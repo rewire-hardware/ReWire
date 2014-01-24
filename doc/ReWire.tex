@@ -1,0 +1,80 @@
+\documentclass{article}[12pt]
+
+\begin{document}
+
+\title{Design of the ReWire Haskell-to-Hardware Compiler}
+\author{Adam Procter}
+
+\maketitle
+
+\section{Introduction}\label{section:introduction}
+
+What is ReWire?
+
+How is this document structured?
+
+\section{Mapping Resumptions to Hardware}
+
+How do resumptions map to (clocked, sequential) hardware circuits?
+
+Well, first of all, what's a reactive resumption? Assume WLOG that it never gets ``done'': then you are talking about a machine that maps a sequence (discrete-time) of inputs to a sequence of outputs. That's just a sequential circuit. (Diagram.)
+
+Now, consider this module
+
+\begin{verbatim}
+module Foo where
+...
+main :: React I O ()
+\end{verbatim}
+
+this is gonna look like
+
+\begin{verbatim}
+entity Foo is
+  port (clk  : in std_logic;                           -- clock signal, always present
+        inp  : in std_logic_vector ([|I|] downto 0);   -- input signal (absent if I isomorphic to ()).
+        outp : out std_logic_vector ([|O|] downto 0)); -- output signal if present (absent if O isomorphic to ()).
+end Foo;
+\end{verbatim}
+
+(Thought: it might be better to have a ``done-less'' react-ish type, i.e. the automata arrow, as the base, but it doesn't matter much.)
+
+\section{Compiler Structure}
+
+Broken into syntax modules (AST with utility functions) and compiler modules (each with a ``pure'' interface though they may be monadic internally) transforming syntax to syntax.
+
+Block diagram here like what was on the white board. Each module will correspond to a single Haskell module.
+
+\subsection{Syntax Modules}
+
+GHC's Haskell AST (wherever that comes from), RWC, SMIL.
+
+\subsection{Compiler Modules}
+
+\section{ReWire Core}
+
+\section{Desugarer}
+
+This translates type-checked GHC modules into ReWire Core.
+
+\section{ReWire Normal Form}
+
+RWNF for short.
+
+\section{Partial Evaluator}
+
+This tries to map type-checked GHC modules with ``main'' of acceptable type down to RWNF.
+
+\section{State Machine Generator}
+
+\section{VHDL Generator}
+
+\appendix
+
+\section{Abstract Syntax Reference}
+
+\subsection{ReWire Core}
+
+\subsection{SMIL}
+
+\end{document}
