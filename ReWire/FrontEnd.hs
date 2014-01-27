@@ -1,6 +1,4 @@
-{-# LANGUAGE CPP #-}
-
-module Main where
+module ReWire.FrontEnd where
 
 import GHC
 import GHC.Paths ( libdir )
