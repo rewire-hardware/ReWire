@@ -19,7 +19,7 @@ rwcDef = T.LanguageDef { T.commentStart    = "{-",
                          T.identLetter     = letter,
                          T.opStart         = fail "no operators",
                          T.opLetter        = fail "no operators",
-                         T.reservedNames   = ["data","of","end","def","is","case"],
+                         T.reservedNames   = ["data","of","end","def","is","case","instance","newtype"],
                          T.reservedOpNames = ["="],
                          T.caseSensitive   = True }
 
