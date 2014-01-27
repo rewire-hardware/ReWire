@@ -32,7 +32,6 @@ data RWCExp = RWCApp RWCTy RWCExp RWCExp
 data RWCLit = RWCLitInteger Integer
             | RWCLitFloat Double
             | RWCLitChar Char
-            | RWCLitString String
             deriving Show
 
 data RWCAlt = RWCAlt (Bind RWCPat (RWCExp,RWCExp)) -- (guard,body)
