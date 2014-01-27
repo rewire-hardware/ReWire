@@ -16,15 +16,13 @@ import Unbound.LocallyNameless
 -- for.
 type Identifier = String
 
-data RWCKind = RWCStar | RWCKfun RWCKind RWCKind deriving Show
-
-data RWCTy = RWCTyApp RWCKind RWCTy RWCTy
-           | RWCTyCon RWCKind Identifier
-           | RWCTyVar RWCKind (Name RWCTy)
+data RWCTy = RWCTyApp RWCTy RWCTy
+           | RWCTyCon Identifier
+           | RWCTyVar (Name RWCTy)
            deriving Show
 
 data RWCExp = RWCApp RWCTy RWCExp RWCExp
-            | RWCLam RWCTy (Bind (Name RWCExp) RWCExp)
+            | RWCLam RWCTy (Bind (Name RWCExp,Embed RWCTy) RWCExp)
             | RWCVar RWCTy (Name RWCExp)
             | RWCCon RWCTy Identifier
             | RWCLiteral RWCTy RWCLit
@@ -50,20 +48,20 @@ data RWCConstraint = RWCConstraint Identifier [RWCTy] deriving Show
 -- Note that this is used both for non-overloaded functions *and* for method
 -- definitions inside an instance; that should eliminate the need for class
 -- declarations and simplify instance declarations (see RWCInstance below).
-data RWCDefn = RWCDefn Identifier (Bind [(Name RWCTy,RWCKind)]
+data RWCDefn = RWCDefn Identifier (Bind [Name RWCTy]
                                     ([RWCConstraint],
                                      RWCTy,
-                                     Bind [(Name RWCExp,Embed RWCTy)] RWCExp))
+                                     RWCExp))
                deriving Show
 
-data RWCData = RWCData Identifier (Bind [(Name RWCTy,RWCKind)]
+data RWCData = RWCData Identifier (Bind [Name RWCTy]
                                     [RWCDataCon])
                deriving Show
 
 data RWCDataCon = RWCDataCon Identifier [RWCTy]
                   deriving Show
 
-data RWCNewtype = RWCNewtype Identifier (Bind [(Name RWCTy,RWCKind)]
+data RWCNewtype = RWCNewtype Identifier (Bind [Name RWCTy]
                                           RWCNewtypeCon)
                   deriving Show
 
@@ -74,7 +72,7 @@ data RWCNewtypeCon = RWCNewtypeCon Identifier RWCTy
 -- simply records the header of a Haskell instance declaration (e.g.
 -- "instance Blop t => Blep t Int where"). The definitions of the
 -- implementations are given as ordinary RWCDefns.
-data RWCInstance = RWCInstance Identifier (Bind [(Name RWCTy,RWCKind)]
+data RWCInstance = RWCInstance Identifier (Bind [Name RWCTy]
                                             ([RWCConstraint],RWCTy))
                    deriving Show
 
@@ -92,7 +90,6 @@ instance Alpha RWCAlt where
 instance Alpha RWCPat where
 instance Alpha RWCLit where
 instance Alpha RWCTy where
-instance Alpha RWCKind where
 instance Alpha RWCData where
 instance Alpha RWCDataCon where
 instance Alpha RWCNewtype where
@@ -102,4 +99,4 @@ instance Alpha RWCDefn where
 instance Alpha RWCInstance where
 instance Alpha RWCProg where
   
-$(derive [''RWCExp,''RWCAlt,''RWCPat,''RWCTy,''RWCKind,''RWCLit,''RWCData,''RWCDataCon,''RWCNewtype,''RWCNewtypeCon,''RWCConstraint,''RWCDefn,''RWCInstance,''RWCProg])
+$(derive [''RWCExp,''RWCAlt,''RWCPat,''RWCTy,''RWCLit,''RWCData,''RWCDataCon,''RWCNewtype,''RWCNewtypeCon,''RWCConstraint,''RWCDefn,''RWCInstance,''RWCProg])

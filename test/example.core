@@ -1,0 +1,53 @@
+data Maybe
+     <a>
+of
+     Nothing
+     Just <a>
+end
+
+data List
+     <a>
+of
+     Empty
+     Cons <a> <(List a)>
+end
+
+newtype StateT
+     <s m a>
+of
+     StateT <((Arr s) (m ((Pair a) s)))>
+end
+
+instance Monad
+  <m s>
+  <Monad <m>>
+  ((StateT s) m)
+end
+
+instance Monad
+  <>
+  <>
+  Maybe
+end
+
+def f
+     <a>
+     <>
+     <((Arr a) (Maybe a))>
+is
+     (\ x<a> -> (Just<((Arr a) (Maybe a))> x<a>)<(Maybe a)>)<((Arr a) (Maybe a))>
+end
+
+{-
+def length
+     <a>
+     <>
+     <((Arr (List a)) Int)>
+is
+     (\ l<(List a)> -> case l<(List a)> of
+                          Nothing                  -> Zero<Int>
+                          (Cons x<a> lt<(List a)>) -> ((add One<Int>)<Arr Int Int> (length<Arr (List a) Int> lt<List a>))<Int>
+                       end<Int>
+     )<(Arr (List a)) Int)>
+end
+-}
