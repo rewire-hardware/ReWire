@@ -8,7 +8,8 @@ import Text.Parsec
 import Text.Parsec.Language as L
 import qualified Text.Parsec.Token as T
 import Unbound.LocallyNameless
-import Data.Char
+import Data.Char (isUpper)
+import Control.Monad (liftM)
 
 rwcDef :: T.LanguageDef st
 rwcDef = T.LanguageDef { T.commentStart    = "{-",
@@ -19,8 +20,8 @@ rwcDef = T.LanguageDef { T.commentStart    = "{-",
                          T.identLetter     = letter,
                          T.opStart         = fail "no operators",
                          T.opLetter        = fail "no operators",
-                         T.reservedNames   = ["data","of","end","def","is","case","instance","newtype"],
-                         T.reservedOpNames = ["="],
+                         T.reservedNames   = ["data","of","end","def","is","case","instance","newtype","case"],
+                         T.reservedOpNames = ["|","\\","->"],
                          T.caseSensitive   = True }
 
 lexer = T.makeTokenParser rwcDef
@@ -76,19 +77,44 @@ ty = do (t1,t2) <- parens (do t1 <- ty
            then return (RWCTyCon n)
            else return (RWCTyVar (s2n n))
 
--- FIXME: the "try" backs off too far here, error messages are lousy.
--- Instead combine app and lambda cases, look ahead for \
-expr = try (do (e1,e2) <- parens (do e1 <- expr
-                                     e2 <- expr
-                                     return (e1,e2))
-               t       <- angles ty
-               return (RWCApp t e1 e2))
+-- FIXME: literals
+pat = do (n,ps) <- parens (do n  <- identifier
+                              ps <- many pat
+                              return (n,ps))
+         t      <- angles ty
+         return (RWCPatCon (embed t) n ps)
+  <|> do n <- identifier
+         t <- angles ty
+         return (RWCPatVar (embed t) (s2n n))
+   <|> (do l <- literal
+           t <- angles ty
+           return (RWCPatLiteral (embed t) l))
+
+alt = do (p,guard) <- angles (do p <- pat
+                                 reservedOp "|"
+                                 g <- expr
+                                 return (p,g))
+         e         <- expr
+         return (RWCAlt (bind p (guard,e)))
+
+literal = liftM RWCLitInteger integer
+      <|> liftM RWCLitFloat float
+      <|> liftM RWCLitChar charLiteral
+
+expr = do (e1,e2) <- parens (do e1 <- expr
+                                e2 <- expr
+                                return (e1,e2))
+          t       <- angles ty
+          return (RWCApp t e1 e2)
+   <|> (do l <- literal
+           t <- angles ty
+           return (RWCLiteral t l))
    <|> (do n <- identifier
            t <- angles ty
            if isUpper (head n)
               then return (RWCCon t n)
               else return (RWCVar t (s2n n)))
-   <|> (do (n,t,e) <- parens (do reservedOp "\\"
+   <|> (do (n,t,e) <- braces (do reservedOp "\\"
                                  n <- identifier -- FIXME: check caps
                                  t <- angles ty
                                  reservedOp "->"
@@ -96,7 +122,13 @@ expr = try (do (e1,e2) <- parens (do e1 <- expr
                                  return (n,t,e))
            t'      <- angles ty
            return (RWCLam t' (bind (s2n n,embed t) e)))
-
+   <|> (do reserved "case"
+           e    <- expr
+           reserved "of"
+           alts <- many alt
+           reserved "end"
+           t    <- angles ty
+           return (RWCCase t e alts))
 
 defn = do reserved "def"
           n   <- identifier
