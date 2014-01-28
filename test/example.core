@@ -18,18 +18,6 @@ of
      StateT <((Arr s) (m ((Pair a) s)))>
 end
 
-instance Monad
-  <m s>
-  <Monad <m>>
-  ((StateT s) m)
-end
-
-instance Monad
-  <>
-  <>
-  Maybe
-end
-
 def f
      <a>
      <>

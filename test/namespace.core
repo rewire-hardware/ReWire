@@ -1,0 +1,36 @@
+def a
+  <a>
+  <>
+  <a>
+is
+  ub<a>
+end
+
+def ub
+  <ub>
+  <>
+  <a>
+is
+  (ub<ub> a<a>)<a>
+end
+
+class MonadState
+  <s m>
+  <Monad <m>>
+  <s m>
+has
+  method get<m s><MonadState <s,m>><(m s)> end
+  method put<m s><MonadState <s,m>><((Arr s) (m Nil))> end
+  method upd<m s><MonadState <s,m>><((Arr ((Arr s) s)) (m Nil))>
+    is (bind<((Arr
+               (m s))
+               ((Arr
+                 ((Arr s) (m Nil)))
+                 (m Nil))
+             )>
+        get<(m s)>)<((Arr
+                      ((Arr s) (m Nil)))
+                      (m Nil))>
+        -- I am too lazy to finish the above; it proves the point as far as scoping discipline :P
+  end
+end

@@ -44,13 +44,20 @@ data RWCPat = RWCPatCon (Embed RWCTy) Identifier [RWCPat]
 
 data RWCConstraint = RWCConstraint Identifier [RWCTy] deriving Show
 
--- Note that this is used both for non-overloaded functions *and* for method
--- definitions inside an instance; that should eliminate the need for class
--- declarations and simplify instance declarations (see RWCInstance below).
-data RWCDefn = RWCDefn Identifier (Bind [Name RWCTy]
-                                    ([RWCConstraint],
-                                     RWCTy,
-                                     RWCExp))
+data RWCClassMethod = RWCClassMethod (Name RWCExp) (Embed (Bind [Name RWCTy]
+                                                               ([RWCConstraint],
+                                                                RWCTy,
+                                                                Maybe RWCExp)))
+                      deriving Show
+
+data RWCDefn = RWCDefn (Name RWCExp) (Embed (Bind [Name RWCTy]
+                                                 ([RWCConstraint],
+                                                   RWCTy,
+                                                   RWCExp)))
+             | RWCClass Identifier (Embed (Bind [Name RWCTy]
+                                               ([RWCConstraint],
+                                                [RWCTy])))
+                                   [RWCClassMethod]
                deriving Show
 
 data RWCData = RWCData Identifier (Bind [Name RWCTy]
@@ -67,20 +74,9 @@ data RWCNewtype = RWCNewtype Identifier (Bind [Name RWCTy]
 data RWCNewtypeCon = RWCNewtypeCon Identifier RWCTy
                      deriving Show
 
--- This is simpler than the instance declarations in Haskell. A RWCInstance
--- simply records the header of a Haskell instance declaration (e.g.
--- "instance Blop t => Blep t Int where"). The definitions of the
--- implementations are given as ordinary RWCDefns.
-data RWCInstance = RWCInstance Identifier (Bind [Name RWCTy]
-                                            ([RWCConstraint],RWCTy))
-                   deriving Show
-
--- Random remark: if we want fundeps, we will need to encode them here. (I
--- will probably add this at some point.)
 data RWCProg = RWCProg { dataDecls    :: [RWCData],
                          newtypeDecls :: [RWCNewtype],
-                         instances    :: [RWCInstance],
-                         defns        :: [RWCDefn] }
+                         defns        :: TRec [RWCDefn] }
                        deriving Show
 
 -- Boilerplate for Unbound.
@@ -94,8 +90,46 @@ instance Alpha RWCDataCon where
 instance Alpha RWCNewtype where
 instance Alpha RWCNewtypeCon where
 instance Alpha RWCConstraint where
+instance Alpha RWCClassMethod where
 instance Alpha RWCDefn where
-instance Alpha RWCInstance where
-instance Alpha RWCProg where
+--instance Alpha RWCProg where      (can't have this anymore due to recbind)
   
-$(derive [''RWCExp,''RWCAlt,''RWCPat,''RWCTy,''RWCLit,''RWCData,''RWCDataCon,''RWCNewtype,''RWCNewtypeCon,''RWCConstraint,''RWCDefn,''RWCInstance,''RWCProg])
+instance Subst RWCExp RWCDefn where
+  isvar _ = Nothing
+  
+instance Subst RWCExp RWCClassMethod where
+  isvar _ = Nothing
+
+instance Subst RWCExp RWCConstraint where
+  isvar _ = Nothing
+
+instance Subst RWCExp RWCExp where
+  isvar (RWCVar _ n) = Just (SubstName n)
+  isvar _            = Nothing
+
+instance Subst RWCExp RWCAlt where
+  isvar _ = Nothing
+
+instance Subst RWCExp RWCPat where
+  isvar _ = Nothing
+
+instance Subst a RWCLit where
+  isvar _ = Nothing
+
+instance Subst RWCExp RWCTy where
+  isvar _ = Nothing
+
+instance Subst RWCTy RWCTy where
+  isvar (RWCTyVar n) = Just (SubstName n)
+  isvar _            = Nothing
+  
+instance Subst RWCTy RWCExp where
+  isvar _ = Nothing
+
+instance Subst RWCTy RWCAlt where
+  isvar _ = Nothing
+
+instance Subst RWCTy RWCPat where
+  isvar _ = Nothing
+
+$(derive [''RWCExp,''RWCAlt,''RWCPat,''RWCTy,''RWCLit,''RWCData,''RWCDataCon,''RWCNewtype,''RWCNewtypeCon,''RWCConstraint,''RWCClassMethod,''RWCDefn{-,''RWCProg-}])
