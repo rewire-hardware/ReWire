@@ -7,10 +7,15 @@ import MonadUtils
 import Bag
 import SrcLoc
 import HsExpr
+import Var (Var(..))
+import Name
+import Outputable
 --End GHC Package Imports
 
 --General Imports
-import Control.Monad.Identity
+--import Control.Monad.Identity
+import Control.Monad.Reader
+import Unbound.LocallyNameless
 --End General Imports
 
 --ReWire Imports
@@ -19,7 +24,7 @@ import ReWire.Core
 
 
 
-type RWDesugar a = Identity a
+type RWDesugar a = Reader DynFlags a
 
 
 --This type can be a lot more general, but I'm fixing it here
@@ -31,7 +36,7 @@ dsLExpr (L loc e) = dsExpr e
 dsExpr :: HsExpr Id -> RWDesugar RWCExp
 dsExpr (HsPar e)               = dsLExpr e
 dsExpr (ExprWithTySigOut e _)  = dsLExpr e
-dsExpr (HsVar var)             = error "Vars not implemented"
+dsExpr (HsVar var)             = return undefined
 dsExpr (HsIPVar _)             = error "HsIPVar panics in GHC."
 dsExpr (HsLit lit)             = error "Lits not implemented yet."
 dsExpr (HsOverLit lit)         = error "Lits not implemented yet."
@@ -91,4 +96,11 @@ dsExpr (EViewPat      {})  = error "Panicking on EViewPat"
 dsExpr (ELazyPat      {})  = error "Panicking on ELazyPat"
 dsExpr (HsType        {})  = error "Panicking on HsType"
 
+--Utility Functions
+getFlags :: RWDesugar DynFlags
+getFlags = ask
 
+ppShow :: Outputable a => a -> RWDesugar String
+ppShow op = do
+              flags <- getFlags
+              return $ showPpr flags op
