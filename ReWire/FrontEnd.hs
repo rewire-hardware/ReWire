@@ -1,5 +1,7 @@
 module ReWire.FrontEnd where
 
+import qualified ReWire.Conversions as Conv
+
 import GHC
 import GHC.Paths ( libdir )
 import DynFlags
@@ -8,27 +10,29 @@ import System.IO
 import MonadUtils
 import Bag
 import SrcLoc 
- 
-main = 
-    defaultErrorHandler defaultFatalMessager defaultFlushOut $ do
-      runGhc (Just libdir) $ do
-        dflags <- getSessionDynFlags
-        let dflags' = dflags {hscTarget = HscInterpreted, 
-                              ghcLink = LinkInMemory, 
-                              ghcMode = CompManager}
-        setSessionDynFlags dflags'  
-        target <- guessTarget "tests/TestMain" Nothing
-        setTargets [target]
-        load LoadAllTargets
-        g <- getModuleGraph
-        p <- parseModule $ head g
-        tc <- typecheckModule p
-        let pm = tm_parsed_module tc
-        let src = pm_parsed_source pm
-        let tc_src = tm_typechecked_source tc
-        liftIO $ printForC dflags' stdout (ppr tc_src)
-        return (tc_src ,dflags')
 
+ 
+main = do 
+    binds <- (defaultErrorHandler defaultFatalMessager defaultFlushOut $ do
+              runGhc (Just libdir) $ do
+                dflags <- getSessionDynFlags
+                let dflags' = dflags {hscTarget = HscInterpreted, 
+                                      ghcLink = LinkInMemory, 
+                                      ghcMode = CompManager}
+                setSessionDynFlags dflags'  
+                target <- guessTarget "test/input_tests/TestMain" Nothing
+                setTargets [target]
+                load LoadAllTargets
+                g <- getModuleGraph
+                p <- parseModule $ head g
+                tc <- typecheckModule p
+                let pm = tm_parsed_module tc
+                let src = pm_parsed_source pm
+                let tc_src = tm_typechecked_source tc
+                liftIO $ printForC dflags' stdout (ppr tc_src)
+                let binds = Conv.runRWDesugar (Conv.dsTcBinds tc_src) dflags'
+                return binds)
+    print binds
 
 output dflags' s = printForC dflags' stdout (ppr s)
 
