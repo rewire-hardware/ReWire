@@ -48,10 +48,11 @@ dsHsBind (PatBind { pat_lhs = pat, pat_rhs = grhss, pat_rhs_ty = ty
 dsHsBind (AbsBinds { abs_tvs = tyvars, abs_ev_vars = dicts
                    , abs_exports = [export]
                    , abs_ev_binds = ev_binds, abs_binds = binds }) | ABE { abe_wrap = wrap, abe_poly = global
-                   , abe_mono = local, abe_prags = prags } <- export = error "AbsBinds A, not defined yet."
+                   , abe_mono = local, abe_prags = prags } <- export = error "AbsBinds Single Export, not defined yet."
+
 dsHsBind (AbsBinds { abs_tvs = tyvars, abs_ev_vars = dicts
                    , abs_exports = exports, abs_ev_binds = ev_binds
-                   , abs_binds = binds }) = error "AbsBinds B, not defined yet."
+                   , abs_binds = binds }) = error "AbsBinds general, not defined yet."
 --dsHsBind (PatSynBind{}) = error "dsHsBind panics"
 
 
