@@ -25,10 +25,10 @@ where
   end
 end
 
-def f
+def eff
   <a>
   <C <a>>
   <((Arr a) ((Pair a) a))>
 is
-  {\ x<a> -> ((MkPair<((Arr a) ((Arr a) ((Pair a) a)))> x<a>)<((Arr a) ((Pair a) a))> x<a>)<((Pair a) a)>}<((Arr a) ((Pair a) a))>
+  {\ x<a> -> ((MkPair<((Arr a) ((Arr a) ((Pair a) a)))> x<a>)<((Arr a) ((Pair a) a))> (f<((Arr a) a)> x<a>)<a>)<((Pair a) a)>}<((Arr a) ((Pair a) a))>
 end

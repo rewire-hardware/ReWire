@@ -77,7 +77,6 @@ ty = do (t1,t2) <- parens (do t1 <- ty
            then return (RWCTyCon n)
            else return (RWCTyVar (s2n n))
 
--- FIXME: literals
 pat = do (n,ps) <- parens (do n  <- identifier
                               ps <- many pat
                               return (n,ps))
