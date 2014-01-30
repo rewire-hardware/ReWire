@@ -44,11 +44,43 @@ data RWCPat = RWCPatCon (Embed RWCTy) Identifier [RWCPat]
 
 data RWCConstraint = RWCConstraint Identifier [RWCTy] deriving Show
 
+-- Unlike Haskell's surface syntax, the entire bundle of type constraints
+-- (including those imposed by the class context) must be reflected here.
+-- For example, instead of:
+--
+-- class Num a where
+--   (+) :: a -> a -> a
+--
+-- you have:
+--
+-- class Num a where
+--   (+) :: Num a => a -> a -> a
+--
+-- Another example:
+--
+-- class Monad m => MonadState s m where
+--   get :: (Monad m,MonadState s m) => m s
+--   put :: (Monad m,MonadState s m) => s -> m ()
+--   upd :: (Monad m,MonadState s m) => (s -> s) -> m ()
+--   upd f = get >>= \ s -> put (f s)
+--
+-- (This is because I couldn't figure out how to get the type variables to
+-- scope over the class methods while still exporting the method names as
+-- binders. There is probably a way to do this, but... oh well!)
 data RWCClassMethod = RWCClassMethod (Name RWCExp) (Embed (Bind [Name RWCTy]
                                                                ([RWCConstraint],
                                                                 RWCTy,
                                                                 Maybe RWCExp)))
                       deriving Show
+
+data RWCInstance = RWCInstance (Bind [Name RWCTy] ([RWCConstraint],RWCTy,[RWCInstanceMethod]))
+                   deriving Show
+
+data RWCInstanceMethod = RWCInstanceMethod (Name RWCExp) (Bind [Name RWCTy]
+                                                              ([RWCConstraint],
+                                                               RWCTy,
+                                                               RWCExp))
+                         deriving Show
 
 data RWCDefn = RWCDefn (Name RWCExp) (Embed (Bind [Name RWCTy]
                                                  ([RWCConstraint],
@@ -58,6 +90,7 @@ data RWCDefn = RWCDefn (Name RWCExp) (Embed (Bind [Name RWCTy]
                                                ([RWCConstraint],
                                                 [RWCTy])))
                                    [RWCClassMethod]
+                                   (Embed [RWCInstance])
                deriving Show
 
 data RWCData = RWCData Identifier (Bind [Name RWCTy]
@@ -91,13 +124,21 @@ instance Alpha RWCNewtype where
 instance Alpha RWCNewtypeCon where
 instance Alpha RWCConstraint where
 instance Alpha RWCClassMethod where
+instance Alpha RWCInstance where
+instance Alpha RWCInstanceMethod where
 instance Alpha RWCDefn where
 --instance Alpha RWCProg where      (can't have this anymore due to recbind)
   
 instance Subst RWCExp RWCDefn where
   isvar _ = Nothing
   
+instance Subst RWCExp RWCInstance where
+  isvar _ = Nothing
+  
 instance Subst RWCExp RWCClassMethod where
+  isvar _ = Nothing
+
+instance Subst RWCExp RWCInstanceMethod where
   isvar _ = Nothing
 
 instance Subst RWCExp RWCConstraint where
@@ -132,4 +173,4 @@ instance Subst RWCTy RWCAlt where
 instance Subst RWCTy RWCPat where
   isvar _ = Nothing
 
-$(derive [''RWCExp,''RWCAlt,''RWCPat,''RWCTy,''RWCLit,''RWCData,''RWCDataCon,''RWCNewtype,''RWCNewtypeCon,''RWCConstraint,''RWCClassMethod,''RWCDefn{-,''RWCProg-}])
+$(derive [''RWCExp,''RWCAlt,''RWCPat,''RWCTy,''RWCLit,''RWCData,''RWCDataCon,''RWCNewtype,''RWCNewtypeCon,''RWCConstraint,''RWCClassMethod,''RWCInstanceMethod,''RWCInstance,''RWCDefn{-,''RWCProg-}])

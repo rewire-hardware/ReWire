@@ -20,7 +20,7 @@ rwcDef = T.LanguageDef { T.commentStart    = "{-",
                          T.identLetter     = letter,
                          T.opStart         = fail "no operators",
                          T.opLetter        = fail "no operators",
-                         T.reservedNames   = ["data","of","end","def","is","newtype","case","class","has","instance"],
+                         T.reservedNames   = ["data","of","end","def","is","newtype","case","class","where","instance"],
                          T.reservedOpNames = ["|","\\","->"],
                          T.caseSensitive   = True }
 
@@ -130,6 +130,26 @@ expr = do (e1,e2) <- parens (do e1 <- expr
            t    <- angles ty
            return (RWCCase t e alts))
 
+instancemethod = do reserved "def"
+                    n   <- identifier
+                    tvs <- angles (many identifier)
+                    cs  <- angles (many constraint)
+                    t   <- angles ty
+                    reserved "is"
+                    e   <- expr
+                    reserved "end"
+                    return (RWCInstanceMethod (s2n n) (bind (map s2n tvs) (cs,t,e)))
+                    
+
+instancedecl = do reserved "instance"
+                  tvs <- angles (many identifier)
+                  cs  <- angles (many constraint)
+                  t   <- angles ty
+                  reserved "where"
+                  ds  <- many instancemethod
+                  reserved "end"
+                  return (RWCInstance (bind (map s2n tvs) (cs,t,ds)))
+
 defn = do reserved "def"
           n   <- identifier
           tvs <- angles (many identifier)
@@ -144,10 +164,11 @@ defn = do reserved "def"
           tvs <- angles (many identifier)
           cs  <- angles (many constraint)
           ts  <- angles (many ty)
-          reserved "has"
+          reserved "where"
           ms  <- many classmethod
+          is  <- many instancedecl
           reserved "end"
-          return (RWCClass n (embed (bind (map s2n tvs) (cs,ts))) ms)
+          return (RWCClass n (embed (bind (map s2n tvs) (cs,ts))) ms (embed is))
 
 classmethod = do reserved "method"
                  n   <- identifier
