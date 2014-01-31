@@ -16,6 +16,7 @@ import Outputable
 --General Imports
 import Control.Monad.Identity
 import Control.Monad.Reader
+import Control.Monad.State
 import Unbound.LocallyNameless
 --End General Imports
 
@@ -25,35 +26,41 @@ import ReWire.Core
 
 
 
-type RWDesugar a = ReaderT DynFlags Identity a
+type RWDesugar a = StateT Int (ReaderT DynFlags Identity) a
 
 runRWDesugar :: RWDesugar a -> DynFlags -> a
 runRWDesugar ds r = runIdentity $
-                    runReaderT ds r
+                    (flip runReaderT) r $
+                    evalStateT ds 0
 
 dsTcBinds :: LHsBinds Id -> RWDesugar [RWCDefn]
 dsTcBinds bag = let binds = map deLoc $ deBag bag 
-                  in mapM dsHsBind binds 
+                  in liftM concat $ mapM dsHsBind binds 
   where
     deLoc (L _ e) = e
     deBag b = bagToList b
 
 
-dsHsBind :: HsBind Id -> RWDesugar RWCDefn
+dsHsBind :: HsBind Id -> RWDesugar [RWCDefn]
 dsHsBind (VarBind { var_id = var, var_rhs = expr, var_inline = inline_regardless }) = error "VarBind not implemented yet"
+
 dsHsBind (FunBind { fun_id = L _ fun, fun_matches = matches
                   , fun_co_fn = co_fn, fun_tick = tick, fun_infix = inf }) = error "FunBind not defined yet."
+
 dsHsBind (PatBind { pat_lhs = pat, pat_rhs = grhss, pat_rhs_ty = ty
                   , pat_ticks = (rhs_tick, var_ticks) }) = error "Patbind not defined yet."
-dsHsBind (AbsBinds { abs_tvs = tyvars, abs_ev_vars = dicts
-                   , abs_exports = [export]
-                   , abs_ev_binds = ev_binds, abs_binds = binds }) | ABE { abe_wrap = wrap, abe_poly = global
-                   , abe_mono = local, abe_prags = prags } <- export = error "AbsBinds Single Export, not defined yet."
+--dsHsBind (AbsBinds { abs_tvs = tyvars, abs_ev_vars = dicts
+--                   , abs_exports = [export]
+--                   , abs_ev_binds = ev_binds, abs_binds = binds }) | ABE { abe_wrap = wrap, abe_poly = global
+--                   , abe_mono = local, abe_prags = prags } <- export = error "AbsBinds Single Export, not defined yet."
 
 dsHsBind (AbsBinds { abs_tvs = tyvars, abs_ev_vars = dicts
                    , abs_exports = exports, abs_ev_binds = ev_binds
-                   , abs_binds = binds }) = error "AbsBinds general, not defined yet."
+                   , abs_binds = binds }) = dsTcBinds binds
+                   --error "AbsBinds general, not defined yet."
 --dsHsBind (PatSynBind{}) = error "dsHsBind panics"
+
+
 
 
 
@@ -127,6 +134,21 @@ dsExpr (EViewPat      {})  = error "Panicking on EViewPat"
 dsExpr (ELazyPat      {})  = error "Panicking on ELazyPat"
 dsExpr (HsType        {})  = error "Panicking on HsType"
 
+anonLambdaWrap :: String -> RWCExp -> RWCTy -> RWCExp
+anonLambdaWrap lbl exp ty = let bound = bind (s2n lbl,embed ty) exp
+                          in RWCLam (extendType ty) bound
+    where
+      extendType :: RWCTy -> RWCTy
+      extendType ty = RWCTyApp ty (eType exp)  
+
+
+eType :: RWCExp -> RWCTy
+eType (RWCApp t _ _)   = t
+eType (RWCLam t _)     = t
+eType (RWCVar t _)     = t
+eType (RWCCon t _)     = t
+eType (RWCLiteral t _) = t
+eType (RWCCase t _ _)  = t
 
 --GHC Type to RWCTy
 dsType :: Type -> RWDesugar RWCTy
@@ -145,3 +167,11 @@ ppShow :: Outputable a => a -> RWDesugar String
 ppShow op = do
               flags <- getFlags
               return $ showPpr flags op
+
+getLabel :: RWDesugar String
+getLabel = do
+             counter <- get
+             put (counter+1)
+             return $ "dsX_" ++ (show counter)
+
+deloc (L _ e) = e
