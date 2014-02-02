@@ -1,9 +1,10 @@
 module TestMain where
 
-main = putStrLn $ "This is Test Main. " 
+--main = putStrLn $ "This is Test Main. " 
 
-fj :: Maybe a -> a
-fj (Just thing) = thing
-fj Nothing = error "oh no!"
+fj :: (Show a) => Maybe a -> String 
+fj (Just thing) = show thing 
+fj Nothing = "oh no!"
 
-value = 1
+
+--value = 1

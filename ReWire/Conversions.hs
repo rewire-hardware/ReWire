@@ -11,6 +11,7 @@ import Var (Var(..))
 import Name
 import Type
 import Outputable
+import TyCon
 --End GHC Package Imports
 
 --General Imports
@@ -18,6 +19,7 @@ import Control.Monad.Identity
 import Control.Monad.Reader
 import Control.Monad.State
 import Unbound.LocallyNameless
+import Debug.Trace
 --End General Imports
 
 --ReWire Imports
@@ -40,12 +42,18 @@ dsTcBinds bag = let binds = map deLoc $ deBag bag
     deLoc (L _ e) = e
     deBag b = bagToList b
 
+dsHsPat :: Pat Id -> RWDesugar RWCPat
+dsHsPat (VarPat id) = undefined
+dsHsPat (LitPat lit) = undefined
+
 
 dsHsBind :: HsBind Id -> RWDesugar [RWCDefn]
 dsHsBind (VarBind { var_id = var, var_rhs = expr, var_inline = inline_regardless }) = error "VarBind not implemented yet"
 
-dsHsBind (FunBind { fun_id = L _ fun, fun_matches = matches
-                  , fun_co_fn = co_fn, fun_tick = tick, fun_infix = inf }) = error "FunBind not defined yet."
+dsHsBind (FunBind { fun_id = L _ fun, fun_matches = (MatchGroup matches match_type) 
+                  , fun_co_fn = co_fn, fun_tick = tick, fun_infix = inf }) = do 
+                                                                               ty <- dsType match_type
+                                                                               return $ trace ("\nDEBUG: " ++ show ty ++ "\n") undefined
 
 dsHsBind (PatBind { pat_lhs = pat, pat_rhs = grhss, pat_rhs_ty = ty
                   , pat_ticks = (rhs_tick, var_ticks) }) = error "Patbind not defined yet."
@@ -56,9 +64,11 @@ dsHsBind (PatBind { pat_lhs = pat, pat_rhs = grhss, pat_rhs_ty = ty
 
 dsHsBind (AbsBinds { abs_tvs = tyvars, abs_ev_vars = dicts
                    , abs_exports = exports, abs_ev_binds = ev_binds
-                   , abs_binds = binds }) = dsTcBinds binds
+                   , abs_binds = binds }) = do
+                                              dsTcBinds binds
                    --error "AbsBinds general, not defined yet."
 --dsHsBind (PatSynBind{}) = error "dsHsBind panics"
+
 
 
 
@@ -153,11 +163,32 @@ eType (RWCCase t _ _)  = t
 --GHC Type to RWCTy
 dsType :: Type -> RWDesugar RWCTy
 dsType ty = case repSplitAppTy_maybe ty of 
-                      Nothing -> undefined
+                      Nothing -> do
+                                   conv
                       Just (left,right) -> do
+                                              s <- ppShow ty
                                               left'  <- dsType left
                                               right' <- dsType right
                                               return $ RWCTyApp left' right'
+      where
+        conv = case getTyVar_maybe ty of
+                      Just var -> do
+                                    var' <- ppShow $ getName var
+                                    return $ RWCTyVar $ s2n var' 
+                      Nothing  -> case splitFunTy_maybe ty of
+                                         Just fun -> error "FunType encountered" 
+                                         Nothing  -> case splitTyConApp_maybe ty of
+                                                              Just (tycon,tys) -> do
+                                                                                   tycon' <- ppShow $ tyConName tycon 
+                                                                                   return (RWCTyCon tycon') 
+                                                              Nothing    -> case splitForAllTy_maybe ty of
+                                                                                  Just frall -> error "Forall Type encountered" 
+                                                                                  Nothing    -> case isNumLitTy ty of
+                                                                                                      Just i  -> error "NumLit Type encountered."
+                                                                                                      Nothing -> case isStrLitTy ty of
+                                                                                                                    Just str -> error "String Literal encountered"
+                                                                                                                    Nothing  -> error "Given Type unsupported"
+                    
 
 --Utility Functions
 getFlags :: RWDesugar DynFlags
