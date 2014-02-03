@@ -162,7 +162,7 @@ defn = do reserved "def"
           n   <- identifier
           tvs <- angles (many identifier)
           cs  <- angles (many constraint)
-          ts  <- angles (many ty)
+          ts  <- angles (commaSep ty)
           reserved "where"
           ms  <- many classmethod
           is  <- many instancedecl
@@ -180,7 +180,7 @@ classmethod = do reserved "method"
                  return (RWCClassMethod (s2n n) (embed (bind (map s2n tvs) (cs,t,impl))))
 
 datacon = do n  <- identifier
-             ts <- many (angles ty)
+             ts <- angles (commaSep ty)
              return (RWCDataCon n ts)
 
 datadecl = do reserved "data"

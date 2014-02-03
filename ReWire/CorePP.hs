@@ -11,8 +11,35 @@ data PPFlags = PPFlags { showTypesOnExpressions :: Bool }
 
 defaultFlags = PPFlags { showTypesOnExpressions = True }
 
-ppDataDecls _ = return empty
-ppNewtypeDecls _ = return empty
+ppDataCon (RWCDataCon n ts) = do ts_p <- mapM ppTy ts
+                                 return (text n <+> char '<' <> commaSep ts_p <> char '>')
+
+ppDataDecl (RWCData n b) = do (tvs,dcs) <- unbind b
+                              dcs_p     <- mapM ppDataCon dcs
+                              return (foldr ($+$) empty
+                                            [text "data" <+> text n,
+                                             nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
+                                             text "of",
+                                             nest 4 (foldr ($+$) empty dcs_p),
+                                             text "end"])
+
+ppDataDecls dds = do dds_p <- mapM ppDataDecl dds
+                     return (foldr ($+$) empty dds_p)
+
+ppNewtypeCon (RWCNewtypeCon n t) = do t_p <- ppTy t
+                                      return (text n <+> char '<' <> t_p <> char '>')
+
+ppNewtypeDecl (RWCNewtype n b) = do (tvs,nc) <- unbind b
+                                    nc_p     <- ppNewtypeCon nc
+                                    return (foldr ($+$) empty
+                                                  [text "newtype" <+> text n,
+                                                   nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
+                                                   text "of",
+                                                   nest 4 nc_p,
+                                                   text "end"])
+
+ppNewtypeDecls nds = do nds_p <- mapM ppNewtypeDecl nds
+                        return (foldr ($+$) empty nds_p)
 
 ppLiteral (RWCLitInteger n) = integer n
 ppLiteral (RWCLitFloat x)   = double x
@@ -133,7 +160,7 @@ ppDefn (RWCClass n (Embed b) ms (Embed is)) = do (tvs,(constraints,ts)) <- unbin
                                                                [text "class" <+> text n,
                                                                 nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
                                                                 nest 4 (char '<' <> hsep constraints_p <> char '>'),
-                                                                nest 4 (char '<' <> hsep ts_p <> char '>'),
+                                                                nest 4 (char '<' <> commaSep ts_p <> char '>'),
                                                                 text "where",
                                                                 nest 4 (foldr ($+$) empty ms_p),
                                                                 nest 4 (foldr ($+$) empty is_p),

@@ -1,15 +1,15 @@
 data Maybe
      <a>
 of
-     Nothing
+     Nothing <>
      Just <a>
 end
 
 data List
      <a>
 of
-     Empty
-     Cons <a> <(List a)>
+     Empty <>
+     Cons <a,(List a)>
 end
 
 newtype StateT
