@@ -42,34 +42,48 @@ dsTcBinds bag = let binds = map deLoc $ deBag bag
     deLoc (L _ e) = e
     deBag b = bagToList b
 
+dsTcBindsInner :: LHsBinds Id -> RWDesugar [(Unbound.LocallyNameless.Name RWCExp,RWCExp)]
+dsTcBindsInner bag = let binds = map deLoc $ deBag bag 
+                  in mapM dsHsBind' binds 
+  where
+    deLoc (L _ e) = e
+    deBag b = bagToList b
+
 dsHsPat :: Pat Id -> RWDesugar RWCPat
-dsHsPat (VarPat id) = undefined
-dsHsPat (LitPat lit) = undefined
+dsHsPat (VarPat id) = error "dsHsPat VarPat unfinished!" 
+dsHsPat (LitPat lit) = error "dsHsPat LitPat unfinished!" 
 
 
 dsHsBind :: HsBind Id -> RWDesugar [RWCDefn]
-dsHsBind (VarBind { var_id = var, var_rhs = expr, var_inline = inline_regardless }) = error "VarBind not implemented yet"
 
-dsHsBind (FunBind { fun_id = L _ fun, fun_matches = (MatchGroup matches match_type) 
-                  , fun_co_fn = co_fn, fun_tick = tick, fun_infix = inf }) = do 
-                                                                               ty <- dsType match_type
-                                                                               return $ trace ("\nDEBUG: " ++ show ty ++ "\n") undefined
-
-dsHsBind (PatBind { pat_lhs = pat, pat_rhs = grhss, pat_rhs_ty = ty
-                  , pat_ticks = (rhs_tick, var_ticks) }) = error "Patbind not defined yet."
 --dsHsBind (AbsBinds { abs_tvs = tyvars, abs_ev_vars = dicts
---                   , abs_exports = [export]
---                   , abs_ev_binds = ev_binds, abs_binds = binds }) | ABE { abe_wrap = wrap, abe_poly = global
---                   , abe_mono = local, abe_prags = prags } <- export = error "AbsBinds Single Export, not defined yet."
-
+--                   , abs_exports = export, abs_ev_binds = ev_binds
+--                   , abs_binds = binds }) = do
 dsHsBind (AbsBinds { abs_tvs = tyvars, abs_ev_vars = dicts
-                   , abs_exports = exports, abs_ev_binds = ev_binds
-                   , abs_binds = binds }) = do
-                                              dsTcBinds binds
+                   , abs_exports = [export]
+                   , abs_ev_binds = ev_binds, abs_binds = binds }) | ABE { abe_wrap = wrap, abe_poly = global
+                   , abe_mono = local, abe_prags = prags } <- export = do
+                                                                         flags <- getFlags
+                                                                         [(bind_name,expr)] <- dsTcBindsInner binds --for now we just operate on one bind
+                                                                         def_vars <- dsVars $ varType global --Get all bound variables in this type
+                                                                         def_cons <- dsCons $ varType global --Get all constraints in this type
+                                                                         def_ty <- dsType $ varType global --Get the converted type 
+                                                                         return $ [RWCDefn (bind_name) (embed $ bind 
+                                                                                                                          def_vars 
+                                                                                                                          (def_cons, def_ty, expr))] 
                    --error "AbsBinds general, not defined yet."
 --dsHsBind (PatSynBind{}) = error "dsHsBind panics"
 
+dsHsBind' :: HsBind Id -> RWDesugar (Unbound.LocallyNameless.Name RWCExp ,RWCExp)
+dsHsBind' (VarBind { var_id = var, var_rhs = expr, var_inline = inline_regardless }) = error "VarBind not implemented yet"
 
+dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = (MatchGroup matches match_type) 
+                  , fun_co_fn = co_fn, fun_tick = tick, fun_infix = inf }) = do 
+                                                                               ty <- dsType match_type
+                                                                               return $ trace ("\nDEBUG: " ++ show ty ++ "\n") $ error "FunBind unfinished!"
+
+dsHsBind' (PatBind { pat_lhs = pat, pat_rhs = grhss, pat_rhs_ty = ty
+                  , pat_ticks = (rhs_tick, var_ticks) }) = error "Patbind not defined yet."
 
 
 
@@ -159,6 +173,12 @@ eType (RWCVar t _)     = t
 eType (RWCCon t _)     = t
 eType (RWCLiteral t _) = t
 eType (RWCCase t _ _)  = t
+
+dsVars :: Type -> RWDesugar [Unbound.LocallyNameless.Name RWCTy]
+dsVars = error "desugar bound vars not defined"
+
+dsCons :: Type -> RWDesugar [RWCConstraint]
+dsCons = error "desugar constraints not defined"
 
 --GHC Type to RWCTy
 dsType :: Type -> RWDesugar RWCTy
