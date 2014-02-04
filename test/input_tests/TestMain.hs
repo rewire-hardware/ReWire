@@ -6,6 +6,6 @@ module TestMain where
 --fj (Just thing) = show thing 
 --fj Nothing = "oh no!"
 
-x = 1
+f x y z = x 
 
 --value = 1

@@ -7,7 +7,8 @@ import MonadUtils
 import Bag
 import SrcLoc
 import HsExpr
-import Var (Var(..))
+import Var (Var(..), varUnique)
+import Unique
 import Name
 import Type
 import Outputable
@@ -53,6 +54,18 @@ dsHsPat :: Pat Id -> RWDesugar RWCPat
 dsHsPat (VarPat id) = error "dsHsPat VarPat unfinished!" 
 dsHsPat (LitPat lit) = error "dsHsPat LitPat unfinished!" 
 
+dsVars :: Type -> [Unbound.LocallyNameless.Name RWCTy] -> RWDesugar ([Unbound.LocallyNameless.Name RWCTy],Type)
+dsVars ty vars = case splitForAllTys ty of
+                            ([],_)      -> return (vars,ty)
+                            (vars',ty')  -> do
+                                             vars'' <- mapM (ppShow . Var.varUnique) vars'
+                                             let bound_vars = map s2n vars'' 
+                                             dsVars ty' $ vars ++ bound_vars 
+
+
+dsCons :: Type -> RWDesugar [RWCConstraint]
+dsCons ty = return [] -- error "desugar constraints not defined"
+
 
 dsHsBind :: HsBind Id -> RWDesugar [RWCDefn]
 
@@ -65,9 +78,11 @@ dsHsBind (AbsBinds { abs_tvs = tyvars, abs_ev_vars = dicts
                    , abe_mono = local, abe_prags = prags } <- export = do
                                                                          flags <- getFlags
                                                                          [(bind_name,expr)] <- dsTcBindsInner binds --for now we just operate on one bind
-                                                                         def_vars <- dsVars $ varType global --Get all bound variables in this type
+                                                                         (def_vars,innerty) <- dsVars (varType global) []
                                                                          def_cons <- dsCons $ varType global --Get all constraints in this type
-                                                                         def_ty <- dsType $ varType global --Get the converted type 
+                                                                         def_ty <- dsType innerty --Get the converted type 
+                                                                         --s <- ppShow $ foralls 
+                                                                         --error $ show (s, s)
                                                                          return $ [RWCDefn (bind_name) (embed $ bind 
                                                                                                                           def_vars 
                                                                                                                           (def_cons, def_ty, expr))] 
@@ -77,10 +92,53 @@ dsHsBind (AbsBinds { abs_tvs = tyvars, abs_ev_vars = dicts
 dsHsBind' :: HsBind Id -> RWDesugar (Unbound.LocallyNameless.Name RWCExp ,RWCExp)
 dsHsBind' (VarBind { var_id = var, var_rhs = expr, var_inline = inline_regardless }) = error "VarBind not implemented yet"
 
-dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = (MatchGroup matches match_type) 
+dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = m@(MatchGroup matches match_type) 
                   , fun_co_fn = co_fn, fun_tick = tick, fun_infix = inf }) = do 
+                                                                               fun_name <- ppShow fun
                                                                                ty <- dsType match_type
-                                                                               return $ trace ("\nDEBUG: " ++ show ty ++ "\n") $ error "FunBind unfinished!"
+                                                                               let arity = matchGroupArity m
+                                                                               let matches' = map deLoc matches
+                                                                               return (s2n fun_name,
+                                                                                       error "FunBind expr body incomplete") 
+      where
+        conv_match :: Match Id -> RWDesugar RWCAlt
+        conv_match (Match lpats mbty grhs) = do
+                                                let pats = map deLoc lpats
+                                                pats' <- mapM dsHsPat pats
+                                                let final_pat = case pats' of
+                                                         []   -> error "Can't make an alt with no Patterns.  dsHsBind' FunBind" --Build alt with no match?
+                                                         _    -> uncurry_rwpats pats'
+
+
+                                                return undefined
+        conv_guards :: GRHSs Id -> RWDesugar [(RWCExp,RWCExp)] --(Guard,Body)
+        conv_guards (GRHSs {grhssGRHSs=lguards, grhssLocalBinds=wclause}) = do --single guard
+                                                                              let guards = map deLoc lguards
+                                                                              return $ error "conv_guards not defined"
+        conv_grhs :: GRHS Id -> RWDesugar (RWCExp,RWCExp) --(Guard,Body)
+        conv_grhs (GRHS [] lexpr) = do
+                                      let expr  = deLoc lexpr
+                                      let guard = RWCCon (RWCTyCon "Bool") "True" -- Simply true, FIXME  What goes here if the guard is true?
+                                      expr' <- dsLExpr lexpr
+                                      return (guard,expr')
+
+        conv_guard_stmt :: LStmt Id -> RWDesugar RWCExp
+        conv_guard_stmt stmt = error "conv_guard_stmt not defined"
+
+
+        --Combining argument patterns into a tuple enables us to match over things easily
+        uncurry_rwpats :: [RWCPat] -> RWCPat
+        uncurry_rwpats []    = error "Can't uncurry something with no arguments. dsHsBind' FunBind"
+        uncurry_rwpats [pat] = pat -- uncurrying one thing just gets you that thing again
+        uncurry_rwpats pats  = let commas = concat $ take (length pats - 1) $ repeat ","
+                                   tycon  = "(" ++ commas ++ ")"
+                                   tys     = map pat_ty pats
+                                   rwcty   = foldl (\acc item -> RWCTyApp acc item) (RWCTyCon tycon) tys
+                                in RWCPatCon (embed rwcty) tycon pats
+
+        pat_ty (RWCPatCon (Embed ty) _ _) = ty
+        pat_ty (RWCPatLiteral (Embed ty) _) = ty
+        pat_ty (RWCPatVar (Embed ty) _) = ty
 
 dsHsBind' (PatBind { pat_lhs = pat, pat_rhs = grhss, pat_rhs_ty = ty
                   , pat_ticks = (rhs_tick, var_ticks) }) = error "Patbind not defined yet."
@@ -174,11 +232,6 @@ eType (RWCCon t _)     = t
 eType (RWCLiteral t _) = t
 eType (RWCCase t _ _)  = t
 
-dsVars :: Type -> RWDesugar [Unbound.LocallyNameless.Name RWCTy]
-dsVars = error "desugar bound vars not defined"
-
-dsCons :: Type -> RWDesugar [RWCConstraint]
-dsCons = error "desugar constraints not defined"
 
 --GHC Type to RWCTy
 dsType :: Type -> RWDesugar RWCTy
@@ -193,7 +246,7 @@ dsType ty = case repSplitAppTy_maybe ty of
       where
         conv = case getTyVar_maybe ty of
                       Just var -> do
-                                    var' <- ppShow $ getName var
+                                    var' <- ppShowSDoc $ pprUnique $ Var.varUnique var
                                     return $ RWCTyVar $ s2n var' 
                       Nothing  -> case splitFunTy_maybe ty of
                                          Just fun -> error "FunType encountered" 
@@ -219,10 +272,15 @@ ppShow op = do
               flags <- getFlags
               return $ showPpr flags op
 
+ppShowSDoc :: SDoc -> RWDesugar String
+ppShowSDoc sdoc = do
+                    flags <- getFlags
+                    return $ showSDoc flags sdoc
+
 getLabel :: RWDesugar String
 getLabel = do
              counter <- get
              put (counter+1)
              return $ "dsX_" ++ (show counter)
 
-deloc (L _ e) = e
+deLoc (L _ e) = e
