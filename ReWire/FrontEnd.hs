@@ -1,6 +1,9 @@
 module ReWire.FrontEnd where
 
 import qualified ReWire.Conversions as Conv
+import qualified ReWire.CorePP as PP
+import Unbound.LocallyNameless
+import Text.PrettyPrint
 
 import GHC
 import GHC.Paths ( libdir )
@@ -10,6 +13,8 @@ import System.IO
 import MonadUtils
 import Bag
 import SrcLoc 
+
+
 
  
 main = do 
@@ -29,10 +34,13 @@ main = do
                 let pm = tm_parsed_module tc
                 let src = pm_parsed_source pm
                 let tc_src = tm_typechecked_source tc
-                liftIO $ printForC dflags' stdout (ppr tc_src)
+--                liftIO $ printForC dflags' stdout (ppr tc_src)
                 let binds = Conv.runRWDesugar (Conv.dsTcBinds tc_src) dflags'
                 return binds)
-    print binds
+
+    let defs = runFreshM $ mapM PP.ppDefn binds
+    print defs 
+    return ()
 
 output dflags' s = printForC dflags' stdout (ppr s)
 

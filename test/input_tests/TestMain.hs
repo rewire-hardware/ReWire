@@ -6,6 +6,8 @@ module TestMain where
 --fj (Just thing) = show thing 
 --fj Nothing = "oh no!"
 
-f x y z = x 
+--Identity
+f :: a -> a
+f x = x 
 
 --value = 1

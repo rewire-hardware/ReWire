@@ -51,7 +51,10 @@ dsTcBindsInner bag = let binds = map deLoc $ deBag bag
     deBag b = bagToList b
 
 dsHsPat :: Pat Id -> RWDesugar RWCPat
-dsHsPat (VarPat id) = error "dsHsPat VarPat unfinished!" 
+dsHsPat (VarPat var) = do
+                         ty <- dsType $ varType var
+                         vname <- ppUniqueVar var
+                         return $ RWCPatVar (embed ty) (s2n vname)
 dsHsPat (LitPat lit) = error "dsHsPat LitPat unfinished!" 
 
 dsVars :: Type -> [Unbound.LocallyNameless.Name RWCTy] -> RWDesugar ([Unbound.LocallyNameless.Name RWCTy],Type)
@@ -92,14 +95,36 @@ dsHsBind (AbsBinds { abs_tvs = tyvars, abs_ev_vars = dicts
 dsHsBind' :: HsBind Id -> RWDesugar (Unbound.LocallyNameless.Name RWCExp ,RWCExp)
 dsHsBind' (VarBind { var_id = var, var_rhs = expr, var_inline = inline_regardless }) = error "VarBind not implemented yet"
 
+--Here we move all pattern matching to the right hand side of the function in a case statement
 dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = m@(MatchGroup matches match_type) 
                   , fun_co_fn = co_fn, fun_tick = tick, fun_infix = inf }) = do 
+                                                                               --Get the function name 
                                                                                fun_name <- ppShow fun
+                                                                               --Get the function's type
                                                                                ty <- dsType match_type
+                                                                               --Arity to determine if we need to rebuild anything on the RHS, zero means 
+                                                                               --you're dealing with something like x = ...
+                                                                               --Anything else is something like f x ... = ...
                                                                                let arity = matchGroupArity m
-                                                                               let matches' = map deLoc matches
-                                                                               return (s2n fun_name,
-                                                                                       error "FunBind expr body incomplete") 
+                                                                               case arity of
+                                                                                     0 -> error "Zero Arity functions not working yet ;-)"
+                                                                                     _ -> do
+                                                                                             let (pat_tys,end_ty) = matchTypes m
+                                                                                             labels <- replicateM arity getLabel
+                                                                                             --Match up our labels we created to the LHS pattern types they correspond to
+                                                                                             expr_tys' <- mapM dsType pat_tys
+                                                                                             end_ty' <- dsType end_ty
+                                                                                             alts <- mapM (conv_match . deLoc) matches
+                                                                                             let vtypes = zip labels expr_tys'
+                                                                                                 lvars = map (\(lbl,ty) -> RWCVar ty (s2n lbl)) vtypes 
+                                                                                                 case_tuple = uncurry_rwexps lvars
+                                                                                                 case_expr  = RWCCase end_ty' case_tuple alts
+                                                                                                 fun_tycon  = RWCTyCon "(->)"
+                                                                                                 rebound_case = foldl (\acc (lbl,ty)-> RWCLam (RWCTyApp (RWCTyApp fun_tycon (ty) ) (exp_ty acc))
+                                                                                                                                               (bind (s2n lbl,embed ty) acc)) case_expr vtypes
+                                                                                             --let label_pats = 
+                                                                                             return (s2n fun_name,
+                                                                                                     rebound_case) 
       where
         conv_match :: Match Id -> RWDesugar RWCAlt
         conv_match (Match lpats mbty grhs) = do
@@ -109,18 +134,26 @@ dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = m@(MatchGroup matches match
                                                          []   -> error "Can't make an alt with no Patterns.  dsHsBind' FunBind" --Build alt with no match?
                                                          _    -> uncurry_rwpats pats'
 
+                                                rwcgexp <- conv_guards grhs >>= merge_guarded_rwcexp
 
-                                                return undefined
+                                                return $ RWCAlt $ bind final_pat rwcgexp
+
+        merge_guarded_rwcexp :: [(RWCExp,RWCExp)] -> RWDesugar (RWCExp,RWCExp)
+        merge_guarded_rwcexp [exp] = return exp
+        merge_guarded_rwcexp _ = error "Multiple guarded equations not supported yet."
+
         conv_guards :: GRHSs Id -> RWDesugar [(RWCExp,RWCExp)] --(Guard,Body)
         conv_guards (GRHSs {grhssGRHSs=lguards, grhssLocalBinds=wclause}) = do --single guard
                                                                               let guards = map deLoc lguards
-                                                                              return $ error "conv_guards not defined"
+                                                                              mapM conv_grhs guards
         conv_grhs :: GRHS Id -> RWDesugar (RWCExp,RWCExp) --(Guard,Body)
         conv_grhs (GRHS [] lexpr) = do
                                       let expr  = deLoc lexpr
                                       let guard = RWCCon (RWCTyCon "Bool") "True" -- Simply true, FIXME  What goes here if the guard is true?
                                       expr' <- dsLExpr lexpr
                                       return (guard,expr')
+
+        conv_grhs _ = error "guards aren't supported yet"
 
         conv_guard_stmt :: LStmt Id -> RWDesugar RWCExp
         conv_guard_stmt stmt = error "conv_guard_stmt not defined"
@@ -140,11 +173,45 @@ dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = m@(MatchGroup matches match
         pat_ty (RWCPatLiteral (Embed ty) _) = ty
         pat_ty (RWCPatVar (Embed ty) _) = ty
 
+
+        uncurry_rwexps :: [RWCExp] -> RWCExp
+        uncurry_rwexps [] = error "Can't uncurry a list of no expressions.  dsHsBind' FunBind"
+        uncurry_rwexps [exp] = exp
+        uncurry_rwexps exps  = let commas = concat $ take (length exps - 1) $ repeat ","
+                                   tycon = "(" ++ commas ++ ")"
+                                   tys  = map exp_ty exps
+                                   rwcty = foldl (\acc item -> RWCTyApp acc item) (RWCTyCon tycon) tys
+                                in foldl (\acc item -> RWCApp (RWCTyApp (exp_ty acc) (exp_ty item)) acc item) (RWCCon (RWCTyCon tycon) tycon) exps
+
+        exp_ty (RWCApp ty _ _) = ty
+        exp_ty (RWCLam ty _) = ty
+        exp_ty (RWCVar ty _) = ty
+        exp_ty (RWCCon ty _) = ty
+        exp_ty (RWCLiteral ty _) = ty
+        exp_ty (RWCCase ty _ _) = ty
+
+
+        matchTypes :: MatchGroup Id -> ([Type],Type)
+        matchTypes (MatchGroup [] ty) = ([],ty)
+        matchTypes (MatchGroup matches ty) = let (Match pats _ grhs) = deLoc $ head matches
+                                                 ltypes           = map (hsPatTy . deLoc) pats -- If we have stuff on the lhs, the rhs type differs
+                                                 (GRHS _ lexpr) = deLoc $ head $ grhssGRHSs grhs 
+                                                 rhs_ty = hsExpTy $ deLoc lexpr --extract the RHS type from the expression that resides on the RHS
+                                              in (ltypes,rhs_ty)
+
+
 dsHsBind' (PatBind { pat_lhs = pat, pat_rhs = grhss, pat_rhs_ty = ty
                   , pat_ticks = (rhs_tick, var_ticks) }) = error "Patbind not defined yet."
 
 
 
+hsPatTy :: Pat Id -> Type
+hsPatTy (VarPat var) = varType var
+hsPatTy _ = error "hsPatTy encountered unimplemented case."
+
+hsExpTy :: HsExpr Id -> Type
+hsExpTy (HsVar var) = varType var
+hsExpTy _ = error "hsExpTy encountered unimplemented case."
 
 
 --This type can be a lot more general, but I'm fixing it here
@@ -156,7 +223,10 @@ dsLExpr (L loc e) = dsExpr e
 dsExpr :: HsExpr Id -> RWDesugar RWCExp
 dsExpr (HsPar e)               = dsLExpr e
 dsExpr (ExprWithTySigOut e _)  = dsLExpr e
-dsExpr (HsVar var)             = error "HsVar not implemented yet."
+dsExpr (HsVar var)             = do
+                                   vname <- ppUniqueVar var
+                                   ty    <- dsType $ varType var
+                                   return $ RWCVar ty (s2n vname)
 dsExpr (HsIPVar _)             = error "HsIPVar panics in GHC."
 dsExpr (HsLit lit)             = error "Lits not implemented yet."
 dsExpr (HsOverLit lit)         = error "Lits not implemented yet."
@@ -276,6 +346,9 @@ ppShowSDoc :: SDoc -> RWDesugar String
 ppShowSDoc sdoc = do
                     flags <- getFlags
                     return $ showSDoc flags sdoc
+
+ppUniqueVar :: Var -> RWDesugar String
+ppUniqueVar var = ppShowSDoc $ pprUnique $ varUnique var
 
 getLabel :: RWDesugar String
 getLabel = do
