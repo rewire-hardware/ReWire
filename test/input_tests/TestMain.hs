@@ -7,7 +7,8 @@ module TestMain where
 --fj Nothing = "oh no!"
 
 --Identity
-f :: a -> a
-f x = x 
+f :: Num charlie => charlie -> charlie
+f x = x
+--f x = x
 
 --value = 1

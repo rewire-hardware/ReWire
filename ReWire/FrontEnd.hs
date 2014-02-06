@@ -34,7 +34,9 @@ main = do
                 let pm = tm_parsed_module tc
                 let src = pm_parsed_source pm
                 let tc_src = tm_typechecked_source tc
---                liftIO $ printForC dflags' stdout (ppr tc_src)
+                liftIO $ putStrLn "==="
+                liftIO $ printForC dflags' stdout (ppr tc_src)
+                liftIO $ putStrLn "==="
                 let binds = Conv.runRWDesugar (Conv.dsTcBinds tc_src) dflags'
                 return binds)
 

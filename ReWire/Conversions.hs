@@ -61,7 +61,7 @@ dsVars :: Type -> [Unbound.LocallyNameless.Name RWCTy] -> RWDesugar ([Unbound.Lo
 dsVars ty vars = case splitForAllTys ty of
                             ([],_)      -> return (vars,ty)
                             (vars',ty')  -> do
-                                             vars'' <- mapM (ppShow . Var.varUnique) vars'
+                                             vars'' <- mapM (ppShowSDoc . pprOccName . nameOccName . Var.varName) vars'
                                              let bound_vars = map s2n vars'' 
                                              dsVars ty' $ vars ++ bound_vars 
 
@@ -316,7 +316,8 @@ dsType ty = case repSplitAppTy_maybe ty of
       where
         conv = case getTyVar_maybe ty of
                       Just var -> do
-                                    var' <- ppShowSDoc $ pprUnique $ Var.varUnique var
+                                    var' <- ppShowSDoc $ pprOccName $ nameOccName $ Var.varName var
+                                    --var' <- ppShowSDoc $ pprUnique $ Var.varUnique var
                                     return $ RWCTyVar $ s2n var' 
                       Nothing  -> case splitFunTy_maybe ty of
                                          Just fun -> error "FunType encountered" 
