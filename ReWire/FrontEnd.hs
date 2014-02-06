@@ -4,6 +4,8 @@ import qualified ReWire.Conversions as Conv
 import qualified ReWire.CorePP as PP
 import Unbound.LocallyNameless
 import Text.PrettyPrint
+import System.Environment (getArgs)
+import System.Exit
 
 import GHC
 import GHC.Paths ( libdir )
@@ -18,6 +20,12 @@ import SrcLoc
 
  
 main = do 
+    args  <- getArgs
+    fname <- case args of
+                    [] -> do
+                            putStrLn "Please provide a filename."
+                            exitFailure
+                    xs -> return $ head xs
     binds <- (defaultErrorHandler defaultFatalMessager defaultFlushOut $ do
               runGhc (Just libdir) $ do
                 dflags <- getSessionDynFlags
@@ -25,7 +33,7 @@ main = do
                                       ghcLink = LinkInMemory, 
                                       ghcMode = CompManager}
                 setSessionDynFlags dflags'  
-                target <- guessTarget "test/input_tests/TestMain" Nothing
+                target <- guessTarget fname Nothing
                 setTargets [target]
                 load LoadAllTargets
                 g <- getModuleGraph
