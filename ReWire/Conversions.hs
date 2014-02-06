@@ -149,7 +149,7 @@ dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = m@(MatchGroup matches match
         conv_grhs :: GRHS Id -> RWDesugar (RWCExp,RWCExp) --(Guard,Body)
         conv_grhs (GRHS [] lexpr) = do
                                       let expr  = deLoc lexpr
-                                      let guard = RWCCon (RWCTyCon "Bool") "True" -- Simply true, FIXME  What goes here if the guard is true?
+                                      let guard = RWCCon (RWCTyCon "GHC.Types.Bool") "GHC.Types.Bool.True" -- Simply true, FIXME  What goes here if the guard is true?
                                       expr' <- dsLExpr lexpr
                                       return (guard,expr')
 
