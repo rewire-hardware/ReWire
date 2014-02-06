@@ -12,7 +12,7 @@ type Bit = Bool
 
 type InnerMonad = Identity
 
-type Re = ReacT W8 Bit InnerMonad 
+type Re = ReacT Bit W8 InnerMonad 
 
 fib, trfib :: Int -> Int
 fib 0 = 0
@@ -34,6 +34,8 @@ machine_fib (r1,r2) = stepReT r1 next >>= machine_fib
                         True -> return (r2,r1+r2)
                         False -> return (r1,r2)
 
-stepReT :: Monad m => out -> (inp -> m a) -> Re a
-stepReT = undefined
-
+stepReT :: Monad m => out -> (inp -> m a) -> ReacT inp out m a
+stepReT out proc = ReacT $ return $ (Right (out,\input -> ReacT $ do
+                                                                    res <- proc input
+                                                                    return $ Left res))
+                                                           

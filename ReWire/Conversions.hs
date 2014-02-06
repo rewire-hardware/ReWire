@@ -13,6 +13,7 @@ import Name
 import Type
 import Outputable
 import TyCon
+import TcEvidence
 --End GHC Package Imports
 
 --General Imports
@@ -20,6 +21,7 @@ import Control.Monad.Identity
 import Control.Monad.Reader
 import Control.Monad.State
 import Unbound.LocallyNameless
+import qualified Data.Data as Dta
 import Debug.Trace
 --End General Imports
 
@@ -107,7 +109,14 @@ dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = m@(MatchGroup matches match
                                                                                --Anything else is something like f x ... = ...
                                                                                let arity = matchGroupArity m
                                                                                case arity of
-                                                                                     0 -> error "Zero Arity functions not working yet ;-)"
+                                                                                     0 -> do
+                                                                                             let [match] = matches  
+                                                                                             gexp <- conv_single_match $ deLoc match
+                                                                                             let alt_match = RWCAlt $ bind true_pat gexp
+                                                                                                 case_expr = RWCCase ty true_expr [alt_match]
+                                                                                             --trace (show "OH NO") $ error "Zero Arity functions not working yet ;-)"
+                                                                                             return (s2n fun_name,
+                                                                                                     case_expr) 
                                                                                      _ -> do
                                                                                              let (pat_tys,end_ty) = matchTypes m
                                                                                              labels <- replicateM arity getLabel
@@ -126,6 +135,12 @@ dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = m@(MatchGroup matches match
                                                                                              return (s2n fun_name,
                                                                                                      rebound_case) 
       where
+        conv_single_match :: Match Id -> RWDesugar (RWCExp,RWCExp) -- (guard, body)
+        conv_single_match (Match [] mbty grhs) = do
+                                                   rwcgexp <- conv_guards grhs >>= merge_guarded_rwcexp
+                                                   return rwcgexp
+
+
         conv_match :: Match Id -> RWDesugar RWCAlt
         conv_match (Match lpats mbty grhs) = do
                                                 let pats = map deLoc lpats
@@ -149,7 +164,7 @@ dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = m@(MatchGroup matches match
         conv_grhs :: GRHS Id -> RWDesugar (RWCExp,RWCExp) --(Guard,Body)
         conv_grhs (GRHS [] lexpr) = do
                                       let expr  = deLoc lexpr
-                                      let guard = RWCCon (RWCTyCon "GHC.Types.Bool") "GHC.Types.Bool.True" -- Simply true, FIXME  What goes here if the guard is true?
+                                      let guard = true_expr -- Simply true, FIXME  What goes here if the guard is true?
                                       expr' <- dsLExpr lexpr
                                       return (guard,expr')
 
@@ -207,11 +222,14 @@ dsHsBind' (PatBind { pat_lhs = pat, pat_rhs = grhss, pat_rhs_ty = ty
 
 hsPatTy :: Pat Id -> Type
 hsPatTy (VarPat var) = varType var
-hsPatTy _ = error "hsPatTy encountered unimplemented case."
+hsPatTy thing = error $ "hsPatTy encountered unimplemented: " ++ (show $ Dta.toConstr thing)
 
 hsExpTy :: HsExpr Id -> Type
 hsExpTy (HsVar var) = varType var
-hsExpTy _ = error "hsExpTy encountered unimplemented case."
+hsExpTy (OpApp lleft lop fixity lright) = let op = deLoc lop
+                                               in hsExpTy op
+hsExpTy (HsWrap (WpCompose w1 w2) expr) = error $ "hsWrap with: " ++ (show $ (Dta.toConstr w1, Dta.toConstr w2))
+hsExpTy thing = error $ "hsExpTy encountered unimplemented: " ++ (show $ Dta.toConstr thing)
 
 
 --This type can be a lot more general, but I'm fixing it here
@@ -358,3 +376,11 @@ getLabel = do
              return $ "dsX_" ++ (show counter)
 
 deLoc (L _ e) = e
+
+bool_type = RWCTyCon "GHC.Types.Bool"
+
+true_pat   = RWCPatCon (embed bool_type) "GHC.Types.True" []
+false_pat  = RWCPatCon (embed bool_type) "GHC.Types.False" []
+
+true_expr   = RWCCon bool_type "GHC.Types.True"
+false_expr  = RWCCon bool_type "GHC.Types.False"
