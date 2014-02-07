@@ -1,0 +1,13 @@
+def
+
+
+
+{-
+main = fib 0 1
+
+fib n m = signal n >>= \ sw ->
+          case sw of
+            1 -> fib n m
+            0 -> fib m (n+m)
+-}
+          
