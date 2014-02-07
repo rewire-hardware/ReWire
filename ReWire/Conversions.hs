@@ -118,7 +118,7 @@ dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = m@(MatchGroup matches match
                                                                                              return (s2n fun_name,
                                                                                                      case_expr) 
                                                                                      _ -> do
-                                                                                             let (pat_tys,end_ty) = matchTypes m
+                                                                                             (pat_tys,end_ty) <- matchTypes m
                                                                                              labels <- replicateM arity getLabel
                                                                                              --Match up our labels we created to the LHS pattern types they correspond to
                                                                                              expr_tys' <- mapM dsType pat_tys
@@ -206,13 +206,14 @@ dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = m@(MatchGroup matches match
         exp_ty (RWCCase ty _ _) = ty
 
 
-        matchTypes :: MatchGroup Id -> ([Type],Type)
-        matchTypes (MatchGroup [] ty) = ([],ty)
-        matchTypes (MatchGroup matches ty) = let (Match pats _ grhs) = deLoc $ head matches
-                                                 ltypes           = map (hsPatTy . deLoc) pats -- If we have stuff on the lhs, the rhs type differs
-                                                 (GRHS _ lexpr) = deLoc $ head $ grhssGRHSs grhs 
-                                                 rhs_ty = hsExpTy $ deLoc lexpr --extract the RHS type from the expression that resides on the RHS
-                                              in (ltypes,rhs_ty)
+        matchTypes :: MatchGroup Id -> RWDesugar ([Type],Type)
+        matchTypes (MatchGroup [] ty) = return ([],ty)
+        matchTypes (MatchGroup matches ty) = do
+                                               let (Match pats _ grhs) = deLoc $ head matches
+                                                   (GRHS _ lexpr) = deLoc $ head $ grhssGRHSs grhs 
+                                               rhs_ty <- hsExpTy $ deLoc lexpr --extract the RHS type from the expression that resides on the RHS
+                                               ltypes <- mapM (hsPatTy . deLoc) pats -- If we have stuff on the lhs, the rhs type differs
+                                               return (ltypes,rhs_ty)
 
 
 dsHsBind' (PatBind { pat_lhs = pat, pat_rhs = grhss, pat_rhs_ty = ty
@@ -220,15 +221,28 @@ dsHsBind' (PatBind { pat_lhs = pat, pat_rhs = grhss, pat_rhs_ty = ty
 
 
 
-hsPatTy :: Pat Id -> Type
-hsPatTy (VarPat var) = varType var
+hsPatTy :: Pat Id -> RWDesugar Type
+hsPatTy (VarPat var) = return $ varType var
 hsPatTy thing = error $ "hsPatTy encountered unimplemented: " ++ (show $ Dta.toConstr thing)
 
-hsExpTy :: HsExpr Id -> Type
-hsExpTy (HsVar var) = varType var
-hsExpTy (OpApp lleft lop fixity lright) = let op = deLoc lop
-                                               in hsExpTy op
-hsExpTy (HsWrap (WpCompose w1 w2) expr) = error $ "hsWrap with: " ++ (show $ (Dta.toConstr w1, Dta.toConstr w2))
+hsExpTy :: HsExpr Id -> RWDesugar Type
+hsExpTy (HsVar var) = do
+                        let n = (nameOccName . getName) var 
+                        n' <- ppShowSDoc $ ppr n
+                        return $ trace ("DEBUG NAME: " ++ n') $ varType var
+--hsExpTy (OpApp lleft lop fixity lright) = do
+                                            --[left,op,right] <- mapM (hsExpTy . deLoc) [lleft,lop,lright]
+                                            --l <- ppShowSDoc $ ppr $ splitAppTys left 
+                                            --r <- ppShowSDoc $ ppr $ splitAppTys right
+                                            --op <- ppShowSDoc $ ppr $ splitAppTys op
+                                            --error $ "DEBUG: " ++ l ++ "\n" ++ r ++ "\n" ++ op
+                                            --return $ error "foo"
+--                                            hsExpTy $ deLoc lop
+--hsExpTy (HsWrap h expr) = do
+                            --t <- hsExpTy expr
+                            --t' <- ppShowSDoc $ ppr t
+                            --s <- ppDebug $ ppr $ h
+                            --error $ "DEBUG: " ++ s ++ "\n" ++ "DEBUG: " ++ t'
 hsExpTy thing = error $ "hsExpTy encountered unimplemented: " ++ (show $ Dta.toConstr thing)
 
 
@@ -254,7 +268,11 @@ dsExpr (HsLam a_Match)         = error "HSLam not implemented yet."
 dsExpr (HsLamCase arg matches) = error "HSLamCase not implemented yet."
 dsExpr (HsApp fun arg)         = error "HsApp not implemented yet"
 --dsExpr (HsUnboundVar _)        = error "HsUnboundVar panics in GHC."
-dsExpr (OpApp e1 op _ e2)      = error "OpApp not implemented yet."
+dsExpr (OpApp e1 op _ e2)      = do
+                                   lexpr <- dsLExpr e1
+                                   rexpr <- dsLExpr e2
+                                   oper  <- dsLExpr op
+                                   error "OH NO"
 dsExpr (SectionL expr op)      = error "SectionL not implemented yet."
 dsExpr (SectionR op expr)      = error "SectionR not implemented yet."
 dsExpr (ExplicitTuple tup_args boxity) = error "ExplicitTuple not implemented yet."
@@ -344,7 +362,7 @@ dsType ty = case repSplitAppTy_maybe ty of
                                                                                    tycon' <- ppShow $ tyConName tycon 
                                                                                    return (RWCTyCon tycon') 
                                                               Nothing    -> case splitForAllTy_maybe ty of
-                                                                                  Just frall -> error "Forall Type encountered" 
+                                                                                  Just (frall,ty') -> dsType ty'
                                                                                   Nothing    -> case isNumLitTy ty of
                                                                                                       Just i  -> error "NumLit Type encountered."
                                                                                                       Nothing -> case isStrLitTy ty of
@@ -365,6 +383,11 @@ ppShowSDoc :: SDoc -> RWDesugar String
 ppShowSDoc sdoc = do
                     flags <- getFlags
                     return $ showSDoc flags sdoc
+
+ppDebug :: SDoc -> RWDesugar String
+ppDebug sdoc = do
+                 flags <- getFlags
+                 return $ showSDocDebug flags sdoc 
 
 ppUniqueVar :: Var -> RWDesugar String
 ppUniqueVar var = ppShowSDoc $ pprUnique $ varUnique var
