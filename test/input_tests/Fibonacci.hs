@@ -35,7 +35,7 @@ machine_fib (r1,r2) = stepReT r1 next >>= machine_fib
                         False -> return (r1,r2)
 
 stepReT :: Monad m => out -> (inp -> m a) -> ReacT inp out m a
-stepReT out proc = ReacT $ return $ (Right (out,\input -> ReacT $ do
+stepReT out proc = ReacT (return ((Right (out,\input -> ReacT ( do
                                                                     res <- proc input
-                                                                    return $ Left res))
+                                                                    return $ Left res)))))
                                                            
