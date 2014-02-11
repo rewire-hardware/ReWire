@@ -55,7 +55,7 @@ dsTcBindsInner bag = let binds = map deLoc $ deBag bag
 dsHsPat :: Pat Id -> RWDesugar RWCPat
 dsHsPat (VarPat var) = do
                          ty <- dsType $ varType var
-                         vname <- ppUniqueVar var
+                         vname <- (ppShowSDoc . pprOccName . nameOccName . Var.varName) var
                          return $ RWCPatVar (embed ty) (s2n vname)
 dsHsPat (LitPat lit) = error "dsHsPat LitPat unfinished!" 
 
@@ -265,13 +265,16 @@ dsExpr (HsWrap co_fn e)        = error "HsWrap not implemented yet."
 dsExpr (NegApp expr neg_expr)  = error "NegApp not implemented yet."
 dsExpr (HsLam a_Match)         = error "HSLam not implemented yet."
 dsExpr (HsLamCase arg matches) = error "HSLamCase not implemented yet."
-dsExpr (HsApp fun arg)         = error "HsApp not implemented yet"
+dsExpr (HsApp fun arg)         = do
+                                   fun' <- dsExpr $ deLoc fun
+                                   arg' <- dsExpr $ deLoc arg
+                                   return $ RWCApp fun' arg'
 --dsExpr (HsUnboundVar _)        = error "HsUnboundVar panics in GHC."
-dsExpr (OpApp e1 op _ e2)      = do
-                                   lexpr <- dsLExpr e1
-                                   rexpr <- dsLExpr e2
-                                   oper  <- dsLExpr op
-                                   error "OH NO"
+dsExpr (OpApp e1 op _ e2)      = error "OppApp not implemented yet." 
+                                   --lexpr <- dsLExpr e1
+                                   --rexpr <- dsLExpr e2
+                                   --oper  <- dsLExpr op
+                                   --error "OH NO"
 dsExpr (SectionL expr op)      = error "SectionL not implemented yet."
 dsExpr (SectionR op expr)      = error "SectionR not implemented yet."
 dsExpr (ExplicitTuple tup_args boxity) = error "ExplicitTuple not implemented yet."
