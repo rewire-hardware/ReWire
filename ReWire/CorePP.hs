@@ -4,6 +4,7 @@ module ReWire.CorePP where
 
 import ReWire.Core
 import ReWire.CoreParser hiding (parens,commaSep,braces,integer,float)
+import Text.Parsec (runParser,eof)
 import Text.PrettyPrint
 import Unbound.LocallyNameless hiding (empty)
 
@@ -45,13 +46,11 @@ ppLiteral (RWCLitInteger n) = integer n
 ppLiteral (RWCLitFloat x)   = double x
 ppLiteral (RWCLitChar c)    = text (show c)
 
-ppPat (RWCPatCon (Embed t) n ps)  = do t_p  <- ppTy t
-                                       ps_p <- mapM ppPat ps
-                                       return (parens (text n <+> hsep ps_p) <> char '<' <> t_p <> char '>')
-ppPat (RWCPatVar (Embed t) n)     = do t_p <- ppTy t
-                                       return (ppName n <> char '<' <> t_p <> char '>')
-ppPat (RWCPatLiteral (Embed t) l) = do t_p <- ppTy t
-                                       return (ppLiteral l <> char '<' <> t_p <> char '>')
+ppPat (RWCPatCon n ps)        = do ps_p <- mapM ppPat ps
+                                   return (parens (text n <+> hsep ps_p))
+ppPat (RWCPatVar (Embed t) n) = do t_p <- ppTy t
+                                   return (ppName n <> char '<' <> t_p <> char '>')
+ppPat (RWCPatLiteral l)       = return (ppLiteral l)
 
 ppAlt (RWCAlt b) = do (p,(eg,eb)) <- unbind b
                       p_p         <- ppPat p
@@ -59,28 +58,25 @@ ppAlt (RWCAlt b) = do (p,(eg,eb)) <- unbind b
                       eb_p        <- ppExpr eb
                       return (char '<' <> p_p <> char '|' <> eg_p <> char '>' <+> eb_p)
 
-ppExpr (RWCApp t e1 e2) = do t_p  <- ppTy t
-                             e1_p <- ppExpr e1
+ppExpr (RWCApp e1 e2)   = do e1_p <- ppExpr e1
                              e2_p <- ppExpr e2
-                             return (parens (e1_p <+> e2_p) <> char '<' <> t_p <> char '>')
+                             return (parens (e1_p <+> e2_p))
 ppExpr (RWCLiteral t l) = do t_p <- ppTy t
                              return (ppLiteral l <> char '<' <> t_p <> char '>')
 ppExpr (RWCCon t n)     = do t_p <- ppTy t
                              return (text n <> char '<' <> t_p <> char '>')
 ppExpr (RWCVar t n)     = do t_p <- ppTy t
                              return (ppName n <> char '<' <> t_p <> char '>')
-ppExpr (RWCLam t b)     = do ((n,Embed t'),e) <- unbind b
-                             t_p              <- ppTy t
-                             t'_p             <- ppTy t'
-                             e_p              <- ppExpr e
-                             return (braces (char '\\' <+> ppName n <> char '<' <> t'_p <> char '>' <+> text "->" <+> e_p) <> char '<' <> t_p <> char '>')
-ppExpr (RWCCase t e alts) = do t_p    <- ppTy t
-                               e_p    <- ppExpr e
-                               alts_p <- mapM ppAlt alts
-                               return (foldr ($+$) empty
+ppExpr (RWCLam b)       = do ((n,Embed t),e) <- unbind b
+                             t_p             <- ppTy t
+                             e_p             <- ppExpr e
+                             return (braces (char '\\' <+> ppName n <> char '<' <> t_p <> char '>' <+> text "->" <+> e_p))
+ppExpr (RWCCase e alts) = do e_p    <- ppExpr e
+                             alts_p <- mapM ppAlt alts
+                             return (foldr ($+$) empty
                                             [text "case" <+> e_p <+> text "of",
                                              nest 4 (foldr ($+$) empty alts_p),
-                                             text "end" <> char '<' <> t_p <> char '>'])
+                                             text "end"])
 
 ppName :: Name a -> Doc
 ppName = text . show
@@ -175,3 +171,10 @@ ppProg p = do dd_p <- ppDataDecls (dataDecls p)
               nt_p <- ppNewtypeDecls (newtypeDecls p)
               ds_p <- ppDefns (defns p)
               return (dd_p $+$ nt_p $+$ ds_p)
+
+ppp :: FilePath -> IO ()
+ppp n = do guts        <- readFile n
+           let res     =  runParser (whiteSpace >> rwcProg >>= \ p -> whiteSpace >> eof >> return p) () n guts
+           case res of
+             Left err  -> print err
+             Right ast -> print (runFreshM (ppProg ast))

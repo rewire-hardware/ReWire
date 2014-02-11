@@ -1,5 +1,4 @@
 module ReWire.CoreParser where
-
 -- FIXME throughout: at any point where "identifier" occurs, we probably want
 -- to reject either Constructors or variables.
 
@@ -80,14 +79,12 @@ ty = do (t1,t2) <- parens (do t1 <- ty
 pat = do (n,ps) <- parens (do n  <- identifier
                               ps <- many pat
                               return (n,ps))
-         t      <- angles ty
-         return (RWCPatCon (embed t) n ps)
+         return (RWCPatCon n ps)
   <|> do n <- identifier
          t <- angles ty
          return (RWCPatVar (embed t) (s2n n))
    <|> (do l <- literal
-           t <- angles ty
-           return (RWCPatLiteral (embed t) l))
+           return (RWCPatLiteral l))
 
 alt = do (p,guard) <- angles (do p <- pat
                                  reservedOp "|"
@@ -103,8 +100,7 @@ literal = liftM RWCLitInteger integer
 expr = do (e1,e2) <- parens (do e1 <- expr
                                 e2 <- expr
                                 return (e1,e2))
-          t       <- angles ty
-          return (RWCApp t e1 e2)
+          return (RWCApp e1 e2)
    <|> (do l <- literal
            t <- angles ty
            return (RWCLiteral t l))
@@ -119,15 +115,13 @@ expr = do (e1,e2) <- parens (do e1 <- expr
                                  reservedOp "->"
                                  e <- expr
                                  return (n,t,e))
-           t'      <- angles ty
-           return (RWCLam t' (bind (s2n n,embed t) e)))
+           return (RWCLam (bind (s2n n,embed t) e)))
    <|> (do reserved "case"
            e    <- expr
            reserved "of"
            alts <- many alt
            reserved "end"
-           t    <- angles ty
-           return (RWCCase t e alts))
+           return (RWCCase e alts))
 
 instancemethod = do reserved "def"
                     n   <- identifier
