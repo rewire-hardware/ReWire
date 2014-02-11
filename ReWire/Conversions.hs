@@ -113,7 +113,7 @@ dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = m@(MatchGroup matches match
                                                                                              let [match] = matches  
                                                                                              gexp <- conv_single_match $ deLoc match
                                                                                              let alt_match = RWCAlt $ bind true_pat gexp
-                                                                                                 case_expr = RWCCase ty true_expr [alt_match]
+                                                                                                 case_expr = RWCCase true_expr [alt_match]
                                                                                              --trace (show "OH NO") $ error "Zero Arity functions not working yet ;-)"
                                                                                              return (s2n fun_name,
                                                                                                      case_expr) 
@@ -127,10 +127,9 @@ dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = m@(MatchGroup matches match
                                                                                              let vtypes = zip labels expr_tys'
                                                                                                  lvars = map (\(lbl,ty) -> RWCVar ty (s2n lbl)) vtypes 
                                                                                                  case_tuple = uncurry_rwexps lvars
-                                                                                                 case_expr  = RWCCase end_ty' case_tuple alts
+                                                                                                 case_expr  = RWCCase case_tuple alts
                                                                                                  fun_tycon  = RWCTyCon "(->)"
-                                                                                                 rebound_case = foldl (\acc (lbl,ty)-> RWCLam (RWCTyApp (RWCTyApp fun_tycon (ty) ) (exp_ty acc))
-                                                                                                                                               (bind (s2n lbl,embed ty) acc)) case_expr vtypes
+                                                                                                 rebound_case = foldl (\acc (lbl,ty)-> RWCLam (bind (s2n lbl,embed ty) acc)) case_expr vtypes
                                                                                              --let label_pats = 
                                                                                              return (s2n fun_name,
                                                                                                      rebound_case) 
@@ -180,13 +179,13 @@ dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = m@(MatchGroup matches match
         uncurry_rwpats [pat] = pat -- uncurrying one thing just gets you that thing again
         uncurry_rwpats pats  = let commas = concat $ take (length pats - 1) $ repeat ","
                                    tycon  = "(" ++ commas ++ ")"
-                                   tys     = map pat_ty pats
-                                   rwcty   = foldl (\acc item -> RWCTyApp acc item) (RWCTyCon tycon) tys
-                                in RWCPatCon (embed rwcty) tycon pats
+         --                          tys     = map pat_ty pats
+         --                          rwcty   = foldl (\acc item -> RWCTyApp acc item) (RWCTyCon tycon) tys
+                                in RWCPatCon tycon pats
 
-        pat_ty (RWCPatCon (Embed ty) _ _) = ty
-        pat_ty (RWCPatLiteral (Embed ty) _) = ty
-        pat_ty (RWCPatVar (Embed ty) _) = ty
+        --pat_ty (RWCPatCon ) _ _) = ty
+        --pat_ty (RWCPatLiteral (Embed ty) _) = ty
+        --pat_ty (RWCPatVar (Embed ty) _) = ty
 
 
         uncurry_rwexps :: [RWCExp] -> RWCExp
@@ -194,16 +193,16 @@ dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = m@(MatchGroup matches match
         uncurry_rwexps [exp] = exp
         uncurry_rwexps exps  = let commas = concat $ take (length exps - 1) $ repeat ","
                                    tycon = "(" ++ commas ++ ")"
-                                   tys  = map exp_ty exps
-                                   rwcty = foldl (\acc item -> RWCTyApp acc item) (RWCTyCon tycon) tys
-                                in foldl (\acc item -> RWCApp (RWCTyApp (exp_ty acc) (exp_ty item)) acc item) (RWCCon (RWCTyCon tycon) tycon) exps
+         --                          tys  = map exp_ty exps
+          --                         rwcty = foldl (\acc item -> RWCTyApp acc item) (RWCTyCon tycon) tys
+                                in foldl (\acc item -> RWCApp acc item) (RWCCon (RWCTyCon tycon) tycon) exps
 
-        exp_ty (RWCApp ty _ _) = ty
-        exp_ty (RWCLam ty _) = ty
-        exp_ty (RWCVar ty _) = ty
-        exp_ty (RWCCon ty _) = ty
-        exp_ty (RWCLiteral ty _) = ty
-        exp_ty (RWCCase ty _ _) = ty
+        --exp_ty (RWCApp ty _ _) = ty
+        --exp_ty (RWCLam ty _) = ty
+        --exp_ty (RWCVar ty _) = ty
+        --exp_ty (RWCCon ty _) = ty
+        --exp_ty (RWCLiteral ty _) = ty
+        --exp_ty (RWCCase ty _ _) = ty
 
 
         matchTypes :: MatchGroup Id -> RWDesugar ([Type],Type)
@@ -324,19 +323,19 @@ dsExpr (HsType        {})  = error "Panicking on HsType"
 
 anonLambdaWrap :: String -> RWCExp -> RWCTy -> RWCExp
 anonLambdaWrap lbl exp ty = let bound = bind (s2n lbl,embed ty) exp
-                          in RWCLam (extendType ty) bound
-    where
-      extendType :: RWCTy -> RWCTy
-      extendType ty = RWCTyApp ty (eType exp)  
+                          in RWCLam bound
+    --where
+      --extendType :: RWCTy -> RWCTy
+      --extendType ty = RWCTyApp ty (eType exp)  
 
 
-eType :: RWCExp -> RWCTy
-eType (RWCApp t _ _)   = t
-eType (RWCLam t _)     = t
-eType (RWCVar t _)     = t
-eType (RWCCon t _)     = t
-eType (RWCLiteral t _) = t
-eType (RWCCase t _ _)  = t
+--eType :: RWCExp -> RWCTy
+--eType (RWCApp t _ _)   = t
+--eType (RWCLam t _)     = t
+--eType (RWCVar t _)     = t
+--eType (RWCCon t _)     = t
+--eType (RWCLiteral t _) = t
+--eType (RWCCase t _ _)  = t
 
 
 --GHC Type to RWCTy
@@ -402,8 +401,8 @@ deLoc (L _ e) = e
 
 bool_type = RWCTyCon "GHC.Types.Bool"
 
-true_pat   = RWCPatCon (embed bool_type) "GHC.Types.True" []
-false_pat  = RWCPatCon (embed bool_type) "GHC.Types.False" []
+true_pat   = RWCPatCon "GHC.Types.True" []
+false_pat  = RWCPatCon "GHC.Types.False" []
 
 true_expr   = RWCCon bool_type "GHC.Types.True"
 false_expr  = RWCCon bool_type "GHC.Types.False"
