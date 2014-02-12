@@ -107,118 +107,105 @@ dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = m@(MatchGroup matches match
                                                                                --Arity to determine if we need to rebuild anything on the RHS, zero means 
                                                                                --you're dealing with something like x = ...
                                                                                --Anything else is something like f x ... = ...
-                                                                               let arity = matchGroupArity m
-                                                                               case arity of
-                                                                                     0 -> do
-                                                                                             let [match] = matches  
-                                                                                             gexp <- conv_single_match $ deLoc match
-                                                                                             let alt_match = RWCAlt $ bind true_pat gexp
-                                                                                                 case_expr = RWCCase true_expr [alt_match]
-                                                                                             --trace (show "OH NO") $ error "Zero Arity functions not working yet ;-)"
-                                                                                             return (s2n fun_name,
-                                                                                                     case_expr) 
-                                                                                     _ -> do
-                                                                                             (pat_tys,end_ty) <- matchTypes m
-                                                                                             labels <- replicateM arity getLabel
-                                                                                             --Match up our labels we created to the LHS pattern types they correspond to
-                                                                                             expr_tys' <- mapM dsType pat_tys
-                                                                                             end_ty' <- dsType end_ty
-                                                                                             alts <- mapM (conv_match . deLoc) matches
-                                                                                             let vtypes = zip labels expr_tys'
-                                                                                                 lvars = map (\(lbl,ty) -> RWCVar ty (s2n lbl)) vtypes 
-                                                                                                 case_tuple = uncurry_rwexps lvars
-                                                                                                 case_expr  = RWCCase case_tuple alts
-                                                                                                 fun_tycon  = RWCTyCon "(->)"
-                                                                                                 rebound_case = foldl (\acc (lbl,ty)-> RWCLam (bind (s2n lbl,embed ty) acc)) case_expr vtypes
-                                                                                             --let label_pats = 
-                                                                                             return (s2n fun_name,
-                                                                                                     rebound_case) 
-      where
-        conv_single_match :: Match Id -> RWDesugar (RWCExp,RWCExp) -- (guard, body)
-        conv_single_match (Match [] mbty grhs) = do
-                                                   rwcgexp <- conv_guards grhs >>= merge_guarded_rwcexp
-                                                   return rwcgexp
-
-
-        conv_match :: Match Id -> RWDesugar RWCAlt
-        conv_match (Match lpats mbty grhs) = do
-                                                let pats = map deLoc lpats
-                                                pats' <- mapM dsHsPat pats
-                                                let final_pat = case pats' of
-                                                         []   -> error "Can't make an alt with no Patterns.  dsHsBind' FunBind" --Build alt with no match?
-                                                         _    -> uncurry_rwpats pats'
-
-                                                rwcgexp <- conv_guards grhs >>= merge_guarded_rwcexp
-
-                                                return $ RWCAlt $ bind final_pat rwcgexp
-
-        merge_guarded_rwcexp :: [(RWCExp,RWCExp)] -> RWDesugar (RWCExp,RWCExp)
-        merge_guarded_rwcexp [exp] = return exp
-        merge_guarded_rwcexp _ = error "Multiple guarded equations not supported yet."
-
-        conv_guards :: GRHSs Id -> RWDesugar [(RWCExp,RWCExp)] --(Guard,Body)
-        conv_guards (GRHSs {grhssGRHSs=lguards, grhssLocalBinds=wclause}) = do --single guard
-                                                                              let guards = map deLoc lguards
-                                                                              mapM conv_grhs guards
-        conv_grhs :: GRHS Id -> RWDesugar (RWCExp,RWCExp) --(Guard,Body)
-        conv_grhs (GRHS [] lexpr) = do
-                                      let expr  = deLoc lexpr
-                                      let guard = true_expr -- Simply true, FIXME  What goes here if the guard is true?
-                                      expr' <- dsLExpr lexpr
-                                      return (guard,expr')
-
-        conv_grhs _ = error "guards aren't supported yet"
-
-        conv_guard_stmt :: LStmt Id -> RWDesugar RWCExp
-        conv_guard_stmt stmt = error "conv_guard_stmt not defined"
-
-
-        --Combining argument patterns into a tuple enables us to match over things easily
-        uncurry_rwpats :: [RWCPat] -> RWCPat
-        uncurry_rwpats []    = error "Can't uncurry something with no arguments. dsHsBind' FunBind"
-        uncurry_rwpats [pat] = pat -- uncurrying one thing just gets you that thing again
-        uncurry_rwpats pats  = let commas = concat $ take (length pats - 1) $ repeat ","
-                                   tycon  = "(" ++ commas ++ ")"
-         --                          tys     = map pat_ty pats
-         --                          rwcty   = foldl (\acc item -> RWCTyApp acc item) (RWCTyCon tycon) tys
-                                in RWCPatCon tycon pats
-
-        --pat_ty (RWCPatCon ) _ _) = ty
-        --pat_ty (RWCPatLiteral (Embed ty) _) = ty
-        --pat_ty (RWCPatVar (Embed ty) _) = ty
-
-
-        uncurry_rwexps :: [RWCExp] -> RWCExp
-        uncurry_rwexps [] = error "Can't uncurry a list of no expressions.  dsHsBind' FunBind"
-        uncurry_rwexps [exp] = exp
-        uncurry_rwexps exps  = let commas = concat $ take (length exps - 1) $ repeat ","
-                                   tycon = "(" ++ commas ++ ")"
-         --                          tys  = map exp_ty exps
-          --                         rwcty = foldl (\acc item -> RWCTyApp acc item) (RWCTyCon tycon) tys
-                                in foldl (\acc item -> RWCApp acc item) (RWCCon (RWCTyCon tycon) tycon) exps
-
-        --exp_ty (RWCApp ty _ _) = ty
-        --exp_ty (RWCLam ty _) = ty
-        --exp_ty (RWCVar ty _) = ty
-        --exp_ty (RWCCon ty _) = ty
-        --exp_ty (RWCLiteral ty _) = ty
-        --exp_ty (RWCCase ty _ _) = ty
-
-
-        matchTypes :: MatchGroup Id -> RWDesugar ([Type],Type)
-        matchTypes (MatchGroup [] ty) = return ([],ty)
-        matchTypes (MatchGroup matches ty) = do
-                                               let (Match pats _ grhs) = deLoc $ head matches
-                                                   (GRHS _ lexpr) = deLoc $ head $ grhssGRHSs grhs 
-                                               rhs_ty <- hsExpTy $ deLoc lexpr --extract the RHS type from the expression that resides on the RHS
-                                               ltypes <- mapM (hsPatTy . deLoc) pats -- If we have stuff on the lhs, the rhs type differs
-                                               return (ltypes,rhs_ty)
-
-
+                                                                               rebound_case <- conv_matchgroup m
+                                                                               return (s2n fun_name, rebound_case) 
 dsHsBind' (PatBind { pat_lhs = pat, pat_rhs = grhss, pat_rhs_ty = ty
                   , pat_ticks = (rhs_tick, var_ticks) }) = error "Patbind not defined yet."
 
+conv_single_match :: Match Id -> RWDesugar (RWCExp,RWCExp) -- (guard, body)
+conv_single_match (Match [] mbty grhs) = do
+                                           rwcgexp <- conv_guards grhs >>= merge_guarded_rwcexp
+                                           return rwcgexp
 
+
+conv_match :: Match Id -> RWDesugar RWCAlt
+conv_match (Match lpats mbty grhs) = do
+                                       let pats = map deLoc lpats
+                                       pats' <- mapM dsHsPat pats
+                                       let final_pat = case pats' of
+                                            []   -> error "Can't make an alt with no Patterns.  dsHsBind' FunBind" --Build alt with no match?
+                                            _    -> uncurry_rwpats pats'
+
+                                       rwcgexp <- conv_guards grhs >>= merge_guarded_rwcexp
+
+                                       return $ RWCAlt $ bind final_pat rwcgexp
+
+merge_guarded_rwcexp :: [(RWCExp,RWCExp)] -> RWDesugar (RWCExp,RWCExp)
+merge_guarded_rwcexp [exp] = return exp
+merge_guarded_rwcexp _ = error "Multiple guarded equations not supported yet."
+
+conv_guards :: GRHSs Id -> RWDesugar [(RWCExp,RWCExp)] --(Guard,Body)
+conv_guards (GRHSs {grhssGRHSs=lguards, grhssLocalBinds=wclause}) = do --single guard
+                                                                     let guards = map deLoc lguards
+                                                                     mapM conv_grhs guards
+conv_grhs :: GRHS Id -> RWDesugar (RWCExp,RWCExp) --(Guard,Body)
+conv_grhs (GRHS [] lexpr) = do
+                             let expr  = deLoc lexpr
+                             let guard = true_expr -- Simply true, FIXME  What goes here if the guard is true?
+                             expr' <- dsLExpr lexpr
+                             return (guard,expr')
+
+conv_grhs _ = error "guards aren't supported yet"
+
+conv_guard_stmt :: LStmt Id -> RWDesugar RWCExp
+conv_guard_stmt stmt = error "conv_guard_stmt not defined"
+
+
+matchTypes :: MatchGroup Id -> RWDesugar ([Type],Type)
+matchTypes (MatchGroup [] ty) = return ([],ty)
+matchTypes (MatchGroup matches ty) = do
+                                       let (Match pats _ grhs) = deLoc $ head matches
+                                           (GRHS _ lexpr) = deLoc $ head $ grhssGRHSs grhs 
+                                       rhs_ty <- hsExpTy $ deLoc lexpr --extract the RHS type from the expression that resides on the RHS
+                                       ltypes <- mapM (hsPatTy . deLoc) pats -- If we have stuff on the lhs, the rhs type differs
+                                       return (ltypes,rhs_ty)
+
+
+conv_matchgroup :: MatchGroup Id -> RWDesugar RWCExp
+conv_matchgroup m@(MatchGroup matches match_type) = do
+                                                      let arity = matchGroupArity m
+                                                      case arity of
+                                                             0 -> do
+                                                                    let [match] = matches  
+                                                                    gexp <- conv_single_match $ deLoc match
+                                                                    let alt_match = RWCAlt $ bind true_pat gexp
+                                                                        case_expr = RWCCase true_expr [alt_match]
+                                                                    --trace (show "OH NO") $ error "Zero Arity functions not working yet ;-)"
+                                                                    return case_expr 
+                                                             _ -> do
+                                                                    (pat_tys,end_ty) <- matchTypes m
+                                                                    labels <- replicateM arity getLabel
+                                                                    --Match up our labels we created to the LHS pattern types they correspond to
+                                                                    expr_tys' <- mapM dsType pat_tys
+                                                                    end_ty' <- dsType end_ty
+                                                                    alts <- mapM (conv_match . deLoc) matches
+                                                                    let vtypes = zip labels expr_tys'
+                                                                        lvars = map (\(lbl,ty) -> RWCVar ty (s2n lbl)) vtypes 
+                                                                        case_tuple = uncurry_rwexps lvars
+                                                                        case_expr  = RWCCase case_tuple alts
+                                                                        fun_tycon  = RWCTyCon "(->)"
+                                                                        rebound_case = foldl (\acc (lbl,ty)-> RWCLam (bind (s2n lbl,embed ty) acc)) case_expr vtypes
+                                                                    --let label_pats = 
+                                                                    return rebound_case
+
+
+
+
+uncurry_rwexps :: [RWCExp] -> RWCExp
+uncurry_rwexps [] = error "Can't uncurry a list of no expressions.  dsHsBind' FunBind"
+uncurry_rwexps [exp] = exp
+uncurry_rwexps exps  = let commas = concat $ take (length exps - 1) $ repeat ","
+                           tycon = "(" ++ commas ++ ")"
+                                in foldl (\acc item -> RWCApp acc item) (RWCCon (RWCTyCon tycon) tycon) exps
+
+
+--Combining argument patterns into a tuple enables us to match over things easily
+uncurry_rwpats :: [RWCPat] -> RWCPat
+uncurry_rwpats []    = error "Can't uncurry something with no arguments. dsHsBind' FunBind"
+uncurry_rwpats [pat] = pat -- uncurrying one thing just gets you that thing again
+uncurry_rwpats pats  = let commas = concat $ take (length pats - 1) $ repeat ","
+                           tycon  = "(" ++ commas ++ ")"
+                                in RWCPatCon tycon pats
 
 hsPatTy :: Pat Id -> RWDesugar Type
 hsPatTy (VarPat var) = return $ varType var
@@ -229,19 +216,6 @@ hsExpTy (HsVar var) = do
                         let n = (nameOccName . getName) var 
                         n' <- ppShowSDoc $ ppr n
                         return $ trace ("DEBUG NAME: " ++ n') $ varType var
---hsExpTy (OpApp lleft lop fixity lright) = do
-                                            --[left,op,right] <- mapM (hsExpTy . deLoc) [lleft,lop,lright]
-                                            --l <- ppShowSDoc $ ppr $ splitAppTys left 
-                                            --r <- ppShowSDoc $ ppr $ splitAppTys right
-                                            --op <- ppShowSDoc $ ppr $ splitAppTys op
-                                            --error $ "DEBUG: " ++ l ++ "\n" ++ r ++ "\n" ++ op
-                                            --return $ error "foo"
---                                            hsExpTy $ deLoc lop
---hsExpTy (HsWrap h expr) = do
-                            --t <- hsExpTy expr
-                            --t' <- ppShowSDoc $ ppr t
-                            --s <- ppDebug $ ppr $ h
-                            --error $ "DEBUG: " ++ s ++ "\n" ++ "DEBUG: " ++ t'
 hsExpTy thing = error $ "hsExpTy encountered unimplemented: " ++ (show $ Dta.toConstr thing)
 
 
@@ -261,23 +235,30 @@ dsExpr (HsVar var)             = do
 dsExpr (HsIPVar _)             = error "HsIPVar panics in GHC."
 dsExpr (HsLit lit)             = error "Lits not implemented yet."
 dsExpr (HsOverLit lit)         = error "Lits not implemented yet."
-dsExpr (HsWrap co_fn e)        = error "HsWrap not implemented yet."
+dsExpr (HsWrap co_fn e)        = trace ("Warning, HSWrap probably broken.") $
+                                       dsExpr e
 dsExpr (NegApp expr neg_expr)  = error "NegApp not implemented yet."
-dsExpr (HsLam a_Match)         = error "HSLam not implemented yet."
+dsExpr (HsLam a_Match)         = conv_matchgroup a_Match 
 dsExpr (HsLamCase arg matches) = error "HSLamCase not implemented yet."
 dsExpr (HsApp fun arg)         = do
-                                   fun' <- dsExpr $ deLoc fun
-                                   arg' <- dsExpr $ deLoc arg
+                                   fun' <- dsLExpr fun
+                                   arg' <- dsLExpr arg
                                    return $ RWCApp fun' arg'
 --dsExpr (HsUnboundVar _)        = error "HsUnboundVar panics in GHC."
-dsExpr (OpApp e1 op _ e2)      = error "OppApp not implemented yet." 
-                                   --lexpr <- dsLExpr e1
-                                   --rexpr <- dsLExpr e2
-                                   --oper  <- dsLExpr op
-                                   --error "OH NO"
+dsExpr (OpApp e1 op _ e2)      = do 
+                                 lexpr <- dsLExpr e1
+                                 rexpr <- dsLExpr e2
+                                 oper  <- dsLExpr op
+                                 return (RWCApp (RWCApp oper lexpr) rexpr)
 dsExpr (SectionL expr op)      = error "SectionL not implemented yet."
 dsExpr (SectionR op expr)      = error "SectionR not implemented yet."
-dsExpr (ExplicitTuple tup_args boxity) = error "ExplicitTuple not implemented yet."
+dsExpr (ExplicitTuple tup_args boxity) = do
+                                           exprs <- mapM (dsExpr . deLoc . prjprs) tup_args
+                                           return $ uncurry_rwexps exprs
+
+  where
+    prjprs (Present lhs) = lhs
+    prjprs (Missing _)   = error "Missing explicit tuple arguments unsupported."
 dsExpr (HsSCC cc expr@(L log _)) = error "HsSCC not implemented yet."
 dsExpr (HsCoreAnn _ expr) = error "HsCoreAnn not implemented yet."
 dsExpr (HsCase discrim matches) = error "HsCase not implemented yet."
@@ -285,6 +266,8 @@ dsExpr (HsLet binds body) = error "HsLet not implemented yet."
 dsExpr (HsDo ListComp stmts res_ty) = error "HsDo ListComp not implemented yet."
 dsExpr (HsDo PArrComp stmts _) = error "HsDo PArrComp not implemented yet."
 dsExpr (HsDo DoExpr stmts _) = error "HsDo DoExpr not implemented yet."
+  where
+    prj (BindStmt _ _ _ _) = undefined
 --dsExpr (HsDo GhciStmtCtxt stmts _) = error "HsDo GhciStmtCtxt not implemented yet."
 dsExpr (HsDo MDoExpr stmts _) = error "HsDo MDoExpr not implemented yet."
 dsExpr (HsDo MonadComp stmts _) = error "HsDo MonadComp not implemented yet."
