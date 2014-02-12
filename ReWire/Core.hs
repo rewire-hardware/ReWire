@@ -22,7 +22,7 @@ data RWCTy = RWCTyApp RWCTy RWCTy
            deriving Show
 
 data RWCExp = RWCApp RWCExp RWCExp
-            | RWCLam (Bind (Name RWCExp,Embed RWCTy) RWCExp)
+            | RWCLam (Bind (Name RWCExp) RWCExp)
             | RWCVar RWCTy (Name RWCExp)
             | RWCCon RWCTy Identifier
             | RWCLiteral RWCTy RWCLit
@@ -32,14 +32,14 @@ data RWCExp = RWCApp RWCExp RWCExp
 data RWCLit = RWCLitInteger Integer
             | RWCLitFloat Double
             | RWCLitChar Char
-            deriving Show
+            deriving (Eq,Show)
 
 data RWCAlt = RWCAlt (Bind RWCPat (RWCExp,RWCExp)) -- (guard,body)
               deriving Show
 
 data RWCPat = RWCPatCon Identifier [RWCPat]
             | RWCPatLiteral RWCLit
-            | RWCPatVar (Embed RWCTy) (Name RWCExp)
+            | RWCPatVar (Name RWCExp)
             deriving Show
 
 data RWCConstraint = RWCConstraint Identifier [RWCTy] deriving Show

@@ -1,13 +1,28 @@
-def
+def main
+  <a>
+  <>
+  <(((React Bit) Int) a)>
+is
+  ((fib<((Arr Int) ((Arr Int) (((React Bit) Int) a)))> 0<Int>) 1<Int>)
+end
 
-
-
-{-
-main = fib 0 1
-
-fib n m = signal n >>= \ sw ->
-          case sw of
-            1 -> fib n m
-            0 -> fib m (n+m)
--}
-          
+def fib
+  <a>
+  <>
+  <((Arr Int) ((Arr Int) (((React Bit) Int) a)))>
+is
+  { \ n ->
+    { \ m ->
+      ((bindRe<((Arr (((React Bit) Int) Bit))
+                    ((Arr (((React Bit) Int) Bit))
+                          (((React Bit) Int) a)))>
+         (signal<((Arr Int) (((React Bit) Int) Bit))>
+          n<Int>))
+         { \ sw -> case sw<Bit> of
+                     <1|True<Bool>> ((fib<((Arr Int) ((Arr Int) (((React Bit) Int) a)))> n<Int>) m<Int>)
+                     <0|True<Bool>> ((fib<((Arr Int) ((Arr Int) (((React Bit) Int) a)))> m<Int>) ((plus<((Arr Int) ((Arr Int) Int))> n<Int>) m<Int>))
+                   end
+         })
+    }
+  }
+end

@@ -81,10 +81,9 @@ pat = do (n,ps) <- parens (do n  <- identifier
                               return (n,ps))
          return (RWCPatCon n ps)
   <|> do n <- identifier
-         t <- angles ty
-         return (RWCPatVar (embed t) (s2n n))
-   <|> (do l <- literal
-           return (RWCPatLiteral l))
+         return (RWCPatVar (s2n n))
+  <|> do l <- literal
+         return (RWCPatLiteral l)
 
 alt = do (p,guard) <- angles (do p <- pat
                                  reservedOp "|"
@@ -109,13 +108,12 @@ expr = do (e1,e2) <- parens (do e1 <- expr
            if isUpper (head n)
               then return (RWCCon t n)
               else return (RWCVar t (s2n n)))
-   <|> (do (n,t,e) <- braces (do reservedOp "\\"
-                                 n <- identifier -- FIXME: check caps
-                                 t <- angles ty
-                                 reservedOp "->"
-                                 e <- expr
-                                 return (n,t,e))
-           return (RWCLam (bind (s2n n,embed t) e)))
+   <|> (do (n,e) <- braces (do reservedOp "\\"
+                               n <- identifier -- FIXME: check caps
+                               reservedOp "->"
+                               e <- expr
+                               return (n,e))
+           return (RWCLam (bind (s2n n) e)))
    <|> (do reserved "case"
            e    <- expr
            reserved "of"

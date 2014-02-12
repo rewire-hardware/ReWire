@@ -46,11 +46,10 @@ ppLiteral (RWCLitInteger n) = integer n
 ppLiteral (RWCLitFloat x)   = double x
 ppLiteral (RWCLitChar c)    = text (show c)
 
-ppPat (RWCPatCon n ps)        = do ps_p <- mapM ppPat ps
-                                   return (parens (text n <+> hsep ps_p))
-ppPat (RWCPatVar (Embed t) n) = do t_p <- ppTy t
-                                   return (ppName n <> char '<' <> t_p <> char '>')
-ppPat (RWCPatLiteral l)       = return (ppLiteral l)
+ppPat (RWCPatCon n ps)  = do ps_p <- mapM ppPat ps
+                             return (parens (text n <+> hsep ps_p))
+ppPat (RWCPatVar n)     = return (ppName n)
+ppPat (RWCPatLiteral l) = return (ppLiteral l)
 
 ppAlt (RWCAlt b) = do (p,(eg,eb)) <- unbind b
                       p_p         <- ppPat p
@@ -60,17 +59,16 @@ ppAlt (RWCAlt b) = do (p,(eg,eb)) <- unbind b
 
 ppExpr (RWCApp e1 e2)   = do e1_p <- ppExpr e1
                              e2_p <- ppExpr e2
-                             return (parens (e1_p <+> e2_p))
+                             return (parens (hang e1_p 4 e2_p))
 ppExpr (RWCLiteral t l) = do t_p <- ppTy t
                              return (ppLiteral l <> char '<' <> t_p <> char '>')
 ppExpr (RWCCon t n)     = do t_p <- ppTy t
                              return (text n <> char '<' <> t_p <> char '>')
 ppExpr (RWCVar t n)     = do t_p <- ppTy t
                              return (ppName n <> char '<' <> t_p <> char '>')
-ppExpr (RWCLam b)       = do ((n,Embed t),e) <- unbind b
-                             t_p             <- ppTy t
-                             e_p             <- ppExpr e
-                             return (braces (char '\\' <+> ppName n <> char '<' <> t_p <> char '>' <+> text "->" <+> e_p))
+ppExpr (RWCLam b)       = do (n,e) <- unbind b
+                             e_p   <- ppExpr e
+                             return (braces (char '\\' <+> ppName n <+> text "->" <+> e_p))
 ppExpr (RWCCase e alts) = do e_p    <- ppExpr e
                              alts_p <- mapM ppAlt alts
                              return (foldr ($+$) empty
