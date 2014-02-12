@@ -1,5 +1,4 @@
 def main
-  <a>
   <>
   <(((React Bit) Int) a)>
 is
@@ -7,7 +6,6 @@ is
 end
 
 def fib
-  <a>
   <>
   <((Arr Int) ((Arr Int) (((React Bit) Int) a)))>
 is

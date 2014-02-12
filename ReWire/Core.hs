@@ -9,6 +9,7 @@
 module ReWire.Core where
 
 import Unbound.LocallyNameless
+import Unbound.LocallyNameless.Types (SetPlusBind)
 
 -- Identifier is used instead of Name for anything that occurs at the top
 -- level of the program (type names, constructor names, class names,
@@ -67,26 +68,26 @@ data RWCConstraint = RWCConstraint Identifier [RWCTy] deriving Show
 -- (This is because I couldn't figure out how to get the type variables to
 -- scope over the class methods while still exporting the method names as
 -- binders. There is probably a way to do this, but... oh well!)
-data RWCClassMethod = RWCClassMethod (Name RWCExp) (Embed (Bind [Name RWCTy]
+data RWCClassMethod = RWCClassMethod (Name RWCExp) (Embed (SetPlusBind [Name RWCTy]
                                                                ([RWCConstraint],
                                                                 RWCTy,
                                                                 Maybe RWCExp)))
                       deriving Show
 
-data RWCInstance = RWCInstance (Bind [Name RWCTy] ([RWCConstraint],RWCTy,[RWCInstanceMethod]))
+data RWCInstance = RWCInstance (SetPlusBind [Name RWCTy] ([RWCConstraint],RWCTy,[RWCInstanceMethod]))
                    deriving Show
 
-data RWCInstanceMethod = RWCInstanceMethod (Name RWCExp) (Bind [Name RWCTy]
+data RWCInstanceMethod = RWCInstanceMethod (Name RWCExp) (SetPlusBind [Name RWCTy]
                                                               ([RWCConstraint],
                                                                RWCTy,
                                                                RWCExp))
                          deriving Show
 
-data RWCDefn = RWCDefn (Name RWCExp) (Embed (Bind [Name RWCTy]
+data RWCDefn = RWCDefn (Name RWCExp) (Embed (SetPlusBind [Name RWCTy]
                                                  ([RWCConstraint],
                                                    RWCTy,
                                                    RWCExp)))
-             | RWCClass Identifier (Embed (Bind [Name RWCTy]
+             | RWCClass Identifier (Embed (SetPlusBind [Name RWCTy]
                                                ([RWCConstraint],
                                                 [RWCTy])))
                                    [RWCClassMethod]

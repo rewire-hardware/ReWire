@@ -89,7 +89,7 @@ matchpat e (RWCPatLiteral l)  = case e of
 simpldefn :: Fresh m => RWCDefn -> m RWCDefn
 simpldefn (RWCDefn n (Embed b)) = do (tvs,(cs,t,e_)) <- unbind b
                                      e               <- simplify e_ 
-                                     return (RWCDefn n (embed $ bind tvs (cs,t,e)))
+                                     return (RWCDefn n (embed $ setbind tvs (cs,t,e)))
 simpldefn d                     = return d
 
 simplprog :: Fresh m => RWCProg -> m RWCProg

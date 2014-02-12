@@ -101,7 +101,7 @@ ppClassMethod (RWCClassMethod n (Embed b)) = do (tvs,(cs,t,mimpl)) <- unbind b
                                                                         Nothing   -> return empty
                                                 return (foldr ($+$) empty
                                                               [text "method" <+> ppName n,
-                                                               nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
+--                                                               nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
                                                                nest 4 (char '<' <> hsep cs_p <> char '>'),
                                                                nest 4 (char '<' <> t_p <> char '>'),
                                                                impl_p,
@@ -113,7 +113,7 @@ ppInstanceMethod (RWCInstanceMethod n b) = do (tvs,(constraints,t,e)) <- unbind 
                                               e_p                     <- ppExpr e
                                               return (foldr ($+$) empty
                                                              [text "def" <+> ppName n,
-                                                              nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
+--                                                              nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
                                                               nest 4 (char '<' <> hsep constraints_p <> char '>'),
                                                               nest 4 (char '<' <> t_p <> char '>'),
                                                               text "is",
@@ -126,7 +126,7 @@ ppInstance (RWCInstance b) = do (tvs,(constraints,t,ims)) <- unbind b
                                 ims_p                     <- mapM ppInstanceMethod ims
                                 return (foldr ($+$) empty
                                               [text "instance",
-                                               nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
+--                                               nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
                                                nest 4 (char '<' <> hsep constraints_p <> char '>'),
                                                nest 4 (char '<' <> t_p <> char '>'),
                                                text "where",
@@ -139,7 +139,7 @@ ppDefn (RWCDefn n (Embed b)) = do (tvs,(constraints,ty,e)) <- unbind b
                                   e_p                      <- ppExpr e
                                   return (foldr ($+$) empty
                                                 [text "def" <+> ppName n,
-                                                 nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
+--                                                 nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
                                                  nest 4 (char '<' <> hsep constraints_p <> char '>'),
                                                  nest 4 (char '<' <> ty_p <> char '>'),
                                                  text "is",
@@ -152,7 +152,7 @@ ppDefn (RWCClass n (Embed b) ms (Embed is)) = do (tvs,(constraints,ts)) <- unbin
                                                  is_p                   <- mapM ppInstance is
                                                  return (foldr ($+$) empty
                                                                [text "class" <+> text n,
-                                                                nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
+--                                                                nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
                                                                 nest 4 (char '<' <> hsep constraints_p <> char '>'),
                                                                 nest 4 (char '<' <> commaSep ts_p <> char '>'),
                                                                 text "where",

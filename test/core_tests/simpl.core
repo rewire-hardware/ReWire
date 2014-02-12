@@ -1,13 +1,11 @@
 def x
   <>
-  <>
   <Int>
 is
   ({\ x -> x<Int>} 3<Int>)
 end
 
 def jabber
-  <>
   <>
   <((Arr (Maybe Int)) Int)>
 is
@@ -20,14 +18,12 @@ end
 
 def jub
   <>
-  <>
   <Int>
 is
   (jabber<((Arr (Maybe Int)) Int)> Nothing<(Maybe Int)>)
 end
 
 def jerb
-  <>
   <>
   <((Arr (Maybe Int)) ((Arr (Maybe Int)) Int))>
 is
@@ -41,7 +37,6 @@ is
 end
 
 def jreb
-  <>
   <>
   <((Arr Int) Int)>
 is

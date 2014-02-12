@@ -1,10 +1,8 @@
 class C
-  <a>
   <D <a,a>>
   <a>
 where
   method f
-    <a>
     <C <a>>
     <((Arr a) a)>
   is
@@ -12,11 +10,9 @@ where
   end
   instance
     <>
-    <>
     <Int>
   where
     def f
-      <>
       <>
       <((Arr Int) Int)>
     is
@@ -26,7 +22,6 @@ where
 end
 
 def eff
-  <a>
   <C <a>>
   <((Arr a) ((Pair a) a))>
 is

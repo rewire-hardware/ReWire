@@ -8,6 +8,7 @@ import Text.Parsec.Language as L
 import qualified Text.Parsec.Token as T
 import Unbound.LocallyNameless
 import Data.Char (isUpper)
+import Data.List (nub)
 import Control.Monad (liftM)
 
 rwcDef :: T.LanguageDef st
@@ -123,53 +124,63 @@ expr = do (e1,e2) <- parens (do e1 <- expr
 
 instancemethod = do reserved "def"
                     n   <- identifier
-                    tvs <- angles (many identifier)
+--                    tvs <- angles (many identifier)
                     cs  <- angles (many constraint)
                     t   <- angles ty
+                    let tvs :: [Name RWCTy]
+                        tvs = nub (fv cs ++ fv t)
                     reserved "is"
                     e   <- expr
                     reserved "end"
-                    return (RWCInstanceMethod (s2n n) (bind (map s2n tvs) (cs,t,e)))
+                    return (RWCInstanceMethod (s2n n) (setbind tvs (cs,t,e)))
                     
 
 instancedecl = do reserved "instance"
-                  tvs <- angles (many identifier)
+--                  tvs <- angles (many identifier)
                   cs  <- angles (many constraint)
                   t   <- angles ty
+                  let tvs :: [Name RWCTy]
+                      tvs = nub (fv cs ++ fv t)
                   reserved "where"
                   ds  <- many instancemethod
                   reserved "end"
-                  return (RWCInstance (bind (map s2n tvs) (cs,t,ds)))
+                  return (RWCInstance (setbind tvs (cs,t,ds)))
 
 defn = do reserved "def"
           n   <- identifier
-          tvs <- angles (many identifier)
+--          tvs <- angles (many identifier)
           cs  <- angles (many constraint)
           t   <- angles ty
+          let tvs :: [Name RWCTy]
+              tvs = nub (fv cs ++ fv t)
           reserved "is"
           e    <- expr
           reserved "end"
-          return (RWCDefn (s2n n) (embed (bind (map s2n tvs) (cs,t,e))))
+          return (RWCDefn (s2n n) (embed (setbind tvs (cs,t,e))))
    <|> do reserved "class"
           n   <- identifier
-          tvs <- angles (many identifier)
+---          tvs <- angles (many identifier)
           cs  <- angles (many constraint)
           ts  <- angles (commaSep ty)
+          let tvs :: [Name RWCTy]
+              tvs = nub (fv cs ++ fv ts)
           reserved "where"
           ms  <- many classmethod
           is  <- many instancedecl
           reserved "end"
-          return (RWCClass n (embed (bind (map s2n tvs) (cs,ts))) ms (embed is))
+          return (RWCClass n (embed (setbind tvs (cs,ts))) ms (embed is))
 
 classmethod = do reserved "method"
                  n   <- identifier
-                 tvs <- angles (many identifier)
+--                 tvs <- angles (many identifier)
                  cs  <- angles (many constraint)
                  t   <- angles ty
+                 let tvs :: [Name RWCTy]
+                     tvs = nub (fv cs ++ fv t)
                  impl <- optionMaybe (do reserved "is"
                                          expr)
                  reserved "end"
-                 return (RWCClassMethod (s2n n) (embed (bind (map s2n tvs) (cs,t,impl))))
+                 return (RWCClassMethod (s2n n) (embed (setbind tvs (cs,t,impl))))
 
 datacon = do n  <- identifier
              ts <- angles (commaSep ty)

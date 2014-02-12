@@ -19,7 +19,6 @@ of
 end
 
 def f
-     <a>
      <>
      <((Arr a) (Maybe a))>
 is
@@ -27,7 +26,6 @@ is
 end
 
 def length
-     <a>
      <>
      <((Arr (List a)) Int)>
 is
