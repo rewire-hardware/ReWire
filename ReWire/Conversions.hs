@@ -14,11 +14,15 @@ import Type
 import Outputable
 import TyCon
 import TcEvidence
+import BasicTypes
+import FastString
 --End GHC Package Imports
 
 --General Imports
+import Numeric
 import Control.Monad.Identity
 import Control.Monad.Reader
+import Control.Monad.Trans.Writer
 import Control.Monad.State
 import Unbound.LocallyNameless
 import qualified Data.Data as Dta
@@ -31,7 +35,7 @@ import ReWire.Core
 
 
 
-type RWDesugar a = StateT Int (ReaderT DynFlags Identity) a
+type RWDesugar = StateT Int (ReaderT DynFlags Identity) 
 
 runRWDesugar :: RWDesugar a -> DynFlags -> a
 runRWDesugar ds r = runIdentity $
@@ -52,18 +56,46 @@ dsTcBindsInner bag = let binds = map deLoc $ deBag bag
     deLoc (L _ e) = e
     deBag b = bagToList b
 
-dsHsPat :: Pat Id -> RWDesugar RWCPat
+--dsHsPats :: [Pat Id] -> RWDesugar (
+
+
+type PatDS =  WriterT [RWCExp] RWDesugar
+
+dsHsPats :: [Pat Id] -> RWDesugar ([RWCPat], [RWCExp])
+dsHsPats pats = runWriterT (mapM dsHsPat pats)
+
+dsHsPat_ :: Pat Id -> RWDesugar RWCPat
+dsHsPat_ pat = do
+                  (pat,_) <- runWriterT (dsHsPat pat)
+                  return pat
+
+
+dsHsPat :: Pat Id -> PatDS RWCPat --(GuardPrepends, RWCPat)
 dsHsPat (VarPat var) = do
-                         ty <- dsType $ varType var
-                         vname <- (ppShowSDoc . pprOccName . nameOccName . Var.varName) var
+                         ty <- lift $ dsType $ varType var
+                         vname <- lift $ ppVar var
                          return $ RWCPatVar (embed ty) (s2n vname)
+dsHsPat (WildPat ty) = do
+                        newname <- lift $ getLabel
+                        ty' <- lift $ dsType ty
+                        return $ RWCPatVar (embed ty') (s2n newname)
+                      
 dsHsPat (LitPat lit) = error "dsHsPat LitPat unfinished!" 
+dsHsPat (TuplePat lpats _ ty) = do
+                                  pats <- mapM (dsHsPat . deLoc) lpats
+                                  return $ uncurry_rwpats pats
+dsHsPat (NPat lit Nothing eqer) = do
+                                    (ty,lit) <- lift $ dsOverLit lit
+                                    eqer' <- lift $ dsExpr eqer
+                                    tell [RWCApp (RWCLiteral ty lit) eqer']
+                                    return $ RWCPatLiteral lit
+dsHsPat x = error $ "dsHsPat Encountered Incomplete defintion for: " ++ (Dta.showConstr $ Dta.toConstr x)
 
 dsVars :: Type -> [Unbound.LocallyNameless.Name RWCTy] -> RWDesugar ([Unbound.LocallyNameless.Name RWCTy],Type)
 dsVars ty vars = case splitForAllTys ty of
                             ([],_)      -> return (vars,ty)
                             (vars',ty')  -> do
-                                             vars'' <- mapM (ppShowSDoc . pprOccName . nameOccName . Var.varName) vars'
+                                             vars'' <- mapM ppVar vars'
                                              let bound_vars = map s2n vars'' 
                                              dsVars ty' $ vars ++ bound_vars 
 
@@ -100,13 +132,8 @@ dsHsBind' (VarBind { var_id = var, var_rhs = expr, var_inline = inline_regardles
 --Here we move all pattern matching to the right hand side of the function in a case statement
 dsHsBind' (FunBind { fun_id = L _ fun, fun_matches = m@(MatchGroup matches match_type) 
                   , fun_co_fn = co_fn, fun_tick = tick, fun_infix = inf }) = do 
-                                                                               --Get the function name 
                                                                                fun_name <- ppShow fun
-                                                                               --Get the function's type
                                                                                ty <- dsType match_type
-                                                                               --Arity to determine if we need to rebuild anything on the RHS, zero means 
-                                                                               --you're dealing with something like x = ...
-                                                                               --Anything else is something like f x ... = ...
                                                                                rebound_case <- conv_matchgroup m
                                                                                return (s2n fun_name, rebound_case) 
 dsHsBind' (PatBind { pat_lhs = pat, pat_rhs = grhss, pat_rhs_ty = ty
@@ -114,19 +141,19 @@ dsHsBind' (PatBind { pat_lhs = pat, pat_rhs = grhss, pat_rhs_ty = ty
 
 conv_single_match :: Match Id -> RWDesugar (RWCExp,RWCExp) -- (guard, body)
 conv_single_match (Match [] mbty grhs) = do
-                                           rwcgexp <- conv_guards grhs >>= merge_guarded_rwcexp
+                                           rwcgexp <- conv_guards [] grhs >>= merge_guarded_rwcexp
                                            return rwcgexp
 
 
 conv_match :: Match Id -> RWDesugar RWCAlt
 conv_match (Match lpats mbty grhs) = do
                                        let pats = map deLoc lpats
-                                       pats' <- mapM dsHsPat pats
+                                       (pats',exps) <- dsHsPats pats
                                        let final_pat = case pats' of
                                             []   -> error "Can't make an alt with no Patterns.  dsHsBind' FunBind" --Build alt with no match?
                                             _    -> uncurry_rwpats pats'
 
-                                       rwcgexp <- conv_guards grhs >>= merge_guarded_rwcexp
+                                       rwcgexp <- conv_guards exps grhs >>= merge_guarded_rwcexp
 
                                        return $ RWCAlt $ bind final_pat rwcgexp
 
@@ -134,31 +161,39 @@ merge_guarded_rwcexp :: [(RWCExp,RWCExp)] -> RWDesugar (RWCExp,RWCExp)
 merge_guarded_rwcexp [exp] = return exp
 merge_guarded_rwcexp _ = error "Multiple guarded equations not supported yet."
 
-conv_guards :: GRHSs Id -> RWDesugar [(RWCExp,RWCExp)] --(Guard,Body)
-conv_guards (GRHSs {grhssGRHSs=lguards, grhssLocalBinds=wclause}) = do --single guard
+conv_guards :: [RWCExp] -> GRHSs Id -> RWDesugar [(RWCExp,RWCExp)] --(Guard,Body)
+conv_guards exps (GRHSs {grhssGRHSs=lguards, grhssLocalBinds=wclause}) = do --single guard
                                                                      let guards = map deLoc lguards
-                                                                     mapM conv_grhs guards
-conv_grhs :: GRHS Id -> RWDesugar (RWCExp,RWCExp) --(Guard,Body)
-conv_grhs (GRHS [] lexpr) = do
+                                                                     mapM (conv_grhs exps) guards
+
+conv_grhs :: [RWCExp] -> GRHS Id -> RWDesugar (RWCExp,RWCExp) --Expressions to prepend -> (Guard,Body)
+conv_grhs [] (GRHS [] lexpr) = do
                              let expr  = deLoc lexpr
-                             let guard = true_expr -- Simply true, FIXME  What goes here if the guard is true?
+                             let guard = true_expr -- Simply true
                              expr' <- dsLExpr lexpr
                              return (guard,expr')
+conv_grhs [pexpr] (GRHS [] lexpr) = do
+                             let expr  = deLoc lexpr
+                             let guard = pexpr -- Simply true, FIXME  What goes here if the guard is true?
+                             expr' <- dsLExpr lexpr
+                             return (guard,expr')
+    where
+      --and_fun = RWCVar (RWCTyVar name "
 
-conv_grhs _ = error "guards aren't supported yet"
+conv_grhs _ _ = error "guards (and NPats) aren't supported yet"
 
 conv_guard_stmt :: LStmt Id -> RWDesugar RWCExp
 conv_guard_stmt stmt = error "conv_guard_stmt not defined"
 
 
-matchTypes :: MatchGroup Id -> RWDesugar ([Type],Type)
-matchTypes (MatchGroup [] ty) = return ([],ty)
+matchTypes :: MatchGroup Id -> RWDesugar ([Type])
+matchTypes (MatchGroup [] ty) = return ([])
 matchTypes (MatchGroup matches ty) = do
                                        let (Match pats _ grhs) = deLoc $ head matches
                                            (GRHS _ lexpr) = deLoc $ head $ grhssGRHSs grhs 
-                                       rhs_ty <- hsExpTy $ deLoc lexpr --extract the RHS type from the expression that resides on the RHS
+                                       --rhs_ty <- hsExpTy $ deLoc lexpr --extract the RHS type from the expression that resides on the RHS
                                        ltypes <- mapM (hsPatTy . deLoc) pats -- If we have stuff on the lhs, the rhs type differs
-                                       return (ltypes,rhs_ty)
+                                       return (ltypes)
 
 
 conv_matchgroup :: MatchGroup Id -> RWDesugar RWCExp
@@ -173,11 +208,11 @@ conv_matchgroup m@(MatchGroup matches match_type) = do
                                                                     --trace (show "OH NO") $ error "Zero Arity functions not working yet ;-)"
                                                                     return case_expr 
                                                              _ -> do
-                                                                    (pat_tys,end_ty) <- matchTypes m
+                                                                    (pat_tys) <- matchTypes m
                                                                     labels <- replicateM arity getLabel
                                                                     --Match up our labels we created to the LHS pattern types they correspond to
                                                                     expr_tys' <- mapM dsType pat_tys
-                                                                    end_ty' <- dsType end_ty
+                                                                    --end_ty' <- dsType end_ty
                                                                     alts <- mapM (conv_match . deLoc) matches
                                                                     let vtypes = zip labels expr_tys'
                                                                         lvars = map (\(lbl,ty) -> RWCVar ty (s2n lbl)) vtypes 
@@ -185,7 +220,7 @@ conv_matchgroup m@(MatchGroup matches match_type) = do
                                                                         case_expr  = RWCCase case_tuple alts
                                                                         fun_tycon  = RWCTyCon "(->)"
                                                                         rebound_case = foldl (\acc (lbl,ty)-> RWCLam (bind (s2n lbl,embed ty) acc)) case_expr vtypes
-                                                                    --let label_pats = 
+                                                                    --let label_pats =
                                                                     return rebound_case
 
 
@@ -209,6 +244,10 @@ uncurry_rwpats pats  = let commas = concat $ take (length pats - 1) $ repeat ","
 
 hsPatTy :: Pat Id -> RWDesugar Type
 hsPatTy (VarPat var) = return $ varType var
+hsPatTy (TuplePat _ _ ty) = return ty
+hsPatTy (WildPat ty) = return ty
+hsPatTy (NPat lit _ _) = return $ ol_type lit 
+                        
 hsPatTy thing = error $ "hsPatTy encountered unimplemented: " ++ (show $ Dta.toConstr thing)
 
 hsExpTy :: HsExpr Id -> RWDesugar Type
@@ -229,12 +268,41 @@ dsExpr :: HsExpr Id -> RWDesugar RWCExp
 dsExpr (HsPar e)               = dsLExpr e
 dsExpr (ExprWithTySigOut e _)  = dsLExpr e
 dsExpr (HsVar var)             = do
-                                   vname <- ppUniqueVar var
+                                   vname <- ppVar var
                                    ty    <- dsType $ varType var
                                    return $ RWCVar ty (s2n vname)
 dsExpr (HsIPVar _)             = error "HsIPVar panics in GHC."
-dsExpr (HsLit lit)             = error "Lits not implemented yet."
-dsExpr (HsOverLit lit)         = error "Lits not implemented yet."
+dsExpr (HsLit lit)             = hl_ann lit
+  where
+   {-
+    hl (HsChar chr)         = RWCLitChar chr
+    hl (HsCharPrim chr)     = RWCLitChar chr
+    hl (HsString _)         = error "Strings Literals not supported."
+    hl (HsStringPrim _)     = error "Strings Literals not supported."
+    hl (HsInt int)          = RWCLitInteger int
+    hl (HsIntPrim int)      = RWCLitInteger int
+    hl (HsWordPrim int)     = RWCLitInteger int
+    hl (HsInt64Prim int)    = RWCLitInteger int
+    hl (HsWord64Prim int)   = RWCLitInteger int
+    hl (HsInteger int t )   = RWCLitInteger int
+    hl (HsRat float ty  )   = RWCLitFloat (fromRat $ fl_value $ float) 
+    hl (HsFloatPrim float)  = RWCLitFloat (fromRat $ fl_value $ float) 
+    hl (HsDoublePrim float) = RWCLitFloat (fromRat $ fl_value $ float) 
+    -}
+
+    hl_ann (HsInteger int ty) = do
+                                  ty' <- dsType ty
+                                  return $ RWCLiteral ty' (RWCLitInteger int)
+    hl_ann (HsRat float ty) = do
+                               ty' <- dsType ty
+                               return $ RWCLiteral ty' $ RWCLitFloat $ fromRat $ fl_value $ float
+    hl_ann (HsChar chr) = do
+                            let ty' = RWCTyCon "GHC.Prim.Char"
+                            return $ RWCLiteral ty' $ RWCLitChar chr
+
+dsExpr (HsOverLit lit)         = do
+                                   (ty,lit') <- dsOverLit lit
+                                   return $ RWCLiteral ty lit'
 dsExpr (HsWrap co_fn e)        = trace ("Warning, HSWrap probably broken.") $
                                        dsExpr e
 dsExpr (NegApp expr neg_expr)  = error "NegApp not implemented yet."
@@ -310,19 +378,18 @@ dsExpr (HsType        {})  = error "Panicking on HsType"
 anonLambdaWrap :: String -> RWCExp -> RWCTy -> RWCExp
 anonLambdaWrap lbl exp ty = let bound = bind (s2n lbl,embed ty) exp
                           in RWCLam bound
-    --where
-      --extendType :: RWCTy -> RWCTy
-      --extendType ty = RWCTyApp ty (eType exp)  
 
-
---eType :: RWCExp -> RWCTy
---eType (RWCApp t _ _)   = t
---eType (RWCLam t _)     = t
---eType (RWCVar t _)     = t
---eType (RWCCon t _)     = t
---eType (RWCLiteral t _) = t
---eType (RWCCase t _ _)  = t
-
+dsOverLit :: HsOverLit id -> RWDesugar (RWCTy, RWCLit)
+dsOverLit lit = do
+                                   ty <- dsType $ ol_type lit
+                                   let lit' = case (ol_val lit) of
+                                                    (HsIntegral int)   -> RWCLitInteger int
+                                                    (HsFractional dbl) -> RWCLitFloat $ fromRat $ fl_value $ dbl
+                                                    (HsIsString   str) -> let str' = unpackFS str 
+                                                                           in if (length str') == 1
+                                                                              then RWCLitChar $ head str'
+                                                                              else error "String literals are not supported."
+                                   return (ty,lit')
 
 --GHC Type to RWCTy
 dsType :: Type -> RWDesugar RWCTy
@@ -337,7 +404,7 @@ dsType ty = case repSplitAppTy_maybe ty of
       where
         conv = case getTyVar_maybe ty of
                       Just var -> do
-                                    var' <- ppShowSDoc $ pprOccName $ nameOccName $ Var.varName var
+                                    var' <- ppVar var
                                     --var' <- ppShowSDoc $ pprUnique $ Var.varUnique var
                                     return $ RWCTyVar $ s2n var' 
                       Nothing  -> case splitFunTy_maybe ty of
@@ -374,8 +441,9 @@ ppDebug sdoc = do
                  flags <- getFlags
                  return $ showSDocDebug flags sdoc 
 
-ppUniqueVar :: Var -> RWDesugar String
-ppUniqueVar var = ppShowSDoc $ pprUnique $ varUnique var
+ppVar :: Var -> RWDesugar String
+ppVar var = ppShowSDoc $ pprOccName $ occName $ Var.varName var
+
 
 getLabel :: RWDesugar String
 getLabel = do
@@ -392,3 +460,11 @@ false_pat  = RWCPatCon "GHC.Types.False" []
 
 true_expr   = RWCCon bool_type "GHC.Types.True"
 false_expr  = RWCCon bool_type "GHC.Types.False"
+
+x `farrow` y = RWCTyApp (RWCTyApp (RWCTyCon "(->)") x) y
+
+bool_op_ty = bool_type `farrow` bool_type `farrow` bool_type
+and_fun    = RWCVar bool_op_ty (s2n "(&&)")
+
+
+dummy_ty    = RWCTyCon "DUMMYTYPE"
