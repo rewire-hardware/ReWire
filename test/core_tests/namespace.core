@@ -1,34 +1,29 @@
 class C
-  <a>
   <D <a,a>>
   <a>
 where
   method f
-    <a>
     <C <a>>
     <((Arr a) a)>
   is
-    {\ x<a> -> x<a>}
+    {\ x -> x<a>}
   end
   instance
-    <>
     <>
     <Int>
   where
     def f
       <>
-      <>
       <((Arr Int) Int)>
     is
-      {\ x<Int> -> 2<Int>}
+      {\ x -> 2<Int>}
     end
   end
 end
 
 def eff
-  <a>
   <C <a>>
   <((Arr a) ((Pair a) a))>
 is
-  {\ x<a> -> ((MkPair<((Arr a) ((Arr a) ((Pair a) a)))> x<a>) (f<((Arr a) a)> x<a>))}
+  {\ x -> ((MkPair<((Arr a) ((Arr a) ((Pair a) a)))> x<a>) (f<((Arr a) a)> x<a>))}
 end

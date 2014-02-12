@@ -19,22 +19,20 @@ of
 end
 
 def f
-     <a>
      <>
      <((Arr a) (Maybe a))>
 is
-     {\ x<a> -> (Just<((Arr a) (Maybe a))> x<a>)}
+     {\ x -> (Just<((Arr a) (Maybe a))> x<a>)}
 end
 
 def length
-     <a>
      <>
      <((Arr (List a)) Int)>
 is
-     {\ l<(List a)> -> case l<(List a)> of
-                          <(Empty)                 |True<Bool>>
+     {\ l -> case l<(List a)> of
+                          <(Empty)    |True<Bool>>
                              0<Int>
-                          <(Cons x<a> lt<(List a)>)|True<Bool>>
+                          <(Cons x lt)|True<Bool>>
                              ((add<((Arr Int) ((Arr Int) Int))> 1<Int>)
                                                                (length<((Arr (List a)) Int)> lt<(List a)>)
                              )
