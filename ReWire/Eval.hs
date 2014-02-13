@@ -138,7 +138,9 @@ matchty _ _ _                                      = fail "matchty failed (const
 
 askvar :: RWCTy -> Name RWCExp -> PEM RWCExp
 askvar t n = do ds <- ask
-                case find (\ (RWCDefn n' _) -> n == n') ds of
+                case find (\ d -> case d of
+                                    RWCDefn n' _ -> n == n'
+                                    _            -> False) ds of
                   Nothing                    -> return (RWCVar t n)
                   Just (RWCDefn _ (Embed b)) -> do (tvs,(cs,t',e)) <- unbind b
                                                    sub             <- matchty [] t' t
