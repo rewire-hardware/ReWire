@@ -74,11 +74,11 @@ dsHsPat :: Pat Id -> PatDS RWCPat --(GuardPrepends, RWCPat)
 dsHsPat (VarPat var) = do
                          ty <- lift $ dsType $ varType var
                          vname <- lift $ ppVar var
-                         return $ RWCPatVar (embed ty) (s2n vname)
+                         return $ RWCPatVar (s2n vname)
 dsHsPat (WildPat ty) = do
                         newname <- lift $ getLabel
                         ty' <- lift $ dsType ty
-                        return $ RWCPatVar (embed ty') (s2n newname)
+                        return $ RWCPatVar (s2n newname)
                       
 dsHsPat (LitPat lit) = error "dsHsPat LitPat unfinished!" 
 dsHsPat (TuplePat lpats _ ty) = do
@@ -120,7 +120,7 @@ dsHsBind (AbsBinds { abs_tvs = tyvars, abs_ev_vars = dicts
                                                                          def_ty <- dsType innerty --Get the converted type 
                                                                          --s <- ppShow $ foralls 
                                                                          --error $ show (s, s)
-                                                                         return $ [RWCDefn (bind_name) (embed $ bind 
+                                                                         return $ [RWCDefn (bind_name) (embed $ setbind 
                                                                                                                           def_vars 
                                                                                                                           (def_cons, def_ty, expr))] 
                    --error "AbsBinds general, not defined yet."
@@ -219,7 +219,7 @@ conv_matchgroup m@(MatchGroup matches match_type) = do
                                                                         case_tuple = uncurry_rwexps lvars
                                                                         case_expr  = RWCCase case_tuple alts
                                                                         fun_tycon  = RWCTyCon "(->)"
-                                                                        rebound_case = foldl (\acc (lbl,ty)-> RWCLam (bind (s2n lbl,embed ty) acc)) case_expr vtypes
+                                                                        rebound_case = foldl (\acc (lbl,ty)-> RWCLam (bind (s2n lbl) acc)) case_expr vtypes
                                                                     --let label_pats =
                                                                     return rebound_case
 
@@ -376,7 +376,7 @@ dsExpr (ELazyPat      {})  = error "Panicking on ELazyPat"
 dsExpr (HsType        {})  = error "Panicking on HsType"
 
 anonLambdaWrap :: String -> RWCExp -> RWCTy -> RWCExp
-anonLambdaWrap lbl exp ty = let bound = bind (s2n lbl,embed ty) exp
+anonLambdaWrap lbl exp ty = let bound = bind (s2n lbl) exp
                           in RWCLam bound
 
 dsOverLit :: HsOverLit id -> RWDesugar (RWCTy, RWCLit)
