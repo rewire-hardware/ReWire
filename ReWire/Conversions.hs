@@ -86,9 +86,11 @@ dsHsPat (TuplePat lpats _ ty) = do
                                   return $ uncurry_rwpats pats
 dsHsPat (NPat lit Nothing eqer) = do
                                     (ty,lit) <- lift $ dsOverLit lit
+                                    lbl <- lift $ getLabel
                                     eqer' <- lift $ dsExpr eqer
-                                    tell [RWCApp (RWCLiteral ty lit) eqer']
-                                    return $ RWCPatLiteral lit
+                                    let eqer'' = RWCApp eqer' (RWCVar ty (s2n lbl))
+                                    tell [RWCApp eqer'' (RWCLiteral ty lit)]
+                                    return $ RWCPatVar (s2n lbl)
 dsHsPat x = error $ "dsHsPat Encountered Incomplete defintion for: " ++ (Dta.showConstr $ Dta.toConstr x)
 
 dsVars :: Type -> [Unbound.LocallyNameless.Name RWCTy] -> RWDesugar ([Unbound.LocallyNameless.Name RWCTy],Type)
@@ -175,6 +177,11 @@ conv_grhs [] (GRHS [] lexpr) = do
 conv_grhs [pexpr] (GRHS [] lexpr) = do
                              let expr  = deLoc lexpr
                              let guard = pexpr -- Simply true, FIXME  What goes here if the guard is true?
+                             expr' <- dsLExpr lexpr
+                             return (guard,expr')
+conv_grhs (e:es) (GRHS [] lexpr) = do
+                             let expr  = deLoc lexpr
+                             let guard = foldl (\acc exp -> (RWCApp (RWCApp and_fun exp) acc)) e es
                              expr' <- dsLExpr lexpr
                              return (guard,expr')
     where
@@ -272,7 +279,7 @@ dsExpr (HsVar var)             = do
                                    ty    <- dsType $ varType var
                                    return $ RWCVar ty (s2n vname)
 dsExpr (HsIPVar _)             = error "HsIPVar panics in GHC."
-dsExpr (HsLit lit)             = hl_ann lit
+dsExpr (HsLit lit)             = error "dsExpr: HsLit encountered." 
   where
    {-
     hl (HsChar chr)         = RWCLitChar chr
