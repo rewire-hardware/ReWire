@@ -34,12 +34,14 @@ import ReWire.Core
 --End ReWire Imports
 
 
+type TypesMap = ()
 
-type RWDesugar = StateT Int (ReaderT DynFlags Identity) 
+type RWDesugar = StateT Int (ReaderT TypesMap (ReaderT DynFlags Identity))
 
 runRWDesugar :: RWDesugar a -> DynFlags -> a
 runRWDesugar ds r = runIdentity $
                     (flip runReaderT) r $
+                    (flip runReaderT) () $ 
                     evalStateT ds 0
 
 dsTcBinds :: LHsBinds Id -> RWDesugar [RWCDefn]
@@ -103,7 +105,22 @@ dsVars ty vars = case splitForAllTys ty of
 
 
 dsCons :: Type -> RWDesugar [RWCConstraint]
-dsCons ty = return [] -- error "desugar constraints not defined"
+dsCons ty = return [] --error "desugar constraints not defined"
+
+dsHsWrap :: HsWrapper -> HsExpr Id ->  RWDesugar RWCExp 
+dsHsWrap WpHole e = dsExpr e
+dsHsWrap (WpCompose (WpEvApp es) (WpTyApp ty)) e = do
+                                                      s1 <- ppShowSDoc $ ppr es
+                                                      s2 <- ppShowSDoc $ ppr $ ty
+                                                      trace ("DEBUG: " ++ s1 ++ "\nDEBUG: " ++ s2) $ dsExpr e
+dsHsWrap (WpCompose w1 w2) e = dsHsWrap w2 e -- (dsHsWrap w2)
+dsHsWrap (WpCast tc) e  = error "WpCast!"
+dsHsWrap (WpEvLam ev) e = error "WpEvLam!"
+dsHsWrap (WpEvApp es) e = error "WpEvApp!"
+dsHsWrap (WpTyLam tv) e = error "WpTyLam!"
+dsHsWrap (WpTyApp ty) e = error "WpTyApp!"
+dsHsWrap (WpLet tcev) e = error "WpLet!"
+
 
 
 dsHsBind :: HsBind Id -> RWDesugar [RWCDefn]
@@ -310,8 +327,7 @@ dsExpr (HsLit lit)             = error "dsExpr: HsLit encountered."
 dsExpr (HsOverLit lit)         = do
                                    (ty,lit') <- dsOverLit lit
                                    return $ RWCLiteral ty lit'
-dsExpr (HsWrap co_fn e)        = trace ("Warning, HSWrap probably broken.") $
-                                       dsExpr e
+dsExpr w@(HsWrap co_fn e)        = dsHsWrap co_fn e 
 dsExpr (NegApp expr neg_expr)  = error "NegApp not implemented yet."
 dsExpr (HsLam a_Match)         = conv_matchgroup a_Match 
 dsExpr (HsLamCase arg matches) = error "HSLamCase not implemented yet."
@@ -431,7 +447,7 @@ dsType ty = case repSplitAppTy_maybe ty of
 
 --Utility Functions
 getFlags :: RWDesugar DynFlags
-getFlags = ask
+getFlags = lift $ lift ask
 
 ppShow :: Outputable a => a -> RWDesugar String
 ppShow op = do
