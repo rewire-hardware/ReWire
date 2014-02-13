@@ -6,7 +6,9 @@ import Unbound.LocallyNameless
 import ReWire.CoreParser (rwcProg,whiteSpace)
 import Text.Parsec (runParser,eof)
 import Control.Monad
-import Data.List (isInfixOf)
+import Data.List (isInfixOf,find)
+import Control.Monad.Reader
+import Control.Monad.Identity
 
 simplify :: Fresh m => RWCExp -> m RWCExp
 simplify (RWCApp e_ e'_)     = do e  <- simplify e_
@@ -104,3 +106,79 @@ psimp n = do guts    <- readFile n
                Left err  -> print err
                Right ast -> print (runFreshM (ppProg ast)) >> putStrLn "===" >> print (runFreshM (simplprog ast >>= ppProg))
 
+type PEM = ReaderT [RWCDefn] (FreshMT Identity)
+
+runPEM :: PEM a -> a
+runPEM m = runIdentity (runFreshMT (runReaderT m []))
+
+expandalt :: RWCAlt -> PEM RWCAlt
+expandalt (RWCAlt b) = do (p,(eg,eb)) <- unbind b
+                          eg'         <- expandexpr eg
+                          eb'         <- expandexpr eb
+                          return (RWCAlt (bind p (eg',eb')))
+
+mergesubs :: Monad m => [(Name RWCTy,RWCTy)] -> [(Name RWCTy,RWCTy)] -> m [(Name RWCTy,RWCTy)]
+mergesubs ((n,t):sub) sub' = case lookup n sub' of
+                               Just t' -> if t `aeq` t' then mergesubs sub sub'
+                                                        else fail "mergesubs failed"
+                               Nothing -> do sub'' <- mergesubs sub sub'
+                                             return ((n,t):sub'')
+mergesubs [] sub'          = return sub'
+
+matchty :: Monad m => [(Name RWCTy,RWCTy)] -> RWCTy -> RWCTy -> m [(Name RWCTy,RWCTy)]
+matchty sub (RWCTyVar n) t                         = case lookup n sub of
+                                                       Nothing -> return ((n,t):sub)
+                                                       Just t' -> if t `aeq` t' then return sub
+                                                                                else fail "matchty failed (variable inconsistency)"
+matchty sub (RWCTyCon i1) (RWCTyCon i2) | i1 == i2 = return sub
+matchty sub (RWCTyApp t1 t2) (RWCTyApp t1' t2')    = do sub1 <- matchty [] t1 t1'
+                                                        sub2 <- matchty [] t2 t2'
+                                                        mergesubs sub1 sub2
+matchty _ _ _                                      = fail "matchty failed (constructor head)"
+
+askvar :: RWCTy -> Name RWCExp -> PEM RWCExp
+askvar t n = do ds <- ask
+                case find (\ (RWCDefn n' _) -> n == n') ds of
+                  Nothing                    -> return (RWCVar t n)
+                  Just (RWCDefn _ (Embed b)) -> do (tvs,(cs,t',e)) <- unbind b
+                                                   sub             <- matchty [] t' t
+                                                   return (substs sub e)
+
+expandexpr :: RWCExp -> PEM RWCExp
+expandexpr (RWCApp e1 e2)    = liftM2 RWCApp (expandexpr e1) (expandexpr e2)
+expandexpr (RWCLam b)        = do (n,e) <- unbind b
+                                  e'    <- expandexpr e
+                                  return (RWCLam (bind n e'))
+expandexpr (RWCVar t n)      = askvar t n
+expandexpr e@(RWCCon {})     = return e
+expandexpr e@(RWCLiteral {}) = return e
+expandexpr (RWCCase e alts)  = do e'    <- expandexpr e
+                                  alts' <- mapM expandalt alts
+                                  return (RWCCase e' alts')
+
+expanddefn :: RWCDefn -> PEM RWCDefn
+expanddefn d@(RWCClass {})       = return d -- FIXME
+expanddefn (RWCDefn n (Embed b)) = do (tvs,(cs,t,e)) <- unbind b
+                                      e'             <- expandexpr e
+                                      return (RWCDefn n (Embed (setbind tvs (cs,t,e'))))
+
+pe :: RWCProg -> PEM RWCProg
+pe p = do ds   <- untrec (defns p)
+          ds'  <- local (const ds) (mapM expanddefn ds)
+          ds'' <- mapM simpldefn ds'
+          return (p { defns = trec ds'' })
+
+doPE :: FilePath -> IO ()
+doPE n = do guts    <- readFile n
+            let res =  runParser (whiteSpace >> rwcProg >>= \ p -> whiteSpace >> eof >> return p) () n guts
+            case res of
+              Left err  -> print err
+              Right ast -> do print (runFreshM (ppProg ast))
+                              loop ast
+                 where loop p = do getLine                                   
+                                   let p' = runPEM (pe p)
+                                   putStrLn "================"
+                                   putStrLn "================"
+                                   putStrLn "================"
+                                   print (runFreshM (ppProg p'))
+                                   loop p'
