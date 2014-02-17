@@ -138,13 +138,13 @@ instancemethod = do reserved "def"
 instancedecl = do reserved "instance"
 --                  tvs <- angles (many identifier)
                   cs  <- angles (many constraint)
-                  t   <- angles ty
+                  ts  <- angles (commaSep ty)
                   let tvs :: [Name RWCTy]
-                      tvs = nub (fv cs ++ fv t)
+                      tvs = nub (fv cs ++ fv ts)
                   reserved "where"
                   ds  <- many instancemethod
                   reserved "end"
-                  return (RWCInstance (setbind tvs (cs,t,ds)))
+                  return (RWCInstance (setbind tvs (cs,ts)) ds)
 
 defn = do reserved "def"
           n   <- identifier

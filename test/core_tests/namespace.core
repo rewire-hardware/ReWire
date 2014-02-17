@@ -13,7 +13,7 @@ where
     <Int>
   where
     def f
-      <>
+      <C <Int>>
       <((Arr Int) Int)>
     is
       {\ x -> 2<Int>}
@@ -26,4 +26,11 @@ def eff
   <((Arr a) ((Pair a) a))>
 is
   {\ x -> ((MkPair<((Arr a) ((Arr a) ((Pair a) a)))> x<a>) (f<((Arr a) a)> x<a>))}
+end
+
+def uff
+  <>
+  <((Arr Int) ((Pair Int) Int))>
+is
+  {\ x -> ((MkPair<((Arr Int) ((Arr Int) ((Pair Int) Int)))> x<Int>) (f<((Arr Int) Int)> x<Int>))}
 end

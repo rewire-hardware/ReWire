@@ -120,18 +120,18 @@ ppInstanceMethod (RWCInstanceMethod n b) = do (tvs,(constraints,t,e)) <- unbind 
                                                               nest 4 e_p,
                                                               text "end"])
 
-ppInstance (RWCInstance b) = do (tvs,(constraints,t,ims)) <- unbind b
-                                constraints_p             <- mapM ppConstraint constraints
-                                t_p                       <- ppTy t
-                                ims_p                     <- mapM ppInstanceMethod ims
-                                return (foldr ($+$) empty
-                                              [text "instance",
---                                               nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
-                                               nest 4 (char '<' <> hsep constraints_p <> char '>'),
-                                               nest 4 (char '<' <> t_p <> char '>'),
-                                               text "where",
-                                               nest 4 (foldr ($+$) empty ims_p),
-                                               text "end"])
+ppInstance (RWCInstance b ims) = do (tvs,(constraints,ts)) <- unbind b
+                                    constraints_p          <- mapM ppConstraint constraints
+                                    ts_p                   <- mapM ppTy ts
+                                    ims_p                  <- mapM ppInstanceMethod ims
+                                    return (foldr ($+$) empty
+                                                  [text "instance",
+    --                                               nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
+                                                   nest 4 (char '<' <> hsep constraints_p <> char '>'),
+                                                   nest 4 (char '<' <> commaSep ts_p <> char '>'),
+                                                   text "where",
+                                                   nest 4 (foldr ($+$) empty ims_p),
+                                                   text "end"])
 
 ppDefn (RWCDefn n (Embed b)) = do (tvs,(constraints,ty,e)) <- unbind b
                                   constraints_p            <- mapM ppConstraint constraints

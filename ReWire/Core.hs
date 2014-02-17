@@ -74,7 +74,8 @@ data RWCClassMethod = RWCClassMethod (Name RWCExp) (Embed (SetPlusBind [Name RWC
                                                                 Maybe RWCExp)))
                       deriving Show
 
-data RWCInstance = RWCInstance (SetPlusBind [Name RWCTy] ([RWCConstraint],RWCTy,[RWCInstanceMethod]))
+-- FIXME: the tyvars should not scope over the instance methods here.
+data RWCInstance = RWCInstance (SetPlusBind [Name RWCTy] ([RWCConstraint],[RWCTy])) [RWCInstanceMethod]
                    deriving Show
 
 data RWCInstanceMethod = RWCInstanceMethod (Name RWCExp) (SetPlusBind [Name RWCTy]
@@ -172,6 +173,9 @@ instance Subst RWCTy RWCAlt where
   isvar _ = Nothing
 
 instance Subst RWCTy RWCPat where
+  isvar _ = Nothing
+
+instance Subst RWCTy RWCConstraint where
   isvar _ = Nothing
 
 $(derive [''RWCExp,''RWCAlt,''RWCPat,''RWCTy,''RWCLit,''RWCData,''RWCDataCon,''RWCNewtype,''RWCNewtypeCon,''RWCConstraint,''RWCClassMethod,''RWCInstanceMethod,''RWCInstance,''RWCDefn{-,''RWCProg-}])
