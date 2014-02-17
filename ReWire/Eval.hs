@@ -1,14 +1,18 @@
+{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
+
 module ReWire.Eval where
 
+import Prelude hiding (sequence,mapM)
 import ReWire.Core
 import ReWire.CorePP
 import Unbound.LocallyNameless
 import ReWire.CoreParser (rwcProg,whiteSpace)
 import Text.Parsec (runParser,eof)
-import Control.Monad
+import Control.Monad hiding (sequence,mapM)
 import Data.List (isInfixOf,find)
-import Control.Monad.Reader
-import Control.Monad.Identity
+import Control.Monad.Reader hiding (sequence,mapM)
+import Control.Monad.Identity hiding (sequence,mapM)
+import Data.Traversable (sequence,mapM)
 
 simplify :: Fresh m => RWCExp -> m RWCExp
 simplify (RWCApp e_ e'_)     = do e  <- simplify e_
@@ -88,11 +92,28 @@ matchpat e (RWCPatLiteral l)  = case e of
                                                   | otherwise -> return MatchNo
                                   _                           -> return MatchMaybe
 
+simplclassmethod :: Fresh m => RWCClassMethod -> m RWCClassMethod
+simplclassmethod (RWCClassMethod n (Embed b)) = do (tvs,(cs,ty,me_)) <- unbind b
+                                                   me                <- mapM simplify me_
+                                                   return (RWCClassMethod n (embed (setbind tvs (cs,ty,me))))
+
+simplinstancemethod :: Fresh m => RWCInstanceMethod -> m RWCInstanceMethod
+simplinstancemethod (RWCInstanceMethod n b) = do (tvs,(cs,t,e_)) <- unbind b
+                                                 e               <- simplify e_
+                                                 return (RWCInstanceMethod n (setbind tvs (cs,t,e)))
+
+simplinstance :: Fresh m => RWCInstance -> m RWCInstance
+simplinstance (RWCInstance b) = do (tvs,(cs,t,meths_)) <- unbind b
+                                   meths               <- mapM simplinstancemethod meths_
+                                   return (RWCInstance (setbind tvs (cs,t,meths)))
+
 simpldefn :: Fresh m => RWCDefn -> m RWCDefn
-simpldefn (RWCDefn n (Embed b)) = do (tvs,(cs,t,e_)) <- unbind b
-                                     e               <- simplify e_ 
-                                     return (RWCDefn n (embed $ setbind tvs (cs,t,e)))
-simpldefn d                     = return d
+simpldefn (RWCDefn n (Embed b))                      = do (tvs,(cs,t,e_)) <- unbind b
+                                                          e               <- simplify e_ 
+                                                          return (RWCDefn n (embed $ setbind tvs (cs,t,e)))
+simpldefn (RWCClass i (Embed b) cms_ (Embed insts_)) = do cms   <- mapM simplclassmethod cms_
+                                                          insts <- mapM simplinstance insts_
+                                                          return (RWCClass i (Embed b) cms (Embed insts))
 
 simplprog :: Fresh m => RWCProg -> m RWCProg
 simplprog p = do ds  <- untrec (defns p)
@@ -138,13 +159,21 @@ matchty _ _ _                                      = fail "matchty failed (const
 
 askvar :: RWCTy -> Name RWCExp -> PEM RWCExp
 askvar t n = do ds <- ask
+                -- First let's see if this is a non-overloaded function.
                 case find (\ d -> case d of
                                     RWCDefn n' _ -> n == n'
                                     _            -> False) ds of
-                  Nothing                    -> return (RWCVar t n)
                   Just (RWCDefn _ (Embed b)) -> do (tvs,(cs,t',e)) <- unbind b
                                                    sub             <- matchty [] t' t
                                                    return (substs sub e)
+                  _                          -> -- Nope. Now let's see if this is an overloaded function.
+                                                case find (\ d -> case d of
+                                                              RWCClass _  _ meths _ -> n `elem` map (\ (RWCClassMethod n _) -> n) meths
+                                                              _                     -> False) ds of
+                                                     Just _  -> -- All right, let's see if we can find the exact instance we want.
+                                                                do error $ "overloaded: " ++ show n -- FIXME: here is where I left off  :3
+                                                     Nothing -> -- Nope. We're stuck!
+                                                                return (RWCVar t n)
 
 expandexpr :: RWCExp -> PEM RWCExp
 expandexpr (RWCApp e1 e2)    = liftM2 RWCApp (expandexpr e1) (expandexpr e2)
@@ -158,11 +187,28 @@ expandexpr (RWCCase e alts)  = do e'    <- expandexpr e
                                   alts' <- mapM expandalt alts
                                   return (RWCCase e' alts')
 
+expandinstancemethod :: RWCInstanceMethod -> PEM RWCInstanceMethod
+expandinstancemethod (RWCInstanceMethod n b) = do (tvs,(cs,t,e_)) <- unbind b
+                                                  e               <- expandexpr e_
+                                                  return (RWCInstanceMethod n (setbind tvs (cs,t,e)))
+
+expandclassmethod :: RWCClassMethod -> PEM RWCClassMethod
+expandclassmethod (RWCClassMethod n (Embed b)) = do (tvs,(cs,ty,me_)) <- unbind b
+                                                    me                 <- mapM expandexpr me_
+                                                    return (RWCClassMethod n (embed (setbind tvs (cs,ty,me))))
+
+expandinstance :: RWCInstance -> PEM RWCInstance
+expandinstance (RWCInstance b) = do (tvs,(cs,t,meths_)) <- unbind b
+                                    meths               <- mapM expandinstancemethod meths_
+                                    return (RWCInstance (setbind tvs (cs,t,meths)))
+
 expanddefn :: RWCDefn -> PEM RWCDefn
-expanddefn d@(RWCClass {})       = return d -- FIXME
-expanddefn (RWCDefn n (Embed b)) = do (tvs,(cs,t,e)) <- unbind b
-                                      e'             <- expandexpr e
-                                      return (RWCDefn n (Embed (setbind tvs (cs,t,e'))))
+expanddefn (RWCClass i (Embed b) cms_ (Embed insts_)) = do cms   <- mapM expandclassmethod cms_
+                                                           insts <- mapM expandinstance insts_
+                                                           return (RWCClass i (embed b) cms (embed insts))
+expanddefn (RWCDefn n (Embed b))                      = do (tvs,(cs,t,e)) <- unbind b
+                                                           e'             <- expandexpr e
+                                                           return (RWCDefn n (Embed (setbind tvs (cs,t,e'))))
 
 pe :: RWCProg -> PEM RWCProg
 pe p = do ds   <- untrec (defns p)
