@@ -15,7 +15,9 @@ import System.IO
 import MonadUtils
 import Bag
 import SrcLoc 
-
+import StaticFlags
+import Control.Monad (when)
+import Data.IORef
 
 
  
@@ -26,8 +28,10 @@ main = do
                             putStrLn "Please provide a filename."
                             exitFailure
                     xs -> return $ head xs
+    ready <- readIORef v_opt_C_ready
+    when (not ready) $ parseStaticFlags [noLoc "-dppr-debug"] >> return ()
     binds <- (defaultErrorHandler defaultFatalMessager defaultFlushOut $ do
-              runGhc (Just libdir) $ do
+              runGhc (Just libdir) $ do                
                 dflags <- getSessionDynFlags
                 let dflags' = dflags {hscTarget = HscInterpreted, 
                                       ghcLink = LinkInMemory, 
@@ -43,7 +47,7 @@ main = do
                 let src = pm_parsed_source pm
                 let tc_src = tm_typechecked_source tc
                 liftIO $ putStrLn "==="
-                liftIO $ printForC dflags' stdout (ppr tc_src)
+                liftIO $ printForUser dflags' stdout neverQualify (ppr tc_src)
                 liftIO $ putStrLn "==="
                 let binds = Conv.runRWDesugar (Conv.dsTcBinds tc_src) dflags'
                 return binds)

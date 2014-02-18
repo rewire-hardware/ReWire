@@ -7,8 +7,9 @@ module TestMain where
 --fj Nothing = "oh no!"
 
 --Identity
-f :: Eq charlie => charlie -> charlie
---f x | x==x = x
-f x = x
+f :: Eq charlie => charlie -> Bool
+f x = x==x
+--f x = x
 
---value = 1
+pup :: Bool
+pup = 1==1
