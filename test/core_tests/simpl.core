@@ -8,8 +8,8 @@ def jabber
   <((Arr (Maybe Int)) Int)>
 is
    {\ x -> case x<(Maybe Int)> of
-             <(Nothing)|True<Bool>> 0<Int>
-             <(Just y) |True<Bool>> y<Int>
+             <(Nothing)> 0<Int>
+             <(Just y) > y<Int>
            end
    }
 end
@@ -25,8 +25,8 @@ def jerb
 is
   { \ m ->
    ({\ x -> case x<(Maybe Int)> of
-              <(Nothing)|True<Bool>> 0<Int>
-              <(Just y) |True<Bool>> y<Int>
+              <(Nothing)> 0<Int>
+              <(Just y) > y<Int>
            end
     } m<(Maybe Int)>)
   }
@@ -37,8 +37,8 @@ def jreb
 is
   { \ m ->
    ({\ x -> case x<(Maybe Int)> of
-              <(Nothing)|True<Bool>> 0<Int>
-              <(Just y) |True<Bool>> y<Int>
+              <(Nothing)> 0<Int>
+              <(Just y) > y<Int>
            end
     } (Just<((Arr Int) (Maybe Int))>m<Int>))
   }

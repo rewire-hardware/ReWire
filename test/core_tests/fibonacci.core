@@ -15,8 +15,8 @@ is
          (signal<((Arr Int) (((React Bit) Int) Bit))>
           n<Int>))
          { \ sw -> case sw<Bit> of
-                     <1|True<Bool>> ((fib<((Arr Int) ((Arr Int) (((React Bit) Int) a)))> n<Int>) m<Int>)
-                     <0|True<Bool>> ((fib<((Arr Int) ((Arr Int) (((React Bit) Int) a)))> m<Int>) ((plus<((Arr Int) ((Arr Int) Int))> n<Int>) m<Int>))
+                     <1> ((fib<((Arr Int) ((Arr Int) (((React Bit) Int) a)))> n<Int>) m<Int>)
+                     <0> ((fib<((Arr Int) ((Arr Int) (((React Bit) Int) a)))> m<Int>) ((plus<((Arr Int) ((Arr Int) Int))> n<Int>) m<Int>))
                    end
          })
     }

@@ -38,10 +38,9 @@ simplify (RWCCase e_ alts_)  = do e    <- simplify e_
                                     Nothing -> return (RWCCase e alts)
 
 simplalt :: Fresh m => RWCAlt -> m RWCAlt
-simplalt (RWCAlt b) = do (p,(eguard_,ebody_)) <- unbind b
-                         eguard               <- simplify eguard_
-                         ebody                <- simplify ebody_
-                         return (RWCAlt (bind p (eguard,ebody)))
+simplalt (RWCAlt b) = do (p,ebody_) <- unbind b
+                         ebody      <- simplify ebody_
+                         return (RWCAlt (bind p ebody))
 
 flattenApp :: RWCExp -> [RWCExp]
 flattenApp (RWCApp e e') = e:flattenApp e'
@@ -51,15 +50,10 @@ isTrueCon :: Identifier -> Bool
 isTrueCon = ("True" `isInfixOf`) -- well, it's good enough if the program is well typed :)
 
 simplcase :: Fresh m => RWCExp -> [RWCAlt] -> m (Maybe RWCExp)
-simplcase escrut (RWCAlt b:alts) = do (p,(eguard_,ebody)) <- unbind b
-                                      mr                  <- matchpat escrut p
+simplcase escrut (RWCAlt b:alts) = do (p,ebody) <- unbind b
+                                      mr        <- matchpat escrut p
                                       case mr of
-                                        MatchYes sub -> do let eguard =  substs sub eguard_
-                                                           eguard'    <- simplify eguard
-                                                           case eguard' of
-                                                             (RWCCon _ c) | isTrueCon c -> liftM Just $ simplify (substs sub ebody)
-                                                                          | otherwise   -> simplcase escrut alts
-                                                             _                          -> return Nothing
+                                        MatchYes sub -> liftM Just $ simplify (substs sub ebody)
                                         MatchMaybe   -> return Nothing
                                         MatchNo      -> simplcase escrut alts
 simplcase escrut []              = return Nothing -- FIXME: should return undefined
@@ -95,27 +89,10 @@ matchpat e (RWCPatLiteral l)  = case e of
                                                   | otherwise -> return MatchNo
                                   _                           -> return MatchMaybe
 
-simplclassmethod :: Fresh m => RWCClassMethod -> m RWCClassMethod
-simplclassmethod (RWCClassMethod n (Embed b)) = do (tvs,(cs,ty,me_)) <- unbind b
-                                                   me                <- mapM simplify me_
-                                                   return (RWCClassMethod n (embed (setbind tvs (cs,ty,me))))
-
-simplinstancemethod :: Fresh m => RWCInstanceMethod -> m RWCInstanceMethod
-simplinstancemethod (RWCInstanceMethod n b) = do (tvs,(cs,t,e_)) <- unbind b
-                                                 e               <- simplify e_
-                                                 return (RWCInstanceMethod n (setbind tvs (cs,t,e)))
-
-simplinstance :: Fresh m => RWCInstance -> m RWCInstance
-simplinstance (RWCInstance b meths_) = do meths <- mapM simplinstancemethod meths_
-                                          return (RWCInstance b meths)
-
 simpldefn :: Fresh m => RWCDefn -> m RWCDefn
-simpldefn (RWCDefn n (Embed b))                      = do (tvs,(cs,t,e_)) <- unbind b
-                                                          e               <- simplify e_ 
-                                                          return (RWCDefn n (embed $ setbind tvs (cs,t,e)))
-simpldefn (RWCClass i (Embed b) cms_ (Embed insts_)) = do cms   <- mapM simplclassmethod cms_
-                                                          insts <- mapM simplinstance insts_
-                                                          return (RWCClass i (Embed b) cms (Embed insts))
+simpldefn (RWCDefn n (Embed b))                      = do (tvs,(t,e_)) <- unbind b
+                                                          e            <- simplify e_ 
+                                                          return (RWCDefn n (embed $ setbind tvs (t,e)))
 
 simplprog :: Fresh m => RWCProg -> m RWCProg
 simplprog p = do ds  <- untrec (defns p)
@@ -129,25 +106,18 @@ psimp n = do guts    <- readFile n
                Left err  -> print err
                Right ast -> print (runFreshM (ppProg ast)) >> putStrLn "===" >> print (runFreshM (simplprog ast >>= ppProg))
 
-type PEM = ReaderT ([RWCDefn],[RWCConstraint]) (FreshMT Identity)
+type PEM = ReaderT [RWCDefn] (FreshMT Identity)
 
 runPEM :: PEM a -> a
-runPEM m = runIdentity (runFreshMT (runReaderT m ([],[])))
+runPEM m = runIdentity (runFreshMT (runReaderT m []))
 
 askDefns :: PEM [RWCDefn]
-askDefns = ask >>= \ (ds,_) -> return ds
-
-askConstraints :: PEM [RWCConstraint]
-askConstraints = ask >>= \ (_,cs) -> return cs
-
-withConstraints :: [RWCConstraint] -> PEM a -> PEM a
-withConstraints cs = local (\(ds,cs') -> (ds,cs++cs'))
+askDefns = ask
 
 expandalt :: RWCAlt -> PEM RWCAlt
-expandalt (RWCAlt b) = do (p,(eg,eb)) <- unbind b
-                          eg'         <- expandexpr eg
-                          eb'         <- expandexpr eb
-                          return (RWCAlt (bind p (eg',eb')))
+expandalt (RWCAlt b) = do (p,eb) <- unbind b
+                          eb'    <- expandexpr eb
+                          return (RWCAlt (bind p eb'))
 
 mergesubs :: Monad m => [(Name RWCTy,RWCTy)] -> [(Name RWCTy,RWCTy)] -> m [(Name RWCTy,RWCTy)]
 mergesubs ((n,t):sub) sub' = case lookup n sub' of
@@ -168,61 +138,13 @@ matchty sub (RWCTyApp t1 t2) (RWCTyApp t1' t2')    = do sub1 <- matchty [] t1 t1
                                                         mergesubs sub1 sub2
 matchty _ _ _                                      = fail "matchty failed (constructor head)"
 
-checkbyinst :: RWCConstraint -> RWCInstance -> PEM Bool
-checkbyinst (RWCConstraint i ts) (RWCInstance b meths) = do (tvs,(cs,ts')) <- unbind b
-                                                            let subs       =  zipWith (matchty []) ts' ts
-                                                            if any isNothing subs
-                                                              then return False
-                                                              else case foldM mergesubs [] (catMaybes subs) of
-                                                                     Just sub -> liftM and (mapM checkconstraint (substs sub cs))
-                                                                     Nothing  -> return False
-
-checkbydefn :: RWCConstraint -> RWCDefn -> PEM Bool
-checkbydefn _ (RWCDefn {})                                                   = return False
-checkbydefn (RWCConstraint i ts) (RWCClass i' _ _ (Embed insts)) | i /= i'   = return False
-                                                                 | otherwise = liftM or (mapM (checkbyinst (RWCConstraint i ts)) insts)
-
-checkconstraint :: RWCConstraint -> PEM Bool
-checkconstraint c = do cs <- askConstraints
-                       if any (`aeq` c) cs
-                          then return True
-                          else do ds <- askDefns
-                                  liftM or (mapM (checkbydefn c) ds)
-                                  -- FIXME: if this returns False, should proceed to check if c is true by superclassing
-
-tryinstancemethod :: RWCTy -> Name RWCExp -> RWCInstanceMethod -> PEM (Maybe RWCExp)
-tryinstancemethod t n (RWCInstanceMethod n' b) | n /= n'   = return Nothing
-                                               | otherwise = do (tvs,(cs,t',e)) <- unbind b
-                                                                case matchty [] t' t of
-                                                                  Just sub -> do issat <- liftM and (mapM checkconstraint (substs sub cs))
-                                                                                 if issat then trace "satisfied" (return (Just $ substs sub e)) else return Nothing
-                                                                  Nothing  -> trace ("no match: " ++ show t) $ return Nothing
-
-tryinstance :: RWCTy -> Name RWCExp -> RWCInstance -> PEM [Maybe RWCExp]
-tryinstance t n (RWCInstance b meths) = mapM (tryinstancemethod t n) meths
-
 askvar :: RWCTy -> Name RWCExp -> PEM RWCExp
 askvar t n = do ds <- askDefns
-                -- First let's see if this is a non-overloaded function.
-                case find (\ d -> case d of
-                                    RWCDefn n' _ -> n == n'
-                                    _            -> False) ds of
-                  Just (RWCDefn _ (Embed b)) -> do (tvs,(cs,t',e)) <- unbind b
-                                                   sub             <- matchty [] t' t
+                case find (\ (RWCDefn n' _) -> n == n') ds of
+                  Just (RWCDefn _ (Embed b)) -> do (tvs,(t',e)) <- unbind b
+                                                   sub          <- matchty [] t' t
                                                    return (substs sub e)
-                  _                          -> -- Nope. Now let's see if this is an overloaded function.
-                                                case find (\ d -> case d of
-                                                              RWCClass _  _ meths _ -> n `elem` map (\ (RWCClassMethod n _) -> n) meths
-                                                              _                     -> False) ds of
-                                                     Just (RWCClass _ _ _ (Embed insts))  -> -- Yes, it's overloaded. Let's see if we can nail down the instance.
-                                                                                            trace ("overloaded: " ++ show n ++ " at " ++ show t) $ 
-                                                                                             do tries <- liftM (catMaybes . concat) $ mapM (tryinstance t n) insts
-                                                                                                case tries of
-                                                                                                  [e] -> return e             -- one match: expand
-                                                                                                  []  -> trace "no match" $ return (RWCVar t n)  -- no match: can't expand
-                                                                                                  _   -> fail "askvar: overlapping instances"
-                                                     _                                    -> -- Nope. We're stuck!
-                                                                                             return (RWCVar t n)
+                  _                          -> return (RWCVar t n)
 
 expandexpr :: RWCExp -> PEM RWCExp
 expandexpr (RWCApp e1 e2)    = liftM2 RWCApp (expandexpr e1) (expandexpr e2)
@@ -236,31 +158,14 @@ expandexpr (RWCCase e alts)  = do e'    <- expandexpr e
                                   alts' <- mapM expandalt alts
                                   return (RWCCase e' alts')
 
-expandinstancemethod :: RWCInstanceMethod -> PEM RWCInstanceMethod
-expandinstancemethod (RWCInstanceMethod n b) = do (tvs,(cs,t,e_)) <- unbind b
-                                                  e               <- withConstraints cs $ expandexpr e_
-                                                  return (RWCInstanceMethod n (setbind tvs (cs,t,e)))
-
-expandclassmethod :: RWCClassMethod -> PEM RWCClassMethod
-expandclassmethod (RWCClassMethod n (Embed b)) = do (tvs,(cs,ty,me_)) <- unbind b
-                                                    me                <- withConstraints cs $ mapM expandexpr me_
-                                                    return (RWCClassMethod n (embed (setbind tvs (cs,ty,me))))
-
-expandinstance :: RWCInstance -> PEM RWCInstance
-expandinstance (RWCInstance b meths_) = do meths <- mapM expandinstancemethod meths_
-                                           return (RWCInstance b meths)
-
 expanddefn :: RWCDefn -> PEM RWCDefn
-expanddefn (RWCClass i (Embed b) cms_ (Embed insts_)) = do cms   <- mapM expandclassmethod cms_
-                                                           insts <- mapM expandinstance insts_
-                                                           return (RWCClass i (embed b) cms (embed insts))
-expanddefn (RWCDefn n (Embed b))                      = do (tvs,(cs,t,e)) <- unbind b
-                                                           e'             <- expandexpr e
-                                                           return (RWCDefn n (Embed (setbind tvs (cs,t,e'))))
+expanddefn (RWCDefn n (Embed b))                      = do (tvs,(t,e)) <- unbind b
+                                                           e'          <- expandexpr e
+                                                           return (RWCDefn n (Embed (setbind tvs (t,e'))))
 
 pe :: RWCProg -> PEM RWCProg
 pe p = do ds   <- untrec (defns p)
-          ds'  <- local (const (ds,[])) (mapM expanddefn ds)
+          ds'  <- local (const ds) (mapM expanddefn ds)
           ds'' <- mapM simpldefn ds'
           return (p { defns = trec ds'' })
 
