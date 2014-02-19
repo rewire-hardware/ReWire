@@ -1,0 +1,14 @@
+id :: a -> a
+is
+  \ x -> x
+end
+
+eff :: a -> (a,a)
+is
+  \ x -> (x,id x)
+end
+
+uff :: Int -> (Int,Int)
+is
+  \ x -> (x,id x)
+end

@@ -1,0 +1,16 @@
+data Maybe a is Nothing | Just a end
+
+data List a is Empty | Cons a (List a) end
+
+f :: a -> Maybe a
+is
+  \ x -> Just x
+end
+
+length :: List a -> Int
+is
+  \ l -> case l of
+         { Empty     -> 0
+         ; Cons x lt -> plus 1 (length lt)
+         }
+end

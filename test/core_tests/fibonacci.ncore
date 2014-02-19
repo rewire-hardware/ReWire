@@ -1,0 +1,14 @@
+main :: React Bit Int a
+is
+  fib 0 1
+end
+
+fib :: Int -> Int -> React Bit Int a
+is
+  \ n ->
+    \ m ->
+      bindRe (signal n) (\ sw -> case sw of
+                                 { 1 -> fib n m
+                                 ; 0 -> fib m (plus n m)
+                                 })
+end

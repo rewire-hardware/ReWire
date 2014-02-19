@@ -7,7 +7,7 @@ import Text.Parsec
 import Text.Parsec.Language as L
 import qualified Text.Parsec.Token as T
 import Unbound.LocallyNameless
-import Data.Char (isUpper)
+import Data.Char (isUpper,isLower)
 import Data.List (nub)
 import Control.Monad (liftM)
 
@@ -18,10 +18,10 @@ rwcDef = T.LanguageDef { T.commentStart    = "{-",
                          T.nestedComments  = True,
                          T.identStart      = letter,
                          T.identLetter     = letter,
-                         T.opStart         = fail "no operators",
-                         T.opLetter        = fail "no operators",
+                         T.opStart         = oneOf "|\\-:",
+                         T.opLetter        = oneOf "\\>:",
                          T.reservedNames   = ["data","of","end","def","is","case"],
-                         T.reservedOpNames = ["|","\\","->"],
+                         T.reservedOpNames = ["|","\\","->","::"],
                          T.caseSensitive   = True }
 
 lexer = T.makeTokenParser rwcDef
@@ -56,6 +56,116 @@ semiSep1       = T.semiSep1 lexer
 commaSep       = T.commaSep lexer
 commaSep1      = T.commaSep1 lexer
 
+varid = lexeme $ try $
+        do{ name <- identifier
+          ; if isUpper (head name)
+             then unexpected ("conid " ++ show name)
+             else return name
+          }
+
+conid = lexeme $ try $
+        do{ name <- identifier
+          ; if isLower (head name)
+             then unexpected ("varid " ++ show name)
+             else return name
+          }
+
+prog = do dds  <- many datadecl
+          defs <- many defn
+          return (RWCProg dds (trec defs))
+
+datadecl = do reserved "data"
+              i   <- conid
+              tvs <- many varid
+              reserved "is"
+              dcs <- datacon `sepBy` reservedOp "|"
+              reserved "end"
+              return (RWCData i (bind (map s2n tvs) dcs))
+
+datacon = do i  <- conid
+             ts <- many atype
+             return (RWCDataCon i ts)
+
+atype = do i <- conid
+           return (RWCTyCon i)
+    <|> do i <- varid
+           return (RWCTyVar (s2n i))
+    <|> do ts <- parens (ty `sepBy` comma)
+           case ts of
+             []  -> return (RWCTyCon "()")
+             [t] -> return t
+             _   -> return (foldl RWCTyApp (RWCTyCon ("(" ++ replicate (length ts - 1) ',' ++ ")")) ts)
+             
+mkarrow t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2
+
+btype = do ts <- many atype
+           return (foldl1 RWCTyApp ts)
+
+ty = do ts <- btype `sepBy` reservedOp "->"
+        return (foldr1 mkarrow ts)
+
+defn = do i <- varid
+          reservedOp "::"
+          t <- ty
+          reserved "is"
+          e <- expr
+          reserved "end"
+          return (RWCDefn (s2n i) (embed (setbind (fv t) (t,e))))
+
+expr = lamexpr
+   <|> do es <- many aexpr
+          return (foldl1 RWCApp es)
+
+aexpr = do i <- varid
+           return (RWCVar (RWCTyCon "FIXME") (s2n i))
+    <|> do i <- conid
+           return (RWCCon (RWCTyCon "FIXME") i)
+    <|> do l <- literal
+           return (RWCLiteral (RWCTyCon "FIXME") l)
+    <|> do es <- parens (expr `sepBy` comma)
+           case es of
+             []  -> return (RWCCon (RWCTyCon "FIXME") "()")
+             [e] -> return e
+             _   -> return (foldl RWCApp (RWCCon (RWCTyCon "FIXME") ("(" ++ replicate (length es - 1) ',' ++ ")")) es)
+             
+literal = liftM RWCLitInteger natural
+      <|> liftM RWCLitFloat float
+      <|> liftM RWCLitChar charLiteral
+
+lamexpr = do reservedOp "\\"
+             i <- varid
+             reservedOp "->"
+             e <- expr
+             return (RWCLam (bind (s2n i) e))
+      <|> do reserved "case"
+             e    <- expr
+             reserved "of"
+             alts <- braces (alt `sepBy` semi)
+             return (RWCCase e alts)
+
+alt = do p <- pat
+         reservedOp "->"
+         e <- expr
+         return (RWCAlt (bind p e))
+
+pat = do i <- conid
+         pats <- many apat
+         return (RWCPatCon i pats)
+  <|> apat
+
+apat = do i <- varid
+          return (RWCPatVar (s2n i))
+   <|> do i <- conid
+          return (RWCPatCon i [])
+   <|> do l <- literal
+          return (RWCPatLiteral l)
+   <|> do ps <- parens (pat `sepBy` comma)
+          case ps of
+            []  -> return (RWCPatCon "()" [])
+            [p] -> return p
+            _   -> return (RWCPatCon ("(" ++ replicate (length ps - 1) ',' ++ ")") ps)
+
+{-
 {-
 constructor = try (do n <- identifier
                       if isUpper (head n)
@@ -143,3 +253,4 @@ rwcProg = do dds <- many datadecl
              ds  <- many defn
              return (RWCProg { dataDecls    = dds,
                                defns        = trec ds })
+-}

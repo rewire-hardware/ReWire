@@ -1,0 +1,35 @@
+x :: Int
+is
+  (\ x -> x) 3
+end
+
+jabber :: Maybe Int -> Int
+is
+  \ x -> case x of
+         { Nothing -> 0
+         ; Just y  -> y
+         }
+end
+
+jub :: Int
+is
+  jabber Nothing
+end
+
+jerb :: Maybe Int -> Maybe Int -> Int
+is
+  \ m ->
+    \ x -> case x of
+           { Nothing -> 0
+           ; Just y  -> y
+           }
+end
+
+jreb :: Int -> Int
+is
+  \ m ->
+    (\ x -> case x of
+            { Nothing -> 0
+            ; Just y  -> y
+            }) m
+end

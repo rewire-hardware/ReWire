@@ -1,6 +1,6 @@
 prog ::= datadecl* defn*
 
-datadecl ::= 'data' conid 'is' datacon1 '|' ... '|' dataconn 'end'
+datadecl ::= 'data' conid varid* 'is' datacon1 '|' ... '|' dataconn 'end'
 
 datacon ::= conid atype*
 
@@ -37,6 +37,6 @@ alt ::= pat '->' expr
 
 pat ::= conid apat+ | apat
 
-apat ::= varid | conid | '(' pat ')'
+apat ::= varid | conid | lit | '(' pat ')' | '()' | '(' pat1 ',' ... ',' patn ')'
 
 lit ::= ...whatever... (literal integers and characters...)
