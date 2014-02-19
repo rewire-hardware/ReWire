@@ -1,12 +1,10 @@
 def x
-  <>
   <Int>
 is
   ({\ x -> x<Int>} 3<Int>)
 end
 
 def jabber
-  <>
   <((Arr (Maybe Int)) Int)>
 is
    {\ x -> case x<(Maybe Int)> of
@@ -17,14 +15,12 @@ is
 end
 
 def jub
-  <>
   <Int>
 is
   (jabber<((Arr (Maybe Int)) Int)> Nothing<(Maybe Int)>)
 end
 
 def jerb
-  <>
   <((Arr (Maybe Int)) ((Arr (Maybe Int)) Int))>
 is
   { \ m ->
@@ -37,7 +33,6 @@ is
 end
 
 def jreb
-  <>
   <((Arr Int) Int)>
 is
   { \ m ->

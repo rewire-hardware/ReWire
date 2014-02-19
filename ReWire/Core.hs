@@ -1,11 +1,5 @@
 {-# LANGUAGE TemplateHaskell,FlexibleInstances,MultiParamTypeClasses,FlexibleContexts,UndecidableInstances #-}
 
--- Some scribbles as I try to figure out what form ReWire Core will take. Note
--- that the term ReWire Core as used here is different from the term as used
--- in the ICFPT paper; rather than being a normal form of Haskell it is a
--- separate language like GHC Core. This is the input to the partial
--- evaluator.
-
 module ReWire.Core where
 
 import Unbound.LocallyNameless
@@ -35,7 +29,7 @@ data RWCLit = RWCLitInteger Integer
             | RWCLitChar Char
             deriving (Eq,Show)
 
-data RWCAlt = RWCAlt (Bind RWCPat (RWCExp,RWCExp)) -- (guard,body)
+data RWCAlt = RWCAlt (Bind RWCPat RWCExp)
               deriving Show
 
 data RWCPat = RWCPatCon Identifier [RWCPat]
@@ -43,56 +37,9 @@ data RWCPat = RWCPatCon Identifier [RWCPat]
             | RWCPatVar (Name RWCExp)
             deriving Show
 
-data RWCConstraint = RWCConstraint Identifier [RWCTy] deriving Show
-
--- Unlike Haskell's surface syntax, the entire bundle of type constraints
--- (including those imposed by the class context) must be reflected here.
--- For example, instead of:
---
--- class Num a where
---   (+) :: a -> a -> a
---
--- you have:
---
--- class Num a where
---   (+) :: Num a => a -> a -> a
---
--- Another example:
---
--- class Monad m => MonadState s m where
---   get :: (Monad m,MonadState s m) => m s
---   put :: (Monad m,MonadState s m) => s -> m ()
---   upd :: (Monad m,MonadState s m) => (s -> s) -> m ()
---   upd f = get >>= \ s -> put (f s)
---
--- (This is because I couldn't figure out how to get the type variables to
--- scope over the class methods while still exporting the method names as
--- binders. There is probably a way to do this, but... oh well!)
-data RWCClassMethod = RWCClassMethod (Name RWCExp) (Embed (SetPlusBind [Name RWCTy]
-                                                               ([RWCConstraint],
-                                                                RWCTy,
-                                                                Maybe RWCExp)))
-                      deriving Show
-
--- FIXME: the tyvars should not scope over the instance methods here.
-data RWCInstance = RWCInstance (SetPlusBind [Name RWCTy] ([RWCConstraint],[RWCTy])) [RWCInstanceMethod]
-                   deriving Show
-
-data RWCInstanceMethod = RWCInstanceMethod (Name RWCExp) (SetPlusBind [Name RWCTy]
-                                                              ([RWCConstraint],
-                                                               RWCTy,
-                                                               RWCExp))
-                         deriving Show
-
 data RWCDefn = RWCDefn (Name RWCExp) (Embed (SetPlusBind [Name RWCTy]
-                                                 ([RWCConstraint],
-                                                   RWCTy,
-                                                   RWCExp)))
-             | RWCClass Identifier (Embed (SetPlusBind [Name RWCTy]
-                                               ([RWCConstraint],
-                                                [RWCTy])))
-                                   [RWCClassMethod]
-                                   (Embed [RWCInstance])
+                                                 (RWCTy,
+                                                  RWCExp)))
                deriving Show
 
 data RWCData = RWCData Identifier (Bind [Name RWCTy]
@@ -102,15 +49,7 @@ data RWCData = RWCData Identifier (Bind [Name RWCTy]
 data RWCDataCon = RWCDataCon Identifier [RWCTy]
                   deriving Show
 
-data RWCNewtype = RWCNewtype Identifier (Bind [Name RWCTy]
-                                          RWCNewtypeCon)
-                  deriving Show
-
-data RWCNewtypeCon = RWCNewtypeCon Identifier RWCTy
-                     deriving Show
-
 data RWCProg = RWCProg { dataDecls    :: [RWCData],
-                         newtypeDecls :: [RWCNewtype],
                          defns        :: TRec [RWCDefn] }
                        deriving Show
 
@@ -122,30 +61,12 @@ instance Alpha RWCLit where
 instance Alpha RWCTy where
 instance Alpha RWCData where
 instance Alpha RWCDataCon where
-instance Alpha RWCNewtype where
-instance Alpha RWCNewtypeCon where
-instance Alpha RWCConstraint where
-instance Alpha RWCClassMethod where
-instance Alpha RWCInstance where
-instance Alpha RWCInstanceMethod where
 instance Alpha RWCDefn where
 --instance Alpha RWCProg where      (can't have this anymore due to recbind)
   
 instance Subst RWCExp RWCDefn where
   isvar _ = Nothing
   
-instance Subst RWCExp RWCInstance where
-  isvar _ = Nothing
-  
-instance Subst RWCExp RWCClassMethod where
-  isvar _ = Nothing
-
-instance Subst RWCExp RWCInstanceMethod where
-  isvar _ = Nothing
-
-instance Subst RWCExp RWCConstraint where
-  isvar _ = Nothing
-
 instance Subst RWCExp RWCExp where
   isvar (RWCVar _ n) = Just (SubstName n)
   isvar _            = Nothing
@@ -175,7 +96,4 @@ instance Subst RWCTy RWCAlt where
 instance Subst RWCTy RWCPat where
   isvar _ = Nothing
 
-instance Subst RWCTy RWCConstraint where
-  isvar _ = Nothing
-
-$(derive [''RWCExp,''RWCAlt,''RWCPat,''RWCTy,''RWCLit,''RWCData,''RWCDataCon,''RWCNewtype,''RWCNewtypeCon,''RWCConstraint,''RWCClassMethod,''RWCInstanceMethod,''RWCInstance,''RWCDefn{-,''RWCProg-}])
+$(derive [''RWCExp,''RWCAlt,''RWCPat,''RWCTy,''RWCLit,''RWCData,''RWCDataCon,''RWCDefn{-,''RWCProg-}])

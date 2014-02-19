@@ -1,12 +1,10 @@
 def main
-  <>
   <(((React Bit) Int) a)>
 is
   ((fib<((Arr Int) ((Arr Int) (((React Bit) Int) a)))> 0<Int>) 1<Int>)
 end
 
 def fib
-  <>
   <((Arr Int) ((Arr Int) (((React Bit) Int) a)))>
 is
   { \ n ->

@@ -12,27 +12,19 @@ of
      Cons <a,(List a)>
 end
 
-newtype StateT
-     <s m a>
-of
-     StateT <((Arr s) (m ((Pair a) s)))>
-end
-
 def f
-     <>
      <((Arr a) (Maybe a))>
 is
      {\ x -> (Just<((Arr a) (Maybe a))> x<a>)}
 end
 
 def length
-     <>
      <((Arr (List a)) Int)>
 is
      {\ l -> case l<(List a)> of
-                          <(Empty)    |True<Bool>>
+                          <(Empty)>
                              0<Int>
-                          <(Cons x lt)|True<Bool>>
+                          <(Cons x lt)>
                              ((add<((Arr Int) ((Arr Int) Int))> 1<Int>)
                                                                (length<((Arr (List a)) Int)> lt<(List a)>)
                              )

@@ -20,7 +20,7 @@ rwcDef = T.LanguageDef { T.commentStart    = "{-",
                          T.identLetter     = letter,
                          T.opStart         = fail "no operators",
                          T.opLetter        = fail "no operators",
-                         T.reservedNames   = ["data","of","end","def","is","newtype","case","class","where","instance"],
+                         T.reservedNames   = ["data","of","end","def","is","case"],
                          T.reservedOpNames = ["|","\\","->"],
                          T.caseSensitive   = True }
 
@@ -64,10 +64,6 @@ constructor = try (do n <- identifier
           <?> "constructor name"
 -}
 
-constraint = do n  <- identifier
-                ts <- angles (commaSep ty)
-                return (RWCConstraint n ts)
-
 ty = do (t1,t2) <- parens (do t1 <- ty
                               t2 <- ty
                               return (t1,t2))
@@ -86,12 +82,9 @@ pat = do (n,ps) <- parens (do n  <- identifier
   <|> do l <- literal
          return (RWCPatLiteral l)
 
-alt = do (p,guard) <- angles (do p <- pat
-                                 reservedOp "|"
-                                 g <- expr
-                                 return (p,g))
-         e         <- expr
-         return (RWCAlt (bind p (guard,e)))
+alt = do p <- angles pat
+         e <- expr
+         return (RWCAlt (bind p e))
 
 literal = liftM RWCLitInteger integer
       <|> liftM RWCLitFloat float
@@ -122,65 +115,17 @@ expr = do (e1,e2) <- parens (do e1 <- expr
            reserved "end"
            return (RWCCase e alts))
 
-instancemethod = do reserved "def"
-                    n   <- identifier
---                    tvs <- angles (many identifier)
-                    cs  <- angles (many constraint)
-                    t   <- angles ty
-                    let tvs :: [Name RWCTy]
-                        tvs = nub (fv cs ++ fv t)
-                    reserved "is"
-                    e   <- expr
-                    reserved "end"
-                    return (RWCInstanceMethod (s2n n) (setbind tvs (cs,t,e)))
-                    
-
-instancedecl = do reserved "instance"
---                  tvs <- angles (many identifier)
-                  cs  <- angles (many constraint)
-                  ts  <- angles (commaSep ty)
-                  let tvs :: [Name RWCTy]
-                      tvs = nub (fv cs ++ fv ts)
-                  reserved "where"
-                  ds  <- many instancemethod
-                  reserved "end"
-                  return (RWCInstance (setbind tvs (cs,ts)) ds)
-
 defn = do reserved "def"
           n   <- identifier
 --          tvs <- angles (many identifier)
-          cs  <- angles (many constraint)
           t   <- angles ty
           let tvs :: [Name RWCTy]
-              tvs = nub (fv cs ++ fv t)
+              tvs = nub (fv t)
           reserved "is"
           e    <- expr
           reserved "end"
-          return (RWCDefn (s2n n) (embed (setbind tvs (cs,t,e))))
-   <|> do reserved "class"
-          n   <- identifier
----          tvs <- angles (many identifier)
-          cs  <- angles (many constraint)
-          ts  <- angles (commaSep ty)
-          let tvs :: [Name RWCTy]
-              tvs = nub (fv cs ++ fv ts)
-          reserved "where"
-          ms  <- many classmethod
-          is  <- many instancedecl
-          reserved "end"
-          return (RWCClass n (embed (setbind tvs (cs,ts))) ms (embed is))
+          return (RWCDefn (s2n n) (embed (setbind tvs (t,e))))
 
-classmethod = do reserved "method"
-                 n   <- identifier
---                 tvs <- angles (many identifier)
-                 cs  <- angles (many constraint)
-                 t   <- angles ty
-                 let tvs :: [Name RWCTy]
-                     tvs = nub (fv cs ++ fv t)
-                 impl <- optionMaybe (do reserved "is"
-                                         expr)
-                 reserved "end"
-                 return (RWCClassMethod (s2n n) (embed (setbind tvs (cs,t,impl))))
 
 datacon = do n  <- identifier
              ts <- angles (commaSep ty)
@@ -194,21 +139,7 @@ datadecl = do reserved "data"
               reserved "end"
               return (RWCData n (bind (map s2n tvs) dcs))
 
-newtypecon = do n <- identifier
-                t <- angles ty
-                return (RWCNewtypeCon n t)
-
-newtypedecl = do reserved "newtype"
-                 n   <- identifier
-                 tvs <- angles (many identifier)
-                 reserved "of"
-                 nc  <- newtypecon
-                 reserved "end"
-                 return (RWCNewtype n (bind (map s2n tvs) nc))
-
 rwcProg = do dds <- many datadecl
-             nds <- many newtypedecl
              ds  <- many defn
              return (RWCProg { dataDecls    = dds,
-                               newtypeDecls = nds,
                                defns        = trec ds })
