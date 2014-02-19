@@ -1,0 +1,42 @@
+prog ::= datadecl* defn*
+
+datadecl ::= 'data' conid 'is' datacon1 '|' ... '|' dataconn 'end'
+
+datacon ::= conid atype*
+
+{- desugar () to Nil, tuples to application of TupleN -}
+atype ::= conid | varid | '(' type ')' | '(' type1 ',' ... ',' typen ')' | '(' ')'
+
+btype ::= atype+
+
+{- desugar to application of Arr, associated right -}
+type ::= btype1 -> ... -> btypen
+
+defn ::= varid '::' type 'is' expr 'end'
+
+expr ::= lamexpr
+       | aexpr+       {- application, associated left -}
+
+lamexpr ::= '\' varid '->' expr     {- scope extends "as far to the right
+                                       as possible" so
+                                       \ x -> x x
+                                       is
+                                       \ x -> (x x)
+                                       not
+                                       (\ x -> x) x -}
+          | 'case' expr 'of' '{' alt1 ';' ... ';' altn '}'
+
+aexpr ::= '(' expr ')'
+        | varid
+        | conid
+        | literal
+        | '(' ')'                          {- desugar to Nil -}
+        | '(' expr1 ',' ... ',' exprn ')'  {- desugar to application of TupleN -}
+
+alt ::= pat '->' expr
+
+pat ::= conid apat+ | apat
+
+apat ::= varid | conid | '(' pat ')'
+
+lit ::= ...whatever... (literal integers and characters...)
