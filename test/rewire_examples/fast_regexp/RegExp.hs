@@ -23,4 +23,9 @@ data RegExp a =   Bar   (RegExp a) (RegExp a)
                 | Atom a
 
 
-type Machine input = ReacT input Bool Identity 
+type Machine input = ReacT (Bool,input) Bool Identity ()
+
+
+match :: Eq a => a -> Machine a
+match a = let match' = \(prev,i) -> ReacT (return (Right (prev && i == a, match')))
+           in ReacT (return (Right (False,match')))
