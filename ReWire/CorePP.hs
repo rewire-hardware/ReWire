@@ -27,34 +27,39 @@ ppLiteral (RWCLitInteger n) = integer n
 ppLiteral (RWCLitFloat x)   = double x
 ppLiteral (RWCLitChar c)    = text (show c)
 
-ppPat (RWCPatCon n ps)  = do ps_p <- mapM ppPat ps
-                             return (parens (text n <+> hsep ps_p))
-ppPat (RWCPatVar n)     = return (ppName n)
-ppPat (RWCPatLiteral l) = return (ppLiteral l)
+ppPat (RWCPatCon n ps)        = do ps_p <- mapM ppPat ps
+                                   return (parens (text n <+> hsep ps_p))
+ppPat (RWCPatVar (Embed t) n) = do t_p <- ppTy t
+                                   return (ppName n <> char '<' <> t_p <> char '>')
+ppPat (RWCPatLiteral l)       = return (ppLiteral l)
 
 ppAlt (RWCAlt b) = do (p,eb) <- unbind b
                       p_p    <- ppPat p
                       eb_p   <- ppExpr eb
                       return (char '<' <> p_p <> char '>' <+> eb_p)
 
-ppExpr (RWCApp e1 e2)   = do e1_p <- ppExpr e1
-                             e2_p <- ppExpr e2
-                             return (parens (hang e1_p 4 e2_p))
+ppExpr (RWCApp t e1 e2)   = do t_p  <- ppTy t
+                               e1_p <- ppExpr e1
+                               e2_p <- ppExpr e2
+                               return (parens (hang e1_p 4 e2_p) <> char '<' <> t_p <> char '>')
 ppExpr (RWCLiteral t l) = do t_p <- ppTy t
                              return (ppLiteral l <> char '<' <> t_p <> char '>')
 ppExpr (RWCCon t n)     = do t_p <- ppTy t
                              return (text n <> char '<' <> t_p <> char '>')
 ppExpr (RWCVar t n)     = do t_p <- ppTy t
                              return (ppName n <> char '<' <> t_p <> char '>')
-ppExpr (RWCLam b)       = do (n,e) <- unbind b
+ppExpr (RWCLam t b)     = do t_p   <- ppTy t
+                             (n,e) <- unbind b
                              e_p   <- ppExpr e
-                             return (braces (char '\\' <+> ppName n <+> text "->" <+> e_p))
-ppExpr (RWCCase e alts) = do e_p    <- ppExpr e
-                             alts_p <- mapM ppAlt alts
-                             return (foldr ($+$) empty
-                                            [text "case" <+> e_p <+> text "of",
-                                             nest 4 (foldr ($+$) empty alts_p),
-                                             text "end"])
+                             return (braces (char '\\' <+> ppName n <+> text "->" <+> e_p) <> char '<' <> t_p <> char '>')
+ppExpr (RWCCase t e alts) = do t_p    <- ppTy t
+                               e_p    <- ppExpr e
+                               alts_p <- mapM ppAlt alts
+                               return (foldr ($+$) empty
+                                              [text "case" <+> e_p <+> text "of",
+                                               nest 4 (foldr ($+$) empty alts_p),
+                                               text "end",
+                                               char '<' <> t_p <> char '>'])
 
 ppName :: Name a -> Doc
 ppName = text . show
@@ -90,7 +95,7 @@ ppProg p = do dd_p <- ppDataDecls (dataDecls p)
 
 ppp :: FilePath -> IO ()
 ppp n = do guts        <- readFile n
-           let res     =  runParser (whiteSpace >> prog >>= \ p -> whiteSpace >> eof >> return p) () n guts
+           let res     =  runParser (whiteSpace >> prog >>= \ p -> whiteSpace >> eof >> return p) 0 n guts
            case res of
              Left err  -> print err
              Right ast -> print (runFreshM (ppProg ast))

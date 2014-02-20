@@ -9,7 +9,7 @@ import qualified Text.Parsec.Token as T
 import Unbound.LocallyNameless
 import Data.Char (isUpper,isLower)
 import Data.List (nub)
-import Control.Monad (liftM)
+import Control.Monad (liftM,foldM)
 
 rwcDef :: T.LanguageDef st
 rwcDef = T.LanguageDef { T.commentStart    = "{-",
@@ -112,21 +112,33 @@ defn = do i <- varid
           reserved "end"
           return (RWCDefn (s2n i) (embed (setbind (fv t) (t,e))))
 
+freshtv = do n <- getState
+             putState (n+1)
+             return (RWCTyVar (s2n $ "?" ++ show n))
+
+mkApp e1 e2 = do t <- freshtv
+                 return (RWCApp t e1 e2)
+                 
 expr = lamexpr
    <|> do es <- many aexpr
-          return (foldl1 RWCApp es)
+          foldM mkApp (head es) (tail es)
 
 aexpr = do i <- varid
-           return (RWCVar (RWCTyCon "FIXME") (s2n i))
+           t <- freshtv
+           return (RWCVar t (s2n i))
     <|> do i <- conid
-           return (RWCCon (RWCTyCon "FIXME") i)
+           t <- freshtv
+           return (RWCCon t i)
     <|> do l <- literal
-           return (RWCLiteral (RWCTyCon "FIXME") l)
+           t <- freshtv
+           return (RWCLiteral t l)
     <|> do es <- parens (expr `sepBy` comma)
            case es of
-             []  -> return (RWCCon (RWCTyCon "FIXME") "()")
+             []  -> do t <- freshtv
+                       return (RWCCon t "()")
              [e] -> return e
-             _   -> return (foldl RWCApp (RWCCon (RWCTyCon "FIXME") ("(" ++ replicate (length es - 1) ',' ++ ")")) es)
+             _   -> do tcon <- freshtv
+                       foldM mkApp (RWCCon tcon ("(" ++ replicate (length es - 1) ',' ++ ")")) es
              
 literal = liftM RWCLitInteger natural
       <|> liftM RWCLitFloat float
@@ -136,12 +148,14 @@ lamexpr = do reservedOp "\\"
              i <- varid
              reservedOp "->"
              e <- expr
-             return (RWCLam (bind (s2n i) e))
+             t <- freshtv
+             return (RWCLam t (bind (s2n i) e))
       <|> do reserved "case"
              e    <- expr
              reserved "of"
              alts <- braces (alt `sepBy` semi)
-             return (RWCCase e alts)
+             t    <- freshtv
+             return (RWCCase t e alts)
 
 alt = do p <- pat
          reservedOp "->"
@@ -154,7 +168,8 @@ pat = do i <- conid
   <|> apat
 
 apat = do i <- varid
-          return (RWCPatVar (s2n i))
+          t <- freshtv
+          return (RWCPatVar (embed t) (s2n i))
    <|> do i <- conid
           return (RWCPatCon i [])
    <|> do l <- literal
