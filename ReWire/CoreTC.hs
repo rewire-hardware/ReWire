@@ -3,60 +3,91 @@
 module ReWire.CoreTC where
 
 import ReWire.Core
-import ReWire.CorePP (ppp)
+import ReWire.CorePP (ppp,ppProg)
 import ReWire.CoreParser
 import Text.Parsec (runParser,eof)
 import Control.Monad.State
+import Control.Monad.Reader
 import Control.Monad.Identity
 import Unbound.LocallyNameless
+import Unbound.LocallyNameless.Types (SetPlusBind)
+import Data.List (nub)
+import Debug.Trace (trace)
 
 -- Type checker for core.
 
-type TySub = [(Name RWCTy,RWCTy)]
+type TySub   = [(Name RWCTy,RWCTy)]
+data TCEnv = TCEnv { as  :: [Assump],
+                     cas :: [CAssump] } deriving Show
+data TCState = TCState { varCounter :: Int,
+                         tySub      :: TySub } deriving Show
+                         
+type Assump  = (Name RWCExp,SetPlusBind [Name RWCTy] RWCTy)
+type CAssump = (Identifier,SetPlusBind [Name RWCTy] RWCTy)
 
-type TCM = FreshMT (StateT TySub Identity)
+type TCM = FreshMT (ReaderT TCEnv (StateT TCState Identity))
 
-gathertvs :: RWCDefn -> TCM TySub
-gathertvs (RWCDefn _ (Embed b)) = do (_,(_,e)) <- unbind b
-                                     gathertvsExp e
+localAssumps f = local (\ tce -> tce { as = f (as tce) })
+askAssumps = ask >>= \ tce -> return (as tce)
+localCAssumps f = local (\ tce -> tce { cas = f (cas tce) })
+getVarCounter = get >>= return . varCounter
+putVarCounter i = get >>= \ s -> put (s { varCounter = i })
+getTySub = get >>= return . tySub
+updTySub f = get >>= \ s -> put (s { tySub = f (tySub s) })
+putTySub sub = get >>= \ s -> put (s { tySub = sub })
 
-gathertvsTy (RWCTyApp t1 t2) = liftM2 (++) (gathertvsTy t1) (gathertvsTy t2)
-gathertvsTy (RWCTyCon _)     = return []
-gathertvsTy (RWCTyVar v)     = let vn = name2String v
-                               in  case vn of
-                                     '?':_ -> return [(v,RWCTyVar v)]
-                                     _     -> return []
+freshv :: TCM (Name RWCTy)
+freshv = do i     <- getVarCounter
+            putVarCounter (i+1)
+            let n =  s2n ("?"++show i)
+            sub   <- getTySub
+            updTySub ((n,RWCTyVar n):)
+            return n
 
-gathertvsExp :: RWCExp -> TCM TySub
-gathertvsExp (RWCApp t e1 e2)   = do tvs_t  <- gathertvsTy t 
-                                     tvs_e1 <- gathertvsExp e1
-                                     tvs_e2 <- gathertvsExp e2
-                                     return (tvs_t++tvs_e1++tvs_e2)
-gathertvsExp (RWCLam t b)       = do tvs_t  <- gathertvsTy t
-                                     (_,e)  <- unbind b
-                                     tvs_e  <- gathertvsExp e
-                                     return (tvs_t++tvs_e)
-gathertvsExp (RWCVar t _)       = gathertvsTy t
-gathertvsExp (RWCCon t _)       = gathertvsTy t
-gathertvsExp (RWCLiteral t _)   = gathertvsTy t
-gathertvsExp (RWCCase t e alts) = do tvs_t    <- gathertvsTy t
-                                     tvs_e    <- gathertvsExp e
-                                     tvs_alts <- liftM concat (mapM gathertvsAlt alts)
-                                     return (tvs_t++tvs_e++tvs_alts)
+initPat :: RWCPat -> TCM RWCPat
+initPat (RWCPatCon i ps_) = do ps <- mapM initPat ps_
+                               return (RWCPatCon i ps)
+initPat (RWCPatLiteral l) = return (RWCPatLiteral l)
+initPat (RWCPatVar _ n)   = do tv <- freshv
+                               return (RWCPatVar (embed $ RWCTyVar tv) n)
 
-gathertvsAlt (RWCAlt b) = do (p,e) <- unbind b
-                             tvs_p <- gathertvsPat p
-                             tvs_e <- gathertvsExp e
-                             return (tvs_p++tvs_e)
+initAlt :: RWCAlt -> TCM RWCAlt
+initAlt (RWCAlt b) = do (p_,e_) <- unbind b
+                        p       <- initPat p_
+                        e       <- initExp e_
+                        return (RWCAlt (bind p e))
 
-gathertvsPat (RWCPatVar (Embed t) _) = gathertvsTy t
-gathertvsPat (RWCPatCon _ pats)      = liftM concat (mapM gathertvsPat pats)
-gathertvsPat (RWCPatLiteral _)       = return []
+initExp :: RWCExp -> TCM RWCExp
+initExp (RWCApp _ e1_ e2_)   = do e1 <- initExp e1_
+                                  e2 <- initExp e2_
+                                  tv <- freshv
+                                  return (RWCApp (RWCTyVar tv) e1 e2)
+initExp (RWCLam _ b)         = do (x,e_) <- unbind b
+                                  e      <- initExp e_
+                                  tv     <- freshv
+                                  return (RWCLam (RWCTyVar tv) (bind x e))
+initExp (RWCVar _ n)         = do tv <- freshv
+                                  return (RWCVar (RWCTyVar tv) n)
+initExp (RWCCon _ n)         = do tv <- freshv
+                                  return (RWCCon (RWCTyVar tv) n)
+initExp (RWCLiteral _ l)     = do tv <- freshv
+                                  return (RWCLiteral (RWCTyVar tv) l)
+initExp (RWCCase _ e_ alts_) = do e    <- initExp e_
+                                  alts <- mapM initAlt alts_
+                                  tv   <- freshv
+                                  return (RWCCase (RWCTyVar tv) e alts)
 
-initTySub :: RWCProg -> TCM ()
-initTySub p = do ds  <- untrec (defns p)
-                 sub <- liftM concat (mapM gathertvs ds)
-                 put sub
+initDefn :: RWCDefn -> TCM (RWCDefn,Assump)
+initDefn (RWCDefn n (Embed b)) = do (tvs,(t,e)) <- unbind b
+                                    e'          <- initExp e
+                                    let a       =  (n,setbind tvs t)
+                                    return (RWCDefn n (Embed (setbind tvs (t,e'))),a)
+
+initDataDecl :: RWCData -> TCM [CAssump]
+initDataDecl _ = return []
+
+arr :: RWCTy -> RWCTy -> RWCTy
+arr t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2
 
 typeOf (RWCApp t _ _)   = t
 typeOf (RWCLam t _)     = t
@@ -65,45 +96,77 @@ typeOf (RWCCon t _)     = t
 typeOf (RWCLiteral t _) = t
 typeOf (RWCCase t _ _)  = t
 
-unify _ _ = return ()
+(@@) :: TySub -> TySub -> TySub
+s1@@s2 = [(u,substs s1 t) | (u,t) <- s2] ++ s1
 
-freshav = undefined
+isFlex :: Name RWCTy -> Bool
+isFlex = (=='?') . head . name2String
 
-askvarty = undefined
-askconty = undefined
+varBind :: Monad m => Name RWCTy -> RWCTy -> m TySub
+varBind u t | t `aeq` RWCTyVar u = return []
+            | u `elem` fv t      = fail $ "occurs check fails: " ++ show u ++ ", " ++ show t
+            | otherwise          = return [(u,t)]
+
+mgu :: Monad m => RWCTy -> RWCTy -> m TySub
+mgu (RWCTyApp tl tr) (RWCTyApp tl' tr')                = do s1 <- mgu tl tl'
+                                                            s2 <- mgu tr tr'
+                                                            return (s2@@s1)
+mgu (RWCTyVar u) t | isFlex u                          = varBind u t
+mgu t (RWCTyVar u) | isFlex u                          = varBind u t
+mgu (RWCTyCon c1) (RWCTyCon c2) | c1 == c2             = return []
+mgu (RWCTyVar v) (RWCTyVar u) | not (isFlex v) && v==u = return []
+mgu t1 t2                                              = fail $ "types do not unify: " ++ show t1 ++ ", " ++ show t2
+
+unify :: RWCTy -> RWCTy -> TCM ()
+unify t1 t2 = do s <- getTySub
+                 u <- mgu (substs s t1) (substs s t2)
+                 updTySub (u@@)
+
+inst :: [Name RWCTy] -> RWCTy -> TCM RWCTy
+inst tvs t = do sub <- mapM (\ tv -> freshv >>= \ v -> return (tv,RWCTyVar v)) tvs
+                return (substs sub t)
 
 tcExp :: RWCExp -> TCM ()
-tcExp (RWCApp t e1 e2) = do tcExp e1
-                            tcExp e2
-                            unify (typeOf e1)
-                                  (RWCTyApp (RWCTyApp (RWCTyCon "(->)") (typeOf e2)) t)
-tcExp (RWCLam t b)     = do (v,e) <- unbind b
-                            t_    <- freshav
-                            unify t 
-                                  (RWCTyApp (RWCTyApp (RWCTyCon "(->)") (typeOf e)) t_)
-tcExp (RWCVar t n)     = do mtn <- askvarty n
-                            case mtn of
-                              Nothing -> return ()
-                              Just tn -> unify t n
-tcExp (RWCCon t n)     = do tn <- askconty n
-                            unify t n
---tcExp (RWCLiteral t n) = ...
---tcExp (RWCCase 
---tcExp e = return ()
+tcExp (RWCApp t e1 e2)   = do tcExp e1
+                              tcExp e2
+                              unify (typeOf e1) (typeOf e2 `arr` t)
+tcExp (RWCLam t b)       = do (x,e) <- unbind b
+                              tv    <- freshv
+                              localAssumps ((x,setbind [] (RWCTyVar tv)):) (tcExp e)
+                              unify t (RWCTyVar tv `arr` typeOf e)
+tcExp (RWCVar t v)       = do as      <- askAssumps
+                              let mpt =  lookup v as
+                              case mpt of
+                                Nothing -> return ()
+                                Just b  -> do (tvs,ta_) <- unbind b
+                                              ta        <- inst tvs ta_
+                                              unify t ta
+tcExp (RWCCon t i)       = return () -- FIXME
+tcExp (RWCLiteral t l)   = case l of
+                             RWCLitInteger _ -> unify t (RWCTyCon "Integer")
+                             RWCLitFloat _   -> unify t (RWCTyCon "Float")
+                             RWCLitChar _    -> unify t (RWCTyCon "Char")
+tcExp (RWCCase t e alts) = return () -- FIXME
 
 tcDefn :: RWCDefn -> TCM ()
 tcDefn (RWCDefn n (Embed b)) = do (tvs,(t,e)) <- unbind b
                                   tcExp e
-                                  unify t (typeOf e)
+                                  trace (show t) $ trace (show (typeOf e)) $ unify t (typeOf e)
 
-tc :: RWCProg -> TCM ()
-tc p = do initTySub p
-          ds <- untrec (defns p)
-          mapM_ tcDefn ds
+tc :: RWCProg -> TCM RWCProg
+tc p = do ds       <- untrec (defns p)
+          (ds',as) <- liftM unzip (mapM initDefn ds)
+          cas      <- liftM concat (mapM initDataDecl (dataDecls p))
+          localAssumps (as++) (localCAssumps (cas++) (mapM_ tcDefn ds'))
+          s        <- getTySub
+          let ds'' =  substs s ds'
+          return (p { defns = trec ds'' })
 
 ptc :: FilePath -> IO ()
-ptc n = do guts        <- readFile n
+ptc n = do ppp n
+           guts        <- readFile n
            let res     =  runParser (whiteSpace >> prog >>= \ p -> whiteSpace >> eof >> return p) 0 n guts
            case res of
              Left err  -> print err
-             Right ast -> print (runIdentity $ runStateT (runFreshMT $ tc ast) [])
+             Right ast -> let (p,s) = runIdentity (runStateT (runReaderT (runFreshMT $ tc ast) (TCEnv [] [])) (TCState 0 []))
+                          in  print (runFreshM (ppProg p))

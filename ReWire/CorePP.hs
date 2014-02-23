@@ -75,10 +75,12 @@ commaSep [x]    = x
 commaSep (x:xs) = x <> char ',' <> commaSep xs
 
 ppDefn (RWCDefn n (Embed b)) = do (tvs,(ty,e)) <- unbind b
+                                  let tvs_p    =  map ppName tvs
                                   ty_p         <- ppTy ty
                                   e_p          <- ppExpr e
                                   return (foldr ($+$) empty
                                                 [text "def" <+> ppName n,
+                                                 nest 4 (char '<' <> commaSep tvs_p <> char '>'),
                                                  nest 4 (char '<' <> ty_p <> char '>'),
                                                  text "is",
                                                  nest 4 e_p,

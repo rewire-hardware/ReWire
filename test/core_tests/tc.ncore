@@ -1,0 +1,24 @@
+x :: Integer
+is
+  3
+end
+
+mkpair :: a -> (a,a)
+is
+  \ x -> (x,x)
+end
+
+y :: (Integer,Integer)
+is
+  mkpair x
+end
+
+id :: a -> a
+is
+  \ x -> x
+end
+
+const :: a -> b -> a
+is
+  \ x -> \ y -> id x
+end

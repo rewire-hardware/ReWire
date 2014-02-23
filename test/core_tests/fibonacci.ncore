@@ -1,9 +1,9 @@
-main :: React Bit Int a
+main :: React Bit Integer a
 is
   fib 0 1
 end
 
-fib :: Int -> Int -> React Bit Int a
+fib :: Integer -> Integer -> React Bit Integer a
 is
   \ n ->
     \ m ->

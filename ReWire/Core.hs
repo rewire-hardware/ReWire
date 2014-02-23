@@ -95,5 +95,8 @@ instance Subst RWCTy RWCAlt where
 
 instance Subst RWCTy RWCPat where
   isvar _ = Nothing
+  
+instance Subst RWCTy RWCDefn where
+  isvar _ = Nothing
 
 $(derive [''RWCExp,''RWCAlt,''RWCPat,''RWCTy,''RWCLit,''RWCData,''RWCDataCon,''RWCDefn{-,''RWCProg-}])
