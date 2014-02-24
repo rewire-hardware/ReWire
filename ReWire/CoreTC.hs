@@ -30,6 +30,7 @@ type TCM = FreshMT (ReaderT TCEnv (StateT TCState Identity))
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
 askAssumps = ask >>= \ tce -> return (as tce)
 localCAssumps f = local (\ tce -> tce { cas = f (cas tce) })
+askCAssumps = ask >>= \ tce -> return (cas tce)
 getVarCounter = get >>= return . varCounter
 putVarCounter i = get >>= \ s -> put (s { varCounter = i })
 getTySub = get >>= return . tySub
@@ -83,8 +84,13 @@ initDefn (RWCDefn n (Embed b)) = do (tvs,(t,e)) <- unbind b
                                     let a       =  (n,setbind tvs t)
                                     return (RWCDefn n (Embed (setbind tvs (t,e'))),a)
 
+initDataCon :: [Name RWCTy] -> RWCTy -> RWCDataCon -> CAssump
+initDataCon tvs rt (RWCDataCon i ts) = (i,setbind tvs (foldr arr rt ts))
+
 initDataDecl :: RWCData -> TCM [CAssump]
-initDataDecl _ = return []
+initDataDecl (RWCData i b) = do (tvs,dcs) <- unbind b
+                                let rt    =  foldl RWCTyApp (RWCTyCon i) (map RWCTyVar tvs)
+                                return $ map (initDataCon tvs rt) dcs
 
 arr :: RWCTy -> RWCTy -> RWCTy
 arr t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2
@@ -109,7 +115,7 @@ varBind u t | t `aeq` RWCTyVar u = return []
 
 mgu :: Monad m => RWCTy -> RWCTy -> m TySub
 mgu (RWCTyApp tl tr) (RWCTyApp tl' tr')                = do s1 <- mgu tl tl'
-                                                            s2 <- mgu tr tr'
+                                                            s2 <- mgu (substs s1 tr) (substs s1 tr')
                                                             return (s2@@s1)
 mgu (RWCTyVar u) t | isFlex u                          = varBind u t
 mgu t (RWCTyVar u) | isFlex u                          = varBind u t
@@ -141,7 +147,13 @@ tcExp (RWCVar t v)       = do as      <- askAssumps
                                 Just b  -> do (tvs,ta_) <- unbind b
                                               ta        <- inst tvs ta_
                                               unify t ta
-tcExp (RWCCon t i)       = return () -- FIXME
+tcExp (RWCCon t i)       = do cas     <- askCAssumps
+                              let mpt =  lookup i cas
+                              case mpt of
+                                Nothing -> fail $ "Unknown constructor: " ++ i
+                                Just b  -> do (tvs,ta_) <- unbind b
+                                              ta        <- inst tvs ta_
+                                              unify t ta
 tcExp (RWCLiteral t l)   = case l of
                              RWCLitInteger _ -> unify t (RWCTyCon "Integer")
                              RWCLitFloat _   -> unify t (RWCTyCon "Float")

@@ -1,16 +1,18 @@
+data Pair a is Pair a a end
+
 x :: Integer
 is
   3
 end
 
-mkpair :: a -> (a,a)
+mkpair :: a -> a -> Pair a
 is
-  \ x -> (x,x)
+  Pair
 end
 
-y :: (Integer,Integer)
+y :: Pair Integer
 is
-  mkpair x
+  mkpair x x
 end
 
 id :: a -> a
