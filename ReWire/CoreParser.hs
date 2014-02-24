@@ -1,6 +1,4 @@
 module ReWire.CoreParser where
--- FIXME throughout: at any point where "identifier" occurs, we probably want
--- to reject either Constructors or variables.
 
 import ReWire.Core
 import Text.Parsec
@@ -168,6 +166,18 @@ apat = do i <- varid
             []  -> return (RWCPatCon "()" [])
             [p] -> return p
             _   -> return (RWCPatCon ("(" ++ replicate (length ps - 1) ',' ++ ")") ps)
+parse :: String -> Either String RWCProg
+parse = parsewithname "<no filename>"
+
+parsewithname :: FilePath -> String -> Either String RWCProg
+parsewithname filename guts =
+  case runParser (whiteSpace >> prog) () filename guts of
+    Left e  -> Left (show e)
+    Right p -> Right p
+            
+parsefile :: FilePath -> IO (Either String RWCProg)
+parsefile fname = do guts <- readFile fname
+                     return (parsewithname fname guts)
 
 {-
 {-

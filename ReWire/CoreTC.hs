@@ -1,18 +1,17 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
-module ReWire.CoreTC where
+module ReWire.CoreTC (typecheck) where
 
 import ReWire.Core
-import ReWire.CorePP (ppp,ppProg)
 import ReWire.CoreParser
 import Text.Parsec (runParser,eof)
 import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Identity
+import Control.Monad.Error
 import Unbound.LocallyNameless
 import Unbound.LocallyNameless.Types (SetPlusBind)
 import Data.List (nub)
-import Debug.Trace (trace)
 
 -- Type checker for core.
 
@@ -25,7 +24,7 @@ data TCState = TCState { varCounter :: Int,
 type Assump  = (Name RWCExp,SetPlusBind [Name RWCTy] RWCTy)
 type CAssump = (Identifier,SetPlusBind [Name RWCTy] RWCTy)
 
-type TCM = FreshMT (ReaderT TCEnv (StateT TCState Identity))
+type TCM = FreshMT (ReaderT TCEnv (StateT TCState (ErrorT String Identity)))
 
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
 askAssumps = ask >>= \ tce -> return (as tce)
@@ -178,7 +177,7 @@ tcExp (RWCLam t b)       = do (x,e) <- unbind b
 tcExp (RWCVar t v)       = do as      <- askAssumps
                               let mpt =  lookup v as
                               case mpt of
-                                Nothing -> return ()
+                                Nothing -> fail $ "Unknown variable: " ++ show v
                                 Just b  -> do (tvs,ta_) <- unbind b
                                               ta        <- inst tvs ta_
                                               unify t ta
@@ -211,11 +210,5 @@ tc p = do ds       <- untrec (defns p)
           s        <- getTySub
           return (p { defns = trec ds'' })
 
-ptc :: FilePath -> IO ()
-ptc n = do ppp n
-           guts        <- readFile n
-           let res     =  runParser (whiteSpace >> prog >>= \ p -> whiteSpace >> eof >> return p) 0 n guts
-           case res of
-             Left err  -> print err
-             Right ast -> let (p,s) = runIdentity (runStateT (runReaderT (runFreshMT $ tc ast) (TCEnv [] [])) (TCState 0 []))
-                          in  print (runFreshM (ppProg p))
+typecheck :: RWCProg -> Either String RWCProg
+typecheck p = fmap fst $ runIdentity (runErrorT (runStateT (runReaderT (runFreshMT (tc p)) (TCEnv [] [])) (TCState 0 [])))
