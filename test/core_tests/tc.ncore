@@ -1,5 +1,7 @@
 data Pair a is Pair a a end
 
+data Maybe a is Nothing | Just a end
+
 x :: Integer
 is
   3
@@ -23,4 +25,36 @@ end
 const :: a -> b -> a
 is
   \ x -> \ y -> id x
+end
+
+fst :: Pair a -> a
+is
+  \ p -> case p of
+         { Pair x y -> x
+         }
+end
+
+flip :: Pair a -> Pair a
+is
+  \ p -> case p of
+         { Pair x y -> Pair y x
+         }
+end
+
+mp :: Maybe a -> Maybe (Pair a)
+is
+  \ m -> case m of
+         { Just x  -> Just (Pair x x)
+         ; Nothing -> Nothing
+         }
+end
+
+mtwo :: Maybe (Pair Integer)
+is
+  mp (Just 3)
+end
+
+mtwo :: Maybe (Pair Integer)
+is
+  mp Nothing
 end

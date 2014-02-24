@@ -132,6 +132,41 @@ inst :: [Name RWCTy] -> RWCTy -> TCM RWCTy
 inst tvs t = do sub <- mapM (\ tv -> freshv >>= \ v -> return (tv,RWCTyVar v)) tvs
                 return (substs sub t)
 
+patassumps :: RWCPat -> [Assump]
+patassumps (RWCPatCon i ps)        = concatMap patassumps ps
+patassumps (RWCPatLiteral _)       = []
+patassumps (RWCPatVar (Embed t) n) = [(n,setbind [] t)]
+
+flattenArrow :: RWCTy -> [RWCTy]
+flattenArrow (RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2) = t1 : flattenArrow t2
+flattenArrow t                                             = [t]
+
+tcPat :: RWCTy -> RWCPat -> TCM ()
+tcPat t (RWCPatLiteral l)         = case l of
+                                      RWCLitInteger _ -> unify t (RWCTyCon "Integer")
+                                      RWCLitFloat _   -> unify t (RWCTyCon "Float")
+                                      RWCLitChar _    -> unify t (RWCTyCon "Char")
+tcPat t (RWCPatVar (Embed tv) _)  = unify t tv
+tcPat t (RWCPatCon i ps)          = do cas     <- askCAssumps
+                                       let mpt =  lookup i cas
+                                       case mpt of
+                                         Nothing -> fail $ "Unknown constructor: " ++ i
+                                         Just b  -> do (tvs,ta_) <- unbind b
+                                                       ta        <- inst tvs ta_
+                                                       let ts    =  flattenArrow ta
+                                                           targs =  init ts
+                                                           tres  =  last ts
+                                                       if length ps /= length targs
+                                                          then fail "Pattern is not applied to enough arguments"
+                                                          else do zipWithM_ tcPat targs ps
+                                                                  unify t tres
+
+tcAlt :: RWCTy -> RWCTy -> RWCAlt -> TCM ()
+tcAlt tres tscrut (RWCAlt b) = do (p,e) <- unbind b
+                                  tcPat tscrut p
+                                  localAssumps (patassumps p++) (tcExp e)
+                                  unify tres (typeOf e)
+
 tcExp :: RWCExp -> TCM ()
 tcExp (RWCApp t e1 e2)   = do tcExp e1
                               tcExp e2
@@ -158,7 +193,8 @@ tcExp (RWCLiteral t l)   = case l of
                              RWCLitInteger _ -> unify t (RWCTyCon "Integer")
                              RWCLitFloat _   -> unify t (RWCTyCon "Float")
                              RWCLitChar _    -> unify t (RWCTyCon "Char")
-tcExp (RWCCase t e alts) = return () -- FIXME
+tcExp (RWCCase t e alts) = do tcExp e
+                              mapM_ (tcAlt t (typeOf e)) alts
 
 tcDefn :: RWCDefn -> TCM ()
 tcDefn (RWCDefn n (Embed b)) = do (tvs,(t,e)) <- unbind b
