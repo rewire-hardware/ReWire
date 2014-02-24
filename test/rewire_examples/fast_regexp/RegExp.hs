@@ -13,9 +13,17 @@ module RegExp where
 import Control.Monad.Resumption.Reactive
 import Control.Monad.State
 import Control.Monad.Identity
+import Prelude ()
 
 
 {- Here we define the abstract syntax for regular expressions -}
+
+type Output = Maybe Bool
+type FFVal  = Output
+type Input input = (Output,input)
+
+data Machine input = Machine {deMachine :: (Input input) -> ReacT (Input input) 
+                                              Output Identity (Output,Machine input)}
 
 data RegExp a =   Bar   (RegExp a) (RegExp a)
                 | Star  (RegExp a)
@@ -24,74 +32,68 @@ data RegExp a =   Bar   (RegExp a) (RegExp a)
                 | Atom a
 
 
-type Output = Maybe Bool
-type Input input = (Bool,input)
+compMachine :: Eq a => RegExp a -> Machine a
+compMachine (Bar r1 r2)  = (compMachine r1) <|> (compMachine r2)
+compMachine (Star r1)    = star (compMachine r1)
+compMachine (Cons r1 r2) = rseq (compMachine r1) (compMachine r2)
+compMachine (Paren r1)   = compMachine r1
+compMachine (Atom a)     = match a Nothing -- The flipflop is primed with Nothing
 
-type Machine input = ReacT (Input input) Output Identity ()
-type WMachine input = (Output,input) -> Machine input
 
+runMachine :: (Input input) -> Machine input -> ReacT (Input input) Output Identity (Output,Machine input)
+runMachine input m1 = ReacT $ do
+                                (output, m1') <- stepMachine input m1
+                                return $ Right (output, \input' -> runMachine input' m1')
 
-match :: Eq a => a -> Machine a
-match a = ReacT (return (Right (Nothing, match' Nothing)))
-    where
-      match' prev (ff_input,i) = case prev of 
-                                        Nothing    -> ReacT 
-                                                            (return 
-                                                              (Right 
-                                                                (Nothing, match' (Just ff_input))))
-                                        Just prev' -> ReacT 
-                                                            (return 
-                                                              (Right 
-                                                                  (Just ((i == a) && prev'), match' (Just ff_input))))
+stepMachine :: Input input -> Machine input -> Identity (Output,Machine input)
+stepMachine input m = case ((deReacT ((deMachine m) input))) of
+                                  Identity (Left v) -> Identity v
+                              
 
+match :: Eq a => a -> (FFVal -> Machine a)
+match a = \flipflop -> Machine (\(prev_output, char) -> case flipflop of
+                                                              Nothing -> return (Nothing,match a prev_output)
+                                                              Just ff -> return (Just ((a == char) && ff),(match a) prev_output))
 
 (<|>) :: Eq a => Machine a -> Machine a -> Machine a 
-r1 <|> r2 = ReacT $ do
-                      Right (r1_result,r1_resume) <- deReacT r1
-                      Right (r2_result,r2_resume) <- deReacT r2
-                      case (r1_result,r2_result) of
-                                (Nothing,Nothing)    -> (return
-                                                                (Right
-                                                                   (Nothing, \x -> (r1_resume x) <|> (r2_resume x))))
-                                (Just r1r,Nothing)   -> (return 
-                                                                (Right 
-                                                                   (Nothing, barcont (r1_result,r1_resume) r2_resume)))
-                                (Nothing,Just r2r)   -> (return
-                                                                (Right
-                                                                   (Nothing, barcont (r2_result,r2_resume) r1_resume)))
-                                (Just r1r, Just r2r) -> (return
-                                                                (Right
-                                                                  (Just (r1r || r2r), \x -> (r1_resume x) <|> (r2_resume x))))
-    where
-      barcont h@(Just held_res,held_cont) resume input = ReacT $ do
-                                                             Right (res, cont) <- deReacT $ resume input
-                                                             case res of
-                                                                  Nothing -> (return
-                                                                                (Right
-                                                                                  (Nothing, barcont h cont)))
-                                                                  Just res' -> (return
-                                                                                (Right
-                                                                                  (Just (res' || held_res), \x -> (held_cont x) <|> (cont x))))
+m1 <|> m2 = Machine (\input -> case fst input of
+                                    Nothing    -> return (Nothing, m1 <|> m2)
+                                    Just _     -> ReacT $ do
+                                                            (output1,resume1) <- stepMachine input m1
+                                                            (output2,resume2) <- stepMachine input m2
+                                                            case (output1,output2) of
+                                                                   (Nothing,Nothing)  -> return $ Left (Nothing, resume1 <|> resume2)
+                                                                   (Nothing,_)        -> return $ Left (Nothing, resume1 <|> m2)
+                                                                   (_,Nothing)        -> return $ Left (Nothing, m1 <|> resume2)
+                                                                   (Just r1, Just r2) -> return $ Left (Just (r1 || r2), resume1 <|> resume2))
+                                                                   
+        
 
+rseq :: Eq a => Machine a -> Machine a -> Machine a
+rseq m1 m2 = Machine (\input -> case fst input of
+                                    Nothing -> return (Nothing, rseq m1 m2)
+                                    Just _  -> ReacT $ do
+                                                          (output1,resume1) <- stepMachine input m1
+                                                          case output1 of
+                                                                  Nothing -> return $ Left (Nothing, rseq resume1 m2)
+                                                                  Just _  -> do
+                                                                               (output2, resume2) <- stepMachine (output1,snd input) m2 
+                                                                               case output2 of
+                                                                                      Nothing  -> return $ Left (Nothing, rseq m1 resume2)
+                                                                                      Just _   -> return $ Left (output2, rseq resume1 resume2))
 
-seq :: Eq a => Machine a -> Machine a -> Machine a
-seq m1 m2 = ReacT $ do
-                      Right (r1_result, r1_resume) <- deReacT m1
-                      Right (_, r2_resume) <- deReacT m2 
-                      case r1_result of
-                          Just r1  -> undefined
-  where
-    runLeft react = ReacT $ do
-                              Right (result,resume) <- deReacT react
-                              case result of
-                                    Nothing -> (return
-                                                 (Right
-                                                  (Nothing, \x -> runLeft (resume x))))
-                                    Just res -> do
-                                                  Right (rresult, rresume) <- deReacT m2
-                                                  case rresult of
-                                                        Nothing -> runRight (result,resume)
-    runRight m@(mresult,mresume) react input = undefined
+star :: Eq a => Machine a -> Machine a
+star m1 = star' (Just False) m1
+
+star' :: Eq a => Output -> Machine a -> Machine a
+star' output m1 = Machine (\input -> case fst input of
+                                            Nothing -> return (Nothing, star' output m1)
+                                            Just inval  -> ReacT $ do
+                                                                    (inner_output, inner_resume) <- case output of
+                                                                                                           Nothing     -> stepMachine input m1
+                                                                                                           Just outval -> stepMachine (Just (inval || outval), snd input) m1
+                                                                    return $ Left (Nothing, star' inner_output inner_resume))
+                                                                                            
                                                 
                                                
     
