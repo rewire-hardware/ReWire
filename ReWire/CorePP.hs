@@ -1,6 +1,6 @@
 {-# OPTIONS -fwarn-incomplete-patterns #-}
 
-module ReWire.CorePP where
+module ReWire.CorePP (pp) where
 
 import ReWire.Core
 import ReWire.CoreParser hiding (parens,commaSep,braces,integer,float)
@@ -95,9 +95,14 @@ ppProg p = do dd_p <- ppDataDecls (dataDecls p)
               ds_p <- ppDefns (defns p)
               return (dd_p $+$ ds_p)
 
+pp :: RWCProg -> Doc
+pp = runFreshM . ppProg
+
+{-
 ppp :: FilePath -> IO ()
 ppp n = do guts        <- readFile n
            let res     =  runParser (whiteSpace >> prog >>= \ p -> whiteSpace >> eof >> return p) 0 n guts
            case res of
              Left err  -> print err
              Right ast -> print (runFreshM (ppProg ast))
+-}

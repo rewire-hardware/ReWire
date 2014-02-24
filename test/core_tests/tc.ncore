@@ -1,3 +1,5 @@
+data Integer is end
+
 data Pair a is Pair a a end
 
 data Maybe a is Nothing | Just a end
@@ -57,4 +59,9 @@ end
 mnothing :: Maybe (Pair Integer)
 is
   mp Nothing
+end
+
+bottom :: a
+is
+  bottom
 end
