@@ -34,7 +34,7 @@ is
          }
 end
 
-flip :: Pair a -> Pair a
+swap :: Pair a -> Pair a
 is
   \ p -> case p of
          { Pair x y -> Pair y x
@@ -54,7 +54,7 @@ is
   mp (Just 3)
 end
 
-mtwo :: Maybe (Pair Integer)
+mnothing :: Maybe (Pair Integer)
 is
   mp Nothing
 end

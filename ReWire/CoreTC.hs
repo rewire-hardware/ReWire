@@ -16,7 +16,7 @@ import Debug.Trace (trace)
 
 -- Type checker for core.
 
-type TySub   = [(Name RWCTy,RWCTy)]
+type TySub = [(Name RWCTy,RWCTy)]
 data TCEnv = TCEnv { as  :: [Assump],
                      cas :: [CAssump] } deriving Show
 data TCState = TCState { varCounter :: Int,
@@ -196,18 +196,19 @@ tcExp (RWCLiteral t l)   = case l of
 tcExp (RWCCase t e alts) = do tcExp e
                               mapM_ (tcAlt t (typeOf e)) alts
 
-tcDefn :: RWCDefn -> TCM ()
+tcDefn :: RWCDefn -> TCM RWCDefn
 tcDefn (RWCDefn n (Embed b)) = do (tvs,(t,e)) <- unbind b
                                   tcExp e
-                                  trace (show t) $ trace (show (typeOf e)) $ unify t (typeOf e)
+                                  unify t (typeOf e)
+                                  s           <- getTySub
+                                  return (RWCDefn n (embed $ setbind tvs (t,substs s e)))
 
 tc :: RWCProg -> TCM RWCProg
 tc p = do ds       <- untrec (defns p)
           (ds',as) <- liftM unzip (mapM initDefn ds)
           cas      <- liftM concat (mapM initDataDecl (dataDecls p))
-          localAssumps (as++) (localCAssumps (cas++) (mapM_ tcDefn ds'))
+          ds''     <- localAssumps (as++) (localCAssumps (cas++) (mapM tcDefn ds'))
           s        <- getTySub
-          let ds'' =  substs s ds'
           return (p { defns = trec ds'' })
 
 ptc :: FilePath -> IO ()
