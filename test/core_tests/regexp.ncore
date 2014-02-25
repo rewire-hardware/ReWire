@@ -1,0 +1,169 @@
+data Maybe a is Nothing | Just a end
+data Bool is True | False end
+data Either a b is Left a | Right b end
+data Identity a is Identity a end
+data ReacT input output a is ReacT (Identity (Either a (Pair output (input -> ReacT input output a)))) end
+data Pair a b is Pair a b end
+data Char is Char Bool Bool Bool Bool Bool Bool Bool Bool end
+
+data Machine input is Machine ((Pair (Maybe Bool) input) -> ReacT ((Pair (Maybe Bool) input)) (Maybe Bool) (Pair (Maybe Bool) (Machine input))) end
+
+data RegExp a is Bar (RegExp a) (RegExp a)
+                 | Star (RegExp a)
+                 | Cons (RegExp a) (RegExp a)
+                 | Paren (RegExp a)
+                 | Atom a
+              end
+
+deMachine :: Machine input -> ((Pair (Maybe Bool) input) -> ReacT ((Pair (Maybe Bool) input)) (Maybe Bool) (Pair (Maybe Bool) (Machine input)))
+is
+  \mm -> case mm of
+          {
+            Machine m -> m
+          }
+end
+
+
+runIdentity :: Identity a -> a
+is
+  \a -> case a of
+          {
+            Identity a -> a
+          }
+end
+
+returnI :: a -> Identity a
+is
+  \a -> Identity a
+end
+
+bindI :: Identity a -> (a -> Identity a) -> Identity a
+is
+  \i -> \r -> case i of
+                {
+                  Identity a -> r a
+                }
+end
+
+
+deReacT :: ReacT input output a -> (Identity (Either a (Pair output (input -> ReacT input output a))))
+is
+  \r -> case r of
+          {
+            ReacT a -> a
+          }
+end
+
+returnRe :: a -> ReacT input output a
+is
+  \a -> ReacT (Identity (Left a))
+end
+
+fst :: Pair a b -> a
+is
+  \p -> case p of
+         {
+           Pair a b -> a
+         }
+end
+
+snd :: Pair a b -> b
+is
+  \p -> case p of
+         {
+           Pair a b -> b
+         }
+end
+
+beq :: Bool -> Bool -> Bool
+is
+  \ba -> \bb -> case (Pair ba bb) of
+                  {
+                      Pair True  True  -> True
+                    ; Pair False False -> True 
+                    ; x                -> False
+                  }
+end
+
+and :: Bool -> Bool -> Bool
+is
+  \ba -> \bb -> case (Pair ba bb) of
+                  {
+                    Pair True True -> True
+                    ; x            -> False
+                  }
+end
+
+or :: Bool -> Bool -> Bool
+is
+  \ba -> \bb -> case (Pair ba bb) of
+                  {
+                    Pair True x -> True
+                    ; Pair x True -> True
+                    ; x           -> False
+                  }
+end
+
+ceq :: Char -> Char -> Bool
+is
+  \ca -> \cb -> case (Pair ca cb) of
+                 {
+                  Pair (Char ca cb cc cd ce cf cg ch) (Char da db dc dd de df dg dh) -> and (beq ca da)  (and (beq cb db) (and (beq cc dc)
+                                                                                        (and (beq cd dd) (and (beq ce de) (and (beq cf df)
+                                                                                        (and (beq cg dg) (beq ch dh)))))))
+                 }
+end
+
+
+runMachine :: Machine input -> ((Pair (Maybe Bool) input)) -> ReacT ((Pair (Maybe Bool) input)) (Maybe Bool) (Pair (Maybe Bool) (Machine input))
+is
+  \mi -> \input -> ReacT (bindI (stepMachine input mi) (\p -> case p of                                                                                                                                     
+                                                                  {
+                                                                    (Pair output mip) -> returnI (Right (Pair output (\inputp -> runMachine mip inputp)))
+                                                                  }))
+
+end
+
+
+stepMachine :: (Pair (Maybe Bool) input) -> Machine input -> Identity (Pair (Maybe Bool) (Machine input))
+is
+  \input -> \m -> case ((deReacT ((deMachine m) input))) of 
+                        {
+                          Identity (Left v) -> Identity v
+                        }
+end
+
+match :: Char -> ((Maybe Bool) -> Machine Char)
+is
+  \a -> \flipflop -> Machine (\p -> case p of 
+                                     {
+                                       (Pair prevoutput char) -> (case flipflop of
+                                                                 {
+                                                                   Nothing -> returnRe (Pair Nothing (match a prevoutput))
+                                                                   ; Just ff -> returnRe (Pair (Just (and (ceq a char) ff)) ((match a) prevoutput))
+                                                                 })
+                                     })
+end
+
+bar :: Machine Char -> Machine Char -> Machine Char
+is
+  \mi -> \mii -> Machine (\input -> case fst input of
+                                    {
+                                      Nothing -> returnRe (Pair Nothing (bar mi mii))
+                                      ; Just zd -> ReacT (bindI (stepMachine input mi) (\p -> case p of
+                                                                                            {
+                                                                                              Pair outputi resumei -> bindI (stepMachine input mii) (\pp -> case pp of
+                                                                                                                                                                 {
+                                                                                                                                                                   Pair outputii resumeii -> case (Pair outputi outputii) of
+                                                                                                                                                                                                  {
+                                                                                                                                                                                                    (Pair Nothing Nothing) -> returnI (Left (Pair Nothing (bar resumei resumeii)))
+                                                                                                                                                                                                    ; (Pair Nothing zd)          -> returnI (Left (Pair Nothing (bar resumei mii)))
+                                                                                                                                                                                                    ; (Pair zd Nothing)          -> returnI (Left (Pair Nothing (bar mi resumeii)))
+                                                                                                                                                                                                    ; (Pair (Just ri) (Just rii)) -> returnI (Left (Pair (Just (or ri rii)) (bar resumei resumeii)))
+                                                                                                                                                                                                  }
+                                                                                                                                                                 })
+                                                                                              
+                                                                                            }))
+                                      })
+end
+

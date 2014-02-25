@@ -91,6 +91,7 @@ data RegExp a =   Bar   (RegExp a) (RegExp a)
 
 compMachine :: RegExp Char -> Machine Char
 compMachine b  = case b of 
+
                     (Bar r1 r2)  -> bar (compMachine r1) (compMachine r2)
                     (Star r1)    -> star (compMachine r1)
                     (Cons r1 r2) -> rseq (compMachine r1) (compMachine r2)
@@ -98,9 +99,8 @@ compMachine b  = case b of
                     (Atom a)     -> match a Nothing --Flipflop is primed with nothing
 
 runMachine :: Machine input -> ((Pair (Maybe Bool) input)) -> ReacT ((Pair (Maybe Bool) input)) (Maybe Bool) (Pair (Maybe Bool) (Machine input))
-runMachine m1 input = ReacT (
-                                bindI (stepMachine input m1) (\(Pair output m1') ->
-                                returnI (Right (Pair output (\input' -> runMachine m1' input')))))
+runMachine m1 input = ReacT (bindI (stepMachine input m1) (\p -> case p of 
+                                                                      (Pair output m1') -> returnI (Right (Pair output (\input' -> runMachine m1' input')))))
 
 stepMachine :: (Pair (Maybe Bool) input) -> Machine input -> Identity (Pair (Maybe Bool) (Machine input))
 stepMachine input m = case ((deReacT ((deMachine m) input))) of
