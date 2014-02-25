@@ -11,14 +11,14 @@ import Unbound.LocallyNameless hiding (empty)
 ppDataCon (RWCDataCon n ts) = do ts_p <- mapM ppTy ts
                                  return (text n <+> char '<' <> commaSep ts_p <> char '>')
 
-ppDataDecl (RWCData n b) = do (tvs,dcs) <- unbind b
-                              dcs_p     <- mapM ppDataCon dcs
-                              return (foldr ($+$) empty
-                                            [text "data" <+> text n,
-                                             nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
-                                             text "of",
-                                             nest 4 (foldr ($+$) empty dcs_p),
-                                             text "end"])
+ppDataDecl (RWCData n b) = lunbind b (\(tvs,dcs) ->
+                            do dcs_p     <- mapM ppDataCon dcs
+                               return (foldr ($+$) empty
+                                             [text "data" <+> text n,
+                                              nest 4 (char '<' <> hsep (map ppName tvs) <> char '>'),
+                                              text "of",
+                                              nest 4 (foldr ($+$) empty dcs_p),
+                                              text "end"]))
 
 ppDataDecls dds = do dds_p <- mapM ppDataDecl dds
                      return (foldr ($+$) empty dds_p)
@@ -33,10 +33,10 @@ ppPat (RWCPatVar (Embed t) n) = do t_p <- ppTy t
                                    return (ppName n <> char '<' <> t_p <> char '>')
 ppPat (RWCPatLiteral l)       = return (ppLiteral l)
 
-ppAlt (RWCAlt b) = do (p,eb) <- unbind b
-                      p_p    <- ppPat p
-                      eb_p   <- ppExpr eb
-                      return (char '<' <> p_p <> char '>' <+> eb_p)
+ppAlt (RWCAlt b) = lunbind b (\(p,eb) ->
+                    do p_p    <- ppPat p
+                       eb_p   <- ppExpr eb
+                       return (char '<' <> p_p <> char '>' <+> eb_p))
 
 ppExpr (RWCApp t e1 e2)   = do t_p  <- ppTy t
                                e1_p <- ppExpr e1
@@ -48,10 +48,10 @@ ppExpr (RWCCon t n)     = do t_p <- ppTy t
                              return (text n <> char '<' <> t_p <> char '>')
 ppExpr (RWCVar t n)     = do t_p <- ppTy t
                              return (ppName n <> char '<' <> t_p <> char '>')
-ppExpr (RWCLam t b)     = do t_p   <- ppTy t
-                             (n,e) <- unbind b
-                             e_p   <- ppExpr e
-                             return (braces (char '\\' <+> ppName n <+> text "->" <+> e_p) <> char '<' <> t_p <> char '>')
+ppExpr (RWCLam t b)     = lunbind b (\(n,e) ->
+                           do t_p   <- ppTy t
+                              e_p   <- ppExpr e
+                              return (braces (char '\\' <+> ppName n <+> text "->" <+> e_p) <> char '<' <> t_p <> char '>'))
 ppExpr (RWCCase t e alts) = do t_p    <- ppTy t
                                e_p    <- ppExpr e
                                alts_p <- mapM ppAlt alts
@@ -74,29 +74,29 @@ commaSep []     = empty
 commaSep [x]    = x
 commaSep (x:xs) = x <> char ',' <> commaSep xs
 
-ppDefn (RWCDefn n (Embed b)) = do (tvs,(ty,e)) <- unbind b
-                                  let tvs_p    =  map ppName tvs
-                                  ty_p         <- ppTy ty
-                                  e_p          <- ppExpr e
-                                  return (foldr ($+$) empty
-                                                [text "def" <+> ppName n,
-                                                 nest 4 (char '<' <> commaSep tvs_p <> char '>'),
-                                                 nest 4 (char '<' <> ty_p <> char '>'),
-                                                 text "is",
-                                                 nest 4 e_p,
-                                                 text "end"])
+ppDefn (RWCDefn n (Embed b)) = lunbind b (\(tvs,(ty,e)) ->
+                                do let tvs_p    =  map ppName tvs
+                                   ty_p         <- ppTy ty
+                                   e_p          <- ppExpr e
+                                   return (foldr ($+$) empty
+                                                 [text "def" <+> ppName n,
+                                                  nest 4 (char '<' <> commaSep tvs_p <> char '>'),
+                                                  nest 4 (char '<' <> ty_p <> char '>'),
+                                                  text "is",
+                                                  nest 4 e_p,
+                                                  text "end"]))
 
-ppDefns defns_ = do defns   <- untrec defns_
+ppDefns defns_ = do defns <- luntrec defns_
                     defns_p <- mapM ppDefn defns
                     return (foldr ($+$) empty defns_p)
 
-ppProg :: Fresh m => RWCProg -> m Doc
+ppProg :: LFresh m => RWCProg -> m Doc
 ppProg p = do dd_p <- ppDataDecls (dataDecls p)
               ds_p <- ppDefns (defns p)
               return (dd_p $+$ ds_p)
 
 pp :: RWCProg -> Doc
-pp = runFreshM . ppProg
+pp = runLFreshM . ppProg
 
 {-
 ppp :: FilePath -> IO ()

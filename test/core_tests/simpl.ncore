@@ -1,9 +1,13 @@
-x :: Int
+data Integer is end
+
+data Maybe a is Just a | Nothing end
+
+x :: Integer
 is
   (\ x -> x) 3
 end
 
-jabber :: Maybe Int -> Int
+jabber :: Maybe Integer -> Integer
 is
   \ x -> case x of
          { Nothing -> 0
@@ -11,12 +15,12 @@ is
          }
 end
 
-jub :: Int
+jub :: Integer
 is
   jabber Nothing
 end
 
-jerb :: Maybe Int -> Maybe Int -> Int
+jerb :: Maybe Integer -> Maybe Integer -> Integer
 is
   \ m ->
     \ x -> case x of
@@ -25,7 +29,7 @@ is
            }
 end
 
-jreb :: Int -> Int
+jreb :: Maybe Integer -> Integer
 is
   \ m ->
     (\ x -> case x of
