@@ -4,9 +4,8 @@ module ReWire.Eval where
 
 import Prelude hiding (sequence,mapM)
 import ReWire.Core
-import ReWire.CorePP
+import ReWire.CorePP (pp)
 import Unbound.LocallyNameless
-import ReWire.CoreParser (rwcProg,whiteSpace)
 import Text.Parsec (runParser,eof)
 import Control.Monad hiding (sequence,mapM)
 import Data.List (isInfixOf,find)
@@ -18,24 +17,24 @@ import Data.Maybe (catMaybes,isNothing,fromJust)
 import Debug.Trace (trace)
 
 simplify :: Fresh m => RWCExp -> m RWCExp
-simplify (RWCApp e_ e'_)     = do e  <- simplify e_
-                                  e' <- simplify e'_
-                                  case e of
-                                    RWCLam b -> do (x,eb) <- unbind b
-                                                   simplify (subst x e' eb)
-                                    _        -> return (RWCApp e e')
-simplify e@(RWCLam b)        = do (x,eb) <- unbind b
-                                  eb'    <- simplify eb
-                                  return (RWCLam (bind x eb'))
+simplify (RWCApp t e_ e'_)     = do e  <- simplify e_
+                                    e' <- simplify e'_
+                                    case e of
+                                      RWCLam _ b -> do (x,eb) <- unbind b
+                                                       simplify (subst x e' eb)
+                                      _        -> return (RWCApp t e e')
+simplify e@(RWCLam t b)        = do (x,eb) <- unbind b
+                                    eb'    <- simplify eb
+                                    return (RWCLam t (bind x eb'))
 simplify e@(RWCVar _ _)      = return e
 simplify e@(RWCCon _ _)      = return e
 simplify e@(RWCLiteral _ _)  = return e
-simplify (RWCCase e_ alts_)  = do e    <- simplify e_
-                                  alts <- mapM simplalt alts_
-                                  sr   <- simplcase e alts
-                                  case sr of
-                                    Just e' -> return e'
-                                    Nothing -> return (RWCCase e alts)
+simplify (RWCCase t e_ alts_)  = do e    <- simplify e_
+                                    alts <- mapM simplalt alts_
+                                    sr   <- simplcase e alts
+                                    case sr of
+                                      Just e' -> return e'
+                                      Nothing -> return (RWCCase t e alts)
 
 simplalt :: Fresh m => RWCAlt -> m RWCAlt
 simplalt (RWCAlt b) = do (p,ebody_) <- unbind b
@@ -43,8 +42,8 @@ simplalt (RWCAlt b) = do (p,ebody_) <- unbind b
                          return (RWCAlt (bind p ebody))
 
 flattenApp :: RWCExp -> [RWCExp]
-flattenApp (RWCApp e e') = e:flattenApp e'
-flattenApp e             = [e]
+flattenApp (RWCApp _ e e') = e:flattenApp e'
+flattenApp e               = [e]
 
 isTrueCon :: Identifier -> Bool
 isTrueCon = ("True" `isInfixOf`) -- well, it's good enough if the program is well typed :)
@@ -83,7 +82,7 @@ matchpat e (RWCPatCon i pats) = case flattenApp e of
                                                                                              return (mergematches ms)
                                                   | otherwise                          -> return MatchNo
                                   _                                                    -> return MatchMaybe
-matchpat e (RWCPatVar n)      = return (MatchYes [(n,e)])
+matchpat e (RWCPatVar _ n)    = return (MatchYes [(n,e)])
 matchpat e (RWCPatLiteral l)  = case e of
                                   RWCLiteral _ l' | l == l'   -> return (MatchYes [])
                                                   | otherwise -> return MatchNo
@@ -98,13 +97,6 @@ simplprog :: Fresh m => RWCProg -> m RWCProg
 simplprog p = do ds  <- untrec (defns p)
                  ds' <- mapM simpldefn ds
                  return (p { defns = trec ds' })
-
-psimp :: FilePath -> IO ()
-psimp n = do guts    <- readFile n
-             let res =  runParser (whiteSpace >> rwcProg >>= \ p -> whiteSpace >> eof >> return p) () n guts
-             case res of
-               Left err  -> print err
-               Right ast -> print (runFreshM (ppProg ast)) >> putStrLn "===" >> print (runFreshM (simplprog ast >>= ppProg))
 
 type PEM = ReaderT [RWCDefn] (FreshMT Identity)
 
@@ -147,21 +139,21 @@ askvar t n = do ds <- askDefns
                   _                          -> return (RWCVar t n)
 
 expandexpr :: RWCExp -> PEM RWCExp
-expandexpr (RWCApp e1 e2)    = liftM2 RWCApp (expandexpr e1) (expandexpr e2)
-expandexpr (RWCLam b)        = do (n,e) <- unbind b
-                                  e'    <- expandexpr e
-                                  return (RWCLam (bind n e'))
-expandexpr (RWCVar t n)      = askvar t n
-expandexpr e@(RWCCon {})     = return e
-expandexpr e@(RWCLiteral {}) = return e
-expandexpr (RWCCase e alts)  = do e'    <- expandexpr e
-                                  alts' <- mapM expandalt alts
-                                  return (RWCCase e' alts')
+expandexpr (RWCApp t e1 e2)   = liftM2 (RWCApp t) (expandexpr e1) (expandexpr e2)
+expandexpr (RWCLam t b)       = do (n,e) <- unbind b
+                                   e'    <- expandexpr e
+                                   return (RWCLam t (bind n e'))
+expandexpr (RWCVar t n)       = askvar t n
+expandexpr e@(RWCCon {})      = return e
+expandexpr e@(RWCLiteral {})  = return e
+expandexpr (RWCCase t e alts) = do e'    <- expandexpr e
+                                   alts' <- mapM expandalt alts
+                                   return (RWCCase t e' alts')
 
 expanddefn :: RWCDefn -> PEM RWCDefn
-expanddefn (RWCDefn n (Embed b))                      = do (tvs,(t,e)) <- unbind b
-                                                           e'          <- expandexpr e
-                                                           return (RWCDefn n (Embed (setbind tvs (t,e'))))
+expanddefn (RWCDefn n (Embed b)) = do (tvs,(t,e)) <- unbind b
+                                      e'          <- expandexpr e
+                                      return (RWCDefn n (Embed (setbind tvs (t,e'))))
 
 pe :: RWCProg -> PEM RWCProg
 pe p = do ds   <- untrec (defns p)
@@ -169,17 +161,14 @@ pe p = do ds   <- untrec (defns p)
           ds'' <- mapM simpldefn ds'
           return (p { defns = trec ds'' })
 
-doPE :: FilePath -> IO ()
-doPE n = do guts    <- readFile n
-            let res =  runParser (whiteSpace >> rwcProg >>= \ p -> whiteSpace >> eof >> return p) () n guts
-            case res of
-              Left err  -> print err
-              Right ast -> do print (runFreshM (ppProg ast))
-                              loop ast
-                 where loop p = do getLine
-                                   let p' = runPEM (pe p)
-                                   putStrLn "================"
-                                   putStrLn "================"
-                                   putStrLn "================"
-                                   print (runFreshM (ppProg p'))
-                                   loop p'
+doPE :: RWCProg -> IO ()
+doPE p = do print (pp p)
+            loop p
+  where loop p = do putStrLn "Press Ctrl-C to exit, or enter to do another round of partial evaluation."
+                    getLine
+                    let p' = runPEM (pe p)
+                    putStrLn "================"
+                    putStrLn "================"
+                    putStrLn "================"
+                    print (pp p')
+                    loop p'

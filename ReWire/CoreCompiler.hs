@@ -7,6 +7,7 @@ import ReWire.CoreParser
 import ReWire.CoreKC
 import ReWire.CoreTC
 import ReWire.CorePP
+import ReWire.Eval
 
 main :: IO ()
 main = do args <- getArgs
@@ -21,4 +22,4 @@ main = do args <- getArgs
                                     Just e  -> hPutStrLn stderr e
                                     Nothing -> case typecheck p of
                                                  Left e   -> hPutStrLn stderr e
-                                                 Right p' -> print (pp p')
+                                                 Right p' -> doPE p'
