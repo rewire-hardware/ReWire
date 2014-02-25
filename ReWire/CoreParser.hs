@@ -10,17 +10,8 @@ import Data.List (nub)
 import Control.Monad (liftM,foldM)
 
 rwcDef :: T.LanguageDef st
-rwcDef = T.LanguageDef { T.commentStart    = "{-",
-                         T.commentEnd      = "-}",
-                         T.commentLine     = "--",
-                         T.nestedComments  = True,
-                         T.identStart      = letter,
-                         T.identLetter     = letter,
-                         T.opStart         = oneOf "|\\-:",
-                         T.opLetter        = oneOf "\\>:",
-                         T.reservedNames   = ["data","of","end","def","is","case"],
-                         T.reservedOpNames = ["|","\\","->","::"],
-                         T.caseSensitive   = True }
+rwcDef = L.haskellDef { T.reservedNames   = ["data","of","end","def","is","case"],
+                        T.reservedOpNames = ["|","\\","->","::"] }
 
 lexer = T.makeTokenParser rwcDef
 

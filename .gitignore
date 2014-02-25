@@ -7,3 +7,4 @@ cabal-dev
 .virthualenv
 *.swp
 *~
+\#*\#
