@@ -13,8 +13,6 @@ module RegExp where
 import Control.Monad.Resumption.Reactive
 import Control.Monad.State
 import Control.Monad.Identity
-import Prelude ()
-
 
 {- Here we define the abstract syntax for regular expressions -}
 
@@ -40,10 +38,10 @@ compMachine (Paren r1)   = compMachine r1
 compMachine (Atom a)     = match a Nothing -- The flipflop is primed with Nothing
 
 
-runMachine :: (Input input) -> Machine input -> ReacT (Input input) Output Identity (Output,Machine input)
-runMachine input m1 = ReacT $ do
+runMachine :: Machine input -> (Input input) -> ReacT (Input input) Output Identity (Output,Machine input)
+runMachine m1 input = ReacT $ do
                                 (output, m1') <- stepMachine input m1
-                                return $ Right (output, \input' -> runMachine input' m1')
+                                return $ Right (output, \input' -> runMachine m1' input')
 
 stepMachine :: Input input -> Machine input -> Identity (Output,Machine input)
 stepMachine input m = case ((deReacT ((deMachine m) input))) of
@@ -92,8 +90,40 @@ star' output m1 = Machine (\input -> case fst input of
                                                                     (inner_output, inner_resume) <- case output of
                                                                                                            Nothing     -> stepMachine input m1
                                                                                                            Just outval -> stepMachine (Just (inval || outval), snd input) m1
-                                                                    return $ Left (Nothing, star' inner_output inner_resume))
+                                                                    return $ Left (inner_output, star' inner_output inner_resume))
                                                                                             
                                                 
                                                
-    
+--Testing Routines and expressions.  This stuff doesn't need to be converted.
+test_expr  = Atom 'a' -- 'a'
+test_expr2 = Bar (Atom 'a') (Atom 'b') -- "a|b"
+test_expr3 = Star test_expr -- "a*"
+test_expr4 = Cons test_expr2 test_expr3 -- "(a|b)a*"
+
+machine1 = compMachine test_expr
+machine2 = compMachine test_expr2
+machine3 = compMachine test_expr3
+machine4 = compMachine test_expr4
+
+reactivate x = ReacT $ return $ Right (Nothing, x)
+
+r1 = reactivate (runMachine machine1)
+r2 = reactivate (runMachine machine2)
+r3 = reactivate (runMachine machine3)
+r4 = reactivate (runMachine machine4)
+
+runReact :: [input] -> ReacT (Input input) Output Identity (Output,Machine input) -> IO ()
+runReact []  (ReacT m)  = do
+                           putStrLn "Input complete."
+                           let (Right (result,_)) = runIdentity m
+                           putStrLn $ "Ending on: " ++ (show result)
+
+runReact (i:is) (ReacT m) = do
+                          let (Right (output,resume)) = runIdentity m
+                          putStrLn $ "Current output reads: " ++ (show output)
+                          putStrLn $ "<Enter> to continue"
+                          _ <- getLine
+                          case output of
+                                Nothing -> runReact (i:is) (resume (Just True,i)) --According to S&P outer input should always be true
+                                Just r  -> runReact is (resume (Just True, i))
+
