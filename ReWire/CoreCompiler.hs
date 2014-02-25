@@ -7,6 +7,7 @@ import ReWire.CoreParser
 import ReWire.CoreKC
 import ReWire.CoreTC
 import ReWire.CorePP
+import ReWire.CorePPHaskell
 import ReWire.Eval
 
 main :: IO ()
@@ -18,8 +19,9 @@ main = do args <- getArgs
                      res_p <- parsefile filename
                      case res_p of
                        Left e  -> hPutStrLn stderr e
-                       Right p -> case kindcheck p of
-                                    Just e  -> hPutStrLn stderr e
-                                    Nothing -> case typecheck p of
-                                                 Left e   -> hPutStrLn stderr e
-                                                 Right p' -> doPE p'
+                       Right p -> do writeFile "Debug.hs" (show $ ppHaskell p)
+                                     case kindcheck p of
+                                       Just e  -> hPutStrLn stderr e
+                                       Nothing -> case typecheck p of
+                                                    Left e   -> hPutStrLn stderr e
+                                                    Right p' -> doPE p'
