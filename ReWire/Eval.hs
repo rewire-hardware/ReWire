@@ -5,6 +5,7 @@ module ReWire.Eval where
 import Prelude hiding (sequence,mapM)
 import ReWire.Core
 import ReWire.CorePP (pp)
+import ReWire.CorePPHaskell (ppHaskell)
 import Unbound.LocallyNameless
 import Text.Parsec (runParser,eof)
 import Control.Monad hiding (sequence,mapM)
@@ -13,8 +14,9 @@ import Control.Monad.Reader hiding (sequence,mapM)
 import Control.Monad.Identity hiding (sequence,mapM)
 import Data.Traversable (sequence,mapM)
 import Data.Maybe (catMaybes,isNothing,fromJust)
+import ReWire.TransformTypes
 
---import Debug.Trace (trace)
+import Debug.Trace (trace)
 
 simplify :: LFresh m => RWCExp -> m RWCExp
 simplify (RWCApp t e_ e'_)     = do e  <- simplify e_
@@ -42,7 +44,7 @@ simplalt (RWCAlt b) = lunbind b (\(p,ebody_) ->
                           return (RWCAlt (bind p ebody)))
 
 flattenApp :: RWCExp -> [RWCExp]
-flattenApp (RWCApp _ e e') = e:flattenApp e'
+flattenApp (RWCApp _ e e') = flattenApp e++[e']
 flattenApp e               = [e]
 
 simplcase :: LFresh m => RWCExp -> [RWCAlt] -> m (Maybe RWCExp)
@@ -106,10 +108,10 @@ runPEM m = runIdentity (runLFreshMT (runReaderT m []))
 askDefns :: PEM [RWCDefn]
 askDefns = ask
 
-expandalt :: RWCAlt -> PEM RWCAlt
-expandalt (RWCAlt b) = lunbind b (\(p,eb) ->
-                        do eb' <- expandexpr eb
-                           return (RWCAlt (bind p eb')))
+expandalt :: Name RWCExp -> RWCAlt -> PEM RWCAlt
+expandalt nexp (RWCAlt b) = lunbind b (\(p,eb) ->
+                             do eb' <- expandexpr nexp eb
+                                return (RWCAlt (bind p eb')))
 
 mergesubs :: Monad m => [(Name RWCTy,RWCTy)] -> [(Name RWCTy,RWCTy)] -> m [(Name RWCTy,RWCTy)]
 mergesubs ((n,t):sub) sub' = case lookup n sub' of
@@ -138,37 +140,43 @@ askvar t n = do ds <- askDefns
                                                     return (substs sub e))
                   _                          -> return (RWCVar t n)
 
-expandexpr :: RWCExp -> PEM RWCExp
-expandexpr (RWCApp t e1 e2)   = liftM2 (RWCApp t) (expandexpr e1) (expandexpr e2)
-expandexpr (RWCLam t b)       = lunbind b (\(n,e) ->
-                                 do e' <- expandexpr e
-                                    return (RWCLam t (bind n e')))
-expandexpr (RWCVar t n)       = askvar t n
-expandexpr e@(RWCCon {})      = return e
-expandexpr e@(RWCLiteral {})  = return e
-expandexpr (RWCCase t e alts) = do e'    <- expandexpr e
-                                   alts' <- mapM expandalt alts
-                                   return (RWCCase t e' alts')
+expandexpr :: Name RWCExp -> RWCExp -> PEM RWCExp
+expandexpr nexp (RWCApp t e1 e2)   = liftM2 (RWCApp t) (expandexpr nexp e1) (expandexpr nexp e2)
+expandexpr nexp (RWCLam t b)       = lunbind b (\(n,e) ->
+                                      do e' <- expandexpr nexp e
+                                         return (RWCLam t (bind n e')))
+expandexpr nexp (RWCVar t n) | nexp == n = askvar t n
+                             | otherwise = return (RWCVar t n)
+--expandexpr nexp (RWCVar t n)       = askvar t n
+expandexpr nexp e@(RWCCon {})      = return e
+expandexpr nexp e@(RWCLiteral {})  = return e
+expandexpr nexp (RWCCase t e alts) = do e'    <- expandexpr nexp e
+                                        alts' <- mapM (expandalt nexp) alts
+                                        return (RWCCase t e' alts')
 
-expanddefn :: RWCDefn -> PEM RWCDefn
-expanddefn (RWCDefn n (Embed b)) = lunbind b (\(tvs,(t,e)) ->
-                                    do e' <- expandexpr e
-                                       return (RWCDefn n (Embed (setbind tvs (t,e')))))
+expanddefn :: Name RWCExp -> RWCDefn -> PEM RWCDefn
+expanddefn nexp (RWCDefn n (Embed b)) = lunbind b (\(tvs,(t,e)) ->
+                                         do e' <- expandexpr nexp e
+                                            return (RWCDefn n (Embed (setbind tvs (t,e')))))
 
-pe :: RWCProg -> PEM RWCProg
-pe p = do ds   <- luntrec (defns p)
-          ds'  <- avoid (map defnName ds) (local (const ds) (mapM expanddefn ds))
-          ds'' <- avoid (map defnName ds) (mapM simpldefn ds')
-          return (p { defns = trec ds'' })
+pe :: Name RWCExp -> RWCProg -> PEM RWCProg
+pe n p = do ds   <- luntrec (defns p)
+            ds'  <- avoid (map defnName ds) (local (const ds) (mapM (expanddefn n) ds))
+            ds'' <- avoid (map defnName ds) (mapM simpldefn ds')
+            return (p { defns = trec ds'' })
+
+cmdExpand :: TransCommand
+cmdExpand n p = let p' = runPEM (pe (s2n n) p)
+                in  (Just p',Nothing)
 
 doPE :: RWCProg -> IO ()
-doPE p = do print (pp p)
+doPE p = do print (ppHaskell p)
             loop p
   where loop p = do putStrLn "Press Ctrl-C to exit, or enter to do another round of partial evaluation."
-                    getLine
-                    let p' = runPEM (pe p)
+                    n <- getLine
+                    let p' = runPEM (pe (s2n n) p)
                     putStrLn "================"
                     putStrLn "================"
                     putStrLn "================"
-                    print (pp p')
+                    print (ppHaskell p')
                     loop p'
