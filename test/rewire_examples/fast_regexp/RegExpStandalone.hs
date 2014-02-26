@@ -23,26 +23,18 @@ data Bool = True | False
 data Either a b = Left a | Right b
 data Pair a b = Pair a b
 
-data Identity a = Identity a
-runIdentity :: Identity a -> a
-runIdentity a = case a of
-                  Identity a' -> a'
+apply :: a -> (a -> b) -> b
+apply a f = f a
 
-returnI :: a -> Identity a
-returnI a = Identity a
 
-bindI :: Identity a -> (a -> Identity b) -> Identity b
-bindI i r = case i of
-             (Identity a) -> r a
+data ReacT input output a = ReacT (Either a (Pair output (input -> ReacT input output a)))
 
-data ReacT input output a = ReacT (Identity (Either a (Pair output (input -> ReacT input output a))))
-
-deReacT :: ReacT input output a -> Identity (Either a (Pair output (input -> ReacT input output a)))
+deReacT :: ReacT input output a -> (Either a (Pair output (input -> ReacT input output a)))
 deReacT r = case r of
               ReacT a -> a
 
 returnRe :: a -> ReacT input output a
-returnRe a = ReacT (Identity (Left a))
+returnRe a = ReacT (Left a)
 
 
 fst :: Pair a b -> a
@@ -99,12 +91,12 @@ compMachine b  = case b of
                     (Atom a)     -> match a Nothing --Flipflop is primed with nothing
 
 runMachine :: Machine input -> ((Pair (Maybe Bool) input)) -> ReacT ((Pair (Maybe Bool) input)) (Maybe Bool) (Pair (Maybe Bool) (Machine input))
-runMachine m1 input = ReacT (bindI (stepMachine input m1) (\p -> case p of 
-                                                                      (Pair output m1') -> returnI (Right (Pair output (\input' -> runMachine m1' input')))))
+runMachine m1 input = ReacT (apply (stepMachine input m1) (\p -> case p of 
+                                                                      (Pair output m1') ->  (Right (Pair output (\input' -> runMachine m1' input')))))
 
-stepMachine :: (Pair (Maybe Bool) input) -> Machine input -> Identity (Pair (Maybe Bool) (Machine input))
+stepMachine :: (Pair (Maybe Bool) input) -> Machine input -> (Pair (Maybe Bool) (Machine input))
 stepMachine input m = case ((deReacT ((deMachine m) input))) of
-                                  Identity (Left v) -> Identity v
+                                  (Left v) -> v
                               
 match :: Char -> ((Maybe Bool) -> Machine Char)
 match a = \flipflop -> Machine (\(Pair prev_output char) -> case flipflop of
@@ -114,26 +106,26 @@ match a = \flipflop -> Machine (\(Pair prev_output char) -> case flipflop of
 bar :: Machine Char -> Machine Char -> Machine Char
 bar m1 m2 = Machine (\input -> case fst input of
                                     Nothing    -> returnRe (Pair Nothing (bar m1 m2))
-                                    Just zd    -> ReacT (bindI (stepMachine input m1) (\(Pair output1 resume1) ->
-                                                         bindI (stepMachine input m2) (\(Pair output2 resume2) ->
+                                    Just zd    -> ReacT (apply (stepMachine input m1) (\(Pair output1 resume1) ->
+                                                         apply (stepMachine input m2) (\(Pair output2 resume2) ->
                                                          case (Pair output1 output2) of
-                                                                   (Pair Nothing Nothing)     -> returnI (Left (Pair Nothing (bar resume1 resume2)))
-                                                                   (Pair Nothing zd)          -> returnI (Left (Pair Nothing (bar resume1 m2)))
-                                                                   (Pair zd Nothing)          -> returnI (Left (Pair Nothing (bar m1 resume2)))
-                                                                   (Pair (Just r1) (Just r2)) -> returnI (Left (Pair (Just (or r1 r2)) (bar resume1 resume2)))))))
+                                                                   (Pair Nothing Nothing)     ->  (Left (Pair Nothing (bar resume1 resume2)))
+                                                                   (Pair Nothing zd)          ->  (Left (Pair Nothing (bar resume1 m2)))
+                                                                   (Pair zd Nothing)          ->  (Left (Pair Nothing (bar m1 resume2)))
+                                                                   (Pair (Just r1) (Just r2)) ->  (Left (Pair (Just (or r1 r2)) (bar resume1 resume2)))))))
                                                                    
         
 
 rseq :: Machine Char -> Machine Char -> Machine Char 
 rseq m1 m2 = Machine (\input -> case fst input of
                                     Nothing -> returnRe (Pair Nothing (rseq m1 m2))
-                                    Just zd -> ReacT ( bindI (stepMachine input m1) (\(Pair output1 resume1) ->
+                                    Just zd -> ReacT ( apply (stepMachine input m1) (\(Pair output1 resume1) ->
                                                        case output1 of
-                                                                  Nothing -> returnI (Left (Pair Nothing (rseq resume1 m2)))
-                                                                  Just zd -> (bindI (stepMachine (Pair output1 (snd input)) m2) (\(Pair output2 resume2) ->
+                                                                  Nothing ->  (Left (Pair Nothing (rseq resume1 m2)))
+                                                                  Just zd -> (apply (stepMachine (Pair output1 (snd input)) m2) (\(Pair output2 resume2) ->
                                                                                case output2 of
-                                                                                      Nothing  -> returnI (Left (Pair Nothing (rseq m1 resume2)))
-                                                                                      Just zd  -> returnI (Left (Pair output2 (rseq resume1 resume2))))))))
+                                                                                      Nothing  ->  (Left (Pair Nothing (rseq m1 resume2)))
+                                                                                      Just zd  ->  (Left (Pair output2 (rseq resume1 resume2))))))))
 
 star :: Machine Char -> Machine Char
 star m1 = star' (Just False) m1
@@ -141,10 +133,10 @@ star m1 = star' (Just False) m1
 star' :: (Maybe Bool) -> Machine Char -> Machine Char
 star' output m1 = Machine (\input -> case fst input of
                                             Nothing -> returnRe (Pair Nothing (star' output m1))
-                                            Just inval  -> ReacT ( bindI (case output of
+                                            Just inval  -> ReacT ( apply (case output of
                                                                                Nothing     -> stepMachine input m1
                                                                                Just outval -> stepMachine (Pair (Just (or inval outval)) (snd input)) m1) (\(Pair inner_output inner_resume) ->
-                                                                    returnI (Left (Pair inner_output (star' inner_output inner_resume))))))
+                                                                     (Left (Pair inner_output (star' inner_output inner_resume))))))
                                                                                             
                                                
 --Testing Routines and expressions.  This stuff doesn't need to be converted.
@@ -161,7 +153,7 @@ machine2 = compMachine test_expr2
 machine3 = compMachine test_expr3
 machine4 = compMachine test_expr4
 
-reactivate x = ReacT (returnI (Right (Pair Nothing x)))
+reactivate x = ReacT ((Right (Pair Nothing x)))
 
 r1 = reactivate (runMachine machine1)
 r2 = reactivate (runMachine machine2)
