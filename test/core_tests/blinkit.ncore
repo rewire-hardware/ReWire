@@ -36,3 +36,8 @@ is
                                  ; Zero -> blink (not b)
                                  })
 end
+
+main :: React Bit Bit a
+is
+  blink Zero
+end

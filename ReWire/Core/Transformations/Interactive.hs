@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
--- Interactive environment for transforming the program.
+-- Interactive environment for transforming ReWire Core programs.
 
 module ReWire.Core.Transformations.Interactive (TransCommand,trans) where
 
@@ -19,11 +19,12 @@ import Data.Maybe (catMaybes,isNothing,fromJust)
 import Data.Char
 import ReWire.Core.Transformations.Expand (cmdExpand)
 import ReWire.Core.Transformations.Reduce (cmdReduce)
+import ReWire.Core.Transformations.Purge (cmdPurge)
 import ReWire.Core.Transformations.Types
 
 import Debug.Trace (trace)
 
--- Here are the commands available.
+-- Table of available commands.
 type CommandTable = [(String,TransCommand)]
 
 cmdPrint :: TransCommand
@@ -32,11 +33,13 @@ cmdPrint _ p = (Just p,Nothing)
 cmdHelp :: TransCommand
 cmdHelp _ _ = (Nothing,Just (intercalate ", " (map fst cmdTable)))
 
+-- Here are the commands available.
 cmdTable :: CommandTable
 cmdTable = [(":p",cmdPrint),
             (":?",cmdHelp),
             ("expand",cmdExpand),
-            ("reduce",cmdReduce)]
+            ("reduce",cmdReduce),
+            ("purge",cmdPurge)]
 
 -- The "repl" for the translation environment.
 trans :: RWCProg -> IO ()
