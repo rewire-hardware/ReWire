@@ -21,6 +21,7 @@ import ReWire.Core.Transformations.Expand (cmdExpand)
 import ReWire.Core.Transformations.Reduce (cmdReduce)
 import ReWire.Core.Transformations.Purge (cmdPurge)
 import ReWire.Core.Transformations.Types
+import System.IO
 
 import Debug.Trace (trace)
 
@@ -46,6 +47,7 @@ trans :: RWCProg -> IO ()
 trans p = do print (ppHaskell p)
              loop p
    where loop p = do putStr "> "
+                     hFlush stdout
                      n <- getLine
                      let (cmd,n') = break isSpace n
                          args     = dropWhile isSpace n'
