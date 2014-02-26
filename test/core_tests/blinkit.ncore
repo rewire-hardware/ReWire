@@ -1,0 +1,38 @@
+data React i o a is Done a | Pause o (i -> React i o a) end
+
+data Bit is Zero | One end
+
+bindRe :: React i o a -> (a -> React i o b) -> React i o b
+is
+  \ m -> \ f -> case m of
+                { (Done x)    -> f x
+                ; (Pause o k) -> Pause o (\ i -> bindRe (k i) f)
+                }
+end
+
+signal :: o -> React i o i
+is
+  \ o -> Pause o Done
+end
+
+main :: React Bit Bit a
+is
+  blink Zero
+end
+
+not :: Bit -> Bit
+is
+  \ b -> case b of
+         { Zero -> One
+         ; One  -> Zero
+         }
+end
+
+blink :: Bit -> React Bit Bit a
+is
+  \ b ->
+      bindRe (signal b) (\ sw -> case sw of
+                                 { One  -> blink b
+                                 ; Zero -> blink (not b)
+                                 })
+end
