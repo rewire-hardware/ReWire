@@ -8,6 +8,7 @@ import Control.Monad.State
 import Control.Monad.Identity
 import Data.Set hiding (map,filter,null)
 import Data.List hiding (insert)
+import Debug.Trace (trace)
 
 type M = StateT (Set (Name RWCExp)) (ReaderT [RWCDefn] (LFreshMT Identity))
 
@@ -21,9 +22,7 @@ inuseAlt (RWCAlt b) = lunbind b (\(p,e) -> inuseExp e)
 inuseExp :: RWCExp -> M ()
 inuseExp (RWCApp _ e1 e2)   = inuseExp e1 >> inuseExp e2
 inuseExp (RWCLam _ b)       = lunbind b (\(n,e) -> inuseExp e)
-inuseExp (RWCVar _ v)       = do inuse <- get
-                                 put (insert v inuse)
-                                 md    <- askDefn v
+inuseExp (RWCVar _ v)       = do md    <- askDefn v
                                  case md of
                                    Just d  -> inuseDefn d
                                    Nothing -> return ()
@@ -42,11 +41,11 @@ purge :: Name RWCExp -> RWCProg -> M (Maybe RWCProg)
 purge n p = do put empty
                ds <- luntrec (defns p)
                avoid (map defnName ds) $ local (const ds) $ do
-                 md      <- askDefn n
+                 md <- askDefn n
                  case md of
                    Just d  -> do inuseDefn d
                                  inuse   <- get
-                                 let ds' =  filter (\ (RWCDefn n _) -> n `member` inuse) ds
+                                 let ds' =  trace (">>>" ++ show inuse ++ "<<<") $ filter (\ (RWCDefn n _) -> n `member` inuse) ds
                                  return (Just $ p { defns = trec ds' })
                    Nothing -> return Nothing
    where defnName (RWCDefn n _) = AnyName n
