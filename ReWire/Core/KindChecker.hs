@@ -1,10 +1,9 @@
 {-# LANGUAGE TemplateHaskell,FlexibleInstances,MultiParamTypeClasses,FlexibleContexts,UndecidableInstances #-}
 
-module ReWire.CoreKC (kindcheck) where
+module ReWire.Core.KindChecker (kindcheck) where
 
-import ReWire.Core
-import ReWire.CoreParser
-import Text.Parsec (runParser,eof)
+import ReWire.Core.Syntax
+import ReWire.Core.Parser
 import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Identity

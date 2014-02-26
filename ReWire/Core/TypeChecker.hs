@@ -1,10 +1,8 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
-module ReWire.CoreTC (typecheck) where
+module ReWire.Core.TypeChecker (typecheck) where
 
-import ReWire.Core
-import ReWire.CoreParser
-import Text.Parsec (runParser,eof)
+import ReWire.Core.Syntax
 import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Identity

@@ -1,20 +1,17 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
-module ReWire.Eval where
+module ReWire.Core.Transformations.Eval where
 
 import Prelude hiding (sequence,mapM)
-import ReWire.Core
-import ReWire.CorePP (pp)
-import ReWire.CorePPHaskell (ppHaskell)
+import ReWire.Core.Syntax
 import Unbound.LocallyNameless
-import Text.Parsec (runParser,eof)
 import Control.Monad hiding (sequence,mapM)
 import Data.List (isInfixOf,find)
 import Control.Monad.Reader hiding (sequence,mapM)
 import Control.Monad.Identity hiding (sequence,mapM)
 import Data.Traversable (sequence,mapM)
 import Data.Maybe (catMaybes,isNothing,fromJust)
-import ReWire.TransformTypes
+import ReWire.Core.Transformations.Types
 
 import Debug.Trace (trace)
 
@@ -168,15 +165,3 @@ pe n p = do ds   <- luntrec (defns p)
 cmdExpand :: TransCommand
 cmdExpand n p = let p' = runPEM (pe (s2n n) p)
                 in  (Just p',Nothing)
-
-doPE :: RWCProg -> IO ()
-doPE p = do print (ppHaskell p)
-            loop p
-  where loop p = do putStrLn "Press Ctrl-C to exit, or enter to do another round of partial evaluation."
-                    n <- getLine
-                    let p' = runPEM (pe (s2n n) p)
-                    putStrLn "================"
-                    putStrLn "================"
-                    putStrLn "================"
-                    print (ppHaskell p')
-                    loop p'

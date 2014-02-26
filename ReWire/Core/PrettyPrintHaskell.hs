@@ -1,10 +1,8 @@
 {-# OPTIONS -fwarn-incomplete-patterns #-}
 
-module ReWire.CorePPHaskell (ppHaskell) where
+module ReWire.Core.PrettyPrintHaskell (ppHaskell) where
 
-import ReWire.Core
-import ReWire.CoreParser hiding (parens,commaSep,braces,integer,float)
-import Text.Parsec (runParser,eof)
+import ReWire.Core.Syntax
 import Text.PrettyPrint
 import Unbound.LocallyNameless hiding (empty)
 

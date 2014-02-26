@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell,FlexibleInstances,MultiParamTypeClasses,FlexibleContexts,UndecidableInstances #-}
 
-module ReWire.Core where
+module ReWire.Core.Syntax where
 
 import Unbound.LocallyNameless
 import Unbound.LocallyNameless.Types (SetPlusBind)

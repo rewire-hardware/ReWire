@@ -2,12 +2,12 @@
 
 -- Interactive environment for transforming the program.
 
-module ReWire.Transform (TransCommand,trans) where
+module ReWire.Core.Transformations.Interactive (TransCommand,trans) where
 
 import Prelude hiding (sequence,mapM)
-import ReWire.Core
-import ReWire.CorePP (pp)
-import ReWire.CorePPHaskell (ppHaskell)
+import ReWire.Core.Syntax
+import ReWire.Core.PrettyPrint (pp)
+import ReWire.Core.PrettyPrintHaskell (ppHaskell)
 import Unbound.LocallyNameless
 import Text.Parsec (runParser,eof)
 import Control.Monad hiding (sequence,mapM)
@@ -17,8 +17,8 @@ import Control.Monad.Identity hiding (sequence,mapM)
 import Data.Traversable (sequence,mapM)
 import Data.Maybe (catMaybes,isNothing,fromJust)
 import Data.Char
-import ReWire.Eval (cmdExpand)
-import ReWire.TransformTypes
+import ReWire.Core.Transformations.Eval (cmdExpand)
+import ReWire.Core.Transformations.Types
 
 import Debug.Trace (trace)
 

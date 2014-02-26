@@ -1,14 +1,14 @@
-module ReWire.CoreCompiler where
+module ReWire.Core.Main where
 
 import System.IO
 import System.Environment
-import ReWire.Core
-import ReWire.CoreParser
-import ReWire.CoreKC
-import ReWire.CoreTC
-import ReWire.CorePP
-import ReWire.CorePPHaskell
-import ReWire.Transform
+import ReWire.Core.Syntax
+import ReWire.Core.Parser
+import ReWire.Core.KindChecker
+import ReWire.Core.TypeChecker
+import ReWire.Core.PrettyPrint
+import ReWire.Core.PrettyPrintHaskell
+import ReWire.Core.Transformations.Interactive
 
 main :: IO ()
 main = do args <- getArgs

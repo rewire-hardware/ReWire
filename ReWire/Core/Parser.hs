@@ -1,6 +1,6 @@
-module ReWire.CoreParser where
+module ReWire.Core.Parser where
 
-import ReWire.Core
+import ReWire.Core.Syntax
 import Text.Parsec
 import Text.Parsec.Language as L
 import qualified Text.Parsec.Token as T

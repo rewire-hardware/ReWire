@@ -1,10 +1,8 @@
 {-# OPTIONS -fwarn-incomplete-patterns #-}
 
-module ReWire.CorePP (pp) where
+module ReWire.Core.PrettyPrint (pp) where
 
-import ReWire.Core
-import ReWire.CoreParser hiding (parens,commaSep,braces,integer,float)
-import Text.Parsec (runParser,eof)
+import ReWire.Core.Syntax
 import Text.PrettyPrint
 import Unbound.LocallyNameless hiding (empty)
 

@@ -1,6 +1,6 @@
-module ReWire.TransformTypes where
+module ReWire.Core.Transformations.Types where
 
-import ReWire.Core
+import ReWire.Core.Syntax
 
 -- A transformation command takes an argument (this can include spaces, so 
 -- multiple arguments are possible but it's up to the command function to
