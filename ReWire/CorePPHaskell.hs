@@ -12,7 +12,7 @@ ppDataCon (RWCDataCon n ts) = do ts_p <- mapM ppTy ts
                                  return (text n <+> hsep (map parens ts_p))
 
 ppDataDecl (RWCData n b) = lunbind b (\(tvs,dcs) ->
-                            do dcs_p     <- mapM ppDataCon dcs
+                            do dcs_p <- mapM ppDataCon dcs
                                return (foldr ($+$) empty
                                              [text "data" <+> text n <+> hsep (map ppName tvs) <+> (if null dcs_p then empty else char '='),
                                               nest 4 (hsep (punctuate (char '|') dcs_p))]))
@@ -30,8 +30,8 @@ ppPat (RWCPatVar (Embed t) n) = return (ppName n)
 ppPat (RWCPatLiteral l)       = return (ppLiteral l)
 
 ppAlt (RWCAlt b) = lunbind b (\(p,eb) ->
-                    do p_p    <- ppPat p
-                       eb_p   <- ppExpr eb
+                    do p_p  <- ppPat p
+                       eb_p <- ppExpr eb
                        return (parens p_p <+> text "->" <+> eb_p))
 
 ppExpr (RWCApp t e1 e2) = do e1_p <- ppExpr e1
@@ -41,7 +41,7 @@ ppExpr (RWCLiteral t l) = return (ppLiteral l)
 ppExpr (RWCCon t n)     = return (text n)
 ppExpr (RWCVar t n)     = return (ppName n)
 ppExpr (RWCLam t b)     = lunbind b (\(n,e) ->
-                           do e_p   <- ppExpr e
+                           do e_p <- ppExpr e
                               return (parens (char '\\' <+> ppName n <+> text "->" <+> e_p)))
 ppExpr (RWCCase t e alts) = do e_p    <- ppExpr e
                                alts_p <- mapM ppAlt alts
@@ -63,15 +63,17 @@ commaSep [x]    = x
 commaSep (x:xs) = x <> char ',' <> commaSep xs
 
 ppDefn (RWCDefn n (Embed b)) = lunbind b (\(tvs,(ty,e)) ->
-                                do ty_p         <- ppTy ty
-                                   e_p          <- ppExpr e
+                                do ty_p <- ppTy ty
+                                   e_p  <- ppExpr e
                                    return (foldr ($+$) empty
                                                  [ppName n <+> text "::" <+> ty_p,
                                                   ppName n <+> text "=",
                                                   nest 4 e_p]))
 
-ppDefns defns_ = do defns <- luntrec defns_
-                    defns_p <- mapM ppDefn defns
+defnName (RWCDefn n _) = AnyName n
+
+ppDefns defns_ = do defns   <- luntrec defns_
+                    defns_p <- avoid (map defnName defns) $ mapM ppDefn defns
                     return (foldr ($+$) empty defns_p)
 
 ppProg :: LFresh m => RWCProg -> m Doc

@@ -28,8 +28,7 @@ $(derive [''Kind])
 type KiSub = [(Name Kind,Kind)]
 data KCEnv = KCEnv { as  :: [Assump], 
                      cas :: [CAssump] } deriving Show
-data KCState = KCState { varCounter :: Int,
-                         kiSub      :: KiSub } deriving Show
+data KCState = KCState { kiSub :: KiSub } deriving Show
 type Assump = (Name RWCTy,SetPlusBind [Name Kind] Kind)
 type CAssump = (Identifier,SetPlusBind [Name Kind] Kind)
 
@@ -39,17 +38,13 @@ localAssumps f = local (\ kce -> kce { as = f (as kce) })
 askAssumps = ask >>= \ kce -> return (as kce)
 localCAssumps f = local (\ kce -> kce { cas = f (cas kce) })
 askCAssumps = ask >>= \ kce -> return (cas kce)
-getVarCounter = get >>= return . varCounter
-putVarCounter i = get >>= \ s -> put (s { varCounter = i })
 getKiSub = get >>= return . kiSub
 updKiSub f = get >>= \ s -> put (s { kiSub = f (kiSub s) })
 putKiSub sub = get >>= \ s -> put (s { kiSub = sub })
 
 freshkv :: KCM (Name Kind)
-freshkv = do i     <- getVarCounter
-             putVarCounter (i+1)
-             let n =  s2n ("?"++show i)
-             sub   <- getKiSub
+freshkv = do n   <- fresh (s2n "?")
+             sub <- getKiSub
              updKiSub ((n,Kvar n):)
              return n
 
@@ -130,7 +125,7 @@ kc p = do ds  <- untrec (defns p)
           localCAssumps (cas++) (mapM_ kcDefn ds)
 
 kindcheck :: RWCProg -> Maybe String
-kindcheck p = l2m $ runIdentity (runErrorT (runStateT (runReaderT (runFreshMT (kc p)) (KCEnv [] cas)) (KCState 0 [])))
+kindcheck p = l2m $ runIdentity (runErrorT (runStateT (runReaderT (runFreshMT (kc p)) (KCEnv [] cas)) (KCState [])))
   where cas      = [("(->)",setbind [] (Kfun Kstar (Kfun Kstar Kstar)))]
         l2m (Left x)  = Just x
         l2m (Right _) = Nothing

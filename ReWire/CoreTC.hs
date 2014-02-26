@@ -18,8 +18,7 @@ import Data.List (nub)
 type TySub = [(Name RWCTy,RWCTy)]
 data TCEnv = TCEnv { as  :: [Assump],
                      cas :: [CAssump] } deriving Show
-data TCState = TCState { varCounter :: Int,
-                         tySub      :: TySub } deriving Show
+data TCState = TCState { tySub :: TySub } deriving Show
                          
 type Assump  = (Name RWCExp,SetPlusBind [Name RWCTy] RWCTy)
 type CAssump = (Identifier,SetPlusBind [Name RWCTy] RWCTy)
@@ -30,17 +29,13 @@ localAssumps f = local (\ tce -> tce { as = f (as tce) })
 askAssumps = ask >>= \ tce -> return (as tce)
 localCAssumps f = local (\ tce -> tce { cas = f (cas tce) })
 askCAssumps = ask >>= \ tce -> return (cas tce)
-getVarCounter = get >>= return . varCounter
-putVarCounter i = get >>= \ s -> put (s { varCounter = i })
 getTySub = get >>= return . tySub
 updTySub f = get >>= \ s -> put (s { tySub = f (tySub s) })
 putTySub sub = get >>= \ s -> put (s { tySub = sub })
 
 freshv :: TCM (Name RWCTy)
-freshv = do i     <- getVarCounter
-            putVarCounter (i+1)
-            let n =  s2n ("?"++show i)
-            sub   <- getTySub
+freshv = do n   <- fresh (s2n "?")
+            sub <- getTySub
             updTySub ((n,RWCTyVar n):)
             return n
 
@@ -211,4 +206,4 @@ tc p = do ds       <- untrec (defns p)
           return (p { defns = trec ds'' })
 
 typecheck :: RWCProg -> Either String RWCProg
-typecheck p = fmap fst $ runIdentity (runErrorT (runStateT (runReaderT (runFreshMT (tc p)) (TCEnv [] [])) (TCState 0 [])))
+typecheck p = fmap fst $ runIdentity (runErrorT (runStateT (runReaderT (runFreshMT (tc p)) (TCEnv [] [])) (TCState [])))
