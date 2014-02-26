@@ -17,7 +17,8 @@ import Control.Monad.Identity hiding (sequence,mapM)
 import Data.Traversable (sequence,mapM)
 import Data.Maybe (catMaybes,isNothing,fromJust)
 import Data.Char
-import ReWire.Core.Transformations.Eval (cmdExpand)
+import ReWire.Core.Transformations.Expand (cmdExpand)
+import ReWire.Core.Transformations.Reduce (cmdReduce)
 import ReWire.Core.Transformations.Types
 
 import Debug.Trace (trace)
@@ -34,7 +35,8 @@ cmdHelp _ _ = (Nothing,Just (intercalate ", " (map fst cmdTable)))
 cmdTable :: CommandTable
 cmdTable = [(":p",cmdPrint),
             (":?",cmdHelp),
-            ("expand",cmdExpand)]
+            ("expand",cmdExpand),
+            ("reduce",cmdReduce)]
 
 -- The "repl" for the translation environment.
 trans :: RWCProg -> IO ()
