@@ -43,7 +43,8 @@ ppExpr (RWCLam t b)     = lunbind b (\(n,e) ->
                               return (parens (char '\\' <+> ppName n <+> text "->" <+> e_p)))
 ppExpr (RWCCase t e alts) = do e_p    <- ppExpr e
                                alts_p <- mapM ppAlt alts
-                               return (foldr ($+$) empty
+                               return (parens $
+                                         foldr ($+$) empty
                                               [text "case" <+> e_p <+> text "of",
                                                nest 4 (braces $ vcat $ punctuate (space <> text ";" <> space) alts_p)])
 
