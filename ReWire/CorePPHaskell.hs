@@ -34,9 +34,9 @@ ppAlt (RWCAlt b) = lunbind b (\(p,eb) ->
                        eb_p   <- ppExpr eb
                        return (parens p_p <+> text "->" <+> eb_p))
 
-ppExpr (RWCApp t e1 e2)   = do e1_p <- ppExpr e1
-                               e2_p <- ppExpr e2
-                               return (parens (hang e1_p 4 e2_p))
+ppExpr (RWCApp t e1 e2) = do e1_p <- ppExpr e1
+                             e2_p <- ppExpr e2
+                             return (parens (hang e1_p 4 e2_p))
 ppExpr (RWCLiteral t l) = return (ppLiteral l)
 ppExpr (RWCCon t n)     = return (text n)
 ppExpr (RWCVar t n)     = return (ppName n)
@@ -81,12 +81,3 @@ ppProg p = do dd_p <- ppDataDecls (dataDecls p)
 
 ppHaskell :: RWCProg -> Doc
 ppHaskell = runLFreshM . ppProg
-
-{-
-ppp :: FilePath -> IO ()
-ppp n = do guts        <- readFile n
-           let res     =  runParser (whiteSpace >> prog >>= \ p -> whiteSpace >> eof >> return p) 0 n guts
-           case res of
-             Left err  -> print err
-             Right ast -> print (runFreshM (ppProg ast))
--}

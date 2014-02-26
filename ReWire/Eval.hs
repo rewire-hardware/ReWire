@@ -45,9 +45,6 @@ flattenApp :: RWCExp -> [RWCExp]
 flattenApp (RWCApp _ e e') = e:flattenApp e'
 flattenApp e               = [e]
 
-isTrueCon :: Identifier -> Bool
-isTrueCon = ("True" `isInfixOf`) -- well, it's good enough if the program is well typed :)
-
 simplcase :: Fresh m => RWCExp -> [RWCAlt] -> m (Maybe RWCExp)
 simplcase escrut (RWCAlt b:alts) = do (p,ebody) <- unbind b
                                       mr        <- matchpat escrut p

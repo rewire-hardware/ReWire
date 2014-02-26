@@ -97,12 +97,3 @@ ppProg p = do dd_p <- ppDataDecls (dataDecls p)
 
 pp :: RWCProg -> Doc
 pp = runLFreshM . ppProg
-
-{-
-ppp :: FilePath -> IO ()
-ppp n = do guts        <- readFile n
-           let res     =  runParser (whiteSpace >> prog >>= \ p -> whiteSpace >> eof >> return p) 0 n guts
-           case res of
-             Left err  -> print err
-             Right ast -> print (runFreshM (ppProg ast))
--}
