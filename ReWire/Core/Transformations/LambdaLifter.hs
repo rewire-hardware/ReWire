@@ -11,7 +11,7 @@ import Control.Monad.State
 import Control.Monad.Identity
 import Data.List (nub)
 
-
+import Debug.Trace
 
 
 --type TransCommand = String -> RWCProg -> (Maybe RWCProg,Maybe String)
@@ -66,11 +66,11 @@ ll_def (RWCDefn name ebnd) = do
 ll_exp :: RWCExp -> LLM RWCExp
 ll_exp l@(RWCLam ty bnd)  = do
                               let arg_ty = fst $ peel_first_type ty
-                              expr <- lunbind bnd (\(pat,term) -> local (\env -> (pat,arg_ty):env) $ do
+                              (expr,wrapenv) <- lunbind bnd (\(pat,term) -> local (\env -> (pat,arg_ty):env) $ do
                                                                                                          term' <- ll_exp term  --Lambda Lift the interior first
                                                                                                          build_defn_expr term' --Build the defn for this lambda
                                                   )
-                              wrap expr --Wrap the expr by applying in-scope variables to it. 
+                              local (\_ -> wrapenv) (wrap expr) --Wrap the expr by applying in-scope variables to it. 
                                
 ll_exp (RWCApp ty e1 e2) = do
                             e1' <- ll_exp e1
@@ -107,7 +107,7 @@ ll_alt (RWCAlt bnd) = lunbind bnd (\(pat, exp) -> do
 {-| Peel off the first type (for a function)  and return the remaining type
  -  of a given type if it exists.  Nothing, otherwise -}
 peel_first_type :: RWCTy -> (RWCTy, Maybe RWCTy)
-peel_first_type (RWCTyApp (RWCTyApp (RWCTyCon "->") ty) rem) = (ty, Just rem)
+peel_first_type (RWCTyApp (RWCTyApp (RWCTyCon "(->)") ty) rem) = (ty, Just rem)
 peel_first_type x = (x, Nothing)
 
 
@@ -133,22 +133,24 @@ wrap expr = do
                             (_, Just rest) -> rest
                             x              -> error $ show x
 
-build_defn_expr :: RWCExp -> LLM (RWCExp)
+build_defn_expr :: RWCExp -> LLM (RWCExp,ReaderEnv)
 build_defn_expr expr = do
                     env <- ask
-                    let expr_ty = rwc_expr_ty expr
+                    let frees = fv expr 
+                        env'  = filter (\x -> elem (fst x) frees) env
+                        expr_ty = rwc_expr_ty expr
                         closure = foldl (\acc (name,name_ty) ->
                                     (RWCLam 
-                                      (RWCTyApp (RWCTyApp (RWCTyCon "->") name_ty) expr_ty)
+                                      (RWCTyApp (RWCTyApp (RWCTyCon "(->)") name_ty) expr_ty)
                                         (bind name acc)
                                        ) 
-                                        ) expr env
+                                        ) expr env'
                     lbl <- getLabel 
                     let ctype = rwc_expr_ty closure
                     let tys = nub $ rwc_ty_vars ctype --FIXME: Should we be nubbing this?
                         defn = RWCDefn (s2n lbl) $ embed $ setbind tys (ctype,closure)
                     tell [defn]
-                    return (RWCVar ctype $ s2n lbl)
+                    return (RWCVar ctype $ s2n lbl,env')
 
 
 rwc_expr_ty (RWCApp ty _ _) = ty
