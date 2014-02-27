@@ -5,9 +5,10 @@ module ReWire.Core.PrettyPrintHaskell (ppHaskell) where
 import ReWire.Core.Syntax
 import Text.PrettyPrint
 import Unbound.LocallyNameless hiding (empty)
+import Control.Monad (liftM)
 
-ppDataCon (RWCDataCon n ts) = do ts_p <- mapM ppTy ts
-                                 return (text n <+> hsep (map parens ts_p))
+ppDataCon (RWCDataCon n ts) = do ts_p <- mapM ppTyAppR ts
+                                 return (text n <+> hsep ts_p)
 
 ppDataDecl (RWCData n b) = lunbind b (\(tvs,dcs) ->
                             do dcs_p <- mapM ppDataCon dcs
@@ -51,11 +52,20 @@ ppExpr (RWCCase t e alts) = do e_p    <- ppExpr e
 ppName :: Name a -> Doc
 ppName = text . show
 
+ppTyArrowL t@(RWCTyApp (RWCTyApp (RWCTyCon ("(->)")) t1) t2) = liftM parens (ppTy t)
+ppTyArrowL t                                                 = ppTy t
+
+ppTy (RWCTyApp (RWCTyApp (RWCTyCon ("(->)")) t1) t2) = do t1_p <- ppTyArrowL t1
+                                                          t2_p <- ppTy t2
+                                                          return (t1_p <+> text "->" <+> t2_p)
 ppTy (RWCTyApp t1 t2) = do t1_p <- ppTy t1
-                           t2_p <- ppTy t2
-                           return (parens (t1_p <+> t2_p))
+                           t2_p <- ppTyAppR t2
+                           return (t1_p <+> t2_p)
 ppTy (RWCTyCon n)     = return (text n)
 ppTy (RWCTyVar n)     = return (ppName n)
+
+ppTyAppR t@(RWCTyApp _ _) = liftM parens (ppTy t)
+ppTyAppR t                = ppTy t
 
 commaSep []     = empty
 commaSep [x]    = x
