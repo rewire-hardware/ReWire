@@ -141,14 +141,13 @@ build_defn_expr expr = do
                         expr_ty = rwc_expr_ty expr
                         closure = foldl (\acc (name,name_ty) ->
                                     (RWCLam 
-                                      (RWCTyApp (RWCTyApp (RWCTyCon "(->)") name_ty) expr_ty)
+                                      (RWCTyApp (RWCTyApp (RWCTyCon "(->)") name_ty) (rwc_expr_ty acc))
                                         (bind name acc)
                                        ) 
                                         ) expr env'
                     lbl <- getLabel 
                     let ctype = rwc_expr_ty closure
-                    let tys = nub $ rwc_ty_vars ctype --FIXME: Should we be nubbing this?
-                        defn = RWCDefn (s2n lbl) $ embed $ setbind tys (ctype,closure)
+                        defn = RWCDefn (s2n lbl) $ embed $ setbind (fv ctype) (ctype,closure)
                     tell [defn]
                     return (RWCVar ctype $ s2n lbl,env')
 
@@ -159,12 +158,6 @@ rwc_expr_ty (RWCVar ty _)   = ty
 rwc_expr_ty (RWCCon ty _)   = ty
 rwc_expr_ty (RWCLiteral ty _) = ty
 rwc_expr_ty (RWCCase ty _ _ ) = ty
-
-rwc_ty_vars :: RWCTy -> [Name RWCTy]
-rwc_ty_vars (RWCTyVar nme) = [nme]
-rwc_ty_vars (RWCTyCon _  ) = []
-rwc_ty_vars (RWCTyApp a1 a2) = (rwc_ty_vars a1) ++ (rwc_ty_vars a2)
-
 
 getLabel :: LLM String 
 getLabel = do
