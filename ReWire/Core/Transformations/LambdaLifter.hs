@@ -60,7 +60,6 @@ ll_def (RWCDefn name ebnd) = do
                                                                                                               return $ RWCLam ty $ bind name exp'
                                                                                                               
                                                )
-                                    
     ll_def_exp x = ll_exp x
 
 ll_exp :: RWCExp -> LLM RWCExp
