@@ -136,7 +136,7 @@ wrap expr = do
 build_defn_expr :: RWCExp -> LLM (RWCExp,ReaderEnv)
 build_defn_expr expr = do
                     env <- ask
-                    let frees = fv expr 
+                    let frees = nub (fv expr)
                         env'  = filter (\x -> elem (fst x) frees) env
                         expr_ty = rwc_expr_ty expr
                         closure = foldl (\acc (name,name_ty) ->
@@ -147,7 +147,7 @@ build_defn_expr expr = do
                                         ) expr env'
                     lbl <- getLabel 
                     let ctype = rwc_expr_ty closure
-                        defn = RWCDefn (s2n lbl) $ embed $ setbind (fv ctype) (ctype,closure)
+                        defn = RWCDefn (s2n lbl) $ embed $ setbind (nub (fv ctype)) (ctype,closure)
                     tell [defn]
                     return (RWCVar ctype $ s2n lbl,env')
 
