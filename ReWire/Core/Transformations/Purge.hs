@@ -45,7 +45,7 @@ purge n p = do put empty
                  case md of
                    Just d  -> do inuseDefn d
                                  inuse   <- get
-                                 let ds' =  trace (">>>" ++ show inuse ++ "<<<") $ filter (\ (RWCDefn n _) -> n `member` inuse) ds
+                                 let ds' =  filter (\ (RWCDefn n _) -> n `member` inuse) ds
                                  return (Just $ p { defns = trec ds' })
                    Nothing -> return Nothing
    where defnName (RWCDefn n _) = AnyName n
