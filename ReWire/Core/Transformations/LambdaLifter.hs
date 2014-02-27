@@ -9,7 +9,7 @@ import Control.Monad.Reader
 import Control.Monad.Writer
 import Control.Monad.State
 import Control.Monad.Identity
-import Data.List (nub)
+import Data.List (nub,nubBy)
 
 import Debug.Trace
 
@@ -65,11 +65,11 @@ ll_def (RWCDefn name ebnd) = do
 ll_exp :: RWCExp -> LLM RWCExp
 ll_exp l@(RWCLam ty bnd)  = do
                               let arg_ty = fst $ peel_first_type ty
-                              (expr,wrapenv) <- lunbind bnd (\(pat,term) -> local (\env -> (pat,arg_ty):env) $ do
+                              (expr,env) <- lunbind bnd (\(pat,term) -> local (\env -> (pat,arg_ty):env) $ do
                                                                                                          term' <- ll_exp term  --Lambda Lift the interior first
                                                                                                          build_defn_expr term' --Build the defn for this lambda
                                                   )
-                              local (\_ -> wrapenv) (wrap expr) --Wrap the expr by applying in-scope variables to it. 
+                              local (\_ -> env) (wrap expr) --Wrap the expr by applying in-scope variables to it. 
                                
 ll_exp (RWCApp ty e1 e2) = do
                             e1' <- ll_exp e1
@@ -122,7 +122,7 @@ peel_final_type ty = pft $ peel_first_type ty
  -  over it with applies -}
 wrap :: RWCExp -> LLM RWCExp
 wrap expr = do
-               env <- ask
+               env <- ask 
                let closure = foldr (\(name,name_ty) acc -> 
                                         RWCApp (rest_ty acc) acc (RWCVar name_ty name)
                                          ) expr (env)
@@ -148,7 +148,9 @@ build_defn_expr expr = do
                     let ctype = rwc_expr_ty closure
                         defn = RWCDefn (s2n lbl) $ embed $ setbind (nub (fv ctype)) (ctype,closure)
                     tell [defn]
-                    return (RWCVar ctype $ s2n lbl,env')
+                    let cfrees = nub (fv closure)
+                        env_closure = filter (\x -> elem (fst x) cfrees) env
+                    return (RWCVar ctype $ s2n lbl,env_closure)
 
 
 rwc_expr_ty (RWCApp ty _ _) = ty
