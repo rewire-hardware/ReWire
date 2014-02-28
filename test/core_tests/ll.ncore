@@ -1,0 +1,13 @@
+{- demonstrates a lil bug in the lambda lifter -}
+
+data Pair a b is Pair a b end
+
+f1 :: a -> b -> c -> c
+is
+  \ x -> \ z -> (\ z -> z)
+end
+
+f2 :: a -> Pair (b -> (Pair a b)) (c -> (Pair a c))
+is
+  \ a -> Pair (\ x -> (Pair a x)) (\ x -> (Pair a x))
+end
