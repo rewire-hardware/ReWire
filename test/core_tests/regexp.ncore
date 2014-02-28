@@ -14,6 +14,19 @@ data RegExp a is Bar (RegExp a) (RegExp a)
                  | Atom a
               end
 
+compMachine :: RegExp Char -> Machine Char
+is
+  \reg -> case reg of
+             { 
+               (Bar r1 r2) -> bar (compMachine r1) (compMachine r2)
+               ; (Star r1) -> star (compMachine r1)
+               ; (Cons r1 r2) -> rseq (compMachine r1) (compMachine r2)
+               ; (Paren r1)   -> compMachine r1
+               ; (Atom a) -> match a Nothing
+             }
+
+end
+
 deMachine :: Machine input -> ((Pair (Maybe Bool) input) -> ReacT ((Pair (Maybe Bool) input)) (Maybe Bool) (Pair (Maybe Bool) (Machine input)))
 is
   \mm -> case mm of
@@ -204,4 +217,54 @@ is
                                                                         (Pair inneroutput innerresume) ->  (Left (Pair inneroutput (starP inneroutput innerresume)))
                                                                       }))
                                           })
+end
+
+a_char :: Char
+is
+  Char False True True False False False False True
+end
+
+b_char :: Char
+is
+  Char False True True False False False True  False
+end
+
+testexpr :: RegExp Char
+is 
+  Atom a_char
+end
+
+testexprii :: RegExp Char
+is
+  Bar (Atom a_char) (Atom b_char)
+end
+
+testexpriii :: RegExp Char
+is
+  Star testexpr
+end
+
+testexpriv :: RegExp Char
+is
+  Cons testexprii testexpriii --(a|b)a*
+end
+
+machinei :: Machine Char
+is
+  compMachine testexpr
+end
+
+machineiv :: Machine Char
+is
+  compMachine testexpriv
+end
+
+reactivate :: (input -> ReacT input (Maybe b) a) -> ReacT input (Maybe b) a
+is
+  \x -> ReacT ((Right (Pair Nothing x)))
+end
+
+main ::ReacT (Pair (Maybe Bool) Char) (Maybe Bool) (Pair (Maybe Bool) (Machine Char))
+is
+  reactivate (runMachine machinei)
 end
