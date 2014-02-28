@@ -22,18 +22,18 @@ lambdaLift cmd prog = let prog' = runLL (ll_prog prog)
                                         
 
 type ReaderEnv = ([(Name RWCExp,RWCTy)])
-type LLM = (WriterT [RWCDefn] (ReaderT ReaderEnv (StateT Int (LFreshM))))
+type LLM = WriterT [RWCDefn] (ReaderT ReaderEnv LFreshM)
 
-runDefns :: LLM RWCProg -> (ReaderT ReaderEnv (StateT Int (LFreshM))) RWCProg
+runDefns :: LLM RWCProg -> (ReaderT ReaderEnv LFreshM) RWCProg
 runDefns llm = runWriterT llm >>= (\(RWCProg {dataDecls=pdecls, defns=trec_defns},new_defns) -> do 
                                                                                                   defns' <- luntrec trec_defns
                                                                                                   let defns'' = trec $ new_defns ++ defns'
                                                                                                   return $ RWCProg {dataDecls=pdecls, defns=defns''}
                                   )
 
-runLL llm = runLFreshM $ evalStateT (runReaderT (runDefns llm) []) 0
+runLL llm = runLFreshM $ runReaderT (runDefns llm) []
 
-runLLM llm = runLFreshM $ evalStateT (runReaderT (runWriterT llm) []) 0
+runLLM llm = runLFreshM $ runReaderT (runWriterT llm) []
 
 ll_prog :: RWCProg -> LLM RWCProg
 ll_prog (RWCProg {dataDecls=pdecls, defns=trec_defns}) = do
@@ -62,14 +62,40 @@ ll_def (RWCDefn name ebnd) = do
                                                )
     ll_def_exp x = ll_exp x
 
+arrow_left :: RWCTy -> RWCTy
+arrow_left (RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) _) = t1
+
+arrow_right :: RWCTy -> RWCTy
+arrow_right (RWCTyApp (RWCTyApp (RWCTyCon "(->)") _) t2) = t2
+
+gather_lambda :: RWCExp -> LLM ([(Name RWCExp,RWCTy)],RWCExp)
+gather_lambda (RWCLam t b) = lunbind b (\(x,e) -> do (xts,e') <- gather_lambda e
+                                                     return ((x,arrow_left t):xts,e'))
+gather_lambda e            = return ([],e)
+
+mkLam :: (Name RWCExp,RWCTy) -> RWCExp -> RWCExp
+mkLam (x,t) bod =  RWCLam (RWCTyApp (RWCTyApp (RWCTyCon "(->)") t) (rwc_expr_ty bod)) (bind x bod)
+
+do_lift :: [(Name RWCExp,RWCTy)] -> RWCExp -> LLM RWCExp
+do_lift xts e = do n                   <- lfresh (s2n "ll")
+                   let lam             =  foldr mkLam e xts
+                       tlam            =  rwc_expr_ty lam
+                       tvs             =  nub (fv tlam)
+                       defn            =  RWCDefn n (embed $ setbind tvs (tlam,lam))
+                   tell [defn]
+                   return (RWCVar tlam n)
+
+rewrap :: [(Name RWCExp,RWCTy)] -> RWCExp -> LLM RWCExp
+rewrap xts e = return (foldl mkApp e xts)
+    where mkApp e1 (x,t) = RWCApp (arrow_right (rwc_expr_ty e1)) e1 (RWCVar t x)
+
 ll_exp :: RWCExp -> LLM RWCExp
-ll_exp l@(RWCLam ty bnd)  = do
-                              let arg_ty = fst $ peel_first_type ty
-                              (expr,env) <- lunbind bnd (\(pat,term) -> local (\env -> (pat,arg_ty):env) $ do
-                                                                                                         term' <- ll_exp term  --Lambda Lift the interior first
-                                                                                                         build_defn_expr term' --Build the defn for this lambda
-                                                  )
-                              local (\_ -> env) (wrap expr) --Wrap the expr by applying in-scope variables to it. 
+ll_exp l@(RWCLam t _)  = do (closed_xts,body) <- gather_lambda l
+                            env               <- ask
+                            let open_xts      =  filter (\(x,_) -> x `elem` fv l) env
+                            body'             <- ll_exp body
+                            e                 <- do_lift open_xts (foldr mkLam body' closed_xts)
+                            rewrap open_xts e
                                
 ll_exp (RWCApp ty e1 e2) = do
                             e1' <- ll_exp e1
@@ -118,6 +144,7 @@ peel_final_type ty = pft $ peel_first_type ty
    pft (ty, Nothing) = ty
    pft (ty, Just x ) = pft $ peel_first_type x
 
+{-
 {-| Given some expression we are lifting out, this closes the current environment
  -  over it with applies -}
 wrap :: RWCExp -> LLM RWCExp
@@ -149,9 +176,9 @@ build_defn_expr expr = do
                         defn = RWCDefn (s2n lbl) $ embed $ setbind (nub (fv ctype)) (ctype,closure)
                     tell [defn]
                     let cfrees = nub (fv closure)
-                        env_closure = filter (\x -> elem (fst x) cfrees) env
+                        env_closure = filter (\x -> elem (fst x) cfrees) env'
                     return (RWCVar ctype $ s2n lbl,env_closure)
-
+-}
 
 rwc_expr_ty (RWCApp ty _ _) = ty
 rwc_expr_ty (RWCLam ty _)   = ty
@@ -160,8 +187,8 @@ rwc_expr_ty (RWCCon ty _)   = ty
 rwc_expr_ty (RWCLiteral ty _) = ty
 rwc_expr_ty (RWCCase ty _ _ ) = ty
 
-getLabel :: LLM String 
-getLabel = do
-              s <- get
-              put (s+1)
-              return ("#!ll" ++ (show s))
+--getLabel :: LLM String 
+--getLabel = do
+--              s <- get
+--              put (s+1)
+--              return ("#!ll" ++ (show s))
