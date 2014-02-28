@@ -1,0 +1,131 @@
+data Pair a b is Pair a b end
+data Either a b is Left a | Right b end
+data St s a is St (s -> Pair a s) end
+data Re i o s a is Re (St s (Either a (Pair o (i -> Re i o s a)))) end
+data React i o a is D a | P o (i -> React i o a) end
+data Nil is Nil end
+data Bit is Zero | One end
+
+returnSt :: a -> St s a
+is
+  \ a -> St (\ s -> Pair a s)
+end
+
+deSt :: St s a -> (s -> Pair a s)
+is
+  \ m -> case m of { St f -> f }
+end
+
+bindSt :: St s a -> (a -> St s b) -> St s b
+is
+  \ m -> \ f ->
+    St (\ s -> case m of
+               { St g -> case g s of
+                         { Pair a s' -> deSt (f a) s' }})
+end
+
+returnRe :: a -> Re i o s a
+is
+  \ a -> Re (returnSt (Left a))
+end
+
+deRe :: Re i o s a -> St s (Either a (Pair o (i -> Re i o s a)))
+is
+  \ phi -> case phi of { Re m -> m }
+end
+
+bindRe :: Re i o s a -> (a -> Re i o s b) -> Re i o s b
+is
+  \ phi -> \ f ->
+    case phi of
+    { Re m -> Re (bindSt m (\ x -> case x of
+                                   { Left v           -> deRe (f v)
+                                   ; Right (Pair o k) -> returnSt (Right (Pair o (\ i -> bindRe (k i) f)))
+                         }))
+    }
+end
+
+returnReact :: a -> React i o a
+is
+  D
+end
+
+bindReact :: React i o a -> (a -> React i o b) -> React i o b
+is
+  \ phi -> \ f ->
+    case phi of
+    { D x   -> f x
+    ; P o k -> P o (\ i -> bindReact (k i) f)
+    }           
+end
+
+liftRe :: St s a -> Re i o s a
+is
+  \ phi -> Re (bindSt phi (\ x -> returnSt (Left x)))
+end
+
+getSt :: St s s
+is
+  St (\ s -> Pair s s)
+end
+
+putSt :: s -> St s Nil
+is
+  \ s' -> St (\ s -> Pair Nil s')
+end
+
+updSt :: (s -> s) -> St s Nil
+is
+  \ f -> St (\ s -> Pair Nil (f s))
+end
+
+signal :: o -> Re i o s i
+is
+  \ o -> Re (returnSt (Right (Pair o returnRe)))
+end
+
+not :: Bit -> Bit
+is
+  \ b -> case b of
+         { Zero -> One
+         ; x    -> Zero
+         }
+end         
+
+seqRe :: Re i o s a -> Re i o s b -> Re i o s b
+is
+  \ phi -> \ gamma -> bindRe phi (\ xx -> gamma)
+end
+
+blink :: Re Bit Bit Bit a
+is
+  bindRe
+    (liftRe getSt)
+    (\ b ->
+      bindRe
+        (signal b)
+        (\ sw -> case sw of
+                 { Zero -> blink
+                 ; One  -> seqRe
+                             (liftRe (updSt not))
+                             blink
+                 }))
+end
+
+extrude :: Re i o s a -> s -> React i o (Pair a s)
+is
+  \ phi -> \ s ->
+    case phi of
+    { Re m -> case deSt m s of
+              { Pair e s' -> case e of
+                             { Left v           -> D (Pair v s')
+                             ; Right (Pair o k) -> P o (\ i -> extrude (k i) s')
+                             }
+              }
+    }
+end
+
+main :: React Bit Bit (Pair a Bit)
+is
+  extrude blink Zero
+end
