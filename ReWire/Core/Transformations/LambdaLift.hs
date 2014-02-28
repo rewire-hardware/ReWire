@@ -1,4 +1,4 @@
-module ReWire.Core.Transformations.LambdaLifter (lambdaLift) where
+module ReWire.Core.Transformations.LambdaLift (lambdaLift) where
 
 import ReWire.Core.Syntax
 import ReWire.Core.Transformations.Types
