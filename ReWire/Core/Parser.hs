@@ -162,7 +162,7 @@ parse = parsewithname "<no filename>"
 
 parsewithname :: FilePath -> String -> Either String RWCProg
 parsewithname filename guts =
-  case runParser (whiteSpace >> prog) () filename guts of
+  case runParser (whiteSpace >> prog >>= \ p -> whiteSpace >> eof >> return p) () filename guts of
     Left e  -> Left (show e)
     Right p -> Right p
             
