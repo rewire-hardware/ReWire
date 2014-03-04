@@ -7,23 +7,14 @@ import ReWire.Core.Syntax
 import Unbound.LocallyNameless
 import Control.Monad hiding (sequence,mapM)
 import Data.List (isInfixOf,find)
-import Control.Monad.Reader hiding (sequence,mapM)
-import Control.Monad.Identity hiding (sequence,mapM)
 import Data.Traversable (sequence,mapM)
 import Data.Maybe (catMaybes,isNothing,fromJust)
 import ReWire.Core.Transformations.Types
+import ReWire.Core.Transformations.Monad
 
 import Debug.Trace (trace)
 
-type M = ReaderT [RWCDefn] (LFreshMT Identity)
-
-runM :: M a -> a
-runM m = runIdentity (runLFreshMT (runReaderT m []))
-
-askDefns :: M [RWCDefn]
-askDefns = ask
-
-expandalt :: Name RWCExp -> RWCAlt -> M RWCAlt
+expandalt :: Name RWCExp -> RWCAlt -> RW RWCAlt
 expandalt nexp (RWCAlt b) = lunbind b (\(p,eb) ->
                              do eb' <- expandexpr nexp eb
                                 return (RWCAlt (bind p eb')))
@@ -47,7 +38,7 @@ matchty sub (RWCTyApp t1 t2) (RWCTyApp t1' t2')    = do sub1 <- matchty [] t1 t1
                                                         mergesubs sub1 sub2
 matchty _ t1 t2                                    = fail $ "matchty failed (constructor head): " ++ show t1 ++ ", " ++ show t2
 
-askvar :: RWCTy -> Name RWCExp -> M RWCExp
+askvar :: RWCTy -> Name RWCExp -> RW RWCExp
 askvar t n = do ds <- askDefns
                 case find (\ (RWCDefn n' _) -> n == n') ds of
                   Just (RWCDefn _ (Embed b)) -> lunbind b (\(tvs,(t',e)) ->
@@ -55,7 +46,7 @@ askvar t n = do ds <- askDefns
                                                     return (substs sub e))
                   _                          -> return (RWCVar t n)
 
-expandexpr :: Name RWCExp -> RWCExp -> M RWCExp
+expandexpr :: Name RWCExp -> RWCExp -> RW RWCExp
 expandexpr nexp (RWCApp t e1 e2)         = liftM2 (RWCApp t) (expandexpr nexp e1) (expandexpr nexp e2)
 expandexpr nexp (RWCLam t b)             = lunbind b (\(n,e) ->
                                             do e' <- expandexpr nexp e
@@ -68,17 +59,16 @@ expandexpr nexp (RWCCase t e alts)       = do e'    <- expandexpr nexp e
                                               alts' <- mapM (expandalt nexp) alts
                                               return (RWCCase t e' alts')
 
-expanddefn :: Name RWCExp -> RWCDefn -> M RWCDefn
+expanddefn :: Name RWCExp -> RWCDefn -> RW RWCDefn
 expanddefn nexp (RWCDefn n (Embed b)) = lunbind b (\(tvs,(t,e)) ->
                                          do e' <- expandexpr nexp e
                                             return (RWCDefn n (Embed (setbind tvs (t,e')))))
 
-pe :: Name RWCExp -> RWCProg -> M RWCProg
-pe n p = do ds   <- luntrec (defns p)
-            ds'  <- avoid (map defnName ds) (local (const ds) (mapM (expanddefn n) ds))
-            return (p { defns = trec ds' })
-   where defnName (RWCDefn n _) = AnyName n
+pe :: Name RWCExp -> RW [RWCDefn]
+pe n = do ds <- askDefns
+          mapM (expanddefn n) ds
 
 cmdExpand :: TransCommand
-cmdExpand n p = let p' = runM (pe (s2n n) p)
+cmdExpand n p = let ds = runRW p (pe (s2n n))
+                    p' = p { defns = trec ds }
                 in  (Just p',Nothing)
