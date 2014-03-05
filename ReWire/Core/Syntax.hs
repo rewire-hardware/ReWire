@@ -100,3 +100,18 @@ instance Subst RWCTy RWCDefn where
   isvar _ = Nothing
 
 $(derive [''RWCExp,''RWCAlt,''RWCPat,''RWCTy,''RWCLit,''RWCData,''RWCDataCon,''RWCDefn{-,''RWCProg-}])
+
+flattenApp :: RWCExp -> [RWCExp]
+flattenApp (RWCApp _ e e') = flattenApp e++[e']
+flattenApp e               = [e]
+
+mkArrow :: RWCTy -> RWCTy -> RWCTy
+mkArrow t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2
+
+typeOf :: RWCExp -> RWCTy
+typeOf (RWCApp t _ _)   = t
+typeOf (RWCLam t _)     = t
+typeOf (RWCVar t _)     = t
+typeOf (RWCCon t _)     = t
+typeOf (RWCLiteral t _) = t
+typeOf (RWCCase t _ _)  = t

@@ -84,11 +84,10 @@ ppDefn (RWCDefn n (Embed b)) = lunbind b (\(tvs,(ty,e)) ->
                                                   nest 4 e_p,
                                                   text "end"]))
 
-defnName (RWCDefn n _) = AnyName n
-
 ppDefns defns_ = do defns   <- luntrec defns_
                     defns_p <- avoid (map defnName defns) $ mapM ppDefn defns
                     return (foldr ($+$) empty defns_p)
+  where defnName (RWCDefn n _) = AnyName n
 
 ppProg :: LFresh m => RWCProg -> m Doc
 ppProg p = do dd_p <- ppDataDecls (dataDecls p)

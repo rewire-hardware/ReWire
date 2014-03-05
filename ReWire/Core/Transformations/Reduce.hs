@@ -41,10 +41,6 @@ redalt (RWCAlt b) = lunbind b (\(p,ebody_) ->
                        do ebody <- reduce ebody_
                           return (RWCAlt (bind p ebody)))
 
-flattenApp :: RWCExp -> [RWCExp]
-flattenApp (RWCApp _ e e') = flattenApp e++[e']
-flattenApp e               = [e]
-
 redcase :: LFresh m => RWCExp -> [RWCAlt] -> m (Maybe RWCExp)
 redcase escrut (RWCAlt b:alts) = lunbind b (\(p,ebody) ->
                                     do mr <- matchpat escrut p

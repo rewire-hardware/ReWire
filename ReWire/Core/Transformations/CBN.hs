@@ -49,12 +49,6 @@ matchpat e_ (RWCPatLiteral l)  = do e <- evalexpr e_
                                                       | otherwise -> return MatchNo
                                       _                           -> return MatchMaybe
 
--- FIXME: begin stuff that may need to be moved out to a module
-flattenApp :: RWCExp -> [RWCExp]
-flattenApp (RWCApp _ e e') = flattenApp e++[e']
-flattenApp e               = [e]
--- FIXME: end stuff that may need to be moved out to a module
-
 evalexpr :: MonadReWire m => RWCExp -> m RWCExp
 evalexpr (RWCApp t e1_ e2)  = do e1 <- evalexpr e1_
                                  case e1 of

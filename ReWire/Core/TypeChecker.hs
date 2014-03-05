@@ -77,22 +77,12 @@ initDefn (RWCDefn n (Embed b)) = do (tvs,(t,e)) <- unbind b
                                     return (RWCDefn n (Embed (setbind tvs (t,e'))),a)
 
 initDataCon :: [Name RWCTy] -> RWCTy -> RWCDataCon -> CAssump
-initDataCon tvs rt (RWCDataCon i ts) = (i,setbind tvs (foldr arr rt ts))
+initDataCon tvs rt (RWCDataCon i ts) = (i,setbind tvs (foldr mkArrow rt ts))
 
 initDataDecl :: RWCData -> TCM [CAssump]
 initDataDecl (RWCData i b) = do (tvs,dcs) <- unbind b
                                 let rt    =  foldl RWCTyApp (RWCTyCon i) (map RWCTyVar tvs)
                                 return $ map (initDataCon tvs rt) dcs
-
-arr :: RWCTy -> RWCTy -> RWCTy
-arr t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2
-
-typeOf (RWCApp t _ _)   = t
-typeOf (RWCLam t _)     = t
-typeOf (RWCVar t _)     = t
-typeOf (RWCCon t _)     = t
-typeOf (RWCLiteral t _) = t
-typeOf (RWCCase t _ _)  = t
 
 (@@) :: TySub -> TySub -> TySub
 s1@@s2 = [(u,substs s1 t) | (u,t) <- s2] ++ s1
@@ -162,11 +152,11 @@ tcAlt tres tscrut (RWCAlt b) = do (p,e) <- unbind b
 tcExp :: RWCExp -> TCM ()
 tcExp (RWCApp t e1 e2)   = do tcExp e1
                               tcExp e2
-                              unify (typeOf e1) (typeOf e2 `arr` t)
+                              unify (typeOf e1) (typeOf e2 `mkArrow` t)
 tcExp (RWCLam t b)       = do (x,e) <- unbind b
                               tv    <- freshv
                               localAssumps ((x,setbind [] (RWCTyVar tv)):) (tcExp e)
-                              unify t (RWCTyVar tv `arr` typeOf e)
+                              unify t (RWCTyVar tv `mkArrow` typeOf e)
 tcExp (RWCVar t v)       = do as      <- askAssumps
                               let mpt =  lookup v as
                               case mpt of

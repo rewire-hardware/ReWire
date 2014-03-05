@@ -37,11 +37,11 @@ expanddefn nexp (RWCDefn n (Embed b)) = lunbind b (\(tvs,(t,e)) ->
                                          do e' <- expandexpr nexp e
                                             return (RWCDefn n (Embed (setbind tvs (t,e')))))
 
-pe :: Name RWCExp -> RW [RWCDefn]
-pe n = do ds <- askDefns
+go :: Name RWCExp -> RW [RWCDefn]
+go n = do ds <- askDefns
           mapM (expanddefn n) ds
 
 cmdExpand :: TransCommand
-cmdExpand n p = let ds = runRW p (pe (s2n n))
+cmdExpand n p = let ds = runRW p (go (s2n n))
                     p' = p { defns = trec ds }
                 in  (Just p',Nothing)

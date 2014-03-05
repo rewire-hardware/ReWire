@@ -14,6 +14,7 @@ import Data.Maybe (fromJust)
 
 -- Kind checking for Core.
 
+-- Syntax for kinds is not exported; it's only used inside the kind checker.
 data Kind = Kvar (Name Kind) | Kstar | Kfun Kind Kind deriving (Eq,Show)
 
 instance Alpha Kind where

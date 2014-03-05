@@ -87,13 +87,11 @@ atype = do i <- conid
              [t] -> return t
              _   -> return (foldl RWCTyApp (RWCTyCon ("(" ++ replicate (length ts - 1) ',' ++ ")")) ts)
              
-mkarrow t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2
-
 btype = do ts <- many atype
            return (foldl1 RWCTyApp ts)
 
 ty = do ts <- btype `sepBy` reservedOp "->"
-        return (foldr1 mkarrow ts)
+        return (foldr1 mkArrow ts)
 
 defn = do i <- varid
           reservedOp "::"
