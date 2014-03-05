@@ -108,6 +108,9 @@ flattenApp e               = [e]
 mkArrow :: RWCTy -> RWCTy -> RWCTy
 mkArrow t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2
 
+arrowLeft :: RWCTy -> RWCTy
+arrowLeft (RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2) = t1
+
 typeOf :: RWCExp -> RWCTy
 typeOf (RWCApp t _ _)   = t
 typeOf (RWCLam t _)     = t
