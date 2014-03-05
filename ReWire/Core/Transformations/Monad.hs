@@ -1,5 +1,7 @@
+{-# LANGUAGE FlexibleInstances,UndecidableInstances,MultiParamTypeClasses #-}
+
 --
--- This is a handy monad class/ transformer with lots of morphisms for stuff
+-- This is a handy monad class/transformer with lots of morphisms for stuff
 -- you often want to do in ReWire transformations.
 --
 module ReWire.Core.Transformations.Monad where
@@ -8,13 +10,17 @@ import Unbound.LocallyNameless
 import Control.Monad.Reader
 import Control.Monad.Identity
 import ReWire.Core.Syntax
+import Control.Monad.State.Class
+import Control.Monad.State.Lazy as Lazy
+import Control.Monad.State.Strict as Strict
+import Data.List (find)
 
 data RWTEnv = RWTEnv { envDefns     :: [RWCDefn],
                        envDataDecls :: [RWCData] }
 
 newtype RWT m a = RWT { deRWT :: ReaderT RWTEnv (LFreshMT m) a }
 
-class Monad m => MonadReWire m where
+class (Monad m,LFresh m) => MonadReWire m where
   askDefns       :: m [RWCDefn]
   askDataDecls   :: m [RWCData]
   localDefns     :: ([RWCDefn] -> [RWCDefn]) -> m a -> m a
@@ -22,6 +28,23 @@ class Monad m => MonadReWire m where
 
 instance MonadTrans RWT where
   lift = RWT . lift . lift
+
+instance MonadReWire m => MonadReWire (Lazy.StateT s m) where
+  askDefns       = lift askDefns
+  askDataDecls   = lift askDataDecls
+  localDefns     = Lazy.mapStateT . localDefns
+  localDataDecls = Lazy.mapStateT . localDataDecls
+
+instance MonadReWire m => MonadReWire (Strict.StateT s m) where
+  askDefns       = lift askDefns
+  askDataDecls   = lift askDataDecls
+  localDefns     = Strict.mapStateT . localDefns
+  localDataDecls = Strict.mapStateT . localDataDecls
+
+instance MonadState s m => MonadState s (RWT m) where
+    get = lift get
+    put = lift . put
+    state = lift . state
 
 instance Monad m => Monad (RWT m) where
   return x = RWT (return x)
@@ -52,3 +75,36 @@ type RW = RWT Identity
 
 runRW :: RWCProg -> RW a -> a
 runRW p = runIdentity . runRWT p
+
+askvar :: MonadReWire m => RWCTy -> Name RWCExp -> m RWCExp
+askvar t n = do ds <- askDefns
+                case find (\ (RWCDefn n' _) -> n == n') ds of
+                  Just (RWCDefn _ (Embed b)) -> lunbind b (\(tvs,(t',e)) ->
+                                                 do sub <- matchty [] t' t
+                                                    return (substs sub e))
+                  _                          -> return (RWCVar t n)
+
+askDefn :: MonadReWire m => Name RWCExp -> m (Maybe RWCDefn)
+askDefn n = do defns <- askDefns
+               return $ find (\(RWCDefn n' _) -> n==n') defns
+
+-- FIXME: begin stuff that should maybe be moved to a separate module
+mergesubs :: Monad m => [(Name RWCTy,RWCTy)] -> [(Name RWCTy,RWCTy)] -> m [(Name RWCTy,RWCTy)]
+mergesubs ((n,t):sub) sub' = case lookup n sub' of
+                               Just t' -> if t `aeq` t' then mergesubs sub sub'
+                                                        else fail "mergesubs failed"
+                               Nothing -> do sub'' <- mergesubs sub sub'
+                                             return ((n,t):sub'')
+mergesubs [] sub'          = return sub'
+
+matchty :: Monad m => [(Name RWCTy,RWCTy)] -> RWCTy -> RWCTy -> m [(Name RWCTy,RWCTy)]
+matchty sub (RWCTyVar n) t                         = case lookup n sub of
+                                                       Nothing -> return ((n,t):sub)
+                                                       Just t' -> if t `aeq` t' then return sub
+                                                                                else fail "matchty failed (variable inconsistency)"
+matchty sub (RWCTyCon i1) (RWCTyCon i2) | i1 == i2 = return sub
+matchty sub (RWCTyApp t1 t2) (RWCTyApp t1' t2')    = do sub1 <- matchty [] t1 t1'
+                                                        sub2 <- matchty [] t2 t2'
+                                                        mergesubs sub1 sub2
+matchty _ t1 t2                                    = fail $ "matchty failed (constructor head): " ++ show t1 ++ ", " ++ show t2
+-- FIXME: end stuff that should maybe be moved to a separate module

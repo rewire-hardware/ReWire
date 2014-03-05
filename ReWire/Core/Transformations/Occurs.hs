@@ -37,7 +37,7 @@ get_occurrences nme (RWCProg decls tdefns) = runLFreshM $ do
                             
 
 
-occurs :: Name RWCExp -> RWCDefn -> LFreshM Bool
+occurs :: LFresh m => Name RWCExp -> RWCDefn -> m Bool
 occurs nme (RWCDefn dnme ebnd) = do
                                   let bnd = unembed ebnd
                                   lunbind bnd (\(_,(_,exp)) -> do

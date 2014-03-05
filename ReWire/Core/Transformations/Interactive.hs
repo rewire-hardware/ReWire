@@ -24,8 +24,6 @@ import ReWire.Core.Transformations.LambdaLift (lambdaLift)
 import ReWire.Core.Transformations.Status (cmdStatus)
 import ReWire.Core.Transformations.Occurs (cmdOccurs)
 import ReWire.Core.Transformations.Uses (cmdUses)
-import ReWire.Core.Transformations.Quash (cmdQuash)
-import ReWire.Core.Transformations.Lint (cmdLint)
 import ReWire.Core.Transformations.Types
 import System.IO
 
@@ -54,9 +52,7 @@ cmdTable = [(":p",cmdPrint),
             ("ll",lambdaLift),
             ("status",cmdStatus),
             ("occurs",cmdOccurs),
-            ("uses", cmdUses),
-            ("quash",cmdQuash),
-            ("lint",cmdLint)]
+            ("uses", cmdUses)]
 
 -- The "repl" for the translation environment.
 trans :: RWCProg -> IO ()

@@ -11,6 +11,7 @@ import Control.Monad.Reader hiding (sequence,mapM)
 import Control.Monad.Identity hiding (sequence,mapM)
 import Data.Traversable (sequence,mapM)
 import Data.Maybe (catMaybes,isNothing,fromJust)
+import ReWire.Core.Transformations.Monad
 import ReWire.Core.Transformations.Types
 
 import Debug.Trace (trace)
@@ -89,14 +90,10 @@ reddefn (RWCDefn n (Embed b)) = lunbind b (\(tvs,(t,e_)) ->
                                    do e <- reduce e_
                                       return (RWCDefn n (embed $ setbind tvs (t,e))))
 
-defnName :: RWCDefn -> AnyName
-defnName (RWCDefn n _) = AnyName n
-
-redprog :: LFresh m => RWCProg -> m RWCProg
-redprog p = do ds  <- luntrec (defns p)
-               ds' <- avoid (map defnName ds) (mapM reddefn ds)
-               return (p { defns = trec ds' })
+redprog :: RWCProg -> RWCProg
+redprog p = runRW p $ do ds  <- askDefns
+                         ds' <- mapM reddefn ds
+                         return (p { defns = trec ds' })
                         
 cmdReduce :: TransCommand
-cmdReduce n p = let p' = runLFreshM (redprog p)
-                in  (Just p',Nothing)
+cmdReduce _ p = (Just (redprog p),Nothing)

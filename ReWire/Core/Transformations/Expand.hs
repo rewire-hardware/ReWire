@@ -19,33 +19,6 @@ expandalt nexp (RWCAlt b) = lunbind b (\(p,eb) ->
                              do eb' <- expandexpr nexp eb
                                 return (RWCAlt (bind p eb')))
 
-mergesubs :: Monad m => [(Name RWCTy,RWCTy)] -> [(Name RWCTy,RWCTy)] -> m [(Name RWCTy,RWCTy)]
-mergesubs ((n,t):sub) sub' = case lookup n sub' of
-                               Just t' -> if t `aeq` t' then mergesubs sub sub'
-                                                        else fail "mergesubs failed"
-                               Nothing -> do sub'' <- mergesubs sub sub'
-                                             return ((n,t):sub'')
-mergesubs [] sub'          = return sub'
-
-matchty :: Monad m => [(Name RWCTy,RWCTy)] -> RWCTy -> RWCTy -> m [(Name RWCTy,RWCTy)]
-matchty sub (RWCTyVar n) t                         = case lookup n sub of
-                                                       Nothing -> return ((n,t):sub)
-                                                       Just t' -> if t `aeq` t' then return sub
-                                                                                else fail "matchty failed (variable inconsistency)"
-matchty sub (RWCTyCon i1) (RWCTyCon i2) | i1 == i2 = return sub
-matchty sub (RWCTyApp t1 t2) (RWCTyApp t1' t2')    = do sub1 <- matchty [] t1 t1'
-                                                        sub2 <- matchty [] t2 t2'
-                                                        mergesubs sub1 sub2
-matchty _ t1 t2                                    = fail $ "matchty failed (constructor head): " ++ show t1 ++ ", " ++ show t2
-
-askvar :: RWCTy -> Name RWCExp -> RW RWCExp
-askvar t n = do ds <- askDefns
-                case find (\ (RWCDefn n' _) -> n == n') ds of
-                  Just (RWCDefn _ (Embed b)) -> lunbind b (\(tvs,(t',e)) ->
-                                                 do sub <- matchty [] t' t
-                                                    return (substs sub e))
-                  _                          -> return (RWCVar t n)
-
 expandexpr :: Name RWCExp -> RWCExp -> RW RWCExp
 expandexpr nexp (RWCApp t e1 e2)         = liftM2 (RWCApp t) (expandexpr nexp e1) (expandexpr nexp e2)
 expandexpr nexp (RWCLam t b)             = lunbind b (\(n,e) ->
