@@ -1,4 +1,9 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
+--
+-- This type checker is based loosely on Mark Jones's "Typing Haskell in
+-- Haskell", though since we don't have type classes in core it is much
+-- simpler.
+--
 
 module ReWire.Core.TypeChecker (typecheck) where
 
