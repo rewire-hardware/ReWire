@@ -101,6 +101,10 @@ instance Subst RWCTy RWCDefn where
 
 $(derive [''RWCExp,''RWCAlt,''RWCPat,''RWCTy,''RWCLit,''RWCData,''RWCDataCon,''RWCDefn{-,''RWCProg-}])
 
+flattenArrow :: RWCTy -> ([RWCTy],RWCTy)
+flattenArrow (RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2) = let (ts,t) = flattenArrow t2 in (t1:ts,t)
+flattenArrow t                                             = ([],t)
+  
 flattenApp :: RWCExp -> [RWCExp]
 flattenApp (RWCApp _ e e') = flattenApp e++[e']
 flattenApp e               = [e]
