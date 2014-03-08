@@ -7,12 +7,15 @@
 module ReWire.Core.Transformations.Monad where
 
 import Unbound.LocallyNameless
+import Unbound.LocallyNameless.Fresh
 import Control.Monad.Reader
+import qualified Control.Monad.Trans.Reader as Reader
 import Control.Monad.Identity
 import ReWire.Core.Syntax
 import Control.Monad.State.Class
 import Control.Monad.State.Lazy as Lazy
 import Control.Monad.State.Strict as Strict
+import Control.Monad.Error
 import Data.List (find)
 
 data RWTEnv = RWTEnv { envDefns     :: [RWCDefn],
@@ -45,6 +48,16 @@ instance MonadState s m => MonadState s (RWT m) where
     get = lift get
     put = lift . put
     state = lift . state
+
+instance (Error e, MonadReWire m) => MonadReWire (ErrorT e m) where
+    askDefns = lift askDefns
+    localDefns = mapErrorT . localDefns
+    askDataDecls = lift askDataDecls
+    localDataDecls = mapErrorT . localDataDecls
+    
+instance MonadError e m => MonadError e (RWT m) where
+    throwError = lift . throwError
+    catchError m h = RWT $ catchError (deRWT m) (deRWT . h)
 
 instance Monad m => Monad (RWT m) where
   return x = RWT (return x)
