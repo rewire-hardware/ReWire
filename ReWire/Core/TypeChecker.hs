@@ -124,10 +124,6 @@ patassumps (RWCPatCon i ps)        = concatMap patassumps ps
 patassumps (RWCPatLiteral _)       = []
 patassumps (RWCPatVar (Embed t) n) = [(n,setbind [] t)]
 
-flattenArrow :: RWCTy -> [RWCTy]
-flattenArrow (RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2) = t1 : flattenArrow t2
-flattenArrow t                                             = [t]
-
 tcPat :: RWCTy -> RWCPat -> TCM ()
 tcPat t (RWCPatLiteral l)         = case l of
                                       RWCLitInteger _ -> unify t (RWCTyCon "Integer")
@@ -138,11 +134,9 @@ tcPat t (RWCPatCon i ps)          = do cas     <- askCAssumps
                                        let mpt =  lookup i cas
                                        case mpt of
                                          Nothing -> fail $ "Unknown constructor: " ++ i
-                                         Just b  -> do (tvs,ta_) <- unbind b
-                                                       ta        <- inst tvs ta_
-                                                       let ts    =  flattenArrow ta
-                                                           targs =  init ts
-                                                           tres  =  last ts
+                                         Just b  -> do (tvs,ta_)        <- unbind b
+                                                       ta               <- inst tvs ta_
+                                                       let (targs,tres) =  flattenArrow ta
                                                        if length ps /= length targs
                                                           then fail "Pattern is not applied to enough arguments"
                                                           else do zipWithM_ tcPat targs ps
