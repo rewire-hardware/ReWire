@@ -105,9 +105,20 @@ flattenArrow :: RWCTy -> ([RWCTy],RWCTy)
 flattenArrow (RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2) = let (ts,t) = flattenArrow t2 in (t1:ts,t)
 flattenArrow t                                             = ([],t)
   
+flattenTyApp :: RWCTy -> [RWCTy]
+flattenTyApp (RWCTyApp t1 t2) = flattenTyApp t1 ++ [t2]
+flattenTyApp t                = [t]
+
 flattenApp :: RWCExp -> [RWCExp]
 flattenApp (RWCApp _ e e') = flattenApp e++[e']
 flattenApp e               = [e]
+
+flattenLambda :: LFresh m => RWCExp -> (([(Name RWCExp,RWCTy)],RWCExp) -> m b) -> m b
+flattenLambda = flattenLambda_ []
+  where flattenLambda_ :: LFresh m => [(Name RWCExp,RWCTy)] -> RWCExp -> (([(Name RWCExp,RWCTy)],RWCExp) -> m b) -> m b
+        flattenLambda_ nts (RWCLam t b) f = lunbind b (\(n,e) -> flattenLambda_ (nts++[(n,arrowLeft t)]) e f)
+        flattenLambda_ nts e f            = f (nts,e)
+                                                     
 
 mkArrow :: RWCTy -> RWCTy -> RWCTy
 mkArrow t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2
