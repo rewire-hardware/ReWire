@@ -1,8 +1,16 @@
-nfprog is a form of prog
+The set nfprog is a subset of prog from the general ReWire Core grammar.
+
+---
 
 nfprog ::= datadecl* nfdecl*
+   {- Note: one of the datadecls must be exactly "data React o i a is D a | P o (i -> React o i a) end" -}
 
-nfdecl ::= contdecl | pausedecl | bittydecl
+--
+
+nfdecl ::= contdecl | maindecl | bittydecl
+   {- Note: exactly one maindecl -}
+
+--
 
 contdecl ::= contname '::' ty 'is' contbody 'end'
    {- Note: ty is at least arity 1, with the last argument being of the input
@@ -16,36 +24,32 @@ contdecl ::= contname '::' ty 'is' contbody 'end'
 contbody ::= \ x1 -> .. -> \ xn -> \ xi -> contexpr
    {- Note: n >= 0 -}
 
-contexpr ::= pausename bittyexpr*
+contexpr ::= P bittyexpr contcall
            | 'case' bittyexpr 'of' { [pat -> contexpr]* }
-   {- Note: all bittyexprs must have bitty type -}
 
-pausedecl ::= pausename '::' ty 'is' pausebody 'end'
-   {- Note: All arguments must be "bitty" types.
+contcall ::= contname bittyexpr*
+           | 'case' bittyexpr 'of' { [pat -> contcall]* }
 
-      Arity of the contbody must match arity of the type.
+--
 
-      Codomain must be "React I O A" where I and O are the same as in all other
-      contdecls/pausedecls and A is bitty. -}
+maindecl ::= 'main' '::' ty 'is' 'P' bittyexpr (contname bittyexpr*) 'end'
+   {- Note: type must be of the form React I O A -}
 
-pausebody ::= \ x1 -> .. -> \ xn -> pauseexpr
-   {- Note: n >= 0 -}
-
-pauseexpr ::= P bittyexpr (contname bittyexpr*)
-            | 'case' bittyexpr 'of' { [pat -> pauseexpr]* }
-   {- Note: all bittyexprs must have bitty type -}
+--
 
 bittydecl ::= bittyname '::' ty 'is' bittybody 'end'
    {- Note: type must be of the form t1 -> ... -> tn, with every ti bitty. -}
 
 bittybody ::= \ x1 -> .. -> \ xn -> bittyexpr
-   {- Note, n >= 0, arity must match that of the bittydecl -}
+   {- Note: n >= 0, arity must match that of the bittydecl -}
 
 bittyexpr ::= bittyname bittyexpr*  {- Note: fully applied -}
             | conname bittyexpr*    {- Note: fully applied -}
             | literal
             | 'case' bittyexpr 'of' { [pat -> bittyexpr]* }
    {- Note: all bittyexprs must have bitty type -}
+
+--
 
 "Bitty" type ::= any monomorphic, non-recursive data type whose fields are all
 bitty types; or certain primitive types like Integer, once we get around to
