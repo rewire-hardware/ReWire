@@ -4,32 +4,64 @@ import ReWire.Core.Syntax
 import ReWire.Core.Transformations.Types
 import ReWire.Core.Transformations.Monad
 import Unbound.LocallyNameless hiding (empty)
-import Data.Map
+import qualified Data.Map as Map
+import Data.Map (Map)
+import qualified Data.Set as Set
+import Data.Set (Set)
+import Data.Graph
+import Data.List (nub)
+import Data.Maybe (fromJust)
 import Control.Monad.State
 import Control.Monad.Error
 import Prelude hiding (lookup)
 
-data DefnSort = DefnBitty | DefnPause | DefnCont
+data DefnSort = DefnBitty | DefnPause | DefnCont deriving Show
 type NFM = ErrorT NFMError (StateT NFMState RW)
-data NFMState = NFM { visited :: Map (Name RWCExp) DefnSort }
+data NFMState = NFM { visited :: Map (Name RWCExp) DefnSort, 
+                      cpx     :: Set Identifier }         -- really this should be env not state, but whatever
 type NFMError = String
 
 getVisited = get >>= return . visited
+getCpxTys = get >>= return . cpx
 modifyVisited f = modify (\ s -> s { visited = f (visited s) })
+modifyCpxTys f = modify (\ s -> s { cpx = f (cpx s) })
+
+type TyGraph = [(Identifier,Identifier,[Identifier])]
+
+buildTyGraph :: LFresh m => [RWCData] -> m TyGraph
+buildTyGraph = liftM (("(->)","(->)",[]):) . mapM mkNode
+  where mkNode (RWCData i b)     = lunbind b (\(tvs,dcs) -> return (i,i,concatMap dcOuts dcs))
+        dcOuts (RWCDataCon i ts) = concatMap tyOuts ts
+        tyOuts (RWCTyApp t1 t2)  = tyOuts t1 ++ tyOuts t2
+        tyOuts (RWCTyCon i)      = [i]
+        tyOuts (RWCTyVar _)      = []
+
+-- Find "complex" type constructors: that is, all type constructors for types
+-- that either are recursive, functional, or contain a complex type.
+cpxTys :: [RWCData] -> Set Identifier
+cpxTys dds = let edges                  = runLFreshM $ buildTyGraph dds
+                 tcs                    = map (\(i,_,_) -> i) edges
+                 (graph,vxmap,kmap)     = graphFromEdges edges
+                 sccs                   = stronglyConnComp edges
+                 sccRecs (AcyclicSCC _) = []
+                 sccRecs (CyclicSCC ts) = ts
+                 recs                   = "(->)" : concatMap sccRecs sccs
+                 cpxs                   = nub $ recs ++ filter (\ i -> any (\ i' -> path graph (fromJust (kmap i)) i') (map (fromJust . kmap) recs)) tcs
+             in Set.fromList cpxs
 
 checkDefnIsPause :: Name RWCExp -> NFM ()
 checkDefnIsPause n = do vset <- getVisited
-                        case lookup n vset of
+                        case Map.lookup n vset of
                            Just DefnPause -> return ()
                            Just DefnBitty -> throwError $ "checkDefnIsPause: " ++ show n ++ " has to be bitty"
                            Just DefnCont  -> throwError $ "checkDefnIsPause: " ++ show n ++ " has to be a continuer"
                            Nothing        -> do
-                             modifyVisited (insert n DefnPause)
                              md <- askDefn n
                              case md of
                                Nothing ->
                                  throwError $ "checkDefnIsPause: " ++ show n ++ " is undefined"
                                Just (RWCDefn _ (Embed b)) -> lunbind b $ \(tvs,(t,e)) -> do
+                                 modifyVisited (Map.insert n DefnPause)
                                  let (targs,tres) = flattenArrow t
                                  mapM_ checkTyIsBitty targs
                                  checkTyIsPause tres
@@ -69,17 +101,17 @@ checkExprIsContApp e = do checkTyIsCont (typeOf e)
 
 checkDefnIsCont :: Name RWCExp -> NFM ()
 checkDefnIsCont n = do vset <- getVisited
-                       case lookup n vset of
+                       case Map.lookup n vset of
                            Just DefnCont  -> return ()
                            Just DefnPause -> throwError $ "checkDefnIsCont: " ++ show n ++ " has to be a pauser"
                            Just DefnBitty -> throwError $ "checkDefnIsCont: " ++ show n ++ " has to be bitty"
                            Nothing        -> do
-                             modifyVisited (insert n DefnCont)
                              md <- askDefn n
                              case md of
                                Nothing ->
                                  throwError $ "checkDefnIsCont: " ++ show n ++ " is undefined"
                                Just (RWCDefn _ (Embed b)) -> lunbind b $ \(tvs,(t,e)) -> do
+                                 modifyVisited (Map.insert n DefnCont)
                                  let (targs,tres) = flattenArrow t
                                  when (length targs < 1)
                                       (throwError $ "checkDefnIsCont: not enough arguments in type")
@@ -114,17 +146,17 @@ checkAltIsCont (RWCAlt b) = lunbind b (\(_,e) -> checkExprIsCont e)
 
 checkDefnIsBitty :: Name RWCExp -> NFM ()
 checkDefnIsBitty n = do vset <- getVisited
-                        case lookup n vset of
+                        case Map.lookup n vset of
                            Just DefnCont  -> throwError $ "checkDefnIsBitty: " ++ show n ++ " has to be a continuer"
                            Just DefnPause -> throwError $ "checkDefnIsBitty: " ++ show n ++ " has to be a pauser"
                            Just DefnBitty -> return ()
                            Nothing        -> do
-                             modifyVisited (insert n DefnBitty)
                              md <- askDefn n
                              case md of
                                Nothing -> return () -- FIXME: I think this happens ONLY when it's locally bound
 --                                 throwError $ "checkDefnIsBitty: " ++ show n ++ " is undefined"
                                Just (RWCDefn _ (Embed b)) -> lunbind b $ \(tvs,(t,e)) -> do
+                                 modifyVisited (Map.insert n DefnBitty)
                                  let (targs,tres) = flattenArrow t
                                  mapM_ checkTyIsBitty targs
                                  checkTyIsBitty tres
@@ -134,7 +166,12 @@ checkDefnIsBitty n = do vset <- getVisited
                                    checkExprIsBitty eb
 
 checkTyIsBitty :: RWCTy -> NFM ()
-checkTyIsBitty _ = return () -- FIXME
+checkTyIsBitty t@(RWCTyApp {}) = mapM_ checkTyIsBitty (flattenTyApp t)
+checkTyIsBitty (RWCTyVar v)    = throwError $ "checkTyIsBitty: encountered polymorphic type"
+checkTyIsBitty (RWCTyCon i)    = do cpx <- getCpxTys
+                                    if i `Set.member` cpx
+                                       then throwError $ "checkTyIsBitty: encountered complex type: " ++ i
+                                       else return ()
 
 checkExprIsBitty :: RWCExp -> NFM ()
 checkExprIsBitty e@(RWCApp {})      = do checkTyIsBitty (typeOf e)
@@ -160,11 +197,14 @@ checkLiteralIsBitty (RWCLitInteger _) = return ()
 checkLiteralIsBitty (RWCLitChar _)    = return ()
 checkLiteralIsBitty (RWCLitFloat _)   = throwError $ "checkLiteralIsBitty: floating point literal encountered"
 
-checkProg :: NFM ()
-checkProg = checkDefnIsPause (s2n "main")
+checkProg :: NFM (Map (Name RWCExp) DefnSort)
+checkProg = do dds <- askDataDecls
+               modifyCpxTys (const (cpxTys dds))
+               checkDefnIsPause (s2n "main")
+               getVisited
 
 runNFM :: RWCProg -> NFM a -> Either NFMError a
-runNFM p phi = fst $ runRW p (runStateT (runErrorT phi) (NFM { visited = empty }))
+runNFM p phi = fst $ runRW p (runStateT (runErrorT phi) (NFM { visited = Map.empty, cpx = Set.empty }))
 
 cmdCheckNF :: TransCommand
 cmdCheckNF _ p = (Nothing,Just s)
