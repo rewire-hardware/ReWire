@@ -22,7 +22,7 @@ is
 end
 
 -- This is a "pauser".
--- It has to be of the form \ x1 -> \ x2 -> .. -> \ xn -> \ xi -> {case producing a pause}.
+-- It has to be of the form \ x1 -> \ x2 -> .. -> \ xn -> {case producing a pause}.
 -- Where n >= 0.
 --
 -- A pause is an expression of the form P e1 e2 where e2 is a continuer call.

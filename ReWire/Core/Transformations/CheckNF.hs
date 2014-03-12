@@ -4,108 +4,167 @@ import ReWire.Core.Syntax
 import ReWire.Core.Transformations.Types
 import ReWire.Core.Transformations.Monad
 import Unbound.LocallyNameless hiding (empty)
-import Data.Set
+import Data.Map
 import Control.Monad.State
 import Control.Monad.Error
+import Prelude hiding (lookup)
 
+data DefnSort = DefnBitty | DefnPause | DefnCont
 type NFM = ErrorT NFMError (StateT NFMState RW)
-data NFMState = NFM { seen :: Set (Name RWCExp) }
+data NFMState = NFM { visited :: Map (Name RWCExp) DefnSort }
 type NFMError = String
 
-getSeen = get >>= return . seen
-modifySeen f = modify (\ s -> s { seen = f (seen s) })
+getVisited = get >>= return . visited
+modifyVisited f = modify (\ s -> s { visited = f (visited s) })
 
-checkArg :: RWCExp -> NFM ()
-checkArg e@(RWCApp t _ _)   = do checkArgTy t
-                                 let (ef:es) = flattenApp e
-                                 mapM_ checkArg es
-                                 case ef of
-                                   -- RWCApp can't happen
-                                   RWCLam _ b    -> throwError $ "checkArg: Encountered lambda expression (this needs to be lifted to the top level): " ++ show ef
-                                   RWCVar _ n    -> checkIsNonRecursiveDefn n
-                                   RWCCon _ i    -> return ()
-                                   -- RWCLiteral can't happen
-                                   RWCCase _ _ _ -> throwError $ "checkArg: Encountered case expression in function position: " ++ show ef
-checkArg e@(RWCLam {})      = throwError $ "checkArg: Encountered lambda expression in argument position: " ++ show e
-checkArg (RWCVar t n)       = checkArgTy t >> checkIsNonRecursiveDefn n
-checkArg (RWCCon t _)       = checkArgTy t
-checkArg (RWCLiteral t _)   = checkArgTy t
-checkArg (RWCCase t e alts) = checkArgTy t >> checkArg e >> mapM_ checkArgAlt alts
-  where checkArgAlt (RWCAlt b) = lunbind b (\(_,e) -> checkArg e)
+checkDefnIsPause :: Name RWCExp -> NFM ()
+checkDefnIsPause n = do vset <- getVisited
+                        case lookup n vset of
+                           Just DefnPause -> return ()
+                           Just DefnBitty -> throwError $ "checkDefnIsPause: " ++ show n ++ " has to be bitty"
+                           Just DefnCont  -> throwError $ "checkDefnIsPause: " ++ show n ++ " has to be a continuer"
+                           Nothing        -> do
+                             modifyVisited (insert n DefnPause)
+                             md <- askDefn n
+                             case md of
+                               Nothing ->
+                                 throwError $ "checkDefnIsPause: " ++ show n ++ " is undefined"
+                               Just (RWCDefn _ (Embed b)) -> lunbind b $ \(tvs,(t,e)) -> do
+                                 let (targs,tres) = flattenArrow t
+                                 mapM_ checkTyIsBitty targs
+                                 checkTyIsPause tres
+                                 flattenLambda e $ \(xts,eb) -> do
+                                   when (length xts /= length targs)
+                                        (throwError $ "checkDefnIsPause: number of lambda-bound variables does not match arity of function (" ++ show (length xts) ++ " vars, arity " ++ show (length targs) ++ ")")
+                                   checkExprIsPause eb
 
-checkIsNonRecursiveDefn :: Name RWCExp -> NFM ()
-checkIsNonRecursiveDefn _ = return () -- FIXME
+checkTyIsPause :: RWCTy -> NFM ()
+checkTyIsPause (RWCTyApp (RWCTyApp (RWCTyApp (RWCTyCon "React") ti) to) ta) =
+  do checkTyIsBitty ti
+     checkTyIsBitty to
+     checkTyIsBitty ta
+     -- FIXME: check to make sure ti, to, ta match what's been seen so far.
+checkTyIsPause t =
+  throwError $ "checkTyIsPause: type is not of form `React t1 t2 t3': " ++ show t
 
-checkContTy :: RWCTy -> NFM ()
-checkContTy (RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2) = checkMachineTy t2 -- FIXME: check that t1 is proper input type
-checkContTy t                                             = throwError $ "checkContTy: Not an arrow type"
+checkExprIsPause :: RWCExp -> NFM ()
+checkExprIsPause (RWCCase t e alts)                           = do checkTyIsPause t
+                                                                   checkExprIsBitty e
+                                                                   mapM_ checkAltIsPause alts
+checkExprIsPause (RWCApp t (RWCApp _ (RWCCon _ "P") esig) ek) = do checkTyIsPause t
+                                                                   checkExprIsBitty esig
+                                                                   checkExprIsContApp ek
+checkExprIsPause e                                            = throwError $ "checkExprIsPause: malformed pause expression: " ++ show e
 
-checkContCall :: RWCExp -> NFM ()
-checkContCall e = do checkContTy (typeOf e)
-                     let (ef:es) = flattenApp e
-                     mapM_ checkArg es
-                     case ef of
-                       RWCVar _ n -> do md <- askDefn n
-                                        case md of
-                                          Just d  -> checkMachineDefn d
-                                          Nothing -> throwError $ "checkContCall: Continuation name " ++ show n ++ "  does not exist or is bound locally"
-                       _          -> throwError $ "checkContCall: Continuation head is not a named function: " ++ show ef
+checkAltIsPause :: RWCAlt -> NFM ()
+checkAltIsPause (RWCAlt b) = lunbind b (\(_,e) -> checkExprIsPause e)
 
-checkPauseApp :: RWCExp -> NFM ()
-checkPauseApp e = do checkPauseTy (typeOf e)
-                     case flattenApp e of
-                       [RWCCon _ "P",esig,econt] -> checkArg esig >> checkContCall econt
-                       _                         -> throwError $ "checkPauseApp: Malformed pause: " ++ show e
+checkExprIsContApp :: RWCExp -> NFM ()
+checkExprIsContApp e = do checkTyIsCont (typeOf e)
+                          let (ef:eargs) = flattenApp e
+                          mapM_ checkExprIsBitty eargs
+                          case ef of
+                            RWCVar _ n -> checkDefnIsCont n
+                            _          -> throwError $ "checkExprIsContApp: malformed continuation application: " ++ show e
 
-checkPause :: RWCExp -> NFM ()
-checkPause (RWCCase _ e alts) = checkArg e >> mapM_ checkPauseAlt alts
-  where checkPauseAlt (RWCAlt b) = lunbind b (\(_,e) -> checkPause e)
-checkPause e                  = checkPauseApp e
+checkDefnIsCont :: Name RWCExp -> NFM ()
+checkDefnIsCont n = do vset <- getVisited
+                       case lookup n vset of
+                           Just DefnCont  -> return ()
+                           Just DefnPause -> throwError $ "checkDefnIsCont: " ++ show n ++ " has to be a pauser"
+                           Just DefnBitty -> throwError $ "checkDefnIsCont: " ++ show n ++ " has to be bitty"
+                           Nothing        -> do
+                             modifyVisited (insert n DefnCont)
+                             md <- askDefn n
+                             case md of
+                               Nothing ->
+                                 throwError $ "checkDefnIsCont: " ++ show n ++ " is undefined"
+                               Just (RWCDefn _ (Embed b)) -> lunbind b $ \(tvs,(t,e)) -> do
+                                 let (targs,tres) = flattenArrow t
+                                 when (length targs < 1)
+                                      (throwError $ "checkDefnIsCont: not enough arguments in type")
+                                 mapM_ checkTyIsBitty targs
+                                 -- FIXME: check that last element of targs matches what's been seen so far
+                                 checkTyIsPause tres
+                                 flattenLambda e $ \(xts,eb) -> do
+                                   when (length xts /= length targs)
+                                        (throwError $ "checkDefnIsCont: number of lambda-bound variables does not match arity of function (" ++ show (length xts) ++ " vars, arity " ++ show (length targs) ++ ")")
+                                   checkExprIsCont eb
 
-checkPauseTy :: RWCTy -> NFM ()
-checkPauseTy t = case flattenTyApp t of
-                   (RWCTyCon "React":ts) -> mapM_ checkArgTy ts
-                   _                     -> throwError $ "checkMachineResultTy: Result type is not in `React': " ++ show t
+checkTyIsCont :: RWCTy -> NFM ()
+checkTyIsCont (RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2) = do checkTyIsBitty t1
+                                                                 checkTyIsPause t2
+                                                                 -- FIXME: make sure t1 matches what's been seen so far
+checkTyIsCont t                                             = throwError $ "checkTyIsCont: malformed continuation type: " ++ show t
 
-checkArgTy :: RWCTy -> NFM ()
-checkArgTy t = case flattenTyApp t of
-                 (RWCTyCon "(->)":_) -> throwError $ "checkArgTy: Argument has arrow type: " ++ show t
-                 (RWCTyCon i:ts)     -> mapM_ checkArgTy ts -- FIXME: check if i is a recursive type
-                 (RWCTyVar _:_)      -> throwError $ "checkArgTy: Argument has polymorphic type: " ++ show t
+checkExprIsCont :: RWCExp -> NFM ()
+checkExprIsCont (RWCCase t e alts) = do checkTyIsPause t
+                                        checkExprIsBitty e
+                                        mapM_ checkAltIsCont alts
+checkExprIsCont e@(RWCApp {})      = do checkTyIsPause (typeOf e)
+                                        let (ef:eargs) = flattenApp e
+                                        mapM_ checkExprIsBitty eargs
+                                        case ef of
+                                          RWCVar _ n -> checkDefnIsPause n
+                                          _          -> throwError $ "checkExprIsCont: malformed application head " ++ show ef
+checkExprIsCont e                  = throwError $ "checkExprIsCont: malformed pause expression: " ++ show e
 
-checkMachineTy :: RWCTy -> NFM ()
-checkMachineTy t = mapM_ checkArgTy targs >> checkPauseTy tres -- FIXME: check that the last arg type is the input signal type
-  where (targs,tres) = flattenArrow t
+checkAltIsCont :: RWCAlt -> NFM ()
+checkAltIsCont (RWCAlt b) = lunbind b (\(_,e) -> checkExprIsCont e)
 
-checkMachineDefn :: RWCDefn -> NFM ()
-checkMachineDefn (RWCDefn n (Embed b)) = lunbind b $ \(tvs,(t,e_)) ->
-                                          do s <- getSeen
-                                             if n `member` s
-                                              then return ()
-                                              else do modifySeen (insert n)
-                                                      checkMachineTy t
-                                                      let (targs,tres) =  flattenArrow t
-                                                      flattenLambda e_ $ \(xts,e) ->
-                                                       if length targs /= length xts
-                                                        then throwError $ "checkMachineDefn: Number of argument types does not match number of lambda binders"
-                                                        else checkPause e
+checkDefnIsBitty :: Name RWCExp -> NFM ()
+checkDefnIsBitty n = do vset <- getVisited
+                        case lookup n vset of
+                           Just DefnCont  -> throwError $ "checkDefnIsBitty: " ++ show n ++ " has to be a continuer"
+                           Just DefnPause -> throwError $ "checkDefnIsBitty: " ++ show n ++ " has to be a pauser"
+                           Just DefnBitty -> return ()
+                           Nothing        -> do
+                             modifyVisited (insert n DefnBitty)
+                             md <- askDefn n
+                             case md of
+                               Nothing -> return () -- FIXME: I think this happens ONLY when it's locally bound
+--                                 throwError $ "checkDefnIsBitty: " ++ show n ++ " is undefined"
+                               Just (RWCDefn _ (Embed b)) -> lunbind b $ \(tvs,(t,e)) -> do
+                                 let (targs,tres) = flattenArrow t
+                                 mapM_ checkTyIsBitty targs
+                                 checkTyIsBitty tres
+                                 flattenLambda e $ \(xts,eb) -> do
+                                   when (length xts /= length targs)
+                                        (throwError $ "checkDefnIsBitty: number of lambda-bound variables does not match arity of function (" ++ show (length xts) ++ " vars, arity " ++ show (length targs) ++ ")")
+                                   checkExprIsBitty eb
 
-checkMainDefn :: RWCDefn -> NFM ()
-checkMainDefn (RWCDefn _ (Embed b)) = lunbind b $ \(tvs,(t,e)) ->
-                                      do modifySeen (insert (s2n "main"))
-                                         checkMachineTy t
-                                         checkPause e
-                                         
+checkTyIsBitty :: RWCTy -> NFM ()
+checkTyIsBitty _ = return () -- FIXME
+
+checkExprIsBitty :: RWCExp -> NFM ()
+checkExprIsBitty e@(RWCApp {})      = do checkTyIsBitty (typeOf e)
+                                         let (ef:eargs) = flattenApp e
+                                         mapM_ checkExprIsBitty eargs
+                                         case ef of
+                                           RWCVar _ n     -> checkDefnIsBitty n
+                                           RWCCon _ i     -> return ()
+                                           RWCLiteral _ l -> checkLiteralIsBitty l
+                                           _              -> throwError $ "checkExprIsBitty: malformed application head " ++ show ef
+checkExprIsBitty (RWCVar t n)       = checkTyIsBitty t >> checkDefnIsBitty n -- checkTy is redundant I think
+checkExprIsBitty (RWCCon t _)       = checkTyIsBitty t
+checkExprIsBitty (RWCLiteral _ l)   = checkLiteralIsBitty l
+checkExprIsBitty (RWCCase t e alts) = do checkTyIsBitty t
+                                         checkExprIsBitty e
+                                         mapM_ checkAltIsBitty alts
+
+checkAltIsBitty :: RWCAlt -> NFM ()
+checkAltIsBitty (RWCAlt b) = lunbind b (\(_,e) -> checkExprIsBitty e)
+
+checkLiteralIsBitty :: RWCLit -> NFM ()
+checkLiteralIsBitty (RWCLitInteger _) = return ()
+checkLiteralIsBitty (RWCLitChar _)    = return ()
+checkLiteralIsBitty (RWCLitFloat _)   = throwError $ "checkLiteralIsBitty: floating point literal encountered"
 
 checkProg :: NFM ()
-checkProg = do md <- askDefn (s2n "main")
-               case md of
-                 Just d  -> checkMainDefn d -- FIXME: main is special
-                 Nothing -> throwError "main does not exist"
-               return ()
+checkProg = checkDefnIsPause (s2n "main")
 
 runNFM :: RWCProg -> NFM a -> Either NFMError a
-runNFM p phi = fst $ runRW p (runStateT (runErrorT phi) (NFM { seen = empty }))
+runNFM p phi = fst $ runRW p (runStateT (runErrorT phi) (NFM { visited = empty }))
 
 cmdCheckNF :: TransCommand
 cmdCheckNF _ p = (Nothing,Just s)

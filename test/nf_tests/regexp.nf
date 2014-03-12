@@ -94,6 +94,17 @@ is
 
 end
 
+rseq :: ReacT (Pair (Maybe Bool) Char) (Maybe Bool) (Pair (Maybe Bool) Char) ->
+        ReacT (Pair (Maybe Bool) Char) (Maybe Bool) (Pair (Maybe Bool) Char) ->
+        ReacT (Pair (Maybe Bool) Char) (Maybe Bool) (Pair (Maybe Bool) Char)
+is
+    \left -> \right -> case left of
+                          {
+                           ReacT (Right (Pair Nothing res)) -> returnRe (Pair Nothing a_char)
+                          }
+end
+
+
 {-
 
 bar :: Machine Char -> Machine Char -> Machine Char
