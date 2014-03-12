@@ -42,10 +42,14 @@ cmdHelp _ _ = (Nothing,Just (intercalate ", " (map fst cmdTable)))
 cmdPrintDebug :: TransCommand
 cmdPrintDebug _ p = (Nothing,Just (show $ pp p))
 
+cmdPrintShow :: TransCommand
+cmdPrintShow _ p = (Nothing,Just (show p))
+
 -- Here are the commands available.
 cmdTable :: CommandTable
 cmdTable = [(":p",cmdPrint),
             (":pd",cmdPrintDebug),
+            (":ps",cmdPrintShow),
             (":?",cmdHelp),
             ("expand",cmdExpand),
             ("reduce",cmdReduce),

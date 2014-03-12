@@ -22,25 +22,24 @@ lambdaLift cmd prog = let prog' = runLL (ll_prog prog)
                                         
 
 type ReaderEnv = ([(Name RWCExp,RWCTy)])
-type LLM = WriterT [RWCDefn] (ReaderT ReaderEnv LFreshM)
+type LLM = WriterT [RWCDefn] (ReaderT ReaderEnv FreshM)
 
-runDefns :: LLM RWCProg -> (ReaderT ReaderEnv LFreshM) RWCProg
-runDefns llm = runWriterT llm >>= (\(RWCProg {dataDecls=pdecls, defns=trec_defns},new_defns) -> do 
+runDefns :: LLM RWCProg -> (ReaderT ReaderEnv FreshM) RWCProg
+runDefns llm = runWriterT llm >>= return . fst 
+                                  {-(\(RWCProg {dataDecls=pdecls, defns=trec_defns},new_defns) -> do 
                                                                                                   defns' <- luntrec trec_defns
                                                                                                   let defns'' = trec $ new_defns ++ defns'
                                                                                                   return $ RWCProg {dataDecls=pdecls, defns=defns''}
-                                  )
+                                  ) -}
 
-runLL llm = runLFreshM $ runReaderT (runDefns llm) []
-
-runLLM llm = runLFreshM $ runReaderT (runWriterT llm) []
+runLL llm = runFreshM $ runReaderT (runDefns llm) []
 
 ll_prog :: RWCProg -> LLM RWCProg
 ll_prog (RWCProg {dataDecls=pdecls, defns=trec_defns}) = do
-                                    defns' <- luntrec trec_defns
-                                    let avoids = map (AnyName . defn_name) defns' 
-                                    defns'' <- avoid avoids $ mapM ll_def defns'
-                                    return $ (RWCProg {dataDecls=pdecls, defns=(trec defns'')})
+                                    defns' <- untrec trec_defns
+--                                    let avoids = map (AnyName . defn_name) defns' 
+                                    (defns'',new_defns) <- listen {-$ avoid avoids-} $ mapM ll_def defns'
+                                    return $ (RWCProg {dataDecls=pdecls, defns=(trec (defns''++new_defns))})
    where
     defn_name :: RWCDefn -> (Name RWCExp)
     defn_name (RWCDefn n _) = n
@@ -49,17 +48,14 @@ ll_prog (RWCProg {dataDecls=pdecls, defns=trec_defns}) = do
 ll_def :: RWCDefn -> LLM RWCDefn
 ll_def (RWCDefn name ebnd) = do
                                let bnd = unembed ebnd 
-                               lunbind bnd (\(tys,(body_ty,expr_body)) -> do
+                               unbind bnd >>= \(tys,(body_ty,expr_body)) -> do
                                                                    expr_body' <- ll_def_exp expr_body
                                                                    return $ RWCDefn name $ embed $ setbind tys (body_ty,expr_body')
-                                           )
   where
     ll_def_exp :: RWCExp -> LLM RWCExp 
-    ll_def_exp (RWCLam ty bexp) = lunbind bexp (\(name, exp) -> local (\env -> (name,fst $ peel_first_type ty):env) $ do
+    ll_def_exp (RWCLam ty bexp) = unbind bexp >>= \(name, exp) -> local (\env -> (name,fst $ peel_first_type ty):env) $ do
                                                                                                               exp' <- ll_def_exp exp
                                                                                                               return $ RWCLam ty $ bind name exp'
-                                                                                                              
-                                               )
     ll_def_exp x = ll_exp x
 
 arrow_left :: RWCTy -> RWCTy
@@ -69,15 +65,15 @@ arrow_right :: RWCTy -> RWCTy
 arrow_right (RWCTyApp (RWCTyApp (RWCTyCon "(->)") _) t2) = t2
 
 gather_lambda :: RWCExp -> LLM ([(Name RWCExp,RWCTy)],RWCExp)
-gather_lambda (RWCLam t b) = lunbind b (\(x,e) -> do (xts,e') <- gather_lambda e
-                                                     return ((x,arrow_left t):xts,e'))
+gather_lambda (RWCLam t b) = unbind b >>= \(x,e) -> do (xts,e') <- gather_lambda e
+                                                       return ((x,arrow_left t):xts,e')
 gather_lambda e            = return ([],e)
 
 mkLam :: (Name RWCExp,RWCTy) -> RWCExp -> RWCExp
 mkLam (x,t) bod =  RWCLam (RWCTyApp (RWCTyApp (RWCTyCon "(->)") t) (rwc_expr_ty bod)) (bind x bod)
 
 do_lift :: [(Name RWCExp,RWCTy)] -> RWCExp -> LLM RWCExp
-do_lift xts e = do n                   <- lfresh (s2n "ll")
+do_lift xts e = do n                   <- fresh (s2n "ll")
                    let lam             =  foldr mkLam e xts
                        tlam            =  rwc_expr_ty lam
                        tvs             =  nub (fv tlam)
@@ -113,10 +109,9 @@ ll_alts :: [RWCAlt] -> LLM [RWCAlt]
 ll_alts = mapM ll_alt
 
 ll_alt :: RWCAlt -> LLM RWCAlt
-ll_alt (RWCAlt bnd) = lunbind bnd (\(pat, exp) -> do
-                                                    exp' <- env_with_pattern pat (ll_exp exp)
-                                                    return (RWCAlt $ bind pat exp')
-                                  )
+ll_alt (RWCAlt bnd) = unbind bnd >>= \(pat, exp) -> do
+                                                     exp' <- env_with_pattern pat (ll_exp exp)
+                                                     return (RWCAlt $ bind pat exp')
                          
    where
       env_with_pattern :: RWCPat -> LLM a -> LLM a

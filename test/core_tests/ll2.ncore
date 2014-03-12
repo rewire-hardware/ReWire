@@ -1,0 +1,6 @@
+data Pair a b is Pair a b end
+
+foo :: a -> Pair (a -> a -> a) a
+is
+  \ x -> Pair (\ y -> case y of { x -> \ z -> x }) x
+end
