@@ -1,3 +1,5 @@
+-- FIXME: Need to make sure bitty defns are not recursive.
+-- FIXME: Need to make sure pattern matching is exhaustive.
 module ReWire.Core.Transformations.CheckNF where
 
 import ReWire.Core.Syntax
@@ -171,15 +173,24 @@ checkMain = do md <- askDefn (s2n "main")
                        checkExprIsBitty e1
                        checkExprIsContCall e2
 
-checkProg :: NFM (Map (Name RWCExp) DefnSort)
+checkProg :: NFM ()
 checkProg = do dds <- askDataDecls
                modifyCpxTys (const (cpxTys dds))
                checkMain
-               getVisited
 
 runNFM :: RWCProg -> NFM a -> Either NFMError a
 runNFM p phi = fst $ runRW p (runStateT (runErrorT phi) (NFM { visited = Map.empty, cpx = Set.empty }))
 
+-- This is a bit odd: we need to leave the defns untrec'd to make sure the
+-- namespace in the map still corresponds correctly to the names in the
+-- defns.
+checkNF :: RWCProg -> Either NFMError ([RWCData],[RWCDefn],Map (Name RWCExp) DefnSort)
+checkNF p = runNFM p $ do checkProg
+                          dds <- askDataDecls
+                          ds  <- askDefns
+                          v   <- getVisited
+                          return (dds,ds,v)
+
 cmdCheckNF :: TransCommand
 cmdCheckNF _ p = (Nothing,Just s)
-  where s = show (runNFM p checkProg)
+  where s = show (runNFM p $ checkProg >> getVisited)
