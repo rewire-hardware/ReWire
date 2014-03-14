@@ -17,6 +17,7 @@ import Control.Monad.State.Lazy as Lazy
 import Control.Monad.State.Strict as Strict
 import Control.Monad.Error
 import Data.List (find)
+import Data.Maybe (fromJust)
 
 data RWTEnv = RWTEnv { envDefns     :: [RWCDefn],
                        envDataDecls :: [RWCData] }
@@ -100,6 +101,27 @@ askvar t n = do ds <- askDefns
 askDefn :: MonadReWire m => Name RWCExp -> m (Maybe RWCDefn)
 askDefn n = do defns <- askDefns
                return $ find (\(RWCDefn n' _) -> n==n') defns
+
+askConDataDecl :: MonadReWire m => Identifier -> m (Maybe RWCData)
+askConDataDecl i = do dds <- askDataDecls
+                      liftM msum $ mapM checkDD dds
+  where checkDD d@(RWCData _ b) = lunbind b $ \ (_,dcs) ->
+                                    if any (\(RWCDataCon i' _) -> i==i') dcs
+                                       then return (Just d)
+                                       else return Nothing
+
+-- FIXME: note this is untested (I wrote it and realized it wouldn't give me
+-- enough info in the context where I thought I needed it) but may be useful
+-- later
+askConTy :: MonadReWire m => Identifier -> m (Maybe RWCTy)
+askConTy i = do mdd <- askConDataDecl i
+                case mdd of
+                  Nothing             -> return Nothing
+                  Just (RWCData di b) -> lunbind b $ \ (tvs,dcs) ->
+                    do let (RWCDataCon _ targs) = fromJust $ find (\(RWCDataCon i' _) -> i==i') dcs
+                           tres                 = foldl RWCTyApp (RWCTyCon di) (map RWCTyVar tvs)
+                           t                    = foldr mkArrow tres targs
+                       return (Just t)
 
 -- FIXME: begin stuff that should maybe be moved to a separate module
 mergesubs :: Monad m => [(Name RWCTy,RWCTy)] -> [(Name RWCTy,RWCTy)] -> m [(Name RWCTy,RWCTy)]
