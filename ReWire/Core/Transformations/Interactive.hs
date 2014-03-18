@@ -25,6 +25,7 @@ import ReWire.Core.Transformations.Status (cmdStatus)
 import ReWire.Core.Transformations.Occurs (cmdOccurs)
 import ReWire.Core.Transformations.Uses (cmdUses)
 import ReWire.Core.Transformations.CheckNF (cmdCheckNF)
+import ReWire.Core.Transformations.ToVHDL (cmdToVHDL)
 import ReWire.Core.Transformations.Types
 import System.IO
 
@@ -58,7 +59,8 @@ cmdTable = [(":p",cmdPrint),
             ("status",cmdStatus),
             ("occurs",cmdOccurs),
             ("uses", cmdUses),
-            ("checknf",cmdCheckNF)]
+            ("checknf",cmdCheckNF),
+            ("tovhdl",cmdToVHDL)]
 
 -- The "repl" for the translation environment.
 trans :: RWCProg -> IO ()

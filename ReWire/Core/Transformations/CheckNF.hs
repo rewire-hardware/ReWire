@@ -178,6 +178,10 @@ checkProg = do dds <- askDataDecls
                modifyCpxTys (const (cpxTys dds))
                checkMain
 
+checkProg' :: RW (Either NFMError (Map (Name RWCExp) DefnSort))
+checkProg' = runStateT (runErrorT $ do checkProg
+                                       getVisited) (NFM { visited = Map.empty, cpx = Set.empty }) >>= return . fst
+
 runNFM :: RWCProg -> NFM a -> Either NFMError a
 runNFM p phi = fst $ runRW p (runStateT (runErrorT phi) (NFM { visited = Map.empty, cpx = Set.empty }))
 
