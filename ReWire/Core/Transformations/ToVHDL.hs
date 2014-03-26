@@ -25,27 +25,28 @@ data AssignmentRHS  = FunCall String [String]
                     | Slice String Int Int
                     | Conditional [(Condition,String)]
                     deriving Show
-data VMState = VMState { signalCounter :: Int } deriving Show
+data VMState = VMState { assignments   :: [Assignment],
+                         declarations  :: [Declaration],
+                         signalCounter :: Int } deriving Show
 data VMEnv   = VMEnv   { bindings :: Map (Name RWCExp) NameInfo } deriving Show
-data VMOut   = VMOut   { assignments  :: [Assignment],
-                         declarations :: [Declaration] } deriving Show
-type VM = ReaderT VMEnv (WriterT VMOut (StateT VMState RW))
+type VM = ReaderT VMEnv (StateT VMState RW)
 
-data NameInfo = Global String | Local String | NotBound deriving (Eq,Show)
+data NameInfo = BoundK Int | BoundVar String | BoundFun String | NotBound deriving (Eq,Show)
 
 getSignalCounter = get >>= return . signalCounter
 modifySignalCounter f = modify (\ s -> s { signalCounter = f (signalCounter s) })
 putSignalCounter = modifySignalCounter . const
 
-instance Monoid VMOut where
-  mempty  = VMOut { assignments = [], declarations = [] }
-  mappend (VMOut { assignments = sa1, declarations = sd1 })
-          (VMOut { assignments = sa2, declarations = sd2 })
-            = VMOut { assignments  = sa1 `mappend` sa2,
-                      declarations = sd1 `mappend` sd2 }
+getAssignments = get >>= return . assignments
+modifyAssignments f = modify (\ s -> s { assignments = f (assignments s) })
+putAssignments = modifyAssignments . const
 
-tellAssignments o = tell (VMOut { assignments = o, declarations = [] })
-tellDeclarations o = tell (VMOut { assignments = [], declarations = o })
+getDeclarations = get >>= return . declarations
+modifyDeclarations f = modify (\ s -> s { declarations = f (declarations s) })
+putDeclarations = modifyDeclarations . const
+
+tellAssignments o = modifyAssignments (++o)
+tellDeclarations o = modifyDeclarations (++o)
 
 askBindings :: VM (Map (Name RWCExp) NameInfo)
 askBindings = ask >>= return . bindings
@@ -57,18 +58,18 @@ askNameInfo :: Name RWCExp -> VM NameInfo
 askNameInfo n = do bindings <- askBindings
                    return $ maybe NotBound id (Map.lookup n bindings)
 
-freshName :: VM String
-freshName = do ctr <- getSignalCounter
-               putSignalCounter (ctr+1)
-               return ("tmp_"++show ctr)
+freshName :: String -> VM String
+freshName n = do ctr <- getSignalCounter
+                 putSignalCounter (ctr+1)
+                 return (n++"_"++show ctr)
                
-freshTmp :: Int -> VM String
-freshTmp i = do sn <- freshName
-                emitDeclaration (sn,i)
-                return sn
+freshTmp :: String -> Int -> VM String
+freshTmp n i = do sn <- freshName n
+                  emitDeclaration (sn,i)
+                  return sn
 
-freshTmpTy :: RWCTy -> VM String
-freshTmpTy = freshTmp <=< tyWidth
+freshTmpTy :: String -> RWCTy -> VM String
+freshTmpTy n = freshTmp n <=< tyWidth
 
 emitAssignment :: Assignment -> VM ()
 emitAssignment = tellAssignments . (:[])
@@ -79,45 +80,72 @@ emitDeclaration = tellDeclarations . (:[])
 --genBittyLiteral :: RWCLit -> VM String
 --genBittyLiteral (RWCLitInteger 
 
-genBittyExp :: RWCExp -> VM String
-genBittyExp e@(RWCApp t _ _)   = let (ef:es) = flattenApp e
-                                 in case ef of
-                                   RWCVar _ i -> do n_i  <- askNameInfo i
-                                                    s_es <- mapM genBittyExp es
-                                                    s    <- freshTmpTy t
-                                                    case n_i of
-                                                      Global n -> emitAssignment (s,FunCall n s_es)
-                                                      Local _  -> fail $ "genBittyExp: locally bound variable is applied as function: " ++ show i
-                                                      NotBound -> fail $ "genBittyExp: unbound variable: " ++ show i
-                                                    return s
-                                   RWCCon _ i -> do tci      <- getDataConTyCon i
-                                                    tagWidth <- getTagWidth tci
-                                                    s_tag    <- freshTmp tagWidth
-                                                    s_es     <- mapM genBittyExp es
-                                                    tag      <- getTag i
-                                                    emitAssignment (s_tag,BitConst tag)
-                                                    s        <- freshTmpTy t
-                                                    emitAssignment (s,Concat (s_tag:s_es))
-                                                    return s
-                                   _          -> fail $ "genBittyExp: malformed application head: " ++ show e
-genBittyExp (RWCCon t i)       = do tag <- getTag i
-                                    s   <- freshTmpTy t
-                                    emitAssignment (s,BitConst tag)
-                                    return s
-genBittyExp (RWCVar t i)       = do n_i <- askNameInfo i
-                                    s   <- freshTmpTy t
-                                    case n_i of
-                                      Global n -> emitAssignment (s,FunCall n [])
-                                      Local n  -> emitAssignment (s,LocalVariable n)
-                                      NotBound -> fail $ "genBittyExp: unbound variable: " ++ show i
-                                    return s
---genBittyExp (RWCLiteral _ l)   = genBittyLiteral l
-genBittyExp (RWCCase t e alts) = do s_scrut     <- genBittyExp e
-                                    scond_alts  <- mapM (genBittyAlt s_scrut (typeOf e)) alts
-                                    s           <- freshTmpTy t
-                                    emitAssignment (s,Conditional scond_alts)
-                                    return s
-genBittyExp e                  = fail $ "genBittyExp: malformed bitty expression: " ++ show e
+getStateWidth = return 0 -- FIXME
+getStateTag _ = return [] -- FIXME
+
+genExp :: RWCExp -> VM String
+genExp e@(RWCApp t _ _)   = let (ef:es) = flattenApp e
+                            in case ef of
+                              RWCCon _ "P" -> case es of
+                                [eo,ek] -> do s_o   <- genExp eo
+                                              s_k   <- genExp ek
+                                              w     <- getStateWidth
+                                              s     <- freshTmp "P" w
+                                              emitAssignment (s,Concat [s_o,s_k])
+                                              return s
+                                _       -> fail $ "genExp: malformed pause expression"
+                              RWCVar _ i -> do n_i  <- askNameInfo i
+                                               case n_i of
+                                                 BoundK n   -> do tag      <- getStateTag n
+                                                                  tagWidth <- getStateTagWidth
+                                                                  s_tag    <- freshTmp tagWidth
+                                                                  emitAssignment (s_tag,BitConst tag)
+                                                                  s_es     <- mapM genExp es
+                                                                  sw       <- getStateWidth
+                                                                  s        <- freshTmp sw
+                                                                  emitAssignment (s,Concat (s_tag:s_es))
+                                                                  return s
+                                                 BoundFun n -> do s_es <- mapM genExp es
+                                                                  s    <- freshTmpTy t
+                                                                  emitAssignment (s,FunCall n s_es)
+                                                                  return s
+                                                 BoundVar _ -> fail $ "genExp: locally bound variable is applied as function: " ++ show i
+                                                 NotBound   -> fail $ "genExp: unbound variable: " ++ show i
+                              RWCCon _ i -> do tci      <- getDataConTyCon i
+                                               tagWidth <- getTagWidth tci
+                                               s_tag    <- freshTmp tagWidth
+                                               tag      <- getTag i
+                                               emitAssignment (s_tag,BitConst tag)
+                                               s        <- freshTmpTy t
+                                               s_es     <- mapM genExp es
+                                               emitAssignment (s,Concat (s_tag:s_es))
+                                               return s
+                              _          -> fail $ "genExp: malformed application head: " ++ show e
+genExp (RWCCon t i)       = do tag <- getTag i
+                               s   <- freshTmpTy t
+                               emitAssignment (s,BitConst tag)
+                               return s
+genExp (RWCVar t i)       = do n_i <- askNameInfo i
+                               case n_i of
+                                 BoundK n   -> do tag      <- getStateTag n
+                                                  tagWidth <- getStateTagWidth
+                                                  s_tag    <- freshTmp tagWidth
+                                                  emitAssignment (s_tag,BitConst tag)
+                                                  return s_tag
+                                 BoundFun n -> do s <- freshTmpTy t
+                                                  emitAssignment (s,FunCall n [])
+                                                  return s
+                                 BoundVar n -> do s <- freshTmpTy t
+                                                  emitAssignment (s,LocalVariable n)
+                                                  return s
+                                 NotBound   -> fail $ "genExp: unbound variable: " ++ show i
+--genExp (RWCLiteral _ l)   = genBittyLiteral l
+genExp (RWCCase t e alts) = do s_scrut     <- genExp e
+                               scond_alts  <- mapM (genBittyAlt s_scrut (typeOf e)) alts
+                               s           <- freshTmpTy t
+                               emitAssignment (s,Conditional scond_alts)
+                               return s
+genExp e                  = fail $ "genExp: malformed bitty expression: " ++ show e
 
 getTagWidth :: Identifier -> VM Int
 getTagWidth i = do dds <- lift $ lift $ askDataDecls
@@ -174,6 +202,7 @@ tyWidth :: RWCTy -> VM Int
 tyWidth (RWCTyVar _) = fail $ "tyWidth: type variable encountered"
 tyWidth t            = do let (th:_) = flattenTyApp t
                           case th of
+                            RWCTyCon "React" -> return 1234 -- FIXME
                             RWCTyVar _ -> fail $ "tyWidth: type variable encountered"
                             RWCTyCon i -> do
                               dds <- lift $ lift $ askDataDecls
@@ -209,7 +238,7 @@ zipWithM3 f (a:as) (b:bs) (c:cs) = do d  <- f a b c
 
 genBittyAlt :: String -> RWCTy -> RWCAlt -> VM (Condition,String)
 genBittyAlt s_scrut t_scrut (RWCAlt b) = lunbind b $ \ (p,e) -> do (cond,bdgs) <- genBittyPat s_scrut t_scrut p
-                                                                   s           <- localBindings (Map.union bdgs) $ genBittyExp e
+                                                                   s           <- localBindings (Map.union bdgs) $ genExp e
                                                                    return (cond,s)
 
 genBittyPat :: String -> RWCTy -> RWCPat -> VM (Condition,Map (Name RWCExp) NameInfo) -- (condition for match, resulting bindings)
@@ -229,7 +258,7 @@ genBittyPat s_scrut t_scrut (RWCPatCon i pats)      = do (s_tag,st_fields) <- br
 --genBittyPat s_scrut (RWCPatLiteral l) = 
 genBittyPat s_scrut t_scrut (RWCPatVar (Embed t) n) = do s <- freshTmpTy t_scrut
                                                          emitAssignment (s,LocalVariable s_scrut)
-                                                         return (CondTrue,Map.singleton n (Local s))
+                                                         return (CondTrue,Map.singleton n (BoundVar s))
 
 chainSconds :: [(String,String)] -> String
 chainSconds ((cond,s):sconds) = s ++ " when " ++ cond ++ " else " ++ chainSconds sconds
@@ -250,51 +279,134 @@ renderAssignmentForVariables (s,Conditional cs)  = s ++ " := " ++ concatMap rend
         renderCond (CondAnd c1 c2) = "(" ++ renderCond c1 ++ " and " ++ renderCond c2 ++ ")"
         renderCond CondTrue        = "true"
 
+renderAssignmentForSignals :: Assignment -> String
+renderAssignmentForSignals (s,FunCall f ss)    = s ++ " <= " ++ f ++ "(" ++ intercalate "," ss ++ ");"
+renderAssignmentForSignals (s,LocalVariable x) = s ++ " <= " ++ x ++ ";"
+renderAssignmentForSignals (s,Concat ss)       = s ++ " <= " ++ intercalate " & " ss ++ ";"
+renderAssignmentForSignals (s,BitConst bs)     = s ++ " <= \"" ++ map bitToChar bs ++ "\";"
+renderAssignmentForSignals (s,Slice t l h)     = s ++ " <= " ++ t ++ "[" ++ show l ++ ":" ++ show h ++ "];"
+renderAssignmentForSignals (s,Conditional cs)  = s ++ " <= " ++ concatMap renderOneCase cs ++ "(others => '0');"
+  where renderOneCase (c,sc) = sc ++ " when " ++ renderCond c ++ " else "
+        renderCond (CondEq s1 s2)  = s1 ++ " = " ++ s2
+        renderCond (CondAnd c1 c2) = "(" ++ renderCond c1 ++ " and " ++ renderCond c2 ++ ")"
+        renderCond CondTrue        = "true"
+
 renderDeclarationForVariables :: Declaration -> String
 renderDeclarationForVariables (s,i) = "variable " ++ s ++ " : std_logic_vector(0 to " ++ show (i-1) ++ ") := (others => '0');"
 
--- FIXME: don't just show name, look up in table
+renderDeclarationForSignals :: Declaration -> String
+renderDeclarationForSignals (s,i) = "signal " ++ s ++ " : std_logic_vector(0 to " ++ show (i-1) ++ ") := (others => '0');"
+
 genBittyDefn :: RWCDefn -> VM String
-genBittyDefn (RWCDefn n (Embed b)) =
+genBittyDefn (RWCDefn n_ (Embed b)) =
+  hideAssignments $ hideDeclarations $
   lunbind b $ \(tvs,(t,e_)) ->
   flattenLambda e_ $ \ (nts,e) ->
-    do let freshArgumentTy (n,t) = do s <- freshName
-                                      w <- tyWidth t
-                                      return ((n,Local s),s ++ " : std_logic_vector(0 to " ++ show (w-1) ++")")
+    do (BoundFun n) <- askNameInfo n_
+       let freshArgumentTy (n,t) = do s <- freshName
+                                      return ((n,BoundVar s),s ++ " : std_logic_vector")
+                                      -- strange but true: width is not reflected in the parameter list
        wr  <- tyWidth (typeOf e)
        bps <- mapM freshArgumentTy nts
        let (bdgs,ps) = unzip bps
-       (s,w) <- listen $ localBindings (Map.union $ Map.fromList bdgs) (genBittyExp e)
-       return ("function " ++ show n ++ "(" ++ intercalate " ; " ps ++ ")\n" ++
+       s   <- localBindings (Map.union $ Map.fromList bdgs) (genExp e)
+       as  <- getAssignments
+       ds  <- getDeclarations
+       return ("pure function " ++ n ++ "(" ++ intercalate " ; " ps ++ ")\n" ++
                "  returns std_logic_vector(0 to " ++ show (wr-1) ++ ")\n" ++
                "is\n" ++
-               concatMap (("  "++) . (++"\n") . renderDeclarationForVariables) (declarations w) ++
+               concatMap (("  "++) . (++"\n") . renderDeclarationForVariables) ds ++
                "begin\n" ++
-               concatMap (("  "++) . (++"\n") . renderAssignmentForVariables) (assignments w) ++
+               concatMap (("  "++) . (++"\n") . renderAssignmentForVariables) as ++
                "  return " ++ s ++ ";\n" ++
-               "end " ++ show n ++ ";\n")
+               "end " ++ n ++ ";\n")
 
-genProg :: VM [String]
-genProg = do res <- lift $ lift $ lift $ checkProg'
+getStateTagWidth = return 0 -- FIXME
+
+-- FIXME: don't just show name, look up in table
+genContDefn :: RWCDefn -> VM ()
+genContDefn (RWCDefn n_ (Embed b)) =
+  lunbind b $ \(tvs,(t,e_)) ->
+  flattenLambda e_ $ \ (nts_,e) ->
+    do (BoundK nk)         <- askNameInfo n_
+       let nts             =  init nts_
+           (nin,tin)       =  last nts_
+       tagWidth            <- getStateTagWidth
+       fieldWidths         <- mapM (tyWidth . snd) nts
+       s_fields            <- mapM freshTmp fieldWidths
+       let fieldOffsets    =  scanl (+) tagWidth fieldWidths
+           ranges []       =  []
+           ranges [n]      =  []
+           ranges (n:m:ns) =  (n,m-1) : ranges (m:ns)
+           fieldRanges     =  ranges fieldOffsets
+           emitOne s (l,h) =  emitAssignment (s,Slice "sm_state" l h)
+       zipWithM_ emitOne s_fields fieldRanges
+       let mkNI n s = (n,BoundVar s)
+           bdgs_    =  zipWith mkNI (map fst nts) s_fields
+       let bdgs      = (nin,BoundVar "sm_input"):bdgs_
+       s   <- localBindings (Map.union $ Map.fromList bdgs) (genExp e)
+       emitAssignment("next_state_"++show nk,LocalVariable s)
+
+hideAssignments :: VM a -> VM a
+hideAssignments m = do as <- getAssignments
+                       putAssignments []
+                       v  <- m
+                       putAssignments as
+                       return v
+
+hideDeclarations :: VM a -> VM a
+hideDeclarations m = do ds <- getDeclarations
+                        putDeclarations []
+                        v  <- m
+                        putDeclarations ds
+                        return v
+
+-- Note: here we can't use the fresh name supply for conts because the
+-- synth. tools need them numbered 0 and up in order for FSM to be
+-- recognized. (I think. I may be totally wrong about that.)
+initBindings :: Map (Name RWCExp) DefnSort -> VM (Map (Name RWCExp) NameInfo)
+initBindings m = do let kvs =  Map.toList m
+                        sns =  [0..]
+                    kvs'    <- doEm sns kvs
+                    return (Map.fromList kvs')
+  where doEm sns ((k,DefnBitty):kvs)    = do n    <- freshName
+                                             rest <- doEm sns kvs
+                                             return ((k,BoundFun n):rest)
+        doEm (n:sns) ((k,DefnCont):kvs) = do rest <- doEm sns kvs
+                                             return ((k,BoundK n):rest)
+        doEm _ []                       = return []
+  
+genProg :: VM String
+genProg = do res <- lift $ lift $ checkProg'
              case res of
-               Left e -> fail $ "genProg: Error in checking normal form: " ++ e
+               Left e  -> fail $ "genProg: Error in checking normal form: " ++ e
                Right m -> do
+                bdgs <- initBindings m
+                localBindings (Map.union bdgs) $ do
                  let kts =  Map.toList m
-                 mapM genOne kts
+                 v_funs  <- mapM genOne kts
+                 as      <- getAssignments
+                 ds      <- getDeclarations
+                 return (concat v_funs ++
+                         concatMap ((++"\n") . renderDeclarationForSignals) ds ++
+                         concatMap ((++"\n") . renderAssignmentForSignals) as)
    where genOne (k,DefnBitty) = do md <- lift $ lift $ askDefn k
                                    case md of
                                      Just d  -> genBittyDefn d
                                      Nothing -> fail $ "genProg: No definition for bitty function " ++ show k
-         genOne _             = return ""
+         genOne (k,DefnCont)  = do md <- lift $ lift $ askDefn k
+                                   case md of
+                                     Just d  -> genContDefn d >> return ""
+                                     Nothing -> fail $ "genProg: No definition for cont function " ++ show k
 
-runVM :: RWCProg -> VM a -> ((a,VMOut),VMState)
+runVM :: RWCProg -> VM a -> (a,VMState)
 runVM p phi = runRW p $
-               (runStateT
-                 (runWriterT
-                   (runReaderT phi env0)) state0)
-  where state0 = VMState { signalCounter = 0 }
+               (runStateT $ runReaderT phi env0) state0
+  where state0 = VMState { signalCounter = 0,
+                           assignments   = [],
+                           declarations  = [] }
         env0   = VMEnv { bindings = Map.empty }
         
 cmdToVHDL :: TransCommand
 cmdToVHDL _ p = (Nothing,Just s)
-  where s = intercalate "\n\n" $ fst $ fst $ runVM p genProg
+  where s = fst $ runVM p genProg
