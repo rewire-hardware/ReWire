@@ -6,7 +6,7 @@ import ReWire.Core.Transformations.CheckNF
 import ReWire.Core.Transformations.Types
 import qualified Data.Map as Map
 import Data.Map (Map)
-import Data.List (intercalate,findIndex,find)
+import Data.List (intercalate,findIndex,find,nub)
 import Data.Maybe (fromJust)
 import Data.Tuple (swap)
 import Control.Monad.State
@@ -64,6 +64,7 @@ freshName n = do ctr <- getSignalCounter
                  return (n++"_"++show ctr)
                
 freshTmp :: String -> Int -> VM String
+freshTmp n 0 = return "\"\"" -- FIXME: hack hack hack?
 freshTmp n i = do sn <- freshName n
                   emitDeclaration (sn,i)
                   return sn
@@ -72,7 +73,8 @@ freshTmpTy :: String -> RWCTy -> VM String
 freshTmpTy n = freshTmp n <=< tyWidth
 
 emitAssignment :: Assignment -> VM ()
-emitAssignment = tellAssignments . (:[])
+emitAssignment ("\"\"",_) = return () -- FIXME: hack hack hack?
+emitAssignment o         = tellAssignments [o]
 
 emitDeclaration :: Declaration -> VM ()
 emitDeclaration = tellDeclarations . (:[])
@@ -80,8 +82,62 @@ emitDeclaration = tellDeclarations . (:[])
 --genBittyLiteral :: RWCLit -> VM String
 --genBittyLiteral (RWCLitInteger 
 
-getStateWidth = return 0 -- FIXME
-getStateTag _ = return [] -- FIXME
+getStateTagWidth :: VM Int
+getStateTagWidth = do bdgs        <- askBindings
+                      let nstates =  length [() | (_,BoundK _) <- Map.toList bdgs]
+                      return (nBits (nstates-1))
+
+getThisStateWidth :: Name RWCExp -> VM Int
+getThisStateWidth n = do Just (RWCDefn _ (Embed b)) <- lift $ lift $ askDefn n
+                         lunbind b $ \ (tvs,(t,e)) -> do
+                           let (targs,_) = flattenArrow t
+                           liftM (sum . init) $ mapM tyWidth targs -- Last argument is the input, not part of state
+
+getThisOutputWidth :: Name RWCExp -> VM Int
+getThisOutputWidth n = do Just (RWCDefn _ (Embed b)) <- lift $ lift $ askDefn n
+                          lunbind b $ \ (tvs,(t,e)) -> do
+                            let (_,tres) = flattenArrow t
+                            case tres of
+                              (RWCTyApp (RWCTyApp (RWCTyApp (RWCTyCon "React") _) t) _) -> tyWidth t
+                              _ -> fail $ "getThisOutputWidth: malformed result type for state (shouldn't happen)"
+
+getOutputWidth :: VM Int
+getOutputWidth = do bdgs    <- askBindings
+                    let sns =  [n | (n,BoundK _) <- Map.toList bdgs]
+                    ows     <- mapM getThisOutputWidth sns
+                    case nub ows of
+                      []  -> fail $ "getOutputWidth: no states defined?"
+                      [n] -> return n
+                      _   -> fail $ "getOutputWidth: inconsistent output widths (shouldn't happen)"
+
+getThisInputWidth :: Name RWCExp -> VM Int
+getThisInputWidth n = do Just (RWCDefn _ (Embed b)) <- lift $ lift $ askDefn n
+                         lunbind b $ \ (tvs,(t,e)) -> do
+                            let (_,tres) = flattenArrow t
+                            case tres of
+                              (RWCTyApp (RWCTyApp (RWCTyApp (RWCTyCon "React") t) _) _) -> tyWidth t
+                              _ -> fail $ "getThisInputWidth: malformed result type for state (shouldn't happen)"
+
+getInputWidth :: VM Int
+getInputWidth = do bdgs    <- askBindings
+                   let sns =  [n | (n,BoundK _) <- Map.toList bdgs]
+                   ows     <- mapM getThisInputWidth sns
+                   case nub ows of
+                      []  -> fail $ "getInputWidth: no states defined?"
+                      [n] -> return n
+                      _   -> fail $ "getInputWidth: inconsistent intput widths (shouldn't happen)"
+
+getStateWidth :: VM Int
+getStateWidth = do ow      <- getOutputWidth
+                   tw      <- getStateTagWidth
+                   bdgs    <- askBindings
+                   let sns =  [n | (n,BoundK _) <- Map.toList bdgs]
+                   sws     <- mapM getThisStateWidth sns
+                   return (ow+tw+maximum sws)
+
+getStateTag :: Int -> VM [Bit]
+getStateTag n = do tw <- getStateTagWidth
+                   return (bitConstFromIntegral tw n)
 
 genExp :: RWCExp -> VM String
 genExp e@(RWCApp t _ _)   = let (ef:es) = flattenApp e
@@ -98,51 +154,53 @@ genExp e@(RWCApp t _ _)   = let (ef:es) = flattenApp e
                                                case n_i of
                                                  BoundK n   -> do tag      <- getStateTag n
                                                                   tagWidth <- getStateTagWidth
-                                                                  s_tag    <- freshTmp tagWidth
+                                                                  s_tag    <- freshTmp "tag" tagWidth
                                                                   emitAssignment (s_tag,BitConst tag)
                                                                   s_es     <- mapM genExp es
                                                                   sw       <- getStateWidth
-                                                                  s        <- freshTmp sw
+                                                                  ow       <- getOutputWidth
+                                                                  let kw   =  sw-ow
+                                                                  s        <- freshTmp "k" kw
                                                                   emitAssignment (s,Concat (s_tag:s_es))
                                                                   return s
                                                  BoundFun n -> do s_es <- mapM genExp es
-                                                                  s    <- freshTmpTy t
+                                                                  s    <- freshTmpTy "funcall" t
                                                                   emitAssignment (s,FunCall n s_es)
                                                                   return s
                                                  BoundVar _ -> fail $ "genExp: locally bound variable is applied as function: " ++ show i
                                                  NotBound   -> fail $ "genExp: unbound variable: " ++ show i
                               RWCCon _ i -> do tci      <- getDataConTyCon i
                                                tagWidth <- getTagWidth tci
-                                               s_tag    <- freshTmp tagWidth
+                                               s_tag    <- freshTmp "tag" tagWidth
                                                tag      <- getTag i
                                                emitAssignment (s_tag,BitConst tag)
-                                               s        <- freshTmpTy t
+                                               s        <- freshTmpTy "conapp" t
                                                s_es     <- mapM genExp es
                                                emitAssignment (s,Concat (s_tag:s_es))
                                                return s
                               _          -> fail $ "genExp: malformed application head: " ++ show e
 genExp (RWCCon t i)       = do tag <- getTag i
-                               s   <- freshTmpTy t
+                               s   <- freshTmpTy "con" t
                                emitAssignment (s,BitConst tag)
                                return s
 genExp (RWCVar t i)       = do n_i <- askNameInfo i
                                case n_i of
                                  BoundK n   -> do tag      <- getStateTag n
                                                   tagWidth <- getStateTagWidth
-                                                  s_tag    <- freshTmp tagWidth
+                                                  s_tag    <- freshTmp "k" tagWidth
                                                   emitAssignment (s_tag,BitConst tag)
                                                   return s_tag
-                                 BoundFun n -> do s <- freshTmpTy t
+                                 BoundFun n -> do s <- freshTmpTy "funcall" t
                                                   emitAssignment (s,FunCall n [])
                                                   return s
-                                 BoundVar n -> do s <- freshTmpTy t
+                                 BoundVar n -> do s <- freshTmpTy "var" t
                                                   emitAssignment (s,LocalVariable n)
                                                   return s
                                  NotBound   -> fail $ "genExp: unbound variable: " ++ show i
 --genExp (RWCLiteral _ l)   = genBittyLiteral l
 genExp (RWCCase t e alts) = do s_scrut     <- genExp e
                                scond_alts  <- mapM (genBittyAlt s_scrut (typeOf e)) alts
-                               s           <- freshTmpTy t
+                               s           <- freshTmpTy "case" t
                                emitAssignment (s,Conditional scond_alts)
                                return s
 genExp e                  = fail $ "genExp: malformed bitty expression: " ++ show e
@@ -152,8 +210,9 @@ getTagWidth i = do dds <- lift $ lift $ askDataDecls
                    case find (\(RWCData i' _) -> i==i') dds of
                      Nothing            -> fail $ "getTagWidth: unknown constructor " ++ i
                      Just (RWCData _ b) -> lunbind b $ \ (_,dcs) -> return (nBits (length dcs-1))
-  where nBits 0 = 0
-        nBits n = nBits (n `quot` 2) + 1
+
+nBits 0 = 0
+nBits n = nBits (n `quot` 2) + 1
 
 getDataConTyCon :: Identifier -> VM Identifier
 getDataConTyCon dci = do dds   <- lift $ lift $ askDataDecls
@@ -167,11 +226,11 @@ getDataConTyCon dci = do dds   <- lift $ lift $ askDataDecls
 breakData :: Identifier -> String -> RWCTy -> VM (String,[(String,RWCTy)])
 breakData i s_scrut t_scrut = do tci              <- getDataConTyCon i
                                  tagWidth         <- getTagWidth tci
-                                 s_tag            <- freshTmp tagWidth
+                                 s_tag            <- freshTmp "tag" tagWidth
                                  emitAssignment (s_tag,Slice s_scrut 0 (tagWidth-1))
                                  fieldTys         <- getFieldTys i t_scrut
                                  fieldWidths      <- mapM tyWidth fieldTys
-                                 s_fields         <- mapM freshTmp fieldWidths
+                                 s_fields         <- mapM (freshTmp "field") fieldWidths
                                  let fieldOffsets    =  scanl (+) tagWidth fieldWidths
                                      ranges []       =  []
                                      ranges [n]      =  []
@@ -202,7 +261,7 @@ tyWidth :: RWCTy -> VM Int
 tyWidth (RWCTyVar _) = fail $ "tyWidth: type variable encountered"
 tyWidth t            = do let (th:_) = flattenTyApp t
                           case th of
-                            RWCTyCon "React" -> return 1234 -- FIXME
+                            RWCTyCon "React" -> getStateWidth
                             RWCTyVar _ -> fail $ "tyWidth: type variable encountered"
                             RWCTyCon i -> do
                               dds <- lift $ lift $ askDataDecls
@@ -251,12 +310,12 @@ genBittyPat s_scrut t_scrut (RWCPatCon i pats)      = do (s_tag,st_fields) <- br
                                                              binds_pats    =  map snd condbinds_pats
                                                          tci               <- getDataConTyCon i
                                                          tagWidth          <- getTagWidth tci
-                                                         s_tagtest         <- freshTmp tagWidth
+                                                         s_tagtest         <- freshTmp "test" tagWidth
                                                          emitAssignment(s_tagtest,BitConst tagValue)
                                                          return (foldr CondAnd (CondEq s_tag s_tagtest) cond_pats,
                                                                  foldr Map.union Map.empty binds_pats)
 --genBittyPat s_scrut (RWCPatLiteral l) = 
-genBittyPat s_scrut t_scrut (RWCPatVar (Embed t) n) = do s <- freshTmpTy t_scrut
+genBittyPat s_scrut t_scrut (RWCPatVar (Embed t) n) = do s <- freshTmpTy "patvar" t_scrut
                                                          emitAssignment (s,LocalVariable s_scrut)
                                                          return (CondTrue,Map.singleton n (BoundVar s))
 
@@ -303,27 +362,23 @@ genBittyDefn (RWCDefn n_ (Embed b)) =
   lunbind b $ \(tvs,(t,e_)) ->
   flattenLambda e_ $ \ (nts,e) ->
     do (BoundFun n) <- askNameInfo n_
-       let freshArgumentTy (n,t) = do s <- freshName
+       let freshArgumentTy (n,t) = do s <- freshName "arg"
                                       return ((n,BoundVar s),s ++ " : std_logic_vector")
-                                      -- strange but true: width is not reflected in the parameter list
        wr  <- tyWidth (typeOf e)
        bps <- mapM freshArgumentTy nts
        let (bdgs,ps) = unzip bps
        s   <- localBindings (Map.union $ Map.fromList bdgs) (genExp e)
        as  <- getAssignments
        ds  <- getDeclarations
-       return ("pure function " ++ n ++ "(" ++ intercalate " ; " ps ++ ")\n" ++
-               "  returns std_logic_vector(0 to " ++ show (wr-1) ++ ")\n" ++
-               "is\n" ++
-               concatMap (("  "++) . (++"\n") . renderDeclarationForVariables) ds ++
-               "begin\n" ++
-               concatMap (("  "++) . (++"\n") . renderAssignmentForVariables) as ++
-               "  return " ++ s ++ ";\n" ++
-               "end " ++ n ++ ";\n")
+       return ("  pure function " ++ n ++ "(" ++ intercalate " ; " ps ++ ")\n" ++
+               "    returns std_logic_vector(0 to " ++ show (wr-1) ++ ")\n" ++
+               "  is\n" ++
+               concatMap (("    "++) . (++"\n") . renderDeclarationForVariables) ds ++
+               "  begin\n" ++
+               concatMap (("    "++) . (++"\n") . renderAssignmentForVariables) as ++
+               "    return " ++ s ++ ";\n" ++
+               "  end " ++ n ++ ";\n")
 
-getStateTagWidth = return 0 -- FIXME
-
--- FIXME: don't just show name, look up in table
 genContDefn :: RWCDefn -> VM ()
 genContDefn (RWCDefn n_ (Embed b)) =
   lunbind b $ \(tvs,(t,e_)) ->
@@ -332,9 +387,10 @@ genContDefn (RWCDefn n_ (Embed b)) =
        let nts             =  init nts_
            (nin,tin)       =  last nts_
        tagWidth            <- getStateTagWidth
+       outputWidth         <- getOutputWidth
        fieldWidths         <- mapM (tyWidth . snd) nts
-       s_fields            <- mapM freshTmp fieldWidths
-       let fieldOffsets    =  scanl (+) tagWidth fieldWidths
+       s_fields            <- mapM (freshTmp "statefield") fieldWidths
+       let fieldOffsets    =  scanl (+) (tagWidth+outputWidth) fieldWidths
            ranges []       =  []
            ranges [n]      =  []
            ranges (n:m:ns) =  (n,m-1) : ranges (m:ns)
@@ -369,13 +425,23 @@ initBindings m = do let kvs =  Map.toList m
                         sns =  [0..]
                     kvs'    <- doEm sns kvs
                     return (Map.fromList kvs')
-  where doEm sns ((k,DefnBitty):kvs)    = do n    <- freshName
+  where doEm sns ((k,DefnBitty):kvs)    = do n    <- freshName "func"
                                              rest <- doEm sns kvs
                                              return ((k,BoundFun n):rest)
         doEm (n:sns) ((k,DefnCont):kvs) = do rest <- doEm sns kvs
                                              return ((k,BoundK n):rest)
         doEm _ []                       = return []
   
+nextstate_sig_assign :: (a,NameInfo) -> VM String
+nextstate_sig_assign (_,BoundK n) = do tag <- getStateTag n
+                                       ss  <- getOutputWidth
+                                       sw  <- getStateTagWidth
+                                       -- special case when only one state!
+                                       if sw==0
+                                          then return $ "        next_state_" ++ show n ++ " when true else\n"
+                                          else return $ "        next_state_" ++ show n ++ " when sm_state[" ++ show ss ++ ":" ++ show (ss+sw-1) ++ "] = \"" ++ map bitToChar tag ++ "\" else\n"
+nextstate_sig_assign _            = return ""
+
 genProg :: VM String
 genProg = do res <- lift $ lift $ checkProg'
              case res of
@@ -383,13 +449,31 @@ genProg = do res <- lift $ lift $ checkProg'
                Right m -> do
                 bdgs <- initBindings m
                 localBindings (Map.union bdgs) $ do
+                 sw      <- getStateWidth
+                 iw      <- getInputWidth
+                 ow      <- getOutputWidth
                  let kts =  Map.toList m
                  v_funs  <- mapM genOne kts
                  as      <- getAssignments
                  ds      <- getDeclarations
-                 return (concat v_funs ++
-                         concatMap ((++"\n") . renderDeclarationForSignals) ds ++
-                         concatMap ((++"\n") . renderAssignmentForSignals) as)
+                 nextstate_sig_assigns <- liftM concat (mapM nextstate_sig_assign (Map.toList bdgs))
+                 let entity_name = "fooFIXME"
+                 return ("architecture behavioral of " ++ entity_name ++ " is\n" ++
+                         concat v_funs ++
+                         "  signal sm_state : std_logic_vector(0 to " ++ show (sw-1) ++ ") := FIXMEINITIALSTATE;\n" ++
+                         concatMap (("  "++) . (++"\n") . renderDeclarationForSignals) ds ++
+                         "begin\n" ++
+                         "  sm_output <= sm_state[0:" ++ show (ow-1) ++ "];\n" ++
+                         concatMap (("  "++) . (++"\n") . renderAssignmentForSignals) as ++
+                         "  process(clk)\n" ++
+                         "  begin\n" ++
+                         "    if rising_edge(clk) then\n" ++
+                         "      sm_state <=\n" ++
+                         nextstate_sig_assigns ++
+                         "        (others => '0');\n" ++
+                         "    end if;\n" ++
+                         "  end process;\n" ++
+                         "end behavioral;\n")
    where genOne (k,DefnBitty) = do md <- lift $ lift $ askDefn k
                                    case md of
                                      Just d  -> genBittyDefn d
