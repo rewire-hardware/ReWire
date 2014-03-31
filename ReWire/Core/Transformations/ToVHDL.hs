@@ -319,10 +319,6 @@ genBittyPat s_scrut t_scrut (RWCPatVar (Embed t) n) = do s <- freshTmpTy "patvar
                                                          emitAssignment (s,LocalVariable s_scrut)
                                                          return (CondTrue,Map.singleton n (BoundVar s))
 
-chainSconds :: [(String,String)] -> String
-chainSconds ((cond,s):sconds) = s ++ " when " ++ cond ++ " else " ++ chainSconds sconds
-chainSconds []                = "(others => '0')"
-
 bitToChar Zero = '0'
 bitToChar One  = '1'
 
@@ -331,9 +327,11 @@ renderAssignmentForVariables (s,FunCall f ss)    = s ++ " := " ++ f ++ "(" ++ in
 renderAssignmentForVariables (s,LocalVariable x) = s ++ " := " ++ x ++ ";"
 renderAssignmentForVariables (s,Concat ss)       = s ++ " := " ++ intercalate " & " ss ++ ";"
 renderAssignmentForVariables (s,BitConst bs)     = s ++ " := \"" ++ map bitToChar bs ++ "\";"
-renderAssignmentForVariables (s,Slice t l h)     = s ++ " := " ++ t ++ "[" ++ show l ++ ":" ++ show h ++ "];"
-renderAssignmentForVariables (s,Conditional cs)  = s ++ " := " ++ concatMap renderOneCase cs ++ "(others => '0');"
-  where renderOneCase (c,sc) = sc ++ " when " ++ renderCond c ++ " else "
+renderAssignmentForVariables (s,Slice t l h)     = s ++ " := " ++ t ++ "(" ++ show l ++ " to " ++ show h ++ ");"
+renderAssignmentForVariables (s,Conditional cs)  = let (b:bs) = map renderOneCase cs
+                                                   in b ++ concatMap (" els"++) bs ++ " else " ++ s ++ " := (others => '0'); end if;"
+  where renderOneCase :: (Condition,String) -> String
+        renderOneCase (c,sc) = "if " ++ renderCond c ++ " then " ++ s ++ " := " ++ sc ++ ";"
         renderCond (CondEq s1 s2)  = s1 ++ " = " ++ s2
         renderCond (CondAnd c1 c2) = "(" ++ renderCond c1 ++ " and " ++ renderCond c2 ++ ")"
         renderCond CondTrue        = "true"
@@ -343,7 +341,7 @@ renderAssignmentForSignals (s,FunCall f ss)    = s ++ " <= " ++ f ++ "(" ++ inte
 renderAssignmentForSignals (s,LocalVariable x) = s ++ " <= " ++ x ++ ";"
 renderAssignmentForSignals (s,Concat ss)       = s ++ " <= " ++ intercalate " & " ss ++ ";"
 renderAssignmentForSignals (s,BitConst bs)     = s ++ " <= \"" ++ map bitToChar bs ++ "\";"
-renderAssignmentForSignals (s,Slice t l h)     = s ++ " <= " ++ t ++ "[" ++ show l ++ ":" ++ show h ++ "];"
+renderAssignmentForSignals (s,Slice t l h)     = s ++ " <= " ++ t ++ "(" ++ show l ++ " to " ++ show h ++ ");"
 renderAssignmentForSignals (s,Conditional cs)  = s ++ " <= " ++ concatMap renderOneCase cs ++ "(others => '0');"
   where renderOneCase (c,sc) = sc ++ " when " ++ renderCond c ++ " else "
         renderCond (CondEq s1 s2)  = s1 ++ " = " ++ s2
@@ -355,6 +353,28 @@ renderDeclarationForVariables (s,i) = "variable " ++ s ++ " : std_logic_vector(0
 
 renderDeclarationForSignals :: Declaration -> String
 renderDeclarationForSignals (s,i) = "signal " ++ s ++ " : std_logic_vector(0 to " ++ show (i-1) ++ ") := (others => '0');"
+
+-- FIXME: Lots of duplicated code here (genBittyDefn).
+genMain :: VM String
+genMain =
+  do md <- lift $ lift $ askDefn (s2n "main")
+     case md of
+       Just (RWCDefn n (Embed b)) ->
+         hideAssignments $ hideDeclarations $
+          lunbind b $ \(tvs,(t,e)) ->
+           do wr  <- tyWidth (typeOf e)
+              s   <- genExp e
+              as  <- getAssignments
+              ds  <- getDeclarations
+              return ("  pure function sm_state_initial\n" ++
+                      "    return std_logic_vector\n" ++
+                      "  is\n" ++
+                      concatMap (("    "++) . (++"\n") . renderDeclarationForVariables) ds ++
+                      "  begin\n" ++
+                      concatMap (("    "++) . (++"\n") . renderAssignmentForVariables) as ++
+                      "    return " ++ s ++ ";\n" ++
+                      "  end sm_state_initial;\n")
+       Nothing -> fail $ "genMain: No definition for main"
 
 genBittyDefn :: RWCDefn -> VM String
 genBittyDefn (RWCDefn n_ (Embed b)) =
@@ -371,7 +391,7 @@ genBittyDefn (RWCDefn n_ (Embed b)) =
        as  <- getAssignments
        ds  <- getDeclarations
        return ("  pure function " ++ n ++ "(" ++ intercalate " ; " ps ++ ")\n" ++
-               "    returns std_logic_vector(0 to " ++ show (wr-1) ++ ")\n" ++
+               "    return std_logic_vector\n" ++
                "  is\n" ++
                concatMap (("    "++) . (++"\n") . renderDeclarationForVariables) ds ++
                "  begin\n" ++
@@ -401,6 +421,8 @@ genContDefn (RWCDefn n_ (Embed b)) =
            bdgs_    =  zipWith mkNI (map fst nts) s_fields
        let bdgs      = (nin,BoundVar "sm_input"):bdgs_
        s   <- localBindings (Map.union $ Map.fromList bdgs) (genExp e)
+       stateWidth <- getStateWidth
+       emitDeclaration("next_state_"++show nk,stateWidth)
        emitAssignment("next_state_"++show nk,LocalVariable s)
 
 hideAssignments :: VM a -> VM a
@@ -432,15 +454,15 @@ initBindings m = do let kvs =  Map.toList m
                                              return ((k,BoundK n):rest)
         doEm _ []                       = return []
   
-nextstate_sig_assign :: (a,NameInfo) -> VM String
+nextstate_sig_assign :: (a,NameInfo) -> VM [String]
 nextstate_sig_assign (_,BoundK n) = do tag <- getStateTag n
                                        ss  <- getOutputWidth
                                        sw  <- getStateTagWidth
                                        -- special case when only one state!
                                        if sw==0
-                                          then return $ "        next_state_" ++ show n ++ " when true else\n"
-                                          else return $ "        next_state_" ++ show n ++ " when sm_state[" ++ show ss ++ ":" ++ show (ss+sw-1) ++ "] = \"" ++ map bitToChar tag ++ "\" else\n"
-nextstate_sig_assign _            = return ""
+                                          then return $ ["if true then sm_state <= next_state_" ++ show n ++ ";"]
+                                          else return $ ["if sm_state(" ++ show ss ++ " to " ++ show (ss+sw-1) ++ ") = \"" ++ map bitToChar tag ++ "\" then sm_state <= next_state_" ++ show n ++ ";"]
+nextstate_sig_assign _            = return []
 
 genProg :: VM String
 genProg = do res <- lift $ lift $ checkProg'
@@ -449,6 +471,7 @@ genProg = do res <- lift $ lift $ checkProg'
                Right m -> do
                 bdgs <- initBindings m
                 localBindings (Map.union bdgs) $ do
+                 v_main  <- genMain
                  sw      <- getStateWidth
                  iw      <- getInputWidth
                  ow      <- getOutputWidth
@@ -456,21 +479,27 @@ genProg = do res <- lift $ lift $ checkProg'
                  v_funs  <- mapM genOne kts
                  as      <- getAssignments
                  ds      <- getDeclarations
-                 nextstate_sig_assigns <- liftM concat (mapM nextstate_sig_assign (Map.toList bdgs))
-                 let entity_name = "fooFIXME"
-                 return ("architecture behavioral of " ++ entity_name ++ " is\n" ++
+                 (assn:assns) <- liftM concat $ mapM nextstate_sig_assign (Map.toList bdgs)
+                 let entity_name = "rewire" -- FIXME: customizable?
+                 return ("library ieee;\n" ++
+                         "use ieee.std_logic_1164.all;\n" ++
+                         "entity " ++ entity_name ++ " is\n" ++
+                         "  port (clk : in std_logic;\n" ++
+                         "        sm_input : in std_logic_vector(0 to " ++ show (iw-1) ++ ");\n" ++
+                         "        sm_output : out std_logic_vector(0 to " ++ show (ow-1) ++ "));\n" ++
+                         "end rewire;\n" ++
+                         "architecture behavioral of " ++ entity_name ++ " is\n" ++
+                         v_main ++
                          concat v_funs ++
-                         "  signal sm_state : std_logic_vector(0 to " ++ show (sw-1) ++ ") := FIXMEINITIALSTATE;\n" ++
+                         "  signal sm_state : std_logic_vector(0 to " ++ show (sw-1) ++ ") := sm_state_initial;\n" ++
                          concatMap (("  "++) . (++"\n") . renderDeclarationForSignals) ds ++
                          "begin\n" ++
-                         "  sm_output <= sm_state[0:" ++ show (ow-1) ++ "];\n" ++
+                         "  sm_output <= sm_state(0 to " ++ show (ow-1) ++ ");\n" ++
                          concatMap (("  "++) . (++"\n") . renderAssignmentForSignals) as ++
                          "  process(clk)\n" ++
                          "  begin\n" ++
                          "    if rising_edge(clk) then\n" ++
-                         "      sm_state <=\n" ++
-                         nextstate_sig_assigns ++
-                         "        (others => '0');\n" ++
+                         "        " ++ assn ++ concatMap (" els"++) assns ++ " else sm_state <= sm_state_initial; end if;\n" ++
                          "    end if;\n" ++
                          "  end process;\n" ++
                          "end behavioral;\n")

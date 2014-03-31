@@ -75,7 +75,7 @@ trans p = do print (ppHaskell p)
                      else case lookup cmd cmdTable of
                                Just f  -> do let (mp,ms) = f args p
                                              case ms of
-                                               Just s  -> putStrLn s
+                                               Just s  -> putStrLn s >> writeFile "rewire.cmd.out" s
                                                Nothing -> return ()
                                              case mp of
                                                Just p' -> do print (ppHaskell p')

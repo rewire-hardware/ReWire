@@ -1,0 +1,34 @@
+-- 4-bit shift register.
+
+data Bit is Zero | One end
+data React i o a is D a | P o (i -> React i o a) end
+data Val is Val Bit Bit Bit Bit end
+data In is In Bit Val end -- the Bit is the load signal
+data Pair a b is Pair a b end
+data Nil is Nil end
+
+shr :: Val -> Pair Val Bit
+is
+  \ v -> case v of
+         { Val v1 v2 v3 v4 -> Pair (Val v1 v1 v2 v3) v4
+         }
+end
+
+mainloop :: Val -> React In Bit Nil
+is
+  \ v -> case shr v of
+         { Pair vnew b -> P b (k vnew)
+         }
+end
+
+k :: Val -> In -> React In Bit Nil
+is
+  \ vnew -> \ i -> case i of
+                  { In One vin -> mainloop vin
+                  ; zzz        -> mainloop vnew }
+end
+
+main :: React In Bit Nil
+is
+  P Zero (k (Val Zero Zero Zero Zero))
+end
