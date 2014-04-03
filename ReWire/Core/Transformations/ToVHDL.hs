@@ -72,9 +72,28 @@ freshTmp n i = do sn <- freshName n
 freshTmpTy :: String -> RWCTy -> VM String
 freshTmpTy n = freshTmp n <=< tyWidth
 
+isNil = (=="\"\"")
+
+removeNils :: AssignmentRHS -> AssignmentRHS
+removeNils (FunCall f ss)    = FunCall f (filter (not . isNil) ss)
+removeNils (LocalVariable v) = LocalVariable v
+removeNils (Concat ss)       = Concat (filter (not . isNil) ss)
+removeNils (BitConst bs)     = BitConst bs
+removeNils (Slice s i j)     = Slice s i j
+removeNils (Conditional cs)  = Conditional (map removeNilsCase cs)
+
+removeNilsCase :: (Condition,String) -> (Condition,String)
+removeNilsCase (c,s) = (removeNilsCond c,s)
+
+removeNilsCond :: Condition -> Condition
+removeNilsCond (CondEq s1 s2) | isNil s1 && isNil s2 = CondTrue
+                              | otherwise            = CondEq s1 s2
+removeNilsCond (CondAnd c1 c2)                       = CondAnd (removeNilsCond c1) (removeNilsCond c2)
+removeNilsCond CondTrue                              = CondTrue
+
 emitAssignment :: Assignment -> VM ()
 emitAssignment ("\"\"",_) = return () -- FIXME: hack hack hack?
-emitAssignment o         = tellAssignments [o]
+emitAssignment (s,rhs)    = tellAssignments [(s,removeNils rhs)]
 
 emitDeclaration :: Declaration -> VM ()
 emitDeclaration = tellDeclarations . (:[])
