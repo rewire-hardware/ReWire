@@ -1,0 +1,33 @@
+\documentclass{article}[11pt]
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+
+\begin{document}
+I suck at \LaTeX.
+
+$$
+\begin{aligned}
+T &::= ()~ |~ T + T~ |~ T \times T~ |~ T \rightarrow T~ |~ M(T) && \text{types}\\
+M &::= \mathbb{I}~ |~ \mathbb{R}_{T\rightarrow{}T} M~ |~ \mathbb{S}_T M~ |~ \mathbb{E}_T M~ |~ \mathbb{M}_{T_d\rightarrow{}T} M&&\text{monads}\\
+T_d &::= \text{a restriction of}~ T~ \text{to ``representable'' types}&&\text{rep. types}\\
+v &::= x, y, z, w&&\text{variables}\\
+e &::= v~ |~ \lambda{}v_T\rightarrow{}e~ |~ e~ e&&\text{(lambda calculus)}\\
+  &~~~~|~ \textbf{nil}&&\text{(unit)}\\
+  &~~~~|~ \textbf{inl}_T~ |~ \textbf{inr}_T~ |~ \textbf{case}~ e~ \textbf{of}~ \textbf{inl}~ v \rightarrow e~ ; \textbf{inr}~ v \rightarrow e~ \textbf{end}&&\text{(coproduct)}\\
+  &~~~~|~ \textbf{mkpair}_T~ |~ \pi^1_T~ |~ \pi^2_T&&\text{(product)}\\
+  &~~~~|~ \textbf{return}_T~ |~ \textbf{bind}_T~ |~ \textbf{lift}_T&&\text{(monad operators)}\\
+  &~~~~|~ \textbf{signal}_T&&\text{(reactive prims.)}\\
+  &~~~~|~ \textbf{get}_T~ |~ \textbf{put}_T&&\text{(state prims.)}\\
+  &~~~~|~ \textbf{throw}_T~ |~ \textbf{catch}_T&&\text{(error prims.)}\\
+  &~~~~|~ \textbf{rdmem}_T~ |~ \textbf{wrmem}_T&&\text{(memory prims.)}
+\end{aligned}
+$$
+
+In reality we're going to support non-recursive, first-order data types with named constructors, but for the abstract presentation, sums/products/unit will do (e.g. $Bit$ can be encoded as $() + ()$).
+
+For the moment I am trying to avoid polymorphism entirely, meaning any expression constructor that on its own might have polymorphic type has a type subscript. The ``real'' language could have Hindley-Milner style polymorphism.
+
+The restriction of the domain type in $\mathbb{M}$ is not accidental. It's there because even in a higher-order setting we need to be able to test for equality.
+
+\end{document}
