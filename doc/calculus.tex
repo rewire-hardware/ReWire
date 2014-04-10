@@ -2,32 +2,86 @@
 
 \usepackage{amsmath}
 \usepackage{amsfonts}
+\usepackage{proof}
 
 \begin{document}
+\section{A Confession}
 I suck at \LaTeX.
 
+\section{Syntax}
 $$
 \begin{aligned}
-T &::= ()~ |~ T + T~ |~ T \times T~ |~ T \rightarrow T~ |~ M(T) && \text{types}\\
-M &::= \mathbb{I}~ |~ \mathbb{R}_{T\rightarrow{}T} M~ |~ \mathbb{S}_T M~ |~ \mathbb{E}_T M~ |~ \mathbb{M}_{T_d\rightarrow{}T} M&&\text{monads}\\
-T_d &::= \text{a restriction of}~ T~ \text{to ``representable'' types}&&\text{rep. types}\\
-v &::= x, y, z, w&&\text{variables}\\
-e &::= v~ |~ \lambda{}v_T\rightarrow{}e~ |~ e~ e&&\text{(lambda calculus)}\\
+x,y,z,w \in \mathit{Variable}\\
+t,t',t'' \in \mathit{Type} &::= ()~ |~ t + t'~ |~ t \times t'~ |~ t \rightarrow t'~ |~ M(t)\\
+d \in \mathit{DataType} &::= \text{a restriction of}~ \mathit{Type}~ \text{to ``data-only'' types}\\
+M \in \mathit{Monad} &::= \mathbb{I}~ |~ T M\\
+T \in \mathit{MonadTrans} &::= \mathbb{R}_{t\rightarrow{}t'}~ |~ \mathbb{S}_t~ |~ \mathbb{E}_t~ |~ \mathbb{M}_{d\rightarrow{}t}\\
+e,e',e'' \in \mathit{Exp}&::= x~ |~ \lambda{}x_t\rightarrow{}e~ |~ e~ e'&&\text{(lambda calculus)}\\
   &~~~~|~ \textbf{nil}&&\text{(unit)}\\
-  &~~~~|~ \textbf{inl}_T~ |~ \textbf{inr}_T~ |~ \textbf{case}~ e~ \textbf{of}~ \textbf{inl}~ v \rightarrow e~ ; \textbf{inr}~ v \rightarrow e~ \textbf{end}&&\text{(coproduct)}\\
-  &~~~~|~ \textbf{mkpair}_T~ |~ \pi^1_T~ |~ \pi^2_T&&\text{(product)}\\
-  &~~~~|~ \textbf{return}_T~ |~ \textbf{bind}_T~ |~ \textbf{lift}_T&&\text{(monad operators)}\\
-  &~~~~|~ \textbf{signal}_T&&\text{(reactive prims.)}\\
-  &~~~~|~ \textbf{get}_T~ |~ \textbf{put}_T&&\text{(state prims.)}\\
-  &~~~~|~ \textbf{throw}_T~ |~ \textbf{catch}_T&&\text{(error prims.)}\\
-  &~~~~|~ \textbf{rdmem}_T~ |~ \textbf{wrmem}_T&&\text{(memory prims.)}
+  &~~~~|~ \textbf{inl}_{t,t'}~ |~ \textbf{inr}_{t,t'}~ |~ \textbf{case}~ e~ \textbf{of}~ \textbf{inl}~ x \rightarrow e'~ ; \textbf{inr}~ y \rightarrow e''~ \textbf{end}&&\text{(coproduct)}\\
+  &~~~~|~ \textbf{mkpair}_{t,t'}~ |~ \pi^1_{t,t'}~ |~ \pi^2_{t,t'}&&\text{(product)}\\
+  &~~~~|~ \textbf{return}_{t,M}~ |~ \textbf{bind}_{t,t',M}~ |~ \textbf{lift}_{t,M,T}&&\text{(monad operators)}\\
+  &~~~~|~ \textbf{signal}_{t,t',M}&&\text{(reactive prims.)}\\
+  &~~~~|~ \textbf{get}_{t,M}~ |~ \textbf{put}_{t,M}&&\text{(state prims.)}\\
+  &~~~~|~ \textbf{throw}_t~ |~ \textbf{catch}_t&&\text{(error prims.)}\\
+  &~~~~|~ \textbf{rdmem}_t~ |~ \textbf{wrmem}_t&&\text{(memory prims.)}
 \end{aligned}
 $$
 
+\subsection{Notes}
+Note: $\mathbb{R}$ is {\it ReactT}, $\mathbb{S}$ is {\it StateT}, $\mathbb{E}$ is {\it ErrorT}, and $\mathbb{M}$ is {\it MemT} (for addressable memory, which may or may not actually be synthesized as RAM).
+
 In reality we're going to support non-recursive, first-order data types with named constructors, but for the abstract presentation, sums/products/unit will do (e.g. $Bit$ can be encoded as $() + ()$).
 
-For the moment I am trying to avoid polymorphism entirely, meaning any expression constructor that on its own might have polymorphic type has a type subscript. The ``real'' language could have Hindley-Milner style polymorphism.
+For the moment I am trying to avoid polymorphism entirely, meaning any expression constructor that on its own might have polymorphic type has a type subscript. The ``real'' language could have Hindley-Milner style polymorphism and of course on paper it's fine to leave off subscripts when they can be inferred from context.
 
 The restriction of the domain type in $\mathbb{M}$ is not accidental. It's there because even in a higher-order setting we need to be able to test for equality.
+
+It may not be necessary to make {\it MemT} a special primitive; memory extraction could probably be performed from {\it StateT}.
+
+\section{Type System}
+\infer[\textsc{T-Lam}]{\Gamma\vdash{}\lambda{}x_t\rightarrow{}e : t \rightarrow t'}{\Gamma,x : t\vdash{}e : t'}
+\vspace{1em}
+\infer[\textsc{T-Var}]{\Gamma,x : t\vdash{}x : t}{}
+\vspace{1em}
+\infer[\textsc{T-App}]{\Gamma\vdash{}e~ e' : t}{\Gamma\vdash{}e : t' \rightarrow t~~~\Gamma\vdash{}e' : t'}
+\vspace{1em}
+\infer[\textsc{T-Nil}]{\Gamma\vdash{}\textbf{nil} : ()}{}
+\vspace{1em}
+\infer[\textsc{T-InL}]{\Gamma\vdash{}\textbf{inl}_{t,t'} : t \rightarrow t + t'}{}
+\vspace{1em}
+\infer[\textsc{T-InR}]{\Gamma\vdash{}\textbf{inr}_{t,t'} : t' \rightarrow t + t'}{}
+\vspace{1em}
+\infer[\textsc{T-Case}]{\Gamma\vdash{}\textbf{case}~ e~ \textbf{of}~ \textbf{inl}~ x \rightarrow e'~ ; \textbf{inr}~ y \rightarrow e''~ \textbf{end} : t}{\Gamma\vdash{}e : t' + t''~~~~\Gamma,x : t'\vdash{}e' : t~~~~\Gamma,y : t''\vdash{}e'' : t}
+\vspace{1em}
+\infer[\textsc{T-MkPair}]{\Gamma\vdash{}\textbf{mkpair}_{t,t'} : t \rightarrow t' \rightarrow t \times t'}{}
+\vspace{1em}
+\infer[\textsc{T-Pi1}]{\Gamma\vdash{}\pi^1_{t,t'} : t \times t' \rightarrow t}{}
+\vspace{1em}
+\infer[\textsc{T-Pi2}]{\Gamma\vdash{}\pi^2_{t,t'} : t \times t' \rightarrow t'}{}
+\vspace{1em}
+\infer[\textsc{T-Return}]{\Gamma\vdash{}\textbf{return}_{t,M} : t \rightarrow M(t)}{}
+\vspace{1em}
+\infer[\textsc{T-Bind}]{\Gamma\vdash{}\textbf{bind}_{t,t',M} : M(t) \rightarrow (t \rightarrow M(t')) \rightarrow M(t')}{}
+\vspace{1em}
+\infer[\textsc{T-Lift}]{\Gamma\vdash{}\textbf{lift}_{t,M,T} : M(t) \rightarrow TM(t)}{}
+\vspace{1em}
+\infer[\textsc{T-Signal}]{\Gamma\vdash{}\textbf{signal}_{t,t',M} : t' \rightarrow \mathbb{R}_{t\rightarrow{}t'}M(t)}{}
+\vspace{1em}
+\infer[\textsc{T-Get}]{\Gamma\vdash{}\textbf{get}_{t,M} : \mathbb{S}_tM(t)}{}
+\vspace{1em}
+\infer[\textsc{T-Put}]{\Gamma\vdash{}\textbf{put}_{t,M} : t \rightarrow \mathbb{S}_tM\big(()\big)}{}
+\vspace{1em}
+\infer[\textsc{T-Throw}]{\Gamma\vdash{}\textbf{throw}_{t,t',M} : t' \rightarrow \mathbb{E}_{t'}M(t)}{}
+\vspace{1em}
+\infer[\textsc{T-Catch}]{\Gamma\vdash{}\textbf{catch}_{t,t',M} : \mathbb{E}_{t'}M(t) \rightarrow (t' \rightarrow \mathbb{E}_{t'}M(t)) \rightarrow \mathbb{E}_{t'}M(t)}{}
+\vspace{1em}
+\infer[\textsc{T-RdMem}]{\Gamma\vdash{}\textbf{rdmem}_{t,t',M} : t \rightarrow \mathbb{M}_{t\rightarrow{}t'}M(t')}{}
+\vspace{1em}
+\infer[\textsc{T-WrMem}]{\Gamma\vdash{}\textbf{wrmem}_{t,t',M} : t \rightarrow t' \rightarrow \mathbb{M}_{t\rightarrow{}t'}M\big(()\big)}{}
+
+\section{Denotational Semantics}
+
+\section{Translation Scheme to RWNF}
 
 \end{document}
