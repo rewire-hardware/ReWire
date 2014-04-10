@@ -23,8 +23,8 @@ e,e',e'' \in \mathit{Exp}&::= x~ |~ \lambda{}x_t\rightarrow{}e~ |~ e~ e'&&\text{
   &~~~~|~ \textbf{return}_{t,M}~ |~ \textbf{bind}_{t,t',M}~ |~ \textbf{lift}_{t,M,T}&&\text{(monad operators)}\\
   &~~~~|~ \textbf{signal}_{t,t',M}&&\text{(reactive prims.)}\\
   &~~~~|~ \textbf{get}_{t,M}~ |~ \textbf{put}_{t,M}&&\text{(state prims.)}\\
-  &~~~~|~ \textbf{throw}_t~ |~ \textbf{catch}_t&&\text{(error prims.)}\\
-  &~~~~|~ \textbf{rdmem}_t~ |~ \textbf{wrmem}_t&&\text{(memory prims.)}
+  &~~~~|~ \textbf{throw}_{t,t',M}~ |~ \textbf{catch}_{t,t',M}&&\text{(error prims.)}\\
+  &~~~~|~ \textbf{rdmem}_{t,t',M}~ |~ \textbf{wrmem}_{t,t',M}&&\text{(memory prims.)}
 \end{aligned}
 $$
 
