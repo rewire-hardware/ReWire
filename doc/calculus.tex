@@ -3,6 +3,7 @@
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{proof}
+\usepackage{stmaryrd}
 
 \begin{document}
 \section{A Confession}
@@ -81,6 +82,31 @@ It may not be necessary to make {\it MemT} a special primitive; memory extractio
 \infer[\textsc{T-WrMem}]{\Gamma\vdash{}\textbf{wrmem}_{t,t',M} : t \rightarrow t' \rightarrow \mathbb{M}_{t\rightarrow{}t'}M\big(()\big)}{}
 
 \section{Denotational Semantics}
+
+\subsection{Of Types}
+$\llbracket{}()\rrbracket = \mathbf{1}$
+
+$\llbracket{}t+t'\rrbracket = \llbracket{}t\rrbracket + \llbracket{}t'\rrbracket$
+
+$\llbracket{}t\times{}t'\rrbracket = \llbracket{}t\rrbracket \times \llbracket{}t'\rrbracket$
+
+$\llbracket{}t\rightarrow{}t'\rrbracket = \llbracket{}t'\rrbracket^{\llbracket{}t\rrbracket}$
+
+$\llbracket{}M(t)\rrbracket = \llbracket{}M\rrbracket\llbracket{}t\rrbracket$
+
+\subsection{Of Monads}
+$\llbracket{}\mathbb{I}\rrbracket = \lambda{}t . t$
+
+$\llbracket{}T M\rrbracket = \llbracket{}T\rrbracket \llbracket{}M\rrbracket$
+
+\subsection{Of Monad Transformers}
+$\llbracket{}\mathbb{R}_{t\rightarrow{}t'}\rrbracket = \lambda{} M . \lambda{} t'' . \nu{}X . M (t'' + (\llbracket{}t'\rrbracket \times (\llbracket{}t\rrbracket \rightarrow X)))$
+
+$\llbracket{}\mathbb{S}_t\rrbracket = \lambda{} M . \lambda{} t' . \llbracket{}t\rrbracket \rightarrow M (t' \times \llbracket{}t\rrbracket)$
+
+$\llbracket{}\mathbb{E}_t\rrbracket = \lambda{} M . \lambda{} t' . M (\llbracket{}t\rrbracket + t')$
+
+$\llbracket{}\mathbb{M}_{t\rightarrow{}t'}\rrbracket = \lambda{} M . \lambda{} t'' . (\llbracket{}t\rrbracket{}\rightarrow\llbracket{}t'\rrbracket) \rightarrow M (t'' \times (\llbracket{}t\rrbracket{}\rightarrow\llbracket{}t'\rrbracket))$
 
 \section{Translation Scheme to RWNF}
 
