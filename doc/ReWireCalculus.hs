@@ -95,7 +95,6 @@ throwError = ErrorT . return . Left
 -- prim (I'm not sure how hard this is to synthesize)
 catchError :: Monad m => ErrorT e m a -> (e -> ErrorT e m a) -> ErrorT e m a
 catchError (ErrorT phi) h = ErrorT $ do res <- phi
-                                        return res
                                         case res of
                                           Left e  -> deErrorT $ h e
                                           Right x -> return (Right x)

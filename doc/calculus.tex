@@ -16,11 +16,11 @@ x,y,z,w \in \mathit{Variable}\\
 t,t',t'' \in \mathit{Type} &::= ()~ |~ t + t'~ |~ t \times t'~ |~ t \rightarrow t'~ |~ M(t)\\
 d \in \mathit{DataType} &::= \text{a restriction of}~ \mathit{Type}~ \text{to ``data-only'' types}\\
 M \in \mathit{Monad} &::= \mathbb{I}~ |~ T M\\
-T \in \mathit{MonadTrans} &::= \mathbb{R}_{t\rightarrow{}t'}~ |~ \mathbb{S}_t~ |~ \mathbb{E}_t~ |~ \mathbb{M}_{d\rightarrow{}t}\\
+T \in \mathit{MonadTrans} &::= \mathbb{R}_{t:t'}~ |~ \mathbb{S}_t~ |~ \mathbb{E}_t~ |~ \mathbb{M}_{d:t}\\
 e,e',e'' \in \mathit{Exp}&::= x~ |~ \lambda{}x_t\rightarrow{}e~ |~ e~ e'&&\text{(lambda calculus)}\\
   &~~~~|~ \textbf{nil}&&\text{(unit)}\\
   &~~~~|~ \textbf{inl}_{t,t'}~ |~ \textbf{inr}_{t,t'}~ |~ \textbf{case}~ e~ \textbf{of}~ \textbf{inl}~ x \rightarrow e'~ ; \textbf{inr}~ y \rightarrow e''~ \textbf{end}&&\text{(coproduct)}\\
-  &~~~~|~ \textbf{mkpair}_{t,t'}~ |~ \pi^1_{t,t'}~ |~ \pi^2_{t,t'}&&\text{(product)}\\
+  &~~~~|~ \textbf{mkpair}_{t,t'}~ |~ \mathbf{fst}_{t,t'}~ |~ \mathbf{snd}_{t,t'}&&\text{(product)}\\
   &~~~~|~ \textbf{return}_{t,M}~ |~ \textbf{bind}_{t,t',M}~ |~ \textbf{lift}_{t,M,T}&&\text{(monad operators)}\\
   &~~~~|~ \textbf{signal}_{t,t',M}&&\text{(reactive prims.)}\\
   &~~~~|~ \textbf{get}_{t,M}~ |~ \textbf{put}_{t,M}&&\text{(state prims.)}\\
@@ -57,9 +57,9 @@ It may not be necessary to make {\it MemT} a special primitive; memory extractio
 \vspace{1em}
 \infer[\textsc{T-MkPair}]{\Gamma\vdash{}\textbf{mkpair}_{t,t'} : t \rightarrow t' \rightarrow t \times t'}{}
 \vspace{1em}
-\infer[\textsc{T-Pi1}]{\Gamma\vdash{}\pi^1_{t,t'} : t \times t' \rightarrow t}{}
+\infer[\textsc{T-Pi1}]{\Gamma\vdash{}\mathbf{fst}_{t,t'} : t \times t' \rightarrow t}{}
 \vspace{1em}
-\infer[\textsc{T-Pi2}]{\Gamma\vdash{}\pi^2_{t,t'} : t \times t' \rightarrow t'}{}
+\infer[\textsc{T-Pi2}]{\Gamma\vdash{}\mathbf{snd}_{t,t'} : t \times t' \rightarrow t'}{}
 \vspace{1em}
 \infer[\textsc{T-Return}]{\Gamma\vdash{}\textbf{return}_{t,M} : t \rightarrow M(t)}{}
 \vspace{1em}
@@ -84,29 +84,82 @@ It may not be necessary to make {\it MemT} a special primitive; memory extractio
 \section{Denotational Semantics}
 
 \subsection{Of Types}
-$\llbracket{}()\rrbracket = \mathbf{1}$
-
-$\llbracket{}t+t'\rrbracket = \llbracket{}t\rrbracket + \llbracket{}t'\rrbracket$
-
-$\llbracket{}t\times{}t'\rrbracket = \llbracket{}t\rrbracket \times \llbracket{}t'\rrbracket$
-
-$\llbracket{}t\rightarrow{}t'\rrbracket = \llbracket{}t'\rrbracket^{\llbracket{}t\rrbracket}$
-
-$\llbracket{}M(t)\rrbracket = \llbracket{}M\rrbracket\llbracket{}t\rrbracket$
+\begin{eqnarray*}
+\llbracket{}()\rrbracket &=& \{()\}\\
+\llbracket{}t+t'\rrbracket &=& \llbracket{}t\rrbracket + \llbracket{}t'\rrbracket\\
+\llbracket{}t\times{}t'\rrbracket &=& \llbracket{}t\rrbracket \times \llbracket{}t'\rrbracket\\
+\llbracket{}t\rightarrow{}t'\rrbracket &=& \llbracket{}t'\rrbracket^{\llbracket{}t\rrbracket}\\
+\llbracket{}M(t)\rrbracket &=& \mathcal{M}\llbracket{}M\rrbracket\llbracket{}t\rrbracket
+\end{eqnarray*}
 
 \subsection{Of Monads}
-$\llbracket{}\mathbb{I}\rrbracket = \lambda{}t . t$
 
-$\llbracket{}T M\rrbracket = \llbracket{}T\rrbracket \llbracket{}M\rrbracket$
+\subsubsection{Type Constructors}
+\begin{eqnarray*}
+\mathcal{M}\llbracket{}\mathbb{I}\rrbracket &=& \lambda t . t\\
+\mathcal{M}\llbracket{}\mathbb{R}_{t:t'}M\rrbracket &=& \lambda t'' . \nu{}X . \mathcal{M}\llbracket{}M\rrbracket (t'' + (\llbracket{}t'\rrbracket \times (\llbracket{}t\rrbracket \rightarrow X)))\\
+\mathcal{M}\llbracket{}\mathbb{S}_t M\rrbracket &=& \lambda t' . \llbracket{}t\rrbracket \rightarrow \mathcal{M}\llbracket{}M\rrbracket (t' \times \llbracket{}t\rrbracket)\\
+\mathcal{M}\llbracket{}\mathbb{E}_t M\rrbracket &=& \lambda{} t' . \mathcal{M}\llbracket{}M\rrbracket (\llbracket{}t\rrbracket + t')\\
+\mathcal{M}\llbracket{}\mathbb{M}_{t:t'} M\rrbracket &=& \mathcal{M}\llbracket{}\mathbb{S}_{t\rightarrow{}t'} M\rrbracket\\
+\end{eqnarray*}
 
-\subsection{Of Monad Transformers}
-$\llbracket{}\mathbb{R}_{t\rightarrow{}t'}\rrbracket = \lambda{} M . \lambda{} t'' . \nu{}X . M (t'' + (\llbracket{}t'\rrbracket \times (\llbracket{}t\rrbracket \rightarrow X)))$
+\subsubsection{Unit Operators}
+\begin{eqnarray*}
+\mathcal{U}\llbracket{}\mathbb{I}\rrbracket &=& \lambda x . x\\
+\mathcal{U}\llbracket{}\mathbb{R}_{t:t'}M\rrbracket &=& \mathcal{U}\llbracket{}M\rrbracket \circ \mathbf{inl}\\
+\mathcal{U}\llbracket{}\mathbb{S}_t M\rrbracket &=& \lambda x . \lambda \sigma . \mathcal{U}\llbracket{}M\rrbracket \langle x,\sigma \rangle\\
+\mathcal{U}\llbracket{}\mathbb{E}_t M\rrbracket &=& \mathcal{U}\llbracket{}M\rrbracket \circ \mathbf{inr}\\
+\mathcal{U}\llbracket{}\mathbb{M}_{t:t'} M\rrbracket &=& \mathcal{U}\llbracket{}\mathbb{S}_{t\rightarrow{}t'} M\rrbracket\\
+\end{eqnarray*}
 
-$\llbracket{}\mathbb{S}_t\rrbracket = \lambda{} M . \lambda{} t' . \llbracket{}t\rrbracket \rightarrow M (t' \times \llbracket{}t\rrbracket)$
+\subsubsection{Bind Operators}
+\begin{eqnarray*}
+\mathcal{B}\llbracket{}\mathbb{I}\rrbracket &=& \lambda x . \lambda f . f x\\
+\mathcal{B}\llbracket{}\mathbb{R}_{t:t'}M\rrbracket &=& \mathbf{fix}~ F . \lambda \varphi . \lambda f . \mathcal{B}\llbracket{}M\rrbracket \varphi \left(\lambda r . \begin{cases}f x&\text{if } r = \mathbf{inl}~ x\\\mathcal{U}\llbracket{}M\rrbracket (\mathbf{inr} \langle o,\lambda i . F~ (\kappa~ i)~ f\rangle)&\text{if } r = \mathbf{inr} \langle{}o,\kappa\rangle\end{cases}\right)\\
+\mathcal{B}\llbracket{}\mathbb{S}_t M\rrbracket &=& \lambda \varphi . \lambda f . \lambda s . \mathcal{B}\llbracket{}M\rrbracket (\varphi s) (\lambda r . f (\pi_2r) (\pi_1 r))\\
+\mathcal{B}\llbracket{}\mathbb{E}_t M\rrbracket &=& \lambda \varphi . \lambda f . \mathcal{B}\llbracket{}M\rrbracket \varphi \left(\lambda r . \begin{cases}\mathcal{U}\llbracket{}M\rrbracket{}r&\text{if } r = \mathbf{inl}~ e\\f x&\text{if } r = \mathbf{inr}~ x\end{cases}\right)\\
+\mathcal{B}\llbracket{}\mathbb{M}_{t:t'} M\rrbracket &=& \mathcal{B}\llbracket{}\mathbb{S}_{t\rightarrow{}t'} M\rrbracket\\
+\end{eqnarray*}
 
-$\llbracket{}\mathbb{E}_t\rrbracket = \lambda{} M . \lambda{} t' . M (\llbracket{}t\rrbracket + t')$
+\subsubsection{Lift Operators}
+\begin{eqnarray*}
+\mathcal{L}\llbracket{}M,\mathbb{R}_{t:t'}\rrbracket &=& \lambda \varphi . \mathcal{B}\llbracket{}M\rrbracket \varphi (\mathcal{U}\llbracket{}M\rrbracket \circ \mathbf{inl})\\
+\mathcal{L}\llbracket{}M,\mathbb{S}_t\rrbracket &=& \lambda \varphi . \lambda \sigma . \mathcal{B}\llbracket{}M\rrbracket \varphi (\lambda x . \mathcal{U}\llbracket{}M\rrbracket\langle{}x,\sigma\rangle)\\
+\mathcal{L}\llbracket{}M,\mathbb{E}_t\rrbracket &=& \lambda \varphi . \mathcal{B}\llbracket{}M\rrbracket \varphi (\mathcal{U}\llbracket{}M\rrbracket \circ \mathbf{inr})\\
+\mathcal{L}\llbracket{}M,\mathbb{M}_{t:t'}\rrbracket &=& \mathcal{L}\llbracket{}M,\mathbb{S}_{t\rightarrow{}t'}\rrbracket
+\end{eqnarray*}
 
-$\llbracket{}\mathbb{M}_{t\rightarrow{}t'}\rrbracket = \lambda{} M . \lambda{} t'' . (\llbracket{}t\rrbracket{}\rightarrow\llbracket{}t'\rrbracket) \rightarrow M (t'' \times (\llbracket{}t\rrbracket{}\rightarrow\llbracket{}t'\rrbracket))$
+\subsection{Of Expressions}
+For clarity's sake (?), irrelevant type subscripts are dropped.
+
+\begin{eqnarray*}
+\llbracket{}x\rrbracket{}\rho &=& \rho x\\
+\llbracket{}\lambda x_t \rightarrow e\rrbracket \rho &=& \lambda v \rightarrow \llbracket{}e\rrbracket(\rho[x\mapsto{}v])\\
+\llbracket{}e~ e'\rrbracket \rho &=& \llbracket{}e\rrbracket\rho~ (\llbracket{}e'\rrbracket\rho)\\
+\llbracket{}\mathbf{nil}\rrbracket \rho &=& ()\\
+\llbracket{}\mathbf{inl}\rrbracket \rho &=& \mathbf{inl}\\
+\llbracket{}\mathbf{inr}\rrbracket \rho &=& \mathbf{inr}\\
+\llbracket{}\mathbf{case}~ e~ \mathbf{of}~ \mathbf{inl}~ x \rightarrow e' ~; \mathbf{inr}~ y \rightarrow e''\rrbracket \rho &=& \begin{cases}
+                                                                                                                                 \llbracket e' \rrbracket (\rho[x\mapsto{}v])&\text{if } \llbracket e \rrbracket \rho = \mathbf{inl}~ v\\
+                                                                                                                                 \llbracket e'' \rrbracket (\rho[y\mapsto{}v])&\text{if } \llbracket e \rrbracket \rho = \mathbf{inr}~ v\\
+                                                                                                                                \end{cases}\\
+\llbracket{}\mathbf{mkpair}\rrbracket{}\rho &=& \lambda x . \lambda y . \langle x,y \rangle\\
+\llbracket{}\mathbf{fst}\rrbracket\rho &=& \pi_1\\
+\llbracket{}\mathbf{snd}\rrbracket\rho &=& \pi_2\\
+\llbracket{}\mathbf{return}_M\rrbracket{}\rho &=& \mathcal{U}\llbracket{}M\rrbracket\\
+\llbracket{}\mathbf{bind}_M\rrbracket{}\rho &=& \mathcal{B}\llbracket{}M\rrbracket\\
+\llbracket{}\mathbf{lift}_{M,T}\rrbracket\rho &=& \mathcal{L}\llbracket{}M,T\rrbracket\\
+\llbracket{}\mathbf{signal}_M\rrbracket\rho &=& \lambda o . \mathcal{U}\llbracket{}M\rrbracket(\mathbf{inr}~ \langle o,\mathcal{U}\llbracket{}\mathbb{R}M\rrbracket\rangle)\\
+\llbracket{}\mathbf{get}_M\rrbracket\rho &=& \lambda \sigma . \mathcal{U}\llbracket{}M\rrbracket\langle\sigma,\sigma\rangle\\
+\llbracket{}\mathbf{put}_M\rrbracket\rho &=& \lambda \sigma' . \lambda \sigma . \mathcal{U}\llbracket{}M\rrbracket\langle(),\sigma'\rangle\\
+\llbracket{}\mathbf{throw}_M\rrbracket\rho &=& \mathcal{U}\llbracket{}M\rrbracket \circ \mathbf{inl}\\
+\llbracket{}\mathbf{catch}_M\rrbracket\rho &=& \lambda h . \lambda \varphi . \mathcal{B}\llbracket{}M\rrbracket\varphi\left(\lambda r . \begin{cases}
+                                                                                                                                               h~ e&\text{if }r = \mathbf{inl}~ e\\
+                                                                                                                                               \mathcal{U}\llbracket{}M\rrbracket r&\text{otherwise}
+                                                                                                                                              \end{cases}\right)\\
+\llbracket{}\mathbf{rdmem}_M\rrbracket\rho &=& \lambda \alpha . \lambda \mu . \mathcal{U}\llbracket{}M\rrbracket (\mu\alpha,\mu)\\
+\llbracket{}\mathbf{wrmem}_M\rrbracket\rho &=& \lambda \alpha . \lambda \omega . \lambda \mu . \mathcal{U}\llbracket{}M\rrbracket ((),\mu[\alpha \mapsto \omega])
+\end{eqnarray*}
 
 \section{Translation Scheme to RWNF}
 
