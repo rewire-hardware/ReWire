@@ -40,6 +40,21 @@ unfold s f = ReactT $ do r <- f s
                            Right (s',o,k) -> return (Right (o,\ i -> unfold s' f))
                            Left a         -> return (Left a)
 
+{-
+intrude :: (Monad m) => StateT s (ReactT i o m) a -> ReactT i o (StateT s m) a
+intrude phi = ReactT $ StateT $ \ s -> do res <- deReactT $ deStateT phi s
+                                          case res of
+                                            Left (x,s') -> return (Left x,s')
+                                            Right (o,k) -> return (Right (o,\ i -> do (x,s') <- k i
+                                                                                      undefined),
+                                                                   undefined)-}
+
+----
+---- "Extrusion", i.e. commuting monad transformers with ReactT.
+----
+class MonadTrans t => MonadExtrude t where
+  extrude :: Monad m => ReactT i o (t m) a -> t (ReactT i o m) a
+
 ----
 ---- State monad transformer.
 ----
@@ -70,11 +85,12 @@ put :: Monad m => s -> StateT s m ()
 put s = StateT (\ _ -> return ((),s))
 
 -- prim
-extrudeStateT :: Monad m => ReactT i o (StateT s m) a -> s -> ReactT i o m (a,s)
-extrudeStateT (ReactT phi) s = ReactT $ do (res,s') <- deStateT phi s
-                                           case res of
-                                             Left x      -> return (Left (x,s'))
-                                             Right (o,k) -> return (Right (o,\ i -> extrudeStateT (k i) s'))
+instance MonadExtrude (StateT s) where
+  extrude (ReactT phi) = StateT $ \ s ->
+                          ReactT $ do (res,s') <- deStateT phi s
+                                      case res of
+                                        Left x      -> return (Left (x,s'))
+                                        Right (o,k) -> return (Right (o,\ i -> deStateT (extrude (k i)) s'))
 
 ---
 --- Error monad transformer.
@@ -89,13 +105,16 @@ instance Monad m => Monad (ErrorT e m) where
                           Left e  -> return (Left e)
                           Right x -> deErrorT (f x)
 
+instance MonadTrans (ErrorT e) where
+  lift phi = ErrorT (phi >>= return . Right)
+
 -- prim
-extrudeErrorT :: Monad m => ReactT i o (ErrorT e m) a -> ReactT i o m (Either e a)
-extrudeErrorT (ReactT phi) = ReactT $ do res <- deErrorT phi
-                                         case res of
-                                           Left e              -> return (Left (Left e))
-                                           Right (Left x)      -> return (Left (Right x))
-                                           Right (Right (o,k)) -> return (Right (o,extrudeErrorT . k))
+instance MonadExtrude (ErrorT e) where
+  extrude (ReactT phi) = ErrorT $ ReactT $ do res <- deErrorT phi
+                                              case res of
+                                                Left e              -> return (Left (Left e))
+                                                Right (Left x)      -> return (Left (Right x))
+                                                Right (Right (o,k)) -> return (Right (o,deErrorT . extrude . k))
 
 -- prim
 throwError :: Monad m => e -> ErrorT e m a
