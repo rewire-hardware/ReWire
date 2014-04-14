@@ -152,6 +152,7 @@ For clarity's sake (?), irrelevant type subscripts are dropped.
 \llbracket{}\mathbf{bind}_M\rrbracket{}\rho &=& \mathcal{B}\llbracket{}M\rrbracket\\
 \llbracket{}\mathbf{lift}_{M,T}\rrbracket\rho &=& \mathcal{L}\llbracket{}M,T\rrbracket\\
 \llbracket{}\mathbf{signal}_M\rrbracket\rho &=& \lambda o . \mathcal{U}\llbracket{}M\rrbracket(\mathbf{inr}~ \langle o,\mathcal{U}\llbracket{}\mathbb{R}M\rrbracket\rangle)\\
+\llbracket{}\mathbf{unfold}_M\rrbracket\rho &=& \mathbf{fix}~ F . \lambda s . \lambda f . \mathbb{B}\llbracket{}M\rrbracket~(f s)~ \left(\lambda r . \begin{cases}\mathbb{U}\llbracket{}M\rrbracket~ (\mathbf{inr} \langle{}o,\lambda i . F~ s'~ f\rangle{})\\~~~\text{when } r = \mathbf{inr}\langle{}s',o,k\rangle\\\mathbb{U}\llbracket{}M\rrbracket~ (\mathbf{inr}~ a)\\~~~\text{when } r = \mathbf{inl}~ a\end{cases}\right)\\
 \llbracket{}\mathbf{get}_M\rrbracket\rho &=& \lambda \sigma . \mathcal{U}\llbracket{}M\rrbracket\langle\sigma,\sigma\rangle\\
 \llbracket{}\mathbf{put}_M\rrbracket\rho &=& \lambda \sigma' . \lambda \sigma . \mathcal{U}\llbracket{}M\rrbracket\langle(),\sigma'\rangle\\
 \llbracket{}\mathbf{throw}_M\rrbracket\rho &=& \mathcal{U}\llbracket{}M\rrbracket \circ \mathbf{inl}\\
