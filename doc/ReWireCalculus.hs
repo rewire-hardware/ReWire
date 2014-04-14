@@ -1,3 +1,5 @@
+module ReWireCalculus where
+
 import Control.Monad
 import Control.Monad.Trans
 
@@ -30,6 +32,13 @@ instance Functor m => Functor (ReactT i o m) where
 -- prim
 signal :: Monad m => o -> ReactT i o m i
 signal o = ReactT (return (Right (o,return)))
+
+-- prim
+unfold :: Monad m => s -> (s -> m (Either a (s,o,i -> s))) -> ReactT i o m a
+unfold s f = ReactT $ do r <- f s
+                         case r of
+                           Right (s',o,k) -> return (Right (o,\ i -> unfold s' f))
+                           Left a         -> return (Left a)
 
 ----
 ---- State monad transformer.
