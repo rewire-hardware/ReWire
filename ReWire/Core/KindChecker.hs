@@ -113,7 +113,8 @@ kcDataDecl (RWCData i b) = do (tvs,dcs)  <- unbind b
                               localAssumps (as++) (mapM_ kcDataCon dcs)
 
 kcDefn :: RWCDefn -> KCM ()
-kcDefn (RWCDefn _ (Embed b)) = do (tvs,(t,_)) <- unbind b
+kcDefn (RWCDefn _ (Embed b)) = do putKiSub []
+                                  (tvs,(t,_)) <- unbind b
                                   as          <- mapM (\ tv -> freshkv >>= \ v -> return (tv,setbind [] (Kvar v))) tvs
                                   k           <- localAssumps (as++) (kcTy t)
                                   unify k Kstar

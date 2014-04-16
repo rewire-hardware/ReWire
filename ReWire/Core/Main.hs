@@ -19,9 +19,14 @@ main = do args <- getArgs
                      res_p <- parsefile filename
                      case res_p of
                        Left e  -> hPutStrLn stderr e
-                       Right p -> do writeFile "Debug.hs" (show $ ppHaskell p)
+                       Right p -> do putStrLn "parse finished"
+--                                     writeFile "show.out" (show p)
+--                                     putStrLn "show out finished"
+--                                     writeFile "Debug.hs" (show $ ppHaskell p)
+--                                     putStrLn "debug out finished"
                                      case kindcheck p of
                                        Just e  -> hPutStrLn stderr e
-                                       Nothing -> case typecheck p of
-                                                    Left e   -> hPutStrLn stderr e
-                                                    Right p' -> trans p'
+                                       Nothing -> putStrLn "kc finished" >>
+                                                   (case typecheck p of
+                                                     Left e   -> hPutStrLn stderr e
+                                                     Right p' -> putStrLn "tc finished" >> trans p')

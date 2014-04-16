@@ -75,19 +75,22 @@ initExp (RWCCase _ e_ alts_) = do e    <- initExp e_
                                   tv   <- freshv
                                   return (RWCCase (RWCTyVar tv) e alts)
 
-initDefn :: RWCDefn -> TCM (RWCDefn,Assump)
+initDefn :: RWCDefn -> TCM RWCDefn
 initDefn (RWCDefn n (Embed b)) = do (tvs,(t,e)) <- unbind b
                                     e'          <- initExp e
-                                    let a       =  (n,setbind tvs t)
-                                    return (RWCDefn n (Embed (setbind tvs (t,e'))),a)
+                                    return (RWCDefn n (Embed (setbind tvs (t,e'))))
 
-initDataCon :: [Name RWCTy] -> RWCTy -> RWCDataCon -> CAssump
-initDataCon tvs rt (RWCDataCon i ts) = (i,setbind tvs (foldr mkArrow rt ts))
+defnAssump :: RWCDefn -> TCM Assump
+defnAssump (RWCDefn n (Embed b)) = do (tvs,(t,e)) <- unbind b
+                                      return (n,setbind tvs t)
 
-initDataDecl :: RWCData -> TCM [CAssump]
-initDataDecl (RWCData i b) = do (tvs,dcs) <- unbind b
-                                let rt    =  foldl RWCTyApp (RWCTyCon i) (map RWCTyVar tvs)
-                                return $ map (initDataCon tvs rt) dcs
+dataConAssump :: [Name RWCTy] -> RWCTy -> RWCDataCon -> CAssump
+dataConAssump tvs rt (RWCDataCon i ts) = (i,setbind tvs (foldr mkArrow rt ts))
+
+dataDeclAssumps :: RWCData -> TCM [CAssump]
+dataDeclAssumps (RWCData i b) = do (tvs,dcs) <- unbind b
+                                   let rt    =  foldl RWCTyApp (RWCTyCon i) (map RWCTyVar tvs)
+                                   return $ map (dataConAssump tvs rt) dcs
 
 (@@) :: TySub -> TySub -> TySub
 s1@@s2 = [(u,substs s1 t) | (u,t) <- s2] ++ s1
@@ -178,19 +181,20 @@ tcExp (RWCCase t e alts) = do tcExp e
                               mapM_ (tcAlt t (typeOf e)) alts
 
 tcDefn :: RWCDefn -> TCM RWCDefn
-tcDefn (RWCDefn n (Embed b)) = do (tvs,(t,e)) <- unbind b
-                                  tcExp e
-                                  unify t (typeOf e)
-                                  s           <- getTySub
-                                  return (RWCDefn n (embed $ setbind tvs (t,substs s e)))
+tcDefn d = do putTySub []
+              RWCDefn n (Embed b) <- initDefn d
+              (tvs,(t,e)) <- unbind b
+              tcExp e
+              unify t (typeOf e)
+              s           <- getTySub
+              return (RWCDefn n (embed $ setbind tvs (t,substs s e)))
 
 tc :: RWCProg -> TCM RWCProg
-tc p = do ds       <- untrec (defns p)
-          (ds',as) <- liftM unzip (mapM initDefn ds)
-          cas      <- liftM concat (mapM initDataDecl (dataDecls p))
-          ds''     <- localAssumps (as++) (localCAssumps (cas++) (mapM tcDefn ds'))
-          s        <- getTySub
-          return (p { defns = trec ds'' })
+tc p = do ds  <- untrec (defns p)
+          as  <- mapM defnAssump ds
+          cas <- liftM concat (mapM dataDeclAssumps (dataDecls p))
+          ds' <- localAssumps (as++) (localCAssumps (cas++) (mapM tcDefn ds))
+          return (p { defns = trec ds' })
 
 typecheck :: RWCProg -> Either String RWCProg
 typecheck p = fmap fst $ runIdentity (runErrorT (runStateT (runReaderT (runFreshMT (tc p)) (TCEnv [] [])) (TCState [])))
