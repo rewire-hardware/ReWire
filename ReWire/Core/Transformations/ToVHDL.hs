@@ -342,6 +342,7 @@ bitToChar Zero = '0'
 bitToChar One  = '1'
 
 renderAssignmentForVariables :: Assignment -> String
+renderAssignmentForVariables (s,FunCall f [])    = s ++ " := " ++ f ++ ";"
 renderAssignmentForVariables (s,FunCall f ss)    = s ++ " := " ++ f ++ "(" ++ intercalate "," ss ++ ");"
 renderAssignmentForVariables (s,LocalVariable x) = s ++ " := " ++ x ++ ";"
 renderAssignmentForVariables (s,Concat ss)       = s ++ " := " ++ intercalate " & " ss ++ ";"
@@ -356,6 +357,7 @@ renderAssignmentForVariables (s,Conditional cs)  = let (b:bs) = map renderOneCas
         renderCond CondTrue        = "true"
 
 renderAssignmentForSignals :: Assignment -> String
+renderAssignmentForSignals (s,FunCall f [])    = s ++ " <= " ++ f ++ ";"
 renderAssignmentForSignals (s,FunCall f ss)    = s ++ " <= " ++ f ++ "(" ++ intercalate "," ss ++ ");"
 renderAssignmentForSignals (s,LocalVariable x) = s ++ " <= " ++ x ++ ";"
 renderAssignmentForSignals (s,Concat ss)       = s ++ " <= " ++ intercalate " & " ss ++ ";"
@@ -401,15 +403,14 @@ genBittyDefn (RWCDefn n_ (Embed b)) =
   lunbind b $ \(tvs,(t,e_)) ->
   flattenLambda e_ $ \ (nts,e) ->
     do (BoundFun n) <- askNameInfo n_
-       let freshArgumentTy (n,t) = do s <- freshName "arg"
-                                      return ((n,BoundVar s),s ++ " : std_logic_vector")
+       let freshArgumentTy pos (n,t) = let s = "arg_" ++ show pos in return ((n,BoundVar s),s ++ " : std_logic_vector") 
        wr  <- tyWidth (typeOf e)
-       bps <- mapM freshArgumentTy nts
+       bps <- zipWithM freshArgumentTy [0..] nts
        let (bdgs,ps) = unzip bps
        s   <- localBindings (Map.union $ Map.fromList bdgs) (genExp e)
        as  <- getAssignments
        ds  <- getDeclarations
-       return ("  pure function " ++ n ++ "(" ++ intercalate " ; " ps ++ ")\n" ++
+       return ("  pure function " ++ n ++ (if null ps then "" else "(" ++ intercalate " ; " ps ++ ")") ++ "\n" ++
                "    return std_logic_vector\n" ++
                "  is\n" ++
                concatMap (("    "++) . (++"\n") . renderDeclarationForVariables) ds ++
@@ -417,6 +418,19 @@ genBittyDefn (RWCDefn n_ (Embed b)) =
                concatMap (("    "++) . (++"\n") . renderAssignmentForVariables) as ++
                "    return " ++ s ++ ";\n" ++
                "  end " ++ n ++ ";\n")
+
+genBittyDefnProto :: RWCDefn -> VM String
+genBittyDefnProto (RWCDefn n_ (Embed b)) =
+  hideAssignments $ hideDeclarations $
+  lunbind b $ \(tvs,(t,e_)) ->
+  flattenLambda e_ $ \ (nts,e) ->
+    do (BoundFun n) <- askNameInfo n_
+       let freshArgumentTy pos (n,t) = let s = "arg_" ++ show pos in return ((n,BoundVar s),s ++ " : std_logic_vector") 
+       wr  <- tyWidth (typeOf e)
+       bps <- zipWithM freshArgumentTy [0..] nts
+       let (bdgs,ps) = unzip bps
+       return ("  pure function " ++ n ++ (if null ps then "" else "(" ++ intercalate " ; " ps ++ ")") ++ "\n" ++
+               "    return std_logic_vector;\n")
 
 genContDefn :: RWCDefn -> VM ()
 genContDefn (RWCDefn n_ (Embed b)) =
@@ -490,16 +504,17 @@ genProg = do res <- lift $ lift $ checkProg'
                Right m -> do
                 bdgs <- initBindings m
                 localBindings (Map.union bdgs) $ do
-                 v_main  <- genMain
-                 sw      <- getStateWidth
-                 iw      <- getInputWidth
-                 ow      <- getOutputWidth
-                 let kts =  Map.toList m
-                 v_funs  <- mapM genOne kts
-                 as      <- getAssignments
-                 ds      <- getDeclarations
+                 v_main   <- genMain
+                 sw       <- getStateWidth
+                 iw       <- getInputWidth
+                 ow       <- getOutputWidth
+                 let kts  =  Map.toList m
+                 v_funs   <- mapM genOne kts
+                 as       <- getAssignments
+                 ds       <- getDeclarations
                  (assn:assns) <- liftM concat $ mapM nextstate_sig_assign (Map.toList bdgs)
                  let entity_name = "rewire" -- FIXME: customizable?
+                 v_protos <- mapM genOneProto kts
                  return ("library ieee;\n" ++
                          "use ieee.std_logic_1164.all;\n" ++
                          "entity " ++ entity_name ++ " is\n" ++
@@ -508,6 +523,7 @@ genProg = do res <- lift $ lift $ checkProg'
                          "        sm_output : out std_logic_vector(0 to " ++ show (ow-1) ++ "));\n" ++
                          "end rewire;\n" ++
                          "architecture behavioral of " ++ entity_name ++ " is\n" ++
+                         concat v_protos ++
                          v_main ++
                          concat v_funs ++
                          "  signal sm_state : std_logic_vector(0 to " ++ show (sw-1) ++ ") := sm_state_initial;\n" ++
@@ -530,6 +546,11 @@ genProg = do res <- lift $ lift $ checkProg'
                                    case md of
                                      Just d  -> genContDefn d >> return ""
                                      Nothing -> fail $ "genProg: No definition for cont function " ++ show k
+         genOneProto (k,DefnBitty) = do md <- lift $ lift $ askDefn k
+                                        case md of
+                                          Just d  -> genBittyDefnProto d
+                                          Nothing -> fail $ "genProg: No definition for bitty function " ++ show k
+         genOneProto _ = return ""
 
 runVM :: RWCProg -> VM a -> (a,VMState)
 runVM p phi = runRW p $
