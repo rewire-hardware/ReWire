@@ -2,7 +2,7 @@
 
 module ReWire.Core.Syntax where
 
-import Data.Set
+import Data.Set hiding (map)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Control.Monad.State
@@ -17,8 +17,8 @@ data RWCTy = RWCTyApp RWCTy RWCTy
 
 data RWCExp = RWCApp RWCExp RWCExp
             | RWCLam (Id RWCExp) RWCTy RWCExp
-            | RWCVar (Id RWCExp) [RWCTy]
-            | RWCCon ConId [RWCTy]
+            | RWCVar (Id RWCExp) RWCTy
+            | RWCCon ConId RWCTy
             | RWCLiteral RWCLit
             | RWCCase RWCExp [RWCAlt]
             deriving Show
@@ -77,7 +77,7 @@ tyTVs (RWCTyCon _)     = []
 tyTVs (RWCTyVar v)     = [v]
 
 class Subst t t' where
-  substs :: Map (Id t') t' -> t -> t
+  subst :: Map (Id t') t' -> t -> t
 
 newtype AlphaM a = AlphaM { deAlphaM :: StateT (Map String String) Maybe a }
   deriving (Functor,Monad,MonadPlus)
@@ -128,3 +128,41 @@ instance Alpha t => Alpha (Poly t) where
 
 instance FV t t => FV (Poly t) t where
   fv (vs :-> x) = [v | v <- fv x, not (v `elem` vs)]
+
+instance Alpha RWCTy where
+  aeq' (RWCTyApp t1 t2) (RWCTyApp t1' t2')   = aeq' t1 t1' >> aeq' t2 t2'
+  aeq' (RWCTyCon i) (RWCTyCon j) | i == j    = return ()
+                                 | otherwise = mzero
+  aeq' (RWCTyVar x) (RWCTyVar y)             = aeq' x y
+  aeq' _ _                                   = mzero
+
+instance FV RWCTy RWCTy where
+  fv (RWCTyApp t1 t2) = fv t1 ++ fv t2
+  fv (RWCTyVar x)     = [x]
+  fv (RWCTyCon _)     = []
+
+instance Subst RWCTy RWCTy where
+  subst m (RWCTyApp t1 t2) = RWCTyApp (subst m t1) (subst m t2)
+  subst m (RWCTyVar x)     = case Map.lookup x m of
+                               Just t  -> t
+                               Nothing -> RWCTyVar x
+  subst m (RWCTyCon i)     = RWCTyCon i
+
+instance Subst a b => Subst [a] b where
+  subst m = map (subst m)
+
+instance Subst RWCExp RWCTy where
+  subst m (RWCApp e1 e2) = RWCApp (subst m e1) (subst m e2)
+  subst m (RWCLam x t e) = RWCLam x (subst m t) (subst m e)
+  subst m (RWCVar x t)   = RWCVar x (subst m t)
+  subst m (RWCCon i t)   = RWCCon i (subst m t)
+  subst m (RWCLiteral l) = RWCLiteral l
+  subst m (RWCCase e as) = RWCCase (subst m e) (subst m as)
+
+instance Subst RWCAlt RWCTy where
+  subst m (RWCAlt p e) = RWCAlt (subst m p) (subst m e)
+
+instance Subst RWCPat RWCTy where
+  subst m (RWCPatCon i ps)  = RWCPatCon i (subst m ps)
+  subst m (RWCPatLiteral l) = RWCPatLiteral l
+  subst m (RWCPatVar x t)   = RWCPatVar x (subst m t)

@@ -12,21 +12,23 @@ import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Identity
 import Control.Monad.Error
-import Unbound.LocallyNameless
-import Unbound.LocallyNameless.Types (SetPlusBind)
 import Data.List (nub)
+import qualified Data.Map as Map
+import Data.Map (Map)
+import Debug.Trace (trace)
 
 -- Type checker for core.
 
-type TySub = [(Name RWCTy,RWCTy)]
-data TCEnv = TCEnv { as  :: [Assump],
-                     cas :: [CAssump] } deriving Show
-data TCState = TCState { tySub :: TySub } deriving Show
+type TySub = Map (Id RWCTy) RWCTy
+data TCEnv = TCEnv { as  :: Map (Id RWCExp) (Poly RWCTy),
+                     cas :: Map ConId (Poly RWCTy) } deriving Show
+data TCState = TCState { tySub :: TySub, 
+                         ctr   :: Int } deriving Show
                          
-type Assump  = (Name RWCExp,SetPlusBind [Name RWCTy] RWCTy)
-type CAssump = (Identifier,SetPlusBind [Name RWCTy] RWCTy)
+type Assump  = (Id RWCExp,Poly RWCTy)
+type CAssump = (ConId,Poly RWCTy)
 
-type TCM = FreshMT (ReaderT TCEnv (StateT TCState (ErrorT String Identity)))
+type TCM = ReaderT TCEnv (StateT TCState (ErrorT String Identity))
 
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
 askAssumps = ask >>= \ tce -> return (as tce)
@@ -35,166 +37,169 @@ askCAssumps = ask >>= \ tce -> return (cas tce)
 getTySub = get >>= return . tySub
 updTySub f = get >>= \ s -> put (s { tySub = f (tySub s) })
 putTySub sub = get >>= \ s -> put (s { tySub = sub })
+getCtr = get >>= return . ctr
+updCtr f = get >>= \ s -> put (s { ctr = f (tySub s) })
+putCtr c = get >>= \ s -> put (s { ctr = c })
 
-freshv :: TCM (Name RWCTy)
-freshv = do n   <- fresh (s2n "?")
-            sub <- getTySub
-            updTySub ((n,RWCTyVar n):)
+freshv :: TCM (Id RWCTy)
+freshv = do ctr   <- getCtr
+            putCtr (ctr+1)
+            let n =  Id $ "?" ++ show ctr
+            updTySub (Map.insert n (RWCTyVar n))
             return n
 
 initPat :: RWCPat -> TCM RWCPat
 initPat (RWCPatCon i ps_) = do ps <- mapM initPat ps_
                                return (RWCPatCon i ps)
 initPat (RWCPatLiteral l) = return (RWCPatLiteral l)
-initPat (RWCPatVar _ n)   = do tv <- freshv
-                               return (RWCPatVar (embed $ RWCTyVar tv) n)
+initPat (RWCPatVar n _)   = do tv <- freshv
+                               return (RWCPatVar n (RWCTyVar tv))
 
 initAlt :: RWCAlt -> TCM RWCAlt
-initAlt (RWCAlt b) = do (p_,e_) <- unbind b
-                        p       <- initPat p_
-                        e       <- initExp e_
-                        return (RWCAlt (bind p e))
+initAlt (RWCAlt p_ e_) = do p       <- initPat p_
+                            e       <- initExp e_
+                            return (RWCAlt p e)
 
 initExp :: RWCExp -> TCM RWCExp
-initExp (RWCApp _ e1_ e2_)   = do e1 <- initExp e1_
-                                  e2 <- initExp e2_
-                                  tv <- freshv
-                                  return (RWCApp (RWCTyVar tv) e1 e2)
-initExp (RWCLam _ b)         = do (x,e_) <- unbind b
-                                  e      <- initExp e_
-                                  tv     <- freshv
-                                  return (RWCLam (RWCTyVar tv) (bind x e))
-initExp (RWCVar _ n)         = do tv <- freshv
-                                  return (RWCVar (RWCTyVar tv) n)
-initExp (RWCCon _ n)         = do tv <- freshv
-                                  return (RWCCon (RWCTyVar tv) n)
-initExp (RWCLiteral _ l)     = do tv <- freshv
-                                  return (RWCLiteral (RWCTyVar tv) l)
-initExp (RWCCase _ e_ alts_) = do e    <- initExp e_
-                                  alts <- mapM initAlt alts_
-                                  tv   <- freshv
-                                  return (RWCCase (RWCTyVar tv) e alts)
+initExp (RWCApp e1_ e2_)   = do e1 <- initExp e1_
+                                e2 <- initExp e2_
+                                return (RWCApp e1 e2)
+initExp (RWCLam x _ e_)    = do e  <- initExp e_
+                                tv <- freshv
+                                return (RWCLam x (RWCTyVar tv) e)
+initExp (RWCVar n _)       = do tv <- freshv
+                                return (RWCVar n (RWCTyVar tv))
+initExp (RWCCon n _)       = do tv <- freshv
+                                return (RWCCon n (RWCTyVar tv))
+initExp (RWCLiteral l)     = return (RWCLiteral l)
+initExp (RWCCase e_ alts_) = do e    <- initExp e_
+                                alts <- mapM initAlt alts_
+                                return (RWCCase e alts)
 
 initDefn :: RWCDefn -> TCM RWCDefn
-initDefn (RWCDefn n (Embed b)) = do (tvs,(t,e)) <- unbind b
-                                    e'          <- initExp e
-                                    return (RWCDefn n (Embed (setbind tvs (t,e'))))
+initDefn (RWCDefn n (tvs :-> t) e) = do e'          <- initExp e
+                                        return (RWCDefn n (tvs :-> t) e')
 
 defnAssump :: RWCDefn -> TCM Assump
-defnAssump (RWCDefn n (Embed b)) = do (tvs,(t,e)) <- unbind b
-                                      return (n,setbind tvs t)
+defnAssump (RWCDefn n (tvs :-> t) _) = return (n,tvs :-> t)
 
-dataConAssump :: [Name RWCTy] -> RWCTy -> RWCDataCon -> CAssump
-dataConAssump tvs rt (RWCDataCon i ts) = (i,setbind tvs (foldr mkArrow rt ts))
+dataConAssump :: [Id RWCTy] -> RWCTy -> RWCDataCon -> CAssump
+dataConAssump tvs rt (RWCDataCon i ts) = (i,tvs :-> foldr mkArrow rt ts)
 
 dataDeclAssumps :: RWCData -> TCM [CAssump]
-dataDeclAssumps (RWCData i b) = do (tvs,dcs) <- unbind b
-                                   let rt    =  foldl RWCTyApp (RWCTyCon i) (map RWCTyVar tvs)
-                                   return $ map (dataConAssump tvs rt) dcs
+dataDeclAssumps (RWCData i tvs dcs) = do let rt = foldl RWCTyApp (RWCTyCon i) (map RWCTyVar tvs)
+                                         return $ map (dataConAssump tvs rt) dcs
 
 (@@) :: TySub -> TySub -> TySub
-s1@@s2 = [(u,substs s1 t) | (u,t) <- s2] ++ s1
+--s1@@s2 = Map.fromList $ [(u,subst s1 t) | (u,t) <- l2] ++ l1
+--  where l1 = Map.toList s1
+--        l2 = Map.toList s2
+s1@@s2 = Map.mapWithKey (\ u t -> subst s1 t) s2 `Map.union` s1
 
-isFlex :: Name RWCTy -> Bool
-isFlex = (=='?') . head . name2String
+isFlex :: Id a -> Bool
+isFlex = (=='?') . head . deId
 
-varBind :: Monad m => Name RWCTy -> RWCTy -> m TySub
-varBind u t | t `aeq` RWCTyVar u = return []
+varBind :: Monad m => Id RWCTy -> RWCTy -> m TySub
+varBind u t | t `aeq` RWCTyVar u = return Map.empty
             | u `elem` fv t      = fail $ "occurs check fails: " ++ show u ++ ", " ++ show t
-            | otherwise          = return [(u,t)]
+            | otherwise          = return (Map.singleton u t)
 
 mgu :: Monad m => RWCTy -> RWCTy -> m TySub
 mgu (RWCTyApp tl tr) (RWCTyApp tl' tr')                = do s1 <- mgu tl tl'
-                                                            s2 <- mgu (substs s1 tr) (substs s1 tr')
+                                                            s2 <- mgu (subst s1 tr) (subst s1 tr')
                                                             return (s2@@s1)
 mgu (RWCTyVar u) t | isFlex u                          = varBind u t
 mgu t (RWCTyVar u) | isFlex u                          = varBind u t
-mgu (RWCTyCon c1) (RWCTyCon c2) | c1 == c2             = return []
-mgu (RWCTyVar v) (RWCTyVar u) | not (isFlex v) && v==u = return []
+mgu (RWCTyCon c1) (RWCTyCon c2) | c1 == c2             = return Map.empty
+mgu (RWCTyVar v) (RWCTyVar u) | not (isFlex v) && v==u = return Map.empty
 mgu t1 t2                                              = fail $ "types do not unify: " ++ show t1 ++ ", " ++ show t2
 
 unify :: RWCTy -> RWCTy -> TCM ()
 unify t1 t2 = do s <- getTySub
-                 u <- mgu (substs s t1) (substs s t2)
+                 u <- mgu (subst s t1) (subst s t2)
                  updTySub (u@@)
 
-inst :: [Name RWCTy] -> RWCTy -> TCM RWCTy
-inst tvs t = do sub <- mapM (\ tv -> freshv >>= \ v -> return (tv,RWCTyVar v)) tvs
-                return (substs sub t)
+inst :: Poly RWCTy -> TCM RWCTy
+inst (tvs :-> t) = do sub <- liftM Map.fromList $ mapM (\ tv -> freshv >>= \ v -> return (tv,RWCTyVar v)) tvs
+                      return (subst sub t)
 
 patassumps :: RWCPat -> [Assump]
-patassumps (RWCPatCon i ps)        = concatMap patassumps ps
-patassumps (RWCPatLiteral _)       = []
-patassumps (RWCPatVar (Embed t) n) = [(n,setbind [] t)]
+patassumps (RWCPatCon i ps)  = concatMap patassumps ps
+patassumps (RWCPatLiteral _) = []
+patassumps (RWCPatVar n t)   = [(n,[] :-> t)]
 
 tcPat :: RWCTy -> RWCPat -> TCM ()
-tcPat t (RWCPatLiteral l)         = case l of
-                                      RWCLitInteger _ -> unify t (RWCTyCon "Integer")
-                                      RWCLitFloat _   -> unify t (RWCTyCon "Float")
-                                      RWCLitChar _    -> unify t (RWCTyCon "Char")
-tcPat t (RWCPatVar (Embed tv) _)  = unify t tv
-tcPat t (RWCPatCon i ps)          = do cas     <- askCAssumps
-                                       let mpt =  lookup i cas
-                                       case mpt of
-                                         Nothing -> fail $ "Unknown constructor: " ++ i
-                                         Just b  -> do (tvs,ta_)        <- unbind b
-                                                       ta               <- inst tvs ta_
-                                                       let (targs,tres) =  flattenArrow ta
-                                                       if length ps /= length targs
-                                                          then fail "Pattern is not applied to enough arguments"
-                                                          else do zipWithM_ tcPat targs ps
-                                                                  unify t tres
+tcPat t (RWCPatLiteral l) = case l of
+                              RWCLitInteger _ -> unify t (RWCTyCon "Integer")
+                              RWCLitFloat _   -> unify t (RWCTyCon "Float")
+                              RWCLitChar _    -> unify t (RWCTyCon "Char")
+tcPat t (RWCPatVar _ tp)  = unify t tp
+tcPat t (RWCPatCon i ps)  = do cas     <- askCAssumps
+                               let mpt =  Map.lookup i cas
+                               case mpt of
+                                 Nothing -> fail $ "Unknown constructor: " ++ i
+                                 Just pta  -> do ta               <- inst pta
+                                                 let (targs,tres) =  flattenArrow ta
+                                                 if length ps /= length targs
+                                                   then fail "Pattern is not applied to enough arguments"
+                                                   else do zipWithM_ tcPat targs ps
+                                                           unify t tres
 
 tcAlt :: RWCTy -> RWCTy -> RWCAlt -> TCM ()
-tcAlt tres tscrut (RWCAlt b) = do (p,e) <- unbind b
-                                  tcPat tscrut p
-                                  localAssumps (patassumps p++) (tcExp e)
-                                  unify tres (typeOf e)
+tcAlt tres tscrut (RWCAlt p e) = do tcPat tscrut p
+                                    let as = Map.fromList (patassumps p)
+                                    te <- localAssumps (as `Map.union`) (tcExp e)
+                                    unify tres te
 
-tcExp :: RWCExp -> TCM ()
-tcExp (RWCApp t e1 e2)   = do tcExp e1
-                              tcExp e2
-                              unify (typeOf e1) (typeOf e2 `mkArrow` t)
-tcExp (RWCLam t b)       = do (x,e) <- unbind b
-                              tv    <- freshv
-                              localAssumps ((x,setbind [] (RWCTyVar tv)):) (tcExp e)
-                              unify t (RWCTyVar tv `mkArrow` typeOf e)
-tcExp (RWCVar t v)       = do as      <- askAssumps
-                              let mpt =  lookup v as
-                              case mpt of
-                                Nothing -> fail $ "Unknown variable: " ++ show v
-                                Just b  -> do (tvs,ta_) <- unbind b
-                                              ta        <- inst tvs ta_
-                                              unify t ta
-tcExp (RWCCon t i)       = do cas     <- askCAssumps
-                              let mpt =  lookup i cas
-                              case mpt of
-                                Nothing -> fail $ "Unknown constructor: " ++ i
-                                Just b  -> do (tvs,ta_) <- unbind b
-                                              ta        <- inst tvs ta_
-                                              unify t ta
-tcExp (RWCLiteral t l)   = case l of
-                             RWCLitInteger _ -> unify t (RWCTyCon "Integer")
-                             RWCLitFloat _   -> unify t (RWCTyCon "Float")
-                             RWCLitChar _    -> unify t (RWCTyCon "Char")
-tcExp (RWCCase t e alts) = do tcExp e
-                              mapM_ (tcAlt t (typeOf e)) alts
+tcExp :: RWCExp -> TCM RWCTy
+tcExp (RWCApp e1 e2)   = do tv <- freshv
+                            t1 <- tcExp e1
+                            t2 <- tcExp e2
+                            unify t1 (t2 `mkArrow` RWCTyVar tv)
+                            return (RWCTyVar tv)
+tcExp (RWCLam x t e)   = do tv <- freshv
+                            te <- localAssumps (Map.insert x ([] :-> t)) (tcExp e)
+                            unify (RWCTyVar tv) (t `mkArrow` te)
+                            return (RWCTyVar tv)
+tcExp (RWCVar v t)     = do as      <- askAssumps
+                            let mpt =  Map.lookup v as
+                            case mpt of
+                              Nothing -> fail $ "Unknown variable: " ++ show v
+                              Just pt -> do ta <- inst pt
+                                            unify t ta
+                                            return t
+tcExp (RWCCon i t)     = do cas     <- askCAssumps
+                            let mpt =  Map.lookup i cas
+                            case mpt of
+                              Nothing -> fail $ "Unknown constructor: " ++ i
+                              Just pt -> do ta <- inst pt
+                                            unify t ta
+                                            return t
+tcExp (RWCLiteral l)   = do tv <- freshv
+                            case l of
+                              RWCLitInteger _ -> unify (RWCTyVar tv) (RWCTyCon "Integer")
+                              RWCLitFloat _   -> unify (RWCTyVar tv) (RWCTyCon "Float")
+                              RWCLitChar _    -> unify (RWCTyVar tv) (RWCTyCon "Char")
+                            return (RWCTyVar tv)
+tcExp (RWCCase e alts) = do tv <- freshv
+                            te <- tcExp e
+                            mapM_ (tcAlt (RWCTyVar tv) te) alts
+                            return (RWCTyVar tv)
 
 tcDefn :: RWCDefn -> TCM RWCDefn
-tcDefn d = do putTySub []
-              RWCDefn n (Embed b) <- initDefn d
-              (tvs,(t,e)) <- unbind b
-              tcExp e
-              unify t (typeOf e)
-              s           <- getTySub
-              return (RWCDefn n (embed $ setbind tvs (t,substs s e)))
+tcDefn d = do putTySub (Map.empty)
+              RWCDefn n (tvs :-> t) e <- initDefn d
+              te <- tcExp e
+              unify t te
+              s  <- getTySub
+              putTySub (Map.empty)
+              trace (show n) $ trace (show (length (Map.keys s))) return (RWCDefn n (tvs :-> t) (subst s e))
 
 tc :: RWCProg -> TCM RWCProg
-tc p = do ds  <- untrec (defns p)
-          as  <- mapM defnAssump ds
-          cas <- liftM concat (mapM dataDeclAssumps (dataDecls p))
-          ds' <- localAssumps (as++) (localCAssumps (cas++) (mapM tcDefn ds))
-          return (p { defns = trec ds' })
+tc p = do as  <- liftM Map.fromList $ mapM defnAssump (defns p)
+          cas <- liftM (Map.fromList . concat) $ mapM dataDeclAssumps (dataDecls p)
+          ds' <- localAssumps (as `Map.union`) (localCAssumps (cas `Map.union`) (mapM tcDefn (defns p)))
+          return (p { defns = ds' })
 
 typecheck :: RWCProg -> Either String RWCProg
-typecheck p = fmap fst $ runIdentity (runErrorT (runStateT (runReaderT (runFreshMT (tc p)) (TCEnv [] [])) (TCState [])))
+typecheck p = fmap fst $ runIdentity (runErrorT (runStateT (runReaderT (tc p) (TCEnv Map.empty Map.empty)) (TCState Map.empty 0)))

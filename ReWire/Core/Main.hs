@@ -6,8 +6,8 @@ import ReWire.Core.Syntax
 import ReWire.Core.Parser
 --import ReWire.Core.PrettyPrint
 import ReWire.Core.PrettyPrintHaskell
---import ReWire.Core.KindChecker
---import ReWire.Core.TypeChecker
+import ReWire.Core.KindChecker
+import ReWire.Core.TypeChecker
 --import ReWire.Core.Transformations.Interactive
 
 main :: IO ()
@@ -24,9 +24,12 @@ main = do args <- getArgs
                                      --putStrLn "show out finished"
                                      --writeFile "Debug.hs" (show $ ppHaskell p)
                                      --putStrLn "debug out finished"
---                                     case kindcheck p of
---                                       Just e  -> hPutStrLn stderr e
---                                       Nothing -> putStrLn "kc finished" >>
---                                                   (case typecheck p of
---                                                     Left e   -> hPutStrLn stderr e
---                                                     Right p' -> putStrLn "tc finished" >> trans p')
+                                     case kindcheck p of
+                                       Just e  -> hPutStrLn stderr e
+                                       Nothing -> do putStrLn "kc finished"
+                                                     case typecheck p of
+                                                       Left e   -> hPutStrLn stderr e
+                                                       Right p' -> do putStrLn "tc finished"
+                                                                      writeFile "tc.out" (show p')
+                                                                      putStrLn "tc debug print finished"
+                                                                      --trans p'

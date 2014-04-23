@@ -105,16 +105,16 @@ expr = lamexpr
           return (foldl RWCApp (head es) (tail es))
 
 aexpr = do i <- varid
-           return (RWCVar (Id i) [])
+           return (RWCVar (Id i) tblank)
     <|> do i <- conid
-           return (RWCCon i [])
+           return (RWCCon i tblank)
     <|> do l <- literal
            return (RWCLiteral l)
     <|> do es <- parens (expr `sepBy` comma)
            case es of
-             []  -> return (RWCCon "()" [])
+             []  -> return (RWCCon "()" tblank)
              [e] -> return e
-             _   -> return (foldl RWCApp (RWCCon ("(" ++ replicate (length es - 1) ',' ++ ")") []) es)
+             _   -> return (foldl RWCApp (RWCCon ("(" ++ replicate (length es - 1) ',' ++ ")") tblank) es)
              
 literal = liftM RWCLitInteger natural
       <|> liftM RWCLitFloat float
