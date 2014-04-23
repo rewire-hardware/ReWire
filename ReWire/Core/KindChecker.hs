@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell,FlexibleInstances,MultiParamTypeClasses,FlexibleContexts,UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module ReWire.Core.KindChecker (kindcheck) where
 
@@ -8,31 +8,37 @@ import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Identity
 import Control.Monad.Error
-import Unbound.LocallyNameless
-import Unbound.LocallyNameless.Types (SetPlusBind)
 import Data.Maybe (fromJust)
+import qualified Data.Map as Map
+import Data.Map (Map)
 
 -- Kind checking for Core.
 
 -- Syntax for kinds is not exported; it's only used inside the kind checker.
-data Kind = Kvar (Name Kind) | Kstar | Kfun Kind Kind deriving (Eq,Show)
+data Kind = Kvar (Id Kind) | Kstar | Kfun Kind Kind deriving (Eq,Show)
 
 instance Alpha Kind where
+  aeq' (Kvar i) (Kvar j)           = aeq' i j
+  aeq' Kstar Kstar                 = return ()
+  aeq' (Kfun k1 k2) (Kfun k1' k2') = aeq' k1 k1' >> aeq' k2 k2'
+  aeq' _ _                         = mzero
 
 instance Subst Kind Kind where
-  isvar (Kvar n) = Just (SubstName n)
-  isvar _        = Nothing
+  substs = error "substs@Kind,Kind undefined" -- FIXME
 
-$(derive [''Kind])
+instance FV Kind Kind where
+  fv (Kvar i)     = [i]
+  fv Kstar        = []
+  fv (Kfun k1 k2) = fv k1 ++ fv k2
 
-type KiSub = [(Name Kind,Kind)]
-data KCEnv = KCEnv { as  :: [Assump], 
-                     cas :: [CAssump] } deriving Show
-data KCState = KCState { kiSub :: KiSub } deriving Show
-type Assump = (Name RWCTy,SetPlusBind [Name Kind] Kind)
-type CAssump = (Identifier,SetPlusBind [Name Kind] Kind)
+type KiSub = Map (Id Kind) Kind
+data KCEnv = KCEnv { as  :: Map (Id RWCTy) (Poly Kind), 
+                     cas :: Map ConId (Poly Kind) } deriving Show
+data KCState = KCState { kiSub :: KiSub, ctr :: Int } deriving Show
+type Assump = (Id RWCTy,Poly Kind)
+type CAssump = (ConId,Poly Kind)
 
-type KCM = FreshMT (ReaderT KCEnv (StateT KCState (ErrorT String Identity)))
+type KCM = ReaderT KCEnv (StateT KCState (ErrorT String Identity))
 
 localAssumps f = local (\ kce -> kce { as = f (as kce) })
 askAssumps = ask >>= \ kce -> return (as kce)
@@ -41,24 +47,30 @@ askCAssumps = ask >>= \ kce -> return (cas kce)
 getKiSub = get >>= return . kiSub
 updKiSub f = get >>= \ s -> put (s { kiSub = f (kiSub s) })
 putKiSub sub = get >>= \ s -> put (s { kiSub = sub })
+getCtr = get >>= return . ctr
+updCtr f = get >>= \ s -> put (s { ctr = f (ctr s) })
+putCtr c = get >>= \ s -> put (s { ctr = c })
 
-freshkv :: KCM (Name Kind)
-freshkv = do n   <- fresh (s2n "?")
-             sub <- getKiSub
-             updKiSub ((n,Kvar n):)
+freshkv :: KCM (Id Kind)
+freshkv = do ctr   <- getCtr
+             putCtr (ctr+1)
+             let n =  Id $ "?" ++ show ctr
+             updKiSub (Map.insert n (Kvar n))
              return n
 
 initDataDecl :: RWCData -> KCM CAssump
-initDataDecl (RWCData i _) = do v <- freshkv
-                                return (i,setbind [] (Kvar v))
+initDataDecl (RWCData i _ _) = do v <- freshkv
+                                  return (i,[] :-> Kvar v)
 
-varBind :: Monad m => Name Kind -> Kind -> m KiSub
-varBind u k | k `aeq` Kvar u = return []
+varBind :: Monad m => Id Kind -> Kind -> m KiSub
+varBind u k | k `aeq` Kvar u = return Map.empty
             | u `elem` fv k  = fail $ "occurs check fails in kind checking: " ++ show u ++ ", " ++ show k
-            | otherwise      = return [(u,k)]
+            | otherwise      = return (Map.singleton u k)
 
 (@@) :: KiSub -> KiSub -> KiSub
-s1@@s2 = [(u,substs s1 t) | (u,t) <- s2] ++ s1
+s1@@s2 = Map.fromList $ [(u,substs s1 t) | (u,t) <- l2] ++ l1
+  where l1 = Map.toList s1
+        l2 = Map.toList s2
 
 mgu :: Monad m => Kind -> Kind -> m KiSub
 mgu (Kfun kl kr) (Kfun kl' kr') = do s1 <- mgu kl kl'
@@ -66,7 +78,7 @@ mgu (Kfun kl kr) (Kfun kl' kr') = do s1 <- mgu kl kl'
                                      return (s2@@s1)
 mgu (Kvar u) k                  = varBind u k
 mgu k (Kvar u)                  = varBind u k
-mgu Kstar Kstar                 = return []
+mgu Kstar Kstar                 = return Map.empty
 mgu k1 k2                       = fail $ "kinds do not unify: " ++ show k1 ++ ", " ++ show k2
 
 unify :: Kind -> Kind -> KCM ()
@@ -74,9 +86,9 @@ unify k1 k2 = do s <- getKiSub
                  u <- mgu (substs s k1) (substs s k2)
                  updKiSub (u@@)
 
-inst :: [Name Kind] -> Kind -> KCM Kind
-inst kvs k = do sub <- mapM (\ kv -> freshkv >>= \ v -> return (kv,Kvar v)) kvs
-                return (substs sub k)
+inst :: Poly Kind -> KCM Kind
+inst (kvs :-> k) = do sub <- liftM Map.fromList $ mapM (\ kv -> freshkv >>= \ v -> return (kv,Kvar v)) kvs
+                      return (substs sub k)
 
 kcTy :: RWCTy -> KCM Kind
 kcTy (RWCTyApp t1 t2) = do k1 <- kcTy t1
@@ -85,48 +97,42 @@ kcTy (RWCTyApp t1 t2) = do k1 <- kcTy t1
                            unify k1 (Kfun k2 (Kvar k))
                            return (Kvar k)
 kcTy (RWCTyCon i)     = do cas <- askCAssumps
-                           let mpk = lookup i cas
+                           let mpk = Map.lookup i cas
                            case mpk of
                              Nothing -> fail $ "Unknown type constructor: " ++ i
-                             Just b  -> do (kvs,ka_) <- unbind b
-                                           inst kvs ka_
+                             Just pk -> inst pk
 kcTy (RWCTyVar v)     = do as <- askAssumps
-                           let mpk = lookup v as
+                           let mpk = Map.lookup v as
                            case mpk of
                              Nothing -> fail $ "Unknown type variable: " ++ show v
-                             Just b  -> do (kvs,ka_) <- unbind b
-                                           inst kvs ka_
+                             Just pk -> inst pk
 
 kcDataCon :: RWCDataCon -> KCM ()
 kcDataCon (RWCDataCon _ ts) = do ks <- mapM kcTy ts
                                  mapM_ (unify Kstar) ks
 
 kcDataDecl :: RWCData -> KCM ()
-kcDataDecl (RWCData i b) = do (tvs,dcs)  <- unbind b
-                              cas        <- askCAssumps
-                              let pk     =  fromJust $ lookup i cas
-                              (kvs_,k_)  <- unbind pk
-                              k          <- inst kvs_ k_
-                              kvs        <- replicateM (length tvs) freshkv
-                              unify k (foldr Kfun Kstar (map Kvar kvs))
-                              as        <- mapM (\ tv -> freshkv >>= \ v -> return (tv,setbind [] (Kvar v))) tvs
-                              localAssumps (as++) (mapM_ kcDataCon dcs)
+kcDataDecl (RWCData i tvs dcs) = do cas    <- askCAssumps
+                                    let pk =  fromJust $ Map.lookup i cas
+                                    k      <- inst pk
+                                    kvs    <- replicateM (length tvs) freshkv
+                                    unify k (foldr Kfun Kstar (map Kvar kvs))
+                                    as     <- liftM Map.fromList $ mapM (\ tv -> freshkv >>= \ v -> return (tv,[] :-> Kvar v)) tvs
+                                    localAssumps (as `Map.union`) (mapM_ kcDataCon dcs)
 
 kcDefn :: RWCDefn -> KCM ()
-kcDefn (RWCDefn _ (Embed b)) = do putKiSub []
-                                  (tvs,(t,_)) <- unbind b
-                                  as          <- mapM (\ tv -> freshkv >>= \ v -> return (tv,setbind [] (Kvar v))) tvs
-                                  k           <- localAssumps (as++) (kcTy t)
-                                  unify k Kstar
+kcDefn (RWCDefn _ (tvs :-> t) _) = do putKiSub Map.empty
+                                      as <- liftM Map.fromList $ mapM (\ tv -> freshkv >>= \ v -> return (tv,[] :-> Kvar v)) tvs
+                                      k  <- localAssumps (as `Map.union`) (kcTy t)
+                                      unify k Kstar
 
 kc :: RWCProg -> KCM ()
-kc p = do ds  <- untrec (defns p)
-          cas <- mapM initDataDecl (dataDecls p)
-          localCAssumps (cas++) (mapM_ kcDataDecl (dataDecls p))
-          localCAssumps (cas++) (mapM_ kcDefn ds)
+kc p = do cas <- liftM Map.fromList $ mapM initDataDecl (dataDecls p)
+          localCAssumps (cas `Map.union`) (mapM_ kcDataDecl (dataDecls p))
+          localCAssumps (cas `Map.union`) (mapM_ kcDefn (defns p))
 
 kindcheck :: RWCProg -> Maybe String
-kindcheck p = l2m $ runIdentity (runErrorT (runStateT (runReaderT (runFreshMT (kc p)) (KCEnv [] cas)) (KCState [])))
-  where cas      = [("(->)",setbind [] (Kfun Kstar (Kfun Kstar Kstar)))]
+kindcheck p = l2m $ runIdentity (runErrorT (runStateT (runReaderT (kc p) (KCEnv Map.empty as)) (KCState Map.empty 0)))
+  where as = Map.fromList [("(->)",[] :-> Kfun Kstar (Kfun Kstar Kstar))]
         l2m (Left x)  = Just x
         l2m (Right _) = Nothing

@@ -4,7 +4,6 @@ import ReWire.Core.Syntax
 import Text.Parsec
 import Text.Parsec.Language as L
 import qualified Text.Parsec.Token as T
-import Unbound.LocallyNameless
 import Data.Char (isUpper,isLower)
 import Data.List (nub)
 import Control.Monad (liftM,foldM)
@@ -45,7 +44,7 @@ semiSep1       = T.semiSep1 lexer
 commaSep       = T.commaSep lexer
 commaSep1      = T.commaSep1 lexer
 
-tblank = RWCTyCon "TypeNotInferredYet"
+tblank = RWCTyCon "_"
 
 varid = lexeme $ try $
         do{ name <- identifier
@@ -63,7 +62,7 @@ conid = lexeme $ try $
 
 prog = do dds  <- many datadecl
           defs <- many defn
-          return (RWCProg dds (trec defs))
+          return (RWCProg dds defs)
 
 datadecl = do reserved "data"
               i   <- conid
@@ -71,7 +70,7 @@ datadecl = do reserved "data"
               reserved "is"
               dcs <- datacon `sepBy` reservedOp "|"
               reserved "end"
-              return (RWCData i (bind (map s2n tvs) dcs))
+              return (RWCData i (map Id tvs) dcs)
 
 datacon = do i  <- conid
              ts <- many atype
@@ -80,7 +79,7 @@ datacon = do i  <- conid
 atype = do i <- conid
            return (RWCTyCon i)
     <|> do i <- varid
-           return (RWCTyVar (s2n i))
+           return (RWCTyVar (Id i))
     <|> do ts <- parens (ty `sepBy` comma)
            case ts of
              []  -> return (RWCTyCon "()")
@@ -99,25 +98,23 @@ defn = do i <- varid
           reserved "is"
           e <- expr
           reserved "end"
-          return (RWCDefn (s2n i) (embed (setbind (nub $ fv t) (t,e))))
+          return (RWCDefn (Id i) (nub (tyTVs t) :-> t) e)
 
-mkApp e1 e2 = return (RWCApp tblank e1 e2)
-                 
 expr = lamexpr
    <|> do es <- many aexpr
-          foldM mkApp (head es) (tail es)
+          return (foldl RWCApp (head es) (tail es))
 
 aexpr = do i <- varid
-           return (RWCVar tblank (s2n i))
+           return (RWCVar (Id i) [])
     <|> do i <- conid
-           return (RWCCon tblank i)
+           return (RWCCon i [])
     <|> do l <- literal
-           return (RWCLiteral tblank l)
+           return (RWCLiteral l)
     <|> do es <- parens (expr `sepBy` comma)
            case es of
-             []  -> return (RWCCon tblank "()")
+             []  -> return (RWCCon "()" [])
              [e] -> return e
-             _   -> foldM mkApp (RWCCon tblank ("(" ++ replicate (length es - 1) ',' ++ ")")) es
+             _   -> return (foldl RWCApp (RWCCon ("(" ++ replicate (length es - 1) ',' ++ ")") []) es)
              
 literal = liftM RWCLitInteger natural
       <|> liftM RWCLitFloat float
@@ -127,17 +124,17 @@ lamexpr = do reservedOp "\\"
              i <- varid
              reservedOp "->"
              e <- expr
-             return (RWCLam tblank (bind (s2n i) e))
+             return (RWCLam (Id i) tblank e)
       <|> do reserved "case"
              e    <- expr
              reserved "of"
              alts <- braces (alt `sepBy` semi)
-             return (RWCCase tblank e alts)
+             return (RWCCase e alts)
 
 alt = do p <- pat
          reservedOp "->"
          e <- expr
-         return (RWCAlt (bind p e))
+         return (RWCAlt p e)
 
 pat = do i <- conid
          pats <- many apat
@@ -145,7 +142,7 @@ pat = do i <- conid
   <|> apat
 
 apat = do i <- varid
-          return (RWCPatVar (embed tblank) (s2n i))
+          return (RWCPatVar (Id i) tblank)
    <|> do i <- conid
           return (RWCPatCon i [])
    <|> do l <- literal

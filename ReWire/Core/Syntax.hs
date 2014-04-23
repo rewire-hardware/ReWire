@@ -1,27 +1,26 @@
-{-# LANGUAGE TemplateHaskell,FlexibleInstances,MultiParamTypeClasses,FlexibleContexts,UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses,GeneralizedNewtypeDeriving,FlexibleInstances #-}
 
 module ReWire.Core.Syntax where
 
-import Unbound.LocallyNameless
-import Unbound.LocallyNameless.Types (SetPlusBind)
+import Data.Set
+import Data.Map (Map)
+import qualified Data.Map as Map
+import Control.Monad.State
 
--- Identifier is used instead of Name for anything that occurs at the top
--- level of the program (type names, constructor names, class names,
--- functions defined at top level) -- i.e. things that cannot be substituted
--- for.
-type Identifier = String
+newtype Id a = Id { deId :: String } deriving (Eq,Ord,Show,Read)
+type ConId = String
 
 data RWCTy = RWCTyApp RWCTy RWCTy
-           | RWCTyCon Identifier
-           | RWCTyVar (Name RWCTy)
+           | RWCTyCon ConId
+           | RWCTyVar (Id RWCTy)
            deriving Show
 
-data RWCExp = RWCApp RWCTy RWCExp RWCExp
-            | RWCLam RWCTy (Bind (Name RWCExp) RWCExp)
-            | RWCVar RWCTy (Name RWCExp)
-            | RWCCon RWCTy Identifier
-            | RWCLiteral RWCTy RWCLit
-            | RWCCase RWCTy RWCExp [RWCAlt]
+data RWCExp = RWCApp RWCExp RWCExp
+            | RWCLam (Id RWCExp) RWCTy RWCExp
+            | RWCVar (Id RWCExp) [RWCTy]
+            | RWCCon ConId [RWCTy]
+            | RWCLiteral RWCLit
+            | RWCCase RWCExp [RWCAlt]
             deriving Show
 
 data RWCLit = RWCLitInteger Integer
@@ -29,77 +28,30 @@ data RWCLit = RWCLitInteger Integer
             | RWCLitChar Char
             deriving (Eq,Show)
 
-data RWCAlt = RWCAlt (Bind RWCPat RWCExp)
+data RWCAlt = RWCAlt RWCPat RWCExp
               deriving Show
 
-data RWCPat = RWCPatCon Identifier [RWCPat]
+data RWCPat = RWCPatCon ConId [RWCPat]
             | RWCPatLiteral RWCLit
-            | RWCPatVar (Embed RWCTy) (Name RWCExp)
+            | RWCPatVar (Id RWCExp) RWCTy
             deriving Show
 
-data RWCDefn = RWCDefn (Name RWCExp) (Embed (SetPlusBind [Name RWCTy]
-                                                 (RWCTy,
-                                                  RWCExp)))
+data RWCDefn = RWCDefn { defnName   :: Id RWCExp,
+                         defnPolyTy :: Poly RWCTy,
+                         defnBody   :: RWCExp }
                deriving Show
 
-data RWCData = RWCData Identifier (Bind [Name RWCTy]
-                                    [RWCDataCon])
+data RWCData = RWCData { dataName   :: ConId,
+                         dataTyVars :: [Id RWCTy],
+                         dataCons   :: [RWCDataCon] }
                deriving Show
 
-data RWCDataCon = RWCDataCon Identifier [RWCTy]
+data RWCDataCon = RWCDataCon ConId [RWCTy]
                   deriving Show
 
 data RWCProg = RWCProg { dataDecls    :: [RWCData],
-                         defns        :: TRec [RWCDefn] }
+                         defns        :: [RWCDefn] }
                        deriving Show
-
--- Boilerplate for Unbound.
-instance Alpha RWCExp where
-instance Alpha RWCAlt where
-instance Alpha RWCPat where
-instance Alpha RWCLit where
-instance Alpha RWCTy where
-instance Alpha RWCData where
-instance Alpha RWCDataCon where
-instance Alpha RWCDefn where
---instance Alpha RWCProg where      (can't have this anymore due to recbind)
-  
-instance Subst RWCExp RWCDefn where
-  isvar _ = Nothing
-  
-instance Subst RWCExp RWCExp where
-  isvar (RWCVar _ n) = Just (SubstName n)
-  isvar _            = Nothing
-
-instance Subst RWCExp RWCAlt where
-  isvar _ = Nothing
-
-instance Subst RWCExp RWCPat where
-  isvar _ = Nothing
-
-instance Subst a RWCLit where
-  isvar _ = Nothing
-
-instance Subst RWCExp RWCTy where
-  isvar _ = Nothing
-
-instance Subst RWCTy RWCTy where
-  isvar (RWCTyVar n) = Just (SubstName n)
-  isvar _            = Nothing
-  
-instance Subst RWCTy RWCExp where
-  isvar _ = Nothing
-
-instance Subst RWCTy RWCAlt where
-  isvar _ = Nothing
-
-instance Subst RWCTy RWCPat where
-  isvar _ = Nothing
-  
-instance Subst RWCTy RWCDefn where
-  isvar _ = Nothing
-
-$(derive [''RWCExp,''RWCAlt,''RWCPat,''RWCTy,''RWCLit,''RWCData,''RWCDataCon,''RWCDefn{-,''RWCProg-}])
 
 flattenArrow :: RWCTy -> ([RWCTy],RWCTy)
 flattenArrow (RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2) = let (ts,t) = flattenArrow t2 in (t1:ts,t)
@@ -110,15 +62,8 @@ flattenTyApp (RWCTyApp t1 t2) = flattenTyApp t1 ++ [t2]
 flattenTyApp t                = [t]
 
 flattenApp :: RWCExp -> [RWCExp]
-flattenApp (RWCApp _ e e') = flattenApp e++[e']
-flattenApp e               = [e]
-
-flattenLambda :: LFresh m => RWCExp -> (([(Name RWCExp,RWCTy)],RWCExp) -> m b) -> m b
-flattenLambda = flattenLambda_ []
-  where flattenLambda_ :: LFresh m => [(Name RWCExp,RWCTy)] -> RWCExp -> (([(Name RWCExp,RWCTy)],RWCExp) -> m b) -> m b
-        flattenLambda_ nts (RWCLam t b) f = lunbind b (\(n,e) -> flattenLambda_ (nts++[(n,arrowLeft t)]) e f)
-        flattenLambda_ nts e f            = f (nts,e)
-                                                     
+flattenApp (RWCApp e e') = flattenApp e++[e']
+flattenApp e             = [e]                                                     
 
 mkArrow :: RWCTy -> RWCTy -> RWCTy
 mkArrow t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2
@@ -126,10 +71,60 @@ mkArrow t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2
 arrowLeft :: RWCTy -> RWCTy
 arrowLeft (RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2) = t1
 
-typeOf :: RWCExp -> RWCTy
-typeOf (RWCApp t _ _)   = t
-typeOf (RWCLam t _)     = t
-typeOf (RWCVar t _)     = t
-typeOf (RWCCon t _)     = t
-typeOf (RWCLiteral t _) = t
-typeOf (RWCCase t _ _)  = t
+tyTVs :: RWCTy -> [Id RWCTy]
+tyTVs (RWCTyApp t1 t2) = tyTVs t1 ++ tyTVs t2
+tyTVs (RWCTyCon _)     = []
+tyTVs (RWCTyVar v)     = [v]
+
+class Subst t t' where
+  substs :: Map (Id t') t' -> t -> t
+
+newtype AlphaM a = AlphaM { deAlphaM :: StateT (Map String String) Maybe a }
+  deriving (Functor,Monad,MonadPlus)
+
+equating :: Id t -> Id t -> AlphaM a -> AlphaM a
+equating (Id x) (Id y) m = do let l = min x y
+                                  r = max x y
+                              vm <- AlphaM get
+                              case Map.lookup l vm of
+                                Just z | z==r      -> return ()
+                                       | otherwise -> mzero
+                                Nothing            -> AlphaM (modify (Map.insert l r))
+                              m
+
+equatings :: [Id t] -> [Id t] -> AlphaM a -> AlphaM a
+equatings l1 l2 m | length l1 /= length l2 = mzero
+                  | otherwise              = eqs' l1 l2
+   where eqs' (x:xs) (y:ys) = equating x y (eqs' xs ys)
+         eqs' [] []         = m
+
+class Alpha t where
+  aeq' :: t -> t -> AlphaM ()
+
+instance Alpha (Id t) where
+  aeq' (Id x) (Id y) = do let l = min x y
+                              r = max x y
+                          vm <- AlphaM get
+                          case Map.lookup l vm of
+                            Nothing | x == y    -> return ()
+                                    | otherwise -> mzero
+                            Just z  | z == r    -> return ()
+                                    | otherwise -> mzero
+
+aeq :: Alpha a => a -> a -> Bool
+aeq x y = case runStateT (deAlphaM (aeq' x y)) Map.empty of
+            Just _  -> True
+            Nothing -> False
+
+infix 4 `aeq`
+
+class FV t t' where
+  fv :: t -> [Id t']
+  
+data Poly t = [Id t] :-> t deriving Show
+
+instance Alpha t => Alpha (Poly t) where
+  aeq' (vs :-> x) (us :-> y) = equatings vs us (aeq' x y)
+
+instance FV t t => FV (Poly t) t where
+  fv (vs :-> x) = [v | v <- fv x, not (v `elem` vs)]

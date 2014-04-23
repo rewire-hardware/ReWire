@@ -4,11 +4,11 @@ import System.IO
 import System.Environment
 import ReWire.Core.Syntax
 import ReWire.Core.Parser
-import ReWire.Core.KindChecker
-import ReWire.Core.TypeChecker
-import ReWire.Core.PrettyPrint
+--import ReWire.Core.PrettyPrint
 import ReWire.Core.PrettyPrintHaskell
-import ReWire.Core.Transformations.Interactive
+--import ReWire.Core.KindChecker
+--import ReWire.Core.TypeChecker
+--import ReWire.Core.Transformations.Interactive
 
 main :: IO ()
 main = do args <- getArgs
@@ -20,13 +20,13 @@ main = do args <- getArgs
                      case res_p of
                        Left e  -> hPutStrLn stderr e
                        Right p -> do putStrLn "parse finished"
---                                     writeFile "show.out" (show p)
---                                     putStrLn "show out finished"
---                                     writeFile "Debug.hs" (show $ ppHaskell p)
---                                     putStrLn "debug out finished"
-                                     case kindcheck p of
-                                       Just e  -> hPutStrLn stderr e
-                                       Nothing -> putStrLn "kc finished" >>
-                                                   (case typecheck p of
-                                                     Left e   -> hPutStrLn stderr e
-                                                     Right p' -> putStrLn "tc finished" >> trans p')
+                                     --writeFile "show.out" (show p)
+                                     --putStrLn "show out finished"
+                                     --writeFile "Debug.hs" (show $ ppHaskell p)
+                                     --putStrLn "debug out finished"
+--                                     case kindcheck p of
+--                                       Just e  -> hPutStrLn stderr e
+--                                       Nothing -> putStrLn "kc finished" >>
+--                                                   (case typecheck p of
+--                                                     Left e   -> hPutStrLn stderr e
+--                                                     Right p' -> putStrLn "tc finished" >> trans p')
