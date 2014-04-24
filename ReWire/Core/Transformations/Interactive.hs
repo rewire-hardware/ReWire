@@ -6,9 +6,8 @@ module ReWire.Core.Transformations.Interactive (TransCommand,trans) where
 
 import Prelude hiding (sequence,mapM)
 import ReWire.Core.Syntax
-import ReWire.Core.PrettyPrint (pp)
+--import ReWire.Core.PrettyPrint (pp)
 import ReWire.Core.PrettyPrintHaskell (ppHaskell)
-import Unbound.LocallyNameless
 import Text.Parsec (runParser,eof)
 import Control.Monad hiding (sequence,mapM)
 import Data.List (isInfixOf,find,intercalate)
@@ -17,13 +16,13 @@ import Control.Monad.Identity hiding (sequence,mapM)
 import Data.Traversable (sequence,mapM)
 import Data.Maybe (catMaybes,isNothing,fromJust)
 import Data.Char
-import ReWire.Core.Transformations.Expand (cmdExpand)
-import ReWire.Core.Transformations.Reduce (cmdReduce)
-import ReWire.Core.Transformations.Purge (cmdPurge)
-import ReWire.Core.Transformations.LambdaLift (lambdaLift)
-import ReWire.Core.Transformations.Status (cmdStatus)
-import ReWire.Core.Transformations.Occurs (cmdOccurs)
-import ReWire.Core.Transformations.Uses (cmdUses)
+--import ReWire.Core.Transformations.Expand (cmdExpand)
+--import ReWire.Core.Transformations.Reduce (cmdReduce)
+--import ReWire.Core.Transformations.Purge (cmdPurge)
+--import ReWire.Core.Transformations.LambdaLift (lambdaLift)
+--import ReWire.Core.Transformations.Status (cmdStatus)
+--import ReWire.Core.Transformations.Occurs (cmdOccurs)
+--import ReWire.Core.Transformations.Uses (cmdUses)
 import ReWire.Core.Transformations.CheckNF (cmdCheckNF)
 import ReWire.Core.Transformations.ToVHDL (cmdToVHDL)
 import ReWire.Core.Transformations.Types
@@ -40,8 +39,8 @@ cmdPrint _ p = (Just p,Nothing)
 cmdHelp :: TransCommand
 cmdHelp _ _ = (Nothing,Just (intercalate ", " (map fst cmdTable)))
 
-cmdPrintDebug :: TransCommand
-cmdPrintDebug _ p = (Nothing,Just (show $ pp p))
+--cmdPrintDebug :: TransCommand
+--cmdPrintDebug _ p = (Nothing,Just (show $ pp p))
 
 cmdPrintShow :: TransCommand
 cmdPrintShow _ p = (Nothing,Just (show p))
@@ -49,16 +48,16 @@ cmdPrintShow _ p = (Nothing,Just (show p))
 -- Here are the commands available.
 cmdTable :: CommandTable
 cmdTable = [(":p",cmdPrint),
-            (":pd",cmdPrintDebug),
+--            (":pd",cmdPrintDebug),
             (":ps",cmdPrintShow),
             (":?",cmdHelp),
-            ("expand",cmdExpand),
-            ("reduce",cmdReduce),
-            ("purge",cmdPurge),
-            ("ll",lambdaLift),
-            ("status",cmdStatus),
-            ("occurs",cmdOccurs),
-            ("uses", cmdUses),
+--            ("expand",cmdExpand),
+--            ("reduce",cmdReduce),
+--            ("purge",cmdPurge),
+--            ("ll",lambdaLift),
+--            ("status",cmdStatus),
+--            ("occurs",cmdOccurs),
+--            ("uses", cmdUses),
             ("checknf",cmdCheckNF),
             ("tovhdl",cmdToVHDL)]
 

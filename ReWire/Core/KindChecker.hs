@@ -9,8 +9,8 @@ import Control.Monad.Reader
 import Control.Monad.Identity
 import Control.Monad.Error
 import Data.Maybe (fromJust)
-import qualified Data.Map as Map
-import Data.Map (Map,(!))
+import qualified Data.Map.Strict as Map
+import Data.Map.Strict (Map,(!))
 
 -- Kind checking for Core.
 
@@ -72,9 +72,8 @@ varBind u k | k `aeq` Kvar u = return Map.empty
             | otherwise      = return (Map.singleton u k)
 
 (@@) :: KiSub -> KiSub -> KiSub
-s1@@s2 = Map.fromList $ [(u,subst s1 t) | (u,t) <- l2] ++ l1
-  where l1 = Map.toList s1
-        l2 = Map.toList s2
+s1@@s2 = {-s1 `deepseq` s2 `deepseq` force -} s
+         where s = Map.mapWithKey (\ u t -> subst s1 t) s2 `Map.union` s1
 
 mgu :: Monad m => Kind -> Kind -> m KiSub
 mgu (Kfun kl kr) (Kfun kl' kr') = do s1 <- mgu kl kl'

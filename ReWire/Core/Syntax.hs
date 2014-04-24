@@ -3,8 +3,8 @@
 module ReWire.Core.Syntax where
 
 import Data.Set hiding (map)
-import Data.Map (Map)
-import qualified Data.Map as Map
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 import Control.Monad.State
 import Control.DeepSeq
 
@@ -44,9 +44,9 @@ data RWCLit = RWCLitInteger Integer
             deriving (Eq,Show)
 
 instance NFData RWCLit where
-  rnf (RWCLitInteger i) = rnf i `deepseq` ()
-  rnf (RWCLitFloat d)   = rnf d `deepseq` ()
-  rnf (RWCLitChar c)    = rnf c `deepseq` ()
+  rnf (RWCLitInteger i) = i `deepseq` ()
+  rnf (RWCLitFloat d)   = d `deepseq` ()
+  rnf (RWCLitChar c)    = c `deepseq` ()
 
 data RWCAlt = RWCAlt RWCPat RWCExp
               deriving Show
@@ -210,5 +210,5 @@ instance Subst RWCPat RWCTy where
   subst m (RWCPatLiteral l) = RWCPatLiteral l
   subst m (RWCPatVar x t)   = RWCPatVar x (subst m t)
 
-instance (NFData k,NFData v) => NFData (Map k v) where
-  rnf = rnf . Map.toList
+--instance (NFData k,NFData v) => NFData (Map k v) where
+--  rnf = rnf . Map.toList
