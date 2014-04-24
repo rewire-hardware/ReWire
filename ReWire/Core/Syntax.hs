@@ -6,14 +6,21 @@ import Data.Set hiding (map)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Control.Monad.State
+import Control.DeepSeq
 
-newtype Id a = Id { deId :: String } deriving (Eq,Ord,Show,Read)
+newtype Id a = Id { deId :: String } deriving (Eq,Ord,Show,Read,NFData)
+
 type ConId = String
 
 data RWCTy = RWCTyApp RWCTy RWCTy
            | RWCTyCon ConId
            | RWCTyVar (Id RWCTy)
            deriving Show
+
+instance NFData RWCTy where
+  rnf (RWCTyApp t1 t2) = t1 `deepseq` t2 `deepseq` ()
+  rnf (RWCTyCon i)     = i `deepseq` ()
+  rnf (RWCTyVar x)     = x `deepseq` ()
 
 data RWCExp = RWCApp RWCExp RWCExp
             | RWCLam (Id RWCExp) RWCTy RWCExp
@@ -23,35 +30,68 @@ data RWCExp = RWCApp RWCExp RWCExp
             | RWCCase RWCExp [RWCAlt]
             deriving Show
 
+instance NFData RWCExp where
+  rnf (RWCApp e1 e2)   = e1 `deepseq` e2 `deepseq` ()
+  rnf (RWCLam x t e)   = x `deepseq` t `deepseq` e `deepseq` ()
+  rnf (RWCVar x t)     = x `deepseq` t `deepseq` ()
+  rnf (RWCCon i t)     = i `deepseq` t `deepseq` ()
+  rnf (RWCLiteral l)   = l `deepseq` ()
+  rnf (RWCCase e alts) = e `deepseq` alts `deepseq` ()
+
 data RWCLit = RWCLitInteger Integer
             | RWCLitFloat Double
             | RWCLitChar Char
             deriving (Eq,Show)
 
+instance NFData RWCLit where
+  rnf (RWCLitInteger i) = rnf i `deepseq` ()
+  rnf (RWCLitFloat d)   = rnf d `deepseq` ()
+  rnf (RWCLitChar c)    = rnf c `deepseq` ()
+
 data RWCAlt = RWCAlt RWCPat RWCExp
               deriving Show
+
+instance NFData RWCAlt where
+  rnf (RWCAlt p e) = p `deepseq` e `deepseq` ()
 
 data RWCPat = RWCPatCon ConId [RWCPat]
             | RWCPatLiteral RWCLit
             | RWCPatVar (Id RWCExp) RWCTy
             deriving Show
 
+instance NFData RWCPat where
+  rnf (RWCPatCon i ps)  = i `deepseq` ps `deepseq` ()
+  rnf (RWCPatLiteral l) = l `deepseq` ()
+  rnf (RWCPatVar x t)   = x `deepseq` t `deepseq` ()
+
 data RWCDefn = RWCDefn { defnName   :: Id RWCExp,
                          defnPolyTy :: Poly RWCTy,
                          defnBody   :: RWCExp }
                deriving Show
+
+instance NFData RWCDefn where
+  rnf (RWCDefn n pt e) = n `deepseq` pt `deepseq` e `deepseq` ()
 
 data RWCData = RWCData { dataName   :: ConId,
                          dataTyVars :: [Id RWCTy],
                          dataCons   :: [RWCDataCon] }
                deriving Show
 
+instance NFData RWCData where
+  rnf (RWCData i tvs dcs) = i `deepseq` tvs `deepseq` dcs `deepseq` ()
+
 data RWCDataCon = RWCDataCon ConId [RWCTy]
                   deriving Show
+
+instance NFData RWCDataCon where
+  rnf (RWCDataCon i ts) = i `deepseq` ts `deepseq` ()
 
 data RWCProg = RWCProg { dataDecls    :: [RWCData],
                          defns        :: [RWCDefn] }
                        deriving Show
+
+instance NFData RWCProg where
+  rnf (RWCProg dds defs) = dds `deepseq` defs `deepseq` ()
 
 flattenArrow :: RWCTy -> ([RWCTy],RWCTy)
 flattenArrow (RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2) = let (ts,t) = flattenArrow t2 in (t1:ts,t)
@@ -123,6 +163,9 @@ class FV t t' where
   
 data Poly t = [Id t] :-> t deriving Show
 
+instance NFData t => NFData (Poly t) where
+  rnf (vs :-> x) = vs `deepseq` x `deepseq` ()
+
 instance Alpha t => Alpha (Poly t) where
   aeq' (vs :-> x) (us :-> y) = equatings vs us (aeq' x y)
 
@@ -166,3 +209,6 @@ instance Subst RWCPat RWCTy where
   subst m (RWCPatCon i ps)  = RWCPatCon i (subst m ps)
   subst m (RWCPatLiteral l) = RWCPatLiteral l
   subst m (RWCPatVar x t)   = RWCPatVar x (subst m t)
+
+instance (NFData k,NFData v) => NFData (Map k v) where
+  rnf = rnf . Map.toList

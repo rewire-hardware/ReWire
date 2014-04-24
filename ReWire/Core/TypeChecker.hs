@@ -8,6 +8,7 @@
 module ReWire.Core.TypeChecker (typecheck) where
 
 import ReWire.Core.Syntax
+import Control.DeepSeq
 import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Identity
@@ -15,7 +16,7 @@ import Control.Monad.Error
 import Data.List (nub)
 import qualified Data.Map as Map
 import Data.Map (Map)
-import Debug.Trace (trace)
+--import Debug.Trace (trace,traceShow)
 
 -- Type checker for core.
 
@@ -91,10 +92,8 @@ dataDeclAssumps (RWCData i tvs dcs) = do let rt = foldl RWCTyApp (RWCTyCon i) (m
                                          return $ map (dataConAssump tvs rt) dcs
 
 (@@) :: TySub -> TySub -> TySub
---s1@@s2 = Map.fromList $ [(u,subst s1 t) | (u,t) <- l2] ++ l1
---  where l1 = Map.toList s1
---        l2 = Map.toList s2
-s1@@s2 = Map.mapWithKey (\ u t -> subst s1 t) s2 `Map.union` s1
+s1@@s2 = s1 `deepseq` s2 `deepseq` force s
+         where s = Map.mapWithKey (\ u t -> subst s1 t) s2 `Map.union` s1
 
 isFlex :: Id a -> Bool
 isFlex = (=='?') . head . deId
@@ -152,10 +151,19 @@ tcAlt tres tscrut (RWCAlt p e) = do tcPat tscrut p
                                     unify tres te
 
 tcExp :: RWCExp -> TCM RWCTy
-tcExp (RWCApp e1 e2)   = do tv <- freshv
-                            t1 <- tcExp e1
-                            t2 <- tcExp e2
-                            unify t1 (t2 `mkArrow` RWCTyVar tv)
+-- The obvious way of handling App, as follows, has unfortunate O(n^2)-ish
+-- behavior in the number of arguments. (O(n) subexpressions with on average
+-- O(n) type size.)
+--tcExp (RWCApp e1 e2)   = do tv <- freshv
+--                            t1 <- tcExp e1
+--                            t2 <- tcExp e2
+--                            unify t1 (t2 `mkArrow` RWCTyVar tv)
+--                            return (RWCTyVar tv)
+tcExp e_@(RWCApp {})   = do let (ef:es)  =  flattenApp e_
+                            tf           <- tcExp ef
+                            tes          <- mapM tcExp es
+                            tv           <- freshv
+                            unify tf (foldr mkArrow (RWCTyVar tv) tes)
                             return (RWCTyVar tv)
 tcExp (RWCLam x t e)   = do tv <- freshv
                             te <- localAssumps (Map.insert x ([] :-> t)) (tcExp e)
@@ -187,13 +195,15 @@ tcExp (RWCCase e alts) = do tv <- freshv
                             return (RWCTyVar tv)
 
 tcDefn :: RWCDefn -> TCM RWCDefn
-tcDefn d = do putTySub (Map.empty)
-              RWCDefn n (tvs :-> t) e <- initDefn d
-              te <- tcExp e
-              unify t te
-              s  <- getTySub
-              putTySub (Map.empty)
-              trace (show n) $ trace (show (length (Map.keys s))) return (RWCDefn n (tvs :-> t) (subst s e))
+tcDefn d_ = do putTySub (Map.empty)
+               d <- initDefn d_
+               let RWCDefn n (tvs :-> t) e = force d
+               te <- tcExp e
+               unify t te
+               s  <- getTySub
+               putTySub (Map.empty)
+               let d' = RWCDefn n (tvs :-> t) (subst s e)
+               d' `deepseq` return d'
 
 tc :: RWCProg -> TCM RWCProg
 tc p = do as  <- liftM Map.fromList $ mapM defnAssump (defns p)
