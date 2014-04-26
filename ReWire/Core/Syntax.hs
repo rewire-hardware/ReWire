@@ -16,13 +16,14 @@ data Poly t = [Id t] :-> t deriving Show
 instance NFData t => NFData (Poly t) where
   rnf (vs :-> x) = vs `deepseq` x `deepseq` ()
 
-instance Subst t t => Subst (Poly t) t where
+instance (NFData t,Subst t t) => Subst (Poly t) t where
   fv (xs :-> t) = filter (not . (`elem` xs)) (fv t)
-  subst' (xs :-> t) = do t' <- foldr forgetting (subst' t) xs
-                         return (xs :-> t')
+  subst' (xs :-> t) = refreshs xs (fv t) $ \ xs' ->
+                       do t' <- subst' t
+                          return (xs' :-> t')
 
 instance Alpha (Poly RWCTy) where
-  aeq' (xs :-> t) (ys :-> u) = equatings "Ty" xs ys (aeq' t u)
+  aeq' (xs :-> t) (ys :-> u) = equatings xs ys (aeq' t u)
 
 ---
   
@@ -31,6 +32,9 @@ data RWCTy = RWCTyApp RWCTy RWCTy
            | RWCTyVar (Id RWCTy)
            deriving Show
 
+instance Sorted RWCTy where
+  sort _ = "RWCTy"
+  
 instance NFData RWCTy where
   rnf (RWCTyApp t1 t2) = t1 `deepseq` t2 `deepseq` ()
   rnf (RWCTyCon i)     = i `deepseq` ()
@@ -51,7 +55,7 @@ instance Subst RWCTy RWCTy where
 instance Alpha RWCTy where
   aeq' (RWCTyApp t1 t2) (RWCTyApp t1' t2') = liftM2 (&&) (aeq' t1 t1') (aeq' t2 t2')
   aeq' (RWCTyCon i) (RWCTyCon j)           = return (i==j)
-  aeq' (RWCTyVar x) (RWCTyVar y)           = varsaeq "Ty" x y
+  aeq' (RWCTyVar x) (RWCTyVar y)           = varsaeq x y
   aeq' _ _                                 = return False
 
 ---
@@ -64,6 +68,9 @@ data RWCExp = RWCApp RWCExp RWCExp
             | RWCCase RWCExp [RWCAlt]
             deriving Show
 
+instance Sorted RWCExp where
+  sort _ = "RWCExp"
+
 instance Subst RWCExp RWCExp where
   fv (RWCApp e1 e2)   = fv e1 ++ fv e2
   fv (RWCLam x _ e)   = filter (/= x) (fv e)
@@ -72,7 +79,9 @@ instance Subst RWCExp RWCExp where
   fv (RWCLiteral l)   = []
   fv (RWCCase e alts) = fv e ++ concatMap fv alts
   subst' (RWCApp e1 e2)   = liftM2 RWCApp (subst' e1) (subst' e2)
-  subst' (RWCLam x t e)   = liftM (RWCLam x t) (forgetting x (subst' e))
+  subst' (RWCLam x t e)   = refresh x (fv e) $ \ x' ->
+                              do e' <- subst' e
+                                 return (RWCLam x' t e')
   subst' (RWCVar x t)     = do ml <- query x
                                case ml of
                                  Just (Left y)  -> return (RWCVar y t)
@@ -81,11 +90,24 @@ instance Subst RWCExp RWCExp where
   subst' (RWCCon i t)     = return (RWCCon i t)
   subst' (RWCCase e alts) = liftM2 RWCCase (subst' e) (subst' alts)
 
+instance Subst RWCExp RWCTy where
+  fv (RWCApp e1 e2)   = fv e1 ++ fv e2
+  fv (RWCLam _ t e)   = fv t ++ fv e
+  fv (RWCVar _ t)     = fv t
+  fv (RWCCon _ t)     = fv t
+  fv (RWCLiteral _)   = []
+  fv (RWCCase e alts) = fv e ++ fv alts
+  subst' (RWCApp e1 e2)   = liftM2 RWCApp (subst' e1) (subst' e2)
+  subst' (RWCLam x t e)   = liftM2 (RWCLam x) (subst' t) (subst' e)
+  subst' (RWCVar x t)     = liftM (RWCVar x) (subst' t)
+  subst' (RWCCon i t)     = liftM (RWCCon i) (subst' t)
+  subst' (RWCCase e alts) = liftM2 RWCCase (subst' e) (subst' alts)
+
 instance Alpha RWCExp where
   aeq' (RWCApp e1 e2) (RWCApp e1' e2')     = liftM2 (&&) (aeq' e1 e1') (aeq' e2 e2')
-  aeq' (RWCLam x t e) (RWCLam x' t' e')    = equating "Exp" x x' $
+  aeq' (RWCLam x t e) (RWCLam x' t' e')    = equating x x' $
                                                liftM2 (&&) (aeq' t t') (aeq' e e')
-  aeq' (RWCVar x _) (RWCVar y _)           = varsaeq "Exp" x y
+  aeq' (RWCVar x _) (RWCVar y _)           = varsaeq x y
   aeq' (RWCCon i _) (RWCCon j _)           = return (i==j)
   aeq' (RWCLiteral l) (RWCLiteral l')      = return (l==l')
   aeq' (RWCCase e alts) (RWCCase e' alts') = liftM2 (&&) (aeq' e e') (aeq' alts alts')
@@ -120,6 +142,10 @@ instance Subst RWCAlt RWCExp where
   fv (RWCAlt p e)     = filter (not . (`elem` patvars p)) (fv e)
   subst' (RWCAlt p e) = liftM (RWCAlt p) (subst' e)
 
+instance Subst RWCAlt RWCTy where
+  fv (RWCAlt p e) = fv p ++ fv e
+  subst' (RWCAlt p e) = liftM2 RWCAlt (subst' p) (subst' e)
+
 instance Alpha RWCAlt where
   aeq' (RWCAlt p e) (RWCAlt p' e') = equatingPats p p' (aeq' e e')
   
@@ -146,8 +172,16 @@ equatingPats (RWCPatCon i ps) (RWCPatCon j ps') k
                                   | otherwise               = foldr (uncurry equatingPats) k (zip ps ps')
 equatingPats (RWCPatLiteral l) (RWCPatLiteral l') k | l == l'   = k
                                                     | otherwise = return False
-equatingPats (RWCPatVar x _) (RWCPatVar y _) k                  = equating "Exp" x y k
+equatingPats (RWCPatVar x _) (RWCPatVar y _) k                  = equating x y k
 
+instance Subst RWCPat RWCTy where
+  fv (RWCPatCon _ ps)  = concatMap fv ps
+  fv (RWCPatLiteral l) = []
+  fv (RWCPatVar _ t)   = fv t
+  subst' (RWCPatCon i ps)  = liftM (RWCPatCon i) (subst' ps)
+  subst' (RWCPatLiteral l) = return (RWCPatLiteral l)
+  subst' (RWCPatVar x t)   = liftM (RWCPatVar x) (subst' t)
+      
 instance NFData RWCPat where
   rnf (RWCPatCon i ps)  = i `deepseq` ps `deepseq` ()
   rnf (RWCPatLiteral l) = l `deepseq` ()
@@ -162,7 +196,16 @@ data RWCDefn = RWCDefn { defnName   :: Id RWCExp,
 
 instance Subst RWCDefn RWCExp where
   fv (RWCDefn n pt e) = filter (/= n) (fv e)
-  subst' (RWCDefn n pt e) = liftM (RWCDefn n pt) (forgetting n (subst' e))
+  subst' (RWCDefn n pt e) = refresh n (fv e) $ \ n' ->
+                              do e' <- subst' e
+                                 return (RWCDefn n' pt e')
+
+instance Subst RWCDefn RWCTy where
+  fv (RWCDefn n pt e) = fv pt ++ fv e
+  subst' (RWCDefn n (xs :-> t) e) = refreshs xs (fv t ++ fv e) $ \ xs' ->
+                                      do t' <- subst' t
+                                         e' <- subst' e
+                                         return (RWCDefn n (xs' :-> t') e')
 
 instance NFData RWCDefn where
   rnf (RWCDefn n pt e) = n `deepseq` pt `deepseq` e `deepseq` ()
@@ -213,46 +256,3 @@ mkArrow t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2
 
 arrowLeft :: RWCTy -> RWCTy
 arrowLeft (RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2) = t1
-
-{-
-instance Alpha RWCTy where
-  aeq' (RWCTyApp t1 t2) (RWCTyApp t1' t2')   = aeq' t1 t1' >> aeq' t2 t2'
-  aeq' (RWCTyCon i) (RWCTyCon j) | i == j    = return ()
-                                 | otherwise = mzero
-  aeq' (RWCTyVar x) (RWCTyVar y)             = aeq' x y
-  aeq' _ _                                   = mzero
-
---instance FV RWCTy RWCTy where
---  fv (RWCTyApp t1 t2) = fv t1 ++ fv t2
---  fv (RWCTyVar x)     = [x]
---  fv (RWCTyCon _)     = []
-
-instance Subst RWCTy RWCTy where
-  subst m (RWCTyApp t1 t2) = RWCTyApp (subst m t1) (subst m t2)
-  subst m (RWCTyVar x)     = case Map.lookup x m of
-                               Just t  -> t
-                               Nothing -> RWCTyVar x
-  subst m (RWCTyCon i)     = RWCTyCon i
-
-instance Subst a b => Subst [a] b where
-  subst m = map (subst m)
-
-instance Subst RWCExp RWCTy where
-  subst m (RWCApp e1 e2) = RWCApp (subst m e1) (subst m e2)
-  subst m (RWCLam x t e) = RWCLam x (subst m t) (subst m e)
-  subst m (RWCVar x t)   = RWCVar x (subst m t)
-  subst m (RWCCon i t)   = RWCCon i (subst m t)
-  subst m (RWCLiteral l) = RWCLiteral l
-  subst m (RWCCase e as) = RWCCase (subst m e) (subst m as)
-
-instance Subst RWCAlt RWCTy where
-  subst m (RWCAlt p e) = RWCAlt (subst m p) (subst m e)
-
-instance Subst RWCPat RWCTy where
-  subst m (RWCPatCon i ps)  = RWCPatCon i (subst m ps)
-  subst m (RWCPatLiteral l) = RWCPatLiteral l
-  subst m (RWCPatVar x t)   = RWCPatVar x (subst m t)
-
---instance (NFData k,NFData v) => NFData (Map k v) where
---  rnf = rnf . Map.toList
--}

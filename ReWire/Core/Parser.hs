@@ -1,5 +1,6 @@
 module ReWire.Core.Parser where
 
+import ReWire.Scoping
 import ReWire.Core.Syntax
 import Text.Parsec
 import Text.Parsec.Language as L
@@ -98,7 +99,7 @@ defn = do i <- varid
           reserved "is"
           e <- expr
           reserved "end"
-          return (RWCDefn (Id i) (nub (tyTVs t) :-> t) e)
+          return (RWCDefn (Id i) (nub (fv t) :-> t) e)
 
 expr = lamexpr
    <|> do es <- many aexpr

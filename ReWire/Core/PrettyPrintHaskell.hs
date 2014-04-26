@@ -6,6 +6,7 @@
 
 module ReWire.Core.PrettyPrintHaskell (ppHaskell) where
 
+import ReWire.Scoping
 import ReWire.Core.Syntax
 import Text.PrettyPrint
 import Control.Monad (liftM)

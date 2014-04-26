@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving,MultiParamTypeClasses,
              FlexibleInstances,TupleSections,FunctionalDependencies,
-             FlexibleContexts #-}
+             FlexibleContexts,ScopedTypeVariables #-}
 
 module ReWire.Scoping where
 
@@ -31,9 +31,9 @@ class (Ord v,Monad m) => MonadAssume v t m | m -> v, m -> t where
 newtype AssumeT v t m a = AssumeT { deAssumeT :: ReaderT (Map v t) m a }
                            deriving (Monad,MonadTrans,MonadPlus)
 
-instance (Ord v,Monad m) => MonadAssume v t (AssumeT v t m) where
-  assuming n t m = AssumeT $ local (insert n t) (deAssumeT m)
-  forgetting n m = AssumeT $ local (delete n) (deAssumeT m)
+instance (Ord v,NFData v,NFData t,Monad m) => MonadAssume v t (AssumeT v t m) where
+  assuming n t m = AssumeT $ local (insert n t) (ask >>= \ s -> s `deepseq` deAssumeT m)
+  forgetting n m = AssumeT $ local (delete n) (ask >>= \ s -> s `deepseq` deAssumeT m)
   query n        = AssumeT $ do { m <- ask ; return (Map.lookup n m) }
   getAssumptions = AssumeT ask
 
@@ -53,6 +53,17 @@ runAssume = runAssumeWith []
 
 newtype Id a = Id { deId :: String } deriving (Eq,Ord,Show,Read,NFData)
 
+type Sort = String
+
+class Sorted t where
+  sort :: t -> Sort
+
+instance Sorted t => Sorted (Id t) where
+  sort _ = sort (undefined::t)
+
+instance Sorted Int where
+  sort _ = "Int"
+
 class Subst t t' where
   fv     :: t -> [Id t']
   subst' :: t -> SubstM t' t
@@ -61,14 +72,14 @@ instance Subst t t' => Subst [t] t' where
   fv = concatMap fv  
   subst' = mapM subst'
 
-subst :: Subst t t' => [(Id t',t')] -> t -> t
-subst s t = let as = map (\ (x,e) -> (x,Right e)) s
+subst :: Subst t t' => (Map (Id t') t') -> t -> t
+subst s t = let as = Map.toList $ fmap Right s
             in  runAssumeWith as (subst' t)
 
 type SubstM t' = Assume (Id t') (Either (Id t') t')
 --            [(Id t',t')] -> t -> t
 
-refresh :: Subst t t => Id t -> [Id t] -> (Id t -> SubstM t a) -> SubstM t a
+refresh :: (NFData t,Subst t t) => Id t -> [Id t] -> (Id t -> SubstM t a) -> SubstM t a
 refresh x fvs_ k = do as      <- getAssumptions
                       let es  =  Map.elems as 
                           fvs =  fvs_ ++ concatMap fv (rights es)
@@ -78,7 +89,7 @@ refresh x fvs_ k = do as      <- getAssumptions
                         then forgetting x (k x)
                         else assuming x (Left x') (k x')
 
-refreshs :: Subst t t => [Id t] -> [Id t] -> ([Id t] -> SubstM t a) -> SubstM t a
+refreshs :: (NFData t,Subst t t) => [Id t] -> [Id t] -> ([Id t] -> SubstM t a) -> SubstM t a
 refreshs xs av k  = ref' (breaks xs) k
    where breaks (x:xs) = (x,xs) : map (\(y,ys) -> (y,x:ys)) (breaks xs)
          breaks []     = []  
@@ -87,8 +98,7 @@ refreshs xs av k  = ref' (breaks xs) k
          ref' [] k           = k []
 
 type IdSort = String
-type IdAny  = String
-type AlphaM = Assume (Either (IdSort,String) (IdSort,String)) String
+type AlphaM = Assume (Either (Sort,String) (Sort,String)) String
 
 class Alpha t where
   aeq' :: t -> t -> AlphaM Bool
@@ -97,28 +107,31 @@ instance Alpha t => Alpha [t] where
   aeq' l1 l2 | length l1 /= length l2 = return False
              | otherwise              = liftM and (zipWithM aeq' l1 l2)
 
-equating :: IdSort -> Id a -> Id a -> AlphaM b -> AlphaM b
-equating s x y m = assuming (Left (s,deId x)) (deId y) $
-                    assuming (Right (s,deId y)) (deId x) $
-                     m
+equating :: Sorted a => Id a -> Id a -> AlphaM b -> AlphaM b
+equating x y m = assuming (Left (sort x,deId x)) (deId y) $
+                  assuming (Right (sort y,deId y)) (deId x) $
+                   m
 
 aeq :: Alpha t => t -> t -> Bool
 aeq x y = runAssume (aeq' x y)
 
 infix 4 `aeq`
 
-equatings :: IdSort -> [Id a] -> [Id a] -> AlphaM Bool -> AlphaM Bool
-equatings s xs ys m | length xs /= length ys = return False
-                    | otherwise              = foldr (uncurry (equating s)) m (zip xs ys)
+equatings :: Sorted a => [Id a] -> [Id a] -> AlphaM Bool -> AlphaM Bool
+equatings xs ys m | length xs /= length ys = return False
+                  | otherwise              = foldr (uncurry equating) m (zip xs ys)
 
-varsaeq s (Id x) (Id y) = do mx <- query (Left (s,x))
-                             my <- query (Right (s,y))
-                             case (mx,my) of
-                               (Just x',Just y') -> return (x'==y && y'==x)
-                               (Just x',Nothing) -> return False
-                               (Nothing,Just y') -> return False
-                               (Nothing,Nothing) -> return (x==y)
+varsaeq :: Sorted a => Id a -> Id a -> AlphaM Bool
+varsaeq x y = do mx <- query (Left (sort x,deId x))
+                 my <- query (Right (sort y,deId y))
+                 case (mx,my) of
+                   (Just x',Just y') -> return (x'==deId y && y'==deId x)
+                   (Just x',Nothing) -> return False
+                   (Nothing,Just y') -> return False
+                   (Nothing,Nothing) -> return (x==y)
 
+instance (NFData v,NFData t) => NFData (Map v t) where
+  rnf = rnf . Map.toList
 
 
 

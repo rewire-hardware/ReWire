@@ -2,6 +2,7 @@
 
 module ReWire.Core.KindChecker (kindcheck) where
 
+import ReWire.Scoping
 import ReWire.Core.Syntax
 import ReWire.Core.Parser
 import Control.Monad.State
@@ -11,6 +12,7 @@ import Control.Monad.Error
 import Data.Maybe (fromJust)
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map,(!))
+import Control.DeepSeq
 
 -- Kind checking for Core.
 
@@ -18,22 +20,27 @@ import Data.Map.Strict (Map,(!))
 data Kind = Kvar (Id Kind) | Kstar | Kfun Kind Kind deriving (Eq,Show)
 
 instance Alpha Kind where
-  aeq' (Kvar i) (Kvar j)           = aeq' i j
-  aeq' Kstar Kstar                 = return ()
-  aeq' (Kfun k1 k2) (Kfun k1' k2') = aeq' k1 k1' >> aeq' k2 k2'
-  aeq' _ _                         = mzero
+  aeq' (Kvar i) (Kvar j)           = return (i==j)
+  aeq' Kstar Kstar                 = return True
+  aeq' (Kfun k1 k2) (Kfun k1' k2') = liftM2 (&&) (aeq' k1 k1') (aeq' k2 k2')
+  aeq' _ _                         = return False
 
 instance Subst Kind Kind where
-  subst m (Kvar i)     = case Map.lookup i m of
-                           Just k  -> k
-                           Nothing -> Kvar i
-  subst m Kstar        = Kstar
-  subst m (Kfun k1 k2) = Kfun (subst m k1) (subst m k2)
-
-instance FV Kind Kind where
   fv (Kvar i)     = [i]
   fv Kstar        = []
   fv (Kfun k1 k2) = fv k1 ++ fv k2
+  subst' (Kvar i)     = do ml <- query i
+                           case ml of
+                             Just (Left j)   -> return (Kvar j)
+                             Just (Right k') -> return k'
+                             Nothing         -> return (Kvar i)
+  subst' Kstar        = return Kstar
+  subst' (Kfun k1 k2) = liftM2 Kfun (subst' k1) (subst' k2)
+
+instance NFData Kind where
+  rnf (Kvar i)     = i `deepseq` ()
+  rnf Kstar        = ()
+  rnf (Kfun k1 k2) = k1 `deepseq` k2 `deepseq` ()
 
 type KiSub = Map (Id Kind) Kind
 data KCEnv = KCEnv { as  :: Map (Id RWCTy) Kind, 

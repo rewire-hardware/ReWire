@@ -7,6 +7,7 @@
 
 module ReWire.Core.TypeChecker (typecheck) where
 
+import ReWire.Scoping
 import ReWire.Core.Syntax
 import Control.DeepSeq
 import Control.Monad.State
@@ -16,7 +17,7 @@ import Control.Monad.Error
 import Data.List (nub)
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map)
---import Debug.Trace (trace,traceShow)
+import Debug.Trace (trace,traceShow)
 
 -- Type checker for core.
 
@@ -92,7 +93,7 @@ dataDeclAssumps (RWCData i tvs dcs) = do let rt = foldl RWCTyApp (RWCTyCon i) (m
                                          return $ map (dataConAssump tvs rt) dcs
 
 (@@) :: TySub -> TySub -> TySub
-s1@@s2 = {-s1 `deepseq` s2 `deepseq` force -} s
+s1@@s2 = s1 `deepseq` s2 `deepseq` force s
          where s = Map.mapWithKey (\ u t -> subst s1 t) s2 `Map.union` s1
 
 isFlex :: Id a -> Bool
@@ -203,7 +204,7 @@ tcDefn d_ = do putTySub (Map.empty)
                s  <- getTySub
                putTySub (Map.empty)
                let d' = RWCDefn n (tvs :-> t) (subst s e)
-               d' `deepseq` return d'
+               traceShow n $ d' `deepseq` return d'
 
 tc :: RWCProg -> TCM RWCProg
 tc p = do as  <- liftM Map.fromList $ mapM defnAssump (defns p)
