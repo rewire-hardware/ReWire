@@ -10,8 +10,8 @@ import Control.Monad.Reader
 import Control.Monad.Identity
 import Data.Map.Strict (Map,insert,delete)
 import qualified Data.Map.Strict as Map
-import Data.Foldable (Foldable)
-import qualified Data.Foldable as Foldable
+--import Data.Foldable (Foldable)
+--import qualified Data.Foldable as Foldable
 import Control.DeepSeq
 import Data.Either (rights)
 --import Data.Maybe (fromJust,catMaybes,isNothing,isJust)
@@ -31,25 +31,25 @@ class (Ord v,Monad m) => MonadAssume v t m | m -> v, m -> t where
 newtype AssumeT v t m a = AssumeT { deAssumeT :: ReaderT (Map v t) m a }
                            deriving (Monad,MonadTrans,MonadPlus)
 
-instance (Ord v,NFData v,NFData t,Monad m) => MonadAssume v t (AssumeT v t m) where
-  assuming n t m = AssumeT $ local (insert n t) (ask >>= \ s -> s `deepseq` deAssumeT m)
-  forgetting n m = AssumeT $ local (delete n) (ask >>= \ s -> s `deepseq` deAssumeT m)
+instance (Ord v,Monad m) => MonadAssume v t (AssumeT v t m) where
+  assuming n t m = AssumeT $ local (insert n t) (deAssumeT m)
+  forgetting n m = AssumeT $ local (delete n) (deAssumeT m)
   query n        = AssumeT $ do { m <- ask ; return (Map.lookup n m) }
   getAssumptions = AssumeT ask
 
 type Assume e t = AssumeT e t Identity
 
-runAssumeTWith :: (Ord v,Foldable f) => f (v,t) -> AssumeT v t m a -> m a
-runAssumeTWith as m = runReaderT (deAssumeT m) (Foldable.foldr (uncurry insert) Map.empty as)
+runAssumeTWith :: Ord v => Map v t -> AssumeT v t m a -> m a
+runAssumeTWith as m = runReaderT (deAssumeT m) as
 
 runAssumeT :: Ord v => AssumeT v t m a -> m a
-runAssumeT = runAssumeTWith []
+runAssumeT = runAssumeTWith Map.empty
 
-runAssumeWith :: (Ord v,Foldable f) => f (v,t) -> Assume v t a -> a
+runAssumeWith :: Ord v => Map v t -> Assume v t a -> a
 runAssumeWith as = runIdentity . runAssumeTWith as
 
 runAssume :: Ord v => Assume v t a -> a
-runAssume = runAssumeWith []
+runAssume = runAssumeWith Map.empty
 
 newtype Id a = Id { deId :: String } deriving (Eq,Ord,Show,Read,NFData)
 
@@ -73,13 +73,11 @@ instance Subst t t' => Subst [t] t' where
   subst' = mapM subst'
 
 subst :: Subst t t' => (Map (Id t') t') -> t -> t
-subst s t = let as = Map.toList $ fmap Right s
-            in  runAssumeWith as (subst' t)
+subst s t = runAssumeWith (fmap Right s) (subst' t)
 
 type SubstM t' = Assume (Id t') (Either (Id t') t')
---            [(Id t',t')] -> t -> t
 
-refresh :: (NFData t,Subst t t) => Id t -> [Id t] -> (Id t -> SubstM t a) -> SubstM t a
+refresh :: Subst t t => Id t -> [Id t] -> (Id t -> SubstM t a) -> SubstM t a
 refresh x fvs_ k = do as      <- getAssumptions
                       let es  =  Map.elems as 
                           fvs =  fvs_ ++ concatMap fv (rights es)
@@ -89,7 +87,7 @@ refresh x fvs_ k = do as      <- getAssumptions
                         then forgetting x (k x)
                         else assuming x (Left x') (k x')
 
-refreshs :: (NFData t,Subst t t) => [Id t] -> [Id t] -> ([Id t] -> SubstM t a) -> SubstM t a
+refreshs :: Subst t t => [Id t] -> [Id t] -> ([Id t] -> SubstM t a) -> SubstM t a
 refreshs xs av k  = ref' (breaks xs) k
    where breaks (x:xs) = (x,xs) : map (\(y,ys) -> (y,x:ys)) (breaks xs)
          breaks []     = []  
@@ -130,8 +128,6 @@ varsaeq x y = do mx <- query (Left (sort x,deId x))
                    (Nothing,Just y') -> return False
                    (Nothing,Nothing) -> return (x==y)
 
-instance (NFData v,NFData t) => NFData (Map v t) where
-  rnf = rnf . Map.toList
 
 
 

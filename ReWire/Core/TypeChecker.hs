@@ -93,7 +93,7 @@ dataDeclAssumps (RWCData i tvs dcs) = do let rt = foldl RWCTyApp (RWCTyCon i) (m
                                          return $ map (dataConAssump tvs rt) dcs
 
 (@@) :: TySub -> TySub -> TySub
-s1@@s2 = s1 `deepseq` s2 `deepseq` force s
+s1@@s2 = {-s1 `deepseq` s2 `deepseq` force-} s
          where s = Map.mapWithKey (\ u t -> subst s1 t) s2 `Map.union` s1
 
 isFlex :: Id a -> Bool
