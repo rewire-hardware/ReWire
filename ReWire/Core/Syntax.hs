@@ -119,48 +119,6 @@ tyTVs (RWCTyVar v)     = [v]
 class Subst t t' where
   subst :: Map (Id t') t' -> t -> t
 
-newtype AlphaM a = AlphaM { deAlphaM :: StateT (Map String String) Maybe a }
-  deriving (Functor,Monad,MonadPlus)
-
-equating :: Id t -> Id t -> AlphaM a -> AlphaM a
-equating (Id x) (Id y) m = do let l = min x y
-                                  r = max x y
-                              vm <- AlphaM get
-                              case Map.lookup l vm of
-                                Just z | z==r      -> return ()
-                                       | otherwise -> mzero
-                                Nothing            -> AlphaM (modify (Map.insert l r))
-                              m
-
-equatings :: [Id t] -> [Id t] -> AlphaM a -> AlphaM a
-equatings l1 l2 m | length l1 /= length l2 = mzero
-                  | otherwise              = eqs' l1 l2
-   where eqs' (x:xs) (y:ys) = equating x y (eqs' xs ys)
-         eqs' [] []         = m
-
-class Alpha t where
-  aeq' :: t -> t -> AlphaM ()
-
-instance Alpha (Id t) where
-  aeq' (Id x) (Id y) = do let l = min x y
-                              r = max x y
-                          vm <- AlphaM get
-                          case Map.lookup l vm of
-                            Nothing | x == y    -> return ()
-                                    | otherwise -> mzero
-                            Just z  | z == r    -> return ()
-                                    | otherwise -> mzero
-
-aeq :: Alpha a => a -> a -> Bool
-aeq x y = case runStateT (deAlphaM (aeq' x y)) Map.empty of
-            Just _  -> True
-            Nothing -> False
-
-infix 4 `aeq`
-
-class FV t t' where
-  fv :: t -> [Id t']
-  
 data Poly t = [Id t] :-> t deriving Show
 
 instance NFData t => NFData (Poly t) where
