@@ -2,7 +2,7 @@
              FlexibleInstances,TupleSections,FunctionalDependencies,
              FlexibleContexts #-}
 
-module AssumeT where
+module ReWire.Scoping where
 
 import Control.Monad
 import Control.Monad.Trans
@@ -13,6 +13,7 @@ import qualified Data.Map.Strict as Map
 import Data.Foldable (Foldable)
 import qualified Data.Foldable as Foldable
 import Control.DeepSeq
+import Data.Either (rights)
 --import Data.Maybe (fromJust,catMaybes,isNothing,isJust)
 --import Unbound.LocallyNameless hiding (fv,subst,substs,Subst,Alpha,aeq)
 --import qualified Unbound.LocallyNameless as U
@@ -54,20 +55,30 @@ newtype Id a = Id { deId :: String } deriving (Eq,Ord,Show,Read,NFData)
 
 class Subst t t' where
   fv     :: t -> [Id t']
-  mkvar  :: Id t' -> t
-  substs :: [(Id t',t)] -> t -> t
+  subst' :: t -> SubstM t' t
 
-refresh :: (MonadAssume (Id e) t m,Subst t e) => Id e -> [Id e] -> (Id e -> m b) -> m b
+instance Subst t t' => Subst [t] t' where
+  fv = concatMap fv  
+  subst' = mapM subst'
+
+subst :: Subst t t' => [(Id t',t')] -> t -> t
+subst s t = let as = map (\ (x,e) -> (x,Right e)) s
+            in  runAssumeWith as (subst' t)
+
+type SubstM t' = Assume (Id t') (Either (Id t') t')
+--            [(Id t',t')] -> t -> t
+
+refresh :: Subst t t => Id t -> [Id t] -> (Id t -> SubstM t a) -> SubstM t a
 refresh x fvs_ k = do as      <- getAssumptions
                       let es  =  Map.elems as 
-                          fvs =  fvs_ ++ concatMap fv es
+                          fvs =  fvs_ ++ concatMap fv (rights es)
                           ys  =  x : map (Id . (++"'") . deId) ys
                           x'  =  head (filter (not . (`elem` fvs)) ys)
                       if x==x'
                         then forgetting x (k x)
-                        else assuming x (mkvar x') (k x')
+                        else assuming x (Left x') (k x')
 
-refreshs :: (MonadAssume (Id e) t m,Subst t e) => [Id e] -> [Id e] -> ([Id e] -> m b) -> m b
+refreshs :: Subst t t => [Id t] -> [Id t] -> ([Id t] -> SubstM t a) -> SubstM t a
 refreshs xs av k  = ref' (breaks xs) k
    where breaks (x:xs) = (x,xs) : map (\(y,ys) -> (y,x:ys)) (breaks xs)
          breaks []     = []  
@@ -75,21 +86,38 @@ refreshs xs av k  = ref' (breaks xs) k
                                   ref' xs (\ xs' -> k (x':xs'))
          ref' [] k           = k []
 
+type IdSort = String
+type IdAny  = String
+type AlphaM = Assume (Either (IdSort,String) (IdSort,String)) String
+
 class Alpha t where
-  aeq :: t -> t -> Bool
-  
+  aeq' :: t -> t -> AlphaM Bool
+
+instance Alpha t => Alpha [t] where
+  aeq' l1 l2 | length l1 /= length l2 = return False
+             | otherwise              = liftM and (zipWithM aeq' l1 l2)
+
+equating :: IdSort -> Id a -> Id a -> AlphaM b -> AlphaM b
+equating s x y m = assuming (Left (s,deId x)) (deId y) $
+                    assuming (Right (s,deId y)) (deId x) $
+                     m
+
+aeq :: Alpha t => t -> t -> Bool
+aeq x y = runAssume (aeq' x y)
+
 infix 4 `aeq`
 
-equating x y = assuming (Left x) y . assuming (Right y) x
-equatings xs ys m | length xs /= length ys = return False
-                  | otherwise              = foldr (uncurry equating) m (zip xs ys)
-varsaeq x y = do mx <- query (Left x)
-                 my <- query (Right y)
-                 case (mx,my) of
-                   (Just x',Just y') -> return (x'==y && y'==x)
-                   (Just x',Nothing) -> return False
-                   (Nothing,Just y') -> return False
-                   (Nothing,Nothing) -> return (x==y)
+equatings :: IdSort -> [Id a] -> [Id a] -> AlphaM Bool -> AlphaM Bool
+equatings s xs ys m | length xs /= length ys = return False
+                    | otherwise              = foldr (uncurry (equating s)) m (zip xs ys)
+
+varsaeq s (Id x) (Id y) = do mx <- query (Left (s,x))
+                             my <- query (Right (s,y))
+                             case (mx,my) of
+                               (Just x',Just y') -> return (x'==y && y'==x)
+                               (Just x',Nothing) -> return False
+                               (Nothing,Just y') -> return False
+                               (Nothing,Nothing) -> return (x==y)
 
 
 
