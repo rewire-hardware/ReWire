@@ -10,7 +10,8 @@ import Control.Monad.State
 import Control.DeepSeq
 import Data.ByteString.Char8 (pack)
 
-type ConId = String
+newtype DataConId = DataConId { deDataConId :: String } deriving (Eq,Ord,Show,NFData)
+newtype TyConId   = TyConId   { deTyConId :: String } deriving (Eq,Ord,Show,NFData)
 
 data Poly t = [Id t] :-> t deriving Show
 
@@ -29,7 +30,7 @@ instance Alpha (Poly RWCTy) where
 ---
   
 data RWCTy = RWCTyApp RWCTy RWCTy
-           | RWCTyCon ConId
+           | RWCTyCon TyConId
            | RWCTyVar (Id RWCTy)
            deriving Show
 
@@ -64,7 +65,7 @@ instance Alpha RWCTy where
 data RWCExp = RWCApp RWCExp RWCExp
             | RWCLam (Id RWCExp) RWCTy RWCExp
             | RWCVar (Id RWCExp) RWCTy
-            | RWCCon ConId RWCTy
+            | RWCCon DataConId RWCTy
             | RWCLiteral RWCLit
             | RWCCase RWCExp [RWCAlt]
             deriving Show
@@ -155,7 +156,7 @@ instance NFData RWCAlt where
 
 ---
   
-data RWCPat = RWCPatCon ConId [RWCPat]
+data RWCPat = RWCPatCon DataConId [RWCPat]
             | RWCPatLiteral RWCLit
             | RWCPatVar (Id RWCExp) RWCTy
             deriving Show
@@ -213,7 +214,7 @@ instance NFData RWCDefn where
 
 ---
   
-data RWCData = RWCData { dataName   :: ConId,
+data RWCData = RWCData { dataName   :: TyConId,
                          dataTyVars :: [Id RWCTy],
                          dataCons   :: [RWCDataCon] }
                deriving Show
@@ -223,7 +224,7 @@ instance NFData RWCData where
 
 ---
   
-data RWCDataCon = RWCDataCon ConId [RWCTy]
+data RWCDataCon = RWCDataCon DataConId [RWCTy]
                   deriving Show
 
 instance NFData RWCDataCon where
@@ -241,8 +242,8 @@ instance NFData RWCProg where
 ---
   
 flattenArrow :: RWCTy -> ([RWCTy],RWCTy)
-flattenArrow (RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2) = let (ts,t) = flattenArrow t2 in (t1:ts,t)
-flattenArrow t                                             = ([],t)
+flattenArrow (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2) = let (ts,t) = flattenArrow t2 in (t1:ts,t)
+flattenArrow t                                                       = ([],t)
   
 flattenTyApp :: RWCTy -> [RWCTy]
 flattenTyApp (RWCTyApp t1 t2) = flattenTyApp t1 ++ [t2]
@@ -253,7 +254,21 @@ flattenApp (RWCApp e e') = flattenApp e++[e']
 flattenApp e             = [e]                                                     
 
 mkArrow :: RWCTy -> RWCTy -> RWCTy
-mkArrow t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2
+mkArrow t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2
 
 arrowLeft :: RWCTy -> RWCTy
-arrowLeft (RWCTyApp (RWCTyApp (RWCTyCon "(->)") t1) t2) = t1
+arrowLeft (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2) = t1
+
+arrowRight :: RWCTy -> RWCTy
+arrowRight (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2) = t2
+
+typeOf :: RWCExp -> RWCTy
+typeOf (RWCApp e _)                   = arrowRight (typeOf e)
+typeOf (RWCLam x t e)                 = mkArrow t (typeOf e)
+typeOf (RWCVar _ t)                   = t
+typeOf (RWCCon _ t)                   = t
+typeOf (RWCLiteral (RWCLitInteger _)) = RWCTyCon (TyConId "Integer")
+typeOf (RWCLiteral (RWCLitFloat _))   = RWCTyCon (TyConId "Float")
+typeOf (RWCLiteral (RWCLitChar _))    = RWCTyCon (TyConId "Char")
+typeOf (RWCCase _ (RWCAlt _ e:_))     = typeOf e
+typeOf (RWCCase _ [])                 = error "typeOf: encountered case with no alts"

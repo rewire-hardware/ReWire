@@ -8,7 +8,7 @@ import ReWire.Core.Parser
 import ReWire.Core.PrettyPrintHaskell
 import ReWire.Core.KindChecker
 import ReWire.Core.TypeChecker
---import ReWire.Core.Transformations.Interactive
+import ReWire.Core.Transformations.Interactive
 
 main :: IO ()
 main = do args <- getArgs
@@ -32,4 +32,4 @@ main = do args <- getArgs
                                                        Right p' -> do putStrLn "tc finished"
                                                                       writeFile "tc.out" (show p')
                                                                       putStrLn "tc debug print finished"
-                                                                      --trans p'
+                                                                      trans p'

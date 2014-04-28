@@ -1,6 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving,MultiParamTypeClasses,
              FlexibleInstances,TupleSections,FunctionalDependencies,
-             FlexibleContexts,ScopedTypeVariables,GADTs,StandaloneDeriving #-}
+             FlexibleContexts,ScopedTypeVariables,GADTs,StandaloneDeriving
+  #-}
 
 module ReWire.Scoping where
 

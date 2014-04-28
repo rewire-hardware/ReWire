@@ -23,12 +23,12 @@ import Debug.Trace (trace,traceShow)
 
 type TySub = Map (Id RWCTy) RWCTy
 data TCEnv = TCEnv { as  :: Map (Id RWCExp) (Poly RWCTy),
-                     cas :: Map ConId (Poly RWCTy) } deriving Show
+                     cas :: Map DataConId (Poly RWCTy) } deriving Show
 data TCState = TCState { tySub :: TySub, 
                          ctr   :: Int } deriving Show
                          
 type Assump  = (Id RWCExp,Poly RWCTy)
-type CAssump = (ConId,Poly RWCTy)
+type CAssump = (DataConId,Poly RWCTy)
 
 type TCM = ReaderT TCEnv (StateT TCState (ErrorT String Identity))
 
@@ -130,14 +130,14 @@ patassumps (RWCPatVar n t)   = [(n,[] :-> t)]
 
 tcPat :: RWCTy -> RWCPat -> TCM ()
 tcPat t (RWCPatLiteral l) = case l of
-                              RWCLitInteger _ -> unify t (RWCTyCon "Integer")
-                              RWCLitFloat _   -> unify t (RWCTyCon "Float")
-                              RWCLitChar _    -> unify t (RWCTyCon "Char")
+                              RWCLitInteger _ -> unify t (RWCTyCon (TyConId "Integer"))
+                              RWCLitFloat _   -> unify t (RWCTyCon (TyConId "Float"))
+                              RWCLitChar _    -> unify t (RWCTyCon (TyConId "Char"))
 tcPat t (RWCPatVar _ tp)  = unify t tp
 tcPat t (RWCPatCon i ps)  = do cas     <- askCAssumps
                                let mpt =  Map.lookup i cas
                                case mpt of
-                                 Nothing -> fail $ "Unknown constructor: " ++ i
+                                 Nothing -> fail $ "Unknown constructor: " ++ deDataConId i
                                  Just pta  -> do ta               <- inst pta
                                                  let (targs,tres) =  flattenArrow ta
                                                  if length ps /= length targs
@@ -180,15 +180,15 @@ tcExp (RWCVar v t)     = do as      <- askAssumps
 tcExp (RWCCon i t)     = do cas     <- askCAssumps
                             let mpt =  Map.lookup i cas
                             case mpt of
-                              Nothing -> fail $ "Unknown constructor: " ++ i
+                              Nothing -> fail $ "Unknown constructor: " ++ deDataConId i
                               Just pt -> do ta <- inst pt
                                             unify t ta
                                             return t
 tcExp (RWCLiteral l)   = do tv <- freshv
                             case l of
-                              RWCLitInteger _ -> unify (RWCTyVar tv) (RWCTyCon "Integer")
-                              RWCLitFloat _   -> unify (RWCTyVar tv) (RWCTyCon "Float")
-                              RWCLitChar _    -> unify (RWCTyVar tv) (RWCTyCon "Char")
+                              RWCLitInteger _ -> unify (RWCTyVar tv) (RWCTyCon (TyConId "Integer"))
+                              RWCLitFloat _   -> unify (RWCTyVar tv) (RWCTyCon (TyConId "Float"))
+                              RWCLitChar _    -> unify (RWCTyVar tv) (RWCTyCon (TyConId "Char"))
                             return (RWCTyVar tv)
 tcExp (RWCCase e alts) = do tv <- freshv
                             te <- tcExp e

@@ -24,7 +24,7 @@ import Data.Char
 --import ReWire.Core.Transformations.Occurs (cmdOccurs)
 --import ReWire.Core.Transformations.Uses (cmdUses)
 import ReWire.Core.Transformations.CheckNF (cmdCheckNF)
-import ReWire.Core.Transformations.ToVHDL (cmdToVHDL)
+--import ReWire.Core.Transformations.ToVHDL (cmdToVHDL)
 import ReWire.Core.Transformations.Types
 import System.IO
 
@@ -47,7 +47,8 @@ cmdPrintShow _ p = (Nothing,Just (show p))
 
 -- Here are the commands available.
 cmdTable :: CommandTable
-cmdTable = [(":p",cmdPrint),
+cmdTable = [
+            (":p",cmdPrint),
 --            (":pd",cmdPrintDebug),
             (":ps",cmdPrintShow),
             (":?",cmdHelp),
@@ -58,8 +59,9 @@ cmdTable = [(":p",cmdPrint),
 --            ("status",cmdStatus),
 --            ("occurs",cmdOccurs),
 --            ("uses", cmdUses),
-            ("checknf",cmdCheckNF),
-            ("tovhdl",cmdToVHDL)]
+            ("checknf",cmdCheckNF)
+--            ("tovhdl",cmdToVHDL)
+           ]
 
 -- The "repl" for the translation environment.
 trans :: RWCProg -> IO ()

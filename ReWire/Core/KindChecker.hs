@@ -48,10 +48,10 @@ instance NFData Kind where
 
 type KiSub = Map (Id Kind) Kind
 data KCEnv = KCEnv { as  :: Map (Id RWCTy) Kind, 
-                     cas :: Map ConId Kind } deriving Show
+                     cas :: Map TyConId Kind } deriving Show
 data KCState = KCState { kiSub :: KiSub, ctr :: Int } deriving Show
 type Assump = (Id RWCTy,Kind)
-type CAssump = (ConId,Kind)
+type CAssump = (TyConId,Kind)
 
 type KCM = ReaderT KCEnv (StateT KCState (ErrorT String Identity))
 
@@ -109,7 +109,7 @@ kcTy (RWCTyApp t1 t2) = do k1 <- kcTy t1
 kcTy (RWCTyCon i)     = do cas <- askCAssumps
                            let mk = Map.lookup i cas
                            case mk of
-                             Nothing -> fail $ "Unknown type constructor: " ++ i
+                             Nothing -> fail $ "Unknown type constructor: " ++ deTyConId i
                              Just k  -> return k
 kcTy (RWCTyVar v)     = do as <- askAssumps
                            let mk = Map.lookup v as
@@ -146,6 +146,6 @@ kc p = do cas <- liftM Map.fromList $ mapM initDataDecl (dataDecls p)
 
 kindcheck :: RWCProg -> Maybe String
 kindcheck p = l2m $ runIdentity (runErrorT (runStateT (runReaderT (kc p) (KCEnv Map.empty as)) (KCState Map.empty 0)))
-  where as = Map.fromList [("(->)",Kfun Kstar (Kfun Kstar Kstar))]
+  where as = Map.fromList [(TyConId "(->)",Kfun Kstar (Kfun Kstar Kstar))]
         l2m (Left x)  = Just x
         l2m (Right _) = Nothing
