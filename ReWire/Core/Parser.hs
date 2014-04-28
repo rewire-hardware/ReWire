@@ -71,7 +71,7 @@ datadecl = do reserved "data"
               reserved "is"
               dcs <- datacon `sepBy` reservedOp "|"
               reserved "end"
-              return (RWCData i (map Id tvs) dcs)
+              return (RWCData i (map mkId tvs) dcs)
 
 datacon = do i  <- conid
              ts <- many atype
@@ -80,7 +80,7 @@ datacon = do i  <- conid
 atype = do i <- conid
            return (RWCTyCon i)
     <|> do i <- varid
-           return (RWCTyVar (Id i))
+           return (RWCTyVar (mkId i))
     <|> do ts <- parens (ty `sepBy` comma)
            case ts of
              []  -> return (RWCTyCon "()")
@@ -99,14 +99,14 @@ defn = do i <- varid
           reserved "is"
           e <- expr
           reserved "end"
-          return (RWCDefn (Id i) (nub (fv t) :-> t) e)
+          return (RWCDefn (mkId i) (nub (fv t) :-> t) e)
 
 expr = lamexpr
    <|> do es <- many aexpr
           return (foldl RWCApp (head es) (tail es))
 
 aexpr = do i <- varid
-           return (RWCVar (Id i) tblank)
+           return (RWCVar (mkId i) tblank)
     <|> do i <- conid
            return (RWCCon i tblank)
     <|> do l <- literal
@@ -125,7 +125,7 @@ lamexpr = do reservedOp "\\"
              i <- varid
              reservedOp "->"
              e <- expr
-             return (RWCLam (Id i) tblank e)
+             return (RWCLam (mkId i) tblank e)
       <|> do reserved "case"
              e    <- expr
              reserved "of"
@@ -143,7 +143,7 @@ pat = do i <- conid
   <|> apat
 
 apat = do i <- varid
-          return (RWCPatVar (Id i) tblank)
+          return (RWCPatVar (mkId i) tblank)
    <|> do i <- conid
           return (RWCPatCon i [])
    <|> do l <- literal

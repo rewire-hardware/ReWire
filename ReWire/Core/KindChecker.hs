@@ -13,12 +13,16 @@ import Data.Maybe (fromJust)
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map,(!))
 import Control.DeepSeq
+import Data.ByteString.Char8 (pack)
 
 -- Kind checking for Core.
 
 -- Syntax for kinds is not exported; it's only used inside the kind checker.
 data Kind = Kvar (Id Kind) | Kstar | Kfun Kind Kind deriving (Eq,Show)
 
+instance IdSort Kind where
+  idSort _ = pack "K"
+  
 instance Alpha Kind where
   aeq' (Kvar i) (Kvar j)           = return (i==j)
   aeq' Kstar Kstar                 = return True
@@ -65,7 +69,7 @@ putCtr c = get >>= \ s -> put (s { ctr = c })
 freshkv :: KCM (Id Kind)
 freshkv = do ctr   <- getCtr
              putCtr (ctr+1)
-             let n =  Id $ "?" ++ show ctr
+             let n =  mkId $ "?" ++ show ctr
              updKiSub (Map.insert n (Kvar n))
              return n
 

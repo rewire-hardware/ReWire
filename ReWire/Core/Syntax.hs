@@ -8,6 +8,7 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Control.Monad.State
 import Control.DeepSeq
+import Data.ByteString.Char8 (pack)
 
 type ConId = String
 
@@ -16,14 +17,14 @@ data Poly t = [Id t] :-> t deriving Show
 instance NFData t => NFData (Poly t) where
   rnf (vs :-> x) = vs `deepseq` x `deepseq` ()
 
-instance (NFData t,Subst t t) => Subst (Poly t) t where
+instance (IdSort t,NFData t,Subst t t) => Subst (Poly t) t where
   fv (xs :-> t) = filter (not . (`elem` xs)) (fv t)
   subst' (xs :-> t) = refreshs xs (fv t) $ \ xs' ->
                        do t' <- subst' t
                           return (xs' :-> t')
 
 instance Alpha (Poly RWCTy) where
-  aeq' (xs :-> t) (ys :-> u) = equatings xs ys (aeq' t u)
+  aeq' (xs :-> t) (ys :-> u) = equatings xs ys (return False) (aeq' t u)
 
 ---
   
@@ -32,8 +33,8 @@ data RWCTy = RWCTyApp RWCTy RWCTy
            | RWCTyVar (Id RWCTy)
            deriving Show
 
-instance Sorted RWCTy where
-  sort _ = "RWCTy"
+instance IdSort RWCTy where
+  idSort _ = pack "T"
   
 instance NFData RWCTy where
   rnf (RWCTyApp t1 t2) = t1 `deepseq` t2 `deepseq` ()
@@ -68,8 +69,8 @@ data RWCExp = RWCApp RWCExp RWCExp
             | RWCCase RWCExp [RWCAlt]
             deriving Show
 
-instance Sorted RWCExp where
-  sort _ = "RWCExp"
+instance IdSort RWCExp where
+  idSort _ = pack "E"
 
 instance Subst RWCExp RWCExp where
   fv (RWCApp e1 e2)   = fv e1 ++ fv e2

@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving,MultiParamTypeClasses,
              FlexibleInstances,TupleSections,FunctionalDependencies,
-             FlexibleContexts,ScopedTypeVariables #-}
+             FlexibleContexts,ScopedTypeVariables,GADTs,StandaloneDeriving #-}
 
 module ReWire.Scoping where
 
@@ -14,6 +14,8 @@ import qualified Data.Map.Strict as Map
 --import qualified Data.Foldable as Foldable
 import Control.DeepSeq
 import Data.Either (rights)
+import qualified Data.ByteString.Char8 as BS
+import Data.ByteString.Char8 (ByteString)
 --import Data.Maybe (fromJust,catMaybes,isNothing,isJust)
 --import Unbound.LocallyNameless hiding (fv,subst,substs,Subst,Alpha,aeq)
 --import qualified Unbound.LocallyNameless as U
@@ -51,18 +53,47 @@ runAssumeWith as = runIdentity . runAssumeTWith as
 runAssume :: Ord v => Assume v t a -> a
 runAssume = runAssumeWith Map.empty
 
-newtype Id a = Id { deId :: String } deriving (Eq,Ord,Show,Read,NFData)
+---
+---
+---
 
-type Sort = String
+-- NB: The "Id" constructor should be hidden
+data Id a = Id {-# UNPACK #-} !ByteString {-# UNPACK #-} !ByteString
+            deriving (Eq,Ord,Show,Read)
 
-class Sorted t where
-  sort :: t -> Sort
+mkId :: forall a . IdSort a => String -> Id a
+mkId x = Id (idSort (undefined::a)) (BS.pack x)
 
-instance Sorted t => Sorted (Id t) where
-  sort _ = sort (undefined::t)
+deId :: Id a -> String
+deId (Id _ i) = BS.unpack i
 
-instance Sorted Int where
-  sort _ = "Int"
+instance NFData (Id a) where
+  rnf (Id s i) = s `seq` i `seq` ()
+
+data IdAny where
+  IdAny :: forall a . !(Id a) -> IdAny
+
+instance Eq IdAny where
+  IdAny (Id _ i1) == IdAny (Id _ i2) = i1==i2
+
+instance Ord IdAny where
+  compare (IdAny (Id _ i1)) (IdAny (Id _ i2)) = compare i1 i2
+
+class IdSort t where
+  idSort :: t -> ByteString
+
+instance IdSort t => IdSort (Id t) where
+  idSort _ = idSort (undefined::t)
+
+any2Id :: forall a . IdSort a => IdAny -> Maybe (Id a)
+any2Id (IdAny (Id s i)) | s == idSort (undefined :: a) = Just (Id s i)
+                        | otherwise                    = Nothing
+
+---
+---
+---
+
+type SubstM t' = Assume (Id t') (Either (Id t') t')
 
 class Subst t t' where
   fv     :: t -> [Id t']
@@ -75,19 +106,17 @@ instance Subst t t' => Subst [t] t' where
 subst :: Subst t t' => (Map (Id t') t') -> t -> t
 subst s t = runAssumeWith (fmap Right s) (subst' t)
 
-type SubstM t' = Assume (Id t') (Either (Id t') t')
+refresh :: (IdSort t,Subst t t) => Id t -> [Id t] -> (Id t -> SubstM t a) -> SubstM t a
+refresh x av_ k = do as      <- getAssumptions
+                     let es =  Map.elems as 
+                         av =  av_ ++ concatMap fv (rights es)
+                         ys =  x : map (mkId . (++"'") . deId) ys
+                         x' =  head (filter (not . (`elem` av)) ys)
+                     if x==x'
+                       then forgetting x (k x)
+                       else assuming x (Left x') (k x')
 
-refresh :: Subst t t => Id t -> [Id t] -> (Id t -> SubstM t a) -> SubstM t a
-refresh x fvs_ k = do as      <- getAssumptions
-                      let es  =  Map.elems as 
-                          fvs =  fvs_ ++ concatMap fv (rights es)
-                          ys  =  x : map (Id . (++"'") . deId) ys
-                          x'  =  head (filter (not . (`elem` fvs)) ys)
-                      if x==x'
-                        then forgetting x (k x)
-                        else assuming x (Left x') (k x')
-
-refreshs :: Subst t t => [Id t] -> [Id t] -> ([Id t] -> SubstM t a) -> SubstM t a
+refreshs :: (IdSort t,Subst t t) => [Id t] -> [Id t] -> ([Id t] -> SubstM t a) -> SubstM t a
 refreshs xs av k  = ref' (breaks xs) k
    where breaks (x:xs) = (x,xs) : map (\(y,ys) -> (y,x:ys)) (breaks xs)
          breaks []     = []  
@@ -95,8 +124,7 @@ refreshs xs av k  = ref' (breaks xs) k
                                   ref' xs (\ xs' -> k (x':xs'))
          ref' [] k           = k []
 
-type IdSort = String
-type AlphaM = Assume (Either (Sort,String) (Sort,String)) String
+type AlphaM = Assume (Either IdAny IdAny) IdAny
 
 class Alpha t where
   aeq' :: t -> t -> AlphaM Bool
@@ -105,9 +133,9 @@ instance Alpha t => Alpha [t] where
   aeq' l1 l2 | length l1 /= length l2 = return False
              | otherwise              = liftM and (zipWithM aeq' l1 l2)
 
-equating :: Sorted a => Id a -> Id a -> AlphaM b -> AlphaM b
-equating x y m = assuming (Left (sort x,deId x)) (deId y) $
-                  assuming (Right (sort y,deId y)) (deId x) $
+equating :: IdSort a => Id a -> Id a -> AlphaM b -> AlphaM b
+equating x y m = assuming (Left (IdAny x)) (IdAny y) $
+                  assuming (Right (IdAny y)) (IdAny x) $
                    m
 
 aeq :: Alpha t => t -> t -> Bool
@@ -115,15 +143,15 @@ aeq x y = runAssume (aeq' x y)
 
 infix 4 `aeq`
 
-equatings :: Sorted a => [Id a] -> [Id a] -> AlphaM Bool -> AlphaM Bool
-equatings xs ys m | length xs /= length ys = return False
-                  | otherwise              = foldr (uncurry equating) m (zip xs ys)
+equatings :: IdSort a => [Id a] -> [Id a] -> AlphaM b -> AlphaM b -> AlphaM b
+equatings xs ys mfail m | length xs /= length ys = mfail
+                        | otherwise              = foldr (uncurry equating) m (zip xs ys)
 
-varsaeq :: Sorted a => Id a -> Id a -> AlphaM Bool
-varsaeq x y = do mx <- query (Left (sort x,deId x))
-                 my <- query (Right (sort y,deId y))
+varsaeq :: IdSort a => Id a -> Id a -> AlphaM Bool
+varsaeq x y = do mx <- query (Left (IdAny x))
+                 my <- query (Right (IdAny y))
                  case (mx,my) of
-                   (Just x',Just y') -> return (x'==deId y && y'==deId x)
+                   (Just x',Just y') -> return (x'==IdAny y && y'==IdAny x)
                    (Just x',Nothing) -> return False
                    (Nothing,Just y') -> return False
                    (Nothing,Nothing) -> return (x==y)

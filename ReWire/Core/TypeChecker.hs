@@ -46,7 +46,7 @@ putCtr c = get >>= \ s -> put (s { ctr = c })
 freshv :: TCM (Id RWCTy)
 freshv = do ctr   <- getCtr
             putCtr (ctr+1)
-            let n =  Id $ "?" ++ show ctr
+            let n =  mkId $ "?" ++ show ctr
             updTySub (Map.insert n (RWCTyVar n))
             return n
 
