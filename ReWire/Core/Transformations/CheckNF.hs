@@ -115,7 +115,7 @@ checkExprIsContCall e = do checkTyIsCont (typeOf e)
                              _          -> throwError $ "checkExprIsContCall: malformed continuation application: " ++ show e
 
 checkAltIsCont :: RWCAlt -> NFM ()
-checkAltIsCont (RWCAlt p e) = inPattern p (\ _ -> checkExprIsCont e)
+checkAltIsCont a = inAlt a (\ _ -> checkExprIsCont)
 
 checkDefnIsBitty :: Id RWCExp -> NFM ()
 checkDefnIsBitty n = trace ("cdib: " ++ show n) $
@@ -165,7 +165,7 @@ checkExprIsBitty e_@(RWCCase e alts) = do checkTyIsBitty (typeOf e_)
                                           mapM_ checkAltIsBitty alts
 
 checkAltIsBitty :: RWCAlt -> NFM ()
-checkAltIsBitty (RWCAlt p e) = inPattern p (\ _ -> checkExprIsBitty e)
+checkAltIsBitty a = inAlt a (\ _ -> checkExprIsBitty)
 
 checkLiteralIsBitty :: RWCLit -> NFM ()
 checkLiteralIsBitty (RWCLitInteger _) = return ()

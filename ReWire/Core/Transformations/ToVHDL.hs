@@ -300,7 +300,7 @@ zipWithM3 f (a:as) (b:bs) (c:cs) = do d  <- f a b c
                                       return (d:ds)
 
 genBittyAlt :: String -> RWCTy -> RWCAlt -> VM (Condition,String)
-genBittyAlt s_scrut t_scrut (RWCAlt p e) = inPattern p $ \ _ -> do
+genBittyAlt s_scrut t_scrut a = inAlt a $ \ p e -> do
                                              (cond,bdgs) <- genBittyPat s_scrut t_scrut p
                                              s           <- localBindings (Map.union bdgs) $ genExp e
                                              return (cond,s)
@@ -413,7 +413,8 @@ genBittyDefnProto (RWCDefn n_ (tvs :-> t) e_) =
        wr  <- tyWidth (typeOf e)
        bps <- zipWithM freshArgumentTy [0..] nts
        let (bdgs,ps) = unzip bps
-       return ("  pure function " ++ n ++ (if null ps then "" else "(" ++ intercalate " ; " ps ++ ")") ++ "\n" ++
+       return ("  -- bitty: " ++ deId n_ ++ "\n" ++
+               "  pure function " ++ n ++ (if null ps then "" else "(" ++ intercalate " ; " ps ++ ")") ++ "\n" ++
                "    return std_logic_vector;\n")
 
 genContDefn :: RWCDefn -> VM ()

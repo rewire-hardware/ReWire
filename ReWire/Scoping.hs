@@ -1,6 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving,MultiParamTypeClasses,
              FlexibleInstances,TupleSections,FunctionalDependencies,
-             FlexibleContexts,ScopedTypeVariables,GADTs,StandaloneDeriving
+             FlexibleContexts,ScopedTypeVariables,GADTs,StandaloneDeriving,
+             UndecidableInstances
   #-}
 
 module ReWire.Scoping where
@@ -8,9 +9,13 @@ module ReWire.Scoping where
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Reader
+import Control.Monad.State
+import Control.Monad.Error
 import Control.Monad.Identity
 import Data.Map.Strict (Map,insert,delete)
 import qualified Data.Map.Strict as Map
+import Data.Set (Set)
+import qualified Data.Set as Set
 --import Data.Foldable (Foldable)
 --import qualified Data.Foldable as Foldable
 import Control.DeepSeq
@@ -27,6 +32,9 @@ import Data.List (nub)
 import Debug.Trace (traceShow)
 -}
 
+--
+-- A monad for assumptions.
+--
 class (Ord v,Monad m) => MonadAssume v t m | m -> v, m -> t where
   assuming       :: v -> t -> m a -> m a
   forgetting     :: v -> m a -> m a
@@ -34,7 +42,14 @@ class (Ord v,Monad m) => MonadAssume v t m | m -> v, m -> t where
   getAssumptions :: m (Map v t)
 
 newtype AssumeT v t m a = AssumeT { deAssumeT :: ReaderT (Map v t) m a }
-                           deriving (Monad,MonadTrans,MonadPlus)
+                           deriving (Monad,MonadTrans,MonadPlus,MonadScope)
+
+deriving instance MonadState s m => MonadState s (AssumeT v t m)
+deriving instance MonadError e m => MonadError e (AssumeT v t m)
+
+instance MonadReader r m => MonadReader r (AssumeT v t m) where
+  ask       = lift ask
+  local f m = AssumeT $ ReaderT $ \ rhoA -> local f (runReaderT (deAssumeT m) rhoA)
 
 instance (Ord v,Monad m) => MonadAssume v t (AssumeT v t m) where
   assuming n t m = AssumeT $ local (insert n t) (deAssumeT m)
@@ -57,7 +72,7 @@ runAssume :: Ord v => Assume v t a -> a
 runAssume = runAssumeWith Map.empty
 
 ---
----
+--- Identifiers.
 ---
 
 -- NB: The "Id" constructor should be hidden
@@ -92,25 +107,80 @@ any2Id :: forall a . IdSort a => IdAny -> Maybe (Id a)
 any2Id (IdAny (Id s i)) | s == idSort (undefined :: a) = Just (Id s i)
                         | otherwise                    = Nothing
 
+sortOf :: IdAny -> ByteString
+sortOf (IdAny (Id s _)) = s
+
+---
+--- A monad for generating locally fresh names.
+---
+newtype ScopeT m a = ScopeT { deScopeT :: ReaderT (Set IdAny) m a }
+   deriving (Monad,MonadTrans,MonadPlus)
+
+deriving instance MonadState s m => MonadState s (ScopeT m)
+deriving instance MonadError e m => MonadError e (ScopeT m)
+
+instance MonadReader r m => MonadReader r (ScopeT m) where
+  ask       = lift ask
+  local f m = ScopeT $ ReaderT $ \ rhoS -> local f (runReaderT (deScopeT m) rhoS)
+
+class Monad m => MonadScope m where
+  getInScope    :: m (Set IdAny)
+  addingToScope :: Id a -> m b -> m b
+
+instance Monad m => MonadScope (ScopeT m) where
+  getInScope        = ScopeT ask
+  addingToScope x m = ScopeT $ local (Set.insert (IdAny x)) (deScopeT m)
+
+instance MonadScope m => MonadScope (ReaderT r m) where
+  getInScope        = lift getInScope
+  addingToScope x m = ReaderT $ \ rho -> addingToScope x (runReaderT m rho)
+  
+getInScopeSorted :: forall m t . (MonadScope m,IdSort t) => m (Set (Id t))
+getInScopeSorted = do s <- getInScope
+                      let s' :: Set (Id t)
+                          s' = Set.map fromJust $ Set.filter isJust $ Set.map any2Id s
+                      return s'
+
+refreshingVar :: forall m t t' a . (Subst t t',MonadScope m) => Id t' -> t -> (Id t' -> t -> m a) -> m a
+refreshingVar x e k = do insc <- getInScopeSorted :: m (Set (Id t'))
+                         if x `Set.member` insc || x `elem` fv e
+                            then let ov =  occv e
+                                     ys =  x : map (mkId . (++"'") . deId) ys
+                                     x' =  head (filter (\ y -> not (y `Set.member` insc || y `elem` ov)) ys)
+                                 in if x /= x'   
+                                      then addingToScope x' (k x' (replace (Map.singleton x x') e))
+                                      else k x e
+                            else k x e
+
+runScopeTWith :: Set IdAny -> ScopeT m a -> m a
+runScopeTWith s m = runReaderT (deScopeT m) s
+
 ---
 ---
 ---
 
 type SubstM t' = Assume (Id t') (Either (Id t') t')
 
-class Subst t t' where
+class IdSort t' => Subst t t' where
   fv     :: t -> [Id t']
+  bv     :: t -> [Id t']
+  occv   :: t -> [Id t']
+  occv e = fv e ++ bv e
   subst' :: t -> SubstM t' t
 
 instance Subst t t' => Subst [t] t' where
-  fv = concatMap fv  
+  fv = concatMap fv
+  bv = concatMap bv
   subst' = mapM subst'
 
 subst :: Subst t t' => (Map (Id t') t') -> t -> t
 subst s t = runAssumeWith (fmap Right s) (subst' t)
 
+replace :: Subst t t' => Map (Id t') (Id t') -> t -> t
+replace s t = runAssumeWith (fmap Left s) (subst' t)
+
 refresh ::
-  (IdSort t,Subst t t) =>
+  Subst t t =>
   Id t -> [Id t] -> (Id t -> SubstM t a) -> SubstM t a
 refresh x av_ k = do as      <- getAssumptions
                      let es =  Map.elems as 
@@ -122,7 +192,7 @@ refresh x av_ k = do as      <- getAssumptions
                        else assuming x (Left x') (k x')
 
 refreshs ::
-   (IdSort t,Subst t t) =>
+   Subst t t =>
    [Id t] -> [Id t] -> ([Id t] -> SubstM t a) -> SubstM t a
 refreshs xs av k  = ref' (breaks xs) k
    where breaks (x:xs) = (x,xs) : map (\(y,ys) -> (y,x:ys)) (breaks xs)

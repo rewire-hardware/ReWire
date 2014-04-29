@@ -19,14 +19,12 @@ import Data.List (find)
 import Data.Maybe (fromJust)
 import ReWire.Scoping
 import Debug.Trace (trace)
+import qualified Data.Set as Set
+import Data.Set (Set)
 
-newtype RWT m a = RWT { deRWT :: AssumeT (Id RWCExp) VarInfo
-                                 (AssumeT TyConId TyConInfo
-                                  (AssumeT DataConId DataConInfo m)) a }
-                  deriving Monad
-
-instance MonadTrans RWT where
-  lift = RWT . lift . lift . lift
+type RWT m = AssumeT (Id RWCExp) VarInfo
+              (AssumeT TyConId TyConInfo
+               (AssumeT DataConId DataConInfo (ScopeT m)))
 
 data VarInfo = GlobalVar RWCDefn | LocalVar RWCTy deriving Show
 newtype TyConInfo = TyConInfo RWCData deriving Show
@@ -37,100 +35,108 @@ data RWTEnv = RWTEnv { envDataDecls :: [RWCData] }
 type RW = RWT Identity
 
 assumingG :: Monad m => Id RWCExp -> RWCDefn -> RWT m a -> RWT m a
-assumingG x d m = RWT $ assuming x (GlobalVar d) (deRWT m)
+assumingG x d m = assuming x (GlobalVar d) m
 
 assumingL :: Monad m => Id RWCExp -> RWCTy -> RWT m a -> RWT m a
-assumingL x t m = RWT $ assuming x (LocalVar t) (deRWT m)
+assumingL x t m = assuming x (LocalVar t) m
 
 assumingT :: Monad m => TyConId -> TyConInfo -> RWT m a -> RWT m a
-assumingT i inf m = RWT $ AssumeT $ ReaderT $ \ rho -> assuming i inf (runReaderT (deAssumeT (deRWT m)) rho)
+assumingT i inf m = AssumeT $ ReaderT $ \ rho -> assuming i inf (runReaderT (deAssumeT m) rho)
 
 assumingD :: Monad m => DataConId -> DataConInfo -> RWT m a -> RWT m a
-assumingD i inf m = RWT $
-                    AssumeT $ ReaderT $ \ rho0 ->
+assumingD i inf m = AssumeT $ ReaderT $ \ rho0 ->
                      AssumeT $ ReaderT $ \ rho1 ->
                        assuming i inf (runReaderT (deAssumeT
                                        (runReaderT (deAssumeT
-                                                    (deRWT m))
+                                                    m)
                                         rho0))
                                        rho1)
 
 forgettingV,forgettingG,forgettingL :: Monad m => Id RWCExp -> RWT m a -> RWT m a
-forgettingV x m = RWT $ forgetting x (deRWT m)
+forgettingV x m = forgetting x m
 forgettingG = forgettingV
 forgettingL = forgettingV
 
 forgettingT :: Monad m => TyConId -> RWT m a -> RWT m a
-forgettingT x m = RWT $ AssumeT $ ReaderT $ \ rho -> forgetting x (runReaderT (deAssumeT (deRWT m)) rho)
+forgettingT x m = AssumeT $ ReaderT $ \ rho -> forgetting x (runReaderT (deAssumeT m) rho)
 
 forgettingD :: Monad m => DataConId -> RWT m a -> RWT m a
-forgettingD x m = RWT $
-                   AssumeT $ ReaderT $ \rho0 ->
-                    AssumeT $ ReaderT $ \rho1 ->
+forgettingD x m = AssumeT $ ReaderT $ \rho0 ->
+                   AssumeT $ ReaderT $ \rho1 ->
                      forgetting x (runReaderT (deAssumeT
                                    (runReaderT (deAssumeT
-                                                (deRWT m))
+                                                m)
                                     rho0))
                                    rho1)
 
 queryV :: Monad m => Id RWCExp -> RWT m (Maybe VarInfo)
-queryV x = RWT (query x)
+queryV x = query x
 
 queryG :: Monad m => Id RWCExp -> RWT m (Maybe RWCDefn)
-queryG x = RWT $
-            do mvi <- query x
-               case mvi of
-                 Nothing            -> return Nothing
-                 Just (LocalVar _)  -> return Nothing
-                 Just (GlobalVar d) -> return (Just d)
+queryG x = do mvi <- query x
+              case mvi of
+                Nothing            -> return Nothing
+                Just (LocalVar _)  -> return Nothing
+                Just (GlobalVar d) -> return (Just d)
 
 queryL :: Monad m => Id RWCExp -> RWT m (Maybe RWCTy)
-queryL x = RWT $
-            do mvi <- query x
-               case mvi of
-                 Nothing            -> return Nothing
-                 Just (LocalVar t)  -> return (Just t)
-                 Just (GlobalVar d) -> return Nothing
+queryL x = do mvi <- query x
+              case mvi of
+                Nothing            -> return Nothing
+                Just (LocalVar t)  -> return (Just t)
+                Just (GlobalVar d) -> return Nothing
 
 queryT :: Monad m => TyConId -> RWT m (Maybe TyConInfo)
-queryT t = RWT $ lift $ query t
+queryT t = lift $ query t
 
 queryD :: Monad m => DataConId -> RWT m (Maybe DataConInfo)
-queryD d = RWT $ lift $ lift $ query d
+queryD d = lift $ lift $ query d
 
 getAssumptionsV :: Monad m => RWT m (Map (Id RWCExp) VarInfo)
-getAssumptionsV = RWT getAssumptions
+getAssumptionsV = getAssumptions
 
 getAssumptionsG :: Monad m => RWT m (Map (Id RWCExp) RWCDefn)
-getAssumptionsG = RWT $ do
+getAssumptionsG = do
                    m <- getAssumptions
                    let deG (GlobalVar x) = Just x
                        deG _             = Nothing
                    return (Map.mapMaybe deG m)
 
 getAssumptionsL :: Monad m => RWT m (Map (Id RWCExp) RWCTy)
-getAssumptionsL = RWT $ do
+getAssumptionsL = do
                    m <- getAssumptions
                    let deL (LocalVar x) = Just x
                        deL _            = Nothing
                    return (Map.mapMaybe deL m)
 
 getAssumptionsT :: Monad m => RWT m (Map TyConId TyConInfo)
-getAssumptionsT = RWT (lift getAssumptions)
+getAssumptionsT = lift getAssumptions
 
 getAssumptionsD :: Monad m => RWT m (Map DataConId DataConInfo)
-getAssumptionsD = RWT $ lift $ lift getAssumptions
+getAssumptionsD = lift $ lift getAssumptions
 
 inLambdas :: Monad m => RWCExp -> ([(Id RWCExp,RWCTy)] -> RWCExp -> RWT m a) -> RWT m a
-inLambdas (RWCLam x t e) k = inLambdas e (\ xts e' -> assumingL x t (k ((x,t):xts) e'))
-inLambdas e k              = k [] e
+inLambdas (RWCLam x_ t e_) k = refreshingVar x_ e_ $ \ x e ->
+                                 inLambdas e (\ xts e' -> assumingL x t (k ((x,t):xts) e'))
+inLambdas e k                = k [] e
 
-inPattern :: Monad m => RWCPat -> ([(Id RWCExp,RWCTy)] -> RWT m a) -> RWT m a
-inPattern (RWCPatCon _ ps) k  = inPatterns ps k
-  where inPatterns (p:ps) k = inPattern p (\ xts -> inPatterns ps (\ xts' -> k (xts++xts')))
-        inPatterns [] k     = k []
-inPattern (RWCPatLiteral _) k = k []
-inPattern (RWCPatVar x t) k   = assumingL x t (k [(x,t)])
+refreshingPat :: Monad m => RWCPat -> RWCExp -> (RWCPat -> RWCExp -> RWT m a) -> RWT m a
+refreshingPat (RWCPatCon i ps) e k  = refreshingPats ps e (\ ps' e' -> k (RWCPatCon i ps') e')
+  where refreshingPats (p:ps) e k = refreshingPat p e (\ p' e' -> refreshingPats ps e' (\ ps' e'' -> k (p':ps') e''))
+        refreshingPats [] e k     = k [] e
+refreshingPat (RWCPatLiteral l) e k = k (RWCPatLiteral l) e
+refreshingPat (RWCPatVar x_ t) e_ k = refreshingVar x_ e_ $ \ x e ->
+                                       k (RWCPatVar x t) e
+
+inAlt :: Monad m => RWCAlt -> (RWCPat -> RWCExp -> RWT m a) -> RWT m a
+inAlt (RWCAlt p_ e_) = refreshingPat p_ e_
+
+--inPattern :: Monad m => RWCPat -> ([(Id RWCExp,RWCTy)] -> RWT m a) -> RWT m a
+--inPattern (RWCPatCon _ ps) k  = inPatterns ps k
+--  where inPatterns (p:ps) k = inPattern p (\ xts -> inPatterns ps (\ xts' -> k (xts++xts')))
+--        inPatterns [] k     = k []
+--inPattern (RWCPatLiteral _) k = k []
+--inPattern (RWCPatVar x t) k   = assumingL x t (k [(x,t)])
 
 mkInitialVarMap :: [RWCDefn] -> Map (Id RWCExp) VarInfo
 mkInitialVarMap = foldr (\ d@(RWCDefn n _ _) -> Map.insert n (GlobalVar d)) Map.empty
@@ -142,44 +148,22 @@ mkInitialDataConMap :: [RWCData] -> Map DataConId DataConInfo
 mkInitialDataConMap = foldr addDD Map.empty
   where addDD (RWCData dn _ dcs) m = foldr (\ d@(RWCDataCon cn _) -> Map.insert cn (DataConInfo dn d)) m dcs
 
+mkInitialVarSet :: [RWCDefn] -> Set IdAny
+mkInitialVarSet = foldr (\ d@(RWCDefn n _ _) -> Set.insert (IdAny n)) Set.empty
+
 runRWT :: Monad m => RWCProg -> RWT m a -> m a
-runRWT p (RWT phi) = trace (show $ Map.keys varmap) $
-                     runAssumeTWith dmap $
-                      runAssumeTWith tmap $
-                       runAssumeTWith varmap $
-                        phi
+runRWT p phi = runScopeTWith varset $
+                runAssumeTWith dmap $
+                 runAssumeTWith tmap $
+                  runAssumeTWith varmap $
+                   phi
   where varmap = mkInitialVarMap (defns p)
         tmap   = mkInitialTyConMap (dataDecls p)
         dmap   = mkInitialDataConMap (dataDecls p)
+        varset = mkInitialVarSet (defns p)
 
 runRW :: RWCProg -> RW a -> a
 runRW p = runIdentity . runRWT p
-
-instance MonadState s m => MonadState s (RWT m) where
-  get = lift get
-  put = lift . put
-
--- Gott im Himmel!
-instance MonadError e m => MonadError e (RWT m) where
-  throwError = lift . throwError
-  catchError = liftCatch catchError
-    where peel m = runReaderT (deAssumeT m)
-          unpeel = AssumeT . ReaderT
-          liftCatch f m h =
-            RWT $ unpeel $ \ rho0 ->
-                   unpeel $ \ rho1 ->
-                    unpeel $ \ rho2 ->
-                     f (peel (peel (peel (deRWT m) rho0) rho1) rho2)
-                       (\ e -> peel (peel (peel (deRWT (h e)) rho0) rho1) rho2)
-
-instance MonadReader r m => MonadReader r (RWT m) where
-  ask       = lift ask
-  local f m = RWT $ unpeel $ \ rho0 ->
-                     unpeel $ \ rho1 ->
-                      unpeel $ \ rho2 ->
-                       local f (peel (peel (peel (deRWT m) rho0) rho1) rho2)
-     where peel m = runReaderT (deAssumeT m)
-           unpeel = AssumeT . ReaderT
 
 {-
 askvar :: MonadReWire m => RWCTy -> Name RWCExp -> m RWCExp

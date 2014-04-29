@@ -18,8 +18,9 @@ data Poly t = [Id t] :-> t deriving Show
 instance NFData t => NFData (Poly t) where
   rnf (vs :-> x) = vs `deepseq` x `deepseq` ()
 
-instance (IdSort t,NFData t,Subst t t) => Subst (Poly t) t where
+instance Subst t t => Subst (Poly t) t where
   fv (xs :-> t) = filter (not . (`elem` xs)) (fv t)
+  bv (xs :-> t) = xs ++ bv t
   subst' (xs :-> t) = refreshs xs (fv t) $ \ xs' ->
                        do t' <- subst' t
                           return (xs' :-> t')
@@ -46,6 +47,7 @@ instance Subst RWCTy RWCTy where
   fv (RWCTyVar x)     = [x]
   fv (RWCTyCon i)     = []
   fv (RWCTyApp t1 t2) = fv t1 ++ fv t2
+  bv _ = []
   subst' (RWCTyVar x)     = do ml <- query x
                                case ml of
                                  Just (Left y)  -> return (RWCTyVar y)
@@ -80,6 +82,12 @@ instance Subst RWCExp RWCExp where
   fv (RWCCon _ _)     = []
   fv (RWCLiteral l)   = []
   fv (RWCCase e alts) = fv e ++ concatMap fv alts
+  bv (RWCApp e1 e2)   = bv e1 ++ bv e2
+  bv (RWCLam x _ e)   = x : bv e
+  bv (RWCVar _ _)     = []
+  bv (RWCCon _ _)     = []
+  bv (RWCLiteral _)   = []
+  bv (RWCCase e alts) = bv e ++ bv alts
   subst' (RWCApp e1 e2)   = liftM2 RWCApp (subst' e1) (subst' e2)
   subst' (RWCLam x t e)   = refresh x (fv e) $ \ x' ->
                               do e' <- subst' e
@@ -99,6 +107,7 @@ instance Subst RWCExp RWCTy where
   fv (RWCCon _ t)     = fv t
   fv (RWCLiteral _)   = []
   fv (RWCCase e alts) = fv e ++ fv alts
+  bv _ = []
   subst' (RWCApp e1 e2)   = liftM2 RWCApp (subst' e1) (subst' e2)
   subst' (RWCLam x t e)   = liftM2 (RWCLam x) (subst' t) (subst' e)
   subst' (RWCVar x t)     = liftM (RWCVar x) (subst' t)
@@ -142,10 +151,12 @@ data RWCAlt = RWCAlt RWCPat RWCExp
 
 instance Subst RWCAlt RWCExp where
   fv (RWCAlt p e)     = filter (not . (`elem` patvars p)) (fv e)
+  bv (RWCAlt p e)     = patvars p ++ bv e
   subst' (RWCAlt p e) = liftM (RWCAlt p) (subst' e)
 
 instance Subst RWCAlt RWCTy where
   fv (RWCAlt p e) = fv p ++ fv e
+  bv (RWCAlt p e) = []
   subst' (RWCAlt p e) = liftM2 RWCAlt (subst' p) (subst' e)
 
 instance Alpha RWCAlt where
@@ -180,6 +191,7 @@ instance Subst RWCPat RWCTy where
   fv (RWCPatCon _ ps)  = concatMap fv ps
   fv (RWCPatLiteral l) = []
   fv (RWCPatVar _ t)   = fv t
+  bv _ = []
   subst' (RWCPatCon i ps)  = liftM (RWCPatCon i) (subst' ps)
   subst' (RWCPatLiteral l) = return (RWCPatLiteral l)
   subst' (RWCPatVar x t)   = liftM (RWCPatVar x) (subst' t)
@@ -198,12 +210,14 @@ data RWCDefn = RWCDefn { defnName   :: Id RWCExp,
 
 instance Subst RWCDefn RWCExp where
   fv (RWCDefn n pt e) = filter (/= n) (fv e)
+  bv (RWCDefn n _ e) = n : bv e
   subst' (RWCDefn n pt e) = refresh n (fv e) $ \ n' ->
                               do e' <- subst' e
                                  return (RWCDefn n' pt e')
 
 instance Subst RWCDefn RWCTy where
   fv (RWCDefn n pt e) = fv pt ++ fv e
+  bv (RWCDefn _ pt _) = bv pt
   subst' (RWCDefn n (xs :-> t) e) = refreshs xs (fv t ++ fv e) $ \ xs' ->
                                       do t' <- subst' t
                                          e' <- subst' e

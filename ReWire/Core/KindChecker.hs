@@ -33,6 +33,7 @@ instance Subst Kind Kind where
   fv (Kvar i)     = [i]
   fv Kstar        = []
   fv (Kfun k1 k2) = fv k1 ++ fv k2
+  bv _            = []
   subst' (Kvar i)     = do ml <- query i
                            case ml of
                              Just (Left j)   -> return (Kvar j)
