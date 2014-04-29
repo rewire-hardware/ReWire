@@ -18,6 +18,7 @@ import Control.Monad.Error
 import Data.List (find)
 import Data.Maybe (fromJust)
 import ReWire.Scoping
+import Debug.Trace (trace)
 
 newtype RWT m a = RWT { deRWT :: AssumeT (Id RWCExp) VarInfo
                                  (AssumeT TyConId TyConInfo
@@ -142,7 +143,8 @@ mkInitialDataConMap = foldr addDD Map.empty
   where addDD (RWCData dn _ dcs) m = foldr (\ d@(RWCDataCon cn _) -> Map.insert cn (DataConInfo dn d)) m dcs
 
 runRWT :: Monad m => RWCProg -> RWT m a -> m a
-runRWT p (RWT phi) = runAssumeTWith dmap $
+runRWT p (RWT phi) = trace (show $ Map.keys varmap) $
+                     runAssumeTWith dmap $
                       runAssumeTWith tmap $
                        runAssumeTWith varmap $
                         phi
@@ -170,6 +172,15 @@ instance MonadError e m => MonadError e (RWT m) where
                      f (peel (peel (peel (deRWT m) rho0) rho1) rho2)
                        (\ e -> peel (peel (peel (deRWT (h e)) rho0) rho1) rho2)
 
+instance MonadReader r m => MonadReader r (RWT m) where
+  ask       = lift ask
+  local f m = RWT $ unpeel $ \ rho0 ->
+                     unpeel $ \ rho1 ->
+                      unpeel $ \ rho2 ->
+                       local f (peel (peel (peel (deRWT m) rho0) rho1) rho2)
+     where peel m = runReaderT (deAssumeT m)
+           unpeel = AssumeT . ReaderT
+
 {-
 askvar :: MonadReWire m => RWCTy -> Name RWCExp -> m RWCExp
 askvar t n = do ds <- askDefns
@@ -190,24 +201,31 @@ askConDataDecl i = do dds <- askDataDecls
                                     if any (\(RWCDataCon i' _) -> i==i') dcs
                                        then return (Just d)
                                        else return Nothing
+-}
 
 -- FIXME: begin stuff that should maybe be moved to a separate module
-mergesubs :: Monad m => [(Name RWCTy,RWCTy)] -> [(Name RWCTy,RWCTy)] -> m [(Name RWCTy,RWCTy)]
-mergesubs ((n,t):sub) sub' = case lookup n sub' of
-                               Just t' -> if t `aeq` t' then mergesubs sub sub'
-                                                        else fail "mergesubs failed"
-                               Nothing -> do sub'' <- mergesubs sub sub'
-                                             return ((n,t):sub'')
-mergesubs [] sub'          = return sub'
+mergesubs :: Monad m => Map (Id RWCTy) RWCTy -> Map (Id RWCTy) RWCTy -> m (Map (Id RWCTy) RWCTy)
+mergesubs sub sub' = Map.foldrWithKey f (return sub') sub
+   where f n t m = do s <- m
+                      case Map.lookup n s of
+                        Just t' -> if t `aeq` t' then return s
+                                                 else fail "mergesubs failed"
+                        Nothing -> liftM (Map.insert n t) m
+                        
+--mergesubs ((n,t):sub) sub' = case lookup n sub' of
+--                               Just t' -> if t `aeq` t' then mergesubs sub sub'
+--                                                        else fail "mergesubs failed"
+--                               Nothing -> do sub'' <- mergesubs sub sub'
+--                                             return ((n,t):sub'')
+--mergesubs [] sub'          = return sub'
 
-matchty :: Monad m => [(Name RWCTy,RWCTy)] -> RWCTy -> RWCTy -> m [(Name RWCTy,RWCTy)]
-matchty sub (RWCTyVar n) t                         = case lookup n sub of
-                                                       Nothing -> return ((n,t):sub)
+matchty :: Monad m => Map (Id RWCTy) RWCTy -> RWCTy -> RWCTy -> m (Map (Id RWCTy) RWCTy)
+matchty sub (RWCTyVar n) t                         = case Map.lookup n sub of
+                                                       Nothing -> return (Map.insert n t sub)
                                                        Just t' -> if t `aeq` t' then return sub
                                                                                 else fail "matchty failed (variable inconsistency)"
 matchty sub (RWCTyCon i1) (RWCTyCon i2) | i1 == i2 = return sub
-matchty sub (RWCTyApp t1 t2) (RWCTyApp t1' t2')    = do sub1 <- matchty [] t1 t1'
-                                                        sub2 <- matchty [] t2 t2'
+matchty sub (RWCTyApp t1 t2) (RWCTyApp t1' t2')    = do sub1 <- matchty sub t1 t1'
+                                                        sub2 <- matchty sub t2 t2'
                                                         mergesubs sub1 sub2
 matchty _ t1 t2                                    = fail $ "matchty failed (constructor head): " ++ show t1 ++ ", " ++ show t2
--- FIXME: end stuff that should maybe be moved to a separate module-}

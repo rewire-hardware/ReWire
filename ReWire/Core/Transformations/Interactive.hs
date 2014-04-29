@@ -24,7 +24,7 @@ import Data.Char
 --import ReWire.Core.Transformations.Occurs (cmdOccurs)
 --import ReWire.Core.Transformations.Uses (cmdUses)
 import ReWire.Core.Transformations.CheckNF (cmdCheckNF)
---import ReWire.Core.Transformations.ToVHDL (cmdToVHDL)
+import ReWire.Core.Transformations.ToVHDL (cmdToVHDL)
 import ReWire.Core.Transformations.Types
 import System.IO
 
@@ -59,8 +59,8 @@ cmdTable = [
 --            ("status",cmdStatus),
 --            ("occurs",cmdOccurs),
 --            ("uses", cmdUses),
-            ("checknf",cmdCheckNF)
---            ("tovhdl",cmdToVHDL)
+            ("checknf",cmdCheckNF),
+            ("tovhdl",cmdToVHDL)
            ]
 
 -- The "repl" for the translation environment.

@@ -1,3 +1,5 @@
+-- FIXME: inLambdas is unbinding things improperly...
+
 -- FIXME: Need to make sure bitty defns are not recursive.
 -- FIXME: Need to make sure pattern matching is exhaustive.
 module ReWire.Core.Transformations.CheckNF where
@@ -17,6 +19,7 @@ import Control.Monad.State
 import Control.Monad.Error
 import Control.Monad.Identity
 import Prelude hiding (lookup)
+import Debug.Trace (trace)
 
 data DefnSort = DefnBitty | DefnCont deriving Show
 type NFM = RWT (ErrorT NFMError (StateT NFMState Identity))
@@ -115,19 +118,20 @@ checkAltIsCont :: RWCAlt -> NFM ()
 checkAltIsCont (RWCAlt p e) = inPattern p (\ _ -> checkExprIsCont e)
 
 checkDefnIsBitty :: Id RWCExp -> NFM ()
-checkDefnIsBitty n = do vset <- getVisited
+checkDefnIsBitty n = trace ("cdib: " ++ show n) $
+                     do vset <- getVisited
                         case Map.lookup n vset of
                            Just DefnCont  -> throwError $ "checkDefnIsBitty: " ++ show n ++ " has to be a continuer"
-                           Just DefnBitty -> return ()
-                           Nothing        -> do
+                           Just DefnBitty -> trace ("cdib bail: " ++ show n) $ return ()
+                           Nothing        -> trace ("cdib looking for: " ++ show n) $ do
                              md <- queryG n
                              case md of
-                               Nothing -> return () -- FIXME: I think this happens ONLY when it's locally bound
+                               Nothing -> trace ("cdib didn't find: " ++ show n) $ return () -- FIXME: I think this happens ONLY when it's locally bound
 --                                 throwError $ "checkDefnIsBitty: " ++ show n ++ " is undefined"
-                               Just (RWCDefn _ (tvs :-> t) e) -> do
+                               Just (RWCDefn _ (tvs :-> t) e) -> trace ("cdib did find: " ++ show n) $ do
                                  when (length tvs > 0)
                                       (throwError $ "checkDefnIsBitty: type is not monomorphic")
-                                 modifyVisited (Map.insert n DefnBitty)
+                                 trace ("cdib: putting: " ++ show n) $ modifyVisited (Map.insert n DefnBitty)
                                  let (targs,tres) = flattenArrow t
                                  mapM_ checkTyIsBitty targs
                                  checkTyIsBitty tres
@@ -185,20 +189,13 @@ checkProg = do dds_    <- getAssumptionsT
                modifyCpxTys (const (cpxTys dds))
                checkMain
 
---checkProg' :: RW (Either NFMError (Map (Id RWCExp) DefnSort))
---checkProg' = runStateT (runErrorT $ do checkProg
---                                       getVisited) (NFM { visited = Map.empty, cpx = Set.empty }) >>= return . fst
+checkProg' :: RWCProg -> Either NFMError (Map (Id RWCExp) DefnSort)
+checkProg' p = runNFM p (checkProg >> getVisited)
 
 runNFM :: RWCProg -> NFM a -> Either NFMError a
 runNFM p phi = fst $ runIdentity $ runStateT (runErrorT (runRWT p phi)) s0
   where s0 = NFM { visited = Map.empty, cpx = Set.empty }
-  
-  
---  fst $ runRW p (runStateT (runErrorT phi) (NFM { visited = Map.empty, cpx = Set.empty }))
 
--- This is a bit odd: we need to leave the defns untrec'd to make sure the
--- namespace in the map still corresponds correctly to the names in the
--- defns.
 checkNF :: RWCProg -> Either NFMError ()
 checkNF p = runNFM p checkProg
 
