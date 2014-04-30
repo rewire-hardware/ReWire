@@ -26,9 +26,14 @@ data AssignmentRHS  = FunCall String [String]
                     | Slice String Int Int
                     | Conditional [(Condition,String)]
                     deriving Show
-data VMState = VMState { assignments   :: [Assignment],
-                         declarations  :: [Declaration],
-                         signalCounter :: Int } deriving Show
+data VMState = VMState { assignments        :: [Assignment],
+                         declarations       :: [Declaration],
+                         signalCounter      :: Int, 
+                         tyWidthCache       :: Map RWCTy Int, 
+                         inputWidthCache    :: Maybe Int,
+                         outputWidthCache   :: Maybe Int,
+                         stateWidthCache    :: Maybe Int, 
+                         stateTagWidthCache :: Maybe Int } deriving Show
 data VMEnv   = VMEnv   { bindings :: Map (Id RWCExp) NameInfo } deriving Show
 type VM = RWT (ReaderT VMEnv (StateT VMState Identity))
 
@@ -46,8 +51,28 @@ getDeclarations = get >>= return . declarations
 modifyDeclarations f = modify (\ s -> s { declarations = f (declarations s) })
 putDeclarations = modifyDeclarations . const
 
-tellAssignments o = modifyAssignments (++o)
-tellDeclarations o = modifyDeclarations (++o)
+getTyWidthCache = get >>= return . tyWidthCache
+modifyTyWidthCache f = modify (\ s -> s { tyWidthCache = f (tyWidthCache s) })
+--putTyWidthCache = modifyTyWidthCache . const
+
+getOutputWidthCache = get >>= return . outputWidthCache
+modifyOutputWidthCache f = modify (\ s -> s { outputWidthCache = f (outputWidthCache s) })
+putOutputWidthCache = modifyOutputWidthCache . const
+
+getInputWidthCache = get >>= return . inputWidthCache
+modifyInputWidthCache f = modify (\ s -> s { inputWidthCache = f (inputWidthCache s) })
+putInputWidthCache = modifyInputWidthCache . const
+
+getStateWidthCache = get >>= return . stateWidthCache
+modifyStateWidthCache f = modify (\ s -> s { stateWidthCache = f (stateWidthCache s) })
+putStateWidthCache = modifyStateWidthCache . const
+
+getStateTagWidthCache = get >>= return . stateTagWidthCache
+modifyStateTagWidthCache f = modify (\ s -> s { stateTagWidthCache = f (stateTagWidthCache s) })
+putStateTagWidthCache = modifyStateTagWidthCache . const
+
+tellAssignments o = modifyAssignments (o++)
+tellDeclarations o = modifyDeclarations (o++)
 
 askBindings :: VM (Map (Id RWCExp) NameInfo)
 askBindings = ask >>= return . bindings
@@ -94,18 +119,24 @@ removeNilsCond CondTrue                              = CondTrue
 
 emitAssignment :: Assignment -> VM ()
 emitAssignment ("\"\"",_) = return () -- FIXME: hack hack hack?
-emitAssignment (s,rhs)    = tellAssignments [(s,removeNils rhs)]
+emitAssignment (s,rhs)    = let a = (s,removeNils rhs)
+                            in  tellAssignments [a]
 
 emitDeclaration :: Declaration -> VM ()
-emitDeclaration = tellDeclarations . (:[])
+emitDeclaration d = tellDeclarations [d]
 
 --genBittyLiteral :: RWCLit -> VM String
 --genBittyLiteral (RWCLitInteger 
 
 getStateTagWidth :: VM Int
-getStateTagWidth = do bdgs        <- askBindings
-                      let nstates =  length [() | (_,BoundK _) <- Map.toList bdgs]
-                      return (nBits (nstates-1))
+getStateTagWidth = do mc <- getStateTagWidthCache
+                      case mc of
+                        Just n -> return n
+                        Nothing -> do bdgs        <- askBindings
+                                      let nstates =  length [() | (_,BoundK _) <- Map.toList bdgs]
+                                          n       =  nBits (nstates-1)
+                                      putStateTagWidthCache (Just n)
+                                      return n
 
 getThisStateWidth :: Id RWCExp -> VM Int
 getThisStateWidth n = do Just (RWCDefn n (tvs :-> t) e) <- queryG n
@@ -121,13 +152,16 @@ getThisOutputWidth n = do Just (RWCDefn n (tvs :-> t) e) <- queryG n
                             _ -> fail $ "getThisOutputWidth: malformed result type for state (shouldn't happen)"
 
 getOutputWidth :: VM Int
-getOutputWidth = do bdgs    <- askBindings
-                    let sns =  [n | (n,BoundK _) <- Map.toList bdgs]
-                    ows     <- mapM getThisOutputWidth sns
-                    case nub ows of
-                      []  -> fail $ "getOutputWidth: no states defined?"
-                      [n] -> return n
-                      _   -> fail $ "getOutputWidth: inconsistent output widths (shouldn't happen)"
+getOutputWidth = do mc <- getOutputWidthCache
+                    case mc of
+                      Just n  -> return n
+                      Nothing -> do bdgs    <- askBindings
+                                    let sns =  [n | (n,BoundK _) <- Map.toList bdgs]
+                                    ows     <- mapM getThisOutputWidth sns
+                                    case nub ows of
+                                      []  -> fail $ "getOutputWidth: no states defined?"
+                                      [n] -> putOutputWidthCache (Just n) >> return n
+                                      _   -> fail $ "getOutputWidth: inconsistent output widths (shouldn't happen)"
 
 getThisInputWidth :: Id RWCExp -> VM Int
 getThisInputWidth n = do Just (RWCDefn n (tvs :-> t) e) <- queryG n
@@ -137,21 +171,29 @@ getThisInputWidth n = do Just (RWCDefn n (tvs :-> t) e) <- queryG n
                            _ -> fail $ "getThisInputWidth: malformed result type for state (shouldn't happen)"
 
 getInputWidth :: VM Int
-getInputWidth = do bdgs    <- askBindings
-                   let sns =  [n | (n,BoundK _) <- Map.toList bdgs]
-                   ows     <- mapM getThisInputWidth sns
-                   case nub ows of
-                      []  -> fail $ "getInputWidth: no states defined?"
-                      [n] -> return n
-                      _   -> fail $ "getInputWidth: inconsistent intput widths (shouldn't happen)"
+getInputWidth = do mc <- getInputWidthCache
+                   case mc of
+                     Just n  -> return n
+                     Nothing -> do bdgs    <- askBindings
+                                   let sns =  [n | (n,BoundK _) <- Map.toList bdgs]
+                                   ows     <- mapM getThisInputWidth sns
+                                   case nub ows of
+                                     []  -> fail $ "getInputWidth: no states defined?"
+                                     [n] -> putInputWidthCache (Just n) >> return n
+                                     _   -> fail $ "getInputWidth: inconsistent intput widths (shouldn't happen)"
 
 getStateWidth :: VM Int
-getStateWidth = do ow      <- getOutputWidth
-                   tw      <- getStateTagWidth
-                   bdgs    <- askBindings
-                   let sns =  [n | (n,BoundK _) <- Map.toList bdgs]
-                   sws     <- mapM getThisStateWidth sns
-                   return (ow+tw+maximum sws)
+getStateWidth = do mc <- getStateWidthCache
+                   case mc of
+                     Just n -> return n
+                     Nothing -> do ow      <- getOutputWidth
+                                   tw      <- getStateTagWidth
+                                   bdgs    <- askBindings
+                                   let sns =  [n | (n,BoundK _) <- Map.toList bdgs]
+                                   sws     <- mapM getThisStateWidth sns
+                                   let n = ow+tw+maximum sws
+                                   putStateWidthCache (Just n)
+                                   return n
 
 getStateTag :: Int -> VM [Bit]
 getStateTag n = do tw <- getStateTagWidth
@@ -268,15 +310,21 @@ getTag i = do tci                 <- getDataConTyCon i
 -- that...)
 tyWidth :: RWCTy -> VM Int
 tyWidth (RWCTyVar _) = fail $ "tyWidth: type variable encountered"
-tyWidth t            = do let (th:_) = flattenTyApp t
-                          case th of
-                            RWCTyCon (TyConId "React") -> getStateWidth
-                            RWCTyVar _ -> fail $ "tyWidth: type variable encountered"
-                            RWCTyCon i -> do
-                              Just (TyConInfo (RWCData _ _ dcs)) <- queryT i
-                              tagWidth <- getTagWidth i
-                              cws      <- mapM (dataConWidth i) dcs
-                              return (tagWidth + maximum cws)
+tyWidth t            = do twc <- getTyWidthCache
+                          case Map.lookup t twc of
+                            Just size -> return size
+                            Nothing   -> do
+                              let (th:_) = flattenTyApp t
+                              case th of
+                                RWCTyCon (TyConId "React") -> getStateWidth
+                                RWCTyVar _ -> fail $ "tyWidth: type variable encountered"
+                                RWCTyCon i -> do
+                                  Just (TyConInfo (RWCData _ _ dcs)) <- queryT i
+                                  tagWidth <- getTagWidth i
+                                  cws      <- mapM (dataConWidth i) dcs
+                                  let size =  tagWidth + maximum cws
+                                  modifyTyWidthCache (Map.insert t size)
+                                  return size
                 where dataConWidth di (RWCDataCon i _) = do
                         fts <- getFieldTys i t
                         liftM sum (mapM tyWidth fts)
@@ -372,14 +420,14 @@ genMain =
               s   <- genExp e
               as  <- getAssignments
               ds  <- getDeclarations
-              return ("  pure function sm_state_initial\n" ++
-                      "    return std_logic_vector\n" ++
-                      "  is\n" ++
-                      concatMap (("    "++) . (++"\n") . renderDeclarationForVariables) ds ++
-                      "  begin\n" ++
-                      concatMap (("    "++) . (++"\n") . renderAssignmentForVariables) as ++
-                      "    return " ++ s ++ ";\n" ++
-                      "  end sm_state_initial;\n")
+              return  ("  pure function sm_state_initial\n" ++
+                       "    return std_logic_vector\n" ++
+                       "  is\n" ++
+                       concatMap (("    "++) . (++"\n") . renderDeclarationForVariables) ds ++
+                       "  begin\n" ++
+                       concatMap (("    "++) . (++"\n") . renderAssignmentForVariables) as ++
+                       "    return " ++ s ++ ";\n" ++
+                       "  end sm_state_initial;\n")
        Nothing -> fail $ "genMain: No definition for main"
 
 genBittyDefn :: RWCDefn -> VM String
@@ -394,15 +442,15 @@ genBittyDefn (RWCDefn n_ (tvs :-> t) e_) =
        s   <- localBindings (Map.union $ Map.fromList bdgs) (genExp e)
        as  <- getAssignments
        ds  <- getDeclarations
-       return ("  -- bitty: " ++ deId n_ ++ "\n" ++
-               "  pure function " ++ n ++ (if null ps then "" else "(" ++ intercalate " ; " ps ++ ")") ++ "\n" ++
-               "    return std_logic_vector\n" ++
-               "  is\n" ++
-               concatMap (("    "++) . (++"\n") . renderDeclarationForVariables) ds ++
-               "  begin\n" ++
-               concatMap (("    "++) . (++"\n") . renderAssignmentForVariables) as ++
-               "    return " ++ s ++ ";\n" ++
-               "  end " ++ n ++ ";\n")
+       return  ("  -- bitty: " ++ deId n_ ++ "\n" ++
+                "  pure function " ++ n ++ (if null ps then "" else "(" ++ intercalate " ; " ps ++ ")") ++ "\n" ++
+                "    return std_logic_vector\n" ++
+                "  is\n" ++
+                concatMap (("    "++) . (++"\n") . renderDeclarationForVariables) ds ++
+                "  begin\n" ++
+                concatMap (("    "++) . (++"\n") . renderAssignmentForVariables) as ++
+                "    return " ++ s ++ ";\n" ++
+                "  end " ++ n ++ ";\n")
 
 genBittyDefnProto :: RWCDefn -> VM String
 genBittyDefnProto (RWCDefn n_ (tvs :-> t) e_) =
@@ -420,6 +468,7 @@ genBittyDefnProto (RWCDefn n_ (tvs :-> t) e_) =
 genContDefn :: RWCDefn -> VM ()
 genContDefn (RWCDefn n_ (tvs :-> t) e_) =
   inLambdas e_ $ \ nts_ e ->
+   trace ("genContDefn: " ++ show n_) $
     do (BoundK nk)         <- askNameInfo n_
        let nts             =  init nts_
            (nin,tin)       =  last nts_
@@ -439,8 +488,10 @@ genContDefn (RWCDefn n_ (tvs :-> t) e_) =
        let bdgs      = (nin,BoundVar "sm_input"):bdgs_
        s   <- localBindings (Map.union $ Map.fromList bdgs) (genExp e)
        stateWidth <- getStateWidth
-       emitDeclaration("next_state_"++show nk,stateWidth)
-       emitAssignment("next_state_"++show nk,LocalVariable s)
+       let decl = ("next_state_"++show nk,stateWidth)
+       emitDeclaration decl
+       let assignment = ("next_state_"++show nk,LocalVariable s)
+       emitAssignment ("next_state_"++show nk,LocalVariable s)
 
 hideAssignments :: VM a -> VM a
 hideAssignments m = do as <- getAssignments
@@ -507,10 +558,10 @@ genProg m = do bdgs <- initBindings m
                          v_main ++
                          concat v_funs ++
                          "  signal sm_state : std_logic_vector(0 to " ++ show (sw-1) ++ ") := sm_state_initial;\n" ++
-                         concatMap (("  "++) . (++"\n") . renderDeclarationForSignals) ds ++
+                         concatMap (("  "++) . (++"\n") . renderDeclarationForSignals) (reverse ds) ++
                          "begin\n" ++
                          "  sm_output <= sm_state(0 to " ++ show (ow-1) ++ ");\n" ++
-                         concatMap (("  "++) . (++"\n") . renderAssignmentForSignals) as ++
+                         concatMap (("  "++) . (++"\n") . renderAssignmentForSignals) (reverse as) ++
                          "  process(clk)\n" ++
                          "  begin\n" ++
                          "    if rising_edge(clk) then\n" ++
@@ -535,9 +586,14 @@ genProg m = do bdgs <- initBindings m
 runVM :: RWCProg -> VM a -> (a,VMState)
 runVM p phi = runIdentity $
                runStateT (runReaderT (runRWT p phi) env0) state0
-  where state0 = VMState { signalCounter = 0,
-                           assignments   = [],
-                           declarations  = [] }
+  where state0 = VMState { signalCounter      = 0,
+                           assignments        = [],
+                           declarations       = [], 
+                           tyWidthCache       = Map.empty, 
+                           inputWidthCache    = Nothing,
+                           outputWidthCache   = Nothing,
+                           stateWidthCache    = Nothing,
+                           stateTagWidthCache = Nothing }
         env0   = VMEnv { bindings = Map.empty }
         
 cmdToVHDL :: TransCommand

@@ -138,7 +138,9 @@ instance MonadScope m => MonadScope (ReaderT r m) where
 getInScopeSorted :: forall m t . (MonadScope m,IdSort t) => m (Set (Id t))
 getInScopeSorted = do s <- getInScope
                       let s' :: Set (Id t)
-                          s' = Set.map fromJust $ Set.filter isJust $ Set.map any2Id s
+                          s' = Set.mapMonotonic fromJust $
+                                 Set.filter isJust $
+                                   Set.mapMonotonic any2Id s
                       return s'
 
 refreshingVar :: forall m t t' a . (Subst t t',MonadScope m) => Id t' -> t -> (Id t' -> t -> m a) -> m a

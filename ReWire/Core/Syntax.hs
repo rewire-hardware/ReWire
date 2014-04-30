@@ -33,7 +33,7 @@ instance Alpha (Poly RWCTy) where
 data RWCTy = RWCTyApp RWCTy RWCTy
            | RWCTyCon TyConId
            | RWCTyVar (Id RWCTy)
-           deriving Show
+           deriving (Ord,Eq,Show)
 
 instance IdSort RWCTy where
   idSort _ = pack "T"
