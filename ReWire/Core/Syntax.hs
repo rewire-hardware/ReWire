@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses,GeneralizedNewtypeDeriving,FlexibleInstances #-}
+{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module ReWire.Core.Syntax where
 
@@ -98,6 +99,7 @@ instance Subst RWCExp RWCExp where
                                  Just (Right e) -> return e
                                  Nothing        -> return (RWCVar x t)
   subst' (RWCCon i t)     = return (RWCCon i t)
+  subst' (RWCLiteral l)   = return (RWCLiteral l)
   subst' (RWCCase e alts) = liftM2 RWCCase (subst' e) (subst' alts)
 
 instance Subst RWCExp RWCTy where
@@ -112,6 +114,7 @@ instance Subst RWCExp RWCTy where
   subst' (RWCLam x t e)   = liftM2 (RWCLam x) (subst' t) (subst' e)
   subst' (RWCVar x t)     = liftM (RWCVar x) (subst' t)
   subst' (RWCCon i t)     = liftM (RWCCon i) (subst' t)
+  subst' (RWCLiteral l)   = return (RWCLiteral l)
   subst' (RWCCase e alts) = liftM2 RWCCase (subst' e) (subst' alts)
 
 instance Alpha RWCExp where
@@ -170,12 +173,14 @@ instance NFData RWCAlt where
 data RWCPat = RWCPatCon DataConId [RWCPat]
             | RWCPatLiteral RWCLit
             | RWCPatVar (Id RWCExp) RWCTy
+            | RWCPatWild
             deriving Show
 
 patvars :: RWCPat -> [Id RWCExp]
 patvars (RWCPatCon _ ps)  = concatMap patvars ps
 patvars (RWCPatLiteral l) = []
 patvars (RWCPatVar x _)   = [x]
+patvars RWCPatWild        = []
 
 equatingPats :: RWCPat -> RWCPat -> AlphaM Bool -> AlphaM Bool
 equatingPats (RWCPatCon i ps) (RWCPatCon j ps') k
@@ -186,20 +191,25 @@ equatingPats (RWCPatCon i ps) (RWCPatCon j ps') k
 equatingPats (RWCPatLiteral l) (RWCPatLiteral l') k | l == l'   = k
                                                     | otherwise = return False
 equatingPats (RWCPatVar x _) (RWCPatVar y _) k                  = equating x y k
+equatingPats RWCPatWild RWCPatWild k                            = k
+equatingPats _ _ k                                              = return False
 
 instance Subst RWCPat RWCTy where
   fv (RWCPatCon _ ps)  = concatMap fv ps
   fv (RWCPatLiteral l) = []
   fv (RWCPatVar _ t)   = fv t
+  fv RWCPatWild        = []
   bv _ = []
   subst' (RWCPatCon i ps)  = liftM (RWCPatCon i) (subst' ps)
   subst' (RWCPatLiteral l) = return (RWCPatLiteral l)
   subst' (RWCPatVar x t)   = liftM (RWCPatVar x) (subst' t)
+  subst' RWCPatWild        = return RWCPatWild
       
 instance NFData RWCPat where
   rnf (RWCPatCon i ps)  = i `deepseq` ps `deepseq` ()
   rnf (RWCPatLiteral l) = l `deepseq` ()
   rnf (RWCPatVar x t)   = x `deepseq` t `deepseq` ()
+  rnf RWCPatWild        = ()
 
 ---
   
@@ -272,9 +282,11 @@ mkArrow t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2
 
 arrowLeft :: RWCTy -> RWCTy
 arrowLeft (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2) = t1
+arrowLeft t                                                       = error $ "arrowLeft: got non-arrow type: " ++ show t
 
 arrowRight :: RWCTy -> RWCTy
 arrowRight (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2) = t2
+arrowRight t                                                       = error $ "arrowRight: got non-arrow type: " ++ show t
 
 typeOf :: RWCExp -> RWCTy
 typeOf (RWCApp e _)                   = arrowRight (typeOf e)

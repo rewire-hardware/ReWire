@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances,UndecidableInstances,MultiParamTypeClasses, 
              GeneralizedNewtypeDeriving #-}
+{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 --
 -- This is a handy monad class/transformer with lots of morphisms for stuff
@@ -127,6 +128,7 @@ refreshingPat (RWCPatCon i ps) e k  = refreshingPats ps e (\ ps' e' -> k (RWCPat
 refreshingPat (RWCPatLiteral l) e k = k (RWCPatLiteral l) e
 refreshingPat (RWCPatVar x_ t) e_ k = refreshingVar x_ e_ $ \ x e ->
                                        k (RWCPatVar x t) e
+refreshingPat RWCPatWild e k        = k RWCPatWild e
 
 inAlt :: Monad m => RWCAlt -> (RWCPat -> RWCExp -> RWT m a) -> RWT m a
 inAlt (RWCAlt p_ e_) = refreshingPat p_ e_

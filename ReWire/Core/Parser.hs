@@ -132,10 +132,16 @@ lamexpr = do reservedOp "\\"
              alts <- braces (alt `sepBy` semi)
              return (RWCCase e alts)
 
+wildcardify fvs (RWCPatCon i ps)               = RWCPatCon i (map (wildcardify fvs) ps)
+wildcardify fvs (RWCPatLiteral l)              = RWCPatLiteral l
+wildcardify fvs (RWCPatVar i t) | i `elem` fvs = RWCPatVar i t
+                                | otherwise    = RWCPatWild
+wildcardify fvs RWCPatWild                        = RWCPatWild
+
 alt = do p <- pat
          reservedOp "->"
          e <- expr
-         return (RWCAlt p e)
+         return (RWCAlt (wildcardify (fv e) p) e)
 
 pat = do i <- conid
          pats <- many apat
@@ -148,6 +154,8 @@ apat = do i <- varid
           return (RWCPatCon (DataConId i) [])
    <|> do l <- literal
           return (RWCPatLiteral l)
+   <|> do symbol "_"
+          return RWCPatWild
    <|> do ps <- parens (pat `sepBy` comma)
           case ps of
             []  -> return (RWCPatCon (DataConId "()") [])

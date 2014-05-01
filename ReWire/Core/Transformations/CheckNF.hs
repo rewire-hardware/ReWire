@@ -1,4 +1,4 @@
--- FIXME: inLambdas is unbinding things improperly...
+{-# OPTIONS -fwarn-incomplete-patterns #-}
 
 -- FIXME: Need to make sure bitty defns are not recursive.
 -- FIXME: Need to make sure pattern matching is exhaustive.
@@ -163,6 +163,7 @@ checkExprIsBitty (RWCLiteral l)     = checkLiteralIsBitty l
 checkExprIsBitty e_@(RWCCase e alts) = do checkTyIsBitty (typeOf e_)
                                           checkExprIsBitty e
                                           mapM_ checkAltIsBitty alts
+checkExprIsBitty e                   = throwError $ "checkExprIsBitty: malformed expression: " ++ show e
 
 checkAltIsBitty :: RWCAlt -> NFM ()
 checkAltIsBitty a = inAlt a (\ _ -> checkExprIsBitty)
@@ -182,6 +183,8 @@ checkMain = do md <- queryG (mkId "main")
                      RWCApp (RWCApp (RWCCon (DataConId "P") _) e1) e2 -> do
                        checkExprIsBitty e1
                        checkExprIsContCall e2
+                     _ -> throwError $ "checkMain: malformed body: " ++ show e
+                 Nothing -> throwError "checkMain: main is not defined"
 
 checkProg :: NFM ()
 checkProg = do dds_    <- getAssumptionsT

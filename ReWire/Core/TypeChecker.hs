@@ -56,6 +56,7 @@ initPat (RWCPatCon i ps_) = do ps <- mapM initPat ps_
 initPat (RWCPatLiteral l) = return (RWCPatLiteral l)
 initPat (RWCPatVar n _)   = do tv <- freshv
                                return (RWCPatVar n (RWCTyVar tv))
+initPat RWCPatWild        = return RWCPatWild
 
 initAlt :: RWCAlt -> TCM RWCAlt
 initAlt (RWCAlt p_ e_) = do p       <- initPat p_
@@ -127,6 +128,7 @@ patassumps :: RWCPat -> [Assump]
 patassumps (RWCPatCon i ps)  = concatMap patassumps ps
 patassumps (RWCPatLiteral _) = []
 patassumps (RWCPatVar n t)   = [(n,[] :-> t)]
+patassumps RWCPatWild        = []
 
 tcPat :: RWCTy -> RWCPat -> TCM ()
 tcPat t (RWCPatLiteral l) = case l of
@@ -144,6 +146,7 @@ tcPat t (RWCPatCon i ps)  = do cas     <- askCAssumps
                                                    then fail "Pattern is not applied to enough arguments"
                                                    else do zipWithM_ tcPat targs ps
                                                            unify t tres
+tcPat t RWCPatWild        = return ()
 
 tcAlt :: RWCTy -> RWCTy -> RWCAlt -> TCM ()
 tcAlt tres tscrut (RWCAlt p e) = do tcPat tscrut p

@@ -7,8 +7,8 @@ import ReWire.Core.Transformations.CheckNF
 import ReWire.Core.Transformations.Types
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map)
-import Data.List (intercalate,findIndex,find,nub,foldl')
-import Data.Maybe (fromJust)
+import Data.List (intercalate,findIndex,find,nub,foldl',isPrefixOf)
+import Data.Maybe (fromJust,catMaybes)
 import Data.Tuple (swap)
 import Control.Monad.State
 import Control.Monad.Reader
@@ -18,15 +18,15 @@ import Control.DeepSeq
 
 type Declaration = (String,Int)
 data Bit = Zero | One deriving (Eq,Show)
-data Condition = CondEq String String | CondAnd Condition Condition | CondTrue deriving Show
+data Condition = CondEq AssignmentRHS AssignmentRHS | CondAnd Condition Condition | CondTrue deriving (Eq,Show)
 type Assignment = (String,AssignmentRHS)
-data AssignmentRHS  = FunCall String [String]
+data AssignmentRHS  = FunCall String [AssignmentRHS]
                     | LocalVariable String
-                    | Concat [String]
+                    | Concat [AssignmentRHS]
                     | BitConst [Bit]
-                    | Slice String Int Int
-                    | Conditional [(Condition,String)]
-                    deriving Show
+                    | Slice AssignmentRHS Int Int
+                    | Conditional [(Condition,AssignmentRHS)]
+                    deriving (Eq,Show)
 data VMState = VMState { assignments        :: [Assignment],
                          declarations       :: [Declaration],
                          signalCounter      :: Int, 
@@ -91,7 +91,7 @@ freshName n = do ctr <- getSignalCounter
                  return (n++"_"++show ctr)
                
 freshTmp :: String -> Int -> VM String
-freshTmp n 0 = return "\"\"" -- FIXME: hack hack hack?
+freshTmp n 0 = return "NIL" -- FIXME: hack hack hack?
 freshTmp n i = do sn <- freshName n
                   emitDeclaration (sn,i)
                   return sn
@@ -99,29 +99,28 @@ freshTmp n i = do sn <- freshName n
 freshTmpTy :: String -> RWCTy -> VM String
 freshTmpTy n = freshTmp n <=< tyWidth
 
-isNil = (=="\"\"")
+--isNil = (=="\"\"")
 
-removeNils :: AssignmentRHS -> AssignmentRHS
-removeNils (FunCall f ss)    = FunCall f (filter (not . isNil) ss)
-removeNils (LocalVariable v) = LocalVariable v
-removeNils (Concat ss)       = Concat (filter (not . isNil) ss)
-removeNils (BitConst bs)     = BitConst bs
-removeNils (Slice s i j)     = Slice s i j
-removeNils (Conditional cs)  = Conditional (map removeNilsCase cs)
+--removeNils :: AssignmentRHS -> AssignmentRHS
+--removeNils (FunCall f ss)    = FunCall f (filter (not . isNil) ss)
+--removeNils (LocalVariable v) = LocalVariable v
+--removeNils (Concat ss)       = Concat (filter (not . isNil) ss)
+--removeNils (BitConst bs)     = BitConst bs
+--removeNils (Slice s i j)     = Slice s i j
+--removeNils (Conditional cs)  = Conditional (map removeNilsCase cs)
 
-removeNilsCase :: (Condition,String) -> (Condition,String)
-removeNilsCase (c,s) = (removeNilsCond c,s)
+--removeNilsCase :: (Condition,String) -> (Condition,String)
+--removeNilsCase (c,s) = (removeNilsCond c,s)
 
-removeNilsCond :: Condition -> Condition
-removeNilsCond (CondEq s1 s2) | isNil s1 && isNil s2 = CondTrue
-                              | otherwise            = CondEq s1 s2
-removeNilsCond (CondAnd c1 c2)                       = CondAnd (removeNilsCond c1) (removeNilsCond c2)
-removeNilsCond CondTrue                              = CondTrue
+--removeNilsCond :: Condition -> Condition
+--removeNilsCond (CondEq s1 s2) | isNil s1 && isNil s2 = CondTrue
+--                              | otherwise            = CondEq s1 s2
+--removeNilsCond (CondAnd c1 c2)                       = CondAnd (removeNilsCond c1) (removeNilsCond c2)
+--removeNilsCond CondTrue                              = CondTrue
 
 emitAssignment :: Assignment -> VM ()
-emitAssignment ("\"\"",_) = return () -- FIXME: hack hack hack?
-emitAssignment (s,rhs)    = let a = (s,removeNils rhs)
-                            in  tellAssignments [a]
+emitAssignment ("NIL",_) = return ()
+emitAssignment (s,rhs)   = tellAssignments [(s,rhs)]
 
 emitDeclaration :: Declaration -> VM ()
 emitDeclaration d = tellDeclarations [d]
@@ -209,7 +208,7 @@ genExp e@(RWCApp _ _)     = let (ef:es) = flattenApp e
                                               s_k   <- genExp ek
                                               w     <- getStateWidth
                                               s     <- freshTmp "P" w
-                                              emitAssignment (s,Concat [s_o,s_k])
+                                              emitAssignment (s,Concat [LocalVariable s_o,LocalVariable s_k])
                                               return s
                                 _       -> fail $ "genExp: malformed pause expression"
                               RWCVar i _ -> do n_i  <- askNameInfo i
@@ -223,11 +222,11 @@ genExp e@(RWCApp _ _)     = let (ef:es) = flattenApp e
                                                                   ow       <- getOutputWidth
                                                                   let kw   =  sw-ow
                                                                   s        <- freshTmp "k" kw
-                                                                  emitAssignment (s,Concat (s_tag:s_es))
+                                                                  emitAssignment (s,Concat (LocalVariable s_tag:map LocalVariable s_es))
                                                                   return s
                                                  BoundFun n -> do s_es <- mapM genExp es
                                                                   s    <- freshTmpTy "funcall" t
-                                                                  emitAssignment (s,FunCall n s_es)
+                                                                  emitAssignment (s,FunCall n (map LocalVariable s_es))
                                                                   return s
                                                  BoundVar _ -> fail $ "genExp: locally bound variable is applied as function: " ++ show i
                                                  NotBound   -> fail $ "genExp@RWCApp: unbound variable: " ++ show i
@@ -238,7 +237,7 @@ genExp e@(RWCApp _ _)     = let (ef:es) = flattenApp e
                                                emitAssignment (s_tag,BitConst tag)
                                                s        <- freshTmpTy "conapp" t
                                                s_es     <- mapM genExp es
-                                               emitAssignment (s,Concat (s_tag:s_es))
+                                               emitAssignment (s,Concat (LocalVariable s_tag:map LocalVariable s_es))
                                                return s
                               _          -> fail $ "genExp: malformed application head: " ++ show e
 genExp (RWCCon i t)       = do tag <- getTag i
@@ -278,22 +277,25 @@ getDataConTyCon :: DataConId -> VM TyConId
 getDataConTyCon dci = do Just (DataConInfo n _) <- queryD dci
                          return n
 
-breakData :: DataConId -> String -> RWCTy -> VM (String,[(String,RWCTy)])
-breakData i s_scrut t_scrut = do tci              <- getDataConTyCon i
-                                 tagWidth         <- getTagWidth tci
-                                 s_tag            <- freshTmp "tag" tagWidth
-                                 emitAssignment (s_tag,Slice s_scrut 0 (tagWidth-1))
-                                 fieldTys         <- getFieldTys i t_scrut
-                                 fieldWidths      <- mapM tyWidth fieldTys
-                                 s_fields         <- mapM (freshTmp "field") fieldWidths
-                                 let fieldOffsets    =  scanl (+) tagWidth fieldWidths
-                                     ranges []       =  []
-                                     ranges [n]      =  []
-                                     ranges (n:m:ns) =  (n,m-1) : ranges (m:ns)
-                                     fieldRanges     =  ranges fieldOffsets
-                                     emitOne s (l,h) =  emitAssignment (s,Slice s_scrut l h)
-                                 fieldRanges `deepseq` zipWithM_ emitOne s_fields fieldRanges
-                                 return (s_tag,zip s_fields fieldTys)
+breakData :: DataConId -> String -> RWCTy -> [Bool] -> VM (String,[(String,RWCTy)])
+breakData i s_scrut t_scrut used = do tci               <- getDataConTyCon i
+                                      tagWidth          <- getTagWidth tci
+                                      s_tag             <- freshTmp "tag" tagWidth
+                                      emitAssignment (s_tag,Slice (LocalVariable s_scrut) 0 (tagWidth-1))
+                                      fieldTys          <- getFieldTys i t_scrut
+                                      fieldWidths       <- mapM tyWidth fieldTys
+                                      let mkField False _ = return ""
+                                          mkField True w  = freshTmp "field" w
+                                      s_fields          <- zipWithM mkField used fieldWidths
+                                      let fieldOffsets    =  scanl (+) tagWidth fieldWidths
+                                          ranges []       =  []
+                                          ranges [n]      =  []
+                                          ranges (n:m:ns) =  (n,m-1) : ranges (m:ns)
+                                          fieldRanges     =  ranges fieldOffsets
+                                          emitOne "" _    =  return ()
+                                          emitOne s (l,h) =  emitAssignment (s,Slice (LocalVariable s_scrut) l h)
+                                      fieldRanges `deepseq` zipWithM_ emitOne s_fields fieldRanges
+                                      return (s_tag,zip s_fields fieldTys)
 
 bitConstFromIntegral :: Integral a => Int -> a -> [Bit]
 bitConstFromIntegral 0 _     = []
@@ -348,14 +350,18 @@ zipWithM3 f (a:as) (b:bs) (c:cs) = do d  <- f a b c
                                       ds <- zipWithM3 f as bs cs
                                       return (d:ds)
 
-genBittyAlt :: String -> RWCTy -> RWCAlt -> VM (Condition,String)
+genBittyAlt :: String -> RWCTy -> RWCAlt -> VM (Condition,AssignmentRHS)
 genBittyAlt s_scrut t_scrut a = inAlt a $ \ p e -> do
                                              (cond,bdgs) <- genBittyPat s_scrut t_scrut p
                                              s           <- localBindings (Map.union bdgs) $ genExp e
-                                             return (cond,s)
+                                             return (cond,LocalVariable s)
+
+isWild RWCPatWild = True
+isWild _          = False
 
 genBittyPat :: String -> RWCTy -> RWCPat -> VM (Condition,Map (Id RWCExp) NameInfo) -- (condition for match, resulting bindings)
-genBittyPat s_scrut t_scrut (RWCPatCon i pats)      = do (s_tag,st_fields) <- breakData i s_scrut t_scrut
+genBittyPat s_scrut t_scrut (RWCPatCon i pats)      = do let used = map (not . isWild) pats
+                                                         (s_tag,st_fields) <- used `deepseq` breakData i s_scrut t_scrut used
                                                          let s_fields      =  map fst st_fields
                                                              t_fields      =  map snd st_fields
                                                          tagValue          <- getTag i
@@ -366,43 +372,44 @@ genBittyPat s_scrut t_scrut (RWCPatCon i pats)      = do (s_tag,st_fields) <- br
                                                          tagWidth          <- getTagWidth tci
                                                          s_tagtest         <- freshTmp "test" tagWidth
                                                          emitAssignment (s_tagtest,BitConst tagValue)
-                                                         return (foldr CondAnd (CondEq s_tag s_tagtest) cond_pats,
+                                                         return (foldr CondAnd (CondEq (LocalVariable s_tag) (LocalVariable s_tagtest)) cond_pats,
                                                                  foldr Map.union Map.empty binds_pats)
 --genBittyPat s_scrut (RWCPatLiteral l) = 
 genBittyPat s_scrut t_scrut (RWCPatVar n _) = do s <- freshTmpTy "patvar" t_scrut
                                                  emitAssignment (s,LocalVariable s_scrut)                                            
                                                  return (CondTrue,Map.singleton n (BoundVar s))
+genBittyPat _ _ RWCPatWild                  = return (CondTrue,Map.empty)
 
 bitToChar Zero = '0'
 bitToChar One  = '1'
 
+renderRHS (FunCall f [])    = f
+renderRHS (FunCall f rs)    = f ++ "(" ++ intercalate "," (map renderRHS rs) ++ ")"
+renderRHS (LocalVariable x) = x
+renderRHS (Concat rs)       = "(" ++ intercalate " & " (map renderRHS rs) ++ ")"
+renderRHS (BitConst bs)     = "\"" ++ map bitToChar bs ++ "\""
+renderRHS (Slice t l h)     = "(" ++ renderRHS t ++ "(" ++ show l ++ " to " ++ show h ++ "))"
+renderRHS r@(Conditional _) = error $ "renderRHS: encountered nested condition: " ++ show r
+
 renderAssignmentForVariables :: Assignment -> String
-renderAssignmentForVariables (s,FunCall f [])    = s ++ " := " ++ f ++ ";"
-renderAssignmentForVariables (s,FunCall f ss)    = s ++ " := " ++ f ++ "(" ++ intercalate "," ss ++ ");"
-renderAssignmentForVariables (s,LocalVariable x) = s ++ " := " ++ x ++ ";"
-renderAssignmentForVariables (s,Concat ss)       = s ++ " := " ++ intercalate " & " ss ++ ";"
-renderAssignmentForVariables (s,BitConst bs)     = s ++ " := \"" ++ map bitToChar bs ++ "\";"
-renderAssignmentForVariables (s,Slice t l h)     = s ++ " := " ++ t ++ "(" ++ show l ++ " to " ++ show h ++ ");"
+renderAssignmentForVariables (s,Conditional [])  = s ++ " := (others => '0');" -- shouldn't happen
 renderAssignmentForVariables (s,Conditional cs)  = let (b:bs) = map renderOneCase cs
                                                    in b ++ concatMap (" els"++) bs ++ " else " ++ s ++ " := (others => '0'); end if;"
-  where renderOneCase :: (Condition,String) -> String
-        renderOneCase (c,sc) = "if " ++ renderCond c ++ " then " ++ s ++ " := " ++ sc ++ ";"
-        renderCond (CondEq s1 s2)  = s1 ++ " = " ++ s2
+  where renderOneCase :: (Condition,AssignmentRHS) -> String
+        renderOneCase (c,sc) = "if " ++ renderCond c ++ " then " ++ s ++ " := " ++ renderRHS sc ++ ";"
+        renderCond (CondEq s1 s2)  = "(" ++ renderRHS s1 ++ " = " ++ renderRHS s2 ++ ")"
         renderCond (CondAnd c1 c2) = "(" ++ renderCond c1 ++ " and " ++ renderCond c2 ++ ")"
         renderCond CondTrue        = "true"
+renderAssignmentForVariables (s,r)               = s ++ " := " ++ renderRHS r ++ ";"
 
 renderAssignmentForSignals :: Assignment -> String
-renderAssignmentForSignals (s,FunCall f [])    = s ++ " <= " ++ f ++ ";"
-renderAssignmentForSignals (s,FunCall f ss)    = s ++ " <= " ++ f ++ "(" ++ intercalate "," ss ++ ");"
-renderAssignmentForSignals (s,LocalVariable x) = s ++ " <= " ++ x ++ ";"
-renderAssignmentForSignals (s,Concat ss)       = s ++ " <= " ++ intercalate " & " ss ++ ";"
-renderAssignmentForSignals (s,BitConst bs)     = s ++ " <= \"" ++ map bitToChar bs ++ "\";"
-renderAssignmentForSignals (s,Slice t l h)     = s ++ " <= " ++ t ++ "(" ++ show l ++ " to " ++ show h ++ ");"
+renderAssignmentForSignals (s,Conditional [])  = s ++ " <= (others => '0');"
 renderAssignmentForSignals (s,Conditional cs)  = s ++ " <= " ++ concatMap renderOneCase cs ++ "(others => '0');"
-  where renderOneCase (c,sc) = sc ++ " when " ++ renderCond c ++ " else "
-        renderCond (CondEq s1 s2)  = s1 ++ " = " ++ s2
+  where renderOneCase (c,sc) = renderRHS sc ++ " when " ++ renderCond c ++ " else "
+        renderCond (CondEq s1 s2)  = "(" ++ renderRHS s1 ++ " = " ++ renderRHS s2 ++ ")"
         renderCond (CondAnd c1 c2) = "(" ++ renderCond c1 ++ " and " ++ renderCond c2 ++ ")"
         renderCond CondTrue        = "true"
+renderAssignmentForSignals (s,r)               = s ++ " <= " ++ renderRHS r ++ ";"
 
 renderDeclarationForVariables :: Declaration -> String
 renderDeclarationForVariables (s,i) = "variable " ++ s ++ " : std_logic_vector(0 to " ++ show (i-1) ++ ") := (others => '0');"
@@ -417,8 +424,11 @@ genMain =
      case md of
        Just (RWCDefn n (tvs :-> t) e) ->
          hideAssignments $ hideDeclarations $
-           do wr  <- tyWidth (typeOf e)
-              s   <- genExp e
+           do wr    <- tyWidth (typeOf e)
+              s     <- genExp e
+              s_ret <- freshTmp "ret" wr
+              emitAssignment (s_ret,LocalVariable s)
+              optimize
               as  <- getAssignments
               ds  <- getDeclarations
               return  ("  pure function sm_state_initial\n" ++
@@ -427,7 +437,7 @@ genMain =
                        concatMap (("    "++) . (++"\n") . renderDeclarationForVariables) (reverse ds) ++
                        "  begin\n" ++
                        concatMap (("    "++) . (++"\n") . renderAssignmentForVariables) (reverse as) ++
-                       "    return " ++ s ++ ";\n" ++
+                       "    return " ++ s_ret ++ ";\n" ++
                        "  end sm_state_initial;\n")
        Nothing -> fail $ "genMain: No definition for main"
 
@@ -441,6 +451,9 @@ genBittyDefn (RWCDefn n_ (tvs :-> t) e_) =
        bps <- zipWithM freshArgumentTy [0..] nts
        let (bdgs,ps) = unzip bps
        s   <- localBindings (Map.union $ Map.fromList bdgs) (genExp e)
+       s_r <- freshTmp "ret" wr
+       emitAssignment (s_r,LocalVariable s)
+       optimize
        as  <- getAssignments
        ds  <- getDeclarations
        return  ("  -- bitty: " ++ deId n_ ++ "\n" ++
@@ -450,7 +463,7 @@ genBittyDefn (RWCDefn n_ (tvs :-> t) e_) =
                 concatMap (("    "++) . (++"\n") . renderDeclarationForVariables) (reverse ds) ++
                 "  begin\n" ++
                 concatMap (("    "++) . (++"\n") . renderAssignmentForVariables) (reverse as) ++
-                "    return " ++ s ++ ";\n" ++
+                "    return " ++ s_r ++ ";\n" ++
                 "  end " ++ n ++ ";\n")
 
 genBittyDefnProto :: RWCDefn -> VM String
@@ -482,17 +495,19 @@ genContDefn (RWCDefn n_ (tvs :-> t) e_) =
            ranges [n]      =  []
            ranges (n:m:ns) =  (n,m-1) : ranges (m:ns)
            fieldRanges     =  ranges fieldOffsets
-           emitOne s (l,h) =  emitAssignment (s,Slice "sm_state" l h)
+           emitOne s (l,h) =  emitAssignment (s,Slice (LocalVariable "sm_state") l h)
        zipWithM_ emitOne s_fields fieldRanges
        let mkNI n s = (n,BoundVar s)
            bdgs_    =  zipWith mkNI (map fst nts) s_fields
        let bdgs      = (nin,BoundVar "sm_input"):bdgs_
-       s   <- localBindings (Map.union $ Map.fromList bdgs) (genExp e)
+       s     <- localBindings (Map.union $ Map.fromList bdgs) (genExp e)
        stateWidth <- getStateWidth
+       s_ret <- freshTmp "ret" stateWidth
+       emitAssignment (s_ret,LocalVariable s)
        let decl = ("next_state_"++show nk,stateWidth)
        emitDeclaration decl
-       let assignment = ("next_state_"++show nk,LocalVariable s)
-       emitAssignment ("next_state_"++show nk,LocalVariable s)
+       let assignment = ("next_state_"++show nk,LocalVariable s_ret)
+       emitAssignment ("next_state_"++show nk,LocalVariable s_ret)
 
 hideAssignments :: VM a -> VM a
 hideAssignments m = do as <- getAssignments
@@ -533,6 +548,80 @@ nextstate_sig_assign (_,BoundK n) = do tag <- getStateTag n
                                           else return $ ["if sm_state(" ++ show ss ++ " to " ++ show (ss+sw-1) ++ ") = \"" ++ map bitToChar tag ++ "\" then sm_state <= next_state_" ++ show n ++ ";"]
 nextstate_sig_assign _            = return []
 
+optimize :: VM ()
+optimize = do as  <- liftM reverse getAssignments
+              as' <- op (Map.singleton "NIL" (BitConst [])) as
+              putAssignments (reverse as')
+  where op :: Map String AssignmentRHS -> [Assignment] -> VM [Assignment]
+        op m ((s,r):as) | isSimple r && not (isSpecial s) =
+                                       do unDecl s
+                                          let m'  = Map.map (applymap (Map.singleton s r)) m
+                                              m'' = Map.insert s r m'
+                                          op m'' as
+                        | otherwise  = do let r' = simplifyRHS (applymap m r)
+                                          if r'==r then do rest <- op m as
+                                                           return ((s,r'):rest)
+                                                   else op m ((s,r'):as)
+        op _ []                      = return []
+        isSpecial s = "ret_" `isPrefixOf` s || "next_state" `isPrefixOf` s
+        isSimple (FunCall _ [])    = True
+        isSimple (FunCall _ _)     = False
+        isSimple (LocalVariable _) = True
+        isSimple (Concat rs)       = all isSimple rs
+        isSimple (BitConst _)      = True
+        isSimple (Slice _ _ _)     = False
+        isSimple (Conditional _)   = False
+        unDecl s = modifyDeclarations (filter ((/= s) . fst))
+        applymap m (FunCall s rs)    = FunCall s (map (applymap m) rs)
+        applymap m (LocalVariable s) = case Map.lookup s m of
+                                         Just r  -> let r' = applymap m r in if r==r' then r' else applymap m r'
+                                         Nothing -> LocalVariable s
+        applymap m (Concat rs)       = Concat (map (applymap m) rs)
+        applymap m (BitConst bs)     = BitConst bs
+        applymap m (Slice r l h)     = Slice (applymap m r) l h
+        applymap m (Conditional cs)  = Conditional $ map (\ (c,r) -> (applymapC m c,applymap m r)) cs
+        applymapC m (CondEq r1 r2)  = CondEq (applymap m r1) (applymap m r2)
+        applymapC m (CondAnd c1 c2) = CondAnd (applymapC m c1) (applymapC m c2)
+        applymapC m CondTrue        = CondTrue
+        simplifyRHS (FunCall s rs)    = FunCall s (map simplifyRHS rs)
+        simplifyRHS (LocalVariable s) = LocalVariable s
+        simplifyRHS r@(Concat rs)     = let rs'  = map simplifyRHS rs
+                                            rs'' = smashConcat rs'
+                                            r'   = case rs'' of
+                                                     []  -> BitConst []
+                                                     [r] -> r
+                                                     _   -> Concat rs''
+                                        in if r == r' then r' else simplifyRHS r'
+        simplifyRHS (BitConst bs)     = BitConst bs
+        simplifyRHS (Slice (BitConst bs) l h) = simplifyRHS $ BitConst $ reverse $ drop (length bs - (h+1)) $ reverse $ drop l bs
+        simplifyRHS (Slice r l h)             = let r' = simplifyRHS r
+                                                in if r /= r' then simplifyRHS (Slice r' l h)
+                                                              else Slice r' l h
+        simplifyRHS (Conditional [(CondTrue,r)]) = simplifyRHS r
+        simplifyRHS (Conditional cs)             = let trimCs ((CondTrue,r):cs)           = [(CondTrue,r)]
+                                                       trimCs ((c,r):cs) | necessarilyFalse c = trimCs cs
+                                                                         | otherwise          = (c,r) : trimCs cs
+                                                       trimCs []                          = []
+                                                       cs'  = trimCs cs
+                                                       cs'' = map (\ (c,r) -> (simplifyCond c,simplifyRHS r)) cs'
+                                                       in if cs'' == cs then Conditional cs''
+                                                                        else simplifyRHS $ Conditional cs''
+        simplifyCond c@(CondEq r1 r2) | r1 == r2  = CondTrue
+                                      | otherwise = let c' = CondEq (simplifyRHS r1) (simplifyRHS r2)
+                                                    in  if c' /= c then simplifyCond c' else c'
+        simplifyCond (CondAnd c CondTrue)         = simplifyCond c
+        simplifyCond (CondAnd CondTrue c)         = simplifyCond c
+        simplifyCond c@(CondAnd c1 c2)            = let c' = CondAnd (simplifyCond c1) (simplifyCond c2)
+                                                    in  if c' /= c then simplifyCond c' else c'
+        simplifyCond CondTrue                     = CondTrue
+        necessarilyFalse (CondEq (BitConst b1) (BitConst b2)) | b1 /= b2 = True
+        necessarilyFalse _                                               = False
+        smashConcat (BitConst bs1:BitConst bs2:rs) = smashConcat (BitConst (bs1++bs2):rs)
+        smashConcat (BitConst []:rs)               = smashConcat rs
+        smashConcat (Concat rs:rs')                = smashConcat (rs++rs')
+        smashConcat (r:rs)                         = r:smashConcat rs
+        smashConcat []                             = []
+
 genProg :: Map (Id RWCExp) DefnSort -> VM String
 genProg m = do bdgs <- initBindings m
                trace (show bdgs) $ localBindings (Map.union bdgs) $ do
@@ -542,6 +631,7 @@ genProg m = do bdgs <- initBindings m
                  ow       <- getOutputWidth
                  let kts  =  Map.toList m
                  v_funs   <- mapM genOne kts
+                 optimize
                  as       <- getAssignments
                  ds       <- getDeclarations
                  (assn:assns) <- liftM concat $ mapM nextstate_sig_assign (Map.toList bdgs)

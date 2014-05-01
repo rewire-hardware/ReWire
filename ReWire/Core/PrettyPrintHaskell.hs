@@ -34,6 +34,7 @@ ppPat (RWCPatCon n ps)        = do ps_p <- mapM ppPat ps
                                    return (parens (text (deDataConId n) <+> hsep ps_p))
 ppPat (RWCPatVar n _)         = return (ppId n)
 ppPat (RWCPatLiteral l)       = return (ppLiteral l)
+ppPat RWCPatWild              = return (text "_")
 
 ppAlt (RWCAlt p eb) =
                     do p_p  <- ppPat p
