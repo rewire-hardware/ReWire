@@ -7,13 +7,14 @@ import ReWire.Core.Transformations.CheckNF
 import ReWire.Core.Transformations.Types
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map)
-import Data.List (intercalate,findIndex,find,nub)
+import Data.List (intercalate,findIndex,find,nub,foldl')
 import Data.Maybe (fromJust)
 import Data.Tuple (swap)
 import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Identity
 import Debug.Trace (trace)
+import Control.DeepSeq
 
 type Declaration = (String,Int)
 data Bit = Zero | One deriving (Eq,Show)
@@ -291,7 +292,7 @@ breakData i s_scrut t_scrut = do tci              <- getDataConTyCon i
                                      ranges (n:m:ns) =  (n,m-1) : ranges (m:ns)
                                      fieldRanges     =  ranges fieldOffsets
                                      emitOne s (l,h) =  emitAssignment (s,Slice s_scrut l h)
-                                 zipWithM_ emitOne s_fields fieldRanges
+                                 fieldRanges `deepseq` zipWithM_ emitOne s_fields fieldRanges
                                  return (s_tag,zip s_fields fieldTys)
 
 bitConstFromIntegral :: Integral a => Int -> a -> [Bit]
@@ -332,7 +333,7 @@ tyWidth t            = do twc <- getTyWidthCache
 getFieldTys :: DataConId -> RWCTy -> VM [RWCTy]
 getFieldTys i t = do Just (DataConInfo tci _)             <- queryD i
                      Just (TyConInfo (RWCData _ tvs dcs)) <- queryT tci
-                     let pt   = foldl RWCTyApp (RWCTyCon tci) (map RWCTyVar tvs)
+                     let pt   = foldl' RWCTyApp (RWCTyCon tci) (map RWCTyVar tvs)
                          msub = matchty Map.empty pt t
                      case msub of
                        Nothing  -> fail $ "getFieldTys: type matching failed (type was " ++ show t ++ " and datacon was " ++ deDataConId i ++ ")"
@@ -358,13 +359,13 @@ genBittyPat s_scrut t_scrut (RWCPatCon i pats)      = do (s_tag,st_fields) <- br
                                                          let s_fields      =  map fst st_fields
                                                              t_fields      =  map snd st_fields
                                                          tagValue          <- getTag i
-                                                         condbinds_pats    <- zipWithM3 genBittyPat s_fields t_fields pats
+                                                         condbinds_pats    <- s_fields `deepseq` t_fields `deepseq` zipWithM3 genBittyPat s_fields t_fields pats
                                                          let cond_pats     =  map fst condbinds_pats
                                                              binds_pats    =  map snd condbinds_pats
                                                          tci               <- getDataConTyCon i
                                                          tagWidth          <- getTagWidth tci
                                                          s_tagtest         <- freshTmp "test" tagWidth
-                                                         emitAssignment(s_tagtest,BitConst tagValue)
+                                                         emitAssignment (s_tagtest,BitConst tagValue)
                                                          return (foldr CondAnd (CondEq s_tag s_tagtest) cond_pats,
                                                                  foldr Map.union Map.empty binds_pats)
 --genBittyPat s_scrut (RWCPatLiteral l) = 
@@ -423,9 +424,9 @@ genMain =
               return  ("  pure function sm_state_initial\n" ++
                        "    return std_logic_vector\n" ++
                        "  is\n" ++
-                       concatMap (("    "++) . (++"\n") . renderDeclarationForVariables) ds ++
+                       concatMap (("    "++) . (++"\n") . renderDeclarationForVariables) (reverse ds) ++
                        "  begin\n" ++
-                       concatMap (("    "++) . (++"\n") . renderAssignmentForVariables) as ++
+                       concatMap (("    "++) . (++"\n") . renderAssignmentForVariables) (reverse as) ++
                        "    return " ++ s ++ ";\n" ++
                        "  end sm_state_initial;\n")
        Nothing -> fail $ "genMain: No definition for main"
@@ -446,9 +447,9 @@ genBittyDefn (RWCDefn n_ (tvs :-> t) e_) =
                 "  pure function " ++ n ++ (if null ps then "" else "(" ++ intercalate " ; " ps ++ ")") ++ "\n" ++
                 "    return std_logic_vector\n" ++
                 "  is\n" ++
-                concatMap (("    "++) . (++"\n") . renderDeclarationForVariables) ds ++
+                concatMap (("    "++) . (++"\n") . renderDeclarationForVariables) (reverse ds) ++
                 "  begin\n" ++
-                concatMap (("    "++) . (++"\n") . renderAssignmentForVariables) as ++
+                concatMap (("    "++) . (++"\n") . renderAssignmentForVariables) (reverse as) ++
                 "    return " ++ s ++ ";\n" ++
                 "  end " ++ n ++ ";\n")
 

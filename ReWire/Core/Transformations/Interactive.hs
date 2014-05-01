@@ -65,7 +65,7 @@ cmdTable = [
 
 -- The "repl" for the translation environment.
 trans :: RWCProg -> IO ()
-trans p = do print (ppHaskell p)
+trans p = do --print (ppHaskell p)
              loop p
    where loop p = do putStr "> "
                      hFlush stdout
@@ -79,7 +79,7 @@ trans p = do print (ppHaskell p)
                                                Just s  -> putStrLn s >> writeFile "rewire.cmd.out" s
                                                Nothing -> return ()
                                              case mp of
-                                               Just p' -> do print (ppHaskell p')
+                                               Just p' -> do --print (ppHaskell p')
                                                              loop p'
                                                Nothing -> loop p
                                Nothing -> do if not (null n) then putStrLn $ "Invalid command: " ++ cmd else return ()
