@@ -563,7 +563,7 @@ optimize = do as  <- liftM reverse getAssignments
                                                            return ((s,r'):rest)
                                                    else op m ((s,r'):as)
         op _ []                      = return []
-        isSpecial s = "ret_" `isPrefixOf` s || "next_state" `isPrefixOf` s
+        isSpecial s = "ret_" `isPrefixOf` s || "next_state" `isPrefixOf` s || "sm_" `isPrefixOf` s || "P" `isPrefixOf` s || "k_" `isPrefixOf` s
         isSimple (FunCall _ [])    = True
         isSimple (FunCall _ _)     = False
         isSimple (LocalVariable _) = True
