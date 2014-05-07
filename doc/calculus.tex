@@ -82,6 +82,14 @@ It may not be necessary to make {\it MemT} a special primitive; memory extractio
 \infer[\textsc{T-RdMem}]{\Gamma\vdash{}\textbf{rdmem}_{t,t',M} : t \rightarrow \mathbb{M}_{t\rightarrow{}t'}M(t')}{}
 \vspace{1em}
 \infer[\textsc{T-WrMem}]{\Gamma\vdash{}\textbf{wrmem}_{t,t',M} : t \rightarrow t' \rightarrow \mathbb{M}_{t\rightarrow{}t'}M\big(()\big)}{}
+\vspace{1em}
+\infer[\textsc{T-RunS}]{\Gamma\vdash{}\textbf{run}_{\mathbb{S},t,t',M} : \mathbb{S}_tM(t') \rightarrow t \rightarrow M(t'\times{}t)}{}
+\vspace{1em}
+\infer[\textsc{T-RunE}]{\Gamma\vdash{}\textbf{run}_{\mathbb{E},t,t',M} : \mathbb{E}_tM(t') \rightarrow M(t'+t)}{}
+\vspace{1em}
+\infer[\textsc{T-RunM}]{\Gamma\vdash{}\textbf{run}_{\mathbb{M},t,t',t'',M} : \mathbb{M}_{t:t'}M(t'') \rightarrow t' \rightarrow M(t'')}{}
+\vspace{1em}
+\infer[\textsc{T-Extrude}]{\Gamma\vdash{}\textbf{extrude}_{T,M,t,t',t''} : \mathbb{R}_{t:t'}TM(t'') \rightarrow T\mathbb{R}_{t:t'}M(t'')}{}
 
 \section{Denotational Semantics}
 
@@ -163,6 +171,9 @@ For clarity's sake (?), irrelevant type subscripts are dropped.
 \llbracket{}\mathbf{rdmem}_M\rrbracket\rho &=& \lambda \alpha . \lambda \mu . \mathcal{U}\llbracket{}M\rrbracket \langle\mu\alpha,\mu\rangle\\
 \llbracket{}\mathbf{wrmem}_M\rrbracket\rho &=& \lambda \alpha . \lambda \omega . \lambda \mu . \mathcal{U}\llbracket{}M\rrbracket \langle(),\mu[\alpha \mapsto \omega]\rangle
 \end{eqnarray*}
+
+\section{Extended Monadic Normal Form}
+An extended monadic normal form program is a typed system of equations:
 
 \section{Monadic Normal Form}
 A monadic normal form program is a typed system of equations:
