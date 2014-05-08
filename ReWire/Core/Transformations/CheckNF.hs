@@ -173,24 +173,24 @@ checkLiteralIsBitty (RWCLitInteger _) = return ()
 checkLiteralIsBitty (RWCLitChar _)    = return ()
 checkLiteralIsBitty (RWCLitFloat _)   = throwError $ "checkLiteralIsBitty: floating point literal encountered"
 
-checkMain :: NFM ()
-checkMain = do md <- queryG (mkId "main")
-               case md of
+checkStart :: NFM ()
+checkStart = do md <- queryG (mkId "start")
+                case md of
                  Just (RWCDefn _ (tvs :-> t) e) -> do
                    when (length tvs > 0) $
-                     throwError $ "checkMain: type of main is not monomorphic"
+                     throwError $ "checkStart: type of start is not monomorphic"
                    case e of
                      RWCApp (RWCApp (RWCCon (DataConId "P") _) e1) e2 -> do
                        checkExprIsBitty e1
                        checkExprIsContCall e2
-                     _ -> throwError $ "checkMain: malformed body: " ++ show e
-                 Nothing -> throwError "checkMain: main is not defined"
+                     _ -> throwError $ "checkStart: malformed body: " ++ show e
+                 Nothing -> throwError "checkStart: start is not defined"
 
 checkProg :: NFM ()
 checkProg = do dds_    <- getAssumptionsT
                let dds =  map (\ (TyConInfo t) -> t) $ Map.elems dds_
                modifyCpxTys (const (cpxTys dds))
-               checkMain
+               checkStart
 
 checkProg' :: RWCProg -> Either NFMError (Map (Id RWCExp) DefnSort)
 checkProg' p = runNFM p (checkProg >> getVisited)

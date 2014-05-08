@@ -418,9 +418,9 @@ renderDeclarationForSignals :: Declaration -> String
 renderDeclarationForSignals (s,i) = "signal " ++ s ++ " : std_logic_vector(0 to " ++ show (i-1) ++ ") := (others => '0');"
 
 -- FIXME: Lots of duplicated code here (genBittyDefn).
-genMain :: VM String
-genMain =
-  do md <- queryG (mkId "main")
+genStart :: VM String
+genStart =
+  do md <- queryG (mkId "start")
      case md of
        Just (RWCDefn n (tvs :-> t) e) ->
          hideAssignments $ hideDeclarations $
@@ -439,14 +439,18 @@ genMain =
                        concatMap (("    "++) . (++"\n") . renderAssignmentForVariables) (reverse as) ++
                        "    return " ++ s_ret ++ ";\n" ++
                        "  end sm_state_initial;\n")
-       Nothing -> fail $ "genMain: No definition for main"
+       Nothing -> fail $ "genStart: No definition for start"
 
 genBittyDefn :: RWCDefn -> VM String
 genBittyDefn (RWCDefn n_ (tvs :-> t) e_) =
   hideAssignments $ hideDeclarations $
   inLambdas e_ $ \ nts e ->
     do (BoundFun n) <- askNameInfo n_
-       let freshArgumentTy pos (n,t) = let s = "arg_" ++ show pos in return ((n,BoundVar s),s ++ " : std_logic_vector") 
+       let freshArgumentTy pos (n,t) = do let s = "arg_" ++ show pos
+                                          ws    <- tyWidth t
+                                          sUse  <- freshTmp "arg_use" ws
+                                          emitAssignment (sUse,LocalVariable s)
+                                          return ((n,BoundVar sUse),s ++ " : std_logic_vector") 
        wr  <- tyWidth (typeOf e)
        bps <- zipWithM freshArgumentTy [0..] nts
        let (bdgs,ps) = unzip bps
@@ -563,7 +567,7 @@ optimize = do as  <- liftM reverse getAssignments
                                                            return ((s,r'):rest)
                                                    else op m ((s,r'):as)
         op _ []                      = return []
-        isSpecial s = "ret_" `isPrefixOf` s || "next_state" `isPrefixOf` s || "sm_" `isPrefixOf` s || "P" `isPrefixOf` s || "k_" `isPrefixOf` s
+        isSpecial s = "ret_" `isPrefixOf` s || "next_state" `isPrefixOf` s || "sm_" `isPrefixOf` s || "P" `isPrefixOf` s || "k_" `isPrefixOf` s || "arg_use_" `isPrefixOf` s
         isSimple (FunCall _ [])    = True
         isSimple (FunCall _ _)     = False
         isSimple (LocalVariable _) = True
@@ -625,7 +629,7 @@ optimize = do as  <- liftM reverse getAssignments
 genProg :: Map (Id RWCExp) DefnSort -> VM String
 genProg m = do bdgs <- initBindings m
                trace (show bdgs) $ localBindings (Map.union bdgs) $ do
-                 v_main   <- genMain
+                 v_start  <- genStart
                  sw       <- getStateWidth
                  iw       <- getInputWidth
                  ow       <- getOutputWidth
@@ -646,7 +650,7 @@ genProg m = do bdgs <- initBindings m
                          "end rewire;\n" ++
                          "architecture behavioral of " ++ entity_name ++ " is\n" ++
                          concat v_protos ++
-                         v_main ++
+                         v_start ++
                          concat v_funs ++
                          "  signal sm_state : std_logic_vector(0 to " ++ show (sw-1) ++ ") := sm_state_initial;\n" ++
                          concatMap (("  "++) . (++"\n") . renderDeclarationForSignals) (reverse ds) ++
