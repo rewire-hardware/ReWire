@@ -4,7 +4,7 @@
 -- NOTE: This is in Monad for historical reasons.
 --
 
-module ReWire.Core.PrettyPrintHaskell (ppHaskell) where
+module ReWire.Core.PrettyPrintHaskell (ppHaskell,ppHaskellWithName) where
 
 import ReWire.Scoping
 import ReWire.Core.Syntax
@@ -93,3 +93,11 @@ ppProg p = do dd_p <- ppDataDecls (dataDecls p)
 
 ppHaskell :: RWCProg -> Doc
 ppHaskell = runIdentity . ppProg
+
+ppProgWithName :: Monad m => RWCProg -> String -> m Doc
+ppProgWithName p n = do dd_p <- ppDataDecls (dataDecls p)
+                        ds_p <- ppDefns (defns p)
+                        return (text ("module " ++ n ++ " where") $+$ text "import Prelude ()" $+$ dd_p $+$ ds_p)
+
+ppHaskellWithName :: RWCProg -> String -> Doc
+ppHaskellWithName p s = runIdentity $ ppProgWithName p s
