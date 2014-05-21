@@ -12,25 +12,29 @@ I suck at \LaTeX.
 \section{Syntax}
 $$
 \begin{aligned}
-x,y,z,w \in \mathit{Variable}\\
-t,t',t'' \in \mathit{Type} &::= ()~ |~ t + t'~ |~ t \times t'~ |~ t \rightarrow t'~ |~ M(t)\\
-d \in \mathit{DataType} &::= \text{a restriction of}~ \mathit{Type}~ \text{to ``data-only'' types}\\
+x,y,z,w,x_i \in \mathit{Variable}\\
+t,t',t'',t_i \in \mathit{SignalType} &::= ()~ |~ t + t'~ |~ t \times t'~ |~ t \rightarrow t'\\
+k,t',t'',t_i \in \mathit{CompuType} &::= M(t)\\
 M \in \mathit{Monad} &::= \mathbb{I}~ |~ T M\\
 T \in \mathit{MonadTrans} &::= \mathbb{R}_{t:t'}~ |~ \mathbb{S}_t~ |~ \mathbb{E}_t~ |~ \mathbb{M}_{d:t}\\
 e,e',e'' \in \mathit{Exp}&::= x~ |~ \lambda{}x_t\rightarrow{}e~ |~ e~ e'&&\text{(lambda calculus)}\\
-  &~~~~|~ \textbf{nil}&&\text{(unit)}\\
-  &~~~~|~ \textbf{inl}_{t,t'}~ |~ \textbf{inr}_{t,t'}~ |~ \textbf{case}~ e~ \textbf{of}~ \textbf{inl}~ x \rightarrow e'~ ; \textbf{inr}~ y \rightarrow e''~ \textbf{end}&&\text{(coproduct)}\\
-  &~~~~|~ \textbf{mkpair}_{t,t'}~ |~ \mathbf{fst}_{t,t'}~ |~ \mathbf{snd}_{t,t'}&&\text{(product)}\\
-  &~~~~|~ \textbf{return}_{t,M}~ |~ \textbf{bind}_{t,t',M}~ |~ \textbf{lift}_{t,M,T}&&\text{(monad operators)}\\
-  &~~~~|~ \textbf{signal}_{t,t',M}~ |~ \mathbf{unfold}_{t,t',t'',M}&&\text{(reactive prims.)}\\
-  &~~~~|~ \textbf{get}_{t,M}~ |~ \textbf{put}_{t,M}&&\text{(state prims.)}\\
-  &~~~~|~ \textbf{throw}_{t,t',M}~ |~ \textbf{catch}_{t,t',M}&&\text{(error prims.)}\\
-  &~~~~|~ \textbf{rdmem}_{t,t',M}~ |~ \textbf{wrmem}_{t,t',M}&&\text{(memory prims.)}
+  &~~~~|~ \mathbf{let}~ x : t = e~ \mathbf{in}~ e'~ \mathbf{end}&&\text{(non-recursive let)}\\
+  &~~~~|~ \mathbf{nil}&&\text{(unit)}\\
+  &~~~~|~ \mathbf{inl}_{t,t'}~ |~ \mathbf{inr}_{t,t'}~ |~ \mathbf{case}~ e~ \mathbf{of}~ \mathbf{inl}~ x \rightarrow e'~ ; \mathbf{inr}~ y \rightarrow e''~ \mathbf{end}&&\text{(coproduct)}\\
+  &~~~~|~ \mathbf{mkpair}_{t,t'}~ |~ \mathbf{fst}_{t,t'}~ |~ \mathbf{snd}_{t,t'}&&\text{(product)}\\
+  &~~~~|~ \mathbf{return}_{t,M}~ |~ \mathbf{bind}_{t,t',M}~ |~ \mathbf{lift}_{t,M,T}&&\text{(monad operators)}\\
+  &~~~~|~ \mathbf{signal}_{t,t',M}~ |~ \mathbf{unfold}_{t,t',t'',M}&&\text{(reactive prims.)}\\
+  &~~~~|~ \mathbf{letrec}~ x_1 : t_1 = e_1~ ; \cdots ; x_n : t_n = e_n~ \mathbf{in}~ e~ \mathbf{end}&&\text{(recursive let)}\\
+  &~~~~|~ \mathbf{get}_{t,M}~ |~ \mathbf{put}_{t,M}&&\text{(state prims.)}\\
+  &~~~~|~ \mathbf{throw}_{t,t',M}~ |~ \mathbf{catch}_{t,t',M}&&\text{(error prims.)}\\
+  &~~~~|~ \mathbf{rdmem}_{t,t',M}~ |~ \mathbf{wrmem}_{t,t',M}&&\text{(memory prims.)}
 \end{aligned}
 $$
 
 \subsection{Notes}
 Note: $\mathbb{R}$ is {\it ReactT}, $\mathbb{S}$ is {\it StateT}, $\mathbb{E}$ is {\it ErrorT}, and $\mathbb{M}$ is {\it MemT} (for addressable memory, which may or may not actually be synthesized as RAM).
+
+See type system below for the all-important restrictions on letrec...
 
 In reality we're going to support non-recursive, first-order data types with named constructors, but for the abstract presentation, sums/products/unit will do (e.g. $Bit$ can be encoded as $() + ()$).
 
@@ -41,11 +45,13 @@ The restriction of the domain type in $\mathbb{M}$ is not accidental. It's there
 It may not be necessary to make {\it MemT} a special primitive; memory extraction could probably be performed from {\it StateT}.
 
 \section{Type System}
-\infer[\textsc{T-Lam}]{\Gamma\vdash{}\lambda{}x_t\rightarrow{}e : t \rightarrow t'}{\Gamma,x : t\vdash{}e : t'}
-\vspace{1em}
 \infer[\textsc{T-Var}]{\Gamma,x : t\vdash{}x : t}{}
 \vspace{1em}
+\infer[\textsc{T-Lam}]{\Gamma\vdash{}\lambda{}x_t\rightarrow{}e : t \rightarrow t'}{\Gamma,x : t\vdash{}e : t'}
+\vspace{1em}
 \infer[\textsc{T-App}]{\Gamma\vdash{}e~ e' : t}{\Gamma\vdash{}e : t' \rightarrow t~~~\Gamma\vdash{}e' : t'}
+\vspace{1em}
+\infer[\textsc{T-Let}]{\Gamma\vdash{}\textbf{let}~ x_t = e~ \textbf{in}~ e'~ \textbf{end} : t'}{\Gamma,x : t\vdash{}e' : t'~~~\Gamma \vdash e : t}
 \vspace{1em}
 \infer[\textsc{T-Nil}]{\Gamma\vdash{}\textbf{nil} : ()}{}
 \vspace{1em}
@@ -138,6 +144,7 @@ For clarity's sake (?), irrelevant type subscripts are dropped.
 \llbracket{}x\rrbracket{}\rho &=& \rho x\\
 \llbracket{}\lambda x_t \rightarrow e\rrbracket \rho &=& \lambda v \rightarrow \llbracket{}e\rrbracket(\rho[x\mapsto{}v])\\
 \llbracket{}e~ e'\rrbracket \rho &=& \llbracket{}e\rrbracket\rho~ (\llbracket{}e'\rrbracket\rho)\\
+\llbracket{}\mathbf{let}~ x = e~ \mathbf{in}~ e' \mathbf{end}\rrbracket \rho &=& \llbracket{}e'\rrbracket (\rho[x\mapsto{}\llbracket{}e\rrbracket\rho])\\
 \llbracket{}\mathbf{nil}\rrbracket \rho &=& ()\\
 \llbracket{}\mathbf{inl}\rrbracket \rho &=& \mathbf{inl}\\
 \llbracket{}\mathbf{inr}\rrbracket \rho &=& \mathbf{inr}\\
