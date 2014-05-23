@@ -13,10 +13,25 @@ I suck at \LaTeX.
 $$
 \begin{aligned}
 x,y,z,w,x_i \in \mathit{Variable}\\
-t,t',t'',t_i \in \mathit{SignalType} &::= ()~ |~ t + t'~ |~ t \times t'~ |~ t \rightarrow t'\\
-k,t',t'',t_i \in \mathit{CompuType} &::= M(t)\\
-M \in \mathit{Monad} &::= \mathbb{I}~ |~ T M\\
-T \in \mathit{MonadTrans} &::= \mathbb{R}_{t:t'}~ |~ \mathbb{S}_t~ |~ \mathbb{E}_t~ |~ \mathbb{M}_{d:t}\\
+t,t',t'',t_i \in \mathit{SigType} &::= ()~ |~ t + t'~ |~ t \times t'&&\text{(signal types)}\\
+\tau,\tau',\tau'',\tau_i \in \mathit{CompType} &::= M(t)&&\text{(computation types)}\\
+B \in \mathit{BaseMonad} &::= \mathbb{I}~ |~ T B\\
+T \in \mathit{MonadTrans} &::= \mathbb{S}_t~ |~ \mathbb{M}_{t:t'}\\
+R \in \mathit{ReMonad} &::= \mathbb{R}_{t:t'} B~ |~ T R\\
+M \in \mathit{Monad} &::= B~ |~ R\\
+e,e',e'',e_i \in \mathit{SigExp}&::= x~ e_1~ \dots~ e_n~ |~ \mathbf{let}~ x : t = e~ \mathbf{in}~ e'~ \mathbf{end}\\
+  &~~~~|~ \mathbf{nil}~ |~ \mathbf{inl}_t~ e~ |~ \mathbf{inr}_t~ e~ |~ \mathbf{mkpair}~ e~ e'\\
+  &~~~~|~ \mathbf{case}~ e~ \mathbf{of}~ \mathbf{inl}~ x \rightarrow e'~ ; \mathbf{inr}~ y \rightarrow e''~ \mathbf{end}\\
+  &~~~~|~ \mathbf{fst}~ e~ |~ \mathbf{snd}~ e\\
+e_k,e'_k,e_{ki} \in CompExp &::= x~ e_1~ \dots~ e_n~ |~ \mathbf{let}~ x : t = e~ \mathbf{in}~ e_k~ \mathbf{end}\\
+  &~~~~|~ \mathbf{return}_M~ e~ |~ \mathbf{bind}~ x : t \leftarrow{} e_k~ \mathbf{in}~ e'_k~ \mathbf{end}~ |~ \mathbf{lift}_T~ e_k\\
+  &~~~~|~ \mathbf{signal}_R~ e\\
+  &~~~~|~ \mathbf{get}_M~ |~ \mathbf{put}_M~ e\\
+  &~~~~|~ \mathbf{rdmem}_M~ e~ |~ \mathbf{wrmem}_M~ e~ e'\\
+b \in \mathit{Body}&::= e~ |~ e_k\\
+d,d_i \in \mathit{Defn}&::= x~ (x_1 : t_1)~ \dots~ (x_n : t_n) = e\\
+P \in \mathit{Prog}&::= \mathbf{let}~ d_1~ \dots~ d_n~ \mathbf{in}~ x~ \mathbf{end}\\
+%%--  &~~~~|~ \mathbf{
 e,e',e'' \in \mathit{Exp}&::= x~ |~ \lambda{}x_t\rightarrow{}e~ |~ e~ e'&&\text{(lambda calculus)}\\
   &~~~~|~ \mathbf{let}~ x : t = e~ \mathbf{in}~ e'~ \mathbf{end}&&\text{(non-recursive let)}\\
   &~~~~|~ \mathbf{nil}&&\text{(unit)}\\
