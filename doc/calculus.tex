@@ -13,49 +13,43 @@ I suck at \LaTeX.
 $$
 \begin{aligned}
 x,y,z,w,x_i \in \mathit{Variable}\\
-t,t',t'',t_i \in \mathit{SigType} &::= ()~ |~ t + t'~ |~ t \times t'&&\text{(signal types)}\\
-\tau,\tau',\tau'',\tau_i \in \mathit{CompType} &::= M(t)&&\text{(computation types)}\\
-B \in \mathit{BaseMonad} &::= \mathbb{I}~ |~ T B\\
-T \in \mathit{MonadTrans} &::= \mathbb{S}_t~ |~ \mathbb{M}_{t:t'}\\
-R \in \mathit{ReMonad} &::= \mathbb{R}_{t:t'} B~ |~ T R\\
-M \in \mathit{Monad} &::= B~ |~ R\\
-e,e',e'',e_i \in \mathit{SigExp}&::= x~ e_1~ \dots~ e_n~ |~ \mathbf{let}~ x : t = e~ \mathbf{in}~ e'~ \mathbf{end}\\
+t,t',t'',t''',t_i \in \mathit{SigType} &::= ()~ |~ t + t'~ |~ t \times t'\\
+e,e',e'',e_i \in \mathit{SigExp}&::= x~ e_1~ \dots~ e_n&&n \ge 0\\
+  &~~~~|~ \mathbf{let}~ x = e~ \mathbf{in}~ e'~ \mathbf{end}\\
   &~~~~|~ \mathbf{nil}~ |~ \mathbf{inl}_t~ e~ |~ \mathbf{inr}_t~ e~ |~ \mathbf{mkpair}~ e~ e'\\
   &~~~~|~ \mathbf{case}~ e~ \mathbf{of}~ \mathbf{inl}~ x \rightarrow e'~ ; \mathbf{inr}~ y \rightarrow e''~ \mathbf{end}\\
   &~~~~|~ \mathbf{fst}~ e~ |~ \mathbf{snd}~ e\\
-e_k,e'_k,e_{ki} \in CompExp &::= x~ e_1~ \dots~ e_n~ |~ \mathbf{let}~ x : t = e~ \mathbf{in}~ e_k~ \mathbf{end}\\
-  &~~~~|~ \mathbf{return}_M~ e~ |~ \mathbf{bind}~ x : t \leftarrow{} e_k~ \mathbf{in}~ e'_k~ \mathbf{end}~ |~ \mathbf{lift}_T~ e_k\\
+T \in \mathit{MonadTrans} &::= \mathbb{S}_t~ |~ \mathbb{M}_{t:t'}\\
+B \in \mathit{BaseMonad} &::= \mathbb{I}~ |~ T B\\
+e_b,e'_b \in \mathit{BaseExp} &::= x~ e_1~ \dots~ e_n&&n \ge 0\\
+  &~~~~|~ \mathbf{let}~ x = e~ \mathbf{in}~ e_b~ \mathbf{end}\\
+  &~~~~|~ \mathbf{case}~ e~ \mathbf{of}~ \mathbf{inl}~ x \rightarrow e_b~ ; \mathbf{inr}~ y \rightarrow e'_b~ \mathbf{end}\\
+  &~~~~|~ \mathbf{return}_B~ e~ |~ \mathbf{bind}~ x \leftarrow{} e_b~ \mathbf{in}~ e'_b~ \mathbf{end}\\
+  &~~~~|~ \mathbf{lift}_T~ e_b\\
+  &~~~~|~ \mathbf{get}_B~ |~ \mathbf{put}_B~ e\\
+  &~~~~|~ \mathbf{rdmem}_B~ e~ |~ \mathbf{wrmem}_B~ e~ e'\\
+R \in \mathit{ReMonad} &::= \mathbb{R}_{t:t'} B~ |~ T R\\
+e_r,e'_r \in \mathit{ReExp} &::= x~ e_1~ \dots~ e_n&&n \ge 0\\
+  &~~~~|~ \mathbf{let}~ x = e~ \mathbf{in}~ e_r~ \mathbf{end}\\
+  &~~~~|~ \mathbf{case}~ e~ \mathbf{of}~ \mathbf{inl}~ x \rightarrow e_r~ ; \mathbf{inr}~ y \rightarrow e'_r~ \mathbf{end}\\
+  &~~~~|~ \mathbf{return}_R~ e~ |~ \mathbf{bind}~ x \leftarrow{} e_r~ \mathbf{in}~ e'_r~ \mathbf{end}\\
+  &~~~~|~ \mathbf{lift}_{\mathbb{R}_{t:t'}}~ e_b\\
+  &~~~~|~ \mathbf{lift}_T~ e_r\\
   &~~~~|~ \mathbf{signal}_R~ e\\
-  &~~~~|~ \mathbf{get}_M~ |~ \mathbf{put}_M~ e\\
-  &~~~~|~ \mathbf{rdmem}_M~ e~ |~ \mathbf{wrmem}_M~ e~ e'\\
-b \in \mathit{Body}&::= e~ |~ e_k\\
-d,d_i \in \mathit{Defn}&::= x~ (x_1 : t_1)~ \dots~ (x_n : t_n) = e\\
-P \in \mathit{Prog}&::= \mathbf{let}~ d_1~ \dots~ d_n~ \mathbf{in}~ x~ \mathbf{end}\\
-%%--  &~~~~|~ \mathbf{
-e,e',e'' \in \mathit{Exp}&::= x~ |~ \lambda{}x_t\rightarrow{}e~ |~ e~ e'&&\text{(lambda calculus)}\\
-  &~~~~|~ \mathbf{let}~ x : t = e~ \mathbf{in}~ e'~ \mathbf{end}&&\text{(non-recursive let)}\\
-  &~~~~|~ \mathbf{nil}&&\text{(unit)}\\
-  &~~~~|~ \mathbf{inl}_{t,t'}~ |~ \mathbf{inr}_{t,t'}~ |~ \mathbf{case}~ e~ \mathbf{of}~ \mathbf{inl}~ x \rightarrow e'~ ; \mathbf{inr}~ y \rightarrow e''~ \mathbf{end}&&\text{(coproduct)}\\
-  &~~~~|~ \mathbf{mkpair}_{t,t'}~ |~ \mathbf{fst}_{t,t'}~ |~ \mathbf{snd}_{t,t'}&&\text{(product)}\\
-  &~~~~|~ \mathbf{return}_{t,M}~ |~ \mathbf{bind}_{t,t',M}~ |~ \mathbf{lift}_{t,M,T}&&\text{(monad operators)}\\
-  &~~~~|~ \mathbf{signal}_{t,t',M}~ |~ \mathbf{unfold}_{t,t',t'',M}&&\text{(reactive prims.)}\\
-  &~~~~|~ \mathbf{letrec}~ x_1 : t_1 = e_1~ ; \cdots ; x_n : t_n = e_n~ \mathbf{in}~ e~ \mathbf{end}&&\text{(recursive let)}\\
-  &~~~~|~ \mathbf{get}_{t,M}~ |~ \mathbf{put}_{t,M}&&\text{(state prims.)}\\
-  &~~~~|~ \mathbf{throw}_{t,t',M}~ |~ \mathbf{catch}_{t,t',M}&&\text{(error prims.)}\\
-  &~~~~|~ \mathbf{rdmem}_{t,t',M}~ |~ \mathbf{wrmem}_{t,t',M}&&\text{(memory prims.)}
+l \in \mathit{LetDefn}&::= x~ (x_1 : t_1)~ \dots~ (x_n : t_n) = e&&n \ge 0\\
+  &~~~~|~ x~ (x_1 : t_1)~ \dots~ (x_n : t_n) = e_b&&n \ge 0\\
+m_i \in \mathit{MachineDefn}&::= x~ (x_1 : t_1)~ \dots~ (x_n : t_n) = e_r&&n \ge 0,~ e_r\text{ is guarded}\\
+P \in \mathit{Prog}&::= \mathbf{let}~ l~ \mathbf{in}~ P~ \mathbf{end}\\
+  &~~~~|~ \mathbf{letrec}~ m_1~ \dots~ m_n~ \mathbf{in}~ x~ \mathbf{end}&&n \ge 1
 \end{aligned}
 $$
 
 \subsection{Notes}
-Note: $\mathbb{R}$ is {\it ReactT}, $\mathbb{S}$ is {\it StateT}, $\mathbb{E}$ is {\it ErrorT}, and $\mathbb{M}$ is {\it MemT} (for addressable memory, which may or may not actually be synthesized as RAM).
-
-See type system below for the all-important restrictions on letrec...
+$\mathbb{R}$ is {\it ReactT}, $\mathbb{S}$ is {\it StateT}, and $\mathbb{M}$ is {\it MemT} (for addressable memory, which may or may not actually be synthesized as RAM).
 
 In reality we're going to support non-recursive, first-order data types with named constructors, but for the abstract presentation, sums/products/unit will do (e.g. $Bit$ can be encoded as $() + ()$).
 
 For the moment I am trying to avoid polymorphism entirely, meaning any expression constructor that on its own might have polymorphic type has a type subscript. The ``real'' language could have Hindley-Milner style polymorphism and of course on paper it's fine to leave off subscripts when they can be inferred from context.
-
-The restriction of the domain type in $\mathbb{M}$ is not accidental. It's there because even in a higher-order setting we need to be able to test for equality.
 
 It may not be necessary to make {\it MemT} a special primitive; memory extraction could probably be performed from {\it StateT}.
 
