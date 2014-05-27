@@ -6,10 +6,8 @@
 \usepackage{stmaryrd}
 
 \begin{document}
-\section{A Confession}
-I suck at \LaTeX.
-
 \section{Syntax}
+\vspace{-0.6em}
 $$
 \begin{aligned}
 x,y,z,w,x_i \in \mathit{Variable}\\
@@ -38,7 +36,14 @@ e_r,e'_r \in \mathit{ReExp} &::= x~ e_1~ \dots~ e_n&&n \ge 0\\
   &~~~~|~ \mathbf{signal}_R~ e\\
 l \in \mathit{LetDefn}&::= x~ (x_1 : t_1)~ \dots~ (x_n : t_n) = e&&n \ge 0\\
   &~~~~|~ x~ (x_1 : t_1)~ \dots~ (x_n : t_n) = e_b&&n \ge 0\\
-m_i \in \mathit{MachineDefn}&::= x~ (x_1 : t_1)~ \dots~ (x_n : t_n) = e_r&&n \ge 0,~ e_r\text{ is guarded}\\
+b,b' \in \mathit{MachineBody}&::= \mathbf{let}~ x~ = e~ \mathbf{in}~ b~ \mathbf{end}\\
+  &~~~~|~ \mathbf{case}~ e~ \mathbf{of}~ \mathbf{inl}~ x \rightarrow b~ ; \mathbf{inr}~ y \rightarrow b'~ \mathbf{end}\\
+  &~~~~|~ \mathbf{return}_R~ e~ |~ \mathbf{bind}~ x \leftarrow{} b~ \mathbf{in}~ b~ \mathbf{end}\\
+  &~~~~|~ \mathbf{bind}~ x \leftarrow{} \mathbf{signal}_R~ e~ \mathbf{in}~ e_r~ \mathbf{end}\\
+  &~~~~|~ \mathbf{lift}_{\mathbb{R}_{t:t'}}~ e_b\\
+  &~~~~|~ \mathbf{lift}_T~ b\\
+  &~~~~|~ \mathbf{signal}_R~ e\\
+m_i \in \mathit{MachineDefn}&::= x~ (x_1 : t_1)~ \dots~ (x_n : t_n) = b&&n \ge 0\\
 P \in \mathit{Prog}&::= \mathbf{let}~ l~ \mathbf{in}~ P~ \mathbf{end}\\
   &~~~~|~ \mathbf{letrec}~ m_1~ \dots~ m_n~ \mathbf{in}~ x~ \mathbf{end}&&n \ge 1
 \end{aligned}
