@@ -7,7 +7,7 @@
 
 \begin{document}
 \section{Syntax}
-
+View this as being a subset of a vanilla higher-order typed lambda calculus with general recursion and special constants for the various monads/morphisms. (The subset does not have general recursion or higher-order features, though it's interesting to note that one could allow functions over signal type as first-class values, compiling them as arrays.)
 \subsection{Signals}
 $$
 \begin{aligned}
@@ -53,7 +53,7 @@ l \in \mathit{LetDefn}&::= x~ (x_1 : t_1)~ \dots~ (x_n : t_n) = e&&n \ge 0\\
   &~~~~|~ x~ (x_1 : t_1)~ \dots~ (x_n : t_n) = e_b&&n \ge 0\\
 b,b' \in \mathit{MachineBody}&::= \mathbf{let}~ x = e~ \mathbf{in}~ b~ \mathbf{end}\\
   &~~~~|~ \mathbf{case}~ e~ \mathbf{of}~ \mathbf{inl}~ x \rightarrow b~ ; \mathbf{inr}~ y \rightarrow b'~ \mathbf{end}\\
-  &~~~~|~ \mathbf{return}_R~ e~ |~ \mathbf{bind}~ x \leftarrow{} b~ \mathbf{in}~ b~ \mathbf{end}\\
+  &~~~~|~ \mathbf{return}_R~ e~ |~ \mathbf{bind}~ x \leftarrow{} b~ \mathbf{in}~ b'~ \mathbf{end}\\
   &~~~~|~ \mathbf{bind}~ x \leftarrow{} \mathbf{signal}_R~ e~ \mathbf{in}~ e_r~ \mathbf{end}\\
   &~~~~|~ \mathbf{lift}_{\mathbb{R}_{t:t'}}~ e_b\\
   &~~~~|~ \mathbf{lift}_T~ b\\
