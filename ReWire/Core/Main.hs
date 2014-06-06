@@ -4,10 +4,10 @@ import System.IO
 import System.Environment
 import ReWire.Core.Syntax
 import ReWire.Core.Parser
+--import ReWire.Core.PrettyPrint
+import ReWire.Core.PrettyPrintHaskell
 import ReWire.Core.KindChecker
 import ReWire.Core.TypeChecker
-import ReWire.Core.PrettyPrint
-import ReWire.Core.PrettyPrintHaskell
 import ReWire.Core.Transformations.Interactive
 
 main :: IO ()
@@ -20,13 +20,16 @@ main = do args <- getArgs
                      case res_p of
                        Left e  -> hPutStrLn stderr e
                        Right p -> do putStrLn "parse finished"
---                                     writeFile "show.out" (show p)
---                                     putStrLn "show out finished"
---                                     writeFile "Debug.hs" (show $ ppHaskell p)
---                                     putStrLn "debug out finished"
+                                     --writeFile "show.out" (show p)
+                                     --putStrLn "show out finished"
+                                     --writeFile "Debug.hs" (show $ ppHaskellWithName p "Debug")
+                                     --putStrLn "debug out finished"
                                      case kindcheck p of
                                        Just e  -> hPutStrLn stderr e
-                                       Nothing -> putStrLn "kc finished" >>
-                                                   (case typecheck p of
-                                                     Left e   -> hPutStrLn stderr e
-                                                     Right p' -> putStrLn "tc finished" >> trans p')
+                                       Nothing -> do putStrLn "kc finished"
+                                                     case typecheck p of
+                                                       Left e   -> hPutStrLn stderr e
+                                                       Right p' -> do putStrLn "tc finished"
+                                                                      writeFile "tc.out" (show p')
+                                                                      putStrLn "tc debug print finished"
+                                                                      trans p'

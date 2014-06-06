@@ -6,46 +6,95 @@
 \usepackage{stmaryrd}
 
 \begin{document}
-\section{A Confession}
-I suck at \LaTeX.
-
-\section{Syntax}
+\section{Syntax of the High-Level Calculus}
+View this as being a subset of a vanilla higher-order typed lambda calculus with general recursion and special constants for the various monads/morphisms. (The subset does not have general recursion or higher-order features, though it's interesting to note that one could allow functions over signal type as first-class values, compiling them as arrays.)
+\subsection{Signals}
 $$
 \begin{aligned}
-x,y,z,w \in \mathit{Variable}\\
-t,t',t'' \in \mathit{Type} &::= ()~ |~ t + t'~ |~ t \times t'~ |~ t \rightarrow t'~ |~ M(t)\\
-d \in \mathit{DataType} &::= \text{a restriction of}~ \mathit{Type}~ \text{to ``data-only'' types}\\
-M \in \mathit{Monad} &::= \mathbb{I}~ |~ T M\\
-T \in \mathit{MonadTrans} &::= \mathbb{R}_{t:t'}~ |~ \mathbb{S}_t~ |~ \mathbb{E}_t~ |~ \mathbb{M}_{d:t}\\
-e,e',e'' \in \mathit{Exp}&::= x~ |~ \lambda{}x_t\rightarrow{}e~ |~ e~ e'&&\text{(lambda calculus)}\\
-  &~~~~|~ \textbf{nil}&&\text{(unit)}\\
-  &~~~~|~ \textbf{inl}_{t,t'}~ |~ \textbf{inr}_{t,t'}~ |~ \textbf{case}~ e~ \textbf{of}~ \textbf{inl}~ x \rightarrow e'~ ; \textbf{inr}~ y \rightarrow e''~ \textbf{end}&&\text{(coproduct)}\\
-  &~~~~|~ \textbf{mkpair}_{t,t'}~ |~ \mathbf{fst}_{t,t'}~ |~ \mathbf{snd}_{t,t'}&&\text{(product)}\\
-  &~~~~|~ \textbf{return}_{t,M}~ |~ \textbf{bind}_{t,t',M}~ |~ \textbf{lift}_{t,M,T}&&\text{(monad operators)}\\
-  &~~~~|~ \textbf{signal}_{t,t',M}~ |~ \mathbf{unfold}_{t,t',t'',M}&&\text{(reactive prims.)}\\
-  &~~~~|~ \textbf{get}_{t,M}~ |~ \textbf{put}_{t,M}&&\text{(state prims.)}\\
-  &~~~~|~ \textbf{throw}_{t,t',M}~ |~ \textbf{catch}_{t,t',M}&&\text{(error prims.)}\\
-  &~~~~|~ \textbf{rdmem}_{t,t',M}~ |~ \textbf{wrmem}_{t,t',M}&&\text{(memory prims.)}
+x,y,z,w,x_i \in \mathit{Variable}\\
+t,t',t'',t''',t_i \in \mathit{SigType} &::= ()~ |~ t + t'~ |~ t \times t'\\
+e,e',e'',e_i \in \mathit{SigExp}&::= x~ e_1~ \dots~ e_n&&n \ge 0\\
+  &~~~~|~ \mathbf{let}~ x = e~ \mathbf{in}~ e'~ \mathbf{end}\\
+  &~~~~|~ \mathbf{nil}~ |~ \mathbf{inl}_t~ e~ |~ \mathbf{inr}_t~ e~ |~ \mathbf{mkpair}~ e~ e'\\
+  &~~~~|~ \mathbf{case}~ e~ \mathbf{of}~ \mathbf{inl}~ x \rightarrow e'~ ; \mathbf{inr}~ y \rightarrow e''~ \mathbf{end}\\
+  &~~~~|~ \mathbf{fst}~ e~ |~ \mathbf{snd}~ e\\
+  &~~~~|~ \mathbf{runId}~ e_b
+\end{aligned}
+$$
+
+\subsection{Base-Monad Computations}
+$$
+\begin{aligned}
+T \in \mathit{MonadTrans} &::= \mathbb{S}_t~ |~ \mathbb{M}_{t:t'}\\
+B \in \mathit{BaseMonad} &::= \mathbb{I}~ |~ T B\\
+e_b,e'_b \in \mathit{BaseExp} &::= x~ e_1~ \dots~ e_n&&n \ge 0\\
+  &~~~~|~ \mathbf{let}~ x = e~ \mathbf{in}~ e_b~ \mathbf{end}\\
+  &~~~~|~ \mathbf{case}~ e~ \mathbf{of}~ \mathbf{inl}~ x \rightarrow e_b~ ; \mathbf{inr}~ y \rightarrow e'_b~ \mathbf{end}\\
+  &~~~~|~ \mathbf{return}_B~ e~ |~ \mathbf{bind}~ x \leftarrow{} e_b~ \mathbf{in}~ e'_b~ \mathbf{end}\\
+  &~~~~|~ \mathbf{lift}_T~ e_b~ |~ \mathbf{run}_{\mathbb{S}_t}~ \\
+  &~~~~|~ \mathbf{get}_B~ |~ \mathbf{put}_B~ e\\
+  &~~~~|~ \mathbf{runStateT}~ e_b~ e~\\
+\end{aligned}
+$$
+
+\subsection{Resumption-Monad Computations}
+$$
+\begin{aligned}
+R \in \mathit{ReMonad} &::= \mathbb{R}_{t:t'} B~ |~ T R\\
+e_r,e'_r \in \mathit{ReExp} &::= x~ e_1~ \dots~ e_n&&n \ge 0\\
+  &~~~~|~ \mathbf{let}~ x = e~ \mathbf{in}~ e_r~ \mathbf{end}\\
+  &~~~~|~ \mathbf{case}~ e~ \mathbf{of}~ \mathbf{inl}~ x \rightarrow e_r~ ; \mathbf{inr}~ y \rightarrow e'_r~ \mathbf{end}\\
+  &~~~~|~ \mathbf{return}_R~ e~ |~ \mathbf{bind}~ x \leftarrow{} e_r~ \mathbf{in}~ e'_r~ \mathbf{end}\\
+  &~~~~|~ \mathbf{lift}_{\mathbb{R}_{t:t'}}~ e_b\\
+  &~~~~|~ \mathbf{lift}_T~ e_r\\
+  &~~~~|~ \mathbf{signal}_R~ e\\
+  &~~~~|~ \mathbf{get}_R~ |~ \mathbf{put}_R~ e\\
+  &~~~~|~ \mathbf{runStateT}~ e_r~ e~ |~ \mathbf{extrudeStateT}~ e_r~ e
+\end{aligned}
+$$
+
+\subsection{Programs}
+$$
+\begin{aligned}
+l \in \mathit{LetDefn}&::= x~ (x_1 : t_1)~ \dots~ (x_n : t_n) = e&&n \ge 0\\
+  &~~~~|~ x~ (x_1 : t_1)~ \dots~ (x_n : t_n) = e_b&&n \ge 0\\
+b,b' \in \mathit{MachineBody}&::= \mathbf{let}~ x = e~ \mathbf{in}~ b~ \mathbf{end}\\
+  &~~~~|~ \mathbf{case}~ e~ \mathbf{of}~ \mathbf{inl}~ x \rightarrow b~ ; \mathbf{inr}~ y \rightarrow b'~ \mathbf{end}\\
+  &~~~~|~ \mathbf{return}_R~ e~ |~ \mathbf{bind}~ x \leftarrow{} b~ \mathbf{in}~ b'~ \mathbf{end}\\
+  &~~~~|~ \mathbf{bind}~ x \leftarrow{} \mathbf{signal}_R~ e~ \mathbf{in}~ e_r~ \mathbf{end}\\
+  &~~~~|~ \mathbf{lift}_{\mathbb{R}_{t:t'}}~ e_b\\
+  &~~~~|~ \mathbf{lift}_T~ b\\
+  &~~~~|~ \mathbf{signal}_R~ e\\
+  &~~~~|~ \mathbf{runStateT}~ e_b~ e~ |~ \mathbf{extrudeStateT}~ e_b~ e\\
+m_i \in \mathit{MachineDefn}&::= x~ (x_1 : t_1)~ \dots~ (x_n : t_n) = b&&n \ge 0\\
+P \in \mathit{Prog}&::= \mathbf{let}~ l~ \mathbf{in}~ P~ \mathbf{end}\\
+  &~~~~|~ \mathbf{letrec}~ m_1~ \dots~ m_n~ \mathbf{in}~ x~ \mathbf{end}&&n \ge 1
 \end{aligned}
 $$
 
 \subsection{Notes}
-Note: $\mathbb{R}$ is {\it ReactT}, $\mathbb{S}$ is {\it StateT}, $\mathbb{E}$ is {\it ErrorT}, and $\mathbb{M}$ is {\it MemT} (for addressable memory, which may or may not actually be synthesized as RAM).
+$\mathbb{R}$ is {\it ReactT}, $\mathbb{S}$ is {\it StateT}, $\mathbb{I}$ is {\it Identity}.
 
-In reality we're going to support non-recursive, first-order data types with named constructors, but for the abstract presentation, sums/products/unit will do (e.g. $Bit$ can be encoded as $() + ()$).
+In a surface language we're going to support non-recursive, first-order data types with named constructors, but for the abstract presentation, sums/products/unit will do (e.g. $Bit$ can be encoded as $() + ()$). Pattern matching on data types in the surface language will have to be exhaustive.
+
+Sized vector/integer types could (and probably should) also be available in the surface language.
 
 For the moment I am trying to avoid polymorphism entirely, meaning any expression constructor that on its own might have polymorphic type has a type subscript. The ``real'' language could have Hindley-Milner style polymorphism and of course on paper it's fine to leave off subscripts when they can be inferred from context.
 
-The restriction of the domain type in $\mathbb{M}$ is not accidental. It's there because even in a higher-order setting we need to be able to test for equality.
-
-It may not be necessary to make {\it MemT} a special primitive; memory extraction could probably be performed from {\it StateT}.
+I {\em think} it is possible to describe addressable memory simply by augmenting {\it SigType} with the form $t \rightarrow t'$ (where $t$ and $t'$ are {\it SigType}).
 
 \section{Type System}
-\infer[\textsc{T-Lam}]{\Gamma\vdash{}\lambda{}x_t\rightarrow{}e : t \rightarrow t'}{\Gamma,x : t\vdash{}e : t'}
+
+THIS SECTION IS OUTDATED, but if it were not outdated it would reflect the simple slogan that ``everything has the type it would have in Haskell''.
+
 \vspace{1em}
 \infer[\textsc{T-Var}]{\Gamma,x : t\vdash{}x : t}{}
 \vspace{1em}
+\infer[\textsc{T-Lam}]{\Gamma\vdash{}\lambda{}x_t\rightarrow{}e : t \rightarrow t'}{\Gamma,x : t\vdash{}e : t'}
+\vspace{1em}
 \infer[\textsc{T-App}]{\Gamma\vdash{}e~ e' : t}{\Gamma\vdash{}e : t' \rightarrow t~~~\Gamma\vdash{}e' : t'}
+\vspace{1em}
+\infer[\textsc{T-Let}]{\Gamma\vdash{}\textbf{let}~ x_t = e~ \textbf{in}~ e'~ \textbf{end} : t'}{\Gamma,x : t\vdash{}e' : t'~~~\Gamma \vdash e : t}
 \vspace{1em}
 \infer[\textsc{T-Nil}]{\Gamma\vdash{}\textbf{nil} : ()}{}
 \vspace{1em}
@@ -93,7 +142,10 @@ It may not be necessary to make {\it MemT} a special primitive; memory extractio
 
 \section{Denotational Semantics}
 
+THIS SECTION IS OUTDATED, but if it were not outdated it would reflect the simple slogan that ``everything has the same semantics it would have in Haskell, EXCEPT that there are no bottoms''.
+
 \subsection{Of Types}
+
 \begin{eqnarray*}
 \llbracket{}()\rrbracket &=& \{()\}\\
 \llbracket{}t+t'\rrbracket &=& \llbracket{}t\rrbracket + \llbracket{}t'\rrbracket\\
@@ -146,6 +198,7 @@ For clarity's sake (?), irrelevant type subscripts are dropped.
 \llbracket{}x\rrbracket{}\rho &=& \rho x\\
 \llbracket{}\lambda x_t \rightarrow e\rrbracket \rho &=& \lambda v \rightarrow \llbracket{}e\rrbracket(\rho[x\mapsto{}v])\\
 \llbracket{}e~ e'\rrbracket \rho &=& \llbracket{}e\rrbracket\rho~ (\llbracket{}e'\rrbracket\rho)\\
+\llbracket{}\mathbf{let}~ x = e~ \mathbf{in}~ e' \mathbf{end}\rrbracket \rho &=& \llbracket{}e'\rrbracket (\rho[x\mapsto{}\llbracket{}e\rrbracket\rho])\\
 \llbracket{}\mathbf{nil}\rrbracket \rho &=& ()\\
 \llbracket{}\mathbf{inl}\rrbracket \rho &=& \mathbf{inl}\\
 \llbracket{}\mathbf{inr}\rrbracket \rho &=& \mathbf{inr}\\
@@ -213,5 +266,111 @@ Notably:
 \end{itemize}
 
 \section{Translation to Monadic Normal Form}
+
+\begin{verbatim}
+tr :: Exp -> M Exp
+tr "f e1 .. en" @ ReT (StT M) _ =
+tr "f e1 .. en" @ StT M _       = do
+  [e1',..,en'] <- mapM tr [e1,..,en]
+  f'           <- schedule f
+  s            <- statename
+  return "f' e1' .. en' s"
+
+tr "f e1 .. en" @ Id _ = do
+  [e1',..,en'] <- mapM tr [e1,..,en]
+  f'           <- schedule f
+  return "f' e1' .. en'"
+
+tr "f e1 .. en" = do
+  [e1',..,en'] <- mapM tr [e1,..,en]
+  return "f e1' .. en'"
+
+tr "let x = e1 in e2" = do
+  e1' <- tr e1
+  e2' <- tr e2
+  return "let x = e1' in e2'"
+
+tr "case e of inl x -> ex ; inr y -> ey" = do
+  let (t',t') =  typeof e
+  e'          <- tr e
+  ex'         <- tr ex
+  ey'         <- tr ey
+  return "case e' of inl x -> ex' ; inr y -> ey'"
+  
+tr "return e" @ ReT (StT M) _ =
+tr "return e" @ StT M _       = do
+  e' <- tr e
+  s  <- statename
+  return "return (e',s)"
+
+tr "return e" @ ReT Id _ = do
+  e' <- tr e
+  return "return e'"
+
+tr "return e" @ Id a = tr e
+
+tr "bind x <- e1 in e2" @ ReT (StT M) _ =
+tr "bind x <- e1 in e2" @ StT M _       = do
+  e1'   <- tr e1
+  e2'   <- tr e2
+  s     <- statename
+  p     <- gensym
+  return "bind p <- e1' in
+          let x  =  pi1 p in
+          let s  =  pi2 p in
+          e2'"
+
+tr "bind x <- e1 in e2" @ ReT Id _ =
+  e1' <- tr e1
+  e2' <- tr e2
+  return "bind x <- e1' in e2'"
+
+tr "bind x <- e1 in e2" @ Id
+  e1' <- tr e1
+  e2' <- tr e2
+  return "let x = e1' in e2'"
+
+tr "lift e" = @ StT M _ = do
+  e' <- tr e
+  s  <- statename
+  x  <- gensym
+  return "bind x <- e' in return (x,s)"
+
+tr "lift e" @ ReT (StT M) _ = do
+  s  <- statename
+  e' <- tr "runStateT e s"
+  return "liftR e'"
+
+tr "lift e" @ ReT Id _ =
+  e' <- tr e
+  return "return e'"
+
+tr "signal e" @ ReT (StT M) _ = do
+  e' <- statelessly (tr e)
+  s  <- statename
+  x  <- gensym
+  return "bind x <- signal e' in return (x,s)"
+
+tr "get" = do
+  s <- statename
+  return "return (s,s)"
+
+tr "put e" = do
+  e' <- statelessly (tr e)
+  return "return ((),e')"
+
+tr "runStateT e1 e2" = do
+  s'  <- gensym
+  e1' <- withstatename s' (tr e1)
+  e2' <- statelessly (tr e2)
+  return "let s' = e2' in e1'"
+
+tr "extrudeStateT e1 e2" = do
+  s'  <- gensym
+  e1' <- withstatename s' (tr e1)
+  e2' <- statelessly (tr e2)
+  return "let s' = e2' in e1'"
+  
+\end{verbatim}
 
 \end{document}

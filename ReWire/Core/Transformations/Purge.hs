@@ -50,4 +50,4 @@ purge n p = fst $
 
 cmdPurge :: TransCommand
 cmdPurge arg_ p = (purge (s2n arg) p,Nothing)
-  where arg = if null arg_ then "main" else arg_
+  where arg = if null arg_ then "start" else arg_

@@ -37,3 +37,8 @@ is
             ; Just y  -> y
             }) m
 end
+
+grakko :: a -> Maybe (Maybe a)
+is
+  \ x -> Just (Just x)
+end
