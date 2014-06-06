@@ -33,7 +33,6 @@ e_b,e'_b \in \mathit{BaseExp} &::= x~ e_1~ \dots~ e_n&&n \ge 0\\
   &~~~~|~ \mathbf{return}_B~ e~ |~ \mathbf{bind}~ x \leftarrow{} e_b~ \mathbf{in}~ e'_b~ \mathbf{end}\\
   &~~~~|~ \mathbf{lift}_T~ e_b~ |~ \mathbf{run}_{\mathbb{S}_t}~ \\
   &~~~~|~ \mathbf{get}_B~ |~ \mathbf{put}_B~ e\\
-  &~~~~|~ \mathbf{rdmem}_B~ e~ |~ \mathbf{wrmem}_B~ e~ e'\\
   &~~~~|~ \mathbf{runStateT}~ e_b~ e~\\
 \end{aligned}
 $$
@@ -50,7 +49,6 @@ e_r,e'_r \in \mathit{ReExp} &::= x~ e_1~ \dots~ e_n&&n \ge 0\\
   &~~~~|~ \mathbf{lift}_T~ e_r\\
   &~~~~|~ \mathbf{signal}_R~ e\\
   &~~~~|~ \mathbf{get}_R~ |~ \mathbf{put}_R~ e\\
-  &~~~~|~ \mathbf{rdmem}_R~ e~ |~ \mathbf{wrmem}_R~ e~ e'\\
   &~~~~|~ \mathbf{runStateT}~ e_r~ e~ |~ \mathbf{extrudeStateT}~ e_r~ e
 \end{aligned}
 $$
@@ -258,5 +256,103 @@ Notably:
 
 \section{Translation to Monadic Normal Form}
 
+\begin{verbatim}
+--
+-- should only be called on exprs whose types are of form
+--
+--   StateT^n (ReactT (StateT^m Id)) a where n > 0 or m > 0.
+--
+-- If n > 0, it'll spit out an expr of type
+--
+--   StateT^(n-1) (ReactT (StateT^m Id)) (a,s)
+--
+-- where s is the type of the state for the first StateT.
+--
+-- If n == 0 and m > 0, it'll spit out an expr of type
+--
+--   ReactT (StateT^(m-1) Id) (a,s)
+--
+-- where s is the type of the state for the first StateT.
+--
+-- The "statename" should be pre-loaded with the appropriate
+-- name, which will have been generated when we entered a
+-- function body.
+--
+tr :: ReExp -> M ReExp
+tr "f e1..en" = do
+  s  <- statename
+  f' <- schedule f for tr'ing
+  if s exists then
+    return "f' e1 .. en s"
+  else
+    return "f' e1 .. en"
+
+tr "let x = e in e_r end" = do
+  e'   <- statelessly (tr e)
+  e_r' <- assuming x has type of e' $ tr e_r
+  return "let x = e' in e_r' end"
+
+tr "case e of inl x -> ex ; inr y -> ey" = do
+  -- e has type (t,t')
+  e'  <- statelessly (tr e)
+  ex' <- assuming x has type t  $ tr ex
+  ey' <- assuming y has type t' $ tr ey
+  return "case e' of inl x -> ex' ; inr y -> ey'"
+
+tr "return e" = do
+  e' <- statelessly (tr e)
+  s  <- statename
+  return "return (e',s)"
+
+tr "bind x <- e1 in e2" = do
+  -- e1 has type M t for some monad M
+  e1' <- tr e1
+  e2' <- assuming x has type t $ tr e2
+  s   <- statename
+  p   <- gensym
+  return "bind p <- e1' in
+          let x  =  pi1 p in
+          let s  =  pi2 p in
+          e2'"
+
+tr "liftS e" = do
+  e' <- statelessly (tr e)
+  s  <- statename
+  x  <- gensym
+  return "bind x <- e' in return (x,s)"
+
+tr "liftR e" = do
+  e'  <- statelessly (tr e)
+  s   <- statename
+  e'' <- tr "runStateT e' s"
+  return "return e''"
+
+tr "signal e" = do
+  e' <- statelessly (tr e)
+  s  <- statename
+  x  <- gensym
+  return "bind x <- signal e' in return (x,s)"
+
+tr "get" = do
+  s <- statename
+  return "return (s,s)"
+
+tr "put e" = do
+  e' <- statelessly (tr e)
+  return "return ((),e')"
+
+tr "runStateT e1 e2" = do
+  s'  <- gensym
+  e1' <- withstatename s' (tr e1)
+  e2' <- statelessly (tr e2)
+  return "let s' = e2' in e1'"
+
+tr "extrudeStateT e1 e2" = do
+  s'  <- gensym
+  e1' <- withstatename s' (tr e1)
+  e2' <- statelessly (tr e2)
+  return "let s' = e2' in e1'"
+  
+\end{verbatim}
 
 \end{document}
