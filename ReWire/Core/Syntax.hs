@@ -67,6 +67,7 @@ instance Alpha RWCTy where
   
 data RWCExp = RWCApp RWCExp RWCExp
             | RWCLam (Id RWCExp) RWCTy RWCExp
+            | RWCLet (Id RWCExp) RWCExp RWCExp
             | RWCVar (Id RWCExp) RWCTy
             | RWCCon DataConId RWCTy
             | RWCLiteral RWCLit
@@ -79,12 +80,14 @@ instance IdSort RWCExp where
 instance Subst RWCExp RWCExp where
   fv (RWCApp e1 e2)   = fv e1 ++ fv e2
   fv (RWCLam x _ e)   = filter (/= x) (fv e)
+  fv (RWCLet x e e')  = fv e ++ filter (/= x) (fv e')
   fv (RWCVar x _)     = [x]
   fv (RWCCon _ _)     = []
   fv (RWCLiteral l)   = []
   fv (RWCCase e alts) = fv e ++ concatMap fv alts
   bv (RWCApp e1 e2)   = bv e1 ++ bv e2
   bv (RWCLam x _ e)   = x : bv e
+  bv (RWCLet x e e')  = x : (bv e ++ bv e')
   bv (RWCVar _ _)     = []
   bv (RWCCon _ _)     = []
   bv (RWCLiteral _)   = []
@@ -93,6 +96,10 @@ instance Subst RWCExp RWCExp where
   subst' (RWCLam x t e)   = refresh x (fv e) $ \ x' ->
                               do e' <- subst' e
                                  return (RWCLam x' t e')
+  subst' (RWCLet x e1 e2) = do e1' <- subst' e1
+                               refresh x (fv e2) $ \ x' ->
+                                 do e2' <- subst' e2
+                                    return (RWCLet x' e1' e2')
   subst' (RWCVar x t)     = do ml <- query x
                                case ml of
                                  Just (Left y)  -> return (RWCVar y t)
@@ -105,6 +112,7 @@ instance Subst RWCExp RWCExp where
 instance Subst RWCExp RWCTy where
   fv (RWCApp e1 e2)   = fv e1 ++ fv e2
   fv (RWCLam _ t e)   = fv t ++ fv e
+  fv (RWCLet _ e1 e2) = fv e1 ++ fv e2
   fv (RWCVar _ t)     = fv t
   fv (RWCCon _ t)     = fv t
   fv (RWCLiteral _)   = []
@@ -112,6 +120,7 @@ instance Subst RWCExp RWCTy where
   bv _ = []
   subst' (RWCApp e1 e2)   = liftM2 RWCApp (subst' e1) (subst' e2)
   subst' (RWCLam x t e)   = liftM2 (RWCLam x) (subst' t) (subst' e)
+  subst' (RWCLet x e1 e2) = liftM2 (RWCLet x) (subst' e1) (subst' e2)
   subst' (RWCVar x t)     = liftM (RWCVar x) (subst' t)
   subst' (RWCCon i t)     = liftM (RWCCon i) (subst' t)
   subst' (RWCLiteral l)   = return (RWCLiteral l)
@@ -130,6 +139,7 @@ instance Alpha RWCExp where
 instance NFData RWCExp where
   rnf (RWCApp e1 e2)   = e1 `deepseq` e2 `deepseq` ()
   rnf (RWCLam x t e)   = x `deepseq` t `deepseq` e `deepseq` ()
+  rnf (RWCLet x e1 e2) = x `deepseq` e1 `deepseq` e2 `deepseq` ()
   rnf (RWCVar x t)     = x `deepseq` t `deepseq` ()
   rnf (RWCCon i t)     = i `deepseq` t `deepseq` ()
   rnf (RWCLiteral l)   = l `deepseq` ()
@@ -290,7 +300,8 @@ arrowRight t                                                       = error $ "ar
 
 typeOf :: RWCExp -> RWCTy
 typeOf (RWCApp e _)                   = arrowRight (typeOf e)
-typeOf (RWCLam x t e)                 = mkArrow t (typeOf e)
+typeOf (RWCLam _ t e)                 = mkArrow t (typeOf e)
+typeOf (RWCLet _ _ e)                 = typeOf e
 typeOf (RWCVar _ t)                   = t
 typeOf (RWCCon _ t)                   = t
 typeOf (RWCLiteral (RWCLitInteger _)) = RWCTyCon (TyConId "Integer")

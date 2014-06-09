@@ -175,6 +175,9 @@ tcExp (RWCLam x _ e)   = do tvx    <- freshv
                             let te =  typeOf e'
                             unify (RWCTyVar tvr) (RWCTyVar tvx `mkArrow` te)
                             return (RWCLam x (RWCTyVar tvx) e')
+tcExp (RWCLet x e1 e2) = do e1' <- tcExp e1
+                            e2' <- localAssumps (Map.insert x ([] :-> typeOf e1')) (tcExp e2)
+                            return (RWCLet x e1' e2')
 tcExp (RWCVar v _)     = do as      <- askAssumps
                             let mpt =  Map.lookup v as
                             case mpt of

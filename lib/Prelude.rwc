@@ -1,0 +1,16 @@
+data Either a b is Left a | Right b end
+data Maybe a is Nothing | Just a end
+data Pair a b is Pair a b end
+data Unit is Unit end
+data Bit is Zero | One end
+
+data ReactT i o m a is ReactT (m (Either a (i -> ReactT i o m a))) end
+data StateT s m a is StateT (s -> m (a,s)) end
+data Id a is Id a end
+
+deRe :: ReactT i o m a -> m (Either a (i -> ReactT i o m a))
+is
+  \ m -> case m of
+         { ReactT phi -> phi
+         }
+end

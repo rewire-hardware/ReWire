@@ -10,7 +10,7 @@ import Data.List (nub)
 import Control.Monad (liftM,foldM)
 
 rwcDef :: T.LanguageDef st
-rwcDef = L.haskellDef { T.reservedNames   = ["data","of","end","def","is","case"],
+rwcDef = L.haskellDef { T.reservedNames   = ["data","of","let","end","def","is","case"],
                         T.reservedOpNames = ["|","\\","->","::"] }
 
 lexer = T.makeTokenParser rwcDef
@@ -126,6 +126,14 @@ lamexpr = do reservedOp "\\"
              reservedOp "->"
              e <- expr
              return (RWCLam (mkId i) tblank e)
+      <|> do reserved "let"
+             x <- varid
+             reservedOp "="
+             e1 <- expr
+             reserved "in"
+             e2 <- expr
+             reserved "end"
+             return (RWCLet (mkId x) e1 e2)
       <|> do reserved "case"
              e    <- expr
              reserved "of"
