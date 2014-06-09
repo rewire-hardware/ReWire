@@ -131,14 +131,6 @@ THIS SECTION IS OUTDATED, but if it were not outdated it would reflect the simpl
 \infer[\textsc{T-RdMem}]{\Gamma\vdash{}\textbf{rdmem}_{t,t',M} : t \rightarrow \mathbb{M}_{t\rightarrow{}t'}M(t')}{}
 \vspace{1em}
 \infer[\textsc{T-WrMem}]{\Gamma\vdash{}\textbf{wrmem}_{t,t',M} : t \rightarrow t' \rightarrow \mathbb{M}_{t\rightarrow{}t'}M\big(()\big)}{}
-\vspace{1em}
-\infer[\textsc{T-RunS}]{\Gamma\vdash{}\textbf{run}_{\mathbb{S},t,t',M} : \mathbb{S}_tM(t') \rightarrow t \rightarrow M(t'\times{}t)}{}
-\vspace{1em}
-\infer[\textsc{T-RunE}]{\Gamma\vdash{}\textbf{run}_{\mathbb{E},t,t',M} : \mathbb{E}_tM(t') \rightarrow M(t'+t)}{}
-\vspace{1em}
-\infer[\textsc{T-RunM}]{\Gamma\vdash{}\textbf{run}_{\mathbb{M},t,t',t'',M} : \mathbb{M}_{t:t'}M(t'') \rightarrow t' \rightarrow M(t'')}{}
-\vspace{1em}
-\infer[\textsc{T-Extrude}]{\Gamma\vdash{}\textbf{extrude}_{T,M,t,t',t''} : \mathbb{R}_{t:t'}TM(t'') \rightarrow T\mathbb{R}_{t:t'}M(t'')}{}
 
 \section{Denotational Semantics}
 
@@ -225,9 +217,6 @@ For clarity's sake (?), irrelevant type subscripts are dropped.
 \llbracket{}\mathbf{wrmem}_M\rrbracket\rho &=& \lambda \alpha . \lambda \omega . \lambda \mu . \mathcal{U}\llbracket{}M\rrbracket \langle(),\mu[\alpha \mapsto \omega]\rangle
 \end{eqnarray*}
 
-\section{Extended Monadic Normal Form}
-An extended monadic normal form program is a typed system of equations:
-
 \section{Monadic Normal Form}
 A monadic normal form program is a typed system of equations:
 
@@ -268,6 +257,22 @@ Notably:
 \section{Translation to Monadic Normal Form}
 
 \begin{verbatim}
+M =~= StateT (FreshNameCounter,Map Name Name,Set Name) Identity
+
+The "Map Name Name" maps functions that have been/are being/will be transformed
+to their new names.
+
+The "Set Name" tracks functions that have been/are being transformed.
+
+schedule :: Name -> M Name
+schedule n = do m <- getMap
+                case Map.lookup n m of
+                  Just n' -> return n'
+                  Nothing -> do
+                    n' <- gensym
+                    updMap (Map.insert n n')
+                    return n'
+
 tr :: Exp -> M Exp
 tr "f e1 .. en" @ ReT (StT M) _ =
 tr "f e1 .. en" @ StT M _       = do
@@ -346,29 +351,33 @@ tr "lift e" @ ReT Id _ =
   return "return e'"
 
 tr "signal e" @ ReT (StT M) _ = do
-  e' <- statelessly (tr e)
+  e' <- tr e
   s  <- statename
   x  <- gensym
   return "bind x <- signal e' in return (x,s)"
+
+tr "signal e" @ ReT Id _ = do
+  e' <- tr e
+  return "signal e'"
 
 tr "get" = do
   s <- statename
   return "return (s,s)"
 
 tr "put e" = do
-  e' <- statelessly (tr e)
+  e' <- tr e
   return "return ((),e')"
 
 tr "runStateT e1 e2" = do
   s'  <- gensym
   e1' <- withstatename s' (tr e1)
-  e2' <- statelessly (tr e2)
+  e2' <- tr e2
   return "let s' = e2' in e1'"
 
 tr "extrudeStateT e1 e2" = do
   s'  <- gensym
   e1' <- withstatename s' (tr e1)
-  e2' <- statelessly (tr e2)
+  e2' <- tr e2
   return "let s' = e2' in e1'"
   
 \end{verbatim}
