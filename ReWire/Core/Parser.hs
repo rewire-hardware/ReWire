@@ -86,6 +86,9 @@ monad = do reserved "ReT"
     <|> do reserved "I"
            return RWCIdM
            
+mktuplecon :: Int -> String
+mktuplecon n = "Tuple" ++ show n
+
 atype = do m <- monad
            t <- parens ty
            return (RWCTyComp m t)
@@ -95,9 +98,9 @@ atype = do m <- monad
            return (RWCTyVar (mkId i))
     <|> do ts <- parens (ty `sepBy` comma)
            case ts of
-             []  -> return (RWCTyCon (TyConId "()"))
+             []  -> return (RWCTyCon (TyConId "Unit"))
              [t] -> return t
-             _   -> return (foldl RWCTyApp (RWCTyCon (TyConId $ "(" ++ replicate (length ts - 1) ',' ++ ")")) ts)
+             _   -> return (foldl RWCTyApp (RWCTyCon (TyConId $ mktuplecon (length ts))) ts)
              
 btype = do ts <- many atype
            return (foldl1 RWCTyApp ts)
@@ -125,9 +128,9 @@ aexpr = do i <- varid
            return (RWCLiteral l)
     <|> do es <- parens (expr `sepBy` comma)
            case es of
-             []  -> return (RWCCon (DataConId "()") tblank)
+             []  -> return (RWCCon (DataConId "Unit") tblank)
              [e] -> return e
-             _   -> return (foldl RWCApp (RWCCon (DataConId $ "(" ++ replicate (length es - 1) ',' ++ ")") tblank) es)
+             _   -> return (foldl RWCApp (RWCCon (DataConId $ mktuplecon (length es)) tblank) es)
              
 literal = liftM RWCLitInteger natural
       <|> liftM RWCLitFloat float
@@ -190,9 +193,9 @@ apat = do i <- varid
           return RWCPatWild
    <|> do ps <- parens (pat `sepBy` comma)
           case ps of
-            []  -> return (RWCPatCon (DataConId "()") [])
+            []  -> return (RWCPatCon (DataConId "Unit") [])
             [p] -> return p
-            _   -> return (RWCPatCon (DataConId $ "(" ++ replicate (length ps - 1) ',' ++ ")") ps)
+            _   -> return (RWCPatCon (DataConId $ mktuplecon (length ps)) ps)
 parse :: String -> Either String RWCProg
 parse = parsewithname "<no filename>"
 
