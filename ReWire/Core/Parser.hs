@@ -10,8 +10,8 @@ import Data.List (nub)
 import Control.Monad (liftM,foldM)
 
 rwcDef :: T.LanguageDef st
-rwcDef = L.haskellDef { T.reservedNames   = ["data","of","let","end","def","is","case"],
-                        T.reservedOpNames = ["|","\\","->","::"] }
+rwcDef = L.haskellDef { T.reservedNames   = ["data","of","let","in","end","def","is","case","bind","return","ReT","StT","I"],
+                        T.reservedOpNames = ["|","\\","->","::","<-"] }
 
 lexer = T.makeTokenParser rwcDef
 
@@ -77,7 +77,19 @@ datacon = do i  <- conid
              ts <- many atype
              return (RWCDataCon (DataConId i) ts)
 
-atype = do i <- conid
+monad = do reserved "ReT"
+           (ti,to,m) <- parens (ty >>= \ t1 -> comma >> ty >>= \ t2 -> comma >> monad >>= \ m -> return (t1,t2,m))
+           return (RWCReT ti to m)
+    <|> do reserved "StT"
+           (tst,m) <- parens (ty >>= \ t -> comma >> monad >>= \ m -> return (t,m))
+           return (RWCStT tst m)           
+    <|> do reserved "I"
+           return RWCIdM
+           
+atype = do m <- monad
+           t <- parens ty
+           return (RWCTyComp m t)
+    <|> do i <- conid
            return (RWCTyCon (TyConId i))
     <|> do i <- varid
            return (RWCTyVar (mkId i))
@@ -132,13 +144,25 @@ lamexpr = do reservedOp "\\"
              e1 <- expr
              reserved "in"
              e2 <- expr
-             reserved "end"
+--             reserved "end"
              return (RWCLet (mkId x) e1 e2)
       <|> do reserved "case"
              e    <- expr
              reserved "of"
              alts <- braces (alt `sepBy` semi)
              return (RWCCase e alts)
+      <|> do reserved "bind"
+             i  <- varid
+             reservedOp "<-"
+             ei <- expr
+             reserved "in"
+             eb <- expr
+--             reserved "end"
+             return (RWCBind (mkId i) ei eb)
+      <|> do reserved "return"
+             m  <- brackets monad
+             e  <- aexpr
+             return (RWCReturn m e)
 
 wildcardify fvs (RWCPatCon i ps)               = RWCPatCon i (map (wildcardify fvs) ps)
 wildcardify fvs (RWCPatLiteral l)              = RWCPatLiteral l

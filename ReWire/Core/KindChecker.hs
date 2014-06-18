@@ -118,6 +118,21 @@ kcTy (RWCTyVar v)     = do as <- askAssumps
                            case mk of
                              Nothing -> fail $ "Unknown type variable: " ++ show v
                              Just k  -> return k
+kcTy (RWCTyComp m t)  = do kcMonad m
+                           k <- kcTy t
+                           unify k Kstar
+                           return Kstar
+
+kcMonad :: RWCMonad -> KCM ()
+kcMonad (RWCReT ti to m) = do kcMonad m
+                              ki <- kcTy ti
+                              ko <- kcTy to
+                              unify ki Kstar
+                              unify ko Kstar
+kcMonad (RWCStT tst m)   = do kcMonad m
+                              kst <- kcTy tst
+                              unify kst Kstar
+kcMonad RWCIdM           = return ()
 
 kcDataCon :: RWCDataCon -> KCM ()
 kcDataCon (RWCDataCon _ ts) = do ks <- mapM kcTy ts

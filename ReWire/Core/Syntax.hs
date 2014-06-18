@@ -34,7 +34,13 @@ instance Alpha (Poly RWCTy) where
 data RWCTy = RWCTyApp RWCTy RWCTy
            | RWCTyCon TyConId
            | RWCTyVar (Id RWCTy)
+           | RWCTyComp RWCMonad RWCTy
            deriving (Ord,Eq,Show)
+
+data RWCMonad = RWCReT RWCTy RWCTy RWCMonad
+              | RWCStT RWCTy RWCMonad
+              | RWCIdM
+              deriving (Ord,Eq,Show)
 
 instance IdSort RWCTy where
   idSort _ = pack "T"
@@ -43,11 +49,18 @@ instance NFData RWCTy where
   rnf (RWCTyApp t1 t2) = t1 `deepseq` t2 `deepseq` ()
   rnf (RWCTyCon i)     = i `deepseq` ()
   rnf (RWCTyVar x)     = x `deepseq` ()
+  rnf (RWCTyComp m t)  = m `deepseq` t `deepseq` ()
+
+instance NFData RWCMonad where
+  rnf (RWCReT t1 t2 m) = t1 `deepseq` t2 `deepseq` m `deepseq` ()
+  rnf (RWCStT t m)     = t `deepseq` m `deepseq` ()
+  rnf RWCIdM           = ()
 
 instance Subst RWCTy RWCTy where
   fv (RWCTyVar x)     = [x]
   fv (RWCTyCon i)     = []
   fv (RWCTyApp t1 t2) = fv t1 ++ fv t2
+  fv (RWCTyComp m t)  = fv m ++ fv t
   bv _ = []
   subst' (RWCTyVar x)     = do ml <- query x
                                case ml of
@@ -56,6 +69,16 @@ instance Subst RWCTy RWCTy where
                                  Nothing        -> return (RWCTyVar x)
   subst' (RWCTyCon i)     = return (RWCTyCon i)
   subst' (RWCTyApp t1 t2) = liftM2 RWCTyApp (subst' t1) (subst' t2)
+  subst' (RWCTyComp m t)  = liftM2 RWCTyComp (subst' m) (subst' t)
+
+instance Subst RWCMonad RWCTy where
+  fv (RWCReT t1 t2 m) = fv t1 ++ fv t2 ++ fv m
+  fv (RWCStT t m)     = fv t ++ fv m
+  fv RWCIdM           = []
+  bv _                = []
+  subst' (RWCReT t1 t2 m) = liftM3 RWCReT (subst' t1) (subst' t2) (subst' m)
+  subst' (RWCStT t m)     = liftM2 RWCStT (subst' t) (subst' m)
+  subst' RWCIdM           = return RWCIdM
 
 instance Alpha RWCTy where
   aeq' (RWCTyApp t1 t2) (RWCTyApp t1' t2') = liftM2 (&&) (aeq' t1 t1') (aeq' t2 t2')
@@ -72,6 +95,8 @@ data RWCExp = RWCApp RWCExp RWCExp
             | RWCCon DataConId RWCTy
             | RWCLiteral RWCLit
             | RWCCase RWCExp [RWCAlt]
+            | RWCBind (Id RWCExp) RWCExp RWCExp
+            | RWCReturn RWCMonad RWCExp
             deriving Show
 
 instance IdSort RWCExp where
@@ -85,6 +110,8 @@ instance Subst RWCExp RWCExp where
   fv (RWCCon _ _)     = []
   fv (RWCLiteral l)   = []
   fv (RWCCase e alts) = fv e ++ concatMap fv alts
+  fv (RWCBind x e e') = fv e ++ filter (/= x) (fv e')
+  fv (RWCReturn _ e)  = fv e
   bv (RWCApp e1 e2)   = bv e1 ++ bv e2
   bv (RWCLam x _ e)   = x : bv e
   bv (RWCLet x e e')  = x : (bv e ++ bv e')
@@ -92,6 +119,8 @@ instance Subst RWCExp RWCExp where
   bv (RWCCon _ _)     = []
   bv (RWCLiteral _)   = []
   bv (RWCCase e alts) = bv e ++ bv alts
+  bv (RWCBind x e e') = x : (bv e ++ bv e')
+  bv (RWCReturn _ e)  = bv e
   subst' (RWCApp e1 e2)   = liftM2 RWCApp (subst' e1) (subst' e2)
   subst' (RWCLam x t e)   = refresh x (fv e) $ \ x' ->
                               do e' <- subst' e
@@ -108,23 +137,33 @@ instance Subst RWCExp RWCExp where
   subst' (RWCCon i t)     = return (RWCCon i t)
   subst' (RWCLiteral l)   = return (RWCLiteral l)
   subst' (RWCCase e alts) = liftM2 RWCCase (subst' e) (subst' alts)
+  subst' (RWCBind x e1 e2) = do e1' <- subst' e1
+                                refresh x (fv e2) $ \ x' ->
+                                  do e2' <- subst' e2
+                                     return (RWCBind x' e1' e2')
+  subst' (RWCReturn m e)   = do e' <- subst' e
+                                return (RWCReturn m e')
 
 instance Subst RWCExp RWCTy where
-  fv (RWCApp e1 e2)   = fv e1 ++ fv e2
-  fv (RWCLam _ t e)   = fv t ++ fv e
-  fv (RWCLet _ e1 e2) = fv e1 ++ fv e2
-  fv (RWCVar _ t)     = fv t
-  fv (RWCCon _ t)     = fv t
-  fv (RWCLiteral _)   = []
-  fv (RWCCase e alts) = fv e ++ fv alts
+  fv (RWCApp e1 e2)    = fv e1 ++ fv e2
+  fv (RWCLam _ t e)    = fv t ++ fv e
+  fv (RWCLet _ e1 e2)  = fv e1 ++ fv e2
+  fv (RWCVar _ t)      = fv t
+  fv (RWCCon _ t)      = fv t
+  fv (RWCLiteral _)    = []
+  fv (RWCCase e alts)  = fv e ++ fv alts
+  fv (RWCBind _ e1 e2) = fv e1 ++ fv e2
+  fv (RWCReturn m e)   = fv m ++ fv e
   bv _ = []
-  subst' (RWCApp e1 e2)   = liftM2 RWCApp (subst' e1) (subst' e2)
-  subst' (RWCLam x t e)   = liftM2 (RWCLam x) (subst' t) (subst' e)
-  subst' (RWCLet x e1 e2) = liftM2 (RWCLet x) (subst' e1) (subst' e2)
-  subst' (RWCVar x t)     = liftM (RWCVar x) (subst' t)
-  subst' (RWCCon i t)     = liftM (RWCCon i) (subst' t)
-  subst' (RWCLiteral l)   = return (RWCLiteral l)
-  subst' (RWCCase e alts) = liftM2 RWCCase (subst' e) (subst' alts)
+  subst' (RWCApp e1 e2)    = liftM2 RWCApp (subst' e1) (subst' e2)
+  subst' (RWCLam x t e)    = liftM2 (RWCLam x) (subst' t) (subst' e)
+  subst' (RWCLet x e1 e2)  = liftM2 (RWCLet x) (subst' e1) (subst' e2)
+  subst' (RWCVar x t)      = liftM (RWCVar x) (subst' t)
+  subst' (RWCCon i t)      = liftM (RWCCon i) (subst' t)
+  subst' (RWCLiteral l)    = return (RWCLiteral l)
+  subst' (RWCCase e alts)  = liftM2 RWCCase (subst' e) (subst' alts)
+  subst' (RWCBind x e1 e2) = liftM2 (RWCBind x) (subst' e1) (subst' e2)
+  subst' (RWCReturn m e)   = liftM2 RWCReturn (subst' m) (subst' e)
 
 instance Alpha RWCExp where
   aeq' (RWCApp e1 e2) (RWCApp e1' e2')     = liftM2 (&&) (aeq' e1 e1') (aeq' e2 e2')
@@ -137,13 +176,15 @@ instance Alpha RWCExp where
   aeq' _ _                                 = return False
   
 instance NFData RWCExp where
-  rnf (RWCApp e1 e2)   = e1 `deepseq` e2 `deepseq` ()
-  rnf (RWCLam x t e)   = x `deepseq` t `deepseq` e `deepseq` ()
-  rnf (RWCLet x e1 e2) = x `deepseq` e1 `deepseq` e2 `deepseq` ()
-  rnf (RWCVar x t)     = x `deepseq` t `deepseq` ()
-  rnf (RWCCon i t)     = i `deepseq` t `deepseq` ()
-  rnf (RWCLiteral l)   = l `deepseq` ()
-  rnf (RWCCase e alts) = e `deepseq` alts `deepseq` ()
+  rnf (RWCApp e1 e2)    = e1 `deepseq` e2 `deepseq` ()
+  rnf (RWCLam x t e)    = x `deepseq` t `deepseq` e `deepseq` ()
+  rnf (RWCLet x e1 e2)  = x `deepseq` e1 `deepseq` e2 `deepseq` ()
+  rnf (RWCVar x t)      = x `deepseq` t `deepseq` ()
+  rnf (RWCCon i t)      = i `deepseq` t `deepseq` ()
+  rnf (RWCLiteral l)    = l `deepseq` ()
+  rnf (RWCCase e alts)  = e `deepseq` alts `deepseq` ()
+  rnf (RWCBind x e1 e2) = x `deepseq` e1 `deepseq` e2 `deepseq` ()
+  rnf (RWCReturn x e)   = x `deepseq` e `deepseq` ()
 
 ---
   
@@ -309,3 +350,5 @@ typeOf (RWCLiteral (RWCLitFloat _))   = RWCTyCon (TyConId "Float")
 typeOf (RWCLiteral (RWCLitChar _))    = RWCTyCon (TyConId "Char")
 typeOf (RWCCase _ (RWCAlt _ e:_))     = typeOf e
 typeOf (RWCCase _ [])                 = error "typeOf: encountered case with no alts"
+typeOf (RWCBind _ _ e)                = typeOf e
+typeOf (RWCReturn m e)                = RWCTyComp m (typeOf e)

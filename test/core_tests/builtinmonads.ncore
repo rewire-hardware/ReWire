@@ -1,0 +1,21 @@
+data Bit is Zero | One end
+
+gwerk :: ReT(Bit,Bit,I)(Bit)
+is
+  return[ReT(Bit,Bit,I)] Zero
+end
+
+and :: Bit -> Bit -> Bit
+is
+  \ b1 -> \ b2 -> case b1 of
+                  { Zero -> Zero
+                  ; One  -> b2
+                  }
+end
+
+gwork :: Bit -> ReT (Bit,Bit,I) (Bit)
+is
+  \ b -> bind z <- gwerk
+      in bind q <- gwerk
+      in return[ReT(Bit,Bit,I)] (and (and b q) z)
+end
