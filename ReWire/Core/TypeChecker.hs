@@ -115,21 +115,10 @@ mgu (RWCTyVar u) t | isFlex u                          = varBind u t
 mgu t (RWCTyVar u) | isFlex u                          = varBind u t
 mgu (RWCTyCon c1) (RWCTyCon c2) | c1 == c2             = return Map.empty
 mgu (RWCTyVar v) (RWCTyVar u) | not (isFlex v) && v==u = return Map.empty
-mgu (RWCTyComp m t) (RWCTyComp m' t')                  = do s1 <- mguMonad m m'
+mgu (RWCTyComp m t) (RWCTyComp m' t')                  = do s1 <- mgu m m'
                                                             s2 <- mgu (subst s1 t) (subst s1 t')
                                                             return (s2@@s1)
 mgu t1 t2                                              = fail $ "types do not unify: " ++ show t1 ++ ", " ++ show t2
-
-mguMonad :: Monad m => RWCMonad -> RWCMonad -> m TySub
-mguMonad (RWCReT t1 t2 m) (RWCReT t1' t2' m') = do s1 <- mgu t1 t1'
-                                                   s2 <- mgu (subst s1 t2) (subst s1 t2')
-                                                   s3 <- mguMonad (subst (s2@@s1) m) (subst (s2@@s1) m')
-                                                   return (s3@@(s2@@s1))
-mguMonad (RWCStT t m) (RWCStT t' m')          = do s1 <- mgu t t'
-                                                   s2 <- mguMonad (subst s1 m) (subst s1 m')
-                                                   return (s2@@s1)
-mguMonad RWCIdM RWCIdM                        = return Map.empty
-mguMonad m1 m2                                = fail $ "monads do not unify: " ++ show m1 ++ ", " ++ show m2
 
 unify :: RWCTy -> RWCTy -> TCM ()
 unify t1 t2 = do s <- getTySub
@@ -210,17 +199,6 @@ tcExp (RWCCase e alts)  = do e'     <- tcExp e
                              tv     <- freshv
                              alts'  <- mapM (tcAlt (RWCTyVar tv) te) alts
                              return (RWCCase e' alts')
-tcExp (RWCBind x e1 e2) = do e1'     <- tcExp e1
-                             s       <- getTySub
-                             let te1 =  subst s (typeOf e1')
-                             case te1 of
-                               RWCTyComp m tx -> do e2' <- localAssumps (Map.insert x ([] :-> tx)) (tcExp e2)
-                                                    tv  <- freshv
-                                                    unify (RWCTyComp m (RWCTyVar tv)) (typeOf e2')
-                                                    return (RWCBind x e1' e2')
-                               _              -> fail $ "Computation expression does not have monadic type"
-tcExp (RWCReturn m e)   = do e' <- tcExp e
-                             return (RWCReturn m e')
 
 tcDefn :: RWCDefn -> TCM RWCDefn
 tcDefn d  = do putTySub (Map.empty)
@@ -235,9 +213,43 @@ tcDefn d  = do putTySub (Map.empty)
                traceShow n $ d' `deepseq` return d'
 
 tc :: RWCProg -> TCM RWCProg
-tc p = do as  <- liftM Map.fromList $ mapM defnAssump (defns p)
-          cas <- liftM (Map.fromList . concat) $ mapM dataDeclAssumps (dataDecls p)
-          ds' <- localAssumps (as `Map.union`) (localCAssumps (cas `Map.union`) (mapM tcDefn (defns p)))
+tc p = do as_     <- liftM Map.fromList $ mapM defnAssump (defns p)
+          let as  =  as_ `Map.union` as0
+              as0 =  Map.fromList $
+                      [(mkId "extrudeStT",[mkId "i",mkId "o",mkId "s",mkId "m",mkId "a"] :->
+                                             (RWCTyVar (mkId "s") `mkArrow`
+                                               (RWCTyComp (RWCTyCon (TyConId "ReT") `RWCTyApp`
+                                                           RWCTyVar (mkId "i") `RWCTyApp`
+                                                           RWCTyVar (mkId "o") `RWCTyApp`
+                                                           RWCTyVar (mkId "m"))
+                                                          (RWCTyCon (TyConId "Tuple2") `RWCTyApp`
+                                                           RWCTyVar (mkId "a") `RWCTyApp`
+                                                           RWCTyVar (mkId "s"))))),
+                       (mkId "runStT",    [mkId "s",mkId "m",mkId "a"] :->
+                                             (RWCTyVar (mkId "s") `mkArrow`
+                                               (RWCTyComp (RWCTyVar (mkId "m"))
+                                                          (RWCTyCon (TyConId "Tuple2") `RWCTyApp`
+                                                           RWCTyVar (mkId "a") `RWCTyApp`
+                                                           RWCTyVar (mkId "s"))))),
+                       (mkId "get",       [mkId "s",mkId "m"] :->
+                                             (RWCTyComp (RWCTyCon (TyConId "StT") `RWCTyApp`
+                                                         RWCTyVar (mkId "s") `RWCTyApp`
+                                                         RWCTyVar (mkId "m"))
+                                                        (RWCTyVar (mkId "s")))),
+                       (mkId "return",    [mkId "a",mkId "m"] :->
+                                             (RWCTyVar (mkId "a") `mkArrow`
+                                              (RWCTyComp (RWCTyVar (mkId "m"))
+                                                         (RWCTyVar (mkId "a"))))),
+                       (mkId "bind",      [mkId "m",mkId "a",mkId "b"] :->
+                                             ((RWCTyComp (RWCTyVar (mkId "m")) (RWCTyVar (mkId "a")))
+                                               `mkArrow`
+                                               ((RWCTyVar (mkId "a") `mkArrow` RWCTyComp (RWCTyVar (mkId "m")) (RWCTyVar (mkId "a")))
+                                                `mkArrow`
+                                                (RWCTyComp (RWCTyVar (mkId "m")) (RWCTyVar (mkId "b"))))))
+                       -- et cetera :/
+                      ]
+          cas     <- liftM (Map.fromList . concat) $ mapM dataDeclAssumps (dataDecls p)
+          ds'     <- localAssumps (as `Map.union`) (localCAssumps (cas `Map.union`) (mapM tcDefn (defns p)))
           return (p { defns = ds' })
 
 typecheck :: RWCProg -> Either String RWCProg

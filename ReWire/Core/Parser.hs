@@ -10,7 +10,7 @@ import Data.List (nub)
 import Control.Monad (liftM,foldM)
 
 rwcDef :: T.LanguageDef st
-rwcDef = L.haskellDef { T.reservedNames   = ["data","of","let","in","end","def","is","case","bind","return","ReT","StT","I"],
+rwcDef = L.haskellDef { T.reservedNames   = ["data","of","let","in","end","def","is","case","bind"],
                         T.reservedOpNames = ["|","\\","->","::","<-"] }
 
 lexer = T.makeTokenParser rwcDef
@@ -77,21 +77,12 @@ datacon = do i  <- conid
              ts <- many atype
              return (RWCDataCon (DataConId i) ts)
 
-monad = do reserved "ReT"
-           (ti,to,m) <- parens (ty >>= \ t1 -> comma >> ty >>= \ t2 -> comma >> monad >>= \ m -> return (t1,t2,m))
-           return (RWCReT ti to m)
-    <|> do reserved "StT"
-           (tst,m) <- parens (ty >>= \ t -> comma >> monad >>= \ m -> return (t,m))
-           return (RWCStT tst m)           
-    <|> do reserved "I"
-           return RWCIdM
-           
 mktuplecon :: Int -> String
 mktuplecon n = "Tuple" ++ show n
 
-atype = do m <- monad
-           t <- parens ty
-           return (RWCTyComp m t)
+atype = do tm <- angles ty
+           tv <- angles ty
+           return (RWCTyComp tm tv)
     <|> do i <- conid
            return (RWCTyCon (TyConId i))
     <|> do i <- varid
@@ -161,11 +152,8 @@ lamexpr = do reservedOp "\\"
              reserved "in"
              eb <- expr
 --             reserved "end"
-             return (RWCBind (mkId i) ei eb)
-      <|> do reserved "return"
-             m  <- brackets monad
-             e  <- aexpr
-             return (RWCReturn m e)
+--             return (RWCBind (mkId i) ei eb)
+             return (RWCApp (RWCApp (RWCVar (mkId "bind") tblank) ei) (RWCLam (mkId i) tblank eb))
 
 wildcardify fvs (RWCPatCon i ps)               = RWCPatCon i (map (wildcardify fvs) ps)
 wildcardify fvs (RWCPatLiteral l)              = RWCPatLiteral l

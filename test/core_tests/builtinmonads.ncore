@@ -1,8 +1,8 @@
 data Bit is Zero | One end
 
-gwerk :: ReT(Bit,Bit,I)(Bit)
+gwerk :: <m><Bit>
 is
-  return[ReT(Bit,Bit,I)] Zero
+  return Zero
 end
 
 and :: Bit -> Bit -> Bit
@@ -13,9 +13,34 @@ is
                   }
 end
 
-gwork :: Bit -> ReT (Bit,Bit,I) (Bit)
+gwork :: Bit -> <ReT a a I><Bit>
 is
   \ b -> bind z <- gwerk
       in bind q <- gwerk
-      in return[ReT(Bit,Bit,I)] (and (and b q) z)
+      in return (and (and b q) z)
 end
+
+{-
+primitive type ReT :: * -> * -> M -> M end
+primitive type StT :: * -> M -> M end
+primitive type I :: M end
+
+data Bit is Zero | One end
+
+primitive val extrudeStT :: <ReT i o (StT s m)><a> -> s -> <ReT i o m><(a,s)> end
+primitive val runStT :: <StT s m><a> -> s -> <m><(a,s)> end
+primitive val get :: <StT s m><s> end
+primitive val put :: s -> <StT s m><()> end
+primitive val lift :: <m><a> -> <t m><a> end
+primitive val signal :: o -> <ReT i o m><i> end
+primitive val bind :: <m><a> -> (a -> <m><b>) -> <m><b> end
+primitive val return :: a -> <m><a> end
+
+pseudoprimitive and :: Bit -> Bit -> Bit
+is
+  \ b1 -> \ b2 -> case b1 of
+                  { Zero -> Zero
+                  ; One  -> b2
+                  }
+end
+-}

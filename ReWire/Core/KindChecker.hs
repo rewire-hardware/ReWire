@@ -5,7 +5,7 @@ module ReWire.Core.KindChecker (kindcheck) where
 
 import ReWire.Scoping
 import ReWire.Core.Syntax
-import ReWire.Core.Parser
+--import ReWire.Core.Parser
 import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Identity
@@ -19,7 +19,7 @@ import Data.ByteString.Char8 (pack)
 -- Kind checking for Core.
 
 -- Syntax for kinds is not exported; it's only used inside the kind checker.
-data Kind = Kvar (Id Kind) | Kstar | Kfun Kind Kind deriving (Eq,Show)
+data Kind = Kvar (Id Kind) | Kstar | Kfun Kind Kind | Kmonad deriving (Eq,Show)
 
 instance IdSort Kind where
   idSort _ = pack "K"
@@ -28,12 +28,14 @@ instance Alpha Kind where
   aeq' (Kvar i) (Kvar j)           = return (i==j)
   aeq' Kstar Kstar                 = return True
   aeq' (Kfun k1 k2) (Kfun k1' k2') = liftM2 (&&) (aeq' k1 k1') (aeq' k2 k2')
+  aeq' Kmonad Kmonad               = return True
   aeq' _ _                         = return False
 
 instance Subst Kind Kind where
   fv (Kvar i)     = [i]
   fv Kstar        = []
   fv (Kfun k1 k2) = fv k1 ++ fv k2
+  fv Kmonad       = []
   bv _            = []
   subst' (Kvar i)     = do ml <- query i
                            case ml of
@@ -42,11 +44,13 @@ instance Subst Kind Kind where
                              Nothing         -> return (Kvar i)
   subst' Kstar        = return Kstar
   subst' (Kfun k1 k2) = liftM2 Kfun (subst' k1) (subst' k2)
+  subst' Kmonad       = return Kmonad
 
 instance NFData Kind where
   rnf (Kvar i)     = i `deepseq` ()
   rnf Kstar        = ()
   rnf (Kfun k1 k2) = k1 `deepseq` k2 `deepseq` ()
+  rnf Kmonad       = ()
 
 type KiSub = Map (Id Kind) Kind
 data KCEnv = KCEnv { as  :: Map (Id RWCTy) Kind, 
@@ -95,6 +99,7 @@ mgu (Kfun kl kr) (Kfun kl' kr') = do s1 <- mgu kl kl'
 mgu (Kvar u) k                  = varBind u k
 mgu k (Kvar u)                  = varBind u k
 mgu Kstar Kstar                 = return Map.empty
+mgu Kmonad Kmonad               = return Map.empty
 mgu k1 k2                       = fail $ "kinds do not unify: " ++ show k1 ++ ", " ++ show k2
 
 unify :: Kind -> Kind -> KCM ()
@@ -103,36 +108,26 @@ unify k1 k2 = do s <- getKiSub
                  updKiSub (u@@)
 
 kcTy :: RWCTy -> KCM Kind
-kcTy (RWCTyApp t1 t2) = do k1 <- kcTy t1
-                           k2 <- kcTy t2
-                           k  <- freshkv
-                           unify k1 (Kfun k2 (Kvar k))
-                           return (Kvar k)
-kcTy (RWCTyCon i)     = do cas <- askCAssumps
-                           let mk = Map.lookup i cas
-                           case mk of
-                             Nothing -> fail $ "Unknown type constructor: " ++ deTyConId i
-                             Just k  -> return k
-kcTy (RWCTyVar v)     = do as <- askAssumps
-                           let mk = Map.lookup v as
-                           case mk of
-                             Nothing -> fail $ "Unknown type variable: " ++ show v
-                             Just k  -> return k
-kcTy (RWCTyComp m t)  = do kcMonad m
-                           k <- kcTy t
-                           unify k Kstar
-                           return Kstar
-
-kcMonad :: RWCMonad -> KCM ()
-kcMonad (RWCReT ti to m) = do kcMonad m
-                              ki <- kcTy ti
-                              ko <- kcTy to
-                              unify ki Kstar
-                              unify ko Kstar
-kcMonad (RWCStT tst m)   = do kcMonad m
-                              kst <- kcTy tst
-                              unify kst Kstar
-kcMonad RWCIdM           = return ()
+kcTy (RWCTyApp t1 t2)  = do k1 <- kcTy t1
+                            k2 <- kcTy t2
+                            k  <- freshkv
+                            unify k1 (Kfun k2 (Kvar k))
+                            return (Kvar k)
+kcTy (RWCTyCon i)      = do cas <- askCAssumps
+                            let mk = Map.lookup i cas
+                            case mk of
+                              Nothing -> fail $ "Unknown type constructor: " ++ deTyConId i
+                              Just k  -> return k
+kcTy (RWCTyVar v)      = do as <- askAssumps
+                            let mk = Map.lookup v as
+                            case mk of
+                              Nothing -> fail $ "Unknown type variable: " ++ show v
+                              Just k  -> return k
+kcTy (RWCTyComp tm tv) = do km <- kcTy tm
+                            kv <- kcTy tv
+                            unify km Kmonad
+                            unify kv Kstar
+                            return Kstar
 
 kcDataCon :: RWCDataCon -> KCM ()
 kcDataCon (RWCDataCon _ ts) = do ks <- mapM kcTy ts
@@ -163,6 +158,12 @@ kc p = do cas <- liftM Map.fromList $ mapM initDataDecl (dataDecls p)
 
 kindcheck :: RWCProg -> Maybe String
 kindcheck p = l2m $ runIdentity (runErrorT (runStateT (runReaderT (kc p) (KCEnv Map.empty as)) (KCState Map.empty 0)))
-  where as = Map.fromList [(TyConId "(->)",Kfun Kstar (Kfun Kstar Kstar))]
+  where as = Map.fromList [(TyConId "(->)",   Kfun Kstar (Kfun Kstar Kstar)),
+                           
+                           (TyConId "ReT",    Kfun Kstar (Kfun Kstar (Kfun Kmonad Kmonad))),
+                           (TyConId "StT",    Kfun Kstar (Kfun Kmonad Kmonad)),
+                           (TyConId "I",      Kmonad),
+                           
+                           (TyConId "Tuple2", Kfun Kstar (Kfun Kstar Kstar))]
         l2m (Left x)  = Just x
         l2m (Right _) = Nothing

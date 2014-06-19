@@ -31,7 +31,7 @@ e_b,e'_b \in \mathit{BaseExp} &::= x~ e_1~ \dots~ e_n&&n \ge 0\\
   &~~~~|~ \mathbf{let}~ x = e~ \mathbf{in}~ e_b~ \mathbf{end}\\
   &~~~~|~ \mathbf{case}~ e~ \mathbf{of}~ \mathbf{inl}~ x \rightarrow e_b~ ; \mathbf{inr}~ y \rightarrow e'_b~ \mathbf{end}\\
   &~~~~|~ \mathbf{return}_B~ e~ |~ \mathbf{bind}~ x \leftarrow{} e_b~ \mathbf{in}~ e'_b~ \mathbf{end}\\
-  &~~~~|~ \mathbf{lift}_T~ e_b~ |~ \mathbf{run}_{\mathbb{S}_t}~ \\
+  &~~~~|~ \mathbf{lift}_T~ e_b~ \\
   &~~~~|~ \mathbf{get}_B~ |~ \mathbf{put}_B~ e\\
   &~~~~|~ \mathbf{runStateT}~ e_b~ e~\\
 \end{aligned}
