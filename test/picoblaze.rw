@@ -1,0 +1,217 @@
+type Instruction is W18 end
+type Register is W4 end
+data Flag is FlagZ | FlagC | FlagZsave | FlagCsave | FlagIE end
+data Flags is Flags Bit Bit Bit Bit Bit end
+data Stack is Stack (W5->W10) W5 end               -- stack (ring buffer) contents, stack pointer
+data Inputs is Inputs W18 W8 Bit Bit end           -- instruction, inport, interrupt, reset
+data Outputs is Outputs W10 W18 Bit W8 Bit Bit end -- addr, portid, write strobe, outport, read strobe, interrupt ack
+data CPUState is CPUState RegFile Flags Mem Stack Outputs Inputs end
+type CPU m is ReT Outputs Inputs (StateT CPUState m) end
+
+getFlag :: Flag -> <CPU m><Bit>
+is
+ \ f ->
+   bind ff <- getFlags
+   in
+     case ff of
+     {
+      Flags fz fc fzs fcs fie ->
+       case f of
+       { FlagZ     -> return fz
+       ; FlagC     -> return fc
+       ; FlagZsave -> return fzs
+       ; FlagCsave -> return fcs
+       ; FlagIE    -> return fie
+       }
+     }
+end
+
+putFlag :: Flag -> Bit -> <CPU m><()>
+is
+ \ f -> \ b ->
+  bind ff <- getFlags
+  in
+    case ff of
+    {
+     Flags fz fc fzs fcs fie ->
+      case f of
+      { FlagZ     -> putFlags (Flags b fc fzs fcs fie)
+      ; FlagC     -> putFlags (Flags fz b fzs fcs fie)
+      ; FlagZsave -> putFlags (Flags fz fc b fcs fie)
+      ; FlagCsave -> putFlags (Flags fz fc fzs b fie)
+      ; FlagIE    -> putFlags (Flags fz fc fzs fcs b)
+      }
+    }
+end
+
+getFlags :: <CPU m><Flags>
+is
+  lift (
+       bind st <- get
+    in case st of
+       { CPUState _ ff _ _ _ _ -> return ff
+       }
+  )
+end
+
+putFlags :: Flags -> <CPU m><()>
+is
+  \ ff ->
+   lift (
+        bind st -> get
+     in case st of
+        { CPUState rf _ mem sta o i -> put (CPUState rf ff mem sta o i)
+        }
+   )
+end
+
+getReg :: Register -> <CPU m><W8>
+is
+  \ r -> bind rf <- getRegFile
+      in return (tblGet rf r)
+end
+
+putReg :: Register -> W8 -> <CPU m><()>
+is
+  \ r -> \ b ->
+         bind rf <- getRegFile
+      in putRegFile (tblPut rf r b)
+end
+
+getRegFile :: <CPU m><RegFile>
+is
+  lift (
+       bind st <- get
+    in case st of
+       { CPUState rf _ _ _ _ _ -> return rf
+       }
+  )
+end
+
+putRegFile :: RegFile -> <CPU m><()>
+is
+  \ rf ->
+   lift (
+        bind st -> get
+     in case st of
+        { CPUState _ ff mem sta o i -> put (CPUState rf ff mem sta o i)
+        }
+   )
+end
+
+push :: W10 -> <CPU m><()>
+is
+  \ a ->
+      bind st <- getStack
+   in let p'  =  plus__W10 (pos st) (literal__1__W10)
+   in let c'  =  tblPut (contents st) p' a
+   in putStack (Stack p' c')
+end
+
+pop :: <CPU m><()>
+is
+     bind st <- getStack
+  in putStack (Stack (minus__W10 (pos st) (literal__1__W10)) (contents st))
+end
+
+getPC :: <CPU m><W10>
+is
+     bind st <- getStack
+  in return (tblGet (contents st) (pos st))
+end
+
+putPC :: W10 -> <CPU m><()>
+is
+  \ a ->
+       bind st <- getStack
+    in return (Stack (tblPut (contents st) a) (pos st))
+end
+
+incrPC :: <CPU m><()>
+is
+     bind pc <- getPC
+  in putPC (plus__W10 pc (literal__1__W10))
+end
+
+getStack :: <CPU m><Stack>
+is
+   lift (
+          bind st <- get
+       in case st of
+          { CPUState _ _ _ sta _ _ -> return sta }
+   )
+end
+
+putStack :: Stack -> <CPU m><()>
+is
+  \ sta ->
+    lift (
+          bind st <- get
+       in case st of
+          { CPUState rf ff mem _ o i -> put (CPUState rf ff mem sta o i) }
+    )
+end
+
+getFromRAM :: W6 -> <CPU m><W8>
+is
+  \ a ->
+      bind mem <- getRAM
+   in return (tblGet mem a)
+end
+
+putToRAM :: W6 -> W8 -> <CPU m><()>
+is
+  \ a -> \ b ->
+      bind mem <- getRAM
+   in putRAM (tblPut mem a b)
+end
+
+getRAM :: <CPU m><Mem>
+is
+   lift (
+          bind st <- get
+       in case st of
+          { CPUState _ _ mem _ _ _ -> return mem }
+   )
+end
+
+putRAM :: RAM -> <CPU m><()>
+is
+  \ mem ->
+    lift (
+          bind st <- get
+       in case st of
+          { CPUState rf ff _ sta o i -> put (CPUState rf ff mem sta o i) }
+    )
+end
+
+writePortID :: W8 -> <CPU m><()>
+is
+  \ b -> bind o <- getOutputs
+      in case o of
+         { Outputs addr _ wstrobe outport rstrobe ack -> Outputs addr b wstrobe outport rstrobe ack }
+end
+
+readInPort :: <CPU m><W8>
+is
+     bind i <- getInputs
+  in case i of
+     { Inputs _ inport _ _ -> return inport }
+end
+
+writeOutPort :: W8 -> <CPU m><()>
+is
+   \ outport ->
+     bind o <- getOutputs
+  in case o of
+     { Outputs addr portid wstrobe _ rstrobe ack -> Outputs addr portid wstrobe outport rstrobe ack }
+end
+
+tick :: <CPU m><()>
+is
+     bind pc <- getPC
+  in bind _  <- putAddrOut pc
+  in bind o  <- getOutputs
+  in bind i  <- signal o
+  in putInputs i
+end
