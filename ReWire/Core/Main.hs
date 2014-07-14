@@ -22,8 +22,8 @@ main = do args <- getArgs
                        Right p -> do putStrLn "parse finished"
                                      --writeFile "show.out" (show p)
                                      --putStrLn "show out finished"
-                                     writeFile "Debug.hs" (show $ ppHaskellWithName p "Debug")
-                                     putStrLn "debug out finished"
+                                     --writeFile "Debug.hs" (show $ ppHaskellWithName p "Debug")
+                                     --putStrLn "debug out finished"
                                      case kindcheck p of
                                        Just e  -> hPutStrLn stderr e
                                        Nothing -> do putStrLn "kc finished"

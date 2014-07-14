@@ -50,6 +50,7 @@ freshv = do ctr   <- getCtr
             updTySub (Map.insert n (RWCTyVar n))
             return n
 
+{-
 initPat :: RWCPat -> TCM RWCPat
 initPat (RWCPatCon i ps_) = do ps <- mapM initPat ps_
                                return (RWCPatCon i ps)
@@ -82,6 +83,7 @@ initExp (RWCCase e_ alts_) = do e    <- initExp e_
 initDefn :: RWCDefn -> TCM RWCDefn
 initDefn (RWCDefn n (tvs :-> t) e) = do e'          <- initExp e
                                         return (RWCDefn n (tvs :-> t) e')
+-}
 
 defnAssump :: RWCDefn -> TCM Assump
 defnAssump (RWCDefn n (tvs :-> t) _) = return (n,tvs :-> t)
@@ -130,12 +132,13 @@ patassumps (RWCPatLiteral _) = []
 patassumps (RWCPatVar n t)   = [(n,[] :-> t)]
 patassumps RWCPatWild        = []
 
-tcPat :: RWCTy -> RWCPat -> TCM ()
-tcPat t (RWCPatLiteral l) = case l of
-                              RWCLitInteger _ -> unify t (RWCTyCon (TyConId "Integer"))
-                              RWCLitFloat _   -> unify t (RWCTyCon (TyConId "Float"))
-                              RWCLitChar _    -> unify t (RWCTyCon (TyConId "Char"))
-tcPat t (RWCPatVar _ tp)  = unify t tp
+tcPat :: RWCTy -> RWCPat -> TCM RWCPat
+tcPat t p@(RWCPatLiteral l) = do case l of
+                                   RWCLitInteger _ -> unify t (RWCTyCon (TyConId "Integer"))
+                                   RWCLitFloat _   -> unify t (RWCTyCon (TyConId "Float"))
+                                   RWCLitChar _    -> unify t (RWCTyCon (TyConId "Char"))
+                                 return p
+tcPat t (RWCPatVar x _)   = return (RWCPatVar x t)
 tcPat t (RWCPatCon i ps)  = do cas     <- askCAssumps
                                let mpt =  Map.lookup i cas
                                case mpt of
@@ -144,69 +147,63 @@ tcPat t (RWCPatCon i ps)  = do cas     <- askCAssumps
                                                  let (targs,tres) =  flattenArrow ta
                                                  if length ps /= length targs
                                                    then fail "Pattern is not applied to enough arguments"
-                                                   else do zipWithM_ tcPat targs ps
+                                                   else do ps' <- zipWithM tcPat targs ps
                                                            unify t tres
-tcPat t RWCPatWild        = return ()
+                                                           return (RWCPatCon i ps')
+tcPat t RWCPatWild        = return RWCPatWild
 
-tcAlt :: RWCTy -> RWCTy -> RWCAlt -> TCM ()
-tcAlt tres tscrut (RWCAlt p e) = do tcPat tscrut p
-                                    let as = Map.fromList (patassumps p)
-                                    te <- localAssumps (as `Map.union`) (tcExp e)
+tcAlt :: RWCTy -> RWCTy -> RWCAlt -> TCM RWCAlt
+tcAlt tres tscrut (RWCAlt p e) = do p'     <- tcPat tscrut p
+                                    let as =  Map.fromList (patassumps p')
+                                    e'     <- localAssumps (as `Map.union`) (tcExp e)
+                                    let te =  typeOf e'
                                     unify tres te
+                                    return (RWCAlt p' e')
 
-tcExp :: RWCExp -> TCM RWCTy
--- The obvious way of handling App, as follows, has unfortunate O(n^2)-ish
--- behavior in the number of arguments. (O(n) subexpressions with on average
--- O(n) type size.)
---tcExp (RWCApp e1 e2)   = do tv <- freshv
---                            t1 <- tcExp e1
---                            t2 <- tcExp e2
---                            unify t1 (t2 `mkArrow` RWCTyVar tv)
---                            return (RWCTyVar tv)
+tcExp :: RWCExp -> TCM RWCExp
 tcExp e_@(RWCApp {})   = do let (ef:es)  =  flattenApp e_
-                            tf           <- tcExp ef
-                            tes          <- mapM tcExp es
+                            ef'          <- tcExp ef
+                            let tf       =  typeOf ef'
+                            es'          <- mapM tcExp es
+                            let tes      =  map typeOf es'
                             tv           <- freshv
                             unify tf (foldr mkArrow (RWCTyVar tv) tes)
-                            return (RWCTyVar tv)
-tcExp (RWCLam x t e)   = do tv <- freshv
-                            te <- localAssumps (Map.insert x ([] :-> t)) (tcExp e)
-                            unify (RWCTyVar tv) (t `mkArrow` te)
-                            return (RWCTyVar tv)
-tcExp (RWCVar v t)     = do as      <- askAssumps
+                            return (foldl RWCApp ef' es')
+tcExp (RWCLam x _ e)   = do tvx    <- freshv
+                            tvr    <- freshv
+                            e'     <- localAssumps (Map.insert x ([] :-> RWCTyVar tvx)) (tcExp e)
+                            let te =  typeOf e'
+                            unify (RWCTyVar tvr) (RWCTyVar tvx `mkArrow` te)
+                            return (RWCLam x (RWCTyVar tvx) e')
+tcExp (RWCVar v _)     = do as      <- askAssumps
                             let mpt =  Map.lookup v as
                             case mpt of
                               Nothing -> fail $ "Unknown variable: " ++ show v
-                              Just pt -> do ta <- inst pt
-                                            unify t ta
-                                            return t
-tcExp (RWCCon i t)     = do cas     <- askCAssumps
+                              Just pt -> do t <- inst pt
+                                            return (RWCVar v t)
+tcExp (RWCCon i _)     = do cas     <- askCAssumps
                             let mpt =  Map.lookup i cas
                             case mpt of
                               Nothing -> fail $ "Unknown constructor: " ++ deDataConId i
-                              Just pt -> do ta <- inst pt
-                                            unify t ta
-                                            return t
-tcExp (RWCLiteral l)   = do tv <- freshv
-                            case l of
-                              RWCLitInteger _ -> unify (RWCTyVar tv) (RWCTyCon (TyConId "Integer"))
-                              RWCLitFloat _   -> unify (RWCTyVar tv) (RWCTyCon (TyConId "Float"))
-                              RWCLitChar _    -> unify (RWCTyVar tv) (RWCTyCon (TyConId "Char"))
-                            return (RWCTyVar tv)
-tcExp (RWCCase e alts) = do tv <- freshv
-                            te <- tcExp e
-                            mapM_ (tcAlt (RWCTyVar tv) te) alts
-                            return (RWCTyVar tv)
+                              Just pt -> do t <- inst pt
+                                            return (RWCCon i t)
+tcExp e@(RWCLiteral l) = return e
+tcExp (RWCCase e alts) = do e'     <- tcExp e
+                            let te =  typeOf e'
+                            tv     <- freshv
+                            alts'  <- mapM (tcAlt (RWCTyVar tv) te) alts
+                            return (RWCCase e' alts')
 
 tcDefn :: RWCDefn -> TCM RWCDefn
-tcDefn d_ = do putTySub (Map.empty)
-               d <- initDefn d_
+tcDefn d  = do putTySub (Map.empty)
+--               d <- initDefn d_
                let RWCDefn n (tvs :-> t) e = force d
-               te <- tcExp e
+               e'     <- tcExp e
+               let te =  typeOf e'
                unify t te
-               s  <- getTySub
+               s      <- getTySub
                putTySub (Map.empty)
-               let d' = RWCDefn n (tvs :-> t) (subst s e)
+               let d' = RWCDefn n (tvs :-> t) (subst s e')
                traceShow n $ d' `deepseq` return d'
 
 tc :: RWCProg -> TCM RWCProg

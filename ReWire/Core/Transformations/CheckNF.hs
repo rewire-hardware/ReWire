@@ -65,7 +65,8 @@ checkTyIsReact t =
   throwError $ "checkTyIsReact: type is not of form `React t1 t2 t3': " ++ show t
 
 checkDefnIsCont :: Id RWCExp -> NFM ()
-checkDefnIsCont n = do vset <- getVisited
+checkDefnIsCont n = trace ("cdic: " ++ show n) $
+                    do vset <- getVisited
                        case Map.lookup n vset of
                            Just DefnCont  -> return ()
                            Just DefnBitty -> throwError $ "checkDefnIsCont: " ++ show n ++ " has to be bitty"
@@ -141,15 +142,17 @@ checkDefnIsBitty n = trace ("cdib: " ++ show n) $
                                    checkExprIsBitty eb
 
 checkTyIsBitty :: RWCTy -> NFM ()
-checkTyIsBitty t@(RWCTyApp {}) = mapM_ checkTyIsBitty (flattenTyApp t)
-checkTyIsBitty (RWCTyVar v)    = throwError $ "checkTyIsBitty: encountered polymorphic type"
-checkTyIsBitty (RWCTyCon i)    = do cpx <- getCpxTys
+checkTyIsBitty t@(RWCTyApp {}) = trace "ctib app" $ mapM_ checkTyIsBitty (flattenTyApp t)
+checkTyIsBitty (RWCTyVar v)    = trace "ctib var" $ throwError $ "checkTyIsBitty: encountered polymorphic type"
+checkTyIsBitty (RWCTyCon i)    = trace ("ctib: " ++ show i) $
+                                 do cpx <- getCpxTys
                                     if i `Set.member` cpx
                                        then throwError $ "checkTyIsBitty: encountered complex type: " ++ deTyConId i
                                        else return ()
 
 checkExprIsBitty :: RWCExp -> NFM ()
-checkExprIsBitty e@(RWCApp {})      = do checkTyIsBitty (typeOf e)
+checkExprIsBitty e@(RWCApp {})      = trace "ceib app" $
+                                      do checkTyIsBitty (typeOf e)
                                          let (ef:eargs) = flattenApp e
                                          mapM_ checkExprIsBitty eargs
                                          case ef of
@@ -157,16 +160,19 @@ checkExprIsBitty e@(RWCApp {})      = do checkTyIsBitty (typeOf e)
                                            RWCCon i _   -> return ()
                                            RWCLiteral l -> checkLiteralIsBitty l
                                            _            -> throwError $ "checkExprIsBitty: malformed application head " ++ show ef
-checkExprIsBitty (RWCVar n t)       = checkTyIsBitty t >> checkDefnIsBitty n -- checkTy is redundant I think
-checkExprIsBitty (RWCCon _ t)       = checkTyIsBitty t
-checkExprIsBitty (RWCLiteral l)     = checkLiteralIsBitty l
-checkExprIsBitty e_@(RWCCase e alts) = do checkTyIsBitty (typeOf e_)
+checkExprIsBitty (RWCVar n t)       = trace ("ceib: " ++ show n) $ do
+                                        checkTyIsBitty t -- this is redundant I think
+                                        checkDefnIsBitty n
+checkExprIsBitty (RWCCon i t)       = trace ("ceib: " ++ show i) $ checkTyIsBitty t
+checkExprIsBitty (RWCLiteral l)     = trace ("ceib: " ++ show l) $ checkLiteralIsBitty l
+checkExprIsBitty e_@(RWCCase e alts) = trace ("ceib case") $ 
+                                       do checkTyIsBitty (typeOf e_)
                                           checkExprIsBitty e
                                           mapM_ checkAltIsBitty alts
 checkExprIsBitty e                   = throwError $ "checkExprIsBitty: malformed expression: " ++ show e
 
 checkAltIsBitty :: RWCAlt -> NFM ()
-checkAltIsBitty a = inAlt a (\ _ -> checkExprIsBitty)
+checkAltIsBitty a = trace "caib" $ inAlt a (\ _ -> checkExprIsBitty)
 
 checkLiteralIsBitty :: RWCLit -> NFM ()
 checkLiteralIsBitty (RWCLitInteger _) = return ()
