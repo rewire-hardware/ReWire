@@ -1,0 +1,48 @@
+!!! forgot MOV !!!
+
+MEM  0000 RWrr aaaa aaaa	R = read? W = write? (RW=00 is no-op, RW=11 may be invalid depending on BRAM config)	16
+
+LD   0001 ddaa 	    		    	      	     	       	      	    	   	   	     	     		16
+
+ST   0010 ddaa														16
+
+ADD  0011 ddss														16
+
+ADDC 0100 ddss														16
+
+SUB  0101 ddss														16
+
+SUBB 0110 ddss														16
+
+NEG  0111 00rr														4
+NOT  0111 01rr														4
+ROL  0111 1Drr			D = direction?										8
+
+OR   1000 ddss														16
+
+AND  1001 ddss														16
+
+XOR  1010 ddss														16
+
+CMP  1011 ddss														16
+
+BRZ  1100 00rr														 4
+BRNZ 1100 01rr														 4
+BRC  1100 10rr														 4
+BRNC 1100 11rr														 4
+
+JMP  1101 00rr														 4
+CLRZ 1101 0100														 1
+CLRC 1101 0101														 1
+IEN  1101 011E			E = enable interrupts?									 2
+IACK 1101 1000			    	   										 1
+IRET 1101 1001														 1
+---  1101 1010														 1
+---  1101 1011														 1
+CLRR 1101 11rr														 4
+
+INCR 1110 00rr														 4
+DECR 1110 01rr														 4
+---  1110 1___														 8
+
+SHFT 1111 DLrr			D = direction? L = logical?								16
