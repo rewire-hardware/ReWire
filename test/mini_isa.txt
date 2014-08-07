@@ -39,5 +39,3 @@ DECR 1110 01rr														 4
 ROT  1110 1Drr			D = direction?										 8
 
 SHFT 1111 LDrr			L = logical?, D = direction? L = logical?						16
-
-NOT  ???? ??rr														 4
