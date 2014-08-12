@@ -18,6 +18,7 @@ import Data.List (nub)
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map)
 import Debug.Trace (trace,traceShow)
+import ReWire.Core.Prims
 
 -- Type checker for core.
 
@@ -85,8 +86,8 @@ initDefn (RWCDefn n (tvs :-> t) e) = do e'          <- initExp e
                                         return (RWCDefn n (tvs :-> t) e')
 -}
 
-defnAssump :: RWCDefn -> TCM Assump
-defnAssump (RWCDefn n (tvs :-> t) _) = return (n,tvs :-> t)
+defnAssump :: RWCDefn -> Assump
+defnAssump (RWCDefn n pt _) = (n,pt)
 
 dataConAssump :: [Id RWCTy] -> RWCTy -> RWCDataCon -> CAssump
 dataConAssump tvs rt (RWCDataCon i ts) = (i,tvs :-> foldr mkArrow rt ts)
@@ -212,42 +213,13 @@ tcDefn d  = do putTySub (Map.empty)
                let d' = RWCDefn n (tvs :-> t) (subst s e')
                traceShow n $ d' `deepseq` return d'
 
+primAssump :: RWCPrim -> Assump
+primAssump (RWCPrim n t _) = (n,[] :-> t)
+  
 tc :: RWCProg -> TCM RWCProg
-tc p = do as_     <- liftM Map.fromList $ mapM defnAssump (defns p)
-          let as  =  as_ `Map.union` as0
-              as0 =  Map.fromList $
-                      [(mkId "extrudeStT",[mkId "i",mkId "o",mkId "s",mkId "m",mkId "a"] :->
-                                             (RWCTyVar (mkId "s") `mkArrow`
-                                               (RWCTyComp (RWCTyCon (TyConId "ReT") `RWCTyApp`
-                                                           RWCTyVar (mkId "i") `RWCTyApp`
-                                                           RWCTyVar (mkId "o") `RWCTyApp`
-                                                           RWCTyVar (mkId "m"))
-                                                          (RWCTyCon (TyConId "Tuple2") `RWCTyApp`
-                                                           RWCTyVar (mkId "a") `RWCTyApp`
-                                                           RWCTyVar (mkId "s"))))),
-                       (mkId "runStT",    [mkId "s",mkId "m",mkId "a"] :->
-                                             (RWCTyVar (mkId "s") `mkArrow`
-                                               (RWCTyComp (RWCTyVar (mkId "m"))
-                                                          (RWCTyCon (TyConId "Tuple2") `RWCTyApp`
-                                                           RWCTyVar (mkId "a") `RWCTyApp`
-                                                           RWCTyVar (mkId "s"))))),
-                       (mkId "get",       [mkId "s",mkId "m"] :->
-                                             (RWCTyComp (RWCTyCon (TyConId "StT") `RWCTyApp`
-                                                         RWCTyVar (mkId "s") `RWCTyApp`
-                                                         RWCTyVar (mkId "m"))
-                                                        (RWCTyVar (mkId "s")))),
-                       (mkId "return",    [mkId "a",mkId "m"] :->
-                                             (RWCTyVar (mkId "a") `mkArrow`
-                                              (RWCTyComp (RWCTyVar (mkId "m"))
-                                                         (RWCTyVar (mkId "a"))))),
-                       (mkId "bind",      [mkId "m",mkId "a",mkId "b"] :->
-                                             ((RWCTyComp (RWCTyVar (mkId "m")) (RWCTyVar (mkId "a")))
-                                               `mkArrow`
-                                               ((RWCTyVar (mkId "a") `mkArrow` RWCTyComp (RWCTyVar (mkId "m")) (RWCTyVar (mkId "a")))
-                                                `mkArrow`
-                                                (RWCTyComp (RWCTyVar (mkId "m")) (RWCTyVar (mkId "b"))))))
-                       -- et cetera :/
-                      ]
+tc p = do let as_ =  Map.fromList $ map defnAssump (defns p) ++ map primAssump (primDecls p)
+              as  =  as_ `Map.union` as0
+              as0 =  Map.fromList prims
           cas     <- liftM (Map.fromList . concat) $ mapM dataDeclAssumps (dataDecls p)
           ds'     <- localAssumps (as `Map.union`) (localCAssumps (cas `Map.union`) (mapM tcDefn (defns p)))
           return (p { defns = ds' })

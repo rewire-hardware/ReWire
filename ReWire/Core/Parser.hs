@@ -10,7 +10,7 @@ import Data.List (nub)
 import Control.Monad (liftM,foldM)
 
 rwcDef :: T.LanguageDef st
-rwcDef = L.haskellDef { T.reservedNames   = ["data","of","let","in","end","def","is","case","bind"],
+rwcDef = L.haskellDef { T.reservedNames   = ["data","of","let","in","end","def","is","case","bind","vhdl"],
                         T.reservedOpNames = ["|","\\","->","::","<-"] }
 
 lexer = T.makeTokenParser rwcDef
@@ -62,8 +62,9 @@ conid = lexeme $ try $
           }
 
 prog = do dds  <- many datadecl
+          pds  <- many primdefn
           defs <- many defn
-          return (RWCProg dds defs)
+          return (RWCProg dds pds defs)
 
 datadecl = do reserved "data"
               i   <- conid
@@ -93,12 +94,20 @@ atype = do tm <- angles ty
              [t] -> return t
              _   -> return (foldl RWCTyApp (RWCTyCon (TyConId $ mktuplecon (length ts))) ts)
              
-btype = do ts <- many atype
+btype = do ts <- many1 atype
            return (foldl1 RWCTyApp ts)
 
-ty = do ts <- btype `sepBy` reservedOp "->"
+ty = do ts <- btype `sepBy1` reservedOp "->"
         return (foldr1 mkArrow ts)
 
+primdefn = do reserved "vhdl"
+              i <- varid
+              reservedOp "::"
+              t <- ty
+              reserved "is"
+              n <- varid
+              return (RWCPrim (mkId i) t n)
+              
 defn = do i <- varid
           reservedOp "::"
           t <- ty
@@ -108,8 +117,8 @@ defn = do i <- varid
           return (RWCDefn (mkId i) (nub (fv t) :-> t) e)
 
 expr = lamexpr
-   <|> do es <- many aexpr
-          return (foldl RWCApp (head es) (tail es))
+   <|> do es <- many1 aexpr
+          return (foldl1 RWCApp es)
 
 aexpr = do i <- varid
            return (RWCVar (mkId i) tblank)

@@ -27,7 +27,7 @@ type RWT m = AssumeT (Id RWCExp) VarInfo
               (AssumeT TyConId TyConInfo
                (AssumeT DataConId DataConInfo (ScopeT m)))
 
-data VarInfo = GlobalVar RWCDefn | LocalVar RWCTy deriving Show
+data VarInfo = PrimVar RWCPrim | GlobalVar RWCDefn | LocalVar RWCTy deriving Show
 newtype TyConInfo = TyConInfo RWCData deriving Show
 data DataConInfo = DataConInfo TyConId RWCDataCon deriving Show
 
@@ -73,19 +73,23 @@ forgettingD x m = AssumeT $ ReaderT $ \rho0 ->
 queryV :: Monad m => Id RWCExp -> RWT m (Maybe VarInfo)
 queryV x = query x
 
+queryP :: Monad m => Id RWCExp -> RWT m (Maybe RWCPrim)
+queryP x = do mvi <- query x
+              case mvi of
+                Just (PrimVar p) -> return (Just p)
+                _                -> return Nothing
+                
 queryG :: Monad m => Id RWCExp -> RWT m (Maybe RWCDefn)
 queryG x = do mvi <- query x
               case mvi of
-                Nothing            -> return Nothing
-                Just (LocalVar _)  -> return Nothing
                 Just (GlobalVar d) -> return (Just d)
+                _                  -> return Nothing
 
 queryL :: Monad m => Id RWCExp -> RWT m (Maybe RWCTy)
 queryL x = do mvi <- query x
               case mvi of
-                Nothing            -> return Nothing
                 Just (LocalVar t)  -> return (Just t)
-                Just (GlobalVar d) -> return Nothing
+                _                  -> return Nothing                
 
 queryT :: Monad m => TyConId -> RWT m (Maybe TyConInfo)
 queryT t = lift $ query t
@@ -140,8 +144,10 @@ inAlt (RWCAlt p_ e_) = refreshingPat p_ e_
 --inPattern (RWCPatLiteral _) k = k []
 --inPattern (RWCPatVar x t) k   = assumingL x t (k [(x,t)])
 
-mkInitialVarMap :: [RWCDefn] -> Map (Id RWCExp) VarInfo
-mkInitialVarMap = foldr (\ d@(RWCDefn n _ _) -> Map.insert n (GlobalVar d)) Map.empty
+mkInitialVarMap :: [RWCDefn] -> [RWCPrim] -> Map (Id RWCExp) VarInfo
+mkInitialVarMap ds ps = foldr (\ p@(RWCPrim n _ _) -> Map.insert n (PrimVar p))  
+                          (foldr (\ d@(RWCDefn n _ _) -> Map.insert n (GlobalVar d)) Map.empty ds)
+                          ps
 
 mkInitialTyConMap :: [RWCData] -> Map TyConId TyConInfo
 mkInitialTyConMap = foldr (\ d@(RWCData n _ _) -> Map.insert n (TyConInfo d)) Map.empty
@@ -150,8 +156,10 @@ mkInitialDataConMap :: [RWCData] -> Map DataConId DataConInfo
 mkInitialDataConMap = foldr addDD Map.empty
   where addDD (RWCData dn _ dcs) m = foldr (\ d@(RWCDataCon cn _) -> Map.insert cn (DataConInfo dn d)) m dcs
 
-mkInitialVarSet :: [RWCDefn] -> Set IdAny
-mkInitialVarSet = foldr (\ d@(RWCDefn n _ _) -> Set.insert (IdAny n)) Set.empty
+mkInitialVarSet :: [RWCDefn] -> [RWCPrim] -> Set IdAny
+mkInitialVarSet ds ps = foldr (\ p@(RWCPrim n _ _) -> Set.insert (IdAny n))
+                          (foldr (\ d@(RWCDefn n _ _) -> Set.insert (IdAny n)) Set.empty ds)
+                          ps
 
 runRWT :: Monad m => RWCProg -> RWT m a -> m a
 runRWT p phi = runScopeTWith varset $
@@ -159,10 +167,10 @@ runRWT p phi = runScopeTWith varset $
                  runAssumeTWith tmap $
                   runAssumeTWith varmap $
                    phi
-  where varmap = mkInitialVarMap (defns p)
+  where varmap = mkInitialVarMap (defns p) (primDecls p)
         tmap   = mkInitialTyConMap (dataDecls p)
         dmap   = mkInitialDataConMap (dataDecls p)
-        varset = mkInitialVarSet (defns p)
+        varset = mkInitialVarSet (defns p) (primDecls p)
 
 runRW :: RWCProg -> RW a -> a
 runRW p = runIdentity . runRWT p

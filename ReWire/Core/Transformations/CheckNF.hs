@@ -21,7 +21,7 @@ import Control.Monad.Identity
 import Prelude hiding (lookup)
 import Debug.Trace (trace)
 
-data DefnSort = DefnBitty | DefnCont deriving Show
+data DefnSort = DefnPrim | DefnBitty | DefnCont deriving (Eq,Show)
 type NFM = RWT (ErrorT NFMError (StateT NFMState Identity))
 data NFMState = NFM { visited :: Map (Id RWCExp) DefnSort, 
                       cpx     :: Set TyConId }         -- really this should be env not state, but whatever
@@ -69,6 +69,7 @@ checkDefnIsCont n = trace ("cdic: " ++ show n) $
                     do vset <- getVisited
                        case Map.lookup n vset of
                            Just DefnCont  -> return ()
+                           Just DefnPrim  -> throwError $ "checkDefnIsCont: " ++ show n ++ " is a primitive"
                            Just DefnBitty -> throwError $ "checkDefnIsCont: " ++ show n ++ " has to be bitty"
                            Nothing        -> do
                              md <- queryG n
@@ -123,12 +124,16 @@ checkDefnIsBitty n = trace ("cdib: " ++ show n) $
                      do vset <- getVisited
                         case Map.lookup n vset of
                            Just DefnCont  -> throwError $ "checkDefnIsBitty: " ++ show n ++ " has to be a continuer"
+                           Just DefnPrim  -> trace ("cdib prim: " ++ show n) $ return ()
                            Just DefnBitty -> trace ("cdib bail: " ++ show n) $ return ()
                            Nothing        -> trace ("cdib looking for: " ++ show n) $ do
                              md <- queryG n
                              case md of
-                               Nothing -> trace ("cdib didn't find: " ++ show n) $ return () -- FIXME: I think this happens ONLY when it's locally bound
---                                 throwError $ "checkDefnIsBitty: " ++ show n ++ " is undefined"
+                               Nothing -> do
+                                 mp <- queryP n
+                                 case mp of
+                                   Just _  -> trace ("cdib: putting prim: " ++ show n) $ modifyVisited (Map.insert n DefnPrim)
+                                   Nothing -> trace ("cdib didn't find: " ++ show n) $ return () -- FIXME: I think this happens ONLY when it's locally bound
                                Just (RWCDefn _ (tvs :-> t) e) -> trace ("cdib did find: " ++ show n) $ do
                                  when (length tvs > 0)
                                       (throwError $ "checkDefnIsBitty: type is not monomorphic")
@@ -149,6 +154,7 @@ checkTyIsBitty (RWCTyCon i)    = trace ("ctib: " ++ show i) $
                                     if i `Set.member` cpx
                                        then throwError $ "checkTyIsBitty: encountered complex type: " ++ deTyConId i
                                        else return ()
+checkTyIsBitty (RWCTyComp m t) = trace "ctib comp" $ throwError $ "checkTyIsBitty: encountered computation type"
 
 checkExprIsBitty :: RWCExp -> NFM ()
 checkExprIsBitty e@(RWCApp {})      = trace "ceib app" $

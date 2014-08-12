@@ -16,6 +16,8 @@ newtype TyConId   = TyConId   { deTyConId :: String } deriving (Eq,Ord,Show,NFDa
 
 data Poly t = [Id t] :-> t deriving Show
 
+infixr :->
+
 instance NFData t => NFData (Poly t) where
   rnf (vs :-> x) = vs `deepseq` x `deepseq` ()
 
@@ -226,6 +228,16 @@ instance NFData RWCPat where
   rnf RWCPatWild        = ()
 
 ---
+
+data RWCPrim = RWCPrim { primName :: Id RWCExp,
+                         primTy   :: RWCTy,     -- can't be poly
+                         primVHDL :: String }   -- VHDL name
+               deriving Show
+
+instance NFData RWCPrim where
+  rnf (RWCPrim n t b) = n `deepseq` t `deepseq` b `deepseq` ()
+
+---
   
 data RWCDefn = RWCDefn { defnName   :: Id RWCExp,
                          defnPolyTy :: Poly RWCTy,
@@ -249,7 +261,7 @@ instance Subst RWCDefn RWCTy where
 
 instance NFData RWCDefn where
   rnf (RWCDefn n pt e) = n `deepseq` pt `deepseq` e `deepseq` ()
-
+  
 ---
   
 data RWCData = RWCData { dataName   :: TyConId,
@@ -270,12 +282,13 @@ instance NFData RWCDataCon where
 
 ---
   
-data RWCProg = RWCProg { dataDecls    :: [RWCData],
-                         defns        :: [RWCDefn] }
+data RWCProg = RWCProg { dataDecls :: [RWCData],
+                         primDecls :: [RWCPrim],
+                         defns     :: [RWCDefn] }
                        deriving Show
 
 instance NFData RWCProg where
-  rnf (RWCProg dds defs) = dds `deepseq` defs `deepseq` ()
+  rnf (RWCProg dds pds defs) = dds `deepseq` pds `deepseq` defs `deepseq` ()
 
 ---
   
@@ -293,6 +306,8 @@ flattenApp e             = [e]
 
 mkArrow :: RWCTy -> RWCTy -> RWCTy
 mkArrow t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2
+
+infixr `mkArrow`
 
 arrowLeft :: RWCTy -> RWCTy
 arrowLeft (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2) = t1

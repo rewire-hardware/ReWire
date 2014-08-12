@@ -38,7 +38,7 @@ data VMState = VMState { assignments        :: [Assignment],
 data VMEnv   = VMEnv   { bindings :: Map (Id RWCExp) NameInfo } deriving Show
 type VM = RWT (ReaderT VMEnv (StateT VMState Identity))
 
-data NameInfo = BoundK Int | BoundVar String | BoundFun String | NotBound deriving (Eq,Show)
+data NameInfo = BoundK Int | BoundVar String | BoundFun String | BoundPrim String | NotBound deriving (Eq,Show)
 
 getSignalCounter = get >>= return . signalCounter
 modifySignalCounter f = modify (\ s -> s { signalCounter = f (signalCounter s) })
@@ -213,23 +213,27 @@ genExp e@(RWCApp _ _)     = let (ef:es) = flattenApp e
                                 _       -> fail $ "genExp: malformed pause expression"
                               RWCVar i _ -> do n_i  <- askNameInfo i
                                                case n_i of
-                                                 BoundK n   -> do tag      <- getStateTag n
-                                                                  tagWidth <- getStateTagWidth
-                                                                  s_tag    <- freshTmp "tag" tagWidth
-                                                                  emitAssignment (s_tag,BitConst tag)
-                                                                  s_es     <- mapM genExp es
-                                                                  sw       <- getStateWidth
-                                                                  ow       <- getOutputWidth
-                                                                  let kw   =  sw-ow
-                                                                  s        <- freshTmp "k" kw
-                                                                  emitAssignment (s,Concat (LocalVariable s_tag:map LocalVariable s_es))
-                                                                  return s
-                                                 BoundFun n -> do s_es <- mapM genExp es
-                                                                  s    <- freshTmpTy "funcall" t
-                                                                  emitAssignment (s,FunCall n (map LocalVariable s_es))
-                                                                  return s
-                                                 BoundVar _ -> fail $ "genExp: locally bound variable is applied as function: " ++ show i
-                                                 NotBound   -> fail $ "genExp@RWCApp: unbound variable: " ++ show i
+                                                 BoundK n    -> do tag      <- getStateTag n
+                                                                   tagWidth <- getStateTagWidth
+                                                                   s_tag    <- freshTmp "tag" tagWidth
+                                                                   emitAssignment (s_tag,BitConst tag)
+                                                                   s_es     <- mapM genExp es
+                                                                   sw       <- getStateWidth
+                                                                   ow       <- getOutputWidth
+                                                                   let kw   =  sw-ow
+                                                                   s        <- freshTmp "k" kw
+                                                                   emitAssignment (s,Concat (LocalVariable s_tag:map LocalVariable s_es))
+                                                                   return s
+                                                 BoundFun n  -> do s_es <- mapM genExp es
+                                                                   s    <- freshTmpTy "funcall" t
+                                                                   emitAssignment (s,FunCall n (map LocalVariable s_es))
+                                                                   return s
+                                                 BoundVar _  -> fail $ "genExp: locally bound variable is applied as function: " ++ show i
+                                                 BoundPrim n -> do s_es <- mapM genExp es
+                                                                   s    <- freshTmpTy "primcall" t
+                                                                   emitAssignment (s,FunCall n (map LocalVariable s_es))
+                                                                   return s
+                                                 NotBound    -> fail $ "genExp@RWCApp: unbound variable: " ++ show i
                               RWCCon i _ -> do tci      <- getDataConTyCon i
                                                tagWidth <- getTagWidth tci
                                                s_tag    <- freshTmp "tag" tagWidth
@@ -246,18 +250,21 @@ genExp (RWCCon i t)       = do tag <- getTag i
                                return s
 genExp (RWCVar i t)       = do n_i <- askNameInfo i
                                case n_i of
-                                 BoundK n   -> do tag      <- getStateTag n
-                                                  tagWidth <- getStateTagWidth
-                                                  s_tag    <- freshTmp "k" tagWidth
-                                                  emitAssignment (s_tag,BitConst tag)
-                                                  return s_tag
-                                 BoundFun n -> do s <- freshTmpTy "funcall" t
-                                                  emitAssignment (s,FunCall n [])
-                                                  return s
-                                 BoundVar n -> do s <- freshTmpTy "var" t
-                                                  emitAssignment (s,LocalVariable n)
-                                                  return s
-                                 NotBound   -> fail $ "genExp@RWCVar: unbound variable: " ++ show i
+                                 BoundK n    -> do tag      <- getStateTag n
+                                                   tagWidth <- getStateTagWidth
+                                                   s_tag    <- freshTmp "k" tagWidth
+                                                   emitAssignment (s_tag,BitConst tag)
+                                                   return s_tag
+                                 BoundFun n  -> do s <- freshTmpTy "funcall" t
+                                                   emitAssignment (s,FunCall n [])
+                                                   return s
+                                 BoundVar n  -> do s <- freshTmpTy "var" t
+                                                   emitAssignment (s,LocalVariable n)
+                                                   return s
+                                 BoundPrim n -> do s <- freshTmpTy "primcall" t
+                                                   emitAssignment (s,FunCall n [])
+                                                   return s
+                                 NotBound    -> fail $ "genExp@RWCVar: unbound variable: " ++ show i
 --genExp (RWCLiteral _ l)   = genBittyLiteral l
 genExp e_@(RWCCase e alts) = do s_scrut     <- genExp e
                                 scond_alts  <- mapM (genBittyAlt s_scrut (typeOf e)) alts
@@ -483,6 +490,10 @@ genBittyDefnProto (RWCDefn n_ (tvs :-> t) e_) =
                "  pure function " ++ n ++ (if null ps then "" else "(" ++ intercalate " ; " ps ++ ")") ++ "\n" ++
                "    return std_logic_vector;\n")
 
+genBittyPrimProto :: RWCPrim -> VM String
+genBittyPrimProto (RWCPrim n_ t vname) =
+       return ("  -- prim: " ++ deId n_ ++ "\n")
+
 genContDefn :: RWCDefn -> VM ()
 genContDefn (RWCDefn n_ (tvs :-> t) e_) =
   inLambdas e_ $ \ nts_ e ->
@@ -535,7 +546,12 @@ initBindings m = do let kvs =  Map.toList m
                         sns =  [0..]
                     kvs'    <- doEm sns kvs
                     return (Map.fromList kvs')
-  where doEm sns ((k,DefnBitty):kvs)    = do n    <- freshName "func"
+  where doEm sns ((k,DefnPrim):kvs)     = do rest <- doEm sns kvs
+                                             mp   <- queryP k
+                                             case mp of
+                                               Just (RWCPrim _ _ vname) -> return ((k,BoundPrim vname):rest)
+                                               _                        -> error $ "initBindings: encountered unbound primitive " ++ show k
+        doEm sns ((k,DefnBitty):kvs)    = do n    <- freshName "func"
                                              rest <- doEm sns kvs
                                              return ((k,BoundFun n):rest)
         doEm (n:sns) ((k,DefnCont):kvs) = do rest <- doEm sns kvs
@@ -638,11 +654,13 @@ genProg m = do bdgs <- initBindings m
                  optimize
                  as       <- getAssignments
                  ds       <- getDeclarations
+                 let any_prims = any ((==DefnPrim) . snd) kts
                  (assn:assns) <- liftM concat $ mapM nextstate_sig_assign (Map.toList bdgs)
                  let entity_name = "rewire" -- FIXME: customizable?
                  v_protos <- mapM genOneProto kts
                  return ("library ieee;\n" ++
                          "use ieee.std_logic_1164.all;\n" ++
+                         (if any_prims then "use prims.all;\n" else "") ++
                          "entity " ++ entity_name ++ " is\n" ++
                          "  port (clk : in std_logic;\n" ++
                          "        sm_input : in std_logic_vector(0 to " ++ show (iw-1) ++ ");\n" ++
@@ -672,10 +690,15 @@ genProg m = do bdgs <- initBindings m
                                    case md of
                                      Just d  -> genContDefn d >> return ""
                                      Nothing -> fail $ "genProg: No definition for cont function " ++ show k
+         genOne (k,DefnPrim)  = return ""
          genOneProto (k,DefnBitty) = do md <- queryG k
                                         case md of
                                           Just d  -> genBittyDefnProto d
                                           Nothing -> fail $ "genProg: No definition for bitty function " ++ show k
+         genOneProto (k,DefnPrim)  = do mp <- queryP k
+                                        case mp of
+                                          Just p  -> genBittyPrimProto p
+                                          Nothing -> fail $ "genProg: No definition for bitty primitive " ++ show k
          genOneProto _ = return ""
 
 runVM :: RWCProg -> VM a -> (a,VMState)
