@@ -1,66 +1,50 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
-module ReWire.Core.Transformations.Expand (cmdExpand) where
+module ReWire.Core.Transformations.Expand where
 
-import Prelude hiding (sequence,mapM)
 import ReWire.Core.Syntax
-import Unbound.LocallyNameless
-import Control.Monad hiding (sequence,mapM)
-import Data.List (isInfixOf,find)
-import Data.Traversable (sequence,mapM)
-import Data.Maybe (catMaybes,isNothing,fromJust)
-import ReWire.Core.Transformations.Types
+import ReWire.Scoping
 import ReWire.Core.Transformations.Monad
-import Control.Monad.State hiding (mapM)
+import ReWire.Core.Transformations.DeUniquify (deUniquify)
+import ReWire.Core.Transformations.Uniquify (uniquify)
+import ReWire.Core.Transformations.Types
 
-import Debug.Trace (trace)
+expandAlt :: [Id RWCExp] -> RWCAlt -> RW RWCAlt
+expandAlt ns (RWCAlt p e) = do e' <- expandExpr ns e
+                               return (RWCAlt p e')
 
-type EM = StateT Int RW
+expandExpr :: [Id RWCExp] -> RWCExp -> RW RWCExp
+expandExpr ns (RWCApp e1 e2)             = do e1' <- expandExpr ns e1
+                                              e2' <- expandExpr ns e2
+                                              return (RWCApp e1' e2')
+expandExpr ns (RWCLam n t e)             = do e' <- expandExpr ns e
+                                              return (RWCLam n t e')
+expandExpr ns (RWCLet n e1 e2)           = do e1' <- expandExpr ns e1
+                                              e2' <- expandExpr ns e2
+                                              return (RWCLet n e1' e2')
+expandExpr ns (RWCVar n t) | n `elem` ns = do me <- askVar t n
+                                              case me of
+                                                Just e  -> expandExpr ns e
+                                                Nothing -> return (RWCVar n t)
+                           | otherwise   = return (RWCVar n t)
+expandExpr ns (RWCCon dci t)             = return (RWCCon dci t)
+expandExpr ns (RWCLiteral l)             = return (RWCLiteral l)
+expandExpr ns (RWCCase e alts)           = do e'    <- expandExpr ns e
+                                              alts' <- mapM (expandAlt ns) alts
+                                              return (RWCCase e' alts')
 
-expandalt :: String -> Maybe Int -> RWCAlt -> EM RWCAlt
-expandalt nexp mpos (RWCAlt b) = lunbind b (\(p,eb) ->
-                                        do eb' <- expandexpr nexp mpos eb
-                                           return (RWCAlt (bind p eb')))
+expandDefn :: [Id RWCExp] -> RWCDefn -> RW RWCDefn
+expandDefn ns (RWCDefn n pt e) = do e' <- expandExpr ns e
+                                    return (RWCDefn n pt e')
 
-expandexpr :: String -> Maybe Int -> RWCExp -> EM RWCExp
-expandexpr nexp mpos (RWCApp t e1 e2)         = liftM2 (RWCApp t) (expandexpr nexp mpos e1) (expandexpr nexp mpos e2)
-expandexpr nexp mpos (RWCLam t b)             = lunbind b (\(n,e) ->
-                                                       do e' <- expandexpr nexp mpos e
-                                                          return (RWCLam t (bind n e')))
-expandexpr nexp mpos (RWCVar t n) | nexp == show n = do pos <- get
-                                                        put (pos+1)
-                                                        case mpos of
-                                                          Just pos' | pos /= pos' -> return (RWCVar t n)
-                                                          _                       -> askvar t n
-                                  | otherwise = return (RWCVar t n)
-expandexpr nexp mpos e@(RWCCon {})            = return e
-expandexpr nexp mpos e@(RWCLiteral {})        = return e
-expandexpr nexp mpos (RWCCase t e alts)       = do e'    <- expandexpr nexp mpos e
-                                                   alts' <- mapM (expandalt nexp mpos) alts
-                                                   return (RWCCase t e' alts')
+expandProg :: [Id RWCExp] -> RWCProg -> RW RWCProg
+expandProg ns (RWCProg dds pds defns) = do defns' <- mapM (expandDefn ns) defns
+                                           return (RWCProg dds pds defns')
 
-expanddefn :: String -> Maybe String -> Maybe Int -> RWCDefn -> EM RWCDefn
-expanddefn nexp mnin mpos (RWCDefn n (Embed b)) = case mnin of
-                                                       Just n' | n' /= show n -> return (RWCDefn n (Embed b))
-                                                       _                      -> lunbind b (\(tvs,(t,e)) ->
-                                                                                             do e' <- expandexpr nexp mpos e
-                                                                                                return (RWCDefn n (Embed (setbind tvs (t,e')))))
-
-go :: String -> Maybe String -> Maybe Int -> EM [RWCDefn]
-go n mnin mpos = do ds <- askDefns
-                    mapM (expanddefn n mnin mpos) ds
+expand :: [Id RWCExp] -> RWCProg -> RWCProg
+expand ns p_ = deUniquify $ runRW ctr p (expandProg ns p)
+    where (p,ctr) = uniquify 0 p_
 
 cmdExpand :: TransCommand
-cmdExpand s p = let ws = words s
-                    mparse = case ws of
-                      [n]                    -> Just (n,Nothing,Nothing)
-                      [n,"in",nin]           -> Just (n,Just nin,Nothing)
-                      [n,"at",spos]          -> Just (n,Nothing,Just (read spos::Int))
-                      [n,"in",nin,"at",spos] -> Just (n,Just nin,Just (read spos::Int))
-                      _                      -> Nothing
-                 in case mparse of
-                      Just (nexp,mnin,mpos) -> let ds = fst $ runRW p (runStateT (go nexp mnin mpos) 0)
-                                                   p' = p { defns = trec ds }
-                                               in  (Just p',Nothing)
-                      Nothing               -> syntaxerr
-   where syntaxerr = (Nothing,Just "Syntax: expand <symbol> [in <symbol>] [at <n>]")
+cmdExpand s p = (Just (expand ns p),Nothing)
+  where ns = map mkId (words s)

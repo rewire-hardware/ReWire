@@ -20,10 +20,10 @@ main = do args <- getArgs
                      case res_p of
                        Left e  -> hPutStrLn stderr e
                        Right p -> do putStrLn "parse finished"
-                                     --writeFile "show.out" (show p)
-                                     --putStrLn "show out finished"
-                                     --writeFile "Debug.hs" (show $ ppHaskellWithName p "Debug")
-                                     --putStrLn "debug out finished"
+                                     writeFile "show.out" (show p)
+                                     putStrLn "show out finished"
+                                     writeFile "Debug.hs" (show $ ppHaskellWithName p "Debug")
+                                     putStrLn "debug out finished"
                                      case kindcheck p of
                                        Just e  -> hPutStrLn stderr e
                                        Nothing -> do putStrLn "kc finished"

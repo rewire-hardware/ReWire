@@ -27,6 +27,7 @@ data NFMState = NFM { visited :: Map (Id RWCExp) DefnSort,
                       cpx     :: Set TyConId }         -- really this should be env not state, but whatever
 type NFMError = String
 
+getVisited :: NFM (Map (Id RWCExp) DefnSort)
 getVisited = get >>= return . visited
 getCpxTys = get >>= return . cpx
 modifyVisited f = modify (\ s -> s { visited = f (visited s) })

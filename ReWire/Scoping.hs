@@ -77,7 +77,10 @@ runAssume = runAssumeWith Map.empty
 
 -- NB: The "Id" constructor should be hidden
 data Id a = Id {-# UNPACK #-} !ByteString {-# UNPACK #-} !ByteString
-            deriving (Eq,Ord,Show,Read)
+            deriving (Eq,Ord)
+
+instance Show (Id a) where
+  show (Id _ x) = BS.unpack x
 
 mkId :: forall a . IdSort a => String -> Id a
 mkId x = Id (idSort (undefined::a)) (BS.pack x)

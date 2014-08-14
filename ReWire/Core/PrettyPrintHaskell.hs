@@ -70,6 +70,9 @@ ppTy (RWCTyApp t1 t2) = do t1_p <- ppTy t1
                            return (t1_p <+> t2_p)
 ppTy (RWCTyCon n)     = return (text (deTyConId n))
 ppTy (RWCTyVar n)     = return (ppId n)
+ppTy (RWCTyComp t1 t2) = do t1_p <- ppTy t1
+                            t2_p <- ppTyAppR t2
+                            return (text "{- computation -}" <+> t1_p <+> t2_p)
 
 ppTyAppR t@(RWCTyApp _ _) = liftM parens (ppTy t)
 ppTyAppR t                = ppTy t
