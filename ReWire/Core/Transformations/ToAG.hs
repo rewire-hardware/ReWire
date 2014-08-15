@@ -70,8 +70,25 @@ stringNodes ((_,no,_):x@(ni,_,_):xs) = do addEdge no ni Nothing
                                           stringNodes (x:xs)
 stringNodes _                        = return ()
 
+--agAcAlt :: Loc -> RWCAlt -> AGM (Node,Node,Node,Loc)
+-- entry node, true exit node, false exit node, result reg if true
+stringAlts :: Node -> [(Node,Node,Node,Loc)] -> AGM ()
+stringAlts nl ((_,no1_t,no1_f,_):x@(no2_e,_,_,_):xs) = do addEdge no1_t nl Nothing
+                                                          addEdge no1_f no2_e Nothing
+                                                          stringAlts nl (x:xs)
+stringAlts nl [(_,no_t,no_f,r)]                      = do addEdge no_t nl Nothing
+                                                          addEdge no_f nl Nothing
+stringAlts _  []                                     = return ()
+
 agExpr :: RWCExp -> AGM (Node,Node,Loc)
 agExpr e = case ef of
+             RWCApp _ _     -> fail "agExpr: app in function position (can't happen)"
+             RWCLiteral _   -> fail "agExpr: encountered literal"
+             RWCLet x el eb -> do
+               (niel,noel,lel) <- agExpr el
+               (nieb,noeb,leb) <- binding x lel $ agExpr eb
+               addEdge noel nieb Nothing
+               return (niel,noeb,leb)
              RWCVar x _     -> do
                mr <- askBinding x
                case mr of
@@ -100,8 +117,27 @@ agExpr e = case ef of
 --                 _  -> fail $ "agExpr: encountered let in function position"
   where (ef:eargs) = flattenApp e
 
+agAcAlt :: Loc -> Loc -> RWCAlt -> AGM (Node,Node,Node,Loc) -- entry node, true exit node, false exit node, result reg if true
+agAcAlt lscr lres (RWCAlt p e) = do (nie,noe,le) <- agAcExpr e
+                                    ni           <- addFreshNode (Rem "alt entry")
+                                    no_t         <- addFreshNode (Assign lres le)
+                                    no_f         <- addFreshNode (Rem "alt exit (no match)")
+                                    addEdge noe no_t Nothing
+                                    addEdge ni nie Nothing
+                                    addEdge ni no_f Nothing
+                                    return (ni,no_t,no_f,le)
+
 agAcExpr :: RWCExp -> AGM (Node,Node,Loc) -- entry node, exit node, result reg
 agAcExpr e = case ef of
+               RWCApp _ _                    -> fail "agAcExpr: app in function position (can't happen)"
+               RWCLam _ _ _                  -> fail "agAcExpr: encountered lambda"
+               RWCLiteral _                  -> fail "agAcExpr: encountered literal"
+               RWCCon _ _                    -> fail "agAcExpr: encountered con"
+               RWCLet x el eb -> do
+                 (niel,noel,lel) <- agAcExpr el
+                 (nieb,noeb,leb) <- binding x lel $ agAcExpr eb
+                 addEdge noel nieb Nothing
+                 return (niel,noeb,leb)
                RWCVar x _ | x == mkId "bind" -> do
                  case eargs of
                    [el,RWCLam x _ er] -> do
@@ -113,6 +149,7 @@ agAcExpr e = case ef of
                RWCVar x _ | x == mkId "return" -> do
                  case eargs of
                    [e] -> agExpr e
+                   _   -> fail "agAcExpr: wrong number of arguments for return"
                RWCVar x _ | x == mkId "signal" -> do
                  case eargs of
                    [e] -> do
@@ -121,12 +158,28 @@ agAcExpr e = case ef of
                      n          <- addFreshNode (Signal re r)
                      addEdge no n Nothing
                      return (ni,n,r)
+                   _  -> fail "agAcExpr: wrong number of arguments for signal"
                RWCVar x _                      -> do
                  ninors           <- mapM agExpr eargs
                  stringNodes ninors
                  let rs           =  map (\ (_,_,r) -> r) ninors -- FIXME: must fill the regs in!
                  (rs,nif,nof,rrf) <- agAcDefn x
                  return (nif,nof,rrf)
+               RWCCase escr alts               -> do
+                 case eargs of
+                   [] -> do
+                     (ni,no,r_scr)   <- agExpr escr
+                     r_res           <- freshLoc
+                     ninotnoers      <- mapM (agAcAlt r_scr r_res) alts
+                     n               <- addFreshNode (Rem "FIXMECASESTART")
+                     let (ni0,_,_,_) =  head ninotnoers
+                     addEdge n ni Nothing
+                     addEdge no ni0 Nothing
+                     nl              <- addFreshNode (Rem "FIXMECASEEND")
+                     stringAlts nl ninotnoers
+                     return (n,nl,r_res)
+                   _  -> fail "agAcExpr: encountered case expression in function position"
+                     
    where (ef:eargs) = flattenApp e  
 
 peelLambdas (RWCLam n t e) = ((n,t):nts,e')
@@ -158,6 +211,7 @@ agAcDefn n = do am <- getActionMap
 agStart :: RWCExp -> AGM ()
 agStart (RWCApp (RWCApp (RWCVar x _) e) _) | x == mkId "extrude" = agStart e -- FIXME
 agStart (RWCVar x _)                                             = agAcDefn x  >> return () -- FIXME
+agStart _ = fail "agStart: malformed start expression"
 
 agProg :: AGM ()
 agProg = do md <- lift $ lift $ queryG (mkId "start")

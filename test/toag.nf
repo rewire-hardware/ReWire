@@ -6,7 +6,10 @@ vhdl bitNot :: Bit -> Bit is prim_bitNot
 go :: <ReT Bit Bit I><Bit>
 is
      bind x <- signal Zero
-  in bind y <- signal x
+  in bind y <- case x of
+               { One  -> signal Zero
+               ; Zero -> signal x
+               }
   in bind z <- signal (bitAnd x y)
   in           go
 end
