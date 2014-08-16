@@ -10,7 +10,7 @@ is
                { One  -> signal Zero
                ; Zero -> signal x
                }
-  in bind z <- signal (bitAnd x y)
+  in bind z <- signal (bitAnd (case y of { One -> x ; Zero -> bitAnd x x }) y)
   in           go
 end
 

@@ -101,12 +101,15 @@ queryL x = RWT $
                  Just (LocalVar t)  -> return (Just t)
                  _                  -> return Nothing                
 
+-}
+
 queryT :: Monad m => TyConId -> RWT m (Maybe TyConInfo)
 queryT t = RWT $ lift $ query t
 
 queryD :: Monad m => DataConId -> RWT m (Maybe DataConInfo)
 queryD d = RWT $ lift $ lift $ query d
 
+{-
 getAssumptionsV :: Monad m => RWT m (Map (Id RWCExp) VarInfo)
 getAssumptionsV = RWT getAssumptions
 
