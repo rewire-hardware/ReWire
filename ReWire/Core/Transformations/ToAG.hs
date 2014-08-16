@@ -1,5 +1,12 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
+-- Will need VHDL primitives:
+--
+-- andBits
+-- ctor_*
+-- checkTag*
+-- getField*    (this is a mite tricky because we'll need one for each instance of polymorphic types)
+
 module ReWire.Core.Transformations.ToAG where
 
 import ReWire.ActionGraph
@@ -83,14 +90,16 @@ stringAlts :: Node -> [(Node,Node,Node,Loc)] -> AGM ()
 stringAlts nl ((_,no1_t,no1_f,_):x@(no2_e,_,_,_):xs) = do addEdge no1_t nl JMP
                                                           addEdge no1_f no2_e JMP
                                                           stringAlts nl (x:xs)
-stringAlts nl [(_,no_t,no_f,r)]                      = do addEdge no_t nl JMP
-                                                          addEdge no_f nl JMP
+-- The last alt is a special case; its condition is ignored, so it does not
+-- really have an no_f.
+stringAlts nl [(_,no,_,r)]                           = do addEdge no nl JMP
 stringAlts _  []                                     = return ()
 
 agExpr :: RWCExp -> AGM (Node,Node,Loc)
 agExpr e = case ef of
              RWCApp _ _     -> fail "agExpr: app in function position (can't happen)"
              RWCLiteral _   -> fail "agExpr: encountered literal"
+             RWCLam _ _ _   -> fail "agExpr: encountered lambda"
              RWCLet x el eb -> do
                (niel,noel,lel) <- agExpr el
                (nieb,noeb,leb) <- binding x lel $ agExpr eb
@@ -99,9 +108,15 @@ agExpr e = case ef of
              RWCVar x _     -> do
                mr <- askBinding x
                case mr of
-                 Just r  -> do n <- addFreshNode (Rem $ "got " ++ show x ++ " in " ++ r)
+                 Just r  -> do -- If it's a locally bound variable we just
+                               -- return the reg it's bound to. Need an entry
+                               -- and exit node, though, so we throw a nop
+                               -- in.
+                               n <- addFreshNode (Rem $ "got " ++ show x ++ " in " ++ r)
                                return (n,n,r)
                  Nothing -> do
+                   -- If this is not a locally bound variable then it must
+                   -- be a non-monadic global, which tranlates to a FunCall.
                    ninors <- mapM agExpr eargs
                    stringNodes (map (\(ni,no,_) -> (ni,no)) ninors)
                    let rs =  map ( \ (_,_,r) -> r) ninors
@@ -113,28 +128,40 @@ agExpr e = case ef of
                                   (_,no,_) = last ninors
                               addEdge no n JMP
                               return (ni,n,r)
-             RWCLam _ _ _   -> fail $ "agExpr: encountered lambda"
              RWCCon (DataConId c) _ -> do
-               ninors <- mapM agExpr eargs
-               stringNodes (map (\(ni,no,_) -> (ni,no)) ninors)
-               let rs =  map ( \ (_,_,r) -> r) ninors
-               r      <- freshLoc (typeOf e)
-               n      <- addFreshNode (FunCall r ("ctor_" ++ c) rs)
-               case ninors of
-                 [] -> return (n,n,r)
-                 _  -> do let (ni,_,_) = head ninors
-                              (_,no,_) = last ninors
+               -- Compile argument expressions.
+               ninors_args <- mapM agExpr eargs
+               -- Sequence argument expressions.
+               stringNodes (map (\(ni,no,_) -> (ni,no)) ninors_args)
+               -- Allocate result reg.
+               r           <- freshLoc (typeOf e)
+               -- Apply constructor function to the args, result in r.
+               let rs_args =  map ( \ (_,_,r) -> r) ninors_args
+               n           <- addFreshNode (FunCall r ("ctor_" ++ c) rs_args)
+               case ninors_args of
+                 [] -> -- No arguments, so n is all we need.
+                       return (n,n,r)
+                 _  -> do -- Sequence argument expressions with ctor call.
+                          let (ni,_,_) = head ninors_args
+                              (_,no,_) = last ninors_args
                           addEdge no n JMP
+                          -- Entry is the beginning of the argument
+                          -- expressions, exit is the constructor call.
                           return (ni,n,r)
              RWCCase escr alts               -> do
                case eargs of
                  [] -> do
                    (ni,no,r_scr)   <- agExpr escr
                    r_res           <- freshLoc (typeOf e)
-                   ninotnoers      <- mapM (agAlt r_scr (typeOf escr) r_res) alts
-                   let (ni0,_,_,_) =  head ninotnoers
+                   ninotnoers_init <- mapM (agAlt r_scr (typeOf escr) r_res) (init alts)
+                   
+                   let (RWCAlt _ e_last) =  last alts
+                   (ni_last,no_last,r_last) <- agExpr e_last
+                   let ninotnoers_last      =  (ni_last,no_last,no_last,r_last)
+                       ninotnoers           =  ninotnoers_init ++ [ninotnoers_last]
+                       (ni0,_,_,_)          =  head ninotnoers
                    addEdge no ni0 JMP
-                   nl              <- addFreshNode (Rem "merge")
+                   nl              <- addFreshNode (Rem "end case")
                    stringAlts nl ninotnoers
                    return (ni,nl,r_res)
                  _  -> fail "agExpr: encountered case expression in function position"
@@ -206,10 +233,10 @@ agPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
                                             addEdge npo_l nai JMP
                                             return (concat bss,ntm,nao,rm)
 agPat lscr tscr RWCPatWild         = do rtm <- freshLoc (RWCTyCon (TyConId "Bit"))
-                                        ntm <- addFreshNode (FunCall rtm "constOne" [])
+                                        ntm <- addFreshNode (FunCall rtm "ctor_One" [])
                                         return ([],ntm,ntm,rtm)
 agPat lscr tscr (RWCPatVar x _)    = do rtm <- freshLoc (RWCTyCon (TyConId "Bit"))
-                                        ntm <- addFreshNode (FunCall rtm "constOne" [])
+                                        ntm <- addFreshNode (FunCall rtm "ctor_One" [])
                                         return ([(x,lscr)],ntm,ntm,rtm)
 agPat _ _ (RWCPatLiteral _)        = fail "agPat: encountered literal"
 
@@ -240,54 +267,111 @@ agAcAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- agPat lscr tscr p
 agAcExpr :: RWCExp -> AGM (Node,Node,Loc) -- entry node, exit node, result reg
 agAcExpr e = case ef of
                RWCApp _ _                    -> fail "agAcExpr: app in function position (can't happen)"
+               -- I suppose strictly speaking we *could* handle lambdas,
+               -- but not for now.
                RWCLam _ _ _                  -> fail "agAcExpr: encountered lambda"
                RWCLiteral _                  -> fail "agAcExpr: encountered literal"
+               -- Can't use data constructors to construct a resumption.
                RWCCon _ _                    -> fail "agAcExpr: encountered con"
+               
                RWCLet x el eb -> do
+                 -- Expression being bound.
                  (niel,noel,lel) <- agAcExpr el
+                 -- Body expression.
                  (nieb,noeb,leb) <- binding x lel $ agAcExpr eb
+                 -- Connect the two in sequence.
                  addEdge noel nieb JMP
+                 
                  return (niel,noeb,leb)
+                 
                RWCVar x _ | x == mkId "bind" -> do
+                 -- Bind is only allowed with a lambda on RHS.
                  case eargs of
                    [el,RWCLam x _ er] -> do
+                     -- Process is essentially identical to let.
                      (entl,exl,regl)  <- agAcExpr el
                      (entr,exr,regr)  <- binding x regl $ agAcExpr er
                      addEdge exl entr JMP
                      return (entl,exr,regr)
                    _ -> fail "wrong rhs for bind"
+                   
                RWCVar x _ | x == mkId "return" -> do
                  case eargs of
                    [e] -> agExpr e
                    _   -> fail "agAcExpr: wrong number of arguments for return"
+                   
                RWCVar x _ | x == mkId "signal" -> do
                  case eargs of
                    [e] -> do
+                     -- First we compute the signal value.
                      (ni,no,re) <- agExpr e
-                     npre       <- addFreshNode (Rem $ "output <- " ++ re)
+                     -- Throw that in the output register.
+                     npre       <- addFreshNode (Assign "output" re)
+                     -- After the signal return, put the input into a fresh
+                     -- register. (Is that necessary? Well, it shouldn't
+                     -- hurt anything.)
+                     r          <- freshLoc (RWCTyCon (TyConId "FIXMEinput")) -- FIXME: need to know type of input
+                     npost      <- addFreshNode (Assign r "input")
+                     -- Chain everything together.
                      addEdge no npre JMP
-                     r          <- freshLoc (RWCTyCon (TyConId "FIXMEinput"))
-                     npost      <- addFreshNode (Rem $ r ++ " <- input")
                      addEdge npre npost SIG
                      return (ni,npost,r)
                    _  -> fail "agAcExpr: wrong number of arguments for signal"
+                   
                RWCVar x _                      -> do
-                 ninors           <- mapM agExpr eargs
-                 stringNodes (map (\(ni,no,_) -> (ni,no)) ninors)
-                 let rs           =  map (\ (_,_,r) -> r) ninors -- FIXME: must fill the regs in!
-                 (rs,nif,nof,rrf) <- agAcDefn x
-                 return (nif,nof,rrf)
+                 -- This is required to be a tail call! Look up info for the
+                 -- callee.
+                 (rs_f,ni_f,no_f,rr_f) <- agAcDefn x
+                 case eargs of
+                   [] -> return (ni_f,no_f,rr_f)
+                   _ -> do
+                     -- Generate code for argument expressions.
+                     ninor_args            <- mapM agExpr eargs
+                     let no_args           =  map (\(_,no,_) -> no) ninor_args
+                         ni_args           =  map (\(ni,_,_) -> ni) ninor_args
+                     -- Sequence the code graphs for the argument expressions.
+                     stringNodes (map (\(ni,no,_) -> (ni,no)) ninor_args)
+                     -- Copy the values from the argument expressions' output
+                     -- regs into the callee's input regs.
+                     let r_args            =  map (\(_,_,r) -> r) ninor_args
+                     n_copies              <- zipWithM (\ r_arg r_f -> addFreshNode (Assign r_f r_arg)) r_args rs_f
+                     stringNodes (map (\ n -> (n,n)) n_copies)
+                     -- Link everything up.
+                     addEdge (last no_args) (head n_copies) JMP
+                     addEdge (last n_copies) ni_f JMP
+                     return (head ni_args,no_f,rr_f)
+                 
                RWCCase escr alts               -> do
                  case eargs of
                    [] -> do
-                     (ni,no,r_scr)   <- agExpr escr
-                     r_res           <- freshLoc (typeOf e)
-                     ninotnoers      <- mapM (agAcAlt r_scr (typeOf escr) r_res) alts
+                     -- Compile scrutinee expression.
+                     (ni_scr,no_scr,r_scr) <- agExpr escr
+                     -- Pre-allocate result register (it's up to agAcAlt to
+                     -- copy the result to this).
+                     r_res                 <- freshLoc (typeOf e)
+                     -- Landing node.
+                     nl                    <- addFreshNode (Rem "end case")
+                     -- Compile each alt *except* the last. (Note that we're
+                     -- assuming there is at least one; a case with zero alts
+                     -- is always undefined anyway.)
+                     ninotnoers_init       <- mapM (agAcAlt r_scr (typeOf escr) r_res) (init alts)
+                     -- For the final alt we don't check the condition, but
+                     -- just assume it's true (this should be valid because
+                     -- pattern matching is required to be total in ReWire.)
+                     let (RWCAlt _ e_last) =  last alts
+                     (ni_last,no_last,r_last) <- agExpr e_last
+                     let ninotnoers_last   =  (ni_last,no_last,no_last,r_last)
+                         ninotnoers        =  ninotnoers_init ++ [ninotnoers_last]
+                     -- Find entry point node for first alt, and jump to it
+                     -- after the scrutinee is evaluated.
                      let (ni0,_,_,_) =  head ninotnoers
-                     addEdge no ni0 JMP
-                     nl              <- addFreshNode (Rem "merge")
+                     addEdge no_scr ni0 JMP
+                     -- This will link the alts together in sequence, and
+                     -- connect them all the the landing node.
                      stringAlts nl ninotnoers
-                     return (ni,nl,r_res)
+                     -- Start point is scr, end point is landing, result is
+                     -- in r_res.
+                     return (ni_scr,nl,r_res)
                    _  -> fail "agAcExpr: encountered case expression in function position"
                      
    where (ef:eargs) = flattenApp e  
@@ -296,28 +380,43 @@ peelLambdas (RWCLam n t e) = ((n,t):nts,e')
                              where (nts,e') = peelLambdas e
 peelLambdas e              = ([],e)
 
+-- Generate code for an action function.
 agAcDefn :: Id RWCExp -> AGM ([Loc],Node,Node,Loc)
 agAcDefn n = do am <- getActionMap
                 case Map.lookup n am of
+                  -- If the name is already in the map, codegen for the
+                  -- function is already completed or in progress.
                   Just x  -> return x
                   Nothing -> do 
                     md <- lift $ lift $ queryG n
                     case md of
+                      Nothing               -> fail $ "agAcDefn: " ++ show n ++ " not defined"
                       Just (RWCDefn _ _ e_) -> do
+                        -- Allocate registers for arguments.
                         let (xts,e)   =  peelLambdas e_
                             xs        =  map fst xts
                             ts        =  map snd xts
                         rs            <- mapM freshLoc ts
-                        let xrs       =  zip xs rs
+                        -- Allocate result register.
                         rr            <- freshLoc (typeOf e)
+                        -- Allocate in and out nodes (no-ops). We cannot
+                        -- just use the in and out nodes for the body
+                        -- expression, because we don't know yet what those
+                        -- are. So we will hook this up later.
                         ni            <- addFreshNode (Rem $ show n ++ " in")
                         no            <- addFreshNode (Rem $ show n ++ " out")
+                        -- Insert the function info into the action map.
                         putActionMap (Map.insert n (rs,ni,no,rr) am)
+                        -- Compile the body expression, with local bindings
+                        -- in place.
+                        let xrs       =  zip xs rs
                         (nie,noe,rre) <- foldr (uncurry binding) (agAcExpr e) xrs
+                        -- Connect in and out nodes.
                         addEdge ni nie JMP
                         addEdge noe no JMP
+                        -- Return function info (identical to what we
+                        -- inserted into the map before).
                         return (rs,ni,no,rr)
-                      Nothing              -> fail $ "agAcDefn: " ++ show n ++ " not defined"
 
 agStart :: RWCExp -> AGM ()
 agStart (RWCApp (RWCApp (RWCVar x _) e) _) | x == mkId "extrude" = agStart e -- FIXME: add state layers to context

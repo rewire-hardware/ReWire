@@ -2,6 +2,8 @@ module ReWire.ActionGraph where
 
 import Data.Graph.Inductive
 import Data.GraphViz
+import Data.GraphViz.Attributes
+import qualified Data.GraphViz.Attributes.Complete as Attr
 import Data.GraphViz.Commands.IO
 import Data.Text.Lazy (unpack)
 import Data.List (intercalate,find)
@@ -20,7 +22,7 @@ data Cmd = Rem String
          deriving Eq
 
 instance Show Cmd where
-  show (Rem s)          = s
+  show (Rem s)          = "/* " ++ s ++ " */"
 --  show (Seq c1 c2)      = show c1 ++ "\n" ++ show c2
   show (FunCall l f ls) = l ++ " := " ++ f ++ "(" ++ intercalate "," ls ++ ")"
   show (Assign l1 l2)   = l1 ++ " := " ++ l2
@@ -35,7 +37,9 @@ type ActionGraph = Gr Cmd Branch
 
 mkDot :: ActionGraph -> String
 mkDot = unpack . printDotGraph . graphToDot params
-          where params = nonClusteredParams { fmtNode = \ (n,l)    -> [toLabel (show n ++ ": " ++ show l)], 
+          where params = nonClusteredParams { fmtNode = \ (n,l)    -> case l of
+                                                                       Rem s -> [toLabel s,Attr.Shape Attr.Note]
+                                                                       _     -> [toLabel (show n ++ ": " ++ show l)], 
                                               fmtEdge = \ (_,_,lb) -> case lb of
                                                                        BZ l  -> [toLabel (l ++ " == 0")] 
                                                                        BNZ l -> [toLabel (l ++ " != 0")]
@@ -87,7 +91,7 @@ agToPseudo ag = intercalate "\n\n\n" $ map (\ n -> show n ++ ":\n" ++ mkp Nothin
                                                        Just n' -> mkp stopNode n'
                                                        Nothing -> "")
                                             [(n',JMP)] -> mkp stopNode n'
-                                            [(n',SIG)] -> "yield, next state is " ++ show n' ++ "\n")
+                                            [(n',SIG)] -> "yield(" ++ show n' ++ ")\n")
           where l    = fromJust $ lab ag n
                 sucs = lsuc ag n
                                               
