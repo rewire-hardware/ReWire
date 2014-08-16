@@ -24,7 +24,7 @@ import Data.List (foldl',find)
 import Data.Maybe (fromJust)
 
 type VarMap = Map (Id RWCExp) Loc
-type RegMap = [(Loc,RWCTy)]
+type RegMap = [(Loc,Int)]
 type ActionMap = Map (Id RWCExp) ([Loc],Node,Node,Loc) -- name -> arg regs, entry node, exit node, result reg
 type AGM = ReaderT VarMap (StateT (Int,RegMap,ActionGraph,ActionMap) RW)
 
@@ -71,13 +71,46 @@ addEdge :: Node -> Node -> Branch -> AGM ()
 addEdge ns nd br = do g <- getGraph
                       putGraph (insEdge (ns,nd,br) g)
 
-freshLoc :: RWCTy -> AGM Loc
-freshLoc t = do c  <- getC
-                putC (c+1)
-                let r = "r" ++ show c
-                rm <- getRegMap
-                putRegMap ((r,t):rm)
-                return r
+freshLocSize :: Int -> AGM Loc
+freshLocSize n = do c  <- getC
+                    putC (c+1)
+                    let r = "r" ++ show c
+                    rm <- getRegMap
+                    putRegMap ((r,n):rm)
+                    return r
+
+freshLocTy :: RWCTy -> AGM Loc
+freshLocTy t = do n <- tyWidth t
+                  freshLocSize n
+
+nBits 0 = 0
+nBits n = nBits (n `quot` 2) + 1
+
+getTagWidth :: TyConId -> AGM Int
+getTagWidth i = do Just (TyConInfo (RWCData _ _ cs)) <- lift $ lift $ queryT i
+                   return (nBits (length cs-1))
+
+tyWidth :: RWCTy -> AGM Int
+tyWidth (RWCTyVar _) = fail $ "tyWidth: type variable encountered"
+tyWidth t            = {-do twc <- getTyWidthCache
+                          case Map.lookup t twc of
+                            Just size -> return size
+                            Nothing   ->-} do
+                              let (th:_) = flattenTyApp t
+                              case th of
+                                RWCTyApp _ _ -> fail "tyWidth: encountered TyApp in func position (can't happen)"
+                                RWCTyVar _ -> fail $ "tyWidth: type variable encountered"
+                                RWCTyComp _ _ -> fail $ "tyWidth: computation type encountered"
+                                RWCTyCon i -> do
+                                  Just (TyConInfo (RWCData _ _ dcs)) <- lift $ lift $ queryT i
+                                  tagWidth <- getTagWidth i
+                                  cws      <- mapM (dataConWidth i) dcs
+                                  let size =  tagWidth + maximum cws
+--                                  modifyTyWidthCache (Map.insert t size)
+                                  return size
+                where dataConWidth di (RWCDataCon i _) = do
+                        fts <- getFieldTys i t
+                        liftM sum (mapM tyWidth fts)
 
 addFreshNode :: Cmd -> AGM Node
 addFreshNode e = do c <- getC
@@ -85,6 +118,10 @@ addFreshNode e = do c <- getC
                     g <- getGraph
                     putGraph (insNode (c,e) g)
                     return c
+
+compBase :: RWCTy -> RWCTy
+compBase (RWCTyComp _ t) = compBase t
+compBase t               = t
 
 stringAlts :: Node -> [(Node,Node,Node,Loc)] -> AGM ()
 stringAlts nl ((_,no1_t,no1_f,_):x@(no2_e,_,_,_):xs) = do addEdge no1_t nl JMP
@@ -120,7 +157,7 @@ agExpr e = case ef of
                    ninors <- mapM agExpr eargs
                    stringNodes (map (\(ni,no,_) -> (ni,no)) ninors)
                    let rs =  map ( \ (_,_,r) -> r) ninors
-                   r      <- freshLoc (typeOf e)
+                   r      <- freshLocTy (typeOf e)
                    n      <- addFreshNode (FunCall r (show x) rs)
                    case ninors of
                      [] -> return (n,n,r)
@@ -134,7 +171,7 @@ agExpr e = case ef of
                -- Sequence argument expressions.
                stringNodes (map (\(ni,no,_) -> (ni,no)) ninors_args)
                -- Allocate result reg.
-               r           <- freshLoc (typeOf e)
+               r           <- freshLocTy (typeOf e)
                -- Apply constructor function to the args, result in r.
                let rs_args =  map ( \ (_,_,r) -> r) ninors_args
                n           <- addFreshNode (FunCall r ("ctor_" ++ c) rs_args)
@@ -152,13 +189,10 @@ agExpr e = case ef of
                case eargs of
                  [] -> do
                    (ni,no,r_scr)   <- agExpr escr
-                   r_res           <- freshLoc (typeOf e)
+                   r_res           <- freshLocTy (typeOf e)
                    ninotnoers_init <- mapM (agAlt r_scr (typeOf escr) r_res) (init alts)
-                   
-                   let (RWCAlt _ e_last) =  last alts
-                   (ni_last,no_last,r_last) <- agExpr e_last
-                   let ninotnoers_last      =  (ni_last,no_last,no_last,r_last)
-                       ninotnoers           =  ninotnoers_init ++ [ninotnoers_last]
+                   ninotnoers_last <- agLastAlt r_scr (typeOf escr) r_res (last alts)
+                   let ninotnoers           =  ninotnoers_init ++ [ninotnoers_last]
                        (ni0,_,_,_)          =  head ninotnoers
                    addEdge no ni0 JMP
                    nl              <- addFreshNode (Rem "end case")
@@ -188,7 +222,7 @@ andRegs []     = fail "andRegs: empty list"
 andRegs [r]    = do n <- addFreshNode (Rem "andRegsNop")
                     return (n,n,r)
 andRegs (r:rs) = do (ni,no,ro) <- andRegs rs
-                    ro'        <- freshLoc (RWCTyCon (TyConId "Bit"))
+                    ro'        <- freshLocSize 1
                     no'        <- addFreshNode (FunCall r "andBits" [r,ro])
                     addEdge no no' JMP
                     return (ni,no',ro')
@@ -199,9 +233,52 @@ zipWithM3 f (x:xs) (y:ys) (z:zs) = do v    <- f x y z
                                       return (v:rest)
 zipWithM3 _ _ _ _                = return []
   
+agLastPat :: Loc -> RWCTy -> RWCPat -> AGM ([(Id RWCExp,Loc)],Node,Node,Loc) -- bindings, entry node, exit node, match bit loc
+agLastPat lscr tscr (RWCPatCon dci ps) = do 
+                                        ntm <- addFreshNode (Rem "final pat")
+                                        let rtm =  "bogus"
+                                        
+                                        case ps of
+                                          [] -> return ([],ntm,ntm,rtm)
+                                          _  -> do
+                                            tfs             <- getFieldTys dci tscr
+                                            -- nfi: rfi <- field i
+                                            rfs             <- mapM freshLocTy tfs
+                                            nfs             <- zipWithM (\ r n -> addFreshNode (FunCall r ("getField" ++ show n) [])) rfs [0..]
+                                            -- bsi: bindings for subpat i
+                                            -- npi_i~>npo_i: entry, exit nodes for subpat i
+                                            -- rmi: whether match for subpat i
+                                            bsnpinporms       <- zipWithM3 agLastPat rfs tfs ps
+                                            let bss           =  map (\ (bs,_,_,_) -> bs) bsnpinporms
+                                                rms           =  map (\ (_,_,_,rm) -> rm) bsnpinporms
+                                            -- nai,nao: entry/exit for final match-and
+                                            -- rm: value for final match-and
+                                            --(nai,nao,rm)      <- andRegs (rtm:rms)
+                                            
+                                            -- after tag match, fill fields
+                                            addEdge ntm (head nfs) JMP
+                                            -- after fill fields, do subpats
+                                            let npinpos       =  map (\ (_,npi,npo,_) -> (npi,npo)) bsnpinporms
+                                                (npi_f,_)     =  head npinpos
+                                                (_,npo_l)     =  last npinpos
+                                            addEdge (last nfs) npi_f JMP
+                                            stringNodes npinpos
+                                            -- after check pats, and results
+--                                            addEdge npo_l nai JMP
+                                            return (concat bss,ntm,npo_l,rtm)
+agLastPat lscr tscr RWCPatWild         = do
+                                        rtm <- freshLocSize 1
+                                        ntm <- addFreshNode (FunCall rtm "ctor_One" [])
+                                        return ([],ntm,ntm,rtm)
+agLastPat lscr tscr (RWCPatVar x _)    = do
+                                        rtm <- freshLocSize 1
+                                        ntm <- addFreshNode (FunCall rtm "ctor_One" [])
+                                        return ([(x,lscr)],ntm,ntm,rtm)
+agLastPat _ _ (RWCPatLiteral _)        = fail "agPat: encountered literal"
+
 agPat :: Loc -> RWCTy -> RWCPat -> AGM ([(Id RWCExp,Loc)],Node,Node,Loc) -- bindings, entry node, exit node, match bit loc
 agPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
-                                        rtm       <- freshLoc (RWCTyCon (TyConId "Bit")) -- FIXME
+                                        rtm       <- freshLocSize 1
                                         ntm       <- addFreshNode (FunCall rtm ("checkTag" ++ (deDataConId dci)) [lscr])
                                         
                                         case ps of
@@ -209,7 +286,7 @@ agPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
                                           _  -> do
                                             tfs             <- getFieldTys dci tscr
                                             -- nfi: rfi <- field i
-                                            rfs             <- mapM freshLoc tfs
+                                            rfs             <- mapM freshLocTy tfs
                                             nfs             <- zipWithM (\ r n -> addFreshNode (FunCall r ("getField" ++ show n) [])) rfs [0..]
                                             -- bsi: bindings for subpat i
                                             -- npi_i~>npo_i: entry, exit nodes for subpat i
@@ -232,13 +309,23 @@ agPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
                                             -- after check pats, and results
                                             addEdge npo_l nai JMP
                                             return (concat bss,ntm,nao,rm)
-agPat lscr tscr RWCPatWild         = do rtm <- freshLoc (RWCTyCon (TyConId "Bit"))
+agPat lscr tscr RWCPatWild         = do rtm <- freshLocSize 1
                                         ntm <- addFreshNode (FunCall rtm "ctor_One" [])
                                         return ([],ntm,ntm,rtm)
-agPat lscr tscr (RWCPatVar x _)    = do rtm <- freshLoc (RWCTyCon (TyConId "Bit"))
+agPat lscr tscr (RWCPatVar x _)    = do rtm <- freshLocSize 1
                                         ntm <- addFreshNode (FunCall rtm "ctor_One" [])
                                         return ([(x,lscr)],ntm,ntm,rtm)
 agPat _ _ (RWCPatLiteral _)        = fail "agPat: encountered literal"
+
+agLastAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> AGM (Node,Node,Node,Loc)
+agLastAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,_) <- agLastPat lscr tscr p
+                                           foldr (uncurry binding) (do
+                                             (nie,noe,le) <- agExpr e
+                                             no           <- addFreshNode (Assign lres le)
+                                             addEdge noe no JMP
+                                             addEdge nop nie JMP
+                                             return (nip,no,no,le))
+                                            bds
 
 agAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> AGM (Node,Node,Node,Loc) -- entry node, true exit node, false exit node, result reg if true
 agAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- agPat lscr tscr p
@@ -251,6 +338,16 @@ agAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- agPat lscr tscr p
                                          addEdge nop no_f (BZ rp)
                                          return (nip,no_t,no_f,le))
                                         bds
+
+agLastAcAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> AGM (Node,Node,Node,Loc)
+agLastAcAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- agLastPat lscr tscr p
+                                             foldr (uncurry binding) (do
+                                               (nie,noe,le) <- agAcExpr e
+                                               no           <- addFreshNode (Assign lres le)
+                                               addEdge noe no JMP
+                                               addEdge nop nie JMP
+                                               return (nip,no,no,le))
+                                              bds
 
 agAcAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> AGM (Node,Node,Node,Loc) -- entry node, true exit node, false exit node, result reg if true
 agAcAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- agPat lscr tscr p
@@ -310,7 +407,7 @@ agAcExpr e = case ef of
                      -- After the signal return, put the input into a fresh
                      -- register. (Is that necessary? Well, it shouldn't
                      -- hurt anything.)
-                     r          <- freshLoc (RWCTyCon (TyConId "FIXMEinput")) -- FIXME: need to know type of input
+                     r          <- freshLocSize 1000 -- FIXME: need to know input type
                      npost      <- addFreshNode (Assign r "input")
                      -- Chain everything together.
                      addEdge no npre JMP
@@ -348,23 +445,19 @@ agAcExpr e = case ef of
                      (ni_scr,no_scr,r_scr) <- agExpr escr
                      -- Pre-allocate result register (it's up to agAcAlt to
                      -- copy the result to this).
-                     r_res                 <- freshLoc (typeOf e)
+                     r_res                 <- freshLocTy (compBase $ typeOf e)
                      -- Landing node.
                      nl                    <- addFreshNode (Rem "end case")
                      -- Compile each alt *except* the last. (Note that we're
                      -- assuming there is at least one; a case with zero alts
                      -- is always undefined anyway.)
                      ninotnoers_init       <- mapM (agAcAlt r_scr (typeOf escr) r_res) (init alts)
-                     -- For the final alt we don't check the condition, but
-                     -- just assume it's true (this should be valid because
-                     -- pattern matching is required to be total in ReWire.)
-                     let (RWCAlt _ e_last) =  last alts
-                     (ni_last,no_last,r_last) <- agExpr e_last
-                     let ninotnoers_last   =  (ni_last,no_last,no_last,r_last)
-                         ninotnoers        =  ninotnoers_init ++ [ninotnoers_last]
+                     -- Special treatment for the last alt.
+                     ninotnoers_last       <- agLastAcAlt r_scr (typeOf escr) r_res (last alts)
+                     let ninotnoers        =  ninotnoers_init ++ [ninotnoers_last]
                      -- Find entry point node for first alt, and jump to it
                      -- after the scrutinee is evaluated.
-                     let (ni0,_,_,_) =  head ninotnoers
+                     let (ni0,_,_,_)       =  head ninotnoers
                      addEdge no_scr ni0 JMP
                      -- This will link the alts together in sequence, and
                      -- connect them all the the landing node.
@@ -396,9 +489,9 @@ agAcDefn n = do am <- getActionMap
                         let (xts,e)   =  peelLambdas e_
                             xs        =  map fst xts
                             ts        =  map snd xts
-                        rs            <- mapM freshLoc ts
+                        rs            <- mapM freshLocTy ts
                         -- Allocate result register.
-                        rr            <- freshLoc (typeOf e)
+                        rr            <- freshLocTy (compBase $ typeOf e)
                         -- Allocate in and out nodes (no-ops). We cannot
                         -- just use the in and out nodes for the body
                         -- expression, because we don't know yet what those
@@ -431,6 +524,15 @@ agProg = do md <- lift $ lift $ queryG (mkId "start")
               Nothing              -> fail "agProg: `start' not defined"
               Just (RWCDefn _ _ e) -> agStart e
 
+agFromRW :: RWCProg -> (RegMap,ActionGraph)
+agFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit Map.empty) s0)
+  where doit    = do agProg
+                     rm <- getRegMap
+                     g  <- getGraph
+                     return (rm,g)
+        s0      = (0,[],empty,Map.empty)
+        (p,ctr) = uniquify 0 p_
+
 ag :: RWCProg -> ActionGraph
 ag p_ = fst $ runRW ctr p (runStateT (runReaderT (agProg >> getGraph) Map.empty) s0)
   where s0      = (0,[],empty,Map.empty)
@@ -438,6 +540,3 @@ ag p_ = fst $ runRW ctr p (runStateT (runReaderT (agProg >> getGraph) Map.empty)
 
 cmdToAG :: TransCommand
 cmdToAG _ p = (Nothing,Just (mkDot $ ag p))
-
-cmdToPseudo :: TransCommand
-cmdToPseudo _ p = (Nothing,Just (agToPseudo $ ag p))

@@ -22,10 +22,10 @@ data Cmd = Rem String
          deriving Eq
 
 instance Show Cmd where
-  show (Rem s)          = "/* " ++ s ++ " */"
---  show (Seq c1 c2)      = show c1 ++ "\n" ++ show c2
-  show (FunCall l f ls) = l ++ " := " ++ f ++ "(" ++ intercalate "," ls ++ ")"
-  show (Assign l1 l2)   = l1 ++ " := " ++ l2
+  show (Rem s)          = "-- " ++ s
+  show (FunCall l f ls) = l ++ " <= "
+                            ++ f ++ "(" ++ intercalate "," ls ++ ");"
+  show (Assign l1 l2)   = l1 ++ " <= " ++ l2 ++ ";"
   
 data Branch = BZ Loc
             | BNZ Loc
@@ -37,15 +37,21 @@ type ActionGraph = Gr Cmd Branch
 
 mkDot :: ActionGraph -> String
 mkDot = unpack . printDotGraph . graphToDot params
-          where params = nonClusteredParams { fmtNode = \ (n,l)    -> case l of
-                                                                       Rem s -> [toLabel s,Attr.Shape Attr.Note]
-                                                                       _     -> [toLabel (show n ++ ": " ++ show l)], 
-                                              fmtEdge = \ (_,_,lb) -> case lb of
-                                                                       BZ l  -> [toLabel (l ++ " == 0")] 
-                                                                       BNZ l -> [toLabel (l ++ " != 0")]
-                                                                       JMP   -> []
-                                                                       SIG   -> [style dashed]}
+  where params = nonClusteredParams
+                    { fmtNode = \ (n,l)    ->
+                       case l of
+                         Rem s -> [toLabel s,Attr.Shape Attr.Note]
+                         _     -> [toLabel
+                                   (show n ++ ": " ++ show l)], 
+                      fmtEdge = \ (_,_,lb) ->
+                       case lb of
+                         BZ l  -> [toLabel (l ++ " == 0")] 
+                         BNZ l -> [toLabel (l ++ " != 0")]
+                         JMP   -> []
+                         SIG   -> [style dashed]
+                    }
 
+{-
 notSig (_,SIG) = False
 notSig _       = True
 
@@ -64,17 +70,20 @@ agToPseudo ag = intercalate "\n\n\n" $ map (\ n -> show n ++ ":\n" ++ mkp Nothin
   where isSigPost n = any (not . notSig) (lpre ag n)
         sigPosts = filter isSigPost (nodes ag)
         
-        areOpposites :: Branch -> Branch -> Bool
-        areOpposites (BNZ l1) (BZ l2) = l1 == l2
-        areOpposites (BZ l1) (BNZ l2) = l1 == l2
-        areOpposites _ _              = False
+        renderCond (BZ r)  = r ++ " == \"0\""
+        renderCond (BNZ r) = r ++ " == \"1\""
         
         nearestCommonReachable :: Node -> Node -> Maybe Node
         nearestCommonReachable n1 n2 = find (`Set.member` ns2) ns1
           where ns1 = dfs [n1] ag'
                 ns2 = Set.fromList (dfs [n2] ag')
                 ag' = efilter edgeNotSig ag
-        
+
+        areOpposites :: Branch -> Branch -> Bool
+        areOpposites (BNZ l1) (BZ l2) = l1 == l2
+        areOpposites (BZ l1) (BNZ l2) = l1 == l2
+        areOpposites _ _              = False
+
         mkp stopNode n  | Just n == stopNode = ""
                         | otherwise     = show l ++ "\n" ++
                                            (case sucs of
@@ -82,20 +91,16 @@ agToPseudo ag = intercalate "\n\n\n" $ map (\ n -> show n ++ ":\n" ++ mkp Nothin
                                               let ncr = nearestCommonReachable n1 n2
                                                   cn1 = mkp ncr n1
                                                   cn2 = mkp ncr n2
-                                              in "if " ++ show l1 ++ " {\n"
+                                              in "if " ++ renderCond l1 ++ " then\n"
                                                  ++ indent cn1
-                                                 ++ "}\nelse {\n"
+                                                 ++ "else\n"
                                                  ++ indent cn2
-                                                 ++ "}\n"
+                                                 ++ "end if;\n"
                                                  ++ (case ncr of
                                                        Just n' -> mkp stopNode n'
                                                        Nothing -> "")
                                             [(n',JMP)] -> mkp stopNode n'
-                                            [(n',SIG)] -> "yield(" ++ show n' ++ ")\n")
+                                            [(n',SIG)] -> "state <= STATE" ++ show n' ++ ";\n")
           where l    = fromJust $ lab ag n
                 sucs = lsuc ag n
-                                              
-{-          
-          let l               = fromJust $ lab ag n
-                     sucs            = lsuc ag n
-                 in  (show n ++ ": " ++ show l ++ "\n" ++ concatMap handle sucs)-}
+-}
