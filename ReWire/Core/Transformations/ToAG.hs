@@ -26,7 +26,21 @@ import Data.Maybe (fromJust)
 type VarMap = Map (Id RWCExp) Loc
 type RegMap = [(Loc,Int)]
 type ActionMap = Map (Id RWCExp) ([Loc],Node,Node,Loc) -- name -> arg regs, entry node, exit node, result reg
-type AGM = ReaderT VarMap (StateT (Int,RegMap,ActionGraph,ActionMap) RW)
+type AGM = ReaderT (Int,VarMap) (StateT (Int,RegMap,ActionGraph,ActionMap) RW)
+
+localStateLayer :: (Int -> Int) -> AGM a -> AGM a
+localStateLayer f = local (\ (sl,vm) -> (f sl,vm))
+
+askStateLayer :: AGM Int
+askStateLayer = do (sl,_) <- ask
+                   return sl
+
+localVarMap :: (VarMap -> VarMap) -> AGM a -> AGM a
+localVarMap f = local (\ (sl,vm) -> (sl,f vm))
+
+askVarMap :: AGM VarMap
+askVarMap = do (_,vm) <- ask
+               return vm
 
 getC :: AGM Int
 getC = do (c,_,_,_) <- get
@@ -61,10 +75,10 @@ putRegMap rm = do (c,_,g,am) <- get
                   put (c,rm,g,am)
 
 binding :: Id RWCExp -> Loc -> AGM a -> AGM a
-binding n l = local (Map.insert n l)
+binding n l = localVarMap (Map.insert n l)
 
 askBinding :: Id RWCExp -> AGM (Maybe Loc)
-askBinding n = do varm <- ask
+askBinding n = do varm <- askVarMap
                   return (Map.lookup n varm)
 
 addEdge :: Node -> Node -> Branch -> AGM ()
@@ -74,7 +88,7 @@ addEdge ns nd br = do g <- getGraph
 freshLocSize :: Int -> AGM Loc
 freshLocSize n = do c  <- getC
                     putC (c+1)
-                    let r = "r" ++ show c
+                    let r = "EMPTY" ++ show c
                     rm <- getRegMap
                     putRegMap ((r,n):rm)
                     return r
@@ -414,7 +428,36 @@ agAcExpr e = case ef of
                      addEdge npre npost SIG
                      return (ni,npost,r)
                    _  -> fail "agAcExpr: wrong number of arguments for signal"
-                   
+               
+               RWCVar x _ | x == mkId "lift" -> do
+                 case eargs of
+                   [e] -> localStateLayer (+1) (agAcExpr e)
+                   _   -> fail "agAcExpr: wrong number of arguments for lift"
+
+               RWCVar x _ | x == mkId "get" -> do
+                 case eargs of
+                   [] -> do l <- askStateLayer
+                            if l < 0
+                              then fail "agAcExpr: not in a state monad (can't happen)"
+                              else do
+                                r <- freshLocSize (2000 + l) -- FIXME: need to know state type
+                                n <- addFreshNode (Assign r ("statevar" ++ show l))
+                                return (n,n,r)
+                   _  -> fail "agAcExpr: wrong number of arguments for get"
+
+               RWCVar x _ | x == mkId "put" -> do
+                 case eargs of
+                   [e] -> do l <- askStateLayer
+                             if l < 0
+                               then fail "agAcExpr: not in a state monad (can't happen)"
+                               else do
+                                 (nie,noe,re) <- agExpr e
+                                 no           <- addFreshNode (Assign ("statevar" ++ show l) re)
+                                 r            <- freshLocSize 0
+                                 addEdge noe no JMP
+                                 return (nie,no,r)
+                   _   -> fail "agAcExpr: wrong number of arguments for get"
+
                RWCVar x _                      -> do
                  -- This is required to be a tail call! Look up info for the
                  -- callee.
@@ -525,17 +568,19 @@ agProg = do md <- lift $ lift $ queryG (mkId "start")
               Just (RWCDefn _ _ e) -> agStart e
 
 agFromRW :: RWCProg -> (RegMap,ActionGraph)
-agFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit Map.empty) s0)
+agFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
   where doit    = do agProg
                      rm <- getRegMap
                      g  <- getGraph
                      return (rm,g)
+        env0    = (-1,Map.empty)
         s0      = (0,[],empty,Map.empty)
         (p,ctr) = uniquify 0 p_
 
 ag :: RWCProg -> ActionGraph
-ag p_ = fst $ runRW ctr p (runStateT (runReaderT (agProg >> getGraph) Map.empty) s0)
-  where s0      = (0,[],empty,Map.empty)
+ag p_ = fst $ runRW ctr p (runStateT (runReaderT (agProg >> getGraph) env0) s0)
+  where env0    = (-1,Map.empty)
+        s0      = (0,[],empty,Map.empty)
         (p,ctr) = uniquify 0 p_
 
 cmdToAG :: TransCommand
