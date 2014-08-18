@@ -25,10 +25,11 @@ import ReWire.Core.Transformations.Purge (cmdPurge,cmdOccurs)
 --import ReWire.Core.Transformations.CheckNF (cmdCheckNF)
 --import ReWire.Core.Transformations.ToVHDL (cmdToVHDL)
 import ReWire.Core.Transformations.ToAG (cmdToAG)
-import ReWire.AGToVHDL (cmdToPseudo)
+--import ReWire.AGToVHDL (cmdToPseudo)
 import ReWire.Core.Transformations.Uniquify (cmdUniquify)
 import ReWire.Core.Transformations.DeUniquify (cmdDeUniquify)
 import ReWire.Core.Transformations.Types
+--import ReWire.ActionGraph (cmdToPseudo)
 import System.IO
 
 import Debug.Trace (trace)
@@ -37,7 +38,7 @@ import Debug.Trace (trace)
 type CommandTable = [(String,TransCommand)]
 
 cmdPrint :: TransCommand
-cmdPrint _ p = (Just p,Nothing)
+cmdPrint _ p = (Nothing,Just $ show $ ppHaskell p)
 
 cmdHelp :: TransCommand
 cmdHelp _ _ = (Nothing,Just (intercalate ", " (map fst cmdTable)))
@@ -66,8 +67,8 @@ cmdTable = [
 --            ("uses", cmdUses),
 --            ("checknf",cmdCheckNF),
 --            ("tovhdl",cmdToVHDL)
-            ("toag",cmdToAG),
-            ("topseudo",cmdToPseudo)
+            ("toag",cmdToAG)
+--            ("topseudo",cmdToPseudo)
            ]
 
 -- The "repl" for the translation environment.

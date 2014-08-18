@@ -26,21 +26,34 @@ import Data.Maybe (fromJust)
 type VarMap = Map (Id RWCExp) Loc
 type RegMap = [(Loc,Int)]
 type ActionMap = Map (Id RWCExp) ([Loc],Node,Node,Loc) -- name -> arg regs, entry node, exit node, result reg
-type AGM = ReaderT (Int,VarMap) (StateT (Int,RegMap,ActionGraph,ActionMap) RW)
+type AGM = ReaderT Env (StateT (Int,RegMap,ActionGraph,ActionMap) RW)
+
+data Env = Env { stateLayer :: Int,
+                 stateTys   :: [RWCTy],
+                 inputTy    :: RWCTy,
+                 outputTy   :: RWCTy,
+                 varMap     :: VarMap }
 
 localStateLayer :: (Int -> Int) -> AGM a -> AGM a
-localStateLayer f = local (\ (sl,vm) -> (f sl,vm))
+localStateLayer f = local (\ e -> e { stateLayer = f (stateLayer e) })
 
 askStateLayer :: AGM Int
-askStateLayer = do (sl,_) <- ask
-                   return sl
+askStateLayer = ask >>= return . stateLayer
 
 localVarMap :: (VarMap -> VarMap) -> AGM a -> AGM a
-localVarMap f = local (\ (sl,vm) -> (sl,f vm))
+localVarMap f = local (\ e -> e { varMap = f (varMap e) })
 
 askVarMap :: AGM VarMap
-askVarMap = do (_,vm) <- ask
-               return vm
+askVarMap = ask >>= return . varMap
+
+askStateTys :: AGM [RWCTy]
+askStateTys = ask >>= return . stateTys
+
+askInputTy :: AGM RWCTy
+askInputTy = ask >>= return . inputTy
+
+askOutputTy :: AGM RWCTy
+askOutputTy = ask >>= return . outputTy
 
 getC :: AGM Int
 getC = do (c,_,_,_) <- get
@@ -86,9 +99,12 @@ addEdge ns nd br = do g <- getGraph
                       putGraph (insEdge (ns,nd,br) g)
 
 freshLocSize :: Int -> AGM Loc
+freshLocSize 0 = do rm <- getRegMap
+                    putRegMap (("EMPTY",0):rm)
+                    return "EMPTY"
 freshLocSize n = do c  <- getC
                     putC (c+1)
-                    let r = "EMPTY" ++ show c
+                    let r = "r" ++ show c
                     rm <- getRegMap
                     putRegMap ((r,n):rm)
                     return r
@@ -237,7 +253,7 @@ andRegs [r]    = do n <- addFreshNode (Rem "andRegsNop")
                     return (n,n,r)
 andRegs (r:rs) = do (ni,no,ro) <- andRegs rs
                     ro'        <- freshLocSize 1
-                    no'        <- addFreshNode (FunCall r "andBits" [r,ro])
+                    no'        <- addFreshNode (FunCall ro' "andBits" [r,ro])
                     addEdge no no' JMP
                     return (ni,no',ro')
 
@@ -246,7 +262,7 @@ zipWithM3 f (x:xs) (y:ys) (z:zs) = do v    <- f x y z
                                       rest <- zipWithM3 f xs ys zs
                                       return (v:rest)
 zipWithM3 _ _ _ _                = return []
-  
+
 agLastPat :: Loc -> RWCTy -> RWCPat -> AGM ([(Id RWCExp,Loc)],Node,Node,Loc) -- bindings, entry node, exit node, match bit loc
 agLastPat lscr tscr (RWCPatCon dci ps) = do 
                                         ntm <- addFreshNode (Rem "final pat")
@@ -258,7 +274,8 @@ agLastPat lscr tscr (RWCPatCon dci ps) = do
                                             tfs             <- getFieldTys dci tscr
                                             -- nfi: rfi <- field i
                                             rfs             <- mapM freshLocTy tfs
-                                            nfs             <- zipWithM (\ r n -> addFreshNode (FunCall r ("getField" ++ show n) [])) rfs [0..]
+                                            nfs             <- zipWithM (\ r n -> addFreshNode (FunCall r ("getField" ++ show n) [lscr])) rfs [0..]
+                                            stringNodes (map (\ n -> (n,n)) nfs)
                                             -- bsi: bindings for subpat i
                                             -- npi_i~>npo_i: entry, exit nodes for subpat i
                                             -- rmi: whether match for subpat i
@@ -282,11 +299,11 @@ agLastPat lscr tscr (RWCPatCon dci ps) = do
                                             return (concat bss,ntm,npo_l,rtm)
 agLastPat lscr tscr RWCPatWild         = do
                                         rtm <- freshLocSize 1
-                                        ntm <- addFreshNode (FunCall rtm "ctor_One" [])
+                                        ntm <- addFreshNode (FunCall rtm "constOne" [])
                                         return ([],ntm,ntm,rtm)
 agLastPat lscr tscr (RWCPatVar x _)    = do
                                         rtm <- freshLocSize 1
-                                        ntm <- addFreshNode (FunCall rtm "ctor_One" [])
+                                        ntm <- addFreshNode (FunCall rtm "constOne" [])
                                         return ([(x,lscr)],ntm,ntm,rtm)
 agLastPat _ _ (RWCPatLiteral _)        = fail "agPat: encountered literal"
 
@@ -301,7 +318,8 @@ agPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
                                             tfs             <- getFieldTys dci tscr
                                             -- nfi: rfi <- field i
                                             rfs             <- mapM freshLocTy tfs
-                                            nfs             <- zipWithM (\ r n -> addFreshNode (FunCall r ("getField" ++ show n) [])) rfs [0..]
+                                            nfs             <- zipWithM (\ r n -> addFreshNode (FunCall r ("getField" ++ show n) [lscr])) rfs [0..]
+                                            stringNodes (map (\ n -> (n,n)) nfs)
                                             -- bsi: bindings for subpat i
                                             -- npi_i~>npo_i: entry, exit nodes for subpat i
                                             -- rmi: whether match for subpat i
@@ -324,10 +342,10 @@ agPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
                                             addEdge npo_l nai JMP
                                             return (concat bss,ntm,nao,rm)
 agPat lscr tscr RWCPatWild         = do rtm <- freshLocSize 1
-                                        ntm <- addFreshNode (FunCall rtm "ctor_One" [])
+                                        ntm <- addFreshNode (FunCall rtm "constOne" [])
                                         return ([],ntm,ntm,rtm)
 agPat lscr tscr (RWCPatVar x _)    = do rtm <- freshLocSize 1
-                                        ntm <- addFreshNode (FunCall rtm "ctor_One" [])
+                                        ntm <- addFreshNode (FunCall rtm "constOne" [])
                                         return ([(x,lscr)],ntm,ntm,rtm)
 agPat _ _ (RWCPatLiteral _)        = fail "agPat: encountered literal"
 
@@ -387,7 +405,7 @@ agAcExpr e = case ef of
                
                RWCLet x el eb -> do
                  -- Expression being bound.
-                 (niel,noel,lel) <- agAcExpr el
+                 (niel,noel,lel) <- agExpr el
                  -- Body expression.
                  (nieb,noeb,leb) <- binding x lel $ agAcExpr eb
                  -- Connect the two in sequence.
@@ -421,7 +439,8 @@ agAcExpr e = case ef of
                      -- After the signal return, put the input into a fresh
                      -- register. (Is that necessary? Well, it shouldn't
                      -- hurt anything.)
-                     r          <- freshLocSize 1000 -- FIXME: need to know input type
+                     ti         <- askInputTy
+                     r          <- freshLocTy ti
                      npost      <- addFreshNode (Assign r "input")
                      -- Chain everything together.
                      addEdge no npre JMP
@@ -436,13 +455,17 @@ agAcExpr e = case ef of
 
                RWCVar x _ | x == mkId "get" -> do
                  case eargs of
-                   [] -> do l <- askStateLayer
+                   [] -> do l   <- askStateLayer
+                            tss <- askStateTys
                             if l < 0
                               then fail "agAcExpr: not in a state monad (can't happen)"
-                              else do
-                                r <- freshLocSize (2000 + l) -- FIXME: need to know state type
-                                n <- addFreshNode (Assign r ("statevar" ++ show l))
-                                return (n,n,r)
+                              else if l >= length tss
+                                then fail $ "agAcExpr: current state layer " ++ show l ++ " exceeds number of state transformers (can't happen)"
+                                else do
+                                  tss <- askStateTys
+                                  r   <- freshLocTy (tss!!l)
+                                  n   <- addFreshNode (Assign r ("statevar" ++ show l))
+                                  return (n,n,r)
                    _  -> fail "agAcExpr: wrong number of arguments for get"
 
                RWCVar x _ | x == mkId "put" -> do
@@ -555,10 +578,23 @@ agAcDefn n = do am <- getActionMap
                         return (rs,ni,no,rr)
 
 agStart :: RWCExp -> AGM ()
-agStart (RWCApp (RWCApp (RWCVar x _) e) _) | x == mkId "extrude" = agStart e -- FIXME: add state layers to context
-agStart (RWCVar x _)                                             = do n_start    <- addFreshNode (Rem "START")
-                                                                      (_,ni,_,_) <- agAcDefn x
-                                                                      addEdge n_start ni JMP
+agStart (RWCApp (RWCApp (RWCVar x _) e) _) | x == mkId "extrude" = agStart e
+agStart (RWCVar x t) = local buildEnv $ do
+                         n_start    <- addFreshNode (Rem "START")
+                         (_,ni,_,_) <- agAcDefn x
+                         addEdge n_start ni JMP
+ where buildEnv env =
+         case t of
+           RWCTyComp (RWCTyApp (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "ReT")) ti) to) tsm) _ ->
+             let
+               getStateTys (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "StT")) tst) ts) = tst : getStateTys ts
+               getStateTys (RWCTyCon (TyConId "I"))                                = []
+               getStateTys _                                                       = error "agStart: start has malformed type (inner monad stack is not of form (StT (StT ... (StT I))))"
+               tss                                                                 = getStateTys tsm
+             in env { inputTy  = ti,
+                      outputTy = to,
+                      stateTys = tss }
+           _ -> error "agStart: start has malformed type (not a computation with outer monad ReT)"
 agStart _ = fail "agStart: malformed start expression"
 
 agProg :: AGM ()
@@ -573,13 +609,13 @@ agFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
                      rm <- getRegMap
                      g  <- getGraph
                      return (rm,g)
-        env0    = (-1,Map.empty)
+        env0    = Env { stateLayer = -1, inputTy = error "input type not set", outputTy = error "output type not set", stateTys = [], varMap = Map.empty }
         s0      = (0,[],empty,Map.empty)
         (p,ctr) = uniquify 0 p_
 
 ag :: RWCProg -> ActionGraph
 ag p_ = fst $ runRW ctr p (runStateT (runReaderT (agProg >> getGraph) env0) s0)
-  where env0    = (-1,Map.empty)
+  where env0    = Env { stateLayer = -1, inputTy = error "input type not set", outputTy = error "output type not set", stateTys = [], varMap = Map.empty }
         s0      = (0,[],empty,Map.empty)
         (p,ctr) = uniquify 0 p_
 
