@@ -20,13 +20,13 @@ nearestCommonReachable ag n1 n2 = find (`Set.member` ns2) ns1
         ag'             = efilter (not . isSig) ag
 
 areOpposites :: Branch -> Branch -> Bool
-areOpposites (BNZ l1) (BZ l2) = l1 == l2
-areOpposites (BZ l1) (BNZ l2) = l1 == l2
-areOpposites _ _              = False
+areOpposites (Is1 l1) (Is0 l2) = l1 == l2
+areOpposites (Is0 l1) (Is1 l2) = l1 == l2
+areOpposites _ _               = False
 
 renderCond :: Branch -> String
-renderCond (BZ r)  = r ++ " = \"0\""
-renderCond (BNZ r) = r ++ " = \"1\""
+renderCond (Is0 r) = r ++ " = \"0\""
+renderCond (Is1 r) = r ++ " = \"1\""
 
 renderState :: ActionGraph -> Node -> String
 renderState ag n =
@@ -37,7 +37,7 @@ renderNode :: ActionGraph -> Maybe Node -> Node -> String
 renderNode ag stop n =
   if Just n == stop
      then ""
-     else show l ++ "\n" ++
+     else show n ++ " " ++ show l ++ "\n" ++
            case sucs of
              [(n1,l1),(n2,l2)] | areOpposites l1 l2 ->
                let ncr = nearestCommonReachable ag n1 n2
@@ -51,8 +51,8 @@ renderNode ag stop n =
                   ++ case ncr of
                        Just n' -> renderNode ag stop n'
                        Nothing -> ""
-             [(n',JMP)] -> renderNode ag stop n'
-             [(n',SIG)] -> "state <= STATE" ++ show n' ++ ";\n"
+             [(n',Always)] -> renderNode ag stop n'
+             [(n',SIG)]    -> "state <= STATE" ++ show n' ++ ";\n"
   where l    = fromJust $ lab ag n
         sucs = lsuc ag n
              

@@ -19,6 +19,7 @@ type Oper = Val -> Val -> Val
 data Cmd = Rem String
          | FunCall Loc String [Loc]
          | Assign Loc Loc
+         | NextState Int
          deriving Eq
 
 instance Show Cmd where
@@ -26,10 +27,13 @@ instance Show Cmd where
   show (FunCall l f ls) = l ++ " <= "
                             ++ f ++ "(" ++ intercalate "," ls ++ ");"
   show (Assign l1 l2)   = l1 ++ " <= " ++ l2 ++ ";"
+  show (NextState n)    = "next state is " ++ show n ++ ";"
   
-data Branch = BZ Loc
-            | BNZ Loc
-            | JMP
+data Branch = StateIs Int
+            | StateIsNot Int
+            | Is0 Loc
+            | Is1 Loc
+            | Always
             | SIG
             deriving (Eq,Show)
 
@@ -45,11 +49,44 @@ mkDot = unpack . printDotGraph . graphToDot params
                                    (show n ++ ": " ++ show l)], 
                       fmtEdge = \ (_,_,lb) ->
                        case lb of
-                         BZ l  -> [toLabel (l ++ " == 0")] 
-                         BNZ l -> [toLabel (l ++ " != 0")]
-                         JMP   -> []
-                         SIG   -> [style dashed]
+                         StateIs n    -> [toLabel ("STATE = " ++ show n)]
+                         StateIsNot n -> [toLabel ("STATE != " ++ show n)]
+                         Is0 l        -> [toLabel (l ++ " = 0")] 
+                         Is1 l        -> [toLabel (l ++ " = 1")]
+                         Always       -> []
+                         SIG          -> [style dashed]
                     }
+
+-- assumed invariant: state enders have outdegree of 1 (should be the case
+-- due to how signal is compiled)
+linearize :: ActionGraph -> ActionGraph
+linearize ag = ag''''
+  where [nEnter,nExit] = newNodes 2 ag
+        
+        isSig (_,SIG) = True
+        isSig _       = False
+        
+        isSigPre n = any isSig (lsuc ag n)
+        isSigPost n = any isSig (lpre ag n)
+        
+        stateStarters = 0:filter isSigPost (nodes ag)
+        stateEnders   = filter isSigPre (nodes ag)
+        
+        edgeIsSig (_,_,SIG) = True
+        edgeIsSig _         = False
+        
+        addEnder n g = insEdge (n,nNext,Always) $
+                        insEdge (nNext,nExit,Always) $
+                         insNode (nNext,NextState ns) g
+          where [nNext] = newNodes 1 g
+                ns = case lsuc ag n of
+                       [(nn,SIG)] -> nn
+                       zz         -> error $ "linearize: unexpected successors for state ender " ++ show zz
+        
+        ag'    = efilter (not . edgeIsSig) ag
+        ag''   = insNodes [(nEnter,Rem "ENTER"),(nExit,Rem "EXIT")] ag'
+        ag'''  = foldr (\ n -> insEdge (nEnter,n,StateIs n)) ag'' stateStarters
+        ag'''' = foldr addEnder ag''' stateEnders
 
 {-
 notSig (_,SIG) = False
