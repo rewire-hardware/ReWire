@@ -5,11 +5,12 @@ import Data.GraphViz
 import Data.GraphViz.Attributes
 import qualified Data.GraphViz.Attributes.Complete as Attr
 import Data.GraphViz.Commands.IO
-import Data.Text.Lazy (unpack)
+import Data.Text.Lazy (unpack,pack)
 import Data.List (intercalate,find)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust,catMaybes)
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Debug.Trace (trace)
 
 type Loc  = String
 type Val  = Int
@@ -20,6 +21,7 @@ data Cmd = Rem String
          | FunCall Loc String [Loc]
          | Assign Loc Loc
          | NextState Int
+         | Seq Cmd Cmd
          deriving Eq
 
 instance Show Cmd where
@@ -28,6 +30,7 @@ instance Show Cmd where
                             ++ f ++ "(" ++ intercalate "," ls ++ ");"
   show (Assign l1 l2)   = l1 ++ " <= " ++ l2 ++ ";"
   show (NextState n)    = "next state is " ++ show n ++ ";"
+  show (Seq c1 c2)      = show c1 ++ "\n" ++ show c2
   
 data Branch = StateIs Int
             | StateIsNot Int
@@ -39,14 +42,16 @@ data Branch = StateIs Int
 
 type ActionGraph = Gr Cmd Branch
 
+dottifyCmd :: Cmd -> String
+dottifyCmd c = concatMap (++"\\l") (lines $ show c)
+
 mkDot :: ActionGraph -> String
 mkDot = unpack . printDotGraph . graphToDot params
   where params = nonClusteredParams
                     { fmtNode = \ (n,l)    ->
-                       case l of
-                         Rem s -> [toLabel s,Attr.Shape Attr.Note]
-                         _     -> [toLabel
-                                   (show n ++ ": " ++ show l)], 
+                       [Attr.Label $ Attr.StrLabel (pack $ dottifyCmd l),
+                         Attr.Shape Attr.BoxShape,
+                         Attr.FontName (pack "Courier")],
                       fmtEdge = \ (_,_,lb) ->
                        case lb of
                          StateIs n    -> [toLabel ("STATE = " ++ show n)]
@@ -87,6 +92,23 @@ linearize ag = ag''''
         ag''   = insNodes [(nEnter,Rem "ENTER"),(nExit,Rem "EXIT")] ag'
         ag'''  = foldr (\ n -> insEdge (nEnter,n,StateIs n)) ag'' stateStarters
         ag'''' = foldr addEnder ag''' stateEnders
+
+gather :: ActionGraph -> ActionGraph
+gather ag | null seqs = ag
+          | otherwise = gather $ mergeSeq (head seqs) ag
+  where mergeSeq (n,n') ag = delNode n' $
+                              insEdges (map (\ (n'',lab) -> (n'',n,lab)) (lpre ag n)) $
+                               insEdges (map (\ (n'',lab) -> (n,n'',lab)) (lsuc ag n')) $
+                                insNode (n, fromJust (lab ag n) `Seq` fromJust (lab ag n')) $
+                                 delNode n $
+                                  ag
+        allNodes           = nodes ag
+        seqs               = catMaybes (map isSeq allNodes)
+        isSeq n            = case lsuc ag n of
+                               [(n',Always)] -> case lpre ag n' of
+                                                  [(n'',Always)] | n == n'' -> Just (n,n')
+                                                  _                         -> Nothing
+                               _             -> Nothing
 
 {-
 notSig (_,SIG) = False

@@ -620,4 +620,4 @@ ag p_ = fst $ runRW ctr p (runStateT (runReaderT (agProg >> getGraph) env0) s0)
         (p,ctr) = uniquify 0 p_
 
 cmdToAG :: TransCommand
-cmdToAG _ p = (Nothing,Just (mkDot $ linearize $ ag p))
+cmdToAG _ p = (Nothing,Just (mkDot $ gather $ linearize $ ag p))
