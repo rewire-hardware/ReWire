@@ -154,12 +154,12 @@ compBase (RWCTyComp _ t) = compBase t
 compBase t               = t
 
 stringAlts :: Node -> [(Node,Node,Node,Loc)] -> AGM ()
-stringAlts nl ((_,no1_t,no1_f,_):x@(no2_e,_,_,_):xs) = do addEdge no1_t nl Always
-                                                          addEdge no1_f no2_e Always
+stringAlts nl ((_,no1_t,no1_f,_):x@(no2_e,_,_,_):xs) = do addEdge no1_t nl (Conditional (BoolConst True))
+                                                          addEdge no1_f no2_e (Conditional (BoolConst True))
                                                           stringAlts nl (x:xs)
 -- The last alt is a special case; its condition is ignored, so it does not
 -- really have an no_f.
-stringAlts nl [(_,no,_,r)]                           = do addEdge no nl Always
+stringAlts nl [(_,no,_,r)]                           = do addEdge no nl (Conditional (BoolConst True))
 stringAlts _  []                                     = return ()
 
 agExpr :: RWCExp -> AGM (Node,Node,Loc)
@@ -170,7 +170,7 @@ agExpr e = case ef of
              RWCLet x el eb -> do
                (niel,noel,lel) <- agExpr el
                (nieb,noeb,leb) <- binding x lel $ agExpr eb
-               addEdge noel nieb Always
+               addEdge noel nieb (Conditional (BoolConst True))
                return (niel,noeb,leb)
              RWCVar x _     -> do
                mr <- askBinding x
@@ -193,7 +193,7 @@ agExpr e = case ef of
                      [] -> return (n,n,r)
                      _  -> do let (ni,_,_) = head ninors
                                   (_,no,_) = last ninors
-                              addEdge no n Always
+                              addEdge no n (Conditional (BoolConst True))
                               return (ni,n,r)
              RWCCon (DataConId c) _ -> do
                -- Compile argument expressions.
@@ -211,7 +211,7 @@ agExpr e = case ef of
                  _  -> do -- Sequence argument expressions with ctor call.
                           let (ni,_,_) = head ninors_args
                               (_,no,_) = last ninors_args
-                          addEdge no n Always
+                          addEdge no n (Conditional (BoolConst True))
                           -- Entry is the beginning of the argument
                           -- expressions, exit is the constructor call.
                           return (ni,n,r)
@@ -224,7 +224,7 @@ agExpr e = case ef of
                    ninotnoers_last <- agLastAlt r_scr (typeOf escr) r_res (last alts)
                    let ninotnoers           =  ninotnoers_init ++ [ninotnoers_last]
                        (ni0,_,_,_)          =  head ninotnoers
-                   addEdge no ni0 Always
+                   addEdge no ni0 (Conditional (BoolConst True))
                    nl              <- addFreshNode (Rem "end case")
                    stringAlts nl ninotnoers
                    return (ni,nl,r_res)
@@ -232,7 +232,7 @@ agExpr e = case ef of
   where (ef:eargs) = flattenApp e
 
 stringNodes :: [(Node,Node)] -> AGM ()
-stringNodes ((_,no):x@(ni,_):xs) = do addEdge no ni Always
+stringNodes ((_,no):x@(ni,_):xs) = do addEdge no ni (Conditional (BoolConst True))
                                       stringNodes (x:xs)
 stringNodes _                    = return ()
 
@@ -254,7 +254,7 @@ andRegs [r]    = do n <- addFreshNode (Rem "andRegsNop")
 andRegs (r:rs) = do (ni,no,ro) <- andRegs rs
                     ro'        <- freshLocSize 1
                     no'        <- addFreshNode (FunCall ro' "andBits" [r,ro])
-                    addEdge no no' Always
+                    addEdge no no' (Conditional (BoolConst True))
                     return (ni,no',ro')
 
 zipWithM3 :: Monad m => (a -> b -> c -> m d) -> [a] -> [b] -> [c] -> m [d]
@@ -287,15 +287,15 @@ agLastPat lscr tscr (RWCPatCon dci ps) = do
                                             --(nai,nao,rm)      <- andRegs (rtm:rms)
                                             
                                             -- after tag match, fill fields
-                                            addEdge ntm (head nfs) Always
+                                            addEdge ntm (head nfs) (Conditional (BoolConst True))
                                             -- after fill fields, do subpats
                                             let npinpos       =  map (\ (_,npi,npo,_) -> (npi,npo)) bsnpinporms
                                                 (npi_f,_)     =  head npinpos
                                                 (_,npo_l)     =  last npinpos
-                                            addEdge (last nfs) npi_f Always
+                                            addEdge (last nfs) npi_f (Conditional (BoolConst True))
                                             stringNodes npinpos
                                             -- after check pats, and results
---                                            addEdge npo_l nai Always
+--                                            addEdge npo_l nai (Conditional (BoolConst True))
                                             return (concat bss,ntm,npo_l,rtm)
 agLastPat lscr tscr RWCPatWild         = do
                                         rtm <- freshLocSize 1
@@ -331,15 +331,15 @@ agPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
                                             (nai,nao,rm)      <- andRegs (rtm:rms)
                                             
                                             -- after tag match, fill fields
-                                            addEdge ntm (head nfs) Always
+                                            addEdge ntm (head nfs) (Conditional (BoolConst True))
                                             -- after fill fields, check pats
                                             let npinpos       =  map (\ (_,npi,npo,_) -> (npi,npo)) bsnpinporms
                                                 (npi_f,_)     =  head npinpos
                                                 (_,npo_l)     =  last npinpos
-                                            addEdge (last nfs) npi_f Always
+                                            addEdge (last nfs) npi_f (Conditional (BoolConst True))
                                             stringNodes npinpos
                                             -- after check pats, and results
-                                            addEdge npo_l nai Always
+                                            addEdge npo_l nai (Conditional (BoolConst True))
                                             return (concat bss,ntm,nao,rm)
 agPat lscr tscr RWCPatWild         = do rtm <- freshLocSize 1
                                         ntm <- addFreshNode (FunCall rtm "constOne" [])
@@ -354,8 +354,8 @@ agLastAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,_) <- agLastPat lscr tsc
                                            foldr (uncurry binding) (do
                                              (nie,noe,le) <- agExpr e
                                              no           <- addFreshNode (Assign lres le)
-                                             addEdge noe no Always
-                                             addEdge nop nie Always
+                                             addEdge noe no (Conditional (BoolConst True))
+                                             addEdge nop nie (Conditional (BoolConst True))
                                              return (nip,no,no,le))
                                             bds
 
@@ -365,9 +365,9 @@ agAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- agPat lscr tscr p
                                          (nie,noe,le) <- agExpr e
                                          no_t         <- addFreshNode (Assign lres le)
                                          no_f         <- addFreshNode (Rem "alt exit (no match)")
-                                         addEdge noe no_t Always
-                                         addEdge nop nie (Is1 rp)
-                                         addEdge nop no_f (Is0 rp)
+                                         addEdge noe no_t (Conditional (BoolConst True))
+                                         addEdge nop nie (Conditional (BoolVar rp))
+                                         addEdge nop no_f (Conditional (Not (BoolVar rp)))
                                          return (nip,no_t,no_f,le))
                                         bds
 
@@ -376,8 +376,8 @@ agLastAcAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- agLastPat lscr 
                                              foldr (uncurry binding) (do
                                                (nie,noe,le) <- agAcExpr e
                                                no           <- addFreshNode (Assign lres le)
-                                               addEdge noe no Always
-                                               addEdge nop nie Always
+                                               addEdge noe no (Conditional (BoolConst True))
+                                               addEdge nop nie (Conditional (BoolConst True))
                                                return (nip,no,no,le))
                                               bds
 
@@ -387,9 +387,9 @@ agAcAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- agPat lscr tscr p
                                            (nie,noe,le) <- agAcExpr e
                                            no_t         <- addFreshNode (Assign lres le)
                                            no_f         <- addFreshNode (Rem "alt exit (no match)")
-                                           addEdge noe no_t Always
-                                           addEdge nop nie (Is1 rp)
-                                           addEdge nop no_f (Is0 rp)
+                                           addEdge noe no_t (Conditional (BoolConst True))
+                                           addEdge nop nie (Conditional (BoolVar rp))
+                                           addEdge nop no_f (Conditional (Not (BoolVar rp)))
                                            return (nip,no_t,no_f,le))
                                           bds
 
@@ -409,7 +409,7 @@ agAcExpr e = case ef of
                  -- Body expression.
                  (nieb,noeb,leb) <- binding x lel $ agAcExpr eb
                  -- Connect the two in sequence.
-                 addEdge noel nieb Always
+                 addEdge noel nieb (Conditional (BoolConst True))
                  
                  return (niel,noeb,leb)
                  
@@ -420,7 +420,7 @@ agAcExpr e = case ef of
                      -- Process is essentially identical to let.
                      (entl,exl,regl)  <- agAcExpr el
                      (entr,exr,regr)  <- binding x regl $ agAcExpr er
-                     addEdge exl entr Always
+                     addEdge exl entr (Conditional (BoolConst True))
                      return (entl,exr,regr)
                    _ -> fail "wrong rhs for bind"
                    
@@ -443,7 +443,7 @@ agAcExpr e = case ef of
                      r          <- freshLocTy ti
                      npost      <- addFreshNode (Assign r "input")
                      -- Chain everything together.
-                     addEdge no npre Always
+                     addEdge no npre (Conditional (BoolConst True))
                      addEdge npre npost SIG
                      return (ni,npost,r)
                    _  -> fail "agAcExpr: wrong number of arguments for signal"
@@ -477,7 +477,7 @@ agAcExpr e = case ef of
                                  (nie,noe,re) <- agExpr e
                                  no           <- addFreshNode (Assign ("statevar" ++ show l) re)
                                  r            <- freshLocSize 0
-                                 addEdge noe no Always
+                                 addEdge noe no (Conditional (BoolConst True))
                                  return (nie,no,r)
                    _   -> fail "agAcExpr: wrong number of arguments for get"
 
@@ -500,8 +500,8 @@ agAcExpr e = case ef of
                      n_copies              <- zipWithM (\ r_arg r_f -> addFreshNode (Assign r_f r_arg)) r_args rs_f
                      stringNodes (map (\ n -> (n,n)) n_copies)
                      -- Link everything up.
-                     addEdge (last no_args) (head n_copies) Always
-                     addEdge (last n_copies) ni_f Always
+                     addEdge (last no_args) (head n_copies) (Conditional (BoolConst True))
+                     addEdge (last n_copies) ni_f (Conditional (BoolConst True))
                      return (head ni_args,no_f,rr_f)
                  
                RWCCase escr alts               -> do
@@ -524,7 +524,7 @@ agAcExpr e = case ef of
                      -- Find entry point node for first alt, and jump to it
                      -- after the scrutinee is evaluated.
                      let (ni0,_,_,_)       =  head ninotnoers
-                     addEdge no_scr ni0 Always
+                     addEdge no_scr ni0 (Conditional (BoolConst True))
                      -- This will link the alts together in sequence, and
                      -- connect them all the the landing node.
                      stringAlts nl ninotnoers
@@ -571,8 +571,8 @@ agAcDefn n = do am <- getActionMap
                         let xrs       =  zip xs rs
                         (nie,noe,rre) <- foldr (uncurry binding) (agAcExpr e) xrs
                         -- Connect in and out nodes.
-                        addEdge ni nie Always
-                        addEdge noe no Always
+                        addEdge ni nie (Conditional (BoolConst True))
+                        addEdge noe no (Conditional (BoolConst True))
                         -- Return function info (identical to what we
                         -- inserted into the map before).
                         return (rs,ni,no,rr)
@@ -582,7 +582,7 @@ agStart (RWCApp (RWCApp (RWCVar x _) e) _) | x == mkId "extrude" = agStart e
 agStart (RWCVar x t) = local buildEnv $ do
                          n_start    <- addFreshNode (Rem "START")
                          (_,ni,_,_) <- agAcDefn x
-                         addEdge n_start ni Always
+                         addEdge n_start ni (Conditional (BoolConst True))
  where buildEnv env =
          case t of
            RWCTyComp (RWCTyApp (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "ReT")) ti) to) tsm) _ ->

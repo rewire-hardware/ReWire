@@ -11,6 +11,7 @@ import Data.Maybe (fromJust)
 import Data.Set (Set)
 import qualified Data.Set as Set
 
+{-
 nearestCommonReachable :: ActionGraph -> Node -> Node -> Maybe Node
 nearestCommonReachable ag n1 n2 = find (`Set.member` ns2) ns1
   where ns1             = dfs [n1] ag'
@@ -55,13 +56,6 @@ renderNode ag stop n =
              [(n',SIG)]    -> "state <= STATE" ++ show n' ++ ";\n"
   where l    = fromJust $ lab ag n
         sucs = lsuc ag n
-             
-indent :: String -> String
-indent s = "  " ++ idt s
-  where idt "\n"     = "\n"
-        idt ('\n':s) = "\n  " ++ idt s
-        idt (c:s)    = c:idt s
-        idt ""       = ""
 
 stateNodes :: ActionGraph -> [Node]
 stateNodes ag = 0:sigPosts
@@ -108,9 +102,11 @@ renderArch rm ag = "architecture behavioral of rewire is\n"
                 ++ "begin\n"
                 ++ indent (renderSM ag)
                 ++ "end behavioral;\n"
+-}
 
 rwToVHDL :: RWCProg -> String
-rwToVHDL p = renderArch rm ag
+--rwToVHDL p = renderArch rm ag
+rwToVHDL p = show $ toPseudo (gather $ linearize $ ag)
   where (rm,ag) = agFromRW p
 
 cmdToPseudo :: TransCommand
