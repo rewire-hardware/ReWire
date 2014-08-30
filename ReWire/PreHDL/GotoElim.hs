@@ -127,26 +127,32 @@ deleteHere = do p <- path
 elimGoto :: GEM Bool
 elimGoto = do c <- here
               case c of
-                Goto b l -> do (cs,mtarg) <- jumpOver l
+                Goto b l ->trace (show l) $
+                            do (cs,mtarg) <- jumpOver l
                                case mtarg of
-                                 Just (Lbl _)       -> do insertOnRight ([Assign ("goto_" ++ l) (BoolRHS b)]
+                                 Just (Lbl _)       ->trace "Lbl" $
+                                                       do insertOnRight ([Assign ("goto_" ++ l) (BoolRHS b)]
                                                                       ++ if null cs then [] else [If (Not (BoolVar ("goto_" ++ l))) (foldr1 Seq cs)]
                                                                       ++ [Lbl l])
                                                           deleteHere
                                                           return True
-                                 Just (If b' c)     -> do insertOnRight ([Assign ("goto_" ++ l) (BoolRHS b)]
+                                 Just (If b' c)     ->trace "If" $ 
+                                                       do insertOnRight ([Assign ("goto_" ++ l) (BoolRHS b)]
                                                                       ++ if null cs then [] else [If (Not (BoolVar ("goto_" ++ l))) (foldr1 Seq cs)]
                                                                       ++ [If (Or b' (BoolVar ("goto_" ++ l)))
                                                                              (Goto (BoolVar ("goto_" ++ l)) l `Seq` c)])
                                                           deleteHere
                                                           return True
-                                 Just (Seq c1 c2)   -> do insertOnRight ([Assign ("goto_" ++ l) (BoolRHS b)]
-                                                                    ++ if null cs then [] else [If (Not (BoolVar ("goto_" ++ l))) (foldr1 Seq cs)]
-                                                                    ++ [Goto (BoolVar ("goto_" ++ l)) l `Seq` (c1 `Seq` c2)])
+                                 Just (Seq c1 c2)   ->trace "Seq" $
+                                                       do insertOnRight ([Assign ("goto_" ++ l) (BoolRHS b)]
+                                                                     ++ if null cs then [] else [If (Not (BoolVar ("goto_" ++ l))) (foldr1 Seq cs)]
+                                                                     ++ [Goto (BoolVar ("goto_" ++ l)) l `Seq` (c1 `Seq` c2)])
                                                           deleteHere
                                                           return True
                                  Just _           -> fail "can't happen: elimGoto: target is not label, if, or seq"
-                                 Nothing          -> do insertOnRight ([Assign ("goto_" ++ l) (BoolRHS b)]
+--                                 Nothing          -> do { k <- advance ; if k then elimGoto else return False }
+                                 Nothing          ->trace "Out" $ 
+                                                     do insertOnRight ([Assign ("goto_" ++ l) (BoolRHS b)]
                                                                     ++ if null cs then [] else [If (Not (BoolVar ("goto_" ++ l))) (foldr1 Seq cs)])
                                                         deleteHere
                                                         goUp
@@ -184,13 +190,14 @@ countGotos (If _ c)    = countGotos c
 countGotos (Seq c1 c2) = countGotos c1 + countGotos c2
 countGotos _           = 0
 
-optimize (If b c)    = If b (optimize c)
-optimize c@(Seq _ _) = squishGotos c
-optimize c           = c
+optimize (If b c)      = If b (optimize c)
+optimize c@(Seq c1 c2) = squishGotos c
+optimize c             = c
 
 squishGotos c | null cs'  = Skip
               | otherwise = foldr1 Seq cs'
-    where cs' = squish (flattenSeq c)
+    where cs' = map optimize $ squish (flattenSeq c)
+          squish []             = []
           squish cs | null gs   = head cs : squish (tail cs)
                     | otherwise = nub gs ++ squish cs'
            where notGoto (Goto _ _) = False

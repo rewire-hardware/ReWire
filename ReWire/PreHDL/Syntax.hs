@@ -2,6 +2,8 @@
 
 module ReWire.PreHDL.Syntax where
 
+import Data.List (intercalate)
+
 type Label = String
 type Loc   = String
 
@@ -38,7 +40,7 @@ data RHS = BoolRHS BoolExp
          | LocRHS Loc
          | FunCallRHS String [Loc]
          | ConstRHS [Bit]
-         deriving (Eq,Show)
+         deriving Eq
 
 data BoolExp = And BoolExp BoolExp
              | Or BoolExp BoolExp
@@ -64,13 +66,19 @@ instance Show BoolExp where
   show (BoolConst False) = "false"
   show (InState n)       = "(state == STATE" ++ show n ++ ")"
 
+instance Show RHS where
+  show (BoolRHS b)       = show b
+  show (LocRHS l)        = l
+  show (FunCallRHS f ls) = f ++ "(" ++ intercalate "," ls ++ ")"
+  show (ConstRHS bs)     = "\"" ++ concatMap show bs ++ "\""
+    
 instance Show Cmd where
   show (Rem s)          = "/* " ++ s ++ " */"
   show (Assign l rhs)   = l ++ " := " ++ show rhs ++ ";"
   show (Lbl l)          = l ++ ":"
   show (Goto b l)       = "when " ++ show b ++ " goto " ++ l ++ ";"
   show (If b c)         = "if " ++ show b ++ " {\n"
-                       ++ indent (show c)
+                       ++ indent (show c) ++ "\n"
                        ++ "}"
     where indent :: String -> String
           indent s = "  " ++ idt s
@@ -81,3 +89,6 @@ instance Show Cmd where
   show (Seq c1 c2)      = show c1 ++ "\n" ++ show c2
   show Skip             = "skip;"
   show (NextState n)    = "next state is " ++ show n ++ ";"
+
+instance Show Prog where
+  show p = show (progHeader p) ++ "\n" ++ show (progBody p)

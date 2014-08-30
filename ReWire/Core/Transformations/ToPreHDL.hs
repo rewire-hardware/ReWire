@@ -11,6 +11,7 @@ module ReWire.Core.Transformations.ToPreHDL where
 
 import ReWire.PreHDL.Syntax
 import ReWire.PreHDL.CFG
+import ReWire.PreHDL.GotoElim
 import ReWire.Core.Transformations.Types
 import ReWire.Core.Transformations.Monad
 import ReWire.Core.Transformations.Uniquify (uniquify)
@@ -616,3 +617,6 @@ agFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
 
 cmdToAG :: TransCommand
 cmdToAG _ p = (Nothing,Just (mkDot $ gather $ linearize $ snd $ agFromRW p))
+
+cmdToPre :: TransCommand
+cmdToPre _ p = (Nothing,Just (show (gotoElim $ progBody $ cfgToProg (snd (agFromRW p)))))

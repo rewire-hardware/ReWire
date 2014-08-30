@@ -33,6 +33,11 @@ mkDot = unpack . printDotGraph . graphToDot params . cfgGraph
         dottifyCmds :: Cmd -> String
         dottifyCmds c = concatMap (++"\\l") (lines (show c))
 
+elimUnreachable :: Node -> Gr Cmd Branch -> Gr Cmd Branch
+elimUnreachable root gr = delNodes unreachable gr
+  where reachable   = dfs [root] gr
+        unreachable = filter (not . (`elem` reachable)) (nodes gr)
+  
 --
 -- Linearize a cyclic signaling CFG.
 --
@@ -40,7 +45,7 @@ mkDot = unpack . printDotGraph . graphToDot params . cfgGraph
 -- due to how signal is compiled)
 --
 linearize :: CFG -> CFG
-linearize cfg = cfg { cfgGraph = gr'''' }
+linearize cfg = cfg { cfgGraph = gr''''' }
   where gr = cfgGraph cfg
         [nEnter,nExit] = newNodes 2 gr
         
@@ -64,10 +69,11 @@ linearize cfg = cfg { cfgGraph = gr'''' }
                        [(nn,Tick)] -> nn
                        zz          -> error $ "linearize: unexpected successors for state ender " ++ show zz
         
-        gr'    = efilter (not . edgeIsTick) gr
-        gr''   = insNodes [(nEnter,Rem "ENTER"),(nExit,Rem "EXIT")] gr'
-        gr'''  = foldr (\ n -> insEdge (nEnter,n,Conditional (InState n))) gr'' stateStarters
-        gr'''' = foldr addEnder gr''' stateEnders
+        gr'     = efilter (not . edgeIsTick) gr
+        gr''    = insNodes [(nEnter,Rem "ENTER"),(nExit,Rem "EXIT")] gr'
+        gr'''   = foldr (\ n -> insEdge (nEnter,n,Conditional (InState n))) gr'' stateStarters
+        gr''''  = foldr addEnder gr''' stateEnders
+        gr''''' = elimUnreachable nEnter gr''''
 
 --
 -- Gather basic blocks in a control flow graph.

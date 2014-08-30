@@ -24,7 +24,7 @@ import ReWire.Core.Transformations.Purge (cmdPurge,cmdOccurs)
 --import ReWire.Core.Transformations.Uses (cmdUses)
 --import ReWire.Core.Transformations.CheckNF (cmdCheckNF)
 --import ReWire.Core.Transformations.ToVHDL (cmdToVHDL)
-import ReWire.Core.Transformations.ToPreHDL (cmdToAG)
+import ReWire.Core.Transformations.ToPreHDL (cmdToAG,cmdToPre)
 --import ReWire.AGToVHDL (cmdToPseudo)
 import ReWire.Core.Transformations.Uniquify (cmdUniquify)
 import ReWire.Core.Transformations.DeUniquify (cmdDeUniquify)
@@ -66,7 +66,8 @@ cmdTable = [
 --            ("uses", cmdUses),
 --            ("checknf",cmdCheckNF),
 --            ("tovhdl",cmdToVHDL)
-            ("toag",cmdToAG)
+            ("toag",cmdToAG),
+            ("topre",cmdToPre)
 --            ("topseudo",cmdToPseudo)
            ]
 
