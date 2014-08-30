@@ -1,6 +1,17 @@
+Main
+Main.*
+Main_p
+Main_p.*
+hpc_*.html
+.hpc
 dist
 cabal-dev
+rewire.cmd.out
+show.out
+tc.out
+*.hs.html
 *.o
+*.hi_o
 *.p_o
 *.p_hi
 *.hi
@@ -11,3 +22,8 @@ cabal-dev
 *~
 \#*\#
 Debug.hs
+*.aux
+*.bbl
+*.blg
+*.log
+*.pdf
