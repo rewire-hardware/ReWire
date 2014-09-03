@@ -40,6 +40,8 @@ data RHS = BoolRHS BoolExp
          | LocRHS Loc
          | FunCallRHS String [Loc]
          | ConstRHS [Bit]
+         | SliceRHS Int Int Loc
+         | ConcatRHS [Loc]
          deriving Eq
 
 data BoolExp = And BoolExp BoolExp
@@ -48,6 +50,7 @@ data BoolExp = And BoolExp BoolExp
              | BoolVar Loc
              | BoolConst Bool
              | InState Int
+             | BoolEq RHS RHS
              deriving Eq
 
 flattenSeq :: Cmd -> [Cmd]
@@ -65,12 +68,15 @@ instance Show BoolExp where
   show (BoolConst True)  = "true"
   show (BoolConst False) = "false"
   show (InState n)       = "(state == STATE" ++ show n ++ ")"
+  show (BoolEq e1 e2)    = show e1 ++ " == " ++ show e2
 
 instance Show RHS where
-  show (BoolRHS b)       = show b
-  show (LocRHS l)        = l
-  show (FunCallRHS f ls) = f ++ "(" ++ intercalate "," ls ++ ")"
-  show (ConstRHS bs)     = "\"" ++ concatMap show bs ++ "\""
+  show (BoolRHS b)        = show b
+  show (LocRHS l)         = l
+  show (FunCallRHS f ls)  = f ++ "(" ++ intercalate "," ls ++ ")"
+  show (ConstRHS bs)      = "\"" ++ concatMap show bs ++ "\""
+  show (SliceRHS lo hi l) = l ++ "[" ++ show lo ++ ":" ++ show hi ++ "]"
+  show (ConcatRHS rs)     = "(" ++ intercalate " & " rs ++ ")"
     
 instance Show Cmd where
   show (Rem s)          = "/* " ++ s ++ " */"

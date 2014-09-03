@@ -1,12 +1,5 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
--- Will need VHDL primitives:
---
--- andBits
--- ctor_*
--- checkTag*
--- getField*    (this is a mite tricky because we'll need one for each instance of polymorphic types)
-
 module ReWire.Core.Transformations.ToPreHDL where
 
 import ReWire.PreHDL.Syntax
@@ -22,7 +15,7 @@ import Control.Monad.Reader
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Graph.Inductive
-import Data.List (foldl',find)
+import Data.List (foldl',find,findIndex)
 import Data.Maybe (fromJust)
 
 type VarMap = Map (Id RWCExp) Loc
@@ -130,10 +123,10 @@ tyWidth t            = {-do twc <- getTyWidthCache
                             Nothing   ->-} do
                               let (th:_) = flattenTyApp t
                               case th of
-                                RWCTyApp _ _ -> fail "tyWidth: encountered TyApp in func position (can't happen)"
-                                RWCTyVar _ -> fail $ "tyWidth: type variable encountered"
+                                RWCTyApp _ _  -> fail "tyWidth: encountered TyApp in func position (can't happen)"
+                                RWCTyVar _    -> fail $ "tyWidth: type variable encountered"
                                 RWCTyComp _ _ -> fail $ "tyWidth: computation type encountered"
-                                RWCTyCon i -> do
+                                RWCTyCon i    -> do
                                   Just (TyConInfo (RWCData _ _ dcs)) <- lift $ lift $ queryT i
                                   tagWidth <- getTagWidth i
                                   cws      <- mapM (dataConWidth i) dcs
@@ -197,26 +190,29 @@ agExpr e = case ef of
                                   (_,no,_) = last ninors
                               addEdge no n (Conditional (BoolConst True))
                               return (ni,n,r)
-             RWCCon (DataConId c) _ -> do
-               -- Compile argument expressions.
-               ninors_args <- mapM agExpr eargs
-               -- Sequence argument expressions.
-               stringNodes (map (\(ni,no,_) -> (ni,no)) ninors_args)
-               -- Allocate result reg.
-               r           <- freshLocTy (typeOf e)
-               -- Apply constructor function to the args, result in r.
-               let rs_args =  map ( \ (_,_,r) -> r) ninors_args
-               n           <- addFreshNode (Assign r (FunCallRHS ("ctor_" ++ c) rs_args))
-               case ninors_args of
-                 [] -> -- No arguments, so n is all we need.
-                       return (n,n,r)
-                 _  -> do -- Sequence argument expressions with ctor call.
-                          let (ni,_,_) = head ninors_args
-                              (_,no,_) = last ninors_args
+             RWCCon dci _ -> do
+               -- Tag.
+               t           <- getTag dci
+               rt          <- freshLocSize (length t)
+               nt          <- addFreshNode (Assign rt (ConstRHS t))
+               case eargs of
+                 [] -> -- No arguments, so tag is all we need.
+                       return (nt,nt,rt)
+                 _  -> do -- Compile argument expressions.
+                          ninors_args <- mapM agExpr eargs
+                          -- Sequence tag and argument expressions.
+                          stringNodes ((nt,nt) : map (\(ni,no,_) -> (ni,no)) ninors_args)
+                          -- Allocate result reg.
+                          r           <- freshLocTy (typeOf e)
+                          -- Concatenate tag and args, result in r.
+                          let rs_args  =  map ( \ (_,_,r) -> r) ninors_args
+                          n            <- addFreshNode (Assign r (ConcatRHS (rt:rs_args)))
+                          -- Sequence argument expressions with ctor call.
+                          let (_,no,_) = last ninors_args
                           addEdge no n (Conditional (BoolConst True))
                           -- Entry is the beginning of the argument
                           -- expressions, exit is the constructor call.
-                          return (ni,n,r)
+                          return (nt,n,r)
              RWCCase escr alts               -> do
                case eargs of
                  [] -> do
@@ -248,6 +244,7 @@ getFieldTys i t = do Just (DataConInfo tci _)             <- lift $ lift $ query
                        Just sub -> do let (RWCDataCon _ targs) = fromJust $ find (\(RWCDataCon i' _) -> i==i') dcs
                                       return (subst sub targs)
 
+{-
 -- must be nonempty
 andRegs :: [Loc] -> CGM (Node,Node,Loc)
 andRegs []     = fail "andRegs: empty list"
@@ -255,9 +252,18 @@ andRegs [r]    = do n <- addFreshNode (Rem "andRegsNop")
                     return (n,n,r)
 andRegs (r:rs) = do (ni,no,ro) <- andRegs rs
                     ro'        <- freshLocSize 1
-                    no'        <- addFreshNode (Assign ro' (FunCallRHS "andBits" [r,ro]))
+                    no'        <- addFreshNode (Assign ro' (BoolRHS (And (BoolVar r) (BoolVar ro))))
                     addEdge no no' (Conditional (BoolConst True))
                     return (ni,no',ro')
+-}
+
+andRegs :: [Loc] -> CGM (Node,Node,Loc)
+andRegs [] = do ro <- freshLocSize 1
+                n  <- addFreshNode (Assign ro (BoolRHS (BoolConst True)))
+                return (n,n,ro)
+andRegs rs = do ro <- freshLocSize 1
+                n  <- addFreshNode (Assign ro (BoolRHS (foldr1 And (map BoolVar rs))))
+                return (n,n,ro)
 
 zipWithM3 :: Monad m => (a -> b -> c -> m d) -> [a] -> [b] -> [c] -> m [d]
 zipWithM3 f (x:xs) (y:ys) (z:zs) = do v    <- f x y z
@@ -275,8 +281,7 @@ agLastPat lscr tscr (RWCPatCon dci ps) = do
                                           _  -> do
                                             tfs             <- getFieldTys dci tscr
                                             -- nfi: rfi <- field i
-                                            rfs             <- mapM freshLocTy tfs
-                                            nfs             <- zipWithM (\ r n -> addFreshNode (Assign r (FunCallRHS ("getField" ++ show n) [lscr]))) rfs [0..]
+                                            (rfs,nfs)       <- liftM unzip $ mapM (mkGetField dci lscr tscr) [0..(length tfs - 1)]
                                             stringNodes (map (\ n -> (n,n)) nfs)
                                             -- bsi: bindings for subpat i
                                             -- npi_i~>npo_i: entry, exit nodes for subpat i
@@ -301,26 +306,66 @@ agLastPat lscr tscr (RWCPatCon dci ps) = do
                                             return (concat bss,ntm,npo_l,rtm)
 agLastPat lscr tscr RWCPatWild         = do
                                         rtm <- freshLocSize 1
-                                        ntm <- addFreshNode (Assign rtm (FunCallRHS "constOne" []))
+                                        ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
                                         return ([],ntm,ntm,rtm)
 agLastPat lscr tscr (RWCPatVar x _)    = do
                                         rtm <- freshLocSize 1
-                                        ntm <- addFreshNode (Assign rtm (FunCallRHS "constOne" []))
+                                        ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
                                         return ([(x,lscr)],ntm,ntm,rtm)
 agLastPat _ _ (RWCPatLiteral _)        = fail "agPat: encountered literal"
 
+getDataConTyCon :: DataConId -> CGM TyConId
+getDataConTyCon dci = do Just (DataConInfo n _) <- lift $ lift $ queryD dci
+                         return n
+
+bitConstFromIntegral :: Integral a => Int -> a -> [Bit]
+bitConstFromIntegral 0 _     = []
+bitConstFromIntegral width n = bitConstFromIntegral (width-1) (n`div`2) ++ thisBit where thisBit = if odd n then [One] else [Zero]
+
+getTag :: DataConId -> CGM [Bit]
+getTag i = do tci                 <- getDataConTyCon i
+              Just (TyConInfo dd) <- lift $ lift $ queryT tci 
+              tagWidth            <- getTagWidth tci
+              case findIndex (\ (RWCDataCon i' _) -> i==i') (dataCons dd) of
+                Just pos -> return (bitConstFromIntegral tagWidth pos)
+                Nothing  -> fail $ "getTag: unknown constructor " ++ deDataConId i
+
+mkTagCheck :: DataConId -> Loc -> CGM (Node,Loc)
+mkTagCheck dci lscr = do rtm  <- freshLocSize 1
+                         tci  <- getDataConTyCon dci
+                         tagw <- getTagWidth tci
+                         case tagw of
+                           0 -> do ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
+                                   return (ntm,rtm)
+                           _ -> do tagv <- liftM ConstRHS (getTag dci)
+                                   ntm  <- addFreshNode (Assign rtm (BoolRHS (BoolEq tagv (SliceRHS 0 (tagw-1) lscr))))
+                                   return (ntm,rtm)
+
+mkGetField :: DataConId -> Loc -> RWCTy -> Int -> CGM (Loc,Node)
+mkGetField dci lscr tscr n = do tci         <- getDataConTyCon dci
+                                tagWidth    <- getTagWidth tci
+                                fieldTys    <- getFieldTys dci tscr
+                                fieldWidths <- mapM tyWidth fieldTys
+                                rf          <- freshLocSize (fieldWidths !! n)
+                                let fieldOffsets    = scanl (+) tagWidth fieldWidths
+                                    ranges []       = []
+                                    ranges [n]      = []
+                                    ranges (n:m:ns) = (n,m-1) : ranges (m:ns)
+                                    fieldRanges     = ranges fieldOffsets
+                                    (lo,hi)         = fieldRanges !! n
+                                nf          <- addFreshNode (Assign rf (SliceRHS lo hi lscr))
+                                return (rf,nf)
+  
 agPat :: Loc -> RWCTy -> RWCPat -> CGM ([(Id RWCExp,Loc)],Node,Node,Loc) -- bindings, entry node, exit node, match bit loc
 agPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
-                                        rtm       <- freshLocSize 1
-                                        ntm       <- addFreshNode (Assign rtm (FunCallRHS ("checkTag" ++ (deDataConId dci)) [lscr]))
+                                        (ntm,rtm) <- mkTagCheck dci lscr
                                         
                                         case ps of
                                           [] -> return ([],ntm,ntm,rtm)
                                           _  -> do
-                                            tfs             <- getFieldTys dci tscr
                                             -- nfi: rfi <- field i
-                                            rfs             <- mapM freshLocTy tfs
-                                            nfs             <- zipWithM (\ r n -> addFreshNode (Assign r (FunCallRHS ("getField" ++ show n) [lscr]))) rfs [0..]
+                                            tfs             <- getFieldTys dci tscr
+                                            (rfs,nfs)       <- liftM unzip $ mapM (mkGetField dci lscr tscr) [0..(length tfs - 1)]
                                             stringNodes (map (\ n -> (n,n)) nfs)
                                             -- bsi: bindings for subpat i
                                             -- npi_i~>npo_i: entry, exit nodes for subpat i
@@ -344,10 +389,10 @@ agPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
                                             addEdge npo_l nai (Conditional (BoolConst True))
                                             return (concat bss,ntm,nao,rm)
 agPat lscr tscr RWCPatWild         = do rtm <- freshLocSize 1
-                                        ntm <- addFreshNode (Assign rtm (FunCallRHS "constOne" []))
+                                        ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
                                         return ([],ntm,ntm,rtm)
 agPat lscr tscr (RWCPatVar x _)    = do rtm <- freshLocSize 1
-                                        ntm <- addFreshNode (Assign rtm (FunCallRHS "constOne" []))
+                                        ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
                                         return ([(x,lscr)],ntm,ntm,rtm)
 agPat _ _ (RWCPatLiteral _)        = fail "agPat: encountered literal"
 
