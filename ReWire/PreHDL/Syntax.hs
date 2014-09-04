@@ -9,8 +9,36 @@ type Loc   = String
 
 data Prog = Prog { progHeader :: Header, progBody :: Cmd }
 
-type Header = () -- FIXME
+instance Show Prog where
+  show p = show (progHeader p) ++ "\n" ++ show (progBody p)
 
+data Header = Header { funDefns   :: [FunDefn],
+                       regDecls   :: [RegDecl], 
+                       stateNames :: [String], 
+                       startState :: String }
+
+instance Show Header where
+  show h = intercalate "\n" (map show (funDefns h) ++ map show (regDecls h))
+
+data FunDefn = FunDefn { funDefnName      :: String,
+                         funDefnParams    :: [RegDecl],
+                         funDefnRegDecls  :: [RegDecl],
+                         funDefnBody      :: Cmd, 
+                         funDefnResultReg :: Loc }
+
+instance Show FunDefn where
+  show fd = "function " ++ funDefnName fd ++ " (" ++ intercalate "," (map show (funDefnParams fd)) ++ ") {\n"
+         ++ indent (concatMap ((++"\n") . show) (funDefnRegDecls fd)
+                 ++ show (funDefnBody fd) ++ "\n"
+                 ++ "return " ++ funDefnResultReg fd ++ ";\n")
+         ++ "}"
+
+data RegDecl = RegDecl { regDeclName :: Loc,
+                         regDefnSize :: Int }
+
+instance Show RegDecl where
+  show rd = regDeclName rd ++ "[" ++ show (regDefnSize rd) ++ "];"
+  
 -- Allowed in:
 --
 --   CLFS
@@ -86,15 +114,13 @@ instance Show Cmd where
   show (If b c)         = "if " ++ show b ++ " {\n"
                        ++ indent (show c) ++ "\n"
                        ++ "}"
-    where indent :: String -> String
-          indent s = "  " ++ idt s
-            where idt "\n"     = "\n"
-                  idt ('\n':s) = "\n  " ++ idt s
-                  idt (c:s)    = c:idt s
-                  idt ""       = ""
   show (Seq c1 c2)      = show c1 ++ "\n" ++ show c2
   show Skip             = "skip;"
   show (NextState n)    = "next state is " ++ show n ++ ";"
 
-instance Show Prog where
-  show p = show (progHeader p) ++ "\n" ++ show (progBody p)
+indent :: String -> String
+indent s = "  " ++ idt s
+  where idt "\n"     = "\n"
+        idt ('\n':s) = "\n  " ++ idt s
+        idt (c:s)    = c:idt s
+        idt ""       = ""

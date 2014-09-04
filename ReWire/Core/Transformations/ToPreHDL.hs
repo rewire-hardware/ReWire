@@ -19,9 +19,8 @@ import Data.List (foldl',find,findIndex)
 import Data.Maybe (fromJust)
 
 type VarMap = Map (Id RWCExp) Loc
-type RegMap = [(Loc,Int)]
 type ActionMap = Map (Id RWCExp) ([Loc],Node,Node,Loc) -- name -> arg regs, entry node, exit node, result reg
-type CGM = ReaderT Env (StateT (Int,RegMap,CFG,ActionMap) RW)
+type CGM = ReaderT Env (StateT (Int,CFG,ActionMap) RW)
 
 data Env = Env { stateLayer :: Int,
                  stateTys   :: [RWCTy],
@@ -51,36 +50,36 @@ askOutputTy :: CGM RWCTy
 askOutputTy = ask >>= return . outputTy
 
 getC :: CGM Int
-getC = do (c,_,_,_) <- get
+getC = do (c,_,_) <- get
           return c
 
 putC :: Int -> CGM ()
-putC c = do (_,rm,g,am) <- get
-            put (c,rm,g,am)
+putC c = do (_,g,am) <- get
+            put (c,g,am)
+  
+getHeader :: CGM Header
+getHeader = do (_,cfg,_) <- get
+               return (cfgHeader cfg)
+
+putHeader :: Header -> CGM ()
+putHeader h = do (c,cfg,am) <- get
+                 put (c,cfg { cfgHeader = h },am)
   
 getGraph :: CGM (Gr Cmd Branch)
-getGraph = do (_,_,cfg,_) <- get
+getGraph = do (_,cfg,_) <- get
               return (cfgGraph cfg)
 
 putGraph :: Gr Cmd Branch -> CGM ()
-putGraph g = do (c,rm,cfg,am) <- get
-                put (c,rm,cfg { cfgGraph = g },am)
+putGraph g = do (c,cfg,am) <- get
+                put (c,cfg { cfgGraph = g },am)
 
 getActionMap :: CGM ActionMap
-getActionMap = do (_,_,_,am) <- get
+getActionMap = do (_,_,am) <- get
                   return am
 
 putActionMap :: ActionMap -> CGM ()
-putActionMap am = do (c,rm,g,_) <- get
-                     put (c,rm,g,am)
-
-getRegMap :: CGM RegMap
-getRegMap = do (_,rm,_,_) <- get
-               return rm
-
-putRegMap :: RegMap -> CGM ()
-putRegMap rm = do (c,_,g,am) <- get
-                  put (c,rm,g,am)
+putActionMap am = do (c,g,_) <- get
+                     put (c,g,am)
 
 binding :: Id RWCExp -> Loc -> CGM a -> CGM a
 binding n l = localVarMap (Map.insert n l)
@@ -94,14 +93,12 @@ addEdge ns nd br = do g <- getGraph
                       putGraph (insEdge (ns,nd,br) g)
 
 freshLocSize :: Int -> CGM Loc
-freshLocSize 0 = do rm <- getRegMap
-                    putRegMap (("EMPTY",0):rm)
-                    return "EMPTY"
+freshLocSize 0 = return "EMPTY"
 freshLocSize n = do c  <- getC
                     putC (c+1)
                     let r = "r" ++ show c
-                    rm <- getRegMap
-                    putRegMap ((r,n):rm)
+                    h  <- getHeader
+                    putHeader (h { regDecls = RegDecl r n : regDecls h })
                     return r
 
 freshLocTy :: RWCTy -> CGM Loc
@@ -157,14 +154,14 @@ stringAlts nl ((_,no1_t,no1_f,_):x@(no2_e,_,_,_):xs) = do addEdge no1_t nl (Cond
 stringAlts nl [(_,no,_,r)]                           = do addEdge no nl (Conditional (BoolConst True))
 stringAlts _  []                                     = return ()
 
-agExpr :: RWCExp -> CGM (Node,Node,Loc)
-agExpr e = case ef of
-             RWCApp _ _     -> fail "agExpr: app in function position (can't happen)"
-             RWCLiteral _   -> fail "agExpr: encountered literal"
-             RWCLam _ _ _   -> fail "agExpr: encountered lambda"
+cfgExpr :: RWCExp -> CGM (Node,Node,Loc)
+cfgExpr e = case ef of
+             RWCApp _ _     -> fail "cfgExpr: app in function position (can't happen)"
+             RWCLiteral _   -> fail "cfgExpr: encountered literal"
+             RWCLam _ _ _   -> fail "cfgExpr: encountered lambda"
              RWCLet x el eb -> do
-               (niel,noel,lel) <- agExpr el
-               (nieb,noeb,leb) <- binding x lel $ agExpr eb
+               (niel,noel,lel) <- cfgExpr el
+               (nieb,noeb,leb) <- binding x lel $ cfgExpr eb
                addEdge noel nieb (Conditional (BoolConst True))
                return (niel,noeb,leb)
              RWCVar x _     -> do
@@ -179,7 +176,7 @@ agExpr e = case ef of
                  Nothing -> do
                    -- If this is not a locally bound variable then it must
                    -- be a non-monadic global, which tranlates to a FunCall.
-                   ninors <- mapM agExpr eargs
+                   ninors <- mapM cfgExpr eargs
                    stringNodes (map (\(ni,no,_) -> (ni,no)) ninors)
                    let rs =  map ( \ (_,_,r) -> r) ninors
                    r      <- freshLocTy (typeOf e)
@@ -199,7 +196,7 @@ agExpr e = case ef of
                  [] -> -- No arguments, so tag is all we need.
                        return (nt,nt,rt)
                  _  -> do -- Compile argument expressions.
-                          ninors_args <- mapM agExpr eargs
+                          ninors_args <- mapM cfgExpr eargs
                           -- Sequence tag and argument expressions.
                           stringNodes ((nt,nt) : map (\(ni,no,_) -> (ni,no)) ninors_args)
                           -- Allocate result reg.
@@ -216,17 +213,17 @@ agExpr e = case ef of
              RWCCase escr alts               -> do
                case eargs of
                  [] -> do
-                   (ni,no,r_scr)   <- agExpr escr
+                   (ni,no,r_scr)   <- cfgExpr escr
                    r_res           <- freshLocTy (typeOf e)
-                   ninotnoers_init <- mapM (agAlt r_scr (typeOf escr) r_res) (init alts)
-                   ninotnoers_last <- agLastAlt r_scr (typeOf escr) r_res (last alts)
+                   ninotnoers_init <- mapM (cfgAlt r_scr (typeOf escr) r_res) (init alts)
+                   ninotnoers_last <- cfgLastAlt r_scr (typeOf escr) r_res (last alts)
                    let ninotnoers           =  ninotnoers_init ++ [ninotnoers_last]
                        (ni0,_,_,_)          =  head ninotnoers
                    addEdge no ni0 (Conditional (BoolConst True))
                    nl              <- addFreshNode (Rem "end case")
                    stringAlts nl ninotnoers
                    return (ni,nl,r_res)
-                 _  -> fail "agExpr: encountered case expression in function position"
+                 _  -> fail "cfgExpr: encountered case expression in function position"
   where (ef:eargs) = flattenApp e
 
 stringNodes :: [(Node,Node)] -> CGM ()
@@ -271,8 +268,8 @@ zipWithM3 f (x:xs) (y:ys) (z:zs) = do v    <- f x y z
                                       return (v:rest)
 zipWithM3 _ _ _ _                = return []
 
-agLastPat :: Loc -> RWCTy -> RWCPat -> CGM ([(Id RWCExp,Loc)],Node,Node,Loc) -- bindings, entry node, exit node, match bit loc
-agLastPat lscr tscr (RWCPatCon dci ps) = do 
+cfgLastPat :: Loc -> RWCTy -> RWCPat -> CGM ([(Id RWCExp,Loc)],Node,Node,Loc) -- bindings, entry node, exit node, match bit loc
+cfgLastPat lscr tscr (RWCPatCon dci ps) = do 
                                         ntm <- addFreshNode (Rem "final pat")
                                         let rtm =  "bogus"
                                         
@@ -286,7 +283,7 @@ agLastPat lscr tscr (RWCPatCon dci ps) = do
                                             -- bsi: bindings for subpat i
                                             -- npi_i~>npo_i: entry, exit nodes for subpat i
                                             -- rmi: whether match for subpat i
-                                            bsnpinporms       <- zipWithM3 agLastPat rfs tfs ps
+                                            bsnpinporms       <- zipWithM3 cfgLastPat rfs tfs ps
                                             let bss           =  map (\ (bs,_,_,_) -> bs) bsnpinporms
                                                 rms           =  map (\ (_,_,_,rm) -> rm) bsnpinporms
                                             -- nai,nao: entry/exit for final match-and
@@ -304,15 +301,15 @@ agLastPat lscr tscr (RWCPatCon dci ps) = do
                                             -- after check pats, and results
 --                                            addEdge npo_l nai (Conditional (BoolConst True))
                                             return (concat bss,ntm,npo_l,rtm)
-agLastPat lscr tscr RWCPatWild         = do
+cfgLastPat lscr tscr RWCPatWild         = do
                                         rtm <- freshLocSize 1
                                         ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
                                         return ([],ntm,ntm,rtm)
-agLastPat lscr tscr (RWCPatVar x _)    = do
+cfgLastPat lscr tscr (RWCPatVar x _)    = do
                                         rtm <- freshLocSize 1
                                         ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
                                         return ([(x,lscr)],ntm,ntm,rtm)
-agLastPat _ _ (RWCPatLiteral _)        = fail "agPat: encountered literal"
+cfgLastPat _ _ (RWCPatLiteral _)        = fail "cfgPat: encountered literal"
 
 getDataConTyCon :: DataConId -> CGM TyConId
 getDataConTyCon dci = do Just (DataConInfo n _) <- lift $ lift $ queryD dci
@@ -356,8 +353,8 @@ mkGetField dci lscr tscr n = do tci         <- getDataConTyCon dci
                                 nf          <- addFreshNode (Assign rf (SliceRHS lo hi lscr))
                                 return (rf,nf)
   
-agPat :: Loc -> RWCTy -> RWCPat -> CGM ([(Id RWCExp,Loc)],Node,Node,Loc) -- bindings, entry node, exit node, match bit loc
-agPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
+cfgPat :: Loc -> RWCTy -> RWCPat -> CGM ([(Id RWCExp,Loc)],Node,Node,Loc) -- bindings, entry node, exit node, match bit loc
+cfgPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
                                         (ntm,rtm) <- mkTagCheck dci lscr
                                         
                                         case ps of
@@ -370,7 +367,7 @@ agPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
                                             -- bsi: bindings for subpat i
                                             -- npi_i~>npo_i: entry, exit nodes for subpat i
                                             -- rmi: whether match for subpat i
-                                            bsnpinporms       <- zipWithM3 agPat rfs tfs ps
+                                            bsnpinporms       <- zipWithM3 cfgPat rfs tfs ps
                                             let bss           =  map (\ (bs,_,_,_) -> bs) bsnpinporms
                                                 rms           =  map (\ (_,_,_,rm) -> rm) bsnpinporms
                                             -- nai,nao: entry/exit for final match-and
@@ -388,73 +385,73 @@ agPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
                                             -- after check pats, and results
                                             addEdge npo_l nai (Conditional (BoolConst True))
                                             return (concat bss,ntm,nao,rm)
-agPat lscr tscr RWCPatWild         = do rtm <- freshLocSize 1
-                                        ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
-                                        return ([],ntm,ntm,rtm)
-agPat lscr tscr (RWCPatVar x _)    = do rtm <- freshLocSize 1
-                                        ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
-                                        return ([(x,lscr)],ntm,ntm,rtm)
-agPat _ _ (RWCPatLiteral _)        = fail "agPat: encountered literal"
+cfgPat lscr tscr RWCPatWild         = do rtm <- freshLocSize 1
+                                         ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
+                                         return ([],ntm,ntm,rtm)
+cfgPat lscr tscr (RWCPatVar x _)    = do rtm <- freshLocSize 1
+                                         ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
+                                         return ([(x,lscr)],ntm,ntm,rtm)
+cfgPat _ _ (RWCPatLiteral _)        = fail "cfgPat: encountered literal"
 
-agLastAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Node,Node,Node,Loc)
-agLastAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,_) <- agLastPat lscr tscr p
-                                           foldr (uncurry binding) (do
-                                             (nie,noe,le) <- agExpr e
-                                             no           <- addFreshNode (Assign lres (LocRHS le))
-                                             addEdge noe no (Conditional (BoolConst True))
-                                             addEdge nop nie (Conditional (BoolConst True))
-                                             return (nip,no,no,le))
-                                            bds
+cfgLastAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Node,Node,Node,Loc)
+cfgLastAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,_) <- cfgLastPat lscr tscr p
+                                            foldr (uncurry binding) (do
+                                              (nie,noe,le) <- cfgExpr e
+                                              no           <- addFreshNode (Assign lres (LocRHS le))
+                                              addEdge noe no (Conditional (BoolConst True))
+                                              addEdge nop nie (Conditional (BoolConst True))
+                                              return (nip,no,no,le))
+                                             bds
 
-agAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Node,Node,Node,Loc) -- entry node, true exit node, false exit node, result reg if true
-agAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- agPat lscr tscr p
-                                       foldr (uncurry binding) (do
-                                         (nie,noe,le) <- agExpr e
-                                         no_t         <- addFreshNode (Assign lres (LocRHS le))
-                                         no_f         <- addFreshNode (Rem "alt exit (no match)")
-                                         addEdge noe no_t (Conditional (BoolConst True))
-                                         addEdge nop nie (Conditional (BoolVar rp))
-                                         addEdge nop no_f (Conditional (Not (BoolVar rp)))
-                                         return (nip,no_t,no_f,le))
-                                        bds
+cfgAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Node,Node,Node,Loc) -- entry node, true exit node, false exit node, result reg if true
+cfgAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- cfgPat lscr tscr p
+                                        foldr (uncurry binding) (do
+                                          (nie,noe,le) <- cfgExpr e
+                                          no_t         <- addFreshNode (Assign lres (LocRHS le))
+                                          no_f         <- addFreshNode (Rem "alt exit (no match)")
+                                          addEdge noe no_t (Conditional (BoolConst True))
+                                          addEdge nop nie (Conditional (BoolVar rp))
+                                          addEdge nop no_f (Conditional (Not (BoolVar rp)))
+                                          return (nip,no_t,no_f,le))
+                                         bds
 
-agLastAcAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Node,Node,Node,Loc)
-agLastAcAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- agLastPat lscr tscr p
-                                             foldr (uncurry binding) (do
-                                               (nie,noe,le) <- agAcExpr e
-                                               no           <- addFreshNode (Assign lres (LocRHS le))
-                                               addEdge noe no (Conditional (BoolConst True))
-                                               addEdge nop nie (Conditional (BoolConst True))
-                                               return (nip,no,no,le))
-                                              bds
+cfgLastAcAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Node,Node,Node,Loc)
+cfgLastAcAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- cfgLastPat lscr tscr p
+                                              foldr (uncurry binding) (do
+                                                (nie,noe,le) <- cfgAcExpr e
+                                                no           <- addFreshNode (Assign lres (LocRHS le))
+                                                addEdge noe no (Conditional (BoolConst True))
+                                                addEdge nop nie (Conditional (BoolConst True))
+                                                return (nip,no,no,le))
+                                               bds
 
-agAcAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Node,Node,Node,Loc) -- entry node, true exit node, false exit node, result reg if true
-agAcAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- agPat lscr tscr p
-                                         foldr (uncurry binding) (do
-                                           (nie,noe,le) <- agAcExpr e
-                                           no_t         <- addFreshNode (Assign lres (LocRHS le))
-                                           no_f         <- addFreshNode (Rem "alt exit (no match)")
-                                           addEdge noe no_t (Conditional (BoolConst True))
-                                           addEdge nop nie (Conditional (BoolVar rp))
-                                           addEdge nop no_f (Conditional (Not (BoolVar rp)))
-                                           return (nip,no_t,no_f,le))
-                                          bds
+cfgAcAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Node,Node,Node,Loc) -- entry node, true exit node, false exit node, result reg if true
+cfgAcAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- cfgPat lscr tscr p
+                                          foldr (uncurry binding) (do
+                                            (nie,noe,le) <- cfgAcExpr e
+                                            no_t         <- addFreshNode (Assign lres (LocRHS le))
+                                            no_f         <- addFreshNode (Rem "alt exit (no match)")
+                                            addEdge noe no_t (Conditional (BoolConst True))
+                                            addEdge nop nie (Conditional (BoolVar rp))
+                                            addEdge nop no_f (Conditional (Not (BoolVar rp)))
+                                            return (nip,no_t,no_f,le))
+                                           bds
 
-agAcExpr :: RWCExp -> CGM (Node,Node,Loc) -- entry node, exit node, result reg
-agAcExpr e = case ef of
-               RWCApp _ _                    -> fail "agAcExpr: app in function position (can't happen)"
+cfgAcExpr :: RWCExp -> CGM (Node,Node,Loc) -- entry node, exit node, result reg
+cfgAcExpr e = case ef of
+               RWCApp _ _                    -> fail "cfgAcExpr: app in function position (can't happen)"
                -- I suppose strictly speaking we *could* handle lambdas,
                -- but not for now.
-               RWCLam _ _ _                  -> fail "agAcExpr: encountered lambda"
-               RWCLiteral _                  -> fail "agAcExpr: encountered literal"
+               RWCLam _ _ _                  -> fail "cfgAcExpr: encountered lambda"
+               RWCLiteral _                  -> fail "cfgAcExpr: encountered literal"
                -- Can't use data constructors to construct a resumption.
-               RWCCon _ _                    -> fail "agAcExpr: encountered con"
+               RWCCon _ _                    -> fail "cfgAcExpr: encountered con"
                
                RWCLet x el eb -> do
                  -- Expression being bound.
-                 (niel,noel,lel) <- agExpr el
+                 (niel,noel,lel) <- cfgExpr el
                  -- Body expression.
-                 (nieb,noeb,leb) <- binding x lel $ agAcExpr eb
+                 (nieb,noeb,leb) <- binding x lel $ cfgAcExpr eb
                  -- Connect the two in sequence.
                  addEdge noel nieb (Conditional (BoolConst True))
                  
@@ -465,22 +462,22 @@ agAcExpr e = case ef of
                  case eargs of
                    [el,RWCLam x _ er] -> do
                      -- Process is essentially identical to let.
-                     (entl,exl,regl)  <- agAcExpr el
-                     (entr,exr,regr)  <- binding x regl $ agAcExpr er
+                     (entl,exl,regl)  <- cfgAcExpr el
+                     (entr,exr,regr)  <- binding x regl $ cfgAcExpr er
                      addEdge exl entr (Conditional (BoolConst True))
                      return (entl,exr,regr)
                    _ -> fail "wrong rhs for bind"
                    
                RWCVar x _ | x == mkId "return" -> do
                  case eargs of
-                   [e] -> agExpr e
-                   _   -> fail "agAcExpr: wrong number of arguments for return"
+                   [e] -> cfgExpr e
+                   _   -> fail "cfgAcExpr: wrong number of arguments for return"
                    
                RWCVar x _ | x == mkId "signal" -> do
                  case eargs of
                    [e] -> do
                      -- First we compute the signal value.
-                     (ni,no,re) <- agExpr e
+                     (ni,no,re) <- cfgExpr e
                      -- Throw that in the output register.
                      npre       <- addFreshNode (Assign "output" (LocRHS re))
                      -- After the signal return, put the input into a fresh
@@ -493,50 +490,50 @@ agAcExpr e = case ef of
                      addEdge no npre (Conditional (BoolConst True))
                      addEdge npre npost Tick
                      return (ni,npost,r)
-                   _  -> fail "agAcExpr: wrong number of arguments for signal"
+                   _  -> fail "cfgAcExpr: wrong number of arguments for signal"
                
                RWCVar x _ | x == mkId "lift" -> do
                  case eargs of
-                   [e] -> localStateLayer (+1) (agAcExpr e)
-                   _   -> fail "agAcExpr: wrong number of arguments for lift"
+                   [e] -> localStateLayer (+1) (cfgAcExpr e)
+                   _   -> fail "cfgAcExpr: wrong number of arguments for lift"
 
                RWCVar x _ | x == mkId "get" -> do
                  case eargs of
                    [] -> do l   <- askStateLayer
                             tss <- askStateTys
                             if l < 0
-                              then fail "agAcExpr: not in a state monad (can't happen)"
+                              then fail "cfgAcExpr: not in a state monad (can't happen)"
                               else if l >= length tss
-                                then fail $ "agAcExpr: current state layer " ++ show l ++ " exceeds number of state transformers (can't happen)"
+                                then fail $ "cfgAcExpr: current state layer " ++ show l ++ " exceeds number of state transformers (can't happen)"
                                 else do
                                   tss <- askStateTys
                                   r   <- freshLocTy (tss!!l)
                                   n   <- addFreshNode (Assign r (LocRHS $ "statevar" ++ show l))
                                   return (n,n,r)
-                   _  -> fail "agAcExpr: wrong number of arguments for get"
+                   _  -> fail "cfgAcExpr: wrong number of arguments for get"
 
                RWCVar x _ | x == mkId "put" -> do
                  case eargs of
                    [e] -> do l <- askStateLayer
                              if l < 0
-                               then fail "agAcExpr: not in a state monad (can't happen)"
+                               then fail "cfgAcExpr: not in a state monad (can't happen)"
                                else do
-                                 (nie,noe,re) <- agExpr e
+                                 (nie,noe,re) <- cfgExpr e
                                  no           <- addFreshNode (Assign ("statevar" ++ show l) (LocRHS re))
                                  r            <- freshLocSize 0
                                  addEdge noe no (Conditional (BoolConst True))
                                  return (nie,no,r)
-                   _   -> fail "agAcExpr: wrong number of arguments for get"
+                   _   -> fail "cfgAcExpr: wrong number of arguments for get"
 
                RWCVar x _                      -> do
                  -- This is required to be a tail call! Look up info for the
                  -- callee.
-                 (rs_f,ni_f,no_f,rr_f) <- agAcDefn x
+                 (rs_f,ni_f,no_f,rr_f) <- cfgAcDefn x
                  case eargs of
                    [] -> return (ni_f,no_f,rr_f)
                    _ -> do
                      -- Generate code for argument expressions.
-                     ninor_args            <- mapM agExpr eargs
+                     ninor_args            <- mapM cfgExpr eargs
                      let no_args           =  map (\(_,no,_) -> no) ninor_args
                          ni_args           =  map (\(ni,_,_) -> ni) ninor_args
                      -- Sequence the code graphs for the argument expressions.
@@ -555,8 +552,8 @@ agAcExpr e = case ef of
                  case eargs of
                    [] -> do
                      -- Compile scrutinee expression.
-                     (ni_scr,no_scr,r_scr) <- agExpr escr
-                     -- Pre-allocate result register (it's up to agAcAlt to
+                     (ni_scr,no_scr,r_scr) <- cfgExpr escr
+                     -- Pre-allocate result register (it's up to cfgAcAlt to
                      -- copy the result to this).
                      r_res                 <- freshLocTy (compBase $ typeOf e)
                      -- Landing node.
@@ -564,9 +561,9 @@ agAcExpr e = case ef of
                      -- Compile each alt *except* the last. (Note that we're
                      -- assuming there is at least one; a case with zero alts
                      -- is always undefined anyway.)
-                     ninotnoers_init       <- mapM (agAcAlt r_scr (typeOf escr) r_res) (init alts)
+                     ninotnoers_init       <- mapM (cfgAcAlt r_scr (typeOf escr) r_res) (init alts)
                      -- Special treatment for the last alt.
-                     ninotnoers_last       <- agLastAcAlt r_scr (typeOf escr) r_res (last alts)
+                     ninotnoers_last       <- cfgLastAcAlt r_scr (typeOf escr) r_res (last alts)
                      let ninotnoers        =  ninotnoers_init ++ [ninotnoers_last]
                      -- Find entry point node for first alt, and jump to it
                      -- after the scrutinee is evaluated.
@@ -578,7 +575,7 @@ agAcExpr e = case ef of
                      -- Start point is scr, end point is landing, result is
                      -- in r_res.
                      return (ni_scr,nl,r_res)
-                   _  -> fail "agAcExpr: encountered case expression in function position"
+                   _  -> fail "cfgAcExpr: encountered case expression in function position"
                      
    where (ef:eargs) = flattenApp e  
 
@@ -587,8 +584,9 @@ peelLambdas (RWCLam n t e) = ((n,t):nts,e')
 peelLambdas e              = ([],e)
 
 -- Generate code for an action function.
-agAcDefn :: Id RWCExp -> CGM ([Loc],Node,Node,Loc)
-agAcDefn n = do am <- getActionMap
+cfgAcDefn :: Id RWCExp -> CGM ([Loc],Node,Node,Loc)
+cfgAcDefn n = do
+                am <- getActionMap
                 case Map.lookup n am of
                   -- If the name is already in the map, codegen for the
                   -- function is already completed or in progress.
@@ -596,7 +594,7 @@ agAcDefn n = do am <- getActionMap
                   Nothing -> do 
                     md <- lift $ lift $ queryG n
                     case md of
-                      Nothing               -> fail $ "agAcDefn: " ++ show n ++ " not defined"
+                      Nothing               -> fail $ "cfgAcDefn: " ++ show n ++ " not defined"
                       Just (RWCDefn _ _ e_) -> do
                         -- Allocate registers for arguments.
                         let (xts,e)   =  peelLambdas e_
@@ -616,7 +614,7 @@ agAcDefn n = do am <- getActionMap
                         -- Compile the body expression, with local bindings
                         -- in place.
                         let xrs       =  zip xs rs
-                        (nie,noe,rre) <- foldr (uncurry binding) (agAcExpr e) xrs
+                        (nie,noe,rre) <- foldr (uncurry binding) (cfgAcExpr e) xrs
                         -- Connect in and out nodes.
                         addEdge ni nie (Conditional (BoolConst True))
                         addEdge noe no (Conditional (BoolConst True))
@@ -624,11 +622,11 @@ agAcDefn n = do am <- getActionMap
                         -- inserted into the map before).
                         return (rs,ni,no,rr)
 
-agStart :: RWCExp -> CGM ()
-agStart (RWCApp (RWCApp (RWCVar x _) e) _) | x == mkId "extrude" = agStart e
-agStart (RWCVar x t) = local buildEnv $ do
+cfgStart :: RWCExp -> CGM ()
+cfgStart (RWCApp (RWCApp (RWCVar x _) e) _) | x == mkId "extrude" = cfgStart e
+cfgStart (RWCVar x t) = local buildEnv $ do
                          n_start    <- addFreshNode (Rem "START")
-                         (_,ni,_,_) <- agAcDefn x
+                         (_,ni,_,_) <- cfgAcDefn x
                          addEdge n_start ni (Conditional (BoolConst True))
  where buildEnv env =
          case t of
@@ -636,32 +634,85 @@ agStart (RWCVar x t) = local buildEnv $ do
              let
                getStateTys (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "StT")) tst) ts) = tst : getStateTys ts
                getStateTys (RWCTyCon (TyConId "I"))                                = []
-               getStateTys _                                                       = error "agStart: start has malformed type (inner monad stack is not of form (StT (StT ... (StT I))))"
+               getStateTys _                                                       = error "cfgStart: start has malformed type (inner monad stack is not of form (StT (StT ... (StT I))))"
                tss                                                                 = getStateTys tsm
              in env { inputTy  = ti,
                       outputTy = to,
                       stateTys = tss }
-           _ -> error "agStart: start has malformed type (not a computation with outer monad ReT)"
-agStart _ = fail "agStart: malformed start expression"
+           _ -> error "cfgStart: start has malformed type (not a computation with outer monad ReT)"
+cfgStart _ = fail "cfgStart: malformed start expression"
 
-agProg :: CGM ()
-agProg = do md <- lift $ lift $ queryG (mkId "start")
-            case md of
-              Nothing              -> fail "agProg: `start' not defined"
-              Just (RWCDefn _ _ e) -> agStart e
+cfgProg :: CGM ()
+cfgProg = do md <- lift $ lift $ queryG (mkId "start")
+             case md of
+              Nothing              -> fail "cfgProg: `start' not defined"
+              Just (RWCDefn _ _ e) -> cfgStart e
 
-agFromRW :: RWCProg -> (RegMap,CFG)
-agFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
-  where doit    = do agProg
-                     rm <- getRegMap
-                     g  <- getGraph
-                     return (rm,CFG { cfgHeader = (), cfgGraph = g })
+cfgFromRW :: RWCProg -> CFG
+cfgFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
+  where doit    = do cfgProg
+                     h <- getHeader
+                     g <- getGraph
+                     return (CFG { cfgHeader = h, cfgGraph = g })
         env0    = Env { stateLayer = -1, inputTy = error "input type not set", outputTy = error "output type not set", stateTys = [], varMap = Map.empty }
-        s0      = (0,[],CFG { cfgHeader = (), cfgGraph = empty },Map.empty)
+        s0      = (0,CFG { cfgHeader = Header { funDefns = [], regDecls = [], stateNames = [], startState = "" },
+                           cfgGraph = empty },Map.empty)
         (p,ctr) = uniquify 0 p_
 
-cmdToAG :: TransCommand
-cmdToAG _ p = (Nothing,Just (mkDot $ gather $ linearize $ snd $ agFromRW p))
+cmdToCFG :: TransCommand
+cmdToCFG _ p = (Nothing,Just (mkDot $ gather $ linearize $ cfgFromRW p))
 
 cmdToPre :: TransCommand
-cmdToPre _ p = (Nothing,Just (show (gotoElim $ progBody $ cfgToProg (snd (agFromRW p)))))
+cmdToPre _ p = (Nothing,Just (show (gotoElim $ progBody $ cfgToProg (cfgFromRW p))))
+
+funExpr :: RWCExp -> CGM (Cmd,Loc)
+funExpr e = case ef of
+             RWCApp _ _     -> fail "cfgExpr: app in function position (can't happen)"
+             RWCLiteral _   -> fail "cfgExpr: encountered literal"
+             RWCLam _ _ _   -> fail "cfgExpr: encountered lambda"
+             RWCLet x el eb -> do
+               (cel,lel) <- funExpr el
+               (ceb,leb) <- binding x lel $ funExpr eb
+               return (cel `mkSeq` ceb,leb)
+             RWCVar x _     -> do
+               mr <- askBinding x
+               case mr of
+                 Just r  -> return (Skip,r)
+                 Nothing -> do
+                   -- If this is not a locally bound variable then it must
+                   -- be a non-monadic global, which tranlates to a FunCall.
+                   crs         <- mapM funExpr eargs
+                   let (cs,rs) =  unzip crs
+                   r           <- freshLocTy (typeOf e)
+                   return (foldr1 mkSeq (cs++[Assign r (FunCallRHS (show x) rs)]),r)
+             RWCCon dci _ -> do
+               -- Tag.
+               t           <- getTag dci
+               rt          <- freshLocSize (length t)
+               nt          <- addFreshNode (Assign rt (ConstRHS t))
+               case eargs of
+                 [] -> -- No arguments, so tag is all we need.
+                       return (Assign rt (ConstRHS t),rt)
+                 _  -> do -- Compile argument expressions.
+                          crs          <- mapM funExpr eargs
+                          let (cs,rs)  =  unzip crs
+                          -- Allocate result reg.
+                          r            <- freshLocTy (typeOf e)
+                          -- Concatenate tag and args, result in r.
+                          return (foldr1 mkSeq (cs++[Assign rt (ConcatRHS (rt:rs))]),r)
+{-             RWCCase escr alts               -> do
+               case eargs of
+                 [] -> do
+                   (c_scr,r_scr)   <- funExpr escr
+                   r_res           <- freshLocTy (typeOf e)
+                   FIXME stopped here
+                   ninotnoers_init <- mapM (cfgAlt r_scr (typeOf escr) r_res) (init alts)
+                   ninotnoers_last <- cfgLastAlt r_scr (typeOf escr) r_res (last alts)
+                   let ninotnoers           =  ninotnoers_init ++ [ninotnoers_last]
+                       (ni0,_,_,_)          =  head ninotnoers
+                   addEdge no ni0 (Conditional (BoolConst True))
+                   nl              <- addFreshNode (Rem "end case")
+                   stringAlts nl ninotnoers
+                   return (ni,nl,r_res)
+                 _  -> fail "funExpr: encountered case expression in function position"-}
+  where (ef:eargs) = flattenApp e
