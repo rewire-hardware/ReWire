@@ -20,7 +20,8 @@ import Data.Maybe (fromJust)
 
 type VarMap = Map (Id RWCExp) Loc
 type ActionMap = Map (Id RWCExp) ([Loc],Node,Node,Loc) -- name -> arg regs, entry node, exit node, result reg
-type CGM = ReaderT Env (StateT (Int,CFG,ActionMap) RW)
+type FunMap = Map (Id RWCExp) String                   -- name -> generated VHDL name
+type CGM = ReaderT Env (StateT (Int,CFG,ActionMap,FunMap) RW)
 
 data Env = Env { stateLayer :: Int,
                  stateTys   :: [RWCTy],
@@ -50,36 +51,44 @@ askOutputTy :: CGM RWCTy
 askOutputTy = ask >>= return . outputTy
 
 getC :: CGM Int
-getC = do (c,_,_) <- get
+getC = do (c,_,_,_) <- get
           return c
 
 putC :: Int -> CGM ()
-putC c = do (_,g,am) <- get
-            put (c,g,am)
+putC c = do (_,g,am,fm) <- get
+            put (c,g,am,fm)
   
 getHeader :: CGM Header
-getHeader = do (_,cfg,_) <- get
+getHeader = do (_,cfg,_,_) <- get
                return (cfgHeader cfg)
 
 putHeader :: Header -> CGM ()
-putHeader h = do (c,cfg,am) <- get
-                 put (c,cfg { cfgHeader = h },am)
+putHeader h = do (c,cfg,am,fm) <- get
+                 put (c,cfg { cfgHeader = h },am,fm)
   
 getGraph :: CGM (Gr Cmd Branch)
-getGraph = do (_,cfg,_) <- get
+getGraph = do (_,cfg,_,_) <- get
               return (cfgGraph cfg)
 
 putGraph :: Gr Cmd Branch -> CGM ()
-putGraph g = do (c,cfg,am) <- get
-                put (c,cfg { cfgGraph = g },am)
+putGraph g = do (c,cfg,am,fm) <- get
+                put (c,cfg { cfgGraph = g },am,fm)
 
 getActionMap :: CGM ActionMap
-getActionMap = do (_,_,am) <- get
+getActionMap = do (_,_,am,_) <- get
                   return am
 
 putActionMap :: ActionMap -> CGM ()
-putActionMap am = do (c,g,_) <- get
-                     put (c,g,am)
+putActionMap am = do (c,g,_,fm) <- get
+                     put (c,g,am,fm)
+
+getFunMap :: CGM FunMap
+getFunMap = do (_,_,_,fm) <- get
+               return fm
+
+putFunMap :: FunMap -> CGM ()
+putFunMap fm = do (c,g,am,_) <- get
+                  put (c,g,am,fm)
 
 binding :: Id RWCExp -> Loc -> CGM a -> CGM a
 binding n l = localVarMap (Map.insert n l)
@@ -88,10 +97,19 @@ askBinding :: Id RWCExp -> CGM (Maybe Loc)
 askBinding n = do varm <- askVarMap
                   return (Map.lookup n varm)
 
+askFun :: Id RWCExp -> CGM (Maybe String)
+askFun n = do funm <- getFunMap
+              return (Map.lookup n funm)
+              
 addEdge :: Node -> Node -> Branch -> CGM ()
 addEdge ns nd br = do g <- getGraph
                       putGraph (insEdge (ns,nd,br) g)
 
+freshFunName :: Id RWCExp -> CGM String
+freshFunName n = do c <- getC
+                    putC (c+1)
+                    return ("rewire_" ++ show n ++ "_" ++ show c)
+  
 freshLocSize :: Int -> CGM Loc
 freshLocSize 0 = return "EMPTY"
 freshLocSize n = do c  <- getC
@@ -174,13 +192,15 @@ cfgExpr e = case ef of
                                n <- addFreshNode (Rem $ "got " ++ show x ++ " in " ++ r)
                                return (n,n,r)
                  Nothing -> do
+                   
                    -- If this is not a locally bound variable then it must
                    -- be a non-monadic global, which tranlates to a FunCall.
+                   nf     <- funDefn x
                    ninors <- mapM cfgExpr eargs
                    stringNodes (map (\(ni,no,_) -> (ni,no)) ninors)
                    let rs =  map ( \ (_,_,r) -> r) ninors
                    r      <- freshLocTy (typeOf e)
-                   n      <- addFreshNode (Assign r (FunCallRHS (show x) rs))
+                   n      <- addFreshNode (Assign r (FunCallRHS nf rs))
                    case ninors of
                      [] -> return (n,n,r)
                      _  -> do let (ni,_,_) = head ninors
@@ -623,7 +643,7 @@ cfgAcDefn n = do
                         return (rs,ni,no,rr)
 
 cfgStart :: RWCExp -> CGM ()
-cfgStart (RWCApp (RWCApp (RWCVar x _) e) _) | x == mkId "extrude" = cfgStart e
+cfgStart (RWCApp (RWCApp (RWCVar x _) e) _) | x == mkId "extrude" = cfgStart e -- FIXME: fill in state expression!
 cfgStart (RWCVar x t) = local buildEnv $ do
                          n_start    <- addFreshNode (Rem "START")
                          (_,ni,_,_) <- cfgAcDefn x
@@ -654,16 +674,77 @@ cfgFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
                      h <- getHeader
                      g <- getGraph
                      return (CFG { cfgHeader = h, cfgGraph = g })
-        env0    = Env { stateLayer = -1, inputTy = error "input type not set", outputTy = error "output type not set", stateTys = [], varMap = Map.empty }
+        env0    = Env { stateLayer = -1,
+                        inputTy = error "input type not set",
+                        outputTy = error "output type not set",
+                        stateTys = [],
+                        varMap = Map.empty }
         s0      = (0,CFG { cfgHeader = Header { funDefns = [], regDecls = [], stateNames = [], startState = "" },
-                           cfgGraph = empty },Map.empty)
+                           cfgGraph = empty },Map.empty,Map.empty)
         (p,ctr) = uniquify 0 p_
 
 cmdToCFG :: TransCommand
 cmdToCFG _ p = (Nothing,Just (mkDot $ gather $ linearize $ cfgFromRW p))
 
 cmdToPre :: TransCommand
-cmdToPre _ p = (Nothing,Just (show (gotoElim $ progBody $ cfgToProg (cfgFromRW p))))
+cmdToPre _ p = (Nothing,Just (show (gotoElim $ cfgToProg (cfgFromRW p))))
+
+mkFunTagCheck :: DataConId -> Loc -> CGM (Cmd,Loc)
+mkFunTagCheck dci lscr = do rtm  <- freshLocSize 1
+                            tci  <- getDataConTyCon dci
+                            tagw <- getTagWidth tci
+                            case tagw of
+                              0 -> return (Assign rtm (BoolRHS (BoolConst True)),rtm)
+                              _ -> do tagv <- liftM ConstRHS (getTag dci)
+                                      return (Assign rtm (BoolRHS (BoolEq tagv (SliceRHS 0 (tagw-1) lscr))),rtm)
+
+mkFunGetField :: DataConId -> Loc -> RWCTy -> Int -> CGM (Loc,Cmd)
+mkFunGetField dci lscr tscr n = do tci         <- getDataConTyCon dci
+                                   tagWidth    <- getTagWidth tci
+                                   fieldTys    <- getFieldTys dci tscr
+                                   fieldWidths <- mapM tyWidth fieldTys
+                                   rf          <- freshLocSize (fieldWidths !! n)
+                                   let fieldOffsets    = scanl (+) tagWidth fieldWidths
+                                       ranges []       = []
+                                       ranges [n]      = []
+                                       ranges (n:m:ns) = (n,m-1) : ranges (m:ns)
+                                       fieldRanges     = ranges fieldOffsets
+                                       (lo,hi)         = fieldRanges !! n
+                                   return (rf,Assign rf (SliceRHS lo hi lscr))
+
+funPat :: Loc -> RWCTy -> RWCPat -> CGM ([(Id RWCExp,Loc)],Cmd,Loc)
+funPat lscr tscr (RWCPatCon dci ps) = do (ctm,rtm) <- mkFunTagCheck dci lscr
+                                         case ps of
+                                           [] -> return ([],ctm,rtm)
+                                           _  -> do tfs       <- getFieldTys dci tscr
+                                                    (rfs,cfs) <- liftM unzip $ mapM (mkFunGetField dci lscr tscr) [0..(length tfs - 1)]
+                                                    bdscsrms  <- zipWithM3 funPat rfs tfs ps
+                                                    let bdss  =  map (\ (bds,_,_) -> bds) bdscsrms
+                                                        cs    =  map (\ (_,c,_) -> c) bdscsrms
+                                                        rms   =  map (\ (_,_,rm) -> rm) bdscsrms
+                                                    rm        <- freshLocSize 1
+                                                    return (concat bdss,
+                                                            foldr1 mkSeq ([ctm] ++ cfs ++ cs ++ [Assign rm (BoolRHS (foldr1 And (map BoolVar rms)))]),
+                                                            rm)
+funPat lscr tscr RWCPatWild         = do rm <- freshLocSize 1
+                                         return ([],Assign rm (BoolRHS (BoolConst True)),rm)
+funPat lscr tscr (RWCPatVar x _)    = do rm <- freshLocSize 1
+                                         return ([(x,lscr)],Assign rm (BoolRHS (BoolConst True)),rm)
+funPat _ _ (RWCPatLiteral _)        = fail "funPat: encountered literal"
+                                         
+funAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM Cmd
+funAlt lscr tscr lres (RWCAlt p e) = do (bds,cmatch,rmatch) <- funPat lscr tscr p
+                                        foldr (uncurry binding) (do
+                                          (ce,le) <- funExpr e
+                                          return (cmatch `mkSeq` If (BoolVar rmatch) (ce `mkSeq` Assign lres (LocRHS le))))
+                                         bds
+
+funLastAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM Cmd
+funLastAlt lscr tscr lres (RWCAlt p e) = do (bds,cmatch,rmatch) <- funPat lscr tscr p
+                                            foldr (uncurry binding) (do
+                                              (ce,le) <- funExpr e
+                                              return (cmatch `mkSeq` ce `mkSeq` Assign lres (LocRHS le)))
+                                             bds
 
 funExpr :: RWCExp -> CGM (Cmd,Loc)
 funExpr e = case ef of
@@ -681,10 +762,11 @@ funExpr e = case ef of
                  Nothing -> do
                    -- If this is not a locally bound variable then it must
                    -- be a non-monadic global, which tranlates to a FunCall.
+                   nf          <- funDefn x
                    crs         <- mapM funExpr eargs
                    let (cs,rs) =  unzip crs
                    r           <- freshLocTy (typeOf e)
-                   return (foldr1 mkSeq (cs++[Assign r (FunCallRHS (show x) rs)]),r)
+                   return (foldr1 mkSeq (cs++[Assign r (FunCallRHS nf rs)]),r)
              RWCCon dci _ -> do
                -- Tag.
                t           <- getTag dci
@@ -699,20 +781,45 @@ funExpr e = case ef of
                           -- Allocate result reg.
                           r            <- freshLocTy (typeOf e)
                           -- Concatenate tag and args, result in r.
-                          return (foldr1 mkSeq (cs++[Assign rt (ConcatRHS (rt:rs))]),r)
-{-             RWCCase escr alts               -> do
+                          return (foldr1 mkSeq (cs++[Assign r (ConcatRHS (rt:rs))]),r)
+             RWCCase escr alts               -> do
                case eargs of
                  [] -> do
-                   (c_scr,r_scr)   <- funExpr escr
-                   r_res           <- freshLocTy (typeOf e)
-                   FIXME stopped here
-                   ninotnoers_init <- mapM (cfgAlt r_scr (typeOf escr) r_res) (init alts)
-                   ninotnoers_last <- cfgLastAlt r_scr (typeOf escr) r_res (last alts)
-                   let ninotnoers           =  ninotnoers_init ++ [ninotnoers_last]
-                       (ni0,_,_,_)          =  head ninotnoers
-                   addEdge no ni0 (Conditional (BoolConst True))
-                   nl              <- addFreshNode (Rem "end case")
-                   stringAlts nl ninotnoers
-                   return (ni,nl,r_res)
-                 _  -> fail "funExpr: encountered case expression in function position"-}
+                   (c_scr,r_scr) <- funExpr escr
+                   r_res         <- freshLocTy (typeOf e)
+                   cs_init       <- mapM (funAlt r_scr (typeOf escr) r_res) (init alts)
+                   c_last        <- funLastAlt r_scr (typeOf escr) r_res (last alts)
+                   return (foldr1 mkSeq (cs_init++[c_last]),r_res)
+                 _  -> fail "funExpr: encountered case expression in function position"
   where (ef:eargs) = flattenApp e
+
+funDefn :: Id RWCExp -> CGM String
+funDefn n = do ms <- askFun n
+               case ms of
+                 Just s  -> return s
+                 Nothing -> do
+                   md <- lift $ lift $ queryG n
+                   case md of
+--                     Nothing               -> fail $ "funDefn: " ++ show n ++ " not defined"
+                     Nothing               -> return (show n) -- FIXME: in this case it should be a VHDL-defined function
+                     Just (RWCDefn _ _ e_) -> do
+                       fn          <- freshFunName n
+                       let (xts,e) =  peelLambdas e_
+                           xs      =  map fst xts
+                           ts      =  map snd xts
+                       pns         <- mapM freshLocTy ts
+                       psizes      <- mapM tyWidth ts
+                       rr          <- freshLocTy (typeOf e)
+                       let xrs     =  zip xs pns
+                       h           <- getHeader
+                       putHeader (h { regDecls = [] })
+                       (ce,re)     <- foldr (uncurry binding) (funExpr e) xrs
+                       h'          <- getHeader
+                       let rds     =  regDecls h'
+                           pds     =  zipWith RegDecl pns psizes
+                           fd      =  FunDefn fn pds rds ce re
+                       putHeader (h' { regDecls = regDecls h,
+                                       funDefns = fd : funDefns h' })
+                       fm          <- getFunMap                                  
+                       putFunMap (Map.insert n fn fm)
+                       return fn

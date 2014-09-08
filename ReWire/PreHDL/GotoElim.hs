@@ -219,8 +219,11 @@ rewind = do p <- path
               CmdTop -> return ()
               _      -> goUp >> rewind
             
-gotoElim :: Cmd -> Cmd
-gotoElim c = runGEM (addGotoResetStmts >> loop >> rewind >> here) (zipRoot c)
+gotoElimC :: Cmd -> Cmd
+gotoElimC c = runGEM (addGotoResetStmts >> loop >> rewind >> here) (zipRoot c)
+
+gotoElim :: Prog -> Prog
+gotoElim p = p { progBody = gotoElimC (progBody p) }
 
 runGEM :: GEM a -> CmdLoc -> a
 runGEM m cl = fst $ runIdentity (runStateT m cl)
