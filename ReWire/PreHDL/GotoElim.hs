@@ -44,23 +44,37 @@ zipDown (CmdLoc (If b c_) p)    = CmdLoc c (CmdNode [] (TagIf b) p cs)
 zipDown _                        = error "zipDown of bottom"
 
 -- goto elimination monad
-type GEM = StateT CmdLoc Identity
+type GEM = StateT (CmdLoc,[String]) Identity
+
+getLoc :: GEM CmdLoc
+getLoc = liftM fst get
+
+putLoc :: CmdLoc -> GEM ()
+putLoc l = do (_,ns) <- get
+              put (l,ns)
+              
+getNames :: GEM [String]
+getNames = liftM snd get
+
+putNames :: [String] -> GEM ()
+putNames ns = do (l,_) <- get
+                 put (l,ns)
 
 here :: GEM Cmd
-here = do (CmdLoc c _) <- get
+here = do (CmdLoc c _) <- getLoc
           return c
 
 path :: GEM CmdPath
-path = do (CmdLoc _ p) <- get
+path = do (CmdLoc _ p) <- getLoc
           return p
 
 putHere :: Cmd -> GEM ()
-putHere c = do (CmdLoc _ p) <- get
-               put (CmdLoc c p)
+putHere c = do (CmdLoc _ p) <- getLoc
+               putLoc (CmdLoc c p)
 
 putPath :: CmdPath -> GEM ()
-putPath p = do (CmdLoc c _) <- get
-               put (CmdLoc c p)
+putPath p = do (CmdLoc c _) <- getLoc
+               putLoc (CmdLoc c p)
                
 atTop :: CmdPath -> Bool
 atTop CmdTop = True
@@ -71,16 +85,16 @@ atRight (CmdNode _ _ _ []) = True
 atRight _                  = False
 
 goDown :: GEM ()
-goDown = do l <- get
-            put (zipDown l)
+goDown = do l <- getLoc
+            putLoc (zipDown l)
 
 goRight :: GEM ()
-goRight = do l <- get
-             put (zipRight l)
+goRight = do l <- getLoc
+             putLoc (zipRight l)
 
 goUp :: GEM ()
-goUp = do l <- get
-          put (zipUp l)
+goUp = do l <- getLoc
+          putLoc (zipUp l)
 
 insertOnRight :: [Cmd] -> GEM ()
 insertOnRight cs = do p <- path
@@ -109,6 +123,8 @@ addGotoResetStmts :: GEM ()
 addGotoResetStmts = do c <- here
                        case c of
                          Lbl l -> do insertOnRight [Assign ("goto_" ++ l) (BoolRHS (BoolConst False))]
+                                     ns <- getNames
+                                     putNames (("goto_" ++ l) : ns)
                                      advance
                                      addGotoResetStmts
                          _     -> do k <- advance
@@ -132,20 +148,20 @@ elimGoto = do c <- here
                                case mtarg of
                                  Just (Lbl _)       ->trace "Lbl" $
                                                        do insertOnRight ([Assign ("goto_" ++ l) (BoolRHS b)]
-                                                                      ++ if null cs then [] else [If (Not (BoolVar ("goto_" ++ l))) (foldr1 Seq cs)]
+                                                                      ++ (if null cs then [] else [If (Not (BoolVar ("goto_" ++ l))) (foldr1 Seq cs)])
                                                                       ++ [Lbl l])
                                                           deleteHere
                                                           return True
                                  Just (If b' c)     ->trace "If" $ 
                                                        do insertOnRight ([Assign ("goto_" ++ l) (BoolRHS b)]
-                                                                      ++ if null cs then [] else [If (Not (BoolVar ("goto_" ++ l))) (foldr1 Seq cs)]
+                                                                      ++ (if null cs then [] else [If (Not (BoolVar ("goto_" ++ l))) (foldr1 Seq cs)])
                                                                       ++ [If (Or b' (BoolVar ("goto_" ++ l)))
                                                                              (Goto (BoolVar ("goto_" ++ l)) l `Seq` c)])
                                                           deleteHere
                                                           return True
                                  Just (Seq c1 c2)   ->trace "Seq" $
                                                        do insertOnRight ([Assign ("goto_" ++ l) (BoolRHS b)]
-                                                                     ++ if null cs then [] else [If (Not (BoolVar ("goto_" ++ l))) (foldr1 Seq cs)]
+                                                                     ++ (if null cs then [] else [If (Not (BoolVar ("goto_" ++ l))) (foldr1 Seq cs)])
                                                                      ++ [Goto (BoolVar ("goto_" ++ l)) l `Seq` (c1 `Seq` c2)])
                                                           deleteHere
                                                           return True
@@ -153,7 +169,7 @@ elimGoto = do c <- here
 --                                 Nothing          -> do { k <- advance ; if k then elimGoto else return False }
                                  Nothing          ->trace "Out" $ 
                                                      do insertOnRight ([Assign ("goto_" ++ l) (BoolRHS b)]
-                                                                    ++ if null cs then [] else [If (Not (BoolVar ("goto_" ++ l))) (foldr1 Seq cs)])
+                                                                    ++ (if null cs then [] else [If (Not (BoolVar ("goto_" ++ l))) (foldr1 Seq cs)]))
                                                         deleteHere
                                                         goUp
                                                         insertOnRight [Goto (BoolVar ("goto_" ++ l)) l]
@@ -194,9 +210,9 @@ optimize (If b c)      = If b (optimize c)
 optimize c@(Seq c1 c2) = squishGotos c
 optimize c             = c
 
-squishGotos c | null cs'  = Skip
-              | otherwise = foldr1 Seq cs'
-    where cs' = map optimize $ squish (flattenSeq c)
+squishGotos c | null csOut = Skip
+              | otherwise  = foldr1 Seq csOut
+    where csOut = map optimize $ squish (flattenSeq c)
           squish []             = []
           squish cs | null gs   = head cs : squish (tail cs)
                     | otherwise = nub gs ++ squish cs'
@@ -219,11 +235,16 @@ rewind = do p <- path
               CmdTop -> return ()
               _      -> goUp >> rewind
             
-gotoElimC :: Cmd -> Cmd
-gotoElimC c = runGEM (addGotoResetStmts >> loop >> rewind >> here) (zipRoot c)
+gotoElimC :: Cmd -> (Cmd,[String])
+gotoElimC c = let (c',(_,ns)) = runIdentity (runStateT (addGotoResetStmts >> loop >> rewind >> here) (zipRoot c,[]))
+              in  (c',ns)
 
 gotoElim :: Prog -> Prog
-gotoElim p = p { progBody = gotoElimC (progBody p) }
+gotoElim p = Prog { progBody   = body',
+                    progHeader = addGotoRegs (progHeader p) }
+             where (body',ns)    = gotoElimC (progBody p)
+                   addGotoRegs h = h { regDecls = gotoRegs ++ regDecls h }
+                   gotoRegs      = map (\ x -> RegDecl x TyBoolean) ns
 
-runGEM :: GEM a -> CmdLoc -> a
-runGEM m cl = fst $ runIdentity (runStateT m cl)
+--runGEM :: GEM a -> CmdLoc -> a
+--runGEM m cl = fst $ runIdentity (runStateT m cl)

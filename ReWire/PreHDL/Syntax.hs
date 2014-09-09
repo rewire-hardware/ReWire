@@ -13,9 +13,11 @@ instance Show Prog where
   show p = show (progHeader p) ++ "\n" ++ show (progBody p)
 
 data Header = Header { funDefns   :: [FunDefn],
-                       regDecls   :: [RegDecl], 
-                       stateNames :: [String], 
-                       startState :: String }
+                       regDecls   :: [RegDecl],
+                       stateNames :: [String],
+                       startState :: String,
+                       inputSize  :: Int,
+                       outputSize :: Int }
 
 instance Show Header where
   show h = intercalate "\n" (map show (funDefns h) ++ map show (regDecls h))
@@ -28,16 +30,22 @@ data FunDefn = FunDefn { funDefnName      :: String,
 
 instance Show FunDefn where
   show fd = "function " ++ funDefnName fd ++ " (" ++ intercalate "," (map show (funDefnParams fd)) ++ ") {\n"
-         ++ indent (concatMap ((++"\n") . show) (funDefnRegDecls fd)
+         ++ indent (concatMap (("var "++) . (++";\n") . show) (funDefnRegDecls fd)
                  ++ show (funDefnBody fd) ++ "\n"
                  ++ "return " ++ funDefnResultReg fd ++ ";\n")
          ++ "}"
 
+data Ty = TyBits Int | TyBoolean
+
+instance Show Ty where
+  show (TyBits n) = "bits[" ++ show n ++ "]"
+  show TyBoolean  = "boolean"
+
 data RegDecl = RegDecl { regDeclName :: Loc,
-                         regDefnSize :: Int }
+                         regDefnTy   :: Ty }
 
 instance Show RegDecl where
-  show rd = regDeclName rd ++ "[" ++ show (regDefnSize rd) ++ "];"
+  show rd = regDeclName rd ++ " : " ++ show (regDefnTy rd)
   
 -- Allowed in:
 --

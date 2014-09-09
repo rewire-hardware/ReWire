@@ -45,7 +45,7 @@ elimUnreachable root gr = delNodes unreachable gr
 -- due to how signal is compiled)
 --
 linearize :: CFG -> CFG
-linearize cfg = cfg { cfgGraph = gr''''' }
+linearize cfg = CFG { cfgHeader = header', cfgGraph = gr''''' }
   where gr = cfgGraph cfg
         [nEnter,nExit] = newNodes 2 gr
         
@@ -74,6 +74,9 @@ linearize cfg = cfg { cfgGraph = gr''''' }
         gr'''   = foldr (\ n -> insEdge (nEnter,n,Conditional (InState n))) gr'' stateStarters
         gr''''  = foldr addEnder gr''' stateEnders
         gr''''' = elimUnreachable nEnter gr''''
+        
+        header' = (cfgHeader cfg) { stateNames = map (("STATE"++) . show) stateStarters, 
+                                    startState = "STATE0" }
 
 --
 -- Gather basic blocks in a control flow graph.
@@ -106,11 +109,12 @@ gather cfg = cfg { cfgGraph = gath (cfgGraph cfg) }
                                        _                                   -> Nothing
 
 cfgToProg :: CFG -> Prog
-cfgToProg cfg = Prog { progHeader = cfgHeader cfg,
+cfgToProg cfg = Prog { progHeader = cfgHeader cfg',
                        progBody   = cmd }
-  where cmd = foldr1 Seq (concatMap renderOne bbs)
-        gr  = cfgGraph (gather (linearize cfg))
-        bbs = topsort gr
+  where cmd  = foldr1 Seq (concatMap renderOne bbs)
+        cfg' = gather (linearize cfg)
+        gr   = cfgGraph cfg'
+        bbs  = topsort gr
         
         renderOne n = Lbl ("L" ++ show n) : cn : map renderSuc (lsuc gr n)
           where cn = fromJust (lab gr n)

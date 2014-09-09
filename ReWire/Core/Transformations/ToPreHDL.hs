@@ -5,6 +5,7 @@ module ReWire.Core.Transformations.ToPreHDL where
 import ReWire.PreHDL.Syntax
 import ReWire.PreHDL.CFG
 import ReWire.PreHDL.GotoElim
+import ReWire.PreHDL.ToVHDL
 import ReWire.Core.Transformations.Types
 import ReWire.Core.Transformations.Monad
 import ReWire.Core.Transformations.Uniquify (uniquify)
@@ -116,13 +117,21 @@ freshLocSize n = do c  <- getC
                     putC (c+1)
                     let r = "r" ++ show c
                     h  <- getHeader
-                    putHeader (h { regDecls = RegDecl r n : regDecls h })
+                    putHeader (h { regDecls = RegDecl r (TyBits n) : regDecls h })
                     return r
 
 freshLocTy :: RWCTy -> CGM Loc
 freshLocTy t = do n <- tyWidth t
                   freshLocSize n
 
+freshLocBool :: CGM Loc
+freshLocBool = do c <- getC
+                  putC (c+1)
+                  let r = "b" ++ show c
+                  h <- getHeader
+                  putHeader (h { regDecls = RegDecl r TyBoolean : regDecls h })
+                  return r
+  
 nBits 0 = 0
 nBits n = nBits (n `quot` 2) + 1
 
@@ -275,10 +284,10 @@ andRegs (r:rs) = do (ni,no,ro) <- andRegs rs
 -}
 
 andRegs :: [Loc] -> CGM (Node,Node,Loc)
-andRegs [] = do ro <- freshLocSize 1
+andRegs [] = do ro <- freshLocBool
                 n  <- addFreshNode (Assign ro (BoolRHS (BoolConst True)))
                 return (n,n,ro)
-andRegs rs = do ro <- freshLocSize 1
+andRegs rs = do ro <- freshLocBool
                 n  <- addFreshNode (Assign ro (BoolRHS (foldr1 And (map BoolVar rs))))
                 return (n,n,ro)
 
@@ -322,11 +331,11 @@ cfgLastPat lscr tscr (RWCPatCon dci ps) = do
 --                                            addEdge npo_l nai (Conditional (BoolConst True))
                                             return (concat bss,ntm,npo_l,rtm)
 cfgLastPat lscr tscr RWCPatWild         = do
-                                        rtm <- freshLocSize 1
+                                        rtm <- freshLocBool
                                         ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
                                         return ([],ntm,ntm,rtm)
 cfgLastPat lscr tscr (RWCPatVar x _)    = do
-                                        rtm <- freshLocSize 1
+                                        rtm <- freshLocBool
                                         ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
                                         return ([(x,lscr)],ntm,ntm,rtm)
 cfgLastPat _ _ (RWCPatLiteral _)        = fail "cfgPat: encountered literal"
@@ -348,7 +357,7 @@ getTag i = do tci                 <- getDataConTyCon i
                 Nothing  -> fail $ "getTag: unknown constructor " ++ deDataConId i
 
 mkTagCheck :: DataConId -> Loc -> CGM (Node,Loc)
-mkTagCheck dci lscr = do rtm  <- freshLocSize 1
+mkTagCheck dci lscr = do rtm  <- freshLocBool
                          tci  <- getDataConTyCon dci
                          tagw <- getTagWidth tci
                          case tagw of
@@ -405,10 +414,10 @@ cfgPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
                                             -- after check pats, and results
                                             addEdge npo_l nai (Conditional (BoolConst True))
                                             return (concat bss,ntm,nao,rm)
-cfgPat lscr tscr RWCPatWild         = do rtm <- freshLocSize 1
+cfgPat lscr tscr RWCPatWild         = do rtm <- freshLocBool
                                          ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
                                          return ([],ntm,ntm,rtm)
-cfgPat lscr tscr (RWCPatVar x _)    = do rtm <- freshLocSize 1
+cfgPat lscr tscr (RWCPatVar x _)    = do rtm <- freshLocBool
                                          ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
                                          return ([(x,lscr)],ntm,ntm,rtm)
 cfgPat _ _ (RWCPatLiteral _)        = fail "cfgPat: encountered literal"
@@ -679,8 +688,15 @@ cfgFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
                         outputTy = error "output type not set",
                         stateTys = [],
                         varMap = Map.empty }
-        s0      = (0,CFG { cfgHeader = Header { funDefns = [], regDecls = [], stateNames = [], startState = "" },
-                           cfgGraph = empty },Map.empty,Map.empty)
+        s0      = (0,CFG { cfgHeader = Header { funDefns   = [],
+                                                regDecls   = [],
+                                                stateNames = [],
+                                                startState = "", 
+                                                inputSize  = 999,
+                                                outputSize = 999 },
+                           cfgGraph = empty },
+                     Map.empty,
+                     Map.empty)
         (p,ctr) = uniquify 0 p_
 
 cmdToCFG :: TransCommand
@@ -689,8 +705,11 @@ cmdToCFG _ p = (Nothing,Just (mkDot $ gather $ linearize $ cfgFromRW p))
 cmdToPre :: TransCommand
 cmdToPre _ p = (Nothing,Just (show (gotoElim $ cfgToProg (cfgFromRW p))))
 
+cmdToVHDL :: TransCommand
+cmdToVHDL _ p = (Nothing,Just (toVHDL (gotoElim $ cfgToProg (cfgFromRW p))))
+
 mkFunTagCheck :: DataConId -> Loc -> CGM (Cmd,Loc)
-mkFunTagCheck dci lscr = do rtm  <- freshLocSize 1
+mkFunTagCheck dci lscr = do rtm  <- freshLocBool
                             tci  <- getDataConTyCon dci
                             tagw <- getTagWidth tci
                             case tagw of
@@ -722,13 +741,13 @@ funPat lscr tscr (RWCPatCon dci ps) = do (ctm,rtm) <- mkFunTagCheck dci lscr
                                                     let bdss  =  map (\ (bds,_,_) -> bds) bdscsrms
                                                         cs    =  map (\ (_,c,_) -> c) bdscsrms
                                                         rms   =  map (\ (_,_,rm) -> rm) bdscsrms
-                                                    rm        <- freshLocSize 1
+                                                    rm        <- freshLocBool
                                                     return (concat bdss,
                                                             foldr1 mkSeq ([ctm] ++ cfs ++ cs ++ [Assign rm (BoolRHS (foldr1 And (map BoolVar rms)))]),
                                                             rm)
-funPat lscr tscr RWCPatWild         = do rm <- freshLocSize 1
+funPat lscr tscr RWCPatWild         = do rm <- freshLocBool
                                          return ([],Assign rm (BoolRHS (BoolConst True)),rm)
-funPat lscr tscr (RWCPatVar x _)    = do rm <- freshLocSize 1
+funPat lscr tscr (RWCPatVar x _)    = do rm <- freshLocBool
                                          return ([(x,lscr)],Assign rm (BoolRHS (BoolConst True)),rm)
 funPat _ _ (RWCPatLiteral _)        = fail "funPat: encountered literal"
                                          
@@ -816,7 +835,7 @@ funDefn n = do ms <- askFun n
                        (ce,re)     <- foldr (uncurry binding) (funExpr e) xrs
                        h'          <- getHeader
                        let rds     =  regDecls h'
-                           pds     =  zipWith RegDecl pns psizes
+                           pds     =  zipWith RegDecl pns (map TyBits psizes)
                            fd      =  FunDefn fn pds rds ce re
                        putHeader (h' { regDecls = regDecls h,
                                        funDefns = fd : funDefns h' })
