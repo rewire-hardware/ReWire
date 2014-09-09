@@ -51,9 +51,22 @@ vCmd (Lbl l)        = "null; -- label " ++ l
 vFunDefnProto :: FunDefn -> String
 vFunDefnProto fd = "function " ++ funDefnName fd ++ (if null params
                                                         then ""
-                                                        else "(" ++ intercalate ";" (map ((++" : std_logic_vector") . regDeclName) params) ++ ")") 
+                                                        else "(" ++ intercalate " ; " (map ((++" : std_logic_vector") . regDeclName) params) ++ ")") 
                                                  ++ " return std_logic_vector;\n"
                    where params = funDefnParams fd
+
+vFunDefn :: FunDefn -> String
+vFunDefn fd = "function " ++ funDefnName fd ++ (if null params
+                                                   then ""
+                                                   else "(" ++ intercalate " ; " (map ((++" : std_logic_vector") . regDeclName) params) ++ ")") 
+                                            ++ " return std_logic_vector\n"
+           ++ "is\n"
+           ++ indent (concatMap ((++"\n") . vRegDecl) (funDefnRegDecls fd))
+           ++ "begin\n"
+           ++ indent (vCmd (funDefnBody fd) ++ "\n")
+           ++ indent ("return " ++ funDefnResultReg fd ++ ";\n")
+           ++ "end " ++ funDefnName fd ++ ";\n"
+      where params = funDefnParams fd
 
 toVHDL :: Prog -> String
 toVHDL p = "library ieee;\n"
@@ -69,7 +82,7 @@ toVHDL p = "library ieee;\n"
         ++ "architecture behavioral of rewire is\n"
         ++ "  type control_state is (" ++ intercalate "," (stateNames (progHeader p)) ++ ");\n"
         ++ indent (concatMap vFunDefnProto (funDefns (progHeader p))) ++ "\n"
---        ++ indent (concatMap vFunDefn (funDefns (progHeader p)))
+        ++ indent (concatMap vFunDefn (funDefns (progHeader p))) ++ "\n"
         ++ "begin\n"
         ++ indent (
            "process (clk)\n"

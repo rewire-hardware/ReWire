@@ -5,6 +5,7 @@ module ReWire.Core.Transformations.ToPreHDL where
 import ReWire.PreHDL.Syntax
 import ReWire.PreHDL.CFG
 import ReWire.PreHDL.GotoElim
+import ReWire.PreHDL.ElimEmpty
 import ReWire.PreHDL.ToVHDL
 import ReWire.Core.Transformations.Types
 import ReWire.Core.Transformations.Monad
@@ -651,13 +652,29 @@ cfgAcDefn n = do
                         -- inserted into the map before).
                         return (rs,ni,no,rr)
 
+mkStateRegDecls :: CGM ()
+mkStateRegDecls = do ts <- askStateTys
+                     ws <- mapM tyWidth ts
+                     let rs =  zipWith (\ w n -> RegDecl { regDeclName = "statevar" ++ show n, regDefnTy = TyBits w }) ws [0..]
+                     h      <- getHeader
+                     putHeader (h { regDecls = rs ++ regDecls h })
+
 cfgStart :: RWCExp -> CGM ()
 cfgStart (RWCApp (RWCApp (RWCVar x _) e) _) | x == mkId "extrude" = cfgStart e -- FIXME: fill in state expression!
 cfgStart (RWCVar x t) = local buildEnv $ do
+                         si  <- tyWidth ti
+                         so  <- tyWidth to
+                         h   <- getHeader
+                         putHeader (h { inputSize  = si,
+                                        outputSize = so })
+                         mkStateRegDecls
                          n_start    <- addFreshNode (Rem "START")
                          (_,ni,_,_) <- cfgAcDefn x
                          addEdge n_start ni (Conditional (BoolConst True))
- where buildEnv env =
+ where buildEnv env = env { inputTy  = ti,
+                            outputTy = to,
+                            stateTys = tss }
+       (ti,to,tss) =  
          case t of
            RWCTyComp (RWCTyApp (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "ReT")) ti) to) tsm) _ ->
              let
@@ -665,9 +682,7 @@ cfgStart (RWCVar x t) = local buildEnv $ do
                getStateTys (RWCTyCon (TyConId "I"))                                = []
                getStateTys _                                                       = error "cfgStart: start has malformed type (inner monad stack is not of form (StT (StT ... (StT I))))"
                tss                                                                 = getStateTys tsm
-             in env { inputTy  = ti,
-                      outputTy = to,
-                      stateTys = tss }
+             in (ti,to,tss)
            _ -> error "cfgStart: start has malformed type (not a computation with outer monad ReT)"
 cfgStart _ = fail "cfgStart: malformed start expression"
 
@@ -706,7 +721,7 @@ cmdToPre :: TransCommand
 cmdToPre _ p = (Nothing,Just (show (gotoElim $ cfgToProg (cfgFromRW p))))
 
 cmdToVHDL :: TransCommand
-cmdToVHDL _ p = (Nothing,Just (toVHDL (gotoElim $ cfgToProg (cfgFromRW p))))
+cmdToVHDL _ p = (Nothing,Just (toVHDL (elimEmpty $ gotoElim $ cfgToProg (cfgFromRW p))))
 
 mkFunTagCheck :: DataConId -> Loc -> CGM (Cmd,Loc)
 mkFunTagCheck dci lscr = do rtm  <- freshLocBool
