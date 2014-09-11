@@ -1,0 +1,39 @@
+data W8 is W8 Bit Bit Bit Bit Bit Bit Bit Bit end
+data Bit is Zero | One end
+data Unit is Unit end
+data Inputs is Inputs W8 Rator end
+data Outputs is Outputs W8 end
+data Rator is Plus | Minus | Shl | Shr | And | Or | Xor | Clr end
+
+vhdl plusW8 :: W8 -> W8 -> W8 is prim_plus
+vhdl minusW8 :: W8 -> W8 -> W8 is prim_minus
+vhdl shlW8 :: W8 -> W8 is prim_shl
+vhdl shrW8 :: W8 -> W8 is prim_shr
+vhdl andW8 :: W8 -> W8 -> W8 is prim_and
+vhdl orW8 :: W8 -> W8 -> W8 is prim_or
+vhdl xorW8 :: W8 -> W8 -> W8 is prim_xor
+vhdl zeroW8 :: W8 is prim_zero
+
+-- ReT Inputs Outputs (StT W8 I)
+
+loop :: <ReT Inputs Outputs (StT W8 I)><()>
+is
+     bind reg <- lift get
+  in bind inp <- signal (Outputs reg)
+  in bind zzz <- case inp of
+     { Inputs rand Plus  -> lift (put (plusW8 reg rand))
+     ; Inputs rand Minus -> lift (put (minusW8 reg rand))
+     ; Inputs rand Shl   -> lift (put (shlW8 reg))
+     ; Inputs rand Shr   -> lift (put (shrW8 reg))
+     ; Inputs rand And   -> lift (put (andW8 reg rand))
+     ; Inputs rand Or    -> lift (put (orW8 reg rand))
+     ; Inputs rand Xor   -> lift (put (xorW8 reg rand))
+     ; Inputs rand Clr   -> lift (put zeroW8)
+     }
+  in loop
+end
+
+start :: <ReT Inputs Outputs I><((),W8)>
+is
+  extrude loop zeroW8
+end
