@@ -20,6 +20,7 @@ loop :: <ReT Inputs Outputs (StT W8 I)><()>
 is
      bind reg <- lift get
   in bind inp <- signal (Outputs reg)
+{-
   in bind zzz <- case inp of
      { Inputs rand Plus  -> lift (put (plusW8 reg rand))
      ; Inputs rand Minus -> lift (put (minusW8 reg rand))
@@ -30,6 +31,18 @@ is
      ; Inputs rand Xor   -> lift (put (xorW8 reg rand))
      ; Inputs rand Clr   -> lift (put zeroW8)
      }
+-}
+  in bind zzz <-
+     lift (put (case inp of
+     { Inputs rand Plus  -> plusW8 reg rand
+     ; Inputs rand Minus -> minusW8 reg rand
+     ; Inputs rand Shl   -> shlW8 reg
+     ; Inputs rand Shr   -> shrW8 reg
+     ; Inputs rand And   -> andW8 reg rand
+     ; Inputs rand Or    -> orW8 reg rand
+     ; Inputs rand Xor   -> xorW8 reg rand
+     ; Inputs rand Clr   -> zeroW8
+     }))
   in loop
 end
 
