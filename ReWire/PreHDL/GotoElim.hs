@@ -96,6 +96,12 @@ goUp :: GEM ()
 goUp = do l <- getLoc
           putLoc (zipUp l)
 
+insertOnLeft :: [Cmd] -> GEM ()
+insertOnLeft cs = do p <- path
+                     case p of
+                       CmdNode left tag up right -> putPath (CmdNode (reverse cs++left) tag up right)
+                       CmdTop                    -> putPath (CmdNode (reverse cs) TagSeq CmdTop [])
+
 insertOnRight :: [Cmd] -> GEM ()
 insertOnRight cs = do p <- path
                       case p of
@@ -118,17 +124,6 @@ upAndOver = do goUp
                if       atTop p   then return False
                 else if atRight p then upAndOver
                  else                  goRight >> return True
-
-addGotoResetStmts :: GEM ()
-addGotoResetStmts = do c <- here
-                       case c of
-                         Lbl l -> do insertOnRight [Assign ("goto_" ++ l) (BoolRHS (BoolConst False))]
-                                     ns <- getNames
-                                     putNames (("goto_" ++ l) : ns)
-                                     advance
-                                     addGotoResetStmts
-                         _     -> do k <- advance
-                                     when k addGotoResetStmts
 
 deleteHere :: GEM ()
 deleteHere = do p <- path
@@ -220,6 +215,35 @@ squishGotos c | null csOut = Skip
                  notGoto _          = True
                  (gs,cs')           = break notGoto cs
 
+labels :: Cmd -> [Label]
+labels (Lbl l)     = [l]
+labels (If _ c)    = labels c
+labels (Seq c1 c2) = labels c1 ++ labels c2
+labels _           = []
+
+addGotoNames :: GEM ()
+addGotoNames = do rewind
+                  ns <- getNames
+                  c  <- here
+                  putNames (map ("goto_"++) (labels c)++ns)
+
+addGotoResetStmts :: GEM ()
+addGotoResetStmts = do rewind
+                       c <- here
+                       let ls = labels c
+                           cs = map (\ l -> Assign ("goto_" ++ l) (BoolRHS (BoolConst False))) ls
+                       insertOnLeft cs
+
+{-                       
+                       case c of
+                         Lbl l -> do insertOnRight [Assign ("goto_" ++ l) (BoolRHS (BoolConst False))]
+                                     ns <- getNames
+                                     putNames (("goto_" ++ l) : ns)
+                                     advance
+                                     addGotoResetStmts
+                         _     -> do k <- advance
+                                     when k addGotoResetStmts-}
+
 loop :: GEM ()
 loop = do rewind
           c <- here
@@ -236,7 +260,12 @@ rewind = do p <- path
               _      -> goUp >> rewind
             
 gotoElimC :: Cmd -> (Cmd,[String])
-gotoElimC c = let (c',(_,ns)) = runIdentity (runStateT (addGotoResetStmts >> loop >> rewind >> here) (zipRoot c,[]))
+gotoElimC c = let (c',(_,ns)) = runIdentity (runStateT (addGotoNames      >>
+                                                        addGotoResetStmts >>
+                                                        loop              >>
+                                                        rewind            >>
+                                                        here)
+                                               (zipRoot c,[]))
               in  (c',ns)
 
 gotoElim :: Prog -> Prog
