@@ -661,6 +661,8 @@ mkStateRegDecls = do ts <- askStateTys
 
 cfgStart :: RWCExp -> CGM ()
 cfgStart (RWCApp (RWCApp (RWCVar x _) e) _) | x == mkId "extrude" = cfgStart e -- FIXME: fill in state expression!
+                                            | x == mkId "par" = fail "cfgStart: par encountered"
+                                            | x == mkId "refold" = fail "cfgStart: refold encountered"
 cfgStart (RWCVar x t) = local buildEnv $ do
                          si  <- tyWidth ti
                          so  <- tyWidth to

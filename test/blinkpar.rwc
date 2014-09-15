@@ -1,0 +1,22 @@
+data Bit is Zero | One end
+data Unit is Unit end
+
+blink0 :: <ReT Unit Bit I><()>
+is
+      bind x <- signal Zero
+  in  bind y <- signal One 
+  in blink0
+end
+
+blink1 :: <ReT Unit Bit I><()>
+is
+      bind x <- signal One 
+  in  bind y <- signal Zero 
+  in blink0
+end
+
+
+start :: <ReT (Tuple2 Unit Unit) (Tuple2 Bit Bit) I><()>
+is
+  par blink0 blink1
+end
