@@ -1,5 +1,6 @@
 data Bit is Zero | One end
 data Unit is Unit end
+data Tuple2 a b is Tuple2 a b end
 
 blink0 :: <ReT Unit Bit I><()>
 is

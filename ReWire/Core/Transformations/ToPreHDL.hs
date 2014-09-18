@@ -20,6 +20,8 @@ import Data.Graph.Inductive
 import Data.List (foldl',find,findIndex)
 import Data.Maybe (fromJust)
 
+import Debug.Trace
+
 type VarMap = Map (Id RWCExp) Loc
 type ActionMap = Map (Id RWCExp) ([Loc],Node,Node,Loc) -- name -> arg regs, entry node, exit node, result reg
 type FunMap = Map (Id RWCExp) String                   -- name -> generated VHDL name
@@ -139,7 +141,15 @@ nBits n = nBits (n `quot` 2) + 1
 getTagWidth :: TyConId -> CGM Int
 getTagWidth i = do Just (TyConInfo (RWCData _ _ cs)) <- lift $ lift $ queryT i
                    return (nBits (length cs-1))
+{-
+tupTyFst :: RWCTy -> RWCTy
+tupTyFst (RWCTyApp (RWCTyApp (RWCTyCon (TyConId {deTyConId = "Tuple2"})) v1) _) = v1
+tupTyFst _ = error  "tupTyFst: Non-Tuple2 type encountered"
 
+tupTySnd :: RWCTy -> RWCTy
+tupTySnd (RWCTyApp (RWCTyApp (RWCTyCon (TyConId {deTyConId = "Tuple2"})) _) v2) = v2
+tupTySnd _ = error "tupTySnd: Non-Tuple2 type encountered"
+-}
 tyWidth :: RWCTy -> CGM Int
 tyWidth (RWCTyVar _) = fail $ "tyWidth: type variable encountered"
 tyWidth t            = {-do twc <- getTyWidthCache
@@ -152,7 +162,7 @@ tyWidth t            = {-do twc <- getTyWidthCache
                                 RWCTyVar _    -> fail $ "tyWidth: type variable encountered"
                                 RWCTyComp _ _ -> fail $ "tyWidth: computation type encountered"
                                 RWCTyCon i    -> do
-                                  Just (TyConInfo (RWCData _ _ dcs)) <- lift $ lift $ queryT i
+                                  Just (TyConInfo (RWCData _ _ dcs)) <- trace (show i) $ lift $ lift $ queryT i
                                   tagWidth <- getTagWidth i
                                   cws      <- mapM (dataConWidth i) dcs
                                   let size =  tagWidth + maximum cws
@@ -660,9 +670,42 @@ mkStateRegDecls = do ts <- askStateTys
                      putHeader (h { regDecls = rs ++ regDecls h })
 
 cfgStart :: RWCExp -> CGM ()
-cfgStart (RWCApp (RWCApp (RWCVar x _) e) _) | x == mkId "extrude" = cfgStart e -- FIXME: fill in state expression!
-                                            | x == mkId "par" = fail "cfgStart: par encountered"
-                                            | x == mkId "refold" = fail "cfgStart: refold encountered"
+cfgStart tot@(RWCApp (RWCApp (RWCVar x _) e) e') | x == mkId "extrude" = cfgStart e -- FIXME: fill in state expression!
+                                                 | x == mkId "refold" = fail "cfgStart: refold encountered"
+                                                 -- | x == mkId "par" = fail "cfgStart: par encountered"
+                                                 | x == mkId "par",
+                                                   RWCVar e1 t1 <- e,
+                                                   RWCVar e2 t2 <- e' = local buildEnv $ do 
+                                                                                   si  <- tyWidth ti
+                                                                                   so  <- tyWidth to
+                                                                                   h   <- getHeader
+                                                                                   putHeader (h { inputSize  = si,
+                                                                                                 outputSize = so })
+                                                                                   mkStateRegDecls
+                                                                                   n_start    <- addFreshNode (Rem "START")
+                                                                                   (_,ni1,no1,_) <- local (setEnv t1) $ cfgAcDefn e1
+                                                                                   (_,ni2,_,_) <- local (setEnv t2) $ cfgAcDefn e2
+                                                                                   addEdge n_start ni1 (Conditional (BoolConst True))
+                                                                                   addEdge ni1 ni2 (Conditional (BoolConst True))
+--Copied where clause, do refactor.
+ where buildEnv env = env { inputTy  = ti,
+                            outputTy = to,
+                            stateTys = tss }
+       (ti,to,tss) =  getTys $ typeOf tot -- resolve the fully applied function
+       getTys t' = 
+         case t' of
+           RWCTyComp (RWCTyApp (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "ReT")) ti) to) tsm) _ ->
+             let
+               getStateTys (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "StT")) tst) ts) = tst : getStateTys ts
+               getStateTys (RWCTyCon (TyConId "I"))                                = []
+               getStateTys _                                                       = error "cfgStart: start has malformed type (inner monad stack is not of form (StT (StT ... (StT I))))"
+               tss                                                                 = getStateTys tsm
+             in (ti,to,tss)
+           _ -> error "cfgStart: start has malformed type (not a computation with outer monad ReT)"
+       setEnv t env = let (ti, to, tss) = getTys t
+                       in env {inputTy = ti, outputTy = to, stateTys = tss}
+--end, Copied where clause, do refactor.
+--
 cfgStart (RWCVar x t) = local buildEnv $ do
                          si  <- tyWidth ti
                          so  <- tyWidth to
