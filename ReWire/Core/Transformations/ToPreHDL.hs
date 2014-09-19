@@ -565,6 +565,33 @@ cfgAcExpr e = case ef of
                                  return (nie,no,r)
                    _   -> fail "cfgAcExpr: wrong number of arguments for get"
 
+               RWCVar x _ | x == mkId "par" -> do 
+                case eargs of
+                  [e1,e2] -> do
+                     let (ti1,to1) = reTy (typeOf e1)
+                         (ti2,to2) = reTy (typeOf e2)
+                     t1w  <- tyWidth ti1
+                     t2w  <- tyWidth ti2
+                     nil1 <- freshLocTy ti1
+                     nil2 <- freshLocTy ti2
+                     outt <- askOutputTy
+                     outr <- freshLocTy outt
+                     --slice up the input to feed it to the internal machines
+                     --TODO: Check Ranges
+                     --FIXME: Are these ranges right?
+                     ni1 <- addFreshNode (Assign nil1 (SliceRHS 0 (t1w-1) "input"))
+                     ni2 <- addFreshNode (Assign nil2 (SliceRHS t1w (t1w+(t2w-1)) "input"))
+                     (entl,exl,regl)  <- cfgAcExpr e1
+                     (entr,exr,regr)  <- cfgAcExpr e2
+                     out <- addFreshNode (Assign outr (ConcatRHS [regl,regr]))
+                     addEdge ni1 entl (Conditional (BoolConst True))
+                     addEdge exl ni2 (Conditional (BoolConst True))
+                     addEdge ni2 entr (Conditional (BoolConst True))
+                     addEdge exr out (Conditional (BoolConst True))
+                     return (ni1,out,outr)
+                  _ -> fail "cfgAcExpr: wrong number of arguments for par"
+               RWCVar x _ | x == mkId "refold" -> fail "cfgAcExpr: refold not implemented, yet"
+
                RWCVar x _                      -> do
                  -- This is required to be a tail call! Look up info for the
                  -- callee.
@@ -618,10 +645,18 @@ cfgAcExpr e = case ef of
                    _  -> fail "cfgAcExpr: encountered case expression in function position"
                      
    where (ef:eargs) = flattenApp e  
-
 peelLambdas (RWCLam n t e) = ((n,t):nts,e')
                              where (nts,e') = peelLambdas e
 peelLambdas e              = ([],e)
+reTy t                     = case t of
+                                 RWCTyComp (RWCTyApp (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "ReT")) ti) to) tsm) _ -> (ti,to)
+                                   --let
+                                   --  getStateTys (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "StT")) tst) ts) = tst : getStateTys ts
+                                   --  getStateTys (RWCTyCon (TyConId "I"))                                = []
+                                   --  getStateTys _                                                       = error "cfgStart: start has malformed type (inner monad stack is not of form (StT (StT ... (StT I))))"
+                                   --  tss                                                                 = getStateTys tsm
+                                   --in (ti,to,tss)
+                                 _ -> error "cfgAcExpr: start has malformed type (not a computation with outer monad ReT)"
 
 -- Generate code for an action function.
 cfgAcDefn :: Id RWCExp -> CGM ([Loc],Node,Node,Loc)
@@ -671,41 +706,6 @@ mkStateRegDecls = do ts <- askStateTys
 
 cfgStart :: RWCExp -> CGM ()
 cfgStart tot@(RWCApp (RWCApp (RWCVar x _) e) e') | x == mkId "extrude" = cfgStart e -- FIXME: fill in state expression!
-                                                 | x == mkId "refold" = fail "cfgStart: refold encountered"
-                                                 -- | x == mkId "par" = fail "cfgStart: par encountered"
-                                                 | x == mkId "par",
-                                                   RWCVar e1 t1 <- e,
-                                                   RWCVar e2 t2 <- e' = local buildEnv $ do 
-                                                                                   si  <- tyWidth ti
-                                                                                   so  <- tyWidth to
-                                                                                   h   <- getHeader
-                                                                                   putHeader (h { inputSize  = si,
-                                                                                                 outputSize = so })
-                                                                                   mkStateRegDecls
-                                                                                   n_start    <- addFreshNode (Rem "START")
-                                                                                   (_,ni1,no1,_) <- local (setEnv t1) $ cfgAcDefn e1
-                                                                                   (_,ni2,_,_) <- local (setEnv t2) $ cfgAcDefn e2
-                                                                                   addEdge n_start ni1 (Conditional (BoolConst True))
-                                                                                   addEdge ni1 ni2 (Conditional (BoolConst True))
---Copied where clause, do refactor.
- where buildEnv env = env { inputTy  = ti,
-                            outputTy = to,
-                            stateTys = tss }
-       (ti,to,tss) =  getTys $ typeOf tot -- resolve the fully applied function
-       getTys t' = 
-         case t' of
-           RWCTyComp (RWCTyApp (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "ReT")) ti) to) tsm) _ ->
-             let
-               getStateTys (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "StT")) tst) ts) = tst : getStateTys ts
-               getStateTys (RWCTyCon (TyConId "I"))                                = []
-               getStateTys _                                                       = error "cfgStart: start has malformed type (inner monad stack is not of form (StT (StT ... (StT I))))"
-               tss                                                                 = getStateTys tsm
-             in (ti,to,tss)
-           _ -> error "cfgStart: start has malformed type (not a computation with outer monad ReT)"
-       setEnv t env = let (ti, to, tss) = getTys t
-                       in env {inputTy = ti, outputTy = to, stateTys = tss}
---end, Copied where clause, do refactor.
---
 cfgStart (RWCVar x t) = local buildEnv $ do
                          si  <- tyWidth ti
                          so  <- tyWidth to

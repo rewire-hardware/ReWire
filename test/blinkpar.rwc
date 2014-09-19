@@ -17,7 +17,12 @@ is
 end
 
 
-start :: <ReT (Tuple2 Unit Unit) (Tuple2 Bit Bit) I><()>
+blinkpar :: <ReT (Tuple2 Unit Unit) (Tuple2 Bit Bit) I><()>
 is
   par blink0 blink1
+end
+
+start :: <ReT (Tuple2 Unit Unit) (Tuple2 Bit Bit) I><()>
+is
+  blinkpar
 end
