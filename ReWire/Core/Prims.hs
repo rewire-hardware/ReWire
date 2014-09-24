@@ -30,12 +30,12 @@ prims = [(mkId "return",[mkId "a",mkId "m"]          :-> v "a" `mkArrow` RWCTyCo
                                                            RWCTyComp (reT (v "i") (v "o") (v "m"))
                                                                      (c "Tuple2" `RWCTyApp` (v "a") `RWCTyApp` (v "s"))),
          --par :: ReacT i1 o1 m a -> ReacT i2 o2 m a -> ReacT (i1,i2) (o1,o2) m a
-         (mkId "par", [mkId "i",mkId "o",mkId "m", mkId "a", mkId "j", mkId "p"] :-> RWCTyComp (reT (v "i") (v "o") (v "m")) (v "a") `mkArrow`
-                                                                                     RWCTyComp (reT (v "j") (v "p") (v "m")) (v "a") `mkArrow`
-                                                                                     RWCTyComp (reT (c "Tuple2" `RWCTyApp` (v "i") `RWCTyApp` (v "j"))
-                                                                                                    (c "Tuple2" `RWCTyApp` (v "o") `RWCTyApp` (v "p"))
-                                                                                                    (v "m"))
-                                                                                                    (v "a")),
+         (mkId "par", [mkId "i",mkId "o",mkId "m", mkId "a", mkId "j", mkId "p",mkId "s", mkId "t"] :-> RWCTyComp (reT (v "i") (v "o") (stT (v "s") (v "m"))) (v "a") `mkArrow`
+                                                                                                        RWCTyComp (reT (v "j") (v "p") (stT (v "t") (v "m"))) (v "a") `mkArrow`
+                                                                                                        RWCTyComp (reT (c "Tuple2" `RWCTyApp` (v "i") `RWCTyApp` (v "j"))
+                                                                                                                       (c "Tuple2" `RWCTyApp` (v "o") `RWCTyApp` (v "p"))
+                                                                                                                       (stT (c "Tuple2" `RWCTyApp` (v "s") `RWCTyApp` (v "t")) (v "m")))
+                                                                                                                       (v "a")),
          --refold :: (Monad m) => (o1 -> o2) -> (o1 -> i2 -> i1) -> ReacT i1 o1 m a -> ReacT i2 o2 m a
          (mkId "refold", [mkId "o",mkId "p", mkId "i", mkId "j", mkId "m", mkId "a"] :-> ((v "o") `mkArrow` (v "p")) `mkArrow`
                                                                                          ((v "o") `mkArrow` (v "j") `mkArrow` (v "i")) `mkArrow`

@@ -731,15 +731,23 @@ cfgStart (RWCVar x t) = local buildEnv $ do
            _ -> error "cfgStart: start has malformed type (not a computation with outer monad ReT)"
 cfgStart _ = fail "cfgStart: malformed start expression"
 
-cfgProg :: CGM ()
-cfgProg = do md <- lift $ lift $ queryG (mkId "start")
-             case md of
-              Nothing              -> fail "cfgProg: `start' not defined"
-              Just (RWCDefn _ _ e) -> cfgStart e
+splitExprs :: RWCExp -> [RWCExp]
+splitExprs tot@(RWCApp (RWCApp (RWCVar x _) e) e') | x == mkId "par" = splitExprs e ++ splitExprs e'
+splitExprs e = [e]
 
-cfgFromRW :: RWCProg -> CFG
-cfgFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
-  where doit    = do cfgProg
+cfgProg :: RWCExpr -> CGM ()
+cfgProg e = do md <- lift $ lift $ queryG (mkId "start")
+               cfgStart e
+             --case md of
+             -- Nothing              -> fail "cfgProg: `start' not defined"
+             -- Just (RWCDefn _ _ e) -> do let es = splitExprs e
+             --                            cfgStart e
+
+cfgFromRW :: RWCProg -> [CFG]
+cfgFromRW p_ =  
+  where 
+        tfun es  = map (\e -> fst $ runRW ctr p (runStateT (runReaderT (doit e) env0) s0))
+        doit e   = do cfgProg e
                      h <- getHeader
                      g <- getGraph
                      return (CFG { cfgHeader = h, cfgGraph = g })

@@ -68,18 +68,18 @@ vFunDefn fd = "function " ++ funDefnName fd ++ (if null params
            ++ "end " ++ funDefnName fd ++ ";\n"
       where params = funDefnParams fd
 
-toVHDL :: Prog -> String
-toVHDL p = "library ieee;\n"
+toVHDL :: String -> Prog -> String
+toVHDL e p = "library ieee;\n"
         ++ "use ieee.std_logic_1164.all;\n"
         ++ "-- Uncomment the following line if VHDL primitives are in use.\n"
         ++ "-- use prims.all;\n"
-        ++ "entity rewire is\n"
+        ++ "entity " ++ e ++ " is\n"
         ++ "  Port ( clk : in std_logic ;\n"
         ++ "         input : in std_logic_vector (0 to " ++ show (inputSize (progHeader p)-1) ++ ");\n"
         ++ "         output : out std_logic_vector (0 to " ++ show (outputSize (progHeader p)-1) ++ "));\n"
-        ++ "end rewire;\n"
+        ++ "end " ++ e ++ ";\n"
         ++ "\n"
-        ++ "architecture behavioral of rewire is\n"
+        ++ "architecture behavioral of " ++ e ++ " is\n"
         ++ "  type control_state is (" ++ intercalate "," (stateNames (progHeader p)) ++ ");\n"
         ++ indent (concatMap vFunDefnProto (funDefns (progHeader p))) ++ "\n"
         ++ indent (concatMap vFunDefn (funDefns (progHeader p))) ++ "\n"
