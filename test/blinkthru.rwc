@@ -9,12 +9,19 @@ is
   in blink0
 end
 
+blink1 :: <ReT Bit Bit (StT () I) ><()>
+is
+      bind x <- signal One
+  in  bind y <- signal x 
+  in blink0
+end
+
 blinkpar :: <ReT (Tuple2 Bit Bit) (Tuple2 Bit Bit) (StT (Tuple2 () ()) I)><()>
 is
   par blink0 blink0
 end
 
-blinkpar :: <ReT (Tuple2 Bit Bit) (Tuple2 Bit Bit) (StT (Tuple2 () ()) I)><()>
+start :: <ReT (Tuple2 Bit Bit) (Tuple2 Bit Bit) (StT (Tuple2 () ()) I)><()>
 is
   blinkpar
 end

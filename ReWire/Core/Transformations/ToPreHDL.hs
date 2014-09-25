@@ -733,9 +733,9 @@ cfgStart _ = fail "cfgStart: malformed start expression"
 
 splitExprs :: RWCExp -> [RWCExp]
 splitExprs tot@(RWCApp (RWCApp (RWCVar x _) e) e') | x == mkId "par" = splitExprs e ++ splitExprs e'
-splitExprs e = [e]
+splitExprs e = trace (show e) [e]
 
-cfgProg :: RWCExpr -> CGM ()
+cfgProg :: RWCExp -> CGM ()
 cfgProg e = do md <- lift $ lift $ queryG (mkId "start")
                cfgStart e
              --case md of
@@ -744,13 +744,30 @@ cfgProg e = do md <- lift $ lift $ queryG (mkId "start")
              --                            cfgStart e
 
 cfgFromRW :: RWCProg -> [CFG]
-cfgFromRW p_ =  
+cfgFromRW p_ = tfun $ runRW ctr p $ sexprs 
   where 
-        tfun es  = map (\e -> fst $ runRW ctr p (runStateT (runReaderT (doit e) env0) s0))
+        sexprs = do
+                  s <- queryG (mkId "start") 
+                  case s of
+                      Just (RWCDefn _ _ (RWCApp (RWCApp (RWCVar x _) e) e')) -> if x == mkId "extrude"
+                                                                                 then return $ splitExprs e
+                                                                                 else fail "cfgFromRW: Should have encountered extrude, but didn't"
+                      Just (RWCDefn _ _ v@(RWCVar x t)) -> do
+                                                             s' <- queryG x
+                                                             case s' of 
+                                                                 Nothing -> fail "cfgFromRW: start function refs a nonexistent var"
+                                                                 Just (RWCDefn _ _ z)  -> return $ splitExprs z
+                      _ -> fail "cfgFromRW: start function malformed" 
+        
+        --case runRW ctr p $ queryG (mkId "start") of
+        --                Nothing -> error "cfgFromRW: `start' not defined"
+        --                Just (RWCDefn _ _ e)  -> tfun $ splitExprs e
+
+        tfun es  = map (\e -> fst $ runRW ctr p (runStateT (runReaderT (doit e) env0) s0)) es
         doit e   = do cfgProg e
-                     h <- getHeader
-                     g <- getGraph
-                     return (CFG { cfgHeader = h, cfgGraph = g })
+                      h <- getHeader
+                      g <- getGraph
+                      return (CFG { cfgHeader = h, cfgGraph = g })
         env0    = Env { stateLayer = -1,
                         inputTy = error "input type not set",
                         outputTy = error "output type not set",
@@ -767,14 +784,19 @@ cfgFromRW p_ =
                      Map.empty)
         (p,ctr) = uniquify 0 p_
 
+devsToVHDL :: [CFG] -> String
+devsToVHDL cfgs = let zcs = zip ([0..]::[Int]) cfgs
+                   in concatMap (\(i,cfg) -> toVHDL ("rewire" ++ show i) $ elimEmpty $ gotoElim $ cfgToProg cfg) zcs
+
 cmdToCFG :: TransCommand
-cmdToCFG _ p = (Nothing,Just (mkDot $ gather $ linearize $ cfgFromRW p))
+cmdToCFG _ p = (Nothing,Just (mkDot $ gather $ linearize $ head $ cfgFromRW p))
 
 cmdToPre :: TransCommand
-cmdToPre _ p = (Nothing,Just (show (gotoElim $ cfgToProg (cfgFromRW p))))
+cmdToPre _ p = (Nothing,Just (show (gotoElim $ cfgToProg $ head $ (cfgFromRW p))))
 
 cmdToVHDL :: TransCommand
-cmdToVHDL _ p = (Nothing,Just (toVHDL (elimEmpty $ gotoElim $ cfgToProg (cfgFromRW p))))
+--cmdToVHDL _ p = (Nothing,Just (toVHDL (elimEmpty $ gotoElim $ cfgToProg (cfgFromRW p))))
+cmdToVHDL _ p = (Nothing,Just (devsToVHDL ((cfgFromRW p))))
 
 mkFunTagCheck :: DataConId -> Loc -> CGM (Cmd,Loc)
 mkFunTagCheck dci lscr = do rtm  <- freshLocBool
