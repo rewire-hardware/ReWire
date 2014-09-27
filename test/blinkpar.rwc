@@ -2,27 +2,27 @@ data Bit is Zero | One end
 data Unit is Unit end
 data Tuple2 a b is Tuple2 a b end
 
-blink0 :: <ReT Unit Bit (StT () I)><()>
+blink0 :: <ReT () Bit (StT () I)><()>
 is
       bind x <- signal Zero
   in  bind y <- signal One 
   in blink0
 end
 
-blink1 :: <ReT Unit Bit (StT () I) ><()>
+blink1 :: <ReT () Bit (StT () I) ><()>
 is
       bind x <- signal One 
   in  bind y <- signal Zero 
-  in blink0
+  in blink1
 end
 
 
-blinkpar :: <ReT (Tuple2 Unit Unit) (Tuple2 Bit Bit) (StT (Tuple2 () ()) I)><()>
+blinkpar :: <ReT (Tuple2 () ()) (Tuple2 Bit Bit) (StT (Tuple2 () ()) I)><()>
 is
   par blink0 blink1
 end
 
-start :: <ReT (Tuple2 Unit Unit) (Tuple2 Bit Bit) (StT (Tuple2 () ()) I)><()>
+start :: <ReT (Tuple2 () ()) (Tuple2 Bit Bit) (StT (Tuple2 () ()) I)><()>
 is
   blinkpar
 end
