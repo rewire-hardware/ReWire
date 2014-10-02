@@ -512,7 +512,6 @@ cfgAcExpr e = case ef of
                  case eargs of
                    [e] -> cfgExpr e
                    _   -> fail "cfgAcExpr: wrong number of arguments for return"
-                   
                RWCVar x _ | x == mkId "signal" -> do
                  case eargs of
                    [e] -> do
@@ -564,7 +563,7 @@ cfgAcExpr e = case ef of
                                  addEdge noe no (Conditional (BoolConst True))
                                  return (nie,no,r)
                    _   -> fail "cfgAcExpr: wrong number of arguments for get"
-
+{-
                RWCVar x _ | x == mkId "par" -> do 
                 case eargs of
                   [e1,e2] -> do
@@ -590,7 +589,7 @@ cfgAcExpr e = case ef of
                      addEdge exr out (Conditional (BoolConst True))
                      return (ni1,out,outr)
                   _ -> fail "cfgAcExpr: wrong number of arguments for par"
-               RWCVar x _ | x == mkId "refold" -> fail "cfgAcExpr: refold not implemented, yet"
+-}
 
                RWCVar x _                      -> do
                  -- This is required to be a tail call! Look up info for the
