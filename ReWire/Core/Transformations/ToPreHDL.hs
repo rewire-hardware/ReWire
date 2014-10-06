@@ -563,33 +563,6 @@ cfgAcExpr e = case ef of
                                  addEdge noe no (Conditional (BoolConst True))
                                  return (nie,no,r)
                    _   -> fail "cfgAcExpr: wrong number of arguments for get"
-{-
-               RWCVar x _ | x == mkId "par" -> do 
-                case eargs of
-                  [e1,e2] -> do
-                     let (ti1,to1) = reTy (typeOf e1)
-                         (ti2,to2) = reTy (typeOf e2)
-                     t1w  <- tyWidth ti1
-                     t2w  <- tyWidth ti2
-                     nil1 <- freshLocTy ti1
-                     nil2 <- freshLocTy ti2
-                     outt <- askOutputTy
-                     outr <- freshLocTy outt
-                     --slice up the input to feed it to the internal machines
-                     --TODO: Check Ranges
-                     --FIXME: Are these ranges right?
-                     ni1 <- addFreshNode (Assign nil1 (SliceRHS 0 (t1w-1) "input"))
-                     ni2 <- addFreshNode (Assign nil2 (SliceRHS t1w (t1w+(t2w-1)) "input"))
-                     (entl,exl,regl)  <- cfgAcExpr e1
-                     (entr,exr,regr)  <- cfgAcExpr e2
-                     out <- addFreshNode (Assign outr (ConcatRHS [regl,regr]))
-                     addEdge ni1 entl (Conditional (BoolConst True))
-                     addEdge exl ni2 (Conditional (BoolConst True))
-                     addEdge ni2 entr (Conditional (BoolConst True))
-                     addEdge exr out (Conditional (BoolConst True))
-                     return (ni1,out,outr)
-                  _ -> fail "cfgAcExpr: wrong number of arguments for par"
--}
 
                RWCVar x _                      -> do
                  -- This is required to be a tail call! Look up info for the
