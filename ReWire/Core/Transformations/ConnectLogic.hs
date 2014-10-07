@@ -1,12 +1,18 @@
-module ReWire.Core.Transformations.ConnectLogic where
+module ReWire.Core.Transformations.ConnectLogic(CLTree(..),
+                                                CLExp,
+                                                CLNamed,
+                                                NRe,
+                                                NCL,
+                                                flattenCLExp
+                                               )where
 
-import Prelude hiding (mapM)
+import Prelude 
 import Data.Functor
 import Control.Applicative
 import Data.Foldable
-import Data.Traversable
+import Data.Traversable hiding (mapM)
 import Data.Monoid
-import Control.Monad.Trans.State hiding (mapM)
+import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer 
 import Control.Monad.Trans.Class
 import Data.Functor.Identity
@@ -38,11 +44,11 @@ writeRe :: NRe -> CLM ()
 writeRe re = do
                 lift $ tell [re]
 
-nextLabel :: CLM Int
+nextLabel :: CLM String 
 nextLabel = do
               r <- lift $ lift $ get
               lift $ lift $ put (r+1) 
-              return r
+              return ("rwcomp" ++ show r)
 
 instance Functor CLTree where
   fmap f (Par ls)        = Par $ fmap (fmap f) ls 
@@ -72,3 +78,31 @@ clExpr e = case ef of
                 _ -> Leaf e
   where
     (ef:args) = flattenApp e
+
+rnCLExp :: CLExp -> CLM CLNamed
+rnCLExp (Leaf re) = do
+                      lbl <- nextLabel
+                      writeRe (lbl,re)
+                      return $ Leaf lbl
+rnCLExp (Par ls) = do
+                      ls' <- mapM rnCLExp ls
+                      lbl <- nextLabel
+                      writeCL (lbl,Par ls') 
+                      return $ Leaf lbl 
+rnCLExp (ReFold f1 f2 r) = do
+                             r' <- rnCLExp r
+                             lbl <- nextLabel
+                             writeCL $ (lbl,ReFold f1 f2 r')
+                             return $ Leaf lbl
+
+convCLExp :: CLExp -> (CLNamed, [NCL], [NRe])
+convCLExp cl = let (((main,labeled),exprs), _) = (runIdentity . 
+                                                  (flip runStateT 0) . 
+                                                  runWriterT . 
+                                                  runWriterT) (rnCLExp cl)
+                in (main,labeled,exprs)
+
+
+flattenCLExp :: RWCExp -> (CLNamed, [NCL], [NRe])
+flattenCLExp = convCLExp . clExpr
+
