@@ -3,7 +3,11 @@
 module ReWire.PreHDL.ToVHDL where
 
 import ReWire.PreHDL.Syntax
+import ReWire.PreHDL.ConnectLogic
 import Data.List (intercalate)
+import qualified Data.Map.Strict as Map
+
+import Debug.Trace
 
 vTy (TyBits n) = "std_logic_vector(0 to " ++ show (n-1) ++ ")"
 vTy TyBoolean  = "boolean"
@@ -68,14 +72,55 @@ vFunDefn fd = "function " ++ funDefnName fd ++ (if null params
            ++ "end " ++ funDefnName fd ++ ";\n"
       where params = funDefnParams fd
 
+clVHDL :: (String,(Int,Int),Map.Map String (Int,Int),[(String, (Prog, (Int, Int)))],[NCL]) -> String
+clVHDL (main_is,(mi,mo),iomap, ps, named) = let entities = concatMap (\(s,(p,_)) -> toVHDL s p) ps
+                                          in entities
+                                             ++ trace (show named) (concatMap (procCL iomap) named)
+                                             ++ main mi mo main_is
+
 progVHDL :: [(String,(Prog,(Int,Int)))] -> String
 progVHDL ps = let entities = concatMap (\(s,(p,_)) -> toVHDL s p) ps
                   iwidth   = foldr (\(_,(_,(i,_))) acc -> i+acc) 0 ps
                   owidth   = foldr (\(_,(_,(_,o))) acc -> o+acc) 0 ps
-            in entities ++ main iwidth owidth ps
+            in entities -- ++ main iwidth owidth ps
 
-main :: Int -> Int -> [(String,(Prog,(Int,Int)))] -> String
-main i o ps = "library ieee;\n"
+procCL :: Map.Map String (Int,Int) -> NCL -> String
+procCL m (n,(Par devs)) = let devs' = map devRefs devs 
+                              (i,o) = case Map.lookup n m of
+                                            Nothing -> trace (show n ++ show m) $ error "procCL: Encountered an unknown reference (non-leaf)."
+                                            Just z  -> z
+                           in pars i o n devs'
+  where
+    devRefs :: CLNamed -> (String,(Int,Int))
+    devRefs (Leaf s) = case Map.lookup s m of
+                              Nothing -> error "procCL: Encountered an unknown Leaf reference"
+                              Just z  -> (s,z)
+    devRefs _        = error "procCL: devRefs encountered a non-Leaf"
+procCL m (n,(ReFold _ _ _)) = error "procCL: ReFold encountered."
+procCL m (n,(Leaf _)) = error "procCL: Leaf encountered."
+
+
+pars :: Int -> Int -> String -> [(String,(Int,Int))] -> String
+pars i o n devs = "library ieee;\n"
+        ++ "use ieee.std_logic_1164.all;\n"
+        ++ "-- Uncomment the following line if VHDL primitives are in use.\n"
+        ++ "-- use prims.all;\n"
+        ++ "entity " ++ n ++ " is\n"
+        ++ "  Port ( clk : in std_logic ;\n"
+        ++ "         input : in std_logic_vector (0 to " ++ show (i-1) ++ ");\n"
+        ++ "         output : out std_logic_vector (0 to " ++ show (o-1) ++ "));\n"
+        ++ "end " ++ n ++ ";\n"
+        ++ "architecture behavioral of " ++ n ++ " is\n"
+        ++ indent (sigdecls devs)
+        ++ "begin\n"
+        ++ indent (siginlinks devs)
+        ++ indent (portMaps devs)
+        ++ indent (sigoutlinks devs)
+        ++ "\nend behavioral;\n"
+
+
+main :: Int -> Int -> String -> String
+main i o n = "library ieee;\n"
         ++ "use ieee.std_logic_1164.all;\n"
         ++ "-- Uncomment the following line if VHDL primitives are in use.\n"
         ++ "-- use prims.all;\n"
@@ -85,39 +130,37 @@ main i o ps = "library ieee;\n"
         ++ "         output : out std_logic_vector (0 to " ++ show (o-1) ++ "));\n"
         ++ "end main;\n"
         ++ "architecture structural of main is\n"
-        ++ indent (sigdecls ps)
         ++ "begin\n"
-        ++ indent (siginlinks ps)
-        ++ indent (portMaps ps)
-        ++ indent (sigoutlinks ps)
+        ++ indent ("dev : entity work." ++ n ++ "(behavioral)\n")
+        ++ (indent . indent) ("port map (clk,input,output);\n\n")
         ++ "\nend structural;\n"
 
 
-sigdecls  :: [(String,(Prog,(Int,Int)))] -> String
+sigdecls  :: [(String,(Int,Int))] -> String
 sigdecls [] = ""
-sigdecls ((n,(_,(iw,ow))):xs) =    "signal " ++ n ++ "input  : std_logic_vector(0 to " ++ show (iw - 1) ++ ");\n"
+sigdecls ((n,(iw,ow)):xs) =    "signal " ++ n ++ "input  : std_logic_vector(0 to " ++ show (iw - 1) ++ ");\n"
                                     ++ "signal " ++ n ++ "output : std_logic_vector(0 to " ++ show (ow - 1) ++ ");\n"
                                     ++ sigdecls xs
 
-siginlinks :: [(String,(Prog,(Int,Int)))] -> String
+siginlinks :: [(String,(Int,Int))] -> String
 siginlinks xs = siginlinks' 0 xs
   where
     siginlinks' _ [] = ""
-    siginlinks' i ((n,(_,(iw,_))):xs) = n ++ "input <= input(" ++ show i ++ " TO " ++ show (i + iw - 1) ++ ");\n"
-                                        ++ siginlinks' (i+iw) xs
+    siginlinks' i ((n,(iw,_)):xs) = n ++ "input <= input(" ++ show i ++ " TO " ++ show (i + iw - 1) ++ ");\n"
+                                      ++ siginlinks' (i+iw) xs
     siginlinks _ _ = error "siginlinks: encountered a bad case"
 
-sigoutlinks :: [(String,(Prog,(Int,Int)))] -> String
+sigoutlinks :: [(String,(Int,Int))] -> String
 sigoutlinks xs = "output <= " ++ sigoutlinks' 0 xs
   where
     sigoutlinks' _ [] = error "sigoutlinks: shouldn't have encountered an empty list of entities" 
-    sigoutlinks' o ((n,(_,(_,ow))):[]) = n ++ "output;"
-    sigoutlinks' o ((n,(_,(_,ow))):xs) = n ++ "output & " ++ sigoutlinks' (o+ow) xs  
+    sigoutlinks' o ((n,(_,ow)):[]) = n ++ "output;"
+    sigoutlinks' o ((n,(_,ow)):xs) = n ++ "output & " ++ sigoutlinks' (o+ow) xs  
 
-portMaps :: [(String,(Prog,(Int,Int)))] -> String
+portMaps :: [(String,(Int,Int))] -> String
 portMaps [] = ""
 portMaps ((n,_):xs) = n ++ "dev : entity work." ++ n ++ "(behavioral)\n"
-                           ++ "  port map (clk," ++ n ++ "input," ++ n ++ "output);\n\n" ++ (portMaps xs)
+                        ++ "  port map (clk," ++ n ++ "input," ++ n ++ "output);\n\n" ++ (portMaps xs)
 
 toVHDL :: String -> Prog -> String
 toVHDL e p = "library ieee;\n"

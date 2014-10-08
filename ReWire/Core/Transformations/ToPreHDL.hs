@@ -21,7 +21,7 @@ import Data.List (foldl',find,findIndex)
 import Data.Maybe (fromJust)
 
 --CL
-import ReWire.Core.Transformations.ConnectLogic
+import ReWire.PreHDL.ConnectLogic
 
 import Debug.Trace
 
@@ -165,7 +165,7 @@ tyWidth t            = {-do twc <- getTyWidthCache
                                 RWCTyVar _    -> fail $ "tyWidth: type variable encountered"
                                 RWCTyComp _ _ -> fail $ "tyWidth: computation type encountered"
                                 RWCTyCon i    -> do
-                                  Just (TyConInfo (RWCData _ _ dcs)) <- trace (show i) $ lift $ lift $ queryT i
+                                  Just (TyConInfo (RWCData _ _ dcs)) <- lift $ lift $ queryT i
                                   tagWidth <- getTagWidth i
                                   cws      <- mapM (dataConWidth i) dcs
                                   let size =  tagWidth + maximum cws
@@ -711,49 +711,32 @@ cfgStart _ = fail "cfgStart: malformed start expression"
 --splitExprs e = trace (show e) [e]
 
 cfgProg :: RWCExp -> CGM ()
-cfgProg e = do md <- lift $ lift $ queryG (mkId "start")
+cfgProg e = --do md <- lift $ lift $ queryG (mkId "start")
                cfgStart e
              --case md of
              -- Nothing              -> fail "cfgProg: `start' not defined"
              -- Just (RWCDefn _ _ e) -> do let es = splitExprs e
              --                            cfgStart e
 
-cfgCLExp :: RWCProg -> CGM ()
-cfgCLExp p_ = do
-                s <- lift $ lift $ queryG (mkId "start")
-                let s' = case s of 
-                              Just (RWCDefn _ _ (RWCApp (RWCApp (RWCVar x _) e) e')) -> if x == mkId "extrude"
-                                                                                         then e 
-                                                                                         else error "cfgFromRW: Should have encountered extrude, but didn't"
-                              Just (RWCDefn _ _ e)                                   -> e 
-                              _                                                      -> error "cfgFromRW: start function malformed"
-                let (main_is, refs, devs)  = flattenCLExp s'
-                
-                return ()
+--cfgCLExp :: RWCProg -> CGM ()
+cfgCLExp p_ = let (Leaf main_is, named_cl, devs) = runRW ctr p $ clexps 
+                  compiled_devs  = fmap (fmap tfun) devs
+                  cd' = map (\(s,(_,i)) -> (s,i)) compiled_devs
+                  (main_width,(m,_)) = runState (cTW (Leaf main_is)) (Map.fromAscList cd',named_cl)
+               in (main_is,main_width,m,compiled_devs,named_cl) 
+--cfgFromRW p_ = tfun $ runRW ctr p $ sexprs 
   where 
-       {- sexprs = do
-                  s <- queryG (mkId "start") 
-                  case s of
-                      Just (RWCDefn _ _ (RWCApp (RWCApp (RWCVar x _) e) e')) -> if x == mkId "extrude"
-                                                                                 then do
-                                                                                         let es = splitExprs e
-                                                                                         return es
-
-                                                                                 else fail "cfgFromRW: Should have encountered extrude, but didn't"
-                      Just (RWCDefn _ _ v@(RWCVar x t)) -> do
-                                                             s' <- queryG x
-                                                             case s' of 
-                                                                 Nothing -> fail "cfgFromRW: start function refs a nonexistent var"
-                                                                 Just (RWCDefn _ _ z)  -> do 
-                                                                                            let es = splitExprs z
-                                                                                            return es
-                      _ -> fail "cfgFromRW: start function malformed" 
-       -} 
-        --case runRW ctr p $ queryG (mkId "start") of
-        --                Nothing -> error "cfgFromRW: `start' not defined"
-        --                Just (RWCDefn _ _ e)  -> tfun $ splitExprs e
-
-        tfun es  = map (\e -> fst $ runRW ctr p (runStateT (runReaderT (doit e) env0) s0)) es
+        clexps :: RW (CLNamed,[NCL],[NRe])
+        clexps = do
+                  s <- queryG (mkId "start")
+                  let s' = case s of 
+                                --Just (RWCDefn _ _ (RWCApp (RWCApp (RWCVar x _) e) e')) -> if x == mkId "extrude"
+                                --                                                               then e 
+                                --                                                               else error "cfgCLExp: Should have encountered extrude, but didn't"
+                                Just (RWCDefn _ _ e)                                   -> e 
+                                --_                                                      -> error "cfgCLExp: start function malformed"
+                  return $ flattenCLExp s'
+        tfun e  = fst $ runRW ctr p (runStateT (runReaderT (doit e) env0) s0)
         doit e   = do cfgProg e
                       h <- getHeader
                       g <- getGraph
@@ -779,7 +762,38 @@ cfgCLExp p_ = do
                                                                                                                   iw <- tyWidth ti
                                                                                                                   ow <- tyWidth to
                                                                                                                   return (iw,ow)
-                           _ -> error "cfgStart: start has malformed type (not a computation with outer monad ReT)"
+                           _ -> error "cfgCLExp: start has malformed type (not a computation with outer monad ReT)"
+        --This is likely dirty and inefficient, but for now we rebuild the monad stack to get type widths
+        dt t  = fst $ runRW ctr p (runStateT (runReaderT (tyWidth t) env0) s0)
+
+        cTW :: CLNamed -> State (Map.Map String (Int,Int),[NCL]) (Int,Int) 
+        cTW (Leaf s) = do
+                          (m,names) <- get
+                          case Map.lookup s m of
+                                Just res -> return res
+                                Nothing  -> case lookup s names of
+                                                    Nothing -> fail "cfgCLExp: Constructing type widths hit an unknown leaf value."
+                                                    Just z  -> do
+                                                                res <- cTW z
+                                                                put (Map.insert s res m, names)
+                                                                return res
+        cTW (ReFold f1 f2 se) = do
+                                  res <- cTW se 
+                                  let t1 = snd $ flattenArrow $ typeOf f1
+                                      t2 = snd $ flattenArrow $ typeOf f2
+                                      owidth = dt t1
+                                      iwidth = dt t2
+                                  return (iwidth,owidth)
+
+
+
+        cTW (Par es) = do
+                        res <- mapM cTW es
+                        let res' = foldr (\(a,b) (x,y) -> (a+x,b+y)) (0,0) res
+                        return res' 
+                        
+        
+                                              
 {-
 cfgFromRW :: RWCProg -> [(CFG,(Int,Int))]
 cfgFromRW p_ = tfun $ runRW ctr p $ sexprs 
@@ -840,14 +854,16 @@ devsToVHDL cfgs = let zcs  = zip ([0..]::[Int]) cfgs
                       zcs' = map (\(i,(cfg,n)) -> ("rewire" ++ show i,(elimEmpty $ gotoElim $ cfgToProg cfg,n))) zcs
                    in progVHDL zcs'
 
---cmdToCFG :: TransCommand
---cmdToCFG _ p = (Nothing,Just (mkDot $ gather $ linearize $ fst $ head $ cfgFromRW p))
+cmdToCFG :: TransCommand
+cmdToCFG _ p = error "ToCFG disabled" --(Nothing,Just (mkDot $ gather $ linearize $ fst $ head $ cfgFromRW p))
 
---cmdToPre :: TransCommand
---cmdToPre _ p = (Nothing,Just (show (gotoElim $ cfgToProg $ fst $ head $ (cfgFromRW p))))
+cmdToPre :: TransCommand
+cmdToPre _ p = error "ToPre disabled" --(Nothing,Just (show (gotoElim $ cfgToProg $ fst $ head $ (cfgFromRW p))))
 
---cmdToVHDL :: TransCommand
---cmdToVHDL _ p = (Nothing,Just (toVHDL (elimEmpty $ gotoElim $ cfgToProg (cfgFromRW p))))
+cmdToVHDL :: TransCommand
+cmdToVHDL _ p = (Nothing,Just (clVHDL (c2p (cfgCLExp p))))
+  where
+    c2p (a,b,c,d,e) = (a,b,c,map (\(x,(y,z)) -> (x,(elimEmpty $ gotoElim $ cfgToProg y,z))) d,e)
 --cmdToVHDL _ p = (Nothing,Just (devsToVHDL ((cfgFromRW p))))
 
 mkFunTagCheck :: DataConId -> Loc -> CGM (Cmd,Loc)

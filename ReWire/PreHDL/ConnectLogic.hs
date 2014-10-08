@@ -1,4 +1,5 @@
-module ReWire.Core.Transformations.ConnectLogic(CLTree(..),
+{-#LANGUAGE RankNTypes #-}
+module ReWire.PreHDL.ConnectLogic(CLTree(..),
                                                 CLExp,
                                                 CLNamed,
                                                 NRe,
@@ -17,19 +18,18 @@ import Control.Monad.Trans.Writer
 import Control.Monad.Trans.Class
 import Data.Functor.Identity
 
-import ReWire.PreHDL.Syntax
 import ReWire.Scoping
 import ReWire.Core.Syntax
 
 type Fun = RWCExp --FIXME: Not sure what makes sense here
 
-data CLTree a  = Par [CLTree a]
-                 | ReFold Fun Fun (CLTree a)
+data CLTree f a  = Par [CLTree f a]
+                 | ReFold f f (CLTree f a)
                  | Leaf a 
                   deriving (Show)
                   
-type CLExp = CLTree RWCExp
-type CLNamed = CLTree String
+type CLExp = CLTree Fun RWCExp
+type CLNamed = CLTree Fun String
 
 type NRe = (String, RWCExp) --Named Re computations that do not contain connect logic 
 type NCL = (String, CLNamed)
@@ -50,17 +50,17 @@ nextLabel = do
               lift $ lift $ put (r+1) 
               return ("rwcomp" ++ show r)
 
-instance Functor CLTree where
+instance forall f . Functor (CLTree f) where
   fmap f (Par ls)        = Par $ fmap (fmap f) ls 
   fmap f (ReFold f1 f2 r) = ReFold f1 f2 (fmap f r) 
   fmap f (Leaf a)         = Leaf (f a)
 
-instance Foldable CLTree where
+instance forall f . Foldable (CLTree f) where
   foldMap f (Par ls) = mconcat $ map (foldMap f) ls --) `mappend` (foldMap f r)
   foldMap f (ReFold _ _ r) = foldMap f r
   foldMap f (Leaf a) = f a
 
-instance Traversable CLTree where
+instance forall f . Traversable (CLTree f) where
   traverse f (Leaf a)          = Leaf <$> f a 
   traverse f (ReFold f1 f2 re) = ReFold f1 f2 <$> traverse f re
   traverse f (Par ls)          = Par <$> (traverse (traverse f) ls) --(traverse f r)
@@ -69,7 +69,7 @@ instance Traversable CLTree where
 clExpr :: RWCExp -> CLExp 
 clExpr e = case ef of
                 RWCVar x _ | x == mkId "par"    -> case args of
-                                                      (a1:a2:[]) -> Par [clExpr $ a1,clExpr $ a2] 
+                                                      (a1:a2:[]) -> Par $ flattenPars [clExpr $ a1,clExpr $ a2] 
                                                       _ -> error "clExpr: Par wrong # args."
                 RWCVar x _ | x == mkId "refold" -> case args of
                                                       (f1:f2:re:[]) -> ReFold f1 f2 (clExpr re)
@@ -94,6 +94,11 @@ rnCLExp (ReFold f1 f2 r) = do
                              lbl <- nextLabel
                              writeCL $ (lbl,ReFold f1 f2 r')
                              return $ Leaf lbl
+
+flattenPars :: [CLExp] -> [CLExp]
+flattenPars [] = []
+flattenPars ((Par ls):xs) = (flattenPars ls) ++ (flattenPars xs)
+flattenPars (x:xs) = [x] ++ (flattenPars xs)
 
 convCLExp :: CLExp -> (CLNamed, [NCL], [NRe])
 convCLExp cl = let (((main,labeled),exprs), _) = (runIdentity . 

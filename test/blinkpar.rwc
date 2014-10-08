@@ -17,12 +17,12 @@ is
 end
 
 
-blinkpar :: <ReT (Tuple2 () ()) (Tuple2 Bit Bit) (StT (Tuple2 () ()) I)><()>
+blinkpar :: <ReT (Tuple2 (Tuple2 () ()) (Tuple2 () ())) (Tuple2 (Tuple2 Bit Bit) (Tuple2 Bit Bit)) (StT (Tuple2 (Tuple2 () ()) (Tuple2 () ())) I)><()>
 is
-  par blink0 blink1
+  par (par blink0 blink1) (par blink1 blink0)
 end
 
-start :: <ReT (Tuple2 () ()) (Tuple2 Bit Bit) (StT (Tuple2 () ()) I)><()>
+start :: <ReT (Tuple2 (Tuple2 () ()) (Tuple2 () ())) (Tuple2 (Tuple2 Bit Bit) (Tuple2 Bit Bit)) (StT (Tuple2 (Tuple2 () ()) (Tuple2 () ())) I)><()>
 is
   blinkpar
 end
