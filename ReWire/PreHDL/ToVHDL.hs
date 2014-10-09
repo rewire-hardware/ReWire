@@ -72,10 +72,10 @@ vFunDefn fd = "function " ++ funDefnName fd ++ (if null params
            ++ "end " ++ funDefnName fd ++ ";\n"
       where params = funDefnParams fd
 
-clVHDL :: (String,(Int,Int),Map.Map String (Int,Int),[(String, (Prog, (Int, Int)))],[NCL]) -> String
+clVHDL :: (String,(Int,Int),Map.Map String (Int,Int),[(String, (Prog, (Int, Int)))],[NCLF]) -> String
 clVHDL (main_is,(mi,mo),iomap, ps, named) = let entities = concatMap (\(s,(p,_)) -> toVHDL s p) ps
                                           in entities
-                                             ++ trace (show named) (concatMap (procCL iomap) named)
+                                             ++ (concatMap (procCL iomap) named)
                                              ++ main mi mo main_is
 
 progVHDL :: [(String,(Prog,(Int,Int)))] -> String
@@ -84,21 +84,52 @@ progVHDL ps = let entities = concatMap (\(s,(p,_)) -> toVHDL s p) ps
                   owidth   = foldr (\(_,(_,(_,o))) acc -> o+acc) 0 ps
             in entities -- ++ main iwidth owidth ps
 
-procCL :: Map.Map String (Int,Int) -> NCL -> String
+procCL :: Map.Map String (Int,Int) -> NCLF -> String
 procCL m (n,(Par devs)) = let devs' = map devRefs devs 
                               (i,o) = case Map.lookup n m of
-                                            Nothing -> trace (show n ++ show m) $ error "procCL: Encountered an unknown reference (non-leaf)."
+                                            Nothing -> error "procCL: Encountered an unknown reference (non-leaf)."
                                             Just z  -> z
                            in pars i o n devs'
   where
-    devRefs :: CLNamed -> (String,(Int,Int))
+    devRefs :: CLFNamed -> (String,(Int,Int))
     devRefs (Leaf s) = case Map.lookup s m of
                               Nothing -> error "procCL: Encountered an unknown Leaf reference"
                               Just z  -> (s,z)
     devRefs _        = error "procCL: devRefs encountered a non-Leaf"
-procCL m (n,(ReFold _ _ _)) = error "procCL: ReFold encountered."
-procCL m (n,(Leaf _)) = error "procCL: Leaf encountered."
 
+
+
+
+procCL m (n,(ReFold f1 f2 (Leaf dev))) = let (i,o) = case Map.lookup n m of
+                                                               Nothing -> error "procCL: Encountered an unknown reference on outer device name in refold."
+                                                               Just z  -> z
+                                             (ii,io) = case Map.lookup n m of
+                                                               Nothing -> error "procCL: Encountered an unknown reference on inner device name in refold."
+                                                               Just z  -> z
+                                             f1' = f1 {funDefnName="fout"}
+                                             f2' = f2 {funDefnName="fin"}
+                                 in "library ieee;\n"
+                                  ++ "use ieee.std_logic_1164.all;\n"
+                                  ++ "-- Uncomment the following line if VHDL primitives are in use.\n"
+                                  ++ "-- use prims.all;\n"
+                                  ++ "entity " ++ n ++ " is\n"
+                                  ++ "  Port ( clk : in std_logic ;\n"
+                                  ++ "         input : in std_logic_vector (0 to " ++ show (i-1) ++ ");\n"
+                                  ++ "         output : out std_logic_vector (0 to " ++ show (o-1) ++ "));\n"
+                                  ++ "end " ++ n ++ ";\n"
+                                  ++ "architecture behavioral of " ++ n ++ " is\n"
+                                  ++ indent ("signal dinput  : std_logic_vector(0 to " ++ show (ii-1) ++ ");\n")
+                                  ++ indent ("signal doutput : std_logic_vector(0 to " ++ show (io-1) ++ ");\n")
+                                  ++ indent (concatMap vFunDefnProto [f1',f2']) ++ "\n"
+                                  ++ indent (concatMap vFunDefn [f1',f2']) ++ "\n"
+                                  ++ "begin\n"
+                                  ++ indent "dinput  <= fin(doutput,input);\n"
+                                  ++ indent ("dev : entity work." ++ dev ++ "(behavioral)\n")
+                                  ++ (indent . indent) ("port map (clk,dinput,doutput);\n\n")
+                                  ++ indent "output <= fout(doutput);\n"
+                                  ++ "\nend behavioral;\n"
+
+procCL _ a  = error $ "procCL: Unhandled tree structure encountered: " ++ (show a)
 
 pars :: Int -> Int -> String -> [(String,(Int,Int))] -> String
 pars i o n devs = "library ieee;\n"

@@ -2,8 +2,10 @@
 module ReWire.PreHDL.ConnectLogic(CLTree(..),
                                                 CLExp,
                                                 CLNamed,
+                                                CLFNamed,
                                                 NRe,
                                                 NCL,
+                                                NCLF,
                                                 flattenCLExp
                                                )where
 
@@ -20,6 +22,7 @@ import Data.Functor.Identity
 
 import ReWire.Scoping
 import ReWire.Core.Syntax
+import ReWire.PreHDL.Syntax (FunDefn)
 
 type Fun = RWCExp --FIXME: Not sure what makes sense here
 
@@ -30,9 +33,11 @@ data CLTree f a  = Par [CLTree f a]
                   
 type CLExp = CLTree Fun RWCExp
 type CLNamed = CLTree Fun String
+type CLFNamed = CLTree FunDefn String
 
 type NRe = (String, RWCExp) --Named Re computations that do not contain connect logic 
 type NCL = (String, CLNamed)
+type NCLF = (String, CLFNamed)
 
 type CLM = WriterT [NCL] (WriterT [NRe] (StateT Int Identity))
 

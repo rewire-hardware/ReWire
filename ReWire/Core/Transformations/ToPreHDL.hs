@@ -734,7 +734,7 @@ cfgCLExp p_ = let (Leaf main_is, named_cl, devs) = runRW ctr p $ clexps
                                 --                                                               then e 
                                 --                                                               else error "cfgCLExp: Should have encountered extrude, but didn't"
                                 Just (RWCDefn _ _ e)                                   -> e 
-                                --_                                                      -> error "cfgCLExp: start function malformed"
+                                _                                                      -> error "cfgCLExp: start function malformed"
                   return $ flattenCLExp s'
         tfun e  = fst $ runRW ctr p (runStateT (runReaderT (doit e) env0) s0)
         doit e   = do cfgProg e
@@ -863,7 +863,7 @@ cmdToPre _ p = error "ToPre disabled" --(Nothing,Just (show (gotoElim $ cfgToPro
 cmdToVHDL :: TransCommand
 cmdToVHDL _ p = (Nothing,Just (clVHDL (c2p (cfgCLExp p))))
   where
-    c2p (a,b,c,d,e) = (a,b,c,map (\(x,(y,z)) -> (x,(elimEmpty $ gotoElim $ cfgToProg y,z))) d,e)
+    c2p (a,b,c,d,e) = (a,b,c,map (\(x,(y,z)) -> (x,(elimEmpty $ gotoElim $ cfgToProg y,z))) d,convNCLs p e)
 --cmdToVHDL _ p = (Nothing,Just (devsToVHDL ((cfgFromRW p))))
 
 mkFunTagCheck :: DataConId -> Loc -> CGM (Cmd,Loc)
@@ -1000,3 +1000,89 @@ funDefn n = do ms <- askFun n
                        fm          <- getFunMap                                  
                        putFunMap (Map.insert n fn fm)
                        return fn
+
+convNCLs :: RWCProg -> [NCL] -> [NCLF]
+convNCLs p_ ncls = runcgm
+  where
+        env0    = Env { stateLayer = -1,
+                        inputTy = error "input type not set",
+                        outputTy = error "output type not set",
+                        stateTys = [],
+                        varMap = Map.empty }
+        s0      = (0,CFG { cfgHeader = Header { funDefns   = [],
+                                                regDecls   = [],
+                                                stateNames = [],
+                                                startState = "", 
+                                                inputSize  = 999,
+                                                outputSize = 999 },
+                           cfgGraph = empty },
+                     Map.empty,
+                     Map.empty)
+        (p,ctr) = uniquify 0 p_
+        runcgm = fst $ runRW ctr p (runStateT (runReaderT (mapM convNCL ncls) env0) s0)
+
+convNCL :: NCL -> CGM NCLF
+convNCL (s,e) = do
+                  e' <- compRefold e
+                  return (s,e')
+
+compRefold :: CLNamed -> CGM CLFNamed
+compRefold e = case e of
+                        (Leaf a) -> return (Leaf a)
+                        (Par ls) -> do
+                                      ls' <- mapM compRefold ls
+                                      return $ Par ls'
+                        (ReFold f1 f2 r) -> do
+                                              f1' <- refoldFunExpr f1
+                                              f2' <- refoldFunExpr f2
+                                              r'  <- compRefold r
+                                              return $ ReFold f1' f2' r'
+
+refoldFunExpr :: RWCExp -> CGM FunDefn
+refoldFunExpr e = case ef of
+                       RWCApp _ _     -> fail "refoldFunExpr: app in function position (can't happen)"
+                       RWCLiteral _   -> fail "refoldFunExpr: encountered literal"
+                       RWCCon _ _     -> fail "refoldFunExpr: encountered constructor"
+                       RWCCase _ _    -> fail "refoldFunExpr: encountered case"
+                       RWCLet x el eb -> fail "refoldFunExpr: encountered let"
+                         --(cel,lel) <- refoldFunExpr el
+                         --(ceb,leb) <- binding x lel $ refoldFunExpr eb
+                         --return (cel `mkSeq` ceb,leb)
+                       e_@(RWCLam _ _ _)   -> do
+                                                  fn          <- freshFunName (mkId "rwlam")
+                                                  let (xts,e) =  peelLambdas e_
+                                                      xs      =  map fst xts
+                                                      ts      =  map snd xts
+                                                  pns         <- mapM freshLocTy ts
+                                                  psizes      <- mapM tyWidth ts
+                                                  let xrs     =  zip xs pns
+                                                  (ce,re)     <- foldr (uncurry binding) (funExpr e) xrs
+                                                  h'          <- getHeader
+                                                  let rds     =  regDecls h'
+                                                      pds     =  zipWith RegDecl pns (map TyBits psizes)
+                                                      fd      =  FunDefn fn pds rds ce re
+                                                  fm          <- getFunMap                                  
+                                                  return fd
+                       RWCVar x _     -> funDefn' x
+  where (ef:eargs) = flattenApp e
+
+funDefn' :: Id RWCExp -> CGM FunDefn 
+funDefn' n = do md <- lift $ lift $ queryG n
+                case md of
+                     Nothing               -> fail $ "funDefn': " ++ show n ++ " not defined"
+                     Just (RWCDefn _ _ e_) -> do
+                                                  fn          <- freshFunName n
+                                                  let (xts,e) =  peelLambdas e_
+                                                      xs      =  map fst xts
+                                                      ts      =  map snd xts
+                                                  pns         <- mapM freshLocTy ts
+                                                  psizes      <- mapM tyWidth ts
+                                                  let xrs     =  zip xs pns
+                                                  (ce,re)     <- foldr (uncurry binding) (funExpr e) xrs
+                                                  h'          <- getHeader
+                                                  let rds     =  regDecls h'
+                                                      pds     =  zipWith RegDecl pns (map TyBits psizes)
+                                                      fd      =  FunDefn fn pds rds ce re
+                                                  fm          <- getFunMap                                  
+                                                  putFunMap (Map.insert n fn fm)
+                                                  return fd
