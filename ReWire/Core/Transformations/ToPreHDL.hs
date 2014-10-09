@@ -1073,18 +1073,23 @@ funDefn' n = do md <- lift $ lift $ queryG n
                 case md of
                      Nothing               -> fail $ "funDefn': " ++ show n ++ " not defined"
                      Just (RWCDefn _ _ e_) -> do
-                                                  fn          <- freshFunName n
-                                                  let (xts,e) =  peelLambdas e_
-                                                      xs      =  map fst xts
-                                                      ts      =  map snd xts
-                                                  pns         <- mapM freshLocTy ts
-                                                  psizes      <- mapM tyWidth ts
-                                                  let xrs     =  zip xs pns
-                                                  (ce,re)     <- foldr (uncurry binding) (funExpr e) xrs
-                                                  h'          <- getHeader
-                                                  let rds     =  regDecls h'
-                                                      pds     =  zipWith RegDecl pns (map TyBits psizes)
-                                                      fd      =  FunDefn fn pds rds ce re
-                                                  fm          <- getFunMap                                  
-                                                  putFunMap (Map.insert n fn fm)
-                                                  return fd
+                       fn          <- freshFunName n
+                       let (xts,e) =  peelLambdas e_
+                           xs      =  map fst xts
+                           ts      =  map snd xts
+                       pns         <- mapM freshLocTy ts
+                       psizes      <- mapM tyWidth ts
+                       rr          <- freshLocTy (typeOf e)
+                       let xrs     =  zip xs pns
+                       h           <- getHeader
+                       putHeader (h { regDecls = [] })
+                       (ce,re)     <- foldr (uncurry binding) (funExpr e) xrs
+                       h'          <- getHeader
+                       let rds     =  regDecls h'
+                           pds     =  zipWith RegDecl pns (map TyBits psizes)
+                           fd      =  FunDefn fn pds rds ce re
+                       trace (show (pds,rds)) $ putHeader (h' { regDecls = regDecls h,
+                                       funDefns = fd : funDefns h' })
+                       fm          <- getFunMap                                  
+                       putFunMap (Map.insert n fn fm)
+                       return fd
