@@ -38,12 +38,12 @@ data Bytes64 = Bytes64 W8 W8 W8 W8 W8 W8 W8 W8
                        W8 W8 W8 W8 W8 W8 W8 W8 
                        W8 W8 W8 W8 W8 W8 W8 W8 
                        W8 W8 W8 W8 W8 W8 W8 W8 
-                       W8 W8 W8 W8 W8 W8 W8 W8 
+                       W8 W8 W8 W8 W8 W8 W8 W8 deriving Show
 
 
-data Words16 a = Words16 a a a a a a a a a a a a a a a a  
+data Words16 a = Words16 a a a a a a a a a a a a a a a a deriving Show
 --Making my life a little easier for testing
-{-
+
 instance Num W8 where
    fromInteger n = W8 (bbit 0) (bbit 1) (bbit 2) (bbit 3) (bbit 4) (bbit 5) (bbit 6) (bbit 7)
                   
@@ -52,7 +52,7 @@ instance Num W8 where
       bool2bit False = Low
 
       bbit = bool2bit . (testBit n)
--}   
+   
 
 
 --Constant Values for initialization
