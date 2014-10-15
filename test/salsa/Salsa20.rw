@@ -1,0 +1,430 @@
+--module Salsa20Cipher where
+--import Control.Monad.Resumption.Reactive 
+--import Prelude (undefined,Num)
+--import Control.Monad.Identity
+
+--import Data.Bits
+
+--Type shimming
+--type Id = Identity
+
+
+--End type shimming
+data Unit is end
+data Bit is High | Low end
+data W8  is W8  Bit Bit Bit Bit Bit Bit Bit Bit end
+data W16 is W16 Bit Bit Bit Bit Bit Bit Bit Bit 
+                    Bit Bit Bit Bit Bit Bit Bit Bit end
+data W32 is W32 Bit Bit Bit Bit Bit Bit Bit Bit
+                   Bit Bit Bit Bit Bit Bit Bit Bit
+                   Bit Bit Bit Bit Bit Bit Bit Bit
+                   Bit Bit Bit Bit Bit Bit Bit Bit end
+
+data Bytes16 is Bytes16 W8 W8 W8 W8 W8 W8 W8 W8 W8 W8 W8 W8 W8 W8 W8 W8 end
+
+
+data Bytes8  is Bytes8 W8 W8 W8 W8 W8 W8 W8 W8 end
+data Bytes64 is Bytes64 W8 W8 W8 W8 W8 W8 W8 W8 
+                       W8 W8 W8 W8 W8 W8 W8 W8 
+                       W8 W8 W8 W8 W8 W8 W8 W8 
+                       W8 W8 W8 W8 W8 W8 W8 W8 
+                       W8 W8 W8 W8 W8 W8 W8 W8 
+                       W8 W8 W8 W8 W8 W8 W8 W8 
+                       W8 W8 W8 W8 W8 W8 W8 W8 
+                       W8 W8 W8 W8 W8 W8 W8 W8 end
+
+
+data Words16 a is Words16 a a a a a a a a a a a a a a a a end
+
+data Tuple2 a b is Tuple2 a b end
+data Tuple3 a b c is Tuple3 a b c end
+data Tuple4 a b c d is Tuple4 a b c d end
+
+
+vhdl add8  :: W8 -> W8 -> W8 is prim_plus
+vhdl xor32 :: W32 -> W32 -> W32 is prim_xor
+vhdl add32 :: W32 -> W32 -> W32 is prim_plus
+vhdl xor512 :: Bytes64 -> Bytes64 -> Bytes64 is prim_xor
+
+--Constant Values for initialization
+--(101,120,112,97)
+sigma0 :: Tuple4 W8 W8 W8 W8
+is
+  Tuple4 (W8 High Low High Low Low High High Low) 
+         (W8 Low Low Low High High High High Low) 
+         (W8 Low Low Low Low High High High Low) 
+         (W8 High Low Low Low Low High High Low)
+end
+--(110,100,32,51)
+sigma1 :: Tuple4 W8 W8 W8 W8
+is
+  Tuple4 (W8 Low High High High Low High High Low)
+         (W8 Low Low High Low Low High High Low)
+         (W8 Low Low Low Low Low High Low Low)
+         (W8 High High Low Low High High Low Low) 
+end
+--(50,45,98,121)
+sigma2 :: Tuple4 W8 W8 W8 W8
+is
+  Tuple4 (W8 Low High Low Low High High Low Low) 
+         (W8 High Low High High Low High Low Low) 
+         (W8 Low High Low Low Low High High Low)
+         (W8 High Low Low High High High High Low)
+end
+--(116,101,32,107)
+sigma3 :: Tuple4 W8 W8 W8 W8 
+is
+  Tuple4 (W8 Low Low High Low High High High Low)
+         (W8 High Low High Low Low High High Low) 
+         (W8 Low Low Low Low Low High Low Low) 
+         (W8 High High Low High Low High High Low)
+end
+
+--(101,120,112,97)
+tau0 :: Tuple4 W8 W8 W8 W8
+is
+  Tuple4 (W8 High Low High Low Low High High Low)
+         (W8 Low Low Low High High High High Low) 
+         (W8 Low Low Low Low High High High Low)
+         (W8 High Low Low Low Low High High Low)
+end
+--(110,100,32,49)
+tau1 :: Tuple4 W8 W8 W8 W8
+is
+  Tuple4 (W8 Low High High High Low High High Low)
+         (W8 Low Low High Low Low High High Low)
+         (W8 Low Low Low Low Low High Low Low) 
+         (W8 High Low Low Low High High Low Low)
+end
+--(54,45,98,121)
+tau2 :: Tuple4 W8 W8 W8 W8
+is
+  Tuple4 (W8 Low High High Low High High Low Low) 
+         (W8 High Low High High Low High Low Low)
+         (W8 Low High Low Low Low High High Low)
+         (W8 High Low Low High High High High Low)
+end
+--(116,101,32,107)
+tau3 :: Tuple4 W8 W8 W8 W8
+is
+  Tuple4  (W8 Low Low High Low High High High Low)
+          (W8 High Low High Low Low High High Low)
+          (W8 Low Low Low Low Low High Low Low)
+          (W8 High High Low High Low High High Low)
+end
+
+--Primitives
+
+--Machine Messages
+--data Rsp = Init Key Key Nonce | Encrypt Message Offset | Complete
+--data Req = IReady | EReady | ReadyEmit Ciphertext | Busy
+
+--The salsa ReactT
+
+rot7  :: W32 -> W32 
+is 
+  \i -> case i of
+        {
+          (W32 b0  b1  b2  b3  b4  b5  b6  b7  
+           b8  b9  b10 b11 b12 b13 b14 b15 
+           b16 b17 b18 b19 b20 b21 b22 b23 
+           b24 b25 b26 b27 b28 b29 b30 b31) -> W32 b7 b8 b9 b10 b11 b12 b13 b14 
+                                                  b15 b16 b17 b18 b19 b20 b21 b22 
+                                                  b23 b24 b25 b26 b27 b28 b29 b30 
+                                                  b31 b0 b1 b2 b3 b4 b5 b6
+        }
+end
+
+rot9 :: W32 -> W32
+is
+  \i -> case i of
+        {
+          (W32 b0  b1  b2  b3  b4  b5  b6  b7  
+           b8  b9  b10 b11 b12 b13 b14 b15 
+           b16 b17 b18 b19 b20 b21 b22 b23 
+           b24 b25 b26 b27 b28 b29 b30 b31) -> W32 b9  b10 b11 b12 b13 b14 b15 b16
+                                                  b17 b18 b19 b20 b21 b22 b23 b24 
+                                                  b25 b26 b27 b28 b29 b30 b31 b0
+                                                  b1  b2  b3  b4  b5  b6  b7  b8
+        }
+end
+rot13 :: W32 -> W32
+is
+  \i -> case i of
+        {
+          (W32 b0  b1  b2  b3  b4  b5  b6  b7  
+            b8  b9  b10 b11 b12 b13 b14 b15 
+            b16 b17 b18 b19 b20 b21 b22 b23 
+            b24 b25 b26 b27 b28 b29 b30 b31) -> W32 b13 b14 b15 b16 b17 b18 b19 b20
+                                                   b21 b22 b23 b24 b25 b26 b27 b28
+                                                   b29 b30 b31 b0  b1  b2  b3  b4
+                                                   b5  b6  b7  b8  b9  b10 b11 b12
+        }
+end
+rot18  :: W32 -> W32
+is
+    \i -> case i of
+          {
+            (W32 b0  b1  b2  b3  b4  b5  b6  b7  
+            b8  b9  b10 b11 b12 b13 b14 b15 
+            b16 b17 b18 b19 b20 b21 b22 b23 
+            b24 b25 b26 b27 b28 b29 b30 b31) -> W32 b18 b19 b20 b21 b22 b23 b24 b25
+                                                   b26 b27 b28 b29 b30 b31 b0  b1
+                                                   b2  b3  b4  b5  b6  b7  b8  b9 
+                                                   b10 b11 b12 b13 b14 b15 b16 b17
+          }
+end
+--Converting 4-bytes in ascending order to a 32-bit little endian word 
+littleendian :: Tuple4 W8 W8 W8 W8 -> W32
+is
+  \i -> case i of
+        {
+          Tuple4 b0 b1 b2 b3 -> w16tow32le (w8to16le b3 b2) (w8to16le b1 b0)
+        }
+end
+
+--The numbers are reversed.  The "bit vector" is "big endian" or the leftmost bit is the most significant bit.
+littleendian' :: W32 -> Tuple4 W8 W8 W8 W8
+is
+  \i -> case i of
+        {
+          (W32 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 a21 a22 a23 a24 a25 a26 a27 a28 a29 a30 a31) ->
+              (W8 a24 a25 a26 a27 a28 a29 a30 a31,W8 a16 a17 a18 a19 a20 a21 a22 a23,W8 a8 a9 a10 a11 a12 a13 a14 a15, W8 a0 a1 a2 a3 a4 a5 a6 a7)
+        }
+end
+w8to16le :: W8 -> W8 -> W16
+is
+ \i -> \j -> case Tuple2 i j of
+              {
+                Tuple2 (W8 b0 b1 b2 b3 b4 b5 b6 b7) (W8 b8 b9 b10 b11 b12 b13 b14 b15) -> W16 b8 b9 b10 b11 b12 b13 b14 b15 b0 b1 b2 b3 b4 b5 b6 b7
+              }
+end
+
+w16tow32le :: W16 -> W16 -> W32
+is
+  \i -> \j -> case Tuple2 i j of
+               {
+                 Tuple2 (W16 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15) (W16 c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15) -> W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
+                                                                                                                                        c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15
+               }
+end
+expwords :: (Words16 W32) -> Bytes64
+is 
+  \i -> case i of
+        {
+          (Words16 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15) -> 
+                                                                             let   x0  = littleendian' a0 in
+                                                                             let   x1  = littleendian' a1 in
+                                                                             let   x2  = littleendian' a2 in
+                                                                             let   x3  = littleendian' a3 in
+                                                                             let   x4  = littleendian' a4 in
+                                                                             let   x5  = littleendian' a5 in
+                                                                             let   x6  = littleendian' a6 in
+                                                                             let   x7  = littleendian' a7 in
+                                                                             let   x8  = littleendian' a8 in
+                                                                             let   x9  = littleendian' a9 in
+                                                                             let   x10 = littleendian' a10 in
+                                                                             let   x11 = littleendian' a11 in
+                                                                             let   x12 = littleendian' a12 in
+                                                                             let   x13 = littleendian' a13 in
+                                                                             let   x14 = littleendian' a14 in
+                                                                             let   x15 = littleendian' a15 in case Words16 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 of
+                                                                                                               {
+                                                                                                                 Words16 
+                                                                                                                 (Tuple4 b0 b1 b2 b3)    
+                                                                                                                 (Tuple4 b4 b5 b6 b7)    
+                                                                                                                 (Tuple4 b8 b9 b10 b11)   
+                                                                                                                 (Tuple4 b12 b13 b14 b15)  
+                                                                                                                 (Tuple4 b16 b17 b18 b19)  
+                                                                                                                 (Tuple4 b20 b21 b22 b23) 
+                                                                                                                 (Tuple4 b24 b25 b26 b27)
+                                                                                                                 (Tuple4 b28 b29 b30 b31) 
+                                                                                                                 (Tuple4 b32 b33 b34 b35)
+                                                                                                                 (Tuple4 b36 b37 b38 b39) 
+                                                                                                                 (Tuple4 b40 b41 b42 b43) 
+                                                                                                                 (Tuple4 b44 b45 b46 b47) 
+                                                                                                                 (Tuple4 b48 b49 b50 b51)
+                                                                                                                 (Tuple4 b52 b53 b54 b55) 
+                                                                                                                 (Tuple4 b56 b57 b58 b59) 
+                                                                                                                 (Tuple4 b60 b61 b62 b63) -> Bytes64 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31 b32 b33 b34 b35 b36 b37 b38 b39 b40 b41 b42 b43 b44 b45 b46 b47 b48 b49 b50 b51 b52 b53 b54 b55 b56 b57 b58 b59 b60 b61 b62 b63
+                                                                                                               }
+      }
+end
+
+impwords :: Bytes64 -> (Words16 W32)
+is
+  \i -> case i of
+    {
+           (Bytes64 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 
+                  a17 a18 a19 a20 a21 a22 a23 a24 a25 a26 a27 a28 a29 a30 a31 
+                  a32 a33 a34 a35 a36 a37 a38 a39 a40 a41 a42 a43 a44 a45 a46 
+                  a47 a48 a49 a50 a51 a52 a53 a54 a55 a56 a57 a58 a59 a60 a61 a62 a63) -> let b0 = littleendian (Tuple4 a0 a1 a2 a3) in
+                                                                                          let b1 = littleendian (Tuple4 a4 a5 a6 a7) in       
+                                                                                          let b2 = littleendian (Tuple4 a8 a9 a10 a11) in    
+                                                                                          let b3 = littleendian (Tuple4 a12 a13 a14 a15) in   
+                                                                                          let b4 = littleendian (Tuple4 a16 a17 a18 a19) in  
+                                                                                          let b5 = littleendian (Tuple4 a20 a21 a22 a23) in  
+                                                                                          let b6 = littleendian (Tuple4 a24 a25 a26 a27) in  
+                                                                                          let b7 = littleendian (Tuple4 a28 a29 a30 a31) in  
+                                                                                          let b8 = littleendian (Tuple4 a32 a33 a34 a35) in  
+                                                                                          let b9 = littleendian (Tuple4 a36 a37 a38 a39) in  
+                                                                                          let b10 = littleendian (Tuple4 a40 a41 a42 a43) in  
+                                                                                          let b11 = littleendian (Tuple4 a44 a45 a46 a47) in  
+                                                                                          let b12 = littleendian (Tuple4 a48 a49 a50 a51) in  
+                                                                                          let b13 = littleendian (Tuple4 a52 a53 a54 a55) in  
+                                                                                          let b14 = littleendian (Tuple4 a56 a57 a58 a59) in  
+                                                                                          let b15 = littleendian (Tuple4 a60 a61 a62 a63)   
+                                                                                          in Words16 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
+
+    }
+end
+
+quarterRound :: Tuple4 W32 W32 W32 W32 -> Tuple4 W32 W32 W32 W32
+is
+  \i -> case i of 
+          {
+            (y0,y1,y2,y3) -> let z1 = xor32 y1 (rot7 (add32 y0 y3))  in
+                             let z2 = xor32 y2 (rot9 (add32 z1 y0))  in
+                             let z3 = xor32 y3 (rot13 (add32 z2 z1)) in
+                             let z0 = xor32 y0 (rot18 (add32 z3 z2))
+                              in (z0,z1,z2,z3)
+          }
+end
+
+rowRound :: Words16 W32 -> Words16 W32
+is
+  \i -> case i of
+        {
+          (Words16 y0 y1 y2 y3
+                   y4 y5 y6 y7
+                   y8 y9 y10 y11
+                   y12 y13 y14 y15) -> let x0 = quarterRound(y0,y1,y2,y3) in
+                                       let x1 = quarterRound(y5,y6,y7,y4) in
+                                       let x2 = quarterRound(y10,y11,y8,y9) in
+                                       let x3 = quarterRound(y15,y12,y13,y14) 
+                                       in case Tuple4 x0 x1 x2 x3 of
+                                            {
+                                              Tuple4
+                                                 (Tuple4 z0 z1 z2 z3)    
+                                                 (Tuple4 z5 z6 z7 z4)     
+                                                 (Tuple4 z10 z11 z8 z9)   
+                                                 (Tuple4 z15 z12 z13 z14) -> (Words16 z0 z1 z2 z3 z4 z5 z6 z7 z8 z9 z10 z11 z12 z13 z14 z15)
+                                            }
+        }
+end
+
+columnRound :: Words16 W32 -> Words16 W32
+is 
+  \i -> case i of
+        {
+       (Words16 x0 x1 x2 x3
+             x4 x5 x6 x7
+             x8 x9 x10 x11
+             x12 x13 x14 x15) -> let   z0  = quarterRound(x0,x4,x8,x12) in
+                                 let   z1  = quarterRound(x5,x9,x13,x1) in
+                                 let   z2  = quarterRound(x10,x14,x2,x6) in
+                                 let   z3  = quarterRound(x15,x3,x7,x11) 
+                               in case Tuple4 z0 z1 z2 z3 of
+                                   {
+                                      Tuple4 
+                                         (Tuple4 y0 y4 y8 y12) 
+                                         (Tuple4 y5 y9 y13 y1)
+                                         (Tuple4 y10 y14 y2 y6) 
+                                         (Tuple4 y15 y3 y7 y11) -> (Words16 y0 y1 y2 y3 y4 y5 y6 y7 y8 y9 y10 y11 y12 y13 y14 y15)
+                                   }
+        }
+
+end
+doubleRound :: Words16 W32 -> Words16 W32
+is
+  \x -> rowRound(columnRound(x))
+end
+
+salsaHash' :: Words16 W32 -> Words16 W32
+is
+  \x ->  case x of
+          {
+            (Words16 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15) ->
+                  case doubleRound(doubleRound(doubleRound(doubleRound(doubleRound(doubleRound(doubleRound(doubleRound(doubleRound(doubleRound(x)))))))))) of
+                    {
+                        (Words16 z0 z1 z2 z3 z4 z5 z6 z7 z8 z9 z10 z11 z12 z13 z14 z15) -> Words16
+                                                                                              (add32 z0 x0)
+                                                                                              (add32 z1 x1)
+                                                                                              (add32 z2 x2)
+                                                                                              (add32 z3 x3)
+                                                                                              (add32 z4 x4)
+                                                                                              (add32 z5 x5)
+                                                                                              (add32 z6 x6)
+                                                                                              (add32 z7 x7)
+                                                                                              (add32 z8 x8)
+                                                                                              (add32 z9 x9)
+                                                                                              (add32 z10 x10)
+                                                                                              (add32 z11 x11)
+                                                                                              (add32 z12 x12)
+                                                                                              (add32 z13 x13)
+                                                                                              (add32 z14 x14)
+                                                                                              (add32 z15 x15)
+                  }
+         }
+end
+
+salsaHash :: Bytes64 -> Bytes64
+is
+  \x ->expwords (salsaHash' (impwords x))
+end
+
+--Build a 256-bit frame
+--Includes the sigma paddings defined in the Salsa20 spec by Berstein
+--This function should be PE'd up in the hand-cranked PE process
+buildSalsa256 :: Bytes16 -> Bytes16 -> Bytes8 -> Bytes8 -> Bytes64
+is
+  \w -> \x -> \y -> \z -> case Tuple4 w x y z of
+                            {
+                              Tuple4 (Bytes16 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15) 
+                                     (Bytes16 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15) 
+                                     (Bytes8  n0 n1 n2 n3 n4 n5 n6 n7) 
+                                     (Bytes8 n8 n9 n10 n11 n12 n13 n14 n15) -> case Tuple4 sigma0 sigma1 sigma2 sigma3 of
+                                                                                    {
+                                                                                             Tuple4 (s0,s1,s2,s3)
+                                                                                                    (s4,s5,s6,s7)
+                                                                                                    (s8,s9,s10,s11)   
+                                                                                                    (s12,s13,s14,s15) -> salsaHash(
+                                                                                                                                    Bytes64 s0  s1  s2  s3  a0  a1  a2  a3  a4 a5 a6 a7  a8 a9 a10 a11 
+                                                                                                                                            a12 a13 a14 a15 s4  s5  s6  s7  n0 n1 n2 n3  n4  n5  n6 n7
+                                                                                                                                            n8  n9  n10 n11 n12 n13 n14 n15 s8 s9 s10 s11 b0  b1  b2 b3 
+                                                                                                                                            b4 b5 b6  b7 b8  b9  b10 b11 b12 b13 b14 b15 s12 s13 s14 s15)
+                                                                                    }
+                           }
+end
+
+key1 :: Bytes16 
+is
+  Bytes16 (W8 High Low Low Low Low Low Low Low) (W8 Low High Low Low Low Low Low Low) (W8 High High Low Low Low Low Low Low) (W8 Low Low High Low Low Low Low Low) (W8 High Low High Low Low Low Low Low) (W8 Low High High Low Low Low Low Low) (W8 High High High Low Low Low Low Low) (W8 Low Low Low High Low Low Low Low) (W8 High Low Low High Low Low Low Low) (W8 Low High Low High Low Low Low Low) (W8 High High Low High Low Low Low Low) (W8 Low Low High High Low Low Low Low) (W8 High Low High High Low Low Low Low) (W8 Low High High High Low Low Low Low) (W8 High High High High Low Low Low Low) (W8 Low Low Low Low High Low Low Low)
+end
+
+key2 :: Bytes16 
+is
+  Bytes16 (W8 High Low Low Low High Low Low Low) (W8 Low High Low Low High Low Low Low) (W8 High High Low Low High Low Low Low) (W8 Low Low High Low High Low Low Low) (W8 High Low High Low High Low Low Low) (W8 Low High High Low High Low Low Low) (W8 High High High Low High Low Low Low) (W8 Low Low Low High High Low Low Low) (W8 High Low Low High High Low Low Low) (W8 Low High Low High High Low Low Low) (W8 High High Low High High Low Low Low) (W8 Low Low High High High Low Low Low) (W8 High Low High High High Low Low Low) (W8 Low High High High High Low Low Low) (W8 High High High High High Low Low Low) (W8 Low Low Low Low Low High Low Low)
+end
+
+zerothoutput :: Bytes64
+is
+Bytes64 (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low)
+end
+
+
+step :: (Tuple3 Bytes8 Bytes8 Bytes64) -> <ReT (Tuple3 Bytes8 Bytes8 Bytes64) Bytes64 I><()>
+is
+  \x -> case x of
+         {
+          Tuple3 b0 b1 b64 -> let y = buildSalsa256 key1 key2 b0 b1
+                               in bind r <- signal (xor512 y b64)
+                                  in step r
+         }
+end
+
+start :: <ReT (Tuple3 Bytes8 Bytes8 Bytes64) Bytes64 I><()>
+is
+  bind r <- signal zerothoutput
+  in step r
+end
