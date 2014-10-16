@@ -714,8 +714,16 @@ cfgFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
                      Map.empty)
         (p,ctr) = uniquify 0 p_
 
+eu gr = gr { cfgGraph = elimUnreachable 0 (cfgGraph gr) }
+
+cmdToSCFG :: TransCommand
+cmdToSCFG _ p = (Nothing,Just (mkDot $ gather $ eu $ cfgFromRW p))
+
 cmdToCFG :: TransCommand
 cmdToCFG _ p = (Nothing,Just (mkDot $ gather $ linearize $ cfgFromRW p))
+
+cmdToPreG :: TransCommand
+cmdToPreG _ p = (Nothing,Just (show (cfgToProg (cfgFromRW p))))
 
 cmdToPre :: TransCommand
 cmdToPre _ p = (Nothing,Just (show (gotoElim $ cfgToProg (cfgFromRW p))))
