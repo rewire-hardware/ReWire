@@ -781,12 +781,14 @@ funAlt lscr tscr lres (RWCAlt p e) = do (bds,cmatch,rmatch) <- funPat lscr tscr 
                                           return (cmatch `mkSeq` If (BoolVar rmatch) (ce `mkSeq` Assign lres (LocRHS le))))
                                          bds
 
+{-
 funLastAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM Cmd
 funLastAlt lscr tscr lres (RWCAlt p e) = do (bds,cmatch,rmatch) <- funPat lscr tscr p
                                             foldr (uncurry binding) (do
                                               (ce,le) <- funExpr e
                                               return (cmatch `mkSeq` ce `mkSeq` Assign lres (LocRHS le)))
                                              bds
+-}
 
 funExpr :: RWCExp -> CGM (Cmd,Loc)
 funExpr e = case ef of
@@ -830,7 +832,7 @@ funExpr e = case ef of
                    (c_scr,r_scr) <- funExpr escr
                    r_res         <- freshLocTy (typeOf e)
                    cs_init       <- mapM (funAlt r_scr (typeOf escr) r_res) (init alts)
-                   c_last        <- funLastAlt r_scr (typeOf escr) r_res (last alts)
+                   c_last        <- funAlt r_scr (typeOf escr) r_res (last alts) -- was funLastAlt
                    return (foldr1 mkSeq (cs_init++[c_last]),r_res)
                  _  -> fail "funExpr: encountered case expression in function position"
   where (ef:eargs) = flattenApp e
