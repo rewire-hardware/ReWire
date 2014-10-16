@@ -10,7 +10,7 @@
 
 
 --End type shimming
-data Unit is end
+data Unit is Unit end
 data Bit is High | Low end
 data W8  is W8  Bit Bit Bit Bit Bit Bit Bit Bit end
 data W16 is W16 Bit Bit Bit Bit Bit Bit Bit Bit 
@@ -39,6 +39,7 @@ data Words16 a is Words16 a a a a a a a a a a a a a a a a end
 data Tuple2 a b is Tuple2 a b end
 data Tuple3 a b c is Tuple3 a b c end
 data Tuple4 a b c d is Tuple4 a b c d end
+data Tuple5 a b c d e is Tuple5 a b c d e end
 
 
 vhdl add8  :: W8 -> W8 -> W8 is prim_plus
@@ -184,7 +185,7 @@ is
 end
 
 --The numbers are reversed.  The "bit vector" is "big endian" or the leftmost bit is the most significant bit.
-littleendian' :: W32 -> Tuple4 W8 W8 W8 W8
+littleendianp :: W32 -> Tuple4 W8 W8 W8 W8
 is
   \i -> case i of
         {
@@ -213,22 +214,22 @@ is
   \i -> case i of
         {
           (Words16 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15) -> 
-                                                                             let   x0  = littleendian' a0 in
-                                                                             let   x1  = littleendian' a1 in
-                                                                             let   x2  = littleendian' a2 in
-                                                                             let   x3  = littleendian' a3 in
-                                                                             let   x4  = littleendian' a4 in
-                                                                             let   x5  = littleendian' a5 in
-                                                                             let   x6  = littleendian' a6 in
-                                                                             let   x7  = littleendian' a7 in
-                                                                             let   x8  = littleendian' a8 in
-                                                                             let   x9  = littleendian' a9 in
-                                                                             let   x10 = littleendian' a10 in
-                                                                             let   x11 = littleendian' a11 in
-                                                                             let   x12 = littleendian' a12 in
-                                                                             let   x13 = littleendian' a13 in
-                                                                             let   x14 = littleendian' a14 in
-                                                                             let   x15 = littleendian' a15 in case Words16 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 of
+                                                                             let   x0  = littleendianp a0 in
+                                                                             let   x1  = littleendianp a1 in
+                                                                             let   x2  = littleendianp a2 in
+                                                                             let   x3  = littleendianp a3 in
+                                                                             let   x4  = littleendianp a4 in
+                                                                             let   x5  = littleendianp a5 in
+                                                                             let   x6  = littleendianp a6 in
+                                                                             let   x7  = littleendianp a7 in
+                                                                             let   x8  = littleendianp a8 in
+                                                                             let   x9  = littleendianp a9 in
+                                                                             let   x10 = littleendianp a10 in
+                                                                             let   x11 = littleendianp a11 in
+                                                                             let   x12 = littleendianp a12 in
+                                                                             let   x13 = littleendianp a13 in
+                                                                             let   x14 = littleendianp a14 in
+                                                                             let   x15 = littleendianp a15 in case Words16 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 of
                                                                                                                {
                                                                                                                  Words16 
                                                                                                                  (Tuple4 b0 b1 b2 b3)    
@@ -340,7 +341,7 @@ is
   \x -> rowRound(columnRound(x))
 end
 
-salsaHash' :: Words16 W32 -> Words16 W32
+salsaHashp :: Words16 W32 -> Words16 W32
 is
   \x ->  case x of
           {
@@ -370,7 +371,7 @@ end
 
 salsaHash :: Bytes64 -> Bytes64
 is
-  \x ->expwords (salsaHash' (impwords x))
+  \x ->expwords (salsaHashp (impwords x))
 end
 
 --Build a 256-bit frame
@@ -413,18 +414,23 @@ Bytes64 (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low
 end
 
 
-step :: (Tuple3 Bytes8 Bytes8 Bytes64) -> <ReT (Tuple3 Bytes8 Bytes8 Bytes64) Bytes64 I><()>
+step :: (Tuple5 Bytes16 Bytes16 Bytes8 Bytes8 Bytes64) -> <ReT (Tuple5 Bytes16 Bytes16 Bytes8 Bytes8 Bytes64) Bytes64 I><()>
 is
   \x -> case x of
          {
-          Tuple3 b0 b1 b64 -> let y = buildSalsa256 key1 key2 b0 b1
-                               in bind r <- signal (xor512 y b64)
-                                  in step r
+          Tuple5 key1 key2 b0 b1 b64 -> let y = buildSalsa256 key1 key2 b0 b1
+                                         in bind r <- signal (xor512 y b64)
+                                            in step r
          }
 end
 
-start :: <ReT (Tuple3 Bytes8 Bytes8 Bytes64) Bytes64 I><()>
+foo :: <ReT (Tuple5 Bytes16 Bytes16 Bytes8 Bytes8 Bytes64) Bytes64 I><()>
 is
   bind r <- signal zerothoutput
   in step r
+end
+
+start :: <ReT (Tuple5 Bytes16 Bytes16 Bytes8 Bytes8 Bytes64) Bytes64 I><()>
+is
+  foo
 end
