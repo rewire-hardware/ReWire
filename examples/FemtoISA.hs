@@ -23,11 +23,28 @@ data Reg  = R0 | R1 | R2 | R3 deriving (Eq,Show)
 --data Instr = LD Addr | ST Addr | NAND Reg Reg Reg | BZ Addr deriving (Eq,Show)
 
 newtype Inputs = Inputs { dataIn :: Byte }
-                    deriving (Eq,Show)
+                    deriving (Eq)
+
+instance Show Inputs where
+  show (Inputs di) = "di = " ++ byn di
+  
 data Outputs   = Outputs { weOut   :: Bit,
                            addrOut :: Addr,
                            dataOut :: Byte }
-                    deriving (Eq,Show)
+                    deriving (Eq) --,Show)
+
+bn :: Bit -> String
+bn One  = "1"
+bn Zero = "0"
+
+an :: Addr -> String
+an = byn . addrToByte
+
+byn = show . byteToW8
+
+instance Show Outputs where
+  show o = "we = " ++ bn (weOut o) ++ " ; ao = " ++ an (addrOut o) ++ " ; do = " ++ byn (dataOut o)
+    
 data CPUState = CPUState { r0 :: Byte, r1 :: Byte, r2 :: Byte, r3 :: Byte,
                            pc :: Addr, inputs :: Inputs, outputs :: Outputs }
                          deriving (Eq,Show)
@@ -152,7 +169,7 @@ finishInstr = do pc <- getPC
                  tick
 
 ld :: Addr -> M ()
-ld a = --trace "ld" $
+ld a = trace "ld" $
         do putAddrOut a
            putWeOut Zero
            tick
@@ -170,11 +187,11 @@ st a = --trace "st" $
            putWeOut One
            tick
           
-           incrPC
+--           incrPC
            finishInstr
 
 nand :: Reg -> Reg -> Reg -> M ()
-nand rd ra rb = --trace "nand" $
+nand rd ra rb = --trace ("nand(" ++ show ra ++ "," ++ show rb ++ ")") $
                  do a <- getReg ra
                     b <- getReg rb
                     putReg rd (nandByte a b)
@@ -184,9 +201,10 @@ nand rd ra rb = --trace "nand" $
 bnz :: Addr -> M ()
 bnz a = --trace "bnz" $
          do v <- getReg R0
-            case v of
-             Byte Zero Zero Zero Zero Zero Zero Zero Zero -> incrPC
-             _                                            -> putPC a
+            trace (show v) $
+             case v of
+              Byte Zero Zero Zero Zero Zero Zero Zero Zero -> incrPC
+              _                                            -> putPC a
             finishInstr
 
 mkReg Zero Zero = R0
@@ -197,6 +215,8 @@ mkReg  One  One = R3
 loop :: M ()
 loop = do instr <- getDataIn
           --trace (show instr) $
+          s <- lift get
+          --trace (show s) $
           case instr of
             Byte Zero Zero a0 a1 a2 a3 a4 a5 -> ld (Addr a0 a1 a2 a3 a4 a5)
             Byte Zero  One a0 a1 a2 a3 a4 a5 -> st (Addr a0 a1 a2 a3 a4 a5)
@@ -207,6 +227,7 @@ loop = do instr <- getDataIn
 reset :: M ()
 reset = do putPC (Addr Zero Zero Zero Zero Zero Zero)
            putDataOut (Byte Zero Zero Zero Zero Zero Zero Zero Zero)
+           tick
            finishInstr
            loop
 
@@ -219,17 +240,28 @@ extrude (ReacT m) s = ReacT (runStateT m s >>= \ (dp,s') ->
 
 start :: ReT Inputs Outputs I ((),CPUState)
 start = extrude reset initState
-  where initState = CPUState { r0 = byteZero, r1 = byteZero, r2 = byteZero, r3 = byteZero, pc = addrZero, outputs = initOutputs, inputs = initInputs }
-        initOutputs = Outputs { weOut = Zero, addrOut = addrZero, dataOut = byteZero }
+  where initState = CPUState { r0 = byteZero,
+                               r1 = byteZero,
+                               r2 = byteZero,
+                               r3 = byteZero,
+                               pc = addrZero,
+                               outputs = initOutputs,
+                               inputs = initInputs }
+        initOutputs = Outputs { weOut = Zero,
+                                addrOut = addrZero,
+                                dataOut = byteZero }
         initInputs  = Inputs { dataIn = byteZero }
         byteZero = Byte Zero Zero Zero Zero Zero Zero Zero Zero
         addrZero = Addr Zero Zero Zero Zero Zero Zero
 
 --test :: [Outputs]
-test = glukk start
-  where glukk phi = case runIdentity (deReacT phi) of
-                      Left _      -> []
-                      Right (o,k) -> (f o,o) : glukk (k (f o))
+test = zip os inputs
+  where os                 = outputs start inputs
+        outputs phi (i:is) = case runIdentity (deReacT phi) of
+                               Left _      -> []
+                               Right (o,k) -> o : outputs (k i) is
+        inputs             = in0 : map f os
+        in0 = Inputs (Byte Zero Zero Zero Zero Zero Zero Zero Zero)
         f o = --trace (show (weOut o)) $
                case addrOut o of
                 Addr Zero Zero Zero Zero Zero Zero -> Inputs (Byte One Zero Zero Zero Zero Zero Zero Zero)
