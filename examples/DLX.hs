@@ -351,6 +351,21 @@ w32_8 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero
             Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
             Zero Zero One Zero Zero Zero
 
+{-
+beqz rs1 offset = do v1 <- getReg rs1
+                     z  <- getReg R0  -- i.e., always zero.
+                     if v1==z 
+                       then
+                          pc <- getPC
+                          let se_offset = signextend26_to_32 offset
+                          let pc'       = plusW32 (plusW32 pc w32_4 Zero) se_offset Zero
+                          setPC pc'
+                          tick
+                       else
+                     tick
+                     
+-}
+
 -- Jump
 j :: W26 -> DLXM ()
 j offset = do pc <- getPC
