@@ -318,6 +318,20 @@ putCFlag :: Bit -> DLXM ()
 putCFlag b = do s <- getState
                 putState (s { cFlag = b })
 
+signextend26_to_32 :: W26 -> W32
+signextend26_to_32 (W26 Zero b24 b23 b22 b21 b20 b19 b18 b17 b16 b15 b14 
+                        b13 b12 b11 b10 b9 b8 b7 b6 b5 b4 b3 b2 b1 b0)
+                         = W32 Zero Zero Zero Zero Zero Zero Zero 
+                               b24 b23 b22 b21 b20 b19 b18 b17 
+                               b16 b15 b14 b13 b12 b11 b10 b9 
+                               b8 b7 b6 b5 b4 b3 b2 b1 b0
+signextend26_to_32 (W26 One b24 b23 b22 b21 b20 b19 b18 b17 b16 b15 b14 
+                        b13 b12 b11 b10 b9 b8 b7 b6 b5 b4 b3 b2 b1 b0)
+                         = W32 One One One One One One One 
+                               b24 b23 b22 b21 b20 b19 b18 b17 
+                               b16 b15 b14 b13 b12 b11 b10 b9 
+                               b8 b7 b6 b5 b4 b3 b2 b1 b0
+
 --
 -- Instructions
 --
@@ -328,6 +342,42 @@ add rD rS = do vD             <- getReg rD
                putCFlag cout  -- not sure there is a carry flag.
                putReg rD vD'
                tick
+
+w32_4 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+            Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+            Zero Zero Zero One Zero Zero
+
+w32_8 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+            Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+            Zero Zero One Zero Zero Zero
+
+-- Jump
+j :: W26 -> DLXM ()
+j offset = do pc <- getPC
+              let signext_offset = signextend26_to_32 offset
+              let pc' = plusW32 pc (plusW32 signext_offset w32_4 Zero) Zero
+              putPC pc'
+              tick
+
+-- Jump and Link
+jal :: W26 -> DLXM ()
+jal offset = do pc <- getPC
+                let signext_offset = signextend26_to_32 offset
+                let pc'  = plusW32 pc (plusW32 signext_offset w32_4 Zero) Zero
+                let r31' = plusW32 pc w32_8 Zero
+                putReg R31 r31'
+                putPC pc'
+                tick
+
+-- Jump and Link register
+jlr :: Register -> DLXM ()
+jlr rs1 = do pc <- getPC
+             let r31' = plusW32 pc w32_8 Zero
+             putReg R31 r31'
+             dst <- getReg rs1
+             putPC dst
+             tick
+
 lw rs1 rd offset = do base <- getReg rs1
                       eff_addr <- return $ plusW32 base (signextend16_32 offset) Zero
                       putWeOut Zero
