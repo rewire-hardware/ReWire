@@ -5,44 +5,87 @@ import Control.Monad.Resumption.Reactive
 import Control.Monad.State hiding (when)
 import Control.Monad.Identity hiding (when)
 
-             --Instr.	Description	Format	Opcode	Operation (C-style coding)
-data OpCodes = ADD   --add	R	0x20	Rd = Rs1 + Rs2
-             | ADDI  --add immediate	I	0x08	Rd = Rs1 + extend(immediate)
-             | AND   --and	R	0x24	Rd = Rs1 & Rs2
-             | ANDI  --and immediate	I	0x0c	Rd = Rs1 & immediate
-             | BEQZ  --branch if equal to zero	I	0x04	PC += (Rs1 == 0 ? extend(immediate) : 0)
-             | BNEZ  --branch if not equal to zero	I	0x05	PC += (Rs1 != 0 ? extend(immediate) : 0)
-             | J     --jump	J	0x02	PC += extend(value)
-             | JAL   --jump and link	J	0x03	R31 = PC + 4 ; PC += extend(value)
-             | JALR  --jump and link register	I	0x13	R31 = PC + 4 ; PC = Rs1
-             | JR    --jump register	I	0x12	PC = Rs1
-             | LHI   --load high bits	I	0x0f	Rd = immediate << 16
-             | LW    --load woRd	I	0x23	Rd = MEM[Rs1 + extend(immediate)]
-             | OR    --or	R	0x25	Rd = Rs1 | Rs2
-             | ORI   --or immediate	I	0x0d	Rd = Rs1 | immediate
-             | SEQ   --set if equal	R	0x28	Rd = (Rs1 == Rs2 ? 1 : 0)
-             | SEQI  --set if equal to immediate	I	0x18	Rd = (Rs1 == extend(immediate) ? 1 : 0)
-             | SLE   --set if less than or equal	R	0x2c	Rd = (Rs1 <= Rs2 ? 1 : 0)
-             | SLEI  --set if less than or equal to immediate	I	0x1c	Rd = (Rs1 <= extend(immediate) ? 1 : 0)
-             | SLL   --shift left logical	R	0x04	Rd = Rs1 << (Rs2 % 8)
-             | SLLI  --shift left logical immediate	I	0x14	Rd = Rs1 << (immediate % 8)
-             | SLT   --set if less than	R	0x2a	Rd = (Rs1 < Rs2 ? 1 : 0)
-             | SLTI  --set if less than immediate	I	0x1a	Rd = (Rs1 < extend(immediate) ? 1 : 0)
-             | SNE   --set if not equal	R	0x29	Rd = (Rs1 != Rs2 ? 1 : 0)
-             | SNEI  --set if not equal to immediate	I	0x19	Rd = (Rs1 != extend(immediate) ? 1 : 0)
-             | SRA   --shift right arithmetic	R	0x07	as SRL & see below
-             | SRAI  --shift right arithmetic immediate	I	0x17	as SRLI & see below
-             | SRL   --shift right logical	R	0x06	Rd = Rs1 >> (Rs2 % 8)
-             | SRLI  --shift right logical immediate	I	0x16	Rd = Rs1 >> (immediate % 8)
-             | SUB   --subtract	R	0x22	Rd = Rs1 - Rs2
-             | SUBI  --subtract immediate	I	0x0a	Rd = Rs1 - extend(immediate)
-             | SW    --store woRd	I	0x2b	MEM[Rs1 + extend(immediate)] = Rd
-             | XOR   --exclusive or	R	0x26	Rd = Rs1 ^ Rs2
-             | XORI  --exclusive or immediate	I	0x0e	Rd = Rs1 ^ immediate
+{-
+loop = do inp <- getInputs
+          case rstIn inp of
+            One  -> reset
+            Zero -> do ie   <- getIEFlag
+                       case (ie,intIn inp) of
+                         (One,One) -> interrupt
+                         _         -> case dataIn inp of
+                           W8 Zero Zero Zero Zero  rEn  wEn   b0   b1 -> mem rEn wEn (mkReg b0 b1)
+-}
 
-decode w32 = case top6 w32 of
-                  W6 Zero Zero Zero Zero Zero Zero -> rtype w32
+reset = putOutputs initOutputs
+  
+decode w6 = case w6 of
+  W6 One Zero Zero Zero Zero Zero  -> error "ADD  00100000 x20"
+  W6 Zero Zero One Zero Zero Zero  -> error "ADDI 00001000 x08"
+  W6 One Zero Zero One Zero Zero   -> error "AND  00100100 x24"
+  W6 Zero Zero One One Zero Zero   -> error "ANDI 00001100 x0c"
+  W6 Zero Zero Zero One Zero Zero  -> error "BEQZ 00000100 x04"
+  W6 Zero Zero Zero One Zero One   -> error "BNEZ 00000101 x05"
+  W6 Zero Zero Zero Zero One Zero  -> error "J    00000010 x02"
+  W6 Zero Zero Zero Zero One One   -> error "JAL  00000011 x03"
+  W6 Zero One Zero Zero One One    -> error "JALR 00010011 x13"
+  W6 Zero One Zero Zero One Zero   -> error "JR   00010010 x12"
+  W6 Zero Zero One One One One     -> error "LHI  0x0f 001111"
+  W6 One Zero Zero Zero One One    -> error "LW   0x23 100011"
+  W6 One Zero Zero One Zero One    -> error "OR   0x25 100101"
+  W6 Zero Zero One One Zero One    -> error "ORI  0x0d 001101"
+  W6 One Zero One Zero Zero Zero   -> error "SEQ  0x28 101000"
+  W6 Zero One One Zero Zero Zero   -> error "SEQI 0x18 011000"
+  W6 One Zero One One Zero Zero    -> error "SLE  0x2c 101100"
+  W6 Zero One One One Zero Zero    -> error "SLEI 0x1c 011100"
+  W6 Zero Zero Zero One Zero Zero  -> error "SLL  0x04 000100"
+  W6 Zero One Zero One Zero Zero   -> error "SLLI 0x14 010100"
+  W6 One Zero One Zero One Zero    -> error "SLT  0x2a 101010"
+  W6 Zero One One Zero One Zero    -> error "SLTI 0x1a 011010"
+  W6 One Zero One Zero Zero One    -> error "SNE  0x29 101001"
+  W6 Zero One One Zero Zero One    -> error "SNEI 0x19 011001"
+  W6 Zero Zero Zero One One One    -> error "SRA  0x07 000111"
+  W6 Zero One Zero One One One     -> error "SRAI 0x17 010111"
+  W6 Zero Zero Zero One One Zero   -> error "SRL  0x06 000110"
+  W6 Zero One Zero One One Zero    -> error "SRLI 0x16 010110"
+  W6 One Zero Zero Zero One Zero   -> error "SUB  0x22 100010"
+  W6 Zero Zero One Zero One Zero   -> error "SUBI 0x0a 001010"
+  W6 One Zero One Zero One One     -> error "SW   0x2b 101011"
+  W6 One Zero Zero One One Zero    -> error "XOR  0x26 100110"
+  W6 Zero Zero One One One  Zero   -> error "XORI 0x0e 001110"
 
+data OpCodes = ADD
+             | ADDI
+             | AND 
+             | ANDI
+             | BEQZ
+             | BNEZ
+             | J   
+             | JAL 
+             | JALR
+             | JR  
+             | LHI 
+             | LW  
+             | OR  
+             | ORI 
+             | SEQ 
+             | SEQI
+             | SLE 
+             | SLEI
+             | SLL 
+             | SLLI
+             | SLT 
+             | SLTI 
+             | SNE  
+             | SNEI 
+             | SRA  
+             | SRAI 
+             | SRL  
+             | SRLI 
+             | SUB  
+             | SUBI 
+             | SW   
+             | XOR  
+             | XORI 
 
 data Register = R0 | R1 | R2 | R3 | R4 | R5 | R6 | R7
               | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15
@@ -57,44 +100,10 @@ data Inputs = Inputs { dataIn :: W32,
 data Outputs = Outputs { addrOut :: W32,
                          dataOut :: W32,
                      --, not sure what this stuff is.
-                         weOut   :: Bit
-                     --    iackOut :: Bit 
+                         weOut   :: Bit,
+                         iackOut :: Bit 
                        }
 
---
--- new boilerplate for DLX.
---
-
-top6 (W32 b0 b1 b2 b3 b4 b5 b6 b7 _ _ _ _ _ _ _ _
-          _ _ _ _ _ _ _ _         _ _ _ _ _ _ _ _) = W6 b0 b1 b2 b3 b4 b5
-
-
-byte0, byte1, byte2, byte3 :: W32 -> W8
-byte0 (W32 b0 b1 b2 b3 b4 b5 b6 b7
-           _ _ _ _ _ _ _ _
-           _ _ _ _ _ _ _ _
-           _ _ _ _ _ _ _ _) = W8 b0 b1 b2 b3 b4 b5 b6 b7
-
-byte1 (W32 _ _ _ _ _ _ _ _
-           b0 b1 b2 b3 b4 b5 b6 b7
-           _ _ _ _ _ _ _ _
-           _ _ _ _ _ _ _ _) = W8 b0 b1 b2 b3 b4 b5 b6 b7
-
-byte2 (W32 _ _ _ _ _ _ _ _
-           _ _ _ _ _ _ _ _
-           b0 b1 b2 b3 b4 b5 b6 b7
-           _ _ _ _ _ _ _ _) = W8 b0 b1 b2 b3 b4 b5 b6 b7
-
-byte3 (W32 _ _ _ _ _ _ _ _
-           _ _ _ _ _ _ _ _
-           _ _ _ _ _ _ _ _
-           b0 b1 b2 b3 b4 b5 b6 b7) = W8 b0 b1 b2 b3 b4 b5 b6 b7
-
-data W5  =  W5 Bit Bit Bit Bit Bit
-data W6  =  W6 Bit Bit Bit Bit Bit Bit
-data W16 = W16 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
-data W26 = W26 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
-               Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 
 {- http://www.csee.umbc.edu/courses/undergraduate/411/spring96/dlx.html -}
 
@@ -136,8 +145,7 @@ rtype (W32 b31 b30 b29 b28 b27 b26 b25 b24 b23 b22 b21 b20 b19 b18 b17 b16
 data DLXState = DLXState { inputs  :: Inputs,
                            outputs :: Outputs,
                            zFlag   :: Bit,    -- some of this stuff has been
-                           cFlag   :: Bit,    -- snarfed willy nilly from 
-                           ieFlag  :: Bit,    -- MiniIsa.hs.
+                           ieFlag  :: Bit,    -- snarfed willy nilly from MiniIsa.hs.
 
                            overFlw :: Bit,
 
@@ -188,6 +196,9 @@ putState = lift . put
 putWeOut :: Bit -> DLXM ()
 putWeOut b = do o <- getOutputs
                 putOutputs (o { weOut = b })
+
+initInputs  = Inputs  { dataIn  = w32_0, rstIn = Zero, intIn = Zero }
+initOutputs = Outputs { addrOut = w32_0, dataOut = w32_0, weOut = Zero, iackOut = Zero }
 
 getDataIn :: DLXM W32
 getDataIn = do i <- getInputs
@@ -307,16 +318,6 @@ tick = do o <- getOutputs
           i <- signal o
           putInputs i
 
---
--- pretty sure there's no carry flag.
---
-getCFlag :: DLXM Bit
-getCFlag = do s <- getState
-              return (cFlag s)
-
-putCFlag :: Bit -> DLXM ()
-putCFlag b = do s <- getState
-                putState (s { cFlag = b })
 
 signextend26_to_32 :: W26 -> W32
 signextend26_to_32 (W26 Zero b24 b23 b22 b21 b20 b19 b18 b17 b16 b15 b14 
@@ -339,32 +340,30 @@ signextend26_to_32 (W26 One b24 b23 b22 b21 b20 b19 b18 b17 b16 b15 b14
 add rD rS = do vD             <- getReg rD
                vS             <- getReg rS
                let (cout,vD') =  plusCW32 vD vS Zero
-               putCFlag cout  -- not sure there is a carry flag.
                putReg rD vD'
                tick
 
-w32_4 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
-            Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
-            Zero Zero Zero One Zero Zero
+addi rD rS imm = do vS <- getReg rS
+                    let signext_imm = signextend16_32 imm
+                    let sum         = plusW32 vS signext_imm Zero
+                    putReg rD sum
+                    tick
 
-w32_8 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
-            Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
-            Zero Zero One Zero Zero Zero
-
-{-
+beqz :: Register -> W16 -> DLXM ()
 beqz rs1 offset = do v1 <- getReg rs1
-                     z  <- getReg R0  -- i.e., always zero.
-                     if v1==z 
-                       then
-                          pc <- getPC
-                          let se_offset = signextend26_to_32 offset
-                          let pc'       = plusW32 (plusW32 pc w32_4 Zero) se_offset Zero
-                          setPC pc'
-                          tick
-                       else
-                     tick
-                     
--}
+                     let se_offset = signextend16_32 offset 
+                     pc <- getPC
+                     let pc'       = plusW32 (plusW32 pc w32_4 Zero) se_offset Zero
+                     if zero v1 then putPC pc' >> tick else tick
+
+bnez :: Register -> W16 -> DLXM ()
+bnez rs1 offset = do v1 <- getReg rs1
+                     let se_offset = signextend16_32 offset 
+                     pc <- getPC
+                     let pc'       = plusW32 (plusW32 pc w32_4 Zero) se_offset Zero
+                     if zero v1 then tick else putPC pc' >> tick 
+
+zero w32 = case w32 of { (W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero) -> True ; _ -> False }
 
 -- Jump
 j :: W26 -> DLXM ()
@@ -418,6 +417,7 @@ or rd rs1 rs2 = do v1      <- getReg rs1
 --
 -- I'm not sure this is exactly the right thing to do.
 --
+signextend16_32 :: W16 -> W32
 signextend16_32 (W16 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15)
     = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
             b0   b1   b2   b3   b4   b5   b6   b7   b8   b9  b10  b11  b12  b13  b14  b15

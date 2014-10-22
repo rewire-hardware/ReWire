@@ -61,6 +61,18 @@ data W32  = W32 Bit Bit Bit Bit Bit Bit Bit Bit
                 Bit Bit Bit Bit Bit Bit Bit Bit 
               deriving Show
 
+w32_0 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+            Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+            Zero Zero Zero Zero Zero Zero
+
+w32_4 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+            Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+            Zero Zero Zero One Zero Zero
+
+w32_8 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+            Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+            Zero Zero One Zero Zero Zero
+
 --
 -- 2's complement or unsigned arithmetic. I haven't thought about this bullshit since
 -- 1989. Does it make a difference with addition here? It doesn't seem too.
@@ -212,3 +224,37 @@ f <> g = \ a -> f a >>= g
 
 
 
+--
+-- new boilerplate for DLX.
+--
+
+top6 (W32 b0 b1 b2 b3 b4 b5 b6 b7 _ _ _ _ _ _ _ _
+          _ _ _ _ _ _ _ _         _ _ _ _ _ _ _ _) = W6 b0 b1 b2 b3 b4 b5
+
+
+byte0, byte1, byte2, byte3 :: W32 -> W8
+byte0 (W32 b0 b1 b2 b3 b4 b5 b6 b7
+           _ _ _ _ _ _ _ _
+           _ _ _ _ _ _ _ _
+           _ _ _ _ _ _ _ _) = W8 b0 b1 b2 b3 b4 b5 b6 b7
+
+byte1 (W32 _ _ _ _ _ _ _ _
+           b0 b1 b2 b3 b4 b5 b6 b7
+           _ _ _ _ _ _ _ _
+           _ _ _ _ _ _ _ _) = W8 b0 b1 b2 b3 b4 b5 b6 b7
+
+byte2 (W32 _ _ _ _ _ _ _ _
+           _ _ _ _ _ _ _ _
+           b0 b1 b2 b3 b4 b5 b6 b7
+           _ _ _ _ _ _ _ _) = W8 b0 b1 b2 b3 b4 b5 b6 b7
+
+byte3 (W32 _ _ _ _ _ _ _ _
+           _ _ _ _ _ _ _ _
+           _ _ _ _ _ _ _ _
+           b0 b1 b2 b3 b4 b5 b6 b7) = W8 b0 b1 b2 b3 b4 b5 b6 b7
+
+data W5  =  W5 Bit Bit Bit Bit Bit
+data W6  =  W6 Bit Bit Bit Bit Bit Bit
+data W16 = W16 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W26 = W26 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+               Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
