@@ -414,23 +414,27 @@ Bytes64 (W8 Low Low Low Low Low Low Low Low) (W8 Low Low Low Low Low Low Low Low
 end
 
 
-step :: (Tuple5 Bytes16 Bytes16 Bytes8 Bytes8 Bytes64) -> <ReT (Tuple5 Bytes16 Bytes16 Bytes8 Bytes8 Bytes64) Bytes64 I><()>
+--step :: (Tuple5 Bytes16 Bytes16 Bytes8 Bytes8 Bytes64) -> <ReT (Tuple5 Bytes16 Bytes16 Bytes8 Bytes8 Bytes64) Bytes64 I><()>
+step :: (Tuple3 Bytes8 Bytes8 Bytes64) -> <ReT (Tuple3 Bytes8 Bytes8 Bytes64) Bytes64 I><()>
 is
   \x -> case x of
          {
-          Tuple5 key1 key2 b0 b1 b64 -> let y = buildSalsa256 key1 key2 b0 b1
+          --Tuple5 key1 key2 b0 b1 b64 -> let y = buildSalsa256 key1 key2 b0 b1
+          Tuple3 b0 b1 b64 -> let y = buildSalsa256 key1 key2 b0 b1
                                          in bind r <- signal (xor512 y b64)
                                             in step r
          }
 end
 
-foo :: <ReT (Tuple5 Bytes16 Bytes16 Bytes8 Bytes8 Bytes64) Bytes64 I><()>
+--foo :: <ReT (Tuple5 Bytes16 Bytes16 Bytes8 Bytes8 Bytes64) Bytes64 I><()>
+foo :: <ReT (Tuple3 Bytes8 Bytes8 Bytes64) Bytes64 I><()>
 is
   bind r <- signal zerothoutput
   in step r
 end
 
-start :: <ReT (Tuple5 Bytes16 Bytes16 Bytes8 Bytes8 Bytes64) Bytes64 I><()>
+--start :: <ReT (Tuple5 Bytes16 Bytes16 Bytes8 Bytes8 Bytes64) Bytes64 I><()>
+start :: <ReT (Tuple3 Bytes8 Bytes8 Bytes64) Bytes64 I><()>
 is
   foo
 end

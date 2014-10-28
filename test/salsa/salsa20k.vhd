@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 -- Uncomment the following line if VHDL primitives are in use.
-use work.prims.all;
+-- use prims.all;
 entity rwcomp0 is
   Port ( clk : in std_logic ;
          input : in std_logic_vector (0 to 639);
@@ -5591,19 +5591,16 @@ end behavioral;
 library ieee;
 use ieee.std_logic_1164.all;
 -- Uncomment the following line if VHDL primitives are in use.
-use work.prims.all;
-
+-- use prims.all;
 entity main is
   Port ( clk : in std_logic ;
-         input : in std_logic_vector (0 to 127);
-         output : out std_logic_vector (0 to 5));
+         input : in std_logic_vector (0 to 639);
+         output : out std_logic_vector (0 to 511));
 end main;
 architecture structural of main is
-	signal input2 : std_logic_vector (0 to 639);
-	signal output2 : std_logic_vector (0 to 511);
 begin
-	input2 <= input & "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
   dev : entity work.rwcomp0(behavioral)
-    port map (clk,input2,output2);
-	output <= output2(0 to 5);
+    port map (clk,input,output);
+    
+
 end structural;
