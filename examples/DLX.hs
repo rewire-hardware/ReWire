@@ -1,5 +1,6 @@
 module DLX where
 
+import Prelude hiding (and,seq,(||))
 import Boilerplate
 import Control.Monad.Resumption.Reactive
 import Control.Monad.State hiding (when)
@@ -16,42 +17,57 @@ loop = do inp <- getInputs
                            W8 Zero Zero Zero Zero  rEn  wEn   b0   b1 -> mem rEn wEn (mkReg b0 b1)
 -}
 
-reset = putOutputs initOutputs
+instrdec w32 = 
+   let
+     t6 = top6 w32
+   in
+   case t6 of 
+        W6 Zero Zero Zero Zero Zero Zero -> decodeR opcode
+            where (rs1,rs2,rd,opcode) = rtype w32
+        W6 Zero Zero Zero Zero One Zero  -> decodeJ t6
+        W6 Zero Zero Zero Zero One One   -> decodeJ t6
+        _                                -> decodeI t6
   
-decode w6 = case w6 of
-  W6 One Zero Zero Zero Zero Zero  -> error "ADD  00100000 x20"
-  W6 Zero Zero One Zero Zero Zero  -> error "ADDI 00001000 x08"
-  W6 One Zero Zero One Zero Zero   -> error "AND  00100100 x24"
-  W6 Zero Zero One One Zero Zero   -> error "ANDI 00001100 x0c"
-  W6 Zero Zero Zero One Zero Zero  -> error "BEQZ 00000100 x04"
-  W6 Zero Zero Zero One Zero One   -> error "BNEZ 00000101 x05"
-  W6 Zero Zero Zero Zero One Zero  -> error "J    00000010 x02"
-  W6 Zero Zero Zero Zero One One   -> error "JAL  00000011 x03"
-  W6 Zero One Zero Zero One One    -> error "JALR 00010011 x13"
-  W6 Zero One Zero Zero One Zero   -> error "JR   00010010 x12"
-  W6 Zero Zero One One One One     -> error "LHI  0x0f 001111"
-  W6 One Zero Zero Zero One One    -> error "LW   0x23 100011"
-  W6 One Zero Zero One Zero One    -> error "OR   0x25 100101"
-  W6 Zero Zero One One Zero One    -> error "ORI  0x0d 001101"
-  W6 One Zero One Zero Zero Zero   -> error "SEQ  0x28 101000"
-  W6 Zero One One Zero Zero Zero   -> error "SEQI 0x18 011000"
-  W6 One Zero One One Zero Zero    -> error "SLE  0x2c 101100"
-  W6 Zero One One One Zero Zero    -> error "SLEI 0x1c 011100"
-  W6 Zero Zero Zero One Zero Zero  -> error "SLL  0x04 000100"
-  W6 Zero One Zero One Zero Zero   -> error "SLLI 0x14 010100"
-  W6 One Zero One Zero One Zero    -> error "SLT  0x2a 101010"
-  W6 Zero One One Zero One Zero    -> error "SLTI 0x1a 011010"
-  W6 One Zero One Zero Zero One    -> error "SNE  0x29 101001"
-  W6 Zero One One Zero Zero One    -> error "SNEI 0x19 011001"
-  W6 Zero Zero Zero One One One    -> error "SRA  0x07 000111"
-  W6 Zero One Zero One One One     -> error "SRAI 0x17 010111"
-  W6 Zero Zero Zero One One Zero   -> error "SRL  0x06 000110"
-  W6 Zero One Zero One One Zero    -> error "SRLI 0x16 010110"
-  W6 One Zero Zero Zero One Zero   -> error "SUB  0x22 100010"
-  W6 Zero Zero One Zero One Zero   -> error "SUBI 0x0a 001010"
-  W6 One Zero One Zero One One     -> error "SW   0x2b 101011"
-  W6 One Zero Zero One One Zero    -> error "XOR  0x26 100110"
-  W6 Zero Zero One One One  Zero   -> error "XORI 0x0e 001110"
+reset = putOutputs initOutputs
+
+decodeR w6 = case w6 of
+  W6 One Zero Zero Zero Zero Zero -> error "ADD  00100000 x20"
+  W6 One Zero Zero One Zero Zero  -> error "AND  00100100 x24"
+  W6 One Zero Zero One Zero One   -> error "OR   0x25 100101"
+  W6 One Zero One Zero Zero Zero  -> error "SEQ  0x28 101000"
+  W6 One Zero One One Zero Zero   -> error "SLE  0x2c 101100"
+  W6 Zero Zero Zero One Zero Zero -> error "SLL  0x04 000100"
+  W6 One Zero One Zero One Zero   -> error "SLT  0x2a 101010"
+  W6 One Zero One Zero Zero One   -> error "SNE  0x29 101001"
+  W6 Zero Zero Zero One One One   -> error "SRA  0x07 000111"
+  W6 Zero Zero Zero One One Zero  -> error "SRL  0x06 000110"
+  W6 One Zero Zero Zero One Zero  -> error "SUB  0x22 100010"
+  W6 One Zero Zero One One Zero   -> error "XOR  0x26 100110"
+
+decodeJ w6 = case w6 of
+  W6 Zero Zero Zero Zero One Zero -> error "J    00000010 x02"
+  W6 Zero Zero Zero Zero One One  -> error "JAL  00000011 x03"
+decodeI w6 = case w6 of
+  W6 Zero Zero One Zero Zero Zero -> error "ADDI 00001000 x08"
+  W6 Zero Zero One One Zero Zero  -> error "ANDI 00001100 x0c"
+  W6 Zero Zero Zero One Zero Zero -> error "BEQZ 00000100 x04"
+  W6 Zero Zero Zero One Zero One  -> error "BNEZ 00000101 x05"
+  W6 Zero One Zero Zero One One   -> error "JALR 00010011 x13"
+  W6 Zero One Zero Zero One Zero  -> error "JR   00010010 x12"
+  W6 Zero Zero One One One One    -> error "LHI  0x0f 001111"
+  W6 One Zero Zero Zero One One   -> error "LW   0x23 100011"
+  W6 Zero Zero One One Zero One   -> error "ORI  0x0d 001101"
+  W6 Zero One One Zero Zero Zero  -> error "SEQI 0x18 011000"
+  W6 Zero One One One Zero Zero   -> error "SLEI 0x1c 011100"
+  W6 Zero One Zero One Zero Zero  -> error "SLLI 0x14 010100"
+  W6 Zero One One Zero One Zero   -> error "SLTI 0x1a 011010"
+  W6 Zero One One Zero Zero One   -> error "SNEI 0x19 011001"
+  W6 Zero One Zero One One One    -> error "SRAI 0x17 010111"
+  W6 Zero One Zero One One Zero   -> error "SRLI 0x16 010110"
+  W6 Zero Zero One Zero One Zero  -> error "SUBI 0x0a 001010"
+  W6 One Zero One Zero One One    -> error "SW   0x2b 101011"
+  W6 Zero Zero One One One Zero   -> error "XORI 0x0e 001110"
+  _                               -> error "unknown opcode"
 
 data OpCodes = ADD
              | ADDI
@@ -132,12 +148,11 @@ itype (W32 b31 b30 b29 b28 b27 b26 b25 b24 b23 b22 b21 b20 b19 b18 b17 b16
                 rd        = W5 b20 b19 b18 b17 b16 
                 immediate = W16 b15 b14 b13 b12 b11 b10 b9 b8 b7 b6 b5 b4 b3 b2 b1 b0
 
-rtype :: W32 -> (W6, W5, W5, W5, W6)
+rtype :: W32 -> (W5, W5, W5, W6)
 rtype (W32 b31 b30 b29 b28 b27 b26 b25 b24 b23 b22 b21 b20 b19 b18 b17 b16 
            b15 b14 b13 b12 b11 b10  b9  b8  b7  b6  b5  b4  b3  b2  b1  b0) 
-        = (zeros,rs1,rs2,rd,opcode)
-          where zeros     = W6 b31 b30 b29 b28 b27 b26
-                rs1       = W5 b25 b24 b23 b22 b21
+        = (rs1,rs2,rd,opcode)
+          where rs1       = W5 b25 b24 b23 b22 b21
                 rs2       = W5 b20 b19 b18 b17 b16 
                 rd        = W5 b15 b14 b13 b12 b11
                 opcode    = W6 b5 b4 b3 b2 b1 b0
@@ -318,7 +333,6 @@ tick = do o <- getOutputs
           i <- signal o
           putInputs i
 
-
 signextend26_to_32 :: W26 -> W32
 signextend26_to_32 (W26 Zero b24 b23 b22 b21 b20 b19 b18 b17 b16 b15 b14 
                         b13 b12 b11 b10 b9 b8 b7 b6 b5 b4 b3 b2 b1 b0)
@@ -337,17 +351,40 @@ signextend26_to_32 (W26 One b24 b23 b22 b21 b20 b19 b18 b17 b16 b15 b14
 -- Instructions
 --
 
+add :: Register -> 
+       Register -> 
+       ReacT Inputs Outputs (StateT DLXState Identity) ()
 add rD rS = do vD             <- getReg rD
                vS             <- getReg rS
                let (cout,vD') =  plusCW32 vD vS Zero
                putReg rD vD'
                tick
 
+addi :: Register -> 
+        Register -> 
+        W16      -> 
+        ReacT Inputs Outputs (StateT DLXState Identity) ()
 addi rD rS imm = do vS <- getReg rS
                     let signext_imm = signextend16_32 imm
                     let sum         = plusW32 vS signext_imm Zero
                     putReg rD sum
                     tick
+
+and :: Register -> 
+       Register -> 
+       Register -> 
+       ReacT Inputs Outputs (StateT DLXState Identity) ()
+and rd rs1 rs2 = do v1 <- getReg rs1
+                    v2 <- getReg rs2
+                    putReg rd (andW32 v1 v2)
+
+andi :: Register -> 
+        Register -> 
+        W16      -> 
+        ReacT Inputs Outputs (StateT DLXState Identity) ()
+andi rd rs1 imm = do v1 <- getReg rs1
+                     let imm32 = zero16 || imm 
+                     putReg rd (andW32 v1 imm32)
 
 beqz :: Register -> W16 -> DLXM ()
 beqz rs1 offset = do v1 <- getReg rs1
@@ -392,6 +429,25 @@ jlr rs1 = do pc <- getPC
              putPC dst
              tick
 
+-- Jump register
+jr :: Register -> DLXM ()
+jr rs1 = do pc <- getPC
+            dst <- getReg rs1
+            putPC dst
+            tick
+
+-- Load high bits immediate
+lhi :: Register -> W16 -> DLXM ()
+lhi rd imm = let 
+               w32 = imm || zero16
+             in 
+               putReg rd w32
+
+-- Load Word
+lw :: Register -> 
+      Register -> 
+      W16      -> 
+      ReacT Inputs Outputs (StateT DLXState Identity) ()
 lw rs1 rd offset = do base <- getReg rs1
                       eff_addr <- return $ plusW32 base (signextend16_32 offset) Zero
                       putWeOut Zero
@@ -400,18 +456,61 @@ lw rs1 rd offset = do base <- getReg rs1
                       v <- getDataIn
                       putReg rd v
 
-movi2s rd rs1    = getReg rs1 >>= putIAR >> tick
+-- It seems weird to me that there is no checking of whether 
+-- there is a special register involved with the next two.
+-- Where does that happen?
 
-movs2i rd rs1    = getIAR >>= putReg rs1 >> tick
+-- Move general purpose to special
+movi2s :: Register -> 
+          Register -> 
+          ReacT Inputs Outputs (StateT DLXState Identity) ()
+movi2s rd rs1    = getReg rs1 >>= putReg rd >> tick
 
+-- Move special to general purpose
+movs2i :: Register -> 
+          Register -> 
+          ReacT Inputs Outputs (StateT DLXState Identity) ()
+movs2i rd rs1    = getReg rs1 >>= putReg rd >> tick
+
+-- No Op
 nop :: DLXM ()
 nop              = return ()
 
+or :: Register -> 
+      Register -> 
+      Register -> 
+      ReacT Inputs Outputs (StateT DLXState Identity) ()
 or rd rs1 rs2 = do v1      <- getReg rs1
                    v2      <- getReg rs2
                    let vd =  orW32 v1 v2
                    putReg rd vd
                    tick
+
+ori :: Register -> 
+       Register -> 
+       W16      -> 
+       ReacT Inputs Outputs (StateT DLXState Identity) ()
+ori rd rs1 imm = do v1 <- getReg rs1
+                    let imm32 = zero16 || imm 
+                    putReg rd (orW32 v1 imm32)
+
+-- Set if equal
+seq rd rs1 rs2 = do v1 <- getReg rs1
+                    v2 <- getReg rs2
+                    if v1==v2
+                      then
+                        putReg rd one32
+                      else
+                        putReg rd zero32
+
+-- Set if equal to immediate
+seqi rd rs1 rs2 = do v1 <- getReg rs1
+                     v2 <- getReg rs2
+                     if v1==v2
+                       then
+                         putReg rd one32
+                       else
+                         putReg rd zero32
 
 
 --

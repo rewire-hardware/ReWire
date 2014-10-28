@@ -4,7 +4,7 @@ import Control.Monad.State hiding (when)
 import Control.Monad.Identity hiding (when)
 
 -- begin primitive boilerplate
-data Bit = Zero | One deriving Show
+data Bit = Zero | One deriving (Eq,Show)
 notBit One  = Zero
 notBit Zero = One
 eqBit One  One  = One
@@ -59,7 +59,7 @@ data W32  = W32 Bit Bit Bit Bit Bit Bit Bit Bit
                 Bit Bit Bit Bit Bit Bit Bit Bit 
                 Bit Bit Bit Bit Bit Bit Bit Bit 
                 Bit Bit Bit Bit Bit Bit Bit Bit 
-              deriving Show
+              deriving (Eq,Show)
 
 w32_0 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
             Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
@@ -160,6 +160,45 @@ plusCW32 (W32  b0  b1  b2  b3  b4  b5  b6  b7  b8  b9 b10 b11 b12 b13 b14 b15
        (co30,d30) = plusCBit b30 c30 co31
        (co31,d31) = plusCBit b31 c31 ci
 
+andW32 (W32  b0  b1  b2  b3  b4  b5  b6  b7  b8  b9 b10 b11 b12 b13 b14 b15 
+           b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31) 
+       (W32  c0  c1  c2  c3  c4  c5  c6  c7  c8  c9 c10 c11 c12 c13 c14 c15 
+           c16 c17 c18 c19 c20 c21 c22 c23 c24 c25 c26 c27 c28 c29 c30 c31) 
+         = (W32  d0  d1  d2  d3  d4  d5  d6  d7  d8  d9 d10 d11 d12 d13 d14 d15 
+                d16 d17 d18 d19 d20 d21 d22 d23 d24 d25 d26 d27 d28 d29 d30 d31) 
+      where d0  = andBit b0 c0
+            d1  = andBit b1 c1
+            d2  = andBit b2 c2
+            d3  = andBit b3 c3
+            d4  = andBit b4 c4
+            d5  = andBit b5 c5
+            d6  = andBit b6 c6
+            d7  = andBit b7 c7
+            d8  = andBit b8 c8
+            d9  = andBit b9 c9
+            d10 = andBit b10 c10
+            d11 = andBit b11 c11
+            d12 = andBit b12 c12
+            d13 = andBit b13 c13
+            d14 = andBit b14 c14
+            d15 = andBit b15 c15
+            d16 = andBit b16 c16
+            d17 = andBit b17 c17
+            d18 = andBit b18 c18
+            d19 = andBit b19 c19
+            d20 = andBit b20 c20
+            d21 = andBit b21 c21
+            d22 = andBit b22 c22
+            d23 = andBit b23 c23
+            d24 = andBit b24 c24
+            d25 = andBit b25 c25
+            d26 = andBit b26 c26
+            d27 = andBit b27 c27
+            d28 = andBit b28 c28
+            d29 = andBit b29 c29
+            d30 = andBit b30 c30
+            d31 = andBit b31 c31
+
 orW32 (W32  b0  b1  b2  b3  b4  b5  b6  b7  b8  b9 b10 b11 b12 b13 b14 b15 
            b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31) 
       (W32  c0  c1  c2  c3  c4  c5  c6  c7  c8  c9 c10 c11 c12 c13 c14 c15 
@@ -228,7 +267,7 @@ f <> g = \ a -> f a >>= g
 -- new boilerplate for DLX.
 --
 
-top6 (W32 b0 b1 b2 b3 b4 b5 b6 b7 _ _ _ _ _ _ _ _
+top6 (W32 b0 b1 b2 b3 b4 b5 _ _ _ _ _ _ _ _ _ _
           _ _ _ _ _ _ _ _         _ _ _ _ _ _ _ _) = W6 b0 b1 b2 b3 b4 b5
 
 
@@ -258,3 +297,14 @@ data W6  =  W6 Bit Bit Bit Bit Bit Bit
 data W16 = W16 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W26 = W26 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
                Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+
+zero16 = W16 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+
+zero32 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+
+one32 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero One
+
+-- concatenation
+(||) :: W16 -> W16 -> W32
+(W16 b15 b14 b13 b12 b11 b10 b9 b8 b7 b6 b5 b4 b3 b2 b1 b0) || (W16 c15 c14 c13 c12 c11 c10 c9 c8 c7 c6 c5 c4 c3 c2 c1 c0) = W32 b15 b14 b13 b12 b11 b10 b9 b8 b7 b6 b5 b4 b3 b2 b1 b0 c15 c14 c13 c12 c11 c10 c9 c8 c7 c6 c5 c4 c3 c2 c1 c0
+
