@@ -41,7 +41,6 @@ data Tuple3 a b c is Tuple3 a b c end
 data Tuple4 a b c d is Tuple4 a b c d end
 data Tuple5 a b c d e is Tuple5 a b c d e end
 
-
 vhdl add8  :: W8 -> W8 -> W8 is prim_plus
 vhdl xor32 :: W32 -> W32 -> W32 is prim_xor
 vhdl add32 :: W32 -> W32 -> W32 is prim_plus
@@ -121,21 +120,42 @@ end
 --data Req = IReady | EReady | ReadyEmit Ciphertext | Busy
 
 --The salsa ReactT
-
-rot7  :: W32 -> W32 
-is 
-  \i -> case i of
-        {
-          (W32 b0  b1  b2  b3  b4  b5  b6  b7  
-           b8  b9  b10 b11 b12 b13 b14 b15 
-           b16 b17 b18 b19 b20 b21 b22 b23 
-           b24 b25 b26 b27 b28 b29 b30 b31) -> W32 b7 b8 b9 b10 b11 b12 b13 b14 
-                                                  b15 b16 b17 b18 b19 b20 b21 b22 
-                                                  b23 b24 b25 b26 b27 b28 b29 b30 
-                                                  b31 b0 b1 b2 b3 b4 b5 b6
-        }
+rot7 :: W32 -> W32
+is
+    (\ i -> (case i of
+                 {((W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)) -> ((((((((((((((((((((((((((((((((W32 b25)
+                                                                                                                                                                                      b26)
+                                                                                                                                                                                     b27)
+                                                                                                                                                                                    b28)
+                                                                                                                                                                                   b29)
+                                                                                                                                                                                  b30)
+                                                                                                                                                                                 b31)
+                                                                                                                                                                                b0)
+                                                                                                                                                                               b1)
+                                                                                                                                                                              b2)
+                                                                                                                                                                             b3)
+                                                                                                                                                                            b4)
+                                                                                                                                                                           b5)
+                                                                                                                                                                          b6)
+                                                                                                                                                                         b7)
+                                                                                                                                                                        b8)
+                                                                                                                                                                       b9)
+                                                                                                                                                                      b10)
+                                                                                                                                                                     b11)
+                                                                                                                                                                    b12)
+                                                                                                                                                                   b13)
+                                                                                                                                                                  b14)
+                                                                                                                                                                 b15)
+                                                                                                                                                                b16)
+                                                                                                                                                               b17)
+                                                                                                                                                              b18)
+                                                                                                                                                             b19)
+                                                                                                                                                            b20)
+                                                                                                                                                           b21)
+                                                                                                                                                          b22)
+                                                                                                                                                         b23)
+                                                                                                                                                        b24)}))
 end
-
 rot9 :: W32 -> W32
 is
   \i -> case i of

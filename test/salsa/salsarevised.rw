@@ -1,5 +1,5 @@
 
-
+{-
 module Debug where
 --import Prelude (Int(..))
 import Data.Bits
@@ -223,9 +223,13 @@ word32ToW32 i = W32 (getbit 0)
     getbit = conv . (testBit i)
     conv True  = High
     conv False = Low 
+-}
+--add32 a b = word32ToW32 $ (w32ToWord32 a) + (w32ToWord32 b)
+--xor32 a b = word32ToW32 $ (w32ToWord32 a) `xor` (w32ToWord32 b)
 
-add32 a b = word32ToW32 $ (w32ToWord32 a) + (w32ToWord32 b)
-xor32 a b = word32ToW32 $ (w32ToWord32 a) `xor` (w32ToWord32 b)
+vhdl xor32 :: W32 -> W32 -> W32 is prim_plus
+vhdl add32 :: W32 -> W32 -> W32 is prim_plus
+vhdl xor512 :: Bytes64 -> Bytes64 -> Bytes64 is prim_xor
 
 bytes64ToList :: Bytes64 -> [W8]
 bytes64ToList (Bytes64 b0 b1 b2 b3 b4 b5 b6 b7
