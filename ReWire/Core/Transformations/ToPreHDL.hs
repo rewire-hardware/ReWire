@@ -1101,3 +1101,31 @@ funDefn' n = do md <- lift $ lift $ queryG n
                        fm          <- getFunMap                                  
                        putFunMap (Map.insert n fn fm)
                        return fd
+
+cfgFromRW :: RWCProg -> CFG
+cfgFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
+  where doit    = do cfgProg'
+                     h <- getHeader
+                     g <- getGraph
+                     return (CFG { cfgHeader = h, cfgGraph = g })
+        env0    = Env { stateLayer = -1,
+                        inputTy = error "input type not set",
+                        outputTy = error "output type not set",
+                        stateTys = [],
+                        varMap = Map.empty }
+        s0      = (0,CFG { cfgHeader = Header { funDefns   = [],
+                                                regDecls   = [],
+                                                stateNames = [],
+                                                startState = "", 
+                                                inputSize  = 999,
+                                                outputSize = 999 },
+                           cfgGraph = empty },
+                     Map.empty,
+                     Map.empty)
+        (p,ctr) = uniquify 0 p_
+
+cfgProg' :: CGM ()
+cfgProg' = do md <- lift $ lift $ queryG (mkId "start")
+              case md of
+                Nothing              -> fail "cfgProg: `start' not defined"
+                Just (RWCDefn _ _ e) -> cfgStart e
