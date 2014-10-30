@@ -308,3 +308,51 @@ one32 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zer
 (||) :: W16 -> W16 -> W32
 (W16 b15 b14 b13 b12 b11 b10 b9 b8 b7 b6 b5 b4 b3 b2 b1 b0) || (W16 c15 c14 c13 c12 c11 c10 c9 c8 c7 c6 c5 c4 c3 c2 c1 c0) = W32 b15 b14 b13 b12 b11 b10 b9 b8 b7 b6 b5 b4 b3 b2 b1 b0 c15 c14 c13 c12 c11 c10 c9 c8 c7 c6 c5 c4 c3 c2 c1 c0
 
+--
+-- Some phoney-baloney operations.
+--
+
+w32_lte :: W32 -> W32 -> Bool
+w32_lte = error "unimplemented"
+
+w32_lt :: W32 -> W32 -> Bool
+w32_lt = error "unimplemented"
+
+w32_ne :: W32 -> W32 -> Bool
+w32_ne = error "unimplemented"
+
+{- 
+data OpCodes = ADD
+             | ADDI
+             | AND 
+             | ANDI
+             | BEQZ
+             | BNEZ
+             | J   
+             | JAL 
+             | JALR
+             | JR  
+             | LHI 
+             | LW  
+             | OR  
+             | ORI 
+             | SEQ 
+             | SEQI
+             | SLE 
+             | SLEI
+             | SLL 
+             | SLLI
+             | SLT 
+             | SLTI 
+             | SNE  
+             | SNEI 
+             | SRA  
+             | SRAI 
+             | SRL  
+             | SRLI 
+             | SUB  
+             | SUBI 
+             | SW   
+             | XOR  
+             | XORI 
+-}
