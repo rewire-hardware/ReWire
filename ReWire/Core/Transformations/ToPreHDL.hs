@@ -854,8 +854,16 @@ devsToVHDL cfgs = let zcs  = zip ([0..]::[Int]) cfgs
                       zcs' = map (\(i,(cfg,n)) -> ("rewire" ++ show i,(elimEmpty $ gotoElim $ cfgToProg cfg,n))) zcs
                    in progVHDL zcs'
 
+eu gr = gr { cfgGraph = elimUnreachable 0 (cfgGraph gr) }
+
+cmdToSCFG :: TransCommand
+cmdToSCFG _ p = (Nothing,Just (mkDot $ gather $ eu $ cfgFromRW p))
+
 cmdToCFG :: TransCommand
 cmdToCFG _ p = error "ToCFG disabled" --(Nothing,Just (mkDot $ gather $ linearize $ fst $ head $ cfgFromRW p))
+
+cmdToPreG :: TransCommand
+cmdToPreG _ p = (Nothing,Just (show (cfgToProg (cfgFromRW p))))
 
 cmdToPre :: TransCommand
 cmdToPre _ p = error "ToPre disabled" --(Nothing,Just (show (gotoElim $ cfgToProg $ fst $ head $ (cfgFromRW p))))
