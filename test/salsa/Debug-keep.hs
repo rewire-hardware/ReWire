@@ -1,11 +1,14 @@
-
-
 module Debug where
 --import Prelude (Int(..))
 import Data.Bits
 --import Data.Functor.Identity
 import Control.Monad.Resumption.Reactive
+import Control.Concurrent.MVar
 import Data.Word
+
+import Data.Binary
+import Data.Binary.Put
+import Data.ByteString.Lazy hiding (zipWith,reverse,map,putStr)
 
 type I = IO
 type ReT = ReacT
@@ -1218,20 +1221,43 @@ zerothoutput =
            ((((((((W8 Low) Low) Low) Low) Low) Low) Low) Low))
           ((((((((W8 Low) Low) Low) Low) Low) Low) Low) Low))
          ((((((((W8 Low) Low) Low) Low) Low) Low) Low) Low))
-step :: Tuple3 Bytes8 Bytes8 Bytes64 -> {- computation -} ReT (Tuple3 Bytes8 Bytes8 Bytes64) Bytes64 I Unit
+
+step :: Tuple2 Bytes8 Bytes8 -> {- computation -} ReT (Tuple2 Bytes8 Bytes8) Bytes64 I Unit
 step =
     (\ x -> (case x of
-                 {((Tuple3 b0 b1 b64)) -> (let y = ((((buildSalsa256 key1)
+                 {((Tuple2 b0 b1)) -> (let y = ((((buildSalsa256 key1)
                                                                 key2)
                                                                b0)
-                                                              b1) in ((bind
-                                                                           (signal
-                                                                                ((xor512 y) b64)))
+                                                              b1) in ((bind (signal y))
                                                                           (\ r -> (step r))))}))
-foo :: {- computation -} ReT (Tuple3 Bytes8 Bytes8 Bytes64) Bytes64 I Unit
+foo :: {- computation -} ReT (Tuple2 Bytes8 Bytes8) Bytes64 I Unit
 foo =
     ((bind (signal zerothoutput)) (\ r -> (step r)))
-start :: {- computation -} ReT (Tuple3 Bytes8 Bytes8 Bytes64) Bytes64 I Unit
+start :: {- computation -} ReT (Tuple2 Bytes8 Bytes8) Bytes64 I Unit
 start =
     foo
+
+
+--Simulation
+convWord :: Word64 -> Bytes8
+convWord wrd = let [b0,b1,b2,b3,b4,b5,b6,b7] = map word8ToW8 $ reverse $ unpack $ runPut $ put wrd
+                in Bytes8 b0 b1 b2 b3 b4 b5 b6 b7
+
+
+zeroBytes = Bytes8 0 0 0 0 0 0 0 0
+
+simulate :: IO ()
+simulate = do
+              cn <- newMVar (0 :: Word64)
+              runReacT start (stepOutput cn)
+              return ()
+  where
+    stepOutput counter output = do
+                                  c <- takeMVar counter
+                                  putMVar counter (c+1)
+                                  print output
+                                  putStr "Enter to continue."
+                                  getLine
+                                  return (Tuple2 zeroBytes (convWord c))
+                                  
 
