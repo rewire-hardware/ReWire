@@ -87,7 +87,7 @@ progVHDL ps = let entities = concatMap (\(s,(p,_)) -> toVHDL s p) ps
 procCL :: Map.Map String (Int,Int) -> NCLF -> String
 procCL m (n,(Par devs)) = let devs' = map devRefs devs 
                               (i,o) = case Map.lookup n m of
-                                            Nothing -> error "procCL: Encountered an unknown reference (non-leaf)."
+                                            Nothing -> error $ "procCL: Encountered an unknown reference (non-leaf).  For: " ++ (show n)
                                             Just z  -> z
                            in pars i o n devs'
   where
@@ -96,6 +96,7 @@ procCL m (n,(Par devs)) = let devs' = map devRefs devs
                               Nothing -> error "procCL: Encountered an unknown Leaf reference"
                               Just z  -> (s,z)
     devRefs _        = error "procCL: devRefs encountered a non-Leaf"
+
 
 
 

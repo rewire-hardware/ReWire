@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module ReWire.Core.Transformations.ToPreHDL where
@@ -723,7 +724,7 @@ cfgCLExp p_ = let (Leaf main_is, named_cl, devs) = runRW ctr p $ clexps
                   compiled_devs  = fmap (fmap tfun) devs
                   cd' = map (\(s,(_,i)) -> (s,i)) compiled_devs
                   (main_width,(m,_)) = runState (cTW (Leaf main_is)) (Map.fromAscList cd',named_cl)
-               in (main_is,main_width,m,compiled_devs,named_cl) 
+               in trace (show (m,cd')) $ (main_is,main_width,m,compiled_devs,named_cl) 
 --cfgFromRW p_ = tfun $ runRW ctr p $ sexprs 
   where 
         clexps :: RW (CLNamed,[NCL],[NRe])
@@ -777,20 +778,20 @@ cfgCLExp p_ = let (Leaf main_is, named_cl, devs) = runRW ctr p $ clexps
                                                                 res <- cTW z
                                                                 put (Map.insert s res m, names)
                                                                 return res
-        cTW (ReFold f1 f2 se) = do
-                                  res <- cTW se 
+        cTW rf@(ReFold f1 f2 se) = do
+                                  !res <- trace ("NamedRes!: " ++ show se) $ cTW se 
                                   let t1 = snd $ flattenArrow $ typeOf f1
                                       t2 = snd $ flattenArrow $ typeOf f2
                                       owidth = dt t1
                                       iwidth = dt t2
-                                  return (iwidth,owidth)
+                                  trace ("REFOLD!!: " ++ show rf ++ "\n\n") $ return (iwidth,owidth)
 
 
 
-        cTW (Par es) = do
-                        res <- mapM cTW es
-                        let res' = foldr (\(a,b) (x,y) -> (a+x,b+y)) (0,0) res
-                        return res' 
+        cTW p@(Par es) = do
+                          res <- mapM cTW es
+                          let res' = foldr (\(a,b) (x,y) -> (a+x,b+y)) (0,0) res
+                          trace ("PAR!!: " ++ show p) $ return res' 
                         
         
                                               
