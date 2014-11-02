@@ -776,7 +776,8 @@ cfgCLExp p_ = let (Leaf main_is, named_cl, devs) = runRW ctr p $ clexps
                                                     Nothing -> fail "cfgCLExp: Constructing type widths hit an unknown leaf value."
                                                     Just z  -> do
                                                                 res <- cTW z
-                                                                put (Map.insert s res m, names)
+                                                                (m',names') <- get
+                                                                put (Map.insert s res m', names')
                                                                 return res
         cTW rf@(ReFold f1 f2 se) = do
                                   !res <- trace ("NamedRes!: " ++ show se) $ cTW se 
