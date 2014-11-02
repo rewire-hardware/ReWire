@@ -117,7 +117,7 @@ freshFunName :: Id RWCExp -> CGM String
 freshFunName n = do c <- getC
                     putC (c+1)
                     return ("rewire_" ++ show n ++ "_" ++ show c)
-  
+{-  
 freshLocSize :: Int -> CGM Loc
 freshLocSize 0 = return "EMPTY"
 freshLocSize n = do c  <- getC
@@ -126,10 +126,27 @@ freshLocSize n = do c  <- getC
                     h  <- getHeader
                     putHeader (h { regDecls = RegDecl r (TyBits n) : regDecls h })
                     return r
+-}
+
+freshLocSize = freshLocSizePrefx "r"
+
+freshLocSizePrefx :: String -> Int -> CGM Loc
+freshLocSizePrefx _ 0 = return "EMPTY"
+freshLocSizePrefx p n = do c  <- getC
+                           putC (c+1)
+                           let r = p ++ show c
+                           h  <- getHeader
+                           putHeader (h { regDecls = RegDecl r (TyBits n) : regDecls h })
+                           return r
 
 freshLocTy :: RWCTy -> CGM Loc
 freshLocTy t = do n <- tyWidth t
                   freshLocSize n
+
+freshLocArgTy :: RWCTy -> CGM Loc
+freshLocArgTy t = do n <- tyWidth t
+                     freshLocSizePrefx "a" n
+
 
 freshLocBool :: CGM Loc
 freshLocBool = do c <- getC
@@ -780,19 +797,19 @@ cfgCLExp p_ = let (Leaf main_is, named_cl, devs) = runRW ctr p $ clexps
                                                                 put (Map.insert s res m', names')
                                                                 return res
         cTW rf@(ReFold f1 f2 se) = do
-                                  !res <- trace ("NamedRes!: " ++ show se) $ cTW se 
+                                  !res <- cTW se 
                                   let t1 = snd $ flattenArrow $ typeOf f1
                                       t2 = snd $ flattenArrow $ typeOf f2
                                       owidth = dt t1
                                       iwidth = dt t2
-                                  trace ("REFOLD!!: " ++ show rf ++ "\n\n") $ return (iwidth,owidth)
+                                  return (iwidth,owidth)
 
 
 
         cTW p@(Par es) = do
                           res <- mapM cTW es
                           let res' = foldr (\(a,b) (x,y) -> (a+x,b+y)) (0,0) res
-                          trace ("PAR!!: " ++ show p) $ return res' 
+                          return res' 
                         
         
                                               
@@ -1061,11 +1078,12 @@ refoldFunExpr e = case ef of
                          --(ceb,leb) <- binding x lel $ refoldFunExpr eb
                          --return (cel `mkSeq` ceb,leb)
                        e_@(RWCLam _ _ _)   -> do
-                                                  fn          <- freshFunName (mkId "rwlam")
+                                                  let n = (mkId "rwlam")
+                                                  fn          <- freshFunName n
                                                   let (xts,e) =  peelLambdas e_
                                                       xs      =  map fst xts
                                                       ts      =  map snd xts
-                                                  pns         <- mapM freshLocTy ts
+                                                  pns         <- mapM freshLocArgTy ts
                                                   psizes      <- mapM tyWidth ts
                                                   let xrs     =  zip xs pns
                                                   (ce,re)     <- foldr (uncurry binding) (funExpr e) xrs
@@ -1074,6 +1092,7 @@ refoldFunExpr e = case ef of
                                                       pds     =  zipWith RegDecl pns (map TyBits psizes)
                                                       fd      =  FunDefn fn pds rds ce re
                                                   fm          <- getFunMap                                  
+                                                  --putFunMap (Map.insert n fn fm)
                                                   return fd
                        RWCVar x _     -> funDefn' x
   where (ef:eargs) = flattenApp e
