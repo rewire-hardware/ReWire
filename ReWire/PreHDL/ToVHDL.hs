@@ -104,7 +104,8 @@ procCL m (n,(Par devs)) = let devs' = map devRefs devs
 procCL m (n,(ReFold f1 f2 (Leaf dev))) = let (i,o) = case Map.lookup n m of
                                                                Nothing -> error "procCL: Encountered an unknown reference on outer device name in refold."
                                                                Just z  -> z
-                                             (ii,io) = case Map.lookup n m of
+                                             --This is the interior device
+                                             (ii,io) = case Map.lookup dev m of
                                                                Nothing -> error "procCL: Encountered an unknown reference on inner device name in refold."
                                                                Just z  -> z
                                              f1' = f1 {funDefnName="fout"}

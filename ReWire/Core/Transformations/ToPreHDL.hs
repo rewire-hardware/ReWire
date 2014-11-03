@@ -117,35 +117,35 @@ freshFunName :: Id RWCExp -> CGM String
 freshFunName n = do c <- getC
                     putC (c+1)
                     return ("rewire_" ++ show n ++ "_" ++ show c)
-{-  
+
 freshLocSize :: Int -> CGM Loc
-freshLocSize 0 = return "EMPTY"
+freshLocSize 0 = do
+                 h <- getHeader
+                 let rds = regDecls h
+                     emptyreg = RegDecl "EMPTY" (TyBits 0)
+                 case elem emptyreg rds of
+                            True  -> return ()
+                            False -> putHeader (h { regDecls = RegDecl "EMPTY" (TyBits 0) : regDecls h})
+                 return "EMPTY"
 freshLocSize n = do c  <- getC
                     putC (c+1)
                     let r = "r" ++ show c
                     h  <- getHeader
                     putHeader (h { regDecls = RegDecl r (TyBits n) : regDecls h })
                     return r
--}
 
-freshLocSize = freshLocSizePrefx "r"
-
-freshLocSizePrefx :: String -> Int -> CGM Loc
-freshLocSizePrefx _ 0 = return "EMPTY"
-freshLocSizePrefx p n = do c  <- getC
-                           putC (c+1)
-                           let r = p ++ show c
-                           h  <- getHeader
-                           putHeader (h { regDecls = RegDecl r (TyBits n) : regDecls h })
-                           return r
 
 freshLocTy :: RWCTy -> CGM Loc
 freshLocTy t = do n <- tyWidth t
                   freshLocSize n
 
-freshLocArgTy :: RWCTy -> CGM Loc
-freshLocArgTy t = do n <- tyWidth t
-                     freshLocSizePrefx "a" n
+freshLocArg :: RWCTy -> CGM Loc
+freshLocArg _ = do c <- getC
+                   putC (c+1)
+                   let r = "a" ++ show c
+                   --h  <- getHeader
+                   --putHeader (h { regDecls = RegDecl r (TyBits n) : regDecls h })
+                   return r
 
 
 freshLocBool :: CGM Loc
@@ -799,7 +799,8 @@ cfgCLExp p_ = let (Leaf main_is, named_cl, devs) = runRW ctr p $ clexps
         cTW rf@(ReFold f1 f2 se) = do
                                   !res <- cTW se 
                                   let t1 = snd $ flattenArrow $ typeOf f1
-                                      t2 = snd $ flattenArrow $ typeOf f2
+                                      --The new input width is the second argument of the refold function
+                                      (_:t2:_) = fst $ flattenArrow $ typeOf f2
                                       owidth = dt t1
                                       iwidth = dt t2
                                   return (iwidth,owidth)
@@ -1083,19 +1084,36 @@ refoldFunExpr e = case ef of
                                                   let (xts,e) =  peelLambdas e_
                                                       xs      =  map fst xts
                                                       ts      =  map snd xts
-                                                  pns         <- mapM freshLocArgTy ts
+                                                  args        <- mapM freshLocArg ts
                                                   psizes      <- mapM tyWidth ts
-                                                  let xrs     =  zip xs pns
-                                                  (ce,re)     <- foldr (uncurry binding) (funExpr e) xrs
+                                                  let xargs   =  zip xs args
+                                                  h'          <- getHeader
+                                                  let rds''   = regDecls h'
+                                                  (ce,re)     <- trace ("RDS VALUES PRIOR!!: " ++ show rds'') $ foldr (uncurry binding) (funExpr e) xargs
                                                   h'          <- getHeader
                                                   let rds     =  regDecls h'
-                                                      pds     =  zipWith RegDecl pns (map TyBits psizes)
+                                                      pds     =  trace ("RDS VALUES!!: " ++ show rds) $ zipWith RegDecl args (map TyBits psizes)
+                                                      {- FIXME: DEFENSIVE CODING-}
+                                                      --rds'    =  filter (\x -> not (elem x pds)) rds
                                                       fd      =  FunDefn fn pds rds ce re
                                                   fm          <- getFunMap                                  
                                                   --putFunMap (Map.insert n fn fm)
                                                   return fd
                        RWCVar x _     -> funDefn' x
   where (ef:eargs) = flattenApp e
+
+{- FIXME: DEFENSIVE CODING -}
+instance Eq Ty where
+  (==) = cheap_ty_eq
+
+instance Eq RegDecl where
+  (==) = cheap_regdec_eq
+
+
+cheap_ty_eq (TyBits i) (TyBits j) = i == j
+cheap_ty_eq TyBoolean  TyBoolean = True
+cheap_ty_eq _ _ = False
+cheap_regdec_eq (RegDecl l1 t1) (RegDecl l2 t2) = l1 == l2 && t1 `cheap_ty_eq` t2
 
 funDefn' :: Id RWCExp -> CGM FunDefn 
 funDefn' n = do md <- lift $ lift $ queryG n

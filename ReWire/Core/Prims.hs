@@ -11,6 +11,7 @@ c = RWCTyCon . TyConId
 
 reT i o m = c "ReT" `RWCTyApp` i `RWCTyApp` o `RWCTyApp` m
 stT s m   = c "StT" `RWCTyApp` s `RWCTyApp` m
+ident = c "I"
 
 prims :: [(Id RWCExp,Poly RWCTy)]
 prims = [(mkId "return",[mkId "a",mkId "m"]          :-> v "a" `mkArrow` RWCTyComp (v "m") (v "a")),
@@ -36,6 +37,14 @@ prims = [(mkId "return",[mkId "a",mkId "m"]          :-> v "a" `mkArrow` RWCTyCo
                                                                                                                        (c "Tuple2" `RWCTyApp` (v "o") `RWCTyApp` (v "p"))
                                                                                                                        (stT (c "Tuple2" `RWCTyApp` (v "s") `RWCTyApp` (v "t")) (v "m")))
                                                                                                                        (v "a")),
+         
+         (mkId "parI", [mkId "i",mkId "o", mkId "a", mkId "j", mkId "p"] :->  RWCTyComp (reT (v "i") (v "o") ident) (v "a") `mkArrow`
+                                                                              RWCTyComp (reT (v "j") (v "p") ident) (v "a") `mkArrow`
+                                                                              RWCTyComp (reT (c "Tuple2" `RWCTyApp` (v "i") `RWCTyApp` (v "j"))
+                                                                                        (c "Tuple2" `RWCTyApp` (v "o") `RWCTyApp` (v "p"))
+                                                                                        ident)
+                                                                                        (v "a")),
+
          --refold :: (Monad m) => (o1 -> o2) -> (o1 -> i2 -> i1) -> ReacT i1 o1 m a -> ReacT i2 o2 m a
          (mkId "refold", [mkId "o",mkId "p", mkId "i", mkId "j", mkId "m", mkId "a"] :-> ((v "o") `mkArrow` (v "p")) `mkArrow`
                                                                                          ((v "o") `mkArrow` (v "j") `mkArrow` (v "i")) `mkArrow`
