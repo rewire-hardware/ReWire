@@ -833,7 +833,7 @@ funExpr e = case ef of
                    r_res         <- freshLocTy (typeOf e)
                    cs_init       <- mapM (funAlt r_scr (typeOf escr) r_res) (init alts)
                    c_last        <- funAlt r_scr (typeOf escr) r_res (last alts) -- was funLastAlt
-                   return (foldr1 mkSeq (cs_init++[c_last]),r_res)
+                   return (foldr1 mkSeq ([c_scr]++cs_init++[c_last]),r_res)
                  _  -> fail "funExpr: encountered case expression in function position"
   where (ef:eargs) = flattenApp e
 
