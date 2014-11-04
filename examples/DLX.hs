@@ -1,6 +1,6 @@
 module DLX where
 
-import Prelude hiding (and,seq,(||))
+import Prelude hiding (and,or,seq,(||))
 import Boilerplate
 import Control.Monad.Resumption.Reactive
 import Control.Monad.State hiding (when)
@@ -22,46 +22,66 @@ instrdec w32 =
      t6 = top6 w32
    in
    case t6 of 
-        W6 Zero Zero Zero Zero Zero Zero -> decodeR opcode
+        W6 Zero Zero Zero Zero Zero Zero -> decodeR opcode rs1' rs2' rd'
             where (rs1,rs2,rd,opcode) = rtype w32
-        W6 Zero Zero Zero Zero One Zero  -> decodeJ t6
-        W6 Zero Zero Zero Zero One One   -> decodeJ t6
-        _                                -> decodeI t6
-  
+                  rs1'                = decodeReg rs1
+                  rs2'                = decodeReg rs2
+                  rd'                 = decodeReg rd
+        W6 Zero Zero Zero Zero One Zero  -> decodeJ offset t6
+            where (opcode,offset) = jtype w32 
+        W6 Zero Zero Zero Zero One One   -> decodeJ offset t6
+            where (opcode,offset) = jtype w32 
+        _                                -> decodeI opcode rs1' rd' imm
+            where (opcode,rs1,rd,imm) = itype w32
+                  rs1'                = decodeReg rs1
+                  rd'                 = decodeReg rd
+              
 reset = putOutputs initOutputs
 
-decodeR w6 = case w6 of
-  W6 One Zero Zero Zero Zero Zero -> error "ADD  00100000 x20"
-  W6 One Zero Zero One Zero Zero  -> error "AND  00100100 x24"
-  W6 One Zero Zero One Zero One   -> error "OR   0x25 100101"
-  W6 One Zero One Zero Zero Zero  -> error "SEQ  0x28 101000"
-  W6 One Zero One One Zero Zero   -> error "SLE  0x2c 101100"
+decodeR :: W6       -> 
+           Register -> 
+           Register -> 
+           Register -> 
+           ReacT Inputs Outputs (StateT DLXState Identity) ()
+decodeR opcode rs1 rs2 rd = case opcode of
+  W6 One Zero Zero Zero Zero Zero -> add rd rs1 rs2 -- "ADD  00100000 x20"
+  W6 One Zero Zero One Zero Zero  -> and rd rs1 rs2 -- "AND  00100100 x24"
+  W6 One Zero Zero One Zero One   -> or rd rs1 rs2  -- "OR   0x25 100101"
+  W6 One Zero One Zero Zero Zero  -> seq rd rs1 rs2 -- "SEQ  0x28 101000"
+  W6 One Zero One One Zero Zero   -> sle rd rs1 rs2 -- "SLE  0x2c 101100"
   W6 Zero Zero Zero One Zero Zero -> error "SLL  0x04 000100"
-  W6 One Zero One Zero One Zero   -> error "SLT  0x2a 101010"
-  W6 One Zero One Zero Zero One   -> error "SNE  0x29 101001"
+  W6 One Zero One Zero One Zero   -> slt rd rs1 rs2 -- "SLT  0x2a 101010"
+  W6 One Zero One Zero Zero One   -> sne rd rs1 rs2 -- "SNE  0x29 101001"
   W6 Zero Zero Zero One One One   -> error "SRA  0x07 000111"
   W6 Zero Zero Zero One One Zero  -> error "SRL  0x06 000110"
   W6 One Zero Zero Zero One Zero  -> error "SUB  0x22 100010"
   W6 One Zero Zero One One Zero   -> error "XOR  0x26 100110"
 
-decodeJ w6 = case w6 of
-  W6 Zero Zero Zero Zero One Zero -> error "J    00000010 x02"
-  W6 Zero Zero Zero Zero One One  -> error "JAL  00000011 x03"
-decodeI w6 = case w6 of
-  W6 Zero Zero One Zero Zero Zero -> error "ADDI 00001000 x08"
-  W6 Zero Zero One One Zero Zero  -> error "ANDI 00001100 x0c"
-  W6 Zero Zero Zero One Zero Zero -> error "BEQZ 00000100 x04"
-  W6 Zero Zero Zero One Zero One  -> error "BNEZ 00000101 x05"
-  W6 Zero One Zero Zero One One   -> error "JALR 00010011 x13"
-  W6 Zero One Zero Zero One Zero  -> error "JR   00010010 x12"
-  W6 Zero Zero One One One One    -> error "LHI  0x0f 001111"
-  W6 One Zero Zero Zero One One   -> error "LW   0x23 100011"
-  W6 Zero Zero One One Zero One   -> error "ORI  0x0d 001101"
-  W6 Zero One One Zero Zero Zero  -> error "SEQI 0x18 011000"
-  W6 Zero One One One Zero Zero   -> error "SLEI 0x1c 011100"
+
+decodeJ offset w6 = case w6 of
+  W6 Zero Zero Zero Zero One Zero -> j offset   -- "J    00000010 x02"
+  W6 Zero Zero Zero Zero One One  -> jal offset -- "JAL  00000011 x03"
+
+decodeI :: W6       -> 
+           Register -> 
+           Register -> 
+           W16      -> 
+           ReacT Inputs Outputs (StateT DLXState Identity) ()
+decodeI opcode rs1 rd imm = case opcode of
+  W6 Zero Zero One Zero Zero Zero -> addi rd rs1 imm -- "ADDI 00001000 x08"
+  W6 Zero Zero One One Zero Zero  -> andi rd rs1 imm -- "ANDI 00001100 x0c"
+  W6 Zero Zero Zero One Zero Zero -> beqz rs1 imm    -- "BEQZ 00000100 x04"
+  W6 Zero Zero Zero One Zero One  -> bnez rs1 imm    -- "BNEZ 00000101 x05"
+  W6 Zero One Zero Zero One One   -> jalr rs1        -- "JALR 00010011 x13"
+  W6 Zero One Zero Zero One Zero  -> jr rs1          -- "JR   00010010 x12"
+  W6 Zero Zero One One One One    -> lhi rs1 imm     -- "LHI  0x0f 001111"
+  W6 One Zero Zero Zero One One   -> lw rs1 rd imm   -- "LW   0x23 100011"
+  W6 Zero Zero One One Zero One   -> ori rd rs1 imm  -- "ORI  0x0d 001101"
+  W6 Zero One One Zero Zero Zero  -> seqi rd rs1 imm -- "SEQI 0x18 011000"
+  W6 Zero One One One Zero Zero   -> slei rd rs1 imm -- "SLEI 0x1c 011100"
   W6 Zero One Zero One Zero Zero  -> error "SLLI 0x14 010100"
-  W6 Zero One One Zero One Zero   -> error "SLTI 0x1a 011010"
-  W6 Zero One One Zero Zero One   -> error "SNEI 0x19 011001"
+  W6 Zero One One Zero One Zero   -> slti rd rs1 imm -- "SLTI 0x1a 011010"
+  W6 Zero One One Zero Zero One   -> snei rd rs1 imm -- "SNEI 0x19 011001"
   W6 Zero One Zero One One One    -> error "SRAI 0x17 010111"
   W6 Zero One Zero One One Zero   -> error "SRLI 0x16 010110"
   W6 Zero Zero One Zero One Zero  -> error "SUBI 0x0a 001010"
@@ -69,39 +89,255 @@ decodeI w6 = case w6 of
   W6 Zero Zero One One One Zero   -> error "XORI 0x0e 001110"
   _                               -> error "unknown opcode"
 
-data OpCodes = ADD
-             | ADDI
-             | AND 
-             | ANDI
-             | BEQZ
-             | BNEZ
-             | J   
-             | JAL 
-             | JALR
-             | JR  
-             | LHI 
-             | LW  
-             | OR  
-             | ORI 
-             | SEQ 
-             | SEQI
-             | SLE 
-             | SLEI
-             | SLL 
-             | SLLI
-             | SLT 
-             | SLTI 
-             | SNE  
-             | SNEI 
-             | SRA  
-             | SRAI 
-             | SRL  
-             | SRLI 
-             | SUB  
-             | SUBI 
-             | SW   
-             | XOR  
-             | XORI 
+
+--
+-- Instructions
+--
+
+add :: Register -> 
+       Register -> 
+       Register ->
+       ReacT Inputs Outputs (StateT DLXState Identity) ()
+add rd rs1 rs2 = do v1             <- getReg rs1
+                    v2             <- getReg rs2
+                    let (cout,v) =  plusCW32 v1 v2 Zero
+                    putReg rd v
+                    tick
+
+addi :: Register -> 
+        Register -> 
+        W16      -> 
+        ReacT Inputs Outputs (StateT DLXState Identity) ()
+addi rD rS imm = do vS <- getReg rS
+                    let signext_imm = signextend16_32 imm
+                    let sum         = plusW32 vS signext_imm Zero
+                    putReg rD sum
+                    tick
+
+and :: Register -> 
+       Register -> 
+       Register -> 
+       ReacT Inputs Outputs (StateT DLXState Identity) ()
+and rd rs1 rs2 = do v1 <- getReg rs1
+                    v2 <- getReg rs2
+                    putReg rd (andW32 v1 v2)
+
+andi :: Register -> 
+        Register -> 
+        W16      -> 
+        ReacT Inputs Outputs (StateT DLXState Identity) ()
+andi rd rs1 imm = do v1 <- getReg rs1
+                     let imm32 = zero16 || imm 
+                     putReg rd (andW32 v1 imm32)
+
+beqz :: Register -> W16 -> DLXM ()
+beqz rs1 offset = do v1 <- getReg rs1
+                     let se_offset = signextend16_32 offset 
+                     pc <- getPC
+                     let pc'       = plusW32 (plusW32 pc w32_4 Zero) se_offset Zero
+                     if zero v1 then putPC pc' >> tick else tick
+
+bnez :: Register -> W16 -> DLXM ()
+bnez rs1 offset = do v1 <- getReg rs1
+                     let se_offset = signextend16_32 offset 
+                     pc <- getPC
+                     let pc'       = plusW32 (plusW32 pc w32_4 Zero) se_offset Zero
+                     if zero v1 then tick else putPC pc' >> tick 
+
+zero w32 = case w32 of { (W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero) -> True ; _ -> False }
+
+-- Jump
+j :: W26 -> DLXM ()
+j offset = do pc <- getPC
+              let signext_offset = signextend26_to_32 offset
+              let pc' = plusW32 pc (plusW32 signext_offset w32_4 Zero) Zero
+              putPC pc'
+              tick
+
+-- Jump and Link
+jal :: W26 -> DLXM ()
+jal offset = do pc <- getPC
+                let signext_offset = signextend26_to_32 offset
+                let pc'  = plusW32 pc (plusW32 signext_offset w32_4 Zero) Zero
+                let r31' = plusW32 pc w32_8 Zero
+                putReg R31 r31'
+                putPC pc'
+                tick
+
+-- Jump and Link register
+jalr :: Register -> DLXM ()
+jalr rs1 = do pc <- getPC
+              let r31' = plusW32 pc w32_8 Zero
+              putReg R31 r31'
+              dst <- getReg rs1
+              putPC dst
+              tick
+
+-- Jump register
+jr :: Register -> DLXM ()
+jr rs1 = do pc <- getPC
+            dst <- getReg rs1
+            putPC dst
+            tick
+
+-- Load high bits immediate
+lhi :: Register -> W16 -> DLXM ()
+lhi rd imm = let 
+               w32 = imm || zero16
+             in 
+               putReg rd w32
+
+-- Load Word
+lw :: Register -> 
+      Register -> 
+      W16      -> 
+      ReacT Inputs Outputs (StateT DLXState Identity) ()
+lw rs1 rd offset = do base <- getReg rs1
+                      eff_addr <- return $ plusW32 base (signextend16_32 offset) Zero
+                      putWeOut Zero
+                      putAddrOut eff_addr
+                      tick
+                      v <- getDataIn
+                      putReg rd v
+
+-- It seems weird to me that there is no checking of whether 
+-- there is a special register involved with the next two.
+-- Where does that happen?
+
+-- Move general purpose to special
+movi2s :: Register -> 
+          Register -> 
+          ReacT Inputs Outputs (StateT DLXState Identity) ()
+movi2s rd rs1    = getReg rs1 >>= putReg rd >> tick
+
+-- Move special to general purpose
+movs2i :: Register -> 
+          Register -> 
+          ReacT Inputs Outputs (StateT DLXState Identity) ()
+movs2i rd rs1    = getReg rs1 >>= putReg rd >> tick
+
+-- No Op
+nop :: DLXM ()
+nop              = return ()
+
+or :: Register -> 
+      Register -> 
+      Register -> 
+      ReacT Inputs Outputs (StateT DLXState Identity) ()
+or rd rs1 rs2 = do v1      <- getReg rs1
+                   v2      <- getReg rs2
+                   let vd =  orW32 v1 v2
+                   putReg rd vd
+                   tick
+
+ori :: Register -> 
+       Register -> 
+       W16      -> 
+       ReacT Inputs Outputs (StateT DLXState Identity) ()
+ori rd rs1 imm = do v1 <- getReg rs1
+                    let imm32 = zero16 || imm 
+                    putReg rd (orW32 v1 imm32)
+
+-- Set if equal
+seq :: Register -> 
+       Register -> 
+       Register ->
+       ReacT Inputs Outputs (StateT DLXState Identity) ()
+seq rd rs1 rs2 = do v1 <- getReg rs1
+                    v2 <- getReg rs2
+                    if v1==v2
+                      then
+                        putReg rd one32
+                      else
+                        putReg rd zero32
+
+-- Set if equal to immediate
+seqi :: Register -> 
+        Register -> 
+        W16      ->
+        ReacT Inputs Outputs (StateT DLXState Identity) ()
+seqi rd rs1 imm = do v1 <- getReg rs1
+                     if v1 == signextend16_32 imm
+                       then
+                         putReg rd one32
+                       else
+                         putReg rd zero32
+
+-- Set if less than or equal
+sle :: Register -> 
+       Register -> 
+       Register ->
+       ReacT Inputs Outputs (StateT DLXState Identity) ()
+sle rd rs1 rs2 = do v1 <- getReg rs1
+                    v2 <- getReg rs2
+                    if v1 `w32_lte` v2
+                      then
+                        putReg rd one32
+                      else
+                        putReg rd zero32
+
+-- Set if less than or equal to immediate
+slei :: Register -> 
+        Register -> 
+        W16      ->
+        ReacT Inputs Outputs (StateT DLXState Identity) ()
+slei rd rs1 imm = do v1 <- getReg rs1
+                     if v1 `w32_lte` signextend16_32 imm
+                       then
+                         putReg rd one32
+                       else
+                         putReg rd zero32
+
+-- Set if less than
+slt :: Register -> 
+       Register -> 
+       Register ->
+       ReacT Inputs Outputs (StateT DLXState Identity) ()
+slt rd rs1 rs2 = do v1 <- getReg rs1
+                    v2 <- getReg rs2
+                    if v1 `w32_lt` v2
+                      then
+                        putReg rd one32
+                      else
+                        putReg rd zero32
+
+-- Set if less than immediate
+slti :: Register -> 
+        Register -> 
+        W16      ->
+        ReacT Inputs Outputs (StateT DLXState Identity) ()
+slti rd rs1 imm = do v1 <- getReg rs1
+                     if v1 `w32_lt` signextend16_32 imm
+                       then
+                         putReg rd one32
+                       else
+                         putReg rd zero32
+
+-- Set if not equal
+sne :: Register -> 
+       Register -> 
+       Register ->
+       ReacT Inputs Outputs (StateT DLXState Identity) ()
+sne rd rs1 rs2 = do v1 <- getReg rs1
+                    v2 <- getReg rs2
+                    if v1 `w32_ne` v2
+                      then
+                        putReg rd one32
+                      else
+                        putReg rd zero32
+
+-- Set if not equal to immediate
+snei :: Register -> 
+        Register -> 
+        W16      ->
+        ReacT Inputs Outputs (StateT DLXState Identity) ()
+snei rd rs1 imm = do v1 <- getReg rs1
+                     if v1 `w32_ne` signextend16_32 imm
+                       then
+                         putReg rd one32
+                       else
+                         putReg rd zero32
+
 
 data Register = R0 | R1 | R2 | R3 | R4 | R5 | R6 | R7
               | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15
@@ -347,170 +583,6 @@ signextend26_to_32 (W26 One b24 b23 b22 b21 b20 b19 b18 b17 b16 b15 b14
                                b16 b15 b14 b13 b12 b11 b10 b9 
                                b8 b7 b6 b5 b4 b3 b2 b1 b0
 
---
--- Instructions
---
-
-add :: Register -> 
-       Register -> 
-       ReacT Inputs Outputs (StateT DLXState Identity) ()
-add rD rS = do vD             <- getReg rD
-               vS             <- getReg rS
-               let (cout,vD') =  plusCW32 vD vS Zero
-               putReg rD vD'
-               tick
-
-addi :: Register -> 
-        Register -> 
-        W16      -> 
-        ReacT Inputs Outputs (StateT DLXState Identity) ()
-addi rD rS imm = do vS <- getReg rS
-                    let signext_imm = signextend16_32 imm
-                    let sum         = plusW32 vS signext_imm Zero
-                    putReg rD sum
-                    tick
-
-and :: Register -> 
-       Register -> 
-       Register -> 
-       ReacT Inputs Outputs (StateT DLXState Identity) ()
-and rd rs1 rs2 = do v1 <- getReg rs1
-                    v2 <- getReg rs2
-                    putReg rd (andW32 v1 v2)
-
-andi :: Register -> 
-        Register -> 
-        W16      -> 
-        ReacT Inputs Outputs (StateT DLXState Identity) ()
-andi rd rs1 imm = do v1 <- getReg rs1
-                     let imm32 = zero16 || imm 
-                     putReg rd (andW32 v1 imm32)
-
-beqz :: Register -> W16 -> DLXM ()
-beqz rs1 offset = do v1 <- getReg rs1
-                     let se_offset = signextend16_32 offset 
-                     pc <- getPC
-                     let pc'       = plusW32 (plusW32 pc w32_4 Zero) se_offset Zero
-                     if zero v1 then putPC pc' >> tick else tick
-
-bnez :: Register -> W16 -> DLXM ()
-bnez rs1 offset = do v1 <- getReg rs1
-                     let se_offset = signextend16_32 offset 
-                     pc <- getPC
-                     let pc'       = plusW32 (plusW32 pc w32_4 Zero) se_offset Zero
-                     if zero v1 then tick else putPC pc' >> tick 
-
-zero w32 = case w32 of { (W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero) -> True ; _ -> False }
-
--- Jump
-j :: W26 -> DLXM ()
-j offset = do pc <- getPC
-              let signext_offset = signextend26_to_32 offset
-              let pc' = plusW32 pc (plusW32 signext_offset w32_4 Zero) Zero
-              putPC pc'
-              tick
-
--- Jump and Link
-jal :: W26 -> DLXM ()
-jal offset = do pc <- getPC
-                let signext_offset = signextend26_to_32 offset
-                let pc'  = plusW32 pc (plusW32 signext_offset w32_4 Zero) Zero
-                let r31' = plusW32 pc w32_8 Zero
-                putReg R31 r31'
-                putPC pc'
-                tick
-
--- Jump and Link register
-jlr :: Register -> DLXM ()
-jlr rs1 = do pc <- getPC
-             let r31' = plusW32 pc w32_8 Zero
-             putReg R31 r31'
-             dst <- getReg rs1
-             putPC dst
-             tick
-
--- Jump register
-jr :: Register -> DLXM ()
-jr rs1 = do pc <- getPC
-            dst <- getReg rs1
-            putPC dst
-            tick
-
--- Load high bits immediate
-lhi :: Register -> W16 -> DLXM ()
-lhi rd imm = let 
-               w32 = imm || zero16
-             in 
-               putReg rd w32
-
--- Load Word
-lw :: Register -> 
-      Register -> 
-      W16      -> 
-      ReacT Inputs Outputs (StateT DLXState Identity) ()
-lw rs1 rd offset = do base <- getReg rs1
-                      eff_addr <- return $ plusW32 base (signextend16_32 offset) Zero
-                      putWeOut Zero
-                      putAddrOut eff_addr
-                      tick
-                      v <- getDataIn
-                      putReg rd v
-
--- It seems weird to me that there is no checking of whether 
--- there is a special register involved with the next two.
--- Where does that happen?
-
--- Move general purpose to special
-movi2s :: Register -> 
-          Register -> 
-          ReacT Inputs Outputs (StateT DLXState Identity) ()
-movi2s rd rs1    = getReg rs1 >>= putReg rd >> tick
-
--- Move special to general purpose
-movs2i :: Register -> 
-          Register -> 
-          ReacT Inputs Outputs (StateT DLXState Identity) ()
-movs2i rd rs1    = getReg rs1 >>= putReg rd >> tick
-
--- No Op
-nop :: DLXM ()
-nop              = return ()
-
-or :: Register -> 
-      Register -> 
-      Register -> 
-      ReacT Inputs Outputs (StateT DLXState Identity) ()
-or rd rs1 rs2 = do v1      <- getReg rs1
-                   v2      <- getReg rs2
-                   let vd =  orW32 v1 v2
-                   putReg rd vd
-                   tick
-
-ori :: Register -> 
-       Register -> 
-       W16      -> 
-       ReacT Inputs Outputs (StateT DLXState Identity) ()
-ori rd rs1 imm = do v1 <- getReg rs1
-                    let imm32 = zero16 || imm 
-                    putReg rd (orW32 v1 imm32)
-
--- Set if equal
-seq rd rs1 rs2 = do v1 <- getReg rs1
-                    v2 <- getReg rs2
-                    if v1==v2
-                      then
-                        putReg rd one32
-                      else
-                        putReg rd zero32
-
--- Set if equal to immediate
-seqi rd rs1 rs2 = do v1 <- getReg rs1
-                     v2 <- getReg rs2
-                     if v1==v2
-                       then
-                         putReg rd one32
-                       else
-                         putReg rd zero32
 
 
 --
@@ -520,3 +592,37 @@ signextend16_32 :: W16 -> W32
 signextend16_32 (W16 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15)
     = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
             b0   b1   b2   b3   b4   b5   b6   b7   b8   b9  b10  b11  b12  b13  b14  b15
+decodeReg w5 = case w5 of
+  W5 Zero Zero Zero Zero Zero -> R0
+  W5 Zero Zero Zero Zero One  -> R1
+  W5 Zero Zero Zero One Zero  -> R2
+  W5 Zero Zero Zero One One   -> R3
+  W5 Zero Zero One Zero Zero  -> R4
+  W5 Zero Zero One Zero One   -> R5
+  W5 Zero Zero One One Zero   -> R6
+  W5 Zero Zero One One One    -> R7
+  W5 Zero One Zero Zero Zero  -> R8
+  W5 Zero One Zero Zero One   -> R9
+  W5 Zero One Zero One Zero   -> R10
+  W5 Zero One Zero One One    -> R11
+  W5 Zero One One Zero Zero   -> R12
+  W5 Zero One One Zero One    -> R13
+  W5 Zero One One One Zero    -> R14
+  W5 Zero One One One One     -> R15
+----
+  W5 One Zero Zero Zero Zero -> R16
+  W5 One Zero Zero Zero One  -> R17
+  W5 One Zero Zero One Zero  -> R18
+  W5 One Zero Zero One One   -> R19
+  W5 One Zero One Zero Zero  -> R20
+  W5 One Zero One Zero One   -> R21
+  W5 One Zero One One Zero   -> R22
+  W5 One Zero One One One    -> R23
+  W5 One One Zero Zero Zero  -> R24
+  W5 One One Zero Zero One   -> R25
+  W5 One One Zero One Zero   -> R26
+  W5 One One Zero One One    -> R27
+  W5 One One One Zero Zero   -> R28
+  W5 One One One Zero One    -> R29
+  W5 One One One One Zero    -> R30
+  W5 One One One One One     -> R31
