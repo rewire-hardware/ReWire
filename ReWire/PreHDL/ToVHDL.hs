@@ -87,7 +87,7 @@ progVHDL ps = let entities = concatMap (\(s,(p,_)) -> toVHDL s p) ps
 procCL :: Map.Map String (Int,Int) -> NCLF -> String
 procCL m (n,(Par devs)) = let devs' = map devRefs devs 
                               (i,o) = case Map.lookup n m of
-                                            Nothing -> error "procCL: Encountered an unknown reference (non-leaf)."
+                                            Nothing -> error $ "procCL: Encountered an unknown reference (non-leaf).  For: " ++ (show n)
                                             Just z  -> z
                            in pars i o n devs'
   where
@@ -100,10 +100,12 @@ procCL m (n,(Par devs)) = let devs' = map devRefs devs
 
 
 
+
 procCL m (n,(ReFold f1 f2 (Leaf dev))) = let (i,o) = case Map.lookup n m of
                                                                Nothing -> error "procCL: Encountered an unknown reference on outer device name in refold."
                                                                Just z  -> z
-                                             (ii,io) = case Map.lookup n m of
+                                             --This is the interior device
+                                             (ii,io) = case Map.lookup dev m of
                                                                Nothing -> error "procCL: Encountered an unknown reference on inner device name in refold."
                                                                Just z  -> z
                                              f1' = f1 {funDefnName="fout"}
@@ -111,7 +113,7 @@ procCL m (n,(ReFold f1 f2 (Leaf dev))) = let (i,o) = case Map.lookup n m of
                                  in "library ieee;\n"
                                   ++ "use ieee.std_logic_1164.all;\n"
                                   ++ "-- Uncomment the following line if VHDL primitives are in use.\n"
-                                  ++ "-- use prims.all;\n"
+                                  ++ "-- use work.prims.all;\n"
                                   ++ "entity " ++ n ++ " is\n"
                                   ++ "  Port ( clk : in std_logic ;\n"
                                   ++ "         input : in std_logic_vector (0 to " ++ show (i-1) ++ ");\n"
@@ -135,7 +137,7 @@ pars :: Int -> Int -> String -> [(String,(Int,Int))] -> String
 pars i o n devs = "library ieee;\n"
         ++ "use ieee.std_logic_1164.all;\n"
         ++ "-- Uncomment the following line if VHDL primitives are in use.\n"
-        ++ "-- use prims.all;\n"
+        ++ "-- use work.prims.all;\n"
         ++ "entity " ++ n ++ " is\n"
         ++ "  Port ( clk : in std_logic ;\n"
         ++ "         input : in std_logic_vector (0 to " ++ show (i-1) ++ ");\n"
@@ -154,7 +156,7 @@ main :: Int -> Int -> String -> String
 main i o n = "library ieee;\n"
         ++ "use ieee.std_logic_1164.all;\n"
         ++ "-- Uncomment the following line if VHDL primitives are in use.\n"
-        ++ "-- use prims.all;\n"
+        ++ "-- use work.prims.all;\n"
         ++ "entity main is\n"
         ++ "  Port ( clk : in std_logic ;\n"
         ++ "         input : in std_logic_vector (0 to " ++ show (i-1) ++ ");\n"
@@ -197,7 +199,7 @@ toVHDL :: String -> Prog -> String
 toVHDL e p = "library ieee;\n"
         ++ "use ieee.std_logic_1164.all;\n"
         ++ "-- Uncomment the following line if VHDL primitives are in use.\n"
-        ++ "-- use prims.all;\n"
+        ++ "-- use work.prims.all;\n"
         ++ "entity " ++ e ++ " is\n"
         ++ "  Port ( clk : in std_logic ;\n"
         ++ "         input : in std_logic_vector (0 to " ++ show (inputSize (progHeader p)-1) ++ ");\n"

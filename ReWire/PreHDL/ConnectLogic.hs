@@ -73,7 +73,8 @@ instance forall f . Traversable (CLTree f) where
 
 clExpr :: RWCExp -> CLExp 
 clExpr e = case ef of
-                RWCVar x _ | x == mkId "par"    -> case args of
+                RWCVar x _ | x == mkId "par" || 
+                             x == mkId "parI"   -> case args of
                                                       (a1:a2:[]) -> Par $ flattenPars [clExpr $ a1,clExpr $ a2] 
                                                       _ -> error "clExpr: Par wrong # args."
                 RWCVar x _ | x == mkId "refold" -> case args of

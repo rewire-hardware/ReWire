@@ -1,0 +1,30 @@
+data Tuple2 a b is Tuple2 a b end
+data Unit is Unit end
+data Bit is Zero | One end
+
+data W8 is W8 Bit Bit Bit Bit Bit Bit Bit Bit end
+
+vhdl f1 :: W8 -> W8 is whatever1
+vhdl f2 :: W8 -> W8 is whatever2
+vhdl f3 :: W8 -> W8 is whatever3
+vhdl f4 :: W8 -> W8 is whatever4
+
+loop :: W8 -> <ReT W8 W8 I><()>
+is
+  \ x -> let y     =  f1 x
+      in let z     =  f2 y
+      in let w     =  f3 z
+      in let q     =  f4 w
+      in bind next <- signal q
+      in loop next
+end
+
+main :: <ReT W8 W8 I><()>
+is
+  loop (W8 Zero Zero Zero Zero Zero Zero Zero Zero)
+end
+
+start :: <ReT W8 W8 I><()>
+is
+  main
+end

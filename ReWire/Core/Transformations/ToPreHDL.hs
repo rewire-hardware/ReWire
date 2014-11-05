@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module ReWire.Core.Transformations.ToPreHDL where
@@ -116,9 +117,16 @@ freshFunName :: Id RWCExp -> CGM String
 freshFunName n = do c <- getC
                     putC (c+1)
                     return ("rewire_" ++ show n ++ "_" ++ show c)
-  
+
 freshLocSize :: Int -> CGM Loc
-freshLocSize 0 = return "EMPTY"
+freshLocSize 0 = do
+                 h <- getHeader
+                 let rds = regDecls h
+                     emptyreg = RegDecl "EMPTY" (TyBits 0)
+                 case elem emptyreg rds of
+                            True  -> return ()
+                            False -> putHeader (h { regDecls = RegDecl "EMPTY" (TyBits 0) : regDecls h})
+                 return "EMPTY"
 freshLocSize n = do c  <- getC
                     putC (c+1)
                     let r = "r" ++ show c
@@ -126,9 +134,19 @@ freshLocSize n = do c  <- getC
                     putHeader (h { regDecls = RegDecl r (TyBits n) : regDecls h })
                     return r
 
+
 freshLocTy :: RWCTy -> CGM Loc
 freshLocTy t = do n <- tyWidth t
                   freshLocSize n
+
+freshLocArg :: RWCTy -> CGM Loc
+freshLocArg _ = do c <- getC
+                   putC (c+1)
+                   let r = "a" ++ show c
+                   --h  <- getHeader
+                   --putHeader (h { regDecls = RegDecl r (TyBits n) : regDecls h })
+                   return r
+
 
 freshLocBool :: CGM Loc
 freshLocBool = do c <- getC
@@ -723,7 +741,7 @@ cfgCLExp p_ = let (Leaf main_is, named_cl, devs) = runRW ctr p $ clexps
                   compiled_devs  = fmap (fmap tfun) devs
                   cd' = map (\(s,(_,i)) -> (s,i)) compiled_devs
                   (main_width,(m,_)) = runState (cTW (Leaf main_is)) (Map.fromAscList cd',named_cl)
-               in (main_is,main_width,m,compiled_devs,named_cl) 
+               in trace (show (m,cd')) $ (main_is,main_width,m,compiled_devs,named_cl) 
 --cfgFromRW p_ = tfun $ runRW ctr p $ sexprs 
   where 
         clexps :: RW (CLNamed,[NCL],[NRe])
@@ -775,22 +793,24 @@ cfgCLExp p_ = let (Leaf main_is, named_cl, devs) = runRW ctr p $ clexps
                                                     Nothing -> fail "cfgCLExp: Constructing type widths hit an unknown leaf value."
                                                     Just z  -> do
                                                                 res <- cTW z
-                                                                put (Map.insert s res m, names)
+                                                                (m',names') <- get
+                                                                put (Map.insert s res m', names')
                                                                 return res
-        cTW (ReFold f1 f2 se) = do
-                                  res <- cTW se 
+        cTW rf@(ReFold f1 f2 se) = do
+                                  !res <- cTW se 
                                   let t1 = snd $ flattenArrow $ typeOf f1
-                                      t2 = snd $ flattenArrow $ typeOf f2
+                                      --The new input width is the second argument of the refold function
+                                      (_:t2:_) = fst $ flattenArrow $ typeOf f2
                                       owidth = dt t1
                                       iwidth = dt t2
                                   return (iwidth,owidth)
 
 
 
-        cTW (Par es) = do
-                        res <- mapM cTW es
-                        let res' = foldr (\(a,b) (x,y) -> (a+x,b+y)) (0,0) res
-                        return res' 
+        cTW p@(Par es) = do
+                          res <- mapM cTW es
+                          let res' = foldr (\(a,b) (x,y) -> (a+x,b+y)) (0,0) res
+                          return res' 
                         
         
                                               
@@ -854,8 +874,16 @@ devsToVHDL cfgs = let zcs  = zip ([0..]::[Int]) cfgs
                       zcs' = map (\(i,(cfg,n)) -> ("rewire" ++ show i,(elimEmpty $ gotoElim $ cfgToProg cfg,n))) zcs
                    in progVHDL zcs'
 
+eu gr = gr { cfgGraph = elimUnreachable 0 (cfgGraph gr) }
+
+cmdToSCFG :: TransCommand
+cmdToSCFG _ p = (Nothing,Just (mkDot $ gather $ eu $ cfgFromRW p))
+
 cmdToCFG :: TransCommand
 cmdToCFG _ p = error "ToCFG disabled" --(Nothing,Just (mkDot $ gather $ linearize $ fst $ head $ cfgFromRW p))
+
+cmdToPreG :: TransCommand
+cmdToPreG _ p = (Nothing,Just (show (cfgToProg (cfgFromRW p))))
 
 cmdToPre :: TransCommand
 cmdToPre _ p = error "ToPre disabled" --(Nothing,Just (show (gotoElim $ cfgToProg $ fst $ head $ (cfgFromRW p))))
@@ -968,7 +996,7 @@ funExpr e = case ef of
                    r_res         <- freshLocTy (typeOf e)
                    cs_init       <- mapM (funAlt r_scr (typeOf escr) r_res) (init alts)
                    c_last        <- funAlt r_scr (typeOf escr) r_res (last alts) -- was funLastAlt
-                   return (foldr1 mkSeq (cs_init++[c_last]),r_res)
+                   return (foldr1 mkSeq ([c_scr]++cs_init++[c_last]),r_res)
                  _  -> fail "funExpr: encountered case expression in function position"
   where (ef:eargs) = flattenApp e
 
@@ -1051,22 +1079,41 @@ refoldFunExpr e = case ef of
                          --(ceb,leb) <- binding x lel $ refoldFunExpr eb
                          --return (cel `mkSeq` ceb,leb)
                        e_@(RWCLam _ _ _)   -> do
-                                                  fn          <- freshFunName (mkId "rwlam")
+                                                  let n = (mkId "rwlam")
+                                                  fn          <- freshFunName n
                                                   let (xts,e) =  peelLambdas e_
                                                       xs      =  map fst xts
                                                       ts      =  map snd xts
-                                                  pns         <- mapM freshLocTy ts
+                                                  args        <- mapM freshLocArg ts
                                                   psizes      <- mapM tyWidth ts
-                                                  let xrs     =  zip xs pns
-                                                  (ce,re)     <- foldr (uncurry binding) (funExpr e) xrs
+                                                  let xargs   =  zip xs args
+                                                  h'          <- getHeader
+                                                  let rds''   = regDecls h'
+                                                  (ce,re)     <- trace ("RDS VALUES PRIOR!!: " ++ show rds'') $ foldr (uncurry binding) (funExpr e) xargs
                                                   h'          <- getHeader
                                                   let rds     =  regDecls h'
-                                                      pds     =  zipWith RegDecl pns (map TyBits psizes)
+                                                      pds     =  trace ("RDS VALUES!!: " ++ show rds) $ zipWith RegDecl args (map TyBits psizes)
+                                                      {- FIXME: DEFENSIVE CODING-}
+                                                      --rds'    =  filter (\x -> not (elem x pds)) rds
                                                       fd      =  FunDefn fn pds rds ce re
                                                   fm          <- getFunMap                                  
+                                                  --putFunMap (Map.insert n fn fm)
                                                   return fd
                        RWCVar x _     -> funDefn' x
   where (ef:eargs) = flattenApp e
+
+{- FIXME: DEFENSIVE CODING -}
+instance Eq Ty where
+  (==) = cheap_ty_eq
+
+instance Eq RegDecl where
+  (==) = cheap_regdec_eq
+
+
+cheap_ty_eq (TyBits i) (TyBits j) = i == j
+cheap_ty_eq TyBoolean  TyBoolean = True
+cheap_ty_eq _ _ = False
+cheap_regdec_eq (RegDecl l1 t1) (RegDecl l2 t2) = l1 == l2 && t1 `cheap_ty_eq` t2
 
 funDefn' :: Id RWCExp -> CGM FunDefn 
 funDefn' n = do md <- lift $ lift $ queryG n
@@ -1093,3 +1140,31 @@ funDefn' n = do md <- lift $ lift $ queryG n
                        fm          <- getFunMap                                  
                        putFunMap (Map.insert n fn fm)
                        return fd
+
+cfgFromRW :: RWCProg -> CFG
+cfgFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
+  where doit    = do cfgProg'
+                     h <- getHeader
+                     g <- getGraph
+                     return (CFG { cfgHeader = h, cfgGraph = g })
+        env0    = Env { stateLayer = -1,
+                        inputTy = error "input type not set",
+                        outputTy = error "output type not set",
+                        stateTys = [],
+                        varMap = Map.empty }
+        s0      = (0,CFG { cfgHeader = Header { funDefns   = [],
+                                                regDecls   = [],
+                                                stateNames = [],
+                                                startState = "", 
+                                                inputSize  = 999,
+                                                outputSize = 999 },
+                           cfgGraph = empty },
+                     Map.empty,
+                     Map.empty)
+        (p,ctr) = uniquify 0 p_
+
+cfgProg' :: CGM ()
+cfgProg' = do md <- lift $ lift $ queryG (mkId "start")
+              case md of
+                Nothing              -> fail "cfgProg: `start' not defined"
+                Just (RWCDefn _ _ e) -> cfgStart e
