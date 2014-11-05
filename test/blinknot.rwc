@@ -1,0 +1,29 @@
+data Bit is Zero | One end
+data Unit is Unit end
+
+blink1 :: <ReT Bit Bit I><()>
+is
+      bind x <- signal One
+  in  bind y <- signal Zero 
+  in blink1
+end
+
+input :: Bit -> Bit -> Bit 
+is
+  \oout -> \ninp -> ninp 
+end
+
+output :: Bit -> Bit
+is
+  \inp -> case inp of
+          {
+            One -> Zero
+            ; Zero -> One
+          }
+end
+
+
+start :: <ReT Bit Bit I><()>
+is
+  refold output input blink1
+end

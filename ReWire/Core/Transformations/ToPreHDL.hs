@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module ReWire.Core.Transformations.ToPreHDL where
@@ -19,6 +20,11 @@ import qualified Data.Map.Strict as Map
 import Data.Graph.Inductive
 import Data.List (foldl',find,findIndex)
 import Data.Maybe (fromJust)
+
+--CL
+import ReWire.PreHDL.ConnectLogic
+
+import Debug.Trace
 
 type VarMap = Map (Id RWCExp) Loc
 type ActionMap = Map (Id RWCExp) ([Loc],Node,Node,Loc) -- name -> arg regs, entry node, exit node, result reg
@@ -111,9 +117,16 @@ freshFunName :: Id RWCExp -> CGM String
 freshFunName n = do c <- getC
                     putC (c+1)
                     return ("rewire_" ++ show n ++ "_" ++ show c)
-  
+
 freshLocSize :: Int -> CGM Loc
-freshLocSize 0 = return "EMPTY"
+freshLocSize 0 = do
+                 h <- getHeader
+                 let rds = regDecls h
+                     emptyreg = RegDecl "EMPTY" (TyBits 0)
+                 case elem emptyreg rds of
+                            True  -> return ()
+                            False -> putHeader (h { regDecls = RegDecl "EMPTY" (TyBits 0) : regDecls h})
+                 return "EMPTY"
 freshLocSize n = do c  <- getC
                     putC (c+1)
                     let r = "r" ++ show c
@@ -121,9 +134,19 @@ freshLocSize n = do c  <- getC
                     putHeader (h { regDecls = RegDecl r (TyBits n) : regDecls h })
                     return r
 
+
 freshLocTy :: RWCTy -> CGM Loc
 freshLocTy t = do n <- tyWidth t
                   freshLocSize n
+
+freshLocArg :: RWCTy -> CGM Loc
+freshLocArg _ = do c <- getC
+                   putC (c+1)
+                   let r = "a" ++ show c
+                   --h  <- getHeader
+                   --putHeader (h { regDecls = RegDecl r (TyBits n) : regDecls h })
+                   return r
+
 
 freshLocBool :: CGM Loc
 freshLocBool = do c <- getC
@@ -139,7 +162,15 @@ nBits n = nBits (n `quot` 2) + 1
 getTagWidth :: TyConId -> CGM Int
 getTagWidth i = do Just (TyConInfo (RWCData _ _ cs)) <- lift $ lift $ queryT i
                    return (nBits (length cs-1))
+{-
+tupTyFst :: RWCTy -> RWCTy
+tupTyFst (RWCTyApp (RWCTyApp (RWCTyCon (TyConId {deTyConId = "Tuple2"})) v1) _) = v1
+tupTyFst _ = error  "tupTyFst: Non-Tuple2 type encountered"
 
+tupTySnd :: RWCTy -> RWCTy
+tupTySnd (RWCTyApp (RWCTyApp (RWCTyCon (TyConId {deTyConId = "Tuple2"})) _) v2) = v2
+tupTySnd _ = error "tupTySnd: Non-Tuple2 type encountered"
+-}
 tyWidth :: RWCTy -> CGM Int
 tyWidth (RWCTyVar _) = fail $ "tyWidth: type variable encountered"
 tyWidth t            = {-do twc <- getTyWidthCache
@@ -502,7 +533,6 @@ cfgAcExpr e = case ef of
                  case eargs of
                    [e] -> cfgExpr e
                    _   -> fail "cfgAcExpr: wrong number of arguments for return"
-                   
                RWCVar x _ | x == mkId "signal" -> do
                  case eargs of
                    [e] -> do
@@ -608,10 +638,18 @@ cfgAcExpr e = case ef of
                    _  -> fail "cfgAcExpr: encountered case expression in function position"
                      
    where (ef:eargs) = flattenApp e  
-
 peelLambdas (RWCLam n t e) = ((n,t):nts,e')
                              where (nts,e') = peelLambdas e
 peelLambdas e              = ([],e)
+reTy t                     = case t of
+                                 RWCTyComp (RWCTyApp (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "ReT")) ti) to) tsm) _ -> (ti,to)
+                                   --let
+                                   --  getStateTys (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "StT")) tst) ts) = tst : getStateTys ts
+                                   --  getStateTys (RWCTyCon (TyConId "I"))                                = []
+                                   --  getStateTys _                                                       = error "cfgStart: start has malformed type (inner monad stack is not of form (StT (StT ... (StT I))))"
+                                   --  tss                                                                 = getStateTys tsm
+                                   --in (ti,to,tss)
+                                 _ -> error "cfgAcExpr: start has malformed type (not a computation with outer monad ReT)"
 
 -- Generate code for an action function.
 cfgAcDefn :: Id RWCExp -> CGM ([Loc],Node,Node,Loc)
@@ -660,7 +698,7 @@ mkStateRegDecls = do ts <- askStateTys
                      putHeader (h { regDecls = rs ++ regDecls h })
 
 cfgStart :: RWCExp -> CGM ()
-cfgStart (RWCApp (RWCApp (RWCVar x _) e) _) | x == mkId "extrude" = cfgStart e -- FIXME: fill in state expression!
+cfgStart tot@(RWCApp (RWCApp (RWCVar x _) e) e') | x == mkId "extrude" = cfgStart e -- FIXME: fill in state expression!
 cfgStart (RWCVar x t) = local buildEnv $ do
                          si  <- tyWidth ti
                          so  <- tyWidth to
@@ -686,18 +724,42 @@ cfgStart (RWCVar x t) = local buildEnv $ do
            _ -> error "cfgStart: start has malformed type (not a computation with outer monad ReT)"
 cfgStart _ = fail "cfgStart: malformed start expression"
 
-cfgProg :: CGM ()
-cfgProg = do md <- lift $ lift $ queryG (mkId "start")
-             case md of
-              Nothing              -> fail "cfgProg: `start' not defined"
-              Just (RWCDefn _ _ e) -> cfgStart e
+--splitExprs :: RWCExp -> [RWCExp]
+--splitExprs tot@(RWCApp (RWCApp (RWCVar x _) e) e') | x == mkId "par" = splitExprs e ++ splitExprs e'
+--splitExprs e = trace (show e) [e]
 
-cfgFromRW :: RWCProg -> CFG
-cfgFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
-  where doit    = do cfgProg
-                     h <- getHeader
-                     g <- getGraph
-                     return (CFG { cfgHeader = h, cfgGraph = g })
+cfgProg :: RWCExp -> CGM ()
+cfgProg e = --do md <- lift $ lift $ queryG (mkId "start")
+               cfgStart e
+             --case md of
+             -- Nothing              -> fail "cfgProg: `start' not defined"
+             -- Just (RWCDefn _ _ e) -> do let es = splitExprs e
+             --                            cfgStart e
+
+--cfgCLExp :: RWCProg -> CGM ()
+cfgCLExp p_ = let (Leaf main_is, named_cl, devs) = runRW ctr p $ clexps 
+                  compiled_devs  = fmap (fmap tfun) devs
+                  cd' = map (\(s,(_,i)) -> (s,i)) compiled_devs
+                  (main_width,(m,_)) = runState (cTW (Leaf main_is)) (Map.fromAscList cd',named_cl)
+               in trace (show (m,cd')) $ (main_is,main_width,m,compiled_devs,named_cl) 
+--cfgFromRW p_ = tfun $ runRW ctr p $ sexprs 
+  where 
+        clexps :: RW (CLNamed,[NCL],[NRe])
+        clexps = do
+                  s <- queryG (mkId "start")
+                  let s' = case s of 
+                                --Just (RWCDefn _ _ (RWCApp (RWCApp (RWCVar x _) e) e')) -> if x == mkId "extrude"
+                                --                                                               then e 
+                                --                                                               else error "cfgCLExp: Should have encountered extrude, but didn't"
+                                Just (RWCDefn _ _ e)                                   -> e 
+                                _                                                      -> error "cfgCLExp: start function malformed"
+                  return $ flattenCLExp s'
+        tfun e  = fst $ runRW ctr p (runStateT (runReaderT (doit e) env0) s0)
+        doit e   = do cfgProg e
+                      h <- getHeader
+                      g <- getGraph
+                      ets <- eIOTys e
+                      return (CFG { cfgHeader = h, cfgGraph = g },ets)
         env0    = Env { stateLayer = -1,
                         inputTy = error "input type not set",
                         outputTy = error "output type not set",
@@ -713,6 +775,104 @@ cfgFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
                      Map.empty,
                      Map.empty)
         (p,ctr) = uniquify 0 p_
+        eIOTys e = case typeOf e of
+                           RWCTyComp (RWCTyApp (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "ReT")) ti) to) _) _ -> do
+                                                                                                                  iw <- tyWidth ti
+                                                                                                                  ow <- tyWidth to
+                                                                                                                  return (iw,ow)
+                           _ -> error "cfgCLExp: start has malformed type (not a computation with outer monad ReT)"
+        --This is likely dirty and inefficient, but for now we rebuild the monad stack to get type widths
+        dt t  = fst $ runRW ctr p (runStateT (runReaderT (tyWidth t) env0) s0)
+
+        cTW :: CLNamed -> State (Map.Map String (Int,Int),[NCL]) (Int,Int) 
+        cTW (Leaf s) = do
+                          (m,names) <- get
+                          case Map.lookup s m of
+                                Just res -> return res
+                                Nothing  -> case lookup s names of
+                                                    Nothing -> fail "cfgCLExp: Constructing type widths hit an unknown leaf value."
+                                                    Just z  -> do
+                                                                res <- cTW z
+                                                                (m',names') <- get
+                                                                put (Map.insert s res m', names')
+                                                                return res
+        cTW rf@(ReFold f1 f2 se) = do
+                                  !res <- cTW se 
+                                  let t1 = snd $ flattenArrow $ typeOf f1
+                                      --The new input width is the second argument of the refold function
+                                      (_:t2:_) = fst $ flattenArrow $ typeOf f2
+                                      owidth = dt t1
+                                      iwidth = dt t2
+                                  return (iwidth,owidth)
+
+
+
+        cTW p@(Par es) = do
+                          res <- mapM cTW es
+                          let res' = foldr (\(a,b) (x,y) -> (a+x,b+y)) (0,0) res
+                          return res' 
+                        
+        
+                                              
+{-
+cfgFromRW :: RWCProg -> [(CFG,(Int,Int))]
+cfgFromRW p_ = tfun $ runRW ctr p $ sexprs 
+                   
+  where 
+        sexprs = do
+                  s <- queryG (mkId "start") 
+                  case s of
+                      Just (RWCDefn _ _ (RWCApp (RWCApp (RWCVar x _) e) e')) -> if x == mkId "extrude"
+                                                                                 then do
+                                                                                         let es = splitExprs e
+                                                                                         return es
+
+                                                                                 else fail "cfgFromRW: Should have encountered extrude, but didn't"
+                      Just (RWCDefn _ _ v@(RWCVar x t)) -> do
+                                                             s' <- queryG x
+                                                             case s' of 
+                                                                 Nothing -> fail "cfgFromRW: start function refs a nonexistent var"
+                                                                 Just (RWCDefn _ _ z)  -> do 
+                                                                                            let es = splitExprs z
+                                                                                            return es
+                      _ -> fail "cfgFromRW: start function malformed" 
+        
+        --case runRW ctr p $ queryG (mkId "start") of
+        --                Nothing -> error "cfgFromRW: `start' not defined"
+        --                Just (RWCDefn _ _ e)  -> tfun $ splitExprs e
+
+        tfun es  = map (\e -> fst $ runRW ctr p (runStateT (runReaderT (doit e) env0) s0)) es
+        doit e   = do cfgProg e
+                      h <- getHeader
+                      g <- getGraph
+                      ets <- eIOTys e
+                      return (CFG { cfgHeader = h, cfgGraph = g },ets)
+        env0    = Env { stateLayer = -1,
+                        inputTy = error "input type not set",
+                        outputTy = error "output type not set",
+                        stateTys = [],
+                        varMap = Map.empty }
+        s0      = (0,CFG { cfgHeader = Header { funDefns   = [],
+                                                regDecls   = [],
+                                                stateNames = [],
+                                                startState = "", 
+                                                inputSize  = 999,
+                                                outputSize = 999 },
+                           cfgGraph = empty },
+                     Map.empty,
+                     Map.empty)
+        (p,ctr) = uniquify 0 p_
+        eIOTys e = case typeOf e of
+                           RWCTyComp (RWCTyApp (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "ReT")) ti) to) _) _ -> do
+                                                                                                                  iw <- tyWidth ti
+                                                                                                                  ow <- tyWidth to
+                                                                                                                  return (iw,ow)
+                           _ -> error "cfgStart: start has malformed type (not a computation with outer monad ReT)"
+-}
+devsToVHDL :: [(CFG,(Int,Int))] -> String
+devsToVHDL cfgs = let zcs  = zip ([0..]::[Int]) cfgs
+                      zcs' = map (\(i,(cfg,n)) -> ("rewire" ++ show i,(elimEmpty $ gotoElim $ cfgToProg cfg,n))) zcs
+                   in progVHDL zcs'
 
 eu gr = gr { cfgGraph = elimUnreachable 0 (cfgGraph gr) }
 
@@ -720,16 +880,19 @@ cmdToSCFG :: TransCommand
 cmdToSCFG _ p = (Nothing,Just (mkDot $ gather $ eu $ cfgFromRW p))
 
 cmdToCFG :: TransCommand
-cmdToCFG _ p = (Nothing,Just (mkDot $ gather $ linearize $ cfgFromRW p))
+cmdToCFG _ p = error "ToCFG disabled" --(Nothing,Just (mkDot $ gather $ linearize $ fst $ head $ cfgFromRW p))
 
 cmdToPreG :: TransCommand
 cmdToPreG _ p = (Nothing,Just (show (cfgToProg (cfgFromRW p))))
 
 cmdToPre :: TransCommand
-cmdToPre _ p = (Nothing,Just (show (gotoElim $ cfgToProg (cfgFromRW p))))
+cmdToPre _ p = error "ToPre disabled" --(Nothing,Just (show (gotoElim $ cfgToProg $ fst $ head $ (cfgFromRW p))))
 
 cmdToVHDL :: TransCommand
-cmdToVHDL _ p = (Nothing,Just (toVHDL (elimEmpty $ gotoElim $ cfgToProg (cfgFromRW p))))
+cmdToVHDL _ p = (Nothing,Just (clVHDL (c2p (cfgCLExp p))))
+  where
+    c2p (a,b,c,d,e) = (a,b,c,map (\(x,(y,z)) -> (x,(elimEmpty $ gotoElim $ cfgToProg y,z))) d,convNCLs p e)
+--cmdToVHDL _ p = (Nothing,Just (devsToVHDL ((cfgFromRW p))))
 
 mkFunTagCheck :: DataConId -> Loc -> CGM (Cmd,Loc)
 mkFunTagCheck dci lscr = do rtm  <- freshLocBool
@@ -867,3 +1030,141 @@ funDefn n = do ms <- askFun n
                        fm          <- getFunMap                                  
                        putFunMap (Map.insert n fn fm)
                        return fn
+
+convNCLs :: RWCProg -> [NCL] -> [NCLF]
+convNCLs p_ ncls = runcgm
+  where
+        env0    = Env { stateLayer = -1,
+                        inputTy = error "input type not set",
+                        outputTy = error "output type not set",
+                        stateTys = [],
+                        varMap = Map.empty }
+        s0      = (0,CFG { cfgHeader = Header { funDefns   = [],
+                                                regDecls   = [],
+                                                stateNames = [],
+                                                startState = "", 
+                                                inputSize  = 999,
+                                                outputSize = 999 },
+                           cfgGraph = empty },
+                     Map.empty,
+                     Map.empty)
+        (p,ctr) = uniquify 0 p_
+        runcgm = fst $ runRW ctr p (runStateT (runReaderT (mapM convNCL ncls) env0) s0)
+
+convNCL :: NCL -> CGM NCLF
+convNCL (s,e) = do
+                  e' <- compRefold e
+                  return (s,e')
+
+compRefold :: CLNamed -> CGM CLFNamed
+compRefold e = case e of
+                        (Leaf a) -> return (Leaf a)
+                        (Par ls) -> do
+                                      ls' <- mapM compRefold ls
+                                      return $ Par ls'
+                        (ReFold f1 f2 r) -> do
+                                              f1' <- refoldFunExpr f1
+                                              f2' <- refoldFunExpr f2
+                                              r'  <- compRefold r
+                                              return $ ReFold f1' f2' r'
+
+refoldFunExpr :: RWCExp -> CGM FunDefn
+refoldFunExpr e = case ef of
+                       RWCApp _ _     -> fail "refoldFunExpr: app in function position (can't happen)"
+                       RWCLiteral _   -> fail "refoldFunExpr: encountered literal"
+                       RWCCon _ _     -> fail "refoldFunExpr: encountered constructor"
+                       RWCCase _ _    -> fail "refoldFunExpr: encountered case"
+                       RWCLet x el eb -> fail "refoldFunExpr: encountered let"
+                         --(cel,lel) <- refoldFunExpr el
+                         --(ceb,leb) <- binding x lel $ refoldFunExpr eb
+                         --return (cel `mkSeq` ceb,leb)
+                       e_@(RWCLam _ _ _)   -> do
+                                                  let n = (mkId "rwlam")
+                                                  fn          <- freshFunName n
+                                                  let (xts,e) =  peelLambdas e_
+                                                      xs      =  map fst xts
+                                                      ts      =  map snd xts
+                                                  args        <- mapM freshLocArg ts
+                                                  psizes      <- mapM tyWidth ts
+                                                  let xargs   =  zip xs args
+                                                  h'          <- getHeader
+                                                  let rds''   = regDecls h'
+                                                  (ce,re)     <- trace ("RDS VALUES PRIOR!!: " ++ show rds'') $ foldr (uncurry binding) (funExpr e) xargs
+                                                  h'          <- getHeader
+                                                  let rds     =  regDecls h'
+                                                      pds     =  trace ("RDS VALUES!!: " ++ show rds) $ zipWith RegDecl args (map TyBits psizes)
+                                                      {- FIXME: DEFENSIVE CODING-}
+                                                      --rds'    =  filter (\x -> not (elem x pds)) rds
+                                                      fd      =  FunDefn fn pds rds ce re
+                                                  fm          <- getFunMap                                  
+                                                  --putFunMap (Map.insert n fn fm)
+                                                  return fd
+                       RWCVar x _     -> funDefn' x
+  where (ef:eargs) = flattenApp e
+
+{- FIXME: DEFENSIVE CODING -}
+instance Eq Ty where
+  (==) = cheap_ty_eq
+
+instance Eq RegDecl where
+  (==) = cheap_regdec_eq
+
+
+cheap_ty_eq (TyBits i) (TyBits j) = i == j
+cheap_ty_eq TyBoolean  TyBoolean = True
+cheap_ty_eq _ _ = False
+cheap_regdec_eq (RegDecl l1 t1) (RegDecl l2 t2) = l1 == l2 && t1 `cheap_ty_eq` t2
+
+funDefn' :: Id RWCExp -> CGM FunDefn 
+funDefn' n = do md <- lift $ lift $ queryG n
+                case md of
+                     Nothing               -> fail $ "funDefn': " ++ show n ++ " not defined"
+                     Just (RWCDefn _ _ e_) -> do
+                       fn          <- freshFunName n
+                       let (xts,e) =  peelLambdas e_
+                           xs      =  map fst xts
+                           ts      =  map snd xts
+                       pns         <- mapM freshLocTy ts
+                       psizes      <- mapM tyWidth ts
+                       rr          <- freshLocTy (typeOf e)
+                       let xrs     =  zip xs pns
+                       h           <- getHeader
+                       putHeader (h { regDecls = [] })
+                       (ce,re)     <- foldr (uncurry binding) (funExpr e) xrs
+                       h'          <- getHeader
+                       let rds     =  regDecls h'
+                           pds     =  zipWith RegDecl pns (map TyBits psizes)
+                           fd      =  FunDefn fn pds rds ce re
+                       trace (show (pds,rds)) $ putHeader (h' { regDecls = regDecls h,
+                                       funDefns = fd : funDefns h' })
+                       fm          <- getFunMap                                  
+                       putFunMap (Map.insert n fn fm)
+                       return fd
+
+cfgFromRW :: RWCProg -> CFG
+cfgFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
+  where doit    = do cfgProg'
+                     h <- getHeader
+                     g <- getGraph
+                     return (CFG { cfgHeader = h, cfgGraph = g })
+        env0    = Env { stateLayer = -1,
+                        inputTy = error "input type not set",
+                        outputTy = error "output type not set",
+                        stateTys = [],
+                        varMap = Map.empty }
+        s0      = (0,CFG { cfgHeader = Header { funDefns   = [],
+                                                regDecls   = [],
+                                                stateNames = [],
+                                                startState = "", 
+                                                inputSize  = 999,
+                                                outputSize = 999 },
+                           cfgGraph = empty },
+                     Map.empty,
+                     Map.empty)
+        (p,ctr) = uniquify 0 p_
+
+cfgProg' :: CGM ()
+cfgProg' = do md <- lift $ lift $ queryG (mkId "start")
+              case md of
+                Nothing              -> fail "cfgProg: `start' not defined"
+                Just (RWCDefn _ _ e) -> cfgStart e
