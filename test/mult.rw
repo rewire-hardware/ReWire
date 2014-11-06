@@ -1,0 +1,63 @@
+data Tuple2 a b is Tuple2 a b end
+data Tuple8 a b c d e f g h is Tuple8 a b c d e f g h end
+data Unit is Unit end
+data Bit is Zero | One end
+
+data W8 is W8 Bit Bit Bit Bit Bit Bit Bit Bit end
+data W16 is W16 Bit Bit Bit Bit Bit Bit Bit Bit
+                Bit Bit Bit Bit Bit Bit Bit Bit end
+
+vhdl add8  :: W8 -> W8 -> W8 is whatever1
+vhdl add16 :: W16 -> W16 -> W16 is whatever2
+
+mk16 :: W8 -> W16
+is
+  \ w -> case w of
+         { W8 a7 a6 a5 a4 a3 a2 a1 a0 -> W16 Zero Zero Zero Zero Zero Zero Zero Zero a7 a6 a5 a4 a3 a2 a1 a0 }
+end
+
+sh :: W16 -> W16
+is
+  \ w -> case w of
+         { W16 _ ae ad ac ab aa a9 a8 a7 a6 a5 a4 a3 a2 a1 a0 -> W16 ae ad ac ab aa a9 a8 a7 a6 a5 a4 a3 a2 a1 a0 Zero }
+end
+
+pp :: Bit -> W8 -> W8
+is
+  \ b -> \ w -> case b of
+                { Zero -> w8Zero
+                ; One  -> w
+                }
+end
+
+loop :: (W8,W8) -> <ReT (W8,W8) W16 I><()>
+is
+  \ p -> case p of
+         { (W8 a7 a6 a5 a4 a3 a2 a1 a0,b) ->
+                    let s0  =  mk16 (pp a0 b)
+                 in let s1  =  add16 s0 (sh (mk16 (pp a1 b)))
+                 in let s2  =  add16 s1 (sh (sh (mk16 (pp a2 b))))
+                 in let s3  =  add16 s2 (sh (sh (sh (mk16 (pp a3 b)))))
+                 in let s4  =  add16 s3 (sh (sh (sh (sh (mk16 (pp a4 b))))))
+                 in let s5  =  add16 s4 (sh (sh (sh (sh (sh (mk16 (pp a5 b)))))))
+                 in let s6  =  add16 s5 (sh (sh (sh (sh (sh (sh (mk16 (pp a6 b))))))))
+                 in let s7  =  add16 s6 (sh (sh (sh (sh (sh (sh (sh (mk16 (pp a7 b)))))))))
+                 in bind p' <- signal s7
+                 in loop p'
+         }
+end
+
+main :: <ReT (W8,W8) W16 I><()>
+is
+  loop (w8Zero,w8Zero)
+end
+
+w8Zero :: W8
+is
+  W8 Zero Zero Zero Zero Zero Zero Zero Zero
+end
+
+start :: <ReT (W8,W8) W16 I><()>
+is
+  main
+end
