@@ -1,0 +1,179 @@
+data Tuple2 a b is Tuple2 a b end
+data Tuple3 a b c is Tuple3 a b c end
+data Tuple8 a b c d e f g h is Tuple8 a b c d e f g h end
+data Unit is Unit end
+data Bit is Zero | One end
+
+data W8 is W8 Bit Bit Bit Bit Bit Bit Bit Bit end
+data W16 is W16 Bit Bit Bit Bit Bit Bit Bit Bit
+                Bit Bit Bit Bit Bit Bit Bit Bit end
+
+vhdl add8  :: W8 -> W8 -> W8 is whatever1
+vhdl add16 :: W16 -> W16 -> W16 is whatever2
+
+mk16 :: W8 -> W16
+is
+  \ w -> case w of
+         { W8 a7 a6 a5 a4 a3 a2 a1 a0 -> W16 Zero Zero Zero Zero Zero Zero Zero Zero a7 a6 a5 a4 a3 a2 a1 a0 }
+end
+
+sh :: W16 -> W16
+is
+  \ w -> case w of
+         { W16 _ ae ad ac ab aa a9 a8 a7 a6 a5 a4 a3 a2 a1 a0 -> W16 ae ad ac ab aa a9 a8 a7 a6 a5 a4 a3 a2 a1 a0 Zero }
+end
+
+pp :: Bit -> W8 -> W8
+is
+  \ b -> \ w -> case b of
+                { Zero -> w8Zero
+                ; One  -> w
+                }
+end
+
+w8Zero :: W8
+is
+  W8 Zero Zero Zero Zero Zero Zero Zero Zero
+end
+
+w16Zero :: W16
+is
+  W16 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero
+end
+
+loop :: (W8,W8) -> <ReT (W8,W8) W16 I><()>
+is
+  \ p -> case p of
+         { (W8 a7 a6 a5 a4 a3 a2 a1 a0,b) ->
+                    let s0  =  mk16 (pp a0 b)
+                 in let s1  =  add16 s0 (sh (mk16 (pp a1 b)))
+                 in let s2  =  add16 s1 (sh (sh (mk16 (pp a2 b))))
+                 in let s3  =  add16 s2 (sh (sh (sh (mk16 (pp a3 b)))))
+                 in let s4  =  add16 s3 (sh (sh (sh (sh (mk16 (pp a4 b))))))
+                 in let s5  =  add16 s4 (sh (sh (sh (sh (sh (mk16 (pp a5 b)))))))
+                 in let s6  =  add16 s5 (sh (sh (sh (sh (sh (sh (mk16 (pp a6 b))))))))
+                 in let s7  =  add16 s6 (sh (sh (sh (sh (sh (sh (sh (mk16 (pp a7 b)))))))))
+                 in bind p' <- signal s7
+                 in loop p'
+         }
+end
+
+phase1 :: (W16,W8,W8) -> <ReT (W8,W8) (W16,W8,W8) I><()>
+is
+  \ o -> bind p <- signal o
+      in case p of
+         { (a,b) -> case a of { (W8 _ _ _ _ _ _ _ a0) -> phase1 (mk16 (pp a0 b),a,b) } }
+end
+
+pipe1 :: <ReT (W8,W8) (W16,W8,W8) I><()>
+is
+  phase1 (w16Zero,w8Zero,w8Zero)
+end
+
+phase2 :: (W16,W8,W8) -> <ReT (W16,W8,W8) (W16,W8,W8) I><()>
+is
+  \ o -> bind p <- signal o
+      in case p of
+         { (s,a,b) -> case a of { (W8 _ _ _ _ _ _ a1 _) -> phase2 (add16 s (sh (mk16 (pp a1 b))),a,b) } }
+end
+
+pipe2 :: <ReT (W16,W8,W8) (W16,W8,W8) I><()>
+is
+  phase2 (w16Zero,w8Zero,w8Zero)
+end
+
+phase3 :: (W16,W8,W8) -> <ReT (W16,W8,W8) (W16,W8,W8) I><()>
+is
+  \ o -> bind p <- signal o
+      in case p of
+         { (s,a,b) -> case a of { (W8 _ _ _ _ _ a2 _ _) -> phase3 (add16 s (sh (sh (mk16 (pp a2 b)))),a,b) } }
+end
+
+pipe3 :: <ReT (W16,W8,W8) (W16,W8,W8) I><()>
+is
+  phase3 (w16Zero,w8Zero,w8Zero)
+end
+
+phase4 :: (W16,W8,W8) -> <ReT (W16,W8,W8) (W16,W8,W8) I><()>
+is
+  \ o -> bind p <- signal o
+      in case p of
+         { (s,a,b) -> case a of { (W8 _ _ _ _ a3 _ _ _) -> phase4 (add16 s (sh (sh (sh (mk16 (pp a3 b))))),a,b) } }
+end
+
+pipe4 :: <ReT (W16,W8,W8) (W16,W8,W8) I><()>
+is
+  phase4 (w16Zero,w8Zero,w8Zero)
+end
+
+phase5 :: (W16,W8,W8) -> <ReT (W16,W8,W8) (W16,W8,W8) I><()>
+is
+  \ o -> bind p <- signal o
+      in case p of
+         { (s,a,b) -> case a of { (W8 _ _ _ a4 _ _ _ _) -> phase5 (add16 s (sh (sh (sh (sh (mk16 (pp a4 b)))))),a,b) } }
+end
+
+pipe5 :: <ReT (W16,W8,W8) (W16,W8,W8) I><()>
+is
+  phase5 (w16Zero,w8Zero,w8Zero)
+end
+
+phase6 :: (W16,W8,W8) -> <ReT (W16,W8,W8) (W16,W8,W8) I><()>
+is
+  \ o -> bind p <- signal o
+      in case p of
+         { (s,a,b) -> case a of { (W8 _ _ a5 _ _ _ _ _) -> phase6 (add16 s (sh (sh (sh (sh (sh (mk16 (pp a5 b))))))),a,b) } }
+end
+
+pipe6 :: <ReT (W16,W8,W8) (W16,W8,W8) I><()>
+is
+  phase6 (w16Zero,w8Zero,w8Zero)
+end
+
+phase7 :: (W16,W8,W8) -> <ReT (W16,W8,W8) (W16,W8,W8) I><()>
+is
+  \ o -> bind p <- signal o
+      in case p of
+         { (s,a,b) -> case a of { (W8 _ a6 _ _ _ _ _ _) -> phase7 (add16 s (sh (sh (sh (sh (sh (sh (mk16 (pp a6 b)))))))),a,b) } }
+end
+
+pipe7 :: <ReT (W16,W8,W8) (W16,W8,W8) I><()>
+is
+  phase7 (w16Zero,w8Zero,w8Zero)
+end
+
+
+phase8 :: W16 -> <ReT (W16,W8,W8) W16 I><()>
+is
+  \ o -> bind p <- signal o
+      in case p of
+         { (s,a,b) -> case a of { (W8 a7 _ _ _ _ _ _ _) -> phase8 (add16 s (sh (sh (sh (sh (sh (sh (sh (mk16 (pp a7 b)))))))))) } }
+end
+
+pipe8 :: <ReT (W16,W8,W8) W16 I><()>
+is
+  phase8 w16Zero
+end
+
+main :: <ReT (W8,W8) W16 I><()>
+is
+  loop (w8Zero,w8Zero)
+end
+
+mkout :: ((W16,W8,W8),((W16,W8,W8),((W16,W8,W8),((W16,W8,W8),((W16,W8,W8),((W16,W8,W8),((W16,W8,W8),W16))))))) -> W16
+is
+  \ t -> case t of { (_,(_,(_,(_,(_,(_,(_,x))))))) -> x }
+end
+
+pushpipe :: ((W16,W8,W8),((W16,W8,W8),((W16,W8,W8),((W16,W8,W8),((W16,W8,W8),((W16,W8,W8),((W16,W8,W8),W16))))))) ->
+            (W8,W8) ->
+            ((W8,W8),((W16,W8,W8),((W16,W8,W8),((W16,W8,W8),((W16,W8,W8),((W16,W8,W8),((W16,W8,W8),(W16,W8,W8))))))))
+is
+  \ t -> \ i -> case t of { (a,(b,(c,(d,(e,(f,(g,_))))))) -> (i,(a,(b,(c,(d,(e,(f,g))))))) }
+end
+
+start :: <ReT (W8,W8) W16 I><()>
+is
+--  main
+  refold mkout pushpipe (parI pipe1 (parI pipe2 (parI pipe3 (parI pipe4 (parI pipe5 (parI pipe6 (parI pipe7 pipe8)))))))
+end
