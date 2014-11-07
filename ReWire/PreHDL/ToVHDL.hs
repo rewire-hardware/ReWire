@@ -41,7 +41,7 @@ vRHS (ConcatRHS ls)     = "(" ++ intercalate " & " ls ++ ")"
 
 vCmd :: Cmd -> String
 vCmd (Rem c)        = "-- " ++ c
-vCmd (Assign "output" rhs) = "output <= " ++ vRHS rhs ++ ";" -- FIXME; kludge :/
+vCmd (Assign "output" rhs) = "nextout := " ++ vRHS rhs ++ ";" -- FIXME; kludge :/
 vCmd (Assign l rhs) = l ++ " := " ++ vRHS rhs ++ ";"
 vCmd (NextState n)  = "state := STATE" ++ show n ++ ";"
 vCmd (If b c)       = "if " ++ vBool b ++ " then\n"
@@ -215,8 +215,10 @@ toVHDL e p = "library ieee;\n"
            "process (clk)\n"
         ++ indent (concatMap ((++"\n") . vRegDecl) (regDecls (progHeader p)))
         ++ "  variable state : control_state := " ++ startState (progHeader p)  ++ ";\n"
+        ++ "  variable nextout : std_logic_vector (0 to " ++ show (outputSize (progHeader p)-1) ++ ");\n"
         ++ "begin\n"
         ++ "  if clk'event and clk='1' then\n"
+        ++ "    output <= nextout;\n"
         ++ indent (indent (vCmd (progBody p))) ++ "\n"
         ++ "  end if;\n"
         ++ "end process;\n"
