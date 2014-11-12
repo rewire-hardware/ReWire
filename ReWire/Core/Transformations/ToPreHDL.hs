@@ -880,13 +880,13 @@ cmdToSCFG :: TransCommand
 cmdToSCFG _ p = (Nothing,Just (mkDot $ gather $ eu $ cfgFromRW p))
 
 cmdToCFG :: TransCommand
-cmdToCFG _ p = error "ToCFG disabled" --(Nothing,Just (mkDot $ gather $ linearize $ fst $ head $ cfgFromRW p))
+cmdToCFG _ p = (Nothing,Just (mkDot $ gather $ linearize $ eu $ cfgFromRW p))
 
 cmdToPreG :: TransCommand
 cmdToPreG _ p = (Nothing,Just (show (cfgToProg (cfgFromRW p))))
 
 cmdToPre :: TransCommand
-cmdToPre _ p = error "ToPre disabled" --(Nothing,Just (show (gotoElim $ cfgToProg $ fst $ head $ (cfgFromRW p))))
+cmdToPre _ p = (Nothing,Just (show (gotoElim $ cfgToProg $ eu $ (cfgFromRW p))))
 
 cmdToVHDL :: TransCommand
 cmdToVHDL _ p = (Nothing,Just (clVHDL (c2p (cfgCLExp p))))
