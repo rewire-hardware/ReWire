@@ -127,7 +127,8 @@ instance Show Cmd where
   show (NextState n)    = "next state is " ++ show n ++ ";"
 
 indent :: String -> String
-indent s = "  " ++ idt s
+indent "" = ""
+indent s  = "  " ++ idt s
   where idt "\n"     = "\n"
         idt ('\n':s) = "\n  " ++ idt s
         idt (c:s)    = c:idt s
