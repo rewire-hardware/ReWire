@@ -219,24 +219,35 @@ cfgExpr e = case ef of
                               return (ni,n,r)
              RWCCon dci _ -> do
                -- Tag.
-               t           <- getTag dci
-               rt          <- freshLocSize (length t)
-               nt          <- addFreshNode (Assign rt (ConstRHS t))
+               t            <- getTag dci
+               rt           <- freshLocSize (length t)
+               nt           <- addFreshNode (Assign rt (ConstRHS t))
+               -- Allocate result reg.
+               r            <- freshLocTy (typeOf e)
+               res_size     <- tyWidth (typeOf e)
+               -- Padding.
+               let targs    =  map typeOf eargs
+               args_size    <- liftM sum (mapM tyWidth targs)
+               let pad_size =  res_size - args_size - length t
+               r_pad        <- freshLocSize pad_size
+               n_pad        <- addFreshNode (Assign r_pad (ConstRHS (replicate pad_size Zero)))
+               addEdge nt n_pad (Conditional (BoolConst True))
                case eargs of
-                 [] -> -- No arguments, so tag is all we need.
-                       return (nt,nt,rt)
+                 [] -> -- No arguments, so tag and padding is all we need.
+                       do n_fill <- addFreshNode (Assign r (ConcatRHS [rt,r_pad]))
+                          addEdge n_pad n_fill (Conditional (BoolConst True))
+                          return (nt,n_fill,r)
                  _  -> do -- Compile argument expressions.
                           ninors_args <- mapM cfgExpr eargs
                           -- Sequence tag and argument expressions.
                           stringNodes ((nt,nt) : map (\(ni,no,_) -> (ni,no)) ninors_args)
-                          -- Allocate result reg.
-                          r           <- freshLocTy (typeOf e)
-                          -- Concatenate tag and args, result in r.
+                          -- Concatenate tag, args, and padding, result in r.
                           let rs_args  =  map ( \ (_,_,r) -> r) ninors_args
-                          n            <- addFreshNode (Assign r (ConcatRHS (rt:rs_args)))
+                          n            <- addFreshNode (Assign r (ConcatRHS ([rt]++rs_args++[r_pad])))
                           -- Sequence argument expressions with ctor call.
                           let (_,no,_) = last ninors_args
-                          addEdge no n (Conditional (BoolConst True))
+                          addEdge no n_pad (Conditional (BoolConst True))
+                          addEdge n_pad n (Conditional (BoolConst True))
                           -- Entry is the beginning of the argument
                           -- expressions, exit is the constructor call.
                           return (nt,n,r)
@@ -813,19 +824,27 @@ funExpr e = case ef of
                    return (foldr1 mkSeq (cs++[Assign r (FunCallRHS nf rs)]),r)
              RWCCon dci _ -> do
                -- Tag.
-               t           <- getTag dci
-               rt          <- freshLocSize (length t)
-               nt          <- addFreshNode (Assign rt (ConstRHS t))
+               t            <- getTag dci
+               rt           <- freshLocSize (length t)
+               -- Allocate result reg.
+               r            <- freshLocTy (typeOf e)
+               res_size     <- tyWidth (typeOf e)
+               -- Padding.
+               let targs    =  map typeOf eargs
+               args_size    <- liftM sum (mapM tyWidth targs)
+               let pad_size =  res_size - args_size - length t
+               r_pad        <- freshLocSize pad_size
                case eargs of
                  [] -> -- No arguments, so tag is all we need.
-                       return (Assign rt (ConstRHS t),rt)
+                       return (foldr1 mkSeq [Assign rt (ConstRHS t),
+                                             Assign r_pad (ConstRHS (replicate pad_size Zero)),
+                                             Assign r (ConcatRHS [rt,r_pad])],r
+                                             )
                  _  -> do -- Compile argument expressions.
                           crs          <- mapM funExpr eargs
                           let (cs,rs)  =  unzip crs
-                          -- Allocate result reg.
-                          r            <- freshLocTy (typeOf e)
                           -- Concatenate tag and args, result in r.
-                          return (foldr1 mkSeq (cs++[Assign r (ConcatRHS (rt:rs))]),r)
+                          return (foldr1 mkSeq (cs++[Assign r (ConcatRHS ([rt]++rs++[r_pad]))]),r)
              RWCCase escr alts               -> do
                case eargs of
                  [] -> do
