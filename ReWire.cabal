@@ -79,7 +79,7 @@ library
                    ReWire.Core.PrettyPrintHaskell
                    ReWire.Core.Prims
                    ReWire.PreHDL.CFG
-                   ReWire.PreHDL.ConnectLogic
+--                   ReWire.PreHDL.ConnectLogic
                    ReWire.PreHDL.ElimEmpty
                    ReWire.PreHDL.GotoElim
                    ReWire.PreHDL.Syntax
