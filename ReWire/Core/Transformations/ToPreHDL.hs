@@ -240,14 +240,13 @@ cfgExpr e = case ef of
                  _  -> do -- Compile argument expressions.
                           ninors_args <- mapM cfgExpr eargs
                           -- Sequence tag and argument expressions.
-                          stringNodes ((nt,nt) : map (\(ni,no,_) -> (ni,no)) ninors_args)
+                          stringNodes ((n_pad,n_pad) : map (\(ni,no,_) -> (ni,no)) ninors_args)
                           -- Concatenate tag, args, and padding, result in r.
                           let rs_args  =  map ( \ (_,_,r) -> r) ninors_args
                           n            <- addFreshNode (Assign r (ConcatRHS ([rt]++rs_args++[r_pad])))
                           -- Sequence argument expressions with ctor call.
                           let (_,no,_) = last ninors_args
-                          addEdge no n_pad (Conditional (BoolConst True))
-                          addEdge n_pad n (Conditional (BoolConst True))
+                          addEdge no n (Conditional (BoolConst True))
                           -- Entry is the beginning of the argument
                           -- expressions, exit is the constructor call.
                           return (nt,n,r)
