@@ -27,3 +27,5 @@ Debug.hs
 *.blg
 *.log
 *.pdf
+.cabal-sandbox
+cabal.sandbox.config
