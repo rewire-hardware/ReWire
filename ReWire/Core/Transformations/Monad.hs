@@ -8,6 +8,7 @@
 --
 module ReWire.Core.Transformations.Monad where
 
+import Control.Applicative
 import Control.Monad.Reader
 import qualified Control.Monad.Trans.Reader as Reader
 import Control.Monad.Identity
@@ -27,7 +28,7 @@ import ReWire.Core.Transformations.Uniquify (uniquify,uniquifyE)
 newtype RWT m a = RWT { deRWT :: AssumeT (Id RWCExp) VarInfo
                                   (AssumeT TyConId TyConInfo
                                    (AssumeT DataConId DataConInfo (ScopeT (StateT Int m)))) a }
-                  deriving Monad
+                  deriving (Functor,Applicative,Monad)
 
 data VarInfo = PrimVar RWCPrim | GlobalVar RWCDefn | LocalVar RWCTy deriving Show
 newtype TyConInfo = TyConInfo RWCData deriving Show

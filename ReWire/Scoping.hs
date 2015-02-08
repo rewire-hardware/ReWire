@@ -6,6 +6,7 @@
 
 module ReWire.Scoping where
 
+import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Reader
@@ -42,7 +43,8 @@ class (Ord v,Monad m) => MonadAssume v t m | m -> v, m -> t where
   getAssumptions :: m (Map v t)
 
 newtype AssumeT v t m a = AssumeT { deAssumeT :: ReaderT (Map v t) m a }
-                           deriving (Monad,MonadTrans,MonadPlus,MonadScope)
+                           deriving (Functor,Applicative,Alternative,Monad,
+                                     MonadTrans,MonadPlus,MonadScope)
 
 deriving instance MonadState s m => MonadState s (AssumeT v t m)
 deriving instance MonadError e m => MonadError e (AssumeT v t m)
@@ -117,7 +119,7 @@ sortOf (IdAny (Id s _)) = s
 --- A monad for generating locally fresh names.
 ---
 newtype ScopeT m a = ScopeT { deScopeT :: ReaderT (Set IdAny) m a }
-   deriving (Monad,MonadTrans,MonadPlus)
+   deriving (Functor,Applicative,Alternative,Monad,MonadTrans,MonadPlus)
 
 deriving instance MonadState s m => MonadState s (ScopeT m)
 deriving instance MonadError e m => MonadError e (ScopeT m)
