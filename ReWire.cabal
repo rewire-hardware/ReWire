@@ -68,6 +68,7 @@ executable rwc
   -- Base language which the package is written in.
   default-language:    Haskell2010
   
+  --ghc-options:         -O -fprof-auto -rtsopts
   ghc-options:         -O -fprof-auto -rtsopts
 
 library 
@@ -114,4 +115,5 @@ library
   -- Base language which the package is written in.
   default-language:    Haskell2010
   
-  ghc-options:         -O -fprof-auto -rtsopts -dynamic
+  --ghc-options:         -O -fprof-auto -rtsopts -dynamic
+  ghc-options:         -O
