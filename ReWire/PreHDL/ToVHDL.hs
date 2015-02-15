@@ -75,8 +75,8 @@ flopNextName n = n ++ "_flop_next"
 toVHDL :: Prog -> String
 toVHDL p = "library ieee;\n"
         ++ "use ieee.std_logic_1164.all;\n"
-        ++ "-- Uncomment the following line if VHDL primitives are in use.\n"
-        ++ "-- use prims.all;\n"
+        ++ "-- Comment out the following line if VHDL primitives are not in use.\n"
+        ++ "use work.prims.all;\n"
         ++ "entity rewire is\n"
         ++ "  Port ( clk : in std_logic ;\n"
         ++ "         input : in std_logic_vector (0 to " ++ show (inputSize (progHeader p)-1) ++ ");\n"
@@ -123,6 +123,7 @@ toVHDL p = "library ieee;\n"
                    ++ indent (loopControlTmpInit ++ "\n")
                    ++ indent (loopInputTmpInit ++ "\n")
                    ++ indent (concatMap (++"\n") loopTmpInits)
+                   ++ indent "output_tmp := (others => '0');\n"
                    ++ indent "-- Loop body.\n"
                    ++ indent (loopBody ++ "\n")
                    ++ indent "-- Write back reg temps.\n"
