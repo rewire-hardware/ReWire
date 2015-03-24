@@ -27,5 +27,6 @@ Debug.hs
 *.blg
 *.log
 *.pdf
+*.synctex.gz
 .cabal-sandbox
 cabal.sandbox.config
