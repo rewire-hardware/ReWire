@@ -1,0 +1,859 @@
+-- kludge, should be in a prelude
+data Tuple2 a b is Tuple2 a b end
+data Unit is Unit end
+-- end kludge
+data Bit is Zero | One end
+data W8  is W8 Bit Bit Bit Bit Bit Bit Bit Bit end
+data Inputs is Inputs W8 Bit Bit end      -- (dataIn,rstIn,intIn)
+data Outputs is Outputs W8 W8 Bit Bit end -- (addrOut,dataOut,weOut,iackOut)
+data CPUState is CPUState Inputs Outputs  -- (inputs,outputs) (0-9,10-27)
+                          Bit Bit Bit W8  -- (zFlag,cFlag,ieFlag,pc) (28,29,30,31-38)
+                          Bit Bit W8      -- (zsFlag,csFlag,pcSave) (39,40,41-48)
+                          W8 W8 W8 W8     -- (r0,r1,r2,r3) (49-56,57-64,65-72,73-80)
+                          end
+data Register is R0 | R1 | R2 | R3 end
+
+
+vhdl notBit   :: Bit -> Bit                  is prim_notBit
+vhdl eqBit    :: Bit -> Bit -> Bit           is prim_eqBit
+vhdl andBit   :: Bit -> Bit -> Bit           is prim_andBit
+vhdl orBit    :: Bit -> Bit -> Bit           is prim_orBit
+vhdl xorBit   :: Bit -> Bit -> Bit           is prim_xorBit
+
+vhdl zeroW8   :: W8                          is prim_zeroW8
+vhdl oneW8    :: W8                          is prim_oneW8
+vhdl notW8    :: W8 -> W8                    is prim_notW8
+vhdl andW8    :: W8 -> W8 -> W8              is prim_andW8
+vhdl orW8     :: W8 -> W8 -> W8              is prim_orW8
+vhdl xorW8    :: W8 -> W8 -> W8              is prim_xorW8
+vhdl eqW8     :: W8 -> W8 -> Bit             is prim_eqW8
+vhdl rolW8    :: W8 -> W8                    is prim_rolW8
+vhdl rorW8    :: W8 -> W8                    is prim_rorW8
+vhdl plusCW8  :: W8 -> W8 -> Bit -> (Bit,W8) is prim_plusCW8
+vhdl plusW8   :: W8 -> W8 -> (Bit,W8)        is prim_plusW8
+vhdl negW8    :: W8 -> W8 -> W8              is prim_negW8
+vhdl minusCW8 :: W8 -> W8 -> Bit -> (Bit,W8) is prim_minusCW8
+vhdl shlCW8   :: W8 -> Bit -> (Bit,W8)       is prim_shlCW8
+vhdl shrCW8   :: W8 -> Bit -> (Bit,W8)       is prim_shrCW8
+vhdl msbW8    :: W8 -> Bit                   is prim_msbW8
+vhdl lsbW8    :: W8 -> Bit                   is prim_lsbW8
+
+
+mkReg :: Bit -> Bit -> Register
+is
+  \ b0 -> \ b1 -> case (b0,b1) of
+                  { (Zero,Zero) -> R0
+                  ; (Zero, One) -> R1
+                  ; ( One,Zero) -> R2
+                  ; ( One, One) -> R3
+                  }
+end
+
+when :: Bit -> <m><()> -> <m><()>
+is
+  \ b -> \ m -> case b of
+                { One  -> m
+                ; Zero -> return ()
+                }
+end
+
+getState :: <ReT Inputs Outputs (StT CPUState I)><CPUState>
+is
+  lift get
+end
+
+outputs :: CPUState -> Outputs
+is
+  \ s -> case s of
+         { CPUState _ o _ _ _ _ _ _ _ _ _ _ _ -> o }
+end
+
+getOutputs :: <ReT Inputs Outputs (StT CPUState I)><Outputs>
+is 
+     bind s <- getState
+  in return (outputs s)
+end
+
+setInputs :: CPUState -> Inputs -> CPUState
+is
+  \ s -> \ i -> 
+         case s of
+         { CPUState _ o z c ie pc zs cs pcs r0 r1 r2 r3 ->
+           CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
+end
+
+putState :: CPUState -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+  \ s -> lift (put s)
+end
+
+putInputs :: Inputs -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+  \ i -> bind s <- getState
+      in putState (setInputs s i)
+end
+
+tick :: <ReT Inputs Outputs (StT CPUState I)><()>
+is
+     bind o <- getOutputs
+  in bind i <- signal o
+  in putInputs i
+end
+
+pc :: CPUState -> W8
+is
+  \ s -> case s of
+         { CPUState _ _ _ _ _ pc _ _ _ _ _ _ _ -> pc }
+end
+
+getPC :: <ReT Inputs Outputs (StT CPUState I)><W8>
+is
+     bind s <- getState
+  in return (pc s)
+end
+
+setPC :: CPUState -> W8 -> CPUState
+is
+  \ s -> \ pc -> 
+         case s of
+         { CPUState i o z c ie  _ zs cs pcs r0 r1 r2 r3 ->
+           CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
+end
+
+putPC :: W8 -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ pc ->
+     bind s <- getState
+  in putState (setPC s pc)
+end
+
+fst :: (a,b) -> a
+is
+  \ p -> case p of { (x,_) -> x }
+end
+
+snd :: (a,b) -> b
+is
+  \ p -> case p of { (_,x) -> x }
+end
+
+incrPC :: <ReT Inputs Outputs (StT CPUState I)><()>
+is
+     bind pc <- getPC
+  in putPC (snd (plusW8 pc oneW8))
+end
+
+r0 :: CPUState -> W8
+is
+  \ s -> case s of
+         { CPUState _ _ _ _ _ _ _ _ _ r0 _ _ _ -> r0 }
+end
+
+r1 :: CPUState -> W8
+is
+  \ s -> case s of
+         { CPUState _ _ _ _ _ _ _ _ _ _ r1 _ _ -> r1 }
+end
+
+r2 :: CPUState -> W8
+is
+  \ s -> case s of
+         { CPUState _ _ _ _ _ _ _ _ _ _ _ r2 _ -> r2 }
+end
+
+r3 :: CPUState -> W8
+is
+  \ s -> case s of
+         { CPUState _ _ _ _ _ _ _ _ _ _ _ _ r3 -> r3 }
+end
+
+getReg :: Register -> <ReT Inputs Outputs (StT CPUState I)><W8>
+is
+  \ r -> bind s <- getState
+      in case r of
+         { R0 -> return (r0 s)
+         ; R1 -> return (r1 s)
+         ; R2 -> return (r2 s)
+         ; R3 -> return (r3 s)
+         }
+end
+
+setR0 :: CPUState -> W8 -> CPUState
+is
+  \ s -> \ r0 -> 
+         case s of
+         { CPUState i o z c ie pc zs cs pcs  _ r1 r2 r3 ->
+           CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
+end
+
+setR1 :: CPUState -> W8 -> CPUState
+is
+  \ s -> \ r1 -> 
+         case s of
+         { CPUState i o z c ie pc zs cs pcs r0  _ r2 r3 ->
+           CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
+end
+
+setR2 :: CPUState -> W8 -> CPUState
+is
+  \ s -> \ r2 -> 
+         case s of
+         { CPUState i o z c ie pc zs cs pcs r0 r1  _ r3 ->
+           CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
+end
+
+setR3 :: CPUState -> W8 -> CPUState
+is
+  \ s -> \ r3 -> 
+         case s of
+         { CPUState i o z c ie pc zs cs pcs r0 r1 r2  _ ->
+           CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
+end
+
+putReg :: Register -> W8 -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+  \ r -> \ v ->
+       bind s <- getState
+    in case r of
+       { R0 -> putState (setR0 s v)
+       ; R1 -> putState (setR1 s v)
+       ; R2 -> putState (setR2 s v)
+       ; R3 -> putState (setR3 s v)
+       }
+end
+
+setPCSave :: CPUState -> W8 -> CPUState
+is
+  \ s -> \ pcs -> 
+         case s of
+         { CPUState i o z c ie pc zs cs   _ r0 r1 r2 r3 ->
+           CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
+end
+
+putPCSave :: W8 -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+  \ v ->
+       bind s <- getState
+    in putState (setPCSave s v)
+end
+
+pcSave :: CPUState -> W8
+is
+  \ s -> case s of
+         { CPUState _ _ _ _ _ _ _ _ pcs _ _ _ _ -> pcs }
+end
+
+getPCSave :: <ReT Inputs Outputs (StT CPUState I)><W8>
+is
+     bind s <- getState
+  in return (pcSave s)
+end
+
+zFlag :: CPUState -> Bit
+is
+  \ s -> case s of
+         { CPUState _ _ z _ _ _ _ _ _ _ _ _ _ -> z }
+end
+
+getZFlag :: <ReT Inputs Outputs (StT CPUState I)><Bit>
+is
+     bind s <- getState
+  in return (zFlag s)
+end
+
+zsFlag :: CPUState -> Bit
+is
+  \ s -> case s of
+         { CPUState _ _ _ _ _ _ zs _ _ _ _ _ _ -> zs }
+end
+
+getZSave :: <ReT Inputs Outputs (StT CPUState I)><Bit>
+is
+     bind s <- getState
+  in return (zsFlag s)
+end
+
+setZFlag :: CPUState -> Bit -> CPUState
+is
+  \ s -> \ z -> 
+         case s of
+         { CPUState i o _ c ie pc zs cs pcs r0 r1 r2 r3 ->
+           CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
+end
+
+putZFlag :: Bit -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+  \ b -> bind s <- getState
+      in putState (setZFlag s b)
+end
+
+setZSave :: CPUState -> Bit -> CPUState
+is
+  \ s -> \ zs -> 
+         case s of
+         { CPUState i o z c ie pc  _ cs pcs r0 r1 r2 r3 ->
+           CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
+end
+
+putZSave :: Bit -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+  \ b -> bind s <- getState
+      in putState (setZSave s b)
+end
+
+cFlag :: CPUState -> Bit
+is
+  \ s -> case s of
+         { CPUState _ _ _ c _ _ _ _ _ _ _ _ _ -> c }
+end
+
+getCFlag :: <ReT Inputs Outputs (StT CPUState I)><Bit>
+is
+     bind s <- getState
+  in return (cFlag s)
+end
+
+csFlag :: CPUState -> Bit
+is
+  \ s -> case s of
+         { CPUState _ _ _ _ _ _ _ cs _ _ _ _ _ -> cs }
+end
+
+getCSave :: <ReT Inputs Outputs (StT CPUState I)><Bit>
+is
+     bind s <- getState
+  in return (csFlag s)
+end
+
+setCFlag :: CPUState -> Bit -> CPUState
+is
+  \ s -> \ c -> 
+         case s of
+         { CPUState i o z _ ie pc zs cs pcs r0 r1 r2 r3 ->
+           CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
+end
+
+putCFlag :: Bit -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+  \ b -> bind s <- getState
+      in putState (setCFlag s b)
+end
+
+setCSave :: CPUState -> Bit -> CPUState
+is
+  \ s -> \ cs -> 
+         case s of
+         { CPUState i o z c ie pc zs  _ pcs r0 r1 r2 r3 ->
+           CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
+end
+
+putCSave :: Bit -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+  \ b -> bind s <- getState
+      in putState (setCSave s b)
+end
+
+setIEFlag :: CPUState -> Bit -> CPUState
+is
+  \ s -> \ ie -> 
+         case s of
+         { CPUState i o z c  _ pc zs cs pcs r0 r1 r2 r3 ->
+           CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
+end
+
+putIEFlag :: Bit -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+  \ b -> bind s <- getState
+      in putState (setIEFlag s b)
+end
+
+ieFlag :: CPUState -> Bit
+is
+  \ s -> case s of
+         { CPUState _ _ _ _ ie _ _ _ _ _ _ _ _ -> ie }
+end
+
+getIEFlag :: <ReT Inputs Outputs (StT CPUState I)><Bit>
+is
+     bind s <- getState
+  in return (ieFlag s)
+end
+
+inputs :: CPUState -> Inputs
+is
+  \ s -> case s of
+         { CPUState i _ _ _ _ _ _ _ _ _ _ _ _ -> i }
+end
+
+getInputs :: <ReT Inputs Outputs (StT CPUState I)><Inputs>
+is
+     bind s <- getState
+  in return (inputs s)
+end
+
+setOutputs :: CPUState -> Outputs -> CPUState
+is
+  \ s -> \ o -> 
+         case s of
+         { CPUState i _ z c ie pc zs cs pcs r0 r1 r2 r3 ->
+           CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
+end
+
+putOutputs :: Outputs -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+  \ o -> bind s <- getState
+      in putState (setOutputs s o)
+end
+
+setAddrOut :: Outputs -> W8 -> Outputs
+is
+  \ o -> \ a_o -> case o of
+                  { Outputs   _ d_o we_o iack_o ->
+                    Outputs a_o d_o we_o iack_o }
+end
+
+putAddrOut :: W8 -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+  \ a -> bind o <- getOutputs
+      in putOutputs (setAddrOut o a)
+end
+
+setDataOut :: Outputs -> W8 -> Outputs
+is
+  \ o -> \ d_o -> case o of
+                  { Outputs a_o   _ we_o iack_o ->
+                    Outputs a_o d_o we_o iack_o }
+end
+
+putDataOut :: W8 -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+  \ d -> bind o <- getOutputs
+      in putOutputs (setDataOut o d)
+end
+
+dataIn :: Inputs -> W8
+is
+  \ i -> case i of
+         { Inputs d_i _ _ -> d_i }
+end
+
+getDataIn :: <ReT Inputs Outputs (StT CPUState I)><W8>
+is
+     bind i <- getInputs
+  in return (dataIn i)
+end
+
+setWeOut :: Outputs -> Bit -> Outputs
+is
+  \ o -> \ we_o -> case o of
+                   { Outputs a_o d_o    _ iack_o ->
+                     Outputs a_o d_o we_o iack_o }
+end
+
+putWeOut :: Bit -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+  \ we -> bind o <- getOutputs
+       in putOutputs (setWeOut o we)
+end
+
+setIackOut :: Outputs -> Bit -> Outputs
+is
+  \ o -> \ iack_o -> case o of
+                     { Outputs a_o d_o we_o      _ ->
+                       Outputs a_o d_o we_o iack_o }
+end
+
+putIackOut :: Bit -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+  \ iack -> bind o <- getOutputs
+         in putOutputs (setIackOut o iack)
+end
+
+mem :: Bit -> Bit -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+  \ rEn -> \ wEn -> \ r -> bind pc  <- getPC
+                        in bind zzz <- putAddrOut pc
+                        in bind zzz <- tick
+                   
+                        in bind a   <- getDataIn
+                   
+                        in bind zzz <- putAddrOut a
+                        in bind zzz <- putWeOut wEn
+                        in bind zzz <- when wEn (
+                                            bind d <- getReg r
+                                         in putDataOut d)
+                        in bind zzz <- incrPC
+                        in bind zzz <- tick
+                        in             when rEn (
+                                            bind v <- getDataIn
+                                         in putReg r v)
+end
+
+ld :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ rD -> \ rS ->
+         bind a   <- getReg rS
+      in bind zzz <- putWeOut Zero
+      in bind zzz <- putAddrOut a
+      in bind zzz <- tick
+              
+      in bind v   <- getDataIn
+      in             putReg rD v
+end
+
+st :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ rD -> \ rS -> 
+         bind a   <- getReg rS
+      in bind v   <- getReg rD
+      in bind zzz <- putWeOut One
+      in bind zzz <- putDataOut v
+      in bind zzz <- putAddrOut a
+      in             tick
+end
+
+add :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ rD -> \ rS -> 
+          bind vD  <- getReg rD
+       in bind vS  <- getReg rS
+       in let p    =  plusCW8 vD vS Zero
+       in let cout =  fst p
+       in let vD'  =  snd p
+       in bind zzz <- putCFlag cout
+       in bind zzz <- putReg rD vD'
+       in             tick
+end
+
+addc :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ rD -> \ rS -> 
+           bind vD  <- getReg rD
+        in bind vS  <- getReg rS
+        in bind cin <- getCFlag
+        in let p    =  plusCW8 vD vS cin
+        in let cout =  fst p
+        in let vD'  =  snd p
+        in bind zzz <- putCFlag cout
+        in bind zzz <- putReg rD vD'
+        in             tick
+end
+
+sub :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ rD -> \ rS ->
+           bind vD          <- getReg rD
+        in bind vS          <- getReg rS
+        in let p            =  minusCW8 vD vS Zero
+        in let cout         =  fst p
+        in let vD'          =  snd p
+        in bind zzz         <- putCFlag cout
+        in bind zzz         <- putReg rD vD'
+        in                     tick
+end
+
+subb :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ rD -> \ rS ->
+           bind vD             <- getReg rD
+        in bind vS             <- getReg rS
+        in bind cin            <- getCFlag
+        in let p               =  minusCW8 vD vS cin
+        in let cout            =  fst p
+        in let vD'             =  snd p
+        in bind zzz            <- putCFlag cout
+        in bind zzz            <- putReg rD vD'
+        in                        tick
+end
+
+mov :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is 
+ \ rD -> \ rS ->
+           bind v   <- getReg rS
+        in bind zzz <- putReg rD v
+        in             tick
+end
+
+or :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is 
+ \ rD -> \ rS ->
+           bind vD      <- getReg rD
+        in bind vS      <- getReg rS
+        in let vD'      =  orW8 vD vS
+        in bind zzz     <- putReg rD vD'
+        in bind zzz     <- putCFlag Zero
+        in bind zzz     <- putZFlag (eqW8 vD' zeroW8)
+        in                 tick
+end
+
+and :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is 
+ \ rD -> \ rS ->
+           bind vD      <- getReg rD
+        in bind vS      <- getReg rS
+        in let vD'      =  andW8 vD vS
+        in bind zzz     <- putReg rD vD'
+        in bind zzz     <- putCFlag Zero
+        in bind zzz     <- putZFlag (eqW8 vD' zeroW8)
+        in                 tick
+end
+
+xor :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is 
+ \ rD -> \ rS ->
+           bind vD      <- getReg rD
+        in bind vS      <- getReg rS
+        in let vD'      =  xorW8 vD vS
+        in bind zzz     <- putReg rD vD'
+        in bind zzz     <- putCFlag Zero
+        in bind zzz     <- putZFlag (eqW8 vD' zeroW8)
+        in                 tick
+end
+
+cmp :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ rD -> \ rS ->
+           bind vD  <- getReg rD
+        in bind vS  <- getReg rS
+        in let p    =  minusCW8 vD vS Zero
+        in let c    =  fst p
+        in let r    =  snd p
+        in bind zzz <- putCFlag c
+        in bind zzz <- putZFlag (eqW8 r zeroW8)
+        in             tick
+end
+
+brz :: Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ r -> bind z   <- getZFlag
+     in bind zzz <- when z (
+                        bind a <- getReg r
+                     in putPC a)
+     in             tick
+end
+
+brnz :: Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ r -> bind z   <- getZFlag
+     in bind zzz <- when (notBit z) (
+                        bind a <- getReg r
+                     in putPC a)
+     in             tick
+end
+
+brc :: Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ r -> bind c   <- getCFlag
+     in bind zzz <- when c (
+                        bind a <- getReg r
+                     in putPC a)
+     in             tick
+end
+
+brnc :: Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ r -> bind c   <- getCFlag
+     in bind zzz <- when (notBit c) (
+                        bind a <- getReg r
+                     in putPC a)
+     in             tick
+end
+
+jmp :: Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ r -> bind a   <- getReg r
+     in bind zzz <- putPC a
+     in             tick
+end
+
+ien :: Bit -> <ReT Inputs Outputs (StT CPUState I)><()>
+is 
+ \ b -> bind zzz <- putIEFlag b
+     in             tick
+end
+
+iack :: <ReT Inputs Outputs (StT CPUState I)><()>
+is
+    bind zzz <- putIackOut One
+ in             tick
+end
+
+iret :: <ReT Inputs Outputs (StT CPUState I)><()>
+is 
+    bind zzz <- putIEFlag One
+ in bind pc  <- getPCSave
+ in bind zzz <- putPC pc
+ in bind z   <- getZSave
+ in bind zzz <- putZFlag z
+ in bind c   <- getCSave
+ in bind zzz <- putCFlag c
+ in             tick
+end
+
+not :: Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ r -> bind v   <- getReg r
+     in bind zzz <- putReg r (notW8 v)
+     in             tick
+end
+
+clrr :: Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ r -> bind zzz <- putReg r zeroW8
+     in             tick
+end
+
+incr :: Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ r -> bind v   <- getReg r
+     in let p    =  plusCW8 v oneW8 Zero
+     in let cout =  fst p
+     in let v'   =  snd p
+     in bind zzz <- putReg r v'
+     in bind zzz <- putCFlag cout
+     in bind zzz <- putZFlag (eqW8 v' zeroW8)
+     in             tick
+end
+
+decr :: Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ r -> bind v   <- getReg r
+     in let p    =  minusCW8 v oneW8 Zero
+     in let cout =  fst p
+     in let v'   =  snd p
+     in bind zzz <- putReg r v'
+     in bind zzz <- putCFlag cout
+     in bind zzz <- putZFlag (eqW8 v' zeroW8)
+     in             tick
+end
+
+rot :: Bit -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ b -> \ r ->
+   case b of
+   { Zero -> bind v   <- getReg r
+          in bind zzz <- putReg r (rolW8 v)
+          in             tick
+   ; One  -> bind v   <- getReg r
+          in bind zzz <- putReg r (rorW8 v)
+          in             tick
+   }
+end
+
+shft :: Bit -> Bit -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
+is
+ \ l -> \ d -> \ r ->
+     bind v   <- getReg r
+  in let p    =  case (d,l) of
+                 { (Zero,Zero) -> shlCW8 v (msbW8 v)
+                 ; (Zero, One) -> shlCW8 v Zero
+                 ; ( One,Zero) -> shrCW8 v (lsbW8 v)
+                 ; ( One, One) -> shrCW8 v Zero
+                 }
+  in let cout =  fst p
+  in let v'   =  snd p
+  in bind zzz <- putReg r v'
+  in bind zzz <- putCFlag cout
+  in bind zzz <- putZFlag (eqW8 v' zeroW8)
+  in             tick
+end
+
+initOutputs :: Outputs
+is
+  Outputs zeroW8 zeroW8 Zero Zero
+end
+
+reset :: <ReT Inputs Outputs (StT CPUState I)><()>
+is
+    bind zzz <- putCFlag Zero
+ in bind zzz <- putZFlag Zero
+ in bind zzz <- putOutputs initOutputs
+ in             tick
+end
+
+interrupt :: <ReT Inputs Outputs (StT CPUState I)><()>
+is
+    bind zzz <- putIEFlag Zero
+ in bind pc  <- getPC
+ in bind z   <- getZFlag
+ in bind c   <- getCFlag
+ in bind zzz <- putPCSave pc
+ in bind zzz <- putZSave z
+ in bind zzz <- putCSave c
+ in             tick
+end
+
+rstIn :: Inputs -> Bit
+is
+  \ i -> case i of
+         { Inputs _ r_i _ -> r_i }
+end
+ 
+intIn :: Inputs -> Bit
+is
+  \ i -> case i of
+         { Inputs _ _ i_i -> i_i }
+end
+
+loop :: <ReT Inputs Outputs (StT CPUState I)><()>
+is
+    bind inp <- getInputs
+ in bind zzz <- case rstIn inp of
+    { One  -> reset
+    ; Zero -> bind ie <- getIEFlag
+           in case (ie,intIn inp) of
+              { (One,One) -> interrupt
+              ; _         -> case dataIn inp of
+                             { W8 Zero Zero Zero Zero  rEn  wEn   b0   b1 -> mem rEn wEn (mkReg b0 b1)
+                             ; W8 Zero Zero Zero  One   b0   b1   c0   c1 -> ld (mkReg b0 b1) (mkReg c0 c1)
+                             ; W8 Zero Zero  One Zero   b0   b1   c0   c1 -> st (mkReg b0 b1) (mkReg c0 c1)
+                             ; W8 Zero Zero  One  One   b0   b1   c0   c1 -> add (mkReg b0 b1) (mkReg c0 c1)
+                             ; W8 Zero  One Zero Zero   b0   b1   c0   c1 -> addc (mkReg b0 b1) (mkReg c0 c1)
+                             ; W8 Zero  One Zero  One   b0   b1   c0   c1 -> sub (mkReg b0 b1) (mkReg c0 c1)
+                             ; W8 Zero  One  One Zero   b0   b1   c0   c1 -> subb (mkReg b0 b1) (mkReg c0 c1)
+                             ; W8 Zero  One  One  One   b0   b1   c0   c1 -> mov (mkReg b0 b1) (mkReg c0 c1)
+                             ; W8  One Zero Zero Zero   b0   b1   c0   c1 -> or (mkReg b0 b1) (mkReg c0 c1)
+                             ; W8  One Zero Zero  One   b0   b1   c0   c1 -> and (mkReg b0 b1) (mkReg c0 c1)
+                             ; W8  One Zero  One Zero   b0   b1   c0   c1 -> xor (mkReg b0 b1) (mkReg c0 c1)
+                             ; W8  One Zero  One  One   b0   b1   c0   c1 -> cmp (mkReg b0 b1) (mkReg c0 c1)
+                             ; W8  One  One Zero Zero Zero Zero   b0   b1 -> brz (mkReg b0 b1)
+                             ; W8  One  One Zero Zero Zero  One   b0   b1 -> brnz (mkReg b0 b1)
+                             ; W8  One  One Zero Zero  One Zero   b0   b1 -> brc (mkReg b0 b1)
+                             ; W8  One  One Zero Zero  One  One   b0   b1 -> brnc (mkReg b0 b1)
+                             ; W8  One  One Zero  One Zero Zero   b0   b1 -> jmp (mkReg b0 b1)
+                             ; W8  One  One Zero  One Zero  One Zero   b0 -> ien b0
+                             ; W8  One  One Zero  One Zero  One  One Zero -> iack
+                             ; W8  One  One Zero  One Zero  One  One  One -> iret
+                             ; W8  One  One Zero  One  One Zero   b0   b1 -> not (mkReg b0 b1)
+                             ; W8  One  One Zero  One  One  One   b0   b1 -> clrr (mkReg b0 b1)
+                             ; W8  One  One  One Zero Zero Zero   b0   b1 -> incr (mkReg b0 b1)
+                             ; W8  One  One  One Zero Zero  One   b0   b1 -> decr (mkReg b0 b1)
+                             ; W8  One  One  One Zero  One    d   b0   b1 -> rot d (mkReg b0 b1)
+                             ; W8  One  One  One  One    l    d   b0   b1 -> shft l d (mkReg b0 b1)
+                             ; _                                          -> reset
+                             }
+              }
+    }
+ in loop
+end
+
+begin :: <ReT Inputs Outputs (StT CPUState I)><()>
+is
+     bind zzz <- reset
+  in             loop
+end
+
+initInputs :: Inputs
+is
+  Inputs zeroW8 Zero Zero
+end
+
+initState :: CPUState
+is
+  CPUState initInputs initOutputs Zero Zero Zero zeroW8 Zero Zero zeroW8 zeroW8 zeroW8 zeroW8 zeroW8
+end
+
+start :: <ReT Inputs Outputs I><((),CPUState)>
+is
+  extrude begin initState
+end

@@ -1,0 +1,3 @@
+expand add addc and brc brnc brnz brz clrr cmp decr fst getCFlag getCSave getDataIn getIEFlag getInputs getOutputs getPC getPCSave getReg getState getZFlag getZSave iack ieFlag ien incr incrPC interrupt iret jmp ld mem mov not or putAddrOut putCFlag putCSave putDataOut putIEFlag putIackOut putInputs putOutputs putPC putPCSave putReg putState putWeOut putZFlag putZSave reset rot shft snd st sub subb tick when xor
+reduce
+purge
