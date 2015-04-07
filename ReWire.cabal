@@ -10,7 +10,7 @@ name:                ReWire
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             0.1.0.0
+version:             0.1.0.1
 
 -- A short (one-line) description of the package.
 synopsis:            A Haskell-to-VHDL compiler
@@ -74,21 +74,36 @@ library
   exposed-modules: ReWire.Core.Syntax
                    ReWire.Core.Parser
                    ReWire.Core.TypeChecker
-                   ReWire.Core.KindChecker
                    ReWire.Core.Kinds
-                   ReWire.Core.Main
+                   ReWire.Core.KindChecker
                    ReWire.Core.PrettyPrintHaskell
-  --                 ReWire.Core.PrettyPrint
                    ReWire.Core.Prims
-                   ReWire.Core.PrimTypes
-                   ReWire.Core.Transformations.Interactive
-                   ReWire.Scoping
                    ReWire.PreHDL.CFG
                    ReWire.PreHDL.ConnectLogic
                    ReWire.PreHDL.ElimEmpty
                    ReWire.PreHDL.GotoElim
                    ReWire.PreHDL.Syntax
                    ReWire.PreHDL.ToVHDL
+                   ReWire.Core.Transformations.Interactive
+--                   ReWire.Core.Transformations.CaseInsertion
+--                   ReWire.Core.Transformations.CBN
+--                   ReWire.Core.Transformations.CheckNF
+                   ReWire.Core.Transformations.DeUniquify
+                   ReWire.Core.Transformations.Expand
+--                   ReWire.Core.Transformations.LambdaLift
+                   ReWire.Core.Transformations.Monad
+--                   ReWire.Core.Transformations.Occurs
+                   ReWire.Core.Transformations.Purge
+                   ReWire.Core.Transformations.Reduce
+--                   ReWire.Core.Transformations.Status
+--                   ReWire.Core.Transformations.Strictness
+                   ReWire.Core.Transformations.ToPreHDL
+                   ReWire.Core.Transformations.Types
+                   ReWire.Core.Transformations.Uniquify
+--                   ReWire.Core.Transformations.Uses
+                   ReWire.Scoping
+
+
   
   -- LANGUAGE extensions used by modules in this package.
   other-extensions:    FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, UndecidableInstances
