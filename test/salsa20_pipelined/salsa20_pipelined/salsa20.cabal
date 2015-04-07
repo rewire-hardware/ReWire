@@ -1,0 +1,10 @@
+Name:           salsa20
+Version:        1.0
+License:        BSD3
+Cabal-Version:  >= 1.9.2
+Build-Type:     Simple
+
+executable salsa20
+    main-is:    Salsa20.hs
+    build-depends: base, binary, monad-resumption, bytestring
+
