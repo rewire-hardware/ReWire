@@ -790,7 +790,7 @@ cfgCLExp p_ = let (Leaf main_is, named_cl, devs) = runRW ctr p $ clexps
                           case Map.lookup s m of
                                 Just res -> return res
                                 Nothing  -> case lookup s names of
-                                                    Nothing -> fail "cfgCLExp: Constructing type widths hit an unknown leaf value."
+                                                    Nothing -> fail $ "cfgCLExp: Constructing type widths hit an unknown leaf value.\n Tried: " ++ (show s)
                                                     Just z  -> do
                                                                 res <- cTW z
                                                                 (m',names') <- get
