@@ -30,4 +30,4 @@ Debug.hs
 *.synctex.gz
 .cabal-sandbox
 cabal.sandbox.config
-*.js_
+*.js_*
