@@ -1,0 +1,32 @@
+data Bit is Zero | One end
+data Tuple2 a b is Tuple2 a b end
+data Unit is Unit end
+data W8 is W8 Bit Bit Bit Bit Bit Bit Bit Bit end
+
+data Oper is Add W8 | Sub W8 | Mul W8 | Clr end
+
+vhdl plusW8 :: W8 -> W8 -> W8 is plusW8
+vhdl minusW8 :: W8 -> W8 -> W8 is minusW8
+
+w8Zero :: W8
+is
+  W8 Zero Zero Zero Zero Zero Zero Zero Zero
+end
+
+loop :: <ReT Oper W8 (StT W8 I)><()>
+is
+    bind x    <- lift get
+ in bind oper <- signal x
+ in bind zzz  <- case oper of
+    { Add y -> lift (put (plusW8 x y))
+    ; Sub y -> lift (put (minusW8 x y))
+    ; Clr   -> lift (put w8Zero)
+    }
+ in loop
+end
+
+
+start :: <ReT Oper W8 I><((),W8)>
+is
+   extrude loop w8Zero
+end

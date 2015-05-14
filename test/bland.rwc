@@ -1,0 +1,14 @@
+data Bit is Zero | One end
+data Unit is Unit end
+
+
+on :: <ReT Unit Bit I><()>
+is
+    bind i <- signal One 
+  in on
+end
+
+start :: <ReT Unit Bit I><()>
+is
+  on
+end

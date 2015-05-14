@@ -1,0 +1,98 @@
+data Tuple2 a b is Tuple2 a b end
+data Unit is Unit end
+data Bit is Zero | One end
+
+data W8 is W8 Bit Bit Bit Bit Bit Bit Bit Bit end
+
+vhdl f1 :: W8 -> W8 is whatever1
+vhdl f2 :: W8 -> W8 is whatever2
+vhdl f3 :: W8 -> W8 is whatever3
+vhdl f4 :: W8 -> W8 is whatever4
+
+phase1 :: W8 -> <ReT W8 W8 I><()>
+is
+   \ x -> let y     =  f1 x
+       in bind next <- signal y
+       in phase1 next
+end
+phase2 :: W8 -> <ReT W8 W8 I><()>
+is
+   \ x -> let y     =  f2 x
+       in bind next <- signal y
+       in phase2 next
+end
+phase3 :: W8 -> <ReT W8 W8 I><()>
+is
+   \ x -> let y     =  f3 x
+       in bind next <- signal y
+       in phase3 next
+end
+phase4 :: W8 -> <ReT W8 W8 I><()>
+is
+   \ x -> let y     =  f4 x
+       in bind next <- signal y
+       in phase4 next
+end
+
+loop :: W8 -> <ReT W8 W8 I><()>
+is
+  \ x -> let y     =  f1 x
+      in let z     =  f2 y
+      in let w     =  f3 z
+      in let q     =  f4 w
+      in let zub   =  f3 q
+      in let fub   =  f1 zub
+      in let lub   =  f4 fub
+      in let dub   =  f2 lub
+      in let qub   =  f2 dub
+      in let mub   =  f2 qub
+      in bind next <- signal mub
+      in loop next
+end
+
+pipe1 :: <ReT W8 W8 I><()>
+is
+  phase1 w8Zero
+end
+pipe2 :: <ReT W8 W8 I><()>
+is
+  phase2 w8Zero
+end
+pipe3 :: <ReT W8 W8 I><()>
+is
+  phase3 w8Zero
+end
+pipe4 :: <ReT W8 W8 I><()>
+is
+  phase4 w8Zero
+end
+
+main :: <ReT W8 W8 I><()>
+is
+  loop (W8 Zero Zero Zero Zero Zero Zero Zero Zero)
+end
+
+w8Zero :: W8
+is
+  W8 Zero Zero Zero Zero Zero Zero Zero Zero
+end
+
+mkout :: (W8,(W8,(W8,(W8,(W8,(W8,(W8,(W8,(W8,W8))))))))) -> W8
+is
+  \ t -> case t of
+         { (_,(_,(_,(_,(_,(_,(_,(_,(_,x))))))))) -> x
+         }
+end
+
+scoot :: (W8,(W8,(W8,(W8,(W8,(W8,(W8,(W8,(W8,W8))))))))) -> W8 -> (W8,(W8,(W8,(W8,(W8,(W8,(W8,(W8,(W8,W8)))))))))
+is
+  \ t -> \ x -> case t of
+                { (a,(b,(c,(d,(e,(f,(g,(h,(i,_))))))))) -> (x,(a,(b,(c,(d,(e,(f,(g,(h,i)))))))))
+                }
+end
+
+start :: <ReT W8 W8 I><()>
+is
+--  main
+  refold mkout scoot (parI pipe1 (parI pipe2 (parI pipe3 (parI pipe4 (parI pipe3 (parI pipe1 (parI pipe4 (parI pipe2 (parI pipe2 pipe2)))))))))
+end

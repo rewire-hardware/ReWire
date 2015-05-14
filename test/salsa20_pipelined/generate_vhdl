@@ -1,0 +1,6 @@
+#!/usr/bin/bash
+printf "tovhdl\n:q" | rwc Salsa20.rw
+mv rewire.cmd.out Salsa20.vhd
+rm *.out
+rm Debug.hs
+cat Salsa20.vhd | xsel --clipboard
