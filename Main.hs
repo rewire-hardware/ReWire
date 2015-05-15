@@ -1,7 +1,3 @@
-module Main (main, rewire) where
+module Main (main) where
 
-import qualified ReWire.Core.Main as M 
-
-main = M.main
-
-rewire = rewire
+import ReWire.Core.Main (main)
