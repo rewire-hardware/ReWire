@@ -135,10 +135,10 @@ instance Show Cmd where
                          elsfs   = (init . tail) bs
                          (_,ec)  = last bs 
                       in "if " ++ show b1 ++ "{\n" 
-                      ++ indent (show c1) ++ "}\n"
+                      ++ indent (show c1) ++ "\n}\n"
                       ++ echain elsfs 
-                      ++ "else {\n"
-                      ++ indent (show ec) ++ "}\n"
+                      ++ "\nelse {\n"
+                      ++ indent (show ec) ++ "\n}\n"
     where
       echain es = concatMap (\(b,c) -> "elsif " ++ show b ++ "{\n" ++ indent (show c) ++ "}\n") es
 
