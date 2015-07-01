@@ -791,6 +791,15 @@ funAlt lscr tscr lres (RWCAlt p e) = do (bds,cmatch,rmatch) <- funPat lscr tscr 
                                           return (cmatch `mkSeq` If (BoolVar rmatch) (ce `mkSeq` Assign lres (LocRHS le))))
                                          bds
 
+funAlt' :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Cmd,(Loc,Cmd))
+funAlt' lscr tscr lres (RWCAlt p e) = do (bds,cmatch,rmatch) <- funPat lscr tscr p
+                                         foldr (uncurry binding) (do
+                                           (ce,le) <- funExpr e
+                                           return (cmatch,(rmatch,(ce `mkSeq` Assign lres (LocRHS le))))
+                                           ) --(cmatch `mkSeq` If (BoolVar rmatch) (ce `mkSeq` Assign lres (LocRHS le))))
+                                          bds
+
+
 {-
 funLastAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM Cmd
 funLastAlt lscr tscr lres (RWCAlt p e) = do (bds,cmatch,rmatch) <- funPat lscr tscr p
@@ -849,9 +858,13 @@ funExpr e = case ef of
                  [] -> do
                    (c_scr,r_scr) <- funExpr escr
                    r_res         <- freshLocTy (typeOf e)
-                   cs_init       <- mapM (funAlt r_scr (typeOf escr) r_res) (init alts)
-                   c_last        <- funAlt r_scr (typeOf escr) r_res (last alts) -- was funLastAlt
-                   return (foldr1 mkSeq ([c_scr]++cs_init++[c_last]),r_res)
+--                   cs_init       <- mapM (funAlt r_scr (typeOf escr) r_res) (init alts)
+--                   c_last        <- funAlt r_scr (typeOf escr) r_res (last alts) -- was funLastAlt
+--                   return (foldr1 mkSeq ([c_scr]++cs_init++[c_last]),r_res)
+                   calts <- mapM (funAlt' r_scr (typeOf escr) r_res) alts
+                   let cases = map ((\(l,c) -> (BoolVar l, c)) . snd) calts
+                       cmatch = foldr1 mkSeq $ map fst calts
+                   return (mkSeq cmatch (CaseIf cases),r_res)                    
                  _  -> fail "funExpr: encountered case expression in function position"
   where (ef:eargs) = flattenApp e
 

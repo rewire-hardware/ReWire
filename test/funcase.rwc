@@ -1,0 +1,36 @@
+data In is A | B | C | D end 
+data Out is Out1 | Out2 end
+data Unit is Unit end
+
+
+proc :: In -> Out 
+is
+  \i -> case i of
+        {
+          A -> Out1
+          ;
+          B -> Out1
+          ; 
+          C -> Out1
+          ;
+          _ -> Out2
+        }
+end
+
+
+startp :: In -> <ReT In Out I><()>
+is
+  \i -> bind inp <- signal (proc i)
+     in startp inp
+end
+
+
+starti :: <ReT In Out I><()>
+is
+  startp A
+end
+
+start :: <ReT In Out I><()>
+is
+  starti
+end

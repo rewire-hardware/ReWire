@@ -48,6 +48,27 @@ vCmd (Seq c1 c2)    = vCmd c1 ++ "\n" ++ vCmd c2
 vCmd Skip           = "null;"
 vCmd (Goto _ _)     = error "vCmd: encountered a goto"
 vCmd (Lbl l)        = "null; -- label " ++ l
+vCmd (CaseIf [])      = "-- WARNING: EMPTY CaseIf"
+vCmd (CaseIf [(_,c)]) = vCmd c
+vCmd (CaseIf [(b1,c1),(_,c2)]) = "if " ++ (vBool b1) ++ " then\n"
+                             ++ indent (vCmd c1) 
+                             ++ "\n else \n"
+                             ++ indent (vCmd c2) 
+                             ++ "end if;"
+
+vCmd (CaseIf bs) = let (b1,c1) = head bs
+                       elsfs   = (init . tail) bs
+                       (_,ec)  = last bs 
+                      in "if " ++ (vBool b1) ++ " then\n" 
+                      ++ indent (vCmd c1) ++ "\n"
+                      ++ echain elsfs 
+                      ++ "else\n"
+                      ++ indent (vCmd ec) ++ "\n"
+                      ++ "end if;"
+    where
+     echain es = concatMap (\(b,c) -> "elsif " ++ (vBool b) ++ " then \n" 
+                                   ++ indent (vCmd c) ++ "\n") es
+
 
 vFunDefnProto :: FunDefn -> String
 vFunDefnProto fd = "function " ++ funDefnName fd ++ (if null params
