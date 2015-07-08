@@ -6,7 +6,6 @@ module ReWire.Core.Transformations.Interactive (TransCommand,trans) where
 
 import Prelude hiding (sequence,mapM)
 import ReWire.Core.Syntax
---import ReWire.Core.PrettyPrint (pp)
 import ReWire.Core.PrettyPrintHaskell (ppHaskell)
 import Text.Parsec (runParser,eof)
 import Control.Monad hiding (sequence,mapM)
@@ -19,13 +18,7 @@ import Data.Char
 import ReWire.Core.Transformations.Expand (cmdExpand)
 import ReWire.Core.Transformations.Reduce (cmdReduce)
 import ReWire.Core.Transformations.Purge (cmdPurge,cmdOccurs)
---import ReWire.Core.Transformations.LambdaLift (lambdaLift)
---import ReWire.Core.Transformations.Status (cmdStatus)
---import ReWire.Core.Transformations.Uses (cmdUses)
---import ReWire.Core.Transformations.CheckNF (cmdCheckNF)
---import ReWire.Core.Transformations.ToVHDL (cmdToVHDL)
 import ReWire.Core.Transformations.ToPreHDL (cmdToCFG,cmdToPre,cmdToVHDL,cmdToSCFG,cmdToPreG)
---import ReWire.AGToVHDL (cmdToPseudo)
 import ReWire.Core.Transformations.Uniquify (cmdUniquify)
 import ReWire.Core.Transformations.DeUniquify (cmdDeUniquify)
 import ReWire.Core.Transformations.Types
