@@ -19,7 +19,7 @@ synopsis:            A Haskell-to-VHDL compiler
 -- description:         
 
 -- URL for the project homepage or repository.
-homepage:            http://chaco.missouri.edu/
+homepage:            https://github.com/mu-chaco/ReWire
 
 -- The license under which the package is released.
 license:             AllRightsReserved
@@ -28,11 +28,11 @@ license:             AllRightsReserved
 license-file:        LICENSE
 
 -- The package author(s).
-author:              Adam Procter
+author:              Adam Procter, Ian Graves, and William L. Harrison
 
 -- An email address to which users can send suggestions, bug reports, and 
 -- patches.
-maintainer:          adamprocter@mail.missouri.edu
+maintainer:          procteram@missouri.edu
 
 -- A copyright notice.
 -- copyright:           
