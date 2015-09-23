@@ -127,6 +127,19 @@ The one-bit input and the eight-bit output on the VHDL side correspond respectiv
 
 ## Caveats
 
+Syntax
+
+Checks for guardedness/higher-order/polymorphism are a bit wonky
+
+Make sure your circuit never terminates (we could implement something that gives meaning to a "return-ing" circuit though)
+
+Generated VHDL may throw a lot of warnings about unused this or that, but it's okay. :)
+
 ## Further Reading
 
-1. Adam Procter, William L. Harrison, Ian Graves, Michela Becchi, and Gerard Allwein. Semantics Driven Hardware Design, Implementation, and Verification with ReWire. <em>In Proceedings of the 16th ACM SIGPLAN/SIGBED Conference on Languages, Compilers and Tools for Embedded Systems (LCTES'15)</em>. ACM, New York, NY, USA, 10 pages. http://doi.acm.org/10.1145/2670529.2754970
+1. Adam Procter, William L. Harrison, Ian Graves, Michela Becchi, and Gerard Allwein. Semantics Driven Hardware Design, Implementation, and Verification with ReWire. In *Proceedings of the 16th ACM SIGPLAN/SIGBED Conference on Languages, Compilers and Tools for Embedded Systems (LCTES'15)*. ACM, New York, NY, USA, 10 pages. http://doi.acm.org/10.1145/2670529.2754970
+2. FPT'15
+3. FPT'13
+4. ARC
+5. Adam's dissertation
+6. Ian's dissertation
