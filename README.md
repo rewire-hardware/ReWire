@@ -161,7 +161,7 @@ At the moment we are not able to correctly synthesize circuits whose execution t
 
 ### VHDL Generation
 
-Generated VHDL may throw a lot of warnings about unused variables; this is normal, and does not seem to have an effect on the synthesized circuits.
+Generated VHDL, when synthesized, may throw a lot of warnings about unused variables. This is normal, and does not seem to have an effect on the synthesized circuits.
 
 ## Further Reading
 
