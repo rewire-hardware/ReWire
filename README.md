@@ -127,19 +127,44 @@ The one-bit input and the eight-bit output on the VHDL side correspond respectiv
 
 ## Caveats
 
-Syntax
+### Concrete Syntax
+For the moment, the concrete syntax supported by ReWire is a bit different from Haskell in certain places. Specifically:
 
-Checks for guardedness/higher-order/polymorphism are a bit wonky
+1. The layout rule is not implemented.
+2. All function definitions must be made at the top level, must be accompanied with a type signature, and the body must be enclosed with *is*...*end* keywords:
+```haskell
+f :: W8 -> W8
+is
+  \ x -> plusW8 x x
+end
+```
+Similarly, *data* declarations must be enclosed with *is*...*end* keywords:
+```haskell
+data Maybe is Nothing | Just a end
+```
+3. Finally, the application of monads (written, e.g. *M t* in Haskell) has to be set off with angle brackets:
+```haskell
+<StT W8 I><W8>
+```
 
-Make sure your circuit never terminates (we could implement something that gives meaning to a "return-ing" circuit though)
+A forthcoming update to the parser will bring our concrete syntax in line with Haskell.
 
-Generated VHDL may throw a lot of warnings about unused this or that, but it's okay. :)
+### Polymorphism and Recursion
+
+Polymorphic and higher-order functions are not allowed at runtime, though some undocumented maneuvers at the interactive prompt allow them to be used in certain situations.
+
+Recursive functions must be guarded and typed in a reactive resumption monad (see the papers below for more details)
+
+### Termination
+
+At the moment we are not able to correctly synthesize circuits whose execution terminates (i.e. ends with a *return* statement), so make sure the *start* loop is infinite.
+
+### VHDL Generation
+
+Generated VHDL may throw a lot of warnings about unused variables; this is normal, and does not seem to have an effect on the synthesized circuits.
 
 ## Further Reading
 
 1. Adam Procter, William L. Harrison, Ian Graves, Michela Becchi, and Gerard Allwein. Semantics Driven Hardware Design, Implementation, and Verification with ReWire. In *Proceedings of the 16th ACM SIGPLAN/SIGBED Conference on Languages, Compilers and Tools for Embedded Systems (LCTES'15)*. ACM, New York, NY, USA, 10 pages. http://doi.acm.org/10.1145/2670529.2754970
-2. FPT'15
-3. FPT'13
-4. ARC
-5. Adam's dissertation
-6. Ian's dissertation
+2. Ian Graves, Adam Procter, William L. Harrison, and Gerard Allwein. Provably Correct Development of Reconfigurable Hardware Designs via Equational Reasoning. To appear at the 2015 International Conference on Field-Programmable Technology.
+3. Adam Procter, William L. Harrison, Ian Graves, Michela Becchi, and Gerard Allwein. Semantics-Directed Machine Architecture in ReWire. In *2013 International Conference on Field-Programmable Technology*.
