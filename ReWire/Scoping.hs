@@ -6,6 +6,7 @@
 
 module ReWire.Scoping where
 
+import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Reader
@@ -42,7 +43,8 @@ class (Ord v,Monad m) => MonadAssume v t m | m -> v, m -> t where
   getAssumptions :: m (Map v t)
 
 newtype AssumeT v t m a = AssumeT { deAssumeT :: ReaderT (Map v t) m a }
-                           deriving (Monad,MonadTrans,MonadPlus,MonadScope)
+                           deriving (Functor,Applicative,Alternative,Monad,
+                                     MonadTrans,MonadPlus,MonadScope)
 
 deriving instance MonadState s m => MonadState s (AssumeT v t m)
 deriving instance MonadError e m => MonadError e (AssumeT v t m)
@@ -117,7 +119,7 @@ sortOf (IdAny (Id s _)) = s
 --- A monad for generating locally fresh names.
 ---
 newtype ScopeT m a = ScopeT { deScopeT :: ReaderT (Set IdAny) m a }
-   deriving (Monad,MonadTrans,MonadPlus)
+   deriving (Functor,Applicative,Alternative,Monad,MonadTrans,MonadPlus)
 
 deriving instance MonadState s m => MonadState s (ScopeT m)
 deriving instance MonadError e m => MonadError e (ScopeT m)
@@ -249,15 +251,12 @@ varsaeq x y = do mx <- query (Left (IdAny x))
 -- results agree with unbound...)
 --
 data Lam = Lam [Id Lam] Lam | Var (Id Lam) | App Lam Lam deriving Eq
-
 instance IdSort Lam where
   idSort _ = BS.pack ""
-
 instance Show Lam where
   show (Lam x l)   = "(\\ " ++ concatMap ((" "++) . deId) x ++ " . " ++ show l ++ ")"
   show (Var x)     = deId x
   show (App e1 e2) = "(" ++ show e1 ++ " " ++ show e2 ++ ")"
-
 instance Subst Lam Lam where
   fv (Var x)     = [x]
   fv (Lam x e)   = [y | y <- fv e, not (y `elem` x)]
@@ -274,28 +273,22 @@ instance Subst Lam Lam where
           doSubst (Lam x e)   = refreshs x (fv e) $ \ x' -> do
                                    e' <- doSubst e
                                    return (Lam x' e')
-
 instance Alpha Lam where
   aeq' (Var x) (Var y)           = varsaeq x y 
   aeq' (Lam xs e) (Lam ys e')    = equatings xs ys (return False) (aeq' e e')
   aeq' (App e1 e2) (App e1' e2') = liftM2 (&&) (aeq' e1 e1') (aeq' e2 e2')
   aeq' _ _                       = return False
-
 data LamU = LamU (Bind [Name LamU] LamU) | VarU (Name LamU) | AppU LamU LamU deriving Show
-
 $(derive [''LamU])
-
 instance U.Alpha LamU
   
 instance U.Subst LamU LamU where
   isvar (VarU n) = Just (SubstName n)
   isvar _        = Nothing
-
 lam2lamu :: Lam -> LamU
 lam2lamu (Var x)     = VarU (s2n (deId x))
 lam2lamu (App e1 e2) = AppU (lam2lamu e1) (lam2lamu e2)
 lam2lamu (Lam x e)   = LamU (bind (map (s2n . deId) x) (lam2lamu e))
-
 checkeqv :: [(Id Lam,Lam)] -> Lam -> Bool
 checkeqv xes e' = let eMine   = lam2lamu $ subst (Map.fromList xes) e'
                       xes_u   = map (\ (x,e) -> (s2n (deId x),lam2lamu e)) xes
@@ -305,9 +298,7 @@ checkeqv xes e' = let eMine   = lam2lamu $ subst (Map.fromList xes) e'
                       
 --test2 :: Lam -> Lam -> Bool
 test2 l1 l2 = l1 `aeq` l2 && l1 /= l2 ==> label (show l1 ++ " --- " ++ show l2) $ (lam2lamu l1 `U.aeq` lam2lamu l2) == (l1 `aeq` l2)
-
 newtype GenSu = GenSu [(Id Lam,Lam)] deriving Show
-
 instance Arbitrary GenSu where
   arbitrary = liftM GenSu $ resize 3 $ listOf1 $ liftM2 (,) genvar arbitrary
   
@@ -315,12 +306,10 @@ genvar :: Gen (Id Lam)
 genvar = liftM mkId $ elements [v ++ suf | v <- vars, suf <- sufs]
   where vars = ["x","y","z"]
         sufs = [""]--,"'","''","'''"]
-
 instance Arbitrary Lam where
   arbitrary = frequency [(7,liftM2 Lam (liftM nub $ resize 5 $ listOf1 $ genvar) arbitrary), -- have to nub here because unbound treats leftmost duplicate binders in a list as being tighter (which I think is probably not right)
                          (7,liftM Var genvar),
                          (6,liftM2 App arbitrary arbitrary)]
-
 qc = \ (GenSu xes) -> checkeqv xes
 --
 -- End grungy example/test case.

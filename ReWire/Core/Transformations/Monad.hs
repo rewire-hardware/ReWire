@@ -8,6 +8,7 @@
 --
 module ReWire.Core.Transformations.Monad where
 
+import Control.Applicative
 import Control.Monad.Reader
 import qualified Control.Monad.Trans.Reader as Reader
 import Control.Monad.Identity
@@ -27,7 +28,7 @@ import ReWire.Core.Transformations.Uniquify (uniquify,uniquifyE)
 newtype RWT m a = RWT { deRWT :: AssumeT (Id RWCExp) VarInfo
                                   (AssumeT TyConId TyConInfo
                                    (AssumeT DataConId DataConInfo (ScopeT (StateT Int m)))) a }
-                  deriving Monad
+                  deriving (Functor,Applicative,Monad)
 
 data VarInfo = PrimVar RWCPrim | GlobalVar RWCDefn | LocalVar RWCTy deriving Show
 newtype TyConInfo = TyConInfo RWCData deriving Show
@@ -40,13 +41,10 @@ type RW = RWT Identity
 {-
 assumingG :: Monad m => Id RWCExp -> RWCDefn -> RWT m a -> RWT m a
 assumingG x d m = RWT $ assuming x (GlobalVar d) (deRWT m)
-
 assumingL :: Monad m => Id RWCExp -> RWCTy -> RWT m a -> RWT m a
 assumingL x t m = RWT $ assuming x (LocalVar t) (deRWT m)
-
 assumingT :: Monad m => TyConId -> TyConInfo -> RWT m a -> RWT m a
 assumingT i inf m = RWT $ AssumeT $ ReaderT $ \ rho -> assuming i inf (runReaderT (deAssumeT (deRWT m)) rho)
-
 assumingD :: Monad m => DataConId -> DataConInfo -> RWT m a -> RWT m a
 assumingD i inf m = RWT $ 
                      AssumeT $ ReaderT $ \ rho0 ->
@@ -56,15 +54,12 @@ assumingD i inf m = RWT $
                                                      (deRWT m))
                                          rho0))
                                         rho1)
-
 forgettingV,forgettingG,forgettingL :: Monad m => Id RWCExp -> RWT m a -> RWT m a
 forgettingV x m = RWT $ forgetting x (deRWT m)
 forgettingG = forgettingV
 forgettingL = forgettingV
-
 forgettingT :: Monad m => TyConId -> RWT m a -> RWT m a
 forgettingT x m = RWT $ AssumeT $ ReaderT $ \ rho -> forgetting x (runReaderT (deAssumeT (deRWT m)) rho)
-
 forgettingD :: Monad m => DataConId -> RWT m a -> RWT m a
 forgettingD x m = RWT $
                    AssumeT $ ReaderT $ \rho0 ->
@@ -74,10 +69,8 @@ forgettingD x m = RWT $
                                                  (deRWT m))
                                      rho0))
                                     rho1)
-
 queryV :: Monad m => Id RWCExp -> RWT m (Maybe VarInfo)
 queryV x = RWT $ query x
-
 queryP :: Monad m => Id RWCExp -> RWT m (Maybe RWCPrim)
 queryP x = RWT $ 
             do mvi <- query x
@@ -100,7 +93,6 @@ queryL x = RWT $
                case mvi of
                  Just (LocalVar t)  -> return (Just t)
                  _                  -> return Nothing                
-
 -}
 
 queryT :: Monad m => TyConId -> RWT m (Maybe TyConInfo)
@@ -112,7 +104,6 @@ queryD d = RWT $ lift $ lift $ query d
 {-
 getAssumptionsV :: Monad m => RWT m (Map (Id RWCExp) VarInfo)
 getAssumptionsV = RWT getAssumptions
-
 getAssumptionsG :: Monad m => RWT m (Map (Id RWCExp) RWCDefn)
 getAssumptionsG = RWT $
                    do
@@ -120,7 +111,6 @@ getAssumptionsG = RWT $
                     let deG (GlobalVar x) = Just x
                         deG _             = Nothing
                     return (Map.mapMaybe deG m)
-
 getAssumptionsL :: Monad m => RWT m (Map (Id RWCExp) RWCTy)
 getAssumptionsL = RWT $ 
                    do
@@ -128,10 +118,8 @@ getAssumptionsL = RWT $
                     let deL (LocalVar x) = Just x
                         deL _            = Nothing
                     return (Map.mapMaybe deL m)
-
 getAssumptionsT :: Monad m => RWT m (Map TyConId TyConInfo)
 getAssumptionsT = RWT $ lift getAssumptions
-
 getAssumptionsD :: Monad m => RWT m (Map DataConId DataConInfo)
 getAssumptionsD = RWT $ lift $ lift getAssumptions
 -}
@@ -215,7 +203,6 @@ askVar t n = do md <- queryG n
 askDefn :: MonadReWire m => Name RWCExp -> m (Maybe RWCDefn)
 askDefn n = do defns <- askDefns
                return $ find (\(RWCDefn n' _) -> n==n') defns
-
 askConDataDecl :: MonadReWire m => Identifier -> m (Maybe RWCData)
 askConDataDecl i = do dds <- askDataDecls
                       liftM msum $ mapM checkDD dds
