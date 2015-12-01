@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 --
 -- This type checker is based loosely on Mark Jones's "Typing Haskell in

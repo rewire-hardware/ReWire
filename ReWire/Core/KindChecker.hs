@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses,FlexibleContexts #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module ReWire.Core.KindChecker (kindcheck) where
