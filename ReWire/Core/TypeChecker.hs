@@ -14,7 +14,7 @@ import Control.DeepSeq
 import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Identity
-import Control.Monad.Error
+import Control.Monad.Except
 import Data.List (nub)
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map)
@@ -32,7 +32,7 @@ data TCState = TCState { tySub :: TySub,
 type Assump  = (Id RWCExp,Poly RWCTy)
 type CAssump = (DataConId,Poly RWCTy)
 
-type TCM = ReaderT TCEnv (StateT TCState (ErrorT String Identity))
+type TCM = ReaderT TCEnv (StateT TCState (ExceptT String Identity))
 
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
 askAssumps = ask >>= \ tce -> return (as tce)
@@ -226,4 +226,4 @@ tc p = do let as_ =  Map.fromList $ map defnAssump (defns p) ++ map primAssump (
           return (p { defns = ds' })
 
 typecheck :: RWCProg -> Either String RWCProg
-typecheck p = fmap fst $ runIdentity (runErrorT (runStateT (runReaderT (tc p) (TCEnv Map.empty Map.empty)) (TCState Map.empty 0)))
+typecheck p = fmap fst $ runIdentity (runExceptT (runStateT (runReaderT (tc p) (TCEnv Map.empty Map.empty)) (TCState Map.empty 0)))

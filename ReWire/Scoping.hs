@@ -11,7 +11,7 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Reader
 import Control.Monad.State
-import Control.Monad.Error
+import Control.Monad.Except
 import Control.Monad.Identity
 import Data.Map.Strict (Map,insert,delete)
 import qualified Data.Map.Strict as Map
