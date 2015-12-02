@@ -6,7 +6,7 @@ ReWire is an experimental compiler for a subset of [Haskell](http://haskell.org/
 
 ## Simple Example: Fibonacci Sequence
 
-The example program produces the elements of the Fibonacci sequence on its output (encoded as 8-bit integers, so things will overflow pretty quickly!). The circuit has a one-bit input that pauses the circuit's operation on low. Our example consists of two parts: **Fibonacci.rw** is the ReWire code, and **prims.vhd** contains a few supporting functions writte in VHDL.
+The example program produces the elements of the Fibonacci sequence on its output (encoded as 8-bit integers, so things will overflow pretty quickly!). The circuit has a one-bit input that pauses the circuit's operation on low. Our example consists of two parts: **Fibonacci.rw** is the ReWire code, and **prims.vhd** contains a few supporting functions written in VHDL.
 
 ### Fibonacci.rw
 ```haskell
