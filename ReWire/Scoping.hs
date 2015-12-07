@@ -180,7 +180,7 @@ instance Subst t t' => Subst [t] t' where
   bv = concatMap bv
   subst' = mapM subst'
 
-subst :: Subst t t' => (Map (Id t') t') -> t -> t
+subst :: Subst t t' => Map (Id t') t' -> t -> t
 subst s t = runAssumeWith (fmap Right s) (subst' t)
 
 replace :: Subst t t' => Map (Id t') (Id t') -> t -> t

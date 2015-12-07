@@ -206,7 +206,7 @@ freshenE e = do ctr <- getCtr
 askVar :: Monad m => RWCTy -> Id RWCExp -> RWT m (Maybe RWCExp)
 askVar t n = do md <- queryG n
                 case md of
-                  Just (RWCDefn _ (tvs :-> t') e) -> do sub <- matchty (Map.empty) t' t
+                  Just (RWCDefn _ (tvs :-> t') e) -> do sub <- matchty Map.empty t' t
                                                         e'  <- freshenE (subst sub e)
                                                         return (Just e')
                   _                               -> return Nothing

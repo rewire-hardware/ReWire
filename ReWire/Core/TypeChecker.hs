@@ -203,14 +203,14 @@ tcExp (RWCCase e alts)  = do e'     <- tcExp e
                              return (RWCCase e' alts')
 
 tcDefn :: RWCDefn -> TCM RWCDefn
-tcDefn d  = do putTySub (Map.empty)
+tcDefn d  = do putTySub Map.empty
 --               d <- initDefn d_
                let RWCDefn n (tvs :-> t) e = force d
                e'     <- tcExp e
                let te =  typeOf e'
                unify t te
                s      <- getTySub
-               putTySub (Map.empty)
+               putTySub Map.empty
                let d' = RWCDefn n (tvs :-> t) (subst s e')
                traceShow n $ d' `deepseq` return d'
 

@@ -75,8 +75,8 @@ trans p = do print (ppHaskell p)
                      n <- getLine
                      let (cmd,n') = break isSpace n
                          args     = dropWhile isSpace n'
-                     if cmd==":q" then return ()
-                     else case lookup cmd cmdTable of
+                     unless (cmd == ":q") $
+                         case lookup cmd cmdTable of
                                Just f  -> do let (mp,ms) = f args p
                                              case ms of
                                                Just s  -> putStrLn s >> writeFile "rewire.cmd.out" s

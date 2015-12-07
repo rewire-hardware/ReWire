@@ -106,13 +106,13 @@ toVHDL p = "library ieee;\n"
         ++ "\n"
         ++ "architecture behavioral of rewire is\n"
         ++ indent ("type control_state is (" ++ intercalate "," (stateNames (progHeader p)) ++ ");\n")
-        ++ indent (concatMap (++"\n") vFunProtos)
-        ++ indent (concatMap (++"\n") vFunDefns)
+        ++ indent (unlines vFunProtos)
+        ++ indent (unlines vFunDefns)
         ++ indent (curControlFlopDecl ++ "\n")
         ++ indent (nextControlFlopDecl ++ "\n")
         ++ indent (inputFlopDecl ++ "\n")
-        ++ indent (concatMap (++"\n") curFlopDecls)
-        ++ indent (concatMap (++"\n") nextFlopDecls)
+        ++ indent (unlines curFlopDecls)
+        ++ indent (unlines nextFlopDecls)
         ++ "begin\n"
         ++ indent loopProcess ++ "\n"
         ++ indent flopProcess ++ "\n"
@@ -137,19 +137,19 @@ toVHDL p = "library ieee;\n"
                    ++ "process (" ++ intercalate "," loopSensitivityList ++ ")\n"
                    ++ indent (loopControlTmpDecl ++ "\n")
                    ++ indent (loopInputTmpDecl ++ "\n")
-                   ++ indent (concatMap (++"\n") loopTmpDecls)
+                   ++ indent (unlines loopTmpDecls)
                    ++ indent (loopOutputTmpDecl ++ "\n")
                    ++ "begin\n"
                    ++ indent "-- Read reg temps.\n"
                    ++ indent (loopControlTmpInit ++ "\n")
                    ++ indent (loopInputTmpInit ++ "\n")
-                   ++ indent (concatMap (++"\n") loopTmpInits)
+                   ++ indent (unlines loopTmpInits)
                    ++ indent "output_tmp := (others => '0');\n"
                    ++ indent "-- Loop body.\n"
                    ++ indent (loopBody ++ "\n")
                    ++ indent "-- Write back reg temps.\n"
                    ++ indent (loopControlTmpWriteback ++ "\n")
-                   ++ indent (concatMap (++"\n") loopTmpWritebacks)
+                   ++ indent (unlines loopTmpWritebacks)
                    ++ indent "-- Update output line.\n"
                    ++ indent "output <= output_tmp;\n"
                    ++ "end process;\n"
@@ -174,7 +174,7 @@ toVHDL p = "library ieee;\n"
                    ++ indent ("if clk'event and clk='1' then\n"
                            ++ indent (inputFlopUpdate ++ "\n")
                            ++ indent (controlFlopUpdate ++ "\n")
-                           ++ indent (concatMap (++"\n") varFlopUpdates)
+                           ++ indent (unlines varFlopUpdates)
                            ++ "end if;\n")
                    ++ "end process;\n"
         flopSensitivityList = ["clk","input"] ++ map flopNextName varNames

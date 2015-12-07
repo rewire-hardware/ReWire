@@ -141,7 +141,7 @@ getTagWidth i = do Just (TyConInfo (RWCData _ _ cs)) <- lift $ lift $ queryT i
                    return (nBits (length cs-1))
 
 tyWidth :: RWCTy -> CGM Int
-tyWidth (RWCTyVar _) = fail $ "tyWidth: type variable encountered"
+tyWidth (RWCTyVar _) = fail "tyWidth: type variable encountered"
 tyWidth t            = {-do twc <- getTyWidthCache
                           case Map.lookup t twc of
                             Just size -> return size
@@ -149,8 +149,8 @@ tyWidth t            = {-do twc <- getTyWidthCache
                               let (th:_) = flattenTyApp t
                               case th of
                                 RWCTyApp _ _  -> fail "tyWidth: encountered TyApp in func position (can't happen)"
-                                RWCTyVar _    -> fail $ "tyWidth: type variable encountered"
-                                RWCTyComp _ _ -> fail $ "tyWidth: computation type encountered"
+                                RWCTyVar _    -> fail "tyWidth: type variable encountered"
+                                RWCTyComp _ _ -> fail "tyWidth: computation type encountered"
                                 RWCTyCon i    -> do
                                   Just (TyConInfo (RWCData _ _ dcs)) <- lift $ lift $ queryT i
                                   tagWidth <- getTagWidth i

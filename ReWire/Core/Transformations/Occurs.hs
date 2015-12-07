@@ -19,7 +19,7 @@ cmdOccurs str prog = case split str ' ' of
     split list del = split' list del [] []
     split' [] _ acc res = case acc of
                                [] -> res
-                               x  -> (res ++ [x])
+                               x  -> res ++ [x]
     split' (s:str) del acc res = if s == del
                                   then split' str del [] (res ++ [acc])
                                   else split' str del (acc ++ [s]) res
@@ -56,5 +56,5 @@ showSList [s]  = s
 showSList strs = "[" ++ (showSList' strs) ++ "]"
 
 showSList' [] = ""
-showSList' (s:[]) = s
+showSList' [s] = s
 showSList' (s:ss) = s ++ ", " ++ showSList' ss
