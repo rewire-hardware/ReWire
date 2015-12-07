@@ -27,7 +27,7 @@ newtype Inputs = Inputs { dataIn :: Byte }
 
 instance Show Inputs where
   show (Inputs di) = "di = " ++ byn di
-  
+
 data Outputs   = Outputs { weOut   :: Bit,
                            addrOut :: Addr,
                            dataOut :: Byte }
@@ -44,7 +44,7 @@ byn = show . byteToW8
 
 instance Show Outputs where
   show o = "we = " ++ bn (weOut o) ++ " ; ao = " ++ an (addrOut o) ++ " ; do = " ++ byn (dataOut o)
-    
+
 data CPUState = CPUState { r0 :: Byte, r1 :: Byte, r2 :: Byte, r3 :: Byte,
                            pc :: Addr, inputs :: Inputs, outputs :: Outputs }
                          deriving (Eq,Show)
@@ -52,7 +52,7 @@ data CPUState = CPUState { r0 :: Byte, r1 :: Byte, r2 :: Byte, r3 :: Byte,
 instance MonadState s m => MonadState s (ReactT i o m) where
   get = lift get
   put = lift . put
-  
+
 type M = ReT Inputs Outputs (StT CPUState I)
 
 byteToW8 :: Byte -> Word8
@@ -80,7 +80,7 @@ w8ToByte w = Byte b0 b1 b2 b3 b4 b5 b6 b7
         bb False = Zero
         bb True  = One
 
-                      
+
 incrByte :: Byte -> Byte
 incrByte b = w8ToByte (byteToW8 b + 1)
 
@@ -109,7 +109,7 @@ nandByte (Byte a0 a1 a2 a3 a4 a5 a6 a7) (Byte b0 b1 b2 b3 b4 b5 b6 b7)
 getPC :: M Addr
 getPC = do s <- get
            return (pc s)
-           
+
 putPC :: Addr -> M ()
 putPC a = do s <- get
              put (s { pc = a })
@@ -123,7 +123,7 @@ getReg R0 = do { s <- get ; return (r0 s) }
 getReg R1 = do { s <- get ; return (r1 s) }
 getReg R2 = do { s <- get ; return (r2 s) }
 getReg R3 = do { s <- get ; return (r3 s) }
-            
+
 putReg :: Reg -> Byte -> M ()
 putReg R0 b = do { s <- get ; put (s { r0 = b }) }
 putReg R1 b = do { s <- get ; put (s { r1 = b }) }
@@ -173,7 +173,7 @@ ld a = trace "ld" $
         do putAddrOut a
            putWeOut Zero
            tick
-          
+
            incrPC
            finishInstr
            d <- getDataIn
@@ -186,7 +186,7 @@ st a = --trace "st" $
            putDataOut d
            putWeOut One
            tick
-          
+
 --           incrPC
            finishInstr
 
@@ -233,7 +233,7 @@ reset = do putPC (Addr Zero Zero Zero Zero Zero Zero)
 
 extrude :: Monad m => ReT i o (StT sto m) a -> sto -> ReT i o m (a,sto)
 extrude (ReacT m) s = ReacT (runStateT m s >>= \ (dp,s') ->
-                             return 
+                             return
                                  (case dp of
                                        Left v      -> Left (v,s')
                                        Right (q,k) -> Right (q,\ i -> extrude (k i) s')))

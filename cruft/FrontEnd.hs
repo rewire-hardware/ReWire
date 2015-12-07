@@ -14,14 +14,14 @@ import Outputable
 import System.IO
 import MonadUtils
 import Bag
-import SrcLoc 
+import SrcLoc
 import StaticFlags
 import Control.Monad (when)
 import Data.IORef
 
 
- 
-main = do 
+
+main = do
     args  <- getArgs
     fname <- case args of
                     [] -> do
@@ -31,12 +31,12 @@ main = do
     ready <- readIORef v_opt_C_ready
     when (not ready) $ parseStaticFlags [noLoc "-dppr-debug"] >> return ()
     binds <- (defaultErrorHandler defaultFatalMessager defaultFlushOut $ do
-              runGhc (Just libdir) $ do                
+              runGhc (Just libdir) $ do
                 dflags <- getSessionDynFlags
-                let dflags' = dflags {hscTarget = HscInterpreted, 
-                                      ghcLink = LinkInMemory, 
+                let dflags' = dflags {hscTarget = HscInterpreted,
+                                      ghcLink = LinkInMemory,
                                       ghcMode = CompManager}
-                setSessionDynFlags dflags'  
+                setSessionDynFlags dflags'
                 target <- guessTarget fname Nothing
                 setTargets [target]
                 load LoadAllTargets
@@ -53,7 +53,7 @@ main = do
                 return binds)
 
     let defs = runFreshM $ mapM PP.ppDefn binds
-    print defs 
+    print defs
     return ()
 
 output dflags' s = printForC dflags' stdout (ppr s)
@@ -65,7 +65,7 @@ deGenLocate (L _ e) = e
 getBinds :: TypecheckedSource -> [HsBindLR Id Id]
 getBinds t = map deGenLocate $ bagToList t
 
-bindtype :: HsBindLR idL idR -> String 
+bindtype :: HsBindLR idL idR -> String
 bindtype (FunBind _ _ _ _ _ _) = "Fun"
 bindtype (PatBind _ _ _ _ _) = "Pat"
 bindtype (VarBind _ _ _) = "Var"
@@ -126,17 +126,17 @@ dsHsBind (AbsBinds { abs_tvs = tyvars, abs_ev_vars = dicts
   ; let core_bind = Rec (fromOL bind_prs)
         ; ds_binds <- dsTcEvBinds ev_binds
         ; rhs <- dsHsWrapper wrap $  -- Usually the identity
-          mkLams tyvars $ mkLams dicts $ 
+          mkLams tyvars $ mkLams dicts $
                       mkCoreLets ds_binds $
                             Let core_bind $
                             Var local
-    
+
   ; (spec_binds, rules) <- dsSpecs rhs prags
 
   ; let   global'   = addIdSpecialisations global rules
     main_bind = makeCorePair dflags global' (isDefaultMethod prags)
-                                         (dictArity dicts) rhs 
-    
+                                         (dictArity dicts) rhs
+
   ; return (main_bind `consOL` spec_binds) }
 
 dsHsBind (AbsBinds { abs_tvs = tyvars, abs_ev_vars = dicts
@@ -163,7 +163,7 @@ dsHsBind (AbsBinds { abs_tvs = tyvars, abs_ev_vars = dicts
   ; let mk_bind (ABE { abe_wrap = wrap, abe_poly = global
                            , abe_mono = local, abe_prags = spec_prags })
           = do { tup_id  <- newSysLocalDs tup_ty
-               ; rhs <- dsHsWrapper wrap $ 
+               ; rhs <- dsHsWrapper wrap $
                                  mkLams tyvars $ mkLams dicts $
                    mkTupleSelector locals local tup_id $
                mkVarApps (Var poly_tup_id) (tyvars ++ dicts)
@@ -173,12 +173,12 @@ dsHsBind (AbsBinds { abs_tvs = tyvars, abs_ev_vars = dicts
                                              `addIdSpecialisations` rules
                            -- Kill the INLINE pragma because it applies to
                            -- the user written (local) function.  The global
-                           -- Id is just the selector.  Hmm.  
+                           -- Id is just the selector.  Hmm.
          ; return ((global', rhs) `consOL` spec_binds) }
 
         ; export_binds_s <- mapM mk_bind exports
 
-  ; return ((poly_tup_id, poly_tup_rhs) `consOL` 
+  ; return ((poly_tup_id, poly_tup_rhs) `consOL`
         concatOL export_binds_s) }
   where
     inline_env :: IdEnv Id   -- Maps a monomorphic local Id to one with

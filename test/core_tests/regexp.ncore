@@ -17,7 +17,7 @@ data RegExp a is Bar (RegExp a) (RegExp a)
 compMachine :: RegExp Char -> Machine Char
 is
   \reg -> case reg of
-             { 
+             {
                (Bar r1 r2) -> bar (compMachine r1) (compMachine r2)
                ; (Star r1) -> star (compMachine r1)
                ; (Cons r1 r2) -> rseq (compMachine r1) (compMachine r2)
@@ -84,7 +84,7 @@ is
   \ba -> \bb -> case (Pair ba bb) of
                   {
                       Pair True  True  -> True
-                    ; Pair False False -> True 
+                    ; Pair False False -> True
                     ; x                -> False
                   }
 end
@@ -121,7 +121,7 @@ end
 
 runMachine :: Machine input -> ((Pair (Maybe Bool) input)) -> ReacT ((Pair (Maybe Bool) input)) (Maybe Bool) (Pair (Maybe Bool) (Machine input))
 is
-  \mi -> \input -> ReacT (apply (stepMachine input mi) (\p -> case p of                                                                                                                                     
+  \mi -> \input -> ReacT (apply (stepMachine input mi) (\p -> case p of
                                                                   {
                                                                     (Pair output mip) ->  (Right (Pair output (\inputp -> runMachine mip inputp)))
                                                                   }))
@@ -131,7 +131,7 @@ end
 
 stepMachine :: (Pair (Maybe Bool) input) -> Machine input ->  (Pair (Maybe Bool) (Machine input))
 is
-  \input -> \m -> case ((deReacT ((deMachine m) input))) of 
+  \input -> \m -> case ((deReacT ((deMachine m) input))) of
                         {
                            (Left v) ->  v
                         }
@@ -139,7 +139,7 @@ end
 
 match :: Char -> ((Maybe Bool) -> Machine Char)
 is
-  \a -> \flipflop -> Machine (\p -> case p of 
+  \a -> \flipflop -> Machine (\p -> case p of
                                      {
                                        (Pair prevoutput char) -> (case flipflop of
                                                                  {
@@ -166,13 +166,13 @@ is
                                                                                                                                                                                                     ; (Pair (Just ri) (Just rii)) ->  (Left (Pair (Just (or ri rii)) (bar resumei resumeii)))
                                                                                                                                                                                                   }
                                                                                                                                                                  })
-                                                                                              
+
                                                                                             }))
                                       })
 end
 
 rseq :: Machine Char -> Machine Char -> Machine Char
-is 
+is
   \mi -> \mii -> Machine (\input -> case fst input of
                                       {
                                         Nothing -> returnRe (Pair Nothing (rseq mi mii))
@@ -180,12 +180,12 @@ is
                                                                                                     {
                                                                                                       Pair outputi resumei -> case outputi of
                                                                                                                                   {
-                                                                                                                                    Nothing ->  (Left (Pair Nothing (rseq resumei mii))) 
+                                                                                                                                    Nothing ->  (Left (Pair Nothing (rseq resumei mii)))
                                                                                                                                     ; Just zd -> (apply (stepMachine (Pair outputi (snd input)) mii) (\r -> case r of
                                                                                                                                                                                                               {
                                                                                                                                                                                                                 Pair outputii resumeii -> case outputii of
                                                                                                                                                                                                                                                   {
-                                                                                                                                                                                                                                                    Nothing   ->  (Left (Pair Nothing (rseq mi resumeii))) 
+                                                                                                                                                                                                                                                    Nothing   ->  (Left (Pair Nothing (rseq mi resumeii)))
                                                                                                                                                                                                                                                     ; Just zd ->  (Left (Pair outputii (rseq resumei resumeii)))
                                                                                                                                                                                                                                                   }
                                                                                                                                                                                                               }
@@ -211,7 +211,7 @@ is
                                                                             {
                                                                                Nothing     -> stepMachine input mi
                                                                                ; Just outval -> stepMachine (Pair (Just (or inval outval)) (snd input)) mi
-                                                                             }) 
+                                                                             })
                                                              (\p -> case p of
                                                                       {
                                                                         (Pair inneroutput innerresume) ->  (Left (Pair inneroutput (starP inneroutput innerresume)))
@@ -230,7 +230,7 @@ is
 end
 
 testexpr :: RegExp Char
-is 
+is
   Atom a_char
 end
 

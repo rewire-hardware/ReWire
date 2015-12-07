@@ -1,5 +1,5 @@
 --module Salsa20Cipher where
---import Control.Monad.Resumption.Reactive 
+--import Control.Monad.Resumption.Reactive
 --import Prelude (undefined,Num)
 --import Control.Monad.Identity
 
@@ -13,7 +13,7 @@
 data Unit is Unit end
 data Bit is Low | High end
 data W8  is W8  Bit Bit Bit Bit Bit Bit Bit Bit end
-data W16 is W16 Bit Bit Bit Bit Bit Bit Bit Bit 
+data W16 is W16 Bit Bit Bit Bit Bit Bit Bit Bit
                     Bit Bit Bit Bit Bit Bit Bit Bit end
 data W32 is W32 Bit Bit Bit Bit Bit Bit Bit Bit
                    Bit Bit Bit Bit Bit Bit Bit Bit
@@ -24,13 +24,13 @@ data Bytes16 is Bytes16 W8 W8 W8 W8 W8 W8 W8 W8 W8 W8 W8 W8 W8 W8 W8 W8 end
 
 
 data Bytes8  is Bytes8 W8 W8 W8 W8 W8 W8 W8 W8 end
-data Bytes64 is Bytes64 W8 W8 W8 W8 W8 W8 W8 W8 
-                       W8 W8 W8 W8 W8 W8 W8 W8 
-                       W8 W8 W8 W8 W8 W8 W8 W8 
-                       W8 W8 W8 W8 W8 W8 W8 W8 
-                       W8 W8 W8 W8 W8 W8 W8 W8 
-                       W8 W8 W8 W8 W8 W8 W8 W8 
-                       W8 W8 W8 W8 W8 W8 W8 W8 
+data Bytes64 is Bytes64 W8 W8 W8 W8 W8 W8 W8 W8
+                       W8 W8 W8 W8 W8 W8 W8 W8
+                       W8 W8 W8 W8 W8 W8 W8 W8
+                       W8 W8 W8 W8 W8 W8 W8 W8
+                       W8 W8 W8 W8 W8 W8 W8 W8
+                       W8 W8 W8 W8 W8 W8 W8 W8
+                       W8 W8 W8 W8 W8 W8 W8 W8
                        W8 W8 W8 W8 W8 W8 W8 W8 end
 
 
@@ -40,7 +40,7 @@ data Tuple2 a b is Tuple2 a b end
 data Tuple3 a b c is Tuple3 a b c end
 data Tuple4 a b c d is Tuple4 a b c d end
 data Tuple5 a b c d e is Tuple5 a b c d e end
-data ParTen is ParTen (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) end 
+data ParTen is ParTen (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) end
 
 vhdl add8 :: W8 -> W8 -> W8 is prim_plus
 vhdl xor32 :: W32 -> W32 -> W32 is prim_xor
@@ -64,7 +64,7 @@ is
   Tuple4 (W8 Low Low High High Low Low High Low) (W8 Low Low High Low High High Low High) (W8 Low High High Low Low Low High Low) (W8 Low High High High High Low Low High)
 end
 --(116,101,32,107)
-sigma3 :: Tuple4 W8 W8 W8 W8 
+sigma3 :: Tuple4 W8 W8 W8 W8
 is
   Tuple4 (W8 Low High High High Low High Low Low) (W8 Low High High Low Low High Low High) (W8 Low Low High Low Low Low Low Low) (W8 Low High High Low High Low High High)
 end
@@ -249,11 +249,11 @@ littleendian :: Tuple4 W8 W8 W8 W8 -> W32
 is
     (\ i -> case i of
               {
-                   Tuple4 
-                        (W8 b7  b6  b5  b4  b3  b2  b1  b0) 
-                        (W8 b15 b14 b13 b12 b11 b10 b9  b8) 
+                   Tuple4
+                        (W8 b7  b6  b5  b4  b3  b2  b1  b0)
+                        (W8 b15 b14 b13 b12 b11 b10 b9  b8)
                         (W8 b23 b22 b21 b20 b19 b18 b17 b16)
-                        (W8 b31 b30 b29 b28 b27 b26 b25 b24)  -> (W32 b31 b30 b29 b28 b27 b26 b25 b24 b23 b22 b21 b20 b19 b18 b17 b16 b15 b14 b13 b12 b11 b10 b9 b8 b7 b6 b5 b4 b3 b2 b1 b0) 
+                        (W8 b31 b30 b29 b28 b27 b26 b25 b24)  -> (W32 b31 b30 b29 b28 b27 b26 b25 b24 b23 b22 b21 b20 b19 b18 b17 b16 b15 b14 b13 b12 b11 b10 b9 b8 b7 b6 b5 b4 b3 b2 b1 b0)
               })
 end
 
@@ -300,10 +300,10 @@ is
 end
 
 expwords :: (Words16 W32) -> Bytes64
-is 
+is
   \i -> case i of
         {
-          (Words16 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15) -> 
+          (Words16 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15) ->
                                                                              let   x0  = littleendianp a0 in
                                                                              let   x1  = littleendianp a1 in
                                                                              let   x2  = littleendianp a2 in
@@ -321,22 +321,22 @@ is
                                                                              let   x14 = littleendianp a14 in
                                                                              let   x15 = littleendianp a15 in case Words16 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 of
                                                                                                                {
-                                                                                                                 Words16 
-                                                                                                                 (Tuple4 b0 b1 b2 b3)    
-                                                                                                                 (Tuple4 b4 b5 b6 b7)    
-                                                                                                                 (Tuple4 b8 b9 b10 b11)   
-                                                                                                                 (Tuple4 b12 b13 b14 b15)  
-                                                                                                                 (Tuple4 b16 b17 b18 b19)  
-                                                                                                                 (Tuple4 b20 b21 b22 b23) 
+                                                                                                                 Words16
+                                                                                                                 (Tuple4 b0 b1 b2 b3)
+                                                                                                                 (Tuple4 b4 b5 b6 b7)
+                                                                                                                 (Tuple4 b8 b9 b10 b11)
+                                                                                                                 (Tuple4 b12 b13 b14 b15)
+                                                                                                                 (Tuple4 b16 b17 b18 b19)
+                                                                                                                 (Tuple4 b20 b21 b22 b23)
                                                                                                                  (Tuple4 b24 b25 b26 b27)
-                                                                                                                 (Tuple4 b28 b29 b30 b31) 
+                                                                                                                 (Tuple4 b28 b29 b30 b31)
                                                                                                                  (Tuple4 b32 b33 b34 b35)
-                                                                                                                 (Tuple4 b36 b37 b38 b39) 
-                                                                                                                 (Tuple4 b40 b41 b42 b43) 
-                                                                                                                 (Tuple4 b44 b45 b46 b47) 
+                                                                                                                 (Tuple4 b36 b37 b38 b39)
+                                                                                                                 (Tuple4 b40 b41 b42 b43)
+                                                                                                                 (Tuple4 b44 b45 b46 b47)
                                                                                                                  (Tuple4 b48 b49 b50 b51)
-                                                                                                                 (Tuple4 b52 b53 b54 b55) 
-                                                                                                                 (Tuple4 b56 b57 b58 b59) 
+                                                                                                                 (Tuple4 b52 b53 b54 b55)
+                                                                                                                 (Tuple4 b56 b57 b58 b59)
                                                                                                                  (Tuple4 b60 b61 b62 b63) -> Bytes64 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31 b32 b33 b34 b35 b36 b37 b38 b39 b40 b41 b42 b43 b44 b45 b46 b47 b48 b49 b50 b51 b52 b53 b54 b55 b56 b57 b58 b59 b60 b61 b62 b63
                                                                                                                }
       }
@@ -346,25 +346,25 @@ impwords :: Bytes64 -> (Words16 W32)
 is
   \i -> case i of
     {
-           (Bytes64 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 
-                  a17 a18 a19 a20 a21 a22 a23 a24 a25 a26 a27 a28 a29 a30 a31 
-                  a32 a33 a34 a35 a36 a37 a38 a39 a40 a41 a42 a43 a44 a45 a46 
+           (Bytes64 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16
+                  a17 a18 a19 a20 a21 a22 a23 a24 a25 a26 a27 a28 a29 a30 a31
+                  a32 a33 a34 a35 a36 a37 a38 a39 a40 a41 a42 a43 a44 a45 a46
                   a47 a48 a49 a50 a51 a52 a53 a54 a55 a56 a57 a58 a59 a60 a61 a62 a63) -> let b0 = littleendian (Tuple4 a0 a1 a2 a3) in
-                                                                                          let b1 = littleendian (Tuple4 a4 a5 a6 a7) in       
-                                                                                          let b2 = littleendian (Tuple4 a8 a9 a10 a11) in    
-                                                                                          let b3 = littleendian (Tuple4 a12 a13 a14 a15) in   
-                                                                                          let b4 = littleendian (Tuple4 a16 a17 a18 a19) in  
-                                                                                          let b5 = littleendian (Tuple4 a20 a21 a22 a23) in  
-                                                                                          let b6 = littleendian (Tuple4 a24 a25 a26 a27) in  
-                                                                                          let b7 = littleendian (Tuple4 a28 a29 a30 a31) in  
-                                                                                          let b8 = littleendian (Tuple4 a32 a33 a34 a35) in  
-                                                                                          let b9 = littleendian (Tuple4 a36 a37 a38 a39) in  
-                                                                                          let b10 = littleendian (Tuple4 a40 a41 a42 a43) in  
-                                                                                          let b11 = littleendian (Tuple4 a44 a45 a46 a47) in  
-                                                                                          let b12 = littleendian (Tuple4 a48 a49 a50 a51) in  
-                                                                                          let b13 = littleendian (Tuple4 a52 a53 a54 a55) in  
-                                                                                          let b14 = littleendian (Tuple4 a56 a57 a58 a59) in  
-                                                                                          let b15 = littleendian (Tuple4 a60 a61 a62 a63)   
+                                                                                          let b1 = littleendian (Tuple4 a4 a5 a6 a7) in
+                                                                                          let b2 = littleendian (Tuple4 a8 a9 a10 a11) in
+                                                                                          let b3 = littleendian (Tuple4 a12 a13 a14 a15) in
+                                                                                          let b4 = littleendian (Tuple4 a16 a17 a18 a19) in
+                                                                                          let b5 = littleendian (Tuple4 a20 a21 a22 a23) in
+                                                                                          let b6 = littleendian (Tuple4 a24 a25 a26 a27) in
+                                                                                          let b7 = littleendian (Tuple4 a28 a29 a30 a31) in
+                                                                                          let b8 = littleendian (Tuple4 a32 a33 a34 a35) in
+                                                                                          let b9 = littleendian (Tuple4 a36 a37 a38 a39) in
+                                                                                          let b10 = littleendian (Tuple4 a40 a41 a42 a43) in
+                                                                                          let b11 = littleendian (Tuple4 a44 a45 a46 a47) in
+                                                                                          let b12 = littleendian (Tuple4 a48 a49 a50 a51) in
+                                                                                          let b13 = littleendian (Tuple4 a52 a53 a54 a55) in
+                                                                                          let b14 = littleendian (Tuple4 a56 a57 a58 a59) in
+                                                                                          let b15 = littleendian (Tuple4 a60 a61 a62 a63)
                                                                                           in Words16 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
 
     }
@@ -372,7 +372,7 @@ end
 
 quarterRound :: Tuple4 W32 W32 W32 W32 -> Tuple4 W32 W32 W32 W32
 is
-  \i -> case i of 
+  \i -> case i of
           {
             (y0,y1,y2,y3) -> let z1 = xor32 y1 (rot7 (add32 y0 y3))  in
                              let z2 = xor32 y2 (rot9 (add32 z1 y0))  in
@@ -392,20 +392,20 @@ is
                    y12 y13 y14 y15) -> let x0 = quarterRound(y0,y1,y2,y3) in
                                        let x1 = quarterRound(y5,y6,y7,y4) in
                                        let x2 = quarterRound(y10,y11,y8,y9) in
-                                       let x3 = quarterRound(y15,y12,y13,y14) 
+                                       let x3 = quarterRound(y15,y12,y13,y14)
                                        in case Tuple4 x0 x1 x2 x3 of
                                             {
                                               Tuple4
-                                                 (Tuple4 z0 z1 z2 z3)    
-                                                 (Tuple4 z5 z6 z7 z4)     
-                                                 (Tuple4 z10 z11 z8 z9)   
+                                                 (Tuple4 z0 z1 z2 z3)
+                                                 (Tuple4 z5 z6 z7 z4)
+                                                 (Tuple4 z10 z11 z8 z9)
                                                  (Tuple4 z15 z12 z13 z14) -> (Words16 z0 z1 z2 z3 z4 z5 z6 z7 z8 z9 z10 z11 z12 z13 z14 z15)
                                             }
         }
 end
 
 columnRound :: Words16 W32 -> Words16 W32
-is 
+is
   \i -> case i of
         {
        (Words16 x0 x1 x2 x3
@@ -414,13 +414,13 @@ is
              x12 x13 x14 x15) -> let   z0  = quarterRound(x0,x4,x8,x12) in
                                  let   z1  = quarterRound(x5,x9,x13,x1) in
                                  let   z2  = quarterRound(x10,x14,x2,x6) in
-                                 let   z3  = quarterRound(x15,x3,x7,x11) 
+                                 let   z3  = quarterRound(x15,x3,x7,x11)
                                in case Tuple4 z0 z1 z2 z3 of
                                    {
-                                      Tuple4 
-                                         (Tuple4 y0 y4 y8 y12) 
+                                      Tuple4
+                                         (Tuple4 y0 y4 y8 y12)
                                          (Tuple4 y5 y9 y13 y1)
-                                         (Tuple4 y10 y14 y2 y6) 
+                                         (Tuple4 y10 y14 y2 y6)
                                          (Tuple4 y15 y3 y7 y11) -> (Words16 y0 y1 y2 y3 y4 y5 y6 y7 y8 y9 y10 y11 y12 y13 y14 y15)
                                    }
         }
@@ -471,18 +471,18 @@ buildSalsa256 :: Bytes16 -> Bytes16 -> Bytes8 -> Bytes8 -> Bytes64
 is
   \w -> \x -> \y -> \z -> case Tuple4 w x y z of
                             {
-                              Tuple4 (Bytes16 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15) 
-                                     (Bytes16 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15) 
-                                     (Bytes8  n0 n1 n2 n3 n4 n5 n6 n7) 
+                              Tuple4 (Bytes16 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15)
+                                     (Bytes16 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15)
+                                     (Bytes8  n0 n1 n2 n3 n4 n5 n6 n7)
                                      (Bytes8 n8 n9 n10 n11 n12 n13 n14 n15) -> case Tuple4 sigma0 sigma1 sigma2 sigma3 of
                                                                                     {
                                                                                              Tuple4 (s0,s1,s2,s3)
                                                                                                     (s4,s5,s6,s7)
-                                                                                                    (s8,s9,s10,s11)   
+                                                                                                    (s8,s9,s10,s11)
                                                                                                     (s12,s13,s14,s15) -> salsaHash(
-                                                                                                                                    Bytes64 s0  s1  s2  s3  a0  a1  a2  a3  a4 a5 a6 a7  a8 a9 a10 a11 
+                                                                                                                                    Bytes64 s0  s1  s2  s3  a0  a1  a2  a3  a4 a5 a6 a7  a8 a9 a10 a11
                                                                                                                                             a12 a13 a14 a15 s4  s5  s6  s7  n0 n1 n2 n3  n4  n5  n6 n7
-                                                                                                                                            n8  n9  n10 n11 n12 n13 n14 n15 s8 s9 s10 s11 b0  b1  b2 b3 
+                                                                                                                                            n8  n9  n10 n11 n12 n13 n14 n15 s8 s9 s10 s11 b0  b1  b2 b3
                                                                                                                                             b4 b5 b6  b7 b8  b9  b10 b11 b12 b13 b14 b15 s12 s13 s14 s15)
                                                                                     }
                            }
@@ -492,28 +492,28 @@ buildFrame :: Bytes16 -> Bytes16 -> Bytes8 -> Bytes8 -> Bytes64
 is
   \w -> \x -> \y -> \z -> case Tuple4 w x y z of
                             {
-                              Tuple4 (Bytes16 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15) 
-                                     (Bytes16 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15) 
-                                     (Bytes8  n0 n1 n2 n3 n4 n5 n6 n7) 
+                              Tuple4 (Bytes16 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15)
+                                     (Bytes16 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15)
+                                     (Bytes8  n0 n1 n2 n3 n4 n5 n6 n7)
                                      (Bytes8 n8 n9 n10 n11 n12 n13 n14 n15) -> case Tuple4 sigma0 sigma1 sigma2 sigma3 of
                                                                                     {
                                                                                              Tuple4 (s0,s1,s2,s3)
                                                                                                     (s4,s5,s6,s7)
-                                                                                                    (s8,s9,s10,s11)   
-                                                                                                    (s12,s13,s14,s15) -> Bytes64 s0  s1  s2  s3  a0  a1  a2  a3  a4 a5 a6 a7  a8 a9 a10 a11 
+                                                                                                    (s8,s9,s10,s11)
+                                                                                                    (s12,s13,s14,s15) -> Bytes64 s0  s1  s2  s3  a0  a1  a2  a3  a4 a5 a6 a7  a8 a9 a10 a11
                                                                                                                                  a12 a13 a14 a15 s4  s5  s6  s7  n0 n1 n2 n3  n4  n5  n6 n7
-                                                                                                                                 n8  n9  n10 n11 n12 n13 n14 n15 s8 s9 s10 s11 b0  b1  b2 b3 
+                                                                                                                                 n8  n9  n10 n11 n12 n13 n14 n15 s8 s9 s10 s11 b0  b1  b2 b3
                                                                                                                                  b4 b5 b6  b7 b8  b9  b10 b11 b12 b13 b14 b15 s12 s13 s14 s15
                                                                                     }
                            }
 end
 
-key1 :: Bytes16 
+key1 :: Bytes16
 is
   Bytes16 (W8 High Low Low Low Low Low Low Low) (W8 Low High Low Low Low Low Low Low) (W8 High High Low Low Low Low Low Low) (W8 Low Low High Low Low Low Low Low) (W8 High Low High Low Low Low Low Low) (W8 Low High High Low Low Low Low Low) (W8 High High High Low Low Low Low Low) (W8 Low Low Low High Low Low Low Low) (W8 High Low Low High Low Low Low Low) (W8 Low High Low High Low Low Low Low) (W8 High High Low High Low Low Low Low) (W8 Low Low High High Low Low Low Low) (W8 High Low High High Low Low Low Low) (W8 Low High High High Low Low Low Low) (W8 High High High High Low Low Low Low) (W8 Low Low Low Low High Low Low Low)
 end
 
-key2 :: Bytes16 
+key2 :: Bytes16
 is
   Bytes16 (W8 High Low Low Low High Low Low Low) (W8 Low High Low Low High Low Low Low) (W8 High High Low Low High Low Low Low) (W8 Low Low High Low High Low Low Low) (W8 High Low High Low High Low Low Low) (W8 Low High High Low High Low Low Low) (W8 High High High Low High Low Low Low) (W8 Low Low Low High High Low Low Low) (W8 High Low Low High High Low Low Low) (W8 Low High Low High High Low Low Low) (W8 High High Low High High Low Low Low) (W8 Low Low High High High Low Low Low) (W8 High Low High High High Low Low Low) (W8 Low High High High High Low Low Low) (W8 High High High High High Low Low Low) (W8 Low Low Low Low Low High Low Low)
 end
@@ -530,7 +530,7 @@ end
 
 pipeline :: <ReT i z I><a> -> <ReT z o I><a> -> <ReT i o I><a>
 is
-  \left -> \right -> refold snd pipe (parI left right) 
+  \left -> \right -> refold snd pipe (parI left right)
 end
 
 snd :: Tuple2 a b -> b
@@ -541,7 +541,7 @@ is
           }
 end
 
-pipe :: Tuple2 a b -> c -> Tuple2 c a 
+pipe :: Tuple2 a b -> c -> Tuple2 c a
 is
   \tup -> \newinp -> case tup of
                      {
@@ -577,16 +577,16 @@ par10 :: (Tuple2 ((Tuple2 (Words16 W32) (Words16 W32)))
 is
   \inp -> case inp of
           {
-            
+
            (Tuple2 a
              (Tuple2 b
               (Tuple2 c
                (Tuple2 d
-                (Tuple2 e 
-                 (Tuple2 f 
-                  (Tuple2 g 
-                   (Tuple2 h 
-                    (Tuple2 i j))))))))) -> ParTen a b c d e f g h i j 
+                (Tuple2 e
+                 (Tuple2 f
+                  (Tuple2 g
+                   (Tuple2 h
+                    (Tuple2 i j))))))))) -> ParTen a b c d e f g h i j
           }
 end
 
@@ -602,25 +602,25 @@ dePar10 :: ParTen -> (Tuple2 ((Tuple2 (Words16 W32) (Words16 W32)))
 is
   \inp -> case inp of
           {
-            ParTen a b c d e f g h i j -> 
+            ParTen a b c d e f g h i j ->
            (Tuple2 a
              (Tuple2 b
               (Tuple2 c
                (Tuple2 d
-                (Tuple2 e 
-                 (Tuple2 f 
-                  (Tuple2 g 
-                   (Tuple2 h 
-                    (Tuple2 i j))))))))) 
+                (Tuple2 e
+                 (Tuple2 f
+                  (Tuple2 g
+                   (Tuple2 h
+                    (Tuple2 i j)))))))))
           }
 end
 
 ddevP :: ParTen -> (Tuple2 Bytes8 Bytes8) -> ParTen
 is
-  \old -> \inp -> case Tuple2 old inp of 
+  \old -> \inp -> case Tuple2 old inp of
                   {
-                    Tuple2 (ParTen a b c d e f g h i nope) (Tuple2 b0 b1) -> let x = buildFrame key1 key2 b0 b1 
-                                                                              in let y = impwords x 
+                    Tuple2 (ParTen a b c d e f g h i nope) (Tuple2 b0 b1) -> let x = buildFrame key1 key2 b0 b1
+                                                                              in let y = impwords x
                                                                                 in let z = Tuple2 y y
                                                                                in (ParTen z a b c d e f g h i)
                   }
@@ -664,11 +664,11 @@ is
     refold ( \out -> pipeout out)
            ( \out -> \inp -> case Tuple2 old inp of
                              {
-                               
+
                              }
-           
+
            )
-    
+
            (pipeline (pipeline (pipeline (pipeline ddev ddev) (pipeline ddev ddev))
                        (pipeline (pipeline ddev ddev) (pipeline ddev ddev)))
              (pipeline ddev ddev))
@@ -677,11 +677,11 @@ end
 {-
 salsa20 :: <ReT (Tuple2 Bytes8 Bytes8) Bytes64 I><()>
 is
-  refold 
+  refold
          (
             \out -> ddevOutput (par10 out)
          )
-        
+
          (
             \old -> \inp -> dePar10 (ddevP (par10 old) inp)
          )
@@ -699,6 +699,6 @@ end
 
 start :: <ReT (Tuple2 Bytes8 Bytes8) Bytes64 I><()>
 is
-  salsa20 
+  salsa20
 end
 -}

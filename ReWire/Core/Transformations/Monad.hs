@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances,UndecidableInstances,MultiParamTypeClasses, 
+{-# LANGUAGE FlexibleInstances,UndecidableInstances,MultiParamTypeClasses,
              GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
@@ -48,7 +48,7 @@ assumingT :: Monad m => TyConId -> TyConInfo -> RWT m a -> RWT m a
 assumingT i inf m = RWT $ AssumeT $ ReaderT $ \ rho -> assuming i inf (runReaderT (deAssumeT (deRWT m)) rho)
 
 assumingD :: Monad m => DataConId -> DataConInfo -> RWT m a -> RWT m a
-assumingD i inf m = RWT $ 
+assumingD i inf m = RWT $
                      AssumeT $ ReaderT $ \ rho0 ->
                       AssumeT $ ReaderT $ \ rho1 ->
                         assuming i inf (runReaderT (deAssumeT
@@ -79,13 +79,13 @@ queryV :: Monad m => Id RWCExp -> RWT m (Maybe VarInfo)
 queryV x = RWT $ query x
 
 queryP :: Monad m => Id RWCExp -> RWT m (Maybe RWCPrim)
-queryP x = RWT $ 
+queryP x = RWT $
             do mvi <- query x
                case mvi of
                  Just (PrimVar p) -> return (Just p)
                  _                -> return Nothing
 -}
-                
+
 queryG :: Monad m => Id RWCExp -> RWT m (Maybe RWCDefn)
 queryG x = RWT $
             do mvi <- query x
@@ -99,7 +99,7 @@ queryL x = RWT $
             do mvi <- query x
                case mvi of
                  Just (LocalVar t)  -> return (Just t)
-                 _                  -> return Nothing                
+                 _                  -> return Nothing
 
 -}
 
@@ -122,7 +122,7 @@ getAssumptionsG = RWT $
                     return (Map.mapMaybe deG m)
 
 getAssumptionsL :: Monad m => RWT m (Map (Id RWCExp) RWCTy)
-getAssumptionsL = RWT $ 
+getAssumptionsL = RWT $
                    do
                     m <- getAssumptions
                     let deL (LocalVar x) = Just x
@@ -137,7 +137,7 @@ getAssumptionsD = RWT $ lift $ lift getAssumptions
 -}
 
 mkInitialVarMap :: [RWCDefn] -> [RWCPrim] -> Map (Id RWCExp) VarInfo
-mkInitialVarMap ds ps = foldr (\ p@(RWCPrim n _ _) -> Map.insert n (PrimVar p))  
+mkInitialVarMap ds ps = foldr (\ p@(RWCPrim n _ _) -> Map.insert n (PrimVar p))
                           (foldr (\ d@(RWCDefn n _ _) -> Map.insert n (GlobalVar d)) Map.empty ds)
                           ps
 

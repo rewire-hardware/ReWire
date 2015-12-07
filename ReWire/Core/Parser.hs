@@ -93,7 +93,7 @@ atype = do tm <- angles ty
              []  -> return (RWCTyCon (TyConId "Unit"))
              [t] -> return t
              _   -> return (foldl RWCTyApp (RWCTyCon (TyConId $ mktuplecon (length ts))) ts)
-             
+
 btype = do ts <- many1 atype
            return (foldl1 RWCTyApp ts)
 
@@ -107,7 +107,7 @@ primdefn = do reserved "vhdl"
               reserved "is"
               n <- varid
               return (RWCPrim (mkId i) t n)
-              
+
 defn = do i <- varid
           reservedOp "::"
           t <- ty
@@ -131,7 +131,7 @@ aexpr = do i <- varid
              []  -> return (RWCCon (DataConId "Unit") tblank)
              [e] -> return e
              _   -> return (foldl RWCApp (RWCCon (DataConId $ mktuplecon (length es)) tblank) es)
-             
+
 literal = liftM RWCLitInteger natural
       <|> liftM RWCLitFloat float
       <|> liftM RWCLitChar charLiteral
@@ -201,7 +201,7 @@ parsewithname filename guts =
   case runParser (whiteSpace >> prog >>= \ p -> whiteSpace >> eof >> return p) () filename guts of
     Left e  -> Left (show e)
     Right p -> Right p
-            
+
 parsefile :: FilePath -> IO (Either String RWCProg)
 parsefile fname = do guts <- readFile fname
                      return (parsewithname fname guts)

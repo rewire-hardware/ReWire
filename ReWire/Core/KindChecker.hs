@@ -20,7 +20,7 @@ import ReWire.Core.PrimTypes
 
 -- Kind checking for Core.
 type KiSub = Map (Id Kind) Kind
-data KCEnv = KCEnv { as  :: Map (Id RWCTy) Kind, 
+data KCEnv = KCEnv { as  :: Map (Id RWCTy) Kind,
                      cas :: Map TyConId Kind } deriving Show
 data KCState = KCState { kiSub :: KiSub, ctr :: Int } deriving Show
 type Assump = (Id RWCTy,Kind)
@@ -126,11 +126,11 @@ kc p = do cas <- liftM Map.fromList $ mapM initDataDecl (dataDecls p)
 kindcheck :: RWCProg -> Maybe String
 kindcheck p = l2m $ runIdentity (runExceptT (runStateT (runReaderT (kc p) (KCEnv Map.empty as)) (KCState Map.empty 0)))
   where as = Map.fromList [(TyConId "(->)",   Kfun Kstar (Kfun Kstar Kstar)),
-                           
+
                            (TyConId "ReT",    Kfun Kstar (Kfun Kstar (Kfun Kmonad Kmonad))),
                            (TyConId "StT",    Kfun Kstar (Kfun Kmonad Kmonad)),
                            (TyConId "I",      Kmonad),
-                           
+
                            (TyConId "Tuple2", Kfun Kstar (Kfun Kstar Kstar))]
         l2m (Left x)  = Just x
         l2m (Right _) = Nothing

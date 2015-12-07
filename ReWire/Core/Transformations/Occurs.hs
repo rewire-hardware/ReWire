@@ -29,12 +29,12 @@ get_occurrences :: String -> RWCProg -> [String]
 get_occurrences nme (RWCProg decls tdefns) = runLFreshM $ do
                                                             defns <- luntrec tdefns
                                                             let nme' = s2n nme
-                                                            defns' <- filterM (occurs nme') defns 
+                                                            defns' <- filterM (occurs nme') defns
                                                             return $ map (name2String . def_name) defns'
 
-                                                      
 
-                            
+
+
 
 
 occurs :: LFresh m => Name RWCExp -> RWCDefn -> m Bool

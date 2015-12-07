@@ -57,7 +57,7 @@ dqvT (Id s x) = do alloced <- askAllocatedT
                    let xs  =  map (Id s . BS.pack) $ variants (pretty (BS.unpack x))
                        x'  =  fromJust $ find (not . (`Set.member` alloced)) xs
                    return x'
-                   
+
 dqvE :: Id RWCExp -> DQM (Id RWCExp)
 dqvE (Id s x) = do alloced <- askAllocatedE
                    let xs  =  map (Id s . BS.pack) $ variants (pretty (BS.unpack x))
@@ -111,7 +111,7 @@ dqAlt (RWCAlt p e) = do let vs      =  pvs p
                           e' <- dqExpr e
                           return (p',e'))
                         return (RWCAlt p' e')
-                           
+
 dqExpr (RWCApp e1 e2) = do e1' <- dqExpr e1
                            e2' <- dqExpr e2
                            return (RWCApp e1' e2')

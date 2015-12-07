@@ -10,8 +10,8 @@ end rewire;
 
 architecture behavioral of rewire is
   type control_state is (STATE0,STATE11);
-  
-  
+
+
 begin
   process (clk)
     variable goto_L1 : boolean := false;

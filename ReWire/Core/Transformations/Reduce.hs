@@ -93,6 +93,6 @@ redprog :: RWCProg -> RWCProg
 redprog p_ = deUniquify $ runRW ctr p (do ds' <- mapM reddefn (defns p)
                                           return (p { defns = ds' }))
   where (p,ctr) = uniquify 0 p_
-                        
+
 cmdReduce :: TransCommand
 cmdReduce _ p = (Just (redprog p),Nothing)

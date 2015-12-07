@@ -69,14 +69,14 @@ is
 end
 
 getOutputs :: <ReT Inputs Outputs (StT CPUState I)><Outputs>
-is 
+is
      bind s <- getState
   in return (outputs s)
 end
 
 setInputs :: CPUState -> Inputs -> CPUState
 is
-  \ s -> \ i -> 
+  \ s -> \ i ->
          case s of
          { CPUState _ o z c ie pc zs cs pcs r0 r1 r2 r3 ->
            CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
@@ -114,7 +114,7 @@ end
 
 setPC :: CPUState -> W8 -> CPUState
 is
-  \ s -> \ pc -> 
+  \ s -> \ pc ->
          case s of
          { CPUState i o z c ie  _ zs cs pcs r0 r1 r2 r3 ->
            CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
@@ -180,7 +180,7 @@ end
 
 setR0 :: CPUState -> W8 -> CPUState
 is
-  \ s -> \ r0 -> 
+  \ s -> \ r0 ->
          case s of
          { CPUState i o z c ie pc zs cs pcs  _ r1 r2 r3 ->
            CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
@@ -188,7 +188,7 @@ end
 
 setR1 :: CPUState -> W8 -> CPUState
 is
-  \ s -> \ r1 -> 
+  \ s -> \ r1 ->
          case s of
          { CPUState i o z c ie pc zs cs pcs r0  _ r2 r3 ->
            CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
@@ -196,7 +196,7 @@ end
 
 setR2 :: CPUState -> W8 -> CPUState
 is
-  \ s -> \ r2 -> 
+  \ s -> \ r2 ->
          case s of
          { CPUState i o z c ie pc zs cs pcs r0 r1  _ r3 ->
            CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
@@ -204,7 +204,7 @@ end
 
 setR3 :: CPUState -> W8 -> CPUState
 is
-  \ s -> \ r3 -> 
+  \ s -> \ r3 ->
          case s of
          { CPUState i o z c ie pc zs cs pcs r0 r1 r2  _ ->
            CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
@@ -224,7 +224,7 @@ end
 
 setPCSave :: CPUState -> W8 -> CPUState
 is
-  \ s -> \ pcs -> 
+  \ s -> \ pcs ->
          case s of
          { CPUState i o z c ie pc zs cs   _ r0 r1 r2 r3 ->
            CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
@@ -275,7 +275,7 @@ end
 
 setZFlag :: CPUState -> Bit -> CPUState
 is
-  \ s -> \ z -> 
+  \ s -> \ z ->
          case s of
          { CPUState i o _ c ie pc zs cs pcs r0 r1 r2 r3 ->
            CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
@@ -289,7 +289,7 @@ end
 
 setZSave :: CPUState -> Bit -> CPUState
 is
-  \ s -> \ zs -> 
+  \ s -> \ zs ->
          case s of
          { CPUState i o z c ie pc  _ cs pcs r0 r1 r2 r3 ->
            CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
@@ -327,7 +327,7 @@ end
 
 setCFlag :: CPUState -> Bit -> CPUState
 is
-  \ s -> \ c -> 
+  \ s -> \ c ->
          case s of
          { CPUState i o z _ ie pc zs cs pcs r0 r1 r2 r3 ->
            CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
@@ -341,7 +341,7 @@ end
 
 setCSave :: CPUState -> Bit -> CPUState
 is
-  \ s -> \ cs -> 
+  \ s -> \ cs ->
          case s of
          { CPUState i o z c ie pc zs  _ pcs r0 r1 r2 r3 ->
            CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
@@ -355,7 +355,7 @@ end
 
 setIEFlag :: CPUState -> Bit -> CPUState
 is
-  \ s -> \ ie -> 
+  \ s -> \ ie ->
          case s of
          { CPUState i o z c  _ pc zs cs pcs r0 r1 r2 r3 ->
            CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
@@ -393,7 +393,7 @@ end
 
 setOutputs :: CPUState -> Outputs -> CPUState
 is
-  \ s -> \ o -> 
+  \ s -> \ o ->
          case s of
          { CPUState i _ z c ie pc zs cs pcs r0 r1 r2 r3 ->
            CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3 }
@@ -474,9 +474,9 @@ is
   \ rEn -> \ wEn -> \ r -> bind pc  <- getPC
                         in bind zzz <- putAddrOut pc
                         in bind zzz <- tick
-                   
+
                         in bind a   <- getDataIn
-                   
+
                         in bind zzz <- putAddrOut a
                         in bind zzz <- putWeOut wEn
                         in bind zzz <- when wEn (
@@ -496,14 +496,14 @@ is
       in bind zzz <- putWeOut Zero
       in bind zzz <- putAddrOut a
       in bind zzz <- tick
-              
+
       in bind v   <- getDataIn
       in             putReg rD v
 end
 
 st :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
 is
- \ rD -> \ rS -> 
+ \ rD -> \ rS ->
          bind a   <- getReg rS
       in bind v   <- getReg rD
       in bind zzz <- putWeOut One
@@ -514,7 +514,7 @@ end
 
 add :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
 is
- \ rD -> \ rS -> 
+ \ rD -> \ rS ->
           bind vD  <- getReg rD
        in bind vS  <- getReg rS
        in let p    =  plusCW8 vD vS Zero
@@ -527,7 +527,7 @@ end
 
 addc :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
 is
- \ rD -> \ rS -> 
+ \ rD -> \ rS ->
            bind vD  <- getReg rD
         in bind vS  <- getReg rS
         in bind cin <- getCFlag
@@ -567,7 +567,7 @@ is
 end
 
 mov :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
-is 
+is
  \ rD -> \ rS ->
            bind v   <- getReg rS
         in bind zzz <- putReg rD v
@@ -575,7 +575,7 @@ is
 end
 
 or :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
-is 
+is
  \ rD -> \ rS ->
            bind vD      <- getReg rD
         in bind vS      <- getReg rS
@@ -587,7 +587,7 @@ is
 end
 
 and :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
-is 
+is
  \ rD -> \ rS ->
            bind vD      <- getReg rD
         in bind vS      <- getReg rS
@@ -599,7 +599,7 @@ is
 end
 
 xor :: Register -> Register -> <ReT Inputs Outputs (StT CPUState I)><()>
-is 
+is
  \ rD -> \ rS ->
            bind vD      <- getReg rD
         in bind vS      <- getReg rS
@@ -667,7 +667,7 @@ is
 end
 
 ien :: Bit -> <ReT Inputs Outputs (StT CPUState I)><()>
-is 
+is
  \ b -> bind zzz <- putIEFlag b
      in             tick
 end
@@ -679,7 +679,7 @@ is
 end
 
 iret :: <ReT Inputs Outputs (StT CPUState I)><()>
-is 
+is
     bind zzz <- putIEFlag One
  in bind pc  <- getPCSave
  in bind zzz <- putPC pc
@@ -788,7 +788,7 @@ is
   \ i -> case i of
          { Inputs _ r_i _ -> r_i }
 end
- 
+
 intIn :: Inputs -> Bit
 is
   \ i -> case i of

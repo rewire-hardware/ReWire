@@ -90,16 +90,16 @@ data Outputs = Outputs { addrOut :: W8,
 
 data CPUState = CPUState { inputs  :: Inputs,
                            outputs :: Outputs,
-                           
+
                            zFlag   :: Bit,
                            cFlag   :: Bit,
                            ieFlag  :: Bit,
                            pc      :: W8,
-                           
+
                            zsFlag  :: Bit,
                            csFlag  :: Bit,
                            pcSave  :: W8,
-                           
+
                            r0      :: W8,
                            r1      :: W8,
                            r2      :: W8,
@@ -115,7 +115,7 @@ mkReg  One  One = R3
 when :: Monad m => Bit -> m () -> m ()
 when One m  = m
 when Zero m = return ()
-  
+
 type CPUM = ReacT Inputs Outputs (StateT CPUState Identity)
 
 tick :: CPUM ()
@@ -232,7 +232,7 @@ putDataOut v = do o <- getOutputs
 getDataIn :: CPUM W8
 getDataIn = do i <- getInputs
                return (dataIn i)
-  
+
 putWeOut :: Bit -> CPUM ()
 putWeOut b = do o <- getOutputs
                 putOutputs (o { weOut = b })
@@ -240,7 +240,7 @@ putWeOut b = do o <- getOutputs
 putIackOut :: Bit -> CPUM ()
 putIackOut b = do o <- getOutputs
                   putOutputs (o { iackOut = b })
-                  
+
 loop :: CPUM ()
 loop = do inp <- getInputs
           case rstIn inp of
@@ -281,9 +281,9 @@ mem :: Bit -> Bit -> Register -> CPUM ()
 mem rEn wEn r = do pc <- getPC
                    putAddrOut pc
                    tick
-                   
+
                    a <- getDataIn
-                   
+
                    putAddrOut a
                    putWeOut wEn
                    when wEn $ do
@@ -300,7 +300,7 @@ ld rD rS = do a <- getReg rS
               putWeOut Zero
               putAddrOut a
               tick
-              
+
               v <- getDataIn
               putReg rD v
 
@@ -311,7 +311,7 @@ st rD rS = do a <- getReg rS
               putDataOut v
               putAddrOut a
               tick
-              
+
 add :: Register -> Register -> CPUM ()
 add rD rS = do vD             <- getReg rD
                vS             <- getReg rS

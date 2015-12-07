@@ -55,8 +55,8 @@ evalexpr (RWCApp t e1_ e2)  = do e1 <- evalexpr e1_
                                    RWCLam tl b -> lunbind b (\(n,e) -> evalexpr (subst n e2 e))
                                    _           -> return (RWCApp t e1 e2)
 evalexpr e@(RWCLam {})      = return e
-evalexpr (RWCVar t n)       = do e <- askvar t n 
-                                 if e `aeq` RWCVar t n     
+evalexpr (RWCVar t n)       = do e <- askvar t n
+                                 if e `aeq` RWCVar t n
                                     then return e
                                     else evalexpr e
 evalexpr e@(RWCCon {})      = return e

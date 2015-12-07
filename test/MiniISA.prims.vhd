@@ -1,8 +1,8 @@
 --
 --	Package File Template
 --
---	Purpose: This package defines supplemental types, subtypes, 
---		 constants, and functions 
+--	Purpose: This package defines supplemental types, subtypes,
+--		 constants, and functions
 --
 --   To use any of the example code shown below, uncomment the lines and modify as necessary
 --
@@ -35,8 +35,8 @@ package prims is
   pure function minusCW8 (arg_0 : std_logic_vector ; -- W8
                           arg_1 : std_logic_vector ; -- W8
 	 	  						  arg_2 : std_logic_vector)  -- Bit
-	 							  return std_logic_vector;						 
---  pure function 
+	 							  return std_logic_vector;
+--  pure function
   pure function rotl (arg_0 : std_logic_vector) return std_logic_vector;
   pure function plusOne (arg_0 : std_logic_vector) return std_logic_vector;
   pure function prim_and(arg_0 : std_logic_vector ; arg_1 : std_logic_vector)
@@ -59,7 +59,7 @@ package body prims is
   begin
     if arg_0 = arg_1 then return "1"; else return "0"; end if;
   end eqW8;
-  
+
   pure function rolW8 (arg_0 : std_logic_vector) return std_logic_vector
   is
   begin
@@ -71,19 +71,19 @@ package body prims is
   begin
     return (arg_0(7 to 7) & arg_0 (0 to 6));
   end rorW8;
-  
+
   pure function msbW8 (arg_0 : std_logic_vector) return std_logic_vector
   is
   begin
     return (arg_0(arg_0'left to arg_0'left));
   end msbW8;
-  
+
   pure function lsbW8 (arg_0 : std_logic_vector) return std_logic_vector
   is
   begin
     return (arg_0(arg_0'right to arg_0'right));
   end lsbW8;
-  
+
   pure function notW8 (arg_0 : std_logic_vector) return std_logic_vector
   is
   begin
@@ -139,7 +139,7 @@ package body prims is
 	 regOut   := (arg_0(1 to 7) & arg_1);
 	 return (carryOut & regOut);
   end shlCW8;
-  
+
   pure function plusCW8 (arg_0 : std_logic_vector ; -- W8
                          arg_1 : std_logic_vector ; -- W8
 								 arg_2 : std_logic_vector)  -- Bit
@@ -161,14 +161,14 @@ package body prims is
     result := std_logic_vector(unsigned("0"&arg_0)-unsigned("0"&arg_1)-unsigned("00000000"&arg_2));
 	 return result;
   end minusCW8;
-  
+
   pure function rotl (arg_0 : std_logic_vector) return std_logic_vector
   is
     variable l : std_logic_vector(0 to 7) := arg_0;
   begin
     return (l(1 to 7) & l(0 to 0));
   end rotl;
-  
+
   pure function plusOne (arg_0 : std_logic_vector) return std_logic_vector
   is
     variable n : std_logic_vector(0 to 7) := arg_0;
@@ -187,13 +187,13 @@ package body prims is
   pure function prim_or(arg_0 : std_logic_vector ; arg_1 : std_logic_vector)
     return std_logic_vector
   is begin return arg_0 OR arg_1; end prim_or;
-  
+
 ---- Example 1
 --  function <function_name>  (signal <signal_name> : in <type_declaration>  ) return <type_declaration> is
 --    variable <variable_name>     : <type_declaration>;
 --  begin
 --    <variable_name> := <signal_name> xor <signal_name>;
---    return <variable_name>; 
+--    return <variable_name>;
 --  end <function_name>;
 
 ---- Example 2
@@ -209,9 +209,9 @@ package body prims is
 
 ---- Procedure Example
 --  procedure <procedure_name>  (<type_declaration> <constant_name>  : in <type_declaration>) is
---    
+--
 --  begin
---    
+--
 --  end <procedure_name>;
- 
+
 end prims;

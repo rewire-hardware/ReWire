@@ -51,36 +51,36 @@ vCmd (Lbl l)        = "null; -- label " ++ l
 vCmd (CaseIf [])      = "-- WARNING: EMPTY CaseIf"
 vCmd (CaseIf [(_,c)]) = vCmd c
 vCmd (CaseIf [(b1,c1),(_,c2)]) = "if " ++ (vBool b1) ++ " then\n"
-                             ++ indent (vCmd c1) 
+                             ++ indent (vCmd c1)
                              ++ "\n else \n"
-                             ++ indent (vCmd c2) 
+                             ++ indent (vCmd c2)
                              ++ "end if;"
 
 vCmd (CaseIf bs) = let (b1,c1) = head bs
                        elsfs   = (init . tail) bs
-                       (_,ec)  = last bs 
-                      in "if " ++ (vBool b1) ++ " then\n" 
+                       (_,ec)  = last bs
+                      in "if " ++ (vBool b1) ++ " then\n"
                       ++ indent (vCmd c1) ++ "\n"
-                      ++ echain elsfs 
+                      ++ echain elsfs
                       ++ "else\n"
                       ++ indent (vCmd ec) ++ "\n"
                       ++ "end if;"
     where
-     echain es = concatMap (\(b,c) -> "elsif " ++ (vBool b) ++ " then \n" 
+     echain es = concatMap (\(b,c) -> "elsif " ++ (vBool b) ++ " then \n"
                                    ++ indent (vCmd c) ++ "\n") es
 
 
 vFunDefnProto :: FunDefn -> String
 vFunDefnProto fd = "function " ++ funDefnName fd ++ (if null params
                                                         then ""
-                                                        else "(" ++ intercalate " ; " (map ((++" : std_logic_vector") . regDeclName) params) ++ ")") 
+                                                        else "(" ++ intercalate " ; " (map ((++" : std_logic_vector") . regDeclName) params) ++ ")")
                                                  ++ " return std_logic_vector;"
                    where params = funDefnParams fd
 
 vFunDefn :: FunDefn -> String
 vFunDefn fd = "function " ++ funDefnName fd ++ (if null params
                                                    then ""
-                                                   else "(" ++ intercalate " ; " (map ((++" : std_logic_vector") . regDeclName) params) ++ ")") 
+                                                   else "(" ++ intercalate " ; " (map ((++" : std_logic_vector") . regDeclName) params) ++ ")")
                                             ++ " return std_logic_vector\n"
            ++ "is\n"
            ++ indent (concatMap ((++"\n") . vRegDecl) (funDefnRegDecls fd))
@@ -129,7 +129,7 @@ toVHDL p = "library ieee;\n"
 
         curFlopDecls  = map curFlopDecl (regDecls (progHeader p))
         curFlopDecl d = "signal " ++ flopName (regDeclName d) ++ " : " ++ vTy (regDefnTy d) ++ " := " ++ vInit (regDefnTy d) ++ ";"
-        
+
         nextFlopDecls  = map nextFlopDecl (regDecls (progHeader p))
         nextFlopDecl d = "signal " ++ flopNextName (regDeclName d) ++ " : " ++ vTy (regDefnTy d) ++ " := " ++ vInit (regDefnTy d) ++ ";"
 

@@ -301,7 +301,7 @@ tr "case e of inl x -> ex ; inr y -> ey" = do
   ex'         <- tr ex
   ey'         <- tr ey
   return "case e' of inl x -> ex' ; inr y -> ey'"
-  
+
 tr "return e" @ ReT (StT M) _ =
 tr "return e" @ StT M _       = do
   e' <- tr e
@@ -379,7 +379,7 @@ tr "extrudeStateT e1 e2" = do
   e1' <- withstatename s' (tr e1)
   e2' <- tr e2
   return "let s' = e2' in e1'"
-  
+
 \end{verbatim}
 
 \end{document}

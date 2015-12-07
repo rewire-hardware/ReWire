@@ -5531,6 +5531,6 @@ architecture structural of main is
 begin
   dev : entity work.rwcomp0(behavioral)
     port map (clk,input,output);
-    
+
 
 end structural;

@@ -52,7 +52,7 @@ getLoc = liftM fst get
 putLoc :: CmdLoc -> GEM ()
 putLoc l = do (_,ns) <- get
               put (l,ns)
-              
+
 getNames :: GEM [String]
 getNames = liftM snd get
 
@@ -75,7 +75,7 @@ putHere c = do (CmdLoc _ p) <- getLoc
 putPath :: CmdPath -> GEM ()
 putPath p = do (CmdLoc c _) <- getLoc
                putLoc (CmdLoc c p)
-               
+
 atTop :: CmdPath -> Bool
 atTop CmdTop = True
 atTop _      = False
@@ -147,7 +147,7 @@ elimGoto = do c <- here
                                                                       ++ [Lbl l])
                                                           deleteHere
                                                           return True
-                                 Just (If b' c)     ->trace "If" $ 
+                                 Just (If b' c)     ->trace "If" $
                                                        do insertOnRight ([Assign ("goto_" ++ l) (BoolRHS b)]
                                                                       ++ (if null cs then [] else [If (Not (BoolVar ("goto_" ++ l))) (foldr1 Seq cs)])
                                                                       ++ [If (Or b' (BoolVar ("goto_" ++ l)))
@@ -162,7 +162,7 @@ elimGoto = do c <- here
                                                           return True
                                  Just _           -> fail "can't happen: elimGoto: target is not label, if, or seq"
 --                                 Nothing          -> do { k <- advance ; if k then elimGoto else return False }
-                                 Nothing          ->trace "Out" $ 
+                                 Nothing          ->trace "Out" $
                                                      do insertOnRight ([Assign ("goto_" ++ l) (BoolRHS b)]
                                                                     ++ (if null cs then [] else [If (Not (BoolVar ("goto_" ++ l))) (foldr1 Seq cs)]))
                                                         deleteHere
@@ -234,7 +234,7 @@ addGotoResetStmts = do rewind
                            cs = map (\ l -> Assign ("goto_" ++ l) (BoolRHS (BoolConst False))) ls
                        insertOnLeft cs
 
-{-                       
+{-
                        case c of
                          Lbl l -> do insertOnRight [Assign ("goto_" ++ l) (BoolRHS (BoolConst False))]
                                      ns <- getNames
@@ -258,7 +258,7 @@ rewind = do p <- path
             case p of
               CmdTop -> return ()
               _      -> goUp >> rewind
-            
+
 gotoElimC :: Cmd -> (Cmd,[String])
 gotoElimC c = let (c',(_,ns)) = runIdentity (runStateT (addGotoNames      >>
                                                         addGotoResetStmts >>

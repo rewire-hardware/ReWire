@@ -19,14 +19,14 @@ import Debug.Trace
 lambdaLift :: TransCommand
 lambdaLift cmd prog = let prog' = runLL (ll_prog prog)
                         in (Just prog', Nothing)
-                                        
+
 
 type ReaderEnv = ([(Name RWCExp,RWCTy)])
 type LLM = WriterT [RWCDefn] (ReaderT ReaderEnv FreshM)
 
 runDefns :: LLM RWCProg -> (ReaderT ReaderEnv FreshM) RWCProg
-runDefns llm = runWriterT llm >>= return . fst 
-                                  {-(\(RWCProg {dataDecls=pdecls, defns=trec_defns},new_defns) -> do 
+runDefns llm = runWriterT llm >>= return . fst
+                                  {-(\(RWCProg {dataDecls=pdecls, defns=trec_defns},new_defns) -> do
                                                                                                   defns' <- luntrec trec_defns
                                                                                                   let defns'' = trec $ new_defns ++ defns'
                                                                                                   return $ RWCProg {dataDecls=pdecls, defns=defns''}
@@ -37,7 +37,7 @@ runLL llm = runFreshM $ runReaderT (runDefns llm) []
 ll_prog :: RWCProg -> LLM RWCProg
 ll_prog (RWCProg {dataDecls=pdecls, defns=trec_defns}) = do
                                     defns' <- untrec trec_defns
---                                    let avoids = map (AnyName . defn_name) defns' 
+--                                    let avoids = map (AnyName . defn_name) defns'
                                     (defns'',new_defns) <- listen {-$ avoid avoids-} $ mapM ll_def defns'
                                     return $ (RWCProg {dataDecls=pdecls, defns=(trec (defns''++new_defns))})
    where
@@ -47,12 +47,12 @@ ll_prog (RWCProg {dataDecls=pdecls, defns=trec_defns}) = do
 
 ll_def :: RWCDefn -> LLM RWCDefn
 ll_def (RWCDefn name ebnd) = do
-                               let bnd = unembed ebnd 
+                               let bnd = unembed ebnd
                                unbind bnd >>= \(tys,(body_ty,expr_body)) -> do
                                                                    expr_body' <- ll_def_exp expr_body
                                                                    return $ RWCDefn name $ embed $ setbind tys (body_ty,expr_body')
   where
-    ll_def_exp :: RWCExp -> LLM RWCExp 
+    ll_def_exp :: RWCExp -> LLM RWCExp
     ll_def_exp (RWCLam ty bexp) = unbind bexp >>= \(name, exp) -> local (\env -> (name,fst $ peel_first_type ty):env) $ do
                                                                                                               exp' <- ll_def_exp exp
                                                                                                               return $ RWCLam ty $ bind name exp'
@@ -92,7 +92,7 @@ ll_exp l@(RWCLam t _)  = do (closed_xts,body) <- gather_lambda l
                             body'             <- ll_exp body
                             e                 <- do_lift open_xts (foldr mkLam body' closed_xts)
                             rewrap open_xts e
-                               
+
 ll_exp (RWCApp ty e1 e2) = do
                             e1' <- ll_exp e1
                             e2' <- ll_exp e2
@@ -112,11 +112,11 @@ ll_alt :: RWCAlt -> LLM RWCAlt
 ll_alt (RWCAlt bnd) = unbind bnd >>= \(pat, exp) -> do
                                                      exp' <- env_with_pattern pat (ll_exp exp)
                                                      return (RWCAlt $ bind pat exp')
-                         
+
    where
       env_with_pattern :: RWCPat -> LLM a -> LLM a
       env_with_pattern pat m = local (\env -> (pat_vars pat) ++ env) m
-                                
+
 
       pat_vars :: RWCPat -> ReaderEnv
       pat_vars (RWCPatLiteral _) = []
@@ -144,13 +144,13 @@ peel_final_type ty = pft $ peel_first_type ty
  -  over it with applies -}
 wrap :: RWCExp -> LLM RWCExp
 wrap expr = do
-               env <- ask 
-               let closure = foldr (\(name,name_ty) acc -> 
+               env <- ask
+               let closure = foldr (\(name,name_ty) acc ->
                                         RWCApp (rest_ty acc) acc (RWCVar name_ty name)
                                          ) expr (env)
-               return closure 
+               return closure
    where
-     rest_ty expr = case peel_first_type $ rwc_expr_ty expr of --This will fail if we are ill-formed 
+     rest_ty expr = case peel_first_type $ rwc_expr_ty expr of --This will fail if we are ill-formed
                             (_, Just rest) -> rest
                             x              -> error $ show x
 
@@ -161,12 +161,12 @@ build_defn_expr expr = do
                         env'  = filter (\x -> elem (fst x) frees) env
                         expr_ty = rwc_expr_ty expr
                         closure = foldl (\acc (name,name_ty) ->
-                                    (RWCLam 
+                                    (RWCLam
                                       (RWCTyApp (RWCTyApp (RWCTyCon "(->)") name_ty) (rwc_expr_ty acc))
                                         (bind name acc)
-                                       ) 
+                                       )
                                         ) expr env'
-                    lbl <- getLabel 
+                    lbl <- getLabel
                     let ctype = rwc_expr_ty closure
                         defn = RWCDefn (s2n lbl) $ embed $ setbind (nub (fv ctype)) (ctype,closure)
                     tell [defn]
@@ -182,7 +182,7 @@ rwc_expr_ty (RWCCon ty _)   = ty
 rwc_expr_ty (RWCLiteral ty _) = ty
 rwc_expr_ty (RWCCase ty _ _ ) = ty
 
---getLabel :: LLM String 
+--getLabel :: LLM String
 --getLabel = do
 --              s <- get
 --              put (s+1)

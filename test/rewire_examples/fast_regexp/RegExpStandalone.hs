@@ -2,8 +2,8 @@
  -
  -
  - This implementation of a regular expression matching
- - device is from Sidhu and Prasanna's "Fast Regular 
- - Expression Matching using FPGAs".  
+ - device is from Sidhu and Prasanna's "Fast Regular
+ - Expression Matching using FPGAs".
  -
  -}
 
@@ -39,9 +39,9 @@ returnRe a = ReacT (Left a)
 
 fst :: Pair a b -> a
 fst p = case p of
-          Pair a b -> a 
+          Pair a b -> a
 
-snd :: Pair a b -> b 
+snd :: Pair a b -> b
 snd p = case p of
           Pair a b -> b
 
@@ -70,9 +70,9 @@ ceq c1 c2 = case Pair c1 c2 of
                 Pair (Char c7 c6 c5 c4 c3 c2 c1 c0) (Char d7 d6 d5 d4 d3 d2 d1 d0) -> and (beq c7 d7)  (and (beq c6 d6) (and (beq c5 d5)
                                                                                       (and (beq c4 d4) (and (beq c3 d3) (and (beq c2 d2)
                                                                                       (and (beq c1 d1) (beq c0 d0)))))))
-                  
 
-data Machine input = Machine {deMachine :: ((Pair (Maybe Bool) input)) -> 
+
+data Machine input = Machine {deMachine :: ((Pair (Maybe Bool) input)) ->
                                             ReacT ((Pair (Maybe Bool) input)) (Maybe Bool) (Pair (Maybe Bool) (Machine input))}
 
 data RegExp a =   Bar   (RegExp a) (RegExp a)
@@ -82,7 +82,7 @@ data RegExp a =   Bar   (RegExp a) (RegExp a)
                 | Atom a
 
 compMachine :: RegExp Char -> Machine Char
-compMachine b  = case b of 
+compMachine b  = case b of
 
                     (Bar r1 r2)  -> bar (compMachine r1) (compMachine r2)
                     (Star r1)    -> star (compMachine r1)
@@ -91,13 +91,13 @@ compMachine b  = case b of
                     (Atom a)     -> match a Nothing --Flipflop is primed with nothing
 
 runMachine :: Machine input -> ((Pair (Maybe Bool) input)) -> ReacT ((Pair (Maybe Bool) input)) (Maybe Bool) (Pair (Maybe Bool) (Machine input))
-runMachine m1 input = ReacT (apply (stepMachine input m1) (\p -> case p of 
+runMachine m1 input = ReacT (apply (stepMachine input m1) (\p -> case p of
                                                                       (Pair output m1') ->  (Right (Pair output (\input' -> runMachine m1' input')))))
 
 stepMachine :: (Pair (Maybe Bool) input) -> Machine input -> (Pair (Maybe Bool) (Machine input))
 stepMachine input m = case ((deReacT ((deMachine m) input))) of
                                   (Left v) -> v
-                              
+
 match :: Char -> ((Maybe Bool) -> Machine Char)
 match a = \flipflop -> Machine (\(Pair prev_output char) -> case flipflop of
                                                               Nothing -> returnRe (Pair Nothing (match a prev_output))
@@ -113,10 +113,10 @@ bar m1 m2 = Machine (\input -> case fst input of
                                                                    (Pair Nothing zd)          ->  (Left (Pair Nothing (bar resume1 m2)))
                                                                    (Pair zd Nothing)          ->  (Left (Pair Nothing (bar m1 resume2)))
                                                                    (Pair (Just r1) (Just r2)) ->  (Left (Pair (Just (or r1 r2)) (bar resume1 resume2)))))))
-                                                                   
-        
 
-rseq :: Machine Char -> Machine Char -> Machine Char 
+
+
+rseq :: Machine Char -> Machine Char -> Machine Char
 rseq m1 m2 = Machine (\input -> case fst input of
                                     Nothing -> returnRe (Pair Nothing (rseq m1 m2))
                                     Just zd -> ReacT ( apply (stepMachine input m1) (\(Pair output1 resume1) ->
@@ -137,8 +137,8 @@ star' output m1 = Machine (\input -> case fst input of
                                                                                Nothing     -> stepMachine input m1
                                                                                Just outval -> stepMachine (Pair (Just (or inval outval)) (snd input)) m1) (\(Pair inner_output inner_resume) ->
                                                                      (Left (Pair inner_output (star' inner_output inner_resume))))))
-                                                                                            
-                                               
+
+
 --Testing Routines and expressions.  This stuff doesn't need to be converted.
 a_char = Char False True True False False False False True
 b_char = Char False True True False False False True  False

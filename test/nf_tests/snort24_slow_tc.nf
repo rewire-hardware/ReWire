@@ -28,7 +28,7 @@ or :: Bit -> Bit -> Bit
 is
   \a -> \b -> case a of
           {
-            One    -> One 
+            One    -> One
             ; Zero -> case b of
                       {
                         Zero -> Zero
@@ -49,7 +49,7 @@ is
             ; Zero -> case b of
                     {
                       One -> Zero
-                      ; Zero -> One 
+                      ; Zero -> One
                     }
            }
 end

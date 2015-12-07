@@ -26,9 +26,9 @@ import ReWire.Core.Prims
 type TySub = Map (Id RWCTy) RWCTy
 data TCEnv = TCEnv { as  :: Map (Id RWCExp) (Poly RWCTy),
                      cas :: Map DataConId (Poly RWCTy) } deriving Show
-data TCState = TCState { tySub :: TySub, 
+data TCState = TCState { tySub :: TySub,
                          ctr   :: Int } deriving Show
-                         
+
 type Assump  = (Id RWCExp,Poly RWCTy)
 type CAssump = (DataConId,Poly RWCTy)
 
@@ -216,7 +216,7 @@ tcDefn d  = do putTySub (Map.empty)
 
 primAssump :: RWCPrim -> Assump
 primAssump (RWCPrim n t _) = (n,[] :-> t)
-  
+
 tc :: RWCProg -> TCM RWCProg
 tc p = do let as_ =  Map.fromList $ map defnAssump (defns p) ++ map primAssump (primDecls p)
               as  =  as_ `Map.union` as0
