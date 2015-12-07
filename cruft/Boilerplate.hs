@@ -55,22 +55,22 @@ plusCW8 (W8 b0 b1 b2 b3 b4 b5 b6 b7) (W8 c0 c1 c2 c3 c4 c5 c6 c7) ci = (co0,W8 d
        (co6,d6) = plusCBit b6 c6 co7
        (co7,d7) = plusCBit b7 c7 ci
 
-data W32  = W32 Bit Bit Bit Bit Bit Bit Bit Bit 
-                Bit Bit Bit Bit Bit Bit Bit Bit 
-                Bit Bit Bit Bit Bit Bit Bit Bit 
-                Bit Bit Bit Bit Bit Bit Bit Bit 
+data W32  = W32 Bit Bit Bit Bit Bit Bit Bit Bit
+                Bit Bit Bit Bit Bit Bit Bit Bit
+                Bit Bit Bit Bit Bit Bit Bit Bit
+                Bit Bit Bit Bit Bit Bit Bit Bit
               deriving (Eq,Show)
 
-w32_0 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
-            Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+w32_0 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero
+            Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero
             Zero Zero Zero Zero Zero Zero
 
-w32_4 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
-            Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+w32_4 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero
+            Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero
             Zero Zero Zero One Zero Zero
 
-w32_8 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
-            Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+w32_8 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero
+            Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero
             Zero Zero One Zero Zero Zero
 
 --
@@ -78,14 +78,14 @@ w32_8 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero
 -- 1989. Does it make a difference with addition here? It doesn't seem too.
 -- But it does bear making sure that I'm not building nonsense.
 --
-plusW32  (W32  b0  b1  b2  b3  b4  b5  b6  b7  b8  b9 b10 b11 b12 b13 b14 b15 
-              b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31) 
-         (W32  c0  c1  c2  c3  c4  c5  c6  c7  c8  c9 c10 c11 c12 c13 c14 c15 
-              c16 c17 c18 c19 c20 c21 c22 c23 c24 c25 c26 c27 c28 c29 c30 c31) 
-         ci 
-         = (W32  d0  d1  d2  d3  d4  d5  d6  d7  d8  d9 d10 d11 d12 d13 d14 d15 
-                d16 d17 d18 d19 d20 d21 d22 d23 d24 d25 d26 d27 d28 d29 d30 d31) 
- where 
+plusW32  (W32  b0  b1  b2  b3  b4  b5  b6  b7  b8  b9 b10 b11 b12 b13 b14 b15
+              b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
+         (W32  c0  c1  c2  c3  c4  c5  c6  c7  c8  c9 c10 c11 c12 c13 c14 c15
+              c16 c17 c18 c19 c20 c21 c22 c23 c24 c25 c26 c27 c28 c29 c30 c31)
+         ci
+         = (W32  d0  d1  d2  d3  d4  d5  d6  d7  d8  d9 d10 d11 d12 d13 d14 d15
+                d16 d17 d18 d19 d20 d21 d22 d23 d24 d25 d26 d27 d28 d29 d30 d31)
+ where
        (co0,d0)   = plusCBit b0  c0  co1
        (co1,d1)   = plusCBit b1  c1  co2
        (co2,d2)   = plusCBit b2  c2  co3
@@ -119,14 +119,14 @@ plusW32  (W32  b0  b1  b2  b3  b4  b5  b6  b7  b8  b9 b10 b11 b12 b13 b14 b15
        (co30,d30) = plusCBit b30 c30 co31
        (co31,d31) = plusCBit b31 c31 ci
 
-plusCW32 (W32  b0  b1  b2  b3  b4  b5  b6  b7  b8  b9 b10 b11 b12 b13 b14 b15 
-              b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31) 
-         (W32  c0  c1  c2  c3  c4  c5  c6  c7  c8  c9 c10 c11 c12 c13 c14 c15 
-              c16 c17 c18 c19 c20 c21 c22 c23 c24 c25 c26 c27 c28 c29 c30 c31) 
-         ci 
-         = (co0, W32  d0  d1  d2  d3  d4  d5  d6  d7  d8  d9 d10 d11 d12 d13 d14 d15 
-                     d16 d17 d18 d19 d20 d21 d22 d23 d24 d25 d26 d27 d28 d29 d30 d31) 
- where 
+plusCW32 (W32  b0  b1  b2  b3  b4  b5  b6  b7  b8  b9 b10 b11 b12 b13 b14 b15
+              b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
+         (W32  c0  c1  c2  c3  c4  c5  c6  c7  c8  c9 c10 c11 c12 c13 c14 c15
+              c16 c17 c18 c19 c20 c21 c22 c23 c24 c25 c26 c27 c28 c29 c30 c31)
+         ci
+         = (co0, W32  d0  d1  d2  d3  d4  d5  d6  d7  d8  d9 d10 d11 d12 d13 d14 d15
+                     d16 d17 d18 d19 d20 d21 d22 d23 d24 d25 d26 d27 d28 d29 d30 d31)
+ where
        (co0,d0)   = plusCBit b0  c0  co1
        (co1,d1)   = plusCBit b1  c1  co2
        (co2,d2)   = plusCBit b2  c2  co3
@@ -160,12 +160,12 @@ plusCW32 (W32  b0  b1  b2  b3  b4  b5  b6  b7  b8  b9 b10 b11 b12 b13 b14 b15
        (co30,d30) = plusCBit b30 c30 co31
        (co31,d31) = plusCBit b31 c31 ci
 
-andW32 (W32  b0  b1  b2  b3  b4  b5  b6  b7  b8  b9 b10 b11 b12 b13 b14 b15 
-           b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31) 
-       (W32  c0  c1  c2  c3  c4  c5  c6  c7  c8  c9 c10 c11 c12 c13 c14 c15 
-           c16 c17 c18 c19 c20 c21 c22 c23 c24 c25 c26 c27 c28 c29 c30 c31) 
-         = (W32  d0  d1  d2  d3  d4  d5  d6  d7  d8  d9 d10 d11 d12 d13 d14 d15 
-                d16 d17 d18 d19 d20 d21 d22 d23 d24 d25 d26 d27 d28 d29 d30 d31) 
+andW32 (W32  b0  b1  b2  b3  b4  b5  b6  b7  b8  b9 b10 b11 b12 b13 b14 b15
+           b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
+       (W32  c0  c1  c2  c3  c4  c5  c6  c7  c8  c9 c10 c11 c12 c13 c14 c15
+           c16 c17 c18 c19 c20 c21 c22 c23 c24 c25 c26 c27 c28 c29 c30 c31)
+         = (W32  d0  d1  d2  d3  d4  d5  d6  d7  d8  d9 d10 d11 d12 d13 d14 d15
+                d16 d17 d18 d19 d20 d21 d22 d23 d24 d25 d26 d27 d28 d29 d30 d31)
       where d0  = andBit b0 c0
             d1  = andBit b1 c1
             d2  = andBit b2 c2
@@ -199,12 +199,12 @@ andW32 (W32  b0  b1  b2  b3  b4  b5  b6  b7  b8  b9 b10 b11 b12 b13 b14 b15
             d30 = andBit b30 c30
             d31 = andBit b31 c31
 
-orW32 (W32  b0  b1  b2  b3  b4  b5  b6  b7  b8  b9 b10 b11 b12 b13 b14 b15 
-           b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31) 
-      (W32  c0  c1  c2  c3  c4  c5  c6  c7  c8  c9 c10 c11 c12 c13 c14 c15 
-           c16 c17 c18 c19 c20 c21 c22 c23 c24 c25 c26 c27 c28 c29 c30 c31) 
-         = (W32  d0  d1  d2  d3  d4  d5  d6  d7  d8  d9 d10 d11 d12 d13 d14 d15 
-                d16 d17 d18 d19 d20 d21 d22 d23 d24 d25 d26 d27 d28 d29 d30 d31) 
+orW32 (W32  b0  b1  b2  b3  b4  b5  b6  b7  b8  b9 b10 b11 b12 b13 b14 b15
+           b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
+      (W32  c0  c1  c2  c3  c4  c5  c6  c7  c8  c9 c10 c11 c12 c13 c14 c15
+           c16 c17 c18 c19 c20 c21 c22 c23 c24 c25 c26 c27 c28 c29 c30 c31)
+         = (W32  d0  d1  d2  d3  d4  d5  d6  d7  d8  d9 d10 d11 d12 d13 d14 d15
+                d16 d17 d18 d19 d20 d21 d22 d23 d24 d25 d26 d27 d28 d29 d30 d31)
       where d0  = orBit b0  c0
             d1  = orBit b1  c1
             d2  = orBit b2  c2
@@ -238,7 +238,7 @@ orW32 (W32  b0  b1  b2  b3  b4  b5  b6  b7  b8  b9 b10 b11 b12 b13 b14 b15
             d30 = orBit b30 c30
             d31 = orBit b31 c31
 
-         
+
 plusW8 a b = plusCW8 a b Zero
 negW8 w = snd $ plusW8 (notW8 w) oneW8
 minusCW8 (W8 b0 b1 b2 b3 b4 b5 b6 b7) (W8 c0 c1 c2 c3 c4 c5 c6 c7) ci = (co0,W8 d0 d1 d2 d3 d4 d5 d6 d7)
@@ -298,9 +298,9 @@ data W16 = W16 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W26 = W26 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
                Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 
-zero16 = W16 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+zero16 = W16 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero
 
-zero32 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero 
+zero32 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero
 
 one32 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero One
 
@@ -321,38 +321,38 @@ w32_lt = error "unimplemented"
 w32_ne :: W32 -> W32 -> Bool
 w32_ne = error "unimplemented"
 
-{- 
+{-
 data OpCodes = ADD
              | ADDI
-             | AND 
+             | AND
              | ANDI
              | BEQZ
              | BNEZ
-             | J   
-             | JAL 
+             | J
+             | JAL
              | JALR
-             | JR  
-             | LHI 
-             | LW  
-             | OR  
-             | ORI 
-             | SEQ 
+             | JR
+             | LHI
+             | LW
+             | OR
+             | ORI
+             | SEQ
              | SEQI
-             | SLE 
+             | SLE
              | SLEI
-             | SLL 
+             | SLL
              | SLLI
-             | SLT 
-             | SLTI 
-             | SNE  
-             | SNEI 
-             | SRA  
-             | SRAI 
-             | SRL  
-             | SRLI 
-             | SUB  
-             | SUBI 
-             | SW   
-             | XOR  
-             | XORI 
+             | SLT
+             | SLTI
+             | SNE
+             | SNEI
+             | SRA
+             | SRAI
+             | SRL
+             | SRLI
+             | SUB
+             | SUBI
+             | SW
+             | XOR
+             | XORI
 -}

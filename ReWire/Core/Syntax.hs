@@ -32,7 +32,7 @@ instance Alpha (Poly RWCTy) where
   aeq' (xs :-> t) (ys :-> u) = equatings xs ys (return False) (aeq' t u)
 
 ---
-  
+
 data RWCTy = RWCTyApp RWCTy RWCTy
            | RWCTyCon TyConId
            | RWCTyVar (Id RWCTy)
@@ -41,7 +41,7 @@ data RWCTy = RWCTyApp RWCTy RWCTy
 
 instance IdSort RWCTy where
   idSort _ = pack "T"
-  
+
 instance NFData RWCTy where
   rnf (RWCTyApp t1 t2) = t1 `deepseq` t2 `deepseq` ()
   rnf (RWCTyCon i)     = i `deepseq` ()
@@ -70,7 +70,7 @@ instance Alpha RWCTy where
   aeq' _ _                                 = return False
 
 ---
-  
+
 data RWCExp = RWCApp RWCExp RWCExp
             | RWCLam (Id RWCExp) RWCTy RWCExp
             | RWCLet (Id RWCExp) RWCExp RWCExp
@@ -141,7 +141,7 @@ instance Alpha RWCExp where
   aeq' (RWCLiteral l) (RWCLiteral l')      = return (l==l')
   aeq' (RWCCase e alts) (RWCCase e' alts') = liftM2 (&&) (aeq' e e') (aeq' alts alts')
   aeq' _ _                                 = return False
-  
+
 instance NFData RWCExp where
   rnf (RWCApp e1 e2)    = e1 `deepseq` e2 `deepseq` ()
   rnf (RWCLam x t e)    = x `deepseq` t `deepseq` e `deepseq` ()
@@ -152,7 +152,7 @@ instance NFData RWCExp where
   rnf (RWCCase e alts)  = e `deepseq` alts `deepseq` ()
 
 ---
-  
+
 data RWCLit = RWCLitInteger Integer
             | RWCLitFloat Double
             | RWCLitChar Char
@@ -164,7 +164,7 @@ instance NFData RWCLit where
   rnf (RWCLitChar c)    = c `deepseq` ()
 
 ---
-  
+
 data RWCAlt = RWCAlt RWCPat RWCExp
               deriving Show
 
@@ -180,12 +180,12 @@ instance Subst RWCAlt RWCTy where
 
 instance Alpha RWCAlt where
   aeq' (RWCAlt p e) (RWCAlt p' e') = equatingPats p p' (aeq' e e')
-  
+
 instance NFData RWCAlt where
   rnf (RWCAlt p e) = p `deepseq` e `deepseq` ()
 
 ---
-  
+
 data RWCPat = RWCPatCon DataConId [RWCPat]
             | RWCPatLiteral RWCLit
             | RWCPatVar (Id RWCExp) RWCTy
@@ -220,7 +220,7 @@ instance Subst RWCPat RWCTy where
   subst' (RWCPatLiteral l) = return (RWCPatLiteral l)
   subst' (RWCPatVar x t)   = liftM (RWCPatVar x) (subst' t)
   subst' RWCPatWild        = return RWCPatWild
-      
+
 instance NFData RWCPat where
   rnf (RWCPatCon i ps)  = i `deepseq` ps `deepseq` ()
   rnf (RWCPatLiteral l) = l `deepseq` ()
@@ -238,7 +238,7 @@ instance NFData RWCPrim where
   rnf (RWCPrim n t b) = n `deepseq` t `deepseq` b `deepseq` ()
 
 ---
-  
+
 data RWCDefn = RWCDefn { defnName   :: Id RWCExp,
                          defnPolyTy :: Poly RWCTy,
                          defnBody   :: RWCExp }
@@ -261,9 +261,9 @@ instance Subst RWCDefn RWCTy where
 
 instance NFData RWCDefn where
   rnf (RWCDefn n pt e) = n `deepseq` pt `deepseq` e `deepseq` ()
-  
+
 ---
-  
+
 data RWCData = RWCData { dataName   :: TyConId,
                          dataTyVars :: [Id RWCTy],
                          dataCons   :: [RWCDataCon] }
@@ -273,7 +273,7 @@ instance NFData RWCData where
   rnf (RWCData i tvs dcs) = i `deepseq` tvs `deepseq` dcs `deepseq` ()
 
 ---
-  
+
 data RWCDataCon = RWCDataCon DataConId [RWCTy]
                   deriving Show
 
@@ -281,7 +281,7 @@ instance NFData RWCDataCon where
   rnf (RWCDataCon i ts) = i `deepseq` ts `deepseq` ()
 
 ---
-  
+
 data RWCProg = RWCProg { dataDecls :: [RWCData],
                          primDecls :: [RWCPrim],
                          defns     :: [RWCDefn] }
@@ -291,18 +291,18 @@ instance NFData RWCProg where
   rnf (RWCProg dds pds defs) = dds `deepseq` pds `deepseq` defs `deepseq` ()
 
 ---
-  
+
 flattenArrow :: RWCTy -> ([RWCTy],RWCTy)
 flattenArrow (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2) = let (ts,t) = flattenArrow t2 in (t1:ts,t)
 flattenArrow t                                                       = ([],t)
-  
+
 flattenTyApp :: RWCTy -> [RWCTy]
 flattenTyApp (RWCTyApp t1 t2) = flattenTyApp t1 ++ [t2]
 flattenTyApp t                = [t]
 
 flattenApp :: RWCExp -> [RWCExp]
 flattenApp (RWCApp e e') = flattenApp e++[e']
-flattenApp e             = [e]                                                     
+flattenApp e             = [e]
 
 mkArrow :: RWCTy -> RWCTy -> RWCTy
 mkArrow t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2

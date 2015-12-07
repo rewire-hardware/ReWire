@@ -11,7 +11,7 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Reader
 import Control.Monad.State
-import Control.Monad.Error
+import Control.Monad.Except
 import Control.Monad.Identity
 import Data.Map.Strict (Map,insert,delete)
 import qualified Data.Map.Strict as Map
@@ -139,7 +139,7 @@ instance Monad m => MonadScope (ScopeT m) where
 instance MonadScope m => MonadScope (ReaderT r m) where
   getInScope        = lift getInScope
   addingToScope x m = ReaderT $ \ rho -> addingToScope x (runReaderT m rho)
-  
+
 getInScopeSorted :: forall m t . (MonadScope m,IdSort t) => m (Set (Id t))
 getInScopeSorted = do s <- getInScope
                       let s' :: Set (Id t)
@@ -154,7 +154,7 @@ refreshingVar x e k = do insc <- getInScopeSorted :: m (Set (Id t'))
                             then let ov =  occv e
                                      ys =  x : map (mkId . (++"'") . deId) ys
                                      x' =  head (filter (\ y -> not (y `Set.member` insc || y `elem` ov)) ys)
-                                 in if x /= x'   
+                                 in if x /= x'
                                       then addingToScope x' (k x' (replace (Map.singleton x x') e))
                                       else k x e
                             else k x e
@@ -180,7 +180,7 @@ instance Subst t t' => Subst [t] t' where
   bv = concatMap bv
   subst' = mapM subst'
 
-subst :: Subst t t' => (Map (Id t') t') -> t -> t
+subst :: Subst t t' => Map (Id t') t' -> t -> t
 subst s t = runAssumeWith (fmap Right s) (subst' t)
 
 replace :: Subst t t' => Map (Id t') (Id t') -> t -> t
@@ -190,7 +190,7 @@ refresh ::
   Subst t t =>
   Id t -> [Id t] -> (Id t -> SubstM t a) -> SubstM t a
 refresh x av_ k = do as      <- getAssumptions
-                     let es =  Map.elems as 
+                     let es =  Map.elems as
                          av =  av_ ++ concatMap fv (rights es)
                          ys =  x : map (mkId . (++"'") . deId) ys
                          x' =  head (filter (not . (`elem` av)) ys)
@@ -203,7 +203,7 @@ refreshs ::
    [Id t] -> [Id t] -> ([Id t] -> SubstM t a) -> SubstM t a
 refreshs xs av k  = ref' (breaks xs) k
    where breaks (x:xs) = (x,xs) : map (\(y,ys) -> (y,x:ys)) (breaks xs)
-         breaks []     = []  
+         breaks []     = []
          ref' ((x,av'):xs) k = refresh x (av++av') $ \ x' ->
                                   ref' xs (\ xs' -> k (x':xs'))
          ref' [] k           = k []
@@ -267,7 +267,7 @@ instance Subst Lam Lam where
   subst' = doSubst
     where doSubst (Var x)     = do ml <- query x
                                    case ml of
-                                     Just (Left y)  -> return (Var y)  
+                                     Just (Left y)  -> return (Var y)
                                      Just (Right l) -> return l
                                      Nothing        -> return (Var x)
           doSubst (App e1 e2) = do e1' <- doSubst e1
@@ -278,7 +278,7 @@ instance Subst Lam Lam where
                                    return (Lam x' e')
 
 instance Alpha Lam where
-  aeq' (Var x) (Var y)           = varsaeq x y 
+  aeq' (Var x) (Var y)           = varsaeq x y
   aeq' (Lam xs e) (Lam ys e')    = equatings xs ys (return False) (aeq' e e')
   aeq' (App e1 e2) (App e1' e2') = liftM2 (&&) (aeq' e1 e1') (aeq' e2 e2')
   aeq' _ _                       = return False
@@ -288,7 +288,7 @@ data LamU = LamU (Bind [Name LamU] LamU) | VarU (Name LamU) | AppU LamU LamU der
 $(derive [''LamU])
 
 instance U.Alpha LamU
-  
+
 instance U.Subst LamU LamU where
   isvar (VarU n) = Just (SubstName n)
   isvar _        = Nothing
@@ -304,7 +304,7 @@ checkeqv xes e' = let eMine   = lam2lamu $ subst (Map.fromList xes) e'
                       e'_u    = lam2lamu e'
                       eTheirs = U.substs xes_u e'_u
                   in  eMine `U.aeq` eTheirs
-                      
+
 --test2 :: Lam -> Lam -> Bool
 test2 l1 l2 = l1 `aeq` l2 && l1 /= l2 ==> label (show l1 ++ " --- " ++ show l2) $ (lam2lamu l1 `U.aeq` lam2lamu l2) == (l1 `aeq` l2)
 
@@ -312,7 +312,7 @@ newtype GenSu = GenSu [(Id Lam,Lam)] deriving Show
 
 instance Arbitrary GenSu where
   arbitrary = liftM GenSu $ resize 3 $ listOf1 $ liftM2 (,) genvar arbitrary
-  
+
 genvar :: Gen (Id Lam)
 genvar = liftM mkId $ elements [v ++ suf | v <- vars, suf <- sufs]
   where vars = ["x","y","z"]

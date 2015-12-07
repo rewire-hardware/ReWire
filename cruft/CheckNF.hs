@@ -23,7 +23,7 @@ import Debug.Trace (trace)
 
 data DefnSort = DefnPrim | DefnBitty | DefnCont deriving (Eq,Show)
 type NFM = RWT (ErrorT NFMError (StateT NFMState Identity))
-data NFMState = NFM { visited :: Map (Id RWCExp) DefnSort, 
+data NFMState = NFM { visited :: Map (Id RWCExp) DefnSort,
                       cpx     :: Set TyConId }         -- really this should be env not state, but whatever
 type NFMError = String
 
@@ -172,7 +172,7 @@ checkExprIsBitty (RWCVar n t)       = trace ("ceib: " ++ show n) $ do
                                         checkDefnIsBitty n
 checkExprIsBitty (RWCCon i t)       = trace ("ceib: " ++ show i) $ checkTyIsBitty t
 checkExprIsBitty (RWCLiteral l)     = trace ("ceib: " ++ show l) $ checkLiteralIsBitty l
-checkExprIsBitty e_@(RWCCase e alts) = trace ("ceib case") $ 
+checkExprIsBitty e_@(RWCCase e alts) = trace ("ceib case") $
                                        do checkTyIsBitty (typeOf e_)
                                           checkExprIsBitty e
                                           mapM_ checkAltIsBitty alts

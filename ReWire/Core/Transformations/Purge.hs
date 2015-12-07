@@ -27,7 +27,7 @@ inuseExp (RWCLet _ el eb)   = inuseExp el >> inuseExp eb
 inuseExp (RWCVar n t)       = do inuse <- get
                                  if n `member` inuse
                                     then return ()
-                                    else do     
+                                    else do
                                       put (insert n inuse)
                                       me  <- lift $ askVar t n
                                       case me of
@@ -44,7 +44,7 @@ inuseProg n p = do let md = find (\ d -> defnName d == n) (defns p)
                      Just (RWCDefn _ _ e) -> do inuse <- get
                                                 put (insert n inuse)
                                                 inuseExp e
-                                                inuse <- get 
+                                                inuse <- get
                                                 let ds' = filter (\ d -> defnName d `member` inuse) (defns p)
                                                 return (Just (p { defns = ds' }))
 
@@ -55,7 +55,7 @@ occursProg n p = do let md = find (\ d -> defnName d == n) (defns p)
                       Just (RWCDefn _ _ e) -> do inuse <- get
                                                  put (insert n inuse)
                                                  inuseExp e
-                                                 inuse <- get 
+                                                 inuse <- get
                                                  return (toList inuse)
 
 purge :: Id RWCExp -> RWCProg -> Maybe RWCProg

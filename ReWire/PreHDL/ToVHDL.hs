@@ -51,36 +51,36 @@ vCmd (Lbl l)        = "null; -- label " ++ l
 vCmd (CaseIf [])      = "-- WARNING: EMPTY CaseIf"
 vCmd (CaseIf [(_,c)]) = vCmd c
 vCmd (CaseIf [(b1,c1),(_,c2)]) = "if " ++ (vBool b1) ++ " then\n"
-                             ++ indent (vCmd c1) 
+                             ++ indent (vCmd c1)
                              ++ "\n else \n"
-                             ++ indent (vCmd c2) 
+                             ++ indent (vCmd c2)
                              ++ "end if;"
 
 vCmd (CaseIf bs) = let (b1,c1) = head bs
                        elsfs   = (init . tail) bs
-                       (_,ec)  = last bs 
-                      in "if " ++ (vBool b1) ++ " then\n" 
+                       (_,ec)  = last bs
+                      in "if " ++ (vBool b1) ++ " then\n"
                       ++ indent (vCmd c1) ++ "\n"
-                      ++ echain elsfs 
+                      ++ echain elsfs
                       ++ "else\n"
                       ++ indent (vCmd ec) ++ "\n"
                       ++ "end if;"
     where
-     echain es = concatMap (\(b,c) -> "elsif " ++ (vBool b) ++ " then \n" 
+     echain es = concatMap (\(b,c) -> "elsif " ++ (vBool b) ++ " then \n"
                                    ++ indent (vCmd c) ++ "\n") es
 
 
 vFunDefnProto :: FunDefn -> String
 vFunDefnProto fd = "function " ++ funDefnName fd ++ (if null params
                                                         then ""
-                                                        else "(" ++ intercalate " ; " (map ((++" : std_logic_vector") . regDeclName) params) ++ ")") 
+                                                        else "(" ++ intercalate " ; " (map ((++" : std_logic_vector") . regDeclName) params) ++ ")")
                                                  ++ " return std_logic_vector;"
                    where params = funDefnParams fd
 
 vFunDefn :: FunDefn -> String
 vFunDefn fd = "function " ++ funDefnName fd ++ (if null params
                                                    then ""
-                                                   else "(" ++ intercalate " ; " (map ((++" : std_logic_vector") . regDeclName) params) ++ ")") 
+                                                   else "(" ++ intercalate " ; " (map ((++" : std_logic_vector") . regDeclName) params) ++ ")")
                                             ++ " return std_logic_vector\n"
            ++ "is\n"
            ++ indent (concatMap ((++"\n") . vRegDecl) (funDefnRegDecls fd))
@@ -106,13 +106,13 @@ toVHDL p = "library ieee;\n"
         ++ "\n"
         ++ "architecture behavioral of rewire is\n"
         ++ indent ("type control_state is (" ++ intercalate "," (stateNames (progHeader p)) ++ ");\n")
-        ++ indent (concatMap (++"\n") vFunProtos)
-        ++ indent (concatMap (++"\n") vFunDefns)
+        ++ indent (unlines vFunProtos)
+        ++ indent (unlines vFunDefns)
         ++ indent (curControlFlopDecl ++ "\n")
         ++ indent (nextControlFlopDecl ++ "\n")
         ++ indent (inputFlopDecl ++ "\n")
-        ++ indent (concatMap (++"\n") curFlopDecls)
-        ++ indent (concatMap (++"\n") nextFlopDecls)
+        ++ indent (unlines curFlopDecls)
+        ++ indent (unlines nextFlopDecls)
         ++ "begin\n"
         ++ indent loopProcess ++ "\n"
         ++ indent flopProcess ++ "\n"
@@ -129,7 +129,7 @@ toVHDL p = "library ieee;\n"
 
         curFlopDecls  = map curFlopDecl (regDecls (progHeader p))
         curFlopDecl d = "signal " ++ flopName (regDeclName d) ++ " : " ++ vTy (regDefnTy d) ++ " := " ++ vInit (regDefnTy d) ++ ";"
-        
+
         nextFlopDecls  = map nextFlopDecl (regDecls (progHeader p))
         nextFlopDecl d = "signal " ++ flopNextName (regDeclName d) ++ " : " ++ vTy (regDefnTy d) ++ " := " ++ vInit (regDefnTy d) ++ ";"
 
@@ -137,19 +137,19 @@ toVHDL p = "library ieee;\n"
                    ++ "process (" ++ intercalate "," loopSensitivityList ++ ")\n"
                    ++ indent (loopControlTmpDecl ++ "\n")
                    ++ indent (loopInputTmpDecl ++ "\n")
-                   ++ indent (concatMap (++"\n") loopTmpDecls)
+                   ++ indent (unlines loopTmpDecls)
                    ++ indent (loopOutputTmpDecl ++ "\n")
                    ++ "begin\n"
                    ++ indent "-- Read reg temps.\n"
                    ++ indent (loopControlTmpInit ++ "\n")
                    ++ indent (loopInputTmpInit ++ "\n")
-                   ++ indent (concatMap (++"\n") loopTmpInits)
+                   ++ indent (unlines loopTmpInits)
                    ++ indent "output_tmp := (others => '0');\n"
                    ++ indent "-- Loop body.\n"
                    ++ indent (loopBody ++ "\n")
                    ++ indent "-- Write back reg temps.\n"
                    ++ indent (loopControlTmpWriteback ++ "\n")
-                   ++ indent (concatMap (++"\n") loopTmpWritebacks)
+                   ++ indent (unlines loopTmpWritebacks)
                    ++ indent "-- Update output line.\n"
                    ++ indent "output <= output_tmp;\n"
                    ++ "end process;\n"
@@ -174,7 +174,7 @@ toVHDL p = "library ieee;\n"
                    ++ indent ("if clk'event and clk='1' then\n"
                            ++ indent (inputFlopUpdate ++ "\n")
                            ++ indent (controlFlopUpdate ++ "\n")
-                           ++ indent (concatMap (++"\n") varFlopUpdates)
+                           ++ indent (unlines varFlopUpdates)
                            ++ "end if;\n")
                    ++ "end process;\n"
         flopSensitivityList = ["clk","input"] ++ map flopNextName varNames

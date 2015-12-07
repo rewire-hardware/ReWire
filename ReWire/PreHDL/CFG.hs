@@ -29,7 +29,7 @@ mkDot = unpack . printDotGraph . graphToDot params . cfgGraph
                          Conditional (BoolConst True) -> []
                          Conditional b                -> [toLabel (show b)]
                     }
-                    
+
         dottifyCmds :: Cmd -> String
         dottifyCmds c = concatMap (++"\\l") (lines (show c))
 
@@ -37,7 +37,7 @@ elimUnreachable :: Node -> Gr Cmd Branch -> Gr Cmd Branch
 elimUnreachable root gr = delNodes unreachable gr
   where reachable   = dfs [root] gr
         unreachable = filter (not . (`elem` reachable)) (nodes gr)
-  
+
 --
 -- Linearize a cyclic signaling CFG.
 --
@@ -48,19 +48,19 @@ linearize :: CFG -> CFG
 linearize cfg = CFG { cfgHeader = header', cfgGraph = gr''''' }
   where gr = cfgGraph cfg
         [nEnter,nExit] = newNodes 2 gr
-        
+
         isTick (_,Tick) = True
         isTick _        = False
-        
+
         isTickPre n = any isTick (lsuc gr n)
         isTickPost n = any isTick (lpre gr n)
-        
+
         stateStarters = 0:filter isTickPost (nodes gr)
         stateEnders   = filter isTickPre (nodes gr)
-        
+
         edgeIsTick (_,_,Tick) = True
         edgeIsTick _         = False
-        
+
         addEnder n g = insEdge (n,nNext,Conditional (BoolConst True)) $
                         insEdge (nNext,nExit,Conditional (BoolConst True)) $
                          insNode (nNext,NextState ns) g
@@ -68,14 +68,14 @@ linearize cfg = CFG { cfgHeader = header', cfgGraph = gr''''' }
                 ns = case lsuc gr n of
                        [(nn,Tick)] -> nn
                        zz          -> error $ "linearize: unexpected successors for state ender " ++ show zz
-        
+
         gr'     = efilter (not . edgeIsTick) gr
         gr''    = insNodes [(nEnter,Rem "ENTER"),(nExit,Rem "EXIT")] gr'
         gr'''   = foldr (\ n -> insEdge (nEnter,n,Conditional (InState n))) gr'' stateStarters
         gr''''  = foldr addEnder gr''' stateEnders
         gr''''' = elimUnreachable nEnter gr''''
-        
-        header' = (cfgHeader cfg) { stateNames = map (("STATE"++) . show) stateStarters, 
+
+        header' = (cfgHeader cfg) { stateNames = map (("STATE"++) . show) stateStarters,
                                     startState = "STATE0" }
 
 --
@@ -115,12 +115,12 @@ cfgToProg cfg = Prog { progHeader = cfgHeader cfg',
         cfg' = gather (linearize cfg)
         gr   = cfgGraph cfg'
         bbs  = topsort gr
-        
+
         renderOne n = Lbl ("L" ++ show n) : cn : map renderSuc (lsuc gr n)
           where cn = fromJust (lab gr n)
-                
+
         renderSuc (n,b) = Goto (branch2bool b) ("L" ++ show n)
-        
+
         branch2bool (Conditional b) = b
         branch2bool Tick            = error "branch2bool: Tick"
-        
+

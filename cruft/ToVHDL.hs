@@ -29,11 +29,11 @@ data AssignmentRHS  = FunCall String [AssignmentRHS]
                     deriving (Eq,Show)
 data VMState = VMState { assignments        :: [Assignment],
                          declarations       :: [Declaration],
-                         signalCounter      :: Int, 
-                         tyWidthCache       :: Map RWCTy Int, 
+                         signalCounter      :: Int,
+                         tyWidthCache       :: Map RWCTy Int,
                          inputWidthCache    :: Maybe Int,
                          outputWidthCache   :: Maybe Int,
-                         stateWidthCache    :: Maybe Int, 
+                         stateWidthCache    :: Maybe Int,
                          stateTagWidthCache :: Maybe Int } deriving Show
 data VMEnv   = VMEnv   { bindings :: Map (Id RWCExp) NameInfo } deriving Show
 type VM = RWT (ReaderT VMEnv (StateT VMState Identity))
@@ -89,7 +89,7 @@ freshName :: String -> VM String
 freshName n = do ctr <- getSignalCounter
                  putSignalCounter (ctr+1)
                  return (n++"_"++show ctr)
-               
+
 freshTmp :: String -> Int -> VM String
 freshTmp n 0 = return "NIL" -- FIXME: hack hack hack?
 freshTmp n i = do sn <- freshName n
@@ -126,7 +126,7 @@ emitDeclaration :: Declaration -> VM ()
 emitDeclaration d = tellDeclarations [d]
 
 --genBittyLiteral :: RWCLit -> VM String
---genBittyLiteral (RWCLitInteger 
+--genBittyLiteral (RWCLitInteger
 
 getStateTagWidth :: VM Int
 getStateTagWidth = do mc <- getStateTagWidthCache
@@ -310,7 +310,7 @@ bitConstFromIntegral width n = bitConstFromIntegral (width-1) (n`div`2) ++ thisB
 
 getTag :: DataConId -> VM [Bit]
 getTag i = do tci                 <- getDataConTyCon i
-              Just (TyConInfo dd) <- queryT tci 
+              Just (TyConInfo dd) <- queryT tci
               tagWidth            <- getTagWidth tci
               case findIndex (\ (RWCDataCon i' _) -> i==i') (dataCons dd) of
                 Just pos -> return (bitConstFromIntegral tagWidth pos)
@@ -381,9 +381,9 @@ genBittyPat s_scrut t_scrut (RWCPatCon i pats)      = do let used = map (not . i
                                                          emitAssignment (s_tagtest,BitConst tagValue)
                                                          return (foldr CondAnd (CondEq (LocalVariable s_tag) (LocalVariable s_tagtest)) cond_pats,
                                                                  foldr Map.union Map.empty binds_pats)
---genBittyPat s_scrut (RWCPatLiteral l) = 
+--genBittyPat s_scrut (RWCPatLiteral l) =
 genBittyPat s_scrut t_scrut (RWCPatVar n _) = do s <- freshTmpTy "patvar" t_scrut
-                                                 emitAssignment (s,LocalVariable s_scrut)                                            
+                                                 emitAssignment (s,LocalVariable s_scrut)
                                                  return (CondTrue,Map.singleton n (BoundVar s))
 genBittyPat _ _ RWCPatWild                  = return (CondTrue,Map.empty)
 
@@ -457,7 +457,7 @@ genBittyDefn (RWCDefn n_ (tvs :-> t) e_) =
                                           ws    <- tyWidth t
                                           sUse  <- freshTmp "arg_use" ws
                                           emitAssignment (sUse,LocalVariable s)
-                                          return ((n,BoundVar sUse),s ++ " : std_logic_vector") 
+                                          return ((n,BoundVar sUse),s ++ " : std_logic_vector")
        wr  <- tyWidth (typeOf e)
        bps <- zipWithM freshArgumentTy [0..] nts
        let (bdgs,ps) = unzip bps
@@ -482,7 +482,7 @@ genBittyDefnProto (RWCDefn n_ (tvs :-> t) e_) =
   hideAssignments $ hideDeclarations $
   inLambdas e_ $ \ nts e ->
     do (BoundFun n) <- askNameInfo n_
-       let freshArgumentTy pos (n,t) = let s = "arg_" ++ show pos in return ((n,BoundVar s),s ++ " : std_logic_vector") 
+       let freshArgumentTy pos (n,t) = let s = "arg_" ++ show pos in return ((n,BoundVar s),s ++ " : std_logic_vector")
        wr  <- tyWidth (typeOf e)
        bps <- zipWithM freshArgumentTy [0..] nts
        let (bdgs,ps) = unzip bps
@@ -557,7 +557,7 @@ initBindings m = do let kvs =  Map.toList m
         doEm (n:sns) ((k,DefnCont):kvs) = do rest <- doEm sns kvs
                                              return ((k,BoundK n):rest)
         doEm _ []                       = return []
-  
+
 nextstate_sig_assign :: (a,NameInfo) -> VM [String]
 nextstate_sig_assign (_,BoundK n) = do tag <- getStateTag n
                                        ss  <- getOutputWidth
@@ -706,14 +706,14 @@ runVM p phi = runIdentity $
                runStateT (runReaderT (runRWT p phi) env0) state0
   where state0 = VMState { signalCounter      = 0,
                            assignments        = [],
-                           declarations       = [], 
-                           tyWidthCache       = Map.empty, 
+                           declarations       = [],
+                           tyWidthCache       = Map.empty,
                            inputWidthCache    = Nothing,
                            outputWidthCache   = Nothing,
                            stateWidthCache    = Nothing,
                            stateTagWidthCache = Nothing }
         env0   = VMEnv { bindings = Map.empty }
-        
+
 cmdToVHDL :: TransCommand
 cmdToVHDL _ p = case checkProg' p of
                   Left e  -> (Nothing,Just $ "failed normal-form check: " ++ show e)

@@ -56,7 +56,7 @@ is
     case phi of
     { D x   -> f x
     ; P o k -> P o (\ i -> bindReact (k i) f)
-    }           
+    }
 end
 
 liftRe :: St s a -> Re i o s a
@@ -90,7 +90,7 @@ is
          { Zero -> One
          ; x    -> Zero
          }
-end         
+end
 
 seqRe :: Re i o s a -> Re i o s b -> Re i o s b
 is

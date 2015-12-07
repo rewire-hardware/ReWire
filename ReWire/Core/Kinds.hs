@@ -14,7 +14,7 @@ infixr `Kfun`
 
 instance IdSort Kind where
   idSort _ = pack "K"
-  
+
 instance Alpha Kind where
   aeq' (Kvar i) (Kvar j)           = return (i==j)
   aeq' Kstar Kstar                 = return True

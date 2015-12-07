@@ -14,7 +14,7 @@ import Control.DeepSeq
 import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Identity
-import Control.Monad.Error
+import Control.Monad.Except
 import Data.List (nub)
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map)
@@ -26,13 +26,13 @@ import ReWire.Core.Prims
 type TySub = Map (Id RWCTy) RWCTy
 data TCEnv = TCEnv { as  :: Map (Id RWCExp) (Poly RWCTy),
                      cas :: Map DataConId (Poly RWCTy) } deriving Show
-data TCState = TCState { tySub :: TySub, 
+data TCState = TCState { tySub :: TySub,
                          ctr   :: Int } deriving Show
-                         
+
 type Assump  = (Id RWCExp,Poly RWCTy)
 type CAssump = (DataConId,Poly RWCTy)
 
-type TCM = ReaderT TCEnv (StateT TCState (ErrorT String Identity))
+type TCM = ReaderT TCEnv (StateT TCState (ExceptT String Identity))
 
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
 askAssumps = ask >>= \ tce -> return (as tce)
@@ -203,20 +203,20 @@ tcExp (RWCCase e alts)  = do e'     <- tcExp e
                              return (RWCCase e' alts')
 
 tcDefn :: RWCDefn -> TCM RWCDefn
-tcDefn d  = do putTySub (Map.empty)
+tcDefn d  = do putTySub Map.empty
 --               d <- initDefn d_
                let RWCDefn n (tvs :-> t) e = force d
                e'     <- tcExp e
                let te =  typeOf e'
                unify t te
                s      <- getTySub
-               putTySub (Map.empty)
+               putTySub Map.empty
                let d' = RWCDefn n (tvs :-> t) (subst s e')
                traceShow n $ d' `deepseq` return d'
 
 primAssump :: RWCPrim -> Assump
 primAssump (RWCPrim n t _) = (n,[] :-> t)
-  
+
 tc :: RWCProg -> TCM RWCProg
 tc p = do let as_ =  Map.fromList $ map defnAssump (defns p) ++ map primAssump (primDecls p)
               as  =  as_ `Map.union` as0
@@ -226,4 +226,4 @@ tc p = do let as_ =  Map.fromList $ map defnAssump (defns p) ++ map primAssump (
           return (p { defns = ds' })
 
 typecheck :: RWCProg -> Either String RWCProg
-typecheck p = fmap fst $ runIdentity (runErrorT (runStateT (runReaderT (tc p) (TCEnv Map.empty Map.empty)) (TCState Map.empty 0)))
+typecheck p = fmap fst $ runIdentity (runExceptT (runStateT (runReaderT (tc p) (TCEnv Map.empty Map.empty)) (TCState Map.empty 0)))

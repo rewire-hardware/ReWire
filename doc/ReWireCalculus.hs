@@ -71,7 +71,7 @@ instance MonadTrans (StateT s) where
 
 instance Functor m => Functor (StateT s m) where
   fmap f m =
-   StateT $ \ s -> 
+   StateT $ \ s ->
     fmap
       (\ (x,s') -> (f x,s'))
       (deStateT m s)

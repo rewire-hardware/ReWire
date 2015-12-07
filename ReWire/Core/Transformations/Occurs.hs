@@ -19,7 +19,7 @@ cmdOccurs str prog = case split str ' ' of
     split list del = split' list del [] []
     split' [] _ acc res = case acc of
                                [] -> res
-                               x  -> (res ++ [x])
+                               x  -> res ++ [x]
     split' (s:str) del acc res = if s == del
                                   then split' str del [] (res ++ [acc])
                                   else split' str del (acc ++ [s]) res
@@ -29,12 +29,12 @@ get_occurrences :: String -> RWCProg -> [String]
 get_occurrences nme (RWCProg decls tdefns) = runLFreshM $ do
                                                             defns <- luntrec tdefns
                                                             let nme' = s2n nme
-                                                            defns' <- filterM (occurs nme') defns 
+                                                            defns' <- filterM (occurs nme') defns
                                                             return $ map (name2String . def_name) defns'
 
-                                                      
 
-                            
+
+
 
 
 occurs :: LFresh m => Name RWCExp -> RWCDefn -> m Bool
@@ -56,5 +56,5 @@ showSList [s]  = s
 showSList strs = "[" ++ (showSList' strs) ++ "]"
 
 showSList' [] = ""
-showSList' (s:[]) = s
+showSList' [s] = s
 showSList' (s:ss) = s ++ ", " ++ showSList' ss

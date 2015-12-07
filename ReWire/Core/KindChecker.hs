@@ -10,7 +10,7 @@ import ReWire.Core.Kinds
 import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Identity
-import Control.Monad.Error
+import Control.Monad.Except
 import Data.Maybe (fromJust)
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map,(!))
@@ -20,13 +20,13 @@ import ReWire.Core.PrimTypes
 
 -- Kind checking for Core.
 type KiSub = Map (Id Kind) Kind
-data KCEnv = KCEnv { as  :: Map (Id RWCTy) Kind, 
+data KCEnv = KCEnv { as  :: Map (Id RWCTy) Kind,
                      cas :: Map TyConId Kind } deriving Show
 data KCState = KCState { kiSub :: KiSub, ctr :: Int } deriving Show
 type Assump = (Id RWCTy,Kind)
 type CAssump = (TyConId,Kind)
 
-type KCM = ReaderT KCEnv (StateT KCState (ErrorT String Identity))
+type KCM = ReaderT KCEnv (StateT KCState (ExceptT String Identity))
 
 localAssumps f = local (\ kce -> kce { as = f (as kce) })
 askAssumps = ask >>= \ kce -> return (as kce)
@@ -124,13 +124,13 @@ kc p = do cas <- liftM Map.fromList $ mapM initDataDecl (dataDecls p)
           localCAssumps (cas `Map.union`) (mapM_ kcDefn (defns p))
 
 kindcheck :: RWCProg -> Maybe String
-kindcheck p = l2m $ runIdentity (runErrorT (runStateT (runReaderT (kc p) (KCEnv Map.empty as)) (KCState Map.empty 0)))
+kindcheck p = l2m $ runIdentity (runExceptT (runStateT (runReaderT (kc p) (KCEnv Map.empty as)) (KCState Map.empty 0)))
   where as = Map.fromList [(TyConId "(->)",   Kfun Kstar (Kfun Kstar Kstar)),
-                           
+
                            (TyConId "ReT",    Kfun Kstar (Kfun Kstar (Kfun Kmonad Kmonad))),
                            (TyConId "StT",    Kfun Kstar (Kfun Kmonad Kmonad)),
                            (TyConId "I",      Kmonad),
-                           
+
                            (TyConId "Tuple2", Kfun Kstar (Kfun Kstar Kstar))]
         l2m (Left x)  = Just x
         l2m (Right _) = Nothing

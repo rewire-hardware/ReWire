@@ -25,7 +25,7 @@ instance Show Header where
 data FunDefn = FunDefn { funDefnName      :: String,
                          funDefnParams    :: [RegDecl],
                          funDefnRegDecls  :: [RegDecl],
-                         funDefnBody      :: Cmd, 
+                         funDefnBody      :: Cmd,
                          funDefnResultReg :: Loc }
 
 instance Show FunDefn where
@@ -46,7 +46,7 @@ data RegDecl = RegDecl { regDeclName :: Loc,
 
 instance Show RegDecl where
   show rd = regDeclName rd ++ " : " ++ show (regDefnTy rd)
-  
+
 -- Allowed in:
 --
 --   CLFS
@@ -114,7 +114,7 @@ instance Show RHS where
   show (ConstRHS bs)      = "\"" ++ concatMap show bs ++ "\""
   show (SliceRHS lo hi l) = l ++ "[" ++ show lo ++ ":" ++ show hi ++ "]"
   show (ConcatRHS rs)     = "(" ++ intercalate " & " rs ++ ")"
-    
+
 instance Show Cmd where
   show (Rem s)          = "/* " ++ s ++ " */"
   show (Assign l rhs)   = l ++ " := " ++ show rhs ++ ";"
@@ -133,10 +133,10 @@ instance Show Cmd where
                              ++ indent (show c2) ++ "}"
   show (CaseIf bs) = let (b1,c1) = head bs
                          elsfs   = (init . tail) bs
-                         (_,ec)  = last bs 
-                      in "if " ++ show b1 ++ "{\n" 
+                         (_,ec)  = last bs
+                      in "if " ++ show b1 ++ "{\n"
                       ++ indent (show c1) ++ "\n}\n"
-                      ++ echain elsfs 
+                      ++ echain elsfs
                       ++ "\nelse {\n"
                       ++ indent (show ec) ++ "\n}\n"
     where

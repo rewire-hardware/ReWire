@@ -26,7 +26,7 @@ doesDeconstr (RWCLiteral t l) x   = return False-}
 {-
 doCI :: Name RWCExp -> RWCTy -> RWCExp -> RW RWCExp
 doCI x tx e = do dd <- doesDeconstr e x
-                 
+
 
 ciExp :: RWCExp -> RW RWCExp
 ciExp (RWCApp t e1 e2)   = liftM2 (RWCApp t) (ciExp e1) (ciExp e2)

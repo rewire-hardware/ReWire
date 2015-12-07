@@ -59,7 +59,7 @@ getC = do (c,_,_,_) <- get
 putC :: Int -> CGM ()
 putC c = do (_,g,am,fm) <- get
             put (c,g,am,fm)
-  
+
 getHeader :: CGM Header
 getHeader = do (_,cfg,_,_) <- get
                return (cfgHeader cfg)
@@ -67,7 +67,7 @@ getHeader = do (_,cfg,_,_) <- get
 putHeader :: Header -> CGM ()
 putHeader h = do (c,cfg,am,fm) <- get
                  put (c,cfg { cfgHeader = h },am,fm)
-  
+
 getGraph :: CGM (Gr Cmd Branch)
 getGraph = do (_,cfg,_,_) <- get
               return (cfgGraph cfg)
@@ -102,7 +102,7 @@ askBinding n = do varm <- askVarMap
 askFun :: Id RWCExp -> CGM (Maybe String)
 askFun n = do funm <- getFunMap
               return (Map.lookup n funm)
-              
+
 addEdge :: Node -> Node -> Branch -> CGM ()
 addEdge ns nd br = do g <- getGraph
                       putGraph (insEdge (ns,nd,br) g)
@@ -111,7 +111,7 @@ freshFunName :: Id RWCExp -> CGM String
 freshFunName n = do c <- getC
                     putC (c+1)
                     return ("rewire_" ++ show n ++ "_" ++ show c)
-  
+
 freshLocSize :: Int -> CGM Loc
 freshLocSize 0 = return "EMPTY"
 freshLocSize n = do c  <- getC
@@ -132,7 +132,7 @@ freshLocBool = do c <- getC
                   h <- getHeader
                   putHeader (h { regDecls = RegDecl r TyBoolean : regDecls h })
                   return r
-  
+
 nBits 0 = 0
 nBits n = nBits (n `quot` 2) + 1
 
@@ -141,7 +141,7 @@ getTagWidth i = do Just (TyConInfo (RWCData _ _ cs)) <- lift $ lift $ queryT i
                    return (nBits (length cs-1))
 
 tyWidth :: RWCTy -> CGM Int
-tyWidth (RWCTyVar _) = fail $ "tyWidth: type variable encountered"
+tyWidth (RWCTyVar _) = fail "tyWidth: type variable encountered"
 tyWidth t            = {-do twc <- getTyWidthCache
                           case Map.lookup t twc of
                             Just size -> return size
@@ -149,8 +149,8 @@ tyWidth t            = {-do twc <- getTyWidthCache
                               let (th:_) = flattenTyApp t
                               case th of
                                 RWCTyApp _ _  -> fail "tyWidth: encountered TyApp in func position (can't happen)"
-                                RWCTyVar _    -> fail $ "tyWidth: type variable encountered"
-                                RWCTyComp _ _ -> fail $ "tyWidth: computation type encountered"
+                                RWCTyVar _    -> fail "tyWidth: type variable encountered"
+                                RWCTyComp _ _ -> fail "tyWidth: computation type encountered"
                                 RWCTyCon i    -> do
                                   Just (TyConInfo (RWCData _ _ dcs)) <- lift $ lift $ queryT i
                                   tagWidth <- getTagWidth i
@@ -202,7 +202,7 @@ cfgExpr e = case ef of
                                n <- addFreshNode (Rem $ "got " ++ show x ++ " in " ++ r)
                                return (n,n,r)
                  Nothing -> do
-                   
+
                    -- If this is not a locally bound variable then it must
                    -- be a non-monadic global, which tranlates to a FunCall.
                    nf     <- funDefn x
@@ -309,10 +309,10 @@ zipWithM3 f (x:xs) (y:ys) (z:zs) = do v    <- f x y z
 zipWithM3 _ _ _ _                = return []
 
 cfgLastPat :: Loc -> RWCTy -> RWCPat -> CGM ([(Id RWCExp,Loc)],Node,Node,Loc) -- bindings, entry node, exit node, match bit loc
-cfgLastPat lscr tscr (RWCPatCon dci ps) = do 
+cfgLastPat lscr tscr (RWCPatCon dci ps) = do
                                         ntm <- addFreshNode (Rem "final pat")
                                         let rtm =  "bogus"
-                                        
+
                                         case ps of
                                           [] -> return ([],ntm,ntm,rtm)
                                           _  -> do
@@ -329,7 +329,7 @@ cfgLastPat lscr tscr (RWCPatCon dci ps) = do
                                             -- nai,nao: entry/exit for final match-and
                                             -- rm: value for final match-and
                                             --(nai,nao,rm)      <- andRegs (rtm:rms)
-                                            
+
                                             -- after tag match, fill fields
                                             addEdge ntm (head nfs) (Conditional (BoolConst True))
                                             -- after fill fields, do subpats
@@ -361,7 +361,7 @@ bitConstFromIntegral width n = bitConstFromIntegral (width-1) (n`div`2) ++ thisB
 
 getTag :: DataConId -> CGM [Bit]
 getTag i = do tci                 <- getDataConTyCon i
-              Just (TyConInfo dd) <- lift $ lift $ queryT tci 
+              Just (TyConInfo dd) <- lift $ lift $ queryT tci
               tagWidth            <- getTagWidth tci
               case findIndex (\ (RWCDataCon i' _) -> i==i') (dataCons dd) of
                 Just pos -> return (bitConstFromIntegral tagWidth pos)
@@ -392,11 +392,11 @@ mkGetField dci lscr tscr n = do tci         <- getDataConTyCon dci
                                     (lo,hi)         = fieldRanges !! n
                                 nf          <- addFreshNode (Assign rf (SliceRHS lo hi lscr))
                                 return (rf,nf)
-  
+
 cfgPat :: Loc -> RWCTy -> RWCPat -> CGM ([(Id RWCExp,Loc)],Node,Node,Loc) -- bindings, entry node, exit node, match bit loc
 cfgPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
                                         (ntm,rtm) <- mkTagCheck dci lscr
-                                        
+
                                         case ps of
                                           [] -> return ([],ntm,ntm,rtm)
                                           _  -> do
@@ -413,7 +413,7 @@ cfgPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
                                             -- nai,nao: entry/exit for final match-and
                                             -- rm: value for final match-and
                                             (nai,nao,rm)      <- andRegs (rtm:rms)
-                                            
+
                                             -- after tag match, fill fields
                                             addEdge ntm (head nfs) (Conditional (BoolConst True))
                                             -- after fill fields, check pats
@@ -486,7 +486,7 @@ cfgAcExpr e = case ef of
                RWCLiteral _                  -> fail "cfgAcExpr: encountered literal"
                -- Can't use data constructors to construct a resumption.
                RWCCon _ _                    -> fail "cfgAcExpr: encountered con"
-               
+
                RWCLet x el eb -> do
                  -- Expression being bound.
                  (niel,noel,lel) <- cfgExpr el
@@ -494,9 +494,9 @@ cfgAcExpr e = case ef of
                  (nieb,noeb,leb) <- binding x lel $ cfgAcExpr eb
                  -- Connect the two in sequence.
                  addEdge noel nieb (Conditional (BoolConst True))
-                 
+
                  return (niel,noeb,leb)
-                 
+
                RWCVar x _ | x == mkId "bind" -> do
                  -- Bind is only allowed with a lambda on RHS.
                  case eargs of
@@ -507,12 +507,12 @@ cfgAcExpr e = case ef of
                      addEdge exl entr (Conditional (BoolConst True))
                      return (entl,exr,regr)
                    _ -> fail "wrong rhs for bind"
-                   
+
                RWCVar x _ | x == mkId "return" -> do
                  case eargs of
                    [e] -> cfgExpr e
                    _   -> fail "cfgAcExpr: wrong number of arguments for return"
-                   
+
                RWCVar x _ | x == mkId "signal" -> do
                  case eargs of
                    [e] -> do
@@ -531,7 +531,7 @@ cfgAcExpr e = case ef of
                      addEdge npre npost Tick
                      return (ni,npost,r)
                    _  -> fail "cfgAcExpr: wrong number of arguments for signal"
-               
+
                RWCVar x _ | x == mkId "lift" -> do
                  case eargs of
                    [e] -> localStateLayer (+1) (cfgAcExpr e)
@@ -587,7 +587,7 @@ cfgAcExpr e = case ef of
                      addEdge (last no_args) (head n_copies) (Conditional (BoolConst True))
                      addEdge (last n_copies) ni_f (Conditional (BoolConst True))
                      return (head ni_args,no_f,rr_f)
-                 
+
                RWCCase escr alts               -> do
                  case eargs of
                    [] -> do
@@ -616,8 +616,8 @@ cfgAcExpr e = case ef of
                      -- in r_res.
                      return (ni_scr,nl,r_res)
                    _  -> fail "cfgAcExpr: encountered case expression in function position"
-                     
-   where (ef:eargs) = flattenApp e  
+
+   where (ef:eargs) = flattenApp e
 
 peelLambdas (RWCLam n t e) = ((n,t):nts,e')
                              where (nts,e') = peelLambdas e
@@ -631,7 +631,7 @@ cfgAcDefn n = do
                   -- If the name is already in the map, codegen for the
                   -- function is already completed or in progress.
                   Just x  -> return x
-                  Nothing -> do 
+                  Nothing -> do
                     md <- lift $ lift $ queryG n
                     case md of
                       Nothing               -> fail $ "cfgAcDefn: " ++ show n ++ " not defined"
@@ -684,7 +684,7 @@ cfgStart (RWCVar x t) = local buildEnv $ do
  where buildEnv env = env { inputTy  = ti,
                             outputTy = to,
                             stateTys = tss }
-       (ti,to,tss) =  
+       (ti,to,tss) =
          case t of
            RWCTyComp (RWCTyApp (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "ReT")) ti) to) tsm) _ ->
              let
@@ -716,7 +716,7 @@ cfgFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
         s0      = (0,CFG { cfgHeader = Header { funDefns   = [],
                                                 regDecls   = [],
                                                 stateNames = [],
-                                                startState = "", 
+                                                startState = "",
                                                 inputSize  = 999,
                                                 outputSize = 999 },
                            cfgGraph = empty },
@@ -783,7 +783,7 @@ funPat lscr tscr RWCPatWild         = do rm <- freshLocBool
 funPat lscr tscr (RWCPatVar x _)    = do rm <- freshLocBool
                                          return ([(x,lscr)],Assign rm (BoolRHS (BoolConst True)),rm)
 funPat _ _ (RWCPatLiteral _)        = fail "funPat: encountered literal"
-                                         
+
 funAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM Cmd
 funAlt lscr tscr lres (RWCAlt p e) = do (bds,cmatch,rmatch) <- funPat lscr tscr p
                                         foldr (uncurry binding) (do
@@ -899,6 +899,6 @@ funDefn n = do ms <- askFun n
                            fd      =  FunDefn fn pds rds ce re
                        putHeader (h' { regDecls = regDecls h,
                                        funDefns = fd : funDefns h' })
-                       fm          <- getFunMap                                  
+                       fm          <- getFunMap
                        putFunMap (Map.insert n fn fm)
                        return fn
