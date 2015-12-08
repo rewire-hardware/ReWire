@@ -4,9 +4,11 @@ module ReWire.PreHDL.CFG where
 
 import ReWire.PreHDL.Syntax
 import Data.Graph.Inductive
+{-
 import Data.GraphViz
 import Data.GraphViz.Attributes
 import qualified Data.GraphViz.Attributes.Complete as Attr
+-}
 import Data.Text.Lazy (unpack,pack)
 import Data.Maybe (fromJust,catMaybes)
 
@@ -16,6 +18,31 @@ data Branch = Conditional BoolExp
 
 data CFG = CFG { cfgHeader :: Header, cfgGraph :: Gr Cmd Branch }
 
+mkDot :: CFG -> String
+mkDot cfg = "digraph {\n"
+     ++ concat sNodes
+     ++ concat sEdges
+     ++ "}\n"
+  where gr       = cfgGraph cfg
+
+        sNodes   = map mkNode (labNodes gr)
+        mkNode (n,l) = show n ++ " [label=\""
+                    ++ dottifyCmds l
+                    ++ "\",shape=box,fontname=Courier];\n"
+
+        sEdges         = map mkEdge (labEdges gr)
+        mkEdge (s,d,l) = show s ++ " -> " ++ show d ++ rest ++ ";\n"
+            where rest = case l of
+                           Tick                         -> "[style=dashed]"
+                           Conditional (BoolConst True) -> ""
+                           Conditional b                -> "[label=" ++ show (show b) ++ "]"
+
+        dottifyCmds :: Cmd -> String
+        dottifyCmds c = concatMap ((++"\\l") . escapeIt) (lines (show c))
+           where escapeIt :: String -> String -- FIXME: terrible kludge
+                 escapeIt s = init (tail (show s))
+
+{-
 mkDot :: CFG -> String
 mkDot = unpack . printDotGraph . graphToDot params . cfgGraph
   where params = nonClusteredParams
@@ -32,6 +59,7 @@ mkDot = unpack . printDotGraph . graphToDot params . cfgGraph
 
         dottifyCmds :: Cmd -> String
         dottifyCmds c = concatMap (++"\\l") (lines (show c))
+-}
 
 elimUnreachable :: Node -> Gr Cmd Branch -> Gr Cmd Branch
 elimUnreachable root gr = delNodes unreachable gr
