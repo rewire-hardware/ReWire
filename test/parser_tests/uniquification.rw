@@ -1,0 +1,10 @@
+data G a b c is G a | Z b | D c end
+data Pup a b c d is Q d | R d d | Zuh a b c d end
+
+guppy :: a -> G a z w
+is
+  \ c -> let c = c in
+         case c of
+         { c -> G c
+         ; d -> G d }
+end
