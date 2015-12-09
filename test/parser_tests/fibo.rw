@@ -1,0 +1,38 @@
+data Unit is Unit end
+data Tuple2 a b is Tuple2 a b end
+data Bit is Zero | One end
+data W8 is W8 Bit Bit Bit Bit Bit Bit Bit Bit end
+
+vhdl plus :: W8 -> W8 -> W8 is plus
+
+begin :: <ReT Bit W8 (StT W8 (StT W8 I))><()>
+is
+     bind zz <- lift (put (W8 Zero Zero Zero Zero Zero Zero Zero Zero))
+  in bind zz <- lift (lift (put (W8 Zero Zero Zero Zero Zero Zero Zero One)))
+  in sig
+end
+
+sig :: <ReT Bit W8 (StT W8 (StT W8 I))><()>
+is
+   bind r0 <- lift get
+in bind i  <- signal r0
+in case i of
+   { Zero -> sig
+   ; One  -> incr
+   }
+end
+
+incr :: <ReT Bit W8 (StT W8 (StT W8 I))><()>
+is
+   bind r0 <- lift get
+in bind r1 <- lift (lift get)
+in bind zz <- lift (put r1)
+in bind zz <- lift (lift (put (plus r0 r1)))
+in            sig
+end
+
+start :: <ReT Bit W8 I><(((),W8),W8)>
+is
+   extrude (extrude begin (W8 Zero Zero Zero Zero Zero Zero Zero Zero))
+           (W8 Zero Zero Zero Zero Zero Zero Zero One)
+end
