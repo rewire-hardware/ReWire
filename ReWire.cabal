@@ -48,13 +48,35 @@ extra-source-files:  README.md
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.10
 
-
 executable rwc
   -- .hs or .lhs file containing the Main module.
   main-is:             Main.hs
 
   -- Modules included in this executable, other than Main.
-  --other-modules:
+  other-modules: ReWire.Core.Syntax
+                 ReWire.Core.Parser
+                 ReWire.Core.TypeChecker
+                 ReWire.Core.Kinds
+                 ReWire.Core.KindChecker
+                 ReWire.Core.PrettyPrintHaskell
+                 ReWire.Core.Main
+                 ReWire.Core.Prims
+                 ReWire.Core.PrimTypes
+                 ReWire.PreHDL.CFG
+                 ReWire.PreHDL.ElimEmpty
+                 ReWire.PreHDL.GotoElim
+                 ReWire.PreHDL.Syntax
+                 ReWire.PreHDL.ToVHDL
+                 ReWire.Core.Transformations.Interactive
+                 ReWire.Core.Transformations.DeUniquify
+                 ReWire.Core.Transformations.Expand
+                 ReWire.Core.Transformations.Monad
+                 ReWire.Core.Transformations.Purge
+                 ReWire.Core.Transformations.Reduce
+                 ReWire.Core.Transformations.ToPreHDL
+                 ReWire.Core.Transformations.Types
+                 ReWire.Core.Transformations.Uniquify
+                 ReWire.Scoping
 
   -- LANGUAGE extensions used by modules in this package.
   other-extensions:    FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, UndecidableInstances
@@ -70,54 +92,6 @@ executable rwc
 
   --ghc-options:         -O -fprof-auto -rtsopts
   ghc-options:         -fprof-auto -rtsopts
-
-library
-  exposed-modules: ReWire.Core.Syntax
-                   ReWire.Core.Parser
-                   ReWire.Core.TypeChecker
-                   ReWire.Core.Kinds
-                   ReWire.Core.KindChecker
-                   ReWire.Core.PrettyPrintHaskell
-                   ReWire.Core.Main
-                   ReWire.Core.Prims
-                   ReWire.Core.PrimTypes
-                   ReWire.PreHDL.CFG
---                   ReWire.PreHDL.ConnectLogic
-                   ReWire.PreHDL.ElimEmpty
-                   ReWire.PreHDL.GotoElim
-                   ReWire.PreHDL.Syntax
-                   ReWire.PreHDL.ToVHDL
-                   ReWire.Core.Transformations.Interactive
---                   ReWire.Core.Transformations.CaseInsertion
---                   ReWire.Core.Transformations.CBN
---                   ReWire.Core.Transformations.CheckNF
-                   ReWire.Core.Transformations.DeUniquify
-                   ReWire.Core.Transformations.Expand
---                   ReWire.Core.Transformations.LambdaLift
-                   ReWire.Core.Transformations.Monad
---                   ReWire.Core.Transformations.Occurs
-                   ReWire.Core.Transformations.Purge
-                   ReWire.Core.Transformations.Reduce
---                   ReWire.Core.Transformations.Status
---                   ReWire.Core.Transformations.Strictness
-                   ReWire.Core.Transformations.ToPreHDL
-                   ReWire.Core.Transformations.Types
-                   ReWire.Core.Transformations.Uniquify
---                   ReWire.Core.Transformations.Uses
-                   ReWire.Scoping
-
-
-
-  -- LANGUAGE extensions used by modules in this package.
-  other-extensions:    FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, UndecidableInstances
-
-  -- Other library packages from which modules are imported.
-  build-depends:       base >=4.6 && <5, mtl >=2.2.1, transformers >=0.3, pretty >=1.1, parsec >=3.1, containers >= 0.5, bytestring >= 0.10, deepseq >= 1.3.0, fgl >= 5.5, text >= 0.11
-
-  -- Base language which the package is written in.
-  default-language:    Haskell2010
-
-  --ghc-options:         -O -fprof-auto -rtsopts -dynamic
 
 source-repository head
   type:     git
