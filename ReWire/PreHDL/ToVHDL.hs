@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module ReWire.PreHDL.ToVHDL where
 

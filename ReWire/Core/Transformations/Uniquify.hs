@@ -72,8 +72,6 @@ uniquifyDataDecl (RWCData i vs dcs) = do (vs',dcs') <- uniquingT vs $
                                            mapM uniquifyDataCon dcs
                                          return (RWCData i vs' dcs')
 
-uniquifyPrimDecl = return
-
 pvs (RWCPatCon dci ps) = concatMap pvs ps
 pvs (RWCPatLiteral l)  = []
 pvs (RWCPatVar x t)    = [x]
@@ -96,26 +94,28 @@ uniquifyAlt (RWCAlt p e) = do let vs      =  pvs p
                                 return (p',e'))
                               return (RWCAlt p' e')
 
-uniquifyExpr (RWCApp e1 e2)   = do e1' <- uniquifyExpr e1
-                                   e2' <- uniquifyExpr e2
-                                   return (RWCApp e1' e2')
-uniquifyExpr (RWCLam n t e)   = do t'        <- uniquifyTy t
-                                   ([n'],e') <- uniquingE [n] (uniquifyExpr e)
-                                   return (RWCLam n' t' e')
-uniquifyExpr (RWCLet n e1 e2) = do e1'        <- uniquifyExpr e1
-                                   ([n'],e2') <- uniquingE [n] (uniquifyExpr e2)
-                                   return (RWCLet n' e1' e2')
-uniquifyExpr (RWCVar n t)     = do t' <- uniquifyTy t
-                                   mn <- askUniqueE n
-                                   case mn of
-                                     Nothing -> return (RWCVar n t')
-                                     Just n' -> return (RWCVar n' t')
-uniquifyExpr (RWCCon dci t)   = do t' <- uniquifyTy t
-                                   return (RWCCon dci t')
-uniquifyExpr (RWCLiteral l)   = return (RWCLiteral l)
-uniquifyExpr (RWCCase e alts) = do e'    <- uniquifyExpr e
-                                   alts' <- mapM uniquifyAlt alts
-                                   return (RWCCase e' alts')
+uniquifyExpr (RWCApp e1 e2)      = do e1' <- uniquifyExpr e1
+                                      e2' <- uniquifyExpr e2
+                                      return (RWCApp e1' e2')
+uniquifyExpr (RWCLam n t e)      = do t'        <- uniquifyTy t
+                                      ([n'],e') <- uniquingE [n] (uniquifyExpr e)
+                                      return (RWCLam n' t' e')
+uniquifyExpr (RWCLet n e1 e2)    = do e1'        <- uniquifyExpr e1
+                                      ([n'],e2') <- uniquingE [n] (uniquifyExpr e2)
+                                      return (RWCLet n' e1' e2')
+uniquifyExpr (RWCVar n t)        = do t' <- uniquifyTy t
+                                      mn <- askUniqueE n
+                                      case mn of
+                                        Nothing -> return (RWCVar n t')
+                                        Just n' -> return (RWCVar n' t')
+uniquifyExpr (RWCCon dci t)      = do t' <- uniquifyTy t
+                                      return (RWCCon dci t')
+uniquifyExpr (RWCLiteral l)      = return (RWCLiteral l)
+uniquifyExpr (RWCCase e alts)    = do e'    <- uniquifyExpr e
+                                      alts' <- mapM uniquifyAlt alts
+                                      return (RWCCase e' alts')
+uniquifyExpr (RWCNativeVHDL n e) = do e' <- uniquifyExpr e
+                                      return (RWCNativeVHDL n e')
 
 uniquifyDefn :: RWCDefn -> UQM RWCDefn
 uniquifyDefn (RWCDefn n (tvs :-> t) e) = do (tvs',(t',e')) <- uniquingT tvs (do
@@ -125,10 +125,9 @@ uniquifyDefn (RWCDefn n (tvs :-> t) e) = do (tvs',(t',e')) <- uniquingT tvs (do
                                             return (RWCDefn n (tvs' :-> t') e')
 
 uniquifyProg :: RWCProg -> UQM RWCProg
-uniquifyProg (RWCProg dds pds ds) = do dds' <- mapM uniquifyDataDecl dds
-                                       pds' <- mapM uniquifyPrimDecl pds
-                                       ds'  <- mapM uniquifyDefn ds
-                                       return (RWCProg dds' pds' ds')
+uniquifyProg (RWCProg dds ds) = do dds' <- mapM uniquifyDataDecl dds
+                                   ds'  <- mapM uniquifyDefn ds
+                                   return (RWCProg dds' ds')
 
 uniquifyE :: Int -> RWCExp -> (RWCExp,Int)
 uniquifyE ctr e = runIdentity $ runStateT (runReaderT (runReaderT (uniquifyExpr e) Map.empty) Map.empty) ctr

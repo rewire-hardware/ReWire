@@ -217,6 +217,18 @@ cfgExpr e = case ef of
                                   (_,no,_) = last ninors
                               addEdge no n (Conditional (BoolConst True))
                               return (ni,n,r)
+             RWCNativeVHDL n _ -> do
+               ninors <- mapM cfgExpr eargs
+               stringNodes (map (\(ni,no,_) -> (ni,no)) ninors)
+               let rs =  map (\ (_,_,r) -> r) ninors
+               r      <- freshLocTy (typeOf e)
+               n      <- addFreshNode (Assign r (FunCallRHS n rs))
+               case ninors of
+                 [] -> return (n,n,r)
+                 _  -> do let (ni,_,_) = head ninors
+                              (_,no,_) = last ninors
+                          addEdge no n (Conditional (BoolConst True))
+                          return (ni,n,r)
              RWCCon dci _ -> do
                -- Tag.
                t            <- getTag dci
@@ -617,6 +629,8 @@ cfgAcExpr e = case ef of
                      return (ni_scr,nl,r_res)
                    _  -> fail "cfgAcExpr: encountered case expression in function position"
 
+               RWCNativeVHDL _ _ -> fail "cfgAcExpr: encountered nativeVHDL"
+
    where (ef:eargs) = flattenApp e
 
 peelLambdas (RWCLam n t e) = ((n,t):nts,e')
@@ -830,6 +844,11 @@ funExpr e = case ef of
                    let (cs,rs) =  unzip crs
                    r           <- freshLocTy (typeOf e)
                    return (foldr1 mkSeq (cs++[Assign r (FunCallRHS nf rs)]),r)
+             RWCNativeVHDL n _ -> do
+               crs         <- mapM funExpr eargs
+               let (cs,rs) =  unzip crs
+               r           <- freshLocTy (typeOf e)
+               return (foldr1 mkSeq (cs++[Assign r (FunCallRHS n rs)]),r)
              RWCCon dci _ -> do
                -- Tag.
                t            <- getTag dci

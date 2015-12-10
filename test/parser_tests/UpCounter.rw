@@ -4,8 +4,8 @@ data Bit is Zero | One end
 
 data W8 is W8 Bit Bit Bit Bit Bit Bit Bit Bit end
 
-vhdl plusOne :: W8 -> W8 is prim_plusOne
-vhdl rotl :: W8 -> W8 is prim_rotl
+plusOne :: W8 -> W8 is vhdl "prim_plusOne" plusOne end
+rotl :: W8 -> W8 is vhdl "prim_rotl" rotl end
 
 tick :: <ReT Bit W8 (StT W8 I)><Bit>
 is

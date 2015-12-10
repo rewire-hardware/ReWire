@@ -39,6 +39,7 @@ reduce (RWCCase esc alts)  = do esc'  <- reduce esc
                                 case sr of
                                   Just e  -> return e
                                   Nothing -> return (RWCCase esc' alts')
+reduce e@(RWCNativeVHDL{}) = return e
 
 redalt :: Monad m => RWCAlt -> RWT m RWCAlt
 redalt (RWCAlt p eb) = do eb' <- reduce eb

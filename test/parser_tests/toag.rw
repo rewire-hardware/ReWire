@@ -1,7 +1,7 @@
 data Bit is Zero | One end
 
-vhdl bitAnd :: Bit -> Bit -> Bit is prim_bitAnd
-vhdl bitNot :: Bit -> Bit is prim_bitNot
+bitAnd :: Bit -> Bit -> Bit is vhdl "prim_bitAnd" bitAnd end
+bitNot :: Bit -> Bit is vhdl "prim_bitNot" bitNot end
 
 go :: <ReT Bit Bit I><Bit>
 is

@@ -21,21 +21,22 @@ inuseAlt :: RWCAlt -> IM ()
 inuseAlt (RWCAlt _ e) = inuseExp e
 
 inuseExp :: RWCExp -> IM ()
-inuseExp (RWCApp e1 e2)     = inuseExp e1 >> inuseExp e2
-inuseExp (RWCLam _ _ e)     = inuseExp e
-inuseExp (RWCLet _ el eb)   = inuseExp el >> inuseExp eb
-inuseExp (RWCVar n t)       = do inuse <- get
-                                 if n `member` inuse
-                                    then return ()
-                                    else do
-                                      put (insert n inuse)
-                                      me  <- lift $ askVar t n
-                                      case me of
-                                        Just e  -> inuseExp e
-                                        Nothing -> return ()
-inuseExp (RWCCon _ _)       = return ()
-inuseExp (RWCLiteral _)     = return ()
-inuseExp (RWCCase e alts)   = inuseExp e >> mapM_ inuseAlt alts
+inuseExp (RWCApp e1 e2)      = inuseExp e1 >> inuseExp e2
+inuseExp (RWCLam _ _ e)      = inuseExp e
+inuseExp (RWCLet _ el eb)    = inuseExp el >> inuseExp eb
+inuseExp (RWCVar n t)        = do inuse <- get
+                                  if n `member` inuse
+                                     then return ()
+                                     else do
+                                       put (insert n inuse)
+                                       me  <- lift $ askVar t n
+                                       case me of
+                                         Just e  -> inuseExp e
+                                         Nothing -> return ()
+inuseExp (RWCCon _ _)        = return ()
+inuseExp (RWCLiteral _)      = return ()
+inuseExp (RWCCase e alts)    = inuseExp e >> mapM_ inuseAlt alts
+inuseExp (RWCNativeVHDL n _) = return ()   -- FIXME(?!): special case here
 
 inuseProg :: Id RWCExp -> RWCProg -> IM (Maybe RWCProg)
 inuseProg n p = do let md = find (\ d -> defnName d == n) (defns p)

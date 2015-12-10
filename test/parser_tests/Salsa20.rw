@@ -46,10 +46,10 @@ data Tuple4 a b c d is Tuple4 a b c d end
 data Tuple5 a b c d e is Tuple5 a b c d e end
 data ParTen is ParTen (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) end
 
-vhdl add8 :: W8 -> W8 -> W8 is prim_plus
-vhdl xor32 :: W32 -> W32 -> W32 is prim_xor
-vhdl add32 :: W32 -> W32 -> W32 is prim_plus
-vhdl xor512 :: Bytes64 -> Bytes64 -> Bytes64 is prim_xor
+add8 :: W8 -> W8 -> W8 is vhdl "prim_plus" add8 end
+xor32 :: W32 -> W32 -> W32 is vhdl "prim_xor" xor32 end
+add32 :: W32 -> W32 -> W32 is vhdl "prim_plus" add32 end
+xor512 :: Bytes64 -> Bytes64 -> Bytes64 is vhdl "prim_xor" xor512 end
 
 --Constant Values for initialization
 --(101,120,112,97)
