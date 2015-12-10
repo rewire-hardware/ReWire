@@ -14,29 +14,29 @@ data CPUState is CPUState Inputs Outputs  -- (inputs,outputs) (0-9,10-27)
 data Register is R0 | R1 | R2 | R3 end
 
 
-vhdl notBit   :: Bit -> Bit                  is prim_notBit
-vhdl eqBit    :: Bit -> Bit -> Bit           is prim_eqBit
-vhdl andBit   :: Bit -> Bit -> Bit           is prim_andBit
-vhdl orBit    :: Bit -> Bit -> Bit           is prim_orBit
-vhdl xorBit   :: Bit -> Bit -> Bit           is prim_xorBit
+notBit   :: Bit -> Bit                  is vhdl "prim_notBit" notBit end
+eqBit    :: Bit -> Bit -> Bit           is vhdl "prim_eqBit" eqBit end
+andBit   :: Bit -> Bit -> Bit           is vhdl "prim_andBit" andBit end
+orBit    :: Bit -> Bit -> Bit           is vhdl "prim_orBit" orBit end
+xorBit   :: Bit -> Bit -> Bit           is vhdl "prim_xorBit" xorBit end
 
-vhdl zeroW8   :: W8                          is prim_zeroW8
-vhdl oneW8    :: W8                          is prim_oneW8
-vhdl notW8    :: W8 -> W8                    is prim_notW8
-vhdl andW8    :: W8 -> W8 -> W8              is prim_andW8
-vhdl orW8     :: W8 -> W8 -> W8              is prim_orW8
-vhdl xorW8    :: W8 -> W8 -> W8              is prim_xorW8
-vhdl eqW8     :: W8 -> W8 -> Bit             is prim_eqW8
-vhdl rolW8    :: W8 -> W8                    is prim_rolW8
-vhdl rorW8    :: W8 -> W8                    is prim_rorW8
-vhdl plusCW8  :: W8 -> W8 -> Bit -> (Bit,W8) is prim_plusCW8
-vhdl plusW8   :: W8 -> W8 -> (Bit,W8)        is prim_plusW8
-vhdl negW8    :: W8 -> W8 -> W8              is prim_negW8
-vhdl minusCW8 :: W8 -> W8 -> Bit -> (Bit,W8) is prim_minusCW8
-vhdl shlCW8   :: W8 -> Bit -> (Bit,W8)       is prim_shlCW8
-vhdl shrCW8   :: W8 -> Bit -> (Bit,W8)       is prim_shrCW8
-vhdl msbW8    :: W8 -> Bit                   is prim_msbW8
-vhdl lsbW8    :: W8 -> Bit                   is prim_lsbW8
+zeroW8   :: W8                          is vhdl "prim_zeroW8" zeroW8 end
+oneW8    :: W8                          is vhdl "prim_oneW8" oneW8 end
+notW8    :: W8 -> W8                    is vhdl "prim_notW8" notW8 end
+andW8    :: W8 -> W8 -> W8              is vhdl "prim_andW8" andW8 end
+orW8     :: W8 -> W8 -> W8              is vhdl "prim_orW8" orW8 end
+xorW8    :: W8 -> W8 -> W8              is vhdl "prim_xorW8" xorW8 end
+eqW8     :: W8 -> W8 -> Bit             is vhdl "prim_eqW8" eqW8 end
+rolW8    :: W8 -> W8                    is vhdl "prim_rolW8" rolW8 end
+rorW8    :: W8 -> W8                    is vhdl "prim_rorW8" rorW8 end
+plusCW8  :: W8 -> W8 -> Bit -> (Bit,W8) is vhdl "prim_plusCW8" plusCW8 end
+plusW8   :: W8 -> W8 -> (Bit,W8)        is vhdl "prim_plusW8" plusW8 end
+negW8    :: W8 -> W8 -> W8              is vhdl "prim_negW8" negW8 end
+minusCW8 :: W8 -> W8 -> Bit -> (Bit,W8) is vhdl "prim_minusCW8" minusCW8 end
+shlCW8   :: W8 -> Bit -> (Bit,W8)       is vhdl "prim_shlCW8" shlCW8 end
+shrCW8   :: W8 -> Bit -> (Bit,W8)       is vhdl "prim_shrCW8" shrCW8 end
+msbW8    :: W8 -> Bit                   is vhdl "prim_msbW8" msbW8 end
+lsbW8    :: W8 -> Bit                   is vhdl "prim_lsbW8" lsbW8 end
 
 
 mkReg :: Bit -> Bit -> Register

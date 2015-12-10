@@ -8,7 +8,10 @@ data Bit is Zero | One end
 data W8 is W8 Bit Bit Bit Bit Bit Bit Bit Bit end
 data Unit is Unit end
 
-vhdl plusW8 :: W8 -> W8 -> W8 is plusW8
+plusW8 :: W8 -> W8 -> W8
+is
+  vhdl "plusW8" plusW8
+end
 
 zeroW8 :: W8
 is

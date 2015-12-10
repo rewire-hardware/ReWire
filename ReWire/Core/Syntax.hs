@@ -78,78 +78,86 @@ data RWCExp = RWCApp RWCExp RWCExp
             | RWCCon DataConId RWCTy
             | RWCLiteral RWCLit
             | RWCCase RWCExp [RWCAlt]
+            | RWCNativeVHDL String RWCExp
             deriving Show
 
 instance IdSort RWCExp where
   idSort _ = pack "E"
 
 instance Subst RWCExp RWCExp where
-  fv (RWCApp e1 e2)   = fv e1 ++ fv e2
-  fv (RWCLam x _ e)   = filter (/= x) (fv e)
-  fv (RWCLet x e e')  = fv e ++ filter (/= x) (fv e')
-  fv (RWCVar x _)     = [x]
-  fv (RWCCon _ _)     = []
-  fv (RWCLiteral l)   = []
-  fv (RWCCase e alts) = fv e ++ concatMap fv alts
-  bv (RWCApp e1 e2)   = bv e1 ++ bv e2
-  bv (RWCLam x _ e)   = x : bv e
-  bv (RWCLet x e e')  = x : (bv e ++ bv e')
-  bv (RWCVar _ _)     = []
-  bv (RWCCon _ _)     = []
-  bv (RWCLiteral _)   = []
-  bv (RWCCase e alts) = bv e ++ bv alts
-  subst' (RWCApp e1 e2)   = liftM2 RWCApp (subst' e1) (subst' e2)
-  subst' (RWCLam x t e)   = refresh x (fv e) $ \ x' ->
-                              do e' <- subst' e
-                                 return (RWCLam x' t e')
-  subst' (RWCLet x e1 e2) = do e1' <- subst' e1
-                               refresh x (fv e2) $ \ x' ->
-                                 do e2' <- subst' e2
-                                    return (RWCLet x' e1' e2')
-  subst' (RWCVar x t)     = do ml <- query x
-                               case ml of
-                                 Just (Left y)  -> return (RWCVar y t)
-                                 Just (Right e) -> return e
-                                 Nothing        -> return (RWCVar x t)
-  subst' (RWCCon i t)     = return (RWCCon i t)
-  subst' (RWCLiteral l)   = return (RWCLiteral l)
-  subst' (RWCCase e alts) = liftM2 RWCCase (subst' e) (subst' alts)
+  fv (RWCApp e1 e2)      = fv e1 ++ fv e2
+  fv (RWCLam x _ e)      = filter (/= x) (fv e)
+  fv (RWCLet x e e')     = fv e ++ filter (/= x) (fv e')
+  fv (RWCVar x _)        = [x]
+  fv (RWCCon _ _)        = []
+  fv (RWCLiteral l)      = []
+  fv (RWCCase e alts)    = fv e ++ concatMap fv alts
+  fv (RWCNativeVHDL _ e) = fv e
+  bv (RWCApp e1 e2)      = bv e1 ++ bv e2
+  bv (RWCLam x _ e)      = x : bv e
+  bv (RWCLet x e e')     = x : (bv e ++ bv e')
+  bv (RWCVar _ _)        = []
+  bv (RWCCon _ _)        = []
+  bv (RWCLiteral _)      = []
+  bv (RWCCase e alts)    = bv e ++ bv alts
+  bv (RWCNativeVHDL _ e) = bv e
+  subst' (RWCApp e1 e2)      = liftM2 RWCApp (subst' e1) (subst' e2)
+  subst' (RWCLam x t e)      = refresh x (fv e) $ \ x' ->
+                                 do e' <- subst' e
+                                    return (RWCLam x' t e')
+  subst' (RWCLet x e1 e2)    = do e1' <- subst' e1
+                                  refresh x (fv e2) $ \ x' ->
+                                    do e2' <- subst' e2
+                                       return (RWCLet x' e1' e2')
+  subst' (RWCVar x t)        = do ml <- query x
+                                  case ml of
+                                    Just (Left y)  -> return (RWCVar y t)
+                                    Just (Right e) -> return e
+                                    Nothing        -> return (RWCVar x t)
+  subst' (RWCCon i t)        = return (RWCCon i t)
+  subst' (RWCLiteral l)      = return (RWCLiteral l)
+  subst' (RWCCase e alts)    = liftM2 RWCCase (subst' e) (subst' alts)
+  subst' (RWCNativeVHDL n e) = liftM (RWCNativeVHDL n) (subst' e)
 
 instance Subst RWCExp RWCTy where
-  fv (RWCApp e1 e2)    = fv e1 ++ fv e2
-  fv (RWCLam _ t e)    = fv t ++ fv e
-  fv (RWCLet _ e1 e2)  = fv e1 ++ fv e2
-  fv (RWCVar _ t)      = fv t
-  fv (RWCCon _ t)      = fv t
-  fv (RWCLiteral _)    = []
-  fv (RWCCase e alts)  = fv e ++ fv alts
+  fv (RWCApp e1 e2)      = fv e1 ++ fv e2
+  fv (RWCLam _ t e)      = fv t ++ fv e
+  fv (RWCLet _ e1 e2)    = fv e1 ++ fv e2
+  fv (RWCVar _ t)        = fv t
+  fv (RWCCon _ t)        = fv t
+  fv (RWCLiteral _)      = []
+  fv (RWCCase e alts)    = fv e ++ fv alts
+  fv (RWCNativeVHDL n e) = fv e
   bv _ = []
-  subst' (RWCApp e1 e2)    = liftM2 RWCApp (subst' e1) (subst' e2)
-  subst' (RWCLam x t e)    = liftM2 (RWCLam x) (subst' t) (subst' e)
-  subst' (RWCLet x e1 e2)  = liftM2 (RWCLet x) (subst' e1) (subst' e2)
-  subst' (RWCVar x t)      = liftM (RWCVar x) (subst' t)
-  subst' (RWCCon i t)      = liftM (RWCCon i) (subst' t)
-  subst' (RWCLiteral l)    = return (RWCLiteral l)
-  subst' (RWCCase e alts)  = liftM2 RWCCase (subst' e) (subst' alts)
+  subst' (RWCApp e1 e2)      = liftM2 RWCApp (subst' e1) (subst' e2)
+  subst' (RWCLam x t e)      = liftM2 (RWCLam x) (subst' t) (subst' e)
+  subst' (RWCLet x e1 e2)    = liftM2 (RWCLet x) (subst' e1) (subst' e2)
+  subst' (RWCVar x t)        = liftM (RWCVar x) (subst' t)
+  subst' (RWCCon i t)        = liftM (RWCCon i) (subst' t)
+  subst' (RWCLiteral l)      = return (RWCLiteral l)
+  subst' (RWCCase e alts)    = liftM2 RWCCase (subst' e) (subst' alts)
+  subst' (RWCNativeVHDL n e) = liftM (RWCNativeVHDL n) (subst' e)
 
 instance Alpha RWCExp where
-  aeq' (RWCApp e1 e2) (RWCApp e1' e2')     = liftM2 (&&) (aeq' e1 e1') (aeq' e2 e2')
-  aeq' (RWCLam x t e) (RWCLam x' t' e')    = equating x x' $
-                                               liftM2 (&&) (aeq' t t') (aeq' e e')
-  aeq' (RWCVar x _) (RWCVar y _)           = varsaeq x y
-  aeq' (RWCCon i _) (RWCCon j _)           = return (i==j)
-  aeq' (RWCLiteral l) (RWCLiteral l')      = return (l==l')
-  aeq' (RWCCase e alts) (RWCCase e' alts') = liftM2 (&&) (aeq' e e') (aeq' alts alts')
-  aeq' _ _                                 = return False
+  aeq' (RWCApp e1 e2) (RWCApp e1' e2')           = liftM2 (&&) (aeq' e1 e1') (aeq' e2 e2')
+  aeq' (RWCLam x t e) (RWCLam x' t' e')          = equating x x' $
+                                                     liftM2 (&&) (aeq' t t') (aeq' e e')
+  aeq' (RWCVar x _) (RWCVar y _)                 = varsaeq x y
+  aeq' (RWCCon i _) (RWCCon j _)                 = return (i==j)
+  aeq' (RWCLiteral l) (RWCLiteral l')            = return (l==l')
+  aeq' (RWCCase e alts) (RWCCase e' alts')       = liftM2 (&&) (aeq' e e') (aeq' alts alts')
+  aeq' (RWCNativeVHDL n e) (RWCNativeVHDL n' e') = liftM2 (&&) (return (n==n')) (aeq' e e')
+  aeq' _ _                                       = return False
 
 instance NFData RWCExp where
-  rnf (RWCApp e1 e2)    = e1 `deepseq` e2 `deepseq` ()
-  rnf (RWCLam x t e)    = x `deepseq` t `deepseq` e `deepseq` ()
-  rnf (RWCLet x e1 e2)  = x `deepseq` e1 `deepseq` e2 `deepseq` ()
-  rnf (RWCVar x t)      = x `deepseq` t `deepseq` ()
-  rnf (RWCCon i t)      = i `deepseq` t `deepseq` ()
-  rnf (RWCLiteral l)    = l `deepseq` ()
-  rnf (RWCCase e alts)  = e `deepseq` alts `deepseq` ()
+  rnf (RWCApp e1 e2)      = e1 `deepseq` e2 `deepseq` ()
+  rnf (RWCLam x t e)      = x `deepseq` t `deepseq` e `deepseq` ()
+  rnf (RWCLet x e1 e2)    = x `deepseq` e1 `deepseq` e2 `deepseq` ()
+  rnf (RWCVar x t)        = x `deepseq` t `deepseq` ()
+  rnf (RWCCon i t)        = i `deepseq` t `deepseq` ()
+  rnf (RWCLiteral l)      = l `deepseq` ()
+  rnf (RWCCase e alts)    = e `deepseq` alts `deepseq` ()
+  rnf (RWCNativeVHDL n e) = n `deepseq` e `deepseq` ()
 
 ---
 
@@ -229,16 +237,6 @@ instance NFData RWCPat where
 
 ---
 
-data RWCPrim = RWCPrim { primName :: Id RWCExp,
-                         primTy   :: RWCTy,     -- can't be poly
-                         primVHDL :: String }   -- VHDL name
-               deriving Show
-
-instance NFData RWCPrim where
-  rnf (RWCPrim n t b) = n `deepseq` t `deepseq` b `deepseq` ()
-
----
-
 data RWCDefn = RWCDefn { defnName   :: Id RWCExp,
                          defnPolyTy :: Poly RWCTy,
                          defnBody   :: RWCExp }
@@ -283,12 +281,11 @@ instance NFData RWCDataCon where
 ---
 
 data RWCProg = RWCProg { dataDecls :: [RWCData],
-                         primDecls :: [RWCPrim],
                          defns     :: [RWCDefn] }
                        deriving Show
 
 instance NFData RWCProg where
-  rnf (RWCProg dds pds defs) = dds `deepseq` pds `deepseq` defs `deepseq` ()
+  rnf (RWCProg dds defs) = dds `deepseq` defs `deepseq` ()
 
 ---
 
@@ -328,3 +325,4 @@ typeOf (RWCLiteral (RWCLitFloat _))   = RWCTyCon (TyConId "Float")
 typeOf (RWCLiteral (RWCLitChar _))    = RWCTyCon (TyConId "Char")
 typeOf (RWCCase _ (RWCAlt _ e:_))     = typeOf e
 typeOf (RWCCase _ [])                 = error "typeOf: encountered case with no alts"
+typeOf (RWCNativeVHDL n e)            = typeOf e

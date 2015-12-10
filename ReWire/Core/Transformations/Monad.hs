@@ -29,7 +29,7 @@ newtype RWT m a = RWT { deRWT :: AssumeT (Id RWCExp) VarInfo
                                    (AssumeT DataConId DataConInfo (ScopeT (StateT Int m)))) a }
                   deriving (Functor,Applicative,Monad)
 
-data VarInfo = PrimVar RWCPrim | GlobalVar RWCDefn | LocalVar RWCTy deriving Show
+data VarInfo = GlobalVar RWCDefn | LocalVar RWCTy deriving Show
 newtype TyConInfo = TyConInfo RWCData deriving Show
 data DataConInfo = DataConInfo TyConId RWCDataCon deriving Show
 
@@ -136,10 +136,8 @@ getAssumptionsD :: Monad m => RWT m (Map DataConId DataConInfo)
 getAssumptionsD = RWT $ lift $ lift getAssumptions
 -}
 
-mkInitialVarMap :: [RWCDefn] -> [RWCPrim] -> Map (Id RWCExp) VarInfo
-mkInitialVarMap ds ps = foldr (\ p@(RWCPrim n _ _) -> Map.insert n (PrimVar p))
-                          (foldr (\ d@(RWCDefn n _ _) -> Map.insert n (GlobalVar d)) Map.empty ds)
-                          ps
+mkInitialVarMap :: [RWCDefn] -> Map (Id RWCExp) VarInfo
+mkInitialVarMap ds = foldr (\ d@(RWCDefn n _ _) -> Map.insert n (GlobalVar d)) Map.empty ds
 
 mkInitialTyConMap :: [RWCData] -> Map TyConId TyConInfo
 mkInitialTyConMap = foldr (\ d@(RWCData n _ _) -> Map.insert n (TyConInfo d)) Map.empty
@@ -148,10 +146,8 @@ mkInitialDataConMap :: [RWCData] -> Map DataConId DataConInfo
 mkInitialDataConMap = foldr addDD Map.empty
   where addDD (RWCData dn _ dcs) m = foldr (\ d@(RWCDataCon cn _) -> Map.insert cn (DataConInfo dn d)) m dcs
 
-mkInitialVarSet :: [RWCDefn] -> [RWCPrim] -> Set IdAny
-mkInitialVarSet ds ps = foldr (\ p@(RWCPrim n _ _) -> Set.insert (IdAny n))
-                          (foldr (\ d@(RWCDefn n _ _) -> Set.insert (IdAny n)) Set.empty ds)
-                          ps
+mkInitialVarSet :: [RWCDefn] -> Set IdAny
+mkInitialVarSet ds = foldr (\ d@(RWCDefn n _ _) -> Set.insert (IdAny n)) Set.empty ds
 
 runRWT :: Monad m => Int -> RWCProg -> RWT m a -> m a
 runRWT ctr p phi = liftM fst $
@@ -161,10 +157,10 @@ runRWT ctr p phi = liftM fst $
                                    runAssumeTWith varmap $
                                     deRWT phi)
                                ctr
-  where varmap      = mkInitialVarMap (defns p) (primDecls p)
+  where varmap      = mkInitialVarMap (defns p)
         tmap        = mkInitialTyConMap (dataDecls p)
         dmap        = mkInitialDataConMap (dataDecls p)
-        varset      = mkInitialVarSet (defns p) (primDecls p)
+        varset      = mkInitialVarSet (defns p)
 
 runRW :: Int -> RWCProg -> RW a -> a
 runRW ctr p = runIdentity . runRWT ctr p
@@ -178,24 +174,25 @@ putCtr = RWT . put
 fsubstE n e = fsubstsE [(n,e)]
 
 fsubstsE :: Monad m => [(Id RWCExp,RWCExp)] -> RWCExp -> RWT m RWCExp
-fsubstsE s (RWCApp e1 e2)     = do e1' <- fsubstsE s e1
-                                   e2' <- fsubstsE s e2
-                                   return (RWCApp e1' e2')
-fsubstsE s (RWCLam n t eb)    = do eb' <- fsubstsE s eb
-                                   return (RWCLam n t eb')
-fsubstsE s (RWCLet n el eb)   = do el' <- fsubstsE s el
-                                   eb' <- fsubstsE s eb
-                                   return (RWCLet n el' eb')
-fsubstsE s (RWCVar n t)       = case lookup n s of
-                                  Just e  -> freshenE e
-                                  Nothing -> return (RWCVar n t)
-fsubstsE s (RWCCon dci t)     = return (RWCCon dci t)
-fsubstsE s (RWCLiteral l)     = return (RWCLiteral l)
-fsubstsE s (RWCCase esc alts) = do esc'  <- fsubstsE s esc
-                                   alts' <- mapM fsubstsE_Alt alts
-                                   return (RWCCase esc' alts')
+fsubstsE s (RWCApp e1 e2)      = do e1' <- fsubstsE s e1
+                                    e2' <- fsubstsE s e2
+                                    return (RWCApp e1' e2')
+fsubstsE s (RWCLam n t eb)     = do eb' <- fsubstsE s eb
+                                    return (RWCLam n t eb')
+fsubstsE s (RWCLet n el eb)    = do el' <- fsubstsE s el
+                                    eb' <- fsubstsE s eb
+                                    return (RWCLet n el' eb')
+fsubstsE s (RWCVar n t)        = case lookup n s of
+                                   Just e  -> freshenE e
+                                   Nothing -> return (RWCVar n t)
+fsubstsE s (RWCCon dci t)      = return (RWCCon dci t)
+fsubstsE s (RWCLiteral l)      = return (RWCLiteral l)
+fsubstsE s (RWCCase esc alts)  = do esc'  <- fsubstsE s esc
+                                    alts' <- mapM fsubstsE_Alt alts
+                                    return (RWCCase esc' alts')
   where fsubstsE_Alt (RWCAlt p eb) = do eb' <- fsubstsE s eb
                                         return (RWCAlt p eb')
+fsubstsE s (RWCNativeVHDL n e) = liftM (RWCNativeVHDL n) (fsubstsE s e)
 
 freshenE :: Monad m => RWCExp -> RWT m RWCExp
 freshenE e = do ctr <- getCtr

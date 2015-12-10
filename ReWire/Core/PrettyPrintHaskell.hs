@@ -58,6 +58,8 @@ ppExpr (RWCCase e alts) = do e_p    <- ppExpr e
                                       foldr ($+$) empty
                                         [text "case" <+> e_p <+> text "of",
                                          nest 4 (braces $ vcat $ punctuate (space <> text ";" <> space) alts_p)])
+ppExpr (RWCNativeVHDL n e) = do e_p <- ppExpr e
+                                return (parens (text "nativeVHDL" <+> doubleQuotes (text n) <+> parens e_p))
 
 ppTyArrowL t@(RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2) = liftM parens (ppTy t)
 ppTyArrowL t                                                         = ppTy t

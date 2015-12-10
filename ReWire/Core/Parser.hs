@@ -62,9 +62,8 @@ conid = lexeme $ try $
           }
 
 prog = do dds  <- many datadecl
-          pds  <- many primdefn
           defs <- many defn
-          return (RWCProg dds pds defs)
+          return (RWCProg dds defs)
 
 datadecl = do reserved "data"
               i   <- conid
@@ -100,14 +99,6 @@ btype = do ts <- many1 atype
 ty = do ts <- btype `sepBy1` reservedOp "->"
         return (foldr1 mkArrow ts)
 
-primdefn = do reserved "vhdl"
-              i <- varid
-              reservedOp "::"
-              t <- ty
-              reserved "is"
-              n <- varid
-              return (RWCPrim (mkId i) t n)
-
 defn = do i <- varid
           reservedOp "::"
           t <- ty
@@ -141,6 +132,10 @@ lamexpr = do reservedOp "\\"
              reservedOp "->"
              e <- expr
              return (RWCLam (mkId i) tblank e)
+      <|> do reserved "vhdl"
+             n <- stringLiteral
+             e <- expr
+             return (RWCNativeVHDL n e)
       <|> do reserved "let"
              x <- varid
              reservedOp "="

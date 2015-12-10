@@ -165,42 +165,44 @@ tcAlt tres tscrut (RWCAlt p e) = do p'      <- tcPat tscrut p
                                     return (RWCAlt p' e')
 
 tcExp :: RWCExp -> TCM (RWCExp,RWCTy)
-tcExp e_@(RWCApp {})    = do let (ef:es)  =  flattenApp e_
-                             (ef',tf)     <- tcExp ef
-                             ress         <- mapM tcExp es
-                             let es'      =  map fst ress
-                                 tes      =  map snd ress
-                             tv           <- freshv
-                             unify tf (foldr mkArrow (RWCTyVar tv) tes)
-                             return (foldl RWCApp ef' es',RWCTyVar tv)
-tcExp (RWCLam x _ e)    = do tvx     <- freshv
-                             tvr     <- freshv
-                             (e',te) <- localAssumps (Map.insert x ([] :-> RWCTyVar tvx)) (tcExp e)
-                             unify (RWCTyVar tvr) (RWCTyVar tvx `mkArrow` te)
-                             return (RWCLam x (RWCTyVar tvx) e',RWCTyVar tvr)
-tcExp (RWCLet x e1 e2)  = do (e1',te1) <- tcExp e1
-                             (e2',te2) <- localAssumps (Map.insert x ([] :-> te1)) (tcExp e2)
-                             return (RWCLet x e1' e2',te2)
-tcExp (RWCVar v _)      = do as      <- askAssumps
-                             let mpt =  Map.lookup v as
-                             case mpt of
-                               Nothing -> fail $ "Unknown variable: " ++ show v
-                               Just pt -> do t <- inst pt
-                                             return (RWCVar v t,t)
-tcExp (RWCCon i _)      = do cas     <- askCAssumps
-                             let mpt =  Map.lookup i cas
-                             case mpt of
-                               Nothing -> fail $ "Unknown constructor: " ++ deDataConId i
-                               Just pt -> do t <- inst pt
-                                             return (RWCCon i t,t)
-tcExp e@(RWCLiteral l)  = case l of
-                            RWCLitInteger _ -> return (e,RWCTyCon (TyConId "Integer"))
-                            RWCLitFloat _   -> return (e,RWCTyCon (TyConId "Float"))
-                            RWCLitChar _    -> return (e,RWCTyCon (TyConId "Char"))
-tcExp (RWCCase e alts)  = do (e',te) <- tcExp e
-                             tv      <- freshv
-                             alts'   <- mapM (tcAlt (RWCTyVar tv) te) alts
-                             return (RWCCase e' alts',RWCTyVar tv)
+tcExp e_@(RWCApp {})      = do let (ef:es)  =  flattenApp e_
+                               (ef',tf)     <- tcExp ef
+                               ress         <- mapM tcExp es
+                               let es'      =  map fst ress
+                                   tes      =  map snd ress
+                               tv           <- freshv
+                               unify tf (foldr mkArrow (RWCTyVar tv) tes)
+                               return (foldl RWCApp ef' es',RWCTyVar tv)
+tcExp (RWCLam x _ e)      = do tvx     <- freshv
+                               tvr     <- freshv
+                               (e',te) <- localAssumps (Map.insert x ([] :-> RWCTyVar tvx)) (tcExp e)
+                               unify (RWCTyVar tvr) (RWCTyVar tvx `mkArrow` te)
+                               return (RWCLam x (RWCTyVar tvx) e',RWCTyVar tvr)
+tcExp (RWCLet x e1 e2)    = do (e1',te1) <- tcExp e1
+                               (e2',te2) <- localAssumps (Map.insert x ([] :-> te1)) (tcExp e2)
+                               return (RWCLet x e1' e2',te2)
+tcExp (RWCVar v _)        = do as      <- askAssumps
+                               let mpt =  Map.lookup v as
+                               case mpt of
+                                 Nothing -> fail $ "Unknown variable: " ++ show v
+                                 Just pt -> do t <- inst pt
+                                               return (RWCVar v t,t)
+tcExp (RWCCon i _)        = do cas     <- askCAssumps
+                               let mpt =  Map.lookup i cas
+                               case mpt of
+                                 Nothing -> fail $ "Unknown constructor: " ++ deDataConId i
+                                 Just pt -> do t <- inst pt
+                                               return (RWCCon i t,t)
+tcExp e@(RWCLiteral l)    = case l of
+                              RWCLitInteger _ -> return (e,RWCTyCon (TyConId "Integer"))
+                              RWCLitFloat _   -> return (e,RWCTyCon (TyConId "Float"))
+                              RWCLitChar _    -> return (e,RWCTyCon (TyConId "Char"))
+tcExp (RWCCase e alts)    = do (e',te) <- tcExp e
+                               tv      <- freshv
+                               alts'   <- mapM (tcAlt (RWCTyVar tv) te) alts
+                               return (RWCCase e' alts',RWCTyVar tv)
+tcExp (RWCNativeVHDL n e) = do (e',te) <- tcExp e
+                               return (RWCNativeVHDL n e',te)
 
 tcDefn :: RWCDefn -> TCM RWCDefn
 tcDefn d  = do putTySub Map.empty
@@ -213,11 +215,8 @@ tcDefn d  = do putTySub Map.empty
                let d' = RWCDefn n (tvs :-> t) (subst s e')
                traceShow n $ d' `deepseq` return d'
 
-primAssump :: RWCPrim -> Assump
-primAssump (RWCPrim n t _) = (n,[] :-> t)
-
 tc :: RWCProg -> TCM RWCProg
-tc p = do let as_ =  Map.fromList $ map defnAssump (defns p) ++ map primAssump (primDecls p)
+tc p = do let as_ =  Map.fromList $ map defnAssump (defns p)
               as  =  as_ `Map.union` as0
               as0 =  Map.fromList prims
           cas     <- liftM (Map.fromList . concat) $ mapM dataDeclAssumps (dataDecls p)

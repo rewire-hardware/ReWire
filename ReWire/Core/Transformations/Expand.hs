@@ -32,14 +32,15 @@ expandExpr ns (RWCLiteral l)             = return (RWCLiteral l)
 expandExpr ns (RWCCase e alts)           = do e'    <- expandExpr ns e
                                               alts' <- mapM (expandAlt ns) alts
                                               return (RWCCase e' alts')
+expandExpr ns (RWCNativeVHDL n e)        = return (RWCNativeVHDL n e)             -- FIXME(?!): special case here!
 
 expandDefn :: [Id RWCExp] -> RWCDefn -> RW RWCDefn
 expandDefn ns (RWCDefn n pt e) = do e' <- expandExpr ns e
                                     return (RWCDefn n pt e')
 
 expandProg :: [Id RWCExp] -> RWCProg -> RW RWCProg
-expandProg ns (RWCProg dds pds defns) = do defns' <- mapM (expandDefn ns) defns
-                                           return (RWCProg dds pds defns')
+expandProg ns (RWCProg dds defns) = do defns' <- mapM (expandDefn ns) defns
+                                       return (RWCProg dds defns')
 
 expand :: [Id RWCExp] -> RWCProg -> RWCProg
 expand ns p_ = deUniquify $ runRW ctr p (expandProg ns p)

@@ -112,34 +112,34 @@ dqAlt (RWCAlt p e) = do let vs      =  pvs p
                           return (p',e'))
                         return (RWCAlt p' e')
 
-dqExpr (RWCApp e1 e2) = do e1' <- dqExpr e1
-                           e2' <- dqExpr e2
-                           return (RWCApp e1' e2')
-dqExpr (RWCLam n t e) = do t' <- dqTy t
-                           ([n'],e') <- dqingE [n] (dqExpr e)
-                           return (RWCLam n' t' e')
-dqExpr (RWCLet n e1 e2) = do e1' <- dqExpr e1
-                             ([n'],e2') <- dqingE [n] (dqExpr e2)
-                             return (RWCLet n' e1' e2')
-dqExpr (RWCVar n t)     = do t' <- dqTy t
-                             ism <- askInScopeE
-                             case Map.lookup n ism of
-                               Just n' -> return (RWCVar n' t')
-                               Nothing -> return (RWCVar n t')
-dqExpr (RWCCon dci t)   = do t' <- dqTy t
-                             return (RWCCon dci t')
-dqExpr (RWCLiteral l)   = return (RWCLiteral l)
-dqExpr (RWCCase e alts) = do e'    <- dqExpr e
-                             alts' <- mapM dqAlt alts
-                             return (RWCCase e' alts')
+dqExpr (RWCApp e1 e2)      = do e1' <- dqExpr e1
+                                e2' <- dqExpr e2
+                                return (RWCApp e1' e2')
+dqExpr (RWCLam n t e)      = do t' <- dqTy t
+                                ([n'],e') <- dqingE [n] (dqExpr e)
+                                return (RWCLam n' t' e')
+dqExpr (RWCLet n e1 e2)    = do e1' <- dqExpr e1
+                                ([n'],e2') <- dqingE [n] (dqExpr e2)
+                                return (RWCLet n' e1' e2')
+dqExpr (RWCVar n t)        = do t' <- dqTy t
+                                ism <- askInScopeE
+                                case Map.lookup n ism of
+                                  Just n' -> return (RWCVar n' t')
+                                  Nothing -> return (RWCVar n t')
+dqExpr (RWCCon dci t)      = do t' <- dqTy t
+                                return (RWCCon dci t')
+dqExpr (RWCLiteral l)      = return (RWCLiteral l)
+dqExpr (RWCCase e alts)    = do e'    <- dqExpr e
+                                alts' <- mapM dqAlt alts
+                                return (RWCCase e' alts')
+dqExpr (RWCNativeVHDL n e) = do e' <- dqExpr e
+                                return (RWCNativeVHDL n e')
 
 dqDataCon (RWCDataCon dci ts) = do ts' <- mapM dqTy ts
                                    return (RWCDataCon dci ts')
 
 dqDataDecl (RWCData n tvs dcs) = do (tvs',dcs') <- dqingT tvs (mapM dqDataCon dcs)
                                     return (RWCData n tvs' dcs')
-
-dqPrimDecl = return
 
 dqDefn (RWCDefn n (tvs :-> t) e) = do (tvs',(t',e')) <- dqingT tvs (do
                                         t' <- dqTy t
@@ -148,10 +148,9 @@ dqDefn (RWCDefn n (tvs :-> t) e) = do (tvs',(t',e')) <- dqingT tvs (do
                                       return (RWCDefn n (tvs' :-> t') e')
 
 dqProg :: RWCProg -> DQM RWCProg
-dqProg (RWCProg dds pds ds) = do dds' <- mapM dqDataDecl dds
-                                 pds' <- mapM dqPrimDecl pds
-                                 ds'  <- mapM dqDefn ds
-                                 return (RWCProg dds' pds' ds')
+dqProg (RWCProg dds ds) = do dds' <- mapM dqDataDecl dds
+                             ds'  <- mapM dqDefn ds
+                             return (RWCProg dds' ds')
 
 deUniquify :: RWCProg -> RWCProg
 deUniquify p = runIdentity (runReaderT (dqProg p) (DQEnv Map.empty Set.empty Map.empty Set.empty))
