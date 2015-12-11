@@ -14,7 +14,7 @@ stT s m   = c "StT" `RWCTyApp` s `RWCTyApp` m
 
 prims :: [(Id RWCExp,Poly RWCTy)]
 prims = [(mkId "return",[mkId "a",mkId "m"]          :-> v "a" `mkArrow` RWCTyComp (v "m") (v "a")),
-         (mkId "bind",  [mkId "m",mkId "a",mkId "b"] :-> RWCTyComp (v "m") (v "a") `mkArrow`
+         (mkId ">>=",  [mkId "m",mkId "a",mkId "b"] :-> RWCTyComp (v "m") (v "a") `mkArrow`
                                                            (v "a" `mkArrow` RWCTyComp (v "m") (v "b")) `mkArrow`
                                                            RWCTyComp (v "m") (v "b")),
          (mkId "get",   [mkId "s",mkId "m"]          :-> RWCTyComp (stT (v "s") (v "m")) (v "s")),
