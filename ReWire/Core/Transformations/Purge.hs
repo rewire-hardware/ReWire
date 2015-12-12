@@ -23,7 +23,6 @@ inuseAlt (RWCAlt _ e) = inuseExp e
 inuseExp :: RWCExp -> IM ()
 inuseExp (RWCApp e1 e2)      = inuseExp e1 >> inuseExp e2
 inuseExp (RWCLam _ _ e)      = inuseExp e
-inuseExp (RWCLet _ el eb)    = inuseExp el >> inuseExp eb
 inuseExp (RWCVar n t)        = do inuse <- get
                                   if n `member` inuse
                                      then return ()

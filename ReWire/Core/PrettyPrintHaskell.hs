@@ -34,7 +34,6 @@ ppPat (RWCPatCon n ps)        = do ps_p <- mapM ppPat ps
                                    return (parens (text (deDataConId n) <+> hsep ps_p))
 ppPat (RWCPatVar n _)         = return (ppId n)
 ppPat (RWCPatLiteral l)       = return (ppLiteral l)
-ppPat RWCPatWild              = return (text "_")
 
 ppAlt (RWCAlt p eb) =
                     do p_p  <- ppPat p
@@ -49,9 +48,6 @@ ppExpr (RWCCon n t)     = return (text (deDataConId n))
 ppExpr (RWCVar n t)     = return (ppId n)
 ppExpr (RWCLam n t e)   = do e_p <- ppExpr e
                              return (parens (char '\\' <+> ppId n <+> text "->" <+> e_p))
-ppExpr (RWCLet n e1 e2) = do e1_p <- ppExpr e1
-                             e2_p <- ppExpr e2
-                             return (parens (text "letnonrec" <+> ppId n <+> text "=" <+> e1_p <+> text "in" <+> e2_p))
 ppExpr (RWCCase e alts) = do e_p    <- ppExpr e
                              alts_p <- mapM ppAlt alts
                              return (parens $

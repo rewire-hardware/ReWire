@@ -179,9 +179,6 @@ fsubstsE s (RWCApp e1 e2)      = do e1' <- fsubstsE s e1
                                     return (RWCApp e1' e2')
 fsubstsE s (RWCLam n t eb)     = do eb' <- fsubstsE s eb
                                     return (RWCLam n t eb')
-fsubstsE s (RWCLet n el eb)    = do el' <- fsubstsE s el
-                                    eb' <- fsubstsE s eb
-                                    return (RWCLet n el' eb')
 fsubstsE s (RWCVar n t)        = case lookup n s of
                                    Just e  -> freshenE e
                                    Nothing -> return (RWCVar n t)

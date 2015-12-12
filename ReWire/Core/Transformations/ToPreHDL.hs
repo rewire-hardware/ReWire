@@ -187,11 +187,6 @@ cfgExpr e = case ef of
              RWCApp _ _     -> fail "cfgExpr: app in function position (can't happen)"
              RWCLiteral _   -> fail "cfgExpr: encountered literal"
              RWCLam _ _ _   -> fail "cfgExpr: encountered lambda"
-             RWCLet x el eb -> do
-               (niel,noel,lel) <- cfgExpr el
-               (nieb,noeb,leb) <- binding x lel $ cfgExpr eb
-               addEdge noel nieb (Conditional (BoolConst True))
-               return (niel,noeb,leb)
              RWCVar x _     -> do
                mr <- askBinding x
                case mr of
@@ -353,10 +348,6 @@ cfgLastPat lscr tscr (RWCPatCon dci ps) = do
                                             -- after check pats, and results
 --                                            addEdge npo_l nai (Conditional (BoolConst True))
                                             return (concat bss,ntm,npo_l,rtm)
-cfgLastPat lscr tscr RWCPatWild         = do
-                                        rtm <- freshLocBool
-                                        ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
-                                        return ([],ntm,ntm,rtm)
 cfgLastPat lscr tscr (RWCPatVar x _)    = do
                                         rtm <- freshLocBool
                                         ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
@@ -437,9 +428,6 @@ cfgPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
                                             -- after check pats, and results
                                             addEdge npo_l nai (Conditional (BoolConst True))
                                             return (concat bss,ntm,nao,rm)
-cfgPat lscr tscr RWCPatWild         = do rtm <- freshLocBool
-                                         ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
-                                         return ([],ntm,ntm,rtm)
 cfgPat lscr tscr (RWCPatVar x _)    = do rtm <- freshLocBool
                                          ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
                                          return ([(x,lscr)],ntm,ntm,rtm)
@@ -498,16 +486,6 @@ cfgAcExpr e = case ef of
                RWCLiteral _                  -> fail "cfgAcExpr: encountered literal"
                -- Can't use data constructors to construct a resumption.
                RWCCon _ _                    -> fail "cfgAcExpr: encountered con"
-
-               RWCLet x el eb -> do
-                 -- Expression being bound.
-                 (niel,noel,lel) <- cfgExpr el
-                 -- Body expression.
-                 (nieb,noeb,leb) <- binding x lel $ cfgAcExpr eb
-                 -- Connect the two in sequence.
-                 addEdge noel nieb (Conditional (BoolConst True))
-
-                 return (niel,noeb,leb)
 
                RWCVar x _ | x == mkId ">>=" -> do
                  -- Bind is only allowed with a lambda on RHS.
@@ -792,8 +770,6 @@ funPat lscr tscr (RWCPatCon dci ps) = do (ctm,rtm) <- mkFunTagCheck dci lscr
                                                     return (concat bdss,
                                                             foldr1 mkSeq ([ctm] ++ cfs ++ cs ++ [Assign rm (BoolRHS (foldr1 And (map BoolVar (rtm:rms))))]),
                                                             rm)
-funPat lscr tscr RWCPatWild         = do rm <- freshLocBool
-                                         return ([],Assign rm (BoolRHS (BoolConst True)),rm)
 funPat lscr tscr (RWCPatVar x _)    = do rm <- freshLocBool
                                          return ([(x,lscr)],Assign rm (BoolRHS (BoolConst True)),rm)
 funPat _ _ (RWCPatLiteral _)        = fail "funPat: encountered literal"
@@ -828,10 +804,6 @@ funExpr e = case ef of
              RWCApp _ _     -> fail "cfgExpr: app in function position (can't happen)"
              RWCLiteral _   -> fail "cfgExpr: encountered literal"
              RWCLam _ _ _   -> fail "cfgExpr: encountered lambda"
-             RWCLet x el eb -> do
-               (cel,lel) <- funExpr el
-               (ceb,leb) <- binding x lel $ funExpr eb
-               return (cel `mkSeq` ceb,leb)
              RWCVar x _     -> do
                mr <- askBinding x
                case mr of
