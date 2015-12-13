@@ -19,15 +19,16 @@ import           Language.Haskell.Exts hiding (parseFile, loc, name, binds, op)
 -- | Parse a ReWire source file.
 parseFile :: FilePath -> IO (ParseResult RWCProg)
 parseFile = Haskell.parseFile
-            >!> deparenify
+            !=> deparenify
             >=> desugarDos
             >=> desugarFuns
             >=> desugarLets
             >=> flattenLambdas
             >=> depatLambdas
+            >=> purgeWildCards
             >=> trans
-      where f >!> g = f >=> return . (>>= runTrans . g)
-            infix 0 >!>
+      where f !=> g = f >=> return . (>>= runTrans . g)
+            infix 0 !=>
             runTrans = flip runStateT 0 >=> return . fst
 
 everywhere :: (Data a, Monad m) => (forall b. Data b => b -> m b) -> a -> m a
@@ -80,17 +81,17 @@ desugarDos =  everywhere desugarDos'
                   Just n          -> tr n
             transDo (Generator loc p e:stmts) = App (App (Var (UnQual (Symbol ">>="))) e) <$> (Lambda loc [p] <$> transDo stmts)
             transDo [Qualifier e]             = return e
-            transDo (Qualifier e:stmts)       = App (App (Var (UnQual (Symbol ">>="))) e) <$> (Lambda unknownLoc [PVar (Ident "$_")] <$> transDo stmts)
+            transDo (Qualifier e:stmts)       = App (App (Var (UnQual (Symbol ">>="))) e) <$> (Lambda unknownLoc [PWildCard] <$> transDo stmts)
             transDo (LetStmt binds:stmts)     = Let binds <$> transDo stmts
             transDo (stmt:_)                  = pFail unknownLoc $ "unsupported syntax: " ++ prettyPrint stmt
             transDo _                         = pFail unknownLoc "something went wrong while translating a do-block."
 
--- | Turns piece-wise function definitions into a single PatBind with a series
---   of nested lambdas and a case expression on the RHS. E.g.:
+-- | Turns piece-wise function definitions into a single PatBind with a lambda
+--   and case expression on the RHS. E.g.:
 -- > f p1 p2 = rhs1
 -- > f q1 q2 = rhs2
 -- becomes
--- > f = \$1 -> \$2 -> case ($1, $2) of { (p1, p2) -> rhs1; (q1, q2) -> rhs2 }
+-- > f = \$1 $2 -> case ($1, $2) of { (p1, p2) -> rhs1; (q1, q2) -> rhs2 }
 desugarFuns :: Module -> Trans Module
 desugarFuns = everywhere desugarFuns'
       where desugarFuns' n = case cast n of
@@ -150,6 +151,14 @@ depatLambdas = everywhere depatLambdas'
                         x <- fresh
                         tr $ Lambda loc [PVar (Ident x)] (Case (Var (UnQual (Ident x))) [Alt loc p (UnGuardedRhs e) Nothing])
                   Just n -> tr n
+
+-- | Turns wildcard patterns into variable patterns.
+purgeWildCards :: Module -> Trans Module
+purgeWildCards = everywhere purgeWildCards'
+      where purgeWildCards' n = case cast n of
+                  Nothing                -> return n
+                  Just PWildCard         -> tr $ PVar $ Ident "$_"
+                  Just n                 -> tr n
 
 -- | Translate a Haskell module into the ReWire abstract syntax.
 trans :: Module -> Trans RWCProg
@@ -254,7 +263,6 @@ transPat loc (PApp (UnQual (Ident x)) ps) = RWCPatCon (DataConId x) <$> mapM (tr
 transPat _   (PApp (Special UnitCon) [])  = return $ RWCPatCon (DataConId "Unit") []
 transPat loc (PLit s lit)                 = RWCPatLiteral <$> transLit loc s lit
 transPat _   (PVar (Ident x))             = return $ RWCPatVar (mkId x) tblank
-transPat _   PWildCard                    = return RWCPatWild
 transPat loc (PTuple _ [p])               = transPat loc p
 transPat loc (PTuple _ ps)                = (RWCPatCon $ DataConId $ mkTuple $ length ps) <$> mapM (transPat loc) ps
-transPat loc p                            = pFail loc $ "unsupported syntax: " ++ prettyPrint p
+transPat loc p                            = pFail loc $ "unsupported syntax: " ++ show p
