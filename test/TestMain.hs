@@ -1,4 +1,4 @@
-import ReWire.Core.Parser
+import ReWire.Core.FrontEnd
 import ReWire.Core.KindChecker
 import ReWire.Core.TypeChecker
 import qualified ReWire.Core.Main as M

@@ -1,5 +1,5 @@
 {-# LANGUAGE ViewPatterns, RankNTypes, LambdaCase #-}
-module ReWire.Core.Parser (parseFile, ParseResult(..), SrcLoc(..), prettyPrint) where
+module ReWire.Core.FrontEnd (parseFile, ParseResult(..), SrcLoc(..), prettyPrint) where
 
 import ReWire.Scoping (mkId, Id, fv)
 import ReWire.Core.Syntax

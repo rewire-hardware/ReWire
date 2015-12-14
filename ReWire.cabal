@@ -64,7 +64,7 @@ library
   ghc-options:      -fprof-auto -rtsopts
 
   exposed-modules:  ReWire.Core.Syntax
-                    ReWire.Core.Parser
+                    ReWire.Core.FrontEnd
                     ReWire.Core.TypeChecker
                     ReWire.Core.Kinds
                     ReWire.Core.KindChecker

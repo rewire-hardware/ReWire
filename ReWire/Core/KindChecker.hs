@@ -6,7 +6,6 @@ module ReWire.Core.KindChecker (kindcheck) where
 import ReWire.Scoping
 import ReWire.Core.Syntax
 import ReWire.Core.Kinds
---import ReWire.Core.Parser
 import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Identity
