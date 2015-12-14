@@ -1,16 +1,17 @@
-{-# LANGUAGE ViewPatterns, RankNTypes #-}
+{-# LANGUAGE ViewPatterns, RankNTypes, LambdaCase #-}
 module ReWire.Core.Parser (parseFile, ParseResult(..), SrcLoc(..), prettyPrint) where
 
 import ReWire.Scoping (mkId, Id, fv)
 import ReWire.Core.Syntax
 import Data.List (nub)
 import Data.Functor ((<$>))
+import Data.Functor.Identity
 import Control.Applicative ((<*>))
 import Control.Monad (foldM, replicateM, (>=>))
 import Control.Monad.Trans.State (runStateT, StateT, get, put)
 import Control.Monad.Trans.Class (lift)
 import Data.Foldable (foldl', foldrM)
-import Data.Data (Data, Typeable, gmapM, cast)
+import Data.Data (Data, Typeable, gmapM, gmapQr, cast)
 import Data.Maybe (fromJust)
 
 import qualified Language.Haskell.Exts as Haskell (parseFile)
@@ -19,20 +20,33 @@ import           Language.Haskell.Exts hiding (parseFile, loc, name, binds, op)
 -- | Parse a ReWire source file.
 parseFile :: FilePath -> IO (ParseResult RWCProg)
 parseFile = Haskell.parseFile
+            -- General idea:
+            --    Haskell
+            --    => (desugar into) lambdas
+            --    => normalize lambdas
+            --    => lambdas to cases (where possible)
+            --   [=> lift the remaining lambdas into fun defs?]
             !=> deparenify
-            >=> desugarDos
             >=> desugarFuns
+            >=> desugarDos
             >=> desugarLets
+            >=> purgeWildCards
+            -- Normalize lambdas (+ desugarAsPats).
             >=> flattenLambdas
             >=> depatLambdas
-            >=> purgeWildCards
+            >=> desugarAsPats
+            >=> lambdasToCases
+            -- TODO(chathhorn): lift lambdas?
             >=> trans
       where f !=> g = f >=> return . (>>= runTrans . g)
             infix 0 !=>
             runTrans = flip runStateT 0 >=> return . fst
 
-everywhere :: (Data a, Monad m) => (forall b. Data b => b -> m b) -> a -> m a
+everywhere :: (Data a, Monad m) => (forall d. Data d => d -> m d) -> a -> m a
 everywhere f = gmapM (everywhere f) >=> f
+
+everywhereQ :: (Data a) => (forall d. Data d => d -> [b]) -> a -> [b]
+everywhereQ f n = f n ++ gmapQr (++) [] (everywhereQ f) n
 
 unknownLoc ::SrcLoc
 unknownLoc = SrcLoc "" 0 0
@@ -54,17 +68,44 @@ fresh = do
 -- | Removes parens in types, expressions, and patterns so they don't confuddle
 --   everything.
 deparenify :: Module -> Trans Module
-deparenify = everywhere deparenify'
-      where deparenify' n = case cast n of
-                  Nothing -> case cast n of
-                        Nothing -> case cast n of
-                              Nothing         -> return n
-                              Just (PParen n) -> tr n
-                              Just n          -> tr n
-                        Just (TyParen n) -> tr n
-                        Just n           -> tr n
-                  Just (Paren n) -> tr n
-                  Just n         -> tr n
+deparenify = everywhere $ \n -> case cast n of
+      Nothing -> case cast n of
+            Nothing -> case cast n of
+                  Nothing         -> return n
+                  Just (PParen n) -> tr n
+                  Just n          -> tr n
+            Just (TyParen n) -> tr n
+            Just n           -> tr n
+      Just (Paren n) -> tr n
+      Just n         -> tr n
+
+-- | Turns wildcard patterns into variable patterns.
+purgeWildCards :: Module -> Trans Module
+purgeWildCards = everywhere $ \n -> case cast n of
+      Nothing        -> return n
+      Just PWildCard -> tr $ PVar $ Ident "$_"
+      Just n         -> tr n
+
+-- | Turns piece-wise function definitions into a single PatBind with a lambda
+--   and case expression on the RHS. E.g.:
+-- > f p1 p2 = rhs1
+-- > f q1 q2 = rhs2
+-- becomes
+-- > f = \$1 $2 -> case ($1, $2) of { (p1, p2) -> rhs1; (q1, q2) -> rhs2 }
+desugarFuns :: Module -> Trans Module
+desugarFuns = everywhere $ \n -> case cast n of
+      Nothing                                               -> return n
+      Just (FunBind ms@(Match loc name pats _ _ Nothing:_)) -> do
+            e <- buildLambda loc ms $ length pats
+            tr $ PatBind loc (PVar name) (UnGuardedRhs e) Nothing
+      Just n@(FunBind _)                                    -> pFail unknownLoc $ "unsupported syntax: " ++ prettyPrint n
+      Just n                                                -> tr n
+      where buildLambda loc ms arrity = do
+                  alts <- mapM toAlt ms
+                  xs <- replicateM arrity fresh
+                  return $ Lambda loc (map (PVar . Ident) xs) $ Case (Tuple Boxed (map (Var . UnQual . Ident) xs)) alts
+            toAlt (Match loc' _ pats Nothing rhs binds) = return $ Alt loc' (PTuple Boxed pats) rhs binds
+            toAlt m@(Match loc' _ _ _ _ _)              = pFail loc' $ "unsupported syntax: " ++ prettyPrint m
 
 -- | Turns do-notation into a series of >>= \x ->. Turns LetStmts into Lets.
 --   Should run before Let and Lambda desugarage. E.g.:
@@ -74,39 +115,16 @@ deparenify = everywhere deparenify'
 -- becomes
 -- > m >>= (\p1 -> (let p2 = e in return e))
 desugarDos :: Module -> Trans Module
-desugarDos =  everywhere desugarDos'
-      where desugarDos' n = case cast n of
-                  Nothing         -> return n
-                  Just (Do stmts) -> transDo stmts >>= tr
-                  Just n          -> tr n
-            transDo (Generator loc p e:stmts) = App (App (Var (UnQual (Symbol ">>="))) e) <$> (Lambda loc [p] <$> transDo stmts)
+desugarDos =  everywhere $ \n -> case cast n of
+      Nothing         -> return n
+      Just (Do stmts) -> transDo stmts >>= tr
+      Just n          -> tr n
+      where transDo (Generator loc p e:stmts) = App (App (Var (UnQual (Symbol ">>="))) e) <$> (Lambda loc [p] <$> transDo stmts)
             transDo [Qualifier e]             = return e
             transDo (Qualifier e:stmts)       = App (App (Var (UnQual (Symbol ">>="))) e) <$> (Lambda unknownLoc [PWildCard] <$> transDo stmts)
             transDo (LetStmt binds:stmts)     = Let binds <$> transDo stmts
             transDo (stmt:_)                  = pFail unknownLoc $ "unsupported syntax: " ++ prettyPrint stmt
             transDo _                         = pFail unknownLoc "something went wrong while translating a do-block."
-
--- | Turns piece-wise function definitions into a single PatBind with a lambda
---   and case expression on the RHS. E.g.:
--- > f p1 p2 = rhs1
--- > f q1 q2 = rhs2
--- becomes
--- > f = \$1 $2 -> case ($1, $2) of { (p1, p2) -> rhs1; (q1, q2) -> rhs2 }
-desugarFuns :: Module -> Trans Module
-desugarFuns = everywhere desugarFuns'
-      where desugarFuns' n = case cast n of
-                  Nothing                                               -> return n
-                  Just (FunBind ms@(Match loc name pats _ _ Nothing:_)) -> do
-                        e <- buildLambda loc ms $ length pats
-                        tr $ PatBind loc (PVar name) (UnGuardedRhs e) Nothing
-                  Just n@(FunBind _)                                    -> pFail unknownLoc $ "unsupported syntax: " ++ prettyPrint n
-                  Just n                                                -> tr n
-            buildLambda loc ms arrity = do
-                  alts <- mapM toAlt ms
-                  xs <- replicateM arrity fresh
-                  return $ Lambda loc (map (PVar . Ident) xs) $ Case (Tuple Boxed (map (Var . UnQual . Ident) xs)) alts
-                  where toAlt (Match loc' _ pats Nothing rhs binds) = return $ Alt loc' (PTuple Boxed pats) rhs binds
-                        toAlt m@(Match loc' _ _ _ _ _)              = pFail loc' $ "unsupported syntax: " ++ prettyPrint m
 
 -- | Turns Lets into Cases. Assumes functions in Lets are already desugared.
 --   E.g.:
@@ -116,13 +134,12 @@ desugarFuns = everywhere desugarFuns'
 -- becomes
 -- > case e1 of { p -> (case e2 of { q -> e3 } }
 desugarLets :: Module -> Trans Module
-desugarLets = everywhere desugarLets'
-      where desugarLets' n = case cast n of
-                  Nothing                  -> return n
-                  Just (Let (BDecls ds) e) -> foldrM transLet e ds >>= tr
-                  Just n@(Let _ _)         -> pFail unknownLoc $ "unsupported syntax: " ++ prettyPrint n
-                  Just n                   -> tr n
-            transLet (PatBind loc p (UnGuardedRhs e1) Nothing) inner = return $ Case e1 [Alt loc p (UnGuardedRhs inner) Nothing]
+desugarLets = everywhere $ \n -> case cast n of
+      Nothing                  -> return n
+      Just (Let (BDecls ds) e) -> foldrM transLet e ds >>= tr
+      Just n@(Let _ _)         -> pFail unknownLoc $ "unsupported syntax: " ++ prettyPrint n
+      Just n                   -> tr n
+      where transLet (PatBind loc p (UnGuardedRhs e1) Nothing) inner = return $ Case e1 [Alt loc p (UnGuardedRhs inner) Nothing]
             transLet n@(PatBind loc _ _ _) _ = pFail loc $ "unsupported syntax: " ++ prettyPrint n
             transLet n                     _ = pFail unknownLoc $ "unsupported syntax: " ++ prettyPrint n
 
@@ -132,33 +149,71 @@ desugarLets = everywhere desugarLets'
 -- becomes
 -- > \p1 -> \p2 -> e
 flattenLambdas :: Module -> Trans Module
-flattenLambdas = everywhere flattenLambdas'
-      where flattenLambdas' n = case cast n of
-                  Nothing                -> return n
-                  Just (Lambda loc ps e) -> foldrM (\p -> return . Lambda loc [p]) e ps >>= tr
-                  Just n                 -> tr n
+flattenLambdas = everywhere $ \n -> case cast n of
+      Nothing                -> return n
+      Just (Lambda loc ps e) -> tr $ foldr (Lambda loc . return) e ps
+      Just n                 -> tr n
 
 -- | Replaces non-var patterns in lambdas with a fresh var and a case. E.g.:
 -- > \(a,b) -> e
 -- becomes
 -- > \$x -> case $x of { (a,b) -> e }
 depatLambdas :: Module -> Trans Module
-depatLambdas = everywhere depatLambdas'
-      where depatLambdas' n = case cast n of
-                  Nothing                      -> return n
-                  Just n@(Lambda _ [PVar _] _) -> tr n
-                  Just (Lambda loc [p] e)      -> do
-                        x <- fresh
-                        tr $ Lambda loc [PVar (Ident x)] (Case (Var (UnQual (Ident x))) [Alt loc p (UnGuardedRhs e) Nothing])
-                  Just n -> tr n
+depatLambdas = everywhere $ \n -> case cast n of
+      Nothing                      -> return n
+      Just n@(Lambda _ [PVar _] _) -> tr n
+      Just (Lambda loc [p] e)      -> do
+            x <- fresh
+            tr $ Lambda loc [PVar (Ident x)] (Case (Var (UnQual (Ident x))) [Alt loc p (UnGuardedRhs e) Nothing])
+      Just n -> tr n
 
--- | Turns wildcard patterns into variable patterns.
-purgeWildCards :: Module -> Trans Module
-purgeWildCards = everywhere purgeWildCards'
-      where purgeWildCards' n = case cast n of
-                  Nothing                -> return n
-                  Just PWildCard         -> tr $ PVar $ Ident "$_"
-                  Just n                 -> tr n
+-- | Desugars as-patterns in (and only in) cases into more cases. Should run
+--   after depatLambdas. E.g.:
+-- > case e1 of
+-- >   x@(C y@p) -> e2
+-- becomes
+-- > case e1 of { C p -> (\x -> ((\y -> e2) p)) (C p) }
+desugarAsPats :: Module -> Trans Module
+desugarAsPats = everywhere $ \n -> case cast n of
+      Nothing                                   -> return n
+      Just (Alt loc p (UnGuardedRhs e) Nothing) -> tr $ Alt loc (deAs p) (UnGuardedRhs $ foldr (mkApp loc) e $ getAses p) Nothing
+      Just n                                    -> tr n
+      where mkApp loc (p, e') e = App (Lambda loc [p] e) e'
+            getAses :: Pat -> [(Pat, Exp)]
+            getAses = everywhereQ $ \n -> case cast n of
+                  Just (PAsPat n p) -> [(PVar n, toExp p)]
+                  _                 -> []
+            deAs :: Pat -> Pat
+            deAs = runIdentity . everywhere (\n -> case cast n of
+                  Nothing           -> return n
+                  Just (PAsPat _ p) -> tr p
+                  Just n            -> tr n)
+            toExp :: Pat -> Exp
+            toExp = \case
+                  PVar n            -> Var $ UnQual n
+                  PLit s n          -> Lit $ deSign s n
+                  -- PNPlusK _name _int -> 
+                  PInfixApp p1 n p2 -> InfixApp (toExp p1) (QConOp n) (toExp p2)
+                  PApp n ps         -> foldl' App (Con n) (map toExp ps)
+                  PTuple b ps       -> Tuple b $ map toExp ps
+                  PList ps          -> List $ map toExp ps
+                  -- PRec _qname _patfields ->
+                  PAsPat _ p        -> toExp p
+                  PIrrPat p         -> toExp p
+                  PatTypeSig _ p _  -> toExp p
+                  -- PViewPat _exp _pat ->
+                  PBangPat p        -> toExp p
+                  _                 -> error "unsupported pattern" -- TODO(chathhorn)
+
+-- | Turns beta-redexes into cases. E.g.:
+-- > (\x -> e2) e1
+-- becomes
+-- > case e1 of { x -> e2 }
+lambdasToCases :: Module -> Trans Module
+lambdasToCases = everywhere $ \n -> case cast n of
+      Nothing                           -> return n
+      Just (App (Lambda loc [p] e2) e1) -> tr $ Case e1 [Alt loc p (UnGuardedRhs e2) Nothing]
+      Just n                            -> tr n
 
 -- | Translate a Haskell module into the ReWire abstract syntax.
 trans :: Module -> Trans RWCProg
@@ -239,20 +294,28 @@ transExp _   (Var (UnQual (Symbol x)))       = return $ RWCVar (mkId x) tblank
 transExp _   (Con (UnQual (Ident x)))        = return $ RWCCon (DataConId x) tblank
 transExp _   (Con (UnQual (Symbol x)))       = return $ RWCCon (DataConId x) tblank
 transExp _   (Con (Special UnitCon))         = return $ RWCCon (DataConId "Unit") tblank
-transExp loc (Lit lit)                       = RWCLiteral <$> transLit loc Signless lit
+transExp loc (Lit lit)                       = RWCLiteral <$> transLit loc lit
 transExp loc (Case e alts)                   = RWCCase <$> transExp loc e <*> mapM transAlt alts
 transExp loc (Tuple _ [e])                   = transExp loc e -- silly mono-tuples introduced during fun desugaring.
 transExp loc (Tuple _ es)                    = foldl' RWCApp (RWCCon (DataConId $ mkTuple $ length es) tblank) <$> mapM (transExp loc) es
 transExp loc e                               = pFail loc $ "unsupported syntax: " ++ prettyPrint e
 -- TODO(chathhorn): all those other expressions...
 
-transLit :: SrcLoc -> Sign -> Literal -> Trans RWCLit
-transLit _ Signless (Int i)  = return $ RWCLitInteger i
-transLit _ Negative (Int i)  = return $ RWCLitInteger (-i)
-transLit _ Signless (Frac d) = return $ RWCLitFloat (fromRational d)
-transLit _ Negative (Frac d) = return $ RWCLitFloat (fromRational (-d))
-transLit _ Signless (Char c) = return $ RWCLitChar c
-transLit loc _ lit           = pFail loc $ "unsupported syntax: " ++ prettyPrint lit
+-- Not entirely sure this is right...
+deSign :: Sign -> Literal -> Literal
+deSign Negative (Int        l) = Int (-l)
+deSign Negative (Frac       l) = Frac (-l)
+deSign Negative (PrimInt    l) = PrimInt (-l)
+deSign Negative (PrimWord   l) = PrimWord (-l)
+deSign Negative (PrimFloat  l) = PrimFloat (-l)
+deSign Negative (PrimDouble l) = PrimDouble (-l)
+deSign _ l = l
+
+transLit :: SrcLoc -> Literal -> Trans RWCLit
+transLit _ (Int i)  = return $ RWCLitInteger i
+transLit _ (Frac d) = return $ RWCLitFloat (fromRational d)
+transLit _ (Char c) = return $ RWCLitChar c
+transLit loc lit           = pFail loc $ "unsupported syntax: " ++ prettyPrint lit
 
 transAlt :: Alt -> Trans RWCAlt
 transAlt (Alt loc p (UnGuardedRhs e) Nothing) = RWCAlt <$> transPat loc p <*> transExp loc e
@@ -261,7 +324,7 @@ transAlt a@(Alt loc _ _ _)                    = pFail loc $ "unsupported syntax:
 transPat :: SrcLoc -> Pat -> Trans RWCPat
 transPat loc (PApp (UnQual (Ident x)) ps) = RWCPatCon (DataConId x) <$> mapM (transPat loc) ps
 transPat _   (PApp (Special UnitCon) [])  = return $ RWCPatCon (DataConId "Unit") []
-transPat loc (PLit s lit)                 = RWCPatLiteral <$> transLit loc s lit
+transPat loc (PLit s lit)                 = RWCPatLiteral <$> transLit loc (deSign s lit)
 transPat _   (PVar (Ident x))             = return $ RWCPatVar (mkId x) tblank
 transPat loc (PTuple _ [p])               = transPat loc p
 transPat loc (PTuple _ ps)                = (RWCPatCon $ DataConId $ mkTuple $ length ps) <$> mapM (transPat loc) ps
