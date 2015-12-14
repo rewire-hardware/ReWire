@@ -14,7 +14,7 @@ rotl :: W8 -> W8
 rotl = nativeVhdl "prim_rotl" undefined
 
 tick :: ReT Bit W8 (StT W8 I) Bit
-tick = lift get >>= signal
+tick = lift get >>= \ x -> signal x
 
 main :: ReT Bit W8 (StT W8 I) ()
 main = do

@@ -10,7 +10,7 @@ proc i = case i of
       _ -> Out2
 
 startp :: In -> ReT In Out I ()
-startp i = signal (proc i) >>= startp
+startp i = signal (proc i) >>= \ x -> startp x
 
 starti :: ReT In Out I ()
 starti =  startp A
