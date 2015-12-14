@@ -16,7 +16,7 @@ filesToTC :: [FilePath]
 filesToTC = filesToCompile ++
              ["MiniISA.hs","UpCounter.hs",
               "dissex.hs","fibo.hs","funcase.hs","toag.hs",
-              "uniquification.hs"]
+              "uniquification.hs","pats.hs"]
 
 filesToParse :: [FilePath]
 filesToParse = filesToTC ++ ["Salsa20.hs"]
