@@ -51,10 +51,10 @@ main = do args <- getArgs
                        if FlagI `elem` flags
                           then interactiveLoop filename
                           else do
-                             res_p <- parsefile filename
+                             res_p <- parseFile filename
                              case res_p of
-                               Left e  -> hPutStrLn stderr e >> exitFailure
-                               Right p ->
+                               ParseFailed loc m -> hPutStrLn stderr (prettyPrint loc ++ ":\n\t" ++ m) >> exitFailure
+                               ParseOk p ->
                                  case kindcheck p of
                                    Just e  -> hPutStrLn stderr e >> exitFailure
                                    Nothing ->
@@ -64,20 +64,21 @@ main = do args <- getArgs
 
 interactiveLoop :: String -> IO ()
 interactiveLoop filename = do
-  res_p <- parsefile filename
+  res_p <- parseFile filename
   case res_p of
-    Left e  -> hPutStrLn stderr e
-    Right p -> do putStrLn "parse finished"
-                  writeFile "show.out" (show p)
-                  putStrLn "show out finished"
-                  writeFile "Debug.hs" (show $ ppHaskellWithName p "Debug")
-                  putStrLn "debug out finished"
-                  case kindcheck p of
-                    Just e  -> hPutStrLn stderr e
-                    Nothing -> do putStrLn "kc finished"
-                                  case typecheck p of
-                                    Left e   -> hPutStrLn stderr e
-                                    Right p' -> do putStrLn "tc finished"
-                                                   writeFile "tc.out" (show p')
-                                                   putStrLn "tc debug print finished"
-                                                   trans p'
+    ParseFailed loc m -> hPutStrLn stderr (prettyPrint loc ++ ":\n\t" ++ m) >> exitFailure
+    ParseOk p -> do
+      putStrLn "parse finished"
+      writeFile "show.out" (show p)
+      putStrLn "show out finished"
+      writeFile "Debug.hs" (show $ ppHaskellWithName p "Debug")
+      putStrLn "debug out finished"
+      case kindcheck p of
+        Just e  -> hPutStrLn stderr e
+        Nothing -> do putStrLn "kc finished"
+                      case typecheck p of
+                        Left e   -> hPutStrLn stderr e
+                        Right p' -> do putStrLn "tc finished"
+                                       writeFile "tc.out" (show p')
+                                       putStrLn "tc debug print finished"
+                                       trans p'

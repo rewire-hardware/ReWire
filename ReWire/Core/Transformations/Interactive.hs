@@ -7,7 +7,6 @@ module ReWire.Core.Transformations.Interactive (TransCommand,trans) where
 import Prelude hiding (sequence,mapM)
 import ReWire.Core.Syntax
 import ReWire.Core.PrettyPrintHaskell (ppHaskell)
-import Text.Parsec (runParser,eof)
 import Control.Monad hiding (sequence,mapM)
 import Data.List (isInfixOf,find,intercalate)
 import Control.Monad.Reader hiding (sequence,mapM)

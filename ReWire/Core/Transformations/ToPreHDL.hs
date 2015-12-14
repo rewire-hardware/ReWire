@@ -509,7 +509,7 @@ cfgAcExpr e = case ef of
 
                  return (niel,noeb,leb)
 
-               RWCVar x _ | x == mkId "bind" -> do
+               RWCVar x _ | x == mkId ">>=" -> do
                  -- Bind is only allowed with a lambda on RHS.
                  case eargs of
                    [el,RWCLam x _ er] -> do

@@ -14,43 +14,34 @@ The example program produces the elements of the Fibonacci sequence on its outpu
 -- The compiler doesn't yet support a "prelude" so we will have to define a
 -- few things ourselves!
 --
-data Bit is Zero | One end
-data W8 is W8 Bit Bit Bit Bit Bit Bit Bit Bit end
-data Unit is Unit end
+data Bit = Zero | One
+data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
+data Unit = Unit
 
-vhdl plusW8 :: W8 -> W8 -> W8 is plusW8
+plusW8 :: W8 -> W8 -> W8
+plusW8 = nativeVhdl "plusW8" plusW8
 
 zeroW8 :: W8
-is
-  W8 Zero Zero Zero Zero Zero Zero Zero Zero
-end
+zeroW8 = W8 Zero Zero Zero Zero Zero Zero Zero Zero
 
 oneW8 :: W8
-is
-  W8 Zero Zero Zero Zero Zero Zero Zero One
-end
+oneW8 = W8 Zero Zero Zero Zero Zero Zero Zero One
+
 --
 -- End stuff that will eventually be in the prelude.
 --
 
-start :: <ReT Bit W8 I><()>
-is
-  begin
-end
+start :: ReT Bit W8 I ()
+start = begin
 
-begin :: <ReT Bit W8 I><()>
-is
-  loop zeroW8 oneW8
-end
+begin :: ReT Bit W8 I ()
+begin = loop zeroW8 oneW8
 
-loop :: W8 -> W8 -> <ReT Bit W8 I><()>
-is
-  \ n -> \ m -> bind b <- signal n
-             in case b of
-                { One  -> loop n m
-                ; Zero -> loop m (plusW8 n m)
-                }
-end
+loop :: W8 -> W8 -> ReT Bit W8 I ()
+loop n m = do b <- signal n
+              case b of
+                  One  -> loop n m
+                  Zero -> loop m (plusW8 n m)
 ```
 
 ### prims.vhd
@@ -132,24 +123,11 @@ The one-bit input and the eight-bit output on the VHDL side correspond respectiv
 ### Concrete Syntax
 For the moment, the concrete syntax supported by ReWire is a bit different from Haskell in certain places. Specifically:
 
-1. The layout rule is not implemented.
-2. All function definitions must be made at the top level, must be accompanied with a type signature, and the body must be enclosed with *is*...*end* keywords:
+1. All function definitions must be made at the top level, must be accompanied with a type signature:
 ```haskell
 f :: W8 -> W8
-is
-  \ x -> plusW8 x x
-end
+f x = plusW8 x x
 ```
-Similarly, *data* declarations must be enclosed with *is*...*end* keywords:
-```haskell
-data Maybe is Nothing | Just a end
-```
-3. Finally, the application of monads (written, e.g. *M t* in Haskell) has to be set off with angle brackets:
-```haskell
-<StT W8 I><W8>
-```
-
-A forthcoming update to the parser will bring our concrete syntax in line with Haskell.
 
 ### Polymorphism and Recursion
 
