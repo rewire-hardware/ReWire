@@ -1,3 +1,5 @@
+module Fibo where
+
 data Unit = Unit
 data Tuple2 a b = Tuple2 a b
 data Bit = Zero | One
