@@ -35,13 +35,13 @@ expandDefn :: [Id RWCExp] -> RWCDefn -> RW RWCDefn
 expandDefn ns (RWCDefn n pt b e) = do e' <- expandExpr ns e
                                       return (RWCDefn n pt b e')
 
-expandProg :: [Id RWCExp] -> RWCProg -> RW RWCProg
-expandProg ns (RWCProg dds defns) = do defns' <- mapM (expandDefn ns) defns
-                                       return (RWCProg dds defns')
+expandModule :: [Id RWCExp] -> RWCModule -> RW RWCModule
+expandModule ns (RWCModule n imps dds defns) = do defns' <- mapM (expandDefn ns) defns
+                                                  return (RWCModule n imps dds defns')
 
-expand :: [Id RWCExp] -> RWCProg -> RWCProg
-expand ns p_ = deUniquify $ runRW ctr p (expandProg ns p)
-    where (p,ctr) = uniquify 0 p_
+expand :: [Id RWCExp] -> RWCModule -> RWCModule
+expand ns m_ = deUniquify $ runRW ctr m (expandModule ns m)
+    where (m,ctr) = uniquify 0 m_
 
 cmdExpand :: TransCommand
 cmdExpand s p = (Just (expand ns p),Nothing)

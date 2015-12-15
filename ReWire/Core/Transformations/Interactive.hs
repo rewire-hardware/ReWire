@@ -66,23 +66,23 @@ cmdTable = [
            ]
 
 -- The "repl" for the translation environment.
-trans :: RWCProg -> IO ()
-trans p = do print (ppHaskell p)
-             loop p
-   where loop p = do putStr "> "
+trans :: RWCModule -> IO ()
+trans m = do print (ppHaskell m)
+             loop m
+   where loop m = do putStr "> "
                      hFlush stdout
                      n <- getLine
                      let (cmd,n') = break isSpace n
                          args     = dropWhile isSpace n'
                      unless (cmd == ":q") $
                          case lookup cmd cmdTable of
-                               Just f  -> do let (mp,ms) = f args p
+                               Just f  -> do let (mp,ms) = f args m
                                              case ms of
                                                Just s  -> putStrLn s >> writeFile "rewire.cmd.out" s
                                                Nothing -> return ()
                                              case mp of
-                                               Just p' -> do print (ppHaskell p')
-                                                             loop p'
-                                               Nothing -> loop p
+                                               Just m' -> do print (ppHaskell m')
+                                                             loop m'
+                                               Nothing -> loop m
                                Nothing -> do if not (null n) then putStrLn $ "Invalid command: " ++ cmd else return ()
-                                             loop p
+                                             loop m

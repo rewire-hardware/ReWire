@@ -49,38 +49,38 @@ options =
 exitUsage :: IO ()
 exitUsage = hPutStr stderr (usageInfo "Usage: rwc [OPTION...] <filename.rw>" options) >> exitFailure
 
-runFE :: Bool -> FilePath -> IO RWCProg
+runFE :: Bool -> FilePath -> IO RWCModule
 runFE fDebug filename = do
-  res_p <- parseFile filename
+  res_m <- parseFile filename
 
-  case res_p of
+  case res_m of
     ParseFailed loc m ->
        hPutStrLn stderr (prettyPrint loc ++ ":\n\t" ++ m) >> exitFailure
-    ParseOk p         -> do
+    ParseOk m         -> do
 
       when fDebug $ do
         putStrLn "parse finished"
-        writeFile "show.out" (show p)
+        writeFile "show.out" (show m)
         putStrLn "show out finished"
-        writeFile "Debug.hs" (show $ ppHaskellWithName p "Debug")
-        putStrLn "debug out finished"        
-      
-      case kindcheck p of
+        writeFile "Debug.hs" (show $ ppHaskell m)
+        putStrLn "debug out finished"
+
+      case kindcheck m of
         Just e  ->
           hPutStrLn stderr e >> exitFailure
         Nothing -> do
           when fDebug (putStrLn "kc finished")
           
-          case typecheck p of
+          case typecheck m of
             Left e   -> hPutStrLn stderr e >> exitFailure
-            Right p' -> do
+            Right m' -> do
 
               when fDebug $ do
                 putStrLn "tc finished"
-                writeFile "tc.out" (show p')
+                writeFile "tc.out" (show m')
                 putStrLn "tc debug print finished"
 
-              return p'
+              return m'
 
 main :: IO ()
 main = do args                       <- getArgs
@@ -103,14 +103,14 @@ main = do args                       <- getArgs
 
           let filename               =  head filenames
 
-          p_ <- runFE (FlagD `elem` flags) filename
+          m_ <- runFE (FlagD `elem` flags) filename
           
-          if FlagI `elem` flags then trans p_
+          if FlagI `elem` flags then trans m_
           else
-            case inline p_ of
+            case inline m_ of
               Nothing -> hPutStrLn stderr "Inlining failed" >> exitFailure
-              Just p  -> do
-                let cfg     = cfgFromRW p
+              Just m  -> do
+                let cfg     = cfgFromRW m
                     cfgDot  = mkDot (gather (eu cfg))
                     lcfgDot = mkDot (gather (linearize cfg))
                     pre     = cfgToProg cfg

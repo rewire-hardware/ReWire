@@ -142,13 +142,13 @@ dqDefn (RWCDefn n (tvs :-> t) b e) = do (tvs',(t',e')) <- dqingT tvs (do
                                           return (t',e'))
                                         return (RWCDefn n (tvs' :-> t') b e')
 
-dqProg :: RWCProg -> DQM RWCProg
-dqProg (RWCProg dds ds) = do dds' <- mapM dqDataDecl dds
-                             ds'  <- mapM dqDefn ds
-                             return (RWCProg dds' ds')
+dqModule :: RWCModule -> DQM RWCModule
+dqModule (RWCModule n imps dds ds) = do dds' <- mapM dqDataDecl dds
+                                        ds'  <- mapM dqDefn ds
+                                        return (RWCModule n imps dds' ds')
 
-deUniquify :: RWCProg -> RWCProg
-deUniquify p = runIdentity (runReaderT (dqProg p) (DQEnv Map.empty Set.empty Map.empty Set.empty))
+deUniquify :: RWCModule -> RWCModule
+deUniquify m = runIdentity (runReaderT (dqModule m) (DQEnv Map.empty Set.empty Map.empty Set.empty))
 
 cmdDeUniquify :: TransCommand
-cmdDeUniquify _ p = (Just (deUniquify p),Nothing)
+cmdDeUniquify _ m = (Just (deUniquify m),Nothing)
