@@ -1,3 +1,5 @@
+module UpCounter where
+
 data Tuple2 a b = Tuple2 a b
 data Unit = Unit
 data Bit = Zero | One

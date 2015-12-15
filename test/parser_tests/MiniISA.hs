@@ -1,3 +1,5 @@
+module MiniISA where
+
 -- kludge, should be in a prelude
 data Tuple2 a b = Tuple2 a b
 data Tuple3 a b c = Tuple3 a b c
