@@ -19,9 +19,6 @@ expandExpr ns (RWCApp e1 e2)             = do e1' <- expandExpr ns e1
                                               return (RWCApp e1' e2')
 expandExpr ns (RWCLam n t e)             = do e' <- expandExpr ns e
                                               return (RWCLam n t e')
-expandExpr ns (RWCLet n e1 e2)           = do e1' <- expandExpr ns e1
-                                              e2' <- expandExpr ns e2
-                                              return (RWCLet n e1' e2')
 expandExpr ns (RWCVar n t) | n `elem` ns = do me <- askVar t n
                                               case me of
                                                 Just e  -> expandExpr ns e

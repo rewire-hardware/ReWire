@@ -93,7 +93,6 @@ dqTy (RWCTyComp t1 t2) = do t1' <- dqTy t1
 pvs (RWCPatCon dci ps) = concatMap pvs ps
 pvs (RWCPatLiteral l)  = []
 pvs (RWCPatVar x t)    = [x]
-pvs RWCPatWild         = []
 
 dqPat (RWCPatCon dci ps) = do ps' <- mapM dqPat ps
                               return (RWCPatCon dci ps')
@@ -103,7 +102,6 @@ dqPat (RWCPatVar n t)    = do t' <- dqTy t
                               case Map.lookup n ism of
                                 Just n' -> return (RWCPatVar n' t')
                                 Nothing -> return (RWCPatVar n t')
-dqPat RWCPatWild         = return RWCPatWild
 
 dqAlt (RWCAlt p e) = do let vs      =  pvs p
                         (_,(p',e')) <- dqingE vs (do
@@ -118,9 +116,6 @@ dqExpr (RWCApp e1 e2)      = do e1' <- dqExpr e1
 dqExpr (RWCLam n t e)      = do t' <- dqTy t
                                 ([n'],e') <- dqingE [n] (dqExpr e)
                                 return (RWCLam n' t' e')
-dqExpr (RWCLet n e1 e2)    = do e1' <- dqExpr e1
-                                ([n'],e2') <- dqingE [n] (dqExpr e2)
-                                return (RWCLet n' e1' e2')
 dqExpr (RWCVar n t)        = do t' <- dqTy t
                                 ism <- askInScopeE
                                 case Map.lookup n ism of

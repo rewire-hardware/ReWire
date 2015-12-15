@@ -59,7 +59,6 @@ initPat (RWCPatCon i ps_) = do ps <- mapM initPat ps_
 initPat (RWCPatLiteral l) = return (RWCPatLiteral l)
 initPat (RWCPatVar n _)   = do tv <- freshv
                                return (RWCPatVar n (RWCTyVar tv))
-initPat RWCPatWild        = return RWCPatWild
 
 initAlt :: RWCAlt -> TCM RWCAlt
 initAlt (RWCAlt p_ e_) = do p       <- initPat p_
@@ -135,7 +134,6 @@ patassumps :: RWCPat -> [Assump]
 patassumps (RWCPatCon i ps)  = concatMap patassumps ps
 patassumps (RWCPatLiteral _) = []
 patassumps (RWCPatVar n t)   = [(n,[] :-> t)]
-patassumps RWCPatWild        = []
 
 tcPat :: RWCTy -> RWCPat -> TCM RWCPat
 tcPat t p@(RWCPatLiteral l) = do case l of
@@ -155,8 +153,6 @@ tcPat t (RWCPatCon i ps)  = do cas     <- askCAssumps
                                                    else do ps' <- zipWithM tcPat targs ps
                                                            unify t tres
                                                            return (RWCPatCon i ps')
-tcPat t RWCPatWild        = return RWCPatWild
-
 tcAlt :: RWCTy -> RWCTy -> RWCAlt -> TCM RWCAlt
 tcAlt tres tscrut (RWCAlt p e) = do p'      <- tcPat tscrut p
                                     let as  =  Map.fromList (patassumps p')
@@ -178,9 +174,6 @@ tcExp (RWCLam x _ e)      = do tvx     <- freshv
                                (e',te) <- localAssumps (Map.insert x ([] :-> RWCTyVar tvx)) (tcExp e)
                                unify (RWCTyVar tvr) (RWCTyVar tvx `mkArrow` te)
                                return (RWCLam x (RWCTyVar tvx) e',RWCTyVar tvr)
-tcExp (RWCLet x e1 e2)    = do (e1',te1) <- tcExp e1
-                               (e2',te2) <- localAssumps (Map.insert x ([] :-> te1)) (tcExp e2)
-                               return (RWCLet x e1' e2',te2)
 tcExp (RWCVar v _)        = do as      <- askAssumps
                                let mpt =  Map.lookup v as
                                case mpt of

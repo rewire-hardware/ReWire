@@ -5,7 +5,7 @@ import System.Environment
 import System.Console.GetOpt
 import System.Exit
 import ReWire.Core.Syntax
-import ReWire.Core.Parser
+import ReWire.Core.FrontEnd
 --import ReWire.Core.PrettyPrint
 import ReWire.Core.PrettyPrintHaskell
 import ReWire.Core.KindChecker

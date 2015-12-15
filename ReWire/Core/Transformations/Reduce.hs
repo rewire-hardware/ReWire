@@ -27,9 +27,6 @@ reduce (RWCApp e1 e2)     = do e1' <- reduce e1
                                  _            -> return (RWCApp e1' e2')
 reduce (RWCLam n t e)      = do e' <- reduce e
                                 return (RWCLam n t e')
-reduce (RWCLet n el eb)    = do el' <- reduce el
-                                eb' <- reduce eb
-                                return (RWCLet n el' eb')
 reduce e@(RWCVar _ _)      = return e
 reduce e@(RWCCon _ _)      = return e
 reduce e@(RWCLiteral _)    = return e
@@ -84,7 +81,6 @@ matchpat e (RWCPatLiteral l)  = case e of
                                   RWCLiteral l' | l == l'   -> return (MatchYes [])
                                                 | otherwise -> return MatchNo
                                   _                         -> return MatchMaybe
-matchpat e RWCPatWild         = return (MatchYes [])
 
 reddefn :: Monad m => RWCDefn -> RWT m RWCDefn
 reddefn (RWCDefn n pt e) = do e' <- reduce e

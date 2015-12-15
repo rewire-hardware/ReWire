@@ -75,7 +75,6 @@ uniquifyDataDecl (RWCData i vs dcs) = do (vs',dcs') <- uniquingT vs $
 pvs (RWCPatCon dci ps) = concatMap pvs ps
 pvs (RWCPatLiteral l)  = []
 pvs (RWCPatVar x t)    = [x]
-pvs RWCPatWild         = []
 
 uniquifyPat (RWCPatCon dci ps) = do ps' <- mapM uniquifyPat ps
                                     return (RWCPatCon dci ps')
@@ -85,7 +84,6 @@ uniquifyPat (RWCPatVar n t)    = do t' <- uniquifyTy t
                                     case mn of
                                       Just n' -> return (RWCPatVar n' t')
                                       Nothing -> return (RWCPatVar n t') -- shouldn't happen
-uniquifyPat RWCPatWild         = return RWCPatWild
 
 uniquifyAlt (RWCAlt p e) = do let vs      =  pvs p
                               (_,(p',e')) <- uniquingE vs (do
@@ -100,9 +98,6 @@ uniquifyExpr (RWCApp e1 e2)      = do e1' <- uniquifyExpr e1
 uniquifyExpr (RWCLam n t e)      = do t'        <- uniquifyTy t
                                       ([n'],e') <- uniquingE [n] (uniquifyExpr e)
                                       return (RWCLam n' t' e')
-uniquifyExpr (RWCLet n e1 e2)    = do e1'        <- uniquifyExpr e1
-                                      ([n'],e2') <- uniquingE [n] (uniquifyExpr e2)
-                                      return (RWCLet n' e1' e2')
 uniquifyExpr (RWCVar n t)        = do t' <- uniquifyTy t
                                       mn <- askUniqueE n
                                       case mn of

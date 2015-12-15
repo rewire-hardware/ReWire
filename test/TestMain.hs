@@ -1,4 +1,4 @@
-import ReWire.Core.Parser
+import ReWire.Core.FrontEnd
 import ReWire.Core.KindChecker
 import ReWire.Core.TypeChecker
 import qualified ReWire.Core.Main as M
@@ -16,7 +16,7 @@ filesToTC :: [FilePath]
 filesToTC = filesToCompile ++
              ["MiniISA.hs","UpCounter.hs",
               "dissex.hs","fibo.hs","funcase.hs","toag.hs",
-              "uniquification.hs"]
+              "uniquification.hs","pats.hs"]
 
 filesToParse :: [FilePath]
 filesToParse = filesToTC ++ ["Salsa20.hs"]
