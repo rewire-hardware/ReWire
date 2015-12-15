@@ -4,8 +4,11 @@ undefined :: a
 undefined = undefined
 
 bitAnd :: Bit -> Bit -> Bit
+{-# INLINE bitAnd #-}
 bitAnd = nativeVhdl "prim_bitAnd" undefined
+
 bitNot :: Bit -> Bit
+{-# INLINE bitNot #-}
 bitNot = nativeVhdl "prim_bitNot" undefined
 
 go :: ReT Bit Bit I Bit

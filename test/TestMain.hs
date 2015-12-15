@@ -10,13 +10,12 @@ import Paths_ReWire
 
 -- TODO: should just snarf these from the dir listing
 filesToCompile :: [FilePath]
-filesToCompile = ["Fibonacci.hs"]
+filesToCompile = ["Fibonacci.hs","MiniISA.hs","UpCounter.hs", "dissex.hs",
+                  "fibo.hs","funcase.hs","toag.hs","toags.hs"]
 
 filesToTC :: [FilePath]
 filesToTC = filesToCompile ++
-             ["MiniISA.hs","UpCounter.hs",
-              "dissex.hs","fibo.hs","funcase.hs","toag.hs",
-              "uniquification.hs","pats.hs"]
+             ["uniquification.hs","pats.hs"]
 
 filesToParse :: [FilePath]
 filesToParse = filesToTC ++ ["Salsa20.hs"]

@@ -11,7 +11,7 @@ data Tuple2 a b = Tuple2 a b
 
 plusW8 :: W8 -> W8 -> W8
 {-# INLINE plusW8 #-}
-plusW8 x y = nativeVhdl "plusW8" plusW8 x y
+plusW8 = nativeVhdl "plusW8" plusW8
 
 zeroW8 :: W8
 zeroW8 = W8 Zero Zero Zero Zero Zero Zero Zero Zero
