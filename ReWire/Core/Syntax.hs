@@ -223,26 +223,27 @@ instance NFData RWCPat where
 
 data RWCDefn = RWCDefn { defnName   :: Id RWCExp,
                          defnPolyTy :: Poly RWCTy,
+                         defnInline :: Bool,
                          defnBody   :: RWCExp }
                deriving Show
 
 instance Subst RWCDefn RWCExp where
-  fv (RWCDefn n pt e) = filter (/= n) (fv e)
-  bv (RWCDefn n _ e) = n : bv e
-  subst' (RWCDefn n pt e) = refresh n (fv e) $ \ n' ->
-                              do e' <- subst' e
-                                 return (RWCDefn n' pt e')
+  fv (RWCDefn n pt _ e) = filter (/= n) (fv e)
+  bv (RWCDefn n _ _ e) = n : bv e
+  subst' (RWCDefn n pt b e) = refresh n (fv e) $ \ n' ->
+                                do e' <- subst' e
+                                   return (RWCDefn n' pt b e')
 
 instance Subst RWCDefn RWCTy where
-  fv (RWCDefn n pt e) = fv pt ++ fv e
-  bv (RWCDefn _ pt _) = bv pt
-  subst' (RWCDefn n (xs :-> t) e) = refreshs xs (fv t ++ fv e) $ \ xs' ->
-                                      do t' <- subst' t
-                                         e' <- subst' e
-                                         return (RWCDefn n (xs' :-> t') e')
+  fv (RWCDefn n pt _ e) = fv pt ++ fv e
+  bv (RWCDefn _ pt _ _) = bv pt
+  subst' (RWCDefn n (xs :-> t) b e) = refreshs xs (fv t ++ fv e) $ \ xs' ->
+                                        do t' <- subst' t
+                                           e' <- subst' e
+                                           return (RWCDefn n (xs' :-> t') b e')
 
 instance NFData RWCDefn where
-  rnf (RWCDefn n pt e) = n `deepseq` pt `deepseq` e `deepseq` ()
+  rnf (RWCDefn n pt b e) = n `deepseq` pt `deepseq` b `deepseq` e `deepseq` ()
 
 ---
 

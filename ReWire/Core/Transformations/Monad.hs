@@ -137,7 +137,7 @@ getAssumptionsD = RWT $ lift $ lift getAssumptions
 -}
 
 mkInitialVarMap :: [RWCDefn] -> Map (Id RWCExp) VarInfo
-mkInitialVarMap ds = foldr (\ d@(RWCDefn n _ _) -> Map.insert n (GlobalVar d)) Map.empty ds
+mkInitialVarMap ds = foldr (\ d@(RWCDefn n _ _ _) -> Map.insert n (GlobalVar d)) Map.empty ds
 
 mkInitialTyConMap :: [RWCData] -> Map TyConId TyConInfo
 mkInitialTyConMap = foldr (\ d@(RWCData n _ _) -> Map.insert n (TyConInfo d)) Map.empty
@@ -147,7 +147,7 @@ mkInitialDataConMap = foldr addDD Map.empty
   where addDD (RWCData dn _ dcs) m = foldr (\ d@(RWCDataCon cn _) -> Map.insert cn (DataConInfo dn d)) m dcs
 
 mkInitialVarSet :: [RWCDefn] -> Set IdAny
-mkInitialVarSet ds = foldr (\ d@(RWCDefn n _ _) -> Set.insert (IdAny n)) Set.empty ds
+mkInitialVarSet ds = foldr (\ d@(RWCDefn n _ _ _) -> Set.insert (IdAny n)) Set.empty ds
 
 runRWT :: Monad m => Int -> RWCProg -> RWT m a -> m a
 runRWT ctr p phi = liftM fst $
@@ -200,10 +200,10 @@ freshenE e = do ctr <- getCtr
 askVar :: Monad m => RWCTy -> Id RWCExp -> RWT m (Maybe RWCExp)
 askVar t n = do md <- queryG n
                 case md of
-                  Just (RWCDefn _ (tvs :-> t') e) -> do sub <- matchty Map.empty t' t
-                                                        e'  <- freshenE (subst sub e)
-                                                        return (Just e')
-                  _                               -> return Nothing
+                  Just (RWCDefn _ (tvs :-> t') _ e) -> do sub <- matchty Map.empty t' t
+                                                          e'  <- freshenE (subst sub e)
+                                                          return (Just e')
+                  _                                 -> return Nothing
 
 {-
 askDefn :: MonadReWire m => Name RWCExp -> m (Maybe RWCDefn)

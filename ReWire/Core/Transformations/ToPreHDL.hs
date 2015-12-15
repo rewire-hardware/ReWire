@@ -627,7 +627,7 @@ cfgAcDefn n = do
                     md <- lift $ lift $ queryG n
                     case md of
                       Nothing               -> fail $ "cfgAcDefn: " ++ show n ++ " not defined"
-                      Just (RWCDefn _ _ e_) -> do
+                      Just (RWCDefn _ _ _ e_) -> do   -- FIXME: might check to make sure the INLINE pragma is false here
                         -- Allocate registers for arguments.
                         let (xts,e)   =  peelLambdas e_
                             xs        =  map fst xts
@@ -691,8 +691,8 @@ cfgStart _ = fail "cfgStart: malformed start expression"
 cfgProg :: CGM ()
 cfgProg = do md <- lift $ lift $ queryG (mkId "start")
              case md of
-              Nothing              -> fail "cfgProg: `start' not defined"
-              Just (RWCDefn _ _ e) -> cfgStart e
+              Nothing                -> fail "cfgProg: `start' not defined"
+              Just (RWCDefn _ _ _ e) -> cfgStart e
 
 cfgFromRW :: RWCProg -> CFG
 cfgFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
@@ -872,7 +872,7 @@ funDefn n = do ms <- askFun n
                    case md of
 --                     Nothing               -> fail $ "funDefn: " ++ show n ++ " not defined"
                      Nothing               -> return (show n) -- FIXME: in this case it should be a VHDL-defined function
-                     Just (RWCDefn _ _ e_) -> do
+                     Just (RWCDefn _ _ _ e_) -> do  -- FIXME: might check to make sure the INLINE pragma is false here
                        fn          <- freshFunName n
                        let (xts,e) =  peelLambdas e_
                            xs      =  map fst xts

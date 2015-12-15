@@ -136,11 +136,11 @@ dqDataCon (RWCDataCon dci ts) = do ts' <- mapM dqTy ts
 dqDataDecl (RWCData n tvs dcs) = do (tvs',dcs') <- dqingT tvs (mapM dqDataCon dcs)
                                     return (RWCData n tvs' dcs')
 
-dqDefn (RWCDefn n (tvs :-> t) e) = do (tvs',(t',e')) <- dqingT tvs (do
-                                        t' <- dqTy t
-                                        e' <- dqExpr e
-                                        return (t',e'))
-                                      return (RWCDefn n (tvs' :-> t') e')
+dqDefn (RWCDefn n (tvs :-> t) b e) = do (tvs',(t',e')) <- dqingT tvs (do
+                                          t' <- dqTy t
+                                          e' <- dqExpr e
+                                          return (t',e'))
+                                        return (RWCDefn n (tvs' :-> t') b e')
 
 dqProg :: RWCProg -> DQM RWCProg
 dqProg (RWCProg dds ds) = do dds' <- mapM dqDataDecl dds

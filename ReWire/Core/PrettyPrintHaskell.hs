@@ -79,13 +79,14 @@ commaSep []     = empty
 commaSep [x]    = x
 commaSep (x:xs) = x <> char ',' <> commaSep xs
 
-ppDefn (RWCDefn n (tvs :-> ty) e) =
+ppDefn (RWCDefn n (tvs :-> ty) b e) =
                                 do ty_p <- ppTy ty
                                    e_p  <- ppExpr e
                                    return (foldr ($+$) empty
-                                                 [ppId n <+> text "::" <+> ty_p,
-                                                  ppId n <+> text "=",
-                                                  nest 4 e_p])
+                                                 (   [ppId n <+> text "::" <+> ty_p]
+                                                  ++ (if b then [text "{-# INLINE" <+> ppId n <+> text "#-}"] else [])
+                                                  ++ [ppId n <+> text "=",
+                                                      nest 4 e_p]))
 
 ppDefns defns = do defns_p <- mapM ppDefn defns
                    return (foldr ($+$) empty defns_p)

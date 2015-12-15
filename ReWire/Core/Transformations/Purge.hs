@@ -41,22 +41,22 @@ inuseProg :: Id RWCExp -> RWCProg -> IM (Maybe RWCProg)
 inuseProg n p = do let md = find (\ d -> defnName d == n) (defns p)
                    case md of
                      Nothing              -> return Nothing
-                     Just (RWCDefn _ _ e) -> do inuse <- get
-                                                put (insert n inuse)
-                                                inuseExp e
-                                                inuse <- get
-                                                let ds' = filter (\ d -> defnName d `member` inuse) (defns p)
-                                                return (Just (p { defns = ds' }))
+                     Just (RWCDefn _ _ _ e) -> do inuse <- get
+                                                  put (insert n inuse)
+                                                  inuseExp e
+                                                  inuse <- get
+                                                  let ds' = filter (\ d -> defnName d `member` inuse) (defns p)
+                                                  return (Just (p { defns = ds' }))
 
 occursProg :: Id RWCExp -> RWCProg -> IM [Id RWCExp]
 occursProg n p = do let md = find (\ d -> defnName d == n) (defns p)
                     case md of
                       Nothing              -> return []
-                      Just (RWCDefn _ _ e) -> do inuse <- get
-                                                 put (insert n inuse)
-                                                 inuseExp e
-                                                 inuse <- get
-                                                 return (toList inuse)
+                      Just (RWCDefn _ _ _ e) -> do inuse <- get
+                                                   put (insert n inuse)
+                                                   inuseExp e
+                                                   inuse <- get
+                                                   return (toList inuse)
 
 purge :: Id RWCExp -> RWCProg -> Maybe RWCProg
 purge n p_ = liftM deUniquify $ fst $ runRW ctr p (runStateT (inuseProg n p) empty)

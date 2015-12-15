@@ -113,11 +113,11 @@ uniquifyExpr (RWCNativeVHDL n e) = do e' <- uniquifyExpr e
                                       return (RWCNativeVHDL n e')
 
 uniquifyDefn :: RWCDefn -> UQM RWCDefn
-uniquifyDefn (RWCDefn n (tvs :-> t) e) = do (tvs',(t',e')) <- uniquingT tvs (do
-                                              t' <- uniquifyTy t
-                                              e' <- uniquifyExpr e
-                                              return (t',e'))
-                                            return (RWCDefn n (tvs' :-> t') e')
+uniquifyDefn (RWCDefn n (tvs :-> t) b e) = do (tvs',(t',e')) <- uniquingT tvs (do
+                                                t' <- uniquifyTy t
+                                                e' <- uniquifyExpr e
+                                                return (t',e'))
+                                              return (RWCDefn n (tvs' :-> t') b e')
 
 uniquifyProg :: RWCProg -> UQM RWCProg
 uniquifyProg (RWCProg dds ds) = do dds' <- mapM uniquifyDataDecl dds
