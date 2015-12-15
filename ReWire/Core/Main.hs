@@ -11,6 +11,7 @@ import ReWire.Core.PrettyPrintHaskell
 import ReWire.Core.KindChecker
 import ReWire.Core.TypeChecker
 import ReWire.Core.Transformations.Interactive
+import ReWire.Core.Transformations.Inline
 import ReWire.PreHDL.CFG (mkDot,gather,linearize,cfgToProg)
 import ReWire.PreHDL.GotoElim (gotoElim)
 import ReWire.PreHDL.ElimEmpty (elimEmpty)
@@ -102,20 +103,23 @@ main = do args                       <- getArgs
 
           let filename               =  head filenames
 
-          p <- runFE (FlagD `elem` flags) filename
+          p_ <- runFE (FlagD `elem` flags) filename
           
-          if FlagI `elem` flags then trans p
-          else do
-            let cfg     = cfgFromRW p
-                cfgDot  = mkDot (gather (eu cfg))
-                lcfgDot = mkDot (gather (linearize cfg))
-                pre     = cfgToProg cfg
-                gpre    = gotoElim pre
-                vhdl    = toVHDL (elimEmpty gpre)
-                doDump (FlagCFG f)  = writeFile f $ mkDot $ gather $ eu cfg
-                doDump (FlagLCFG f) = writeFile f $ mkDot $ gather $ linearize cfg
-                doDump (FlagPre f)  = writeFile f $ show pre
-                doDump (FlagGPre f) = writeFile f $ show gpre
-                doDump (FlagO f)    = writeFile f vhdl
-                doDump _            = return ()
-            mapM_ doDump flags
+          if FlagI `elem` flags then trans p_
+          else
+            case inline p_ of
+              Nothing -> hPutStrLn stderr "Inlining failed" >> exitFailure
+              Just p  -> do
+                let cfg     = cfgFromRW p
+                    cfgDot  = mkDot (gather (eu cfg))
+                    lcfgDot = mkDot (gather (linearize cfg))
+                    pre     = cfgToProg cfg
+                    gpre    = gotoElim pre
+                    vhdl    = toVHDL (elimEmpty gpre)
+                    doDump (FlagCFG f)  = writeFile f $ mkDot $ gather $ eu cfg
+                    doDump (FlagLCFG f) = writeFile f $ mkDot $ gather $ linearize cfg
+                    doDump (FlagPre f)  = writeFile f $ show pre
+                    doDump (FlagGPre f) = writeFile f $ show gpre
+                    doDump (FlagO f)    = writeFile f vhdl
+                    doDump _            = return ()
+                mapM_ doDump flags

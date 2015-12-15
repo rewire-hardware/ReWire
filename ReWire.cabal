@@ -86,6 +86,7 @@ library
                     ReWire.Core.Transformations.ToPreHDL
                     ReWire.Core.Transformations.Types
                     ReWire.Core.Transformations.Uniquify
+                    ReWire.Core.Transformations.Inline
                     ReWire.Scoping
 
 executable rwc

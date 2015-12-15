@@ -7,6 +7,7 @@ undefined :: a
 undefined = undefined
 
 plus :: W8 -> W8 -> W8
+{-# INLINE plus #-}
 plus = nativeVhdl "plus" undefined
 
 sig :: ReT Bit W8 (StT W8 (StT W8 I)) ()

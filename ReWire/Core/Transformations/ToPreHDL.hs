@@ -19,11 +19,16 @@ import qualified Data.Map.Strict as Map
 import Data.Graph.Inductive
 import Data.List (foldl',find,findIndex)
 import Data.Maybe (fromJust)
+import qualified Debug.Trace (trace)
 
 type VarMap = Map (Id RWCExp) Loc
 type ActionMap = Map (Id RWCExp) ([Loc],Node,Node,Loc) -- name -> arg regs, entry node, exit node, result reg
 type FunMap = Map (Id RWCExp) String                   -- name -> generated VHDL name
 type CGM = ReaderT Env (StateT (Int,CFG,ActionMap,FunMap) RW)
+
+trace :: String -> a -> a
+--trace = Debug.Trace.trace
+trace = flip const
 
 data Env = Env { stateLayer :: Int,
                  stateTys   :: [RWCTy],
@@ -444,7 +449,8 @@ cfgLastAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,_) <- cfgLastPat lscr t
                                              bds
 
 cfgAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Node,Node,Node,Loc) -- entry node, true exit node, false exit node, result reg if true
-cfgAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- cfgPat lscr tscr p
+cfgAlt lscr tscr lres (RWCAlt p e) =trace ("Entering alt: " ++ show p) $
+                                     do (bds,nip,nop,rp) <- cfgPat lscr tscr p
                                         foldr (uncurry binding) (do
                                           (nie,noe,le) <- cfgExpr e
                                           no_t         <- addFreshNode (Assign lres (LocRHS le))
@@ -456,7 +462,8 @@ cfgAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- cfgPat lscr tscr p
                                          bds
 
 cfgLastAcAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Node,Node,Node,Loc)
-cfgLastAcAlt lscr tscr lres (RWCAlt p e) = do (bds,nip,nop,rp) <- cfgLastPat lscr tscr p
+cfgLastAcAlt lscr tscr lres (RWCAlt p e) =trace ("Entering last alt: " ++ show p) $
+                                           do (bds,nip,nop,rp) <- cfgLastPat lscr tscr p
                                               foldr (uncurry binding) (do
                                                 (nie,noe,le) <- cfgAcExpr e
                                                 no           <- addFreshNode (Assign lres (LocRHS le))
@@ -487,7 +494,7 @@ cfgAcExpr e = case ef of
                -- Can't use data constructors to construct a resumption.
                RWCCon _ _                    -> fail "cfgAcExpr: encountered con"
 
-               RWCVar x _ | x == mkId ">>=" -> do
+               RWCVar x _ | x == mkId ">>=" -> trace ("cfgAcExpr: Entering* bind") $ do
                  -- Bind is only allowed with a lambda on RHS.
                  case eargs of
                    [el,RWCLam x _ er] -> do
@@ -498,12 +505,12 @@ cfgAcExpr e = case ef of
                      return (entl,exr,regr)
                    _ -> fail "wrong rhs for bind"
 
-               RWCVar x _ | x == mkId "return" -> do
+               RWCVar x _ | x == mkId "return" -> trace ("cfgAcExpr: Entering* return") $ do
                  case eargs of
                    [e] -> cfgExpr e
                    _   -> fail "cfgAcExpr: wrong number of arguments for return"
 
-               RWCVar x _ | x == mkId "signal" -> do
+               RWCVar x _ | x == mkId "signal" -> trace ("cfgAcExpr: Entering* signal") $ do
                  case eargs of
                    [e] -> do
                      -- First we compute the signal value.
@@ -522,12 +529,12 @@ cfgAcExpr e = case ef of
                      return (ni,npost,r)
                    _  -> fail "cfgAcExpr: wrong number of arguments for signal"
 
-               RWCVar x _ | x == mkId "lift" -> do
+               RWCVar x _ | x == mkId "lift" -> trace ("cfgAcExpr: Entering* lift") $ do
                  case eargs of
                    [e] -> localStateLayer (+1) (cfgAcExpr e)
                    _   -> fail "cfgAcExpr: wrong number of arguments for lift"
 
-               RWCVar x _ | x == mkId "get" -> do
+               RWCVar x _ | x == mkId "get" -> trace ("cfgAcExpr: Entering* get") $ do
                  case eargs of
                    [] -> do l   <- askStateLayer
                             tss <- askStateTys
@@ -542,7 +549,7 @@ cfgAcExpr e = case ef of
                                   return (n,n,r)
                    _  -> fail "cfgAcExpr: wrong number of arguments for get"
 
-               RWCVar x _ | x == mkId "put" -> do
+               RWCVar x _ | x == mkId "put" -> trace ("cfgAcExpr: Entering* put") $ do
                  case eargs of
                    [e] -> do l <- askStateLayer
                              if l < 0
@@ -555,7 +562,7 @@ cfgAcExpr e = case ef of
                                  return (nie,no,r)
                    _   -> fail "cfgAcExpr: wrong number of arguments for get"
 
-               RWCVar x _                      -> do
+               RWCVar x _                      -> trace ("cfgAcExpr: Entering var/app " ++ show x) $ do
                  -- This is required to be a tail call! Look up info for the
                  -- callee.
                  (rs_f,ni_f,no_f,rr_f) <- cfgAcDefn x
@@ -578,7 +585,7 @@ cfgAcExpr e = case ef of
                      addEdge (last n_copies) ni_f (Conditional (BoolConst True))
                      return (head ni_args,no_f,rr_f)
 
-               RWCCase escr alts               -> do
+               RWCCase escr alts               -> trace ("cfgAcExpr: Entering case") $ do
                  case eargs of
                    [] -> do
                      -- Compile scrutinee expression.
@@ -622,8 +629,8 @@ cfgAcDefn n = do
                 case Map.lookup n am of
                   -- If the name is already in the map, codegen for the
                   -- function is already completed or in progress.
-                  Just x  -> return x
-                  Nothing -> do
+                  Just x  -> trace ("cfgAcDefn: Was already in " ++ show n) $ return x
+                  Nothing -> trace ("cfgAcDefn: Entering " ++ show n) $ do
                     md <- lift $ lift $ queryG n
                     case md of
                       Nothing               -> fail $ "cfgAcDefn: " ++ show n ++ " not defined"

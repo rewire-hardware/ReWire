@@ -8,12 +8,15 @@ undefined :: a
 undefined = undefined
 
 plusOne :: W8 -> W8
+{-# INLINE plusOne #-}
 plusOne = nativeVhdl "prim_plusOne" undefined
 
 rotl :: W8 -> W8
+{-# INLINE rotl #-}
 rotl = nativeVhdl "prim_rotl" undefined
 
 tick :: ReT Bit W8 (StT W8 I) Bit
+{-# INLINE tick #-}
 tick = lift get >>= \ x -> signal x
 
 main :: ReT Bit W8 (StT W8 I) ()
