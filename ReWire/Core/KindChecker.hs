@@ -108,14 +108,14 @@ kcDataDecl (RWCData i tvs dcs) = do cas   <- askCAssumps
                                     localAssumps (as `Map.union`) (mapM_ kcDataCon dcs)
 
 kcDefn :: RWCDefn -> KCM ()
-kcDefn (RWCDefn _ (tvs :-> t) _) = do oldsub      <- getKiSub
-                                      let oldkeys =  Map.keys oldsub
-                                      as          <- liftM Map.fromList $ mapM (\ tv -> freshkv >>= \ v -> return (tv,Kvar v)) tvs
-                                      k           <- localAssumps (as `Map.union`) (kcTy t)
-                                      unify k Kstar
-                                      sub         <- getKiSub
-                                      let newsub  =  Map.mapWithKey (\ k _ -> sub ! k) oldsub
-                                      putKiSub newsub
+kcDefn (RWCDefn _ (tvs :-> t) _ _) = do oldsub      <- getKiSub
+                                        let oldkeys =  Map.keys oldsub
+                                        as          <- liftM Map.fromList $ mapM (\ tv -> freshkv >>= \ v -> return (tv,Kvar v)) tvs
+                                        k           <- localAssumps (as `Map.union`) (kcTy t)
+                                        unify k Kstar
+                                        sub         <- getKiSub
+                                        let newsub  =  Map.mapWithKey (\ k _ -> sub ! k) oldsub
+                                        putKiSub newsub
 
 kc :: RWCProg -> KCM ()
 kc p = do cas <- liftM Map.fromList $ mapM initDataDecl (dataDecls p)

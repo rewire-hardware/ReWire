@@ -83,8 +83,8 @@ matchpat e (RWCPatLiteral l)  = case e of
                                   _                         -> return MatchMaybe
 
 reddefn :: Monad m => RWCDefn -> RWT m RWCDefn
-reddefn (RWCDefn n pt e) = do e' <- reduce e
-                              return (RWCDefn n pt e')
+reddefn (RWCDefn n pt b e) = do e' <- reduce e
+                                return (RWCDefn n pt b e')
 
 redprog :: RWCProg -> RWCProg
 redprog p_ = deUniquify $ runRW ctr p (do ds' <- mapM reddefn (defns p)

@@ -382,7 +382,8 @@ trans :: Module -> Trans RWCProg
 trans (Module _loc _name _pragmas _ _exports _imports (reverse -> ds)) = do
       datas <- foldM transData [] ds
       sigs  <- foldM transTySig [] ds
-      defs  <- foldM (transDef sigs) [] ds
+      inls  <- foldM transInlineSig [] ds
+      defs  <- foldM (transDef sigs inls) [] ds
       return $ RWCProg datas defs
 
 transData :: [RWCData] -> Decl -> Trans [RWCData]
@@ -398,11 +399,17 @@ transTySig sigs (TypeSig loc names t) = do
       return $ zip (map (\(Ident x) -> x) names) (repeat t') ++ sigs
 transTySig sigs _                     = return sigs
 
-transDef :: [(String, RWCTy)] -> [RWCDefn] -> Decl -> Trans [RWCDefn]
-transDef tys defs (PatBind loc (PVar (Ident x)) (UnGuardedRhs e) Nothing) = case lookup x tys of
-      Just t -> (:defs) . RWCDefn (mkId x) (nub (fv t) :-> t) <$> transExp loc e
+-- I guess this doesn't need to be in the monad, really, but whatever...  --adam
+-- Not sure what the boolean field means here, so we ignore it!  --adam
+transInlineSig :: [String] -> Decl -> Trans [String]
+transInlineSig inls (InlineSig _ _ AlwaysActive (UnQual (Ident x))) = return (x:inls)
+transInlineSig inls _                                               = return inls
+
+transDef :: [(String, RWCTy)] -> [String] -> [RWCDefn] -> Decl -> Trans [RWCDefn]
+transDef tys inls defs (PatBind loc (PVar (Ident x)) (UnGuardedRhs e) Nothing) = case lookup x tys of
+      Just t -> (:defs) . RWCDefn (mkId x) (nub (fv t) :-> t) (x `elem` inls) <$> transExp loc e
       _      -> pFail loc $ "no type signature for " ++ x
-transDef _   defs _                                                       = return defs
+transDef _   _    defs _                                                       = return defs
 
 transTyVar :: SrcLoc -> TyVarBind -> Trans (Id RWCTy)
 transTyVar loc = \case

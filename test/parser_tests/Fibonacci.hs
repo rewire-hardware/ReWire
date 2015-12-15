@@ -10,6 +10,7 @@ data Unit       = Unit
 data Tuple2 a b = Tuple2 a b
 
 plusW8 :: W8 -> W8 -> W8
+{-# INLINE plusW8 #-}
 plusW8 x y = nativeVhdl "plusW8" plusW8 x y
 
 zeroW8 :: W8

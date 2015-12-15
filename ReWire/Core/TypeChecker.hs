@@ -87,7 +87,7 @@ initDefn (RWCDefn n (tvs :-> t) e) = do e'          <- initExp e
 -}
 
 defnAssump :: RWCDefn -> Assump
-defnAssump (RWCDefn n pt _) = (n,pt)
+defnAssump (RWCDefn n pt _ _) = (n,pt)
 
 dataConAssump :: [Id RWCTy] -> RWCTy -> RWCDataCon -> CAssump
 dataConAssump tvs rt (RWCDataCon i ts) = (i,tvs :-> foldr mkArrow rt ts)
@@ -200,12 +200,12 @@ tcExp (RWCNativeVHDL n e) = do (e',te) <- tcExp e
 tcDefn :: RWCDefn -> TCM RWCDefn
 tcDefn d  = do putTySub Map.empty
 --               d <- initDefn d_
-               let RWCDefn n (tvs :-> t) e = force d
+               let RWCDefn n (tvs :-> t) b e = force d
                (e',te) <- tcExp e
                unify t te
                s       <- getTySub
                putTySub Map.empty
-               let d' = RWCDefn n (tvs :-> t) (subst s e')
+               let d' = RWCDefn n (tvs :-> t) b (subst s e')
                traceShow n $ d' `deepseq` return d'
 
 tc :: RWCProg -> TCM RWCProg

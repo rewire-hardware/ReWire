@@ -32,8 +32,8 @@ expandExpr ns (RWCCase e alts)           = do e'    <- expandExpr ns e
 expandExpr ns (RWCNativeVHDL n e)        = return (RWCNativeVHDL n e)             -- FIXME(?!): special case here!
 
 expandDefn :: [Id RWCExp] -> RWCDefn -> RW RWCDefn
-expandDefn ns (RWCDefn n pt e) = do e' <- expandExpr ns e
-                                    return (RWCDefn n pt e')
+expandDefn ns (RWCDefn n pt b e) = do e' <- expandExpr ns e
+                                      return (RWCDefn n pt b e')
 
 expandProg :: [Id RWCExp] -> RWCProg -> RW RWCProg
 expandProg ns (RWCProg dds defns) = do defns' <- mapM (expandDefn ns) defns
