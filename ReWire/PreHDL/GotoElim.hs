@@ -5,8 +5,12 @@ module ReWire.PreHDL.GotoElim where
 import ReWire.PreHDL.Syntax
 import Control.Monad.State
 import Control.Monad.Identity
-import Debug.Trace (trace)
+import qualified Debug.Trace
 import Data.List (nub)
+
+trace :: String -> a -> a
+--trace = Debug.Trace.trace
+trace = flip const
 
 --
 -- A zipper for Cmd.

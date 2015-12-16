@@ -206,7 +206,8 @@ tcDefn d  = do putTySub Map.empty
                s       <- getTySub
                putTySub Map.empty
                let d' = RWCDefn n (tvs :-> t) b (subst s e')
-               traceShow n $ d' `deepseq` return d'
+               --traceShow n $ d' `deepseq` return d'
+               d' `deepseq` return d'
 
 tc :: RWCProg -> TCM RWCProg
 tc p = do let as_ =  Map.fromList $ map defnAssump (defns p)

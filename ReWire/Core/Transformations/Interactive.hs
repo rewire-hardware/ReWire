@@ -23,8 +23,6 @@ import ReWire.Core.Transformations.DeUniquify (cmdDeUniquify)
 import ReWire.Core.Transformations.Types
 import System.IO
 
-import Debug.Trace (trace)
-
 -- Table of available commands.
 type CommandTable = [(String,TransCommand)]
 

@@ -30,7 +30,6 @@ import qualified Unbound.LocallyNameless as U
 import Test.QuickCheck
 import Test.QuickCheck.Gen
 import Data.List (nub)
-import Debug.Trace (traceShow)
 -}
 
 --
