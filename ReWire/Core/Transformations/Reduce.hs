@@ -16,8 +16,6 @@ import ReWire.Core.Transformations.Types
 import ReWire.Core.Transformations.Uniquify (uniquify)
 import ReWire.Core.Transformations.DeUniquify (deUniquify)
 
-import Debug.Trace (trace)
-
 reduce :: Monad m => RWCExp -> RWT m RWCExp
 reduce (RWCApp e1 e2)     = do e1' <- reduce e1
                                e2' <- reduce e2

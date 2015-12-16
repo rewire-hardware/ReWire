@@ -11,7 +11,6 @@ import Control.Monad.State
 import Control.Monad.Identity
 import Data.Set hiding (map,filter,null)
 import Data.List hiding (insert)
-import Debug.Trace (trace)
 import ReWire.Core.Transformations.Uniquify (uniquify)
 import ReWire.Core.Transformations.DeUniquify (deUniquify)
 

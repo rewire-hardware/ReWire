@@ -19,7 +19,6 @@ import Data.Map (Map)
 import Data.List (find)
 import Data.Maybe (fromJust)
 import ReWire.Scoping
-import Debug.Trace (trace)
 import qualified Data.Set as Set
 import Data.Set (Set)
 import ReWire.Core.Transformations.Uniquify (uniquify,uniquifyE)
