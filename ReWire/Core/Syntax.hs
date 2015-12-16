@@ -13,6 +13,7 @@ import Data.ByteString.Char8 (pack)
 
 newtype DataConId = DataConId { deDataConId :: String } deriving (Eq,Ord,Show,NFData)
 newtype TyConId   = TyConId   { deTyConId :: String } deriving (Eq,Ord,Show,NFData)
+newtype ModuleId  = ModuleId  { deModuleId :: String } deriving (Eq,Ord,Show,NFData)
 
 data Poly t = [Id t] :-> t deriving Show
 
@@ -265,12 +266,14 @@ instance NFData RWCDataCon where
 
 ---
 
-data RWCProg = RWCProg { dataDecls :: [RWCData],
-                         defns     :: [RWCDefn] }
-                       deriving Show
+data RWCModule = RWCModule { name       :: ModuleId,
+                             imports    :: [ModuleId],
+                             dataDecls  :: [RWCData],
+                             defns      :: [RWCDefn] }
+                           deriving Show
 
-instance NFData RWCProg where
-  rnf (RWCProg dds defs) = dds `deepseq` defs `deepseq` ()
+instance NFData RWCModule where
+  rnf (RWCModule n imps dds defs) = n `deepseq` imps `deepseq` dds `deepseq` defs `deepseq` ()
 
 ---
 

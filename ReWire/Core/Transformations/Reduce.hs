@@ -84,10 +84,10 @@ reddefn :: Monad m => RWCDefn -> RWT m RWCDefn
 reddefn (RWCDefn n pt b e) = do e' <- reduce e
                                 return (RWCDefn n pt b e')
 
-redprog :: RWCProg -> RWCProg
-redprog p_ = deUniquify $ runRW ctr p (do ds' <- mapM reddefn (defns p)
-                                          return (p { defns = ds' }))
-  where (p,ctr) = uniquify 0 p_
+redmod :: RWCModule -> RWCModule
+redmod m_ = deUniquify $ runRW ctr m (do ds' <- mapM reddefn (defns m)
+                                         return (m { defns = ds' }))
+  where (m,ctr) = uniquify 0 m_
 
 cmdReduce :: TransCommand
-cmdReduce _ p = (Just (redprog p),Nothing)
+cmdReduce _ p = (Just (redmod p),Nothing)

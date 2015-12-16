@@ -209,13 +209,13 @@ tcDefn d  = do putTySub Map.empty
                --traceShow n $ d' `deepseq` return d'
                d' `deepseq` return d'
 
-tc :: RWCProg -> TCM RWCProg
-tc p = do let as_ =  Map.fromList $ map defnAssump (defns p)
+tc :: RWCModule -> TCM RWCModule
+tc m = do let as_ =  Map.fromList $ map defnAssump (defns m)
               as  =  as_ `Map.union` as0
               as0 =  Map.fromList prims
-          cas     <- liftM (Map.fromList . concat) $ mapM dataDeclAssumps (dataDecls p)
-          ds'     <- localAssumps (as `Map.union`) (localCAssumps (cas `Map.union`) (mapM tcDefn (defns p)))
-          return (p { defns = ds' })
+          cas     <- liftM (Map.fromList . concat) $ mapM dataDeclAssumps (dataDecls m)
+          ds'     <- localAssumps (as `Map.union`) (localCAssumps (cas `Map.union`) (mapM tcDefn (defns m)))
+          return (m { defns = ds' })
 
-typecheck :: RWCProg -> Either String RWCProg
-typecheck p = fmap fst $ runIdentity (runExceptT (runStateT (runReaderT (tc p) (TCEnv Map.empty Map.empty)) (TCState Map.empty 0)))
+typecheck :: RWCModule -> Either String RWCModule
+typecheck m = fmap fst $ runIdentity (runExceptT (runStateT (runReaderT (tc m) (TCEnv Map.empty Map.empty)) (TCState Map.empty 0)))

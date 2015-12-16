@@ -148,21 +148,21 @@ mkInitialDataConMap = foldr addDD Map.empty
 mkInitialVarSet :: [RWCDefn] -> Set IdAny
 mkInitialVarSet ds = foldr (\ d@(RWCDefn n _ _ _) -> Set.insert (IdAny n)) Set.empty ds
 
-runRWT :: Monad m => Int -> RWCProg -> RWT m a -> m a
-runRWT ctr p phi = liftM fst $
+runRWT :: Monad m => Int -> RWCModule -> RWT m a -> m a
+runRWT ctr m phi = liftM fst $
                      runStateT (runScopeTWith varset $
                                  runAssumeTWith dmap $
                                   runAssumeTWith tmap $
                                    runAssumeTWith varmap $
                                     deRWT phi)
                                ctr
-  where varmap      = mkInitialVarMap (defns p)
-        tmap        = mkInitialTyConMap (dataDecls p)
-        dmap        = mkInitialDataConMap (dataDecls p)
-        varset      = mkInitialVarSet (defns p)
+  where varmap      = mkInitialVarMap (defns m)
+        tmap        = mkInitialTyConMap (dataDecls m)
+        dmap        = mkInitialDataConMap (dataDecls m)
+        varset      = mkInitialVarSet (defns m)
 
-runRW :: Int -> RWCProg -> RW a -> a
-runRW ctr p = runIdentity . runRWT ctr p
+runRW :: Int -> RWCModule -> RW a -> a
+runRW ctr m = runIdentity . runRWT ctr m
 
 getCtr :: Monad m => RWT m Int
 getCtr = RWT get

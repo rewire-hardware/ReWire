@@ -1,3 +1,5 @@
+module Pats where
+
 data Tuple2 a b = Tuple2 a b
 data Bit = Zero | One
 

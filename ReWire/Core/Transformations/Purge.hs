@@ -36,39 +36,40 @@ inuseExp (RWCLiteral _)      = return ()
 inuseExp (RWCCase e alts)    = inuseExp e >> mapM_ inuseAlt alts
 inuseExp (RWCNativeVHDL n _) = return ()   -- FIXME(?!): special case here
 
-inuseProg :: Id RWCExp -> RWCProg -> IM (Maybe RWCProg)
-inuseProg n p = do let md = find (\ d -> defnName d == n) (defns p)
-                   case md of
-                     Nothing              -> return Nothing
-                     Just (RWCDefn _ _ _ e) -> do inuse <- get
-                                                  put (insert n inuse)
-                                                  inuseExp e
-                                                  inuse <- get
-                                                  let ds' = filter (\ d -> defnName d `member` inuse) (defns p)
-                                                  return (Just (p { defns = ds' }))
+inuseModule :: Id RWCExp -> RWCModule -> IM (Maybe RWCModule)
+inuseModule n m = do let md = find (\ d -> defnName d == n) (defns m)
+                     case md of
+                       Nothing              -> return Nothing
+                       Just (RWCDefn _ _ _ e) -> do inuse <- get
+                                                    put (insert n inuse)
+                                                    inuseExp e
+                                                    inuse <- get
+                                                    let ds' = filter (\ d -> defnName d `member` inuse) (defns m)
+                                                    return (Just (m { defns = ds' }))
 
-occursProg :: Id RWCExp -> RWCProg -> IM [Id RWCExp]
-occursProg n p = do let md = find (\ d -> defnName d == n) (defns p)
-                    case md of
-                      Nothing              -> return []
-                      Just (RWCDefn _ _ _ e) -> do inuse <- get
-                                                   put (insert n inuse)
-                                                   inuseExp e
-                                                   inuse <- get
-                                                   return (toList inuse)
+occursModule :: Id RWCExp -> RWCModule -> IM [Id RWCExp]
+occursModule n m = do let md = find (\ d -> defnName d == n) (defns m)
+                      case md of
+                        Nothing              -> return []
+                        Just (RWCDefn _ _ _ e) -> do inuse <- get
+                                                     put (insert n inuse)
+                                                     inuseExp e
+                                                     inuse <- get
+                                                     return (toList inuse)
 
-purge :: Id RWCExp -> RWCProg -> Maybe RWCProg
-purge n p_ = liftM deUniquify $ fst $ runRW ctr p (runStateT (inuseProg n p) empty)
-  where (p,ctr) = uniquify 0 p_
+purge :: Id RWCExp -> RWCModule -> Maybe RWCModule
+purge n m_ = liftM deUniquify $ fst $ runRW ctr m (runStateT (inuseModule n m) empty)
+  where (m,ctr) = uniquify 0 m_
 
-occurs :: Id RWCExp -> RWCProg -> [Id RWCExp]
-occurs n p_ = filter (not . ('@' `elem`) . show) $ fst $ runRW ctr p (runStateT (occursProg n p) empty)
-  where (p,ctr) = uniquify 0 p_
+-- FIXME: Not sure why the filter is here...
+occurs :: Id RWCExp -> RWCModule -> [Id RWCExp]
+occurs n m_ = filter (not . ('@' `elem`) . show) $ fst $ runRW ctr m (runStateT (occursModule n m) empty)
+  where (m,ctr) = uniquify 0 m_
 
 cmdPurge :: TransCommand
-cmdPurge arg_ p = (purge (mkId arg) p,Nothing)
+cmdPurge arg_ m = (purge (mkId arg) m,Nothing)
   where arg = if null arg_ then "start" else arg_
 
 cmdOccurs :: TransCommand
-cmdOccurs arg_ p = (Nothing, Just $ show $ occurs (mkId arg) p)
+cmdOccurs arg_ m = (Nothing, Just $ show $ occurs (mkId arg) m)
   where arg = if null arg_ then "start" else arg_

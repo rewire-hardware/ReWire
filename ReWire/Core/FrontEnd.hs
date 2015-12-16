@@ -18,7 +18,7 @@ import qualified Language.Haskell.Exts as Haskell (parseFile)
 import           Language.Haskell.Exts hiding (parseFile, loc, name, binds, op)
 
 -- | Parse a ReWire source file.
-parseFile :: FilePath -> IO (ParseResult RWCProg)
+parseFile :: FilePath -> IO (ParseResult RWCModule)
 parseFile = Haskell.parseFile
       -- *** Desugar into lambdas:
       !=> deparenify
@@ -378,13 +378,15 @@ liftLambdas m = runStateT (everywhere (liftLambdas' $ concatMap getGVar (getDecl
                        ]
 
 -- | Translate a Haskell module into the ReWire abstract syntax.
-trans :: Module -> Trans RWCProg
-trans (Module _loc _name _pragmas _ _exports _imports (reverse -> ds)) = do
+trans :: Module -> Trans RWCModule
+trans (Module _loc (ModuleName n) _pragmas _ _exports _imports (reverse -> ds)) = do
       datas <- foldM transData [] ds
       sigs  <- foldM transTySig [] ds
       inls  <- foldM transInlineSig [] ds
       defs  <- foldM (transDef sigs inls) [] ds
-      return $ RWCProg datas defs
+      -- FIXME: have fun  --adam
+      let imps = []
+      return $ RWCModule (ModuleId n) imps datas defs
 
 transData :: [RWCData] -> Decl -> Trans [RWCData]
 transData datas (DataDecl loc _ _ (Ident x) tyVars cons _deriving) = do

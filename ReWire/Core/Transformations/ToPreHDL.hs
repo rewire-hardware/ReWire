@@ -701,7 +701,7 @@ cfgProg = do md <- lift $ lift $ queryG (mkId "start")
               Nothing                -> fail "cfgProg: `start' not defined"
               Just (RWCDefn _ _ _ e) -> cfgStart e
 
-cfgFromRW :: RWCProg -> CFG
+cfgFromRW :: RWCModule -> CFG
 cfgFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
   where doit    = do cfgProg
                      h <- getHeader

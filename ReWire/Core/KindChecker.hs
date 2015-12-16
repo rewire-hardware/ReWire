@@ -117,12 +117,12 @@ kcDefn (RWCDefn _ (tvs :-> t) _ _) = do oldsub      <- getKiSub
                                         let newsub  =  Map.mapWithKey (\ k _ -> sub ! k) oldsub
                                         putKiSub newsub
 
-kc :: RWCProg -> KCM ()
+kc :: RWCModule -> KCM ()
 kc p = do cas <- liftM Map.fromList $ mapM initDataDecl (dataDecls p)
           localCAssumps (cas `Map.union`) (mapM_ kcDataDecl (dataDecls p))
           localCAssumps (cas `Map.union`) (mapM_ kcDefn (defns p))
 
-kindcheck :: RWCProg -> Maybe String
+kindcheck :: RWCModule -> Maybe String
 kindcheck p = l2m $ runIdentity (runExceptT (runStateT (runReaderT (kc p) (KCEnv Map.empty as)) (KCState Map.empty 0)))
   where as = Map.fromList [(TyConId "(->)",   Kfun Kstar (Kfun Kstar Kstar)),
 

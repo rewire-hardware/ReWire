@@ -4,7 +4,7 @@
 -- NOTE: This is in Monad for historical reasons.
 --
 
-module ReWire.Core.PrettyPrintHaskell (ppHaskell,ppHaskellWithName) where
+module ReWire.Core.PrettyPrintHaskell (ppHaskell) where
 
 import ReWire.Scoping
 import ReWire.Core.Syntax
@@ -91,18 +91,12 @@ ppDefn (RWCDefn n (tvs :-> ty) b e) =
 ppDefns defns = do defns_p <- mapM ppDefn defns
                    return (foldr ($+$) empty defns_p)
 
-ppProg :: Monad m => RWCProg -> m Doc
-ppProg p = do dd_p <- ppDataDecls (dataDecls p)
-              ds_p <- ppDefns (defns p)
-              return (text "import Prelude ()" $+$ dd_p $+$ ds_p)
+ppModule :: Monad m => RWCModule -> m Doc
+ppModule m = do dd_p      <- ppDataDecls (dataDecls m)
+                ds_p      <- ppDefns (defns m)
+                return (text "module" <+> text (deModuleId (name m)) <+> text "where"
+                   $+$ dd_p
+                   $+$ ds_p)
 
-ppHaskell :: RWCProg -> Doc
-ppHaskell = runIdentity . ppProg
-
-ppProgWithName :: Monad m => RWCProg -> String -> m Doc
-ppProgWithName p n = do dd_p <- ppDataDecls (dataDecls p)
-                        ds_p <- ppDefns (defns p)
-                        return (text ("module " ++ n ++ " where") $+$ text "import Prelude ()" $+$ dd_p $+$ ds_p)
-
-ppHaskellWithName :: RWCProg -> String -> Doc
-ppHaskellWithName p s = runIdentity $ ppProgWithName p s
+ppHaskell :: RWCModule -> Doc
+ppHaskell = runIdentity . ppModule

@@ -6,10 +6,12 @@ ReWire is an experimental compiler for a subset of [Haskell](http://haskell.org/
 
 ## Simple Example: Fibonacci Sequence
 
-The example program produces the elements of the Fibonacci sequence on its output (encoded as 8-bit integers, so things will overflow pretty quickly!). The circuit has a one-bit input that pauses the circuit's operation on low. Our example consists of two parts: **Fibonacci.rw** is the ReWire code, and **prims.vhd** contains a few supporting functions written in VHDL.
+The example program produces the elements of the Fibonacci sequence on its output (encoded as 8-bit integers, so things will overflow pretty quickly!). The circuit has a one-bit input that pauses the circuit's operation on low. Our example consists of two parts: **Fibonacci.hs** is the ReWire code, and **prims.vhd** contains a few supporting functions written in VHDL.
 
-### Fibonacci.rw
+### Fibonacci.hs
 ```haskell
+module Fibonacci where
+
 --
 -- The compiler doesn't yet support a "prelude" so we will have to define a
 -- few things ourselves!
@@ -20,7 +22,8 @@ data Unit       = Unit
 data Tuple2 a b = Tuple2 a b
 
 plusW8 :: W8 -> W8 -> W8
-plusW8 x y = nativeVhdl "plusW8" plusW8 x y
+{-# INLINE plusW8 #-}
+plusW8 = nativeVhdl "plusW8" plusW8
 
 zeroW8 :: W8
 zeroW8 = W8 Zero Zero Zero Zero Zero Zero Zero Zero
@@ -114,7 +117,7 @@ The one-bit input and the eight-bit output on the VHDL side correspond respectiv
 ### Concrete Syntax
 For the moment, the concrete syntax supported by ReWire is a bit different from Haskell in certain places. Specifically:
 
-1. All function definitions must be made at the top level, must be accompanied with a type signature:
+1. All function definitions must be made at the top level and must be accompanied by a type signature:
 ```haskell
 f :: W8 -> W8
 f x = plusW8 x x
