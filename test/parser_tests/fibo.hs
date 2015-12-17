@@ -1,7 +1,5 @@
 module Fibo where
 
-data Unit = Unit
-data Tuple2 a b = Tuple2 a b
 data Bit = Zero | One
 data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
 

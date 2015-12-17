@@ -15,7 +15,8 @@ import Control.Monad.Identity
 ppDataCon (RWCDataCon n ts) = do ts_p <- mapM ppTyAppR ts
                                  return (text (deDataConId n) <+> hsep ts_p)
 
-ppDataDecl (RWCData n tvs dcs) =
+-- FIXME: just ignoring the kind here
+ppDataDecl (RWCData n tvs k dcs) =
                             do dcs_p <- mapM ppDataCon dcs
                                return (foldr ($+$) empty
                                              [text "data" <+> text (deTyConId n) <+> hsep (map ppId tvs) <+> (if null dcs_p then empty else char '='),
@@ -57,12 +58,12 @@ ppExpr (RWCCase e alts) = do e_p    <- ppExpr e
 ppExpr (RWCNativeVHDL n e) = do e_p <- ppExpr e
                                 return (parens (text "nativeVHDL" <+> doubleQuotes (text n) <+> parens e_p))
 
-ppTyArrowL t@(RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2) = liftM parens (ppTy t)
-ppTyArrowL t                                                         = ppTy t
+ppTyArrowL t@(RWCTyApp (RWCTyApp (RWCTyCon (TyConId "->")) t1) t2) = liftM parens (ppTy t)
+ppTyArrowL t                                                       = ppTy t
 
-ppTy (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2) = do t1_p <- ppTyArrowL t1
-                                                                  t2_p <- ppTy t2
-                                                                  return (t1_p <+> text "->" <+> t2_p)
+ppTy (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "->")) t1) t2) = do t1_p <- ppTyArrowL t1
+                                                                t2_p <- ppTy t2
+                                                                return (t1_p <+> text "->" <+> t2_p)
 ppTy (RWCTyApp t1 t2) = do t1_p <- ppTy t1
                            t2_p <- ppTyAppR t2
                            return (t1_p <+> t2_p)

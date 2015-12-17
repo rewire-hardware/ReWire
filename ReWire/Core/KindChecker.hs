@@ -4,6 +4,7 @@
 module ReWire.Core.KindChecker (kindcheck) where
 
 import ReWire.Scoping
+import ReWire.Core.PrimBasis
 import ReWire.Core.Syntax
 import ReWire.Core.Kinds
 import Control.Monad.State
@@ -15,7 +16,6 @@ import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map,(!))
 import Control.DeepSeq
 import Data.ByteString.Char8 (pack)
-import ReWire.Core.PrimTypes
 
 -- Kind checking for Core.
 type KiSub = Map (Id Kind) Kind
@@ -46,8 +46,8 @@ freshkv = do ctr   <- getCtr
              return n
 
 initDataDecl :: RWCData -> KCM CAssump
-initDataDecl (RWCData i _ _) = do v <- freshkv
-                                  return (i,Kvar v)
+initDataDecl (RWCData i _ _ _) = do v <- freshkv
+                                    return (i,Kvar v)
 
 varBind :: Monad m => Id Kind -> Kind -> m KiSub
 varBind u k | k `aeq` Kvar u = return Map.empty
@@ -100,12 +100,12 @@ kcDataCon (RWCDataCon _ ts) = do ks <- mapM kcTy ts
                                  mapM_ (unify Kstar) ks
 
 kcDataDecl :: RWCData -> KCM ()
-kcDataDecl (RWCData i tvs dcs) = do cas   <- askCAssumps
-                                    let k =  cas ! i
-                                    kvs   <- replicateM (length tvs) freshkv
-                                    unify k (foldr Kfun Kstar (map Kvar kvs))
-                                    as    <- liftM Map.fromList $ mapM (\ tv -> freshkv >>= \ v -> return (tv,Kvar v)) tvs
-                                    localAssumps (as `Map.union`) (mapM_ kcDataCon dcs)
+kcDataDecl (RWCData i tvs _ dcs) = do cas   <- askCAssumps
+                                      let k =  cas ! i
+                                      kvs   <- replicateM (length tvs) freshkv
+                                      unify k (foldr Kfun Kstar (map Kvar kvs))
+                                      as    <- liftM Map.fromList $ mapM (\ tv -> freshkv >>= \ v -> return (tv,Kvar v)) tvs
+                                      localAssumps (as `Map.union`) (mapM_ kcDataCon dcs)
 
 kcDefn :: RWCDefn -> KCM ()
 kcDefn (RWCDefn _ (tvs :-> t) _ _) = do oldsub      <- getKiSub
@@ -117,19 +117,34 @@ kcDefn (RWCDefn _ (tvs :-> t) _ _) = do oldsub      <- getKiSub
                                         let newsub  =  Map.mapWithKey (\ k _ -> sub ! k) oldsub
                                         putKiSub newsub
 
-kc :: RWCModule -> KCM ()
-kc p = do cas <- liftM Map.fromList $ mapM initDataDecl (dataDecls p)
-          localCAssumps (cas `Map.union`) (mapM_ kcDataDecl (dataDecls p))
-          localCAssumps (cas `Map.union`) (mapM_ kcDefn (defns p))
+-- There is, IIRC, a weird little corner case in the Haskell Report that says
+-- if an inferred kind is underconstrained it defaults to *. Not sure if this
+-- can ever happen in ReWire, but might as well be safe.
+monoize :: Kind -> Kind
+monoize (Kfun k1 k2) = Kfun (monoize k1) (monoize k2)
+monoize Kstar        = Kstar
+monoize Kmonad       = Kmonad
+monoize (Kvar _)     = Kstar
 
-kindcheck :: RWCModule -> Maybe String
-kindcheck p = l2m $ runIdentity (runExceptT (runStateT (runReaderT (kc p) (KCEnv Map.empty as)) (KCState Map.empty 0)))
-  where as = Map.fromList [(TyConId "(->)",   Kfun Kstar (Kfun Kstar Kstar)),
+redecorate :: KiSub -> RWCData -> KCM RWCData
+redecorate s (RWCData i tvs _ dcs) = do cas <- askCAssumps
+                                        case Map.lookup i cas of
+                                          Just k  -> return (RWCData i tvs (monoize (subst s k)) dcs)
+                                          Nothing -> fail $ "redecorate: no such assumption: " ++ show i
 
-                           (TyConId "ReT",    Kfun Kstar (Kfun Kstar (Kfun Kmonad Kmonad))),
-                           (TyConId "StT",    Kfun Kstar (Kfun Kmonad Kmonad)),
-                           (TyConId "I",      Kmonad),
+basisCAssumps :: RWCModule -> [CAssump]
+basisCAssumps m = map (\ (RWCData i _ k _) -> (i,k)) (dataDecls m)
 
-                           (TyConId "Tuple2", Kfun Kstar (Kfun Kstar Kstar))]
-        l2m (Left x)  = Just x
-        l2m (Right _) = Nothing
+kc :: [RWCModule] -> RWCModule -> KCM RWCModule
+kc ms m = do ncas     <- mapM initDataDecl (dataDecls m)
+             let bcas =  concatMap basisCAssumps ms
+                 cas  =  Map.fromList (ncas++bcas)
+             localCAssumps (cas `Map.union`) $ do
+               mapM_ kcDataDecl (dataDecls m)
+               mapM_ kcDefn (defns m)
+               s   <- getKiSub
+               dds <- mapM (redecorate s) (dataDecls m)
+               return (m { dataDecls = dds })
+
+kindcheck :: RWCModule -> Either String RWCModule
+kindcheck m = fmap fst $ runIdentity (runExceptT (runStateT (runReaderT (kc [primBasis] m) (KCEnv Map.empty Map.empty)) (KCState Map.empty 0)))

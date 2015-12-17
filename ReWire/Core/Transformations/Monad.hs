@@ -139,11 +139,11 @@ mkInitialVarMap :: [RWCDefn] -> Map (Id RWCExp) VarInfo
 mkInitialVarMap ds = foldr (\ d@(RWCDefn n _ _ _) -> Map.insert n (GlobalVar d)) Map.empty ds
 
 mkInitialTyConMap :: [RWCData] -> Map TyConId TyConInfo
-mkInitialTyConMap = foldr (\ d@(RWCData n _ _) -> Map.insert n (TyConInfo d)) Map.empty
+mkInitialTyConMap = foldr (\ d@(RWCData n _ _ _) -> Map.insert n (TyConInfo d)) Map.empty
 
 mkInitialDataConMap :: [RWCData] -> Map DataConId DataConInfo
 mkInitialDataConMap = foldr addDD Map.empty
-  where addDD (RWCData dn _ dcs) m = foldr (\ d@(RWCDataCon cn _) -> Map.insert cn (DataConInfo dn d)) m dcs
+  where addDD (RWCData dn _ _ dcs) m = foldr (\ d@(RWCDataCon cn _) -> Map.insert cn (DataConInfo dn d)) m dcs
 
 mkInitialVarSet :: [RWCDefn] -> Set IdAny
 mkInitialVarSet ds = foldr (\ d@(RWCDefn n _ _ _) -> Set.insert (IdAny n)) Set.empty ds

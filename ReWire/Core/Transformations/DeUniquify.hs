@@ -133,8 +133,8 @@ dqExpr (RWCNativeVHDL n e) = do e' <- dqExpr e
 dqDataCon (RWCDataCon dci ts) = do ts' <- mapM dqTy ts
                                    return (RWCDataCon dci ts')
 
-dqDataDecl (RWCData n tvs dcs) = do (tvs',dcs') <- dqingT tvs (mapM dqDataCon dcs)
-                                    return (RWCData n tvs' dcs')
+dqDataDecl (RWCData n tvs k dcs) = do (tvs',dcs') <- dqingT tvs (mapM dqDataCon dcs)
+                                      return (RWCData n tvs' k dcs')
 
 dqDefn (RWCDefn n (tvs :-> t) b e) = do (tvs',(t',e')) <- dqingT tvs (do
                                           t' <- dqTy t

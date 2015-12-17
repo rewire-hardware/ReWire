@@ -1,7 +1,5 @@
 module UpCounter where
 
-data Tuple2 a b = Tuple2 a b
-data Unit = Unit
 data Bit = Zero | One
 
 data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit

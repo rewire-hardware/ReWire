@@ -32,9 +32,9 @@ testTC f_ = testCase f_ (do f   <- getDataFileName ("test/parser_tests/" ++ f_)
                             res <- parseFile f
                             case res of
                               ParseFailed _ err -> assertFailure err
-                              ParseOk p         -> case kindcheck p of
-                                Just err -> assertFailure err
-                                Nothing  -> case typecheck p of
+                              ParseOk m         -> case kindcheck m of
+                                Left err -> assertFailure err
+                                Right m' -> case typecheck m' of
                                   Left err -> assertFailure err
                                   Right _  -> return ())
 

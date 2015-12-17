@@ -2,8 +2,6 @@ module Dissex where
 
 data Bit = Zero | One
 data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
-data Tuple2 a b = Tuple2 a b
-data Unit = Unit
 
 undefined :: a
 undefined = undefined

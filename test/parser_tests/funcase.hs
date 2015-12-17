@@ -2,7 +2,6 @@ module FunCase where
 
 data In = A | B | C | D
 data Out = Out1 | Out2
-data Unit = Unit
 
 proc :: In -> Out
 proc i = case i of
