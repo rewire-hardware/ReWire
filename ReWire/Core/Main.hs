@@ -4,6 +4,7 @@ import System.IO
 import System.Environment
 import System.Console.GetOpt
 import System.Exit
+import ReWire.Core.PrimBasis
 import ReWire.Core.Syntax
 import ReWire.Core.FrontEnd
 --import ReWire.Core.PrettyPrint
@@ -66,21 +67,21 @@ runFE fDebug filename = do
         putStrLn "debug out finished"
 
       case kindcheck m of
-        Just e  ->
+        Left e  ->
           hPutStrLn stderr e >> exitFailure
-        Nothing -> do
+        Right m' -> do
           when fDebug (putStrLn "kc finished")
           
-          case typecheck m of
+          case typecheck m' of
             Left e   -> hPutStrLn stderr e >> exitFailure
-            Right m' -> do
+            Right m'' -> do
 
               when fDebug $ do
                 putStrLn "tc finished"
-                writeFile "tc.out" (show m')
+                writeFile "tc.out" (show m'')
                 putStrLn "tc debug print finished"
 
-              return m'
+              return m''
 
 main :: IO ()
 main = do args                       <- getArgs
@@ -110,7 +111,8 @@ main = do args                       <- getArgs
             case inline m_ of
               Nothing -> hPutStrLn stderr "Inlining failed" >> exitFailure
               Just m  -> do
-                let cfg     = cfgFromRW m
+                let mergeModule m1 m2 = RWCModule (name m1) (imports m1 ++ imports m2) (dataDecls m1 ++ dataDecls m2) (defns m1 ++ defns m2)
+                    cfg     = cfgFromRW (m `mergeModule` primBasis)
                     cfgDot  = mkDot (gather (eu cfg))
                     lcfgDot = mkDot (gather (linearize cfg))
                     pre     = cfgToProg cfg

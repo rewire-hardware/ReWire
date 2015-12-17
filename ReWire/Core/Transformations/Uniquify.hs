@@ -68,9 +68,9 @@ uniquifyTy (RWCTyComp t1 t2) = do t1' <- uniquifyTy t1
 uniquifyDataCon (RWCDataCon dci ts) = do ts' <- mapM uniquifyTy ts
                                          return (RWCDataCon dci ts')
 
-uniquifyDataDecl (RWCData i vs dcs) = do (vs',dcs') <- uniquingT vs $
-                                           mapM uniquifyDataCon dcs
-                                         return (RWCData i vs' dcs')
+uniquifyDataDecl (RWCData i vs k dcs) = do (vs',dcs') <- uniquingT vs $
+                                             mapM uniquifyDataCon dcs
+                                           return (RWCData i vs' k dcs')
 
 pvs (RWCPatCon dci ps) = concatMap pvs ps
 pvs (RWCPatLiteral l)  = []

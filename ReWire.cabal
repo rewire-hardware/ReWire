@@ -71,8 +71,7 @@ library
                     ReWire.Core.KindChecker
                     ReWire.Core.PrettyPrintHaskell
                     ReWire.Core.Main
-                    ReWire.Core.Prims
-                    ReWire.Core.PrimTypes
+                    ReWire.Core.PrimBasis
                     ReWire.PreHDL.CFG
                     ReWire.PreHDL.ElimEmpty
                     ReWire.PreHDL.GotoElim

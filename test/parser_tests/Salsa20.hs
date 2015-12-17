@@ -16,7 +16,6 @@ module Salsa20 where
 
 
 --End type shimming
-data Unit = Unit
 data Bit = Low | High
 data W8  = W8  Bit Bit Bit Bit Bit Bit Bit Bit
 data W16 = W16 Bit Bit Bit Bit Bit Bit Bit Bit
