@@ -10,6 +10,7 @@ module ReWire.Core.TypeChecker (typecheck) where
 
 import ReWire.Scoping
 import ReWire.Core.Syntax
+import ReWire.Core.PrimBasis
 import Control.DeepSeq
 import Control.Monad.State
 import Control.Monad.Reader
@@ -19,7 +20,7 @@ import Data.List (nub)
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map)
 import Debug.Trace (trace,traceShow)
-import ReWire.Core.Prims
+--import ReWire.Core.Prims
 
 -- Type checker for core.
 
@@ -92,9 +93,9 @@ defnAssump (RWCDefn n pt _ _) = (n,pt)
 dataConAssump :: [Id RWCTy] -> RWCTy -> RWCDataCon -> CAssump
 dataConAssump tvs rt (RWCDataCon i ts) = (i,tvs :-> foldr mkArrow rt ts)
 
-dataDeclAssumps :: RWCData -> TCM [CAssump]
-dataDeclAssumps (RWCData i tvs dcs) = do let rt = foldl RWCTyApp (RWCTyCon i) (map RWCTyVar tvs)
-                                         return $ map (dataConAssump tvs rt) dcs
+dataDeclAssumps :: RWCData -> [CAssump]
+dataDeclAssumps (RWCData i tvs _ dcs) = let rt = foldl RWCTyApp (RWCTyCon i) (map RWCTyVar tvs)
+                                        in  map (dataConAssump tvs rt) dcs
 
 (@@) :: TySub -> TySub -> TySub
 s1@@s2 = {-s1 `deepseq` s2 `deepseq` force-} s
@@ -209,13 +210,11 @@ tcDefn d  = do putTySub Map.empty
                --traceShow n $ d' `deepseq` return d'
                d' `deepseq` return d'
 
-tc :: RWCModule -> TCM RWCModule
-tc m = do let as_ =  Map.fromList $ map defnAssump (defns m)
-              as  =  as_ `Map.union` as0
-              as0 =  Map.fromList prims
-          cas     <- liftM (Map.fromList . concat) $ mapM dataDeclAssumps (dataDecls m)
-          ds'     <- localAssumps (as `Map.union`) (localCAssumps (cas `Map.union`) (mapM tcDefn (defns m)))
-          return (m { defns = ds' })
+tc :: [RWCModule] -> RWCModule -> TCM RWCModule
+tc ms m = do let as  =  Map.fromList $ concatMap (map defnAssump . defns) (m:ms)
+                 cas =  Map.fromList $ concatMap (concatMap dataDeclAssumps . dataDecls) (m:ms)
+             ds'     <- localAssumps (as `Map.union`) (localCAssumps (cas `Map.union`) (mapM tcDefn (defns m)))
+             return (m { defns = ds' })
 
 typecheck :: RWCModule -> Either String RWCModule
-typecheck m = fmap fst $ runIdentity (runExceptT (runStateT (runReaderT (tc m) (TCEnv Map.empty Map.empty)) (TCState Map.empty 0)))
+typecheck m = fmap fst $ runIdentity (runExceptT (runStateT (runReaderT (tc [primBasis] m) (TCEnv Map.empty Map.empty)) (TCState Map.empty 0)))

@@ -142,7 +142,7 @@ nBits 0 = 0
 nBits n = nBits (n `quot` 2) + 1
 
 getTagWidth :: TyConId -> CGM Int
-getTagWidth i = do Just (TyConInfo (RWCData _ _ cs)) <- lift $ lift $ queryT i
+getTagWidth i = do Just (TyConInfo (RWCData _ _ _ cs)) <- lift $ lift $ queryT i
                    return (nBits (length cs-1))
 
 tyWidth :: RWCTy -> CGM Int
@@ -157,7 +157,7 @@ tyWidth t            = {-do twc <- getTyWidthCache
                                 RWCTyVar _    -> fail "tyWidth: type variable encountered"
                                 RWCTyComp _ _ -> fail "tyWidth: computation type encountered"
                                 RWCTyCon i    -> do
-                                  Just (TyConInfo (RWCData _ _ dcs)) <- lift $ lift $ queryT i
+                                  Just (TyConInfo (RWCData _ _ _ dcs)) <- lift $ lift $ queryT i
                                   tagWidth <- getTagWidth i
                                   cws      <- mapM (dataConWidth i) dcs
                                   let size =  tagWidth + maximum cws
@@ -284,8 +284,8 @@ stringNodes ((_,no):x@(ni,_):xs) = do addEdge no ni (Conditional (BoolConst True
 stringNodes _                    = return ()
 
 getFieldTys :: DataConId -> RWCTy -> CGM [RWCTy]
-getFieldTys i t = do Just (DataConInfo tci _)             <- lift $ lift $ queryD i
-                     Just (TyConInfo (RWCData _ tvs dcs)) <- lift $ lift $ queryT tci
+getFieldTys i t = do Just (DataConInfo tci _)               <- lift $ lift $ queryD i
+                     Just (TyConInfo (RWCData _ tvs _ dcs)) <- lift $ lift $ queryT tci
                      let pt   = foldl' RWCTyApp (RWCTyCon tci) (map RWCTyVar tvs)
                          msub = matchty Map.empty pt t
                      case msub of

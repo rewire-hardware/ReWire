@@ -3,6 +3,7 @@
 
 module ReWire.Core.Syntax where
 
+import ReWire.Core.Kinds
 import ReWire.Scoping
 import Data.Set hiding (map,filter,foldr)
 import Data.Map.Strict (Map)
@@ -250,11 +251,12 @@ instance NFData RWCDefn where
 
 data RWCData = RWCData { dataName   :: TyConId,
                          dataTyVars :: [Id RWCTy],
+                         dataKind   :: Kind,
                          dataCons   :: [RWCDataCon] }
                deriving Show
 
 instance NFData RWCData where
-  rnf (RWCData i tvs dcs) = i `deepseq` tvs `deepseq` dcs `deepseq` ()
+  rnf (RWCData i tvs k dcs) = i `deepseq` tvs `deepseq` dcs `deepseq` k `deepseq` ()
 
 ---
 
@@ -278,8 +280,8 @@ instance NFData RWCModule where
 ---
 
 flattenArrow :: RWCTy -> ([RWCTy],RWCTy)
-flattenArrow (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2) = let (ts,t) = flattenArrow t2 in (t1:ts,t)
-flattenArrow t                                                       = ([],t)
+flattenArrow (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "->")) t1) t2) = let (ts,t) = flattenArrow t2 in (t1:ts,t)
+flattenArrow t                                                     = ([],t)
 
 flattenTyApp :: RWCTy -> [RWCTy]
 flattenTyApp (RWCTyApp t1 t2) = flattenTyApp t1 ++ [t2]
@@ -290,17 +292,17 @@ flattenApp (RWCApp e e') = flattenApp e++[e']
 flattenApp e             = [e]
 
 mkArrow :: RWCTy -> RWCTy -> RWCTy
-mkArrow t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2
+mkArrow t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon (TyConId "->")) t1) t2
 
 infixr `mkArrow`
 
 arrowLeft :: RWCTy -> RWCTy
-arrowLeft (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2) = t1
-arrowLeft t                                                       = error $ "arrowLeft: got non-arrow type: " ++ show t
+arrowLeft (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "->")) t1) t2) = t1
+arrowLeft t                                                     = error $ "arrowLeft: got non-arrow type: " ++ show t
 
 arrowRight :: RWCTy -> RWCTy
-arrowRight (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "(->)")) t1) t2) = t2
-arrowRight t                                                       = error $ "arrowRight: got non-arrow type: " ++ show t
+arrowRight (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "->")) t1) t2) = t2
+arrowRight t                                                     = error $ "arrowRight: got non-arrow type: " ++ show t
 
 typeOf :: RWCExp -> RWCTy
 typeOf (RWCApp e _)                   = arrowRight (typeOf e)

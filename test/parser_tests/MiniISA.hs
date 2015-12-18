@@ -1,10 +1,5 @@
 module MiniISA where
 
--- kludge, should be in a prelude
-data Tuple2 a b = Tuple2 a b
-data Tuple3 a b c = Tuple3 a b c
-data Tuple4 a b c d = Tuple4 a b c d
-data Unit = Unit
 -- end kludge
 data Bit = Zero | One
 data W8  = W8 Bit Bit Bit Bit Bit Bit Bit Bit

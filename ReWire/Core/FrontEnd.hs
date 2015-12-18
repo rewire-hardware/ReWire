@@ -6,6 +6,7 @@ module ReWire.Core.FrontEnd
       , prettyPrint
       ) where
 
+import ReWire.Core.Kinds
 import ReWire.Core.Syntax
 import ReWire.Scoping (mkId, Id, fv)
 import ReWire.SYB
@@ -24,7 +25,7 @@ import Data.List (nub)
 import Data.Monoid ((<>))
 
 import qualified Language.Haskell.Exts as Haskell (parseFile)
-import           Language.Haskell.Exts hiding (parseFile, loc, name, binds, op)
+import           Language.Haskell.Exts hiding (parseFile, loc, name, binds, op, Kind)
 
 -- | Parse a ReWire source file.
 parseFile :: FilePath -> IO (ParseResult RWCModule)
@@ -79,7 +80,7 @@ deparenify = match (\(Paren n)   -> return n)
           <> match (\(TyParen n) -> return n)
 
 mkTuple :: Int -> String
-mkTuple n = "Tuple" ++ show n
+mkTuple n = "(" ++ replicate (n-1) ',' ++ ")"
 
 -- | Turns Symbols and Specials into normal identifiers.
 normIds :: Transform Trans
@@ -87,7 +88,7 @@ normIds = match (\case
             Symbol n               -> return $ Ident n)
        <> match (\case
             Qual _ n               -> return $ UnQual n
-            Special UnitCon        -> return $ UnQual $ Ident "Unit"
+            Special UnitCon        -> return $ UnQual $ Ident "()"
             Special ListCon        -> return $ UnQual $ Ident "List"
             Special FunCon         -> return $ UnQual $ Ident "->"
             -- I think this is only for the prefix constructor.
@@ -288,7 +289,7 @@ transData :: [RWCData] -> Decl -> Trans [RWCData]
 transData datas (DataDecl loc _ _ (Ident x) tyVars cons _deriving) = do
       tyVars' <- mapM (transTyVar loc) tyVars
       cons' <- mapM transCon cons
-      return $ RWCData (TyConId x) tyVars' cons' : datas
+      return $ RWCData (TyConId x) tyVars' kblank cons' : datas
 transData datas _                                                  = return datas
 
 transTySig :: [(String, RWCTy)] -> Decl -> Trans [(String, RWCTy)]
@@ -342,6 +343,9 @@ isMonad ms = \case
       TyCon (UnQual (Ident "I"))                                 -> True
       TyVar (Ident x)                                            -> x `elem` ms
       _                                                          -> False
+
+kblank :: Kind
+kblank = Kstar
 
 tblank :: RWCTy
 tblank = RWCTyCon (TyConId "_")
