@@ -64,3 +64,4 @@ notifications:
 cache:
   directories:
   - $HOME/.cabal
+  - $HOME/.ghc
