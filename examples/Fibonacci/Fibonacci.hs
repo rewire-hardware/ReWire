@@ -1,4 +1,4 @@
--- File: Fibonacci.rw
+module Fibonacci where
 
 --
 -- The compiler doesn't yet support a "prelude" so we will have to define a
@@ -6,11 +6,10 @@
 --
 data Bit        = Zero | One
 data W8         = W8 Bit Bit Bit Bit Bit Bit Bit Bit
-data Unit       = Unit
-data Tuple2 a b = Tuple2 a b
 
 plusW8 :: W8 -> W8 -> W8
-plusW8 x y = nativeVhdl "plusW8" plusW8 x y
+{-# INLINE plusW8 #-}
+plusW8 = nativeVhdl "plusW8" plusW8
 
 zeroW8 :: W8
 zeroW8 = W8 Zero Zero Zero Zero Zero Zero Zero Zero
