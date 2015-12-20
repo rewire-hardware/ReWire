@@ -1,4 +1,4 @@
-{-# LANGUAGE ViewPatterns, LambdaCase #-}
+{-# LANGUAGE ViewPatterns, LambdaCase, NamedFieldPuns, FlexibleInstances #-}
 module ReWire.Core.FrontEnd
       ( parseFile
       , ParseResult(..)
@@ -12,7 +12,9 @@ import ReWire.Scoping (mkId, Id, fv)
 import ReWire.SYB
 
 import Control.Applicative ((<*>))
-import Control.Monad (foldM, replicateM, (>=>), mzero)
+import Control.Arrow ((&&&))
+import Control.Monad (foldM, replicateM, (>=>), mzero, unless)
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (ExceptT(..), throwE, runExceptT)
 import Control.Monad.Trans.Maybe (MaybeT(..))
@@ -21,17 +23,45 @@ import Data.Data (Data, cast)
 import Data.Foldable (foldl', foldrM)
 import Data.Functor ((<$>))
 import Data.Functor.Identity
-import Data.List (nub)
-import Data.Monoid ((<>))
+import Data.List (nub, find, foldl1)
+import Data.List.Split (splitOn)
+import Data.Maybe (fromMaybe)
+import Data.Monoid ((<>), mconcat)
+import qualified Data.Map.Strict as Map
+import System.FilePath (joinPath, (<.>))
 
 import qualified Language.Haskell.Exts as Haskell (parseFile)
 import           Language.Haskell.Exts hiding (parseFile, loc, name, binds, op, Kind)
 
--- | Parse a ReWire source file.
+import ReWire.Core.PrettyPrintHaskell
+
+ppRWC :: ModMeta -> Trans ()
+ppRWC (ModMeta m exps) = do
+      liftIO $ putStrLn "\nEXPORTS:"
+      liftIO $ print exps
+      liftIO $ putStrLn "\nMOD:"
+      liftIO $ print $ ppHaskell m
+
+pp :: Module -> Trans ()
+pp = liftIO . putStrLn . prettyPrint
+
+-- | Recursively opens and parses files.
 parseFile :: FilePath -> IO (ParseResult RWCModule)
-parseFile = Haskell.parseFile
-      -- *** Desugar into lambdas:
-      !=> runT (normIds <> deparenify <> desugarInfix <> wheresToLets)
+parseFile = runTrans . getModule
+      where runTrans :: Trans a -> IO (ParseResult a)
+            runTrans = except2PR . (flip runStateT initState >=> return . fst)
+
+            except2PR :: ExceptT (SrcLoc, String) IO a -> IO (ParseResult a)
+            except2PR (runExceptT -> e) = e >>= return . \case
+                  Left (loc, msg) -> ParseFailed loc msg
+                  Right a         -> return a
+
+toFilePath :: ModuleName -> FilePath
+toFilePath (ModuleName n) = joinPath (splitOn "." n) <.> "hs"
+
+-- | Desugar into lambdas then normalize the lambdas.
+desugar :: Module -> Trans Module
+desugar = runT (normIds <> deparenify <> desugarInfix <> wheresToLets)
       >=> runT desugarFuns
       >=> runT (desugarTuples <> desugarDos)
       >=> runT desugarLets
@@ -41,36 +71,173 @@ parseFile = Haskell.parseFile
       >=> runT depatLambdas
       >=> runT desugarAsPats
       >=> runT lambdasToCases
-      -- *** Translate into the core abstract syntax:
-      >=> trans
-      where (!=>) :: (FilePath -> IO (ParseResult Module)) -> (Module -> Trans a) -> FilePath -> IO (ParseResult a)
-            f !=> g = f >=> runTrans . (pr2Trans >=> g)
-            infix 0 !=>
-            runTrans :: Trans a -> IO (ParseResult a)
-            runTrans = except2PR . (flip runStateT 0 >=> return . fst)
-            pr2Trans :: ParseResult a -> Trans a
-            pr2Trans = \case
-                  ParseOk p           -> return p
-                  ParseFailed loc msg -> pFail loc msg
-            except2PR :: ExceptT (SrcLoc, String) IO a -> IO (ParseResult a)
-            except2PR (runExceptT -> e) = \case
-                  Left (loc, msg) -> ParseFailed loc msg
-                  Right a         -> return a
-                  <$> e
 
 unknownLoc :: SrcLoc
 unknownLoc = SrcLoc "" 0 0
 
-type Trans = StateT Int (ExceptT (SrcLoc, String) IO)
+initState :: TransState
+initState = TS 0 Map.empty
+
+data FQName = FQName ModuleName Name
+      deriving (Eq, Show)
+
+class ToQName a where
+      toQName :: a -> QName
+instance ToQName QName where
+      toQName = id
+instance ToQName FQName where
+      toQName (FQName m x) = Qual m x
+instance ToQName Name where
+      toQName = UnQual
+
+class FromQName a where
+      fromQName :: QName -> a
+instance FromQName QName where
+      fromQName = id
+instance FromQName FQName where
+      fromQName (Qual m x) = FQName m x
+instance FromQName Name where
+      fromQName (Qual _ x) = x
+      fromQName (UnQual x) = x
+instance FromQName String where
+      fromQName (Qual m x)         = qual (FQName m x)
+      fromQName (UnQual (Ident x)) = x
+
+tySigil :: (ToQName a, FromQName b) => a -> b
+tySigil x = case toQName x of
+      Qual m (Ident x') -> fromQName $ Qual m $ Ident $ "#" ++ x'
+      UnQual (Ident x') -> fromQName $ UnQual $ Ident $ "#" ++ x'
+
+data TransState = TS
+      { tsNextFresh :: Int
+      , tsModCache  :: Map.Map FilePath ModMeta
+      }
+      deriving Show
+
+data ModMeta = ModMeta
+      { mmModule  :: RWCModule
+      , mmExports :: [FQName]
+      }
+      deriving Show
+
+getModule :: FilePath -> Trans RWCModule
+getModule fp = do
+      ModMeta m _ <- getCached fp
+      return m
+
+getExports :: FilePath -> Trans [FQName]
+getExports fp = do
+      ModMeta _ exps <- getCached fp
+      return exps
+
+getCached :: FilePath -> Trans ModMeta
+getCached fp = do
+      mods <- tsModCache <$> get
+      case Map.lookup fp mods of
+            Just mm  -> return mm
+            Nothing -> do
+                  m <- justParse fp
+                  m' <- desugar m
+                  pp m'
+                  rn <- mkRenamer m'
+                  m'' <- trans rn m'
+                  ppRWC m''
+                  cache fp m''
+                  return m''
+
+      where justParse :: FilePath -> Trans Module
+            justParse = (liftIO . Haskell.parseFile) >=> pr2Trans
+            pr2Trans :: ParseResult a -> Trans a
+            pr2Trans = \case
+                  ParseOk p           -> return p
+                  ParseFailed loc msg -> pFail loc msg
+
+mkRenamer :: Module -> Trans Renamer
+mkRenamer (Module loc m _ _ _ imps ds) = do
+      rns <- mapM toRenamer imps
+      return $ mconcat rns
+
+toRenamer :: ImportDecl -> Trans Renamer
+toRenamer (ImportDecl loc m quald _ _ _ as specs) = do
+      exps <- getExports $ toFilePath m
+      callMrt exps as specs
+      where callMrt exps Nothing   Nothing          = mkTable m Nothing exps
+            callMrt exps (Just m') Nothing          = mkTable m' Nothing exps
+            callMrt exps (Just m') (Just (h, imps)) = mkTable m' (Just (h, map getImp imps)) exps
+            callMrt exps Nothing   (Just (h, imps)) = mkTable m (Just (h, map getImp imps)) exps
+
+            getImp (IVar n)              = n
+            getImp (IAbs _ n)            = n
+            getImp (IThingAll _n)        = error "wtf"
+            getImp (IThingWith _n _cons) = error "well now my fucking map got to be a fold"
+
+            mkTable :: ModuleName -> Maybe (Bool, [Name]) -> [FQName] -> Trans Renamer
+            -- No list of imports -- so import everything.
+            mkTable m' Nothing exps = mkTable m' (Just (False, map getUnQual exps)) exps
+                  where getUnQual :: FQName -> Name
+                        getUnQual (FQName _ n) = n
+            -- List of imports, no "hiding".
+            mkTable m' (Just (False, imps)) exps = foldM ins Map.empty imps
+                  where ins table imp = case find (cmp imp) exps of
+                              Just exp -> return $
+                                    let tab' = Map.insert (Qual m' imp) exp table
+                                    in if quald then tab' else Map.insert (UnQual imp) exp tab'
+                              Nothing  -> pFail loc $ "importing an unexported symbol from " ++ prettyPrint m
+            -- List of imports with "hiding" -- import everything, then delete
+            -- the items from the list.
+            mkTable m' (Just (True, imps)) exps = do
+                  tab <- mkTable m' Nothing exps
+                  foldM del tab imps
+                  where del table imp = case find (cmp imp) exps of
+                              Just exp -> return
+                                    $ Map.delete (Qual m' imp)
+                                    $ Map.delete (UnQual imp) table
+                              Nothing  -> pFail loc $ "importing an unexported symbol from " ++ prettyPrint m
+
+            cmp :: Name -> FQName -> Bool
+            cmp imp (FQName _ exp) = imp == exp
+
+type Renamer = Map.Map QName FQName
+
+-- | Parameters: the renamer, the name to rename, a module to use as the default qualifier.
+--   Returns: the fully qualified name.
+rename :: (ToQName a, FromQName b) => Renamer -> a -> b
+rename rn x = fromQName . maybe (toQName x) toQName $ Map.lookup (toQName x) rn
+
+extend :: ToQName a => [(a, FQName)] -> Renamer -> Renamer
+extend kvs = Map.union $ Map.fromList $ map ((toQName . fst) &&& snd) kvs
+
+qual :: FQName -> String
+qual (FQName (ModuleName m) (Ident n)) = m ++ "." ++ n
+
+unqual :: FQName -> QName
+unqual (FQName _ n) = UnQual n
+
+exclude :: ToQName a => [a] -> Renamer -> Renamer
+exclude = foldr ((.) . Map.delete . toQName) id
+
+-- | True iff an entry for the name exists in the renamer.
+finger :: Renamer -> QName -> Bool
+finger = flip Map.member
+
+type Trans = StateT TransState (ExceptT (SrcLoc, String) IO)
 
 pFail :: SrcLoc -> String -> Trans a
 pFail loc msg = lift $ throwE (loc, msg)
 
-fresh :: Trans String
+update :: (TransState -> TransState) -> Trans ()
+update = (<$> get) >=> put
+
+cache :: FilePath -> ModMeta -> Trans ()
+cache fp mm = do
+      mods <- tsModCache <$> get
+      update (\s -> s {tsModCache = Map.insert fp mm $ tsModCache s})
+
+fresh :: Trans Name
 fresh = do
-      x <- get
-      put $ x + 1
-      return $ "$" ++ show x
+      x <- tsNextFresh <$> get
+      update $ \s -> s {tsNextFresh = x + 1}
+      return $ Ident $ "$" ++ show x
 
 -- | Removes parens in types, expressions, and patterns so they don't confuddle
 --   everything.
@@ -79,21 +246,25 @@ deparenify = match (\(Paren n)   -> return n)
           <> match (\(PParen n)  -> return n)
           <> match (\(TyParen n) -> return n)
 
-mkTuple :: Int -> String
-mkTuple n = "(" ++ replicate (n-1) ',' ++ ")"
+mkTuple :: Int -> Name
+mkTuple n = Ident $ "(" ++ replicate (n-1) ',' ++ ")"
 
--- | Turns Symbols and Specials into normal identifiers.
+-- | Turns Symbols and Specials into normal identifiers and adds a prefix to
+--   all names in the type namespace.
 normIds :: Transform Trans
 normIds = match (\case
             Symbol n               -> return $ Ident n)
        <> match (\case
-            Qual _ n               -> return $ UnQual n
             Special UnitCon        -> return $ UnQual $ Ident "()"
             Special ListCon        -> return $ UnQual $ Ident "List"
             Special FunCon         -> return $ UnQual $ Ident "->"
             -- I think this is only for the prefix constructor.
-            Special (TupleCon _ i) -> return $ UnQual $ Ident $ mkTuple i
+            Special (TupleCon _ i) -> return $ UnQual $ mkTuple i
             Special Cons           -> return $ UnQual $ Ident "Cons")
+       <> match (\case
+            TyCon x                -> return $ TyCon $ tySigil x)
+       <> match (\case
+            DataDecl a b c x d e f -> return $ DataDecl a b c (tySigil x) d e f)
 
 -- | Turns sections and infix ops into regular applications and lambdas.
 desugarInfix :: Transform Trans
@@ -102,10 +273,10 @@ desugarInfix = match $ \case
       LeftSection e (QConOp op)  -> return $ App (Con op) e
       RightSection (QVarOp op) e -> do
             x <- fresh
-            return $ Lambda unknownLoc [PVar $ Ident x] $ App (App (Var op) $ Var $ UnQual $ Ident x) e
+            return $ Lambda unknownLoc [PVar x] $ App (App (Var op) $ Var $ UnQual x) e
       RightSection (QConOp op) e -> do
             x <- fresh
-            return $ Lambda unknownLoc [PVar $ Ident x] $ App (App (Con op) $ Var $ UnQual $ Ident x) e
+            return $ Lambda unknownLoc [PVar x] $ App (App (Con op) $ Var $ UnQual x) e
       InfixApp e1 (QVarOp op) e2 -> return $ App (App (Var op) e1) e2
       InfixApp e1 (QConOp op) e2 -> return $ App (App (Con op) e1) e2
 
@@ -124,29 +295,29 @@ desugarFuns = match $ \case
       FunBind ms@(Match loc name pats _ _ Nothing:_) -> do
             e <- buildLambda loc ms $ length pats
             return $ PatBind loc (PVar name) (UnGuardedRhs e) Nothing
-      n@(FunBind _)                                  -> pFail unknownLoc $ "unsupported syntax: " ++ prettyPrint n
+      n@(FunBind _)                                  -> pFail unknownLoc $ "unsupported decl syntax: " ++ prettyPrint n
       where buildLambda :: SrcLoc -> [Match] -> Int -> Trans Exp
             buildLambda loc ms 1 = do
                   alts <- mapM toAlt ms
                   x <- fresh
-                  return $ Lambda loc [PVar $ Ident x] $ Case (Var $ UnQual $ Ident x) alts
+                  return $ Lambda loc [PVar x] $ Case (Var $ UnQual x) alts
             buildLambda loc ms arrity = do
                   alts <- mapM toAlt ms
                   xs <- replicateM arrity fresh
-                  return $ Lambda loc (map (PVar . Ident) xs) $ Case (Tuple Boxed (map (Var . UnQual . Ident) xs)) alts
+                  return $ Lambda loc (map PVar xs) $ Case (Tuple Boxed (map (Var . UnQual) xs)) alts
             toAlt :: Match -> Trans Alt
             toAlt (Match loc' _ [p] Nothing rhs binds) = return $ Alt loc' p rhs binds
             toAlt (Match loc' _ ps Nothing rhs binds)  = return $ Alt loc' (PTuple Boxed ps) rhs binds
-            toAlt m@(Match loc' _ _ _ _ _)             = pFail loc' $ "unsupported syntax: " ++ prettyPrint m
+            toAlt m@(Match loc' _ _ _ _ _)             = pFail loc' $ "unsupported decl syntax: " ++ prettyPrint m
 
 -- | Turns tuples into applications of a TupleN constructor (also in types and pats):
 -- > (x, y, z)
 -- becomes
 -- > (Tuple3 x y z)
 desugarTuples :: Transform Trans
-desugarTuples = match (\(Tuple _ es)   -> return $ foldl' App (Con $ UnQual $ Ident $ mkTuple $ length es) es)
-             <> match (\(TyTuple _ ts) -> return $ foldl' TyApp (TyCon $ UnQual $ Ident $ mkTuple $ length ts) ts)
-             <> match (\(PTuple _ ps)  -> return $ PApp (UnQual $ Ident $ mkTuple $ length ps) ps)
+desugarTuples = match (\(Tuple _ es)   -> return $ foldl' App (Con $ UnQual $ mkTuple $ length es) es)
+             <> match (\(TyTuple _ ts) -> return $ foldl' TyApp (TyCon $ UnQual $ mkTuple $ length ts) ts)
+             <> match (\(PTuple _ ps)  -> return $ PApp (UnQual $ mkTuple $ length ps) ps)
 
 -- | Turns do-notation into a series of >>= \x ->. Turns LetStmts into Lets.
 --   Should run before Let and Lambda desugarage. E.g.:
@@ -163,7 +334,7 @@ desugarDos = match $ \(Do stmts) -> transDo stmts
                   [Qualifier e]             -> return e
                   Qualifier e : stmts       -> App (App (Var $ UnQual $ Ident ">>=") e) . Lambda unknownLoc [PWildCard] <$> transDo stmts
                   LetStmt binds : stmts     -> Let binds <$> transDo stmts
-                  s : _                     -> pFail unknownLoc $ "unsupported syntax: " ++ prettyPrint s
+                  s : _                     -> pFail unknownLoc $ "unsupported syntax in do-block: " ++ prettyPrint s
                   _                         -> pFail unknownLoc "something went wrong while translating a do-block."
 
 -- | Turns where clauses into lets. Only valid because we're disallowing
@@ -189,10 +360,10 @@ wheresToLets = match (\case
 desugarLets :: Transform Trans
 desugarLets = match $ \case
       Let (BDecls ds) e -> foldrM transLet e ds
-      n@(Let _ _)       -> pFail unknownLoc $ "unsupported syntax: " ++ prettyPrint n
+      n@(Let _ _)       -> pFail unknownLoc $ "unsupported let syntax: " ++ prettyPrint n
       where transLet :: Decl -> Exp -> Trans Exp
             transLet (PatBind loc p (UnGuardedRhs e1) Nothing) inner = return $ Case e1 [Alt loc p (UnGuardedRhs inner) Nothing]
-            transLet n@(PatBind loc _ _ _)                     _     = pFail loc $ "unsupported syntax: " ++ prettyPrint n
+            transLet n@(PatBind loc _ _ _)                     _     = pFail loc $ "unsupported let syntax: " ++ prettyPrint n
             transLet n                                         _     = pFail unknownLoc $ "unsupported syntax: " ++ prettyPrint n
 
 -- | Turns ifs into cases and unary minus.
@@ -228,7 +399,7 @@ depatLambdas = match $ \case
       n@(Lambda _ [PVar _] _) -> return n
       Lambda loc [p] e        -> do
             x <- fresh
-            return $ Lambda loc [PVar $ Ident x] (Case (Var $ UnQual $ Ident x) [Alt loc p (UnGuardedRhs e) Nothing])
+            return $ Lambda loc [PVar x] (Case (Var $ UnQual x) [Alt loc p (UnGuardedRhs e) Nothing])
 
 -- | Desugars as-patterns in (and only in) cases into more cases. Should run
 --   after depatLambdas. E.g.:
@@ -275,73 +446,105 @@ lambdasToCases = match $
       \(App (Lambda loc [p] e2) e1) -> return $ Case e1 [Alt loc p (UnGuardedRhs e2) Nothing]
 
 -- | Translate a Haskell module into the ReWire abstract syntax.
-trans :: Module -> Trans RWCModule
-trans (Module _loc (ModuleName n) _pragmas _ _exports _imports (reverse -> ds)) = do
-      datas <- foldM transData [] ds
-      sigs  <- foldM transTySig [] ds
-      inls  <- foldM transInlineSig [] ds
-      defs  <- foldM (transDef sigs inls) [] ds
-      -- FIXME: have fun  --adam
-      let imps = []
-      return $ RWCModule (ModuleId n) imps datas defs
+trans :: Renamer -> Module -> Trans ModMeta
+trans rn (Module loc m _pragmas _ exps imps (reverse -> ds)) = do
+      let rn' = extend (zip (getGlobs ds) $ map (FQName m) $ getGlobs ds) rn
+      tyDefs <- foldM (transData rn') [] ds
+      tySigs <- foldM (transTySig rn') [] ds
+      inls   <- foldM transInlineSig [] ds
+      fnDefs <- foldM (transDef rn' tySigs inls) [] ds
+      exps'  <- maybe (return $ map (FQName m) $ getGlobs ds) (foldM (transExport loc m rn') []) exps
+      imps'  <- mapM (getModule . toFilePath . importModule) imps
+      return $ ModMeta (mergeMods $ RWCModule tyDefs fnDefs : imps') exps'
+      where getGlobs :: [Decl] -> [Name]
+            getGlobs = foldl' (flip getGlobs') []
+                  where getGlobs' :: Decl -> [Name] -> [Name]
+                        getGlobs' = \case
+                              DataDecl _ _ _ n _ cons _     -> ((n : foldr getCtors [] cons) ++)
+                              PatBind _ (PVar n) _ _        -> (n :)
+                              _                             -> id
+                        getCtors :: QualConDecl -> [Name] -> [Name]
+                        getCtors = \case
+                              QualConDecl _ _ _ (ConDecl n _) -> (n :)
+                              _                               -> id
+            mergeMods :: [RWCModule] -> RWCModule
+            mergeMods = foldl1 mergeMods'
+                  where mergeMods' (RWCModule ts fs) (RWCModule ts' fs') = RWCModule (ts ++ ts') (fs ++ fs')
 
-transData :: [RWCData] -> Decl -> Trans [RWCData]
-transData datas (DataDecl loc _ _ (Ident x) tyVars cons _deriving) = do
+transExport :: SrcLoc -> ModuleName -> Renamer -> [FQName] -> ExportSpec -> Trans [FQName]
+transExport loc m rn exps = \case
+      EVar x              -> if finger rn x
+            then return $ rename rn x : exps
+            else pFail loc $ "unknown name in export list: " ++ prettyPrint x
+      EAbs _ x -> if finger rn x
+            then return $ rename rn x : exps
+            else pFail loc $ "unknown name in export list: " ++ prettyPrint x
+      EThingAll _       -> pFail unknownLoc "TODO: EThingAll"
+      EThingWith _ _    -> pFail unknownLoc "TODO: EThingWith"
+      EModuleContents m -> do
+            exps' <- getExports $ toFilePath m
+            return $ exps' ++ exps
+
+transData :: Renamer -> [RWCData] -> Decl -> Trans [RWCData]
+transData rn datas (DataDecl loc _ _ x tyVars cons _deriving) = do
       tyVars' <- mapM (transTyVar loc) tyVars
-      cons' <- mapM transCon cons
-      return $ RWCData (TyConId x) tyVars' kblank cons' : datas
-transData datas _                                                  = return datas
+      cons' <- mapM (transCon rn) cons
+      return $ RWCData (TyConId $ rename rn x) tyVars' kblank cons' : datas
+transData _  datas _                                          = return datas
 
-transTySig :: [(String, RWCTy)] -> Decl -> Trans [(String, RWCTy)]
-transTySig sigs (TypeSig loc names t) = do
-      t' <- transTy loc [] t
-      return $ zip (map (\(Ident x) -> x) names) (repeat t') ++ sigs
-transTySig sigs _                     = return sigs
+transTySig :: Renamer -> [(Name, RWCTy)] -> Decl -> Trans [(Name, RWCTy)]
+transTySig rn sigs (TypeSig loc names t) = do
+      t' <- transTy loc rn [] t
+      return $ zip names (repeat t') ++ sigs
+transTySig _ sigs _                      = return sigs
 
 -- I guess this doesn't need to be in the monad, really, but whatever...  --adam
 -- Not sure what the boolean field means here, so we ignore it!  --adam
-transInlineSig :: [String] -> Decl -> Trans [String]
-transInlineSig inls (InlineSig _ _ AlwaysActive (UnQual (Ident x))) = return (x:inls)
-transInlineSig inls _                                               = return inls
+transInlineSig :: [Name] -> Decl -> Trans [Name]
+transInlineSig inls = \case
+      (InlineSig _ _ AlwaysActive (Qual _ x)) -> return $ x : inls
+      (InlineSig _ _ AlwaysActive (UnQual x)) -> return $ x : inls
+      _                                       -> return inls
 
-transDef :: [(String, RWCTy)] -> [String] -> [RWCDefn] -> Decl -> Trans [RWCDefn]
-transDef tys inls defs (PatBind loc (PVar (Ident x)) (UnGuardedRhs e) Nothing) = case lookup x tys of
-      Just t -> (:defs) . RWCDefn (mkId x) (nub (fv t) :-> t) (x `elem` inls) <$> transExp loc e
-      _      -> pFail loc $ "no type signature for " ++ x
-transDef _   _    defs _                                                       = return defs
+transDef :: Renamer -> [(Name, RWCTy)] -> [Name] -> [RWCDefn] -> Decl -> Trans [RWCDefn]
+transDef rn tys inls defs (PatBind loc (PVar x) (UnGuardedRhs e) Nothing) = case lookup x tys of
+      Just t -> (:defs) . RWCDefn (mkId $ rename rn x) (nub (fv t) :-> t) (x `elem` inls) <$> transExp loc rn e
+      _      -> pFail loc $ "no type signature for " ++ prettyPrint x
+transDef _  _   _    defs _                                               = return defs
 
 transTyVar :: SrcLoc -> TyVarBind -> Trans (Id RWCTy)
 transTyVar loc = \case
       UnkindedVar (Ident x) -> return $ mkId x
-      tv                    -> pFail loc $ "unsupported syntax: " ++ prettyPrint tv
+      tv                    -> pFail loc $ "unsupported type syntax: " ++ prettyPrint tv
 
-transCon :: QualConDecl -> Trans RWCDataCon
-transCon = \case
-      QualConDecl loc [] _ (ConDecl (Ident x) tys) -> (RWCDataCon $ DataConId x) <$> mapM (transTy loc []) tys
-      d@(QualConDecl loc _ _ _)                    -> pFail loc $ "unsupported syntax: " ++ prettyPrint d
+transCon :: Renamer -> QualConDecl -> Trans RWCDataCon
+transCon rn = \case
+      QualConDecl loc [] _ (ConDecl x tys) -> (RWCDataCon $ DataConId $ rename rn x) <$> mapM (transTy loc rn []) tys
+      d@(QualConDecl loc _ _ _)            -> pFail loc $ "unsupported ctor syntax: " ++ prettyPrint d
 
-transTy :: SrcLoc -> [String] -> Type -> Trans RWCTy
-transTy loc ms = \case
+transTy :: SrcLoc -> Renamer -> [Name] -> Type -> Trans RWCTy
+transTy loc rn ms = \case
       TyForall Nothing cs t    -> do
            ms' <- mapM (getNad loc) cs
-           transTy loc (ms ++ ms') t
-      TyFun a b                -> mkArrow <$> transTy loc ms a <*> transTy loc ms b
-      TyApp a b | isMonad ms a -> RWCTyComp <$> transTy loc ms a <*> transTy loc ms b
-                | otherwise    -> RWCTyApp <$> transTy loc ms a <*> transTy loc ms b
-      TyCon (UnQual (Ident x)) -> return $ RWCTyCon (TyConId x)
-      TyVar (Ident x)          -> return $ RWCTyVar (mkId x)
-      t                        -> pFail loc $ "unsupported syntax: " ++ prettyPrint t
+           transTy loc rn (ms ++ ms') t
+      TyFun a b                -> mkArrow <$> transTy loc rn ms a <*> transTy loc rn ms b
+      TyApp a b | isMonad ms a -> RWCTyComp <$> transTy loc rn ms a <*> transTy loc rn ms b
+                | otherwise    -> RWCTyApp <$> transTy loc rn ms a <*> transTy loc rn ms b
+      TyCon x                  -> return $ RWCTyCon (TyConId $ rename rn x)
+      TyVar x                  -> return $ RWCTyVar (mkId $ prettyPrint x)
+      t                        -> pFail loc $ "unsupported type syntax: " ++ prettyPrint t
 
-getNad :: SrcLoc -> Asst -> Trans String
-getNad _   (ClassA (UnQual (Ident "Monad")) [TyVar (Ident x)]) = return x
-getNad loc a                                                   = pFail loc $ "unsupported typeclass constraint: " ++ prettyPrint a
+getNad :: SrcLoc -> Asst -> Trans Name
+getNad loc = \case
+      ClassA (UnQual (Ident "Monad")) [TyVar x] -> return x
+      a                                         -> pFail loc $ "unsupported typeclass constraint: " ++ prettyPrint a
 
-isMonad :: [String] -> Type -> Bool
+isMonad :: [Name] -> Type -> Bool
 isMonad ms = \case
       TyApp (TyApp (TyApp (TyCon (UnQual (Ident "ReT"))) _) _) t -> isMonad ms t
       TyApp (TyApp (TyCon (UnQual (Ident "StT"))) _) t           -> isMonad ms t
       TyCon (UnQual (Ident "I"))                                 -> True
-      TyVar (Ident x)                                            -> x `elem` ms
+      TyVar x                                                    -> x `elem` ms
       _                                                          -> False
 
 kblank :: Kind
@@ -350,17 +553,17 @@ kblank = Kstar
 tblank :: RWCTy
 tblank = RWCTyCon (TyConId "_")
 
-transExp :: SrcLoc -> Exp -> Trans RWCExp
-transExp loc = \case
-      App (App (Var (UnQual (Ident "nativeVhdl")))  (Lit (String f))) e
-                                    -> RWCNativeVHDL f <$> transExp loc e
-      App e1 e2                     -> RWCApp <$> transExp loc e1 <*> transExp loc e2
-      Lambda loc [PVar (Ident x)] e -> RWCLam (mkId x) tblank <$> transExp loc e
-      Var (UnQual (Ident x))        -> return $ RWCVar (mkId x) tblank
-      Con (UnQual (Ident x))        -> return $ RWCCon (DataConId x) tblank
-      Lit lit                       -> RWCLiteral <$> transLit loc lit
-      Case e alts                   -> RWCCase <$> transExp loc e <*> mapM transAlt alts
-      e                             -> pFail loc $ "unsupported syntax: " ++ prettyPrint e
+transExp :: SrcLoc -> Renamer -> Exp -> Trans RWCExp
+transExp loc rn = \case
+      App (App (Var (UnQual (Ident "nativeVhdl"))) (Lit (String f))) e
+                            -> RWCNativeVHDL f <$> transExp loc rn e
+      App e1 e2             -> RWCApp <$> transExp loc rn e1 <*> transExp loc rn e2
+      Lambda loc [PVar x] e -> RWCLam (mkId $ prettyPrint x) tblank <$> transExp loc (exclude [x] rn) e
+      Var x                 -> return $ RWCVar (mkId $ rename rn x) tblank
+      Con x                 -> return $ RWCCon (DataConId $ rename rn x) tblank
+      Lit lit               -> RWCLiteral <$> transLit loc lit
+      Case e alts           -> RWCCase <$> transExp loc rn e <*> mapM (transAlt rn) alts
+      e                     -> pFail loc $ "unsupported expression syntax: " ++ prettyPrint e
 
 -- Not entirely sure this is right...
 deSign :: Sign -> Literal -> Literal
@@ -378,16 +581,20 @@ transLit loc = \case
       Int i  -> return $ RWCLitInteger i
       Frac d -> return $ RWCLitFloat (fromRational d)
       Char c -> return $ RWCLitChar c
-      lit    -> pFail loc $ "unsupported syntax: " ++ prettyPrint lit
+      lit    -> pFail loc $ "unsupported syntax for a literal: " ++ prettyPrint lit
 
-transAlt :: Alt -> Trans RWCAlt
-transAlt = \case
-      Alt loc p (UnGuardedRhs e) Nothing -> RWCAlt <$> transPat loc p <*> transExp loc e
+transAlt :: Renamer -> Alt -> Trans RWCAlt
+transAlt rn = \case
+      Alt loc p (UnGuardedRhs e) Nothing -> RWCAlt <$> transPat loc rn p <*> transExp loc (exclude (getVars p) rn) e
       a@(Alt loc _ _ _)                  -> pFail loc $ "unsupported syntax: " ++ prettyPrint a
+      where getVars :: Pat -> [Name]
+            getVars = runQ $ query' $ \case
+                  PVar x -> [x]
+                  _      -> []
 
-transPat :: SrcLoc -> Pat -> Trans RWCPat
-transPat loc = \case
-      PApp (UnQual (Ident x)) ps -> RWCPatCon (DataConId x) <$> mapM (transPat loc) ps
-      PLit s lit                 -> RWCPatLiteral <$> transLit loc (deSign s lit)
-      PVar (Ident x)             -> return $ RWCPatVar (mkId x) tblank
-      p                          -> pFail loc $ "unsupported syntax: " ++ prettyPrint p
+transPat :: SrcLoc -> Renamer -> Pat -> Trans RWCPat
+transPat loc rn = \case
+      PApp x ps          -> RWCPatCon (DataConId $ rename rn x) <$> mapM (transPat loc rn) ps
+      PLit s lit         -> RWCPatLiteral <$> transLit loc (deSign s lit)
+      PVar x             -> return $ RWCPatVar (mkId $ prettyPrint x) tblank
+      p                  -> pFail loc $ "unsupported syntax in a pattern: " ++ prettyPrint p

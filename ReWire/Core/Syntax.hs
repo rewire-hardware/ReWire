@@ -268,14 +268,12 @@ instance NFData RWCDataCon where
 
 ---
 
-data RWCModule = RWCModule { name       :: ModuleId,
-                             imports    :: [ModuleId],
-                             dataDecls  :: [RWCData],
+data RWCModule = RWCModule { dataDecls  :: [RWCData],
                              defns      :: [RWCDefn] }
                            deriving Show
 
 instance NFData RWCModule where
-  rnf (RWCModule n imps dds defs) = n `deepseq` imps `deepseq` dds `deepseq` defs `deepseq` ()
+  rnf (RWCModule dds defs) = dds `deepseq` defs `deepseq` ()
 
 ---
 

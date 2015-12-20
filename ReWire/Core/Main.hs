@@ -18,7 +18,7 @@ import ReWire.PreHDL.GotoElim (gotoElim)
 import ReWire.PreHDL.ElimEmpty (elimEmpty)
 import ReWire.PreHDL.ToVHDL (toVHDL)
 import ReWire.Core.Transformations.ToPreHDL (cfgFromRW,eu)
-import Control.Monad (when)
+import Control.Monad (when,unless)
 
 data Flag = FlagCFG String
           | FlagLCFG String
@@ -71,7 +71,6 @@ runFE fDebug filename = do
           hPutStrLn stderr e >> exitFailure
         Right m' -> do
           when fDebug (putStrLn "kc finished")
-          
           case typecheck m' of
             Left e   -> hPutStrLn stderr e >> exitFailure
             Right m'' -> do
@@ -87,9 +86,9 @@ main :: IO ()
 main = do args                       <- getArgs
 
           let (flags,filenames,errs) =  getOpt Permute options args
-          
-          when (not (null errs)) (mapM_ (hPutStrLn stderr) errs >> exitUsage)
-             
+
+          unless (null errs) (mapM_ (hPutStrLn stderr) errs >> exitUsage)
+
           when (length filenames /= 1) (hPutStrLn stderr "exactly one source file must be specified" >> exitUsage)
 
           let isActFlag (FlagCFG _)  = True
@@ -99,19 +98,19 @@ main = do args                       <- getArgs
               isActFlag (FlagO _)    = True
               isActFlag FlagI        = True
               isActFlag _            = False
-          
-          when (not (any isActFlag flags)) (hPutStrLn stderr "must specify at least one of -i, -o, --cfg, --lcfg, --pre, or --gpre" >> exitUsage)
+
+          unless (any isActFlag flags) (hPutStrLn stderr "must specify at least one of -i, -o, --cfg, --lcfg, --pre, or --gpre" >> exitUsage)
 
           let filename               =  head filenames
 
           m_ <- runFE (FlagD `elem` flags) filename
-          
+
           if FlagI `elem` flags then trans m_
           else
             case inline m_ of
               Nothing -> hPutStrLn stderr "Inlining failed" >> exitFailure
               Just m  -> do
-                let mergeModule m1 m2 = RWCModule (name m1) (imports m1 ++ imports m2) (dataDecls m1 ++ dataDecls m2) (defns m1 ++ defns m2)
+                let mergeModule m1 m2 = RWCModule (dataDecls m1 ++ dataDecls m2) (defns m1 ++ defns m2)
                     cfg     = cfgFromRW (m `mergeModule` primBasis)
                     cfgDot  = mkDot (gather (eu cfg))
                     lcfgDot = mkDot (gather (linearize cfg))

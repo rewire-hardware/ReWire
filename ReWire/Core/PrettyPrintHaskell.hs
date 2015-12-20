@@ -95,9 +95,7 @@ ppDefns defns = do defns_p <- mapM ppDefn defns
 ppModule :: Monad m => RWCModule -> m Doc
 ppModule m = do dd_p      <- ppDataDecls (dataDecls m)
                 ds_p      <- ppDefns (defns m)
-                return (text "module" <+> text (deModuleId (name m)) <+> text "where"
-                   $+$ dd_p
-                   $+$ ds_p)
+                return (dd_p $+$ ds_p)
 
 ppHaskell :: RWCModule -> Doc
 ppHaskell = runIdentity . ppModule

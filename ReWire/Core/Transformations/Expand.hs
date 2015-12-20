@@ -36,8 +36,8 @@ expandDefn ns (RWCDefn n pt b e) = do e' <- expandExpr ns e
                                       return (RWCDefn n pt b e')
 
 expandModule :: [Id RWCExp] -> RWCModule -> RW RWCModule
-expandModule ns (RWCModule n imps dds defns) = do defns' <- mapM (expandDefn ns) defns
-                                                  return (RWCModule n imps dds defns')
+expandModule ns (RWCModule dds defns) = do defns' <- mapM (expandDefn ns) defns
+                                           return (RWCModule dds defns')
 
 expand :: [Id RWCExp] -> RWCModule -> RWCModule
 expand ns m_ = deUniquify $ runRW ctr m (expandModule ns m)
