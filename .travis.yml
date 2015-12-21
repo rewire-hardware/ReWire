@@ -3,7 +3,6 @@ sudo: false
 matrix:
   include:
   - env: CABALVER=1.16 GHCVER=7.6.3
-    compiler: "gcc -Icache-hack-ghc-7.6.3"
     addons:
       apt:
         packages:
@@ -13,7 +12,6 @@ matrix:
         sources:
         - hvr-ghc
   - env: CABALVER=1.18 GHCVER=7.8.4
-    compiler: "gcc -Icache-hack-ghc-7.8.4"
     addons:
       apt:
         packages:
@@ -23,7 +21,6 @@ matrix:
         sources:
         - hvr-ghc
   - env: CABALVER=1.22 GHCVER=7.10.2
-    compiler: "gcc -Icache-hack-ghc-7.10.2"
     addons:
       apt:
         packages:
@@ -33,7 +30,6 @@ matrix:
         sources:
         - hvr-ghc
   - env: CABALVER=head GHCVER=head
-    compiler: "gcc -Icache-hack-ghc-head"
     addons:
       apt:
         packages:
@@ -65,7 +61,3 @@ script:
 notifications:
   slack:
     secure: ZZaRDOwwSSTIAudI/L+qZY/1uc+fMzfpLN19BTPOQuSb+6krkpIA+sKkBcCp0r9yZXKpqdCtnrbogeQoJSy/tI5VjAHZoXHJz23IypjsgGZ5utqbMmuaB3BWObUP1dIWBo30iLYJJFUxKKuqpIaLVeQWTP2NDgkdYW0H5ERGhGvF2lWvwNhpW3fQxnmsRlWdV5wlSVdemOeCxF7LeJt7W9RnhcnDmwChpTPNGu24NdrqY2MtU4z43KsbjZGH7M/Rh7keZUd/D8LvcYSHofClaDkQT8FaCZ7LI6ADnbXge7NGtje1ASSL1v8oi7xXMwufiuuXJ8bIQPQBm62W/T2bnP3dnYjoZn4vVguoYfzZAcSaAbjHM06RaTzIn4gZNjXvCuj/w2qEbobiwmY8uDZ5f7Ro9En1gDGvJsvevmoCmBWp7OHJONoBlnpg6Ir8HdJlkImE7kD2jEwOoQTgPoh5CU6izO/lu5ZtqmLuVpFk+XzRwESj7v3ccQd4FQ8rdaQckxKVAWEBJM4aqhBAoQTafI6pt6VjlwB+5UX9wh9JtesBjBxhnpusCGv9GfQfi2WGeFQ9fZcLSztehcal0Nlq3QoQtMx2D+VTfUPbr7VVozkzpWtp/kN3aWhYaZgr3QwO8VaEZK7a4V71XgjSomSeV6rOJz2NkjJhFGezN05WKVs=
-cache:
-  directories:
-  - $HOME/.cabal
-  - $HOME/.ghc
