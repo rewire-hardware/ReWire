@@ -1,4 +1,4 @@
-import ReWire.Core.FrontEnd
+import ReWire.FrontEnd
 import ReWire.Core.KindChecker
 import ReWire.Core.TypeChecker
 import qualified ReWire.Core.Main as M
@@ -22,14 +22,14 @@ filesToParse = filesToTC ++ ["Salsa20.hs"]
 
 testParse :: FilePath -> Test
 testParse f_ = testCase f_ (do f   <- getDataFileName ("test/parser_tests/" ++ f_)
-                               res <- parseFile f
+                               res <- loadModule f
                                case res of
                                  ParseFailed _ err -> assertFailure err
                                  ParseOk _         -> return ())
 
 testTC :: FilePath -> Test
 testTC f_ = testCase f_ (do f   <- getDataFileName ("test/parser_tests/" ++ f_)
-                            res <- parseFile f
+                            res <- loadModule f
                             case res of
                               ParseFailed _ err -> assertFailure err
                               ParseOk m         -> case kindcheck m of

@@ -10,15 +10,13 @@ module ReWire.SYB
       , query'
       ) where
 
-import Control.Applicative ((<*>))
 import Control.Exception (PatternMatchFail(..))
 import Control.Monad.Catch (MonadCatch(..))
-import Control.Monad ((>=>), msum, MonadPlus(..))
+import Control.Monad ((>=>), MonadPlus(..))
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Maybe (MaybeT(..))
 import Data.Data (Data, Typeable, gmapM, gmapQr, cast)
 import Data.Functor ((<$>))
-import Data.Functor.Identity
 import Data.Maybe (fromJust)
 import Data.Monoid (Monoid(..))
 
@@ -28,12 +26,12 @@ everywhere f = gmapM (everywhere f) >=> f
 everywhereQ :: (MonadPlus m, Data a) => (forall d. Data d => d -> m b) -> a -> m b
 everywhereQ f n = f n `mplus` gmapQr mplus mzero (everywhereQ f) n
 
-generalizeA :: (Monad m, Typeable a) => (a -> m b) -> forall a. Typeable a => a -> MaybeT m b
+generalizeA :: (Monad m, Typeable a) => (a -> m b) -> forall d. Typeable d => d -> MaybeT m b
 generalizeA f x = case f <$> cast x of
       Nothing -> mzero
       Just x' -> lift x'
 
-generalize :: (Monad m, Typeable a) => (a -> m a) -> forall a. Typeable a => a -> MaybeT m a
+generalize :: (Monad m, Typeable a) => (a -> m a) -> forall d. Typeable d => d -> MaybeT m d
 generalize f = generalizeA f >=> tr
 
 data Transform m where

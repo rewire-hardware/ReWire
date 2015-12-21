@@ -64,31 +64,36 @@ library
                   , transformers >=0.3
   default-language: Haskell2010
   other-extensions: FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, UndecidableInstances
-  ghc-options:      -fprof-auto -rtsopts
+  ghc-options:      -fprof-auto -rtsopts -Wall -fno-warn-name-shadowing
 
-  exposed-modules:  ReWire.Core.Syntax
-                    ReWire.Core.FrontEnd
-                    ReWire.Core.TypeChecker
+  exposed-modules:  ReWire.Core.KindChecker
                     ReWire.Core.Kinds
-                    ReWire.Core.KindChecker
-                    ReWire.Core.PrettyPrintHaskell
                     ReWire.Core.Main
+                    ReWire.Core.PrettyPrintHaskell
                     ReWire.Core.PrimBasis
-                    ReWire.PreHDL.CFG
-                    ReWire.PreHDL.ElimEmpty
-                    ReWire.PreHDL.GotoElim
-                    ReWire.PreHDL.Syntax
-                    ReWire.PreHDL.ToVHDL
-                    ReWire.Core.Transformations.Interactive
+                    ReWire.Core.Syntax
                     ReWire.Core.Transformations.DeUniquify
                     ReWire.Core.Transformations.Expand
+                    ReWire.Core.Transformations.Inline
+                    ReWire.Core.Transformations.Interactive
                     ReWire.Core.Transformations.Monad
                     ReWire.Core.Transformations.Purge
                     ReWire.Core.Transformations.Reduce
                     ReWire.Core.Transformations.ToPreHDL
                     ReWire.Core.Transformations.Types
                     ReWire.Core.Transformations.Uniquify
-                    ReWire.Core.Transformations.Inline
+                    ReWire.Core.TypeChecker
+                    ReWire.FrontEnd
+                    ReWire.FrontEnd.Cache
+                    ReWire.FrontEnd.Desugar
+                    ReWire.FrontEnd.Error
+                    ReWire.FrontEnd.Translate
+                    ReWire.FrontEnd.Renamer
+                    ReWire.PreHDL.CFG
+                    ReWire.PreHDL.ElimEmpty
+                    ReWire.PreHDL.GotoElim
+                    ReWire.PreHDL.Syntax
+                    ReWire.PreHDL.ToVHDL
                     ReWire.Scoping
                     ReWire.SYB
 

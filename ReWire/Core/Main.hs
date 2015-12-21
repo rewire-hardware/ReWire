@@ -6,13 +6,13 @@ import System.Console.GetOpt
 import System.Exit
 import ReWire.Core.PrimBasis
 import ReWire.Core.Syntax
-import ReWire.Core.FrontEnd
 --import ReWire.Core.PrettyPrint
 import ReWire.Core.PrettyPrintHaskell
 import ReWire.Core.KindChecker
 import ReWire.Core.TypeChecker
 import ReWire.Core.Transformations.Interactive
 import ReWire.Core.Transformations.Inline
+import ReWire.FrontEnd
 import ReWire.PreHDL.CFG (mkDot,gather,linearize,cfgToProg)
 import ReWire.PreHDL.GotoElim (gotoElim)
 import ReWire.PreHDL.ElimEmpty (elimEmpty)
@@ -52,7 +52,7 @@ exitUsage = hPutStr stderr (usageInfo "Usage: rwc [OPTION...] <filename.rw>" opt
 
 runFE :: Bool -> FilePath -> IO RWCModule
 runFE fDebug filename = do
-  res_m <- parseFile filename
+  res_m <- loadModule filename
 
   case res_m of
     ParseFailed loc m ->
