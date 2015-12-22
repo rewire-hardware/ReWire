@@ -696,9 +696,9 @@ cfgStart (RWCVar x t) = local buildEnv $ do
 cfgStart _ = fail "cfgStart: malformed start expression"
 
 cfgProg :: CGM ()
-cfgProg = do md <- lift $ lift $ queryG (mkId "start")
+cfgProg = do md <- lift $ lift $ queryG (mkId "Main.start")
              case md of
-              Nothing                -> fail "cfgProg: `start' not defined"
+              Nothing                -> fail "cfgProg: `Main.start' not defined"
               Just (RWCDefn _ _ _ e) -> cfgStart e
 
 cfgFromRW :: RWCModule -> CFG

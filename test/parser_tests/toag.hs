@@ -1,5 +1,3 @@
-module ToAG where
-
 data Bit = Zero | One
 
 undefined :: a

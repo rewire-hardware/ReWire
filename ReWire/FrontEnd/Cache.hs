@@ -2,8 +2,6 @@
 module ReWire.FrontEnd.Cache
       ( runCache
       , getModule
-      , getExports
-      , cache
       ) where
 
 import ReWire.Core.Syntax
@@ -70,7 +68,7 @@ getCached fp = do
                   exps' <- foldM (transExport $ nub $ concat allExps) [] exps
 
                   cache fp $ ModMeta (mergeMods $ rwcm : mods) exps'
-                  -- _ppRWC $ ModMeta (mergeMods $ rwcm : mods) exps'
+                  _ppRWC $ ModMeta (mergeMods $ rwcm : mods) exps'
                   getCached fp
 
       where justParse :: FilePath -> Cache Module

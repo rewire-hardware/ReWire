@@ -80,9 +80,9 @@ transExport loc ds rn exps = \case
             lookupCtors' :: Export -> Export -> Export
             lookupCtors' (ExportWith x cs) _ = ExportWith x cs
             lookupCtors' (ExportAll x) (ExportWith x' cs)
-                  | x == x'   = ExportWith x' cs
-                  | otherwise = ExportAll x
-            lookupCtors' e _ = e
+                  | x == x'                  = ExportWith x' cs
+                  | otherwise                = ExportAll x
+            lookupCtors' e _                 = e
 
 transData :: (Functor m, Monad m) => Renamer -> [RWCData] -> Decl -> ParseError m [RWCData]
 transData rn datas = \case
@@ -90,14 +90,14 @@ transData rn datas = \case
             tyVars' <- mapM (transTyVar loc) tyVars
             cons' <- mapM (transCon rn) cons
             return $ RWCData (TyConId $ rename rn x) tyVars' kblank cons' : datas
-      _                                          -> return datas
+      _                                        -> return datas
 
 transTySig :: (Functor m, Monad m) => Renamer -> [(Name, RWCTy)] -> Decl -> ParseError m [(Name, RWCTy)]
 transTySig rn sigs = \case
       TypeSig loc names t -> do
             t' <- transTy loc rn [] t
             return $ zip names (repeat t') ++ sigs
-      _                     -> return sigs
+      _                   -> return sigs
 
 -- I guess this doesn't need to be in the monad, really, but whatever...  --adam
 -- Not sure what the boolean field means here, so we ignore it!  --adam
@@ -105,7 +105,7 @@ transInlineSig :: Monad m => [Name] -> Decl -> ParseError m [Name]
 transInlineSig inls = \case
       InlineSig _ _ AlwaysActive (Qual _ x) -> return $ x : inls
       InlineSig _ _ AlwaysActive (UnQual x) -> return $ x : inls
-      _                                       -> return inls
+      _                                     -> return inls
 
 transDef :: (Functor m, Monad m) => Renamer -> [(Name, RWCTy)] -> [Name] -> [RWCDefn] -> Decl -> ParseError m [RWCDefn]
 transDef rn tys inls defs = \case
@@ -146,8 +146,8 @@ isMonad ms = \case
       TyApp (TyApp (TyApp (TyCon (UnQual (Ident "ReT"))) _) _) t -> isMonad ms t
       TyApp (TyApp (TyCon (UnQual (Ident "StT"))) _) t           -> isMonad ms t
       TyCon (UnQual (Ident "I"))                                 -> True
-      TyVar x                                                     -> x `elem` ms
-      _                                                           -> False
+      TyVar x                                                    -> x `elem` ms
+      _                                                          -> False
 
 kblank :: Kind
 kblank = Kstar
@@ -192,4 +192,4 @@ transPat loc rn = \case
 
 deSigil :: FQName -> FQName
 deSigil (FQName m (Ident ('#':cs))) = FQName m (Ident cs)
-deSigil x = x
+deSigil x                           = x

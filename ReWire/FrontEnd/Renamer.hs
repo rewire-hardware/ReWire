@@ -51,8 +51,6 @@ qual :: FQName -> String
 qual (FQName (ModuleName m) (Ident n))  = m ++ "." ++ n
 qual (FQName (ModuleName m) (Symbol n)) = m ++ "." ++ n
 
--- | Parameters: the renamer, the name to rename, a module to use as the default qualifier.
---   Returns: the fully qualified name.
 rename :: (ToQName a, FromQName b) => Renamer -> a -> b
 rename rn x = fromQName . maybe (toQName x) toQName $ Map.lookup (toQName x) rn
 

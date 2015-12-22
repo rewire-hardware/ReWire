@@ -12,4 +12,4 @@ toInline m = concatMap f (defns m)
         f _                    = []
 
 inline :: RWCModule -> Maybe RWCModule
-inline m = purge (mkId "start") $ redmod $ expand (toInline m) m
+inline m = purge (mkId "Main.start") $ redmod $ expand (toInline m) m

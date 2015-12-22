@@ -1,5 +1,3 @@
-module Salsa20 where
-
 --
 -- NB: This should parse, but it should not typecheck.
 --

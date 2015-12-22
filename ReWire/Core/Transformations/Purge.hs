@@ -68,8 +68,8 @@ occurs n m_ = filter (not . ('@' `elem`) . show) $ fst $ runRW ctr m (runStateT 
 
 cmdPurge :: TransCommand
 cmdPurge arg_ m = (purge (mkId arg) m,Nothing)
-  where arg = if null arg_ then "start" else arg_
+  where arg = if null arg_ then "Main.start" else arg_
 
 cmdOccurs :: TransCommand
 cmdOccurs arg_ m = (Nothing, Just $ show $ occurs (mkId arg) m)
-  where arg = if null arg_ then "start" else arg_
+  where arg = if null arg_ then "Main.start" else arg_
