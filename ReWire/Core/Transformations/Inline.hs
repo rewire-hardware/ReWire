@@ -6,10 +6,10 @@ import ReWire.Core.Transformations.Expand (expand)
 import ReWire.Core.Transformations.Reduce (redmod)
 import ReWire.Core.Transformations.Purge (purge)
 
-toInline :: RWCModule -> [Id RWCExp]
+toInline :: RWCProgram -> [Id RWCExp]
 toInline m = concatMap f (defns m)
   where f (RWCDefn n _ True _) = [n]
         f _                    = []
 
-inline :: RWCModule -> Maybe RWCModule
+inline :: RWCProgram -> Maybe RWCProgram
 inline m = purge (mkId "Main.start") $ redmod $ expand (toInline m) m

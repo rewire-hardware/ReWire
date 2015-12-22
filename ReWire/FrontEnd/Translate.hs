@@ -17,7 +17,7 @@ import Data.List (nub)
 import Language.Haskell.Exts hiding (loc, name, binds, op, Kind)
 
 -- | Translate a Haskell module into the ReWire abstract syntax.
-translate :: (Functor m, Monad m) => Renamer -> Module -> ParseError m (RWCModule, [ModuleName], [Export])
+translate :: (Functor m, Monad m) => Renamer -> Module -> ParseError m (RWCProgram, [ModuleName], [Export])
 translate rn (Module loc m _pragmas _ exps imps (reverse -> ds)) = do
       let rn' = extend (zip (getGlobs ds) $ map (deSigil . FQName m) $ getGlobs ds) rn
       tyDefs <- foldM (transData rn') [] ds
@@ -25,7 +25,7 @@ translate rn (Module loc m _pragmas _ exps imps (reverse -> ds)) = do
       inls   <- foldM transInlineSig [] ds
       fnDefs <- foldM (transDef rn' tySigs inls) [] ds
       exps'  <- maybe (return $ map (Export . FQName m) $ getGlobs ds) (foldM (transExport loc ds rn') []) exps
-      return (RWCModule tyDefs fnDefs, map importModule imps, exps')
+      return (RWCProgram tyDefs fnDefs, map importModule imps, exps')
       where getGlobs :: [Decl] -> [Name]
             getGlobs = foldl' (flip getGlobs') []
                   where getGlobs' :: Decl -> [Name] -> [Name]

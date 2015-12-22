@@ -210,11 +210,11 @@ tcDefn d  = do putTySub Map.empty
                --traceShow n $ d' `deepseq` return d'
                d' `deepseq` return d'
 
-tc :: [RWCModule] -> RWCModule -> TCM RWCModule
+tc :: [RWCProgram] -> RWCProgram -> TCM RWCProgram
 tc ms m = do let as  =  Map.fromList $ concatMap (map defnAssump . defns) (m:ms)
                  cas =  Map.fromList $ concatMap (concatMap dataDeclAssumps . dataDecls) (m:ms)
              ds'     <- localAssumps (as `Map.union`) (localCAssumps (cas `Map.union`) (mapM tcDefn (defns m)))
              return (m { defns = ds' })
 
-typecheck :: RWCModule -> Either String RWCModule
+typecheck :: RWCProgram -> Either String RWCProgram
 typecheck m = fmap fst $ runIdentity (runExceptT (runStateT (runReaderT (tc [primBasis] m) (TCEnv Map.empty Map.empty)) (TCState Map.empty 0)))

@@ -23,7 +23,7 @@ import           Language.Haskell.Exts hiding (parseFile, loc, name, binds, op)
 
 import ReWire.Core.PrettyPrintHaskell
 
-data ModMeta = ModMeta !RWCModule ![NExport]
+data ModMeta = ModMeta !RWCProgram ![NExport]
       deriving Show
 
 type Cache = StateT (Map.Map FilePath ModMeta) (ParseError IO)
@@ -41,7 +41,7 @@ _pp = liftIO . putStrLn . prettyPrint
 runCache :: Cache a -> IO (ParseResult a)
 runCache = runParseError . (flip runStateT Map.empty >=> return . fst)
 
-getModule :: FilePath -> Cache RWCModule
+getModule :: FilePath -> Cache RWCProgram
 getModule fp = do
       ModMeta m  _ <- getCached fp
       return m
@@ -77,9 +77,9 @@ getCached fp = do
             pr2Cache = \case
                   ParseOk p           -> return p
                   ParseFailed loc msg -> lift $ pFailAt loc msg
-            mergeMods :: [RWCModule] -> RWCModule
-            mergeMods = foldl' mergeMods' (RWCModule [] [])
-                  where mergeMods' (RWCModule ts fs) (RWCModule ts' fs') = RWCModule (ts ++ ts') (fs ++ fs')
+            mergeMods :: [RWCProgram] -> RWCProgram
+            mergeMods = foldl' mergeMods' (RWCProgram [] [])
+                  where mergeMods' (RWCProgram ts fs) (RWCProgram ts' fs') = RWCProgram (ts ++ ts') (fs ++ fs')
             transExport :: [NExport] -> [NExport] -> Export -> Cache [NExport]
             transExport iexps exps = \case
                   Export x        -> return $ insExport (NExport x) exps

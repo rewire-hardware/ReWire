@@ -10,7 +10,7 @@ import ReWire.Core.PrettyPrintHaskell
 -- the concrete syntax... so here we are.
 --
 
-primBasis = RWCModule
+primBasis = RWCProgram
                ([ RWCData (TyConId "->")  [mkId "a",mkId "b"]          (Kstar `Kfun` (Kstar `Kfun` Kstar))                  []
                 , RWCData (TyConId "ReT") [mkId "i",mkId "o",mkId "m"] (Kstar `Kfun` (Kstar `Kfun` (Kmonad `Kfun` Kmonad))) []
                 , RWCData (TyConId "StT") [mkId "s",mkId "m"]          (Kstar `Kfun` (Kmonad `Kfun` Kmonad))                []

@@ -50,9 +50,9 @@ options =
 exitUsage :: IO ()
 exitUsage = hPutStr stderr (usageInfo "Usage: rwc [OPTION...] <filename.rw>" options) >> exitFailure
 
-runFE :: Bool -> FilePath -> IO RWCModule
+runFE :: Bool -> FilePath -> IO RWCProgram
 runFE fDebug filename = do
-  res_m <- loadModule filename
+  res_m <- loadProgram filename
 
   case res_m of
     ParseFailed loc m ->
@@ -110,7 +110,7 @@ main = do args                       <- getArgs
             case inline m_ of
               Nothing -> hPutStrLn stderr "Inlining failed" >> exitFailure
               Just m  -> do
-                let mergeModule m1 m2 = RWCModule (dataDecls m1 ++ dataDecls m2) (defns m1 ++ defns m2)
+                let mergeModule m1 m2 = RWCProgram (dataDecls m1 ++ dataDecls m2) (defns m1 ++ defns m2)
                     cfg     = cfgFromRW (m `mergeModule` primBasis)
                     cfgDot  = mkDot (gather (eu cfg))
                     lcfgDot = mkDot (gather (linearize cfg))

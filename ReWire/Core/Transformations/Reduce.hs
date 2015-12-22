@@ -84,7 +84,7 @@ reddefn :: Monad m => RWCDefn -> RWT m RWCDefn
 reddefn (RWCDefn n pt b e) = do e' <- reduce e
                                 return (RWCDefn n pt b e')
 
-redmod :: RWCModule -> RWCModule
+redmod :: RWCProgram -> RWCProgram
 redmod m_ = deUniquify $ runRW ctr m (do ds' <- mapM reddefn (defns m)
                                          return (m { defns = ds' }))
   where (m,ctr) = uniquify 0 m_

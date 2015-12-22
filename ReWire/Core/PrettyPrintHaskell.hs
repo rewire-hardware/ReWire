@@ -92,10 +92,10 @@ ppDefn (RWCDefn n (tvs :-> ty) b e) =
 ppDefns defns = do defns_p <- mapM ppDefn defns
                    return (foldr ($+$) empty defns_p)
 
-ppModule :: Monad m => RWCModule -> m Doc
+ppModule :: Monad m => RWCProgram -> m Doc
 ppModule m = do dd_p      <- ppDataDecls (dataDecls m)
                 ds_p      <- ppDefns (defns m)
                 return (dd_p $+$ ds_p)
 
-ppHaskell :: RWCModule -> Doc
+ppHaskell :: RWCProgram -> Doc
 ppHaskell = runIdentity . ppModule
