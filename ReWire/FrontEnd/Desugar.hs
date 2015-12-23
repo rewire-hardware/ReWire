@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 module ReWire.FrontEnd.Desugar (desugar) where
 
-import ReWire.FrontEnd.Error (ParseError, pFail, pFailAt)
+import ReWire.FrontEnd.Error (ParseError, pFailAt)
 import ReWire.SYB (Transform, runT, runQ, match, match', query')
 
 import Control.Monad (liftM, replicateM, (>=>))
@@ -17,6 +17,8 @@ import Language.Haskell.Exts (prettyPrint)
 import Language.Haskell.Exts.SrcLoc (noLoc)
 import Language.Haskell.Exts.Syntax
 
+-- TODO(chathhorn): record syntax should be fairly easy to desugar.
+
 -- | Desugar into lambdas then normalize the lambdas.
 desugar :: Module -> ParseError IO Module
 desugar = liftM fst . flip runStateT 0 .
@@ -25,7 +27,6 @@ desugar = liftM fst . flip runStateT 0 .
            <> deparenify
            <> desugarInfix
            <> wheresToLets
-           <> addTySigil
             )
       >=> runT desugarFuns
       >=> runT
@@ -67,27 +68,6 @@ normIds = match (\case
             Special (TupleCon _ i) -> return $ UnQual $ mkTuple i
             Special Cons           -> return $ UnQual $ Ident "Cons")
 
-addTySigil :: Transform Fresh
-addTySigil = match (\case
-                  TyCon x                -> if x `elem` builtins then return $ TyCon x else return $ TyCon $ tySigilQ x)
-          <> match (\case
-                  DataDecl a b c x d e f -> return $ DataDecl a b c (tySigil x) d e f)
-          <> match (\case
-                  EAbs ns x              -> return $ EAbs ns $ tySigilQ x
-                  EThingAll x            -> return $ EThingAll $ tySigilQ x
-                  EThingWith x cs        -> return $ EThingWith (tySigilQ x) cs)
-
-builtins :: [QName]
-builtins = map (UnQual . Ident) ["ReT", "StT", "I", "()"] -- also tuples, but we sneakily avoid renaming them.
-
-tySigil :: Name -> Name
-tySigil (Ident x) = Ident $ "#" ++ x
-
-tySigilQ :: QName -> QName
-tySigilQ (Qual m x) = Qual m $ tySigil x
-tySigilQ (UnQual x) = UnQual $ tySigil x
-_                   = error "attempting to sigil a special"
-
 mkTuple :: Int -> Name
 mkTuple n = Ident $ "(" ++ replicate (n-1) ',' ++ ")"
 
@@ -100,17 +80,19 @@ deparenify = match (\(Paren n)   -> return n)
 
 -- | Turns sections and infix ops into regular applications and lambdas.
 desugarInfix :: Transform Fresh
-desugarInfix = match $ \case
-      LeftSection e (QVarOp op)  -> return $ App (Var op) e
-      LeftSection e (QConOp op)  -> return $ App (Con op) e
-      RightSection (QVarOp op) e -> do
-            x <- fresh
-            return $ Lambda noLoc [PVar x] $ App (App (Var op) $ Var $ UnQual x) e
-      RightSection (QConOp op) e -> do
-            x <- fresh
-            return $ Lambda noLoc [PVar x] $ App (App (Con op) $ Var $ UnQual x) e
-      InfixApp e1 (QVarOp op) e2 -> return $ App (App (Var op) e1) e2
-      InfixApp e1 (QConOp op) e2 -> return $ App (App (Con op) e1) e2
+desugarInfix = match (\case
+                  LeftSection e (QVarOp op)  -> return $ App (Var op) e
+                  LeftSection e (QConOp op)  -> return $ App (Con op) e
+                  RightSection (QVarOp op) e -> do
+                        x <- fresh
+                        return $ Lambda noLoc [PVar x] $ App (App (Var op) $ Var $ UnQual x) e
+                  RightSection (QConOp op) e -> do
+                        x <- fresh
+                        return $ Lambda noLoc [PVar x] $ App (App (Con op) $ Var $ UnQual x) e
+                  InfixApp e1 (QVarOp op) e2 -> return $ App (App (Var op) e1) e2
+                  InfixApp e1 (QConOp op) e2 -> return $ App (App (Con op) e1) e2)
+            <> match (\case
+                  InfixConDecl a n b -> return $ ConDecl n [a, b])
 
 -- | Turns wildcard patterns into variable patterns.
 desugarWildCards :: Transform Fresh
@@ -145,7 +127,7 @@ desugarFuns = match $ \case
       FunBind ms@(Match loc name pats _ _ Nothing:_) -> do
             e <- buildLambda loc ms $ length pats
             return $ PatBind loc (PVar name) (UnGuardedRhs e) Nothing
-      n@(FunBind _)                                  -> lift $ pFail $ "unsupported decl syntax: " ++ prettyPrint n
+      n@(FunBind (Match loc _ _ _ _ _:_))            -> lift $ pFailAt loc $ "unsupported decl syntax: " ++ prettyPrint n
       where buildLambda :: SrcLoc -> [Match] -> Int -> Fresh Exp
             buildLambda loc ms 1 = do
                   alts <- mapM toAlt ms
@@ -184,8 +166,8 @@ desugarDos = match $ \(Do stmts) -> transDo stmts
                   [Qualifier e]             -> return e
                   Qualifier e : stmts       -> App (App (Var $ UnQual $ Ident ">>=") e) . Lambda noLoc [PWildCard] <$> transDo stmts
                   LetStmt binds : stmts     -> Let binds <$> transDo stmts
-                  s : _                     -> lift $ pFail $ "unsupported syntax in do-block: " ++ prettyPrint s
-                  _                         -> lift $ pFail "something went wrong while translating a do-block."
+                  s : _                     -> lift $ pFailAt noLoc $ "unsupported syntax in do-block: " ++ prettyPrint s
+                  _                         -> lift $ pFailAt noLoc  "something went wrong while translating a do-block."
 
 -- | Turns where clauses into lets. Only valid because we're disallowing
 --   guards, so this pass also raises an error if it encounters a guard.
@@ -210,11 +192,11 @@ wheresToLets = match (\case
 desugarLets :: Transform Fresh
 desugarLets = match $ \case
       Let (BDecls ds) e -> foldrM transLet e ds
-      n@(Let _ _)       -> lift $ pFail $ "unsupported let syntax: " ++ prettyPrint n
+      n@(Let _ _)       -> lift $ pFailAt noLoc $ "unsupported let syntax: " ++ prettyPrint n
       where transLet :: Decl -> Exp -> Fresh Exp
             transLet (PatBind loc p (UnGuardedRhs e1) Nothing) inner = return $ Case e1 [Alt loc p (UnGuardedRhs inner) Nothing]
             transLet n@(PatBind loc _ _ _)                     _     = lift $ pFailAt loc $ "unsupported let syntax: " ++ prettyPrint n
-            transLet n                                         _     = lift $ pFail $ "unsupported syntax: " ++ prettyPrint n
+            transLet n                                         _     = lift $ pFailAt noLoc $ "unsupported syntax: " ++ prettyPrint n
 
 -- | Turns ifs into cases and unary minus.
 -- > if e1 then e2 else e3
@@ -285,7 +267,7 @@ desugarAsPats = match $
                   PatTypeSig _ p _  -> patToExp p
                   -- PViewPat _exp _pat ->
                   PBangPat p        -> patToExp p
-                  p                 -> lift $ pFail $ "unsupported pattern: " ++ prettyPrint p
+                  p                 -> lift $ pFailAt noLoc $ "unsupported pattern: " ++ prettyPrint p
 
 -- | Turns beta-redexes into cases. E.g.:
 -- > (\x -> e2) e1

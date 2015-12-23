@@ -1,11 +1,14 @@
-import ReWire.FrontEnd
 import ReWire.Core.KindChecker
 import ReWire.Core.TypeChecker
+import ReWire.FrontEnd
 import qualified ReWire.Core.Main as M
+
+import System.Directory (setCurrentDirectory)
+import System.Environment (withArgs)
 import Test.Framework (defaultMain, testGroup, Test)
 import Test.Framework.Providers.HUnit
 import Test.HUnit hiding (Test)
-import System.Environment (withArgs)
+
 import Paths_ReWire
 
 -- TODO: should just snarf these from the dir listing
@@ -15,21 +18,23 @@ filesToCompile = ["Fibonacci.hs","MiniISA.hs","UpCounter.hs", "dissex.hs",
 
 filesToTC :: [FilePath]
 filesToTC = filesToCompile ++
-             ["uniquification.hs","pats.hs"]
+             ["uniquification.hs","pats.hs", "Mods.hs"]
 
 filesToParse :: [FilePath]
 filesToParse = filesToTC ++ ["Salsa20.hs"]
 
 testParse :: FilePath -> Test
-testParse f_ = testCase f_ (do f   <- getDataFileName ("test/parser_tests/" ++ f_)
-                               res <- loadProgram f
+testParse f_ = testCase f_ (do d   <- getDataFileName "test/parser_tests/"
+                               setCurrentDirectory d
+                               res <- loadProgram f_
                                case res of
                                  ParseFailed _ err -> assertFailure err
                                  ParseOk _         -> return ())
 
 testTC :: FilePath -> Test
-testTC f_ = testCase f_ (do f   <- getDataFileName ("test/parser_tests/" ++ f_)
-                            res <- loadProgram f
+testTC f_ = testCase f_ (do d   <- getDataFileName "test/parser_tests/"
+                            setCurrentDirectory d
+                            res <- loadProgram f_
                             case res of
                               ParseFailed _ err -> assertFailure err
                               ParseOk m         -> case kindcheck m of

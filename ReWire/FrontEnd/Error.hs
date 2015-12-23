@@ -4,22 +4,33 @@ module ReWire.FrontEnd.Error
       , pFailAt
       , pFail
       , runParseError
+      , setLoc
       ) where
 
+import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (ExceptT(..), throwE, runExceptT)
+import Control.Monad.Trans.State (StateT(..), get, put)
 
 import Language.Haskell.Exts.SrcLoc (noLoc)
 import Language.Haskell.Exts (SrcLoc, ParseResult(..))
 
-type ParseError = ExceptT (SrcLoc, String)
+type ParseError m = StateT SrcLoc (ExceptT (SrcLoc, String) m)
+
+setLoc :: Monad m => SrcLoc -> ParseError m ()
+setLoc = put
+
+lastLoc :: Monad m => ParseError m SrcLoc
+lastLoc = get
 
 pFailAt :: Monad m => SrcLoc -> String -> ParseError m a
-pFailAt loc msg = throwE (loc, msg)
+pFailAt loc msg = lift $ throwE (loc, msg)
 
 pFail :: Monad m => String -> ParseError m a
-pFail = pFailAt noLoc
+pFail msg = do
+      loc <- lastLoc
+      pFailAt loc msg
 
 runParseError :: Monad m => ParseError m a -> m (ParseResult a)
-runParseError e = runExceptT e >>= return . \case
+runParseError e = runExceptT (runStateT e noLoc) >>= return . \case
       Left (loc, msg) -> ParseFailed loc msg
-      Right a         -> return a
+      Right (a, _)    -> return a

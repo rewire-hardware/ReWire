@@ -8,7 +8,8 @@ import Control.DeepSeq
 import Data.ByteString.Char8 (pack)
 import Control.Monad (liftM2)
 
-data Kind = Kvar (Id Kind) | Kstar | Kfun Kind Kind | Kmonad deriving (Eq,Show)
+data Kind = Kvar (Id Kind) | Kstar | Kfun Kind Kind | Kmonad
+      deriving (Ord,Eq,Show)
 
 infixr `Kfun`
 

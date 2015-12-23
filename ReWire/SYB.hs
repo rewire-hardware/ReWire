@@ -35,32 +35,26 @@ generalize :: (Monad m, Typeable a) => (a -> m a) -> forall d. Typeable d => d -
 generalize f = generalizeA f >=> tr
 
 data Transform m where
-      TEmpty     :: Transform m
       Transform  :: (Functor m, MonadCatch m) => (forall d. Data d => d -> MaybeT m d) -> Transform m
       Transform' :: (Functor m, Monad m)      => (forall d. Data d => d -> MaybeT m d) -> Transform m
 
-instance Monoid (Transform m) where
-      mempty                                = TEmpty
-      mappend TEmpty         a              = a
-      mappend a              TEmpty         = a
-      mappend (Transform f)  (Transform g)  = Transform  (f <+> g)
-      mappend (Transform f)  (Transform' g) = Transform  (f <+> g)
-      mappend (Transform' f) (Transform g)  = Transform  (f <+> g)
-      mappend (Transform' f) (Transform' g) = Transform' (f |+| g)
+instance (Functor m, Monad m) => Monoid (Transform m) where
+      mempty                                = Transform' return
+      mappend (Transform f)  (Transform g)  = Transform  $ f <+> g
+      mappend (Transform f)  (Transform' g) = Transform  $ f <+> g
+      mappend (Transform' f) (Transform g)  = Transform  $ f <+> g
+      mappend (Transform' f) (Transform' g) = Transform' $ f |+| g
 
 data Query m a where
-      QEmpty  :: Query m a
       Query   :: (Functor m, MonadPlus m, MonadCatch m) => (forall d. Data d => d -> MaybeT m a) -> Query m a
       Query'  :: (Functor m, MonadPlus m)               => (forall d. Data d => d -> MaybeT m a) -> Query m a
 
-instance MonadPlus m => Monoid (Query m a) where
-      mempty                        = QEmpty
-      mappend QEmpty     a          = a
-      mappend a          QEmpty     = a
-      mappend (Query f)  (Query g)  = Query  (f <++> g)
-      mappend (Query f)  (Query' g) = Query  (f <++> g)
-      mappend (Query' f) (Query g)  = Query  (f <++> g)
-      mappend (Query' f) (Query' g) = Query' (f |++| g)
+instance (Functor m, MonadPlus m) => Monoid (Query m a) where
+      mempty                        = Query' $ const mzero
+      mappend (Query f)  (Query g)  = Query  $ f <++> g
+      mappend (Query f)  (Query' g) = Query  $ f <++> g
+      mappend (Query' f) (Query g)  = Query  $ f <++> g
+      mappend (Query' f) (Query' g) = Query' $ f |++| g
 
 match :: (Functor m, MonadCatch m, Data a) => (a -> m a) -> Transform m
 match f = Transform $ generalize f
@@ -77,12 +71,10 @@ query' :: (Functor m, MonadPlus m, Data a) => (a -> m b) -> Query m b
 query' f = Query' $ generalizeA f
 
 runT :: (Monad m, Data d) => Transform m -> d -> m d
-runT TEmpty         = return
 runT (Transform  f) = everywhere $ \n -> fromJust <$> runMaybeT (f n `mplusE` tr n)
 runT (Transform' f) = everywhere $ \n -> fromJust <$> runMaybeT (f n `mplus`  tr n)
 
 runQ :: (MonadPlus m, Data d) => Query m a -> d -> m a
-runQ QEmpty     = const mzero
 runQ (Query  f) = everywhereQ $ \n -> fromJust <$> runMaybeT (f n `mplusE` lift mzero)
 runQ (Query' f) = everywhereQ $ \n -> fromJust <$> runMaybeT (f n `mplus`  lift mzero)
 

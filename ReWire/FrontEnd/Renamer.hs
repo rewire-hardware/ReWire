@@ -1,7 +1,8 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, TupleSections #-}
 module ReWire.FrontEnd.Renamer
       ( Renamer
       , FQName(..)
+      , Namespace(..)
       , rename
       , extend
       , exclude
@@ -16,10 +17,13 @@ import System.FilePath (joinPath, (<.>))
 
 import Language.Haskell.Exts (Name(..), ModuleName(..), QName(..), prettyPrint)
 
-type Renamer = Map.Map QName FQName
+type Renamer = Map.Map (Namespace, QName) FQName
+
+data Namespace = TypeNS | ValueNS
+      deriving (Ord, Eq, Show)
 
 data FQName = FQName !ModuleName !Name
-      deriving (Eq, Show)
+      deriving (Ord, Eq, Show)
 
 class ToQName a where
       toQName :: a -> QName
@@ -51,18 +55,18 @@ qual :: FQName -> String
 qual (FQName (ModuleName m) (Ident n))  = m ++ "." ++ n
 qual (FQName (ModuleName m) (Symbol n)) = m ++ "." ++ n
 
-rename :: (ToQName a, FromQName b) => Renamer -> a -> b
-rename rn x = fromQName . maybe (toQName x) toQName $ Map.lookup (toQName x) rn
+rename :: (ToQName a, FromQName b) => Namespace -> Renamer -> a -> b
+rename ns rn x = fromQName . maybe (toQName x) toQName $ Map.lookup (ns, toQName x) rn
 
-extend :: ToQName a => [(a, FQName)] -> Renamer -> Renamer
-extend kvs = Map.union $ Map.fromList $ map ((toQName . fst) &&& snd) kvs
+extend :: ToQName a => Namespace -> [(a, FQName)] -> Renamer -> Renamer
+extend ns kvs = Map.union $ Map.fromList $ map (((ns,) . toQName . fst) &&& snd) kvs
 
-exclude :: ToQName a => [a] -> Renamer -> Renamer
-exclude = foldr ((.) . Map.delete . toQName) id
+exclude :: ToQName a => Namespace -> [a] -> Renamer -> Renamer
+exclude ns = foldr ((.) . Map.delete . (ns,) . toQName) id
 
 -- | True iff an entry for the name exists in the renamer.
-finger :: ToQName a => Renamer -> a -> Bool
-finger rn = flip Map.member rn . toQName
+finger :: ToQName a => Namespace -> Renamer -> a -> Bool
+finger ns rn = flip Map.member rn . (ns,) . toQName
 
 toFilePath :: ModuleName -> FilePath
 toFilePath (ModuleName n) = joinPath (splitOn "." n) <.> "hs"
