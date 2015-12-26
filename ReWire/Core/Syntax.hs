@@ -5,12 +5,14 @@ module ReWire.Core.Syntax where
 
 import ReWire.Core.Kinds
 import ReWire.Scoping
-import Data.Set hiding (map,filter,foldr)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import Control.Monad.State
+
 import Control.DeepSeq
+import Control.Monad.State
 import Data.ByteString.Char8 (pack)
+import Data.Map.Strict (Map)
+import Data.Monoid (Monoid(..))
+import Data.Set hiding (map,filter,foldr)
+import qualified Data.Map.Strict as Map
 
 newtype DataConId = DataConId { deDataConId :: String } deriving (Eq,Ord,Show,NFData)
 newtype TyConId   = TyConId   { deTyConId :: String } deriving (Eq,Ord,Show,NFData)
@@ -275,6 +277,13 @@ data RWCProgram = RWCProgram { dataDecls  :: [RWCData],
 
 instance NFData RWCProgram where
   rnf (RWCProgram dds defs) = dds `deepseq` defs `deepseq` ()
+
+nub' :: Ord a => [a] -> [a]
+nub' = toList . fromList
+
+instance Monoid RWCProgram where
+  mempty = RWCProgram mempty mempty
+  mappend (RWCProgram ts vs) (RWCProgram ts' vs') = RWCProgram (nub' $ ts ++ ts') $ nub' $ vs ++ vs'
 
 ---
 

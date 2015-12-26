@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase, FlexibleInstances, TupleSections, NamedFieldPuns #-}
 module ReWire.FrontEnd.Cache
       ( runCache
-      , getModule
+      , getProgram
       ) where
 
 import ReWire.Core.Syntax
@@ -15,7 +15,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State (runStateT, StateT, get, modify)
 import Data.Functor ((<$>))
-import Data.List (find, foldl')
+import Data.List (find)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Monoid(..), mconcat, (<>))
 import qualified Data.Map.Strict as Map
@@ -75,12 +75,6 @@ data Caches = Caches
       , program   :: Map.Map FilePath RWCProgram
       }
 
-_pp :: Module -> Cache ()
-_pp = liftIO . putStrLn . prettyPrint
-
-nub' :: Ord a => [a] -> [a]
-nub' = Set.toList . Set.fromList
-
 runCache :: Cache a -> IO (ParseResult a)
 runCache = runParseError . (flip runStateT (Caches Map.empty Map.empty Map.empty Map.empty)
                               >=> return . fst)
@@ -111,8 +105,12 @@ getExports fp = do
                   m <- getDesugared fp
                   rn <- getRenamer fp
                   exps <- lift $ translateExps rn m
+
+                  modify $ \c@Caches { exports } -> c { exports = Map.insert fp mempty exports }
+
                   allExps <- mapM (getExports . toFilePath) $ getImps m
                   exps' <- foldM (transExport $ mconcat allExps) mempty exps
+
                   modify $ \c@Caches { exports } -> c { exports = Map.insert fp exps' exports }
                   return exps'
       where transExport :: Exports -> Exports -> Export -> Cache Exports
@@ -131,45 +129,20 @@ getRenamer fp = do
             Just rn -> return rn
             Nothing -> do
                   m <- getDesugared fp
+
+                  modify $ \c@Caches { renamer } -> c { renamer = Map.insert fp mempty renamer }
+
                   rn <- mkRenamer m
+
                   modify $ \c@Caches { renamer } -> c { renamer = Map.insert fp rn renamer }
                   return rn
+      where mkRenamer :: Module -> Cache Renamer
+            mkRenamer (Module loc _ _ _ _ imps _) = do
+                  lift $ setLoc loc
+                  rns <- mapM mkRenamer' imps
+                  return $ mconcat rns
 
-getModule :: FilePath -> Cache RWCProgram
-getModule fp = do
-      cached <- program <$> get
-      case Map.lookup fp cached of
-            Just m  -> return m
-            Nothing -> do
-                  m <- getDesugared fp
-                  rn <- getRenamer fp
-
-                  rwcm <- lift $ translate rn m
-                  allMods <- mapM (getModule . toFilePath) $ getImps m
-                  let merged = mergeMods $ rwcm : allMods
-
-                  modify $ \c@Caches { desugared, renamer, exports, program } -> c
-                        { desugared = Map.delete fp desugared
-                        , renamer   = Map.delete fp renamer
-                        , exports   = Map.delete fp exports
-                        , program   = Map.insert fp merged program
-                        }
-                  return merged
-
-      where mergeMods :: [RWCProgram] -> RWCProgram
-            mergeMods = foldl' mergeMods' (RWCProgram [] [])
-                  where mergeMods' (RWCProgram ts fs) (RWCProgram ts' fs') = RWCProgram (nub' $ ts ++ ts') (nub' $ fs ++ fs')
-
-getImps :: Module -> [ModuleName]
-getImps (Module _ _ _ _ _ imps _) = map importModule imps
-
-mkRenamer :: Module -> Cache Renamer
-mkRenamer (Module loc _ _ _ _ imps _) = do
-      lift $ setLoc loc
-      rns <- mapM mkRenamer' imps
-      return $ mconcat rns
-
-      where mkRenamer' :: ImportDecl -> Cache Renamer
+            mkRenamer' :: ImportDecl -> Cache Renamer
             mkRenamer' (ImportDecl loc m quald _ _ _ as specs) = do
                   lift $ setLoc loc
                   exps <- getExports $ toFilePath m
@@ -222,4 +195,33 @@ mkRenamer (Module loc _ _ _ _ imps _) = do
                               where del table (ns, x) = return
                                                 $ Map.delete (ns, Qual m' x)
                                                 $ Map.delete (ns, UnQual x) table
+
+
+getProgram :: FilePath -> Cache RWCProgram
+getProgram fp = do
+      cached <- program <$> get
+      case Map.lookup fp cached of
+            Just m  -> return m
+            Nothing -> do
+                  m <- getDesugared fp
+                  rn <- getRenamer fp
+
+                  modify $ \c@Caches { program } -> c
+                        { program   = Map.insert fp (RWCProgram [] []) program
+                        }
+
+                  rwcm <- lift $ translate rn m
+                  allMods <- mapM (getProgram . toFilePath) $ getImps m
+                  let merged = mconcat $ rwcm : allMods
+
+                  modify $ \c@Caches { desugared, renamer, exports, program } -> c
+                        { desugared = Map.delete fp desugared
+                        , renamer   = Map.delete fp renamer
+                        , exports   = Map.delete fp exports
+                        , program   = Map.insert fp merged program
+                        }
+                  return merged
+
+getImps :: Module -> [ModuleName]
+getImps (Module _ _ _ _ _ imps _) = map importModule imps
 
