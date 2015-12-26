@@ -5,18 +5,21 @@ module ReWire.Core.Syntax where
 
 import ReWire.Core.Kinds
 import ReWire.Scoping
-import Data.Set hiding (map,filter,foldr)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import Control.Monad.State
+
 import Control.DeepSeq
+import Control.Monad.State
 import Data.ByteString.Char8 (pack)
+import Data.Map.Strict (Map)
+import Data.Monoid (Monoid(..))
+import Data.Set hiding (map,filter,foldr)
+import qualified Data.Map.Strict as Map
 
 newtype DataConId = DataConId { deDataConId :: String } deriving (Eq,Ord,Show,NFData)
 newtype TyConId   = TyConId   { deTyConId :: String } deriving (Eq,Ord,Show,NFData)
 newtype ModuleId  = ModuleId  { deModuleId :: String } deriving (Eq,Ord,Show,NFData)
 
-data Poly t = [Id t] :-> t deriving Show
+data Poly t = [Id t] :-> t
+      deriving (Ord,Eq,Show)
 
 infixr :->
 
@@ -80,7 +83,7 @@ data RWCExp = RWCApp RWCExp RWCExp
             | RWCLiteral RWCLit
             | RWCCase RWCExp [RWCAlt]
             | RWCNativeVHDL String RWCExp
-            deriving Show
+            deriving (Ord,Eq,Show)
 
 instance IdSort RWCExp where
   idSort _ = pack "E"
@@ -156,7 +159,7 @@ instance NFData RWCExp where
 data RWCLit = RWCLitInteger Integer
             | RWCLitFloat Double
             | RWCLitChar Char
-            deriving (Eq,Show)
+            deriving (Ord,Eq,Show)
 
 instance NFData RWCLit where
   rnf (RWCLitInteger i) = i `deepseq` ()
@@ -166,7 +169,7 @@ instance NFData RWCLit where
 ---
 
 data RWCAlt = RWCAlt RWCPat RWCExp
-              deriving Show
+              deriving (Ord,Eq,Show)
 
 instance Subst RWCAlt RWCExp where
   fv (RWCAlt p e)     = filter (not . (`elem` patvars p)) (fv e)
@@ -189,7 +192,7 @@ instance NFData RWCAlt where
 data RWCPat = RWCPatCon DataConId [RWCPat]
             | RWCPatLiteral RWCLit
             | RWCPatVar (Id RWCExp) RWCTy
-            deriving Show
+            deriving (Ord,Eq,Show)
 
 patvars :: RWCPat -> [Id RWCExp]
 patvars (RWCPatCon _ ps)  = concatMap patvars ps
@@ -227,7 +230,7 @@ data RWCDefn = RWCDefn { defnName   :: Id RWCExp,
                          defnPolyTy :: Poly RWCTy,
                          defnInline :: Bool,
                          defnBody   :: RWCExp }
-               deriving Show
+               deriving (Ord,Eq,Show)
 
 instance Subst RWCDefn RWCExp where
   fv (RWCDefn n pt _ e) = filter (/= n) (fv e)
@@ -253,7 +256,7 @@ data RWCData = RWCData { dataName   :: TyConId,
                          dataTyVars :: [Id RWCTy],
                          dataKind   :: Kind,
                          dataCons   :: [RWCDataCon] }
-               deriving Show
+               deriving (Ord,Eq,Show)
 
 instance NFData RWCData where
   rnf (RWCData i tvs k dcs) = i `deepseq` tvs `deepseq` dcs `deepseq` k `deepseq` ()
@@ -261,21 +264,26 @@ instance NFData RWCData where
 ---
 
 data RWCDataCon = RWCDataCon DataConId [RWCTy]
-                  deriving Show
+                  deriving (Ord,Eq,Show)
 
 instance NFData RWCDataCon where
   rnf (RWCDataCon i ts) = i `deepseq` ts `deepseq` ()
 
 ---
 
-data RWCModule = RWCModule { name       :: ModuleId,
-                             imports    :: [ModuleId],
-                             dataDecls  :: [RWCData],
-                             defns      :: [RWCDefn] }
-                           deriving Show
+data RWCProgram = RWCProgram { dataDecls  :: [RWCData],
+                               defns      :: [RWCDefn] }
+                  deriving (Ord,Eq,Show)
 
-instance NFData RWCModule where
-  rnf (RWCModule n imps dds defs) = n `deepseq` imps `deepseq` dds `deepseq` defs `deepseq` ()
+instance NFData RWCProgram where
+  rnf (RWCProgram dds defs) = dds `deepseq` defs `deepseq` ()
+
+nub' :: Ord a => [a] -> [a]
+nub' = toList . fromList
+
+instance Monoid RWCProgram where
+  mempty = RWCProgram mempty mempty
+  mappend (RWCProgram ts vs) (RWCProgram ts' vs') = RWCProgram (nub' $ ts ++ ts') $ nub' $ vs ++ vs'
 
 ---
 

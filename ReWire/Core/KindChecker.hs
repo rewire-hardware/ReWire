@@ -132,10 +132,10 @@ redecorate s (RWCData i tvs _ dcs) = do cas <- askCAssumps
                                           Just k  -> return (RWCData i tvs (monoize (subst s k)) dcs)
                                           Nothing -> fail $ "redecorate: no such assumption: " ++ show i
 
-basisCAssumps :: RWCModule -> [CAssump]
+basisCAssumps :: RWCProgram -> [CAssump]
 basisCAssumps m = map (\ (RWCData i _ k _) -> (i,k)) (dataDecls m)
 
-kc :: [RWCModule] -> RWCModule -> KCM RWCModule
+kc :: [RWCProgram] -> RWCProgram -> KCM RWCProgram
 kc ms m = do ncas     <- mapM initDataDecl (dataDecls m)
              let bcas =  concatMap basisCAssumps ms
                  cas  =  Map.fromList (ncas++bcas)
@@ -146,5 +146,5 @@ kc ms m = do ncas     <- mapM initDataDecl (dataDecls m)
                dds <- mapM (redecorate s) (dataDecls m)
                return (m { dataDecls = dds })
 
-kindcheck :: RWCModule -> Either String RWCModule
+kindcheck :: RWCProgram -> Either String RWCProgram
 kindcheck m = fmap fst $ runIdentity (runExceptT (runStateT (runReaderT (kc [primBasis] m) (KCEnv Map.empty Map.empty)) (KCState Map.empty 0)))

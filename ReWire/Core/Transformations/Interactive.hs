@@ -64,7 +64,7 @@ cmdTable = [
            ]
 
 -- The "repl" for the translation environment.
-trans :: RWCModule -> IO ()
+trans :: RWCProgram -> IO ()
 trans m = do print (ppHaskell m)
              loop m
    where loop m = do putStr "> "

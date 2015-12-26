@@ -10,15 +10,13 @@ module ReWire.SYB
       , query'
       ) where
 
-import Control.Applicative ((<*>))
 import Control.Exception (PatternMatchFail(..))
 import Control.Monad.Catch (MonadCatch(..))
-import Control.Monad ((>=>), msum, MonadPlus(..))
+import Control.Monad ((>=>), MonadPlus(..))
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Maybe (MaybeT(..))
 import Data.Data (Data, Typeable, gmapM, gmapQr, cast)
 import Data.Functor ((<$>))
-import Data.Functor.Identity
 import Data.Maybe (fromJust)
 import Data.Monoid (Monoid(..))
 
@@ -28,41 +26,35 @@ everywhere f = gmapM (everywhere f) >=> f
 everywhereQ :: (MonadPlus m, Data a) => (forall d. Data d => d -> m b) -> a -> m b
 everywhereQ f n = f n `mplus` gmapQr mplus mzero (everywhereQ f) n
 
-generalizeA :: (Monad m, Typeable a) => (a -> m b) -> forall a. Typeable a => a -> MaybeT m b
+generalizeA :: (Monad m, Typeable a) => (a -> m b) -> forall d. Typeable d => d -> MaybeT m b
 generalizeA f x = case f <$> cast x of
       Nothing -> mzero
       Just x' -> lift x'
 
-generalize :: (Monad m, Typeable a) => (a -> m a) -> forall a. Typeable a => a -> MaybeT m a
+generalize :: (Monad m, Typeable a) => (a -> m a) -> forall d. Typeable d => d -> MaybeT m d
 generalize f = generalizeA f >=> tr
 
 data Transform m where
-      TEmpty     :: Transform m
       Transform  :: (Functor m, MonadCatch m) => (forall d. Data d => d -> MaybeT m d) -> Transform m
       Transform' :: (Functor m, Monad m)      => (forall d. Data d => d -> MaybeT m d) -> Transform m
 
-instance Monoid (Transform m) where
-      mempty                                = TEmpty
-      mappend TEmpty         a              = a
-      mappend a              TEmpty         = a
-      mappend (Transform f)  (Transform g)  = Transform  (f <+> g)
-      mappend (Transform f)  (Transform' g) = Transform  (f <+> g)
-      mappend (Transform' f) (Transform g)  = Transform  (f <+> g)
-      mappend (Transform' f) (Transform' g) = Transform' (f |+| g)
+instance (Functor m, Monad m) => Monoid (Transform m) where
+      mempty                                = Transform' return
+      mappend (Transform f)  (Transform g)  = Transform  $ f <+> g
+      mappend (Transform f)  (Transform' g) = Transform  $ f <+> g
+      mappend (Transform' f) (Transform g)  = Transform  $ f <+> g
+      mappend (Transform' f) (Transform' g) = Transform' $ f |+| g
 
 data Query m a where
-      QEmpty  :: Query m a
       Query   :: (Functor m, MonadPlus m, MonadCatch m) => (forall d. Data d => d -> MaybeT m a) -> Query m a
       Query'  :: (Functor m, MonadPlus m)               => (forall d. Data d => d -> MaybeT m a) -> Query m a
 
-instance MonadPlus m => Monoid (Query m a) where
-      mempty                        = QEmpty
-      mappend QEmpty     a          = a
-      mappend a          QEmpty     = a
-      mappend (Query f)  (Query g)  = Query  (f <++> g)
-      mappend (Query f)  (Query' g) = Query  (f <++> g)
-      mappend (Query' f) (Query g)  = Query  (f <++> g)
-      mappend (Query' f) (Query' g) = Query' (f |++| g)
+instance (Functor m, MonadPlus m) => Monoid (Query m a) where
+      mempty                        = Query' $ const mzero
+      mappend (Query f)  (Query g)  = Query  $ f <++> g
+      mappend (Query f)  (Query' g) = Query  $ f <++> g
+      mappend (Query' f) (Query g)  = Query  $ f <++> g
+      mappend (Query' f) (Query' g) = Query' $ f |++| g
 
 match :: (Functor m, MonadCatch m, Data a) => (a -> m a) -> Transform m
 match f = Transform $ generalize f
@@ -79,12 +71,10 @@ query' :: (Functor m, MonadPlus m, Data a) => (a -> m b) -> Query m b
 query' f = Query' $ generalizeA f
 
 runT :: (Monad m, Data d) => Transform m -> d -> m d
-runT TEmpty         = return
 runT (Transform  f) = everywhere $ \n -> fromJust <$> runMaybeT (f n `mplusE` tr n)
 runT (Transform' f) = everywhere $ \n -> fromJust <$> runMaybeT (f n `mplus`  tr n)
 
 runQ :: (MonadPlus m, Data d) => Query m a -> d -> m a
-runQ QEmpty     = const mzero
 runQ (Query  f) = everywhereQ $ \n -> fromJust <$> runMaybeT (f n `mplusE` lift mzero)
 runQ (Query' f) = everywhereQ $ \n -> fromJust <$> runMaybeT (f n `mplus`  lift mzero)
 

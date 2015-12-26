@@ -119,15 +119,15 @@ uniquifyDefn (RWCDefn n (tvs :-> t) b e) = do (tvs',(t',e')) <- uniquingT tvs (d
                                                 return (t',e'))
                                               return (RWCDefn n (tvs' :-> t') b e')
 
-uniquifyModule :: RWCModule -> UQM RWCModule
-uniquifyModule (RWCModule n imps dds ds) = do dds' <- mapM uniquifyDataDecl dds
-                                              ds'  <- mapM uniquifyDefn ds
-                                              return (RWCModule n imps dds' ds')
+uniquifyModule :: RWCProgram -> UQM RWCProgram
+uniquifyModule (RWCProgram dds ds) = do dds' <- mapM uniquifyDataDecl dds
+                                        ds'  <- mapM uniquifyDefn ds
+                                        return (RWCProgram dds' ds')
 
 uniquifyE :: Int -> RWCExp -> (RWCExp,Int)
 uniquifyE ctr e = runIdentity $ runStateT (runReaderT (runReaderT (uniquifyExpr e) Map.empty) Map.empty) ctr
 
-uniquify :: Int -> RWCModule -> (RWCModule,Int)
+uniquify :: Int -> RWCProgram -> (RWCProgram,Int)
 uniquify ctr m = runIdentity $ runStateT (runReaderT (runReaderT (uniquifyModule m) Map.empty) Map.empty) ctr
 
 cmdUniquify :: TransCommand
