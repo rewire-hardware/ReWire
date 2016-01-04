@@ -8,7 +8,7 @@
 --
 module ReWire.Core.Transformations.Monad where
 
---import Control.Applicative
+import Control.Applicative
 import Control.Monad.Reader
 --import qualified Control.Monad.Trans.Reader as Reader
 import Control.Monad.Identity
