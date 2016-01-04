@@ -6,12 +6,15 @@ module ReWire.PreHDL.ToVHDL where
 import ReWire.PreHDL.Syntax
 import Data.List (intercalate)
 
+vTy :: Ty -> String
 vTy (TyBits n) = "std_logic_vector(0 to " ++ show (n-1) ++ ")"
 vTy TyBoolean  = "boolean"
 
+vInit :: Ty -> String
 vInit (TyBits _) = "(others => '0')"
 vInit TyBoolean  = "false"
 
+vRegDecl :: RegDecl -> String
 vRegDecl rd = "variable " ++ regDeclName rd ++ " : " ++ vTy (regDefnTy rd) ++ " := " ++ vInit (regDefnTy rd) ++ ";"
 
 vHeader :: Header -> String
@@ -91,7 +94,8 @@ vFunDefn fd = "function " ++ funDefnName fd ++ (if null params
            ++ "end " ++ funDefnName fd ++ ";"
       where params = funDefnParams fd
 
-flopName n = n ++ "_flop"
+flopName, flopNextName :: String -> String
+flopName n     = n ++ "_flop"
 flopNextName n = n ++ "_flop_next"
 
 toVHDL :: Prog -> String

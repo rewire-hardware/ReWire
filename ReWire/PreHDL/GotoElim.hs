@@ -5,7 +5,7 @@ module ReWire.PreHDL.GotoElim (gotoElim) where
 import ReWire.PreHDL.Syntax
 import Control.Monad.State
 import Control.Monad.Identity
-import qualified Debug.Trace
+--import qualified Debug.Trace
 import Data.List (nub)
 
 trace :: String -> a -> a
@@ -22,10 +22,12 @@ data CmdLoc     = CmdLoc Cmd CmdPath deriving (Eq,Show)
 zipRoot :: Cmd -> CmdLoc
 zipRoot c = CmdLoc c CmdTop
 
+{-
 zipLeft :: CmdLoc -> CmdLoc
 zipLeft (CmdLoc _ CmdTop)                          = error "zipLeft of top"
 zipLeft (CmdLoc c (CmdNode (l:left) tag up right)) = CmdLoc l (CmdNode left tag up (c:right))
 zipLeft (CmdLoc _ (CmdNode [] _ _ _))              = error "zipLeft of first"
+-}
 
 zipRight :: CmdLoc -> CmdLoc
 zipRight (CmdLoc _ CmdTop)                          = error "zipRight of top"
@@ -133,7 +135,7 @@ deleteHere :: GEM ()
 deleteHere = do p <- path
                 case p of
                   CmdTop                        -> putHere Skip
-                  CmdNode [] tag up []          -> putHere Skip
+                  CmdNode [] _ _ []             -> putHere Skip
                   CmdNode left tag up (r:right) -> do putHere r
                                                       putPath (CmdNode left tag up right)
                   CmdNode (l:left) tag up right -> do putHere l
@@ -205,10 +207,12 @@ countGotos (If _ c)    = countGotos c
 countGotos (Seq c1 c2) = countGotos c1 + countGotos c2
 countGotos _           = 0
 
-optimize (If b c)      = If b (optimize c)
-optimize c@(Seq c1 c2) = squishGotos c
-optimize c             = c
+optimize :: Cmd -> Cmd
+optimize (If b c)  = If b (optimize c)
+optimize c@(Seq{}) = squishGotos c
+optimize c         = c
 
+squishGotos :: Cmd -> Cmd
 squishGotos c | null csOut = Skip
               | otherwise  = foldr1 Seq csOut
     where csOut = map optimize $ squish (flattenSeq c)

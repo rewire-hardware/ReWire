@@ -16,9 +16,9 @@ import Control.Monad ((>=>), MonadPlus(..))
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Maybe (MaybeT(..))
 import Data.Data (Data, Typeable, gmapM, gmapQr, cast)
-import Data.Functor ((<$>))
+--import Data.Functor ((<$>))
 import Data.Maybe (fromJust)
-import Data.Monoid (Monoid(..))
+--import Data.Monoid (Monoid(..))
 
 everywhere :: (Monad m, Data a) => (forall d. Data d => (d -> m d)) -> a -> m a
 everywhere f = gmapM (everywhere f) >=> f

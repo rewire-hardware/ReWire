@@ -8,7 +8,7 @@ import ReWire.Core.Transformations.Types
 import ReWire.Core.Transformations.Monad
 import Control.Monad.Reader
 import Control.Monad.State
-import Control.Monad.Identity
+--import Control.Monad.Identity
 import Data.Set hiding (map,filter,null)
 import Data.List hiding (insert)
 import ReWire.Core.Transformations.Uniquify (uniquify)
@@ -34,7 +34,7 @@ inuseExp (RWCVar n t)        = do inuse <- get
 inuseExp (RWCCon _ _)        = return ()
 inuseExp (RWCLiteral _)      = return ()
 inuseExp (RWCCase e alts)    = inuseExp e >> mapM_ inuseAlt alts
-inuseExp (RWCNativeVHDL n _) = return ()   -- FIXME(?!): special case here
+inuseExp (RWCNativeVHDL _ _) = return ()   -- FIXME(?!): special case here
 
 inuseModule :: Id RWCExp -> RWCProgram -> IM (Maybe RWCProgram)
 inuseModule n m = do let md = find (\ d -> defnName d == n) (defns m)

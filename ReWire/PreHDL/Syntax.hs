@@ -127,7 +127,7 @@ instance Show Cmd where
   show Skip             = "skip;"
   show (NextState n)    = "next state is " ++ show n ++ ";"
   show (CaseIf [])      = "/* WARNING: EMPTY CaseIf */"
-  show (CaseIf [(b,c)]) = show c
+  show (CaseIf [(_,c)]) = show c
   show (CaseIf [(b1,c1),(_,c2)]) = "if " ++ show b1 ++ "{\n"
                              ++ indent (show c1) ++ "} else {\n"
                              ++ indent (show c2) ++ "}"

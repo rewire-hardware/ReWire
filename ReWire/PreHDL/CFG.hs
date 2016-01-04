@@ -8,8 +8,8 @@ import Data.Graph.Inductive
 import Data.GraphViz
 import Data.GraphViz.Attributes
 import qualified Data.GraphViz.Attributes.Complete as Attr
--}
 import Data.Text.Lazy (unpack,pack)
+-}
 import Data.Maybe (fromJust,catMaybes)
 
 data Branch = Conditional BoolExp

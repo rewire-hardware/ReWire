@@ -11,31 +11,45 @@ import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Identity
 import Control.Monad.Except
-import Data.Maybe (fromJust)
+--import Data.Maybe (fromJust)
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map,(!))
-import Control.DeepSeq
-import Data.ByteString.Char8 (pack)
+--import Control.DeepSeq
+--import Data.ByteString.Char8 (pack)
 
 -- Kind checking for Core.
 type KiSub = Map (Id Kind) Kind
 data KCEnv = KCEnv { as  :: Map (Id RWCTy) Kind,
                      cas :: Map TyConId Kind } deriving Show
 data KCState = KCState { kiSub :: KiSub, ctr :: Int } deriving Show
-type Assump = (Id RWCTy,Kind)
-type CAssump = (TyConId,Kind)
 
 type KCM = ReaderT KCEnv (StateT KCState (ExceptT String Identity))
 
+localAssumps :: (Map (Id RWCTy) Kind -> Map (Id RWCTy) Kind) -> KCM a -> KCM a
 localAssumps f = local (\ kce -> kce { as = f (as kce) })
+
+askAssumps :: KCM (Map (Id RWCTy) Kind)
 askAssumps = ask >>= \ kce -> return (as kce)
+
+localCAssumps :: (Map TyConId Kind -> Map TyConId Kind) -> KCM a -> KCM a
 localCAssumps f = local (\ kce -> kce { cas = f (cas kce) })
+
+askCAssumps :: KCM (Map TyConId Kind)
 askCAssumps = ask >>= \ kce -> return (cas kce)
+
+getKiSub :: KCM KiSub
 getKiSub = get >>= return . kiSub
+
+updKiSub :: (KiSub -> KiSub) -> KCM ()
 updKiSub f = get >>= \ s -> put (s { kiSub = f (kiSub s) })
+
+putKiSub :: KiSub -> KCM ()
 putKiSub sub = get >>= \ s -> put (s { kiSub = sub })
+
+getCtr :: KCM Int
 getCtr = get >>= return . ctr
-updCtr f = get >>= \ s -> put (s { ctr = f (ctr s) })
+
+putCtr :: Int -> KCM ()
 putCtr c = get >>= \ s -> put (s { ctr = c })
 
 freshkv :: KCM (Id Kind)
@@ -45,7 +59,7 @@ freshkv = do ctr   <- getCtr
              updKiSub (Map.insert n (Kvar n))
              return n
 
-initDataDecl :: RWCData -> KCM CAssump
+initDataDecl :: RWCData -> KCM (TyConId,Kind)
 initDataDecl (RWCData i _ _ _) = do v <- freshkv
                                     return (i,Kvar v)
 
@@ -56,7 +70,7 @@ varBind u k | k `aeq` Kvar u = return Map.empty
 
 (@@) :: KiSub -> KiSub -> KiSub
 s1@@s2 = {-s1 `deepseq` s2 `deepseq` force -} s
-         where s = Map.mapWithKey (\ u t -> subst s1 t) s2 `Map.union` s1
+         where s = Map.mapWithKey (\ _ t -> subst s1 t) s2 `Map.union` s1
 
 mgu :: Monad m => Kind -> Kind -> m KiSub
 mgu (Kfun kl kr) (Kfun kl' kr') = do s1 <- mgu kl kl'
@@ -109,7 +123,6 @@ kcDataDecl (RWCData i tvs _ dcs) = do cas   <- askCAssumps
 
 kcDefn :: RWCDefn -> KCM ()
 kcDefn (RWCDefn _ (tvs :-> t) _ _) = do oldsub      <- getKiSub
-                                        let oldkeys =  Map.keys oldsub
                                         as          <- liftM Map.fromList $ mapM (\ tv -> freshkv >>= \ v -> return (tv,Kvar v)) tvs
                                         k           <- localAssumps (as `Map.union`) (kcTy t)
                                         unify k Kstar
@@ -132,7 +145,7 @@ redecorate s (RWCData i tvs _ dcs) = do cas <- askCAssumps
                                           Just k  -> return (RWCData i tvs (monoize (subst s k)) dcs)
                                           Nothing -> fail $ "redecorate: no such assumption: " ++ show i
 
-basisCAssumps :: RWCProgram -> [CAssump]
+basisCAssumps :: RWCProgram -> [(TyConId,Kind)]
 basisCAssumps m = map (\ (RWCData i _ k _) -> (i,k)) (dataDecls m)
 
 kc :: [RWCProgram] -> RWCProgram -> KCM RWCProgram

@@ -9,10 +9,10 @@ import ReWire.Scoping
 import Control.DeepSeq
 import Control.Monad.State
 import Data.ByteString.Char8 (pack)
-import Data.Map.Strict (Map)
-import Data.Monoid (Monoid(..))
+--import Data.Map.Strict (Map)
+--import Data.Monoid (Monoid(..))
 import Data.Set hiding (map,filter,foldr)
-import qualified Data.Map.Strict as Map
+--import qualified Data.Map.Strict as Map
 
 newtype DataConId = DataConId { deDataConId :: String } deriving (Eq,Ord,Show,NFData)
 newtype TyConId   = TyConId   { deTyConId :: String } deriving (Eq,Ord,Show,NFData)
@@ -55,7 +55,7 @@ instance NFData RWCTy where
 
 instance Subst RWCTy RWCTy where
   fv (RWCTyVar x)     = [x]
-  fv (RWCTyCon i)     = []
+  fv (RWCTyCon _)     = []
   fv (RWCTyApp t1 t2) = fv t1 ++ fv t2
   fv (RWCTyComp m t)  = fv m ++ fv t
   bv _ = []
@@ -93,7 +93,7 @@ instance Subst RWCExp RWCExp where
   fv (RWCLam x _ e)      = filter (/= x) (fv e)
   fv (RWCVar x _)        = [x]
   fv (RWCCon _ _)        = []
-  fv (RWCLiteral l)      = []
+  fv (RWCLiteral _)      = []
   fv (RWCCase e alts)    = fv e ++ concatMap fv alts
   fv (RWCNativeVHDL _ e) = fv e
   bv (RWCApp e1 e2)      = bv e1 ++ bv e2
@@ -124,7 +124,7 @@ instance Subst RWCExp RWCTy where
   fv (RWCCon _ t)        = fv t
   fv (RWCLiteral _)      = []
   fv (RWCCase e alts)    = fv e ++ fv alts
-  fv (RWCNativeVHDL n e) = fv e
+  fv (RWCNativeVHDL _ e) = fv e
   bv _ = []
   subst' (RWCApp e1 e2)      = liftM2 RWCApp (subst' e1) (subst' e2)
   subst' (RWCLam x t e)      = liftM2 (RWCLam x) (subst' t) (subst' e)
@@ -178,7 +178,7 @@ instance Subst RWCAlt RWCExp where
 
 instance Subst RWCAlt RWCTy where
   fv (RWCAlt p e) = fv p ++ fv e
-  bv (RWCAlt p e) = []
+  bv (RWCAlt{})   = []
   subst' (RWCAlt p e) = liftM2 RWCAlt (subst' p) (subst' e)
 
 instance Alpha RWCAlt where
@@ -196,7 +196,7 @@ data RWCPat = RWCPatCon DataConId [RWCPat]
 
 patvars :: RWCPat -> [Id RWCExp]
 patvars (RWCPatCon _ ps)  = concatMap patvars ps
-patvars (RWCPatLiteral l) = []
+patvars (RWCPatLiteral _) = []
 patvars (RWCPatVar x _)   = [x]
 
 equatingPats :: RWCPat -> RWCPat -> AlphaM Bool -> AlphaM Bool
@@ -208,11 +208,11 @@ equatingPats (RWCPatCon i ps) (RWCPatCon j ps') k
 equatingPats (RWCPatLiteral l) (RWCPatLiteral l') k | l == l'   = k
                                                     | otherwise = return False
 equatingPats (RWCPatVar x _) (RWCPatVar y _) k                  = equating x y k
-equatingPats _ _ k                                              = return False
+equatingPats _ _ _                                              = return False
 
 instance Subst RWCPat RWCTy where
   fv (RWCPatCon _ ps)  = concatMap fv ps
-  fv (RWCPatLiteral l) = []
+  fv (RWCPatLiteral _) = []
   fv (RWCPatVar _ t)   = fv t
   bv _ = []
   subst' (RWCPatCon i ps)  = liftM (RWCPatCon i) (subst' ps)
@@ -233,14 +233,14 @@ data RWCDefn = RWCDefn { defnName   :: Id RWCExp,
                deriving (Ord,Eq,Show)
 
 instance Subst RWCDefn RWCExp where
-  fv (RWCDefn n pt _ e) = filter (/= n) (fv e)
+  fv (RWCDefn n _ _ e) = filter (/= n) (fv e)
   bv (RWCDefn n _ _ e) = n : bv e
   subst' (RWCDefn n pt b e) = refresh n (fv e) $ \ n' ->
                                 do e' <- subst' e
                                    return (RWCDefn n' pt b e')
 
 instance Subst RWCDefn RWCTy where
-  fv (RWCDefn n pt _ e) = fv pt ++ fv e
+  fv (RWCDefn _ pt _ e) = fv pt ++ fv e
   bv (RWCDefn _ pt _ _) = bv pt
   subst' (RWCDefn n (xs :-> t) b e) = refreshs xs (fv t ++ fv e) $ \ xs' ->
                                         do t' <- subst' t
@@ -305,12 +305,12 @@ mkArrow t1 t2 = RWCTyApp (RWCTyApp (RWCTyCon (TyConId "->")) t1) t2
 infixr `mkArrow`
 
 arrowLeft :: RWCTy -> RWCTy
-arrowLeft (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "->")) t1) t2) = t1
-arrowLeft t                                                     = error $ "arrowLeft: got non-arrow type: " ++ show t
+arrowLeft (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "->")) t1) _) = t1
+arrowLeft t                                                    = error $ "arrowLeft: got non-arrow type: " ++ show t
 
 arrowRight :: RWCTy -> RWCTy
-arrowRight (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "->")) t1) t2) = t2
-arrowRight t                                                     = error $ "arrowRight: got non-arrow type: " ++ show t
+arrowRight (RWCTyApp (RWCTyApp (RWCTyCon (TyConId "->")) _) t2) = t2
+arrowRight t                                                    = error $ "arrowRight: got non-arrow type: " ++ show t
 
 typeOf :: RWCExp -> RWCTy
 typeOf (RWCApp e _)                   = arrowRight (typeOf e)
@@ -322,4 +322,4 @@ typeOf (RWCLiteral (RWCLitFloat _))   = RWCTyCon (TyConId "Float")
 typeOf (RWCLiteral (RWCLitChar _))    = RWCTyCon (TyConId "Char")
 typeOf (RWCCase _ (RWCAlt _ e:_))     = typeOf e
 typeOf (RWCCase _ [])                 = error "typeOf: encountered case with no alts"
-typeOf (RWCNativeVHDL n e)            = typeOf e
+typeOf (RWCNativeVHDL _ e)            = typeOf e

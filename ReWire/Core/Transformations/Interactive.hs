@@ -4,15 +4,15 @@
 
 module ReWire.Core.Transformations.Interactive (TransCommand,trans) where
 
-import Prelude hiding (sequence,mapM)
+--import Prelude hiding (sequence,mapM)
 import ReWire.Core.Syntax
 import ReWire.Core.PrettyPrintHaskell (ppHaskell)
-import Control.Monad hiding (sequence,mapM)
-import Data.List (isInfixOf,find,intercalate)
-import Control.Monad.Reader hiding (sequence,mapM)
-import Control.Monad.Identity hiding (sequence,mapM)
-import Data.Traversable (sequence,mapM)
-import Data.Maybe (catMaybes,isNothing,fromJust)
+import Control.Monad -- hiding (sequence,mapM)
+import Data.List (intercalate)
+--import Control.Monad.Reader hiding (sequence,mapM)
+--import Control.Monad.Identity hiding (sequence,mapM)
+--import Data.Traversable (sequence,mapM)
+--import Data.Maybe (catMaybes,isNothing,fromJust)
 import Data.Char
 import ReWire.Core.Transformations.Expand (cmdExpand)
 import ReWire.Core.Transformations.Reduce (cmdReduce)

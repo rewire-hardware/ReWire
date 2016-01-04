@@ -25,34 +25,44 @@ b32 n = let (q,r) = quotRem n 32
             c     = (['0'..'9']++['A'..]) !! r
         in  c:sq
 
+askT :: UQM (Map (Id RWCTy) (Id RWCTy))
 askT = lift ask
+
+localT :: (Map (Id RWCTy) (Id RWCTy) -> Map (Id RWCTy) (Id RWCTy)) -> UQM a -> UQM a
 localT f m = ReaderT $ \ rhoE -> local f (runReaderT m rhoE)
 
+askE :: UQM (Map (Id RWCExp) (Id RWCExp))
 askE = ask
+
+localE :: (Map (Id RWCExp) (Id RWCExp) -> Map (Id RWCExp) (Id RWCExp)) -> UQM a -> UQM a
 localE = local
 
+askUniqueT :: Id RWCTy -> UQM (Maybe (Id RWCTy))
 askUniqueT n = do m <- askT
                   return (Map.lookup n m)
 
+askUniqueE :: Id RWCExp -> UQM (Maybe (Id RWCExp))
 askUniqueE n = do m <- askE
                   return (Map.lookup n m)
-
 
 fresh :: Id a -> UQM (Id a)
 fresh (Id s x) = do n <- get
                     put (n+1)
                     return (Id s (BS.append x (BS.pack ("@" ++ base32 n))))
 
+uniquingT :: [Id RWCTy] -> UQM t -> UQM ([Id RWCTy],t)
 uniquingT ns m = do ns'    <- mapM fresh ns
                     let bs =  Map.fromList (zip ns ns')
                     v      <- localT (Map.union bs) m
                     return (ns',v)
 
+uniquingE :: [Id RWCExp] -> UQM t -> UQM ([Id RWCExp],t)
 uniquingE ns m = do ns'    <- mapM fresh ns
                     let bs =  Map.fromList (zip ns ns')
                     v      <- localE (Map.union bs) m
                     return (ns',v)
 
+uniquifyTy :: RWCTy -> UQM RWCTy
 uniquifyTy (RWCTyApp t1 t2)  = do t1' <- uniquifyTy t1
                                   t2' <- uniquifyTy t2
                                   return (RWCTyApp t1' t2')
@@ -65,17 +75,21 @@ uniquifyTy (RWCTyComp t1 t2) = do t1' <- uniquifyTy t1
                                   t2' <- uniquifyTy t2
                                   return (RWCTyComp t1' t2')
 
+uniquifyDataCon :: RWCDataCon -> UQM RWCDataCon
 uniquifyDataCon (RWCDataCon dci ts) = do ts' <- mapM uniquifyTy ts
                                          return (RWCDataCon dci ts')
 
+uniquifyDataDecl :: RWCData -> UQM RWCData
 uniquifyDataDecl (RWCData i vs k dcs) = do (vs',dcs') <- uniquingT vs $
                                              mapM uniquifyDataCon dcs
                                            return (RWCData i vs' k dcs')
 
-pvs (RWCPatCon dci ps) = concatMap pvs ps
-pvs (RWCPatLiteral l)  = []
-pvs (RWCPatVar x t)    = [x]
+pvs :: RWCPat -> [Id RWCExp]
+pvs (RWCPatCon _ ps)  = concatMap pvs ps
+pvs (RWCPatLiteral _) = []
+pvs (RWCPatVar x _)   = [x]
 
+uniquifyPat :: RWCPat -> UQM RWCPat
 uniquifyPat (RWCPatCon dci ps) = do ps' <- mapM uniquifyPat ps
                                     return (RWCPatCon dci ps')
 uniquifyPat (RWCPatLiteral l)  = return (RWCPatLiteral l)
@@ -85,6 +99,7 @@ uniquifyPat (RWCPatVar n t)    = do t' <- uniquifyTy t
                                       Just n' -> return (RWCPatVar n' t')
                                       Nothing -> return (RWCPatVar n t') -- shouldn't happen
 
+uniquifyAlt :: RWCAlt -> UQM RWCAlt
 uniquifyAlt (RWCAlt p e) = do let vs      =  pvs p
                               (_,(p',e')) <- uniquingE vs (do
                                 p' <- uniquifyPat p
@@ -92,6 +107,7 @@ uniquifyAlt (RWCAlt p e) = do let vs      =  pvs p
                                 return (p',e'))
                               return (RWCAlt p' e')
 
+uniquifyExpr :: RWCExp -> UQM RWCExp
 uniquifyExpr (RWCApp e1 e2)      = do e1' <- uniquifyExpr e1
                                       e2' <- uniquifyExpr e2
                                       return (RWCApp e1' e2')

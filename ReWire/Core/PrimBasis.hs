@@ -3,13 +3,13 @@ module ReWire.Core.PrimBasis where
 import ReWire.Scoping
 import ReWire.Core.Kinds
 import ReWire.Core.Syntax
-import ReWire.Core.PrettyPrintHaskell
 
 --
 -- The "primitive basis" has some magical voodoo that cannot be expressed in
 -- the concrete syntax... so here we are.
 --
 
+primBasis :: RWCProgram
 primBasis = RWCProgram
                ([ RWCData (TyConId "->")  [mkId "a",mkId "b"]          (Kstar `Kfun` (Kstar `Kfun` Kstar))                  []
                 , RWCData (TyConId "ReT") [mkId "i",mkId "o",mkId "m"] (Kstar `Kfun` (Kstar `Kfun` (Kmonad `Kfun` Kmonad))) []
@@ -24,7 +24,7 @@ primBasis = RWCProgram
                (map mkPrimDefn prims)
    where mkTuple n = RWCData (TyConId i) tvs k [ctor]
              where i    = "(" ++ replicate (n-1) ',' ++ ")"
-                   tvs  = map mkId (take n ([[c] | c <- ['a'..'z']]++map (('t':).show) [0..]))
+                   tvs  = map mkId (take n ([[c] | c <- ['a'..'z']]++map (('t':).show) ([0::Integer ..])))
                    k    = foldr Kfun Kstar (replicate n Kstar)
                    ctor = RWCDataCon (DataConId i) (map RWCTyVar tvs)
 

@@ -12,10 +12,10 @@ import ReWire.FrontEnd.Renamer (Renamer, FQName(..), Namespace(..), rename, exte
 import ReWire.Scoping (mkId, Id, fv)
 import ReWire.SYB (runQ, query')
 
-import Control.Applicative ((<*>))
+--import Control.Applicative ((<*>))
 import Control.Monad (foldM)
 import Data.Foldable (foldl')
-import Data.Functor ((<$>))
+--import Data.Functor ((<$>))
 import Data.List (nub)
 
 import Language.Haskell.Exts hiding (loc, name, binds, op, Kind)

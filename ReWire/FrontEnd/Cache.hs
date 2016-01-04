@@ -14,10 +14,10 @@ import Control.Monad (foldM, (>=>), when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State (runStateT, StateT, get, modify)
-import Data.Functor ((<$>))
+--import Data.Functor ((<$>))
 import Data.List (find)
 import Data.Maybe (fromMaybe)
-import Data.Monoid (Monoid(..), mconcat, (<>))
+import Data.Monoid ((<>))
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 

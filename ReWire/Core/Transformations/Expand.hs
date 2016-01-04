@@ -24,12 +24,12 @@ expandExpr ns (RWCVar n t) | n `elem` ns = do me <- askVar t n
                                                 Just e  -> expandExpr ns e
                                                 Nothing -> return (RWCVar n t)
                            | otherwise   = return (RWCVar n t)
-expandExpr ns (RWCCon dci t)             = return (RWCCon dci t)
-expandExpr ns (RWCLiteral l)             = return (RWCLiteral l)
+expandExpr _ (RWCCon dci t)              = return (RWCCon dci t)
+expandExpr _ (RWCLiteral l)              = return (RWCLiteral l)
 expandExpr ns (RWCCase e alts)           = do e'    <- expandExpr ns e
                                               alts' <- mapM (expandAlt ns) alts
                                               return (RWCCase e' alts')
-expandExpr ns (RWCNativeVHDL n e)        = return (RWCNativeVHDL n e)             -- FIXME(?!): special case here!
+expandExpr _ (RWCNativeVHDL n e)         = return (RWCNativeVHDL n e)             -- FIXME(?!): special case here!
 
 expandDefn :: [Id RWCExp] -> RWCDefn -> RW RWCDefn
 expandDefn ns (RWCDefn n pt b e) = do e' <- expandExpr ns e

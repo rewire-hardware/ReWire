@@ -9,7 +9,7 @@ import Control.Monad (liftM, replicateM, (>=>))
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State (runStateT, StateT, get, modify)
 import Data.Foldable (foldl', foldrM)
-import Data.Functor ((<$>))
+--import Data.Functor ((<$>))
 import Data.Functor.Identity
 import Data.Monoid ((<>))
 

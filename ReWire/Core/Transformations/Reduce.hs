@@ -6,11 +6,11 @@ import Prelude hiding (sequence,mapM)
 import ReWire.Scoping
 import ReWire.Core.Syntax
 import Control.Monad hiding (sequence,mapM)
-import Data.List (isInfixOf,find)
-import Control.Monad.Reader hiding (sequence,mapM)
-import Control.Monad.Identity hiding (sequence,mapM)
-import Data.Traversable (sequence,mapM)
-import Data.Maybe (catMaybes,isNothing,fromJust)
+--import Data.List (isInfixOf,find)
+--import Control.Monad.Reader hiding (sequence,mapM)
+--import Control.Monad.Identity hiding (sequence,mapM)
+import Data.Traversable (mapM)
+--import Data.Maybe (catMaybes,isNothing,fromJust)
 import ReWire.Core.Transformations.Monad
 import ReWire.Core.Transformations.Types
 import ReWire.Core.Transformations.Uniquify (uniquify)
@@ -20,7 +20,7 @@ reduce :: Monad m => RWCExp -> RWT m RWCExp
 reduce (RWCApp e1 e2)     = do e1' <- reduce e1
                                e2' <- reduce e2
                                case e1' of
-                                 RWCLam n t b -> do b' <- fsubstE n e2' b
+                                 RWCLam n _ b -> do b' <- fsubstE n e2' b
                                                     reduce b'
                                  _            -> return (RWCApp e1' e2')
 reduce (RWCLam n t e)      = do e' <- reduce e
@@ -47,7 +47,7 @@ redcase esc (RWCAlt p eb:alts) = do mr <- matchpat esc p
                                                          liftM Just $ reduce eb'
                                       MatchMaybe   -> return Nothing
                                       MatchNo      -> redcase esc alts
-redcase esc []                 = return Nothing -- FIXME: should return undefined?
+redcase _ []                   = return Nothing -- FIXME: should return undefined?
 
 data MatchResult = MatchYes [(Id RWCExp,RWCExp)]
                  | MatchMaybe

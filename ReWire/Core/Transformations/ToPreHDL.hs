@@ -19,7 +19,7 @@ import qualified Data.Map.Strict as Map
 import Data.Graph.Inductive
 import Data.List (foldl',find,findIndex)
 import Data.Maybe (fromJust)
-import qualified Debug.Trace (trace)
+--import qualified Debug.Trace (trace)
 
 type VarMap = Map (Id RWCExp) Loc
 type ActionMap = Map (Id RWCExp) ([Loc],Node,Node,Loc) -- name -> arg regs, entry node, exit node, result reg
@@ -138,6 +138,7 @@ freshLocBool = do c <- getC
                   putHeader (h { regDecls = RegDecl r TyBoolean : regDecls h })
                   return r
 
+nBits :: Int -> Int
 nBits 0 = 0
 nBits n = nBits (n `quot` 2) + 1
 
@@ -159,11 +160,11 @@ tyWidth t            = {-do twc <- getTyWidthCache
                                 RWCTyCon i    -> do
                                   Just (TyConInfo (RWCData _ _ _ dcs)) <- lift $ lift $ queryT i
                                   tagWidth <- getTagWidth i
-                                  cws      <- mapM (dataConWidth i) dcs
+                                  cws      <- mapM dataConWidth dcs
                                   let size =  tagWidth + maximum cws
 --                                  modifyTyWidthCache (Map.insert t size)
                                   return size
-                where dataConWidth di (RWCDataCon i _) = do
+                where dataConWidth (RWCDataCon i _) = do
                         fts <- getFieldTys i t
                         liftM sum (mapM tyWidth fts)
 
@@ -184,7 +185,7 @@ stringAlts nl ((_,no1_t,no1_f,_):x@(no2_e,_,_,_):xs) = do addEdge no1_t nl (Cond
                                                           stringAlts nl (x:xs)
 -- The last alt is a special case; its condition is ignored, so it does not
 -- really have an no_f.
-stringAlts nl [(_,no,_,r)]                           = do addEdge no nl (Conditional (BoolConst True))
+stringAlts nl [(_,no,_,_)]                           = do addEdge no nl (Conditional (BoolConst True))
 stringAlts _  []                                     = return ()
 
 cfgExpr :: RWCExp -> CGM (Node,Node,Loc)
@@ -337,7 +338,7 @@ cfgLastPat lscr tscr (RWCPatCon dci ps) = do
                                             -- rmi: whether match for subpat i
                                             bsnpinporms       <- zipWithM3 cfgLastPat rfs tfs ps
                                             let bss           =  map (\ (bs,_,_,_) -> bs) bsnpinporms
-                                                rms           =  map (\ (_,_,_,rm) -> rm) bsnpinporms
+--                                                 rms           =  map (\ (_,_,_,rm) -> rm) bsnpinporms
                                             -- nai,nao: entry/exit for final match-and
                                             -- rm: value for final match-and
                                             --(nai,nao,rm)      <- andRegs (rtm:rms)
@@ -353,7 +354,7 @@ cfgLastPat lscr tscr (RWCPatCon dci ps) = do
                                             -- after check pats, and results
 --                                            addEdge npo_l nai (Conditional (BoolConst True))
                                             return (concat bss,ntm,npo_l,rtm)
-cfgLastPat lscr tscr (RWCPatVar x _)    = do
+cfgLastPat lscr _ (RWCPatVar x _)       = do
                                         rtm <- freshLocBool
                                         ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
                                         return ([(x,lscr)],ntm,ntm,rtm)
@@ -394,7 +395,7 @@ mkGetField dci lscr tscr n = do tci         <- getDataConTyCon dci
                                 rf          <- freshLocSize (fieldWidths !! n)
                                 let fieldOffsets    = scanl (+) tagWidth fieldWidths
                                     ranges []       = []
-                                    ranges [n]      = []
+                                    ranges [_]      = []
                                     ranges (n:m:ns) = (n,m-1) : ranges (m:ns)
                                     fieldRanges     = ranges fieldOffsets
                                     (lo,hi)         = fieldRanges !! n
@@ -433,7 +434,7 @@ cfgPat lscr tscr (RWCPatCon dci ps) = do -- ntm: rtm <- tag match?
                                             -- after check pats, and results
                                             addEdge npo_l nai (Conditional (BoolConst True))
                                             return (concat bss,ntm,nao,rm)
-cfgPat lscr tscr (RWCPatVar x _)    = do rtm <- freshLocBool
+cfgPat lscr _ (RWCPatVar x _)       = do rtm <- freshLocBool
                                          ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
                                          return ([(x,lscr)],ntm,ntm,rtm)
 cfgPat _ _ (RWCPatLiteral _)        = fail "cfgPat: encountered literal"
@@ -463,7 +464,7 @@ cfgAlt lscr tscr lres (RWCAlt p e) =trace ("Entering alt: " ++ show p) $
 
 cfgLastAcAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Node,Node,Node,Loc)
 cfgLastAcAlt lscr tscr lres (RWCAlt p e) =trace ("Entering last alt: " ++ show p) $
-                                           do (bds,nip,nop,rp) <- cfgLastPat lscr tscr p
+                                           do (bds,nip,nop,_) <- cfgLastPat lscr tscr p
                                               foldr (uncurry binding) (do
                                                 (nie,noe,le) <- cfgAcExpr e
                                                 no           <- addFreshNode (Assign lres (LocRHS le))
@@ -618,6 +619,7 @@ cfgAcExpr e = case ef of
 
    where (ef:eargs) = flattenApp e
 
+peelLambdas :: RWCExp -> ([(Id RWCExp,RWCTy)],RWCExp)
 peelLambdas (RWCLam n t e) = ((n,t):nts,e')
                              where (nts,e') = peelLambdas e
 peelLambdas e              = ([],e)
@@ -636,24 +638,24 @@ cfgAcDefn n = do
                       Nothing               -> fail $ "cfgAcDefn: " ++ show n ++ " not defined"
                       Just (RWCDefn _ _ _ e_) -> do   -- FIXME: might check to make sure the INLINE pragma is false here
                         -- Allocate registers for arguments.
-                        let (xts,e)   =  peelLambdas e_
-                            xs        =  map fst xts
-                            ts        =  map snd xts
-                        rs            <- mapM freshLocTy ts
+                        let (xts,e) =  peelLambdas e_
+                            xs      =  map fst xts
+                            ts      =  map snd xts
+                        rs          <- mapM freshLocTy ts
                         -- Allocate result register.
-                        rr            <- freshLocTy (compBase $ typeOf e)
+                        rr          <- freshLocTy (compBase $ typeOf e)
                         -- Allocate in and out nodes (no-ops). We cannot
                         -- just use the in and out nodes for the body
                         -- expression, because we don't know yet what those
                         -- are. So we will hook this up later.
-                        ni            <- addFreshNode (Rem $ show n ++ " in")
-                        no            <- addFreshNode (Rem $ show n ++ " out")
+                        ni          <- addFreshNode (Rem $ show n ++ " in")
+                        no          <- addFreshNode (Rem $ show n ++ " out")
                         -- Insert the function info into the action map.
                         putActionMap (Map.insert n (rs,ni,no,rr) am)
                         -- Compile the body expression, with local bindings
                         -- in place.
-                        let xrs       =  zip xs rs
-                        (nie,noe,rre) <- foldr (uncurry binding) (cfgAcExpr e) xrs
+                        let xrs     =  zip xs rs
+                        (nie,noe,_) <- foldr (uncurry binding) (cfgAcExpr e) xrs
                         -- Connect in and out nodes.
                         addEdge ni nie (Conditional (BoolConst True))
                         addEdge noe no (Conditional (BoolConst True))
@@ -664,7 +666,7 @@ cfgAcDefn n = do
 mkStateRegDecls :: CGM ()
 mkStateRegDecls = do ts <- askStateTys
                      ws <- mapM tyWidth ts
-                     let rs =  zipWith (\ w n -> RegDecl { regDeclName = "statevar" ++ show n, regDefnTy = TyBits w }) ws [0..]
+                     let rs =  zipWith (\ w n -> RegDecl { regDeclName = "statevar" ++ show n, regDefnTy = TyBits w }) ws [0::Integer ..]
                      h      <- getHeader
                      putHeader (h { regDecls = rs ++ regDecls h })
 
@@ -723,6 +725,7 @@ cfgFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
                      Map.empty)
         (p,ctr) = uniquify 0 p_
 
+eu :: CFG -> CFG
 eu gr = gr { cfgGraph = elimUnreachable 0 (cfgGraph gr) }
 
 cmdToSCFG :: TransCommand
@@ -757,7 +760,7 @@ mkFunGetField dci lscr tscr n = do tci         <- getDataConTyCon dci
                                    rf          <- freshLocSize (fieldWidths !! n)
                                    let fieldOffsets    = scanl (+) tagWidth fieldWidths
                                        ranges []       = []
-                                       ranges [n]      = []
+                                       ranges [_]      = []
                                        ranges (n:m:ns) = (n,m-1) : ranges (m:ns)
                                        fieldRanges     = ranges fieldOffsets
                                        (lo,hi)         = fieldRanges !! n
@@ -777,7 +780,7 @@ funPat lscr tscr (RWCPatCon dci ps) = do (ctm,rtm) <- mkFunTagCheck dci lscr
                                                     return (concat bdss,
                                                             foldr1 mkSeq ([ctm] ++ cfs ++ cs ++ [Assign rm (BoolRHS (foldr1 And (map BoolVar (rtm:rms))))]),
                                                             rm)
-funPat lscr tscr (RWCPatVar x _)    = do rm <- freshLocBool
+funPat lscr _ (RWCPatVar x _)       = do rm <- freshLocBool
                                          return ([(x,lscr)],Assign rm (BoolRHS (BoolConst True)),rm)
 funPat _ _ (RWCPatLiteral _)        = fail "funPat: encountered literal"
 
@@ -886,7 +889,6 @@ funDefn n = do ms <- askFun n
                            ts      =  map snd xts
                        pns         <- mapM freshLocTy ts
                        psizes      <- mapM tyWidth ts
-                       rr          <- freshLocTy (typeOf e)
                        let xrs     =  zip xs pns
                        h           <- getHeader
                        putHeader (h { regDecls = [] })

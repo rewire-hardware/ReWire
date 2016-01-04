@@ -16,10 +16,10 @@ import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Identity
 import Control.Monad.Except
-import Data.List (nub)
+--import Data.List (nub)
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map)
-import Debug.Trace (trace,traceShow)
+--import Debug.Trace (trace,traceShow)
 --import ReWire.Core.Prims
 
 -- Type checker for core.
@@ -35,15 +35,31 @@ type CAssump = (DataConId,Poly RWCTy)
 
 type TCM = ReaderT TCEnv (StateT TCState (ExceptT String Identity))
 
+localAssumps :: (Map (Id RWCExp) (Poly RWCTy) -> Map (Id RWCExp) (Poly RWCTy)) -> TCM a -> TCM a
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
+
+askAssumps :: TCM (Map (Id RWCExp) (Poly RWCTy))
 askAssumps = ask >>= \ tce -> return (as tce)
+
+localCAssumps :: (Map DataConId (Poly RWCTy) -> Map DataConId (Poly RWCTy)) -> TCM a -> TCM a
 localCAssumps f = local (\ tce -> tce { cas = f (cas tce) })
+
+askCAssumps :: TCM (Map DataConId (Poly RWCTy))
 askCAssumps = ask >>= \ tce -> return (cas tce)
+
+getTySub :: TCM TySub
 getTySub = get >>= return . tySub
+
+updTySub :: (TySub -> TySub) -> TCM ()
 updTySub f = get >>= \ s -> put (s { tySub = f (tySub s) })
+
+putTySub :: TySub -> TCM ()
 putTySub sub = get >>= \ s -> put (s { tySub = sub })
+
+getCtr :: TCM Int
 getCtr = get >>= return . ctr
-updCtr f = get >>= \ s -> put (s { ctr = f (tySub s) })
+
+putCtr :: Int -> TCM ()
 putCtr c = get >>= \ s -> put (s { ctr = c })
 
 freshv :: TCM (Id RWCTy)
@@ -99,7 +115,7 @@ dataDeclAssumps (RWCData i tvs _ dcs) = let rt = foldl RWCTyApp (RWCTyCon i) (ma
 
 (@@) :: TySub -> TySub -> TySub
 s1@@s2 = {-s1 `deepseq` s2 `deepseq` force-} s
-         where s = Map.mapWithKey (\ u t -> subst s1 t) s2 `Map.union` s1
+         where s = Map.mapWithKey (\ _ t -> subst s1 t) s2 `Map.union` s1
 
 isFlex :: Id a -> Bool
 isFlex = (=='?') . head . deId
@@ -132,7 +148,7 @@ inst (tvs :-> t) = do sub <- liftM Map.fromList $ mapM (\ tv -> freshv >>= \ v -
                       return (subst sub t)
 
 patassumps :: RWCPat -> [Assump]
-patassumps (RWCPatCon i ps)  = concatMap patassumps ps
+patassumps (RWCPatCon _ ps)  = concatMap patassumps ps
 patassumps (RWCPatLiteral _) = []
 patassumps (RWCPatVar n t)   = [(n,[] :-> t)]
 
