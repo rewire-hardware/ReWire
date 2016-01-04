@@ -10,7 +10,7 @@ import Control.DeepSeq
 import Control.Monad.State
 import Data.ByteString.Char8 (pack)
 --import Data.Map.Strict (Map)
---import Data.Monoid (Monoid(..))
+import Data.Monoid (Monoid(..))
 import Data.Set hiding (map,filter,foldr)
 --import qualified Data.Map.Strict as Map
 
