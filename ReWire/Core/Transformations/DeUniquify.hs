@@ -47,7 +47,7 @@ localAllocatedT :: (Set (Id RWCTy) -> Set (Id RWCTy)) -> DQM a -> DQM a
 localAllocatedT f = local (\ e -> e { allocatedT = f (allocatedT e) })
 
 variants :: String -> [String]
-variants s = s : (s ++ "'") : (s ++ "''") : [s ++ show n | n <- [0..]]
+variants s = s : (s ++ "'") : (s ++ "''") : [s ++ show n | n <- [0::Integer ..]]
 
 pretty :: String -> String
 pretty = takeWhile (/='@')
@@ -78,6 +78,7 @@ dqingE ns m = do ns'    <- mapM dqvE ns
                             localInScopeE (bs `Map.union`) m
                  return (ns',v)
 
+dqTy :: RWCTy -> DQM RWCTy
 dqTy (RWCTyApp t1 t2)  = do t1' <- dqTy t1
                             t2' <- dqTy t2
                             return (RWCTyApp t1' t2')
@@ -90,10 +91,12 @@ dqTy (RWCTyComp t1 t2) = do t1' <- dqTy t1
                             t2' <- dqTy t2
                             return (RWCTyComp t1' t2')
 
-pvs (RWCPatCon dci ps) = concatMap pvs ps
-pvs (RWCPatLiteral l)  = []
-pvs (RWCPatVar x t)    = [x]
+pvs :: RWCPat -> [Id RWCExp]
+pvs (RWCPatCon _ ps)   = concatMap pvs ps
+pvs (RWCPatLiteral _)  = []
+pvs (RWCPatVar x _)    = [x]
 
+dqPat :: RWCPat -> DQM RWCPat
 dqPat (RWCPatCon dci ps) = do ps' <- mapM dqPat ps
                               return (RWCPatCon dci ps')
 dqPat (RWCPatLiteral l)  = return (RWCPatLiteral l)
@@ -103,6 +106,7 @@ dqPat (RWCPatVar n t)    = do t' <- dqTy t
                                 Just n' -> return (RWCPatVar n' t')
                                 Nothing -> return (RWCPatVar n t')
 
+dqAlt :: RWCAlt -> DQM RWCAlt
 dqAlt (RWCAlt p e) = do let vs      =  pvs p
                         (_,(p',e')) <- dqingE vs (do
                           p' <- dqPat p
@@ -110,6 +114,7 @@ dqAlt (RWCAlt p e) = do let vs      =  pvs p
                           return (p',e'))
                         return (RWCAlt p' e')
 
+dqExpr :: RWCExp -> DQM RWCExp
 dqExpr (RWCApp e1 e2)      = do e1' <- dqExpr e1
                                 e2' <- dqExpr e2
                                 return (RWCApp e1' e2')
@@ -130,12 +135,15 @@ dqExpr (RWCCase e alts)    = do e'    <- dqExpr e
 dqExpr (RWCNativeVHDL n e) = do e' <- dqExpr e
                                 return (RWCNativeVHDL n e')
 
+dqDataCon :: RWCDataCon -> DQM RWCDataCon
 dqDataCon (RWCDataCon dci ts) = do ts' <- mapM dqTy ts
                                    return (RWCDataCon dci ts')
 
+dqDataDecl :: RWCData -> DQM RWCData
 dqDataDecl (RWCData n tvs k dcs) = do (tvs',dcs') <- dqingT tvs (mapM dqDataCon dcs)
                                       return (RWCData n tvs' k dcs')
 
+dqDefn :: RWCDefn -> DQM RWCDefn
 dqDefn (RWCDefn n (tvs :-> t) b e) = do (tvs',(t',e')) <- dqingT tvs (do
                                           t' <- dqTy t
                                           e' <- dqExpr e

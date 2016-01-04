@@ -23,7 +23,7 @@ import Control.DeepSeq
 import Data.Either (rights)
 import qualified Data.ByteString.Char8 as BS
 import Data.ByteString.Char8 (ByteString)
-import Data.Maybe (fromJust,catMaybes,isNothing,isJust)
+import Data.Maybe (fromJust,isJust)
 {-
 import Unbound.LocallyNameless hiding (fv,subst,substs,Subst,Alpha,aeq,aeq')
 import qualified Unbound.LocallyNameless as U
@@ -235,8 +235,8 @@ varsaeq x y = do mx <- query (Left (IdAny x))
                  my <- query (Right (IdAny y))
                  case (mx,my) of
                    (Just x',Just y') -> return (x'==IdAny y && y'==IdAny x)
-                   (Just x',Nothing) -> return False
-                   (Nothing,Just y') -> return False
+                   (Just _,Nothing)  -> return False
+                   (Nothing,Just _)  -> return False
                    (Nothing,Nothing) -> return (x==y)
 
 

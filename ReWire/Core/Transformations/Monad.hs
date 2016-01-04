@@ -10,18 +10,18 @@ module ReWire.Core.Transformations.Monad where
 
 import Control.Applicative
 import Control.Monad.Reader
-import qualified Control.Monad.Trans.Reader as Reader
+--import qualified Control.Monad.Trans.Reader as Reader
 import Control.Monad.Identity
 import ReWire.Core.Syntax
 import qualified Data.Map.Strict as Map
 import Control.Monad.State
 import Data.Map (Map)
-import Data.List (find)
-import Data.Maybe (fromJust)
+--import Data.List (find)
+--import Data.Maybe (fromJust)
 import ReWire.Scoping
 import qualified Data.Set as Set
 import Data.Set (Set)
-import ReWire.Core.Transformations.Uniquify (uniquify,uniquifyE)
+import ReWire.Core.Transformations.Uniquify (uniquifyE)
 
 newtype RWT m a = RWT { deRWT :: AssumeT (Id RWCExp) VarInfo
                                   (AssumeT TyConId TyConInfo
@@ -146,7 +146,7 @@ mkInitialDataConMap = foldr addDD Map.empty
   where addDD (RWCData dn _ _ dcs) m = foldr (\ d@(RWCDataCon cn _) -> Map.insert cn (DataConInfo dn d)) m dcs
 
 mkInitialVarSet :: [RWCDefn] -> Set IdAny
-mkInitialVarSet ds = foldr (\ d@(RWCDefn n _ _ _) -> Set.insert (IdAny n)) Set.empty ds
+mkInitialVarSet ds = foldr (\ (RWCDefn n _ _ _) -> Set.insert (IdAny n)) Set.empty ds
 
 runRWT :: Monad m => Int -> RWCProgram -> RWT m a -> m a
 runRWT ctr m phi = liftM fst $
@@ -170,6 +170,7 @@ getCtr = RWT get
 putCtr :: Monad m => Int -> RWT m ()
 putCtr = RWT . put
 
+fsubstE :: Monad m => Id RWCExp -> RWCExp -> RWCExp -> RWT m RWCExp
 fsubstE n e = fsubstsE [(n,e)]
 
 fsubstsE :: Monad m => [(Id RWCExp,RWCExp)] -> RWCExp -> RWT m RWCExp
@@ -181,8 +182,8 @@ fsubstsE s (RWCLam n t eb)     = do eb' <- fsubstsE s eb
 fsubstsE s (RWCVar n t)        = case lookup n s of
                                    Just e  -> freshenE e
                                    Nothing -> return (RWCVar n t)
-fsubstsE s (RWCCon dci t)      = return (RWCCon dci t)
-fsubstsE s (RWCLiteral l)      = return (RWCLiteral l)
+fsubstsE _ (RWCCon dci t)      = return (RWCCon dci t)
+fsubstsE _ (RWCLiteral l)      = return (RWCLiteral l)
 fsubstsE s (RWCCase esc alts)  = do esc'  <- fsubstsE s esc
                                     alts' <- mapM fsubstsE_Alt alts
                                     return (RWCCase esc' alts')
@@ -199,10 +200,10 @@ freshenE e = do ctr <- getCtr
 askVar :: Monad m => RWCTy -> Id RWCExp -> RWT m (Maybe RWCExp)
 askVar t n = do md <- queryG n
                 case md of
-                  Just (RWCDefn _ (tvs :-> t') _ e) -> do sub <- matchty Map.empty t' t
-                                                          e'  <- freshenE (subst sub e)
-                                                          return (Just e')
-                  _                                 -> return Nothing
+                  Just (RWCDefn _ (_ :-> t') _ e) -> do sub <- matchty Map.empty t' t
+                                                        e'  <- freshenE (subst sub e)
+                                                        return (Just e')
+                  _                               -> return Nothing
 
 {-
 askDefn :: MonadReWire m => Name RWCExp -> m (Maybe RWCDefn)
