@@ -158,12 +158,15 @@ tyWidth t            = {-do twc <- getTyWidthCache
                                 RWCTyVar _    -> fail "tyWidth: type variable encountered"
                                 RWCTyComp _ _ -> fail "tyWidth: computation type encountered"
                                 RWCTyCon i    -> do
-                                  Just (TyConInfo (RWCData _ _ _ dcs)) <- lift $ lift $ queryT i
-                                  tagWidth <- getTagWidth i
-                                  cws      <- mapM dataConWidth dcs
-                                  let size =  tagWidth + maximum cws
---                                  modifyTyWidthCache (Map.insert t size)
-                                  return size
+                                  minfo <- lift $ lift $ queryT i
+                                  case minfo of
+                                    Nothing                              -> fail $ "tyWidth: encountered unknown tycon " ++ show i
+                                    Just (TyConInfo (RWCData _ _ _ dcs)) -> do
+                                      tagWidth <- getTagWidth i
+                                      cws      <- mapM dataConWidth dcs
+                                      let size =  tagWidth + maximum cws
+--                                      modifyTyWidthCache (Map.insert t size)
+                                      return size
                 where dataConWidth (RWCDataCon i _) = do
                         fts <- getFieldTys i t
                         liftM sum (mapM tyWidth fts)
