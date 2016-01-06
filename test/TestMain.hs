@@ -1,6 +1,7 @@
 import ReWire.Core.KindChecker
 import ReWire.Core.TypeChecker
 import ReWire.FrontEnd
+import ReWire.FrontEnd.LoadPath
 import qualified ReWire.Core.Main as M
 
 import System.Directory (setCurrentDirectory)
@@ -13,12 +14,13 @@ import Paths_ReWire
 
 -- TODO: should just snarf these from the dir listing
 filesToCompile :: [FilePath]
-filesToCompile = ["Fibonacci.hs","MiniISA.hs","UpCounter.hs", "dissex.hs",
-                  "fibo.hs","funcase.hs","toag.hs","toags.hs"]
+filesToCompile = ["Fibonacci.hs","MiniISA.hs","UpCounter.hs","dissex.hs",
+                  "fibo.hs","funcase.hs","toag.hs","toags.hs",
+                  "PreludeTest.hs"]
 
 filesToTC :: [FilePath]
 filesToTC = filesToCompile ++
-             ["uniquification.hs","pats.hs", "Mods.hs"]
+             ["uniquification.hs","pats.hs","Mods.hs"]
 
 filesToParse :: [FilePath]
 filesToParse = filesToTC ++ ["Salsa20.hs"]
@@ -26,7 +28,8 @@ filesToParse = filesToTC ++ ["Salsa20.hs"]
 testParse :: FilePath -> Test
 testParse f_ = testCase f_ (do d   <- getDataFileName "test/parser_tests/"
                                setCurrentDirectory d
-                               res <- loadProgram f_
+                               lp  <- getSystemLoadPath
+                               res <- loadProgram lp f_
                                case res of
                                  ParseFailed _ err -> assertFailure err
                                  ParseOk _         -> return ())
@@ -34,7 +37,8 @@ testParse f_ = testCase f_ (do d   <- getDataFileName "test/parser_tests/"
 testTC :: FilePath -> Test
 testTC f_ = testCase f_ (do d   <- getDataFileName "test/parser_tests/"
                             setCurrentDirectory d
-                            res <- loadProgram f_
+                            lp  <- getSystemLoadPath
+                            res <- loadProgram lp f_
                             case res of
                               ParseFailed _ err -> assertFailure err
                               ParseOk m         -> case kindcheck m of

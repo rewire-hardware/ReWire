@@ -2,6 +2,7 @@
 module ReWire.FrontEnd.Cache
       ( runCache
       , getProgram
+      , LoadPath
       ) where
 
 import ReWire.Core.Syntax
@@ -10,19 +11,23 @@ import ReWire.FrontEnd.Translate
 import ReWire.FrontEnd.Error
 import ReWire.FrontEnd.Renamer
 
-import Control.Monad (foldM, (>=>), when)
+import Control.Monad (foldM, (>=>), when, msum)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State (runStateT, StateT, get, modify)
+import Control.Monad.Trans.Reader (runReaderT, ReaderT, ask, local)
 import Data.Functor ((<$>))
 import Data.List (find)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe,catMaybes)
 import Data.Monoid (Monoid(..),(<>))
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 import qualified Language.Haskell.Exts as Haskell (parseFile)
 import           Language.Haskell.Exts hiding (parseFile, loc, name, binds, op, Namespace(..))
+
+import System.Directory (getCurrentDirectory, setCurrentDirectory, doesFileExist, doesDirectoryExist)
+
 
 data Exports = Exports !(Set.Set FQName) !(Set.Set FQName) !(Map.Map Name (Set.Set FQName))
       deriving Show
@@ -39,11 +44,11 @@ expType x cs' (Exports vs ts cs) = Exports (cs' <> vs) (Set.insert x ts) $ Map.i
 
 checkImpValue :: Name -> Exports -> Cache ()
 checkImpValue x (Exports vs _ _) = when (Set.null $ Set.filter ((==x) . unqual) vs)
-      $ lift $ pFail $ "attempting to import an unexported symbol: " ++ prettyPrint x
+      $ lift $ lift $ pFail $ "attempting to import an unexported symbol: " ++ prettyPrint x
 
 checkImpType :: Name -> Exports -> Cache ()
 checkImpType x (Exports _ ts _) = when (Set.null $ Set.filter ((==x) . unqual) ts)
-      $ lift $ pFail $ "attempting to import an unexported symbol: " ++ prettyPrint x
+      $ lift $ lift $ pFail $ "attempting to import an unexported symbol: " ++ prettyPrint x
 
 getCtors :: Name -> Exports -> Set.Set FQName
 getCtors x (Exports _ _ cs) = fromMaybe mempty $ Map.lookup x cs
@@ -55,7 +60,7 @@ lookupExp ns x (Exports vs ts _) = case ns of
       where lkup :: Set.Set FQName -> Cache FQName
             lkup xs = case find (cmp x) (Set.toList xs) of
                   Just x' -> return x'
-                  Nothing -> lift $ pFail $ "attempting to import an unexported symbol: " ++ prettyPrint x
+                  Nothing -> lift $ lift $ pFail $ "attempting to import an unexported symbol: " ++ prettyPrint x
             cmp :: Name -> FQName -> Bool
             cmp x (FQName _ x') = x == x'
 
@@ -66,7 +71,9 @@ toImports (Exports vs ts _) = map ((ValueNS,) . unqual) (Set.toList vs)
 unqual :: FQName -> Name
 unqual (FQName _ x) = x
 
-type Cache = StateT Caches (ParseError IO)
+type Cache = ReaderT LoadPath (StateT Caches (ParseError IO))
+
+type LoadPath = [FilePath]
 
 data Caches = Caches
       { desugared :: Map.Map FilePath Module
@@ -75,43 +82,63 @@ data Caches = Caches
       , program   :: Map.Map FilePath RWCProgram
       }
 
-runCache :: Cache a -> IO (ParseResult a)
-runCache = runParseError . (flip runStateT (Caches Map.empty Map.empty Map.empty Map.empty)
-                              >=> return . fst)
+runCache :: Cache a -> LoadPath -> IO (ParseResult a)
+runCache m lp = runParseError
+                  (fst <$> runStateT (runReaderT m lp) (Caches Map.empty Map.empty Map.empty Map.empty))
 
 getDesugared :: FilePath -> Cache Module
 getDesugared fp = do
-      cached <- desugared <$> get
+      cached <- desugared <$> lift get
       case Map.lookup fp cached of
             Just m  -> return m
             Nothing -> do
                   m <- justParse fp
-                  m' <- lift $ desugar m
-                  modify $ \c@Caches { desugared } -> c { desugared = Map.insert fp m' desugared }
+                  m' <- lift $ lift $ desugar m
+                  lift $ modify $ \c@Caches { desugared } -> c { desugared = Map.insert fp m' desugared }
                   getDesugared fp
       where justParse :: FilePath -> Cache Module
-            justParse = (liftIO . Haskell.parseFile) >=> pr2Cache
+            justParse fp = do lp    <- ask
+                              mmods <- mapM (tryParseInDir fp) lp
+                              case msum mmods of
+                                Nothing  -> lift $ lift $ pFail ("module not found in loadpath: " ++ fp)
+                                Just mod -> return mod
+            -- FIXME: The directory crawling could be more robust here. (Should
+            -- use exception handling.)
+            tryParseInDir :: FilePath -> FilePath -> Cache (Maybe Module)
+            tryParseInDir fp dp = do
+              dExists <- liftIO $ doesDirectoryExist dp
+              if not dExists
+               then return Nothing
+               else do
+                oldCwd <- liftIO $ getCurrentDirectory
+                liftIO $ setCurrentDirectory dp
+                exists <- liftIO $ doesFileExist fp
+                result <- if exists then do pr <- liftIO $ Haskell.parseFile fp
+                                            Just <$> pr2Cache pr
+                                    else return Nothing
+                liftIO $ setCurrentDirectory oldCwd
+                return result
             pr2Cache :: ParseResult a -> Cache a
             pr2Cache = \case
                   ParseOk p           -> return p
-                  ParseFailed loc msg -> lift $ pFailAt loc msg
+                  ParseFailed loc msg -> lift $ lift $ pFailAt loc msg
 
 getExports :: FilePath -> Cache Exports
 getExports fp = do
-      cached <- exports <$> get
+      cached <- exports <$> lift get
       case Map.lookup fp cached of
             Just exps -> return exps
             Nothing   -> do
                   m <- getDesugared fp
                   rn <- getRenamer fp
-                  exps <- lift $ translateExps rn m
+                  exps <- lift $ lift $ translateExps rn m
 
-                  modify $ \c@Caches { exports } -> c { exports = Map.insert fp mempty exports }
+                  lift $ modify $ \c@Caches { exports } -> c { exports = Map.insert fp mempty exports }
 
                   allExps <- mapM (getExports . toFilePath) $ getImps m
                   exps' <- foldM (transExport $ mconcat allExps) mempty exps
 
-                  modify $ \c@Caches { exports } -> c { exports = Map.insert fp exps' exports }
+                  lift $ modify $ \c@Caches { exports } -> c { exports = Map.insert fp exps' exports }
                   return exps'
       where transExport :: Exports -> Exports -> Export -> Cache Exports
             transExport iexps exps = \case
@@ -124,27 +151,27 @@ getExports fp = do
 
 getRenamer :: FilePath -> Cache Renamer
 getRenamer fp = do
-      cached <- renamer <$> get
+      cached <- renamer <$> lift get
       case Map.lookup fp cached of
             Just rn -> return rn
             Nothing -> do
                   m <- getDesugared fp
 
-                  modify $ \c@Caches { renamer } -> c { renamer = Map.insert fp mempty renamer }
+                  lift $ modify $ \c@Caches { renamer } -> c { renamer = Map.insert fp mempty renamer }
 
                   rn <- mkRenamer m
 
-                  modify $ \c@Caches { renamer } -> c { renamer = Map.insert fp rn renamer }
+                  lift $ modify $ \c@Caches { renamer } -> c { renamer = Map.insert fp rn renamer }
                   return rn
       where mkRenamer :: Module -> Cache Renamer
             mkRenamer (Module loc _ _ _ _ imps _) = do
-                  lift $ setLoc loc
+                  lift $ lift $ setLoc loc
                   rns <- mapM mkRenamer' imps
                   return $ mconcat rns
 
             mkRenamer' :: ImportDecl -> Cache Renamer
             mkRenamer' (ImportDecl loc m quald _ _ _ as specs) = do
-                  lift $ setLoc loc
+                  lift $ lift $ setLoc loc
                   exps <- getExports $ toFilePath m
                   mkTable exps as specs
                   where mkTable :: Exports -> Maybe ModuleName -> Maybe (Bool, [ImportSpec]) -> Cache Renamer
@@ -199,22 +226,22 @@ getRenamer fp = do
 
 getProgram :: FilePath -> Cache RWCProgram
 getProgram fp = do
-      cached <- program <$> get
+      cached <- program <$> lift get
       case Map.lookup fp cached of
             Just m  -> return m
             Nothing -> do
                   m <- getDesugared fp
                   rn <- getRenamer fp
 
-                  modify $ \c@Caches { program } -> c
+                  lift $ modify $ \c@Caches { program } -> c
                         { program   = Map.insert fp (RWCProgram [] []) program
                         }
 
-                  rwcm <- lift $ translate rn m
+                  rwcm <- lift $ lift $ translate rn m
                   allMods <- mapM (getProgram . toFilePath) $ getImps m
                   let merged = mconcat $ rwcm : allMods
 
-                  modify $ \c@Caches { desugared, renamer, exports, program } -> c
+                  lift $ modify $ \c@Caches { desugared, renamer, exports, program } -> c
                         { desugared = Map.delete fp desugared
                         , renamer   = Map.delete fp renamer
                         , exports   = Map.delete fp exports

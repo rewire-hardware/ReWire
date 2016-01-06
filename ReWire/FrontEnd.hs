@@ -3,14 +3,15 @@ module ReWire.FrontEnd
       , ParseResult(..)
       , SrcLoc(..)
       , prettyPrint
+      , LoadPath
       ) where
 
 import ReWire.Core.Syntax (RWCProgram)
-import ReWire.FrontEnd.Cache (runCache, getProgram)
+import ReWire.FrontEnd.Cache (runCache, getProgram, LoadPath)
 
 import Language.Haskell.Exts (ParseResult(..), SrcLoc(..), prettyPrint)
 
 -- | Opens and parses a file and, recursively, its imports.
-loadProgram :: FilePath -> IO (ParseResult RWCProgram)
-loadProgram = runCache . getProgram
+loadProgram :: LoadPath -> FilePath -> IO (ParseResult RWCProgram)
+loadProgram lp fp = runCache (getProgram fp) lp
 

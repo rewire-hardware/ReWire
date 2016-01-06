@@ -13,12 +13,15 @@ import ReWire.Core.TypeChecker
 import ReWire.Core.Transformations.Interactive
 import ReWire.Core.Transformations.Inline
 import ReWire.FrontEnd
+import ReWire.FrontEnd.LoadPath
 import ReWire.PreHDL.CFG (mkDot,gather,linearize,cfgToProg)
 import ReWire.PreHDL.GotoElim (gotoElim)
 import ReWire.PreHDL.ElimEmpty (elimEmpty)
 import ReWire.PreHDL.ToVHDL (toVHDL)
 import ReWire.Core.Transformations.ToPreHDL (cfgFromRW,eu)
 import Control.Monad (when,unless)
+import Data.List (intercalate)
+import Data.List.Split (splitOn)
 
 data Flag = FlagCFG String
           | FlagLCFG String
@@ -27,32 +30,35 @@ data Flag = FlagCFG String
           | FlagO String
           | FlagI
           | FlagD
+          | FlagLoadPath String
           deriving (Eq,Show)
 
 options :: [OptDescr Flag]
 options =
- [ Option ['d'] ["debug"] (NoArg FlagD)
-                          "dump miscellaneous debugging information"
- , Option ['i'] []        (NoArg FlagI)
-                          "run in interactive mode (overrides all other options)"
- , Option ['o'] []        (ReqArg FlagO "filename.vhd")
-                          "generate VHDL"
- , Option []    ["cfg"]   (ReqArg FlagCFG "filename.dot")
-                          "generate control flow graph before linearization"
- , Option []    ["lcfg"]  (ReqArg FlagLCFG "filename.dot")
-                          "generate control flow graph after linearization"
- , Option []    ["pre"]   (ReqArg FlagPre "filename.phdl")
-                          "generate PreHDL before goto elimination"
- , Option []    ["gpre"]  (ReqArg FlagGPre "filename.phdl")
-                          "generate PreHDL after goto elimination"
+ [ Option ['d'] ["debug"]    (NoArg FlagD)
+                             "dump miscellaneous debugging information"
+ , Option ['i'] []           (NoArg FlagI)
+                             "run in interactive mode (overrides all other options except --loadpath)"
+ , Option ['o'] []           (ReqArg FlagO "filename.vhd")
+                             "generate VHDL"
+ , Option []    ["loadpath"] (ReqArg FlagLoadPath "dir1,dir2,...")
+                             "additional directories for loadpath"
+ , Option []    ["cfg"]      (ReqArg FlagCFG "filename.dot")
+                             "generate control flow graph before linearization"
+ , Option []    ["lcfg"]     (ReqArg FlagLCFG "filename.dot")
+                             "generate control flow graph after linearization"
+ , Option []    ["pre"]      (ReqArg FlagPre "filename.phdl")
+                             "generate PreHDL before goto elimination"
+ , Option []    ["gpre"]     (ReqArg FlagGPre "filename.phdl")
+                             "generate PreHDL after goto elimination"
  ]
 
 exitUsage :: IO ()
 exitUsage = hPutStr stderr (usageInfo "Usage: rwc [OPTION...] <filename.rw>" options) >> exitFailure
 
-runFE :: Bool -> FilePath -> IO RWCProgram
-runFE fDebug filename = do
-  res_m <- loadProgram filename
+runFE :: Bool -> LoadPath -> FilePath -> IO RWCProgram
+runFE fDebug lp filename = do
+  res_m <- loadProgram lp filename
 
   case res_m of
     ParseFailed loc m ->
@@ -101,9 +107,17 @@ main = do args                       <- getArgs
 
           unless (any isActFlag flags) (hPutStrLn stderr "must specify at least one of -i, -o, --cfg, --lcfg, --pre, or --gpre" >> exitUsage)
 
-          let filename               =  head filenames
+          let filename                             =  head filenames
+              getLoadPathEntries (FlagLoadPath ds) =  splitOn "," ds
+              getLoadPathEntries _                 =  []
+              userLP                               =  concatMap getLoadPathEntries flags
+          systemLP                                 <- getSystemLoadPath
+          let lp                                   =  userLP ++ systemLP
 
-          m_ <- runFE (FlagD `elem` flags) filename
+          when (FlagD `elem` flags) $ do
+            putStrLn ("loadpath: " ++ intercalate "," lp)
+
+          m_ <- runFE (FlagD `elem` flags) lp filename
 
           if FlagI `elem` flags then trans m_
           else
