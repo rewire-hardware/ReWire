@@ -6,8 +6,8 @@ module ReWire.FrontEnd
       , LoadPath
       ) where
 
-import ReWire.Core.Syntax (RWCProgram)
-import ReWire.FrontEnd.Cache (runCache, getProgram, LoadPath)
+import ReWire.Core.Syntax
+import ReWire.FrontEnd.Cache
 
 import Language.Haskell.Exts (ParseResult(..), SrcLoc(..), prettyPrint)
 

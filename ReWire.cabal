@@ -88,12 +88,13 @@ library
                     ReWire.Core.Transformations.Uniquify
                     ReWire.Core.TypeChecker
                     ReWire.FrontEnd
+                    ReWire.FrontEnd.Annotate
                     ReWire.FrontEnd.Cache
                     ReWire.FrontEnd.Desugar
                     ReWire.FrontEnd.Error
                     ReWire.FrontEnd.LoadPath
                     ReWire.FrontEnd.Translate
-                    ReWire.FrontEnd.Renamer
+                    ReWire.FrontEnd.Rename
                     ReWire.PreHDL.CFG
                     ReWire.PreHDL.ElimEmpty
                     ReWire.PreHDL.GotoElim

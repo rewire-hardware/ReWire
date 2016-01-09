@@ -7,83 +7,84 @@ module ReWire.FrontEnd.Translate
 
 import ReWire.Core.Kinds
 import ReWire.Core.Syntax
+import ReWire.FrontEnd.Annotate
 import ReWire.FrontEnd.Error
-import ReWire.FrontEnd.Renamer (Renamer, FQName(..), Namespace(..), rename, extend, exclude, finger)
-import ReWire.Scoping (mkId, Id, fv)
-import ReWire.SYB (runQ, query')
+import ReWire.FrontEnd.Rename
+import ReWire.Scoping
+import ReWire.SYB
 
 import Control.Applicative ((<*>))
 import Control.Monad (foldM)
 import Data.Foldable (foldl')
 import Data.Functor ((<$>))
 import Data.List (nub)
+import Language.Haskell.Exts.Annotated.Simplify (sName, sDeclHead, sQName, sModuleName)
+import Language.Haskell.Exts.Pretty (prettyPrint)
 
-import Language.Haskell.Exts hiding (loc, name, binds, op, Kind)
+import qualified Language.Haskell.Exts.Syntax as S
+
+import Language.Haskell.Exts.Annotated.Syntax hiding (Kind)
 
 -- | Translate a Haskell module into the ReWire abstract syntax.
-translate :: (Functor m, Monad m) => Renamer -> Module -> ParseError m RWCProgram
-translate rn (Module loc m _ _ _ _ (reverse -> ds)) = do
-      let rn' = extendWithGlobs m ds rn
-      setLoc loc
+translate :: (Functor m, Monad m) => Renamer -> Module Annote -> ParseError m RWCProgram
+translate rn (Module _ (Just (ModuleHead _ m _ _)) _ _ (reverse -> ds)) = do
+      let rn' = extendWithGlobs (sModuleName m) ds rn
       tyDefs <- foldM (transData rn') [] ds
       tySigs <- foldM (transTySig rn') [] ds
       inls   <- foldM transInlineSig [] ds
       fnDefs <- foldM (transDef rn' tySigs inls) [] ds
       return $ RWCProgram tyDefs fnDefs
+translate _ m = pFailAt (ann m) "unsupported module syntax"
 
-data Export = Export FQName | ExportWith FQName [FQName] | ExportAll FQName | ExportMod ModuleName
+data Export = Export FQName | ExportWith FQName [FQName] | ExportAll FQName | ExportMod S.ModuleName
       deriving Show
 
-translateExps :: Monad m => Renamer -> Module -> ParseError m [Export]
-translateExps rn (Module loc m _ _ exps _ ds) = do
-      let rn' = extendWithGlobs m ds rn
-      setLoc loc
-      maybe (return $ getGlobExps rn' ds) (foldM (transExport rn' ds) []) exps
-      where getGlobExps :: Renamer -> [Decl] -> [Export]
-            getGlobExps rn = foldl' (flip getGlobExps') []
-                  where getGlobExps' :: Decl -> [Export] -> [Export]
-                        getGlobExps' = \case
-                              DataDecl _ _ _ n _ cons _     -> (:) $ ExportWith (rename TypeNS rn n) $ map (rename ValueNS rn . getCtor) cons
-                              PatBind _ (PVar n) _ _        -> (:) $ Export $ rename ValueNS rn n
-                              _                             -> id
+translateExps :: Monad m => Renamer -> Module Annote -> ParseError m [Export]
+translateExps rn (Module _ (Just (ModuleHead _ m _ exps)) _ _ ds) = do
+      let rn' = extendWithGlobs (sModuleName m) ds rn
+      maybe (return $ getGlobExps rn' ds) (\ (ExportSpecList _ exps') -> foldM (transExport rn' ds) [] exps') exps
+      where getGlobExps :: Renamer -> [Decl Annote] -> [Export]
+            getGlobExps rn = foldl' (flip $ getGlobExps' rn) []
+            getGlobExps' :: Renamer -> Decl Annote -> [Export] -> [Export]
+            getGlobExps' rn = \ case
+                  DataDecl _ _ _ hd cs _   -> (:) $ ExportWith (rename TypeNS rn $ fst $ sDeclHead hd) $ map (rename ValueNS rn . getCtor) cs
+                  PatBind _ (PVar _ n) _ _ -> (:) $ Export $ rename ValueNS rn (sName n)
+                  _                        -> id
+translateExps _ m = pFailAt (ann m) "unsupported module syntax"
 
-
-transExport :: Monad m => Renamer -> [Decl] -> [Export] -> ExportSpec -> ParseError m [Export]
-transExport rn ds exps = \case
-      EVar x@(UnQual (Ident "main")) -> if finger ValueNS rn x
+transExport :: Monad m => Renamer -> [Decl Annote] -> [Export] -> ExportSpec Annote -> ParseError m [Export]
+transExport rn ds exps = \ case
+      EVar l (sQName -> x)                 -> if finger ValueNS rn x
             then return $ Export (rename ValueNS rn x) : exps
-            else return exps
-      EVar x                         -> if finger ValueNS rn x
-            then return $ Export (rename ValueNS rn x) : exps
-            else pFail $ "unknown name in export list: " ++ prettyPrint x
-      EAbs _ x                       -> if finger TypeNS rn x
+            else pFailAt l "unknown name in export list"
+      EAbs l _ (sQName -> x)               -> if finger TypeNS rn x
             then return $ Export (rename TypeNS rn x) : exps
-            else pFail $ "unknown name in export list: " ++ prettyPrint x
-      EThingAll x                    -> if finger TypeNS rn x
+            else pFailAt l "unknown name in export list"
+      EThingAll l (sQName -> x)            -> if finger TypeNS rn x
             then return $ lookupCtors rn x ds : exps
-            else pFail $ "unknown name in export list: " ++ prettyPrint x
-      EThingWith x cs                -> if and $ finger TypeNS rn x : map (finger ValueNS rn . unwrap) cs
+            else pFailAt l "unknown name in export list"
+      EThingWith l (sQName -> x) cs        -> if and $ finger TypeNS rn x : map (finger ValueNS rn . unwrap) cs
             then return $ ExportWith (rename TypeNS rn x) (map (rename ValueNS rn . unwrap) cs) : exps
-            else pFail $ "unknown name in export list: " ++ prettyPrint x
-      EModuleContents m              -> return $ ExportMod m : exps
-      where unwrap :: CName -> Name
-            unwrap (VarName x) = x
-            unwrap (ConName x) = x
+            else pFailAt l "unknown name in export list"
+      EModuleContents _ (sModuleName -> m) -> return $ ExportMod m : exps
+      where unwrap :: CName Annote -> S.Name
+            unwrap (VarName _ x) = sName x
+            unwrap (ConName _ x) = sName x
 
-            lookupCtors :: Renamer -> QName -> [Decl] -> Export
+            lookupCtors :: Renamer -> S.QName -> [Decl Annote] -> Export
             lookupCtors rn x = foldl' lookupCtors' (ExportAll $ rename TypeNS rn x) . map (toExport rn) . filter isDataDecl
 
-            isDataDecl :: Decl -> Bool
+            isDataDecl :: Decl Annote -> Bool
             isDataDecl DataDecl{} = True
             isDataDecl _          = False
 
-            toExport :: Renamer -> Decl -> Export
-            toExport rn (DataDecl _ _ _ x _ cs _) = ExportWith (rename TypeNS rn x) $ map (toExport' rn) cs
-            toExport _ _                          = undefined
+            toExport :: Renamer -> Decl Annote -> Export
+            toExport rn (DataDecl _ _ _ hd cs _) = ExportWith (rename TypeNS rn $ fst $ sDeclHead hd) $ map (toExport' rn) cs
+            toExport _ _                         = undefined
 
-            toExport' :: Renamer -> QualConDecl -> FQName
-            toExport' rn (QualConDecl _ _ _ (ConDecl x _)) = rename ValueNS rn x
-            toExport' _  _                                 = undefined
+            toExport' :: Renamer -> QualConDecl Annote -> FQName
+            toExport' rn (QualConDecl _ _ _ (ConDecl _ (sName -> x) _)) = rename ValueNS rn x
+            toExport' _  _                                   = undefined
 
             lookupCtors' :: Export -> Export -> Export
             lookupCtors' (ExportWith x cs) _ = ExportWith x cs
@@ -92,94 +93,92 @@ transExport rn ds exps = \case
                   | otherwise                = ExportAll x
             lookupCtors' e _                 = e
 
-
-extendWithGlobs :: ModuleName -> [Decl] -> Renamer -> Renamer
+extendWithGlobs :: S.ModuleName -> [Decl Annote] -> Renamer -> Renamer
 extendWithGlobs m ds rn = extend ValueNS (zip (getGlobValDefs ds) $ map (FQName m) $ getGlobValDefs ds)
                         $ extend TypeNS  (zip (getGlobTyDefs ds)  $ map (FQName m) $ getGlobTyDefs ds) rn
-      where getGlobValDefs :: [Decl] -> [Name]
+      where getGlobValDefs :: [Decl Annote] -> [S.Name]
             getGlobValDefs = foldl' (flip getGlobs') []
-                  where getGlobs' :: Decl -> [Name] -> [Name]
-                        getGlobs' = \case
-                              DataDecl _ _ _ _ _ cons _     -> (++) $ map getCtor cons
-                              PatBind _ (PVar n) _ _        -> (:) n
-                              _                             -> id
-            getGlobTyDefs :: [Decl] -> [Name]
+                  where getGlobs' :: Decl Annote -> [S.Name] -> [S.Name]
+                        getGlobs' = \ case
+                              DataDecl _ _ _ _ cons _  -> (++) $ map getCtor cons
+                              PatBind _ (PVar _ n) _ _ -> (:) $ sName n
+                              _                        -> id
+            getGlobTyDefs :: [Decl Annote] -> [S.Name]
             getGlobTyDefs = foldl' (flip getGlobs') []
-                  where getGlobs' :: Decl -> [Name] -> [Name]
-                        getGlobs' = \case
-                              DataDecl _ _ _ n _ _ _     -> (:) n
-                              _                             -> id
-getCtor :: QualConDecl -> Name
-getCtor = \case
-      QualConDecl _ _ _ (ConDecl n _)        -> n
-      QualConDecl _ _ _ (RecDecl n _)        -> n
-      QualConDecl _ _ _ (InfixConDecl _ n _) -> n
+                  where getGlobs' :: Decl Annote -> [S.Name] -> [S.Name]
+                        getGlobs' = \ case
+                              DataDecl _ _ _ hd _ _ -> (:) $ fst $ sDeclHead hd
+                              _                     -> id
+getCtor :: QualConDecl Annote -> S.Name
+getCtor = \ case
+      QualConDecl _ _ _ (ConDecl _ n _) -> sName n
+      QualConDecl _ _ _ (RecDecl _ n _) -> sName n
+      _                                 -> error "impossible"
 
-transData :: (Functor m, Monad m) => Renamer -> [RWCData] -> Decl -> ParseError m [RWCData]
-transData rn datas = \case
-      DataDecl loc _ _ x tyVars cons _deriving -> do
-            setLoc loc
-            tyVars' <- mapM transTyVar tyVars
+transData :: (Functor m, Monad m) => Renamer -> [RWCData] -> Decl Annote -> ParseError m [RWCData]
+transData rn datas = \ case
+      DataDecl l _ _ (sDeclHead -> hd) cons _ -> do
+            tyVars' <- mapM (transTyVar l) $ snd hd
             cons' <- mapM (transCon rn) cons
-            return $ RWCData (TyConId $ rename TypeNS rn x) tyVars' kblank cons' : datas
-      _                                        -> return datas
+            return $ RWCData (TyConId $ rename TypeNS rn $ fst hd) tyVars' kblank cons' : datas
+      _                                       -> return datas
 
-transTySig :: (Functor m, Monad m) => Renamer -> [(Name, RWCTy)] -> Decl -> ParseError m [(Name, RWCTy)]
-transTySig rn sigs = \case
-      TypeSig loc names t -> do
-            t' <- transTy loc rn [] t
-            return $ zip names (repeat t') ++ sigs
-      _                   -> return sigs
+transTySig :: (Functor m, Monad m) => Renamer -> [(S.Name, RWCTy)] -> Decl Annote -> ParseError m [(S.Name, RWCTy)]
+transTySig rn sigs = \ case
+      TypeSig _ names t -> do
+            t' <- transTy rn [] t
+            return $ zip (map sName names) (repeat t') ++ sigs
+      _                 -> return sigs
 
 -- I guess this doesn't need to be in the monad, really, but whatever...  --adam
 -- Not sure what the boolean field means here, so we ignore it!  --adam
-transInlineSig :: Monad m => [Name] -> Decl -> ParseError m [Name]
-transInlineSig inls = \case
-      InlineSig _ _ AlwaysActive (Qual _ x) -> return $ x : inls
-      InlineSig _ _ AlwaysActive (UnQual x) -> return $ x : inls
-      _                                     -> return inls
+transInlineSig :: Monad m => [S.Name] -> Decl Annote -> ParseError m [S.Name]
+transInlineSig inls = \ case
+      InlineSig _ _ Nothing (Qual _ _ x) -> return $ sName x : inls
+      InlineSig _ _ Nothing (UnQual _ x) -> return $ sName x : inls
+      _                                  -> return inls
 
-transDef :: (Functor m, Monad m) => Renamer -> [(Name, RWCTy)] -> [Name] -> [RWCDefn] -> Decl -> ParseError m [RWCDefn]
-transDef rn tys inls defs = \case
-      PatBind loc (PVar x) (UnGuardedRhs e) Nothing -> setLoc loc >> case lookup x tys of
+transDef :: (Functor m, Monad m) => Renamer -> [(S.Name, RWCTy)] -> [S.Name] -> [RWCDefn] -> Decl Annote -> ParseError m [RWCDefn]
+transDef rn tys inls defs = \ case
+      PatBind l (PVar _ (sName -> x)) (UnGuardedRhs _ e) Nothing -> case lookup x tys of
             Just t -> (:defs) . RWCDefn (mkId $ rename ValueNS rn x) (nub (fv t) :-> t) (x `elem` inls) <$> transExp rn e
-            _      -> pFail $ "no type signature for " ++ prettyPrint x
+            _      -> pFailAt l "no type signature for"
       _                                             -> return defs
 
-transTyVar :: Monad m => TyVarBind -> ParseError m (Id RWCTy)
-transTyVar = \case
-      UnkindedVar (Ident x) -> return $ mkId x
-      tv                    -> pFail $ "unsupported type syntax: " ++ prettyPrint tv
+transTyVar :: Monad m => Annote -> S.TyVarBind -> ParseError m (Id RWCTy)
+transTyVar l = \ case
+      S.UnkindedVar (S.Ident x) -> return $ mkId x
+      _                         -> pFailAt l "unsupported type syntax"
 
-transCon :: (Functor m, Monad m) => Renamer -> QualConDecl -> ParseError m RWCDataCon
-transCon rn = \case
-      QualConDecl loc [] _ (ConDecl x tys) -> (RWCDataCon $ DataConId $ rename ValueNS rn x) <$> mapM (transTy loc rn []) tys
-      d@(QualConDecl loc _ _ _)            -> pFailAt loc $ "unsupported ctor syntax: " ++ prettyPrint d
+transCon :: (Functor m, Monad m) => Renamer -> QualConDecl Annote -> ParseError m RWCDataCon
+transCon rn = \ case
+      QualConDecl _ Nothing _ (ConDecl _ x tys) -> (RWCDataCon $ DataConId $ rename ValueNS rn $ sName x) <$> mapM (transTy rn []) tys
+      d                                         -> pFailAt (ann d) "unsupported ctor syntax"
 
-transTy :: (Functor m, Monad m) => SrcLoc -> Renamer -> [Name] -> Type -> ParseError m RWCTy
-transTy loc rn ms = \case
-      TyForall Nothing cs t    -> do
-           ms' <- mapM (getNad loc) cs
-           transTy loc rn (ms ++ ms') t
-      TyFun a b                -> mkArrow <$> transTy loc rn ms a <*> transTy loc rn ms b
-      TyApp a b | isMonad ms a -> RWCTyComp <$> transTy loc rn ms a <*> transTy loc rn ms b
-                | otherwise    -> RWCTyApp <$> transTy loc rn ms a <*> transTy loc rn ms b
-      TyCon x                  -> return $ RWCTyCon (TyConId $ rename TypeNS rn x)
-      TyVar x                  -> return $ RWCTyVar (mkId $ prettyPrint x)
-      t                        -> pFailAt loc $ "unsupported type syntax: " ++ prettyPrint t
+transTy :: (Functor m, Monad m) => Renamer -> [S.Name] -> Type Annote -> ParseError m RWCTy
+transTy rn ms = \ case
+      TyForall _ Nothing (Just (CxTuple _ cs)) t   -> do
+           ms' <- mapM getNad cs
+           transTy rn (ms ++ ms') t
+      TyFun _ a b                -> mkArrow <$> transTy rn ms a <*> transTy rn ms b
+      TyApp _ a b | isMonad ms a -> RWCTyComp <$> transTy rn ms a <*> transTy rn ms b
+                  | otherwise    -> RWCTyApp <$> transTy rn ms a <*> transTy rn ms b
+      TyCon _ x                  -> return $ RWCTyCon (TyConId $ rename TypeNS rn $ sQName x)
+      TyVar _ x                  -> return $ RWCTyVar (mkId $ prettyPrint x)
+      t                          -> pFailAt (ann t) "unsupported type syntax"
 
-getNad :: Monad m => SrcLoc -> Asst -> ParseError m Name
-getNad loc = \case
-      ClassA (UnQual (Ident "Monad")) [TyVar x] -> return x
-      a                                         -> pFailAt loc $ "unsupported typeclass constraint: " ++ prettyPrint a
+getNad :: Monad m => Asst Annote -> ParseError m S.Name
+getNad = \ case
+      ClassA _ (UnQual _ (Ident _ "Monad")) [TyVar _ x] -> return $ sName x
+      a                                                 -> pFailAt (ann a) "unsupported typeclass constraint"
 
-isMonad :: [Name] -> Type -> Bool
-isMonad ms = \case
-      TyApp (TyApp (TyApp (TyCon (UnQual (Ident "ReT"))) _) _) t -> isMonad ms t
-      TyApp (TyApp (TyCon (UnQual (Ident "StT"))) _) t           -> isMonad ms t
-      TyCon (UnQual (Ident "I"))                                 -> True
-      TyVar x                                                    -> x `elem` ms
-      _                                                          -> False
+isMonad :: [S.Name] -> Type Annote -> Bool
+isMonad ms = \ case
+      TyApp _ (TyApp _ (TyApp _ (TyCon _ (UnQual _ (Ident _ "ReT"))) _) _) t -> isMonad ms t
+      TyApp _ (TyApp _ (TyCon _ (UnQual _ (Ident _ "StT"))) _) t             -> isMonad ms t
+      TyCon _ (UnQual _ (Ident _ "I"))                                       -> True
+      TyVar _ (sName -> x)                                                   -> x `elem` ms
+      _                                                                      -> False
 
 kblank :: Kind
 kblank = Kstar
@@ -187,37 +186,37 @@ kblank = Kstar
 tblank :: RWCTy
 tblank = RWCTyCon (TyConId "_")
 
-transExp :: (Functor m, Monad m) => Renamer -> Exp -> ParseError m RWCExp
-transExp rn = \case
-      App (App (Var (UnQual (Ident "nativeVhdl"))) (Lit (String f))) e
-                             -> RWCNativeVHDL f <$> transExp rn e
-      App e1 e2              -> RWCApp <$> transExp rn e1 <*> transExp rn e2
-      Lambda loc [PVar x] e  -> setLoc loc >> RWCLam (mkId $ prettyPrint x) tblank <$> transExp (exclude ValueNS [x] rn) e
-      Var x                  -> return $ RWCVar (mkId $ rename ValueNS rn x) tblank
-      Con x                  -> return $ RWCCon (DataConId $ rename ValueNS rn x) tblank
-      Lit lit                -> RWCLiteral <$> transLit lit
-      Case e alts            -> RWCCase <$> transExp rn e <*> mapM (transAlt rn) alts
-      e                      -> pFail $ "unsupported expression syntax: " ++ prettyPrint e
+transExp :: (Functor m, Monad m) => Renamer -> Exp Annote -> ParseError m RWCExp
+transExp rn = \ case
+      App _ (App _ (Var _ (UnQual _ (Ident _ "nativeVhdl"))) (Lit _ (String _ f _))) e
+                            -> RWCNativeVHDL f <$> transExp rn e
+      App _ e1 e2           -> RWCApp <$> transExp rn e1 <*> transExp rn e2
+      Lambda _ [PVar _ x] e -> RWCLam (mkId $ prettyPrint x) tblank <$> transExp (exclude ValueNS [sName x] rn) e
+      Var _ x               -> return $ RWCVar (mkId $ rename ValueNS rn $ sQName x) tblank
+      Con _ x               -> return $ RWCCon (DataConId $ rename ValueNS rn $ sQName x) tblank
+      Lit _ lit             -> RWCLiteral <$> transLit lit
+      Case _ e alts         -> RWCCase <$> transExp rn e <*> mapM (transAlt rn) alts
+      e                     -> pFailAt (ann e) "unsupported expression syntax"
 
-transLit :: Monad m => Literal -> ParseError m RWCLit
-transLit = \case
-      Int i  -> return $ RWCLitInteger i
-      Frac d -> return $ RWCLitFloat (fromRational d)
-      Char c -> return $ RWCLitChar c
-      lit    -> pFail $ "unsupported syntax for a literal: " ++ prettyPrint lit
+transLit :: Monad m => Literal Annote -> ParseError m RWCLit
+transLit = \ case
+      Int _ i _  -> return $ RWCLitInteger i
+      Frac _ d _ -> return $ RWCLitFloat $ fromRational d
+      Char _ c _ -> return $ RWCLitChar c
+      lit        -> pFailAt (ann lit) "unsupported syntax for a literal"
 
-transAlt :: (Functor m, Monad m) => Renamer -> Alt -> ParseError m RWCAlt
-transAlt rn = \case
-      Alt loc p (UnGuardedRhs e) Nothing -> setLoc loc >> RWCAlt <$> transPat rn p <*> transExp (exclude ValueNS (getVars p) rn) e
-      a@(Alt loc _ _ _)                  -> pFailAt loc $ "unsupported syntax: " ++ prettyPrint a
-      where getVars :: Pat -> [Name]
-            getVars = runQ $ query' $ \case
-                  PVar x -> [x]
-                  _      -> []
+transAlt :: (Functor m, Monad m) => Renamer -> Alt Annote -> ParseError m RWCAlt
+transAlt rn = \ case
+      Alt _ p (UnGuardedRhs _ e) Nothing -> RWCAlt <$> transPat rn p <*> transExp (exclude ValueNS (getVars p) rn) e
+      a                                  -> pFailAt (ann a) "unsupported syntax"
+      where getVars :: Pat Annote -> [S.Name]
+            getVars = runPureQ $ (||? QEmpty) $ \ p -> case p :: Pat Annote of
+                  PVar _ x -> [sName x]
+                  _        -> []
 
-transPat :: (Functor m, Monad m) => Renamer -> Pat -> ParseError m RWCPat
-transPat rn = \case
-      PApp x ps          -> RWCPatCon (DataConId $ rename ValueNS rn x) <$> mapM (transPat rn) ps
-      PLit Signless lit  -> RWCPatLiteral <$> transLit lit
-      PVar x             -> return $ RWCPatVar (mkId $ prettyPrint x) tblank
-      p                  -> pFail $ "unsupported syntax in a pattern: " ++ prettyPrint p
+transPat :: (Functor m, Monad m) => Renamer -> Pat Annote -> ParseError m RWCPat
+transPat rn = \ case
+      PApp _ x ps             -> RWCPatCon (DataConId $ rename ValueNS rn $ sQName x) <$> mapM (transPat rn) ps
+      PLit _ (Signless _) lit -> RWCPatLiteral <$> transLit lit
+      PVar _ x                -> return $ RWCPatVar (mkId $ prettyPrint x) tblank
+      p                       -> pFailAt (ann p) "unsupported syntax in a pattern"

@@ -4,33 +4,26 @@ module ReWire.FrontEnd.Error
       , pFailAt
       , pFail
       , runParseError
-      , setLoc
       ) where
 
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Except (ExceptT(..), throwE, runExceptT)
-import Control.Monad.Trans.State (StateT(..), get, put)
+import ReWire.FrontEnd.Annotate
 
-import Language.Haskell.Exts.SrcLoc (noLoc)
+import Control.Monad.Trans.Except (ExceptT(..), throwE, runExceptT)
+import Language.Haskell.Exts.Annotated.Syntax (Annotated(..))
+import Language.Haskell.Exts.Pretty (prettyPrint)
+import Language.Haskell.Exts.SrcLoc (noLoc, SrcInfo(..))
 import Language.Haskell.Exts (SrcLoc, ParseResult(..))
 
-type ParseError m = StateT SrcLoc (ExceptT (SrcLoc, String) m)
+type ParseError = ExceptT (SrcLoc, String)
 
-setLoc :: Monad m => SrcLoc -> ParseError m ()
-setLoc = put
-
-lastLoc :: Monad m => ParseError m SrcLoc
-lastLoc = get
-
-pFailAt :: Monad m => SrcLoc -> String -> ParseError m a
-pFailAt loc msg = lift $ throwE (loc, msg)
+pFailAt :: Monad m => Annote -> String -> ParseError m a
+pFailAt (AnnoteLoc l) msg = throwE (getPointLoc l, msg)
+pFailAt (Annote a)    msg = throwE (getPointLoc $ ann a, msg ++ ":\n" ++ unlines (take 5 $ lines $ prettyPrint a))
 
 pFail :: Monad m => String -> ParseError m a
-pFail msg = do
-      loc <- lastLoc
-      pFailAt loc msg
+pFail msg = throwE (noLoc, msg)
 
 runParseError :: Monad m => ParseError m a -> m (ParseResult a)
-runParseError e = runExceptT (runStateT e noLoc) >>= return . \case
+runParseError e = runExceptT e >>= return . \ case
       Left (loc, msg) -> ParseFailed loc msg
-      Right (a, _)    -> return a
+      Right a         -> return a
