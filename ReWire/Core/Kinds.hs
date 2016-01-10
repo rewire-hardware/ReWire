@@ -1,15 +1,16 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses,DeriveDataTypeable #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module ReWire.Core.Kinds where
 
 import ReWire.Scoping
 import Control.DeepSeq
+import Data.Data (Typeable,Data)
 import Data.ByteString.Char8 (pack)
 import Control.Monad (liftM2)
 
 data Kind = Kvar (Id Kind) | Kstar | Kfun Kind Kind | Kmonad
-      deriving (Ord,Eq,Show)
+      deriving (Ord,Eq,Show,Typeable,Data)
 
 infixr `Kfun`
 

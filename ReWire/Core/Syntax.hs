@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses,GeneralizedNewtypeDeriving,FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses,GeneralizedNewtypeDeriving,FlexibleInstances,DeriveDataTypeable #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module ReWire.Core.Syntax where
@@ -9,17 +9,18 @@ import ReWire.Scoping
 import Control.DeepSeq
 import Control.Monad.State
 import Data.ByteString.Char8 (pack)
+import Data.Data (Typeable,Data)
 --import Data.Map.Strict (Map)
 import Data.Monoid (Monoid(..))
 import Data.Set hiding (map,filter,foldr)
 --import qualified Data.Map.Strict as Map
 
-newtype DataConId = DataConId { deDataConId :: String } deriving (Eq,Ord,Show,NFData)
-newtype TyConId   = TyConId   { deTyConId :: String } deriving (Eq,Ord,Show,NFData)
-newtype ModuleId  = ModuleId  { deModuleId :: String } deriving (Eq,Ord,Show,NFData)
+newtype DataConId = DataConId { deDataConId :: String } deriving (Eq,Ord,Show,Typeable,Data,NFData)
+newtype TyConId   = TyConId   { deTyConId :: String } deriving (Eq,Ord,Show,Typeable,Data,NFData)
+newtype ModuleId  = ModuleId  { deModuleId :: String } deriving (Eq,Ord,Show,Typeable,Data,NFData)
 
 data Poly t = [Id t] :-> t
-      deriving (Ord,Eq,Show)
+      deriving (Ord,Eq,Show,Typeable,Data)
 
 infixr :->
 
@@ -42,7 +43,7 @@ data RWCTy = RWCTyApp RWCTy RWCTy
            | RWCTyCon TyConId
            | RWCTyVar (Id RWCTy)
            | RWCTyComp RWCTy RWCTy -- application of a monad
-           deriving (Ord,Eq,Show)
+           deriving (Ord,Eq,Show,Typeable,Data)
 
 instance IdSort RWCTy where
   idSort _ = pack "T"
@@ -83,7 +84,7 @@ data RWCExp = RWCApp RWCExp RWCExp
             | RWCLiteral RWCLit
             | RWCCase RWCExp [RWCAlt]
             | RWCNativeVHDL String RWCExp
-            deriving (Ord,Eq,Show)
+            deriving (Ord,Eq,Show,Typeable,Data)
 
 instance IdSort RWCExp where
   idSort _ = pack "E"
@@ -159,7 +160,7 @@ instance NFData RWCExp where
 data RWCLit = RWCLitInteger Integer
             | RWCLitFloat Double
             | RWCLitChar Char
-            deriving (Ord,Eq,Show)
+            deriving (Ord,Eq,Show,Typeable,Data)
 
 instance NFData RWCLit where
   rnf (RWCLitInteger i) = i `deepseq` ()
@@ -169,7 +170,7 @@ instance NFData RWCLit where
 ---
 
 data RWCAlt = RWCAlt RWCPat RWCExp
-              deriving (Ord,Eq,Show)
+              deriving (Ord,Eq,Show,Typeable,Data)
 
 instance Subst RWCAlt RWCExp where
   fv (RWCAlt p e)     = filter (not . (`elem` patvars p)) (fv e)
@@ -178,7 +179,7 @@ instance Subst RWCAlt RWCExp where
 
 instance Subst RWCAlt RWCTy where
   fv (RWCAlt p e) = fv p ++ fv e
-  bv (RWCAlt{})   = []
+  bv RWCAlt{}     = []
   subst' (RWCAlt p e) = liftM2 RWCAlt (subst' p) (subst' e)
 
 instance Alpha RWCAlt where
@@ -192,7 +193,7 @@ instance NFData RWCAlt where
 data RWCPat = RWCPatCon DataConId [RWCPat]
             | RWCPatLiteral RWCLit
             | RWCPatVar (Id RWCExp) RWCTy
-            deriving (Ord,Eq,Show)
+            deriving (Ord,Eq,Show,Typeable,Data)
 
 patvars :: RWCPat -> [Id RWCExp]
 patvars (RWCPatCon _ ps)  = concatMap patvars ps
@@ -230,7 +231,7 @@ data RWCDefn = RWCDefn { defnName   :: Id RWCExp,
                          defnPolyTy :: Poly RWCTy,
                          defnInline :: Bool,
                          defnBody   :: RWCExp }
-               deriving (Ord,Eq,Show)
+               deriving (Ord,Eq,Show,Typeable,Data)
 
 instance Subst RWCDefn RWCExp where
   fv (RWCDefn n _ _ e) = filter (/= n) (fv e)
@@ -256,7 +257,7 @@ data RWCData = RWCData { dataName   :: TyConId,
                          dataTyVars :: [Id RWCTy],
                          dataKind   :: Kind,
                          dataCons   :: [RWCDataCon] }
-               deriving (Ord,Eq,Show)
+               deriving (Ord,Eq,Show,Typeable,Data)
 
 instance NFData RWCData where
   rnf (RWCData i tvs k dcs) = i `deepseq` tvs `deepseq` dcs `deepseq` k `deepseq` ()
@@ -264,7 +265,7 @@ instance NFData RWCData where
 ---
 
 data RWCDataCon = RWCDataCon DataConId [RWCTy]
-                  deriving (Ord,Eq,Show)
+                  deriving (Ord,Eq,Show,Typeable,Data)
 
 instance NFData RWCDataCon where
   rnf (RWCDataCon i ts) = i `deepseq` ts `deepseq` ()
@@ -273,7 +274,7 @@ instance NFData RWCDataCon where
 
 data RWCProgram = RWCProgram { dataDecls  :: [RWCData],
                                defns      :: [RWCDefn] }
-                  deriving (Ord,Eq,Show)
+                  deriving (Ord,Eq,Show,Typeable,Data)
 
 instance NFData RWCProgram where
   rnf (RWCProgram dds defs) = dds `deepseq` defs `deepseq` ()
