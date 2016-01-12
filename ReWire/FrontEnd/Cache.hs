@@ -23,7 +23,7 @@ import Data.Maybe (fromMaybe)
 import Data.Monoid (Monoid(..),(<>))
 import Language.Haskell.Exts.Annotated (parseFile, ParseResult(..))
 import Language.Haskell.Exts.Annotated.Simplify (sName, sModuleName)
-import Language.Haskell.Exts.SrcLoc (SrcInfo(..), SrcSpanInfo, noLoc, noInfoSpan, mkSrcSpan)
+import Language.Haskell.Exts.SrcLoc (SrcInfo(..), SrcSpanInfo, noInfoSpan, mkSrcSpan)
 import System.Directory (getCurrentDirectory, setCurrentDirectory, doesFileExist, doesDirectoryExist)
 
 import qualified Data.Map.Strict              as Map
@@ -216,10 +216,8 @@ getRenamer fp = do
 -- | Fills in the provenance with dummy values for exports.
 giveAnnote :: S.Name -> Name Annote
 giveAnnote = \ case
-      S.Ident x -> Ident an x
-      S.Symbol x -> Symbol an x
-      where an :: Annote
-            an = fromSrcInfo $ noInfoSpan $ mkSrcSpan noLoc noLoc
+      S.Ident x -> Ident noAnn x
+      S.Symbol x -> Symbol noAnn x
 
 lookupExp :: Namespace -> Name Annote -> Exports -> Cache FQName
 lookupExp ns x (Exports vs ts _) = case ns of

@@ -1,58 +1,19 @@
-{-# LANGUAGE Rank2Types, GADTs, DeriveDataTypeable, ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module ReWire.FrontEnd.Annotate
       ( annotate
       , Annote (..)
       ) where
 
 import ReWire.SYB
+import ReWire.Core.Syntax
 
 import Control.Monad.Identity (Identity(..))
-import Data.Data (Data(..), Typeable, cast)
-import Data.Foldable (Foldable)
+import Data.Data (Data(..), cast)
 import Data.Functor ((<$>))
 import Data.Maybe (fromJust)
-import Data.Traversable (Traversable)
-import GHC.Generics (Generic)
-import Language.Haskell.Exts.Annotated.ExactPrint (ExactP)
-import Language.Haskell.Exts.Pretty (Pretty)
-import Language.Haskell.Exts.SrcLoc (SrcInfo(..), SrcSpanInfo)
+import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
 
 import Language.Haskell.Exts.Annotated.Syntax
-
--- | The point of this is just to hide the annotation from traversals.
-data Annote where
-      AnnoteLoc :: SrcSpanInfo -> Annote
-      Annote :: forall ast.
-            ( Functor ast
-            , Foldable ast
-            , Traversable ast
-            , Annotated ast
-            , ExactP ast
-            , Eq (ast SrcSpanInfo)
-            , Data (ast SrcSpanInfo)
-            , Ord (ast SrcSpanInfo)
-            , Show (ast SrcSpanInfo)
-            , Generic (ast SrcSpanInfo)
-            , Pretty (ast SrcSpanInfo)
-            ) => ast SrcSpanInfo -> Annote
-      deriving Typeable
-
-instance SrcInfo Annote where
-      toSrcInfo a b c = AnnoteLoc $ toSrcInfo a b c
-      fromSrcInfo     = AnnoteLoc . fromSrcInfo
-      fileName        = fileName . unAnnote
-      startLine       = startLine . unAnnote
-      startColumn     = startColumn . unAnnote
-
--- | Using the default definition of gfoldl.
-instance Data Annote where
-      gunfold    = undefined
-      toConstr   = undefined
-      dataTypeOf = undefined
-
-unAnnote :: Annote -> SrcSpanInfo
-unAnnote (AnnoteLoc l) = l
-unAnnote (Annote a)    = ann a
 
 annotate :: (Data (ast Annote), Functor ast) => ast SrcSpanInfo -> ast Annote
 annotate m = runIdentity $ runPureT nodes $ AnnoteLoc <$> m
@@ -123,6 +84,6 @@ nodes =   (s :: SF Module)
       ||> (s :: SF Annotation)
       ||> TId
       where s n = return $ gmapT (\ t -> case cast t :: Maybe Annote of
-                  Just _  -> fromJust $ cast $ Annote (fmap unAnnote n)
+                  Just _  -> fromJust $ cast $ Annote (unAnn <$> n)
                   Nothing -> t) n
 

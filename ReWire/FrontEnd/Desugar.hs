@@ -28,6 +28,7 @@ desugar = liftM fst . flip runStateT 0 .
            <> wheresToLets
            <> addMainModuleHead
            <> normTyContext
+           <> desugarTyFuns
             )
       >=> runT desugarFuns
       >=> runT
@@ -202,6 +203,11 @@ normTyContext = (||> TId) $ \ x -> case x :: Type Annote of
       TyForall (l :: Annote) tvs Nothing t   -> return $ TyForall l tvs (Just $ CxTuple l []) t
       TyForall l tvs (Just (CxEmpty _)) t    -> return $ TyForall l tvs (Just $ CxTuple l []) t
       TyForall l tvs (Just (CxSingle _ a)) t -> return $ TyForall l tvs (Just $ CxTuple l [a]) t
+
+-- | Turns the type a -> b into (->) a b.
+desugarTyFuns :: Transform Fresh
+desugarTyFuns = (||> TId) $
+      \ (TyFun (l :: Annote) a b) -> return $ TyApp l (TyApp l (TyCon l (UnQual l (Ident l "->"))) a) b
 
 -- | Turns Lets into Cases. Assumes functions in Lets are already desugared.
 --   E.g.:

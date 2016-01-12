@@ -7,7 +7,6 @@ module ReWire.FrontEnd.Translate
 
 import ReWire.Core.Kinds
 import ReWire.Core.Syntax
-import ReWire.FrontEnd.Annotate
 import ReWire.FrontEnd.Error
 import ReWire.FrontEnd.Rename
 import ReWire.Scoping
@@ -120,7 +119,7 @@ transData rn datas = \ case
       DataDecl l _ _ (sDeclHead -> hd) cons _ -> do
             tyVars' <- mapM (transTyVar l) $ snd hd
             cons' <- mapM (transCon rn) cons
-            return $ RWCData (TyConId $ rename TypeNS rn $ fst hd) tyVars' kblank cons' : datas
+            return $ RWCData l (TyConId $ rename TypeNS rn $ fst hd) tyVars' kblank cons' : datas
       _                                       -> return datas
 
 transTySig :: (Functor m, Monad m) => Renamer -> [(S.Name, RWCTy)] -> Decl Annote -> ParseError m [(S.Name, RWCTy)]
@@ -141,7 +140,7 @@ transInlineSig inls = \ case
 transDef :: (Functor m, Monad m) => Renamer -> [(S.Name, RWCTy)] -> [S.Name] -> [RWCDefn] -> Decl Annote -> ParseError m [RWCDefn]
 transDef rn tys inls defs = \ case
       PatBind l (PVar _ (sName -> x)) (UnGuardedRhs _ e) Nothing -> case lookup x tys of
-            Just t -> (:defs) . RWCDefn (mkId $ rename ValueNS rn x) (nub (fv t) :-> t) (x `elem` inls) <$> transExp rn e
+            Just t -> (:defs) . RWCDefn l (mkId $ rename ValueNS rn x) (nub (fv t) :-> t) (x `elem` inls) <$> transExp rn e
             _      -> pFailAt l "no type signature for"
       _                                             -> return defs
 
@@ -152,7 +151,7 @@ transTyVar l = \ case
 
 transCon :: (Functor m, Monad m) => Renamer -> QualConDecl Annote -> ParseError m RWCDataCon
 transCon rn = \ case
-      QualConDecl _ Nothing _ (ConDecl _ x tys) -> (RWCDataCon $ DataConId $ rename ValueNS rn $ sName x) <$> mapM (transTy rn []) tys
+      QualConDecl l Nothing _ (ConDecl _ x tys) -> RWCDataCon l (DataConId $ rename ValueNS rn $ sName x) <$> mapM (transTy rn []) tys
       d                                         -> pFailAt (ann d) "unsupported ctor syntax"
 
 transTy :: (Functor m, Monad m) => Renamer -> [S.Name] -> Type Annote -> ParseError m RWCTy
@@ -160,11 +159,10 @@ transTy rn ms = \ case
       TyForall _ Nothing (Just (CxTuple _ cs)) t   -> do
            ms' <- mapM getNad cs
            transTy rn (ms ++ ms') t
-      TyFun _ a b                -> mkArrow <$> transTy rn ms a <*> transTy rn ms b
-      TyApp _ a b | isMonad ms a -> RWCTyComp <$> transTy rn ms a <*> transTy rn ms b
-                  | otherwise    -> RWCTyApp <$> transTy rn ms a <*> transTy rn ms b
-      TyCon _ x                  -> return $ RWCTyCon (TyConId $ rename TypeNS rn $ sQName x)
-      TyVar _ x                  -> return $ RWCTyVar (mkId $ prettyPrint x)
+      TyApp l a b | isMonad ms a -> RWCTyComp l <$> transTy rn ms a <*> transTy rn ms b
+                  | otherwise    -> RWCTyApp l <$> transTy rn ms a <*> transTy rn ms b
+      TyCon l x                  -> return $ RWCTyCon l (TyConId $ rename TypeNS rn $ sQName x)
+      TyVar l x                  -> return $ RWCTyVar l (mkId $ prettyPrint x)
       t                          -> pFailAt (ann t) "unsupported type syntax"
 
 getNad :: Monad m => Asst Annote -> ParseError m S.Name
@@ -184,18 +182,18 @@ kblank :: Kind
 kblank = Kstar
 
 tblank :: RWCTy
-tblank = RWCTyCon (TyConId "_")
+tblank = RWCTyCon noAnn (TyConId "_")
 
 transExp :: (Functor m, Monad m) => Renamer -> Exp Annote -> ParseError m RWCExp
 transExp rn = \ case
-      App _ (App _ (Var _ (UnQual _ (Ident _ "nativeVhdl"))) (Lit _ (String _ f _))) e
-                            -> RWCNativeVHDL f <$> transExp rn e
-      App _ e1 e2           -> RWCApp <$> transExp rn e1 <*> transExp rn e2
-      Lambda _ [PVar _ x] e -> RWCLam (mkId $ prettyPrint x) tblank <$> transExp (exclude ValueNS [sName x] rn) e
-      Var _ x               -> return $ RWCVar (mkId $ rename ValueNS rn $ sQName x) tblank
-      Con _ x               -> return $ RWCCon (DataConId $ rename ValueNS rn $ sQName x) tblank
-      Lit _ lit             -> RWCLiteral <$> transLit lit
-      Case _ e alts         -> RWCCase <$> transExp rn e <*> mapM (transAlt rn) alts
+      App l (App _ (Var _ (UnQual _ (Ident _ "nativeVhdl"))) (Lit _ (String _ f _))) e
+                            -> RWCNativeVHDL l f <$> transExp rn e
+      App l e1 e2           -> RWCApp l <$> transExp rn e1 <*> transExp rn e2
+      Lambda l [PVar _ x] e -> RWCLam l (mkId $ prettyPrint x) tblank <$> transExp (exclude ValueNS [sName x] rn) e
+      Var l x               -> return $ RWCVar l (mkId $ rename ValueNS rn $ sQName x) tblank
+      Con l x               -> return $ RWCCon l (DataConId $ rename ValueNS rn $ sQName x) tblank
+      Lit l lit             -> RWCLiteral l <$> transLit lit
+      Case l e alts         -> RWCCase l <$> transExp rn e <*> mapM (transAlt rn) alts
       e                     -> pFailAt (ann e) "unsupported expression syntax"
 
 transLit :: Monad m => Literal Annote -> ParseError m RWCLit
@@ -207,7 +205,7 @@ transLit = \ case
 
 transAlt :: (Functor m, Monad m) => Renamer -> Alt Annote -> ParseError m RWCAlt
 transAlt rn = \ case
-      Alt _ p (UnGuardedRhs _ e) Nothing -> RWCAlt <$> transPat rn p <*> transExp (exclude ValueNS (getVars p) rn) e
+      Alt l p (UnGuardedRhs _ e) Nothing -> RWCAlt l <$> transPat rn p <*> transExp (exclude ValueNS (getVars p) rn) e
       a                                  -> pFailAt (ann a) "unsupported syntax"
       where getVars :: Pat Annote -> [S.Name]
             getVars = runPureQ $ (||? QEmpty) $ \ p -> case p :: Pat Annote of
@@ -216,7 +214,7 @@ transAlt rn = \ case
 
 transPat :: (Functor m, Monad m) => Renamer -> Pat Annote -> ParseError m RWCPat
 transPat rn = \ case
-      PApp _ x ps             -> RWCPatCon (DataConId $ rename ValueNS rn $ sQName x) <$> mapM (transPat rn) ps
-      PLit _ (Signless _) lit -> RWCPatLiteral <$> transLit lit
-      PVar _ x                -> return $ RWCPatVar (mkId $ prettyPrint x) tblank
+      PApp l x ps             -> RWCPatCon l (DataConId $ rename ValueNS rn $ sQName x) <$> mapM (transPat rn) ps
+      PLit l (Signless _) lit -> RWCPatLiteral l <$> transLit lit
+      PVar l x                -> return $ RWCPatVar l (mkId $ prettyPrint x) tblank
       p                       -> pFailAt (ann p) "unsupported syntax in a pattern"

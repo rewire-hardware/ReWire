@@ -79,76 +79,76 @@ dqingE ns m = do ns'    <- mapM dqvE ns
                  return (ns',v)
 
 dqTy :: RWCTy -> DQM RWCTy
-dqTy (RWCTyApp t1 t2)  = do t1' <- dqTy t1
-                            t2' <- dqTy t2
-                            return (RWCTyApp t1' t2')
-dqTy (RWCTyCon tci)    = return (RWCTyCon tci)
-dqTy (RWCTyVar n)      = do ism <- askInScopeT
-                            case Map.lookup n ism of
-                              Just n' -> return (RWCTyVar n')
-                              Nothing -> return (RWCTyVar n)
-dqTy (RWCTyComp t1 t2) = do t1' <- dqTy t1
-                            t2' <- dqTy t2
-                            return (RWCTyComp t1' t2')
+dqTy (RWCTyApp an t1 t2)  = do t1' <- dqTy t1
+                               t2' <- dqTy t2
+                               return (RWCTyApp an t1' t2')
+dqTy (RWCTyCon an tci)    = return (RWCTyCon an tci)
+dqTy (RWCTyVar an n)      = do ism <- askInScopeT
+                               case Map.lookup n ism of
+                                 Just n' -> return (RWCTyVar an n')
+                                 Nothing -> return (RWCTyVar an n)
+dqTy (RWCTyComp an t1 t2) = do t1' <- dqTy t1
+                               t2' <- dqTy t2
+                               return (RWCTyComp an t1' t2')
 
 pvs :: RWCPat -> [Id RWCExp]
-pvs (RWCPatCon _ ps)   = concatMap pvs ps
-pvs (RWCPatLiteral _)  = []
-pvs (RWCPatVar x _)    = [x]
+pvs (RWCPatCon _ _ ps)  = concatMap pvs ps
+pvs (RWCPatLiteral _ _) = []
+pvs (RWCPatVar _ x _)   = [x]
 
 dqPat :: RWCPat -> DQM RWCPat
-dqPat (RWCPatCon dci ps) = do ps' <- mapM dqPat ps
-                              return (RWCPatCon dci ps')
-dqPat (RWCPatLiteral l)  = return (RWCPatLiteral l)
-dqPat (RWCPatVar n t)    = do t' <- dqTy t
-                              ism <- askInScopeE
-                              case Map.lookup n ism of
-                                Just n' -> return (RWCPatVar n' t')
-                                Nothing -> return (RWCPatVar n t')
+dqPat (RWCPatCon an dci ps) = do ps' <- mapM dqPat ps
+                                 return (RWCPatCon an dci ps')
+dqPat (RWCPatLiteral an l)  = return (RWCPatLiteral an l)
+dqPat (RWCPatVar an n t)    = do t' <- dqTy t
+                                 ism <- askInScopeE
+                                 case Map.lookup n ism of
+                                   Just n' -> return (RWCPatVar an n' t')
+                                   Nothing -> return (RWCPatVar an n t')
 
 dqAlt :: RWCAlt -> DQM RWCAlt
-dqAlt (RWCAlt p e) = do let vs      =  pvs p
-                        (_,(p',e')) <- dqingE vs (do
-                          p' <- dqPat p
-                          e' <- dqExpr e
-                          return (p',e'))
-                        return (RWCAlt p' e')
+dqAlt (RWCAlt an p e) = do let vs      =  pvs p
+                           (_,(p',e')) <- dqingE vs (do
+                             p' <- dqPat p
+                             e' <- dqExpr e
+                             return (p',e'))
+                           return (RWCAlt an p' e')
 
 dqExpr :: RWCExp -> DQM RWCExp
-dqExpr (RWCApp e1 e2)      = do e1' <- dqExpr e1
-                                e2' <- dqExpr e2
-                                return (RWCApp e1' e2')
-dqExpr (RWCLam n t e)      = do t' <- dqTy t
-                                ([n'],e') <- dqingE [n] (dqExpr e)
-                                return (RWCLam n' t' e')
-dqExpr (RWCVar n t)        = do t' <- dqTy t
-                                ism <- askInScopeE
-                                case Map.lookup n ism of
-                                  Just n' -> return (RWCVar n' t')
-                                  Nothing -> return (RWCVar n t')
-dqExpr (RWCCon dci t)      = do t' <- dqTy t
-                                return (RWCCon dci t')
-dqExpr (RWCLiteral l)      = return (RWCLiteral l)
-dqExpr (RWCCase e alts)    = do e'    <- dqExpr e
-                                alts' <- mapM dqAlt alts
-                                return (RWCCase e' alts')
-dqExpr (RWCNativeVHDL n e) = do e' <- dqExpr e
-                                return (RWCNativeVHDL n e')
+dqExpr (RWCApp an e1 e2)      = do e1' <- dqExpr e1
+                                   e2' <- dqExpr e2
+                                   return (RWCApp an e1' e2')
+dqExpr (RWCLam an n t e)      = do t' <- dqTy t
+                                   ([n'],e') <- dqingE [n] (dqExpr e)
+                                   return (RWCLam an n' t' e')
+dqExpr (RWCVar an n t)        = do t' <- dqTy t
+                                   ism <- askInScopeE
+                                   case Map.lookup n ism of
+                                     Just n' -> return (RWCVar an n' t')
+                                     Nothing -> return (RWCVar an n t')
+dqExpr (RWCCon an dci t)      = do t' <- dqTy t
+                                   return (RWCCon an dci t')
+dqExpr (RWCLiteral an l)      = return (RWCLiteral an l)
+dqExpr (RWCCase an e alts)    = do e'    <- dqExpr e
+                                   alts' <- mapM dqAlt alts
+                                   return (RWCCase an e' alts')
+dqExpr (RWCNativeVHDL an n e) = do e' <- dqExpr e
+                                   return (RWCNativeVHDL an n e')
 
 dqDataCon :: RWCDataCon -> DQM RWCDataCon
-dqDataCon (RWCDataCon dci ts) = do ts' <- mapM dqTy ts
-                                   return (RWCDataCon dci ts')
+dqDataCon (RWCDataCon an dci ts) = do ts' <- mapM dqTy ts
+                                      return (RWCDataCon an dci ts')
 
 dqDataDecl :: RWCData -> DQM RWCData
-dqDataDecl (RWCData n tvs k dcs) = do (tvs',dcs') <- dqingT tvs (mapM dqDataCon dcs)
-                                      return (RWCData n tvs' k dcs')
+dqDataDecl (RWCData an n tvs k dcs) = do (tvs',dcs') <- dqingT tvs (mapM dqDataCon dcs)
+                                         return (RWCData an n tvs' k dcs')
 
 dqDefn :: RWCDefn -> DQM RWCDefn
-dqDefn (RWCDefn n (tvs :-> t) b e) = do (tvs',(t',e')) <- dqingT tvs (do
-                                          t' <- dqTy t
-                                          e' <- dqExpr e
-                                          return (t',e'))
-                                        return (RWCDefn n (tvs' :-> t') b e')
+dqDefn (RWCDefn an n (tvs :-> t) b e) = do (tvs',(t',e')) <- dqingT tvs (do
+                                             t' <- dqTy t
+                                             e' <- dqExpr e
+                                             return (t',e'))
+                                           return (RWCDefn an n (tvs' :-> t') b e')
 
 dqModule :: RWCProgram -> DQM RWCProgram
 dqModule (RWCProgram dds ds) = do dds' <- mapM dqDataDecl dds

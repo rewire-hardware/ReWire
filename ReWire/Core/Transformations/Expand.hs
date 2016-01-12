@@ -10,30 +10,30 @@ import ReWire.Core.Transformations.Uniquify (uniquify)
 import ReWire.Core.Transformations.Types
 
 expandAlt :: [Id RWCExp] -> RWCAlt -> RW RWCAlt
-expandAlt ns (RWCAlt p e) = do e' <- expandExpr ns e
-                               return (RWCAlt p e')
+expandAlt ns (RWCAlt an p e) = do e' <- expandExpr ns e
+                                  return (RWCAlt an p e')
 
 expandExpr :: [Id RWCExp] -> RWCExp -> RW RWCExp
-expandExpr ns (RWCApp e1 e2)             = do e1' <- expandExpr ns e1
-                                              e2' <- expandExpr ns e2
-                                              return (RWCApp e1' e2')
-expandExpr ns (RWCLam n t e)             = do e' <- expandExpr ns e
-                                              return (RWCLam n t e')
-expandExpr ns (RWCVar n t) | n `elem` ns = do me <- askVar t n
-                                              case me of
-                                                Just e  -> expandExpr ns e
-                                                Nothing -> return (RWCVar n t)
-                           | otherwise   = return (RWCVar n t)
-expandExpr _ (RWCCon dci t)              = return (RWCCon dci t)
-expandExpr _ (RWCLiteral l)              = return (RWCLiteral l)
-expandExpr ns (RWCCase e alts)           = do e'    <- expandExpr ns e
-                                              alts' <- mapM (expandAlt ns) alts
-                                              return (RWCCase e' alts')
-expandExpr _ (RWCNativeVHDL n e)         = return (RWCNativeVHDL n e)             -- FIXME(?!): special case here!
+expandExpr ns (RWCApp an e1 e2)             = do e1' <- expandExpr ns e1
+                                                 e2' <- expandExpr ns e2
+                                                 return (RWCApp an e1' e2')
+expandExpr ns (RWCLam an n t e)             = do e' <- expandExpr ns e
+                                                 return (RWCLam an n t e')
+expandExpr ns (RWCVar an n t) | n `elem` ns = do me <- askVar t n
+                                                 case me of
+                                                   Just e  -> expandExpr ns e
+                                                   Nothing -> return (RWCVar an n t)
+                              | otherwise   = return (RWCVar an n t)
+expandExpr _ (RWCCon an dci t)              = return (RWCCon an dci t)
+expandExpr _ (RWCLiteral an l)              = return (RWCLiteral an l)
+expandExpr ns (RWCCase an e alts)           = do e'    <- expandExpr ns e
+                                                 alts' <- mapM (expandAlt ns) alts
+                                                 return (RWCCase an e' alts')
+expandExpr _ (RWCNativeVHDL an n e)         = return (RWCNativeVHDL an n e) -- FIXME(?!): special case here!
 
 expandDefn :: [Id RWCExp] -> RWCDefn -> RW RWCDefn
-expandDefn ns (RWCDefn n pt b e) = do e' <- expandExpr ns e
-                                      return (RWCDefn n pt b e')
+expandDefn ns (RWCDefn an n pt b e) = do e' <- expandExpr ns e
+                                         return (RWCDefn an n pt b e')
 
 expandModule :: [Id RWCExp] -> RWCProgram -> RW RWCProgram
 expandModule ns (RWCProgram dds defns) = do defns' <- mapM (expandDefn ns) defns

@@ -8,8 +8,8 @@ import ReWire.Core.Transformations.Purge (purge)
 
 toInline :: RWCProgram -> [Id RWCExp]
 toInline m = concatMap f (defns m)
-  where f (RWCDefn n _ True _) = [n]
-        f _                    = []
+  where f (RWCDefn _ n _ True _) = [n]
+        f _                      = []
 
 inline :: RWCProgram -> Maybe RWCProgram
 inline m = purge (mkId "Main.start") $ redmod $ expand (toInline m) m
