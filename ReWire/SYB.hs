@@ -1,18 +1,15 @@
-{-# LANGUAGE Rank2Types, GADTs #-}
+{-# LANGUAGE RankNTypes, GADTs, LambdaCase #-}
 module ReWire.SYB
-      ( Transform
-      , Query
-      , runT
-      , runQ
-      , match
-      , match'
-      , query
-      , query'
+      ( Transform (TId), Query (QEmpty)
+      , (||>)
+      , (||?), (|?)
+      , runT, runPureT
+      , runQ, runPureQ
       ) where
 
 import Control.Exception (PatternMatchFail(..))
 import Control.Monad.Catch (MonadCatch(..))
-import Control.Monad ((>=>), MonadPlus(..))
+import Control.Monad (liftM, (>=>), MonadPlus(..))
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Maybe (MaybeT(..))
 import Data.Data (Data, Typeable, gmapM, gmapQr, cast)
@@ -20,7 +17,7 @@ import Data.Functor ((<$>))
 import Data.Maybe (fromJust)
 import Data.Monoid (Monoid(..))
 
-everywhere :: (Monad m, Data a) => (forall d. Data d => (d -> m d)) -> a -> m a
+everywhere :: (Monad m, Data a) => (forall d. Data d => d -> m d) -> a -> m a
 everywhere f = gmapM (everywhere f) >=> f
 
 everywhereQ :: (MonadPlus m, Data a) => (forall d. Data d => d -> m b) -> a -> m b
@@ -33,78 +30,67 @@ generalizeA f x = case f <$> cast x of
 
 generalize :: (Monad m, Typeable a) => (a -> m a) -> forall d. Typeable d => d -> MaybeT m d
 generalize f = generalizeA f >=> tr
+      where tr :: (Monad m, Typeable a, Typeable b) => a -> m b
+            tr = return . fromJust . cast
 
+-- | This is just a list of type
+-- > [exists d. Data d => d -> MaybeT m d]
 data Transform m where
-      Transform  :: (Functor m, MonadCatch m) => (forall d. Data d => d -> MaybeT m d) -> Transform m
-      Transform' :: (Functor m, Monad m)      => (forall d. Data d => d -> MaybeT m d) -> Transform m
+      TCons :: (forall d. Data d => d -> MaybeT m d) -> Transform m -> Transform m
+      TId   :: Transform m
 
-instance (Functor m, Monad m) => Monoid (Transform m) where
-      mempty                                = Transform' return
-      mappend (Transform f)  (Transform g)  = Transform  $ f <+> g
-      mappend (Transform f)  (Transform' g) = Transform  $ f <+> g
-      mappend (Transform' f) (Transform g)  = Transform  $ f <+> g
-      mappend (Transform' f) (Transform' g) = Transform' $ f |+| g
+type T m = forall d. Data d => d -> MaybeT m d
 
+instance Monoid (Transform m) where
+      mempty                 = TId
+      mappend (TCons f fs) g = TCons f $ mappend fs g
+      mappend TId g          = g
+
+foldT :: Monad m => (T m -> T m -> T m) -> Transform m -> T m
+foldT op (TCons f fs) = f `op` foldT op fs
+foldT _ TId           = lift . return
+
+(||>) :: (Monad m, Typeable d) => (d -> m d) -> Transform m -> Transform m
+f ||> fs = generalize f `TCons` fs
+infixr 1 ||>
+
+runT :: (Functor m, MonadCatch m, Data d) => Transform m -> d -> m d
+runT t = everywhere $ liftM fromJust . runMaybeT . foldT (\ f g x -> f x `mplusE` g x) t
+
+runPureT :: (Functor m, Monad m, Data d) => Transform m -> d -> m d
+runPureT t = everywhere $ liftM fromJust . runMaybeT . foldT (\ f g x -> f x `mplus` g x) t
+
+-- | This is just a list of type
+-- > [exists d. Data d => d -> MaybeT m a]
 data Query m a where
-      Query   :: (Functor m, MonadPlus m, MonadCatch m) => (forall d. Data d => d -> MaybeT m a) -> Query m a
-      Query'  :: (Functor m, MonadPlus m)               => (forall d. Data d => d -> MaybeT m a) -> Query m a
+      QCons  :: (forall d. Data d => d -> MaybeT m a) -> Query m a -> Query m a
+      QEmpty :: Query m a
 
-instance (Functor m, MonadPlus m) => Monoid (Query m a) where
-      mempty                        = Query' $ const mzero
-      mappend (Query f)  (Query g)  = Query  $ f <++> g
-      mappend (Query f)  (Query' g) = Query  $ f <++> g
-      mappend (Query' f) (Query g)  = Query  $ f <++> g
-      mappend (Query' f) (Query' g) = Query' $ f |++| g
+type Q m a = forall d. Data d => d -> MaybeT m a
 
-match :: (Functor m, MonadCatch m, Data a) => (a -> m a) -> Transform m
-match f = Transform $ generalize f
+instance Monoid (Query m a) where
+      mempty                 = QEmpty
+      mappend (QCons f fs) g = QCons f $ mappend fs g
+      mappend QEmpty g       = g
 
--- | Pure version.
-match' :: (Functor m, Monad m, Data a) => (a -> m a) -> Transform m
-match' f = Transform' $ generalize f
+(|?) :: (Monad m, Typeable d) => (d -> a) -> Query m a -> Query m a
+f |? fs = QCons (generalizeA $ return . f) fs
+infixr 1 |?
 
-query :: (Functor m, MonadPlus m, MonadCatch m, Data a) => (a -> b) -> Query m b
-query f = Query $ generalizeA (return . f)
+(||?) :: (Monad m, Typeable d) => (d -> m a) -> Query m a -> Query m a
+f ||? fs = QCons (generalizeA f) fs
+infixr 1 ||?
 
--- | Pure version.
-query' :: (Functor m, MonadPlus m, Data a) => (a -> m b) -> Query m b
-query' f = Query' $ generalizeA f
+foldQ :: MonadPlus m => (Q m a -> Q m a -> Q m a) -> Query m a -> Q m a
+foldQ op (QCons f fs) = f `op` foldQ op fs
+foldQ _ QEmpty        = lift . const mzero
 
-runT :: (Monad m, Data d) => Transform m -> d -> m d
-runT (Transform  f) = everywhere $ \n -> fromJust <$> runMaybeT (f n `mplusE` tr n)
-runT (Transform' f) = everywhere $ \n -> fromJust <$> runMaybeT (f n `mplus`  tr n)
+runQ :: (Functor m, MonadPlus m, MonadCatch m, Data d) => Query m a -> d -> m a
+runQ q = everywhereQ $ liftM fromJust . runMaybeT . foldQ (\ f g x -> f x `mplusE` g x) q
 
-runQ :: (MonadPlus m, Data d) => Query m a -> d -> m a
-runQ (Query  f) = everywhereQ $ \n -> fromJust <$> runMaybeT (f n `mplusE` lift mzero)
-runQ (Query' f) = everywhereQ $ \n -> fromJust <$> runMaybeT (f n `mplus`  lift mzero)
-
-(<+>) :: (MonadPlus m, MonadCatch m)
-      => (forall d. Data d => d -> m d)
-      -> (forall d. Data d => d -> m d)
-      ->  forall d. Data d => d -> m d
-f <+> g = \x -> f (fromJust $ cast x) `mplusE` g (fromJust $ cast x)
-
-(<++>) :: (MonadPlus m, MonadCatch m)
-      => (forall d. Data d => d -> m a)
-      -> (forall d. Data d => d -> m a)
-      ->  forall d. Data d => d -> m a
-f <++> g = \x -> f x `mplusE` g x
-
-(|+|) :: MonadPlus m
-      => (forall d. Data d => d -> m d)
-      -> (forall d. Data d => d -> m d)
-      ->  forall d. Data d => d -> m d
-f |+| g = \x -> f (fromJust $ cast x) `mplus` g (fromJust $ cast x)
-
-(|++|) :: MonadPlus m
-      => (forall d. Data d => d -> m a)
-      -> (forall d. Data d => d -> m a)
-      ->  forall d. Data d => d -> m a
-f |++| g = \x -> f x `mplus` g x
+runPureQ :: (Functor m, MonadPlus m, Data d) => Query m a -> d -> m a
+runPureQ q = everywhereQ $ liftM fromJust . runMaybeT . foldQ (\ f g x -> f x `mplus` g x) q
 
 -- | mplus + match fail treated as mzero.
 mplusE :: (MonadCatch m, MonadPlus m) => m a -> m a -> m a
-mplusE a b = catch a (\(PatternMatchFail _) -> mzero) `mplus` b
-
-tr :: (Monad m, Typeable a, Typeable b) => a -> m b
-tr = return . fromJust . cast
+mplusE a b = catch a (\ (PatternMatchFail _) -> mzero) `mplus` b

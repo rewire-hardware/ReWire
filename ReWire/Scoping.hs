@@ -1,10 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving,MultiParamTypeClasses,
              FlexibleInstances,TupleSections,FunctionalDependencies,
              FlexibleContexts,ScopedTypeVariables,GADTs,StandaloneDeriving,
-             UndecidableInstances
+             UndecidableInstances,DeriveDataTypeable
   #-}
 
 module ReWire.Scoping where
+
+import ReWire.Pretty
 
 import Control.Applicative
 import Control.Monad
@@ -13,6 +15,7 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Except
 import Control.Monad.Identity
+import Data.Data (Typeable,Data)
 import Data.Map.Strict (Map,insert,delete)
 import qualified Data.Map.Strict as Map
 import Data.Set (Set)
@@ -24,6 +27,7 @@ import Data.Either (rights)
 import qualified Data.ByteString.Char8 as BS
 import Data.ByteString.Char8 (ByteString)
 import Data.Maybe (fromJust,isJust)
+import Text.PrettyPrint (text)
 {-
 import Unbound.LocallyNameless hiding (fv,subst,substs,Subst,Alpha,aeq,aeq')
 import qualified Unbound.LocallyNameless as U
@@ -78,10 +82,13 @@ runAssume = runAssumeWith Map.empty
 
 -- NB: The "Id" constructor should be hidden
 data Id a = Id {-# UNPACK #-} !ByteString {-# UNPACK #-} !ByteString
-            deriving (Eq,Ord)
+            deriving (Eq,Ord,Typeable,Data)
 
 instance Show (Id a) where
   show (Id _ x) = BS.unpack x
+
+instance Pretty (Id a) where
+  pretty = text . deId
 
 mkId :: forall a . IdSort a => String -> Id a
 mkId x = Id (idSort (undefined::a)) (BS.pack x)

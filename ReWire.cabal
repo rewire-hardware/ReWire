@@ -73,7 +73,6 @@ library
   exposed-modules:  ReWire.Core.KindChecker
                     ReWire.Core.Kinds
                     ReWire.Core.Main
-                    ReWire.Core.PrettyPrintHaskell
                     ReWire.Core.PrimBasis
                     ReWire.Core.Syntax
                     ReWire.Core.Transformations.DeUniquify
@@ -87,18 +86,20 @@ library
                     ReWire.Core.Transformations.Types
                     ReWire.Core.Transformations.Uniquify
                     ReWire.Core.TypeChecker
+                    ReWire.Error
                     ReWire.FrontEnd
+                    ReWire.FrontEnd.Annotate
                     ReWire.FrontEnd.Cache
                     ReWire.FrontEnd.Desugar
-                    ReWire.FrontEnd.Error
                     ReWire.FrontEnd.LoadPath
                     ReWire.FrontEnd.Translate
-                    ReWire.FrontEnd.Renamer
+                    ReWire.FrontEnd.Rename
                     ReWire.PreHDL.CFG
                     ReWire.PreHDL.ElimEmpty
                     ReWire.PreHDL.GotoElim
                     ReWire.PreHDL.Syntax
                     ReWire.PreHDL.ToVHDL
+                    ReWire.Pretty
                     ReWire.Scoping
                     ReWire.SYB
 
@@ -116,7 +117,7 @@ test-suite rwc-test
                     , base >= 4.6 && <5
                     , Cabal >=1.10
                     , directory >=1.2 && <1.3
-                    , HUnit >=1.2.5 && <1.3
+                    , HUnit >=1.2.5 && <1.3.1
                     , test-framework >=0.8 && <0.9
                     , test-framework-hunit >= 0.3.0.2 && <0.4
   default-language:   Haskell2010

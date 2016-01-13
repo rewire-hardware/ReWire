@@ -31,8 +31,8 @@ testParse f_ = testCase f_ (do d   <- getDataFileName "test/parser_tests/"
                                lp  <- getSystemLoadPath
                                res <- loadProgram lp f_
                                case res of
-                                 ParseFailed _ err -> assertFailure err
-                                 ParseOk _         -> return ())
+                                 Left e  -> assertFailure $ show e
+                                 Right _ -> return ())
 
 testTC :: FilePath -> Test
 testTC f_ = testCase f_ (do d   <- getDataFileName "test/parser_tests/"
@@ -40,12 +40,12 @@ testTC f_ = testCase f_ (do d   <- getDataFileName "test/parser_tests/"
                             lp  <- getSystemLoadPath
                             res <- loadProgram lp f_
                             case res of
-                              ParseFailed _ err -> assertFailure err
-                              ParseOk m         -> case kindcheck m of
-                                Left err -> assertFailure err
+                              Left e  -> assertFailure $ show e
+                              Right m -> case kindcheck m of
+                                Left e   -> assertFailure $ show e
                                 Right m' -> case typecheck m' of
-                                  Left err -> assertFailure err
-                                  Right _  -> return ())
+                                  Left e  -> assertFailure $ show e
+                                  Right _ -> return ())
 
 testCompile :: FilePath -> Test
 testCompile f_ = testCase f_ (do f <- getDataFileName ("test/parser_tests/" ++ f_)

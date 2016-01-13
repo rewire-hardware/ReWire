@@ -63,77 +63,77 @@ uniquingE ns m = do ns'    <- mapM fresh ns
                     return (ns',v)
 
 uniquifyTy :: RWCTy -> UQM RWCTy
-uniquifyTy (RWCTyApp t1 t2)  = do t1' <- uniquifyTy t1
-                                  t2' <- uniquifyTy t2
-                                  return (RWCTyApp t1' t2')
-uniquifyTy (RWCTyCon i)      = return (RWCTyCon i)
-uniquifyTy (RWCTyVar n)      = do mn <- askUniqueT n
-                                  case mn of
-                                    Nothing -> return (RWCTyVar n)
-                                    Just n' -> return (RWCTyVar n')
-uniquifyTy (RWCTyComp t1 t2) = do t1' <- uniquifyTy t1
-                                  t2' <- uniquifyTy t2
-                                  return (RWCTyComp t1' t2')
+uniquifyTy (RWCTyApp an t1 t2)  = do t1' <- uniquifyTy t1
+                                     t2' <- uniquifyTy t2
+                                     return (RWCTyApp an t1' t2')
+uniquifyTy (RWCTyCon an i)      = return (RWCTyCon an i)
+uniquifyTy (RWCTyVar an n)      = do mn <- askUniqueT n
+                                     case mn of
+                                       Nothing -> return (RWCTyVar an n)
+                                       Just n' -> return (RWCTyVar an n')
+uniquifyTy (RWCTyComp an t1 t2) = do t1' <- uniquifyTy t1
+                                     t2' <- uniquifyTy t2
+                                     return (RWCTyComp an t1' t2')
 
 uniquifyDataCon :: RWCDataCon -> UQM RWCDataCon
-uniquifyDataCon (RWCDataCon dci ts) = do ts' <- mapM uniquifyTy ts
-                                         return (RWCDataCon dci ts')
+uniquifyDataCon (RWCDataCon an dci ts) = do ts' <- mapM uniquifyTy ts
+                                            return (RWCDataCon an dci ts')
 
 uniquifyDataDecl :: RWCData -> UQM RWCData
-uniquifyDataDecl (RWCData i vs k dcs) = do (vs',dcs') <- uniquingT vs $
-                                             mapM uniquifyDataCon dcs
-                                           return (RWCData i vs' k dcs')
+uniquifyDataDecl (RWCData an i vs k dcs) = do (vs',dcs') <- uniquingT vs $
+                                                mapM uniquifyDataCon dcs
+                                              return (RWCData an i vs' k dcs')
 
 pvs :: RWCPat -> [Id RWCExp]
-pvs (RWCPatCon _ ps)  = concatMap pvs ps
-pvs (RWCPatLiteral _) = []
-pvs (RWCPatVar x _)   = [x]
+pvs (RWCPatCon _ _ ps)  = concatMap pvs ps
+pvs (RWCPatLiteral _ _) = []
+pvs (RWCPatVar _ x _)   = [x]
 
 uniquifyPat :: RWCPat -> UQM RWCPat
-uniquifyPat (RWCPatCon dci ps) = do ps' <- mapM uniquifyPat ps
-                                    return (RWCPatCon dci ps')
-uniquifyPat (RWCPatLiteral l)  = return (RWCPatLiteral l)
-uniquifyPat (RWCPatVar n t)    = do t' <- uniquifyTy t
-                                    mn <- askUniqueE n
-                                    case mn of
-                                      Just n' -> return (RWCPatVar n' t')
-                                      Nothing -> return (RWCPatVar n t') -- shouldn't happen
+uniquifyPat (RWCPatCon an dci ps) = do ps' <- mapM uniquifyPat ps
+                                       return (RWCPatCon an dci ps')
+uniquifyPat (RWCPatLiteral an l)  = return (RWCPatLiteral an l)
+uniquifyPat (RWCPatVar an n t)    = do t' <- uniquifyTy t
+                                       mn <- askUniqueE n
+                                       case mn of
+                                         Just n' -> return (RWCPatVar an n' t')
+                                         Nothing -> return (RWCPatVar an n t') -- shouldn't happen
 
 uniquifyAlt :: RWCAlt -> UQM RWCAlt
-uniquifyAlt (RWCAlt p e) = do let vs      =  pvs p
-                              (_,(p',e')) <- uniquingE vs (do
-                                p' <- uniquifyPat p
-                                e' <- uniquifyExpr e
-                                return (p',e'))
-                              return (RWCAlt p' e')
+uniquifyAlt (RWCAlt an p e) = do let vs      =  pvs p
+                                 (_,(p',e')) <- uniquingE vs (do
+                                   p' <- uniquifyPat p
+                                   e' <- uniquifyExpr e
+                                   return (p',e'))
+                                 return (RWCAlt an p' e')
 
 uniquifyExpr :: RWCExp -> UQM RWCExp
-uniquifyExpr (RWCApp e1 e2)      = do e1' <- uniquifyExpr e1
-                                      e2' <- uniquifyExpr e2
-                                      return (RWCApp e1' e2')
-uniquifyExpr (RWCLam n t e)      = do t'        <- uniquifyTy t
-                                      ([n'],e') <- uniquingE [n] (uniquifyExpr e)
-                                      return (RWCLam n' t' e')
-uniquifyExpr (RWCVar n t)        = do t' <- uniquifyTy t
-                                      mn <- askUniqueE n
-                                      case mn of
-                                        Nothing -> return (RWCVar n t')
-                                        Just n' -> return (RWCVar n' t')
-uniquifyExpr (RWCCon dci t)      = do t' <- uniquifyTy t
-                                      return (RWCCon dci t')
-uniquifyExpr (RWCLiteral l)      = return (RWCLiteral l)
-uniquifyExpr (RWCCase e alts)    = do e'    <- uniquifyExpr e
-                                      alts' <- mapM uniquifyAlt alts
-                                      return (RWCCase e' alts')
-uniquifyExpr (RWCNativeVHDL n e) = do e' <- uniquifyExpr e
-                                      return (RWCNativeVHDL n e')
+uniquifyExpr (RWCApp an e1 e2)      = do e1' <- uniquifyExpr e1
+                                         e2' <- uniquifyExpr e2
+                                         return (RWCApp an e1' e2')
+uniquifyExpr (RWCLam an n t e)      = do t'        <- uniquifyTy t
+                                         ([n'],e') <- uniquingE [n] (uniquifyExpr e)
+                                         return (RWCLam an n' t' e')
+uniquifyExpr (RWCVar an n t)        = do t' <- uniquifyTy t
+                                         mn <- askUniqueE n
+                                         case mn of
+                                           Nothing -> return (RWCVar an n t')
+                                           Just n' -> return (RWCVar an n' t')
+uniquifyExpr (RWCCon an dci t)      = do t' <- uniquifyTy t
+                                         return (RWCCon an dci t')
+uniquifyExpr (RWCLiteral an l)      = return (RWCLiteral an l)
+uniquifyExpr (RWCCase an e alts)    = do e'    <- uniquifyExpr e
+                                         alts' <- mapM uniquifyAlt alts
+                                         return (RWCCase an e' alts')
+uniquifyExpr (RWCNativeVHDL an n e) = do e' <- uniquifyExpr e
+                                         return (RWCNativeVHDL an n e')
 
 uniquifyDefn :: RWCDefn -> UQM RWCDefn
-uniquifyDefn (RWCDefn n (tvs :-> t) b e) = do (tvs',(t',e')) <- uniquingT tvs (do
-                                                t' <- uniquifyTy t
-                                                e' <- uniquifyExpr e
-                                                return (t',e'))
-                                              return (RWCDefn n (tvs' :-> t') b e')
+uniquifyDefn (RWCDefn an n (tvs :-> t) b e) = do (tvs',(t',e')) <- uniquingT tvs (do
+                                                   t' <- uniquifyTy t
+                                                   e' <- uniquifyExpr e
+                                                   return (t',e'))
+                                                 return (RWCDefn an n (tvs' :-> t') b e')
 
 uniquifyModule :: RWCProgram -> UQM RWCProgram
 uniquifyModule (RWCProgram dds ds) = do dds' <- mapM uniquifyDataDecl dds

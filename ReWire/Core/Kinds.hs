@@ -1,15 +1,18 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses,DeriveDataTypeable #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module ReWire.Core.Kinds where
 
 import ReWire.Scoping
+import ReWire.Pretty
 import Control.DeepSeq
+import Data.Data (Typeable,Data)
 import Data.ByteString.Char8 (pack)
 import Control.Monad (liftM2)
+import Text.PrettyPrint (text,parens,(<+>))
 
 data Kind = Kvar (Id Kind) | Kstar | Kfun Kind Kind | Kmonad
-      deriving (Ord,Eq,Show)
+      deriving (Ord,Eq,Show,Typeable,Data)
 
 infixr `Kfun`
 
@@ -43,3 +46,9 @@ instance NFData Kind where
   rnf Kstar        = ()
   rnf (Kfun k1 k2) = k1 `deepseq` k2 `deepseq` ()
   rnf Kmonad       = ()
+
+instance Pretty Kind where
+  pretty (Kvar x)     = pretty x
+  pretty Kstar        = text "*"
+  pretty (Kfun a b)   = parens (pretty a <+> text "->" <+> pretty b)
+  pretty Kmonad       = text "'nad"

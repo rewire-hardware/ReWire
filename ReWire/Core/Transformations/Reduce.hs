@@ -17,36 +17,36 @@ import ReWire.Core.Transformations.Uniquify (uniquify)
 import ReWire.Core.Transformations.DeUniquify (deUniquify)
 
 reduce :: Monad m => RWCExp -> RWT m RWCExp
-reduce (RWCApp e1 e2)     = do e1' <- reduce e1
-                               e2' <- reduce e2
-                               case e1' of
-                                 RWCLam n _ b -> do b' <- fsubstE n e2' b
-                                                    reduce b'
-                                 _            -> return (RWCApp e1' e2')
-reduce (RWCLam n t e)      = do e' <- reduce e
-                                return (RWCLam n t e')
-reduce e@(RWCVar _ _)      = return e
-reduce e@(RWCCon _ _)      = return e
-reduce e@(RWCLiteral _)    = return e
-reduce (RWCCase esc alts)  = do esc'  <- reduce esc
-                                alts' <- mapM redalt alts
-                                sr    <- redcase esc' alts
-                                case sr of
-                                  Just e  -> return e
-                                  Nothing -> return (RWCCase esc' alts')
-reduce e@(RWCNativeVHDL{}) = return e
+reduce (RWCApp an e1 e2)     = do e1' <- reduce e1
+                                  e2' <- reduce e2
+                                  case e1' of
+                                    RWCLam _ n _ b -> do b' <- fsubstE n e2' b
+                                                         reduce b'
+                                    _              -> return (RWCApp an e1' e2')
+reduce (RWCLam an n t e)      = do e' <- reduce e
+                                   return (RWCLam an n t e')
+reduce e@RWCVar {}      = return e
+reduce e@RWCCon {}      = return e
+reduce e@RWCLiteral {}    = return e
+reduce (RWCCase an esc alts)  = do esc'  <- reduce esc
+                                   alts' <- mapM redalt alts
+                                   sr    <- redcase esc' alts
+                                   case sr of
+                                     Just e  -> return e
+                                     Nothing -> return (RWCCase an esc' alts')
+reduce e@RWCNativeVHDL {} = return e
 
 redalt :: Monad m => RWCAlt -> RWT m RWCAlt
-redalt (RWCAlt p eb) = do eb' <- reduce eb
-                          return (RWCAlt p eb')
+redalt (RWCAlt an p eb) = do eb' <- reduce eb
+                             return (RWCAlt an p eb')
 
 redcase :: Monad m => RWCExp -> [RWCAlt] -> RWT m (Maybe RWCExp)
-redcase esc (RWCAlt p eb:alts) = do mr <- matchpat esc p
-                                    case mr of
-                                      MatchYes sub -> do eb' <- fsubstsE sub eb
-                                                         liftM Just $ reduce eb'
-                                      MatchMaybe   -> return Nothing
-                                      MatchNo      -> redcase esc alts
+redcase esc (RWCAlt _ p eb:alts) = do mr <- matchpat esc p
+                                      case mr of
+                                        MatchYes sub -> do eb' <- fsubstsE sub eb
+                                                           liftM Just $ reduce eb'
+                                        MatchMaybe   -> return Nothing
+                                        MatchNo      -> redcase esc alts
 redcase _ []                   = return Nothing -- FIXME: should return undefined?
 
 data MatchResult = MatchYes [(Id RWCExp,RWCExp)]
@@ -69,20 +69,20 @@ mergematches (m:ms) = case mr of
   where mr = mergematches ms
 
 matchpat :: Monad m => RWCExp -> RWCPat -> RWT m MatchResult
-matchpat e (RWCPatCon i pats) = case flattenApp e of
-                                  (RWCCon c _:es) | c == i && length es == length pats -> do ms <- zipWithM matchpat es pats
-                                                                                             return (mergematches ms)
-                                                  | otherwise                          -> return MatchNo
-                                  _                                                    -> return MatchMaybe
-matchpat e (RWCPatVar n _)    = return (MatchYes [(n,e)])
-matchpat e (RWCPatLiteral l)  = case e of
-                                  RWCLiteral l' | l == l'   -> return (MatchYes [])
-                                                | otherwise -> return MatchNo
-                                  _                         -> return MatchMaybe
+matchpat e (RWCPatCon _ i pats) = case flattenApp e of
+                                    (RWCCon _ c _:es) | c == i && length es == length pats -> do ms <- zipWithM matchpat es pats
+                                                                                                 return (mergematches ms)
+                                                      | otherwise                          -> return MatchNo
+                                    _                                                      -> return MatchMaybe
+matchpat e (RWCPatVar _ n _)    = return (MatchYes [(n,e)])
+matchpat e (RWCPatLiteral _ l)  = case e of
+                                    RWCLiteral _ l' | l == l'   -> return (MatchYes [])
+                                                    | otherwise -> return MatchNo
+                                    _                           -> return MatchMaybe
 
 reddefn :: Monad m => RWCDefn -> RWT m RWCDefn
-reddefn (RWCDefn n pt b e) = do e' <- reduce e
-                                return (RWCDefn n pt b e')
+reddefn (RWCDefn an n pt b e) = do e' <- reduce e
+                                   return (RWCDefn an n pt b e')
 
 redmod :: RWCProgram -> RWCProgram
 redmod m_ = deUniquify $ runRW ctr m (do ds' <- mapM reddefn (defns m)

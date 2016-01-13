@@ -6,8 +6,7 @@ import System.Console.GetOpt
 import System.Exit
 import ReWire.Core.PrimBasis
 import ReWire.Core.Syntax
---import ReWire.Core.PrettyPrint
-import ReWire.Core.PrettyPrintHaskell
+import ReWire.Pretty
 import ReWire.Core.KindChecker
 import ReWire.Core.TypeChecker
 import ReWire.Core.Transformations.Interactive
@@ -61,24 +60,24 @@ runFE fDebug lp filename = do
   res_m <- loadProgram lp filename
 
   case res_m of
-    ParseFailed loc m ->
-       hPutStrLn stderr (prettyPrint loc ++ ":\n\t" ++ m) >> exitFailure
-    ParseOk m         -> do
+    Left e ->
+       hPrint stderr e >> exitFailure
+    Right m      -> do
 
       when fDebug $ do
         putStrLn "parse finished"
         writeFile "show.out" (show m)
         putStrLn "show out finished"
-        writeFile "Debug.hs" (show $ ppHaskell m)
+        writeFile "Debug.hs" (prettyPrint m)
         putStrLn "debug out finished"
 
       case kindcheck m of
         Left e  ->
-          hPutStrLn stderr e >> exitFailure
+          hPrint stderr e >> exitFailure
         Right m' -> do
           when fDebug (putStrLn "kc finished")
           case typecheck m' of
-            Left e   -> hPutStrLn stderr e >> exitFailure
+            Left e   -> hPrint stderr e >> exitFailure
             Right m'' -> do
 
               when fDebug $ do
@@ -114,7 +113,7 @@ main = do args                       <- getArgs
           systemLP                                 <- getSystemLoadPath
           let lp                                   =  userLP ++ systemLP
 
-          when (FlagD `elem` flags) $ do
+          when (FlagD `elem` flags) $
             putStrLn ("loadpath: " ++ intercalate "," lp)
 
           m_ <- runFE (FlagD `elem` flags) lp filename

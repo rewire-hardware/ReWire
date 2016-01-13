@@ -136,17 +136,17 @@ getAssumptionsD = RWT $ lift $ lift getAssumptions
 -}
 
 mkInitialVarMap :: [RWCDefn] -> Map (Id RWCExp) VarInfo
-mkInitialVarMap ds = foldr (\ d@(RWCDefn n _ _ _) -> Map.insert n (GlobalVar d)) Map.empty ds
+mkInitialVarMap ds = foldr (\ d@(RWCDefn _ n _ _ _) -> Map.insert n (GlobalVar d)) Map.empty ds
 
 mkInitialTyConMap :: [RWCData] -> Map TyConId TyConInfo
-mkInitialTyConMap = foldr (\ d@(RWCData n _ _ _) -> Map.insert n (TyConInfo d)) Map.empty
+mkInitialTyConMap = foldr (\ d@(RWCData _ n _ _ _) -> Map.insert n (TyConInfo d)) Map.empty
 
 mkInitialDataConMap :: [RWCData] -> Map DataConId DataConInfo
 mkInitialDataConMap = foldr addDD Map.empty
-  where addDD (RWCData dn _ _ dcs) m = foldr (\ d@(RWCDataCon cn _) -> Map.insert cn (DataConInfo dn d)) m dcs
+  where addDD (RWCData _ dn _ _ dcs) m = foldr (\ d@(RWCDataCon _ cn _) -> Map.insert cn (DataConInfo dn d)) m dcs
 
 mkInitialVarSet :: [RWCDefn] -> Set IdAny
-mkInitialVarSet ds = foldr (\ (RWCDefn n _ _ _) -> Set.insert (IdAny n)) Set.empty ds
+mkInitialVarSet ds = foldr (\ (RWCDefn _ n _ _ _) -> Set.insert (IdAny n)) Set.empty ds
 
 runRWT :: Monad m => Int -> RWCProgram -> RWT m a -> m a
 runRWT ctr m phi = liftM fst $
@@ -174,22 +174,22 @@ fsubstE :: Monad m => Id RWCExp -> RWCExp -> RWCExp -> RWT m RWCExp
 fsubstE n e = fsubstsE [(n,e)]
 
 fsubstsE :: Monad m => [(Id RWCExp,RWCExp)] -> RWCExp -> RWT m RWCExp
-fsubstsE s (RWCApp e1 e2)      = do e1' <- fsubstsE s e1
-                                    e2' <- fsubstsE s e2
-                                    return (RWCApp e1' e2')
-fsubstsE s (RWCLam n t eb)     = do eb' <- fsubstsE s eb
-                                    return (RWCLam n t eb')
-fsubstsE s (RWCVar n t)        = case lookup n s of
-                                   Just e  -> freshenE e
-                                   Nothing -> return (RWCVar n t)
-fsubstsE _ (RWCCon dci t)      = return (RWCCon dci t)
-fsubstsE _ (RWCLiteral l)      = return (RWCLiteral l)
-fsubstsE s (RWCCase esc alts)  = do esc'  <- fsubstsE s esc
-                                    alts' <- mapM fsubstsE_Alt alts
-                                    return (RWCCase esc' alts')
-  where fsubstsE_Alt (RWCAlt p eb) = do eb' <- fsubstsE s eb
-                                        return (RWCAlt p eb')
-fsubstsE s (RWCNativeVHDL n e) = liftM (RWCNativeVHDL n) (fsubstsE s e)
+fsubstsE s (RWCApp an e1 e2)      = do e1' <- fsubstsE s e1
+                                       e2' <- fsubstsE s e2
+                                       return (RWCApp an e1' e2')
+fsubstsE s (RWCLam an n t eb)     = do eb' <- fsubstsE s eb
+                                       return (RWCLam an n t eb')
+fsubstsE s (RWCVar an n t)        = case lookup n s of
+                                      Just e  -> freshenE e
+                                      Nothing -> return (RWCVar an n t)
+fsubstsE _ (RWCCon an dci t)      = return (RWCCon an dci t)
+fsubstsE _ (RWCLiteral an l)      = return (RWCLiteral an l)
+fsubstsE s (RWCCase an esc alts)  = do esc'  <- fsubstsE s esc
+                                       alts' <- mapM fsubstsE_Alt alts
+                                       return (RWCCase an esc' alts')
+  where fsubstsE_Alt (RWCAlt an p eb) = do eb' <- fsubstsE s eb
+                                           return (RWCAlt an p eb')
+fsubstsE s (RWCNativeVHDL an n e) = liftM (RWCNativeVHDL an n) (fsubstsE s e)
 
 freshenE :: Monad m => RWCExp -> RWT m RWCExp
 freshenE e = do ctr <- getCtr
@@ -200,10 +200,10 @@ freshenE e = do ctr <- getCtr
 askVar :: Monad m => RWCTy -> Id RWCExp -> RWT m (Maybe RWCExp)
 askVar t n = do md <- queryG n
                 case md of
-                  Just (RWCDefn _ (_ :-> t') _ e) -> do sub <- matchty Map.empty t' t
-                                                        e'  <- freshenE (subst sub e)
-                                                        return (Just e')
-                  _                               -> return Nothing
+                  Just (RWCDefn _ _ (_ :-> t') _ e) -> do sub <- matchty Map.empty t' t
+                                                          e'  <- freshenE (subst sub e)
+                                                          return (Just e')
+                  _                                 -> return Nothing
 
 {-
 askDefn :: MonadReWire m => Name RWCExp -> m (Maybe RWCDefn)
@@ -229,15 +229,15 @@ mergesubs sub sub' = Map.foldrWithKey f (return sub') sub
                         Nothing -> liftM (Map.insert n t) m
 
 matchty :: Monad m => Map (Id RWCTy) RWCTy -> RWCTy -> RWCTy -> m (Map (Id RWCTy) RWCTy)
-matchty sub (RWCTyVar n) t                         = case Map.lookup n sub of
+matchty sub (RWCTyVar _ n) t                         = case Map.lookup n sub of
                                                        Nothing -> return (Map.insert n t sub)
                                                        Just t' -> if t `aeq` t' then return sub
                                                                                 else fail "matchty failed (variable inconsistency)"
-matchty sub (RWCTyCon i1) (RWCTyCon i2) | i1 == i2 = return sub
-matchty sub (RWCTyApp t1 t2) (RWCTyApp t1' t2')    = do sub1 <- matchty sub t1 t1'
-                                                        sub2 <- matchty sub t2 t2'
-                                                        mergesubs sub1 sub2
-matchty sub (RWCTyComp t1 t2) (RWCTyComp t1' t2')  = do sub1 <- matchty sub t1 t1'
-                                                        sub2 <- matchty sub t2 t2'
-                                                        mergesubs sub1 sub2
-matchty _ t1 t2                                    = fail $ "matchty failed (constructor head): " ++ show t1 ++ ", " ++ show t2
+matchty sub (RWCTyCon _ i1) (RWCTyCon _ i2) | i1 == i2 = return sub
+matchty sub (RWCTyApp _ t1 t2) (RWCTyApp _ t1' t2')    = do sub1 <- matchty sub t1 t1'
+                                                            sub2 <- matchty sub t2 t2'
+                                                            mergesubs sub1 sub2
+matchty sub (RWCTyComp _ t1 t2) (RWCTyComp _ t1' t2')  = do sub1 <- matchty sub t1 t1'
+                                                            sub2 <- matchty sub t2 t2'
+                                                            mergesubs sub1 sub2
+matchty _ t1 t2                                        = fail $ "matchty failed (constructor head): " ++ show t1 ++ ", " ++ show t2

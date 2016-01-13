@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances, TupleSections #-}
-module ReWire.FrontEnd.Renamer
+module ReWire.FrontEnd.Rename
       ( Renamer
       , FQName(..)
       , Namespace(..)
@@ -12,10 +12,10 @@ module ReWire.FrontEnd.Renamer
 
 import Control.Arrow ((&&&))
 import Data.List.Split (splitOn)
-import qualified Data.Map.Strict as Map
+import Language.Haskell.Exts (Name(..), ModuleName(..), QName(..), prettyPrint)
 import System.FilePath (joinPath, (<.>))
 
-import Language.Haskell.Exts (Name(..), ModuleName(..), QName(..), prettyPrint)
+import qualified Data.Map.Strict as Map
 
 type Renamer = Map.Map (Namespace, QName) FQName
 
