@@ -10,8 +10,11 @@ y = x && x
 
 loop :: Bool -> ReT Bool Bool I ()
 loop a = do
-  b <- signal a
+  b <- signal ((zookus . zookus) a)
   loop (a && x && y)
+
+zookus :: Bool -> Bool
+zookus x = fst (x,x)
 
 main :: ReT Bool Bool I ()
 main = loop False
