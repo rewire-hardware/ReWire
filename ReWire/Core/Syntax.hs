@@ -2,8 +2,8 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module ReWire.Core.Syntax
-      ( Annote(..), unAnn, noAnn
-      , DataConId(..), TyConId(..), ModuleId(..), Poly(..)
+      ( Annote(..),unAnn,noAnn
+      , DataConId(..),TyConId(..),ModuleId(..),Poly(..)
       , RWCTy(..)
       , RWCExp(..)
       , RWCLit(..)
@@ -13,11 +13,12 @@ module ReWire.Core.Syntax
       , RWCData(..)
       , RWCDataCon(..)
       , RWCProgram(..)
-      , flattenArrow, mkArrow, arrowLeft, arrowRight
-      , flattenTyApp, flattenApp, typeOf
+      , flattenArrow,mkArrow,arrowLeft,arrowRight
+      , flattenTyApp,flattenApp,typeOf
       ) where
 
 import ReWire.Core.Kinds
+import ReWire.Pretty
 import ReWire.Scoping
 
 import Control.DeepSeq
@@ -32,44 +33,46 @@ import Data.Traversable (Traversable)
 import GHC.Generics (Generic)
 import Language.Haskell.Exts.Annotated (Annotated(..))
 import Language.Haskell.Exts.Annotated.ExactPrint (ExactP)
-import Language.Haskell.Exts.Pretty (Pretty)
+import qualified Language.Haskell.Exts.Pretty as HS (Pretty)
 import Language.Haskell.Exts.SrcLoc (SrcInfo(..),SrcSpanInfo(..),noLoc,noInfoSpan,mkSrcSpan)
 --import qualified Data.Map.Strict as Map
 
+import Text.PrettyPrint
+
 -- | The point of this is just to hide the annotation from traversals.
 data Annote where
-      AnnoteLoc :: SrcSpanInfo -> Annote
-      Annote :: forall ast.
-            ( Functor ast
-            , Foldable ast
-            , Traversable ast
-            , Annotated ast
-            , ExactP ast
-            , Eq (ast SrcSpanInfo)
-            , Data (ast SrcSpanInfo)
-            , Ord (ast SrcSpanInfo)
-            , Show (ast SrcSpanInfo)
-            , Generic (ast SrcSpanInfo)
-            , Pretty (ast SrcSpanInfo)
-            ) => ast SrcSpanInfo -> Annote
-      deriving Typeable
+  AnnoteLoc :: SrcSpanInfo -> Annote
+  Annote :: forall ast.
+    ( Functor ast
+    , Foldable ast
+    , Traversable ast
+    , Annotated ast
+    , ExactP ast
+    , Eq (ast SrcSpanInfo)
+    , Data (ast SrcSpanInfo)
+    , Ord (ast SrcSpanInfo)
+    , Show (ast SrcSpanInfo)
+    , Generic (ast SrcSpanInfo)
+    , HS.Pretty (ast SrcSpanInfo)
+    ) => ast SrcSpanInfo -> Annote
+  deriving Typeable
 
 instance SrcInfo Annote where
-      toSrcInfo a b c = AnnoteLoc $ toSrcInfo a b c
-      fromSrcInfo     = AnnoteLoc . fromSrcInfo
-      fileName        = fileName . unAnn
-      startLine       = startLine . unAnn
-      startColumn     = startColumn . unAnn
+  toSrcInfo a b c = AnnoteLoc $ toSrcInfo a b c
+  fromSrcInfo     = AnnoteLoc . fromSrcInfo
+  fileName        = fileName . unAnn
+  startLine       = startLine . unAnn
+  startColumn     = startColumn . unAnn
 
 -- | Using the default definition of gfoldl.
 instance Data Annote where
-      gunfold    = undefined
-      toConstr   = undefined
-      dataTypeOf = undefined
+  gunfold    = undefined
+  toConstr   = undefined
+  dataTypeOf = undefined
 
 instance Show Annote where
-      show (AnnoteLoc l) = "AnnoteLoc (" ++ show l ++ ")"
-      show (Annote a)    = "Annote (" ++ show a ++ ")"
+  show (AnnoteLoc l) = "AnnoteLoc (" ++ show l ++ ")"
+  show (Annote a)    = "Annote (" ++ show a ++ ")"
 
 -- TODO(chathhorn): afraid of screwing stuff up if the annotation isn't
 -- ignored.
@@ -146,6 +149,19 @@ instance Alpha RWCTy where
   aeq' (RWCTyCon _ i) (RWCTyCon _ j)           = return (i==j)
   aeq' (RWCTyVar _ x) (RWCTyVar _ y)           = varsaeq x y
   aeq' _ _                                     = return False
+
+instance Pretty RWCTy where
+  pretty (RWCTyApp _ (RWCTyApp _ (RWCTyCon _ (TyConId "->")) t1) t2) = ppTyArrowL t1 <+> text "->" <+> pretty t2
+    where ppTyArrowL t@(RWCTyApp _ (RWCTyApp _ (RWCTyCon _ (TyConId "->")) _) _) = parens $ pretty t
+          ppTyArrowL t                                                           = pretty t
+  pretty (RWCTyApp _ t1 t2)  = pretty t1 <+> ppTyAppR t2
+  pretty (RWCTyCon _ n)      = text (deTyConId n)
+  pretty (RWCTyVar _ n)      = pretty n
+  pretty (RWCTyComp _ t1 t2) = text "{- computation -}" <+> pretty t1 <+> ppTyAppR t2
+
+ppTyAppR :: RWCTy -> Doc
+ppTyAppR t@RWCTyApp {} = parens $ pretty t
+ppTyAppR t             = pretty t
 
 ---
 
@@ -227,6 +243,18 @@ instance NFData RWCExp where
   rnf (RWCCase _ e alts)    = e `deepseq` alts `deepseq` ()
   rnf (RWCNativeVHDL _ n e) = n `deepseq` e `deepseq` ()
 
+instance Pretty RWCExp where
+  pretty (RWCApp _ e1 e2)      = parens $ hang (pretty e1) 4 (pretty e2)
+  pretty (RWCLiteral _ l)      = pretty l
+  pretty (RWCCon _ n _)        = text $ deDataConId n
+  pretty (RWCVar _ n _)        = pretty n
+  pretty (RWCLam _ n _ e)      = parens (char '\\' <+> pretty n <+> text "->" <+> pretty e)
+  pretty (RWCCase _ e alts)    = parens $
+                                foldr ($+$) empty
+                                  [text "case" <+> pretty e <+> text "of",
+                                  nest 4 (braces $ vcat $ punctuate (space <> text ";" <> space) $ map pretty alts)]
+  pretty (RWCNativeVHDL _ n e) = parens (text "nativeVHDL" <+> doubleQuotes (text n) <+> parens (pretty e))
+
 ---
 
 data RWCLit = RWCLitInteger Integer
@@ -238,6 +266,11 @@ instance NFData RWCLit where
   rnf (RWCLitInteger i) = i `deepseq` ()
   rnf (RWCLitFloat d)   = d `deepseq` ()
   rnf (RWCLitChar c)    = c `deepseq` ()
+
+instance Pretty RWCLit where
+  pretty (RWCLitInteger n) = integer n
+  pretty (RWCLitFloat x)   = double x
+  pretty (RWCLitChar c)    = text (show c)
 
 ---
 
@@ -259,6 +292,9 @@ instance Alpha RWCAlt where
 
 instance NFData RWCAlt where
   rnf (RWCAlt _ p e) = p `deepseq` e `deepseq` ()
+
+instance Pretty RWCAlt where
+  pretty (RWCAlt _ p eb) = parens (pretty p) <+> text "->" <+> (pretty eb)
 
 ---
 
@@ -297,6 +333,11 @@ instance NFData RWCPat where
   rnf (RWCPatLiteral _ l) = l `deepseq` ()
   rnf (RWCPatVar _ x t)   = x `deepseq` t `deepseq` ()
 
+instance Pretty RWCPat where
+  pretty (RWCPatCon _ n ps)        = parens (text (deDataConId n) <+> hsep (map pretty ps))
+  pretty (RWCPatVar _ n _)         = pretty n
+  pretty (RWCPatLiteral _ l)       = pretty l
+
 ---
 
 data RWCDefn = RWCDefn { defnAnnote :: Annote,
@@ -324,6 +365,12 @@ instance Subst RWCDefn RWCTy where
 instance NFData RWCDefn where
   rnf (RWCDefn _ n pt b e) = n `deepseq` pt `deepseq` b `deepseq` e `deepseq` ()
 
+instance Pretty RWCDefn where
+  pretty (RWCDefn _ n (_ :-> ty) b e) = foldr ($+$) empty
+                                          (  [pretty n <+> text "::" <+> pretty ty]
+                                          ++ (if b then [text "{-# INLINE" <+> pretty n <+> text "#-}"] else [])
+                                          ++ [pretty n <+> text "=", nest 4 $ pretty e])
+
 ---
 
 data RWCData = RWCData { dataAnnote :: Annote,
@@ -336,6 +383,12 @@ data RWCData = RWCData { dataAnnote :: Annote,
 instance NFData RWCData where
   rnf (RWCData _ i tvs k dcs) = i `deepseq` tvs `deepseq` dcs `deepseq` k `deepseq` ()
 
+-- FIXME: just ignoring the kind here
+instance Pretty RWCData where
+  pretty (RWCData _ n tvs _ dcs) = foldr ($+$) empty
+                                     [text "data" <+> text (deTyConId n) <+> hsep (map pretty tvs) <+> (if null (map pretty dcs) then empty else char '='),
+                                     nest 4 (hsep (punctuate (char '|') $ map pretty dcs))]
+
 ---
 
 data RWCDataCon = RWCDataCon Annote DataConId [RWCTy]
@@ -343,6 +396,9 @@ data RWCDataCon = RWCDataCon Annote DataConId [RWCTy]
 
 instance NFData RWCDataCon where
   rnf (RWCDataCon _ i ts) = i `deepseq` ts `deepseq` ()
+
+instance Pretty RWCDataCon where
+  pretty (RWCDataCon _ n ts) = text (deDataConId n) <+> hsep (map pretty ts)
 
 ---
 
@@ -356,6 +412,11 @@ instance NFData RWCProgram where
 instance Monoid RWCProgram where
   mempty = RWCProgram mempty mempty
   mappend (RWCProgram ts vs) (RWCProgram ts' vs') = RWCProgram (nub $ ts ++ ts') $ nub $ vs ++ vs'
+
+instance Pretty RWCProgram where
+  pretty p = ppDataDecls (dataDecls p) $+$ ppDefns (defns p)
+    where ppDefns = foldr ($+$) empty . map pretty
+          ppDataDecls = foldr ($+$) empty . map pretty
 
 ---
 

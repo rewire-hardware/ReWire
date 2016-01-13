@@ -2,13 +2,12 @@
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 module ReWire.FrontEnd.Desugar (desugar) where
 
-import ReWire.FrontEnd.Error
+import ReWire.Error
 import ReWire.FrontEnd.Annotate
 import ReWire.SYB
 
 import Control.Monad (liftM, replicateM, (>=>))
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.State (runStateT, StateT, get, modify)
+import Control.Monad.State (runStateT, StateT, MonadState(..), modify)
 import Data.Foldable (foldl', foldrM)
 import Data.Functor ((<$>))
 import Data.Functor.Identity (Identity(..))
@@ -19,7 +18,7 @@ import Language.Haskell.Exts.Annotated.Syntax
 -- TODO(chathhorn): record syntax should be fairly easy to desugar.
 
 -- | Desugar into lambdas then normalize the lambdas.
-desugar :: Module Annote -> ParseError IO (Module Annote)
+desugar :: Module Annote -> SyntaxError IO (Module Annote)
 desugar = liftM fst . flip runStateT 0 .
       ( runT
             ( normIds
@@ -49,7 +48,7 @@ desugar = liftM fst . flip runStateT 0 .
       >=> runT lambdasToCases
       )
 
-type Fresh = StateT Int (ParseError IO)
+type Fresh = StateT Int (SyntaxError IO)
 
 fresh :: Annote -> Fresh (Name Annote)
 fresh l = do
@@ -136,7 +135,7 @@ desugarFuns = (||> TId) $ \ case
       FunBind l ms@(Match l' name pats _ Nothing:_) -> do
             e <- buildLambda l ms $ length pats
             return $ PatBind l (PVar l' name) (UnGuardedRhs l e) Nothing
-      n@FunBind{}                                   -> lift $ pFailAt (ann n) "unsupported decl syntax"
+      n@FunBind{}                                   -> failAt (ann n) "Unsupported decl syntax"
       where buildLambda :: Annote -> [Match Annote] -> Int -> Fresh (Exp Annote)
             buildLambda l ms 1 = do
                   alts <- mapM toAlt ms
@@ -149,7 +148,7 @@ desugarFuns = (||> TId) $ \ case
             toAlt :: Match Annote -> Fresh (Alt Annote)
             toAlt (Match l' _ [p] rhs binds) = return $ Alt l' p rhs binds
             toAlt (Match l' _ ps  rhs binds) = return $ Alt l' (PTuple l' Boxed ps) rhs binds
-            toAlt m                          = lift $ pFailAt (ann m) "unsupported decl syntax"
+            toAlt m                          = failAt (ann m) "Unsupported decl syntax"
 
 -- | Turns tuples into applications of a TupleN constructor (also in types and pats):
 -- > (x, y, z)
@@ -176,21 +175,21 @@ desugarDos = (||> TId) $ \ (Do l stmts) -> transDo l stmts
                   [Qualifier _ e]          -> return e
                   Qualifier l' e : stmts   -> App l' (App l' (Var l' $ UnQual l' $ Ident l' ">>=") e) . Lambda l' [PWildCard l'] <$> transDo l stmts
                   LetStmt l' binds : stmts -> Let l' binds <$> transDo l stmts
-                  s : _                    -> lift $ pFailAt (ann s) "unsupported syntax in do-block"
-                  []                       -> lift $ pFailAt l "ill-formed do-block"
+                  s : _                    -> failAt (ann s) "Unsupported syntax in do-block"
+                  []                       -> failAt l "Ill-formed do-block"
 
 -- | Turns where clauses into lets. Only valid because we're disallowing
 --   guards, so this pass also raises an error if it encounters a guard.
 wheresToLets :: Transform Fresh
 wheresToLets = (\ case
             Match l name ps (UnGuardedRhs l' e) (Just binds) -> return $ Match l name ps (UnGuardedRhs l' $ Let l' binds e) Nothing
-            Match l _ _ (GuardedRhss _ _) _                  -> lift $ pFailAt l "guards are not supported")
+            Match l _ _ (GuardedRhss _ _) _                  -> failAt l "Guards are not supported")
       ||> (\ case
             PatBind l p (UnGuardedRhs l' e) (Just binds) -> return $ PatBind l p (UnGuardedRhs l' $ Let l' binds e) Nothing
-            PatBind l _ (GuardedRhss _ _) _              -> lift $ pFailAt l "guards are not supported")
+            PatBind l _ (GuardedRhss _ _) _              -> failAt l "Guards are not supported")
       ||> (\ case
             Alt l p (UnGuardedRhs l' e) (Just binds) -> return $ Alt l p (UnGuardedRhs l' $ Let l' binds e) Nothing
-            Alt l _ (GuardedRhss _ _) _              -> lift $ pFailAt l "guards are not supported")
+            Alt l _ (GuardedRhss _ _) _              -> failAt l "Guards are not supported")
       ||> TId
 
 addMainModuleHead :: Transform Fresh
@@ -219,10 +218,10 @@ desugarTyFuns = (||> TId) $
 desugarLets :: Transform Fresh
 desugarLets = (||> TId) $ \ case
       Let _ (BDecls _ ds) e -> foldrM transLet e ds
-      n@Let{}               -> lift $ pFailAt (ann n) "unsupported let syntax"
+      n@Let{}               -> failAt (ann n) "Unsupported let syntax"
       where transLet :: Decl Annote -> Exp Annote -> Fresh (Exp Annote)
             transLet (PatBind l p (UnGuardedRhs l' e1) Nothing) inner = return $ Case l e1 [Alt l p (UnGuardedRhs l' inner) Nothing]
-            transLet n _                                              = lift $ pFailAt (ann n) "unsupported syntax in a let binding"
+            transLet n _                                              = failAt (ann n) "Unsupported syntax in a let binding"
 
 -- | Turns ifs into cases and unary minus.
 -- > if e1 then e2 else e3
@@ -293,7 +292,7 @@ desugarAsPats = (||> TId) $
                   PatTypeSig _ p _        -> patToExp p
                   -- PViewPat _exp _pat ->
                   PBangPat _ p            -> patToExp p
-                  p                       -> lift $ pFailAt (ann p) "unsupported pattern"
+                  p                       -> failAt (ann p) "Unsupported pattern"
 
 -- | Turns beta-redexes into cases. E.g.:
 -- > (\ x -> e2) e1

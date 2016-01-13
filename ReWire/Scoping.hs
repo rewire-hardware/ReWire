@@ -6,6 +6,8 @@
 
 module ReWire.Scoping where
 
+import ReWire.Pretty
+
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans
@@ -25,6 +27,7 @@ import Data.Either (rights)
 import qualified Data.ByteString.Char8 as BS
 import Data.ByteString.Char8 (ByteString)
 import Data.Maybe (fromJust,isJust)
+import Text.PrettyPrint (text)
 {-
 import Unbound.LocallyNameless hiding (fv,subst,substs,Subst,Alpha,aeq,aeq')
 import qualified Unbound.LocallyNameless as U
@@ -83,6 +86,9 @@ data Id a = Id {-# UNPACK #-} !ByteString {-# UNPACK #-} !ByteString
 
 instance Show (Id a) where
   show (Id _ x) = BS.unpack x
+
+instance Pretty (Id a) where
+  pretty = text . deId
 
 mkId :: forall a . IdSort a => String -> Id a
 mkId x = Id (idSort (undefined::a)) (BS.pack x)

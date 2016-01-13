@@ -6,17 +6,17 @@ module ReWire.FrontEnd.Cache
       ) where
 
 import ReWire.Core.Syntax
+import ReWire.Error
 import ReWire.FrontEnd.Annotate
 import ReWire.FrontEnd.Desugar
-import ReWire.FrontEnd.Error
 import ReWire.FrontEnd.Rename
 import ReWire.FrontEnd.Translate
 
 import Control.Monad (foldM, when, msum)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (runReaderT, ReaderT, MonadReader(..))
+import Control.Monad.State.Strict (runStateT, StateT, MonadState(..), modify)
 import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Reader (runReaderT, ReaderT, ask)
-import Control.Monad.Trans.State (runStateT, StateT, get, modify)
 import Data.Functor ((<$>))
 import Data.List (find)
 import Data.Maybe (fromMaybe)
@@ -46,12 +46,12 @@ expType :: FQName -> Set.Set FQName -> Exports -> Exports
 expType x cs' (Exports vs ts cs) = Exports (cs' <> vs) (Set.insert x ts) $ Map.insert (unqual x) cs' cs
 
 checkImpValue :: Name Annote -> Exports -> Cache ()
-checkImpValue x (Exports vs _ _) = when (Set.null $ Set.filter ((== sName x) . unqual) vs)
-      $ lift $ lift $ pFailAt (ann x) "attempting to import an unexported symbol"
+checkImpValue x (Exports vs _ _) = when (Set.null $ Set.filter ((== sName x) . unqual) vs) $
+      failAt (ann x) "Attempting to import an unexported symbol"
 
 checkImpType :: Name Annote -> Exports -> Cache ()
-checkImpType x (Exports _ ts _) = when (Set.null $ Set.filter ((== sName x) . unqual) ts)
-      $ lift $ lift $ pFailAt (ann x) "attempting to import an unexported symbol"
+checkImpType x (Exports _ ts _) = when (Set.null $ Set.filter ((== sName x) . unqual) ts) $
+      failAt (ann x) "Attempting to import an unexported symbol"
 
 getCtors :: S.Name -> Exports -> Set.Set FQName
 getCtors x (Exports _ _ cs) = fromMaybe mempty $ Map.lookup x cs
@@ -59,7 +59,7 @@ getCtors x (Exports _ _ cs) = fromMaybe mempty $ Map.lookup x cs
 unqual :: FQName -> S.Name
 unqual (FQName _ x) = x
 
-type Cache = ReaderT LoadPath (StateT Caches (ParseError IO))
+type Cache = ReaderT LoadPath (StateT Caches (SyntaxError IO))
 
 type LoadPath = [FilePath]
 
@@ -70,25 +70,25 @@ data Caches = Caches
       , program   :: Map.Map FilePath RWCProgram
       }
 
-runCache :: Cache a -> LoadPath -> IO (ParseResult a)
-runCache m lp = runParseError
-                  (fst <$> runStateT (runReaderT m lp) (Caches Map.empty Map.empty Map.empty Map.empty))
+runCache :: Cache a -> LoadPath -> IO (Either Error a)
+runCache m lp = runSyntaxError $
+      fst <$> runStateT (runReaderT m lp) (Caches Map.empty Map.empty Map.empty Map.empty)
 
 getDesugared :: FilePath -> Cache (Module Annote)
 getDesugared fp = do
-      cached <- desugared <$> lift get
+      cached <- desugared <$> get
       case Map.lookup fp cached of
             Just m  -> return m
             Nothing -> do
                   m <- justParse fp
                   m' <- lift $ lift $ desugar $ annotate m
-                  lift $ modify $ \ c@Caches { desugared } -> c { desugared = Map.insert fp m' desugared }
+                  modify $ \ c@Caches { desugared } -> c { desugared = Map.insert fp m' desugared }
                   getDesugared fp
       where justParse :: FilePath -> Cache (Module SrcSpanInfo)
             justParse fp = do lp    <- ask
                               mmods <- mapM (tryParseInDir fp) lp
                               case msum mmods of
-                                Nothing  -> lift $ lift $ pFail $ "file not found in loadpath: " ++ fp
+                                Nothing  -> failNowhere $ "File not found in loadpath: " ++ fp
                                 Just mod -> return mod
             -- FIXME: The directory crawling could be more robust here. (Should
             -- use exception handling.)
@@ -109,11 +109,11 @@ getDesugared fp = do
             pr2Cache :: ParseResult a -> Cache a
             pr2Cache = \ case
                   ParseOk p           -> return p
-                  ParseFailed l msg -> lift $ lift $ pFailAt (fromSrcInfo $ noInfoSpan $ mkSrcSpan l l) msg
+                  ParseFailed l msg -> failAt (fromSrcInfo $ noInfoSpan $ mkSrcSpan l l) msg
 
 getExports :: FilePath -> Cache Exports
 getExports fp = do
-      cached <- exports <$> lift get
+      cached <- exports <$> get
       case Map.lookup fp cached of
             Just exps -> return exps
             Nothing   -> do
@@ -121,12 +121,12 @@ getExports fp = do
                   rn <- getRenamer fp
                   exps <- lift $ lift $ translateExps rn m
 
-                  lift $ modify $ \ c@Caches { exports } -> c { exports = Map.insert fp mempty exports }
+                  modify $ \ c@Caches { exports } -> c { exports = Map.insert fp mempty exports }
 
                   allExps <- mapM (getExports . toFilePath) $ getImps m
                   exps' <- foldM (transExport $ mconcat allExps) mempty exps
 
-                  lift $ modify $ \ c@Caches { exports } -> c { exports = Map.insert fp exps' exports }
+                  modify $ \ c@Caches { exports } -> c { exports = Map.insert fp exps' exports }
                   return exps'
       where transExport :: Exports -> Exports -> Export -> Cache Exports
             transExport iexps exps = \ case
@@ -139,23 +139,23 @@ getExports fp = do
 
 getRenamer :: FilePath -> Cache Renamer
 getRenamer fp = do
-      cached <- renamer <$> lift get
+      cached <- renamer <$> get
       case Map.lookup fp cached of
             Just rn -> return rn
             Nothing -> do
                   m <- getDesugared fp
 
-                  lift $ modify $ \ c@Caches { renamer } -> c { renamer = Map.insert fp mempty renamer }
+                  modify $ \ c@Caches { renamer } -> c { renamer = Map.insert fp mempty renamer }
 
                   rn <- mkRenamer m
 
-                  lift $ modify $ \ c@Caches { renamer } -> c { renamer = Map.insert fp rn renamer }
+                  modify $ \ c@Caches { renamer } -> c { renamer = Map.insert fp rn renamer }
                   return rn
       where mkRenamer :: Module Annote -> Cache Renamer
             mkRenamer (Module _ _ _ imps _) = do
                   rns <- mapM mkRenamer' imps
                   return $ mconcat rns
-            mkRenamer m = lift $ lift $ pFailAt (ann m) "unsupported module syntax"
+            mkRenamer m = failAt (ann m) "Unsupported module syntax"
 
             mkRenamer' :: ImportDecl Annote -> Cache Renamer
             mkRenamer' (ImportDecl _ (sModuleName -> m) quald _ _ _ as specs) = do
@@ -226,27 +226,27 @@ lookupExp ns x (Exports vs ts _) = case ns of
       where lkup :: Set.Set FQName -> Cache FQName
             lkup xs = case find cmp (Set.toList xs) of
                   Just x' -> return x'
-                  Nothing -> lift $ lift $ pFailAt (ann x) "attempting to import an unexported symbol"
+                  Nothing -> failAt (ann x) "Attempting to import an unexported symbol"
             cmp :: FQName -> Bool
             cmp (FQName _ x') = sName x == x'
 
 getProgram :: FilePath -> Cache RWCProgram
 getProgram fp = do
-      cached <- program <$> lift get
+      cached <- program <$> get
       case Map.lookup fp cached of
             Just m  -> return m
             Nothing -> do
                   m <- getDesugared fp
                   rn <- getRenamer fp
 
-                  lift $ modify $ \ c@Caches { program } -> c
+                  modify $ \ c@Caches { program } -> c
                         { program = Map.insert fp (RWCProgram [] []) program }
 
                   rwcm <- lift $ lift $ translate rn m
                   allMods <- mapM (getProgram . toFilePath) $ getImps m
                   let merged = mconcat $ rwcm : allMods
 
-                  lift $ modify $ \ c@Caches { desugared, renamer, exports, program } -> c
+                  modify $ \ c@Caches { desugared, renamer, exports, program } -> c
                         { desugared = Map.delete fp desugared
                         , renamer   = Map.delete fp renamer
                         , exports   = Map.delete fp exports

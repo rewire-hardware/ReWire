@@ -6,7 +6,6 @@ module ReWire.Core.Transformations.Interactive (TransCommand,trans) where
 
 --import Prelude hiding (sequence,mapM)
 import ReWire.Core.Syntax
-import ReWire.Core.PrettyPrintHaskell (ppHaskell)
 import Control.Monad -- hiding (sequence,mapM)
 import Data.List (intercalate)
 --import Control.Monad.Reader hiding (sequence,mapM)
@@ -21,13 +20,14 @@ import ReWire.Core.Transformations.ToPreHDL (cmdToCFG,cmdToPre,cmdToVHDL,cmdToSC
 import ReWire.Core.Transformations.Uniquify (cmdUniquify)
 import ReWire.Core.Transformations.DeUniquify (cmdDeUniquify)
 import ReWire.Core.Transformations.Types
+import ReWire.Pretty
 import System.IO
 
 -- Table of available commands.
 type CommandTable = [(String,TransCommand)]
 
 cmdPrint :: TransCommand
-cmdPrint _ p = (Nothing,Just $ show $ ppHaskell p)
+cmdPrint _ p = (Nothing,Just $ prettyPrint p)
 
 cmdHelp :: TransCommand
 cmdHelp _ _ = (Nothing,Just (intercalate ", " (map fst cmdTable)))
@@ -65,7 +65,7 @@ cmdTable = [
 
 -- The "repl" for the translation environment.
 trans :: RWCProgram -> IO ()
-trans m = do print (ppHaskell m)
+trans m = do print (pretty m)
              loop m
    where loop m = do putStr "> "
                      hFlush stdout
@@ -79,7 +79,7 @@ trans m = do print (ppHaskell m)
                                                Just s  -> putStrLn s >> writeFile "rewire.cmd.out" s
                                                Nothing -> return ()
                                              case mp of
-                                               Just m' -> do print (ppHaskell m')
+                                               Just m' -> do print (pretty m')
                                                              loop m'
                                                Nothing -> loop m
                                Nothing -> do if not (null n) then putStrLn $ "Invalid command: " ++ cmd else return ()

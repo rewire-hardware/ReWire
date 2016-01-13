@@ -73,7 +73,6 @@ library
   exposed-modules:  ReWire.Core.KindChecker
                     ReWire.Core.Kinds
                     ReWire.Core.Main
-                    ReWire.Core.PrettyPrintHaskell
                     ReWire.Core.PrimBasis
                     ReWire.Core.Syntax
                     ReWire.Core.Transformations.DeUniquify
@@ -87,11 +86,11 @@ library
                     ReWire.Core.Transformations.Types
                     ReWire.Core.Transformations.Uniquify
                     ReWire.Core.TypeChecker
+                    ReWire.Error
                     ReWire.FrontEnd
                     ReWire.FrontEnd.Annotate
                     ReWire.FrontEnd.Cache
                     ReWire.FrontEnd.Desugar
-                    ReWire.FrontEnd.Error
                     ReWire.FrontEnd.LoadPath
                     ReWire.FrontEnd.Translate
                     ReWire.FrontEnd.Rename
@@ -100,6 +99,7 @@ library
                     ReWire.PreHDL.GotoElim
                     ReWire.PreHDL.Syntax
                     ReWire.PreHDL.ToVHDL
+                    ReWire.Pretty
                     ReWire.Scoping
                     ReWire.SYB
 

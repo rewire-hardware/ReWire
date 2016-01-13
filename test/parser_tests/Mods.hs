@@ -1,4 +1,4 @@
-module Mods (CX.Y(..), x, y) where 
+module Mods (CX.Y(..), x, y) where
 
 import qualified Mods.X as BX (x, X(..), Y(..))
 import qualified Mods.Y as BY (y, X(..), Y(..))
