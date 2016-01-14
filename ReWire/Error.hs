@@ -1,40 +1,57 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, UndecidableInstances #-}
 module ReWire.Error
-      ( SyntaxError, Error
+      ( SyntaxError, SyntaxErrorT, AstError
+      , MonadError
       , failAt
       , failNowhere
+      , filePath
       , runSyntaxError
       ) where
 
 import ReWire.Core.Syntax
 
-import Control.Monad.Except (MonadError(..), ExceptT(..), runExceptT, throwError)
-import Language.Haskell.Exts.Annotated.Syntax (Annotated(..))
+import Control.Monad.Except (MonadError (..), ExceptT (..), runExceptT, throwError)
+import Language.Haskell.Exts.Annotated.Syntax (Annotated (..))
 import Language.Haskell.Exts.Pretty (prettyPrim)
-import Language.Haskell.Exts.SrcLoc (SrcLoc(..), SrcInfo(..), SrcSpanInfo)
-import Text.PrettyPrint (nest, text, int, (<>), (<+>), ($$), Doc)
+import Language.Haskell.Exts.SrcLoc (SrcLoc (..), SrcInfo (..), SrcSpanInfo, noLoc)
+import Text.PrettyPrint (empty, nest, text, int, (<>), (<+>), ($$), Doc)
 
-type SyntaxError = ExceptT Error
+type SyntaxErrorT = ExceptT AstError
 
-data Error = Error !Annote !String
+data AstError = AstError !Annote !String
 
-instance Show Error where
-      show (Error (AnnoteLoc l) msg) = show $ prettyHdr l msg
-      show (Error (Annote a)    msg) = show $
-            prettyHdr (ann a) msg
+-- UndecidableInstances required for this: basically just a typeclass synonym.
+class MonadError AstError m => SyntaxError m
+instance MonadError AstError m => SyntaxError m
+
+instance Show AstError where
+      show (AstError (LocAnnote l) msg) = show $ errorHdr l msg
+      show (AstError (AstAnnote a) msg) = trunc 50 (show $ nest 4 $ text "...") $ show $
+            errorHdr (ann a) msg
             $$ nest 4 (text "In the fragment:")
             $$ nest 6 (prettyPrim a)
 
-prettyHdr :: SrcSpanInfo -> String -> Doc
-prettyHdr l msg = loc $$ nest 4 (text "Error:" <+> text msg)
-      where loc = text file <> text ":" <> int start <> text ":" <> int end <> text ":"
-            SrcLoc file start end = getPointLoc l
+errorHdr :: SrcSpanInfo -> String -> Doc
+errorHdr l msg = if getPointLoc l == noLoc
+      then text "Error:" <+> text msg
+      else loc $$ nest 4 (text "Error:" <+> text msg)
+      where loc = text file <> num r <> num c <> text ":"
+            num n = if n == -1 then empty else text ":" <> int n
+            SrcLoc file r c = getPointLoc l
 
-failAt :: MonadError Error m => Annote -> String -> m a
-failAt an msg = throwError $ Error an msg
+trunc :: Int -> String -> String -> String
+trunc n t s
+      | length (lines s) > n = unlines $ take n $ lines s ++ [t]
+      | otherwise            = s
 
-failNowhere :: MonadError Error m => String -> m a
-failNowhere msg = throwError $ Error noAnn msg
+failAt :: (SyntaxError m, Annotation an) => an -> String -> m a
+failAt an msg = throwError $ AstError (toAnnote an) msg
 
-runSyntaxError :: Monad m => SyntaxError m a -> m (Either Error a)
+failNowhere :: SyntaxError m => String -> m a
+failNowhere = failAt noLoc
+
+filePath :: FilePath -> SrcLoc
+filePath fp = SrcLoc fp (-1) (-1)
+
+runSyntaxError :: Monad m => SyntaxErrorT m a -> m (Either AstError a)
 runSyntaxError = runExceptT
