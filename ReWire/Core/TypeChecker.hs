@@ -34,7 +34,7 @@ data TCState = TCState { tySub :: TySub,
 type Assump  = (Id RWCExp,Poly RWCTy)
 type CAssump = (DataConId,Poly RWCTy)
 
-type TCM = ReaderT TCEnv (StateT TCState (SyntaxError Identity))
+type TCM = ReaderT TCEnv (StateT TCState (SyntaxErrorT Identity))
 
 localAssumps :: (Map (Id RWCExp) (Poly RWCTy) -> Map (Id RWCExp) (Poly RWCTy)) -> TCM a -> TCM a
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
@@ -163,7 +163,7 @@ tcPat t (RWCPatVar an x _)  = return (RWCPatVar an x t)
 tcPat t (RWCPatCon an i ps) = do cas     <- askCAssumps
                                  let mpt =  Map.lookup i cas
                                  case mpt of
-                                   Nothing -> failAt an "Unknown constructor"
+                                   Nothing -> failAt an $ "Unknown constructor: " ++ prettyPrint i
                                    Just pta  -> do ta               <- inst pta
                                                    let (targs,tres) =  flattenArrow ta
                                                    if length ps /= length targs
@@ -195,13 +195,13 @@ tcExp (RWCLam an x _ e)      = do tvx     <- freshv
 tcExp (RWCVar an v _)        = do as      <- askAssumps
                                   let mpt =  Map.lookup v as
                                   case mpt of
-                                    Nothing -> failAt an "Unknown variable"
+                                    Nothing -> failAt an $ "Unknown variable: " ++ prettyPrint v
                                     Just pt -> do t <- inst pt
                                                   return (RWCVar an v t,t)
 tcExp (RWCCon an i _)        = do cas     <- askCAssumps
                                   let mpt =  Map.lookup i cas
                                   case mpt of
-                                    Nothing -> failAt an "Unknown constructor"
+                                    Nothing -> failAt an $ "Unknown constructor: " ++ prettyPrint i
                                     Just pt -> do t <- inst pt
                                                   return (RWCCon an i t,t)
 tcExp e@(RWCLiteral _ l)     = case l of
@@ -233,5 +233,5 @@ tc ms m = do let as  =  Map.fromList $ concatMap (map defnAssump . defns) (m:ms)
              ds'     <- localAssumps (as `Map.union`) (localCAssumps (cas `Map.union`) (mapM tcDefn (defns m)))
              return (m { defns = ds' })
 
-typecheck :: RWCProgram -> Either Error RWCProgram
+typecheck :: RWCProgram -> Either AstError RWCProgram
 typecheck m = fmap fst $ runIdentity (runSyntaxError (runStateT (runReaderT (tc [primBasis] m) (TCEnv Map.empty Map.empty)) (TCState Map.empty 0)))

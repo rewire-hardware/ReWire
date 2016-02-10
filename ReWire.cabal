@@ -44,7 +44,11 @@ build-type:          Simple
 -- Extra files to be distributed with the package, such as examples or a
 -- README.
 extra-source-files:  README.md
-data-files:          lib/*.hs test/parser_tests/*.hs test/tc_tests/*.hs
+data-files:          lib/*.hs
+                     test/parser_tests/*.hs
+                     test/parser_tests/Mods/*.hs
+                     test/parser_tests/Mods/C/*.hs
+                     test/tc_tests/*.hs
 
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.10
@@ -91,6 +95,7 @@ library
                     ReWire.FrontEnd.Annotate
                     ReWire.FrontEnd.Cache
                     ReWire.FrontEnd.Desugar
+                    ReWire.FrontEnd.Fixity
                     ReWire.FrontEnd.LoadPath
                     ReWire.FrontEnd.Translate
                     ReWire.FrontEnd.Rename

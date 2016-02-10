@@ -20,7 +20,7 @@ filesToCompile = ["Fibonacci.hs","MiniISA.hs","UpCounter.hs","dissex.hs",
 
 filesToTC :: [FilePath]
 filesToTC = filesToCompile ++
-             ["uniquification.hs","pats.hs","Mods.hs"]
+             ["uniquification.hs","pats.hs","Mods.hs","Infix.hs"]
 
 filesToParse :: [FilePath]
 filesToParse = filesToTC ++ ["Salsa20.hs"]

@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module ReWire.Core.Syntax
-      ( Annote(..),unAnn,noAnn
+      ( Annote(..),unAnn,noAnn,Annotation(..)
       , DataConId(..),TyConId(..),ModuleId(..),Poly(..)
       , RWCTy(..)
       , RWCExp(..)
@@ -34,15 +34,14 @@ import GHC.Generics (Generic)
 import Language.Haskell.Exts.Annotated (Annotated(..))
 import Language.Haskell.Exts.Annotated.ExactPrint (ExactP)
 import qualified Language.Haskell.Exts.Pretty as HS (Pretty)
-import Language.Haskell.Exts.SrcLoc (SrcInfo(..),SrcSpanInfo(..),noLoc,noInfoSpan,mkSrcSpan)
+import Language.Haskell.Exts.SrcLoc (SrcLoc,SrcInfo(..),SrcSpanInfo(..),noLoc,noInfoSpan,mkSrcSpan)
 --import qualified Data.Map.Strict as Map
 
 import Text.PrettyPrint
 
--- | The point of this is just to hide the annotation from traversals.
 data Annote where
-  AnnoteLoc :: SrcSpanInfo -> Annote
-  Annote :: forall ast.
+  LocAnnote  :: SrcSpanInfo -> Annote
+  AstAnnote  :: forall ast.
     ( Functor ast
     , Foldable ast
     , Traversable ast
@@ -57,9 +56,21 @@ data Annote where
     ) => ast SrcSpanInfo -> Annote
   deriving Typeable
 
+class Annotation a where
+  toAnnote :: a -> Annote
+
+instance Annotation Annote where
+  toAnnote = id
+
+instance Annotation SrcSpanInfo  where
+  toAnnote = LocAnnote
+
+instance Annotation SrcLoc where
+  toAnnote l = fromSrcInfo $ noInfoSpan $ mkSrcSpan l l
+
 instance SrcInfo Annote where
-  toSrcInfo a b c = AnnoteLoc $ toSrcInfo a b c
-  fromSrcInfo     = AnnoteLoc . fromSrcInfo
+  toSrcInfo a b c = LocAnnote $ toSrcInfo a b c
+  fromSrcInfo     = LocAnnote . fromSrcInfo
   fileName        = fileName . unAnn
   startLine       = startLine . unAnn
   startColumn     = startColumn . unAnn
@@ -71,8 +82,8 @@ instance Data Annote where
   dataTypeOf = undefined
 
 instance Show Annote where
-  show (AnnoteLoc l) = "AnnoteLoc (" ++ show l ++ ")"
-  show (Annote a)    = "Annote (" ++ show a ++ ")"
+  show (LocAnnote l) = "LocAnnote (" ++ show l ++ ")"
+  show (AstAnnote a) = "AstAnnote (" ++ show a ++ ")"
 
 -- TODO(chathhorn): afraid of screwing stuff up if the annotation isn't
 -- ignored.
@@ -82,8 +93,8 @@ instance Eq Annote where
   _ == _ = True
 
 unAnn :: Annote -> SrcSpanInfo
-unAnn (AnnoteLoc l) = l
-unAnn (Annote a)    = ann a
+unAnn (LocAnnote l) = l
+unAnn (AstAnnote a) = ann a
 
 noAnn :: Annote
 noAnn = fromSrcInfo $ noInfoSpan $ mkSrcSpan noLoc noLoc
@@ -112,6 +123,14 @@ instance Subst t t => Subst (Poly t) t where
 instance Alpha (Poly RWCTy) where
   aeq' (xs :-> t) (ys :-> u) = equatings xs ys (return False) (aeq' t u)
 
+instance Pretty DataConId where
+  pretty = text . deDataConId
+
+instance Pretty TyConId where
+  pretty = text . deTyConId
+
+instance Pretty ModuleId where
+  pretty = text . deModuleId
 ---
 
 data RWCTy = RWCTyApp Annote RWCTy RWCTy

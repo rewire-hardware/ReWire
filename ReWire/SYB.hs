@@ -7,15 +7,15 @@ module ReWire.SYB
       , runQ, runPureQ
       ) where
 
-import Control.Exception (PatternMatchFail(..))
-import Control.Monad.Catch (MonadCatch(..))
-import Control.Monad (liftM, (>=>), MonadPlus(..))
+import Control.Exception (PatternMatchFail (..))
+import Control.Monad.Catch (MonadCatch (..))
+import Control.Monad (liftM, (>=>), MonadPlus (..))
 import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Maybe (MaybeT(..))
+import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.Data (Data, Typeable, gmapM, gmapQr, cast)
 import Data.Functor ((<$>))
 import Data.Maybe (fromJust)
-import Data.Monoid (Monoid(..))
+import Data.Monoid (Monoid (..))
 
 everywhere :: (Monad m, Data a) => (forall d. Data d => d -> m d) -> a -> m a
 everywhere f = gmapM (everywhere f) >=> f

@@ -1,22 +1,22 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module ReWire.FrontEnd.Annotate
       ( annotate
-      , Annote (..)
+      , Annote
       ) where
 
+import ReWire.Core.Syntax (unAnn, Annote (..))
 import ReWire.SYB
-import ReWire.Core.Syntax
 
-import Control.Monad.Identity (Identity(..))
-import Data.Data (Data(..), cast)
+import Control.Monad.Identity (Identity (..))
+import Data.Data (Data (..), cast)
 import Data.Functor ((<$>))
 import Data.Maybe (fromJust)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
 
 import Language.Haskell.Exts.Annotated.Syntax
 
-annotate :: (Data (ast Annote), Functor ast) => ast SrcSpanInfo -> ast Annote
-annotate m = runIdentity $ runPureT nodes $ AnnoteLoc <$> m
+annotate :: (Data (ast Annote), Functor ast, Monad m) => ast SrcSpanInfo -> m (ast Annote)
+annotate m = return $ runIdentity $ runPureT nodes $ LocAnnote <$> m
 
 type SF a = a Annote -> Identity (a Annote)
 
@@ -84,6 +84,6 @@ nodes =   (s :: SF Module)
       ||> (s :: SF Annotation)
       ||> TId
       where s n = return $ gmapT (\ t -> case cast t :: Maybe Annote of
-                  Just _  -> fromJust $ cast $ Annote (unAnn <$> n)
+                  Just _  -> fromJust $ cast $ AstAnnote (unAnn <$> n)
                   Nothing -> t) n
 

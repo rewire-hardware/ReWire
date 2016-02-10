@@ -4,21 +4,21 @@ module Prelude where
 --
 -- See: https://www.haskell.org/onlinereport/haskell2010/haskellch9.html
 
--- Function type  
- 
+-- Function type
+
 -- identity function
 {-# INLINE id #-}
-id :: a -> a  
+id :: a -> a
 id x = x
 
 -- constant function
 {-# INLINE const #-}
-const            :: a -> b -> a  
+const            :: a -> b -> a
 const x _        =  x
 
 -- function composition
 {-# INLINE (.) #-}
-(.)              :: (b -> c) -> (a -> b) -> a -> c  
+(.)              :: (b -> c) -> (a -> b) -> a -> c
 f . g            =  \ x -> f (g x)
 
 -- Boolean type
@@ -39,8 +39,8 @@ not False = True
 otherwise :: Bool
 otherwise = True
 
--- Maybe type  
- 
+-- Maybe type
+
 data Maybe a = Nothing | Just a
 
 {-# INLINE maybe #-}
@@ -48,8 +48,8 @@ maybe :: b -> (a -> b) -> Maybe a -> b
 maybe n f Nothing  = n
 maybe n f (Just x) = f x
 
--- Either type  
- 
+-- Either type
+
 data Either a b = Left a | Right b
 
 {-# INLINE either #-}
@@ -57,7 +57,7 @@ either :: (a -> c) -> (b -> c) -> Either a b -> c
 either f g (Left x)  = f x
 either f g (Right y) = g y
 
--- Tuples  
+-- Tuples
 
 -- (Data types for tuples are defined in PrimBasis)
 -- data  (a,b)   =  (a,b)

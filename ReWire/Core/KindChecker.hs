@@ -24,7 +24,7 @@ data KCEnv = KCEnv { as  :: Map (Id RWCTy) Kind,
                      cas :: Map TyConId Kind } deriving Show
 data KCState = KCState { kiSub :: KiSub, ctr :: Int } deriving Show
 
-type KCM = ReaderT KCEnv (StateT KCState (SyntaxError Identity))
+type KCM = ReaderT KCEnv (StateT KCState (SyntaxErrorT Identity))
 
 localAssumps :: (Map (Id RWCTy) Kind -> Map (Id RWCTy) Kind) -> KCM a -> KCM a
 localAssumps f = local (\ kce -> kce { as = f (as kce) })
@@ -160,5 +160,5 @@ kc ms m = do ncas     <- mapM initDataDecl (dataDecls m)
                dds <- mapM (redecorate s) (dataDecls m)
                return (m { dataDecls = dds })
 
-kindcheck :: RWCProgram -> Either Error RWCProgram
+kindcheck :: RWCProgram -> Either AstError RWCProgram
 kindcheck m = fmap fst $ runIdentity (runSyntaxError (runStateT (runReaderT (kc [primBasis] m) (KCEnv Map.empty Map.empty)) (KCState Map.empty 0)))
