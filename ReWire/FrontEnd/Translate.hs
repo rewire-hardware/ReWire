@@ -6,7 +6,7 @@ import ReWire.Core.Syntax
 import ReWire.Error
 import ReWire.FrontEnd.Fixity
 import ReWire.FrontEnd.Rename
-import ReWire.Scoping
+import ReWire.Scoping (Id, IdSort, fv, mkId)
 import ReWire.SYB
 
 import Control.Applicative (Applicative, (<*>))
@@ -245,7 +245,7 @@ transAlt rn = \ case
       Alt l p (UnGuardedRhs _ e) Nothing -> RWCAlt l <$> transPat rn p <*> transExp (exclude Value (getVars p) rn) e
       a                                  -> failAt (ann a) "Unsupported syntax"
       where getVars :: Pat Annote -> [S.Name]
-            getVars = runPureQ $ (||? QEmpty) $ \ p -> case p :: Pat Annote of
+            getVars = runPureQ $ query $ \ p -> case p :: Pat Annote of
                   PVar _ x -> [sName x]
                   _        -> []
 

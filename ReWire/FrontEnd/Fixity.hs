@@ -32,7 +32,7 @@ fresh = do
 enterScope :: S.ModuleName -> [Decl SrcSpanInfo] -> OpRenamer -> OpRenamer
 enterScope m ds rn op
       | sQOp op `elem` ops = qual m op
-      | otherwise            = rn op
+      | otherwise          = rn op
       where ops :: [S.QOp]
             ops = foldr (\ case
                   FunBind _ (Match _ n _ _ _:_)        -> (:) $ S.QVarOp $ S.UnQual $ sName n
