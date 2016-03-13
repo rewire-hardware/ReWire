@@ -1,9 +1,6 @@
 data Bit = Zero | One
 data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
 
-undefined :: a
-undefined = undefined
-
 plus :: W8 -> W8 -> W8
 {-# INLINE plus #-}
 plus = nativeVhdl "plus" undefined

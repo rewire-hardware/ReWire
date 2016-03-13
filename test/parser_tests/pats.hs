@@ -1,5 +1,4 @@
 data Bit = Zero | One
-data Bool = True | False
 
 isEq :: Bit -> Bit -> Bool
 isEq One  One  = True

@@ -1,7 +1,3 @@
---module PreludeTest where
-
-import Prelude
-
 x :: Bool
 x = True
 

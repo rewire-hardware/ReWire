@@ -35,7 +35,6 @@ not :: Bool -> Bool
 not True  = False
 not False = True
 
--- kind of pointless because we don't have guards but whatever
 otherwise :: Bool
 otherwise = True
 
@@ -79,3 +78,6 @@ curry f x y = f (x, y)
 {-# INLINE uncurry #-}
 uncurry :: (a -> b -> c) -> ((a, b) -> c)
 uncurry f p = f (fst p) (snd p)
+
+undefined :: a
+undefined = primError "Prelude.undefined"

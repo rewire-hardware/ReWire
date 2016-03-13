@@ -9,9 +9,6 @@ data CPUState = CPUState Inputs Outputs   -- (inputs,outputs) (0-9,10-27)
                           W8 W8 W8 W8     -- (r0,r1,r2,r3) (49-56,57-64,65-72,73-80)
 data Register = R0 | R1 | R2 | R3
 
-undefined :: a
-undefined = undefined
-
 notBit   :: Bit -> Bit
 {-# INLINE notBit #-}
 notBit   =  nativeVhdl "prim_notBit" undefined
