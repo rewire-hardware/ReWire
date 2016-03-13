@@ -106,14 +106,6 @@ dqPat (RWCPatVar an n t)    = do t' <- dqTy t
                                    Just n' -> return (RWCPatVar an n' t')
                                    Nothing -> return (RWCPatVar an n t')
 
-dqAlt :: RWCAlt -> DQM RWCAlt
-dqAlt (RWCAlt an p e) = do let vs      =  pvs p
-                           (_,(p',e')) <- dqingE vs (do
-                             p' <- dqPat p
-                             e' <- dqExpr e
-                             return (p',e'))
-                           return (RWCAlt an p' e')
-
 dqExpr :: RWCExp -> DQM RWCExp
 dqExpr (RWCApp an e1 e2)      = do e1' <- dqExpr e1
                                    e2' <- dqExpr e2
@@ -129,11 +121,19 @@ dqExpr (RWCVar an n t)        = do t' <- dqTy t
 dqExpr (RWCCon an dci t)      = do t' <- dqTy t
                                    return (RWCCon an dci t')
 dqExpr (RWCLiteral an l)      = return (RWCLiteral an l)
-dqExpr (RWCCase an e alts)    = do e'    <- dqExpr e
-                                   alts' <- mapM dqAlt alts
-                                   return (RWCCase an e' alts')
+dqExpr (RWCCase an e p e1 e2) = do e'    <- dqExpr e
+                                   let vs = pvs p
+                                   (_,(p',e1')) <- dqingE vs (do
+                                     p'  <- dqPat p
+                                     e1' <- dqExpr e1
+                                     return (p',e1'))
+                                   e2' <- dqExpr e2
+                                   return (RWCCase an e' p' e1' e2')
+
 dqExpr (RWCNativeVHDL an n e) = do e' <- dqExpr e
                                    return (RWCNativeVHDL an n e')
+dqExpr (RWCError an m t)      = do t' <- dqTy t
+                                   return (RWCError an m t')
 
 dqDataCon :: RWCDataCon -> DQM RWCDataCon
 dqDataCon (RWCDataCon an dci ts) = do ts' <- mapM dqTy ts

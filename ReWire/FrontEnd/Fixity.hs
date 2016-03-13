@@ -61,9 +61,9 @@ getFixities = foldr toFixity []
                   ConOp _ n -> sName n
 
 -- | Renames local operators and fixes local and file-scope fixities.
--- applyFixities appears to be able to handle this automatically, but it seems
--- to be buggy and not allow inner fixity declarations to shadow outer ones (on
--- operators with the same name).
+--   applyFixities appears to be able to handle this automatically, but it seems
+--   to be buggy and not allow inner fixity declarations to shadow outer ones (on
+--   operators with the same name).
 fixLocalOps :: Module SrcSpanInfo -> Module SrcSpanInfo
 fixLocalOps = applyGlobFixities . fst . flip runState 0 . runPureT (renameDecl id ||> TId)
       where applyGlobFixities :: Module SrcSpanInfo -> Module SrcSpanInfo

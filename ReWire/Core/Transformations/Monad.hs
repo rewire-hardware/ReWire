@@ -184,12 +184,12 @@ fsubstsE s (RWCVar an n t)        = case lookup n s of
                                       Nothing -> return (RWCVar an n t)
 fsubstsE _ (RWCCon an dci t)      = return (RWCCon an dci t)
 fsubstsE _ (RWCLiteral an l)      = return (RWCLiteral an l)
-fsubstsE s (RWCCase an esc alts)  = do esc'  <- fsubstsE s esc
-                                       alts' <- mapM fsubstsE_Alt alts
-                                       return (RWCCase an esc' alts')
-  where fsubstsE_Alt (RWCAlt an p eb) = do eb' <- fsubstsE s eb
-                                           return (RWCAlt an p eb')
+fsubstsE s (RWCCase an e p e1 e2) = do e'  <- fsubstsE s e
+                                       e1' <- fsubstsE s e1
+                                       e2' <- fsubstsE s e2
+                                       return (RWCCase an e' p e1' e2')
 fsubstsE s (RWCNativeVHDL an n e) = liftM (RWCNativeVHDL an n) (fsubstsE s e)
+fsubstsE _ (RWCError an m t)      = return (RWCError an m t)
 
 freshenE :: Monad m => RWCExp -> RWT m RWCExp
 freshenE e = do ctr <- getCtr

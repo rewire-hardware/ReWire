@@ -99,13 +99,6 @@ uniquifyPat (RWCPatVar an n t)    = do t' <- uniquifyTy t
                                          Just n' -> return (RWCPatVar an n' t')
                                          Nothing -> return (RWCPatVar an n t') -- shouldn't happen
 
-uniquifyAlt :: RWCAlt -> UQM RWCAlt
-uniquifyAlt (RWCAlt an p e) = do let vs      =  pvs p
-                                 (_,(p',e')) <- uniquingE vs (do
-                                   p' <- uniquifyPat p
-                                   e' <- uniquifyExpr e
-                                   return (p',e'))
-                                 return (RWCAlt an p' e')
 
 uniquifyExpr :: RWCExp -> UQM RWCExp
 uniquifyExpr (RWCApp an e1 e2)      = do e1' <- uniquifyExpr e1
@@ -122,11 +115,18 @@ uniquifyExpr (RWCVar an n t)        = do t' <- uniquifyTy t
 uniquifyExpr (RWCCon an dci t)      = do t' <- uniquifyTy t
                                          return (RWCCon an dci t')
 uniquifyExpr (RWCLiteral an l)      = return (RWCLiteral an l)
-uniquifyExpr (RWCCase an e alts)    = do e'    <- uniquifyExpr e
-                                         alts' <- mapM uniquifyAlt alts
-                                         return (RWCCase an e' alts')
+uniquifyExpr (RWCCase an e p e1 e2) = do e'    <- uniquifyExpr e
+                                         let vs = pvs p
+                                         (_,(p',e1')) <- uniquingE vs (do
+                                           p' <- uniquifyPat p
+                                           e1' <- uniquifyExpr e1
+                                           return (p',e1'))
+                                         e2' <- uniquifyExpr e2
+                                         return (RWCCase an e' p' e1' e2')
 uniquifyExpr (RWCNativeVHDL an n e) = do e' <- uniquifyExpr e
                                          return (RWCNativeVHDL an n e')
+uniquifyExpr (RWCError an m t)      = do t' <- uniquifyTy t
+                                         return (RWCError an m t')
 
 uniquifyDefn :: RWCDefn -> UQM RWCDefn
 uniquifyDefn (RWCDefn an n (tvs :-> t) b e) = do (tvs',(t',e')) <- uniquingT tvs (do

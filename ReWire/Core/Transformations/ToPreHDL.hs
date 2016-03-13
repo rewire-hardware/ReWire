@@ -1,25 +1,34 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
-module ReWire.Core.Transformations.ToPreHDL where
+module ReWire.Core.Transformations.ToPreHDL
+  ( cmdToCFG
+  , cmdToPre
+  , cmdToSCFG
+  , cmdToPreG
+  , cmdToVHDL
+  , cfgFromRW
+  , eu
+  ) where
 
-import ReWire.PreHDL.Syntax
-import ReWire.PreHDL.CFG
-import ReWire.PreHDL.GotoElim
-import ReWire.PreHDL.ElimEmpty
-import ReWire.PreHDL.ToVHDL
-import ReWire.Core.Transformations.Types
-import ReWire.Core.Transformations.Monad
-import ReWire.Core.Transformations.Uniquify (uniquify)
 import ReWire.Core.Syntax
+import ReWire.Core.Transformations.Monad
+import ReWire.Core.Transformations.Types
+import ReWire.Core.Transformations.Uniquify (uniquify)
+import ReWire.PreHDL.CFG
+import ReWire.PreHDL.ElimEmpty
+import ReWire.PreHDL.GotoElim
+import ReWire.PreHDL.Syntax
+import ReWire.PreHDL.ToVHDL
+import ReWire.Pretty
 import ReWire.Scoping
 import Control.Monad.State
 import Control.Monad.Reader
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Graph.Inductive
+import Data.Graph.Inductive hiding (prettyPrint)
 import Data.List (foldl',find,findIndex)
 import Data.Maybe (fromJust)
---import qualified Debug.Trace (trace)
+-- import qualified Debug.Trace (trace)
 
 type VarMap = Map (Id RWCExp) Loc
 type ActionMap = Map (Id RWCExp) ([Loc],Node,Node,Loc) -- name -> arg regs, entry node, exit node, result reg
@@ -27,7 +36,7 @@ type FunMap = Map (Id RWCExp) String                   -- name -> generated VHDL
 type CGM = ReaderT Env (StateT (Int,CFG,ActionMap,FunMap) RW)
 
 trace :: String -> a -> a
---trace = Debug.Trace.trace
+-- trace = Debug.Trace.trace
 trace = flip const
 
 data Env = Env { stateLayer :: Int,
@@ -160,7 +169,7 @@ tyWidth t              = {-do twc <- getTyWidthCache
                                     RWCTyCon _ i -> do
                                       minfo <- lift $ lift $ queryT i
                                       case minfo of
-                                        Nothing                              -> fail $ "tyWidth: encountered unknown tycon " ++ show i
+                                        Nothing                                -> fail $ "tyWidth: encountered unknown tycon " ++ show i
                                         Just (TyConInfo (RWCData _ _ _ _ dcs)) -> do
                                           tagWidth <- getTagWidth i
                                           cws      <- mapM dataConWidth dcs
@@ -182,14 +191,11 @@ compBase :: RWCTy -> RWCTy
 compBase (RWCTyComp _ _ t) = compBase t
 compBase t               = t
 
-stringAlts :: Node -> [(Node,Node,Node,Loc)] -> CGM ()
-stringAlts nl ((_,no1_t,no1_f,_):x@(no2_e,_,_,_):xs) = do addEdge no1_t nl (Conditional (BoolConst True))
-                                                          addEdge no1_f no2_e (Conditional (BoolConst True))
-                                                          stringAlts nl (x:xs)
--- The last alt is a special case; its condition is ignored, so it does not
--- really have an no_f.
-stringAlts nl [(_,no,_,_)]                           = do addEdge no nl (Conditional (BoolConst True))
-stringAlts _  []                                     = return ()
+stringAlts :: Node -> (Node,Node,Node,Loc) -> (Node,Node,Loc) -> CGM ()
+stringAlts nl (_,no1_t,no1_f,_) (no2_e,no,_) = do addEdge no1_t nl (Conditional (BoolConst True))
+                                                  addEdge no1_f no2_e (Conditional (BoolConst True))
+                                                  addEdge no nl (Conditional (BoolConst True))
+                                                  return ()
 
 cfgExpr :: RWCExp -> CGM (Node,Node,Loc)
 cfgExpr e = case ef of
@@ -233,6 +239,7 @@ cfgExpr e = case ef of
                               (_,no,_) = last ninors
                           addEdge no n (Conditional (BoolConst True))
                           return (ni,n,r)
+             RWCError {}    -> fail "cfgExpr: RWCError"
              RWCCon _ dci _ -> do
                -- Tag.
                t            <- getTag dci
@@ -266,19 +273,24 @@ cfgExpr e = case ef of
                           -- Entry is the beginning of the argument
                           -- expressions, exit is the constructor call.
                           return (nt,n,r)
-             RWCCase _ escr alts ->
+             RWCCase _ escr p e1 e2 ->
                case eargs of
                  [] -> do
-                   (ni,no,r_scr)   <- cfgExpr escr
-                   r_res           <- freshLocTy (typeOf e)
-                   ninotnoers_init <- mapM (cfgAlt r_scr (typeOf escr) r_res) (init alts)
-                   ninotnoers_last <- cfgLastAlt r_scr (typeOf escr) r_res (last alts)
-                   let ninotnoers           =  ninotnoers_init ++ [ninotnoers_last]
-                       (ni0,_,_,_)          =  head ninotnoers
+                   (ni,no,r_scr)         <- cfgExpr escr
+                   r_res                 <- freshLocTy (typeOf e)
+                   ns_init@(ni0,no',_,_) <- if isError e2
+                                            then cfgLastAlt r_scr (typeOf escr) r_res p e1
+                                            else cfgAlt r_scr (typeOf escr) r_res p e1
+
                    addEdge no ni0 (Conditional (BoolConst True))
-                   nl              <- addFreshNode (Rem "end case")
-                   stringAlts nl ninotnoers
+                   nl                    <- addFreshNode (Rem "end case")
+
+                   if isError e2
+                   then addEdge no' nl (Conditional (BoolConst True))
+                   else cfgExpr e2 >>= stringAlts nl ns_init
+
                    return (ni,nl,r_res)
+
                  _  -> fail "cfgExpr: encountered case expression in function position"
   where (ef:eargs) = flattenApp e
 
@@ -442,51 +454,52 @@ cfgPat lscr _ (RWCPatVar _ x _)       = do rtm <- freshLocBool
                                            return ([(x,lscr)],ntm,ntm,rtm)
 cfgPat _ _ RWCPatLiteral {}           = fail "cfgPat: encountered literal"
 
-cfgLastAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Node,Node,Node,Loc)
-cfgLastAlt lscr tscr lres (RWCAlt _ p e) = do (bds,nip,nop,_) <- cfgLastPat lscr tscr p
-                                              foldr (uncurry binding) (do
-                                                (nie,noe,le) <- cfgExpr e
-                                                no           <- addFreshNode (Assign lres (LocRHS le))
-                                                addEdge noe no (Conditional (BoolConst True))
-                                                addEdge nop nie (Conditional (BoolConst True))
-                                                return (nip,no,no,le))
-                                               bds
+cfgLastAlt :: Loc -> RWCTy -> Loc -> RWCPat -> RWCExp -> CGM (Node,Node,Node,Loc)
+cfgLastAlt lscr tscr lres p e = do (bds,nip,nop,_) <- cfgLastPat lscr tscr p
+                                   foldr (uncurry binding) (do
+                                     (nie,noe,le) <- cfgExpr e
+                                     no           <- addFreshNode (Assign lres (LocRHS le))
+                                     addEdge noe no (Conditional (BoolConst True))
+                                     addEdge nop nie (Conditional (BoolConst True))
+                                     return (nip,no,no,le))
+                                    bds
 
-cfgAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Node,Node,Node,Loc) -- entry node, true exit node, false exit node, result reg if true
-cfgAlt lscr tscr lres (RWCAlt _ p e) = trace ("Entering alt: " ++ show p) $
-                                       do (bds,nip,nop,rp) <- cfgPat lscr tscr p
-                                          foldr (uncurry binding) (do
-                                            (nie,noe,le) <- cfgExpr e
-                                            no_t         <- addFreshNode (Assign lres (LocRHS le))
-                                            no_f         <- addFreshNode (Rem "alt exit (no match)")
-                                            addEdge noe no_t (Conditional (BoolConst True))
-                                            addEdge nop nie (Conditional (BoolVar rp))
-                                            addEdge nop no_f (Conditional (Not (BoolVar rp)))
-                                            return (nip,no_t,no_f,le))
-                                           bds
+cfgAlt :: Loc -> RWCTy -> Loc -> RWCPat -> RWCExp -> CGM (Node,Node,Node,Loc) -- entry node, true exit node, false exit node, result reg if true
+cfgAlt lscr tscr lres p e = trace ("Entering alt: " ++ show (unAnn p)) $
+                            do (bds,nip,nop,rp) <- cfgPat lscr tscr p
+                               foldr (uncurry binding) (do
+                                 (nie,noe,le) <- cfgExpr e
+                                 no_t         <- addFreshNode (Assign lres (LocRHS le))
+                                 no_f         <- addFreshNode (Rem "alt exit (no match)")
+                                 addEdge noe no_t (Conditional (BoolConst True))
+                                 addEdge nop nie (Conditional (BoolVar rp))
+                                 addEdge nop no_f (Conditional (Not (BoolVar rp)))
+                                 return (nip,no_t,no_f,le))
+                                bds
 
-cfgLastAcAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Node,Node,Node,Loc)
-cfgLastAcAlt lscr tscr lres (RWCAlt _ p e) = trace ("Entering last alt: " ++ show p) $
-                                             do (bds,nip,nop,_) <- cfgLastPat lscr tscr p
-                                                foldr (uncurry binding) (do
-                                                  (nie,noe,le) <- cfgAcExpr e
-                                                  no           <- addFreshNode (Assign lres (LocRHS le))
-                                                  addEdge noe no (Conditional (BoolConst True))
-                                                  addEdge nop nie (Conditional (BoolConst True))
-                                                  return (nip,no,no,le))
-                                                 bds
+cfgLastAcAlt :: Loc -> RWCTy -> Loc -> RWCPat -> RWCExp -> CGM (Node,Node,Node,Loc)
+cfgLastAcAlt lscr tscr lres p e = trace ("Entering last alt: " ++ show (unAnn p)) $
+                                  do (bds,nip,nop,_) <- cfgLastPat lscr tscr p
+                                     foldr (uncurry binding) (do
+                                       (nie,noe,le) <- cfgAcExpr e
+                                       no           <- addFreshNode (Assign lres (LocRHS le))
+                                       addEdge noe no (Conditional (BoolConst True))
+                                       addEdge nop nie (Conditional (BoolConst True))
+                                       return (nip,no,no,le))
+                                      bds
 
-cfgAcAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Node,Node,Node,Loc) -- entry node, true exit node, false exit node, result reg if true
-cfgAcAlt lscr tscr lres (RWCAlt _ p e) = do (bds,nip,nop,rp) <- cfgPat lscr tscr p
-                                            foldr (uncurry binding) (do
-                                              (nie,noe,le) <- cfgAcExpr e
-                                              no_t         <- addFreshNode (Assign lres (LocRHS le))
-                                              no_f         <- addFreshNode (Rem "alt exit (no match)")
-                                              addEdge noe no_t (Conditional (BoolConst True))
-                                              addEdge nop nie (Conditional (BoolVar rp))
-                                              addEdge nop no_f (Conditional (Not (BoolVar rp)))
-                                              return (nip,no_t,no_f,le))
-                                             bds
+cfgAcAlt :: Loc -> RWCTy -> Loc -> RWCPat -> RWCExp -> CGM (Node,Node,Node,Loc) -- entry node, true exit node, false exit node, result reg if true
+cfgAcAlt lscr tscr lres p e = trace ("Entering cfgAcAlt: " ++ show (unAnn p)) $
+                              do (bds,nip,nop,rp) <- cfgPat lscr tscr p
+                                 foldr (uncurry binding) (do
+                                   (nie,noe,le) <- cfgAcExpr e
+                                   no_t         <- addFreshNode (Assign lres (LocRHS le))
+                                   no_f         <- addFreshNode (Rem "alt exit (no match)")
+                                   addEdge noe no_t (Conditional (BoolConst True))
+                                   addEdge nop nie (Conditional (BoolVar rp))
+                                   addEdge nop no_f (Conditional (Not (BoolVar rp)))
+                                   return (nip,no_t,no_f,le))
+                                  bds
 
 cfgAcExpr :: RWCExp -> CGM (Node,Node,Loc) -- entry node, exit node, result reg
 cfgAcExpr e = case ef of
@@ -589,7 +602,7 @@ cfgAcExpr e = case ef of
                      addEdge (last n_copies) ni_f (Conditional (BoolConst True))
                      return (head ni_args,no_f,rr_f)
 
-               RWCCase _ escr alts               -> trace ("cfgAcExpr: Entering case") $ do
+               RWCCase _ escr p e1 e2            -> trace ("cfgAcExpr: Entering case") $ do
                  case eargs of
                    [] -> do
                      -- Compile scrutinee expression.
@@ -597,30 +610,38 @@ cfgAcExpr e = case ef of
                      -- Pre-allocate result register (it's up to cfgAcAlt to
                      -- copy the result to this).
                      r_res                 <- freshLocTy (compBase $ typeOf e)
-                     -- Landing node.
-                     nl                    <- addFreshNode (Rem "end case")
                      -- Compile each alt *except* the last. (Note that we're
                      -- assuming there is at least one; a case with zero alts
                      -- is always undefined anyway.)
-                     ninotnoers_init       <- mapM (cfgAcAlt r_scr (typeOf escr) r_res) (init alts)
-                     -- Special treatment for the last alt.
-                     ninotnoers_last       <- cfgLastAcAlt r_scr (typeOf escr) r_res (last alts)
-                     let ninotnoers        =  ninotnoers_init ++ [ninotnoers_last]
+                     ns_init@(ni0,no',_,_) <- if isError e2
+                                              then cfgLastAcAlt r_scr (typeOf escr) r_res p e1
+                                              else cfgAcAlt r_scr (typeOf escr) r_res p e1
+
                      -- Find entry point node for first alt, and jump to it
                      -- after the scrutinee is evaluated.
-                     let (ni0,_,_,_)       =  head ninotnoers
                      addEdge no_scr ni0 (Conditional (BoolConst True))
+                     -- Landing node.
+                     nl                    <- addFreshNode (Rem "end case")
+
+                     -- Special treatment for the last alt.
+                     if isError e2
+                     then addEdge no' nl (Conditional (BoolConst True))
                      -- This will link the alts together in sequence, and
                      -- connect them all the the landing node.
-                     stringAlts nl ninotnoers
+                     else cfgAcExpr e2 >>= stringAlts nl ns_init
                      -- Start point is scr, end point is landing, result is
                      -- in r_res.
                      return (ni_scr,nl,r_res)
                    _  -> fail "cfgAcExpr: encountered case expression in function position"
 
                RWCNativeVHDL {}                  -> fail "cfgAcExpr: encountered nativeVHDL"
+               RWCError {}                       -> fail "cfgAcExpr: RWCError"
 
    where (ef:eargs) = flattenApp e
+
+isError :: RWCExp -> Bool
+isError RWCError {} = True
+isError _           = False
 
 peelLambdas :: RWCExp -> ([(Id RWCExp,RWCTy)],RWCExp)
 peelLambdas (RWCLam _ n t e) = ((n,t):nts,e')
@@ -787,30 +808,20 @@ funPat lscr _ (RWCPatVar _ x _)       = do rm <- freshLocBool
                                            return ([(x,lscr)],Assign rm (BoolRHS (BoolConst True)),rm)
 funPat _ _ RWCPatLiteral {}           = fail "funPat: encountered literal"
 
-funAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM Cmd
-funAlt lscr tscr lres (RWCAlt _ p e) = do (bds,cmatch,rmatch) <- funPat lscr tscr p
-                                          foldr (uncurry binding) (do
-                                            (ce,le) <- funExpr e
-                                            return (cmatch `mkSeq` If (BoolVar rmatch) (ce `mkSeq` Assign lres (LocRHS le))))
-                                           bds
+funAlt :: Loc -> RWCTy -> Loc -> RWCPat -> RWCExp -> CGM Cmd
+funAlt lscr tscr lres p e = do (bds,cmatch,rmatch) <- funPat lscr tscr p
+                               foldr (uncurry binding) (do
+                                 (ce,le) <- funExpr e
+                                 return (cmatch `mkSeq` If (BoolVar rmatch) (ce `mkSeq` Assign lres (LocRHS le))))
+                                bds
 
-funAlt' :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM (Cmd,(Loc,Cmd))
-funAlt' lscr tscr lres (RWCAlt _ p e) = do (bds,cmatch,rmatch) <- funPat lscr tscr p
-                                           foldr (uncurry binding) (do
-                                             (ce,le) <- funExpr e
-                                             return (cmatch,(rmatch,(ce `mkSeq` Assign lres (LocRHS le))))
-                                             ) --(cmatch `mkSeq` If (BoolVar rmatch) (ce `mkSeq` Assign lres (LocRHS le))))
-                                            bds
-
-
-{-
-funLastAlt :: Loc -> RWCTy -> Loc -> RWCAlt -> CGM Cmd
-funLastAlt lscr tscr lres (RWCAlt p e) = do (bds,cmatch,rmatch) <- funPat lscr tscr p
-                                            foldr (uncurry binding) (do
-                                              (ce,le) <- funExpr e
-                                              return (cmatch `mkSeq` ce `mkSeq` Assign lres (LocRHS le)))
-                                             bds
--}
+funAlt' :: Loc -> RWCTy -> Loc -> RWCPat -> RWCExp -> CGM (Cmd,(Loc,Cmd))
+funAlt' lscr tscr lres p e = do (bds,cmatch,rmatch) <- funPat lscr tscr p
+                                foldr (uncurry binding) (do
+                                  (ce,le) <- funExpr e
+                                  return (cmatch,(rmatch,(ce `mkSeq` Assign lres (LocRHS le))))
+                                  ) --(cmatch `mkSeq` If (BoolVar rmatch) (ce `mkSeq` Assign lres (LocRHS le))))
+                                 bds
 
 funExpr :: RWCExp -> CGM (Cmd,Loc)
 funExpr e = case ef of
@@ -834,6 +845,7 @@ funExpr e = case ef of
                let (cs,rs) =  unzip crs
                r           <- freshLocTy (typeOf e)
                return (foldr1 mkSeq (cs++[Assign r (FunCallRHS n rs)]),r)
+             RWCError {}    -> fail "funExpr: RWCError"
              RWCCon _ dci _ -> do
                -- Tag.
                t            <- getTag dci
@@ -861,7 +873,7 @@ funExpr e = case ef of
                                                 ++ cs
                                                 ++ [Assign r (ConcatRHS ([rt]++rs++[r_pad]))]),
                                   r)
-             RWCCase _ escr alts ->
+             RWCCase _ escr p e1 e2 ->
                case eargs of
                  [] -> do
                    (c_scr,r_scr) <- funExpr escr
@@ -869,10 +881,12 @@ funExpr e = case ef of
 --                   cs_init       <- mapM (funAlt r_scr (typeOf escr) r_res) (init alts)
 --                   c_last        <- funAlt r_scr (typeOf escr) r_res (last alts) -- was funLastAlt
 --                   return (foldr1 mkSeq ([c_scr]++cs_init++[c_last]),r_res)
-                   calts <- mapM (funAlt' r_scr (typeOf escr) r_res) alts
-                   let cases = map ((\ (l,c) -> (BoolVar l, c)) . snd) calts
-                       cmatch = foldr1 mkSeq $ map fst calts
-                   return (c_scr `mkSeq` cmatch `mkSeq` CaseIf cases,r_res)
+                   (e1',(e1'l, e1'c)) <- funAlt' r_scr (typeOf escr) r_res p e1
+                   if isError e2
+                   then return (c_scr `mkSeq` e1' `mkSeq` CaseIf [(BoolVar e1'l,e1'c)],r_res)
+                   else do (e2',e2'l) <- funExpr e2
+                           let cases  = [(BoolVar e1'l,e1'c),(BoolVar e2'l,e2')]
+                           return (c_scr `mkSeq` e1' `mkSeq` e2' `mkSeq` CaseIf cases,r_res)
                  _  -> fail "funExpr: encountered case expression in function position"
   where (ef:eargs) = flattenApp e
 
