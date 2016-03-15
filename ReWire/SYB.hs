@@ -1,6 +1,7 @@
 {-# LANGUAGE RankNTypes, GADTs, LambdaCase #-}
 module ReWire.SYB
       ( Transform (TId), Query (QEmpty)
+      , transform, query
       , (||>)
       , (||?), (|?)
       , runT, runPureT
@@ -54,6 +55,9 @@ foldT _ TId           = lift . return
 f ||> fs = generalize f `TCons` fs
 infixr 1 ||>
 
+transform :: (Monad m, Typeable d) => (d -> m d) -> Transform m
+transform = (||> TId)
+
 runT :: (Functor m, MonadCatch m, Data d) => Transform m -> d -> m d
 runT t = everywhere $ liftM fromJust . runMaybeT . foldT (\ f g x -> f x `mplusE` g x) t
 
@@ -80,6 +84,9 @@ infixr 1 |?
 (||?) :: (Monad m, Typeable d) => (d -> m a) -> Query m a -> Query m a
 f ||? fs = QCons (generalizeA f) fs
 infixr 1 ||?
+
+query :: (Monad m, Typeable d) => (d -> m a) -> Query m a
+query = (||? QEmpty)
 
 foldQ :: MonadPlus m => (Q m a -> Q m a -> Q m a) -> Query m a -> Q m a
 foldQ op (QCons f fs) = f `op` foldQ op fs

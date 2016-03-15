@@ -4,7 +4,7 @@ module ReWire.FrontEnd.Annotate
       , Annote
       ) where
 
-import ReWire.Core.Syntax (unAnn, Annote (..))
+import ReWire.Core.Syntax (toSrcSpanInfo, Annote (..))
 import ReWire.SYB
 
 import Control.Monad.Identity (Identity (..))
@@ -84,6 +84,6 @@ nodes =   (s :: SF Module)
       ||> (s :: SF Annotation)
       ||> TId
       where s n = return $ gmapT (\ t -> case cast t :: Maybe Annote of
-                  Just _  -> fromJust $ cast $ AstAnnote (unAnn <$> n)
+                  Just _  -> fromJust $ cast $ AstAnnote (toSrcSpanInfo <$> n)
                   Nothing -> t) n
 

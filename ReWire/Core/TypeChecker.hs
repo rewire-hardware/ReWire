@@ -78,11 +78,6 @@ initPat (RWCPatLiteral l) = return (RWCPatLiteral l)
 initPat (RWCPatVar n _)   = do tv <- freshv
                                return (RWCPatVar n (RWCTyVar tv))
 
-initAlt :: RWCAlt -> TCM RWCAlt
-initAlt (RWCAlt p_ e_) = do p       <- initPat p_
-                            e       <- initExp e_
-                            return (RWCAlt p e)
-
 initExp :: RWCExp -> TCM RWCExp
 initExp (RWCApp e1_ e2_)   = do e1 <- initExp e1_
                                 e2 <- initExp e2_
@@ -171,13 +166,6 @@ tcPat t (RWCPatCon an i ps) = do cas     <- askCAssumps
                                                      else do ps' <- zipWithM tcPat targs ps
                                                              unify an t tres
                                                              return (RWCPatCon an i ps')
-tcAlt :: RWCTy -> RWCTy -> RWCAlt -> TCM RWCAlt
-tcAlt tres tscrut (RWCAlt an p e) = do p'      <- tcPat tscrut p
-                                       let as  =  Map.fromList (patassumps p')
-                                       (e',te) <- localAssumps (as `Map.union`) (tcExp e)
-                                       unify an tres te
-                                       return (RWCAlt an p' e')
-
 tcExp :: RWCExp -> TCM (RWCExp,RWCTy)
 tcExp e_@(RWCApp an _ _)     = do let (ef:es)  =  flattenApp e_
                                   (ef',tf)     <- tcExp ef
@@ -208,12 +196,20 @@ tcExp e@(RWCLiteral _ l)     = case l of
                                   RWCLitInteger _ -> return (e,RWCTyCon noAnn (TyConId "Integer"))
                                   RWCLitFloat _   -> return (e,RWCTyCon noAnn (TyConId "Float"))
                                   RWCLitChar _    -> return (e,RWCTyCon noAnn (TyConId "Char"))
-tcExp (RWCCase an e alts)    = do (e',te) <- tcExp e
-                                  tv      <- freshv
-                                  alts'   <- mapM (tcAlt (RWCTyVar noAnn tv) te) alts
-                                  return (RWCCase an e' alts',RWCTyVar noAnn tv)
+tcExp (RWCCase an e p e1 e2) = do (e',te)   <- tcExp e
+                                  tv        <- freshv
+                                  p'        <- tcPat te p
+                                  let as = Map.fromList (patassumps p')
+                                  (e1',te1) <- localAssumps (as `Map.union`) (tcExp e1)
+                                  unify an (RWCTyVar noAnn tv) te1
+                                  (e2',te2) <- tcExp e2
+                                  unify an (RWCTyVar noAnn tv) te2
+                                  return (RWCCase an e' p' e1' e2',RWCTyVar noAnn tv)
+
 tcExp (RWCNativeVHDL an n e) = do (e',te) <- tcExp e
                                   return (RWCNativeVHDL an n e',te)
+tcExp (RWCError an m _)      = do tv <- freshv
+                                  return (RWCError an m (RWCTyVar noAnn tv),RWCTyVar noAnn tv)
 
 tcDefn :: RWCDefn -> TCM RWCDefn
 tcDefn d  = do putTySub Map.empty

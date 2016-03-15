@@ -4,30 +4,41 @@
              UndecidableInstances,DeriveDataTypeable
   #-}
 
-module ReWire.Scoping where
+module ReWire.Scoping
+  ( Id(..),IdAny(..),IdSort(..),mkId,any2Id
+  , Alpha(..),AlphaM
+  , MonadAssume(..),AssumeT,runAssume,runAssumeT,runAssumeTWith
+  , ScopeT,runScopeTWith
+  , Subst(..),subst
+  , aeq,varsaeq
+  , equating,equatings
+  , replace
+  , refresh,refreshs
+  , deId
+  ) where
 
 import ReWire.Pretty
 
 import Control.Applicative
+import Control.DeepSeq
 import Control.Monad
-import Control.Monad.Trans
-import Control.Monad.Reader
-import Control.Monad.State
 import Control.Monad.Except
 import Control.Monad.Identity
-import Data.Data (Typeable,Data)
-import Data.Map.Strict (Map,insert,delete)
-import qualified Data.Map.Strict as Map
-import Data.Set (Set)
-import qualified Data.Set as Set
---import Data.Foldable (Foldable)
---import qualified Data.Foldable as Foldable
-import Control.DeepSeq
-import Data.Either (rights)
-import qualified Data.ByteString.Char8 as BS
+import Control.Monad.Reader
+import Control.Monad.State
+import Control.Monad.Trans
 import Data.ByteString.Char8 (ByteString)
+import Data.Data (Typeable,Data)
+import Data.Either (rights)
+import Data.Map.Strict (Map,insert,delete)
 import Data.Maybe (fromJust,isJust)
+import Data.Set (Set)
 import Text.PrettyPrint (text)
+
+import qualified Data.ByteString.Char8 as BS
+import qualified Data.Map.Strict       as Map
+import qualified Data.Set              as Set
+
 {-
 import Unbound.LocallyNameless hiding (fv,subst,substs,Subst,Alpha,aeq,aeq')
 import qualified Unbound.LocallyNameless as U

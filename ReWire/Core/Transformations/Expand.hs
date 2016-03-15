@@ -9,10 +9,6 @@ import ReWire.Core.Transformations.DeUniquify (deUniquify)
 import ReWire.Core.Transformations.Uniquify (uniquify)
 import ReWire.Core.Transformations.Types
 
-expandAlt :: [Id RWCExp] -> RWCAlt -> RW RWCAlt
-expandAlt ns (RWCAlt an p e) = do e' <- expandExpr ns e
-                                  return (RWCAlt an p e')
-
 expandExpr :: [Id RWCExp] -> RWCExp -> RW RWCExp
 expandExpr ns (RWCApp an e1 e2)             = do e1' <- expandExpr ns e1
                                                  e2' <- expandExpr ns e2
@@ -26,10 +22,12 @@ expandExpr ns (RWCVar an n t) | n `elem` ns = do me <- askVar t n
                               | otherwise   = return (RWCVar an n t)
 expandExpr _ (RWCCon an dci t)              = return (RWCCon an dci t)
 expandExpr _ (RWCLiteral an l)              = return (RWCLiteral an l)
-expandExpr ns (RWCCase an e alts)           = do e'    <- expandExpr ns e
-                                                 alts' <- mapM (expandAlt ns) alts
-                                                 return (RWCCase an e' alts')
+expandExpr ns (RWCCase an e p e1 e2)        = do e'    <- expandExpr ns e
+                                                 e1'   <- expandExpr ns e1
+                                                 e2'   <- expandExpr ns e2
+                                                 return (RWCCase an e' p e1' e2')
 expandExpr _ (RWCNativeVHDL an n e)         = return (RWCNativeVHDL an n e) -- FIXME(?!): special case here!
+expandExpr _ (RWCError an m t)              = return (RWCError an m t)
 
 expandDefn :: [Id RWCExp] -> RWCDefn -> RW RWCDefn
 expandDefn ns (RWCDefn an n pt b e) = do e' <- expandExpr ns e

@@ -23,6 +23,8 @@ import Language.Haskell.Exts.Annotated.Simplify (sModuleName)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
 import System.Directory (getCurrentDirectory, setCurrentDirectory, doesFileExist, doesDirectoryExist)
 
+import ReWire.Pretty
+
 import qualified Data.Map.Strict              as Map
 import qualified Language.Haskell.Exts.Syntax as S
 
@@ -36,12 +38,25 @@ runCache :: Cache a -> LoadPath -> IO (Either AstError a)
 runCache m lp = runSyntaxError $ fst <$> runStateT (runReaderT m lp) mempty
 
 mkRenamer :: Annotation a => Module a -> Cache Renamer
-mkRenamer (Module _ _ _ imps _) = mconcat <$> mapM mkRenamer' imps
+mkRenamer m = mconcat <$> mapM mkRenamer' (getImps m)
       where mkRenamer' :: Annotation a => ImportDecl a -> Cache Renamer
             mkRenamer' (ImportDecl _ (sModuleName -> m) quald _ _ _ (fmap sModuleName -> as) specs) = do
                   (_, exps) <- getProgram $ toFilePath m
                   fromImps m quald exps as specs
-mkRenamer m = failAt (ann m) "Unsupported module syntax"
+
+getImps :: Annotation a => Module a -> [ImportDecl a]
+getImps = \case
+      Module l _ _ imps _            -> addPrelude l imps
+      XmlPage {}                     -> []
+      XmlHybrid l _ _ imps _ _ _ _ _ -> addPrelude l imps
+      where addPrelude :: Annotation a => a -> [ImportDecl a] -> [ImportDecl a]
+            addPrelude l imps = 
+                  if any isPrelude imps 
+                        then imps
+                        else ImportDecl l (ModuleName l "Prelude") False False False Nothing Nothing Nothing : imps
+            isPrelude :: Annotation a => ImportDecl a -> Bool
+            isPrelude ImportDecl { importModule = ModuleName _ n } = n == "Prelude"
+
 
 -- Pass 1    Parse.
 -- Pass 2-4  Fixity fixing (uniquify + fix + deuniquify, because bug in applyFixities).
@@ -91,10 +106,5 @@ getProgram fp = Map.lookup fp <$> get >>= \ case
                   ParseFailed (S.SrcLoc "" r c) msg -> failAt (S.SrcLoc fp r c) msg
                   ParseFailed l msg                 -> failAt l msg
 
-            loadImports :: Module a -> Cache RWCProgram
-            loadImports = liftM mconcat . mapM (liftM fst . getProgram . toFilePath) . getImps
-
-            getImps :: Module a -> [S.ModuleName]
-            getImps (Module _ _ _ imps _)            = map (sModuleName . importModule) imps
-            getImps XmlPage {}                       = []
-            getImps (XmlHybrid _ _ _ imps _ _ _ _ _) = map (sModuleName . importModule) imps
+            loadImports :: Annotation a => Module a -> Cache RWCProgram
+            loadImports = liftM mconcat . mapM (liftM fst . getProgram . toFilePath . sModuleName . importModule) . getImps

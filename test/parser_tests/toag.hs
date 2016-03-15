@@ -1,8 +1,5 @@
 data Bit = Zero | One
 
-undefined :: a
-undefined = undefined
-
 bitAnd :: Bit -> Bit -> Bit
 {-# INLINE bitAnd #-}
 bitAnd = nativeVhdl "prim_bitAnd" undefined

@@ -16,23 +16,21 @@ import ReWire.Core.Transformations.DeUniquify (deUniquify)
 
 type IM = StateT (Set (Id RWCExp)) RW
 
-inuseAlt :: RWCAlt -> IM ()
-inuseAlt (RWCAlt _ _ e) = inuseExp e
-
 inuseExp :: RWCExp -> IM ()
-inuseExp (RWCApp _ e1 e2)   = inuseExp e1 >> inuseExp e2
-inuseExp (RWCLam _ _ _ e)   = inuseExp e
-inuseExp (RWCVar _ n t)     = do inuse <- get
-                                 unless (n `member` inuse) $ do
-                                   put (insert n inuse)
-                                   me <- lift $ askVar t n
-                                   case me of
-                                     Just e  -> inuseExp e
-                                     Nothing -> return ()
-inuseExp RWCCon {}          = return ()
-inuseExp RWCLiteral {}      = return ()
-inuseExp (RWCCase _ e alts) = inuseExp e >> mapM_ inuseAlt alts
-inuseExp RWCNativeVHDL {}   = return ()   -- FIXME(?!): special case here
+inuseExp (RWCApp _ e1 e2)      = inuseExp e1 >> inuseExp e2
+inuseExp (RWCLam _ _ _ e)      = inuseExp e
+inuseExp (RWCVar _ n t)        = do inuse <- get
+                                    unless (n `member` inuse) $ do
+                                      put (insert n inuse)
+                                      me <- lift $ askVar t n
+                                      case me of
+                                        Just e  -> inuseExp e
+                                        Nothing -> return ()
+inuseExp RWCCon {}             = return ()
+inuseExp RWCLiteral {}         = return ()
+inuseExp (RWCCase _ e _ e1 e2) = inuseExp e >> inuseExp e1 >> inuseExp e2
+inuseExp RWCNativeVHDL {}      = return ()   -- FIXME(?!): special case here
+inuseExp RWCError {}           = return ()
 
 inuseModule :: Id RWCExp -> RWCProgram -> IM (Maybe RWCProgram)
 inuseModule n m = do let md = find (\ d -> defnName d == n) (defns m)

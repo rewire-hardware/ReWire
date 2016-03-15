@@ -1,6 +1,9 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
-module ReWire.Core.Transformations.Reduce where
+module ReWire.Core.Transformations.Reduce
+  ( redmod
+  , cmdReduce
+  ) where
 
 import Prelude hiding (sequence,mapM)
 import ReWire.Scoping
@@ -25,29 +28,21 @@ reduce (RWCApp an e1 e2)     = do e1' <- reduce e1
                                     _              -> return (RWCApp an e1' e2')
 reduce (RWCLam an n t e)      = do e' <- reduce e
                                    return (RWCLam an n t e')
-reduce e@RWCVar {}      = return e
-reduce e@RWCCon {}      = return e
-reduce e@RWCLiteral {}    = return e
-reduce (RWCCase an esc alts)  = do esc'  <- reduce esc
-                                   alts' <- mapM redalt alts
-                                   sr    <- redcase esc' alts
-                                   case sr of
-                                     Just e  -> return e
-                                     Nothing -> return (RWCCase an esc' alts')
-reduce e@RWCNativeVHDL {} = return e
+reduce e@RWCVar {}            = return e
+reduce e@RWCCon {}            = return e
+reduce e@RWCLiteral {}        = return e
+reduce (RWCCase an e p e1 e2) = do e' <- reduce e
+                                   mr <- matchpat e' p
+                                   case mr of
+                                     MatchYes sub -> do
+                                       e1' <- fsubstsE sub e1
+                                       reduce e1'
+                                     MatchMaybe ->
+                                       liftM2 (RWCCase an e' p) (reduce e1) (reduce e2)
+                                     MatchNo -> reduce e2
+reduce e@RWCNativeVHDL {}     = return e
+reduce e@RWCError {}          = return e
 
-redalt :: Monad m => RWCAlt -> RWT m RWCAlt
-redalt (RWCAlt an p eb) = do eb' <- reduce eb
-                             return (RWCAlt an p eb')
-
-redcase :: Monad m => RWCExp -> [RWCAlt] -> RWT m (Maybe RWCExp)
-redcase esc (RWCAlt _ p eb:alts) = do mr <- matchpat esc p
-                                      case mr of
-                                        MatchYes sub -> do eb' <- fsubstsE sub eb
-                                                           liftM Just $ reduce eb'
-                                        MatchMaybe   -> return Nothing
-                                        MatchNo      -> redcase esc alts
-redcase _ []                   = return Nothing -- FIXME: should return undefined?
 
 data MatchResult = MatchYes [(Id RWCExp,RWCExp)]
                  | MatchMaybe
@@ -56,7 +51,7 @@ data MatchResult = MatchYes [(Id RWCExp,RWCExp)]
 
 mergematches :: [MatchResult] -> MatchResult
 mergematches []     = MatchYes []
-mergematches (m:ms) = case mr of
+mergematches (m:ms) = case mergematches ms of
                         MatchYes bs -> case m of
                                          MatchYes bs' -> MatchYes (bs'++bs)
                                          MatchNo      -> MatchNo
@@ -66,7 +61,6 @@ mergematches (m:ms) = case mr of
                                          MatchYes _ -> MatchMaybe
                                          MatchNo    -> MatchNo
                                          MatchMaybe -> MatchMaybe
-  where mr = mergematches ms
 
 matchpat :: Monad m => RWCExp -> RWCPat -> RWT m MatchResult
 matchpat e (RWCPatCon _ i pats) = case flattenApp e of

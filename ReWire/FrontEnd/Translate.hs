@@ -2,15 +2,15 @@
 module ReWire.FrontEnd.Translate (translate) where
 
 import ReWire.Core.Kinds
-import ReWire.Core.Syntax
+import ReWire.Core.Syntax hiding (ann)
 import ReWire.Error
 import ReWire.FrontEnd.Fixity
 import ReWire.FrontEnd.Rename
-import ReWire.Scoping
+import ReWire.Scoping (Id, IdSort, fv, mkId)
 import ReWire.SYB
 
 import Control.Applicative (Applicative, (<*>))
-import Control.Monad (foldM)
+import Control.Monad (foldM, void)
 import Data.Foldable (foldl')
 import Data.Functor ((<$>))
 import Data.List (nub)
@@ -50,9 +50,9 @@ translate rn (Module _ (Just (ModuleHead _ m _ exps)) _ _ (reverse -> ds)) = do
 
             getGlobExps' :: Renamer -> Decl Annote -> [Export] -> [Export]
             getGlobExps' rn = \ case
-                  DataDecl _ _ _ hd cs _               -> (:)  $ ExportWith (rename Type rn $ fst $ sDeclHead hd) $ map (rename Value rn . getCtor) cs
-                  PatBind _ (PVar _ n) _ _             -> (:)  $ Export $ rename Value rn $ sName n
-                  _                                    -> id
+                  DataDecl _ _ _ hd cs _   -> (:) $ ExportWith (rename Type rn $ fst $ sDeclHead hd) $ map (rename Value rn . getCtor) cs
+                  PatBind _ (PVar _ n) _ _ -> (:) $ Export $ rename Value rn $ sName n
+                  _                        -> id
 translate _ m = failAt (ann m) "Unsupported module syntax"
 
 resolveExports :: Renamer -> [Export] -> Exports
@@ -61,7 +61,7 @@ resolveExports rn = foldr (resolveExport rn) mempty
 resolveExport :: Renamer -> Export -> Exports -> Exports
 resolveExport rn = \ case
       Export x               -> expValue x
-      ExportAll x            -> expType x (getCtors (qnamish x) $ allExports rn)
+      ExportAll x            -> expType x $ getCtors (qnamish x) $ allExports rn
       ExportWith x cs        -> expType x (Set.fromList cs)
       ExportMod m            -> (<> getExports m rn)
       ExportFixity asc lvl x -> expFixity asc lvl x
@@ -74,10 +74,9 @@ getExportFixities = map toExportFixity . getFixities
 
 transExport :: SyntaxError m => Renamer -> [Decl Annote] -> [Export] -> ExportSpec Annote -> m [Export]
 transExport rn ds exps = \ case
-      EVar l x                             -> do
-            x' <- unqual x
+      EVar l x                             ->
             if finger Value rn (sQName x)
-            then return $ Export (rename Value rn $ sQName x) : fixities x' ++ exps
+            then return $ Export (rename Value rn $ sQName x) : fixities (qnamish x) ++ exps
             else failAt l "Unknown variable name in export list"
       EAbs l _ (sQName -> x)               ->
             if finger Type rn x
@@ -127,11 +126,6 @@ transExport rn ds exps = \ case
             fixities n = flip filter (getExportFixities ds) $ \ case
                   ExportFixity _ _ n' -> n == n'
                   _                   -> False
-
-            unqual :: SyntaxError m => QName Annote -> m S.Name
-            unqual (UnQual _ n) = return $ sName n
-            unqual (Qual _ _ n) = return $ sName n
-            unqual n            = failAt (ann n) "Special constructor in export list"
 
 extendWithGlobs :: S.ModuleName -> [Decl Annote] -> Renamer -> Renamer
 extendWithGlobs m ds rn = extend Value (zip (getGlobValDefs ds) $ map (qnamish . S.Qual m) $ getGlobValDefs ds)
@@ -225,13 +219,24 @@ transExp :: (Applicative m, Functor m, SyntaxError m) => Renamer -> Exp Annote -
 transExp rn = \ case
       App l (App _ (Var _ (UnQual _ (Ident _ "nativeVhdl"))) (Lit _ (String _ f _))) e
                             -> RWCNativeVHDL l f <$> transExp rn e
+      App l (Var _ (UnQual _ (Ident _ "primError"))) (Lit _ (String _ m _))
+                            -> return $ RWCError l m tblank
       App l e1 e2           -> RWCApp l <$> transExp rn e1 <*> transExp rn e2
       Lambda l [PVar _ x] e -> RWCLam l (mkUId $ sName x) tblank <$> transExp (exclude Value [sName x] rn) e
       Var l x               -> return $ RWCVar l (mkId $ rename Value rn x) tblank
       Con l x               -> return $ RWCCon l (DataConId $ rename Value rn x) tblank
       Lit l lit             -> RWCLiteral l <$> transLit lit
-      Case l e alts         -> RWCCase l <$> transExp rn e <*> mapM (transAlt rn) alts
-      e                     -> failAt (ann e) "Unsupported expression syntax"
+      Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _]
+                            -> RWCCase l
+                                    <$> transExp rn e
+                                    <*> transPat rn p
+                                    <*> transExp (exclude Value (getVars p) rn) e1
+                                    <*> transExp rn e2
+      e                     -> failAt (ann e) $ "Unsupported expression syntax: " ++ show (void e)
+      where getVars :: Pat Annote -> [S.Name]
+            getVars = runPureQ $ query $ \ p -> case p :: Pat Annote of
+                  PVar _ x -> [sName x]
+                  _        -> []
 
 transLit :: SyntaxError m => Literal Annote -> m RWCLit
 transLit = \ case
@@ -240,18 +245,9 @@ transLit = \ case
       Char _ c _ -> return $ RWCLitChar c
       lit        -> failAt (ann lit) "Unsupported syntax for a literal"
 
-transAlt :: (Applicative m, Functor m, SyntaxError m) => Renamer -> Alt Annote -> m RWCAlt
-transAlt rn = \ case
-      Alt l p (UnGuardedRhs _ e) Nothing -> RWCAlt l <$> transPat rn p <*> transExp (exclude Value (getVars p) rn) e
-      a                                  -> failAt (ann a) "Unsupported syntax"
-      where getVars :: Pat Annote -> [S.Name]
-            getVars = runPureQ $ (||? QEmpty) $ \ p -> case p :: Pat Annote of
-                  PVar _ x -> [sName x]
-                  _        -> []
-
 transPat :: (Functor m, SyntaxError m) => Renamer -> Pat Annote -> m RWCPat
 transPat rn = \ case
       PApp l x ps             -> RWCPatCon l (DataConId $ rename Value rn x) <$> mapM (transPat rn) ps
       PLit l (Signless _) lit -> RWCPatLiteral l <$> transLit lit
       PVar l x                -> return $ RWCPatVar l (mkUId $ sName x) tblank
-      p                       -> failAt (ann p) "Unsupported syntax in a pattern"
+      p                       -> failAt (ann p) $ "Unsupported syntax in a pattern: " ++ (show $ void p)

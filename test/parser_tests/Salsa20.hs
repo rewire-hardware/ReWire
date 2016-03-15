@@ -44,9 +44,6 @@ data Tuple4 a b c d = Tuple4 a b c d
 data Tuple5 a b c d e = Tuple5 a b c d e
 data ParTen = ParTen (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32)) (Tuple2 (Words16 W32) (Words16 W32))
 
-undefined :: a
-undefined = undefined
-
 add8 :: W8 -> W8 -> W8
 add8 = nativeVhdl "prim_plus" undefined
 xor32 :: W32 -> W32 -> W32

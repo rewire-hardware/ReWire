@@ -2,9 +2,6 @@ data Bit = Zero | One
 
 data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
 
-undefined :: a
-undefined = undefined
-
 plusOne :: W8 -> W8
 {-# INLINE plusOne #-}
 plusOne = nativeVhdl "prim_plusOne" undefined
