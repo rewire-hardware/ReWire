@@ -1,4 +1,4 @@
-module ReWire.Core.Main where
+module ReWire.Main (main) where
 
 import System.IO
 import System.Environment

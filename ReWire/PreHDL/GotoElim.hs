@@ -1,5 +1,3 @@
-{-# OPTIONS -fwarn-incomplete-patterns #-}
-
 module ReWire.PreHDL.GotoElim (gotoElim) where
 
 import ReWire.PreHDL.Syntax

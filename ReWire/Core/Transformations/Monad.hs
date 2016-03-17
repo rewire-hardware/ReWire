@@ -1,12 +1,18 @@
 {-# LANGUAGE FlexibleInstances,UndecidableInstances,MultiParamTypeClasses,
              GeneralizedNewtypeDeriving #-}
-{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
-
 --
 -- This is a handy monad class/transformer with lots of morphisms for stuff
 -- you often want to do in ReWire transformations.
 --
-module ReWire.Core.Transformations.Monad where
+module ReWire.Core.Transformations.Monad
+  ( RW,RWT
+  , TyConInfo(..),DataConInfo(..)
+  , askVar
+  , runRW
+  , fsubstE,fsubstsE
+  , queryG,queryT,queryD
+  , matchty
+  ) where
 
 import Control.Applicative
 import Control.Monad.Reader
@@ -31,8 +37,6 @@ newtype RWT m a = RWT { deRWT :: AssumeT (Id RWCExp) VarInfo
 data VarInfo = GlobalVar RWCDefn | LocalVar RWCTy deriving Show
 newtype TyConInfo = TyConInfo RWCData deriving Show
 data DataConInfo = DataConInfo TyConId RWCDataCon deriving Show
-
-data RWTEnv = RWTEnv { envDataDecls :: [RWCData] }
 
 type RW = RWT Identity
 

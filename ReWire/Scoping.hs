@@ -157,25 +157,6 @@ instance MonadScope m => MonadScope (ReaderT r m) where
   getInScope        = lift getInScope
   addingToScope x m = ReaderT $ \ rho -> addingToScope x (runReaderT m rho)
 
-getInScopeSorted :: forall m t . (MonadScope m,IdSort t) => m (Set (Id t))
-getInScopeSorted = do s <- getInScope
-                      let s' :: Set (Id t)
-                          s' = Set.mapMonotonic fromJust $
-                                 Set.filter isJust $
-                                   Set.mapMonotonic any2Id s
-                      return s'
-
-refreshingVar :: forall m t t' a . (Subst t t',MonadScope m) => Id t' -> t -> (Id t' -> t -> m a) -> m a
-refreshingVar x e k = do insc <- getInScopeSorted :: m (Set (Id t'))
-                         if x `Set.member` insc || x `elem` fv e
-                            then let ov =  occv e
-                                     ys =  x : map (mkId . (++"'") . deId) ys
-                                     x' =  head (filter (\ y -> not (y `Set.member` insc || y `elem` ov)) ys)
-                                 in if x /= x'
-                                      then addingToScope x' (k x' (replace (Map.singleton x x') e))
-                                      else k x e
-                            else k x e
-
 runScopeTWith :: Set IdAny -> ScopeT m a -> m a
 runScopeTWith s m = runReaderT (deScopeT m) s
 

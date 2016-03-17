@@ -1,6 +1,7 @@
-{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
-
-module ReWire.Core.Transformations.DeUniquify where
+module ReWire.Core.Transformations.DeUniquify
+  ( deUniquify
+  , cmdDeUniquify
+  ) where
 
 import ReWire.Core.Syntax
 import ReWire.Scoping

@@ -76,7 +76,6 @@ library
 
   exposed-modules:  ReWire.Core.KindChecker
                     ReWire.Core.Kinds
-                    ReWire.Core.Main
                     ReWire.Core.PrimBasis
                     ReWire.Core.Syntax
                     ReWire.Core.Transformations.DeUniquify
@@ -97,8 +96,9 @@ library
                     ReWire.FrontEnd.Desugar
                     ReWire.FrontEnd.Fixity
                     ReWire.FrontEnd.LoadPath
-                    ReWire.FrontEnd.Translate
                     ReWire.FrontEnd.Rename
+                    ReWire.FrontEnd.Translate
+                    ReWire.Main
                     ReWire.PreHDL.CFG
                     ReWire.PreHDL.ElimEmpty
                     ReWire.PreHDL.GotoElim

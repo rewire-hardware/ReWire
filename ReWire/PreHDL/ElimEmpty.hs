@@ -1,6 +1,4 @@
-{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
-
-module ReWire.PreHDL.ElimEmpty where
+module ReWire.PreHDL.ElimEmpty (elimEmpty) where
 
 import ReWire.PreHDL.Syntax
 

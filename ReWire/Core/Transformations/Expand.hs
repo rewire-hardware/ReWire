@@ -1,6 +1,4 @@
-{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
-
-module ReWire.Core.Transformations.Expand where
+module ReWire.Core.Transformations.Expand (expand,cmdExpand) where
 
 import ReWire.Core.Syntax
 import ReWire.Scoping

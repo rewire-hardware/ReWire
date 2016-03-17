@@ -1,6 +1,21 @@
-{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
-
-module ReWire.Core.Transformations.Uniquify where
+module ReWire.Core.Transformations.Uniquify
+  ( base32,b32
+  , fresh
+  , pvs
+  , askT,localT
+  , askE,localE
+  , askUniqueT,askUniqueE
+  , uniquingT,uniquingE
+  , uniquifyTy
+  , uniquifyE
+  , uniquifyDataCon
+  , uniquifyDataDecl
+  , uniquifyPat
+  , uniquifyExpr
+  , uniquifyDefn
+  , uniquifyModule
+  , uniquify,cmdUniquify
+  ) where
 
 import ReWire.Core.Syntax
 import ReWire.Scoping

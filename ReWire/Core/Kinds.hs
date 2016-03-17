@@ -1,7 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses,DeriveDataTypeable #-}
-{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
-module ReWire.Core.Kinds where
+module ReWire.Core.Kinds (Kind(..)) where
 
 import ReWire.Scoping
 import ReWire.Pretty

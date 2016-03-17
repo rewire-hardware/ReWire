@@ -2,19 +2,19 @@
       ,Rank2Types,GADTs,ScopedTypeVariables #-}
 
 module ReWire.Core.Syntax
-      ( Annote(..),toSrcSpanInfo,noAnn,unAnn,Annotation(..),Annotated(..)
-      , DataConId(..),TyConId(..),Poly(..)
-      , RWCTy(..)
-      , RWCExp(..)
-      , RWCLit(..)
-      , RWCPat(..)
-      , RWCDefn(..)
-      , RWCData(..)
-      , RWCDataCon(..)
-      , RWCProgram(..)
-      , flattenArrow,mkArrow,arrowLeft,arrowRight
-      , flattenTyApp,flattenApp,typeOf
-      ) where
+  ( Annote(..),toSrcSpanInfo,noAnn,unAnn,Annotation(..),Annotated(..)
+  , DataConId(..),TyConId(..),Poly(..)
+  , RWCTy(..)
+  , RWCExp(..)
+  , RWCLit(..)
+  , RWCPat(..)
+  , RWCDefn(..)
+  , RWCData(..)
+  , RWCDataCon(..)
+  , RWCProgram(..)
+  , flattenArrow,mkArrow,arrowLeft,arrowRight
+  , flattenTyApp,flattenApp,typeOf
+  ) where
 
 import ReWire.Core.Kinds
 import ReWire.Pretty

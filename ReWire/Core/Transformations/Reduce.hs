@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
-
 module ReWire.Core.Transformations.Reduce
   ( redmod
   , cmdReduce

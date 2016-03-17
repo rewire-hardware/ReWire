@@ -1,7 +1,6 @@
-{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module ReWire.PreHDL.ToVHDL where
+module ReWire.PreHDL.ToVHDL (toVHDL) where
 
 import ReWire.PreHDL.Syntax
 import Data.List (intercalate)

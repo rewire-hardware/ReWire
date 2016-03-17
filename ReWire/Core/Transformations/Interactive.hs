@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
-
 -- Interactive environment for transforming ReWire Core programs.
 
 module ReWire.Core.Transformations.Interactive (TransCommand,trans) where

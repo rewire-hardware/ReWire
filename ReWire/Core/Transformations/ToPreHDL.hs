@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
-
 module ReWire.Core.Transformations.ToPreHDL
   ( cmdToCFG
   , cmdToPre
@@ -807,13 +805,6 @@ funPat lscr tscr (RWCPatCon _ dci ps) = do (ctm,rtm) <- mkFunTagCheck dci lscr
 funPat lscr _ (RWCPatVar _ x _)       = do rm <- freshLocBool
                                            return ([(x,lscr)],Assign rm (BoolRHS (BoolConst True)),rm)
 funPat _ _ RWCPatLiteral {}           = fail "funPat: encountered literal"
-
-funAlt :: Loc -> RWCTy -> Loc -> RWCPat -> RWCExp -> CGM Cmd
-funAlt lscr tscr lres p e = do (bds,cmatch,rmatch) <- funPat lscr tscr p
-                               foldr (uncurry binding) (do
-                                 (ce,le) <- funExpr e
-                                 return (cmatch `mkSeq` If (BoolVar rmatch) (ce `mkSeq` Assign lres (LocRHS le))))
-                                bds
 
 funAlt' :: Loc -> RWCTy -> Loc -> RWCPat -> RWCExp -> CGM (Cmd,(Loc,Cmd))
 funAlt' lscr tscr lres p e = do (bds,cmatch,rmatch) <- funPat lscr tscr p

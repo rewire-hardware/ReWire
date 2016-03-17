@@ -1,6 +1,8 @@
-{-# OPTIONS -fwarn-incomplete-patterns #-}
-
-module ReWire.PreHDL.CFG where
+module ReWire.PreHDL.CFG
+  ( CFG(..),Branch(..)
+  , elimUnreachable,mkDot,gather
+  , linearize,cfgToProg
+  ) where
 
 import ReWire.PreHDL.Syntax
 import Data.Graph.Inductive

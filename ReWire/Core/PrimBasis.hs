@@ -1,4 +1,4 @@
-module ReWire.Core.PrimBasis where
+module ReWire.Core.PrimBasis (primBasis) where
 
 import ReWire.Scoping
 import ReWire.Core.Kinds

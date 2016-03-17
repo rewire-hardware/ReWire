@@ -1,6 +1,10 @@
-{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
-
-module ReWire.Core.Transformations.Purge where
+module ReWire.Core.Transformations.Purge
+  ( inuseExp
+  , inuseModule
+  , occursModule
+  , purge,occurs
+  , cmdPurge,cmdOccurs
+  ) where
 
 import ReWire.Core.Syntax
 import ReWire.Scoping
