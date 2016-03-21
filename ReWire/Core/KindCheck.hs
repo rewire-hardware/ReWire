@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses,FlexibleContexts #-}
 
-module ReWire.Core.KindChecker (kindcheck) where
+module ReWire.Core.KindCheck (kindcheck) where
 
 import ReWire.Error
 import ReWire.Pretty

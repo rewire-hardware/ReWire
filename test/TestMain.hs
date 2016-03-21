@@ -1,8 +1,8 @@
-import ReWire.Core.KindChecker
-import ReWire.Core.TypeChecker
+import ReWire.Core.KindCheck
+import ReWire.Core.TypeCheck
 import ReWire.FrontEnd
 import ReWire.FrontEnd.LoadPath
-import qualified ReWire.Core.Main as M
+import qualified ReWire.Main as M
 
 import System.Directory (setCurrentDirectory)
 import System.Environment (withArgs)

@@ -5,7 +5,7 @@
 -- simpler.
 --
 
-module ReWire.Core.TypeChecker (typecheck) where
+module ReWire.Core.TypeCheck (typecheck) where
 
 import ReWire.Error
 import ReWire.Scoping

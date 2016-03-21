@@ -7,8 +7,8 @@ import System.Exit
 import ReWire.Core.PrimBasis
 import ReWire.Core.Syntax
 import ReWire.Pretty
-import ReWire.Core.KindChecker
-import ReWire.Core.TypeChecker
+import ReWire.Core.KindCheck
+import ReWire.Core.TypeCheck
 import ReWire.Core.Transformations.Interactive
 import ReWire.Core.Transformations.Inline
 import ReWire.FrontEnd
