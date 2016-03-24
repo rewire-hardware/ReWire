@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase, ViewPatterns #-}
-module ReWire.FrontEnd.Translate (translate) where
+module ReWire.FrontEnd.ToMantle (toMantle) where
 
-import ReWire.Core.Kinds
+import ReWire.FrontEnd.Kinds
 import ReWire.Core.Syntax hiding (ann)
 import ReWire.Error
 import ReWire.FrontEnd.Fixity
@@ -36,8 +36,8 @@ mkUId (S.Ident n)  = mkId n
 mkUId (S.Symbol n) = mkId n
 
 -- | Translate a Haskell module into the ReWire abstract syntax.
-translate :: (Applicative m, Functor m, SyntaxError m) => Renamer -> Module Annote -> m (RWCProgram, Exports)
-translate rn (Module _ (Just (ModuleHead _ m _ exps)) _ _ (reverse -> ds)) = do
+toMantle :: (Applicative m, Functor m, SyntaxError m) => Renamer -> Module Annote -> m (RWCProgram, Exports)
+toMantle rn (Module _ (Just (ModuleHead _ m _ exps)) _ _ (reverse -> ds)) = do
       let rn' = extendWithGlobs (sModuleName m) ds rn
       tyDefs <- foldM (transData rn') [] ds
       tySigs <- foldM (transTySig rn') [] ds
@@ -53,7 +53,7 @@ translate rn (Module _ (Just (ModuleHead _ m _ exps)) _ _ (reverse -> ds)) = do
                   DataDecl _ _ _ hd cs _   -> (:) $ ExportWith (rename Type rn $ fst $ sDeclHead hd) $ map (rename Value rn . getCtor) cs
                   PatBind _ (PVar _ n) _ _ -> (:) $ Export $ rename Value rn $ sName n
                   _                        -> id
-translate _ m = failAt (ann m) "Unsupported module syntax"
+toMantle _ m = failAt (ann m) "Unsupported module syntax"
 
 resolveExports :: Renamer -> [Export] -> Exports
 resolveExports rn = foldr (resolveExport rn) mempty

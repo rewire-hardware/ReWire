@@ -1,5 +1,3 @@
-import ReWire.Core.KindCheck
-import ReWire.Core.TypeCheck
 import ReWire.FrontEnd
 import ReWire.FrontEnd.LoadPath
 import qualified ReWire.Main as M
@@ -41,11 +39,7 @@ testTC f_ = testCase f_ (do d   <- getDataFileName "test/parser_tests/"
                             res <- loadProgram lp f_
                             case res of
                               Left e  -> assertFailure $ show e
-                              Right m -> case kindcheck m of
-                                Left e   -> assertFailure $ show e
-                                Right m' -> case typecheck m' of
-                                  Left e  -> assertFailure $ show e
-                                  Right _ -> return ())
+                              Right m -> return ())
 
 testCompile :: FilePath -> Test
 testCompile f_ = testCase f_ (do f <- getDataFileName ("test/parser_tests/" ++ f_)

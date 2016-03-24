@@ -16,7 +16,7 @@ module ReWire.Core.Syntax
   , flattenTyApp,flattenApp,typeOf
   ) where
 
-import ReWire.Core.Kinds
+import ReWire.FrontEnd.Kinds
 import ReWire.Pretty
 import ReWire.Scoping
 import ReWire.SYB (runPureT,transform)

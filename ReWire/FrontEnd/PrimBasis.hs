@@ -1,7 +1,7 @@
-module ReWire.Core.PrimBasis (primBasis) where
+module ReWire.FrontEnd.PrimBasis (primBasis) where
 
 import ReWire.Scoping
-import ReWire.Core.Kinds
+import ReWire.FrontEnd.Kinds
 import ReWire.Core.Syntax
 
 --

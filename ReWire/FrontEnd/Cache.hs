@@ -9,10 +9,13 @@ import ReWire.Core.Syntax
 import ReWire.Error
 import ReWire.FrontEnd.Annotate
 import ReWire.FrontEnd.Desugar
+import ReWire.FrontEnd.KindCheck
 import ReWire.FrontEnd.Rename
-import ReWire.FrontEnd.Translate
+import ReWire.FrontEnd.ToCore
+import ReWire.FrontEnd.ToMantle
+import ReWire.FrontEnd.TypeCheck
 
-import Control.Monad ((<=<), liftM, msum)
+import Control.Monad ((>=>), liftM, msum)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT, ReaderT, MonadReader (..))
 import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify)
@@ -61,8 +64,9 @@ getImps = \case
 -- Pass 1    Parse.
 -- Pass 2-4  Fixity fixing (uniquify + fix + deuniquify, because bug in applyFixities).
 -- Pass 5    Annotate.
--- Pass 6-12 Desugar.
--- Pass 13   Translate + rename globals.
+-- Pass 6-14 Desugar.
+-- Pass 15   Translate to mantle + rename globals.
+-- Pass 16   Translate to core
 
 getProgram :: FilePath -> Cache (RWCProgram, Exports)
 getProgram fp = Map.lookup fp <$> get >>= \ case
@@ -79,10 +83,16 @@ getProgram fp = Map.lookup fp <$> get >>= \ case
             rn         <- mkRenamer m
             imps       <- loadImports m
 
-            (m', exps) <- translate rn <=< desugar <=< annotate <=< fixFixity rn $ m
+            (m', exps) <- fixFixity rn
+                      >=> annotate
+                      >=> desugar
+                      >=> toMantle rn $ m
+            m''        <- kindcheck
+                      >=> typecheck
+                      >=> toCore $ m' <> imps
 
-            modify $ Map.insert fp (m' <> imps, exps)
-            return (m' <> imps, exps)
+            modify $ Map.insert fp (m'', exps)
+            return (m'', exps)
 
       where tryParseInDir :: FilePath -> Cache (Maybe (Module SrcSpanInfo))
             tryParseInDir dp = do

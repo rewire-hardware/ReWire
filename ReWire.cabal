@@ -74,10 +74,7 @@ library
 
   other-modules:    Paths_ReWire
 
-  exposed-modules:  ReWire.Core.KindCheck
-                    ReWire.Core.Kinds
-                    ReWire.Core.PrimBasis
-                    ReWire.Core.Syntax
+  exposed-modules:  ReWire.Core.Syntax
                     ReWire.Core.Transformations.DeUniquify
                     ReWire.Core.Transformations.Expand
                     ReWire.Core.Transformations.Inline
@@ -88,16 +85,20 @@ library
                     ReWire.Core.Transformations.ToPreHDL
                     ReWire.Core.Transformations.Types
                     ReWire.Core.Transformations.Uniquify
-                    ReWire.Core.TypeCheck
                     ReWire.Error
                     ReWire.FrontEnd
                     ReWire.FrontEnd.Annotate
                     ReWire.FrontEnd.Cache
                     ReWire.FrontEnd.Desugar
                     ReWire.FrontEnd.Fixity
+                    ReWire.FrontEnd.KindCheck
+                    ReWire.FrontEnd.Kinds
                     ReWire.FrontEnd.LoadPath
+                    ReWire.FrontEnd.PrimBasis
                     ReWire.FrontEnd.Rename
-                    ReWire.FrontEnd.Translate
+                    ReWire.FrontEnd.ToCore
+                    ReWire.FrontEnd.ToMantle
+                    ReWire.FrontEnd.TypeCheck
                     ReWire.Main
                     ReWire.PreHDL.CFG
                     ReWire.PreHDL.ElimEmpty

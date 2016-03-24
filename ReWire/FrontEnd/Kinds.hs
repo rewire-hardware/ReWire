@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses,DeriveDataTypeable #-}
 
-module ReWire.Core.Kinds (Kind(..)) where
+module ReWire.FrontEnd.Kinds (Kind(..)) where
 
 import ReWire.Scoping
 import ReWire.Pretty
