@@ -1,10 +1,10 @@
-module ReWire.Core.Transformations.Inline (inline) where
+module ReWire.Core.Inline (inline) where
 
 import ReWire.Scoping
 import ReWire.Core.Syntax
-import ReWire.Core.Transformations.Expand (expand)
-import ReWire.Core.Transformations.Reduce (redmod)
-import ReWire.Core.Transformations.Purge (purge)
+import ReWire.Core.Expand (expand)
+import ReWire.Core.Reduce (redmod)
+import ReWire.Core.Purge (purge)
 
 toInline :: RWCProgram -> [Id RWCExp]
 toInline m = concatMap f (defns m)

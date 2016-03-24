@@ -1,4 +1,4 @@
-module ReWire.Core.Transformations.Purge
+module ReWire.Core.Purge
   ( inuseExp
   , inuseModule
   , occursModule
@@ -8,15 +8,15 @@ module ReWire.Core.Transformations.Purge
 
 import ReWire.Core.Syntax
 import ReWire.Scoping
-import ReWire.Core.Transformations.Types
-import ReWire.Core.Transformations.Monad
+import ReWire.Core.Types
+import ReWire.Core.Monad
 import Control.Monad.Reader
 import Control.Monad.State
 --import Control.Monad.Identity
 import Data.Set hiding (map,filter,null)
 import Data.List hiding (insert)
-import ReWire.Core.Transformations.Uniquify (uniquify)
-import ReWire.Core.Transformations.DeUniquify (deUniquify)
+import ReWire.Core.Uniquify (uniquify)
+import ReWire.Core.DeUniquify (deUniquify)
 
 type IM = StateT (Set (Id RWCExp)) RW
 

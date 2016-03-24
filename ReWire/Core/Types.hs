@@ -1,4 +1,4 @@
-module ReWire.Core.Transformations.Types (TransCommand) where
+module ReWire.Core.Types (TransCommand) where
 
 import ReWire.Core.Syntax
 

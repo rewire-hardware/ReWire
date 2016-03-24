@@ -1,23 +1,24 @@
 module ReWire.Main (main) where
 
-import System.IO
-import System.Environment
-import System.Console.GetOpt
-import System.Exit
+import ReWire.Core.Inline
+import ReWire.Core.Interactive
 import ReWire.Core.Syntax
-import ReWire.Pretty
-import ReWire.Core.Transformations.Interactive
-import ReWire.Core.Transformations.Inline
+import ReWire.Core.ToPreHDL (cfgFromRW,eu)
 import ReWire.FrontEnd
 import ReWire.FrontEnd.LoadPath
 import ReWire.PreHDL.CFG (mkDot,gather,linearize,cfgToProg)
-import ReWire.PreHDL.GotoElim (gotoElim)
 import ReWire.PreHDL.ElimEmpty (elimEmpty)
+import ReWire.PreHDL.GotoElim (gotoElim)
 import ReWire.PreHDL.ToVHDL (toVHDL)
-import ReWire.Core.Transformations.ToPreHDL (cfgFromRW,eu)
+import ReWire.Pretty
+
 import Control.Monad (when,unless)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
+import System.Console.GetOpt
+import System.Environment
+import System.Exit
+import System.IO
 
 data Flag = FlagCFG String
           | FlagLCFG String

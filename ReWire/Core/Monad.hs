@@ -4,7 +4,7 @@
 -- This is a handy monad class/transformer with lots of morphisms for stuff
 -- you often want to do in ReWire transformations.
 --
-module ReWire.Core.Transformations.Monad
+module ReWire.Core.Monad
   ( RW,RWT
   , TyConInfo(..),DataConInfo(..)
   , askVar
@@ -27,7 +27,7 @@ import Data.Map (Map)
 import ReWire.Scoping
 import qualified Data.Set as Set
 import Data.Set (Set)
-import ReWire.Core.Transformations.Uniquify (uniquifyE)
+import ReWire.Core.Uniquify (uniquifyE)
 
 newtype RWT m a = RWT { deRWT :: AssumeT (Id RWCExp) VarInfo
                                   (AssumeT TyConId TyConInfo

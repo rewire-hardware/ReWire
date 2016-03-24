@@ -74,17 +74,17 @@ library
 
   other-modules:    Paths_ReWire
 
-  exposed-modules:  ReWire.Core.Syntax
-                    ReWire.Core.Transformations.DeUniquify
-                    ReWire.Core.Transformations.Expand
-                    ReWire.Core.Transformations.Inline
-                    ReWire.Core.Transformations.Interactive
-                    ReWire.Core.Transformations.Monad
-                    ReWire.Core.Transformations.Purge
-                    ReWire.Core.Transformations.Reduce
-                    ReWire.Core.Transformations.ToPreHDL
-                    ReWire.Core.Transformations.Types
-                    ReWire.Core.Transformations.Uniquify
+  exposed-modules:  ReWire.Core.DeUniquify
+                    ReWire.Core.Expand
+                    ReWire.Core.Inline
+                    ReWire.Core.Interactive
+                    ReWire.Core.Monad
+                    ReWire.Core.Purge
+                    ReWire.Core.Reduce
+                    ReWire.Core.Syntax
+                    ReWire.Core.ToPreHDL
+                    ReWire.Core.Types
+                    ReWire.Core.Uniquify
                     ReWire.Error
                     ReWire.FrontEnd
                     ReWire.FrontEnd.Annotate

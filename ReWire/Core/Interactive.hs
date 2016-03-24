@@ -1,6 +1,6 @@
 -- Interactive environment for transforming ReWire Core programs.
 
-module ReWire.Core.Transformations.Interactive (TransCommand,trans) where
+module ReWire.Core.Interactive (TransCommand,trans) where
 
 --import Prelude hiding (sequence,mapM)
 import ReWire.Core.Syntax
@@ -11,13 +11,13 @@ import Data.List (intercalate)
 --import Data.Traversable (sequence,mapM)
 --import Data.Maybe (catMaybes,isNothing,fromJust)
 import Data.Char
-import ReWire.Core.Transformations.Expand (cmdExpand)
-import ReWire.Core.Transformations.Reduce (cmdReduce)
-import ReWire.Core.Transformations.Purge (cmdPurge,cmdOccurs)
-import ReWire.Core.Transformations.ToPreHDL (cmdToCFG,cmdToPre,cmdToVHDL,cmdToSCFG,cmdToPreG)
-import ReWire.Core.Transformations.Uniquify (cmdUniquify)
-import ReWire.Core.Transformations.DeUniquify (cmdDeUniquify)
-import ReWire.Core.Transformations.Types
+import ReWire.Core.Expand (cmdExpand)
+import ReWire.Core.Reduce (cmdReduce)
+import ReWire.Core.Purge (cmdPurge,cmdOccurs)
+import ReWire.Core.ToPreHDL (cmdToCFG,cmdToPre,cmdToVHDL,cmdToSCFG,cmdToPreG)
+import ReWire.Core.Uniquify (cmdUniquify)
+import ReWire.Core.DeUniquify (cmdDeUniquify)
+import ReWire.Core.Types
 import ReWire.Pretty
 import System.IO
 

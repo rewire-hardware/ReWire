@@ -1,4 +1,4 @@
-module ReWire.Core.Transformations.Uniquify
+module ReWire.Core.Uniquify
   ( base32,b32
   , fresh
   , pvs
@@ -25,7 +25,7 @@ import Control.Monad.Identity
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import qualified Data.ByteString.Char8 as BS
-import ReWire.Core.Transformations.Types
+import ReWire.Core.Types
 
 type UQM = ReaderT (Map (Id RWCExp) (Id RWCExp)) (ReaderT (Map (Id RWCTy) (Id RWCTy)) (StateT Int Identity))
 

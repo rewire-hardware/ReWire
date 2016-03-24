@@ -1,4 +1,4 @@
-module ReWire.Core.Transformations.DeUniquify
+module ReWire.Core.DeUniquify
   ( deUniquify
   , cmdDeUniquify
   ) where
@@ -14,7 +14,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.ByteString.Char8 as BS
 import Data.List (find)
 import Data.Maybe (fromJust)
-import ReWire.Core.Transformations.Types
+import ReWire.Core.Types
 
 data DQEnv = DQEnv { inScopeE   :: Map (Id RWCExp) (Id RWCExp),
                      allocatedE :: Set (Id RWCExp),

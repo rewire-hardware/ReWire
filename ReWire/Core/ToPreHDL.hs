@@ -1,4 +1,4 @@
-module ReWire.Core.Transformations.ToPreHDL
+module ReWire.Core.ToPreHDL
   ( cmdToCFG
   , cmdToPre
   , cmdToSCFG
@@ -9,9 +9,9 @@ module ReWire.Core.Transformations.ToPreHDL
   ) where
 
 import ReWire.Core.Syntax
-import ReWire.Core.Transformations.Monad
-import ReWire.Core.Transformations.Types
-import ReWire.Core.Transformations.Uniquify (uniquify)
+import ReWire.Core.Monad
+import ReWire.Core.Types
+import ReWire.Core.Uniquify (uniquify)
 import ReWire.PreHDL.CFG
 import ReWire.PreHDL.ElimEmpty
 import ReWire.PreHDL.GotoElim

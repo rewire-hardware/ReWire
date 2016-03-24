@@ -1,11 +1,11 @@
-module ReWire.Core.Transformations.Expand (expand,cmdExpand) where
+module ReWire.Core.Expand (expand,cmdExpand) where
 
 import ReWire.Core.Syntax
 import ReWire.Scoping
-import ReWire.Core.Transformations.Monad
-import ReWire.Core.Transformations.DeUniquify (deUniquify)
-import ReWire.Core.Transformations.Uniquify (uniquify)
-import ReWire.Core.Transformations.Types
+import ReWire.Core.Monad
+import ReWire.Core.DeUniquify (deUniquify)
+import ReWire.Core.Uniquify (uniquify)
+import ReWire.Core.Types
 
 expandExpr :: [Id RWCExp] -> RWCExp -> RW RWCExp
 expandExpr ns (RWCApp an e1 e2)             = do e1' <- expandExpr ns e1

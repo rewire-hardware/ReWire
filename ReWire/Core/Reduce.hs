@@ -1,4 +1,4 @@
-module ReWire.Core.Transformations.Reduce
+module ReWire.Core.Reduce
   ( redmod
   , cmdReduce
   ) where
@@ -12,10 +12,10 @@ import Control.Monad hiding (sequence,mapM)
 --import Control.Monad.Identity hiding (sequence,mapM)
 import Data.Traversable (mapM)
 --import Data.Maybe (catMaybes,isNothing,fromJust)
-import ReWire.Core.Transformations.Monad
-import ReWire.Core.Transformations.Types
-import ReWire.Core.Transformations.Uniquify (uniquify)
-import ReWire.Core.Transformations.DeUniquify (deUniquify)
+import ReWire.Core.Monad
+import ReWire.Core.Types
+import ReWire.Core.Uniquify (uniquify)
+import ReWire.Core.DeUniquify (deUniquify)
 
 reduce :: Monad m => RWCExp -> RWT m RWCExp
 reduce (RWCApp an e1 e2)     = do e1' <- reduce e1
