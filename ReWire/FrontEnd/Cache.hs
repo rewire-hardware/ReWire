@@ -5,8 +5,9 @@ module ReWire.FrontEnd.Cache
       , LoadPath
       ) where
 
-import ReWire.Core.Syntax
+import ReWire.Core.Syntax (RWCProgram)
 import ReWire.Error
+import ReWire.FrontEnd.Syntax
 import ReWire.FrontEnd.Annotate
 import ReWire.FrontEnd.Desugar
 import ReWire.FrontEnd.KindCheck
@@ -35,7 +36,7 @@ import Language.Haskell.Exts.Annotated.Syntax hiding (Annotation, Namespace)
 
 type Cache = ReaderT LoadPath (StateT ModCache (SyntaxErrorT IO))
 type LoadPath = [FilePath]
-type ModCache = Map.Map FilePath (RWCProgram, Exports)
+type ModCache = Map.Map FilePath (RWMProgram, Exports)
 
 runCache :: Cache a -> LoadPath -> IO (Either AstError a)
 runCache m lp = runSyntaxError $ fst <$> runStateT (runReaderT m lp) mempty
@@ -44,7 +45,7 @@ mkRenamer :: Annotation a => Module a -> Cache Renamer
 mkRenamer m = mconcat <$> mapM mkRenamer' (getImps m)
       where mkRenamer' :: Annotation a => ImportDecl a -> Cache Renamer
             mkRenamer' (ImportDecl _ (sModuleName -> m) quald _ _ _ (fmap sModuleName -> as) specs) = do
-                  (_, exps) <- getProgram $ toFilePath m
+                  (_, exps) <- getProgram' $ toFilePath m
                   fromImps m quald exps as specs
 
 getImps :: Annotation a => Module a -> [ImportDecl a]
@@ -60,6 +61,13 @@ getImps = \case
             isPrelude :: Annotation a => ImportDecl a -> Bool
             isPrelude ImportDecl { importModule = ModuleName _ n } = n == "Prelude"
 
+getProgram :: FilePath -> Cache RWCProgram
+getProgram fp = do
+      (p, _) <- getProgram' fp
+      p'     <- kindcheck
+            >=> typecheck
+            >=> toCore $ p
+      return p'
 
 -- Pass 1    Parse.
 -- Pass 2-4  Fixity fixing (uniquify + fix + deuniquify, because bug in applyFixities).
@@ -68,8 +76,8 @@ getImps = \case
 -- Pass 15   Translate to mantle + rename globals.
 -- Pass 16   Translate to core
 
-getProgram :: FilePath -> Cache (RWCProgram, Exports)
-getProgram fp = Map.lookup fp <$> get >>= \ case
+getProgram' :: FilePath -> Cache (RWMProgram, Exports)
+getProgram' fp = Map.lookup fp <$> get >>= \ case
       Just p  -> return p
       Nothing -> do
             modify $ Map.insert fp mempty
@@ -87,12 +95,9 @@ getProgram fp = Map.lookup fp <$> get >>= \ case
                       >=> annotate
                       >=> desugar
                       >=> toMantle rn $ m
-            m''        <- kindcheck
-                      >=> typecheck
-                      >=> toCore $ m' <> imps
 
-            modify $ Map.insert fp (m'', exps)
-            return (m'', exps)
+            modify $ Map.insert fp (m' <> imps, exps)
+            return (m' <> imps, exps)
 
       where tryParseInDir :: FilePath -> Cache (Maybe (Module SrcSpanInfo))
             tryParseInDir dp = do
@@ -116,5 +121,5 @@ getProgram fp = Map.lookup fp <$> get >>= \ case
                   ParseFailed (S.SrcLoc "" r c) msg -> failAt (S.SrcLoc fp r c) msg
                   ParseFailed l msg                 -> failAt l msg
 
-            loadImports :: Annotation a => Module a -> Cache RWCProgram
-            loadImports = liftM mconcat . mapM (liftM fst . getProgram . toFilePath . sModuleName . importModule) . getImps
+            loadImports :: Annotation a => Module a -> Cache RWMProgram
+            loadImports = liftM mconcat . mapM (liftM fst . getProgram' . toFilePath . sModuleName . importModule) . getImps

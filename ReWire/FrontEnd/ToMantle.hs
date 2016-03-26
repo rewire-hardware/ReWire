@@ -2,7 +2,7 @@
 module ReWire.FrontEnd.ToMantle (toMantle) where
 
 import ReWire.FrontEnd.Kinds
-import ReWire.Core.Syntax hiding (ann)
+import ReWire.FrontEnd.Syntax hiding (ann)
 import ReWire.Error
 import ReWire.FrontEnd.Fixity
 import ReWire.FrontEnd.Rename
@@ -36,7 +36,7 @@ mkUId (S.Ident n)  = mkId n
 mkUId (S.Symbol n) = mkId n
 
 -- | Translate a Haskell module into the ReWire abstract syntax.
-toMantle :: (Applicative m, Functor m, SyntaxError m) => Renamer -> Module Annote -> m (RWCProgram, Exports)
+toMantle :: (Applicative m, Functor m, SyntaxError m) => Renamer -> Module Annote -> m (RWMProgram, Exports)
 toMantle rn (Module _ (Just (ModuleHead _ m _ exps)) _ _ (reverse -> ds)) = do
       let rn' = extendWithGlobs (sModuleName m) ds rn
       tyDefs <- foldM (transData rn') [] ds
@@ -44,7 +44,7 @@ toMantle rn (Module _ (Just (ModuleHead _ m _ exps)) _ _ (reverse -> ds)) = do
       inls   <- foldM transInlineSig [] ds
       fnDefs <- foldM (transDef rn' tySigs inls) [] ds
       exps'  <- maybe (return $ getGlobExps rn' ds) (\ (ExportSpecList _ exps') -> foldM (transExport rn' ds) [] exps') exps
-      return (RWCProgram tyDefs fnDefs, resolveExports rn exps')
+      return (RWMProgram tyDefs fnDefs, resolveExports rn exps')
       where getGlobExps :: Renamer -> [Decl Annote] -> [Export]
             getGlobExps rn ds = getExportFixities ds ++ foldr (getGlobExps' rn) [] ds
 
@@ -145,12 +145,12 @@ getCtor = \ case
       QualConDecl _ _ _ (RecDecl _ n _) -> sName n
       _                                 -> undefined
 
-transData :: (Applicative m, Functor m, SyntaxError m) => Renamer -> [RWCData] -> Decl Annote -> m [RWCData]
+transData :: (Applicative m, Functor m, SyntaxError m) => Renamer -> [RWMData] -> Decl Annote -> m [RWMData]
 transData rn datas = \ case
       DataDecl l _ _ (sDeclHead -> hd) cons _ -> do
             tyVars' <- mapM (transTyVar l) $ snd hd
             cons' <- mapM (transCon rn) cons
-            return $ RWCData l (TyConId $ rename Type rn $ fst hd) tyVars' kblank cons' : datas
+            return $ RWMData l (TyConId $ rename Type rn $ fst hd) tyVars' kblank cons' : datas
       _                                       -> return datas
 
 transTySig :: (Applicative m, Functor m, SyntaxError m) => Renamer -> [(S.Name, RWCTy)] -> Decl Annote -> m [(S.Name, RWCTy)]
@@ -168,10 +168,10 @@ transInlineSig inls = \ case
       InlineSig _ _ Nothing (UnQual _ x) -> return $ sName x : inls
       _                                  -> return inls
 
-transDef :: (Applicative m, Functor m, SyntaxError m) => Renamer -> [(S.Name, RWCTy)] -> [S.Name] -> [RWCDefn] -> Decl Annote -> m [RWCDefn]
+transDef :: (Applicative m, Functor m, SyntaxError m) => Renamer -> [(S.Name, RWCTy)] -> [S.Name] -> [RWMDefn] -> Decl Annote -> m [RWMDefn]
 transDef rn tys inls defs = \ case
       PatBind l (PVar _ (sName -> x)) (UnGuardedRhs _ e) Nothing -> case lookup x tys of
-            Just t -> (:defs) . RWCDefn l (mkId $ rename Value rn x) (nub (fv t) :-> t) (x `elem` inls) <$> transExp rn e
+            Just t -> (:defs) . RWMDefn l (mkId $ rename Value rn x) (nub (fv t) :-> t) (x `elem` inls) <$> transExp rn e
             _      -> failAt l "No type signature for"
       _                                             -> return defs
 
@@ -215,19 +215,19 @@ kblank = Kstar
 tblank :: RWCTy
 tblank = RWCTyCon noAnn (TyConId "_")
 
-transExp :: (Applicative m, Functor m, SyntaxError m) => Renamer -> Exp Annote -> m RWCExp
+transExp :: (Applicative m, Functor m, SyntaxError m) => Renamer -> Exp Annote -> m RWMExp
 transExp rn = \ case
       App l (App _ (Var _ (UnQual _ (Ident _ "nativeVhdl"))) (Lit _ (String _ f _))) e
-                            -> RWCNativeVHDL l f <$> transExp rn e
+                            -> RWMNativeVHDL l f <$> transExp rn e
       App l (Var _ (UnQual _ (Ident _ "primError"))) (Lit _ (String _ m _))
-                            -> return $ RWCError l m tblank
-      App l e1 e2           -> RWCApp l <$> transExp rn e1 <*> transExp rn e2
-      Lambda l [PVar _ x] e -> RWCLam l (mkUId $ sName x) tblank <$> transExp (exclude Value [sName x] rn) e
-      Var l x               -> return $ RWCVar l (mkId $ rename Value rn x) tblank
-      Con l x               -> return $ RWCCon l (DataConId $ rename Value rn x) tblank
-      Lit l lit             -> RWCLiteral l <$> transLit lit
+                            -> return $ RWMError l m tblank
+      App l e1 e2           -> RWMApp l <$> transExp rn e1 <*> transExp rn e2
+      Lambda l [PVar _ x] e -> RWMLam l (mkUId $ sName x) tblank <$> transExp (exclude Value [sName x] rn) e
+      Var l x               -> return $ RWMVar l (mkId $ rename Value rn x) tblank
+      Con l x               -> return $ RWMCon l (DataConId $ rename Value rn x) tblank
+      Lit l lit             -> RWMLiteral l <$> transLit lit
       Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _]
-                            -> RWCCase l
+                            -> RWMCase l
                                     <$> transExp rn e
                                     <*> transPat rn p
                                     <*> transExp (exclude Value (getVars p) rn) e1
@@ -245,9 +245,9 @@ transLit = \ case
       Char _ c _ -> return $ RWCLitChar c
       lit        -> failAt (ann lit) "Unsupported syntax for a literal"
 
-transPat :: (Functor m, SyntaxError m) => Renamer -> Pat Annote -> m RWCPat
+transPat :: (Functor m, SyntaxError m) => Renamer -> Pat Annote -> m RWMPat
 transPat rn = \ case
-      PApp l x ps             -> RWCPatCon l (DataConId $ rename Value rn x) <$> mapM (transPat rn) ps
-      PLit l (Signless _) lit -> RWCPatLiteral l <$> transLit lit
-      PVar l x                -> return $ RWCPatVar l (mkUId $ sName x) tblank
+      PApp l x ps             -> RWMPatCon l (DataConId $ rename Value rn x) <$> mapM (transPat rn) ps
+      PLit l (Signless _) lit -> RWMPatLiteral l <$> transLit lit
+      PVar l x                -> return $ RWMPatVar l (mkUId $ sName x) tblank
       p                       -> failAt (ann p) $ "Unsupported syntax in a pattern: " ++ (show $ void p)

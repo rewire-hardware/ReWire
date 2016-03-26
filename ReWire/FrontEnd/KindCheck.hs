@@ -2,10 +2,10 @@
 
 module ReWire.FrontEnd.KindCheck (kindcheck) where
 
-import ReWire.FrontEnd.Kinds
-import ReWire.Core.Syntax
 import ReWire.Error
+import ReWire.FrontEnd.Kinds
 import ReWire.FrontEnd.PrimBasis
+import ReWire.FrontEnd.Syntax
 import ReWire.Pretty
 import ReWire.Scoping
 
@@ -61,8 +61,8 @@ freshkv = do
       updKiSub $ Map.insert n $ Kvar n
       return n
 
-initDataDecl :: SyntaxError m => RWCData -> KCM m (TyConId, Kind)
-initDataDecl (RWCData _ i _ _ _) = do
+initDataDecl :: SyntaxError m => RWMData -> KCM m (TyConId, Kind)
+initDataDecl (RWMData _ i _ _ _) = do
       v <- freshkv
       return (i, Kvar v)
 
@@ -123,8 +123,8 @@ kcDataCon (RWCDataCon an _ ts) = do
       ks <- mapM kcTy ts
       mapM_ (unify an Kstar) ks
 
-kcDataDecl :: SyntaxError m => RWCData -> KCM m ()
-kcDataDecl (RWCData an i tvs _ dcs) = do
+kcDataDecl :: SyntaxError m => RWMData -> KCM m ()
+kcDataDecl (RWMData an i tvs _ dcs) = do
       cas   <- askCAssumps
       let k =  cas ! i
       kvs   <- replicateM (length tvs) freshkv
@@ -132,8 +132,8 @@ kcDataDecl (RWCData an i tvs _ dcs) = do
       as    <- liftM Map.fromList $ mapM (\ tv -> freshkv >>= \ v -> return (tv, Kvar v)) tvs
       localAssumps (as `Map.union`) (mapM_ kcDataCon dcs)
 
-kcDefn :: SyntaxError m => RWCDefn -> KCM m ()
-kcDefn (RWCDefn an _ (tvs :-> t) _ _) = do
+kcDefn :: SyntaxError m => RWMDefn -> KCM m ()
+kcDefn (RWMDefn an _ (tvs :-> t) _ _) = do
       oldsub      <- getKiSub
       as          <- liftM Map.fromList $ mapM (\ tv -> freshkv >>= \ v -> return (tv, Kvar v)) tvs
       k           <- localAssumps (as `Map.union`) $ kcTy t
@@ -152,17 +152,17 @@ monoize = \ case
       Kmonad     -> Kmonad
       Kvar _     -> Kstar
 
-redecorate :: SyntaxError m => KiSub -> RWCData -> KCM m RWCData
-redecorate s (RWCData an i tvs _ dcs) = do
+redecorate :: SyntaxError m => KiSub -> RWMData -> KCM m RWMData
+redecorate s (RWMData an i tvs _ dcs) = do
       cas <- askCAssumps
       case Map.lookup i cas of
-            Just k  -> return $ RWCData an i tvs (monoize (subst s k)) dcs
+            Just k  -> return $ RWMData an i tvs (monoize (subst s k)) dcs
             Nothing -> failAt an $ "Redecorate: no such assumption: " ++ show i
 
-basisCAssumps :: RWCProgram -> [(TyConId, Kind)]
-basisCAssumps m = map (\ (RWCData _ i _ k _) -> (i, k)) $ dataDecls m
+basisCAssumps :: RWMProgram -> [(TyConId, Kind)]
+basisCAssumps m = map (\ (RWMData _ i _ k _) -> (i, k)) $ dataDecls m
 
-kc :: SyntaxError m => [RWCProgram] -> RWCProgram -> KCM m RWCProgram
+kc :: SyntaxError m => [RWMProgram] -> RWMProgram -> KCM m RWMProgram
 kc ms m = do
       ncas      <- mapM initDataDecl $ dataDecls m
       let  bcas =  concatMap basisCAssumps ms
@@ -174,5 +174,5 @@ kc ms m = do
             dds <- mapM (redecorate s) $ dataDecls m
             return m { dataDecls = dds }
 
-kindcheck :: (SyntaxError m, Functor m) => RWCProgram -> m RWCProgram
+kindcheck :: (SyntaxError m, Functor m) => RWMProgram -> m RWMProgram
 kindcheck m = fmap fst $ runStateT (runReaderT (kc [primBasis] m) (KCEnv Map.empty Map.empty)) $ KCState Map.empty 0
