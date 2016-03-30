@@ -3,7 +3,6 @@ module ReWire.FrontEnd.ToCore (toCore) where
 
 import ReWire.Core.Syntax
 import ReWire.FrontEnd.PrimBasis
-import ReWire.FrontEnd.Rename
 import ReWire.FrontEnd.Syntax
 import ReWire.Scoping
 
@@ -17,7 +16,7 @@ toCore p = toCore' $ p <> primBasis
             toCore' (RWMProgram datas funs) = RWCProgram <$> mapM transData datas <*> mapM transFun funs
 
 transData :: Monad m => RWMData -> m RWCData
-transData (RWMData an ty tys knd cons) = return $ RWCData an ty tys knd cons
+transData (RWMData an t ts _ cs) = return $ RWCData an t ts cs
 
 transFun :: (Monad m, Applicative m) => RWMDefn -> m RWCDefn
 transFun (RWMDefn an n ty inl e) = do

@@ -27,8 +27,6 @@ import Language.Haskell.Exts.Annotated.Simplify (sModuleName)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
 import System.Directory (getCurrentDirectory, setCurrentDirectory, doesFileExist, doesDirectoryExist)
 
-import ReWire.Pretty
-
 import qualified Data.Map.Strict              as Map
 import qualified Language.Haskell.Exts.Syntax as S
 

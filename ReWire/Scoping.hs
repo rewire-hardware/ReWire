@@ -26,12 +26,10 @@ import Control.Monad.Except
 import Control.Monad.Identity
 import Control.Monad.Reader
 import Control.Monad.State
-import Control.Monad.Trans
 import Data.ByteString.Char8 (ByteString)
 import Data.Data (Typeable,Data)
 import Data.Either (rights)
 import Data.Map.Strict (Map,insert,delete)
-import Data.Maybe (fromJust,isJust)
 import Data.Set (Set)
 import Text.PrettyPrint (text)
 

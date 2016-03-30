@@ -17,7 +17,6 @@ import ReWire.PreHDL.ElimEmpty
 import ReWire.PreHDL.GotoElim
 import ReWire.PreHDL.Syntax
 import ReWire.PreHDL.ToVHDL
-import ReWire.Pretty
 import ReWire.Scoping
 import Control.Monad.State
 import Control.Monad.Reader
@@ -150,7 +149,7 @@ nBits 0 = 0
 nBits n = nBits (n `quot` 2) + 1
 
 getTagWidth :: TyConId -> CGM Int
-getTagWidth i = do Just (TyConInfo (RWCData _ _ _ _ cs)) <- lift $ lift $ queryT i
+getTagWidth i = do Just (TyConInfo (RWCData _ _ _ cs)) <- lift $ lift $ queryT i
                    return (nBits (length cs-1))
 
 tyWidth :: RWCTy -> CGM Int
@@ -168,7 +167,7 @@ tyWidth t              = {-do twc <- getTyWidthCache
                                       minfo <- lift $ lift $ queryT i
                                       case minfo of
                                         Nothing                                -> fail $ "tyWidth: encountered unknown tycon " ++ show i
-                                        Just (TyConInfo (RWCData _ _ _ _ dcs)) -> do
+                                        Just (TyConInfo (RWCData _ _ _ dcs)) -> do
                                           tagWidth <- getTagWidth i
                                           cws      <- mapM dataConWidth dcs
                                           let size =  tagWidth + maximum cws
@@ -299,7 +298,7 @@ stringNodes _                    = return ()
 
 getFieldTys :: DataConId -> RWCTy -> CGM [RWCTy]
 getFieldTys i t = do Just (DataConInfo tci _)                 <- lift $ lift $ queryD i
-                     Just (TyConInfo (RWCData _ _ tvs _ dcs)) <- lift $ lift $ queryT tci
+                     Just (TyConInfo (RWCData _ _ tvs dcs)) <- lift $ lift $ queryT tci
                      let pt   = foldl' (RWCTyApp noAnn) (RWCTyCon noAnn tci) (map (RWCTyVar noAnn) tvs)
                          msub = matchty Map.empty pt t
                      case msub of

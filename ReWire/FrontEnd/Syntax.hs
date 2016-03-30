@@ -22,7 +22,6 @@ module ReWire.FrontEnd.Syntax
 import ReWire.FrontEnd.Kinds
 import ReWire.Pretty
 import ReWire.Scoping
-import ReWire.SYB (runPureT,transform)
 import ReWire.Core.Syntax as C
       ( Annotated(..)
       , Annote(..)
@@ -43,18 +42,10 @@ import ReWire.Core.Syntax as C
 
 import Control.DeepSeq
 import Control.Monad.State
-import Control.Monad.Identity (Identity(..))
 import Data.ByteString.Char8 (pack)
 import Data.Data (Typeable,Data(..))
-import Data.Foldable (Foldable)
 import Data.List (nub)
 import Data.Monoid (Monoid(..))
-import Data.Traversable (Traversable)
-import GHC.Generics (Generic)
-import qualified Language.Haskell.Exts.Annotated as HS (Annotated(..))
-import Language.Haskell.Exts.Annotated.ExactPrint (ExactP)
-import qualified Language.Haskell.Exts.Pretty as HS (Pretty)
-import Language.Haskell.Exts.SrcLoc (SrcLoc,SrcInfo(..),SrcSpanInfo(..),noLoc,noInfoSpan,mkSrcSpan)
 
 import Text.PrettyPrint
 

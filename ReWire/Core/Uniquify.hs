@@ -95,9 +95,8 @@ uniquifyDataCon (RWCDataCon an dci ts) = do ts' <- mapM uniquifyTy ts
                                             return (RWCDataCon an dci ts')
 
 uniquifyDataDecl :: RWCData -> UQM RWCData
-uniquifyDataDecl (RWCData an i vs k dcs) = do (vs',dcs') <- uniquingT vs $
-                                                mapM uniquifyDataCon dcs
-                                              return (RWCData an i vs' k dcs')
+uniquifyDataDecl (RWCData an i vs dcs) = do (vs',dcs') <- uniquingT vs $ mapM uniquifyDataCon dcs
+                                            return (RWCData an i vs' dcs')
 
 pvs :: RWCPat -> [Id RWCExp]
 pvs (RWCPatCon _ _ ps)  = concatMap pvs ps

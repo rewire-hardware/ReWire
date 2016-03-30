@@ -16,7 +16,6 @@ module ReWire.Core.Syntax
   , flattenTyApp,flattenApp,typeOf
   ) where
 
-import ReWire.FrontEnd.Kinds
 import ReWire.Pretty
 import ReWire.Scoping
 import ReWire.SYB (runPureT,transform)
@@ -415,19 +414,18 @@ instance Pretty RWCDefn where
 data RWCData = RWCData { dataAnnote :: Annote,
                          dataName   :: TyConId,
                          dataTyVars :: [Id RWCTy],
-                         dataKind   :: Kind,
                          dataCons   :: [RWCDataCon] }
                deriving (Ord,Eq,Show,Typeable,Data)
 
 instance Annotated RWCData where
-  ann (RWCData a _ _ _ _) = a
+  ann (RWCData a _ _ _) = a
 
 instance NFData RWCData where
-  rnf (RWCData _ i tvs k dcs) = i `deepseq` tvs `deepseq` dcs `deepseq` k `deepseq` ()
+  rnf (RWCData _ i tvs dcs) = i `deepseq` tvs `deepseq` dcs `deepseq` ()
 
 -- FIXME: just ignoring the kind here
 instance Pretty RWCData where
-  pretty (RWCData _ n tvs _ dcs) = foldr ($+$) empty
+  pretty (RWCData _ n tvs dcs) = foldr ($+$) empty
                                      [text "data" <+> text (deTyConId n) <+> hsep (map pretty tvs) <+> (if null (map pretty dcs) then empty else char '='),
                                      nest 4 (hsep (punctuate (char '|') $ map pretty dcs))]
 

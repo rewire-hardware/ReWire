@@ -156,7 +156,7 @@ redecorate :: SyntaxError m => KiSub -> RWMData -> KCM m RWMData
 redecorate s (RWMData an i tvs _ dcs) = do
       cas <- askCAssumps
       case Map.lookup i cas of
-            Just k  -> return $ RWMData an i tvs (monoize (subst s k)) dcs
+            Just k  -> return $ RWMData an i tvs (monoize $ subst s k) dcs
             Nothing -> failAt an $ "Redecorate: no such assumption: " ++ show i
 
 basisCAssumps :: RWMProgram -> [(TyConId, Kind)]

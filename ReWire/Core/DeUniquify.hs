@@ -141,8 +141,8 @@ dqDataCon (RWCDataCon an dci ts) = do ts' <- mapM dqTy ts
                                       return (RWCDataCon an dci ts')
 
 dqDataDecl :: RWCData -> DQM RWCData
-dqDataDecl (RWCData an n tvs k dcs) = do (tvs',dcs') <- dqingT tvs (mapM dqDataCon dcs)
-                                         return (RWCData an n tvs' k dcs')
+dqDataDecl (RWCData an n tvs dcs) = do (tvs',dcs') <- dqingT tvs (mapM dqDataCon dcs)
+                                       return (RWCData an n tvs' dcs')
 
 dqDefn :: RWCDefn -> DQM RWCDefn
 dqDefn (RWCDefn an n (tvs :-> t) b e) = do (tvs',(t',e')) <- dqingT tvs (do

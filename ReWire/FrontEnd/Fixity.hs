@@ -118,9 +118,6 @@ renameMatch rn = \ case
 
 renameExp :: OpRenamer -> Exp SrcSpanInfo -> Fresh (Exp SrcSpanInfo)
 renameExp rn = \ case
-      Var l x                 -> return $ Var l x
-      Con l x                 -> return $ Con l x
-      Lit l lit               -> return $ Lit l lit
       InfixApp l e1 op e2     -> do
             e1' <- renameExp rn e1
             e2' <- renameExp rn e2
