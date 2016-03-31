@@ -7,14 +7,19 @@ module ReWire.FrontEnd.Cache
 
 import ReWire.Core.Syntax (RWCProgram)
 import ReWire.Error
-import ReWire.FrontEnd.Syntax
 import ReWire.FrontEnd.Annotate
 import ReWire.FrontEnd.Desugar
+import ReWire.FrontEnd.Expand
 import ReWire.FrontEnd.KindCheck
+import ReWire.FrontEnd.Monad
+import ReWire.FrontEnd.Purge
+import ReWire.FrontEnd.Reduce
 import ReWire.FrontEnd.Rename
+import ReWire.FrontEnd.Syntax
 import ReWire.FrontEnd.ToCore
 import ReWire.FrontEnd.ToMantle
 import ReWire.FrontEnd.TypeCheck
+import ReWire.Scoping
 
 import Control.Monad ((>=>), liftM, msum)
 import Control.Monad.IO.Class (liftIO)
@@ -59,14 +64,6 @@ getImps = \case
             isPrelude :: Annotation a => ImportDecl a -> Bool
             isPrelude ImportDecl { importModule = ModuleName _ n } = n == "Prelude"
 
-getProgram :: FilePath -> Cache RWCProgram
-getProgram fp = do
-      (p, _) <- getProgram' fp
-      p'     <- kindcheck
-            >=> typecheck
-            >=> toCore $ p
-      return p'
-
 -- Pass 1    Parse.
 -- Pass 2-4  Fixity fixing (uniquify + fix + deuniquify, because bug in applyFixities).
 -- Pass 5    Annotate.
@@ -89,6 +86,7 @@ getProgram' fp = Map.lookup fp <$> get >>= \ case
             rn         <- mkRenamer m
             imps       <- loadImports m
 
+            -- Phase 1 (haskell-src-exts) transformations.
             (m', exps) <- fixFixity rn
                       >=> annotate
                       >=> desugar
@@ -121,3 +119,23 @@ getProgram' fp = Map.lookup fp <$> get >>= \ case
 
             loadImports :: Annotation a => Module a -> Cache RWMProgram
             loadImports = liftM mconcat . mapM (liftM fst . getProgram' . toFilePath . sModuleName . importModule) . getImps
+
+-- Phase 2 (pre-core) transformations.
+getProgram :: FilePath -> Cache RWCProgram
+getProgram fp = do
+      (p, _) <- getProgram' fp
+      p'     <- kindcheck
+            >=> typecheck
+            >=> return . inline
+            >=> toCore $ p
+      return p'
+
+inline :: RWMProgram -> RWMProgram
+inline m = runRW m (
+         ( expand inlineds
+       >=> redmod
+       >=> purge (mkId "Main.start")
+         ) m)
+      where inlineds                 = concatMap f (defns m)
+            f (RWMDefn _ n _ True _) = [n]
+            f _                      = []

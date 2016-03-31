@@ -1,23 +1,14 @@
 module ReWire.Core.ToPreHDL
-  ( cmdToCFG
-  , cmdToPre
-  , cmdToSCFG
-  , cmdToPreG
-  , cmdToVHDL
-  , cfgFromRW
+  ( cfgFromRW
   , eu
   ) where
 
-import ReWire.Core.Syntax
 import ReWire.Core.Monad
-import ReWire.Core.Types
-import ReWire.Core.Uniquify (uniquify)
+import ReWire.Core.Syntax
 import ReWire.PreHDL.CFG
-import ReWire.PreHDL.ElimEmpty
-import ReWire.PreHDL.GotoElim
 import ReWire.PreHDL.Syntax
-import ReWire.PreHDL.ToVHDL
 import ReWire.Scoping
+
 import Control.Monad.State
 import Control.Monad.Reader
 import Data.Map.Strict (Map)
@@ -297,7 +288,7 @@ stringNodes ((_,no):x@(ni,_):xs) = do addEdge no ni (Conditional (BoolConst True
 stringNodes _                    = return ()
 
 getFieldTys :: DataConId -> RWCTy -> CGM [RWCTy]
-getFieldTys i t = do Just (DataConInfo tci _)                 <- lift $ lift $ queryD i
+getFieldTys i t = do Just (DataConInfo tci _)               <- lift $ lift $ queryD i
                      Just (TyConInfo (RWCData _ _ tvs dcs)) <- lift $ lift $ queryT tci
                      let pt   = foldl' (RWCTyApp noAnn) (RWCTyCon noAnn tci) (map (RWCTyVar noAnn) tvs)
                          msub = matchty Map.empty pt t
@@ -725,16 +716,19 @@ cfgProg = do md <- lift $ lift $ queryG (mkId "Main.start")
                Just (RWCDefn _ _ _ _ e) -> cfgStart e
 
 cfgFromRW :: RWCProgram -> CFG
-cfgFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
-  where doit    = do cfgProg
+cfgFromRW p = fst $ runRW p (runStateT (runReaderT doit env0) s0)
+  where doit :: CGM CFG
+        doit    = do cfgProg
                      h <- getHeader
                      g <- getGraph
                      return CFG { cfgHeader = h, cfgGraph = g }
+        env0 :: Env
         env0    = Env { stateLayer = -1,
                         inputTy = error "input type not set",
                         outputTy = error "output type not set",
                         stateTys = [],
                         varMap = Map.empty }
+        s0 :: (Int,CFG,ActionMap,FunMap)
         s0      = (0,CFG { cfgHeader = Header { funDefns   = [],
                                                 regDecls   = [],
                                                 stateNames = [],
@@ -744,25 +738,9 @@ cfgFromRW p_ = fst $ runRW ctr p (runStateT (runReaderT doit env0) s0)
                            cfgGraph = empty },
                      Map.empty,
                      Map.empty)
-        (p,ctr) = uniquify 0 p_
 
 eu :: CFG -> CFG
 eu gr = gr { cfgGraph = elimUnreachable 0 (cfgGraph gr) }
-
-cmdToSCFG :: TransCommand
-cmdToSCFG _ p = (Nothing,Just (mkDot $ gather $ eu $ cfgFromRW p))
-
-cmdToCFG :: TransCommand
-cmdToCFG _ p = (Nothing,Just (mkDot $ gather $ linearize $ cfgFromRW p))
-
-cmdToPreG :: TransCommand
-cmdToPreG _ p = (Nothing,Just (show (cfgToProg (cfgFromRW p))))
-
-cmdToPre :: TransCommand
-cmdToPre _ p = (Nothing,Just (show (gotoElim $ cfgToProg (cfgFromRW p))))
-
-cmdToVHDL :: TransCommand
-cmdToVHDL _ p = (Nothing,Just (toVHDL (elimEmpty $ gotoElim $ cfgToProg (cfgFromRW p))))
 
 mkFunTagCheck :: DataConId -> Loc -> CGM (Cmd,Loc)
 mkFunTagCheck dci lscr = do rtm  <- freshLocBool

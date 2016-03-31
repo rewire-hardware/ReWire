@@ -1,8 +1,7 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving,MultiParamTypeClasses,
-             FlexibleInstances,TupleSections,FunctionalDependencies,
-             FlexibleContexts,ScopedTypeVariables,GADTs,StandaloneDeriving,
-             UndecidableInstances,DeriveDataTypeable
-  #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, MultiParamTypeClasses, FlexibleInstances,
+             TupleSections, FunctionalDependencies, FlexibleContexts, ScopedTypeVariables,
+             GADTs, StandaloneDeriving, UndecidableInstances, OverlappingInstances,
+             DeriveDataTypeable #-}
 
 module ReWire.Scoping
   ( Id(..),IdAny(..),IdSort(..),mkId,any2Id
@@ -37,18 +36,10 @@ import qualified Data.ByteString.Char8 as BS
 import qualified Data.Map.Strict       as Map
 import qualified Data.Set              as Set
 
-{-
-import Unbound.LocallyNameless hiding (fv,subst,substs,Subst,Alpha,aeq,aeq')
-import qualified Unbound.LocallyNameless as U
-import Test.QuickCheck
-import Test.QuickCheck.Gen
-import Data.List (nub)
--}
-
 --
 -- A monad for assumptions.
 --
-class (Ord v,Monad m) => MonadAssume v t m | m -> v, m -> t where
+class MonadAssume v t m | t -> v, m v -> t where
   assuming       :: v -> t -> m a -> m a
   forgetting     :: v -> m a -> m a
   query          :: v -> m (Maybe t)
@@ -65,11 +56,17 @@ instance MonadReader r m => MonadReader r (AssumeT v t m) where
   ask       = lift ask
   local f m = AssumeT $ ReaderT $ \ rhoA -> local f (runReaderT (deAssumeT m) rhoA)
 
-instance (Ord v,Monad m) => MonadAssume v t (AssumeT v t m) where
+instance (Ord v, Monad m) => MonadAssume v t (AssumeT v t m) where
   assuming n t m = AssumeT $ local (insert n t) (deAssumeT m)
   forgetting n m = AssumeT $ local (delete n) (deAssumeT m)
   query n        = AssumeT $ do { m <- ask ; return (Map.lookup n m) }
   getAssumptions = AssumeT ask
+
+instance (Ord v', Monad m, MonadAssume v t m) => MonadAssume v t (AssumeT v' t' m) where
+  assuming n t m = AssumeT $ ReaderT $ \x -> assuming n t (runAssumeTWith x m)
+  forgetting n m = AssumeT $ ReaderT $ \x -> forgetting n (runAssumeTWith x m)
+  query n        = lift $ query n
+  getAssumptions = lift $ getAssumptions
 
 type Assume e t = AssumeT e t Identity
 
@@ -163,6 +160,7 @@ runScopeTWith s m = runReaderT (deScopeT m) s
 ---
 
 type SubstM t' = Assume (Id t') (Either (Id t') t')
+type Assumps t = SubstM t (Map (Id t) (Either (Id t) t))
 
 class IdSort t' => Subst t t' where
   fv     :: t -> [Id t']
@@ -185,7 +183,7 @@ replace s t = runAssumeWith (fmap Left s) (subst' t)
 refresh ::
   Subst t t =>
   Id t -> [Id t] -> (Id t -> SubstM t a) -> SubstM t a
-refresh x av_ k = do as      <- getAssumptions
+refresh x av_ k = do as     <- getAssumptions :: Assumps t
                      let es =  Map.elems as
                          av =  av_ ++ concatMap fv (rights es)
                          ys =  x : map (mkId . (++"'") . deId) ys
@@ -235,92 +233,3 @@ varsaeq x y = do mx <- query (Left (IdAny x))
                    (Just _,Nothing)  -> return False
                    (Nothing,Just _)  -> return False
                    (Nothing,Nothing) -> return (x==y)
-
-
-
-
-
-
-{-
---
--- Begin grungy example/test case. (Uses QuickCheck to verify that the
--- results agree with unbound...)
---
-data Lam = Lam [Id Lam] Lam | Var (Id Lam) | App Lam Lam deriving Eq
-
-instance IdSort Lam where
-  idSort _ = BS.pack ""
-
-instance Show Lam where
-  show (Lam x l)   = "(\\ " ++ concatMap ((" "++) . deId) x ++ " . " ++ show l ++ ")"
-  show (Var x)     = deId x
-  show (App e1 e2) = "(" ++ show e1 ++ " " ++ show e2 ++ ")"
-
-instance Subst Lam Lam where
-  fv (Var x)     = [x]
-  fv (Lam x e)   = [y | y <- fv e, not (y `elem` x)]
-  fv (App e1 e2) = fv e1 ++ fv e2
-  subst' = doSubst
-    where doSubst (Var x)     = do ml <- query x
-                                   case ml of
-                                     Just (Left y)  -> return (Var y)
-                                     Just (Right l) -> return l
-                                     Nothing        -> return (Var x)
-          doSubst (App e1 e2) = do e1' <- doSubst e1
-                                   e2' <- doSubst e2
-                                   return (App e1' e2')
-          doSubst (Lam x e)   = refreshs x (fv e) $ \ x' -> do
-                                   e' <- doSubst e
-                                   return (Lam x' e')
-
-instance Alpha Lam where
-  aeq' (Var x) (Var y)           = varsaeq x y
-  aeq' (Lam xs e) (Lam ys e')    = equatings xs ys (return False) (aeq' e e')
-  aeq' (App e1 e2) (App e1' e2') = liftM2 (&&) (aeq' e1 e1') (aeq' e2 e2')
-  aeq' _ _                       = return False
-
-data LamU = LamU (Bind [Name LamU] LamU) | VarU (Name LamU) | AppU LamU LamU deriving Show
-
-$(derive [''LamU])
-
-instance U.Alpha LamU
-
-instance U.Subst LamU LamU where
-  isvar (VarU n) = Just (SubstName n)
-  isvar _        = Nothing
-
-lam2lamu :: Lam -> LamU
-lam2lamu (Var x)     = VarU (s2n (deId x))
-lam2lamu (App e1 e2) = AppU (lam2lamu e1) (lam2lamu e2)
-lam2lamu (Lam x e)   = LamU (bind (map (s2n . deId) x) (lam2lamu e))
-
-checkeqv :: [(Id Lam,Lam)] -> Lam -> Bool
-checkeqv xes e' = let eMine   = lam2lamu $ subst (Map.fromList xes) e'
-                      xes_u   = map (\ (x,e) -> (s2n (deId x),lam2lamu e)) xes
-                      e'_u    = lam2lamu e'
-                      eTheirs = U.substs xes_u e'_u
-                  in  eMine `U.aeq` eTheirs
-
---test2 :: Lam -> Lam -> Bool
-test2 l1 l2 = l1 `aeq` l2 && l1 /= l2 ==> label (show l1 ++ " --- " ++ show l2) $ (lam2lamu l1 `U.aeq` lam2lamu l2) == (l1 `aeq` l2)
-
-newtype GenSu = GenSu [(Id Lam,Lam)] deriving Show
-
-instance Arbitrary GenSu where
-  arbitrary = liftM GenSu $ resize 3 $ listOf1 $ liftM2 (,) genvar arbitrary
-
-genvar :: Gen (Id Lam)
-genvar = liftM mkId $ elements [v ++ suf | v <- vars, suf <- sufs]
-  where vars = ["x","y","z"]
-        sufs = [""]--,"'","''","'''"]
-
-instance Arbitrary Lam where
-  arbitrary = frequency [(7,liftM2 Lam (liftM nub $ resize 5 $ listOf1 $ genvar) arbitrary), -- have to nub here because unbound treats leftmost duplicate binders in a list as being tighter (which I think is probably not right)
-                         (7,liftM Var genvar),
-                         (6,liftM2 App arbitrary arbitrary)]
-
-qc = \ (GenSu xes) -> checkeqv xes
---
--- End grungy example/test case.
---
--}

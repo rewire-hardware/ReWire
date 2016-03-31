@@ -4,17 +4,17 @@
 -- This is a handy monad class/transformer with lots of morphisms for stuff
 -- you often want to do in ReWire transformations.
 --
-module ReWire.Core.Monad
+module ReWire.FrontEnd.Monad
   ( RW,RWT
   , TyConInfo(..),DataConInfo(..)
   , askVar
   , runRW
   , queryG,queryT,queryD
   , matchty
+  , fsubstE, fsubstsE
   ) where
 
-import ReWire.Core.Syntax
--- import ReWire.FrontEnd.Uniquify (uniquifyE)
+import ReWire.FrontEnd.Syntax
 import ReWire.Scoping
 
 import Control.Monad.Reader
@@ -24,17 +24,17 @@ import Data.Map (Map)
 import qualified Data.Set as Set
 import Data.Set (Set)
 
-type RWT m = AssumeT (Id RWCExp) VarInfo
+type RWT m = AssumeT (Id RWMExp) VarInfo
                         (AssumeT TyConId TyConInfo
                               (AssumeT DataConId DataConInfo (ScopeT m)))
 
-data VarInfo = GlobalVar RWCDefn | LocalVar RWCTy deriving Show
-newtype TyConInfo = TyConInfo RWCData deriving Show
+data VarInfo = GlobalVar RWMDefn | LocalVar RWCTy deriving Show
+newtype TyConInfo = TyConInfo RWMData deriving Show
 data DataConInfo = DataConInfo TyConId RWCDataCon deriving Show
 
 type RW = RWT Identity
 
-queryG :: Monad m => Id RWCExp -> RWT m (Maybe RWCDefn)
+queryG :: Monad m => Id RWMExp -> RWT m (Maybe RWMDefn)
 queryG x = do
       mvi <- query x
       case mvi of
@@ -47,20 +47,20 @@ queryT t = query t
 queryD :: Monad m => DataConId -> RWT m (Maybe DataConInfo)
 queryD d = query d
 
-mkInitialVarMap :: [RWCDefn] -> Map (Id RWCExp) VarInfo
-mkInitialVarMap ds = foldr (\ d@(RWCDefn _ n _ _ _) -> Map.insert n (GlobalVar d)) Map.empty ds
+mkInitialVarMap :: [RWMDefn] -> Map (Id RWMExp) VarInfo
+mkInitialVarMap ds = foldr (\ d@(RWMDefn _ n _ _ _) -> Map.insert n (GlobalVar d)) Map.empty ds
 
-mkInitialTyConMap :: [RWCData] -> Map TyConId TyConInfo
-mkInitialTyConMap = foldr (\ d@(RWCData _ n _ _) -> Map.insert n (TyConInfo d)) Map.empty
+mkInitialTyConMap :: [RWMData] -> Map TyConId TyConInfo
+mkInitialTyConMap = foldr (\ d@(RWMData _ n _ _ _) -> Map.insert n (TyConInfo d)) Map.empty
 
-mkInitialDataConMap :: [RWCData] -> Map DataConId DataConInfo
+mkInitialDataConMap :: [RWMData] -> Map DataConId DataConInfo
 mkInitialDataConMap = foldr addDD Map.empty
-  where addDD (RWCData _ dn _ dcs) m = foldr (\ d@(RWCDataCon _ cn _) -> Map.insert cn (DataConInfo dn d)) m dcs
+  where addDD (RWMData _ dn _ _ dcs) m = foldr (\ d@(RWCDataCon _ cn _) -> Map.insert cn (DataConInfo dn d)) m dcs
 
-mkInitialVarSet :: [RWCDefn] -> Set IdAny
-mkInitialVarSet ds = foldr (\ (RWCDefn _ n _ _ _) -> Set.insert (IdAny n)) Set.empty ds
+mkInitialVarSet :: [RWMDefn] -> Set IdAny
+mkInitialVarSet ds = foldr (\ (RWMDefn _ n _ _ _) -> Set.insert (IdAny n)) Set.empty ds
 
-runRWT :: Monad m => RWCProgram -> RWT m a -> m a
+runRWT :: Monad m => RWMProgram -> RWT m a -> m a
 runRWT m phi = runScopeTWith varset $
                  runAssumeTWith dmap $
                    runAssumeTWith tmap $
@@ -70,16 +70,47 @@ runRWT m phi = runScopeTWith varset $
         dmap   = mkInitialDataConMap (dataDecls m)
         varset = mkInitialVarSet (defns m)
 
-runRW :: RWCProgram -> RW a -> a
+runRW :: RWMProgram -> RW a -> a
 runRW m = runIdentity . runRWT m
 
-askVar :: Monad m => RWCTy -> Id RWCExp -> RWT m (Maybe RWCExp)
+askVar :: Monad m => RWCTy -> Id RWMExp -> RWT m (Maybe RWMExp)
 askVar t n = do md <- queryG n
                 case md of
-                  Just (RWCDefn _ _ (_ :-> t') _ e) -> do sub <- matchty Map.empty t' t
+                  Just (RWMDefn _ _ (_ :-> t') _ e) -> do sub <- matchty Map.empty t' t
                                                           e'  <- return $ subst sub e
                                                           return (Just e')
                   _                                 -> return Nothing
+
+
+fsubstE :: Monad m => Id RWMExp -> RWMExp -> RWMExp -> RWT m RWMExp
+fsubstE n e = fsubstsE [(n,e)]
+
+fsubstsE :: Monad m => [(Id RWMExp, RWMExp)] -> RWMExp -> RWT m RWMExp
+fsubstsE s (RWMApp an e1 e2)      = do e1' <- fsubstsE s e1
+                                       e2' <- fsubstsE s e2
+                                       return $ RWMApp an e1' e2'
+fsubstsE s (RWMLam an n t eb)     = do eb' <- fsubstsE s eb
+                                       return $ RWMLam an n t eb'
+fsubstsE s (RWMVar an n t)        = case lookup n s of
+                                      Just e  -> freshenE e
+                                      Nothing -> return $ RWMVar an n t
+fsubstsE _ (RWMCon an dci t)      = return (RWMCon an dci t)
+fsubstsE _ (RWMLiteral an l)      = return (RWMLiteral an l)
+fsubstsE s (RWMCase an e p e1 e2) = do e'  <- fsubstsE s e
+                                       e1' <- fsubstsE s e1
+                                       e2' <- fsubstsE s e2
+                                       return (RWMCase an e' p e1' e2')
+fsubstsE s (RWMNativeVHDL an n e) = liftM (RWMNativeVHDL an n) (fsubstsE s e)
+fsubstsE _ (RWMError an m t)      = return (RWMError an m t)
+
+freshenE :: Monad m => RWMExp -> RWT m RWMExp
+freshenE = return
+-- *** TODO TODO TODO ***
+-- freshenE e = do ctr <- getCtr
+--                 let (e',ctr') = uniquifyE ctr e
+--                 putCtr ctr'
+--                 return e'
+
 
 -- FIXME: begin stuff that should maybe be moved to a separate module
 mergesubs :: Monad m => Map (Id RWCTy) RWCTy -> Map (Id RWCTy) RWCTy -> m (Map (Id RWCTy) RWCTy)

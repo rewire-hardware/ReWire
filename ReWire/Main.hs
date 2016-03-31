@@ -1,8 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 module ReWire.Main (main) where
 
-import ReWire.Core.Inline
-import ReWire.Core.Syntax
 import ReWire.Core.ToPreHDL (cfgFromRW,eu)
 import ReWire.FrontEnd
 import ReWire.FrontEnd.LoadPath
@@ -50,24 +48,6 @@ options =
 exitUsage :: IO ()
 exitUsage = hPutStr stderr (usageInfo "Usage: rwc [OPTION...] <filename.rw>" options) >> exitFailure
 
-runFE :: Bool -> LoadPath -> FilePath -> IO RWCProgram
-runFE fDebug lp filename = do
-  res_m <- loadProgram lp filename
-
-  case res_m of
-    Left e ->
-       hPrint stderr e >> exitFailure
-    Right m      -> do
-
-      when fDebug $ do
-        putStrLn "parse finished"
-        writeFile "show.out" (show m)
-        putStrLn "show out finished"
-        writeFile "Debug.hs" (prettyPrint m)
-        putStrLn "debug out finished"
-
-      return m
-
 main :: IO ()
 main = do args                       <- getArgs
 
@@ -79,33 +59,39 @@ main = do args                       <- getArgs
 
           unless (any isActFlag flags) (hPutStrLn stderr "must specify at least one of -o, --cfg, --lcfg, --pre, or --gpre" >> exitUsage)
 
-          let filename                             =  head filenames
-              userLP                               =  concatMap getLoadPathEntries flags
-          systemLP                                 <- getSystemLoadPath
-          let lp                                   =  userLP ++ systemLP
+          let filename               =  head filenames
+              userLP                 =  concatMap getLoadPathEntries flags
+          systemLP                   <- getSystemLoadPath
+          let lp                     =  userLP ++ systemLP
 
           when (FlagD `elem` flags) $
             putStrLn ("loadpath: " ++ intercalate "," lp)
 
-          m_ <- runFE (FlagD `elem` flags) lp filename
+          m_ <- loadProgram lp filename
 
-          case inline m_ of
-            Nothing -> hPutStrLn stderr "Inlining failed" >> exitFailure
-            Just m  -> do
-              let cfg     = cfgFromRW m
-                  cfgDot  = mkDot (gather (eu cfg))
-                  lcfgDot = mkDot (gather (linearize cfg))
-                  pre     = cfgToProg cfg
-                  gpre    = gotoElim pre
-                  vhdl    = toVHDL (elimEmpty gpre)
-                  doDump = \ case
-                    FlagCFG f  -> writeFile f cfgDot
-                    FlagLCFG f -> writeFile f lcfgDot
-                    FlagPre f  -> writeFile f $ show pre
-                    FlagGPre f -> writeFile f $ show gpre
-                    FlagO f    -> writeFile f vhdl
-                    _          -> return ()
-              mapM_ doDump flags
+          case m_ of
+            Left e  -> hPrint stderr e >> exitFailure
+            Right m -> do
+              when (FlagD `elem` flags) $ do
+                putStrLn "front end finished"
+                writeFile "show.out" (show m)
+                putStrLn "show out finished"
+                writeFile "Debug.hs" (prettyPrint m)
+                putStrLn "debug out finished"
+                let cfg     = cfgFromRW m
+                    cfgDot  = mkDot (gather (eu cfg))
+                    lcfgDot = mkDot (gather (linearize cfg))
+                    pre     = cfgToProg cfg
+                    gpre    = gotoElim pre
+                    vhdl    = toVHDL (elimEmpty gpre)
+                    doDump = \ case
+                      FlagCFG f  -> writeFile f cfgDot
+                      FlagLCFG f -> writeFile f lcfgDot
+                      FlagPre f  -> writeFile f $ show pre
+                      FlagGPre f -> writeFile f $ show gpre
+                      FlagO f    -> writeFile f vhdl
+                      _          -> return ()
+                mapM_ doDump flags
   where isActFlag = \ case
           FlagCFG {}  -> True
           FlagLCFG {} -> True
