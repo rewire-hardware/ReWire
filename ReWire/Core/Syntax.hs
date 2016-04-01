@@ -1,9 +1,8 @@
 {-# LANGUAGE MultiParamTypeClasses,GeneralizedNewtypeDeriving,FlexibleInstances,DeriveDataTypeable
-      ,Rank2Types,GADTs,ScopedTypeVariables #-}
+      #-}
 
 module ReWire.Core.Syntax
-  ( Annote(..),toSrcSpanInfo,noAnn,unAnn,Annotation(..),Annotated(..)
-  , DataConId(..),TyConId(..),Poly(..)
+  ( DataConId(..),TyConId(..),Poly(..)
   , RWCTy(..)
   , RWCExp(..)
   , RWCLit(..)
@@ -12,121 +11,35 @@ module ReWire.Core.Syntax
   , RWCData(..)
   , RWCDataCon(..)
   , RWCProgram(..)
-  , flattenArrow,mkArrow,arrowLeft,arrowRight
+  , mkArrow
   , flattenTyApp,flattenApp,typeOf
   ) where
 
 import ReWire.Pretty
 import ReWire.Scoping
-import ReWire.SYB (runPureT,transform)
+import ReWire.Annotation
 
-import Control.DeepSeq
-import Control.Monad.State
-import Control.Monad.Identity (Identity(..))
 import Data.ByteString.Char8 (pack)
 import Data.Data (Typeable,Data(..))
-import Data.Foldable (Foldable)
 import Data.List (nub)
---import Data.Map.Strict (Map)
-import Data.Monoid (Monoid(..))
-import Data.Traversable (Traversable)
-import GHC.Generics (Generic)
-import qualified Language.Haskell.Exts.Annotated as HS (Annotated(..))
-import Language.Haskell.Exts.Annotated.ExactPrint (ExactP)
-import qualified Language.Haskell.Exts.Pretty as HS (Pretty)
-import Language.Haskell.Exts.SrcLoc (SrcLoc,SrcInfo(..),SrcSpanInfo(..),noLoc,noInfoSpan,mkSrcSpan)
---import qualified Data.Map.Strict as Map
-
 import Text.PrettyPrint
-
-data Annote where
-  NoAnnote   :: Annote
-  LocAnnote  :: SrcSpanInfo -> Annote
-  AstAnnote  :: forall ast.
-    ( Functor ast
-    , Foldable ast
-    , Traversable ast
-    , HS.Annotated ast
-    , ExactP ast
-    , Eq (ast SrcSpanInfo)
-    , Data (ast SrcSpanInfo)
-    , Ord (ast SrcSpanInfo)
-    , Show (ast SrcSpanInfo)
-    , Generic (ast SrcSpanInfo)
-    , HS.Pretty (ast SrcSpanInfo)
-    ) => ast SrcSpanInfo -> Annote
-  deriving Typeable
-
-class Annotation a where
-  toAnnote :: a -> Annote
-
-instance Annotation Annote where
-  toAnnote = id
-
-instance Annotation SrcSpanInfo  where
-  toAnnote = LocAnnote
-
-instance Annotation SrcLoc where
-  toAnnote l = fromSrcInfo $ noInfoSpan $ mkSrcSpan l l
-
-class Annotated a where
- ann    :: a -> Annote
-
-unAnn :: Data d => d -> d
-unAnn = runIdentity . (runPureT $ transform $ \ (_::Annote) -> return noAnn)
-
-instance SrcInfo Annote where
-  toSrcInfo a b c = LocAnnote $ toSrcInfo a b c
-  fromSrcInfo     = LocAnnote . fromSrcInfo
-  fileName        = fileName . toSrcSpanInfo
-  startLine       = startLine . toSrcSpanInfo
-  startColumn     = startColumn . toSrcSpanInfo
-
--- | Using the default definition of gfoldl.
-instance Data Annote where
-  gunfold    = undefined
-  toConstr   = undefined
-  dataTypeOf = undefined
-
-instance Show Annote where
-  show NoAnnote      = "NoAnnote"
-  show (LocAnnote l) = "LocAnnote (" ++ show l ++ ")"
-  show (AstAnnote a) = "AstAnnote (" ++ show a ++ ")"
-
--- TODO(chathhorn): afraid of screwing stuff up if the annotation isn't
--- ignored.
-instance Ord Annote where
-  _ <= _ = True
-instance Eq Annote where
-  _ == _ = True
-
-toSrcSpanInfo :: Annote -> SrcSpanInfo
-toSrcSpanInfo NoAnnote      = fromSrcInfo $ noInfoSpan $ mkSrcSpan noLoc noLoc
-toSrcSpanInfo (LocAnnote l) = l
-toSrcSpanInfo (AstAnnote a) = HS.ann a
-
-noAnn :: Annote
-noAnn = NoAnnote
 
 ---
 
-newtype DataConId = DataConId { deDataConId :: String } deriving (Eq,Ord,Show,Typeable,Data,NFData)
-newtype TyConId   = TyConId   { deTyConId :: String } deriving (Eq,Ord,Show,Typeable,Data,NFData)
+newtype DataConId = DataConId { deDataConId :: String } deriving (Eq,Ord,Show,Typeable,Data)
+newtype TyConId   = TyConId   { deTyConId :: String } deriving (Eq,Ord,Show,Typeable,Data)
 
 data Poly t = [Id t] :-> t
       deriving (Ord,Eq,Show,Typeable,Data)
 
 infixr :->
 
-instance NFData t => NFData (Poly t) where
-  rnf (vs :-> x) = vs `deepseq` x `deepseq` ()
-
 instance Subst t t => Subst (Poly t) t where
   fv (xs :-> t) = filter (not . (`elem` xs)) (fv t)
   bv (xs :-> t) = xs ++ bv t
   subst' (xs :-> t) = refreshs xs (fv t) $ \ xs' ->
                        do t' <- subst' t
-                          return (xs' :-> t')
+                          return $ xs' :-> t'
 
 instance Alpha (Poly RWCTy) where
   aeq' (xs :-> t) (ys :-> u) = equatings xs ys (return False) (aeq' t u)
@@ -154,12 +67,6 @@ instance Annotated RWCTy where
 instance IdSort RWCTy where
   idSort _ = pack "T"
 
-instance NFData RWCTy where
-  rnf (RWCTyApp _ t1 t2) = t1 `deepseq` t2 `deepseq` ()
-  rnf (RWCTyCon _ i)     = i `deepseq` ()
-  rnf (RWCTyVar _ x)     = x `deepseq` ()
-  rnf (RWCTyComp _ m t)  = m `deepseq` t `deepseq` ()
-
 instance Subst RWCTy RWCTy where
   fv (RWCTyVar _ x)     = [x]
   fv (RWCTyCon _ _)     = []
@@ -168,16 +75,16 @@ instance Subst RWCTy RWCTy where
   bv _ = []
   subst' (RWCTyVar an x)  = do ml <- query x
                                case ml of
-                                 Just (Left y)  -> return (RWCTyVar an y)
+                                 Just (Left y)  -> return $ RWCTyVar an y
                                  Just (Right e) -> return e
-                                 Nothing        -> return (RWCTyVar an x)
-  subst' (RWCTyCon an i)     = return (RWCTyCon an i)
-  subst' (RWCTyApp an t1 t2) = liftM2 (RWCTyApp an) (subst' t1) (subst' t2)
-  subst' (RWCTyComp an m t)  = liftM2 (RWCTyComp an) (subst' m) (subst' t)
+                                 Nothing        -> return $ RWCTyVar an x
+  subst' (RWCTyCon an i)     = return $ RWCTyCon an i
+  subst' (RWCTyApp an t1 t2) = RWCTyApp an <$> subst' t1 <*> subst' t2
+  subst' (RWCTyComp an m t)  = RWCTyComp an <$> subst' m <*> subst' t
 
 instance Alpha RWCTy where
-  aeq' (RWCTyApp _ t1 t2) (RWCTyApp _ t1' t2') = liftM2 (&&) (aeq' t1 t1') (aeq' t2 t2')
-  aeq' (RWCTyCon _ i) (RWCTyCon _ j)           = return (i==j)
+  aeq' (RWCTyApp _ t1 t2) (RWCTyApp _ t1' t2') = (&&) <$> aeq' t1 t1' <*> aeq' t2 t2'
+  aeq' (RWCTyCon _ i) (RWCTyCon _ j)           = return $ i == j
   aeq' (RWCTyVar _ x) (RWCTyVar _ y)           = varsaeq x y
   aeq' _ _                                     = return False
 
@@ -236,20 +143,20 @@ instance Subst RWCExp RWCExp where
   bv (RWCCase _ e p e1 e2) = bv e ++ patvars p ++ bv e1 ++ bv e2
   bv (RWCNativeVHDL _ _ e) = bv e
   bv (RWCError _ _ _)      = []
-  subst' (RWCApp an e1 e2)      = liftM2 (RWCApp an) (subst' e1) (subst' e2)
+  subst' (RWCApp an e1 e2)      = RWCApp an <$> subst' e1 <*> subst' e2
   subst' (RWCLam an x t e)      = refresh x (fv e) $ \ x' ->
                                     do e' <- subst' e
-                                       return (RWCLam an x' t e')
+                                       return $ RWCLam an x' t e'
   subst' (RWCVar an x t)        = do ml <- query x
                                      case ml of
-                                       Just (Left y)  -> return (RWCVar an y t)
+                                       Just (Left y)  -> return $ RWCVar an y t
                                        Just (Right e) -> return e
-                                       Nothing        -> return (RWCVar an x t)
-  subst' (RWCCon an i t)        = return (RWCCon an i t)
-  subst' (RWCLiteral an l)      = return (RWCLiteral an l)
-  subst' (RWCCase an e p e1 e2) = liftM4 (RWCCase an) (subst' e) (return p) (subst' e1) (subst' e2)
-  subst' (RWCNativeVHDL an n e) = liftM (RWCNativeVHDL an n) (subst' e)
-  subst' (RWCError an m t)      = return (RWCError an m t)
+                                       Nothing        -> return $ RWCVar an x t
+  subst' (RWCCon an i t)        = return $ RWCCon an i t
+  subst' (RWCLiteral an l)      = return $ RWCLiteral an l
+  subst' (RWCCase an e p e1 e2) = RWCCase an <$> subst' e <*> return p <*> subst' e1 <*> subst' e2
+  subst' (RWCNativeVHDL an n e) = RWCNativeVHDL an n <$> subst' e
+  subst' (RWCError an m t)      = return $ RWCError an m t
 
 instance Subst RWCExp RWCTy where
   fv (RWCApp _ e1 e2)      = fv e1 ++ fv e2
@@ -261,36 +168,25 @@ instance Subst RWCExp RWCTy where
   fv (RWCNativeVHDL _ _ e) = fv e
   fv (RWCError _ _ t)      = fv t
   bv _ = []
-  subst' (RWCApp an e1 e2)      = liftM2 (RWCApp an) (subst' e1) (subst' e2)
-  subst' (RWCLam an x t e)      = liftM2 (RWCLam an x) (subst' t) (subst' e)
-  subst' (RWCVar an x t)        = liftM (RWCVar an x) (subst' t)
-  subst' (RWCCon an i t)        = liftM (RWCCon an i) (subst' t)
-  subst' (RWCLiteral an l)      = return (RWCLiteral an l)
-  subst' (RWCCase an e p e1 e2) = liftM4 (RWCCase an) (subst' e) (subst' p) (subst' e1) (subst' e2)
-  subst' (RWCNativeVHDL an n e) = liftM (RWCNativeVHDL an n) (subst' e)
-  subst' (RWCError an m t)      = liftM (RWCError an m) (subst' t)
+  subst' (RWCApp an e1 e2)      = RWCApp an <$> subst' e1 <*> subst' e2
+  subst' (RWCLam an x t e)      = RWCLam an x <$> subst' t <*> subst' e
+  subst' (RWCVar an x t)        = RWCVar an x <$> subst' t
+  subst' (RWCCon an i t)        = RWCCon an i <$> subst' t
+  subst' (RWCLiteral an l)      = return $ RWCLiteral an l
+  subst' (RWCCase an e p e1 e2) = RWCCase an <$> subst' e <*> subst' p <*> subst' e1 <*> subst' e2
+  subst' (RWCNativeVHDL an n e) = RWCNativeVHDL an n <$> subst' e
+  subst' (RWCError an m t)      = RWCError an m <$> subst' t
 
 instance Alpha RWCExp where
-  aeq' (RWCApp _ e1 e2) (RWCApp _ e1' e2')             = liftM2 (&&) (aeq' e1 e1') (aeq' e2 e2')
-  aeq' (RWCLam _ x t e) (RWCLam _ x' t' e')            = equating x x' $
-                                                           liftM2 (&&) (aeq' t t') (aeq' e e')
+  aeq' (RWCApp _ e1 e2) (RWCApp _ e1' e2')             = (&&) <$> aeq' e1 e1' <*> aeq' e2 e2'
+  aeq' (RWCLam _ x t e) (RWCLam _ x' t' e')            = equating x x' $ (&&) <$> aeq' t t' <*> aeq' e e'
   aeq' (RWCVar _ x _) (RWCVar _ y _)                   = varsaeq x y
-  aeq' (RWCCon _ i _) (RWCCon _ j _)                   = return (i==j)
-  aeq' (RWCLiteral _ l) (RWCLiteral _ l')              = return (l==l')
-  aeq' (RWCCase _ e p e1 e2) (RWCCase _ e' p' e1' e2') = liftM2 (&&) (aeq' e e') (liftM2 (&&) (equatingPats p p' (aeq' e1 e1')) (aeq' e2 e2'))
-  aeq' (RWCNativeVHDL _ n e) (RWCNativeVHDL _ n' e')   = liftM2 (&&) (return (n==n')) (aeq' e e')
-  aeq' (RWCError _ m _) (RWCError _ m' _)              = return (m == m')
+  aeq' (RWCCon _ i _) (RWCCon _ j _)                   = return $ i == j
+  aeq' (RWCLiteral _ l) (RWCLiteral _ l')              = return $ l == l'
+  aeq' (RWCCase _ e p e1 e2) (RWCCase _ e' p' e1' e2') = (&&) <$> aeq' e e' <*> ((&&) <$> equatingPats p p' (aeq' e1 e1') <*> aeq' e2 e2')
+  aeq' (RWCNativeVHDL _ n e) (RWCNativeVHDL _ n' e')   = (&&) <$> return (n == n') <*> aeq' e e'
+  aeq' (RWCError _ m _) (RWCError _ m' _)              = return $ m == m'
   aeq' _ _                                             = return False
-
-instance NFData RWCExp where
-  rnf (RWCApp _ e1 e2)      = e1 `deepseq` e2 `deepseq` ()
-  rnf (RWCLam _ x t e)      = x `deepseq` t `deepseq` e `deepseq` ()
-  rnf (RWCVar _ x t)        = x `deepseq` t `deepseq` ()
-  rnf (RWCCon _ i t)        = i `deepseq` t `deepseq` ()
-  rnf (RWCLiteral _ l)      = l `deepseq` ()
-  rnf (RWCCase _ e p e1 e2) = e `deepseq` p `deepseq` e1 `deepseq` e2 `deepseq` ()
-  rnf (RWCNativeVHDL _ n e) = n `deepseq` e `deepseq` ()
-  rnf (RWCError _ m t)      = m `deepseq` t `deepseq` ()
 
 instance Pretty RWCExp where
   pretty (RWCApp _ e1 e2)      = parens $ hang (pretty e1) 4 (pretty e2)
@@ -315,11 +211,6 @@ data RWCLit = RWCLitInteger Integer
             | RWCLitFloat Double
             | RWCLitChar Char
             deriving (Ord,Eq,Show,Typeable,Data)
-
-instance NFData RWCLit where
-  rnf (RWCLitInteger i) = i `deepseq` ()
-  rnf (RWCLitFloat d)   = d `deepseq` ()
-  rnf (RWCLitChar c)    = c `deepseq` ()
 
 instance Pretty RWCLit where
   pretty (RWCLitInteger n) = integer n
@@ -359,14 +250,9 @@ instance Subst RWCPat RWCTy where
   fv (RWCPatLiteral _ _) = []
   fv (RWCPatVar _ _ t)   = fv t
   bv _ = []
-  subst' (RWCPatCon an i ps)  = liftM (RWCPatCon an i) (subst' ps)
-  subst' (RWCPatLiteral an l) = return (RWCPatLiteral an l)
-  subst' (RWCPatVar an x t)   = liftM (RWCPatVar an x) (subst' t)
-
-instance NFData RWCPat where
-  rnf (RWCPatCon _ i ps)  = i `deepseq` ps `deepseq` ()
-  rnf (RWCPatLiteral _ l) = l `deepseq` ()
-  rnf (RWCPatVar _ x t)   = x `deepseq` t `deepseq` ()
+  subst' (RWCPatCon an i ps)  = RWCPatCon an i <$> subst' ps
+  subst' (RWCPatLiteral an l) = return $ RWCPatLiteral an l
+  subst' (RWCPatVar an x t)   = RWCPatVar an x <$> subst' t
 
 instance Pretty RWCPat where
   pretty (RWCPatCon _ n ps)        = parens (text (deDataConId n) <+> hsep (map pretty ps))
@@ -390,7 +276,7 @@ instance Subst RWCDefn RWCExp where
   bv (RWCDefn _ n _ _ e) = n : bv e
   subst' (RWCDefn an n pt b e) = refresh n (fv e) $ \ n' ->
                                  do e' <- subst' e
-                                    return (RWCDefn an n' pt b e')
+                                    return $ RWCDefn an n' pt b e'
 
 instance Subst RWCDefn RWCTy where
   fv (RWCDefn _ _ pt _ e) = fv pt ++ fv e
@@ -398,10 +284,7 @@ instance Subst RWCDefn RWCTy where
   subst' (RWCDefn an n (xs :-> t) b e) = refreshs xs (fv t ++ fv e) $ \ xs' ->
                                          do t' <- subst' t
                                             e' <- subst' e
-                                            return (RWCDefn an n (xs' :-> t') b e')
-
-instance NFData RWCDefn where
-  rnf (RWCDefn _ n pt b e) = n `deepseq` pt `deepseq` b `deepseq` e `deepseq` ()
+                                            return $ RWCDefn an n (xs' :-> t') b e'
 
 instance Pretty RWCDefn where
   pretty (RWCDefn _ n (_ :-> ty) b e) = foldr ($+$) empty
@@ -420,9 +303,6 @@ data RWCData = RWCData { dataAnnote :: Annote,
 instance Annotated RWCData where
   ann (RWCData a _ _ _) = a
 
-instance NFData RWCData where
-  rnf (RWCData _ i tvs dcs) = i `deepseq` tvs `deepseq` dcs `deepseq` ()
-
 -- FIXME: just ignoring the kind here
 instance Pretty RWCData where
   pretty (RWCData _ n tvs dcs) = foldr ($+$) empty
@@ -437,9 +317,6 @@ data RWCDataCon = RWCDataCon Annote DataConId [RWCTy]
 instance Annotated RWCDataCon where
   ann (RWCDataCon a _ _) = a
 
-instance NFData RWCDataCon where
-  rnf (RWCDataCon _ i ts) = i `deepseq` ts `deepseq` ()
-
 instance Pretty RWCDataCon where
   pretty (RWCDataCon _ n ts) = text (deDataConId n) <+> hsep (map pretty ts)
 
@@ -448,9 +325,6 @@ instance Pretty RWCDataCon where
 data RWCProgram = RWCProgram { dataDecls  :: [RWCData],
                                defns      :: [RWCDefn] }
                   deriving (Ord,Eq,Show,Typeable,Data)
-
-instance NFData RWCProgram where
-  rnf (RWCProgram dds defs) = dds `deepseq` defs `deepseq` ()
 
 instance Monoid RWCProgram where
   mempty = RWCProgram mempty mempty
@@ -462,10 +336,6 @@ instance Pretty RWCProgram where
           ppDataDecls = foldr ($+$) empty . map pretty
 
 ---
-
-flattenArrow :: RWCTy -> ([RWCTy],RWCTy)
-flattenArrow (RWCTyApp _ (RWCTyApp _ (RWCTyCon _ (TyConId "->")) t1) t2) = let (ts,t) = flattenArrow t2 in (t1:ts,t)
-flattenArrow t                                                           = ([],t)
 
 flattenTyApp :: RWCTy -> [RWCTy]
 flattenTyApp (RWCTyApp _ t1 t2) = flattenTyApp t1 ++ [t2]
@@ -479,10 +349,6 @@ mkArrow :: RWCTy -> RWCTy -> RWCTy
 mkArrow t = RWCTyApp noAnn (RWCTyApp noAnn (RWCTyCon noAnn (TyConId "->")) t)
 
 infixr `mkArrow`
-
-arrowLeft :: RWCTy -> RWCTy
-arrowLeft (RWCTyApp _ (RWCTyApp _ (RWCTyCon _ (TyConId "->")) t1) _) = t1
-arrowLeft t                                                          = error $ "arrowLeft: got non-arrow type: " ++ show t
 
 arrowRight :: RWCTy -> RWCTy
 arrowRight (RWCTyApp _ (RWCTyApp _ (RWCTyCon _ (TyConId "->")) _) t2) = t2

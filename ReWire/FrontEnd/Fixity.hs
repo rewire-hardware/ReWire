@@ -7,10 +7,8 @@ module ReWire.FrontEnd.Fixity
 
 import ReWire.SYB
 
-import Control.Applicative ((<*>))
 import Control.Monad.Identity (Identity (..))
 import Control.Monad.State (State, runState, get, modify)
-import Data.Functor ((<$>))
 import Data.Maybe (fromMaybe)
 import Language.Haskell.Exts.Annotated.Fixity (Fixity (..), applyFixities)
 import Language.Haskell.Exts.Annotated.Simplify (sName, sQOp, sAssoc, sModuleName)

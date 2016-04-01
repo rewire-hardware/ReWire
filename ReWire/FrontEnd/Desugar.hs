@@ -10,7 +10,6 @@ import Control.Monad.Catch (MonadCatch)
 import Control.Monad (liftM, replicateM, (>=>), void)
 import Control.Monad.State (runStateT, StateT, MonadState (..), modify)
 import Data.Foldable (foldl', foldrM)
-import Data.Functor ((<$>))
 import Data.Functor.Identity (Identity (..))
 import Data.Monoid ((<>))
 
@@ -19,7 +18,7 @@ import Language.Haskell.Exts.Annotated.Syntax
 -- TODO(chathhorn): record syntax should be fairly easy to desugar.
 
 -- | Desugar into lambdas then normalize the lambdas.
-desugar :: (Functor m, SyntaxError m, MonadCatch m) => Module Annote -> m (Module Annote)
+desugar :: (SyntaxError m, MonadCatch m) => Module Annote -> m (Module Annote)
 desugar = liftM fst . flip runStateT 0 .
       ( runT  -- Each "runT" is a separate pass over the AST.
             ( desugarNegs
@@ -249,9 +248,9 @@ addMainModuleHead = transform $
 -- >    return e
 -- becomes
 -- > m >>= (\ p1 -> (let p2 = e in return e))
-desugarDos :: (Functor m, MonadCatch m, SyntaxError m) => Transform (Fresh m)
+desugarDos :: (MonadCatch m, SyntaxError m) => Transform (Fresh m)
 desugarDos = transform $ \ (Do l stmts) -> transDo l stmts
-      where transDo :: (Functor m, MonadCatch m, SyntaxError m) => Annote -> [Stmt Annote] -> Fresh m (Exp Annote)
+      where transDo :: (MonadCatch m, SyntaxError m) => Annote -> [Stmt Annote] -> Fresh m (Exp Annote)
             transDo l = \ case
                   Generator l' p e : stmts -> App l' (App l' (Var l' $ UnQual l' $ Ident l' ">>=") e) . Lambda l' [p] <$> transDo l stmts
                   [Qualifier _ e]          -> return e
@@ -340,7 +339,7 @@ depatLambdas = transform $ \ case
 -- >   x@(C y@p) -> e2
 -- becomes
 -- > case e1 of { C p -> (\ x -> ((\ y -> e2) p)) (C p) }
-desugarAsPats :: (Functor m, MonadCatch m, SyntaxError m) => Transform (Fresh m)
+desugarAsPats :: (MonadCatch m, SyntaxError m) => Transform (Fresh m)
 desugarAsPats = transform $
       \ (Alt l p (UnGuardedRhs l' e) Nothing) -> do
             app <- foldrM (mkApp l) e $ getAses p

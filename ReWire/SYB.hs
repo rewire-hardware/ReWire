@@ -14,9 +14,7 @@ import Control.Monad (liftM, (>=>), MonadPlus (..))
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.Data (Data, Typeable, gmapM, gmapQr, cast)
-import Data.Functor ((<$>))
 import Data.Maybe (fromJust)
-import Data.Monoid (Monoid (..))
 
 everywhere :: (Monad m, Data a) => (forall d. Data d => d -> m d) -> a -> m a
 everywhere f = gmapM (everywhere f) >=> f
@@ -58,10 +56,10 @@ infixr 1 ||>
 transform :: (Monad m, Typeable d) => (d -> m d) -> Transform m
 transform = (||> TId)
 
-runT :: (Functor m, MonadCatch m, Data d) => Transform m -> d -> m d
+runT :: (MonadCatch m, Data d) => Transform m -> d -> m d
 runT t = everywhere $ liftM fromJust . runMaybeT . foldT (\ f g x -> f x `mplusE` g x) t
 
-runPureT :: (Functor m, Monad m, Data d) => Transform m -> d -> m d
+runPureT :: (Monad m, Data d) => Transform m -> d -> m d
 runPureT t = everywhere $ liftM fromJust . runMaybeT . foldT (\ f g x -> f x `mplus` g x) t
 
 -- | This is just a list of type
@@ -92,10 +90,10 @@ foldQ :: MonadPlus m => (Q m a -> Q m a -> Q m a) -> Query m a -> Q m a
 foldQ op (QCons f fs) = f `op` foldQ op fs
 foldQ _ QEmpty        = lift . const mzero
 
-runQ :: (Functor m, MonadPlus m, MonadCatch m, Data d) => Query m a -> d -> m a
+runQ :: (MonadPlus m, MonadCatch m, Data d) => Query m a -> d -> m a
 runQ q = everywhereQ $ liftM fromJust . runMaybeT . foldQ (\ f g x -> f x `mplusE` g x) q
 
-runPureQ :: (Functor m, MonadPlus m, Data d) => Query m a -> d -> m a
+runPureQ :: (MonadPlus m, Data d) => Query m a -> d -> m a
 runPureQ q = everywhereQ $ liftM fromJust . runMaybeT . foldQ (\ f g x -> f x `mplus` g x) q
 
 -- | mplus + match fail treated as mzero.

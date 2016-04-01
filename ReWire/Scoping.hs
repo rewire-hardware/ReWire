@@ -1,7 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, MultiParamTypeClasses, FlexibleInstances,
              TupleSections, FunctionalDependencies, FlexibleContexts, ScopedTypeVariables,
-             GADTs, StandaloneDeriving, UndecidableInstances, OverlappingInstances,
-             DeriveDataTypeable #-}
+             GADTs, StandaloneDeriving, UndecidableInstances, DeriveDataTypeable #-}
 
 module ReWire.Scoping
   ( Id(..),IdAny(..),IdSort(..),mkId,any2Id
@@ -39,7 +38,7 @@ import qualified Data.Set              as Set
 --
 -- A monad for assumptions.
 --
-class MonadAssume v t m | t -> v, m v -> t where
+class Monad m => MonadAssume v t m | m v -> t, m t -> v where
   assuming       :: v -> t -> m a -> m a
   forgetting     :: v -> m a -> m a
   query          :: v -> m (Maybe t)
@@ -56,17 +55,17 @@ instance MonadReader r m => MonadReader r (AssumeT v t m) where
   ask       = lift ask
   local f m = AssumeT $ ReaderT $ \ rhoA -> local f (runReaderT (deAssumeT m) rhoA)
 
-instance (Ord v, Monad m) => MonadAssume v t (AssumeT v t m) where
-  assuming n t m = AssumeT $ local (insert n t) (deAssumeT m)
-  forgetting n m = AssumeT $ local (delete n) (deAssumeT m)
-  query n        = AssumeT $ do { m <- ask ; return (Map.lookup n m) }
-  getAssumptions = AssumeT ask
-
-instance (Ord v', Monad m, MonadAssume v t m) => MonadAssume v t (AssumeT v' t' m) where
+instance {-# OVERLAPPABLE #-} (Ord v', Monad m, MonadAssume v t m) => MonadAssume v t (AssumeT v' t' m) where
   assuming n t m = AssumeT $ ReaderT $ \x -> assuming n t (runAssumeTWith x m)
   forgetting n m = AssumeT $ ReaderT $ \x -> forgetting n (runAssumeTWith x m)
   query n        = lift $ query n
   getAssumptions = lift $ getAssumptions
+
+instance {-# OVERLAPPING #-} (Ord v, Monad m) => MonadAssume v t (AssumeT v t m) where
+  assuming n t m = AssumeT $ local (insert n t) (deAssumeT m)
+  forgetting n m = AssumeT $ local (delete n) (deAssumeT m)
+  query n        = AssumeT $ do { m <- ask ; return (Map.lookup n m) }
+  getAssumptions = AssumeT ask
 
 type Assume e t = AssumeT e t Identity
 

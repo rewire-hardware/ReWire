@@ -8,8 +8,6 @@ import ReWire.Scoping
 
 import Data.Monoid ((<>))
 
-import Control.Applicative((<$>), (<*>), Applicative(..))
-
 toCore :: (Monad m, Functor m, Applicative m) => RWMProgram -> m RWCProgram
 toCore p = toCore' $ p <> primBasis
       where toCore' :: (Monad m, Functor m, Applicative m) => RWMProgram -> m RWCProgram

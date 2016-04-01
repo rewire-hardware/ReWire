@@ -3,6 +3,7 @@ module ReWire.Core.ToPreHDL
   , eu
   ) where
 
+import ReWire.Annotation
 import ReWire.Core.Monad
 import ReWire.Core.Syntax
 import ReWire.PreHDL.CFG

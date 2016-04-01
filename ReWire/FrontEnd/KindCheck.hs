@@ -2,6 +2,7 @@
 
 module ReWire.FrontEnd.KindCheck (kindcheck) where
 
+import ReWire.Annotation
 import ReWire.Error
 import ReWire.FrontEnd.Kinds
 import ReWire.FrontEnd.PrimBasis
@@ -9,9 +10,9 @@ import ReWire.FrontEnd.Syntax
 import ReWire.Pretty
 import ReWire.Scoping
 
-import Control.Monad.Identity
-import Control.Monad.Reader
-import Control.Monad.State
+import Control.Monad (replicateM)
+import Control.Monad.Reader (ReaderT (..), ask, local)
+import Control.Monad.State (StateT (..), get, put)
 import Data.Map.Strict (Map, (!))
 
 import qualified Data.Map.Strict as Map
@@ -93,30 +94,29 @@ unify an k1 k2 = do
       updKiSub (u @@)
 
 kcTy :: SyntaxError m => RWCTy -> KCM m Kind
-kcTy (RWCTyApp an t1 t2)  = do
-      k1 <- kcTy t1
-      k2 <- kcTy t2
-      k  <- freshkv
-      unify an k1 $ Kfun k2 $ Kvar k
-      return $ Kvar k
-kcTy (RWCTyCon an i)     = do
-      cas <- askCAssumps
-      let mk = Map.lookup i cas
-      case mk of
-            Nothing -> failAt an "Unknown type constructor"
-            Just k  -> return k
-kcTy (RWCTyVar an v)     = do
-      as <- askAssumps
-      let mk = Map.lookup v as
-      case mk of
-            Nothing -> failAt an "Unknown type variable"
-            Just k  -> return k
-kcTy (RWCTyComp an tm tv) = do
-      km <- kcTy tm
-      kv <- kcTy tv
-      unify an km Kmonad
-      unify an kv Kstar
-      return Kstar
+kcTy = \ case
+      RWCTyApp an t1 t2  -> do
+            k1 <- kcTy t1
+            k2 <- kcTy t2
+            k  <- freshkv
+            unify an k1 $ Kfun k2 $ Kvar k
+            return $ Kvar k
+      RWCTyCon an i      -> do
+            cas <- askCAssumps
+            case Map.lookup i cas of
+                  Nothing -> failAt an "Unknown type constructor"
+                  Just k  -> return k
+      RWCTyVar an v      -> do
+            as <- askAssumps
+            case Map.lookup v as of
+                  Nothing -> failAt an "Unknown type variable"
+                  Just k  -> return k
+      RWCTyComp an tm tv -> do
+            km <- kcTy tm
+            kv <- kcTy tv
+            unify an km Kmonad
+            unify an kv Kstar
+            return Kstar
 
 kcDataCon :: SyntaxError m => RWCDataCon -> KCM m ()
 kcDataCon (RWCDataCon an _ ts) = do
@@ -129,13 +129,13 @@ kcDataDecl (RWMData an i tvs _ dcs) = do
       let k =  cas ! i
       kvs   <- replicateM (length tvs) freshkv
       unify an k $ foldr (Kfun . Kvar) Kstar kvs
-      as    <- liftM Map.fromList $ mapM (\ tv -> freshkv >>= \ v -> return (tv, Kvar v)) tvs
+      as    <- Map.fromList <$> mapM (\ tv -> freshkv >>= \ v -> return (tv, Kvar v)) tvs
       localAssumps (as `Map.union`) (mapM_ kcDataCon dcs)
 
 kcDefn :: SyntaxError m => RWMDefn -> KCM m ()
 kcDefn (RWMDefn an _ (tvs :-> t) _ _) = do
       oldsub      <- getKiSub
-      as          <- liftM Map.fromList $ mapM (\ tv -> freshkv >>= \ v -> return (tv, Kvar v)) tvs
+      as          <- Map.fromList <$> mapM (\ tv -> freshkv >>= \ v -> return (tv, Kvar v)) tvs
       k           <- localAssumps (as `Map.union`) $ kcTy t
       unify an k Kstar
       sub         <- getKiSub

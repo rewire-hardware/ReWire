@@ -8,7 +8,7 @@ module ReWire.Error
       , runSyntaxError
       ) where
 
-import ReWire.Core.Syntax (Annotation(..), Annote(..), toSrcSpanInfo)
+import ReWire.Annotation (Annotation (..), Annote (..), toSrcSpanInfo)
 
 import Control.Monad.Except (MonadError (..), ExceptT (..), runExceptT, throwError)
 import Language.Haskell.Exts.Annotated.Syntax (Annotated (..))

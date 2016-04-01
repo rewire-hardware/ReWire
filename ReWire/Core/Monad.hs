@@ -7,7 +7,6 @@
 module ReWire.Core.Monad
   ( RW,RWT
   , TyConInfo(..),DataConInfo(..)
-  , askVar
   , runRW
   , queryG,queryT,queryD
   , matchty
@@ -72,14 +71,6 @@ runRWT m phi = runScopeTWith varset $
 
 runRW :: RWCProgram -> RW a -> a
 runRW m = runIdentity . runRWT m
-
-askVar :: Monad m => RWCTy -> Id RWCExp -> RWT m (Maybe RWCExp)
-askVar t n = do md <- queryG n
-                case md of
-                  Just (RWCDefn _ _ (_ :-> t') _ e) -> do sub <- matchty Map.empty t' t
-                                                          e'  <- return $ subst sub e
-                                                          return (Just e')
-                  _                                 -> return Nothing
 
 -- FIXME: begin stuff that should maybe be moved to a separate module
 mergesubs :: Monad m => Map (Id RWCTy) RWCTy -> Map (Id RWCTy) RWCTy -> m (Map (Id RWCTy) RWCTy)

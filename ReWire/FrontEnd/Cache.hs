@@ -5,6 +5,7 @@ module ReWire.FrontEnd.Cache
       , LoadPath
       ) where
 
+import ReWire.Annotation
 import ReWire.Core.Syntax (RWCProgram)
 import ReWire.Error
 import ReWire.FrontEnd.Annotate
@@ -19,14 +20,14 @@ import ReWire.FrontEnd.Syntax
 import ReWire.FrontEnd.ToCore
 import ReWire.FrontEnd.ToMantle
 import ReWire.FrontEnd.TypeCheck
+import ReWire.FrontEnd.Uniquify
 import ReWire.Scoping
 
 import Control.Monad ((>=>), liftM, msum)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT, ReaderT, MonadReader (..))
 import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify)
-import Data.Functor ((<$>))
-import Data.Monoid ((<>), mempty, mconcat)
+import Data.Monoid ((<>))
 import Language.Haskell.Exts.Annotated (parseFileWithMode, ParseResult (..), defaultParseMode, ParseMode (..))
 import Language.Haskell.Exts.Annotated.Simplify (sModuleName)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
@@ -57,8 +58,8 @@ getImps = \case
       XmlPage {}                     -> []
       XmlHybrid l _ _ imps _ _ _ _ _ -> addPrelude l imps
       where addPrelude :: Annotation a => a -> [ImportDecl a] -> [ImportDecl a]
-            addPrelude l imps = 
-                  if any isPrelude imps 
+            addPrelude l imps =
+                  if any isPrelude imps
                         then imps
                         else ImportDecl l (ModuleName l "Prelude") False False False Nothing Nothing Nothing : imps
             isPrelude :: Annotation a => ImportDecl a -> Bool
@@ -132,10 +133,11 @@ getProgram fp = do
 
 inline :: RWMProgram -> RWMProgram
 inline m = runRW m (
-         ( expand inlineds
-       >=> redmod
+         ( uniquify
+       >=> expand inlineds
+       >=> reduce
        >=> purge (mkId "Main.start")
          ) m)
-      where inlineds                 = concatMap f (defns m)
+      where inlineds                 = concatMap f $ defns m
             f (RWMDefn _ n _ True _) = [n]
             f _                      = []

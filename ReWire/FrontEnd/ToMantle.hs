@@ -1,20 +1,19 @@
 {-# LANGUAGE LambdaCase, ViewPatterns #-}
 module ReWire.FrontEnd.ToMantle (toMantle) where
 
+import ReWire.Annotation hiding (ann)
 import ReWire.FrontEnd.Kinds
-import ReWire.FrontEnd.Syntax hiding (ann)
+import ReWire.FrontEnd.Syntax
 import ReWire.Error
 import ReWire.FrontEnd.Fixity
 import ReWire.FrontEnd.Rename
 import ReWire.Scoping (Id, IdSort, fv, mkId)
 import ReWire.SYB
 
-import Control.Applicative (Applicative, (<*>))
 import Control.Monad (foldM, void)
 import Data.Foldable (foldl')
-import Data.Functor ((<$>))
 import Data.List (nub)
-import Data.Monoid (mempty, (<>))
+import Data.Monoid ((<>))
 import Language.Haskell.Exts.Annotated.Fixity (Fixity (..))
 import Language.Haskell.Exts.Annotated.Simplify (sName, sDeclHead, sQName, sModuleName)
 

@@ -74,30 +74,30 @@ library
 
   other-modules:    Paths_ReWire
 
-  exposed-modules:  ReWire.FrontEnd.DeUniquify
-                    ReWire.FrontEnd.Expand
-                    ReWire.FrontEnd.Monad
+  exposed-modules:  ReWire.Annotation
                     ReWire.Core.Monad
-                    ReWire.FrontEnd.Purge
-                    ReWire.FrontEnd.Reduce
                     ReWire.Core.Syntax
                     ReWire.Core.ToPreHDL
-                    ReWire.FrontEnd.Uniquify
                     ReWire.Error
                     ReWire.FrontEnd
                     ReWire.FrontEnd.Annotate
                     ReWire.FrontEnd.Cache
                     ReWire.FrontEnd.Desugar
+                    ReWire.FrontEnd.Expand
                     ReWire.FrontEnd.Fixity
                     ReWire.FrontEnd.KindCheck
                     ReWire.FrontEnd.Kinds
                     ReWire.FrontEnd.LoadPath
+                    ReWire.FrontEnd.Monad
                     ReWire.FrontEnd.PrimBasis
+                    ReWire.FrontEnd.Purge
+                    ReWire.FrontEnd.Reduce
                     ReWire.FrontEnd.Rename
                     ReWire.FrontEnd.Syntax
                     ReWire.FrontEnd.ToCore
                     ReWire.FrontEnd.ToMantle
                     ReWire.FrontEnd.TypeCheck
+                    ReWire.FrontEnd.Uniquify
                     ReWire.Main
                     ReWire.PreHDL.CFG
                     ReWire.PreHDL.ElimEmpty

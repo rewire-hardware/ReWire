@@ -9,17 +9,16 @@ module ReWire.FrontEnd.Rename
       , fromImps
       ) where
 
-import ReWire.Core.Syntax (Annotation)
+import ReWire.Annotation (Annotation)
 import ReWire.Error
 import ReWire.FrontEnd.Fixity
 
 import Control.Arrow ((&&&))
 import Control.Monad (liftM, foldM)
-import Data.Functor ((<$>))
 import Data.List (find)
 import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
-import Data.Monoid (Monoid (..), (<>))
+import Data.Monoid ((<>))
 import Language.Haskell.Exts.Annotated.Fixity (Fixity (..), AppFixity (..))
 import Language.Haskell.Exts.Annotated.Simplify (sName, sQName)
 import Language.Haskell.Exts.Pretty (prettyPrint)
