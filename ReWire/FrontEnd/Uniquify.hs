@@ -91,7 +91,6 @@ uniquifyDataDecl (RWMData an i vs k dcs) = do
 uniquifyPat :: Monad m => RWMPat -> UQM m RWMPat
 uniquifyPat = \ case
       RWMPatCon an dci ps -> RWMPatCon an dci <$> mapM uniquifyPat ps
-      RWMPatLiteral an l  -> return $ RWMPatLiteral an l
       RWMPatVar an n t    -> do
             mn <- askUniqueE n
             case mn of
@@ -111,7 +110,6 @@ uniquifyExpr = \ case
                   Nothing -> RWMVar an n <$> uniquifyTy t
                   Just n' -> RWMVar an n' <$> uniquifyTy t
       RWMCon an dci t      -> RWMCon an dci <$> uniquifyTy t
-      RWMLiteral an l      -> return $ RWMLiteral an l
       RWMCase an e p e1 e2 -> do
             e'             <- uniquifyExpr e
             (_, (p', e1')) <- uniquingE (pvs p) $ (,) <$> uniquifyPat p <*> uniquifyExpr e1
@@ -122,7 +120,6 @@ uniquifyExpr = \ case
       where pvs :: RWMPat -> [Id RWMExp]
             pvs = \ case
                   RWMPatCon _ _ ps  -> concatMap pvs ps
-                  RWMPatLiteral _ _ -> []
                   RWMPatVar _ x _   -> [x]
 
 uniquifyDefn :: Monad m => RWMDefn -> UQM m RWMDefn

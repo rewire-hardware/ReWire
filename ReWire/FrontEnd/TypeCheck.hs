@@ -126,16 +126,9 @@ inst (tvs :-> t) = do
 
 patassumps :: RWMPat -> [Assump]
 patassumps (RWMPatCon _ _ ps)  = concatMap patassumps ps
-patassumps (RWMPatLiteral _ _) = []
 patassumps (RWMPatVar _ n t)   = [(n, [] :-> t)]
 
 tcPat :: SyntaxError m => RWCTy -> RWMPat -> TCM m RWMPat
-tcPat t p@(RWMPatLiteral an l) = do
-      case l of
-            RWCLitInteger _ -> unify an t (RWCTyCon noAnn (TyConId "Integer"))
-            RWCLitFloat _   -> unify an t (RWCTyCon noAnn (TyConId "Float"))
-            RWCLitChar _    -> unify an t (RWCTyCon noAnn (TyConId "Char"))
-      return p
 tcPat t (RWMPatVar an x _)  = return (RWMPatVar an x t)
 tcPat t (RWMPatCon an i ps) = do
       cas     <- askCAssumps
@@ -182,10 +175,6 @@ tcExp = \ case
                   Just pt -> do
                         t <- inst pt
                         return (RWMCon an i t, t)
-      e@(RWMLiteral _ l)   -> return $ case l of
-            RWCLitInteger _ -> (e, RWCTyCon noAnn $ TyConId "Integer")
-            RWCLitFloat _   -> (e, RWCTyCon noAnn $ TyConId "Float")
-            RWCLitChar _    -> (e, RWCTyCon noAnn $ TyConId "Char")
       RWMCase an e p e1 e2 -> do
             (e', te)   <- tcExp e
             tv         <- freshv

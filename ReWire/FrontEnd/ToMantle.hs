@@ -224,7 +224,6 @@ transExp rn = \ case
       Lambda l [PVar _ x] e -> RWMLam l (mkUId $ sName x) tblank <$> transExp (exclude Value [sName x] rn) e
       Var l x               -> return $ RWMVar l (mkId $ rename Value rn x) tblank
       Con l x               -> return $ RWMCon l (DataConId $ rename Value rn x) tblank
-      Lit l lit             -> RWMLiteral l <$> transLit lit
       Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _]
                             -> RWMCase l
                                     <$> transExp rn e
@@ -237,16 +236,8 @@ transExp rn = \ case
                   PVar _ x -> [sName x]
                   _        -> []
 
-transLit :: SyntaxError m => Literal Annote -> m RWCLit
-transLit = \ case
-      Int _ i _  -> return $ RWCLitInteger i
-      Frac _ d _ -> return $ RWCLitFloat $ fromRational d
-      Char _ c _ -> return $ RWCLitChar c
-      lit        -> failAt (ann lit) "Unsupported syntax for a literal"
-
 transPat :: (Functor m, SyntaxError m) => Renamer -> Pat Annote -> m RWMPat
 transPat rn = \ case
       PApp l x ps             -> RWMPatCon l (DataConId $ rename Value rn x) <$> mapM (transPat rn) ps
-      PLit l (Signless _) lit -> RWMPatLiteral l <$> transLit lit
       PVar l x                -> return $ RWMPatVar l (mkUId $ sName x) tblank
       p                       -> failAt (ann p) $ "Unsupported syntax in a pattern: " ++ (show $ void p)

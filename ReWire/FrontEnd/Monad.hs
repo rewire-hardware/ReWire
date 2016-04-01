@@ -38,17 +38,17 @@ queryG = query >=> return . \ case
       _                  -> Nothing
 
 mkInitialVarMap :: [RWMDefn] -> Map (Id RWMExp) VarInfo
-mkInitialVarMap ds = foldr (\ d@(RWMDefn _ n _ _ _) -> Map.insert n (GlobalVar d)) Map.empty ds
+mkInitialVarMap ds = foldr (\ d@(RWMDefn _ n _ _ _) -> Map.insert n (GlobalVar d)) mempty ds
 
 mkInitialTyConMap :: [RWMData] -> Map TyConId TyConInfo
-mkInitialTyConMap = foldr (\ d@(RWMData _ n _ _ _) -> Map.insert n (TyConInfo d)) Map.empty
+mkInitialTyConMap = foldr (\ d@(RWMData _ n _ _ _) -> Map.insert n (TyConInfo d)) mempty
 
 mkInitialDataConMap :: [RWMData] -> Map DataConId DataConInfo
 mkInitialDataConMap = foldr addDD Map.empty
       where addDD (RWMData _ dn _ _ dcs) m = foldr (\ d@(RWCDataCon _ cn _) -> Map.insert cn (DataConInfo dn d)) m dcs
 
 mkInitialVarSet :: [RWMDefn] -> Set IdAny
-mkInitialVarSet ds = foldr (\ (RWMDefn _ n _ _ _) -> Set.insert (IdAny n)) Set.empty ds
+mkInitialVarSet ds = foldr (\ (RWMDefn _ n _ _ _) -> Set.insert (IdAny n)) mempty ds
 
 runRWT :: Monad m => RWMProgram -> RWT m a -> m a
 runRWT m phi = runScopeTWith varset
@@ -64,12 +64,9 @@ runRW :: RWMProgram -> RW a -> a
 runRW m = runIdentity . runRWT m
 
 askVar :: MonadAssume (Id RWMExp) VarInfo m => RWCTy -> Id RWMExp -> m (Maybe RWMExp)
-askVar t = queryG >=> \ case
-      Just (RWMDefn _ _ (_ :-> t') _ e) -> do
-            sub <- matchty Map.empty t' t
-            return $ Just $ subst sub e
-      _                                 -> return Nothing
-
+askVar t = queryG >=> return . \ case
+      Just (RWMDefn _ _ (_ :-> t') _ e) -> Just $ subst (matchty mempty t' t) e
+      _                                 -> Nothing
 
 fsubstE :: Monad m => Id RWMExp -> RWMExp -> RWMExp -> RWT m RWMExp
 fsubstE n e = fsubstsE [(n, e)]
@@ -82,7 +79,6 @@ fsubstsE s = \ case
             Just e  -> freshenE e
             Nothing -> return $ RWMVar an n t
       RWMCon an dci t      -> return $ RWMCon an dci t
-      RWMLiteral an l      -> return $ RWMLiteral an l
       RWMCase an e p e1 e2 -> RWMCase an <$> fsubstsE s e <*> return p <*> fsubstsE s e1 <*> fsubstsE s e2
       RWMNativeVHDL an n e -> RWMNativeVHDL an n <$> fsubstsE s e
       RWMError an m t      -> return $ RWMError an m t
@@ -97,29 +93,21 @@ freshenE = return
 
 
 -- FIXME: begin stuff that should maybe be moved to a separate module
-mergesubs :: Monad m => Map (Id RWCTy) RWCTy -> Map (Id RWCTy) RWCTy -> m (Map (Id RWCTy) RWCTy)
-mergesubs sub sub' = Map.foldrWithKey f (return sub') sub
-      where f n t m = do
-                  s <- m
-                  case Map.lookup n s of
-                        Just t' -> if t `aeq` t'
-                              then return s
-                              else fail "mergesubs failed"
-                        Nothing -> Map.insert n t <$> m
+mergesubs :: Map (Id RWCTy) RWCTy -> Map (Id RWCTy) RWCTy -> Map (Id RWCTy) RWCTy
+mergesubs sub sub' = Map.foldrWithKey f sub' sub
+      where f n t m = case Map.lookup n m of
+                  Just t' -> if t `aeq` t'
+                        then m
+                        else error "mergesubs failed"
+                  Nothing -> Map.insert n t m
 
-matchty :: Monad m => Map (Id RWCTy) RWCTy -> RWCTy -> RWCTy -> m (Map (Id RWCTy) RWCTy)
-matchty sub (RWCTyVar _ n) t                         = case Map.lookup n sub of
-      Nothing -> return $ Map.insert n t sub
+matchty :: Map (Id RWCTy) RWCTy -> RWCTy -> RWCTy -> Map (Id RWCTy) RWCTy
+matchty sub (RWCTyVar _ n) t                           = case Map.lookup n sub of
+      Nothing -> Map.insert n t sub
       Just t' -> if t `aeq` t'
-            then return sub
-            else fail "matchty failed (variable inconsistency)"
-matchty sub (RWCTyCon _ i1) (RWCTyCon _ i2) | i1 == i2 = return sub
-matchty sub (RWCTyApp _ t1 t2) (RWCTyApp _ t1' t2')    = do
-      sub1 <- matchty sub t1 t1'
-      sub2 <- matchty sub t2 t2'
-      mergesubs sub1 sub2
-matchty sub (RWCTyComp _ t1 t2) (RWCTyComp _ t1' t2')  = do
-      sub1 <- matchty sub t1 t1'
-      sub2 <- matchty sub t2 t2'
-      mergesubs sub1 sub2
-matchty _ t1 t2                                        = fail $ "matchty failed (constructor head): " ++ show t1 ++ ", " ++ show t2
+            then sub
+            else error "matchty failed (variable inconsistency)"
+matchty sub (RWCTyCon _ i1) (RWCTyCon _ i2) | i1 == i2 = sub
+matchty sub (RWCTyApp _ t1 t2) (RWCTyApp _ t1' t2')    = mergesubs (matchty sub t1 t1') (matchty sub t2 t2')
+matchty sub (RWCTyComp _ t1 t2) (RWCTyComp _ t1' t2')  = mergesubs (matchty sub t1 t1') (matchty sub t2 t2')
+matchty _ t1 t2                                        = error $ "matchty failed (constructor head): " ++ show t1 ++ ", " ++ show t2

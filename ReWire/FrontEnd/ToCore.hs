@@ -31,7 +31,6 @@ transExp = \ case
       RWMLam an x t e       -> RWCLam an <$> transId x <*>  return t <*> transExp e
       RWMVar an x t         -> RWCVar an <$> transId x <*> return t
       RWMCon an d t         -> return $ RWCCon an d t
-      RWMLiteral an l       -> return $ RWCLiteral an l
       RWMCase an e1 p e2 e3 -> RWCCase an <$> transExp e1 <*> transPat p <*> transExp e2 <*> transExp e3
       RWMNativeVHDL an s e  -> RWCNativeVHDL an s <$> transExp e
       RWMError an s t       -> return $ RWCError an s t
@@ -40,5 +39,4 @@ transExp = \ case
 transPat :: (Monad m, Functor m, Applicative m) => RWMPat -> m RWCPat
 transPat = \ case
       RWMPatCon an d ps  -> RWCPatCon an d <$> mapM transPat ps
-      RWMPatLiteral an l -> return $ RWCPatLiteral an l
       RWMPatVar an x t   -> RWCPatVar an <$> transId x <*> return t

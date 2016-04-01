@@ -18,7 +18,6 @@ reduceExp = \ case
       RWMLam an n t e      -> RWMLam an n t <$> reduceExp e
       e@RWMVar {}          -> return e
       e@RWMCon {}          -> return e
-      e@RWMLiteral {}      -> return e
       RWMCase an e p e1 e2 -> do
             e' <- reduceExp e
             mr <- matchpat e' p
@@ -57,11 +56,6 @@ matchpat e = \ case
                   | otherwise                          -> return MatchNo
             _                                          -> return MatchMaybe
       RWMPatVar _ n _    -> return $ MatchYes [(n, e)]
-      RWMPatLiteral _ l  -> return $ case e of
-            RWMLiteral _ l'
-                  | l == l'   -> MatchYes []
-                  | otherwise -> MatchNo
-            _                 -> MatchMaybe
 
 reddefn :: RWMDefn -> RW RWMDefn
 reddefn (RWMDefn an n pt b e) = RWMDefn an n pt b <$> reduceExp e

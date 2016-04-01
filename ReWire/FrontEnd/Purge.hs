@@ -26,7 +26,6 @@ inuseExp = \ case
                         Just e  -> inuseExp e
                         Nothing -> return ()
       RWMCon {}           -> return ()
-      RWMLiteral {}       -> return ()
       RWMCase _ e _ e1 e2 -> inuseExp e >> inuseExp e1 >> inuseExp e2
       RWMNativeVHDL {}    -> return ()   -- FIXME(?!): special case here
       RWMError {}         -> return ()

@@ -6,7 +6,6 @@
 module ReWire.FrontEnd.Syntax
       ( DataConId(..), TyConId(..), Poly(..)
       , RWMExp(..)
-      , RWCLit(..)
       , RWMPat(..)
       , RWMDefn(..)
       , RWMData(..)
@@ -23,7 +22,6 @@ import ReWire.Core.Syntax as C
       ( DataConId(..)
       , TyConId(..)
       , RWCTy(..)
-      , RWCLit(..)
       , RWCDataCon(..)
       , Poly(..)
       , flattenTyApp
@@ -44,7 +42,6 @@ data RWMExp = RWMApp Annote RWMExp RWMExp
             | RWMLam Annote (Id RWMExp) RWCTy RWMExp
             | RWMVar Annote (Id RWMExp) RWCTy
             | RWMCon Annote DataConId RWCTy
-            | RWMLiteral Annote RWCLit
             | RWMCase Annote RWMExp RWMPat RWMExp RWMExp
             | RWMNativeVHDL Annote String RWMExp
             | RWMError Annote String RWCTy
@@ -56,7 +53,6 @@ instance Annotated RWMExp where
             RWMLam a _ _ _      -> a
             RWMVar a _ _        -> a
             RWMCon a _ _        -> a
-            RWMLiteral a _      -> a
             RWMCase a _ _ _ _   -> a
             RWMNativeVHDL a _ _ -> a
             RWMError a _ _      -> a
@@ -70,7 +66,6 @@ instance Subst RWMExp RWMExp where
             RWMLam _ x _ e      -> filter (/= x) (fv e)
             RWMVar _ x _        -> [x]
             RWMCon _ _ _        -> []
-            RWMLiteral _ _      -> []
             RWMCase _ e p e1 e2 -> fv e ++ filter (not . (`elem` patvars p)) (fv e1) ++ fv e2
             RWMNativeVHDL _ _ e -> fv e
             RWMError _ _ _      -> []
@@ -79,7 +74,6 @@ instance Subst RWMExp RWMExp where
             RWMLam _ x _ e      -> x : bv e
             RWMVar _ _ _        -> []
             RWMCon _ _ _        -> []
-            RWMLiteral _ _      -> []
             RWMCase _ e p e1 e2 -> bv e ++ patvars p ++ bv e1 ++ bv e2
             RWMNativeVHDL _ _ e -> bv e
             RWMError _ _ _      -> []
@@ -93,7 +87,6 @@ instance Subst RWMExp RWMExp where
                   Just (Right e) -> e
                   Nothing        -> RWMVar an x t
             RWMCon an i t        -> return $ RWMCon an i t
-            RWMLiteral an l      -> return $ RWMLiteral an l
             RWMCase an e p e1 e2 -> RWMCase an <$> subst' e <*> return p <*> subst' e1 <*> subst' e2
             RWMNativeVHDL an n e -> RWMNativeVHDL an n <$> subst' e
             RWMError an m t      -> return $ RWMError an m t
@@ -104,7 +97,6 @@ instance Subst RWMExp RWCTy where
             RWMLam _ _ t e      -> fv t ++ fv e
             RWMVar _ _ t        -> fv t
             RWMCon _ _ t        -> fv t
-            RWMLiteral _ _      -> []
             RWMCase _ e p e1 e2 -> fv e ++ fv p ++ fv e1 ++ fv e2
             RWMNativeVHDL _ _ e -> fv e
             RWMError _ _ t      -> fv t
@@ -114,7 +106,6 @@ instance Subst RWMExp RWCTy where
             RWMLam an x t e      -> RWMLam an x <$> subst' t <*> subst' e
             RWMVar an x t        -> RWMVar an x <$> subst' t
             RWMCon an i t        -> RWMCon an i <$> subst' t
-            RWMLiteral an l      -> return $ RWMLiteral an l
             RWMCase an e p e1 e2 -> RWMCase an <$> subst' e <*> subst' p <*> subst' e1 <*> subst' e2
             RWMNativeVHDL an n e -> RWMNativeVHDL an n <$> subst' e
             RWMError an m t      -> RWMError an m <$> subst' t
@@ -124,7 +115,6 @@ instance Alpha RWMExp where
       aeq' (RWMLam _ x t e) (RWMLam _ x' t' e')            = equating x x' $ (&&) <$> aeq' t t' <*> aeq' e e'
       aeq' (RWMVar _ x _) (RWMVar _ y _)                   = varsaeq x y
       aeq' (RWMCon _ i _) (RWMCon _ j _)                   = return $ i == j
-      aeq' (RWMLiteral _ l) (RWMLiteral _ l')              = return $ l == l'
       aeq' (RWMCase _ e p e1 e2) (RWMCase _ e' p' e1' e2') = (&&) <$> aeq' e e' <*> ((&&) <$> equatingPats p p' (aeq' e1 e1') <*> aeq' e2 e2')
       aeq' (RWMNativeVHDL _ n e) (RWMNativeVHDL _ n' e')   = (&&) <$> return (n == n') <*> aeq' e e'
       aeq' (RWMError _ m _) (RWMError _ m' _)              = return $ m == m'
@@ -136,7 +126,6 @@ instance NFData RWMExp where
             RWMLam _ x t e      -> x  `deepseq` t  `deepseq` e  `deepseq` ()
             RWMVar _ x t        -> x  `deepseq` t  `deepseq` ()
             RWMCon _ i t        -> i  `deepseq` t  `deepseq` ()
-            RWMLiteral _ l      -> l  `deepseq` ()
             RWMCase _ e p e1 e2 -> e  `deepseq` p  `deepseq` e1 `deepseq` e2 `deepseq` ()
             RWMNativeVHDL _ n e -> n  `deepseq` e  `deepseq` ()
             RWMError _ m t      -> m  `deepseq` t  `deepseq` ()
@@ -144,7 +133,6 @@ instance NFData RWMExp where
 instance Pretty RWMExp where
       pretty = \ case
             RWMApp _ e1 e2      -> parens $ hang (pretty e1) 4 (pretty e2)
-            RWMLiteral _ l      -> pretty l
             RWMCon _ n _        -> text (deDataConId n)
             RWMVar _ n _        -> pretty n
             RWMLam _ n _ e      -> parens (char '\\' <+> pretty n <+> text "->" <+> pretty e)
@@ -162,20 +150,17 @@ instance Pretty RWMExp where
 ---
 
 data RWMPat = RWMPatCon Annote DataConId [RWMPat]
-            | RWMPatLiteral Annote RWCLit
             | RWMPatVar Annote (Id RWMExp) RWCTy
             deriving (Ord, Eq, Show, Typeable, Data)
 
 instance Annotated RWMPat where
       ann = \ case
             RWMPatCon a _ _   -> a
-            RWMPatLiteral a _ -> a
             RWMPatVar a _ _   -> a
 
 patvars :: RWMPat -> [Id RWMExp]
 patvars = \ case
       RWMPatCon _ _ ps  -> concatMap patvars ps
-      RWMPatLiteral _ _ -> []
       RWMPatVar _ x _   -> [x]
 
 equatingPats :: RWMPat -> RWMPat -> AlphaM Bool -> AlphaM Bool
@@ -185,34 +170,27 @@ equatingPats (RWMPatCon _ i ps) (RWMPatCon _ j ps') k
       where equatingsPats ps ps' k
                   | length ps /= length ps' = return False
                   | otherwise               = foldr (uncurry equatingPats) k (zip ps ps')
-equatingPats (RWMPatLiteral _ l) (RWMPatLiteral _ l') k
-      | l == l'   = k
-      | otherwise = return False
 equatingPats (RWMPatVar _ x _) (RWMPatVar _ y _) k = equating x y k
 equatingPats _ _ _                                 = return False
 
 instance Subst RWMPat RWCTy where
       fv = \ case
             RWMPatCon _ _ ps  -> concatMap fv ps
-            RWMPatLiteral _ _ -> []
             RWMPatVar _ _ t   -> fv t
       bv _ = []
       subst' = \ case
             RWMPatCon an i ps  -> RWMPatCon an i <$> subst' ps
-            RWMPatLiteral an l -> return $ RWMPatLiteral an l
             RWMPatVar an x t   -> RWMPatVar an x <$> subst' t
 
 instance NFData RWMPat where
       rnf = \ case
             RWMPatCon _ i ps  -> i `deepseq` ps `deepseq` ()
-            RWMPatLiteral _ l -> l `deepseq` ()
             RWMPatVar _ x t   -> x `deepseq` t `deepseq` ()
 
 instance Pretty RWMPat where
       pretty = \ case
             RWMPatCon _ n ps  -> parens $ text (deDataConId n) <+> hsep (map pretty ps)
             RWMPatVar _ n _   -> pretty n
-            RWMPatLiteral _ l -> pretty l
 
 ---
 
@@ -314,12 +292,6 @@ instance NFData RWCTy where
             RWCTyCon _ i     -> i  `deepseq` ()
             RWCTyVar _ x     -> x  `deepseq` ()
             RWCTyComp _ m t  -> m  `deepseq` t  `deepseq` ()
-
-instance NFData RWCLit where
-      rnf = \ case
-            RWCLitInteger i -> i `deepseq` ()
-            RWCLitFloat d   -> d `deepseq` ()
-            RWCLitChar c    -> c `deepseq` ()
 
 instance NFData RWCDataCon where
       rnf (RWCDataCon _ i ts) = i `deepseq` ts `deepseq` ()

@@ -189,7 +189,6 @@ stringAlts nl (_,no1_t,no1_f,_) (no2_e,no,_) = do addEdge no1_t nl (Conditional 
 cfgExpr :: RWCExp -> CGM (Node,Node,Loc)
 cfgExpr e = case ef of
              RWCApp {}     -> fail "cfgExpr: app in function position (can't happen)"
-             RWCLiteral {} -> fail "cfgExpr: encountered literal"
              RWCLam {}     -> fail "cfgExpr: encountered lambda"
              RWCVar _ x _  -> do
                mr <- askBinding x
@@ -362,7 +361,6 @@ cfgLastPat lscr _ (RWCPatVar _ x _)       = do
                                             rtm <- freshLocBool
                                             ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
                                             return ([(x,lscr)],ntm,ntm,rtm)
-cfgLastPat _ _ (RWCPatLiteral _ _)        = fail "cfgPat: encountered literal"
 
 getDataConTyCon :: DataConId -> CGM TyConId
 getDataConTyCon dci = do Just (DataConInfo n _) <- lift $ lift $ queryD dci
@@ -441,7 +439,6 @@ cfgPat lscr tscr (RWCPatCon _ dci ps) = do -- ntm: rtm <- tag match?
 cfgPat lscr _ (RWCPatVar _ x _)       = do rtm <- freshLocBool
                                            ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
                                            return ([(x,lscr)],ntm,ntm,rtm)
-cfgPat _ _ RWCPatLiteral {}           = fail "cfgPat: encountered literal"
 
 cfgLastAlt :: Loc -> RWCTy -> Loc -> RWCPat -> RWCExp -> CGM (Node,Node,Node,Loc)
 cfgLastAlt lscr tscr lres p e = do (bds,nip,nop,_) <- cfgLastPat lscr tscr p
@@ -496,7 +493,6 @@ cfgAcExpr e = case ef of
                -- I suppose strictly speaking we *could* handle lambdas,
                -- but not for now.
                RWCLam {}                         -> fail "cfgAcExpr: encountered lambda"
-               RWCLiteral {}                     -> fail "cfgAcExpr: encountered literal"
                -- Can't use data constructors to construct a resumption.
                RWCCon {}                         -> fail "cfgAcExpr: encountered con"
 
@@ -782,7 +778,6 @@ funPat lscr tscr (RWCPatCon _ dci ps) = do (ctm,rtm) <- mkFunTagCheck dci lscr
                                                               rm)
 funPat lscr _ (RWCPatVar _ x _)       = do rm <- freshLocBool
                                            return ([(x,lscr)],Assign rm (BoolRHS (BoolConst True)),rm)
-funPat _ _ RWCPatLiteral {}           = fail "funPat: encountered literal"
 
 funAlt' :: Loc -> RWCTy -> Loc -> RWCPat -> RWCExp -> CGM (Cmd,(Loc,Cmd))
 funAlt' lscr tscr lres p e = do (bds,cmatch,rmatch) <- funPat lscr tscr p
@@ -795,7 +790,6 @@ funAlt' lscr tscr lres p e = do (bds,cmatch,rmatch) <- funPat lscr tscr p
 funExpr :: RWCExp -> CGM (Cmd,Loc)
 funExpr e = case ef of
              RWCApp {}     -> fail "cfgExpr: app in function position (can't happen)"
-             RWCLiteral {} -> fail "cfgExpr: encountered literal"
              RWCLam {}     -> fail "cfgExpr: encountered lambda"
              RWCVar _ x _  -> do
                mr <- askBinding x
