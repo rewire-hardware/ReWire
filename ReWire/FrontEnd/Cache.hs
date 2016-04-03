@@ -21,6 +21,7 @@ import ReWire.FrontEnd.ToCore
 import ReWire.FrontEnd.ToMantle
 import ReWire.FrontEnd.TypeCheck
 import ReWire.FrontEnd.Uniquify
+import ReWire.Pretty
 import ReWire.Scoping
 
 import Control.Monad ((>=>), liftM, msum)
@@ -127,17 +128,28 @@ getProgram fp = do
       (p, _) <- getProgram' fp
       p'     <- kindcheck
             >=> typecheck
-            >=> return . inline
+            >=> inline
             >=> toCore $ p
       return p'
 
-inline :: RWMProgram -> RWMProgram
-inline m = runRW m (
-         ( uniquify
-       >=> expand inlineds
-       >=> reduce
-       >=> purge (mkId "Main.start")
-         ) m)
-      where inlineds                 = concatMap f $ defns m
-            f (RWMDefn _ n _ True _) = [n]
-            f _                      = []
+inline :: RWMProgram -> Cache RWMProgram
+inline m = do
+      m'   <- neuterPrims >=> uniquify $ m
+      --liftIO $ putStrLn "Uniquified, PRE-LL:"
+      --liftIO $ putStrLn $ prettyPrint m'
+      --liftIO $ putStrLn "POST-LL:"
+      --liftIO $ putStrLn $ prettyPrint m''
+      m'' <- runRWT m'
+           $ expand inlineds
+         >=> uniquify
+         >=> reduce
+      -- liftIO $ putStrLn "PRE-LL:"
+      -- liftIO $ putStrLn $ prettyPrint m''
+      m''' <- runRWT m'' $ liftLambdas
+      m'''' <- runRWT m''' $ purge (mkId "Main.start")
+      --liftIO $ putStrLn $ "POST Purge and such:" ++ prettyPrint m'''
+      --typecheck m'''
+      return m''''
+      where inlineds = concatMap f $ defns m
+            f (RWMDefn _ n _ True _ _) = [n]
+            f _                        = []

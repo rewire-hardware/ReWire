@@ -12,7 +12,7 @@ import Data.GraphViz.Attributes
 import qualified Data.GraphViz.Attributes.Complete as Attr
 import Data.Text.Lazy (unpack,pack)
 -}
-import Data.Maybe (fromJust,catMaybes)
+import Data.Maybe (fromMaybe,catMaybes)
 
 data Branch = Conditional BoolExp
             | Tick
@@ -127,7 +127,7 @@ gather cfg = cfg { cfgGraph = gath (cfgGraph cfg) }
           where mergeSeq (n,n') gr = delNode n' $
                                       insEdges (map (\ (n'',lab) -> (n'',n,lab)) (lpre gr n)) $
                                        insEdges (map (\ (n'',lab) -> (n,n'',lab)) (lsuc gr n')) $
-                                        insNode (n, fromJust (lab gr n) `mkSeq` fromJust (lab gr n')) $
+                                        insNode (n, fromMaybe (error "CFG.gather (left)")  (lab gr n) `mkSeq` fromMaybe (error "CFG.gather (right)") (lab gr n')) $
                                          delNode n $
                                           gr
                 allNodes           = nodes gr
@@ -147,7 +147,7 @@ cfgToProg cfg = Prog { progHeader = cfgHeader cfg',
         bbs  = topsort gr
 
         renderOne n = Lbl ("L" ++ show n) : cn : map renderSuc (lsuc gr n)
-          where cn = fromJust (lab gr n)
+          where cn = fromMaybe (error "CFG.cfgToProg") (lab gr n)
 
         renderSuc (n,b) = Goto (branch2bool b) ("L" ++ show n)
 

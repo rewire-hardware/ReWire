@@ -5,26 +5,23 @@
 --
 module ReWire.FrontEnd.Monad
       ( RW, RWT
-      , TyConInfo(..), DataConInfo(..)
+      , VarInfo (..)
       , askVar
-      , runRW
+      , runRWT
       , fsubstE, fsubstsE
       ) where
 
 import ReWire.FrontEnd.Syntax
 import ReWire.Scoping
+import ReWire.SYB hiding (query)
 
 import Control.Monad ((>=>))
 import Control.Monad.Identity (Identity (..))
 import Data.Map (Map)
-import Data.Set (Set)
 
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
 
-type RWT m = AssumeT (Id RWMExp) VarInfo
-                        (AssumeT TyConId TyConInfo
-                              (AssumeT DataConId DataConInfo (ScopeT m)))
+type RWT m = AssumeT (Id RWMExp) VarInfo m
 
 data VarInfo = GlobalVar RWMDefn | LocalVar RWCTy deriving Show
 newtype TyConInfo = TyConInfo RWMData deriving Show
@@ -38,35 +35,25 @@ queryG = query >=> return . \ case
       _                  -> Nothing
 
 mkInitialVarMap :: [RWMDefn] -> Map (Id RWMExp) VarInfo
-mkInitialVarMap ds = foldr (\ d@(RWMDefn _ n _ _ _) -> Map.insert n (GlobalVar d)) mempty ds
+mkInitialVarMap = runQ
+       $ (\ d@(RWMDefn _ x _ _ _ _) -> Map.insert x (GlobalVar d) mempty)
+      ||? \ case
+            RWMLam _ x t _          -> Map.insert x (LocalVar t) mempty
+            _                       -> mempty
+      ||? \ case
+            RWMPatVar _ x t         -> Map.insert x (LocalVar t) mempty
+            _                       -> mempty
+      ||? QEmpty
 
-mkInitialTyConMap :: [RWMData] -> Map TyConId TyConInfo
-mkInitialTyConMap = foldr (\ d@(RWMData _ n _ _ _) -> Map.insert n (TyConInfo d)) mempty
-
-mkInitialDataConMap :: [RWMData] -> Map DataConId DataConInfo
-mkInitialDataConMap = foldr addDD Map.empty
-      where addDD (RWMData _ dn _ _ dcs) m = foldr (\ d@(RWCDataCon _ cn _) -> Map.insert cn (DataConInfo dn d)) m dcs
-
-mkInitialVarSet :: [RWMDefn] -> Set IdAny
-mkInitialVarSet ds = foldr (\ (RWMDefn _ n _ _ _) -> Set.insert (IdAny n)) mempty ds
-
-runRWT :: Monad m => RWMProgram -> RWT m a -> m a
-runRWT m phi = runScopeTWith varset
-             $ runAssumeTWith dmap
-             $ runAssumeTWith tmap
-             $ runAssumeTWith varmap phi
-      where varmap = mkInitialVarMap (defns m)
-            tmap   = mkInitialTyConMap (dataDecls m)
-            dmap   = mkInitialDataConMap (dataDecls m)
-            varset = mkInitialVarSet (defns m)
-
-runRW :: RWMProgram -> RW a -> a
-runRW m = runIdentity . runRWT m
+runRWT :: Monad m => RWMProgram -> (RWMProgram -> RWT m RWMProgram) -> m RWMProgram
+runRWT m phi = runAssumeTWith varmap
+             $ phi m
+      where varmap = mkInitialVarMap $ defns m
 
 askVar :: MonadAssume (Id RWMExp) VarInfo m => RWCTy -> Id RWMExp -> m (Maybe RWMExp)
 askVar t = queryG >=> return . \ case
-      Just (RWMDefn _ _ (_ :-> t') _ e) -> Just $ subst (matchty mempty t' t) e
-      _                                 -> Nothing
+      Just (RWMDefn _ _ (_ :-> t') _ _ e) -> Just $ subst (matchty mempty t' t) e
+      _                                   -> Nothing
 
 fsubstE :: Monad m => Id RWMExp -> RWMExp -> RWMExp -> RWT m RWMExp
 fsubstE n e = fsubstsE [(n, e)]

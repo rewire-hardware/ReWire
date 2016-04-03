@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, GeneralizedNewtypeDeriving, FlexibleInstances
-           , DeriveDataTypeable, Rank2Types, GADTs, ScopedTypeVariables
+           , DeriveDataTypeable, DeriveGeneric, Rank2Types, GADTs, ScopedTypeVariables
            , StandaloneDeriving, LambdaCase #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
@@ -10,7 +10,9 @@ module ReWire.FrontEnd.Syntax
       , RWMDefn(..)
       , RWMData(..)
       , RWMProgram(..)
+      , kblank, tblank
       , flattenApp
+      , typeOf, patvars
       , module C
       ) where
 
@@ -26,6 +28,7 @@ import ReWire.Core.Syntax as C
       , Poly(..)
       , flattenTyApp
       , mkArrow
+      , arrowRight
       )
 
 import Control.DeepSeq (NFData (..), deepseq)
@@ -33,10 +36,15 @@ import Data.ByteString.Char8 (pack)
 import Data.Data (Typeable, Data(..))
 import Data.List (nub)
 import Data.Monoid ((<>))
-
 import Text.PrettyPrint
       ( text, char, nest, hsep, punctuate, parens, doubleQuotes
       , space, hang, braces, vcat, (<+>), ($+$))
+
+kblank :: Kind
+kblank = Kstar
+
+tblank :: RWCTy
+tblank = RWCTyCon noAnn (TyConId "_")
 
 data RWMExp = RWMApp Annote RWMExp RWMExp
             | RWMLam Annote (Id RWMExp) RWCTy RWMExp
@@ -63,7 +71,7 @@ instance IdSort RWMExp where
 instance Subst RWMExp RWMExp where
       fv = \ case
             RWMApp _ e1 e2      -> fv e1 ++ fv e2
-            RWMLam _ x _ e      -> filter (/= x) (fv e)
+            RWMLam _ x _ e      -> filter (/= x) $ fv e
             RWMVar _ x _        -> [x]
             RWMCon _ _ _        -> []
             RWMCase _ e p e1 e2 -> fv e ++ filter (not . (`elem` patvars p)) (fv e1) ++ fv e2
@@ -199,35 +207,36 @@ data RWMDefn = RWMDefn
       , defnName   :: Id RWMExp
       , defnPolyTy :: Poly RWCTy
       , defnInline :: Bool
+      , defnVars   :: [Id RWMExp]
       , defnBody   :: RWMExp
       } deriving (Ord, Eq, Show, Typeable, Data)
 
 instance Annotated RWMDefn where
-  ann (RWMDefn a _ _ _ _) = a
+      ann (RWMDefn a _ _ _ _ _) = a
 
 instance Subst RWMDefn RWMExp where
-      fv (RWMDefn _ n _ _ e) = filter (/= n) (fv e)
-      bv (RWMDefn _ n _ _ e) = n : bv e
-      subst' (RWMDefn an n pt b e) = refresh n (fv e) $ \ n' -> do
-            e' <- subst' e
-            return $ RWMDefn an n' pt b e'
+      fv (RWMDefn _ n _ _ vs e) = filter (not . (`elem` n : vs)) $ fv e
+      bv (RWMDefn _ n _ _ vs e) = vs ++ n : bv e
+      -- subst' (RWMDefn an n pt b vs e) = refresh n (fv e) $ \ n' -> do
+      --       e' <- subst' e
+      --       return $ RWMDefn an n' pt b e'
 
 instance Subst RWMDefn RWCTy where
-      fv (RWMDefn _ _ pt _ e) = fv pt ++ fv e
-      bv (RWMDefn _ _ pt _ _) = bv pt
-      subst' (RWMDefn an n (xs :-> t) b e) = refreshs xs (fv t ++ fv e) $ \ xs' -> do
-            t' <- subst' t
-            e' <- subst' e
-            return $ RWMDefn an n (xs' :-> t') b e'
+      fv (RWMDefn _ _ pt _ vs e) = fv pt ++ fv e
+      bv (RWMDefn _ _ pt _ vs _) = bv pt
+      -- subst' (RWMDefn an n (xs :-> t) b vs e) = refreshs xs (fv t ++ fv e) $ \ xs' -> do
+      --       t' <- subst' t
+      --       e' <- subst' e
+      --       return $ RWMDefn an n (xs' :-> t') b e'
 
 instance NFData RWMDefn where
-  rnf (RWMDefn _ n pt b e) = n `deepseq` pt `deepseq` b `deepseq` e `deepseq` ()
+      rnf (RWMDefn _ n pt b vs e) = n `deepseq` pt `deepseq` b `deepseq` vs `deepseq` e `deepseq` ()
 
 instance Pretty RWMDefn where
-      pretty (RWMDefn _ n (_ :-> ty) b e) = foldr ($+$) mempty
+      pretty (RWMDefn _ n (_ :-> ty) b vs e) = foldr ($+$) mempty
             (  [pretty n <+> text "::" <+> pretty ty]
             ++ (if b then [text "{-# INLINE" <+> pretty n <+> text "#-}"] else [])
-            ++ [pretty n <+> text "=", nest 4 $ pretty e]
+            ++ [pretty n <+> hsep (map pretty vs) <+> text "=", nest 4 $ pretty e]
             )
 
 ---
@@ -278,6 +287,15 @@ flattenApp :: RWMExp -> [RWMExp]
 flattenApp (RWMApp _ e e') = flattenApp e ++ [e']
 flattenApp e               = [e]
 
+typeOf :: RWMExp -> RWCTy
+typeOf (RWMApp _ e _)        = arrowRight (typeOf e)
+typeOf (RWMLam _ _ t e)      = mkArrow t (typeOf e)
+typeOf (RWMVar _ _ t)        = t
+typeOf (RWMCon _ _ t)        = t
+typeOf (RWMCase _ _ _ e _)   = typeOf e
+typeOf (RWMNativeVHDL _ _ e) = typeOf e
+typeOf (RWMError _ _ t)      = t
+
 -- Orphan instances for removing the NFData dependency from Core.Syntax.
 
 deriving instance NFData DataConId
@@ -295,4 +313,3 @@ instance NFData RWCTy where
 
 instance NFData RWCDataCon where
       rnf (RWCDataCon _ i ts) = i `deepseq` ts `deepseq` ()
-

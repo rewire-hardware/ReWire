@@ -25,7 +25,7 @@ import Data.Set (Set)
 
 type RWT m = AssumeT (Id RWCExp) VarInfo
                         (AssumeT TyConId TyConInfo
-                              (AssumeT DataConId DataConInfo (ScopeT m)))
+                              (AssumeT DataConId DataConInfo m))
 
 data VarInfo = GlobalVar RWCDefn | LocalVar RWCTy deriving Show
 newtype TyConInfo = TyConInfo RWCData deriving Show
@@ -60,8 +60,7 @@ mkInitialVarSet :: [RWCDefn] -> Set IdAny
 mkInitialVarSet ds = foldr (\ (RWCDefn _ n _ _ _) -> Set.insert (IdAny n)) Set.empty ds
 
 runRWT :: Monad m => RWCProgram -> RWT m a -> m a
-runRWT m phi = runScopeTWith varset $
-                 runAssumeTWith dmap $
+runRWT m phi = runAssumeTWith dmap $
                    runAssumeTWith tmap $
                      runAssumeTWith varmap phi
   where varmap = mkInitialVarMap (defns m)

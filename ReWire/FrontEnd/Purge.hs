@@ -11,9 +11,9 @@ import Control.Monad (unless)
 import Data.List (find)
 import Data.Set (Set, insert, member)
 
-type IM = StateT (Set (Id RWMExp)) RW
+type IM m = StateT (Set (Id RWMExp)) (RWT m)
 
-inuseExp :: RWMExp -> IM ()
+inuseExp :: Monad m => RWMExp -> IM m ()
 inuseExp = \ case
       RWMApp _ e1 e2      -> inuseExp e1 >> inuseExp e2
       RWMLam _ _ _ e      -> inuseExp e
@@ -30,12 +30,12 @@ inuseExp = \ case
       RWMNativeVHDL {}    -> return ()   -- FIXME(?!): special case here
       RWMError {}         -> return ()
 
-inuseModule :: Id RWMExp -> RWMProgram -> IM RWMProgram
-inuseModule n m = do
+inuseProgram :: Monad m => Id RWMExp -> RWMProgram -> IM m RWMProgram
+inuseProgram n m = do
       let md = find (\ d -> defnName d == n) $ defns m
       case md of
-            Nothing                  -> return mempty
-            Just (RWMDefn _ _ _ _ e) -> do
+            Nothing                    -> return mempty
+            Just (RWMDefn _ _ _ _ _ e) -> do
                   inuse <- get
                   put $ insert n inuse
                   inuseExp e
@@ -43,6 +43,6 @@ inuseModule n m = do
                   let ds' = filter (\ d -> defnName d `member` inuse) (defns m)
                   return m { defns = ds' }
 
-purge :: Id RWMExp -> RWMProgram -> RW RWMProgram
-purge n m = fst <$> runStateT (inuseModule n m) mempty
+purge :: Monad m => Id RWMExp -> RWMProgram -> RWT m RWMProgram
+purge n m = fst <$> runStateT (inuseProgram n m) mempty
 

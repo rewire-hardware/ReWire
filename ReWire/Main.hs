@@ -74,24 +74,25 @@ main = do args                       <- getArgs
             Right m -> do
               when (FlagD `elem` flags) $ do
                 putStrLn "front end finished"
-                writeFile "show.out" (show m)
-                putStrLn "show out finished"
+                -- writeFile "show.out" (show m)
+                -- putStrLn "show out finished"
                 writeFile "Debug.hs" (prettyPrint m)
                 putStrLn "debug out finished"
-                let cfg     = cfgFromRW m
-                    cfgDot  = mkDot (gather (eu cfg))
-                    lcfgDot = mkDot (gather (linearize cfg))
-                    pre     = cfgToProg cfg
-                    gpre    = gotoElim pre
-                    vhdl    = toVHDL (elimEmpty gpre)
-                    doDump = \ case
-                      FlagCFG f  -> writeFile f cfgDot
-                      FlagLCFG f -> writeFile f lcfgDot
-                      FlagPre f  -> writeFile f $ show pre
-                      FlagGPre f -> writeFile f $ show gpre
-                      FlagO f    -> writeFile f vhdl
-                      _          -> return ()
-                mapM_ doDump flags
+                -- TODO(chathhorn): disabling backend because I broke.
+                -- let cfg     = cfgFromRW m
+                --     cfgDot  = mkDot (gather (eu cfg))
+                --     lcfgDot = mkDot (gather (linearize cfg))
+                --     pre     = cfgToProg cfg
+                --     gpre    = gotoElim pre
+                --     vhdl    = toVHDL (elimEmpty gpre)
+                --     doDump = \ case
+                --       FlagCFG f  -> writeFile f cfgDot
+                --       FlagLCFG f -> writeFile f lcfgDot
+                --       FlagPre f  -> writeFile f $ show pre
+                --       FlagGPre f -> writeFile f $ show gpre
+                --       FlagO f    -> writeFile f vhdl
+                --       _          -> return ()
+                -- mapM_ doDump flags
   where isActFlag = \ case
           FlagCFG {}  -> True
           FlagLCFG {} -> True

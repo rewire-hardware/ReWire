@@ -10,7 +10,7 @@ module ReWire.Core.Syntax
   , RWCData(..)
   , RWCDataCon(..)
   , RWCProgram(..)
-  , mkArrow
+  , mkArrow, arrowRight
   , flattenTyApp,flattenApp,typeOf
   ) where
 
@@ -94,7 +94,7 @@ instance Pretty RWCTy where
   pretty (RWCTyApp _ t1 t2)  = pretty t1 <+> ppTyAppR t2
   pretty (RWCTyCon _ n)      = text (deTyConId n)
   pretty (RWCTyVar _ n)      = pretty n
-  pretty (RWCTyComp _ t1 t2) = text "{- computation -}" <+> pretty t1 <+> ppTyAppR t2
+  pretty (RWCTyComp _ t1 t2) = pretty t1 <+> ppTyAppR t2
 
 ppTyAppR :: RWCTy -> Doc
 ppTyAppR t@RWCTyApp {} = parens $ pretty t
@@ -103,17 +103,15 @@ ppTyAppR t             = pretty t
 ---
 
 data RWCExp = RWCApp Annote RWCExp RWCExp
-            | RWCLam Annote (Id RWCExp) RWCTy RWCExp
             | RWCVar Annote (Id RWCExp) RWCTy
             | RWCCon Annote DataConId RWCTy
             | RWCCase Annote RWCExp RWCPat RWCExp RWCExp
-            | RWCNativeVHDL Annote String RWCExp
+            | RWCNativeVHDL Annote String RWCTy
             | RWCError Annote String RWCTy
             deriving (Ord,Eq,Show,Typeable,Data)
 
 instance Annotated RWCExp where
   ann (RWCApp a _ _)        = a
-  ann (RWCLam a _ _ _)      = a
   ann (RWCVar a _ _)        = a
   ann (RWCCon a _ _)        = a
   ann (RWCCase a _ _ _ _)   = a
@@ -125,23 +123,18 @@ instance IdSort RWCExp where
 
 instance Subst RWCExp RWCExp where
   fv (RWCApp _ e1 e2)      = fv e1 ++ fv e2
-  fv (RWCLam _ x _ e)      = filter (/= x) (fv e)
   fv (RWCVar _ x _)        = [x]
   fv (RWCCon _ _ _)        = []
   fv (RWCCase _ e p e1 e2) = fv e ++ filter (not . (`elem` patvars p)) (fv e1) ++ fv e2
-  fv (RWCNativeVHDL _ _ e) = fv e
+  fv (RWCNativeVHDL _ _ _) = []
   fv (RWCError _ _ _)      = []
   bv (RWCApp _ e1 e2)      = bv e1 ++ bv e2
-  bv (RWCLam _ x _ e)      = x : bv e
   bv (RWCVar _ _ _)        = []
   bv (RWCCon _ _ _)        = []
   bv (RWCCase _ e p e1 e2) = bv e ++ patvars p ++ bv e1 ++ bv e2
-  bv (RWCNativeVHDL _ _ e) = bv e
+  bv (RWCNativeVHDL _ _ _) = []
   bv (RWCError _ _ _)      = []
   subst' (RWCApp an e1 e2)      = RWCApp an <$> subst' e1 <*> subst' e2
-  subst' (RWCLam an x t e)      = refresh x (fv e) $ \ x' ->
-                                    do e' <- subst' e
-                                       return $ RWCLam an x' t e'
   subst' (RWCVar an x t)        = do ml <- query x
                                      case ml of
                                        Just (Left y)  -> return $ RWCVar an y t
@@ -149,33 +142,30 @@ instance Subst RWCExp RWCExp where
                                        Nothing        -> return $ RWCVar an x t
   subst' (RWCCon an i t)        = return $ RWCCon an i t
   subst' (RWCCase an e p e1 e2) = RWCCase an <$> subst' e <*> return p <*> subst' e1 <*> subst' e2
-  subst' (RWCNativeVHDL an n e) = RWCNativeVHDL an n <$> subst' e
+  subst' (RWCNativeVHDL an n t) = return $ RWCNativeVHDL an n t
   subst' (RWCError an m t)      = return $ RWCError an m t
 
 instance Subst RWCExp RWCTy where
   fv (RWCApp _ e1 e2)      = fv e1 ++ fv e2
-  fv (RWCLam _ _ t e)      = fv t ++ fv e
   fv (RWCVar _ _ t)        = fv t
   fv (RWCCon _ _ t)        = fv t
   fv (RWCCase _ e p e1 e2) = fv e ++ fv p ++ fv e1 ++ fv e2
-  fv (RWCNativeVHDL _ _ e) = fv e
+  fv (RWCNativeVHDL _ _ t) = fv t
   fv (RWCError _ _ t)      = fv t
   bv _ = []
   subst' (RWCApp an e1 e2)      = RWCApp an <$> subst' e1 <*> subst' e2
-  subst' (RWCLam an x t e)      = RWCLam an x <$> subst' t <*> subst' e
   subst' (RWCVar an x t)        = RWCVar an x <$> subst' t
   subst' (RWCCon an i t)        = RWCCon an i <$> subst' t
   subst' (RWCCase an e p e1 e2) = RWCCase an <$> subst' e <*> subst' p <*> subst' e1 <*> subst' e2
-  subst' (RWCNativeVHDL an n e) = RWCNativeVHDL an n <$> subst' e
+  subst' (RWCNativeVHDL an n t) = RWCNativeVHDL an n <$> subst' t
   subst' (RWCError an m t)      = RWCError an m <$> subst' t
 
 instance Alpha RWCExp where
   aeq' (RWCApp _ e1 e2) (RWCApp _ e1' e2')             = (&&) <$> aeq' e1 e1' <*> aeq' e2 e2'
-  aeq' (RWCLam _ x t e) (RWCLam _ x' t' e')            = equating x x' $ (&&) <$> aeq' t t' <*> aeq' e e'
   aeq' (RWCVar _ x _) (RWCVar _ y _)                   = varsaeq x y
   aeq' (RWCCon _ i _) (RWCCon _ j _)                   = return $ i == j
   aeq' (RWCCase _ e p e1 e2) (RWCCase _ e' p' e1' e2') = (&&) <$> aeq' e e' <*> ((&&) <$> equatingPats p p' (aeq' e1 e1') <*> aeq' e2 e2')
-  aeq' (RWCNativeVHDL _ n e) (RWCNativeVHDL _ n' e')   = (&&) <$> return (n == n') <*> aeq' e e'
+  aeq' (RWCNativeVHDL _ n t) (RWCNativeVHDL _ n' t')   = return $ n == n'
   aeq' (RWCError _ m _) (RWCError _ m' _)              = return $ m == m'
   aeq' _ _                                             = return False
 
@@ -183,7 +173,6 @@ instance Pretty RWCExp where
   pretty (RWCApp _ e1 e2)      = parens $ hang (pretty e1) 4 (pretty e2)
   pretty (RWCCon _ n _)        = text (deDataConId n)
   pretty (RWCVar _ n _)        = pretty n
-  pretty (RWCLam _ n _ e)      = parens (char '\\' <+> pretty n <+> text "->" <+> pretty e)
   pretty (RWCCase _ e p e1 e2) = parens $
                                  foldr ($+$) empty
                                    [ text "case" <+> pretty e <+> text "of"
@@ -192,7 +181,7 @@ instance Pretty RWCExp where
                                      , text "_" <+> text "->" <+> pretty e2
                                      ])
                                    ]
-  pretty (RWCNativeVHDL _ n e) = parens (text "nativeVHDL" <+> doubleQuotes (text n) <+> parens (pretty e))
+  pretty (RWCNativeVHDL _ n _) = parens (text "nativeVHDL" <+> doubleQuotes (text n))
   pretty (RWCError _ m _)      = parens (text "primError" <+> doubleQuotes (text m))
 
 ---
@@ -234,7 +223,7 @@ instance Pretty RWCPat where
 data RWCDefn = RWCDefn { defnAnnote :: Annote,
                          defnName   :: Id RWCExp,
                          defnPolyTy :: Poly RWCTy,
-                         defnInline :: Bool,
+                         defnVars   :: [Id RWCExp],
                          defnBody   :: RWCExp }
                deriving (Ord,Eq,Show,Typeable,Data)
 
@@ -242,25 +231,24 @@ instance Annotated RWCDefn where
   ann (RWCDefn a _ _ _ _) = a
 
 instance Subst RWCDefn RWCExp where
-  fv (RWCDefn _ n _ _ e) = filter (/= n) (fv e)
-  bv (RWCDefn _ n _ _ e) = n : bv e
-  subst' (RWCDefn an n pt b e) = refresh n (fv e) $ \ n' ->
-                                 do e' <- subst' e
-                                    return $ RWCDefn an n' pt b e'
+  fv (RWCDefn _ n _ vs e) = filter (not . (`elem` n : vs)) (fv e)
+  bv (RWCDefn _ n _ vs e) = vs ++ n : bv e
+  -- subst' (RWCDefn an n pt e) = refresh n (fv e) $ \ n' ->
+  --                              do e' <- subst' e
+  --                                 return $ RWCDefn an n' pt e'
 
 instance Subst RWCDefn RWCTy where
   fv (RWCDefn _ _ pt _ e) = fv pt ++ fv e
   bv (RWCDefn _ _ pt _ _) = bv pt
-  subst' (RWCDefn an n (xs :-> t) b e) = refreshs xs (fv t ++ fv e) $ \ xs' ->
-                                         do t' <- subst' t
-                                            e' <- subst' e
-                                            return $ RWCDefn an n (xs' :-> t') b e'
+  -- subst' (RWCDefn an n (xs :-> t) e) = refreshs xs (fv t ++ fv e) $ \ xs' ->
+  --                                      do t' <- subst' t
+  --                                         e' <- subst' e
+  --                                         return $ RWCDefn an n (xs' :-> t') e'
 
 instance Pretty RWCDefn where
-  pretty (RWCDefn _ n (_ :-> ty) b e) = foldr ($+$) empty
-                                          (  [pretty n <+> text "::" <+> pretty ty]
-                                          ++ (if b then [text "{-# INLINE" <+> pretty n <+> text "#-}"] else [])
-                                          ++ [pretty n <+> text "=", nest 4 $ pretty e])
+  pretty (RWCDefn _ n (_ :-> ty) vs e) = foldr ($+$) empty
+                                           (  [pretty n <+> text "::" <+> pretty ty]
+                                           ++ [pretty n <+> hsep (map pretty vs) <+> text "=", nest 4 $ pretty e])
 
 ---
 
@@ -325,10 +313,9 @@ arrowRight (RWCTyApp _ (RWCTyApp _ (RWCTyCon _ (TyConId "->")) _) t2) = t2
 arrowRight t                                                          = error $ "arrowRight: got non-arrow type: " ++ show t
 
 typeOf :: RWCExp -> RWCTy
-typeOf (RWCApp _ e _)                    = arrowRight (typeOf e)
-typeOf (RWCLam _ _ t e)                  = mkArrow t (typeOf e)
-typeOf (RWCVar _ _ t)                    = t
-typeOf (RWCCon _ _ t)                    = t
-typeOf (RWCCase _ _ _ e _)               = typeOf e
-typeOf (RWCNativeVHDL _ _ e)             = typeOf e
-typeOf (RWCError _ _ t)                  = t
+typeOf (RWCApp _ e _)        = arrowRight (typeOf e)
+typeOf (RWCVar _ _ t)        = t
+typeOf (RWCCon _ _ t)        = t
+typeOf (RWCCase _ _ _ e _)   = typeOf e
+typeOf (RWCNativeVHDL _ _ t) = t
+typeOf (RWCError _ _ t)      = t

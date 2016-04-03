@@ -18,19 +18,8 @@ filesToCompile = ["Fibonacci.hs","MiniISA.hs","UpCounter.hs","dissex.hs",
 
 filesToTC :: [FilePath]
 filesToTC = filesToCompile ++
-             ["uniquification.hs","pats.hs","guards.hs","Mods.hs","Infix.hs"]
-
-filesToParse :: [FilePath]
-filesToParse = filesToTC ++ ["Salsa20.hs"]
-
-testParse :: FilePath -> Test
-testParse f_ = testCase f_ (do d   <- getDataFileName "test/parser_tests/"
-                               setCurrentDirectory d
-                               lp  <- getSystemLoadPath
-                               res <- loadProgram lp f_
-                               case res of
-                                 Left e  -> assertFailure $ show e
-                                 Right _ -> return ())
+             ["uniquification.hs","pats.hs","guards.hs","Mods.hs","Infix.hs",
+              "Salsa20.hs"]
 
 testTC :: FilePath -> Test
 testTC f_ = testCase f_ (do d   <- getDataFileName "test/parser_tests/"
@@ -52,8 +41,7 @@ testCompile f_ = testCase f_ (do f <- getDataFileName ("test/parser_tests/" ++ f
                                           f]
                                           M.main)
 
-tests = [testGroup "Files to Parse"     (map testParse filesToParse),
-         testGroup "Files to Typecheck" (map testTC filesToTC),
+tests = [testGroup "Files to Typecheck" (map testTC filesToTC),
          testGroup "Files to Compile"   (map testCompile filesToCompile)]
 
 main = defaultMain tests

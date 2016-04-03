@@ -7,7 +7,7 @@ import ReWire.FrontEnd.Syntax
 
 import Control.Monad (zipWithM)
 
-reduceExp :: RWMExp -> RW RWMExp
+reduceExp :: Monad m => RWMExp -> RWT m RWMExp
 reduceExp = \ case
       RWMApp an e1 e2      -> do
             e1' <- reduceExp e1
@@ -46,7 +46,7 @@ mergematches (m:ms) = case mergematches ms of
             MatchNo    -> MatchNo
             MatchMaybe -> MatchMaybe
 
-matchpat :: RWMExp -> RWMPat -> RW MatchResult
+matchpat :: Monad m => RWMExp -> RWMPat -> RWT m MatchResult
 matchpat e = \ case
       RWMPatCon _ i pats -> case flattenApp e of
             RWMCon _ c _:es
@@ -57,10 +57,10 @@ matchpat e = \ case
             _                                          -> return MatchMaybe
       RWMPatVar _ n _    -> return $ MatchYes [(n, e)]
 
-reddefn :: RWMDefn -> RW RWMDefn
-reddefn (RWMDefn an n pt b e) = RWMDefn an n pt b <$> reduceExp e
+reddefn :: Monad m => RWMDefn -> RWT m RWMDefn
+reddefn (RWMDefn an n pt b vs e) = RWMDefn an n pt b vs <$> reduceExp e
 
-reduce :: RWMProgram -> RW RWMProgram
+reduce :: Monad m => RWMProgram -> RWT m RWMProgram
 reduce m = do
       ds' <- mapM reddefn $ defns m
       return m { defns = ds' }

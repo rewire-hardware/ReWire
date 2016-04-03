@@ -16,7 +16,6 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Graph.Inductive hiding (prettyPrint)
 import Data.List (foldl',find,findIndex)
-import Data.Maybe (fromJust)
 -- import qualified Debug.Trace (trace)
 
 type VarMap = Map (Id RWCExp) Loc
@@ -189,7 +188,6 @@ stringAlts nl (_,no1_t,no1_f,_) (no2_e,no,_) = do addEdge no1_t nl (Conditional 
 cfgExpr :: RWCExp -> CGM (Node,Node,Loc)
 cfgExpr e = case ef of
              RWCApp {}     -> fail "cfgExpr: app in function position (can't happen)"
-             RWCLam {}     -> fail "cfgExpr: encountered lambda"
              RWCVar _ x _  -> do
                mr <- askBinding x
                case mr of
@@ -294,8 +292,9 @@ getFieldTys i t = do Just (DataConInfo tci _)               <- lift $ lift $ que
                          msub = matchty Map.empty pt t
                      case msub of
                        Nothing  -> fail $ "getFieldTys: type matching failed (type was " ++ show t ++ " and datacon was " ++ deDataConId i ++ ")"
-                       Just sub -> do let (RWCDataCon _ _ targs) = fromJust $ find (\ (RWCDataCon _ i' _) -> i==i') dcs
-                                      return (subst sub targs)
+                       Just sub -> case find (\ (RWCDataCon _ i' _) -> i==i') dcs of
+                                     Just (RWCDataCon _ _ targs) -> return (subst sub targs)
+                                     _                           -> error "getFieldTys"
 
 {-
 -- must be nonempty
@@ -490,21 +489,19 @@ cfgAcAlt lscr tscr lres p e = trace ("Entering cfgAcAlt: " ++ show (unAnn p)) $
 cfgAcExpr :: RWCExp -> CGM (Node,Node,Loc) -- entry node, exit node, result reg
 cfgAcExpr e = case ef of
                RWCApp {}                         -> fail "cfgAcExpr: app in function position (can't happen)"
-               -- I suppose strictly speaking we *could* handle lambdas,
-               -- but not for now.
-               RWCLam {}                         -> fail "cfgAcExpr: encountered lambda"
                -- Can't use data constructors to construct a resumption.
                RWCCon {}                         -> fail "cfgAcExpr: encountered con"
 
                RWCVar _ x _ | x == mkId ">>="    -> trace ("cfgAcExpr: Entering* bind") $ do
                  -- Bind is only allowed with a lambda on RHS.
+                 -- TODO(chathhorn): Bind will always have a RWCVar or RWCApp on the rhs now, not a lambda.
                  case eargs of
-                   [el,RWCLam _ x _ er] -> do
-                     -- Process is essentially identical to let.
-                     (entl,exl,regl)  <- cfgAcExpr el
-                     (entr,exr,regr)  <- binding x regl $ cfgAcExpr er
-                     addEdge exl entr (Conditional (BoolConst True))
-                     return (entl,exr,regr)
+                   -- [el,RWCLam _ x _ er] -> do
+                   [el,RWCVar _ x _] -> do
+                     (rs_f,ni_f,no_f,rr_f) <- cfgAcDefn x -- TODO(chathhorn): broke.
+                     return (ni_f, no_f, rr_f)
+                   [el,RWCApp _ e _] -> do
+                     cfgExpr e -- TODO(chathhorn): broke.
                    _ -> fail "wrong rhs for bind"
 
                RWCVar _ x _ | x == mkId "return" -> trace ("cfgAcExpr: Entering* return") $ do
@@ -628,11 +625,6 @@ isError :: RWCExp -> Bool
 isError RWCError {} = True
 isError _           = False
 
-peelLambdas :: RWCExp -> ([(Id RWCExp,RWCTy)],RWCExp)
-peelLambdas (RWCLam _ n t e) = ((n,t):nts,e')
-                               where (nts,e') = peelLambdas e
-peelLambdas e                = ([],e)
-
 -- Generate code for an action function.
 cfgAcDefn :: Id RWCExp -> CGM ([Loc],Node,Node,Loc)
 cfgAcDefn n = do
@@ -644,10 +636,10 @@ cfgAcDefn n = do
                   Nothing -> trace ("cfgAcDefn: Entering " ++ show n) $ do
                     md <- lift $ lift $ queryG n
                     case md of
-                      Nothing               -> fail $ "cfgAcDefn: " ++ show n ++ " not defined"
-                      Just (RWCDefn _ _ _ _ e_) -> do   -- FIXME: might check to make sure the INLINE pragma is false here
+                      Nothing                    -> fail $ "cfgAcDefn: " ++ show n ++ " not defined"
+                      Just (RWCDefn _ _ (_ :-> t) vs e) -> do
                         -- Allocate registers for arguments.
-                        let (xts,e) =  peelLambdas e_
+                        let xts     =  zip vs $ flattenTyApp t
                             xs      =  map fst xts
                             ts      =  map snd xts
                         rs          <- mapM freshLocTy ts
@@ -709,8 +701,8 @@ cfgStart _ = fail "cfgStart: malformed start expression"
 cfgProg :: CGM ()
 cfgProg = do md <- lift $ lift $ queryG (mkId "Main.start")
              case md of
-               Nothing                  -> fail "cfgProg: `Main.start' not defined"
-               Just (RWCDefn _ _ _ _ e) -> cfgStart e
+               Nothing                   -> fail "cfgProg: `Main.start' not defined"
+               Just (RWCDefn _ _ _ [] e) -> cfgStart e
 
 cfgFromRW :: RWCProgram -> CFG
 cfgFromRW p = fst $ runRW p (runStateT (runReaderT doit env0) s0)
@@ -790,7 +782,6 @@ funAlt' lscr tscr lres p e = do (bds,cmatch,rmatch) <- funPat lscr tscr p
 funExpr :: RWCExp -> CGM (Cmd,Loc)
 funExpr e = case ef of
              RWCApp {}     -> fail "cfgExpr: app in function position (can't happen)"
-             RWCLam {}     -> fail "cfgExpr: encountered lambda"
              RWCVar _ x _  -> do
                mr <- askBinding x
                case mr of
@@ -860,11 +851,11 @@ funDefn n = do ms <- askFun n
                  Nothing -> do
                    md <- lift $ lift $ queryG n
                    case md of
---                     Nothing               -> fail $ "funDefn: " ++ show n ++ " not defined"
-                     Nothing               -> return (show n) -- FIXME: in this case it should be a VHDL-defined function
-                     Just (RWCDefn _ _ _ _ e_) -> do  -- FIXME: might check to make sure the INLINE pragma is false here
+--                     Nothing                  -> fail $ "funDefn: " ++ show n ++ " not defined"
+                     Nothing                    -> return (show n) -- FIXME: in this case it should be a VHDL-defined function
+                     Just (RWCDefn _ _ (_ :-> t) vs e) -> do
                        fn          <- freshFunName n
-                       let (xts,e) =  peelLambdas e_
+                       let xts     =  zip vs $ flattenTyApp t
                            xs      =  map fst xts
                            ts      =  map snd xts
                        pns         <- mapM freshLocTy ts

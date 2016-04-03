@@ -6,7 +6,6 @@ module ReWire.Scoping
   ( Id(..),IdAny(..),IdSort(..),mkId,any2Id
   , Alpha(..),AlphaM
   , MonadAssume(..),AssumeT,runAssume,runAssumeT,runAssumeTWith
-  , ScopeT,runScopeTWith
   , Subst(..),subst
   , aeq,varsaeq
   , equating,equatings
@@ -17,13 +16,15 @@ module ReWire.Scoping
 
 import ReWire.Pretty
 
-import Control.Applicative
-import Control.DeepSeq
-import Control.Monad
-import Control.Monad.Except
-import Control.Monad.Identity
-import Control.Monad.Reader
-import Control.Monad.State
+import Control.Applicative (Alternative)
+import Control.DeepSeq (NFData(..))
+import Control.Monad (MonadPlus,liftM,zipWithM)
+import Control.Monad.Trans (lift,MonadIO,MonadTrans)
+import Control.Monad.Catch (MonadCatch,MonadThrow)
+import Control.Monad.Except (MonadError)
+import Control.Monad.Identity (Identity(..))
+import Control.Monad.Reader (MonadReader(..),ReaderT(..))
+import Control.Monad.State (MonadState(..),StateT(..))
 import Data.ByteString.Char8 (ByteString)
 import Data.Data (Typeable,Data)
 import Data.Either (rights)
@@ -38,7 +39,7 @@ import qualified Data.Set              as Set
 --
 -- A monad for assumptions.
 --
-class Monad m => MonadAssume v t m | m v -> t, m t -> v where
+class (Ord v, Monad m) => MonadAssume v t m | m v -> t, m t -> v where
   assuming       :: v -> t -> m a -> m a
   forgetting     :: v -> m a -> m a
   query          :: v -> m (Maybe t)
@@ -46,26 +47,41 @@ class Monad m => MonadAssume v t m | m v -> t, m t -> v where
 
 newtype AssumeT v t m a = AssumeT { deAssumeT :: ReaderT (Map v t) m a }
                            deriving (Functor,Applicative,Alternative,Monad,
-                                     MonadTrans,MonadPlus,MonadScope)
+                                     MonadTrans,MonadPlus)
 
 deriving instance MonadState s m => MonadState s (AssumeT v t m)
 deriving instance MonadError e m => MonadError e (AssumeT v t m)
+deriving instance MonadCatch m   => MonadCatch (AssumeT v t m)
+deriving instance MonadThrow m   => MonadThrow (AssumeT v t m)
+deriving instance MonadIO m      => MonadIO (AssumeT v t m)
 
 instance MonadReader r m => MonadReader r (AssumeT v t m) where
   ask       = lift ask
   local f m = AssumeT $ ReaderT $ \ rhoA -> local f (runReaderT (deAssumeT m) rhoA)
-
-instance {-# OVERLAPPABLE #-} (Ord v', Monad m, MonadAssume v t m) => MonadAssume v t (AssumeT v' t' m) where
-  assuming n t m = AssumeT $ ReaderT $ \x -> assuming n t (runAssumeTWith x m)
-  forgetting n m = AssumeT $ ReaderT $ \x -> forgetting n (runAssumeTWith x m)
-  query n        = lift $ query n
-  getAssumptions = lift $ getAssumptions
 
 instance {-# OVERLAPPING #-} (Ord v, Monad m) => MonadAssume v t (AssumeT v t m) where
   assuming n t m = AssumeT $ local (insert n t) (deAssumeT m)
   forgetting n m = AssumeT $ local (delete n) (deAssumeT m)
   query n        = AssumeT $ do { m <- ask ; return (Map.lookup n m) }
   getAssumptions = AssumeT ask
+
+instance {-# OVERLAPPING #-} (Ord v', Monad m, MonadAssume v t m) => MonadAssume v t (AssumeT v' t' m) where
+  assuming n t m = AssumeT $ ReaderT $ \x -> assuming n t (runAssumeTWith x m)
+  forgetting n m = AssumeT $ ReaderT $ \x -> forgetting n (runAssumeTWith x m)
+  query n        = lift $ query n
+  getAssumptions = lift $ getAssumptions
+
+instance {-# OVERLAPPING #-} (Monad m, MonadAssume v t m) => MonadAssume v t (StateT s m) where
+  assuming n t m = StateT $ \s -> do
+      (a, s') <- runStateT m s
+      a'      <- assuming n t (return a)
+      return (a', s')
+  forgetting n m = StateT $ \s -> do
+      (a, s') <- runStateT m s
+      a'      <- forgetting n (return a)
+      return (a', s')
+  query n        = lift $ query n
+  getAssumptions = lift $ getAssumptions
 
 type Assume e t = AssumeT e t Identity
 
@@ -125,34 +141,6 @@ any2Id (IdAny (Id s i)) | s == idSort (undefined :: a) = Just (Id s i)
 
 sortOf :: IdAny -> ByteString
 sortOf (IdAny (Id s _)) = s
-
----
---- A monad for generating locally fresh names.
----
-newtype ScopeT m a = ScopeT { deScopeT :: ReaderT (Set IdAny) m a }
-   deriving (Functor,Applicative,Alternative,Monad,MonadTrans,MonadPlus)
-
-deriving instance MonadState s m => MonadState s (ScopeT m)
-deriving instance MonadError e m => MonadError e (ScopeT m)
-
-instance MonadReader r m => MonadReader r (ScopeT m) where
-  ask       = lift ask
-  local f m = ScopeT $ ReaderT $ \ rhoS -> local f (runReaderT (deScopeT m) rhoS)
-
-class Monad m => MonadScope m where
-  getInScope    :: m (Set IdAny)
-  addingToScope :: Id a -> m b -> m b
-
-instance Monad m => MonadScope (ScopeT m) where
-  getInScope        = ScopeT ask
-  addingToScope x m = ScopeT $ local (Set.insert (IdAny x)) (deScopeT m)
-
-instance MonadScope m => MonadScope (ReaderT r m) where
-  getInScope        = lift getInScope
-  addingToScope x m = ReaderT $ \ rho -> addingToScope x (runReaderT m rho)
-
-runScopeTWith :: Set IdAny -> ScopeT m a -> m a
-runScopeTWith s m = runReaderT (deScopeT m) s
 
 ---
 ---

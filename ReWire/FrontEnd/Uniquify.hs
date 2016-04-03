@@ -102,7 +102,7 @@ uniquifyExpr = \ case
       RWMApp an e1 e2      -> RWMApp an <$> uniquifyExpr e1 <*> uniquifyExpr e2
       RWMLam an n t e      -> do
             t'         <- uniquifyTy t
-            ([n'], e') <- uniquingE [n] (uniquifyExpr e)
+            ([n'], e') <- uniquingE [n] $ uniquifyExpr e
             return $ RWMLam an n' t' e'
       RWMVar an n t        -> do
             mn <- askUniqueE n
@@ -123,9 +123,9 @@ uniquifyExpr = \ case
                   RWMPatVar _ x _   -> [x]
 
 uniquifyDefn :: Monad m => RWMDefn -> UQM m RWMDefn
-uniquifyDefn (RWMDefn an n (tvs :-> t) b e) = do
+uniquifyDefn (RWMDefn an n (tvs :-> t) b [] e) = do
       (tvs', (t', e')) <- uniquingT tvs $ (,) <$> uniquifyTy t <*> uniquifyExpr e
-      return $ RWMDefn an n (tvs' :-> t') b e'
+      return $ RWMDefn an n (tvs' :-> t') b [] e'
 
 uniquifyModule :: Monad m => RWMProgram -> UQM m RWMProgram
 uniquifyModule (RWMProgram dds ds) = do

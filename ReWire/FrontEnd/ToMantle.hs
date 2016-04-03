@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, ViewPatterns, ScopedTypeVariables #-}
 module ReWire.FrontEnd.ToMantle (toMantle) where
 
 import ReWire.Annotation hiding (ann)
@@ -170,7 +170,7 @@ transInlineSig inls = \ case
 transDef :: (Applicative m, Functor m, SyntaxError m) => Renamer -> [(S.Name, RWCTy)] -> [S.Name] -> [RWMDefn] -> Decl Annote -> m [RWMDefn]
 transDef rn tys inls defs = \ case
       PatBind l (PVar _ (sName -> x)) (UnGuardedRhs _ e) Nothing -> case lookup x tys of
-            Just t -> (:defs) . RWMDefn l (mkId $ rename Value rn x) (nub (fv t) :-> t) (x `elem` inls) <$> transExp rn e
+            Just t -> (:defs) . RWMDefn l (mkId $ rename Value rn x) (nub (fv t) :-> t) (x `elem` inls) [] <$> transExp rn e
             _      -> failAt l "No type signature for"
       _                                             -> return defs
 
@@ -208,12 +208,6 @@ isMonad ms = \ case
       TyVar _ (sName -> x)                                                   -> x `elem` ms
       _                                                                      -> False
 
-kblank :: Kind
-kblank = Kstar
-
-tblank :: RWCTy
-tblank = RWCTyCon noAnn (TyConId "_")
-
 transExp :: (Applicative m, Functor m, SyntaxError m) => Renamer -> Exp Annote -> m RWMExp
 transExp rn = \ case
       App l (App _ (Var _ (UnQual _ (Ident _ "nativeVhdl"))) (Lit _ (String _ f _))) e
@@ -232,9 +226,9 @@ transExp rn = \ case
                                     <*> transExp rn e2
       e                     -> failAt (ann e) $ "Unsupported expression syntax: " ++ show (void e)
       where getVars :: Pat Annote -> [S.Name]
-            getVars = runPureQ $ query $ \ p -> case p :: Pat Annote of
-                  PVar _ x -> [sName x]
-                  _        -> []
+            getVars = runQ $ query $ \ case
+                  PVar (_::Annote) x -> [sName x]
+                  _                  -> []
 
 transPat :: (Functor m, SyntaxError m) => Renamer -> Pat Annote -> m RWMPat
 transPat rn = \ case

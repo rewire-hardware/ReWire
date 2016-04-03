@@ -133,7 +133,7 @@ kcDataDecl (RWMData an i tvs _ dcs) = do
       localAssumps (as `Map.union`) (mapM_ kcDataCon dcs)
 
 kcDefn :: SyntaxError m => RWMDefn -> KCM m ()
-kcDefn (RWMDefn an _ (tvs :-> t) _ _) = do
+kcDefn (RWMDefn an _ (tvs :-> t) _ _ _) = do
       oldsub      <- getKiSub
       as          <- Map.fromList <$> mapM (\ tv -> freshkv >>= \ v -> return (tv, Kvar v)) tvs
       k           <- localAssumps (as `Map.union`) $ kcTy t

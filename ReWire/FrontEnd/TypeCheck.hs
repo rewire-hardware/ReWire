@@ -78,7 +78,7 @@ freshv = do
       return n
 
 defnAssump :: RWMDefn -> Assump
-defnAssump (RWMDefn _ n pt _ _) = (n, pt)
+defnAssump (RWMDefn _ n pt _ _ _) = (n, pt)
 
 dataConAssump :: [Id RWCTy] -> RWCTy -> RWCDataCon -> CAssump
 dataConAssump tvs rt (RWCDataCon _ i ts) = (i, tvs :-> foldr mkArrow rt ts)
@@ -196,12 +196,12 @@ tcExp = \ case
 tcDefn :: SyntaxError m => RWMDefn -> TCM m RWMDefn
 tcDefn d  = do
       putTySub mempty
-      let RWMDefn an n (tvs :-> t) b e = force d
+      let RWMDefn an n (tvs :-> t) b [] e = force d
       (e', te) <- tcExp e
       unify an t te
       s        <- getTySub
       putTySub mempty
-      let d' = RWMDefn noAnn n (tvs :-> t) b (subst s e')
+      let d' = RWMDefn noAnn n (tvs :-> t) b [] (subst s e')
       d' `deepseq` return d'
 
 tc :: SyntaxError m => [RWMProgram] -> RWMProgram -> TCM m RWMProgram

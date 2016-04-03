@@ -43,7 +43,7 @@ stT :: RWCTy -> RWCTy -> RWCTy
 stT s m   = c "StT" `tyApp` s `tyApp` m
 
 mkPrimDefn :: (Id RWMExp, Poly RWCTy) -> RWMDefn
-mkPrimDefn (n, vs :-> t) = RWMDefn noAnn n (vs :-> t) False $ RWMVar noAnn n t
+mkPrimDefn (n, vs :-> t) = RWMDefn noAnn n (vs :-> t) False [] $ RWMVar noAnn n t
 
 prims :: [(Id RWMExp, Poly RWCTy)]
 prims =
