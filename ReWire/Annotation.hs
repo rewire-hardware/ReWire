@@ -1,22 +1,32 @@
-{-# LANGUAGE Rank2Types, ScopedTypeVariables, GADTs #-}
+{-# LANGUAGE Rank2Types, ScopedTypeVariables, GADTs, TypeOperators, StandaloneDeriving
+           , TypeFamilies, DeriveGeneric, LambdaCase #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.Annotation
-      ( Annote(..)
-      , Annotation(..)
-      , Annotated(..)
+      ( Annote (..)
+      , Annotation (..)
+      , Annotated (..)
       , toSrcSpanInfo
+      , SrcSpanInfo (..), SrcSpan
       , noAnn, unAnn
       ) where
 
 import ReWire.SYB (runPureT,transform)
 
+import Control.DeepSeq (NFData (..))
 import Control.Monad.Identity (Identity(..))
 import Data.Data (Typeable,Data(..))
 import GHC.Generics (Generic)
 import Language.Haskell.Exts.Annotated.ExactPrint (ExactP)
-import Language.Haskell.Exts.SrcLoc (SrcLoc,SrcInfo(..),SrcSpanInfo(..),noLoc,noInfoSpan,mkSrcSpan)
+import Language.Haskell.Exts.SrcLoc
+      ( SrcLoc, SrcInfo (..), SrcSpanInfo (..), SrcSpan (..)
+      , noLoc, noInfoSpan, mkSrcSpan)
 
 import qualified Language.Haskell.Exts.Annotated as HS (Annotated(..))
 import qualified Language.Haskell.Exts.Pretty as HS (Pretty)
+
+import Unbound.Generics.LocallyNameless (Alpha (..))
+
+import GHC.Generics (Generic (..), U1, Rec0, (:+:))
 
 data Annote where
       NoAnnote  :: Annote
@@ -79,10 +89,40 @@ instance Ord Annote where
 instance Eq Annote where
       _ == _ = True
 
+instance Alpha Annote where
+      aeq' _ = (==)
+      acompare' _ = compare
+      fvAny' _ _ = pure
+      close _ _ = id
+      open _ _ = id
+      isPat _ = mempty
+      isTerm _ = mempty
+      nthPatFind _ = mempty
+      namePatFind _ = mempty
+      swaps' _ _ = id
+      freshen' _ i = return (i, mempty)
+      lfreshen' _ i cont = cont i mempty
+
+instance Generic Annote where
+      type Rep Annote = U1 :+: Rec0 SrcSpanInfo :+: Rec0 Int
+      to = error "Generic Annote: to" -- TODO(chathhorn) plz leave me alone ghc
+      from = error "Generic Annote: from"
+
+instance NFData Annote where
+      rnf _ = () -- Probably not ideal.
+
 toSrcSpanInfo :: Annote -> SrcSpanInfo
-toSrcSpanInfo NoAnnote      = fromSrcInfo $ noInfoSpan $ mkSrcSpan noLoc noLoc
-toSrcSpanInfo (LocAnnote l) = l
-toSrcSpanInfo (AstAnnote a) = HS.ann a
+toSrcSpanInfo = \ case
+      NoAnnote    -> fromSrcInfo $ noInfoSpan $ mkSrcSpan noLoc noLoc
+      LocAnnote l -> l
+      AstAnnote a -> HS.ann a
 
 noAnn :: Annote
 noAnn = NoAnnote
+
+-- Orphans.
+
+deriving instance Generic SrcSpanInfo
+deriving instance Generic SrcSpan
+instance Alpha SrcSpanInfo
+instance Alpha SrcSpan

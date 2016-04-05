@@ -10,19 +10,14 @@ import ReWire.Core.Syntax (RWCProgram)
 import ReWire.Error
 import ReWire.FrontEnd.Annotate
 import ReWire.FrontEnd.Desugar
-import ReWire.FrontEnd.Expand
+import ReWire.FrontEnd.Transform
 import ReWire.FrontEnd.KindCheck
-import ReWire.FrontEnd.Monad
-import ReWire.FrontEnd.Purge
-import ReWire.FrontEnd.Reduce
 import ReWire.FrontEnd.Rename
 import ReWire.FrontEnd.Syntax
 import ReWire.FrontEnd.ToCore
 import ReWire.FrontEnd.ToMantle
 import ReWire.FrontEnd.TypeCheck
-import ReWire.FrontEnd.Uniquify
-import ReWire.Pretty
-import ReWire.Scoping
+import ReWire.FrontEnd.PrimBasis
 
 import Control.Monad ((>=>), liftM, msum)
 import Control.Monad.IO.Class (liftIO)
@@ -31,13 +26,14 @@ import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify)
 import Data.Monoid ((<>))
 import Language.Haskell.Exts.Annotated (parseFileWithMode, ParseResult (..), defaultParseMode, ParseMode (..))
 import Language.Haskell.Exts.Annotated.Simplify (sModuleName)
-import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
 import System.Directory (getCurrentDirectory, setCurrentDirectory, doesFileExist, doesDirectoryExist)
 
 import qualified Data.Map.Strict              as Map
 import qualified Language.Haskell.Exts.Syntax as S
 
 import Language.Haskell.Exts.Annotated.Syntax hiding (Annotation, Namespace)
+
+import Unbound.Generics.LocallyNameless (runFreshMT, string2Name)
 
 type Cache = ReaderT LoadPath (StateT ModCache (SyntaxErrorT IO))
 type LoadPath = [FilePath]
@@ -126,30 +122,15 @@ getProgram' fp = Map.lookup fp <$> get >>= \ case
 getProgram :: FilePath -> Cache RWCProgram
 getProgram fp = do
       (p, _) <- getProgram' fp
-      p'     <- kindcheck
+      p'     <- runFreshMT
+              $ kindcheck
             >=> typecheck
+            >=> return . (primBasis <>)
+            >=> neuterPrims
             >=> inline
-            >=> toCore $ p
+            >=> reduce
+            >=> liftLambdas
+            >=> purge (string2Name "Main.start")
+            >=> toCore
+              $ p
       return p'
-
-inline :: RWMProgram -> Cache RWMProgram
-inline m = do
-      m'   <- neuterPrims >=> uniquify $ m
-      --liftIO $ putStrLn "Uniquified, PRE-LL:"
-      --liftIO $ putStrLn $ prettyPrint m'
-      --liftIO $ putStrLn "POST-LL:"
-      --liftIO $ putStrLn $ prettyPrint m''
-      m'' <- runRWT m'
-           $ expand inlineds
-         >=> uniquify
-         >=> reduce
-      -- liftIO $ putStrLn "PRE-LL:"
-      -- liftIO $ putStrLn $ prettyPrint m''
-      m''' <- runRWT m'' $ liftLambdas
-      m'''' <- runRWT m''' $ purge (mkId "Main.start")
-      --liftIO $ putStrLn $ "POST Purge and such:" ++ prettyPrint m'''
-      --typecheck m'''
-      return m''''
-      where inlineds = concatMap f $ defns m
-            f (RWMDefn _ n _ True _ _) = [n]
-            f _                        = []

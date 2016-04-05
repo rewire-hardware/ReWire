@@ -8,7 +8,6 @@ import ReWire.Core.Monad
 import ReWire.Core.Syntax
 import ReWire.PreHDL.CFG
 import ReWire.PreHDL.Syntax
-import ReWire.Scoping
 
 import Control.Monad.State
 import Control.Monad.Reader
@@ -18,10 +17,15 @@ import Data.Graph.Inductive hiding (prettyPrint)
 import Data.List (foldl',find,findIndex)
 -- import qualified Debug.Trace (trace)
 
-type VarMap = Map (Id RWCExp) Loc
-type ActionMap = Map (Id RWCExp) ([Loc],Node,Node,Loc) -- name -> arg regs, entry node, exit node, result reg
-type FunMap = Map (Id RWCExp) String                   -- name -> generated VHDL name
+type VarMap = Map Id Loc
+type ActionMap = Map Id ([Loc],Node,Node,Loc) -- name -> arg regs, entry node, exit node, result reg
+type FunMap = Map Id String                   -- name -> generated VHDL name
 type CGM = ReaderT Env (StateT (Int,CFG,ActionMap,FunMap) RW)
+
+type Id = String
+
+mkId :: String -> Id
+mkId = id
 
 trace :: String -> a -> a
 -- trace = Debug.Trace.trace
@@ -94,14 +98,14 @@ putFunMap :: FunMap -> CGM ()
 putFunMap fm = do (c,g,am,_) <- get
                   put (c,g,am,fm)
 
-binding :: Id RWCExp -> Loc -> CGM a -> CGM a
+binding :: Id -> Loc -> CGM a -> CGM a
 binding n l = localVarMap (Map.insert n l)
 
-askBinding :: Id RWCExp -> CGM (Maybe Loc)
+askBinding :: Id -> CGM (Maybe Loc)
 askBinding n = do varm <- askVarMap
                   return (Map.lookup n varm)
 
-askFun :: Id RWCExp -> CGM (Maybe String)
+askFun :: Id -> CGM (Maybe String)
 askFun n = do funm <- getFunMap
               return (Map.lookup n funm)
 
@@ -109,7 +113,7 @@ addEdge :: Node -> Node -> Branch -> CGM ()
 addEdge ns nd br = do g <- getGraph
                       putGraph (insEdge (ns,nd,br) g)
 
-freshFunName :: Id RWCExp -> CGM String
+freshFunName :: Id -> CGM String
 freshFunName n = do c <- getC
                     putC (c+1)
                     return ("rewire_" ++ show n ++ "_" ++ show c)
@@ -188,7 +192,9 @@ stringAlts nl (_,no1_t,no1_f,_) (no2_e,no,_) = do addEdge no1_t nl (Conditional 
 cfgExpr :: RWCExp -> CGM (Node,Node,Loc)
 cfgExpr e = case ef of
              RWCApp {}     -> fail "cfgExpr: app in function position (can't happen)"
-             RWCVar _ x _  -> do
+             -- TODO(chathhorn)
+             -- RWCLVar _ x _  ->
+             RWCGVar _ _ x  -> do
                mr <- askBinding x
                case mr of
                  Just r  -> do -- If it's a locally bound variable we just
@@ -213,7 +219,7 @@ cfgExpr e = case ef of
                                   (_,no,_) = last ninors
                               addEdge no n (Conditional (BoolConst True))
                               return (ni,n,r)
-             RWCNativeVHDL _ n _ -> do
+             RWCNativeVHDL _ _ n -> do
                ninors <- mapM cfgExpr eargs
                stringNodes (map (\ (ni,no,_) -> (ni,no)) ninors)
                let rs =  map (\ (_,_,r) -> r) ninors
@@ -226,7 +232,7 @@ cfgExpr e = case ef of
                           addEdge no n (Conditional (BoolConst True))
                           return (ni,n,r)
              RWCError {}    -> fail "cfgExpr: RWCError"
-             RWCCon _ dci _ -> do
+             RWCCon _ _ dci -> do
                -- Tag.
                t            <- getTag dci
                rt           <- freshLocSize (length t)
@@ -289,11 +295,11 @@ getFieldTys :: DataConId -> RWCTy -> CGM [RWCTy]
 getFieldTys i t = do Just (DataConInfo tci _)               <- lift $ lift $ queryD i
                      Just (TyConInfo (RWCData _ _ tvs dcs)) <- lift $ lift $ queryT tci
                      let pt   = foldl' (RWCTyApp noAnn) (RWCTyCon noAnn tci) (map (RWCTyVar noAnn) tvs)
-                         msub = matchty Map.empty pt t
+                         msub = undefined -- TODO(chathhorn) matchty Map.empty pt t
                      case msub of
                        Nothing  -> fail $ "getFieldTys: type matching failed (type was " ++ show t ++ " and datacon was " ++ deDataConId i ++ ")"
                        Just sub -> case find (\ (RWCDataCon _ i' _) -> i==i') dcs of
-                                     Just (RWCDataCon _ _ targs) -> return (subst sub targs)
+                                     Just (RWCDataCon _ _ targs) -> return undefined -- TODO(chathhorn) (subst sub targs)
                                      _                           -> error "getFieldTys"
 
 {-
@@ -323,7 +329,7 @@ zipWithM3 f (x:xs) (y:ys) (z:zs) = do v    <- f x y z
                                       return (v:rest)
 zipWithM3 _ _ _ _                = return []
 
-cfgLastPat :: Loc -> RWCTy -> RWCPat -> CGM ([(Id RWCExp,Loc)],Node,Node,Loc) -- bindings, entry node, exit node, match bit loc
+cfgLastPat :: Loc -> RWCTy -> RWCPat -> CGM ([(Id,Loc)],Node,Node,Loc) -- bindings, entry node, exit node, match bit loc
 cfgLastPat lscr tscr (RWCPatCon _ dci ps) = do
                                             ntm <- addFreshNode (Rem "final pat")
                                             let rtm =  "bogus"
@@ -356,10 +362,10 @@ cfgLastPat lscr tscr (RWCPatCon _ dci ps) = do
                                                     -- after check pats, and results
             --                                          addEdge npo_l nai (Conditional (BoolConst True))
                                                     return (concat bss,ntm,npo_l,rtm)
-cfgLastPat lscr _ (RWCPatVar _ x _)       = do
+cfgLastPat lscr _ (RWCPatVar _ _)       = do
                                             rtm <- freshLocBool
                                             ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
-                                            return ([(x,lscr)],ntm,ntm,rtm)
+                                            return ([(undefined,lscr)],ntm,ntm,rtm) -- TODO(chathhorn)
 
 getDataConTyCon :: DataConId -> CGM TyConId
 getDataConTyCon dci = do Just (DataConInfo n _) <- lift $ lift $ queryD dci
@@ -403,7 +409,7 @@ mkGetField dci lscr tscr n = do tci         <- getDataConTyCon dci
                                 nf          <- addFreshNode (Assign rf (SliceRHS lo hi lscr))
                                 return (rf,nf)
 
-cfgPat :: Loc -> RWCTy -> RWCPat -> CGM ([(Id RWCExp,Loc)],Node,Node,Loc) -- bindings, entry node, exit node, match bit loc
+cfgPat :: Loc -> RWCTy -> RWCPat -> CGM ([(Id,Loc)],Node,Node,Loc) -- bindings, entry node, exit node, match bit loc
 cfgPat lscr tscr (RWCPatCon _ dci ps) = do -- ntm: rtm <- tag match?
                                         (ntm,rtm) <- mkTagCheck dci lscr
 
@@ -435,9 +441,9 @@ cfgPat lscr tscr (RWCPatCon _ dci ps) = do -- ntm: rtm <- tag match?
                                             -- after check pats, and results
                                             addEdge npo_l nai (Conditional (BoolConst True))
                                             return (concat bss,ntm,nao,rm)
-cfgPat lscr _ (RWCPatVar _ x _)       = do rtm <- freshLocBool
-                                           ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
-                                           return ([(x,lscr)],ntm,ntm,rtm)
+cfgPat lscr _ (RWCPatVar _ _)       = do rtm <- freshLocBool
+                                         ntm <- addFreshNode (Assign rtm (BoolRHS (BoolConst True)))
+                                         return ([(undefined,lscr)],ntm,ntm,rtm) -- TODO(chathhorn)
 
 cfgLastAlt :: Loc -> RWCTy -> Loc -> RWCPat -> RWCExp -> CGM (Node,Node,Node,Loc)
 cfgLastAlt lscr tscr lres p e = do (bds,nip,nop,_) <- cfgLastPat lscr tscr p
@@ -492,24 +498,26 @@ cfgAcExpr e = case ef of
                -- Can't use data constructors to construct a resumption.
                RWCCon {}                         -> fail "cfgAcExpr: encountered con"
 
-               RWCVar _ x _ | x == mkId ">>="    -> trace ("cfgAcExpr: Entering* bind") $ do
+               -- TODO(chathhorn)
+               --RWCLVar _ x _ ->
+               RWCGVar _ _ x | x == mkId ">>="    -> trace ("cfgAcExpr: Entering* bind") $ do
                  -- Bind is only allowed with a lambda on RHS.
-                 -- TODO(chathhorn): Bind will always have a RWCVar or RWCApp on the rhs now, not a lambda.
+                 -- TODO(chathhorn): Bind will always have a Var or RWCApp on the rhs now, not a lambda.
                  case eargs of
                    -- [el,RWCLam _ x _ er] -> do
-                   [el,RWCVar _ x _] -> do
+                   [el,RWCGVar _ _ x] -> do
                      (rs_f,ni_f,no_f,rr_f) <- cfgAcDefn x -- TODO(chathhorn): broke.
                      return (ni_f, no_f, rr_f)
                    [el,RWCApp _ e _] -> do
                      cfgExpr e -- TODO(chathhorn): broke.
                    _ -> fail "wrong rhs for bind"
 
-               RWCVar _ x _ | x == mkId "return" -> trace ("cfgAcExpr: Entering* return") $ do
+               RWCGVar _ _ x | x == mkId "return" -> trace ("cfgAcExpr: Entering* return") $ do
                  case eargs of
                    [e] -> cfgExpr e
                    _   -> fail "cfgAcExpr: wrong number of arguments for return"
 
-               RWCVar _ x _ | x == mkId "signal" -> trace ("cfgAcExpr: Entering* signal") $ do
+               RWCGVar _ _ x | x == mkId "signal" -> trace ("cfgAcExpr: Entering* signal") $ do
                  case eargs of
                    [e] -> do
                      -- First we compute the signal value.
@@ -528,12 +536,12 @@ cfgAcExpr e = case ef of
                      return (ni,npost,r)
                    _  -> fail "cfgAcExpr: wrong number of arguments for signal"
 
-               RWCVar _ x _ | x == mkId "lift"   -> trace ("cfgAcExpr: Entering* lift") $ do
+               RWCGVar _ _ x | x == mkId "lift"   -> trace ("cfgAcExpr: Entering* lift") $ do
                  case eargs of
                    [e] -> localStateLayer (+1) (cfgAcExpr e)
                    _   -> fail "cfgAcExpr: wrong number of arguments for lift"
 
-               RWCVar _ x _ | x == mkId "get"    -> trace ("cfgAcExpr: Entering* get") $ do
+               RWCGVar _ _ x | x == mkId "get"    -> trace ("cfgAcExpr: Entering* get") $ do
                  case eargs of
                    [] -> do l   <- askStateLayer
                             tss <- askStateTys
@@ -548,7 +556,7 @@ cfgAcExpr e = case ef of
                                   return (n,n,r)
                    _  -> fail "cfgAcExpr: wrong number of arguments for get"
 
-               RWCVar _ x _ | x == mkId "put"    -> trace ("cfgAcExpr: Entering* put") $ do
+               RWCGVar _ _ x | x == mkId "put"    -> trace ("cfgAcExpr: Entering* put") $ do
                  case eargs of
                    [e] -> do l <- askStateLayer
                              if l < 0
@@ -561,7 +569,7 @@ cfgAcExpr e = case ef of
                                  return (nie,no,r)
                    _   -> fail "cfgAcExpr: wrong number of arguments for get"
 
-               RWCVar _ x _                      -> trace ("cfgAcExpr: Entering var/app " ++ show x) $ do
+               RWCGVar _ _ x                      -> trace ("cfgAcExpr: Entering var/app " ++ show x) $ do
                  -- This is required to be a tail call! Look up info for the
                  -- callee.
                  (rs_f,ni_f,no_f,rr_f) <- cfgAcDefn x
@@ -626,7 +634,7 @@ isError RWCError {} = True
 isError _           = False
 
 -- Generate code for an action function.
-cfgAcDefn :: Id RWCExp -> CGM ([Loc],Node,Node,Loc)
+cfgAcDefn :: Id -> CGM ([Loc],Node,Node,Loc)
 cfgAcDefn n = do
                 am <- getActionMap
                 case Map.lookup n am of
@@ -637,9 +645,10 @@ cfgAcDefn n = do
                     md <- lift $ lift $ queryG n
                     case md of
                       Nothing                    -> fail $ "cfgAcDefn: " ++ show n ++ " not defined"
-                      Just (RWCDefn _ _ (_ :-> t) vs e) -> do
+                      Just (RWCDefn _ _ _ vs e) -> do
+                        let t = undefined -- TODO(chathhorn)
                         -- Allocate registers for arguments.
-                        let xts     =  zip vs $ flattenTyApp t
+                        let xts     =  zip undefined $ flattenTyApp t -- TODO(chathhorn): vs is arity
                             xs      =  map fst xts
                             ts      =  map snd xts
                         rs          <- mapM freshLocTy ts
@@ -672,8 +681,8 @@ mkStateRegDecls = do ts <- askStateTys
                      putHeader (h { regDecls = rs ++ regDecls h })
 
 cfgStart :: RWCExp -> CGM ()
-cfgStart (RWCApp _ (RWCApp _ (RWCVar _ x _) e) _) | x == mkId "extrude" = cfgStart e -- FIXME: fill in state expression!
-cfgStart (RWCVar _ x t) = local buildEnv $ do
+cfgStart (RWCApp _ (RWCApp _ (RWCGVar _ _ x) e) _) | x == mkId "extrude" = cfgStart e -- FIXME: fill in state expression!
+cfgStart (RWCGVar _ t x) = local buildEnv $ do
                           si  <- tyWidth ti
                           so  <- tyWidth to
                           h   <- getHeader
@@ -701,8 +710,8 @@ cfgStart _ = fail "cfgStart: malformed start expression"
 cfgProg :: CGM ()
 cfgProg = do md <- lift $ lift $ queryG (mkId "Main.start")
              case md of
-               Nothing                   -> fail "cfgProg: `Main.start' not defined"
-               Just (RWCDefn _ _ _ [] e) -> cfgStart e
+               Nothing                  -> fail "cfgProg: `Main.start' not defined"
+               Just (RWCDefn _ _ _ 0 e) -> cfgStart e
 
 cfgFromRW :: RWCProgram -> CFG
 cfgFromRW p = fst $ runRW p (runStateT (runReaderT doit env0) s0)
@@ -754,7 +763,7 @@ mkFunGetField dci lscr tscr n = do tci         <- getDataConTyCon dci
                                        (lo,hi)         = fieldRanges !! n
                                    return (rf,Assign rf (SliceRHS lo hi lscr))
 
-funPat :: Loc -> RWCTy -> RWCPat -> CGM ([(Id RWCExp,Loc)],Cmd,Loc)
+funPat :: Loc -> RWCTy -> RWCPat -> CGM ([(Id,Loc)],Cmd,Loc)
 funPat lscr tscr (RWCPatCon _ dci ps) = do (ctm,rtm) <- mkFunTagCheck dci lscr
                                            case ps of
                                              [] -> return ([],ctm,rtm)
@@ -768,8 +777,8 @@ funPat lscr tscr (RWCPatCon _ dci ps) = do (ctm,rtm) <- mkFunTagCheck dci lscr
                                                       return (concat bdss,
                                                               foldr1 mkSeq ([ctm] ++ cfs ++ cs ++ [Assign rm (BoolRHS (foldr1 And (map BoolVar (rtm:rms))))]),
                                                               rm)
-funPat lscr _ (RWCPatVar _ x _)       = do rm <- freshLocBool
-                                           return ([(x,lscr)],Assign rm (BoolRHS (BoolConst True)),rm)
+funPat lscr _ (RWCPatVar _ _)       = do rm <- freshLocBool
+                                         return ([(undefined,lscr)],Assign rm (BoolRHS (BoolConst True)),rm) -- TODO(chathhorn)
 
 funAlt' :: Loc -> RWCTy -> Loc -> RWCPat -> RWCExp -> CGM (Cmd,(Loc,Cmd))
 funAlt' lscr tscr lres p e = do (bds,cmatch,rmatch) <- funPat lscr tscr p
@@ -782,7 +791,7 @@ funAlt' lscr tscr lres p e = do (bds,cmatch,rmatch) <- funPat lscr tscr p
 funExpr :: RWCExp -> CGM (Cmd,Loc)
 funExpr e = case ef of
              RWCApp {}     -> fail "cfgExpr: app in function position (can't happen)"
-             RWCVar _ x _  -> do
+             RWCGVar _ _ x  -> do
                mr <- askBinding x
                case mr of
                  Just r  -> return (Skip,r)
@@ -794,13 +803,13 @@ funExpr e = case ef of
                    let (cs,rs) =  unzip crs
                    r           <- freshLocTy (typeOf e)
                    return (foldr1 mkSeq (cs++[Assign r (FunCallRHS nf rs)]),r)
-             RWCNativeVHDL _ n _ -> do
+             RWCNativeVHDL _ _ n -> do
                crs         <- mapM funExpr eargs
                let (cs,rs) =  unzip crs
                r           <- freshLocTy (typeOf e)
                return (foldr1 mkSeq (cs++[Assign r (FunCallRHS n rs)]),r)
              RWCError {}    -> fail "funExpr: RWCError"
-             RWCCon _ dci _ -> do
+             RWCCon _ _ dci -> do
                -- Tag.
                t            <- getTag dci
                rt           <- freshLocSize (length t)
@@ -844,7 +853,7 @@ funExpr e = case ef of
                  _  -> fail "funExpr: encountered case expression in function position"
   where (ef:eargs) = flattenApp e
 
-funDefn :: Id RWCExp -> CGM String
+funDefn :: Id -> CGM String
 funDefn n = do ms <- askFun n
                case ms of
                  Just s  -> return s
@@ -853,9 +862,10 @@ funDefn n = do ms <- askFun n
                    case md of
 --                     Nothing                  -> fail $ "funDefn: " ++ show n ++ " not defined"
                      Nothing                    -> return (show n) -- FIXME: in this case it should be a VHDL-defined function
-                     Just (RWCDefn _ _ (_ :-> t) vs e) -> do
+                     Just (RWCDefn _ _ _ vs e) -> do
+                       let t = undefined -- TODO(chathhorn)
                        fn          <- freshFunName n
-                       let xts     =  zip vs $ flattenTyApp t
+                       let xts     =  zip undefined $ flattenTyApp t -- TODO(chathhorn): vs is arity
                            xs      =  map fst xts
                            ts      =  map snd xts
                        pns         <- mapM freshLocTy ts

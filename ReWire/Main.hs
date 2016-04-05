@@ -1,13 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 module ReWire.Main (main) where
 
-import ReWire.Core.ToPreHDL (cfgFromRW,eu)
 import ReWire.FrontEnd
 import ReWire.FrontEnd.LoadPath
-import ReWire.PreHDL.CFG (mkDot,gather,linearize,cfgToProg)
-import ReWire.PreHDL.ElimEmpty (elimEmpty)
-import ReWire.PreHDL.GotoElim (gotoElim)
-import ReWire.PreHDL.ToVHDL (toVHDL)
 import ReWire.Pretty
 
 import Control.Monad (when,unless)
