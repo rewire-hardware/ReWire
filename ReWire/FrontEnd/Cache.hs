@@ -18,6 +18,7 @@ import ReWire.FrontEnd.ToCore
 import ReWire.FrontEnd.ToMantle
 import ReWire.FrontEnd.TypeCheck
 import ReWire.FrontEnd.PrimBasis
+import ReWire.Pretty
 
 import Control.Monad ((>=>), liftM, msum)
 import Control.Monad.IO.Class (liftIO)
@@ -27,17 +28,19 @@ import Data.Monoid ((<>))
 import Language.Haskell.Exts.Annotated (parseFileWithMode, ParseResult (..), defaultParseMode, ParseMode (..))
 import Language.Haskell.Exts.Annotated.Simplify (sModuleName)
 import System.Directory (getCurrentDirectory, setCurrentDirectory, doesFileExist, doesDirectoryExist)
+import Data.Set (Set)
 
 import qualified Data.Map.Strict              as Map
+import qualified Data.Set                     as Set
 import qualified Language.Haskell.Exts.Syntax as S
 
 import Language.Haskell.Exts.Annotated.Syntax hiding (Annotation, Namespace)
 
-import Unbound.Generics.LocallyNameless (runFreshMT, string2Name)
+import Unbound.Generics.LocallyNameless (runFreshMT, string2Name, name2String)
 
 type Cache = ReaderT LoadPath (StateT ModCache (SyntaxErrorT IO))
 type LoadPath = [FilePath]
-type ModCache = Map.Map FilePath (RWMProgram, Exports)
+type ModCache = Map.Map FilePath (RWMModule, Exports)
 
 runCache :: Cache a -> LoadPath -> IO (Either AstError a)
 runCache m lp = runSyntaxError $ fst <$> runStateT (runReaderT m lp) mempty
@@ -46,7 +49,7 @@ mkRenamer :: Annotation a => Module a -> Cache Renamer
 mkRenamer m = mconcat <$> mapM mkRenamer' (getImps m)
       where mkRenamer' :: Annotation a => ImportDecl a -> Cache Renamer
             mkRenamer' (ImportDecl _ (sModuleName -> m) quald _ _ _ (fmap sModuleName -> as) specs) = do
-                  (_, exps) <- getProgram' $ toFilePath m
+                  (_, exps) <- getModule $ toFilePath m
                   fromImps m quald exps as specs
 
 getImps :: Annotation a => Module a -> [ImportDecl a]
@@ -69,8 +72,8 @@ getImps = \case
 -- Pass 15   Translate to mantle + rename globals.
 -- Pass 16   Translate to core
 
-getProgram' :: FilePath -> Cache (RWMProgram, Exports)
-getProgram' fp = Map.lookup fp <$> get >>= \ case
+getModule :: FilePath -> Cache (RWMModule, Exports)
+getModule fp = Map.lookup fp <$> get >>= \ case
       Just p  -> return p
       Nothing -> do
             modify $ Map.insert fp mempty
@@ -115,22 +118,30 @@ getProgram' fp = Map.lookup fp <$> get >>= \ case
                   ParseFailed (S.SrcLoc "" r c) msg -> failAt (S.SrcLoc fp r c) msg
                   ParseFailed l msg                 -> failAt l msg
 
-            loadImports :: Annotation a => Module a -> Cache RWMProgram
-            loadImports = liftM mconcat . mapM (liftM fst . getProgram' . toFilePath . sModuleName . importModule) . getImps
+            loadImports :: Annotation a => Module a -> Cache RWMModule
+            loadImports = liftM mconcat . mapM (liftM fst . getModule . toFilePath . sModuleName . importModule) . getImps
 
 -- Phase 2 (pre-core) transformations.
 getProgram :: FilePath -> Cache RWCProgram
 getProgram fp = do
-      (p, _) <- getProgram' fp
-      p'     <- runFreshMT
+      (RWMModule ts ds, _) <- getModule fp
+
+      liftIO $ putStrLn "FVs:\n"
+      liftIO $ putStrLn $ foldr (++) "" $ map (\n -> " | " ++ name2String n) $ (concatMap fv ds :: [ReWire.FrontEnd.Syntax.Name RWMExp])
+
+      p'     <- runFreshMT $ addPrims $ RWMProgram ts $ trec ds
+
+      liftIO $ putStrLn "Pre TC:\n"
+      liftIO $ putStrLn $ prettyPrint p'
+
+      p''     <- runFreshMT
               $ kindcheck
             >=> typecheck
-            >=> return . (primBasis <>)
             >=> neuterPrims
             >=> inline
-            >=> reduce
-            >=> liftLambdas
-            >=> purge (string2Name "Main.start")
+            -- >=> reduce
+            -- >=> liftLambdas
+            -- >=> purge (string2Name "Main.start")
             >=> toCore
-              $ p
-      return p'
+              $ p'
+      return p''

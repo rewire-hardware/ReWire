@@ -30,6 +30,7 @@ import GHC.Generics (Generic (..), U1, Rec0, (:+:))
 
 data Annote where
       NoAnnote  :: Annote
+      MsgAnnote :: String -> Annote
       LocAnnote :: SrcSpanInfo -> Annote
       AstAnnote :: forall ast.
             ( Functor ast
@@ -79,6 +80,7 @@ instance Data Annote where
 
 instance Show Annote where
       show NoAnnote      = "NoAnnote"
+      show (MsgAnnote m) = "MsgAnnote (" ++ show m ++ ")"
       show (LocAnnote l) = "LocAnnote (" ++ show l ++ ")"
       show (AstAnnote a) = "AstAnnote (" ++ show a ++ ")"
 
@@ -114,6 +116,7 @@ instance NFData Annote where
 toSrcSpanInfo :: Annote -> SrcSpanInfo
 toSrcSpanInfo = \ case
       NoAnnote    -> fromSrcInfo $ noInfoSpan $ mkSrcSpan noLoc noLoc
+      MsgAnnote _ -> toSrcSpanInfo NoAnnote
       LocAnnote l -> l
       AstAnnote a -> HS.ann a
 

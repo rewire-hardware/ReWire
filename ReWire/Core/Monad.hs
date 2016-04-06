@@ -20,8 +20,6 @@ import Data.Map (Map)
 
 import qualified Data.Map.Strict as Map
 
-import Unbound.Generics.LocallyNameless (Name,aeq)
-
 type RWT m = AssumeT String VarInfo
                         (AssumeT TyConId TyConInfo
                               (AssumeT DataConId DataConInfo m))
@@ -67,19 +65,19 @@ runRW :: RWCProgram -> RW a -> a
 runRW m = runIdentity . runRWT m
 
 -- FIXME: begin stuff that should maybe be moved to a separate module
-mergesubs :: Monad m => Map (Name RWCTy) RWCTy -> Map (Name RWCTy) RWCTy -> m (Map (Name RWCTy) RWCTy)
+mergesubs :: Monad m => Map String RWCTy -> Map String RWCTy -> m (Map String RWCTy)
 mergesubs sub sub' = Map.foldrWithKey f (return sub') sub
    where f n t m = do s <- m
                       case Map.lookup n s of
-                        Just t' -> if t `aeq` t' then return s
-                                                 else fail "mergesubs failed"
+                        Just t' -> if t == t' then return s
+                                              else fail "mergesubs failed"
                         Nothing -> liftM (Map.insert n t) m
 
-matchty :: Monad m => Map (Name RWCTy) RWCTy -> RWCTy -> RWCTy -> m (Map (Name RWCTy) RWCTy)
+matchty :: Monad m => Map String RWCTy -> RWCTy -> RWCTy -> m (Map String RWCTy)
 matchty sub (RWCTyVar _ n) t                         = case Map.lookup n sub of
                                                        Nothing -> return (Map.insert n t sub)
-                                                       Just t' -> if t `aeq` t' then return sub
-                                                                                else fail "matchty failed (variable inconsistency)"
+                                                       Just t' -> if t == t' then return sub
+                                                                             else fail "matchty failed (variable inconsistency)"
 matchty sub (RWCTyCon _ i1) (RWCTyCon _ i2) | i1 == i2 = return sub
 matchty sub (RWCTyApp _ t1 t2) (RWCTyApp _ t1' t2')    = do sub1 <- matchty sub t1 t1'
                                                             sub2 <- matchty sub t2 t2'

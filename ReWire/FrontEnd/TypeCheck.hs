@@ -9,7 +9,6 @@ module ReWire.FrontEnd.TypeCheck (typecheck) where
 
 import ReWire.Annotation
 import ReWire.Error
-import ReWire.FrontEnd.PrimBasis
 import ReWire.FrontEnd.Syntax
 import ReWire.Pretty
 
@@ -30,7 +29,7 @@ subst ss = substs (Map.assocs ss)
 
 -- Type checker for core.
 
-type TySub = Map (Name RWCTy) RWCTy
+type TySub = Map (Name RWMTy) RWMTy
 data TCEnv = TCEnv
       { as  :: Map (Name RWMExp) Poly
       , cas :: Map DataConId Poly
@@ -42,35 +41,35 @@ type CAssump = (DataConId, Poly)
 type TCM m = ReaderT TCEnv (StateT TySub m)
 
 typecheck :: (Fresh m, SyntaxError m) => RWMProgram -> m RWMProgram
-typecheck p = fmap fst $ runStateT (runReaderT (tc primBasis p) (TCEnv mempty mempty)) mempty
+typecheck p = fmap fst $ runStateT (runReaderT (tc p) (TCEnv mempty mempty)) mempty
 
 localAssumps :: SyntaxError m => (Map (Name RWMExp) Poly -> Map (Name RWMExp) Poly) -> TCM m a -> TCM m a
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
 
 askAssumps :: SyntaxError m => TCM m (Map (Name RWMExp) Poly)
-askAssumps = ask >>= \ tce -> return (as tce)
+askAssumps = ask >>= return . as
 
 localCAssumps :: SyntaxError m => (Map DataConId Poly -> Map DataConId Poly) -> TCM m a -> TCM m a
 localCAssumps f = local (\ tce -> tce { cas = f (cas tce) })
 
 askCAssumps :: SyntaxError m => TCM m (Map DataConId Poly)
-askCAssumps = ask >>= \ tce -> return (cas tce)
+askCAssumps = ask >>= return . cas
 
-freshv :: (Fresh m, SyntaxError m) => TCM m RWCTy
+freshv :: (Fresh m, SyntaxError m) => TCM m RWMTy
 freshv = do
       n <- fresh $ string2Name "?"
-      modify $ Map.insert n $ RWCTyVar noAnn n
-      return $ RWCTyVar noAnn n
+      modify $ Map.insert n $ RWMTyVar noAnn n
+      return $ RWMTyVar noAnn n
 
 defnAssump :: RWMDefn -> Assump
-defnAssump (RWMDefn _ n pt _ _) = (n, pt)
+defnAssump (RWMDefn _ n (Embed pt) _ _) = (n, pt)
 
-dataConAssump :: [Name RWCTy] -> RWCTy -> RWCDataCon -> CAssump
-dataConAssump tvs rt (RWCDataCon _ i ts) = (i, tvs |-> foldr mkArrow rt ts)
+dataConAssump :: [Name RWMTy] -> RWMTy -> RWMDataCon -> CAssump
+dataConAssump tvs rt (RWMDataCon _ i ts) = (i, tvs `poly` foldr mkArrow rt ts)
 
 dataDeclAssumps :: RWMData -> [CAssump]
 dataDeclAssumps (RWMData _ i tvs _ dcs) = map (dataConAssump tvs rt) dcs
-      where rt = foldl (RWCTyApp noAnn) (RWCTyCon noAnn i) (map (RWCTyVar noAnn) tvs)
+      where rt = foldl (RWMTyApp noAnn) (RWMTyCon noAnn i) (map (RWMTyVar noAnn) tvs)
 
 (@@) :: TySub -> TySub -> TySub
 s1 @@ s2 = Map.mapWithKey (\ _ t -> subst s1 t) s2 `Map.union` s1
@@ -78,33 +77,33 @@ s1 @@ s2 = Map.mapWithKey (\ _ t -> subst s1 t) s2 `Map.union` s1
 isFlex :: Name a -> Bool
 isFlex = (=='?') . head . name2String
 
-varBind :: SyntaxError m => Annote -> Name RWCTy -> RWCTy -> TCM m TySub
-varBind an u t | t `aeq` RWCTyVar noAnn u = return mempty
-               | u `elem` fvl t           = failAt an $ "Occurs check fails: " ++ show u ++ ", " ++ prettyPrint t
+varBind :: SyntaxError m => Annote -> Name RWMTy -> RWMTy -> TCM m TySub
+varBind an u t | t `aeq` RWMTyVar noAnn u = return mempty
+               | u `elem` fv t            = failAt an $ "Occurs check fails: " ++ show u ++ ", " ++ prettyPrint t
                | otherwise                = return (Map.singleton u t)
 
-mgu :: SyntaxError m => Annote -> RWCTy -> RWCTy -> TCM m TySub
-mgu an (RWCTyApp _ tl tr) (RWCTyApp _ tl' tr')                     = do
+mgu :: SyntaxError m => Annote -> RWMTy -> RWMTy -> TCM m TySub
+mgu an (RWMTyApp _ tl tr) (RWMTyApp _ tl' tr')                     = do
       s1 <- mgu an tl tl'
       s2 <- mgu an (subst s1 tr) $ subst s1 tr'
       return $ s2 @@ s1
-mgu an (RWCTyVar _ u)     t               | isFlex u               = varBind an u t
-mgu an t                  (RWCTyVar _ u)  | isFlex u               = varBind an u t
-mgu _  (RWCTyCon _ c1)    (RWCTyCon _ c2) | c1 == c2               = return mempty
-mgu _  (RWCTyVar _ v)     (RWCTyVar _ u)  | not (isFlex v) && v==u = return mempty
-mgu an (RWCTyComp _ m t)  (RWCTyComp _ m' t')                      = do
+mgu an (RWMTyVar _ u)     t               | isFlex u               = varBind an u t
+mgu an t                  (RWMTyVar _ u)  | isFlex u               = varBind an u t
+mgu _  (RWMTyCon _ c1)    (RWMTyCon _ c2) | c1 == c2               = return mempty
+mgu _  (RWMTyVar _ v)     (RWMTyVar _ u)  | not (isFlex v) && v==u = return mempty
+mgu an (RWMTyComp _ m t)  (RWMTyComp _ m' t')                      = do
       s1 <- mgu an m m'
       s2 <- mgu an (subst s1 t) (subst s1 t')
       return $ s2 @@ s1
 mgu an t1 t2                                                       = failAt an $ "Types do not unify: " ++ prettyPrint t1 ++ ", " ++ prettyPrint t2
 
-unify :: SyntaxError m => Annote -> RWCTy -> RWCTy -> TCM m ()
+unify :: SyntaxError m => Annote -> RWMTy -> RWMTy -> TCM m ()
 unify an t1 t2 = do
       s <- get
       u <- mgu an (subst s t1) $ subst s t2
       modify (u@@)
 
-inst :: (Fresh m, SyntaxError m) => Poly -> TCM m RWCTy
+inst :: (Fresh m, SyntaxError m) => Poly -> TCM m RWMTy
 inst (Poly pt) = do
       (tvs, t) <- unbind pt
       sub      <- Map.fromList <$> mapM (\ tv -> freshv >>= \ v -> return (tv, v)) tvs
@@ -113,9 +112,9 @@ inst (Poly pt) = do
 patassumps :: RWMPat -> [Assump]
 patassumps = \ case
       RWMPatCon _ _ ps -> concatMap patassumps ps
-      RWMPatVar _ t n  -> [(n, [] |-> t)]
+      RWMPatVar _ t n  -> [(n, [] `poly` t)]
 
-tcPat :: (Fresh m, SyntaxError m) => RWCTy -> RWMPat -> TCM m RWMPat
+tcPat :: (Fresh m, SyntaxError m) => RWMTy -> RWMPat -> TCM m RWMPat
 tcPat t = \ case
       RWMPatVar an _ x  -> return $ RWMPatVar an t x
       RWMPatCon an i ps -> do
@@ -132,7 +131,7 @@ tcPat t = \ case
                               unify an t tres
                               return $ RWMPatCon an i ps'
 
-tcExp :: (Fresh m, SyntaxError m) => RWMExp -> TCM m (RWMExp, RWCTy)
+tcExp :: (Fresh m, SyntaxError m) => RWMExp -> TCM m (RWMExp, RWMTy)
 tcExp = \ case
       e_@(RWMApp an _ _)   -> do
             let (ef:es) =  flattenApp e_
@@ -147,7 +146,7 @@ tcExp = \ case
             (x, e')   <- unbind e
             tvx       <- freshv
             tvr       <- freshv
-            (e'', te) <- localAssumps (Map.insert x ([] |-> tvx)) $ tcExp e'
+            (e'', te) <- localAssumps (Map.insert x ([] `poly` tvx)) $ tcExp e'
             unify an tvr $ tvx `mkArrow` te
             return (RWMLam an tvx $ bind x e'', tvr)
       RWMVar an _ v        -> do
@@ -185,7 +184,7 @@ tcExp = \ case
 tcDefn :: (Fresh m, SyntaxError m) => RWMDefn -> TCM m RWMDefn
 tcDefn d  = do
       put mempty
-      let RWMDefn an n (Poly pt) b (Embed e) = force d
+      let RWMDefn an n (Embed (Poly pt)) b (Embed e) = force d
       (tvs, t)  <- unbind pt
       (vs, e')  <- unbind e
       (e'', te) <- tcExp e'
@@ -195,17 +194,16 @@ tcDefn d  = do
       let d' = RWMDefn noAnn n (tvs |-> t) b $ Embed $ bind vs $ subst s e''
       d' `deepseq` return d'
 
-tc :: (Fresh m, SyntaxError m) => RWMProgram -> RWMProgram -> TCM m RWMProgram
-tc p0 p = do
-      ds0 <- untrec $ defns p0
+tc :: (Fresh m, SyntaxError m) => RWMProgram -> TCM m RWMProgram
+tc p = do
       ds  <- untrec $ defns p
-      let as  =  Map.fromList $ map defnAssump $ ds0 ++ ds
-          cas =  Map.fromList $ concatMap (concatMap dataDeclAssumps . dataDecls) [p0, p]
+      let as  =  Map.fromList $ map defnAssump ds
+          cas =  Map.fromList $ concatMap dataDeclAssumps $ dataDecls p
       ds'     <- localAssumps (as `Map.union`) $ localCAssumps (cas `Map.union`) $ mapM tcDefn ds
       return p { defns = trec ds' }
 
-flattenArrow :: RWCTy -> ([RWCTy], RWCTy)
-flattenArrow (RWCTyApp _ (RWCTyApp _ (RWCTyCon _ (TyConId "->")) t1) t2) = (t1:ts, t)
+flattenArrow :: RWMTy -> ([RWMTy], RWMTy)
+flattenArrow (RWMTyApp _ (RWMTyApp _ (RWMTyCon _ (TyConId "->")) t1) t2) = (t1:ts, t)
       where (ts, t) = flattenArrow t2
 flattenArrow t                                                           = ([], t)
 

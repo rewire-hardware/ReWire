@@ -3,7 +3,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module ReWire.Core.Syntax
-  ( DataConId(..),TyConId(..),Poly(..)
+  ( DataConId(..),TyConId(..)
   , RWCTy(..)
   , RWCExp(..)
   , RWCPat(..)
@@ -13,7 +13,6 @@ module ReWire.Core.Syntax
   , RWCProgram(..)
   , mkArrow,arrowRight
   , flattenTyApp,flattenApp,typeOf
-  , (|->)
   ) where
 
 import ReWire.Pretty
@@ -24,7 +23,7 @@ import Data.List (nub)
 import Text.PrettyPrint
 import GHC.Generics (Generic)
 
-import Unbound.Generics.LocallyNameless (name2String,aeq,bind,Alpha,Subst(..),SubstName(..))
+import Unbound.Generics.LocallyNameless (name2String,Alpha)
 import Unbound.Generics.LocallyNameless.Name (Name(..))
 import Unbound.Generics.LocallyNameless.Bind (Bind(..))
 
@@ -33,22 +32,6 @@ newtype TyConId   = TyConId   { deTyConId :: String } deriving (Eq,Ord,Generic,S
 
 instance Alpha TyConId
 instance Alpha DataConId
-
-data Poly = Poly (Bind [Name RWCTy] RWCTy)
-      deriving (Generic,Show,Typeable,Data)
-
-(|->) :: [Name RWCTy] -> RWCTy -> Poly
-vs |-> t = Poly $ bind vs t
-
-infix 0 |->
-
-instance Alpha Poly
-
-instance Eq Poly where
-  (==) = aeq
-
-instance Pretty Poly where
-  pretty _ = text "TODO(pretty Poly)"
 
 instance Pretty DataConId where
   pretty = text . deDataConId
@@ -60,20 +43,9 @@ instance Pretty TyConId where
 
 data RWCTy = RWCTyApp Annote RWCTy RWCTy
            | RWCTyCon Annote TyConId
-           | RWCTyVar Annote (Name RWCTy)
+           | RWCTyVar Annote String
            | RWCTyComp Annote RWCTy RWCTy -- application of a monad
            deriving (Eq,Generic,Show,Typeable,Data)
-
-instance Alpha RWCTy
-
-instance Subst RWCTy RWCTy where
-      isvar (RWCTyVar _ x) = Just $ SubstName x
-      isvar _              = Nothing
-instance Subst RWCTy Annote
-instance Subst RWCTy SrcSpanInfo
-instance Subst RWCTy SrcSpan
-instance Subst RWCTy TyConId
-instance Subst RWCTy DataConId
 
 instance Annotated RWCTy where
   ann (RWCTyApp a _ _)  = a
@@ -90,7 +62,7 @@ instance Pretty RWCTy where
           ppTyArrowL t                                                           = pretty t
   pretty (RWCTyApp _ t1 t2)  = pretty t1 <+> ppTyAppR t2
   pretty (RWCTyCon _ n)      = text (deTyConId n)
-  pretty (RWCTyVar _ n)      = pretty n
+  pretty (RWCTyVar _ n)      = text n
   pretty (RWCTyComp _ t1 t2) = pretty t1 <+> ppTyAppR t2
 
 ppTyAppR :: RWCTy -> Doc
@@ -152,7 +124,7 @@ instance Pretty RWCPat where
 
 data RWCDefn = RWCDefn { defnAnnote :: Annote,
                          defnName   :: String,
-                         defnPolyTy :: Poly,
+                         defnTy     :: RWCTy,
                          defnArity  :: Int,
                          defnBody   :: RWCExp }
                deriving (Eq,Show,Typeable,Data)
@@ -169,7 +141,7 @@ instance Pretty RWCDefn where
 
 data RWCData = RWCData { dataAnnote :: Annote,
                          dataName   :: TyConId,
-                         dataTyVars :: [Name RWCTy],
+                         dataTyVars :: [String],
                          dataCons   :: [RWCDataCon] }
                deriving (Eq,Show,Typeable,Data)
 
@@ -179,15 +151,13 @@ instance Annotated RWCData where
 -- FIXME: just ignoring the kind here
 instance Pretty RWCData where
   pretty (RWCData _ n tvs dcs) = foldr ($+$) empty
-                                     [text "data" <+> text (deTyConId n) <+> hsep (map pretty tvs) <+> (if null (map pretty dcs) then empty else char '='),
+                                     [text "data" <+> text (deTyConId n) <+> hsep (map text tvs) <+> (if null (map pretty dcs) then mempty else char '='),
                                      nest 4 (hsep (punctuate (char '|') $ map pretty dcs))]
 
 ---
 
 data RWCDataCon = RWCDataCon Annote DataConId [RWCTy]
                   deriving (Generic,Eq,Show,Typeable,Data)
-
-instance Alpha RWCDataCon
 
 instance Annotated RWCDataCon where
   ann (RWCDataCon a _ _) = a
