@@ -8,7 +8,6 @@ module ReWire.SYB
 
 import Control.Exception (PatternMatchFail (..))
 import Control.Monad.Catch (MonadCatch (..))
-import Control.Monad.Identity (Identity (..))
 import Control.Monad (liftM, (>=>), MonadPlus (..))
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Maybe (MaybeT (..))

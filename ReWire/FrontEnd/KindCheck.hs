@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, LambdaCase, TupleSections #-}
 
-module ReWire.FrontEnd.KindCheck (kindcheck) where
+module ReWire.FrontEnd.KindCheck (kindCheck) where
 
 import ReWire.Annotation
 import ReWire.Error
@@ -96,6 +96,7 @@ kcTy = \ case
             unify an km KMonad
             unify an kv KStar
             return KStar
+      RWMTyBlank an      -> failAt an "Something went wrong in the kind checker"
 
 kcDataCon :: (Fresh m, SyntaxError m) => RWMDataCon -> KCM m ()
 kcDataCon (RWMDataCon an _ ts) = do
@@ -133,6 +134,7 @@ monoize = \ case
       KStar      -> KStar
       KMonad     -> KMonad
       KVar _     -> KStar
+      KBlank     -> KStar
 
 redecorate :: SyntaxError m => KiSub -> RWMData -> KCM m RWMData
 redecorate s (RWMData an i tvs _ dcs) = do
@@ -157,5 +159,5 @@ kc p = do
             dds <- mapM (redecorate s) $ dataDecls p
             return p { dataDecls = dds }
 
-kindcheck :: (Fresh m, SyntaxError m) => RWMProgram -> m RWMProgram
-kindcheck m = fmap fst $ runStateT (runReaderT (kc m) (KCEnv mempty mempty)) mempty
+kindCheck :: (Fresh m, SyntaxError m) => RWMProgram -> m RWMProgram
+kindCheck m = fmap fst $ runStateT (runReaderT (kc m) (KCEnv mempty mempty)) mempty

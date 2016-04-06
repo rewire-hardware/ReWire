@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, ViewPatterns, ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 module ReWire.FrontEnd.Transform
       ( inline, reduce
@@ -13,72 +13,47 @@ import ReWire.SYB hiding (query)
 
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.State (State, runState, StateT (..), get, put)
+import Control.Monad (zipWithM)
+import Data.List (find, nub, (\\))
 import Data.Maybe (fromJust)
-import Data.List (find, nub, intersect)
 
-import Unbound.Generics.LocallyNameless (Fresh (..), string2Name, substs)
+import Unbound.Generics.LocallyNameless (Fresh (..), string2Name, name2String, substs, subst)
 
--- expandExpr :: Fresh m => [RWMDefn] -> RWMExp -> m RWMExp
--- expandExpr ns = \ case
---       RWMApp an e1 e2       -> RWMApp an <$> expandExpr ns e1 <*> expandExpr ns e2
---       RWMLam an t e         -> do
---             (p, e') <- unbind e
---             e''     <- expandExpr ns e'
---             return $ RWMLam an t $ bind p e''
---       RWMVar _ _ (lkup -> Just (RWMDefn _ _ _ _ (Embed e))) -> do
---             ([], e') <- unbind e
---             expandExpr ns e'
---       RWMCase an e e1 e2    -> do
---             (p, e1') <- unbind e1
---             e1''     <- expandExpr ns e1'
---             RWMCase an <$> expandExpr ns e <*> pure (bind p e1'') <*> expandExpr ns e2
---       e                     -> return e
---       where lkup :: Name RWMExp -> Maybe RWMDefn
---             lkup = (flip findDefn) ns
--- 
--- expandDefn :: Fresh m => [RWMDefn] -> RWMDefn -> m RWMDefn
--- expandDefn ns (RWMDefn an n t b (Embed e)) = do
---       (p, e') <- unbind e
---       e'' <- expandExpr ns e'
---       return $ RWMDefn an n t b $ Embed $ bind p e''
-
--- expand :: Fresh m => [RWMDefn] -> [RWMDefn] -> m [RWMDefn]
--- expand ns (RWMProgram dds defns) = do
---       ds <- untrec defns
---       ds' <- mapM (expandDefn ns) ds
---       return $ RWMProgram dds $ trec ds'
-
+-- | Inlines defs marked for inlining. Must run before lambda lifting.
 inline :: Fresh m => RWMProgram -> m RWMProgram
 inline (RWMProgram ts ds) = do
       ds'  <- untrec ds
       subs <- mapM toSubst $ filter defnInline ds'
       return $ RWMProgram ts $ trec $ map (substs subs) ds'
+      where toSubst :: Fresh m => RWMDefn -> m (Name RWMExp, RWMExp)
+            toSubst (RWMDefn _ n _ _ (Embed e)) = do
+                  ([], e') <- unbind e
+                  return (n, e')
 
-toSubst :: Fresh m => RWMDefn -> m (Name RWMExp, RWMExp)
-toSubst (RWMDefn _ n _ _ (Embed e)) = do
-      ([], e') <- unbind e
-      return (n, e')
-
+-- | Replaces the expression in RWMNativeVHDL so we don't descend into it
+--   during other transformations.
 neuterPrims :: (MonadCatch m, Fresh m) => RWMProgram -> m RWMProgram
-neuterPrims = transProg $ transform $
+neuterPrims = transProg $ \_ -> transform $
       \ (RWMNativeVHDL an s e) -> return $ RWMNativeVHDL an s (RWMError an (typeOf e) "nativeVHDL expression placeholder")
 
 liftLambdas :: (MonadCatch m, Fresh m) => RWMProgram -> m RWMProgram
-liftLambdas p = runStateT (transProg liftLambdas' p) [] >>= addDecls
-      where liftLambdas' :: (MonadCatch m, Fresh m) => Transform (StateT [RWMDefn] m)
-            liftLambdas' =  transform $ \ case
+liftLambdas p = fst <$> runStateT (transProg liftLambdas' p) []
+      where liftLambdas' :: (MonadCatch m, Fresh m) => ([RWMData], [RWMDefn]) -> Transform (StateT [RWMDefn] m)
+            liftLambdas' (_, ds) =  \ case
                   l@(RWMLam _ _ e) -> do
-                        gvs <- map defnName <$> (untrec $ defns p) -- TODO (chathhorn) non-global locals
+                        let gvs = map defnName ds -- TODO (chathhorn) non-global locals
                         (x, e') <- unbind e
                         let fvs = filter (not . (`elem` x:gvs)) $ fv e'
                         newApp (fvs ++ [x]) l e'
                   RWMCase an e e1 e2 -> do
-                        gvs <- map defnName <$> (untrec $ defns p) -- TODO (chathhorn) non-global locals
+                        let gvs = map defnName ds -- TODO (chathhorn) non-global locals
                         (p, e1') <- unbind e1
                         let pvs = patVars p
                             fvs = filter (not . (`elem` gvs ++ pvs)) $ fv e1'
                         e1'' <- newApp (fvs ++ pvs) e1' e1'
                         return $ RWMCase an e (bind p e1'') e2
+                  ||> (\ ([] :: [RWMDefn]) -> get) -- damn
+                  ||> TId
 
             newApp :: (Monad m, Fresh m) => [Name RWMExp] -> RWMExp -> RWMExp -> StateT [RWMDefn] m RWMExp
             newApp fvs e body = do
@@ -103,30 +78,23 @@ liftLambdas p = runStateT (transProg liftLambdas' p) [] >>= addDecls
                   -- Just (LocalVar t) -> return t
                   -- _ -> getType . fromMaybe (error $ "liftLambdas: failed to find: " ++ show v) . findDefn v <$> get
 
-            addDecls :: (Monad m, Fresh m) => (RWMProgram, [RWMDefn]) -> m RWMProgram
-            addDecls (RWMProgram ts vs1, vs2) = do
-                  vs1' <- untrec vs1
-                  return $ RWMProgram ts $ trec $ vs1' ++ vs2
+-- | Purge.
 
-
--- Purge.
-
-purge :: Fresh m => Name RWMExp -> RWMProgram -> m RWMProgram
-purge n (RWMProgram ts vs) = do
+purge :: Fresh m => RWMProgram -> m RWMProgram
+purge (RWMProgram ts vs) = do
       vs' <- untrec vs
-      return $ RWMProgram ts $ trec $ inuseDefn n vs'
+      return $ RWMProgram ts $ trec $ inuseDefn vs'
 
-data Defns = Defns { allDefns :: [RWMDefn], someNames :: [Name RWMExp] }
-
-inuseDefn :: Name RWMExp -> [RWMDefn] -> [RWMDefn]
-inuseDefn n ds = map (findDefn' ds) $ someNames $ snd $ runState (inuseDefn' n) $ Defns ds [n]
-      where inuseDefn' :: Name RWMExp -> State Defns ()
+inuseDefn :: [RWMDefn] -> [RWMDefn]
+inuseDefn ds = case find ((=="Main.start") . name2String . defnName) ds of
+      Just n -> map (findDefn' ds) $ snd $ runState (inuseDefn' $ defnName n) [defnName n]
+      Nothing -> []
+      where inuseDefn' :: Name RWMExp -> State [Name RWMExp] ()
             inuseDefn' n = do
-                  defns     <- allDefns <$> get
-                  inuse     <- someNames <$> get
-                  let inuse' = nub $ inuse ++ fvDefn n defns
-                  put $ Defns defns inuse'
-                  mapM_ inuseDefn' $ inuse' `intersect` inuse
+                  inuse     <- get
+                  let inuse' = nub $ inuse ++ fvDefn n ds
+                  put inuse'
+                  mapM_ inuseDefn' $ inuse' \\ inuse
 
 findDefn :: Name RWMExp -> [RWMDefn] -> Maybe RWMDefn
 findDefn n = find ((==n) . defnName)
@@ -137,65 +105,67 @@ findDefn' ds = fromJust . flip findDefn ds
 fvDefn :: Name RWMExp -> [RWMDefn] -> [Name RWMExp]
 fvDefn n ds = fv $ findDefn' ds n
 
--- Reduce.
+-- | Reduce.
 
-reduce :: Monad m => a -> m a
-reduce = return
+reduce :: Fresh m => RWMProgram -> m RWMProgram
+reduce (RWMProgram ts vs) = do
+      vs' <- untrec vs
+      RWMProgram ts <$> (trec <$> mapM reduceDefn vs')
 
--- reduceExp :: Monad m => RWMExp -> RWT m RWMExp
--- reduceExp = \ case
---       RWMApp an e1 e2      -> do
---             e1' <- reduceExp e1
---             e2' <- reduceExp e2
---             case e1' of
---                   RWMLam _ n _ b -> fsubstE n e2' b >>= reduceExp
---                   _              -> return $ RWMApp an e1' e2'
---       RWMLam an n t e      -> RWMLam an n t <$> reduceExp e
---       e@RWMVar {}          -> return e
---       e@RWMCon {}          -> return e
---       RWMCase an e p e1 e2 -> do
---             e' <- reduceExp e
---             mr <- matchpat e' p
---             case mr of
---                   MatchYes sub -> fsubstsE sub e1 >>= reduceExp
---                   MatchMaybe   -> RWMCase an e' p <$> reduceExp e1 <*> reduceExp e2
---                   MatchNo      -> reduceExp e2
---       e@RWMNativeVHDL {}   -> return e
---       e@RWMError {}        -> return e
--- 
--- data MatchResult = MatchYes [(Id RWMExp, RWMExp)]
---                  | MatchMaybe
---                  | MatchNo
---                  deriving Show
--- 
--- mergematches :: [MatchResult] -> MatchResult
--- mergematches []     = MatchYes []
--- mergematches (m:ms) = case mergematches ms of
---       MatchYes bs -> case m of
---             MatchYes bs' -> MatchYes $ bs' ++ bs
---             MatchNo      -> MatchNo
---             MatchMaybe   -> MatchMaybe
---       MatchNo     -> MatchNo
---       MatchMaybe  -> case m of
---             MatchYes _ -> MatchMaybe
---             MatchNo    -> MatchNo
---             MatchMaybe -> MatchMaybe
--- 
--- matchpat :: Monad m => RWMExp -> RWMPat -> RWT m MatchResult
--- matchpat e = \ case
---       RWMPatCon _ i pats -> case flattenApp e of
---             RWMCon _ c _:es
---                   | c == i && length es == length pats -> do
---                         ms <- zipWithM matchpat es pats
---                         return $ mergematches ms
---                   | otherwise                          -> return MatchNo
---             _                                          -> return MatchMaybe
---       RWMPatVar _ n _    -> return $ MatchYes [(n, e)]
--- 
--- reddefn :: Monad m => RWMDefn -> RWT m RWMDefn
--- reddefn (RWMDefn an n pt b vs e) = RWMDefn an n pt b vs <$> reduceExp e
--- 
--- reduce :: Monad m => RWMProgram -> RWT m RWMProgram
--- reduce m = do
---       ds' <- mapM reddefn $ defns m
---       return m { defns = ds' }
+reduceDefn :: Fresh m => RWMDefn -> m RWMDefn
+reduceDefn (RWMDefn an n pt b (Embed e)) = do
+      (vs, e') <- unbind e
+      RWMDefn an n pt b <$> Embed <$> bind vs <$> reduceExp e'
+
+reduceExp :: Fresh m => RWMExp -> m RWMExp
+reduceExp = \ case
+      RWMApp an e1 e2      -> do
+            e1' <- reduceExp e1
+            e2' <- reduceExp e2
+            case e1' of
+                  RWMLam _ _ e -> do
+                        (x, e') <- unbind e
+                        reduceExp $ subst x e2' e'
+                  _              -> return $ RWMApp an e1' e2'
+      RWMLam an t e      -> do
+            (x, e') <- unbind e
+            RWMLam an t <$> bind x <$> reduceExp e'
+      RWMCase an e e1 e2 -> do
+            (p, e1') <- unbind e1
+            e' <- reduceExp e
+            mr <- matchPat e' p
+            case mr of
+                  MatchYes sub -> reduceExp $ substs sub e1'
+                  MatchMaybe   -> RWMCase an e' <$> (bind p <$> reduceExp e1') <*> reduceExp e2
+                  MatchNo      -> reduceExp e2
+      e -> return e
+
+data MatchResult = MatchYes [(Name RWMExp, RWMExp)]
+                 | MatchMaybe
+                 | MatchNo
+                 deriving Show
+
+mergeMatches :: [MatchResult] -> MatchResult
+mergeMatches []     = MatchYes []
+mergeMatches (m:ms) = case mergeMatches ms of
+      MatchYes bs -> case m of
+            MatchYes bs' -> MatchYes $ bs' ++ bs
+            MatchNo      -> MatchNo
+            MatchMaybe   -> MatchMaybe
+      MatchNo     -> MatchNo
+      MatchMaybe  -> case m of
+            MatchYes _ -> MatchMaybe
+            MatchNo    -> MatchNo
+            MatchMaybe -> MatchMaybe
+
+matchPat :: Fresh m => RWMExp -> RWMPat -> m MatchResult
+matchPat e = \ case
+      RWMPatCon _ i pats -> case flattenApp e of
+            RWMCon _ _ c : es
+                  | c == i && length es == length pats -> do
+                        ms <- zipWithM matchPat es pats
+                        return $ mergeMatches ms
+                  | otherwise                          -> return MatchNo
+            _                                          -> return MatchMaybe
+      RWMPatVar _ _ x    -> return $ MatchYes [(x, e)]
+

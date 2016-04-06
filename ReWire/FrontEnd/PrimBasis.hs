@@ -19,14 +19,12 @@ addPrims (RWMProgram ts vs) = do
       vs'   <- untrec vs
       -- pdats <- mapM mkPrimData $ fv vs'
       let pdefs = catMaybes $ map mkPrimDefn $ fvs vs'
-      return $ RWMProgram (ts ++ pdats) $ trec $ vs' ++ pdefs
+      return $ RWMProgram (ts ++ primDatas) $ trec $ vs' ++ pdefs
 
 fvs :: [RWMDefn] -> [Name RWMExp]
 fvs = nub . concatMap fv'
       where fv' :: RWMDefn -> [Name RWMExp]
             fv' (RWMDefn _ _ _ _ (Embed e)) = fv e
-
-pdats = primDatas
 
 mkPrimDefn :: Name RWMExp -> Maybe RWMDefn
 mkPrimDefn n = do

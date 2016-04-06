@@ -44,6 +44,8 @@ import Unbound.Generics.LocallyNameless
       , bind, unbind, trec, untrec, aeq)
 import qualified Unbound.Generics.LocallyNameless as UB
 import Unbound.Generics.LocallyNameless.Internal.Fold (toListOf)
+import Unbound.Generics.LocallyNameless.Name (Name(..))
+import Unbound.Generics.LocallyNameless.Bind (Bind(..))
 
 fv :: (Alpha a, Typeable b) => a -> [Name b]
 fv = toListOf UB.fv
@@ -200,6 +202,8 @@ instance Subst RWMExp SrcSpan
 instance Subst RWMTy RWMExp
 instance Subst RWMTy RWMPat
 
+instance NFData RWMExp
+
 instance Annotated RWMExp where
       ann = \ case
             RWMApp a _ _        -> a
@@ -209,16 +213,6 @@ instance Annotated RWMExp where
             RWMCase a _ _ _   -> a
             RWMNativeVHDL a _ _ -> a
             RWMError a _ _      -> a
-
-instance NFData RWMExp where
-      rnf = \ case
-            RWMApp _ e1 e2      -> e1 `deepseq` e2 `deepseq` ()
-            RWMLam _ t e        -> t  `deepseq` e  `deepseq` ()
-            RWMVar _ t x        -> t  `deepseq` x  `deepseq` ()
-            RWMCon _ t i        -> t  `deepseq` i  `deepseq` ()
-            RWMCase _ e e1 e2   -> e  `deepseq` e1 `deepseq` e2 `deepseq` ()
-            RWMNativeVHDL _ n e -> n  `deepseq` e  `deepseq` ()
-            RWMError _ t m      -> t  `deepseq` m  `deepseq` ()
 
 instance Pretty RWMExp where
       pretty = \ case
@@ -244,7 +238,7 @@ instance Pretty RWMExp where
 ---
 
 data RWMPat = RWMPatCon Annote DataConId [RWMPat]
-            | RWMPatVar Annote RWMTy (Name RWMExp)
+            | RWMPatVar Annote (Embed RWMTy) (Name RWMExp)
             deriving (Show, Generic, Typeable, Data)
 
 patVars :: RWMPat -> [Name RWMExp]
@@ -254,15 +248,12 @@ patVars = \ case
 
 instance Alpha RWMPat
 
+instance NFData RWMPat
+
 instance Annotated RWMPat where
       ann = \ case
             RWMPatCon a _ _   -> a
             RWMPatVar a _ _   -> a
-
-instance NFData RWMPat where
-      rnf = \ case
-            RWMPatCon _ i ps  -> i `deepseq` ps `deepseq` ()
-            RWMPatVar _ x t   -> x `deepseq` t `deepseq` ()
 
 instance Pretty RWMPat where
       pretty = \ case
@@ -281,11 +272,10 @@ data RWMDefn = RWMDefn
 
 instance Alpha RWMDefn
 
+instance NFData RWMDefn
+
 instance Annotated RWMDefn where
       ann (RWMDefn a _ _ _ _) = a
-
-instance NFData RWMDefn where
-      rnf (RWMDefn _ n pt b e) = n `deepseq` pt `deepseq` b `deepseq` e `deepseq` ()
 
 instance Pretty RWMDefn where
       pretty (RWMDefn _ n (Embed t) b (Embed e)) = runFreshM $ do
@@ -308,16 +298,15 @@ data RWMData = RWMData
 
 instance Alpha RWMData
 
+instance NFData RWMData
+
 instance Annotated RWMData where
       ann (RWMData a _ _ _ _) = a
-
-instance NFData RWMData where
-      rnf (RWMData _ i tvs k dcs) = i `deepseq` tvs `deepseq` dcs `deepseq` k `deepseq` ()
 
 instance Pretty RWMData where
       pretty (RWMData _ n tvs k dcs) = foldr ($+$) mempty
             [ text "data" <+> text (deTyConId n) <+> text "::" <+> pretty k <+> hsep (map pretty tvs) <+> (if null (map pretty dcs) then mempty else char '=')
-            , nest 4 (hsep (punctuate (char '|') $ map pretty dcs))
+            , nest 4 (hsep (punctuate (space <+> char '|') $ map pretty dcs))
             ]
 
 ---
@@ -338,11 +327,10 @@ instance Pretty RWMProgram where
                         return $ foldr ($+$) mempty $ map pretty ds'
                   ppDataDecls = foldr ($+$) mempty . map pretty
 
--- | Because no Data instance for RWMProgram...
-transProg :: (MonadCatch m, Fresh m) => Transform m -> RWMProgram -> m RWMProgram
+transProg :: (MonadCatch m, Fresh m) => (([RWMData], [RWMDefn]) -> Transform m) -> RWMProgram -> m RWMProgram
 transProg f (RWMProgram ts vs) = do
       vs' <- untrec vs
-      RWMProgram <$> runT f ts <*> (trec <$> runT f vs')
+      RWMProgram <$> runT (f (ts, vs')) ts <*> (trec <$> runT (f (ts, vs')) vs')
 
 ---
 
@@ -374,16 +362,21 @@ typeOf = \ case
       RWMNativeVHDL _ _ e -> typeOf e
       RWMError _ t _      -> t
 
-
--- Somewhat sketchy orphans.
+-- Orphans.
 
 deriving instance Data a => Data (Embed a)
 deriving instance NFData a => NFData (TRec a)
+deriving instance Data a => Data (Name a)
+deriving instance (Data a, Data b) => Data (Bind a b)
 
 deriving instance MonadThrow m => MonadThrow (FreshMT m)
 deriving instance MonadCatch m => MonadCatch (FreshMT m)
 
--- Orphan instances for removing the NFData dependency from Core.Syntax.
+-- Orphan instances for removing dependencies from Core.Syntax.
 
-deriving instance NFData DataConId
-deriving instance NFData TyConId
+instance NFData DataConId
+instance NFData TyConId
+
+instance Alpha TyConId
+instance Alpha DataConId
+

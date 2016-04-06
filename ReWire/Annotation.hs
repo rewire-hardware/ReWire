@@ -105,10 +105,12 @@ instance Alpha Annote where
       freshen' _ i = return (i, mempty)
       lfreshen' _ i cont = cont i mempty
 
+-- TODO(chathhorn): Probably need to just add a constructor for every ast node
+-- type and do away with the existential quantifier.
 instance Generic Annote where
       type Rep Annote = U1 :+: Rec0 SrcSpanInfo :+: Rec0 Int
-      to = error "Generic Annote: to" -- TODO(chathhorn) plz leave me alone ghc
-      from = error "Generic Annote: from"
+      to = error "TODO(chathhorn): Generic Annote: to" -- plz leave me alone ghc
+      from = error "TODO(chathhorn): Generic Annote: from"
 
 instance NFData Annote where
       rnf _ = () -- Probably not ideal.

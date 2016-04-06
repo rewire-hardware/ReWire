@@ -1,11 +1,11 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, TupleSections #-}
 --
 -- This type checker is based loosely on Mark Jones's "Typing Haskell in
 -- Haskell", though since we don't have type classes in core it is much
 -- simpler.
 --
 
-module ReWire.FrontEnd.TypeCheck (typecheck) where
+module ReWire.FrontEnd.TypeCheck (typeCheck) where
 
 import ReWire.Annotation
 import ReWire.Error
@@ -40,8 +40,8 @@ type CAssump = (DataConId, Poly)
 
 type TCM m = ReaderT TCEnv (StateT TySub m)
 
-typecheck :: (Fresh m, SyntaxError m) => RWMProgram -> m RWMProgram
-typecheck p = fmap fst $ runStateT (runReaderT (tc p) (TCEnv mempty mempty)) mempty
+typeCheck :: (Fresh m, SyntaxError m) => RWMProgram -> m RWMProgram
+typeCheck p = fmap fst $ runStateT (runReaderT (tc p) (TCEnv mempty mempty)) mempty
 
 localAssumps :: SyntaxError m => (Map (Name RWMExp) Poly -> Map (Name RWMExp) Poly) -> TCM m a -> TCM m a
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
@@ -106,17 +106,17 @@ unify an t1 t2 = do
 inst :: (Fresh m, SyntaxError m) => Poly -> TCM m RWMTy
 inst (Poly pt) = do
       (tvs, t) <- unbind pt
-      sub      <- Map.fromList <$> mapM (\ tv -> freshv >>= \ v -> return (tv, v)) tvs
+      sub      <- Map.fromList <$> mapM (\ tv -> (tv,) <$> freshv) tvs
       return $ subst sub t
 
 patassumps :: RWMPat -> [Assump]
 patassumps = \ case
       RWMPatCon _ _ ps -> concatMap patassumps ps
-      RWMPatVar _ t n  -> [(n, [] `poly` t)]
+      RWMPatVar _ (Embed t) n  -> [(n, [] `poly` t)]
 
 tcPat :: (Fresh m, SyntaxError m) => RWMTy -> RWMPat -> TCM m RWMPat
 tcPat t = \ case
-      RWMPatVar an _ x  -> return $ RWMPatVar an t x
+      RWMPatVar an _ x  -> return $ RWMPatVar an (Embed t) x
       RWMPatCon an i ps -> do
             cas     <- askCAssumps
             case Map.lookup i cas of

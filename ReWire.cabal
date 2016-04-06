@@ -77,10 +77,8 @@ library
   other-modules:    Paths_ReWire
 
   exposed-modules:  ReWire.Annotation
-                    ReWire.Core.Monad
                     ReWire.Core.Scoping
                     ReWire.Core.Syntax
-                    ReWire.Core.ToPreHDL
                     ReWire.Error
                     ReWire.FrontEnd
                     ReWire.FrontEnd.Annotate

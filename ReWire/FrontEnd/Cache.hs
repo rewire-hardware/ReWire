@@ -18,7 +18,6 @@ import ReWire.FrontEnd.ToCore
 import ReWire.FrontEnd.ToMantle
 import ReWire.FrontEnd.TypeCheck
 import ReWire.FrontEnd.PrimBasis
-import ReWire.Pretty
 
 import Control.Monad ((>=>), liftM, msum)
 import Control.Monad.IO.Class (liftIO)
@@ -28,15 +27,13 @@ import Data.Monoid ((<>))
 import Language.Haskell.Exts.Annotated (parseFileWithMode, ParseResult (..), defaultParseMode, ParseMode (..))
 import Language.Haskell.Exts.Annotated.Simplify (sModuleName)
 import System.Directory (getCurrentDirectory, setCurrentDirectory, doesFileExist, doesDirectoryExist)
-import Data.Set (Set)
 
 import qualified Data.Map.Strict              as Map
-import qualified Data.Set                     as Set
 import qualified Language.Haskell.Exts.Syntax as S
 
 import Language.Haskell.Exts.Annotated.Syntax hiding (Annotation, Namespace)
 
-import Unbound.Generics.LocallyNameless (runFreshMT, string2Name, name2String)
+import Unbound.Generics.LocallyNameless (runFreshMT)
 
 type Cache = ReaderT LoadPath (StateT ModCache (SyntaxErrorT IO))
 type LoadPath = [FilePath]
@@ -126,22 +123,38 @@ getProgram :: FilePath -> Cache RWCProgram
 getProgram fp = do
       (RWMModule ts ds, _) <- getModule fp
 
-      liftIO $ putStrLn "FVs:\n"
-      liftIO $ putStrLn $ foldr (++) "" $ map (\n -> " | " ++ name2String n) $ (concatMap fv ds :: [ReWire.FrontEnd.Syntax.Name RWMExp])
-
       p'     <- runFreshMT $ addPrims $ RWMProgram ts $ trec ds
 
-      liftIO $ putStrLn "Pre TC:\n"
-      liftIO $ putStrLn $ prettyPrint p'
+      -- liftIO $ putStrLn "Pre TC:\n"
+      -- liftIO $ putStrLn $ prettyPrint p'
 
       p''     <- runFreshMT
-              $ kindcheck
-            >=> typecheck
+              $ kindCheck
+            >=> typeCheck
             >=> neuterPrims
             >=> inline
-            -- >=> reduce
-            -- >=> liftLambdas
-            -- >=> purge (string2Name "Main.start")
-            >=> toCore
-              $ p'
-      return p''
+            >=> reduce
+            $ p'
+
+      -- liftIO $ putStrLn "Post TC:\n"
+      -- liftIO $ putStrLn $ prettyPrint p''
+
+      p'''   <- runFreshMT
+              $ liftLambdas
+              $ p''
+
+      -- liftIO $ putStrLn "Post LL:\n"
+      -- liftIO $ putStrLn $ prettyPrint p'''
+
+      p''''  <- runFreshMT
+              $ purge
+              $ p'''
+
+      -- liftIO $ putStrLn "Post purge:\n"
+      -- liftIO $ putStrLn $ prettyPrint p''''
+
+      p''''' <- runFreshMT
+              $ toCore
+              $ p''''
+
+      return p'''''
