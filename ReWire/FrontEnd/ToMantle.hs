@@ -8,7 +8,7 @@ import ReWire.FrontEnd.Rename
 import ReWire.FrontEnd.Syntax
 import ReWire.SYB
 
-import Control.Monad (foldM, void)
+import Control.Monad (foldM, replicateM, void)
 import Data.Foldable (foldl')
 import Data.Monoid ((<>))
 import Language.Haskell.Exts.Annotated.Fixity (Fixity (..))
@@ -19,7 +19,7 @@ import qualified Language.Haskell.Exts.Syntax as S
 
 import Language.Haskell.Exts.Annotated.Syntax hiding (Name, Kind)
 
-import Unbound.Generics.LocallyNameless (string2Name)
+import Unbound.Generics.LocallyNameless (string2Name, name2String, fresh)
 
 -- | An intermediate form for exports. TODO(chathhorn): get rid of it.
 data Export = Export FQName
@@ -37,7 +37,7 @@ mkUId (S.Ident n)  = mkId n
 mkUId (S.Symbol n) = mkId n
 
 -- | Translate a Haskell module into the ReWire abstract syntax.
-toMantle :: SyntaxError m => Renamer -> Module Annote -> m (RWMModule, Exports)
+toMantle :: (Fresh m, SyntaxError m) => Renamer -> Module Annote -> m (RWMModule, Exports)
 toMantle rn (Module _ (Just (ModuleHead _ m _ exps)) _ _ (reverse -> ds)) = do
       let rn' = extendWithGlobs (sModuleName m) ds rn
       tyDefs <- foldM (transData rn') [] ds
@@ -146,15 +146,17 @@ getCtor = \ case
       QualConDecl _ _ _ (RecDecl _ n _) -> sName n
       _                                 -> undefined
 
-transData :: SyntaxError m => Renamer -> [RWMData] -> Decl Annote -> m [RWMData]
+transData :: (SyntaxError m, Fresh m) => Renamer -> [RWMData] -> Decl Annote -> m [RWMData]
 transData rn datas = \ case
-      DataDecl l _ _ (sDeclHead -> hd) cons _ -> do
-            tyVars' <- mapM (transTyVar l) $ snd hd
-            cons' <- mapM (transCon rn) cons
-            pure $ RWMData l (TyConId $ rename Type rn $ fst hd) tyVars' kblank cons' : datas
+      DataDecl l _ _ (sDeclHead -> hd) cs _ -> do
+            let n = string2Name $ rename Type rn $ fst hd
+            tvs' <- mapM (transTyVar l) $ snd hd
+            ks   <- replicateM (length tvs') (KVar <$> fresh (string2Name $ name2String n))
+            cs'  <- mapM (transCon rn ks tvs' n) cs
+            pure $ RWMData l n (foldr KFun KStar ks) cs' : datas
       _                                       -> pure datas
 
-transTySig :: SyntaxError m => Renamer -> [(S.Name, RWMTy)] -> Decl Annote -> m [(S.Name, RWMTy)]
+transTySig :: (Fresh m, SyntaxError m) => Renamer -> [(S.Name, RWMTy)] -> Decl Annote -> m [(S.Name, RWMTy)]
 transTySig rn sigs = \ case
       TypeSig _ names t -> do
             t' <- transTy rn [] t
@@ -183,20 +185,23 @@ transTyVar l = \ case
       S.UnkindedVar x -> pure $ mkUId x
       _               -> failAt l "Unsupported type syntax"
 
-transCon :: SyntaxError m => Renamer -> QualConDecl Annote -> m RWMDataCon
-transCon rn = \ case
-      QualConDecl l Nothing _ (ConDecl _ x tys) -> RWMDataCon l (DataConId $ rename Value rn x) <$> mapM (transTy rn []) tys
+transCon :: (Fresh m, SyntaxError m) => Renamer -> [Kind] -> [Name RWMTy] -> Name TyConId -> QualConDecl Annote -> m RWMDataCon
+transCon rn ks tvs tc = \ case
+      QualConDecl l Nothing _ (ConDecl _ x tys) -> do
+            let tvs' = zipWith (RWMTyVar l) ks tvs
+            t <- foldr mkArrow (foldl' (RWMTyApp l) (RWMTyCon l tc) tvs') <$> mapM (transTy rn []) tys
+            return $ RWMDataCon l (string2Name $ rename Value rn x) (tvs |-> t)
       d                                         -> failAt (ann d) "Unsupported ctor syntax"
 
-transTy :: SyntaxError m => Renamer -> [S.Name] -> Type Annote -> m RWMTy
+transTy :: (Fresh m, SyntaxError m) => Renamer -> [S.Name] -> Type Annote -> m RWMTy
 transTy rn ms = \ case
       TyForall _ Nothing (Just (CxTuple _ cs)) t   -> do
            ms' <- mapM getNad cs
            transTy rn (ms ++ ms') t
       TyApp l a b | isMonad ms a -> RWMTyComp l <$> transTy rn ms a <*> transTy rn ms b
                   | otherwise    -> RWMTyApp l <$> transTy rn ms a <*> transTy rn ms b
-      TyCon l x                  -> pure $ RWMTyCon l (TyConId $ rename Type rn x)
-      TyVar l x                  -> pure $ RWMTyVar l $ mkUId $ sName x
+      TyCon l x                  -> pure $ RWMTyCon l (string2Name $ rename Type rn x)
+      TyVar l x                  -> RWMTyVar l <$> (KVar <$> (fresh $ string2Name $ show x)) <*> pure (mkUId $ sName x)
       t                          -> failAt (ann t) "Unsupported type syntax"
 
 getNad :: SyntaxError m => Asst Annote -> m S.Name
@@ -223,7 +228,7 @@ transExp rn = \ case
             e' <- transExp (exclude Value [sName x] rn) e
             pure $ RWMLam l tblank $ bind (mkUId $ sName x) e'
       Var l x               -> pure $ RWMVar l tblank (mkId $ rename Value rn x)
-      Con l x               -> pure $ RWMCon l tblank (DataConId $ rename Value rn x)
+      Con l x               -> pure $ RWMCon l tblank (string2Name $ rename Value rn x)
       Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _] -> do
             e' <- transExp rn e
             p' <- transPat rn p
@@ -238,6 +243,6 @@ transExp rn = \ case
 
 transPat :: SyntaxError m => Renamer -> Pat Annote -> m RWMPat
 transPat rn = \ case
-      PApp l x ps             -> RWMPatCon l (DataConId $ rename Value rn x) <$> mapM (transPat rn) ps
+      PApp l x ps             -> RWMPatCon l (Embed $ string2Name $ rename Value rn x) <$> mapM (transPat rn) ps
       PVar l x                -> pure $ RWMPatVar l (Embed tblank) (mkUId $ sName x)
       p                       -> failAt (ann p) $ "Unsupported syntax in a pattern: " ++ (show $ void p)

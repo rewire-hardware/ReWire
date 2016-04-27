@@ -3,12 +3,12 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module ReWire.FrontEnd.Syntax
-      ( DataConId (..), TyConId (..)
+      ( DataConId, TyConId
       , RWMTy (..), RWMExp (..), RWMPat (..)
       , RWMDefn (..), RWMData (..), RWMDataCon (..)
       , RWMProgram (..)
       , Kind (..)
-      , kblank, tblank
+      , tblank, kblank
       , flattenApp, mkArrow
       , typeOf
       , transProg
@@ -16,16 +16,12 @@ module ReWire.FrontEnd.Syntax
       , Fresh, Name, Embed (..), TRec, Bind
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly
-      , module C
+      , flattenTyApp
       ) where
 
 import ReWire.Annotation
 import ReWire.Pretty
-import ReWire.Core.Syntax as C
-      ( DataConId (..)
-      , TyConId (..)
-      , flattenTyApp
-      )
+import ReWire.Core.Syntax (flattenTyApp)
 import ReWire.SYB
 
 import Control.DeepSeq (NFData (..), deepseq)
@@ -34,12 +30,13 @@ import Data.Data (Typeable, Data(..))
 import Data.Monoid ((<>))
 import GHC.Generics (Generic)
 import Text.PrettyPrint
-      ( Doc, text, char, nest, hsep, punctuate, parens, doubleQuotes
+      ( Doc, text, nest, hsep, punctuate, parens, doubleQuotes
       , space, hang, braces, vcat, (<+>), ($+$))
 
 import Unbound.Generics.LocallyNameless
       ( Subst (..), Alpha (..), SubstName (..)
-      , Bind, Name, TRec (..), Embed (..), name2String
+      , Bind, Name, TRec (..), Embed (..)
+      , name2String, string2Name
       , runFreshM, Fresh (..), FreshMT (..)
       , bind, unbind, trec, untrec, aeq)
 import qualified Unbound.Generics.LocallyNameless as UB
@@ -50,27 +47,31 @@ import Unbound.Generics.LocallyNameless.Bind (Bind(..))
 fv :: (Alpha a, Typeable b) => a -> [Name b]
 fv = toListOf UB.fv
 
-kblank :: Kind
-kblank = KBlank
-
 tblank :: RWMTy
 tblank = RWMTyBlank noAnn
 
-data RWMDataCon = RWMDataCon Annote DataConId [RWMTy]
-                  deriving (Generic,Eq,Show,Typeable,Data)
+kblank :: Kind
+kblank = KVar $ string2Name "_"
+
+newtype DataConId = DataConId String
+      deriving (Generic, Typeable, Data)
+newtype TyConId = TyConId String
+      deriving (Generic, Typeable, Data)
+
+data RWMDataCon = RWMDataCon Annote (Name DataConId) (Embed Poly)
+      deriving (Generic, Eq, Show, Typeable, Data)
 
 instance Alpha RWMDataCon
 
 instance Annotated RWMDataCon where
-  ann (RWMDataCon a _ _) = a
+      ann (RWMDataCon a _ _) = a
 
 instance Pretty RWMDataCon where
-  pretty (RWMDataCon _ n ts) = text (deDataConId n) <+> hsep (map pretty ts)
+      pretty (RWMDataCon _ n t) = text (name2String n) <+> text "::" <+> pretty t
 
-instance NFData RWMDataCon where
-      rnf (RWMDataCon _ i ts) = i `deepseq` ts `deepseq` ()
+instance NFData RWMDataCon
 
-data Kind = KStar | KFun Kind Kind | KMonad | KVar (Name Kind) | KBlank
+data Kind = KStar | KFun Kind Kind | KMonad | KVar (Name Kind)
       deriving (Generic, Ord, Eq, Show, Typeable, Data)
 
 infixr `KFun`
@@ -81,27 +82,20 @@ instance Subst Kind Kind where
       isvar (KVar x) = Just $ SubstName x
       isvar _        = Nothing
 
-instance NFData Kind where
-      rnf = \ case
-            KVar n     -> n `deepseq` ()
-            KStar      -> ()
-            KFun k1 k2 -> k1 `deepseq` k2 `deepseq` ()
-            KMonad     -> ()
-            KBlank     -> ()
+instance NFData Kind
 
 instance Pretty Kind where
       pretty = \ case
-            KStar    -> text "*"
-            KVar n   -> text $ name2String n
-            KFun a b -> parens $ pretty a <+> text "->" <+> pretty b
-            KMonad   -> text "M"
-            KBlank   -> text "_"
+            KStar            -> text "*"
+            KVar n           -> text $ show n
+            KFun a@KFun {} b -> parens (pretty a) <+> text "->" <+> pretty b
+            KFun a b         -> pretty a <+> text "->" <+> pretty b
+            KMonad           -> text "M"
 
-data Poly = Poly (Bind [Name RWMTy] RWMTy)
-      deriving (Generic,Show,Typeable,Data)
+newtype Poly = Poly (Bind [Name RWMTy] RWMTy)
+      deriving (Generic, Show, Typeable, Data)
 
-instance NFData Poly where
-      rnf (Poly t) = t `deepseq` ()
+instance NFData Poly
 
 poly :: [Name RWMTy] -> RWMTy -> Poly
 poly vs t = Poly $ bind vs t
@@ -109,7 +103,7 @@ poly vs t = Poly $ bind vs t
 (|->) :: [Name RWMTy] -> RWMTy -> Embed Poly
 vs |-> t = Embed $ poly vs t
 
-infix 0 |->
+infix 1 |->
 
 instance Alpha Poly
 
@@ -122,8 +116,8 @@ instance Pretty Poly where
             return $ pretty t
 
 data RWMTy = RWMTyApp Annote RWMTy RWMTy
-           | RWMTyCon Annote TyConId
-           | RWMTyVar Annote (Name RWMTy)
+           | RWMTyCon Annote (Name TyConId)
+           | RWMTyVar Annote Kind (Name RWMTy)
            | RWMTyComp Annote RWMTy RWMTy -- application of a monad
            | RWMTyBlank Annote
            deriving (Eq,Generic,Show,Typeable,Data)
@@ -131,43 +125,35 @@ data RWMTy = RWMTyApp Annote RWMTy RWMTy
 instance Alpha RWMTy
 
 instance Subst RWMTy RWMTy where
-      isvar (RWMTyVar _ x) = Just $ SubstName x
-      isvar _              = Nothing
-instance Subst RWMTy Annote
-instance Subst RWMTy SrcSpanInfo
-instance Subst RWMTy SrcSpan
-instance Subst RWMTy TyConId
-instance Subst RWMTy DataConId
+      isvar (RWMTyVar _ _ x) = Just $ SubstName x
+      isvar _                = Nothing
+instance Subst RWMTy Annote where
+      subst _ _ x = x
+      substs _ x = x
+instance Subst RWMTy Kind
 
 instance Annotated RWMTy where
       ann = \ case
             RWMTyApp a _ _  -> a
             RWMTyCon a _    -> a
-            RWMTyVar a _    -> a
+            RWMTyVar a _ _  -> a
             RWMTyComp a _ _ -> a
             RWMTyBlank a    -> a
 
-instance Pretty (Name RWMTy) where
-  pretty n = text $ name2String n
-
 instance Pretty RWMTy where
       pretty = \ case
-            RWMTyApp _ (RWMTyApp _ (RWMTyCon _ (TyConId "->")) t1) t2 -> ppTyArrowL t1 <+> text "->" <+> pretty t2
-                  where ppTyArrowL t@(RWMTyApp _ (RWMTyApp _ (RWMTyCon _ (TyConId "->")) _) _) = parens $ pretty t
+            RWMTyApp _ (RWMTyApp _ (RWMTyCon _ c) t1) t2
+                  | name2String c == "->" -> ppTyArrowL t1 <+> text "->" <+> pretty t2
+                  where ppTyArrowL t@(RWMTyApp _ (RWMTyApp _ (RWMTyCon _ c) _) _)
+                              | name2String c == "->" = parens $ pretty t
                         ppTyArrowL t                                                           = pretty t
             RWMTyApp _ t1 t2  -> pretty t1 <+> ppTyAppR t2
-            RWMTyCon _ n      -> text (deTyConId n)
-            RWMTyVar _ n      -> pretty n
+            RWMTyCon _ n      -> text (name2String n)
+            RWMTyVar _ _ n    -> pretty n
             RWMTyComp _ t1 t2 -> pretty t1 <+> ppTyAppR t2
             RWMTyBlank _      -> text "_"
 
-instance NFData RWMTy where
-      rnf = \ case
-            RWMTyApp _ t1 t2 -> t1 `deepseq` t2 `deepseq` ()
-            RWMTyCon _ i     -> i  `deepseq` ()
-            RWMTyVar _ x     -> x  `deepseq` ()
-            RWMTyComp _ m t  -> m  `deepseq` t  `deepseq` ()
-            RWMTyBlank _     -> ()
+instance NFData RWMTy
 
 ppTyAppR :: RWMTy -> Doc
 ppTyAppR t@RWMTyApp {} = parens $ pretty t
@@ -178,7 +164,7 @@ ppTyAppR t             = pretty t
 data RWMExp = RWMApp Annote RWMExp RWMExp
             | RWMLam Annote RWMTy (Bind (Name RWMExp) RWMExp)
             | RWMVar Annote RWMTy (Name RWMExp)
-            | RWMCon Annote RWMTy DataConId
+            | RWMCon Annote RWMTy (Name DataConId)
             | RWMCase Annote RWMExp (Bind RWMPat RWMExp) RWMExp
             | RWMNativeVHDL Annote String RWMExp
             | RWMError Annote RWMTy String
@@ -189,15 +175,14 @@ instance Alpha RWMExp
 instance Subst RWMExp RWMExp where
       isvar (RWMVar _ _ x) = Just $ SubstName x
       isvar _              = Nothing
-instance Subst RWMExp Annote
-instance Subst RWMExp SrcSpanInfo
+instance Subst RWMExp Annote where
+      subst _ _ x = x
+      substs _ x = x
 instance Subst RWMExp RWMTy
-instance Subst RWMExp DataConId
-instance Subst RWMExp TyConId
+instance Subst RWMExp Kind
 instance Subst RWMExp RWMPat
 instance Subst RWMExp RWMDefn
 instance Subst RWMExp Poly
-instance Subst RWMExp SrcSpan
 
 instance Subst RWMTy RWMExp
 instance Subst RWMTy RWMPat
@@ -217,11 +202,11 @@ instance Annotated RWMExp where
 instance Pretty RWMExp where
       pretty = \ case
             RWMApp _ e1 e2      -> parens $ hang (pretty e1) 4 $ pretty e2
-            RWMCon _ _ n        -> text $ deDataConId n
-            RWMVar _ _ n        -> text $ show n
+            RWMCon _ _ n        -> text $ name2String n
+            RWMVar _ t n        -> text (show n) <+> text "::" <+> pretty t
             RWMLam _ _ e        -> runFreshM $ do
                   (p, e') <- unbind e
-                  return $ parens $ text "\\ " <+> text (show p) <+> text "->" <+> pretty e'
+                  return $ parens $ text "\\" <+> text (show p) <+> text "->" <+> pretty e'
             RWMCase _ e e1 e2 -> runFreshM $ do
                   (p, e1') <- unbind e1
                   return $ parens $
@@ -233,11 +218,11 @@ instance Pretty RWMExp where
                               ])
                         ]
             RWMNativeVHDL _ n e -> parens (text "nativeVHDL" <+> doubleQuotes (text n) <+> parens (pretty e))
-            RWMError _ _ m      -> parens (text "primError" <+> doubleQuotes (text m))
+            RWMError _ t m      -> parens (text "primError" <+> doubleQuotes (text m) <+> text "::" <+> pretty t)
 
 ---
 
-data RWMPat = RWMPatCon Annote DataConId [RWMPat]
+data RWMPat = RWMPatCon Annote (Embed (Name DataConId)) [RWMPat]
             | RWMPatVar Annote (Embed RWMTy) (Name RWMExp)
             deriving (Show, Generic, Typeable, Data)
 
@@ -257,8 +242,8 @@ instance Annotated RWMPat where
 
 instance Pretty RWMPat where
       pretty = \ case
-            RWMPatCon _ n ps  -> parens $ text (deDataConId n) <+> hsep (map pretty ps)
-            RWMPatVar _ _ n   -> text $ show n
+            RWMPatCon _ (Embed n) ps  -> parens $ text (name2String n) <+> hsep (map pretty ps)
+            RWMPatVar _ _ n           -> text $ show n
 
 ---
 
@@ -290,8 +275,7 @@ instance Pretty RWMDefn where
 
 data RWMData = RWMData
       { dataAnnote :: Annote
-      , dataName   :: TyConId
-      , dataTyVars :: [Name RWMTy]
+      , dataName   :: Name TyConId
       , dataKind   :: Kind
       , dataCons   :: [RWMDataCon]
       } deriving (Generic, Show, Typeable, Data)
@@ -301,36 +285,30 @@ instance Alpha RWMData
 instance NFData RWMData
 
 instance Annotated RWMData where
-      ann (RWMData a _ _ _ _) = a
+      ann (RWMData a _ _ _) = a
 
 instance Pretty RWMData where
-      pretty (RWMData _ n tvs k dcs) = foldr ($+$) mempty
-            [ text "data" <+> text (deTyConId n) <+> text "::" <+> pretty k <+> hsep (map pretty tvs) <+> (if null (map pretty dcs) then mempty else char '=')
-            , nest 4 (hsep (punctuate (space <+> char '|') $ map pretty dcs))
-            ]
+      pretty (RWMData _ n k cs) = foldr ($+$) mempty $
+                  (text "data" <+> text (name2String n) <+> text "::" <+> pretty k <+> text "where")
+                  : map (nest 4 . pretty) cs
 
 ---
 
-
-data RWMProgram = RWMProgram
-      { dataDecls  :: [RWMData]
-      , defns      :: TRec [RWMDefn]
-      } deriving (Show, Typeable)
+newtype RWMProgram = RWMProgram (TRec ([RWMData], [RWMDefn]))
+      deriving (Show, Typeable)
 
 instance NFData RWMProgram where
-      rnf (RWMProgram dds defs) = dds `deepseq` defs `deepseq` ()
+      rnf (RWMProgram p) = p `deepseq` ()
 
 instance Pretty RWMProgram where
-      pretty p = ppDataDecls (dataDecls p) $+$ ppDefns (defns p)
-            where ppDefns ds = runFreshM $ do
-                        ds' <- untrec ds
-                        return $ foldr ($+$) mempty $ map pretty ds'
-                  ppDataDecls = foldr ($+$) mempty . map pretty
+      pretty (RWMProgram p) = runFreshM $ do
+            (ts, vs) <- untrec p
+            return $ (foldr ($+$) mempty $ map pretty ts) $+$ (foldr ($+$) mempty $ map pretty vs)
 
 transProg :: (MonadCatch m, Fresh m) => (([RWMData], [RWMDefn]) -> Transform m) -> RWMProgram -> m RWMProgram
-transProg f (RWMProgram ts vs) = do
-      vs' <- untrec vs
-      RWMProgram <$> runT (f (ts, vs')) ts <*> (trec <$> runT (f (ts, vs')) vs')
+transProg f (RWMProgram p) = do
+      (ts, vs) <- untrec p
+      RWMProgram <$> (trec <$> runT (f (ts, vs)) (ts, vs))
 
 ---
 
@@ -339,7 +317,7 @@ flattenApp (RWMApp _ e e') = flattenApp e ++ [e']
 flattenApp e               = [e]
 
 mkArrow :: RWMTy -> RWMTy -> RWMTy
-mkArrow t = RWMTyApp (ann t) (RWMTyApp (ann t) (RWMTyCon (ann t) (TyConId "->")) t)
+mkArrow t = RWMTyApp (ann t) (RWMTyApp (ann t) (RWMTyCon (ann t) (string2Name "->")) t)
 
 infixr `mkArrow`
 
@@ -349,8 +327,9 @@ mkArrow' t b = runFreshM $ do
       return $ mkArrow t $ typeOf e
 
 arrowRight :: RWMTy -> RWMTy
-arrowRight (RWMTyApp _ (RWMTyApp _ (RWMTyCon _ (TyConId "->")) _) t2) = t2
-arrowRight t                                                          = error $ "arrowRight: got non-arrow type: " ++ show t
+arrowRight (RWMTyApp _ (RWMTyApp _ (RWMTyCon _ c) _) t2)
+      | name2String c == "->" = t2
+arrowRight t                  = error $ "arrowRight: got non-arrow type: " ++ show t
 
 typeOf :: RWMExp -> RWMTy
 typeOf = \ case
@@ -372,11 +351,8 @@ deriving instance (Data a, Data b) => Data (Bind a b)
 deriving instance MonadThrow m => MonadThrow (FreshMT m)
 deriving instance MonadCatch m => MonadCatch (FreshMT m)
 
--- Orphan instances for removing dependencies from Core.Syntax.
+instance Pretty (Name a) where
+      pretty n = text $ show n
 
-instance NFData DataConId
-instance NFData TyConId
-
-instance Alpha TyConId
-instance Alpha DataConId
-
+instance Pretty a => Pretty (Embed a) where
+      pretty (Embed a) = pretty a

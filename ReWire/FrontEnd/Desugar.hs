@@ -49,9 +49,12 @@ desugar = liftM fst . flip runStateT 0 .
             )
       >=> runT
             ( flattenAlts -- again
+            )
+      >=> runT
+            (
+            desugarWildCards
            <> desugarAsPats
             )
-      >=> runT desugarWildCards
       )
 
 type FreshT = StateT Int
@@ -308,10 +311,7 @@ desugarNegs = transform $
 -- | Turns wildcard patterns into variable patterns.
 desugarWildCards :: (MonadCatch m, SyntaxError m) => Transform (FreshT m)
 desugarWildCards = transform $
-      \ (PWildCard (l :: Annote)) -> return $ PVar l $ wild l
-
-wild :: Annote -> Name Annote
-wild l = Ident l "$_"
+      \ (PWildCard (l :: Annote)) -> PVar l <$> fresh l
 
 -- | Turns Lambdas with several bindings into several lambdas with single
 --   bindings. E.g.:
@@ -340,8 +340,7 @@ depatLambdas = transform $ \ case
 -- becomes
 -- > case e1 of { C p -> (\ x -> ((\ y -> e2) p)) (C p) }
 desugarAsPats :: (MonadCatch m, SyntaxError m) => Transform (FreshT m)
-desugarAsPats = transform $
-      \ (Alt l p (UnGuardedRhs l' e) Nothing) -> do
+desugarAsPats = transform $ \ (Alt l p (UnGuardedRhs l' e) Nothing) -> do
             app <- foldrM (mkApp l) e $ getAses p
             return $ Alt l (deAs p) (UnGuardedRhs l' app) Nothing
 
@@ -361,7 +360,7 @@ desugarAsPats = transform $
             patToExp :: (Functor m, SyntaxError m) => Pat Annote -> FreshT m (Exp Annote)
             patToExp = \ case
                   PVar l n                -> return $ Var l $ UnQual l n
-                  PWildCard l             -> return $ Var l $ UnQual l $ wild l
+                  PWildCard l             -> Var l <$> (UnQual l <$> fresh l)
                   PLit l (Signless _) n   -> return $ Lit l n
                   -- PNPlusK _name _int ->
                   PApp l n ps             -> foldl' (App l) (Con l n) <$> mapM patToExp ps

@@ -33,14 +33,14 @@ import qualified Language.Haskell.Exts.Syntax as S
 
 import Language.Haskell.Exts.Annotated.Syntax hiding (Annotation, Namespace)
 
-import Unbound.Generics.LocallyNameless (runFreshMT)
+import Unbound.Generics.LocallyNameless (runFreshMT, FreshMT (..))
 
-type Cache = ReaderT LoadPath (StateT ModCache (SyntaxErrorT IO))
+type Cache = ReaderT LoadPath (StateT ModCache (FreshMT (SyntaxErrorT IO)))
 type LoadPath = [FilePath]
 type ModCache = Map.Map FilePath (RWMModule, Exports)
 
 runCache :: Cache a -> LoadPath -> IO (Either AstError a)
-runCache m lp = runSyntaxError $ fst <$> runStateT (runReaderT m lp) mempty
+runCache m lp = runSyntaxError $ fst <$> runFreshMT (runStateT (runReaderT m lp) mempty)
 
 mkRenamer :: Annotation a => Module a -> Cache Renamer
 mkRenamer m = mconcat <$> mapM mkRenamer' (getImps m)
@@ -123,38 +123,38 @@ getProgram :: FilePath -> Cache RWCProgram
 getProgram fp = do
       (RWMModule ts ds, _) <- getModule fp
 
-      p'     <- runFreshMT $ addPrims $ RWMProgram ts $ trec ds
+      p'     <- addPrims $ RWMProgram $ trec (ts, ds)
 
       -- liftIO $ putStrLn "Pre TC:\n"
       -- liftIO $ putStrLn $ prettyPrint p'
 
-      p''     <- runFreshMT
-              $ kindCheck
-            >=> typeCheck
-            >=> neuterPrims
-            >=> inline
-            >=> reduce
-            $ p'
+      p''     <- kindCheck
+             >=> typeCheck
+             >=> neuterPrims
+             >=> inline
+             >=> reduce
+             $ p'
 
       -- liftIO $ putStrLn "Post TC:\n"
       -- liftIO $ putStrLn $ prettyPrint p''
 
-      p'''   <- runFreshMT
-              $ liftLambdas
-              $ p''
+      p'''   <- liftLambdas p''
 
       -- liftIO $ putStrLn "Post LL:\n"
       -- liftIO $ putStrLn $ prettyPrint p'''
 
-      p''''  <- runFreshMT
-              $ purge
-              $ p'''
+      -- typeCheck p'''
+
+      -- liftIO $ putStrLn "Retypechecked\n"
+
+      p''''  <- purge p'''
 
       -- liftIO $ putStrLn "Post purge:\n"
       -- liftIO $ putStrLn $ prettyPrint p''''
 
-      p''''' <- runFreshMT
-              $ toCore
-              $ p''''
+      p''''' <- toCore p''''
+
+      -- liftIO $ putStrLn "Core:\n"
+      -- liftIO $ putStrLn $ prettyPrint p'''''
 
       return p'''''

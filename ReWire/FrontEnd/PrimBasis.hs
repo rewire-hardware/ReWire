@@ -3,7 +3,7 @@ module ReWire.FrontEnd.PrimBasis (addPrims) where
 import ReWire.Annotation
 import ReWire.FrontEnd.Syntax
 
-import Data.List (nub)
+import Data.List (nub, foldl')
 import Data.Map.Strict (Map)
 import Data.Maybe (catMaybes)
 import Unbound.Generics.LocallyNameless (string2Name, name2String)
@@ -15,11 +15,11 @@ import qualified Data.Map.Strict as Map
 -- the concrete syntax... so here we are.
 
 addPrims :: Fresh m => RWMProgram -> m RWMProgram
-addPrims (RWMProgram ts vs) = do
-      vs'   <- untrec vs
-      -- pdats <- mapM mkPrimData $ fv vs'
-      let pdefs = catMaybes $ map mkPrimDefn $ fvs vs'
-      return $ RWMProgram (ts ++ primDatas) $ trec $ vs' ++ pdefs
+addPrims (RWMProgram p) = do
+      (ts, vs) <- untrec p
+      -- pdats <- mapM mkPrimData $ fv vs
+      let pdefs = catMaybes $ map mkPrimDefn $ fvs vs
+      return $ RWMProgram $ trec (ts ++ primDatas, vs ++ pdefs)
 
 fvs :: [RWMDefn] -> [Name RWMExp]
 fvs = nub . concatMap fv'
@@ -38,25 +38,33 @@ msg :: String -> Annote
 msg m = MsgAnnote m
 
 primDatas :: [RWMData]
-primDatas = [ RWMData (msg "Builtin: ->")  (TyConId "->")  [mkId "a", mkId "b"]           (KStar `KFun` (KStar `KFun` KStar))                  []
-            , RWMData (msg "Builtin: ReT") (TyConId "ReT") [mkId "i", mkId "o", mkId "m"] (KStar `KFun` (KStar `KFun` (KMonad `KFun` KMonad))) []
-            , RWMData (msg "Builtin: StT") (TyConId "StT") [mkId "s", mkId "m"]           (KStar `KFun` (KMonad `KFun` KMonad))                []
-            , RWMData (msg "Builtin: I")   (TyConId "I")   []                             KMonad                                               []
-            , RWMData (msg "Builtin: ()")  (TyConId "()")  []                             KStar                                                [RWMDataCon noAnn (DataConId "()") []]
+primDatas = [ RWMData (msg "Builtin: ->")  (mkId "->")  (KStar `KFun` (KStar `KFun` KStar))                  []
+            , RWMData (msg "Builtin: ReT") (mkId "ReT") (KStar `KFun` (KStar `KFun` (KMonad `KFun` KMonad))) []
+            , RWMData (msg "Builtin: StT") (mkId "StT") (KStar `KFun` (KMonad `KFun` KMonad))                []
+            , RWMData (msg "Builtin: I")   (mkId "I")   KMonad                                               []
+            , RWMData (msg "Builtin: ()")  (mkId "()")  KStar                                                [RWMDataCon noAnn (mkId "()") ([] |-> RWMTyCon noAnn (string2Name "()"))]
             ] ++ map mkTuple [2..62] -- why 62? 'cause that's what ghc does!
 
 mkTuple :: Int -> RWMData
-mkTuple n = RWMData (msg "Builtin: tuple") (TyConId i) tvs k [ctor]
+mkTuple n = RWMData (msg "Builtin: tuple") (mkId i) k [ctor]
       where i    = "(" ++ replicate (n-1) ',' ++ ")"
             tvs  = map mkId $ take n $ [[c] | c <- ['a'..'z']] ++ map (('t':) . show) [0::Integer ..]
+            tvs' = map (RWMTyVar noAnn KStar) tvs
             k    = foldr KFun KStar $ replicate n KStar
-            ctor = RWMDataCon noAnn (DataConId i) $ map (RWMTyVar noAnn) tvs
+            rt   = foldl' (RWMTyApp noAnn) (RWMTyCon noAnn $ mkId i) tvs'
+            ctor = RWMDataCon noAnn (mkId i) $ tvs |-> foldr mkArrow rt tvs'
+
+tv :: String -> RWMTy
+tv = RWMTyVar noAnn (KMonad `KFun` KMonad) . mkId
+
+mv :: String -> RWMTy
+mv = RWMTyVar noAnn KMonad . mkId
 
 v :: String -> RWMTy
-v = RWMTyVar noAnn . mkId
+v = RWMTyVar noAnn KStar . mkId
 
 c :: String -> RWMTy
-c = RWMTyCon noAnn . TyConId
+c = RWMTyCon noAnn . mkId
 
 tyApp :: RWMTy -> RWMTy -> RWMTy
 tyApp = RWMTyApp noAnn
@@ -71,34 +79,34 @@ prims :: Map String (Embed Poly)
 prims = Map.fromList
       [ ( "return"
         , [mkId "a", mkId "m"]
-        |-> v "a" `mkArrow` RWMTyComp noAnn (v "m") (v "a")
+        |-> v "a" `mkArrow` RWMTyComp noAnn (mv "m") (v "a")
         )
       , ( ">>="
         , [mkId "m", mkId "a", mkId "b"]
-        |-> RWMTyComp noAnn (v "m") (v "a")
-            `mkArrow` (v "a" `mkArrow` RWMTyComp noAnn (v "m") (v "b"))
-            `mkArrow` RWMTyComp noAnn (v "m") (v "b")
+        |-> RWMTyComp noAnn (mv "m") (v "a")
+            `mkArrow` (v "a" `mkArrow` RWMTyComp noAnn (mv "m") (v "b"))
+            `mkArrow` RWMTyComp noAnn (mv "m") (v "b")
         )
       , ( "get"
         , [mkId "s", mkId "m"]
-        |-> RWMTyComp noAnn (stT (v "s") (v "m")) (v "s")
+        |-> RWMTyComp noAnn (stT (v "s") (mv "m")) (v "s")
         )
       , ( "put"
         , [mkId "s", mkId "m"]
-        |-> v "s" `mkArrow` RWMTyComp noAnn (stT (v "s") (v "m")) (c "()")
+        |-> v "s" `mkArrow` RWMTyComp noAnn (stT (v "s") (mv "m")) (c "()")
         )
       , ( "signal"
         , [mkId "o", mkId "i", mkId "m"]
-        |-> v "o" `mkArrow` RWMTyComp noAnn (reT (v "i") (v "o") (v "m")) (v "i")
+        |-> v "o" `mkArrow` RWMTyComp noAnn (reT (v "i") (v "o") (mv "m")) (v "i")
         )
       , ( "lift"
         , [mkId "m", mkId "a", mkId "t"]
-        |-> RWMTyComp noAnn (v "m") (v "a") `mkArrow` RWMTyComp noAnn (v "t" `tyApp` v "m") (v "a")
+        |-> RWMTyComp noAnn (mv "m") (v "a") `mkArrow` RWMTyComp noAnn (tv "t" `tyApp` mv "m") (v "a")
         )
       , ( "extrude"
         , [mkId "i", mkId "o", mkId "s", mkId "m", mkId "a"]
-        |-> RWMTyComp noAnn (reT (v "i") (v "o") (stT (v "s") (v "m"))) (v "a")
+        |-> RWMTyComp noAnn (reT (v "i") (v "o") (stT (v "s") (mv "m"))) (v "a")
             `mkArrow` v "s"
-            `mkArrow` RWMTyComp noAnn (reT (v "i") (v "o") (v "m")) (c "(,)" `tyApp` v "a" `tyApp` v "s")
+            `mkArrow` RWMTyComp noAnn (reT (v "i") (v "o") (mv "m")) (c "(,)" `tyApp` v "a" `tyApp` v "s")
         )
       ]

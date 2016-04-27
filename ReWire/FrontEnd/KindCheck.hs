@@ -8,9 +8,8 @@ import ReWire.FrontEnd.Syntax
 import ReWire.Pretty
 
 import Control.Monad.Reader (ReaderT (..), ask, local)
-import Control.Monad (replicateM, when)
-import Control.Monad.State (StateT (..), get, put, modify)
-import Data.Map.Strict (Map, (!))
+import Control.Monad.State (StateT (..), get, modify)
+import Data.Map.Strict (Map)
 
 import qualified Data.Map.Strict as Map
 
@@ -21,23 +20,15 @@ subst ss = substs (Map.assocs ss)
 
 -- Kind checking for Core.
 type KiSub = Map (Name Kind) Kind
-data KCEnv = KCEnv
-      { as  :: Map (Name RWMTy) Kind
-      , cas :: Map TyConId Kind
-      } deriving Show
+data KCEnv = KCEnv { cas :: Map (Name TyConId) Kind }
+      deriving Show
 
 type KCM m = ReaderT KCEnv (StateT KiSub m)
 
-localAssumps :: SyntaxError m => (Map (Name RWMTy) Kind -> Map (Name RWMTy) Kind) -> KCM m a -> KCM m a
-localAssumps f = local $ \ kce -> kce { as = f (as kce) }
-
-askAssumps :: SyntaxError m => KCM m (Map (Name RWMTy) Kind)
-askAssumps = ask >>= \ kce -> return (as kce)
-
-localCAssumps :: SyntaxError m => (Map TyConId Kind -> Map TyConId Kind) -> KCM m a -> KCM m a
+localCAssumps :: SyntaxError m => (Map (Name TyConId) Kind -> Map (Name TyConId) Kind) -> KCM m a -> KCM m a
 localCAssumps f = local $ \ kce -> kce { cas = f (cas kce) }
 
-askCAssumps :: SyntaxError m => KCM m (Map TyConId Kind)
+askCAssumps :: SyntaxError m => KCM m (Map (Name TyConId) Kind)
 askCAssumps = ask >>= \ kce -> return $ cas kce
 
 freshkv :: (Fresh m, SyntaxError m) => KCM m Kind
@@ -85,11 +76,7 @@ kcTy = \ case
             case Map.lookup i cas of
                   Nothing -> failAt an "Unknown type constructor"
                   Just k  -> return k
-      RWMTyVar an v      -> do
-            as <- askAssumps
-            case Map.lookup v as of
-                  Nothing -> failAt an "Unknown type variable"
-                  Just k  -> return k
+      RWMTyVar _ k _     -> return k
       RWMTyComp an tm tv -> do
             km <- kcTy tm
             kv <- kcTy tv
@@ -99,31 +86,19 @@ kcTy = \ case
       RWMTyBlank an      -> failAt an "Something went wrong in the kind checker"
 
 kcDataCon :: (Fresh m, SyntaxError m) => RWMDataCon -> KCM m ()
-kcDataCon (RWMDataCon an _ ts) = do
-      ks <- mapM kcTy ts
-      mapM_ (unify an KStar) ks
+kcDataCon (RWMDataCon an _ (Embed (Poly t))) = do
+      (_, t') <- unbind t
+      k       <- kcTy t'
+      unify an KStar k
 
 kcDataDecl :: (Fresh m, SyntaxError m) => RWMData -> KCM m ()
-kcDataDecl (RWMData an i tvs dk dcs) = do
-      cas   <- askCAssumps
-      let k =  cas ! i
-      kvs   <- replicateM (length tvs) freshkv
-      -- Skip builtins.
-      when (dk == kblank) $ do
-            unify an k $ foldr KFun KStar kvs
-            as    <- Map.fromList <$> mapM (\ tv -> freshkv >>= \ v -> return (tv, v)) tvs
-            localAssumps (as `Map.union`) (mapM_ kcDataCon dcs)
+kcDataDecl (RWMData _ _ _ cs) = mapM_ kcDataCon cs
 
 kcDefn :: (Fresh m, SyntaxError m) => RWMDefn -> KCM m ()
-kcDefn (RWMDefn an _ (Embed (Poly pt)) _ _) = do
-      (tvs, t)    <- unbind pt
-      oldsub      <- get
-      as          <- Map.fromList <$> mapM (\ tv -> freshkv >>= \ v -> return (tv, v)) tvs
-      k           <- localAssumps (as `Map.union`) $ kcTy t
+kcDefn (RWMDefn an _ (Embed (Poly t)) _ _) = do
+      (_, t')    <- unbind t
+      k          <- kcTy t'
       unify an k KStar
-      sub         <- get
-      let newsub  =  Map.mapWithKey (\ k _ -> sub ! k) oldsub
-      put newsub
 
 -- There is, IIRC, a weird little corner case in the Haskell Report that says
 -- if an inferred kind is underconstrained it defaults to *. Not sure if this
@@ -134,30 +109,27 @@ monoize = \ case
       KStar      -> KStar
       KMonad     -> KMonad
       KVar _     -> KStar
-      KBlank     -> KStar
 
 redecorate :: SyntaxError m => KiSub -> RWMData -> KCM m RWMData
-redecorate s (RWMData an i tvs _ dcs) = do
-      cas <- askCAssumps
+redecorate s (RWMData an i _ cs) = do
+      cas        <- askCAssumps
       case Map.lookup i cas of
-            Just k  -> return $ RWMData an i tvs (monoize $ subst s k) dcs
+            Just k  -> return $ RWMData an i (monoize $ subst s k) cs
             Nothing -> failAt an $ "Redecorate: no such assumption: " ++ show i
 
-assump :: (Fresh m, SyntaxError m) => RWMData -> KCM m (TyConId, Kind)
-assump (RWMData _ i _ k _)
-      | k /= kblank = return (i, k)
-      | otherwise   = (i,) <$> freshkv
+assump :: RWMData -> (Name TyConId, Kind)
+assump (RWMData _ i k _) = (i, k)
 
 kc :: (Fresh m, SyntaxError m) => RWMProgram -> KCM m RWMProgram
-kc p = do
-      cas      <- Map.fromList <$> (mapM assump $ dataDecls p)
+kc (RWMProgram p) = do
+      (ts, vs) <- untrec p
+      let cas   = Map.fromList $ map assump ts
       localCAssumps (cas `Map.union`) $ do
-            defns' <- untrec $ defns p
-            mapM_ kcDataDecl $ dataDecls p
-            mapM_ kcDefn defns'
+            mapM_ kcDataDecl ts
+            mapM_ kcDefn vs
             s   <- get
-            dds <- mapM (redecorate s) $ dataDecls p
-            return p { dataDecls = dds }
+            ts' <- mapM (redecorate s) ts
+            return $ RWMProgram $ trec (ts', vs)
 
 kindCheck :: (Fresh m, SyntaxError m) => RWMProgram -> m RWMProgram
-kindCheck m = fmap fst $ runStateT (runReaderT (kc m) (KCEnv mempty mempty)) mempty
+kindCheck m = fmap fst $ runStateT (runReaderT (kc m) (KCEnv mempty)) mempty

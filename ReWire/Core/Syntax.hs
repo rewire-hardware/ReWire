@@ -140,14 +140,14 @@ instance Pretty RWCDefn where
 
 ---
 
-data RWCDataCon = RWCDataCon Annote DataConId [RWCTy]
+data RWCDataCon = RWCDataCon Annote DataConId RWCTy
                   deriving (Generic,Eq,Show,Typeable,Data)
 
 instance Annotated RWCDataCon where
   ann (RWCDataCon a _ _) = a
 
 instance Pretty RWCDataCon where
-  pretty (RWCDataCon _ n ts) = text (deDataConId n) <+> hsep (map pretty ts)
+  pretty (RWCDataCon _ n t) = text (deDataConId n) <+> text "::" <+> pretty t
 
 ---
 

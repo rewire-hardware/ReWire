@@ -21,10 +21,10 @@ import Unbound.Generics.LocallyNameless (Fresh (..), string2Name, name2String, s
 
 -- | Inlines defs marked for inlining. Must run before lambda lifting.
 inline :: Fresh m => RWMProgram -> m RWMProgram
-inline (RWMProgram ts ds) = do
-      ds'  <- untrec ds
-      subs <- mapM toSubst $ filter defnInline ds'
-      return $ RWMProgram ts $ trec $ map (substs subs) ds'
+inline (RWMProgram p) = do
+      (ts, ds) <- untrec p
+      subs     <- mapM toSubst $ filter defnInline ds
+      return $ RWMProgram $ trec (ts,  map (substs subs) ds)
       where toSubst :: Fresh m => RWMDefn -> m (Name RWMExp, RWMExp)
             toSubst (RWMDefn _ n _ _ (Embed e)) = do
                   ([], e') <- unbind e
@@ -81,13 +81,13 @@ liftLambdas p = fst <$> runStateT (transProg liftLambdas' p) []
 -- | Purge.
 
 purge :: Fresh m => RWMProgram -> m RWMProgram
-purge (RWMProgram ts vs) = do
-      vs' <- untrec vs
-      return $ RWMProgram ts $ trec $ inuseDefn vs'
+purge (RWMProgram p) = do
+      (ts, vs) <- untrec p
+      return $ RWMProgram $ trec (ts, inuseDefn vs)
 
 inuseDefn :: [RWMDefn] -> [RWMDefn]
 inuseDefn ds = case find ((=="Main.start") . name2String . defnName) ds of
-      Just n -> map (findDefn' ds) $ snd $ runState (inuseDefn' $ defnName n) [defnName n]
+      Just n  -> map (findDefn' ds) $ snd $ runState (inuseDefn' $ defnName n) [defnName n]
       Nothing -> []
       where inuseDefn' :: Name RWMExp -> State [Name RWMExp] ()
             inuseDefn' n = do
@@ -108,9 +108,10 @@ fvDefn n ds = fv $ findDefn' ds n
 -- | Reduce.
 
 reduce :: Fresh m => RWMProgram -> m RWMProgram
-reduce (RWMProgram ts vs) = do
-      vs' <- untrec vs
-      RWMProgram ts <$> (trec <$> mapM reduceDefn vs')
+reduce (RWMProgram p) = do
+      (ts, vs) <- untrec p
+      vs'      <- mapM reduceDefn vs
+      return $ RWMProgram $ trec (ts, vs')
 
 reduceDefn :: Fresh m => RWMDefn -> m RWMDefn
 reduceDefn (RWMDefn an n pt b (Embed e)) = do
@@ -160,12 +161,12 @@ mergeMatches (m:ms) = case mergeMatches ms of
 
 matchPat :: Fresh m => RWMExp -> RWMPat -> m MatchResult
 matchPat e = \ case
-      RWMPatCon _ i pats -> case flattenApp e of
+      RWMPatCon _ (Embed i) pats -> case flattenApp e of
             RWMCon _ _ c : es
                   | c == i && length es == length pats -> do
                         ms <- zipWithM matchPat es pats
                         return $ mergeMatches ms
                   | otherwise                          -> return MatchNo
             _                                          -> return MatchMaybe
-      RWMPatVar _ _ x    -> return $ MatchYes [(x, e)]
+      RWMPatVar _ _ x            -> return $ MatchYes [(x, e)]
 

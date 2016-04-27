@@ -15,7 +15,6 @@ import ReWire.SYB (runPureT,transform)
 import Control.DeepSeq (NFData (..))
 import Control.Monad.Identity (Identity(..))
 import Data.Data (Typeable,Data(..))
-import GHC.Generics (Generic)
 import Language.Haskell.Exts.Annotated.ExactPrint (ExactP)
 import Language.Haskell.Exts.SrcLoc
       ( SrcLoc, SrcInfo (..), SrcSpanInfo (..), SrcSpan (..)
@@ -26,7 +25,7 @@ import qualified Language.Haskell.Exts.Pretty as HS (Pretty)
 
 import Unbound.Generics.LocallyNameless (Alpha (..))
 
-import GHC.Generics (Generic (..), U1, Rec0, (:+:))
+import GHC.Generics (Generic (..))
 
 data Annote where
       NoAnnote  :: Annote
@@ -92,8 +91,8 @@ instance Eq Annote where
       _ == _ = True
 
 instance Alpha Annote where
-      aeq' _ = (==)
-      acompare' _ = compare
+      aeq' _ _ _ = True
+      acompare' _ _ _ = EQ
       fvAny' _ _ = pure
       close _ _ = id
       open _ _ = id
@@ -104,13 +103,6 @@ instance Alpha Annote where
       swaps' _ _ = id
       freshen' _ i = return (i, mempty)
       lfreshen' _ i cont = cont i mempty
-
--- TODO(chathhorn): Probably need to just add a constructor for every ast node
--- type and do away with the existential quantifier.
-instance Generic Annote where
-      type Rep Annote = U1 :+: Rec0 SrcSpanInfo :+: Rec0 Int
-      to = error "TODO(chathhorn): Generic Annote: to" -- plz leave me alone ghc
-      from = error "TODO(chathhorn): Generic Annote: from"
 
 instance NFData Annote where
       rnf _ = () -- Probably not ideal.
@@ -124,10 +116,3 @@ toSrcSpanInfo = \ case
 
 noAnn :: Annote
 noAnn = NoAnnote
-
--- Orphans.
-
-deriving instance Generic SrcSpanInfo
-deriving instance Generic SrcSpan
-instance Alpha SrcSpanInfo
-instance Alpha SrcSpan

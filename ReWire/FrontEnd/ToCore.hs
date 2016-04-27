@@ -6,17 +6,21 @@ import ReWire.Core.Syntax hiding (typeOf, flattenApp)
 import ReWire.FrontEnd.Syntax
 import ReWire.Pretty
 
-import Unbound.Generics.LocallyNameless (name2String)
+import Unbound.Generics.LocallyNameless (name2String, runFreshM)
 
 toCore :: Fresh m => RWMProgram -> m RWCProgram
-toCore (RWMProgram datas funs) = do
-      funs' <- untrec funs
-      RWCProgram (concatMap transData datas) <$> mapM transDefn funs'
+toCore (RWMProgram p) = do
+      (ts, vs) <- untrec p
+      let ts' = concatMap transData ts
+      vs' <- mapM transDefn vs
+      return $ RWCProgram ts' vs'
 
 transData :: RWMData -> [RWCDataCon]
-transData (RWMData _ _ _ _ cs) = map transDataCon cs
-      where transDataCon :: RWMDataCon -> RWCDataCon
-            transDataCon (RWMDataCon an c ts) = RWCDataCon an c $ map transType ts
+transData (RWMData _ _ _ cs) = runFreshM $ mapM transDataCon cs
+      where transDataCon :: Fresh m => RWMDataCon -> m RWCDataCon
+            transDataCon (RWMDataCon an c (Embed (Poly t))) = do
+                  (_, t') <- unbind t
+                  return $ RWCDataCon an (DataConId $ name2String c) $ transType t'
 
 transDefn :: Fresh m => RWMDefn -> m RWCDefn
 transDefn (RWMDefn an n (Embed (Poly t)) _ (Embed e)) = do
@@ -29,7 +33,7 @@ transExp = \ case
       RWMApp an e1 e2       -> RWCApp an <$> transExp e1 <*> transExp e2
       -- TODO(chathhorn): distinguish locals from globals.
       RWMVar an t x         -> pure $ RWCGVar an (transType t) $ name2String x
-      RWMCon an t d         -> pure $ RWCCon an (transType t) d
+      RWMCon an t d         -> pure $ RWCCon an (transType t) $ DataConId $ name2String d
       RWMCase an e1 e2 (RWMError _ _ _)   -> do
             (p, e2') <- unbind e2
             RWCMatch an <$> transExp e1 <*> transPat p <*> pure (getVar e2') <*> pure Nothing
@@ -45,13 +49,13 @@ transExp = \ case
 
 transPat :: Fresh m => RWMPat -> m RWCPat
 transPat = \ case
-      RWMPatCon an d ps        -> RWCPatCon an d <$> mapM transPat ps
-      RWMPatVar an (Embed t) _ -> pure $ RWCPatVar an $ transType t
+      RWMPatCon an (Embed d) ps -> RWCPatCon an (DataConId $ name2String d) <$> mapM transPat ps
+      RWMPatVar an (Embed t) _  -> pure $ RWCPatVar an $ transType t
 
 transType :: RWMTy -> RWCTy
 transType = \ case
       RWMTyApp an t1 t2  -> RWCTyApp an (transType t1) $ transType t2
-      RWMTyCon an c      -> RWCTyCon an c
+      RWMTyCon an c      -> RWCTyCon an $ TyConId $ name2String c
       RWMTyComp an t1 t2 -> RWCTyComp an (transType t1) $ transType t2
       _                  -> RWCTyCon noAnn $ TyConId "TODO(chathhorn): leaked polymorphism"
 
