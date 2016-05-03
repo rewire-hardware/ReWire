@@ -1,6 +1,6 @@
 # Site title and subtitle. This is used in _includes/header.html
 title: 'ReWire'
-subtitle: 'Compiler thing blah'
+subtitle: 'Hardware circuits from functional specifications'
 
 # if you wish to integrate disqus on pages set your shortname here
 disqus_shortname: ''
