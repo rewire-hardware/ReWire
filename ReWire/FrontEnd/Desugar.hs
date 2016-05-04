@@ -31,6 +31,7 @@ desugar = liftM fst . flip runStateT 0 .
             ( depatLambdas
            <> lambdasToCases
             )
+      >=> runT liftDiscriminator
       >=> runT flattenAlts
       >=> runT desugarGuards
       >=> runT
@@ -164,6 +165,11 @@ desugarFuns = transform $ \ case
             toAlt (Match l' _ [p] rhs binds) = return $ Alt l' p rhs binds
             toAlt (Match l' _ ps  rhs binds) = return $ Alt l' (PTuple l' Boxed ps) rhs binds
             toAlt m                          = failAt (ann m) "Unsupported decl syntax"
+
+liftDiscriminator :: (MonadCatch m, SyntaxError m) => Transform (FreshT m)
+liftDiscriminator = transform $ \ (Case l e alts) -> do
+      x <- fresh l
+      return $ App l (Lambda l [PVar l x] $ Case l (Var l $ UnQual l x) alts) e
 
 -- | Turn cases with multiple alts into cases with two alts: an alt with a
 -- pattern and another with a default, wildcard branch.

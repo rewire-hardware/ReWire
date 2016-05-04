@@ -39,10 +39,10 @@ instance Pretty TyConId where
 ---
 
 data Ty = TyApp  Annote Ty Ty
-           | TyCon  Annote TyConId
-           | TyComp Annote Ty Ty
-           | TyVar  Annote TyId
-           deriving (Eq,Generic,Show,Typeable,Data)
+        | TyCon  Annote TyConId
+        | TyComp Annote Ty Ty
+        | TyVar  Annote TyId
+        deriving (Eq,Generic,Show,Typeable,Data)
 
 instance Annotated Ty where
   ann (TyApp a _ _)  = a
@@ -70,6 +70,7 @@ data Exp = App        Annote Exp Exp
          | LVar       Annote Ty  LId
          | Con        Annote Ty  DataConId
          | Match      Annote Ty  Exp Pat GId [LId] (Maybe Exp)
+         | Prim       Annote Ty  GId
          | NativeVHDL Annote Ty  String
          deriving (Eq,Show,Typeable,Data)
 
@@ -79,37 +80,38 @@ instance Annotated Exp where
   ann (LVar a _ _)          = a
   ann (Con a _ _)           = a
   ann (Match a _ _ _ _ _ _) = a
+  ann (Prim a _ _)          = a
   ann (NativeVHDL a _ _)    = a
 
 instance Pretty Exp where
-  pretty (App _ e1 e2)                = parens $ hang (pretty e1) 4 (pretty e2)
-  pretty (Con _ _ n)                  = text (deDataConId n)
-  pretty (GVar _ _ n)                 = text n
-  pretty (LVar _ _ n)                 = text $ "$" ++ show n
-  pretty (Match _ _ e p e1 _ Nothing) = parens $
+  pretty (App _ e1 e2)                 = parens $ hang (pretty e1) 4 (pretty e2)
+  pretty (Con _ _ n)                   = text (deDataConId n)
+  pretty (GVar _ _ n)                  = text n
+  pretty (LVar _ _ n)                  = text $ "$" ++ show n
+  pretty (Match _ _ e p e1 as Nothing) = parens $
                                  foldr ($+$) empty
                                    [ text "match" <+> pretty e <+> text "of"
                                    , nest 4 (braces $ vcat $ punctuate (space <> text ";" <> space)
                                      -- TODO(chathhorn)
-                                     [ parens (pretty p) <+> text "->" <+> text e1
+                                     [ parens (pretty p) <+> text "->" <+> text e1 <+> hsep (map (pretty . LVar undefined undefined)as)
                                      ])
                                    ]
-  pretty (Match _ _ e p e1 _ (Just e2)) = parens $
+  pretty (Match _ _ e p e1 as (Just e2)) = parens $
                                  foldr ($+$) empty
                                    [ text "match" <+> pretty e <+> text "of"
                                    , nest 4 (braces $ vcat $ punctuate (space <> text ";" <> space)
                                      -- TODO(chathhorn)
-                                     [ parens (pretty p) <+> text "->" <+> text e1
+                                     [ parens (pretty p) <+> text "->" <+> text e1 <+> hsep (map (pretty . LVar undefined undefined)as)
                                      , text "_" <+> text "->" <+> pretty e2
                                      ])
                                    ]
-  pretty (NativeVHDL _ _ n)           = parens (text "nativeVHDL" <+> doubleQuotes (text n))
+  pretty (NativeVHDL _ _ n)             = parens (text "nativeVHDL" <+> doubleQuotes (text n))
 
 ---
 
 data Pat = PatCon Annote DataConId [Pat]
-            | PatVar Annote Ty
-            deriving (Eq,Show,Typeable,Data)
+         | PatVar Annote Ty
+         deriving (Eq,Show,Typeable,Data)
 
 instance Annotated Pat where
   ann (PatCon a _ _) = a
@@ -132,8 +134,8 @@ instance Annotated Defn where
 
 instance Pretty Defn where
   pretty (Defn _ n ty e) = foldr ($+$) empty
-                                           (  [text n <+> text "::" <+> pretty ty]
-                                           ++ [text n <+> hsep (map (text . ("$"++) . show) [0..arity ty - 1]) <+> text "=", nest 4 $ pretty e])
+                        (  [text n <+> text "::" <+> pretty ty]
+                        ++ [text n <+> hsep (map (text . ("$"++) . show) [0..arity ty - 1]) <+> text "=", nest 4 $ pretty e])
 
 ---
 
@@ -149,7 +151,7 @@ instance Pretty DataCon where
 ---
 
 data Program = Program { ctors  :: [DataCon],
-                               defns  :: [Defn] }
+                         defns  :: [Defn] }
                   deriving (Eq,Show,Typeable,Data)
 
 instance Monoid Program where

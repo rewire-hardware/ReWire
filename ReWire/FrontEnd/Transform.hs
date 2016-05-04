@@ -132,7 +132,15 @@ liftLambdas p = evalStateT (transProg liftLambdas' p) []
 purge :: Fresh m => RWMProgram -> m RWMProgram
 purge (RWMProgram p) = do
       (ts, vs) <- untrec p
-      return $ RWMProgram $ trec (ts, inuseDefn vs)
+      return $ RWMProgram $ trec (inuseData (fv $ trec $ inuseDefn vs) ts, inuseDefn vs)
+      where inuseData :: [Name DataConId] -> [RWMData] -> [RWMData]
+            inuseData ns = map $ inuseData' ns
+
+            inuseData' :: [Name DataConId] -> RWMData -> RWMData
+            inuseData' ns (RWMData an n k cs) = RWMData an n k $ filter ((flip Set.member (Set.fromList ns)) . dataConName) cs
+
+            dataConName :: RWMDataCon -> Name DataConId
+            dataConName (RWMDataCon _ n _) = n
 
 inuseDefn :: [RWMDefn] -> [RWMDefn]
 inuseDefn ds = case find ((=="Main.start") . name2String . defnName) ds of
@@ -241,5 +249,3 @@ transProg f (RWMProgram p) = do
       (ts, vs) <- untrec p
       p'       <- runT (f $ getArrow ts) (ts, vs)
       return $ RWMProgram $ trec p'
-
-

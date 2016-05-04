@@ -125,36 +125,28 @@ getProgram :: FilePath -> Cache Core.Program
 getProgram fp = do
       (RWMModule ts ds, _) <- getModule fp
 
-      p'     <- pure $ addPrims (ts, ds)
-
-      p''     <- kindCheck
-             >=> typeCheck
-             >=> neuterPrims
-             >=> inline
-             >=> reduce
-             >=> shiftLambdas
-             $ p'
-
-      -- printInfo "___Post_TC___" p''
-
-      p'''   <- liftLambdas p''
-      -- _ <- typeCheck p'''
-
-      -- printInfo "___Post_LL___" p'''
-
-      p''''  <- purge p'''
-      -- _ <- typeCheck p''''
-
-      -- printInfo "___Post_Purge___" p''''
-
-      p''''' <- toCore p''''
+      p <- kindCheck
+       >=> typeCheck
+       >=> neuterPrims
+       >=> inline
+       >=> reduce
+       >=> shiftLambdas
+       -- >=> printInfo "___Post_TC___"
+       >=> liftLambdas
+       -- >=> typeCheck
+       -- >=> printInfo "___Post_LL___"
+       >=> purge
+       -- >=> typeCheck
+       -- >=> printInfo "___Post_Purge___"
+       >=> toCore
+       $ addPrims (ts, ds)
 
       -- liftIO $ putStrLn "___Core___"
-      -- liftIO $ putStrLn $ prettyPrint p'''''
+      -- liftIO $ putStrLn $ prettyPrint p
 
-      return p'''''
+      return p
 
-printInfo :: (MonadIO m, Pretty a, Alpha a) => String -> a -> m ()
+printInfo :: (MonadIO m, Pretty a, Alpha a) => String -> a -> m a
 printInfo msg p = do
       liftIO $ putStrLn msg
       liftIO $ putStrLn "Free kind vars:\n"
@@ -169,4 +161,4 @@ printInfo msg p = do
       liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name RWMExp])
       liftIO $ putStrLn "Program:\n"
       liftIO $ putStrLn $ prettyPrint p
-
+      return p
