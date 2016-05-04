@@ -32,8 +32,8 @@ Currently the only way to acquire ReWire's source is via GitHub. (Stable release
 Note that depending on your system configuration, the `cabal install` steps below may require administrative privileges.
 
     $ cd ReWire
-    $ cabal configure
     $ cabal install --only-dependencies
+    $ cabal configure
     $ cabal install
 
 If everything works correctly, you should now have an `rwc` binary somewhere in your path.
