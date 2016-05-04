@@ -13,6 +13,7 @@ import Data.Foldable (foldl')
 import Data.Monoid ((<>))
 import Language.Haskell.Exts.Annotated.Fixity (Fixity (..))
 import Language.Haskell.Exts.Annotated.Simplify (sName, sDeclHead, sQName, sModuleName)
+import Language.Haskell.Exts.Pretty (prettyPrint)
 
 import qualified Data.Set                     as Set
 import qualified Language.Haskell.Exts.Syntax as S
@@ -151,7 +152,7 @@ transData rn datas = \ case
       DataDecl l _ _ (sDeclHead -> hd) cs _ -> do
             let n = string2Name $ rename Type rn $ fst hd
             tvs' <- mapM (transTyVar l) $ snd hd
-            ks   <- replicateM (length tvs') (KVar <$> fresh (string2Name $ name2String n))
+            ks   <- replicateM (length tvs') $ freshKVar $ name2String n
             cs'  <- mapM (transCon rn ks tvs' n) cs
             pure $ RWMData l n (foldr KFun KStar ks) cs' : datas
       _                                       -> pure datas
@@ -189,7 +190,7 @@ transCon :: (Fresh m, SyntaxError m) => Renamer -> [Kind] -> [Name RWMTy] -> Nam
 transCon rn ks tvs tc = \ case
       QualConDecl l Nothing _ (ConDecl _ x tys) -> do
             let tvs' = zipWith (RWMTyVar l) ks tvs
-            t <- foldr mkArrow (foldl' (RWMTyApp l) (RWMTyCon l tc) tvs') <$> mapM (transTy rn []) tys
+            t <- foldr arr0 (foldl' (RWMTyApp l) (RWMTyCon l tc) tvs') <$> mapM (transTy rn []) tys
             return $ RWMDataCon l (string2Name $ rename Value rn x) (tvs |-> t)
       d                                         -> failAt (ann d) "Unsupported ctor syntax"
 
@@ -201,8 +202,11 @@ transTy rn ms = \ case
       TyApp l a b | isMonad ms a -> RWMTyComp l <$> transTy rn ms a <*> transTy rn ms b
                   | otherwise    -> RWMTyApp l <$> transTy rn ms a <*> transTy rn ms b
       TyCon l x                  -> pure $ RWMTyCon l (string2Name $ rename Type rn x)
-      TyVar l x                  -> RWMTyVar l <$> (KVar <$> (fresh $ string2Name $ show x)) <*> pure (mkUId $ sName x)
+      TyVar l x                  -> RWMTyVar l <$> freshKVar (prettyPrint x) <*> (pure $ mkUId $ sName x)
       t                          -> failAt (ann t) "Unsupported type syntax"
+
+freshKVar :: Fresh m => String -> m Kind
+freshKVar n = KVar <$> fresh (string2Name $ "?K_" ++ n)
 
 getNad :: SyntaxError m => Asst Annote -> m S.Name
 getNad = \ case
@@ -234,7 +238,12 @@ transExp rn = \ case
             p' <- transPat rn p
             e1' <- transExp (exclude Value (getVars p) rn) e1
             e2' <- transExp rn e2
-            pure $ RWMCase l e' (bind p' e1') e2'
+            pure $ RWMCase l tblank e' (bind p' e1') (Just e2')
+      Case l e [Alt _ p (UnGuardedRhs _ e1) _] -> do
+            e' <- transExp rn e
+            p' <- transPat rn p
+            e1' <- transExp (exclude Value (getVars p) rn) e1
+            pure $ RWMCase l tblank e' (bind p' e1') Nothing
       e                     -> failAt (ann e) $ "Unsupported expression syntax: " ++ show (void e)
       where getVars :: Pat Annote -> [S.Name]
             getVars = runQ $ query $ \ case

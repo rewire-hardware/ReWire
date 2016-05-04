@@ -182,10 +182,7 @@ desugarFuns = transform $ \ case
 flattenAlts :: (MonadCatch m, SyntaxError m) => Transform (FreshT m)
 flattenAlts = transform $ \ (Case l e alts) -> return $ Case l e $ flatten l e alts
       where flatten :: Annote -> Exp Annote -> [Alt Annote] -> [Alt Annote]
-            flatten l _ [alt'@Alt {}] =
-                  [ alt'
-                  , Alt l (PWildCard l) (UnGuardedRhs l $ App l (Var l $ UnQual l $ Ident l "primError") $ Lit l $ String l "pattern match failure" "") Nothing
-                  ]
+            flatten _ _ [alt'@Alt {}] = [ alt' ]
             flatten _ _ alts'@[Alt {}, Alt _ (PWildCard _) _ _] = alts'
             flatten l e (Alt l' p' rhs' binds' : alts')
                   = [Alt l' p' rhs' binds', Alt l (PWildCard l) (UnGuardedRhs l $ Case l e $ flatten l e alts') Nothing]
@@ -209,17 +206,23 @@ desugarGuards = transform $ \ case
                   return $ Case l1 e'
                         [ Alt l2 (PVar l2 y)
                               ( UnGuardedRhs l3 $ Case l3 v
-                                    [ Alt l3 p (UnGuardedRhs l3 $ toLet l3 l6 y binds rhs) Nothing
+                                    [ Alt l3 p (UnGuardedRhs l3 $ toLet l3 (Var l6 $ UnQual l6 y) binds rhs) Nothing
                                     , Alt l4 (PWildCard l5) (UnGuardedRhs l6 $ Var l6 $ UnQual l6 y) Nothing
                                     ]
                               )
                               Nothing
                         ]
+            Case l1 v [Alt l2 p (GuardedRhss l3 rhs) binds] ->
+                  return $ Case l1 v [ Alt l2 p (UnGuardedRhs l3 $ toLet l3 (err l1) binds rhs) Nothing ]
       where toIfs :: GuardedRhs Annote -> Exp Annote -> Exp Annote
             toIfs (GuardedRhs l [Qualifier _ g1] e1) = If l g1 e1
-            toLet :: Annote -> Annote -> Name Annote -> Maybe (Binds Annote) -> [GuardedRhs Annote] -> Exp Annote
-            toLet l l' y (Just binds) rhs =  Let l binds $ foldr toIfs (Var l' $ UnQual l' y) rhs
-            toLet _ l' y Nothing rhs      =  foldr toIfs (Var l' $ UnQual l' y) rhs
+
+            toLet :: Annote -> Exp Annote -> Maybe (Binds Annote) -> [GuardedRhs Annote] -> Exp Annote
+            toLet l y (Just binds) rhs =  Let l binds $ foldr toIfs y rhs
+            toLet _ y Nothing rhs      =  foldr toIfs y rhs
+
+            err :: Annote -> Exp Annote
+            err l = App l (Var l $ UnQual l $ Ident l "primError") $ Lit l $ String l "pattern match failure" ""
 
 
 -- | Turns where clauses into lets. Only valid after guard desugarage. E.g.:
