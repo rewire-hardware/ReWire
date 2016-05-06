@@ -6,8 +6,64 @@ date: 2016-05-03 10:51:52
 order: 4
 ---
 
+The purpose of this section is to provide an overview of the ReWire language as it relates to vanilla Haskell. Readers unfamiliar with Haskell may wish to consult an introductory text such as [Programming in Haskell](http://www.cs.nott.ac.uk/~pszgmh/book.html) by Graham Hutton or [Learn You a Haskell for Great Good!](http://learnyouahaskell.com) by Miran Lipovača before diving into ReWire.
 
-* Go learn Haskell if you haven't already; ReWire programs are Haskell programs of a certain form
+ReWire is a _subset_ of Haskell: all ReWire programs are Haskell programs, but not all Haskell programs are ReWire programs. The main difference between ReWire and Haskell is that ReWire places limits on the use of higher order functions, polymorphism, and recursion. Higher order functions and polymorphism are not allowed except where they can be eliminated via inlining. Recursion is only allowed for functions and computations in a certain class of monads, and such computations must be guarded and tail recursive.
+
+# Reactive Resumption Monads
+
+The fundamental abstraction in ReWire is a class of monads called _reactive resumption monads_. Reactive resumption monads allow us to give a functional semantics to clocked, reactive processes like hardware circuits.
+
+While reactive resumption monads are treated as a primitive in ReWire, their semantics can be defined in terms of Haskell. We will start with a simple case, then generalize to a monad transformer. The type of the _reactive resumption monad_ `Re` is defined in Haskell as follows.
+
+```haskell
+data Re i o a = Done a | Pause o (i -> Re i o a)
+```
+
+Think of the type `Re i o a` as representing a computation that is exchanging input and output signals (of types `i` and `o` respectively) with an external environment, and will return a value of type `a` if and when it terminates. Formally, a computation in `Re i o a` is either in a `Done` state, representing a finished computation that has returned a value of type `a`, or in a `Pause` state, yielding an output of type `o` and a function (i.e., a continuation) of type `i -> Re i o a` that is waiting for the next input from the environment. The type `Re i o` is a monad as follows:
+
+```haskell
+instance Monad (Re i o) where
+  return = Done
+  Done v >>= f    = f v
+  Pause o k >>= f = Pause o (k >=> f)
+```
+
+where `>=>` is the left-to-right Kleisli composition operator.
+
+We can generalize `Re` to a monad transformer `ReT`, which allows us to mix other kinds of effects with reactivity.
+
+```haskell
+newtype ReT i o m a =
+        ReT { deReT :: m (Either a (o, i -> ReT i o m a)) }
+
+instance Monad m => Monad (ReT i o m) where
+  return = ReT . return . Left
+  ReT m >>= f = ReT $ do
+    r <- m
+    case r of
+      Left v      -> deReT (f v)
+      Right (o,k) -> return (Right (o,k >=> f))
+
+instance MonadTrans (ReT i o) where
+  lift m = ReT (m >>= return . Left)
+```
+
+One particularly useful operation in `ReT`, which we will actually take as a primitive in ReWire, is called `signal`.
+
+```haskell
+signal :: Monad m => o -> ReT i o m i
+signal o = ReT (return (Right (o,return)))
+```
+
+Think of `signal o` as meaning "yield the output `o` to the environment, wait for a new input `i`, then return `i`".
+
+# Layered State Monads
+
+```haskell
+newtype StT s m a = StT { deStT :: s -> m (a,s) }
+```
+
 * ReWire's special sauce
     - ReT and StT
     - Restrictions on recursion (data and control)

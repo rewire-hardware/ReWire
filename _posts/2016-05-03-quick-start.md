@@ -109,63 +109,63 @@ This will generate a VHDL file called `Fibonacci.vhd` which is ready for simulat
 
 Fire up ISE.
 
-![Screenshot]({{ site.baseurl }}/images/ss1.png)
+<img src="{{ site.baseurl }}/images/ss1.png" style="display: block; margin: 0 auto; max-width: 100%;" alt="Screenshot" />
 
 Select New Project.
 
-![Screenshot]({{ site.baseurl }}/images/ss2.png)
+<img src="{{ site.baseurl }}/images/ss2.png" style="display: block; margin: 0 auto; max-width: 100%;" alt="Screenshot" />
 
 Pick a directory, and call the project Fibonacci. Click Next.
 
-![Screenshot]({{ site.baseurl }}/images/ss3.png)
+<img src="{{ site.baseurl }}/images/ss3.png" style="display: block; margin: 0 auto; max-width: 100%;" alt="Screenshot" />
 
 Under "Evaluation Development Board" select "Spartan-3E Starter Board". Change Preferred Language to VHDL if it's not already set. Click Next, then Finish.
 
-![Screenshot]({{ site.baseurl }}/images/ss4.png)
+<img src="{{ site.baseurl }}/images/ss4.png" style="display: block; margin: 0 auto; max-width: 100%;" alt="Screenshot" />
 
 You now have an empty project. Go to Project -> Add Copy of Source. Browse to the directory that has Fibonacci.vhd and prims.vhd. Select both, and hit Open. Just hit OK on the next dialog. Your project should now have the ReWire file loaded.
 
-![Screenshot]({{ site.baseurl }}/images/ss5.png)
+<img src="{{ site.baseurl }}/images/ss5.png" style="display: block; margin: 0 auto; max-width: 100%;" alt="Screenshot" />
 
 # Simulating the Circuit
 
 Click over to Simulation, click on rewire, then fold out the "ISim Simulator" guy.
 
-![Screenshot]({{ site.baseurl }}/images/ss6.png)
+<img src="{{ site.baseurl }}/images/ss6.png" style="display: block; margin: 0 auto; max-width: 100%;" alt="Screenshot" />
 
 Double-click on "Simulate Behavioral Model". The ISim simulator should load. Simulation -> Restart. We'll just show you the relevant waveforms: clk, input, and output, but your screen will probably have others.
 
-![Screenshot]({{ site.baseurl }}/images/ss8.png)
+<img src="{{ site.baseurl }}/images/ss8.png" style="display: block; margin: 0 auto; max-width: 100%;" alt="Screenshot" />
 
 Right click on clk, force clock.
 
-![Screenshot]({{ site.baseurl }}/images/ss9.png)
+<img src="{{ site.baseurl }}/images/ss9.png" style="display: block; margin: 0 auto; max-width: 100%;" alt="Screenshot" />
 
 0, 1, 4ps, OK.
 
 Right click on input, force constant.
 
-![Screenshot]({{ site.baseurl }}/images/ss10.png)
+<img src="{{ site.baseurl }}/images/ss10.png" style="display: block; margin: 0 auto; display: block; margin: 0 auto; max-width: 100%;" alt="Screenshot" />
 
 0, OK.
 
-![Screenshot]({{ site.baseurl }}/images/ss11.png)
+<img src="{{ site.baseurl }}/images/ss11.png" style="display: block; margin: 0 auto; max-width: 100%;" alt="Screenshot" />
 
 Change the run time to 1ps, then hit the button a few times and watch what the circuit does. (You may want to zoom out).
 
-![Screenshot]({{ site.baseurl }}/images/ss12.png)
+<img src="{{ site.baseurl }}/images/ss12.png" style="display: block; margin: 0 auto; max-width: 100%;" alt="Screenshot" />
 
 Is that the Fibonacci sequence? Right click on output, select Radix, change it to Unsigned Decimal. Looks good!
 
-![Screenshot]({{ site.baseurl }}/images/ss13.png)
+<img src="{{ site.baseurl }}/images/ss13.png" style="display: block; margin: 0 auto; max-width: 100%;" alt="Screenshot" />
 
 Let's see if the switch works. Force input to 1 and run a few more cycles.
 
-![Screenshot]({{ site.baseurl }}/images/ss14.png)
+<img src="{{ site.baseurl }}/images/ss14.png" style="display: block; margin: 0 auto; max-width: 100%;" alt="Screenshot" />
 
 Looks good! Now force it back to 0 and run a few more.
 
-![Screenshot]({{ site.baseurl }}/images/ss15.png)
+<img src="{{ site.baseurl }}/images/ss15.png" style="display: block; margin: 0 auto; max-width: 100%;" alt="Screenshot" />
 
 Looks good! (Though if we go too far we overflow, but whatever!)
 
@@ -188,7 +188,7 @@ NET "output[7]" LOC="F12";
 
 Gotta synthesize/implement.
 
-![Screenshot]({{ site.baseurl }}/images/ss16.png)
+<img src="{{ site.baseurl }}/images/ss16.png" style="display: block; margin: 0 auto; max-width: 100%;" alt="Screenshot" />
 
 Click rewire, then double-click Implement Design. This will generate some warnings in the synthesis process but that's okay.
 
