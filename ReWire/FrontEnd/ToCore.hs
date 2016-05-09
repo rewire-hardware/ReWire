@@ -21,11 +21,11 @@ toCore (RWMProgram p) = runFreshMT $ do
       return $ Program ts' vs'
 
 transData :: Fresh m => RWMData -> m [DataCon]
-transData (RWMData _ _ _ cs) = mapM transDataCon cs
-      where transDataCon :: Fresh m => RWMDataCon -> m DataCon
-            transDataCon (RWMDataCon an c (Embed (Poly t))) = do
+transData (RWMData _ _ _ cs) = mapM transDataCon $ zip [0..] cs
+      where transDataCon :: Fresh m => (Int, RWMDataCon) -> m DataCon
+            transDataCon (n, RWMDataCon an c (Embed (Poly t))) = do
                   (_, t') <- unbind t
-                  return $ DataCon an (DataConId $ name2String c) $ transType t'
+                  return $ DataCon an (DataConId $ name2String c) n $ transType t'
 
 transDefn :: Fresh m => RWMDefn -> m Defn
 transDefn (RWMDefn an n (Embed (Poly t)) _ (Embed e)) = do
@@ -42,7 +42,9 @@ transExp :: Fresh m => RWMExp -> ReaderT (Map (Name RWMExp) Int) m Exp
 transExp = \ case
       RWMApp an e1 e2                     -> App an <$> transExp e1 <*> transExp e2
       RWMVar an t x                       -> (Map.lookup x <$> ask) >>= \ case
-            Nothing -> pure $ GVar an (transType t) $ transVar x
+            Nothing -> if elem '.' (name2String x)
+                  then pure $ GVar an (transType t) $ transVar x
+                  else pure $ Prim an (transType t) $ transVar x
             Just i  -> pure $ LVar an (transType t) i
       RWMCon an t d                       -> pure $ Con an (transType t) $ DataConId $ name2String d
       RWMMatch an t e p f as (Just e2)    -> Match an (transType t) <$> transExp e <*> transPat p <*> (toGId <$> transExp f) <*> mapM ((toLId <$>) . transExp) as <*> (Just <$> transExp e2)

@@ -66,26 +66,27 @@ ppTyAppR t          = pretty t
 ---
 
 data Exp = App        Annote Exp Exp
+         | Prim       Annote Ty  GId
          | GVar       Annote Ty  GId
          | LVar       Annote Ty  LId
          | Con        Annote Ty  DataConId
          | Match      Annote Ty  Exp Pat GId [LId] (Maybe Exp)
-         | Prim       Annote Ty  GId
          | NativeVHDL Annote Ty  String
          deriving (Eq,Show,Typeable,Data)
 
 instance Annotated Exp where
   ann (App a _ _)           = a
+  ann (Prim a _ _)          = a
   ann (GVar a _ _)          = a
   ann (LVar a _ _)          = a
   ann (Con a _ _)           = a
   ann (Match a _ _ _ _ _ _) = a
-  ann (Prim a _ _)          = a
   ann (NativeVHDL a _ _)    = a
 
 instance Pretty Exp where
   pretty (App _ e1 e2)                 = parens $ hang (pretty e1) 4 (pretty e2)
   pretty (Con _ _ n)                   = text (deDataConId n)
+  pretty (Prim _ _ n)                  = text n
   pretty (GVar _ _ n)                  = text n
   pretty (LVar _ _ n)                  = text $ "$" ++ show n
   pretty (Match _ _ e p e1 as Nothing) = parens $
@@ -139,14 +140,14 @@ instance Pretty Defn where
 
 ---
 
-data DataCon = DataCon Annote DataConId Ty
+data DataCon = DataCon Annote DataConId Int Ty
                   deriving (Generic,Eq,Show,Typeable,Data)
 
 instance Annotated DataCon where
-  ann (DataCon a _ _) = a
+  ann (DataCon a _ _ _) = a
 
 instance Pretty DataCon where
-  pretty (DataCon _ n t) = text (deDataConId n) <+> text "::" <+> pretty t
+  pretty (DataCon _ n _ t) = text (deDataConId n) <+> text "::" <+> pretty t
 
 ---
 
@@ -186,6 +187,7 @@ arrowRight t                                                 = error $ "arrowRig
 typeOf :: Exp -> Ty
 typeOf = \ case
   App _ e _           -> arrowRight (typeOf e)
+  Prim _ t _          -> t
   GVar _ t _          -> t
   LVar _ t _          -> t
   Con _ t _           -> t
