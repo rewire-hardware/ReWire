@@ -886,7 +886,7 @@ funExpr e = case ef of
                    then return (c_scr `mkSeq` e1' `mkSeq` CaseIf [(BoolVar e1'l,e1'c)],r_res)
                    else do (e2',e2'l) <- funExpr e2
                            let cases  = [(BoolVar e1'l,e1'c),(BoolVar e2'l,e2')]
-                           return (c_scr `mkSeq` e1' `mkSeq` e2' `mkSeq` CaseIf cases,r_res)
+                           return (c_scr `mkSeq` e1' {-`mkSeq` e2'-} `mkSeq` CaseIf cases,r_res)
                  _  -> fail "funExpr: encountered case expression in function position"
   where (ef:eargs) = flattenApp e
 
