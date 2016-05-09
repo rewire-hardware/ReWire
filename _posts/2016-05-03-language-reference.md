@@ -17,14 +17,15 @@ The fundamental abstraction in ReWire is a class of monads called _reactive resu
 While reactive resumption monads are treated as a primitive in ReWire, their semantics can be defined in terms of Haskell. We will start with a simple case, then generalize to a monad transformer. The type of the _reactive resumption monad_ `Re` is defined in Haskell as follows.
 
 ```haskell
-data Re i o a = Done a | Pause o (i -> Re i o a)
+data Re i o a = Done a
+              | Pause o (i -> Re i o a)
 ```
 
 Think of the type `Re i o a` as representing a computation that is exchanging input and output signals (of types `i` and `o` respectively) with an external environment, and will return a value of type `a` if and when it terminates. Formally, a computation in `Re i o a` is either in a `Done` state, representing a finished computation that has returned a value of type `a`, or in a `Pause` state, yielding an output of type `o` and a function (i.e., a continuation) of type `i -> Re i o a` that is waiting for the next input from the environment. The type `Re i o` is a monad as follows:
 
 ```haskell
 instance Monad (Re i o) where
-  return = Done
+  return          = Done
   Done v >>= f    = f v
   Pause o k >>= f = Pause o (k >=> f)
 ```
@@ -60,13 +61,42 @@ Think of `signal o` as meaning "yield the output `o` to the environment, wait fo
 
 # Layered State Monads
 
+ReWire also contains built-in support for _layered state monads_, which enable us to describe circuits with mutable state. Formally, a layered state monad is any monad composed from one or more applications of the state monad transformer `StT` to the base identity monad `I`. While `StT` and `I` are primitives in ReWire, they can be defined in Haskell as follows:
+
 ```haskell
 newtype StT s m a = StT { deStT :: s -> m (a,s) }
+
+instance Monad m => Monad (StT s m) where
+  return x    = StT $ \ s -> return (x,s)
+  StT m >>= f = StT $ \ s -> m s >>= \ (x,s) -> deStT (f x) s
+
+instance MonadTrans (StT s) where
+  lift m = StT $ \ s -> m >>= \ x -> return (x,s)
+
+newtype I a = I { deI :: I a -> a }
+
+instance Monad I where
+  return    = I
+  I x >>= f = f x
 ```
 
-* ReWire's special sauce
-    - ReT and StT
-    - Restrictions on recursion (data and control)
-* How behavior maps to hardware
-    - Data types map to bit vectors
-    - One "signal" in ReT maps to one clock tick
+These are, in fact, equivalent to `StateT` and `Identity` in Haskell's standard libraries.
+
+The monads supported by ReWire are limited to monads composed of 
+
+# Restrictions
+
+Basically Haskell 98 but...
+
+* Type classes not implemented
+* `type` keyword not yet implemented
+* Polymorphism only allowed if it can be squashed via inlining
+* Recursion restricted
+
+# Interfacing with VHDL
+
+* Data types -> bit vectors
+* `nativeVhdl`
+* `extrude`
+* `start`
+* `signal`
