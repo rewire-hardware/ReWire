@@ -7,7 +7,7 @@ order: 3
 ---
 
 
-In this section we will walk through the process of compiling, simulating, and running a ReWire program. The purpose of this tutorial is not to help you understand the ReWire language, but simply how to use the ReWire compiler on a simple example.
+In this section we will walk through the process of compiling, simulating, and running a ReWire program. The purpose of this tutorial is not to help you understand the ReWire language, just how to use the ReWire compiler.
 
 We will be working with every functional programmer's favorite example: the [Fibonacci sequence](http://en.wikipedia.org/wiki/Fibonacci_number). The Fibonacci sequence is defined as 0, 1, 1, 2, 3, 5, 8, 13, ... . In other words, the first two elements of the sequence are 0 and 1, and the <i>n</i>th element of the sequence (for <i>n</i> > 1) is obtained by adding together the two elements that precede it. We will use ReWire to build a circuit that displays one element of the Fibonacci sequence per clock tick, in order, in 8-bit binary on a bank of LEDs.
 
