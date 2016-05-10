@@ -8,7 +8,7 @@ order: 2
 
 # Step 1: Install System Requirements
 
-You will need:
+Your system will need to meet a few prerequisites before installing ReWire:
 
 * [Haskell Platform](http://www.haskell.org/platform/), version 7.10.2 (July 2015) or later.
 * [Git](http://git-scm.com/) (to acquire the ReWire source).
