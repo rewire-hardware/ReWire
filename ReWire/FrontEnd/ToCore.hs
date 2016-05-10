@@ -2,7 +2,7 @@
 module ReWire.FrontEnd.ToCore (toCore) where
 
 import ReWire.Core.Syntax hiding (typeOf, flattenApp)
-import ReWire.FrontEnd.Syntax
+import ReWire.FrontEnd.Syntax hiding (defnName)
 import ReWire.Pretty
 
 import Control.Monad.Reader (ReaderT (..), ask)
@@ -17,7 +17,7 @@ toCore :: Monad m => RWMProgram -> m Program
 toCore (RWMProgram p) = runFreshMT $ do
       (ts, vs) <- untrec p
       ts' <- concat <$> mapM transData ts
-      vs' <- mapM transDefn vs
+      vs' <- filter (elem '.' . defnName) <$> mapM transDefn vs
       return $ Program ts' vs'
 
 transData :: Fresh m => RWMData -> m [DataCon]
