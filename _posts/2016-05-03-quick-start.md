@@ -235,7 +235,7 @@ You can now __close the ISim window__; if you receive a prompt about saving the 
 
 ## Step 4: Implementing the Circuit on the Board
 
-No FPGA project can be considered successful until we have actually made some LEDs flash, so in this section we will load our circuit onto our Spartan-3E Starter Kit board. For testing purposes, we will connect the clock signal to the on-board 50MHz oscillator at FPGA pin C9; the `pause` input to the switch SW0 at FPGA pin L13, and the output bits to the LEDs located at the lower right corner of the board, at FPGA pins F9, E9, D11, C11, F11, E11, E12, and F12 (from left to right):
+No FPGA project can be considered successful until we have actually made some LEDs flash, so in this section we will load our circuit onto our Spartan-3E Starter Kit board. For testing purposes, we will connect the clock signal to the on-board 50MHz oscillator at FPGA pin C9; the `pause` input to the switch SW0 at FPGA pin L13; and the output bits to the LEDs located at the lower right corner of the board, at FPGA pins F9, E9, D11, C11, F11, E11, E12, and F12 (from left to right):
 
 ```
                              ______________________
@@ -246,7 +246,7 @@ on-board oscillator [C9] ----|>                   |      [F9,E9,D11,C11,F11,E11,
                              |____________________|
 ```
 
-(Obviously our choice of a 50MHz oscillator will make it impossible to view the sequence in real time, but the `pause` switch will make it possible to peek in on the sequence.)
+(Obviously our choice of a 50MHz clock will make it impossible to view the sequence in real time, but the `pause` switch will make it possible to peek in on the sequence.)
 
 To map VHDL inputs and outputs to FPGA pins, we must add a UCF constraint file to our project. First, __select Implementation in the Design pane at the upper left corner of the Project Navigator window__. Then select __Project -> New Source -> Implementation Constraints File__. Under __File name__, enter `Fibonacci.ucf`, then __click Next__ and __click Finish__. An editor window for the (new, blank) UCF file will appear. __Enter the following text__ and select __File -> Save__:
 
