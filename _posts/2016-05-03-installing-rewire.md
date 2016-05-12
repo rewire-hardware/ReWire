@@ -11,7 +11,6 @@ order: 2
 Your system will need to meet a few prerequisites before installing ReWire:
 
 * [Haskell Platform](http://www.haskell.org/platform/), version 7.10.2 (July 2015) or later.
-* [Git](http://git-scm.com/) (to acquire the ReWire source).
 * Some sort of FPGA development tool suite that supports VHDL. Currently the only tested tools are those from Xilinx:
    - [ISE](http://www.xilinx.com/products/design-tools/ise-design-suite.html)
    - [Vivado](http://www.xilinx.com/products/design-tools/vivado.html)
@@ -23,15 +22,14 @@ For the quick start tutorial we will be using ISE and the (sadly discontinued) [
 
 # Step 2: Acquire ReWire Source
 
-Currently the only way to acquire ReWire's source is via GitHub. (Stable releases in tarball form will be coming soon.)
-
-    $ git clone git@github.com:mu-chaco/ReWire.git
+You can download the latest ReWire source code from the [release page](https://github.com/mu-chaco/ReWire/releases) on GitHub.
 
 # Step 3: Build ReWire
 
 Note that depending on your system configuration, the `cabal install` steps below may require administrative privileges.
 
-    $ cd ReWire
+    $ tar xvzf ReWire-<version>.tar.gz
+    $ cd ReWire-<version>
     $ cabal install --only-dependencies
     $ cabal configure
     $ cabal install
