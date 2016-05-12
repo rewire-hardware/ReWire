@@ -2,8 +2,8 @@
 -- The compiler doesn't yet support a "prelude" so we will have to define a
 -- few things ourselves!
 --
-data Bit        = Zero | One
-data W8         = W8 Bit Bit Bit Bit Bit Bit Bit Bit
+data Bit = Zero | One
+data W8  = W8 Bit Bit Bit Bit Bit Bit Bit Bit
 
 plusW8 :: W8 -> W8 -> W8
 {-# INLINE plusW8 #-}

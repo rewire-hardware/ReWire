@@ -7,10 +7,8 @@ module ReWire.FrontEnd.Fixity
 
 import ReWire.SYB
 
-import Control.Applicative ((<*>))
 import Control.Monad.Identity (Identity (..))
 import Control.Monad.State (State, runState, get, modify)
-import Data.Functor ((<$>))
 import Data.Maybe (fromMaybe)
 import Language.Haskell.Exts.Annotated.Fixity (Fixity (..), applyFixities)
 import Language.Haskell.Exts.Annotated.Simplify (sName, sQOp, sAssoc, sModuleName)
@@ -118,9 +116,6 @@ renameMatch rn = \ case
 
 renameExp :: OpRenamer -> Exp SrcSpanInfo -> Fresh (Exp SrcSpanInfo)
 renameExp rn = \ case
-      Var l x                 -> return $ Var l x
-      Con l x                 -> return $ Con l x
-      Lit l lit               -> return $ Lit l lit
       InfixApp l e1 op e2     -> do
             e1' <- renameExp rn e1
             e2' <- renameExp rn e2

@@ -54,64 +54,59 @@ data-files:          lib/*.hs
 cabal-version:       >=1.10
 
 library
-  build-depends:    base >=4.6 && <5
+  build-depends   : ghc >=7.10
+                  , base >=4.6 && < 5
                   , bytestring >= 0.10
                   , containers >= 0.5
                   , deepseq >= 1.3.0
-                  , directory >=1.2 && <1.3
-                  , exceptions >= 0.8 && <0.9
+                  , directory >= 1.2 && < 1.3
+                  , exceptions >= 0.8 && < 0.9
                   , fgl >= 5.5
-                  , filepath >= 1.3 && <1.5
-                  , haskell-src-exts >= 1.17 && <1.18
-                  , mtl >=2.2.1
-                  , pretty >=1.1
-                  , split >= 0.2 && <0.3
+                  , filepath >= 1.3 && < 1.5
+                  , haskell-src-exts >= 1.17 && < 1.18
+                  , mtl >= 2.2.1
+                  , pretty >= 1.1
+                  , split >= 0.2 && < 0.3
                   , text >= 0.11
-                  , transformers >=0.3
+                  , transformers >= 0.3
+                  , unbound-generics >= 0.3
   default-language: Haskell2010
   other-extensions: FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, UndecidableInstances
-  ghc-options:      -fprof-auto -rtsopts -Wall -fno-warn-name-shadowing -fno-warn-unused-imports
+  ghc-options:      -fprof-auto -rtsopts -Wall -fno-warn-name-shadowing
 
   other-modules:    Paths_ReWire
 
-  exposed-modules:  ReWire.Core.KindChecker
-                    ReWire.Core.Kinds
-                    ReWire.Core.Main
-                    ReWire.Core.PrimBasis
+  exposed-modules:  ReWire.Annotation
+                    ReWire.Core.Scoping
                     ReWire.Core.Syntax
-                    ReWire.Core.Transformations.DeUniquify
-                    ReWire.Core.Transformations.Expand
-                    ReWire.Core.Transformations.Inline
-                    ReWire.Core.Transformations.Interactive
-                    ReWire.Core.Transformations.Monad
-                    ReWire.Core.Transformations.Purge
-                    ReWire.Core.Transformations.Reduce
-                    ReWire.Core.Transformations.ToPreHDL
-                    ReWire.Core.Transformations.Types
-                    ReWire.Core.Transformations.Uniquify
-                    ReWire.Core.TypeChecker
                     ReWire.Error
                     ReWire.FrontEnd
                     ReWire.FrontEnd.Annotate
                     ReWire.FrontEnd.Cache
                     ReWire.FrontEnd.Desugar
                     ReWire.FrontEnd.Fixity
+                    ReWire.FrontEnd.KindCheck
                     ReWire.FrontEnd.LoadPath
-                    ReWire.FrontEnd.Translate
+                    ReWire.FrontEnd.PrimBasis
                     ReWire.FrontEnd.Rename
+                    ReWire.FrontEnd.Syntax
+                    ReWire.FrontEnd.ToCore
+                    ReWire.FrontEnd.ToMantle
+                    ReWire.FrontEnd.Transform
+                    ReWire.FrontEnd.TypeCheck
+                    ReWire.Main
                     ReWire.PreHDL.CFG
                     ReWire.PreHDL.ElimEmpty
                     ReWire.PreHDL.GotoElim
                     ReWire.PreHDL.Syntax
                     ReWire.PreHDL.ToVHDL
                     ReWire.Pretty
-                    ReWire.Scoping
                     ReWire.SYB
 
 executable rwc
   hs-source-dirs:   rwc
   main-is:          Main.hs
-  build-depends:    ReWire, base >=4.6 && <5
+  build-depends:    ReWire, base >= 4.6 && < 5
   default-language: Haskell2010
 
 test-suite rwc-test
@@ -119,12 +114,12 @@ test-suite rwc-test
   hs-source-dirs:     test
   main-is:            TestMain.hs
   build-depends:      ReWire
-                    , base >= 4.6 && <5
-                    , Cabal >=1.10
-                    , directory >=1.2 && <1.3
-                    , HUnit >=1.2.5 && <1.3.1
-                    , test-framework >=0.8 && <0.9
-                    , test-framework-hunit >= 0.3.0.2 && <0.4
+                    , base >= 4.6 && < 5
+                    , Cabal >= 1.10
+                    , directory >= 1.2 && < 1.3
+                    , HUnit >= 1.2.5 && < 1.4
+                    , test-framework >= 0.8 && < 0.9
+                    , test-framework-hunit >= 0.3.0.2 && < 0.4
   default-language:   Haskell2010
 
 source-repository head

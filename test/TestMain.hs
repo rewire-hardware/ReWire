@@ -1,8 +1,6 @@
-import ReWire.Core.KindChecker
-import ReWire.Core.TypeChecker
 import ReWire.FrontEnd
 import ReWire.FrontEnd.LoadPath
-import qualified ReWire.Core.Main as M
+import qualified ReWire.Main as M
 
 import System.Directory (setCurrentDirectory)
 import System.Environment (withArgs)
@@ -20,19 +18,8 @@ filesToCompile = ["Fibonacci.hs","MiniISA.hs","UpCounter.hs","dissex.hs",
 
 filesToTC :: [FilePath]
 filesToTC = filesToCompile ++
-             ["uniquification.hs","pats.hs","guards.hs","Mods.hs","Infix.hs"]
-
-filesToParse :: [FilePath]
-filesToParse = filesToTC ++ ["Salsa20.hs"]
-
-testParse :: FilePath -> Test
-testParse f_ = testCase f_ (do d   <- getDataFileName "test/parser_tests/"
-                               setCurrentDirectory d
-                               lp  <- getSystemLoadPath
-                               res <- loadProgram lp f_
-                               case res of
-                                 Left e  -> assertFailure $ show e
-                                 Right _ -> return ())
+             ["uniquification.hs","pats.hs","guards.hs","Mods.hs","Infix.hs",
+              "Salsa20.hs"]
 
 testTC :: FilePath -> Test
 testTC f_ = testCase f_ (do d   <- getDataFileName "test/parser_tests/"
@@ -41,11 +28,7 @@ testTC f_ = testCase f_ (do d   <- getDataFileName "test/parser_tests/"
                             res <- loadProgram lp f_
                             case res of
                               Left e  -> assertFailure $ show e
-                              Right m -> case kindcheck m of
-                                Left e   -> assertFailure $ show e
-                                Right m' -> case typecheck m' of
-                                  Left e  -> assertFailure $ show e
-                                  Right _ -> return ())
+                              Right m -> return ())
 
 testCompile :: FilePath -> Test
 testCompile f_ = testCase f_ (do f <- getDataFileName ("test/parser_tests/" ++ f_)
@@ -58,8 +41,7 @@ testCompile f_ = testCase f_ (do f <- getDataFileName ("test/parser_tests/" ++ f
                                           f]
                                           M.main)
 
-tests = [testGroup "Files to Parse"     (map testParse filesToParse),
-         testGroup "Files to Typecheck" (map testTC filesToTC),
+tests = [testGroup "Files to Typecheck" (map testTC filesToTC),
          testGroup "Files to Compile"   (map testCompile filesToCompile)]
 
 main = defaultMain tests

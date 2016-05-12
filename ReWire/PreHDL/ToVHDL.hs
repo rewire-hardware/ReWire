@@ -1,7 +1,6 @@
-{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module ReWire.PreHDL.ToVHDL where
+module ReWire.PreHDL.ToVHDL (toVHDL) where
 
 import ReWire.PreHDL.Syntax
 import Data.List (intercalate)
@@ -17,8 +16,8 @@ vInit TyBoolean  = "false"
 vRegDecl :: RegDecl -> String
 vRegDecl rd = "variable " ++ regDeclName rd ++ " : " ++ vTy (regDefnTy rd) ++ " := " ++ vInit (regDefnTy rd) ++ ";"
 
-vHeader :: Header -> String
-vHeader h = concatMap ((++"\n") . vRegDecl) (regDecls h) -- FIXME: fundefns, state names, start state
+-- vHeader :: Header -> String
+-- vHeader h = concatMap ((++"\n") . vRegDecl) (regDecls h) -- FIXME: fundefns, state names, start state
 
 vBool :: BoolExp -> String
 vBool (And b1 b2)        = "(" ++ vBool b1 ++ " AND " ++ vBool b2 ++ ")"

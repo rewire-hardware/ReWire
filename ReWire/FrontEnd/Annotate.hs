@@ -4,12 +4,11 @@ module ReWire.FrontEnd.Annotate
       , Annote
       ) where
 
-import ReWire.Core.Syntax (toSrcSpanInfo, Annote (..))
+import ReWire.Annotation (Annote (..), toSrcSpanInfo)
 import ReWire.SYB
 
 import Control.Monad.Identity (Identity (..))
 import Data.Data (Data (..), cast)
-import Data.Functor ((<$>))
 import Data.Maybe (fromJust)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
 

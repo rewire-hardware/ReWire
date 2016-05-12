@@ -8,7 +8,7 @@ module ReWire.Error
       , runSyntaxError
       ) where
 
-import ReWire.Core.Syntax (Annotation(..), Annote(..), toSrcSpanInfo)
+import ReWire.Annotation (Annotation (..), Annote (..), toSrcSpanInfo)
 
 import Control.Monad.Except (MonadError (..), ExceptT (..), runExceptT, throwError)
 import Language.Haskell.Exts.Annotated.Syntax (Annotated (..))
@@ -29,7 +29,8 @@ instance Show AstError where
             errorHdr (ann a) msg
             $$ nest 4 (text "In the fragment:")
             $$ nest 6 (prettyPrim a)
-      show (AstError a msg) = show $ errorHdr (toSrcSpanInfo a) msg
+      show (AstError a@(MsgAnnote m) msg) = show $ errorHdr (toSrcSpanInfo a) $ msg ++ "\n" ++ m
+      show (AstError a msg)               = show $ errorHdr (toSrcSpanInfo a) msg
 
 errorHdr :: SrcSpanInfo -> String -> Doc
 errorHdr l msg = if getPointLoc l == noLoc

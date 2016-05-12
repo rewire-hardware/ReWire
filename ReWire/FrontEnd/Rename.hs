@@ -3,23 +3,23 @@ module ReWire.FrontEnd.Rename
       ( Renamer, fixFixity, getExports, allExports
       , exclude, extend, finger, rename
       , FQName (mod, name), qnamish
-      , Namespace (..)
+      , Namespace (..), RWMModule (..)
       , Exports, expValue, expType, expFixity, getCtors
       , toFilePath
       , fromImps
       ) where
 
-import ReWire.Core.Syntax (Annotation)
+import ReWire.Annotation (Annotation)
 import ReWire.Error
 import ReWire.FrontEnd.Fixity
+import ReWire.FrontEnd.Syntax (RWMData, RWMDefn)
 
 import Control.Arrow ((&&&))
 import Control.Monad (liftM, foldM)
-import Data.Functor ((<$>))
 import Data.List (find)
 import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
-import Data.Monoid (Monoid (..), (<>))
+import Data.Monoid ((<>))
 import Language.Haskell.Exts.Annotated.Fixity (Fixity (..), AppFixity (..))
 import Language.Haskell.Exts.Annotated.Simplify (sName, sQName)
 import Language.Haskell.Exts.Pretty (prettyPrint)
@@ -42,6 +42,14 @@ data Exports = Exports
       (Set.Set Fixity)                   -- Fixities
       (Map.Map S.Name (Set.Set FQName))  -- Type |-> Ctors (where Type and Ctors are also in Types and Values, respectively)
       deriving Show
+
+data RWMModule = RWMModule [RWMData] [RWMDefn]
+
+instance Monoid RWMModule where
+      mempty = RWMModule [] []
+      mappend (RWMModule a b) (RWMModule a' b') = RWMModule (a ++ a') (b ++ b')
+
+---
 
 expValue :: FQName -> Exports -> Exports
 expValue x (Exports vs ts fs cs) = Exports (Set.insert x vs) ts fs cs

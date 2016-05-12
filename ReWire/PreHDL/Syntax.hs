@@ -1,6 +1,11 @@
-{-# OPTIONS -fwarn-incomplete-patterns #-}
-
-module ReWire.PreHDL.Syntax where
+module ReWire.PreHDL.Syntax
+  ( Label,Loc
+  , Prog(..),Header(..),FunDefn(..),Ty(..),RegDecl(..)
+  , Cmd(..),RHS(..),BoolExp(..)
+  , Bit(..)
+  , mkSeq,flattenSeq
+  , indent
+  ) where
 
 import Data.List (intercalate)
 
