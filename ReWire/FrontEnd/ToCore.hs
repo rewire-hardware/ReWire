@@ -17,8 +17,13 @@ toCore :: Monad m => RWMProgram -> m Program
 toCore (RWMProgram p) = runFreshMT $ do
       (ts, vs) <- untrec p
       ts' <- concat <$> mapM transData ts
-      vs' <- filter (elem '.' . defnName) <$> mapM transDefn vs
+      vs' <- filter (notPrim . defnName) <$> mapM transDefn vs
       return $ Program ts' vs'
+
+notPrim :: String -> Bool
+notPrim x = isQual x || isLL x
+      where isQual = elem '.'
+            isLL = elem '$'
 
 transData :: Fresh m => RWMData -> m [DataCon]
 transData (RWMData _ _ _ cs) = mapM transDataCon $ zip [0..] cs
@@ -42,7 +47,7 @@ transExp :: Fresh m => RWMExp -> ReaderT (Map (Name RWMExp) Int) m Exp
 transExp = \ case
       RWMApp an e1 e2                     -> App an <$> transExp e1 <*> transExp e2
       RWMVar an t x                       -> (Map.lookup x <$> ask) >>= \ case
-            Nothing -> if elem '.' (name2String x)
+            Nothing -> if notPrim (name2String x)
                   then pure $ GVar an (transType t) $ transVar x
                   else pure $ Prim an (transType t) $ transVar x
             Just i  -> pure $ LVar an (transType t) i
