@@ -1,0 +1,102 @@
+- Definition: a type is "simple" if it is free of arrows, recursive or
+  higher-order data types, and monads.
+
+- Assumption: we are post-lambda lifting and we have a pile of functions with
+  types that are of one of the following forms (type variables are allowed but
+  they must range only over simple types):
+
+    (pure)          T1 -> T2 -> ... -> Tn -> T
+                    where each Ti and T are simple.
+
+    (state-monadic) T1 -> T2 -> ... -> Tn -> StT S1 (StT S2 (... (StT Sm I))) T
+                    where each Ti, each Si, and T are simple.
+
+    (res-monadic)   T1 -> T2 -> ... -> Tn ->
+                      ReT I O (StT S1 (StT S2 (... (StT Sm I)))) T
+                    where each Ti, I O, each Si, and T are simple.
+
+  All calls to res-monadic functions must be tail calls.
+  Only res-monadic functions may be recursive.
+  Recursion must be loop-guarded. Loop-guarded here means that every loop
+    through the call graph has at least one guarded edge. I haven't yet
+    explained guarded edges.
+
+- To purify a pure function: do nothing.
+
+- To purify a state-monadic function f:
+
+    Suppose f :: T1 -> T2 -> ... -> Tn -> StT S1 (StT S2 (... (StT Sm I))) T
+    and the definition of f is f x1 ... xn = e.
+
+    We will define a new function
+
+    f_pure :: T1 -> ... -> Tn -> S1 -> ... -> Sm -> (T,(S1,(...,Sm)))
+
+    Definition of f_pure is
+
+    f_pure x1 ... xn s1 ... sm = [|purify_state_body 1 e|]
+
+    where s1 ... sm are fresh variables and
+
+    purify_state_body i (return e)    = "(e,(s1,(...,sm)))"
+    purify_state_body i (e >>= g)     = "let
+                                            (v,(s1,(...,sm))) = [|purify_state_body i e|]
+                                         in
+                                            g_pure v s1 ... sm"
+    purify_state_body i (lift e)      = purify_state_body (i+1) e
+    purify_state_body i get           = "(si,(s1,(...,sm)))"
+    purify_state_body i (put e)       = "((),(s1,(...,(si-1,(e,(si+1,(...,sm)))))))"
+    purify_state_body i (f e1 ... ek) = "f_pure e1 .... ek"
+    purify_state_body i (case e of
+                           P1 -> e1
+                           ...
+                           Pk -> ek)  = "case e of
+                                           P1 -> [|purify_state_body i e1|]
+                                           ...
+                                           Pk -> [|purify_state_body i ek|]"
+
+- To purify a resumption-monadic function f:
+
+    Suppose f :: T1 -> T2 -> ... -> Tn ->
+               ReT I O (StT S1 (StT S2 (... (StT Sm I)))) T
+    and the definition of f is f x1 ... xn = e.
+
+    We will define a new function
+
+       f_pure :: T1 -> T2 -> ... -> Tn -> I -> S1 -> ... -> Sm -> (Either T (O,R),(S1,(...,Sm)))
+
+    Definition of f_pure is
+
+       f_pure x1 ... xn s1 ... sm = [|purify_res_body e|]
+
+    where s1 ... sm are fresh variables and
+
+    purify_res_body (return e)         = "(Left e,(s1,(...,sm)))"
+    purify_res_body (signal e
+                      >>= g e1 ... ek) = "(Right (e,R_g e1 ... ek),(s1,(...,sm)))"   * and create resumption point constructor for g if it doesn't already exist
+    purify_res_body (signal e)         = "(Right (e,R_ret),(s1,(...,sm)))"
+    purify_res_body (e >>= g)          = "let
+                                             (Left v,(s1,(...,sm))) = [|purify_res_body e|]   * because we are post-lambda lifting, the irrefutable pattern SHOULD be okay
+                                          in
+                                             g_pure v s1 ... sm"
+    purify_res_body (lift e)           = purify_res_body 1 e
+    purify_res_body (f e1 ... ek)      = "f_pure e1 .... ek"
+    purify_res_body (case e of
+                       P1 -> e1
+                       ...
+                       Pk -> ek)       = "case e of
+                                            P1 -> [|purify_state_body i e1|]
+                                            ...
+                                            Pk -> [|purify_state_body i ek|]"
+
+    Create resumption point constructor for a function
+
+      f :: T1 -> T2 -> ... -> Tn -> ReT I O (StT S1 (StT S2 (... (StT Sm I)))) T
+
+    means to add
+
+      R_f :: T1 -> T2 -> ... -> Tn -> R
+
+    to constructors of R. We will assume that R has at least one constructor:
+
+      R_ret :: R.
