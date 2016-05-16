@@ -79,7 +79,10 @@
                                              (Left v,(s1,(...,sm))) = [|purify_res_body e|]   * because we are post-lambda lifting, the irrefutable pattern SHOULD be okay
                                           in
                                              g_pure v s1 ... sm"
-    purify_res_body (lift e)           = purify_res_body 1 e
+    purify_res_body (lift e)           = "let
+                                             (v,(s1,(...,sm))) = purify_state_body 1 e
+                                          in
+                                             (Left v,(s1,(...,sm)))"
     purify_res_body (f e1 ... ek)      = "f_pure e1 .... ek"
     purify_res_body (case e of
                        P1 -> e1
