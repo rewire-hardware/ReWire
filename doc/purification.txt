@@ -77,7 +77,7 @@
     purify_res_body (return e)         = "(Left e,(s1,(...,sm)))"
     purify_res_body (signal e
                       >>= g e1 ... ek) = "(Right (e,R_g e1 ... ek),(s1,(...,sm)))"            * and create resumption point constructor for g if it doesn't already exist
-    purify_res_body (signal e)         = "(Right (e,R_ret),(s1,(...,sm)))"
+    purify_res_body (signal e)         = "(Right (e,R_ret),(s1,(...,sm)))"                    * and create resumption point constructor "R_ret" if doesn't already exist
     purify_res_body (e >>= g)          = "let
                                              (Left v,(s1,(...,sm))) = [|purify_res_body e|]   * because of the restriction on signal and the excision of non-tail calls, the irrefutable pattern will be okay
                                           in
@@ -101,8 +101,52 @@
 
     means to add
 
-      R_f :: T1 -> T2 -> ... -> Tn -> R
+      R_f :: T1 -> T2 -> ... -> Tn -> R.
 
-    to constructors of R. We will assume that R has at least one constructor:
+Pure form is:
 
-      R_ret :: R.
+  Special junk as follows:
+
+    data R = ...whatever we generated during purification...
+
+    ^^ f_pure must exist for each of the above R_f ^^
+
+    start_pure :: S1 -> ... -> Sm -> (Either T (O,R),(S1,(...,Sm)))
+    start_pure = <whatever came from purifying start>                -- compiled normally
+
+    init_s1 :: S1
+    init_s1 = <some pure expression>                                 -- compiled normally
+    ...
+    init_sm :: Sm
+    init_sm = <some pure expression>                                 -- compiled normally
+
+    init :: ReT I O (StT S1 (StT S2 (... (StT Sm I)))) T             -- compiled specially
+    init = do let (res,(s1',(...,sm'))) = start_pure init_s1 ... init_sm
+              put s1'
+              lift (put s2')
+              ...
+              put^{m-1} sm'
+              case res of
+                Left x      -> return x
+                Right (o,r) -> do i <- signal o
+                                  loop r i
+
+    loop :: R -> I -> ReT I O (StT S1 (StT S2 (... (StT Sm I)))) T   -- compiled specially
+    loop r i = case r of
+                 R_ret         = return i   -- if it exists
+                 -- One of these for each resumption point:
+                 R_f x y ... z = do
+                                   s1 <- get
+                                   s2 <- lift get
+                                   s3 <- lift (lift get)
+                                   ...
+                                   sm <- lift^{m-1} get
+                                   let (res,(s1',(...,sm'))) = f_pure x y ... z i s1 ... sm
+                                   put s1'
+                                   lift (put s2')
+                                   ...
+                                   put^{m-1} sm'
+                                   case res of
+                                     Left x       -> return x
+                                     Right (o,r') -> do i' <- signal o
+                                                        loop r' i'
