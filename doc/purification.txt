@@ -21,6 +21,9 @@
     through the call graph has at least one guarded edge. I haven't yet
     explained guarded edges.
 
+  signal must never occur embedded in the left-hand side of a bind, *except*
+    in the form of signal e >>= f e1 e2 ... ek where f is a top-level name.
+
 - To purify a pure function: do nothing.
 
 - To purify a state-monadic function f:
@@ -73,10 +76,10 @@
 
     purify_res_body (return e)         = "(Left e,(s1,(...,sm)))"
     purify_res_body (signal e
-                      >>= g e1 ... ek) = "(Right (e,R_g e1 ... ek),(s1,(...,sm)))"   * and create resumption point constructor for g if it doesn't already exist
+                      >>= g e1 ... ek) = "(Right (e,R_g e1 ... ek),(s1,(...,sm)))"            * and create resumption point constructor for g if it doesn't already exist
     purify_res_body (signal e)         = "(Right (e,R_ret),(s1,(...,sm)))"
     purify_res_body (e >>= g)          = "let
-                                             (Left v,(s1,(...,sm))) = [|purify_res_body e|]   * because we are post-lambda lifting, the irrefutable pattern SHOULD be okay
+                                             (Left v,(s1,(...,sm))) = [|purify_res_body e|]   * because of the restriction on signal and the excision of non-tail calls, the irrefutable pattern will be okay
                                           in
                                              g_pure v s1 ... sm"
     purify_res_body (lift e)           = "let
@@ -88,9 +91,9 @@
                        P1 -> e1
                        ...
                        Pk -> ek)       = "case e of
-                                            P1 -> [|purify_state_body i e1|]
+                                            P1 -> [|purify_res_body i e1|]
                                             ...
-                                            Pk -> [|purify_state_body i ek|]"
+                                            Pk -> [|purify_res_body i ek|]"
 
     Create resumption point constructor for a function
 
