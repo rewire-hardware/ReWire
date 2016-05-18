@@ -79,6 +79,7 @@ library
   exposed-modules:  ReWire.Annotation
                     ReWire.Core.Scoping
                     ReWire.Core.Syntax
+                    ReWire.Core.ToMiniHDL
                     ReWire.Error
                     ReWire.FrontEnd
                     ReWire.FrontEnd.Annotate
@@ -95,6 +96,7 @@ library
                     ReWire.FrontEnd.Transform
                     ReWire.FrontEnd.TypeCheck
                     ReWire.Main
+                    ReWire.MiniHDL.Syntax
                     ReWire.PreHDL.CFG
                     ReWire.PreHDL.ElimEmpty
                     ReWire.PreHDL.GotoElim
