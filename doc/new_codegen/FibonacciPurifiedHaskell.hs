@@ -1,15 +1,30 @@
+import Control.Monad.Resumption.Reactive
+import Control.Monad.Identity
+import Data.Word
+
+type ReT = ReacT
+--type I = Identity
+type I = IO
+
+nativeVhdl :: String -> a -> a
+nativeVhdl _ x = x
+
 data Bit = Zero | One deriving Show
-data W8  = W8 Bit Bit Bit Bit Bit Bit Bit Bit
+--data W8  = W8 Bit Bit Bit Bit Bit Bit Bit Bit
+type W8 = Word8
 
 plusW8 :: W8 -> W8 -> W8
 {-# INLINE plusW8 #-}
-plusW8 = nativeVhdl "plusW8" plusW8
+--plusW8 = nativeVhdl "plusW8" plusW8
+plusW8 = nativeVhdl "plusW8" (+)
 
 zeroW8 :: W8
-zeroW8 = W8 Zero Zero Zero Zero Zero Zero Zero Zero
+--zeroW8 = W8 Zero Zero Zero Zero Zero Zero Zero Zero
+zeroW8 = 0
 
 oneW8 :: W8
-oneW8 = W8 Zero Zero Zero Zero Zero Zero Zero One
+--oneW8 = W8 Zero Zero Zero Zero Zero Zero Zero One
+oneW8 = 1
 
 data R = R_k W8 W8
 
@@ -26,9 +41,6 @@ k_pure :: W8 -> W8 -> Bit -> Either () (W8,R)
 k_pure n m b = case b of
                  One  -> loop_pure n m
                  Zero -> loop_pure m (plusW8 n m)
-
-start :: ReT Bit W8 I ()
-start = init
 
 init :: ReT Bit W8 I ()
 init = do let res = start_pure

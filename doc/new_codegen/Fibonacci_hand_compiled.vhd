@@ -85,15 +85,15 @@ architecture impl of begin_pure is
   end component;
   component loop_pure
     port (arg1 : in std_logic_vector(0 to 7);
-		    arg2 : in std_logic_vector(0 to 7);
-	  	    res  : out std_logic_vector(0 to 24));
+          arg2 : in std_logic_vector(0 to 7);
+          res  : out std_logic_vector(0 to 24));
   end component;
 begin
   zeroW8_call : zeroW8 port map (res => loop_pure_call_arg_1);
   oneW8_call  : oneW8  port map (res => loop_pure_call_arg_2);
   loop_pure_call : loop_pure port map (arg1 => loop_pure_call_arg_1,
-													arg2 => loop_pure_call_arg_2,
-													res  => res);
+                                       arg2 => loop_pure_call_arg_2,
+                                       res  => res);
 end impl;
 
 --- loop_pure :: W8 -> W8 -> Either () (W8,R)
@@ -104,8 +104,8 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity loop_pure is
   port (arg1 : in std_logic_vector(0 to 7);
-		  arg2 : in std_logic_vector(0 to 7);
-		  res  : out std_logic_vector(0 to 24));
+                  arg2 : in std_logic_vector(0 to 7);
+                  res  : out std_logic_vector(0 to 24));
 end loop_pure;
 
 architecture impl of loop_pure is
@@ -123,9 +123,9 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity k_pure is
   port (arg1 : in std_logic_vector(0 to 7);
-	     arg2 : in std_logic_vector(0 to 7);
-		  arg3 : in std_logic_vector(0 to 0);
-		  res  : out std_logic_vector(0 to 24));
+             arg2 : in std_logic_vector(0 to 7);
+                  arg3 : in std_logic_vector(0 to 0);
+                  res  : out std_logic_vector(0 to 24));
 end k_pure;
 
 architecture impl of k_pure is
@@ -134,8 +134,8 @@ architecture impl of k_pure is
   signal plusW8_call_res : std_logic_vector(0 to 7);
   component loop_pure
     port (arg1 : in std_logic_vector(0 to 7);
-	 	    arg2 : in std_logic_vector(0 to 7);
-		    res  : out std_logic_vector(0 to 24));
+                    arg2 : in std_logic_vector(0 to 7);
+                    res  : out std_logic_vector(0 to 24));
   end component;
   component plusW8
     port (arg1 : in std_logic_vector(0 to 7);
@@ -145,19 +145,19 @@ architecture impl of k_pure is
 begin
   with arg3 select res <=
     loop_pure_call_1_res when "1",
-	 loop_pure_call_2_res when others;
-	 
+    loop_pure_call_2_res when others;
+         
   loop_pure_call_1 : loop_pure port map (arg1 => arg1,
-													  arg2 => arg2,
-													  res  => loop_pure_call_1_res);
+                                         arg2 => arg2,
+                                         res  => loop_pure_call_1_res);
 
   loop_pure_call_2 : loop_pure port map (arg1 => arg2,
-													  arg2 => plusW8_call_res,
-													  res  => loop_pure_call_2_res);
+                                         arg2 => plusW8_call_res,
+                                         res  => loop_pure_call_2_res);
 
   plusW8_call : plusW8 port map (arg1 => arg1,
-											arg2 => arg2,
-										   res  => plusW8_call_res);											
+                                 arg2 => arg2,
+                                 res  => plusW8_call_res);
 end impl;
 
 ---
@@ -182,9 +182,9 @@ architecture impl of top_level is
   end component;
   component k_pure
     port (arg1 : in std_logic_vector(0 to 7);
-	       arg2 : in std_logic_vector(0 to 7);
-		    arg3 : in std_logic_vector(0 to 0);
-		    res  : out std_logic_vector(0 to 24));
+          arg2 : in std_logic_vector(0 to 7);
+          arg3 : in std_logic_vector(0 to 0);
+          res  : out std_logic_vector(0 to 24));
   end component;
   signal circuit_state : std_logic_vector(0 to 15);
   signal start_pure_call_res : std_logic_vector(0 to 24);
@@ -193,9 +193,9 @@ architecture impl of top_level is
 begin
   start_pure_call : start_pure port map (res => start_pure_call_res);
   k_pure_call : k_pure port map (arg1 => circuit_state(0 to 7),
-										   arg2 => circuit_state(8 to 15),
-											arg3 => inp,
-											res  => k_pure_call_res);
+                                 arg2 => circuit_state(8 to 15),
+                                 arg3 => inp,
+                                 res  => k_pure_call_res);
   with rst select case_res <= start_pure_call_res when '1',
                               k_pure_call_res when others;
 
@@ -204,7 +204,7 @@ begin
   process(clk)
   begin
     if clk'event and clk='1' then
-	   circuit_state <= case_res(9 to 24);
-	 end if;
+           circuit_state <= case_res(9 to 24);
+         end if;
   end process;
 end impl;
