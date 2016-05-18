@@ -39,7 +39,7 @@ instance Pretty Architecture where
                                           $+$ nest 2 (vcat (map pretty comps))
                                           $+$ text "begin"
                                           $+$ nest 2 (vcat (map pretty ss))
-                                          $+$ text "end" <+> text n1 <> text ";"
+                                          $+$ text "end" <+> text n1 <> semi
 
 data Component = Component { componentName  :: Name,
                              componentPorts :: [Port] }
@@ -56,14 +56,14 @@ data Port = Port { portName      :: Name,
             deriving (Eq,Show)
 
 instance Pretty Port where
-  pretty (Port n d t) = text n <> text ":" <+> pretty d <+> pretty t
+  pretty (Port n d t) = text n <> colon <+> pretty d <+> pretty t
 
 data Signal = Signal { signalName :: Name,
                        signalType :: Ty }
               deriving (Eq,Show)
 
 instance Pretty Signal where
-  pretty (Signal n t) = text "signal" <+> text n <> text ":" <+> pretty t <> text ";"
+  pretty (Signal n t) = text "signal" <+> text n <> colon <+> pretty t <> semi
 
 data Direction = In | Out deriving (Eq,Show)
 
@@ -84,13 +84,13 @@ data Stmt = Assign LHS Expr
           deriving (Eq,Show)
 
 instance Pretty Stmt where
-  pretty (Assign lhs e)           = pretty lhs <+> text "<=" <+> pretty e <> ";"
-  pretty (WithAssign e lhs bs mb) = text "with" <+> pretty e <+> text "select" <+> pretty lhs <+> text "<=" <+> vcat (punctuate comma branches) <> text ";"
+  pretty (Assign lhs e)           = pretty lhs <+> text "<=" <+> pretty e <> semi
+  pretty (WithAssign e lhs bs mb) = text "with" <+> pretty e <+> text "select" <+> pretty lhs <+> text "<=" <+> vcat (punctuate comma branches) <> semi
       where branches = map (\(e1,e2) -> pretty e1 <+> text "when" <+> pretty e2) bs
                        ++ case mb of
                             Nothing -> []
                             Just e  -> [pretty e <+> text "when others"]
-  pretty (Instantiate n1 n2 pm)   = text n1 <> text ":" <+> text n2 <+> text "port map" <+> parens (pretty pm) <> text ";"
+  pretty (Instantiate n1 n2 pm)   = text n1 <> colon <+> text n2 <+> text "port map" <+> parens (pretty pm) <> semi
   pretty (ClkProcess n ss)        = text "process" <> parens (text n)
                                 $+$ text "begin"
                                 $+$ nest 2 (text "if" <+> text n <> text "'event and" <+> text n <+> text "= '1' then")
@@ -120,7 +120,7 @@ data Expr = ExprName Name
 instance Pretty Expr where
   pretty (ExprName n)       = text n
   pretty (ExprBit b)        = text "'" <> pretty b <> text "'"
-  pretty (ExprBitString bs) = text "\"" <> hcat (map pretty bs) <> "\""
+  pretty (ExprBitString bs) = text "\"" <> hcat (map pretty bs) <> text "\""
   pretty (ExprConcat e1 e2) = parens (pretty e1 <+> text "&" <+> pretty e2)
   pretty (ExprSlice e l h)  = parens (pretty e) <> parens (int l <+> text "to" <+> int h)
 
