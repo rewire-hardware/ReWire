@@ -5,6 +5,10 @@ module ReWire.PreHDL.ToVHDL where
 
 import ReWire.PreHDL.Syntax
 import Data.List (intercalate)
+import Encoding (zEncodeString)  -- this is from the ghc package
+
+mangle :: String -> String
+mangle = zEncodeString
 
 vTy :: Ty -> String
 vTy (TyBits n) = "std_logic_vector(0 to " ++ show (n-1) ++ ")"
@@ -34,8 +38,8 @@ vRHS :: RHS -> String
 vRHS (BoolRHS b)        = vBool b
 vRHS (LocRHS "input")   = "input_tmp" -- FIXME: kludge
 vRHS (LocRHS l)         = l
-vRHS (FunCallRHS s [])  = s
-vRHS (FunCallRHS s ls)  = s ++ "(" ++ intercalate "," ls ++ ")"
+vRHS (FunCallRHS s [])  = mangle s
+vRHS (FunCallRHS s ls)  = mangle s ++ "(" ++ intercalate "," ls ++ ")"
 vRHS (ConstRHS bs)      = "\"" ++ concatMap show bs ++ "\""
 vRHS (SliceRHS lo hi r) = r ++ "(" ++ show lo ++ " to " ++ show hi ++ ")"
 vRHS (ConcatRHS ls)     = "(" ++ intercalate " & " ls ++ ")"
@@ -75,23 +79,23 @@ vCmd (CaseIf bs) = let (b1,c1) = head bs
 
 
 vFunDefnProto :: FunDefn -> String
-vFunDefnProto fd = "function " ++ funDefnName fd ++ (if null params
-                                                        then ""
-                                                        else "(" ++ intercalate " ; " (map ((++" : std_logic_vector") . regDeclName) params) ++ ")")
-                                                 ++ " return std_logic_vector;"
+vFunDefnProto fd = "function " ++ mangle (funDefnName fd) ++ (if null params
+                                                              then ""
+                                                              else "(" ++ intercalate " ; " (map ((++" : std_logic_vector") . regDeclName) params) ++ ")")
+                               ++ " return std_logic_vector;"
                    where params = funDefnParams fd
 
 vFunDefn :: FunDefn -> String
-vFunDefn fd = "function " ++ funDefnName fd ++ (if null params
-                                                   then ""
-                                                   else "(" ++ intercalate " ; " (map ((++" : std_logic_vector") . regDeclName) params) ++ ")")
-                                            ++ " return std_logic_vector\n"
+vFunDefn fd = "function " ++ mangle (funDefnName fd) ++ (if null params
+                                                         then ""
+                                                         else "(" ++ intercalate " ; " (map ((++" : std_logic_vector") . regDeclName) params) ++ ")")
+                          ++ " return std_logic_vector\n"
            ++ "is\n"
            ++ indent (concatMap ((++"\n") . vRegDecl) (funDefnRegDecls fd))
            ++ "begin\n"
            ++ indent (vCmd (funDefnBody fd) ++ "\n")
            ++ indent ("return " ++ funDefnResultReg fd ++ ";\n")
-           ++ "end " ++ funDefnName fd ++ ";"
+           ++ "end " ++ mangle (funDefnName fd) ++ ";"
       where params = funDefnParams fd
 
 flopName, flopNextName :: String -> String
