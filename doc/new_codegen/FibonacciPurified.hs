@@ -27,6 +27,10 @@ k_pure n m b = case b of
                  One  -> loop_pure n m
                  Zero -> loop_pure m (plusW8 n m)
 
+start :: (Either () (W8,R),Either () (W8,R),Either () (W8,R),Either () (W8,R))
+start = (start_pure,begin_pure,loop_pure zeroW8 oneW8,k_pure zeroW8 oneW8 One)
+
+{-
 start :: ReT Bit W8 I ()
 start = init
 
@@ -45,3 +49,4 @@ loop r i = case r of
                             Left x       -> return x
                             Right (o,r') -> do i' <- signal o
                                                loop r' i'
+-}

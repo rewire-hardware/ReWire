@@ -13,7 +13,7 @@ module ReWire.Core.Syntax
   , mkArrow,arrowRight
   , flattenArrow,flattenTyApp
   , flattenApp,typeOf
-  , GId, LId
+  , GId, LId, TyId
   ) where
 
 import ReWire.Pretty
@@ -202,4 +202,3 @@ typeOf = \ case
   Con _ t _           -> t
   Match _ t _ _ _ _ _ -> t
   NativeVHDL _ t _    -> t
-
