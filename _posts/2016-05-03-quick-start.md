@@ -40,8 +40,6 @@ The example source code in its entirety follows.
 ## `Fibonacci.hs`
 
 ```haskell
-module Fibonacci where
-
 --
 -- The compiler doesn't yet support a "prelude" so we will have to define a
 -- few things ourselves!
