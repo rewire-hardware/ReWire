@@ -252,6 +252,6 @@ transExp rn = \ case
 
 transPat :: SyntaxError m => Renamer -> Pat Annote -> m RWMPat
 transPat rn = \ case
-      PApp l x ps             -> RWMPatCon l (Embed $ string2Name $ rename Value rn x) <$> mapM (transPat rn) ps
+      PApp l x ps             -> RWMPatCon l (Embed tblank) (Embed $ string2Name $ rename Value rn x) <$> mapM (transPat rn) ps
       PVar l x                -> pure $ RWMPatVar l (Embed tblank) (mkUId $ sName x)
       p                       -> failAt (ann p) $ "Unsupported syntax in a pattern: " ++ (show $ void p)

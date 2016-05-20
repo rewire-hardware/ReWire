@@ -115,7 +115,7 @@ liftLambdas p = evalStateT (transProg liftLambdas' p) []
 
             patVars :: RWMPat -> [(Name RWMExp, RWMTy)]
             patVars = \ case
-                  RWMPatCon _ _ ps        -> concatMap patVars ps
+                  RWMPatCon _ _ _ ps      -> concatMap patVars ps
                   RWMPatVar _ (Embed t) x -> [(x, t)]
 
             promote :: Name a -> Name a
@@ -124,8 +124,8 @@ liftLambdas p = evalStateT (transProg liftLambdas' p) []
 
             transPat :: RWMPat -> RWMMatchPat
             transPat = \ case
-                  RWMPatCon an (Embed c) ps -> RWMMatchPatCon an c $ map transPat ps
-                  RWMPatVar an (Embed t) _  -> RWMMatchPatVar an t
+                  RWMPatCon an (Embed t) (Embed c) ps -> RWMMatchPatCon an t c $ map transPat ps
+                  RWMPatVar an (Embed t) _            -> RWMMatchPatVar an t
 
 -- | Purge.
 
@@ -219,7 +219,7 @@ mergeMatches (m:ms) = case mergeMatches ms of
 
 matchPat :: Fresh m => RWMExp -> RWMPat -> m MatchResult
 matchPat e = \ case
-      RWMPatCon _ (Embed i) pats -> case flattenApp e of
+      RWMPatCon _ _ (Embed i) pats -> case flattenApp e of
             RWMCon _ _ c : es
                   | c == i && length es == length pats -> do
                         ms <- zipWithM matchPat es pats
