@@ -235,7 +235,7 @@ instance Pretty RWMExp where
 
 ---
 
-data RWMPat = RWMPatCon  Annote (Embed (Name DataConId)) [RWMPat]
+data RWMPat = RWMPatCon  Annote (Embed RWMTy) (Embed (Name DataConId)) [RWMPat]
             | RWMPatVar  Annote (Embed RWMTy) (Name RWMExp)
             deriving (Show, Generic, Typeable, Data)
 
@@ -245,16 +245,16 @@ instance NFData RWMPat
 
 instance Annotated RWMPat where
       ann = \ case
-            RWMPatCon  a _ _ -> a
-            RWMPatVar  a _ _ -> a
+            RWMPatCon  a _ _ _ -> a
+            RWMPatVar  a _ _   -> a
 
 instance Pretty RWMPat where
       pretty = \ case
-            RWMPatCon _ (Embed n) ps -> parens $ text (name2String n) <+> hsep (map pretty ps)
-            RWMPatVar _ _ n          -> text $ show n
+            RWMPatCon _ _ (Embed n) ps -> parens $ text (name2String n) <+> hsep (map pretty ps)
+            RWMPatVar _ _ n            -> text $ show n
 
 
-data RWMMatchPat = RWMMatchPatCon Annote (Name DataConId) [RWMMatchPat]
+data RWMMatchPat = RWMMatchPatCon Annote RWMTy (Name DataConId) [RWMMatchPat]
                  | RWMMatchPatVar Annote RWMTy
                  deriving (Show, Generic, Typeable, Data)
 
@@ -267,13 +267,13 @@ instance NFData RWMMatchPat
 
 instance Annotated RWMMatchPat where
       ann = \ case
-            RWMMatchPatCon a _ _  -> a
-            RWMMatchPatVar a _    -> a
+            RWMMatchPatCon a _ _ _  -> a
+            RWMMatchPatVar a _      -> a
 
 instance Pretty RWMMatchPat where
       pretty = \ case
-            RWMMatchPatCon _ n ps -> parens $ text (name2String n) <+> hsep (map pretty ps)
-            RWMMatchPatVar _ t    -> parens $ text "*" <+> text "::" <+> pretty t
+            RWMMatchPatCon _ _ n ps -> parens $ text (name2String n) <+> hsep (map pretty ps)
+            RWMMatchPatVar _ t      -> parens $ text "*" <+> text "::" <+> pretty t
 
 ---
 

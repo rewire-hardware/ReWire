@@ -68,8 +68,8 @@ toLId e               = error $ "toLId: expected LVar, got: " ++ prettyPrint e
 
 transPat :: Fresh m => RWMMatchPat -> m Pat
 transPat = \ case
-      RWMMatchPatCon an d ps -> PatCon an (DataConId $ name2String d) <$> mapM transPat ps
-      RWMMatchPatVar an t    -> pure $ PatVar an $ transType t
+      RWMMatchPatCon an t d ps -> PatCon an (transType t) (DataConId $ name2String d) <$> mapM transPat ps
+      RWMMatchPatVar an t      -> pure $ PatVar an $ transType t
 
 transType :: RWMTy -> Ty
 transType = \ case

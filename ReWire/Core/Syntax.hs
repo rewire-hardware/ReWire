@@ -111,17 +111,17 @@ instance Pretty Exp where
 
 ---
 
-data Pat = PatCon Annote DataConId [Pat]
+data Pat = PatCon Annote Ty DataConId [Pat]
          | PatVar Annote Ty
          deriving (Eq,Show,Typeable,Data)
 
 instance Annotated Pat where
-  ann (PatCon a _ _) = a
+  ann (PatCon a _ _ _) = a
   ann (PatVar a _)   = a
 
 instance Pretty Pat where
-  pretty (PatCon _ n ps) = parens (text (deDataConId n) <+> hsep (map pretty ps))
-  pretty (PatVar _ _)    = text "*"
+  pretty (PatCon _ t n ps) = parens (text (deDataConId n) <+> hsep (map pretty ps) <+> text "::" <+> pretty t)
+  pretty (PatVar _ _)      = text "*"
 
 ---
 
