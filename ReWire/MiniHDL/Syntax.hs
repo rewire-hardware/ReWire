@@ -71,11 +71,12 @@ instance Pretty Direction where
   pretty In  = text "in"
   pretty Out = text "out"
 
-data Ty = TyStdLogic | TyStdLogicVector Int deriving (Eq,Show)
+data Ty = TyStdLogic | TyStdLogicVector Int | TyBool deriving (Eq,Show)
 
 instance Pretty Ty where
   pretty TyStdLogic           = text "std_logic"
   pretty (TyStdLogicVector n) = text "std_logic_vector" <+> parens (text "0 to" <+> int (n-1))
+  pretty TyBool               = text "boolean"
 
 data Stmt = Assign LHS Expr
           | WithAssign Expr LHS [(Expr,Expr)] (Maybe Expr)
@@ -115,14 +116,19 @@ data Expr = ExprName Name
           | ExprBitString [Bit]
           | ExprConcat Expr Expr
           | ExprSlice Expr Int Int
+          | ExprIsEq Expr Expr
+          | ExprBoolConst Bool
           deriving (Eq,Show)
 
 instance Pretty Expr where
-  pretty (ExprName n)       = text n
-  pretty (ExprBit b)        = text "'" <> pretty b <> text "'"
-  pretty (ExprBitString bs) = text "\"" <> hcat (map pretty bs) <> text "\""
-  pretty (ExprConcat e1 e2) = parens (pretty e1 <+> text "&" <+> pretty e2)
-  pretty (ExprSlice e l h)  = parens (pretty e) <> parens (int l <+> text "to" <+> int h)
+  pretty (ExprName n)          = text n
+  pretty (ExprBit b)           = text "'" <> pretty b <> text "'"
+  pretty (ExprBitString bs)    = text "\"" <> hcat (map pretty bs) <> text "\""
+  pretty (ExprConcat e1 e2)    = parens (pretty e1 <+> text "&" <+> pretty e2)
+  pretty (ExprSlice e l h)     = pretty e <> parens (int l <+> text "to" <+> int h)
+  pretty (ExprIsEq e1 e2)      = parens (pretty e1 <+> text "=" <+> pretty e2)
+  pretty (ExprBoolConst True)  = text "TRUE"
+  pretty (ExprBoolConst False) = text "FALSE"
 
 data Bit = Zero | One deriving (Eq,Show)
 

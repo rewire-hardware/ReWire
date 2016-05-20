@@ -96,7 +96,7 @@ dciPadVector dci t = do ctor         <- askDci dci
                         ctors        <- tcictors tci
                         let tot      =  ceilLog2 (length ctors) + fieldwidth
                         tysize       <- sizeof t
-                        let padwidth =  max 0 (tysize-tot)
+                        let padwidth =  tysize-tot
                         return (nvec padwidth 0)
 
 ceilLog2 :: Int -> Int
@@ -111,11 +111,14 @@ ctorwidth t (DataCon _ _ _ ct) = do let ts     =  flattenArrow ct
                                     sizes      <- mapM sizeof targs'
                                     return (sum sizes)
 
+--ctorFieldWidthsAt :: DataConId -> C.Ty -> CM [Int]
+--ctorFieldWidthsAt dci tspec = do 
+
 sizeof :: C.Ty -> CM Int
 sizeof t = case th of
              TyApp _ _ _  -> failAt (ann t) "sizeof: Got TyApp after flattening (can't happen)"
              TyCon _ tci  -> do ctors        <- tcictors tci
-                                let tagwidth =  max 0 (ceilLog2 (length ctors))
+                                let tagwidth =  ceilLog2 (length ctors)
                                 ctorwidths   <- mapM (ctorwidth t) ctors
                                 return (tagwidth + maximum ctorwidths)
              TyComp _ _ _ -> failAt (ann t) "sizeof: Encountered computation type"
@@ -153,6 +156,13 @@ addComponent i t = do (sigs,comps,ctr) <- get
                         Nothing -> do ps <- getTyPorts t
                                       put (sigs,Component (mangle i) ps:comps,ctr)
 
+compilePat :: Name -> C.Ty -> Pat -> CM (Expr,[Expr])  -- first Expr is for whether match (std_logic); remaining Exprs are for fields
+compilePat nscr tscr (PatCon _ dci ps) = do dcitagvec  <- dciTagVector dci
+                                            let tagw   =  length dcitagvec
+                                            -- FIXME(adam): subpats
+                                            return (ExprIsEq (ExprSlice (ExprName nscr) 0 (tagw-1)) (ExprBitString dcitagvec),[])
+compilePat nscr _ (PatVar {})          = return (ExprBoolConst True,[ExprName nscr])
+
 compileExp :: C.Exp -> CM ([Stmt],Name)
 compileExp e_ = case e of
                   App {}        -> failAt (ann e_) "compileExp: Got App after flattening (can't happen)"
@@ -170,7 +180,7 @@ compileExp e_ = case e of
                                       return (stmts++[Instantiate n (mangle i) pm],n++"_res")
                   LVar _ _ i       -> case eargs of
                                         [] -> return ([],"arg"++show i)
-                                        _  -> failAt (ann e_) $ "compileExp: Encountered local variable in function-application position in " ++ prettyPrint e_
+                                        _  -> failAt (ann e_) $ "compileExp: Encountered local variable in function position in " ++ prettyPrint e_
                   Con _ t i        -> do n           <- freshName (mangle (deDataConId i))
                                          let tres    =  last (flattenArrow t)
                                          size        <- sizeof tres
@@ -184,7 +194,23 @@ compileExp e_ = case e of
                                                                                           (foldl ExprConcat (ExprBitString tagvec) (map ExprName ns))
                                                                                           (ExprBitString padvec)
                                                                                       )],n++"_res")
-                  Match {}         -> return ([],"Mdonk") -- FIXME(adam): Implementing pattern matching is the last thing here, bit of a doozy
+                  Match _ _ escr p gid lids malt -> case eargs of
+                                                      [] -> case malt of
+                                                              Just ealt -> do (stmts_escr,n_escr) <- compileExp escr
+                                                                              (ematch,efields)    <- compilePat n_escr (typeOf escr) p
+                                                                              (stmts_ealt,n_ealt) <- compileExp ealt
+                                                                              n                   <- freshName "match_res"
+                                                                              
+                                                                              return (stmts_escr++stmts_ealt++
+                                                                                      [WithAssign ematch (LHSName n)
+                                                                                                  [(ExprName "Mdonk1",ExprBoolConst True)]
+                                                                                                   (Just (ExprName n_ealt))],
+                                                                                      n)
+                                                              Nothing   -> do (stmts_escr,n_escr) <- compileExp escr
+                                                                              (_,efields)         <- compilePat n_escr (typeOf escr) p
+                                                                              return (stmts_escr,
+                                                                                      "Mdonkdefault")
+                                                      _  -> failAt (ann e_) $ "compileExp: Encountered match in function position in " ++ prettyPrint e_
                   NativeVHDL _ t i -> do n <- freshName i
                                          let tres    =  last (flattenArrow t)
                                          size        <- sizeof tres
