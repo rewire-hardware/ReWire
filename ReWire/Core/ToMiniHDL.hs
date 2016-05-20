@@ -6,13 +6,20 @@ import ReWire.Pretty
 import ReWire.Annotation
 import ReWire.Error
 import Control.Monad.Reader
+import Control.Monad.State
 import Control.Monad.Identity
 import Encoding (zEncodeString)   -- this is from the ghc package
+import Data.List (find)
+import Data.Bits (testBit)
 
 mangle :: String -> String
 mangle = zEncodeString
 
-type CM = SyntaxErrorT (ReaderT [DataCon] Identity)
+type CM = SyntaxErrorT (
+            StateT ([Signal],[Component],Int) (
+              ReaderT [DataCon] Identity
+            )
+          )
 
 askCtors :: CM [DataCon]
 askCtors = ask
@@ -51,23 +58,49 @@ apply s t@(TyVar _ i)     = case lookup i s of
                               Just t' -> t'
                               Nothing -> t
 
-datanumctors :: TyConId -> CM Int
-datanumctors tci = do ctors <- myctors tci
-                      return (length ctors)
-
-myctors :: TyConId -> CM [DataCon]
-myctors tci = do ctors <- askCtors
-                 return (filter isMine ctors)
+tcictors :: TyConId -> CM [DataCon]
+tcictors tci = do ctors <- askCtors
+                  return (filter isMine ctors)
    where isMine (DataCon _ _ _ t) = case flattenTyApp (last (flattenArrow t)) of
                                       (TyCon _ tci':_) -> tci == tci'
                                       _                -> False
 
+askDci :: DataConId -> CM DataCon
+askDci dci = do ctors <- askCtors
+                case find (\ (DataCon _ dci' _ _) -> dci == dci') ctors of
+                  Just ctor -> return ctor
+                  Nothing   -> failNowhere $ "askDci: no info for data constructor " ++ show dci
+
+dcitci :: DataConId -> CM TyConId
+dcitci dci = do DataCon _ _ _ t <- askDci dci
+                case flattenTyApp (last (flattenArrow t)) of
+                  (TyCon _ tci:_) -> return tci
+                  _               -> failNowhere $ "dcitci: malformed type for data constructor "
+                                                ++ show dci ++ " (does not end in application of TyCon)"
+
+nvec :: Int -> Int -> [Bit]
+nvec width n = nvec' 0 []
+  where nvec' pos bits | pos >= width = bits
+                       | otherwise    = nvec' (pos+1) ((if testBit n pos then One else Zero):bits)
+
+dciTagVector :: DataConId -> CM [Bit]
+dciTagVector dci = do tci               <- dcitci dci
+                      ctors             <- tcictors tci
+                      DataCon _ _ pos _ <- askDci dci
+                      return (nvec (ceilLog2 (length ctors)) pos)
+
+dciPadVector :: DataConId -> C.Ty -> CM [Bit]
+dciPadVector dci t = do ctor         <- askDci dci
+                        fieldwidth   <- ctorwidth t ctor
+                        tci          <- dcitci dci
+                        ctors        <- tcictors tci
+                        let tot      =  ceilLog2 (length ctors) + fieldwidth
+                        tysize       <- sizeof t
+                        let padwidth =  max 0 (tysize-tot)
+                        return (nvec padwidth 0)
+
 ceilLog2 :: Int -> Int
 ceilLog2 n = ceiling (logBase 2 (fromIntegral n :: Double))
-
-tagwidthdata :: TyConId -> CM Int
-tagwidthdata tci = do nctors <- datanumctors tci
-                      return (max 0 (ceilLog2 nctors))
 
 ctorwidth :: C.Ty -> DataCon -> CM Int
 ctorwidth t (DataCon _ _ _ ct) = do let ts     =  flattenArrow ct
@@ -81,7 +114,7 @@ ctorwidth t (DataCon _ _ _ ct) = do let ts     =  flattenArrow ct
 sizeof :: C.Ty -> CM Int
 sizeof t = case th of
              TyApp _ _ _  -> failAt (ann t) "sizeof: Got TyApp after flattening (can't happen)"
-             TyCon _ tci  -> do ctors        <- myctors tci
+             TyCon _ tci  -> do ctors        <- tcictors tci
                                 let tagwidth =  max 0 (ceilLog2 (length ctors))
                                 ctorwidths   <- mapM (ctorwidth t) ctors
                                 return (tagwidth + maximum ctorwidths)
@@ -89,34 +122,88 @@ sizeof t = case th of
              TyVar _ _    -> failAt (ann t) "sizeof: Encountered type variable"
     where (th:_) = flattenTyApp t
 
-getDefnPorts :: Defn -> CM [Port]
-getDefnPorts (Defn _ _ t _) = do let ts       =  flattenArrow t
-                                     targs    =  init ts
-                                     tres     =  last ts
-                                     argnames =  zipWith (\ _ x -> "arg" ++ show x) targs ([0..]::[Int])
-                                 argsizes     <- mapM sizeof targs
-                                 ressize      <- sizeof tres
-                                 let argports =  zipWith (\ n x -> Port n In (TyStdLogicVector x)) argnames argsizes
-                                     resport  =  Port "res" Out (TyStdLogicVector ressize)
-                                 return (argports ++ [resport])
+getTyPorts :: C.Ty -> CM [Port]
+getTyPorts t = do let ts       =  flattenArrow t
+                      targs    =  init ts
+                      tres     =  last ts
+                      argnames =  zipWith (\ _ x -> "arg" ++ show x) targs ([0..]::[Int])
+                  argsizes     <- mapM sizeof targs
+                  ressize      <- sizeof tres
+                  let argports =  zipWith (\ n x -> Port n In (TyStdLogicVector x)) argnames argsizes
+                      resport  =  Port "res" Out (TyStdLogicVector ressize)
+                  return (argports ++ [resport])
 
 mkDefnEntity :: Defn -> CM Entity
-mkDefnEntity d@(Defn _ n _ _) = do ps <- getDefnPorts d
-                                   return (Entity (mangle n) ps)
+mkDefnEntity (Defn _ n t _) = do ps <- getTyPorts t
+                                 return (Entity (mangle n) ps)
 
-compileExp :: C.Exp -> CM ()
+freshName :: String -> CM Name
+freshName s = do (sigs,comps,ctr) <- get
+                 put (sigs,comps,ctr+1)
+                 return (s ++ "_" ++ show ctr)
+
+addSignal :: String -> M.Ty -> CM ()
+addSignal n t = do (sigs,comps,ctr) <- get
+                   put (sigs++[Signal n t],comps,ctr)
+
+addComponent :: GId -> C.Ty -> CM ()
+addComponent i t = do (sigs,comps,ctr) <- get
+                      case find ((==mangle i) . componentName) comps of
+                        Just _ -> return ()
+                        Nothing -> do ps <- getTyPorts t
+                                      put (sigs,Component (mangle i) ps:comps,ctr)
+
+compileExp :: C.Exp -> CM ([Stmt],Name)
 compileExp e_ = case e of
                   App {}        -> failAt (ann e_) "compileExp: Got App after flattening (can't happen)"
                   Prim {}       -> failAt (ann e_) "compileExp: Encountered Prim"
-                  GVar {}       -> undefined {- instantiate, add components to so-far-list, stripe -}
-                  LVar {}       -> undefined {- is just argN; must be empty eargs -}
-                  Con {}        -> undefined {- get tag vector, pad vector, stripe -}
-                  Match {}      -> undefined {- ... -}
-                  NativeVHDL {} -> undefined {- same as gvar, just don't mangle! -}
-  where (e:_eargs) = flattenApp e_
+                  GVar _ t i    -> do n           <- freshName (mangle i)
+                                      let tres    =  last (flattenArrow t)
+                                      size        <- sizeof tres
+                                      addSignal (n++"_res") (TyStdLogicVector size)
+                                      sssns       <- mapM compileExp eargs
+                                      let stmts   =  concatMap fst sssns
+                                          ns      =  map snd sssns
+                                      addComponent i t
+                                      let argns   =  map (\ n -> "arg" ++ show n) ([0..]::[Int])
+                                          pm      =  PortMap (zip argns ns ++ [("res",n++"_res")])
+                                      return (stmts++[Instantiate n (mangle i) pm],n++"_res")
+                  LVar _ _ i       -> case eargs of
+                                        [] -> return ([],"arg"++show i)
+                                        _  -> failAt (ann e_) $ "compileExp: Encountered local variable in function-application position in " ++ prettyPrint e_
+                  Con _ t i        -> do n           <- freshName (mangle (deDataConId i))
+                                         let tres    =  last (flattenArrow t)
+                                         size        <- sizeof tres
+                                         addSignal (n++"_res") (TyStdLogicVector size)
+                                         sssns       <- mapM compileExp eargs
+                                         let stmts   =  concatMap fst sssns
+                                             ns      =  map snd sssns
+                                         tagvec      <- dciTagVector i
+                                         padvec      <- dciPadVector i tres 
+                                         return (stmts++[Assign (LHSName (n++"_res")) (ExprConcat
+                                                                                          (foldl ExprConcat (ExprBitString tagvec) (map ExprName ns))
+                                                                                          (ExprBitString padvec)
+                                                                                      )],n++"_res")
+                  Match {}         -> return ([],"Mdonk") -- FIXME(adam): Implementing pattern matching is the last thing here, bit of a doozy
+                  NativeVHDL _ t i -> do n <- freshName i
+                                         let tres    =  last (flattenArrow t)
+                                         size        <- sizeof tres
+                                         addSignal (n++"_res") (TyStdLogicVector size)
+                                         sssns       <- mapM compileExp eargs
+                                         let stmts   =  concatMap fst sssns
+                                             ns      =  map snd sssns
+                                         addComponent i t
+                                         let argns   =  map (\ n -> "arg" ++ show n) ([0..]::[Int])
+                                             pm      =  PortMap (zip argns ns ++ [("res",n++"_res")])
+                                         return (stmts++[Instantiate n i pm],n++"_res")
+                                         
+  where (e:eargs) = flattenApp e_
 
 mkDefnArch :: Defn -> CM Architecture
-mkDefnArch (Defn _ n _ _) = return (Architecture (mangle (n ++ "_impl")) (mangle n) [] [] []) -- FIXME(adam)
+mkDefnArch (Defn _ n _ e) = do put ([],[],0) -- empty out the signal and component store, reset name counter
+                               (stmts,nres)   <- compileExp e
+                               (sigs,comps,_) <- get
+                               return (Architecture (mangle n ++ "_impl") (mangle n) sigs comps (stmts++[Assign (LHSName "res") (ExprName nres)]))
 
 compileDefn :: Defn -> CM Unit
 compileDefn d = do ent  <- mkDefnEntity d
@@ -124,6 +211,6 @@ compileDefn d = do ent  <- mkDefnEntity d
                    return (Unit ent arch)
 
 compileProgram :: C.Program -> Either AstError M.Program
-compileProgram p = runIdentity $ flip runReaderT (ctors p) $ runSyntaxError $
+compileProgram p = fst $ runIdentity $ flip runReaderT (ctors p) $ flip runStateT ([],[],0) $ runSyntaxError $
                      do units <- mapM compileDefn (defns p)
                         return (M.Program units)
