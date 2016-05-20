@@ -110,12 +110,12 @@ inst (Poly pt) = do
 
 patAssumps :: RWMPat -> [Assump]
 patAssumps = \ case
-      RWMPatCon _ _ ps        -> concatMap patAssumps ps
+      RWMPatCon _ _ _ ps      -> concatMap patAssumps ps
       RWMPatVar _ (Embed t) n -> [(n, [] `poly` t)]
 
 patHoles :: Fresh m => RWMMatchPat -> m [Assump]
 patHoles = \ case
-      RWMMatchPatCon _ _ ps -> do
+      RWMMatchPatCon _ _ _ ps -> do
             holes <- mapM patHoles ps
             return $ concat holes
       RWMMatchPatVar _ t    -> do
@@ -125,7 +125,7 @@ patHoles = \ case
 tcPat :: (Fresh m, SyntaxError m) => RWMTy -> RWMPat -> TCM m RWMPat
 tcPat t = \ case
       RWMPatVar an _ x  -> return $ RWMPatVar an (Embed t) x
-      RWMPatCon an (Embed i) ps -> do
+      RWMPatCon an _ (Embed i) ps -> do
             cas     <- cas <$> ask
             case Map.lookup i cas of
                   Nothing  -> failAt an $ "Unknown constructor: " ++ prettyPrint i
@@ -137,12 +137,12 @@ tcPat t = \ case
                         else do
                               ps' <- zipWithM tcPat targs ps
                               unify an t tres
-                              return $ RWMPatCon an (Embed i) ps'
+                              return $ RWMPatCon an (Embed t) (Embed i) ps'
 
 tcMatchPat :: (Fresh m, SyntaxError m) => RWMTy -> RWMMatchPat -> TCM m RWMMatchPat
 tcMatchPat t = \ case
       RWMMatchPatVar an _ -> return $ RWMMatchPatVar an t
-      RWMMatchPatCon an i ps -> do
+      RWMMatchPatCon an _ i ps -> do
             cas     <- cas <$> ask
             case Map.lookup i cas of
                   Nothing  -> failAt an $ "Unknown constructor: " ++ prettyPrint i
@@ -154,7 +154,7 @@ tcMatchPat t = \ case
                         else do
                               ps' <- zipWithM tcMatchPat targs ps
                               unify an t tres
-                              return $ RWMMatchPatCon an i ps'
+                              return $ RWMMatchPatCon an t i ps'
 
 tcExp :: (Fresh m, SyntaxError m) => RWMExp -> TCM m (RWMExp, RWMTy)
 tcExp = \ case
