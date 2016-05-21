@@ -118,6 +118,7 @@ data Expr = ExprName Name
           | ExprSlice Expr Int Int
           | ExprIsEq Expr Expr
           | ExprBoolConst Bool
+          | ExprAnd Expr Expr
           deriving (Eq,Show)
 
 instance Pretty Expr where
@@ -129,6 +130,7 @@ instance Pretty Expr where
   pretty (ExprIsEq e1 e2)      = parens (pretty e1 <+> text "=" <+> pretty e2)
   pretty (ExprBoolConst True)  = text "TRUE"
   pretty (ExprBoolConst False) = text "FALSE"
+  pretty (ExprAnd e1 e2)       = parens (pretty e1 <+> text "AND" <+> pretty e2)
 
 data Bit = Zero | One deriving (Eq,Show)
 

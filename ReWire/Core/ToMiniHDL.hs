@@ -156,12 +156,26 @@ addComponent i t = do (sigs,comps,ctr) <- get
                         Nothing -> do ps <- getTyPorts t
                                       put (sigs,Component (mangle i) ps:comps,ctr)
 
-compilePat :: Name -> C.Ty -> Pat -> CM (Expr,[Expr])  -- first Expr is for whether match (std_logic); remaining Exprs are for fields
-compilePat nscr tscr (PatCon _ dci ps) = do dcitagvec  <- dciTagVector dci
-                                            let tagw   =  length dcitagvec
-                                            -- FIXME(adam): subpats
-                                            return (ExprIsEq (ExprSlice (ExprName nscr) 0 (tagw-1)) (ExprBitString dcitagvec),[])
-compilePat nscr _ (PatVar {})          = return (ExprBoolConst True,[ExprName nscr])
+typeOfPat :: Pat -> C.Ty
+typeOfPat (PatCon _ t _ _) = t
+typeOfPat (PatVar _ t)     = t
+
+-- FIXME(adam): The "slices of slices" thing may not work when we try to
+--              compile. Better to pass in a name, not expr, and a beginning
+--              offset...
+compilePat :: Expr -> Pat -> CM (Expr,[Expr])  -- first Expr is for whether match (std_logic); remaining Exprs are for extracted fields
+compilePat escr (PatCon _ _ dci ps) = do dcitagvec          <- dciTagVector dci
+                                         let tagw           =  length dcitagvec
+                                         fieldwidths        <- mapM (sizeof . typeOfPat) ps
+                                         let fieldstarts    =  init $ scanl (+) 0 fieldwidths   -- bgn
+                                             fieldranges    =  zipWith (\ s w -> (s,s+w-1)) fieldstarts fieldwidths
+                                             efields        =  map (uncurry (ExprSlice escr)) fieldranges
+                                         rs                 <- zipWithM compilePat efields ps
+                                         let ematchs        =  map fst rs
+                                             eslices        =  concatMap snd rs
+                                             ematch         =  foldl ExprAnd (ExprIsEq (ExprSlice escr 0 (tagw-1)) (ExprBitString dcitagvec)) ematchs   -- bgn
+                                         return (ematch,eslices)
+compilePat escr (PatVar {})         = return (ExprBoolConst True,[escr])
 
 compileExp :: C.Exp -> CM ([Stmt],Name)
 compileExp e_ = case e of
@@ -194,20 +208,21 @@ compileExp e_ = case e of
                                                                                           (foldl ExprConcat (ExprBitString tagvec) (map ExprName ns))
                                                                                           (ExprBitString padvec)
                                                                                       )],n++"_res")
-                  Match _ _ escr p gid lids malt -> case eargs of
+                  Match _ t escr p gid lids malt -> case eargs of
                                                       [] -> case malt of
                                                               Just ealt -> do (stmts_escr,n_escr) <- compileExp escr
-                                                                              (ematch,efields)    <- compilePat n_escr (typeOf escr) p
+                                                                              (ematch,efields)    <- compilePat (ExprName n_escr) p
                                                                               (stmts_ealt,n_ealt) <- compileExp ealt
                                                                               n                   <- freshName "match_res"
-                                                                              
+                                                                              sizeres             <- sizeof t
+                                                                              addSignal n (TyStdLogicVector sizeres)
                                                                               return (stmts_escr++stmts_ealt++
                                                                                       [WithAssign ematch (LHSName n)
                                                                                                   [(ExprName "Mdonk1",ExprBoolConst True)]
                                                                                                    (Just (ExprName n_ealt))],
                                                                                       n)
                                                               Nothing   -> do (stmts_escr,n_escr) <- compileExp escr
-                                                                              (_,efields)         <- compilePat n_escr (typeOf escr) p
+                                                                              (_,efields)         <- compilePat (ExprName n_escr) p
                                                                               return (stmts_escr,
                                                                                       "Mdonkdefault")
                                                       _  -> failAt (ann e_) $ "compileExp: Encountered match in function position in " ++ prettyPrint e_
