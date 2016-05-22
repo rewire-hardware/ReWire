@@ -4,10 +4,11 @@ bitAnd :: Bit -> Bit -> Bit
 bitAnd Zero _ = Zero
 bitAnd _ x    = x
 
-gloop :: Either Bit (Either Bit (Bit,Bit)) -> Bit
-gloop (Left x)              = x
-gloop (Right (Left x))      = x
-gloop (Right (Right (x,y))) = bitAnd x (bitAnd One y)
+gloop :: Bit -> Either Bit (Either Bit (Bit,Bit)) -> Bit
+gloop y z = case z of
+	      Left x              -> x
+	      Right (Left x)      -> y
+              Right (Right (x,y)) -> bitAnd x (bitAnd One y)
 
 start :: Either Bit (Either Bit (Bit,Bit)) -> Bit
-start x = gloop x
+start x = gloop One x

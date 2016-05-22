@@ -99,11 +99,11 @@ instance Pretty Stmt where
                                 $+$ nest 2 (text "end if;")
                                 $+$ text "end process;"
 
-data PortMap = PortMap [(Name,Name)]
+data PortMap = PortMap [(Name,Expr)]
              deriving (Eq,Show)
 
 instance Pretty PortMap where
-  pretty (PortMap ps) = vcat (punctuate comma (map (\(n1,n2) -> text n1 <+> text "=>" <+> text n2) ps))
+  pretty (PortMap ps) = vcat (punctuate comma (map (\(n,e) -> text n <+> text "=>" <+> pretty e) ps))
 
 data LHS = LHSName Name
          deriving (Eq,Show)
