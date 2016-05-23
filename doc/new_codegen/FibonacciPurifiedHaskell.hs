@@ -42,18 +42,26 @@ k_pure n m b = case b of
                  One  -> loop_pure n m
                  Zero -> loop_pure m (plusW8 n m)
 
-init :: ReT Bit W8 I ()
-init = do let res = start_pure
-          case res of
-            Left x      -> return x
-            Right (o,r) -> do i <- signal o
-                              loop r i
+dispatch :: R -> Bit -> Either () (W8,R)
+dispatch (R_k n m) i = k_pure n m i
 
-loop :: R -> Bit -> ReT Bit W8 I ()
-loop r i = case r of
-             R_k n m -> do
-                          let res = k_pure n m i
-                          case res of
-                            Left x       -> return x
-                            Right (o,r') -> do i' <- signal o
-                                               loop r' i'
+--
+-- Here we arrive at the one and only bit of magic: "start" must be of the form
+-- "unfold f x", with f and x names.
+--
+start :: ReT Bit W8 I ()
+start = unfold dispatch start_pure
+
+--
+-- This is here as a Haskell figleaf but can be treated as a polymorphic
+-- primitive in ReWire.
+--
+--    unfold
+--      :: (b -> i -> Either a (o,b))
+--         -> Either a (o,b)
+--         -> ReT i o I a
+--
+unfold :: (R -> Bit -> Either () (W8,R)) -> Either () (W8,R) -> ReT Bit W8 I ()
+unfold f (Left x)       = return x
+unfold f (Right (o,r')) = do i' <- signal o
+                             unfold f (f r' i')

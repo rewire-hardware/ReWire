@@ -27,26 +27,8 @@ k_pure n m b = case b of
                  One  -> loop_pure n m
                  Zero -> loop_pure m (plusW8 n m)
 
-start :: (Either () (W8,R),Either () (W8,R),Either () (W8,R),Either () (W8,R))
-start = (start_pure,begin_pure,loop_pure zeroW8 oneW8,k_pure zeroW8 oneW8 One)
+dispatch :: R -> Bit -> Either () (W8,R)
+dispatch (R_k n m) i = k_pure n m i
 
-{-
 start :: ReT Bit W8 I ()
-start = init
-
-init :: ReT Bit W8 I ()
-init = do let res = start_pure
-          case res of
-            Left x      -> return x
-            Right (o,r) -> do i <- signal o
-                              loop r i
-
-loop :: R -> Bit -> ReT Bit W8 I ()
-loop r i = case r of
-             R_k n m -> do
-                          let res = k_pure n m i
-                          case res of
-                            Left x       -> return x
-                            Right (o,r') -> do i' <- signal o
-                                               loop r' i'
--}
+start = unfold dispatch start_pure
