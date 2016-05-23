@@ -13,7 +13,10 @@ data Unit = Unit Entity Architecture
           deriving (Eq,Show)
 
 instance Pretty Unit where
-  pretty (Unit ent arch) = pretty ent $+$ pretty arch
+  pretty (Unit ent arch) = text "library ieee;"
+                       $+$ text "use ieee.std_logic_1164.all;"
+                       $+$ pretty ent
+                       $+$ pretty arch
 
 type Name = String
 

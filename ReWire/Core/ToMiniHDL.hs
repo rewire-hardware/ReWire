@@ -17,12 +17,15 @@ mangle = zEncodeString
 
 type CM = SyntaxErrorT (
             StateT ([Signal],[Component],Int) (
-              ReaderT [DataCon] Identity
+              ReaderT ([DataCon],[Defn]) Identity
             )
           )
 
 askCtors :: CM [DataCon]
-askCtors = ask
+askCtors = liftM fst ask
+
+askDefns :: CM [Defn]
+askDefns = liftM snd ask
 
 type TySub = [(TyId,C.Ty)]
 
@@ -111,16 +114,15 @@ ctorwidth t (DataCon _ _ _ ct) = do let ts     =  flattenArrow ct
                                     sizes      <- mapM sizeof targs'
                                     return (sum sizes)
 
---ctorFieldWidthsAt :: DataConId -> C.Ty -> CM [Int]
---ctorFieldWidthsAt dci tspec = do 
-
 sizeof :: C.Ty -> CM Int
 sizeof t = case th of
              TyApp _ _ _  -> failAt (ann t) "sizeof: Got TyApp after flattening (can't happen)"
-             TyCon _ tci  -> do ctors        <- tcictors tci
-                                let tagwidth =  ceilLog2 (length ctors)
-                                ctorwidths   <- mapM (ctorwidth t) ctors
-                                return (tagwidth + maximum ctorwidths)
+             TyCon _ tci  -> do ctors <- tcictors tci
+                                case ctors of
+                                  [] -> return 0
+                                  _  -> do let tagwidth =  ceilLog2 (length ctors)
+                                           ctorwidths   <- mapM (ctorwidth t) ctors
+                                           return (tagwidth + maximum ctorwidths)
              TyComp _ _ _ -> failAt (ann t) "sizeof: Encountered computation type"
              TyVar _ _    -> failAt (ann t) "sizeof: Encountered type variable"
     where (th:_) = flattenTyApp t
@@ -177,6 +179,12 @@ compilePat nscr offset (PatCon _ _ dci ps) = do dcitagvec        <- dciTagVector
 compilePat nscr offset (PatVar _ t)        = do size <- sizeof t
                                                 return (ExprBoolConst True,[ExprSlice (ExprName nscr) offset (offset+size-1)])
 
+askGIdTy :: GId -> CM C.Ty
+askGIdTy i = do defns <- askDefns
+                case find (\ (Defn _ i' _ _) -> i == i') defns of
+                  Just (Defn _ _ t _) -> return t
+                  Nothing             -> failNowhere $ "askGIdTy: no info for identifier " ++ show i
+
 compileExp :: C.Exp -> CM ([Stmt],Name)
 compileExp e_ = case e of
                   App {}        -> failAt (ann e_) "compileExp: Got App after flattening (can't happen)"
@@ -210,8 +218,6 @@ compileExp e_ = case e of
                                                                                   (ExprBitString padvec)
                                                                                )],
                                                  n)
-                  -- FIXME(adam): In the following, need to add component for
-                  -- the call; would be easiest if we had type info for gid.
                   Match _ t escr p gid lids malt -> case eargs of
                                                       [] -> case malt of
                                                               Just ealt -> do n                   <- liftM (++"_res") $ freshName "match"
@@ -223,6 +229,8 @@ compileExp e_ = case e of
                                                                               addSignal n_gid (TyStdLogicVector sizeres)
                                                                               n_call              <- liftM (++"_call") $ freshName (mangle gid)
                                                                               (stmts_ealt,n_ealt) <- compileExp ealt
+                                                                              t_gid               <- askGIdTy gid
+                                                                              addComponent gid t_gid
                                                                               let argns           =  map (\ n -> "arg" ++ show n) ([0..]::[Int])
                                                                                   pm              =  PortMap (zip argns
                                                                                                               (map (ExprName . ("arg"++) . show) lids
@@ -241,6 +249,8 @@ compileExp e_ = case e of
                                                                               n_gid               <- liftM (++"_res") $ freshName (mangle gid)
                                                                               addSignal n_gid (TyStdLogicVector sizeres)
                                                                               n_call              <- liftM (++"_call") $ freshName (mangle gid)
+                                                                              t_gid               <- askGIdTy gid
+                                                                              addComponent gid t_gid
                                                                               let argns           =  map (\ n -> "arg" ++ show n) ([0..]::[Int])
                                                                                   pm              =  PortMap (zip argns
                                                                                                               (map (ExprName . ("arg"++) . show) lids
@@ -280,16 +290,20 @@ compileDefn d | defnName d == "Main.start" = do
                           insize    <- sizeof t_in
                           outsize   <- sizeof t_out
                           statesize <- sizeof t_startstate
+                          ressize   <- sizeof t_res
                           addComponent n_startstate t_startstate
                           addComponent n_loopfun t_loopfun
                           addSignal "start_state" (TyStdLogicVector statesize)
                           addSignal "loop_out" (TyStdLogicVector statesize)
                           addSignal "current_state" (TyStdLogicVector statesize)
+                          addSignal "done_or_next_state" (TyStdLogicVector statesize)
                           addSignal "next_state" (TyStdLogicVector statesize)
-                          let ports = [Port "clk" In TyStdLogic,
-                                       Port "rst" In TyStdLogic,
-                                       Port "inp" In (TyStdLogicVector insize),
-                                       Port "outp" Out (TyStdLogicVector outsize)]
+                          let ports       = [Port "clk" In TyStdLogic,
+                                             Port "rst" In TyStdLogic,
+                                             Port "inp" In (TyStdLogicVector insize),
+                                             Port "outp" Out (TyStdLogicVector (1+max outsize ressize))]
+                              pad_for_out = ExprBitString (replicate (max 0 (ressize-outsize)) Zero)
+                              pad_for_res = ExprBitString (replicate (max 0 (outsize-ressize)) Zero)
                           (sigs,comps,_) <- get
                           return (Unit
                                    (Entity "top_level" ports)
@@ -301,17 +315,20 @@ compileDefn d | defnName d == "Main.start" = do
                                        [Instantiate "start_call" (mangle n_startstate)
                                           (PortMap [("res",ExprName "start_state")]),
                                         Instantiate "loop_call" (mangle n_loopfun)
-                                          -- FIXME: unfortunately the slice width here is dependent on whether the "Left" constructor gets eliminated! This will be wrong if it doesn't.
-                                          (PortMap [("arg0",ExprSlice (ExprName "current_state") outsize (statesize-1)),
+                                          (PortMap [("arg0",ExprSlice (ExprName "current_state") (outsize+1) (statesize-1)),
                                                     ("arg1",ExprName "inp"),
                                                     ("res",ExprName "loop_out")]),
                                         WithAssign (ExprName "rst") (LHSName "next_state")
                                          [(ExprName "start_state",ExprBit One)]
+                                         (Just (ExprName "done_or_next_state")),
+                                        WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "done_or_next_state")
+                                         [(ExprName "current_state",ExprBitString [One])]
                                          (Just (ExprName "loop_out")),
                                         ClkProcess "clk"
                                          [Assign (LHSName "current_state") (ExprName "next_state")],
-                                        -- FIXME: unfortunately the slice width here is dependent on whether the "Left" constructor gets eliminated! This will be wrong if it doesn't.
-                                        Assign (LHSName "outp") (ExprSlice (ExprName "current_state") 0 (outsize-1))
+                                        WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "outp")
+                                         [(ExprConcat (ExprSlice (ExprName "current_state") 1 outsize) pad_for_out,ExprBitString [One])]
+                                         (Just (ExprConcat (ExprSlice (ExprName "current_state") 1 ressize) pad_for_res))
                                        ]
                                    )
                                  )
@@ -325,6 +342,6 @@ compileDefn d | defnName d == "Main.start" = do
                   return (Unit ent arch)
 
 compileProgram :: C.Program -> Either AstError M.Program
-compileProgram p = fst $ runIdentity $ flip runReaderT (ctors p) $ flip runStateT ([],[],0) $ runSyntaxError $
+compileProgram p = fst $ runIdentity $ flip runReaderT (ctors p,defns p) $ flip runStateT ([],[],0) $ runSyntaxError $
                      do units <- mapM compileDefn (defns p)
                         return (M.Program units)
