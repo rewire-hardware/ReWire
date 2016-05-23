@@ -119,7 +119,7 @@ sizeof t = case th of
              TyApp _ _ _  -> failAt (ann t) "sizeof: Got TyApp after flattening (can't happen)"
              TyCon _ tci  -> do ctors <- tcictors tci
                                 case ctors of
-                                  [] -> return 0
+                                  [] -> return 0    -- failsafe in case all constructors have been eliminated
                                   _  -> do let tagwidth =  ceilLog2 (length ctors)
                                            ctorwidths   <- mapM (ctorwidth t) ctors
                                            return (tagwidth + maximum ctorwidths)
@@ -322,13 +322,13 @@ compileDefn d | defnName d == "Main.start" = do
                                          [(ExprName "start_state",ExprBit One)]
                                          (Just (ExprName "done_or_next_state")),
                                         WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "done_or_next_state")
-                                         [(ExprName "current_state",ExprBitString [One])]
-                                         (Just (ExprName "loop_out")),
+                                         [(ExprName "loop_out",ExprBitString [One])]
+                                         (Just (ExprName "current_state")),
                                         ClkProcess "clk"
                                          [Assign (LHSName "current_state") (ExprName "next_state")],
                                         WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "outp")
-                                         [(ExprConcat (ExprSlice (ExprName "current_state") 1 outsize) pad_for_out,ExprBitString [One])]
-                                         (Just (ExprConcat (ExprSlice (ExprName "current_state") 1 ressize) pad_for_res))
+                                         [(ExprConcat (ExprBitString [One]) (ExprConcat (ExprSlice (ExprName "current_state") 1 outsize) pad_for_out),ExprBitString [One])]
+                                         (Just (ExprConcat (ExprBitString [Zero]) (ExprConcat (ExprSlice (ExprName "current_state") 1 ressize) pad_for_res)))
                                        ]
                                    )
                                  )
