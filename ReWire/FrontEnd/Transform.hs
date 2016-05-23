@@ -137,7 +137,9 @@ purge (RWMProgram p) = do
             inuseData ns = map $ inuseData' ns
 
             inuseData' :: [Name DataConId] -> RWMData -> RWMData
-            inuseData' ns (RWMData an n k cs) = RWMData an n k $ filter ((flip Set.member (Set.fromList ns)) . dataConName) cs
+            inuseData' ns (RWMData an n k cs)
+                  | name2String n == "Prelude.Either" = RWMData an n k cs
+                  | otherwise                         = RWMData an n k $ filter ((flip Set.member (Set.fromList ns)) . dataConName) cs
 
             dataConName :: RWMDataCon -> Name DataConId
             dataConName (RWMDataCon _ n _) = n

@@ -40,7 +40,7 @@ freshkv = do
 varBind :: (Fresh m, SyntaxError m) => Annote -> Name Kind -> Kind -> KCM m KiSub
 varBind an u k
       | k `aeq` KVar u = return mempty
-      | u `elem` fv k = failAt an $ "Occurs check fails in kind checking: " ++ show u ++ ", " ++ prettyPrint k
+      | u `elem` fv k  = failAt an $ "Occurs check fails in kind checking: " ++ show u ++ ", " ++ prettyPrint k
       | otherwise      = return $ Map.singleton u k
 
 (@@) :: KiSub -> KiSub -> KiSub
