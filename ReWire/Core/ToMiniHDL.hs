@@ -270,7 +270,55 @@ mkDefnArch (Defn _ n _ e) = do put ([],[],0) -- empty out the signal and compone
 
 compileDefn :: Defn -> CM Unit
 compileDefn d | defnName d == "Main.start" = do
-                  return (Unit (Entity "top_level" []) (Architecture "top_level_impl" "top_level" [] [] [])) -- FIXME(adam): stub
+                  let t = defnTy d
+                      e = defnBody d
+                  case t of
+                    TyComp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (TyConId "ReT")) t_in) t_out) (TyCon _ (TyConId "I"))) t_res ->
+                      case e of
+                        App _ (App _ (Prim _ _ "unfold") (GVar _ t_loopfun n_loopfun)) (GVar _ t_startstate n_startstate) -> do
+                          put ([],[],0) -- empty out signal and component store, reset name counter
+                          insize    <- sizeof t_in
+                          outsize   <- sizeof t_out
+                          statesize <- sizeof t_startstate
+                          addComponent n_startstate t_startstate
+                          addComponent n_loopfun t_loopfun
+                          addSignal "start_state" (TyStdLogicVector statesize)
+                          addSignal "loop_out" (TyStdLogicVector statesize)
+                          addSignal "current_state" (TyStdLogicVector statesize)
+                          addSignal "next_state" (TyStdLogicVector statesize)
+                          let ports = [Port "clk" In TyStdLogic,
+                                       Port "rst" In TyStdLogic,
+                                       Port "inp" In (TyStdLogicVector insize),
+                                       Port "outp" Out (TyStdLogicVector outsize)]
+                          (sigs,comps,_) <- get
+                          return (Unit
+                                   (Entity "top_level" ports)
+                                   (Architecture
+                                       "top_level_impl"
+                                       "top_level"
+                                       sigs
+                                       comps
+                                       [Instantiate "start_call" (mangle n_startstate)
+                                          (PortMap [("res",ExprName "start_state")]),
+                                        Instantiate "loop_call" (mangle n_loopfun)
+                                          -- FIXME: unfortunately the slice width here is dependent on whether the "Left" constructor gets eliminated! This will be wrong if it doesn't.
+                                          (PortMap [("arg0",ExprSlice (ExprName "current_state") outsize (statesize-1)),
+                                                    ("arg1",ExprName "inp"),
+                                                    ("res",ExprName "loop_out")]),
+                                        WithAssign (ExprName "rst") (LHSName "next_state")
+                                         [(ExprName "start_state",ExprBit One)]
+                                         (Just (ExprName "loop_out")),
+                                        ClkProcess "clk"
+                                         [Assign (LHSName "current_state") (ExprName "next_state")],
+                                        -- FIXME: unfortunately the slice width here is dependent on whether the "Left" constructor gets eliminated! This will be wrong if it doesn't.
+                                        Assign (LHSName "outp") (ExprSlice (ExprName "current_state") 0 (outsize-1))
+                                       ]
+                                   )
+                                 )
+                        _ ->
+                          failAt (ann d) $ "compileDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " ++ prettyPrint e
+                    _ ->
+                      failAt (ann d) $ "compileDefn: Main.start has illegal type: " ++ prettyPrint t
               | otherwise                  = do
                   ent  <- mkDefnEntity d
                   arch <- mkDefnArch d
