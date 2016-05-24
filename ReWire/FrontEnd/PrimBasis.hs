@@ -55,6 +55,19 @@ primDefns = map mkDefn
             `arr0` v "s"
             `arr0` RWMTyComp noAnn (reT (v "i") (v "o") (mv "m")) (c "(,)" `tyApp` v "a" `tyApp` v "s")
         )
+      -- FIXME(adam): probably should not be making reference into the Prelude here
+      , ( "unfold"
+        , [mkId "b",mkId "i",mkId "a",mkId "o"]
+        |-> (v "b"
+                `arr0` v "i"
+                `arr0` tyApp (tyApp (c "Prelude.Either")
+                                       (v "a"))
+                                       (tyApp (tyApp (c "(,)") (v "o")) (v "b")))
+            `arr0` tyApp (tyApp (c "Prelude.Either")
+                                   (v "a"))
+                                   (tyApp (tyApp (c "(,)") (v "o")) (v "b"))
+            `arr0` RWMTyComp noAnn (reT (v "i") (v "o") (c "I")) (v "a")
+       )
       ]
 
 mkId :: String -> Name b

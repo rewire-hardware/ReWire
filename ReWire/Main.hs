@@ -4,6 +4,7 @@ module ReWire.Main (main) where
 import ReWire.FrontEnd
 import ReWire.FrontEnd.LoadPath
 import ReWire.Pretty
+import ReWire.Core.ToMiniHDL
 
 import Control.Monad (when,unless)
 import Data.List (intercalate)
@@ -13,11 +14,7 @@ import System.Environment
 import System.Exit
 import System.IO
 
-data Flag = FlagCFG String
-          | FlagLCFG String
-          | FlagPre String
-          | FlagGPre String
-          | FlagO String
+data Flag = FlagO String
           | FlagD
           | FlagLoadPath String
           deriving (Eq,Show)
@@ -30,14 +27,6 @@ options =
                              "generate VHDL"
  , Option []    ["loadpath"] (ReqArg FlagLoadPath "dir1,dir2,...")
                              "additional directories for loadpath"
- , Option []    ["cfg"]      (ReqArg FlagCFG "filename.dot")
-                             "generate control flow graph before linearization"
- , Option []    ["lcfg"]     (ReqArg FlagLCFG "filename.dot")
-                             "generate control flow graph after linearization"
- , Option []    ["pre"]      (ReqArg FlagPre "filename.phdl")
-                             "generate PreHDL before goto elimination"
- , Option []    ["gpre"]     (ReqArg FlagGPre "filename.phdl")
-                             "generate PreHDL after goto elimination"
  ]
 
 exitUsage :: IO ()
@@ -52,7 +41,7 @@ main = do args                       <- getArgs
 
           when (length filenames /= 1) (hPutStrLn stderr "exactly one source file must be specified" >> exitUsage)
 
-          unless (any isActFlag flags) (hPutStrLn stderr "must specify at least one of -o, --cfg, --lcfg, --pre, or --gpre" >> exitUsage)
+          unless (any isActFlag flags) (hPutStrLn stderr "must specify at least one of -o or -d" >> exitUsage)
 
           let filename               =  head filenames
               userLP                 =  concatMap getLoadPathEntries flags
@@ -62,39 +51,30 @@ main = do args                       <- getArgs
           when (FlagD `elem` flags) $
             putStrLn ("loadpath: " ++ intercalate "," lp)
 
-          m_ <- loadProgram lp filename
+          prog_ <- loadProgram lp filename
 
-          case m_ of
-            Left e  -> hPrint stderr e >> exitFailure
-            Right m -> do
+          case prog_ of
+            Left e     -> hPrint stderr e >> exitFailure
+            Right prog -> do
               when (FlagD `elem` flags) $ do
                 putStrLn "front end finished"
                 -- writeFile "show.out" (show m)
                 -- putStrLn "show out finished"
-                writeFile "Debug.hs" (prettyPrint m)
+                writeFile "Debug.hs" (prettyPrint prog)
                 putStrLn "debug out finished"
-                -- TODO(chathhorn): disabling backend because I broke.
-                -- let cfg     = cfgFromRW m
-                --     cfgDot  = mkDot (gather (eu cfg))
-                --     lcfgDot = mkDot (gather (linearize cfg))
-                --     pre     = cfgToProg cfg
-                --     gpre    = gotoElim pre
-                --     vhdl    = toVHDL (elimEmpty gpre)
-                --     doDump = \ case
-                --       FlagCFG f  -> writeFile f cfgDot
-                --       FlagLCFG f -> writeFile f lcfgDot
-                --       FlagPre f  -> writeFile f $ show pre
-                --       FlagGPre f -> writeFile f $ show gpre
-                --       FlagO f    -> writeFile f vhdl
-                --       _          -> return ()
-                -- mapM_ doDump flags
+              case compileProgram prog of
+                Left e      -> hPrint stderr e >> exitFailure
+                Right mprog ->
+                  case findOutFile flags of
+                    Just f  -> writeFile f (prettyPrint mprog)
+                    Nothing -> return ()
   where isActFlag = \ case
-          FlagCFG {}  -> True
-          FlagLCFG {} -> True
-          FlagPre {}  -> True
-          FlagGPre {} -> True
-          FlagO {}    -> True
-          _           -> False
+          FlagD {} -> True
+          FlagO {} -> True
+          _        -> False
+        findOutFile (FlagO f:_) = Just f
+        findOutFile (_:flags)   = findOutFile flags
+        findOutFile []          = Nothing
         getLoadPathEntries (FlagLoadPath ds) =  splitOn "," ds
         getLoadPathEntries _                 =  []
 

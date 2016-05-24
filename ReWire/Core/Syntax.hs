@@ -11,8 +11,9 @@ module ReWire.Core.Syntax
   , DataCon(..)
   , Program(..)
   , mkArrow,arrowRight
+  , flattenArrow,flattenTyApp
   , flattenApp,typeOf
-  , GId, LId
+  , GId, LId, TyId
   ) where
 
 import ReWire.Pretty
@@ -171,6 +172,14 @@ arity = \ case
   TyApp _ (TyApp _ (TyCon _ (TyConId "->")) _) t2 -> 1 + arity t2
   _                                               -> 0
 
+flattenArrow :: Ty -> [Ty]
+flattenArrow (TyApp _ (TyApp _ (TyCon _ (TyConId "->")) tl) tr) = tl : flattenArrow tr
+flattenArrow t                                                  = [t]
+
+flattenTyApp :: Ty -> [Ty]
+flattenTyApp (TyApp _ t t') = flattenTyApp t ++ [t']
+flattenTyApp t              = [t]
+
 flattenApp :: Exp -> [Exp]
 flattenApp (App _ e e') = flattenApp e++[e']
 flattenApp e            = [e]
@@ -193,4 +202,3 @@ typeOf = \ case
   Con _ t _           -> t
   Match _ t _ _ _ _ _ -> t
   NativeVHDL _ t _    -> t
-

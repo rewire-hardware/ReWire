@@ -2,7 +2,8 @@ import ReWire.FrontEnd
 import ReWire.FrontEnd.LoadPath
 import qualified ReWire.Main as M
 
-import System.Directory (setCurrentDirectory)
+import Data.List (isSuffixOf)
+import System.Directory (setCurrentDirectory,getDirectoryContents)
 import System.Environment (withArgs)
 import Test.Framework (defaultMain, testGroup, Test)
 import Test.Framework.Providers.HUnit
@@ -10,38 +11,23 @@ import Test.HUnit hiding (Test)
 
 import Paths_ReWire
 
--- TODO: should just snarf these from the dir listing
-filesToCompile :: [FilePath]
-filesToCompile = ["Fibonacci.hs","MiniISA.hs","UpCounter.hs","dissex.hs",
-                  "fibo.hs","funcase.hs","toag.hs","toags.hs",
-                  "PreludeTest.hs"]
+testFE :: FilePath -> FilePath -> Test
+testFE dn fn = testCase fn (do setCurrentDirectory dn
+                               lp  <- getSystemLoadPath
+                               res <- loadProgram lp fn
+                               case res of
+                                 Left e  -> assertFailure $ show e
+                                 Right m -> return ())
 
-filesToTC :: [FilePath]
-filesToTC = filesToCompile ++
-             ["uniquification.hs","pats.hs","guards.hs","Mods.hs","Infix.hs",
-              "Salsa20.hs"]
+testCompiler :: FilePath -> FilePath -> Test
+testCompiler dn fn = testCase fn (withArgs ["-o","/dev/null",(dn++"/"++fn)] M.main)
 
-testTC :: FilePath -> Test
-testTC f_ = testCase f_ (do d   <- getDataFileName "test/parser_tests/"
-                            setCurrentDirectory d
-                            lp  <- getSystemLoadPath
-                            res <- loadProgram lp f_
-                            case res of
-                              Left e  -> assertFailure $ show e
-                              Right m -> return ())
+tests = do dirname_fe <- getDataFileName ("test/frontend_tests")
+           files_fe   <- filter isHs <$> getDirectoryContents dirname_fe
+           dirname_c  <- getDataFileName ("test/compiler_tests")
+           files_c    <- filter isHs <$> getDirectoryContents dirname_c
+           return [testGroup "Frontend Tests"      (map (testFE dirname_fe) files_fe),
+                   testGroup "Full Compiler Tests" (map (testCompiler dirname_c) files_c)]
+   where isHs = (".hs" `isSuffixOf`)
 
-testCompile :: FilePath -> Test
-testCompile f_ = testCase f_ (do f <- getDataFileName ("test/parser_tests/" ++ f_)
-                                 withArgs ["-d",
-                                          "-o","/dev/null",
-                                          "--cfg=/dev/null",
-                                          "--lcfg=/dev/null",
-                                          "--pre=/dev/null",
-                                          "--gpre=/dev/null",
-                                          f]
-                                          M.main)
-
-tests = [testGroup "Files to Typecheck" (map testTC filesToTC),
-         testGroup "Files to Compile"   (map testCompile filesToCompile)]
-
-main = defaultMain tests
+main = tests >>= defaultMain
