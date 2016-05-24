@@ -45,10 +45,10 @@ build-type:          Simple
 -- README.
 extra-source-files:  README.md
 data-files:          lib/*.hs
-                     test/parser_tests/*.hs
-                     test/parser_tests/Mods/*.hs
-                     test/parser_tests/Mods/C/*.hs
-                     test/tc_tests/*.hs
+                     test/frontend_tests/*.hs
+                     test/frontend_tests/Mods/*.hs
+                     test/frontend_tests/Mods/C/*.hs
+                     test/compiler_tests/*.hs
 
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.10
