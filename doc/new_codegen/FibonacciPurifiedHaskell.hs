@@ -62,6 +62,6 @@ start = unfold dispatch start_pure
 --         -> ReT i o I a
 --
 unfold :: (R -> Bit -> Either () (W8,R)) -> Either () (W8,R) -> ReT Bit W8 I ()
-unfold f (Left x)       = return x
-unfold f (Right (o,r')) = do i' <- signal o
-                             unfold f (f r' i')
+unfold f (Left x)      = return x
+unfold f (Right (o,s)) = do i <- signal o
+                            unfold f (f s i)
