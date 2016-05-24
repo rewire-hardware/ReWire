@@ -10,7 +10,7 @@ name:                ReWire
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             0.1.0.1
+version:             0.2.0.0
 
 -- A short (one-line) description of the package.
 synopsis:            A Haskell-to-VHDL compiler
@@ -28,7 +28,7 @@ license:             AllRightsReserved
 license-file:        LICENSE
 
 -- The package author(s).
-author:              Adam Procter, Ian Graves, and William L. Harrison
+author:              Adam Procter, Chris Hathhorn, Ian Graves, and William L. Harrison
 
 -- An email address to which users can send suggestions, bug reports, and
 -- patches.
