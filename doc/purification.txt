@@ -1,152 +1,209 @@
-- Definition: a type is "simple" if it is free of arrows, recursive or
-  higher-order data types, and monads.
+(The background assumption here is that we are working in basically Haskell
+98, minus type classes, plus the ReWire primitives.)
 
-- Assumption: we are post-lambda lifting and we have a pile of functions with
-  types that are of one of the following forms (type variables are allowed but
-  they must range only over simple types):
+I. Compilable Form
+==================
+
+- Definition: a program is *compilable* if it:
+
+  * contains no function (respectively, data) declarations with function-
+    or computation-typed arguments (respectively, fields);
+    + Note that parameterized data types *are* allowed by this definition
+
+  * never instantiates parameterized data types with function or
+    computation types;
+    + e.g. Maybe Int and Maybe (Maybe (Int,Int)) are okay, but
+           Maybe (Int -> Int) and Maybe (StateT Int I ()) are not
+
+  * contains no polymorphic functions;
+    + Eventually we can lift this restriction, as long as polymorphic
+      functions are never instantiated at functional or computational type
+
+  * contains no recursive data or function definitions; and
+    + "unfold" is a primitive so the use of it doesn't "count" towards
+      this restriction
+
+  * contains a definition of the form:
+
+      start :: ReT T1 T2 I T3
+      start = unfold x y
+
+    where T1, T2, and T3 are non-functional, non-computational, monomorphic
+    types and x and y are names.
+
+It is also advisable to be sure that all pattern matches are complete, as we
+will simply take the last pattern in any "case" as a fall-through without
+actually checking for a match. (This may result in undefined behavior---but
+that's the same as Haskell, right???)
+
+II. Purification of Monadic Code
+================================
+
+The goal of purification is to turn a monadic program (in a somewhat restricted
+form, documented in Subsection (a) below) into a semantically equivalent
+compilable program.
+
+a. Definitions and Assumptions
+------------------------------
+
+- Assumption (perhaps too vaguely stated): We are "post-lambda lifting."
+
+- Definition: A type is *simple* if it contains no arrows, computation types,
+  or type variables.
+
+- Assumption: We have a program consisting of data definitions respecting the
+  restrictions in Section (I), and a set of function definitions, each of which
+  has a type of one of the following forms:
 
     (pure)          T1 -> T2 -> ... -> Tn -> T
                     where each Ti and T are simple.
+		      (n >= 0)
 
     (state-monadic) T1 -> T2 -> ... -> Tn -> StT S1 (StT S2 (... (StT Sm I))) T
                     where each Ti, each Si, and T are simple.
+		      (n,m >= 0)
 
     (res-monadic)   T1 -> T2 -> ... -> Tn ->
-                      ReT I O (StT S1 (StT S2 (... (StT Sm I)))) T
-                    where each Ti, I O, each Si, and T are simple.
+                      ReT In Out (StT S1 (StT S2 (... (StT Sm I)))) T
+                    where each Ti, In Out, each Si, and T are simple.
+		      (n,m >= 0)
 
-  All calls to res-monadic functions must be tail calls.
-  Only res-monadic functions may be recursive.
-  Recursion must be loop-guarded. Loop-guarded here means that every loop
-    through the call graph has at least one guarded edge. I haven't yet
-    explained guarded edges.
+    	     ****** (Each res-monadic definition has to have the *same*
+		    "In", "Out", and "T".)
 
-  signal must never occur embedded in the left-hand side of a bind, *except*
-    in the form of signal e >>= f e1 e2 ... ek where f is a top-level name.
+- Assumption: All case scrutinees have simple type.
 
-- To purify a pure function: do nothing.
+  * (Bit of an odd corner case here!)
 
-- To purify a state-monadic function f:
+- Assumption: All calls to res-monadic functions are tail calls.
 
-    Suppose f :: T1 -> T2 -> ... -> Tn -> StT S1 (StT S2 (... (StT Sm I))) T
-    and the definition of f is f x1 ... xn = e.
+- Assumption: All recursive functions are res-monadic functions.
 
-    We will define a new function
+- Definitions: A call is *guarded* if it is textually guarded by a "signal".
+  The edge corresponding to a guarded call is called a *guarded edge*. A call
+  graph is *loop-guarded* if every loop in the call graph contains at least one
+  guarded edge.
 
-    f_pure :: T1 -> ... -> Tn -> S1 -> ... -> Sm -> (T,(S1,(...,Sm)))
+- Assumption: The call graph is loop-guarded.
 
-    Definition of f_pure is
+- Assumption: signal never occurs embedded in the left-hand side of a bind,
+  *except* in the form signal e >>= f e1 e2 ... ek (k >= 0) where f is a top-
+  level name.
 
-    f_pure x1 ... xn s1 ... sm = [|purify_state_body 1 e|]
+  * It may be necessary to do a separate pass before purification to ensure
+    this!
+
+- Assumption: We have a definition "start of the following type:
+
+    start :: ReT In Out I T
+
+b. Purification Procedure
+-------------------------
+
+The purification procedure rewrites each definition as follows.
+
+- [Pure functions]
+
+     No change to the definition.
+
+- [State-monadic functions]
+
+    Suppose
+
+      f :: T1 -> T2 -> ... -> Tn -> StT S1 (StT S2 (... (StT Sm I))) T
+      f x1 ... xn = e.
+
+    Replace this with
+
+      f_pure :: T1 -> ... -> Tn -> S1 -> ... -> Sm -> (T,(S1,(...,Sm)))
+      f_pure x1 ... xn s1 ... sm = "[|purify_state_body 1 e|]"
 
     where s1 ... sm are fresh variables and
 
-    purify_state_body i (return e)    = "(e,(s1,(...,sm)))"
-    purify_state_body i (e >>= g)     = "let
-                                            (v,(s1,(...,sm))) = [|purify_state_body i e|]
-                                         in
-                                            g_pure v s1 ... sm"
-    purify_state_body i (lift e)      = purify_state_body (i+1) e
-    purify_state_body i get           = "(si,(s1,(...,sm)))"
-    purify_state_body i (put e)       = "((),(s1,(...,(si-1,(e,(si+1,(...,sm)))))))"
-    purify_state_body i (f e1 ... ek) = "f_pure e1 .... ek"
-    purify_state_body i (case e of
-                           P1 -> e1
-                           ...
-                           Pk -> ek)  = "case e of
-                                           P1 -> [|purify_state_body i e1|]
-                                           ...
-                                           Pk -> [|purify_state_body i ek|]"
+      purify_state_body i (return e)    = "(e,(s1,(...,sm)))"
+      purify_state_body i (e >>= g)     = "let
+                                             (v,(s1,(...,sm))) = [|purify_state_body i e|]
+					   in
+					     g_pure v s1 ... sm"
+      purify_state_body i (lift e)      = purify_state_body (i+1) e
+      purify_state_body i get           = "(si,(s1,(...,sm)))"
+      purify_state_body i (put e)       = "((),(s1,(...,(si-1,(e,(si+1,(...,sm)))))))"
+      purify_state_body i (f e1 ... ek) = "f_pure e1 .... ek"
+      purify_state_body i (case e of
+                             P1 -> e1
+                             ...
+                             Pk -> ek)  = "case e of
+                                             P1 -> [|purify_state_body i e1|]
+                                             ...
+                                             Pk -> [|purify_state_body i ek|]"
 
-- To purify a resumption-monadic function f:
+- [Resumption-monadic functions]
 
-    Suppose f :: T1 -> T2 -> ... -> Tn ->
-               ReT I O (StT S1 (StT S2 (... (StT Sm I)))) T
-    and the definition of f is f x1 ... xn = e.
+    As we go, we will be building a new data type called R (for "resumption
+    point") of kind *, and a function definition called "dispatch" of type
 
-    We will define a new function
+       dispatch :: R -> In -> Either T (W8,R).
 
-       f_pure :: T1 -> T2 -> ... -> Tn -> I -> S1 -> ... -> Sm -> (Either T (O,R),(S1,(...,Sm)))
+    Suppose
 
-    Definition of f_pure is
+      f :: T1 -> T2 -> ... -> Tn
+              -> ReT In Out (StT S1 (StT S2 (... (StT Sm I)))) T
+      f x1 ... xn = e.
 
+    Replace this with
+
+       f_pure :: T1 -> T2 -> ... -> Tn -> In
+       	         -> S1 -> ... -> Sm
+		 -> (Either T (O,R),(S1,(...,Sm)))
        f_pure x1 ... xn s1 ... sm = [|purify_res_body e|]
 
     where s1 ... sm are fresh variables and
 
-    purify_res_body (return e)         = "(Left e,(s1,(...,sm)))"
-    purify_res_body (signal e
-                      >>= g e1 ... ek) = "(Right (e,R_g e1 ... ek),(s1,(...,sm)))"            * and create resumption point constructor for g if it doesn't already exist
-    purify_res_body (signal e)         = "(Right (e,R_ret),(s1,(...,sm)))"                    * and create resumption point constructor "R_ret" if doesn't already exist
-    purify_res_body (e >>= g)          = "let
-                                             (Left v,(s1,(...,sm))) = [|purify_res_body e|]   * because of the restriction on signal and the excision of non-tail calls, the irrefutable pattern will be okay
-                                          in
-                                             g_pure v s1 ... sm"
-    purify_res_body (lift e)           = "let
-                                             (v,(s1,(...,sm))) = purify_state_body 1 e
-                                          in
-                                             (Left v,(s1,(...,sm)))"
-    purify_res_body (f e1 ... ek)      = "f_pure e1 .... ek"
-    purify_res_body (case e of
-                       P1 -> e1
-                       ...
-                       Pk -> ek)       = "case e of
-                                            P1 -> [|purify_res_body i e1|]
-                                            ...
-                                            Pk -> [|purify_res_body i ek|]"
+        purify_res_body (return e)         = "(Left e,(s1,(...,sm)))"
 
-    Create resumption point constructor for a function
+	purify_res_body (signal e
+	                  >>= g e1 ... ek) = "(Right (e,R_g e1 ... ek),(s1,(...,sm)))"
+			          	     Side effect:
+					       * add the clause "R_g T1 ... Tk" to R
+						    (where Ti is the type of ei)
+					       * add the eqn
+					           dispatch (R_g e1 ... ek) i
+						      = g_pure e1 ... ek i
+						 to defn of dispatch
 
-      f :: T1 -> T2 -> ... -> Tn -> ReT I O (StT S1 (StT S2 (... (StT Sm I)))) T
+        purify_res_body (signal e)         = "(Right (e,R_ret),(s1,(...,sm)))"
+			          	     Side effect:
+					       * add the clause "R_return" to R
+					       * add the eqn
+					           dispatch R_return i = Left i
+						 to defn of dispatch
 
-    means to add
+	purify_res_body (e >>= g)          = "let
+			       		        -- N.B.: The irrefutable pattern here is
+						-- sketchy, but it should be okay because
+						-- of the restriction on occurrences of
+						-- "signal"
+                                                (Left v,(s1,(...,sm))) = [|purify_res_body e|]
+                                              in
+                                                 g_pure v s1 ... sm"
 
-      R_f :: T1 -> T2 -> ... -> Tn -> R.
+        purify_res_body (lift e)           = "let
+                                                 (v,(s1,(...,sm))) = [|purify_state_body 1 e|]
+                                              in
+                                                 (Left v,(s1,(...,sm)))"
 
-Pure form is:
+        purify_res_body (f e1 ... ek)      = "f_pure e1 .... ek"
 
-  Special junk as follows:
+        purify_res_body (case e of
+                           P1 -> e1
+                           ...
+                           Pk -> ek)       = "case e of
+                                                P1 -> [|purify_res_body i e1|]
+                                                ...
+                                                Pk -> [|purify_res_body i ek|]"
 
-    data R = ...whatever we generated during purification...
+- In addition to all the above, we re-tie the recursive knot by adding a new
+  "start" as follows:
 
-    ^^ f_pure must exist for each of the above R_f ^^
-
-    start_pure :: S1 -> ... -> Sm -> (Either T (O,R),(S1,(...,Sm)))
-    start_pure = <whatever came from purifying start>                -- compiled normally
-
-    init_s1 :: S1
-    init_s1 = <some pure expression>                                 -- compiled normally
-    ...
-    init_sm :: Sm
-    init_sm = <some pure expression>                                 -- compiled normally
-
-    init :: ReT I O (StT S1 (StT S2 (... (StT Sm I)))) T             -- compiled specially
-    init = do let (res,(s1',(...,sm'))) = start_pure init_s1 ... init_sm
-              put s1'
-              lift (put s2')
-              ...
-              put^{m-1} sm'
-              case res of
-                Left x      -> return x
-                Right (o,r) -> do i <- signal o
-                                  loop r i
-
-    loop :: R -> I -> ReT I O (StT S1 (StT S2 (... (StT Sm I)))) T   -- compiled specially
-    loop r i = case r of
-                 R_ret         = return i   -- if it exists
-                 -- One of these for each resumption point:
-                 R_f x y ... z = do
-                                   s1 <- get
-                                   s2 <- lift get
-                                   s3 <- lift (lift get)
-                                   ...
-                                   sm <- lift^{m-1} get
-                                   let (res,(s1',(...,sm'))) = f_pure x y ... z i s1 ... sm
-                                   put s1'
-                                   lift (put s2')
-                                   ...
-                                   put^{m-1} sm'
-                                   case res of
-                                     Left x       -> return x
-                                     Right (o,r') -> do i' <- signal o
-                                                        loop r' i'
+  	  start :: ReT In Out I T
+	  start = unfold dispatch start_pure
