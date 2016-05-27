@@ -86,12 +86,15 @@ The monads supported by ReWire are limited to monads composed of
 
 # Restrictions
 
-Basically Haskell 98 but...
+The ReWire language is essentially a subset of Haskell 98. The major restrictions are as follows.
 
-* Type classes not implemented
-* `type` keyword not yet implemented
-* Polymorphism only allowed if it can be squashed via inlining
-* Recursion restricted
+* __Type classes__ are not (yet) implemented.
+* The __`type` keyword__ is not (yet) implemented.
+* __Polymorphic__ and __higher-order__ functions are only allowed if they can be __eliminated via inlining__.
+  - For example, the polymorphic function `fst :: (a,b) -> a` can always be inlined, as can the higher-order (and polymorphic) function `(.) :: (b -> c) -> (a -> b) -> (a -> c)`.
+* __`Data` types__ are allowed, including parametric data types like `Maybe`, but only if they are __first-order__ (i.e., do not contain any function- or monad-typed fields) and __non-recursive__.
+* __Recursive function definitions__ are allowed, but only in a reactive resumption monad. Such definitions must be _tail recursive_ and _guarded_.
+  - FIXME: Insert some examples/nonexamples.
 
 # Interfacing with VHDL
 
