@@ -89,6 +89,7 @@ library
                     ReWire.FrontEnd.KindCheck
                     ReWire.FrontEnd.LoadPath
                     ReWire.FrontEnd.PrimBasis
+                    ReWire.FrontEnd.Purify
                     ReWire.FrontEnd.Rename
                     ReWire.FrontEnd.Syntax
                     ReWire.FrontEnd.ToCore

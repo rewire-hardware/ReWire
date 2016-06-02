@@ -12,6 +12,7 @@ import ReWire.FrontEnd.Annotate
 import ReWire.FrontEnd.Desugar
 import ReWire.FrontEnd.KindCheck
 import ReWire.FrontEnd.PrimBasis
+import ReWire.FrontEnd.Purify
 import ReWire.FrontEnd.Rename
 import ReWire.FrontEnd.Syntax
 import ReWire.FrontEnd.ToCore
@@ -138,6 +139,9 @@ getProgram fp = do
        >=> purge
        -- >=> typeCheck
        -- >=> printInfo "___Post_Purge___"
+       >=> purify
+       -- >=> typeCheck
+       -- >=> printInfo "___Post_Purify___"
        >=> toCore
        $ addPrims (ts, ds)
 
