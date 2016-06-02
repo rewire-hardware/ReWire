@@ -3,7 +3,7 @@ module ReWire.FrontEnd.Rename
       ( Renamer, fixFixity, getExports, allExports
       , exclude, extend, finger, rename
       , FQName (mod, name), qnamish
-      , Namespace (..), RWMModule (..)
+      , Namespace (..), Module (..)
       , Exports, expValue, expType, expFixity, getCtors
       , toFilePath
       , fromImps
@@ -12,7 +12,7 @@ module ReWire.FrontEnd.Rename
 import ReWire.Annotation (Annotation)
 import ReWire.Error
 import ReWire.FrontEnd.Fixity
-import ReWire.FrontEnd.Syntax (RWMData, RWMDefn)
+import ReWire.FrontEnd.Syntax (DataDefn, Defn)
 
 import Control.Arrow ((&&&))
 import Control.Monad (liftM, foldM)
@@ -26,11 +26,12 @@ import Language.Haskell.Exts.Pretty (prettyPrint)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
 import System.FilePath (joinPath, (<.>))
 
-import qualified Data.Map.Strict              as Map
-import qualified Data.Set                     as Set
-import qualified Language.Haskell.Exts.Syntax as S
+import qualified Data.Map.Strict                        as Map
+import qualified Data.Set                               as Set
+import qualified Language.Haskell.Exts.Syntax           as S hiding (Module)
+import qualified Language.Haskell.Exts.Annotated.Syntax as S (Module)
 
-import Language.Haskell.Exts.Annotated.Syntax hiding (Namespace, Annotation)
+import Language.Haskell.Exts.Annotated.Syntax hiding (Namespace, Annotation, Module)
 
 -- Note that GHC (although we might not catch this) disallows the same symbol
 -- appearing twice in an export list (e.g., with different qualifiers, from
@@ -43,11 +44,11 @@ data Exports = Exports
       (Map.Map S.Name (Set.Set FQName))  -- Type |-> Ctors (where Type and Ctors are also in Types and Values, respectively)
       deriving Show
 
-data RWMModule = RWMModule [RWMData] [RWMDefn]
+data Module = Module [DataDefn] [Defn]
 
-instance Monoid RWMModule where
-      mempty = RWMModule [] []
-      mappend (RWMModule a b) (RWMModule a' b') = RWMModule (a ++ a') (b ++ b')
+instance Monoid Module where
+      mempty = Module [] []
+      mappend (Module a b) (Module a' b') = Module (a ++ a') (b ++ b')
 
 ---
 
@@ -141,7 +142,7 @@ extend ns kvs rn@Renamer { rnNames } = rn { rnNames = Map.fromList (map (((ns,) 
 exclude :: QNamish a => Namespace -> [a] -> Renamer -> Renamer
 exclude ns ks rn@Renamer { rnNames } = rn { rnNames = foldr (Map.delete . (ns,) . toQNamish) rnNames ks }
 
-fixFixity :: Monad m => Renamer -> Module SrcSpanInfo -> m (Module SrcSpanInfo)
+fixFixity :: Monad m => Renamer -> S.Module SrcSpanInfo -> m (S.Module SrcSpanInfo)
 fixFixity Renamer { rnFixities } = liftM deuniquifyLocalOps . applyFixities (Set.toList rnFixities) . fixLocalOps
 
 addFixities :: [Fixity] -> Renamer -> Renamer

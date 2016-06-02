@@ -1,81 +1,84 @@
 {-# LANGUAGE LambdaCase, ViewPatterns #-}
 module ReWire.FrontEnd.ToCore (toCore) where
 
-import ReWire.Core.Syntax hiding (typeOf, flattenApp)
-import ReWire.FrontEnd.Syntax hiding (defnName)
 import ReWire.Pretty
 
 import Control.Monad.Reader (ReaderT (..), ask)
 import Data.Map.Strict (Map)
-import Unbound.Generics.LocallyNameless (runFreshMT)
+import Unbound.Generics.LocallyNameless
+      ( Name, Fresh, runFreshMT, Embed (..)
+      , unbind, untrec
+      )
 
-import qualified Data.Map.Strict as Map
+import qualified Data.Map.Strict        as Map
+import qualified ReWire.Core.Syntax     as C
+import qualified ReWire.FrontEnd.Syntax as M
 
 import Unbound.Generics.LocallyNameless (name2String)
 
-toCore :: Monad m => RWMProgram -> m Program
-toCore (RWMProgram p) = runFreshMT $ do
+toCore :: Monad m => M.Program -> m C.Program
+toCore (M.Program p) = runFreshMT $ do
       (ts, vs) <- untrec p
       ts' <- concat <$> mapM transData ts
-      vs' <- filter (notPrim . defnName) <$> mapM transDefn vs
-      return $ Program ts' vs'
+      vs' <- filter (notPrim . C.defnName) <$> mapM transDefn vs
+      return $ C.Program ts' vs'
 
 notPrim :: String -> Bool
 notPrim x = isQual x || isLL x
       where isQual = elem '.'
             isLL = elem '$'
 
-transData :: Fresh m => RWMData -> m [DataCon]
-transData (RWMData _ _ _ cs) = mapM transDataCon $ zip [0..] cs
-      where transDataCon :: Fresh m => (Int, RWMDataCon) -> m DataCon
-            transDataCon (n, RWMDataCon an c (Embed (Poly t))) = do
+transData :: Fresh m => M.DataDefn -> m [C.DataCon]
+transData (M.DataDefn _ _ _ cs) = mapM transDataCon $ zip [0..] cs
+      where transDataCon :: Fresh m => (Int, M.DataCon) -> m C.DataCon
+            transDataCon (n, M.DataCon an c (Embed (M.Poly t))) = do
                   (_, t') <- unbind t
-                  return $ DataCon an (DataConId $ name2String c) n $ transType t'
+                  return $ C.DataCon an (C.DataConId $ name2String c) n $ transType t'
 
-transDefn :: Fresh m => RWMDefn -> m Defn
-transDefn (RWMDefn an n (Embed (Poly t)) _ (Embed e)) = do
+transDefn :: Fresh m => M.Defn -> m C.Defn
+transDefn (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) = do
       (_, t')  <- unbind t
       (xs, e') <- unbind e
-      Defn an (transVar n) (transType t') <$> runReaderT (transExp e') (Map.fromList $ zip xs [0..])
+      C.Defn an (transVar n) (transType t') <$> runReaderT (transExp e') (Map.fromList $ zip xs [0..])
 
-transVar :: Name RWMExp -> GId
+transVar :: Name M.Exp -> C.GId
 transVar n = case head $ name2String n of
       '$' -> prettyPrint n
       _   -> name2String n
 
-transExp :: Fresh m => RWMExp -> ReaderT (Map (Name RWMExp) Int) m Exp
+transExp :: Fresh m => M.Exp -> ReaderT (Map (Name M.Exp) Int) m C.Exp
 transExp = \ case
-      RWMApp an e1 e2                     -> App an <$> transExp e1 <*> transExp e2
-      RWMVar an t x                       -> (Map.lookup x <$> ask) >>= \ case
+      M.App an e1 e2                    -> C.App an <$> transExp e1 <*> transExp e2
+      M.Var an t x                      -> (Map.lookup x <$> ask) >>= \ case
             Nothing -> if notPrim (name2String x)
-                  then pure $ GVar an (transType t) $ transVar x
-                  else pure $ Prim an (transType t) $ transVar x
-            Just i  -> pure $ LVar an (transType t) i
-      RWMCon an t d                       -> pure $ Con an (transType t) $ DataConId $ name2String d
-      RWMMatch an t e p f as (Just e2)    -> Match an (transType t) <$> transExp e <*> transPat p <*> (toGId <$> transExp f) <*> mapM ((toLId <$>) . transExp) as <*> (Just <$> transExp e2)
-      RWMMatch an t e p f as Nothing      -> Match an (transType t) <$> transExp e <*> transPat p <*> (toGId <$> transExp f) <*> mapM ((toLId <$>) . transExp) as <*> pure Nothing
-      RWMNativeVHDL an s (RWMError _ t _) -> pure $ NativeVHDL an (transType t) s
-      RWMError an t _                     -> pure $ GVar an (transType t) "ERROR"
-      e                                   -> error $ "ToCore: unsupported expression: " ++ prettyPrint e
+                  then pure $ C.GVar an (transType t) $ transVar x
+                  else pure $ C.Prim an (transType t) $ transVar x
+            Just i  -> pure $ C.LVar an (transType t) i
+      M.Con an t d                      -> pure $ C.Con an (transType t) $ C.DataConId $ name2String d
+      M.Match an t e p f as (Just e2)   -> C.Match an (transType t) <$> transExp e <*> transPat p <*> (toGId <$> transExp f) <*> mapM ((toLId <$>) . transExp) as <*> (Just <$> transExp e2)
+      M.Match an t e p f as Nothing     -> C.Match an (transType t) <$> transExp e <*> transPat p <*> (toGId <$> transExp f) <*> mapM ((toLId <$>) . transExp) as <*> pure Nothing
+      M.NativeVHDL an s (M.Error _ t _) -> pure $ C.NativeVHDL an (transType t) s
+      M.Error an t _                    -> pure $ C.GVar an (transType t) "ERROR"
+      e                                 -> error $ "ToCore: unsupported expression: " ++ prettyPrint e
 
-toGId :: Exp -> GId
-toGId (GVar _ _ x) = x
+toGId :: C.Exp -> C.GId
+toGId (C.GVar _ _ x) = x
 toGId e               = error $ "toGId: expected GVar, got: " ++ prettyPrint e
 
-toLId :: Exp -> LId
-toLId (LVar _ _ x) = x
+toLId :: C.Exp -> C.LId
+toLId (C.LVar _ _ x) = x
 toLId e               = error $ "toLId: expected LVar, got: " ++ prettyPrint e
 
-transPat :: Fresh m => RWMMatchPat -> m Pat
+transPat :: Fresh m => M.MatchPat -> m C.Pat
 transPat = \ case
-      RWMMatchPatCon an t d ps -> PatCon an (transType t) (DataConId $ name2String d) <$> mapM transPat ps
-      RWMMatchPatVar an t      -> pure $ PatVar an $ transType t
+      M.MatchPatCon an t d ps -> C.PatCon an (transType t) (C.DataConId $ name2String d) <$> mapM transPat ps
+      M.MatchPatVar an t      -> pure $ C.PatVar an $ transType t
 
-transType :: RWMTy -> Ty
+transType :: M.Ty -> C.Ty
 transType = \ case
-      RWMTyApp an t1 t2  -> TyApp an (transType t1) $ transType t2
-      RWMTyCon an c      -> TyCon an $ TyConId $ name2String c
-      RWMTyComp an t1 t2 -> TyComp an (transType t1) $ transType t2
-      RWMTyVar an _ x    -> TyVar an $ name2String x
-      t                  -> error $ "ToCore: unsupported type: " ++ prettyPrint t
+      M.TyApp an t1 t2  -> C.TyApp an (transType t1) $ transType t2
+      M.TyCon an c      -> C.TyCon an $ C.TyConId $ name2String c
+      M.TyComp an t1 t2 -> C.TyComp an (transType t1) $ transType t2
+      M.TyVar an _ x    -> C.TyVar an $ name2String x
+      t                 -> error $ "ToCore: unsupported type: " ++ prettyPrint t
 
