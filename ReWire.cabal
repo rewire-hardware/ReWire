@@ -2,53 +2,53 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 -- The name of the package.
-name:                ReWire
+name:               ReWire
 
 -- The package version.  See the Haskell package versioning policy (PVP)
 -- for standards guiding when and how versions should be incremented.
 -- http://www.haskell.org/haskellwiki/Package_versioning_policy
--- PVP summary:      +-+------- breaking API changes
---                   | | +----- non-breaking API additions
---                   | | | +--- code changes with no API change
-version:             0.2.0.0
+-- PVP summary:     +-+------- breaking API changes
+--                  | | +----- non-breaking API additions
+--                  | | | +--- code changes with no API change
+version:            0.2.0.0
 
 -- A short (one-line) description of the package.
-synopsis:            A Haskell-to-VHDL compiler
+synopsis:           A Haskell-to-VHDL compiler
 
 -- A longer description of the package.
-description:         An experimental compiler for a subset of Haskell to VHDL.
+description:        An experimental compiler for a subset of Haskell to VHDL.
 
 -- URL for the project homepage or repository.
-homepage:            https://github.com/mu-chaco/ReWire
+homepage:           https://github.com/mu-chaco/ReWire
 
 -- The license under which the package is released.
-license:             AllRightsReserved
+license:            AllRightsReserved
 
 -- The file containing the license text.
-license-file:        LICENSE
+license-file:       LICENSE
 
 -- The package author(s).
-author:              Adam Procter, Chris Hathhorn, Ian Graves, and William L. Harrison
+author:             Adam Procter, Chris Hathhorn, Ian Graves, and William L. Harrison
 
 -- An email address to which users can send suggestions, bug reports, and
 -- patches.
-maintainer:          procteram@missouri.edu
+maintainer:         procteram@missouri.edu
 
 -- A copyright notice.
 -- copyright:
 
-category:            Language
+category:           Language
 
-build-type:          Simple
+build-type:         Simple
 
 -- Extra files to be distributed with the package, such as examples or a
 -- README.
-extra-source-files:  README.md
-data-files:          lib/*.hs
-                     test/frontend_tests/*.hs
-                     test/frontend_tests/Mods/*.hs
-                     test/frontend_tests/Mods/C/*.hs
-                     test/compiler_tests/*.hs
+extra-source-files: README.md
+data-files:         lib/*.hs
+                    test/frontend_tests/*.hs
+                    test/frontend_tests/Mods/*.hs
+                    test/frontend_tests/Mods/C/*.hs
+                    test/compiler_tests/*.hs
 
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.10
@@ -61,7 +61,6 @@ library
                   , deepseq >= 1.3.0
                   , directory >= 1.2 && < 1.3
                   , exceptions >= 0.8 && < 0.9
-                  , fgl >= 5.5
                   , filepath >= 1.3 && < 1.5
                   , haskell-src-exts >= 1.17 && < 1.18
                   , mtl >= 2.2.1
@@ -77,7 +76,6 @@ library
   other-modules:    Paths_ReWire
 
   exposed-modules:  ReWire.Annotation
-                    ReWire.Core.Scoping
                     ReWire.Core.Syntax
                     ReWire.Core.ToMiniHDL
                     ReWire.Error
@@ -89,6 +87,7 @@ library
                     ReWire.FrontEnd.KindCheck
                     ReWire.FrontEnd.LoadPath
                     ReWire.FrontEnd.PrimBasis
+                    ReWire.FrontEnd.Purify
                     ReWire.FrontEnd.Rename
                     ReWire.FrontEnd.Syntax
                     ReWire.FrontEnd.ToCore
@@ -97,11 +96,6 @@ library
                     ReWire.FrontEnd.TypeCheck
                     ReWire.Main
                     ReWire.MiniHDL.Syntax
-                    ReWire.PreHDL.CFG
-                    ReWire.PreHDL.ElimEmpty
-                    ReWire.PreHDL.GotoElim
-                    ReWire.PreHDL.Syntax
-                    ReWire.PreHDL.ToVHDL
                     ReWire.Pretty
                     ReWire.SYB
 
@@ -112,18 +106,19 @@ executable rwc
   default-language: Haskell2010
 
 test-suite rwc-test
-  type:               exitcode-stdio-1.0
-  hs-source-dirs:     test
-  main-is:            TestMain.hs
-  build-depends:      ReWire
-                    , base >= 4.6 && < 5
-                    , Cabal >= 1.10
-                    , directory >= 1.2 && < 1.3
-                    , HUnit >= 1.2.5 && < 1.4
-                    , test-framework >= 0.8 && < 0.9
-                    , test-framework-hunit >= 0.3.0.2 && < 0.4
-  default-language:   Haskell2010
+  type:              exitcode-stdio-1.0
+  hs-source-dirs:    test
+  main-is:           TestMain.hs
+  build-depends:     ReWire
+                   , base >= 4.6 && < 5
+                   , Cabal >= 1.10
+                   , directory >= 1.2 && < 1.3
+                   , HUnit >= 1.2.5 && < 1.4
+                   , test-framework >= 0.8 && < 0.9
+                   , test-framework-hunit >= 0.3.0.2 && < 0.4
+  other-modules:     Paths_ReWire
+  default-language:  Haskell2010
 
 source-repository head
-  type:     git
-  location: git://github.com/mu-chaco/ReWire.git
+  type:              git
+  location:          git://github.com/mu-chaco/ReWire.git

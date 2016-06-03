@@ -12,6 +12,7 @@ import ReWire.FrontEnd.Annotate
 import ReWire.FrontEnd.Desugar
 import ReWire.FrontEnd.KindCheck
 import ReWire.FrontEnd.PrimBasis
+import ReWire.FrontEnd.Purify
 import ReWire.FrontEnd.Rename
 import ReWire.FrontEnd.Syntax
 import ReWire.FrontEnd.ToCore
@@ -29,33 +30,34 @@ import Language.Haskell.Exts.Annotated (parseFileWithMode, ParseResult (..), def
 import Language.Haskell.Exts.Annotated.Simplify (sModuleName)
 import System.Directory (getCurrentDirectory, setCurrentDirectory, doesFileExist, doesDirectoryExist)
 
-import qualified Data.Map.Strict              as Map
-import qualified Language.Haskell.Exts.Syntax as S
-import qualified ReWire.Core.Syntax           as Core
+import qualified Data.Map.Strict                        as Map
+import qualified Language.Haskell.Exts.Syntax           as S hiding (Module)
+import qualified Language.Haskell.Exts.Annotated.Syntax as S (Module (..))
+import qualified ReWire.Core.Syntax                     as Core
 
-import Language.Haskell.Exts.Annotated.Syntax hiding (Annotation, Namespace, Name, Kind)
+import Language.Haskell.Exts.Annotated.Syntax hiding (Annotation, Exp, Module (..), Namespace, Name, Kind)
 
 import Unbound.Generics.LocallyNameless (runFreshMT, FreshMT (..), Alpha)
 
 type Cache = ReaderT LoadPath (StateT ModCache (FreshMT (SyntaxErrorT IO)))
 type LoadPath = [FilePath]
-type ModCache = Map.Map FilePath (RWMModule, Exports)
+type ModCache = Map.Map FilePath (Module, Exports)
 
 runCache :: Cache a -> LoadPath -> IO (Either AstError a)
 runCache m lp = runSyntaxError $ fst <$> runFreshMT (runStateT (runReaderT m lp) mempty)
 
-mkRenamer :: Annotation a => Module a -> Cache Renamer
+mkRenamer :: Annotation a => S.Module a -> Cache Renamer
 mkRenamer m = mconcat <$> mapM mkRenamer' (getImps m)
       where mkRenamer' :: Annotation a => ImportDecl a -> Cache Renamer
             mkRenamer' (ImportDecl _ (sModuleName -> m) quald _ _ _ (fmap sModuleName -> as) specs) = do
                   (_, exps) <- getModule $ toFilePath m
                   fromImps m quald exps as specs
 
-getImps :: Annotation a => Module a -> [ImportDecl a]
+getImps :: Annotation a => S.Module a -> [ImportDecl a]
 getImps = \ case
-      Module l _ _ imps _            -> addPrelude l imps
-      XmlPage {}                     -> []
-      XmlHybrid l _ _ imps _ _ _ _ _ -> addPrelude l imps
+      S.Module l _ _ imps _            -> addPrelude l imps
+      S.XmlPage {}                     -> []
+      S.XmlHybrid l _ _ imps _ _ _ _ _ -> addPrelude l imps
       where addPrelude :: Annotation a => a -> [ImportDecl a] -> [ImportDecl a]
             addPrelude l imps =
                   if any isPrelude imps
@@ -71,7 +73,7 @@ getImps = \ case
 -- Pass 15   Translate to mantle + rename globals.
 -- Pass 16   Translate to core
 
-getModule :: FilePath -> Cache (RWMModule, Exports)
+getModule :: FilePath -> Cache (Module, Exports)
 getModule fp = Map.lookup fp <$> get >>= \ case
       Just p  -> return p
       Nothing -> do
@@ -95,7 +97,7 @@ getModule fp = Map.lookup fp <$> get >>= \ case
             modify $ Map.insert fp (m' <> imps, exps)
             return (m' <> imps, exps)
 
-      where tryParseInDir :: FilePath -> Cache (Maybe (Module SrcSpanInfo))
+      where tryParseInDir :: FilePath -> Cache (Maybe (S.Module SrcSpanInfo))
             tryParseInDir dp = do
                   dExists <- liftIO $ doesDirectoryExist dp
                   if not dExists then return Nothing else do
@@ -108,7 +110,7 @@ getModule fp = Map.lookup fp <$> get >>= \ case
                         liftIO $ setCurrentDirectory oldCwd
                         return result
 
-            parse :: IO (ParseResult (Module SrcSpanInfo))
+            parse :: IO (ParseResult (S.Module SrcSpanInfo))
             parse = parseFileWithMode defaultParseMode { parseFilename = fp, fixities = Nothing } fp
 
             pr2Cache :: ParseResult a -> Cache a
@@ -117,13 +119,13 @@ getModule fp = Map.lookup fp <$> get >>= \ case
                   ParseFailed (S.SrcLoc "" r c) msg -> failAt (S.SrcLoc fp r c) msg
                   ParseFailed l msg                 -> failAt l msg
 
-            loadImports :: Annotation a => Module a -> Cache RWMModule
+            loadImports :: Annotation a => S.Module a -> Cache Module
             loadImports = liftM mconcat . mapM (liftM fst . getModule . toFilePath . sModuleName . importModule) . getImps
 
 -- Phase 2 (pre-core) transformations.
 getProgram :: FilePath -> Cache Core.Program
 getProgram fp = do
-      (RWMModule ts ds, _) <- getModule fp
+      (Module ts ds, _) <- getModule fp
 
       p <- kindCheck
        >=> typeCheck
@@ -138,6 +140,9 @@ getProgram fp = do
        >=> purge
        -- >=> typeCheck
        -- >=> printInfo "___Post_Purge___"
+       >=> purify
+       -- >=> typeCheck
+       -- >=> printInfo "___Post_Purify___"
        >=> toCore
        $ addPrims (ts, ds)
 
@@ -152,13 +157,13 @@ printInfo msg p = do
       liftIO $ putStrLn "Free kind vars:\n"
       liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Kind])
       liftIO $ putStrLn "Free type vars:\n"
-      liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name RWMTy])
+      liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Ty])
       liftIO $ putStrLn "Free tycon vars:\n"
       liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name TyConId])
       liftIO $ putStrLn "Free con vars:\n"
       liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name DataConId])
       liftIO $ putStrLn "Free exp vars:\n"
-      liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name RWMExp])
+      liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Exp])
       liftIO $ putStrLn "Program:\n"
       liftIO $ putStrLn $ prettyPrint p
       return p

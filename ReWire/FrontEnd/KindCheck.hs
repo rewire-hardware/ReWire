@@ -63,41 +63,41 @@ unify an k1 k2 = do
       u <- mgu an (subst s k1) $ subst s k2
       modify (u @@)
 
-kcTy :: (Fresh m, SyntaxError m) => RWMTy -> KCM m Kind
+kcTy :: (Fresh m, SyntaxError m) => Ty -> KCM m Kind
 kcTy = \ case
-      RWMTyApp an t1 t2  -> do
+      TyApp an t1 t2  -> do
             k1 <- kcTy t1
             k2 <- kcTy t2
             k  <- freshkv
             unify an k1 $ KFun k2 k
             return k
-      RWMTyCon an i      -> do
+      TyCon an i      -> do
             cas <- askCAssumps
             case Map.lookup i cas of
                   Nothing -> failAt an "Unknown type constructor"
                   Just k  -> return k
-      RWMTyVar _ k _     -> return k
-      RWMTyComp an tm tv -> do
+      TyVar _ k _     -> return k
+      TyComp an tm tv -> do
             km <- kcTy tm
             kv <- kcTy tv
             unify an km KMonad
             unify an kv KStar
             return KStar
-      RWMTyBlank an      -> failAt an "Something went wrong in the kind checker"
+      TyBlank an      -> failAt an "Something went wrong in the kind checker"
 
-kcDataCon :: (Fresh m, SyntaxError m) => RWMDataCon -> KCM m ()
-kcDataCon (RWMDataCon an _ (Embed (Poly t))) = do
+kcDataCon :: (Fresh m, SyntaxError m) => DataCon -> KCM m ()
+kcDataCon (DataCon an _ (Embed (Poly t))) = do
       (_, t') <- unbind t
       k       <- kcTy t'
       unify an KStar k
 
-kcDataDecl :: (Fresh m, SyntaxError m) => RWMData -> KCM m ()
-kcDataDecl (RWMData _ _ _ cs) = mapM_ kcDataCon cs
+kcDataDecl :: (Fresh m, SyntaxError m) => DataDefn -> KCM m ()
+kcDataDecl (DataDefn _ _ _ cs) = mapM_ kcDataCon cs
 
-kcDefn :: (Fresh m, SyntaxError m) => RWMDefn -> KCM m ()
-kcDefn (RWMDefn an _ (Embed (Poly t)) _ _) = do
-      (_, t')    <- unbind t
-      k          <- kcTy t'
+kcDefn :: (Fresh m, SyntaxError m) => Defn -> KCM m ()
+kcDefn (Defn an _ (Embed (Poly t)) _ _) = do
+      (_, t') <- unbind t
+      k       <- kcTy t'
       unify an k KStar
 
 -- There is, IIRC, a weird little corner case in the Haskell Report that says
@@ -110,26 +110,26 @@ monoize = \ case
       KMonad     -> KMonad
       KVar _     -> KStar
 
-redecorate :: SyntaxError m => KiSub -> RWMData -> KCM m RWMData
-redecorate s (RWMData an i _ cs) = do
-      cas        <- askCAssumps
+redecorate :: SyntaxError m => KiSub -> DataDefn -> KCM m DataDefn
+redecorate s (DataDefn an i _ cs) = do
+      cas <- askCAssumps
       case Map.lookup i cas of
-            Just k  -> return $ RWMData an i (monoize $ subst s k) cs
+            Just k  -> return $ DataDefn an i (monoize $ subst s k) cs
             Nothing -> failAt an $ "Redecorate: no such assumption: " ++ show i
 
-assump :: RWMData -> (Name TyConId, Kind)
-assump (RWMData _ i k _) = (i, k)
+assump :: DataDefn -> (Name TyConId, Kind)
+assump (DataDefn _ i k _) = (i, k)
 
-kc :: (Fresh m, SyntaxError m) => RWMProgram -> KCM m RWMProgram
-kc (RWMProgram p) = do
+kc :: (Fresh m, SyntaxError m) => Program -> KCM m Program
+kc (Program p) = do
       (ts, vs) <- untrec p
-      let cas   = Map.fromList $ map assump ts
+      let cas  =  Map.fromList $ map assump ts
       localCAssumps (cas `Map.union`) $ do
             mapM_ kcDataDecl ts
             mapM_ kcDefn vs
             s   <- get
             ts' <- mapM (redecorate s) ts
-            return $ RWMProgram $ trec (ts', vs)
+            return $ Program $ trec (ts', vs)
 
-kindCheck :: (Fresh m, SyntaxError m) => RWMProgram -> m RWMProgram
+kindCheck :: (Fresh m, SyntaxError m) => Program -> m Program
 kindCheck m = fmap fst $ runStateT (runReaderT (kc m) (KCEnv mempty)) mempty

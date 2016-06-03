@@ -1,6 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses,GeneralizedNewtypeDeriving,FlexibleInstances,
-             DeriveDataTypeable,DeriveGeneric,StandaloneDeriving,LambdaCase #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE DeriveDataTypeable,DeriveGeneric,LambdaCase #-}
 
 module ReWire.Core.Syntax
   ( DataConId(..),TyConId(..)
