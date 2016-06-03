@@ -1,6 +1,5 @@
 {-# LANGUAGE Rank2Types, ScopedTypeVariables, GADTs, TypeOperators, StandaloneDeriving
            , TypeFamilies, DeriveGeneric, LambdaCase #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.Annotation
       ( Annote (..)
       , Annotation (..)
