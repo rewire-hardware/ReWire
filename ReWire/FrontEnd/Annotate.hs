@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.Annotate
       ( annotate
       , Annote

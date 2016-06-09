@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, UndecidableInstances #-}
+{-# LANGUAGE Safe #-}
 module ReWire.Error
       ( SyntaxError, SyntaxErrorT, AstError
       , MonadError

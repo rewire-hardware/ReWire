@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase, FlexibleInstances, TupleSections, NamedFieldPuns, ViewPatterns #-}
+{-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.Cache
       ( runCache
       , getProgram
@@ -11,6 +12,7 @@ import ReWire.Error
 import ReWire.FrontEnd.Annotate
 import ReWire.FrontEnd.Desugar
 import ReWire.FrontEnd.KindCheck
+import ReWire.FrontEnd.Parse
 import ReWire.FrontEnd.PrimBasis
 import ReWire.FrontEnd.Purify
 import ReWire.FrontEnd.Rename
@@ -20,24 +22,20 @@ import ReWire.FrontEnd.ToMantle
 import ReWire.FrontEnd.Transform
 import ReWire.FrontEnd.TypeCheck
 import ReWire.Pretty
+import ReWire.FrontEnd.Unbound (runFreshMT, FreshMT (..), Alpha)
 
 import Control.Monad ((>=>), liftM, msum)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Reader (runReaderT, ReaderT, MonadReader (..))
 import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify)
 import Data.Monoid ((<>))
-import Language.Haskell.Exts.Annotated (parseFileWithMode, ParseResult (..), defaultParseMode, ParseMode (..))
 import Language.Haskell.Exts.Annotated.Simplify (sModuleName)
-import System.Directory (getCurrentDirectory, setCurrentDirectory, doesFileExist, doesDirectoryExist)
 
 import qualified Data.Map.Strict                        as Map
-import qualified Language.Haskell.Exts.Syntax           as S hiding (Module)
 import qualified Language.Haskell.Exts.Annotated.Syntax as S (Module (..))
 import qualified ReWire.Core.Syntax                     as Core
 
 import Language.Haskell.Exts.Annotated.Syntax hiding (Annotation, Exp, Module (..), Namespace, Name, Kind)
-
-import Unbound.Generics.LocallyNameless (runFreshMT, FreshMT (..), Alpha)
 
 type Cache = ReaderT LoadPath (StateT ModCache (FreshMT (SyntaxErrorT IO)))
 type LoadPath = [FilePath]
@@ -80,7 +78,7 @@ getModule fp = Map.lookup fp <$> get >>= \ case
             modify $ Map.insert fp mempty
 
             lp         <- ask
-            mmods      <- mapM tryParseInDir lp
+            mmods      <- mapM (tryParseInDir fp) lp
             -- FIXME: The directory crawling could be more robust here. (Should
             -- use exception handling.)
             m          <- maybe (failAt (filePath fp) "File not found in loadpath") return $ msum mmods
@@ -97,29 +95,7 @@ getModule fp = Map.lookup fp <$> get >>= \ case
             modify $ Map.insert fp (m' <> imps, exps)
             return (m' <> imps, exps)
 
-      where tryParseInDir :: FilePath -> Cache (Maybe (S.Module SrcSpanInfo))
-            tryParseInDir dp = do
-                  dExists <- liftIO $ doesDirectoryExist dp
-                  if not dExists then return Nothing else do
-                        oldCwd <- liftIO getCurrentDirectory
-                        liftIO $ setCurrentDirectory dp
-                        exists <- liftIO $ doesFileExist fp
-                        result <- if not exists then return Nothing else do
-                              pr <- liftIO parse
-                              Just <$> pr2Cache pr
-                        liftIO $ setCurrentDirectory oldCwd
-                        return result
-
-            parse :: IO (ParseResult (S.Module SrcSpanInfo))
-            parse = parseFileWithMode defaultParseMode { parseFilename = fp, fixities = Nothing } fp
-
-            pr2Cache :: ParseResult a -> Cache a
-            pr2Cache = \ case
-                  ParseOk p                         -> return p
-                  ParseFailed (S.SrcLoc "" r c) msg -> failAt (S.SrcLoc fp r c) msg
-                  ParseFailed l msg                 -> failAt l msg
-
-            loadImports :: Annotation a => S.Module a -> Cache Module
+      where loadImports :: Annotation a => S.Module a -> Cache Module
             loadImports = liftM mconcat . mapM (liftM fst . getModule . toFilePath . sModuleName . importModule) . getImps
 
 -- Phase 2 (pre-core) transformations.

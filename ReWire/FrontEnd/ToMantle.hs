@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase, ViewPatterns, ScopedTypeVariables #-}
+{-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.ToMantle (toMantle) where
 
 import ReWire.Annotation hiding (ann)
@@ -6,6 +7,10 @@ import ReWire.Error
 import ReWire.FrontEnd.Fixity
 import ReWire.FrontEnd.Rename hiding (Module)
 import ReWire.FrontEnd.Syntax ((|->))
+import ReWire.FrontEnd.Unbound
+      ( string2Name, name2String
+      , fresh, Fresh, Name, Embed (..), bind
+      )
 import ReWire.SYB
 
 import Control.Monad (foldM, replicateM, void)
@@ -21,11 +26,6 @@ import qualified ReWire.FrontEnd.Rename       as M
 import qualified ReWire.FrontEnd.Syntax       as M
 
 import Language.Haskell.Exts.Annotated.Syntax hiding (Name, Kind)
-
-import Unbound.Generics.LocallyNameless
-      ( string2Name, name2String
-      , fresh, Fresh, Name, Embed (..), bind
-      )
 
 -- | An intermediate form for exports. TODO(chathhorn): get rid of it.
 data Export = Export FQName

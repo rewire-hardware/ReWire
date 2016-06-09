@@ -1,7 +1,6 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, DeriveDataTypeable, DeriveGeneric, GeneralizedNewtypeDeriving
-           , Rank2Types, GADTs, ScopedTypeVariables, StandaloneDeriving, LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, DeriveDataTypeable, DeriveGeneric, Rank2Types, GADTs, ScopedTypeVariables, StandaloneDeriving, LambdaCase #-}
+{-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-
 module ReWire.FrontEnd.Syntax
       ( DataConId, TyConId
       , Ty (..), Exp (..), Pat (..), MatchPat (..)
@@ -17,10 +16,21 @@ module ReWire.FrontEnd.Syntax
       ) where
 
 import ReWire.Annotation
+import ReWire.FrontEnd.Unbound
+      ( Fresh (..), FreshMT (..), runFreshM
+      , Embed (..)
+      , TRec (..), trec, untrec
+      , Name (..), AnyName (..), SubstName (..)
+      , Bind (..), bind, unbind
+      , Alpha, aeq, Subst (..)
+      , toListOf
+      , name2String, string2Name
+      )
 import ReWire.Pretty
+import qualified ReWire.FrontEnd.Unbound as UB (fv, fvAny)
 
 import Control.DeepSeq (NFData (..), deepseq)
-import Control.Monad.Catch (MonadCatch, MonadThrow)
+import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 import Data.Data (Typeable, Data (..))
 import Data.List (find)
 import Data.Maybe (fromJust)
@@ -30,18 +40,6 @@ import Text.PrettyPrint
       ( Doc, text, nest, hsep, punctuate, parens, doubleQuotes
       , space, hang, braces, vcat, (<+>), ($+$)
       )
-
-import Unbound.Generics.LocallyNameless
-      ( Subst (..), Alpha (..), SubstName (..)
-      , Bind, Name, AnyName (..), TRec (..), Embed (..)
-      , name2String, string2Name
-      , runFreshM, Fresh (..), FreshMT (..)
-      , bind, unbind, trec, untrec, aeq
-      )
-import qualified Unbound.Generics.LocallyNameless as UB
-import Unbound.Generics.LocallyNameless.Internal.Fold (toListOf)
-import Unbound.Generics.LocallyNameless.Name (Name(..))
-import Unbound.Generics.LocallyNameless.Bind (Bind(..))
 
 fv :: (Alpha a, Typeable b) => a -> [Name b]
 fv = toListOf UB.fv
@@ -55,9 +53,9 @@ tblank = TyBlank noAnn
 kblank :: Kind
 kblank = KVar $ string2Name "_"
 
-newtype DataConId = DataConId String
+data DataConId = DataConId String
       deriving (Generic, Typeable, Data)
-newtype TyConId = TyConId String
+data TyConId = TyConId String
       deriving (Generic, Typeable, Data)
 
 data DataCon = DataCon Annote (Name DataConId) (Embed Poly)
@@ -94,7 +92,7 @@ instance Pretty Kind where
             KFun a b         -> pretty a <+> text "->" <+> pretty b
             KMonad           -> text "M"
 
-newtype Poly = Poly (Bind [Name Ty] Ty)
+data Poly = Poly (Bind [Name Ty] Ty)
       deriving (Generic, Show, Typeable, Data)
 
 instance NFData Poly
@@ -359,13 +357,17 @@ getArrow = dataName . fromJust . find ((== "->") . name2String . dataName)
 
 -- Orphans.
 
+instance NFData a => NFData (TRec a) where
+      rnf (TRec r) = r `deepseq` ()
+
 deriving instance Data a => Data (Embed a)
-deriving instance NFData a => NFData (TRec a)
 deriving instance Data a => Data (Name a)
 deriving instance (Data a, Data b) => Data (Bind a b)
 
-deriving instance MonadThrow m => MonadThrow (FreshMT m)
-deriving instance MonadCatch m => MonadCatch (FreshMT m)
+instance MonadThrow m => MonadThrow (FreshMT m) where
+      throwM = FreshMT . throwM
+instance MonadCatch m => MonadCatch (FreshMT m) where
+      catch (FreshMT m') h = FreshMT $ catch m' (unFreshMT . h)
 
 instance Pretty AnyName where
       pretty (AnyName n) = pretty n

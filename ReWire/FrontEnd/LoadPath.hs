@@ -1,3 +1,4 @@
+{-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.LoadPath (getSystemLoadPath) where
 
 import Paths_ReWire

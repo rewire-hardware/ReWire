@@ -1,19 +1,18 @@
+{-# LANGUAGE Safe #-}
 module ReWire.Core.ToMiniHDL where
 
-import ReWire.MiniHDL.Syntax as M
-import ReWire.Core.Syntax as C
-import ReWire.Pretty
 import ReWire.Annotation
+import ReWire.Core.Syntax as C
 import ReWire.Error
+import ReWire.Core.Mangle
+import ReWire.MiniHDL.Syntax as M
+import ReWire.Pretty
+
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Identity
-import Encoding (zEncodeString)   -- this is from the ghc package
 import Data.List (find)
 import Data.Bits (testBit)
-
-mangle :: String -> String
-mangle = zEncodeString
 
 type CM = SyntaxErrorT (
             StateT ([Signal],[Component],Int) (
@@ -212,7 +211,7 @@ compileExp e_ = case e of
                                          let stmts   =  concatMap fst sssns
                                              ns      =  map snd sssns
                                          tagvec      <- dciTagVector i
-                                         padvec      <- dciPadVector i tres 
+                                         padvec      <- dciPadVector i tres
                                          return (stmts++[Assign (LHSName n) (ExprConcat
                                                                                (foldl ExprConcat (ExprBitString tagvec) (map ExprName ns))
                                                                                   (ExprBitString padvec)

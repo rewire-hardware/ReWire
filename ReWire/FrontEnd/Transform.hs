@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase, ViewPatterns, ScopedTypeVariables, GADTs #-}
+{-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 module ReWire.FrontEnd.Transform
       ( inline, reduce
@@ -10,6 +11,12 @@ module ReWire.FrontEnd.Transform
 
 import ReWire.Error
 import ReWire.FrontEnd.Syntax
+import ReWire.FrontEnd.Unbound
+      ( Fresh (..), string2Name, name2String
+      , substs, subst, unembed
+      , isFreeName, runFreshM
+      , Name (..)
+      )
 import ReWire.SYB
 
 import Control.Arrow ((***))
@@ -22,13 +29,6 @@ import Data.Maybe (fromJust, fromMaybe)
 
 import Data.Set (Set, singleton, union, (\\))
 import qualified Data.Set as Set
-
-import Unbound.Generics.LocallyNameless
-      ( Fresh (..), string2Name, name2String
-      , substs, subst, unembed
-      , isFreeName, runFreshM
-      )
-import Unbound.Generics.LocallyNameless.Name (Name (..))
 
 -- | Inlines defs marked for inlining. Must run before lambda lifting.
 inline :: Fresh m => Program -> m Program
