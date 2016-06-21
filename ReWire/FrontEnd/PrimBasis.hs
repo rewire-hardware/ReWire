@@ -1,10 +1,11 @@
+{-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.PrimBasis (addPrims) where
 
 import ReWire.Annotation
 import ReWire.FrontEnd.Syntax
 
 import Data.List (foldl')
-import Unbound.Generics.LocallyNameless (string2Name)
+import Unbound.Generics.LocallyNameless.Name (string2Name)
 
 -- The "primitive basis" has some magical voodoo that cannot be expressed in
 -- the concrete syntax... so here we are.

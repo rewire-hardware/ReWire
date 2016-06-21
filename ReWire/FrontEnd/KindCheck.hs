@@ -1,10 +1,11 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, LambdaCase, TupleSections #-}
-
+{-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.KindCheck (kindCheck) where
 
 import ReWire.Annotation
 import ReWire.Error
 import ReWire.FrontEnd.Syntax
+import ReWire.FrontEnd.Unbound (fresh, substs, aeq, Subst, string2Name)
 import ReWire.Pretty
 
 import Control.Monad.Reader (ReaderT (..), ask, local)
@@ -12,8 +13,6 @@ import Control.Monad.State (StateT (..), get, modify)
 import Data.Map.Strict (Map)
 
 import qualified Data.Map.Strict as Map
-
-import Unbound.Generics.LocallyNameless (fresh, substs, aeq, Subst, string2Name)
 
 subst :: Subst b a => Map (Name b) b -> a -> a
 subst ss = substs (Map.assocs ss)

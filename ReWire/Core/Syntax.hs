@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable,DeriveGeneric,LambdaCase #-}
+{-# LANGUAGE Safe #-}
 
 module ReWire.Core.Syntax
   ( DataConId(..),TyConId(..)

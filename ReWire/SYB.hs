@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes, GADTs, LambdaCase #-}
+{-# LANGUAGE Safe #-}
 module ReWire.SYB
       ( Transform (TId)
       , transform, (||>), runT, runPureT

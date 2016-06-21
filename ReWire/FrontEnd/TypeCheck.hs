@@ -1,15 +1,19 @@
 {-# LANGUAGE FlexibleContexts, LambdaCase, TupleSections #-}
+{-# LANGUAGE Safe #-}
 --
 -- This type checker is based loosely on Mark Jones's "Typing Haskell in
 -- Haskell", though since we don't have type classes in core it is much
 -- simpler.
 --
-
 module ReWire.FrontEnd.TypeCheck (typeCheck) where
 
 import ReWire.Annotation
 import ReWire.Error
 import ReWire.FrontEnd.Syntax
+import ReWire.FrontEnd.Unbound
+      ( fresh, substs, aeq, Subst
+      , name2String, string2Name
+      )
 import ReWire.Pretty
 
 import Control.DeepSeq (deepseq, force)
@@ -20,11 +24,6 @@ import Data.List (foldl')
 import Data.Map.Strict (Map)
 
 import qualified Data.Map.Strict as Map
-
-import Unbound.Generics.LocallyNameless
-      ( fresh, substs, aeq, Subst
-      , name2String, string2Name
-      )
 
 subst :: Subst b a => Map (Name b) b -> a -> a
 subst ss = substs (Map.assocs ss)

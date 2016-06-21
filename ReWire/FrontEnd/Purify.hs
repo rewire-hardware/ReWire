@@ -1,3 +1,4 @@
+{-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.Purify (purify) where
 
 import ReWire.FrontEnd.Syntax

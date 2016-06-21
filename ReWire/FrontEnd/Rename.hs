@@ -1,4 +1,5 @@
 {-# LANGUAGE Rank2Types, FlexibleInstances, TupleSections, LambdaCase, ViewPatterns, NamedFieldPuns #-}
+{-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.Rename
       ( Renamer, fixFixity, getExports, allExports
       , exclude, extend, finger, rename

@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase, ScopedTypeVariables #-}
+{-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.Fixity
       ( fixLocalOps
       , deuniquifyLocalOps
@@ -14,7 +15,7 @@ import Language.Haskell.Exts.Annotated.Fixity (Fixity (..), applyFixities)
 import Language.Haskell.Exts.Annotated.Simplify (sName, sQOp, sAssoc, sModuleName)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
 
-import qualified Language.Haskell.Exts as S
+import qualified Language.Haskell.Exts.Syntax as S
 
 import Language.Haskell.Exts.Annotated.Syntax hiding (Namespace)
 

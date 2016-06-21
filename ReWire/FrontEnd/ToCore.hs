@@ -1,20 +1,19 @@
 {-# LANGUAGE LambdaCase, ViewPatterns #-}
+{-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.ToCore (toCore) where
 
 import ReWire.Pretty
+import ReWire.FrontEnd.Unbound
+      ( Name, Fresh, runFreshMT, Embed (..)
+      , unbind, untrec, name2String
+      )
 
 import Control.Monad.Reader (ReaderT (..), ask)
 import Data.Map.Strict (Map)
-import Unbound.Generics.LocallyNameless
-      ( Name, Fresh, runFreshMT, Embed (..)
-      , unbind, untrec
-      )
 
 import qualified Data.Map.Strict        as Map
 import qualified ReWire.Core.Syntax     as C
 import qualified ReWire.FrontEnd.Syntax as M
-
-import Unbound.Generics.LocallyNameless (name2String)
 
 toCore :: Monad m => M.Program -> m C.Program
 toCore (M.Program p) = runFreshMT $ do

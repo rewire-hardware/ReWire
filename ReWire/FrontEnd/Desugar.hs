@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase, ScopedTypeVariables #-}
+{-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 module ReWire.FrontEnd.Desugar (desugar) where
 

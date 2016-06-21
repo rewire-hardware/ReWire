@@ -1,3 +1,4 @@
+{-# LANGUAGE Safe #-}
 module ReWire.MiniHDL.Syntax where
 
 import ReWire.Pretty

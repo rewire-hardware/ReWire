@@ -1,5 +1,6 @@
 {-# LANGUAGE Rank2Types, ScopedTypeVariables, GADTs, TypeOperators, StandaloneDeriving
            , TypeFamilies, DeriveGeneric, LambdaCase #-}
+{-# LANGUAGE Safe #-}
 module ReWire.Annotation
       ( Annote (..)
       , Annotation (..)
@@ -10,6 +11,7 @@ module ReWire.Annotation
       ) where
 
 import ReWire.SYB (runPureT,transform)
+import ReWire.FrontEnd.Unbound (Alpha (..))
 
 import Control.DeepSeq (NFData (..))
 import Control.Monad.Identity (Identity(..))
@@ -19,12 +21,11 @@ import Language.Haskell.Exts.SrcLoc
       ( SrcLoc, SrcInfo (..), SrcSpanInfo (..), SrcSpan (..)
       , noLoc, noInfoSpan, mkSrcSpan)
 
-import qualified Language.Haskell.Exts.Annotated as HS (Annotated(..))
+import qualified Language.Haskell.Exts.Annotated.Syntax as HS (Annotated(..))
 import qualified Language.Haskell.Exts.Pretty as HS (Pretty)
 
-import Unbound.Generics.LocallyNameless (Alpha (..))
 
-import GHC.Generics (Generic (..))
+import safe GHC.Generics (Generic (..))
 
 data Annote where
       NoAnnote  :: Annote

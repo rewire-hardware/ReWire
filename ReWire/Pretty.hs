@@ -1,3 +1,4 @@
+{-# LANGUAGE Safe #-}
 module ReWire.Pretty (Pretty (..), prettyPrint) where
 
 import Text.PrettyPrint (Doc)
