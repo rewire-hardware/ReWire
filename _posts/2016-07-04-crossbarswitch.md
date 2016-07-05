@@ -1,0 +1,204 @@
+---
+layout: page
+title: "Case Study #1: Crossbar Switch"
+category: doc
+date: 2016-07-04 10:52:04
+order: 5
+---
+
+### What's a Crossbar Switch?
+
+To perform this exercise, I relied primarily on two sources to explain what a crossbar switch is; they are:
+
+* [Wikipedia](https://en.wikipedia.org/wiki/Crossbar_switch), and
+* [The Crossbar Switch](http://www.mathcs.emory.edu/~cheung/Courses/355/Syllabus/90-parallel/CrossBar.html).
+
+Given these explanations, I generated a Haskell implementation of a crossbar switch like function (see `CrossbarSwitch.hs` below). Now, one could spend a lot of time trying to figure out if the code in `CrossbarSwitch.hs` is a crossbar switch, but for the purposes of learning ReWire, that issue is really beside the point. I recommend simply accepting `CrossbarSwitch.hs` as an input specification and don't worry too much about what it actually models. The real point of this part of the tutorial is to see how to program in ReWire.
+
+All the Haskell and ReWire code for this example can be found below:
+
+* [ReWirePrelude.hs]({{ site.baseurl }}/assets/code/ReWirePrelude.hs)
+* [CrossbarSwitch.hs]({{ site.baseurl }}/assets/code/CrossbarSwitch.hs)
+* [RWCrossbar.hs]({{ site.baseurl }}/assets/code/RWCrossbar.hs)
+
+What follows is an explanation of this code. First we describe the ReWirePrelude, which is a collection of, more or less, standard definitions. Then, we consider the Haskell definition of a crossbar switch, written in monadic style. In the final and most important section, we transform the Haskell definition of the switch into proper ReWire. This is important because it gives you a practical introduction to the differences between Haskell and ReWire. There are a number of small differences between the Haskell code `CrossbarSwitch.hs` and the ReWire code `RWCrossbar.hs` that shed light on how to program in ReWire.
+
+The usual mode of program development is to first write a version of the desired application in Haskell using the concepts described in the [Language Reference section]({{ site.baseurl }}{% post_url 2016-05-03-language-reference %}). The reasons to do this boil down to the GHC compiler being vastly more mature than the ReWire compiler, and so, for example, error messages are much more informative. Once all the kinks as it were are worked out in Haskell (e.g., getting something that typechecks, etc.), make a number of small tweeks to get your program into the ReWire subset of Haskell. This section of the tutorial introduces the reader to this mode of program development.
+
+### \"ReWire Prelude\"
+
+In the same manner as the Glasgow Haskell Compiler and other Haskell implementations, we are compiling a list of standard definitions into a prelude file, ``ReWirePrelude.hs``. This file is, in effect, a dirty snowball of definitions that we are accumulating with the intent of ultimately making it part of the standard ReWire implementation. For now, to use it, you must explicitly import it.
+
+`ReWirePrelude.hs` includes definitions for bits (`Bit`) and words of various sizes (e.g., `W8` and `W32`) as well as functions on those primitive types (e.g., `rotateR2`). The particular file we use can be found [here]({{ site.baseurl }}/assets/code/ReWirePrelude.hs).
+
+
+```` haskell
+module ReWirePrelude where
+
+data Bit = Zero | One
+data W8  = W8 Bit Bit Bit Bit Bit Bit Bit Bit
+data W32 = W32 Bit Bit Bit Bit Bit Bit Bit Bit
+               Bit Bit Bit Bit Bit Bit Bit Bit
+               Bit Bit Bit Bit Bit Bit Bit Bit
+               Bit Bit Bit Bit Bit Bit Bit Bit
+
+rotateR2,rotateR6,rotateR7,rotateR11,rotateR13,rotateR17,rotateR18,rotateR19,rotateR22 :: W32 -> W32
+rotateR2 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
+              b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
+           = (W32 b30 b31 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13
+                  b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29)
+
+  ...stuff deleted...
+````  
+
+### Crossbar Switch in Haskell
+
+```` haskell
+module CrossbarSwitch where
+
+import Control.Monad.Identity
+import Control.Monad.State
+import Control.Monad.Resumption.Reactive
+
+import ReWirePrelude
+
+switch :: t -> t -> Bool -> (t, t)
+switch x y True  = (x,x)
+switch x y False = (x,y)
+
+data Maybe4 = Maybe4 (Maybe W8) (Maybe W8) (Maybe W8) (Maybe W8)
+
+crossbar :: Maybe4                                                                            ->
+            (Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool) ->
+            Maybe4 
+crossbar (Maybe4 x10 x20 x30 x40) (c11,c12,c13,c14,c21,c22,c23,c24,c31,c32,c33,c34,c41,c42,c43,c44)
+   = let
+          (x11,y10)  = switch x10 y11 c11
+          (x12,y20)  = switch x11 y12 c12
+          (x13,y30)  = switch x12 y13 c13
+          (x14,y40)  = switch x13 y14 c14
+          (x21,y11) = switch x20 y21 c21
+          (x22,y12) = switch x21 y22 c22
+          (x23,y13) = switch x22 y23 c23
+          (x24,y14) = switch x23 y24 c24
+          (x31,y21) = switch x30 y31 c31
+          (x32,y22) = switch x31 y32 c32
+          (x33,y23) = switch x32 y33 c33
+          (x34,y24) = switch x33 y34 c34
+          (x41,y31) = switch x40 Nothing c41
+          (x42,y32) = switch x41 Nothing c42
+          (x43,y33) = switch x42 Nothing c43
+          (x44,y34) = switch x43 Nothing c44
+     in
+       Maybe4 y10 y20 y30 y40
+
+data Inp = Inp Maybe4                                                                            
+               (Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool)
+         | NoInput
+            
+data Out = Out Maybe4 | Nix
+
+devcrossbar :: ReacT Inp Out Identity ()
+devcrossbar = signal Nix >>= dev
+
+dev :: Inp -> ReacT Inp Out Identity ()
+dev (Inp m4 b16) = signal (Out (crossbar m4 b16)) >>= dev
+dev NoInput      = signal Nix >>= dev
+````
+
+
+### Crossbar Switch in ReWire
+
+This section considers the ReWire version of the crossbar switch. The whole code is available [here]({{ site.baseurl }}/assets/code/RWCrossbar.hs). These two implementations are _almost_ the same, but there are differences. We will go through the code in detail to highlight the differences.
+
+Here we have commented out the module and import declarations, except for the `ReWirePrelude`. The main ReWire file does not belong in a `module`. Note that the monad definitions from `Control.Monad` are built-in to ReWire, and so, they should not be imported.
+
+```` haskell
+{- 
+module CrossbarSwitch where
+
+import Control.Monad.Identity
+import Control.Monad.State
+import Control.Monad.Resumption.Reactive
+
+type I = Identity
+-}
+
+import ReWirePrelude
+````
+
+Note that the `switch` function has polymorphic type below. ReWire does not allow polymorphically typed expressions, and so, for that reason, we use an `INLINE` directive. This directive informs the ReWire frontend to inline that function wherever it occurs. This has the effect of eliminating the polymorphic function. An alternative would be to simply rewrite the type declaration of `switch` so that it had a simple (i.e., variable free) type. Note also that the `Maybe4` declaration is written with no free variables; i.e., `Maybe4` isn't polymorphic either.
+
+It is worth emphasizing that each function declaration in ReWire must have an accompanying type declaration.
+
+```` haskell
+switch :: t -> t -> Bool -> (t, t)
+{-# INLINE switch #-}
+switch x y True  = (x,x)
+switch x y False = (x,y)
+
+data Maybe4 = Maybe4 (Maybe W8) (Maybe W8) (Maybe W8) (Maybe W8)
+```` 
+
+The code for `crossbar` below has several changes. For one, it is no longer declared with a `let` declaration, but rather uses an equivalent `where` formulation. Semantically, `where` and `let` are equivalent; that is, `let <binding-group> in e` is equvalent to `e where <binding-group>`. But, as of this writing, `let` has not been implemented in the ReWire compiler as yet (it is on a lengthy to-do list of simple extensions). There is another slightly more substantial difference. The clauses in the `where` declaration have been rearranged in order of dependency. These binding clauses are processed in-order (in the manner of, say, OCaml) rather than as a group (as in Haskell). This is a ReWire bug/feature which also appears on the aforementioned to-do list.
+
+```` haskell
+crossbar :: Maybe4                                                                            ->
+            (Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool) ->
+            Maybe4 
+crossbar (Maybe4 x10 x20 x30 x40) (c11,c12,c13,c14,c21,c22,c23,c24,c31,c32,c33,c34,c41,c42,c43,c44)
+   = Maybe4 y10 y20 y30 y40
+        where
+          (x41,y31) = switch x40 Nothing c41
+          (x31,y21) = switch x30 y31 c31
+          (x21,y11) = switch x20 y21 c21
+          (x42,y32) = switch x41 Nothing c42
+          (x32,y22) = switch x31 y32 c32
+          (x22,y12) = switch x21 y22 c22
+          (x11,y10) = switch x10 y11 c11
+          (x12,y20) = switch x11 y12 c12
+          (x43,y33) = switch x42 Nothing c43
+          (x33,y23) = switch x32 y33 c33
+          (x23,y13) = switch x22 y23 c23
+          (x13,y30) = switch x12 y13 c13
+          (x44,y34) = switch x43 Nothing c44
+          (x34,y24) = switch x33 y34 c34
+          (x24,y14) = switch x23 y24 c24
+          (x14,y40) = switch x13 y14 c14
+````
+
+Below are the input and output types for the device, `Inp` and `Out`. One thing that stands out style-wise when compared to Haskell is that we don't use a `type` synonym for the long tuple of `Bool`s. In Haskell, one would typically write something like `type Bool16 = (Bool,...,Bool)` just for syntactic convenience. As it stands, `type` synonyms are unimplemented in ReWire. This is, again, on the aforementioned to-do list of simple extensions to ReWire.
+
+```` haskell
+data Inp = Inp Maybe4                                                                            
+               (Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool)
+         | NoInput
+            
+data Out = Out Maybe4 | Nix
+````
+
+Below is the device declaration. The built-in identity monad in ReWire is written `I` (rather than `Identity` that was imported from `Control.Monad` in the Haskell version). Note that the `dev` has been replaced by the semantically equivalent `\ i -> dev i` below. This is because ReWire is a 1st-order language and you cannot pass the function `dev` to the other function `>>=`. It is a focus of current research to extend ReWire to higher-order.
+
+```` haskell
+devcrossbar :: ReT Inp Out I ()
+devcrossbar = signal Nix >>= \ i -> dev i
+
+dev :: Inp -> ReT Inp Out I ()
+dev (Inp m4 b16) = signal (Out (crossbar m4 b16)) >>= \ i -> dev i
+dev NoInput      = signal Nix >>= \ i -> dev i
+````
+
+Last, but not least, is that every ReWire specification must contain a `start` declaration. The `start` symbol must have type `ReT Inp Out I ()`.
+
+```` haskell
+start :: ReT Inp Out I ()
+start = devcrossbar
+````
+
+### Compiling with the ReWire Compiler
+
+````
+bill$ rwc RWCrossbar.hs -o RWC.vhd
+bill$ ls -l RWC.vhd
+-rwxr-xr-x  1 bill  staff  61024 Jul  5 14:11 RWC.vhd
+````
