@@ -21,8 +21,10 @@ This instruction manual has four parts:
 
 While we aim to make this guide as self-contained as possible, prior knowledge of Haskell and some experience with basic FPGA development will be helpful.
 
-#### Further Reading
+####  Further Reading
 
-* FPT'15
-* TECS (hopefully...)/LCTES
-* ARC maybe
+* _Provably Correct Development of Reconfigurable Hardware Designs via Equational Reasoning_, Ian Graves, Adam Procter, William L. Harrison, and Gerard Allwein. FPT 2015 [pdf]({{ site.baseurl }}/assets/papers/fpt15.pdf) [slides]({{ site.baseurl }}/assets/papers/slides-fpt15.pdf).
+* _A Principled Approach to Secure Multi-Core Processor Design with ReWire_, Adam Procter, William Harrison, Ian Graves, Michela Becchi, and Gerard Allwein. ACM Transactions on Embedded Computing Systems (to appear) [pdf]({{ site.baseurl }}/assets/papers/tecs16.pdf).
+* _Semantics Driven Hardware Design, Implementation, and Verification with ReWire_, Adam Procter, William Harrison, Ian Graves, Michela Becchi, and Gerard Allwein. LCTES 2015 [pdf]({{ site.baseurl }}/assets/papers/lctes15.pdf).
+* _Hardware Synthesis from Functional Embedded Domain-Specific Languages:
+A Case Study in Regular Expression Compilation_, Ian Graves, Adam Procter, William Harrison, Michela Becchi, and Gerard Allwein. ARC 2015 [pdf]({{ site.baseurl }}/assets/papers/arc15.pdf).
