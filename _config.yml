@@ -2,6 +2,11 @@
 title: 'ReWire'
 subtitle: 'Hardware circuits from functional specifications'
 
+#gems: [jekyll_figure]
+#
+#figures:
+#  dir: images
+
 # if you wish to integrate disqus on pages set your shortname here
 disqus_shortname: ''
 
