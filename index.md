@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Jekyll Docs Template"
+title: "ReWire Functional Hardware Description"
 ---
 
 ### Get Started
