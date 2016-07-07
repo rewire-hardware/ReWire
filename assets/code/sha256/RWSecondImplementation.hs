@@ -206,19 +206,19 @@ start = extrude
          (extrude
            (extrude
             (extrude
-                 devsha256'
+                 devsha256''
                  (Oct w00000000 w00000000 w00000000 w00000000 w00000000 w00000000 w00000000 w00000000))
              (Hex w00000000 w00000000 w00000000 w00000000 w00000000 w00000000 w00000000 w00000000 w00000000 w00000000 w00000000 w00000000 w00000000 w00000000 w00000000 w00000000))
          (Oct w00000000 w00000000 w00000000 w00000000 w00000000 w00000000 w00000000 w00000000)) C0
 
-devsha256'
+devsha256''
   :: ReT
        Inp
        Out
        (StT
           (Oct W32) (StT (Hex W32) (StT (Oct W32) (StT Ctr I))))
        ()
-devsha256' = signal Nix >>= \ d -> dev d
+devsha256'' = signal Nix >>= \ d -> dev d
 
 dev
   :: Inp

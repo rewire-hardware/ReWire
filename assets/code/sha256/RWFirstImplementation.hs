@@ -31,9 +31,11 @@ nativeVhdl = flip const
 w32Plus :: W32 -> W32 -> W32
 {-# INLINE w32Plus #-}
 w32Plus = nativeVhdl "w32Plus" w32Plus
+
 w32Xor :: W32 -> W32 -> W32
 {-# INLINE w32Xor #-}
 w32Xor  = nativeVhdl "w32Xor" w32Xor
+
 w32And :: W32 -> W32 -> W32
 {-# INLINE w32And #-}
 w32And  = nativeVhdl "w32And" w32And
@@ -41,6 +43,10 @@ w32And  = nativeVhdl "w32And" w32And
 w32Not :: W32 -> W32
 {-# INLINE w32Not #-}
 w32Not = nativeVhdl "w32Not" w32Not
+
+incCtr :: Ctr -> Ctr
+{-# INLINE incCtr #-}
+incCtr = nativeVhdl "incCtr" incCtr
 
 data Oct a = Oct a a a a
                  a a a a -- deriving Show
@@ -212,10 +218,6 @@ data Ctr = C0  | C1  | C2  | C3  | C4  | C5  | C6  | C7  |
            C40 | C41 | C42 | C43 | C44 | C45 | C46 | C47 |
            C48 | C49 | C50 | C51 | C52 | C53 | C54 | C55 |
            C56 | C57 | C58 | C59 | C60 | C61 | C62 | C63 
-
-incCtr :: Ctr -> Ctr
-{-# INLINE incCtr #-}
-incCtr = nativeVhdl "incCtr" incCtr
 
 seed :: Ctr -> W32
 seed C0  = w428a2f98

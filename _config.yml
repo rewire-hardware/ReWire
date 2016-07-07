@@ -39,7 +39,7 @@ baseurl: '/ReWire'
 permalink: none
 
 # Syntax highlighting
-highlighter: rouge
+highlighter: pygments
 
 # Since these are pages, it doesn't really matter
 future: true
