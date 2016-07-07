@@ -33,7 +33,7 @@ In the same manner as the Glasgow Haskell Compiler and other Haskell implementat
 `ReWirePrelude.hs` includes definitions for bits (`Bit`) and words of various sizes (e.g., `W8` and `W32`) as well as functions on those primitive types (e.g., `rotateR2`). The particular file we use can be found [here]({{ site.baseurl }}/assets/code/ReWirePrelude.hs).
 
 
-{% highlight haskell %}
+```` haskell
 module ReWirePrelude where
 
 data Bit = Zero | One
@@ -50,13 +50,13 @@ rotateR2 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
                   b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29)
 
   ...stuff deleted...
-{% endhighlight %}  
+````  
 
 ### Crossbar Switch in Haskell
 
 What follows is a crossbar switch function written in Haskell. We will take this as an input specification, by which we mean that it is not terribly important to actually understand what the `crossbar` function is calculating. Rather, what is interesting is what must change in this specification to transform it into a proper ReWire specification.
 
-{% highlight haskell %}
+```` haskell
 module CrossbarSwitch where
 
 import Control.Monad.Identity
@@ -105,7 +105,7 @@ devcrossbar = signal Nix >>= dev
 dev :: Inp -> ReacT Inp Out Identity ()
 dev (Inp m4 b16) = signal (Out (crossbar m4 b16)) >>= dev
 dev NoInput      = signal Nix >>= dev
-{% endhighlight %}
+````
 
 
 ### Crossbar Switch in ReWire
@@ -114,7 +114,7 @@ This section considers the ReWire version of the crossbar switch. The whole code
 
 Here we have commented out the module and import declarations, except for the `ReWirePrelude`. The main ReWire file does not belong in a `module`. Note that the monad definitions from `Control.Monad` are built-in to ReWire, and so, they should not be imported.
 
-{% highlight haskell %}
+```` haskell
 {- 
 module CrossbarSwitch where
 
@@ -126,24 +126,24 @@ type I = Identity
 -}
 
 import ReWirePrelude
-{% endhighlight %}
+````
 
 Note that the `switch` function has polymorphic type below. ReWire does not allow polymorphically typed expressions, and so, for that reason, we use an `INLINE` directive. This directive informs the ReWire frontend to inline that function wherever it occurs. This has the effect of eliminating the polymorphic function. An alternative would be to simply rewrite the type declaration of `switch` so that it had a simple (i.e., variable free) type. Note also that the `Maybe4` declaration is written with no free variables; i.e., `Maybe4` isn't polymorphic either.
 
 It is worth emphasizing that each function declaration in ReWire must have an accompanying type declaration.
 
-{% highlight haskell %}
+```` haskell
 switch :: t -> t -> Bool -> (t, t)
 {-# INLINE switch #-}
 switch x y True  = (x,x)
 switch x y False = (x,y)
 
 data Maybe4 = Maybe4 (Maybe W8) (Maybe W8) (Maybe W8) (Maybe W8)
-{% endhighlight %} 
+```` 
 
 The code for `crossbar` below has several changes. For one, it is no longer declared with a `let` declaration, but rather uses an equivalent `where` formulation. Semantically, `where` and `let` are equivalent; that is, `let <binding-group> in e` is equvalent to `e where <binding-group>`. But, as of this writing, `let` has not been implemented in the ReWire compiler as yet (it is on a lengthy to-do list of simple extensions). There is another slightly more substantial difference. The clauses in the `where` declaration have been rearranged in order of dependency. These binding clauses are processed in-order (in the manner of, say, OCaml) rather than as a group (as in Haskell). This is a ReWire bug/feature which also appears on the aforementioned to-do list. Note that we have also dispensed with the `type` synonym `Bool16`. Type synonyms are on our to-do list.
 
-{% highlight haskell %}
+```` haskell
 crossbar :: Maybe4                                                                            ->
             (Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool) ->
             Maybe4 
@@ -166,35 +166,35 @@ crossbar (Maybe4 x10 x20 x30 x40) (c11,c12,c13,c14,c21,c22,c23,c24,c31,c32,c33,c
           (x34,y24) = switch x33 y34 c34
           (x24,y14) = switch x23 y24 c24
           (x14,y40) = switch x13 y14 c14
-{% endhighlight %}
+````
 
 Below are the input and output types for the device, `Inp` and `Out`. One thing that stands out style-wise when compared to Haskell is that we don't use a `type` synonym for the long tuple of `Bool`s. In Haskell, one would typically write something like `type Bool16 = (Bool,...,Bool)` just for syntactic convenience. As it stands, `type` synonyms are unimplemented in ReWire. This is, again, on the aforementioned to-do list of simple extensions to ReWire.
 
-{% highlight haskell %}
+```` haskell
 data Inp = Inp Maybe4                                                                            
                (Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool)
          | NoInput
             
 data Out = Out Maybe4 | Nix
-{% endhighlight %}
+````
 
 Below is the device declaration. The built-in identity monad in ReWire is written `I` (rather than `Identity` that was imported from `Control.Monad` in the Haskell version). Note that the `dev` has been replaced by the semantically equivalent `\ i -> dev i` below. This is because ReWire is a 1st-order language and you cannot pass the function `dev` to the other function `>>=`. It is a focus of current research to extend ReWire to higher-order.
 
-{% highlight haskell %}
+```` haskell
 devcrossbar :: ReT Inp Out I ()
 devcrossbar = signal Nix >>= \ i -> dev i
 
 dev :: Inp -> ReT Inp Out I ()
 dev (Inp m4 b16) = signal (Out (crossbar m4 b16)) >>= \ i -> dev i
 dev NoInput      = signal Nix >>= \ i -> dev i
-{% endhighlight %}
+````
 
 Last, but not least, is that every ReWire specification must contain a `start` declaration. The `start` symbol must have type `ReT Inp Out I ()`.
 
-{% highlight haskell %}
+```` haskell
 start :: ReT Inp Out I ()
 start = devcrossbar
-{% endhighlight %}
+````
 
 ### Compiling with the ReWire Compiler
 
