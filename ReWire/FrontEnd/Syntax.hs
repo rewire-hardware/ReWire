@@ -165,13 +165,14 @@ data Exp = App        Annote Exp Exp
          | Lam        Annote Ty (Bind (Name Exp) Exp)
          | Var        Annote Ty (Name Exp)
          | Con        Annote Ty (Name DataConId)
-         | RecUpdate  Annote Ty [FieldUpdate] -- [(Name Exp,Exp)]
+         | RecUpdate  Annote Ty Exp [(Exp,Exp)]
          | Case       Annote Ty Exp (Bind Pat Exp) (Maybe Exp)
          | Match      Annote Ty Exp MatchPat Exp [Exp] (Maybe Exp)
          | NativeVHDL Annote String Exp
          | Error      Annote Ty String
              deriving (Generic, Show, Typeable, Data)
 
+{-
 data FieldUpdate = FieldUpdate [(Name Exp,Exp)]
              deriving (Generic, Show, Typeable, Data)
 
@@ -179,6 +180,7 @@ instance NFData FieldUpdate
 instance Subst Ty FieldUpdate
 instance Subst Exp FieldUpdate
 instance Alpha FieldUpdate
+-}
 
 -- RecUpdate l (Exp l) [FieldUpdate l]
 -- data FieldUpdate l = FieldUpdate l (QName l) (Exp l)

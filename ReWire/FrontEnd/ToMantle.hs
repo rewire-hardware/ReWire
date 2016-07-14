@@ -226,6 +226,7 @@ isMonad ms = \ case
       TyVar _ (sName -> x)                                                   -> x `elem` ms
       _                                                                      -> False
 
+
 transExp :: SyntaxError m => Renamer -> Exp Annote -> m M.Exp
 transExp rn = \ case
       App l (App _ (Var _ (UnQual _ (Ident _ "nativeVhdl"))) (Lit _ (String _ f _))) e
@@ -238,6 +239,11 @@ transExp rn = \ case
             pure $ M.Lam l M.tblank $ bind (mkUId $ sName x) e'
       Var l x               -> pure $ M.Var l M.tblank (mkId $ rename Value rn x)
       Con l x               -> pure $ M.Con l M.tblank (string2Name $ rename Value rn x)
+      RecUpdate l e fus -> do
+                                  e' <- transExp rn e
+                                  es' <- mapM (transExp rn) (map (\ (FieldUpdate _ _ e) -> e) fus)
+                                  ns' <- mapM (transExp rn) (map (\ (FieldUpdate l n _) -> (Var l n)) fus)
+                                  pure $ M.RecUpdate l M.tblank e' (zip ns' es')
       Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _] -> do
             e'  <- transExp rn e
             p'  <- transPat rn p
