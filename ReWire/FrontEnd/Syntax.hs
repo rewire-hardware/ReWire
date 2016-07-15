@@ -57,17 +57,22 @@ data DataConId = DataConId String
       deriving (Generic, Typeable, Data)
 data TyConId = TyConId String
       deriving (Generic, Typeable, Data)
+data FieldId  = FieldId String
+      deriving (Generic, Typeable, Data)
 
 data DataCon = DataCon Annote (Name DataConId) (Embed Poly)
+             | RecCon Annote (Name DataConId) (Embed Poly) [([Name FieldId],Embed Poly)]
       deriving (Generic, Eq, Show, Typeable, Data)
 
 instance Alpha DataCon
 
 instance Annotated DataCon where
-      ann (DataCon a _ _) = a
+      ann (DataCon a _ _)  = a
+      ann (RecCon a _ _ _) = a
 
 instance Pretty DataCon where
-      pretty (DataCon _ n t) = text (name2String n) <+> text "::" <+> pretty t
+      pretty (DataCon _ n t)  = text (name2String n) <+> text "::" <+> pretty t
+      pretty (RecCon _ n t _) = text (name2String n) <+> text "::" <+> pretty t
 
 instance NFData DataCon
 
