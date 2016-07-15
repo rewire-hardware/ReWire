@@ -227,6 +227,13 @@ isMonad ms = \ case
       _                                                                      -> False
 
 
+--qn2nxp :: QName l -> Name (Exp l)
+--qn2nxp (Qual m n) = undefine
+--qn2nxp :: QName l -> Name M.Exp
+qn2nxp (UnQual _ (Ident _ n))  = string2Name n
+qn2nxp (Qual _ _ _)  = undefined
+qn2nxp (Special _ _) = undefined
+
 transExp :: SyntaxError m => Renamer -> Exp Annote -> m M.Exp
 transExp rn = \ case
       App l (App _ (Var _ (UnQual _ (Ident _ "nativeVhdl"))) (Lit _ (String _ f _))) e
@@ -242,8 +249,8 @@ transExp rn = \ case
       RecUpdate l e fus -> do
                                   e' <- transExp rn e
                                   es' <- mapM (transExp rn) (map (\ (FieldUpdate _ _ e) -> e) fus)
-                                  ns' <- mapM (transExp rn) (map (\ (FieldUpdate l n _) -> (Var l n)) fus)
-                                  pure $ M.RecUpdate l M.tblank e' (zip ns' es')
+                                  ns' <- mapM (transExp rn) (map (\ (FieldUpdate l n _) -> qn2nxp n) fus)
+                                  pure $ M.RecUp l M.tblank e' (zip ns' es')
       Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _] -> do
             e'  <- transExp rn e
             p'  <- transPat rn p
