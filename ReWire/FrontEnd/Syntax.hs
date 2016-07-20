@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, DeriveDataTypeable, DeriveGeneric, Rank2Types, GADTs, ScopedTypeVariables, StandaloneDeriving, LambdaCase #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -11,6 +12,7 @@ module ReWire.FrontEnd.Syntax
       , flattenApp, arr0, mkArrow, arrowRight, getArrow
       , fv, fvAny
       , Fresh, Name, Embed (..), TRec, Bind
+      , FieldId
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly
       ) where
@@ -60,9 +62,11 @@ data TyConId = TyConId String
 data FieldId  = FieldId String
       deriving (Generic, Typeable, Data)
 
+
 data DataCon = DataCon Annote (Name DataConId) (Embed Poly)
              | RecCon Annote (Name DataConId) (Embed Poly) [([Name FieldId],Embed Poly)]
       deriving (Generic, Eq, Show, Typeable, Data)
+
 
 instance Alpha DataCon
 
@@ -121,10 +125,10 @@ instance Pretty Poly where
             return $ pretty t
 
 data Ty = TyApp Annote Ty Ty
-           | TyCon Annote (Name TyConId)
-           | TyVar Annote Kind (Name Ty)
-           | TyComp Annote Ty Ty -- application of a monad
-           | TyBlank Annote
+        | TyCon Annote (Name TyConId)
+        | TyVar Annote Kind (Name Ty)
+        | TyComp Annote Ty Ty -- application of a monad
+        | TyBlank Annote
            deriving (Eq, Generic, Show, Typeable, Data)
 
 instance Alpha Ty
@@ -170,25 +174,12 @@ data Exp = App        Annote Exp Exp
          | Lam        Annote Ty (Bind (Name Exp) Exp)
          | Var        Annote Ty (Name Exp)
          | Con        Annote Ty (Name DataConId)
-         | RecUp      Annote Ty Exp  [(Name Exp,Exp)] -- Changed to avoid a nameclash
+         | RecUp      Annote Ty Exp  [(Name Exp,Exp)] 
          | Case       Annote Ty Exp (Bind Pat Exp) (Maybe Exp)
          | Match      Annote Ty Exp MatchPat Exp [Exp] (Maybe Exp)
          | NativeVHDL Annote String Exp
          | Error      Annote Ty String
          deriving (Generic, Show, Typeable, Data)
-
-{-
-data FieldUpdate = FieldUpdate [(Name Exp,Exp)]
-             deriving (Generic, Show, Typeable, Data)
-
-instance NFData FieldUpdate
-instance Subst Ty FieldUpdate
-instance Subst Exp FieldUpdate
-instance Alpha FieldUpdate
--}
-
--- RecUpdate l (Exp l) [FieldUpdate l]
--- data FieldUpdate l = FieldUpdate l (QName l) (Exp l)
 
 instance Alpha Exp
 
@@ -259,8 +250,8 @@ instance Pretty Exp where
 
 ---
 
-data Pat = PatCon  Annote (Embed Ty) (Embed (Name DataConId)) [Pat]
-            | PatVar  Annote (Embed Ty) (Name Exp)
+data Pat = PatCon Annote (Embed Ty) (Embed (Name DataConId)) [Pat]
+         | PatVar Annote (Embed Ty) (Name Exp)
             deriving (Show, Generic, Typeable, Data)
 
 instance Alpha Pat
@@ -363,7 +354,7 @@ instance Pretty Program where
 
 flattenApp :: Exp -> [Exp]
 flattenApp (App _ e e') = flattenApp e ++ [e']
-flattenApp e               = [e]
+flattenApp e            = [e]
 
 arr0 :: Ty -> Ty -> Ty
 arr0 = mkArrow $ string2Name "->"
