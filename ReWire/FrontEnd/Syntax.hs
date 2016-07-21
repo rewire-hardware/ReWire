@@ -166,7 +166,7 @@ instance NFData Ty
 
 ppTyAppR :: Ty -> Doc
 ppTyAppR t@TyApp {} = parens $ pretty t
-ppTyAppR t             = pretty t
+ppTyAppR t          = pretty t
 
 ----
 
@@ -174,7 +174,7 @@ data Exp = App        Annote Exp Exp
          | Lam        Annote Ty (Bind (Name Exp) Exp)
          | Var        Annote Ty (Name Exp)
          | Con        Annote Ty (Name DataConId)
-         | RecUp      Annote Ty Exp  [(Name Exp,Exp)] 
+         | RecUp      Annote Ty Exp  [(Name FieldId,Exp)] 
          | Case       Annote Ty Exp (Bind Pat Exp) (Maybe Exp)
          | Match      Annote Ty Exp MatchPat Exp [Exp] (Maybe Exp)
          | NativeVHDL Annote String Exp
