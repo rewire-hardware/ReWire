@@ -3,14 +3,14 @@ module ReWire.FrontEnd.Records where
 
 import ReWire.Annotation
 import ReWire.FrontEnd.Unbound
-      ( Fresh (..), FreshMT (..), runFreshM
+      ( Fresh (..),{- FreshMT (..), runFreshM
       , Embed (..)
       , TRec (..), trec, untrec
       , Name (..), AnyName (..), SubstName (..)
       , Bind (..), bind, unbind
       , Alpha, aeq, Subst (..)
       , toListOf
-      , name2String, string2Name
+      ,-} name2String, string2Name
       )
 import ReWire.Error
 import ReWire.FrontEnd.Syntax
@@ -30,18 +30,18 @@ splitArrow :: (Fresh m, MonadError AstError m) => Poly -> m (Ty, Ty)
 splitArrow (Poly phi) = do
   (_,ty) <- unbind phi
   case ty of
-       (TyApp _ (TyApp _ (TyCon _ arr) t1) t2) -> return (t1,t2)
-       d                                       -> failAt (ann d) "record field non-arrow type"
+       (TyApp _ (TyApp _ (TyCon _ _) t1) t2) -> return (t1,t2)
+       d                                     -> failAt (ann d) "record field non-arrow type"
 
 replaceAtIndex :: Int -> a -> [a] -> [a]
 replaceAtIndex n item ls = a ++ (item:b) where (a, (_:b)) = splitAt n ls
 
 mkApp :: Annote -> Exp -> [Exp] -> Exp
-mkApp an rator []         = rator
+mkApp _ rator []          = rator
 mkApp an rator (arg:args) = mkApp an (App an rator arg) args
 
---rmdups :: Eq a => [a] -> [a]
-rmdups [] = []
+rmdups :: Eq a => [(a,b)] -> [(a,b)]
+rmdups []         = []
 rmdups ((x,e):xs) = case lookup x xs of
                          Just _  -> rmdups xs
                          Nothing -> (x,e) : rmdups xs
@@ -51,7 +51,7 @@ rmdups ((x,e):xs) = case lookup x xs of
 ----------------
 
 findIndex :: Name FieldId -> Int -> [(Name FieldId, a)] -> Maybe Int
-findIndex f i []            = Nothing
+findIndex _ _ []            = Nothing
 findIndex f i ((nf,_):rest) = if name2String f == name2String nf
                                then Just i
                                else findIndex f (i+1) rest
@@ -62,7 +62,7 @@ poly2Ty (Poly p) = do (_,ty) <- unbind p
                       return ty
 
 lookUpF :: Eq a => a -> [(t, [(a, b)])] -> Maybe (t, [(a, b)])
-lookUpF f []           = Nothing
+lookUpF _ []           = Nothing
 lookUpF f ((d,fs):dfs) = case lookup f fs of
                               Just _  -> Just (d,fs)
                               Nothing -> lookUpF f dfs
@@ -87,6 +87,7 @@ transRecUpdate (RecUp an t e ups@((f,_):_)) rho = case e of
      where Just (Embed c,fs) = lookUpF f rho
            l_ups       = length ups'
            ups'        = rmdups ups
+  d          -> failAt (ann d) "Ill-formed record update."
 
 -- PU, this code stinks.
 
@@ -95,7 +96,7 @@ arrange _ [] _            = return []
 arrange an ((f,_):fs) ups = case lookup f ups of
                                  Just e -> do es <- arrange an fs ups'
                                               return (e:es)
-                                     where ups' = filter (\ (f',e) -> f /= f') ups
+                                     where ups' = filter (\ (f',_) -> f /= f') ups
                                  Nothing -> failAt an "Failure processing constructor record application."
 
 varrecupdate :: Fresh m =>
@@ -106,7 +107,7 @@ varrecupdate :: Fresh m =>
                 [(Name FieldId, Exp)]        ->
                 Exp                          ->
                 m Exp
-varrecupdate an t d fs [] e           = return e
+varrecupdate _ _ _ _ [] e             = return e
 varrecupdate an t c fs ((f,e'):ups) e = do e'' <- recupdate an t c (f,e') fs e 
                                            varrecupdate an t c fs ups e''
 
@@ -126,8 +127,8 @@ type DataEnv = [(Name DataConId, [(Name FieldId, Embed Poly)])]
 mkRecEnv :: [DataDefn] -> DataEnv
 mkRecEnv = foldr f []
   where f d ds = case dataCons d of
-                      [RecCon an n t fds] -> (n,flatten fds) : ds
-                      _                   -> ds
+                      [RecCon _ n _ fds] -> (n,flatten fds) : ds
+                      _                  -> ds
 
 
 -- Given the declaration:  data T = C {f1,f2 :: Int}  
@@ -153,7 +154,6 @@ mkRecPatExp an typ@(Embed ty) c@(Embed cstr) f fns e = do
 -- constructing the expression (e.g., "C 9 f2")
   let Just i = findIndex f 0 fns
   let cvs    = map (\ (v,t) -> Var an t (string2Name v)) foobar
-  let t      = fns'' !! i
   let cvs'   = replaceAtIndex i e cvs
   let exp    = mkApp an (Con an ty cstr) cvs'
   return (pat,exp)
