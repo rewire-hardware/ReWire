@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase, ViewPatterns, ScopedTypeVariables, GADTs #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
@@ -19,6 +20,9 @@ import ReWire.FrontEnd.Unbound
       )
 import ReWire.SYB
 
+import ReWire.FrontEnd.Records
+      (desugarRecData, desugarRec, desugarDefns)
+
 import Control.Arrow ((***))
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.State (State, evalStateT, execState, StateT (..), get, modify)
@@ -30,6 +34,7 @@ import Data.Maybe (fromJust, fromMaybe)
 import Data.Set (Set, singleton, union, (\\))
 import qualified Data.Set as Set
 
+
 -- | Inlines defs marked for inlining. Must run before lambda lifting.
 inline :: Fresh m => Program -> m Program
 inline (Program p) = do
@@ -40,6 +45,14 @@ inline (Program p) = do
             toSubst (Defn _ n _ _ (Embed e)) = do
                   ([], e') <- unbind e
                   return (n, e')
+
+records :: (Fresh m, MonadError AstError m) => Program -> m Program
+records (Program p) = do
+      (ts, ds) <- untrec p
+      ds'      <- desugarDefns ts ds
+      newdefs  <- mapM desugarRec ts
+      let ts' = map desugarRecData ts
+      return $ Program $ trec (ts', ds'++ concat newdefs)
 
 -- | Replaces the expression in NativeVHDL so we don't descend into it
 --   during other transformations.
