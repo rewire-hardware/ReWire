@@ -1,5 +1,9 @@
 {-# LANGUAGE FlexibleContexts #-}
-module ReWire.FrontEnd.Records where
+module ReWire.FrontEnd.Records
+       ( desugarDefns,
+         desugarRecData,
+         desugarRec
+         ) where
 
 import ReWire.Annotation
 import ReWire.FrontEnd.Unbound
@@ -67,15 +71,37 @@ lookUpF f ((d,fs):dfs) = case lookup f fs of
                               Just _  -> Just (d,fs)
                               Nothing -> lookUpF f dfs
 
+----------------
+-- Desugaring data declarations with a single constructor that is also in record form                      
+----------------
+
+desugarDefns :: (Fresh m, MonadError AstError m) =>
+                [DataDefn] ->
+                [Defn]     ->
+                m [Defn]
+desugarDefns ts ds = mapM (desugarDefn rho) ds
+   where rho = mkRecEnv ts
+
+desugarDefn :: (Fresh m, MonadError AstError m) =>
+               DataEnv ->
+               Defn    ->
+               m Defn
+desugarDefn rho d = do
+  let Embed b = defnBody d
+  (ns,e) <- unbind b
+  e'     <- transRecUpdate rho e
+  let b' = bind ns e'
+  return  $ d { defnBody = Embed b' }
+
 -- transRecUpdate is written under the assumption that the 'e' below is either a Var or a Con.
 -- I think that it's possible (have to check the parser) that it's a RecUp. I'm going to assume
 -- away the RecUp case for the time being.                      
 
 transRecUpdate :: (MonadError AstError m, Fresh m) =>
-                  Exp                                                      ->
                   [(Embed (Name DataConId), [(Name FieldId, Embed Poly)])] ->
+                  Exp                                                      ->
                   m Exp
-transRecUpdate (RecUp an t e ups@((f,_):_)) rho = case e of
+transRecUpdate rho (RecUp an t e ups@((f,_):_)) = case e of
   Var _ _ _  -> varrecupdate an (Embed t) c fs ups e
      where Just (c,fs) = lookUpF f rho
   Con _ t _  -> if length fs /= l_ups
@@ -123,11 +149,11 @@ recupdate an ty@(Embed t) c (f,new) fds dscr = do
   (p,e) <- mkRecPatExp an ty c f fds new
   return (Case an t dscr (bind p e) Nothing)
 
-type DataEnv = [(Name DataConId, [(Name FieldId, Embed Poly)])]
+type DataEnv = [(Embed (Name DataConId), [(Name FieldId, Embed Poly)])]
 mkRecEnv :: [DataDefn] -> DataEnv
 mkRecEnv = foldr f []
   where f d ds = case dataCons d of
-                      [RecCon _ n _ fds] -> (n,flatten fds) : ds
+                      [RecCon _ n _ fds] -> (Embed n,flatten fds) : ds
                       _                  -> ds
 
 
@@ -162,7 +188,12 @@ mkRecPatExp an typ@(Embed ty) c@(Embed cstr) f fns e = do
 ----------------
 -- Desugaring data declarations with a single constructor that is also in record form                      
 ----------------
-                         
+
+desugarRecData :: DataDefn -> DataDefn
+desugarRecData d = case dataCons d of
+                        [RecCon an n t _] -> d { dataCons=[DataCon an n t] }
+                        _                 -> d
+
 desugarRec :: (Fresh m, MonadError AstError m) => DataDefn -> m [Defn]
 desugarRec d = case dataCons d of
                     [RecCon an n t fds] -> recordDefs an n t fds
