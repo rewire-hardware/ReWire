@@ -15,6 +15,7 @@ module ReWire.FrontEnd.Syntax
       , FieldId
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly
+      , rangeTy
       ) where
 
 import ReWire.Annotation
@@ -174,6 +175,7 @@ data Exp = App        Annote Exp Exp
          | Lam        Annote Ty (Bind (Name Exp) Exp)
          | Var        Annote Ty (Name Exp)
          | Con        Annote Ty (Name DataConId)
+         | RecConApp  Annote Ty (Name DataConId) [(Name FieldId,Exp)] 
          | RecUp      Annote Ty Exp  [(Name FieldId,Exp)] 
          | Case       Annote Ty Exp (Bind Pat Exp) (Maybe Exp)
          | Match      Annote Ty Exp MatchPat Exp [Exp] (Maybe Exp)
@@ -206,6 +208,7 @@ instance Annotated Exp where
             Lam a _ _           -> a
             Var a _ _           -> a
             Con a _ _           -> a
+            RecConApp a _ _ _   -> a
             RecUp a _ _ _       -> a
             Case a _ _ _ _      -> a
             Match a _ _ _ _ _ _ -> a
@@ -220,6 +223,12 @@ instance Pretty Exp where
             Lam _ _ e        -> runFreshM $ do
                   (p, e') <- unbind e
                   return $ parens $ text "\\" <+> text (show p) <+> text "->" <+> pretty e'
+            RecConApp _ _ e fus  -> runFreshM $ do
+                            let ns   = map ((text . show) . fst) fus                   
+                            let es   = map (pretty . snd) fus
+                            let res  = zip ns es
+                            let res' = foldr ($+$) mempty $ map (\ (n, e) -> (n <+> text "=" <+> e)) res
+                            return $ pretty e <+> text "{" <+> res' <+> text "}"
             RecUp _ _ e fus  -> runFreshM $ do
                             let ns   = map ((text . show) . fst) fus                   
                             let es   = map (pretty . snd) fus
@@ -360,6 +369,12 @@ arr0 :: Ty -> Ty -> Ty
 arr0 = mkArrow $ string2Name "->"
 
 infixr `arr0`
+
+rangeTy :: Ty -> Ty
+rangeTy t@(TyApp _ (TyApp _ (TyCon _ con) t1) t2) = case name2String con of
+                                                          "->" -> rangeTy t2
+                                                          _    -> t
+rangeTy t                                         = t
 
 mkArrow :: Name TyConId -> Ty -> Ty -> Ty
 mkArrow arr t = TyApp (ann t) (TyApp (ann t) (TyCon (ann t) arr) t)

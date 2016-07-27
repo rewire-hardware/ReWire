@@ -5,7 +5,7 @@ module ReWire.FrontEnd.KindCheck (kindCheck) where
 import ReWire.Annotation
 import ReWire.Error
 import ReWire.FrontEnd.Syntax
-import ReWire.FrontEnd.Unbound (fresh, substs, aeq, Subst, string2Name)
+import ReWire.FrontEnd.Unbound (fresh, substs, aeq, Subst, string2Name,name2String)
 import ReWire.Pretty
 
 import Control.Monad.Reader (ReaderT (..), ask, local)
@@ -70,11 +70,13 @@ kcTy = \ case
             k  <- freshkv
             unify an k1 $ KFun k2 k
             return k
-      TyCon an i      -> do
-            cas <- askCAssumps
-            case Map.lookup i cas of
-                  Nothing -> failAt an "Unknown type constructor"
-                  Just k  -> return k
+      TyCon an i      -> case name2String i of
+                              "->" -> return (KFun KStar (KFun KStar KStar))
+                              _    -> do
+                                cas <- askCAssumps
+                                case Map.lookup i cas of
+                                     Nothing -> failAt an $ "Unknown type constructor: " ++ name2String i
+                                     Just k  -> return k
       TyVar _ k _     -> return k
       TyComp an tm tv -> do
             km <- kcTy tm

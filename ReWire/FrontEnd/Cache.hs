@@ -81,7 +81,7 @@ getModule fp = Map.lookup fp <$> get >>= \ case
             mmods      <- mapM (tryParseInDir fp) lp
             -- FIXME: The directory crawling could be more robust here. (Should
             -- use exception handling.)
-            m          <- maybe (failAt (filePath fp) "File not found in loadpath") return $ msum mmods
+            m          <- maybe (failAt (filePath fp) "File not found in load-path") return $ msum mmods
 
             rn         <- mkRenamer m
             imps       <- loadImports m
@@ -103,13 +103,15 @@ getProgram :: FilePath -> Cache Core.Program
 getProgram fp = do
       (Module ts ds, _) <- getModule fp
 
-      p <- kindCheck
+      p <- records
+       -- >=> printInfo "___Post_records___"
+       >=> kindCheck
        >=> typeCheck
        >=> neuterPrims
        >=> inline
        >=> reduce
        >=> shiftLambdas
-       -- >=> printInfo "___Post_TC___"
+       >=> printInfo "___Post_TC___"
        >=> liftLambdas
        -- >=> typeCheck
        -- >=> printInfo "___Post_LL___"
