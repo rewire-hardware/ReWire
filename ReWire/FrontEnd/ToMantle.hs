@@ -205,7 +205,7 @@ transCon rn ks tvs tc = \ case
             t <- foldr M.arr0 (foldl' (M.TyApp l) (M.TyCon l tc) tvs') <$> mapM (transTy rn []) tys
             ts <- mapM (transTy rn [] >=> (return . (tvs |->))) tys
             return $ M.RecCon l (string2Name $ rename Value rn x) (tvs |-> t) (zip flds ts)
-      d                                         -> failAt (ann d) "Unsupported ctor syntax"
+      d                                         -> failAt (ann d) "Unsupported Ctor syntax"
 
 transTy :: (Fresh m, SyntaxError m) => Renamer -> [S.Name] -> Type Annote -> m M.Ty
 transTy rn ms = \ case
@@ -252,6 +252,10 @@ transExp rn = \ case
             es' <- mapM (transExp rn) (map (\ (FieldUpdate _ _ e) -> e) fus)
             ns' <- mapM (return . mkId . rename Value rn) (map (\ (FieldUpdate _ n _) -> n) fus)
             pure $ M.RecUp l M.tblank e' (zip ns' es')
+      RecConstr l n fus -> do
+            es' <- mapM (transExp rn) (map (\ (FieldUpdate _ _ e) -> e) fus)
+            ns' <- mapM (return . mkId . rename Value rn) (map (\ (FieldUpdate _ n _) -> n) fus)
+            pure $ M.RecConApp l M.tblank (string2Name $ rename Value rn n) (zip ns' es')
       Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _] -> do
             e'  <- transExp rn e
             p'  <- transPat rn p

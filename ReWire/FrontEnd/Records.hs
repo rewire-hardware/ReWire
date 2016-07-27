@@ -7,14 +7,7 @@ module ReWire.FrontEnd.Records
 
 import ReWire.Annotation
 import ReWire.FrontEnd.Unbound
-      ( Fresh (..),{- FreshMT (..), runFreshM
-      , Embed (..)
-      , TRec (..), trec, untrec
-      , Name (..), AnyName (..), SubstName (..)
-      , Bind (..), bind, unbind
-      , Alpha, aeq, Subst (..)
-      , toListOf
-      ,-} name2String, string2Name
+      ( Fresh (..), name2String, string2Name
       )
 import ReWire.Error
 import ReWire.FrontEnd.Syntax
@@ -65,12 +58,20 @@ poly2Ty :: Fresh m => Poly -> m Ty
 poly2Ty (Poly p) = do (_,ty) <- unbind p
                       return ty
 
+lookUpF :: (Eq a, Annotation an, MonadError AstError m) =>
+               an -> a -> [(t, [(a, b)])] -> m (t, [(a, b)])
+lookUpF an _ []           = failAt an "Unrecognized Field Name"
+lookUpF an f ((d,fs):dfs) = case lookup f fs of
+                              Just _  -> return (d,fs)
+                              Nothing -> lookUpF an f dfs
+
+{-
 lookUpF :: Eq a => a -> [(t, [(a, b)])] -> Maybe (t, [(a, b)])
 lookUpF _ []           = Nothing
 lookUpF f ((d,fs):dfs) = case lookup f fs of
                               Just _  -> Just (d,fs)
                               Nothing -> lookUpF f dfs
-
+-}
 ----------------
 -- Desugaring data declarations with a single constructor that is also in record form                      
 ----------------
@@ -101,22 +102,36 @@ transRecUpdate :: (MonadError AstError m, Fresh m) =>
                   [(Embed (Name DataConId), [(Name FieldId, Embed Poly)])] ->
                   Exp                                                      ->
                   m Exp
+transRecUpdate _ (RecUp an _ _ [])              = failAt an "Ill-formed Record Update."
 transRecUpdate rho (RecUp an t e ups@((f,_):_)) = case e of
-  Var _ _ _  -> varrecupdate an (Embed t) c fs ups e
-     where Just (c,fs) = lookUpF f rho
-  Con _ t _  -> if length fs /= l_ups
+  Var _ _ _  -> do (c,fs) <- lookUpF an f rho
+                   varrecupdate an (Embed t) c fs ups e
+  Con _ t _  -> do (Embed c,fs) <- lookUpF an f rho
+                   let ups'  = rmdups ups
+                   let l_ups = length ups'
+                   if length fs /= l_ups
                    then 
                      failAt an "Constructor record applications must be fully saturated in ReWire."
                    else
                      do exps <- arrange an fs ups'
                         return $ mkApp an (Con an t c) exps
-     where Just (Embed c,fs) = lookUpF f rho
-           l_ups       = length ups'
-           ups'        = rmdups ups
   d          -> failAt (ann d) "Ill-formed record update."
+transRecUpdate rho (RecConApp an _ _ [])            = failAt an "Ill-formed Record Construction."
+
+transRecUpdate rho (RecConApp an t c ups@((f,_):_)) = do
+                   (Embed _,fs) <- lookUpF an f rho
+                   let ups'  = rmdups ups
+                   let l_ups = length ups'
+                   if length fs /= l_ups
+                   then 
+                     failAt an "Constructor record applications must be fully saturated in ReWire."
+                   else
+                     do exps <- arrange an fs ups'
+                        return $ mkApp an (Con an t c) exps
+
+transRecUpdate _ e              = return e
 
 -- PU, this code stinks.
-
 arrange :: (MonadError AstError m, Eq a) => Annote -> [(a,b)] -> [(a,c)] -> m [c]
 arrange _ [] _            = return []
 arrange an ((f,_):fs) ups = case lookup f ups of
@@ -156,7 +171,6 @@ mkRecEnv = foldr f []
                       [RecCon _ n _ fds] -> (Embed n,flatten fds) : ds
                       _                  -> ds
 
-
 -- Given the declaration:  data T = C {f1,f2 :: Int}  
 -- Record Variable Update: x {f1 = 9}
 -- ...is desugared as:     case x of C d f2    -> C 9 f2
@@ -191,7 +205,7 @@ mkRecPatExp an typ@(Embed ty) c@(Embed cstr) f fns e = do
 
 desugarRecData :: DataDefn -> DataDefn
 desugarRecData d = case dataCons d of
-                        [RecCon an n t _] -> d { dataCons=[DataCon an n t] }
+                        [RecCon an n t _] -> d { dataCons=[DataCon (MsgAnnote "arglebargle") n t] }
                         _                 -> d
 
 desugarRec :: (Fresh m, MonadError AstError m) => DataDefn -> m [Defn]
@@ -213,13 +227,15 @@ recordDefs :: (Fresh m, MonadError AstError m) =>
               Annote -> Name DataConId -> Embed Poly -> [([Name FieldId], Embed Poly)] -> m [Defn]
 recordDefs an n (Embed (Poly phi)) flds = do
                    (_,ty) <- unbind phi
-                   tys'   <- mapM splitArrow tys
-                   let pats = mkpats an (Embed ty) (map (\ (ty,t) -> Embed (arr0 ty t)) tys') n m
-                   return $ map (\ (p,f,(t1,t2)) -> mkdefn an f t1 t2 p) (zip3 pats fs tys')
+                   tys'   <- mapM poly2Ty polys
+                   let targ = rangeTy ty
+                   let t1t2 = foldr (\ b bs -> (targ,b) : bs) [] tys'
+                   let pats = mkpats an (Embed ty) (map (\ (t1,t2) -> Embed (arr0 t1 t2)) t1t2) n m
+                   return $ map (\ (p,f,(t1,t2)) -> mkdefn an f t1 t2 p) (zip3 pats fs t1t2)
   where 
         fdecs = flatten flds
         fs    = map (string2Name . name2String . fst) fdecs
-        tys   = map ((\ (Embed x) -> x) . snd) fdecs
+        polys = map ((\ (Embed x) -> x) . snd) fdecs
         m     = length fdecs
 
 {-
@@ -233,7 +249,7 @@ mkdefn an f t1 t2 p = Defn
                         { defnAnnote = an
                         , defnName   = f
                         , defnPolyTy = ty
-                        , defnInline = True -- or whatever
+                        , defnInline = False -- True -- or whatever
                         , defnBody   = body
                         }
   where
@@ -250,7 +266,7 @@ mkpats an t ts n m = map (mkpi an t ts n m) [0..m-1]
                 tweek (j,tau) = PatVar an tau (if i==j then string2Name "y" else string2Name "x")
   
 
-
+{-
 -----------------------------------------------------------------------
 -- What follows are some notes about what I don't implement and why. --
 -----------------------------------------------------------------------
@@ -292,3 +308,4 @@ Upshot: I'm going to assume that case (1) holds --- i.e., that record constructo
 
 -}
 
+-}

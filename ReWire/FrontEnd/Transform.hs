@@ -8,6 +8,7 @@ module ReWire.FrontEnd.Transform
       , shiftLambdas
       , liftLambdas
       , purge
+      , records
       ) where
 
 import ReWire.Error
@@ -52,7 +53,7 @@ records (Program p) = do
       ds'      <- desugarDefns ts ds
       newdefs  <- mapM desugarRec ts
       let ts' = map desugarRecData ts
-      return $ Program $ trec (ts', ds'++ concat newdefs)
+      return $ Program $ trec (ts', ds' ++ concat newdefs)
 
 -- | Replaces the expression in NativeVHDL so we don't descend into it
 --   during other transformations.
