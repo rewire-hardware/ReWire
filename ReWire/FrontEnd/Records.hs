@@ -2,7 +2,11 @@
 module ReWire.FrontEnd.Records
        ( desugarDefns,
          desugarRecData,
-         desugarRec
+         desugarRec,
+         freshVar,
+         freshVars,
+         replaceAtIndex,
+         poly2Ty
          ) where
 
 import ReWire.Annotation
