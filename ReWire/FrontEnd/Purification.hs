@@ -8,6 +8,7 @@ import ReWire.FrontEnd.Unbound
 import ReWire.Error
 import ReWire.FrontEnd.Syntax
 import ReWire.FrontEnd.Records (freshVar, freshVars, replaceAtIndex, poly2Ty)
+import Control.Monad.State
 
 --
 -- N.b., this is my attempt to rough out the purification pass described in Adam's note.
@@ -205,13 +206,20 @@ classifyCases = \ case
                             | xs == "put"           -> return $ Put an e
                             | xs == "lift"          -> return $ Lift an e
             where xs = name2String x
-    --- THINK THIS STUFF BELOW THROUGH AGAIN. Not sure (flattenApp g) returns the right stuff.
      App an (App _ f@(Var _ _ x) e) g | xs == ">>=" -> return $ Bind an e g
-                                      | otherwise   -> return $ Apply an f (e : flattenApp g)
+                                      | otherwise   -> return $ Apply an f [e,g]
             where xs = name2String x
+     t@(App an _ _)                                  -> do (f,_,es) <- destructApp t
+                                                           return $ Apply an f es
+                                                        where 
      Case an _ dsc bnds me                          -> do (p,e) <- unbind bnds
                                                           return (Switch an dsc p e me)
      d                                              -> failAt (ann d) "Unclassifiable case"
+
+destructApp (App _ f@(Var _ t _) rand) = return (f,t,[rand])
+destructApp (App _ rator rand)         = do (f,t,es) <- destructApp rator
+                                            return (f,t,es++[rand])
+destructApp d                          = failAt (ann d) "Tried to destruct non-app"
 
 -- > let p = e1 in e2
 --     becomes
@@ -282,30 +290,158 @@ purify_state_body rho stos tys i tm = do
 					     g_pure v s1 ... sm"
 -}
 
+--
+-- It may be that the type for each subexpression occurring in here should be
+-- part of the annotation here. That is partially accomplished right now.                               
+--                               
+data RCase an t p e = RReturn an e t
+                    | RLift an e t
+                    | Signal an e t
+                    | RBind an e t e t
+                    | SigK an e t e t [(e,t)]   -- (signal e >>= g e1 ... ek)
+                    | RApp an t e [(e,t)]
+                    | RSwitch an t e p e (Maybe e)
+
+destructArrow :: MonadError AstError m => Ty -> m (Ty,Ty)
+destructArrow t@(TyApp an (TyApp _ (TyCon _ con) t1) t2) = case name2String con of
+                                                           "->" -> return (t1,t2)
+                                                           _    -> failAt an "Non-arrow type(3)"
+destructArrow t                                          = failAt (ann t) "Non-arrow type(4)"
 
 --
--- Junkyard below                               
+-- shinola classifies syntactic applications. Just seemed easier to
+-- make it its own function. It distinguishes shit from shinola.
 --
+shinola :: MonadError AstError m => Annote -> (Exp, Ty, [Exp]) -> m (RCase Annote Ty p Exp)
+shinola an (f,t,[e]) = do
+  (te,_) <- destructArrow t
+  case f of
+   Var _ _ x | xs == "return" -> return $ RReturn an e te
+             | xs == "lift"   -> return $ RLift an e te
+             | xs == "signal" -> return $ Signal an e te
+     where xs = name2String x
+shinola an (f,t,[e,g]) = case f of
+  Var _ tb x | xs == ">>=" -> do sig <- issignal e
+                                 case sig of
+                                  Just te -> do (g',tg',es) <- destructApp g
+                                                bes         <- mkBindings tg' es
+                                                return $ SigK an e te g' tg' bes
+                                  Nothing -> do (_,tg,_) <- destructApp g
+                                                (te,_)   <- destructArrow tb
+                                                return $ RBind an e te g tg
+             | otherwise   -> do bes <- mkBindings t [e,g]
+                                 return $ RApp an t f bes
+                 where xs = name2String x
+shinola an (f,t,es)    = do bes <- mkBindings t es
+                            return $ RApp an t f bes
+
+mkBindings :: MonadError AstError m => Ty -> [t] -> m [(t, Ty)]
+mkBindings t []     = return []
+mkBindings t (e:es) = do (dom,ran) <- destructArrow t
+                         bes       <- mkBindings ran es
+                         return $ (e,dom) : bes
+
+issignal :: MonadError AstError m => Exp -> m (Maybe Ty)
+issignal (App _ (Var _ t x) e) | xs == "signal" = do (te,_) <- destructArrow t
+                                                     return (Just te)
+                               | otherwise      = return Nothing
+            where xs = name2String x
+issignal _                                      = return Nothing
+
+classifyRCases :: (Fresh m, MonadError AstError m) => Exp -> m (RCase Annote Ty Pat Exp)
+classifyRCases = \ case 
+     t@(App an _ _)        -> do (f,t,es) <- destructApp t
+                                 shinola an (f,t,es)
+     Case an t dsc bnds me -> do (p,e) <- unbind bnds
+                                 return (RSwitch an t dsc p e me)
+     d                     -> failAt (ann d) "Unclassifiable R-case"
+
+-- Shouldn't mkLeft/mkRight change the type t to an Either?
+mkLeft :: Annote -> Ty -> Exp -> Exp
+mkLeft an t e = App an (Con an t (string2Name "Left")) e
+mkRight :: Annote -> Ty -> Exp -> Exp
+mkRight an t e = App an (Con an t (string2Name "Right")) e
+
+mkEitherTy :: Annote -> Ty -> Ty -> Ty
+mkEitherTy an t1 t2 = TyApp an (TyApp an (TyCon an either) t1) t2
+    where either = string2Name "Either"
+
+sub :: MonadError AstError m => Exp -> m String
+sub g = case g of
+  (Var an t x) -> return $ "R_" ++ gn
+      where gn = name2String x
+  d            -> failAt (ann d) "sub failed"            
+
+rtype :: Annote -> String -> [Ty] -> Ty
+rtype an r_g tes = foldr arr0 (TyCon an (string2Name r_g)) tes
+      
+-- Just a stub for the clause and equation state
+data Bogus  = Bogus
+addClause   = undefined
+addEquation = undefined
+
+
+purify_res_body :: (Fresh m, MonadError AstError m) => Ty -> Ty -> Ty -> [Exp] -> Exp -> StateT Bogus m Exp
+purify_res_body i o t stos tm = do
+  cls <- lift $ classifyRCases tm
+  case cls of
+--
+--     purify_res_body (return e)         = "(Left e,(s1,(...,sm)))"
+--
+       RReturn an e t        -> lift $ mkTuple an (mkLeft an t e : stos)
+
+       SigK an e te g tg bes -> do
+         r_g <- sub g
+         let rt   = rtype an r_g ts
+         let rcon = Con an rt (string2Name r_g)
+         let rGes = foldr (App an) rcon es
+         addClause "R_g T1 ... Tk"                                     -- TBD
+         addEquation "dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i" -- TBD
+         eRg <- lift $ mkTuple an [e,rGes]
+-- Calculate Either T (O,R)
+         let etor = mkEitherTy an t (mkPairTy an o (TyCon an (string2Name "R")))
+         lift $ mkTuple an (mkRight an undefined eRg : stos) -- not sure about the type to pass
+          where (es,ts) = unzip bes
 
 {-
-stateMonadic :: Defn -> m (Ty,Defn)
-stateMonadic d = undefined
-  where name         = defnName d
-        (Embed poly) = defnPolyTy d
+	purify_res_body (signal e
+	                  >>= g e1 ... ek) = "(Right (e,R_g e1 ... ek),(s1,(...,sm)))"
+			          	     Side effect:
+					       * add the clause "R_g T1 ... Tk" to R
+						    (where Ti is the type of ei)
+					       * add the eqn
+					           dispatch (R_g e1 ... ek) i
+						      = g_pure e1 ... ek i
+						 to defn of dispatch
 
-isStateMonad :: [Ty] -> Ty -> Maybe (Ty,[Ty])
-isStateMonad stos = \ case
-    TyComp an (TyApp _ (TyApp _ (TyCon _ n) s) m) a | name2String n == "StT" ->
-                                                        isStateMonad (s:stos) (TyComp an m a)
-                                                    | otherwise              -> Nothing
-    TyComp an (TyCon _ n) a                         | name2String n == "I"   -> Just (a,reverse stos)
-                                                    | otherwise              -> Nothing
-    _                                                                        -> Nothing
+        purify_res_body (signal e)         = "(Right (e,R_ret),(s1,(...,sm)))"
+			          	     Side effect:
+					       * add the clause "R_return" to R
+					       * add the eqn
+					           dispatch R_return i = Left i
+						 to defn of dispatch
 
---ranTy :: Ty -> Ty
-ranTy :: [Ty] -> Ty -> (Ty, [Ty])
-ranTy taus t@(TyApp _ (TyApp _ (TyCon _ con) t1) t2) = case name2String con of
-                                                              "->" -> ranTy (t1:taus) t2
-                                                              _    -> (t,taus)
-ranTy taus t                                         = (t,taus)
+	purify_res_body (e >>= g)          = "let
+			       		        -- N.B.: The irrefutable pattern here is
+						-- sketchy, but it should be okay because
+						-- of the restriction on occurrences of
+						-- "signal"
+                                                (Left v,(s1,(...,sm))) = [|purify_res_body e|]
+                                              in
+                                                 g_pure v s1 ... sm"
+
+        purify_res_body (lift e)           = "let
+                                                 (v,(s1,(...,sm))) = [|purify_state_body 1 e|]
+                                              in
+                                                 (Left v,(s1,(...,sm)))"
+
+        purify_res_body (f e1 ... ek)      = "f_pure e1 .... ek"
+
+        purify_res_body (case e of
+                           P1 -> e1
+                           ...
+                           Pk -> ek)       = "case e of
+                                                P1 -> [|purify_res_body i e1|]
+                                                ...
+                                                Pk -> [|purify_res_body i ek|]"
 -}
