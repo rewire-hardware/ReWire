@@ -3,7 +3,7 @@
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.FrontEnd.Syntax
-      ( DataConId, TyConId
+      ( DataConId (..), TyConId
       , Ty (..), Exp (..), Pat (..), MatchPat (..)
       , Defn (..), DataDefn (..), DataCon (..)
       , Program (..)
@@ -63,11 +63,9 @@ data TyConId = TyConId String
 data FieldId  = FieldId String
       deriving (Generic, Typeable, Data)
 
-
 data DataCon = DataCon Annote (Name DataConId) (Embed Poly)
              | RecCon Annote (Name DataConId) (Embed Poly) [([Name FieldId],Embed Poly)]
       deriving (Generic, Eq, Show, Typeable, Data)
-
 
 instance Alpha DataCon
 
