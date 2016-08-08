@@ -282,13 +282,81 @@ purify_state_body rho stos tys i tm = do
                          where ty         = TyBlank an -- Possible to calculate this type, but it's a
                                                        -- pain in the ass. Is it necessary?
 
-
 {-  
       purify_state_body i (e >>= g)     = "let
                                              (v,(s1,(...,sm))) = [|purify_state_body i e|]
 					   in
 					     g_pure v s1 ... sm"
 -}
+
+{-
+   gatherRes is a big, honkin' hack. It takes a list of Defn, filters out all of those non-res-typed
+   Defn's. Then, it creates an environment matching res-typed names to their purified types.
+-}
+gatherRes :: (MonadError AstError m, Fresh m) => [Defn] -> m ([Defn], PureEnv)
+gatherRes ds = do dnts <- foldM f [] dnps
+                  let res_dnts = filter (isResMonad . \ (_,_,t) -> t) dnts
+                  let res_ds   = map (\ (d,_,_) -> d) res_dnts
+                  let nmts     = map (\ (_,n,t) -> (n,purifyResTy t)) res_dnts
+                  env <- foldM g [] nmts
+                  return (res_ds,env)
+  where dnps              = map (\ d -> (d, name2String $ defnName d, defnPolyTy d)) ds
+        f :: Fresh m => [(Defn,String,Ty)] -> (Defn,String,Embed Poly) -> m [(Defn,String,Ty)]
+        f dnts (d,n,Embed poly) = poly2Ty poly >>= \ t -> return ((d,n,t):dnts)
+        g pnts (n,Just t)  = return $ (n,t) : pnts
+        g pnts (_,Nothing) = failAt NoAnnote "purifyResTy failed"
+        isResMonad :: Ty -> Bool
+        isResMonad ty = case rangeTy ty of
+                         TyComp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ n) i) o) m) a
+                           | name2String n == "ReT" -> True
+                           | otherwise              -> False
+                         _                          -> False
+
+{-
+   This takes a Ty of the form 
+        T1 -> T2 -> ... -> Tn -> ReT In Out (StT S1 (StT S2 (... (StT Sm I)))) T
+   and returns a Ty of the form
+        T1 -> T2 -> ... -> Tn -> In -> S1 -> ... -> Sm -> (Either T (O,R),(S1,(...,Sm)))              
+-}
+purifyResTy :: Ty -> Maybe Ty
+purifyResTy t = do
+  (ts,i,o,stos,a) <- dstrResTy t
+  let etor     = mkEitherTy NoAnnote a (mkPairTy NoAnnote o (TyCon NoAnnote (string2Name "R")))
+  let ranTy    = foldr (mkPairTy NoAnnote) etor stos
+  let purified = foldr (TyApp NoAnnote) ranTy (reverse $ ts ++ [i] ++ stos)
+  return purified
+  
+{-
+   This takes a type of the form
+      T1 -> T2 -> ... -> Tnd -> ReT In Out (StT S1 (StT S2 (... (StT Sm I)))) T
+   and returns
+      ([T1,...,Tn],In,Out,[S1,...,Sm],T)
+-}
+dstrResTy :: Ty -> Maybe ([Ty],Ty,Ty,[Ty],Ty)
+dstrResTy ty = do (i,o,m,a) <- dstrReT rt
+                  stos      <- dstrStT m
+                  return (ts,i,o,stos,a)
+   where (ts,rt) = dstrTyApp [] ty
+         ---
+         dstrTyApp :: [Ty] -> Ty -> ([Ty],Ty)
+         dstrTyApp acc (TyApp _ t1 t2) = dstrTyApp (t1:acc) t2
+         dstrTyApp acc t               = (reverse acc,t)
+         ---
+         dstrReT :: Ty -> Maybe (Ty, Ty, Ty, Ty)
+         dstrReT = \ case
+           TyComp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ n) i) o) m) a
+             | name2String n == "ReT" -> Just (i,o,m,a)
+
+             | otherwise              -> Nothing
+           _                          -> Nothing      
+         ---
+         dstrStT :: Ty -> Maybe [Ty]
+         dstrStT = \ case
+           TyApp _ (TyApp _ (TyCon _ n) s) m | name2String n == "StT" -> do stos <- dstrStT m
+                                                                            return (s:stos)
+                                             | otherwise              -> Nothing
+           TyCon _ n                         | name2String n == "I"   -> return []
+           _                                                          -> Nothing  
 
 --
 -- It may be that the type for each subexpression occurring in here should be
@@ -375,33 +443,39 @@ sub g = case g of
 rtype :: Annote -> String -> [Ty] -> Ty
 rtype an r_g tes = foldr arr0 (TyCon an (string2Name r_g)) tes
       
--- Just a stub for the clause and equation state
-data Bogus  = Bogus
-addClause   = undefined
-addEquation = undefined
+-- state for res-purification.
+data PSto = PSto [DataCon] [(Pat,Exp)]
+addClause dc   = modify (\ (PSto dcs pes) -> PSto (dc:dcs) pes)
+addEquation pe = modify (\ (PSto dcs pes) -> PSto dcs (pe:pes))
 
+mkRDataCon :: Annote -> String -> [Ty] -> DataCon
+mkRDataCon an r_g ts = DataCon an (string2Name r_g) ([] |-> ty)
+   where ty = foldr (TyApp an) (TyCon an (string2Name "R")) ts
 
-purify_res_body :: (Fresh m, MonadError AstError m) => Ty -> Ty -> Ty -> [Exp] -> Exp -> StateT Bogus m Exp
-purify_res_body i o t stos tm = do
+--   dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i
+mkDispatch r_g ts g = undefined
+
+purify_res_body :: (Fresh m, MonadError AstError m) =>
+                   [Ty] -> Ty -> Ty -> Ty -> [Exp] -> Exp -> StateT PSto m Exp
+purify_res_body ts i o t stos tm = do
   cls <- lift $ classifyRCases tm
   case cls of
---
---     purify_res_body (return e)         = "(Left e,(s1,(...,sm)))"
---
-       RReturn an e t        -> lift $ mkTuple an (mkLeft an t e : stos)
-
+                               
+       RReturn an e t        -> lift $ mkTuple an (mkLeft an etor e : stos)
+          where etor = mkEitherTy an t (mkPairTy an o (TyCon an (string2Name "R"))) 
+ 
        SigK an e te g tg bes -> do
          r_g <- sub g
          let rt   = rtype an r_g ts
          let rcon = Con an rt (string2Name r_g)
          let rGes = foldr (App an) rcon es
-         addClause "R_g T1 ... Tk"                                     -- TBD
-         addEquation "dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i" -- TBD
+         addClause (mkRDataCon an r_g ts) -- "R_g T1 ... Tk"
+         addEquation undefined --"dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i" -- TBD
          eRg <- lift $ mkTuple an [e,rGes]
--- Calculate Either T (O,R)
+         -- Calculate Either T (O,R)
          let etor = mkEitherTy an t (mkPairTy an o (TyCon an (string2Name "R")))
-         lift $ mkTuple an (mkRight an undefined eRg : stos) -- not sure about the type to pass
-          where (es,ts) = unzip bes
+         lift $ mkTuple an (mkRight an etor eRg : stos) 
+              where (es,ts) = unzip bes
 
 {-
 	purify_res_body (signal e
@@ -444,4 +518,24 @@ purify_res_body i o t stos tm = do
                                                 P1 -> [|purify_res_body i e1|]
                                                 ...
                                                 Pk -> [|purify_res_body i ek|]"
+-}
+
+seedR = DataDefn 
+  { dataAnnote = MsgAnnote "R Datatype"
+  , dataName   = string2Name "R"
+  , dataKind   = KStar
+  , dataCons   = [DataCon NoAnnote (string2Name "R_return") ([] |-> TyCon NoAnnote (string2Name "R"))]
+  }
+
+{-
+data DataCon = DataCon Annote (Name DataConId) (Embed Poly)
+             | RecCon Annote (Name DataConId) (Embed Poly) [([Name FieldId],Embed Poly)]
+      deriving (Generic, Eq, Show, Typeable, Data)
+
+data DataDefn = DataDefn
+      { dataAnnote :: Annote
+      , dataName   :: Name TyConId
+      , dataKind   :: Kind
+      , dataCons   :: [DataCon]
+      } deriving (Generic, Show, Typeable, Data)
 -}
