@@ -9,6 +9,8 @@ import ReWire.Error
 import ReWire.FrontEnd.Syntax
 import ReWire.FrontEnd.Records (freshVar, freshVars, replaceAtIndex, poly2Ty)
 import Control.Monad.State
+import Data.Maybe (fromJust)
+import Data.List (nub)
 
 s2n :: String -> Name a
 {-# INLINE s2n #-}
@@ -30,21 +32,56 @@ purify (Program p) = do
       let (smds,pds) = partition mds
       rds       <- mapM isResMonadicDefn pds
       let (rmds,ods) = partition rds
-      let nameNpoly  = map (\ d -> (defnName d, defnPolyTy d)) (smds ++ rmds)
-      rho       <- mkPureEnv nameNpoly
+
+      let nameNpolyS = map (\ d -> (defnName d, defnPolyTy d)) smds
+      rhoS      <- mkPureEnv nameNpolyS
+      let nameNpolyR = map (\ d -> (defnName d, defnPolyTy d)) rmds
+      rhoR      <- mkPureEnv nameNpolyR
+      (i,o,t)   <- liftMaybe NoAnnote errmsg (extractIOT $ map snd rhoR)
+
+      let rho = rhoS ++ rhoR
       pure_smds <- mapM (purifyStateDefn rho) smds
       iv        <- freshVar "i"
       (pure_rmds,PSto dcs pes) <- runStateT (mapM (purifyResDefn rho iv) rmds) (PSto [] [])
+
       let r  = mkR_Datatype dcs
-      df        <- mkDispatch NoAnnote undefined pes iv
+
+      let dt = dispatchTy i t
+      df        <- mkDispatch dt pes iv
+
       return $ Program $ trec (ts++[r], pds ++ pure_smds ++ pure_rmds) 
    where f Nothing ms  = ms
          f (Just a) ms = a : ms
+         errmsg        = "Non-unique input, output or return type in specification"
+         -- dispatch :: R -> In -> Either T (W8,R)
+         dispatchTy :: Ty -> Ty -> Ty
+         dispatchTy i t = mkArrowTy [TyCon an $ s2n "R", i, etor]
+             where etor = mkEitherTy an t (mkPairTy an (TyCon an $ s2n "W8") (TyCon an (s2n "R")))
+                   an   = MsgAnnote "Type of dispatch function"
 
+
+{-
+   (extractIOT tys) takes a list of res-monadic types and returns
+        Just (i,o,t)
+   if each ty in tys has the form
+        ... -> ResT i o (...) t
+   and otherwise
+        Nothing
+So, basically, all these types should have one and only one of each of In, Out, and T types.
+-}
+extractIOT :: [Ty] -> Maybe (Ty,Ty,Ty)
+extractIOT tys = let
+                   proj (_,i,o,_,t) = (i,o,t)
+                   iots             = nub $ fromJust $ mapM (destroyResTy >=> return . proj) tys
+                 in
+                  case iots of
+                       [(i,o,t)] -> Just (i,o,t)
+                       _         -> Nothing
+            
 -- dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i
 -- by default, must add the eqn: dispatch R_return i = Left i
-mkDispatch :: (Fresh m, MonadError AstError m) => Annote -> Ty -> [(Pat,Exp)] -> String -> m Defn
-mkDispatch an ty pes iv = do
+mkDispatch :: (Fresh m, MonadError AstError m) => Ty -> [(Pat,Exp)] -> String -> m Defn
+mkDispatch ty pes iv = do
   dsc <- freshVar "dsc"
   let dscv = Var an (TyCon an (s2n "R")) (s2n dsc)
   let body = mkCase an ty dscv pes
@@ -52,23 +89,13 @@ mkDispatch an ty pes iv = do
   let dispatch = seed_dispatch { defnBody = dispatch_body }
   return dispatch
     where seed_dispatch = Defn {
-                            defnAnnote = MsgAnnote "Defn of R data type"
+                            defnAnnote = an
                           , defnName   = s2n "R"
-                          , defnPolyTy = undefined
+                          , defnPolyTy = [] |-> ty
                           , defnInline = False
                           , defnBody   = undefined
                           }
-{-
-data Defn = Defn
-      { defnAnnote :: Annote
-      , defnName   :: Name Exp
-      , defnPolyTy :: Embed Poly
-      , defnInline :: Bool
-      , defnBody   :: Embed (Bind [Name Exp] Exp)
-      } deriving (Generic, Show, Typeable, Data)
--}
-
--- dispatch :: R -> In -> Either T (W8,R)
+          an            = MsgAnnote "Defn of dispatch function"
 
 mkCase :: Annote -> Ty -> Exp -> [(Pat,Exp)] -> Exp
 mkCase an ty dsc []          = error "Shouldn't ever happen."
@@ -105,7 +132,6 @@ partition = foldl step  ([],[])
    where
      step (smds,pds) (Left d)  = (d : smds, pds)
      step (smds,pds) (Right d) = (smds, d : pds)
-
 
 isStateMonadicDefn :: Fresh m => Defn -> m (Either Defn Defn)
 isStateMonadicDefn d = do ty <- poly2Ty poly
