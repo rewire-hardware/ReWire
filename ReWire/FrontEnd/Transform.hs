@@ -79,7 +79,7 @@ liftLambdas p = evalStateT (transProg liftLambdas' p) []
                         (fvs, e') <- freshen e
 
                         let t' = foldr (mkArrow arr) (typeOf arr e') $ map snd bvs ++ [t]
-                        f     <- fresh $ string2Name "$LL"
+                        f     <- fresh $ string2Name "$LL."
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs ++ [x]) e')
                         return $ foldl' (\ e' (v, vt) -> App an e' $ Var an vt v) (Var an t' f) $ map (promote *** id) bvs
@@ -91,7 +91,7 @@ liftLambdas p = evalStateT (transProg liftLambdas' p) []
                         let pvs = patVars p
 
                         let t' = foldr (mkArrow arr) (typeOf arr e) $ map snd bvs ++ map snd pvs
-                        f     <- fresh $ string2Name "$LL"
+                        f     <- fresh $ string2Name "$LL."
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs ++ map fst pvs) e')
                         return $ Match an t e1 (transPat p) (Var an t' f) (map (\ (v, vt) -> Var an vt (promote v)) bvs) e2
@@ -132,7 +132,7 @@ liftLambdas p = evalStateT (transProg liftLambdas' p) []
 purge :: Fresh m => Program -> m Program
 purge (Program p) = do
       (ts, vs) <- untrec p
-      return $ Program $ trec (inuseData (fv $ trec $ inuseDefn vs) ts, inuseDefn vs)
+      return $ Program $ trec (inuseData (fv $ trec $ inuseDefn vs) ts, filterBuiltins $ inuseDefn vs)
       where inuseData :: [Name DataConId] -> [DataDefn] -> [DataDefn]
             inuseData ns = map $ inuseData' ns
 
@@ -143,6 +143,9 @@ purge (Program p) = do
 
             dataConName :: DataCon -> Name DataConId
             dataConName (DataCon _ n _) = n
+
+            filterBuiltins :: [Defn] -> [Defn]
+            filterBuiltins = filter (elem '.' . name2String . defnName)
 
 inuseDefn :: [Defn] -> [Defn]
 inuseDefn ds = case find ((=="Main.start") . name2String . defnName) ds of
