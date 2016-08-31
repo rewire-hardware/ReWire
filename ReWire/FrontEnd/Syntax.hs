@@ -376,7 +376,7 @@ arr0 = mkArrow $ string2Name "->"
 infixr `arr0`
 
 rangeTy :: Ty -> Ty
-rangeTy t@(TyApp _ (TyApp _ (TyCon _ con) _) t2) = case name2String con of
+rangeTy t@(TyApp _ (TyApp _ (TyCon _ con) t1) t2) = case name2String con of
                                                           "->" -> rangeTy t2
                                                           _    -> t
 rangeTy t                                         = t
