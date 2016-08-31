@@ -1,5 +1,5 @@
 {-# LANGUAGE LambdaCase, FlexibleInstances, TupleSections, NamedFieldPuns, ViewPatterns #-}
-{-# LANGUAGE Safe #-}
+-- {-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.Cache
       ( runCache
       , getProgram
@@ -111,7 +111,7 @@ getProgram fp = do
        >=> inline
        >=> reduce
        >=> shiftLambdas
-       >=> printInfo "___Post_TC___"
+       -- >=> printInfo "___Post_TC___"
        >=> liftLambdas
        -- >=> typeCheck
        -- >=> printInfo "___Post_LL___"
@@ -119,8 +119,8 @@ getProgram fp = do
        -- >=> typeCheck
        -- >=> printInfo "___Post_Purge___"
        >=> purify
-       -- >=> typeCheck
-       -- >=> printInfo "___Post_Purify___"
+--       >=> typeCheck
+       >=> printInfo "___Post_Purify___"
        >=> toCore
        $ addPrims (ts, ds)
 

@@ -128,8 +128,15 @@ data Ty = TyApp Annote Ty Ty
         | TyVar Annote Kind (Name Ty)
         | TyComp Annote Ty Ty -- application of a monad
         | TyBlank Annote
-           deriving (Eq, Generic, Show, Typeable, Data)
+           deriving (Eq, Generic, Typeable, Data)
 
+instance Show Ty where
+  show (TyApp _ t1 t2)  = "(" ++ show t1 ++ " " ++ show t2 ++ ")"
+  show (TyCon _ n)      = name2String n
+  show (TyVar _ _ n)    = name2String n
+  show (TyComp _ t1 t2) = show t1 ++ "{" ++ show t2 ++ "}"
+  show (TyBlank _)      = "Blank"
+  
 instance Alpha Ty
 
 instance Subst Ty Ty where
@@ -369,7 +376,7 @@ arr0 = mkArrow $ string2Name "->"
 infixr `arr0`
 
 rangeTy :: Ty -> Ty
-rangeTy t@(TyApp _ (TyApp _ (TyCon _ con) t1) t2) = case name2String con of
+rangeTy t@(TyApp _ (TyApp _ (TyCon _ con) _) t2) = case name2String con of
                                                           "->" -> rangeTy t2
                                                           _    -> t
 rangeTy t                                         = t
