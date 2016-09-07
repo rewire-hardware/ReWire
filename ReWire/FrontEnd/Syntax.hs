@@ -312,7 +312,10 @@ data Defn = Defn
       , defnPolyTy :: Embed Poly
       , defnInline :: Bool
       , defnBody   :: Embed (Bind [Name Exp] Exp)
-      } deriving (Generic, Show, Typeable, Data)
+      } deriving (Generic, {- Show,-} Typeable, Data)
+
+instance Show Defn where
+  show d = name2String (defnName d) ++ " :: " ++ show (defnPolyTy d)
 
 instance Alpha Defn
 
