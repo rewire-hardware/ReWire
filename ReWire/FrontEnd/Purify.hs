@@ -39,7 +39,9 @@ purify (Program p) = do
       let dt = dispatchTy i t
       df        <- mkDispatch dt pes iv
 
-      return $ Program $ trec (ts++[r], ods ++ pure_smds ++ pure_rmds) 
+      start_def <- mkStart i o t -- still need to finish mkStart
+
+      return $ Program $ trec (ts++[r], start_def : ods ++ pure_smds ++ pure_rmds) 
    where f Nothing ms  = ms
          f (Just a) ms = a : ms
          errmsg        = "Non-unique input, output or return type in specification"
@@ -48,6 +50,34 @@ purify (Program p) = do
              where etor = mkEitherTy an t (mkPairTy an (TyCon an $ s2n "W8") (TyCon an (s2n "R")))
                    an   = MsgAnnote "Type of dispatch function"
 
+{-
+In addition to all the above, we re-tie the recursive knot by adding a new
+  "start" as follows:
+
+  	  start :: ReT In Out I T
+	  start = unfold dispatch start_pure
+
+          start :: In -> (Either T (O,R),()) --- drop the "()"?
+-}
+
+mkStart i o t = do
+  return $ Defn {
+      defnAnnote = MsgAnnote "start function"
+    , defnName   = s2n "start"
+    , defnPolyTy = [] |-> tyStart
+    , defnInline = False               
+    , defnBody   = appl
+    }
+   where na         = NoAnnote
+         etor       = mkEitherTy na t (mkPairTy na o (TyCon na (s2n "R")))
+         ranStart   = mkPairTy na etor (TyCon na (s2n "()"))
+         tyStart    = i `arr0` ranStart
+         unfold     = Var na (TyBlank $ MsgAnnote "stub type for unfold") (s2n "unfold")
+         dispatch   = Var na (TyBlank $ MsgAnnote "stub type for dispatch") (s2n "dispatch")
+         start_pure = Var na (TyBlank $ MsgAnnote "stub type for start_pure") (s2n "start_pure")
+         appl       = Embed $ bind [] (App na (App na unfold dispatch) start_pure)
+         
+         
 s2n :: String -> Name a
 {-# INLINE s2n #-}
 s2n = string2Name 
@@ -169,7 +199,7 @@ mkDispatch ty pes iv = do
   return dispatch
     where seed_dispatch = Defn {
                             defnAnnote = an
-                          , defnName   = s2n "R"
+                          , defnName   = s2n "R" -- is this right? shouldn't it be dsc or dispatch?
                           , defnPolyTy = [] |-> ty
                           , defnInline = False
                           , defnBody   = undefined
