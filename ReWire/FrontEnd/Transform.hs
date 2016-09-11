@@ -35,7 +35,6 @@ import Data.Maybe (fromJust, fromMaybe)
 import Data.Set (Set, singleton, union, (\\))
 import qualified Data.Set as Set
 
-
 -- | Inlines defs marked for inlining. Must run before lambda lifting.
 inline :: Fresh m => Program -> m Program
 inline (Program p) = do
@@ -153,6 +152,7 @@ purge (Program p) = do
             inuseData' :: [Name DataConId] -> DataDefn -> DataDefn
             inuseData' ns (DataDefn an n k cs)
                   | name2String n == "Prelude.Either" = DataDefn an n k cs
+                  | name2String n == "(,)"            = DataDefn an n k cs
                   | otherwise                         = DataDefn an n k $ filter ((flip Set.member (Set.fromList ns)) . dataConName) cs
 
             dataConName :: DataCon -> Name DataConId

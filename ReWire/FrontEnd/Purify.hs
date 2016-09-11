@@ -101,50 +101,14 @@ checkIOT phis = do
        _         -> failAt NoAnnote "checkIOT: Non-unique input, output, or result types"
      where proj (_,i,o,_,t) = (i,o,t)
 
-{-
-{-
-   (extractIOT tys) takes a list of res-monadic types and returns
-        Just (i,o,t)
-   if each ty in tys has the form
-        ... -> ResT i o (...) t
-   and otherwise
-        Nothing
-So, basically, all these types should have one and only one of each of In, Out, and T types.
--}
-extractIOT :: [Ty] -> Maybe (Ty,Ty,Ty)
-extractIOT []  = error "extractIOT assumes non-empty input"
-extractIOT tys = let
-                   proj (_,i,o,_,t) = (i,o,t)
-                   iots             = nub $ myfromJust $ mapM (trace "1" destroyResTy >=> return . proj) tys
-                 in
-                  case iots of
-                       [(i,o,t)] -> Just (i,o,t)
-                       _         -> Nothing
-
--}
-
-{-
-[
- ((-> Main.In) (((ReT Main.In) Main.Out) I){()}),
- (((ReT Main.In) Main.Out) I){()},
- (((ReT Main.In) Main.Out) I){()},
- ((-> Main.In) (((ReT Main.In) Main.Out) I){()}),
- ((-> o) (((ReT i) o) m){i})
-]
-data Ty = TyApp Annote Ty Ty
-        | TyCon Annote (Name TyConId)
-        | TyVar Annote Kind (Name Ty)
-        | TyComp Annote Ty Ty -- application of a monad
-        | TyBlank Annote
-           deriving (Eq, Generic, Typeable, Data)
--}
-
 varfree (TyApp _ t1 t2)  = varfree t1 && varfree t2
 varfree (TyCon _ _)      = True
 varfree (TyVar _ _ _)    = False
 varfree (TyComp _ t1 t2) = varfree t1 && varfree t2
 varfree (TyBlank _)      = True
 
+
+-- Begin of junk
 
 foo :: [Ty] -> Maybe [([Ty], Ty, Ty, [Ty], Ty)]
 foo =  mapM destroyResTy
@@ -158,6 +122,10 @@ strioi = TyComp NoAnnote (reT (c "In") (c "Out") (stT (c "S1") (stT (c "S2") (c 
 
 crud = c "T1" `arr0` c "T2" `arr0` strioi
 
+rator = Var NoAnnote (TyBlank NoAnnote) (s2n "rator")
+rand1 = Var NoAnnote (TyBlank NoAnnote) (s2n "rand1")
+rand2 = Var NoAnnote (TyBlank NoAnnote) (s2n "rand2")
+
 rioi = TyComp an (TyApp an (TyApp an (TyApp an ret inty) out) i) nilTy
         where nilTy = TyCon an (s2n "()")
               an    = NoAnnote
@@ -165,7 +133,7 @@ rioi = TyComp an (TyApp an (TyApp an (TyApp an ret inty) out) i) nilTy
               inty  = TyCon an (s2n "In")
               ret   = TyCon an (s2n "ReT")
               i     = TyCon an (s2n "I")
-
+-- End of junk
 
 mkId :: String -> Name b
 mkId = string2Name
@@ -268,8 +236,8 @@ isStateMonadicDefn d = do ty <- poly2Ty poly
 isResMonadicDefn :: Fresh m => Defn -> m (Either Defn Defn)
 isResMonadicDefn d = do ty <- poly2Ty poly
                         if isResMonad ty
-                           then trace ("ResMonadicDefn: " ++ show d) $ return $ Left d
-                           else trace ("NOTResMonadicDefn: " ++ show d) $return $ Right d
+                           then return $ Left d
+                           else return $ Right d
   where Embed poly = defnPolyTy d
         isResMonad :: Ty -> Bool
         isResMonad ty = case rangeTy ty of
@@ -596,9 +564,9 @@ classifyApp an (f,t,[e]) = do
 classifyApp an (f,t,[e,g]) = case f of
   Var _ tb x | xs == ">>=" -> do sig <- issignal e
                                  case sig of
-                                  Just te -> do (g',tg',es) <- destructApp g
-                                                bes         <- mkBindings tg' es
-                                                return $ SigK an e te g' tg' bes
+                                  Just (s,ts) -> do (g',tg',es) <- destructApp g
+                                                    bes         <- mkBindings tg' es
+                                                    return $ SigK an s ts g' tg' bes
                                   Nothing -> do -- (_,tg,_) <- destructApp g
                                                 (te,tau) <- destructArrow tb
                                                 (tg,_)   <- destructArrow tau
@@ -844,13 +812,13 @@ mkTuplePat an ((n,t):ns) =
 
 -- Shouldn't mkLeft/mkRight change the type t to an Either?
 mkLeft :: Annote -> Ty -> Exp -> Exp
-mkLeft an t e = App an (Con an t (s2n "Left")) e
+mkLeft an t e = App an (Con an t (s2n "Prelude.Left")) e
 mkRight :: Annote -> Ty -> Exp -> Exp
-mkRight an t e = App an (Con an t (s2n "Right")) e
+mkRight an t e = App an (Con an t (s2n "Prelude.Right")) e
 
 mkEitherTy :: Annote -> Ty -> Ty -> Ty
 mkEitherTy an t1 t2 = TyApp an (TyApp an (TyCon an either) t1) t2
-    where either = s2n "Either"
+    where either = s2n "Prelude.Either"
 
 sub :: MonadError AstError m => Exp -> m String
 sub g = case g of
@@ -882,8 +850,21 @@ mkPureVar rho = \ case
   d            -> failAt (ann d) "Can't make a pure variable out of a non-variable"            
 
 mkApp :: Annote -> Exp -> [Exp] -> Exp
+mkApp an rator = foldl step rator
+  where step ap rand = App an ap rand
+
+{-
+-- WRONG!
+mkApp :: Annote -> Exp -> [Exp] -> Exp
 mkApp an rator = foldr (App an) rator
 
+partition :: [Either a b] -> ([a], [b])
+partition = foldl step  ([],[])
+   where
+     step (smds,pds) (Left d)  = (d : smds, pds)
+     step (smds,pds) (Right d) = (smds, d : pds)
+-}
+       
 mkPureApp :: MonadError AstError m => Annote -> PureEnv -> Exp -> [Exp] -> m Exp
 mkPureApp an rho e es = do ep <- mkPureVar rho e
                            return $ mkApp an e es
@@ -907,9 +888,9 @@ mkBindings t (e:es) = do (dom,ran) <- destructArrow t
                          bes       <- mkBindings ran es
                          return $ (e,dom) : bes
 
-issignal :: MonadError AstError m => Exp -> m (Maybe Ty)
+issignal :: MonadError AstError m => Exp -> m (Maybe (Exp,Ty))
 issignal (App _ (Var _ t x) e) | xs == "signal" = do (te,_) <- destructArrow t
-                                                     return (Just te)
+                                                     return (Just (e,te))
                                | otherwise      = return Nothing
             where xs = n2s x
 issignal _                                      = return Nothing
