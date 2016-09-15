@@ -1,4 +1,4 @@
-{-# LANGUAGE Safe #-}
+-- {-# LANGUAGE Safe #-}
 module ReWire.Core.ToMiniHDL where
 
 import ReWire.Annotation
@@ -13,6 +13,8 @@ import Control.Monad.State
 import Control.Monad.Identity
 import Data.List (find)
 import Data.Bits (testBit)
+
+import Debug.Trace --- here we go.
 
 type CM = SyntaxErrorT (
             StateT ([Signal],[Component],Int) (
@@ -187,7 +189,7 @@ askGIdTy i = do defns <- askDefns
 compileExp :: C.Exp -> CM ([Stmt],Name)
 compileExp e_ = case e of
                   App {}        -> failAt (ann e_) "compileExp: Got App after flattening (can't happen)"
-                  Prim {}       -> failAt (ann e_) "compileExp: Encountered Prim"
+                  Prim {}       -> failAt (ann e_) $ "compileExp: Encountered Prim " ++ show e
                   GVar _ t i    -> do n           <- liftM (++"_res") $ freshName (mangle i)
                                       n_inst      <- liftM (++"_call") $ freshName (mangle i)
                                       let tres    =  last (flattenArrow t)
@@ -342,5 +344,8 @@ compileDefn d | defnName d == "Main.start" = do
 
 compileProgram :: C.Program -> Either AstError M.Program
 compileProgram p = fst $ runIdentity $ flip runReaderT (ctors p,defns p) $ flip runStateT ([],[],0) $ runSyntaxError $
-                     do units <- mapM compileDefn (defns p)
+                     do 
+                        units <- trace (show $ map proj (defns p)) $ mapM compileDefn (defns p)
                         return (M.Program units)
+
+proj (Defn _ gid _ _) = gid

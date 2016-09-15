@@ -186,7 +186,20 @@ data Exp = App        Annote Exp Exp
          | Match      Annote Ty Exp MatchPat Exp [Exp] (Maybe Exp)
          | NativeVHDL Annote String Exp
          | Error      Annote Ty String
-         deriving (Generic, Show, Typeable, Data)
+         deriving (Generic, {- Show,-} Typeable, Data)
+
+instance Show Exp where
+  show (App _ e1 e2)       = "(" ++ show e1 ++ " " ++ show e2 ++ ")"
+  show (Lam _ _ _)         = "*lambda-expression*"
+  show (Var _ _ n)         = "(Var " ++ name2String n ++ ")"
+  show (Con _ _ c)         = name2String c
+  show (RecConApp _ _ _ _) = "*RecConApp*"
+  show (RecUp _ _ _ _)     = "*RecUp*"
+  show (Case _ _ _ _ _)    = "*Case*"
+  show (Match _ _ e1 mp e2 es Nothing)   = "(Match " ++ " " ++ show e1 ++ " " ++ show mp ++ " " ++ show e2 ++ " " ++ show es ++ ")"
+  show (Match _ _ e1 mp e2 es (Just e3)) = "(Match " ++ " " ++ show e1 ++ " " ++ show mp ++ " " ++ show e2 ++ " " ++ show es ++ " " ++ show e3 ++ ")"
+  show (NativeVHDL _ _ _)  = "*nativeVHDL*"
+  show (Error _ _ _)       = "*error*"
 
 instance Alpha Exp
 
@@ -284,8 +297,14 @@ instance Pretty Pat where
 
 
 data MatchPat = MatchPatCon Annote Ty (Name DataConId) [MatchPat]
-                 | MatchPatVar Annote Ty
-                 deriving (Show, Generic, Typeable, Data)
+              | MatchPatVar Annote Ty
+                 deriving ({-Show, -}Generic, Typeable, Data)
+
+instance Show MatchPat where
+  show = \ case
+    (MatchPatCon _ _ n [])  -> name2String n
+    (MatchPatCon _ _ n mps) -> "(" ++ name2String n ++ foldr1 (\ s ps -> s ++ " " ++ ps) (map show mps)
+    (MatchPatVar _ _)       -> "*matchpatvar*"
 
 instance Alpha MatchPat
 
