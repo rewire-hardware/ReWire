@@ -877,7 +877,7 @@ mkPureVar rho = \ case
   v@(Var an t x) | xs == "extrude" -> return v
                  | otherwise       -> do
                      t' <- lookupPure an xs rho
-                     return $ Var an t' (s2n $ xs ++ "_pure")
+                     return $ Var an t' (s2n $ xs {- ++ "_pure" -})
       where xs = n2s x
   d                       -> failAt (ann d) $ "Can't make a pure variable out of a non-variable" ++ show d
 
