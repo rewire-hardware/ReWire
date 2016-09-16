@@ -5,11 +5,11 @@ module ReWire.FrontEnd.KindCheck (kindCheck) where
 import ReWire.Annotation
 import ReWire.Error
 import ReWire.FrontEnd.Syntax
-import ReWire.FrontEnd.Unbound (fresh, substs, aeq, Subst, string2Name,name2String)
+import ReWire.FrontEnd.Unbound (fresh, substs, aeq, Subst, string2Name, name2String, runFreshMT)
 import ReWire.Pretty
 
 import Control.Monad.Reader (ReaderT (..), ask, local)
-import Control.Monad.State (StateT (..), get, modify)
+import Control.Monad.State (evalStateT, StateT (..), get, modify)
 import Data.Map.Strict (Map)
 
 import qualified Data.Map.Strict as Map
@@ -71,6 +71,8 @@ kcTy = \ case
             unify an k1 $ KFun k2 k
             return k
       TyCon an i      -> case name2String i of
+                              -- This special case really shouldn't be
+                              -- necessary (bug?).
                               "->" -> return (KFun KStar (KFun KStar KStar))
                               _    -> do
                                 cas <- askCAssumps
@@ -86,14 +88,16 @@ kcTy = \ case
             return KStar
       TyBlank an      -> failAt an "Something went wrong in the kind checker"
 
-kcDataCon :: (Fresh m, SyntaxError m) => DataCon -> KCM m ()
-kcDataCon (DataCon an _ (Embed (Poly t))) = do
-      (_, t') <- unbind t
-      k       <- kcTy t'
-      unify an KStar k
+-- kcDataCon :: (Fresh m, SyntaxError m) => DataCon -> KCM m ()
+-- kcDataCon (DataCon an _ (Embed (Poly t))) = do
+--       (_, t') <- unbind t
+--       k       <- kcTy t'
+--       unify an k KStar
 
+-- Only needed for debugging.
 kcDataDecl :: (Fresh m, SyntaxError m) => DataDefn -> KCM m ()
-kcDataDecl (DataDefn _ _ _ cs) = mapM_ kcDataCon cs
+-- kcDataDecl (DataDefn _ _ _ cs) = mapM_ kcDataCon cs
+kcDataDecl _ = return ()
 
 kcDefn :: (Fresh m, SyntaxError m) => Defn -> KCM m ()
 kcDefn (Defn an _ (Embed (Poly t)) _ _) = do
@@ -121,16 +125,15 @@ redecorate s (DataDefn an i _ cs) = do
 assump :: DataDefn -> (Name TyConId, Kind)
 assump (DataDefn _ i k _) = (i, k)
 
-kc :: (Fresh m, SyntaxError m) => Program -> KCM m Program
-kc (Program p) = do
-      (ts, vs) <- untrec p
+kc :: (Fresh m, SyntaxError m) => FreeProgram -> KCM m FreeProgram
+kc (ts, vs) = do
       let cas  =  Map.fromList $ map assump ts
       localCAssumps (cas `Map.union`) $ do
             mapM_ kcDataDecl ts
             mapM_ kcDefn vs
             s   <- get
             ts' <- mapM (redecorate s) ts
-            return $ Program $ trec (ts', vs)
+            return (ts', vs)
 
-kindCheck :: (Fresh m, SyntaxError m) => Program -> m Program
-kindCheck m = fmap fst $ runStateT (runReaderT (kc m) (KCEnv mempty)) mempty
+kindCheck :: SyntaxError m => FreeProgram -> m FreeProgram
+kindCheck m = runFreshMT $ evalStateT (runReaderT (kc m) $ KCEnv mempty) mempty

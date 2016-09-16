@@ -11,14 +11,14 @@ import ReWire.Annotation
 import ReWire.Error
 import ReWire.FrontEnd.Syntax
 import ReWire.FrontEnd.Unbound
-      ( fresh, substs, aeq, Subst
+      ( fresh, substs, aeq, Subst, runFreshMT
       , name2String, string2Name
       )
 import ReWire.Pretty
 
 import Control.DeepSeq (deepseq, force)
 import Control.Monad.Reader (ReaderT (..), local, ask)
-import Control.Monad.State (StateT (..), get, put, modify)
+import Control.Monad.State (evalStateT, StateT (..), get, put, modify)
 import Control.Monad (zipWithM)
 import Data.List (foldl')
 import Data.Map.Strict (Map)
@@ -42,11 +42,9 @@ type CAssump = (Name DataConId, Poly)
 
 type TCM m = ReaderT TCEnv (StateT TySub m)
 
-typeCheck :: (Fresh m, SyntaxError m) => Program -> m Program
-typeCheck (Program p) = do
-      (ts, vs)   <- untrec p
-      (ts', vs') <- fst <$> runStateT (runReaderT (tc (ts, vs)) (TCEnv mempty mempty (getArrow ts))) mempty
-      return $ Program $ trec (ts', vs')
+typeCheck :: SyntaxError m => FreeProgram -> m FreeProgram
+typeCheck (ts, vs) = runFreshMT $
+      evalStateT (runReaderT (tc (ts, vs)) (TCEnv mempty mempty (getArrow ts))) mempty
 
 localAssumps :: SyntaxError m => (Map (Name Exp) Poly -> Map (Name Exp) Poly) -> TCM m a -> TCM m a
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
@@ -244,7 +242,7 @@ tcDefn d  = do
       let d' = Defn noAnn n (tvs |-> t) b $ Embed $ bind vs $ subst s e''
       d' `deepseq` return d'
 
-tc :: (Fresh m, SyntaxError m) => ([DataDefn], [Defn]) -> TCM m ([DataDefn], [Defn])
+tc :: (Fresh m, SyntaxError m) => FreeProgram -> TCM m FreeProgram
 tc (ts, vs) = do
       let as   =  Map.fromList $ map defnAssump vs
           cas  =  Map.fromList $ concatMap dataDeclAssumps ts

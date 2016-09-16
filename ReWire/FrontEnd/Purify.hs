@@ -943,5 +943,3 @@ dstArrow t@(TyApp an (TyApp _ (TyCon _ con) t1) t2) = case n2s con of
                                                            _    -> failAt an "Non-arrow type(3)"
 dstArrow t                                          = failAt (ann t) "Non-arrow type(4)"
 
-
-
