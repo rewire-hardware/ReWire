@@ -9,7 +9,7 @@ import ReWire.FrontEnd.Unbound (fresh, substs, aeq, Subst, string2Name)
 import ReWire.Pretty
 
 import Control.Monad.Reader (ReaderT (..), ask, local)
-import Control.Monad.State (StateT (..), get, modify)
+import Control.Monad.State (evalStateT, StateT (..), get, modify)
 import Data.Map.Strict (Map)
 
 import qualified Data.Map.Strict as Map
@@ -84,14 +84,16 @@ kcTy = \ case
             return KStar
       TyBlank an      -> failAt an "Something went wrong in the kind checker"
 
-kcDataCon :: (Fresh m, SyntaxError m) => DataCon -> KCM m ()
-kcDataCon (DataCon an _ (Embed (Poly t))) = do
-      (_, t') <- unbind t
-      k       <- kcTy t'
-      unify an KStar k
+-- kcDataCon :: (Fresh m, SyntaxError m) => DataCon -> KCM m ()
+-- kcDataCon (DataCon an _ (Embed (Poly t))) = do
+--       (_, t') <- unbind t
+--       k       <- kcTy t'
+--       unify an k KStar
 
+-- Only needed for debugging.
 kcDataDecl :: (Fresh m, SyntaxError m) => DataDefn -> KCM m ()
-kcDataDecl (DataDefn _ _ _ cs) = mapM_ kcDataCon cs
+-- kcDataDecl (DataDefn _ _ _ cs) = mapM_ kcDataCon cs
+kcDataDecl _ = return ()
 
 kcDefn :: (Fresh m, SyntaxError m) => Defn -> KCM m ()
 kcDefn (Defn an _ (Embed (Poly t)) _ _) = do
@@ -131,4 +133,4 @@ kc (Program p) = do
             return $ Program $ trec (ts', vs)
 
 kindCheck :: (Fresh m, SyntaxError m) => Program -> m Program
-kindCheck m = fmap fst $ runStateT (runReaderT (kc m) (KCEnv mempty)) mempty
+kindCheck m = evalStateT (runReaderT (kc m) $ KCEnv mempty) mempty

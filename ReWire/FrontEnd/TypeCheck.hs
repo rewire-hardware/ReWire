@@ -18,7 +18,7 @@ import ReWire.Pretty
 
 import Control.DeepSeq (deepseq, force)
 import Control.Monad.Reader (ReaderT (..), local, ask)
-import Control.Monad.State (StateT (..), get, put, modify)
+import Control.Monad.State (evalStateT, StateT (..), get, put, modify)
 import Control.Monad (zipWithM)
 import Data.List (foldl')
 import Data.Map.Strict (Map)
@@ -45,7 +45,7 @@ type TCM m = ReaderT TCEnv (StateT TySub m)
 typeCheck :: (Fresh m, SyntaxError m) => Program -> m Program
 typeCheck (Program p) = do
       (ts, vs)   <- untrec p
-      (ts', vs') <- fst <$> runStateT (runReaderT (tc (ts, vs)) (TCEnv mempty mempty (getArrow ts))) mempty
+      (ts', vs') <- evalStateT (runReaderT (tc (ts, vs)) (TCEnv mempty mempty (getArrow ts))) mempty
       return $ Program $ trec (ts', vs')
 
 localAssumps :: SyntaxError m => (Map (Name Exp) Poly -> Map (Name Exp) Poly) -> TCM m a -> TCM m a
