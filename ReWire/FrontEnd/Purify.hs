@@ -4,7 +4,7 @@ module ReWire.FrontEnd.Purify (purify) where
 
 import ReWire.Annotation
 import ReWire.FrontEnd.Unbound
-      ( Fresh (..), name2String, string2Name
+      ( Fresh (..), name2String, string2Name, runFreshMT
       )
 import ReWire.Error
 import ReWire.FrontEnd.Syntax
@@ -14,9 +14,8 @@ import Data.Maybe (fromJust)
 import Data.List (nub,find)
 import Debug.Trace
 
-purify :: (Fresh m, MonadError AstError m, MonadIO m) => Program -> m Program
-purify (Program p) = do
-      (ts, ds)  <- untrec p
+purify :: (MonadError AstError m, MonadIO m) => FreeProgram -> m FreeProgram
+purify (ts, ds) = runFreshMT $ do
       mds       <- mapM isStateMonadicDefn ds
       let (smds,pds) = partition mds
       rds       <- mapM isResMonadicDefn pds
@@ -43,7 +42,7 @@ purify (Program p) = do
 
       start_def <- mkStart i o t
 
-      return $ Program $ trec (ts++[r], start_def : ods ++ pure_smds ++ pure_rmds) 
+      return (ts++[r], start_def : ods ++ pure_smds ++ pure_rmds) 
    where f Nothing ms  = ms
          f (Just a) ms = a : ms
          errmsg        = "Non-unique input, output or return type in specification"
@@ -261,7 +260,7 @@ purifyStateDefn rho d = do
   let d_pure = dname -- s2n $ dname ++ "_pure"
   (args,e)   <- unbind body
   (_,stys,_) <- liftMaybe "failed at purifyStateDefn" $ dstStT ty
-  nstos      <- freshVars (length stys)
+  nstos      <- freshVars "pur" (length stys)
   let stos = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip nstos stys)
   e'         <- purify_state_body rho stos stys 0 e
   let b_pure = bind args e'
@@ -285,7 +284,7 @@ purifyResDefn rho imprhoR iv d = do
   (args,e)   <- lift $ unbind body
   (ts,i,o,stys,a) <- lift $ liftMaybe "failed at purifyResDefn" $ dstResTy ty
 
-  nstos      <- lift $ freshVars (length stys)
+  nstos      <- lift $ freshVars "pur" (length stys)
   let stos = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip nstos stys)
   e'         <- purify_res_body rho i o a stys stos iv e
   let b_pure = bind args e'
@@ -514,7 +513,7 @@ purify_state_body rho stos stys i tm = do
                                        return $ Case an t e1' (bind p e2') Nothing
     Bind an t e g -> do
       e'    <- purify_state_body rho stos stys i e
-      ns    <- freshVars (length stos + 1)
+      ns    <- freshVars "pur" (length stos + 1)
       let vs = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip ns stys)
       g_pure_app <- mkPureApp an rho g vs
       (p,_) <- mkTuplePat an (zip ns stys)
@@ -669,7 +668,7 @@ head of the application. The way it's written below assumes that g is a variable
 
          -- start calculating pattern: p = (Left v,(s1,(...,sm)))
          let etor  = mkEitherTy an ert (mkPairTy an o (TyCon an (s2n "R")))
-         svars         <- freshVars (length stys)
+         svars         <- freshVars "pur" (length stys)
          v             <- freshVar "v"
          (stps,stoTy)  <- mkTuplePat an (zip svars stys)
          let leftv = PatCon an (Embed etor) (Embed $ s2n "Left") [PatVar an (Embed t) v]
@@ -685,7 +684,7 @@ head of the application. The way it's written below assumes that g is a variable
        --       or this will fail.
        RLift an e te -> do 
          e'    <- lift $ purify_state_body rho stos stys 1 e
-         s_i   <- freshVars (length stys)
+         s_i   <- freshVars "pur" (length stys)
          v     <- freshVar "v"
          -- the pattern "(v,(s1,(...,sm)))"
          (p,_) <- mkTuplePat an $ (v,t) : zip s_i stys         
@@ -867,7 +866,7 @@ mkRDataCon an r_g ts = DataCon an (s2n r_g) ([] |-> ty)
 
 mkRPat :: Fresh m => Annote -> [Ty] -> String -> m (Pat,[Name Exp])
 mkRPat an ts r_g = do
-  xs <- freshVars (length ts) -- fencepost counting problem?
+  xs <- freshVars "pur" (length ts) -- fencepost counting problem?
   let varpats = map (\ (x,t) -> PatVar an (Embed t) x) (zip xs ts)
   return (PatCon an (Embed ty) (Embed $ s2n r_g) varpats, xs)
    where ty = foldr (TyApp an) (TyCon an $ s2n r_g) ts

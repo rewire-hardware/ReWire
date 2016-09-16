@@ -24,8 +24,8 @@ flatten = foldr (\ (as,b) asbs -> cross b as ++ asbs) []
 freshVar :: Fresh m => String -> m (Name a)
 freshVar n = fresh (string2Name $ "?X_" ++ n ++ "_")
 
-freshVars :: (Enum a1, Num a1, Show a1, Fresh m) => a1 -> m [Name a]
-freshVars m = mapM (freshVar . show) [0..m-1]
+freshVars :: (Enum a1, Num a1, Show a1, Fresh m) => String -> a1 -> m [Name a]
+freshVars n m = mapM (freshVar . (n++) . show) [0..m-1]
 
 splitArrow :: (Fresh m, MonadError AstError m) => Poly -> m (Ty, Ty)
 splitArrow (Poly phi) = do
@@ -188,7 +188,7 @@ mkRecPatExp
      Exp                          ->
      m (Pat, Exp)
 mkRecPatExp an typ@(Embed ty) c@(Embed cstr) f fns e = do
-  fvs <- freshVars m
+  fvs <- freshVars "rpat" m
   let fns'   = map ((\ (Embed x) -> x) . snd) fns
   fns'' <- mapM poly2Ty fns'
   let foobar = zip fvs fns''

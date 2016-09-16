@@ -44,13 +44,12 @@ inline (ts, ds) = return (ts,  map (substs subs) ds)
                   return (n, e')
             subs = map toSubst $ filter defnInline ds
 
-records :: (Fresh m, MonadError AstError m) => Program -> m Program
-records (Program p) = do
-      (ts, ds) <- untrec p
+records :: MonadError AstError m => FreeProgram -> m FreeProgram
+records (ts, ds) = runFreshMT $ do
       ds'      <- desugarDefns ts ds
       newdefs  <- mapM desugarRec ts
       let ts' = map desugarRecData ts
-      return $ Program $ trec (ts', ds' ++ concat newdefs)
+      return (ts', ds' ++ concat newdefs)
 
 -- | Replaces the expression in NativeVHDL so we don't descend into it
 --   during other transformations.
