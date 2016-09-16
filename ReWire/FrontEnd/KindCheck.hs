@@ -5,7 +5,7 @@ module ReWire.FrontEnd.KindCheck (kindCheck) where
 import ReWire.Annotation
 import ReWire.Error
 import ReWire.FrontEnd.Syntax
-import ReWire.FrontEnd.Unbound (fresh, substs, aeq, Subst, string2Name)
+import ReWire.FrontEnd.Unbound (fresh, substs, aeq, Subst, string2Name, runFreshMT)
 import ReWire.Pretty
 
 import Control.Monad.Reader (ReaderT (..), ask, local)
@@ -121,16 +121,15 @@ redecorate s (DataDefn an i _ cs) = do
 assump :: DataDefn -> (Name TyConId, Kind)
 assump (DataDefn _ i k _) = (i, k)
 
-kc :: (Fresh m, SyntaxError m) => Program -> KCM m Program
-kc (Program p) = do
-      (ts, vs) <- untrec p
+kc :: (Fresh m, SyntaxError m) => FreeProgram -> KCM m FreeProgram
+kc (ts, vs) = do
       let cas  =  Map.fromList $ map assump ts
       localCAssumps (cas `Map.union`) $ do
             mapM_ kcDataDecl ts
             mapM_ kcDefn vs
             s   <- get
             ts' <- mapM (redecorate s) ts
-            return $ Program $ trec (ts', vs)
+            return (ts', vs)
 
-kindCheck :: (Fresh m, SyntaxError m) => Program -> m Program
-kindCheck m = evalStateT (runReaderT (kc m) $ KCEnv mempty) mempty
+kindCheck :: SyntaxError m => FreeProgram -> m FreeProgram
+kindCheck m = runFreshMT $ evalStateT (runReaderT (kc m) $ KCEnv mempty) mempty

@@ -14,7 +14,7 @@ import ReWire.FrontEnd.Syntax
 import ReWire.FrontEnd.Unbound
       ( Fresh (..), string2Name, name2String
       , substs, subst, unembed
-      , isFreeName, runFreshM
+      , isFreeName, runFreshM, runFreshMT
       , Name (..)
       )
 import ReWire.SYB
@@ -22,7 +22,7 @@ import ReWire.SYB
 import Control.Arrow ((***))
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.State (State, evalStateT, execState, StateT (..), get, modify)
-import Control.Monad (zipWithM, replicateM)
+import Control.Monad (replicateM)
 import Data.Data (Data)
 import Data.List (nub, find, foldl')
 import Data.Maybe (fromJust, fromMaybe)
@@ -31,43 +31,38 @@ import Data.Set (Set, singleton, union, (\\))
 import qualified Data.Set as Set
 
 -- | Inlines defs marked for inlining. Must run before lambda lifting.
-inline :: Fresh m => Program -> m Program
-inline (Program p) = do
-      (ts, ds) <- untrec p
-      subs     <- mapM toSubst $ filter defnInline ds
-      return $ Program $ trec (ts,  map (substs subs) ds)
-      where toSubst :: Fresh m => Defn -> m (Name Exp, Exp)
-            toSubst (Defn _ n _ _ (Embed e)) = do
+inline :: Monad m => FreeProgram -> m FreeProgram
+inline (ts, ds) = return (ts,  map (substs subs) ds)
+      where toSubst :: Defn -> (Name Exp, Exp)
+            toSubst (Defn _ n _ _ (Embed e)) = runFreshM $ do
                   ([], e') <- unbind e
                   return (n, e')
+            subs = map toSubst $ filter defnInline ds
 
 -- | Replaces the expression in NativeVHDL so we don't descend into it
 --   during other transformations.
-neuterPrims :: (MonadCatch m, Fresh m) => Program -> m Program
+neuterPrims :: MonadCatch m => FreeProgram -> m FreeProgram
 neuterPrims = transProg $ \ arr -> transform $
       \ (NativeVHDL an s e) -> return $ NativeVHDL an s (Error an (typeOf arr e) "nativeVHDL expression placeholder")
 
-shiftLambdas :: Fresh m => Program -> m Program
-shiftLambdas (Program p) = do
-      (ts, vs) <- untrec p
-      vs' <- mapM shiftLambdas' vs
-      return $ Program $ trec (ts, vs')
-      where shiftLambdas' :: Fresh m => Defn -> m Defn
-            shiftLambdas' (Defn an n t inl (Embed e)) = Defn an n t inl <$> (Embed <$> mash e)
+shiftLambdas :: Monad m => FreeProgram -> m FreeProgram
+shiftLambdas (ts, vs) = return (ts, map shiftLambdas' vs)
+      where shiftLambdas' :: Defn -> Defn
+            shiftLambdas' (Defn an n t inl (Embed e)) = Defn an n t inl (Embed $ mash e)
 
-            mash :: Fresh m => Bind [Name Exp] Exp -> m (Bind [Name Exp] Exp)
-            mash e = do
+            mash :: Bind [Name Exp] Exp -> Bind [Name Exp] Exp
+            mash e = runFreshM $ do
                   (vs, e') <- unbind e
                   case e' of
                         Lam _ _ b -> do
                               (v, b') <- unbind b
-                              mash $ bind (vs ++ [v]) b'
+                              return $ mash $ bind (vs ++ [v]) b'
                         _ -> return e
 
 -- | This is a hacky SYB-based lambda lifter, it requires some ugly mucking
 --   with the internals of unbound-generics.
-liftLambdas :: (MonadCatch m, Fresh m) => Program -> m Program
-liftLambdas p = evalStateT (transProg liftLambdas' p) []
+liftLambdas :: MonadCatch m => FreeProgram -> m FreeProgram
+liftLambdas p = runFreshMT $ evalStateT (transProg liftLambdas' p) []
       where liftLambdas' :: (MonadCatch m, Fresh m) => Name TyConId -> Transform (StateT [Defn] m)
             liftLambdas' arr =  \ case
                   Lam an t b -> do
@@ -129,10 +124,8 @@ liftLambdas p = evalStateT (transProg liftLambdas' p) []
 
 -- | Purge.
 
-purge :: Fresh m => Program -> m Program
-purge (Program p) = do
-      (ts, vs) <- untrec p
-      return $ Program $ trec (inuseData (fv $ trec $ inuseDefn vs) ts, filterBuiltins $ inuseDefn vs)
+purge :: Monad m => FreeProgram -> m FreeProgram
+purge (ts, vs) = return $ (inuseData (fv $ trec $ inuseDefn vs) ts, filterBuiltins $ inuseDefn vs)
       where inuseData :: [Name DataConId] -> [DataDefn] -> [DataDefn]
             inuseData ns = map $ inuseData' ns
 
@@ -166,18 +159,17 @@ inuseDefn ds = case find ((=="Main.start") . name2String . defnName) ds of
 
 -- | Reduce.
 
-reduce :: (SyntaxError m, Fresh m) => Program -> m Program
-reduce (Program p) = do
-      (ts, vs) <- untrec p
+reduce :: SyntaxError m => FreeProgram -> m FreeProgram
+reduce (ts, vs) = do
       vs'      <- mapM reduceDefn vs
-      return $ Program $ trec (ts, vs')
+      return (ts, vs')
 
-reduceDefn :: (SyntaxError m, Fresh m) => Defn -> m Defn
-reduceDefn (Defn an n pt b (Embed e)) = do
+reduceDefn :: SyntaxError m => Defn -> m Defn
+reduceDefn (Defn an n pt b (Embed e)) = runFreshMT $ do
       (vs, e') <- unbind e
       Defn an n pt b <$> Embed <$> bind vs <$> reduceExp e'
 
-reduceExp :: (SyntaxError m, Fresh m) => Exp -> m Exp
+reduceExp :: (Fresh m, SyntaxError m) => Exp -> m Exp
 reduceExp = \ case
       App an e1 e2      -> do
             e1' <- reduceExp e1
@@ -193,7 +185,7 @@ reduceExp = \ case
       Case an t e e1 e2 -> do
             (p, e1') <- unbind e1
             e' <- reduceExp e
-            mr <- matchPat e' p
+            let mr = matchPat e' p
             case mr of
                   MatchYes sub -> reduceExp $ substs sub e1'
                   MatchMaybe   -> case e2 of
@@ -222,16 +214,14 @@ mergeMatches (m:ms) = case mergeMatches ms of
             MatchNo    -> MatchNo
             MatchMaybe -> MatchMaybe
 
-matchPat :: Fresh m => Exp -> Pat -> m MatchResult
+matchPat :: Exp -> Pat -> MatchResult
 matchPat e = \ case
       PatCon _ _ (Embed i) pats -> case flattenApp e of
             Con _ _ c : es
-                  | c == i && length es == length pats -> do
-                        ms <- zipWithM matchPat es pats
-                        return $ mergeMatches ms
-                  | otherwise                          -> return MatchNo
-            _                                          -> return MatchMaybe
-      PatVar _ _ x            -> return $ MatchYes [(x, e)]
+                  | c == i && length es == length pats -> mergeMatches $ zipWith matchPat es pats
+                  | otherwise                          -> MatchNo
+            _                                          -> MatchMaybe
+      PatVar _ _ x            -> MatchYes [(x, e)]
 
 mkArrow' :: Name TyConId -> Ty -> Bind (Name Exp) Exp -> Ty
 mkArrow' arr t b = runFreshM $ do
@@ -249,8 +239,5 @@ typeOf arr = \ case
       NativeVHDL _ _ e    -> typeOf arr e
       Error _ t _         -> t
 
-transProg :: (MonadCatch m, Fresh m) => (Name TyConId -> Transform m) -> Program -> m Program
-transProg f (Program p) = do
-      (ts, vs) <- untrec p
-      p'       <- runT (f $ getArrow ts) (ts, vs)
-      return $ Program $ trec p'
+transProg :: MonadCatch m => (Name TyConId -> Transform m) -> FreeProgram -> m FreeProgram
+transProg f (ts, vs) = runT (f $ getArrow ts) (ts, vs)

@@ -10,8 +10,8 @@ import Unbound.Generics.LocallyNameless.Name (string2Name)
 -- The "primitive basis" has some magical voodoo that cannot be expressed in
 -- the concrete syntax... so here we are.
 
-addPrims :: ([DataDefn], [Defn]) -> Program
-addPrims (ts, vs) = Program $ trec (ts ++ primDatas, vs ++ primDefns)
+addPrims :: ([DataDefn], [Defn]) -> FreeProgram
+addPrims (ts, vs) = (ts ++ primDatas, vs ++ primDefns)
 
 primDatas :: [DataDefn]
 primDatas = map mkData
