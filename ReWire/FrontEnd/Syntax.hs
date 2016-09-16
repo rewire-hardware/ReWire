@@ -5,7 +5,7 @@ module ReWire.FrontEnd.Syntax
       ( DataConId, TyConId
       , Ty (..), Exp (..), Pat (..), MatchPat (..)
       , Defn (..), DataDefn (..), DataCon (..)
-      , Program (..)
+      , FreeProgram, Program (..)
       , Kind (..)
       , tblank, kblank
       , flattenApp, arr0, mkArrow, arrowRight, getArrow
@@ -320,6 +320,8 @@ instance Pretty DataDefn where
                   : map (nest 4 . pretty) cs
 
 ---
+
+type FreeProgram = ([DataDefn], [Defn])
 
 newtype Program = Program (TRec ([DataDefn], [Defn]))
       deriving (Generic, Show, Typeable)

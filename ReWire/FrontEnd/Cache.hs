@@ -22,7 +22,7 @@ import ReWire.FrontEnd.ToMantle
 import ReWire.FrontEnd.Transform
 import ReWire.FrontEnd.TypeCheck
 import ReWire.Pretty
-import ReWire.FrontEnd.Unbound (runFreshMT, FreshMT (..), Alpha)
+import ReWire.FrontEnd.Unbound (runFreshMT, FreshMT (..))
 
 import Control.Monad ((>=>), liftM, msum)
 import Control.Monad.IO.Class (liftIO, MonadIO)
@@ -127,8 +127,9 @@ getProgram fp = do
 
       return p
 
-printInfo :: (MonadIO m, Pretty a, Alpha a) => String -> a -> m a
-printInfo msg p = do
+printInfo :: MonadIO m => String -> FreeProgram -> m FreeProgram
+printInfo msg fp = do
+      let p = Program $ trec fp
       liftIO $ putStrLn msg
       liftIO $ putStrLn "Free kind vars:\n"
       liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Kind])
@@ -142,4 +143,4 @@ printInfo msg p = do
       liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Exp])
       liftIO $ putStrLn "Program:\n"
       liftIO $ putStrLn $ prettyPrint p
-      return p
+      return fp
