@@ -25,10 +25,10 @@ purify (Program p) = do
       let nameNpolyS = map (\ d -> (defnName d, defnPolyTy d)) smds
       rhoS      <- mkPureEnv nameNpolyS
       let nameNpolyR = map (\ d -> (defnName d, defnPolyTy d)) rmds
-      imprhoR   <- mapM (\ (d,Embed p) -> poly2Ty p >>= \ t -> return (n2s d,t)) nameNpolyR
+      imprhoR   <- mapM (\ (d,Embed p) -> poly2Ty p >>= \ t -> return (d,t)) nameNpolyR
       rhoR      <- mkPureEnv nameNpolyR
 
-      (_,tyStart) <- liftMaybe "No start symbol!" $ find (isStart . fst) imprhoR
+      (_,tyStart) <- liftMaybe "No start symbol!" $ find (isStart . n2s . fst) imprhoR
       (_,i,o,_,t) <- liftMaybe ("dstResTy applied to: " ++ show tyStart) $ dstResTy tyStart
 
       let rho = rhoS ++ rhoR
@@ -162,12 +162,12 @@ proj (_,i,o,_,t) = (i,o,t)
             
 -- dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i
 -- by default, must add the eqn: dispatch R_return i = Left i
-mkDispatch :: (Fresh m, MonadError AstError m) => Ty -> [(Pat,Exp)] -> String -> m Defn
+mkDispatch :: (Fresh m, MonadError AstError m) => Ty -> [(Pat,Exp)] -> Name Exp -> m Defn
 mkDispatch ty pes iv = do
   dsc <- freshVar "dsc"
-  let dscv = Var an (TyCon an (s2n "R")) (s2n dsc)
+  let dscv = Var an (TyCon an (s2n "R")) dsc
   let body = mkCase an ty dscv pes
-  let dispatch_body = Embed (bind [s2n dsc :: Name Exp, s2n iv :: Name Exp] body)
+  let dispatch_body = Embed (bind [dsc :: Name Exp, iv :: Name Exp] body)
   let dispatch = seed_dispatch { defnBody = dispatch_body }
   return dispatch
     where seed_dispatch = Defn {
@@ -197,25 +197,25 @@ mkR_Datatype dcs = seedR { dataCons = r_return : dcs }
      r_return = DataCon NoAnnote (s2n "R_return") ([] |-> TyCon NoAnnote (s2n "R"))
 
 type TySkel  = ([Ty],Ty,Ty,[Ty],Ty)
-type PureEnv = [(String, Ty)]
+type PureEnv = [(Name Exp, Ty)]
 
-mkPureEnv :: (Fresh m,MonadError AstError m) => [(Name a, Embed Poly)] -> m PureEnv
+mkPureEnv :: (Fresh m,MonadError AstError m) => [(Name Exp, Embed Poly)] -> m PureEnv
 mkPureEnv []                  = return []
 mkPureEnv ((n,Embed phi):nps) = do
   ty  <- poly2Ty phi
   purety <- liftMaybe "failed to purify type" (purifyResTy ty)
   env <- mkPureEnv nps
-  return $ (n2s n, purety) : env
+  return $ (n, purety) : env
 
-lookupPure :: MonadError AstError m => Annote -> String -> PureEnv -> m Ty
+lookupPure :: MonadError AstError m => Annote -> Name Exp -> PureEnv -> m Ty
 lookupPure an x rho = case lookup x rho of
                            Just ty -> return ty
-                           Nothing -> failAt an $ "No pure binding for variable: " ++ x
+                           Nothing -> failAt an $ "No pure binding for variable: " ++ n2s x
 
-lookupImpure :: MonadError AstError m => Annote -> String -> PureEnv -> m Ty
+lookupImpure :: MonadError AstError m => Annote -> Name Exp -> PureEnv -> m Ty
 lookupImpure an x rho = case lookup x rho of
                            Just ty -> return ty
-                           Nothing -> failAt an $ "No impure binding for variable: " ++ x
+                           Nothing -> failAt an $ "No impure binding for variable: " ++ n2s x
 
 partition :: [Either a b] -> ([a], [b])
 partition = foldl step  ([],[])
@@ -258,16 +258,16 @@ purifyStateDefn rho d = do
 --  liftIO $ putStrLn $ "purify_state_defn"
   ty         <- lookupPure an dname rho
   let p_pure = [] |-> ty
-  let d_pure = s2n dname -- s2n $ dname ++ "_pure"
+  let d_pure = dname -- s2n $ dname ++ "_pure"
   (args,e)   <- unbind body
   (_,stys,_) <- liftMaybe "failed at purifyStateDefn" $ dstStT ty
   nstos      <- freshVars (length stys)
-  let stos = foldr (\ (n,t) nts -> Var an t (s2n n) : nts) [] (zip nstos stys)
+  let stos = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip nstos stys)
   e'         <- purify_state_body rho stos stys 0 e
   let b_pure = bind args e'
   return $ d { defnName=d_pure, defnPolyTy=p_pure, defnBody=(Embed b_pure) }
     where
-      dname      = n2s $ defnName d
+      dname      = defnName d
       Embed body = defnBody d
       an         = defnAnnote d
 
@@ -276,22 +276,22 @@ liftMaybe _ (Just v)   = return v
 liftMaybe msg Nothing = failAt NoAnnote msg
 
 purifyResDefn :: (Fresh m, MonadError AstError m, MonadIO m) =>
-                 PureEnv -> [(String,Ty)] -> String -> Defn -> StateT PSto m Defn
+                 PureEnv -> [(Name Exp,Ty)] -> Name Exp -> Defn -> StateT PSto m Defn
 purifyResDefn rho imprhoR iv d = do
   ty         <- lift $ lookupImpure an dname imprhoR
   pure_ty    <- lift $ liftMaybe "Failed to create pure type" $ purifyResTy ty
   let p_pure = [] |-> pure_ty
-  let d_pure = s2n dname -- s2n $ dname ++ "_pure"
+  let d_pure = dname -- s2n $ dname ++ "_pure"
   (args,e)   <- lift $ unbind body
   (ts,i,o,stys,a) <- lift $ liftMaybe "failed at purifyResDefn" $ dstResTy ty
 
   nstos      <- lift $ freshVars (length stys)
-  let stos = foldr (\ (n,t) nts -> Var an t (s2n n) : nts) [] (zip nstos stys)
+  let stos = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip nstos stys)
   e'         <- purify_res_body rho i o a stys stos iv e
   let b_pure = bind args e'
   return $ d { defnName=d_pure, defnPolyTy=p_pure, defnBody=(Embed b_pure) }
     where
-      dname      = n2s $ defnName d
+      dname      = defnName d
       Embed body = defnBody d
       an         = defnAnnote d
 
@@ -515,10 +515,10 @@ purify_state_body rho stos stys i tm = do
     Bind an t e g -> do
       e'    <- purify_state_body rho stos stys i e
       ns    <- freshVars (length stos + 1)
-      let vs = foldr (\ (n,t) nts -> Var an t (s2n n) : nts) [] (zip ns stys)
+      let vs = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip ns stys)
       g_pure_app <- mkPureApp an rho g vs
       (p,_) <- mkTuplePat an (zip ns stys)
-      gn    <- var2string g
+      gn    <- var2name g
       ptg   <- lookupPure an gn rho
       let ty = rangeTy ptg
       return $ mkLet an ty p e' g_pure_app
@@ -609,7 +609,7 @@ addEquation pe = modify (\ (PSto dcs pes) -> PSto dcs (pe:pes))
                  tm     -- term to be purified
 -}
 purify_res_body :: (Fresh m, MonadError AstError m, MonadIO m) =>
-                   PureEnv -> Ty -> Ty -> Ty -> [Ty] -> [Exp] -> String -> Exp -> StateT PSto m Exp
+                   PureEnv -> Ty -> Ty -> Ty -> [Ty] -> [Exp] -> Name Exp -> Exp -> StateT PSto m Exp
 purify_res_body rho i o t stys stos iv tm = do
 --  lift $ liftIO $ putStrLn $ "purify_res_body"
   cls <- lift $ classifyRCases tm
@@ -631,8 +631,8 @@ purify_res_body rho i o t stys stos iv tm = do
          let rGes    = mkApp an rcon es 
          addClause (mkRDataCon an r_g ts') -- "R_g T1 ... Tk"
          (p,xs) <- mkRPat an ts' r_g        -- Pattern (R_g e1 ... ek)
-         let vars    = map (\ (x,t) -> Var an t (s2n x)) (zip xs ts')
-         g_pure_app <- mkPureApp an rho g (vars ++ [Var an i (s2n iv)])
+         let vars    = map (\ (x,t) -> Var an t x) (zip xs ts')
+         g_pure_app <- mkPureApp an rho g (vars ++ [Var an i iv])
          addEquation (p,g_pure_app) --"dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i" 
          let (eRg,_) = mkTuple an [(e,te'),(rGes,t)]
          -- Calculate Either T (O,R)
@@ -672,12 +672,12 @@ head of the application. The way it's written below assumes that g is a variable
          svars         <- freshVars (length stys)
          v             <- freshVar "v"
          (stps,stoTy)  <- mkTuplePat an (zip svars stys)
-         let leftv = PatCon an (Embed etor) (Embed $ s2n "Left") [PatVar an (Embed t) (s2n v)]
+         let leftv = PatCon an (Embed etor) (Embed $ s2n "Left") [PatVar an (Embed t) v]
          let p     =  mkPairPat an etor stoTy leftv stps
          -- done calculating p = (Left v,(s1,(...,sm)))
          -- calculating g_pure_app = "g_pure v s1 ... sm"
-         let vars       = map (\ (x,t) -> Var an t (s2n x)) (zip svars stys)
-         g_pure_app <-  mkPureApp an rho g' (Var an ert (s2n v) : vars)
+         let vars       = map (\ (x,t) -> Var an t x) (zip svars stys)
+         g_pure_app <-  mkPureApp an rho g' (Var an ert v : vars)
          -- done calculating g_pure_app
          return $ mkLet an ty p e' g_pure_app
 
@@ -690,7 +690,7 @@ head of the application. The way it's written below assumes that g is a variable
          -- the pattern "(v,(s1,(...,sm)))"
          (p,_) <- mkTuplePat an $ (v,t) : zip s_i stys         
          let etor    = mkEitherTy an t (mkPairTy an o (TyCon an (s2n "R")))
-         let leftv   = mkLeft an etor (Var an t (s2n v))
+         let leftv   = mkLeft an etor (Var an t v)
          let body    = mkTupleExp an $ (leftv,etor) : zip stos stys
          let body_ty = mkTupleTy (etor : stys)
          return $ mkLet an body_ty p e' body
@@ -792,9 +792,9 @@ purifyExp = \ case
 -- A Compendium of Helper Functions
 ---------------------------
 
-var2string :: MonadError AstError m => Exp -> m String
-var2string (Var _ _ x) = return $ n2s x
-var2string d           = failAt (ann d) "var2string applied to non-variable"
+var2name :: MonadError AstError m => Exp -> m (Name Exp)
+var2name (Var _ _ x) = return x
+var2name d           = failAt (ann d) "var2string applied to non-variable"
 
 --
 -- Takes t1 and t2 and creates (t1,t2). I'm assuming (?!?) that the name of the
@@ -831,14 +831,14 @@ mkArrowTy tys = foldr1 arr0 tys
 mkPairPat :: Annote -> Ty -> Ty -> Pat -> Pat -> Pat
 mkPairPat an ty1 ty2 p1 p2 = PatCon an (Embed $ mkPairTy an ty1 ty2) (Embed (s2n "(,)")) [p1,p2]
 
-mkTuplePat :: MonadError AstError m => Annote -> [(String, Ty)] -> m (Pat, Ty)
+mkTuplePat :: MonadError AstError m => Annote -> [(Name Exp, Ty)] -> m (Pat, Ty)
 mkTuplePat an []         = failAt an "Empty product patterns don't exist"
-mkTuplePat an ((n,t):[]) = return (PatVar an (Embed t) (s2n n),t)
+mkTuplePat an ((n,t):[]) = return (PatVar an (Embed t) n,t)
 mkTuplePat an ((n,t):ns) =
   do (p2,t2) <- mkTuplePat an ns
      let p1p2 = PatCon an (Embed $ mkPairTy an t t2) (Embed (s2n "(,)")) [pn,p2]
      return $ (p1p2, mkPairTy an t t2)
-         where pn = PatVar an (Embed t) (s2n n)
+         where pn = PatVar an (Embed t) n
 
 -- Shouldn't mkLeft/mkRight change the type t to an Either?
 mkLeft :: Annote -> Ty -> Exp -> Exp
@@ -865,19 +865,19 @@ mkRDataCon :: Annote -> String -> [Ty] -> DataCon
 mkRDataCon an r_g ts = DataCon an (s2n r_g) ([] |-> ty)
    where ty = foldr (TyApp an) (TyCon an (s2n "R")) ts
 
-mkRPat :: Fresh m => Annote -> [Ty] -> String -> m (Pat,[String])
+mkRPat :: Fresh m => Annote -> [Ty] -> String -> m (Pat,[Name Exp])
 mkRPat an ts r_g = do
   xs <- freshVars (length ts) -- fencepost counting problem?
-  let varpats = map (\ (x,t) -> PatVar an (Embed t) (s2n x)) (zip xs ts)
+  let varpats = map (\ (x,t) -> PatVar an (Embed t) x) (zip xs ts)
   return (PatCon an (Embed ty) (Embed $ s2n r_g) varpats, xs)
-   where ty = foldr (TyApp an) (TyCon an (s2n r_g)) ts
+   where ty = foldr (TyApp an) (TyCon an $ s2n r_g) ts
 
 mkPureVar :: MonadError AstError m => PureEnv -> Exp -> m Exp
 mkPureVar rho = \ case
   v@(Var an t x) | xs == "extrude" -> return v
                  | otherwise       -> do
-                     t' <- lookupPure an xs rho
-                     return $ Var an t' (s2n $ xs {- ++ "_pure" -})
+                     t' <- lookupPure an x rho
+                     return $ Var an t' (x {- ++ "_pure" -})
       where xs = n2s x
   d                       -> failAt (ann d) $ "Can't make a pure variable out of a non-variable" ++ show d
 

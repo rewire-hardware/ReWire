@@ -21,10 +21,10 @@ flatten = foldr (\ (as,b) asbs -> cross b as ++ asbs) []
       where cross :: b -> [a] -> [(a, b)]
             cross b = foldr (\ a as -> (a,b) : as) [] 
 
-freshVar :: Fresh m => String -> m String
-freshVar n = fresh (string2Name $ "?X_" ++ n) >>= return . name2String
+freshVar :: Fresh m => String -> m (Name a)
+freshVar n = fresh (string2Name $ "?X_" ++ n ++ "_")
 
-freshVars :: (Enum a1, Num a1, Show a1, Fresh m) => a1 -> m [String]
+freshVars :: (Enum a1, Num a1, Show a1, Fresh m) => a1 -> m [Name a]
 freshVars m = mapM (freshVar . show) [0..m-1]
 
 splitArrow :: (Fresh m, MonadError AstError m) => Poly -> m (Ty, Ty)
@@ -193,11 +193,11 @@ mkRecPatExp an typ@(Embed ty) c@(Embed cstr) f fns e = do
   fns'' <- mapM poly2Ty fns'
   let foobar = zip fvs fns''
 -- constructing the pattern (e.g., "C d f2")
-  let pvs    = map (\ (v,t) -> PatVar an (Embed t) (string2Name v)) foobar
+  let pvs    = map (\ (v,t) -> PatVar an (Embed t) v) foobar
   let pat    = PatCon an typ c pvs
 -- constructing the expression (e.g., "C 9 f2")
   let Just i = findIndex f 0 fns
-  let cvs    = map (\ (v,t) -> Var an t (string2Name v)) foobar
+  let cvs    = map (\ (v,t) -> Var an t v) foobar
   let cvs'   = replaceAtIndex i e cvs
   let exp    = mkApp an (Con an ty cstr) cvs'
   return (pat,exp)
