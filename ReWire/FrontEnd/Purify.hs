@@ -260,7 +260,7 @@ purifyStateDefn rho d = do
   let d_pure = dname -- s2n $ dname ++ "_pure"
   (args,e)   <- unbind body
   (_,stys,_) <- liftMaybe "failed at purifyStateDefn" $ dstStT ty
-  nstos      <- freshVars "pur" (length stys)
+  nstos      <- freshVars "sigma" (length stys)
   let stos = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip nstos stys)
   e'         <- purify_state_body rho stos stys 0 e
   let b_pure = bind args e'
@@ -284,10 +284,11 @@ purifyResDefn rho imprhoR iv d = do
   (args,e)   <- lift $ unbind body
   (ts,i,o,stys,a) <- lift $ liftMaybe "failed at purifyResDefn" $ dstResTy ty
 
-  nstos      <- lift $ freshVars "pur" (length stys)
-  let stos = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip nstos stys)
+  nstos      <- lift $ freshVars "sto" (length stys)
+  let stos   = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip nstos stys)
   e'         <- purify_res_body rho i o a stys stos iv e
-  let b_pure = bind args e'
+
+  let b_pure = bind (args++nstos) e'
   return $ d { defnName=d_pure, defnPolyTy=p_pure, defnBody=(Embed b_pure) }
     where
       dname      = defnName d
@@ -513,7 +514,7 @@ purify_state_body rho stos stys i tm = do
                                        return $ Case an t e1' (bind p e2') Nothing
     Bind an t e g -> do
       e'    <- purify_state_body rho stos stys i e
-      ns    <- freshVars "pur" (length stos + 1)
+      ns    <- freshVars "st" (length stos + 1)
       let vs = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip ns stys)
       g_pure_app <- mkPureApp an rho g vs
       (p,_) <- mkTuplePat an (zip ns stys)
@@ -668,11 +669,11 @@ head of the application. The way it's written below assumes that g is a variable
 
          -- start calculating pattern: p = (Left v,(s1,(...,sm)))
          let etor  = mkEitherTy an ert (mkPairTy an o (TyCon an (s2n "R")))
-         svars         <- freshVars "pur" (length stys)
+         svars         <- freshVars "state" (length stys)
          v             <- freshVar "v"
          (stps,stoTy)  <- mkTuplePat an (zip svars stys)
          let leftv = PatCon an (Embed etor) (Embed $ s2n "Left") [PatVar an (Embed t) v]
-         let p     =  mkPairPat an etor stoTy leftv stps
+         let p     = mkPairPat an etor stoTy leftv stps
          -- done calculating p = (Left v,(s1,(...,sm)))
          -- calculating g_pure_app = "g_pure v s1 ... sm"
          let vars       = map (\ (x,t) -> Var an t x) (zip svars stys)
@@ -684,8 +685,8 @@ head of the application. The way it's written below assumes that g is a variable
        --       or this will fail.
        RLift an e te -> do 
          e'    <- lift $ purify_state_body rho stos stys 1 e
-         s_i   <- freshVars "pur" (length stys)
-         v     <- freshVar "v"
+         s_i   <- freshVars "State" (length stys)
+         v     <- freshVar "var"
          -- the pattern "(v,(s1,(...,sm)))"
          (p,_) <- mkTuplePat an $ (v,t) : zip s_i stys         
          let etor    = mkEitherTy an t (mkPairTy an o (TyCon an (s2n "R")))
@@ -866,7 +867,7 @@ mkRDataCon an r_g ts = DataCon an (s2n r_g) ([] |-> ty)
 
 mkRPat :: Fresh m => Annote -> [Ty] -> String -> m (Pat,[Name Exp])
 mkRPat an ts r_g = do
-  xs <- freshVars "pur" (length ts) -- fencepost counting problem?
+  xs <- freshVars "store" (length ts) -- fencepost counting problem?
   let varpats = map (\ (x,t) -> PatVar an (Embed t) x) (zip xs ts)
   return (PatCon an (Embed ty) (Embed $ s2n r_g) varpats, xs)
    where ty = foldr (TyApp an) (TyCon an $ s2n r_g) ts
@@ -912,10 +913,10 @@ dstApp d                          = failAt (ann d) "Tried to dst non-app"
 -- > let p = e1 in e2
 --     becomes
 -- > case e1 of { p -> e2 }
-  -- Case an ty e1 (bind p e2) Nothing
 -- N.b., use a Match here instead of a Case.
 mkLet :: Annote -> Ty -> Pat -> Exp -> Exp -> Exp
-mkLet an ty p e1 e2 = Match an ty e1 (pat2mpat p) e2 [] Nothing
+mkLet an ty p e1 e2 = Case an ty e1 (bind p e2) Nothing
+--mkLet an ty p e1 e2 = Match an ty e1 (pat2mpat p) e2 [] Nothing
    where
      pat2mpat :: Pat -> MatchPat
      pat2mpat = \ case
