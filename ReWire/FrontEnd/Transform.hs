@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase, ViewPatterns, ScopedTypeVariables, GADTs #-}
-{-# LANGUAGE Safe #-}
+-- {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 module ReWire.FrontEnd.Transform
       ( inline, reduce
@@ -34,6 +34,8 @@ import Data.Maybe (fromJust, fromMaybe)
 
 import Data.Set (Set, singleton, union, (\\))
 import qualified Data.Set as Set
+
+import Debug.Trace
 
 -- | Inlines defs marked for inlining. Must run before lambda lifting.
 inline :: Monad m => FreeProgram -> m FreeProgram
@@ -143,9 +145,12 @@ purge (ts, vs) = return $ (inuseData (fv $ trec $ inuseDefn vs) ts, filterBuilti
 
             inuseData' :: [Name DataConId] -> DataDefn -> DataDefn
             inuseData' ns (DataDefn an n k cs)
-                  | name2String n == "Prelude.Either" = DataDefn an n k cs
-                  | name2String n == "(,)"            = DataDefn an n k cs
-                  | otherwise                         = DataDefn an n k $ filter ((flip Set.member (Set.fromList ns)) . dataConName) cs
+                    | name2String n == "Prelude.Either" = DataDefn an n k cs
+                    | name2String n == "(,)"            = DataDefn an n k cs
+                    | name2String n == "()"             = DataDefn an n k cs
+      --            | name2String n == "Prelude.Left"   = DataDefn an n k cs
+      --            | name2String n == "Prelude.Right"  = DataDefn an n k cs 
+                    | otherwise                         = DataDefn an n k $ filter ((flip Set.member (Set.fromList ns)) . dataConName) cs
 
             dataConName :: DataCon -> Name DataConId
             dataConName (DataCon _ n _) = n

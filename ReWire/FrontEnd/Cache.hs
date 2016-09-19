@@ -120,7 +120,8 @@ getProgram fp = do
        -- >=> printInfo "___Post_Purge___"
        >=> purify
 --       >=> typeCheck
-       >=> printInfo "___Post_Purify___"
+--       >=> printInfo "___Post_Purify___"
+       >=> liftLambdas
        >=> toCore
        $ addPrims (ts, ds)
 

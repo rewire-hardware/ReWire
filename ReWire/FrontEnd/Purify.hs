@@ -672,7 +672,7 @@ head of the application. The way it's written below assumes that g is a variable
          svars         <- freshVars "state" (length stys)
          v             <- freshVar "v"
          (stps,stoTy)  <- mkTuplePat an (zip svars stys)
-         let leftv = PatCon an (Embed etor) (Embed $ s2n "Left") [PatVar an (Embed t) v]
+         let leftv = PatCon an (Embed etor) (Embed $ s2n "Prelude.Left") [PatVar an (Embed t) v]
          let p     = mkPairPat an etor stoTy leftv stps
          -- done calculating p = (Left v,(s1,(...,sm)))
          -- calculating g_pure_app = "g_pure v s1 ... sm"
