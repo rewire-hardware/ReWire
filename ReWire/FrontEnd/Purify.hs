@@ -197,7 +197,7 @@ mkPureEnv :: (Fresh m,MonadError AstError m) => [(Name Exp, Embed Poly)] -> m Pu
 mkPureEnv []                  = return []
 mkPureEnv ((n,Embed phi):nps) = do
   ty  <- poly2Ty phi
-  purety <- liftMaybe "failed to purify type" (purifyResTy ty)
+  purety <- purifyTyM ty -- liftMaybe "failed to purify type" (purifyResTy ty)
   env <- mkPureEnv nps
   return $ (n, purety) : env
 
@@ -249,9 +249,10 @@ isResMonadicDefn d = do ty <- poly2Ty poly
 purifyStateDefn :: (Fresh m, MonadError AstError m, MonadIO m) =>
                    PureEnv -> Defn -> m Defn
 purifyStateDefn rho d = do
+  ty         <- poly2Ty phi
 --  liftIO $ putStrLn $ "purify_state_defn"
-  ty         <- lookupPure an dname rho
-  let p_pure = [] |-> ty
+  p_pure     <- lookupPure an dname rho
+--  let p_pure = [] |-> ty
   let d_pure = dname -- s2n $ dname ++ "_pure"
   (args,e)   <- unbind body
   (_,stys,_) <- liftMaybe "failed at purifyStateDefn" $ dstStT ty
@@ -259,11 +260,12 @@ purifyStateDefn rho d = do
   let stos = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip nstos stys)
   e'         <- purify_state_body rho stos stys 0 e
   let b_pure = bind args e'
-  return $ d { defnName=d_pure, defnPolyTy=p_pure, defnBody=(Embed b_pure) }
+  return $ d { defnName=d_pure, defnPolyTy=([] |-> p_pure), defnBody=(Embed b_pure) }
     where
       dname      = defnName d
       Embed body = defnBody d
       an         = defnAnnote d
+      Embed phi  = defnPolyTy d
 
 liftMaybe :: MonadError AstError m => String -> Maybe a -> m a
 liftMaybe _ (Just v)   = return v
@@ -354,9 +356,10 @@ dstTyApp acc t               = (reverse acc,t)
       ([T1,...,Tn],[S1,...,Sm],T)
 -}
 dstStT :: Ty -> Maybe ([Ty],[Ty],Ty)
-dstStT ty = do let (ts,smt) = dstTyApp [] ty
-               (a,stos) <- dstComp smt
-               return (ts,stos,a)
+dstStT ty = trace ("dstStT: " ++ show ty) $ do
+  let (ts,smt) = dstTyApp [] ty
+  (a,stos) <- dstComp smt
+  return (ts,stos,a)
    where 
          ---
      dstComp :: Ty -> Maybe (Ty,[Ty])          
@@ -451,6 +454,7 @@ dstResTy ty = do (i,o,m,a) <- dstReT rt
 classifyCases :: (Fresh m, MonadError AstError m) => Exp -> m (Cases Annote Pat Exp Ty)
 classifyCases = \ case 
      Var an t g | n2s g == "get"                    -> return $ Get an t
+                | otherwise                         -> return $ Apply an (Var an t g) []
      (App an (Var _ t x) e) | xs == "return"        -> return $ Return an t e
                             | xs == "put"           -> return $ Put an e
                             | xs == "lift"          -> return $ Lift an e
@@ -491,7 +495,7 @@ purify_state_body rho stos stys i tm = do
 --  liftIO $ putStrLn $ "purify_state_body"
   exp <- classifyCases tm
   case exp of
-    Get an _      -> return $ mkTupleExp an $ (stos !! (i-1), stys !! (i-1)) : zip stos stys
+    Get an _      -> return $ mkTupleExp an $ (trace ("i = " ++ show i) $ stos !! i, trace ("i = " ++ show i) $ stys !! i) : zip stos stys
 
     Return an t e -> do (te,_) <- dstArrow t
                         return $ mkTupleExp an $ (e,te) : zip stos stys
