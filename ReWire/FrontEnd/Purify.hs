@@ -46,10 +46,13 @@ purify (ts, ds) = runFreshMT $ do
    where f Nothing ms  = ms
          f (Just a) ms = a : ms
          errmsg        = "Non-unique input, output or return type in specification"
+{-
          dispatchTy :: Ty -> Ty -> Ty
          dispatchTy i t = mkArrowTy [TyCon an $ s2n "R", i, etor]
              where etor = mkEitherTy an t (mkPairTy an (TyCon an $ s2n "W8") (TyCon an (s2n "R")))
                    an   = MsgAnnote "Type of dispatch function"
+-}
+
 
 isStart :: String -> Bool
 isStart n = take 10 n == "Main.start" && null nonNumsInSuffix
@@ -74,18 +77,18 @@ mkStart i o t = do
     , defnInline = False               
     , defnBody   = appl
     }
-   where -- na         = NoAnnote
-         -- etor       = mkEitherTy na t (mkPairTy na o (TyCon na (s2n "R")))
-         -- ranStart   = mkPairTy na etor (TyCon na (s2n "()"))
-         -- tyStart    = i `arr0` ranStart
+   where na         = NoAnnote
+         etor       = mkEitherTy na t (mkPairTy na o (TyCon na (s2n "R")))
+         ranStart   = mkPairTy na etor (TyCon na (s2n "()"))
+         pureStart  = i `arr0` ranStart
          tyStart    = TyComp noAnn (reT i o (c "I")) t
          reT i o m  = c "ReT" `tyApp` i `tyApp` o `tyApp` m
          c          = TyCon noAnn . s2n
          tyApp      = TyApp noAnn
 
          unfold     = Var na (TyBlank $ MsgAnnote "stub type for unfold") (s2n "unfold")
-         dispatch   = Var na (TyBlank $ MsgAnnote "stub type for dispatch") (s2n "$Pure.dispatch")
-         start_pure = Var na (TyBlank $ MsgAnnote "stub type for start_pure") (s2n "$Pure.start")
+         dispatch   = Var na (dispatchTy i t) {- (TyBlank $ MsgAnnote "stub type for dispatch") -}  (s2n "$Pure.dispatch")
+         start_pure = Var na pureStart {- (TyBlank $ MsgAnnote "stub type for start_pure")-} (s2n "$Pure.start")
          appl       = Embed $ bind [] (App na (App na unfold dispatch) start_pure)
          
          
@@ -96,19 +99,6 @@ s2n = string2Name
 n2s :: Name a -> String
 {-# INLINE n2s #-}
 n2s = name2String
-
-{-
-checkIOT :: (Fresh m, MonadError AstError m) => [Poly] -> m (Ty,Ty,Ty)
-checkIOT []   = failAt NoAnnote "checkIOT assumes non-empty input"
-checkIOT phis = do
-  tys <- mapM (poly2Ty >=> (liftMaybe "whatever" . dstResTy) >=> return . proj) phis
-  let iots = nub tys
-  case iots of
-       [(i,o,t)] -> return (i,o,t)
-       (_:_)     -> trace (show iots) $ failAt NoAnnote "checkIOT: Non-unique input, output, or result types"
-       []        -> failAt NoAnnote "checkIOT: Empty input, output, or result types"
-     where proj (_,i,o,_,t) = (i,o,t)
--}
 
 varfree (TyApp _ t1 t2)  = varfree t1 && varfree t2
 varfree (TyCon _ _)      = True
@@ -796,6 +786,11 @@ purifyExp = \ case
 ---------------------------
 -- A Compendium of Helper Functions
 ---------------------------
+
+dispatchTy :: Ty -> Ty -> Ty
+dispatchTy i t = mkArrowTy [TyCon an $ s2n "R", i, etor]
+    where etor = mkEitherTy an t (mkPairTy an (TyCon an $ s2n "W8") (TyCon an (s2n "R")))
+          an   = MsgAnnote "Type of dispatch function"
 
 var2name :: MonadError AstError m => Exp -> m (Name Exp)
 var2name (Var _ _ x) = return x

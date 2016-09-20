@@ -135,7 +135,7 @@ instance Show Ty where
   show (TyCon _ n)      = name2String n
   show (TyVar _ _ n)    = name2String n
   show (TyComp _ t1 t2) = show t1 ++ "{" ++ show t2 ++ "}"
-  show (TyBlank _)      = "Blank"
+  show (TyBlank an)     = "TyBlank: " ++ show an
   
 instance Alpha Ty
 

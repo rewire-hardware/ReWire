@@ -76,5 +76,5 @@ transType = \ case
       M.TyCon an c      -> C.TyCon an $ C.TyConId $ name2String c
       M.TyComp an t1 t2 -> C.TyComp an (transType t1) $ transType t2
       M.TyVar an _ x    -> C.TyVar an $ name2String x
-      t                 -> error $ "ToCore: unsupported type: " ++ prettyPrint t
+      t                 -> error $ "ToCore: unsupported type: " ++ show t
 
