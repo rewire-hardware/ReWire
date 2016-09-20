@@ -103,7 +103,8 @@ getProgram :: FilePath -> Cache Core.Program
 getProgram fp = do
       (Module ts ds, _) <- getModule fp
 
-      p <- records
+      p <- addPrims
+       >=> records
        -- >=> printInfo "___Post_records___"
        >=> kindCheck
        >=> typeCheck
@@ -123,7 +124,7 @@ getProgram fp = do
 --       >=> printInfo "___Post_Purify___"
        >=> liftLambdas
        >=> toCore
-       $ addPrims (ts, ds)
+       $ (ts, ds)
 
       -- liftIO $ putStrLn "___Core___"
       -- liftIO $ putStrLn $ prettyPrint p
