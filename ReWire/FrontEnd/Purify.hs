@@ -492,18 +492,25 @@ purify_state_body rho stos stys i tm = do
   exp <- classifyCases tm
   case exp of
     Get an _      -> return $ mkTupleExp an $ (stos !! (i-1), stys !! (i-1)) : zip stos stys
+
     Return an t e -> do (te,_) <- dstArrow t
                         return $ mkTupleExp an $ (e,te) : zip stos stys
+
     Lift an e     -> purify_state_body rho stos stys (i+1) e
+
     Put an e      -> return $ mkTupleExp an $ (nil,nilTy) : zip stos' stys
         where nil   = Con an nilTy (s2n "()")
               nilTy = TyCon an (s2n "()")
               stos' = replaceAtIndex (i-1) e stos
-    Apply an e es -> mkPureApp an rho e es
+
+    Apply an e es -> do rator <- mkPureApp an rho e es
+                        return $ mkApp an rator stos
+
     Switch an t e1 p e2 (Just e) -> do e1' <- purify_state_body rho stos stys i e1
                                        e2' <- purify_state_body rho stos stys i e2
                                        e'  <- purify_state_body rho stos stys i e
                                        return $ Case an t e1' (bind p e2') (Just e')
+
     Switch an t e1 p e2 Nothing  -> do e1' <- purify_state_body rho stos stys i e1
                                        e2' <- purify_state_body rho stos stys i e2
                                        return $ Case an t e1' (bind p e2') Nothing
@@ -692,14 +699,15 @@ head of the application. The way it's written below assumes that g is a variable
 
        RVar an (Var _ tx x)   -> do
          tx' <- purifyTyM tx
-         return $ Var an tx' x
+         return $ mkApp an (Var an tx' x) stos
 
        RApp an ty rator rands -> do
 --         lift $ liftIO $ putStrLn $ "rator = " ++ show rator
          rator' <- purify_res_body rho i o t stys stos iv rator
      --    N.b., don't think it's necessary to purify the rands because they're simply typed.
      --    rands' <- mapM (purify_res_body rho i o t stys stos iv . fst) rands
-         mkPureApp an rho rator' (map fst rands)
+         f <- mkPureApp an rho rator' (map fst rands)
+         return $ mkApp an f stos
 
        RSwitch an ty dsc p e1 Nothing     -> do
          ty' <- lift $ purifyTyM ty
