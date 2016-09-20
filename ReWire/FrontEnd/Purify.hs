@@ -69,18 +69,23 @@ In addition to all the above, we re-tie the recursive knot by adding a new
 mkStart i o t = do
   return $ Defn {
       defnAnnote = MsgAnnote "start function"
-    , defnName   = s2n "start"
+    , defnName   = s2n "Main.start"
     , defnPolyTy = [] |-> tyStart
     , defnInline = False               
     , defnBody   = appl
     }
-   where na         = NoAnnote
-         etor       = mkEitherTy na t (mkPairTy na o (TyCon na (s2n "R")))
-         ranStart   = mkPairTy na etor (TyCon na (s2n "()"))
-         tyStart    = i `arr0` ranStart
+   where -- na         = NoAnnote
+         -- etor       = mkEitherTy na t (mkPairTy na o (TyCon na (s2n "R")))
+         -- ranStart   = mkPairTy na etor (TyCon na (s2n "()"))
+         -- tyStart    = i `arr0` ranStart
+         tyStart    = TyComp noAnn (reT i o (c "I")) t
+         reT i o m  = c "ReT" `tyApp` i `tyApp` o `tyApp` m
+         c          = TyCon noAnn . s2n
+         tyApp      = TyApp noAnn
+
          unfold     = Var na (TyBlank $ MsgAnnote "stub type for unfold") (s2n "unfold")
-         dispatch   = Var na (TyBlank $ MsgAnnote "stub type for dispatch") (s2n "dispatch")
-         start_pure = Var na (TyBlank $ MsgAnnote "stub type for start_pure") (s2n "start_pure")
+         dispatch   = Var na (TyBlank $ MsgAnnote "stub type for dispatch") (s2n "$Pure.dispatch")
+         start_pure = Var na (TyBlank $ MsgAnnote "stub type for start_pure") (s2n "$Pure.start")
          appl       = Embed $ bind [] (App na (App na unfold dispatch) start_pure)
          
          
@@ -171,7 +176,7 @@ mkDispatch ty pes iv = do
   return dispatch
     where seed_dispatch = Defn {
                             defnAnnote = an
-                          , defnName   = s2n "R" -- is this right? shouldn't it be dsc or dispatch?
+                          , defnName   = s2n "$Pure.dispatch"
                           , defnPolyTy = [] |-> ty
                           , defnInline = False
                           , defnBody   = undefined
@@ -280,7 +285,7 @@ purifyResDefn rho imprhoR iv d = do
   ty         <- lift $ lookupImpure an dname imprhoR
   pure_ty    <- lift $ liftMaybe "Failed to create pure type" $ purifyResTy ty
   let p_pure = [] |-> pure_ty
-  let d_pure = dname -- s2n $ dname ++ "_pure"
+  let d_pure = if n2s dname == "Main.start" then s2n "$Pure.start" else dname
   (args,e)   <- lift $ unbind body
   (ts,i,o,stys,a) <- lift $ liftMaybe "failed at purifyResDefn" $ dstResTy ty
 

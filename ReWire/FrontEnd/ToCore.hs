@@ -18,13 +18,11 @@ import qualified ReWire.FrontEnd.Syntax as M
 toCore :: Monad m => M.FreeProgram -> m C.Program
 toCore (ts, vs) = runFreshMT $ do
       ts' <- concat <$> mapM transData ts
-      vs' <- filter (notPrim . C.defnName) <$> mapM transDefn vs
+      vs' <- mapM transDefn $ filter (notPrim . M.defnName) vs
       return $ C.Program ts' vs'
 
-notPrim :: String -> Bool
-notPrim x = isQual x || isLL x
-      where isQual = elem '.'
-            isLL = elem '$'
+notPrim :: Name a -> Bool
+notPrim = elem '.' . name2String
 
 transData :: Fresh m => M.DataDefn -> m [C.DataCon]
 transData (M.DataDefn _ _ _ cs) = mapM transDataCon $ zip [0..] cs
@@ -48,7 +46,7 @@ transExp :: Fresh m => M.Exp -> ReaderT (Map (Name M.Exp) Int) m C.Exp
 transExp = \ case
       M.App an e1 e2                    -> C.App an <$> transExp e1 <*> transExp e2
       M.Var an t x                      -> (Map.lookup x <$> ask) >>= \ case
-            Nothing -> if notPrim (name2String x)
+            Nothing -> if notPrim x
                   then pure $ C.GVar an (transType t) $ transVar x
                   else pure $ C.Prim an (transType t) $ transVar x
             Just i  -> pure $ C.LVar an (transType t) i
