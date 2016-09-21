@@ -6,3 +6,11 @@ guppy c = let c = c in
           case c of
              c -> G c
              d -> G d
+
+main :: ReT (Pup () () () ()) (G () () ()) I ()
+main = do
+  signal $ Z ()
+  main
+
+start :: ReT (Pup () () () ()) (G () () ()) I ()
+start = main
