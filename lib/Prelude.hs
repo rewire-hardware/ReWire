@@ -21,6 +21,14 @@ const x _        =  x
 (.)              :: (b -> c) -> (a -> b) -> a -> c
 f . g            =  \ x -> f (g x)
 
+{-# INLINE flip #-}
+flip                    :: (a -> b -> c) -> b -> a -> c
+flip f x y              =  f y x
+
+{-# INLINE ($) #-}
+($)                     :: (a -> b) -> a -> b
+f $ x                   =  f x
+
 -- Boolean type
 
 data Bool = False | True
@@ -81,3 +89,8 @@ uncurry f p = f (fst p) (snd p)
 
 undefined :: a
 undefined = primError "Prelude.undefined"
+
+infixr 9  .
+infixl 1  >>, >>=
+infixr 1  =<<
+infixr 0  $
