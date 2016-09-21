@@ -39,12 +39,12 @@ import Debug.Trace
 
 -- | Inlines defs marked for inlining. Must run before lambda lifting.
 inline :: Monad m => FreeProgram -> m FreeProgram
-inline (ts, ds) = return (ts,  map (substs subs) ds)
+inline (ts, ds) = return (ts, substs subs ds)
       where toSubst :: Defn -> (Name Exp, Exp)
             toSubst (Defn _ n _ _ (Embed e)) = runFreshM $ do
                   ([], e') <- unbind e
                   return (n, e')
-            subs = map toSubst $ filter defnInline ds
+            subs = map toSubst $ substs (map toSubst $ filter defnInline ds) $ filter defnInline ds
 
 records :: MonadError AstError m => FreeProgram -> m FreeProgram
 records (ts, ds) = runFreshMT $ do
