@@ -88,7 +88,7 @@ liftLambdas p = runFreshMT $ evalStateT (transProg liftLambdas' p) []
                         (fvs, e') <- freshen e
 
                         let t' = foldr (mkArrow arr) (typeOf arr e') $ map snd bvs ++ [t]
-                        f     <- fresh $ string2Name "$LL."
+                        f     <- fresh $ string2Name "$LL.lambda"
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs ++ [x]) e')
                         return $ foldl' (\ e' (v, vt) -> App an e' $ Var an vt v) (Var an t' f) $ map (promote *** id) bvs
@@ -100,18 +100,29 @@ liftLambdas p = runFreshMT $ evalStateT (transProg liftLambdas' p) []
                         let pvs = patVars p
 
                         let t' = foldr (mkArrow arr) (typeOf arr e) $ map snd bvs ++ map snd pvs
-                        f     <- fresh $ string2Name "$LL."
+                        f     <- fresh $ string2Name "$LL.case"
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs ++ map fst pvs) e')
                         return $ Match an t e1 (transPat p) (Var an t' f) (map (\ (v, vt) -> Var an vt (promote v)) bvs) e2
+                  -- TODO(chathhorn): This case is really just normalizing
+                  -- Match, consider moving to ToCore.
+                  Match an t e1 p e lvars els -> do
+                        let bvs   = bv e
+                        (fvs, e') <- freshen e
+
+                        let t' = foldr (mkArrow arr) (typeOf arr e) $ map snd bvs
+                        f     <- fresh $ string2Name "$LL.match"
+
+                        modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind fvs e')
+                        return $ Match an t e1 p (Var an t' f) (map (\ (v, vt) -> Var an vt v) bvs ++ lvars) els
                   ||> (\ ([] :: [Defn]) -> get) -- this is cute!
                   ||> TId
 
             freshen :: (MonadCatch m, Fresh m) => Exp -> m ([Name Exp], Exp)
             freshen e = do
                   let bvs  = bv e
-                  fvs  <- replicateM (length bvs) $ fresh $ string2Name "LA"
-                  e' <- substs' (zip (map fst bvs) fvs) e
+                  fvs      <- replicateM (length bvs) $ fresh $ string2Name "$LL"
+                  e'       <- substs' (zip (map fst bvs) fvs) e
                   return (fvs, e')
 
             substs' :: MonadCatch m => [(Name Exp, Name Exp)] -> Exp -> m Exp
@@ -120,7 +131,7 @@ liftLambdas p = runFreshMT $ evalStateT (transProg liftLambdas' p) []
             bv :: Data a => a -> [(Name Exp, Ty)]
             bv = nub . runQ (query $ \ case
                   Var _ t n | not $ isFreeName n -> [(n, t)]
-                  _                                 -> [])
+                  _                              -> [])
 
             patVars :: Pat -> [(Name Exp, Ty)]
             patVars = \ case

@@ -42,7 +42,7 @@ purify (ts, ds) = runFreshMT $ do
 
       start_def <- mkStart i o t
 
-      return (ts++[r], start_def : ods ++ pure_smds ++ pure_rmds) 
+      return (ts++[r], start_def : df : ods ++ pure_smds ++ pure_rmds) 
    where f Nothing ms  = ms
          f (Just a) ms = a : ms
          errmsg        = "Non-unique input, output or return type in specification"
@@ -828,7 +828,7 @@ purifyExp = \ case
 
 dispatchTy :: Ty -> Ty -> Ty
 dispatchTy i t = mkArrowTy [TyCon an $ s2n "R", i, etor]
-    where etor = mkEitherTy an t (mkPairTy an (TyCon an $ s2n "W8") (TyCon an (s2n "R")))
+    where etor = mkEitherTy an t (mkPairTy an (TyCon an $ s2n "Main.W8") (TyCon an (s2n "R")))
           an   = MsgAnnote "Type of dispatch function"
 
 var2name :: MonadError AstError m => Exp -> m (Name Exp)
