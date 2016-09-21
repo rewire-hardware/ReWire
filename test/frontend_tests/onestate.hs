@@ -8,8 +8,6 @@ grunt = do
 
 incr :: ReT Bit W8 (StT W8 I) ()
 incr = do
-      --r0 <- lift get
-      --lift (put r0)
       lift grunt
       incr
 

@@ -259,7 +259,7 @@ purifyStateDefn rho d = do
   nstos      <- freshVars "sigma" (length stys)
   let stos = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip nstos stys)
   e'         <- purify_state_body rho stos stys 0 e
-  let b_pure = bind args e'
+  let b_pure = bind (args++nstos) e'
   return $ d { defnName=d_pure, defnPolyTy=([] |-> p_pure), defnBody=(Embed b_pure) }
     where
       dname      = defnName d
@@ -477,6 +477,30 @@ data Cases an p e t = Get an t
                     | Switch an t e p e (Maybe e)
 
 
+{- This is a thought experiment which very well may end up as cruft.
+
+p_s_b ::  (Fresh m, MonadError AstError m, MonadIO m) =>
+                     Int -> Exp -> [(Name Exp,Ty)] -> m (Exp,[(Name Exp,Ty)])
+p_s_b i tm stos = do
+  exp <- classifyCases tm
+  case exp of
+    Get an _      -> return $ (mkVar $ stos !! i, stos) -- fencepost counting?
+        where mkVar (n,t) = Var NoAnnote t n
+
+    Return an t e -> return $ (e,stos)
+
+    Lift an e     -> undefined
+
+    Put an e      -> undefined
+
+    Apply an e es -> undefined
+
+    Switch an t e1 p e2 (Just e) -> undefined
+
+    Switch an t e1 p e2 Nothing  -> undefined
+      
+    Bind an t e g -> undefined
+-}  
 
 {-
    purify_state_body
@@ -486,6 +510,7 @@ data Cases an p e t = Get an t
                   i    -- lifting "depth"
                   tm   -- term to be purified
 -}
+
 --
 -- Make sure to check for fencepost counting problems.
 --
@@ -519,13 +544,15 @@ purify_state_body rho stos stys i tm = do
                                        e2' <- purify_state_body rho stos stys i e2
                                        return $ Case an t e1' (bind p e2') Nothing
     Bind an t e g -> do
-      e'    <- purify_state_body rho stos stys i e
-      ns    <- freshVars "st" (length stos + 1)
-      let vs = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip ns stys)
+      (te,_)  <- dstArrow t
+      (_,_,a) <- liftMaybe "Non-StT Type passed to dstStT" $ dstStT te -- a is the return type of e
+      e'      <- purify_state_body rho stos stys i e
+      ns      <- freshVars "st" (length stos + 1)
+      let vs = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip ns (a:stys))
       g_pure_app <- mkPureApp an rho g vs
-      (p,_) <- mkTuplePat an (zip ns stys)
-      gn    <- var2name g
-      ptg   <- lookupPure an gn rho
+      (p,_)   <- trace ("ns*stys = " ++ show (zip ns (a:stys))) $ mkTuplePat an (zip ns (a:stys))
+      gn      <- var2name g
+      ptg     <- lookupPure an gn rho
       let ty = rangeTy ptg
       return $ mkLet an ty p e' g_pure_app
 
@@ -690,7 +717,7 @@ head of the application. The way it's written below assumes that g is a variable
        -- N.b., the pure env rho will have to contain *all* purified bindings
        --       or this will fail.
        RLift an e te -> do 
-         e'    <- lift $ purify_state_body rho stos stys 1 e
+         e'    <- lift $ purify_state_body rho stos stys 0 e -- was 1, which seems incorrect.
          s_i   <- freshVars "State" (length stys)
          v     <- freshVar "var"
          -- the pattern "(v,(s1,(...,sm)))"

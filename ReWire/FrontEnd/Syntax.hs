@@ -131,6 +131,9 @@ data Ty = TyApp Annote Ty Ty
            deriving (Eq, Generic, Typeable, Data)
 
 instance Show Ty where
+  show (TyApp _ (TyApp _ (TyCon _ n) t1) t2)
+    | name2String n == "(,)" = "(" ++ show t1 ++ "," ++ show t2 ++ ")"
+    | otherwise              = "((" ++ name2String n ++ " " ++ show t1 ++ ")" ++ " " ++ show t2 ++ ")"
   show (TyApp _ t1 t2)  = "(" ++ show t1 ++ " " ++ show t2 ++ ")"
   show (TyCon _ n)      = name2String n
   show (TyVar _ _ n)    = name2String n
@@ -158,7 +161,8 @@ instance Annotated Ty where
 instance Pretty Ty where
       pretty = \ case
             TyApp _ (TyApp _ (TyCon _ c) t1) t2
-                  | name2String c == "->" -> ppTyArrowL t1 <+> text "->" <+> pretty t2
+                  | name2String c == "->"  -> ppTyArrowL t1 <+> text "->" <+> pretty t2
+                  | name2String c == "(,)" -> parens (ppTyArrowL t1 <+> text "," <+> pretty t2)
                   where ppTyArrowL t@(TyApp _ (TyApp _ (TyCon _ c) _) _)
                               | name2String c == "->" = parens $ pretty t
                         ppTyArrowL t                                                           = pretty t
@@ -189,6 +193,7 @@ data Exp = App        Annote Exp Exp
          deriving (Generic, {- Show,-} Typeable, Data)
 
 instance Show Exp where
+  show (App _ (App _ (Var _ _ n) e1) e2) | name2String n == "(,)" = "(" ++ show e1 ++ "," ++ show e2 ++ ")"
   show (App _ e1 e2)       = "(" ++ show e1 ++ " " ++ show e2 ++ ")"
   show (Lam _ _ _)         = "*lambda-expression*"
   show (Var _ _ n)         = "(Var " ++ name2String n ++ ")"
@@ -235,9 +240,11 @@ instance Annotated Exp where
 
 instance Pretty Exp where
       pretty = \ case
+            App _ (App _ (Con _ _ n) e1) e2
+              | name2String n == "(,)" -> parens $ pretty e1 <+> text "," <+> pretty e2
             App _ e1 e2      -> parens $ hang (pretty e1) 4 $ pretty e2
             Con _ _ n        -> text $ name2String n
-            Var _ t n        -> text (show n) <+> text "::" <+> pretty t
+            Var _ t n        -> text (show n) -- <+> text "::" <+> pretty t
             Lam _ _ e        -> runFreshM $ do
                   (p, e') <- unbind e
                   return $ parens $ text "\\" <+> text (show p) <+> text "->" <+> pretty e'
@@ -292,7 +299,9 @@ instance Annotated Pat where
 
 instance Pretty Pat where
       pretty = \ case
-            PatCon _ _ (Embed n) ps -> parens $ text (name2String n) <+> hsep (map pretty ps)
+            PatCon _ _ (Embed n) ps
+              | name2String n == "(,)" -> parens $ pretty (head ps) <+> text "," <+> pretty (head (tail ps))
+              | otherwise              -> parens $ text (name2String n) <+> hsep (map pretty ps)
             PatVar _ _ n            -> text $ show n
 
 
