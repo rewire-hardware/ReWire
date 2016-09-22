@@ -38,7 +38,7 @@ purify (ts, ds) = runFreshMT $ do
       let r  = mkR_Datatype dcs
 
       let dt = dispatchTy i t
-      df        <- mkDispatch dt pes iv
+      df        <- mkDispatch dt pes iv i
 
       start_def <- mkStart i o t
 
@@ -46,13 +46,6 @@ purify (ts, ds) = runFreshMT $ do
    where f Nothing ms  = ms
          f (Just a) ms = a : ms
          errmsg        = "Non-unique input, output or return type in specification"
-{-
-         dispatchTy :: Ty -> Ty -> Ty
-         dispatchTy i t = mkArrowTy [TyCon an $ s2n "R", i, etor]
-             where etor = mkEitherTy an t (mkPairTy an (TyCon an $ s2n "W8") (TyCon an (s2n "R")))
-                   an   = MsgAnnote "Type of dispatch function"
--}
-
 
 isStart :: String -> Bool
 isStart n = take 10 n == "Main.start" && null nonNumsInSuffix
@@ -149,18 +142,17 @@ reT i o m = c "ReT" `tyApp` i `tyApp` o `tyApp` m
 stT :: Ty -> Ty -> Ty
 stT s m   = c "StT" `tyApp` s `tyApp` m
 
-
-myfromJust (Just a) = a
-myfromJust Nothing  = error "hey stupid"
-proj (_,i,o,_,t) = (i,o,t)
-            
 -- dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i
--- by default, must add the eqn: dispatch R_return i = Left i
-mkDispatch :: (Fresh m, MonadError AstError m) => Ty -> [(Pat,Exp)] -> Name Exp -> m Defn
-mkDispatch ty pes iv = do
+mkDispatch :: (Fresh m, MonadError AstError m) => Ty -> [(Pat,Exp)] -> Name Exp -> Ty -> m Defn
+mkDispatch ty pes iv it = do
+  
+  -- by default, must add the eqn: dispatch R_return i = Left i
+  let pdef = PatCon NoAnnote (Embed (TyCon NoAnnote (s2n "R"))) (Embed $ s2n "R_return") []
+  let bdef = mkLeft NoAnnote (rangeTy ty) (Var NoAnnote it iv)
+        
   dsc <- freshVar "dsc"
   let dscv = Var an (TyCon an (s2n "R")) dsc
-  let body = mkCase an ty dscv pes
+  let body = mkCase an ty dscv (pes ++ [(pdef,bdef)])
   let dispatch_body = Embed (bind [dsc :: Name Exp, iv :: Name Exp] body)
   let dispatch = seed_dispatch { defnBody = dispatch_body }
   return dispatch
@@ -172,6 +164,7 @@ mkDispatch ty pes iv = do
                           , defnBody   = undefined
                           }
           an            = MsgAnnote "Defn of dispatch function"
+
 
 mkCase :: Annote -> Ty -> Exp -> [(Pat,Exp)] -> Exp
 mkCase an ty dsc []          = error "Shouldn't ever happen."
