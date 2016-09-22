@@ -888,15 +888,11 @@ sub g = case g of
       where gn = n2s x
   d            -> failAt (ann d) "sub failed"            
 
-{-
-rtype :: Annote -> String -> [Ty] -> Ty
-rtype an r_g tes = foldr arr0 (TyCon an (s2n r_g)) tes
--}
-
 mkRDataCon :: Annote -> String -> [Ty] -> DataCon
 mkRDataCon an r_g ts = DataCon an (s2n r_g) ([] |-> ty)
-   where ty = foldr (TyApp an) (TyCon an (s2n "R")) ts
-
+--   where ty = foldr (TyApp an) (TyCon an (s2n "R")) ts --- DOH!
+     where ty = mkArrowTy $ ts ++ [TyCon an (s2n "R")]
+           
 mkRPat :: Fresh m => Annote -> [Ty] -> String -> m (Pat,[Name Exp])
 mkRPat an ts r_g = do
   xs <- freshVars "store" (length ts) -- fencepost counting problem?
