@@ -88,6 +88,7 @@ library
                     ReWire.Error
                     ReWire.FrontEnd.Annotate
                     ReWire.FrontEnd.Cache
+                    ReWire.FrontEnd.ToCoq
                     ReWire.FrontEnd.Desugar
                     ReWire.FrontEnd.Fixity
                     ReWire.FrontEnd.KindCheck

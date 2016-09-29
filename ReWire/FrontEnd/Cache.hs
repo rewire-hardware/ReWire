@@ -21,6 +21,7 @@ import ReWire.FrontEnd.ToCore
 import ReWire.FrontEnd.ToMantle
 import ReWire.FrontEnd.Transform
 import ReWire.FrontEnd.TypeCheck
+import ReWire.FrontEnd.ToCoq
 import ReWire.Pretty
 import ReWire.FrontEnd.Unbound (runFreshMT, FreshMT (..))
 
@@ -108,6 +109,7 @@ getProgram fp = do
        -- >=> printInfo "___Post_records___"
        >=> kindCheck
        >=> typeCheck
+       >=> toCoq
        >=> neuterPrims
        >=> inline
        >=> reduce
