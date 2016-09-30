@@ -14,6 +14,8 @@ import Data.Maybe (fromJust)
 import Data.List (nub,find)
 import Debug.Trace
 
+
+
 purify :: (MonadError AstError m, MonadIO m) => FreeProgram -> m FreeProgram
 purify (ts, ds) = runFreshMT $ do
       mds       <- mapM isStateMonadicDefn ds
@@ -33,7 +35,7 @@ purify (ts, ds) = runFreshMT $ do
       let rho = rhoS ++ rhoR
       pure_smds <- mapM (purifyStateDefn rho) smds
       iv        <- freshVar "i"
-      (pure_rmds,PSto dcs pes) <- runStateT (mapM (purifyResDefn rho imprhoR iv) rmds) (PSto [] [])
+      (pure_rmds,PSto dcs pes defs) <- runStateT (mapM (purifyResDefn rho imprhoR iv) rmds) (PSto [] [] [])
 
       let r  = mkR_Datatype dcs
 
@@ -563,6 +565,7 @@ data RCase an t p e = RReturn an e t
                     | Signal an e t
                     | RBind an e t e t
                     | SigK an e t e t [(e,t)]   -- (signal e >>= g e1 ... ek)
+                    | Extrude t e [(e,t)]
                     | RApp an t e [(e,t)]
                     | RSwitch an t e p e (Maybe e)
                     | RMatch an t e MatchPat e [e] (Maybe e)
@@ -574,6 +577,7 @@ instance Show (RCase an t p e) where
   show (Signal _ _ _)         = "Signal"
   show (RBind _ _ _ _ _)      = "RBind"
   show (SigK _ _ _ _ _ _)     = "SigK"
+  show (Extrude _ _ _)        = "Extrude"
   show (RApp _ _ _ _)         = "RApp"
   show (RSwitch _ _ _ _ _ _)  = "RSwitch"
   show (RMatch _ _ _ _ _ _ _) = "RMatch"
@@ -602,11 +606,17 @@ classifyApp an (f,t,[e,g]) = case f of
                                   Nothing -> do (te,tau) <- dstArrow tb
                                                 (tg,_)   <- dstArrow tau
                                                 return $ RBind an e te g tg
+             | xs == "extrude" -> do bes <- mkBindings t [e,g]
+                                     return $ Extrude t f bes
              | otherwise   -> do bes <- mkBindings t [e,g]
                                  return $ RApp an t f bes
                  where xs = n2s x
-classifyApp an (f,t,es)    = do bes <- mkBindings t es
-                                return $ RApp an t f bes
+classifyApp an (f,t,es) = case f of
+  Var _ tb x | xs == "extrude" -> do bes <- mkBindings t es
+                                     return $ Extrude t f bes
+             | otherwise       -> do bes <- mkBindings t es
+                                     return $ RApp an t f bes
+                 where xs = n2s x
 
 classifyRCases :: (Fresh m, MonadError AstError m) => Exp -> m (RCase Annote Ty Pat Exp)
 classifyRCases = \ case   
@@ -619,9 +629,10 @@ classifyRCases = \ case
      d                         -> failAt (ann d) $ "Unclassifiable R-case: " ++ show d
       
 -- state for res-purification.
-data PSto = PSto [DataCon] [(Pat,Exp)]
-addClause dc   = modify (\ (PSto dcs pes) -> PSto (dc:dcs) pes)
-addEquation pe = modify (\ (PSto dcs pes) -> PSto dcs (pe:pes))
+data PSto = PSto [DataCon] [(Pat,Exp)] [Defn]
+addClause dc   = modify (\ (PSto dcs pes defs) -> PSto (dc:dcs) pes defs)
+addEquation pe = modify (\ (PSto dcs pes defs) -> PSto dcs (pe:pes) defs)
+addDefn d      = modify (\ (PSto dcs pes defs) -> PSto dcs pes (d:defs))
 
 {-
    purify_res_body
@@ -724,6 +735,22 @@ head of the application. The way it's written below assumes that g is a variable
        RVar an (Var _ tx x)   -> do
          tx' <- purifyTyM tx
          return $ mkApp an (Var an tx' x) stos
+
+
+{-
+
+extrude :: Monad m => ReT i o (StT s m) a -> s -> ReT i o m (a,s)
+
+To purify e = (extrude ... (extrude phi s1) ... sn):
+1. N.b., phi :: ReT i o (StT s m) a. We'll assume that e is "maximal". I.e.,
+   that you have identified how many times extrude has been applied and its arguments s1, ..., sn.
+2. phi' <- purify_res_body phi
+3. make definition and addit to definitions: $LL = phi'
+4. return $ (...($LL s1)...sn)
+
+-}
+
+       Extrude ty rator rands -> failAt NoAnnote "Got to Extrude"
 
        RApp an ty rator rands -> do
 --         lift $ liftIO $ putStrLn $ "rator = " ++ show rator
