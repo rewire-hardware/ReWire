@@ -807,7 +807,7 @@ To purify e = (extrude ... (extrude phi s1) ... sn):
               _          -> failAt NoAnnote $ "Extruded device is non-variable: " ++ show dev
 
        RApp an ty rator rands -> do
---         lift $ liftIO $ putStrLn $ "rator = " ++ show rator
+         lift $ liftIO $ putStrLn $ "rator = " ++ show rator
          rator' <- purify_res_body rho i o t stys stos iv rator
      --    N.b., don't think it's necessary to purify the rands because they're simply typed.
      --    rands' <- mapM (purify_res_body rho i o t stys stos iv . fst) rands
@@ -836,65 +836,6 @@ To purify e = (extrude ... (extrude phi s1) ... sn):
          e2' <- purify_res_body rho i o t stys stos iv e2
          e3' <- purify_res_body rho i o t stys stos iv e3
          return $ Match an ty' e1 mp e2' es (Just e3')
-
-{-
-purifyExp :: (Fresh m, MonadError AstError m) => Exp -> m Exp
-purifyExp = \ case
-  App an e1 e2                      -> do
-    e1' <- purifyExp e1
-    e2' <- purifyExp e2
-    return $ App an e1' e2'
-  Lam an ty b                       -> do
-    (p,e) <- unbind b
-    ty'   <- purifyTyM ty
-    e'    <- purifyExp e
-    let b' = bind p e'
-    return $ Lam an ty' b'
-  Var an ty n                       -> do
-    ty' <- purifyTyM ty
-    return $ Var an ty' n
-  Con an ty n                       -> do
-    ty' <- purifyTyM ty
-    return $ Con an ty' n
-  RecConApp an ty n bs              -> do
-    ty' <- purifyTyM ty
-    bs' <- mapM (\ (n,e) -> purifyExp e >>= \ e' -> return (n,e')) bs
-    return $ RecConApp an ty' n bs'
-  RecUp an ty e bs                  -> do
-    ty' <- purifyTyM ty
-    e'  <- purifyExp e
-    bs' <- mapM (\ (n,e) -> purifyExp e >>= \ e' -> return (n,e')) bs
-    return $ RecUp an ty' e' bs'
-  Case an ty e1 b Nothing           -> do
-    ty'    <- purifyTyM ty
-    (p,e2) <- unbind b
-    e1'    <- purifyExp e1
-    e2'    <- purifyExp e2
-    let b' = bind p e2'
-    return $ Case an ty' e1' b' Nothing
-  Case an ty e1 b (Just e3)         -> do
-    ty'    <- purifyTyM ty
-    (p,e2) <- unbind b
-    e1'    <- purifyExp e1
-    e2'    <- purifyExp e2
-    e3'    <- purifyExp e3
-    let b' = bind p e2'
-    return $ Case an ty' e1' b' (Just e3')
-  Match an ty e1 mp e2 es Nothing   -> do
-    ty' <- purifyTyM ty
-    e1' <- purifyExp e1
-    e2' <- purifyExp e2
-    es' <- mapM purifyExp es
-    return $ Match an ty' e1' mp e2' es' Nothing
-  Match an ty e1 mp e2 es (Just e3) -> do
-    ty' <- purifyTyM ty
-    e1' <- purifyExp e1
-    e2' <- purifyExp e2
-    e3' <- purifyExp e3
-    es' <- mapM purifyExp es
-    return $ Match an ty' e1' mp e2' es' (Just e3')
-  e                                 -> return e
--}
 
 ---------------------------
 -- A Compendium of Helper Functions
@@ -984,6 +925,7 @@ mkRPat an ts r_g = do
 mkPureVar :: MonadError AstError m => PureEnv -> Exp -> m Exp
 mkPureVar rho = \ case
   v@(Var an t x) | xs == "extrude" -> return v
+                 | xs == "unfold"  -> return v
                  | otherwise       -> do
                      t' <- lookupPure an x rho
                      return $ Var an t' (x {- ++ "_pure" -})
