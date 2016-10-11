@@ -196,7 +196,7 @@ instance Show Exp where
   show (App _ (App _ (Var _ _ n) e1) e2) | name2String n == "(,)" = "(" ++ show e1 ++ "," ++ show e2 ++ ")"
   show (App _ e1 e2)       = "(" ++ show e1 ++ " " ++ show e2 ++ ")"
   show (Lam _ _ _)         = "*lambda-expression*"
-  show (Var _ _ n)         = "(Var " ++ name2String n ++ ")"
+  show (Var _ _ n)         = {- "(Var " ++ -} name2String n {- ++ ")" -}
   show (Con _ _ c)         = name2String c
   show (RecConApp _ _ _ _) = "*RecConApp*"
   show (RecUp _ _ _ _)     = "*RecUp*"

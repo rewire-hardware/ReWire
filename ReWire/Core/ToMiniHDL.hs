@@ -14,7 +14,7 @@ import Control.Monad.Identity
 import Data.List (find)
 import Data.Bits (testBit)
 
-import Debug.Trace --- here we go.
+--import Debug.Trace --- here we go.
 
 type CM = SyntaxErrorT (
             StateT ([Signal],[Component],Int) (
@@ -345,7 +345,7 @@ compileDefn d | defnName d == "Main.start" = do
 compileProgram :: C.Program -> Either AstError M.Program
 compileProgram p = fst $ runIdentity $ flip runReaderT (ctors p,defns p) $ flip runStateT ([],[],0) $ runSyntaxError $
                      do
-                        units <- trace (show $ map proj (defns p)) $ mapM compileDefn (defns p)
+                        units <- {- trace (show $ map proj (defns p)) $ -} mapM compileDefn (defns p)
                         return (M.Program units)
 
 proj :: Defn -> GId

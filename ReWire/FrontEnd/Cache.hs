@@ -125,7 +125,7 @@ getProgram fp = do
 --       >=> typeCheck
 --       >=> printInfo "___Post_Purify___"
        >=> liftLambdas
-       >=> printInfo "___Post_Second_LL___"       
+--       >=> printInfo "___Post_Second_LL___"       
        >=> toCore
        $ (ts, ds)
 

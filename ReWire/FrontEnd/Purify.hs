@@ -120,6 +120,50 @@ rator = Var NoAnnote (TyBlank NoAnnote) (s2n "rator")
 rand1 = Var NoAnnote (TyBlank NoAnnote) (s2n "rand1")
 rand2 = Var NoAnnote (TyBlank NoAnnote) (s2n "rand2")
 
+extrude = Var NoAnnote (TyBlank NoAnnote) (s2n "extrude")
+dev     = Var NoAnnote (TyBlank NoAnnote) (s2n "dev")
+s1      = Var NoAnnote (TyBlank NoAnnote) (s2n "s1")
+s2      = Var NoAnnote (TyBlank NoAnnote) (s2n "s2")
+s0      = Var NoAnnote (TyBlank NoAnnote) (s2n "s0")
+ext1    = mkApp NoAnnote extrude [dev, s1]
+ext2    = mkApp NoAnnote extrude [ (mkApp NoAnnote extrude [dev, s1]), s2]
+ext3    = mkApp NoAnnote extrude [ (mkApp NoAnnote extrude [inner, s1]), s2]
+   where inner = mkApp NoAnnote extrude [dev,s0]
+noext   = mkApp NoAnnote rator [rand1,rand2]
+
+con c   = Con NoAnnote (TyBlank NoAnnote) (s2n c)
+app f x = App NoAnnote f x
+var x   = Var NoAnnote (TyBlank NoAnnote) (s2n x)
+{-
+start :: ReT Bit Bit I ((Bit,Bit),Bit)
+start = extrude (extrude (go One) Zero) One
+-}
+start = app (app extrude arg1) (con "One")
+  where arg1   = app (app extrude go_one) (con "Zero")
+        go_one = app (var "go") (con "One")
+
+start' = app (app extrude arg1) (con "One")
+  where arg1   = app (app extrude go_one) (con "Zero")
+        go_one = app (app (var "go") (con "Fee")) (con "Fie")
+
+
+{-
+Converts
+   (extrude (extrude (... (extrude dev s1) ...) s(n-1)) sn)
+Into
+   (dev,[s1,...,sn])
+
+Won't work if called on a non-extrude application.
+-}
+flattenExtr :: Exp -> (Exp, [Exp])
+flattenExtr e = case e of
+  (App _ (App _ (Var _ _ v) arg1) arg2) | n2s v == "extrude" -> (dev,args++[arg2])
+      where (dev,args) = flattenExtr arg1
+  t@(App _ rator rand)                                       -> (t,args)
+      where (_,args) = flattenExtr rand
+  _                                                          -> (e,[])
+  
+
 rioi = TyComp an (TyApp an (TyApp an (TyApp an ret inty) out) i) nilTy
         where nilTy = TyCon an (s2n "()")
               an    = NoAnnote
@@ -351,7 +395,7 @@ dstTyApp acc t               = (reverse acc,t)
       ([T1,...,Tn],[S1,...,Sm],T)
 -}
 dstStT :: Ty -> Maybe ([Ty],[Ty],Ty)
-dstStT ty = trace ("dstStT: " ++ show ty) $ do
+dstStT ty = {- trace ("dstStT: " ++ show ty) $ -} do
   let (ts,smt) = dstTyApp [] ty
   (a,stos) <- dstComp smt
   return (ts,stos,a)
@@ -515,7 +559,7 @@ purify_state_body rho stos stys i tm = do
 --  liftIO $ putStrLn $ "purify_state_body"
   exp <- classifyCases tm
   case exp of
-    Get an _      -> return $ mkTupleExp an $ (trace ("i = " ++ show i) $ stos !! i, trace ("i = " ++ show i) $ stys !! i) : zip stos stys
+    Get an _      -> return $ mkTupleExp an $ (stos !! i, stys !! i) : zip stos stys
 
     Return an t e -> do (te,_) <- dstArrow t
                         return $ mkTupleExp an $ (e,te) : zip stos stys
@@ -545,7 +589,7 @@ purify_state_body rho stos stys i tm = do
       ns      <- freshVars "st" (length stos + 1)
       let vs = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip ns (a:stys))
       g_pure_app <- mkPureApp an rho g vs
-      (p,_)   <- trace ("ns*stys = " ++ show (zip ns (a:stys))) $ mkTuplePat an (zip ns (a:stys))
+      (p,_)   <- {- trace ("ns*stys = " ++ show (zip ns (a:stys))) $ -} mkTuplePat an (zip ns (a:stys))
       gn      <- var2name g
       ptg     <- lookupPure an gn rho
       let ty = rangeTy ptg
@@ -565,7 +609,7 @@ data RCase an t p e = RReturn an e t
                     | Signal an e t
                     | RBind an e t e t
                     | SigK an e t e t [(e,t)]   -- (signal e >>= g e1 ... ek)
-                    | Extrude t e [(e,t)]
+                    | Extrude t e [e] -- [(e,t)]
                     | RApp an t e [(e,t)]
                     | RSwitch an t e p e (Maybe e)
                     | RMatch an t e MatchPat e [e] (Maybe e)
@@ -607,13 +651,13 @@ classifyApp an (f,t,[e,g]) = case f of
                                                 (tg,_)   <- dstArrow tau
                                                 return $ RBind an e te g tg
              | xs == "extrude" -> do bes <- mkBindings t [e,g]
-                                     return $ Extrude t f bes
+                                     return $ Extrude t f [e,g] -- bes
              | otherwise   -> do bes <- mkBindings t [e,g]
                                  return $ RApp an t f bes
                  where xs = n2s x
 classifyApp an (f,t,es) = case f of
   Var _ tb x | xs == "extrude" -> do bes <- mkBindings t es
-                                     return $ Extrude t f bes
+                                     return $ Extrude t f es
              | otherwise       -> do bes <- mkBindings t es
                                      return $ RApp an t f bes
                  where xs = n2s x
@@ -648,9 +692,7 @@ addDefn d      = modify (\ (PSto dcs pes defs) -> PSto dcs pes (d:defs))
 purify_res_body :: (Fresh m, MonadError AstError m, MonadIO m) =>
                    PureEnv -> Ty -> Ty -> Ty -> [Ty] -> [Exp] -> Name Exp -> Exp -> StateT PSto m Exp
 purify_res_body rho i o t stys stos iv tm = do
---  lift $ liftIO $ putStrLn $ "purify_res_body"
   cls <- lift $ classifyRCases tm
---  lift $ liftIO $ putStrLn $ "    " ++ show cls
   case cls of
                                
        RReturn an e te       -> do
@@ -738,7 +780,6 @@ head of the application. The way it's written below assumes that g is a variable
 
 
 {-
-
 extrude :: Monad m => ReT i o (StT s m) a -> s -> ReT i o m (a,s)
 
 To purify e = (extrude ... (extrude phi s1) ... sn):
@@ -747,10 +788,23 @@ To purify e = (extrude ... (extrude phi s1) ... sn):
 2. phi' <- purify_res_body phi
 3. make definition and addit to definitions: $LL = phi'
 4. return $ (...($LL s1)...sn)
-
 -}
 
-       Extrude ty rator rands -> failAt NoAnnote "Got to Extrude"
+       Extrude ty rator rands -> do
+         let (dev,stos) = flattenExtr $ mkApp NoAnnote rator rands
+         case dev of
+              Var an t d -> do
+                t'  <- liftMaybe "purifying extruded device" $ purifyTy t
+                tau <- lookupPure NoAnnote d rho
+                trace (show d ++ " :: " ++ show tau) $ return $ mkApp NoAnnote (Var an t' d) stos
+
+              App _ _ _  -> do
+                (Var an t f,_,es) <- dstApp dev
+                t'                <- liftMaybe "purifying extruded device" $ purifyTy t
+                let f' = Var an t' f
+                trace (show f' ++ " :: " ++ show t') $ return $ mkApp NoAnnote f' (es++stos)
+                
+              _          -> failAt NoAnnote $ "Extruded device is non-variable: " ++ show dev
 
        RApp an ty rator rands -> do
 --         lift $ liftIO $ putStrLn $ "rator = " ++ show rator
@@ -772,12 +826,12 @@ To purify e = (extrude ... (extrude phi s1) ... sn):
          return $ Case an ty' dsc (bind p e1') (Just e2')
 
        -- e1 must be simply-typed, so don't purify it.
-       RMatch an ty e1 mp e2 es Nothing   -> trace ("A: " ++ show e1) $ do
+       RMatch an ty e1 mp e2 es Nothing   -> do
          ty' <- lift $ purifyTyM ty
          e2' <- purify_res_body rho i o t stys stos iv e2
          return $ Match an ty' e1 mp e2' es Nothing
 
-       RMatch an ty e1 mp e2 es (Just e3) -> trace ("B: " ++ show e1) $ do
+       RMatch an ty e1 mp e2 es (Just e3) -> do
          ty' <- lift $ purifyTyM ty
          e2' <- purify_res_body rho i o t stys stos iv e2
          e3' <- purify_res_body rho i o t stys stos iv e3
@@ -990,7 +1044,6 @@ issignal (App _ (Var _ t x) e) | xs == "signal" = do (te,_) <- dstArrow t
                                | otherwise      = return Nothing
             where xs = n2s x
 issignal _                                      = return Nothing
-
 
 dstArrow :: MonadError AstError m => Ty -> m (Ty,Ty)
 dstArrow t@(TyApp an (TyApp _ (TyCon _ con) t1) t2) = case n2s con of
