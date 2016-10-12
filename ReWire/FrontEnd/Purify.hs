@@ -750,7 +750,8 @@ head of the application. The way it's written below assumes that g is a variable
          let etor  = mkEitherTy an ert (mkPairTy an o (TyCon an (s2n "R")))
          svars         <- freshVars "state" (length stys)
          v             <- freshVar "v"
-         (stps,stoTy)  <- mkTuplePat an (zip svars stys)
+         (stps,stoTy)  <- {- trace ("here: " ++ "\n e = " ++ show e ++ "\n g = " ++ show g ++ "\n svars = " ++ show svars ++ "\n stys = " ++ show stys) $ -}
+                                mkTuplePat an (zip svars stys)
          let leftv = PatCon an (Embed etor) (Embed $ s2n "Prelude.Left") [PatVar an (Embed t) v]
          let p     = mkPairPat an etor stoTy leftv stps
          -- done calculating p = (Left v,(s1,(...,sm)))
@@ -767,7 +768,7 @@ head of the application. The way it's written below assumes that g is a variable
          s_i   <- freshVars "State" (length stys)
          v     <- freshVar "var"
          -- the pattern "(v,(s1,(...,sm)))"
-         (p,_) <- mkTuplePat an $ (v,t) : zip s_i stys         
+         (p,_) <- {- trace "there" $ -} mkTuplePat an $ (v,t) : zip s_i stys         
          let etor    = mkEitherTy an t (mkPairTy an o (TyCon an (s2n "R")))
          let leftv   = mkLeft an etor (Var an t v)
          let body    = mkTupleExp an $ (leftv,etor) : zip stos stys
@@ -796,13 +797,15 @@ To purify e = (extrude ... (extrude phi s1) ... sn):
               Var an t d -> do
                 t'  <- liftMaybe "purifying extruded device" $ purifyTy t
                 tau <- lookupPure NoAnnote d rho
-                trace (show d ++ " :: " ++ show tau) $ return $ mkApp NoAnnote (Var an t' d) stos
+                {- trace (show d ++ " :: " ++ show tau) $ -}
+                return $ mkApp NoAnnote (Var an t' d) stos
 
               App _ _ _  -> do
                 (Var an t f,_,es) <- dstApp dev
                 t'                <- liftMaybe "purifying extruded device" $ purifyTy t
                 let f' = Var an t' f
-                trace (show f' ++ " :: " ++ show t') $ return $ mkApp NoAnnote f' (es++stos)
+                {- trace (show f' ++ " :: " ++ show t') $ -}
+                return $ mkApp NoAnnote f' (es++stos)
                 
               _          -> failAt NoAnnote $ "Extruded device is non-variable: " ++ show dev
 
@@ -886,13 +889,31 @@ mkPairPat :: Annote -> Ty -> Ty -> Pat -> Pat -> Pat
 mkPairPat an ty1 ty2 p1 p2 = PatCon an (Embed $ mkPairTy an ty1 ty2) (Embed (s2n "(,)")) [p1,p2]
 
 mkTuplePat :: MonadError AstError m => Annote -> [(Name Exp, Ty)] -> m (Pat, Ty)
-mkTuplePat an []         = failAt an "Empty product patterns don't exist"
+mkTuplePat an []         = return (nilPat,nilTy)
+  where nilPat = PatCon NoAnnote (Embed nilTy) (Embed (s2n "()")) []
+        nilTy  = TyCon NoAnnote (s2n "()")
+        -- failAt an "Empty product patterns don't exist"
 mkTuplePat an ((n,t):[]) = return (PatVar an (Embed t) n,t)
 mkTuplePat an ((n,t):ns) =
   do (p2,t2) <- mkTuplePat an ns
      let p1p2 = PatCon an (Embed $ mkPairTy an t t2) (Embed (s2n "(,)")) [pn,p2]
      return $ (p1p2, mkPairTy an t t2)
          where pn = PatVar an (Embed t) n
+
+
+
+{-
+data Pat = PatCon Annote (Embed Ty) (Embed (Name DataConId)) [Pat]
+         | PatVar Annote (Embed Ty) (Name Exp)
+            deriving (Show, Generic, Typeable, Data)
+
+data Ty = TyApp Annote Ty Ty
+        | TyCon Annote (Name TyConId)
+        | TyVar Annote Kind (Name Ty)
+        | TyComp Annote Ty Ty -- application of a monad
+        | TyBlank Annote
+           deriving (Eq, Generic, Typeable, Data)
+-}
 
 -- Shouldn't mkLeft/mkRight change the type t to an Either?
 mkLeft :: Annote -> Ty -> Exp -> Exp
