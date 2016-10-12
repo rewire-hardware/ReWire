@@ -810,7 +810,7 @@ To purify e = (extrude ... (extrude phi s1) ... sn):
               _          -> failAt NoAnnote $ "Extruded device is non-variable: " ++ show dev
 
        RApp an ty rator rands -> do
-         lift $ liftIO $ putStrLn $ "rator = " ++ show rator
+     --    lift $ liftIO $ putStrLn $ "rator = " ++ show rator
          rator' <- purify_res_body rho i o t stys stos iv rator
      --    N.b., don't think it's necessary to purify the rands because they're simply typed.
      --    rands' <- mapM (purify_res_body rho i o t stys stos iv . fst) rands

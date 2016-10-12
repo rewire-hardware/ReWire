@@ -1,4 +1,4 @@
-
+{-
 ---------------------------------------------
 --- ReWire Fig Leaf
 ---------------------------------------------
@@ -23,6 +23,7 @@ nativeVhdl = flip const
 ---------------------------------------------
 --- End of Fig Leaf
 ---------------------------------------------
+-}
 
 -- end kludge
 data Bit = Zero | One
@@ -109,11 +110,13 @@ mkReg  Zero  One  = R1
 mkReg  One   Zero = R2
 mkReg  One   One  = R3
 
+{-
 {-# INLINE when #-}
 when :: Monad m => Bit -> m () -> m ()
 when = \ b -> \ m -> case b of
                        One  -> m
                        Zero -> return ()
+-}
 
 getState :: ReT Inputs Outputs (StT CPUState I) CPUState
 {-# INLINE getState #-}
@@ -155,12 +158,14 @@ putPC :: W8 -> ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE putPC #-}
 putPC pc = getState >>= \s -> putState (setPC s pc)
 
-fst :: (a,b) -> a
-{-# INLINE fst #-}
+fst :: (Bit, W8) -> Bit
+--fst :: (a,b) -> a
+-- {-# INLINE fst #-}
 fst (x, _) = x
 
-snd :: (a,b) -> b
-{-# INLINE snd #-}
+snd :: (Bit, W8) -> W8
+--snd :: (a,b) -> b
+-- {-# INLINE snd #-}
 snd (_, x) = x
 
 incrPC :: ReT Inputs Outputs (StT CPUState I) ()
@@ -348,10 +353,14 @@ mem rEn wEn r = do
       a <- getDataIn
       putAddrOut a
       putWeOut wEn
-      when wEn (getReg r >>= \ x -> putDataOut x)
+      case wEn of
+       One  -> (getReg r >>= \ x -> putDataOut x)
+       Zero -> return ()
       incrPC
       tick
-      when rEn (getDataIn >>= \ x -> putReg r x)
+      case rEn of
+       One  -> (getDataIn >>= \ x -> putReg r x)
+       Zero -> return ()
 
 ld :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE ld #-}
@@ -476,28 +485,36 @@ brz :: Register -> ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE brz #-}
 brz r = do
       z <- getZFlag
-      when z (getReg r >>= \ x -> putPC x)
+      case z of
+       One  -> (getReg r >>= \ x -> putPC x)
+       Zero -> return ()
       tick
 
 brnz :: Register -> ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE brnz #-}
 brnz r = do
       z <- getZFlag
-      when (notBit z) (getReg r >>= \ x -> putPC x)
+      case (notBit z) of
+       One  -> (getReg r >>= \ x -> putPC x)
+       Zero -> return ()
       tick
 
 brc :: Register -> ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE brc #-}
 brc r = do
       c <- getCFlag
-      when c (getReg r >>= \ x -> putPC x)
+      case c of
+       One  -> (getReg r >>= \ x -> putPC x)
+       Zero -> return ()
       tick
 
 brnc :: Register -> ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE brnc #-}
 brnc r = do
       c <- getCFlag
-      when (notBit c) (getReg r >>= \ x -> putPC x)
+      case (notBit c) of
+       One  -> (getReg r >>= \ x -> putPC x)
+       Zero -> return ()
       tick
 
 jmp :: Register -> ReT Inputs Outputs (StT CPUState I) ()
