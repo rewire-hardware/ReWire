@@ -215,6 +215,7 @@ tcExp = \ case
                         (e2', te2)  <- tcExp e2
                         unify an tv te2
                         return (Match an tv e' p' f as (Just e2'), tv)
+      nv@(NativeVHDL _ _ (Error _ t _)) -> return (nv, t)
       NativeVHDL an n e      -> do
             (e', te) <- tcExp e
             return (NativeVHDL an n e', te)

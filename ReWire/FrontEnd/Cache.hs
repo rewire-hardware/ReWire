@@ -107,8 +107,8 @@ getProgram fp = do
       p <- addPrims
        >=> records
        -- >=> printInfo "___Post_records___"
-       >=> kindCheck
        >=> inline
+       >=> kindCheck
        >=> typeCheck
        >=> toCoq
        >=> neuterPrims
