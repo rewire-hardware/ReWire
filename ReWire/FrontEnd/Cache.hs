@@ -107,11 +107,11 @@ getProgram fp = do
       p <- addPrims
        >=> records
        -- >=> printInfo "___Post_records___"
+       >=> inline
        >=> kindCheck
        >=> typeCheck
        >=> toCoq
        >=> neuterPrims
-       >=> inline
        >=> reduce
        >=> shiftLambdas
 --       >=> printInfo "___Post_TC___"
