@@ -505,7 +505,8 @@ classifyCases = \ case
                                                           return $ Apply an f es
      Case an t dsc bnds me                          -> do (p,e) <- unbind bnds
                                                           return (Switch an t dsc p e me)
-     d                                              -> failAt (ann d) "Unclassifiable case"
+     Match an t e1 mp e2 es me                      -> return $ SMatch an t e1 mp e2 es me
+     d                                              -> failAt (ann d) $ "Unclassifiable case: " ++ show d
 
 data Cases an p e t = Get an t
                     | Return an t e
@@ -514,32 +515,8 @@ data Cases an p e t = Get an t
                     | Bind an t e e
                     | Apply an e [e]
                     | Switch an t e p e (Maybe e)
+                    | SMatch an t e MatchPat e [e] (Maybe e)
 
-
-{- This is a thought experiment which very well may end up as cruft.
-
-p_s_b ::  (Fresh m, MonadError AstError m, MonadIO m) =>
-                     Int -> Exp -> [(Name Exp,Ty)] -> m (Exp,[(Name Exp,Ty)])
-p_s_b i tm stos = do
-  exp <- classifyCases tm
-  case exp of
-    Get an _      -> return $ (mkVar $ stos !! i, stos) -- fencepost counting?
-        where mkVar (n,t) = Var NoAnnote t n
-
-    Return an t e -> return $ (e,stos)
-
-    Lift an e     -> undefined
-
-    Put an e      -> undefined
-
-    Apply an e es -> undefined
-
-    Switch an t e1 p e2 (Just e) -> undefined
-
-    Switch an t e1 p e2 Nothing  -> undefined
-      
-    Bind an t e g -> undefined
--}  
 
 {-
    purify_state_body
@@ -582,6 +559,19 @@ purify_state_body rho stos stys i tm = do
     Switch an t e1 p e2 Nothing  -> do e1' <- purify_state_body rho stos stys i e1
                                        e2' <- purify_state_body rho stos stys i e2
                                        return $ Case an t e1' (bind p e2') Nothing
+
+    -- e1 must be simply-typed, so don't purify it.
+    SMatch an ty e1 mp e2 es Nothing -> do
+         ty' <- purifyTyM ty
+         e2' <- purify_state_body rho stos stys i e2
+         return $ Match an ty' e1 mp e2' es Nothing
+
+    SMatch an ty e1 mp e2 es (Just e3) -> do
+         ty' <- purifyTyM ty
+         e2' <- purify_state_body rho stos stys i e2
+         e3' <- purify_state_body rho stos stys i e3
+         return $ Match an ty' e1 mp e2' es (Just e3')
+
     Bind an t e g -> do
       (te,_)  <- dstArrow t
       (_,_,a) <- liftMaybe "Non-StT Type passed to dstStT" $ dstStT te -- a is the return type of e
@@ -590,7 +580,11 @@ purify_state_body rho stos stys i tm = do
       let vs = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip ns (a:stys))
       g_pure_app <- mkPureApp an rho g vs
       (p,_)   <- {- trace ("ns*stys = " ++ show (zip ns (a:stys))) $ -} mkTuplePat an (zip ns (a:stys))
-      gn      <- var2name g
+--
+-- g can, in general, be an application. That's causing the error when (var2name g) is called.
+--
+      (f,_,_) <- dstApp g
+      gn      <- var2name f -- var2name g
       ptg     <- lookupPure an gn rho
       let ty = rangeTy ptg
       return $ mkLet an ty p e' g_pure_app
@@ -750,11 +744,11 @@ head of the application. The way it's written below assumes that g is a variable
          let etor  = mkEitherTy an ert (mkPairTy an o (TyCon an (s2n "R")))
          svars         <- freshVars "state" (length stys)
          v             <- freshVar "v"
-         (stps,stoTy)  <- {- trace ("here: " ++ "\n e = " ++ show e ++ "\n g = " ++ show g ++ "\n svars = " ++ show svars ++ "\n stys = " ++ show stys) $ -}
-                                mkTuplePat an (zip svars stys)
+         (stps,stoTy)  <- mkTuplePat an (zip svars stys)
          let leftv = PatCon an (Embed etor) (Embed $ s2n "Prelude.Left") [PatVar an (Embed t) v]
          let p     = mkPairPat an etor stoTy leftv stps
          -- done calculating p = (Left v,(s1,(...,sm)))
+
          -- calculating g_pure_app = "g_pure v s1 ... sm"
          let vars       = map (\ (x,t) -> Var an t x) (zip svars stys)
          g_pure_app <-  mkPureApp an rho g' (Var an ert v : vars)
@@ -851,7 +845,7 @@ dispatchTy i t = mkArrowTy [TyCon an $ s2n "R", i, etor]
 
 var2name :: MonadError AstError m => Exp -> m (Name Exp)
 var2name (Var _ _ x) = return x
-var2name d           = failAt (ann d) "var2string applied to non-variable"
+var2name d           = failAt (ann d) $ "var2string applied to non-variable: " ++ show d
 
 --
 -- Takes t1 and t2 and creates (t1,t2). I'm assuming (?!?) that the name of the
