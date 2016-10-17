@@ -110,7 +110,7 @@ dev NoInput      = signal Nix >>= dev
 
 ### Crossbar Switch in ReWire
 
-This section considers the ReWire version of the crossbar switch. The whole code is available [here]({{ site.baseurl }}/assets/code/RWCrossbar.hs). These two implementations are _almost_ the same, but there are differences. We will go through the code in detail to highlight the differences.
+This section considers the ReWire version of the crossbar switch. The whole code is available [here]({{ site.baseurl }}/assets/code/crossbar/RWCrossbar.hs). These two implementations are _almost_ the same, but there are differences. We will go through the code in detail to highlight the differences.
 
 Here we have commented out the module and import declarations, except for the `ReWirePrelude`. The main ReWire file does not belong in a `module`. Note that the monad definitions from `Control.Monad` are built-in to ReWire, and so, they should not be imported.
 
