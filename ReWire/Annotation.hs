@@ -72,10 +72,7 @@ instance SrcInfo Annote where
       startColumn     = startColumn . toSrcSpanInfo
 
 -- | Using the default definition of gfoldl.
-instance Data Annote where
-      gunfold    = undefined
-      toConstr   = undefined
-      dataTypeOf = undefined
+instance Data Annote
 
 instance Show Annote where
       show NoAnnote      = "NoAnnote"
