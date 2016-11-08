@@ -133,6 +133,7 @@ data Ty = TyApp Annote Ty Ty
 instance Show Ty where
   show (TyApp _ (TyApp _ (TyCon _ n) t1) t2)
     | name2String n == "(,)" = "(" ++ show t1 ++ "," ++ show t2 ++ ")"
+    | name2String n == "->"  = "(" ++ show t1 ++ " -> " ++ show t2 ++ ")"
     | otherwise              = "((" ++ name2String n ++ " " ++ show t1 ++ ")" ++ " " ++ show t2 ++ ")"
   show (TyApp _ t1 t2)  = "(" ++ show t1 ++ " " ++ show t2 ++ ")"
   show (TyCon _ n)      = name2String n
@@ -244,7 +245,7 @@ instance Pretty Exp where
               | name2String n == "(,)" -> parens $ pretty e1 <+> text "," <+> pretty e2
             App _ e1 e2      -> parens $ hang (pretty e1) 4 $ pretty e2
             Con _ _ n        -> text $ name2String n
-            Var _ t n        -> text (show n) -- <+> text "::" <+> pretty t
+            Var _ t n        -> text (show n) <+> text "::" <+> pretty t
             Lam _ _ e        -> runFreshM $ do
                   (p, e') <- unbind e
                   return $ parens $ text "\\" <+> text (show p) <+> text "->" <+> pretty e'

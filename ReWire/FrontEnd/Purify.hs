@@ -1,6 +1,9 @@
 {-# LANGUAGE FlexibleContexts, LambdaCase #-}
 -- {-# LANGUAGE Safe, FlexibleContexts, LambdaCase #-}
-module ReWire.FrontEnd.Purify (purify) where
+module ReWire.FrontEnd.Purify (purify,
+                               classifyTy,
+                               TyVariety(Arrow,ReTApp,StTApp,IdApp,PairApp,Pure),
+                               liftMaybe) where
 
 import ReWire.Annotation
 import ReWire.FrontEnd.Unbound
