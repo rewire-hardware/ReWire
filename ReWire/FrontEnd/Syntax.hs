@@ -239,13 +239,22 @@ instance Annotated Exp where
             NativeVHDL a _ _    -> a
             Error a _ _         -> a
 
+{-
+cleanName str = case str of
+  ('$':'L':'L':'.':rest)         -> rest
+  ('$':'P':'U':'R':'E':'.':rest) -> rest
+  ('M':'a':'i':'n':'.':rest)     -> rest
+  ('?':'X':rest)                 -> 'x':rest
+  _                              -> str
+  -}
+
 instance Pretty Exp where
       pretty = \ case
             App _ (App _ (Con _ _ n) e1) e2
               | name2String n == "(,)" -> parens $ pretty e1 <+> text "," <+> pretty e2
             App _ e1 e2      -> parens $ hang (pretty e1) 4 $ pretty e2
             Con _ _ n        -> text $ name2String n
-            Var _ t n        -> text (show n) <+> text "::" <+> pretty t
+            Var _ t n        -> text $ show n {- <+> text "::" <+> pretty t -}
             Lam _ _ e        -> runFreshM $ do
                   (p, e') <- unbind e
                   return $ parens $ text "\\" <+> text (show p) <+> text "->" <+> pretty e'
@@ -274,7 +283,7 @@ instance Pretty Exp where
             Match _ _ e p e1 as e2 -> runFreshM $ do
                   return $ parens $
                         foldr ($+$) mempty
-                        [ text "match" <+> pretty e <+> text "of"
+                        [ text "case" <+> pretty e <+> text "of"
                         , nest 4 (braces $ vcat $ punctuate (space <> text ";")
                               [ pretty p <+> text "->" <+> pretty e1 <+> hsep (map pretty as) ]
                               ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
