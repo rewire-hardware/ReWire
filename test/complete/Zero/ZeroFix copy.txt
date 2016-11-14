@@ -1,0 +1,49 @@
+--- ZeroPostPurify.hs	2016-11-13 17:03:56.469245200 -0800
++++ ZeroPostPurifyFixed.hs	2016-11-13 17:27:56.270422300 -0800
+@@ -37,11 +37,12 @@
+   Right (o,b) -> ReacT $ return (Right (o, unfold f . f b))
+ -}
+ 
+---unfold :: (b -> i -> Either a (o,b)) -> Either a (o,b) -> ReT i o I a
+-unfold = undefined
++unfold :: (b -> i -> Either a (o,b)) -> Either a (o,b) -> ReT i o I a
++unfold f (Left a)      = ReacT $ return (Left a)
++unfold f (Right (o,b)) = ReacT $ return (Right (o, unfold f . f b))
+     
+ -- Need to add this too because of the way dispatch function is generated now (will change).
+-data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
++--data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
+ 
+ ---------------------------------------------
+ --- End: ReWire Fig Leaf
+@@ -51,22 +52,22 @@
+      Zero :: Bit
+ 
+ data R :: * where
+-    R_return :: R
++--    R_return :: R
+     R_ll_lambda :: R
+ 
+---start3 :: ReT Bit Bit I ()
++start3 :: ReT Bit Bit I ()
+ start3 = unfold dispatch2 start
+ 
+ -- Known error with purification.txt: \/ should be Bit (or output type generally).
+---dispatch2 :: R -> Bit -> Either () (W8 , R)
++dispatch2 :: R -> Bit -> Either () (Bit , R)
+ dispatch2 x_dsc_1 x_i_ =
+     case x_dsc_1 of
+          R_ll_lambda -> ll_lambda1 x_i_
+-         _           -> case x_dsc_1 of
+-                             R_return -> Left x_i_
++{-         _           -> case x_dsc_1 of
++                             R_return -> Left x_i_-}
+ 
+---ll_lambda1 :: Bit -> Either () (Bit , R)
+-ll_lambda1 d = start3
++ll_lambda1 :: Bit -> Either () (Bit , R)
++ll_lambda1 d = start
+ 
+---start :: Either () (Bit , R)
++start :: Either () (Bit , R)
+ start = Right (Zero , R_ll_lambda)
