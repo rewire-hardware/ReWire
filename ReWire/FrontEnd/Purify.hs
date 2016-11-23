@@ -42,7 +42,7 @@ purify (ts, ds) = runFreshMT $ do
 
       let r  = mkR_Datatype dcs
 
-      let dt = dispatchTy i t
+      let dt = dispatchTy i o t
       df        <- mkDispatch dt pes iv i
 
       start_def <- mkStart i o t
@@ -85,7 +85,7 @@ mkStart i o t = do
          tyApp      = TyApp noAnn
 
          unfold     = Var na (TyBlank $ MsgAnnote "stub type for unfold") (s2n "unfold")
-         dispatch   = Var na (dispatchTy i t) {- (TyBlank $ MsgAnnote "stub type for dispatch") -}  (s2n "$Pure.dispatch")
+         dispatch   = Var na (dispatchTy i o t) {- (TyBlank $ MsgAnnote "stub type for dispatch") -}  (s2n "$Pure.dispatch")
          start_pure = Var na pureStart {- (TyBlank $ MsgAnnote "stub type for start_pure")-} (s2n "$Pure.start")
          appl       = Embed $ bind [] (App na (App na unfold dispatch) start_pure)
          
@@ -196,12 +196,12 @@ mkDispatch :: (Fresh m, MonadError AstError m) => Ty -> [(Pat,Exp)] -> Name Exp 
 mkDispatch ty pes iv it = do
   
   -- by default, must add the eqn: dispatch R_return i = Left i
-  let pdef = PatCon NoAnnote (Embed (TyCon NoAnnote (s2n "R"))) (Embed $ s2n "R_return") []
-  let bdef = mkLeft NoAnnote (rangeTy ty) (Var NoAnnote it iv)
+--  let pdef = PatCon NoAnnote (Embed (TyCon NoAnnote (s2n "R"))) (Embed $ s2n "R_return") []
+--  let bdef = mkLeft NoAnnote (rangeTy ty) (Var NoAnnote it iv)
         
   dsc <- freshVar "dsc"
   let dscv = Var an (TyCon an (s2n "R")) dsc
-  let body = mkCase an ty dscv (pes ++ [(pdef,bdef)])
+  let body = mkCase an ty dscv (pes {- ++ [(pdef,bdef)]-})
   let dispatch_body = Embed (bind [dsc :: Name Exp, iv :: Name Exp] body)
   let dispatch = seed_dispatch { defnBody = dispatch_body }
   return dispatch
@@ -222,7 +222,7 @@ mkCase an ty dsc ((p,e):pes) = Case an ty dsc (bind p e) (Just rest)
    where rest = mkCase an ty dsc pes
 
 mkR_Datatype :: [DataCon] -> DataDefn
-mkR_Datatype dcs = seedR { dataCons = r_return : dcs }
+mkR_Datatype dcs = seedR { dataCons = {- r_return : -} dcs }
    where
      seedR = DataDefn 
        { dataAnnote = MsgAnnote "R Datatype"
@@ -230,7 +230,7 @@ mkR_Datatype dcs = seedR { dataCons = r_return : dcs }
        , dataKind   = KStar
        , dataCons   = []
        }
-     r_return = DataCon NoAnnote (s2n "R_return") ([] |-> TyCon NoAnnote (s2n "R"))
+--     r_return = DataCon NoAnnote (s2n "R_return") ([] |-> TyCon NoAnnote (s2n "R"))
 
 type TySkel  = ([Ty],Ty,Ty,[Ty],Ty)
 type PureEnv = [(Name Exp, Ty)]
@@ -772,9 +772,13 @@ head of the application. The way it's written below assumes that g is a variable
          let body_ty = mkTupleTy (etor : stys)
          return $ mkLet an body_ty p e' body
 
+-- 
+
        RVar an (Var _ tx x)   -> do
+--         lift $ liftIO $ putStrLn $ "***** RVar is " ++ n2s x
          tx' <- purifyTyM tx
-         return $ mkApp an (Var an tx' x) stos
+         return $ mkApp an (Var an tx' x') stos
+           where x' = if n2s x == "Main.start" then (s2n "$Pure.start") else x
 
 
 {-
@@ -841,9 +845,9 @@ To purify e = (extrude ... (extrude phi s1) ... sn):
 -- A Compendium of Helper Functions
 ---------------------------
 
-dispatchTy :: Ty -> Ty -> Ty
-dispatchTy i t = mkArrowTy [TyCon an $ s2n "R", i, etor]
-    where etor = mkEitherTy an t (mkPairTy an (TyCon an $ s2n "Main.W8") (TyCon an (s2n "R")))
+dispatchTy :: Ty -> Ty -> Ty -> Ty
+dispatchTy i o t = mkArrowTy [TyCon an $ s2n "R", i, etor]
+    where etor = mkEitherTy an t (mkPairTy an {- (TyCon an $ s2n "Main.W8") -} o (TyCon an (s2n "R")))
           an   = MsgAnnote "Type of dispatch function"
 
 var2name :: MonadError AstError m => Exp -> m (Name Exp)
