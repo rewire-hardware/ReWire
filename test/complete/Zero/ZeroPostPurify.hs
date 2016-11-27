@@ -51,22 +51,19 @@ data Bit :: * where
      Zero :: Bit
 
 data R :: * where
-    R_return :: R
     R_ll_lambda :: R
 
 --start3 :: ReT Bit Bit I ()
 start3 = unfold dispatch2 start
 
 -- Known error with purification.txt: \/ should be Bit (or output type generally).
---dispatch2 :: R -> Bit -> Either () (W8 , R)
+dispatch2 :: R -> Bit -> Either () (Bit , R)
 dispatch2 x_dsc_1 x_i_ =
     case x_dsc_1 of
          R_ll_lambda -> ll_lambda1 x_i_
-         _           -> case x_dsc_1 of
-                             R_return -> Left x_i_
 
 --ll_lambda1 :: Bit -> Either () (Bit , R)
-ll_lambda1 d = start3
+ll_lambda1 d = start
 
 --start :: Either () (Bit , R)
 start = Right (Zero , R_ll_lambda)
