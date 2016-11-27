@@ -37,9 +37,11 @@ data W8 :: * where
 data R :: * where
     R_lambda :: R
 
+{-
 --start8 :: ReT Bit W8 I ((() , W8))
 start8 =
     unfold dispatch7 start
+-}
 
 --dispatch7 :: R -> Bit -> Either ((() , W8)) ((W8 , R))
 dispatch7 x_dsc_1 x_i_ =
@@ -66,19 +68,22 @@ lambda3 x1 x_sto0_ =
 lambda2 d x_sto0_ =
     (case (case (x_sto0_ , x_sto0_) of
                {(x_var_1 , x_State0_) -> ((Left
-                                                 x_var_1) , x_sto0_)}) of
-         {((Left x_v_1) , x_state0_) -> (((lambda3 x_sto0_)
-                                                        x_v_1)
-                                                       x_state0_)})
+                                                 x_var_1) , x_State0_)}) of
+--                                                 x_var_1) , x_sto0_)}) of
+         {((Left x_v_1) , x_state0_) -> lambda3  x_v_1 x_state0_ })
+--         {((Left x_v_1) , x_state0_) -> lambda3 x_sto0_ x_v_1 x_state0_ })    
+    
 incr1 :: W8 -> (Either () ((W8 , R)) , W8)
 incr1 x_sto0_ =
     (case (case (grunt6 x_sto0_) of
                {(x_var_1 , x_State0_) -> ((Left
-                                                 x_var_1) , x_sto0_)}) of
-         {((Left x_v_1) , x_state0_) -> (((lambda2 x_sto0_)
-                                                        x_v_1)
-                                                       x_state0_)})
-start :: Either ((() , W8)) ((W8 , R))
+                                                 x_var_1) , x_State0_)}) of
+--                                                 x_var_1) , x_sto0_)}) of
+         {((Left x_v_1) , x_state0_) -> lambda2 x_v_1 x_state0_ })
+--         {((Left x_v_1) , x_state0_) -> (((lambda2 x_sto0_) x_v_1) x_state0_)})
+
+--start :: Either ((() , W8)) ((W8 , R))
+start :: (Either () (W8, R), W8)
 start =
     (incr1
          ((((((((W8 Zero) Zero) Zero) Zero)
