@@ -17,8 +17,6 @@ import Data.Maybe (fromJust)
 import Data.List (nub,find)
 import Debug.Trace
 
-
-
 purify :: (MonadError AstError m, MonadIO m) => FreeProgram -> m FreeProgram
 purify (ts, ds) = runFreshMT $ do
       mds       <- mapM isStateMonadicDefn ds
@@ -34,7 +32,7 @@ purify (ts, ds) = runFreshMT $ do
 
       (_,tyStart) <- liftMaybe "No start symbol!" $ find (isStart . n2s . fst) imprhoR
       (_,i,o,_,t) <- liftMaybe ("dstResTy applied to: " ++ show tyStart) $ dstResTy tyStart
-
+      let s   = tail $ dstTuple t --- this is the list of states!!!!!
       let rho = rhoS ++ rhoR
       pure_smds <- mapM (purifyStateDefn rho) smds
       iv        <- freshVar "i"
@@ -42,15 +40,48 @@ purify (ts, ds) = runFreshMT $ do
 
       let r  = mkR_Datatype dcs
 
-      let dt = dispatchTy i o t
+      let mstoTy = sndTy t -- this will be the state type *if* t is a pair; NO it won't. Use s.
+      let dt = dispatchTy i o mstoTy t 
       df        <- mkDispatch dt pes iv i
 
-      start_def <- mkStart i o t
+      start_def <- mkStart i o mstoTy t
 
       return (ts++[r], start_def : df : ods ++ pure_smds ++ pure_rmds) 
    where f Nothing ms  = ms
          f (Just a) ms = a : ms
          errmsg        = "Non-unique input, output or return type in specification"
+         sndTy :: Ty -> Maybe Ty
+         sndTy t = case t of
+            TyApp an (TyApp _ (TyCon _ con) _) t2 | n2s con == "(,)" -> Just t2
+            _                                                        -> Nothing
+         dstTuple :: Ty -> [Ty]
+         dstTuple t = case t of
+            TyApp an (TyApp _ (TyCon _ con) t1) t2 | n2s con == "(,)" -> dstTuple t1 ++ [t2]
+            _                                                         -> [t]
+
+
+--
+-- Converts
+--    (extrude (extrude (... (extrude ((Var _ t f) e1...ek) s1) ...) s(n-1)) sn)
+-- Into
+--    rangeTy t
+
+-- We need to calculate the "un-extruded type" of the start symbol, so that we can
+-- gather all the state types (if any).
+--
+-- Caution: assuming that every start symbol has a l.h.s. of the form above.
+--
+range_type_start :: MonadError AstError m => Exp -> m Ty
+range_type_start e = do
+  let e' = stripExtrude e
+  (_,t,_) <- dstApp e'
+  return (rangeTy t)
+   where
+     stripExtrude :: Exp -> Exp
+     stripExtrude e = case e of 
+       (App _ (App _ h@(Var _ _ v) arg1) arg2) | n2s v == "extrude" -> dev
+                                                      where (dev,_) = flattenExtr arg1
+       _                                                            -> e
 
 isStart :: String -> Bool
 isStart n = take 10 n == "Main.start" && null nonNumsInSuffix
@@ -67,7 +98,7 @@ In addition to all the above, we re-tie the recursive knot by adding a new
           start :: In -> (Either T (O,R),()) --- drop the "()"?
 -}
 
-mkStart i o t = do
+mkStart i o ms t = do
   return $ Defn {
       defnAnnote = MsgAnnote "start function"
     , defnName   = s2n "Main.start"
@@ -76,8 +107,10 @@ mkStart i o t = do
     , defnBody   = appl
     }
    where na         = NoAnnote
-         etor       = mkEitherTy na t (mkPairTy na o (TyCon na (s2n "R")))
-         ranStart   = mkPairTy na etor (TyCon na (s2n "()"))
+         etor       = case ms of
+           Just s  -> mkEitherTy t (mkPairTy o (mkPairTy rTy s))
+           Nothing -> mkEitherTy t (mkPairTy o rTy)
+         ranStart   = mkPairTy etor (TyCon na (s2n "()"))
          pureStart  = i `arr0` ranStart
          tyStart    = TyComp noAnn (reT i o (c "I")) t
          reT i o m  = c "ReT" `tyApp` i `tyApp` o `tyApp` m
@@ -85,8 +118,8 @@ mkStart i o t = do
          tyApp      = TyApp noAnn
 
          unfold     = Var na (TyBlank $ MsgAnnote "stub type for unfold") (s2n "unfold")
-         dispatch   = Var na (dispatchTy i o t) {- (TyBlank $ MsgAnnote "stub type for dispatch") -}  (s2n "$Pure.dispatch")
-         start_pure = Var na pureStart {- (TyBlank $ MsgAnnote "stub type for start_pure")-} (s2n "$Pure.start")
+         dispatch   = Var na (dispatchTy i o ms t) (s2n "$Pure.dispatch")
+         start_pure = Var na pureStart (s2n "$Pure.start")
          appl       = Embed $ bind [] (App na (App na unfold dispatch) start_pure)
          
          
@@ -128,11 +161,11 @@ dev     = Var NoAnnote (TyBlank NoAnnote) (s2n "dev")
 s1      = Var NoAnnote (TyBlank NoAnnote) (s2n "s1")
 s2      = Var NoAnnote (TyBlank NoAnnote) (s2n "s2")
 s0      = Var NoAnnote (TyBlank NoAnnote) (s2n "s0")
-ext1    = mkApp NoAnnote extrude [dev, s1]
-ext2    = mkApp NoAnnote extrude [ (mkApp NoAnnote extrude [dev, s1]), s2]
-ext3    = mkApp NoAnnote extrude [ (mkApp NoAnnote extrude [inner, s1]), s2]
-   where inner = mkApp NoAnnote extrude [dev,s0]
-noext   = mkApp NoAnnote rator [rand1,rand2]
+ext1    = mkApp extrude [dev, s1]
+ext2    = mkApp extrude [ (mkApp extrude [dev, s1]), s2]
+ext3    = mkApp extrude [ (mkApp extrude [inner, s1]), s2]
+   where inner = mkApp extrude [dev,s0]
+noext   = mkApp rator [rand1,rand2]
 
 con c   = Con NoAnnote (TyBlank NoAnnote) (s2n c)
 app f x = App NoAnnote f x
@@ -165,6 +198,7 @@ flattenExtr e = case e of
   t@(App _ rator rand)                                       -> (t,args)
       where (_,args) = flattenExtr rand
   _                                                          -> (e,[])
+
   
 
 rioi = TyComp an (TyApp an (TyApp an (TyApp an ret inty) out) i) nilTy
@@ -200,7 +234,7 @@ mkDispatch ty pes iv it = do
 --  let bdef = mkLeft NoAnnote (rangeTy ty) (Var NoAnnote it iv)
         
   dsc <- freshVar "dsc"
-  let dscv = Var an (TyCon an (s2n "R")) dsc
+  let dscv = Var an rTy dsc
   let body = mkCase an ty dscv (pes {- ++ [(pdef,bdef)]-})
   let dispatch_body = Embed (bind [dsc :: Name Exp, iv :: Name Exp] body)
   let dispatch = seed_dispatch { defnBody = dispatch_body }
@@ -230,7 +264,10 @@ mkR_Datatype dcs = seedR { dataCons = {- r_return : -} dcs }
        , dataKind   = KStar
        , dataCons   = []
        }
---     r_return = DataCon NoAnnote (s2n "R_return") ([] |-> TyCon NoAnnote (s2n "R"))
+
+-- global constant representation of R data type
+rTy :: Ty
+rTy = TyCon NoAnnote (s2n "R")
 
 type TySkel  = ([Ty],Ty,Ty,[Ty],Ty)
 type PureEnv = [(Name Exp, Ty)]
@@ -434,11 +471,10 @@ dstStT ty = {- trace ("dstStT: " ++ show ty) $ -} do
 purifyResTy :: Ty -> Maybe Ty
 purifyResTy t = do
   (ts,i,o,stos,a) <- dstResTy t
-  let etor     = mkEitherTy NoAnnote a (mkPairTy NoAnnote o (TyCon NoAnnote (s2n "R")))
   let ranTy    = case stos of
-                      [] -> etor
-                      _  -> mkPairTy NoAnnote etor (mkTupleTy stos)
-  let purified = foldr arr0 ranTy (ts ++ stos)
+                      [] -> mkEitherTy a (mkPairTy o rTy)
+                      _  -> mkRangeTy a o rTy $ mkTupleTy stos
+  let purified = trace ("stos = " ++ show stos ++ " for " ++ show t) $ foldr arr0 ranTy (ts ++ stos)
   return purified
 
 --
@@ -539,20 +575,20 @@ purify_state_body rho stos stys i tm = do
 --  liftIO $ putStrLn $ "purify_state_body"
   exp <- classifyCases tm
   case exp of
-    Get an _      -> return $ mkTupleExp an $ (stos !! i, stys !! i) : zip stos stys
+    Get an _      -> return $ mkTupleExp $ (stos !! i, stys !! i) : zip stos stys
 
     Return an t e -> do (te,_) <- dstArrow t
-                        return $ mkTupleExp an $ (e,te) : zip stos stys
+                        return $ mkTupleExp $ (e,te) : zip stos stys
 
     Lift an e     -> purify_state_body rho stos stys (i+1) e
 
-    Put an e      -> return $ mkTupleExp an $ (nil,nilTy) : zip stos' stys
+    Put an e      -> return $ mkTupleExp $ (nil,nilTy) : zip stos' stys
         where nil   = Con an nilTy (s2n "()")
               nilTy = TyCon an (s2n "()")
               stos' = replaceAtIndex (i-1) e stos
 
     Apply an e es -> do rator <- mkPureApp an rho e es
-                        return $ mkApp an rator stos
+                        return $ mkApp rator stos
 
     Switch an t e1 p e2 (Just e) -> do e1' <- purify_state_body rho stos stys i e1
                                        e2' <- purify_state_body rho stos stys i e2
@@ -582,7 +618,7 @@ purify_state_body rho stos stys i tm = do
       ns      <- freshVars "st" (length stos + 1)
       let vs = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip ns (a:stys))
       g_pure_app <- mkPureApp an rho g vs
-      (p,_)   <- {- trace ("ns*stys = " ++ show (zip ns (a:stys))) $ -} mkTuplePat an (zip ns (a:stys))
+      (p,_)   <- {- trace ("ns*stys = " ++ show (zip ns (a:stys))) $ -} mkTuplePat (zip ns (a:stys))
 --
 -- g can, in general, be an application. That's causing the error when (var2name g) is called.
 --
@@ -689,37 +725,63 @@ addDefn d      = modify (\ (PSto dcs pes defs) -> PSto dcs pes (d:defs))
 purify_res_body :: (Fresh m, MonadError AstError m, MonadIO m) =>
                    PureEnv -> Ty -> Ty -> Ty -> [Ty] -> [Exp] -> Name Exp -> Exp -> StateT PSto m Exp
 purify_res_body rho i o t stys stos iv tm = do
+  let stovars = mkTupleExp $ zip stos stys
+  let stateType = mkTupleTy stys
+  let stoTy   = mkTupleTy stys
   cls <- lift $ classifyRCases tm
   case cls of
                                
+--        purify_res_body (return e)         = "(Left (e,(s1,(...,sm))))"
        RReturn an e te       -> do
          te' <- lift $ purifyTyM te
-         let etor = mkEitherTy an te' (mkPairTy an o (TyCon an (s2n "R"))) 
-         return $ mkTupleExp an $ (mkLeft an etor e, etor) : zip stos stys          
+         let etor = mkRangeTy te' o rTy stateType
+         return $ mkLeft etor $ mkTupleExp $ (e,etor) : zip stos stys          
+
+-- 	purify_res_body (signal e
+-- 	                  >>= g e1 ... ek) = "Right ((e, (s1,(...,sm))), R_g e1 ... ek)"
+-- 			          	     Side effect:
+-- 					       * add the clause "R_g T1 ... Tk" to R
+-- 						    (where Ti is the type of ei)
+-- 					       * add the eqn
+-- 					           dispatch ((R_g e1 ... ek),(s1,...,sm)) i
+-- 						      = g_pure e1 ... ek i s1 ... sm
+-- 						 to defn of dispatch
 
        SigK an e te g tg bes -> do
          let (es,ts) = unzip bes
          ts' <- lift $ mapM purifyTyM ts
          te' <- lift $ purifyTyM te
          r_g <- sub g
-         let rt      = mkArrowTy $ ts' ++ [TyCon an (s2n "R")]
+         let rt      = mkArrowTy $ ts' ++ [rTy]
          let rcon    = Con an rt (s2n r_g)
-         let rGes    = mkApp an rcon es 
-         addClause (mkRDataCon an r_g ts') -- "R_g T1 ... Tk"
-         (p,xs) <- mkRPat an ts' r_g        -- Pattern (R_g e1 ... ek)
-         let vars    = map (\ (x,t) -> Var an t x) (zip xs ts')
-         g_pure_app <- mkPureApp an rho g (vars ++ [Var an i iv])
-         addEquation (p,g_pure_app) --"dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i" 
-         let (eRg,_) = mkTuple an [(e,te'),(rGes,t)]
-         -- Calculate Either T (O,R)
-         let etor    = mkEitherTy an t (mkPairTy an o (TyCon an (s2n "R")))
-         return $ mkTupleExp an $ (mkRight an etor eRg, etor) : zip stos stys
+         let rGes    = mkApp rcon es 
+         addClause (mkRDataCon an r_g ts')                      -- "R_g T1 ... Tk"
 
+         ns     <- freshVars "s" (length stos)
+         (stopat,_) <- mkTuplePat $ zip ns stys                 -- Pattern (s1,...,sn)
+         (p,xs) <- mkRPat an ts' r_g                            -- Pattern (R_g e1 ... ek)
+         let pairpat = mkPairPat rTy stateType p stopat           -- Pattern (R_g e1 ... ek,(s1,...,sn))
+         
+         let svars = map (\ (x,t) -> Var an t x) $ zip ns stys  -- [s1,...,sn]
+         let vars  = map (\ (x,t) -> Var an t x) (zip xs ts')   -- [x1,...,xn]
+         g_pure_app <- mkPureApp an rho g (vars ++ [Var an i iv] ++ svars)
+         --"dispatch (R_g e1 ... ek,(s1,...,sn)) i = g_pure e1 ... ek i s1 ... sn" 
+         addEquation (pairpat,g_pure_app)
+         
+--         let stovars = mkTupleExp $ zip stos stys
+         let etor          = mkRangeTy t o rTy stateType
+         let (inner,rXsto) = mkTuple [(rGes,rTy),(stovars,stateType)] --  (R,(s1,...,sm))
+         let (outer,_)     = mkTuple [(e,te),(inner,rXsto)]        -- (e, (R_g e1 ... ek, (s1,(...,sm))))
+         return $ mkRight etor outer                          -- Right ((e, R_g e1 ... ek), (s1,(...,sm)))
+
+
+--        purify_res_body (signal e)         = "(Right ((e,(s1,(...,sm))),R_ret))"
        Signal an e tau -> do
-         let r_return  = Con an (TyCon an (s2n "R")) (s2n "R_return")
-         let (eRret,_) = mkTuple an [(e,tau),(r_return,TyCon an (s2n "R"))]
-         let etor      = mkEitherTy an t (mkPairTy an o (TyCon an (s2n "R")))
-         return $ mkTupleExp an $ (mkRight an etor eRret,etor) : zip stos stys
+         let r_return     = Con an rTy (s2n "R_return")
+         let (inner,tin)  = mkTuple [(r_return,rTy),(stovars,stateType)]
+         let (outer,tout) = mkTuple [(e,tau),(inner,tin)]
+         let etor         = mkRangeTy t o rTy stateType
+         return $ mkRight etor outer
 
 {-
 	purify_res_body (e >>= g)          = "let
@@ -743,14 +805,13 @@ head of the application. The way it's written below assumes that g is a variable
          e'            <- purify_res_body rho i o ert stys stos iv e
          g'            <- purify_res_body rho i o t stys stos iv g
 
-         -- start calculating pattern: p = (Left v,(s1,(...,sm)))
-         let etor  = mkEitherTy an ert (mkPairTy an o (TyCon an (s2n "R")))
+         -- start calculating pattern: p = (Left (v,(s1,(...,sm))))
+         let etor  = mkRangeTy ert o rTy stateType 
          svars         <- freshVars "state" (length stys)
          v             <- freshVar "v"
-         (stps,stoTy)  <- mkTuplePat an (zip svars stys)
-         let leftv = PatCon an (Embed etor) (Embed $ s2n "Prelude.Left") [PatVar an (Embed t) v]
-         let p     = mkPairPat an etor stoTy leftv stps
-         -- done calculating p = (Left v,(s1,(...,sm)))
+         (stps,stty)  <- mkTuplePat $ (v,ert) : (zip svars stys)
+         let p = PatCon an (Embed etor) (Embed $ s2n "Prelude.Left") [stps]
+         -- done calculating p = Left (v,(s1,(...,sm)))
 
          -- calculating g_pure_app = "g_pure v s1 ... sm"
          let vars       = map (\ (x,t) -> Var an t x) (zip svars stys)
@@ -765,10 +826,11 @@ head of the application. The way it's written below assumes that g is a variable
          s_i   <- freshVars "State" (length stys)
          v     <- freshVar "var"
          -- the pattern "(v,(s1,(...,sm)))"
-         (p,_) <- {- trace "there" $ -} mkTuplePat an $ (v,t) : zip s_i stys         
-         let etor    = mkEitherTy an t (mkPairTy an o (TyCon an (s2n "R")))
-         let leftv   = mkLeft an etor (Var an t v)
-         let body    = mkTupleExp an $ (leftv,etor) : zip stos stys
+         (p,_) <- {- trace "there" $ -} mkTuplePat $ (v,t) : zip s_i stys         
+
+         let etor    = mkRangeTy t o rTy stateType 
+         let leftv   = mkLeft etor (Var an t v)
+         let body    = mkTupleExp $ (leftv,etor) : zip stos stys
          let body_ty = mkTupleTy (etor : stys)
          return $ mkLet an body_ty p e' body
 
@@ -777,7 +839,7 @@ head of the application. The way it's written below assumes that g is a variable
        RVar an (Var _ tx x)   -> do
 --         lift $ liftIO $ putStrLn $ "***** RVar is " ++ n2s x
          tx' <- purifyTyM tx
-         return $ mkApp an (Var an tx' x') stos
+         return $ mkApp (Var an tx' x') stos
            where x' = if n2s x == "Main.start" then (s2n "$Pure.start") else x
 
 
@@ -793,20 +855,20 @@ To purify e = (extrude ... (extrude phi s1) ... sn):
 -}
 
        Extrude ty rator rands -> do
-         let (dev,stos) = flattenExtr $ mkApp NoAnnote rator rands
+         let (dev,stos) = flattenExtr $ mkApp rator rands
          case dev of
               Var an t d -> do
                 t'  <- liftMaybe "purifying extruded device" $ purifyTy t
                 tau <- lookupPure NoAnnote d rho
                 {- trace (show d ++ " :: " ++ show tau) $ -}
-                return $ mkApp NoAnnote (Var an t' d) stos
+                return $ mkApp (Var an t' d) stos
 
               App _ _ _  -> do
                 (Var an t f,_,es) <- dstApp dev
                 t'                <- liftMaybe "purifying extruded device" $ purifyTy t
                 let f' = Var an t' f
                 {- trace (show f' ++ " :: " ++ show t') $ -}
-                return $ mkApp NoAnnote f' (es++stos)
+                return $ mkApp f' (es++stos)
                 
               _          -> failAt NoAnnote $ "Extruded device is non-variable: " ++ show dev
 
@@ -816,7 +878,7 @@ To purify e = (extrude ... (extrude phi s1) ... sn):
      --    N.b., don't think it's necessary to purify the rands because they're simply typed.
      --    rands' <- mapM (purify_res_body rho i o t stys stos iv . fst) rands
          f <- mkPureApp an rho rator' (map fst rands)
-         return $ mkApp an f stos
+         return $ mkApp f stos
 
        RSwitch an ty dsc p e1 Nothing     -> do
          ty' <- lift $ purifyTyM ty
@@ -845,10 +907,18 @@ To purify e = (extrude ... (extrude phi s1) ... sn):
 -- A Compendium of Helper Functions
 ---------------------------
 
-dispatchTy :: Ty -> Ty -> Ty -> Ty
-dispatchTy i o t = mkArrowTy [TyCon an $ s2n "R", i, etor]
-    where etor = mkEitherTy an t (mkPairTy an {- (TyCon an $ s2n "Main.W8") -} o (TyCon an (s2n "R")))
+dispatchTy :: Ty -> Ty -> Maybe Ty -> Ty -> Ty
+dispatchTy i o ms t = mkArrowTy [domTy, i, etor]
+    where 
+          etor = case ms of
+            Just s  -> mkRangeTy t o rTy s
+            Nothing -> mkEitherTy t (mkPairTy o rTy)
           an   = MsgAnnote "Type of dispatch function"
+          domTy = case ms of
+            Just s  -> mkPairTy rTy s
+            Nothing -> rTy
+          
+--etor = mkEitherTy t (mkPairTy {- (TyCon an $ s2n "Main.W8") -} o rTy)
 
 var2name :: MonadError AstError m => Exp -> m (Name Exp)
 var2name (Var _ _ x) = return x
@@ -858,26 +928,26 @@ var2name d           = failAt (ann d) $ "var2string applied to non-variable: " +
 -- Takes t1 and t2 and creates (t1,t2). I'm assuming (?!?) that the name of the
 -- pairing constructor is "(,)". Correct me if I'm wrong.                  
 --                  
-mkPairTy :: Annote -> Ty -> Ty -> Ty
-mkPairTy an t1 t2 = TyApp an (TyApp an (TyCon an pair) t1) t2
+mkPairTy :: Ty -> Ty -> Ty
+mkPairTy t1 t2 = TyApp NoAnnote (TyApp NoAnnote (TyCon NoAnnote pair) t1) t2
     where pair = s2n "(,)"
 
-mkPair :: Annote -> (Exp, Ty) -> (Exp, Ty) -> (Exp, Ty)
-mkPair an (e1,t1) (e2,t2) = (App an (App an paircon e1) e2, t1xt2)
-   where t1xt2   = mkPairTy an t1 t2
-         paircon = Con an t1xt2 (s2n "(,)")
+mkPair :: (Exp, Ty) -> (Exp, Ty) -> (Exp, Ty)
+mkPair (e1,t1) (e2,t2) = (App NoAnnote (App NoAnnote paircon e1) e2, t1xt2)
+   where t1xt2   = mkPairTy t1 t2
+         paircon = Con NoAnnote t1xt2 (s2n "(,)")
 
-mkTuple :: Annote -> [(Exp, Ty)] -> (Exp, Ty)
-mkTuple an [] = error "one"
-mkTuple an bs = foldr1 (mkPair an) bs
+mkTuple :: [(Exp, Ty)] -> (Exp, Ty)
+mkTuple [] = error "one"
+mkTuple bs = foldr1 mkPair bs
 
 mkTupleTy :: [Ty] -> Ty
-mkTupleTy [] = error "two"
-mkTupleTy bs = foldr1 (mkPairTy NoAnnote) bs
+mkTupleTy [] = TyCon NoAnnote (s2n "()") -- error "two"
+mkTupleTy bs = foldr1 mkPairTy bs
 
-mkTupleExp :: Annote -> [(Exp, Ty)] -> Exp
-mkTupleExp an [] = error "three"
-mkTupleExp an bs = fst (mkTuple an bs)
+mkTupleExp :: [(Exp, Ty)] -> Exp
+mkTupleExp [] = error "three"
+mkTupleExp bs = fst (mkTuple bs)
 
 {-
   Takes [T1,...,Tn] and returns (T1 -> (T2 -> ... (T(n-1) -> Tn) ...))
@@ -886,20 +956,20 @@ mkArrowTy :: [Ty] -> Ty
 mkArrowTy []  = error "four"
 mkArrowTy tys = foldr1 arr0 tys
 
-mkPairPat :: Annote -> Ty -> Ty -> Pat -> Pat -> Pat
-mkPairPat an ty1 ty2 p1 p2 = PatCon an (Embed $ mkPairTy an ty1 ty2) (Embed (s2n "(,)")) [p1,p2]
+mkPairPat :: Ty -> Ty -> Pat -> Pat -> Pat
+mkPairPat ty1 ty2 p1 p2 = PatCon NoAnnote (Embed $ mkPairTy ty1 ty2) (Embed (s2n "(,)")) [p1,p2]
 
-mkTuplePat :: MonadError AstError m => Annote -> [(Name Exp, Ty)] -> m (Pat, Ty)
-mkTuplePat an []         = return (nilPat,nilTy)
+mkTuplePat :: MonadError AstError m => [(Name Exp, Ty)] -> m (Pat, Ty)
+mkTuplePat []         = return (nilPat,nilTy)
   where nilPat = PatCon NoAnnote (Embed nilTy) (Embed (s2n "()")) []
         nilTy  = TyCon NoAnnote (s2n "()")
         -- failAt an "Empty product patterns don't exist"
-mkTuplePat an ((n,t):[]) = return (PatVar an (Embed t) n,t)
-mkTuplePat an ((n,t):ns) =
-  do (p2,t2) <- mkTuplePat an ns
-     let p1p2 = PatCon an (Embed $ mkPairTy an t t2) (Embed (s2n "(,)")) [pn,p2]
-     return $ (p1p2, mkPairTy an t t2)
-         where pn = PatVar an (Embed t) n
+mkTuplePat ((n,t):[]) = return (PatVar NoAnnote (Embed t) n,t)
+mkTuplePat ((n,t):ns) =
+  do (p2,t2) <- mkTuplePat ns
+     let p1p2 = PatCon NoAnnote (Embed $ mkPairTy t t2) (Embed (s2n "(,)")) [pn,p2]
+     return $ (p1p2, mkPairTy t t2)
+         where pn = PatVar NoAnnote (Embed t) n
 
 
 
@@ -917,13 +987,14 @@ data Ty = TyApp Annote Ty Ty
 -}
 
 -- Shouldn't mkLeft/mkRight change the type t to an Either?
-mkLeft :: Annote -> Ty -> Exp -> Exp
-mkLeft an t e = App an (Con an t (s2n "Prelude.Left")) e
-mkRight :: Annote -> Ty -> Exp -> Exp
-mkRight an t e = App an (Con an t (s2n "Prelude.Right")) e
+mkLeft :: Ty -> Exp -> Exp
+mkLeft t e = App NoAnnote (Con NoAnnote t (s2n "Prelude.Left")) e
 
-mkEitherTy :: Annote -> Ty -> Ty -> Ty
-mkEitherTy an t1 t2 = TyApp an (TyApp an (TyCon an either) t1) t2
+mkRight :: Ty -> Exp -> Exp
+mkRight t e = App NoAnnote (Con NoAnnote t (s2n "Prelude.Right")) e
+
+mkEitherTy :: Ty -> Ty -> Ty
+mkEitherTy t1 t2 = TyApp NoAnnote (TyApp NoAnnote (TyCon NoAnnote either) t1) t2
     where either = s2n "Prelude.Either"
 
 sub :: MonadError AstError m => Exp -> m String
@@ -934,8 +1005,8 @@ sub g = case g of
 
 mkRDataCon :: Annote -> String -> [Ty] -> DataCon
 mkRDataCon an r_g ts = DataCon an (s2n r_g) ([] |-> ty)
---   where ty = foldr (TyApp an) (TyCon an (s2n "R")) ts --- DOH!
-     where ty = mkArrowTy $ ts ++ [TyCon an (s2n "R")]
+--   where ty = foldr (TyApp an) rTy ts --- DOH!
+     where ty = mkArrowTy $ ts ++ [rTy]
            
 mkRPat :: Fresh m => Annote -> [Ty] -> String -> m (Pat,[Name Exp])
 mkRPat an ts r_g = do
@@ -954,9 +1025,9 @@ mkPureVar rho = \ case
       where xs = n2s x
   d                       -> failAt (ann d) $ "Can't make a pure variable out of a non-variable" ++ show d
 
-mkApp :: Annote -> Exp -> [Exp] -> Exp
-mkApp an rator = foldl step rator
-  where step ap rand = App an ap rand
+mkApp :: Exp -> [Exp] -> Exp
+mkApp rator = foldl step rator
+  where step ap rand = App NoAnnote ap rand
 
 {-
 -- WRONG!
@@ -974,7 +1045,7 @@ mkPureApp :: MonadError AstError m => Annote -> PureEnv -> Exp -> [Exp] -> m Exp
 mkPureApp an rho e es = do (rator,ty,rands) <- dstApp e
                            ep               <- mkPureVar rho rator
                         --   let ep = rator
-                           return $ mkApp an ep $ rands ++ es
+                           return $ mkApp ep $ rands ++ es
 
 dstApp :: MonadError AstError m => Exp -> m (Exp, Ty, [Exp])
 dstApp (App _ f@(Var _ t _) rand) = return (f,t,[rand])
@@ -1015,3 +1086,7 @@ dstArrow t@(TyApp an (TyApp _ (TyCon _ con) t1) t2) = case n2s con of
                                                            _    -> failAt an "Non-arrow type(3)"
 dstArrow t                                          = failAt (ann t) "Non-arrow type(4)"
 
+
+-- type Range a o k s = Either (a,s) (o,(k,s))
+mkRangeTy :: Ty -> Ty -> Ty -> Ty -> Ty
+mkRangeTy a o k s = mkEitherTy (mkPairTy a s) (mkPairTy o (mkPairTy k s))

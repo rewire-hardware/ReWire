@@ -168,7 +168,7 @@ The purification procedure rewrites each definition as follows.
         purify_res_body (return e)         = "(Left (e,(s1,(...,sm))))"
 
 	purify_res_body (signal e
-	                  >>= g e1 ... ek) = "(Right ((e,(s1,(...,sm))),R_g e1 ... ek))"
+	                  >>= g e1 ... ek) = "Right ((e, (s1,(...,sm))), R_g e1 ... ek)"
 --	                  >>= g e1 ... ek) = "(Right (e,R_g e1 ... ek),(s1,(...,sm)))"
 			          	     Side effect:
 					       * add the clause "R_g T1 ... Tk" to R

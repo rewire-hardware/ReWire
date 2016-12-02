@@ -11,6 +11,7 @@ incr = do
       --r0 <- lift get
       --lift (lift (put r0))
       lift grunt
+      signal (W8 Zero Zero Zero Zero Zero Zero Zero Zero)
       incr
 
 start :: ReT Bit W8 I (((),W8),W8)

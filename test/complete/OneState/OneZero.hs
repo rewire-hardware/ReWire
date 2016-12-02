@@ -1,3 +1,4 @@
+{-
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 module OneZero where
@@ -27,6 +28,7 @@ extrude = undefined
 ---------------------------------------------
 --- End: ReWire Fig Leaf
 ---------------------------------------------
+-}
 
 data Bit = Zero | One
 data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
