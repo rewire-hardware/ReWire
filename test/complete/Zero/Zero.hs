@@ -1,3 +1,4 @@
+{-
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 module Zero where
@@ -24,7 +25,7 @@ unfold f (Right (o,b)) = ReacT $ return (Right (o, unfold f . f b))
 ---------------------------------------------
 --- End: ReWire Fig Leaf
 ---------------------------------------------
-
+-}
 
 data Bit = Zero | One
 
