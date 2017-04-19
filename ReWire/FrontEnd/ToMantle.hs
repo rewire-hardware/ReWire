@@ -13,7 +13,7 @@ import ReWire.FrontEnd.Unbound
       )
 import ReWire.SYB
 
-import Control.Monad (foldM, replicateM, void)
+import Control.Monad ((>=>),foldM, replicateM, void)
 import Data.Foldable (foldl')
 import Data.Monoid ((<>))
 import Language.Haskell.Exts.Annotated.Fixity (Fixity (..))
@@ -197,6 +197,14 @@ transCon rn ks tvs tc = \ case
             let tvs' = zipWith (M.TyVar l) ks tvs
             t <- foldr M.arr0 (foldl' (M.TyApp l) (M.TyCon l tc) tvs') <$> mapM (transTy rn []) tys
             return $ M.DataCon l (string2Name $ rename Value rn x) (tvs |-> t)
+      -- The following is kind of hacky, sorry. Bill.
+      QualConDecl l Nothing _ (RecDecl _ x fs)  -> do
+            let tys  = map (\ (FieldDecl _ _ t) -> t) fs
+            let flds = map (\ (FieldDecl _ xs _) -> (map (string2Name . rename Value rn) xs)) fs
+            let tvs' = zipWith (M.TyVar l) ks tvs
+            t <- foldr M.arr0 (foldl' (M.TyApp l) (M.TyCon l tc) tvs') <$> mapM (transTy rn []) tys
+            ts <- mapM (transTy rn [] >=> (return . (tvs |->))) tys
+            return $ M.RecCon l (string2Name $ rename Value rn x) (tvs |-> t) (zip flds ts)
       d                                         -> failAt (ann d) "Unsupported ctor syntax"
 
 transTy :: (Fresh m, SyntaxError m) => Renamer -> [S.Name] -> Type Annote -> m M.Ty
@@ -226,6 +234,7 @@ isMonad ms = \ case
       TyVar _ (sName -> x)                                                   -> x `elem` ms
       _                                                                      -> False
 
+
 transExp :: SyntaxError m => Renamer -> Exp Annote -> m M.Exp
 transExp rn = \ case
       App l (App _ (Var _ (UnQual _ (Ident _ "nativeVhdl"))) (Lit _ (String _ f _))) e
@@ -238,6 +247,11 @@ transExp rn = \ case
             pure $ M.Lam l M.tblank $ bind (mkUId $ sName x) e'
       Var l x               -> pure $ M.Var l M.tblank (mkId $ rename Value rn x)
       Con l x               -> pure $ M.Con l M.tblank (string2Name $ rename Value rn x)
+      RecUpdate l e fus -> do
+            e' <- transExp rn e
+            es' <- mapM (transExp rn) (map (\ (FieldUpdate _ _ e) -> e) fus)
+            ns' <- mapM (return . mkId . rename Value rn) (map (\ (FieldUpdate _ n _) -> n) fus)
+            pure $ M.RecUp l M.tblank e' (zip ns' es')
       Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _] -> do
             e'  <- transExp rn e
             p'  <- transPat rn p

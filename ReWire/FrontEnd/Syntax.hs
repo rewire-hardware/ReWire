@@ -57,17 +57,22 @@ data DataConId = DataConId String
       deriving (Generic, Typeable, Data)
 data TyConId = TyConId String
       deriving (Generic, Typeable, Data)
+data FieldId  = FieldId String
+      deriving (Generic, Typeable, Data)
 
 data DataCon = DataCon Annote (Name DataConId) (Embed Poly)
+             | RecCon Annote (Name DataConId) (Embed Poly) [([Name FieldId],Embed Poly)]
       deriving (Generic, Eq, Show, Typeable, Data)
 
 instance Alpha DataCon
 
 instance Annotated DataCon where
-      ann (DataCon a _ _) = a
+      ann (DataCon a _ _)  = a
+      ann (RecCon a _ _ _) = a
 
 instance Pretty DataCon where
-      pretty (DataCon _ n t) = text (name2String n) <+> text "::" <+> pretty t
+      pretty (DataCon _ n t)  = text (name2String n) <+> text "::" <+> pretty t
+      pretty (RecCon _ n t _) = text (name2String n) <+> text "::" <+> pretty t
 
 instance NFData DataCon
 
@@ -162,14 +167,28 @@ ppTyAppR t             = pretty t
 ----
 
 data Exp = App        Annote Exp Exp
-            | Lam        Annote Ty (Bind (Name Exp) Exp)
-            | Var        Annote Ty (Name Exp)
-            | Con        Annote Ty (Name DataConId)
-            | Case       Annote Ty Exp (Bind Pat Exp) (Maybe Exp)
-            | Match      Annote Ty Exp MatchPat Exp [Exp] (Maybe Exp)
-            | NativeVHDL Annote String Exp
-            | Error      Annote Ty String
-            deriving (Generic, Show, Typeable, Data)
+         | Lam        Annote Ty (Bind (Name Exp) Exp)
+         | Var        Annote Ty (Name Exp)
+         | Con        Annote Ty (Name DataConId)
+         | RecUp      Annote Ty Exp  [(Name Exp,Exp)] -- Changed to avoid a nameclash
+         | Case       Annote Ty Exp (Bind Pat Exp) (Maybe Exp)
+         | Match      Annote Ty Exp MatchPat Exp [Exp] (Maybe Exp)
+         | NativeVHDL Annote String Exp
+         | Error      Annote Ty String
+         deriving (Generic, Show, Typeable, Data)
+
+{-
+data FieldUpdate = FieldUpdate [(Name Exp,Exp)]
+             deriving (Generic, Show, Typeable, Data)
+
+instance NFData FieldUpdate
+instance Subst Ty FieldUpdate
+instance Subst Exp FieldUpdate
+instance Alpha FieldUpdate
+-}
+
+-- RecUpdate l (Exp l) [FieldUpdate l]
+-- data FieldUpdate l = FieldUpdate l (QName l) (Exp l)
 
 instance Alpha Exp
 
@@ -196,6 +215,7 @@ instance Annotated Exp where
             Lam a _ _           -> a
             Var a _ _           -> a
             Con a _ _           -> a
+            RecUp a _ _ _       -> a
             Case a _ _ _ _      -> a
             Match a _ _ _ _ _ _ -> a
             NativeVHDL a _ _    -> a
@@ -209,6 +229,12 @@ instance Pretty Exp where
             Lam _ _ e        -> runFreshM $ do
                   (p, e') <- unbind e
                   return $ parens $ text "\\" <+> text (show p) <+> text "->" <+> pretty e'
+            RecUp _ _ e fus  -> runFreshM $ do
+                            let ns   = map ((text . show) . fst) fus                   
+                            let es   = map (pretty . snd) fus
+                            let res  = zip ns es
+                            let res' = foldr ($+$) mempty $ map (\ (n, e) -> (n <+> text "=" <+> e)) res
+                            return $ pretty e <+> text "{" <+> res' <+> text "}"
             Case _ _ e e1 e2 -> runFreshM $ do
                   (p, e1') <- unbind e1
                   return $ parens $
