@@ -10,7 +10,7 @@ order: 2
 
 Your system will need to meet a few prerequisites before installing ReWire:
 
-* [Haskell Platform](http://www.haskell.org/platform/), version 7.10.2 (July 2015) or later.
+* [Haskell Platform](https://www.haskell.org/platform/prior.html), version 7.10.3. Later versions of GHC (8.0 or greater) will not work with ReWire because these later releases do not yet fully support libraries ReWire relies on.
 * Some sort of FPGA development tool suite that supports VHDL. Currently the only tested tools are those from Xilinx:
    - [ISE](http://www.xilinx.com/products/design-tools/ise-design-suite.html)
    - [Vivado](http://www.xilinx.com/products/design-tools/vivado.html)
