@@ -29,7 +29,7 @@ purify (ts, ds) = runFreshMT $ do
       imprhoR   <- mapM (\ (d,Embed p) -> poly2Ty p >>= \ t -> return (d,t)) nameNpolyR
 
       (_,tyStart) <- liftMaybe "No start symbol!" $ find (isStart . n2s . fst) imprhoR
-      (_,i,o,_,t) <- liftMaybe ("dstResTy applied to: " ++ show tyStart) $ dstResTy tyStart
+      (_,i,o,_,t) <- liftMaybe ("dstResTy applied to: " ++ show tyStart) $ trace ("tyStart = " ++ show tyStart) $ dstResTy tyStart
 
       --- if t = (a,s), need to set t:=a and stos:=s
       let (ty,stys) = case dstTuple t of
@@ -45,6 +45,9 @@ purify (ts, ds) = runFreshMT $ do
 
       pure_smds <- mapM (purifyStateDefn rho ms) smds
       iv        <- freshVar "i"
+      --
+      -- The problem is that the start symbol is being passed ms/=[] below:
+      --
       (pure_rmds,PSto dcs pes defs) <- runStateT (mapM (purifyResDefn rho imprhoR iv ms) rmds) (PSto [] [] [])
 
       let r  = mkR_Datatype dcs
@@ -114,7 +117,15 @@ grunt i o ms t = "i = " ++ show i ++ "\n" ++
                  "ms = " ++ show ms ++ "\n" ++
                  "t = " ++ show t
 
-mkStart i o ms t = {- trace (grunt i o ms t) $ -} do
+-- Correcting mkStart.
+--
+-- In the type of Main.start.
+-- t (return type of Main.start) needs to be combined with ms (list of StT s, stores).
+-- 
+--
+
+mkStart :: Monad m => Ty -> Ty -> Maybe [Ty] -> Ty -> m Defn
+mkStart i o ms t = trace ("MKSTART: tyStart = " ++ show tyStart ++ ":::" ++ grunt i o ms t) $ do
   return $ Defn {
       defnAnnote = MsgAnnote "start function"
     , defnName   = s2n "Main.start"
@@ -123,21 +134,29 @@ mkStart i o ms t = {- trace (grunt i o ms t) $ -} do
     , defnBody   = appl
     }
    where na         = NoAnnote
-         etor       = mkRangeTy t o ms {- case ms of
-           Just s  -> mkEitherTy t (mkPairTy o (mkPairTy rTy s))
-           Nothing -> mkEitherTy t (mkPairTy o rTy) -}
+         etor       = mkRangeTy t o ms 
          ranStart   = mkPairTy etor (TyCon na (s2n "()"))
-         pureStart  = i `arr0` ranStart
-         tyStart    = TyComp noAnn (reT i o (c "I")) t
-         reT i o m  = c "ReT" `tyApp` i `tyApp` o `tyApp` m
-         c          = TyCon noAnn . s2n
-         tyApp      = TyApp noAnn
+         pureStart  = i `arr0` ranStart  -- seems irrelevant to the generated code.
+
+         extresTy :: Ty -> Maybe [Ty] -> Ty
+         extresTy t (Just stos) = foldl mkPairTy t stos
+         extresTy t _           = t
+         
+         reT i o a  = c "ReT" `tyApp` i `tyApp` o `tyApp` a
+         tyStart    = TyComp noAnn (reT i o (c "I")) (extresTy t ms)
 
          unfold     = Var na (TyBlank $ MsgAnnote "stub type for unfold") (s2n "unfold")
          dispatch   = Var na (dispatchTy i o ms t) (s2n "$Pure.dispatch")
          start_pure = Var na pureStart (s2n "$Pure.start")
          appl       = Embed $ bind [] (App na (App na unfold dispatch) start_pure)
-         
+
+
+
+
+{-
+extresTy t []       = t
+extresTy t (st:sts) = extresTy (mkPairTy t st) sts
+-}
          
 s2n :: String -> Name a
 {-# INLINE s2n #-}
@@ -224,6 +243,18 @@ rioi = TyComp an (TyApp an (TyApp an (TyApp an ret inty) out) i) nilTy
               inty  = TyCon an (s2n "In")
               ret   = TyCon an (s2n "ReT")
               i     = TyCon an (s2n "I")
+
+--start :: ReT Bit Bit I ((),W8)
+
+startty = TyComp an (TyApp an (TyApp an (TyApp an ret inty) out) i) retty
+        where nilTy = TyCon an (s2n "()")
+              retty = mkPairTy nilTy (TyCon an (s2n "W8"))
+              an    = NoAnnote
+              out   = TyCon an (s2n "Bit2")
+              inty  = TyCon an (s2n "Bit1")
+              ret   = TyCon an (s2n "ReT")
+              i     = TyCon an (s2n "I")
+
 -- End of junk
 
 mkId :: String -> Name b
@@ -392,7 +423,8 @@ purifyResDefn rho imprhoR iv ms d = do
 --
 -- Below is an egregious hack to compile the start symbol slightly differently.
 --
-  let p_pure = if n2s dname == "Main.start" then [] |-> rangeTy pure_ty else [] |-> pure_ty
+--  let p_pure = [] |-> pure_ty
+  let p_pure = if n2s dname == "Main.start" then [] |-> rangeTy pure_ty else [] |-> pure_ty      
   let d_pure = if n2s dname == "Main.start" then s2n "$Pure.start" else dname
   let args'  = if n2s dname == "Main.start" then [] else args
   let nstos'  = if n2s dname == "Main.start" then [] else nstos
@@ -511,7 +543,7 @@ purifyResTy t ms = do
                       [] -> mkEitherTy a (mkPairTy o rTy)
                       _  -> mkRangeTy a o $ mkTupleTy stos -}
   let purified = foldr arr0 ranTy (ts ++ stos)
-  return $ trace ("purifyResTy: a = " ++ show a ++ "\n" ++ "purifyResTy: ts = " ++ show ts ++ "\n" ++ "purifyResTy: purified = " ++ show purified) $ purified
+  return $ trace ("purifyResTy: t = " ++ show t ++ "\n" ++ "purifyResTy: ms = " ++ show ms ++ "\n" ++ "purifyResTy: a = " ++ show a ++ "\n" ++ "purifyResTy: ts = " ++ show ts ++ "\n" ++ "purifyResTy: purified = " ++ show purified) $ purified
 
 --
 -- Takes
@@ -895,7 +927,7 @@ head of the application. The way it's written below assumes that g is a variable
        RVar an (Var _ tx x)   -> do
 --         lift $ liftIO $ putStrLn $ "***** RVar is " ++ n2s x
          tx' <- purifyTyM tx (Just stys)
-         return $ mkApp (Var an tx' x') stos
+         return {-$ trace ("BLAHHH::: tx = " ++ show tx ++ "," ++ "tx' = " ++ show tx' ++ ", stys = " ++ show stys )-} $ mkApp (Var an tx' x') stos
            where x' = if n2s x == "Main.start" then (s2n "$Pure.start") else x
 
 

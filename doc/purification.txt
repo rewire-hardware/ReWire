@@ -153,10 +153,11 @@ The purification procedure rewrites each definition as follows.
 
     Replace this with
 
-{-       f_pure :: T1 -> T2 -> ... -> Tn -> In
+{-       f_pure :: T1 -> T2 -> ... -> Tn
+                 -> In
        	         -> S1 -> ... -> Sm
 		 -> (Either T (O,R),(S1,(...,Sm))) -}
-       f_pure :: T1 -> T2 -> ... -> Tn ->
+       f_pure :: T1 -> T2 -> ... -> Tn {- What about In? Parameter seems to have disappeared. -}
        	         -> S1 -> ... -> Sm
 		 -> (Either (T,(S1,...,Sm)) ((O,(S1,...,Sm)),R))
 
