@@ -37,8 +37,9 @@ unfold f = \ case
   Right (o,b) -> ReacT $ return (Right (o, unfold f . f b))
 -}
 
---unfold :: (b -> i -> Either a (o,b)) -> Either a (o,b) -> ReT i o I a
-unfold = undefined
+unfold :: (b -> i -> Either a (o,b)) -> Either a (o,b) -> ReT i o I a
+unfold f (Left a)      = ReacT $ return (Left a)
+unfold f (Right (o,b)) = ReacT $ return (Right (o, unfold f . f b))
     
 -- Need to add this too because of the way dispatch function is generated now (will change).
 data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
@@ -46,6 +47,7 @@ data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
 ---------------------------------------------
 --- End: ReWire Fig Leaf
 ---------------------------------------------
+
 
 data Bit :: * where
      Zero :: Bit

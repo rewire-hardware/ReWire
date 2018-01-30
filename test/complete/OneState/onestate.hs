@@ -42,7 +42,7 @@ grunt = do
 
 incr :: ReT Bit W8 (StT W8 I) ()
 incr = do
-  lift grunt
+--  lift grunt
   x <- lift get
   signal x
   incr
