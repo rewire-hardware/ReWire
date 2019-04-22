@@ -40,6 +40,10 @@ Because ReWire has a formal semantics, one can reason about hardware designs in 
 
 ##### __Further Reading__
 
+* _Language Abstractions for Hardware-based Control-Flow Integrity Monitoring._ Bill Harrison and Gerard Allwein. Proceedings of the 2018 International Conference on Reconfigurable Computing and FPGAs. [pdf]({{ site.baseurl }}/assets/papers/reconfig18.pdf)  
+* _The Mechanized Marriage of Effects and Monads with Applications to High Assurance Hardware._ Tom Reynolds, Bill Harrison, Adam Procter, and Gerard Allwein. To appear in ACM Transactions on Embedded Computing Systems. [pdf]({{ site.baseurl }}/assets/papers/tecs18.pdf)
+* _Semantics-directed Prototyping of Hardware Runtime Monitors._ Bill Harrison and Gerard Allwein. To appear in Proceedings of the 29th International Symposium on Rapid System Prototyping (RSP). [pdf]({{ site.baseurl }}/assets/papers/rsp18.pdf)
+* _A Core Calculus for Secure Hardware: Its Formal Semantics and Proof System._ Tom Reynolds, Adam Procter, Bill Harrison, and Gerard Allwein. 15th ACM-IEEE International Conference on Formal Methods and Models for System Design (MEMOCODE17). [pdf]({{ site.baseurl }}/assets/papers/memocode17.pdf)
 * _A Programming Model for Reconfigurable Computing Based in Functional Concurrency_, William L. Harrison, Adam Procter, Ian Graves, Michela Becchi, and Gerard Allwein. ReCoSoC 2016 [pdf]({{ site.baseurl }}/assets/papers/recosoc16.pdf) [slides]({{ site.baseurl }}/assets/papers/slides-recosoc16.pdf).
 * _Provably Correct Development of Reconfigurable Hardware Designs via Equational Reasoning_, Ian Graves, Adam Procter, William L. Harrison, and Gerard Allwein. FPT 2015 [pdf]({{ site.baseurl }}/assets/papers/fpt15.pdf) [slides]({{ site.baseurl }}/assets/papers/slides-fpt15.pdf).
 * _A Principled Approach to Secure Multi-Core Processor Design with ReWire_, Adam Procter, William Harrison, Ian Graves, Michela Becchi, and Gerard Allwein. ACM Transactions on Embedded Computing Systems (to appear) [pdf]({{ site.baseurl }}/assets/papers/tecs16.pdf).
