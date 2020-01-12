@@ -71,7 +71,6 @@ library
                   , monad-resumption >= 0.1.4.0
   default-language: Haskell2010
   ghc-options:      -fprof-auto
-                    -rtsopts
                     -Wall
                     -fno-warn-name-shadowing
 
@@ -83,7 +82,6 @@ library
                     ReWire.Error
                     ReWire.FrontEnd.Annotate
                     ReWire.FrontEnd.Cache
-                    ReWire.FrontEnd.ToCoq
                     ReWire.FrontEnd.Desugar
                     ReWire.FrontEnd.Fixity
                     ReWire.FrontEnd.KindCheck
@@ -111,6 +109,9 @@ executable rwc
   main-is:          Main.hs
   build-depends:    ReWire, base >= 4.8 && < 5
   default-language: Haskell2010
+  ghc-options:      -fprof-auto
+                    -Wall
+                    -rtsopts
 
 test-suite rwc-test
   type:             exitcode-stdio-1.0
@@ -125,6 +126,8 @@ test-suite rwc-test
                   , ReWire
   other-modules:    Paths_ReWire
   default-language: Haskell2010
+  ghc-options:      -fprof-auto
+                    -Wall
 
 source-repository head
   type:             git
