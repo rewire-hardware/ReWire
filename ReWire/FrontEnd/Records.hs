@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.Records
        ( desugarDefns,
          desugarRecData,

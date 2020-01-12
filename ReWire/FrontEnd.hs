@@ -1,4 +1,4 @@
--- {-# LANGUAGE Safe #-}
+{-# LANGUAGE Safe #-}
 module ReWire.FrontEnd
       ( loadProgram
       , LoadPath

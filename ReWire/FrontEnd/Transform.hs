@@ -1,6 +1,5 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase, ViewPatterns, ScopedTypeVariables, GADTs #-}
--- {-# LANGUAGE Safe #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, ViewPatterns, ScopedTypeVariables, GADTs #-}
+{-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 module ReWire.FrontEnd.Transform
       ( inline, reduce
@@ -35,14 +34,12 @@ import Data.Maybe (fromJust, fromMaybe)
 import Data.Set (Set, singleton, union, (\\))
 import qualified Data.Set as Set
 
-import Debug.Trace
-
 -- | Inlines defs marked for inlining. Must run before lambda lifting.
 inline :: Monad m => FreeProgram -> m FreeProgram
 inline (ts, ds) = return (ts, substs subs ds)
       where toSubst :: Defn -> (Name Exp, Exp)
             toSubst (Defn _ n _ _ (Embed e)) = runFreshM $ do
-                  ([], e') <- unbind e
+                  (_, e') <- unbind e
                   return (n, e')
             subs = map toSubst $ substs (map toSubst $ filter defnInline ds) $ filter defnInline ds
 
@@ -188,17 +185,17 @@ inuseDefn ds = case find ((=="Main.start") . name2String . defnName) ds of
 
 -- | Reduce.
 
-reduce :: SyntaxError m => FreeProgram -> m FreeProgram
+reduce :: MonadError AstError m => FreeProgram -> m FreeProgram
 reduce (ts, vs) = do
       vs'      <- mapM reduceDefn vs
       return (ts, vs')
 
-reduceDefn :: SyntaxError m => Defn -> m Defn
+reduceDefn :: MonadError AstError m => Defn -> m Defn
 reduceDefn (Defn an n pt b (Embed e)) = runFreshMT $ do
       (vs, e') <- unbind e
       Defn an n pt b <$> Embed <$> bind vs <$> reduceExp e'
 
-reduceExp :: (Fresh m, SyntaxError m) => Exp -> m Exp
+reduceExp :: (Fresh m, MonadError AstError m) => Exp -> m Exp
 reduceExp = \ case
       App an e1 e2      -> do
             e1' <- reduceExp e1

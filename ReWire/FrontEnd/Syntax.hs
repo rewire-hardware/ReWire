@@ -1,5 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, DeriveDataTypeable, DeriveGeneric, Rank2Types, GADTs, ScopedTypeVariables, StandaloneDeriving, LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, DeriveDataTypeable, DeriveGeneric, Rank2Types, GADTs, ScopedTypeVariables, StandaloneDeriving, LambdaCase #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.FrontEnd.Syntax
@@ -20,7 +19,7 @@ module ReWire.FrontEnd.Syntax
 
 import ReWire.Annotation
 import ReWire.FrontEnd.Unbound
-      ( Fresh (..), FreshMT (..), runFreshM
+      ( Fresh (..), runFreshM
       , Embed (..)
       , TRec (..), trec, untrec
       , Name (..), AnyName (..), SubstName (..)
@@ -33,11 +32,9 @@ import ReWire.Pretty
 import qualified ReWire.FrontEnd.Unbound as UB (fv, fvAny)
 
 import Control.DeepSeq (NFData (..), deepseq)
-import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 import Data.Data (Typeable, Data (..))
 import Data.List (find)
 import Data.Maybe (fromJust)
-import Data.Monoid ((<>))
 import GHC.Generics (Generic)
 import Text.PrettyPrint
       ( Doc, text, nest, hsep, punctuate, parens, doubleQuotes
@@ -254,7 +251,7 @@ instance Pretty Exp where
               | name2String n == "(,)" -> parens $ pretty e1 <+> text "," <+> pretty e2
             App _ e1 e2      -> parens $ hang (pretty e1) 4 $ pretty e2
             Con _ _ n        -> text $ name2String n
-            Var _ t n        -> text $ show n {- <+> text "::" <+> pretty t -}
+            Var _ _ n        -> text $ show n {- <+> text "::" <+> pretty t -}
             Lam _ _ e        -> runFreshM $ do
                   (p, e') <- unbind e
                   return $ parens $ text "\\" <+> text (show p) <+> text "->" <+> pretty e'
@@ -419,10 +416,10 @@ arr0 = mkArrow $ string2Name "->"
 infixr `arr0`
 
 rangeTy :: Ty -> Ty
-rangeTy t@(TyApp _ (TyApp _ (TyCon _ con) t1) t2) = case name2String con of
-                                                          "->" -> rangeTy t2
+rangeTy t@(TyApp _ (TyApp _ (TyCon _ con) _) t') = case name2String con of
+                                                          "->" -> rangeTy t'
                                                           _    -> t
-rangeTy t                                         = t
+rangeTy t                                        = t
 
 mkArrow :: Name TyConId -> Ty -> Ty -> Ty
 mkArrow arr t = TyApp (ann t) (TyApp (ann t) (TyCon (ann t) arr) t)
@@ -443,11 +440,6 @@ instance NFData a => NFData (TRec a) where
 deriving instance Data a => Data (Embed a)
 deriving instance Data a => Data (Name a)
 deriving instance (Data a, Data b) => Data (Bind a b)
-
-instance MonadThrow m => MonadThrow (FreshMT m) where
-      throwM = FreshMT . throwM
-instance MonadCatch m => MonadCatch (FreshMT m) where
-      catch (FreshMT m') h = FreshMT $ catch m' (unFreshMT . h)
 
 instance Pretty AnyName where
       pretty (AnyName n) = pretty n

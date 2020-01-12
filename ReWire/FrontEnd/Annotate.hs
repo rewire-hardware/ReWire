@@ -13,7 +13,7 @@ import Data.Data (Data (..), cast)
 import Data.Maybe (fromJust)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
 
-import Language.Haskell.Exts.Annotated.Syntax
+import Language.Haskell.Exts.Syntax
 
 annotate :: (Data (ast Annote), Functor ast, Monad m) => ast SrcSpanInfo -> m (ast Annote)
 annotate m = return $ runIdentity $ runPureT nodes $ LocAnnote <$> m
@@ -23,7 +23,7 @@ type SF a = a Annote -> Identity (a Annote)
 nodes :: Transform Identity
 nodes =   (s :: SF Module)
       ||> (s :: SF ModuleHead)
-      ||> (s :: SF WarningText)
+      -- ||> (s :: SF WarningText)
       ||> (s :: SF ExportSpecList)
       ||> (s :: SF ExportSpec)
       ||> (s :: SF ImportDecl)

@@ -1,6 +1,7 @@
 {-# LANGUAGE Safe #-}
 module ReWire.MiniHDL.Syntax where
 
+import Prelude hiding ((<>))
 import ReWire.Pretty
 import Text.PrettyPrint
 

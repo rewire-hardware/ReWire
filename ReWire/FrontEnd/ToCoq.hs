@@ -1,6 +1,5 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
--- {-# LANGUAGE Safe, LambdaCase #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase #-}
+{-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.ToCoq (toCoq) where
 
 import System.IO
@@ -15,8 +14,6 @@ import ReWire.FrontEnd.Records (freshVar, freshVars, replaceAtIndex, poly2Ty)
 import Control.Monad.IO.Class
 
 import ReWire.FrontEnd.Purify
-
-import Debug.Trace
 
 -- import ReWire.FrontEnd.CoqSyntax
 

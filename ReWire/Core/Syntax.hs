@@ -20,7 +20,7 @@ import ReWire.Annotation
 
 import Data.Data (Typeable,Data(..))
 import Data.List (nub)
-import Text.PrettyPrint
+import Text.PrettyPrint hiding ((<>))
 import GHC.Generics (Generic)
 
 newtype DataConId = DataConId { deDataConId :: String } deriving (Eq,Ord,Generic,Show,Typeable,Data)
@@ -155,9 +155,11 @@ data Program = Program { ctors  :: [DataCon],
                          defns  :: [Defn] }
                   deriving (Eq,Show,Typeable,Data)
 
+instance Semigroup Program where
+  (Program ts vs) <> (Program ts' vs') = Program (nub $ ts ++ ts') $ nub $ vs ++ vs'
+
 instance Monoid Program where
   mempty = Program mempty mempty
-  mappend (Program ts vs) (Program ts' vs') = Program (nub $ ts ++ ts') $ nub $ vs ++ vs'
 
 instance Pretty Program where
   pretty p = ppDataDecls (ctors p) $+$ ppDefns (defns p)

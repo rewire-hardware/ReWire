@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts, LambdaCase #-}
--- {-# LANGUAGE Safe, FlexibleContexts, LambdaCase #-}
+{-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.Purify (purify,
                                classifyTy,
                                TyVariety(Arrow,ReTApp,StTApp,IdApp,PairApp,Pure),
@@ -13,11 +13,10 @@ import ReWire.Error
 import ReWire.FrontEnd.Syntax
 import ReWire.FrontEnd.Records (freshVar, freshVars, replaceAtIndex, poly2Ty)
 import Control.Monad.State
-import Data.Maybe (fromJust)
-import Data.List (nub,find)
-import Debug.Trace
+import Control.Monad.Fail (MonadFail)
+import Data.List (find)
 
-purify :: (MonadError AstError m, MonadIO m) => FreeProgram -> m FreeProgram
+purify :: (MonadError AstError m, MonadIO m, MonadFail m) => FreeProgram -> m FreeProgram
 purify (ts, ds) = runFreshMT $ do
       mds       <- mapM isStateMonadicDefn ds
       let (smds,pds) = partition mds
@@ -29,7 +28,7 @@ purify (ts, ds) = runFreshMT $ do
       imprhoR   <- mapM (\ (d,Embed p) -> poly2Ty p >>= \ t -> return (d,t)) nameNpolyR
 
       (_,tyStart) <- liftMaybe "No start symbol!" $ find (isStart . n2s . fst) imprhoR
-      (_,i,o,_,t) <- liftMaybe ("dstResTy applied to: " ++ show tyStart) $ trace ("tyStart = " ++ show tyStart) $ dstResTy tyStart
+      (_,i,o,_,t) <- liftMaybe ("dstResTy applied to: " ++ show tyStart) {- $ trace ("tyStart = " ++ show tyStart) -} $ dstResTy tyStart
 
       --- if t = (a,s), need to set t:=a and stos:=s
       let (ty,stys) = case dstTuple t of
@@ -125,12 +124,12 @@ grunt i o ms t = "i = " ++ show i ++ "\n" ++
 --
 
 mkStart :: Monad m => Ty -> Ty -> Maybe [Ty] -> Ty -> m Defn
-mkStart i o ms t = trace ("MKSTART: tyStart = " ++ show tyStart ++ ":::" ++ grunt i o ms t) $ do
+mkStart i o ms t = {- trace ("MKSTART: tyStart = " ++ show tyStart ++ ":::" ++ grunt i o ms t) $-} do
   return $ Defn {
       defnAnnote = MsgAnnote "start function"
     , defnName   = s2n "Main.start"
     , defnPolyTy = [] |-> tyStart
-    , defnInline = False               
+    , defnInline = False
     , defnBody   = appl
     }
    where na         = NoAnnote
@@ -141,7 +140,7 @@ mkStart i o ms t = trace ("MKSTART: tyStart = " ++ show tyStart ++ ":::" ++ grun
          extresTy :: Ty -> Maybe [Ty] -> Ty
          extresTy t (Just stos) = foldl mkPairTy t stos
          extresTy t _           = t
-         
+
          reT i o a  = c "ReT" `tyApp` i `tyApp` o `tyApp` a
          tyStart    = TyComp noAnn (reT i o (c "I")) (extresTy t ms)
 
@@ -150,14 +149,11 @@ mkStart i o ms t = trace ("MKSTART: tyStart = " ++ show tyStart ++ ":::" ++ grun
          start_pure = Var na pureStart (s2n "$Pure.start")
          appl       = Embed $ bind [] (App na (App na unfold dispatch) start_pure)
 
-
-
-
 {-
 extresTy t []       = t
 extresTy t (st:sts) = extresTy (mkPairTy t st) sts
 -}
-         
+
 s2n :: String -> Name a
 {-# INLINE s2n #-}
 s2n = string2Name 
@@ -397,12 +393,12 @@ liftMaybe :: MonadError AstError m => String -> Maybe a -> m a
 liftMaybe _ (Just v)   = return v
 liftMaybe msg Nothing = failAt NoAnnote msg
 
-purifyResDefn :: (Fresh m, MonadError AstError m, MonadIO m) =>
+purifyResDefn :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) =>
                  PureEnv -> [(Name Exp,Ty)] -> Name Exp -> Maybe [Ty] -> Defn -> StateT PSto m Defn
 purifyResDefn rho imprhoR iv ms d = do
   ty         <- lift $ lookupImpure an dname imprhoR
   pure_ty    <- lift $ liftMaybe "Failed to create pure type"
-                     $ trace ("ARG purifyResTy " ++ show ty ++ " " ++ show ms)
+                     {- $ trace ("ARG purifyResTy " ++ show ty ++ " " ++ show ms) -}
                      $ purifyResTy ty ms
   (args,e)   <- lift $ unbind body
 
@@ -411,13 +407,13 @@ purifyResDefn rho imprhoR iv ms d = do
   let stys = case ms of
         Nothing  -> []
         Just sts -> sts
-  
+
   nstos      <- lift $ freshVars "sto" (length stys)
   let stos   = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip nstos stys)
   let mst    = case stos of
                     [] -> Nothing
                     _  -> Just (stos,stys)
-                    
+
   e'         <- purify_res_body rho i o a {- stys stos -} iv mst e
 
 --
@@ -428,9 +424,9 @@ purifyResDefn rho imprhoR iv ms d = do
   let d_pure = if n2s dname == "Main.start" then s2n "$Pure.start" else dname
   let args'  = if n2s dname == "Main.start" then [] else args
   let nstos'  = if n2s dname == "Main.start" then [] else nstos
- 
+
   let b_pure = bind (args' ++ nstos') e'
-  return $ trace ("HEY " ++ show d_pure ++ " :: " ++ show p_pure) $ d { defnName=d_pure, defnPolyTy=p_pure, defnBody=(Embed b_pure) }
+  return {- $ trace ("HEY " ++ show d_pure ++ " :: " ++ show p_pure) -} $ d { defnName=d_pure, defnPolyTy=p_pure, defnBody=(Embed b_pure) }
     where
       dname      = defnName d
       Embed body = defnBody d
@@ -543,7 +539,7 @@ purifyResTy t ms = do
                       [] -> mkEitherTy a (mkPairTy o rTy)
                       _  -> mkRangeTy a o $ mkTupleTy stos -}
   let purified = foldr arr0 ranTy (ts ++ stos)
-  return $ trace ("purifyResTy: t = " ++ show t ++ "\n" ++ "purifyResTy: ms = " ++ show ms ++ "\n" ++ "purifyResTy: a = " ++ show a ++ "\n" ++ "purifyResTy: ts = " ++ show ts ++ "\n" ++ "purifyResTy: purified = " ++ show purified) $ purified
+  return {- $ trace ("purifyResTy: t = " ++ show t ++ "\n" ++ "purifyResTy: ms = " ++ show ms ++ "\n" ++ "purifyResTy: a = " ++ show a ++ "\n" ++ "purifyResTy: ts = " ++ show ts ++ "\n" ++ "purifyResTy: purified = " ++ show purified) -} $ purified
 
 --
 -- Takes
@@ -790,7 +786,7 @@ addDefn d      = modify (\ (PSto dcs pes defs) -> PSto dcs pes (d:defs))
                  iv     -- fresh var to use for input type
                  tm     -- term to be purified
 -}
-purify_res_body :: (Fresh m, MonadError AstError m, MonadIO m) =>
+purify_res_body :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) =>
                    PureEnv -> Ty -> Ty -> Ty -> {- [Ty] -> [Exp] -> -} Name Exp -> Maybe ([Exp],[Ty]) -> Exp -> StateT PSto m Exp
 purify_res_body rho i o t {- stys stos -} iv mst tm = do
   let stovars = case mst of

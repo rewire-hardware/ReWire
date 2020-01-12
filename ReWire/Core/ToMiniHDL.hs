@@ -1,4 +1,4 @@
--- {-# LANGUAGE Safe #-}
+{-# LANGUAGE Safe #-}
 module ReWire.Core.ToMiniHDL where
 
 import ReWire.Annotation
@@ -13,8 +13,6 @@ import Control.Monad.State
 import Control.Monad.Identity
 import Data.List (find)
 import Data.Bits (testBit)
-
---import Debug.Trace --- here we go.
 
 type CM = SyntaxErrorT (
             StateT ([Signal],[Component],Int) (

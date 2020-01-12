@@ -1,5 +1,5 @@
 {-# LANGUAGE LambdaCase, FlexibleInstances, TupleSections, NamedFieldPuns, ViewPatterns #-}
--- {-# LANGUAGE Safe #-}
+{-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.Cache
       ( runCache
       , getProgram
@@ -25,18 +25,16 @@ import ReWire.FrontEnd.ToCoq
 import ReWire.Pretty
 import ReWire.FrontEnd.Unbound (runFreshMT, FreshMT (..))
 
-import Control.Monad ((>=>), liftM, msum)
+import Control.Monad ((>=>), liftM, msum, void)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Reader (runReaderT, ReaderT, MonadReader (..))
 import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify)
-import Data.Monoid ((<>))
-import Language.Haskell.Exts.Annotated.Simplify (sModuleName)
 
-import qualified Data.Map.Strict                        as Map
-import qualified Language.Haskell.Exts.Annotated.Syntax as S (Module (..))
-import qualified ReWire.Core.Syntax                     as Core
+import qualified Data.Map.Strict              as Map
+import qualified Language.Haskell.Exts.Syntax as S (Module (..))
+import qualified ReWire.Core.Syntax           as Core
 
-import Language.Haskell.Exts.Annotated.Syntax hiding (Annotation, Exp, Module (..), Namespace, Name, Kind)
+import Language.Haskell.Exts.Syntax hiding (Annotation, Exp, Module (..), Namespace, Name, Kind)
 
 type Cache = ReaderT LoadPath (StateT ModCache (FreshMT (SyntaxErrorT IO)))
 type LoadPath = [FilePath]
@@ -48,7 +46,7 @@ runCache m lp = runSyntaxError $ fst <$> runFreshMT (runStateT (runReaderT m lp)
 mkRenamer :: Annotation a => S.Module a -> Cache Renamer
 mkRenamer m = mconcat <$> mapM mkRenamer' (getImps m)
       where mkRenamer' :: Annotation a => ImportDecl a -> Cache Renamer
-            mkRenamer' (ImportDecl _ (sModuleName -> m) quald _ _ _ (fmap sModuleName -> as) specs) = do
+            mkRenamer' (ImportDecl _ (void -> m) quald _ _ _ (fmap void -> as) specs) = do
                   (_, exps) <- getModule $ toFilePath m
                   fromImps m quald exps as specs
 
@@ -97,7 +95,7 @@ getModule fp = Map.lookup fp <$> get >>= \ case
             return (m' <> imps, exps)
 
       where loadImports :: Annotation a => S.Module a -> Cache Module
-            loadImports = liftM mconcat . mapM (liftM fst . getModule . toFilePath . sModuleName . importModule) . getImps
+            loadImports = liftM mconcat . mapM (liftM fst . getModule . toFilePath . void . importModule) . getImps
 
 -- Phase 2 (pre-core) transformations.
 getProgram :: FilePath -> Cache Core.Program

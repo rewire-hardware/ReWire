@@ -1,5 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
--- {-# LANGUAGE Safe #-}
+{-# LANGUAGE Safe #-}
 module ReWire.Main (main) where
 
 import ReWire.FrontEnd

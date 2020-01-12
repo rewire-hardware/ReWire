@@ -16,14 +16,13 @@ import ReWire.FrontEnd.Unbound (Alpha (..))
 import Control.DeepSeq (NFData (..))
 import Control.Monad.Identity (Identity(..))
 import Data.Data (Typeable,Data(..))
-import Language.Haskell.Exts.Annotated.ExactPrint (ExactP)
+import Language.Haskell.Exts.ExactPrint (ExactP)
 import Language.Haskell.Exts.SrcLoc
       ( SrcLoc, SrcInfo (..), SrcSpanInfo (..), SrcSpan (..)
       , noLoc, noInfoSpan, mkSrcSpan)
 
-import qualified Language.Haskell.Exts.Annotated.Syntax as HS (Annotated(..))
+import qualified Language.Haskell.Exts.Syntax as HS (Annotated(..))
 import qualified Language.Haskell.Exts.Pretty as HS (Pretty)
-
 
 import safe GHC.Generics (Generic (..))
 

@@ -14,7 +14,6 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.Data (Data, Typeable, gmapM, gmapQr, cast)
 import Data.Maybe (fromJust)
-import Data.Monoid ((<>))
 
 everywhere :: (Monad m, Data a) => (forall d. Data d => d -> m d) -> a -> m a
 everywhere f = gmapM (everywhere f) >=> f
@@ -37,10 +36,12 @@ data Transform m where
 
 type T m = forall d. Data d => d -> MaybeT m d
 
+instance Semigroup (Transform m) where
+      (TCons f fs) <> g = f `TCons` (fs <> g)
+      TId          <> g = g
+
 instance Monoid (Transform m) where
       mempty                 = TId
-      mappend (TCons f fs) g = f `TCons` (fs <> g)
-      mappend TId g          = g
 
 foldT :: Monad m => (T m -> T m -> T m) -> Transform m -> T m
 foldT op (TCons f fs) = f `op` foldT op fs
@@ -71,10 +72,12 @@ data Query a where
 
 type Q a = forall d. Data d => d -> a
 
+instance Semigroup (Query a) where
+      (QCons f fs) <> g = f `QCons` (fs <> g)
+      QEmpty       <> g = g
+
 instance Monoid (Query a) where
       mempty                 = QEmpty
-      mappend (QCons f fs) g = f `QCons` (fs <> g)
-      mappend QEmpty g       = g
 
 generalizeQ :: (Typeable a, Monoid b) => (a -> b) -> forall d. Typeable d => d -> b
 generalizeQ f x = case f <$> cast x of
