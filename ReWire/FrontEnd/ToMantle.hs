@@ -99,7 +99,7 @@ transExport rn ds exps = \ case
             then pure $ ExportWith (rename Type rn x) (map (rename Value rn . unwrap) cs) : concatMap (fixities . unwrap) cs ++ exps
             else failAt l "Unknown class or type name in export list"
       -- TODO(chathhorn): I don't know what it means for a wildcard to appear in the middle of an export list.
-      EThingWith l (EWildcard _ _) (void -> x) []       ->
+      EThingWith l (EWildcard _ _) (void -> x) _       ->
             if finger Type rn x
             then pure $ lookupCtors x : concatMap fixities (getCtors $ lookupCtors x) ++ exps
             else failAt l "Unknown class or type name in export list"

@@ -13,7 +13,6 @@ import ReWire.Annotation (Annotation (..), Annote (..), toSrcSpanInfo)
 
 import Prelude hiding ((<>))
 import Control.Monad.Except (MonadError (..), ExceptT (..), runExceptT, throwError)
-import Control.Monad.Fail (MonadFail (..))
 import Language.Haskell.Exts.Syntax (Annotated (..))
 import Language.Haskell.Exts.Pretty (prettyPrim)
 import Language.Haskell.Exts.SrcLoc (SrcLoc (..), SrcInfo (..), SrcSpanInfo, noLoc)
@@ -30,9 +29,6 @@ instance Show AstError where
             $$ nest 6 (prettyPrim a)
       show (AstError a@(MsgAnnote m) msg) = show $ errorHdr (toSrcSpanInfo a) $ msg ++ "\n" ++ m
       show (AstError a msg)               = show $ errorHdr (toSrcSpanInfo a) msg
-
--- instance (Monad m, MonadError AstError m) => MonadFail m where
---       fail = undefined
 
 errorHdr :: SrcSpanInfo -> String -> Doc
 errorHdr l msg = if getPointLoc l == noLoc

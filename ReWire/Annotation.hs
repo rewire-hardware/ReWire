@@ -1,6 +1,7 @@
 {-# LANGUAGE Rank2Types, ScopedTypeVariables, GADTs, TypeOperators, StandaloneDeriving
-           , TypeFamilies, DeriveGeneric, LambdaCase #-}
+           , TypeFamilies, DeriveGeneric, LambdaCase, DeriveDataTypeable #-}
 {-# LANGUAGE Safe #-}
+{-# OPTIONS_GHC -Wno-missing-methods #-}
 module ReWire.Annotation
       ( Annote (..)
       , Annotation (..)

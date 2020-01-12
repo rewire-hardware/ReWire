@@ -1,14 +1,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.Records
-       ( desugarDefns,
-         desugarRecData,
-         desugarRec,
-         freshVar,
-         freshVars,
-         replaceAtIndex,
-         poly2Ty
-         ) where
+      ( desugarDefns
+      , desugarRecData
+      , desugarRec
+      ) where
 
 import ReWire.Annotation
 import ReWire.FrontEnd.Unbound
@@ -17,26 +13,24 @@ import ReWire.FrontEnd.Unbound
 import ReWire.Error
 import ReWire.FrontEnd.Syntax
 
-flatten :: [([a],b)] -> [(a,b)]
-flatten = foldr (\ (as,b) asbs -> cross b as ++ asbs) []
-      where cross :: b -> [a] -> [(a, b)]
-            cross b = foldr (\ a as -> (a,b) : as) [] 
-
 freshVar :: Fresh m => String -> m (Name a)
 freshVar n = fresh (string2Name $ "?X_" ++ n ++ "_")
 
 freshVars :: (Enum a1, Num a1, Show a1, Fresh m) => String -> a1 -> m [Name a]
 freshVars n m = mapM (freshVar . (n++) . show) [0..m-1]
 
-splitArrow :: (Fresh m, MonadError AstError m) => Poly -> m (Ty, Ty)
-splitArrow (Poly phi) = do
-  (_,ty) <- unbind phi
-  case ty of
-       (TyApp _ (TyApp _ (TyCon _ _) t1) t2) -> return (t1,t2)
-       d                                     -> failAt (ann d) "record field non-arrow type"
-
 replaceAtIndex :: Int -> a -> [a] -> [a]
 replaceAtIndex n item ls = a ++ (item:b) where (a, (_:b)) = splitAt n ls
+
+-- is stuff like this kosher?
+poly2Ty :: Fresh m => Poly -> m Ty
+poly2Ty (Poly p) = do (_,ty) <- unbind p
+                      return ty
+
+flatten :: [([a],b)] -> [(a,b)]
+flatten = foldr (\ (as,b) asbs -> cross b as ++ asbs) []
+      where cross :: b -> [a] -> [(a, b)]
+            cross b = foldr (\ a as -> (a,b) : as) [] 
 
 mkApp :: Annote -> Exp -> [Exp] -> Exp
 mkApp _ rator []          = rator
@@ -57,11 +51,6 @@ findIndex _ _ []            = Nothing
 findIndex f i ((nf,_):rest) = if name2String f == name2String nf
                                then Just i
                                else findIndex f (i+1) rest
-
--- is stuff like this kosher?
-poly2Ty :: Fresh m => Poly -> m Ty
-poly2Ty (Poly p) = do (_,ty) <- unbind p
-                      return ty
 
 lookUpF :: (Eq a, Annotation an, MonadError AstError m) =>
                an -> a -> [(t, [(a, b)])] -> m (t, [(a, b)])
@@ -121,7 +110,7 @@ transRecUpdate rho (RecUp an t e ups@((f,_):_)) = case e of
                      do exps <- arrange an fs ups'
                         return $ mkApp an (Con an t c) exps
   d          -> failAt (ann d) "Ill-formed record update."
-transRecUpdate rho (RecConApp an _ _ [])            = failAt an "Ill-formed Record Construction."
+transRecUpdate _ (RecConApp an _ _ [])            = failAt an "Ill-formed Record Construction."
 
 transRecUpdate rho (RecConApp an t c ups@((f,_):_)) = do
                    (Embed _,fs) <- lookUpF an f rho
@@ -210,7 +199,7 @@ mkRecPatExp an typ@(Embed ty) c@(Embed cstr) f fns e = do
 
 desugarRecData :: DataDefn -> DataDefn
 desugarRecData d = case dataCons d of
-                        [RecCon an n t _] -> d { dataCons=[DataCon (MsgAnnote "arglebargle") n t] }
+                        [RecCon _ n t _] -> d { dataCons=[DataCon (MsgAnnote "arglebargle") n t] }
                         _                 -> d
 
 desugarRec :: (Fresh m, MonadError AstError m) => DataDefn -> m [Defn]

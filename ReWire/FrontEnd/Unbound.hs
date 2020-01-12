@@ -17,6 +17,6 @@ import safe Unbound.Generics.LocallyNameless.Internal.Fold
 
 import Control.Monad.Fail (MonadFail (..))
 
--- Orphan instance
+-- TODO(chathhorn): Orphan instance
 instance MonadFail m => MonadFail (FreshMT m) where
       fail = undefined -- TODO(chathhorn)
