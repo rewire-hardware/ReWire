@@ -1,3 +1,4 @@
+{-
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 module UpCounter where
@@ -26,6 +27,7 @@ nativeVhdl = undefined
 ---------------------------------------------
 --- End: ReWire Fig Leaf
 ---------------------------------------------
+-}
 
 data Bit = Zero | One
 
