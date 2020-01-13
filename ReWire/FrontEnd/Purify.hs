@@ -201,12 +201,12 @@ mkDispatch ty pes iv _ = do
 
   dsc <- freshVar "dsc"
   let dscv = Var an rTy dsc
-  let body = mkCase an ty dscv (pes {- ++ [(pdef,bdef)]-})
+  body <- mkCase an ty dscv (pes {- ++ [(pdef,bdef)]-})
   let dispatch_body = Embed (bind [dsc :: Name Exp, iv :: Name Exp] body)
   let dispatch = seed_dispatch { defnBody = dispatch_body }
   return dispatch
-    where seed_dispatch = Defn {
-                            defnAnnote = an
+    where seed_dispatch = Defn
+                          { defnAnnote = an
                           , defnName   = s2n "$Pure.dispatch"
                           , defnPolyTy = [] |-> ty
                           , defnInline = False
@@ -215,11 +215,10 @@ mkDispatch ty pes iv _ = do
           an            = MsgAnnote "Defn of dispatch function"
 
 
-mkCase :: Annote -> Ty -> Exp -> [(Pat,Exp)] -> Exp
-mkCase _ _ _ []              = error "Shouldn't ever happen."
-mkCase an ty dsc ((p,e):[])  = Case an ty dsc (bind p e) Nothing
-mkCase an ty dsc ((p,e):pes) = Case an ty dsc (bind p e) (Just rest)
-   where rest = mkCase an ty dsc pes
+mkCase :: MonadError AstError m => Annote -> Ty -> Exp -> [(Pat,Exp)] -> m Exp
+mkCase an _ _ []             = failAt an "Shouldn't ever happen."
+mkCase an ty dsc [(p,e)]     = return $ Case an ty dsc (bind p e) Nothing
+mkCase an ty dsc ((p,e):pes) = Case an ty dsc (bind p e) . Just <$> mkCase an ty dsc pes
 
 mkR_Datatype :: [DataCon] -> DataDefn
 mkR_Datatype dcs = seedR { dataCons = {- r_return : -} dcs }
