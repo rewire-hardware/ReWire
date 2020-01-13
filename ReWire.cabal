@@ -109,9 +109,7 @@ executable rwc
   main-is:          Main.hs
   build-depends:    ReWire, base >= 4.8 && < 5
   default-language: Haskell2010
-  ghc-options:      -fprof-auto
-                    -Wall
-                    -rtsopts
+  ghc-options:      -Wall
 
 test-suite rwc-test
   type:             exitcode-stdio-1.0
@@ -127,6 +125,8 @@ test-suite rwc-test
   other-modules:    Paths_ReWire
   default-language: Haskell2010
   ghc-options:      -fprof-auto
+                    -fprof-cafs
+                    -rtsopts
                     -Wall
 
 source-repository head
