@@ -42,9 +42,9 @@ type ModCache = Map.Map FilePath (Module, Exports)
 runCache :: Cache a -> LoadPath -> IO (Either AstError a)
 runCache m lp = runSyntaxError $ fst <$> runFreshMT (runStateT (runReaderT m lp) mempty)
 
-mkRenamer :: Annotation a => S.Module a -> Cache Renamer
+mkRenamer :: S.Module SrcSpanInfo -> Cache Renamer
 mkRenamer m = mconcat <$> mapM mkRenamer' (getImps m)
-      where mkRenamer' :: Annotation a => ImportDecl a -> Cache Renamer
+      where mkRenamer' :: ImportDecl SrcSpanInfo -> Cache Renamer
             mkRenamer' (ImportDecl _ (void -> m) quald _ _ _ (fmap void -> as) specs) = do
                   (_, exps) <- getModule $ toFilePath m
                   fromImps m quald exps as specs
@@ -119,7 +119,7 @@ getProgram fp = do
 --       >=> printInfo "___Post_Purge___"
        >=> purify
 --       >=> typeCheck
-       >=> printInfo "___Post_Purify___"
+--       >=> printInfo "___Post_Purify___"
        >=> liftLambdas
 --       >=> printInfo "___Post_Second_LL___"       
        >=> toCore

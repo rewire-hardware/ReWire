@@ -86,16 +86,16 @@ getExportFixities = map toExportFixity . getFixities
 
 transExport :: MonadError AstError m => Renamer -> [Decl Annote] -> [Export] -> ExportSpec Annote -> m [Export]
 transExport rn ds exps = \ case
-      EVar l x                             ->
-            if finger Value rn (void x)
-            then pure $ Export (rename Value rn $ void x) : fixities (qnamish x) ++ exps
+      EVar l (void -> x)                 ->
+            if finger Value rn x
+            then pure $ Export (rename Value rn x) : fixities (qnamish x) ++ exps
             else failAt l "Unknown variable name in export list"
       EAbs l _ (void -> x)               ->
             if finger Type rn x
             then pure $ Export (rename Type rn x) : exps
             else failAt l "Unknown class or type name in export list"
       EThingWith l (NoWildcard _) (void -> x) cs        ->
-            if and $ finger Type rn x : map (finger Value rn . unwrap) cs
+            if and $ finger Type rn x : map (finger Value rn . qnamish . unwrap) cs
             then pure $ ExportWith (rename Type rn x) (map (rename Value rn . unwrap) cs) : concatMap (fixities . unwrap) cs ++ exps
             else failAt l "Unknown class or type name in export list"
       -- TODO(chathhorn): I don't know what it means for a wildcard to appear in the middle of an export list.

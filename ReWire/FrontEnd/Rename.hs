@@ -10,7 +10,7 @@ module ReWire.FrontEnd.Rename
       , fromImps
       ) where
 
-import ReWire.Annotation (Annotation)
+import ReWire.Annotation (Annotation, Annote, noAnn)
 import ReWire.Error
 import ReWire.FrontEnd.Fixity
 import ReWire.FrontEnd.Syntax (DataDefn, Defn)
@@ -23,7 +23,7 @@ import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
 import Language.Haskell.Exts.Fixity (Fixity (..), AppFixity (..))
 import Language.Haskell.Exts.Pretty (prettyPrint)
-import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
+import Language.Haskell.Exts.SrcLoc (SrcSpanInfo, noSrcSpan)
 import System.FilePath (joinPath, (<.>))
 
 import qualified Data.Map.Strict                        as Map
@@ -93,11 +93,21 @@ instance QNamish (QName a) where
       fromQNamish (Qual _ (ModuleName _ m) n) = Qual undefined (ModuleName undefined m) $ undefined <$ n
       fromQNamish (UnQual _ n)                = UnQual undefined $ undefined <$ n
       fromQNamish n                           = UnQual undefined $ (undefined <$) $ Ident undefined $ prettyPrint n
-instance QNamish (Name a) where
-      toQNamish = toQNamish . void
-      fromQNamish (Qual _ _ n) = undefined <$ n
-      fromQNamish (UnQual _ n) = undefined <$ n
-      fromQNamish n            = (undefined <$) $ Ident undefined $ prettyPrint n
+instance QNamish (Name ()) where
+      toQNamish = UnQual () . void
+      fromQNamish (Qual _ _ n) = () <$ n
+      fromQNamish (UnQual _ n) = () <$ n
+      fromQNamish n            = (() <$) $ Ident () $ prettyPrint n
+instance QNamish (Name SrcSpanInfo) where
+      toQNamish = UnQual () . void
+      fromQNamish (Qual _ _ n) = noSrcSpan <$ n
+      fromQNamish (UnQual _ n) = noSrcSpan <$ n
+      fromQNamish n            = (noSrcSpan <$) $ Ident noSrcSpan $ prettyPrint n
+instance QNamish (Name Annote) where
+      toQNamish = UnQual () . void
+      fromQNamish (Qual _ _ n) = noAnn <$ n
+      fromQNamish (UnQual _ n) = noAnn <$ n
+      fromQNamish n            = (noAnn <$) $ Ident noAnn $ prettyPrint n
 instance QNamish FQName where
       toQNamish (FQName m n) = Qual () m n
       fromQNamish (Qual _ m n) = FQName (void m) (void n)
@@ -156,11 +166,11 @@ requalFixity m (Fixity asc lvl n) = Fixity asc lvl $ case n of
       UnQual _ n' -> Qual () m n'
       n'          -> Qual () m $ qnamish n'
 
-filterFixities :: (Name a -> Bool) -> [Fixity] -> [Fixity]
+filterFixities :: (Name () -> Bool) -> [Fixity] -> [Fixity]
 filterFixities p = filter $ \ (Fixity _ _ n) -> p $ qnamish n
 
 -- | True iff an entry for the name exists in the renamer.
-finger :: QNamish a => Namespace -> Renamer -> a -> Bool
+finger :: Namespace -> Renamer -> QName () -> Bool
 finger ns Renamer { rnNames } = flip Map.member rnNames . (ns,) . toQNamish
 
 toFilePath :: ModuleName a -> FilePath
@@ -186,7 +196,7 @@ type Imports a = ([(Namespace, Name a)], [Fixity])
 -- | Build renamer from a single import line. Should work on either pre- or
 -- post-desugared import lists. Params: module being imported, "qualified",
 -- exports (of this import), "... as <qualifier>", imports.
-fromImps :: (Annotation a, Functor m, MonadError AstError m) => ModuleName () -> Bool -> Exports -> Maybe (ModuleName ()) -> Maybe (ImportSpecList a) -> m Renamer
+fromImps :: (Functor m, MonadError AstError m) => ModuleName () -> Bool -> Exports -> Maybe (ModuleName ()) -> Maybe (ImportSpecList SrcSpanInfo) -> m Renamer
 fromImps m quald exps Nothing   Nothing                          = addExports m exps <$> fromImps' m quald noExps exps
 fromImps m quald exps (Just m') Nothing                          = addExports m exps <$> fromImps' m' quald noExps exps
 fromImps m quald exps (Just m') (Just (ImportSpecList _ h imps)) = do
@@ -222,7 +232,7 @@ fromImps' m' quald (Just (True, (imps, fs))) exps = do
                   $ exclude ns [Qual () m' $ void x, UnQual () $ void x]
                   $ addFixities (filterFixities (/= void x) fs) tab
 
-getImp :: (Annotation a, MonadError AstError m) => Exports -> Imports a -> ImportSpec a -> m (Imports a)
+getImp :: (MonadError AstError m) => Exports -> Imports SrcSpanInfo -> ImportSpec SrcSpanInfo -> m (Imports SrcSpanInfo)
 getImp exps (imps, fs) = \ case
       IVar _ x          -> do
             _ <- lookupExp Value x exps
