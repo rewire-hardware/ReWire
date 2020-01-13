@@ -18,13 +18,11 @@ import qualified ReWire.FrontEnd.Syntax as M
 toCore :: Monad m => M.FreeProgram -> m C.Program
 toCore (ts, vs) = runFreshMT $ do
       ts' <- concat <$> mapM transData ts
-      vs' <- filter (notPrim . C.defnName) <$> mapM transDefn vs
+      vs' <- mapM transDefn $ filter (notPrim . M.defnName) vs
       return $ C.Program ts' vs'
 
-notPrim :: String -> Bool
-notPrim x = isQual x || isLL x
-      where isQual = elem '.'
-            isLL = elem '$'
+notPrim :: Name a -> Bool
+notPrim = elem '.' . name2String
 
 transData :: Fresh m => M.DataDefn -> m [C.DataCon]
 transData (M.DataDefn _ _ _ cs) = mapM transDataCon $ zip [0..] cs
@@ -32,6 +30,7 @@ transData (M.DataDefn _ _ _ cs) = mapM transDataCon $ zip [0..] cs
             transDataCon (n, M.DataCon an c (Embed (M.Poly t))) = do
                   (_, t') <- unbind t
                   return $ C.DataCon an (C.DataConId $ name2String c) n $ transType t'
+            transDataCon (_, M.RecCon _ _ _ _) = undefined -- TODO(chathhorn)
 
 transDefn :: Fresh m => M.Defn -> m C.Defn
 transDefn (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) = do
@@ -48,7 +47,7 @@ transExp :: Fresh m => M.Exp -> ReaderT (Map (Name M.Exp) Int) m C.Exp
 transExp = \ case
       M.App an e1 e2                    -> C.App an <$> transExp e1 <*> transExp e2
       M.Var an t x                      -> (Map.lookup x <$> ask) >>= \ case
-            Nothing -> if notPrim (name2String x)
+            Nothing -> if notPrim x
                   then pure $ C.GVar an (transType t) $ transVar x
                   else pure $ C.Prim an (transType t) $ transVar x
             Just i  -> pure $ C.LVar an (transType t) i
@@ -78,5 +77,5 @@ transType = \ case
       M.TyCon an c      -> C.TyCon an $ C.TyConId $ name2String c
       M.TyComp an t1 t2 -> C.TyComp an (transType t1) $ transType t2
       M.TyVar an _ x    -> C.TyVar an $ name2String x
-      t                 -> error $ "ToCore: unsupported type: " ++ prettyPrint t
+      t                 -> error $ "ToCore: unsupported type: " ++ show t
 

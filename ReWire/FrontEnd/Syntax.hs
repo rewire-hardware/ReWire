@@ -1,8 +1,8 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, DeriveDataTypeable, DeriveGeneric, Rank2Types, GADTs, ScopedTypeVariables, StandaloneDeriving, LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, DeriveDataTypeable, DeriveGeneric, Rank2Types, GADTs, ScopedTypeVariables, StandaloneDeriving, LambdaCase #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.FrontEnd.Syntax
-      ( DataConId, TyConId
+      ( DataConId (..), TyConId
       , Ty (..), Exp (..), Pat (..), MatchPat (..)
       , Defn (..), DataDefn (..), DataCon (..)
       , FreeProgram, Program (..)
@@ -11,13 +11,15 @@ module ReWire.FrontEnd.Syntax
       , flattenApp, arr0, mkArrow, arrowRight, getArrow
       , fv, fvAny
       , Fresh, Name, Embed (..), TRec, Bind
+      , FieldId
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly
+      , rangeTy
       ) where
 
 import ReWire.Annotation
 import ReWire.FrontEnd.Unbound
-      ( Fresh (..), FreshMT (..), runFreshM
+      ( Fresh (..), runFreshM
       , Embed (..)
       , TRec (..), trec, untrec
       , Name (..), AnyName (..), SubstName (..)
@@ -30,11 +32,9 @@ import ReWire.Pretty
 import qualified ReWire.FrontEnd.Unbound as UB (fv, fvAny)
 
 import Control.DeepSeq (NFData (..), deepseq)
-import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 import Data.Data (Typeable, Data (..))
 import Data.List (find)
 import Data.Maybe (fromJust)
-import Data.Monoid ((<>))
 import GHC.Generics (Generic)
 import Text.PrettyPrint
       ( Doc, text, nest, hsep, punctuate, parens, doubleQuotes
@@ -57,17 +57,22 @@ data DataConId = DataConId String
       deriving (Generic, Typeable, Data)
 data TyConId = TyConId String
       deriving (Generic, Typeable, Data)
+data FieldId  = FieldId String
+      deriving (Generic, Typeable, Data)
 
 data DataCon = DataCon Annote (Name DataConId) (Embed Poly)
+             | RecCon Annote (Name DataConId) (Embed Poly) [([Name FieldId],Embed Poly)]
       deriving (Generic, Eq, Show, Typeable, Data)
 
 instance Alpha DataCon
 
 instance Annotated DataCon where
-      ann (DataCon a _ _) = a
+      ann (DataCon a _ _)  = a
+      ann (RecCon a _ _ _) = a
 
 instance Pretty DataCon where
-      pretty (DataCon _ n t) = text (name2String n) <+> text "::" <+> pretty t
+      pretty (DataCon _ n t)  = text (name2String n) <+> text "::" <+> pretty t
+      pretty (RecCon _ n t _) = text (name2String n) <+> text "::" <+> pretty t
 
 instance NFData DataCon
 
@@ -116,12 +121,23 @@ instance Pretty Poly where
             return $ pretty t
 
 data Ty = TyApp Annote Ty Ty
-           | TyCon Annote (Name TyConId)
-           | TyVar Annote Kind (Name Ty)
-           | TyComp Annote Ty Ty -- application of a monad
-           | TyBlank Annote
-           deriving (Eq, Generic, Show, Typeable, Data)
+        | TyCon Annote (Name TyConId)
+        | TyVar Annote Kind (Name Ty)
+        | TyComp Annote Ty Ty -- application of a monad
+        | TyBlank Annote
+           deriving (Eq, Generic, Typeable, Data)
 
+instance Show Ty where
+  show (TyApp _ (TyApp _ (TyCon _ n) t1) t2)
+    | name2String n == "(,)" = "(" ++ show t1 ++ "," ++ show t2 ++ ")"
+    | name2String n == "->"  = "(" ++ show t1 ++ " -> " ++ show t2 ++ ")"
+    | otherwise              = "((" ++ name2String n ++ " " ++ show t1 ++ ")" ++ " " ++ show t2 ++ ")"
+  show (TyApp _ t1 t2)  = "(" ++ show t1 ++ " " ++ show t2 ++ ")"
+  show (TyCon _ n)      = name2String n
+  show (TyVar _ _ n)    = name2String n
+  show (TyComp _ t1 t2) = show t1 ++ "{" ++ show t2 ++ "}"
+  show (TyBlank an)     = "TyBlank: " ++ show an
+  
 instance Alpha Ty
 
 instance Subst Ty Ty where
@@ -143,7 +159,8 @@ instance Annotated Ty where
 instance Pretty Ty where
       pretty = \ case
             TyApp _ (TyApp _ (TyCon _ c) t1) t2
-                  | name2String c == "->" -> ppTyArrowL t1 <+> text "->" <+> pretty t2
+                  | name2String c == "->"  -> ppTyArrowL t1 <+> text "->" <+> pretty t2
+                  | name2String c == "(,)" -> parens (ppTyArrowL t1 <+> text "," <+> pretty t2)
                   where ppTyArrowL t@(TyApp _ (TyApp _ (TyCon _ c) _) _)
                               | name2String c == "->" = parens $ pretty t
                         ppTyArrowL t                                                           = pretty t
@@ -157,19 +174,35 @@ instance NFData Ty
 
 ppTyAppR :: Ty -> Doc
 ppTyAppR t@TyApp {} = parens $ pretty t
-ppTyAppR t             = pretty t
+ppTyAppR t          = pretty t
 
 ----
 
 data Exp = App        Annote Exp Exp
-            | Lam        Annote Ty (Bind (Name Exp) Exp)
-            | Var        Annote Ty (Name Exp)
-            | Con        Annote Ty (Name DataConId)
-            | Case       Annote Ty Exp (Bind Pat Exp) (Maybe Exp)
-            | Match      Annote Ty Exp MatchPat Exp [Exp] (Maybe Exp)
-            | NativeVHDL Annote String Exp
-            | Error      Annote Ty String
-            deriving (Generic, Show, Typeable, Data)
+         | Lam        Annote Ty (Bind (Name Exp) Exp)
+         | Var        Annote Ty (Name Exp)
+         | Con        Annote Ty (Name DataConId)
+         | RecConApp  Annote Ty (Name DataConId) [(Name FieldId,Exp)] 
+         | RecUp      Annote Ty Exp  [(Name FieldId,Exp)] 
+         | Case       Annote Ty Exp (Bind Pat Exp) (Maybe Exp)
+         | Match      Annote Ty Exp MatchPat Exp [Exp] (Maybe Exp)
+         | NativeVHDL Annote String Exp
+         | Error      Annote Ty String
+         deriving (Generic, {- Show,-} Typeable, Data)
+
+instance Show Exp where
+  show (App _ (App _ (Var _ _ n) e1) e2) | name2String n == "(,)" = "(" ++ show e1 ++ "," ++ show e2 ++ ")"
+  show (App _ e1 e2)       = "(" ++ show e1 ++ " " ++ show e2 ++ ")"
+  show (Lam _ _ _)         = "*lambda-expression*"
+  show (Var _ _ n)         = {- "(Var " ++ -} name2String n {- ++ ")" -}
+  show (Con _ _ c)         = name2String c
+  show (RecConApp _ _ _ _) = "*RecConApp*"
+  show (RecUp _ _ _ _)     = "*RecUp*"
+  show (Case _ _ _ _ _)    = "*Case*"
+  show (Match _ _ e1 mp e2 es Nothing)   = "(Match " ++ " " ++ show e1 ++ " " ++ show mp ++ " " ++ show e2 ++ " " ++ show es ++ ")"
+  show (Match _ _ e1 mp e2 es (Just e3)) = "(Match " ++ " " ++ show e1 ++ " " ++ show mp ++ " " ++ show e2 ++ " " ++ show es ++ " " ++ show e3 ++ ")"
+  show (NativeVHDL _ _ _)  = "*nativeVHDL*"
+  show (Error _ _ _)       = "*error*"
 
 instance Alpha Exp
 
@@ -196,19 +229,44 @@ instance Annotated Exp where
             Lam a _ _           -> a
             Var a _ _           -> a
             Con a _ _           -> a
+            RecConApp a _ _ _   -> a
+            RecUp a _ _ _       -> a
             Case a _ _ _ _      -> a
             Match a _ _ _ _ _ _ -> a
             NativeVHDL a _ _    -> a
             Error a _ _         -> a
 
+{-
+cleanName str = case str of
+  ('$':'L':'L':'.':rest)         -> rest
+  ('$':'P':'U':'R':'E':'.':rest) -> rest
+  ('M':'a':'i':'n':'.':rest)     -> rest
+  ('?':'X':rest)                 -> 'x':rest
+  _                              -> str
+  -}
+
 instance Pretty Exp where
       pretty = \ case
+            App _ (App _ (Con _ _ n) e1) e2
+              | name2String n == "(,)" -> parens $ pretty e1 <+> text "," <+> pretty e2
             App _ e1 e2      -> parens $ hang (pretty e1) 4 $ pretty e2
             Con _ _ n        -> text $ name2String n
-            Var _ t n        -> text (show n) <+> text "::" <+> pretty t
+            Var _ _ n        -> text $ show n {- <+> text "::" <+> pretty t -}
             Lam _ _ e        -> runFreshM $ do
                   (p, e') <- unbind e
                   return $ parens $ text "\\" <+> text (show p) <+> text "->" <+> pretty e'
+            RecConApp _ _ e fus  -> runFreshM $ do
+                            let ns   = map ((text . show) . fst) fus                   
+                            let es   = map (pretty . snd) fus
+                            let res  = zip ns es
+                            let res' = foldr ($+$) mempty $ map (\ (n, e) -> (n <+> text "=" <+> e)) res
+                            return $ pretty e <+> text "{" <+> res' <+> text "}"
+            RecUp _ _ e fus  -> runFreshM $ do
+                            let ns   = map ((text . show) . fst) fus                   
+                            let es   = map (pretty . snd) fus
+                            let res  = zip ns es
+                            let res' = foldr ($+$) mempty $ map (\ (n, e) -> (n <+> text "=" <+> e)) res
+                            return $ pretty e <+> text "{" <+> res' <+> text "}"
             Case _ _ e e1 e2 -> runFreshM $ do
                   (p, e1') <- unbind e1
                   return $ parens $
@@ -222,7 +280,7 @@ instance Pretty Exp where
             Match _ _ e p e1 as e2 -> runFreshM $ do
                   return $ parens $
                         foldr ($+$) mempty
-                        [ text "match" <+> pretty e <+> text "of"
+                        [ text "case" <+> pretty e <+> text "of"
                         , nest 4 (braces $ vcat $ punctuate (space <> text ";")
                               [ pretty p <+> text "->" <+> pretty e1 <+> hsep (map pretty as) ]
                               ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
@@ -233,8 +291,8 @@ instance Pretty Exp where
 
 ---
 
-data Pat = PatCon  Annote (Embed Ty) (Embed (Name DataConId)) [Pat]
-            | PatVar  Annote (Embed Ty) (Name Exp)
+data Pat = PatCon Annote (Embed Ty) (Embed (Name DataConId)) [Pat]
+         | PatVar Annote (Embed Ty) (Name Exp)
             deriving (Show, Generic, Typeable, Data)
 
 instance Alpha Pat
@@ -248,13 +306,21 @@ instance Annotated Pat where
 
 instance Pretty Pat where
       pretty = \ case
-            PatCon _ _ (Embed n) ps -> parens $ text (name2String n) <+> hsep (map pretty ps)
+            PatCon _ _ (Embed n) ps
+              | name2String n == "(,)" -> parens $ pretty (head ps) <+> text "," <+> pretty (head (tail ps))
+              | otherwise              -> parens $ text (name2String n) <+> hsep (map pretty ps)
             PatVar _ _ n            -> text $ show n
 
 
 data MatchPat = MatchPatCon Annote Ty (Name DataConId) [MatchPat]
-                 | MatchPatVar Annote Ty
-                 deriving (Show, Generic, Typeable, Data)
+              | MatchPatVar Annote Ty
+                 deriving ({-Show, -}Generic, Typeable, Data)
+
+instance Show MatchPat where
+  show = \ case
+    (MatchPatCon _ _ n [])  -> name2String n
+    (MatchPatCon _ _ n mps) -> "(" ++ name2String n ++ foldr1 (\ s ps -> s ++ " " ++ ps) (map show mps)
+    (MatchPatVar _ _)       -> "*matchpatvar*"
 
 instance Alpha MatchPat
 
@@ -281,7 +347,10 @@ data Defn = Defn
       , defnPolyTy :: Embed Poly
       , defnInline :: Bool
       , defnBody   :: Embed (Bind [Name Exp] Exp)
-      } deriving (Generic, Show, Typeable, Data)
+      } deriving (Generic, {- Show,-} Typeable, Data)
+
+instance Show Defn where
+  show d = name2String (defnName d) ++ " :: " ++ show (defnPolyTy d)
 
 instance Alpha Defn
 
@@ -339,12 +408,18 @@ instance Pretty Program where
 
 flattenApp :: Exp -> [Exp]
 flattenApp (App _ e e') = flattenApp e ++ [e']
-flattenApp e               = [e]
+flattenApp e            = [e]
 
 arr0 :: Ty -> Ty -> Ty
 arr0 = mkArrow $ string2Name "->"
 
 infixr `arr0`
+
+rangeTy :: Ty -> Ty
+rangeTy t@(TyApp _ (TyApp _ (TyCon _ con) _) t') = case name2String con of
+                                                          "->" -> rangeTy t'
+                                                          _    -> t
+rangeTy t                                        = t
 
 mkArrow :: Name TyConId -> Ty -> Ty -> Ty
 mkArrow arr t = TyApp (ann t) (TyApp (ann t) (TyCon (ann t) arr) t)
@@ -365,11 +440,6 @@ instance NFData a => NFData (TRec a) where
 deriving instance Data a => Data (Embed a)
 deriving instance Data a => Data (Name a)
 deriving instance (Data a, Data b) => Data (Bind a b)
-
-instance MonadThrow m => MonadThrow (FreshMT m) where
-      throwM = FreshMT . throwM
-instance MonadCatch m => MonadCatch (FreshMT m) where
-      catch (FreshMT m') h = FreshMT $ catch m' (unFreshMT . h)
 
 instance Pretty AnyName where
       pretty (AnyName n) = pretty n

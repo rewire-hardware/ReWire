@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, ViewPatterns, ScopedTypeVariables, GADTs #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, ViewPatterns, ScopedTypeVariables, GADTs #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 module ReWire.FrontEnd.Transform
@@ -7,6 +7,7 @@ module ReWire.FrontEnd.Transform
       , shiftLambdas
       , liftLambdas
       , purge
+      , records
       ) where
 
 import ReWire.Error
@@ -18,6 +19,9 @@ import ReWire.FrontEnd.Unbound
       , Name (..)
       )
 import ReWire.SYB
+
+import ReWire.FrontEnd.Records
+      (desugarRecData, desugarRec, desugarDefns)
 
 import Control.Arrow ((***))
 import Control.Monad.Catch (MonadCatch)
@@ -32,12 +36,19 @@ import qualified Data.Set as Set
 
 -- | Inlines defs marked for inlining. Must run before lambda lifting.
 inline :: Monad m => FreeProgram -> m FreeProgram
-inline (ts, ds) = return (ts,  map (substs subs) ds)
+inline (ts, ds) = return (ts, substs subs ds)
       where toSubst :: Defn -> (Name Exp, Exp)
             toSubst (Defn _ n _ _ (Embed e)) = runFreshM $ do
-                  ([], e') <- unbind e
+                  (_, e') <- unbind e
                   return (n, e')
-            subs = map toSubst $ filter defnInline ds
+            subs = map toSubst $ substs (map toSubst $ filter defnInline ds) $ filter defnInline ds
+
+records :: MonadError AstError m => FreeProgram -> m FreeProgram
+records (ts, ds) = runFreshMT $ do
+      ds'      <- desugarDefns ts ds
+      newdefs  <- mapM desugarRec ts
+      let ts' = map desugarRecData ts
+      return (ts', ds' ++ concat newdefs)
 
 -- | Replaces the expression in NativeVHDL so we don't descend into it
 --   during other transformations.
@@ -74,7 +85,7 @@ liftLambdas p = runFreshMT $ evalStateT (transProg liftLambdas' p) []
                         (fvs, e') <- freshen e
 
                         let t' = foldr (mkArrow arr) (typeOf arr e') $ map snd bvs ++ [t]
-                        f     <- fresh $ string2Name "$LL."
+                        f     <- fresh $ string2Name "$LL.lambda"
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs ++ [x]) e')
                         return $ foldl' (\ e' (v, vt) -> App an e' $ Var an vt v) (Var an t' f) $ map (promote *** id) bvs
@@ -86,18 +97,29 @@ liftLambdas p = runFreshMT $ evalStateT (transProg liftLambdas' p) []
                         let pvs = patVars p
 
                         let t' = foldr (mkArrow arr) (typeOf arr e) $ map snd bvs ++ map snd pvs
-                        f     <- fresh $ string2Name "$LL."
+                        f     <- fresh $ string2Name "$LL.case"
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs ++ map fst pvs) e')
                         return $ Match an t e1 (transPat p) (Var an t' f) (map (\ (v, vt) -> Var an vt (promote v)) bvs) e2
+                  -- TODO(chathhorn): This case is really just normalizing
+                  -- Match, consider moving to ToCore.
+                  Match an t e1 p e lvars els -> do
+                        let bvs   = bv e
+                        (fvs, e') <- freshen e
+
+                        let t' = foldr (mkArrow arr) (typeOf arr e) $ map snd bvs
+                        f     <- fresh $ string2Name "$LL.match"
+
+                        modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind fvs e')
+                        return $ Match an t e1 p (Var an t' f) (map (\ (v, vt) -> Var an vt v) bvs ++ lvars) els
                   ||> (\ ([] :: [Defn]) -> get) -- this is cute!
                   ||> TId
 
             freshen :: (MonadCatch m, Fresh m) => Exp -> m ([Name Exp], Exp)
             freshen e = do
                   let bvs  = bv e
-                  fvs  <- replicateM (length bvs) $ fresh $ string2Name "LA"
-                  e' <- substs' (zip (map fst bvs) fvs) e
+                  fvs      <- replicateM (length bvs) $ fresh $ string2Name "$LL"
+                  e'       <- substs' (zip (map fst bvs) fvs) e
                   return (fvs, e')
 
             substs' :: MonadCatch m => [(Name Exp, Name Exp)] -> Exp -> m Exp
@@ -106,7 +128,7 @@ liftLambdas p = runFreshMT $ evalStateT (transProg liftLambdas' p) []
             bv :: Data a => a -> [(Name Exp, Ty)]
             bv = nub . runQ (query $ \ case
                   Var _ t n | not $ isFreeName n -> [(n, t)]
-                  _                                 -> [])
+                  _                              -> [])
 
             patVars :: Pat -> [(Name Exp, Ty)]
             patVars = \ case
@@ -131,8 +153,12 @@ purge (ts, vs) = return $ (inuseData (fv $ trec $ inuseDefn vs) ts, filterBuilti
 
             inuseData' :: [Name DataConId] -> DataDefn -> DataDefn
             inuseData' ns (DataDefn an n k cs)
-                  | name2String n == "Prelude.Either" = DataDefn an n k cs
-                  | otherwise                         = DataDefn an n k $ filter ((flip Set.member (Set.fromList ns)) . dataConName) cs
+                    | name2String n == "Prelude.Either" = DataDefn an n k cs
+                    | name2String n == "(,)"            = DataDefn an n k cs
+                    | name2String n == "()"             = DataDefn an n k cs
+      --            | name2String n == "Prelude.Left"   = DataDefn an n k cs
+      --            | name2String n == "Prelude.Right"  = DataDefn an n k cs 
+                    | otherwise                         = DataDefn an n k $ filter ((flip Set.member (Set.fromList ns)) . dataConName) cs
 
             dataConName :: DataCon -> Name DataConId
             dataConName (DataCon _ n _) = n
@@ -159,17 +185,17 @@ inuseDefn ds = case find ((=="Main.start") . name2String . defnName) ds of
 
 -- | Reduce.
 
-reduce :: SyntaxError m => FreeProgram -> m FreeProgram
+reduce :: MonadError AstError m => FreeProgram -> m FreeProgram
 reduce (ts, vs) = do
       vs'      <- mapM reduceDefn vs
       return (ts, vs')
 
-reduceDefn :: SyntaxError m => Defn -> m Defn
+reduceDefn :: MonadError AstError m => Defn -> m Defn
 reduceDefn (Defn an n pt b (Embed e)) = runFreshMT $ do
       (vs, e') <- unbind e
       Defn an n pt b <$> Embed <$> bind vs <$> reduceExp e'
 
-reduceExp :: (Fresh m, SyntaxError m) => Exp -> m Exp
+reduceExp :: (Fresh m, MonadError AstError m) => Exp -> m Exp
 reduceExp = \ case
       App an e1 e2      -> do
             e1' <- reduceExp e1

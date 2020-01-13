@@ -142,7 +142,8 @@ The purification procedure rewrites each definition as follows.
     As we go, we will be building a new data type called R (for "resumption
     point") of kind *, and a function definition called "dispatch" of type
 
-       dispatch :: R -> In -> Either T (W8,R).
+       dispatch :: (R,(S1,...,Sm)) -> In -> Either (T,(S1,...,Sm)) ((Out,(S1,...,Sm)),R).
+--       dispatch :: R -> In -> Either T (Out,R).
 
     Suppose
 
@@ -152,47 +153,76 @@ The purification procedure rewrites each definition as follows.
 
     Replace this with
 
-       f_pure :: T1 -> T2 -> ... -> Tn -> In
+{-       f_pure :: T1 -> T2 -> ... -> Tn
+                 -> In
        	         -> S1 -> ... -> Sm
-		 -> (Either T (O,R),(S1,(...,Sm)))
+		 -> (Either T (O,R),(S1,(...,Sm))) -}
+       f_pure :: T1 -> T2 -> ... -> Tn {- What about In? Parameter seems to have disappeared. -}
+       	         -> S1 -> ... -> Sm
+		 -> (Either (T,(S1,...,Sm)) ((O,(S1,...,Sm)),R))
+
        f_pure x1 ... xn s1 ... sm = [|purify_res_body e|]
 
     where s1 ... sm are fresh variables and
 
-        purify_res_body (return e)         = "(Left e,(s1,(...,sm)))"
+--        purify_res_body (return e)         = "(Left e,(s1,(...,sm)))"
+        purify_res_body (return e)         = "(Left (e,(s1,(...,sm))))"
 
 	purify_res_body (signal e
-	                  >>= g e1 ... ek) = "(Right (e,R_g e1 ... ek),(s1,(...,sm)))"
+	                  >>= g e1 ... ek) = "Right ((e, (s1,(...,sm))), R_g e1 ... ek)"
+--	                  >>= g e1 ... ek) = "(Right (e,R_g e1 ... ek),(s1,(...,sm)))"
 			          	     Side effect:
 					       * add the clause "R_g T1 ... Tk" to R
 						    (where Ti is the type of ei)
 					       * add the eqn
+					           dispatch ((R_g e1 ... ek),(s1,...,sm)) i
+						      = g_pure e1 ... ek i s1 ... sm
+						 to defn of dispatch
+{-
 					           dispatch (R_g e1 ... ek) i
 						      = g_pure e1 ... ek i
-						 to defn of dispatch
+-}
 
-        purify_res_body (signal e)         = "(Right (e,R_ret),(s1,(...,sm)))"
+        purify_res_body (signal e)         = "(Right ((e,(s1,(...,sm))),R_ret))"
+--        purify_res_body (signal e)         = "(Right (e,R_ret),(s1,(...,sm)))"
 			          	     Side effect:
 					       * add the clause "R_return" to R
+					           --- ^^^ correct
 					       * add the eqn
 					           dispatch R_return i = Left i
 						 to defn of dispatch
 
+	purify_res_body (e >>= g e1 ... ek)  = "let
+			       		        -- N.B.: The irrefutable pattern here is
+						-- sketchy, but it should be okay because
+						-- of the restriction on occurrences of
+						-- "signal"
+                                                (Left (v,(s1,(...,sm)))) = [|purify_res_body e|]
+--                                                (Left v,(s1,(...,sm))) = [|purify_res_body e|]
+                                              in
+                                                 g_pure e1 ... ek v s1 ... sm"
+
+
+{-
 	purify_res_body (e >>= g)          = "let
 			       		        -- N.B.: The irrefutable pattern here is
 						-- sketchy, but it should be okay because
 						-- of the restriction on occurrences of
 						-- "signal"
-                                                (Left v,(s1,(...,sm))) = [|purify_res_body e|]
+                                                (Left (v,(s1,(...,sm)))) = [|purify_res_body e|]
+--                                                (Left v,(s1,(...,sm))) = [|purify_res_body e|]
                                               in
                                                  g_pure v s1 ... sm"
+-}
 
         purify_res_body (lift e)           = "let
                                                  (v,(s1,(...,sm))) = [|purify_state_body 1 e|]
                                               in
-                                                 (Left v,(s1,(...,sm)))"
+                                                 (Left (v,(s1,(...,sm))))"
+--                                                 (Left v,(s1,(...,sm)))"
 
         purify_res_body (f e1 ... ek)      = "f_pure e1 .... ek"
+	-- k encompasses both lambda lifted and state params.
 
         purify_res_body (case e of
                            P1 -> e1
@@ -205,5 +235,6 @@ The purification procedure rewrites each definition as follows.
 - In addition to all the above, we re-tie the recursive knot by adding a new
   "start" as follows:
 
-  	  start :: ReT In Out I T
+  	  start :: ReT In Out I (T,(S1,...,Sm))
+--  	  start :: ReT In Out I T
 	  start = unfold dispatch start_pure

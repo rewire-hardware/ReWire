@@ -1,4 +1,4 @@
-module Mods (CX.Y(..), x, y) where
+module Main (CX.Y(..), x, y) where
 
 import qualified Mods.X as BX (x, X(..), Y(..))
 import qualified Mods.Y as BY (y, X(..), Y(..))
@@ -15,4 +15,11 @@ y :: BX.Y
 y = BY.y
 
 
+main :: ReT BY.X BX.Y I ()
+main = do
+  signal y
+  main
+
+start :: ReT BY.X BX.Y I ()
+start = main
 

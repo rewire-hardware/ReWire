@@ -4,6 +4,12 @@
 --
 data Bit = Zero | One
 data W8  = W8 Bit Bit Bit Bit Bit Bit Bit Bit
+data T   = A Bit | B Bit W8
+
+{-
+Inductive Bit := Zero : Bit | One : Bit ;;
+Inductive W8  := W8 : Bit -> ... -> W8 ;;
+-}
 
 plusW8 :: W8 -> W8 -> W8
 {-# INLINE plusW8 #-}
@@ -30,3 +36,9 @@ loop n m = do b <- signal n
               case b of
                   One  -> loop n m
                   Zero -> loop m (plusW8 n m)
+
+{-
+
+Definition loop 
+
+-}

@@ -187,7 +187,7 @@ askGIdTy i = do defns <- askDefns
 compileExp :: C.Exp -> CM ([Stmt],Name)
 compileExp e_ = case e of
                   App {}        -> failAt (ann e_) "compileExp: Got App after flattening (can't happen)"
-                  Prim {}       -> failAt (ann e_) "compileExp: Encountered Prim"
+                  Prim {}       -> failAt (ann e_) $ "compileExp: Encountered unknown Prim: " ++ prettyPrint e
                   GVar _ t i    -> do n           <- liftM (++"_res") $ freshName (mangle i)
                                       n_inst      <- liftM (++"_call") $ freshName (mangle i)
                                       let tres    =  last (flattenArrow t)
@@ -342,5 +342,9 @@ compileDefn d | defnName d == "Main.start" = do
 
 compileProgram :: C.Program -> Either AstError M.Program
 compileProgram p = fst $ runIdentity $ flip runReaderT (ctors p,defns p) $ flip runStateT ([],[],0) $ runSyntaxError $
-                     do units <- mapM compileDefn (defns p)
+                     do
+                        units <- {- trace (show $ map proj (defns p)) $ -} mapM compileDefn (defns p)
                         return (M.Program units)
+
+proj :: Defn -> GId
+proj (Defn _ gid _ _) = gid

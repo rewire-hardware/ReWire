@@ -1,4 +1,4 @@
-module Infix where
+module Main where
 
 import Mods.Infix ((<|), L (..), R (..), R' (..), L' (..), lt)
 
@@ -71,3 +71,10 @@ e' = L `lt` R `lt` L `rt` L `Mods.Infix.lt` R
 a'' :: L'
 a'' = L' :> R' :> L' Mods.Infix.:< L' :< R'
 
+main :: ReT L R I ()
+main = do
+  signal d
+  main
+
+start :: ReT L R I ()
+start = main

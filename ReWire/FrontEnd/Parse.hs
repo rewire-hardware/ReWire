@@ -1,16 +1,16 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase, FlexibleContexts #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.FrontEnd.Parse (tryParseInDir) where
 
 import ReWire.Error
 
-import Language.Haskell.Exts.Annotated (parseFileWithMode, ParseResult (..), defaultParseMode, ParseMode (..))
+import Language.Haskell.Exts (parseFileWithMode, ParseResult (..), defaultParseMode, ParseMode (..))
 import safe Control.Monad.IO.Class (liftIO, MonadIO)
 import safe Language.Haskell.Exts.SrcLoc (SrcSpanInfo, SrcLoc (..))
-import safe Language.Haskell.Exts.Annotated.Syntax (Module (..))
+import safe Language.Haskell.Exts.Syntax (Module (..))
 import safe System.Directory (getCurrentDirectory, setCurrentDirectory, doesFileExist, doesDirectoryExist)
 
-tryParseInDir :: (MonadIO m, SyntaxError m) => FilePath -> FilePath -> m (Maybe (Module SrcSpanInfo))
+tryParseInDir :: (MonadIO m, MonadError AstError m) => FilePath -> FilePath -> m (Maybe (Module SrcSpanInfo))
 tryParseInDir fp dp = do
       dExists <- liftIO $ doesDirectoryExist dp
       if not dExists then return Nothing else do
@@ -23,7 +23,7 @@ tryParseInDir fp dp = do
             liftIO $ setCurrentDirectory oldCwd
             return result
 
-      where pr2Cache :: SyntaxError m => ParseResult a -> m a
+      where pr2Cache :: MonadError AstError m => ParseResult a -> m a
             pr2Cache = \ case
                   ParseOk p                       -> return p
                   ParseFailed (SrcLoc "" r c) msg -> failAt (SrcLoc fp r c) msg

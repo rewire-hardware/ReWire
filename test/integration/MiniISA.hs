@@ -1,3 +1,30 @@
+{-
+---------------------------------------------
+--- ReWire Fig Leaf
+---------------------------------------------
+
+import Data.Bits
+import Data.Word
+import Data.Char
+import Control.Monad.Identity
+import Control.Monad.State
+import Control.Monad.Resumption.Reactive
+
+type ReT = ReacT
+type StT = StateT
+type I   = Identity
+
+extrude :: Monad m => ReT i o (StT s m) a -> s -> ReT i o m (a,s)
+extrude = undefined
+
+nativeVhdl :: String -> a -> a
+nativeVhdl = flip const
+
+---------------------------------------------
+--- End of Fig Leaf
+---------------------------------------------
+-}
+
 -- end kludge
 data Bit = Zero | One
 data W8  = W8 Bit Bit Bit Bit Bit Bit Bit Bit
@@ -11,71 +38,71 @@ data Register = R0 | R1 | R2 | R3
 
 notBit   :: Bit -> Bit
 {-# INLINE notBit #-}
-notBit   =  nativeVhdl "prim_notBit" undefined
+notBit   =  nativeVhdl "prim_notBit" notBit
 eqBit    :: Bit -> Bit -> Bit
 {-# INLINE eqBit    #-}
-eqBit    =  nativeVhdl "prim_eqBit" undefined
+eqBit    =  nativeVhdl "prim_eqBit" eqBit
 andBit   :: Bit -> Bit -> Bit
 {-# INLINE andBit   #-}
-andBit   =  nativeVhdl "prim_andBit" undefined
+andBit   =  nativeVhdl "prim_andBit" andBit
 orBit    :: Bit -> Bit -> Bit
 {-# INLINE orBit    #-}
-orBit    =  nativeVhdl "prim_orBit" undefined
+orBit    =  nativeVhdl "prim_orBit" orBit
 xorBit   :: Bit -> Bit -> Bit
 {-# INLINE xorBit   #-}
-xorBit   =  nativeVhdl "prim_xorBit" undefined
+xorBit   =  nativeVhdl "prim_xorBit" xorBit
 
 zeroW8   :: W8
 {-# INLINE zeroW8   #-}
-zeroW8   =  nativeVhdl "prim_zeroW8" undefined
+zeroW8   =  nativeVhdl "prim_zeroW8" zeroW8
 oneW8    :: W8
 {-# INLINE oneW8    #-}
-oneW8    =  nativeVhdl "prim_oneW8" undefined
+oneW8    =  nativeVhdl "prim_oneW8" oneW8
 notW8    :: W8 -> W8
 {-# INLINE notW8    #-}
-notW8    =  nativeVhdl "prim_notW8" undefined
+notW8    =  nativeVhdl "prim_notW8" notW8
 andW8    :: W8 -> W8 -> W8
 {-# INLINE andW8    #-}
-andW8    =  nativeVhdl "prim_andW8" undefined
+andW8    =  nativeVhdl "prim_andW8" andW8
 orW8     :: W8 -> W8 -> W8
 {-# INLINE orW8     #-}
-orW8     =  nativeVhdl "prim_orW8" undefined
+orW8     =  nativeVhdl "prim_orW8" orW8
 xorW8    :: W8 -> W8 -> W8
 {-# INLINE xorW8    #-}
-xorW8    =  nativeVhdl "prim_xorW8" undefined
+xorW8    =  nativeVhdl "prim_xorW8" xorW8
 eqW8     :: W8 -> W8 -> Bit
 {-# INLINE eqW8     #-}
-eqW8     =  nativeVhdl "prim_eqW8" undefined
+eqW8     =  nativeVhdl "prim_eqW8" eqW8
 rolW8    :: W8 -> W8
 {-# INLINE rolW8    #-}
-rolW8    =  nativeVhdl "prim_rolW8" undefined
+rolW8    =  nativeVhdl "prim_rolW8" rolW8
 rorW8    :: W8 -> W8
 {-# INLINE rorW8    #-}
-rorW8    =  nativeVhdl "prim_rorW8" undefined
+rorW8    =  nativeVhdl "prim_rorW8" rorW8
 plusCW8  :: W8 -> W8 -> Bit -> (Bit,W8)
 {-# INLINE plusCW8  #-}
-plusCW8  =  nativeVhdl "prim_plusCW8" undefined
+plusCW8  =  nativeVhdl "prim_plusCW8" plusCW8
 plusW8   :: W8 -> W8 -> (Bit,W8)
 {-# INLINE plusW8   #-}
-plusW8   =  nativeVhdl "prim_plusW8" undefined
+plusW8   =  nativeVhdl "prim_plusW8" plusW8
 negW8    :: W8 -> W8 -> W8
 {-# INLINE negW8    #-}
-negW8    =  nativeVhdl "prim_negW8" undefined
+negW8    =  nativeVhdl "prim_negW8" negW8
 minusCW8 :: W8 -> W8 -> Bit -> (Bit,W8)
 {-# INLINE minusCW8 #-}
-minusCW8 =  nativeVhdl "prim_minusCW8" undefined
+minusCW8 =  nativeVhdl "prim_minusCW8" minusCW8
 shlCW8   :: W8 -> Bit -> (Bit,W8)
 {-# INLINE shlCW8   #-}
-shlCW8   =  nativeVhdl "prim_shlCW8" undefined
+shlCW8   =  nativeVhdl "prim_shlCW8" shlCW8
 shrCW8   :: W8 -> Bit -> (Bit,W8)
 {-# INLINE shrCW8   #-}
-shrCW8   =  nativeVhdl "prim_shrCW8" undefined
+shrCW8   =  nativeVhdl "prim_shrCW8" shrCW8
 msbW8    :: W8 -> Bit
 {-# INLINE msbW8    #-}
-msbW8    =  nativeVhdl "prim_msbW8" undefined
+msbW8    =  nativeVhdl "prim_msbW8" msbW8
 lsbW8    :: W8 -> Bit
 {-# INLINE lsbW8    #-}
-lsbW8    =  nativeVhdl "prim_lsbW8" undefined
+lsbW8    =  nativeVhdl "prim_lsbW8" lsbW8
 
 mkReg :: Bit -> Bit -> Register
 mkReg  Zero  Zero = R0
@@ -129,12 +156,10 @@ putPC :: W8 -> ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE putPC #-}
 putPC pc = getState >>= \s -> putState (setPC s pc)
 
-fst :: (a,b) -> a
-{-# INLINE fst #-}
+fst :: (Bit,W8) -> Bit
 fst (x, _) = x
 
-snd :: (a,b) -> b
-{-# INLINE snd #-}
+snd :: (Bit,W8) -> W8
 snd (_, x) = x
 
 incrPC :: ReT Inputs Outputs (StT CPUState I) ()

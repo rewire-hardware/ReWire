@@ -42,17 +42,17 @@ type CAssump = (Name DataConId, Poly)
 
 type TCM m = ReaderT TCEnv (StateT TySub m)
 
-typeCheck :: SyntaxError m => FreeProgram -> m FreeProgram
+typeCheck :: MonadError AstError m => FreeProgram -> m FreeProgram
 typeCheck (ts, vs) = runFreshMT $
       evalStateT (runReaderT (tc (ts, vs)) (TCEnv mempty mempty (getArrow ts))) mempty
 
-localAssumps :: SyntaxError m => (Map (Name Exp) Poly -> Map (Name Exp) Poly) -> TCM m a -> TCM m a
+localAssumps :: MonadError AstError m => (Map (Name Exp) Poly -> Map (Name Exp) Poly) -> TCM m a -> TCM m a
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
 
-localCAssumps :: SyntaxError m => (Map (Name DataConId) Poly -> Map (Name DataConId) Poly) -> TCM m a -> TCM m a
+localCAssumps :: MonadError AstError m => (Map (Name DataConId) Poly -> Map (Name DataConId) Poly) -> TCM m a -> TCM m a
 localCAssumps f = local (\ tce -> tce { cas = f (cas tce) })
 
-freshv :: (Fresh m, SyntaxError m) => TCM m Ty
+freshv :: (Fresh m, MonadError AstError m) => TCM m Ty
 freshv = do
       n <- fresh $ string2Name "?"
       modify $ Map.insert n $ TyVar noAnn kblank n
@@ -66,6 +66,7 @@ dataDeclAssumps (DataDefn _ _ _ cs) = map dataConAssump cs
 
 dataConAssump :: DataCon -> CAssump
 dataConAssump (DataCon _ i (Embed t)) = (i, t)
+dataConAssump _ = undefined -- TODO(chathhorn): record stuff not typechecked
 
 (@@) :: TySub -> TySub -> TySub
 s1 @@ s2 = Map.mapWithKey (\ _ t -> subst s1 t) s2 `Map.union` s1
@@ -73,12 +74,12 @@ s1 @@ s2 = Map.mapWithKey (\ _ t -> subst s1 t) s2 `Map.union` s1
 isFlex :: Name a -> Bool
 isFlex = (=='?') . head . name2String
 
-varBind :: SyntaxError m => Annote -> Name Ty -> Ty -> TCM m TySub
+varBind :: MonadError AstError m => Annote -> Name Ty -> Ty -> TCM m TySub
 varBind an u t | t `aeq` TyVar noAnn kblank u = return mempty
                | u `elem` fv t                = failAt an $ "Occurs check fails: " ++ show u ++ ", " ++ prettyPrint t
                | otherwise                    = return (Map.singleton u t)
 
-mgu :: SyntaxError m => Annote -> Ty -> Ty -> TCM m TySub
+mgu :: MonadError AstError m => Annote -> Ty -> Ty -> TCM m TySub
 mgu an (TyApp _ tl tr) (TyApp _ tl' tr')                                      = do
       s1 <- mgu an tl tl'
       s2 <- mgu an (subst s1 tr) $ subst s1 tr'
@@ -93,13 +94,13 @@ mgu an (TyComp _ m t)  (TyComp _ m' t')                                       = 
       return $ s2 @@ s1
 mgu an t1 t2 = failAt an $ "Types do not unify: " ++ prettyPrint t1 ++ ", " ++ prettyPrint t2
 
-unify :: SyntaxError m => Annote -> Ty -> Ty -> TCM m ()
+unify :: MonadError AstError m => Annote -> Ty -> Ty -> TCM m ()
 unify an t1 t2 = do
       s <- get
       u <- mgu an (subst s t1) $ subst s t2
       modify (u@@)
 
-inst :: (Fresh m, SyntaxError m) => Poly -> TCM m Ty
+inst :: (Fresh m, MonadError AstError m) => Poly -> TCM m Ty
 inst (Poly pt) = do
       (tvs, t) <- unbind pt
       sub      <- Map.fromList <$> mapM (\ tv -> (tv,) <$> freshv) tvs
@@ -119,7 +120,7 @@ patHoles = \ case
             x <- fresh $ string2Name "PHOLE"
             return [(x, [] `poly` t)]
 
-tcPat :: (Fresh m, SyntaxError m) => Ty -> Pat -> TCM m Pat
+tcPat :: (Fresh m, MonadError AstError m) => Ty -> Pat -> TCM m Pat
 tcPat t = \ case
       PatVar an _ x  -> return $ PatVar an (Embed t) x
       PatCon an _ (Embed i) ps -> do
@@ -136,7 +137,7 @@ tcPat t = \ case
                               unify an t tres
                               return $ PatCon an (Embed t) (Embed i) ps'
 
-tcMatchPat :: (Fresh m, SyntaxError m) => Ty -> MatchPat -> TCM m MatchPat
+tcMatchPat :: (Fresh m, MonadError AstError m) => Ty -> MatchPat -> TCM m MatchPat
 tcMatchPat t = \ case
       MatchPatVar an _ -> return $ MatchPatVar an t
       MatchPatCon an _ i ps -> do
@@ -153,7 +154,7 @@ tcMatchPat t = \ case
                               unify an t tres
                               return $ MatchPatCon an t i ps'
 
-tcExp :: (Fresh m, SyntaxError m) => Exp -> TCM m (Exp, Ty)
+tcExp :: (Fresh m, MonadError AstError m) => Exp -> TCM m (Exp, Ty)
 tcExp = \ case
       e_@(App an _ _)        -> do
             let (ef:es) =  flattenApp e_
@@ -215,6 +216,7 @@ tcExp = \ case
                         (e2', te2)  <- tcExp e2
                         unify an tv te2
                         return (Match an tv e' p' f as (Just e2'), tv)
+      nv@(NativeVHDL _ _ (Error _ t _)) -> return (nv, t)
       NativeVHDL an n e      -> do
             (e', te) <- tcExp e
             return (NativeVHDL an n e', te)
@@ -222,11 +224,12 @@ tcExp = \ case
             tv <- freshv
             return (Error an tv m, tv)
 
+      _ -> undefined -- TODO(chathhorn): record stuff not typechecked
 mkApp :: Annote -> Exp -> [Exp] -> [Name Exp] -> Exp
 mkApp an f as holes = foldl' (\ e x -> App an e x) f
       $ as ++ map (Var an tblank) holes
 
-tcDefn :: (Fresh m, SyntaxError m) => Defn -> TCM m Defn
+tcDefn :: (Fresh m, MonadError AstError m) => Defn -> TCM m Defn
 tcDefn d  = do
       put mempty
       let Defn an n (Embed (Poly pt)) b (Embed e) = force d
@@ -242,7 +245,7 @@ tcDefn d  = do
       let d' = Defn noAnn n (tvs |-> t) b $ Embed $ bind vs $ subst s e''
       d' `deepseq` return d'
 
-tc :: (Fresh m, SyntaxError m) => FreeProgram -> TCM m FreeProgram
+tc :: (Fresh m, MonadError AstError m) => FreeProgram -> TCM m FreeProgram
 tc (ts, vs) = do
       let as   =  Map.fromList $ map defnAssump vs
           cas  =  Map.fromList $ concatMap dataDeclAssumps ts

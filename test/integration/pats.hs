@@ -19,4 +19,10 @@ baz b = f c
             f Zero = One
             c      = One
 
+main :: ReT Bit Bit I ()
+main = do
+  signal $ neg $ baz $ Zero
+  main
 
+start :: ReT Bit Bit I ()
+start = main

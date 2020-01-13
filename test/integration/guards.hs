@@ -49,3 +49,10 @@ nonsense
             b :: (Bit, Bit, Bit)
             b = (One, Zero, One)
 
+main :: ReT Bool Bool I ()
+main = do
+  signal nonsense
+  main
+
+start :: ReT Bool Bool I ()
+start = main

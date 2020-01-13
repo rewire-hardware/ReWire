@@ -1,6 +1,7 @@
 {-# LANGUAGE Rank2Types, ScopedTypeVariables, GADTs, TypeOperators, StandaloneDeriving
-           , TypeFamilies, DeriveGeneric, LambdaCase #-}
+           , TypeFamilies, DeriveGeneric, LambdaCase, DeriveDataTypeable #-}
 {-# LANGUAGE Safe #-}
+{-# OPTIONS_GHC -Wno-missing-methods #-}
 module ReWire.Annotation
       ( Annote (..)
       , Annotation (..)
@@ -16,14 +17,13 @@ import ReWire.FrontEnd.Unbound (Alpha (..))
 import Control.DeepSeq (NFData (..))
 import Control.Monad.Identity (Identity(..))
 import Data.Data (Typeable,Data(..))
-import Language.Haskell.Exts.Annotated.ExactPrint (ExactP)
+import Language.Haskell.Exts.ExactPrint (ExactP)
 import Language.Haskell.Exts.SrcLoc
       ( SrcLoc, SrcInfo (..), SrcSpanInfo (..), SrcSpan (..)
       , noLoc, noInfoSpan, mkSrcSpan)
 
-import qualified Language.Haskell.Exts.Annotated.Syntax as HS (Annotated(..))
+import qualified Language.Haskell.Exts.Syntax as HS (Annotated(..))
 import qualified Language.Haskell.Exts.Pretty as HS (Pretty)
-
 
 import safe GHC.Generics (Generic (..))
 
@@ -72,10 +72,7 @@ instance SrcInfo Annote where
       startColumn     = startColumn . toSrcSpanInfo
 
 -- | Using the default definition of gfoldl.
-instance Data Annote where
-      gunfold    = undefined
-      toConstr   = undefined
-      dataTypeOf = undefined
+instance Data Annote
 
 instance Show Annote where
       show NoAnnote      = "NoAnnote"

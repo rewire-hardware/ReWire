@@ -1,0 +1,979 @@
+module PicoBlaze where
+
+import RWPrelude
+
+-- rewriting of PicoBlaze in Haskell syntax
+
+type Instruction = W18
+type Register    = W4
+
+data Flag        = FlagZ | FlagC | FlagZsave | FlagCsave | FlagIE 
+data Flags       = Flags Bit Bit Bit Bit Bit 
+
+data Stack       = Stack (W5->W10) W5              -- stack (ring buffer) contents, stack pointer
+
+data Inputs      = Inputs W18 W8 Bit Bit           -- instruction, inport, interrupt, reset
+data Outputs     = Outputs W10 W18 Bit W8 Bit Bit  -- addr, portid, write strobe,
+                                                   -- outport, read strobe, interrupt ack
+
+data CPUState    = CPUState RegFile Flags Mem Stack Outputs Inputs
+type CPU m       = ReT Outputs Inputs (StateT CPUState m) 
+type Binop       = W8 -> W8 -> Bit -> (Bit,W8)     -- (x, y, carry-in; return is carry-out, result)
+type Unop        = W8 -> Bit -> (Bit,W8)           -- (x, carry-in; return is carry-out, result)
+
+
+
+{-
+getFlag :: Flag -> <CPU m><Bit>
+is
+ \ f ->
+   bind ff <- getFlags
+   in
+     case ff of
+     {
+      Flags fz fc fzs fcs fie ->
+       case f of
+       { FlagZ     -> return fz
+       ; FlagC     -> return fc
+       ; FlagZsave -> return fzs
+       ; FlagCsave -> return fcs
+       ; FlagIE    -> return fie
+       }
+     }
+end
+
+putFlag :: Flag -> Bit -> <CPU m><()>
+is
+ \ f -> \ b ->
+  bind ff <- getFlags
+  in
+    case ff of
+    {
+     Flags fz fc fzs fcs fie ->
+      case f of
+      { FlagZ     -> putFlags (Flags b fc fzs fcs fie)
+      ; FlagC     -> putFlags (Flags fz b fzs fcs fie)
+      ; FlagZsave -> putFlags (Flags fz fc b fcs fie)
+      ; FlagCsave -> putFlags (Flags fz fc fzs b fie)
+      ; FlagIE    -> putFlags (Flags fz fc fzs fcs b)
+      }
+    }
+end
+
+getFlags :: <CPU m><Flags>
+is
+  lift (
+       bind st <- get
+    in case st of
+       { CPUState _ ff _ _ _ _ -> return ff
+       }
+  )
+end
+
+putFlags :: Flags -> <CPU m><()>
+is
+  \ ff ->
+   lift (
+        bind st -> get
+     in case st of
+        { CPUState rf _ mem sta o i -> put (CPUState rf ff mem sta o i)
+        }
+   )
+end
+
+getReg :: Register -> <CPU m><W8>
+is
+  \ r -> bind rf <- getRegFile
+      in return (tblGet rf r)
+end
+
+putReg :: Register -> W8 -> <CPU m><()>
+is
+  \ r -> \ b ->
+         bind rf <- getRegFile
+      in putRegFile (tblPut rf r b)
+end
+
+getRegFile :: <CPU m><RegFile>
+is
+  lift (
+       bind st <- get
+    in case st of
+       { CPUState rf _ _ _ _ _ -> return rf
+       }
+  )
+end
+
+putRegFile :: RegFile -> <CPU m><()>
+is
+  \ rf ->
+   lift (
+        bind st -> get
+     in case st of
+        { CPUState _ ff mem sta o i -> put (CPUState rf ff mem sta o i)
+        }
+   )
+end
+
+push :: W10 -> <CPU m><()>
+is
+  \ a ->
+      bind st <- getStack
+   in let p'  =  plus__W10 (pos st) (literal__1__W10)
+   in let c'  =  tblPut (contents st) p' a
+   in putStack (Stack p' c')
+end
+
+pop :: <CPU m><()>
+is
+     bind st <- getStack
+  in putStack (Stack (minus__W10 (pos st) (literal__1__W10)) (contents st))
+end
+
+getPC :: <CPU m><W10>
+is
+     bind st <- getStack
+  in return (tblGet (contents st) (pos st))
+end
+
+putPC :: W10 -> <CPU m><()>
+is
+  \ a ->
+       bind st <- getStack
+    in return (Stack (tblPut (contents st) a) (pos st))
+end
+
+incrPC :: <CPU m><()>
+is
+     bind pc <- getPC
+  in putPC (plus__W10 pc (literal__1__W10))
+end
+
+getStack :: <CPU m><Stack>
+is
+   lift (
+          bind st <- get
+       in case st of
+          { CPUState _ _ _ sta _ _ -> return sta }
+   )
+end
+
+putStack :: Stack -> <CPU m><()>
+is
+  \ sta ->
+    lift (
+          bind st <- get
+       in case st of
+          { CPUState rf ff mem _ o i -> put (CPUState rf ff mem sta o i) }
+    )
+end
+
+getFromRAM :: W6 -> <CPU m><W8>
+is
+  \ a ->
+      bind mem <- getRAM
+   in return (tblGet mem a)
+end
+
+putToRAM :: W6 -> W8 -> <CPU m><()>
+is
+  \ a -> \ b ->
+      bind mem <- getRAM
+   in putRAM (tblPut mem a b)
+end
+
+getRAM :: <CPU m><Mem>
+is
+   lift (
+          bind st <- get
+       in case st of
+          { CPUState _ _ mem _ _ _ -> return mem }
+   )
+end
+
+putRAM :: RAM -> <CPU m><()>
+is
+  \ mem ->
+    lift (
+          bind st <- get
+       in case st of
+          { CPUState rf ff _ sta o i -> put (CPUState rf ff mem sta o i) }
+    )
+end
+
+writePortID :: W8 -> <CPU m><()>
+is
+  \ b -> bind o <- getOutputs
+      in case o of
+         { Outputs addr _ wstrobe outport rstrobe ack -> Outputs addr b wstrobe outport rstrobe ack }
+end
+
+readInPort :: <CPU m><W8>
+is
+     bind i <- getInputs
+  in case i of
+     { Inputs _ inport _ _ -> return inport }
+end
+
+writeOutPort :: W8 -> <CPU m><()>
+is
+   \ outport ->
+     bind o <- getOutputs
+  in case o of
+     { Outputs addr portid wstrobe _ rstrobe ack -> Outputs addr portid wstrobe outport rstrobe ack }
+end
+
+tick :: <CPU m><()>
+is
+     bind pc <- getPC
+  in bind _  <- putAddrOut pc
+  in bind o  <- getOutputs
+  in bind i  <- signal o
+  in putInputs i
+end
+
+decode :: Instruction -> <CPU m><()>
+is
+  \ i ->
+     case i of
+     { (W18  Zero  One  One  Zero  Zero  Zero x0 x1 x2 x3 k0 k1 k2 k3 k4 k5 k6 k7) ->
+         addImm (W4 x0 x1 x2 x3) (W8 k0 k1 k2 k3 k4 k5 k6 k7)
+     ; (W18  Zero  One  One  Zero  Zero  One x0 x1 x2 x3 y0 y1 y2 y3  Zero  Zero  Zero  Zero) ->
+         addReg (W4 x0 x1 x2 x3) (W4 y0 y1 y2 y3)
+     ; (W18  Zero  One  One  Zero  One  Zero x0 x1 x2 x3 k0 k1 k2 k3 k4 k5 k6 k7) ->
+         addImmC (W4 x0 x1 x2 x3) (W8 k0 k1 k2 k3 k4 k5 k6 k7)
+     ; (W18  Zero  One  One  Zero  One  One x0 x1 x2 x3 y0 y1 y2 y3  Zero  Zero  Zero  Zero) ->
+         addRegC (W4 x0 x1 x2 x3) (W4 y0 y1 y2 y3)
+     ; (W18  Zero  Zero  One  Zero  One  Zero x0 x1 x2 x3 k0 k1 k2 k3 k4 k5 k6 k7) ->
+         andImm (W4 x0 x1 x2 x3) (W8 k0 k1 k2 k3 k4 k5 k6 k7)
+     ; (W18  Zero  Zero  One  Zero  One  One x0 x1 x2 x3 y0 y1 y2 y3  Zero  Zero  Zero  Zero) ->
+         andReg (W4 x0 x1 x2 x3) (W4 y0 y1 y2 y3)
+     ; (W18  One  One  Zero  Zero  Zero  Zero  Zero  Zero a0 a1 a2 a3 a4 a5 a6 a7 a8 a9) ->
+         call (W10 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9)
+     ; (W18  One  One  Zero  Zero  Zero  One  One  Zero a0 a1 a2 a3 a4 a5 a6 a7 a8 a9) ->
+         callC (W10 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9)
+     ; (W18  One  One  Zero  Zero  Zero  One  One  One a0 a1 a2 a3 a4 a5 a6 a7 a8 a9) ->
+         callNC (W10 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9)
+     ; (W18  One  One  Zero  Zero  Zero  One  Zero  One a0 a1 a2 a3 a4 a5 a6 a7 a8 a9) ->
+         callNZ (W10 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9)
+     ; (W18  One  One  Zero  Zero  Zero  One  Zero  Zero a0 a1 a2 a3 a4 a5 a6 a7 a8 a9) ->
+         callZ (W10 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9)
+     ; (W18  Zero  One  Zero  One  Zero  Zero x0 x1 x2 x3 k0 k1 k2 k3 k4 k5 k6 k7) ->
+         compareImm (W4 x0 x1 x2 x3) (W8 k0 k1 k2 k3 k4 k5 k6 k7)
+     ; (W18  Zero  One  Zero  One  Zero  One x0 x1 x2 x3 y0 y1 y2 y3  Zero  Zero  Zero  Zero) ->
+         compareReg (W4 x0 x1 x2 x3) (W4 y0 y1 y2 y3)
+     ; (W18  One  One  One  One  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  b) ->
+         setInterruptEnable b  -- both EINT and DINT are handled here
+     ; (W18  Zero  Zero  Zero  One  One  Zero x0 x1 x2 x3  Zero  Zero s0 s1 s2 s3 s4 s5) ->
+         fetchImm (W4 x0 x1 x2 x3) (W6 s0 s1 s2 s3 s4 s5)
+     ; (W18  Zero  Zero  Zero  One  One  One x0 x1 x2 x3 y0 y1 y2 y3  Zero  Zero  Zero  Zero) ->
+         fetchReg (W4 x0 x1 x2 x3) (W4 y0 y1 y2 y3)
+     ; (W18  Zero  Zero  Zero  One  Zero  One x0 x1 x2 x3 y0 y1 y2 y3  Zero  Zero  Zero  Zero) ->
+         inputReg (W4 x0 x1 x2 x3) (W4 y0 y1 y2 y3)
+     ; (W18  Zero  Zero  Zero  One  Zero  Zero x0 x1 x2 x3 p0 p1 p2 p3 p4 p5 p6 p7) ->
+         inputImm (W4 x0 x1 x2 x3) (W8 p0 p1 p2 p3 p4 p5 p6 p7)
+     ; (W18  One  One  Zero  One  Zero  Zero  Zero  Zero a0 a1 a2 a3 a4 a5 a6 a7 a8 a9) ->
+         jump (W10 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9)
+     ; (W18  One  One  Zero  One  Zero  One  One  Zero a0 a1 a2 a3 a4 a5 a6 a7 a8 a9) ->
+         jumpC (W10 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9)
+     ; (W18  One  One  Zero  One  Zero  One  One  One a0 a1 a2 a3 a4 a5 a6 a7 a8 a9) ->
+         jumpNC (W10 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9)
+     ; (W18  One  One  Zero  One  Zero  One  Zero  One a0 a1 a2 a3 a4 a5 a6 a7 a8 a9) ->
+         jumpNZ (W10 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9)
+     ; (W18  One  One  Zero  One  Zero  One  Zero  Zero a0 a1 a2 a3 a4 a5 a6 a7 a8 a9) ->
+         jumpZ (W10 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9)
+     ; (W18  Zero  Zero  Zero  Zero  Zero  Zero x0 x1 x2 x3 k0 k1 k2 k3 k4 k5 k6 k7) ->
+         loadImm (W4 x0 x1 x2 x3) (W8 k0 k1 k2 k3 k4 k5 k6 k7)
+     ; (W18  Zero  Zero  Zero  Zero  Zero  One x0 x1 x2 x3 y0 y1 y2 y3  Zero  Zero  Zero  Zero) ->
+         loadReg (W4 x0 x1 x2 x3) (W4 y0 y1 y2 y3)
+     ; (W18  Zero  Zero  One  One  Zero  Zero x0 x1 x2 x3 k0 k1 k2 k3 k4 k5 k6 k7) ->
+         orImm (W4 x0 x1 x2 x3) (W8 k0 k1 k2 k3 k4 k5 k6 k7)
+     ; (W18  Zero  Zero  One  One  Zero  One x0 x1 x2 x3 y0 y1 y2 y3  Zero  Zero  Zero  Zero) ->
+         orReg (W4 x0 x1 x2 x3) (W4 y0 y1 y2 y3)
+     ; (W18  One  Zero  One  One  Zero  One x0 x1 x2 x3 y0 y1 y2 y3  Zero  Zero  Zero  Zero) ->
+         outputReg (W4 x0 x1 x2 x3) (W4 y0 y1 y2 y3)
+     ; (W18  One  Zero  One  One  Zero  Zero x0 x1 x2 x3 p0 p1 p2 p3 p4 p5 p6 p7) ->
+         outputImm (W4 x0 x1 x2 x3) (W8 p0 p1 p2 p3 p4 p5 p6 p7)
+     ; (W18  One  Zero  One  Zero  One  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero) ->
+         ret
+     ; (W18  One  Zero  One  Zero  One  One  One  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero) ->
+         retC
+     ; (W18  One  Zero  One  Zero  One  One  One  One  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero) ->
+         retNC
+     ; (W18  One  Zero  One  Zero  One  One  Zero  One  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero) ->
+         retNZ
+     ; (W18  One  Zero  One  Zero  One  One  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero) ->
+         retZ
+     ; (W18  One  One  One  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero  b) ->
+         reti b -- both RETI DISABLE and RETI ENABLE are handled here
+     ; (W18  One  Zero  Zero  Zero  Zero  Zero x0 x1 x2 x3  Zero  Zero  Zero  Zero  Zero  Zero  One  Zero) ->
+         rl (W4 x0 x1 x2 x3)
+     ; (W18  One  Zero  Zero  Zero  Zero  Zero x0 x1 x2 x3  Zero  Zero  Zero  Zero  One  One  Zero  Zero) ->
+         rr (W4 x0 x1 x2 x3)
+     ; (W18  One  Zero  Zero  Zero  Zero  Zero x0 x1 x2 x3  Zero  Zero  Zero  Zero  Zero  One  One  Zero) ->
+         sl0 (W4 x0 x1 x2 x3)
+     ; (W18  One  Zero  Zero  Zero  Zero  Zero x0 x1 x2 x3  Zero  Zero  Zero  Zero  Zero  One  One  One) ->
+         sl1 (W4 x0 x1 x2 x3)
+     ; (W18  One  Zero  Zero  Zero  Zero  Zero x0 x1 x2 x3  Zero  Zero  Zero  Zero  Zero  Zero  Zero  Zero) ->
+         sla (W4 x0 x1 x2 x3)
+     ; (W18  One  Zero  Zero  Zero  Zero  Zero x0 x1 x2 x3  Zero  Zero  Zero  Zero  Zero  One  Zero  Zero) ->
+         slx (W4 x0 x1 x2 x3)
+     ; (W18  One  Zero  Zero  Zero  Zero  Zero x0 x1 x2 x3  Zero  Zero  Zero  Zero  One  One  One  Zero) ->
+         sr0 (W4 x0 x1 x2 x3)
+     ; (W18  One  Zero  Zero  Zero  Zero  Zero x0 x1 x2 x3  Zero  Zero  Zero  Zero  One  One  One  One) ->
+         sr1 (W4 x0 x1 x2 x3)
+     ; (W18  One  Zero  Zero  Zero  Zero  Zero x0 x1 x2 x3  Zero  Zero  Zero  Zero  One  Zero  Zero  Zero) ->
+         sra (W4 x0 x1 x2 x3)
+     ; (W18  One  Zero  Zero  Zero  Zero  Zero x0 x1 x2 x3  Zero  Zero  Zero  Zero  One  Zero  One  Zero) ->
+         srx (W4 x0 x1 x2 x3)
+     ; (W18  One  Zero  One  One  One  Zero x0 x1 x2 x3  Zero  Zero s0 s1 s2 s3 s4 s5) ->
+         storeImm (W4 x0 x1 x2 x3) (W6 s0 s1 s2 s3 s4 s5)
+     ; (W18  One  Zero  One  One  One  One x0 x1 x2 x3 y0 y1 y2 y3  Zero  Zero  Zero  Zero) ->
+         storeReg (W4 x0 x1 x2 x3) (W4 y0 y1 y2 y3)
+     ; (W18  Zero  One  One  One  Zero  Zero x0 x1 x2 x3 k0 k1 k2 k3 k4 k5 k6 k7) ->
+         subImm (W4 x0 x1 x2 x3) (W8 k0 k1 k2 k3 k4 k5 k6 k7)
+     ; (W18  Zero  One  One  One  Zero  One x0 x1 x2 x3 y0 y1 y2 y3  Zero  Zero  Zero  Zero) ->
+         subReg (W4 x0 x1 x2 x3) (W4 y0 y1 y2 y3)
+     ; (W18  Zero  One  One  One  One  Zero x0 x1 x2 x3 k0 k1 k2 k3 k4 k5 k6 k7) ->
+         subImmC (W4 x0 x1 x2 x3) (W8 k0 k1 k2 k3 k4 k5 k6 k7)
+     ; (W18  Zero  One  One  One  One  One x0 x1 x2 x3 y0 y1 y2 y3  Zero  Zero  Zero  Zero) ->
+         subRegC (W4 x0 x1 x2 x3) (W4 y0 y1 y2 y3)
+     ; (W18  Zero  One  Zero  Zero  One  Zero x0 x1 x2 x3 k0 k1 k2 k3 k4 k5 k6 k7) ->
+         testImm (W4 x0 x1 x2 x3) (W8 k0 k1 k2 k3 k4 k5 k6 k7)
+     ; (W18  Zero  One  Zero  Zero  One  One x0 x1 x2 x3 y0 y1 y2 y3  Zero  Zero  Zero  Zero) ->
+         testReg (W4 x0 x1 x2 x3) (W4 y0 y1 y2 y3)
+     ; (W18  Zero  Zero  One  One  One  Zero x0 x1 x2 x3 k0 k1 k2 k3 k4 k5 k6 k7) ->
+         xorImm (W4 x0 x1 x2 x3) (W8 k0 k1 k2 k3 k4 k5 k6 k7)
+     ; (W18  Zero  Zero  One  One  One  One x0 x1 x2 x3 y0 y1 y2 y3  Zero  Zero  Zero  Zero) ->
+         xorReg (W4 x0 x1 x2 x3) (W4 y0 y1 y2 y3)
+     ; _                                                           ->
+         invalid
+     }
+end
+
+fst :: (a,b) -> a
+is
+  \ p -> case p of { (x,_) -> x }
+end
+
+snd :: (a,b) -> b
+is
+  \ p -> case p of { (_,y) -> y }
+end
+
+binopReg :: Binop -> Register -> Register -> <CPU m><()>
+is
+  \ oper -> \ sX -> \ sY ->
+       bind vX <- getReg sX
+    in bind vY <- getReg sY
+    in bind c  <- getFlag FlagC
+    in let p   =  oper vX vY c
+    in let c'  =  fst p
+    in let vX' =  snd p
+    in bind _  <- putFlag FlagZ (w8_eq vx' (W8 Zero Zero Zero Zero Zero Zero Zero Zero))
+    in bind _  <- putFlag FlagC c'
+    in bind _  <- putReg sX v'
+    in bind _  <- incrPC
+    in bind _  <- tick
+    in            tick
+end
+
+-- FIXME: These are not properly implementing carry-out!
+opAdd :: Binop
+is
+  \ x -> \ y -> \ ci -> (0,w8_add x y)
+end
+
+opAddC :: Binop
+is
+  \ x -> \ y -> \ ci -> (0,w8_add x (w8_add y (W8 Zero Zero Zero Zero Zero Zero Zero ci)))
+end
+
+opSub :: Binop
+is
+  \ x -> \ y -> \ ci -> (0,w8_sub x y)
+end
+
+opSubC :: Binop
+is
+  \ x -> \ y -> \ ci -> (0,w8_sub x (w8_sub y (W8 Zero Zero Zero Zero Zero Zero Zero ci)))
+end
+
+addImm :: Register -> W8 -> <CPU m><()>
+is
+  binopImm opAdd
+end
+
+addImmC :: Register -> W8 -> <CPU m><()>
+is
+  binopImm opAddC
+end
+
+addReg :: Register -> Register -> <CPU m><()>
+is
+  binopReg opAdd
+end
+
+addRegC :: Register -> Register -> <CPU m><()>
+is
+  binopReg opAddC
+end
+
+subImm :: Register -> W8 -> <CPU m><()>
+is
+  binopImm opSub
+end
+
+subImmC :: Register -> W8 -> <CPU m><()>
+is
+  binopImm opSubC
+end
+
+subReg :: Register -> Register -> <CPU m><()>
+is
+  binopReg opSub
+end
+
+subRegC :: Register -> Register -> <CPU m><()>
+is
+  binopReg opSubC
+end
+
+opAnd :: Binop
+is
+  \ x -> \ y -> \ cin -> (Zero,w8_and x y)
+end
+
+opOr :: Binop
+is
+  \ x -> \ y -> \ cin -> (Zero,w8_or x y)
+end
+
+opXor :: Binop
+is
+  \ x -> \ y -> \ cin -> (Zero,w8_xor x y)
+end
+
+andImm :: Register -> W8 -> <CPU m><()>
+is
+  binopImm opAnd
+end
+
+andReg :: Register -> Register -> <CPU m><()>
+is
+  binopReg opAnd
+end
+
+orImm :: Register -> W8 -> <CPU m><()>
+is
+  binopImm opOr
+end
+
+orReg :: Register -> Register -> <CPU m><()>
+is
+  binopReg opOr
+end
+
+xorImm :: Register -> W8 -> <CPU m><()>
+is
+  binopImm opXor
+end
+
+xorReg :: Register -> Register -> <CPU m><()>
+is
+  binopReg opXor
+end
+
+doUnop oper sX :: Unop -> Register -> <CPU m><()>
+is
+  \ oper -> \ sX ->
+       bind v <- getReg sX
+    in bind c <- getFlag FlagC
+    in let p  =  oper v c
+    in let c' =  fst p
+    in let v' =  snd p
+    in bind _ <- putFlag FlagZ (w8_eq v' (W8 Zero Zero Zero Zero Zero Zero Zero Zero))
+    in bind _ <- putFlag FlagC c'
+    in bind _ <- putReg sX v'
+    in bind _ <- incrPC
+    in bind _ <- tick
+    in           tick
+end
+
+opRL :: Unop
+is
+  \ w -> \ cin ->
+    case w of
+    { W8 a b c d e f g h -> (a,W8 b c d e f g h a) }
+end
+
+opRR :: Unop
+is
+  \ w -> \ cin ->
+    case w of
+    { W8 a b c d e f g h -> (h,W8 h a b c d e f g) }
+end
+
+opSL0 :: Unop
+is
+  \ w -> \ cin ->
+    case w of
+    { W8 a b c d e f g h -> (a,W8 b c d e f g h Zero) }
+end
+
+opSL1 :: Unop
+is
+  \ w -> \ cin ->
+    case w of
+    { W8 a b c d e f g h -> (a,W8 b c d e f g h One) }
+end
+
+opSLA :: Unop
+is
+  \ w -> \ cin ->
+    case w of
+    { W8 a b c d e f g h -> (a,W8 b c d e f g h cin) }
+end
+
+opSLX :: Unop
+is
+  \ w -> \ cin ->
+    case w of
+    { W8 a b c d e f g h -> (a,W8 b c d e f g h h) }
+end
+
+opSR0 :: Unop
+is
+  \ w -> \ cin ->
+    case w of
+    { W8 a b c d e f g h -> (h,W8 Zero a b c d e f g) }
+end
+
+opSR1 :: Unop
+is
+  \ w -> \ cin ->
+    case w of
+    { W8 a b c d e f g h -> (h,W8 One a b c d e f g) }
+end
+
+opSRA :: Unop
+is
+  \ w -> \ cin ->
+    case w of
+    { W8 a b c d e f g h -> (h,W8 cin a b c d e f g) }
+end
+
+opSRX :: Unop
+is
+  \ w -> \ cin ->
+    case w of
+    { W8 a b c d e f g h -> (h,W8 a a b c d e f g) }
+end
+
+rl :: Register -> <CPU m><()>
+is
+  doUnop opRL
+end
+
+rr :: Register -> <CPU m><()>
+is
+  doUnop opRR
+end
+
+sl0 :: Register -> <CPU m><()>
+is
+  doUnop opSL0
+end
+
+sl1 :: Register -> <CPU m><()>
+is
+  doUnop opSL1
+end
+
+sla :: Register -> <CPU m><()>
+is
+  doUnop opSLA
+end
+
+slx :: Register -> <CPU m><()>
+is
+  doUnop opSLX
+end
+
+sr0 :: Register -> <CPU m><()>
+is
+  doUnop opSR0
+end
+
+sr1 :: Register -> <CPU m><()>
+is
+  doUnop opSR1
+end
+
+sra :: Register -> <CPU m><()>
+is
+  doUnop opSRA
+end
+
+srx :: Register -> <CPU m><()>
+is
+  doUnop opSRX
+end
+
+doCompare :: W8 -> W8 -> <CPU m><()>
+is
+  \ x -> \ y ->
+      bind _ <- putFlag FlagZ (w8_eq x y)
+   in bind _ <- putFlag FlagC (w8_lt x y)
+   in bind _ <- incrPC
+   in bind _ <- tick
+   in           tick
+end
+
+compareImm :: Register -> W8 -> <CPU m><()>
+is
+  \ sX -> \ kk ->
+      bind v <- getReg sX
+   in           doCompare v kk
+end
+
+compareImm :: Register -> Register -> <CPU m><()>
+is
+  \ sX -> \ sY ->
+      bind vX <- getReg sX
+   in bind vY <- getReg sY
+   in            doCompare vX vY
+end
+
+oddParity :: W8 -> Bit
+is
+  \ x ->
+    case x of
+    { W8 b0 b1 b2 b3 b4 b5 b6 b7 -> xor (xor (xor b0 b1) (xor b2 b3)) (xor (xor b4 b5) (xor b6 b7))
+    }
+end
+
+doTest :: W8 -> W8 -> <CPU m><()>
+is
+  \ x -> \ y ->
+       bind _ <- putFlag FlagZ (w8_eq x y)
+    in bind _ <- putFlag FlagC (oddParity x y)
+    in bind _ <- incrPC
+    in bind _ <- tick
+    in           tick
+end
+
+testImm :: Register -> W8 -> <CPU m><()>
+is
+  \ sX -> \ kk ->
+       bind v <- getReg sX
+    in           doTest v kk
+end
+
+testReg :: Register -> Register -> <CPU m><()>
+is
+  \ sX -> \ sY ->
+       bind vX <- getReg sX
+    in bind vY <- getReg sY
+    in            doTest vX vY
+end
+
+loadImm :: Register -> W8 -> <CPU m><()>
+is
+  \ sX -> \ v ->
+       bind _ <- putReg sX v
+    in bind _ <- incrPC
+    in bind _ <- tick
+    in           tick
+end
+
+loadReg :: Register -> Register -> <CPU m><()>
+is
+  \ sX -> \ sY ->
+       bind vY <- getReg sY
+    in bind _  <- putReg sX vY
+    in bind _  <- incrPC
+    in bind _  <- tick
+    in            tick
+end
+
+trim8to6 :: W8 -> W6
+is
+  \ x ->
+    case x of
+    { W8 _ _ a b c d e f -> W6 a b c d e f }
+end
+
+doFetch :: Register -> W6 -> <CPU m><()>
+is
+  \ sX -> \ a ->
+       bind vX' <- getFromRAM a
+    in bind _   <- putReg sX vX'
+    in bind _   <- incrPC
+    in bind _   <- tick
+    in             tick
+end
+
+fetchImm :: Register -> W6 -> <CPU m><()>
+is
+  doFetch
+end
+
+fetchReg :: Register -> Register -> <CPU m><()>
+is
+  \ sX -> \ sY ->
+       bind a <- getReg sY
+    in           doFetch sX (trim8to6 a)
+end
+
+storeImm :: Register -> W6 -> <CPU m><()>
+is
+  \ sX -> \ ss ->
+       bind v <- getReg sX
+    in bind _ <- putToRAM ss v
+    in bind _ <- incrPC
+    in bind _ <- tick
+    in           tick
+end
+
+storeReg :: Register -> Register -> <CPU m><()>
+is
+  \ sX -> \ sY ->
+       bind v  <- getReg sX
+    in bind ss <- getReg sY
+    in bind _  <- putToRAM (trim8to6 ss) v
+    in bind _  <- incrPC
+    in bind _  <- tick
+    in            tick
+end
+
+whenFlag :: Flag -> <CPU m><a> -> <CPU m><a>
+is
+  \ f -> \ phi -> \ gamma ->
+       bind v <- getFlag f
+    in case v of
+       { One  -> phi
+       ; Zero -> gamma }
+end
+
+jump :: W10 -> <CPU m><()>
+is
+  \ a ->
+       bind _ <- putPC a
+    in bind _ <- tick
+    in           tick
+end
+
+jumpC :: W10 -> <CPU m><()>
+is
+  \ a ->
+       bind _ <- whenFlag FlagC (putPC a) incrPC
+    in bind _ <- tick
+    in           tick
+end
+
+jumpNC :: W10 -> <CPU m><()>
+is
+  \ a ->
+       bind _ <- whenFlag FlagC incrPC (putPC a)
+    in bind _ <- tick
+    in           tick
+end
+
+jumpNZ :: W10 -> <CPU m><()>
+is
+  \ a ->
+       bind _ <- whenFlag FlagZ incrPC (putPC a)
+    in bind _ <- tick
+    in           tick
+end
+
+jumpZ :: W10 -> <CPU m><()>
+is
+  \ a ->
+       bind _ <- whenFlag FlagZ (putPC a) incrPC
+    in bind _ <- tick
+    in           tick
+end
+
+call :: W10 -> <CPU m><()>
+is
+  \ a ->
+       bind _ <- push a
+    in bind _ <- tick
+    in           tick
+end
+
+callC :: W10 -> <CPU m><()>
+is
+  \ a ->
+       bind _ <- whenFlag FlagC (push a) incrPC
+    in bind _ <- tick
+    in           tick
+end
+
+callNC :: W10 -> <CPU m><()>
+is
+  \ a ->
+       bind _ <- whenFlag FlagC incrPC (push a)
+    in bind _ <- tick
+    in           tick
+end
+
+callNZ :: W10 -> <CPU m><()>
+is
+  \ a ->
+       bind _ <- whenFlag FlagZ incrPC (push a)
+    in bind _ <- tick
+    in           tick
+end
+
+callZ :: W10 -> <CPU m><()>
+is
+  \ a ->
+       bind _ <- whenFlag FlagZ (push a) incrPC
+    in bind _ <- tick
+    in           tick
+end
+
+ret :: <CPU m><()>
+is
+       bind _ <- pop
+    in bind _ <- incrPC
+    in bind _ <- tick
+    in           tick
+end
+
+retC :: <CPU m><()>
+is
+       bind _ <- whenFlag FlagC pop (return ())
+    in bind _ <- incrPC
+    in bind _ <- tick
+    in           tick
+end
+
+retNC :: <CPU m><()>
+is
+       bind _ <- whenFlag FlagC (return ()) pop
+    in bind _ <- incrPC
+    in bind _ <- tick
+    in           tick
+end
+
+retNZ :: <CPU m><()>
+is
+       bind _ <- whenFlag FlagZ (return ()) pop
+    in bind _ <- incrPC
+    in bind _ <- tick
+    in           tick
+end
+
+retZ :: <CPU m><()>
+is
+       bind _ <- whenFlag FlagZ pop (return ())
+    in bind _ <- incrPC
+    in bind _ <- tick
+    in           tick
+end
+
+reti :: Bit -> <CPU m><()>
+is
+  \ b ->
+       bind zs <- getFlag FlagZsave
+    in bind _  <- putFlag FlagZ zs
+    in bind cs <- getFlag FlagCsave
+    in bind _  <- putFlag FlagZ cs
+    in bind _  <- putFlag FlagIE b
+    in bind _  <- pop
+    in bind _  <- tick
+    in            tick
+end
+
+setInterruptEnable :: Bit -> <CPU m><()>
+is
+  putFlag FlagIE
+end
+
+inputReg :: Register -> Register -> <CPU m><()>
+is
+  \ sX -> \ sY ->
+       bind vY <- getReg sY
+    in bind _  <- writePortID vY
+    in bind _  <- incrPC
+    in bind _  <- tick
+    in bind vX <- readInPort
+    in bind _  <- putReg sX vX
+    -- FIXME: assert read_strobe
+    in            tick
+end
+
+inputImm :: Register -> W8 -> <CPU m><()>
+is
+  \ sX -> \ pp ->
+       bind _  <- writePortID pp
+    in bind _  <- incrPC
+    in bind _  <- tick
+    in bind vX <- readInPort
+    in bind _  <- putReg sX vX
+    -- FIXME: assert read_strobe
+    in            tick
+end
+
+outputReg :: Register -> Register -> <CPU m><()>
+is
+  \ sX -> \ sY ->
+       bind vY <- getReg sY
+    in bind _  <- writePortID vY
+    in bind vX <- getReg sX
+    in bind _  <- writeOutPort vX
+    in bind _  <- incrPC
+    in bind _  <- tick
+    -- FIXME: assert write_strobe
+    in            tick
+end
+
+outputImm :: Register -> W8 -> <CPU m><()>
+is
+  \ sX -> \ pp ->
+       bind _  <- writePortID pp
+    in bind vX <- getReg sX
+    in bind _  <- writeOutPort vX
+    in bind _  <- incrPC
+    in bind _  <- tick
+    -- FIXME: assert write_strobe
+    in            tick
+end
+
+invalid :: <CPU m><()>
+is
+     bind _ <- incrPC
+  in bind _ <- tick
+  in           tick
+end
+
+loop :: <CPU m><()>
+is
+     bind s    <- lift g
+  in let i     =  inputs s
+  in let instr = instruction_in i
+  in bind ie   <- getFlag FlagIE
+  in bind _    <- case reset_in i of
+                  { One  -> reset_event
+                  ; Zero -> case (ie,interrupt_in i) of
+                            { (One,One) -> interrupt_event
+                            ; _         -> decode instr
+                            }
+                  }
+  in loop
+end
+
+start :: ReactT Outputs Inputs I ((),CPUState)
+is
+  extrudeStateT start initialCPUState
+end
+
+initialCPUState :: CPUState
+is
+  CPUState FIXME
+end
+-}
