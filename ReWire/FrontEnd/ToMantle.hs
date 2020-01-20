@@ -1,33 +1,36 @@
 {-# LANGUAGE LambdaCase, ViewPatterns, ScopedTypeVariables, FlexibleContexts #-}
 {-# LANGUAGE Safe #-}
-module ReWire.FrontEnd.ToMantle (toMantle) where
+module ReWire.FrontEnd.ToMantle (toMantle, extendWithGlobs, getImps) where
 
 import ReWire.Annotation hiding (ann)
 import ReWire.Error
 import ReWire.FrontEnd.Fixity
 import ReWire.FrontEnd.Rename hiding (Module)
-import ReWire.FrontEnd.Syntax ((|->))
+import ReWire.FrontEnd.Syntax ((|->), tblank)
 import ReWire.FrontEnd.Unbound
       ( string2Name, name2String
       , fresh, Fresh, Name, Embed (..), bind
       )
 import ReWire.SYB
 
-import Control.Monad ((>=>),foldM, replicateM, void)
+import Control.Arrow ((&&&))
+import Control.Monad (foldM, replicateM, void)
 import Data.Foldable (foldl')
 import Language.Haskell.Exts.Fixity (Fixity (..))
 import Language.Haskell.Exts.Pretty (prettyPrint)
 
 import qualified Data.Set                     as Set
+import qualified Data.Map.Strict              as Map
 import qualified Language.Haskell.Exts.Syntax as S
 import qualified ReWire.FrontEnd.Rename       as M
 import qualified ReWire.FrontEnd.Syntax       as M
 
-import Language.Haskell.Exts.Syntax hiding (Name, Kind)
+import Language.Haskell.Exts.Syntax hiding (Annotation, Name, Kind)
 
 -- | An intermediate form for exports. TODO(chathhorn): get rid of it.
 data Export = Export FQName
-            | ExportWith FQName [FQName]
+            -- ExportWith: Type name, ctors
+            | ExportWith FQName (Set.Set FQName) FQCtorSigs
             | ExportAll FQName
             | ExportMod (S.ModuleName ())
             | ExportFixity (S.Assoc ()) Int (S.Name ())
@@ -49,34 +52,42 @@ mkUId (Symbol _ n) = mkId n
 
 -- | Translate a Haskell module into the ReWire abstract syntax.
 toMantle :: (Fresh m, MonadError AstError m) => Renamer -> Module Annote -> m (M.Module, Exports)
-toMantle rn (Module _ (Just (ModuleHead _ m _ exps)) _ _ (reverse -> ds)) = do
-      let rn' = extendWithGlobs (void m) ds rn
-      tyDefs <- foldM (transData rn') [] ds
-      tySigs <- foldM (transTySig rn') [] ds
-      inls   <- foldM transInlineSig [] ds
-      fnDefs <- foldM (transDef rn' tySigs inls) [] ds
-      exps'  <- maybe (pure $ getGlobExps rn' ds) (\ (ExportSpecList _ exps') -> foldM (transExport rn' ds) [] exps') exps
-      pure (M.Module tyDefs fnDefs, resolveExports rn exps')
-      where getGlobExps :: Renamer -> [Decl Annote] -> [Export]
-            getGlobExps rn ds = getExportFixities ds ++ foldr (getGlobExps' rn) [] ds
+toMantle rn = \ case
+      Module _ (Just (ModuleHead _ _ _ exps)) _ _ (reverse -> ds) -> do
+            tyDefs <- foldM (transData rn) [] ds
+            tySigs <- foldM (transTySig rn) [] ds
+            inls   <- foldM transInlineSig [] ds
+            fnDefs <- foldM (transDef rn tySigs inls) [] ds
+            exps'  <- maybe (pure $ getGlobExps rn ds) (\ (ExportSpecList _ exps') -> foldM (transExport rn ds) [] exps') exps
+            pure (M.Module tyDefs fnDefs, resolveExports rn exps')
+            where getGlobExps :: Renamer -> [Decl Annote] -> [Export]
+                  getGlobExps rn ds = getTypeExports rn
+                        ++ getExportFixities ds
+                        ++ concatMap (getFunExports rn) ds
 
-            getGlobExps' :: Renamer -> Decl Annote -> [Export] -> [Export]
-            getGlobExps' rn = \ case
-                  DataDecl _ _ _ hd cs _   -> (:) $ ExportWith (rename Type rn $ fst $ sDeclHead hd) $ map (rename Value rn . getCtor) cs
-                  PatBind _ (PVar _ n) _ _ -> (:) $ Export $ rename Value rn $ void n
-                  _                        -> id
-toMantle _ m = failAt (ann m) "Unsupported module syntax"
+                  getFunExports :: Renamer -> Decl Annote -> [Export]
+                  getFunExports rn = \ case
+                        PatBind _ (PVar _ n) _ _ -> [Export $ rename Value rn $ void n]
+                        _                        -> []
 
-resolveExports :: Renamer -> [Export] -> Exports
-resolveExports rn = foldr (resolveExport rn) mempty
+                  getTypeExports :: Renamer -> [Export]
+                  getTypeExports rn = map (exportAll rn) (Set.toList $ getLocalTypes rn)
 
-resolveExport :: Renamer -> Export -> Exports -> Exports
-resolveExport rn = \ case
-      Export x               -> expValue x
-      ExportAll x            -> expType x $ getCtors (qnamish x) $ allExports rn
-      ExportWith x cs        -> expType x (Set.fromList cs)
-      ExportMod m            -> (<> getExports m rn)
-      ExportFixity asc lvl x -> expFixity asc lvl x
+                  resolveExports :: Renamer -> [Export] -> Exports
+                  resolveExports rn = foldr (resolveExport rn) mempty
+
+                  resolveExport :: Renamer -> Export -> Exports -> Exports
+                  resolveExport rn = \ case
+                        Export x               -> expValue x
+                        ExportAll x            -> expType x (lookupCtors rn x) (lookupCtorSigsForType rn x)
+                        ExportWith x cs fs     -> expType x cs fs
+                        ExportMod m            -> (<> getExports m rn)
+                        ExportFixity asc lvl x -> expFixity asc lvl x
+      m                                                           -> failAt (ann m) "Unsupported module syntax"
+
+exportAll :: QNamish a => Renamer -> a -> Export
+exportAll rn x = let x' = rename Type rn x in
+      ExportWith x' (lookupCtors rn x') (lookupCtorSigsForType rn x')
 
 getExportFixities :: [Decl Annote] -> [Export]
 getExportFixities = map toExportFixity . getFixities
@@ -94,14 +105,15 @@ transExport rn ds exps = \ case
             if finger Type rn x
             then pure $ Export (rename Type rn x) : exps
             else failAt l "Unknown class or type name in export list"
-      EThingWith l (NoWildcard _) (void -> x) cs        ->
-            if and $ finger Type rn x : map (finger Value rn . qnamish . unwrap) cs
-            then pure $ ExportWith (rename Type rn x) (map (rename Value rn . unwrap) cs) : concatMap (fixities . unwrap) cs ++ exps
+      EThingWith l (NoWildcard _) (void -> x) cs       -> let cs' = Set.fromList $ map (rename Value rn . unwrap) cs in
+            if and $ finger Type rn x : map (finger Value rn . name) (Set.toList cs')
+            then pure $ ExportWith (rename Type rn x) cs' (Map.fromSet (lookupCtorSig rn) cs')
+                  : concatMap (fixities . unwrap) cs ++ exps
             else failAt l "Unknown class or type name in export list"
       -- TODO(chathhorn): I don't know what it means for a wildcard to appear in the middle of an export list.
       EThingWith l (EWildcard _ _) (void -> x) _       ->
             if finger Type rn x
-            then pure $ lookupCtors x : concatMap fixities (getCtors $ lookupCtors x) ++ exps
+            then pure $ exportAll rn x : concatMap fixities (map name $ Set.toList $ lookupCtors rn x) ++ exps
             else failAt l "Unknown class or type name in export list"
       EModuleContents _ (void -> m) ->
             pure $ ExportMod m : exps
@@ -109,54 +121,10 @@ transExport rn ds exps = \ case
             unwrap (VarName _ x) = void x
             unwrap (ConName _ x) = void x
 
-            lookupCtors :: S.QName () -> Export
-            lookupCtors x = foldl' lookupCtors' (ExportAll $ rename Type rn x) (map (toExport rn) $ filter isDataDecl ds)
-
-            isDataDecl :: Decl Annote -> Bool
-            isDataDecl DataDecl {} = True
-            isDataDecl _           = False
-
-            toExport :: Renamer -> Decl Annote -> Export
-            toExport rn (DataDecl _ _ _ hd cs _) = ExportWith (rename Type rn $ fst $ sDeclHead hd) $ map (toExport' rn) cs
-            toExport _ _                         = undefined
-
-            toExport' :: Renamer -> QualConDecl Annote -> FQName
-            toExport' rn (QualConDecl _ _ _ (ConDecl _ (void -> x) _)) = rename Value rn x
-            toExport' _  _                                              = undefined
-
-            lookupCtors' :: Export -> Export -> Export
-            lookupCtors' (ExportWith x cs) _ = ExportWith x cs
-            lookupCtors' (ExportAll x) (ExportWith x' cs)
-                  | x == x'                  = ExportWith x' cs
-                  | otherwise                = ExportAll x
-            lookupCtors' e _                 = e
-
-            getCtors :: Export -> [S.Name ()]
-            getCtors (ExportWith _ cs) = map name cs
-            getCtors _                 = []
-
             fixities :: S.Name () -> [Export]
             fixities n = flip filter (getExportFixities ds) $ \ case
                   ExportFixity _ _ n' -> n == n'
                   _                   -> False
-
-extendWithGlobs :: S.ModuleName () -> [Decl Annote] -> Renamer -> Renamer
-extendWithGlobs m ds rn = extend Value (zip (getGlobValDefs ds) $ map (qnamish . S.Qual () m) $ getGlobValDefs ds)
-                        $ extend Type  (zip (getGlobTyDefs ds)  $ map (qnamish . S.Qual () m) $ getGlobTyDefs ds) rn
-      where getGlobValDefs :: [Decl Annote] -> [S.Name ()]
-            getGlobValDefs = flip foldr [] $ \ case
-                  DataDecl _ _ _ _ cons _              -> (++) $ map getCtor cons
-                  PatBind _ (PVar _ n) _ _             -> (:) $ void n
-                  _                                    -> id
-            getGlobTyDefs :: [Decl Annote] -> [S.Name ()]
-            getGlobTyDefs = flip foldr [] $ \ case
-                  DataDecl _ _ _ hd _ _ -> (:) $ fst $ sDeclHead hd
-                  _                     -> id
-getCtor :: QualConDecl Annote -> S.Name ()
-getCtor = \ case
-      QualConDecl _ _ _ (ConDecl _ n _) -> void n
-      QualConDecl _ _ _ (RecDecl _ n _) -> void n
-      _                                 -> undefined
 
 transData :: (MonadError AstError m, Fresh m) => Renamer -> [M.DataDefn] -> Decl Annote -> m [M.DataDefn]
 transData rn datas = \ case
@@ -189,7 +157,10 @@ transDef rn tys inls defs = \ case
             Just t -> do
                   e' <- transExp rn e
                   pure $ M.Defn l (mkId $ rename Value rn x) (M.fv t |-> t) (x `elem` inls) (Embed (bind [] e')) : defs
-            _      -> failAt l "No type signature for"
+            -- _      -> failAt l "No type signature"
+            Nothing -> do
+                  e' <- transExp rn e
+                  pure $ M.Defn l (mkId $ rename Value rn x) ([] |-> tblank) (x `elem` inls) (Embed (bind [] e')) : defs
       _                                             -> pure defs
 
 transTyVar :: MonadError AstError m => Annote -> S.TyVarBind () -> m (Name M.Ty)
@@ -203,14 +174,6 @@ transCon rn ks tvs tc = \ case
             let tvs' = zipWith (M.TyVar l) ks tvs
             t <- foldr M.arr0 (foldl' (M.TyApp l) (M.TyCon l tc) tvs') <$> mapM (transTy rn []) tys
             return $ M.DataCon l (string2Name $ rename Value rn x) (tvs |-> t)
-      -- The following is kind of hacky, sorry. Bill.
-      QualConDecl l Nothing _ (RecDecl _ x fs)  -> do
-            let tys  = map (\ (FieldDecl _ _ t) -> t) fs
-            let flds = map (\ (FieldDecl _ xs _) -> (map (string2Name . rename Value rn) xs)) fs
-            let tvs' = zipWith (M.TyVar l) ks tvs
-            t <- foldr M.arr0 (foldl' (M.TyApp l) (M.TyCon l tc) tvs') <$> mapM (transTy rn []) tys
-            ts <- mapM (transTy rn [] >=> (return . (tvs |->))) tys
-            return $ M.RecCon l (string2Name $ rename Value rn x) (tvs |-> t) (zip flds ts)
       d                                         -> failAt (ann d) "Unsupported Ctor syntax"
 
 transTy :: (Fresh m, MonadError AstError m) => Renamer -> [S.Name ()] -> Type Annote -> m M.Ty
@@ -240,7 +203,6 @@ isMonad ms = \ case
       TyVar _ (void -> x)                                                   -> x `elem` ms
       _                                                                      -> False
 
-
 transExp :: MonadError AstError m => Renamer -> Exp Annote -> m M.Exp
 transExp rn = \ case
       App l (App _ (Var _ (UnQual _ (Ident _ "nativeVhdl"))) (Lit _ (String _ f _))) e
@@ -253,15 +215,6 @@ transExp rn = \ case
             pure $ M.Lam l M.tblank $ bind (mkUId $ void x) e'
       Var l x               -> pure $ M.Var l M.tblank (mkId $ rename Value rn x)
       Con l x               -> pure $ M.Con l M.tblank (string2Name $ rename Value rn x)
-      RecUpdate l e fus -> do
-            e' <- transExp rn e
-            es' <- mapM (transExp rn) (map (\ (FieldUpdate _ _ e) -> e) fus)
-            ns' <- mapM (return . mkId . rename Value rn) (map (\ (FieldUpdate _ n _) -> n) fus)
-            pure $ M.RecUp l M.tblank e' (zip ns' es')
-      RecConstr l n fus -> do
-            es' <- mapM (transExp rn) (map (\ (FieldUpdate _ _ e) -> e) fus)
-            ns' <- mapM (return . mkId . rename Value rn) (map (\ (FieldUpdate _ n _) -> n) fus)
-            pure $ M.RecConApp l M.tblank (string2Name $ rename Value rn n) (zip ns' es')
       Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _] -> do
             e'  <- transExp rn e
             p'  <- transPat rn p
@@ -284,3 +237,73 @@ transPat rn = \ case
       PApp l x ps             -> M.PatCon l (Embed M.tblank) (Embed $ string2Name $ rename Value rn x) <$> mapM (transPat rn) ps
       PVar l x                -> pure $ M.PatVar l (Embed M.tblank) (mkUId $ void x)
       p                       -> failAt (ann p) $ "Unsupported syntax in a pattern: " ++ (show $ void p)
+
+extendWithGlobs :: Annotation a => S.Module a -> Renamer -> Renamer
+extendWithGlobs = \ case
+      Module _ (Just (ModuleHead _ m _ _)) _ _ ds -> setCtors (getModCtors ds) (getModCtorSigs ds) . extendWithGlobs' (void m) ds
+      _                                           -> id
+      where extendWithGlobs' :: Annotation a => S.ModuleName () -> [Decl a] -> Renamer -> Renamer
+            extendWithGlobs' m ds = extend Value (zip (getGlobValDefs ds) $ map (qnamish . S.Qual () m) $ getGlobValDefs ds)
+                                  . extend Type  (zip (getGlobTyDefs ds)  $ map (qnamish . S.Qual () m) $ getGlobTyDefs ds)
+
+            getGlobValDefs :: Annotation a => [Decl a] -> [S.Name ()]
+            getGlobValDefs = concatMap $ \ case
+                  DataDecl _ _ _ _ cons _              -> Set.toList $ Set.unions $ map getCtor cons
+                  PatBind _ (PVar _ n) _ _             -> [void n]
+                  _                                    -> []
+
+            getGlobTyDefs :: Annotation a => [Decl a] -> [S.Name ()]
+            getGlobTyDefs = concatMap $ \ case
+                  DataDecl _ _ _ hd _ _ -> [fst $ sDeclHead hd]
+                  _                     -> []
+
+            getModCtors :: Annotation a => [S.Decl a] -> Ctors
+            getModCtors ds =  Map.unions $ map getCtors' ds
+
+            getCtors' :: Decl l -> Ctors
+            getCtors' = \ case
+                  DataDecl _ _ _ dh cons _ -> Map.singleton (fst $ sDeclHead dh) $ Set.unions $ map getCtor cons
+                  _                        -> mempty
+
+            getModCtorSigs :: Annotation a => [S.Decl a] -> CtorSigs
+            getModCtorSigs ds = Map.unions $ map getCtorSigs' ds
+
+            getCtorSigs' :: Decl l -> CtorSigs
+            getCtorSigs' = \ case
+                  DataDecl _ _ _ _ cons _ -> getCtorSigs cons
+                  _                       -> mempty
+
+            getCtorSigs :: [QualConDecl l] -> CtorSigs
+            getCtorSigs = Map.fromList . map (getCtorName &&& getFields)
+
+            getCtor :: QualConDecl l -> Set.Set (S.Name ())
+            getCtor d = Set.fromList $ getCtorName d : (getFields d)
+
+            getCtorName :: QualConDecl l -> S.Name ()
+            getCtorName = \ case
+                  QualConDecl _ _ _ (ConDecl _ n _)        -> void n
+                  QualConDecl _ _ _ (InfixConDecl _ _ n _) -> void n
+                  QualConDecl _ _ _ (RecDecl _ n _)        -> void n
+
+            getFields :: QualConDecl l -> [S.Name ()]
+            getFields = \ case
+                  QualConDecl _ _ _ (ConDecl _ _ ts)       -> replicate (length ts) $ Ident () ""
+                  QualConDecl _ _ _ (InfixConDecl _ _ _ _) -> [Ident () "", Ident () ""]
+                  QualConDecl _ _ _ (RecDecl _ _ fs)       -> concatMap getFields' fs
+
+            getFields' :: FieldDecl l -> [S.Name ()]
+            getFields' (FieldDecl _ ns _) = map void ns
+
+getImps :: Annotation a => S.Module a -> [ImportDecl a]
+getImps = \ case
+      S.Module l _ _ imps _            -> addPrelude l imps
+      S.XmlPage {}                     -> []
+      S.XmlHybrid l _ _ imps _ _ _ _ _ -> addPrelude l imps
+      where addPrelude :: Annotation a => a -> [ImportDecl a] -> [ImportDecl a]
+            addPrelude l imps =
+                  if any isPrelude imps
+                        then imps
+                        else ImportDecl l (ModuleName l "Prelude") False False False Nothing Nothing Nothing : imps
+            isPrelude :: Annotation a => ImportDecl a -> Bool
+            isPrelude ImportDecl { importModule = ModuleName _ n } = n == "Prelude"
+

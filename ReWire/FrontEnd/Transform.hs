@@ -7,7 +7,6 @@ module ReWire.FrontEnd.Transform
       , shiftLambdas
       , liftLambdas
       , purge
-      , records
       ) where
 
 import ReWire.Error
@@ -19,9 +18,6 @@ import ReWire.FrontEnd.Unbound
       , Name (..)
       )
 import ReWire.SYB
-
-import ReWire.FrontEnd.Records
-      (desugarRecData, desugarRec, desugarDefns)
 
 import Control.Arrow ((***))
 import Control.Monad.Catch (MonadCatch)
@@ -42,13 +38,6 @@ inline (ts, ds) = return (ts, substs subs ds)
                   (_, e') <- unbind e
                   return (n, e')
             subs = map toSubst $ substs (map toSubst $ filter defnInline ds) $ filter defnInline ds
-
-records :: MonadError AstError m => FreeProgram -> m FreeProgram
-records (ts, ds) = runFreshMT $ do
-      ds'      <- desugarDefns ts ds
-      newdefs  <- mapM desugarRec ts
-      let ts' = map desugarRecData ts
-      return (ts', ds' ++ concat newdefs)
 
 -- | Replaces the expression in NativeVHDL so we don't descend into it
 --   during other transformations.

@@ -66,7 +66,6 @@ dataDeclAssumps (DataDefn _ _ _ cs) = map dataConAssump cs
 
 dataConAssump :: DataCon -> CAssump
 dataConAssump (DataCon _ i (Embed t)) = (i, t)
-dataConAssump _ = undefined -- TODO(chathhorn): record stuff not typechecked
 
 (@@) :: TySub -> TySub -> TySub
 s1 @@ s2 = Map.mapWithKey (\ _ t -> subst s1 t) s2 `Map.union` s1
@@ -224,7 +223,6 @@ tcExp = \ case
             tv <- freshv
             return (Error an tv m, tv)
 
-      _ -> undefined -- TODO(chathhorn): record stuff not typechecked
 mkApp :: Annote -> Exp -> [Exp] -> [Name Exp] -> Exp
 mkApp an f as holes = foldl' (\ e x -> App an e x) f
       $ as ++ map (Var an tblank) holes

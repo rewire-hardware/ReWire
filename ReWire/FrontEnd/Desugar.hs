@@ -1,30 +1,40 @@
 {-# LANGUAGE LambdaCase, ScopedTypeVariables, FlexibleContexts #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
-module ReWire.FrontEnd.Desugar (desugar) where
+module ReWire.FrontEnd.Desugar (desugar, addMainModuleHead) where
 
+import ReWire.Annotation (noAnn, Annote (..))
 import ReWire.Error
-import ReWire.FrontEnd.Annotate
+import ReWire.FrontEnd.Rename hiding (Module)
 import ReWire.SYB
 
 import Control.Monad.Catch (MonadCatch)
-import Control.Monad (liftM, replicateM, (>=>), void)
+import Control.Monad (liftM, replicateM, (>=>), void, when, msum)
 import Control.Monad.State (runStateT, StateT, MonadState (..), modify)
 import Data.Foldable (foldl', foldrM)
 import Data.Functor.Identity (Identity (..))
 
 import Language.Haskell.Exts.Syntax
 
--- TODO(chathhorn): record syntax should be fairly easy to desugar.
+import qualified Data.Map.Strict              as Map
+
+-- | Adds the "module Main where" if no module given (but not the "main"
+--   export).
+addMainModuleHead :: Module a -> Module a
+addMainModuleHead = \ case
+      Module l Nothing ps imps ds -> Module l (Just $ ModuleHead l (ModuleName l "Main") Nothing $ Just $ ExportSpecList l []) ps imps ds
+      m                           -> m
 
 -- | Desugar into lambdas then normalize the lambdas.
-desugar :: (MonadError AstError m, MonadCatch m) => Module Annote -> m (Module Annote)
-desugar = liftM fst . flip runStateT 0 .
-      ( runT  -- Each "runT" is a separate pass over the AST.
+desugar :: (MonadError AstError m, MonadCatch m) => Renamer -> Module Annote -> m (Module Annote)
+desugar rn = liftM fst . flip runStateT 0 .
+      ( return
+      >=> runT  -- Each "runT" is a separate pass over the AST.
             ( desugarNegs
            <> desugarDos
            <> desugarInfix
            <> desugarFuns
+           <> (desugarRecords rn)
             )
       >=> runT flattenLambdas
       >=> runT
@@ -46,14 +56,12 @@ desugar = liftM fst . flip runStateT 0 .
            <> deparenify
            <> normTyContext
            <> desugarTyFuns
-           <> addMainModuleHead
             )
       >=> runT
             ( flattenAlts -- again
             )
       >=> runT
-            (
-            desugarWildCards
+            ( desugarWildCards
            <> desugarAsPats
             )
       )
@@ -63,8 +71,140 @@ type FreshT = StateT Int
 fresh :: Monad m => Annote -> FreshT m (Name Annote)
 fresh l = do
       x <- get
-      modify $ const $ x + 1
+      modify $ (+1)
       return $ Ident l $ "$" ++ show x
+
+-- | record ctor name |-> (field, field place, ctor arity)
+type FieldInfo = (Name Annote, (Name Annote, Int, Int))
+
+-- | Desugar record type defs, field accessors, record patterns, record
+--   construction expressions, and record update syntax.
+-- > R {f = a}
+-- becomes
+-- > R _ a _
+-- and
+-- > r { f = a }
+-- becomes
+-- > case r of R x0 _ x1 -> R x0 a x1
+desugarRecords :: (MonadCatch m, MonadError AstError m) => Renamer -> Transform (FreshT m)
+desugarRecords rn = (\ (Module (l :: Annote) h p imps decls) -> do
+            let fs = concatMap fieldInfo $ Map.assocs $ Map.filter isRecordSig $ getLocalCtorSigs rn
+            ds <- mapM fieldDecl fs
+            return $ Module l h p imps (decls ++ ds ++ map inlineSig fs))
+      ||> (\ (PRec (l :: Annote) c fpats) -> do
+            let sig = lookupCtorSig rn (rename Value rn c :: FQName)
+            when (fpats /= [] && not (isRecordSig sig))   $ failAt l "Record pattern found, but not a record"
+            when (not $ all (inSig sig pfToField) fpats) $ failAt l "Field pattern for nonexistent field"
+            return $ PApp l c $ map (toPat l fpats) sig)
+      ||> (\ (RecDecl (l :: Annote) n fs) ->
+            return $ ConDecl l n $ map (\ (FieldDecl _ _ t) -> t) $ concatMap flatten fs)
+      ||> (\ x -> case x :: Exp Annote of
+            -- R { b = e } becomes R undefined e undefined
+            RecConstr l c fups -> do
+                  let sig = lookupCtorSig rn (rename Value rn c :: FQName)
+                  when (fups /= [] && not (isRecordSig sig))   $ failAt l "Record constructor found, but not a record"
+                  when (not $ all (inSig sig fupToField) fups) $ failAt l "Field initializer for nonexistent field"
+                  return $ foldl' (App l) (Con l c) $ map (toExp l fups) sig
+            RecUpdate l _ [] -> failAt l "Empty record update"
+            -- r { b = e } becomes case r of { R x1 _ x2 -> R x1 e x2 }
+            RecUpdate l e fups -> do
+                  (ctor, sig) <- case msum $ map fupToField fups of
+                        Nothing -> failAt l "You cannot use `..' in a record update"
+                        Just f  -> maybe (failAt l "Field update for nonexistent field") return
+                                 $ findCtorSigFromField rn (rename Value rn f :: FQName)
+                  pats <- mapM (toRUpPat l fups) sig
+                  exps <- mapM (toRUpExp l fups) $ zip pats sig
+                  return $ Case l e
+                        [ Alt l
+                              (PApp l (qnamish ctor) pats)
+                              (UnGuardedRhs l (foldl' (App l) (Con l $ qnamish ctor) exps))
+                              Nothing
+                        ]
+            )
+      ||> TId
+
+      where fieldDecl :: Monad m => FieldInfo -> FreshT m (Decl Annote)
+            fieldDecl (ctor, (f, i, arr)) = do
+                  let l = MsgAnnote "Generated record field accessor."
+                  x <- fresh l
+                  x' <- fresh l
+                  return $ PatBind l (PVar l (l <$ f))
+                        ( UnGuardedRhs l
+                              ( Lambda l [PVar l x]
+                                    ( Case l (Var l (UnQual l x))
+                                          [ Alt l (PApp l (UnQual l ctor) (argPats x' i arr))
+                                                (UnGuardedRhs l (Var l (UnQual l x')))
+                                                Nothing
+                                          ]
+                                    )
+                              )
+                        ) Nothing
+
+            flatten :: FieldDecl Annote -> [FieldDecl Annote]
+            flatten (FieldDecl l xs t) = map (\ x -> FieldDecl l [x] t) xs
+
+            fieldInfo :: (Name (), [Name ()]) -> [FieldInfo]
+            fieldInfo (ctor, fs) = map (fieldInfo' ctor $ length fs) $ zip [0..] fs
+
+            fieldInfo' :: Name () -> Int -> (Int, Name ()) -> FieldInfo
+            fieldInfo' ctor arr (i, f) = (noAnn <$ ctor, (noAnn <$ f, i, arr))
+
+            argPats :: Name Annote -> Int -> Int -> [Pat Annote]
+            argPats x i tot = let a = ann x in
+                  replicate i (PWildCard a) ++ [PVar a x] ++ replicate (tot - i - 1) (PWildCard a)
+
+            inlineSig :: FieldInfo -> Decl Annote
+            inlineSig (_, (f, _, _)) = InlineSig noAnn True Nothing (UnQual noAnn f)
+
+            inSig :: [FQName] -> (a -> Maybe FQName) -> a -> Bool
+            inSig sig proj = maybe True (flip any sig . (==)) . proj
+
+            pfToField :: PatField Annote -> Maybe FQName
+            pfToField = \ case
+                  PFieldPat _ f' _ -> Just $ rename Value rn f'
+                  PFieldPun _ f'   -> Just $ rename Value rn f'
+                  _                -> Nothing
+
+            pfToPat :: FQName -> PatField Annote -> Pat Annote
+            pfToPat f = \ case
+                  PFieldPat _ _ p  -> p
+                  PFieldPun l _    -> PVar l $ l <$ name f
+                  PFieldWildcard l -> PVar l $ l <$ name f
+
+            fupToField :: FieldUpdate Annote -> Maybe FQName
+            fupToField = \ case
+                  FieldUpdate _ f' _ -> Just $ rename Value rn f'
+                  FieldPun _ f'      -> Just $ rename Value rn f'
+                  _                  -> Nothing
+
+            fupToExp :: FQName -> FieldUpdate Annote -> Exp Annote
+            fupToExp f = \ case
+                  FieldUpdate _ _ e  -> e
+                  FieldPun l _       -> Var l $ UnQual l $ l <$ name f
+                  FieldWildcard l    -> Var l $ UnQual l $ l <$ name f
+
+            convField :: FQName -> b -> (a -> Maybe FQName) -> (a -> b) -> [a] -> b
+            convField f d proj conv (a:as) = case proj a of
+                  Just x | x == f        -> conv a
+                  Just _                 -> convField f d proj conv as
+                  Nothing {- wildcard -} -> convField f (conv a) proj conv as
+            convField _ d _ _ []           = d
+
+            toPat :: Annote -> [PatField Annote] -> FQName -> Pat Annote
+            toPat l fpats f = convField f (PWildCard l) pfToField (pfToPat f) fpats
+
+            toExp :: Annote -> [FieldUpdate Annote] -> FQName -> Exp Annote
+            toExp l fups f = convField f (Var l $ UnQual l $ Ident l "undefined") fupToField (fupToExp f) fups
+
+            toRUpPat :: Monad m => Annote -> [FieldUpdate Annote] -> FQName -> FreshT m (Pat Annote)
+            toRUpPat l fups f = do
+                  x <- fresh l
+                  return $ convField f (PVar l x) fupToField (PWildCard . ann) fups
+
+            toRUpExp :: MonadError AstError m => Annote -> [FieldUpdate Annote] -> (Pat Annote, FQName) -> m (Exp Annote)
+            toRUpExp l _    (PVar _ x, _) = return $ Var l $ qnamish x
+            toRUpExp l fups (_, f)        = convField f (failAt l "Something went wrong while desugaring a record update")
+                                                fupToField (return . fupToExp f) fups
 
 -- | Turns Specials into normal identifiers.
 normIds :: (MonadCatch m, MonadError AstError m) => Transform (FreshT m)
@@ -246,12 +386,6 @@ wheresToLets = (\ case
                   Alt l p (UnGuardedRhs l' e) (Just binds) -> return $ Alt l p (UnGuardedRhs l' $ Let l' binds e) Nothing
                   a@(Alt l _ (GuardedRhss _ _) _)          -> failAt (l :: Annote) $ "Guards are not supported: " ++ show (void a))
            ||> TId
-
--- | Adds the "module Main where" if no module given (but not the "main"
---   export).
-addMainModuleHead :: (MonadCatch m, MonadError AstError m) => Transform (FreshT m)
-addMainModuleHead = transform $
-      \ (Module (l :: Annote) Nothing ps imps ds) -> return $ Module l (Just $ ModuleHead l (ModuleName l "Main") Nothing $ Just $ ExportSpecList l []) ps imps ds
 
 -- | Turns do-notation into a series of >>= \ x ->. Turns LetStmts into Lets.
 --   E.g.:

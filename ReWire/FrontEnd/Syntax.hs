@@ -61,18 +61,15 @@ data FieldId  = FieldId String
       deriving (Generic, Typeable, Data)
 
 data DataCon = DataCon Annote (Name DataConId) (Embed Poly)
-             | RecCon Annote (Name DataConId) (Embed Poly) [([Name FieldId],Embed Poly)]
       deriving (Generic, Eq, Show, Typeable, Data)
 
 instance Alpha DataCon
 
 instance Annotated DataCon where
       ann (DataCon a _ _)  = a
-      ann (RecCon a _ _ _) = a
 
 instance Pretty DataCon where
       pretty (DataCon _ n t)  = text (name2String n) <+> text "::" <+> pretty t
-      pretty (RecCon _ n t _) = text (name2String n) <+> text "::" <+> pretty t
 
 instance NFData DataCon
 
@@ -182,8 +179,6 @@ data Exp = App        Annote Exp Exp
          | Lam        Annote Ty (Bind (Name Exp) Exp)
          | Var        Annote Ty (Name Exp)
          | Con        Annote Ty (Name DataConId)
-         | RecConApp  Annote Ty (Name DataConId) [(Name FieldId,Exp)] 
-         | RecUp      Annote Ty Exp  [(Name FieldId,Exp)] 
          | Case       Annote Ty Exp (Bind Pat Exp) (Maybe Exp)
          | Match      Annote Ty Exp MatchPat Exp [Exp] (Maybe Exp)
          | NativeVHDL Annote String Exp
@@ -196,8 +191,6 @@ instance Show Exp where
   show (Lam _ _ _)         = "*lambda-expression*"
   show (Var _ _ n)         = {- "(Var " ++ -} name2String n {- ++ ")" -}
   show (Con _ _ c)         = name2String c
-  show (RecConApp _ _ _ _) = "*RecConApp*"
-  show (RecUp _ _ _ _)     = "*RecUp*"
   show (Case _ _ _ _ _)    = "*Case*"
   show (Match _ _ e1 mp e2 es Nothing)   = "(Match " ++ " " ++ show e1 ++ " " ++ show mp ++ " " ++ show e2 ++ " " ++ show es ++ ")"
   show (Match _ _ e1 mp e2 es (Just e3)) = "(Match " ++ " " ++ show e1 ++ " " ++ show mp ++ " " ++ show e2 ++ " " ++ show es ++ " " ++ show e3 ++ ")"
@@ -229,8 +222,6 @@ instance Annotated Exp where
             Lam a _ _           -> a
             Var a _ _           -> a
             Con a _ _           -> a
-            RecConApp a _ _ _   -> a
-            RecUp a _ _ _       -> a
             Case a _ _ _ _      -> a
             Match a _ _ _ _ _ _ -> a
             NativeVHDL a _ _    -> a
@@ -255,18 +246,6 @@ instance Pretty Exp where
             Lam _ _ e        -> runFreshM $ do
                   (p, e') <- unbind e
                   return $ parens $ text "\\" <+> text (show p) <+> text "->" <+> pretty e'
-            RecConApp _ _ e fus  -> runFreshM $ do
-                            let ns   = map ((text . show) . fst) fus                   
-                            let es   = map (pretty . snd) fus
-                            let res  = zip ns es
-                            let res' = foldr ($+$) mempty $ map (\ (n, e) -> (n <+> text "=" <+> e)) res
-                            return $ pretty e <+> text "{" <+> res' <+> text "}"
-            RecUp _ _ e fus  -> runFreshM $ do
-                            let ns   = map ((text . show) . fst) fus                   
-                            let es   = map (pretty . snd) fus
-                            let res  = zip ns es
-                            let res' = foldr ($+$) mempty $ map (\ (n, e) -> (n <+> text "=" <+> e)) res
-                            return $ pretty e <+> text "{" <+> res' <+> text "}"
             Case _ _ e e1 e2 -> runFreshM $ do
                   (p, e1') <- unbind e1
                   return $ parens $

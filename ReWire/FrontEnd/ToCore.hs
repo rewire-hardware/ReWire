@@ -30,7 +30,6 @@ transData (M.DataDefn _ _ _ cs) = mapM transDataCon $ zip [0..] cs
             transDataCon (n, M.DataCon an c (Embed (M.Poly t))) = do
                   (_, t') <- unbind t
                   return $ C.DataCon an (C.DataConId $ name2String c) n $ transType t'
-            transDataCon (_, M.RecCon _ _ _ _) = undefined -- TODO(chathhorn)
 
 transDefn :: Fresh m => M.Defn -> m C.Defn
 transDefn (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) = do

@@ -1,11 +1,16 @@
-{-# LANGUAGE Rank2Types, FlexibleInstances, FlexibleContexts, TupleSections, LambdaCase, ViewPatterns, NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns, Rank2Types, FlexibleInstances, FlexibleContexts, TupleSections, LambdaCase, ViewPatterns, NamedFieldPuns #-}
 {-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.Rename
       ( Renamer, fixFixity, getExports, allExports
       , exclude, extend, finger, rename
       , FQName (mod, name), qnamish
+      , QNamish
       , Namespace (..), Module (..)
-      , Exports, expValue, expType, expFixity, getCtors
+      , Exports, expValue, expType, expFixity, expCtorSigs, getCtors
+      , Ctors, FQCtors, CtorSigs, FQCtorSigs
+      , setCtors, getLocalTypes, getLocalCtorSigs
+      , lookupCtors, lookupCtorSig, lookupCtorSigsForType, isRecordSig
+      , findCtorSigFromField
       , toFilePath
       , fromImps
       ) where
@@ -32,15 +37,33 @@ import qualified Language.Haskell.Exts.Syntax           as S
 
 import Language.Haskell.Exts.Syntax hiding (Namespace, Annotation, Module)
 
+
+-- | Map from type name to its set of data constructors.
+--   Note: the set of "ctors" also includes fields (things that might appear in
+--   an export list).
+type Ctors = Map.Map (Name ()) (Set.Set (Name ()))
+
+-- | Qualified (globally-unique) version of the above map.
+type FQCtors = Map.Map (FQName) (Set.Set FQName)
+
+-- | Map from construtor name to its field "signature,"
+--   which is either an empty list or a list of field names.
+type CtorSigs = Map.Map (Name ()) [Name ()]
+
+-- | Qualified (globally-unique) version of the above map.
+type FQCtorSigs = Map.Map FQName [FQName]
+
 -- Note that GHC (although we might not catch this) disallows the same symbol
 -- appearing twice in an export list (e.g., with different qualifiers, from
 -- different modules), but clearly you can import the same symbol (defined in
 -- the same or different modules) twice with different qualifiers.
 data Exports = Exports
-      (Set.Set FQName)                     -- Values
-      (Set.Set FQName)                     -- Types
-      (Set.Set Fixity)                     -- Fixities
-      (Map.Map (Name ()) (Set.Set FQName)) -- Type |-> Ctors (where Type and Ctors are also in Types and Values, respectively)
+      { expValues      :: Set.Set FQName                  -- Values
+      , expTypes       :: Set.Set FQName                  -- Types
+      , expFixities    :: Set.Set Fixity                  -- Fixities
+      , expCtors       :: FQCtors
+      , expCtorSigs    :: FQCtorSigs
+      }
       deriving Show
 
 data Module = Module [DataDefn] [Defn]
@@ -54,25 +77,34 @@ instance Monoid Module where
 ---
 
 expValue :: FQName -> Exports -> Exports
-expValue x (Exports vs ts fs cs) = Exports (Set.insert x vs) ts fs cs
+expValue x e@(Exports {expValues}) = e {expValues = Set.insert x expValues}
 
-expType :: FQName -> Set.Set FQName -> Exports -> Exports
-expType x cs' (Exports vs ts fs cs) = Exports (cs' <> vs) (Set.insert x ts) fs (Map.insert (qnamish x) cs' cs)
+expType :: FQName -> Set.Set FQName -> FQCtorSigs -> Exports -> Exports
+expType x cs' sigs' e@(Exports {expValues, expTypes, expCtors, expCtorSigs}) = e
+      { expValues      = cs' <> expValues
+      , expTypes       = Set.insert x expTypes
+      , expCtors       = Map.unionWith mappend
+                              (Map.fromList [(x, cs'), (qnamish $ name x, cs')]) -- Insert both qualified and unqualified keys for pre-renamer lookup.
+                              expCtors
+      , expCtorSigs    = sigs' <> expCtorSigs
+      }
 
 expFixity :: Assoc () -> Int -> Name () -> Exports -> Exports
-expFixity asc lvl x (Exports vs ts fs cs) = Exports vs ts (Set.insert (Fixity asc lvl $ UnQual () x) fs) cs
+expFixity asc lvl x e@(Exports {expFixities}) = e {expFixities = Set.insert (Fixity asc lvl $ UnQual () x) expFixities}
 
-getCtors :: Name () -> Exports -> Set.Set FQName
-getCtors x (Exports _ _ _ cs) = fromMaybe mempty $ Map.lookup x cs
+-- | Things in the export list of the named thing (ctors or fields).
+getCtors :: QNamish a => a -> Exports -> Set.Set FQName
+getCtors x Exports {expCtors} = fromMaybe mempty $ Map.lookup (qnamish x) expCtors
 
 fixities :: Exports -> [Name ()] -> [Fixity]
-fixities (Exports _ _ fs _) ns = Set.toList $ Set.filter (\ (Fixity _ _ n') -> n' `elem` map (UnQual ()) ns) fs
+fixities Exports {expFixities} ns = Set.toList $ Set.filter (\ (Fixity _ _ n') -> n' `elem` map (UnQual ()) ns) expFixities
 
 instance Semigroup Exports where
-      (Exports a b c d) <> (Exports a' b' c' d') = Exports (a <> a') (b <> b') (c <> c') (Map.unionWith mappend d d')
+      (Exports a b c d e) <> (Exports a' b' c' d' e') =
+            Exports (a <> a') (b <> b') (c <> c') (Map.unionWith mappend d d') (e <> e')
 
 instance Monoid Exports where
-      mempty = Exports mempty mempty mempty mempty
+      mempty = Exports mempty mempty mempty mempty mempty
 
 data Namespace = Type | Value
       deriving (Ord, Eq, Show)
@@ -128,13 +160,15 @@ data Renamer = Renamer
       { rnNames    :: Map.Map (Namespace, QName ()) FQName
       , rnExports  :: Map.Map (ModuleName ()) Exports
       , rnFixities :: Set.Set Fixity
-      }
+      , rnCtors    :: Ctors
+      , rnCtorSigs :: CtorSigs
+      } deriving Show
 
 instance Semigroup Renamer where
-      (Renamer a b c) <> (Renamer a' b' c') = Renamer (a <> a') (b <> b') (c <> c')
+      (Renamer a b c d e) <> (Renamer a' b' c' d' e') = Renamer (a <> a') (b <> b') (c <> c') (Map.unionWith (<>) d d') (e <> e')
 
 instance Monoid Renamer where
-      mempty = Renamer mempty mempty mempty
+      mempty = Renamer mempty mempty mempty mempty mempty
 
 rename :: (QNamish a, QNamish b) => Namespace -> Renamer -> a -> b
 rename ns Renamer { rnNames } x = fromQNamish . maybe (toQNamish x) toQNamish $ Map.lookup (ns, toQNamish x) rnNames
@@ -170,16 +204,16 @@ filterFixities :: (Name () -> Bool) -> [Fixity] -> [Fixity]
 filterFixities p = filter $ \ (Fixity _ _ n) -> p $ qnamish n
 
 -- | True iff an entry for the name exists in the renamer.
-finger :: Namespace -> Renamer -> QName () -> Bool
+finger :: QNamish a => Namespace -> Renamer -> a -> Bool
 finger ns Renamer { rnNames } = flip Map.member rnNames . (ns,) . toQNamish
 
 toFilePath :: ModuleName a -> FilePath
 toFilePath (ModuleName _ n) = joinPath (splitOn "." n) <.> "hs"
 
 lookupExp :: (Annotation a, MonadError AstError m) => Namespace -> Name a -> Exports -> m FQName
-lookupExp ns x (Exports vs ts _ _) = case ns of
-      Value -> lkup vs
-      Type  -> lkup ts
+lookupExp ns x Exports {expValues, expTypes} = case ns of
+      Value -> lkup expValues
+      Type  -> lkup expTypes
       where lkup :: MonadError AstError m => Set.Set FQName -> m FQName
             lkup xs = case find cmp (Set.toList xs) of
                   Just x' -> return x'
@@ -188,8 +222,46 @@ lookupExp ns x (Exports vs ts _ _) = case ns of
             cmp :: FQName -> Bool
             cmp (FQName _ x') = void x == x'
 
+getLocalTypes :: Renamer -> Set.Set (Name ())
+getLocalTypes rn = Map.keysSet $ rnCtors rn
+
+getLocalCtorSigs :: Renamer -> CtorSigs
+getLocalCtorSigs = rnCtorSigs
+
+lookupCtors :: QNamish a => Renamer -> a -> Set.Set FQName
+lookupCtors rn x = Map.findWithDefault mempty (rename Type rn x) (allCtors rn)
+
+lookupCtorSig :: QNamish a => Renamer -> a -> [FQName]
+lookupCtorSig rn x = Map.findWithDefault mempty (rename Value rn x) (allCtorSigs rn)
+
+lookupCtorSigsForType :: QNamish a => Renamer -> a -> FQCtorSigs
+lookupCtorSigsForType rn x = Map.fromSet (lookupCtorSig rn) (lookupCtors rn x)
+
+findCtorSigFromField :: QNamish a => Renamer -> a -> Maybe (FQName, [FQName])
+findCtorSigFromField rn f = find (any (== qnamish f) . snd) $ Map.assocs (allCtorSigs rn)
+
+-- TODO(chathhorn): use a proper type for the sigs.
+isRecordSig :: QNamish a => [a] -> Bool
+isRecordSig [] = False
+isRecordSig ns = all ((/= Ident () "") . name . qnamish) ns
+
 noExps :: Maybe (Bool, Imports SrcSpanInfo)
 noExps = Nothing
+
+setCtors :: Ctors -> CtorSigs -> Renamer -> Renamer
+setCtors ctors sigs rn = rn { rnCtors = ctors, rnCtorSigs = sigs }
+
+qualifyCtors :: Renamer -> Ctors -> FQCtors
+qualifyCtors rn = Map.mapKeys (rename Type rn) . Map.map (Set.map $ rename Value rn)
+
+qualifyCtorSigs :: Renamer -> CtorSigs -> FQCtorSigs
+qualifyCtorSigs rn = Map.mapKeys (rename Value rn) . Map.map (map $ rename Value rn)
+
+allCtors :: Renamer -> FQCtors
+allCtors rn = (qualifyCtors rn $ rnCtors rn) <> (expCtors $ allExports rn)
+
+allCtorSigs :: Renamer -> FQCtorSigs
+allCtorSigs rn = (qualifyCtorSigs rn $ rnCtorSigs rn) <> (expCtorSigs $ allExports rn)
 
 type Imports a = ([(Namespace, Name a)], [Fixity])
 
@@ -210,16 +282,16 @@ fromImps' :: (Annotation a, MonadError AstError m) => ModuleName () -> Bool -> M
 -- No list of imports -- so import everything.
 fromImps' m' quald Nothing exps = fromImps' m' quald (Just (False, toImports exps)) exps
       where toImports :: Exports -> Imports SrcSpanInfo
-            toImports (Exports vs ts fs _) =
-                  ( map ((Value,) . qnamish) (Set.toList vs) ++ map ((Type,) . qnamish) (Set.toList ts)
-                  , Set.toList $ fs <> Set.map (requalFixity m') fs
+            toImports Exports {expValues, expTypes, expFixities} =
+                  ( map ((Value,) . qnamish) (Set.toList expValues) ++ map ((Type,) . qnamish) (Set.toList expTypes)
+                  , Set.toList $ expFixities <> Set.map (requalFixity m') expFixities
                   )
 -- List of imports, no "hiding".
 fromImps' m' quald (Just (False, (imps, fs))) exps = foldM ins mempty imps
       where ins :: (Annotation a, MonadError AstError m) => Renamer -> (Namespace, Name a) -> m Renamer
             ins tab (ns, x) = do
                   e <- lookupExp ns x exps
-                  let xs' = (Qual () m' $ void x, e)                                : if quald then [] else [(UnQual () $ void x, e)]
+                  let xs' = (Qual () m' $ void x, e)                               : if quald then [] else [(UnQual () $ void x, e)]
                       fs' = map (requalFixity m') (filterFixities (== void x) fs) ++ if quald then [] else filterFixities (== void x) fs
                   return $ extend ns xs' $ addFixities fs' tab
 -- List of imports with "hiding" -- import everything, then delete the items

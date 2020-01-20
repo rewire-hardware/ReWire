@@ -5,6 +5,7 @@ module ReWire.FrontEnd.Cache
       , getProgram
       , LoadPath
       , printInfo
+      , printInfoHSE
       ) where
 
 import ReWire.Annotation
@@ -32,6 +33,7 @@ import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify)
 import qualified Data.Map.Strict              as Map
 import qualified Language.Haskell.Exts.Syntax as S (Module (..))
 import qualified ReWire.Core.Syntax           as Core
+import qualified Language.Haskell.Exts.Pretty as P
 
 import Language.Haskell.Exts.Syntax hiding (Annotation, Exp, Module (..), Namespace, Name, Kind)
 
@@ -43,24 +45,11 @@ runCache :: Cache a -> LoadPath -> IO (Either AstError a)
 runCache m lp = runSyntaxError $ fst <$> runFreshMT (runStateT (runReaderT m lp) mempty)
 
 mkRenamer :: S.Module SrcSpanInfo -> Cache Renamer
-mkRenamer m = mconcat <$> mapM mkRenamer' (getImps m)
+mkRenamer m = extendWithGlobs m <$> mconcat <$> mapM mkRenamer' (getImps m)
       where mkRenamer' :: ImportDecl SrcSpanInfo -> Cache Renamer
             mkRenamer' (ImportDecl _ (void -> m) quald _ _ _ (fmap void -> as) specs) = do
                   (_, exps) <- getModule $ toFilePath m
                   fromImps m quald exps as specs
-
-getImps :: Annotation a => S.Module a -> [ImportDecl a]
-getImps = \ case
-      S.Module l _ _ imps _            -> addPrelude l imps
-      S.XmlPage {}                     -> []
-      S.XmlHybrid l _ _ imps _ _ _ _ _ -> addPrelude l imps
-      where addPrelude :: Annotation a => a -> [ImportDecl a] -> [ImportDecl a]
-            addPrelude l imps =
-                  if any isPrelude imps
-                        then imps
-                        else ImportDecl l (ModuleName l "Prelude") False False False Nothing Nothing Nothing : imps
-            isPrelude :: Annotation a => ImportDecl a -> Bool
-            isPrelude ImportDecl { importModule = ModuleName _ n } = n == "Prelude"
 
 -- Pass 1    Parse.
 -- Pass 2-4  Fixity fixing (uniquify + fix + deuniquify, because bug in applyFixities).
@@ -79,16 +68,19 @@ getModule fp = Map.lookup fp <$> get >>= \ case
             mmods      <- mapM (tryParseInDir fp) lp
             -- FIXME: The directory crawling could be more robust here. (Should
             -- use exception handling.)
-            m          <- maybe (failAt (filePath fp) "File not found in load-path") return $ msum mmods
+            m          <- maybe (failAt (filePath fp) "File not found in load-path") (return . addMainModuleHead) $ msum mmods
 
             rn         <- mkRenamer m
             imps       <- loadImports m
 
             -- Phase 1 (haskell-src-exts) transformations.
-            (m', exps) <- fixFixity rn
+            (m', exps) <- return
+                      >=> fixFixity rn
                       >=> annotate
-                      >=> desugar
-                      >=> toMantle rn $ m
+                      >=> desugar rn
+                      -- >=> printInfoHSE "__Post_Desugar__" rn
+                      >=> toMantle rn
+                      $ m
 
             modify $ Map.insert fp (m' <> imps, exps)
             return (m' <> imps, exps)
@@ -101,9 +93,9 @@ getProgram :: FilePath -> Cache Core.Program
 getProgram fp = do
       (Module ts ds, _) <- getModule fp
 
-      p <- addPrims
-       >=> records
-       -- >=> printInfo "___Post_records___"
+      p <- return
+       -- >=> printInfo "__Desugared__"
+       >=> addPrims
        >=> inline
        >=> kindCheck
        >=> typeCheck
@@ -113,15 +105,15 @@ getProgram fp = do
 --       >=> printInfo "___Post_TC___"
        >=> liftLambdas
 --       >=> typeCheck
-       -- >=> printInfo "___Post_LL___"
+--     >=> printInfo "___Post_LL___"
        >=> purge
        -- >=> typeCheck
---       >=> printInfo "___Post_Purge___"
+--     >=> printInfo "___Post_Purge___"
        >=> purify
 --       >=> typeCheck
 --       >=> printInfo "___Post_Purify___"
        >=> liftLambdas
---       >=> printInfo "___Post_Second_LL___"       
+--       >=> printInfo "___Post_Second_LL___"
        >=> toCore
        $ (ts, ds)
 
@@ -147,3 +139,17 @@ printInfo msg fp = do
       liftIO $ putStrLn "Program:\n"
       liftIO $ putStrLn $ prettyPrint p
       return fp
+
+printInfoHSE :: MonadIO m => String -> Renamer -> S.Module a -> m (S.Module a)
+printInfoHSE msg rn hse = do
+      liftIO $ putStrLn msg
+      liftIO $ putStrLn "\nRenamer:\n"
+      liftIO $ putStrLn $ show rn
+      liftIO $ putStrLn "\nExports:\n"
+      liftIO $ putStrLn $ show $ allExports rn
+      liftIO $ putStrLn "\nShow HSE:\n"
+      liftIO $ putStrLn $ show $ void hse
+      liftIO $ putStrLn "\nPretty HSE:\n"
+      liftIO $ putStrLn $ P.prettyPrint $ void hse
+      return hse
+

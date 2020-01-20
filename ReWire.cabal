@@ -88,7 +88,6 @@ library
                     ReWire.FrontEnd.Parse
                     ReWire.FrontEnd.PrimBasis
                     ReWire.FrontEnd.Purify
-                    ReWire.FrontEnd.Records
                     ReWire.FrontEnd.Rename
                     ReWire.FrontEnd.Syntax
                     ReWire.FrontEnd.ToCore
