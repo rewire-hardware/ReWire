@@ -34,10 +34,10 @@ matchTy s (TyApp _ t1 t2) (TyApp _ t1' t2')          = do s1 <- matchTy [] t1 t1
                                                           s' <- merge s s1
                                                           merge s' s2
 matchTy _ (TyCon _ tci) (TyCon _ tci') | tci == tci' = return []
-matchTy s (TyComp _ t1 t2) (TyComp _ t1' t2')        = do s1 <- matchTy [] t1 t1'
-                                                          s2 <- matchTy [] t2 t2'
-                                                          s' <- merge s s1
-                                                          merge s' s2
+--matchTy s (TyComp _ t1 t2) (TyComp _ t1' t2')        = do s1 <- matchTy [] t1 t1'
+--                                                          s2 <- matchTy [] t2 t2'
+--                                                          s' <- merge s s1
+--                                                          merge s' s2
 matchTy s (TyVar _ v) t                              = merge s [(v,t)]
 matchTy _ t t'                                       = failNowhere $ "matchTy: can't match " ++ prettyPrint t
                                                                      ++ " with " ++ prettyPrint t'
@@ -55,7 +55,7 @@ merge ((v,t):s) s' = case lookup v s' of
 apply :: TySub -> C.Ty -> C.Ty
 apply s (TyApp an t1 t2)  = TyApp an (apply s t1) (apply s t2)
 apply _ t@(TyCon {})      = t
-apply s (TyComp an t1 t2) = TyComp an (apply s t1) (apply s t2)
+-- apply s (TyComp an t1 t2) = TyComp an (apply s t1) (apply s t2)
 apply s t@(TyVar _ i)     = case lookup i s of
                               Just t' -> t'
                               Nothing -> t
@@ -122,7 +122,7 @@ sizeof t = case th of
                                   _  -> do let tagwidth =  ceilLog2 (length ctors)
                                            ctorwidths   <- mapM (ctorwidth t) ctors
                                            return (tagwidth + maximum ctorwidths)
-             TyComp _ _ _ -> failAt (ann t) "sizeof: Encountered computation type"
+             -- TyComp _ _ _ -> failAt (ann t) "sizeof: Encountered computation type"
              TyVar _ _    -> failAt (ann t) "sizeof: Encountered type variable"
     where (th:_) = flattenTyApp t
 
@@ -186,8 +186,8 @@ askGIdTy i = do defns <- askDefns
 
 compileExp :: C.Exp -> CM ([Stmt],Name)
 compileExp e_ = case e of
-                  App {}        -> failAt (ann e_) "compileExp: Got App after flattening (can't happen)"
-                  Prim {}       -> failAt (ann e_) $ "compileExp: Encountered unknown Prim: " ++ prettyPrint e
+                  App {}        -> failAt (ann e) "compileExp: Got App after flattening (can't happen)"
+                  Prim {}       -> failAt (ann e) $ "compileExp: Encountered unknown Prim: " ++ prettyPrint e
                   GVar _ t i    -> do n           <- liftM (++"_res") $ freshName (mangle i)
                                       n_inst      <- liftM (++"_call") $ freshName (mangle i)
                                       let tres    =  last (flattenArrow t)
@@ -282,7 +282,7 @@ compileDefn d | defnName d == "Main.start" = do
                   let t = defnTy d
                       e = defnBody d
                   case t of
-                    TyComp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (TyConId "ReT")) t_in) t_out) (TyCon _ (TyConId "I"))) t_res ->
+                    TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (TyConId "ReT")) t_in) t_out) (TyCon _ (TyConId "I"))) t_res ->
                       case e of
                         App _ (App _ (Prim _ _ "unfold") (GVar _ t_loopfun n_loopfun)) (GVar _ t_startstate n_startstate) -> do
                           put ([],[],0) -- empty out signal and component store, reset name counter

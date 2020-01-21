@@ -15,6 +15,7 @@ module ReWire.FrontEnd.Syntax
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly
       , rangeTy
+      , kmonad, tycomp
       ) where
 
 import ReWire.Annotation
@@ -53,6 +54,12 @@ tblank = TyBlank noAnn
 kblank :: Kind
 kblank = KVar $ string2Name "_"
 
+kmonad :: Kind
+kmonad = KStar `KFun` KStar
+
+tycomp :: Annote -> Ty -> Ty -> Ty
+tycomp = TyApp
+
 data DataConId = DataConId String
       deriving (Generic, Typeable, Data)
 data TyConId = TyConId String
@@ -73,7 +80,10 @@ instance Pretty DataCon where
 
 instance NFData DataCon
 
-data Kind = KStar | KFun Kind Kind | KMonad | KVar (Name Kind)
+data Kind = KStar
+          | KFun Kind Kind
+          -- | KMonad
+          | KVar (Name Kind)
       deriving (Generic, Ord, Eq, Show, Typeable, Data)
 
 infixr `KFun`
@@ -92,7 +102,7 @@ instance Pretty Kind where
             KVar n           -> text $ show n
             KFun a@KFun {} b -> parens (pretty a) <+> text "->" <+> pretty b
             KFun a b         -> pretty a <+> text "->" <+> pretty b
-            KMonad           -> text "M"
+            -- KMonad           -> text "M"
 
 data Poly = Poly (Bind [Name Ty] Ty)
       deriving (Generic, Show, Typeable, Data)
@@ -120,20 +130,20 @@ instance Pretty Poly where
 data Ty = TyApp Annote Ty Ty
         | TyCon Annote (Name TyConId)
         | TyVar Annote Kind (Name Ty)
-        | TyComp Annote Ty Ty -- application of a monad
+        -- | TyComp Annote Ty Ty -- application of a monad
         | TyBlank Annote
-           deriving (Eq, Generic, Typeable, Data)
+           deriving (Eq, Generic, Typeable, Data, Show)
 
-instance Show Ty where
-  show (TyApp _ (TyApp _ (TyCon _ n) t1) t2)
-    | name2String n == "(,)" = "(" ++ show t1 ++ "," ++ show t2 ++ ")"
-    | name2String n == "->"  = "(" ++ show t1 ++ " -> " ++ show t2 ++ ")"
-    | otherwise              = "((" ++ name2String n ++ " " ++ show t1 ++ ")" ++ " " ++ show t2 ++ ")"
-  show (TyApp _ t1 t2)  = "(" ++ show t1 ++ " " ++ show t2 ++ ")"
-  show (TyCon _ n)      = name2String n
-  show (TyVar _ _ n)    = name2String n
-  show (TyComp _ t1 t2) = show t1 ++ "{" ++ show t2 ++ "}"
-  show (TyBlank an)     = "TyBlank: " ++ show an
+--instance Show Ty where
+--  show (TyApp _ (TyApp _ (TyCon _ n) t1) t2)
+--    | name2String n == "(,)" = "(" ++ show t1 ++ "," ++ show t2 ++ ")"
+--    | name2String n == "->"  = "(" ++ show t1 ++ " -> " ++ show t2 ++ ")"
+--    | otherwise              = "((" ++ name2String n ++ " " ++ show t1 ++ ")" ++ " " ++ show t2 ++ ")"
+--  show (TyApp _ t1 t2)  = "(" ++ show t1 ++ " " ++ show t2 ++ ")"
+--  show (TyCon _ n)      = name2String n
+--  show (TyVar _ _ n)    = name2String n
+--  -- show (TyComp _ t1 t2) = show t1 ++ "{" ++ show t2 ++ "}"
+--  show (TyBlank an)     = "TyBlank: " ++ show an
   
 instance Alpha Ty
 
@@ -150,7 +160,7 @@ instance Annotated Ty where
             TyApp a _ _  -> a
             TyCon a _    -> a
             TyVar a _ _  -> a
-            TyComp a _ _ -> a
+            -- TyComp a _ _ -> a
             TyBlank a    -> a
 
 instance Pretty Ty where
@@ -164,7 +174,7 @@ instance Pretty Ty where
             TyApp _ t1 t2  -> pretty t1 <+> ppTyAppR t2
             TyCon _ n      -> text (name2String n)
             TyVar _ _ n    -> pretty n
-            TyComp _ t1 t2 -> pretty t1 <+> ppTyAppR t2
+            -- TyComp _ t1 t2 -> pretty t1 <+> ppTyAppR t2
             TyBlank _      -> text "_"
 
 instance NFData Ty
@@ -226,15 +236,6 @@ instance Annotated Exp where
             Match a _ _ _ _ _ _ -> a
             NativeVHDL a _ _    -> a
             Error a _ _         -> a
-
-{-
-cleanName str = case str of
-  ('$':'L':'L':'.':rest)         -> rest
-  ('$':'P':'U':'R':'E':'.':rest) -> rest
-  ('M':'a':'i':'n':'.':rest)     -> rest
-  ('?':'X':rest)                 -> 'x':rest
-  _                              -> str
-  -}
 
 instance Pretty Exp where
       pretty = \ case

@@ -12,6 +12,7 @@ import ReWire.FrontEnd.Unbound
       )
 import ReWire.Error
 import ReWire.FrontEnd.Syntax
+import ReWire.Pretty
 import Control.Monad.State
 import Control.Monad.Fail (MonadFail)
 import Data.List (find)
@@ -150,7 +151,7 @@ mkStart i o ms t = {- trace ("MKSTART: tyStart = " ++ show tyStart ++ ":::" ++ g
          extresTy t _           = t
 
          reT i o a  = c "ReT" `tyApp` i `tyApp` o `tyApp` a
-         tyStart    = TyComp noAnn (reT i o (c "I")) (extresTy t ms)
+         tyStart    = tycomp noAnn (reT i o (c "I")) (extresTy t ms)
 
          unfold     = Var na (TyBlank $ MsgAnnote "stub type for unfold") (s2n "unfold")
          dispatch   = Var na (dispatchTy i o ms t) (s2n "$Pure.dispatch")
@@ -268,10 +269,10 @@ isStateMonadicDefn d = do ty <- poly2Ty poly
   where Embed poly = defnPolyTy d
         isStateMonad :: Ty -> Bool
         isStateMonad = \ case
-              TyComp an (TyApp _ (TyApp _ (TyCon _ n) _) m) a | n2s n == "StT" ->
-                                                                  isStateMonad (TyComp an m a)
+              TyApp an (TyApp _ (TyApp _ (TyCon _ n) _) m) a | n2s n == "StT" ->
+                                                                  isStateMonad (tycomp an m a)
                                                               | otherwise              -> False
-              TyComp _ (TyCon _ n) _                          | n2s n == "I"   -> True
+              TyApp _ (TyCon _ n) _                          | n2s n == "I"   -> True
                                                               | otherwise              -> False
               _                                                                        -> False
 
@@ -283,7 +284,7 @@ isResMonadicDefn d = do ty <- poly2Ty poly
   where Embed poly = defnPolyTy d
         isResMonad :: Ty -> Bool
         isResMonad ty = case rangeTy ty of
-                         TyComp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ n) _) _) _) _
+                         TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ n) _) _) _) _
                            | n2s n == "ReT" -> True
                            | otherwise      -> False
                          _                  -> False
@@ -375,13 +376,18 @@ instance Annotated (TyVariety t) where
 
 classifyTy :: Ty -> Maybe (TyVariety Ty)
 classifyTy t = case t of
-   TyComp an (TyApp _ (TyApp _ (TyApp _ (TyCon _ n) i) o) m) a
+
+-- TyApp an
+--       (TyApp _ (TyCon _ ->) (TyVar _ (KVar ?K_o85) o33))
+--(TyApp an (TyApp _ (TyApp _ (TyApp _ (TyCon _ ReT) (TyVar _ (KVar ?K_i86) i32)) (TyVar _ (KVar ?K_o87) o33)) (TyVar _ (KVar ?K_m88) m30)) (TyVar _ (KVar ?K_i89) i32))
+
+   TyApp an (TyApp _ (TyApp _ (TyApp _ (TyCon _ n) i) o) m) a
                                                    | n2s n == "ReT"   -> return $ ReTApp an i o m a
    TyApp an (TyApp _ (TyCon _ con) t1) t2          | n2s con == "->"  -> return $ Arrow an t1 t2
                                                    | n2s con == "(,)" -> return $ PairApp an t1 t2
-   TyComp an (TyApp _ (TyApp _ (TyCon _ n) s) m) a | n2s n == "StT"   -> return $ StTApp an s m a
-   TyComp an (TyCon _ n) a                         | n2s n == "I"     -> return $ IdApp an a
-   TyComp _ _ _                                                       -> Nothing
+   TyApp an (TyApp _ (TyApp _ (TyCon _ n) s) m) a | n2s n == "StT"   -> return $ StTApp an s m a
+   TyApp an (TyCon _ n) a                         | n2s n == "I"     -> return $ IdApp an a
+   TyApp _ _ _                                                       -> Nothing
    _                                                                  -> return $ Pure (ann t) t
 
 purifyTy :: Ty -> Maybe [Ty] -> Maybe Ty
@@ -402,7 +408,8 @@ purifyTy t ms = do
          Pure _ t         -> return t
 
 purifyTyM :: MonadError AstError m => Ty -> Maybe [Ty] -> m Ty
-purifyTyM t ms = liftMaybe ("failed to purifyTy: " ++ show t) $ purifyTy t ms
+purifyTyM t ms = liftMaybe ("failed to purifyTy: " ++ prettyPrint (unAnn t) ++ " show: " ++ show (unAnn t))
+               $ purifyTy t ms
 
 dstTyApp :: [Ty] -> Ty -> ([Ty],Ty)
 dstTyApp acc t@(TyApp _ (TyApp _ (TyCon _ arr) t1) t2) = if n2s arr == "->"
@@ -425,11 +432,11 @@ dstStT ty = {- trace ("dstStT: " ++ show ty) $ -} do
          ---
      dstComp :: Ty -> Maybe (Ty,[Ty])
      dstComp = \ case
-              TyComp _ c@(TyApp _ (TyApp _ (TyCon _ n) _) _) a | n2s n == "StT" ->
+              TyApp _ c@(TyApp _ (TyApp _ (TyCon _ n) _) _) a | n2s n == "StT" ->
                                                                     do sts <- dstStT c
                                                                        Just (a,sts)
                                                                 | otherwise              -> Nothing
-              TyComp _ (TyCon _ n) a                           | n2s n == "I"           -> Just(a,[])
+              TyApp _ (TyCon _ n) a                           | n2s n == "I"           -> Just(a,[])
                                                                 | otherwise              -> Nothing
               _                                                                          -> Nothing
 
@@ -495,7 +502,7 @@ dstResTy ty = do (i,o,m,a) <- dstReT rt
          ---
          dstReT :: Ty -> Maybe (Ty, Ty, Ty, Ty)
          dstReT = \ case
-           TyComp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ n) i) o) m) a
+           TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ n) i) o) m) a
              | n2s n == "ReT" -> Just (i,o,m,a)
 
              | otherwise              -> Nothing

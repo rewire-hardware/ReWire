@@ -68,7 +68,10 @@ getModule fp = Map.lookup fp <$> get >>= \ case
             mmods      <- mapM (tryParseInDir fp) lp
             -- FIXME: The directory crawling could be more robust here. (Should
             -- use exception handling.)
-            m          <- maybe (failAt (filePath fp) "File not found in load-path") (return . addMainModuleHead) $ msum mmods
+            m          <- maybe
+                              (failAt (filePath fp) "File not found in load-path")
+                              (return . addMainModuleHead)
+                        $ msum mmods
 
             rn         <- mkRenamer m
             imps       <- loadImports m
@@ -77,6 +80,7 @@ getModule fp = Map.lookup fp <$> get >>= \ case
             (m', exps) <- return
                       >=> fixFixity rn
                       >=> annotate
+                      -- >=> printInfoHSE "__Pre_Desugar__" rn
                       >=> desugar rn
                       -- >=> printInfoHSE "__Post_Desugar__" rn
                       >=> toMantle rn
@@ -108,10 +112,10 @@ getProgram fp = do
 --     >=> printInfo "___Post_LL___"
        >=> purge
        -- >=> typeCheck
---     >=> printInfo "___Post_Purge___"
-       >=> purify
+--      >=> printInfo "___Post_Purge___"
+       >=> purify -- TODO(chathhorn): move before purge?
 --       >=> typeCheck
---       >=> printInfo "___Post_Purify___"
+       -- >=> printInfo "___Post_Purify___"
        >=> liftLambdas
 --       >=> printInfo "___Post_Second_LL___"
        >=> toCore

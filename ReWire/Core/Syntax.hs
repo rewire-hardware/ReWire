@@ -40,14 +40,14 @@ instance Pretty TyConId where
 
 data Ty = TyApp  Annote Ty Ty
         | TyCon  Annote TyConId
-        | TyComp Annote Ty Ty
+        -- | TyComp Annote Ty Ty
         | TyVar  Annote TyId
         deriving (Eq,Generic,Show,Typeable,Data)
 
 instance Annotated Ty where
   ann (TyApp a _ _)  = a
   ann (TyCon a _)    = a
-  ann (TyComp a _ _) = a
+  -- ann (TyComp a _ _) = a
   ann (TyVar a _)    = a
 
 instance Pretty Ty where
@@ -56,7 +56,7 @@ instance Pretty Ty where
           ppTyArrowL t                                                  = pretty t
   pretty (TyApp _ t1 t2)  = pretty t1 <+> ppTyAppR t2
   pretty (TyCon _ n)      = text (deTyConId n)
-  pretty (TyComp _ t1 t2) = pretty t1 <+> ppTyAppR t2
+  -- pretty (TyComp _ t1 t2) = pretty t1 <+> ppTyAppR t2
   pretty (TyVar _ x)      = text x
 
 ppTyAppR :: Ty -> Doc

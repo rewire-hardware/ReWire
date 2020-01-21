@@ -11,14 +11,14 @@ import Unbound.Generics.LocallyNameless.Name (string2Name)
 -- the concrete syntax... so here we are.
 
 addPrims :: Monad m => FreeProgram -> m FreeProgram
-addPrims (ts, vs) = return (ts ++ primDatas, vs ++ primDefns)
+addPrims (ts, vs) = return (ts ++ primDatas, vs)
 
 primDatas :: [DataDefn]
 primDatas = map mkData
       [ ("->",  KStar `KFun` (KStar `KFun` KStar),                  [])
-      , ("ReT", KStar `KFun` (KStar `KFun` (KMonad `KFun` KMonad)), [])
-      , ("StT", KStar `KFun` (KMonad `KFun` KMonad),                [])
-      , ("I",   KMonad,                                             [])
+      , ("ReT", KStar `KFun` (KStar `KFun` (kmonad `KFun` kmonad)), [])
+      , ("StT", KStar `KFun` (kmonad `KFun` kmonad),                [])
+      , ("I",   kmonad,                                             [])
       , ("()",  KStar,                                              [DataCon noAnn (mkId "()") ([] |-> TyCon noAnn (mkId "()"))])
       ] ++ map mkTuple [2..62] -- why 62? 'cause that's what ghc does!
 
@@ -26,35 +26,35 @@ primDefns :: [Defn]
 primDefns = map mkDefn
       [ ( "return"
         , [mkId "a", mkId "m"]
-        |-> v "a" `arr0` TyComp noAnn (mv "m") (v "a")
+        |-> v "a" `arr0` tycomp noAnn (mv "m") (v "a")
         )
       , ( ">>="
         , [mkId "m", mkId "a", mkId "b"]
-        |-> TyComp noAnn (mv "m") (v "a")
-            `arr0` (v "a" `arr0` TyComp noAnn (mv "m") (v "b"))
-            `arr0` TyComp noAnn (mv "m") (v "b")
+        |-> tycomp noAnn (mv "m") (v "a")
+            `arr0` (v "a" `arr0` tycomp noAnn (mv "m") (v "b"))
+            `arr0` tycomp noAnn (mv "m") (v "b")
         )
       , ( "get"
         , [mkId "s", mkId "m"]
-        |-> TyComp noAnn (stT (v "s") (mv "m")) (v "s")
+        |-> tycomp noAnn (stT (v "s") (mv "m")) (v "s")
         )
       , ( "put"
         , [mkId "s", mkId "m"]
-        |-> v "s" `arr0` TyComp noAnn (stT (v "s") (mv "m")) (c "()")
+        |-> v "s" `arr0` tycomp noAnn (stT (v "s") (mv "m")) (c "()")
         )
       , ( "signal"
         , [mkId "o", mkId "i", mkId "m"]
-        |-> v "o" `arr0` TyComp noAnn (reT (v "i") (v "o") (mv "m")) (v "i")
+        |-> v "o" `arr0` tycomp noAnn (reT (v "i") (v "o") (mv "m")) (v "i")
         )
       , ( "lift"
         , [mkId "m", mkId "a", mkId "t"]
-        |-> TyComp noAnn (mv "m") (v "a") `arr0` TyComp noAnn (tv "t" `tyApp` mv "m") (v "a")
+        |-> tycomp noAnn (mv "m") (v "a") `arr0` tycomp noAnn (tv "t" `tyApp` mv "m") (v "a")
         )
       , ( "extrude"
         , [mkId "i", mkId "o", mkId "s", mkId "m", mkId "a"]
-        |-> TyComp noAnn (reT (v "i") (v "o") (stT (v "s") (mv "m"))) (v "a")
+        |-> tycomp noAnn (reT (v "i") (v "o") (stT (v "s") (mv "m"))) (v "a")
             `arr0` v "s"
-            `arr0` TyComp noAnn (reT (v "i") (v "o") (mv "m")) (c "(,)" `tyApp` v "a" `tyApp` v "s")
+            `arr0` tycomp noAnn (reT (v "i") (v "o") (mv "m")) (c "(,)" `tyApp` v "a" `tyApp` v "s")
         )
       -- FIXME(adam): probably should not be making reference into the Prelude here
       , ( "unfold"
@@ -67,7 +67,7 @@ primDefns = map mkDefn
             `arr0` tyApp (tyApp (c "Prelude.Either")
                                    (v "a"))
                                    (tyApp (tyApp (c "(,)") (v "o")) (v "b"))
-            `arr0` TyComp noAnn (reT (v "i") (v "o") (c "I")) (v "a")
+            `arr0` tycomp noAnn (reT (v "i") (v "o") (c "I")) (v "a")
        )
       ]
 
@@ -90,10 +90,10 @@ mkTuple n = DataDefn (msg "Builtin: tuple") (mkId i) k [ctor]
             ctor = DataCon noAnn (mkId i) $ tvs |-> foldr arr0 rt tvs'
 
 tv :: String -> Ty
-tv = TyVar noAnn (KMonad `KFun` KMonad) . mkId
+tv = TyVar noAnn (kmonad `KFun` kmonad) . mkId
 
 mv :: String -> Ty
-mv = TyVar noAnn KMonad . mkId
+mv = TyVar noAnn kmonad . mkId
 
 v :: String -> Ty
 v = TyVar noAnn KStar . mkId

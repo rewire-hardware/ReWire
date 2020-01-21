@@ -136,27 +136,30 @@ liftLambdas p = runFreshMT $ evalStateT (transProg liftLambdas' p) []
 -- | Purge.
 
 purge :: Monad m => FreeProgram -> m FreeProgram
-purge (ts, vs) = return $ (inuseData (fv $ trec $ inuseDefn vs) ts, filterBuiltins $ inuseDefn vs)
+purge (ts, vs) = return $ (inuseData (fv $ trec $ inuseDefn vs) ts, filterPrims $ inuseDefn vs)
       where inuseData :: [Name DataConId] -> [DataDefn] -> [DataDefn]
             inuseData ns = map $ inuseData' ns
 
             inuseData' :: [Name DataConId] -> DataDefn -> DataDefn
-            inuseData' ns (DataDefn an n k cs)
-                    | name2String n == "Prelude.Either" = DataDefn an n k cs
-                    | name2String n == "(,)"            = DataDefn an n k cs
-                    | name2String n == "()"             = DataDefn an n k cs
-      --            | name2String n == "Prelude.Left"   = DataDefn an n k cs
-      --            | name2String n == "Prelude.Right"  = DataDefn an n k cs 
-                    | otherwise                         = DataDefn an n k $ filter ((flip Set.member (Set.fromList ns)) . dataConName) cs
+            inuseData' ns d@(DataDefn an n k cs)
+                  | name2String n `elem` annoyingExceptions = d
+                  | otherwise                               = DataDefn an n k $ filter ((flip Set.member (Set.fromList ns)) . dataConName) cs
+
+            annoyingExceptions :: [String]
+            annoyingExceptions =
+                               [ "Prelude.Either"
+                               , "(,)"
+                               , "()"
+                               ]
 
             dataConName :: DataCon -> Name DataConId
             dataConName (DataCon _ n _) = n
 
-            filterBuiltins :: [Defn] -> [Defn]
-            filterBuiltins = filter (elem '.' . name2String . defnName)
+            filterPrims :: [Defn] -> [Defn]
+            filterPrims = filter (elem '.' . name2String . defnName)
 
 inuseDefn :: [Defn] -> [Defn]
-inuseDefn ds = case find ((=="Main.start") . name2String . defnName) ds of
+inuseDefn ds = case find ((== "Main.start") . name2String . defnName) ds of
       Just n  -> map toDefn $ Set.elems $ execState (inuseDefn' $ defnName n) (singleton $ defnName n)
       Nothing -> []
       where inuseDefn' :: Name Exp -> State (Set (Name Exp)) ()
@@ -171,6 +174,7 @@ inuseDefn ds = case find ((=="Main.start") . name2String . defnName) ds of
 
             toDefn :: Name Exp -> Defn
             toDefn n = fromJust $ find ((==n) . defnName) ds
+
 
 -- | Reduce.
 

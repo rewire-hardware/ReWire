@@ -47,8 +47,9 @@ mkId :: String -> Name b
 mkId = string2Name
 
 mkUId :: S.Name a -> Name b
-mkUId (Ident _ n)  = mkId n
-mkUId (Symbol _ n) = mkId n
+mkUId = \ case
+      Ident _ n  -> mkId n
+      Symbol _ n -> mkId n
 
 -- | Translate a Haskell module into the ReWire abstract syntax.
 toMantle :: (Fresh m, MonadError AstError m) => Renamer -> Module Annote -> m (M.Module, Exports)
@@ -151,17 +152,21 @@ transInlineSig inls = \ case
       InlineSig _ _ Nothing (UnQual _ x) -> pure $ void x : inls
       _                                  -> pure inls
 
+-- TODO(chathhorn): should be a map, not a fold
 transDef :: MonadError AstError m => Renamer -> [(S.Name (), M.Ty)] -> [S.Name ()] -> [M.Defn] -> Decl Annote -> m [M.Defn]
 transDef rn tys inls defs = \ case
-      PatBind l (PVar _ (void -> x)) (UnGuardedRhs _ e) Nothing -> case lookup x tys of
-            Just t -> do
-                  e' <- transExp rn e
-                  pure $ M.Defn l (mkId $ rename Value rn x) (M.fv t |-> t) (x `elem` inls) (Embed (bind [] e')) : defs
-            -- _      -> failAt l "No type signature"
-            Nothing -> do
-                  e' <- transExp rn e
-                  pure $ M.Defn l (mkId $ rename Value rn x) ([] |-> tblank) (x `elem` inls) (Embed (bind [] e')) : defs
-      _                                             -> pure defs
+      PatBind l (PVar _ (void -> x)) (UnGuardedRhs _ e) Nothing -> do
+            e' <- transExp rn e
+            case lookup x tys of
+                  Just t -> pure $ M.Defn l (mkId $ rename Value rn x) (M.fv t |-> t) (x `elem` inls) (Embed (bind [] e')) : defs
+                  Nothing -> if x `elem` inls
+                        then pure $ M.Defn l (mkId $ rename Value rn x) ([] |-> tblank) True (Embed (bind [] e')) : defs
+                        else failAt l "No type signature on non-inline toplevel definition"
+      DataDecl _ _ _ _ _ _                                      -> pure defs -- TODO(chathhorn): elide
+      InlineSig _ _ _ _                                         -> pure defs -- TODO(chathhorn): elide
+      TypeSig _ _ _                                             -> pure defs -- TODO(chathhorn): elide
+      InfixDecl _ _ _ _                                         -> pure defs -- TODO(chathhorn): elide
+      d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " ++ show d
 
 transTyVar :: MonadError AstError m => Annote -> S.TyVarBind () -> m (Name M.Ty)
 transTyVar l = \ case
@@ -181,7 +186,7 @@ transTy rn ms = \ case
       TyForall _ Nothing (Just (CxTuple _ cs)) t   -> do
            ms' <- mapM getNad cs
            transTy rn (ms ++ ms') t
-      TyApp l a b | isMonad ms a -> M.TyComp l <$> transTy rn ms a <*> transTy rn ms b
+      TyApp l a b {- | isMonad ms a -> M.TyComp l <$> transTy rn ms a <*> transTy rn ms b -}
                   | otherwise    -> M.TyApp l <$> transTy rn ms a <*> transTy rn ms b
       TyCon l x                  -> pure $ M.TyCon l (string2Name $ rename Type rn x)
       TyVar l x                  -> M.TyVar l <$> freshKVar (prettyPrint x) <*> (pure $ mkUId $ void x)
@@ -238,19 +243,24 @@ transPat rn = \ case
       PVar l x                -> pure $ M.PatVar l (Embed M.tblank) (mkUId $ void x)
       p                       -> failAt (ann p) $ "Unsupported syntax in a pattern: " ++ (show $ void p)
 
+-- Note: runs before desugaring.
+-- TODO(chathhorn): GADT style decls?
 extendWithGlobs :: Annotation a => S.Module a -> Renamer -> Renamer
 extendWithGlobs = \ case
+      Module _ (Just (ModuleHead _ (ModuleName _ "Prim") _ _)) _ _ ds -> setCtors (getModCtors ds) (getModCtorSigs ds) . extendWithGlobs' (ModuleName () "") ds
       Module _ (Just (ModuleHead _ m _ _)) _ _ ds -> setCtors (getModCtors ds) (getModCtorSigs ds) . extendWithGlobs' (void m) ds
-      _                                           -> id
+      --_                                           -> id -- TODO(chathhorn): graceful error
       where extendWithGlobs' :: Annotation a => S.ModuleName () -> [Decl a] -> Renamer -> Renamer
             extendWithGlobs' m ds = extend Value (zip (getGlobValDefs ds) $ map (qnamish . S.Qual () m) $ getGlobValDefs ds)
                                   . extend Type  (zip (getGlobTyDefs ds)  $ map (qnamish . S.Qual () m) $ getGlobTyDefs ds)
 
             getGlobValDefs :: Annotation a => [Decl a] -> [S.Name ()]
             getGlobValDefs = concatMap $ \ case
-                  DataDecl _ _ _ _ cons _              -> Set.toList $ Set.unions $ map getCtor cons
-                  PatBind _ (PVar _ n) _ _             -> [void n]
-                  _                                    -> []
+                  DataDecl _ _ _ _ cons _               -> Set.toList $ Set.unions $ map getCtor cons
+                  PatBind _ (PVar _ n) _ _              -> [void n]
+                  FunBind _ (Match _ n _ _ _ : _)       -> [void n]
+                  FunBind _ (InfixMatch _ _ n _ _ _: _) -> [void n]
+                  _                                     -> []
 
             getGlobTyDefs :: Annotation a => [Decl a] -> [S.Name ()]
             getGlobTyDefs = concatMap $ \ case
@@ -296,14 +306,12 @@ extendWithGlobs = \ case
 
 getImps :: Annotation a => S.Module a -> [ImportDecl a]
 getImps = \ case
-      S.Module l _ _ imps _            -> addPrelude l imps
+      S.Module l _ _ imps _            -> addMod l "Prim" $ addMod l "Prelude" imps
       S.XmlPage {}                     -> []
-      S.XmlHybrid l _ _ imps _ _ _ _ _ -> addPrelude l imps
-      where addPrelude :: Annotation a => a -> [ImportDecl a] -> [ImportDecl a]
-            addPrelude l imps =
-                  if any isPrelude imps
-                        then imps
-                        else ImportDecl l (ModuleName l "Prelude") False False False Nothing Nothing Nothing : imps
-            isPrelude :: Annotation a => ImportDecl a -> Bool
-            isPrelude ImportDecl { importModule = ModuleName _ n } = n == "Prelude"
+      S.XmlHybrid l _ _ imps _ _ _ _ _ -> addMod l "Prim" $ addMod l "Prelude" imps
+      where addMod :: Annotation a => a -> String -> [ImportDecl a] -> [ImportDecl a]
+            addMod l m imps = if any (isMod m) imps then imps
+                  else ImportDecl l (ModuleName l m) False False False Nothing Nothing Nothing : imps
 
+            isMod :: Annotation a => String -> ImportDecl a -> Bool
+            isMod m ImportDecl { importModule = ModuleName _ n } = n == m
