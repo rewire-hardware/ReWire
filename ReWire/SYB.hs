@@ -98,6 +98,7 @@ foldQ _ QEmpty        = const mempty
 everywhereQ :: (Data a, Monoid b) => (forall d. Data d => d -> b) -> a -> b
 everywhereQ f n = f n <> gmapQr (<>) mempty (everywhereQ f) n
 
--- | Returns the mappend sum of the result of all matches. No impure version, so pattern match failures aren't caught.
+-- | Returns the mappend sum of the result of all matches. No impure version,
+--   so pattern match failures aren't caught.
 runQ :: (Data d, Monoid a) => Query a -> d -> a
 runQ q = everywhereQ $ foldQ (\ f g x -> f x <> g x) q

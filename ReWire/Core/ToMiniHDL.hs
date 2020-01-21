@@ -34,10 +34,6 @@ matchTy s (TyApp _ t1 t2) (TyApp _ t1' t2')          = do s1 <- matchTy [] t1 t1
                                                           s' <- merge s s1
                                                           merge s' s2
 matchTy _ (TyCon _ tci) (TyCon _ tci') | tci == tci' = return []
---matchTy s (TyComp _ t1 t2) (TyComp _ t1' t2')        = do s1 <- matchTy [] t1 t1'
---                                                          s2 <- matchTy [] t2 t2'
---                                                          s' <- merge s s1
---                                                          merge s' s2
 matchTy s (TyVar _ v) t                              = merge s [(v,t)]
 matchTy _ t t'                                       = failNowhere $ "matchTy: can't match " ++ prettyPrint t
                                                                      ++ " with " ++ prettyPrint t'
@@ -55,7 +51,6 @@ merge ((v,t):s) s' = case lookup v s' of
 apply :: TySub -> C.Ty -> C.Ty
 apply s (TyApp an t1 t2)  = TyApp an (apply s t1) (apply s t2)
 apply _ t@(TyCon {})      = t
--- apply s (TyComp an t1 t2) = TyComp an (apply s t1) (apply s t2)
 apply s t@(TyVar _ i)     = case lookup i s of
                               Just t' -> t'
                               Nothing -> t
@@ -122,7 +117,6 @@ sizeof t = case th of
                                   _  -> do let tagwidth =  ceilLog2 (length ctors)
                                            ctorwidths   <- mapM (ctorwidth t) ctors
                                            return (tagwidth + maximum ctorwidths)
-             -- TyComp _ _ _ -> failAt (ann t) "sizeof: Encountered computation type"
              TyVar _ _    -> failAt (ann t) "sizeof: Encountered type variable"
     where (th:_) = flattenTyApp t
 
@@ -343,7 +337,7 @@ compileDefn d | defnName d == "Main.start" = do
 compileProgram :: C.Program -> Either AstError M.Program
 compileProgram p = fst $ runIdentity $ flip runReaderT (ctors p,defns p) $ flip runStateT ([],[],0) $ runSyntaxError $
                      do
-                        units <- {- trace (show $ map proj (defns p)) $ -} mapM compileDefn (defns p)
+                        units <- mapM compileDefn (defns p)
                         return (M.Program units)
 
 proj :: Defn -> GId

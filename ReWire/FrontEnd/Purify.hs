@@ -1,14 +1,11 @@
 {-# LANGUAGE FlexibleContexts, LambdaCase #-}
 {-# LANGUAGE Safe #-}
 
-module ReWire.FrontEnd.Purify (purify,
-                               classifyTy,
-                               TyVariety(Arrow,ReTApp,StTApp,IdApp,PairApp,Pure),
-                               liftMaybe) where
+module ReWire.FrontEnd.Purify (purify) where
 
 import ReWire.Annotation
 import ReWire.FrontEnd.Unbound
-      ( Fresh (..), name2String, string2Name, runFreshMT
+      ( Fresh (..), name2String, string2Name
       )
 import ReWire.Error
 import ReWire.FrontEnd.Syntax
@@ -31,8 +28,8 @@ poly2Ty :: Fresh m => Poly -> m Ty
 poly2Ty (Poly p) = do (_,ty) <- unbind p
                       return ty
 
-purify :: (MonadError AstError m, MonadIO m, MonadFail m) => FreeProgram -> m FreeProgram
-purify (ts, ds) = runFreshMT $ do
+purify :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) => FreeProgram -> m FreeProgram
+purify (ts, ds) = do
       mds       <- mapM isStateMonadicDefn ds
       let (smds,pds) = partition mds
       rds       <- mapM isResMonadicDefn pds
@@ -43,7 +40,7 @@ purify (ts, ds) = runFreshMT $ do
       imprhoR   <- mapM (\ (d,Embed p) -> poly2Ty p >>= \ t -> return (d,t)) nameNpolyR
 
       (_,tyStart) <- liftMaybe "No start symbol!" $ find (isStart . n2s . fst) imprhoR
-      (_,i,o,_,t) <- liftMaybe ("dstResTy applied to: " ++ show tyStart) {- $ trace ("tyStart = " ++ show tyStart) -} $ dstResTy tyStart
+      (_,i,o,_,t) <- liftMaybe ("dstResTy applied to: " ++ show tyStart) $ dstResTy tyStart
 
       --- if t = (a,s), need to set t:=a and stos:=s
       let (ty,stys) = case dstTuple t of
@@ -107,7 +104,6 @@ range_type_start e = do
 isStart :: String -> Bool
 isStart n = take 10 n == "Main.start" && null nonNumsInSuffix
   where nonNumsInSuffix = [ c | c <- drop 10 n, not $ c `elem` ['0'..'9']]
---        s               = n2s n
 
 {-
 In addition to all the above, we re-tie the recursive knot by adding a new
@@ -133,7 +129,7 @@ In addition to all the above, we re-tie the recursive knot by adding a new
 --
 
 mkStart :: Monad m => Ty -> Ty -> Maybe [Ty] -> Ty -> m Defn
-mkStart i o ms t = {- trace ("MKSTART: tyStart = " ++ show tyStart ++ ":::" ++ grunt i o ms t) $-} do
+mkStart i o ms t = do
   return $ Defn {
       defnAnnote = MsgAnnote "start function"
     , defnName   = s2n "Main.start"
@@ -150,8 +146,8 @@ mkStart i o ms t = {- trace ("MKSTART: tyStart = " ++ show tyStart ++ ":::" ++ g
          extresTy t (Just stos) = foldl mkPairTy t stos
          extresTy t _           = t
 
-         reT i o a  = c "ReT" `tyApp` i `tyApp` o `tyApp` a
-         tyStart    = tycomp noAnn (reT i o (c "I")) (extresTy t ms)
+         reT i o a  = TyCon noAnn (s2n "ReT") `tyApp` i `tyApp` o `tyApp` a
+         tyStart    = tycomp noAnn (reT i o (TyCon noAnn (s2n "I"))) (extresTy t ms)
 
          unfold     = Var na (TyBlank $ MsgAnnote "stub type for unfold") (s2n "unfold")
          dispatch   = Var na (dispatchTy i o ms t) (s2n "$Pure.dispatch")
@@ -183,12 +179,6 @@ flattenExtr e = case e of
       where (_,args) = flattenExtr rand
   _                                                          -> (e,[])
 
-mkId :: String -> Name b
-mkId = string2Name
-
-c :: String -> Ty
-c = TyCon noAnn . mkId
-
 tyApp :: Ty -> Ty -> Ty
 tyApp = TyApp noAnn
 
@@ -202,7 +192,7 @@ mkDispatch ty pes iv _ = do
 
   dsc <- freshVar "dsc"
   let dscv = Var an rTy dsc
-  body <- mkCase an ty dscv (pes {- ++ [(pdef,bdef)]-})
+  body <- mkCase an ty dscv pes
   let dispatch_body = Embed (bind [dsc :: Name Exp, iv :: Name Exp] body)
   let dispatch = seed_dispatch { defnBody = dispatch_body }
   return dispatch
@@ -222,7 +212,7 @@ mkCase an ty dsc [(p,e)]     = return $ Case an ty dsc (bind p e) Nothing
 mkCase an ty dsc ((p,e):pes) = Case an ty dsc (bind p e) . Just <$> mkCase an ty dsc pes
 
 mkR_Datatype :: [DataCon] -> DataDefn
-mkR_Datatype dcs = seedR { dataCons = {- r_return : -} dcs }
+mkR_Datatype dcs = seedR { dataCons = dcs }
    where
      seedR = DataDefn
        { dataAnnote = MsgAnnote "R Datatype"
@@ -241,7 +231,7 @@ mkPureEnv :: (Fresh m,MonadError AstError m) => [(Name Exp, Embed Poly)] -> Mayb
 mkPureEnv [] _                   = return []
 mkPureEnv ((n,Embed phi):nps) ms = do
   ty  <- poly2Ty phi
-  purety <- purifyTyM ty ms -- liftMaybe "failed to purify type" (purifyResTy ty)
+  purety <- purifyTyM ty ms
   env <- mkPureEnv nps ms
   return $ (n, purety) : env
 
@@ -294,10 +284,8 @@ purifyStateDefn :: (Fresh m, MonadError AstError m, MonadIO m) =>
                    PureEnv -> Maybe [Ty] -> Defn -> m Defn
 purifyStateDefn rho ms d = do
   ty         <- poly2Ty phi
---  liftIO $ putStrLn $ "purify_state_defn"
   p_pure     <- lookupPure an dname rho
---  let p_pure = [] |-> ty
-  let d_pure = dname -- s2n $ dname ++ "_pure"
+  let d_pure = dname
   (args,e)   <- unbind body
   (_,stys,_) <- liftMaybe "failed at purifyStateDefn" $ dstStT ty
   nstos      <- freshVars "sigma" (length stys)
@@ -320,7 +308,6 @@ purifyResDefn :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) =>
 purifyResDefn rho imprhoR iv ms d = do
   ty         <- lift $ lookupImpure an dname imprhoR
   pure_ty    <- lift $ liftMaybe "Failed to create pure type"
-                     {- $ trace ("ARG purifyResTy " ++ show ty ++ " " ++ show ms) -}
                      $ purifyResTy ty ms
   (args,e)   <- lift $ unbind body
 
@@ -341,14 +328,13 @@ purifyResDefn rho imprhoR iv ms d = do
 --
 -- Below is an egregious hack to compile the start symbol slightly differently.
 --
---  let p_pure = [] |-> pure_ty
   let p_pure = if n2s dname == "Main.start" then [] |-> rangeTy pure_ty else [] |-> pure_ty
   let d_pure = if n2s dname == "Main.start" then s2n "$Pure.start" else dname
   let args'  = if n2s dname == "Main.start" then [] else args
-  let nstos'  = if n2s dname == "Main.start" then [] else nstos
+  let nstos' = if n2s dname == "Main.start" then [] else nstos
 
   let b_pure = bind (args' ++ nstos') e'
-  return {- $ trace ("HEY " ++ show d_pure ++ " :: " ++ show p_pure) -} $ d { defnName=d_pure, defnPolyTy=p_pure, defnBody=(Embed b_pure) }
+  return $ d { defnName=d_pure, defnPolyTy=p_pure, defnBody=(Embed b_pure) }
     where
       dname      = defnName d
       Embed body = defnBody d
@@ -424,7 +410,7 @@ dstTyApp acc t               = (reverse acc,t)
       ([T1,...,Tn],[S1,...,Sm],T)
 -}
 dstStT :: Ty -> Maybe ([Ty],[Ty],Ty)
-dstStT ty = {- trace ("dstStT: " ++ show ty) $ -} do
+dstStT ty = do
   let (ts,smt) = dstTyApp [] ty
   (a,stos) <- dstComp smt
   return (ts,stos,a)
@@ -467,7 +453,7 @@ purifyResTy t ms = do
                       [] -> mkEitherTy a (mkPairTy o rTy)
                       _  -> mkRangeTy a o $ mkTupleTy stos -}
   let purified = foldr arr0 ranTy (ts ++ stos)
-  return {- $ trace ("purifyResTy: t = " ++ show t ++ "\n" ++ "purifyResTy: ms = " ++ show ms ++ "\n" ++ "purifyResTy: a = " ++ show a ++ "\n" ++ "purifyResTy: ts = " ++ show ts ++ "\n" ++ "purifyResTy: purified = " ++ show purified) -} $ purified
+  return purified
 
 --
 -- Takes
@@ -610,7 +596,7 @@ purify_state_body rho stos stys i ms tm = do
       ns      <- freshVars "st" (length stos + 1)
       let vs = foldr (\ (n,t) nts -> Var an t n : nts) [] (zip ns (a:stys))
       g_pure_app <- mkPureApp an rho g vs
-      (p,_)   <- {- trace ("ns*stys = " ++ show (zip ns (a:stys))) $ -} mkTuplePat (zip ns (a:stys))
+      (p,_)   <- mkTuplePat (zip ns (a:stys))
 --
 -- g can, in general, be an application. That's causing the error when (var2name g) is called.
 --
@@ -809,8 +795,8 @@ head of the application. The way it's written below assumes that g is a variable
          tg'           <- purifyTyM tg (Just stys)
          -- ert is the return type of e; ty is the type of the whole expression
          (ert,ty)      <- dstArrow tg'
-         e'            <- purify_res_body rho i o ert {- stys stos -} iv mst e
-         g'            <- purify_res_body rho i o t {- stys stos -} iv mst g
+         e'            <- purify_res_body rho i o ert iv mst e
+         g'            <- purify_res_body rho i o t iv mst g
 
          -- start calculating pattern: p = (Left (v,(s1,(...,sm))))
          let etor  = mkRangeTy ert o (sndM mst)
@@ -836,7 +822,7 @@ head of the application. The way it's written below assumes that g is a variable
          s_i   <- freshVars "State" (length stys)
          v     <- freshVar "var"
          -- the pattern "(v,(s1,(...,sm)))"
-         (p,_) <- {- trace "there" $ -} mkTuplePat $ (v,t) : zip s_i stys
+         (p,_) <- mkTuplePat $ (v,t) : zip s_i stys
 
          let etor    = mkRangeTy t o (sndM mst)
          let leftv   = mkLeft etor (Var an t v)
@@ -845,9 +831,8 @@ head of the application. The way it's written below assumes that g is a variable
          return $ mkLet an body_ty p e' body
 
        RVar an (Var _ tx x)   -> do
---         lift $ liftIO $ putStrLn $ "***** RVar is " ++ n2s x
          tx' <- purifyTyM tx (Just stys)
-         return {-$ trace ("BLAHHH::: tx = " ++ show tx ++ "," ++ "tx' = " ++ show tx' ++ ", stys = " ++ show stys )-} $ mkApp (Var an tx' x') stos
+         return $ mkApp (Var an tx' x') stos
            where x' = if n2s x == "Main.start" then (s2n "$Pure.start") else x
 
 
@@ -867,15 +852,12 @@ To purify e = (extrude ... (extrude phi s1) ... sn):
          case dev of
               Var an t d -> do
                 t'  <- liftMaybe "purifying extruded device" $ purifyTy t (Just stys)
---                tau <- lookupPure NoAnnote d rho
---                trace ("HEY " ++ show d ++ " :: " ++ show t') $
                 return $ mkApp (Var an t' d) stos
 
               App _ _ _  -> do
                 (Var an t f,_,es) <- dstApp dev
                 t'                <- liftMaybe "purifying extruded device" $ purifyTy t (Just stys)
                 let f' = Var an t' f
-                {- trace (show f' ++ " :: " ++ show t') $ -}
                 return $ mkApp f' (es++stos)
               _          -> failAt NoAnnote $ "Extruded device is non-variable: " ++ show dev
 
@@ -915,7 +897,7 @@ To purify e = (extrude ... (extrude phi s1) ... sn):
 ---------------------------
 
 dispatchTy :: Ty -> Ty -> Maybe [Ty] -> Ty -> Ty
-dispatchTy i o ms t = {- trace ("Input to dispatchTy: " ++ show (i,o,ms,t) ++ "\n" ++ "Output from mkRangeTy: " ++ show etor) $ -} mkArrowTy [domTy, i, etor]
+dispatchTy i o ms t = mkArrowTy [domTy, i, etor]
     where
           etor = mkRangeTy t o ms
           domTy = case ms of
@@ -1014,7 +996,7 @@ mkPureVar rho = \ case
                  | xs == "unfold"  -> return v
                  | otherwise       -> do
                      t' <- lookupPure an x rho
-                     return $ Var an t' (x {- ++ "_pure" -})
+                     return $ Var an t' x
       where xs = n2s x
   d                       -> failAt (ann d) $ "Can't make a pure variable out of a non-variable" ++ show d
 

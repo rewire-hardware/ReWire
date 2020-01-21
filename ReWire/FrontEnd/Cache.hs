@@ -80,9 +80,9 @@ getModule fp = Map.lookup fp <$> get >>= \ case
             (m', exps) <- return
                       >=> fixFixity rn
                       >=> annotate
-                      -- >=> printInfoHSE "__Pre_Desugar__" rn
+--                    >=> printInfoHSE "__Pre_Desugar__" rn
                       >=> desugar rn
-                      -- >=> printInfoHSE "__Post_Desugar__" rn
+--                    >=> printInfoHSE "__Post_Desugar__" rn
                       >=> toMantle rn
                       $ m
 
@@ -98,7 +98,7 @@ getProgram fp = do
       (Module ts ds, _) <- getModule fp
 
       p <- return
-       -- >=> printInfo "__Desugared__"
+--     >=> printInfo "__Desugared__"
        >=> addPrims
        >=> inline
        >=> kindCheck
@@ -106,23 +106,24 @@ getProgram fp = do
        >=> neuterPrims
        >=> reduce
        >=> shiftLambdas
---       >=> printInfo "___Post_TC___"
+--     >=> printInfo "___Post_TC___"
        >=> liftLambdas
---       >=> typeCheck
+--     >=> typeCheck
 --     >=> printInfo "___Post_LL___"
        >=> purge
-       -- >=> typeCheck
---      >=> printInfo "___Post_Purge___"
-       >=> purify -- TODO(chathhorn): move before purge?
---       >=> typeCheck
-       -- >=> printInfo "___Post_Purify___"
+--     >=> typeCheck
+--     >=> printInfo "___Post_Purge___"
+       >=> purify -- TODO(chathhorn): move before purge? purge again after purify?
+--     >=> typeCheck
+--     >=> printInfo "___Post_Purify___"
        >=> liftLambdas
---       >=> printInfo "___Post_Second_LL___"
+--     >=> printInfo "___Post_Second_LL___"
+--     >=> kindCheck >=> typeCheck
        >=> toCore
        $ (ts, ds)
 
-      -- liftIO $ putStrLn "___Core___"
-      -- liftIO $ putStrLn $ prettyPrint p
+--    liftIO $ putStrLn "___Core___"
+--    liftIO $ putStrLn $ prettyPrint p
 
       return p
 

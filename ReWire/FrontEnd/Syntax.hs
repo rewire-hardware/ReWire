@@ -82,7 +82,6 @@ instance NFData DataCon
 
 data Kind = KStar
           | KFun Kind Kind
-          -- | KMonad
           | KVar (Name Kind)
       deriving (Generic, Ord, Eq, Show, Typeable, Data)
 
@@ -102,7 +101,6 @@ instance Pretty Kind where
             KVar n           -> text $ show n
             KFun a@KFun {} b -> parens (pretty a) <+> text "->" <+> pretty b
             KFun a b         -> pretty a <+> text "->" <+> pretty b
-            -- KMonad           -> text "M"
 
 data Poly = Poly (Bind [Name Ty] Ty)
       deriving (Generic, Show, Typeable, Data)
@@ -130,21 +128,9 @@ instance Pretty Poly where
 data Ty = TyApp Annote Ty Ty
         | TyCon Annote (Name TyConId)
         | TyVar Annote Kind (Name Ty)
-        -- | TyComp Annote Ty Ty -- application of a monad
         | TyBlank Annote
            deriving (Eq, Generic, Typeable, Data, Show)
 
---instance Show Ty where
---  show (TyApp _ (TyApp _ (TyCon _ n) t1) t2)
---    | name2String n == "(,)" = "(" ++ show t1 ++ "," ++ show t2 ++ ")"
---    | name2String n == "->"  = "(" ++ show t1 ++ " -> " ++ show t2 ++ ")"
---    | otherwise              = "((" ++ name2String n ++ " " ++ show t1 ++ ")" ++ " " ++ show t2 ++ ")"
---  show (TyApp _ t1 t2)  = "(" ++ show t1 ++ " " ++ show t2 ++ ")"
---  show (TyCon _ n)      = name2String n
---  show (TyVar _ _ n)    = name2String n
---  -- show (TyComp _ t1 t2) = show t1 ++ "{" ++ show t2 ++ "}"
---  show (TyBlank an)     = "TyBlank: " ++ show an
-  
 instance Alpha Ty
 
 instance Subst Ty Ty where
@@ -160,7 +146,6 @@ instance Annotated Ty where
             TyApp a _ _  -> a
             TyCon a _    -> a
             TyVar a _ _  -> a
-            -- TyComp a _ _ -> a
             TyBlank a    -> a
 
 instance Pretty Ty where
@@ -174,7 +159,6 @@ instance Pretty Ty where
             TyApp _ t1 t2  -> pretty t1 <+> ppTyAppR t2
             TyCon _ n      -> text (name2String n)
             TyVar _ _ n    -> pretty n
-            -- TyComp _ t1 t2 -> pretty t1 <+> ppTyAppR t2
             TyBlank _      -> text "_"
 
 instance NFData Ty
@@ -193,19 +177,7 @@ data Exp = App        Annote Exp Exp
          | Match      Annote Ty Exp MatchPat Exp [Exp] (Maybe Exp)
          | NativeVHDL Annote String Exp
          | Error      Annote Ty String
-         deriving (Generic, {- Show,-} Typeable, Data)
-
-instance Show Exp where
-  show (App _ (App _ (Var _ _ n) e1) e2) | name2String n == "(,)" = "(" ++ show e1 ++ "," ++ show e2 ++ ")"
-  show (App _ e1 e2)       = "(" ++ show e1 ++ " " ++ show e2 ++ ")"
-  show (Lam _ _ _)         = "*lambda-expression*"
-  show (Var _ _ n)         = {- "(Var " ++ -} name2String n {- ++ ")" -}
-  show (Con _ _ c)         = name2String c
-  show (Case _ _ _ _ _)    = "*Case*"
-  show (Match _ _ e1 mp e2 es Nothing)   = "(Match " ++ " " ++ show e1 ++ " " ++ show mp ++ " " ++ show e2 ++ " " ++ show es ++ ")"
-  show (Match _ _ e1 mp e2 es (Just e3)) = "(Match " ++ " " ++ show e1 ++ " " ++ show mp ++ " " ++ show e2 ++ " " ++ show es ++ " " ++ show e3 ++ ")"
-  show (NativeVHDL _ _ _)  = "*nativeVHDL*"
-  show (Error _ _ _)       = "*error*"
+         deriving (Generic, Show, Typeable, Data)
 
 instance Alpha Exp
 
@@ -294,13 +266,7 @@ instance Pretty Pat where
 
 data MatchPat = MatchPatCon Annote Ty (Name DataConId) [MatchPat]
               | MatchPatVar Annote Ty
-                 deriving ({-Show, -}Generic, Typeable, Data)
-
-instance Show MatchPat where
-  show = \ case
-    (MatchPatCon _ _ n [])  -> name2String n
-    (MatchPatCon _ _ n mps) -> "(" ++ name2String n ++ foldr1 (\ s ps -> s ++ " " ++ ps) (map show mps)
-    (MatchPatVar _ _)       -> "*matchpatvar*"
+                 deriving (Show, Generic, Typeable, Data)
 
 instance Alpha MatchPat
 
@@ -327,10 +293,7 @@ data Defn = Defn
       , defnPolyTy :: Embed Poly
       , defnInline :: Bool
       , defnBody   :: Embed (Bind [Name Exp] Exp)
-      } deriving (Generic, {- Show,-} Typeable, Data)
-
-instance Show Defn where
-  show d = name2String (defnName d) ++ " :: " ++ show (defnPolyTy d)
+      } deriving (Generic, Show, Typeable, Data)
 
 instance Alpha Defn
 

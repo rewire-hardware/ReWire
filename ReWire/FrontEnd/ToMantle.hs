@@ -186,8 +186,7 @@ transTy rn ms = \ case
       TyForall _ Nothing (Just (CxTuple _ cs)) t   -> do
            ms' <- mapM getNad cs
            transTy rn (ms ++ ms') t
-      TyApp l a b {- | isMonad ms a -> M.TyComp l <$> transTy rn ms a <*> transTy rn ms b -}
-                  | otherwise    -> M.TyApp l <$> transTy rn ms a <*> transTy rn ms b
+      TyApp l a b                -> M.TyApp l <$> transTy rn ms a <*> transTy rn ms b
       TyCon l x                  -> pure $ M.TyCon l (string2Name $ rename Type rn x)
       TyVar l x                  -> M.TyVar l <$> freshKVar (prettyPrint x) <*> (pure $ mkUId $ void x)
       t                          -> failAt (ann t) "Unsupported type syntax"
@@ -199,14 +198,6 @@ getNad :: MonadError AstError m => Asst Annote -> m (S.Name ())
 getNad = \ case
       ClassA _ (UnQual _ (Ident _ "Monad")) [TyVar _ x] -> pure $ void x
       a                                                   -> failAt (ann a) "Unsupported typeclass constraint"
-
-isMonad :: [S.Name ()] -> Type Annote -> Bool
-isMonad ms = \ case
-      TyApp _ (TyApp _ (TyApp _ (TyCon _ (UnQual _ (Ident _ "ReT"))) _) _) t -> isMonad ms t
-      TyApp _ (TyApp _ (TyCon _ (UnQual _ (Ident _ "StT"))) _) t             -> isMonad ms t
-      TyCon _ (UnQual _ (Ident _ "I"))                                       -> True
-      TyVar _ (void -> x)                                                   -> x `elem` ms
-      _                                                                      -> False
 
 transExp :: MonadError AstError m => Renamer -> Exp Annote -> m M.Exp
 transExp rn = \ case
@@ -248,8 +239,8 @@ transPat rn = \ case
 extendWithGlobs :: Annotation a => S.Module a -> Renamer -> Renamer
 extendWithGlobs = \ case
       Module _ (Just (ModuleHead _ (ModuleName _ "Prim") _ _)) _ _ ds -> setCtors (getModCtors ds) (getModCtorSigs ds) . extendWithGlobs' (ModuleName () "") ds
-      Module _ (Just (ModuleHead _ m _ _)) _ _ ds -> setCtors (getModCtors ds) (getModCtorSigs ds) . extendWithGlobs' (void m) ds
-      --_                                           -> id -- TODO(chathhorn): graceful error
+      Module _ (Just (ModuleHead _ m _ _)) _ _ ds                     -> setCtors (getModCtors ds) (getModCtorSigs ds) . extendWithGlobs' (void m) ds
+      _                                                               -> id
       where extendWithGlobs' :: Annotation a => S.ModuleName () -> [Decl a] -> Renamer -> Renamer
             extendWithGlobs' m ds = extend Value (zip (getGlobValDefs ds) $ map (qnamish . S.Qual () m) $ getGlobValDefs ds)
                                   . extend Type  (zip (getGlobTyDefs ds)  $ map (qnamish . S.Qual () m) $ getGlobTyDefs ds)

@@ -59,8 +59,6 @@ main = do args                       <- getArgs
             Right prog -> do
               when (FlagD `elem` flags) $ do
                 putStrLn "front end finished"
-                -- writeFile "show.out" (show m)
-                -- putStrLn "show out finished"
                 writeFile "Debug.hs" (prettyPrint prog)
                 putStrLn "debug out finished"
               case compileProgram prog of
