@@ -67,6 +67,7 @@ data Exports = Exports
       deriving Show
 
 data Module = Module [DataDefn] [Defn]
+      deriving Show
 
 instance Semigroup Module where
       (Module a b) <> (Module a' b') = Module (a ++ a') (b ++ b')

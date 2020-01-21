@@ -394,7 +394,7 @@ purifyTy t ms = do
          Pure _ t         -> return t
 
 purifyTyM :: MonadError AstError m => Ty -> Maybe [Ty] -> m Ty
-purifyTyM t ms = liftMaybe ("failed to purifyTy: " ++ prettyPrint (unAnn t) ++ " show: " ++ show (unAnn t))
+purifyTyM t ms = liftMaybe ("failed to purifyTy: " ++ prettyPrint (unAnn t))
                $ purifyTy t ms
 
 dstTyApp :: [Ty] -> Ty -> ([Ty],Ty)

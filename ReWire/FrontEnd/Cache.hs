@@ -39,7 +39,7 @@ import Language.Haskell.Exts.Syntax hiding (Annotation, Exp, Module (..), Namesp
 
 type Cache = ReaderT LoadPath (StateT ModCache (FreshMT (SyntaxErrorT IO)))
 type LoadPath = [FilePath]
-type ModCache = Map.Map FilePath (Module, Exports)
+type ModCache = Map.Map FilePath (Module, (Module, Exports))
 
 runCache :: Cache a -> LoadPath -> IO (Either AstError a)
 runCache m lp = runSyntaxError $ fst <$> runFreshMT (runStateT (runReaderT m lp) mempty)
@@ -48,7 +48,7 @@ mkRenamer :: S.Module SrcSpanInfo -> Cache Renamer
 mkRenamer m = extendWithGlobs m <$> mconcat <$> mapM mkRenamer' (getImps m)
       where mkRenamer' :: ImportDecl SrcSpanInfo -> Cache Renamer
             mkRenamer' (ImportDecl _ (void -> m) quald _ _ _ (fmap void -> as) specs) = do
-                  (_, exps) <- getModule $ toFilePath m
+                  (_, (_, exps)) <- getModule $ toFilePath m
                   fromImps m quald exps as specs
 
 -- Pass 1    Parse.
@@ -58,7 +58,7 @@ mkRenamer m = extendWithGlobs m <$> mconcat <$> mapM mkRenamer' (getImps m)
 -- Pass 15   Translate to mantle + rename globals.
 -- Pass 16   Translate to core
 
-getModule :: FilePath -> Cache (Module, Exports)
+getModule :: FilePath -> Cache (Module, (Module, Exports))
 getModule fp = Map.lookup fp <$> get >>= \ case
       Just p  -> return p
       Nothing -> do
@@ -82,12 +82,12 @@ getModule fp = Map.lookup fp <$> get >>= \ case
                       >=> annotate
 --                    >=> printInfoHSE "__Pre_Desugar__" rn
                       >=> desugar rn
---                    >=> printInfoHSE "__Post_Desugar__" rn
+--                    >=> printInfoHSE "__Post_Desugar__" rn imps
                       >=> toMantle rn
                       $ m
 
-            modify $ Map.insert fp (m' <> imps, exps)
-            return (m' <> imps, exps)
+            modify $ Map.insert fp (m', (imps, exps))
+            return (m', (imps, exps))
 
       where loadImports :: Annotation a => S.Module a -> Cache Module
             loadImports = liftM mconcat . mapM (liftM fst . getModule . toFilePath . void . importModule) . getImps
@@ -95,7 +95,8 @@ getModule fp = Map.lookup fp <$> get >>= \ case
 -- Phase 2 (pre-core) transformations.
 getProgram :: FilePath -> Cache Core.Program
 getProgram fp = do
-      (Module ts ds, _) <- getModule fp
+      (mod, (imps, _))  <- getModule fp
+      let (Module ts ds) = mod <> imps
 
       p <- return
 --     >=> printInfo "__Desugared__"
@@ -145,16 +146,18 @@ printInfo msg fp = do
       liftIO $ putStrLn $ prettyPrint p
       return fp
 
-printInfoHSE :: MonadIO m => String -> Renamer -> S.Module a -> m (S.Module a)
-printInfoHSE msg rn hse = do
+printInfoHSE :: MonadIO m => String -> Renamer -> Module -> S.Module a -> m (S.Module a)
+printInfoHSE msg rn imps hse = do
       liftIO $ putStrLn msg
       liftIO $ putStrLn "\nRenamer:\n"
       liftIO $ putStrLn $ show rn
       liftIO $ putStrLn "\nExports:\n"
       liftIO $ putStrLn $ show $ allExports rn
-      liftIO $ putStrLn "\nShow HSE:\n"
+      liftIO $ putStrLn "\nShow imps:\n"
+      liftIO $ putStrLn $ show imps
+      liftIO $ putStrLn "\nShow HSE mod:\n"
       liftIO $ putStrLn $ show $ void hse
-      liftIO $ putStrLn "\nPretty HSE:\n"
+      liftIO $ putStrLn "\nPretty HSE mod:\n"
       liftIO $ putStrLn $ P.prettyPrint $ void hse
       return hse
 

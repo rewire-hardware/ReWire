@@ -155,11 +155,11 @@ instance Pretty Ty where
                   | name2String c == "(,)" -> parens (ppTyArrowL t1 <+> text "," <+> pretty t2)
                   where ppTyArrowL t@(TyApp _ (TyApp _ (TyCon _ c) _) _)
                               | name2String c == "->" = parens $ pretty t
-                        ppTyArrowL t                                                           = pretty t
-            TyApp _ t1 t2  -> pretty t1 <+> ppTyAppR t2
-            TyCon _ n      -> text (name2String n)
-            TyVar _ _ n    -> pretty n
-            TyBlank _      -> text "_"
+                        ppTyArrowL t                  = pretty t
+            TyApp _ t1 t2                  -> pretty t1 <+> ppTyAppR t2
+            TyCon _ n                      -> text (name2String n)
+            TyVar _ _ n                    -> pretty n
+            TyBlank _                      -> text "_"
 
 instance NFData Ty
 
@@ -258,10 +258,10 @@ instance Annotated Pat where
 
 instance Pretty Pat where
       pretty = \ case
-            PatCon _ _ (Embed n) ps
-              | name2String n == "(,)" -> parens $ pretty (head ps) <+> text "," <+> pretty (head (tail ps))
-              | otherwise              -> parens $ text (name2String n) <+> hsep (map pretty ps)
-            PatVar _ _ n            -> text $ show n
+            PatCon _ _ (Embed n) [p1, p2]
+              | name2String n == "(,)" -> parens $ pretty p1 <+> text "," <+> pretty p2
+            PatCon _ _ (Embed n) ps    -> parens $ text (name2String n) <+> hsep (map pretty ps)
+            PatVar _ _ n               -> text $ show n
 
 
 data MatchPat = MatchPatCon Annote Ty (Name DataConId) [MatchPat]
@@ -282,8 +282,10 @@ instance Annotated MatchPat where
 
 instance Pretty MatchPat where
       pretty = \ case
-            MatchPatCon _ _ n ps -> parens $ text (name2String n) <+> hsep (map pretty ps)
-            MatchPatVar _ t      -> parens $ text "*" <+> text "::" <+> pretty t
+            MatchPatCon _ _ n [p1, p2]
+                  | name2String n == "(,)" -> parens $ pretty p1 <+> text "," <+> pretty p2
+            MatchPatCon _ _ n ps           -> parens $ text (name2String n) <+> hsep (map pretty ps)
+            MatchPatVar _ t                -> parens $ text "*" <+> text "::" <+> pretty t
 
 ---
 

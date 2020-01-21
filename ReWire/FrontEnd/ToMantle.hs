@@ -238,12 +238,15 @@ transPat rn = \ case
 -- TODO(chathhorn): GADT style decls?
 extendWithGlobs :: Annotation a => S.Module a -> Renamer -> Renamer
 extendWithGlobs = \ case
-      Module _ (Just (ModuleHead _ (ModuleName _ "Prim") _ _)) _ _ ds -> setCtors (getModCtors ds) (getModCtorSigs ds) . extendWithGlobs' (ModuleName () "") ds
-      Module _ (Just (ModuleHead _ m _ _)) _ _ ds                     -> setCtors (getModCtors ds) (getModCtorSigs ds) . extendWithGlobs' (void m) ds
+      Module l (Just (ModuleHead _ (ModuleName _ "Prim") _ _)) _ _ ds -> extendWith ds $ ModuleName l ""
+      Module _ (Just (ModuleHead _ m _ _)) _ _ ds                     -> extendWith ds m
       _                                                               -> id
-      where extendWithGlobs' :: Annotation a => S.ModuleName () -> [Decl a] -> Renamer -> Renamer
-            extendWithGlobs' m ds = extend Value (zip (getGlobValDefs ds) $ map (qnamish . S.Qual () m) $ getGlobValDefs ds)
-                                  . extend Type  (zip (getGlobTyDefs ds)  $ map (qnamish . S.Qual () m) $ getGlobTyDefs ds)
+      where extendWith :: Annotation a => [Decl a] -> ModuleName a -> Renamer -> Renamer
+            extendWith ds m = setCtors (getModCtors ds) (getModCtorSigs ds) . extendWith' ds (void m)
+
+            extendWith' :: Annotation a => [Decl a] -> ModuleName () -> Renamer -> Renamer
+            extendWith' ds m = extend Value (zip (getGlobValDefs ds) $ map (qnamish . S.Qual () m) $ getGlobValDefs ds)
+                             . extend Type  (zip (getGlobTyDefs ds)  $ map (qnamish . S.Qual () m) $ getGlobTyDefs ds)
 
             getGlobValDefs :: Annotation a => [Decl a] -> [S.Name ()]
             getGlobValDefs = concatMap $ \ case
