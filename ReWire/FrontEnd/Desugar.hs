@@ -71,7 +71,7 @@ type FreshT = StateT Int
 fresh :: Monad m => Annote -> FreshT m (Name Annote)
 fresh l = do
       x <- get
-      modify $ (+1)
+      modify (+ 1)
       return $ Ident l $ "$" ++ show x
 
 -- | record ctor name |-> (field, field place, ctor arity)

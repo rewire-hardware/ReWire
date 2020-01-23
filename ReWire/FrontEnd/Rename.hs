@@ -21,7 +21,7 @@ import ReWire.FrontEnd.Fixity
 import ReWire.FrontEnd.Syntax (DataDefn, Defn)
 
 import Control.Arrow ((&&&))
-import Control.Monad (liftM, foldM, void)
+import Control.Monad (foldM, void)
 import Control.Monad.Fail (MonadFail)
 import Data.List (find)
 import Data.List.Split (splitOn)
@@ -181,7 +181,9 @@ exclude :: QNamish a => Namespace -> [a] -> Renamer -> Renamer
 exclude ns ks rn@Renamer { rnNames } = rn { rnNames = foldr (Map.delete . (ns,) . toQNamish) rnNames ks }
 
 fixFixity :: MonadFail m => Renamer -> S.Module SrcSpanInfo -> m (S.Module SrcSpanInfo)
-fixFixity Renamer { rnFixities } = liftM deuniquifyLocalOps . applyFixities (Set.toList rnFixities) . fixLocalOps
+fixFixity Renamer { rnFixities } m = do
+      m' <- fixLocalOps m >>= applyFixities (Set.toList rnFixities)
+      return $ deuniquifyLocalOps m'
 
 addFixities :: [Fixity] -> Renamer -> Renamer
 addFixities fixities' rn@Renamer { rnFixities } = rn { rnFixities = rnFixities `Set.union` Set.fromList fixities' }

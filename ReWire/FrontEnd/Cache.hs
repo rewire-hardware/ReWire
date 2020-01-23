@@ -118,8 +118,8 @@ getProgram fp = do
 --     >=> typeCheck
 --     >=> printInfo "___Post_Purify___"
        >=> liftLambdas
---     >=> printInfo "___Post_Second_LL___"
---     >=> kindCheck >=> typeCheck
+       -- >=> printInfo "___Post_Second_LL___"
+       -- >=> kindCheck >=> typeCheck
        >=> toCore
        $ (ts, ds)
 

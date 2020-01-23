@@ -87,7 +87,7 @@ mgu an (TyVar _ _ u)   t                | isFlex u                             =
 mgu an t                  (TyVar _ _ u) | isFlex u                             = varBind an u t
 mgu _  (TyCon _ c1)    (TyCon _ c2)     | (name2String c1) == (name2String c2) = return mempty
 mgu _  (TyVar _ _ v)   (TyVar _ _ u)    | not (isFlex v) && v==u               = return mempty
-mgu an t1 t2 = failAt an $ "Types do not unify: " ++ show t1 ++ ", " ++ show t2
+mgu an t1 t2 = failAt an $ "Types do not unify: " ++ prettyPrint t1 ++ ", " ++ prettyPrint t2
 
 unify :: MonadError AstError m => Annote -> Ty -> Ty -> TCM m ()
 unify an t1 t2 = do
