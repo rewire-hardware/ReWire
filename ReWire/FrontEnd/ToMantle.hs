@@ -166,7 +166,7 @@ transDef rn tys inls defs = \ case
       InlineSig _ _ _ _                                         -> pure defs -- TODO(chathhorn): elide
       TypeSig _ _ _                                             -> pure defs -- TODO(chathhorn): elide
       InfixDecl _ _ _ _                                         -> pure defs -- TODO(chathhorn): elide
-      d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " ++ show d
+      d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " ++ show (() <$ d)
 
 transTyVar :: MonadError AstError m => Annote -> S.TyVarBind () -> m (Name M.Ty)
 transTyVar l = \ case

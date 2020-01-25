@@ -304,7 +304,7 @@ desugarFuns = transform $ \ case
             toAlt :: MonadError AstError m => Match Annote -> FreshT m (Alt Annote)
             toAlt (Match l' _ [p] rhs binds) = return $ Alt l' p rhs binds
             toAlt (Match l' _ ps  rhs binds) = return $ Alt l' (PTuple l' Boxed ps) rhs binds
-            toAlt m                          = failAt (ann m) "Unsupported decl syntax"
+            toAlt m                          = failAt (ann m) $ "Unsupported decl syntax: " ++ show (() <$ m)
 
 liftDiscriminator :: (MonadCatch m, MonadError AstError m) => Transform (FreshT m)
 liftDiscriminator = transform $ \ (Case l e alts) -> do
@@ -402,7 +402,7 @@ desugarDos = transform $ \ (Do l stmts) -> transDo l stmts
                   [Qualifier _ e]          -> return e
                   Qualifier l' e : stmts   -> App l' (App l' (Var l' $ UnQual l' $ Ident l' ">>=") e) . Lambda l' [PWildCard l'] <$> transDo l stmts
                   LetStmt l' binds : stmts -> Let l' binds <$> transDo l stmts
-                  s : _                    -> failAt (ann s) "Unsupported syntax in do-block"
+                  s : _                    -> failAt (ann s) $ "Unsupported syntax in do-block: " ++ show (() <$ s)
                   []                       -> failAt l "Ill-formed do-block"
 
 normTyContext :: (MonadCatch m, MonadError AstError m) => Transform (FreshT m)
@@ -514,7 +514,7 @@ desugarAsPats = transform $ \ (Alt l p (UnGuardedRhs l' e) Nothing) -> do
                   PatTypeSig _ p _        -> patToExp p
                   -- PViewPat _exp _pat ->
                   PBangPat _ p            -> patToExp p
-                  p                       -> failAt (ann p) "Unsupported pattern"
+                  p                       -> failAt (ann p) $ "Unsupported pattern: " ++ show (() <$ p)
 
 -- | Turns beta-redexes into cases. E.g.:
 -- > (\ x -> e2) e1
