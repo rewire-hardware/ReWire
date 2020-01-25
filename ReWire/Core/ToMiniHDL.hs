@@ -14,10 +14,10 @@ import Control.Monad.Identity
 import Data.List (find)
 import Data.Bits (testBit)
 
-type CM = SyntaxErrorT (
-            StateT ([Signal],[Component],Int) (
-              ReaderT ([DataCon],[Defn]) Identity
-            )
+type CM = StateT ([Signal],[Component],Int) (
+              ReaderT ([DataCon],[Defn]) (
+                  SyntaxErrorT Identity
+              )
           )
 
 askCtors :: CM [DataCon]
@@ -35,7 +35,7 @@ matchTy s (TyApp _ t1 t2) (TyApp _ t1' t2')          = do s1 <- matchTy [] t1 t1
                                                           merge s' s2
 matchTy _ (TyCon _ tci) (TyCon _ tci') | tci == tci' = return []
 matchTy s (TyVar _ v) t                              = merge s [(v,t)]
-matchTy _ t t'                                       = failNowhere $ "matchTy: can't match " ++ prettyPrint t
+matchTy _ t t'                                       = lift $ failNowhere $ "matchTy: can't match " ++ prettyPrint t
                                                                      ++ " with " ++ prettyPrint t'
 
 merge :: TySub -> TySub -> CM TySub
@@ -44,7 +44,7 @@ merge ((v,t):s) s' = case lookup v s' of
                        Nothing             -> do s'' <- merge s s'
                                                  return ((v,t):s'')
                        Just t' | t == t'   -> merge s s'
-                               | otherwise -> failNowhere $ "merge: inconsistent assignment of tyvar " ++ v
+                               | otherwise -> lift $ failNowhere $ "merge: inconsistent assignment of tyvar " ++ v
                                                           ++ ": " ++ prettyPrint t ++ " vs. "
                                                           ++ prettyPrint t'
 
@@ -66,13 +66,13 @@ askDci :: DataConId -> CM DataCon
 askDci dci = do ctors <- askCtors
                 case find (\ (DataCon _ dci' _ _) -> dci == dci') ctors of
                   Just ctor -> return ctor
-                  Nothing   -> failNowhere $ "askDci: no info for data constructor " ++ show dci
+                  Nothing   -> lift $ failNowhere $ "askDci: no info for data constructor " ++ show dci
 
 dcitci :: DataConId -> CM TyConId
 dcitci dci = do DataCon _ _ _ t <- askDci dci
                 case flattenTyApp (last (flattenArrow t)) of
                   (TyCon _ tci:_) -> return tci
-                  _               -> failNowhere $ "dcitci: malformed type for data constructor "
+                  _               -> lift $ failNowhere $ "dcitci: malformed type for data constructor "
                                                 ++ show dci ++ " (does not end in application of TyCon)"
 
 nvec :: Int -> Int -> [Bit]
@@ -176,7 +176,7 @@ askGIdTy :: GId -> CM C.Ty
 askGIdTy i = do defns <- askDefns
                 case find (\ (Defn _ i' _ _) -> i == i') defns of
                   Just (Defn _ _ t _) -> return t
-                  Nothing             -> failNowhere $ "askGIdTy: no info for identifier " ++ show i
+                  Nothing             -> lift $ failNowhere $ "askGIdTy: no info for identifier " ++ show i
 
 compileExp :: C.Exp -> CM ([Stmt],Name)
 compileExp e_ = case e of
@@ -335,7 +335,7 @@ compileDefn d | defnName d == "Main.start" = do
                   return (Unit ent arch)
 
 compileProgram :: C.Program -> Either AstError M.Program
-compileProgram p = fst $ runIdentity $ flip runReaderT (ctors p,defns p) $ flip runStateT ([],[],0) $ runSyntaxError $
+compileProgram p = liftM fst $ runIdentity $ runSyntaxError $ flip runReaderT (ctors p,defns p) $ flip runStateT ([],[],0) $
                      do
                         units <- mapM compileDefn (defns p)
                         return (M.Program units)

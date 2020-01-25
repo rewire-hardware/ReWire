@@ -28,7 +28,7 @@ import ReWire.FrontEnd.Unbound (runFreshMT, FreshMT (..))
 import Control.Monad ((>=>), liftM, msum, void)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Reader (runReaderT, ReaderT, MonadReader (..))
-import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify)
+import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify, lift)
 
 import qualified Data.Map.Strict              as Map
 import qualified Language.Haskell.Exts.Syntax as S (Module (..))
@@ -78,7 +78,7 @@ getModule fp = Map.lookup fp <$> get >>= \ case
 
             -- Phase 1 (haskell-src-exts) transformations.
             (m', exps) <- return
-                      >=> fixFixity rn
+                      >=> lift . lift . fixFixity rn
                       >=> annotate
 --                    >=> printInfoHSE "__Pre_Desugar__" rn
                       >=> desugar rn
