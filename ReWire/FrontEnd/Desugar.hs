@@ -15,6 +15,7 @@ import Data.Foldable (foldl', foldrM)
 import Data.Functor.Identity (Identity (..))
 
 import Language.Haskell.Exts.Syntax
+import Language.Haskell.Exts.Pretty (prettyPrint)
 
 import qualified Data.Map.Strict              as Map
 
@@ -125,14 +126,15 @@ desugarRecords rn = (\ (Module (l :: Annote) h p imps decls) -> do
 
       where fieldDecl :: Monad m => FieldInfo -> FreshT m (Decl Annote)
             fieldDecl (ctor, (f, i, arr)) = do
-                  let l = MsgAnnote "Generated record field accessor."
-                  x <- fresh l
-                  x' <- fresh l
-                  return $ PatBind l (PVar l (l <$ f))
-                        ( UnGuardedRhs l
-                              ( Lambda l [PVar l x]
-                                    ( Case l (Var l (UnQual l x))
-                                          [ Alt l (PApp l (UnQual l ctor) (argPats x' i arr))
+                  let l = MsgAnnote $ "Generated record field accessor for " ++ prettyPrint f ++ " at: "
+                  let ap (MsgAnnote s) s' = MsgAnnote (s ++ s')
+                  x <- fresh (ap l "x")
+                  x' <- fresh (ap l "x'")
+                  return $ PatBind (ap l "PatBind") (PVar (ap l "") (l <$ f))
+                        ( UnGuardedRhs (ap l "UnGuardedRhs")
+                              ( Lambda (ap l "Lambda") [PVar l x]
+                                    ( Case (ap l "Case") (Var l (UnQual l x))
+                                          [ Alt (ap l "Alt") (PApp l (UnQual l ctor) (argPats x' i arr))
                                                 (UnGuardedRhs l (Var l (UnQual l x')))
                                                 Nothing
                                           ]
@@ -306,6 +308,10 @@ desugarFuns = transform $ \ case
             toAlt (Match l' _ ps  rhs binds) = return $ Alt l' (PTuple l' Boxed ps) rhs binds
             toAlt m                          = failAt (ann m) $ "Unsupported decl syntax: " ++ show (() <$ m)
 
+-- | Turns
+-- > case e of {...}
+-- into
+-- > (\ x -> case x of {...}) k
 liftDiscriminator :: (MonadCatch m, MonadError AstError m) => Transform (FreshT m)
 liftDiscriminator = transform $ \ (Case l e alts) -> do
       x <- fresh l

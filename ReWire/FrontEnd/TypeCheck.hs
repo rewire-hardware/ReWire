@@ -221,7 +221,7 @@ tcExp = \ case
 
 mkApp :: Annote -> Exp -> [Exp] -> [Name Exp] -> Exp
 mkApp an f as holes = foldl' (\ e x -> App an e x) f
-      $ as ++ map (Var an tblank) holes
+      $ as ++ map (Var an $ TyBlank an) holes
 
 tcDefn :: (Fresh m, MonadError AstError m) => Defn -> TCM m Defn
 tcDefn d  = do

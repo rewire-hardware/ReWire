@@ -6,8 +6,7 @@ module ReWire.FrontEnd.Syntax
       , Ty (..), Exp (..), Pat (..), MatchPat (..)
       , Defn (..), DataDefn (..), DataCon (..)
       , FreeProgram, Program (..)
-      , Kind (..)
-      , tblank, kblank
+      , Kind (..), kblank
       , flattenApp, arr0, mkArrow, arrowRight, getArrow
       , fv, fvAny
       , Fresh, Name, Embed (..), TRec, Bind
@@ -47,9 +46,6 @@ fv = toListOf UB.fv
 
 fvAny :: Alpha a => a -> [AnyName]
 fvAny = toListOf UB.fvAny
-
-tblank :: Ty
-tblank = TyBlank noAnn
 
 kblank :: Kind
 kblank = KVar $ string2Name "_"

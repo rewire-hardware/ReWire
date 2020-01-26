@@ -6,7 +6,7 @@ import ReWire.Annotation hiding (ann)
 import ReWire.Error
 import ReWire.FrontEnd.Fixity
 import ReWire.FrontEnd.Rename hiding (Module)
-import ReWire.FrontEnd.Syntax ((|->), tblank)
+import ReWire.FrontEnd.Syntax ((|->))
 import ReWire.FrontEnd.Unbound
       ( string2Name, name2String
       , fresh, Fresh, Name, Embed (..), bind
@@ -160,7 +160,7 @@ transDef rn tys inls defs = \ case
             case lookup x tys of
                   Just t -> pure $ M.Defn l (mkId $ rename Value rn x) (M.fv t |-> t) (x `elem` inls) (Embed (bind [] e')) : defs
                   Nothing -> if x `elem` inls
-                        then pure $ M.Defn l (mkId $ rename Value rn x) ([] |-> tblank) True (Embed (bind [] e')) : defs
+                        then pure $ M.Defn l (mkId $ rename Value rn x) ([] |-> M.TyBlank l) True (Embed (bind [] e')) : defs
                         else failAt l "No type signature on non-inline toplevel definition"
       DataDecl _ _ _ _ _ _                                      -> pure defs -- TODO(chathhorn): elide
       InlineSig _ _ _ _                                         -> pure defs -- TODO(chathhorn): elide
@@ -204,24 +204,24 @@ transExp rn = \ case
       App l (App _ (Var _ (UnQual _ (Ident _ "nativeVhdl"))) (Lit _ (String _ f _))) e
                             -> M.NativeVHDL l f <$> transExp rn e
       App l (Var _ (UnQual _ (Ident _ "primError"))) (Lit _ (String _ m _))
-                            -> pure $ M.Error l M.tblank m
+                            -> pure $ M.Error l (M.TyBlank l) m
       App l e1 e2           -> M.App l <$> transExp rn e1 <*> transExp rn e2
       Lambda l [PVar _ x] e -> do
             e' <- transExp (exclude Value [void x] rn) e
-            pure $ M.Lam l M.tblank $ bind (mkUId $ void x) e'
-      Var l x               -> pure $ M.Var l M.tblank (mkId $ rename Value rn x)
-      Con l x               -> pure $ M.Con l M.tblank (string2Name $ rename Value rn x)
+            pure $ M.Lam l (M.TyBlank l) $ bind (mkUId $ void x) e'
+      Var l x               -> pure $ M.Var l (M.TyBlank l) (mkId $ rename Value rn x)
+      Con l x               -> pure $ M.Con l (M.TyBlank l) (string2Name $ rename Value rn x)
       Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _] -> do
             e'  <- transExp rn e
             p'  <- transPat rn p
             e1' <- transExp (exclude Value (getVars p) rn) e1
             e2' <- transExp rn e2
-            pure $ M.Case l M.tblank e' (bind p' e1') (Just e2')
+            pure $ M.Case l (M.TyBlank l) e' (bind p' e1') (Just e2')
       Case l e [Alt _ p (UnGuardedRhs _ e1) _] -> do
             e'  <- transExp rn e
             p'  <- transPat rn p
             e1' <- transExp (exclude Value (getVars p) rn) e1
-            pure $ M.Case l M.tblank e' (bind p' e1') Nothing
+            pure $ M.Case l (M.TyBlank l) e' (bind p' e1') Nothing
       e                     -> failAt (ann e) $ "Unsupported expression syntax: " ++ show (void e)
       where getVars :: Pat Annote -> [S.Name ()]
             getVars = runQ $ query $ \ case
@@ -230,8 +230,8 @@ transExp rn = \ case
 
 transPat :: MonadError AstError m => Renamer -> Pat Annote -> m M.Pat
 transPat rn = \ case
-      PApp l x ps             -> M.PatCon l (Embed M.tblank) (Embed $ string2Name $ rename Value rn x) <$> mapM (transPat rn) ps
-      PVar l x                -> pure $ M.PatVar l (Embed M.tblank) (mkUId $ void x)
+      PApp l x ps             -> M.PatCon l (Embed (M.TyBlank l)) (Embed $ string2Name $ rename Value rn x) <$> mapM (transPat rn) ps
+      PVar l x                -> pure $ M.PatVar l (Embed (M.TyBlank l)) (mkUId $ void x)
       p                       -> failAt (ann p) $ "Unsupported syntax in a pattern: " ++ (show $ void p)
 
 -- Note: runs before desugaring.
