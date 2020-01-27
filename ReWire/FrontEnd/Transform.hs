@@ -208,7 +208,7 @@ reduceExp = \ case
                         Nothing  -> Case an t e' <$> (bind p <$> reduceExp e1') <*> pure Nothing
                         Just e2' -> Case an t e' <$> (bind p <$> reduceExp e1') <*> (Just <$> reduceExp e2')
                   MatchNo      -> case e2 of
-                        Nothing  -> failAt an "Reduce: pattern match failure"
+                        Nothing  -> pure $ Error an t "Pattern match failure (reduced)"
                         Just e2' -> reduceExp e2'
       e -> return e
 
