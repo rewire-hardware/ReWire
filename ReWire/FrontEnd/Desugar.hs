@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, ScopedTypeVariables, FlexibleContexts #-}
+{-# LANGUAGE LambdaCase, ScopedTypeVariables, FlexibleContexts, TupleSections #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 module ReWire.FrontEnd.Desugar (desugar, addMainModuleHead) where
@@ -13,6 +13,7 @@ import Control.Monad (liftM, replicateM, (>=>), void, when, msum)
 import Control.Monad.State (runStateT, StateT, MonadState (..), modify)
 import Data.Foldable (foldl', foldrM)
 import Data.Functor.Identity (Identity (..))
+import Data.Maybe (isNothing, mapMaybe)
 
 import Language.Haskell.Exts.Syntax
 import Language.Haskell.Exts.Pretty (prettyPrint)
@@ -42,7 +43,6 @@ desugar rn = liftM fst . flip runStateT 0 .
             ( depatLambdas
            <> lambdasToCases
             )
-      >=> runT liftDiscriminator
       >=> runT flattenAlts
       >=> runT desugarGuards
       >=> runT
@@ -64,6 +64,7 @@ desugar rn = liftM fst . flip runStateT 0 .
       >=> runT
             ( desugarWildCards
            <> desugarAsPats
+           <> liftDiscriminator
             )
       )
 
@@ -76,7 +77,7 @@ fresh l = do
       return $ Ident l $ "$" ++ show x
 
 -- | record ctor name |-> (field, field place, ctor arity)
-type FieldInfo = (Name Annote, (Name Annote, Int, Int))
+type FieldInfo = (Name Annote, (Name Annote, Type Annote, Int, Int))
 
 -- | Desugar record type defs, field accessors, record patterns, record
 --   construction expressions, and record update syntax.
@@ -89,23 +90,25 @@ type FieldInfo = (Name Annote, (Name Annote, Int, Int))
 -- > case r of R x0 _ x1 -> R x0 a x1
 desugarRecords :: (MonadCatch m, MonadError AstError m) => Renamer -> Transform (FreshT m)
 desugarRecords rn = (\ (Module (l :: Annote) h p imps decls) -> do
-            let fs = concatMap fieldInfo $ Map.assocs $ Map.filter isRecordSig $ getLocalCtorSigs rn
-            ds <- mapM fieldDecl fs
-            return $ Module l h p imps (decls ++ ds ++ map inlineSig fs))
+            let fs = concatMap fieldInfo $ Map.assocs $ filterRecords $ getLocalCtorSigs rn
+            ds <- concatMap tupList <$> mapM fieldDecl fs
+            return $ Module l h p imps (decls ++ ds)) -- ++ map inlineSig fs))
       ||> (\ (PRec (l :: Annote) c fpats) -> do
-            let sig = lookupCtorSig rn (rename Value rn c :: FQName)
+            let sig  = lookupCtorSig rn (rename Value rn c :: FQName)
+            let flds = toNames sig
             when (fpats /= [] && not (isRecordSig sig))   $ failAt l "Record pattern found, but not a record"
-            when (not $ all (inSig sig pfToField) fpats) $ failAt l "Field pattern for nonexistent field"
-            return $ PApp l c $ map (toPat l fpats) sig)
+            when (not $ all (inSig flds pfToField) fpats) $ failAt l "Field pattern for nonexistent field"
+            return $ PApp l c $ map (toPat l fpats) flds)
       ||> (\ (RecDecl (l :: Annote) n fs) ->
             return $ ConDecl l n $ map (\ (FieldDecl _ _ t) -> t) $ concatMap flatten fs)
       ||> (\ x -> case x :: Exp Annote of
             -- R { b = e } becomes R undefined e undefined
             RecConstr l c fups -> do
-                  let sig = lookupCtorSig rn (rename Value rn c :: FQName)
+                  let sig  = lookupCtorSig rn (rename Value rn c :: FQName)
+                  let flds = toNames sig
                   when (fups /= [] && not (isRecordSig sig))   $ failAt l "Record constructor found, but not a record"
-                  when (not $ all (inSig sig fupToField) fups) $ failAt l "Field initializer for nonexistent field"
-                  return $ foldl' (App l) (Con l c) $ map (toExp l fups) sig
+                  when (not $ all (inSig flds fupToField) fups) $ failAt l "Field initializer for nonexistent field"
+                  return $ foldl' (App l) (Con l c) $ map (toExp l fups) flds
             RecUpdate l _ [] -> failAt l "Empty record update"
             -- r { b = e } becomes case r of { R x1 _ x2 -> R x1 e x2 }
             RecUpdate l e fups -> do
@@ -113,8 +116,9 @@ desugarRecords rn = (\ (Module (l :: Annote) h p imps decls) -> do
                         Nothing -> failAt l "You cannot use `..' in a record update"
                         Just f  -> maybe (failAt l "Field update for nonexistent field") return
                                  $ findCtorSigFromField rn (rename Value rn f :: FQName)
-                  pats <- mapM (toRUpPat l fups) sig
-                  exps <- mapM (toRUpExp l fups) $ zip pats sig
+                  let flds = toNames sig
+                  pats <- mapM (toRUpPat l fups) flds
+                  exps <- mapM (toRUpExp l fups) $ zip pats flds
                   return $ Case l e
                         [ Alt l
                               (PApp l (qnamish ctor) pats)
@@ -124,39 +128,59 @@ desugarRecords rn = (\ (Module (l :: Annote) h p imps decls) -> do
             )
       ||> TId
 
-      where fieldDecl :: Monad m => FieldInfo -> FreshT m (Decl Annote)
-            fieldDecl (ctor, (f, i, arr)) = do
-                  let l = MsgAnnote $ "Generated record field accessor for " ++ prettyPrint f ++ " at: "
-                  let ap (MsgAnnote s) s' = MsgAnnote (s ++ s')
-                  x <- fresh (ap l "x")
-                  x' <- fresh (ap l "x'")
-                  return $ PatBind (ap l "PatBind") (PVar (ap l "") (l <$ f))
-                        ( UnGuardedRhs (ap l "UnGuardedRhs")
-                              ( Lambda (ap l "Lambda") [PVar l x]
-                                    ( Case (ap l "Case") (Var l (UnQual l x))
-                                          [ Alt (ap l "Alt") (PApp l (UnQual l ctor) (argPats x' i arr))
-                                                (UnGuardedRhs l (Var l (UnQual l x')))
-                                                Nothing
-                                          ]
-                                    )
-                              )
-                        ) Nothing
+      where fieldDecl :: Monad m => FieldInfo -> FreshT m (Decl Annote, Decl Annote)
+            fieldDecl (ctor, (f, t, i, arr)) = do
+                  let an s = MsgAnnote $ "Generated record field accessor for " ++ prettyPrint f ++ " at: " ++ s
+                  x <- fresh (an "x")
+                  x' <- fresh (an "x'")
+                  return $ (,)
+                         ( TypeSig (an "TypeSig") [an "TypeSig Name" <$ f] (an "TypeSig Type" <$ t) )
+                         $ PatBind (an "PatBind") (PVar (an "PVar") (an "PVar" <$ f))
+                               ( UnGuardedRhs (an "UnGuardedRhs")
+                                     ( Lambda (an "Lambda") [PVar (an "PVar") x]
+                                           ( Case (an "Case") (Var (an "Var") (UnQual (an "Var") x))
+                                                 [ Alt (an "Alt") (PApp (an "PApp") (UnQual (an "PApp") ctor) (argPats x' i arr))
+                                                       (UnGuardedRhs (an "UnGuardedRhs") (Var (an "Var") (UnQual (an "Var") x')))
+                                                       Nothing
+                                                 ]
+                                           )
+                                     )
+                               ) Nothing
+
+            tupList :: (a, a) -> [a]
+            tupList (x, y) = [x, y]
 
             flatten :: FieldDecl Annote -> [FieldDecl Annote]
             flatten (FieldDecl l xs t) = map (\ x -> FieldDecl l [x] t) xs
 
-            fieldInfo :: (Name (), [Name ()]) -> [FieldInfo]
+            -- TODO(chathhorn): remove this fieldinfo thing.
+            fieldInfo :: (Name (), [(Name (), Type ())]) -> [FieldInfo]
             fieldInfo (ctor, fs) = map (fieldInfo' ctor $ length fs) $ zip [0..] fs
 
-            fieldInfo' :: Name () -> Int -> (Int, Name ()) -> FieldInfo
-            fieldInfo' ctor arr (i, f) = (noAnn <$ ctor, (noAnn <$ f, i, arr))
+            fieldInfo' :: Name () -> Int -> (Int, (Name (), Type ())) -> FieldInfo
+            fieldInfo' ctor arr (i, (f, t)) = (noAnn <$ ctor, (noAnn <$ f, noAnn <$ t, i, arr))
+
+            filterRecords :: CtorSigs -> Map.Map (Name ()) [(Name (), Type ())]
+            filterRecords = Map.mapMaybe $ \ a -> if isRecordSig a then Just $ toRecordSig a else Nothing
+
+            toNames :: [(Maybe a, t)] -> [a]
+            toNames = mapMaybe $ \ a -> do
+                  n <- fst a
+                  return n
+
+            isRecordSig :: [(Maybe a, t)] -> Bool
+            isRecordSig [] = False
+            isRecordSig s = not $ any (isNothing . fst) s
+
+            toRecordSig :: [(Maybe a, t)] -> [(a, t)]
+            toRecordSig = concatMap (\ (n, t) -> maybe [] (pure . (, t)) n)
 
             argPats :: Name Annote -> Int -> Int -> [Pat Annote]
             argPats x i tot = let a = ann x in
                   replicate i (PWildCard a) ++ [PVar a x] ++ replicate (tot - i - 1) (PWildCard a)
 
             inlineSig :: FieldInfo -> Decl Annote
-            inlineSig (_, (f, _, _)) = InlineSig noAnn True Nothing (UnQual noAnn f)
+            inlineSig (_, (f, _, _, _)) = InlineSig noAnn True Nothing (UnQual noAnn f)
 
             inSig :: [FQName] -> (a -> Maybe FQName) -> a -> Bool
             inSig sig proj = maybe True (flip any sig . (==)) . proj
@@ -422,6 +446,7 @@ desugarTyFuns :: (MonadCatch m, MonadError AstError m) => Transform (FreshT m)
 desugarTyFuns = transform $
       \ (TyFun (l :: Annote) a b) -> return $ TyApp l (TyApp l (TyCon l (UnQual l (Ident l "->"))) a) b
 
+-- TODO(chathhorn): recursive bindings?
 -- | Turns Lets into Cases. Assumes functions in Lets are already desugared.
 --   E.g.:
 -- > let p = e1
@@ -442,7 +467,7 @@ desugarLets = transform $ \ case
             isPatBind PatBind {} = True
             isPatBind _          = False
 
--- | Turns ifs into cases and unary minus.
+-- | Turns ifs into cases.
 -- > if e1 then e2 else e3
 -- becomes
 -- > case e1 of { True -> e2; False -> e3 }

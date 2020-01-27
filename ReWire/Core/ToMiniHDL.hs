@@ -69,10 +69,10 @@ askDci dci = do ctors <- askCtors
                   Nothing   -> lift $ failNowhere $ "askDci: no info for data constructor " ++ show dci
 
 dcitci :: DataConId -> CM TyConId
-dcitci dci = do DataCon _ _ _ t <- askDci dci
+dcitci dci = do DataCon l _ _ t <- askDci dci
                 case flattenTyApp (last (flattenArrow t)) of
                   (TyCon _ tci:_) -> return tci
-                  _               -> lift $ failNowhere $ "dcitci: malformed type for data constructor "
+                  _               -> lift $ failAt l $ "dcitci: malformed type for data constructor "
                                                 ++ show dci ++ " (does not end in application of TyCon)"
 
 nvec :: Int -> Int -> [Bit]

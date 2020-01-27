@@ -133,8 +133,7 @@ liftLambdas p = runFreshMT $ evalStateT (transProg liftLambdas' p) []
                   PatCon an (Embed t) (Embed c) ps -> MatchPatCon an t c $ map transPat ps
                   PatVar an (Embed t) _            -> MatchPatVar an t
 
--- | Purge.
-
+-- | Remove unused definitions.
 purge :: Monad m => FreeProgram -> m FreeProgram
 purge (ts, vs) = return $ (inuseData (fv $ trec $ inuseDefn vs) ts, filterPrims $ inuseDefn vs)
       where inuseData :: [Name DataConId] -> [DataDefn] -> [DataDefn]
@@ -175,9 +174,7 @@ inuseDefn ds = case find ((== "Main.start") . name2String . defnName) ds of
             toDefn :: Name Exp -> Defn
             toDefn n = fromJust $ find ((==n) . defnName) ds
 
-
--- | Reduce.
-
+-- | Partially evaluate expressions.
 reduce :: MonadError AstError m => FreeProgram -> m FreeProgram
 reduce (ts, vs) = do
       vs'      <- mapM reduceDefn vs

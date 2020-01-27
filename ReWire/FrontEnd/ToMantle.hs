@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, ViewPatterns, ScopedTypeVariables, FlexibleContexts #-}
+{-# LANGUAGE LambdaCase, ViewPatterns, ScopedTypeVariables, FlexibleContexts, TupleSections #-}
 {-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.ToMantle (toMantle, extendWithGlobs, getImps) where
 
@@ -13,7 +13,7 @@ import ReWire.FrontEnd.Unbound
       )
 import ReWire.SYB
 
-import Control.Arrow ((&&&))
+import Control.Arrow ((&&&), (***))
 import Control.Monad (foldM, replicateM, void)
 import Data.Foldable (foldl')
 import Language.Haskell.Exts.Fixity (Fixity (..))
@@ -166,7 +166,7 @@ transDef rn tys inls defs = \ case
       InlineSig _ _ _ _                                         -> pure defs -- TODO(chathhorn): elide
       TypeSig _ _ _                                             -> pure defs -- TODO(chathhorn): elide
       InfixDecl _ _ _ _                                         -> pure defs -- TODO(chathhorn): elide
-      d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " ++ show (() <$ d)
+      d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " ++ show (void d)
 
 transTyVar :: MonadError AstError m => Annote -> S.TyVarBind () -> m (Name M.Ty)
 transTyVar l = \ case
@@ -274,14 +274,25 @@ extendWithGlobs = \ case
 
             getCtorSigs' :: Decl l -> CtorSigs
             getCtorSigs' = \ case
-                  DataDecl _ _ _ _ cons _ -> getCtorSigs cons
-                  _                       -> mempty
+                  DataDecl _ _ _ dh cons _ -> getCtorSigs (sDeclHead dh) cons
+                  _                        -> mempty
 
-            getCtorSigs :: [QualConDecl l] -> CtorSigs
-            getCtorSigs = Map.fromList . map (getCtorName &&& getFields)
+            getCtorSigs :: (S.Name (), [S.TyVarBind ()]) -> [QualConDecl l] -> CtorSigs
+            getCtorSigs dsig = Map.fromList . map (getCtorName &&& map (extendCtorSig $ dsigToTyApp dsig) . getFields)
+
+            dsigToTyApp  :: (S.Name (), [S.TyVarBind ()]) -> S.Type ()
+            dsigToTyApp (n, vs) = foldl' (S.TyApp ()) (S.TyCon () $ qnamish n) $ map toTyVar vs
+
+            toTyVar :: S.TyVarBind () -> S.Type ()
+            toTyVar = \ case
+                  KindedVar   _ n _ -> TyVar () n
+                  UnkindedVar _ n   -> TyVar () n
+
+            extendCtorSig :: S.Type () -> (n, S.Type ()) -> (n, S.Type ())
+            extendCtorSig t = id *** (S.TyFun () t)
 
             getCtor :: QualConDecl l -> Set.Set (S.Name ())
-            getCtor d = Set.fromList $ getCtorName d : (getFields d)
+            getCtor d = Set.fromList $ getCtorName d : (getFieldNames $ getFields d)
 
             getCtorName :: QualConDecl l -> S.Name ()
             getCtorName = \ case
@@ -289,14 +300,17 @@ extendWithGlobs = \ case
                   QualConDecl _ _ _ (InfixConDecl _ _ n _) -> void n
                   QualConDecl _ _ _ (RecDecl _ n _)        -> void n
 
-            getFields :: QualConDecl l -> [S.Name ()]
+            getFields :: QualConDecl l -> [(Maybe (S.Name ()), S.Type ())]
             getFields = \ case
-                  QualConDecl _ _ _ (ConDecl _ _ ts)       -> replicate (length ts) $ Ident () ""
-                  QualConDecl _ _ _ (InfixConDecl _ _ _ _) -> [Ident () "", Ident () ""]
-                  QualConDecl _ _ _ (RecDecl _ _ fs)       -> concatMap getFields' fs
+                  QualConDecl _ _ _ (ConDecl _ _ ts)         -> map ((Nothing, ) . void) ts
+                  QualConDecl _ _ _ (InfixConDecl _ t1 _ t2) -> [(Nothing, void t1), (Nothing, void t2)]
+                  QualConDecl _ _ _ (RecDecl _ _ fs)         -> concatMap getFields' fs
 
-            getFields' :: FieldDecl l -> [S.Name ()]
-            getFields' (FieldDecl _ ns _) = map void ns
+            getFields' :: FieldDecl l -> [(Maybe (S.Name ()), S.Type ())]
+            getFields' (FieldDecl _ ns t) = map ((, void t) . Just . void) ns
+
+            getFieldNames :: [(Maybe (S.Name ()), S.Type ())] -> [S.Name ()]
+            getFieldNames = concatMap (maybe [] (:[]) . fst)
 
 getImps :: Annotation a => S.Module a -> [ImportDecl a]
 getImps = \ case

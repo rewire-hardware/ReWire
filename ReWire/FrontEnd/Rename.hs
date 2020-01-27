@@ -9,7 +9,7 @@ module ReWire.FrontEnd.Rename
       , Exports, expValue, expType, expFixity, expCtorSigs, getCtors
       , Ctors, FQCtors, CtorSigs, FQCtorSigs
       , setCtors, getLocalTypes, getLocalCtorSigs
-      , lookupCtors, lookupCtorSig, lookupCtorSigsForType, isRecordSig
+      , lookupCtors, lookupCtorSig, lookupCtorSigsForType
       , findCtorSigFromField
       , toFilePath
       , fromImps
@@ -20,7 +20,7 @@ import ReWire.Error
 import ReWire.FrontEnd.Fixity
 import ReWire.FrontEnd.Syntax (DataDefn, Defn)
 
-import Control.Arrow ((&&&))
+import Control.Arrow ((&&&), (***))
 import Control.Monad (foldM, void)
 import Control.Monad.State (MonadState)
 import Control.Monad.Fail (MonadFail)
@@ -48,11 +48,11 @@ type Ctors = Map.Map (Name ()) (Set.Set (Name ()))
 type FQCtors = Map.Map (FQName) (Set.Set FQName)
 
 -- | Map from construtor name to its field "signature,"
---   which is either an empty list or a list of field names.
-type CtorSigs = Map.Map (Name ()) [Name ()]
+--   which is a list of field names and types.
+type CtorSigs = Map.Map (Name ()) [(Maybe (Name ()), Type ())]
 
 -- | Qualified (globally-unique) version of the above map.
-type FQCtorSigs = Map.Map FQName [FQName]
+type FQCtorSigs = Map.Map FQName [(Maybe FQName, Type ())]
 
 -- Note that GHC (although we might not catch this) disallows the same symbol
 -- appearing twice in an export list (e.g., with different qualifiers, from
@@ -122,11 +122,12 @@ class QNamish a where
 qnamish :: (QNamish a, QNamish b) => a -> b
 qnamish = fromQNamish . toQNamish
 
-instance QNamish (QName a) where
+instance QNamish (QName ()) where
+      toQNamish = id
+      fromQNamish = void
+instance QNamish (QName Annote) where
       toQNamish = void
-      fromQNamish (Qual _ (ModuleName _ m) n) = Qual undefined (ModuleName undefined m) $ undefined <$ n
-      fromQNamish (UnQual _ n)                = UnQual undefined $ undefined <$ n
-      fromQNamish n                           = UnQual undefined $ (undefined <$) $ Ident undefined $ prettyPrint n
+      fromQNamish = (noAnn <$)
 instance QNamish (Name ()) where
       toQNamish = UnQual () . void
       fromQNamish (Qual _ _ n) = () <$ n
@@ -236,19 +237,14 @@ getLocalCtorSigs = rnCtorSigs
 lookupCtors :: QNamish a => Renamer -> a -> Set.Set FQName
 lookupCtors rn x = Map.findWithDefault mempty (rename Type rn x) (allCtors rn)
 
-lookupCtorSig :: QNamish a => Renamer -> a -> [FQName]
+lookupCtorSig :: QNamish a => Renamer -> a -> [(Maybe FQName, Type ())]
 lookupCtorSig rn x = Map.findWithDefault mempty (rename Value rn x) (allCtorSigs rn)
 
 lookupCtorSigsForType :: QNamish a => Renamer -> a -> FQCtorSigs
 lookupCtorSigsForType rn x = Map.fromSet (lookupCtorSig rn) (lookupCtors rn x)
 
-findCtorSigFromField :: QNamish a => Renamer -> a -> Maybe (FQName, [FQName])
-findCtorSigFromField rn f = find (any (== qnamish f) . snd) $ Map.assocs (allCtorSigs rn)
-
--- TODO(chathhorn): use a proper type for the sigs.
-isRecordSig :: QNamish a => [a] -> Bool
-isRecordSig [] = False
-isRecordSig ns = all ((/= Ident () "") . name . qnamish) ns
+findCtorSigFromField :: QNamish a => Renamer -> a -> Maybe (FQName, [(Maybe FQName, Type ())])
+findCtorSigFromField rn f = find (any (maybe False (== qnamish f) . fst) . snd) $ Map.assocs (allCtorSigs rn)
 
 noExps :: Maybe (Bool, Imports SrcSpanInfo)
 noExps = Nothing
@@ -260,7 +256,7 @@ qualifyCtors :: Renamer -> Ctors -> FQCtors
 qualifyCtors rn = Map.mapKeys (rename Type rn) . Map.map (Set.map $ rename Value rn)
 
 qualifyCtorSigs :: Renamer -> CtorSigs -> FQCtorSigs
-qualifyCtorSigs rn = Map.mapKeys (rename Value rn) . Map.map (map $ rename Value rn)
+qualifyCtorSigs rn = Map.mapKeys (rename Value rn) . Map.map (map $ fmap (rename Value rn) *** id)
 
 allCtors :: Renamer -> FQCtors
 allCtors rn = (qualifyCtors rn $ rnCtors rn) <> (expCtors $ allExports rn)

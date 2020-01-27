@@ -207,7 +207,7 @@ mkDispatch ty pes iv _ = do
 
 
 mkCase :: MonadError AstError m => Annote -> Ty -> Exp -> [(Pat,Exp)] -> m Exp
-mkCase an _ _ []             = failAt an "Shouldn't ever happen."
+mkCase an _ _ []             = return $ Error an (TyBlank an) "Something went wrong during purification while constructing the dispatch function"
 mkCase an ty dsc [(p,e)]     = return $ Case an ty dsc (bind p e) Nothing
 mkCase an ty dsc ((p,e):pes) = Case an ty dsc (bind p e) . Just <$> mkCase an ty dsc pes
 
@@ -300,7 +300,7 @@ purifyStateDefn rho ms d = do
       Embed phi  = defnPolyTy d
 
 liftMaybe :: MonadError AstError m => String -> Maybe a -> m a
-liftMaybe _ (Just v)   = return v
+liftMaybe _ (Just v)  = return v
 liftMaybe msg Nothing = failAt NoAnnote msg
 
 purifyResDefn :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) =>
@@ -992,12 +992,11 @@ mkRPat an ts r_g = do
 
 mkPureVar :: MonadError AstError m => PureEnv -> Exp -> m Exp
 mkPureVar rho = \ case
-  v@(Var an _ x) | xs == "extrude" -> return v
-                 | xs == "unfold"  -> return v
-                 | otherwise       -> do
+  v@(Var an _ x) | n2s x == "extrude" -> return v
+                 | n2s x == "unfold"  -> return v
+                 | otherwise          -> do
                      t' <- lookupPure an x rho
                      return $ Var an t' x
-      where xs = n2s x
   d                       -> failAt (ann d) $ "Can't make a pure variable out of a non-variable" ++ show d
 
 mkApp :: Exp -> [Exp] -> Exp
