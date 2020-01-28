@@ -13,7 +13,7 @@ module ReWire.FrontEnd.Syntax
       , FieldId
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly
-      , rangeTy
+      , codomTy
       , kmonad, tycomp
       ) where
 
@@ -72,7 +72,7 @@ instance Annotated DataCon where
       ann (DataCon a _ _)  = a
 
 instance Pretty DataCon where
-      pretty (DataCon _ n t)  = text (name2String n) <+> text "::" <+> pretty t
+      pretty (DataCon _ n t)  = pretty n <+> text "::" <+> pretty t
 
 instance NFData DataCon
 
@@ -153,15 +153,15 @@ instance Pretty Ty where
                               | name2String c == "->" = parens $ pretty t
                         ppTyArrowL t                  = pretty t
             TyApp _ t1 t2                  -> pretty t1 <+> ppTyAppR t2
-            TyCon _ n                      -> text (name2String n)
+                  where ppTyAppR :: Ty -> Doc
+                        ppTyAppR t@TyApp {} = parens $ pretty t
+                        ppTyAppR t          = pretty t
+            TyCon _ n                      -> pretty n
             TyVar _ _ n                    -> pretty n
             TyBlank _                      -> text "_"
 
 instance NFData Ty
 
-ppTyAppR :: Ty -> Doc
-ppTyAppR t@TyApp {} = parens $ pretty t
-ppTyAppR t          = pretty t
 
 ----
 
@@ -210,7 +210,7 @@ instance Pretty Exp where
             App _ (App _ (Con _ _ n) e1) e2
               | name2String n == "(,)" -> parens $ pretty e1 <+> text "," <+> pretty e2
             App _ e1 e2      -> parens $ hang (pretty e1) 4 $ pretty e2
-            Con _ _ n        -> text $ name2String n
+            Con _ _ n        -> pretty n
             Var _ _ n        -> text $ show n {- <+> text "::" <+> pretty t -}
             Lam _ _ e        -> runFreshM $ do
                   (p, e') <- unbind e
@@ -256,7 +256,7 @@ instance Pretty Pat where
       pretty = \ case
             PatCon _ _ (Embed n) [p1, p2]
               | name2String n == "(,)" -> parens $ pretty p1 <+> text "," <+> pretty p2
-            PatCon _ _ (Embed n) ps    -> parens $ text (name2String n) <+> hsep (map pretty ps)
+            PatCon _ _ (Embed n) ps    -> parens $ pretty n <+> hsep (map pretty ps)
             PatVar _ _ n               -> text $ show n
 
 
@@ -280,7 +280,7 @@ instance Pretty MatchPat where
       pretty = \ case
             MatchPatCon _ _ n [p1, p2]
                   | name2String n == "(,)" -> parens $ pretty p1 <+> text "," <+> pretty p2
-            MatchPatCon _ _ n ps           -> parens $ text (name2String n) <+> hsep (map pretty ps)
+            MatchPatCon _ _ n ps           -> parens $ pretty n <+> hsep (map pretty ps)
             MatchPatVar _ t                -> parens $ text "*" <+> text "::" <+> pretty t
 
 ---
@@ -326,7 +326,7 @@ instance Annotated DataDefn where
 
 instance Pretty DataDefn where
       pretty (DataDefn _ n k cs) = foldr ($+$) mempty $
-                  (text "data" <+> text (name2String n) <+> text "::" <+> pretty k <+> text "where")
+                  (text "data" <+> pretty n <+> text "::" <+> pretty k <+> text "where")
                   : map (nest 4 . pretty) cs
 
 ---
@@ -356,11 +356,10 @@ arr0 = mkArrow $ string2Name "->"
 
 infixr `arr0`
 
-rangeTy :: Ty -> Ty
-rangeTy t@(TyApp _ (TyApp _ (TyCon _ con) _) t') = case name2String con of
-                                                          "->" -> rangeTy t'
-                                                          _    -> t
-rangeTy t                                        = t
+codomTy :: Ty -> Ty
+codomTy (TyApp _ (TyApp _ (TyCon _ c) _) t')
+      | name2String c == "->" = codomTy t'
+codomTy t                     = t
 
 mkArrow :: Name TyConId -> Ty -> Ty -> Ty
 mkArrow arr t = TyApp (ann t) (TyApp (ann t) (TyCon (ann t) arr) t)

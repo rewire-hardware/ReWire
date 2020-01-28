@@ -6,7 +6,7 @@ module ReWire.FrontEnd.Transform
       , neuterPrims
       , shiftLambdas
       , liftLambdas
-      , purge
+      , purgeUnused
       ) where
 
 import ReWire.Error
@@ -27,7 +27,7 @@ import Data.Data (Data)
 import Data.List (nub, find, foldl')
 import Data.Maybe (fromJust, fromMaybe)
 
-import Data.Set (Set, singleton, union, (\\))
+import Data.Set (Set, union, (\\))
 import qualified Data.Set as Set
 
 -- | Inlines defs marked for inlining. Must run before lambda lifting.
@@ -134,42 +134,47 @@ liftLambdas p = runFreshMT $ evalStateT (transProg liftLambdas' p) []
                   PatVar an (Embed t) _            -> MatchPatVar an t
 
 -- | Remove unused definitions.
-purge :: Monad m => FreeProgram -> m FreeProgram
-purge (ts, vs) = return $ (inuseData (fv $ trec $ inuseDefn vs) ts, filterPrims $ inuseDefn vs)
+purgeUnused :: Monad m => FreeProgram -> m FreeProgram
+purgeUnused (ts, vs) = return $ (inuseData (fv $ trec $ inuseDefn vs) ts, inuseDefn vs)
       where inuseData :: [Name DataConId] -> [DataDefn] -> [DataDefn]
             inuseData ns = map $ inuseData' ns
 
             inuseData' :: [Name DataConId] -> DataDefn -> DataDefn
             inuseData' ns d@(DataDefn an n k cs)
-                  | name2String n `elem` annoyingExceptions = d
-                  | otherwise                               = DataDefn an n k $ filter ((flip Set.member (Set.fromList ns)) . dataConName) cs
+                  | name2String n `elem` reservedData = d
+                  | otherwise                         = DataDefn an n k $ filter ((flip Set.member (Set.fromList ns)) . dataConName) cs
 
-            annoyingExceptions :: [String]
-            annoyingExceptions =
-                               [ "Prelude.Either"
-                               , "(,)"
-                               , "()"
-                               ]
+            reservedData :: [String]
+            reservedData =
+                         [ "Prelude.Either"
+                         , "(,)"
+                         , "()"
+                         ]
 
             dataConName :: DataCon -> Name DataConId
             dataConName (DataCon _ n _) = n
 
-            filterPrims :: [Defn] -> [Defn]
-            filterPrims = filter (elem '.' . name2String . defnName)
-
 inuseDefn :: [Defn] -> [Defn]
-inuseDefn ds = case find ((== "Main.start") . name2String . defnName) ds of
-      Just n  -> map toDefn $ Set.elems $ execState (inuseDefn' $ defnName n) (singleton $ defnName n)
-      Nothing -> []
-      where inuseDefn' :: Name Exp -> State (Set (Name Exp)) ()
-            inuseDefn' n = do
+inuseDefn ds = map toDefn $ Set.elems $ execState (inuseDefn' ds') ds'
+      where inuseDefn' :: Set (Name Exp) -> State (Set (Name Exp)) ()
+            inuseDefn' ns | Set.null ns = return ()
+                          | otherwise   = do
                   inuse  <- get
-                  modify $ union (fvs n)
+                  modify $ union (fvs ns)
                   inuse' <- get
-                  mapM_ inuseDefn' $ inuse' \\ inuse
+                  inuseDefn' $ inuse' \\ inuse
 
-            fvs :: Name Exp -> Set (Name Exp)
-            fvs = Set.fromList . fv . unembed . defnBody . toDefn
+            reservedDefn :: [String]
+            reservedDefn =
+                         [ "Main.start"
+                         , "unfold"
+                         ]
+
+            ds' :: Set (Name Exp)
+            ds' = Set.fromList $ filter (flip elem reservedDefn . name2String) $ map defnName ds
+
+            fvs :: Set (Name Exp) -> Set (Name Exp)
+            fvs = Set.fromList . concatMap (fv . unembed . defnBody . toDefn) . Set.elems
 
             toDefn :: Name Exp -> Defn
             toDefn n = fromJust $ find ((==n) . defnName) ds

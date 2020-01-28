@@ -15,7 +15,7 @@ testCompiler dn fn = testCase fn (do setCurrentDirectory dn
 tests :: IO [Test]
 tests = do dirname_c  <- getDataFileName ("test/integration")
            files_c    <- filter isHs <$> getDirectoryContents dirname_c
-           return [testGroup "\nFull Compiler Tests" (map (testCompiler dirname_c) files_c)]
+           return [testGroup ("\nFull Compiler Tests:\n" ++ (foldr (\ a b -> a ++ " " ++ b) "" files_c)) (map (testCompiler dirname_c) files_c)]
    where isHs = isSuffixOf ".hs"
 
 main :: IO ()
