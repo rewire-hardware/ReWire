@@ -28,23 +28,23 @@ askDefns = liftM snd ask
 
 type TySub = [(TyId,C.Ty)]
 
-matchTy :: TySub -> C.Ty -> C.Ty -> CM TySub
-matchTy s (TyApp _ t1 t2) (TyApp _ t1' t2')          = do s1 <- matchTy [] t1 t1'
-                                                          s2 <- matchTy [] t2 t2'
-                                                          s' <- merge s s1
-                                                          merge s' s2
-matchTy _ (TyCon _ tci) (TyCon _ tci') | tci == tci' = return []
-matchTy s (TyVar _ v) t                              = merge s [(v,t)]
-matchTy _ t t'                                       = lift $ failNowhere $ "matchTy: can't match " ++ prettyPrint t
-                                                                     ++ " with " ++ prettyPrint t'
+matchTy :: Annote -> TySub -> C.Ty -> C.Ty -> CM TySub
+matchTy l s (TyApp _ t1 t2) (TyApp _ t1' t2')          = do s1 <- matchTy l [] t1 t1'
+                                                            s2 <- matchTy l [] t2 t2'
+                                                            s' <- merge l s s1
+                                                            merge l s' s2
+matchTy _ _ (TyCon _ tci) (TyCon _ tci') | tci == tci' = return []
+matchTy l s (TyVar _ v) t                              = merge l s [(v,t)]
+matchTy l _ t t'                                       = failAt l $ "sizeof: matchTy: can't match " ++ prettyPrint t
+                                                                 ++ " with " ++ prettyPrint t'
 
-merge :: TySub -> TySub -> CM TySub
-merge [] s'        = return s'
-merge ((v,t):s) s' = case lookup v s' of
-                       Nothing             -> do s'' <- merge s s'
+merge :: Annote -> TySub -> TySub -> CM TySub
+merge _ [] s'        = return s'
+merge l ((v,t):s) s' = case lookup v s' of
+                       Nothing             -> do s'' <- merge l s s'
                                                  return ((v,t):s'')
-                       Just t' | t == t'   -> merge s s'
-                               | otherwise -> lift $ failNowhere $ "merge: inconsistent assignment of tyvar " ++ v
+                       Just t' | t == t'   -> merge l s s'
+                               | otherwise -> lift $ failAt l $ "sizeof: merge: inconsistent assignment of tyvar " ++ v
                                                           ++ ": " ++ prettyPrint t ++ " vs. "
                                                           ++ prettyPrint t'
 
@@ -103,7 +103,7 @@ ctorwidth :: C.Ty -> DataCon -> CM Int
 ctorwidth t (DataCon _ _ _ ct) = do let ts     =  flattenArrow ct
                                         tres   =  last ts
                                         targs  =  init ts
-                                    s          <- matchTy [] tres t
+                                    s          <- matchTy (ann t) [] tres t
                                     let targs' =  map (apply s) targs
                                     sizes      <- mapM sizeof targs'
                                     return (sum sizes)

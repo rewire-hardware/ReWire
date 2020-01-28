@@ -212,13 +212,11 @@ mkCase an ty dsc [(p,e)]     = return $ Case an ty dsc (bind p e) Nothing
 mkCase an ty dsc ((p,e):pes) = Case an ty dsc (bind p e) . Just <$> mkCase an ty dsc pes
 
 mkR_Datatype :: [DataCon] -> DataDefn
-mkR_Datatype dcs = seedR { dataCons = dcs }
-   where
-     seedR = DataDefn
+mkR_Datatype dcs = DataDefn
        { dataAnnote = MsgAnnote "R Datatype"
        , dataName   = s2n "R"
        , dataKind   = KStar
-       , dataCons   = []
+       , dataCons   = mkRDataCon noAnn (s2n "R_return") [] : dcs
        }
 
 -- global constant representation of R data type
@@ -738,7 +736,7 @@ purify_res_body rho i o t {- stys stos -} iv mst tm = do
          ts' <- lift $ mapM (\ t -> purifyTyM t (Just stys)) ts
          r_g <- sub g
          let rt      = mkArrowTy $ ts' ++ [rTy]
-         let rcon    = Con an rt (s2n r_g)
+         let rcon    = Con an rt r_g
          let rGes    = mkApp rcon es
          addClause (mkRDataCon an r_g ts')                      -- "R_g T1 ... Tk"
 
@@ -973,22 +971,21 @@ mkEitherTy :: Ty -> Ty -> Ty
 mkEitherTy t1 t2 = TyApp NoAnnote (TyApp NoAnnote (TyCon NoAnnote either) t1) t2
     where either = s2n "Prelude.Either"
 
-sub :: MonadError AstError m => Exp -> m String
+sub :: (Fresh m, MonadError AstError m) => Exp -> m (Name DataConId)
 sub g = case g of
-  (Var _ _ x) -> return $ "R_" ++ gn
-      where gn = n2s x
-  d            -> failAt (ann d) "sub failed"
+  Var _ _ x -> fresh $ s2n $ "R_" ++ n2s x
+  d         -> failAt (ann d) "sub failed"
 
-mkRDataCon :: Annote -> String -> [Ty] -> DataCon
-mkRDataCon an r_g ts = DataCon an (s2n r_g) ([] |-> ty)
+mkRDataCon :: Annote -> Name DataConId -> [Ty] -> DataCon
+mkRDataCon an r_g ts = DataCon an r_g ([] |-> ty)
      where ty = mkArrowTy $ ts ++ [rTy]
 
-mkRPat :: Fresh m => Annote -> [Ty] -> String -> m (Pat,[Name Exp])
+mkRPat :: Fresh m => Annote -> [Ty] -> Name DataConId -> m (Pat,[Name Exp])
 mkRPat an ts r_g = do
   xs <- freshVars "store" (length ts) -- fencepost counting problem?
   let varpats = map (\ (x,t) -> PatVar an (Embed t) x) (zip xs ts)
-  return (PatCon an (Embed ty) (Embed $ s2n r_g) varpats, xs)
-   where ty = foldr (TyApp an) (TyCon an $ s2n r_g) ts
+  return (PatCon an (Embed ty) (Embed $ r_g) varpats, xs)
+   where ty = foldr (TyApp an) (TyCon an $ s2n "R") ts
 
 mkPureVar :: MonadError AstError m => PureEnv -> Exp -> m Exp
 mkPureVar rho = \ case
