@@ -13,7 +13,7 @@ module ReWire.FrontEnd.Syntax
       , FieldId
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly
-      , codomTy
+      , rangeTy
       , kmonad, tycomp
       ) where
 
@@ -356,10 +356,10 @@ arr0 = mkArrow $ string2Name "->"
 
 infixr `arr0`
 
-codomTy :: Ty -> Ty
-codomTy (TyApp _ (TyApp _ (TyCon _ c) _) t')
-      | name2String c == "->" = codomTy t'
-codomTy t                     = t
+rangeTy :: Ty -> Ty
+rangeTy (TyApp _ (TyApp _ (TyCon _ c) _) t')
+      | name2String c == "->" = rangeTy t'
+rangeTy t                     = t
 
 mkArrow :: Name TyConId -> Ty -> Ty -> Ty
 mkArrow arr t = TyApp (ann t) (TyApp (ann t) (TyCon (ann t) arr) t)
