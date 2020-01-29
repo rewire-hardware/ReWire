@@ -132,8 +132,8 @@ instance Annotated Defn where
 
 instance Pretty Defn where
   pretty (Defn _ n ty e) = foldr ($+$) empty
-                        (  [text n <+> text "::" <+> pretty ty]
-                        ++ [text n <+> hsep (map (text . ("$"++) . show) [0..arity ty - 1]) <+> text "=", nest 4 $ pretty e])
+                        ( (text n <+> text "::" <+> pretty ty)
+                        : [text n <+> hsep (map (text . ("$"++) . show) [0..arity ty - 1]) <+> text "=", nest 4 $ pretty e])
 
 ---
 
@@ -160,8 +160,8 @@ instance Monoid Program where
 
 instance Pretty Program where
   pretty p = ppDataDecls (ctors p) $+$ ppDefns (defns p)
-    where ppDefns = foldr ($+$) empty . map pretty
-          ppDataDecls = foldr ($+$) empty . map pretty
+    where ppDefns = foldr (($+$) . pretty) empty
+          ppDataDecls = foldr (($+$) . pretty) empty
 
 ---
 

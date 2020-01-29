@@ -15,7 +15,7 @@ module ReWire.Error
 import ReWire.Annotation (Annotation (..), Annote (..), toSrcSpanInfo, noAnn)
 
 import Prelude hiding ((<>))
-import Control.Monad.Except (MonadError (..), ExceptT (..), runExceptT, throwError, liftM)
+import Control.Monad.Except (MonadError (..), ExceptT (..), runExceptT, throwError)
 import Control.Monad.Fail (MonadFail (..))
 import Control.Monad.Trans (MonadTrans (..))
 import Control.Monad.IO.Class (MonadIO (..))
@@ -80,7 +80,7 @@ filePath :: FilePath -> SrcLoc
 filePath fp = SrcLoc fp (-1) (-1)
 
 runSyntaxError :: Monad m => SyntaxErrorT m a -> m (Either AstError a)
-runSyntaxError = runExceptT . liftM fst . flip runStateT noAnn . unwrap
+runSyntaxError = runExceptT . fmap fst . flip runStateT noAnn . unwrap
 
 mark :: (MonadState Annote m, Annotation an) => an -> m ()
 mark = put . toAnnote

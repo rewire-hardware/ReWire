@@ -9,7 +9,7 @@ import ReWire.FrontEnd.Rename hiding (Module)
 import ReWire.SYB
 
 import Control.Monad.Catch (MonadCatch)
-import Control.Monad (liftM, replicateM, (>=>), void, when, msum)
+import Control.Monad (replicateM, (>=>), void, when, msum, unless)
 import Control.Monad.State (runStateT, StateT, MonadState (..), modify)
 import Data.Foldable (foldl', foldrM)
 import Data.Functor.Identity (Identity (..))
@@ -29,14 +29,14 @@ addMainModuleHead = \ case
 
 -- | Desugar into lambdas then normalize the lambdas.
 desugar :: (MonadError AstError m, MonadCatch m) => Renamer -> Module Annote -> m (Module Annote)
-desugar rn = liftM fst . flip runStateT 0 .
+desugar rn = fmap fst . flip runStateT 0 .
       ( return
       >=> runT  -- Each "runT" is a separate pass over the AST.
             ( desugarNegs
            <> desugarDos
            <> desugarInfix
            <> desugarFuns
-           <> (desugarRecords rn)
+           <> desugarRecords rn
             )
       >=> runT flattenLambdas
       >=> runT
@@ -58,9 +58,7 @@ desugar rn = liftM fst . flip runStateT 0 .
            <> normTyContext
            <> desugarTyFuns
             )
-      >=> runT
-            ( flattenAlts -- again
-            )
+      >=> runT flattenAlts -- again
       >=> runT
             ( desugarWildCards
            <> desugarAsPats
@@ -95,9 +93,9 @@ desugarRecords rn = (\ (Module (l :: Annote) h p imps decls) -> do
             return $ Module l h p imps (decls ++ ds)) -- ++ map inlineSig fs))
       ||> (\ (PRec (l :: Annote) c fpats) -> do
             let sig  = lookupCtorSig rn (rename Value rn c :: FQName)
-            let flds = toNames sig
-            when (fpats /= [] && not (isRecordSig sig))   $ failAt l "Record pattern found, but not a record"
-            when (not $ all (inSig flds pfToField) fpats) $ failAt l "Field pattern for nonexistent field"
+            let flds = mapMaybe fst sig
+            when (fpats /= [] && not (isRecordSig sig)) $ failAt l "Record pattern found, but not a record"
+            unless (all (inSig flds pfToField) fpats)   $ failAt l "Field pattern for nonexistent field"
             return $ PApp l c $ map (toPat l fpats) flds)
       ||> (\ (RecDecl (l :: Annote) n fs) ->
             return $ ConDecl l n $ map (\ (FieldDecl _ _ t) -> t) $ concatMap flatten fs)
@@ -105,9 +103,9 @@ desugarRecords rn = (\ (Module (l :: Annote) h p imps decls) -> do
             -- R { b = e } becomes R undefined e undefined
             RecConstr l c fups -> do
                   let sig  = lookupCtorSig rn (rename Value rn c :: FQName)
-                  let flds = toNames sig
-                  when (fups /= [] && not (isRecordSig sig))   $ failAt l "Record constructor found, but not a record"
-                  when (not $ all (inSig flds fupToField) fups) $ failAt l "Field initializer for nonexistent field"
+                  let flds = mapMaybe fst sig
+                  when (fups /= [] && not (isRecordSig sig)) $ failAt l "Record constructor found, but not a record"
+                  unless (all (inSig flds fupToField) fups)  $ failAt l "Field initializer for nonexistent field"
                   return $ foldl' (App l) (Con l c) $ map (toExp l fups) flds
             RecUpdate l _ [] -> failAt l "Empty record update"
             -- r { b = e } becomes case r of { R x1 _ x2 -> R x1 e x2 }
@@ -116,7 +114,7 @@ desugarRecords rn = (\ (Module (l :: Annote) h p imps decls) -> do
                         Nothing -> failAt l "You cannot use `..' in a record update"
                         Just f  -> maybe (failAt l "Field update for nonexistent field") return
                                  $ findCtorSigFromField rn (rename Value rn f :: FQName)
-                  let flds = toNames sig
+                  let flds = mapMaybe fst sig
                   pats <- mapM (toRUpPat l fups) flds
                   exps <- mapM (toRUpExp l fups) $ zip pats flds
                   return $ Case l e
@@ -162,11 +160,6 @@ desugarRecords rn = (\ (Module (l :: Annote) h p imps decls) -> do
 
             filterRecords :: CtorSigs -> Map.Map (Name ()) [(Name (), Type ())]
             filterRecords = Map.mapMaybe $ \ a -> if isRecordSig a then Just $ toRecordSig a else Nothing
-
-            toNames :: [(Maybe a, t)] -> [a]
-            toNames = mapMaybe $ \ a -> do
-                  n <- fst a
-                  return n
 
             isRecordSig :: [(Maybe a, t)] -> Bool
             isRecordSig [] = False

@@ -13,9 +13,10 @@ import ReWire.FrontEnd.Unbound
       )
 import ReWire.SYB
 
-import Control.Arrow ((&&&), (***))
+import Control.Arrow ((&&&), second)
 import Control.Monad (foldM, replicateM, void)
 import Data.Foldable (foldl')
+import Data.Maybe (mapMaybe)
 import Language.Haskell.Exts.Fixity (Fixity (..))
 import Language.Haskell.Exts.Pretty (prettyPrint)
 
@@ -114,7 +115,7 @@ transExport rn ds exps = \ case
       -- TODO(chathhorn): I don't know what it means for a wildcard to appear in the middle of an export list.
       EThingWith l (EWildcard _ _) (void -> x) _       ->
             if finger Type rn x
-            then pure $ exportAll rn x : concatMap fixities (map name $ Set.toList $ lookupCtors rn x) ++ exps
+            then pure $ exportAll rn x : concatMap (fixities . name) (Set.toList $ lookupCtors rn x) ++ exps
             else failAt l "Unknown class or type name in export list"
       EModuleContents _ (void -> m) ->
             pure $ ExportMod m : exps
@@ -162,10 +163,10 @@ transDef rn tys inls defs = \ case
                   Nothing -> if x `elem` inls
                         then pure $ M.Defn l (mkId $ rename Value rn x) ([] |-> M.TyBlank l) True (Embed (bind [] e')) : defs
                         else failAt l "No type signature on non-inline toplevel definition"
-      DataDecl _ _ _ _ _ _                                      -> pure defs -- TODO(chathhorn): elide
-      InlineSig _ _ _ _                                         -> pure defs -- TODO(chathhorn): elide
-      TypeSig _ _ _                                             -> pure defs -- TODO(chathhorn): elide
-      InfixDecl _ _ _ _                                         -> pure defs -- TODO(chathhorn): elide
+      DataDecl {}                                               -> pure defs -- TODO(chathhorn): elide
+      InlineSig {}                                              -> pure defs -- TODO(chathhorn): elide
+      TypeSig {}                                                -> pure defs -- TODO(chathhorn): elide
+      InfixDecl {}                                              -> pure defs -- TODO(chathhorn): elide
       d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " ++ show (void d)
 
 transTyVar :: MonadError AstError m => Annote -> S.TyVarBind () -> m (Name M.Ty)
@@ -188,7 +189,7 @@ transTy rn ms = \ case
            transTy rn (ms ++ ms') t
       TyApp l a b                -> M.TyApp l <$> transTy rn ms a <*> transTy rn ms b
       TyCon l x                  -> pure $ M.TyCon l (string2Name $ rename Type rn x)
-      TyVar l x                  -> M.TyVar l <$> freshKVar (prettyPrint x) <*> (pure $ mkUId $ void x)
+      TyVar l x                  -> M.TyVar l <$> freshKVar (prettyPrint x) <*> pure (mkUId $ void x)
       t                          -> failAt (ann t) "Unsupported type syntax"
 
 freshKVar :: Fresh m => String -> m M.Kind
@@ -232,7 +233,7 @@ transPat :: MonadError AstError m => Renamer -> Pat Annote -> m M.Pat
 transPat rn = \ case
       PApp l x ps             -> M.PatCon l (Embed (M.TyBlank l)) (Embed $ string2Name $ rename Value rn x) <$> mapM (transPat rn) ps
       PVar l x                -> pure $ M.PatVar l (Embed (M.TyBlank l)) (mkUId $ void x)
-      p                       -> failAt (ann p) $ "Unsupported syntax in a pattern: " ++ (show $ void p)
+      p                       -> failAt (ann p) $ "Unsupported syntax in a pattern: " ++ show (void p)
 
 -- Note: runs before desugaring.
 -- TODO(chathhorn): GADT style decls?
@@ -289,10 +290,10 @@ extendWithGlobs = \ case
                   UnkindedVar _ n   -> TyVar () n
 
             extendCtorSig :: S.Type () -> (n, S.Type ()) -> (n, S.Type ())
-            extendCtorSig t = id *** (S.TyFun () t)
+            extendCtorSig t = second $ S.TyFun () t
 
             getCtor :: QualConDecl l -> Set.Set (S.Name ())
-            getCtor d = Set.fromList $ getCtorName d : (getFieldNames $ getFields d)
+            getCtor d = Set.fromList $ getCtorName d : getFieldNames (getFields d)
 
             getCtorName :: QualConDecl l -> S.Name ()
             getCtorName = \ case
@@ -310,7 +311,7 @@ extendWithGlobs = \ case
             getFields' (FieldDecl _ ns t) = map ((, void t) . Just . void) ns
 
             getFieldNames :: [(Maybe (S.Name ()), S.Type ())] -> [S.Name ()]
-            getFieldNames = concatMap (maybe [] (:[]) . fst)
+            getFieldNames = mapMaybe fst
 
 getImps :: Annotation a => S.Module a -> [ImportDecl a]
 getImps = \ case

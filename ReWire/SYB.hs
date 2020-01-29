@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, GADTs, LambdaCase #-}
+{-# LANGUAGE RankNTypes, GADTs #-}
 {-# LANGUAGE Safe #-}
 module ReWire.SYB
       ( Transform (TId)
@@ -9,7 +9,7 @@ module ReWire.SYB
 
 import Control.Exception (PatternMatchFail (..))
 import Control.Monad.Catch (MonadCatch (..))
-import Control.Monad (liftM, (>=>), MonadPlus (..))
+import Control.Monad ((>=>), MonadPlus (..))
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.Data (Data, Typeable, gmapM, gmapQr, cast)
@@ -55,10 +55,10 @@ transform :: (Monad m, Typeable d) => (d -> m d) -> Transform m
 transform = (||> TId)
 
 runPureT :: (Monad m, Data d) => Transform m -> d -> m d
-runPureT t = everywhere $ liftM fromJust . runMaybeT . foldT (\ f g x -> f x `mplus` g x) t
+runPureT t = everywhere $ fmap fromJust . runMaybeT . foldT (\ f g x -> f x `mplus` g x) t
 
 runT :: (MonadCatch m, Data d) => Transform m -> d -> m d
-runT t = everywhere $ liftM fromJust . runMaybeT . foldT (\ f g x -> f x `mplusE` g x) t
+runT t = everywhere $ fmap fromJust . runMaybeT . foldT (\ f g x -> f x `mplusE` g x) t
 
 -- | mplus + match fail treated as mzero.
 mplusE :: (MonadCatch m, MonadPlus m) => m a -> m a -> m a
@@ -80,9 +80,7 @@ instance Monoid (Query a) where
       mempty                 = QEmpty
 
 generalizeQ :: (Typeable a, Monoid b) => (a -> b) -> forall d. Typeable d => d -> b
-generalizeQ f x = case f <$> cast x of
-      Just x' -> x'
-      Nothing -> mempty
+generalizeQ f x = maybe mempty f $ cast x
 
 (||?) :: (Typeable d, Monoid a) => (d -> a) -> Query a -> Query a
 f ||? fs = generalizeQ f `QCons` fs

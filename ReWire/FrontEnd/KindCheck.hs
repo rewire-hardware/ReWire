@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, LambdaCase, TupleSections #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, LambdaCase #-}
 {-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.KindCheck (kindCheck) where
 
@@ -19,7 +19,7 @@ subst ss = substs (Map.assocs ss)
 
 -- Kind checking for Core.
 type KiSub = Map (Name Kind) Kind
-data KCEnv = KCEnv { cas :: Map (Name TyConId) Kind }
+newtype KCEnv = KCEnv { cas :: Map (Name TyConId) Kind }
       deriving Show
 
 type KCM m = ReaderT KCEnv (StateT KiSub m)

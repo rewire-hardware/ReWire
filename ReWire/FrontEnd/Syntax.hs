@@ -56,11 +56,11 @@ kmonad = KStar `KFun` KStar
 tycomp :: Annote -> Ty -> Ty -> Ty
 tycomp = TyApp
 
-data DataConId = DataConId String
+newtype DataConId = DataConId String
       deriving (Generic, Typeable, Data)
-data TyConId = TyConId String
+newtype TyConId = TyConId String
       deriving (Generic, Typeable, Data)
-data FieldId  = FieldId String
+newtype FieldId  = FieldId String
       deriving (Generic, Typeable, Data)
 
 data DataCon = DataCon Annote (Name DataConId) (Embed Poly)
@@ -98,7 +98,7 @@ instance Pretty Kind where
             KFun a@KFun {} b -> parens (pretty a) <+> text "->" <+> pretty b
             KFun a b         -> pretty a <+> text "->" <+> pretty b
 
-data Poly = Poly (Bind [Name Ty] Ty)
+newtype Poly = Poly (Bind [Name Ty] Ty)
       deriving (Generic, Show, Typeable, Data)
 
 instance NFData Poly
@@ -225,7 +225,7 @@ instance Pretty Exp where
                               ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
                               )
                         ]
-            Match _ _ e p e1 as e2 -> runFreshM $ do
+            Match _ _ e p e1 as e2 -> runFreshM $
                   return $ parens $
                         foldr ($+$) mempty
                         [ text "case" <+> pretty e <+> text "of"
@@ -304,9 +304,9 @@ instance Pretty Defn where
       pretty (Defn _ n t b (Embed e)) = runFreshM $ do
             (vs, e') <- unbind e
             return $ foldr ($+$) mempty
-                  $  [text (show n) <+> text "::" <+> pretty t]
-                  ++ (if b then [text "{-# INLINE" <+> text (show n) <+> text "#-}"] else [])
-                  ++ [text (show n) <+> hsep (map (text . show) vs) <+> text "=", nest 4 $ pretty e']
+                  $  [ text (show n) <+> text "::" <+> pretty t ]
+                  ++ [ text "{-# INLINE" <+> text (show n) <+> text "#-}" | b ]
+                  ++ [ text (show n) <+> hsep (map (text . show) vs) <+> text "=", nest 4 $ pretty e' ]
 
 ---
 
@@ -344,7 +344,7 @@ instance NFData Program where
 instance Pretty Program where
       pretty (Program p) = runFreshM $ do
             (ts, vs) <- untrec p
-            return $ (foldr ($+$) mempty $ map pretty ts) $+$ (foldr ($+$) mempty $ map pretty vs)
+            return $ foldr (($+$) . pretty) mempty ts $+$ foldr (($+$) . pretty) mempty vs
 ---
 
 flattenApp :: Exp -> [Exp]

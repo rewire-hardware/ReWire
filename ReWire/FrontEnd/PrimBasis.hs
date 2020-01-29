@@ -26,7 +26,7 @@ mkId :: String -> Name b
 mkId = string2Name
 
 msg :: String -> Annote
-msg m = MsgAnnote m
+msg = MsgAnnote
 
 mkData :: (String, Kind, [DataCon]) -> DataDefn
 mkData (n, k, cs) = DataDefn (msg $ "Primitive: " ++ n) (mkId n) k cs

@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, ViewPatterns, FlexibleContexts #-}
+{-# LANGUAGE LambdaCase, FlexibleContexts #-}
 {-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.ToCore (toCore) where
 
@@ -11,7 +11,7 @@ import ReWire.FrontEnd.Unbound
       )
 
 import Control.Monad ((<=<))
-import Control.Monad.Reader (ReaderT (..), ask)
+import Control.Monad.Reader (ReaderT (..), asks)
 import Data.Map.Strict (Map)
 
 import qualified Data.Map.Strict        as Map
@@ -48,7 +48,7 @@ transVar n = case head $ name2String n of
 transExp :: (MonadError AstError m, Fresh m) => M.Exp -> ReaderT (Map (Name M.Exp) Int) m C.Exp
 transExp = \ case
       M.App an e1 e2                    -> C.App an <$> transExp e1 <*> transExp e2
-      M.Var an t x                      -> (Map.lookup x <$> ask) >>= \ case
+      M.Var an t x                      -> asks (Map.lookup x) >>= \ case
             Nothing -> if notPrim x
                   then C.GVar an <$> transType t <*> pure (transVar x)
                   else C.Prim an <$> transType t <*> pure (transVar x)

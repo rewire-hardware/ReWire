@@ -17,7 +17,7 @@ import ReWire.FrontEnd.Unbound
 import ReWire.Pretty
 
 import Control.DeepSeq (deepseq, force)
-import Control.Monad.Reader (ReaderT (..), local, ask)
+import Control.Monad.Reader (ReaderT (..), local, asks)
 import Control.Monad.State (evalStateT, StateT (..), get, put, modify)
 import Control.Monad (zipWithM)
 import Data.List (foldl')
@@ -83,10 +83,10 @@ mgu an (TyApp _ tl tr) (TyApp _ tl' tr')                                      = 
       s1 <- mgu an tl tl'
       s2 <- mgu an (subst s1 tr) $ subst s1 tr'
       return $ s2 @@ s1
-mgu an (TyVar _ _ u)   t                | isFlex u                             = varBind an u t
-mgu an t                  (TyVar _ _ u) | isFlex u                             = varBind an u t
-mgu _  (TyCon _ c1)    (TyCon _ c2)     | (name2String c1) == (name2String c2) = return mempty
-mgu _  (TyVar _ _ v)   (TyVar _ _ u)    | not (isFlex v) && v==u               = return mempty
+mgu an (TyVar _ _ u)   t                | isFlex u                         = varBind an u t
+mgu an t                  (TyVar _ _ u) | isFlex u                         = varBind an u t
+mgu _  (TyCon _ c1)    (TyCon _ c2)     | name2String c1 == name2String c2 = return mempty
+mgu _  (TyVar _ _ v)   (TyVar _ _ u)    | not (isFlex v) && v==u           = return mempty
 mgu an t1 t2 = failAt an $ "Types do not unify: " ++ prettyPrint t1 ++ ", " ++ prettyPrint t2
 
 unify :: MonadError AstError m => Annote -> Ty -> Ty -> TCM m ()
@@ -119,7 +119,7 @@ tcPat :: (Fresh m, MonadError AstError m) => Ty -> Pat -> TCM m Pat
 tcPat t = \ case
       PatVar an _ x  -> return $ PatVar an (Embed t) x
       PatCon an _ (Embed i) ps -> do
-            cas     <- cas <$> ask
+            cas     <- asks cas
             case Map.lookup i cas of
                   Nothing  -> failAt an $ "Unknown constructor: " ++ prettyPrint i
                   Just pta -> do
@@ -136,7 +136,7 @@ tcMatchPat :: (Fresh m, MonadError AstError m) => Ty -> MatchPat -> TCM m MatchP
 tcMatchPat t = \ case
       MatchPatVar an _ -> return $ MatchPatVar an t
       MatchPatCon an _ i ps -> do
-            cas     <- cas <$> ask
+            cas     <- asks cas
             case Map.lookup i cas of
                   Nothing  -> failAt an $ "Unknown constructor: " ++ prettyPrint i
                   Just pta -> do
@@ -158,7 +158,7 @@ tcExp = \ case
             let   es'   =  map fst ress
                   tes   =  map snd ress
             tv          <- freshv
-            arr         <- arr <$> ask
+            arr         <- asks arr
             let tf'     =  foldr (mkArrow arr) tv tes
             unify an tf tf'
             return (foldl (App an) ef' es', tv)
@@ -167,18 +167,18 @@ tcExp = \ case
             tvx       <- freshv
             tvr       <- freshv
             (e'', te) <- localAssumps (Map.insert x ([] `poly` tvx)) $ tcExp e'
-            arr       <- arr <$> ask
+            arr       <- asks arr
             unify an tvr $ mkArrow arr tvx te
             return (Lam an tvx $ bind x e'', tvr)
       Var an _ v             -> do
-            as <- as <$> ask
+            as <- asks as
             case Map.lookup v as of
                   Nothing -> failAt an $ "Unknown variable: " ++ show v
                   Just pt -> do
                         t <- inst pt
                         return (Var an t v, t)
       Con an _ i      -> do
-            cas <- cas <$> ask
+            cas <- asks cas
             case Map.lookup i cas of
                   Nothing -> failAt an $ "Unknown constructor: " ++ prettyPrint i
                   Just pt -> do
@@ -220,7 +220,7 @@ tcExp = \ case
             return (Error an tv m, tv)
 
 mkApp :: Annote -> Exp -> [Exp] -> [Name Exp] -> Exp
-mkApp an f as holes = foldl' (\ e x -> App an e x) f
+mkApp an f as holes = foldl' (App an) f
       $ as ++ map (Var an $ TyBlank an) holes
 
 tcDefn :: (Fresh m, MonadError AstError m) => Defn -> TCM m Defn
