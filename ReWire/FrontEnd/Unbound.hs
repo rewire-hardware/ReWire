@@ -8,6 +8,7 @@ module ReWire.FrontEnd.Unbound
       , Subst (..), SubstName (..)
       , runFreshM, runFreshMT, fv, fvAny, aeq
       , trec, untrec, bind, unbind, unembed
+      , n2s
       ) where
 
 import Unbound.Generics.LocallyNameless
@@ -16,6 +17,10 @@ import safe Unbound.Generics.LocallyNameless.Name
 import safe Unbound.Generics.LocallyNameless.Internal.Fold
 
 import Control.Monad.Fail (MonadFail (..))
+
+n2s :: Name a -> String
+{-# INLINE n2s #-}
+n2s = name2String
 
 -- TODO(chathhorn): Orphan instance
 instance MonadFail m => MonadFail (FreshMT m) where

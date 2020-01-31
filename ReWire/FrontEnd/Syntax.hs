@@ -1,4 +1,15 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, DeriveDataTypeable, DeriveGeneric, Rank2Types, GADTs, ScopedTypeVariables, StandaloneDeriving, LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses
+           , FlexibleContexts
+           , FlexibleInstances
+           , DeriveDataTypeable
+           , DeriveGeneric
+           , Rank2Types
+           , GADTs
+           , ScopedTypeVariables
+           , StandaloneDeriving
+           , LambdaCase
+           , ViewPatterns
+           #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.FrontEnd.Syntax
@@ -15,6 +26,7 @@ module ReWire.FrontEnd.Syntax
       , Poly (..), (|->), poly
       , rangeTy
       , kmonad, tycomp
+      , TypeAnnotated (..)
       ) where
 
 import ReWire.Annotation
@@ -26,7 +38,7 @@ import ReWire.FrontEnd.Unbound
       , Bind (..), bind, unbind
       , Alpha, aeq, Subst (..)
       , toListOf
-      , name2String, string2Name
+      , n2s, s2n
       )
 import ReWire.Pretty
 import qualified ReWire.FrontEnd.Unbound as UB (fv, fvAny)
@@ -48,13 +60,16 @@ fvAny :: Alpha a => a -> [AnyName]
 fvAny = toListOf UB.fvAny
 
 kblank :: Kind
-kblank = KVar $ string2Name "_"
+kblank = KVar $ s2n "_"
 
 kmonad :: Kind
 kmonad = KStar `KFun` KStar
 
 tycomp :: Annote -> Ty -> Ty -> Ty
 tycomp = TyApp
+
+class TypeAnnotated a where
+      typeof :: a -> Ty
 
 newtype DataConId = DataConId String
       deriving (Generic, Typeable, Data)
@@ -147,11 +162,11 @@ instance Annotated Ty where
 instance Pretty Ty where
       pretty = \ case
             TyApp _ (TyApp _ (TyCon _ c) t1) t2
-                  | name2String c == "->"  -> ppTyArrowL t1 <+> text "->" <+> pretty t2
-                  | name2String c == "(,)" -> parens (ppTyArrowL t1 <+> text "," <+> pretty t2)
+                  | n2s c == "->"  -> ppTyArrowL t1 <+> text "->" <+> pretty t2
+                  | n2s c == "(,)" -> parens (ppTyArrowL t1 <+> text "," <+> pretty t2)
                   where ppTyArrowL t@(TyApp _ (TyApp _ (TyCon _ c) _) _)
-                              | name2String c == "->" = parens $ pretty t
-                        ppTyArrowL t                  = pretty t
+                              | n2s c == "->" = parens $ pretty t
+                        ppTyArrowL t          = pretty t
             TyApp _ t1 t2                  -> pretty t1 <+> ppTyAppR t2
                   where ppTyAppR :: Ty -> Doc
                         ppTyAppR t@TyApp {} = parens $ pretty t
@@ -161,7 +176,6 @@ instance Pretty Ty where
             TyBlank _                      -> text "_"
 
 instance NFData Ty
-
 
 ----
 
@@ -194,6 +208,17 @@ instance Subst Ty Pat
 
 instance NFData Exp
 
+instance TypeAnnotated Exp where
+      typeof = \ case
+            App _ e _           -> arrowRight $ typeof e
+            Lam _ t _           -> t
+            Var _ t _           -> t
+            Con _ t _           -> t
+            Case _ t _ _ _      -> t
+            Match _ t _ _ _ _ _ -> t
+            NativeVHDL _ _ e    -> typeof e
+            Error _ t _         -> t
+
 instance Annotated Exp where
       ann = \ case
             App a _ _           -> a
@@ -207,15 +232,14 @@ instance Annotated Exp where
 
 instance Pretty Exp where
       pretty = \ case
-            App _ (App _ (Con _ _ n) e1) e2
-              | name2String n == "(,)" -> parens $ pretty e1 <+> text "," <+> pretty e2
-            App _ e1 e2      -> parens $ hang (pretty e1) 4 $ pretty e2
-            Con _ _ n        -> pretty n
-            Var _ _ n        -> text $ show n {- <+> text "::" <+> pretty t -}
-            Lam _ _ e        -> runFreshM $ do
+            App _ (App _ (Con _ _ (n2s -> "(,)")) e1) e2 -> parens $ pretty e1 <+> text "," <+> pretty e2
+            App _ e1 e2                                  -> parens $ hang (pretty e1) 4 $ pretty e2
+            Con _ _ n                                    -> pretty n
+            Var _ _ n                                    -> text $ show n {- <+> text "::" <+> pretty t -}
+            Lam _ _ e                                    -> runFreshM $ do
                   (p, e') <- unbind e
                   return $ parens $ text "\\" <+> text (show p) <+> text "->" <+> pretty e'
-            Case _ _ e e1 e2 -> runFreshM $ do
+            Case _ _ e e1 e2                             -> runFreshM $ do
                   (p, e1') <- unbind e1
                   return $ parens $
                         foldr ($+$) mempty
@@ -225,7 +249,7 @@ instance Pretty Exp where
                               ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
                               )
                         ]
-            Match _ _ e p e1 as e2 -> runFreshM $
+            Match _ _ e p e1 as e2                       -> runFreshM $
                   return $ parens $
                         foldr ($+$) mempty
                         [ text "case" <+> pretty e <+> text "of"
@@ -234,8 +258,8 @@ instance Pretty Exp where
                               ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
                               )
                         ]
-            NativeVHDL _ n e -> parens (text "nativeVHDL" <+> doubleQuotes (text n) <+> parens (pretty e))
-            Error _ t m      -> parens (text "primError" <+> doubleQuotes (text m) <+> text "::" <+> pretty t)
+            NativeVHDL _ n e                             -> parens (text "nativeVHDL" <+> doubleQuotes (text n) <+> parens (pretty e))
+            Error _ t m                                  -> parens (text "primError" <+> doubleQuotes (text m) <+> text "::" <+> pretty t)
 
 ---
 
@@ -247,6 +271,11 @@ instance Alpha Pat
 
 instance NFData Pat
 
+instance TypeAnnotated Pat where
+      typeof = \ case
+            PatCon  _ (Embed t) _ _ -> t
+            PatVar  _ (Embed t) _   -> t
+
 instance Annotated Pat where
       ann = \ case
             PatCon  a _ _ _ -> a
@@ -254,10 +283,9 @@ instance Annotated Pat where
 
 instance Pretty Pat where
       pretty = \ case
-            PatCon _ _ (Embed n) [p1, p2]
-              | name2String n == "(,)" -> parens $ pretty p1 <+> text "," <+> pretty p2
-            PatCon _ _ (Embed n) ps    -> parens $ pretty n <+> hsep (map pretty ps)
-            PatVar _ _ n               -> text $ show n
+            PatCon _ _ (Embed (n2s -> "(,)")) [p1, p2] -> parens $ pretty p1 <+> text "," <+> pretty p2
+            PatCon _ _ (Embed n) ps                    -> parens $ pretty n <+> hsep (map pretty ps)
+            PatVar _ _ n                               -> text $ show n
 
 
 data MatchPat = MatchPatCon Annote Ty (Name DataConId) [MatchPat]
@@ -271,6 +299,11 @@ instance Subst Ty MatchPat
 
 instance NFData MatchPat
 
+instance TypeAnnotated MatchPat where
+      typeof = \ case
+            MatchPatCon _ t _ _  -> t
+            MatchPatVar _ t      -> t
+
 instance Annotated MatchPat where
       ann = \ case
             MatchPatCon a _ _ _  -> a
@@ -278,10 +311,9 @@ instance Annotated MatchPat where
 
 instance Pretty MatchPat where
       pretty = \ case
-            MatchPatCon _ _ n [p1, p2]
-                  | name2String n == "(,)" -> parens $ pretty p1 <+> text "," <+> pretty p2
-            MatchPatCon _ _ n ps           -> parens $ pretty n <+> hsep (map pretty ps)
-            MatchPatVar _ t                -> parens $ text "*" <+> text "::" <+> pretty t
+            MatchPatCon _ _ (n2s -> "(,)") [p1, p2] -> parens $ pretty p1 <+> text "," <+> pretty p2
+            MatchPatCon _ _ n ps                    -> parens $ pretty n <+> hsep (map pretty ps)
+            MatchPatVar _ t                         -> parens $ text "*" <+> text "::" <+> pretty t
 
 ---
 
@@ -352,25 +384,23 @@ flattenApp (App _ e e') = flattenApp e ++ [e']
 flattenApp e            = [e]
 
 arr0 :: Ty -> Ty -> Ty
-arr0 = mkArrow $ string2Name "->"
+arr0 = mkArrow $ s2n "->"
 
 infixr `arr0`
 
 rangeTy :: Ty -> Ty
-rangeTy (TyApp _ (TyApp _ (TyCon _ c) _) t')
-      | name2String c == "->" = rangeTy t'
-rangeTy t                     = t
+rangeTy (TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) t') = rangeTy t'
+rangeTy t                                                = t
 
 mkArrow :: Name TyConId -> Ty -> Ty -> Ty
 mkArrow arr t = TyApp (ann t) (TyApp (ann t) (TyCon (ann t) arr) t)
 
 arrowRight :: Ty -> Ty
-arrowRight (TyApp _ (TyApp _ (TyCon _ c) _) t2)
-      | name2String c == "->" = t2
-arrowRight t                  = t
+arrowRight (TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) t') = t'
+arrowRight t                                                = t
 
 getArrow :: [DataDefn] -> Name TyConId
-getArrow = dataName . fromJust . find ((== "->") . name2String . dataName)
+getArrow = dataName . fromJust . find ((== "->") . n2s . dataName)
 
 -- Orphans.
 

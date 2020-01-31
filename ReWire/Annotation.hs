@@ -61,7 +61,7 @@ class Annotated a where
       ann :: a -> Annote
 
 unAnn :: Data d => d -> d
-unAnn = runIdentity . runPureT (transform $ \ (_::Annote) -> return noAnn)
+unAnn = runIdentity . runPureT (transform $ \ (_ :: Annote) -> return noAnn)
 
 instance SrcInfo Annote where
       toSrcInfo a b c = LocAnnote $ toSrcInfo a b c
