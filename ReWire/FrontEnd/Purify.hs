@@ -14,7 +14,7 @@ import ReWire.Pretty
 import Control.Arrow (first, second, (&&&))
 import Control.Monad.State
 import Control.Monad.Fail (MonadFail)
-import Data.List (foldl', find)
+import Data.List (foldl', find, intercalate)
 import Data.List.NonEmpty (NonEmpty (..), (<|))
 import qualified Data.List.NonEmpty as NE
 import Data.Either (partitionEithers)
@@ -44,7 +44,6 @@ replaceAtIndex :: Int -> a -> [a] -> [a]
 replaceAtIndex n item ls = a ++ (item : b)
       where (a, _ : b) = splitAt n ls
 
--- is stuff like this kosher?
 poly2Ty :: Fresh m => Poly -> m Ty
 poly2Ty (Poly p) = snd <$> unbind p
 
@@ -141,20 +140,18 @@ flattenExtr = \ case
 -- dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i
 mkDispatch :: Fresh m => Ty -> NonEmpty (Pat, Exp) -> Name Exp -> m Defn
 mkDispatch ty pes iv = do
-      dsc <- freshVar "dsc"
-      let dscv          = Var an rTy dsc
-          body          = mkCase an ty dscv pes
-          dispatch_body = Embed (bind [dsc :: Name Exp, iv :: Name Exp] body)
+      dsc     <- freshVar "dsc"
+      let body  = Embed $ bind [dsc :: Name Exp, iv :: Name Exp] cases
+          cases = mkCase an ty (Var an rTy dsc) pes
+          an    = MsgAnnote $ "Generated dispatch function: " ++ prettyPrint cases
+
       pure Defn
             { defnAnnote = an
             , defnName   = s2n "$Pure.dispatch"
             , defnPolyTy = [] |-> ty
             , defnInline = False
-            , defnBody = dispatch_body
+            , defnBody   = body
             }
-
-      where an :: Annote
-            an = MsgAnnote "Generated dispatch function"
 
 mkCase :: Annote -> Ty -> Exp -> NonEmpty (Pat, Exp) -> Exp
 mkCase an ty dsc = \ case
@@ -313,6 +310,11 @@ purifyTy t ms = classifyTy t >>= \ case
 purifyTyM :: MonadError AstError m => Ty -> [Ty] -> m Ty
 purifyTyM t = liftMaybe (ann t) ("failed to purifyTy: " ++ prettyPrint (unAnn t)) . purifyTy t
 
+dstArrow :: MonadError AstError m => Ty -> m (Ty, Ty)
+dstArrow = \ case
+      TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t1) t2 -> pure (t1, t2)
+      t                                               -> failAt (ann t) "Non-arrow type(4)"
+
 paramTys :: Ty -> [Ty]
 paramTys = paramTys' []
       where paramTys' :: [Ty] -> Ty -> [Ty]
@@ -392,12 +394,12 @@ classifyCases = \ case
       App an (App _ (Var _ t x) e) g
             | n2s x == ">>="    -> pure $ Bind an t e g
             | otherwise         -> pure $ Apply an t x [e, g]
-      t@(App an _ _)            -> do
-            (n, t, es) <- dstApp t
-            pure $ Apply an t n es
+      e@App {}                  -> do
+            (n, t, es) <- dstApp e
+            pure $ Apply (ann e) t n es
       Case an t dsc bnds me     -> do
             (p, e) <- unbind bnds
-            pure (Switch an t dsc p e me)
+            pure $ Switch an t dsc p e me
       Match an t e1 mp e2 es me -> pure $ SMatch an t e1 mp e2 es me
       d                         -> failAt (ann d) $ "Unclassifiable case: " ++ show d
 
@@ -510,12 +512,12 @@ classifyApp an (x, t, [e])
             pure $ RReturn an e te
       | n2s x == "lift"   = pure $ RLift an e
       | n2s x == "signal" = pure $ Signal an e
-      | otherwise         = RApp an t x <$> mkBindings t [e]
+      | otherwise         = RApp an t x <$> mkBindings an t [e]
 classifyApp an (x, t, [e, g])
-      | n2s x == ">>="     = case issignal e of
+      | n2s x == ">>="     = case isSignal e of
             Just s -> do
                   (g', t, es) <- dstApp g
-                  bes         <- mkBindings t es
+                  bes         <- mkBindings an t es
                   pure $ SigK an t s g' bes
             Nothing -> do
                   (_, tau) <- dstArrow t
@@ -523,17 +525,22 @@ classifyApp an (x, t, [e, g])
                   pure $ RBind an e g tg
       | n2s x == "extrude" = pure $ Extrude an t x [e, g]
       | otherwise          = do
-            bes <- mkBindings t [e, g]
+            bes <- mkBindings an t [e, g]
             pure $ RApp an t x bes
+      where isSignal :: Exp -> Maybe Exp
+            isSignal = \ case
+                  App _ (Var _ _ (n2s -> "signal")) e -> pure e
+                  _                                   -> Nothing
 classifyApp an (x, t, es)
       | n2s x == "extrude" = pure $ Extrude an t x es
       | otherwise          = do
-            bes <- mkBindings t es
+            bes <- mkBindings an t es
             pure $ RApp an t x bes
+
 
 classifyRCases :: (Fresh m, MonadError AstError m) => Exp -> m (RCase Annote Ty Pat Exp)
 classifyRCases = \ case
-     t@(App an _ _)            -> dstApp t >>= classifyApp an
+     e@(App an _ _)            -> dstApp e >>= classifyApp an
      Case an t dsc bnds me     -> do (p, e) <- unbind bnds
                                      pure $ RSwitch an t dsc p e me
      Match an t e1 mp e2 es me -> pure $ RMatch an t e1 mp e2 es me
@@ -677,23 +684,21 @@ purifyResBody rho i o t iv mst = classifyRCases >=> \ case
       -- 2. phi' <- purifyResBody phi
       -- 3. make definition and addit to definitions: $LL = phi'
       -- 4. return $ (...($LL s1)...sn)
-      Extrude an t rator rands -> do
-            let (dev, stos) = flattenExtr $ mkApp (Var an t rator) rands
-            case dev of
-                 Var an t d -> do
-                   t'  <- liftMaybe an "purifying extruded device" $ purifyTy t (snd mst)
-                   pure $ mkApp (Var an t' d) stos
-
-                 App an _ _  -> do
-                   (f, t, es) <- dstApp dev
-                   t'         <- liftMaybe an "purifying extruded device" $ purifyTy t (snd mst)
-                   pure $ mkApp (Var an t' f) (es ++ stos)
-                 e           -> failAt (ann e) $ "Extruded device is non-variable: " ++ show dev
+      Extrude an t rator rands -> case flattenExtr $ mkApp (Var an t rator) rands of
+            (Var an t d, stos) -> do
+                  t'  <- liftMaybe an "purifying extruded device" $ purifyTy t (snd mst)
+                  pure $ mkApp (Var an t' d) stos
+            (e@App {}, stos)  -> do
+                  (f, t, es) <- dstApp e
+                  t'         <- liftMaybe (ann e) "purifying extruded device" $ purifyTy t (snd mst)
+                  pure $ mkApp (Var (ann e) t' f) $ es ++ stos
+            (e, _)           -> failAt (ann e) $ "Extruded device is non-variable: " ++ show e
 
       RApp an rty rator rands -> do
             rator' <- purifyResBody rho i o t iv mst (Var an rty rator)
-            -- N.b., don't think it's necessary to purify the rands because they're simply typed.
-            f <- mkPureApp an rho rator' (map fst rands)
+            -- N.b., don't think it's necessary to purify the rands because
+            -- they're simply typed.
+            f      <- mkPureApp an rho rator' (map fst rands)
             pure $ mkApp f $ fst mst
 
       RSwitch an ty dsc p e1 Nothing     -> do
@@ -733,13 +738,13 @@ dispatchTy i o (t :| ms) = mkArrowTy $ domTy :| [i, etor]
 mkPairTy :: Ty -> Ty -> Ty
 mkPairTy t = TyApp noAnn (TyApp noAnn (TyCon noAnn $ s2n "(,)") t)
 
-mkPair :: Exp -> Exp -> Exp -- TODO(chathhorn): find the real (,) ctor
+mkPair :: Exp -> Exp -> Exp
 mkPair e1 e2 = App noAnn (App noAnn (Con noAnn t (s2n "(,)")) e1) e2
       where t = mkArrowTy $ typeof e1 :| [typeof e2, mkPairTy (typeof e1) $ typeof e2]
 
 mkTuple :: [Exp] -> Exp
 mkTuple = \ case
-      []     -> Con noAnn (mkTupleTy []) $ s2n "()" -- TODO(chathhorn): find the real unit
+      []     -> Con noAnn (mkTupleTy []) $ s2n "()"
       x : xs -> foldl1 mkPair $ x :| xs
 
 mkTupleTy :: [Ty] -> Ty
@@ -767,8 +772,8 @@ mkPairPat p1 p2 = PatCon noAnn (Embed $ mkPairTy (typeof p1) (typeof p2)) (Embed
 
 mkTuplePat :: [(Name Exp, Ty)] -> Pat
 mkTuplePat = \ case
-      []          -> PatCon noAnn (Embed $ TyCon noAnn $ s2n "()") (Embed $ s2n "()") []
-      x : xs      -> foldl1 mkPairPat $ NE.map patVar $ x :| xs
+      []     -> PatCon noAnn (Embed $ TyCon noAnn $ s2n "()") (Embed $ s2n "()") []
+      x : xs -> foldl1 mkPairPat $ NE.map patVar $ x :| xs
       where patVar :: (Name Exp, Ty) -> Pat
             patVar (n, t) = PatVar noAnn (Embed t) n
 
@@ -815,7 +820,7 @@ dstApp = \ case
       App _ rator rand       -> do
             (n, t, es) <- dstApp rator
             pure (n, t, es ++ [rand])
-      (Var _ t n)            -> pure (n, t, [])
+      Var _ t n              -> pure (n, t, [])
       d                      -> failAt (ann d) "Tried to dst non-app"
 
 -- > let p = e1 in e2
@@ -825,19 +830,13 @@ dstApp = \ case
 mkLet :: Annote -> Ty -> Pat -> Exp -> Exp -> Exp
 mkLet an ty p e1 e2 = Case an ty e1 (bind p e2) Nothing
 
-mkBindings :: MonadError AstError m => Ty -> [t] -> m [(t, Ty)]
-mkBindings _ []     = pure []
-mkBindings t (e:es) = do
-      (dom, ran) <- dstArrow t
-      bes        <- mkBindings ran es
-      pure $ (e, dom) : bes
-
-issignal :: Exp -> Maybe Exp
-issignal = \ case
-      App _ (Var _ _ (n2s -> "signal")) e -> pure e
-      _                                   -> Nothing
-
-dstArrow :: MonadError AstError m => Ty -> m (Ty, Ty)
-dstArrow = \ case
-      TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t1) t2 -> pure (t1, t2)
-      t                                               -> failAt (ann t) "Non-arrow type(4)"
+mkBindings :: (Pretty t, MonadError AstError m) => Annote -> Ty -> [t] -> m [(t, Ty)]
+mkBindings an t es = do
+      let ps = paramTys t
+      when (length ps < length es)
+            $ failAt an
+            $ "Purify: mkBindings: attempting to calculate argument types: "
+           ++ "[" ++ intercalate ", " (map prettyPrint es) ++ "]"
+           ++ " vs "
+           ++ "[" ++ intercalate ", " (map prettyPrint ps) ++ "]"
+      pure $ zip es ps
