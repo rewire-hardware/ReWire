@@ -2,29 +2,29 @@
 {-# LANGUAGE Safe #-}
 
 module ReWire.Core.Syntax
-  ( DataConId(..),TyConId(..)
-  , Ty(..)
-  , Exp(..)
-  , Pat(..)
-  , Defn(..)
-  , DataCon(..)
-  , Program(..)
-  , mkArrow,arrowRight
-  , flattenArrow,flattenTyApp
-  , flattenApp,typeOf
+  ( DataConId (..), TyConId (..)
+  , Ty (..)
+  , Exp (..)
+  , Pat (..)
+  , Defn (..)
+  , DataCon (..)
+  , Program (..)
+  , mkArrow, arrowRight
+  , flattenArrow, flattenTyApp
+  , flattenApp, typeOf
   , GId, LId, TyId
   ) where
 
 import ReWire.Pretty
 import ReWire.Annotation
 
-import Data.Data (Typeable,Data(..))
+import Data.Data (Typeable, Data(..))
 import Data.List (nub)
 import Text.PrettyPrint hiding ((<>))
 import GHC.Generics (Generic)
 
-newtype DataConId = DataConId { deDataConId :: String } deriving (Eq,Ord,Generic,Show,Typeable,Data)
-newtype TyConId   = TyConId   { deTyConId :: String } deriving (Eq,Ord,Generic,Show,Typeable,Data)
+newtype DataConId = DataConId { deDataConId :: String } deriving (Eq, Ord, Generic, Show, Typeable, Data)
+newtype TyConId   = TyConId   { deTyConId :: String } deriving (Eq, Ord, Generic, Show, Typeable, Data)
 
 type GId  = String
 type LId  = Int
@@ -38,10 +38,10 @@ instance Pretty TyConId where
 
 ---
 
-data Ty = TyApp  Annote Ty Ty
-        | TyCon  Annote TyConId
-        | TyVar  Annote TyId
-        deriving (Eq,Generic,Show,Typeable,Data)
+data Ty = TyApp Annote Ty Ty
+        | TyCon Annote TyConId
+        | TyVar Annote TyId
+        deriving (Eq, Generic, Show, Typeable, Data)
 
 instance Annotated Ty where
   ann (TyApp a _ _)  = a
@@ -69,7 +69,7 @@ data Exp = App        Annote Exp Exp
          | Con        Annote Ty  DataConId
          | Match      Annote Ty  Exp Pat GId [LId] (Maybe Exp)
          | NativeVHDL Annote Ty  String
-         deriving (Eq,Show,Typeable,Data)
+         deriving (Eq, Show, Typeable, Data)
 
 instance Annotated Exp where
   ann (App a _ _)           = a
@@ -109,7 +109,7 @@ instance Pretty Exp where
 
 data Pat = PatCon Annote Ty DataConId [Pat]
          | PatVar Annote Ty
-         deriving (Eq,Show,Typeable,Data)
+         deriving (Eq, Show, Typeable, Data)
 
 instance Annotated Pat where
   ann (PatCon a _ _ _) = a
@@ -125,7 +125,7 @@ data Defn = Defn { defnAnnote :: Annote,
                    defnName   :: GId,
                    defnTy     :: Ty, -- params given by the arity.
                    defnBody   :: Exp }
-               deriving (Eq,Show,Typeable,Data)
+               deriving (Eq, Show, Typeable, Data)
 
 instance Annotated Defn where
   ann (Defn a _ _ _) = a
@@ -138,7 +138,7 @@ instance Pretty Defn where
 ---
 
 data DataCon = DataCon Annote DataConId Int Ty
-                  deriving (Generic,Eq,Show,Typeable,Data)
+                  deriving (Generic, Eq, Show, Typeable, Data)
 
 instance Annotated DataCon where
   ann (DataCon a _ _ _) = a
@@ -148,9 +148,9 @@ instance Pretty DataCon where
 
 ---
 
-data Program = Program { ctors  :: [DataCon],
-                         defns  :: [Defn] }
-                  deriving (Eq,Show,Typeable,Data)
+data Program = Program { ctors :: [DataCon],
+                         defns :: [Defn] }
+                  deriving (Eq, Show, Typeable, Data)
 
 instance Semigroup Program where
   (Program ts vs) <> (Program ts' vs') = Program (nub $ ts ++ ts') $ nub $ vs ++ vs'

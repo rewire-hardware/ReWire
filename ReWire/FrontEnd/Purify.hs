@@ -276,13 +276,13 @@ data TyVariety = Arrow Ty Ty | ReTApp | StTApp | IdApp | PairApp Ty Ty | Pure | 
 purifyTy :: MonadError AstError m => Annote -> [Ty] -> Ty -> m Ty
 purifyTy an ms t = case classifyTy t of
       Arrow t1 t2   -> TyApp an <$> (TyApp an (TyCon an $ s2n "->") <$> purifyTy an ms t1) <*> purifyTy an ms t2
-      ReTApp        -> liftMaybe an ( "Purification: failed purifying ResT type: " ++ prettyPrint t)
+      ReTApp        -> liftMaybe an ( "Purification: failed to purify ResT type: " ++ prettyPrint t)
                                     $ purifyResTy ms t
-      StTApp        -> liftMaybe an ( "Purification: failed purifying StT type: " ++ prettyPrint t)
+      StTApp        -> liftMaybe an ( "Purification: failed to purify StT type: " ++ prettyPrint t)
                                     $ purifyStTTy t
       PairApp t1 t2 -> TyApp an <$> (TyApp an (TyCon an $ s2n "(,)") <$> purifyTy an ms t1) <*> purifyTy an ms t2
       Pure          -> pure t
-      _             -> failAt an $ "Purification: failed purifying type: " ++ prettyPrint t
+      _             -> failAt an $ "Purification: failed to purify type: " ++ prettyPrint t
 
             -- This takes a Ty of the form
             --      T1 -> T2 -> ... -> Tn -> ReT In Out (StT S1 (StT S2 (... (StT Sm I)))) T
@@ -314,8 +314,8 @@ purifyTy an ms t = case classifyTy t of
                   TyApp _ (TyApp _ (TyCon _ (n2s -> "(,)")) t1) t2                       -> PairApp t1 t2
                   TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "StT")) _) _) _             -> StTApp
                   TyApp _ (TyCon _ (n2s -> "I")) _                                       -> IdApp
-                  TyApp {}                                                               -> Impure
-                  t                                                                      -> Pure
+                  -- TyApp {}                                                               -> Impure
+                  _                                                                      -> Pure
 
 dstArrow :: MonadError AstError m => Ty -> m (Ty, Ty)
 dstArrow = \ case
@@ -569,7 +569,7 @@ purifyResBody rho i o t iv mst = classifyRCases >=> \ case
       -- to defn of dispatch
       SigK an t e g bes -> do
             let (es, ts) = unzip bes
-            ts' <- mapM (\ t -> purifyTy an (snd mst) t) ts
+            ts' <- mapM (purifyTy an $ snd mst) ts
 
             r_g <- fresh $ s2n $ "R_" ++ prettyPrint g
             let rt      = mkArrowTy $ ts' |: rTy
