@@ -23,6 +23,11 @@ import Data.Either (partitionEithers)
 (|:) :: [a] -> a -> NonEmpty a
 xs |: x = NE.reverse $ x :| reverse xs
 
+atMay :: (Eq i, Num i) => [a] -> i -> Maybe a
+atMay []       _ = Nothing
+atMay (x : _)  0 = Just x
+atMay (_ : xs) n = atMay xs $ n - 1
+
 isPrim :: Name Exp -> Bool
 isPrim = notElem '.' . n2s
 
@@ -271,18 +276,18 @@ purifyResDefn rho imprhoR iv ms d = do
 -- Purifying Types
 ---------------------------
 
-data TyVariety = Arrow Ty Ty | ReTApp | StTApp | IdApp | PairApp Ty Ty | Pure | Impure
+data TyVariety = Arrow Ty Ty | ReTApp | StTApp | IdApp | PairApp Ty Ty | Pure
 
 purifyTy :: MonadError AstError m => Annote -> [Ty] -> Ty -> m Ty
 purifyTy an ms t = case classifyTy t of
       Arrow t1 t2   -> TyApp an <$> (TyApp an (TyCon an $ s2n "->") <$> purifyTy an ms t1) <*> purifyTy an ms t2
-      ReTApp        -> liftMaybe an ( "Purification: failed to purify ResT type: " ++ prettyPrint t)
+      ReTApp        -> liftMaybe an ( "Purify: failed to purify ResT type: " ++ prettyPrint t)
                                     $ purifyResTy ms t
-      StTApp        -> liftMaybe an ( "Purification: failed to purify StT type: " ++ prettyPrint t)
+      StTApp        -> liftMaybe an ( "Purify: failed to purify StT type: " ++ prettyPrint t)
                                     $ purifyStTTy t
       PairApp t1 t2 -> TyApp an <$> (TyApp an (TyCon an $ s2n "(,)") <$> purifyTy an ms t1) <*> purifyTy an ms t2
       Pure          -> pure t
-      _             -> failAt an $ "Purification: failed to purify type: " ++ prettyPrint t
+      _             -> failAt an $ "Purify: failed to purify type: " ++ prettyPrint t
 
             -- This takes a Ty of the form
             --      T1 -> T2 -> ... -> Tn -> ReT In Out (StT S1 (StT S2 (... (StT Sm I)))) T
@@ -314,13 +319,12 @@ purifyTy an ms t = case classifyTy t of
                   TyApp _ (TyApp _ (TyCon _ (n2s -> "(,)")) t1) t2                       -> PairApp t1 t2
                   TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "StT")) _) _) _             -> StTApp
                   TyApp _ (TyCon _ (n2s -> "I")) _                                       -> IdApp
-                  -- TyApp {}                                                               -> Impure
                   _                                                                      -> Pure
 
 dstArrow :: MonadError AstError m => Ty -> m (Ty, Ty)
 dstArrow = \ case
       TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t1) t2 -> pure (t1, t2)
-      t                                               -> failAt (ann t) "Purification: expecting arrow, encountered non-arrow"
+      t                                               -> failAt (ann t) "Purify: expecting arrow, encountered non-arrow"
 
 paramTys :: Ty -> [Ty]
 paramTys = paramTys' []
@@ -405,7 +409,9 @@ data Cases an p e t = Get an t
 purifyStateBody :: (Fresh m, MonadError AstError m, MonadIO m) =>
                      PureEnv -> [Exp] -> [Ty] -> Int -> [Ty] -> Exp -> m Exp
 purifyStateBody rho stos stys i ms = classifyCases >=> \ case
-      Get _ _      -> pure $ mkTuple $ (stos !! i) : stos
+      Get an _      -> do
+            s <- liftMaybe an "Purify: state-layer mismatch" $ stos `atMay` i
+            pure $ mkTuple $ s : stos
 
       Return _ _ e -> pure $ mkTuple $ e : stos
 

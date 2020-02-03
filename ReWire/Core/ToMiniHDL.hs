@@ -83,17 +83,17 @@ dciTagVector :: DataConId -> CM [Bit]
 dciTagVector dci = do tci               <- dcitci dci
                       ctors             <- tcictors tci
                       DataCon _ _ pos _ <- askDci dci
-                      return (nvec (ceilLog2 (length ctors)) pos)
+                      return $ nvec (ceilLog2 (length ctors)) pos
 
-dciPadVector :: DataConId -> C.Ty -> CM [Bit]
-dciPadVector dci t = do ctor         <- askDci dci
-                        fieldwidth   <- ctorwidth t ctor
-                        tci          <- dcitci dci
-                        ctors        <- tcictors tci
-                        let tot      =  ceilLog2 (length ctors) + fieldwidth
-                        tysize       <- sizeof (ann t) t
-                        let padwidth =  tysize-tot
-                        return (nvec padwidth 0)
+dciPadVector :: Annote -> DataConId -> C.Ty -> CM [Bit]
+dciPadVector an dci t = do ctor         <- askDci dci
+                           fieldwidth   <- ctorwidth t ctor
+                           tci          <- dcitci dci
+                           ctors        <- tcictors tci
+                           let tot      =  ceilLog2 (length ctors) + fieldwidth
+                           tysize       <- sizeof an t
+                           let padwidth =  tysize - tot
+                           return $ nvec padwidth 0
 
 ceilLog2 :: Int -> Int
 ceilLog2 n = ceiling (logBase 2 (fromIntegral n :: Double))
@@ -120,20 +120,21 @@ sizeof an t = case th of
              TyVar _ _    -> failAt an $ "ToMiniHDL: sizeof: Encountered type variable: " ++ prettyPrint t
     where (th:_) = flattenTyApp t
 
-getTyPorts :: C.Ty -> CM [Port]
-getTyPorts t = do let ts       =  flattenArrow t
-                      targs    =  init ts
-                      tres     =  last ts
-                      argnames =  zipWith (\ _ x -> "arg" ++ show x) targs ([0..]::[Int])
-                  argsizes     <- mapM (sizeof (ann t)) targs
-                  ressize      <- sizeof (ann t) tres
-                  let argports =  zipWith (\ n x -> Port n In (TyStdLogicVector x)) argnames argsizes
-                      resport  =  Port "res" Out (TyStdLogicVector ressize)
-                  return (argports ++ [resport])
+getTyPorts :: Annote -> C.Ty -> CM [Port]
+getTyPorts an t = do let ts       =  flattenArrow t
+                         targs    =  init ts
+                         tres     =  last ts
+                         argnames =  zipWith (\ _ x -> "arg" ++ show x) targs ([0..]::[Int])
+                     argsizes     <- mapM (sizeof an) targs
+                     ressize      <- sizeof an tres
+                     let argports =  zipWith (\ n x -> Port n In (TyStdLogicVector x)) argnames argsizes
+                         resport  =  Port "res" Out (TyStdLogicVector ressize)
+                     return (argports ++ [resport])
 
 mkDefnEntity :: Defn -> CM Entity
-mkDefnEntity (Defn _ n t _) = do ps <- getTyPorts t
-                                 return (Entity (mangle n) ps)
+mkDefnEntity (Defn an n t _) = do
+      ps <- getTyPorts an t
+      return $ Entity (mangle n) ps
 
 freshName :: String -> CM Name
 freshName s = do (sigs, comps, ctr) <- get
@@ -144,12 +145,14 @@ addSignal :: String -> M.Ty -> CM ()
 addSignal n t = do (sigs, comps, ctr) <- get
                    put (sigs ++ [Signal n t], comps, ctr)
 
-addComponent :: GId -> C.Ty -> CM ()
-addComponent i t = do (sigs, comps, ctr) <- get
-                      case find ((==mangle i) . componentName) comps of
-                        Just _ -> return ()
-                        Nothing -> do ps <- getTyPorts t
-                                      put (sigs, Component (mangle i) ps:comps, ctr)
+addComponent :: Annote -> GId -> C.Ty -> CM ()
+addComponent an i t = do
+      (sigs, comps, ctr) <- get
+      case find ((== mangle i) . componentName) comps of
+            Just _ -> return ()
+            Nothing -> do
+                  ps <- getTyPorts an t
+                  put (sigs, Component (mangle i) ps : comps, ctr)
 
 typeOfPat :: Pat -> C.Ty
 typeOfPat (PatCon _ t _ _) = t
@@ -190,7 +193,7 @@ compileExp e_ = case e of
                                       sssns       <- mapM compileExp eargs
                                       let stmts   =  concatMap fst sssns
                                           ns      =  map snd sssns
-                                      addComponent i t
+                                      addComponent an i t
                                       let argns   =  map (\ n -> "arg" ++ show n) ([0..] :: [Int])
                                           pm      =  PortMap (zip argns (map ExprName ns) ++ [("res", ExprName n)])
                                       return (stmts ++ [Instantiate n_inst (mangle i) pm], n)
@@ -205,7 +208,7 @@ compileExp e_ = case e of
                                          let stmts   =  concatMap fst sssns
                                              ns      =  map snd sssns
                                          tagvec      <- dciTagVector i
-                                         padvec      <- dciPadVector i tres
+                                         padvec      <- dciPadVector an i tres
                                          return (stmts ++ [Assign (LHSName n) (ExprConcat
                                                                                (foldl ExprConcat (ExprBitString tagvec) (map ExprName ns))
                                                                                   (ExprBitString padvec)
@@ -223,7 +226,7 @@ compileExp e_ = case e of
                                                                               n_call              <- (++ "_call") <$> freshName (mangle gid)
                                                                               (stmts_ealt, n_ealt) <- compileExp ealt
                                                                               t_gid               <- askGIdTy gid
-                                                                              addComponent gid t_gid
+                                                                              addComponent an gid t_gid
                                                                               let argns           =  map (\ n -> "arg" ++ show n) ([0..]::[Int])
                                                                                   pm              =  PortMap (zip argns
                                                                                                               (map (ExprName . ("arg" ++) . show) lids
@@ -243,7 +246,7 @@ compileExp e_ = case e of
                                                                               addSignal n_gid (TyStdLogicVector sizeres)
                                                                               n_call              <- (++ "_call") <$> freshName (mangle gid)
                                                                               t_gid               <- askGIdTy gid
-                                                                              addComponent gid t_gid
+                                                                              addComponent an gid t_gid
                                                                               let argns           =  map (\ n -> "arg" ++ show n) ([0..]::[Int])
                                                                                   pm              =  PortMap (zip argns
                                                                                                               (map (ExprName . ("arg" ++) . show) lids
@@ -259,7 +262,7 @@ compileExp e_ = case e of
                                           sssns       <- mapM compileExp eargs
                                           let stmts   =  concatMap fst sssns
                                               ns      =  map snd sssns
-                                          addComponent i t
+                                          addComponent an i t
                                           let argns   =  map (\ n -> "arg" ++ show n) ([0..]::[Int])
                                               pm      =  PortMap (zip argns (map ExprName ns) ++ [("res", ExprName n)])
                                           return (stmts ++ [Instantiate n_call i pm], n)
@@ -284,8 +287,8 @@ compileDefn d | defnName d == "Main.start" = do
                           outsize   <- sizeof an t_out
                           statesize <- sizeof an t_startstate
                           ressize   <- sizeof an t_res
-                          addComponent n_startstate t_startstate
-                          addComponent n_loopfun t_loopfun
+                          addComponent an n_startstate t_startstate
+                          addComponent an n_loopfun t_loopfun
                           addSignal "start_state" (TyStdLogicVector statesize)
                           addSignal "loop_out" (TyStdLogicVector statesize)
                           addSignal "current_state" (TyStdLogicVector statesize)
