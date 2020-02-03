@@ -176,7 +176,7 @@ mkPureEnv :: (Fresh m, MonadError AstError m) => [(Name Exp, Embed Poly)] -> [Ty
 mkPureEnv [] _                      = pure []
 mkPureEnv ((n, Embed phi) : nps) ms = do
       ty     <- poly2Ty phi
-      purety <- purifyTyM ty ms
+      purety <- purifyTy (ann ty) ms ty
       env    <- mkPureEnv nps ms
       pure $ (n, purety) : env
 
@@ -241,8 +241,7 @@ purifyResDefn :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) =>
                  PureEnv -> [(Name Exp, Ty)] -> Name Exp -> [Ty] -> Defn -> StateT PSto m Defn
 purifyResDefn rho imprhoR iv ms d = do
       ty           <- lookupImpure an dname imprhoR
-      pure_ty      <- liftMaybe (ann d) "Failed to create pure type"
-                    $ purifyResTy ty ms
+      pure_ty      <- purifyTy (ann d) ms ty
       (args, e)    <- unbind body
 
       (_, i, o, a) <- liftMaybe (ann d) "failed at purifyResDefn" $ dstResTy ty
@@ -272,48 +271,56 @@ purifyResDefn rho imprhoR iv ms d = do
 -- Purifying Types
 ---------------------------
 
-data TyVariety t = Arrow Annote t t
-                 | ReTApp Annote t t t t
-                 | StTApp Annote t t t
-                 | IdApp Annote t
-                 | PairApp Annote t t
-                 | Pure Annote t
+data TyVariety = Arrow Ty Ty | ReTApp | StTApp | IdApp | PairApp Ty Ty | Pure | Impure
 
-instance Annotated (TyVariety t) where
-      ann = \ case
-            Arrow a _ _      -> a
-            ReTApp a _ _ _ _ -> a
-            StTApp a _ _ _   -> a
-            IdApp a _        -> a
-            PairApp a _ _    -> a --- do we need more tuples?
-            Pure a _         -> a
+purifyTy :: MonadError AstError m => Annote -> [Ty] -> Ty -> m Ty
+purifyTy an ms t = case classifyTy t of
+      Arrow t1 t2   -> TyApp an <$> (TyApp an (TyCon an $ s2n "->") <$> purifyTy an ms t1) <*> purifyTy an ms t2
+      ReTApp        -> liftMaybe an ( "Purification: failed purifying ResT type: " ++ prettyPrint t)
+                                    $ purifyResTy ms t
+      StTApp        -> liftMaybe an ( "Purification: failed purifying StT type: " ++ prettyPrint t)
+                                    $ purifyStTTy t
+      PairApp t1 t2 -> TyApp an <$> (TyApp an (TyCon an $ s2n "(,)") <$> purifyTy an ms t1) <*> purifyTy an ms t2
+      Pure          -> pure t
+      _             -> failAt an $ "Purification: failed purifying type: " ++ prettyPrint t
 
-classifyTy :: Ty -> Maybe (TyVariety Ty)
-classifyTy = \ case
-      TyApp an (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReT")) i) o) m) a -> pure $ ReTApp an i o m a
-      TyApp an (TyApp _ (TyCon _ (n2s -> "->")) t1) t2                        -> pure $ Arrow an t1 t2
-      TyApp an (TyApp _ (TyCon _ (n2s -> "(,)")) t1) t2                       -> pure $ PairApp an t1 t2
-      TyApp an (TyApp _ (TyApp _ (TyCon _ (n2s -> "StT")) s) m) a             -> pure $ StTApp an s m a
-      TyApp an (TyCon _ (n2s -> "I")) a                                       -> pure $ IdApp an a
-      TyApp {}                                                                -> Nothing
-      t                                                                       -> pure $ Pure (ann t) t
+            -- This takes a Ty of the form
+            --      T1 -> T2 -> ... -> Tn -> ReT In Out (StT S1 (StT S2 (... (StT Sm I)))) T
+            -- and returns a Ty of the form
+            --      T1 -> T2 -> ... -> Tn -> In -> S1 -> ... -> Sm -> (Either T (O, R), (S1, (..., Sm)))
+      where purifyResTy :: [Ty] -> Ty -> Maybe Ty
+            purifyResTy ms t = do
+                  (ts, _, o, a) <- dstResTy t
+                  pure $ mkArrowTy $ (ts ++ ms) |: mkRangeTy a o ms
 
-purifyTy :: Ty -> [Ty] -> Maybe Ty
-purifyTy t ms = classifyTy t >>= \ case
-      Arrow an t1 t2   -> TyApp an <$> (TyApp an (TyCon an $ s2n "->") <$> purifyTy t1 ms) <*> purifyTy t2 ms
-      ReTApp {}        -> purifyResTy t ms
-      StTApp {}        -> purifyStTTy t
-      IdApp {}         -> Nothing
-      PairApp a t1 t2  -> TyApp a <$> (TyApp a (TyCon a $ s2n "(,)") <$> purifyTy t1 ms) <*> purifyTy t2 ms
-      Pure _ t         -> pure t
+            -- Takes
+            --      T1 -> T2 -> ... -> Tn -> StT S1 (StT S2 (... (StT Sm I))) T
+            -- and replaces it by
+            --      T1 -> ... -> Tn -> S1 -> ... -> Sm -> (T, (S1, (..., Sm)))
+            --
+            -- I'm going to rewrite this to stick precisely to Adam's description.
+            -- N.b., the product in the codomain associates to the right. The
+            -- definition of purifyStTTy required a little hackery to get the result
+            -- into that form.
+            purifyStTTy :: Ty -> Maybe Ty
+            purifyStTTy t = do
+                  (ts, stos, a) <- dstStT t
+                  pure $ mkArrowTy $ (ts ++ stos) |: mkTupleTy (a : stos)
 
-purifyTyM :: MonadError AstError m => Ty -> [Ty] -> m Ty
-purifyTyM t = liftMaybe (ann t) ("failed to purifyTy: " ++ prettyPrint (unAnn t)) . purifyTy t
+            classifyTy :: Ty -> TyVariety
+            classifyTy = \ case
+                  TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReT")) _) _) _) _ -> ReTApp
+                  TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t1) t2                        -> Arrow t1 t2
+                  TyApp _ (TyApp _ (TyCon _ (n2s -> "(,)")) t1) t2                       -> PairApp t1 t2
+                  TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "StT")) _) _) _             -> StTApp
+                  TyApp _ (TyCon _ (n2s -> "I")) _                                       -> IdApp
+                  TyApp {}                                                               -> Impure
+                  t                                                                      -> Pure
 
 dstArrow :: MonadError AstError m => Ty -> m (Ty, Ty)
 dstArrow = \ case
       TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t1) t2 -> pure (t1, t2)
-      t                                               -> failAt (ann t) "Non-arrow type(4)"
+      t                                               -> failAt (ann t) "Purification: expecting arrow, encountered non-arrow"
 
 paramTys :: Ty -> [Ty]
 paramTys = paramTys' []
@@ -341,29 +348,6 @@ dstStT ty = do
                   TyApp _ (TyApp _ (TyCon _ (n2s -> "StT")) s) m -> (s :) <$> dstStT m
                   TyCon _ (n2s -> "I")                           -> pure []
                   _                                              -> Nothing
-
--- This takes a Ty of the form
---      T1 -> T2 -> ... -> Tn -> ReT In Out (StT S1 (StT S2 (... (StT Sm I)))) T
--- and returns a Ty of the form
---      T1 -> T2 -> ... -> Tn -> In -> S1 -> ... -> Sm -> (Either T (O, R), (S1, (..., Sm)))
-purifyResTy :: Ty -> [Ty] -> Maybe Ty
-purifyResTy t ms = do
-      (ts, _, o, a) <- dstResTy t
-      pure $ mkArrowTy $ (ts ++ ms) |: mkRangeTy a o ms
-
--- Takes
---      T1 -> T2 -> ... -> Tn -> StT S1 (StT S2 (... (StT Sm I))) T
--- and replaces it by
---      T1 -> ... -> Tn -> S1 -> ... -> Sm -> (T, (S1, (..., Sm)))
---
--- I'm going to rewrite this to stick precisely to Adam's description.
--- N.b., the product in the codomain associates to the right. The
--- definition of purifyStTTy required a little hackery to get the result
--- into that form.
-purifyStTTy :: Ty -> Maybe Ty
-purifyStTTy t = do
-      (ts, stos, a) <- dstStT t
-      pure $ mkArrowTy $ (ts ++ stos) |: mkTupleTy (a : stos)
 
 -- This takes a type of the form
 --    T1 -> T2 -> ... -> Tn -> ReT In Out (StT S1 (StT S2 (... (StT Sm I)))) T
@@ -449,12 +433,12 @@ purifyStateBody rho stos stys i ms = classifyCases >=> \ case
 
     -- e1 must be simply-typed, so don't purify it.
       SMatch an ty e1 mp e2 es Nothing -> do
-            ty' <- purifyTyM ty ms
+            ty' <- purifyTy an ms ty
             e2' <- purifyStateBody rho stos stys i ms e2
             pure $ Match an ty' e1 mp e2' es Nothing
 
       SMatch an ty e1 mp e2 es (Just e3) -> do
-            ty' <- purifyTyM ty ms
+            ty' <- purifyTy an ms ty
             e2' <- purifyStateBody rho stos stys i ms e2
             e3' <- purifyStateBody rho stos stys i ms e3
             pure $ Match an ty' e1 mp e2' es (Just e3')
@@ -569,8 +553,8 @@ purifyResBody :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) =>
                    PureEnv -> Ty -> Ty -> Ty -> Name Exp -> ([Exp], [Ty]) -> Exp -> StateT PSto m Exp
 purifyResBody rho i o t iv mst = classifyRCases >=> \ case
       -- purifyResBody (return e)         = "(Left (e, (s1, (..., sm))))"
-      RReturn _ e te       -> do
-            te' <- purifyTyM te (snd mst)
+      RReturn an e te       -> do
+            te' <- purifyTy an (snd mst) te
             let etor = mkRangeTy te' o (snd mst)
             pure $ mkLeft etor $ mkTuple $ e : fst mst
 
@@ -585,7 +569,7 @@ purifyResBody rho i o t iv mst = classifyRCases >=> \ case
       -- to defn of dispatch
       SigK an t e g bes -> do
             let (es, ts) = unzip bes
-            ts' <- mapM (\ t -> purifyTyM t $ snd mst) ts
+            ts' <- mapM (\ t -> purifyTy an (snd mst) t) ts
 
             r_g <- fresh $ s2n $ "R_" ++ prettyPrint g
             let rt      = mkArrowTy $ ts' |: rTy
@@ -637,7 +621,7 @@ purifyResBody rho i o t iv mst = classifyRCases >=> \ case
       -- head of the application. The way it's written below assumes that g is a variable.
       RBind an e g tg -> do
             -- purify the types of e and g
-            tg'         <- purifyTyM tg (snd mst)
+            tg'         <- purifyTy an (snd mst) tg
             -- ert is the return type of e; ty is the type of the whole expression
             (ert, ty)   <- dstArrow tg'
             e'          <- purifyResBody rho i o ert iv mst e
@@ -672,7 +656,7 @@ purifyResBody rho i o t iv mst = classifyRCases >=> \ case
             pure $ mkLet an body_ty p e' body
 
       RVar an tx x   -> do
-            tx' <- purifyTyM tx (snd mst)
+            tx' <- purifyTy an (snd mst) tx
             pure $ mkApp (Var an tx' x') (fst mst)
                   where x' = if isStart x then s2n "$Pure.start" else x
 
@@ -686,13 +670,13 @@ purifyResBody rho i o t iv mst = classifyRCases >=> \ case
       -- 4. return $ (...($LL s1)...sn)
       Extrude an t rator rands -> case flattenExtr $ mkApp (Var an t rator) rands of
             (Var an t d, stos) -> do
-                  t'  <- liftMaybe an "purifying extruded device" $ purifyTy t (snd mst)
+                  t'  <- purifyTy an (snd mst) t
                   pure $ mkApp (Var an t' d) stos
-            (e@App {}, stos)  -> do
+            (e@App {}, stos)   -> do
                   (f, t, es) <- dstApp e
-                  t'         <- liftMaybe (ann e) "purifying extruded device" $ purifyTy t (snd mst)
+                  t'         <- purifyTy (ann e) (snd mst) t
                   pure $ mkApp (Var (ann e) t' f) $ es ++ stos
-            (e, _)           -> failAt (ann e) $ "Extruded device is non-variable: " ++ show e
+            (e, _)             -> failAt (ann e) $ "Extruded device is non-variable: " ++ show e
 
       RApp an rty rator rands -> do
             rator' <- purifyResBody rho i o t iv mst (Var an rty rator)
@@ -702,24 +686,24 @@ purifyResBody rho i o t iv mst = classifyRCases >=> \ case
             pure $ mkApp f $ fst mst
 
       RSwitch an ty dsc p e1 Nothing     -> do
-            ty' <- purifyTyM ty (snd mst)
+            ty' <- purifyTy an (snd mst) ty
             e1' <- purifyResBody rho i o t iv mst e1
             pure $ Case an ty' dsc (bind p e1') Nothing
 
       RSwitch an ty dsc p e1 (Just e2)   -> do
-            ty' <- purifyTyM ty (snd mst)
+            ty' <- purifyTy an (snd mst) ty
             e1' <- purifyResBody rho i o t iv mst e1
             e2' <- purifyResBody rho i o t iv mst e2
             pure $ Case an ty' dsc (bind p e1') (Just e2')
 
        -- e1 must be simply-typed, so don't purify it.
       RMatch an ty e1 mp e2 es Nothing   -> do
-            ty' <- purifyTyM ty (snd mst)
+            ty' <- purifyTy an (snd mst) ty
             e2' <- purifyResBody rho i o t iv mst e2
             pure $ Match an ty' e1 mp e2' es Nothing
 
       RMatch an ty e1 mp e2 es (Just e3) -> do
-            ty' <- purifyTyM ty (snd mst)
+            ty' <- purifyTy an (snd mst) ty
             e2' <- purifyResBody rho i o t iv mst e2
             e3' <- purifyResBody rho i o t iv mst e3
             pure $ Match an ty' e1 mp e2' es (Just e3')
