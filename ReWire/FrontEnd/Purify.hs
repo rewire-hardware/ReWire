@@ -637,7 +637,7 @@ purifyResBody rho i o t iv mst = classifyRCases >=> \ case
             let etor     = mkRangeTy ert o (snd mst)
             svars       <- freshVars "state" $ snd mst
             v           <- freshVar "v"
-            let stps    = mkTuplePat $ (v, ert) : svars
+            let stps     = mkTuplePat $ (v, ert) : svars
             let p        = PatCon an (Embed etor) (Embed $ s2n "Prelude.Left") [stps]
             -- done calculating p = Left (v, (s1, (..., sm)))
 
@@ -784,8 +784,7 @@ mkRPat :: Fresh m => Annote -> [Ty] -> Name DataConId -> m (Pat, [Name Exp])
 mkRPat an ts r_g = do
       xs <- freshVars "store" ts
       let varpats = map (\ (x, t) -> PatVar an (Embed t) x) xs
-      pure (PatCon an (Embed ty) (Embed r_g) varpats, map fst xs)
-      where ty = foldr (TyApp an) (TyCon an $ s2n "R") ts
+      pure (PatCon an (Embed $ TyCon an $ s2n "R") (Embed r_g) varpats, map fst xs)
 
 mkPureVar :: MonadError AstError m => Annote -> PureEnv -> Name Exp -> Ty -> m Exp
 mkPureVar an rho x t

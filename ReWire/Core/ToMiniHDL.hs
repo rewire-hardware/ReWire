@@ -37,7 +37,7 @@ matchTy l s (TyApp _ t1 t2) (TyApp _ t1' t2')          = do s1 <- matchTy l [] t
                                                             merge l s' s2
 matchTy _ _ (TyCon _ tci) (TyCon _ tci') | tci == tci' = return []
 matchTy l s (TyVar _ v) t                              = merge l s [(v, t)]
-matchTy l _ t t'                                       = failAt l $ "sizeof: matchTy: can't match " ++ prettyPrint t
+matchTy l _ t t'                                       = failAt l $ "ToMiniHDL: sizeof: matchTy: can't match " ++ prettyPrint t
                                                                  ++ " with " ++ prettyPrint t'
 
 merge :: Annote -> TySub -> TySub -> CM TySub
