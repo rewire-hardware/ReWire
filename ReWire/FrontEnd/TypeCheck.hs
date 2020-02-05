@@ -55,8 +55,9 @@ localCAssumps f = local (\ tce -> tce { cas = f (cas tce) })
 freshv :: (Fresh m, MonadError AstError m) => TCM m Ty
 freshv = do
       n <- fresh $ string2Name "?"
-      modify $ Map.insert n $ TyVar noAnn kblank n
-      return $ TyVar noAnn kblank n
+      let tv = TyVar (MsgAnnote "TypeCheck: freshv") kblank n
+      modify $ Map.insert n tv
+      return tv
 
 defnAssump :: Defn -> Assump
 defnAssump (Defn _ n (Embed pt) _ _) = (n, pt)
@@ -236,7 +237,7 @@ tcDefn d  = do
       unify an te' te
       s <- get
       put mempty
-      let d' = Defn noAnn n (tvs |-> t) b $ Embed $ bind vs $ subst s e''
+      let d' = Defn an n (tvs |-> t) b $ Embed $ bind vs $ subst s e''
       d' `deepseq` return d'
 
 tc :: (Fresh m, MonadError AstError m) => FreeProgram -> TCM m FreeProgram

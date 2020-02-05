@@ -19,7 +19,7 @@ primDatas = map mkData
       , ("ReT", KStar `KFun` (KStar `KFun` (kmonad `KFun` kmonad)), [])
       , ("StT", KStar `KFun` (kmonad `KFun` kmonad),                [])
       , ("I",   kmonad,                                             [])
-      , ("()",  KStar,                                              [DataCon noAnn (mkId "()") ([] |-> TyCon noAnn (mkId "()"))])
+      , ("()",  KStar,                                              [DataCon (MsgAnnote "Prim: () data ctor") (mkId "()") ([] |-> TyCon (MsgAnnote "Prim: () type ctor") (mkId "()"))])
       ] ++ map mkTuple [2..62] -- why 62? 'cause that's what ghc does!
 
 mkId :: String -> Name b
@@ -35,7 +35,7 @@ mkTuple :: Int -> DataDefn
 mkTuple n = DataDefn (msg "Primitive: tuple") (mkId i) k [ctor]
       where i    = "(" ++ replicate (n-1) ',' ++ ")"
             tvs  = map mkId $ take n $ [[c] | c <- ['a'..'z']] ++ map (('t':) . show) [0::Integer ..]
-            tvs' = map (TyVar noAnn KStar) tvs
+            tvs' = map (TyVar (MsgAnnote "Prim: tuple type variable") KStar) tvs
             k    = foldr KFun KStar $ replicate n KStar
-            rt   = foldl' (TyApp noAnn) (TyCon noAnn $ mkId i) tvs'
-            ctor = DataCon noAnn (mkId i) $ tvs |-> foldr arr0 rt tvs'
+            rt   = foldl' (TyApp (MsgAnnote "Prim: tuple type ctor app")) (TyCon (MsgAnnote "Prim: tuple type ctor") $ mkId i) tvs'
+            ctor = DataCon (MsgAnnote "Prim: tuple data ctor") (mkId i) $ tvs |-> foldr arr0 rt tvs'

@@ -62,8 +62,10 @@ purify (ts, ds) = do
 
       imprhoR   <- mapM (\ (d, Embed p) -> poly2Ty p >>= \ t -> pure (d, t)) nameNpolyR
 
-      (_, tyStart) <- liftMaybe noAnn "No start symbol!" $ find (isStart . fst) imprhoR
-      (_, i, o, t) <- liftMaybe (ann tyStart) ("dstResTy applied to: " ++ show tyStart) $ dstResTy tyStart
+      (_, tyStart) <- liftMaybe noAnn "No start symbol!"
+                        $ find (isStart . fst) imprhoR
+      (_, i, o, t) <- liftMaybe (ann tyStart) ("dstResTy applied to: " ++ show tyStart)
+                        $ dstResTy tyStart
 
       --- if t = (a, s), need to set t := a and stos := s
       let tups = dstTupleTy t
@@ -165,12 +167,12 @@ mkRDatatype dcs = DataDefn
        { dataAnnote = MsgAnnote "R Datatype"
        , dataName   = s2n "R"
        , dataKind   = KStar
-       , dataCons   = mkRDataCon noAnn (s2n "R_return") [] : dcs
+       , dataCons   = mkRDataCon (MsgAnnote "Purify: mkRDatatype") (s2n "R_return") [] : dcs
        }
 
 -- global constant representation of R data type
 rTy :: Ty
-rTy = TyCon noAnn (s2n "R")
+rTy = TyCon (MsgAnnote "Purify: rTy") (s2n "R")
 
 type PureEnv = [(Name Exp, Ty)]
 
@@ -407,12 +409,13 @@ purifyStateBody :: (Fresh m, MonadError AstError m, MonadIO m) =>
                      PureEnv -> [Exp] -> [Ty] -> Int -> [Ty] -> Exp -> m Exp
 purifyStateBody rho stos stys i ms = classifyCases >=> \ case
       Get an _      -> do
-            s <- liftMaybe an "Purify: state-layer mismatch" $ stos `atMay` i
+            s <- liftMaybe an ("Purify: state-layer mismatch: length stos == " ++ show (length stos) ++ ", i == " ++ show i)
+                  $ stos `atMay` i
             pure $ mkTuple $ s : stos
 
       Return _ _ e -> pure $ mkTuple $ e : stos
 
-      Lift _ e     -> purifyStateBody rho stos stys (i+1) ms e
+      Lift _ e     -> purifyStateBody rho stos stys (i + 1) ms e
 
       Put an e     -> pure $ mkTuple $ nil : stos'
             where nil   = Con an nilTy (s2n "()")
@@ -723,20 +726,20 @@ dispatchTy i o (t :| ms) = mkArrowTy $ domTy :| [i, etor]
 -- | Takes t1 and t2 and creates (t1, t2). I'm assuming (?!?) that the name of the
 -- pairing constructor is "(,)". Correct me if I'm wrong.
 mkPairTy :: Ty -> Ty -> Ty
-mkPairTy t = TyApp noAnn (TyApp noAnn (TyCon noAnn $ s2n "(,)") t)
+mkPairTy t = TyApp (MsgAnnote "Purify: mkPairTy") (TyApp (MsgAnnote "Purify: mkPairTy") (TyCon (MsgAnnote "Purify: mkPairTy") $ s2n "(,)") t)
 
 mkPair :: Exp -> Exp -> Exp
-mkPair e1 e2 = App noAnn (App noAnn (Con noAnn t (s2n "(,)")) e1) e2
+mkPair e1 e2 = App (MsgAnnote "Purify: mkPair") (App (MsgAnnote "Purify: mkPair") (Con (MsgAnnote "Purify: mkPair") t (s2n "(,)")) e1) e2
       where t = mkArrowTy $ typeof e1 :| [typeof e2, mkPairTy (typeof e1) $ typeof e2]
 
 mkTuple :: [Exp] -> Exp
 mkTuple = \ case
-      []     -> Con noAnn (mkTupleTy []) $ s2n "()"
+      []     -> Con (MsgAnnote "Purify: mkTuple") (mkTupleTy []) $ s2n "()"
       x : xs -> foldl1 mkPair $ x :| xs
 
 mkTupleTy :: [Ty] -> Ty
 mkTupleTy = \ case
-      []     -> TyCon noAnn $ s2n "()"
+      []     -> TyCon (MsgAnnote "Purify: mkTupleTy") $ s2n "()"
       t : ts -> foldl1 mkPairTy $ t :| ts
 
 dstTupleTy :: Ty -> NonEmpty Ty
@@ -755,24 +758,24 @@ mkArrowTy :: NonEmpty Ty -> Ty
 mkArrowTy = foldr1 arr0
 
 mkPairPat :: Pat -> Pat -> Pat
-mkPairPat p1 p2 = PatCon noAnn (Embed $ mkPairTy (typeof p1) (typeof p2)) (Embed (s2n "(,)")) [p1, p2]
+mkPairPat p1 p2 = PatCon (MsgAnnote "Purify: mkPairPat") (Embed $ mkPairTy (typeof p1) (typeof p2)) (Embed (s2n "(,)")) [p1, p2]
 
 mkTuplePat :: [(Name Exp, Ty)] -> Pat
 mkTuplePat = \ case
-      []     -> PatCon noAnn (Embed $ TyCon noAnn $ s2n "()") (Embed $ s2n "()") []
+      []     -> PatCon (MsgAnnote "Purify: mkTuplePat") (Embed $ TyCon (MsgAnnote "Purify: mkTuplePat") $ s2n "()") (Embed $ s2n "()") []
       x : xs -> foldl1 mkPairPat $ NE.map patVar $ x :| xs
       where patVar :: (Name Exp, Ty) -> Pat
-            patVar (n, t) = PatVar noAnn (Embed t) n
+            patVar (n, t) = PatVar (MsgAnnote "Purify: mkTuplePat") (Embed t) n
 
 -- Shouldn't mkLeft/mkRight change the type t to an Either?
 mkLeft :: Ty -> Exp -> Exp
-mkLeft t = App noAnn (Con noAnn t (s2n "Prelude.Left"))
+mkLeft t = App (MsgAnnote "Purify: mkLeft") (Con (MsgAnnote "Purify: mkLeft") t (s2n "Prelude.Left"))
 
 mkRight :: Ty -> Exp -> Exp
-mkRight t = App noAnn (Con noAnn t (s2n "Prelude.Right"))
+mkRight t = App (MsgAnnote "Purify: mkRight") (Con (MsgAnnote "Purify: mkRight") t (s2n "Prelude.Right"))
 
 mkEitherTy :: Ty -> Ty -> Ty
-mkEitherTy t1 = TyApp noAnn (TyApp noAnn (TyCon noAnn $ s2n "Prelude.Either") t1)
+mkEitherTy t1 = TyApp (MsgAnnote "Purify: mkEitherTy") (TyApp (MsgAnnote "Purify: mkEitherTy") (TyCon (MsgAnnote "Purify: mkEitherTy") $ s2n "Prelude.Either") t1)
 
 mkRDataCon :: Annote -> Name DataConId -> [Ty] -> DataCon
 mkRDataCon an r_g ts = DataCon an r_g ([] |-> mkArrowTy (ts |: rTy))
@@ -792,7 +795,7 @@ mkPureVar an rho x t
             pure $ Var an t' x
 
 mkApp :: Exp -> [Exp] -> Exp
-mkApp = foldl' (App noAnn)
+mkApp = foldl' (App (MsgAnnote "Purify: mkApp"))
 
 mkPureApp :: MonadError AstError m => Annote -> PureEnv -> Exp -> [Exp] -> m Exp
 mkPureApp an rho e es = do
