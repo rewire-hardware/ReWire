@@ -90,6 +90,14 @@ uncurry f p = f (fst p) (snd p)
 undefined :: a
 undefined = primError "Prelude.undefined"
 
+{-# INLINE (>>) #-}
+(>>) :: Monad m => m a -> m b -> m b
+ma >> mb = ma >>= (\ _ -> mb)
+
+{-# INLINE modify #-}
+modify :: Monad m => (s -> s) -> StT s m ()
+modify f = get >>= (put . f)
+
 infixr 9  .
 infixl 1  >>, >>=
 infixr 1  =<<
