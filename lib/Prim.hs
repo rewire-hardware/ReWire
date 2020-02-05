@@ -34,5 +34,10 @@ lift = primError "Prim: lift"
 extrude :: ReT i o (StT s m) a -> s -> ReT i o m (a, s)
 extrude = primError "Prim: extrude"
 
-unfold :: (b -> i -> Either a (o, b)) -> Either a (o, b) -> ReT i o I a
+-- TODO(chathhorn): this is not the real type of unfold. r and a need
+-- to be fixed types:
+-- data A -- = (generated ctors)
+-- data R -- = (generated ctors)
+-- unfold :: (R -> i -> Either A (o, R)) -> Either A (o, R) -> ReT i o I a
+unfold :: (r -> i -> Either a (o, r)) -> Either a (o, r) -> ReT i o I a
 unfold = primError "Prim: unfold"

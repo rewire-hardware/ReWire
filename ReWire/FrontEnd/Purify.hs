@@ -74,9 +74,6 @@ purify (ts, ds) = do
 
       pure_smds <- mapM (purifyStateDefn rho $ NE.tail tups) smds
       iv        <- freshVar "i"
-      --
-      -- The problem is that the start symbol is being passed (NE.tail tups) /= [] below:
-      --
 
       -- by default, must add the eqn: dispatch R_return i = Left i
       let ty   = dispatchTy i o tups
