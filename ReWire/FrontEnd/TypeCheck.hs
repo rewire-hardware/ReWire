@@ -34,7 +34,6 @@ type TySub = Map (Name Ty) Ty
 data TCEnv = TCEnv
       { as  :: Map (Name Exp) Poly
       , cas :: Map (Name DataConId) Poly
-      , arr :: Name TyConId
       } deriving Show
 
 type Assump  = (Name Exp, Poly)
@@ -44,7 +43,7 @@ type TCM m = ReaderT TCEnv (StateT TySub m)
 
 typeCheck :: MonadError AstError m => FreeProgram -> m FreeProgram
 typeCheck (ts, vs) = runFreshMT $
-      evalStateT (runReaderT (tc (ts, vs)) (TCEnv mempty mempty (getArrow ts))) mempty
+      evalStateT (runReaderT (tc (ts, vs)) (TCEnv mempty mempty)) mempty
 
 localAssumps :: MonadError AstError m => (Map (Name Exp) Poly -> Map (Name Exp) Poly) -> TCM m a -> TCM m a
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
@@ -159,8 +158,7 @@ tcExp = \ case
             let   es'   =  map fst ress
                   tes   =  map snd ress
             tv          <- freshv
-            arr         <- asks arr
-            let tf'     =  foldr (mkArrow arr) tv tes
+            let tf'     =  foldr arr tv tes
             unify an tf tf'
             return (foldl (App an) ef' es', tv)
       Lam an _ e             -> do
@@ -168,8 +166,7 @@ tcExp = \ case
             tvx       <- freshv
             tvr       <- freshv
             (e'', te) <- localAssumps (Map.insert x ([] `poly` tvx)) $ tcExp e'
-            arr       <- asks arr
-            unify an tvr $ mkArrow arr tvx te
+            unify an tvr $ arr tvx te
             return (Lam an tvx $ bind x e'', tvr)
       Var an _ v             -> do
             as <- asks as

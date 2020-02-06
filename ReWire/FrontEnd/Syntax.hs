@@ -18,7 +18,7 @@ module ReWire.FrontEnd.Syntax
       , Defn (..), DataDefn (..), DataCon (..)
       , FreeProgram, Program (..)
       , Kind (..), kblank
-      , flattenApp, arr0, mkArrow, arrowRight, getArrow
+      , flattenApp, arr, arrowRight
       , fv, fvAny
       , Fresh, Name, Embed (..), TRec, Bind
       , FieldId
@@ -45,8 +45,6 @@ import qualified ReWire.FrontEnd.Unbound as UB (fv, fvAny)
 
 import Control.DeepSeq (NFData (..), deepseq)
 import Data.Data (Typeable, Data (..))
-import Data.List (find)
-import Data.Maybe (fromJust)
 import GHC.Generics (Generic)
 import Text.PrettyPrint
       ( Doc, text, nest, hsep, punctuate, parens, doubleQuotes
@@ -69,7 +67,7 @@ tycomp :: Annote -> Ty -> Ty -> Ty
 tycomp = TyApp
 
 class TypeAnnotated a where
-      typeof :: a -> Ty
+      typeOf :: a -> Ty
 
 newtype DataConId = DataConId String
       deriving (Generic, Typeable, Data)
@@ -209,14 +207,14 @@ instance Subst Ty Pat
 instance NFData Exp
 
 instance TypeAnnotated Exp where
-      typeof = \ case
-            App _ e _           -> arrowRight $ typeof e
-            Lam _ t _           -> t
+      typeOf = \ case
+            App _ e _           -> arrowRight $ typeOf e
+            Lam _ t e           -> arr' t e
             Var _ t _           -> t
             Con _ t _           -> t
             Case _ t _ _ _      -> t
             Match _ t _ _ _ _ _ -> t
-            NativeVHDL _ _ e    -> typeof e
+            NativeVHDL _ _ e    -> typeOf e
             Error _ t _         -> t
 
 instance Annotated Exp where
@@ -272,7 +270,7 @@ instance Alpha Pat
 instance NFData Pat
 
 instance TypeAnnotated Pat where
-      typeof = \ case
+      typeOf = \ case
             PatCon  _ (Embed t) _ _ -> t
             PatVar  _ (Embed t) _   -> t
 
@@ -300,7 +298,7 @@ instance Subst Ty MatchPat
 instance NFData MatchPat
 
 instance TypeAnnotated MatchPat where
-      typeof = \ case
+      typeOf = \ case
             MatchPatCon _ t _ _  -> t
             MatchPatVar _ t      -> t
 
@@ -383,24 +381,21 @@ flattenApp :: Exp -> [Exp]
 flattenApp (App _ e e') = flattenApp e ++ [e']
 flattenApp e            = [e]
 
-arr0 :: Ty -> Ty -> Ty
-arr0 = mkArrow $ s2n "->"
-
-infixr `arr0`
-
 rangeTy :: Ty -> Ty
 rangeTy (TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) t') = rangeTy t'
 rangeTy t                                                = t
 
-mkArrow :: Name TyConId -> Ty -> Ty -> Ty
-mkArrow arr t = TyApp (ann t) (TyApp (ann t) (TyCon (ann t) arr) t)
+arr :: Ty -> Ty -> Ty
+arr t = TyApp (ann t) (TyApp (ann t) (TyCon (ann t) $ s2n "->") t)
+
+arr' :: Ty -> Bind (Name Exp) Exp -> Ty
+arr' t b = runFreshM $ do
+      (_, e) <- unbind b
+      return $ arr t $ typeOf e
 
 arrowRight :: Ty -> Ty
 arrowRight (TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) t') = t'
 arrowRight t                                                = t
-
-getArrow :: [DataDefn] -> Name TyConId
-getArrow = dataName . fromJust . find ((== "->") . n2s . dataName)
 
 -- Orphans.
 

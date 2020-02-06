@@ -112,7 +112,7 @@ mkStart i o (t :| ms) = Defn
       }
       where etor       = mkRangeTy t o ms
             ranStart   = mkPairTy etor (TyCon (MsgAnnote "Purify: ranStart") (s2n "()"))
-            pureStart  = i `arr0` ranStart  -- seems irrelevant to the generated code.
+            pureStart  = i `arr` ranStart  -- seems irrelevant to the generated code.
 
             extresTy :: Ty -> [Ty] -> Ty
             extresTy = foldl' mkPairTy
@@ -730,7 +730,7 @@ mkPairTy t = TyApp (MsgAnnote "Purify: mkPairTy") (TyApp (MsgAnnote "Purify: mkP
 
 mkPair :: Exp -> Exp -> Exp
 mkPair e1 e2 = App (MsgAnnote "Purify: mkPair") (App (MsgAnnote "Purify: mkPair") (Con (MsgAnnote "Purify: mkPair") t (s2n "(,)")) e1) e2
-      where t = mkArrowTy $ typeof e1 :| [typeof e2, mkPairTy (typeof e1) $ typeof e2]
+      where t = mkArrowTy $ typeOf e1 :| [typeOf e2, mkPairTy (typeOf e1) $ typeOf e2]
 
 mkTuple :: [Exp] -> Exp
 mkTuple = \ case
@@ -755,10 +755,10 @@ mkRangeTy a o = \ case
 
 -- | Takes [T1, ..., Tn] and returns (T1 -> (T2 -> ... (T(n-1) -> Tn) ...))
 mkArrowTy :: NonEmpty Ty -> Ty
-mkArrowTy = foldr1 arr0
+mkArrowTy = foldr1 arr
 
 mkPairPat :: Pat -> Pat -> Pat
-mkPairPat p1 p2 = PatCon (MsgAnnote "Purify: mkPairPat") (Embed $ mkPairTy (typeof p1) (typeof p2)) (Embed (s2n "(,)")) [p1, p2]
+mkPairPat p1 p2 = PatCon (MsgAnnote "Purify: mkPairPat") (Embed $ mkPairTy (typeOf p1) (typeOf p2)) (Embed (s2n "(,)")) [p1, p2]
 
 mkTuplePat :: [(Name Exp, Ty)] -> Pat
 mkTuplePat = \ case

@@ -80,7 +80,7 @@ data Ty = TyStdLogic | TyStdLogicVector Int | TyBool deriving (Eq,Show)
 
 instance Pretty Ty where
   pretty TyStdLogic           = text "std_logic"
-  pretty (TyStdLogicVector n) = text "std_logic_vector" <+> parens (text "0 to" <+> int (n-1))
+  pretty (TyStdLogicVector n) = text "std_logic_vector" <+> parens (text "0 to" <+> int (n - 1))
   pretty TyBool               = text "boolean"
 
 data Stmt = Assign LHS Expr

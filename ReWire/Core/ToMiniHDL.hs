@@ -311,7 +311,7 @@ compileDefn d | defnName d == "Main.start" = do
                                        [Instantiate "start_call" (mangle n_startstate)
                                           (PortMap [("res", ExprName "start_state")]),
                                         Instantiate "loop_call" (mangle n_loopfun)
-                                          (PortMap [("arg0", ExprSlice (ExprName "current_state") (outsize + 1) (statesize-1)),
+                                          (PortMap [("arg0", ExprSlice (ExprName "current_state") (outsize + 1) (statesize - 1)),
                                                     ("arg1", ExprName "inp"),
                                                     ("res", ExprName "loop_out")]),
                                         WithAssign (ExprName "rst") (LHSName "next_state")

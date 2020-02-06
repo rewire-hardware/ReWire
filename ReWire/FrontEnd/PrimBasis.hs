@@ -38,4 +38,4 @@ mkTuple n = DataDefn (msg "Primitive: tuple") (mkId i) k [ctor]
             tvs' = map (TyVar (MsgAnnote "Prim: tuple type variable") KStar) tvs
             k    = foldr KFun KStar $ replicate n KStar
             rt   = foldl' (TyApp (MsgAnnote "Prim: tuple type ctor app")) (TyCon (MsgAnnote "Prim: tuple type ctor") $ mkId i) tvs'
-            ctor = DataCon (MsgAnnote "Prim: tuple data ctor") (mkId i) $ tvs |-> foldr arr0 rt tvs'
+            ctor = DataCon (MsgAnnote "Prim: tuple data ctor") (mkId i) $ tvs |-> foldr arr rt tvs'

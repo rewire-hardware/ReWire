@@ -178,7 +178,7 @@ transCon :: (Fresh m, MonadError AstError m) => Renamer -> [M.Kind] -> [Name M.T
 transCon rn ks tvs tc = \ case
       QualConDecl l Nothing _ (ConDecl _ x tys) -> do
             let tvs' = zipWith (M.TyVar l) ks tvs
-            t <- foldr M.arr0 (foldl' (M.TyApp l) (M.TyCon l tc) tvs') <$> mapM (transTy rn []) tys
+            t <- foldr M.arr (foldl' (M.TyApp l) (M.TyCon l tc) tvs') <$> mapM (transTy rn []) tys
             return $ M.DataCon l (string2Name $ rename Value rn x) (tvs |-> t)
       d                                         -> failAt (ann d) "Unsupported Ctor syntax"
 
