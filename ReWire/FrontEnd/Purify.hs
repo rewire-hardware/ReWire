@@ -111,9 +111,6 @@ mkStart i o (t :| ms) = Defn
       , defnBody   = appl
       }
       where etor       = mkRangeTy t o ms
-            ranStart   = mkPairTy etor (TyCon (MsgAnnote "Purify: ranStart") (s2n "()"))
-            pureStart  = i `arr` ranStart  -- seems irrelevant to the generated code.
-
             extresTy :: Ty -> [Ty] -> Ty
             extresTy = foldl' mkPairTy
 
@@ -124,7 +121,7 @@ mkStart i o (t :| ms) = Defn
 
             unfold     = Var (MsgAnnote "Purify: unfold") (TyBlank $ MsgAnnote "stub type for unfold") (s2n "unfold")
             dispatch   = Var (MsgAnnote "Purify: dispatch") (dispatchTy i o $ t :| ms) (s2n "$Pure.dispatch")
-            start_pure = Var (MsgAnnote "Purify: start_pure") pureStart (s2n "$Pure.start")
+            start_pure = Var (MsgAnnote "Purify: start_pure") etor (s2n "$Pure.start")
             appl       = Embed $ bind [] (App (MsgAnnote "Purify: appl") (App (MsgAnnote "Purify: appl") unfold dispatch) start_pure)
 
             tyApp :: Ty -> Ty -> Ty
@@ -146,7 +143,7 @@ mkDispatch :: Fresh m => Ty -> NonEmpty (Pat, Exp) -> Name Exp -> m Defn
 mkDispatch ty pes iv = do
       dsc     <- freshVar "dsc"
       let body  = Embed $ bind [dsc :: Name Exp, iv :: Name Exp] cases
-          cases = mkCase an ty (Var an rTy dsc) pes
+          cases = mkCase an (rangeTy ty) (Var an rTy dsc) pes
           an    = MsgAnnote $ "Generated dispatch function: " ++ prettyPrint cases
 
       pure Defn
@@ -450,17 +447,17 @@ purifyStateBody rho stos stys i ms = classifyCases >=> \ case
             pure $ Match an ty' e1 mp e2' es (Just e3')
 
       Bind an t e g -> do
-            (te, _)  <- dstArrow t
-            (_, _, a) <- liftMaybe (ann te) "Non-StT Type passed to dstStT" $ dstStT te -- a is the return type of e
-            e'      <- purifyStateBody rho stos stys i ms e
-            ns      <- freshVars "st" $ a : stys
-            let vs = foldr (\ (n, t) nts -> Var an t n : nts) [] ns
+            (te, _)    <- dstArrow t
+            (_, _, a)  <- liftMaybe (ann te) "Non-StT Type passed to dstStT" $ dstStT te -- a is the return type of e
+            e'         <- purifyStateBody rho stos stys i ms e
+            ns         <- freshVars "st" $ a : stys
+            let vs      = foldr (\ (n, t) nts -> Var an t n : nts) [] ns
             g_pure_app <- mkPureApp an rho g vs
-            let p  = mkTuplePat ns
+            let p       = mkTuplePat ns
             -- g can, in general, be an application. That's causing the error when (var2Name g) is called.
             (gn, _, _) <- dstApp g
-            ptg     <- lookupPure an gn rho
-            let ty   = rangeTy ptg
+            ptg        <- lookupPure an gn rho
+            let ty      = rangeTy ptg
             pure $ mkLet an ty p e' g_pure_app
 
 ---------------------------
