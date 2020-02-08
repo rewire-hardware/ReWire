@@ -195,8 +195,6 @@ connect :: (Sigs, Mem) -> ReT PortsIn PortsOut (StT (Sigs, Mem) I) PortsIn
 connect x = do
       lift $ put x
       signal $ outports $ fst x
-      -- lift ( x >> get >>= (return . outports . fst) -- TODO(chathhorn): why are these parens necessary?
-      -- ) >>= signal
   where
     outports :: Sigs -> PortsOut
     outports s = PortsOut { ack_out = ack_reg s , data_out = data_out_reg s }
@@ -252,24 +250,21 @@ idle ip = let
              d_i  = data_in ip
           in
             case (_go, _rnw) of
-              -- (S, S) -> connect (pre_read p_i a_i) >>= perform_read
               (S, S) -> (lift (pre_read p_i a_i >> get) >>= connect) >>= perform_read
-              -- (S, C) -> connect (pre_write p_i a_i d_i) >>= perform_write
               (S, C) -> (lift (pre_write p_i a_i d_i >> get) >>= connect) >>= perform_write
-              -- _      -> connect pre_idle >>= idle
               _      -> (lift (pre_idle >> get) >>= connect) >>= idle
           where
 
             pre_read :: W2 -> W10 -> StT (Sigs, Mem) I ()
             pre_read p_i a_i = do
-              set_addr_reg (p_i <&> a_i) -- <&> defined in ReWirePrelude
+              set_addr_reg (p_i <&> a_i)
               set_partition_reg p_i
               set_ack_reg C
               set_data_out_reg zeroW32
 
             pre_write :: W2 -> W10 -> W32 -> StT (Sigs, Mem) I ()
             pre_write p_i a_i d_i = do
-              set_addr_reg (p_i <&> a_i) -- <&> defined in ReWirePrelude
+              set_addr_reg (p_i <&> a_i)
               set_data_reg d_i
               set_partition_reg p_i
               set_ack_reg C
@@ -281,7 +276,6 @@ idle ip = let
               set_data_out_reg zeroW32
 
 perform_read :: PortsIn -> ReT PortsIn PortsOut (StT (Sigs, Mem) I) ()
--- perform_read _ = connect perform_read_act >>= idle
 perform_read _ = (lift (perform_read_act >> get) >>= connect) >>= idle
   where
     perform_read_act = do
@@ -291,7 +285,6 @@ perform_read _ = (lift (perform_read_act >> get) >>= connect) >>= idle
       set_ack_reg S
 
 perform_write :: PortsIn -> ReT PortsIn PortsOut (StT (Sigs, Mem) I) ()
--- perform_write _ = connect perform_write_act >>= idle
 perform_write _ = (lift (perform_write_act >> get) >>= connect) >>= idle
   where
     perform_write_act = do
