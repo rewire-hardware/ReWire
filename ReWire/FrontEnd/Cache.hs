@@ -113,18 +113,21 @@ getProgram fp = do
 --     >=> typeCheck
 --     >=> printInfo "___Post_LL___"
        >=> purgeUnused
---     >=> typeCheck
---     >=> printInfo "___Post_Purge___"
+       -- >=> kindCheck >=> typeCheck
+       -- >=> printInfo "___Post_Purge___"
        >=> purify -- TODO(chathhorn): move before purge? purge again after purify?
---     >=> printInfo "___Post_Purify___"
+       -- >=> printInfo "___Post_Purify___"
+       -- >=> kindCheck
+       -- >=> typeCheck
        >=> liftLambdas
---     >=> printInfo "___Post_Second_LL___"
---     >=> kindCheck >=> typeCheck
+       -- >=> printInfo "___Post_Second_LL___"
        >=> toCore
        $ (ts, ds)
 
---    liftIO $ putStrLn "___Core___"
---    liftIO $ putStrLn $ prettyPrint p
+      -- liftIO $ putStrLn "___Core___"
+      -- liftIO $ putStrLn $ prettyPrint p
+      -- liftIO $ putStrLn "\nShow core:\n"
+      -- liftIO $ print $ unAnn p
 
       return p
 
@@ -144,6 +147,8 @@ printInfo msg fp = do
       liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Exp])
       liftIO $ putStrLn "Program:\n"
       liftIO $ putStrLn $ prettyPrint p
+      liftIO $ putStrLn "\nProgram (show):\n"
+      liftIO $ print $ unAnn fp
       return fp
 
 printInfoHSE :: MonadIO m => String -> Renamer -> Module -> S.Module a -> m (S.Module a)

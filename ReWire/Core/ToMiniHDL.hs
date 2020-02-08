@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase, FlexibleContexts #-}
 {-# LANGUAGE Safe #-}
 module ReWire.Core.ToMiniHDL where
 
@@ -30,25 +31,27 @@ askDefns = asks snd
 
 type TySub = [(TyId, C.Ty)]
 
-matchTy :: Annote -> TySub -> C.Ty -> C.Ty -> CM TySub
-matchTy l s (TyApp _ t1 t2) (TyApp _ t1' t2')          = do s1 <- matchTy l [] t1 t1'
-                                                            s2 <- matchTy l [] t2 t2'
-                                                            s' <- merge l s s1
-                                                            merge l s' s2
-matchTy _ _ (TyCon _ tci) (TyCon _ tci') | tci == tci' = return []
-matchTy l s (TyVar _ v) t                              = merge l s [(v, t)]
-matchTy l _ t t'                                       = failAt l $ "ToMiniHDL: sizeof: matchTy: can't match " ++ prettyPrint t
-                                                                 ++ " with " ++ prettyPrint t'
+matchTy :: MonadError AstError m => Annote -> C.Ty -> C.Ty -> m TySub
+matchTy an (TyApp _ t1 t2) (TyApp _ t1' t2') = do
+      s1 <- matchTy an t1 t1'
+      s2 <- matchTy an t2 t2'
+      merge an s1 s2
+matchTy _ (TyVar _ v) t                      = pure [(v, t)]
+matchTy _ (TyCon _ tci) (TyCon _ tci')
+      | tci == tci'                          = pure []
+matchTy an t t'                              = failAt an
+      $ "ToMiniHDL: sizeof: matchTy: can't match "
+      ++ prettyPrint t ++ " with " ++ prettyPrint t'
 
-merge :: Annote -> TySub -> TySub -> CM TySub
-merge _ [] s'        = return s'
-merge l ((v, t):s) s' = case lookup v s' of
-                       Nothing             -> do s'' <- merge l s s'
-                                                 return ((v, t):s'')
-                       Just t' | t == t'   -> merge l s s'
-                               | otherwise -> lift $ failAt l $ "sizeof: merge: inconsistent assignment of tyvar " ++ v
-                                                          ++ ": " ++ prettyPrint t ++ " vs. "
-                                                          ++ prettyPrint t'
+merge :: MonadError AstError m => Annote -> TySub -> TySub -> m TySub
+merge an s'  = \ case
+      []          -> pure s'
+      (v, t) : s -> case lookup v s' of
+            Nothing           -> ((v, t) :) <$> merge an s' s
+            Just t' | t == t' -> merge an s' s
+            Just t'           -> failAt an
+                  $ "sizeof: merge: inconsistent assignment of tyvar " ++ v
+                  ++ ": " ++ prettyPrint t ++ " vs. " ++ prettyPrint t'
 
 apply :: TySub -> C.Ty -> C.Ty
 apply s (TyApp an t1 t2)  = TyApp an (apply s t1) (apply s t2)
@@ -57,9 +60,10 @@ apply s t@(TyVar _ i)     = fromMaybe t $ lookup i s
 
 tcictors :: TyConId -> CM [DataCon]
 tcictors tci = filter isMine <$> askCtors
-   where isMine (DataCon _ _ _ t) = case flattenTyApp (last (flattenArrow t)) of
-                                      (TyCon _ tci':_) -> tci == tci'
-                                      _                -> False
+      where isMine :: DataCon -> Bool
+            isMine (DataCon _ _ _ t) = case flattenTyApp $ last $ flattenArrow t of
+                  (TyCon _ tci' : _) -> tci == tci'
+                  _                  -> False
 
 askDci :: DataConId -> CM DataCon
 askDci dci = do ctors <- askCtors
@@ -72,7 +76,7 @@ dcitci dci = do DataCon l _ _ t <- askDci dci
                 case flattenTyApp (last (flattenArrow t)) of
                   (TyCon _ tci:_) -> return tci
                   _               -> lift $ failAt l $ "dcitci: malformed type for data constructor "
-                                                ++ show dci ++ " (does not end in application of TyCon)"
+                                          ++ show dci ++ " (does not end in application of TyCon)"
 
 nvec :: Int -> Int -> [Bit]
 nvec width n = nvec' 0 []
@@ -80,22 +84,25 @@ nvec width n = nvec' 0 []
                        | otherwise    = nvec' (pos + 1) ((if testBit n pos then One else Zero):bits)
 
 dciTagVector :: DataConId -> CM [Bit]
-dciTagVector dci = do tci               <- dcitci dci
-                      ctors             <- tcictors tci
-                      DataCon _ _ pos _ <- askDci dci
-                      return $ nvec (ceilLog2 (length ctors)) pos
+dciTagVector dci = do
+      tci               <- dcitci dci
+      ctors             <- tcictors tci
+      DataCon _ _ pos _ <- askDci dci
+      return $ nvec (ceilLog2 (length ctors)) pos
 
 dciPadVector :: Annote -> DataConId -> C.Ty -> CM [Bit]
-dciPadVector an dci t = do ctor         <- askDci dci
-                           fieldwidth   <- ctorwidth t ctor
-                           tci          <- dcitci dci
-                           ctors        <- tcictors tci
-                           let tot      =  ceilLog2 (length ctors) + fieldwidth
-                           tysize       <- sizeof an t
-                           let padwidth =  tysize - tot
-                           return $ nvec padwidth 0
+dciPadVector an dci t = do
+      ctor         <- askDci dci
+      fieldwidth   <- ctorwidth t ctor
+      tci          <- dcitci dci
+      ctors        <- tcictors tci
+      let tot      =  ceilLog2 (length ctors) + fieldwidth
+      tysize       <- sizeof an t
+      let padwidth =  tysize - tot
+      return $ nvec padwidth 0
 
 ceilLog2 :: Int -> Int
+ceilLog2 n | n < 1 = 0
 ceilLog2 n = ceiling (logBase 2 (fromIntegral n :: Double))
 
 ctorwidth :: C.Ty -> DataCon -> CM Int
@@ -103,22 +110,20 @@ ctorwidth t (DataCon an _ _ ct) = do
       let ts     =  flattenArrow ct
           tres   =  last ts
           targs  =  init ts
-      s          <- matchTy (ann t) [] tres t
+      s          <- matchTy (ann t) tres t
       let targs' =  map (apply s) targs
       sizes      <- mapM (sizeof an) targs'
       return $ sum sizes
 
 sizeof :: Annote -> C.Ty -> CM Int
 sizeof an t = case th of
-             TyApp {}     -> failAt an $ "ToMiniHDL: sizeof: Got TyApp after flattening (can't happen): " ++ prettyPrint t
-             TyCon _ tci  -> do ctors <- tcictors tci
-                                case ctors of
-                                  [] -> return 0    -- failsafe in case all constructors have been eliminated
-                                  _  -> do let tagwidth =  ceilLog2 (length ctors)
-                                           ctorwidths   <- mapM (ctorwidth t) ctors
-                                           return (tagwidth + maximum ctorwidths)
-             TyVar _ _    -> failAt an $ "ToMiniHDL: sizeof: Encountered type variable: " ++ prettyPrint t
-    where (th:_) = flattenTyApp t
+      TyApp {}     -> failAt an $ "ToMiniHDL: sizeof: Got TyApp after flattening (can't happen): " ++ prettyPrint t
+      TyCon _ tci  -> do
+            ctors      <- tcictors tci
+            ctorwidths <- mapM (ctorwidth t) ctors
+            return $ ceilLog2 (length ctors) + maximum (0 : ctorwidths)
+      TyVar _ _    -> failAt an $ "ToMiniHDL: sizeof: Encountered type variable: " ++ prettyPrint t
+      where (th : _) = flattenTyApp t
 
 getTyPorts :: Annote -> C.Ty -> CM [Port]
 getTyPorts an t = do let ts       =  flattenArrow t
@@ -154,26 +159,24 @@ addComponent an i t = do
                   ps <- getTyPorts an t
                   put (sigs, Component (mangle i) ps : comps, ctr)
 
-typeOfPat :: Pat -> C.Ty
-typeOfPat (PatCon _ t _ _) = t
-typeOfPat (PatVar _ t)     = t
-
 compilePat :: Name -> Int -> Pat -> CM (Expr, [Expr])  -- first Expr is for whether match (std_logic); remaining Exprs are for extracted fields
-compilePat nscr offset (PatCon an _ dci ps) = do dcitagvec        <- dciTagVector dci
-                                                 let tagw         =  length dcitagvec
-                                                 fieldwidths      <- mapM (sizeof an . typeOfPat) ps
-                                                 let fieldoffsets =  init $ scanl (+) (offset + tagw) fieldwidths
-                                                 rs               <- zipWithM (compilePat nscr) fieldoffsets ps
-                                                 let ematchs      =  map fst rs
-                                                     eslices      =  concatMap snd rs
-                                                     ematch       =  foldl ExprAnd
-                                                                       (ExprIsEq
-                                                                         (ExprSlice (ExprName nscr) offset (offset + tagw - 1))
-                                                                         (ExprBitString dcitagvec))
-                                                                       ematchs
-                                                 return (ematch, eslices)
-compilePat nscr offset (PatVar an t)       = do size <- sizeof an t
-                                                return (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + size - 1)])
+compilePat nscr offset (PatCon an _ dci ps) = do
+      dcitagvec        <- dciTagVector dci
+      let tagw         =  length dcitagvec
+      fieldwidths      <- mapM (sizeof an . typeOf) ps
+      let fieldoffsets =  init $ scanl (+) (offset + tagw) fieldwidths
+      rs               <- zipWithM (compilePat nscr) fieldoffsets ps
+      let ematchs      =  map fst rs
+          eslices      =  concatMap snd rs
+          ematch       =  foldl ExprAnd
+                            (ExprIsEq
+                              (ExprSlice (ExprName nscr) offset (offset + tagw - 1))
+                              (ExprBitString dcitagvec))
+                            ematchs
+      return (ematch, eslices)
+compilePat nscr offset (PatVar an t)       = do
+      size <- sizeof an t
+      return (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + size - 1)])
 
 askGIdTy :: GId -> CM C.Ty
 askGIdTy i = do defns <- askDefns
@@ -183,96 +186,100 @@ askGIdTy i = do defns <- askDefns
 
 compileExp :: C.Exp -> CM ([Stmt], Name)
 compileExp e_ = case e of
-                  App {}        -> failAt (ann e) "compileExp: Got App after flattening (can't happen)"
-                  Prim {}       -> failAt (ann e) $ "compileExp: Encountered unknown Prim: " ++ prettyPrint e
-                  GVar an t i   -> do n           <- (++ "_res") <$> freshName (mangle i)
-                                      n_inst      <- (++ "_call") <$> freshName (mangle i)
-                                      let tres    =  last (flattenArrow t)
-                                      size        <- sizeof an tres
-                                      addSignal n (TyStdLogicVector size)
-                                      sssns       <- mapM compileExp eargs
-                                      let stmts   =  concatMap fst sssns
-                                          ns      =  map snd sssns
-                                      addComponent an i t
-                                      let argns   =  map (\ n -> "arg" ++ show n) ([0..] :: [Int])
-                                          pm      =  PortMap (zip argns (map ExprName ns) ++ [("res", ExprName n)])
-                                      return (stmts ++ [Instantiate n_inst (mangle i) pm], n)
-                  LVar _ _ i       -> case eargs of
-                                        [] -> return ([], "arg" ++ show i)
-                                        _  -> failAt (ann e_) $ "compileExp: Encountered local variable in function position in " ++ prettyPrint e_
-                  Con an t i       -> do n           <- (++"_res") <$> freshName (mangle (deDataConId i))
-                                         let tres    =  last (flattenArrow t)
-                                         size        <- sizeof an tres
-                                         addSignal n (TyStdLogicVector size)
-                                         sssns       <- mapM compileExp eargs
-                                         let stmts   =  concatMap fst sssns
-                                             ns      =  map snd sssns
-                                         tagvec      <- dciTagVector i
-                                         padvec      <- dciPadVector an i tres
-                                         return (stmts ++ [Assign (LHSName n) (ExprConcat
-                                                                               (foldl ExprConcat (ExprBitString tagvec) (map ExprName ns))
-                                                                                  (ExprBitString padvec)
-                                                                               )],
-                                                 n)
-                  Match an t escr p gid lids malt -> case eargs of
-                                                      [] -> case malt of
-                                                              Just ealt -> do n                   <- (++ "_res") <$> freshName "match"
-                                                                              sizeres             <- sizeof an t
-                                                                              addSignal n (TyStdLogicVector sizeres)
-                                                                              (stmts_escr, n_escr) <- compileExp escr
-                                                                              (ematch, efields)    <- compilePat n_escr 0 p
-                                                                              n_gid               <- (++ "_res") <$> freshName (mangle gid)
-                                                                              addSignal n_gid (TyStdLogicVector sizeres)
-                                                                              n_call              <- (++ "_call") <$> freshName (mangle gid)
-                                                                              (stmts_ealt, n_ealt) <- compileExp ealt
-                                                                              t_gid               <- askGIdTy gid
-                                                                              addComponent an gid t_gid
-                                                                              let argns           =  map (\ n -> "arg" ++ show n) ([0..]::[Int])
-                                                                                  pm              =  PortMap (zip argns
-                                                                                                              (map (ExprName . ("arg" ++) . show) lids
-                                                                                                               ++ efields)
-                                                                                                              ++ [("res", ExprName n_gid)])
-                                                                              return (stmts_escr ++
-                                                                                      [WithAssign ematch (LHSName n)
-                                                                                                  [(ExprName n_gid, ExprBoolConst True)]
-                                                                                                   (Just (ExprName n_ealt)),
-                                                                                       Instantiate n_call (mangle gid) pm] ++
-                                                                                      stmts_ealt,
-                                                                                      n)
-                                                              Nothing   -> do sizeres             <- sizeof an t
-                                                                              (stmts_escr, n_escr) <- compileExp escr
-                                                                              (_, efields)         <- compilePat n_escr 0 p
-                                                                              n_gid               <- (++ "_res") <$> freshName (mangle gid)
-                                                                              addSignal n_gid (TyStdLogicVector sizeres)
-                                                                              n_call              <- (++ "_call") <$> freshName (mangle gid)
-                                                                              t_gid               <- askGIdTy gid
-                                                                              addComponent an gid t_gid
-                                                                              let argns           =  map (\ n -> "arg" ++ show n) ([0..]::[Int])
-                                                                                  pm              =  PortMap (zip argns
-                                                                                                              (map (ExprName . ("arg" ++) . show) lids
-                                                                                                              ++ efields)
-                                                                                                              ++ [("res", ExprName n_gid)])
-                                                                              return (stmts_escr ++ [Instantiate n_call (mangle gid) pm], n_gid)
-                                                      _  -> failAt (ann e_) $ "compileExp: Encountered match in function position in " ++ prettyPrint e_
-                  NativeVHDL an t i -> do n           <- (++ "_res") <$> freshName i
-                                          n_call      <- (++ "_call") <$> freshName i
-                                          let tres    =  last (flattenArrow t)
-                                          size        <- sizeof an tres
-                                          addSignal n (TyStdLogicVector size)
-                                          sssns       <- mapM compileExp eargs
-                                          let stmts   =  concatMap fst sssns
-                                              ns      =  map snd sssns
-                                          addComponent an i t
-                                          let argns   =  map (\ n -> "arg" ++ show n) ([0..]::[Int])
-                                              pm      =  PortMap (zip argns (map ExprName ns) ++ [("res", ExprName n)])
-                                          return (stmts ++ [Instantiate n_call i pm], n)
+      App {}        -> failAt (ann e) "compileExp: Got App after flattening (can't happen)"
+      Prim {}       -> failAt (ann e) $ "compileExp: Encountered unknown Prim: " ++ prettyPrint e
+      GVar an t i   -> do n           <- (++ "_res") <$> freshName (mangle i)
+                          n_inst      <- (++ "_call") <$> freshName (mangle i)
+                          let tres    =  last (flattenArrow t)
+                          size        <- sizeof an tres
+                          addSignal n (TyStdLogicVector size)
+                          sssns       <- mapM compileExp eargs
+                          let stmts   =  concatMap fst sssns
+                              ns      =  map snd sssns
+                          addComponent an i t
+                          let argns   =  map (\ n -> "arg" ++ show n) ([0..] :: [Int])
+                              pm      =  PortMap (zip argns (map ExprName ns) ++ [("res", ExprName n)])
+                          return (stmts ++ [Instantiate n_inst (mangle i) pm], n)
+      LVar _ _ i       -> case eargs of
+                            [] -> return ([], "arg" ++ show i)
+                            _  -> failAt (ann e_) $ "compileExp: Encountered local variable in function position in " ++ prettyPrint e_
+      Con an t i       -> do n           <- (++"_res") <$> freshName (mangle (deDataConId i))
+                             let tres    =  last (flattenArrow t)
+                             size        <- sizeof an tres
+                             addSignal n (TyStdLogicVector size)
+                             sssns       <- mapM compileExp eargs
+                             let stmts   =  concatMap fst sssns
+                                 ns      =  map snd sssns
+                             tagvec      <- dciTagVector i
+                             padvec      <- dciPadVector an i tres
+                             return (stmts ++ [Assign (LHSName n) (ExprConcat
+                                                                   (foldl ExprConcat (ExprBitString tagvec) (map ExprName ns))
+                                                                      (ExprBitString padvec)
+                                                                   )],
+                                     n)
+      Match an t escr p gid lids malt -> case eargs of
+            [] -> case malt of
+                  Just ealt -> do
+                        n                   <- (++ "_res") <$> freshName "match"
+                        sizeres             <- sizeof an t
+                        addSignal n (TyStdLogicVector sizeres)
+                        (stmts_escr, n_escr) <- compileExp escr
+                        (ematch, efields)    <- compilePat n_escr 0 p
+                        n_gid               <- (++ "_res") <$> freshName (mangle gid)
+                        addSignal n_gid (TyStdLogicVector sizeres)
+                        n_call              <- (++ "_call") <$> freshName (mangle gid)
+                        (stmts_ealt, n_ealt) <- compileExp ealt
+                        t_gid               <- askGIdTy gid
+                        addComponent an gid t_gid
+                        let argns           =  map (\ n -> "arg" ++ show n) ([0..]::[Int])
+                            pm              =  PortMap (zip argns
+                                                        (map (ExprName . ("arg" ++) . show) lids
+                                                         ++ efields)
+                                                        ++ [("res", ExprName n_gid)])
+                        return (stmts_escr ++
+                                [WithAssign ematch (LHSName n)
+                                            [(ExprName n_gid, ExprBoolConst True)]
+                                             (Just (ExprName n_ealt)),
+                                 Instantiate n_call (mangle gid) pm] ++
+                                stmts_ealt,
+                                n)
+                  Nothing   -> do
+                        sizeres             <- sizeof an t
+                        (stmts_escr, n_escr) <- compileExp escr
+                        (_, efields)         <- compilePat n_escr 0 p
+                        n_gid               <- (++ "_res") <$> freshName (mangle gid)
+                        addSignal n_gid (TyStdLogicVector sizeres)
+                        n_call              <- (++ "_call") <$> freshName (mangle gid)
+                        t_gid               <- askGIdTy gid
+                        addComponent an gid t_gid
+                        let argns           =  map (\ n -> "arg" ++ show n) ([0..]::[Int])
+                            pm              =  PortMap (zip argns
+                                                        (map (ExprName . ("arg" ++) . show) lids
+                                                        ++ efields)
+                                                        ++ [("res", ExprName n_gid)])
+                        return (stmts_escr ++ [Instantiate n_call (mangle gid) pm], n_gid)
+            _  -> failAt (ann e_) $ "compileExp: Encountered match in function position in " ++ prettyPrint e_
+      NativeVHDL an t i -> do
+            n           <- (++ "_res") <$> freshName i
+            n_call      <- (++ "_call") <$> freshName i
+            let tres    =  last (flattenArrow t)
+            size        <- sizeof an tres
+            addSignal n (TyStdLogicVector size)
+            sssns       <- mapM compileExp eargs
+            let stmts   =  concatMap fst sssns
+                ns      =  map snd sssns
+            addComponent an i t
+            let argns   =  map (\ n -> "arg" ++ show n) ([0..]::[Int])
+                pm      =  PortMap (zip argns (map ExprName ns) ++ [("res", ExprName n)])
+            return (stmts ++ [Instantiate n_call i pm], n)
   where (e:eargs) = flattenApp e_
 
 mkDefnArch :: Defn -> CM Architecture
-mkDefnArch (Defn _ n _ e) = do put ([], [], 0) -- empty out the signal and component store, reset name counter
-                               (stmts, nres)   <- compileExp e
-                               (sigs, comps, _) <- get
-                               return (Architecture (mangle n ++ "_impl") (mangle n) sigs comps (stmts ++ [Assign (LHSName "res") (ExprName nres)]))
+mkDefnArch (Defn _ n _ e) = do
+      put ([], [], 0) -- empty out the signal and component store, reset name counter
+      (stmts, nres)   <- compileExp e
+      (sigs, comps, _) <- get
+      return (Architecture (mangle n ++ "_impl") (mangle n) sigs comps (stmts ++ [Assign (LHSName "res") (ExprName nres)]))
 
 compileDefn :: Defn -> CM Unit
 compileDefn d | defnName d == "Main.start" = do
@@ -298,8 +305,8 @@ compileDefn d | defnName d == "Main.start" = do
                                              Port "rst" In TyStdLogic,
                                              Port "inp" In (TyStdLogicVector insize),
                                              Port "outp" Out (TyStdLogicVector (1 + max outsize ressize))]
-                              pad_for_out = ExprBitString (replicate (max 0 (ressize-outsize)) Zero)
-                              pad_for_res = ExprBitString (replicate (max 0 (outsize-ressize)) Zero)
+                              pad_for_out = ExprBitString (replicate (max 0 (ressize - outsize)) Zero)
+                              pad_for_res = ExprBitString (replicate (max 0 (outsize - ressize)) Zero)
                           (sigs, comps, _) <- get
                           return (Unit
                                    (Entity "top_level" ports)
