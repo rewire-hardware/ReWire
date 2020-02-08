@@ -17,7 +17,7 @@ import ReWire.FrontEnd.Unbound
 import ReWire.Pretty
 
 import Control.DeepSeq (deepseq, force)
-import Control.Monad.Reader (ReaderT (..), local, ask)
+import Control.Monad.Reader (ReaderT (..), local, asks)
 import Control.Monad.State (evalStateT, StateT (..), get, put, modify)
 import Control.Monad (zipWithM)
 import Data.List (foldl')
@@ -34,7 +34,6 @@ type TySub = Map (Name Ty) Ty
 data TCEnv = TCEnv
       { as  :: Map (Name Exp) Poly
       , cas :: Map (Name DataConId) Poly
-      , arr :: Name TyConId
       } deriving Show
 
 type Assump  = (Name Exp, Poly)
@@ -44,7 +43,7 @@ type TCM m = ReaderT TCEnv (StateT TySub m)
 
 typeCheck :: MonadError AstError m => FreeProgram -> m FreeProgram
 typeCheck (ts, vs) = runFreshMT $
-      evalStateT (runReaderT (tc (ts, vs)) (TCEnv mempty mempty (getArrow ts))) mempty
+      evalStateT (runReaderT (tc (ts, vs)) (TCEnv mempty mempty)) mempty
 
 localAssumps :: MonadError AstError m => (Map (Name Exp) Poly -> Map (Name Exp) Poly) -> TCM m a -> TCM m a
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
@@ -55,8 +54,9 @@ localCAssumps f = local (\ tce -> tce { cas = f (cas tce) })
 freshv :: (Fresh m, MonadError AstError m) => TCM m Ty
 freshv = do
       n <- fresh $ string2Name "?"
-      modify $ Map.insert n $ TyVar noAnn kblank n
-      return $ TyVar noAnn kblank n
+      let tv = TyVar (MsgAnnote "TypeCheck: freshv") kblank n
+      modify $ Map.insert n tv
+      return tv
 
 defnAssump :: Defn -> Assump
 defnAssump (Defn _ n (Embed pt) _ _) = (n, pt)
@@ -66,7 +66,6 @@ dataDeclAssumps (DataDefn _ _ _ cs) = map dataConAssump cs
 
 dataConAssump :: DataCon -> CAssump
 dataConAssump (DataCon _ i (Embed t)) = (i, t)
-dataConAssump _ = undefined -- TODO(chathhorn): record stuff not typechecked
 
 (@@) :: TySub -> TySub -> TySub
 s1 @@ s2 = Map.mapWithKey (\ _ t -> subst s1 t) s2 `Map.union` s1
@@ -84,14 +83,10 @@ mgu an (TyApp _ tl tr) (TyApp _ tl' tr')                                      = 
       s1 <- mgu an tl tl'
       s2 <- mgu an (subst s1 tr) $ subst s1 tr'
       return $ s2 @@ s1
-mgu an (TyVar _ _ u)   t                | isFlex u                             = varBind an u t
-mgu an t                  (TyVar _ _ u) | isFlex u                             = varBind an u t
-mgu _  (TyCon _ c1)    (TyCon _ c2)     | (name2String c1) == (name2String c2) = return mempty
-mgu _  (TyVar _ _ v)   (TyVar _ _ u)    | not (isFlex v) && v==u               = return mempty
-mgu an (TyComp _ m t)  (TyComp _ m' t')                                       = do
-      s1 <- mgu an m m'
-      s2 <- mgu an (subst s1 t) (subst s1 t')
-      return $ s2 @@ s1
+mgu an (TyVar _ _ u)   t                | isFlex u                         = varBind an u t
+mgu an t                  (TyVar _ _ u) | isFlex u                         = varBind an u t
+mgu _  (TyCon _ c1)    (TyCon _ c2)     | name2String c1 == name2String c2 = return mempty
+mgu _  (TyVar _ _ v)   (TyVar _ _ u)    | not (isFlex v) && v==u           = return mempty
 mgu an t1 t2 = failAt an $ "Types do not unify: " ++ prettyPrint t1 ++ ", " ++ prettyPrint t2
 
 unify :: MonadError AstError m => Annote -> Ty -> Ty -> TCM m ()
@@ -124,7 +119,7 @@ tcPat :: (Fresh m, MonadError AstError m) => Ty -> Pat -> TCM m Pat
 tcPat t = \ case
       PatVar an _ x  -> return $ PatVar an (Embed t) x
       PatCon an _ (Embed i) ps -> do
-            cas     <- cas <$> ask
+            cas     <- asks cas
             case Map.lookup i cas of
                   Nothing  -> failAt an $ "Unknown constructor: " ++ prettyPrint i
                   Just pta -> do
@@ -141,7 +136,7 @@ tcMatchPat :: (Fresh m, MonadError AstError m) => Ty -> MatchPat -> TCM m MatchP
 tcMatchPat t = \ case
       MatchPatVar an _ -> return $ MatchPatVar an t
       MatchPatCon an _ i ps -> do
-            cas     <- cas <$> ask
+            cas     <- asks cas
             case Map.lookup i cas of
                   Nothing  -> failAt an $ "Unknown constructor: " ++ prettyPrint i
                   Just pta -> do
@@ -163,8 +158,7 @@ tcExp = \ case
             let   es'   =  map fst ress
                   tes   =  map snd ress
             tv          <- freshv
-            arr         <- arr <$> ask
-            let tf'     =  foldr (mkArrow arr) tv tes
+            let tf'     =  foldr arr tv tes
             unify an tf tf'
             return (foldl (App an) ef' es', tv)
       Lam an _ e             -> do
@@ -172,18 +166,17 @@ tcExp = \ case
             tvx       <- freshv
             tvr       <- freshv
             (e'', te) <- localAssumps (Map.insert x ([] `poly` tvx)) $ tcExp e'
-            arr       <- arr <$> ask
-            unify an tvr $ mkArrow arr tvx te
+            unify an tvr $ arr tvx te
             return (Lam an tvx $ bind x e'', tvr)
       Var an _ v             -> do
-            as <- as <$> ask
+            as <- asks as
             case Map.lookup v as of
                   Nothing -> failAt an $ "Unknown variable: " ++ show v
                   Just pt -> do
                         t <- inst pt
                         return (Var an t v, t)
       Con an _ i      -> do
-            cas <- cas <$> ask
+            cas <- asks cas
             case Map.lookup i cas of
                   Nothing -> failAt an $ "Unknown constructor: " ++ prettyPrint i
                   Just pt -> do
@@ -224,10 +217,9 @@ tcExp = \ case
             tv <- freshv
             return (Error an tv m, tv)
 
-      _ -> undefined -- TODO(chathhorn): record stuff not typechecked
 mkApp :: Annote -> Exp -> [Exp] -> [Name Exp] -> Exp
-mkApp an f as holes = foldl' (\ e x -> App an e x) f
-      $ as ++ map (Var an tblank) holes
+mkApp an f as holes = foldl' (App an) f
+      $ as ++ map (Var an $ TyBlank an) holes
 
 tcDefn :: (Fresh m, MonadError AstError m) => Defn -> TCM m Defn
 tcDefn d  = do
@@ -242,7 +234,7 @@ tcDefn d  = do
       unify an te' te
       s <- get
       put mempty
-      let d' = Defn noAnn n (tvs |-> t) b $ Embed $ bind vs $ subst s e''
+      let d' = Defn an n (tvs |-> t) b $ Embed $ bind vs $ subst s e''
       d' `deepseq` return d'
 
 tc :: (Fresh m, MonadError AstError m) => FreeProgram -> TCM m FreeProgram

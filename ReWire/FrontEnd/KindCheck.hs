@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, LambdaCase, TupleSections #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, LambdaCase #-}
 {-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.KindCheck (kindCheck) where
 
@@ -19,7 +19,7 @@ subst ss = substs (Map.assocs ss)
 
 -- Kind checking for Core.
 type KiSub = Map (Name Kind) Kind
-data KCEnv = KCEnv { cas :: Map (Name TyConId) Kind }
+newtype KCEnv = KCEnv { cas :: Map (Name TyConId) Kind }
       deriving Show
 
 type KCM m = ReaderT KCEnv (StateT KiSub m)
@@ -53,7 +53,6 @@ mgu an (KFun kl kr) (KFun kl' kr') = do
 mgu an (KVar u) k                  = varBind an u k
 mgu an k (KVar u)                  = varBind an u k
 mgu _ KStar KStar                  = return mempty
-mgu _ KMonad KMonad                = return mempty
 mgu an k1 k2                       = failAt an $ "Kinds do not unify: " ++ prettyPrint k1 ++ ", " ++ prettyPrint k2
 
 unify :: (Fresh m, MonadError AstError m) => Annote -> Kind -> Kind -> KCM m ()
@@ -80,21 +79,15 @@ kcTy = \ case
                                      Nothing -> failAt an $ "Unknown type constructor: " ++ name2String i
                                      Just k  -> return k
       TyVar _ k _     -> return k
-      TyComp an tm tv -> do
-            km <- kcTy tm
-            kv <- kcTy tv
-            unify an km KMonad
-            unify an kv KStar
-            return KStar
       TyBlank an      -> failAt an "Something went wrong in the kind checker"
 
+-- | Only needed for debugging.
 -- kcDataCon :: (Fresh m, MonadError AstError m) => DataCon -> KCM m ()
 -- kcDataCon (DataCon an _ (Embed (Poly t))) = do
 --       (_, t') <- unbind t
 --       k       <- kcTy t'
 --       unify an k KStar
 
--- Only needed for debugging.
 kcDataDecl :: (Fresh m, MonadError AstError m) => DataDefn -> KCM m ()
 -- kcDataDecl (DataDefn _ _ _ cs) = mapM_ kcDataCon cs
 kcDataDecl _ = return ()
@@ -112,7 +105,6 @@ monoize :: Kind -> Kind
 monoize = \ case
       KFun k1 k2 -> KFun (monoize k1) $ monoize k2
       KStar      -> KStar
-      KMonad     -> KMonad
       KVar _     -> KStar
 
 redecorate :: MonadError AstError m => KiSub -> DataDefn -> KCM m DataDefn

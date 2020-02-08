@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, ScopedTypeVariables #-}
+{-# LANGUAGE LambdaCase, ScopedTypeVariables, FlexibleContexts #-}
 {-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.Fixity
       ( fixLocalOps
@@ -7,23 +7,29 @@ module ReWire.FrontEnd.Fixity
       ) where
 
 import ReWire.SYB
+import ReWire.Error
+import ReWire.Annotation (Annote)
 
 import Control.Monad (void)
+import Control.Monad.Fail (MonadFail (..))
 import Control.Monad.Identity (Identity (..))
-import Control.Monad.State (State, runState, get, modify)
-import Data.Maybe (fromMaybe, fromJust) -- TODO(chathhorn): remove fromJust
+import Control.Monad.State (MonadState, StateT, runStateT, get, modify, lift)
+import Data.Maybe (fromMaybe)
 import Language.Haskell.Exts.Fixity (Fixity (..), applyFixities)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
 
 import Language.Haskell.Exts.Syntax
 
-type Fresh = State Int
+type FreshT = StateT Int
 type OpRenamer = QOp SrcSpanInfo -> QOp SrcSpanInfo
 
-fresh :: Fresh (ModuleName ())
+mark' :: MonadState Annote m => SrcSpanInfo -> FreshT m ()
+mark' = lift . mark
+
+fresh :: Monad m => FreshT m (ModuleName ())
 fresh = do
       x <- get
-      modify $ const $ x + 1
+      modify (+ 1)
       return $ ModuleName () $ '$' : show x
 
 enterScope :: ModuleName () -> [Decl SrcSpanInfo] -> OpRenamer -> OpRenamer
@@ -58,117 +64,133 @@ getFixities = foldr toFixity []
                   ConOp _ n -> void n
 
 -- | Renames local operators and fixes local and file-scope fixities.
---   applyFixities appears to be able to handle this automatically, but it seems
+--   applyFixities appears to be intended to handle this automatically, but it seems
 --   to be buggy and not allow inner fixity declarations to shadow outer ones (on
 --   operators with the same name).
-fixLocalOps :: Module SrcSpanInfo -> Module SrcSpanInfo
-fixLocalOps = applyGlobFixities . fst . flip runState 0 . runPureT (renameDecl id ||> TId)
-      where applyGlobFixities :: Module SrcSpanInfo -> Module SrcSpanInfo
+--   Note: applyFixities annoyingly fixes the annotation type as SrcSpanInfo.
+fixLocalOps :: (MonadState Annote m, MonadFail m) => Module SrcSpanInfo -> m (Module SrcSpanInfo)
+fixLocalOps = (applyGlobFixities =<<) . fmap fst . flip runStateT 0 . runPureT (renameDecl id ||> TId)
+      where applyGlobFixities :: (MonadState Annote m, MonadFail m) => Module SrcSpanInfo -> m (Module SrcSpanInfo)
             applyGlobFixities m@(Module _ (Just (ModuleHead _ mn _ _)) _ _ ds)
-                                                          = fromJust $ applyFixities (getFixities ds ++ getFixities' (void mn) ds) m
-            applyGlobFixities m@(Module _ Nothing _ _ ds) = fromJust $ applyFixities (getFixities ds) m
-            applyGlobFixities m                           = m
+                                                          = mark (ann m) >> applyFixities (getFixities ds ++ getFixities' (void mn) ds) m
+            applyGlobFixities m@(Module _ Nothing _ _ ds) = mark (ann m) >> applyFixities (getFixities ds) m
+            applyGlobFixities m                           = return m
 
 deuniquifyLocalOps :: Module SrcSpanInfo -> Module SrcSpanInfo
 deuniquifyLocalOps = runIdentity . runPureT ((||> TId) $ \ case
       QVarOp l1 (Qual l2 (ModuleName _ ('$' : _)) n) -> return $ QVarOp l1 $ UnQual l2 n
       (x :: QOp SrcSpanInfo)                         -> return x)
 
-renameDecl :: OpRenamer -> Decl SrcSpanInfo -> Fresh (Decl SrcSpanInfo)
+renameDecl :: (MonadState Annote m, MonadFail m) => OpRenamer -> Decl SrcSpanInfo -> FreshT m (Decl SrcSpanInfo)
 renameDecl rn = \ case
       PatBind l1 p (UnGuardedRhs l2 e) Nothing -> do
+            mark' l1
             e' <- renameExp rn e
             return $ PatBind l1 p (UnGuardedRhs l2 e') Nothing
       PatBind l1 p (UnGuardedRhs l2 e) (Just (BDecls l3 ds)) -> do
+            mark' l1
             m    <- fresh
             e'   <- renameExp (enterScope m ds rn) e
-            let e'' = fromJust $ applyFixities (getFixities' m ds) e'
+            e''  <- applyFixities (getFixities' m ds) e'
             ds'  <- mapM (renameDecl $ enterScope m ds rn) ds
-            let ds'' = fromJust $ mapM (applyFixities $ getFixities' m ds) ds'
+            ds'' <- mapM (applyFixities $ getFixities' m ds) ds'
             return $ PatBind l1 p (UnGuardedRhs l2 e'') $ Just (BDecls l3 ds'')
-      FunBind l ms -> FunBind l <$> mapM (renameMatch rn) ms
+      FunBind l ms -> do
+            mark' l
+            FunBind l <$> mapM (renameMatch rn) ms
       d -> return d
 
-renameMatch :: OpRenamer -> Match SrcSpanInfo -> Fresh (Match SrcSpanInfo)
+renameMatch :: (MonadState Annote m, MonadFail m) => OpRenamer -> Match SrcSpanInfo -> FreshT m (Match SrcSpanInfo)
 renameMatch rn = \ case
       Match l1 n ps (UnGuardedRhs l2 e) Nothing -> do
+            mark' l1
             e' <- renameExp rn e
             return $ Match l1 n ps (UnGuardedRhs l2 e') Nothing
       Match l1 n ps (UnGuardedRhs l2 e) (Just (BDecls l3 ds)) -> do
+            mark' l1
             m    <- fresh
             e'   <- renameExp (enterScope m ds rn) e
-            let e'' = fromJust $ applyFixities (getFixities' m ds) e'
+            e''  <- applyFixities (getFixities' m ds) e'
             ds'  <- mapM (renameDecl $ enterScope m ds rn) ds
-            let ds'' = fromJust $ mapM (applyFixities $ getFixities' m ds) ds'
+            ds'' <- mapM (applyFixities $ getFixities' m ds) ds'
             return $ Match l1 n ps (UnGuardedRhs l2 e'') $ Just (BDecls l3 ds'')
       InfixMatch l1 p n ps (UnGuardedRhs l2 e) Nothing -> do
+            mark' l1
             e' <- renameExp rn e
             return $ InfixMatch l1 p n ps (UnGuardedRhs l2 e') Nothing
       InfixMatch l1 p n ps (UnGuardedRhs l2 e) (Just (BDecls l3 ds)) -> do
+            mark' l1
             m    <- fresh
             e'   <- renameExp (enterScope m ds rn) e
-            let e'' = fromJust $ applyFixities (getFixities' m ds) e'
+            e''  <- applyFixities (getFixities' m ds) e'
             ds'  <- mapM (renameDecl $ enterScope m ds rn) ds
-            let ds'' = fromJust $ mapM (applyFixities $ getFixities' m ds) ds'
+            ds'' <- mapM (applyFixities $ getFixities' m ds) ds'
             return $ InfixMatch l1 p n ps (UnGuardedRhs l2 e'') $ Just (BDecls l3 ds'')
       m -> return m
 
-renameExp :: OpRenamer -> Exp SrcSpanInfo -> Fresh (Exp SrcSpanInfo)
+renameExp :: (MonadState Annote m, MonadFail m) => OpRenamer -> Exp SrcSpanInfo -> FreshT m (Exp SrcSpanInfo)
 renameExp rn = \ case
       InfixApp l e1 op e2     -> do
+            mark' l
             e1' <- renameExp rn e1
             e2' <- renameExp rn e2
             return $ InfixApp l e1' (rn op) e2'
-      App l e1 e2             -> App l <$> renameExp rn e1 <*> renameExp rn e2
-      NegApp l e              -> NegApp l <$> renameExp rn e
-      Lambda l ps e           -> Lambda l ps <$> renameExp rn e
+      App l e1 e2             -> mark' l >> App l <$> renameExp rn e1 <*> renameExp rn e2
+      NegApp l e              -> mark' l >> NegApp l <$> renameExp rn e
+      Lambda l ps e           -> mark' l >> Lambda l ps <$> renameExp rn e
       Let l1 (BDecls l2 ds) e -> do
+            mark' l1
             m    <- fresh
             ds'  <- mapM (renameDecl $ enterScope m ds rn) ds
-            let ds'' = fromJust $ mapM (applyFixities $ getFixities' m ds) ds'
+            ds'' <- mapM (applyFixities $ getFixities' m ds) ds'
             e'   <- renameExp (enterScope m ds rn) e
-            let e''  = fromJust $ applyFixities (getFixities' m ds) e'
+            e''  <- applyFixities (getFixities' m ds) e'
             return $ Let l1 (BDecls l2 ds'') e''
-      If l e1 e2 e3           -> If l <$> renameExp rn e1 <*> renameExp rn e2 <*> renameExp rn e3
-      Case l e alts           -> Case l <$> renameExp rn e <*> mapM (renameAlt rn) alts
-      Do l stmts              -> Do l <$> renameStmts rn stmts
-      Tuple l b es            -> Tuple l b <$> mapM (renameExp rn) es
-      List l es               -> List l <$> mapM (renameExp rn) es
-      Paren l e               -> Paren l <$> renameExp rn e
-      LeftSection l e op      -> LeftSection l <$> renameExp rn e <*> return op
-      RightSection l op e     -> RightSection l op <$> renameExp rn e
+      If l e1 e2 e3           -> mark' l >> If l <$> renameExp rn e1 <*> renameExp rn e2 <*> renameExp rn e3
+      Case l e alts           -> mark' l >> Case l <$> renameExp rn e <*> mapM (renameAlt rn) alts
+      Do l stmts              -> mark' l >> Do l <$> renameStmts rn stmts
+      Tuple l b es            -> mark' l >> Tuple l b <$> mapM (renameExp rn) es
+      List l es               -> mark' l >> List l <$> mapM (renameExp rn) es
+      Paren l e               -> mark' l >> Paren l <$> renameExp rn e
+      LeftSection l e op      -> mark' l >> LeftSection l <$> renameExp rn e <*> return op
+      RightSection l op e     -> mark' l >> RightSection l op <$> renameExp rn e
       e                       -> return e
 
-renameAlt :: OpRenamer -> Alt SrcSpanInfo -> Fresh (Alt SrcSpanInfo)
+renameAlt :: (MonadState Annote m, MonadFail m) => OpRenamer -> Alt SrcSpanInfo -> FreshT m (Alt SrcSpanInfo)
 renameAlt rn = \ case
       Alt l1 p (UnGuardedRhs l2 e) Nothing -> do
+            mark' l1
             e' <- renameExp rn e
             return $ Alt l1 p (UnGuardedRhs l2 e') Nothing
       Alt l1 p (UnGuardedRhs l2 e) (Just (BDecls l3 ds)) -> do
+            mark' l1
             m    <- fresh
             e'   <- renameExp (enterScope m ds rn) e
-            let e''  = fromJust $ applyFixities (getFixities' m ds) e'
+            e''  <- applyFixities (getFixities' m ds) e'
             ds'  <- mapM (renameDecl $ enterScope m ds rn) ds
-            let ds'' = fromJust $ mapM (applyFixities $ getFixities' m ds) ds'
+            ds'' <- mapM (applyFixities $ getFixities' m ds) ds'
             return $ Alt l1 p (UnGuardedRhs l2 e'') $ Just $ BDecls l3 ds''
       a                                  -> return a
 
-renameStmts :: OpRenamer -> [Stmt SrcSpanInfo] -> Fresh [Stmt SrcSpanInfo]
+renameStmts :: (MonadState Annote m, MonadFail m) => OpRenamer -> [Stmt SrcSpanInfo] -> FreshT m [Stmt SrcSpanInfo]
 renameStmts _ [] = return []
 renameStmts rn (Generator l p e : stmts) = do
+      mark' l
       e'     <- renameExp rn e
       stmts' <- renameStmts rn stmts
       return $ Generator l p e' : stmts'
 renameStmts rn (Qualifier l e : stmts) = do
+      mark' l
       e'     <- renameExp rn e
       stmts' <- renameStmts rn stmts
       return $ Qualifier l e' : stmts'
 renameStmts rn (LetStmt l1 (BDecls l2 ds) : stmts) = do
+      mark' l1
       m       <- fresh
       ds'     <- mapM (renameDecl $ enterScope m ds rn) ds
-      let ds'' = fromJust $ mapM (applyFixities $ getFixities' m ds) ds'
+      ds''    <- mapM (applyFixities $ getFixities' m ds) ds'
       stmts'  <- renameStmts (enterScope m ds rn) stmts
-      let stmts'' = fromJust $ mapM (applyFixities $ getFixities' m ds) stmts'
+      stmts'' <- mapM (applyFixities $ getFixities' m ds) stmts'
       return $ LetStmt l1 (BDecls l2 ds'') : stmts''
 renameStmts _ stmts = return stmts
 

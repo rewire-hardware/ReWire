@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE Safe #-}
 module ReWire.Main (main) where
 
@@ -10,6 +9,7 @@ import ReWire.Core.ToMiniHDL
 import Control.Monad (when,unless)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
+import System.FilePath ((-<.>))
 import System.Console.GetOpt
 import System.Environment
 import System.Exit
@@ -22,13 +22,13 @@ data Flag = FlagO String
 
 options :: [OptDescr Flag]
 options =
- [ Option ['d'] ["debug"]    (NoArg FlagD)
-                             "dump miscellaneous debugging information"
- , Option ['o'] []           (ReqArg FlagO "filename.vhd")
-                             "generate VHDL"
- , Option []    ["loadpath"] (ReqArg FlagLoadPath "dir1,dir2,...")
-                             "additional directories for loadpath"
- ]
+       [ Option ['d'] ["debug"]    (NoArg FlagD)
+                                   "dump miscellaneous debugging information"
+       , Option ['o'] []           (ReqArg FlagO "filename.vhd")
+                                   "generate VHDL"
+       , Option []    ["loadpath"] (ReqArg FlagLoadPath "dir1,dir2,...")
+                                   "additional directories for loadpath"
+       ]
 
 exitUsage :: IO ()
 exitUsage = hPutStr stderr (usageInfo "Usage: rwc [OPTION...] <filename.rw>" options) >> exitFailure
@@ -41,8 +41,6 @@ main = do args                       <- getArgs
           unless (null errs) (mapM_ (hPutStrLn stderr) errs >> exitUsage)
 
           when (length filenames /= 1) (hPutStrLn stderr "exactly one source file must be specified" >> exitUsage)
-
-          unless (any isActFlag flags) (hPutStrLn stderr "must specify at least one of -o or -d" >> exitUsage)
 
           let filename               =  head filenames
               userLP                 =  concatMap getLoadPathEntries flags
@@ -59,8 +57,6 @@ main = do args                       <- getArgs
             Right prog -> do
               when (FlagD `elem` flags) $ do
                 putStrLn "front end finished"
-                -- writeFile "show.out" (show m)
-                -- putStrLn "show out finished"
                 writeFile "Debug.hs" (prettyPrint prog)
                 putStrLn "debug out finished"
               case compileProgram prog of
@@ -68,14 +64,14 @@ main = do args                       <- getArgs
                 Right mprog ->
                   case findOutFile flags of
                     Just f  -> writeFile f (prettyPrint mprog)
-                    Nothing -> return ()
-  where isActFlag = \ case
-          FlagD {} -> True
-          FlagO {} -> True
-          _        -> False
+                    Nothing -> writeFile (filename -<.> "vhdl") (prettyPrint mprog)
+
+  where findOutFile :: [Flag] -> Maybe FilePath
         findOutFile (FlagO f:_) = Just f
         findOutFile (_:flags)   = findOutFile flags
         findOutFile []          = Nothing
+
+        getLoadPathEntries :: Flag -> [FilePath]
         getLoadPathEntries (FlagLoadPath ds) =  splitOn "," ds
         getLoadPathEntries _                 =  []
 

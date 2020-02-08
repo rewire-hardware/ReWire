@@ -1,5 +1,4 @@
-{-# LANGUAGE Rank2Types, ScopedTypeVariables, GADTs, TypeOperators, StandaloneDeriving
-           , TypeFamilies, DeriveGeneric, LambdaCase, DeriveDataTypeable #-}
+{-# LANGUAGE Rank2Types, ScopedTypeVariables, GADTs, TypeOperators, TypeFamilies, LambdaCase, DeriveDataTypeable #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -Wno-missing-methods #-}
 module ReWire.Annotation
@@ -62,7 +61,7 @@ class Annotated a where
       ann :: a -> Annote
 
 unAnn :: Data d => d -> d
-unAnn = runIdentity . (runPureT $ transform $ \ (_::Annote) -> return noAnn)
+unAnn = runIdentity . runPureT (transform $ \ (_ :: Annote) -> return noAnn)
 
 instance SrcInfo Annote where
       toSrcInfo a b c = LocAnnote $ toSrcInfo a b c

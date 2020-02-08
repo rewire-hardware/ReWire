@@ -1,10 +1,11 @@
-{-# LANGUAGE LambdaCase, FlexibleInstances, TupleSections, NamedFieldPuns, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, FlexibleInstances, ViewPatterns #-}
 {-# LANGUAGE Safe #-}
 module ReWire.FrontEnd.Cache
       ( runCache
       , getProgram
       , LoadPath
       , printInfo
+      , printInfoHSE
       ) where
 
 import ReWire.Annotation
@@ -24,43 +25,31 @@ import ReWire.FrontEnd.TypeCheck
 import ReWire.Pretty
 import ReWire.FrontEnd.Unbound (runFreshMT, FreshMT (..))
 
-import Control.Monad ((>=>), liftM, msum, void)
+import Control.Monad ((>=>), msum, void)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Reader (runReaderT, ReaderT, MonadReader (..))
-import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify)
+import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify, lift)
 
 import qualified Data.Map.Strict              as Map
 import qualified Language.Haskell.Exts.Syntax as S (Module (..))
 import qualified ReWire.Core.Syntax           as Core
+import qualified Language.Haskell.Exts.Pretty as P
 
 import Language.Haskell.Exts.Syntax hiding (Annotation, Exp, Module (..), Namespace, Name, Kind)
 
 type Cache = ReaderT LoadPath (StateT ModCache (FreshMT (SyntaxErrorT IO)))
 type LoadPath = [FilePath]
-type ModCache = Map.Map FilePath (Module, Exports)
+type ModCache = Map.Map FilePath (Module, (Module, Exports))
 
 runCache :: Cache a -> LoadPath -> IO (Either AstError a)
 runCache m lp = runSyntaxError $ fst <$> runFreshMT (runStateT (runReaderT m lp) mempty)
 
 mkRenamer :: S.Module SrcSpanInfo -> Cache Renamer
-mkRenamer m = mconcat <$> mapM mkRenamer' (getImps m)
+mkRenamer m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps m)
       where mkRenamer' :: ImportDecl SrcSpanInfo -> Cache Renamer
             mkRenamer' (ImportDecl _ (void -> m) quald _ _ _ (fmap void -> as) specs) = do
-                  (_, exps) <- getModule $ toFilePath m
+                  (_, (_, exps)) <- getModule $ toFilePath m
                   fromImps m quald exps as specs
-
-getImps :: Annotation a => S.Module a -> [ImportDecl a]
-getImps = \ case
-      S.Module l _ _ imps _            -> addPrelude l imps
-      S.XmlPage {}                     -> []
-      S.XmlHybrid l _ _ imps _ _ _ _ _ -> addPrelude l imps
-      where addPrelude :: Annotation a => a -> [ImportDecl a] -> [ImportDecl a]
-            addPrelude l imps =
-                  if any isPrelude imps
-                        then imps
-                        else ImportDecl l (ModuleName l "Prelude") False False False Nothing Nothing Nothing : imps
-            isPrelude :: Annotation a => ImportDecl a -> Bool
-            isPrelude ImportDecl { importModule = ModuleName _ n } = n == "Prelude"
 
 -- Pass 1    Parse.
 -- Pass 2-4  Fixity fixing (uniquify + fix + deuniquify, because bug in applyFixities).
@@ -69,7 +58,7 @@ getImps = \ case
 -- Pass 15   Translate to mantle + rename globals.
 -- Pass 16   Translate to core
 
-getModule :: FilePath -> Cache (Module, Exports)
+getModule :: FilePath -> Cache (Module, (Module, Exports))
 getModule fp = Map.lookup fp <$> get >>= \ case
       Just p  -> return p
       Nothing -> do
@@ -79,54 +68,66 @@ getModule fp = Map.lookup fp <$> get >>= \ case
             mmods      <- mapM (tryParseInDir fp) lp
             -- FIXME: The directory crawling could be more robust here. (Should
             -- use exception handling.)
-            m          <- maybe (failAt (filePath fp) "File not found in load-path") return $ msum mmods
+            m          <- maybe
+                              (failAt (filePath fp) "File not found in load-path")
+                              (return . addMainModuleHead)
+                        $ msum mmods
 
             rn         <- mkRenamer m
             imps       <- loadImports m
 
             -- Phase 1 (haskell-src-exts) transformations.
-            (m', exps) <- fixFixity rn
+            (m', exps) <- return
+                      >=> lift . lift . fixFixity rn
                       >=> annotate
-                      >=> desugar
-                      >=> toMantle rn $ m
+                      -- >=> printInfoHSE "__Pre_Desugar__" rn imps
+                      >=> desugar rn
+                      -- >=> printInfoHSE "__Post_Desugar__" rn imps
+                      >=> toMantle rn
+                      $ m
 
-            modify $ Map.insert fp (m' <> imps, exps)
-            return (m' <> imps, exps)
+            modify $ Map.insert fp (m', (imps, exps))
+            return (m', (imps, exps))
 
       where loadImports :: Annotation a => S.Module a -> Cache Module
-            loadImports = liftM mconcat . mapM (liftM fst . getModule . toFilePath . void . importModule) . getImps
+            loadImports = fmap mconcat . mapM (fmap fst . getModule . toFilePath . void . importModule) . getImps
 
 -- Phase 2 (pre-core) transformations.
 getProgram :: FilePath -> Cache Core.Program
 getProgram fp = do
-      (Module ts ds, _) <- getModule fp
+      (mod, (imps, _))  <- getModule fp
+      let (Module ts ds) = mod <> imps
 
-      p <- addPrims
-       >=> records
-       -- >=> printInfo "___Post_records___"
+      p <- return
+--     >=> printInfo "__Desugared__"
+       >=> addPrims
        >=> inline
-       >=> kindCheck
-       >=> typeCheck
+--     >=> printInfo "__Inlined__"
+       >=> kindCheck >=> typeCheck
        >=> neuterPrims
+--     >=> printInfo "__Inlined__"
        >=> reduce
        >=> shiftLambdas
---       >=> printInfo "___Post_TC___"
+--     >=> printInfo "___Post_TC___"
        >=> liftLambdas
---       >=> typeCheck
-       -- >=> printInfo "___Post_LL___"
-       >=> purge
+--     >=> typeCheck
+--     >=> printInfo "___Post_LL___"
+       >=> purgeUnused
+       -- >=> kindCheck >=> typeCheck
+       -- >=> printInfo "___Post_Purge___"
+       >=> purify -- TODO(chathhorn): move before purge? purge again after purify?
+       -- >=> printInfo "___Post_Purify___"
+       -- >=> kindCheck
        -- >=> typeCheck
---       >=> printInfo "___Post_Purge___"
-       >=> purify
---       >=> typeCheck
---       >=> printInfo "___Post_Purify___"
        >=> liftLambdas
---       >=> printInfo "___Post_Second_LL___"       
+       -- >=> printInfo "___Post_Second_LL___"
        >=> toCore
        $ (ts, ds)
 
       -- liftIO $ putStrLn "___Core___"
       -- liftIO $ putStrLn $ prettyPrint p
+      -- liftIO $ putStrLn "\nShow core:\n"
+      -- liftIO $ print $ unAnn p
 
       return p
 
@@ -146,4 +147,22 @@ printInfo msg fp = do
       liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Exp])
       liftIO $ putStrLn "Program:\n"
       liftIO $ putStrLn $ prettyPrint p
+      liftIO $ putStrLn "\nProgram (show):\n"
+      liftIO $ print $ unAnn fp
       return fp
+
+printInfoHSE :: MonadIO m => String -> Renamer -> Module -> S.Module a -> m (S.Module a)
+printInfoHSE msg rn imps hse = do
+      liftIO $ putStrLn msg
+      liftIO $ putStrLn "\nRenamer:\n"
+      liftIO $ print rn
+      liftIO $ putStrLn "\nExports:\n"
+      liftIO $ print $ allExports rn
+      liftIO $ putStrLn "\nShow imps:\n"
+      liftIO $ print imps
+      liftIO $ putStrLn "\nShow HSE mod:\n"
+      liftIO $ print $ void hse
+      liftIO $ putStrLn "\nPretty HSE mod:\n"
+      liftIO $ putStrLn $ P.prettyPrint $ void hse
+      return hse
+

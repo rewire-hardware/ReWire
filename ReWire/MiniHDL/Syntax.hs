@@ -5,7 +5,7 @@ import Prelude hiding ((<>))
 import ReWire.Pretty
 import Text.PrettyPrint
 
-data Program = Program { programUnits :: [Unit] }
+newtype Program = Program { programUnits :: [Unit] }
              deriving (Eq,Show)
 
 instance Pretty Program where
@@ -80,7 +80,7 @@ data Ty = TyStdLogic | TyStdLogicVector Int | TyBool deriving (Eq,Show)
 
 instance Pretty Ty where
   pretty TyStdLogic           = text "std_logic"
-  pretty (TyStdLogicVector n) = text "std_logic_vector" <+> parens (text "0 to" <+> int (n-1))
+  pretty (TyStdLogicVector n) = text "std_logic_vector" <+> parens (text "0 to" <+> int (n - 1))
   pretty TyBool               = text "boolean"
 
 data Stmt = Assign LHS Expr
@@ -104,13 +104,13 @@ instance Pretty Stmt where
                                 $+$ nest 2 (text "end if;")
                                 $+$ text "end process;"
 
-data PortMap = PortMap [(Name,Expr)]
+newtype PortMap = PortMap [(Name,Expr)]
              deriving (Eq,Show)
 
 instance Pretty PortMap where
   pretty (PortMap ps) = vcat (punctuate comma (map (\(n,e) -> text n <+> text "=>" <+> pretty e) ps))
 
-data LHS = LHSName Name
+newtype LHS = LHSName Name
          deriving (Eq,Show)
 
 instance Pretty LHS where

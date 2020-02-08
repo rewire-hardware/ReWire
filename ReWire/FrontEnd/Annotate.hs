@@ -23,7 +23,6 @@ type SF a = a Annote -> Identity (a Annote)
 nodes :: Transform Identity
 nodes =   (s :: SF Module)
       ||> (s :: SF ModuleHead)
-      -- ||> (s :: SF WarningText)
       ||> (s :: SF ExportSpecList)
       ||> (s :: SF ExportSpec)
       ||> (s :: SF ImportDecl)
