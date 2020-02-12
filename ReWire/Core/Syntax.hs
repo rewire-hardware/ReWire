@@ -96,7 +96,7 @@ instance Annotated Exp where
 
 instance Pretty Exp where
       pretty (App _ e1 e2)                  = parens $ hang (pretty e1) 4 (pretty e2)
-      pretty (Con _ _ n)                    = text (deDataConId n)
+      pretty (Con _ t n)                    = parens $ text (deDataConId n) <+> text "::" <+> pretty t
       pretty (Prim _ _ n)                   = text n
       pretty (GVar _ t n)                   = text n <+>  text "::" <+> pretty t
       pretty (LVar _ _ n)                   = text $ "$" ++ show n

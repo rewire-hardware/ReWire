@@ -14,10 +14,11 @@ import ReWire.Pretty
 import Control.Arrow (first, second, (&&&))
 import Control.Monad.State
 import Control.Monad.Fail (MonadFail)
-import Data.List (foldl', find, intercalate)
-import Data.List.NonEmpty (NonEmpty (..), (<|))
+import Data.List (nubBy, foldl', find, intercalate)
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NE
 import Data.Either (partitionEithers)
+import Data.Maybe (fromMaybe)
 
 -- Append to a non-empty list.
 (|:) :: [a] -> a -> NonEmpty a
@@ -54,42 +55,50 @@ poly2Ty (Poly p) = snd <$> unbind p
 
 purify :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) => FreeProgram -> m FreeProgram
 purify (ts, ds) = do
-      (smds, pds) <- partitionEithers <$> mapM isStateMonadicDefn ds
-      (rmds, ods) <- partitionEithers <$> mapM isResMonadicDefn pds
+      (smds, pds)         <- partitionEithers <$> mapM isStateMonadicDefn ds
+      (rmds, ods)         <- partitionEithers <$> mapM isResMonadicDefn pds
+      let (startd, rmds') =  partitionEithers  $  map  isStartDefn rmds
+      let rmds = rmds' ++ startd -- TODO(chathhorn): kludge to make sure start is the last thing purified.
 
       let nameNpolyS = map (defnName &&& defnPolyTy) smds
           nameNpolyR = map (defnName &&& defnPolyTy) rmds
 
-      imprhoR   <- mapM (\ (d, Embed p) -> poly2Ty p >>= \ t -> pure (d, t)) nameNpolyR
+      imprhoR       <- mapM (\ (d, Embed p) -> poly2Ty p >>= \ t -> pure (d, t)) nameNpolyR
 
-      (_, tyStart) <- liftMaybe noAnn "No start symbol!"
-                        $ find (isStart . fst) imprhoR
-      (_, i, o, t) <- liftMaybe (ann tyStart) ("dstResTy applied to: " ++ show tyStart)
-                        $ dstResTy tyStart
+      (_, tyStart)  <- liftMaybe noAnn "No start symbol!"
+                     $ find (isStart . fst) imprhoR
+      (i, o, _, t) <- liftMaybe (ann tyStart) ("dstReT applied to: " ++ show tyStart)
+                     $ dstReT $ rangeTy tyStart
 
-      --- if t = (a, s), need to set t := a and stos := s
-      let tups = dstTupleTy t
+      -- if t = (a, s), need to set t := a and stos := s -- TODO(chathhorn): this is a huge kludge
+      -- let t' :| ms = dstTupleTy t
 
-      rhoS      <- mkPureEnv nameNpolyS $ NE.tail tups
-      rhoR      <- mkPureEnv nameNpolyR $ NE.tail tups
+      rhoS      <- mkPureEnv nameNpolyS
+      rhoR      <- mkPureEnv nameNpolyR
       let rho = rhoS ++ rhoR
 
-      pure_smds <- mapM (purifyStateDefn rho $ NE.tail tups) smds
+      pure_smds <- mapM (purifyStateDefn rho) smds
       iv        <- freshVar "i"
 
-      -- by default, must add the eqn: dispatch R_return i = Left i
-      let ty   = dispatchTy i o tups
-          pdef = PatCon (MsgAnnote "Purify: pdef") (Embed (TyCon (MsgAnnote "Purify: pdef") (s2n "R"))) (Embed $ s2n "R_return") []
-          bdef = mkLeft (rangeTy ty) (Var (MsgAnnote "Purify: bdef") i iv)
+      -- TODO(chathhorn): mechanism for retrieving ms is really kludgy
+      -- TODO(chathhorn): rmds and imprhoR seem to contain duplicate information
+      (pure_rmds, PSto dcs pes _ ms) <- runStateT (mapM (purifyResDefn rho imprhoR iv) rmds) $ PSto [] [] [] []
 
-      (pure_rmds, PSto dcs pes _) <- runStateT
-            (mapM (purifyResDefn rho imprhoR iv $ NE.tail tups) rmds)
-            $ PSto [] ((pdef, bdef) :| []) []
+      -- TODO(chathhorn): entirely to remove duplicate R_return.
+      let dcs' = nubBy deq dcs
+          pes' = nubBy peq pes
+          deq (DataCon _ d1 _) (DataCon _ d2 _) = n2s d1 == n2s d2
+          peq p1 p2 = patStr (fst p1) == patStr (fst p2)
+          patStr (PatCon _ _ (Embed n) _) = n2s n
+          patStr (PatVar _ _ n) = n2s n
+      -- ^ TODO(chathhorn) hackity hack
 
-      disp <- mkDispatch ty pes iv
+      let ty   = dispatchTy i o (t :| ms)
 
-      pure ( ts ++ [mkRDatatype dcs]
-           , mkStart i o tups
+      disp <- mkDispatch ty pes' iv
+
+      pure ( ts ++ [mkRDatatype dcs']
+           , mkStart i o (t :| ms)
            : disp
            : ods ++ pure_smds ++ pure_rmds)
 
@@ -139,11 +148,12 @@ flattenExtr = \ case
       e                                                    -> (e, [])
 
 -- dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i
-mkDispatch :: Fresh m => Ty -> NonEmpty (Pat, Exp) -> Name Exp -> m Defn
-mkDispatch ty pes iv = do
+mkDispatch :: (MonadError AstError m, Fresh m) => Ty -> [(Pat, Exp)] -> Name Exp -> m Defn
+mkDispatch _ [] _ = failAt NoAnnote "Empty dispatch: invalid ReWire (is recursion guarded by signal?)"
+mkDispatch ty (p : pes) iv = do
       dsc     <- freshVar "dsc"
       let body  = Embed $ bind [dsc :: Name Exp, iv :: Name Exp] cases
-          cases = mkCase an (rangeTy ty) (Var an rTy dsc) pes
+          cases = mkCase an (Var an rTy dsc) (p :| pes)
           an    = MsgAnnote $ "Generated dispatch function: " ++ prettyPrint cases
 
       pure Defn
@@ -154,17 +164,17 @@ mkDispatch ty pes iv = do
             , defnBody   = body
             }
 
-mkCase :: Annote -> Ty -> Exp -> NonEmpty (Pat, Exp) -> Exp
-mkCase an ty dsc = \ case
-      (p, e) :| []         -> Case an ty dsc (bind p e) Nothing
-      (p, e) :| (pe : pes) -> Case an ty dsc (bind p e) . Just $ mkCase an ty dsc $ pe :| pes
+mkCase :: Annote -> Exp -> NonEmpty (Pat, Exp) -> Exp
+mkCase an dsc = \ case
+      (p, e) :| []         -> Case an (typeOf e) dsc (bind p e) Nothing
+      (p, e) :| (pe : pes) -> Case an (typeOf e) dsc (bind p e) . Just $ mkCase an dsc $ pe :| pes
 
 mkRDatatype :: [DataCon] -> DataDefn
 mkRDatatype dcs = DataDefn
        { dataAnnote = MsgAnnote "R Datatype"
        , dataName   = s2n "R"
        , dataKind   = KStar
-       , dataCons   = mkRDataCon (MsgAnnote "Purify: mkRDatatype") (s2n "R_return") [] : dcs
+       , dataCons   = dcs
        }
 
 -- global constant representation of R data type
@@ -173,13 +183,22 @@ rTy = TyCon (MsgAnnote "Purify: rTy") (s2n "R")
 
 type PureEnv = [(Name Exp, Ty)]
 
-mkPureEnv :: (Fresh m, MonadError AstError m) => [(Name Exp, Embed Poly)] -> [Ty] -> m PureEnv
-mkPureEnv [] _                      = pure []
-mkPureEnv ((n, Embed phi) : nps) ms = do
+mkPureEnv :: (Fresh m, MonadError AstError m) => [(Name Exp, Embed Poly)] -> m PureEnv
+mkPureEnv []                     = pure []
+mkPureEnv ((n, Embed phi) : nps) = do
       ty     <- poly2Ty phi
+      let ms  = getStates ty
       purety <- purifyTy (ann ty) ms ty
-      env    <- mkPureEnv nps ms
+      env    <- mkPureEnv nps
       pure $ (n, purety) : env
+
+getStates :: Ty -> [Ty]
+getStates t =
+      let r               = rangeTy t
+          sts             = fromMaybe [] (dstCompM r >>= dstStT)
+      in case dstReT r of
+          Just (_, _, sts', _) -> sts'
+          _                    -> sts
 
 lookupPure :: MonadError AstError m => Annote -> Name Exp -> PureEnv -> m Ty
 lookupPure an x rho = case lookup x rho of
@@ -218,14 +237,20 @@ isResMonadicDefn d
                   TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReT")) _) _) _) _ -> True
                   _                                                                      -> False
 
+isStartDefn :: Defn -> Either Defn Defn
+isStartDefn = \ case
+      d | isStart (defnName d) -> Left d
+      d                        -> Right d
+
 purifyStateDefn :: (Fresh m, MonadError AstError m, MonadIO m) =>
-                   PureEnv -> [Ty] -> Defn -> m Defn
-purifyStateDefn rho ms d = do
+                   PureEnv -> Defn -> m Defn
+purifyStateDefn rho d = do
       ty           <- poly2Ty phi
+      let ms        = getStates ty
       p_pure       <- lookupPure (ann d) (defnName d) rho
       let d_pure    = defnName d
       (args, e)    <- unbind body
-      (_, stys, _) <- liftMaybe (ann d) "failed at purifyStateDefn" $ dstStT ty
+      stys         <- liftMaybe (ann d) "failed at purifyStateDefn" $ dstCompM (rangeTy ty) >>= dstStT
       nstos        <- freshVars "sigma" stys
       let stos      = foldr (\ (n, t) nts -> Var (ann d) t n : nts) [] nstos
       e'           <- purifyStateBody rho stos stys 0 ms e
@@ -239,13 +264,14 @@ liftMaybe :: MonadError AstError m => Annote -> String -> Maybe a -> m a
 liftMaybe an msg = maybe (failAt an msg) pure
 
 purifyResDefn :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) =>
-                 PureEnv -> [(Name Exp, Ty)] -> Name Exp -> [Ty] -> Defn -> StateT PSto m Defn
-purifyResDefn rho imprhoR iv ms d = do
+                 PureEnv -> [(Name Exp, Ty)] -> Name Exp -> Defn -> StateT PSto m Defn
+purifyResDefn rho imprhoR iv d = do
       ty           <- lookupImpure an dname imprhoR
+      ms           <- addStates $ getStates ty
       pure_ty      <- purifyTy (ann d) ms ty
       (args, e)    <- unbind body
 
-      (_, i, o, a) <- liftMaybe (ann d) "failed at purifyResDefn" $ dstResTy ty
+      (i, o, _, a) <- liftMaybe (ann d) "failed at purifyResDefn" $ dstReT $ rangeTy ty
 
       (nstos, mst) <- do
             nstos   <- freshVars "sto" ms
@@ -291,8 +317,8 @@ purifyTy an ms t = case classifyTy t of
             --      T1 -> T2 -> ... -> Tn -> In -> S1 -> ... -> Sm -> (Either T (O, R), (S1, (..., Sm)))
       where purifyResTy :: [Ty] -> Ty -> Maybe Ty
             purifyResTy ms t = do
-                  (ts, _, o, a) <- dstResTy t
-                  pure $ mkArrowTy $ (ts ++ ms) |: mkRangeTy a o ms
+                  (_, o, _, a) <- dstReT $ rangeTy t
+                  pure $ mkArrowTy $ (paramTys t ++ ms) |: mkRangeTy a o ms
 
             -- Takes
             --      T1 -> T2 -> ... -> Tn -> StT S1 (StT S2 (... (StT Sm I))) T
@@ -305,8 +331,10 @@ purifyTy an ms t = case classifyTy t of
             -- into that form.
             purifyStTTy :: Ty -> Maybe Ty
             purifyStTTy t = do
-                  (ts, stos, a) <- dstStT t
-                  pure $ mkArrowTy $ (ts ++ stos) |: mkTupleTy (a : stos)
+                  let r        = rangeTy t
+                  a           <- dstCompR r
+                  stos        <- dstCompM r >>= dstStT
+                  pure $ mkArrowTy $ (paramTys t ++ stos) |: mkTupleTy (a : stos)
 
             classifyTy :: Ty -> TyVariety
             classifyTy = \ case
@@ -330,37 +358,41 @@ paramTys = paramTys' []
                   _                                                   -> reverse acc
 
 -- This takes a type of the form
---    T1 -> T2 -> ... -> Tnd -> StT S1 (StT S2 (... (StT Sm I))) T
+--    StT S1 (StT S2 (... (StT Sm I)))
 -- and returns
---    ([T1, ..., Tn], [S1, ..., Sm], T)
-dstStT :: Ty -> Maybe ([Ty], [Ty], Ty)
-dstStT ty = do
-      (a, stos) <- dstComp $ rangeTy ty
-      pure (paramTys ty, stos, a)
-      where dstComp :: Ty -> Maybe (Ty, [Ty])
-            dstComp = \ case
-                  TyApp _ c@(TyApp _ (TyApp _ (TyCon _ (n2s -> "StT")) _) _) a -> (a, ) <$> dstStT c
-                  TyApp _ (TyCon _ (n2s -> "I")) a                             -> pure (a, [])
-                  _                                                            -> Nothing
-
-            dstStT :: Ty -> Maybe [Ty]
-            dstStT = \ case
-                  TyApp _ (TyApp _ (TyCon _ (n2s -> "StT")) s) m -> (s :) <$> dstStT m
-                  TyCon _ (n2s -> "I")                           -> pure []
-                  _                                              -> Nothing
+--    [S1, ..., Sm]
+dstStT :: Ty -> Maybe [Ty]
+dstStT = \ case
+      TyApp _ (TyApp _ (TyCon _ (n2s -> "StT")) s) m -> (s :) <$> dstStT m
+      TyCon _ (n2s -> "I")                           -> pure []
+      _                                              -> Nothing
 
 -- This takes a type of the form
---    T1 -> T2 -> ... -> Tn -> ReT In Out (StT S1 (StT S2 (... (StT Sm I)))) T
+--    m a
 -- and returns
---    ([T1, ..., Tn], In, Out, T)
-dstResTy :: Ty -> Maybe ([Ty], Ty, Ty, Ty)
-dstResTy ty = do
-      (i, o, a)   <- dstReT $ rangeTy ty
-      pure (paramTys ty, i, o, a)
-      where dstReT :: Ty -> Maybe (Ty, Ty, Ty)
-            dstReT = \ case
-                  TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReT")) i) o) _) a -> Just (i, o, a)
-                  _                                                                      -> Nothing
+--    a
+dstCompR :: Ty -> Maybe Ty
+dstCompR = \ case
+      TyApp _ _ a -> pure a
+      _           -> Nothing
+
+-- This takes a type of the form
+--    m a
+-- and returns
+--    m
+dstCompM :: Ty -> Maybe Ty
+dstCompM = \ case
+      TyApp _ m _ -> pure m
+      _           -> Nothing
+
+-- This takes a type of the form
+--    ReT In Out (StT S1 (StT S2 (... (StT Sm I)))) T
+-- and returns
+--    (In, Out, [S1, ..., Sm], T)
+dstReT :: Ty -> Maybe (Ty, Ty, [Ty], Ty)
+dstReT = \ case
+      TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReT")) i) o) m) a -> dstStT m >>= \ ms -> pure (i, o, ms, a)
+      _                                                                      -> Nothing
 
 ---------------------------
 -- Purifying State Monadic definitions
@@ -417,7 +449,7 @@ purifyStateBody rho stos stys i ms = classifyCases >=> \ case
       Put an e     -> pure $ mkTuple $ nil : stos'
             where nil   = Con an nilTy (s2n "()")
                   nilTy = TyCon an (s2n "()")
-                  stos' = replaceAtIndex (i-1) e stos
+                  stos' = replaceAtIndex (i - 1) e stos
 
       Apply an t n es -> do
             rator <- mkPureApp an rho (Var an t n) es
@@ -448,7 +480,7 @@ purifyStateBody rho stos stys i ms = classifyCases >=> \ case
 
       Bind an t e g -> do
             (te, _)    <- dstArrow t
-            (_, _, a)  <- liftMaybe (ann te) "Non-StT Type passed to dstStT" $ dstStT te -- a is the return type of e
+            a          <- liftMaybe (ann te) "Invalid type in bind" $ dstCompR te -- a is the return type of e
             e'         <- purifyStateBody rho stos stys i ms e
             ns         <- freshVars "st" $ a : stys
             let vs      = foldr (\ (n, t) nts -> Var an t n : nts) [] ns
@@ -458,7 +490,7 @@ purifyStateBody rho stos stys i ms = classifyCases >=> \ case
             (gn, _, _) <- dstApp g
             ptg        <- lookupPure an gn rho
             let ty      = rangeTy ptg
-            pure $ mkLet an ty p e' g_pure_app
+            pure $ mkLet an p e' g_pure_app
 
 ---------------------------
 -- Purifying Resumption Monadic definitions
@@ -535,13 +567,21 @@ classifyRCases = \ case
      d                         -> failAt (ann d) $ "Unclassifiable R-case: " ++ show d
 
 -- state for res-purification.
-data PSto = PSto [DataCon] (NonEmpty (Pat, Exp)) [Defn]
+data PSto = PSto [DataCon] [(Pat, Exp)] [Defn] [Ty]
 
 addClause :: MonadState PSto m => DataCon -> m ()
-addClause dc   = modify (\ (PSto dcs pes defs) -> PSto (dc : dcs) pes defs)
+addClause dc   = modify (\ (PSto dcs pes defs sts) -> PSto (dc : dcs) pes defs sts)
 
 addEquation :: MonadState PSto m => (Pat, Exp) -> m ()
-addEquation pe = modify (\ (PSto dcs pes defs) -> PSto dcs (pe <| pes) defs)
+addEquation pe = modify (\ (PSto dcs pes defs sts) -> PSto dcs (pe : pes) defs sts)
+
+addStates :: MonadState PSto m => [Ty] -> m [Ty]
+addStates sts' = do
+      modify $ \ case
+            PSto dcs pes defs sts | length sts' > length sts -> PSto dcs pes defs sts'
+            sto                                              -> sto
+      PSto _ _ _ ms <- get
+      pure ms
 
 -- purifyResBody
 --  rho    -- pure environment
@@ -559,7 +599,8 @@ purifyResBody rho i o t iv mst = classifyRCases >=> \ case
       RReturn an e te       -> do
             te' <- purifyTy an (snd mst) te
             let etor = mkRangeTy te' o (snd mst)
-            pure $ mkLeft etor $ mkTuple $ e : fst mst
+            let tup  = mkTuple $ e : fst mst
+            pure $ mkLeft (mkArrowTy $ typeOf tup :| [etor]) tup
 
       -- purifyResBody (signal e
       --        >>= g e1 ... ek) = "Right ((e, (s1, (..., sm))), R_g e1 ... ek)"
@@ -570,22 +611,17 @@ purifyResBody rho i o t iv mst = classifyRCases >=> \ case
       --         dispatch ((R_g e1 ... ek), (s1, ..., sm)) i
       --      = g_pure e1 ... ek i s1 ... sm
       -- to defn of dispatch
-      SigK an t e g bes -> do
+      SigK an _ e g bes -> do
             let (es, ts) = unzip bes
             ts' <- mapM (purifyTy an $ snd mst) ts
 
             r_g <- fresh $ s2n $ "R_" ++ prettyPrint g
-            let rt      = mkArrowTy $ ts' |: rTy
-            let rcon    = Con an rt r_g
-            let rGes    = mkApp rcon es
             addClause (mkRDataCon an r_g ts')      -- "R_g T1 ... Tk"
 
-            ns     <- freshVars "s" $ snd mst
-            let stopat = mkTuplePat ns             -- Pattern (s1, ..., sn)
             (p, xs) <- mkRPat an ts' r_g           -- Pattern (R_g e1 ... ek)
-            let pairpat = case snd mst of          -- Pattern (R_g e1 ... ek, (s1, ..., sn))
-                  []-> p
-                  _ -> mkPairPat p stopat
+            ns      <- freshVars "s" $ snd mst
+            let pairpat = if null ns then p else mkPairPat p (mkTuplePat ns)
+            -- ^ Pattern (R_g e1 ... ek, (s1, ..., sn))
 
             let svars = map (\ (x, t) -> Var an t x) ns  -- [s1, ..., sn]
             let vars  = map (\ (x, t) -> Var an t x) (zip xs ts')   -- [x1, ..., xn]
@@ -593,30 +629,45 @@ purifyResBody rho i o t iv mst = classifyRCases >=> \ case
             -- "dispatch (R_g e1 ... ek, (s1, ..., sn)) i = g_pure e1 ... ek i s1 ... sn"
             addEquation (pairpat, g_pure_app)
 
-            let etor        = mkRangeTy t o (snd mst)
+            let rGes    = mkApp (Con an (mkArrowTy $ ts' |: rTy) r_g) es
             let inner = case fst mst of
                   []   -> rGes                    --  R_g e1 ... ek :: R
-                  stos -> mkTuple [rGes, mkTuple stos]
-                                                  -- ^ (R, (s1, ..., sm))
-            let outer   = mkTuple [e, inner]      -- (e, (R_g e1 ... ek, (s1, (..., sm))))
-            pure $ mkRight etor outer             -- Right ((e, R_g e1 ... ek), (s1, (..., sm)))
+                  stos -> mkPair rGes $ mkTuple stos
+                                              -- ^ (R, (s1, ..., sm))
+            let outer   = mkPair e inner      -- (e, (R_g e1 ... ek, (s1, (..., sm))))
+            let etor    = mkRangeTy t o (snd mst)
+            pure $ mkRight (mkArrowTy $ typeOf outer :| [etor]) outer             -- Right ((e, R_g e1 ... ek), (s1, (..., sm)))
 
       -- purifyResBody (signal e)         = "(Right ((e, (s1, (..., sm))), R_ret))"
       Signal an e -> do
-            let r_return     = Con an rTy (s2n "R_return")
+            let r_return     = s2n "R_return"
             let inner = case fst mst of
-                  []   -> r_return
-                  stos -> mkTuple [r_return, mkTuple stos]
-            let outer   = mkTuple [e, inner]
+                  []   -> Con an rTy r_return
+                  stos -> mkPair (Con an rTy r_return) $ mkTuple stos
+            let outer   = mkPair e inner
             let etor    = mkRangeTy t o (snd mst)
-            pure $ mkRight etor outer
+
+            -- by default, must add the eqn: dispatch R_return i = Left i
+            let ty   = dispatchTy i o (t :| snd mst)
+
+            p_ret <- fst <$> mkRPat an [] r_return
+            p_ret_ns <- freshVars "s" $ snd mst
+            let p_ret' = if null p_ret_ns then p_ret else mkPairPat p_ret (mkTuplePat p_ret_ns)
+
+            let var_i = Var an i iv
+            let b_ret = if null p_ret_ns then var_i else mkPair var_i (mkTuple $ map (uncurry $ flip $ Var an) p_ret_ns)
+            let b_ret' = mkLeft (mkArrowTy $ typeOf b_ret :| [rangeTy ty]) b_ret
+            addClause $ mkRDataCon an r_return []
+            addEquation (p_ret', b_ret')
+
+            pure $ mkRight (mkArrowTy $ typeOf outer :| [etor]) outer
 
       -- purifyResBody (e >>= g)          = "let
       --   -- N.B.: The irrefutable pattern here is
       --   -- sketchy, but it should be okay because
       --   -- of the restriction on occurrences of
       --   -- "signal"
-      --               (Left v, (s1, (..., sm))) = [|purifyResBody e|]
+      --               Left (v, (s1, (..., sm))) = [|purifyResBody e|]
       --             in
       --               g_pure v s1 ... sm"
       -- It appears to me that g can be an application (and not only a variable). In which case, I guess
@@ -628,7 +679,6 @@ purifyResBody rho i o t iv mst = classifyRCases >=> \ case
             -- ert is the return type of e; ty is the type of the whole expression
             (ert, ty)   <- dstArrow tg'
             e'          <- purifyResBody rho i o ert iv mst e
-            g'          <- purifyResBody rho i o t iv mst g
 
             -- start calculating pattern: p = (Left (v, (s1, (..., sm))))
             let etor     = mkRangeTy ert o (snd mst)
@@ -640,9 +690,9 @@ purifyResBody rho i o t iv mst = classifyRCases >=> \ case
 
             -- calculating g_pure_app = "g_pure v s1 ... sm"
             let vars     = map (\ (x, t) -> Var an t x) svars
-            g_pure_app  <- mkPureApp an rho g' (Var an ert v : vars)
+            g_pure_app  <- mkPureApp an rho g (Var an ert v : vars)
             -- done calculating g_pure_app
-            pure $ mkLet an ty p e' g_pure_app
+            pure $ mkLet an p e' g_pure_app
 
           -- N.b., the pure env rho will have to contain *all* purified bindings
           --       or this will fail.
@@ -653,10 +703,10 @@ purifyResBody rho i o t iv mst = classifyRCases >=> \ case
             -- the pattern "(v, (s1, (..., sm)))"
             let p       = mkTuplePat $ (v, t) : s_i
                 etor    = mkRangeTy t o (snd mst)
-                leftv   = mkLeft etor (Var an t v)
-                body    = mkTuple $ leftv : fst mst
-                body_ty = mkTupleTy (etor : snd mst)
-            pure $ mkLet an body_ty p e' body
+                tup     = mkTuple $ Var an t v : fst mst
+                body    = mkLeft (mkArrowTy $ typeOf tup :| [etor]) tup
+
+            pure $ mkLet an p e' body
 
       RVar an tx x   -> do
             tx' <- purifyTy an (snd mst) tx
@@ -739,11 +789,11 @@ mkTupleTy = \ case
       []     -> TyCon (MsgAnnote "Purify: mkTupleTy") $ s2n "()"
       t : ts -> foldl1 mkPairTy $ t :| ts
 
-dstTupleTy :: Ty -> NonEmpty Ty
+dstTupleTy :: Ty -> [Ty]
 dstTupleTy = \ case
-      -- TyCon _ (n2s -> "()")                         -> [] -- TODO(chathhorn): wish this was the inverse of mkTupleTy
-      TyApp _ (TyApp _ (TyCon _ (n2s -> "(,)")) t1) t2 -> dstTupleTy t1 <> (t2 :| [])
-      t                                                -> t :| []
+      TyCon _ (n2s -> "()")                            -> []
+      TyApp _ (TyApp _ (TyCon _ (n2s -> "(,)")) t1) t2 -> dstTupleTy t1 ++ [t2]
+      t                                                -> [t]
 
 mkRangeTy :: Ty -> Ty -> [Ty] -> Ty
 mkRangeTy a o = \ case
@@ -813,8 +863,8 @@ dstApp = \ case
 --     becomes
 -- > case e1 of { p -> e2 }
 -- N.b., use a Match here instead of a Case.
-mkLet :: Annote -> Ty -> Pat -> Exp -> Exp -> Exp
-mkLet an ty p e1 e2 = Case an ty e1 (bind p e2) Nothing
+mkLet :: Annote -> Pat -> Exp -> Exp -> Exp
+mkLet an p e1 e2 = Case an (typeOf e2) e1 (bind p e2) Nothing
 
 mkBindings :: (Pretty t, MonadError AstError m) => Annote -> Ty -> [t] -> m [(t, Ty)]
 mkBindings an t es = do

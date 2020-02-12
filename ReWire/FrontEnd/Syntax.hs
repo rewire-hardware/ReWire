@@ -232,16 +232,16 @@ instance Pretty Exp where
       pretty = \ case
             App _ (App _ (Con _ _ (n2s -> "(,)")) e1) e2 -> parens $ pretty e1 <+> text "," <+> pretty e2
             App _ e1 e2                                  -> parens $ hang (pretty e1) 4 $ pretty e2
-            Con _ _ n                                    -> pretty n
+            Con _ t n                                    -> parens $ pretty n <+> text "::" <+> pretty t
             Var _ _ n                                    -> text $ show n {- <+> text "::" <+> pretty t -}
             Lam _ _ e                                    -> runFreshM $ do
                   (p, e') <- unbind e
                   return $ parens $ text "\\" <+> text (show p) <+> text "->" <+> pretty e'
-            Case _ _ e e1 e2                             -> runFreshM $ do
+            Case _ t e e1 e2                             -> runFreshM $ do
                   (p, e1') <- unbind e1
                   return $ parens $
                         foldr ($+$) mempty
-                        [ text "case" <+> pretty e <+> text "of"
+                        [ (parens $ text "case" <+> text "::" <+> pretty t) <+> pretty e <+> text "of"
                         , nest 4 (braces $ vcat $ punctuate (space <> text ";")
                               [ pretty p <+> text "->" <+> pretty e1' ]
                               ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
