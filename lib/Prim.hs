@@ -31,14 +31,18 @@ signal = primError "Prim: signal"
 lift :: m a -> t m a
 lift = primError "Prim: lift"
 
--- TODO(chathhorn): note the kludged type
-extrude :: ReT i o (StT s m) a -> s -> ReT i o m ()
+extrude :: ReT i o (StT s m) a -> s -> ReT i o m (a, s)
 extrude = primError "Prim: extrude"
 
--- TODO(chathhorn): this is not the real type of unfold. r and a need
--- to be fixed types:
--- data A -- = (generated ctors)
--- data R -- = (generated ctors)
--- unfold :: (R -> i -> Either A (o, R)) -> Either A (o, R) -> ReT i o I a
-unfold :: (r -> i -> Either i (o, r)) -> Either a (o, r) -> ReT i o I a
+unfold :: (r -> i -> Either a (o, r)) -> Either a (o, r) -> ReT i o I a
 unfold = primError "Prim: unfold"
+
+-- extrude :: ReT i o (StT s m) a -> s -> ReT i o m (a, s)
+-- extrude = primError "Prim: extrude"
+-- 
+-- data R
+-- data A
+-- data S
+-- 
+-- unfold :: ((R, S) -> i -> Either A (o, (R, S))) -> Either A (o, (R, S)) -> ReT i o I a
+-- unfold = primError "Prim: unfold"
