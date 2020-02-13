@@ -18,13 +18,13 @@ module ReWire.FrontEnd.Syntax
       , Defn (..), DataDefn (..), DataCon (..)
       , FreeProgram, Program (..)
       , Kind (..), kblank
-      , flattenApp, arr, arrowRight
+      , flattenApp, flattenArrow, arr, arrowRight
       , fv, fvAny
       , Fresh, Name, Embed (..), TRec, Bind
       , FieldId
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly
-      , rangeTy
+      , rangeTy, paramTys
       , kmonad, tycomp
       , TypeAnnotated (..)
       ) where
@@ -132,7 +132,7 @@ instance Eq Poly where
 instance Pretty Poly where
       pretty (Poly pt) = runFreshM $ do
             (_, t) <- unbind pt
-            return $ pretty t
+            pure $ pretty t
 
 data Ty = TyApp Annote Ty Ty
         | TyCon Annote (Name TyConId)
@@ -236,19 +236,19 @@ instance Pretty Exp where
             Var _ _ n                                    -> text $ show n {- <+> text "::" <+> pretty t -}
             Lam _ _ e                                    -> runFreshM $ do
                   (p, e') <- unbind e
-                  return $ parens $ text "\\" <+> text (show p) <+> text "->" <+> pretty e'
+                  pure $ parens $ text "\\" <+> text (show p) <+> text "->" <+> pretty e'
             Case _ t e e1 e2                             -> runFreshM $ do
                   (p, e1') <- unbind e1
-                  return $ parens $
+                  pure $ parens $
                         foldr ($+$) mempty
-                        [ (parens $ text "case" <+> text "::" <+> pretty t) <+> pretty e <+> text "of"
+                        [ parens (text "case" <+> text "::" <+> pretty t) <+> pretty e <+> text "of"
                         , nest 4 (braces $ vcat $ punctuate (space <> text ";")
                               [ pretty p <+> text "->" <+> pretty e1' ]
                               ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
                               )
                         ]
             Match _ _ e p e1 as e2                       -> runFreshM $
-                  return $ parens $
+                  pure $ parens $
                         foldr ($+$) mempty
                         [ text "case" <+> pretty e <+> text "of"
                         , nest 4 (braces $ vcat $ punctuate (space <> text ";")
@@ -333,7 +333,7 @@ instance Annotated Defn where
 instance Pretty Defn where
       pretty (Defn _ n t b (Embed e)) = runFreshM $ do
             (vs, e') <- unbind e
-            return $ foldr ($+$) mempty
+            pure $ foldr ($+$) mempty
                   $  [ text (show n) <+> text "::" <+> pretty t ]
                   ++ [ text "{-# INLINE" <+> text (show n) <+> text "#-}" | b ]
                   ++ [ text (show n) <+> hsep (map (text . show) vs) <+> text "=", nest 4 $ pretty e' ]
@@ -374,28 +374,42 @@ instance NFData Program where
 instance Pretty Program where
       pretty (Program p) = runFreshM $ do
             (ts, vs) <- untrec p
-            return $ foldr (($+$) . pretty) mempty ts $+$ foldr (($+$) . pretty) mempty vs
+            pure $ foldr (($+$) . pretty) mempty ts $+$ foldr (($+$) . pretty) mempty vs
 ---
 
 flattenApp :: Exp -> [Exp]
-flattenApp (App _ e e') = flattenApp e ++ [e']
-flattenApp e            = [e]
+flattenApp = \ case
+      App _ e e' -> flattenApp e ++ [e']
+      e          -> [e]
+
+flattenArrow :: Ty -> ([Ty], Ty)
+flattenArrow = \ case
+      TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t1) t2 -> (t1 : ts, t)
+            where (ts, t) = flattenArrow t2
+      t                                               -> ([], t)
 
 rangeTy :: Ty -> Ty
-rangeTy (TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) t') = rangeTy t'
-rangeTy t                                                = t
+rangeTy = \ case
+      TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) t' -> rangeTy t'
+      t                                              -> t
 
 arr :: Ty -> Ty -> Ty
 arr t = TyApp (ann t) (TyApp (ann t) (TyCon (ann t) $ s2n "->") t)
 
 arr' :: Ty -> Bind (Name Exp) Exp -> Ty
-arr' t b = runFreshM $ do
-      (_, e) <- unbind b
-      return $ arr t $ typeOf e
+arr' t b = runFreshM (arr t . typeOf <$> (snd <$> unbind b))
 
 arrowRight :: Ty -> Ty
-arrowRight (TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) t') = t'
-arrowRight t                                                = t
+arrowRight = \ case
+      TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) t' -> t'
+      t                                              -> t
+
+paramTys :: Ty -> [Ty]
+paramTys = paramTys' []
+      where paramTys' :: [Ty] -> Ty -> [Ty]
+            paramTys' acc = \ case
+                  TyApp    _ (TyApp _ (TyCon _ (n2s -> "->")) t1) t2  -> paramTys' (t1 : acc) t2
+                  _                                                   -> reverse acc
 
 -- Orphans.
 

@@ -90,7 +90,7 @@ desugarRecords :: (MonadCatch m, MonadError AstError m) => Renamer -> Transform 
 desugarRecords rn = (\ (Module (l :: Annote) h p imps decls) -> do
             let fs = concatMap fieldInfo $ Map.assocs $ filterRecords $ getLocalCtorSigs rn
             ds <- concatMap tupList <$> mapM fieldDecl fs
-            return $ Module l h p imps (decls ++ ds)) -- ++ map inlineSig fs))
+            return $ Module l h p imps (decls ++ ds))
       ||> (\ (PRec (l :: Annote) c fpats) -> do
             let sig  = lookupCtorSig rn (rename Value rn c :: FQName)
             let flds = mapMaybe fst sig
@@ -171,9 +171,6 @@ desugarRecords rn = (\ (Module (l :: Annote) h p imps decls) -> do
             argPats :: Name Annote -> Int -> Int -> [Pat Annote]
             argPats x i tot = let a = ann x in
                   replicate i (PWildCard a) ++ [PVar a x] ++ replicate (tot - i - 1) (PWildCard a)
-
-            inlineSig :: FieldInfo -> Decl Annote
-            inlineSig (_, (f, _, _, _)) = InlineSig noAnn True Nothing (UnQual noAnn f)
 
             inSig :: [FQName] -> (a -> Maybe FQName) -> a -> Bool
             inSig sig proj = maybe True (flip any sig . (==)) . proj

@@ -94,6 +94,7 @@ library
                     ReWire.FrontEnd.ToMantle
                     ReWire.FrontEnd.Transform
                     ReWire.FrontEnd.TypeCheck
+                    ReWire.FrontEnd.TypeVerify
                     ReWire.FrontEnd.Unbound
                     ReWire.MiniHDL.Syntax
                     ReWire.Pretty

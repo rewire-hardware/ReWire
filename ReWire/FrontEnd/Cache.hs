@@ -22,6 +22,7 @@ import ReWire.FrontEnd.ToCore
 import ReWire.FrontEnd.ToMantle
 import ReWire.FrontEnd.Transform
 import ReWire.FrontEnd.TypeCheck
+import ReWire.FrontEnd.TypeVerify
 import ReWire.Pretty
 import ReWire.FrontEnd.Unbound (runFreshMT, FreshMT (..))
 

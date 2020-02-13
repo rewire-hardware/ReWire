@@ -350,13 +350,6 @@ dstArrow = \ case
       TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t1) t2 -> pure (t1, t2)
       t                                               -> failAt (ann t) "Purify: expecting arrow, encountered non-arrow"
 
-paramTys :: Ty -> [Ty]
-paramTys = paramTys' []
-      where paramTys' :: [Ty] -> Ty -> [Ty]
-            paramTys' acc = \ case
-                  TyApp    _ (TyApp _ (TyCon _ (n2s -> "->")) t1) t2  -> paramTys' (t1 : acc) t2
-                  _                                                   -> reverse acc
-
 -- This takes a type of the form
 --    StT S1 (StT S2 (... (StT Sm I)))
 -- and returns
@@ -487,9 +480,6 @@ purifyStateBody rho stos stys i ms = classifyCases >=> \ case
             g_pure_app <- mkPureApp an rho g vs
             let p       = mkTuplePat ns
             -- g can, in general, be an application. That's causing the error when (var2Name g) is called.
-            (gn, _, _) <- dstApp g
-            ptg        <- lookupPure an gn rho
-            let ty      = rangeTy ptg
             pure $ mkLet an p e' g_pure_app
 
 ---------------------------
@@ -677,7 +667,7 @@ purifyResBody rho i o t iv mst = classifyRCases >=> \ case
             -- purify the types of e and g
             tg'         <- purifyTy an (snd mst) tg
             -- ert is the return type of e; ty is the type of the whole expression
-            (ert, ty)   <- dstArrow tg'
+            (ert, _)    <- dstArrow tg'
             e'          <- purifyResBody rho i o ert iv mst e
 
             -- start calculating pattern: p = (Left (v, (s1, (..., sm))))
@@ -789,12 +779,6 @@ mkTupleTy = \ case
       []     -> TyCon (MsgAnnote "Purify: mkTupleTy") $ s2n "()"
       t : ts -> foldl1 mkPairTy $ t :| ts
 
-dstTupleTy :: Ty -> [Ty]
-dstTupleTy = \ case
-      TyCon _ (n2s -> "()")                            -> []
-      TyApp _ (TyApp _ (TyCon _ (n2s -> "(,)")) t1) t2 -> dstTupleTy t1 ++ [t2]
-      t                                                -> [t]
-
 mkRangeTy :: Ty -> Ty -> [Ty] -> Ty
 mkRangeTy a o = \ case
       [] -> mkEitherTy a (mkPairTy o rTy)
@@ -833,13 +817,11 @@ mkRPat an ts r_g = do
       let varpats = map (\ (x, t) -> PatVar an (Embed t) x) xs
       pure (PatCon an (Embed $ TyCon an $ s2n "R") (Embed r_g) varpats, map fst xs)
 
-mkPureVar :: MonadError AstError m => Annote -> PureEnv -> Name Exp -> Ty -> m Exp
-mkPureVar an rho x t
-      | n2s x == "extrude" = pure $ Var an t x
-      | n2s x == "unfold"  = pure $ Var an t x
-      | otherwise          = do
-            t' <- lookupPure an x rho
-            pure $ Var an t' x
+mkPureVar :: MonadError AstError m => Annote -> PureEnv -> Ty -> Name Exp -> m Exp
+mkPureVar an rho t x = case n2s x of
+      "extrude" -> pure $ Var an t x
+      "unfold"  -> pure $ Var an t x
+      _         -> Var an <$> lookupPure an x rho <*> pure x
 
 mkApp :: Exp -> [Exp] -> Exp
 mkApp = foldl' (App (MsgAnnote "Purify: mkApp"))
@@ -847,7 +829,7 @@ mkApp = foldl' (App (MsgAnnote "Purify: mkApp"))
 mkPureApp :: MonadError AstError m => Annote -> PureEnv -> Exp -> [Exp] -> m Exp
 mkPureApp an rho e es = do
       (rator, t, rands) <- dstApp e
-      ep                <- mkPureVar an rho rator t
+      ep                <- mkPureVar an rho t rator
       pure $ mkApp ep $ rands ++ es
 
 dstApp :: MonadError AstError m => Exp -> m (Name Exp, Ty, [Exp])
