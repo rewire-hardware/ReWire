@@ -30,7 +30,7 @@ fresh :: Monad m => FreshT m (ModuleName ())
 fresh = do
       x <- get
       modify (+ 1)
-      return $ ModuleName () $ '$' : show x
+      pure $ ModuleName () $ '$' : show x
 
 enterScope :: ModuleName () -> [Decl SrcSpanInfo] -> OpRenamer -> OpRenamer
 enterScope m ds rn op
@@ -89,12 +89,8 @@ renameDecl rn = \ case
             return $ PatBind l1 p (UnGuardedRhs l2 e') Nothing
       PatBind l1 p (UnGuardedRhs l2 e) (Just (BDecls l3 ds)) -> do
             mark' l1
-            m    <- fresh
-            e'   <- renameExp (enterScope m ds rn) e
-            e''  <- applyFixities (getFixities' m ds) e'
-            ds'  <- mapM (renameDecl $ enterScope m ds rn) ds
-            ds'' <- mapM (applyFixities $ getFixities' m ds) ds'
-            return $ PatBind l1 p (UnGuardedRhs l2 e'') $ Just (BDecls l3 ds'')
+            (e', ds') <- renameExpInScope rn ds e
+            return $ PatBind l1 p (UnGuardedRhs l2 e') $ Just (BDecls l3 ds')
       FunBind l ms -> do
             mark' l
             FunBind l <$> mapM (renameMatch rn) ms
@@ -108,24 +104,17 @@ renameMatch rn = \ case
             return $ Match l1 n ps (UnGuardedRhs l2 e') Nothing
       Match l1 n ps (UnGuardedRhs l2 e) (Just (BDecls l3 ds)) -> do
             mark' l1
-            m    <- fresh
-            e'   <- renameExp (enterScope m ds rn) e
-            e''  <- applyFixities (getFixities' m ds) e'
-            ds'  <- mapM (renameDecl $ enterScope m ds rn) ds
-            ds'' <- mapM (applyFixities $ getFixities' m ds) ds'
-            return $ Match l1 n ps (UnGuardedRhs l2 e'') $ Just (BDecls l3 ds'')
+            (e', ds') <- renameExpInScope rn ds e
+
+            return $ Match l1 n ps (UnGuardedRhs l2 e') $ Just (BDecls l3 ds')
       InfixMatch l1 p n ps (UnGuardedRhs l2 e) Nothing -> do
             mark' l1
             e' <- renameExp rn e
             return $ InfixMatch l1 p n ps (UnGuardedRhs l2 e') Nothing
       InfixMatch l1 p n ps (UnGuardedRhs l2 e) (Just (BDecls l3 ds)) -> do
             mark' l1
-            m    <- fresh
-            e'   <- renameExp (enterScope m ds rn) e
-            e''  <- applyFixities (getFixities' m ds) e'
-            ds'  <- mapM (renameDecl $ enterScope m ds rn) ds
-            ds'' <- mapM (applyFixities $ getFixities' m ds) ds'
-            return $ InfixMatch l1 p n ps (UnGuardedRhs l2 e'') $ Just (BDecls l3 ds'')
+            (e', ds') <- renameExpInScope rn ds e
+            return $ InfixMatch l1 p n ps (UnGuardedRhs l2 e') $ Just (BDecls l3 ds')
       m -> return m
 
 renameExp :: (MonadState Annote m, MonadFail m) => OpRenamer -> Exp SrcSpanInfo -> FreshT m (Exp SrcSpanInfo)
@@ -140,12 +129,8 @@ renameExp rn = \ case
       Lambda l ps e           -> mark' l >> Lambda l ps <$> renameExp rn e
       Let l1 (BDecls l2 ds) e -> do
             mark' l1
-            m    <- fresh
-            ds'  <- mapM (renameDecl $ enterScope m ds rn) ds
-            ds'' <- mapM (applyFixities $ getFixities' m ds) ds'
-            e'   <- renameExp (enterScope m ds rn) e
-            e''  <- applyFixities (getFixities' m ds) e'
-            return $ Let l1 (BDecls l2 ds'') e''
+            (e', ds') <- renameExpInScope rn ds e
+            return $ Let l1 (BDecls l2 ds') e'
       If l e1 e2 e3           -> mark' l >> If l <$> renameExp rn e1 <*> renameExp rn e2 <*> renameExp rn e3
       Case l e alts           -> mark' l >> Case l <$> renameExp rn e <*> mapM (renameAlt rn) alts
       Do l stmts              -> mark' l >> Do l <$> renameStmts rn stmts
@@ -164,12 +149,8 @@ renameAlt rn = \ case
             return $ Alt l1 p (UnGuardedRhs l2 e') Nothing
       Alt l1 p (UnGuardedRhs l2 e) (Just (BDecls l3 ds)) -> do
             mark' l1
-            m    <- fresh
-            e'   <- renameExp (enterScope m ds rn) e
-            e''  <- applyFixities (getFixities' m ds) e'
-            ds'  <- mapM (renameDecl $ enterScope m ds rn) ds
-            ds'' <- mapM (applyFixities $ getFixities' m ds) ds'
-            return $ Alt l1 p (UnGuardedRhs l2 e'') $ Just $ BDecls l3 ds''
+            (e', ds') <- renameExpInScope rn ds e
+            return $ Alt l1 p (UnGuardedRhs l2 e') $ Just $ BDecls l3 ds'
       a                                  -> return a
 
 renameStmts :: (MonadState Annote m, MonadFail m) => OpRenamer -> [Stmt SrcSpanInfo] -> FreshT m [Stmt SrcSpanInfo]
@@ -187,10 +168,19 @@ renameStmts rn (Qualifier l e : stmts) = do
 renameStmts rn (LetStmt l1 (BDecls l2 ds) : stmts) = do
       mark' l1
       m       <- fresh
-      ds'     <- mapM (renameDecl $ enterScope m ds rn) ds
-      ds''    <- mapM (applyFixities $ getFixities' m ds) ds'
       stmts'  <- renameStmts (enterScope m ds rn) stmts
       stmts'' <- mapM (applyFixities $ getFixities' m ds) stmts'
+      ds'     <- mapM (renameDecl $ enterScope m ds rn) ds
+      ds''    <- mapM (applyFixities $ getFixities' m ds) ds'
       return $ LetStmt l1 (BDecls l2 ds'') : stmts''
 renameStmts _ stmts = return stmts
+
+renameExpInScope :: (MonadState Annote m, MonadFail m) => OpRenamer -> [Decl SrcSpanInfo] -> Exp SrcSpanInfo -> FreshT m (Exp SrcSpanInfo, [Decl SrcSpanInfo])
+renameExpInScope rn ds e = do
+      m    <- fresh
+      e'   <- renameExp (enterScope m ds rn) e
+      e''  <- applyFixities (getFixities' m ds) e'
+      ds'  <- mapM (renameDecl $ enterScope m ds rn) ds
+      ds'' <- mapM (applyFixities $ getFixities' m ds) ds'
+      pure (e'', ds'')
 

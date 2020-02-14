@@ -117,6 +117,7 @@ getProgram fp = do
        -- >=> kindCheck >=> typeCheck
        -- >=> printInfo "___Post_Purge___"
        >=> purify -- TODO(chathhorn): move before purge? purge again after purify?
+       -- >=> typeVerify
        -- >=> printInfo "___Post_Purify___"
        -- >=> kindCheck
        -- >=> typeCheck
