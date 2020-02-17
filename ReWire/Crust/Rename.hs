@@ -32,7 +32,9 @@ import Language.Haskell.Exts.Pretty (prettyPrint)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo, noSrcSpan)
 import System.FilePath (joinPath, (<.>))
 
+import Data.Map.Strict (Map)
 import qualified Data.Map.Strict                        as Map
+import Data.Set (Set)
 import qualified Data.Set                               as Set
 import qualified Language.Haskell.Exts.Syntax           as S
 
@@ -42,26 +44,26 @@ import Language.Haskell.Exts.Syntax hiding (Namespace, Annotation, Module)
 -- | Map from type name to its set of data constructors.
 --   Note: the set of "ctors" also includes fields (things that might appear in
 --   an export list).
-type Ctors = Map.Map (Name ()) (Set.Set (Name ()))
+type Ctors = Map (Name ()) (Set (Name ()))
 
 -- | Qualified (globally-unique) version of the above map.
-type FQCtors = Map.Map FQName (Set.Set FQName)
+type FQCtors = Map FQName (Set FQName)
 
 -- | Map from construtor name to its field "signature,"
 --   which is a list of field names and types.
-type CtorSigs = Map.Map (Name ()) [(Maybe (Name ()), Type ())]
+type CtorSigs = Map (Name ()) [(Maybe (Name ()), Type ())]
 
 -- | Qualified (globally-unique) version of the above map.
-type FQCtorSigs = Map.Map FQName [(Maybe FQName, Type ())]
+type FQCtorSigs = Map FQName [(Maybe FQName, Type ())]
 
 -- Note that GHC (although we might not catch this) disallows the same symbol
 -- appearing twice in an export list (e.g., with different qualifiers, from
 -- different modules), but clearly you can import the same symbol (defined in
 -- the same or different modules) twice with different qualifiers.
 data Exports = Exports
-      { expValues      :: Set.Set FQName                  -- Values
-      , expTypes       :: Set.Set FQName                  -- Types
-      , expFixities    :: Set.Set Fixity                  -- Fixities
+      { expValues      :: Set FQName                  -- Values
+      , expTypes       :: Set FQName                  -- Types
+      , expFixities    :: Set Fixity                  -- Fixities
       , expCtors       :: FQCtors
       , expCtorSigs    :: FQCtorSigs
       }
@@ -81,7 +83,7 @@ instance Monoid Module where
 expValue :: FQName -> Exports -> Exports
 expValue x e@Exports { expValues } = e { expValues = Set.insert x expValues }
 
-expType :: FQName -> Set.Set FQName -> FQCtorSigs -> Exports -> Exports
+expType :: FQName -> Set FQName -> FQCtorSigs -> Exports -> Exports
 expType x cs' sigs' e@Exports { expValues, expTypes, expCtors, expCtorSigs } = e
       { expValues      = cs' <> expValues
       , expTypes       = Set.insert x expTypes
@@ -95,7 +97,7 @@ expFixity :: Assoc () -> Int -> Name () -> Exports -> Exports
 expFixity asc lvl x e@Exports { expFixities } = e { expFixities = Set.insert (Fixity asc lvl $ UnQual () x) expFixities }
 
 -- | Things in the export list of the named thing (ctors or fields).
-getCtors :: QNamish a => a -> Exports -> Set.Set FQName
+getCtors :: QNamish a => a -> Exports -> Set FQName
 getCtors x Exports { expCtors } = fromMaybe mempty $ Map.lookup (qnamish x) expCtors
 
 fixities :: Exports -> [Name ()] -> [Fixity]
@@ -160,9 +162,9 @@ instance QNamish String where
       fromQNamish n                                       = prettyPrint n
 
 data Renamer = Renamer
-      { rnNames    :: Map.Map (Namespace, QName ()) FQName
-      , rnExports  :: Map.Map (ModuleName ()) Exports
-      , rnFixities :: Set.Set Fixity
+      { rnNames    :: Map (Namespace, QName ()) FQName
+      , rnExports  :: Map (ModuleName ()) Exports
+      , rnFixities :: Set Fixity
       , rnCtors    :: Ctors
       , rnCtorSigs :: CtorSigs
       } deriving Show
@@ -219,20 +221,20 @@ lookupExp :: (Annotation a, MonadError AstError m) => Namespace -> Name a -> Exp
 lookupExp ns x Exports {expValues, expTypes} = case ns of
       Value -> lkup expValues
       Type  -> lkup expTypes
-      where lkup :: MonadError AstError m => Set.Set FQName -> m FQName
+      where lkup :: MonadError AstError m => Set FQName -> m FQName
             lkup xs = maybe (failAt (ann x) $ "Attempting to import an unexported symbol: " ++ prettyPrint x) pure
                     $ find cmp (Set.toList xs)
 
             cmp :: FQName -> Bool
             cmp (FQName _ x') = void x == x'
 
-getLocalTypes :: Renamer -> Set.Set (Name ())
+getLocalTypes :: Renamer -> Set (Name ())
 getLocalTypes rn = Map.keysSet $ rnCtors rn
 
 getLocalCtorSigs :: Renamer -> CtorSigs
 getLocalCtorSigs = rnCtorSigs
 
-lookupCtors :: QNamish a => Renamer -> a -> Set.Set FQName
+lookupCtors :: QNamish a => Renamer -> a -> Set FQName
 lookupCtors rn x = Map.findWithDefault mempty (rename Type rn x) (allCtors rn)
 
 lookupCtorSig :: QNamish a => Renamer -> a -> [(Maybe FQName, Type ())]

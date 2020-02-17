@@ -138,7 +138,7 @@ data Ty = TyApp Annote Ty Ty
         | TyCon Annote (Name TyConId)
         | TyVar Annote Kind (Name Ty)
         | TyBlank Annote
-           deriving (Eq, Generic, Typeable, Data, Show)
+      deriving (Eq, Ord, Generic, Typeable, Data, Show)
 
 instance Alpha Ty
 

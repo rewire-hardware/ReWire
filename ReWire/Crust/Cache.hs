@@ -118,19 +118,17 @@ getProgram fp = do
        -- >=> kindCheck >=> typeCheck
        -- >=> printInfo "___Post_Purge___"
        >=> purify -- TODO(chathhorn): move before purge? purge again after purify?
-       -- >=> typeVerify
-       -- >=> printInfo "___Post_Purify___"
-       -- >=> kindCheck
-       -- >=> typeCheck
+ --      >=> printInfo "___Post_Purify___"
+ --      >=> typeVerify
        >=> liftLambdas
        -- >=> printInfo "___Post_Second_LL___"
        >=> toCore
        $ (ts, ds)
 
-      -- liftIO $ putStrLn "___Core___"
-      -- liftIO $ putStrLn $ prettyPrint p
-      -- liftIO $ putStrLn "\nShow core:\n"
-      -- liftIO $ print $ unAnn p
+  --     liftIO $ putStrLn "___Core___"
+  --     liftIO $ putStrLn $ prettyPrint p
+  --     liftIO $ putStrLn "\nShow core:\n"
+  --     liftIO $ print $ unAnn p
 
       pure p
 
@@ -138,12 +136,12 @@ printInfo :: MonadIO m => String -> FreeProgram -> m FreeProgram
 printInfo msg fp = do
       let p = Program $ trec fp
       liftIO $ putStrLn msg
-      liftIO $ putStrLn "Free kind vars:\n"
-      liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Kind])
-      liftIO $ putStrLn "Free type vars:\n"
-      liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Ty])
-      liftIO $ putStrLn "Free tycon vars:\n"
-      liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name TyConId])
+      -- liftIO $ putStrLn "Free kind vars:\n"
+      -- liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Kind])
+      -- liftIO $ putStrLn "Free type vars:\n"
+      -- liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Ty])
+      -- liftIO $ putStrLn "Free tycon vars:\n"
+      -- liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name TyConId])
       liftIO $ putStrLn "Free con vars:\n"
       liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name DataConId])
       liftIO $ putStrLn "Free exp vars:\n"
