@@ -10,8 +10,8 @@ import Unbound.Generics.LocallyNameless.Name (string2Name)
 -- The "primitive basis" has some magical voodoo that cannot be expressed in
 -- the concrete syntax... so here we are.
 
-addPrims :: Monad m => FreeProgram -> m FreeProgram
-addPrims (ts, vs) = return (ts ++ primDatas, vs)
+addPrims :: FreeProgram -> FreeProgram
+addPrims (ts, vs) = (ts ++ primDatas, vs)
 
 primDatas :: [DataDefn]
 primDatas = map mkData

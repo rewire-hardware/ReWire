@@ -22,7 +22,7 @@ toCore :: MonadError AstError m => M.FreeProgram -> m C.Program
 toCore (ts, vs) = runFreshMT $ do
       ts' <- concat <$> mapM transData ts
       vs' <- mapM transDefn $ filter (notPrim . M.defnName) vs
-      return $ C.Program ts' vs'
+      pure $ C.Program ts' vs'
 
 notPrim :: Name a -> Bool
 notPrim = elem '.' . name2String

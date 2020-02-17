@@ -24,7 +24,7 @@ import Control.Arrow ((&&&), first)
 import Control.Monad (foldM, void)
 import Control.Monad.State (MonadState)
 import Control.Monad.Fail (MonadFail)
-import Data.List (find)
+import Data.List (find, foldl')
 import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
 import Language.Haskell.Exts.Fixity (Fixity (..), AppFixity (..))
@@ -184,9 +184,8 @@ exclude ns ks rn@Renamer { rnNames } = rn { rnNames = foldr (Map.delete . (ns,) 
 
 fixFixity :: (MonadFail m, MonadState Annote m) => Renamer -> S.Module SrcSpanInfo -> m (S.Module SrcSpanInfo)
 fixFixity Renamer { rnFixities } m = do
-      mark (ann m)
-      m' <- fixLocalOps m >>= applyFixities (Set.toList rnFixities)
-      return $ deuniquifyLocalOps m'
+      mark $ ann m
+      deuniquifyLocalOps <$> (fixLocalOps m >>= applyFixities (Set.toList rnFixities))
 
 addFixities :: [Fixity] -> Renamer -> Renamer
 addFixities fixities' rn@Renamer { rnFixities } = rn { rnFixities = rnFixities `Set.union` Set.fromList fixities' }
@@ -221,9 +220,8 @@ lookupExp ns x Exports {expValues, expTypes} = case ns of
       Value -> lkup expValues
       Type  -> lkup expTypes
       where lkup :: MonadError AstError m => Set.Set FQName -> m FQName
-            lkup xs = case find cmp (Set.toList xs) of
-                  Just x' -> return x'
-                  Nothing -> failAt (ann x) $ "Attempting to import an unexported symbol: " ++ prettyPrint x
+            lkup xs = maybe (failAt (ann x) $ "Attempting to import an unexported symbol: " ++ prettyPrint x) pure
+                    $ find cmp (Set.toList xs)
 
             cmp :: FQName -> Bool
             cmp (FQName _ x') = void x == x'
@@ -294,36 +292,34 @@ fromImps' m' quald (Just (False, (imps, fs))) exps = foldM ins mempty imps
                   e <- lookupExp ns x exps
                   let xs' = (Qual () m' $ void x, e)                               : [ (UnQual () $ void x, e) | not quald ]
                       fs' = map (requalFixity m') (filterFixities (== void x) fs) ++ if quald then [] else filterFixities (== void x) fs
-                  return $ extend ns xs' $ addFixities fs' tab
+                  pure $ extend ns xs' $ addFixities fs' tab
 -- List of imports with "hiding" -- import everything, then delete the items
 -- from the list.
-fromImps' m' quald (Just (True, (imps, fs))) exps = do
-      tab <- fromImps' m' quald noExps exps
-      foldM del tab imps
-      where del :: (Annotation a, MonadError AstError m) => Renamer -> (Namespace, Name a) -> m Renamer
-            del tab (ns, x) = return
-                  $ exclude ns [Qual () m' $ void x, UnQual () $ void x]
+fromImps' m' quald (Just (True, (imps, fs))) exps = flip (foldl' del) imps <$> fromImps' m' quald noExps exps
+      where del :: Renamer -> (Namespace, Name a) -> Renamer
+            del tab (ns, x) = exclude ns [Qual () m' $ void x, UnQual () $ void x]
                   $ addFixities (filterFixities (/= void x) fs) tab
 
 getImp :: (MonadError AstError m) => Exports -> Imports SrcSpanInfo -> ImportSpec SrcSpanInfo -> m (Imports SrcSpanInfo)
 getImp exps (imps, fs) = \ case
       IVar _ x          -> do
             _ <- lookupExp Value x exps
-            return ((Value, x) : imps, fixities exps [void x] ++ fs)
+            pure ((Value, x) : imps, fixities exps [void x] ++ fs)
       IAbs _ _ x        -> do
             _ <- lookupExp Type x exps
-            return ((Type, x) : imps, fs)
+            pure ((Type, x) : imps, fs)
       IThingAll _ x     -> do
             _ <- lookupExp Type x exps
-            return ( (Type, x) : (map ((Value,) . qnamish) (Set.toList $ getCtors (void x) exps) ++ imps)
+            pure ( (Type, x) : (map ((Value,) . qnamish) (Set.toList $ getCtors (void x) exps) ++ imps)
                    , fixities exps (map name (Set.toList $ getCtors (void x) exps)) ++ fs
                    )
       IThingWith _ x cs -> do
             _ <- lookupExp Type x exps
             mapM_ (flip (lookupExp Value) exps . toName) cs
-            return ( (Type, x) : (map ((Value,) . toName) cs ++ imps)
+            pure ( (Type, x) : (map ((Value,) . toName) cs ++ imps)
                    , fixities exps (map (void . toName) cs) ++ fs
                    )
       where toName :: CName a -> Name a
-            toName (VarName _ x) = x
-            toName (ConName _ x) = x
+            toName = \ case
+                  VarName _ x -> x
+                  ConName _ x -> x

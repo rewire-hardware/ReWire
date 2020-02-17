@@ -61,7 +61,7 @@ mkRenamer m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps m)
 
 getModule :: FilePath -> Cache (Module, (Module, Exports))
 getModule fp = Map.lookup fp <$> get >>= \ case
-      Just p  -> return p
+      Just p  -> pure p
       Nothing -> do
             modify $ Map.insert fp mempty
 
@@ -71,14 +71,14 @@ getModule fp = Map.lookup fp <$> get >>= \ case
             -- use exception handling.)
             m          <- maybe
                               (failAt (filePath fp) "File not found in load-path")
-                              (return . addMainModuleHead)
+                              (pure . addMainModuleHead)
                         $ msum mmods
 
             rn         <- mkRenamer m
             imps       <- loadImports m
 
             -- Phase 1 (haskell-src-exts) transformations.
-            (m', exps) <- return
+            (m', exps) <- pure
                       >=> lift . lift . fixFixity rn
                       >=> annotate
                       -- >=> printInfoHSE "__Pre_Desugar__" rn imps
@@ -88,7 +88,7 @@ getModule fp = Map.lookup fp <$> get >>= \ case
                       $ m
 
             modify $ Map.insert fp (m', (imps, exps))
-            return (m', (imps, exps))
+            pure (m', (imps, exps))
 
       where loadImports :: Annotation a => S.Module a -> Cache Module
             loadImports = fmap mconcat . mapM (fmap fst . getModule . toFilePath . void . importModule) . getImps
@@ -99,21 +99,22 @@ getProgram fp = do
       (mod, (imps, _))  <- getModule fp
       let (Module ts ds) = mod <> imps
 
-      p <- return
+      p <- pure
 --     >=> printInfo "__Desugared__"
-       >=> addPrims
-       >=> inline
+       >=> pure . addPrims
+       >=> pure . inline
 --     >=> printInfo "__Inlined__"
-       >=> kindCheck >=> typeCheck
+       >=> kindCheck
+       >=> typeCheck
        >=> neuterPrims
 --     >=> printInfo "__Inlined__"
        >=> reduce
-       >=> shiftLambdas
+       >=> pure . shiftLambdas
 --     >=> printInfo "___Post_TC___"
        >=> liftLambdas
 --     >=> typeCheck
 --     >=> printInfo "___Post_LL___"
-       >=> purgeUnused
+       >=> pure . purgeUnused
        -- >=> kindCheck >=> typeCheck
        -- >=> printInfo "___Post_Purge___"
        >=> purify -- TODO(chathhorn): move before purge? purge again after purify?
@@ -131,7 +132,7 @@ getProgram fp = do
       -- liftIO $ putStrLn "\nShow core:\n"
       -- liftIO $ print $ unAnn p
 
-      return p
+      pure p
 
 printInfo :: MonadIO m => String -> FreeProgram -> m FreeProgram
 printInfo msg fp = do
@@ -151,7 +152,7 @@ printInfo msg fp = do
       liftIO $ putStrLn $ prettyPrint p
       liftIO $ putStrLn "\nProgram (show):\n"
       liftIO $ print $ unAnn fp
-      return fp
+      pure fp
 
 printInfoHSE :: MonadIO m => String -> Renamer -> Module -> S.Module a -> m (S.Module a)
 printInfoHSE msg rn imps hse = do
@@ -166,5 +167,5 @@ printInfoHSE msg rn imps hse = do
       liftIO $ print $ void hse
       liftIO $ putStrLn "\nPretty HSE mod:\n"
       liftIO $ putStrLn $ P.prettyPrint $ void hse
-      return hse
+      pure hse
 
