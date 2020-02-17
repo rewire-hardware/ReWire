@@ -11,7 +11,7 @@ module ReWire.Annotation
       ) where
 
 import ReWire.SYB (runPureT,transform)
-import ReWire.FrontEnd.Unbound (Alpha (..))
+import ReWire.Unbound (Alpha (..))
 
 import Control.DeepSeq (NFData (..))
 import Control.Monad.Identity (Identity(..))

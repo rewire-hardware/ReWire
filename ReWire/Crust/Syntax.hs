@@ -12,7 +12,7 @@
            #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module ReWire.FrontEnd.Syntax
+module ReWire.Crust.Syntax
       ( DataConId (..), TyConId
       , Ty (..), Exp (..), Pat (..), MatchPat (..)
       , Defn (..), DataDefn (..), DataCon (..)
@@ -30,7 +30,7 @@ module ReWire.FrontEnd.Syntax
       ) where
 
 import ReWire.Annotation
-import ReWire.FrontEnd.Unbound
+import ReWire.Unbound
       ( Fresh (..), runFreshM
       , Embed (..)
       , TRec (..), trec, untrec
@@ -41,7 +41,7 @@ import ReWire.FrontEnd.Unbound
       , n2s, s2n
       )
 import ReWire.Pretty
-import qualified ReWire.FrontEnd.Unbound as UB (fv, fvAny)
+import qualified ReWire.Unbound as UB (fv, fvAny)
 
 import Control.DeepSeq (NFData (..), deepseq)
 import Data.Data (Typeable, Data (..))

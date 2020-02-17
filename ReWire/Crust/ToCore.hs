@@ -1,11 +1,11 @@
 {-# LANGUAGE LambdaCase, FlexibleContexts #-}
 {-# LANGUAGE Safe #-}
-module ReWire.FrontEnd.ToCore (toCore) where
+module ReWire.Crust.ToCore (toCore) where
 
 import ReWire.Annotation
 import ReWire.Error
 import ReWire.Pretty
-import ReWire.FrontEnd.Unbound
+import ReWire.Unbound
       ( Name, Fresh, runFreshMT, Embed (..)
       , unbind, name2String
       )
@@ -16,7 +16,7 @@ import Data.Map.Strict (Map)
 
 import qualified Data.Map.Strict        as Map
 import qualified ReWire.Core.Syntax     as C
-import qualified ReWire.FrontEnd.Syntax as M
+import qualified ReWire.Crust.Syntax as M
 
 toCore :: MonadError AstError m => M.FreeProgram -> m C.Program
 toCore (ts, vs) = runFreshMT $ do

@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase, FlexibleContexts #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.FrontEnd.Parse (tryParseInDir) where
+module ReWire.Crust.Parse (tryParseInDir) where
 
 import ReWire.Error
 

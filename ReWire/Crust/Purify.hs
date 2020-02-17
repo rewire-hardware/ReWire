@@ -1,14 +1,14 @@
 {-# LANGUAGE FlexibleContexts, LambdaCase, ViewPatterns, TupleSections #-}
 {-# LANGUAGE Safe #-}
 
-module ReWire.FrontEnd.Purify (purify) where
+module ReWire.Crust.Purify (purify) where
 
 import ReWire.Annotation
-import ReWire.FrontEnd.Unbound
+import ReWire.Unbound
       ( Fresh (..), s2n, n2s
       )
 import ReWire.Error
-import ReWire.FrontEnd.Syntax
+import ReWire.Crust.Syntax
 import ReWire.Pretty
 
 import Control.Arrow (first, second, (&&&))

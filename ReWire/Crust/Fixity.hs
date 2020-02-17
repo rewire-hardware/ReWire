@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase, ScopedTypeVariables, FlexibleContexts #-}
 {-# LANGUAGE Safe #-}
-module ReWire.FrontEnd.Fixity
+module ReWire.Crust.Fixity
       ( fixLocalOps
       , deuniquifyLocalOps
       , getFixities

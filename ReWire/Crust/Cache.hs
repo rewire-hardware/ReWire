@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase, FlexibleInstances, ViewPatterns #-}
 {-# LANGUAGE Safe #-}
-module ReWire.FrontEnd.Cache
+module ReWire.Crust.Cache
       ( runCache
       , getProgram
       , LoadPath
@@ -10,21 +10,21 @@ module ReWire.FrontEnd.Cache
 
 import ReWire.Annotation
 import ReWire.Error
-import ReWire.FrontEnd.Annotate
-import ReWire.FrontEnd.Desugar
-import ReWire.FrontEnd.KindCheck
-import ReWire.FrontEnd.Parse
-import ReWire.FrontEnd.PrimBasis
-import ReWire.FrontEnd.Purify
-import ReWire.FrontEnd.Rename
-import ReWire.FrontEnd.Syntax
-import ReWire.FrontEnd.ToCore
-import ReWire.FrontEnd.ToMantle
-import ReWire.FrontEnd.Transform
-import ReWire.FrontEnd.TypeCheck
-import ReWire.FrontEnd.TypeVerify
+import ReWire.Crust.Annotate
+import ReWire.Crust.Desugar
+import ReWire.Crust.KindCheck
+import ReWire.Crust.Parse
+import ReWire.Crust.PrimBasis
+import ReWire.Crust.Purify
+import ReWire.Crust.Rename
+import ReWire.Crust.Syntax
+import ReWire.Crust.ToCore
+import ReWire.Crust.ToCrust
+import ReWire.Crust.Transform
+import ReWire.Crust.TypeCheck
+import ReWire.Crust.TypeVerify
+import ReWire.Unbound (runFreshMT, FreshMT (..))
 import ReWire.Pretty
-import ReWire.FrontEnd.Unbound (runFreshMT, FreshMT (..))
 
 import Control.Monad ((>=>), msum, void)
 import Control.Monad.IO.Class (liftIO, MonadIO)
@@ -84,7 +84,7 @@ getModule fp = Map.lookup fp <$> get >>= \ case
                       -- >=> printInfoHSE "__Pre_Desugar__" rn imps
                       >=> desugar rn
                       -- >=> printInfoHSE "__Post_Desugar__" rn imps
-                      >=> toMantle rn
+                      >=> toCrust rn
                       $ m
 
             modify $ Map.insert fp (m', (imps, exps))

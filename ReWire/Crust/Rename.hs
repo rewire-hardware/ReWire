@@ -1,6 +1,6 @@
 {-# LANGUAGE NamedFieldPuns, Rank2Types, FlexibleInstances, FlexibleContexts, TupleSections, LambdaCase #-}
 {-# LANGUAGE Safe #-}
-module ReWire.FrontEnd.Rename
+module ReWire.Crust.Rename
       ( Renamer, fixFixity, getExports, allExports
       , exclude, extend, finger, rename
       , FQName (mod, name), qnamish
@@ -17,8 +17,8 @@ module ReWire.FrontEnd.Rename
 
 import ReWire.Annotation (Annotation, Annote, noAnn)
 import ReWire.Error
-import ReWire.FrontEnd.Fixity
-import ReWire.FrontEnd.Syntax (DataDefn, Defn)
+import ReWire.Crust.Fixity
+import ReWire.Crust.Syntax (DataDefn, Defn)
 
 import Control.Arrow ((&&&), first)
 import Control.Monad (foldM, void)

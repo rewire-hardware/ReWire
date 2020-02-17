@@ -5,16 +5,16 @@
 -- Haskell", though since we don't have type classes in core it is much
 -- simpler.
 --
-module ReWire.FrontEnd.TypeCheck (typeCheck) where
+module ReWire.Crust.TypeCheck (typeCheck) where
 
 import ReWire.Annotation
 import ReWire.Error
-import ReWire.FrontEnd.Syntax
-import ReWire.FrontEnd.Unbound
+import ReWire.Unbound
       ( fresh, substs, aeq, Subst, runFreshMT
       , n2s, s2n
       )
 import ReWire.Pretty
+import ReWire.Crust.Syntax
 
 import Control.DeepSeq (deepseq, force)
 import Control.Monad.Reader (ReaderT (..), local, asks)

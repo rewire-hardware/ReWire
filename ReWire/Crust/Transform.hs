@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, LambdaCase, ScopedTypeVariables, GADTs, TupleSections #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
-module ReWire.FrontEnd.Transform
+module ReWire.Crust.Transform
       ( inline, reduce
       , neuterPrims
       , shiftLambdas
@@ -10,14 +10,14 @@ module ReWire.FrontEnd.Transform
       ) where
 
 import ReWire.Error
-import ReWire.FrontEnd.Syntax
-import ReWire.FrontEnd.Unbound
+import ReWire.Unbound
       ( Fresh (..), s2n, n2s
       , substs, subst, unembed
       , isFreeName, runFreshM, runFreshMT
       , Name (..)
       )
 import ReWire.SYB
+import ReWire.Crust.Syntax
 
 import Control.Arrow (first)
 import Control.Monad.Catch (MonadCatch)

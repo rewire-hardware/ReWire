@@ -2,7 +2,6 @@
 module ReWire.Main (main) where
 
 import ReWire.FrontEnd
-import ReWire.FrontEnd.LoadPath
 import ReWire.Pretty
 import ReWire.Core.ToMiniHDL
 
@@ -34,37 +33,36 @@ exitUsage :: IO ()
 exitUsage = hPutStr stderr (usageInfo "Usage: rwc [OPTION...] <filename.rw>" options) >> exitFailure
 
 main :: IO ()
-main = do args                       <- getArgs
+main = do
+      args                       <- getArgs
 
-          let (flags,filenames,errs) =  getOpt Permute options args
+      let (flags,filenames,errs) =  getOpt Permute options args
 
-          unless (null errs) (mapM_ (hPutStrLn stderr) errs >> exitUsage)
+      unless (null errs) (mapM_ (hPutStrLn stderr) errs >> exitUsage)
 
-          when (length filenames /= 1) (hPutStrLn stderr "exactly one source file must be specified" >> exitUsage)
+      when (length filenames /= 1) (hPutStrLn stderr "exactly one source file must be specified" >> exitUsage)
 
-          let filename               =  head filenames
-              userLP                 =  concatMap getLoadPathEntries flags
-          systemLP                   <- getSystemLoadPath
-          let lp                     =  userLP ++ systemLP
+      let filename               =  head filenames
+          userLP                 =  concatMap getLoadPathEntries flags
+      systemLP                   <- getSystemLoadPath
+      let lp                     =  userLP ++ systemLP
 
-          when (FlagD `elem` flags) $
-            putStrLn ("loadpath: " ++ intercalate "," lp)
+      when (FlagD `elem` flags) $ putStrLn ("loadpath: " ++ intercalate "," lp)
 
-          prog_ <- loadProgram lp filename
+      prog_ <- loadProgram lp filename
 
-          case prog_ of
+      case prog_ of
             Left e     -> hPrint stderr e >> exitFailure
             Right prog -> do
-              when (FlagD `elem` flags) $ do
-                putStrLn "front end finished"
-                writeFile "Debug.hs" (prettyPrint prog)
-                putStrLn "debug out finished"
-              case compileProgram prog of
-                Left e      -> hPrint stderr e >> exitFailure
-                Right mprog ->
-                  case findOutFile flags of
-                    Just f  -> writeFile f (prettyPrint mprog)
-                    Nothing -> writeFile (filename -<.> "vhdl") (prettyPrint mprog)
+                  when (FlagD `elem` flags) $ do
+                        putStrLn "front end finished"
+                        writeFile "Debug.hs" (prettyPrint prog)
+                        putStrLn "debug out finished"
+                  case compileProgram prog of
+                        Left e      -> hPrint stderr e >> exitFailure
+                        Right mprog -> case findOutFile flags of
+                              Just f  -> writeFile f (prettyPrint mprog)
+                              Nothing -> writeFile (filename -<.> "vhdl") (prettyPrint mprog)
 
   where findOutFile :: [Flag] -> Maybe FilePath
         findOutFile (FlagO f:_) = Just f

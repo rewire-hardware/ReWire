@@ -1,11 +1,11 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, LambdaCase #-}
 {-# LANGUAGE Safe #-}
-module ReWire.FrontEnd.KindCheck (kindCheck) where
+module ReWire.Crust.KindCheck (kindCheck) where
 
 import ReWire.Annotation
 import ReWire.Error
-import ReWire.FrontEnd.Syntax
-import ReWire.FrontEnd.Unbound (fresh, substs, aeq, Subst, string2Name, name2String, runFreshMT)
+import ReWire.Crust.Syntax
+import ReWire.Unbound (fresh, substs, aeq, Subst, string2Name, name2String, runFreshMT)
 import ReWire.Pretty
 
 import Control.Monad.Reader (ReaderT (..), ask, local)

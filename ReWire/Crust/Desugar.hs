@@ -1,11 +1,11 @@
 {-# LANGUAGE LambdaCase, ScopedTypeVariables, FlexibleContexts, TupleSections #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
-module ReWire.FrontEnd.Desugar (desugar, addMainModuleHead) where
+module ReWire.Crust.Desugar (desugar, addMainModuleHead) where
 
 import ReWire.Annotation (noAnn, Annote (..))
 import ReWire.Error
-import ReWire.FrontEnd.Rename hiding (Module)
+import ReWire.Crust.Rename hiding (Module)
 import ReWire.SYB
 
 import Control.Monad.Catch (MonadCatch)
