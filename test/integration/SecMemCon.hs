@@ -199,7 +199,7 @@ connect x = do
     outports :: Sigs -> PortsOut
     outports s = PortsOut { ack_out = ack_reg s , data_out = data_out_reg s }
 
-start :: ReT PortsIn PortsOut I ((), (Sigs, Mem))
+start :: ReT PortsIn PortsOut I ()
 start = extrude reset (zeroSigs, zeroMem)
 
 reset :: ReT PortsIn PortsOut (StT (Sigs, Mem) I) ()

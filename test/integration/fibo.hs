@@ -26,6 +26,6 @@ incr = do
       lift (lift (put (plus r0 r1)))
       sig
 
-start :: ReT Bit W8 I (((),W8),W8)
+start :: ReT Bit W8 I ()
 start = extrude (extrude begin (W8 Zero Zero Zero Zero Zero Zero Zero Zero))
         (W8 Zero Zero Zero Zero Zero Zero Zero One)

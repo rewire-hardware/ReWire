@@ -123,7 +123,7 @@ data Out = DigestR (Oct W32) | Nix | Hashing
 --- "go" functions in TestingSHA256.hs.
 -------------------------------------------------------------------------------------------
 
-start :: ReT Inp Out I (((((), Oct W32), Hex W32), Oct W32), Ctr)
+start :: ReT Inp Out I ()
 start = extrude
          (extrude
            (extrude

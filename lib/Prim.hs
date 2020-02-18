@@ -31,15 +31,12 @@ signal = primError "Prim: signal"
 lift :: m a -> t m a
 lift = primError "Prim: lift"
 
-extrude :: ReT i o (StT s m) a -> s -> ReT i o m (a, s)
+extrude :: ReT i o (StT s m) a -> s -> ReT i o m a
 extrude = primError "Prim: extrude"
 
 unfold :: (r -> i -> Either a (o, r)) -> Either a (o, r) -> ReT i o I a
 unfold = primError "Prim: unfold"
 
--- extrude :: ReT i o (StT s m) a -> s -> ReT i o m (a, s)
--- extrude = primError "Prim: extrude"
--- 
 -- data R
 -- data A
 -- data S
