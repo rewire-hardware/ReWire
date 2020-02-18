@@ -250,10 +250,10 @@ instance Parenless Exp where
 instance Pretty Exp where
       pretty = \ case
             App _ (App _ (Con _ _ (n2s -> "(,)")) e1) e2 -> parens $ pretty e1 <> (text "," <+> pretty e2)
-            App _ e1@App {} e2                           -> hang (pretty e1) 1 $ mparen e2
-            App _ e1 e2                                  -> hang (mparen e1) 1 $ mparen e2
+            App _ e1@App {} e2                           -> hang (pretty e1) 2 $ mparen e2
+            App _ e1 e2                                  -> hang (mparen e1) 2 $ mparen e2
             Con _ t n                                    -> pretty n <+> braces (pretty t)
-            Var _ _ n                                    -> text $ show n
+            Var _ t n                                    -> text (show n) <+> braces (pretty t)
             Lam _ _ e                                    -> runFreshM $ do
                   (p, e') <- unbind e
                   pure $ text "\\" <+> text (show p) <+> text "->" <+> pretty e'
@@ -261,7 +261,7 @@ instance Pretty Exp where
                   (p, e1') <- unbind e1
                   pure $ foldr ($+$) empty
                         [ text "case" <+> braces (pretty t) <+> pretty e <+> text "of"
-                        , nest 2 (vcat $ punctuate (space <> text ";")
+                        , nest 2 (vcat $
                               [ pretty p <+> text "->" <+> pretty e1' ]
                               ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
                               )
@@ -269,12 +269,12 @@ instance Pretty Exp where
             Match _ t e p e1 as e2                       -> runFreshM $
                   pure $ foldr ($+$) empty
                         [ text "case" <+> braces (pretty t) <+> pretty e <+> text "of"
-                        , nest 2 (vcat $ punctuate (space <> text ";")
+                        , nest 2 (vcat $
                               [ pretty p <+> text "->" <+> pretty e1 <+> hsep (map pretty as) ]
                               ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
                               )
                         ]
-            NativeVHDL _ n e                             -> text "nativeVHDL" <+> doubleQuotes (text n) <+> parens (pretty e)
+            NativeVHDL _ n e                             -> text "nativeVHDL" <+> doubleQuotes (text n) <+> mparen e
             Error _ t m                                  -> text "primError" <+> braces (pretty t) <+> doubleQuotes (text m)
 
 ---

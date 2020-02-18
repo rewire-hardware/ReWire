@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase, FlexibleContexts #-}
 {-# LANGUAGE Safe #-}
-module ReWire.Core.ToMiniHDL where
+module ReWire.Core.ToMiniHDL (compileProgram) where
 
 import ReWire.Annotation
 import ReWire.Core.Syntax as C
@@ -54,7 +54,7 @@ merge an s'  = \ case
                   ++ ": " ++ prettyPrint t ++ " vs. " ++ prettyPrint t'
 
 apply :: TySub -> C.Ty -> C.Ty
-apply s (TyApp an t1 t2)  = TyApp an (apply s t1) (apply s t2)
+apply s (TyApp an t1 t2)  = TyApp an (apply s t1) $ apply s t2
 apply _ t@TyCon {}        = t
 apply s t@(TyVar _ i)     = fromMaybe t $ lookup i s
 
@@ -66,17 +66,19 @@ tcictors tci = filter isMine <$> askCtors
                   _                  -> False
 
 askDci :: DataConId -> CM DataCon
-askDci dci = do ctors <- askCtors
-                case find (\ (DataCon _ dci' _ _) -> dci == dci') ctors of
-                  Just ctor -> return ctor
-                  Nothing   -> lift $ failNowhere $ "askDci: no info for data constructor " ++ show dci
+askDci dci = do
+      ctors <- askCtors
+      case find (\ (DataCon _ dci' _ _) -> dci == dci') ctors of
+            Just ctor -> pure ctor
+            Nothing   -> lift $ failNowhere $ "askDci: no info for data constructor " ++ show dci
 
 dcitci :: DataConId -> CM TyConId
-dcitci dci = do DataCon l _ _ t <- askDci dci
-                case flattenTyApp (last (flattenArrow t)) of
-                  (TyCon _ tci:_) -> return tci
-                  _               -> lift $ failAt l $ "dcitci: malformed type for data constructor "
-                                          ++ show dci ++ " (does not end in application of TyCon)"
+dcitci dci = do
+      DataCon l _ _ t <- askDci dci
+      case flattenTyApp (last (flattenArrow t)) of
+            (TyCon _ tci:_) -> pure tci
+            _               -> lift $ failAt l $ "dcitci: malformed type for data constructor "
+                                    ++ show dci ++ " (does not end in application of TyCon)"
 
 nvec :: Int -> Int -> [Bit]
 nvec width n = nvec' 0 []
@@ -88,7 +90,7 @@ dciTagVector dci = do
       tci               <- dcitci dci
       ctors             <- tcictors tci
       DataCon _ _ pos _ <- askDci dci
-      return $ nvec (ceilLog2 (length ctors)) pos
+      pure $ nvec (ceilLog2 (length ctors)) pos
 
 dciPadVector :: Annote -> DataConId -> C.Ty -> CM [Bit]
 dciPadVector an dci t = do
@@ -99,7 +101,7 @@ dciPadVector an dci t = do
       let tot      =  ceilLog2 (length ctors) + fieldwidth
       tysize       <- sizeof an t
       let padwidth =  tysize - tot
-      return $ nvec padwidth 0
+      pure $ nvec padwidth 0
 
 ceilLog2 :: Int -> Int
 ceilLog2 n | n < 1 = 0
@@ -113,7 +115,7 @@ ctorwidth t (DataCon an _ _ ct) = do
       s          <- matchTy (ann t) tres t
       let targs' =  map (apply s) targs
       sizes      <- mapM (sizeof an) targs'
-      return $ sum sizes
+      pure $ sum sizes
 
 sizeof :: Annote -> C.Ty -> CM Int
 sizeof an t = case th of
@@ -121,40 +123,43 @@ sizeof an t = case th of
       TyCon _ tci  -> do
             ctors      <- tcictors tci
             ctorwidths <- mapM (ctorwidth t) ctors
-            return $ ceilLog2 (length ctors) + maximum (0 : ctorwidths)
+            pure $ ceilLog2 (length ctors) + maximum (0 : ctorwidths)
       TyVar _ _    -> failAt an $ "ToMiniHDL: sizeof: Encountered type variable: " ++ prettyPrint t
       where (th : _) = flattenTyApp t
 
 getTyPorts :: Annote -> C.Ty -> CM [Port]
-getTyPorts an t = do let ts       =  flattenArrow t
-                         targs    =  init ts
-                         tres     =  last ts
-                         argnames =  zipWith (\ _ x -> "arg" ++ show x) targs ([0..]::[Int])
-                     argsizes     <- mapM (sizeof an) targs
-                     ressize      <- sizeof an tres
-                     let argports =  zipWith (\ n x -> Port n In (TyStdLogicVector x)) argnames argsizes
-                         resport  =  Port "res" Out (TyStdLogicVector ressize)
-                     return (argports ++ [resport])
+getTyPorts an t = do
+      let ts       =  flattenArrow t
+          targs    =  init ts
+          tres     =  last ts
+          argnames =  zipWith (\ _ x -> "arg" ++ show x) targs ([0..]::[Int])
+      argsizes     <- mapM (sizeof an) targs
+      ressize      <- sizeof an tres
+      let argports =  zipWith (\ n x -> Port n In (TyStdLogicVector x)) argnames argsizes
+          resport  =  Port "res" Out (TyStdLogicVector ressize)
+      pure $ argports ++ [resport]
 
 mkDefnEntity :: Defn -> CM Entity
 mkDefnEntity (Defn an n t _) = do
       ps <- getTyPorts an t
-      return $ Entity (mangle n) ps
+      pure $ Entity (mangle n) ps
 
 freshName :: String -> CM Name
-freshName s = do (sigs, comps, ctr) <- get
-                 put (sigs, comps, ctr + 1)
-                 return (s ++ "_" ++ show ctr)
+freshName s = do
+      (sigs, comps, ctr) <- get
+      put (sigs, comps, ctr + 1)
+      pure (s ++ "_" ++ show ctr)
 
 addSignal :: String -> M.Ty -> CM ()
-addSignal n t = do (sigs, comps, ctr) <- get
-                   put (sigs ++ [Signal n t], comps, ctr)
+addSignal n t = do
+      (sigs, comps, ctr) <- get
+      put (sigs ++ [Signal n t], comps, ctr)
 
 addComponent :: Annote -> GId -> C.Ty -> CM ()
 addComponent an i t = do
       (sigs, comps, ctr) <- get
       case find ((== mangle i) . componentName) comps of
-            Just _ -> return ()
+            Just _ -> pure ()
             Nothing -> do
                   ps <- getTyPorts an t
                   put (sigs, Component (mangle i) ps : comps, ctr)
@@ -173,50 +178,53 @@ compilePat nscr offset (PatCon an _ dci ps) = do
                               (ExprSlice (ExprName nscr) offset (offset + tagw - 1))
                               (ExprBitString dcitagvec))
                             ematchs
-      return (ematch, eslices)
+      pure (ematch, eslices)
 compilePat nscr offset (PatVar an t)       = do
       size <- sizeof an t
-      return (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + size - 1)])
+      pure (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + size - 1)])
 
 askGIdTy :: GId -> CM C.Ty
-askGIdTy i = do defns <- askDefns
-                case find (\ (Defn _ i' _ _) -> i == i') defns of
-                  Just (Defn _ _ t _) -> return t
-                  Nothing             -> lift $ failNowhere $ "askGIdTy: no info for identifier " ++ show i
+askGIdTy i = do
+      defns <- askDefns
+      case find (\ (Defn _ i' _ _) -> i == i') defns of
+            Just (Defn _ _ t _) -> pure t
+            Nothing             -> lift $ failNowhere $ "askGIdTy: no info for identifier " ++ show i
 
 compileExp :: C.Exp -> CM ([Stmt], Name)
 compileExp e_ = case e of
       App {}        -> failAt (ann e) "compileExp: Got App after flattening (can't happen)"
       Prim {}       -> failAt (ann e) $ "compileExp: Encountered unknown Prim: " ++ prettyPrint e
-      GVar an t i   -> do n           <- (++ "_res") <$> freshName (mangle i)
-                          n_inst      <- (++ "_call") <$> freshName (mangle i)
-                          let tres    =  last (flattenArrow t)
-                          size        <- sizeof an tres
-                          addSignal n (TyStdLogicVector size)
-                          sssns       <- mapM compileExp eargs
-                          let stmts   =  concatMap fst sssns
-                              ns      =  map snd sssns
-                          addComponent an i t
-                          let argns   =  map (\ n -> "arg" ++ show n) ([0..] :: [Int])
-                              pm      =  PortMap (zip argns (map ExprName ns) ++ [("res", ExprName n)])
-                          return (stmts ++ [Instantiate n_inst (mangle i) pm], n)
+      GVar an t i   -> do
+            n           <- (++ "_res") <$> freshName (mangle i)
+            n_inst      <- (++ "_call") <$> freshName (mangle i)
+            let tres    =  last (flattenArrow t)
+            size        <- sizeof an tres
+            addSignal n (TyStdLogicVector size)
+            sssns       <- mapM compileExp eargs
+            let stmts   =  concatMap fst sssns
+                ns      =  map snd sssns
+            addComponent an i t
+            let argns   =  map (\ n -> "arg" ++ show n) ([0..] :: [Int])
+                pm      =  PortMap (zip argns (map ExprName ns) ++ [("res", ExprName n)])
+            pure (stmts ++ [Instantiate n_inst (mangle i) pm], n)
       LVar _ _ i       -> case eargs of
-                            [] -> return ([], "arg" ++ show i)
-                            _  -> failAt (ann e_) $ "compileExp: Encountered local variable in function position in " ++ prettyPrint e_
-      Con an t i       -> do n           <- (++"_res") <$> freshName (mangle (deDataConId i))
-                             let tres    =  last (flattenArrow t)
-                             size        <- sizeof an tres
-                             addSignal n (TyStdLogicVector size)
-                             sssns       <- mapM compileExp eargs
-                             let stmts   =  concatMap fst sssns
-                                 ns      =  map snd sssns
-                             tagvec      <- dciTagVector i
-                             padvec      <- dciPadVector an i tres
-                             return (stmts ++ [Assign (LHSName n) (ExprConcat
-                                                                   (foldl ExprConcat (ExprBitString tagvec) (map ExprName ns))
-                                                                      (ExprBitString padvec)
-                                                                   )],
-                                     n)
+            [] -> pure ([], "arg" ++ show i)
+            _  -> failAt (ann e_) $ "compileExp: Encountered local variable in function position in " ++ prettyPrint e_
+      Con an t i       -> do
+            n           <- (++"_res") <$> freshName (mangle (deDataConId i))
+            let tres    =  last (flattenArrow t)
+            size        <- sizeof an tres
+            addSignal n (TyStdLogicVector size)
+            sssns       <- mapM compileExp eargs
+            let stmts   =  concatMap fst sssns
+                ns      =  map snd sssns
+            tagvec      <- dciTagVector i
+            padvec      <- dciPadVector an i tres
+            pure (stmts ++ [Assign (LHSName n) (ExprConcat
+                                                  (foldl ExprConcat (ExprBitString tagvec) (map ExprName ns))
+                                                     (ExprBitString padvec)
+                                                  )],
+                    n)
       Match an t escr p gid lids malt -> case eargs of
             [] -> case malt of
                   Just ealt -> do
@@ -236,7 +244,7 @@ compileExp e_ = case e of
                                                         (map (ExprName . ("arg" ++) . show) lids
                                                          ++ efields)
                                                         ++ [("res", ExprName n_gid)])
-                        return (stmts_escr ++
+                        pure (stmts_escr ++
                                 [WithAssign ematch (LHSName n)
                                             [(ExprName n_gid, ExprBoolConst True)]
                                              (Just (ExprName n_ealt)),
@@ -257,7 +265,7 @@ compileExp e_ = case e of
                                                         (map (ExprName . ("arg" ++) . show) lids
                                                         ++ efields)
                                                         ++ [("res", ExprName n_gid)])
-                        return (stmts_escr ++ [Instantiate n_call (mangle gid) pm], n_gid)
+                        pure (stmts_escr ++ [Instantiate n_call (mangle gid) pm], n_gid)
             _  -> failAt (ann e_) $ "compileExp: Encountered match in function position in " ++ prettyPrint e_
       NativeVHDL an t i -> do
             n           <- (++ "_res") <$> freshName i
@@ -271,7 +279,7 @@ compileExp e_ = case e of
             addComponent an i t
             let argns   =  map (\ n -> "arg" ++ show n) ([0..]::[Int])
                 pm      =  PortMap (zip argns (map ExprName ns) ++ [("res", ExprName n)])
-            return (stmts ++ [Instantiate n_call i pm], n)
+            pure (stmts ++ [Instantiate n_call i pm], n)
   where (e:eargs) = flattenApp e_
 
 mkDefnArch :: Defn -> CM Architecture
@@ -279,76 +287,68 @@ mkDefnArch (Defn _ n _ e) = do
       put ([], [], 0) -- empty out the signal and component store, reset name counter
       (stmts, nres)   <- compileExp e
       (sigs, comps, _) <- get
-      return (Architecture (mangle n ++ "_impl") (mangle n) sigs comps (stmts ++ [Assign (LHSName "res") (ExprName nres)]))
+      pure (Architecture (mangle n ++ "_impl") (mangle n) sigs comps (stmts ++ [Assign (LHSName "res") (ExprName nres)]))
 
 compileDefn :: Defn -> CM Unit
-compileDefn d | defnName d == "Main.start" = do
-                  let t = defnTy d
-                      e = defnBody d
-                  case t of
-                    TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (TyConId "ReT")) t_in) t_out) (TyCon _ (TyConId "I"))) t_res ->
-                      case e of
-                        App an (App _ (Prim _ _ "unfold") (GVar _ t_loopfun n_loopfun)) (GVar _ t_startstate n_startstate) -> do
-                          put ([], [], 0) -- empty out signal and component store, reset name counter
-                          insize    <- sizeof an t_in
-                          outsize   <- sizeof an t_out
-                          statesize <- sizeof an t_startstate
-                          ressize   <- sizeof an t_res
-                          addComponent an n_startstate t_startstate
-                          addComponent an n_loopfun t_loopfun
-                          addSignal "start_state" (TyStdLogicVector statesize)
-                          addSignal "loop_out" (TyStdLogicVector statesize)
-                          addSignal "current_state" (TyStdLogicVector statesize)
-                          addSignal "done_or_next_state" (TyStdLogicVector statesize)
-                          addSignal "next_state" (TyStdLogicVector statesize)
-                          let ports       = [Port "clk" In TyStdLogic,
-                                             Port "rst" In TyStdLogic,
-                                             Port "inp" In (TyStdLogicVector insize),
-                                             Port "outp" Out (TyStdLogicVector (1 + max outsize ressize))]
-                              pad_for_out = ExprBitString (replicate (max 0 (ressize - outsize)) Zero)
-                              pad_for_res = ExprBitString (replicate (max 0 (outsize - ressize)) Zero)
-                          (sigs, comps, _) <- get
-                          return (Unit
-                                   (Entity "top_level" ports)
-                                   (Architecture
-                                       "top_level_impl"
-                                       "top_level"
-                                       sigs
-                                       comps
-                                       [Instantiate "start_call" (mangle n_startstate)
-                                          (PortMap [("res", ExprName "start_state")]),
-                                        Instantiate "loop_call" (mangle n_loopfun)
-                                          (PortMap [("arg0", ExprSlice (ExprName "current_state") (outsize + 1) (statesize - 1)),
-                                                    ("arg1", ExprName "inp"),
-                                                    ("res", ExprName "loop_out")]),
-                                        WithAssign (ExprName "rst") (LHSName "next_state")
-                                         [(ExprName "start_state", ExprBit One)]
-                                         (Just (ExprName "done_or_next_state")),
-                                        WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "done_or_next_state")
-                                         [(ExprName "loop_out", ExprBitString [One])]
-                                         (Just (ExprName "current_state")),
-                                        ClkProcess "clk"
-                                         [Assign (LHSName "current_state") (ExprName "next_state")],
-                                        WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "outp")
-                                         [(ExprConcat (ExprBitString [One]) (ExprConcat (ExprSlice (ExprName "current_state") 1 outsize) pad_for_out), ExprBitString [One])]
-                                         (Just (ExprConcat (ExprBitString [Zero]) (ExprConcat (ExprSlice (ExprName "current_state") 1 ressize) pad_for_res)))
-                                       ]
-                                   )
-                                 )
-                        _ ->
-                          failAt (ann d) $ "compileDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " ++ prettyPrint e
-                    _ ->
-                      failAt (ann d) $ "compileDefn: Main.start has illegal type: " ++ prettyPrint t
-              | otherwise                  = do
-                  ent  <- mkDefnEntity d
-                  arch <- mkDefnArch d
-                  return (Unit ent arch)
+compileDefn = \ case
+      d | defnName d == "Main.start" -> do
+            let t = defnTy d
+                e = defnBody d
+            case t of
+                  TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (TyConId "ReT")) t_in) t_out) (TyCon _ (TyConId "I"))) t_res ->
+                        case e of
+                              App an (App _ (Prim _ _ "unfold") (GVar _ t_loopfun n_loopfun)) (GVar _ t_startstate n_startstate) -> do
+                                    put ([], [], 0) -- empty out signal and component store, reset name counter
+                                    insize    <- sizeof an t_in
+                                    outsize   <- sizeof an t_out
+                                    statesize <- sizeof an t_startstate
+                                    ressize   <- sizeof an t_res
+                                    addComponent an n_startstate t_startstate
+                                    addComponent an n_loopfun t_loopfun
+                                    addSignal "start_state" (TyStdLogicVector statesize)
+                                    addSignal "loop_out" (TyStdLogicVector statesize)
+                                    addSignal "current_state" (TyStdLogicVector statesize)
+                                    addSignal "done_or_next_state" (TyStdLogicVector statesize)
+                                    addSignal "next_state" (TyStdLogicVector statesize)
+                                    let ports       = [Port "clk" In TyStdLogic,
+                                                       Port "rst" In TyStdLogic,
+                                                       Port "inp" In (TyStdLogicVector insize),
+                                                       Port "outp" Out (TyStdLogicVector (1 + max outsize ressize))]
+                                        pad_for_out = ExprBitString (replicate (max 0 (ressize - outsize)) Zero)
+                                        pad_for_res = ExprBitString (replicate (max 0 (outsize - ressize)) Zero)
+                                    (sigs, comps, _) <- get
+                                    pure (Unit
+                                             (Entity "top_level" ports)
+                                             (Architecture
+                                                 "top_level_impl"
+                                                 "top_level"
+                                                 sigs
+                                                 comps
+                                                 [Instantiate "start_call" (mangle n_startstate)
+                                                    (PortMap [("res", ExprName "start_state")]),
+                                                  Instantiate "loop_call" (mangle n_loopfun)
+                                                    (PortMap [("arg0", ExprSlice (ExprName "current_state") (outsize + 1) (statesize - 1)),
+                                                              ("arg1", ExprName "inp"),
+                                                              ("res", ExprName "loop_out")]),
+                                                  WithAssign (ExprName "rst") (LHSName "next_state")
+                                                   [(ExprName "start_state", ExprBit One)]
+                                                   (Just (ExprName "done_or_next_state")),
+                                                  WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "done_or_next_state")
+                                                   [(ExprName "loop_out", ExprBitString [One])]
+                                                   (Just (ExprName "current_state")),
+                                                  ClkProcess "clk"
+                                                   [Assign (LHSName "current_state") (ExprName "next_state")],
+                                                  WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "outp")
+                                                   [(ExprConcat (ExprBitString [One]) (ExprConcat (ExprSlice (ExprName "current_state") 1 outsize) pad_for_out), ExprBitString [One])]
+                                                   (Just (ExprConcat (ExprBitString [Zero]) (ExprConcat (ExprSlice (ExprName "current_state") 1 ressize) pad_for_res)))
+                                                 ]
+                                             )
+                                           )
+                              _ -> failAt (ann d) $ "compileDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " ++ prettyPrint e
+                  _ -> failAt (ann d) $ "compileDefn: Main.start has illegal type: " ++ prettyPrint t
+      d -> Unit <$> mkDefnEntity d <*> mkDefnArch d
 
 compileProgram :: C.Program -> Either AstError M.Program
 compileProgram p = fmap fst $ runIdentity $ runSyntaxError $ flip runReaderT (ctors p, defns p) $ flip runStateT ([], [], 0) $
-                     do
-                        units <- mapM compileDefn (defns p)
-                        return (M.Program units)
+      M.Program <$> mapM compileDefn (defns p)
 
-proj :: Defn -> GId
-proj (Defn _ gid _ _) = gid

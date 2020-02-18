@@ -24,8 +24,9 @@ import Control.Monad.Catch (MonadCatch)
 import Control.Monad.State (State, evalStateT, execState, StateT (..), get, modify)
 import Control.Monad (replicateM)
 import Data.Data (Data)
-import Data.List (nub, find, foldl')
+import Data.List (find, foldl')
 import Data.Maybe (fromJust, fromMaybe)
+import Data.Containers.ListUtils (nubOrdOn)
 
 import Data.Set (Set, union, (\\))
 import qualified Data.Set as Set
@@ -115,7 +116,7 @@ liftLambdas p = runFreshMT $ evalStateT (runT liftLambdas' p) []
             substs' subs = runT (transform $ \ n -> pure $ fromMaybe n (lookup n subs))
 
             bv :: Data a => a -> [(Name Exp, Ty)]
-            bv = nub . runQ (query $ \ case
+            bv = nubOrdOn fst . runQ (query $ \ case
                   Var _ t n | not $ isFreeName n -> [(n, t)]
                   _                              -> [])
 

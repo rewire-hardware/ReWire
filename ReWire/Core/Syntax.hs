@@ -20,12 +20,20 @@ import ReWire.Pretty
 import ReWire.Annotation
 
 import Data.Data (Typeable, Data(..))
-import Data.List (nub)
+import Data.List (intersperse)
 import Text.PrettyPrint hiding ((<>))
 import GHC.Generics (Generic)
+import Data.Containers.ListUtils (nubOrd)
 
 class TypeAnnotated a where
       typeOf :: a -> Ty
+
+class Parenless a where
+      -- | Parts that never need to be wrapped in parens during pretty printing.
+      parenless :: a -> Bool
+
+mparen :: (Pretty a, Parenless a) => a -> Doc
+mparen a = if parenless a then pretty a else parens $ pretty a
 
 newtype DataConId = DataConId { deDataConId :: String } deriving (Eq, Ord, Generic, Show, Typeable, Data)
 newtype TyConId   = TyConId   { deTyConId :: String } deriving (Eq, Ord, Generic, Show, Typeable, Data)
@@ -45,7 +53,7 @@ instance Pretty TyConId where
 data Ty = TyApp Annote Ty Ty
         | TyCon Annote TyConId
         | TyVar Annote TyId
-        deriving (Eq, Generic, Show, Typeable, Data)
+        deriving (Eq, Ord, Generic, Show, Typeable, Data)
 
 instance Annotated Ty where
       ann = \ case
@@ -54,16 +62,22 @@ instance Annotated Ty where
             TyVar a _    -> a
 
 instance Pretty Ty where
-      pretty (TyApp _ (TyApp _ (TyCon _ (TyConId "->")) t1) t2) = ppTyArrowL t1 <+> text "->" <+> pretty t2
-            where ppTyArrowL t@(TyApp _ (TyApp _ (TyCon _ (TyConId "->")) _) _) = parens $ pretty t
-                  ppTyArrowL t                                                  = pretty t
-      pretty (TyApp _ t1 t2)  = pretty t1 <+> ppTyAppR t2
-      pretty (TyCon _ n)      = text (deTyConId n)
-      pretty (TyVar _ x)      = text x
-
-ppTyAppR :: Ty -> Doc
-ppTyAppR t@TyApp {} = parens $ pretty t
-ppTyAppR t          = pretty t
+      pretty = \ case
+            TyApp _ (TyApp _ (TyCon _ c) t1) t2
+                  | deTyConId c == "->"  -> ppTyArrowL t1 <+> text "->" <+> pretty t2
+                  | deTyConId c == "(,)" -> parens $ ppTyArrowL t1 <> (text "," <+> pretty t2)
+                  where ppTyArrowL :: Ty -> Doc
+                        ppTyArrowL = \ case
+                              t@(TyApp _ (TyApp _ (TyCon _ (TyConId "->")) _) _) -> parens $ pretty t
+                              t                                                  -> pretty t
+            TyApp _ t1 t2                  -> pretty t1 <+> ppTyAppR t2
+                  where ppTyAppR :: Ty -> Doc
+                        ppTyAppR = \ case
+                              t@(TyApp _ (TyApp _ (TyCon _ (TyConId "(,)")) _) _) -> pretty t
+                              t@TyApp {}                                          -> parens $ pretty t
+                              t                                                   -> pretty t
+            TyCon _ n                      -> text $ deTyConId n
+            TyVar _ n                      -> text n
 
 ---
 
@@ -74,7 +88,7 @@ data Exp = App        Annote Exp Exp
          | Con        Annote Ty  DataConId
          | Match      Annote Ty  Exp Pat GId [LId] (Maybe Exp)
          | NativeVHDL Annote Ty  String
-         deriving (Eq, Show, Typeable, Data)
+         deriving (Eq, Ord, Show, Typeable, Data)
 
 instance TypeAnnotated Exp where
       typeOf = \ case
@@ -96,35 +110,45 @@ instance Annotated Exp where
             Match a _ _ _ _ _ _ -> a
             NativeVHDL a _ _    -> a
 
+instance Parenless Exp where
+      parenless = \ case -- simple (non-compound?) expressions
+            App _ (App _ (Con _ _ (DataConId "(,)")) _) _ -> True
+            Con _ _ _                                     -> True
+            GVar _ _ _                                    -> True
+            LVar _ _ _                                    -> True
+            Prim _ _ _                                    -> True
+            _                                             -> False
+
 instance Pretty Exp where
-      pretty (App _ e1 e2)                  = parens $ hang (pretty e1) 4 (pretty e2)
-      pretty (Con _ t n)                    = parens $ text (deDataConId n) <+> text "::" <+> pretty t
-      pretty (Prim _ _ n)                   = text n
-      pretty (GVar _ t n)                   = text n <+>  text "::" <+> pretty t
-      pretty (LVar _ _ n)                   = text $ "$" ++ show n
-      pretty (Match _ t e p e1 as Nothing)  = parens $
-            foldr ($+$) empty
-            [ text "match" <+> parens (text "::" <+> pretty t) <+> pretty e <+> text "of"
-            , nest 4 (braces $ vcat $ punctuate (space <> text ";" <> space)
-                  [ parens (pretty p) <+> text "->" <+> text e1
-                        <+> hsep (map (pretty . LVar undefined undefined) as) ])
-            ]
-      pretty (Match _ t e p e1 as (Just e2)) = parens $
-            foldr ($+$) empty
-            [ text "match"  <+> parens (text "::" <+> pretty t) <+> pretty e <+> text "of"
-            , nest 4 (braces $ vcat $ punctuate (space <> text ";" <> space)
-                  [ parens (pretty p) <+> text "->"
-                        <+> text e1 <+> hsep (map (pretty . LVar undefined undefined) as)
-                  , text "_" <+> text "->" <+> pretty e2
-                  ])
-            ]
-      pretty (NativeVHDL _ _ n)              = parens (text "nativeVHDL" <+> doubleQuotes (text n))
+      pretty = \ case
+            App _ (App _ (Con _ _ (DataConId "(,)")) e1) e2 -> parens $ pretty e1 <> (text "," <+> pretty e2)
+            App _ e1@App {} e2                              -> hang (pretty e1) 2 $ mparen e2
+            App _ e1 e2                                     -> hang (mparen e1) 2 $ mparen e2
+            Con _ t (DataConId n)                           -> text n <+> braces (pretty t)
+            Prim _ _ n                                      -> text n
+            GVar _ t n                                      -> text n <+> braces (pretty t)
+            LVar _ _ n                                      -> text $ "$" ++ show n
+            Match _ t e p e1 as Nothing                     -> foldr ($+$) empty
+                  [ text "match" <+> braces (pretty t) <+> pretty e <+> text "of"
+                  , nest 2 (vcat
+                       [ pretty p <+> text "->" <+> text e1
+                             <+> hsep (map (pretty . LVar undefined undefined) as) ])
+                  ]
+            Match _ t e p e1 as (Just e2)                   -> foldr ($+$) empty
+                  [ text "match"  <+> braces (pretty t) <+> pretty e <+> text "of"
+                  , nest 2 (vcat
+                        [ pretty p <+> text "->"
+                              <+> text e1 <+> hsep (map (pretty . LVar undefined undefined) as)
+                        , text "_" <+> text "->" <+> pretty e2
+                        ])
+                  ]
+            NativeVHDL _ _ n                                -> text "nativeVHDL" <+> doubleQuotes (text n)
 
 ---
 
 data Pat = PatCon Annote Ty DataConId [Pat]
          | PatVar Annote Ty
-         deriving (Eq, Show, Typeable, Data)
+         deriving (Eq, Ord, Show, Typeable, Data)
 
 instance TypeAnnotated Pat where
       typeOf = \ case
@@ -136,10 +160,18 @@ instance Annotated Pat where
             PatCon a _ _ _ -> a
             PatVar a _     -> a
 
+instance Parenless Pat where
+      parenless = \ case
+            PatCon _ _ (DataConId "(,)") _ -> True
+            PatCon _ _ _ []                -> True
+            PatVar _ _                     -> True
+            _                              -> False
+
 instance Pretty Pat where
       pretty = \ case
-            PatCon _ t n ps -> parens (text (deDataConId n) <+> hsep (map pretty ps) <+> text "::" <+> pretty t)
-            PatVar _ _      -> text "*"
+            PatCon _ _ (DataConId "(,)") [p1, p2] -> parens $ pretty p1 <> (text "," <+> pretty p2)
+            PatCon _ _ (DataConId n) ps           -> text n <+> hsep (map mparen ps)
+            PatVar _ t                            -> braces $ pretty t
 
 ---
 
@@ -147,7 +179,7 @@ data Defn = Defn { defnAnnote :: Annote,
                    defnName   :: GId,
                    defnTy     :: Ty, -- params given by the arity.
                    defnBody   :: Exp }
-      deriving (Eq, Show, Typeable, Data)
+      deriving (Eq, Ord, Show, Typeable, Data)
 
 instance Annotated Defn where
       ann (Defn a _ _ _) = a
@@ -155,12 +187,12 @@ instance Annotated Defn where
 instance Pretty Defn where
       pretty (Defn _ n ty e) = foldr ($+$) empty
                              ( (text n <+> text "::" <+> pretty ty)
-                             : [text n <+> hsep (map (text . ("$" ++) . show) [0 .. arity ty - 1]) <+> text "=", nest 4 $ pretty e])
+                             : [text n <+> hsep (map (text . ("$" ++) . show) [0 .. arity ty - 1]) <+> text "=", nest 2 $ pretty e])
 
 ---
 
 data DataCon = DataCon Annote DataConId Int Ty
-      deriving (Generic, Eq, Show, Typeable, Data)
+      deriving (Generic, Eq, Ord, Show, Typeable, Data)
 
 instance Annotated DataCon where
       ann (DataCon a _ _ _) = a
@@ -172,18 +204,18 @@ instance Pretty DataCon where
 
 data Program = Program { ctors :: [DataCon],
                          defns :: [Defn] }
-      deriving (Eq, Show, Typeable, Data)
+      deriving (Eq, Ord, Show, Typeable, Data)
 
 instance Semigroup Program where
-      (Program ts vs) <> (Program ts' vs') = Program (nub $ ts ++ ts') $ nub $ vs ++ vs'
+      (Program ts vs) <> (Program ts' vs') = Program (nubOrd $ ts ++ ts') $ nubOrd $ vs ++ vs'
 
 instance Monoid Program where
       mempty = Program mempty mempty
 
 instance Pretty Program where
-      pretty p = ppDataDecls (ctors p) $+$ ppDefns (defns p)
-            where ppDefns = foldr (($+$) . pretty) empty
-                  ppDataDecls = foldr (($+$) . pretty) empty
+      pretty p = ppDataDecls (ctors p) $+$ text "" $+$ ppDefns (defns p)
+            where ppDefns = vcat . intersperse (text "") . map pretty
+                  ppDataDecls = vcat . intersperse (text "") . map pretty
 
 ---
 
