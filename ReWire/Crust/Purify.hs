@@ -18,10 +18,9 @@ import Data.List (nubBy, foldl', intercalate)
 import Data.Either (partitionEithers)
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.Bool (bool)
-import Data.Tuple (swap)
 
-import Data.Set (Set, elems, singleton, insert)
-import Data.Map.Strict (Map, fromList)
+import Data.Set (Set, singleton, insert)
+import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
 atMay :: (Eq i, Num i) => [a] -> i -> Maybe a
@@ -36,7 +35,7 @@ isStart :: Name Exp -> Bool
 isStart = (== "Main.start") . n2s
 
 freshVar :: Fresh m => String -> m (Name a)
-freshVar n = fresh (s2n $ n ++ "_")
+freshVar n = fresh $ s2n n
 
 freshVars :: Fresh m => String -> [b] -> m [(Name a, b)]
 freshVars v = mapM (\ (i, b) -> (, b) <$> freshVar (v ++ show i)) . zip [0 :: Int ..]
@@ -57,6 +56,8 @@ purify (ts, ds) = do
       (rmds, ods)         <- partitionEithers <$> mapM isResMonadicDefn pds
       let (startd, rmds') =  partitionEithers  $  map  isStartDefn rmds
       let rmds = rmds' ++ startd -- TODO(chathhorn): kludge to make sure start is the last thing purified.
+
+      when (null startd) $ failAt noAnn "No definition for Main.start found!"
 
       let nameNpolyS = map (defnName &&& defnPolyTy) smds
           nameNpolyR = map (defnName &&& defnPolyTy) rmds
@@ -721,28 +722,12 @@ purifyResBody rho i o a iv stos ms = classifyRCases >=> \ case
             pure $ Match an ty' e1 mp e2' es (Just e3')
 
       where mkLeft :: (Fresh m, MonadError AstError m) => String -> Exp -> [Exp] -> StateT PSto m Exp
-            mkLeft s a [] = do
-                  let t = typeOf a
-                  PSto x y cs <- get
-                  c <- case Map.lookup (unAnn t) cs of
-                        Nothing -> do
-                              c <- freshVar s
-                              put $ PSto x y $ Map.insert (unAnn t) c cs
-                              pure c
-                        Just c -> pure c
-                  pure ( App ( MsgAnnote "Purify: mkLeft")
-                              ( Con ( MsgAnnote "Purify: mkLeft") (mkArrowTy [aTy] $ mkRangeTy o ms) (s2n "Prelude.Left"))
-                              ( App ( MsgAnnote "Purify: mkLeft")
-                                    ( Con (MsgAnnote "Purify: mkLeft") (mkArrowTy [t] aTy) c)
-                                    a
-                              )
-                        )
             mkLeft s a stos = do
                   let t = typeOf a
                   PSto x y cs <- get
                   c <- case Map.lookup (unAnn t) cs of
                         Nothing -> do
-                              c <- freshVar s
+                              c <- freshVar $ "A_" ++ s
                               put $ PSto x y $ Map.insert (unAnn t) c cs
                               pure c
                         Just c -> pure c
