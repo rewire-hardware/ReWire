@@ -118,17 +118,17 @@ getProgram fp = do
        -- >=> kindCheck >=> typeCheck
        -- >=> printInfo "___Post_Purge___"
        >=> purify -- TODO(chathhorn): move before purge? purge again after purify?
- --      >=> printInfo "___Post_Purify___"
+       -- >=> printInfo "___Post_Purify___"
  --      >=> typeVerify
        >=> liftLambdas
        -- >=> printInfo "___Post_Second_LL___"
        >=> toCore
        $ (ts, ds)
 
-  --     liftIO $ putStrLn "___Core___"
-  --     liftIO $ putStrLn $ prettyPrint p
-  --     liftIO $ putStrLn "\nShow core:\n"
-  --     liftIO $ print $ unAnn p
+      -- liftIO $ putStrLn "___Core___"
+      -- liftIO $ putStrLn $ prettyPrint p
+      -- liftIO $ putStrLn "\nShow core:\n"
+      -- liftIO $ print $ unAnn p
 
       pure p
 
