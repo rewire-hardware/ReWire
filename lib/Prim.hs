@@ -13,6 +13,9 @@ module Prim where
 -- data (a, b) = (a, b)
 -- ...
 
+data R_ -- Ctors generated during program build.
+data A_ -- Ctors generated during program build.
+
 return :: a -> m a
 return = primError "Prim: return"
 
@@ -34,12 +37,5 @@ lift = primError "Prim: lift"
 extrude :: ReT i o (StT s m) a -> s -> ReT i o m a
 extrude = primError "Prim: extrude"
 
-unfold :: (r -> i -> Either a (o, r)) -> Either a (o, r) -> ReT i o I a
+unfold :: ((R_, s) -> i -> Either (A_, s) (o, (R_, s))) -> Either (A_, s) (o, (R_, s)) -> ReT i o I a
 unfold = primError "Prim: unfold"
-
--- data R
--- data A
--- data S
--- 
--- unfold :: ((R, S) -> i -> Either A (o, (R, S))) -> Either A (o, (R, S)) -> ReT i o I a
--- unfold = primError "Prim: unfold"

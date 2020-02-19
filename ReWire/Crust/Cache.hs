@@ -133,15 +133,15 @@ getProgram flags fp = do
 printInfo :: MonadIO m => Bool -> String -> FreeProgram -> m FreeProgram
 printInfo verbose msg fp = do
       let p = Program $ trec fp
-      liftIO $ putStrLn "# =====================\n"
+      liftIO $ putStrLn "# ============================="
       liftIO $ putStrLn $ "# " ++ msg
-      liftIO $ putStrLn "# =====================\n"
-      liftIO $ putStrLn "## Free kind vars:\n"
-      liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Kind])
-      liftIO $ putStrLn "## Free type vars:\n"
-      liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Ty])
-      liftIO $ putStrLn "## Free tycon vars:\n"
-      liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name TyConId])
+      liftIO $ putStrLn "# =============================\n"
+      when verbose $ liftIO $ putStrLn "## Free kind vars:\n"
+      when verbose $ liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Kind])
+      when verbose $ liftIO $ putStrLn "## Free type vars:\n"
+      when verbose $ liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Ty])
+      when verbose $ liftIO $ putStrLn "## Free tycon vars:\n"
+      when verbose $ liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name TyConId])
       liftIO $ putStrLn "## Free con vars:\n"
       liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name DataConId])
       liftIO $ putStrLn "## Free exp vars:\n"

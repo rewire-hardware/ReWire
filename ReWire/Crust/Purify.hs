@@ -86,7 +86,7 @@ purify (ts, ds) = do
 
       disp <- mkDispatch i o ms iv pes'
 
-      pure ( ts ++ [mkRDatatype dcs'] ++ [mkADatatype $ Map.toList allAs]
+      pure ( filter (not . isAorR) ts ++ [mkRDatatype dcs'] ++ [mkADatatype $ Map.toList allAs]
            , mkStart i o ms
            : disp
            : ods ++ pure_smds ++ pure_rmds)
@@ -104,6 +104,9 @@ purify (ts, ds) = do
             mergeReTys :: (Ty, Ty, [Ty], Ty) -> (Ty, Ty, [Ty], Set Ty) -> (Ty, Ty, [Ty], Set Ty)
             mergeReTys (i, o, ms, a) (_ , _ , ms', a') | length ms > length ms' = (i, o, ms, insert a a')
             mergeReTys (_, _, _ , a) (i', o', ms', a')                          = (i', o', ms', insert a a')
+
+            isAorR :: DataDefn -> Bool
+            isAorR = uncurry (||) . ((== "A_") &&& (== "R_")) . n2s . dataName
 
 -- In addition to all the above, we re-tie the recursive knot by adding a new
 --   "start" as follows
@@ -176,7 +179,7 @@ mkCase an dsc (p, e) = \ case
 mkRDatatype :: [DataCon] -> DataDefn
 mkRDatatype dcs = DataDefn
        { dataAnnote = MsgAnnote "Purify: R Datatype"
-       , dataName   = s2n "R"
+       , dataName   = s2n "R_"
        , dataKind   = KStar
        , dataCons   = dcs
        }
@@ -187,7 +190,7 @@ mkRDataCon an r_g ts = DataCon an r_g $ [] |-> mkArrowTy ts rTy
 mkADatatype :: [(Ty, Name DataConId)] -> DataDefn
 mkADatatype allAs = DataDefn
        { dataAnnote = MsgAnnote "Purify: A Datatype"
-       , dataName   = s2n "A"
+       , dataName   = s2n "A_"
        , dataKind   = KStar
        , dataCons   = map mkADataCon allAs
        }
@@ -746,10 +749,10 @@ mkPair e1 e2 = App (MsgAnnote "Purify: mkPair") (App (MsgAnnote "Purify: mkPair"
 
 -- global constant representation of R data type
 rTy :: Ty
-rTy = TyCon (MsgAnnote "Purify: rTy") (s2n "R")
+rTy = TyCon (MsgAnnote "Purify: rTy") (s2n "R_")
 
 aTy :: Ty
-aTy = TyCon (MsgAnnote "Purify: aTy") (s2n "A")
+aTy = TyCon (MsgAnnote "Purify: aTy") (s2n "A_")
 
 nilTy :: Ty
 nilTy = TyCon (MsgAnnote "Purify: nilTy") (s2n "()")
@@ -803,7 +806,7 @@ mkRPat :: Fresh m => Annote -> [Ty] -> Name DataConId -> m (Pat, [Name Exp])
 mkRPat an ts r_g = do
       xs <- freshVars "store" ts
       let varpats = map (\ (x, t) -> PatVar an (Embed t) x) xs
-      pure (PatCon an (Embed $ TyCon an $ s2n "R") (Embed r_g) varpats, map fst xs)
+      pure (PatCon an (Embed $ TyCon an $ s2n "R_") (Embed r_g) varpats, map fst xs)
 
 mkPureVar :: MonadError AstError m => Annote -> PureEnv -> Ty -> Name Exp -> m Exp
 mkPureVar an rho t x = case n2s x of
