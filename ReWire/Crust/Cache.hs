@@ -25,8 +25,9 @@ import ReWire.Crust.TypeCheck
 import ReWire.Crust.TypeVerify
 import ReWire.Unbound (runFreshMT, FreshMT (..))
 import ReWire.Pretty
+import ReWire.Flags (Flag (..))
 
-import Control.Monad ((>=>), msum, void)
+import Control.Monad ((>=>), msum, void, when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Reader (runReaderT, ReaderT, MonadReader (..))
 import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify, lift)
@@ -94,76 +95,74 @@ getModule fp = Map.lookup fp <$> get >>= \ case
             loadImports = fmap mconcat . mapM (fmap fst . getModule . toFilePath . void . importModule) . getImps
 
 -- Phase 2 (pre-core) transformations.
-getProgram :: FilePath -> Cache Core.Program
-getProgram fp = do
+getProgram :: [Flag] -> FilePath -> Cache Core.Program
+getProgram flags fp = do
       (mod, (imps, _))  <- getModule fp
       let (Module ts ds) = mod <> imps
 
       p <- pure
---     >=> printInfo "__Desugared__"
+       >=> whenSet FlagDCrust1 (printInfo (FlagV `elem` flags) "Crust 1: desugared")
        >=> pure . addPrims
        >=> pure . inline
---     >=> printInfo "__Inlined__"
        >=> kindCheck
        >=> typeCheck
        >=> neuterPrims
---     >=> printInfo "__Inlined__"
        >=> reduce
        >=> pure . shiftLambdas
---     >=> printInfo "___Post_TC___"
        >=> liftLambdas
---     >=> typeCheck
---     >=> printInfo "___Post_LL___"
        >=> pure . purgeUnused
-       -- >=> kindCheck >=> typeCheck
-       -- >=> printInfo "___Post_Purge___"
+       >=> whenSet FlagDCrust2 (printInfo (FlagV `elem` flags) "Crust 2: Pre-purification")
        >=> purify -- TODO(chathhorn): move before purge? purge again after purify?
-       -- >=> printInfo "___Post_Purify___"
-       >=> typeVerify
+       >=> whenSet FlagDCrust3 (printInfo (FlagV `elem` flags) "Crust 3: Post-purification")
+       >=> whenSet FlagDTypes typeVerify
        >=> liftLambdas
-       -- >=> printInfo "___Post_Second_LL___"
        >=> toCore
        $ (ts, ds)
 
-      -- liftIO $ putStrLn "___Core___"
-      -- liftIO $ putStrLn $ prettyPrint p
-      -- liftIO $ putStrLn "\nShow core:\n"
-      -- liftIO $ print $ unAnn p
+      when (FlagDCore `elem` flags) $ liftIO $ do
+            putStrLn "# Core"
+            putStrLn $ prettyPrint p
+            when (FlagV `elem` flags) $ putStrLn "\n## Show core:\n"
+            when (FlagV `elem` flags) $ print $ unAnn p
 
       pure p
 
-printInfo :: MonadIO m => String -> FreeProgram -> m FreeProgram
-printInfo msg fp = do
+      where whenSet :: Applicative m => Flag -> (a -> m a) -> a -> m a
+            whenSet f m = if f `elem` flags then m else pure
+
+printInfo :: MonadIO m => Bool -> String -> FreeProgram -> m FreeProgram
+printInfo verbose msg fp = do
       let p = Program $ trec fp
-      liftIO $ putStrLn msg
-      -- liftIO $ putStrLn "Free kind vars:\n"
-      -- liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Kind])
-      -- liftIO $ putStrLn "Free type vars:\n"
-      -- liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Ty])
-      -- liftIO $ putStrLn "Free tycon vars:\n"
-      -- liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name TyConId])
-      liftIO $ putStrLn "Free con vars:\n"
+      liftIO $ putStrLn "# =====================\n"
+      liftIO $ putStrLn $ "# " ++ msg
+      liftIO $ putStrLn "# =====================\n"
+      liftIO $ putStrLn "## Free kind vars:\n"
+      liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Kind])
+      liftIO $ putStrLn "## Free type vars:\n"
+      liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Ty])
+      liftIO $ putStrLn "## Free tycon vars:\n"
+      liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name TyConId])
+      liftIO $ putStrLn "## Free con vars:\n"
       liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name DataConId])
-      liftIO $ putStrLn "Free exp vars:\n"
+      liftIO $ putStrLn "## Free exp vars:\n"
       liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Exp])
-      liftIO $ putStrLn "Program:\n"
+      liftIO $ putStrLn "## Program:\n"
       liftIO $ putStrLn $ prettyPrint p
-      liftIO $ putStrLn "\nProgram (show):\n"
-      liftIO $ print $ unAnn fp
+      when verbose $ liftIO $ putStrLn "\n## Program (show):\n"
+      when verbose $ liftIO $ print $ unAnn fp
       pure fp
 
 printInfoHSE :: MonadIO m => String -> Renamer -> Module -> S.Module a -> m (S.Module a)
 printInfoHSE msg rn imps hse = do
       liftIO $ putStrLn msg
-      liftIO $ putStrLn "\nRenamer:\n"
+      liftIO $ putStrLn "\n## Renamer:\n"
       liftIO $ print rn
-      liftIO $ putStrLn "\nExports:\n"
+      liftIO $ putStrLn "\n## Exports:\n"
       liftIO $ print $ allExports rn
-      liftIO $ putStrLn "\nShow imps:\n"
+      liftIO $ putStrLn "\n## Show imps:\n"
       liftIO $ print imps
-      liftIO $ putStrLn "\nShow HSE mod:\n"
+      liftIO $ putStrLn "\n## Show HSE mod:\n"
       liftIO $ print $ void hse
-      liftIO $ putStrLn "\nPretty HSE mod:\n"
+      liftIO $ putStrLn "\n## Pretty HSE mod:\n"
       liftIO $ putStrLn $ P.prettyPrint $ void hse
       pure hse
-

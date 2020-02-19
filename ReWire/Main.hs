@@ -4,6 +4,7 @@ module ReWire.Main (main) where
 import ReWire.FrontEnd
 import ReWire.Pretty
 import ReWire.Core.ToMiniHDL
+import ReWire.Flags (Flag (..))
 
 import Control.Monad (when,unless)
 import Data.List (intercalate)
@@ -14,15 +15,22 @@ import System.Environment
 import System.Exit
 import System.IO
 
-data Flag = FlagO String
-          | FlagD
-          | FlagLoadPath String
-          deriving (Eq,Show)
-
 options :: [OptDescr Flag]
 options =
        [ Option ['d'] ["debug"]    (NoArg FlagD)
                                    "dump miscellaneous debugging information"
+       , Option ['v'] ["verbose"]    (NoArg FlagV)
+                                   "more verbose debugging output"
+       , Option []    ["dcrust1"]    (NoArg FlagDCrust1)
+                                   "dump post-desugar crust"
+       , Option []    ["dcrust2"]    (NoArg FlagDCrust2)
+                                   "dump pre-purify crust"
+       , Option []    ["dcrust3"]    (NoArg FlagDCrust3)
+                                   "dump post-purify crust"
+       , Option []    ["dcore"]    (NoArg FlagDCore)
+                                   "dump core"
+       , Option []    ["dtypes"]    (NoArg FlagDTypes)
+                                   "enable extra typechecking after various IR transformations"
        , Option ['o'] []           (ReqArg FlagO "filename.vhd")
                                    "generate VHDL"
        , Option []    ["loadpath"] (ReqArg FlagLoadPath "dir1,dir2,...")
@@ -34,22 +42,22 @@ exitUsage = hPutStr stderr (usageInfo "Usage: rwc [OPTION...] <filename.rw>" opt
 
 main :: IO ()
 main = do
-      args                       <- getArgs
+      args                         <- getArgs
 
-      let (flags,filenames,errs) =  getOpt Permute options args
+      let (flags, filenames, errs) =  getOpt Permute options args
 
       unless (null errs) (mapM_ (hPutStrLn stderr) errs >> exitUsage)
 
       when (length filenames /= 1) (hPutStrLn stderr "exactly one source file must be specified" >> exitUsage)
 
-      let filename               =  head filenames
-          userLP                 =  concatMap getLoadPathEntries flags
-      systemLP                   <- getSystemLoadPath
-      let lp                     =  userLP ++ systemLP
+      let filename                 =  head filenames
+          userLP                   =  concatMap getLoadPathEntries flags
+      systemLP                     <- getSystemLoadPath
+      let lp                       =  userLP ++ systemLP
 
       when (FlagD `elem` flags) $ putStrLn ("loadpath: " ++ intercalate "," lp)
 
-      prog_ <- loadProgram lp filename
+      prog_ <- loadProgram flags lp filename
 
       case prog_ of
             Left e     -> hPrint stderr e >> exitFailure

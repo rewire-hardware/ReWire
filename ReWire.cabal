@@ -95,6 +95,7 @@ library
                     ReWire.Crust.TypeCheck
                     ReWire.Crust.TypeVerify
                     ReWire.Error
+                    ReWire.Flags
                     ReWire.MiniHDL.Syntax
                     ReWire.Pretty
                     ReWire.SYB
