@@ -491,7 +491,6 @@ classifyApp an (x, t, [e])
       | n2s x == "return" = pure $ RReturn an e
       | n2s x == "lift"   = pure $ RLift an e
       | n2s x == "signal" = pure $ Signal an e
-      | otherwise         = RApp an t x <$> mkBindings an t [e]
 classifyApp an (x, t, [e, g])
       | n2s x == ">>="     = case isSignal e of
             Just s -> do
@@ -502,17 +501,13 @@ classifyApp an (x, t, [e, g])
                   tau <- snd <$> dstArrow t
                   RBind an e g . fst <$> dstArrow tau
       | n2s x == "extrude" = pure $ Extrude an t x [e, g]
-      | otherwise          = RApp an t x <$> mkBindings an t [e, g]
       where isSignal :: Exp -> Maybe Exp
             isSignal = \ case
                   App _ (Var _ _ (n2s -> "signal")) e -> pure e
                   _                                   -> Nothing
 classifyApp an (x, t, es)
       | n2s x == "extrude" = pure $ Extrude an t x es
-      | otherwise          = do
-            bes <- mkBindings an t es
-            pure $ RApp an t x bes
-
+      | otherwise          = RApp an t x <$> mkBindings an t es
 
 classifyRCases :: (Fresh m, MonadError AstError m) => Exp -> m (RCase Annote Ty Pat Exp)
 classifyRCases = \ case
@@ -683,8 +678,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
             rator' <- purifyResBody rho i o a stos ms (Var an rty rator)
             -- N.b., don't think it's necessary to purify the rands because
             -- they're simply typed.
-            f      <- mkPureApp an rho rator' (map fst rands)
-            pure $ mkApp f stos
+            mkPureApp an rho rator' (map fst rands)
 
        -- e1 must be simply-typed, so don't purify it.
       RMatch an ty e1 mp e2 es Nothing   -> do
@@ -821,7 +815,7 @@ mkPureApp :: MonadError AstError m => Annote -> PureEnv -> Exp -> [Exp] -> m Exp
 mkPureApp an rho e es = do
       (rator, t, rands) <- dstApp e
       ep                <- mkPureVar an rho t rator
-      pure $ mkApp ep $ rands ++ es
+      pure $ mkApp ep $ es ++ rands
 
 dstApp :: MonadError AstError m => Exp -> m (Name Exp, Ty, [Exp])
 dstApp = \ case
