@@ -138,7 +138,7 @@ liftLambdas p = runFreshMT $ evalStateT (runT liftLambdas' p) []
 purgeUnused :: FreeProgram -> FreeProgram
 purgeUnused (ts, vs) = (inuseData (fv $ trec $ inuseDefn vs) ts, inuseDefn vs)
       where inuseData :: [Name DataConId] -> [DataDefn] -> [DataDefn]
-            inuseData ns = map $ inuseData' ns
+            inuseData ns = filter (not . null . dataCons) . map (inuseData' ns)
 
             inuseData' :: [Name DataConId] -> DataDefn -> DataDefn
             inuseData' ns d@(DataDefn an n k cs)
