@@ -48,8 +48,8 @@ import Data.Data (Typeable, Data (..))
 import Data.List (intersperse)
 import GHC.Generics (Generic)
 import Text.PrettyPrint
-      ( Doc, text, nest, hsep, punctuate, parens, doubleQuotes
-      , space, hang, braces, vcat, (<+>), ($+$), empty
+      ( Doc, text, nest, hsep, parens, doubleQuotes
+      , hang, braces, vcat, (<+>), ($+$), empty
       )
 
 fv :: (Alpha a, Typeable b) => a -> [Name b]
@@ -243,8 +243,8 @@ instance Annotated Exp where
 instance Parenless Exp where
       parenless = \ case -- simple (non-compound?) expressions
             App _ (App _ (Con _ _ (n2s -> "(,)")) _) _ -> True
-            Con _ _ _                                  -> True
-            Var _ _ _                                  -> True
+            Con {}                                     -> True
+            Var {}                                     -> True
             _                                          -> False
 
 instance Pretty Exp where
@@ -262,16 +262,16 @@ instance Pretty Exp where
                   pure $ foldr ($+$) empty
                         [ text "case" <+> braces (pretty t) <+> pretty e <+> text "of"
                         , nest 2 (vcat $
-                              [ pretty p <+> text "->" <+> pretty e1' ]
-                              ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
+                              ( pretty p <+> text "->" <+> pretty e1' )
+                              : maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
                               )
                         ]
             Match _ t e p e1 as e2                       -> runFreshM $
                   pure $ foldr ($+$) empty
                         [ text "case" <+> braces (pretty t) <+> pretty e <+> text "of"
                         , nest 2 (vcat $
-                              [ pretty p <+> text "->" <+> pretty e1 <+> hsep (map pretty as) ]
-                              ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
+                              ( pretty p <+> text "->" <+> pretty e1 <+> hsep (map pretty as) )
+                              : maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
                               )
                         ]
             NativeVHDL _ n e                             -> text "nativeVHDL" <+> doubleQuotes (text n) <+> mparen e
@@ -301,7 +301,7 @@ instance Parenless Pat where
       parenless = \ case
             PatCon _ _ (Embed (n2s -> "(,)")) _ -> True
             PatCon _ _ _ []                     -> True
-            PatVar _ _ _                        -> True
+            PatVar {}                           -> True
             _                                   -> False
 
 instance Pretty Pat where
@@ -336,7 +336,7 @@ instance Parenless MatchPat where
       parenless = \ case
             MatchPatCon _ _ (n2s -> "(,)") _ -> True
             MatchPatCon _ _ _ []             -> True
-            MatchPatVar _ _                  -> True
+            MatchPatVar {}                   -> True
             _                                -> False
 
 instance Pretty MatchPat where

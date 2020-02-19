@@ -125,10 +125,10 @@ getProgram fp = do
        >=> toCore
        $ (ts, ds)
 
-      liftIO $ putStrLn "___Core___"
-      liftIO $ putStrLn $ prettyPrint p
-      liftIO $ putStrLn "\nShow core:\n"
-      liftIO $ print $ unAnn p
+      -- liftIO $ putStrLn "___Core___"
+      -- liftIO $ putStrLn $ prettyPrint p
+      -- liftIO $ putStrLn "\nShow core:\n"
+      -- liftIO $ print $ unAnn p
 
       pure p
 

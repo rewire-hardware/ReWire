@@ -93,7 +93,7 @@ purify (ts, ds) = do
 
       -- TODO(chathhorn): what if I retype extrude and unfold (et al.?) with concrete types and re-run type inference?
       where getCanonReTy :: Fresh m => [Defn] -> m (Maybe (Ty, Ty, [Ty], Set Ty))
-            getCanonReTy = (>>= pure . getCanonReTy' . catMaybes) . sequence . map (projDefnTy >=> pure . dstReT)
+            getCanonReTy = (>>= pure . getCanonReTy' . catMaybes) . mapM (projDefnTy >=> pure . dstReT)
 
             getCanonReTy' :: [(Ty, Ty, [Ty], Ty)] -> Maybe (Ty, Ty, [Ty], Set Ty)
             getCanonReTy' = \ case
@@ -244,12 +244,11 @@ purifyStateDefn rho d = do
       (args, e)    <- unbind body
       stys         <- liftMaybe (ann d) "failed at purifyStateDefn" $ dstCompM (rangeTy ty) >>= dstStT
       nstos        <- freshVars "sigma" stys
-      let stos      = foldr (\ (n, t) nts -> Var (ann d) t n : nts) [] nstos
+      let stos      = map (mkVar $ ann d) nstos
       e'           <- purifyStateBody rho stos stys 0 ms e
       let b_pure    = bind (args ++ map fst nstos) e'
       pure $ d { defnName = d_pure, defnPolyTy = [] |-> p_pure, defnBody = Embed b_pure }
-      where
-            Embed body = defnBody d
+      where Embed body = defnBody d
             Embed phi  = defnPolyTy d
 
 liftMaybe :: MonadError AstError m => Annote -> String -> Maybe a -> m a
@@ -266,7 +265,7 @@ purifyResDefn rho ms d = do
 
       (nstos, stos, ms) <- do
             nstos   <- freshVars "sto" ms
-            pure (map fst nstos, map (\ (n, t) -> Var an t n) nstos, ms)
+            pure (map fst nstos, map (mkVar an) nstos, ms)
       e'           <- purifyResBody rho i o a stos ms e
 
       --
@@ -448,7 +447,7 @@ purifyStateBody rho stos stys i ms = classifyCases >=> \ case
             a          <- liftMaybe (ann te) "Invalid type in bind" $ dstCompR te -- a is the return type of e
             e'         <- purifyStateBody rho stos stys i ms e
             ns         <- freshVars "st" $ a : stys
-            let vs      = foldr (\ (n, t) nts -> Var an t n : nts) [] ns
+            let vs      = map (mkVar an) ns
             g_pure_app <- mkPureApp an rho g vs
             let p       = mkTuplePat ns
             -- g can, in general, be an application. That's causing the error when (var2Name g) is called.
@@ -498,7 +497,7 @@ classifyApp an (x, t, [e, g])
                   pure $ SigK an t s g' bes
             Nothing -> do
                   tau <- snd <$> dstArrow t
-                  RBind an e g <$> fst <$> dstArrow tau
+                  RBind an e g . fst <$> dstArrow tau
       | n2s x == "extrude" = pure $ Extrude an t x [e, g]
       | otherwise          = RApp an t x <$> mkBindings an t [e, g]
       where isSignal :: Exp -> Maybe Exp
@@ -631,11 +630,9 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
             e'          <- purifyResBody rho i o ert stos ms e
 
             -- start calculating pattern: p = (Left (v, (s1, (..., sm))))
-            let etor     = mkRangeTy o ms
-            svars       <- freshVars "state" ms
+            svars       <- freshVars "s" ms
             v           <- freshVar "v"
-            let stps     = mkTuplePat $ (v, ert) : svars
-            let p        = PatCon an (Embed etor) (Embed $ s2n "Prelude.Left") [stps]
+            p           <- mkLeftPat "RBind" (patVar (v, ert)) (map patVar svars)
             -- done calculating p = Left (v, (s1, (..., sm)))
 
             -- calculating g_pure_app = "g_pure v s1 ... sm"
@@ -648,8 +645,8 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
           --       or this will fail.
       RLift an e -> do
             e'    <- purifyStateBody rho stos ms 0 ms e -- was 1, which seems incorrect.
-            s_i   <- freshVars "State" ms
-            v     <- freshVar "var"
+            s_i   <- freshVars "s" ms
+            v     <- freshVar "v"
             -- the pattern "(v, (s1, (..., sm)))"
             let p       = mkTuplePat $ (v, a) : s_i
             body <- mkLeft "RLift" (Var an a v) stos
@@ -713,6 +710,17 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
                              (if null stos then anode else mkPair anode (mkTuple stos))
                         )
 
+            mkLeftPat :: (Fresh m, MonadError AstError m) => String -> Pat -> [Pat] -> StateT PSto m Pat
+            mkLeftPat s a stos = do
+                  let t = typeOf a
+                  c <- getACtor s t
+                  let anode =  PatCon (MsgAnnote "Purify: mkLeftPat") (Embed $ mkArrowTy [t] aTy) (Embed c) [a]
+                  pure ( PatCon ( MsgAnnote "Purify: mkLeftPat")
+                             ( Embed $ mkArrowTy [if null stos then aTy else mkPairTy aTy $ mkTupleTy ms] $ mkRangeTy o ms)
+                             ( Embed $ s2n "Prelude.Left")
+                             [ if null stos then anode else mkPairPat anode (mkTuplePat' stos)]
+                       )
+
             mkRight :: Exp -> Exp
             mkRight e = App ( MsgAnnote "Purify: mkRight")
                             ( Con (MsgAnnote "Purify: mkRight") (mkArrowTy [typeOf e] $ mkRangeTy o ms) (s2n "Prelude.Right"))
@@ -763,11 +771,18 @@ mkTupleTy = \ case
       ts -> foldl1 mkPairTy ts
 
 mkTuplePat :: [(Name Exp, Ty)] -> Pat
-mkTuplePat = \ case
+mkTuplePat = mkTuplePat' . map patVar
+
+mkTuplePat' :: [Pat] -> Pat
+mkTuplePat' = \ case
       [] -> nilPat
-      xs -> foldl1 mkPairPat $ map patVar xs
-      where patVar :: (Name Exp, Ty) -> Pat
-            patVar (n, t) = PatVar (MsgAnnote "Purify: mkTuplePat") (Embed t) n
+      xs -> foldl1 mkPairPat xs
+
+patVar :: (Name Exp, Ty) -> Pat
+patVar (n, t) = PatVar (MsgAnnote "Purify: patVar") (Embed t) n
+
+mkVar :: Annote -> (Name Exp, Ty) -> Exp
+mkVar an (n, t) = Var an t n
 
 mkRangeTy :: Ty -> [Ty] -> Ty
 mkRangeTy o = \ case

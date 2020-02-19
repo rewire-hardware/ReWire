@@ -73,6 +73,8 @@ mgu an (TyVar _ _ u)   t             | isFlex u         = varBind an u t
 mgu an t               (TyVar _ _ u) | isFlex u         = varBind an u t
 mgu _  (TyCon _ c1)    (TyCon _ c2)  | n2s c1 == n2s c2 = pure mempty
 mgu _  TyVar {}   TyVar {}                              = pure mempty -- TODO(chathhorn): maybe something more could be done here.
+mgu _  TyBlank {}  _                                    = pure mempty -- TODO(chathhorn): maybe something more could be done here.
+mgu _  _           TyBlank {}                           = pure mempty -- TODO(chathhorn): maybe something more could be done here.
 mgu an t1 t2 = failAt an $ "TypeVerify: types do not unify: " ++ prettyPrint t1 ++ ", " ++ prettyPrint t2
 
 unify :: MonadError AstError m => Annote -> Ty -> Ty -> TCM m ()

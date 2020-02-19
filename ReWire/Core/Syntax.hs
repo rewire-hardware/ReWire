@@ -113,10 +113,10 @@ instance Annotated Exp where
 instance Parenless Exp where
       parenless = \ case -- simple (non-compound?) expressions
             App _ (App _ (Con _ _ (DataConId "(,)")) _) _ -> True
-            Con _ _ _                                     -> True
-            GVar _ _ _                                    -> True
-            LVar _ _ _                                    -> True
-            Prim _ _ _                                    -> True
+            Con {}                                        -> True
+            GVar {}                                       -> True
+            LVar {}                                       -> True
+            Prim {}                                       -> True
             _                                             -> False
 
 instance Pretty Exp where
@@ -164,7 +164,7 @@ instance Parenless Pat where
       parenless = \ case
             PatCon _ _ (DataConId "(,)") _ -> True
             PatCon _ _ _ []                -> True
-            PatVar _ _                     -> True
+            PatVar {}                      -> True
             _                              -> False
 
 instance Pretty Pat where

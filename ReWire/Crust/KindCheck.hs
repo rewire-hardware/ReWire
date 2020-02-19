@@ -8,7 +8,7 @@ import ReWire.Crust.Syntax
 import ReWire.Unbound (fresh, substs, aeq, Subst, string2Name, name2String, runFreshMT)
 import ReWire.Pretty
 
-import Control.Monad.Reader (ReaderT (..), ask, local)
+import Control.Monad.Reader (ReaderT (..), local, asks)
 import Control.Monad.State (evalStateT, StateT (..), get, modify)
 import Data.Map.Strict (Map)
 
@@ -28,7 +28,7 @@ localCAssumps :: MonadError AstError m => (Map (Name TyConId) Kind -> Map (Name 
 localCAssumps f = local $ \ kce -> kce { cas = f (cas kce) }
 
 askCAssumps :: MonadError AstError m => KCM m (Map (Name TyConId) Kind)
-askCAssumps = cas <$> ask
+askCAssumps = asks cas
 
 freshkv :: (Fresh m, MonadError AstError m) => KCM m Kind
 freshkv = do
