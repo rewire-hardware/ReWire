@@ -71,6 +71,8 @@ main = do
 
             compileFile :: [Flag] -> LoadPath -> String -> IO ()
             compileFile flags lp filename = do
+                  when (FlagD `elem` flags) $ putStrLn $ "Compiling: " ++ filename
+
                   fout <- getOutFile flags filename
 
                   runSyntaxError (loadProgram flags lp filename >>= compileProgram >>= liftIO . writeFile fout . prettyPrint)
