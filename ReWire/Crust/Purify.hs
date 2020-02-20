@@ -754,19 +754,13 @@ nilPat :: Pat
 nilPat = PatCon (MsgAnnote "Purify: nilPat") (Embed nilTy) (Embed $ s2n "()") []
 
 mkTuple :: [Exp] -> Exp
-mkTuple = \ case
-      [] -> nil
-      xs -> foldl1 mkPair xs
+mkTuple = foldr mkPair nil
 
 mkTupleTy :: [Ty] -> Ty
-mkTupleTy = \ case
-      [] -> nilTy
-      ts -> foldl1 mkPairTy ts
+mkTupleTy = foldr mkPairTy nilTy
 
 mkTuplePat :: [Pat] -> Pat
-mkTuplePat = \ case
-      [] -> nilPat
-      xs -> foldl1 mkPairPat xs
+mkTuplePat = foldr mkPairPat nilPat
 
 patVar :: (Name Exp, Ty) -> Pat
 patVar (n, t) = PatVar (MsgAnnote "Purify: patVar") (Embed t) n

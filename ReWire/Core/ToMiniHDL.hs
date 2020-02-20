@@ -325,6 +325,7 @@ compileDefn = \ case
                                                     (PortMap [("res", ExprName "start_state")]),
                                                   Instantiate "loop_call" (mangle n_loopfun)
                                                     (PortMap [("arg0", ExprSlice (ExprName "current_state") (outsize + 1) (statesize - 1)),
+                                                            -- ^ TODO(chathhorn) statesize (the start state size) can be larger than all of arg0.
                                                               ("arg1", ExprName "inp"),
                                                               ("res", ExprName "loop_out")]),
                                                   WithAssign (ExprName "rst") (LHSName "next_state")
