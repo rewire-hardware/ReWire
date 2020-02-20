@@ -12,7 +12,7 @@ import ReWire.Flags (Flag (..))
 import Paths_ReWire
 
 -- | Opens and parses a file and, recursively, its imports.
-loadProgram :: [Flag] -> LoadPath -> FilePath -> IO (Either AstError Program)
+loadProgram :: [Flag] -> LoadPath -> FilePath -> SyntaxErrorT IO Program
 loadProgram flags lp fp = runCache (getProgram flags fp) lp
 
 getSystemLoadPath :: IO [FilePath]

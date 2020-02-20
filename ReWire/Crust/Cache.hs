@@ -43,8 +43,8 @@ type Cache = ReaderT LoadPath (StateT ModCache (FreshMT (SyntaxErrorT IO)))
 type LoadPath = [FilePath]
 type ModCache = Map.Map FilePath (Module, (Module, Exports))
 
-runCache :: Cache a -> LoadPath -> IO (Either AstError a)
-runCache m lp = runSyntaxError $ fst <$> runFreshMT (runStateT (runReaderT m lp) mempty)
+runCache :: Cache a -> LoadPath -> SyntaxErrorT IO a
+runCache m lp = fst <$> runFreshMT (runStateT (runReaderT m lp) mempty)
 
 mkRenamer :: S.Module SrcSpanInfo -> Cache Renamer
 mkRenamer m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps m)

@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE Safe #-}
 module ReWire.Main (main) where
 
@@ -5,8 +6,10 @@ import ReWire.FrontEnd
 import ReWire.Pretty
 import ReWire.Core.ToMiniHDL
 import ReWire.Flags (Flag (..))
+import ReWire.Error (runSyntaxError)
 
-import Control.Monad (when,unless)
+import Control.Monad (when, unless)
+import Control.Monad.IO.Class (liftIO)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
 import System.FilePath ((-<.>))
@@ -48,36 +51,27 @@ main = do
 
       unless (null errs) (mapM_ (hPutStrLn stderr) errs >> exitUsage)
 
-      when (length filenames /= 1) (hPutStrLn stderr "exactly one source file must be specified" >> exitUsage)
-
-      let filename                 =  head filenames
-          userLP                   =  concatMap getLoadPathEntries flags
+      let userLP                   =  concatMap getLoadPathEntries flags
       systemLP                     <- getSystemLoadPath
       let lp                       =  userLP ++ systemLP
 
       when (FlagD `elem` flags) $ putStrLn ("loadpath: " ++ intercalate "," lp)
 
-      prog_ <- loadProgram flags lp filename
+      mapM_ (compileFile flags $ userLP ++ systemLP) filenames
 
-      case prog_ of
-            Left e     -> hPrint stderr e >> exitFailure
-            Right prog -> do
-                  when (FlagD `elem` flags) $ do
-                        putStrLn "front end finished"
-                        writeFile "Debug.hs" (prettyPrint prog)
-                        putStrLn "debug out finished"
-                  case compileProgram prog of
-                        Left e      -> hPrint stderr e >> exitFailure
-                        Right mprog -> case findOutFile flags of
-                              Just f  -> writeFile f (prettyPrint mprog)
-                              Nothing -> writeFile (filename -<.> "vhdl") (prettyPrint mprog)
+      where getOutFile :: [Flag] -> String -> IO String
+            getOutFile flags filename = case filter (\ case { FlagO {} -> True; _ -> False }) flags of
+                  []        -> pure $ filename -<.> "vhdl"
+                  [FlagO o] -> pure o
+                  _         -> hPutStrLn stderr "Multiple output files specified on the command line!" >> exitFailure
 
-  where findOutFile :: [Flag] -> Maybe FilePath
-        findOutFile (FlagO f:_) = Just f
-        findOutFile (_:flags)   = findOutFile flags
-        findOutFile []          = Nothing
+            getLoadPathEntries :: Flag -> [FilePath]
+            getLoadPathEntries (FlagLoadPath ds) =  splitOn "," ds
+            getLoadPathEntries _                 =  []
 
-        getLoadPathEntries :: Flag -> [FilePath]
-        getLoadPathEntries (FlagLoadPath ds) =  splitOn "," ds
-        getLoadPathEntries _                 =  []
+            compileFile :: [Flag] -> LoadPath -> String -> IO ()
+            compileFile flags lp filename = do
+                  fout <- getOutFile flags filename
 
+                  runSyntaxError (loadProgram flags lp filename >>= compileProgram >>= liftIO . writeFile fout . prettyPrint)
+                        >>= either ((>> exitFailure) . hPrint stderr) pure

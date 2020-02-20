@@ -487,7 +487,7 @@ instance Show (RCase an t p e) where
 -- make it its own function.
 classifyApp :: MonadError AstError m => Annote -> (Name Exp, Ty, [Exp]) -> m (RCase Annote Ty p Exp)
 classifyApp an (x, t, [])  = pure $ RVar an t x
-classifyApp an (x, t, [e])
+classifyApp an (x, _, [e])
       | n2s x == "return" = pure $ RReturn an e
       | n2s x == "lift"   = pure $ RLift an e
       | n2s x == "signal" = pure $ Signal an e

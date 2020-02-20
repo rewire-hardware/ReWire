@@ -17,16 +17,16 @@ import Data.List (find)
 import Data.Bits (testBit)
 import Data.Maybe (fromMaybe)
 
-type CM = StateT ([Signal], [Component], Int) (
+type CM m = StateT ([Signal], [Component], Int) (
               ReaderT ([DataCon], [Defn]) (
-                  SyntaxErrorT Identity
+                  SyntaxErrorT m
               )
           )
 
-askCtors :: CM [DataCon]
+askCtors :: Monad m => CM m [DataCon]
 askCtors = asks fst
 
-askDefns :: CM [Defn]
+askDefns :: Monad m => CM m [Defn]
 askDefns = asks snd
 
 type TySub = [(TyId, C.Ty)]
@@ -58,21 +58,21 @@ apply s (TyApp an t1 t2)  = TyApp an (apply s t1) $ apply s t2
 apply _ t@TyCon {}        = t
 apply s t@(TyVar _ i)     = fromMaybe t $ lookup i s
 
-tcictors :: TyConId -> CM [DataCon]
+tcictors :: Monad m => TyConId -> CM m [DataCon]
 tcictors tci = filter isMine <$> askCtors
       where isMine :: DataCon -> Bool
             isMine (DataCon _ _ _ t) = case flattenTyApp $ last $ flattenArrow t of
                   (TyCon _ tci' : _) -> tci == tci'
                   _                  -> False
 
-askDci :: DataConId -> CM DataCon
+askDci :: Monad m => DataConId -> CM m DataCon
 askDci dci = do
       ctors <- askCtors
       case find (\ (DataCon _ dci' _ _) -> dci == dci') ctors of
             Just ctor -> pure ctor
             Nothing   -> lift $ failNowhere $ "askDci: no info for data constructor " ++ show dci
 
-dcitci :: DataConId -> CM TyConId
+dcitci :: Monad m => DataConId -> CM m TyConId
 dcitci dci = do
       DataCon l _ _ t <- askDci dci
       case flattenTyApp (last (flattenArrow t)) of
@@ -85,14 +85,14 @@ nvec width n = nvec' 0 []
   where nvec' pos bits | pos >= width = bits
                        | otherwise    = nvec' (pos + 1) ((if testBit n pos then One else Zero):bits)
 
-dciTagVector :: DataConId -> CM [Bit]
+dciTagVector :: Monad m => DataConId -> CM m [Bit]
 dciTagVector dci = do
       tci               <- dcitci dci
       ctors             <- tcictors tci
       DataCon _ _ pos _ <- askDci dci
       pure $ nvec (ceilLog2 (length ctors)) pos
 
-dciPadVector :: Annote -> DataConId -> C.Ty -> CM [Bit]
+dciPadVector :: Monad m => Annote -> DataConId -> C.Ty -> CM m [Bit]
 dciPadVector an dci t = do
       ctor         <- askDci dci
       fieldwidth   <- ctorwidth t ctor
@@ -107,7 +107,7 @@ ceilLog2 :: Int -> Int
 ceilLog2 n | n < 1 = 0
 ceilLog2 n = ceiling (logBase 2 (fromIntegral n :: Double))
 
-ctorwidth :: C.Ty -> DataCon -> CM Int
+ctorwidth :: Monad m => C.Ty -> DataCon -> CM m Int
 ctorwidth t (DataCon an _ _ ct) = do
       let ts     =  flattenArrow ct
           tres   =  last ts
@@ -117,7 +117,7 @@ ctorwidth t (DataCon an _ _ ct) = do
       sizes      <- mapM (sizeof an) targs'
       pure $ sum sizes
 
-sizeof :: Annote -> C.Ty -> CM Int
+sizeof :: Monad m => Annote -> C.Ty -> CM m Int
 sizeof an t = case th of
       TyApp {}     -> failAt an $ "ToMiniHDL: sizeof: Got TyApp after flattening (can't happen): " ++ prettyPrint t
       TyCon _ tci  -> do
@@ -127,7 +127,7 @@ sizeof an t = case th of
       TyVar _ _    -> failAt an $ "ToMiniHDL: sizeof: Encountered type variable: " ++ prettyPrint t
       where (th : _) = flattenTyApp t
 
-getTyPorts :: Annote -> C.Ty -> CM [Port]
+getTyPorts :: Monad m => Annote -> C.Ty -> CM m [Port]
 getTyPorts an t = do
       let ts       =  flattenArrow t
           targs    =  init ts
@@ -139,23 +139,21 @@ getTyPorts an t = do
           resport  =  Port "res" Out (TyStdLogicVector ressize)
       pure $ argports ++ [resport]
 
-mkDefnEntity :: Defn -> CM Entity
-mkDefnEntity (Defn an n t _) = do
-      ps <- getTyPorts an t
-      pure $ Entity (mangle n) ps
+mkDefnEntity :: Monad m => Defn -> CM m Entity
+mkDefnEntity (Defn an n t _) = Entity (mangle n) <$> getTyPorts an t
 
-freshName :: String -> CM Name
+freshName :: Monad m => String -> CM m Name
 freshName s = do
       (sigs, comps, ctr) <- get
       put (sigs, comps, ctr + 1)
       pure (s ++ "_" ++ show ctr)
 
-addSignal :: String -> M.Ty -> CM ()
+addSignal :: Monad m => String -> M.Ty -> CM m ()
 addSignal n t = do
       (sigs, comps, ctr) <- get
       put (sigs ++ [Signal n t], comps, ctr)
 
-addComponent :: Annote -> GId -> C.Ty -> CM ()
+addComponent :: Monad m => Annote -> GId -> C.Ty -> CM m ()
 addComponent an i t = do
       (sigs, comps, ctr) <- get
       case find ((== mangle i) . componentName) comps of
@@ -164,7 +162,7 @@ addComponent an i t = do
                   ps <- getTyPorts an t
                   put (sigs, Component (mangle i) ps : comps, ctr)
 
-compilePat :: Name -> Int -> Pat -> CM (Expr, [Expr])  -- first Expr is for whether match (std_logic); remaining Exprs are for extracted fields
+compilePat :: Monad m => Name -> Int -> Pat -> CM m (Expr, [Expr])  -- first Expr is for whether match (std_logic); remaining Exprs are for extracted fields
 compilePat nscr offset (PatCon an _ dci ps) = do
       dcitagvec        <- dciTagVector dci
       let tagw         =  length dcitagvec
@@ -183,14 +181,14 @@ compilePat nscr offset (PatVar an t)       = do
       size <- sizeof an t
       pure (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + size - 1)])
 
-askGIdTy :: GId -> CM C.Ty
+askGIdTy :: Monad m => GId -> CM m C.Ty
 askGIdTy i = do
       defns <- askDefns
       case find (\ (Defn _ i' _ _) -> i == i') defns of
             Just (Defn _ _ t _) -> pure t
             Nothing             -> lift $ failNowhere $ "askGIdTy: no info for identifier " ++ show i
 
-compileExp :: C.Exp -> CM ([Stmt], Name)
+compileExp :: Monad m => C.Exp -> CM m ([Stmt], Name)
 compileExp e_ = case e of
       App {}        -> failAt (ann e) "compileExp: Got App after flattening (can't happen)"
       Prim {}       -> failAt (ann e) $ "compileExp: Encountered unknown Prim: " ++ prettyPrint e
@@ -282,14 +280,14 @@ compileExp e_ = case e of
             pure (stmts ++ [Instantiate n_call i pm], n)
   where (e:eargs) = flattenApp e_
 
-mkDefnArch :: Defn -> CM Architecture
+mkDefnArch :: Monad m => Defn -> CM m Architecture
 mkDefnArch (Defn _ n _ e) = do
       put ([], [], 0) -- empty out the signal and component store, reset name counter
       (stmts, nres)   <- compileExp e
       (sigs, comps, _) <- get
       pure (Architecture (mangle n ++ "_impl") (mangle n) sigs comps (stmts ++ [Assign (LHSName "res") (ExprName nres)]))
 
-compileDefn :: Defn -> CM Unit
+compileDefn :: Monad m => Defn -> CM m Unit
 compileDefn = \ case
       d | defnName d == "Main.start" -> do
             let t = defnTy d
@@ -348,7 +346,7 @@ compileDefn = \ case
                   _ -> failAt (ann d) $ "compileDefn: Main.start has illegal type: " ++ prettyPrint t
       d -> Unit <$> mkDefnEntity d <*> mkDefnArch d
 
-compileProgram :: C.Program -> Either AstError M.Program
-compileProgram p = fmap fst $ runIdentity $ runSyntaxError $ flip runReaderT (ctors p, defns p) $ flip runStateT ([], [], 0) $
+compileProgram :: Monad m => C.Program -> SyntaxErrorT m M.Program
+compileProgram p = fmap fst $ flip runReaderT (ctors p, defns p) $ flip runStateT ([], [], 0) $
       M.Program <$> mapM compileDefn (defns p)
 
