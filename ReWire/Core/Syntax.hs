@@ -51,8 +51,8 @@ instance Pretty TyConId where
 ---
 
 data Ty = TyApp Annote Ty Ty
-        | TyCon Annote TyConId
-        | TyVar Annote TyId
+        | TyCon Annote !TyConId
+        | TyVar Annote !TyId
         deriving (Eq, Ord, Generic, Show, Typeable, Data)
 
 instance Annotated Ty where
@@ -82,11 +82,11 @@ instance Pretty Ty where
 ---
 
 data Exp = App        Annote Exp Exp
-         | Prim       Annote Ty  GId
-         | GVar       Annote Ty  GId
-         | LVar       Annote Ty  LId
-         | Con        Annote Ty  DataConId
-         | Match      Annote Ty  Exp Pat GId [LId] (Maybe Exp)
+         | Prim       Annote Ty  !GId
+         | GVar       Annote Ty  !GId
+         | LVar       Annote Ty  !LId
+         | Con        Annote Ty  !DataConId
+         | Match      Annote Ty  Exp Pat !GId [LId] (Maybe Exp)
          | NativeVHDL Annote Ty  String
          deriving (Eq, Ord, Show, Typeable, Data)
 
@@ -146,7 +146,7 @@ instance Pretty Exp where
 
 ---
 
-data Pat = PatCon Annote Ty DataConId [Pat]
+data Pat = PatCon Annote Ty !DataConId [Pat]
          | PatVar Annote Ty
          deriving (Eq, Ord, Show, Typeable, Data)
 
@@ -176,7 +176,7 @@ instance Pretty Pat where
 ---
 
 data Defn = Defn { defnAnnote :: Annote,
-                   defnName   :: GId,
+                   defnName   :: !GId,
                    defnTy     :: Ty, -- params given by the arity.
                    defnBody   :: Exp }
       deriving (Eq, Ord, Show, Typeable, Data)

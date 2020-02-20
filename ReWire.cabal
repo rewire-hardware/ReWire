@@ -72,6 +72,7 @@ library
   default-language: Haskell2010
   ghc-options:      -Wall
                     -fno-warn-name-shadowing
+                    -funbox-strict-fields
                     -O2
 
   other-modules:    Paths_ReWire
@@ -111,6 +112,7 @@ executable rwc
   default-language: Haskell2010
   ghc-options:      -Wall
                     -O2
+                    -funbox-strict-fields
 
 test-suite rwc-test
   type:             exitcode-stdio-1.0
@@ -127,6 +129,7 @@ test-suite rwc-test
   default-language: Haskell2010
   ghc-options:      -Wall
                     -O2
+                    -funbox-strict-fields
 
 source-repository head
   type:             git

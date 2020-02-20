@@ -24,7 +24,7 @@ instance Pretty Unit where
 type Name = String
 
 data Entity = Entity
-      { entityName  :: Name
+      { entityName  :: !Name
       , entityPorts :: [Port]
       } deriving (Eq, Show)
 
@@ -34,8 +34,8 @@ instance Pretty Entity where
                          $+$ text "end" <+> text n <> semi
 
 data Architecture = Architecture
-      { archName       :: Name
-      , archEntityName :: Name
+      { archName       :: !Name
+      , archEntityName :: !Name
       , archSignals    :: [Signal]
       , archComponents :: [Component]
       , archStmts      :: [Stmt]
@@ -50,7 +50,7 @@ instance Pretty Architecture where
                                               $+$ text "end" <+> text n1 <> semi
 
 data Component = Component
-      { componentName  :: Name
+      { componentName  :: !Name
       , componentPorts :: [Port]
       } deriving (Eq, Show)
 
@@ -60,17 +60,17 @@ instance Pretty Component where
                             $+$ text "end component;"
 
 data Port = Port
-      { portName      :: Name
-      , portDirection :: Direction
-      , portType      :: Ty
+      { portName      :: !Name
+      , portDirection :: !Direction
+      , portType      :: !Ty
       } deriving (Eq, Show)
 
 instance Pretty Port where
       pretty (Port n d t) = text n <> colon <+> pretty d <+> pretty t
 
 data Signal = Signal
-      { signalName :: Name
-      , signalType :: Ty
+      { signalName :: !Name
+      , signalType :: !Ty
       } deriving (Eq, Show)
 
 instance Pretty Signal where
@@ -82,17 +82,17 @@ instance Pretty Direction where
       pretty In  = text "in"
       pretty Out = text "out"
 
-data Ty = TyStdLogic | TyStdLogicVector Int | TyBool deriving (Eq, Show)
+data Ty = TyStdLogic | TyStdLogicVector !Int | TyBool deriving (Eq, Show)
 
 instance Pretty Ty where
       pretty TyStdLogic           = text "std_logic"
       pretty (TyStdLogicVector n) = text "std_logic_vector" <+> parens (text "0 to" <+> int (n - 1))
       pretty TyBool               = text "boolean"
 
-data Stmt = Assign LHS Expr
-          | WithAssign Expr LHS [(Expr, Expr)] (Maybe Expr)
-          | Instantiate Name Name PortMap
-          | ClkProcess Name [Stmt]
+data Stmt = Assign !LHS Expr
+          | WithAssign Expr !LHS [(Expr, Expr)] (Maybe Expr)
+          | Instantiate !Name !Name !PortMap
+          | ClkProcess !Name [Stmt]
       deriving (Eq, Show)
 
 instance Pretty Stmt where
@@ -121,13 +121,13 @@ newtype LHS = LHSName Name
 instance Pretty LHS where
       pretty (LHSName n) = text n
 
-data Expr = ExprName Name
-          | ExprBit Bit
+data Expr = ExprName !Name
+          | ExprBit !Bit
           | ExprBitString [Bit]
           | ExprConcat Expr Expr
-          | ExprSlice Expr Int Int
+          | ExprSlice Expr !Int !Int
           | ExprIsEq Expr Expr
-          | ExprBoolConst Bool
+          | ExprBoolConst !Bool
           | ExprAnd Expr Expr
       deriving (Eq, Show)
 

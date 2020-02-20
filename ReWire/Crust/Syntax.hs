@@ -152,10 +152,10 @@ instance Alpha Ty
 
 instance Subst Ty Ty where
       isvar (TyVar _ _ x) = Just $ SubstName x
-      isvar _                = Nothing
+      isvar _             = Nothing
 instance Subst Ty Annote where
       subst _ _ x = x
-      substs _ x = x
+      substs _ x  = x
 instance Subst Ty Kind
 
 instance Annotated Ty where
@@ -194,8 +194,8 @@ data Exp = App        Annote Exp Exp
          | Con        Annote Ty (Name DataConId)
          | Case       Annote Ty Exp (Bind Pat Exp) (Maybe Exp)
          | Match      Annote Ty Exp MatchPat Exp [Exp] (Maybe Exp)
-         | NativeVHDL Annote String Exp
-         | Error      Annote Ty String
+         | NativeVHDL Annote !String Exp
+         | Error      Annote Ty !String
       deriving (Generic, Show, Typeable, Data)
 
 instance Alpha Exp
@@ -351,7 +351,7 @@ data Defn = Defn
       { defnAnnote :: Annote
       , defnName   :: Name Exp
       , defnPolyTy :: Embed Poly
-      , defnInline :: Bool
+      , defnInline :: !Bool
       , defnBody   :: Embed (Bind [Name Exp] Exp)
       } deriving (Generic, Show, Typeable, Data)
 
