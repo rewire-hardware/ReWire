@@ -268,7 +268,7 @@ instance Pretty Exp where
                         ]
             Match _ t e p e1 as e2                       -> runFreshM $
                   pure $ foldr ($+$) empty
-                        [ text "case" <+> braces (pretty t) <+> pretty e <+> text "of"
+                        [ text "match" <+> braces (pretty t) <+> pretty e <+> text "of"
                         , nest 2 (vcat $
                               ( pretty p <+> text "->" <+> pretty e1 <+> hsep (map pretty as) )
                               : maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2

@@ -12,7 +12,6 @@ import ReWire.Pretty
 import Control.Monad (zipWithM)
 import Control.Monad.Reader (ReaderT (..), asks)
 import Control.Monad.State (StateT (..), get, put, lift)
-import Control.Monad.Identity (Identity (..))
 import Data.List (find)
 import Data.Bits (testBit)
 import Data.Maybe (fromMaybe)
