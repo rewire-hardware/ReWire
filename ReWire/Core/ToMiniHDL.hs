@@ -300,6 +300,7 @@ compileDefn = \ case
                                     outsize   <- sizeof an t_out
                                     statesize <- sizeof an t_startstate
                                     ressize   <- sizeof an t_res
+                                    arg0size  <- sizeof an (head $ flattenArrow t_loopfun)
                                     addComponent an n_startstate t_startstate
                                     addComponent an n_loopfun t_loopfun
                                     addSignal "start_state" (TyStdLogicVector statesize)
@@ -311,6 +312,7 @@ compileDefn = \ case
                                                        Port "rst" In TyStdLogic,
                                                        Port "inp" In (TyStdLogicVector insize),
                                                        Port "outp" Out (TyStdLogicVector (1 + max outsize ressize))]
+                                                       -- ^ TODO(chathhorn): suspect "max outsize resize" should be "max ressize (outsize + Rsize + statesize)"
                                         pad_for_out = ExprBitString (replicate (max 0 (ressize - outsize)) Zero)
                                         pad_for_res = ExprBitString (replicate (max 0 (outsize - ressize)) Zero)
                                     (sigs, comps, _) <- get
@@ -324,8 +326,7 @@ compileDefn = \ case
                                                  [Instantiate "start_call" (mangle n_startstate)
                                                     (PortMap [("res", ExprName "start_state")]),
                                                   Instantiate "loop_call" (mangle n_loopfun)
-                                                    (PortMap [("arg0", ExprSlice (ExprName "current_state") (outsize + 1) (statesize - 1)),
-                                                            -- ^ TODO(chathhorn) statesize (the start state size) can be larger than all of arg0.
+                                                    (PortMap [("arg0", ExprSlice (ExprName "current_state") (1 + outsize) (1 + outsize + arg0size - 1)),
                                                               ("arg1", ExprName "inp"),
                                                               ("res", ExprName "loop_out")]),
                                                   WithAssign (ExprName "rst") (LHSName "next_state")
