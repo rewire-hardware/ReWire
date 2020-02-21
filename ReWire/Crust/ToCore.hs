@@ -7,7 +7,7 @@ import ReWire.Error
 import ReWire.Pretty
 import ReWire.Unbound
       ( Name, Fresh, runFreshMT, Embed (..)
-      , unbind, n2s
+      , unbind
       )
 
 import Control.Monad ((<=<))
@@ -25,7 +25,7 @@ toCore (ts, vs) = runFreshMT $ do
       pure $ C.Program ts' vs'
 
 notPrim :: Name a -> Bool
-notPrim = elem '.' . n2s
+notPrim = elem '.' . show
 
 transData :: (MonadError AstError m, Fresh m) => M.DataDefn -> m [C.DataCon]
 transData (M.DataDefn _ _ _ cs) = mapM transDataCon $ zip [0..] cs
@@ -38,20 +38,15 @@ transDefn :: (MonadError AstError m, Fresh m) => M.Defn -> m C.Defn
 transDefn (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) = do
       (_, t')  <- unbind t
       (xs, e') <- unbind e
-      C.Defn an (transVar n) <$> transType t' <*> runReaderT (transExp e') (Map.fromList $ zip xs [0..])
-
-transVar :: Name M.Exp -> C.GId
-transVar n = case head $ n2s n of
-      '$' -> show n
-      _   -> show n
+      C.Defn an (show n) <$> transType t' <*> runReaderT (transExp e') (Map.fromList $ zip xs [0..])
 
 transExp :: (MonadError AstError m, Fresh m) => M.Exp -> ReaderT (Map (Name M.Exp) Int) m C.Exp
 transExp = \ case
       M.App an e1 e2                    -> C.App an <$> transExp e1 <*> transExp e2
       M.Var an t x                      -> asks (Map.lookup x) >>= \ case
             Nothing -> if notPrim x
-                  then C.GVar an <$> transType t <*> pure (transVar x)
-                  else C.Prim an <$> transType t <*> pure (transVar x)
+                  then C.GVar an <$> transType t <*> pure (show x)
+                  else C.Prim an <$> transType t <*> pure (show x)
             Just i  -> C.LVar an <$> transType t <*> pure i
       M.Con an t d                      -> C.Con an <$> transType t <*> pure (C.DataConId (show d))
       M.Match an t e p f as (Just e2)   -> C.Match an <$> transType t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> mapM (toLId <=< transExp) as <*> (Just <$> transExp e2)

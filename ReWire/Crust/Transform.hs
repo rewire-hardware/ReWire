@@ -62,8 +62,8 @@ shiftLambdas (ts, vs) = (ts, map shiftLambdas' vs)
 
 -- | This is a hacky SYB-based lambda lifter, it requires some ugly mucking
 --   with the internals of unbound-generics.
-liftLambdas :: MonadCatch m => FreeProgram -> m FreeProgram
-liftLambdas p = runFreshMT $ evalStateT (runT liftLambdas' p) []
+liftLambdas :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
+liftLambdas p = evalStateT (runT liftLambdas' p) []
       where liftLambdas' :: (MonadCatch m, Fresh m) => Transform (StateT [Defn] m)
             liftLambdas' =  \ case
                   Lam an t b -> do
