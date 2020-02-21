@@ -429,9 +429,7 @@ purifyStateBody rho stos stys i ms = classifyCases >=> \ case
 
       Put _ e         -> pure $ mkTuple $ nil : replaceAtIndex (i - 1) e stos
 
-      Apply an t n es -> do
-            rator <- mkPureApp an rho (Var an t n) es
-            pure $ mkApp rator stos
+      Apply an t n es -> mkPureApp an rho (Var an t n) $ stos ++ es
 
     -- e1 must be simply-typed, so don't purify it.
       SMatch an ty e1 mp e2 es Nothing -> do
@@ -450,8 +448,7 @@ purifyStateBody rho stos stys i ms = classifyCases >=> \ case
             a          <- liftMaybe (ann te) "Invalid type in bind" $ dstCompR te -- a is the return type of e
             e'         <- purifyStateBody rho stos stys i ms e
             ns         <- freshVars "st" $ a : stys
-            let vs      = map (mkVar an) ns
-            g_pure_app <- mkPureApp an rho g vs
+            g_pure_app <- mkPureApp an rho g $ map (mkVar an) ns
             let p       = mkTuplePat $ map patVar ns
             -- g can, in general, be an application. That's causing the error when (var2Name g) is called.
             pure $ mkLet an p e' g_pure_app
@@ -469,7 +466,7 @@ data RCase an t p e = RReturn an e
                     | RBind an e e t
                     | SigK an t e (Name e) [(e, t)] -- (signal e >>= g e1 ... ek)
                     | Extrude an t (Name e) [e]     -- [(e, t)]
-                    | RApp an t (Name e) [(e, t)]
+                    | RApp an t (Name e) [e]
                     | RMatch an t e MatchPat e [e] (Maybe e)
 
 instance Show (RCase an t p e) where
@@ -514,7 +511,7 @@ classifyApp an (x, t, [e, g])
                   _                                   -> Nothing
 classifyApp an (x, t, es)
       | n2s x == "extrude" = pure $ Extrude an t x es
-      | otherwise          = RApp an t x <$> mkBindings an t es
+      | otherwise          = pure $ RApp an t x es
 
 -- state for res-purification.
 data PSto = PSto [DataCon] [(Pat, Exp)] (Name Exp) (Map Ty (Name DataConId))
@@ -628,7 +625,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
             -- done calculating p = Left (v, (s1, (..., sm)))
 
             -- calculating g_pure_app = "g_pure v s1 ... sm"
-            let vars     = map (\ (x, t) -> Var an t x) svars
+            let vars     = map (mkVar an) svars
             g_pure_app  <- mkPureApp an rho g (Var an ert v : vars)
             -- done calculating g_pure_app
             pure $ mkLet an p e' g_pure_app
@@ -672,7 +669,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
             rator' <- purifyResBody rho i o a stos ms (Var an rty rator)
             -- N.b., don't think it's necessary to purify the rands because
             -- they're simply typed.
-            mkPureApp an rho rator' $ map fst rands
+            mkPureApp an rho rator' rands
 
        -- e1 must be simply-typed, so don't purify it.
       RMatch an ty e1 mp e2 es Nothing   -> do
@@ -796,7 +793,7 @@ mkPureApp :: MonadError AstError m => Annote -> PureEnv -> Exp -> [Exp] -> m Exp
 mkPureApp an rho e es = do
       (rator, t, rands) <- dstApp e
       ep                <- mkPureVar an rho t rator
-      pure $ mkApp ep $ rands ++ es
+      pure $ mkApp ep $ es ++ rands
 
 dstApp :: MonadError AstError m => Exp -> m (Name Exp, Ty, [Exp])
 dstApp = \ case
