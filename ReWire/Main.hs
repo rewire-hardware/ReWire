@@ -20,30 +20,19 @@ import System.IO
 
 options :: [OptDescr Flag]
 options =
-       [ Option ['d'] ["debug"]    (NoArg FlagD)
-                                   "dump miscellaneous debugging information"
-       , Option ['v'] ["verbose"]    (NoArg FlagV)
-                                   "more verbose debugging output"
-       , Option []    ["dhask1"]    (NoArg FlagDHask1)
-                                   "dump pre-desugar haskell"
-       , Option []    ["dhask2"]    (NoArg FlagDHask2)
-                                   "dump post-desugar haskell"
-       , Option []    ["dcrust1"]    (NoArg FlagDCrust1)
-                                   "dump post-desugar crust"
-       , Option []    ["dcrust2"]    (NoArg FlagDCrust2)
-                                   "dump pre-purify crust"
-       , Option []    ["dcrust3"]    (NoArg FlagDCrust3)
-                                   "dump post-purify crust"
-       , Option []    ["dcrust4"]    (NoArg FlagDCrust4)
-                                   "dump post-second-lambda-lifting crust"
-       , Option []    ["dcore"]      (NoArg FlagDCore)
-                                   "dump core"
-       , Option []    ["dtypes"]     (NoArg FlagDTypes)
-                                   "enable extra typechecking after various IR transformations"
-       , Option ['o'] []             (ReqArg FlagO "filename.vhd")
-                                   "generate VHDL"
-       , Option []    ["loadpath"]   (ReqArg FlagLoadPath "dir1,dir2,...")
-                                   "additional directories for loadpath"
+       [ Option ['v'] ["verbose"]  (NoArg FlagV)       "More verbose output."
+       , Option []    ["dhask1"]   (NoArg FlagDHask1)  "Dump pre-desugar haskell."
+       , Option []    ["dhask2"]   (NoArg FlagDHask2)  "Dump post-desugar haskell."
+       , Option []    ["dcrust1"]  (NoArg FlagDCrust1) "Dump post-desugar crust."
+       , Option []    ["dcrust2"]  (NoArg FlagDCrust2) "Dump pre-purify crust."
+       , Option []    ["dcrust3"]  (NoArg FlagDCrust3) "Dump post-purify crust."
+       , Option []    ["dcrust4"]  (NoArg FlagDCrust4) "Dump post-second-lambda-lifting crust."
+       , Option []    ["dcore"]    (NoArg FlagDCore)   "Dump core."
+       , Option []    ["dtypes"]   (NoArg FlagDTypes)  "Enable extra typechecking after various IR transformations."
+       , Option ['o'] []           (ReqArg FlagO "filename.vhd")
+            "Name for VHDL output file."
+       , Option []    ["loadpath"] (ReqArg FlagLoadPath "dir1,dir2,...")
+            "Additional directories for loadpath."
        ]
 
 exitUsage :: IO ()
@@ -61,7 +50,7 @@ main = do
       systemLP                     <- getSystemLoadPath
       let lp                       =  userLP ++ systemLP
 
-      when (FlagD `elem` flags) $ putStrLn ("loadpath: " ++ intercalate "," lp)
+      when (FlagV `elem` flags) $ putStrLn ("loadpath: " ++ intercalate "," lp)
 
       mapM_ (compileFile flags $ userLP ++ systemLP) filenames
 
@@ -77,7 +66,7 @@ main = do
 
             compileFile :: [Flag] -> LoadPath -> String -> IO ()
             compileFile flags lp filename = do
-                  when (FlagD `elem` flags) $ putStrLn $ "Compiling: " ++ filename
+                  when (FlagV `elem` flags) $ putStrLn $ "Compiling: " ++ filename
 
                   fout <- getOutFile flags filename
 
