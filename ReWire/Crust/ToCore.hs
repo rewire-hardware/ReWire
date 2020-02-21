@@ -5,10 +5,7 @@ module ReWire.Crust.ToCore (toCore) where
 import ReWire.Annotation
 import ReWire.Error
 import ReWire.Pretty
-import ReWire.Unbound
-      ( Name, Fresh, runFreshMT, Embed (..)
-      , unbind
-      )
+import ReWire.Unbound (Name, Fresh, Embed (..) , unbind)
 
 import Control.Monad ((<=<))
 import Control.Monad.Reader (ReaderT (..), asks)
@@ -18,8 +15,8 @@ import qualified Data.Map.Strict        as Map
 import qualified ReWire.Core.Syntax     as C
 import qualified ReWire.Crust.Syntax as M
 
-toCore :: MonadError AstError m => M.FreeProgram -> m C.Program
-toCore (ts, vs) = runFreshMT $ do
+toCore :: (Fresh m, MonadError AstError m) => M.FreeProgram -> m C.Program
+toCore (ts, vs) = do
       ts' <- concat <$> mapM transData ts
       vs' <- mapM transDefn $ filter (notPrim . M.defnName) vs
       pure $ C.Program ts' vs'

@@ -5,7 +5,7 @@ module ReWire.Crust.KindCheck (kindCheck) where
 import ReWire.Annotation
 import ReWire.Error
 import ReWire.Crust.Syntax
-import ReWire.Unbound (fresh, substs, aeq, Subst, string2Name, name2String, runFreshMT)
+import ReWire.Unbound (fresh, substs, aeq, Subst, s2n, n2s)
 import ReWire.Pretty
 
 import Control.Monad.Reader (ReaderT (..), local, asks)
@@ -32,7 +32,7 @@ askCAssumps = asks cas
 
 freshkv :: (Fresh m, MonadError AstError m) => KCM m Kind
 freshkv = do
-      n <- fresh $ string2Name "?"
+      n <- fresh $ s2n "?"
       modify $ Map.insert n $ KVar n
       pure $ KVar n
 
@@ -69,14 +69,14 @@ kcTy = \ case
             k  <- freshkv
             unify an k1 $ KFun k2 k
             pure k
-      TyCon an i      -> case name2String i of
-                              -- This special case really shouldn't be
-                              -- necessary (bug?).
-                              "->" -> pure $ KFun KStar $ KFun KStar KStar
-                              _    -> do
-                                cas <- askCAssumps
-                                maybe (failAt an $ "Unknown type constructor: " ++ name2String i) pure
-                                      $ Map.lookup i cas
+      TyCon an i      -> case n2s i of
+            -- This special case really shouldn't be
+            -- necessary (bug?).
+            "->" -> pure $ KFun KStar $ KFun KStar KStar
+            _    -> do
+                  cas <- askCAssumps
+                  maybe (failAt an $ "Unknown type constructor: " ++ n2s i) pure
+                        $ Map.lookup i cas
       TyVar _ k _     -> pure k
       TyBlank an      -> failAt an "Something went wrong in the kind checker"
 
@@ -126,5 +126,5 @@ kc (ts, vs) = do
             ts' <- mapM (redecorate s) ts
             pure (ts', vs)
 
-kindCheck :: MonadError AstError m => FreeProgram -> m FreeProgram
-kindCheck m = runFreshMT $ evalStateT (runReaderT (kc m) $ KCEnv mempty) mempty
+kindCheck :: (Fresh m, MonadError AstError m) => FreeProgram -> m FreeProgram
+kindCheck m = evalStateT (runReaderT (kc m) $ KCEnv mempty) mempty

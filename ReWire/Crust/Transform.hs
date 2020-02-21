@@ -13,7 +13,7 @@ import ReWire.Error
 import ReWire.Unbound
       ( Fresh (..), s2n, n2s
       , substs, subst, unembed
-      , isFreeName, runFreshM, runFreshMT
+      , isFreeName, runFreshM
       , Name (..)
       )
 import ReWire.SYB
@@ -35,9 +35,11 @@ import qualified Data.Set as Set
 inline :: FreeProgram -> FreeProgram
 inline (ts, ds) = (ts, substs subs ds)
       where toSubst :: Defn -> (Name Exp, Exp)
-            toSubst (Defn _ n _ _ (Embed e)) = runFreshM $ do
-                  (_, e') <- unbind e
-                  pure (n, e')
+            toSubst (Defn _ n _ _ (Embed e)) = runFreshM $ unbind e >>= \ case
+                  ([], e') -> pure (n, e')
+                  _        -> error "Inlining: definition not inlinable (this shouldn't happen)"
+
+            subs :: [(Name Exp, Exp)]
             subs = map toSubst $ substs (map toSubst $ filter defnInline ds) $ filter defnInline ds
 
 -- | Replaces the expression in NativeVHDL so we don't descend into it
@@ -46,19 +48,17 @@ neuterPrims :: MonadCatch m => FreeProgram -> m FreeProgram
 neuterPrims = runT $ transform $
       \ (NativeVHDL an s e) -> pure $ NativeVHDL an s (Error an (typeOf e) "nativeVHDL expression placeholder")
 
-shiftLambdas :: FreeProgram -> FreeProgram
-shiftLambdas (ts, vs) = (ts, map shiftLambdas' vs)
-      where shiftLambdas' :: Defn -> Defn
-            shiftLambdas' (Defn an n t inl (Embed e)) = Defn an n t inl (Embed $ mash e)
+shiftLambdas :: Fresh m => FreeProgram -> m FreeProgram
+shiftLambdas (ts, vs) = (ts,) <$> mapM shiftLambdas' vs
+      where shiftLambdas' :: Fresh m => Defn -> m Defn
+            shiftLambdas' (Defn an n t inl (Embed e)) = Defn an n t inl <$> Embed <$> mash e
 
-            mash :: Bind [Name Exp] Exp -> Bind [Name Exp] Exp
-            mash e = runFreshM $ do
-                  (vs, e') <- unbind e
-                  case e' of
-                        Lam _ _ b -> do
-                              (v, b') <- unbind b
-                              pure $ mash $ bind (vs ++ [v]) b'
-                        _ -> pure e
+            mash :: Fresh m => Bind [Name Exp] Exp -> m (Bind [Name Exp] Exp)
+            mash e = unbind e >>= \ case
+                  (vs, Lam _ _ b) -> do
+                        (v, b') <- unbind b
+                        mash $ bind (vs ++ [v]) b'
+                  _ -> pure e
 
 -- | This is a hacky SYB-based lambda lifter, it requires some ugly mucking
 --   with the internals of unbound-generics.
@@ -181,13 +181,12 @@ inuseDefn ds = map toDefn $ Set.elems $ execState (inuseDefn' ds') ds'
             toDefn n = fromJust $ find ((==n) . defnName) ds
 
 -- | Partially evaluate expressions.
-reduce :: MonadError AstError m => FreeProgram -> m FreeProgram
+reduce :: (Fresh m, MonadError AstError m) => FreeProgram -> m FreeProgram
 reduce (ts, vs) = (ts, ) <$> mapM reduceDefn vs
 
-reduceDefn :: MonadError AstError m => Defn -> m Defn
-reduceDefn (Defn an n pt b (Embed e)) = runFreshMT $ do
-      (vs, e') <- unbind e
-      (Defn an n pt b . Embed) . bind vs <$> reduceExp e'
+reduceDefn :: (Fresh m, MonadError AstError m) => Defn -> m Defn
+reduceDefn (Defn an n pt b (Embed e)) = unbind e >>= \ case
+      (vs, e') -> (Defn an n pt b . Embed) . bind vs <$> reduceExp e'
 
 reduceExp :: (Fresh m, MonadError AstError m) => Exp -> m Exp
 reduceExp = \ case

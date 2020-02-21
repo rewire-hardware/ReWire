@@ -10,7 +10,7 @@ module ReWire.Crust.TypeVerify (typeVerify) where
 import ReWire.Annotation
 import ReWire.Error
 import ReWire.Unbound
-      ( fresh, substs, aeq, Subst, runFreshMT
+      ( fresh, substs, aeq, Subst
       , n2s, s2n
       )
 import ReWire.Pretty
@@ -37,8 +37,8 @@ data TCEnv = TCEnv
 
 type TCM m = ReaderT TCEnv (StateT TySub m)
 
-typeVerify :: MonadError AstError m => FreeProgram -> m FreeProgram
-typeVerify (ts, vs) = runFreshMT $ evalStateT (runReaderT (tc (ts, vs)) $ TCEnv mempty mempty) mempty
+typeVerify :: (Fresh m, MonadError AstError m) => FreeProgram -> m FreeProgram
+typeVerify (ts, vs) = evalStateT (runReaderT (tc (ts, vs)) $ TCEnv mempty mempty) mempty
 
 localAssumps :: MonadError AstError m => (Map (Name Exp) Poly -> Map (Name Exp) Poly) -> TCM m a -> TCM m a
 localAssumps f = local (\ tce -> tce { as = f (as tce) })

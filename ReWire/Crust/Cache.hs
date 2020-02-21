@@ -111,14 +111,15 @@ getProgram flags fp = do
        >=> typeCheck
        >=> neuterPrims
        >=> reduce
-       >=> pure . shiftLambdas
+       >=> shiftLambdas
        >=> liftLambdas
        >=> pure . purgeUnused
        >=> whenSet FlagDCrust2 (printInfo "Crust 2: Pre-purification")
-       >=> purify -- TODO(chathhorn): move before purge? purge again after purify?
+       >=> purify
        >=> whenSet FlagDCrust3 (printInfo "Crust 3: Post-purification")
        >=> whenSet FlagDTypes typeVerify'
        >=> liftLambdas
+       >=> pure . purgeUnused
        >=> whenSet FlagDCrust4 (printInfo "Crust 4: Post-second-lambda-lifting")
        >=> toCore
        $ (ts, ds)
@@ -134,7 +135,7 @@ getProgram flags fp = do
       where whenSet :: Applicative m => Flag -> (Bool -> a -> m a) -> a -> m a
             whenSet f m = if f `elem` flags then m $ FlagV `elem` flags else pure
 
-            typeVerify' :: (MonadError AstError m, MonadIO m) => Bool -> FreeProgram -> m FreeProgram
+            typeVerify' :: (Fresh m, MonadError AstError m, MonadIO m) => Bool -> FreeProgram -> m FreeProgram
             typeVerify' verbose a = do
                   when verbose $ liftIO $ putStrLn "Debug: verifying post-purification types."
                   typeVerify a
