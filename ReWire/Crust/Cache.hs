@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, FlexibleInstances, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, FlexibleInstances, ViewPatterns, FlexibleContexts #-}
 {-# LANGUAGE Safe #-}
 module ReWire.Crust.Cache
       ( runCache
@@ -94,8 +94,8 @@ getModule flags fp = Map.lookup fp <$> get >>= \ case
       where loadImports :: Annotation a => S.Module a -> Cache Module
             loadImports = fmap mconcat . mapM (fmap fst . getModule flags . toFilePath . void . importModule) . getImps
 
-            whenSet :: Applicative m => Flag -> (a -> m a) -> a -> m a
-            whenSet f m = if f `elem` flags then m else pure
+            whenSet :: Applicative m => Flag -> (Bool -> a -> m a) -> a -> m a
+            whenSet f m = if f `elem` flags then m $ FlagV `elem` flags else pure
 
 -- Phase 2 (pre-core) transformations.
 getProgram :: [Flag] -> FilePath -> Cache Core.Program
@@ -104,7 +104,7 @@ getProgram flags fp = do
       let (Module ts ds) = mod <> imps
 
       p <- pure
-       >=> whenSet FlagDCrust1 (printInfo (FlagV `elem` flags) "Crust 1: Post-desugaring")
+       >=> whenSet FlagDCrust1 (printInfo "Crust 1: Post-desugaring")
        >=> pure . addPrims
        >=> pure . inline
        >=> kindCheck
@@ -114,12 +114,12 @@ getProgram flags fp = do
        >=> pure . shiftLambdas
        >=> liftLambdas
        >=> pure . purgeUnused
-       >=> whenSet FlagDCrust2 (printInfo (FlagV `elem` flags) "Crust 2: Pre-purification")
+       >=> whenSet FlagDCrust2 (printInfo "Crust 2: Pre-purification")
        >=> purify -- TODO(chathhorn): move before purge? purge again after purify?
-       >=> whenSet FlagDCrust3 (printInfo (FlagV `elem` flags) "Crust 3: Post-purification")
-       >=> whenSet FlagDTypes typeVerify
+       >=> whenSet FlagDCrust3 (printInfo "Crust 3: Post-purification")
+       >=> whenSet FlagDTypes typeVerify'
        >=> liftLambdas
-       >=> whenSet FlagDCrust4 (printInfo (FlagV `elem` flags) "Crust 4: Post-second-lambda-lifting")
+       >=> whenSet FlagDCrust4 (printInfo "Crust 4: Post-second-lambda-lifting")
        >=> toCore
        $ (ts, ds)
 
@@ -131,8 +131,13 @@ getProgram flags fp = do
 
       pure p
 
-      where whenSet :: Applicative m => Flag -> (a -> m a) -> a -> m a
-            whenSet f m = if f `elem` flags then m else pure
+      where whenSet :: Applicative m => Flag -> (Bool -> a -> m a) -> a -> m a
+            whenSet f m = if f `elem` flags then m $ FlagV `elem` flags else pure
+
+            typeVerify' :: (MonadError AstError m, MonadIO m) => Bool -> FreeProgram -> m FreeProgram
+            typeVerify' verbose a = do
+                  when verbose $ liftIO $ putStrLn "Debug: verifying post-purification types."
+                  typeVerify a
 
 printHeader :: MonadIO m => String -> m ()
 printHeader hd = do
@@ -140,8 +145,8 @@ printHeader hd = do
       liftIO $ putStrLn $ "# " ++ hd
       liftIO $ putStrLn "# =======================================\n"
 
-printInfo :: MonadIO m => Bool -> String -> FreeProgram -> m FreeProgram
-printInfo verbose hd fp = do
+printInfo :: MonadIO m => String -> Bool -> FreeProgram -> m FreeProgram
+printInfo hd verbose fp = do
       let p = Program $ trec fp
       printHeader hd
       when verbose $ liftIO $ putStrLn "## Free kind vars:\n"
@@ -160,17 +165,17 @@ printInfo verbose hd fp = do
       when verbose $ liftIO $ print $ unAnn fp
       pure fp
 
-printInfoHSE :: MonadIO m => String -> Renamer -> Module -> S.Module a -> m (S.Module a)
-printInfoHSE hd rn imps hse = do
+printInfoHSE :: MonadIO m => String -> Renamer -> Module -> Bool -> S.Module a -> m (S.Module a)
+printInfoHSE hd rn imps verbose hse = do
       printHeader hd
-      liftIO $ putStrLn "\n## Renamer:\n"
-      liftIO $ print rn
-      liftIO $ putStrLn "\n## Exports:\n"
-      liftIO $ print $ allExports rn
-      liftIO $ putStrLn "\n## Show imps:\n"
-      liftIO $ print imps
-      liftIO $ putStrLn "\n## Show HSE mod:\n"
-      liftIO $ print $ void hse
-      liftIO $ putStrLn "\n## Pretty HSE mod:\n"
+      when verbose $ liftIO $ putStrLn "\n## Renamer:\n"
+      when verbose $ liftIO $ print rn
+      when verbose $ liftIO $ putStrLn "\n## Exports:\n"
+      when verbose $ liftIO $ print $ allExports rn
+      when verbose $ liftIO $ putStrLn "\n## Show imps:\n"
+      when verbose $ liftIO $ print imps
+      when verbose $ liftIO $ putStrLn "\n## Show HSE mod:\n"
+      when verbose $ liftIO $ print $ void hse
+      when verbose $ liftIO $ putStrLn "\n## Pretty HSE mod:\n"
       liftIO $ putStrLn $ P.prettyPrint $ void hse
       pure hse
