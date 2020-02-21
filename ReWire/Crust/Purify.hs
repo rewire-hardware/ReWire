@@ -533,7 +533,8 @@ getACtor s t = do
       PSto dcs pes iv as <- get
       case Map.lookup (unAnn t) as of
             Nothing -> do
-                  c <- freshVar $ "A_" ++ s
+                  c <- freshVar $ "A_" ++ s ++ show (Map.size as)
+                  -- ^ TODO(chathhorn): the num postfixed by Fresh is dropped in toCore because ctors assumed unique.
                   put $ PSto dcs pes iv $ Map.insert (unAnn t) c as
                   pure c
             Just c -> pure c
@@ -565,7 +566,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
             let (es, ts) = unzip bes
             ts' <- mapM (purifyTy an ms) ts
 
-            r_g <- fresh $ s2n $ "R_" ++ prettyPrint g
+            r_g <- freshVar $ "R_" ++ prettyPrint g
             addClause $ mkRDataCon an r_g ts'      -- "R_g T1 ... Tk"
 
             (p, xs) <- mkRPat an ts' r_g           -- Pattern (R_g e1 ... ek)
@@ -692,24 +693,22 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
                   let anode = App ( MsgAnnote "Purify: mkLeft")
                                   ( Con (MsgAnnote "Purify: mkLeft") (mkArrowTy [t] aTy) c)
                                   a
-                  pure ( App ( MsgAnnote "Purify: mkLeft")
+                  pure $ App ( MsgAnnote "Purify: mkLeft")
                              ( Con ( MsgAnnote "Purify: mkLeft")
                                    ( mkArrowTy [mkTupleTy $ aTy : ms] $ mkRangeTy o ms)
                                    ( s2n "Prelude.Left")
                              )
                              (mkTuple $ anode : stos)
-                        )
 
             mkLeftPat :: (Fresh m, MonadError AstError m) => String -> Pat -> [Pat] -> StateT PSto m Pat
             mkLeftPat s a stos = do
                   let t = typeOf a
                   c <- getACtor s t
                   let anode =  PatCon (MsgAnnote "Purify: mkLeftPat") (Embed $ mkArrowTy [t] aTy) (Embed c) [a]
-                  pure ( PatCon ( MsgAnnote "Purify: mkLeftPat")
+                  pure $ PatCon ( MsgAnnote "Purify: mkLeftPat")
                              ( Embed $ mkArrowTy [mkTupleTy $ aTy : ms] $ mkRangeTy o ms)
                              ( Embed $ s2n "Prelude.Left")
                              [ mkTuplePat $ anode : stos]
-                       )
 
             mkRight :: Exp -> Exp
             mkRight e = App ( MsgAnnote "Purify: mkRight")

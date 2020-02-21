@@ -218,7 +218,7 @@ instance Pretty Program where
                   ppDataDecls = vcat . intersperse (text "") . map pretty
 
 ---
-
+-- TODO(chathhorn): should rewrite these to return ([x], x) or non-empty list.
 arity :: Ty -> Int
 arity = \ case
       TyApp _ (TyApp _ (TyCon _ (TyConId "->")) _) t2 -> 1 + arity t2

@@ -24,19 +24,25 @@ options =
                                    "dump miscellaneous debugging information"
        , Option ['v'] ["verbose"]    (NoArg FlagV)
                                    "more verbose debugging output"
+       , Option []    ["dhask1"]    (NoArg FlagDHask1)
+                                   "dump pre-desugar haskell"
+       , Option []    ["dhask2"]    (NoArg FlagDHask2)
+                                   "dump post-desugar haskell"
        , Option []    ["dcrust1"]    (NoArg FlagDCrust1)
                                    "dump post-desugar crust"
        , Option []    ["dcrust2"]    (NoArg FlagDCrust2)
                                    "dump pre-purify crust"
        , Option []    ["dcrust3"]    (NoArg FlagDCrust3)
                                    "dump post-purify crust"
-       , Option []    ["dcore"]    (NoArg FlagDCore)
+       , Option []    ["dcrust4"]    (NoArg FlagDCrust4)
+                                   "dump post-second-lambda-lifting crust"
+       , Option []    ["dcore"]      (NoArg FlagDCore)
                                    "dump core"
-       , Option []    ["dtypes"]    (NoArg FlagDTypes)
+       , Option []    ["dtypes"]     (NoArg FlagDTypes)
                                    "enable extra typechecking after various IR transformations"
-       , Option ['o'] []           (ReqArg FlagO "filename.vhd")
+       , Option ['o'] []             (ReqArg FlagO "filename.vhd")
                                    "generate VHDL"
-       , Option []    ["loadpath"] (ReqArg FlagLoadPath "dir1,dir2,...")
+       , Option []    ["loadpath"]   (ReqArg FlagLoadPath "dir1,dir2,...")
                                    "additional directories for loadpath"
        ]
 

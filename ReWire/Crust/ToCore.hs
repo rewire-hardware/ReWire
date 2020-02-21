@@ -7,7 +7,7 @@ import ReWire.Error
 import ReWire.Pretty
 import ReWire.Unbound
       ( Name, Fresh, runFreshMT, Embed (..)
-      , unbind, name2String
+      , unbind, n2s
       )
 
 import Control.Monad ((<=<))
@@ -25,14 +25,14 @@ toCore (ts, vs) = runFreshMT $ do
       pure $ C.Program ts' vs'
 
 notPrim :: Name a -> Bool
-notPrim = elem '.' . name2String
+notPrim = elem '.' . n2s
 
 transData :: (MonadError AstError m, Fresh m) => M.DataDefn -> m [C.DataCon]
 transData (M.DataDefn _ _ _ cs) = mapM transDataCon $ zip [0..] cs
       where transDataCon :: (MonadError AstError m, Fresh m) => (Int, M.DataCon) -> m C.DataCon
             transDataCon (n, M.DataCon an c (Embed (M.Poly t))) = do
                   (_, t') <- unbind t
-                  C.DataCon an (C.DataConId $ name2String c) n <$> transType t'
+                  C.DataCon an (C.DataConId $ show c) n <$> transType t'
 
 transDefn :: (MonadError AstError m, Fresh m) => M.Defn -> m C.Defn
 transDefn (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) = do
@@ -41,9 +41,9 @@ transDefn (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) = do
       C.Defn an (transVar n) <$> transType t' <*> runReaderT (transExp e') (Map.fromList $ zip xs [0..])
 
 transVar :: Name M.Exp -> C.GId
-transVar n = case head $ name2String n of
-      '$' -> prettyPrint n
-      _   -> name2String n
+transVar n = case head $ n2s n of
+      '$' -> show n
+      _   -> show n
 
 transExp :: (MonadError AstError m, Fresh m) => M.Exp -> ReaderT (Map (Name M.Exp) Int) m C.Exp
 transExp = \ case
@@ -53,7 +53,7 @@ transExp = \ case
                   then C.GVar an <$> transType t <*> pure (transVar x)
                   else C.Prim an <$> transType t <*> pure (transVar x)
             Just i  -> C.LVar an <$> transType t <*> pure i
-      M.Con an t d                      -> C.Con an <$> transType t <*> pure (C.DataConId (name2String d))
+      M.Con an t d                      -> C.Con an <$> transType t <*> pure (C.DataConId (show d))
       M.Match an t e p f as (Just e2)   -> C.Match an <$> transType t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> mapM (toLId <=< transExp) as <*> (Just <$> transExp e2)
       M.Match an t e p f as Nothing     -> C.Match an <$> transType t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> mapM (toLId <=< transExp) as <*> pure Nothing
       M.NativeVHDL an s (M.Error _ t _) -> C.NativeVHDL an <$> transType t <*> pure s
@@ -70,13 +70,13 @@ toLId e              = failAt (ann e) $ "toLId: expected LVar, got: " ++ prettyP
 
 transPat :: (MonadError AstError m, Fresh m) => M.MatchPat -> m C.Pat
 transPat = \ case
-      M.MatchPatCon an t d ps -> C.PatCon an <$> transType t <*> pure (C.DataConId $ name2String d) <*> mapM transPat ps
+      M.MatchPatCon an t d ps -> C.PatCon an <$> transType t <*> pure (C.DataConId $ show d) <*> mapM transPat ps
       M.MatchPatVar an t      -> C.PatVar an <$> transType t
 
 transType :: MonadError AstError m => M.Ty -> m C.Ty
 transType = \ case
       M.TyApp an t1 t2  -> C.TyApp an <$> transType t1 <*> transType t2
-      M.TyCon an c      -> pure $ C.TyCon an $ C.TyConId $ name2String c
-      M.TyVar an _ x    -> pure $ C.TyVar an $ name2String x
+      M.TyCon an c      -> pure $ C.TyCon an $ C.TyConId $ show c
+      M.TyVar an _ x    -> pure $ C.TyVar an $ show x
       t                 -> pure $ C.TyVar (ann t) "$$TyBlank$$" -- TODO(chathhorn)
 
