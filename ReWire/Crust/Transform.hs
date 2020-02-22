@@ -16,6 +16,7 @@ import ReWire.Unbound
       , isFreeName, runFreshM
       , Name (..)
       )
+import ReWire.Annotation (Annote (..))
 import ReWire.SYB
 import ReWire.Crust.Syntax
 
@@ -48,10 +49,14 @@ neuterPrims :: MonadCatch m => FreeProgram -> m FreeProgram
 neuterPrims = runT $ transform $
       \ (NativeVHDL an s e) -> pure $ NativeVHDL an s (Error an (typeOf e) "nativeVHDL expression placeholder")
 
+-- | Shifts vars bound by top-level lambdas into defs.
+-- > g = \ x1 -> \ x2 -> e
+--   becomes
+-- > g x1 x2 = e
 shiftLambdas :: Fresh m => FreeProgram -> m FreeProgram
 shiftLambdas (ts, vs) = (ts,) <$> mapM shiftLambdas' vs
       where shiftLambdas' :: Fresh m => Defn -> m Defn
-            shiftLambdas' (Defn an n t inl (Embed e)) = Defn an n t inl <$> Embed <$> mash e
+            shiftLambdas' (Defn an n t inl (Embed e)) = Defn an n t inl . Embed <$> mash e
 
             mash :: Fresh m => Bind [Name Exp] Exp -> m (Bind [Name Exp] Exp)
             mash e = unbind e >>= \ case
@@ -60,8 +65,7 @@ shiftLambdas (ts, vs) = (ts,) <$> mapM shiftLambdas' vs
                         mash $ bind (vs ++ [v]) b'
                   _ -> pure e
 
--- | This is a hacky SYB-based lambda lifter, it requires some ugly mucking
---   with the internals of unbound-generics.
+-- | Lifts lambdas and case/match into a top level fun def.
 liftLambdas :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
 liftLambdas p = evalStateT (runT liftLambdas' p) []
       where liftLambdas' :: (MonadCatch m, Fresh m) => Transform (StateT [Defn] m)
@@ -78,7 +82,7 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                         f     <- fresh $ s2n "$LL.lambda"
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs ++ [x]) e')
-                        pure $ foldl' (\ e' (v, vt) -> App an e' $ Var an vt v) (Var an t' f) $ map (first promote) bvs
+                        pure $ foldl' (App an) (Var an t' f) $ map (toVar an . first promote) bvs
                   Case an t e1 b e2 -> do
                         (p, e)    <- unbind b
                         let bvs   = bv e
@@ -90,9 +94,8 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                         f     <- fresh $ s2n "$LL.case"
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs ++ map fst pvs) e')
-                        pure $ Match an t e1 (transPat p) (Var an t' f) (map (\ (v, vt) -> Var an vt (promote v)) bvs) e2
-                  -- TODO(chathhorn): This case is really just normalizing
-                  -- Match, consider moving to ToCore.
+                        pure $ Match an t e1 (transPat p) (Var an t' f) (map (toVar an . first promote) bvs) e2
+                  -- TODO(chathhorn): This case is really just normalizing Match, consider moving to ToCore.
                   Match an t e1 p e lvars els -> do
                         let bvs   = bv e
                         (fvs, e') <- freshen e
@@ -101,9 +104,25 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                         f     <- fresh $ s2n "$LL.match"
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind fvs e')
-                        pure $ Match an t e1 p (Var an t' f) (map (\ (v, vt) -> Var an vt v) bvs ++ lvars) els
+                        pure $ Match an t e1 p (Var an t' f) (map (toVar an) bvs ++ lvars) els
+                  -- Lifts matches in the operator position of an application.
+                  -- TODO(chathhorn): move somewhere else?
+                  App an e@Match {} arg -> do
+                        let bvs   = bv e
+                        (fvs, e') <- freshen e
+
+                        let t' = foldr (arr . snd) (typeOf e) bvs
+                        f     <- fresh $ s2n "$LL.matchapp"
+
+                        modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind fvs e')
+                        pure $ App an
+                              (foldl' (App an) (Var an t' f) $ map (toVar an) bvs)
+                              arg
                   ||> (\ ([] :: [Defn]) -> get) -- this is cute!
                   ||> TId
+
+            toVar :: Annote -> (Name Exp, Ty) -> Exp
+            toVar an (v, vt) = Var an vt v
 
             freshen :: (MonadCatch m, Fresh m) => Exp -> m ([Name Exp], Exp)
             freshen e = do

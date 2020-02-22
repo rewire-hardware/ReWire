@@ -4,9 +4,7 @@
 module ReWire.Crust.Purify (purify) where
 
 import ReWire.Annotation
-import ReWire.Unbound
-      ( Fresh (..), s2n, n2s
-      )
+import ReWire.Unbound (Fresh (..), s2n, n2s)
 import ReWire.Error
 import ReWire.Crust.Syntax
 import ReWire.Pretty
@@ -14,7 +12,7 @@ import ReWire.Pretty
 import Control.Arrow (first, second, (&&&))
 import Control.Monad.State
 import Control.Monad.Fail (MonadFail)
-import Data.List (foldl', intercalate)
+import Data.List (foldl')
 import Data.Either (partitionEithers)
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.Bool (bool)
@@ -429,28 +427,29 @@ purifyStateBody rho stos stys i ms = classifyCases >=> \ case
 
       Put _ e         -> pure $ mkTuple $ nil : replaceAtIndex (i - 1) e stos
 
-      Apply an t n es -> mkPureApp an rho (Var an t n) $ stos ++ es
+      Apply an t n es -> mkPureApp an rho t n $ es ++ stos
 
     -- e1 must be simply-typed, so don't purify it.
-      SMatch an ty e1 mp e2 es Nothing -> do
-            ty' <- rangeTy <$> purifyTy an ms ty
+      SMatch an ty e1 mp e2 es e3 -> do
+            ty' <- purifyTy an ms ty
             e2' <- purifyStateBody rho stos stys i ms e2
-            pure $ Match an ty' e1 mp e2' es Nothing
-
-      SMatch an ty e1 mp e2 es (Just e3) -> do
-            ty' <- rangeTy <$> purifyTy an ms ty
-            e2' <- purifyStateBody rho stos stys i ms e2
-            e3' <- purifyStateBody rho stos stys i ms e3
-            pure $ Match an ty' e1 mp e2' es (Just e3')
+            e3' <- maybePlumb (purifyStateBody rho stos stys i ms <$> e3)
+            let (e2'', es') = dstApp' e2'
+            vs <- freshVars "ignore" $ map typeOf es' -- TODO(chathhorn): big kludge.
+            let e3'' = (\ case
+                        (e, []) -> foldl' (\ e' (v, t) -> Lam an t $ bind v e') e vs
+                        (e, _)  -> e -- TODO(chathhorn): only drop the stos!
+                  ) <$> dstApp' <$> e3'
+            pure $ mkApp (Match an ty' e1 mp e2'' es e3'') es'
 
       Bind an t e g -> do
-            te         <- fst <$> dstArrow t
-            a          <- liftMaybe (ann te) "Invalid type in bind" $ dstCompR te -- a is the return type of e
-            e'         <- purifyStateBody rho stos stys i ms e
-            ns         <- freshVars "st" $ a : stys
-            g_pure_app <- mkPureApp an rho g $ map (mkVar an) ns
-            let p       = mkTuplePat $ map patVar ns
-            -- g can, in general, be an application. That's causing the error when (var2Name g) is called.
+            te          <- fst <$> dstArrow t
+            a           <- liftMaybe (ann te) "Invalid type in bind" $ dstCompR te -- a is the return type of e
+            ns          <- freshVars "st" $ a : stys
+            (f, tf, es) <- dstApp g
+            g_pure_app  <- mkPureApp an rho tf f $ es ++ map (mkVar an) ns
+            let p        = mkTuplePat $ map patVar ns
+            e'          <- purifyStateBody rho stos stys i ms e
             pure $ mkLet an p e' g_pure_app
 
 ---------------------------
@@ -499,8 +498,7 @@ classifyApp an (x, t, [e, g])
       | n2s x == ">>="     = case isSignal e of
             Just s -> do
                   (g', t, es) <- dstApp g
-                  bes         <- mkBindings an t es
-                  pure $ SigK an t s g' bes
+                  pure $ SigK an t s g' $ zip es $ paramTys t
             Nothing -> do
                   tau         <- snd <$> dstArrow t
                   RBind an e g . fst <$> dstArrow tau
@@ -574,7 +572,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
             let svars = map (\ (x, t) -> Var an t x) ns  -- [s1, ..., sn]
             let vars  = map (\ (x, t) -> Var an t x) (zip xs ts')   -- [x1, ..., xn]
             iv <- getI
-            g_pure_app <- mkPureApp an rho (Var an a g) (vars ++ [Var an i iv] ++ svars)
+            g_pure_app <- mkPureApp an rho a g $ vars ++ Var an i iv : svars
             -- "dispatch (R_g e1 ... ek, (s1, ..., sn)) i = g_pure e1 ... ek i s1 ... sn"
             addEquation (pairpat, g_pure_app)
 
@@ -626,7 +624,8 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
 
             -- calculating g_pure_app = "g_pure v s1 ... sm"
             let vars     = map (mkVar an) svars
-            g_pure_app  <- mkPureApp an rho g (Var an ert v : vars)
+            (f, t, es)  <- dstApp g
+            g_pure_app  <- mkPureApp an rho t f $ es ++ Var an ert v : vars
             -- done calculating g_pure_app
             pure $ mkLet an p e' g_pure_app
 
@@ -644,7 +643,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
 
       RVar an tx x   -> do
             tx' <- purifyTy an ms tx
-            pure $ mkApp (Var an tx' x') stos
+            pure $ mkApp' an tx' x' stos
                   where x' = if isStart x then s2n "$Pure.start" else x
 
       -- extrude :: Monad m => ReT i o (StT s m) a -> s -> ReT i o m a
@@ -655,33 +654,35 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
       -- 2. phi' <- purifyResBody phi
       -- 3. make definition and addit to definitions: $LL = phi'
       -- 4. return $ (...($LL s1)...sn)
-      Extrude an t rator rands -> case flattenExtr $ mkApp (Var an t rator) rands of
+      Extrude an t rator rands -> case flattenExtr $ mkApp' an t rator rands of
             (Var an t d, stos) -> do
                   t'  <- purifyTy an ms t
-                  pure $ mkApp (Var an t' d) stos
+                  pure $ mkApp' an t' d stos
             (e@App {}, stos)   -> do
                   (f, t, es) <- dstApp e
                   t'         <- purifyTy (ann e) ms t
-                  pure $ mkApp (Var (ann e) t' f) $ es ++ stos
+                  pure $ mkApp' (ann e) t' f $ es ++ stos
             (e, _)             -> failAt (ann e) $ "Extruded device is non-variable: " ++ show e
 
       RApp an rty rator rands -> do
             rator' <- purifyResBody rho i o a stos ms (Var an rty rator)
             -- N.b., don't think it's necessary to purify the rands because
             -- they're simply typed.
-            mkPureApp an rho rator' rands
+            (f, t, stos') <- dstApp rator'
+            mkPureApp an rho t f $ rands ++ stos'
 
        -- e1 must be simply-typed, so don't purify it.
-      RMatch an ty e1 mp e2 es Nothing   -> do
-            ty' <- rangeTy <$> purifyTy an ms ty
+      RMatch an ty e1 mp e2 es e3 -> do
+            ty' <- purifyTy an ms ty
             e2' <- purifyResBody rho i o a stos ms e2
-            pure $ Match an ty' e1 mp e2' es Nothing
-
-      RMatch an ty e1 mp e2 es (Just e3) -> do
-            ty' <- rangeTy <$> purifyTy an ms ty
-            e2' <- purifyResBody rho i o a stos ms e2
-            e3' <- purifyResBody rho i o a stos ms e3
-            pure $ Match an ty' e1 mp e2' es (Just e3')
+            e3' <- maybePlumb (purifyResBody rho i o a stos ms <$> e3)
+            let (e2'', es') = dstApp' e2'
+            vs <- freshVars "ignore" $ map typeOf es' -- TODO(chathhorn): big kludge.
+            let e3'' = (\ case
+                        (e, []) -> foldl' (\ e' (v, t) -> Lam an t $ bind v e') e vs
+                        (e, _)  -> e -- TODO(chathhorn): only drop the stos!
+                  ) <$> dstApp' <$> e3'
+            pure $ mkApp (Match an ty' e1 mp e2'' es e3'') es'
 
       where mkLeft :: (Fresh m, MonadError AstError m) => String -> Exp -> [Exp] -> StateT PSto m Exp
             mkLeft s a stos = do
@@ -789,11 +790,11 @@ mkPureVar an rho t x = case n2s x of
 mkApp :: Exp -> [Exp] -> Exp
 mkApp = foldl' $ App (MsgAnnote "Purify: mkApp")
 
-mkPureApp :: MonadError AstError m => Annote -> PureEnv -> Exp -> [Exp] -> m Exp
-mkPureApp an rho e es = do
-      (rator, t, rands) <- dstApp e
-      ep                <- mkPureVar an rho t rator
-      pure $ mkApp ep $ es ++ rands
+mkApp' :: Annote -> Ty -> Name Exp -> [Exp] -> Exp
+mkApp' an t n = mkApp (Var an t n)
+
+mkPureApp :: MonadError AstError m => Annote -> PureEnv -> Ty -> Name Exp -> [Exp] -> m Exp
+mkPureApp an rho t rator es = flip mkApp es <$> mkPureVar an rho t rator
 
 dstApp :: MonadError AstError m => Exp -> m (Name Exp, Ty, [Exp])
 dstApp = \ case
@@ -804,6 +805,11 @@ dstApp = \ case
       Var _ t n              -> pure (n, t, [])
       d                      -> failAt (ann d) "Tried to dst non-app"
 
+dstApp' :: Exp -> (Exp, [Exp])
+dstApp' = \ case
+      App _ e rand -> (fst $ dstApp' e, snd (dstApp' e) ++ [rand])
+      e            -> (e, [])
+
 -- > let p = e1 in e2
 --     becomes
 -- > case e1 of { p -> e2 }
@@ -811,13 +817,5 @@ dstApp = \ case
 mkLet :: Annote -> Pat -> Exp -> Exp -> Exp
 mkLet an p e1 e2 = Case an (typeOf e2) e1 (bind p e2) Nothing
 
-mkBindings :: (Pretty t, MonadError AstError m) => Annote -> Ty -> [t] -> m [(t, Ty)]
-mkBindings an t es = do
-      let ps = paramTys t
-      when (length ps < length es)
-            $ failAt an
-            $ "Purify: mkBindings: attempting to calculate argument types: "
-           ++ "[" ++ intercalate ", " (map prettyPrint es) ++ "]"
-           ++ " vs "
-           ++ "[" ++ intercalate ", " (map prettyPrint ps) ++ "]"
-      pure $ zip es ps
+maybePlumb :: Monad m => Maybe (m a) -> m (Maybe a)
+maybePlumb = maybe (pure Nothing) (>>= (pure . Just))
