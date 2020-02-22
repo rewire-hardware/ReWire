@@ -226,7 +226,7 @@ compileExp e_ = case e of
             [] -> case malt of
                   Just ealt -> do
                         n                   <- (++ "_res") <$> freshName "match"
-                        sizeres             <- sizeof an t
+                        sizeres             <- sizeof an (last $ flattenArrow t)
                         addSignal n (TyStdLogicVector sizeres)
                         (stmts_escr, n_escr) <- compileExp escr
                         (ematch, efields)    <- compilePat n_escr 0 p
@@ -249,16 +249,16 @@ compileExp e_ = case e of
                                 stmts_ealt,
                                 n)
                   Nothing   -> do
-                        sizeres             <- sizeof an t
+                        sizeres              <- sizeof an (last $ flattenArrow t)
                         (stmts_escr, n_escr) <- compileExp escr
                         (_, efields)         <- compilePat n_escr 0 p
-                        n_gid               <- (++ "_res") <$> freshName (mangle gid)
+                        n_gid                <- (++ "_res") <$> freshName (mangle gid)
                         addSignal n_gid (TyStdLogicVector sizeres)
-                        n_call              <- (++ "_call") <$> freshName (mangle gid)
-                        t_gid               <- askGIdTy gid
+                        n_call               <- (++ "_call") <$> freshName (mangle gid)
+                        t_gid                <- askGIdTy gid
                         addComponent an gid t_gid
-                        let argns           =  map (\ n -> "arg" ++ show n) ([0..]::[Int])
-                            pm              =  PortMap (zip argns
+                        let argns            =  map (\ n -> "arg" ++ show n) ([0..]::[Int])
+                            pm               =  PortMap (zip argns
                                                         (map (ExprName . ("arg" ++) . show) lids
                                                         ++ efields)
                                                         ++ [("res", ExprName n_gid)])
