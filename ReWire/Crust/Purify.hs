@@ -396,7 +396,7 @@ classifyCases = \ case
       e@App {}                  -> do
             (n, t, es) <- dstApp e
             pure $ Apply (ann e) t n es
-      Match an t e1 mp e2 es me -> pure $ SMatch an t e1 mp e2 es me
+      Match an _ e1 mp e2 es me -> pure $ SMatch an e1 mp e2 es me
       d                         -> failAt (ann d) $ "Unclassifiable case: " ++ show d
 
 data Cases an p e t = Get an t
@@ -405,7 +405,7 @@ data Cases an p e t = Get an t
                     | Put an e
                     | Bind an t e e
                     | Apply an t (Name Exp) [e]
-                    | SMatch an t e MatchPat e [e] (Maybe e)
+                    | SMatch an e MatchPat e [e] (Maybe e)
 
 -- | purifyStateBody
 --   rho  -- pure environment
@@ -430,17 +430,11 @@ purifyStateBody rho stos stys i ms = classifyCases >=> \ case
       Apply an t n es -> mkPureApp an rho t n $ es ++ stos
 
     -- e1 must be simply-typed, so don't purify it.
-      SMatch an ty e1 mp e2 es e3 -> do
-            ty' <- purifyTy an ms ty
-            e2' <- purifyStateBody rho stos stys i ms e2
+      SMatch an e1 mp e2 es e3 -> do
+            p <- transPat mp
+            e2' <- purifyStateBody rho stos stys i ms $ mkApp e2 $ es ++ map (mkVar an) (patVars p)
             e3' <- maybePlumb (purifyStateBody rho stos stys i ms <$> e3)
-            let (e2'', es') = dstApp' e2'
-            vs <- freshVars "ignore" $ map typeOf es' -- TODO(chathhorn): big kludge.
-            let e3'' = (\ case
-                        (e, []) -> foldl' (\ e' (v, t) -> Lam an t $ bind v e') e vs
-                        (e, _)  -> e -- TODO(chathhorn): only drop the stos!
-                  ) <$> dstApp' <$> e3'
-            pure $ mkApp (Match an ty' e1 mp e2'' es e3'') es'
+            pure $ Case an (typeOf e2') e1 (bind p e2') e3'
 
       Bind an t e g -> do
             te          <- fst <$> dstArrow t
@@ -450,7 +444,17 @@ purifyStateBody rho stos stys i ms = classifyCases >=> \ case
             g_pure_app  <- mkPureApp an rho tf f $ es ++ map (mkVar an) ns
             let p        = mkTuplePat $ map patVar ns
             e'          <- purifyStateBody rho stos stys i ms e
-            pure $ mkLet an p e' g_pure_app
+            mkLet an p e' g_pure_app
+
+transPat :: Fresh m => MatchPat -> m Pat
+transPat = \ case
+      MatchPatCon an t c ps -> PatCon an (Embed t) (Embed c) <$> mapM transPat ps
+      MatchPatVar an t      -> PatVar an (Embed t) <$> freshVar "m2c"
+
+patVars :: Pat -> [(Name Exp, Ty)]
+patVars = \ case
+      PatCon _ _ _ ps      -> concatMap patVars ps
+      PatVar _ (Embed t) x -> [(x, t)]
 
 ---------------------------
 -- Purifying Resumption Monadic definitions
@@ -466,7 +470,7 @@ data RCase an t p e = RReturn an e
                     | SigK an t e (Name e) [(e, t)] -- (signal e >>= g e1 ... ek)
                     | Extrude an t (Name e) [e]     -- [(e, t)]
                     | RApp an t (Name e) [e]
-                    | RMatch an t e MatchPat e [e] (Maybe e)
+                    | RMatch an e MatchPat e [e] (Maybe e)
 
 instance Show (RCase an t p e) where
       show RReturn {} = "RReturn"
@@ -482,7 +486,7 @@ instance Show (RCase an t p e) where
 classifyRCases :: (Fresh m, MonadError AstError m) => Exp -> m (RCase Annote Ty Pat Exp)
 classifyRCases = \ case
      e@(App an _ _)            -> dstApp e >>= classifyApp an
-     Match an t e1 mp e2 es me -> pure $ RMatch an t e1 mp e2 es me
+     Match an _ e1 mp e2 es me -> pure $ RMatch an e1 mp e2 es me
      Var an t x                -> pure $ RVar an t x
      d                         -> failAt (ann d) $ "Unclassifiable R-case: " ++ show d
 
@@ -627,7 +631,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
             (f, t, es)  <- dstApp g
             g_pure_app  <- mkPureApp an rho t f $ es ++ Var an ert v : vars
             -- done calculating g_pure_app
-            pure $ mkLet an p e' g_pure_app
+            mkLet an p e' g_pure_app
 
           -- N.b., the pure env rho will have to contain *all* purified bindings
           --       or this will fail.
@@ -639,7 +643,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
             let p       = mkTuplePat $ map patVar $ (v, a) : s_i
             body <- mkLeft "RLift" (Var an a v) stos
 
-            pure $ mkLet an p e' body
+            mkLet an p e' body
 
       RVar an tx x   -> do
             tx' <- purifyTy an ms tx
@@ -672,17 +676,11 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
             mkPureApp an rho t f $ rands ++ stos'
 
        -- e1 must be simply-typed, so don't purify it.
-      RMatch an ty e1 mp e2 es e3 -> do
-            ty' <- purifyTy an ms ty
-            e2' <- purifyResBody rho i o a stos ms e2
+      RMatch an e1 mp e2 es e3 -> do
+            p <- transPat mp
+            e2' <- purifyResBody rho i o a stos ms $ mkApp e2 $ es ++ map (mkVar an) (patVars p)
             e3' <- maybePlumb (purifyResBody rho i o a stos ms <$> e3)
-            let (e2'', es') = dstApp' e2'
-            vs <- freshVars "ignore" $ map typeOf es' -- TODO(chathhorn): big kludge.
-            let e3'' = (\ case
-                        (e, []) -> foldl' (\ e' (v, t) -> Lam an t $ bind v e') e vs
-                        (e, _)  -> e -- TODO(chathhorn): only drop the stos!
-                  ) <$> dstApp' <$> e3'
-            pure $ mkApp (Match an ty' e1 mp e2'' es e3'') es'
+            pure $ Case an (typeOf e2') e1 (bind p e2') e3'
 
       where mkLeft :: (Fresh m, MonadError AstError m) => String -> Exp -> [Exp] -> StateT PSto m Exp
             mkLeft s a stos = do
@@ -814,8 +812,11 @@ dstApp' = \ case
 --     becomes
 -- > case e1 of { p -> e2 }
 -- N.b., use a Match here instead of a Case.
-mkLet :: Annote -> Pat -> Exp -> Exp -> Exp
-mkLet an p e1 e2 = Case an (typeOf e2) e1 (bind p e2) Nothing
+mkLet :: Fresh m => Annote -> Pat -> Exp -> Exp -> m Exp
+mkLet an p e1 e2 = do
+      v <- freshVar "disc"
+      -- Need to lift the discriminator.
+      pure $ App an (Lam an (typeOf e1) $ bind v $ Case an (typeOf e2) (Var an (typeOf e1) v) (bind p e2) Nothing) e1
 
 maybePlumb :: Monad m => Maybe (m a) -> m (Maybe a)
 maybePlumb = maybe (pure Nothing) (>>= (pure . Just))
