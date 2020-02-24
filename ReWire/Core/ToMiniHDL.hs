@@ -12,7 +12,7 @@ import ReWire.Pretty
 import Control.Monad (zipWithM)
 import Control.Monad.Reader (ReaderT (..), asks)
 import Control.Monad.State (StateT (..), get, put, lift)
-import Data.List (find)
+import Data.List (find, foldl')
 import Data.Bits (testBit)
 import Data.Maybe (fromMaybe)
 
@@ -170,7 +170,7 @@ compilePat nscr offset (PatCon an _ dci ps) = do
       rs               <- zipWithM (compilePat nscr) fieldoffsets ps
       let ematchs      =  map fst rs
           eslices      =  concatMap snd rs
-          ematch       =  foldl ExprAnd
+          ematch       =  foldl' ExprAnd
                             (ExprIsEq
                               (ExprSlice (ExprName nscr) offset (offset + tagw - 1))
                               (ExprBitString dcitagvec))
@@ -218,7 +218,7 @@ compileExp e_ = case e of
             tagvec      <- dciTagVector i
             padvec      <- dciPadVector an i tres
             pure (stmts ++ [Assign (LHSName n) (ExprConcat
-                                                  (foldl ExprConcat (ExprBitString tagvec) (map ExprName ns))
+                                                  (foldl' ExprConcat (ExprBitString tagvec) (map ExprName ns))
                                                      (ExprBitString padvec)
                                                   )],
                     n)
