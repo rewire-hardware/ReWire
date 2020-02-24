@@ -425,7 +425,7 @@ purifyStateBody rho stos stys i ms = classifyCases >=> \ case
 
       Lift _ e        -> purifyStateBody rho stos stys (i + 1) ms e
 
-      Put _ e         -> pure $ mkTuple $ nil : replaceAtIndex (i - 1) e stos
+      Put _ e         -> pure $ mkTuple $ nil : replaceAtIndex i e stos
 
       Apply an t n es -> mkPureApp an rho t n $ es ++ stos
 
