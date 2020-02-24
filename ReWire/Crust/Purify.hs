@@ -391,7 +391,7 @@ classifyCases = \ case
             | n2s x == "put"    -> pure $ Put an e
             | n2s x == "lift"   -> pure $ Lift an e
       App an (App _ (Var _ t x) e) g
-            | n2s x == ">>="    -> pure $ Bind an t e g
+            | n2s x == ">>="    -> pure $ Bind an e g
             | otherwise         -> pure $ Apply an t x [e, g]
       e@App {}                  -> do
             (n, t, es) <- dstApp e
@@ -403,7 +403,7 @@ data Cases an p e t = Get an t
                     | Return an t e
                     | Lift an e
                     | Put an e
-                    | Bind an t e e
+                    | Bind an e e
                     | Apply an t (Name Exp) [e]
                     | SMatch an e MatchPat e [e] (Maybe e)
 
@@ -436,9 +436,8 @@ purifyStateBody rho stos stys i ms = classifyCases >=> \ case
             e3' <- maybePlumb (purifyStateBody rho stos stys i ms <$> e3)
             pure $ Case an (typeOf e2') e1 (bind p e2') e3'
 
-      Bind an t e g -> do
-            te          <- fst <$> dstArrow t
-            a           <- liftMaybe (ann te) "Invalid type in bind" $ dstCompR te -- a is the return type of e
+      Bind an e g -> do
+            a           <- liftMaybe (ann e) "Invalid type in bind" $ dstCompR $ typeOf e
             ns          <- freshVars "st" $ a : stys
             (f, tf, es) <- dstApp g
             g_pure_app  <- mkPureApp an rho tf f $ es ++ map (mkVar an) ns
@@ -466,7 +465,7 @@ data RCase an t p e = RReturn an e
                     | RLift an e
                     | RVar an t (Name e)
                     | Signal an e
-                    | RBind an e e t
+                    | RBind an e e
                     | SigK an t e (Name e) [(e, t)] -- (signal e >>= g e1 ... ek)
                     | Extrude an t (Name e) [e]     -- [(e, t)]
                     | RApp an t (Name e) [e]
@@ -503,9 +502,7 @@ classifyApp an (x, t, [e, g])
             Just s -> do
                   (g', t, es) <- dstApp g
                   pure $ SigK an t s g' $ zip es $ paramTys t
-            Nothing -> do
-                  tau         <- snd <$> dstArrow t
-                  RBind an e g . fst <$> dstArrow tau
+            Nothing -> pure $ RBind an e g
       | n2s x == "extrude" = pure $ Extrude an t x [e, g]
       where isSignal :: Exp -> Maybe Exp
             isSignal = \ case
@@ -613,9 +610,9 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
       -- It appears to me that g can be an application (and not only a variable). In which case, I guess
       -- the right thing to do is just apply "v s1 ... sm" to g. And possibly add "_pure" to the function at the
       -- head of the application. The way it's written below assumes that g is a variable.
-      RBind an e g tg -> do
+      RBind an e g -> do
             -- purify the types of e and g
-            tg'         <- purifyTy an ms tg
+            tg'         <- purifyTy an ms $ typeOf g
             -- ert is the return type of e; ty is the type of the whole expression
             (ert, _)    <- dstArrow tg'
             e'          <- purifyResBody rho i o ert stos ms e
@@ -802,11 +799,6 @@ dstApp = \ case
             pure (n, t, es ++ [rand])
       Var _ t n              -> pure (n, t, [])
       d                      -> failAt (ann d) "Tried to dst non-app"
-
-dstApp' :: Exp -> (Exp, [Exp])
-dstApp' = \ case
-      App _ e rand -> (fst $ dstApp' e, snd (dstApp' e) ++ [rand])
-      e            -> (e, [])
 
 -- > let p = e1 in e2
 --     becomes
