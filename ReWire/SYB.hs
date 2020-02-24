@@ -26,7 +26,7 @@ generalizeA f x = case f <$> cast x of
 generalize :: (Monad m, Typeable a) => (a -> m a) -> forall d. Typeable d => d -> MaybeT m d
 generalize f = generalizeA f >=> tr
       where tr :: (Monad m, Typeable a, Typeable b) => a -> m b
-            tr = return . fromJust . cast
+            tr = pure . fromJust . cast
 
 -- | This is just a list of type
 -- > [exists d. Data d => d -> MaybeT m d]
@@ -45,7 +45,7 @@ instance Monoid (Transform m) where
 
 foldT :: Monad m => (T m -> T m -> T m) -> Transform m -> T m
 foldT op (TCons f fs) = f `op` foldT op fs
-foldT _ TId           = lift . return
+foldT _ TId           = lift . pure
 
 (||>) :: (Monad m, Typeable d) => (d -> m d) -> Transform m -> Transform m
 f ||> fs = generalize f `TCons` fs

@@ -13,6 +13,9 @@ module Prim where
 -- data (a, b) = (a, b)
 -- ...
 
+data R_ -- Ctors generated during program build.
+data A_ -- Ctors generated during program build.
+
 return :: a -> m a
 return = primError "Prim: return"
 
@@ -31,13 +34,8 @@ signal = primError "Prim: signal"
 lift :: m a -> t m a
 lift = primError "Prim: lift"
 
-extrude :: ReT i o (StT s m) a -> s -> ReT i o m (a, s)
+extrude :: ReT i o (StT s m) a -> s -> ReT i o m a
 extrude = primError "Prim: extrude"
 
--- TODO(chathhorn): this is not the real type of unfold. r and a need
--- to be fixed types:
--- data A -- = (generated ctors)
--- data R -- = (generated ctors)
--- unfold :: (R -> i -> Either A (o, R)) -> Either A (o, R) -> ReT i o I a
-unfold :: (r -> i -> Either a (o, r)) -> Either a (o, r) -> ReT i o I a
+unfold :: ((R_, s) -> i -> Either (A_, s) (o, (R_, s))) -> Either (A_, s) (o, (R_, s)) -> ReT i o I a
 unfold = primError "Prim: unfold"

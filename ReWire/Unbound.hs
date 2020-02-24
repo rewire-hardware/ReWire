@@ -1,6 +1,6 @@
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module ReWire.FrontEnd.Unbound
+module ReWire.Unbound
       ( module Unbound.Generics.LocallyNameless.Name
       , module Unbound.Generics.LocallyNameless.Internal.Fold
       , Alpha (..), Fresh (..), FreshMT (..), Embed (..)

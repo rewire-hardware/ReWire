@@ -23,7 +23,7 @@ type ReT = ReacT
 type StT = StateT
 type I   = Identity
 
-extrude :: Monad m => ReT i o (StT s m) a -> s -> ReT i o m (a,s)
+extrude :: Monad m => ReT i o (StT s m) a -> s -> ReT i o m a
 extrude = undefined
 
 nativeVhdl :: String -> a -> a
@@ -207,7 +207,7 @@ digest3 (Oct x0 x1 x2 x3 x4 x5 x6 x7) = DigestR x6 x7
 --- "go" functions in TestingSHA256.hs.
 -------------------------------------------------------------------------------------------
 
-start :: ReT Inp Out I (((((), Oct W32), Hex W32), Oct W32), Ctr)
+start :: ReT Inp Out I ()
 start = extrude
          (extrude
            (extrude

@@ -14,7 +14,7 @@ type ReT = ReacT
 type StT = StateT
 type I   = Identity
 
-extrude :: Monad m => ReT i o (StT s m) a -> s -> ReT i o m (a,s)
+extrude :: Monad m => ReT i o (StT s m) a -> s -> ReT i o m a
 extrude = undefined
 
 nativeVhdl :: String -> a -> a
@@ -683,5 +683,5 @@ initInputs = Inputs zeroW8 Zero Zero
 initState :: CPUState
 initState = CPUState initInputs initOutputs Zero Zero Zero zeroW8 Zero Zero zeroW8 zeroW8 zeroW8 zeroW8 zeroW8
 
-start :: ReT Inputs Outputs I ((),CPUState)
+start :: ReT Inputs Outputs I ()
 start = extrude begin initState

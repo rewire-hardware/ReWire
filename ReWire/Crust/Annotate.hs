@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Safe #-}
-module ReWire.FrontEnd.Annotate
+module ReWire.Crust.Annotate
       ( annotate
       , Annote
       ) where

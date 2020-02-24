@@ -72,6 +72,7 @@ library
   default-language: Haskell2010
   ghc-options:      -Wall
                     -fno-warn-name-shadowing
+                    -funbox-strict-fields
                     -O2
 
   other-modules:    Paths_ReWire
@@ -79,28 +80,29 @@ library
                     ReWire.Core.Mangle
                     ReWire.Core.Syntax
                     ReWire.Core.ToMiniHDL
+                    ReWire.Crust.Annotate
+                    ReWire.Crust.Cache
+                    ReWire.Crust.Desugar
+                    ReWire.Crust.Fixity
+                    ReWire.Crust.KindCheck
+                    ReWire.Crust.Parse
+                    ReWire.Crust.PrimBasis
+                    ReWire.Crust.Purify
+                    ReWire.Crust.Rename
+                    ReWire.Crust.Syntax
+                    ReWire.Crust.ToCore
+                    ReWire.Crust.ToCrust
+                    ReWire.Crust.Transform
+                    ReWire.Crust.TypeCheck
+                    ReWire.Crust.TypeVerify
                     ReWire.Error
-                    ReWire.FrontEnd.Annotate
-                    ReWire.FrontEnd.Cache
-                    ReWire.FrontEnd.Desugar
-                    ReWire.FrontEnd.Fixity
-                    ReWire.FrontEnd.KindCheck
-                    ReWire.FrontEnd.Parse
-                    ReWire.FrontEnd.PrimBasis
-                    ReWire.FrontEnd.Purify
-                    ReWire.FrontEnd.Rename
-                    ReWire.FrontEnd.Syntax
-                    ReWire.FrontEnd.ToCore
-                    ReWire.FrontEnd.ToMantle
-                    ReWire.FrontEnd.Transform
-                    ReWire.FrontEnd.TypeCheck
-                    ReWire.FrontEnd.Unbound
+                    ReWire.Flags
                     ReWire.MiniHDL.Syntax
                     ReWire.Pretty
                     ReWire.SYB
+                    ReWire.Unbound
 
   exposed-modules:  ReWire.FrontEnd
-                    ReWire.FrontEnd.LoadPath
                     ReWire.Main
 
 executable rwc
@@ -110,6 +112,7 @@ executable rwc
   default-language: Haskell2010
   ghc-options:      -Wall
                     -O2
+                    -funbox-strict-fields
 
 test-suite rwc-test
   type:             exitcode-stdio-1.0
@@ -126,6 +129,7 @@ test-suite rwc-test
   default-language: Haskell2010
   ghc-options:      -Wall
                     -O2
+                    -funbox-strict-fields
 
 source-repository head
   type:             git

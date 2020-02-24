@@ -53,5 +53,5 @@ main = do
             Zero -> lift get >>= \n -> lift (put (rotl n))
       main
 
-start :: ReT Bit W8 I ((),W8)
+start :: ReT Bit W8 I ()
 start = extrude main (W8 Zero Zero Zero Zero Zero Zero Zero Zero)

@@ -16,5 +16,5 @@ go = do
       lift (lift (put y))
       go
 
-start :: ReT Bit Bit I ((Bit,Bit),Bit)
+start :: ReT Bit Bit I Bit
 start = extrude (extrude go Zero) One

@@ -1,16 +1,13 @@
 {-# LANGUAGE LambdaCase, ViewPatterns, ScopedTypeVariables, FlexibleContexts, TupleSections #-}
 {-# LANGUAGE Safe #-}
-module ReWire.FrontEnd.ToMantle (toMantle, extendWithGlobs, getImps) where
+module ReWire.Crust.ToCrust (toCrust, extendWithGlobs, getImps) where
 
 import ReWire.Annotation hiding (ann)
 import ReWire.Error
-import ReWire.FrontEnd.Fixity
-import ReWire.FrontEnd.Rename hiding (Module)
-import ReWire.FrontEnd.Syntax ((|->))
-import ReWire.FrontEnd.Unbound
-      ( string2Name, name2String
-      , fresh, Fresh, Name, Embed (..), bind
-      )
+import ReWire.Crust.Fixity
+import ReWire.Crust.Rename hiding (Module)
+import ReWire.Crust.Syntax ((|->))
+import ReWire.Unbound (s2n, n2s, fresh, Fresh, Name, Embed (..), bind)
 import ReWire.SYB
 
 import Control.Arrow ((&&&), second)
@@ -23,8 +20,8 @@ import Language.Haskell.Exts.Pretty (prettyPrint)
 import qualified Data.Set                     as Set
 import qualified Data.Map.Strict              as Map
 import qualified Language.Haskell.Exts.Syntax as S
-import qualified ReWire.FrontEnd.Rename       as M
-import qualified ReWire.FrontEnd.Syntax       as M
+import qualified ReWire.Crust.Rename          as M
+import qualified ReWire.Crust.Syntax          as M
 
 import Language.Haskell.Exts.Syntax hiding (Annotation, Name, Kind)
 
@@ -44,17 +41,14 @@ sDeclHead = \ case
       DHParen _ dh                       -> sDeclHead dh
       DHApp _ (sDeclHead -> (n, tvs)) tv -> (n, tvs ++ [void tv])
 
-mkId :: String -> Name b
-mkId = string2Name
-
 mkUId :: S.Name a -> Name b
 mkUId = \ case
-      Ident _ n  -> mkId n
-      Symbol _ n -> mkId n
+      Ident _ n  -> s2n n
+      Symbol _ n -> s2n n
 
 -- | Translate a Haskell module into the ReWire abstract syntax.
-toMantle :: (Fresh m, MonadError AstError m) => Renamer -> Module Annote -> m (M.Module, Exports)
-toMantle rn = \ case
+toCrust :: (Fresh m, MonadError AstError m) => Renamer -> Module Annote -> m (M.Module, Exports)
+toCrust rn = \ case
       Module _ (Just (ModuleHead _ _ _ exps)) _ _ (reverse -> ds) -> do
             tyDefs <- foldM (transData rn) [] ds
             tySigs <- foldM (transTySig rn) [] ds
@@ -131,9 +125,9 @@ transExport rn ds exps = \ case
 transData :: (MonadError AstError m, Fresh m) => Renamer -> [M.DataDefn] -> Decl Annote -> m [M.DataDefn]
 transData rn datas = \ case
       DataDecl l _ _ (sDeclHead -> hd) cs _ -> do
-            let n = string2Name $ rename Type rn $ fst hd
+            let n = s2n $ rename Type rn $ fst hd
             tvs' <- mapM (transTyVar l) $ snd hd
-            ks   <- replicateM (length tvs') $ freshKVar $ name2String n
+            ks   <- replicateM (length tvs') $ freshKVar $ n2s n
             cs'  <- mapM (transCon rn ks tvs' n) cs
             pure $ M.DataDefn l n (foldr M.KFun M.KStar ks) cs' : datas
       _                                       -> pure datas
@@ -159,9 +153,9 @@ transDef rn tys inls defs = \ case
       PatBind l (PVar _ (void -> x)) (UnGuardedRhs _ e) Nothing -> do
             e' <- transExp rn e
             case lookup x tys of
-                  Just t -> pure $ M.Defn l (mkId $ rename Value rn x) (M.fv t |-> t) (x `elem` inls) (Embed (bind [] e')) : defs
+                  Just t -> pure $ M.Defn l (s2n $ rename Value rn x) (M.fv t |-> t) (x `elem` inls) (Embed (bind [] e')) : defs
                   Nothing -> if x `elem` inls
-                        then pure $ M.Defn l (mkId $ rename Value rn x) ([] |-> M.TyBlank l) True (Embed (bind [] e')) : defs
+                        then pure $ M.Defn l (s2n $ rename Value rn x) ([] |-> M.TyBlank l) True (Embed (bind [] e')) : defs
                         else failAt l "No type signature on non-inline toplevel definition"
       DataDecl {}                                               -> pure defs -- TODO(chathhorn): elide
       InlineSig {}                                              -> pure defs -- TODO(chathhorn): elide
@@ -179,7 +173,7 @@ transCon rn ks tvs tc = \ case
       QualConDecl l Nothing _ (ConDecl _ x tys) -> do
             let tvs' = zipWith (M.TyVar l) ks tvs
             t <- foldr M.arr (foldl' (M.TyApp l) (M.TyCon l tc) tvs') <$> mapM (transTy rn []) tys
-            return $ M.DataCon l (string2Name $ rename Value rn x) (tvs |-> t)
+            pure $ M.DataCon l (s2n $ rename Value rn x) (tvs |-> t)
       d                                         -> failAt (ann d) "Unsupported Ctor syntax"
 
 transTy :: (Fresh m, MonadError AstError m) => Renamer -> [S.Name ()] -> Type Annote -> m M.Ty
@@ -188,12 +182,12 @@ transTy rn ms = \ case
            ms' <- mapM getNad cs
            transTy rn (ms ++ ms') t
       TyApp l a b                -> M.TyApp l <$> transTy rn ms a <*> transTy rn ms b
-      TyCon l x                  -> pure $ M.TyCon l (string2Name $ rename Type rn x)
+      TyCon l x                  -> pure $ M.TyCon l (s2n $ rename Type rn x)
       TyVar l x                  -> M.TyVar l <$> freshKVar (prettyPrint x) <*> pure (mkUId $ void x)
       t                          -> failAt (ann t) "Unsupported type syntax"
 
 freshKVar :: Fresh m => String -> m M.Kind
-freshKVar n = M.KVar <$> fresh (string2Name $ "?K_" ++ n)
+freshKVar n = M.KVar <$> fresh (s2n $ "?K_" ++ n)
 
 getNad :: MonadError AstError m => Asst Annote -> m (S.Name ())
 getNad = \ case
@@ -210,8 +204,8 @@ transExp rn = \ case
       Lambda l [PVar _ x] e -> do
             e' <- transExp (exclude Value [void x] rn) e
             pure $ M.Lam l (M.TyBlank l) $ bind (mkUId $ void x) e'
-      Var l x               -> pure $ M.Var l (M.TyBlank l) (mkId $ rename Value rn x)
-      Con l x               -> pure $ M.Con l (M.TyBlank l) (string2Name $ rename Value rn x)
+      Var l x               -> pure $ M.Var l (M.TyBlank l) (s2n $ rename Value rn x)
+      Con l x               -> pure $ M.Con l (M.TyBlank l) (s2n $ rename Value rn x)
       Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _] -> do
             e'  <- transExp rn e
             p'  <- transPat rn p
@@ -231,7 +225,7 @@ transExp rn = \ case
 
 transPat :: MonadError AstError m => Renamer -> Pat Annote -> m M.Pat
 transPat rn = \ case
-      PApp l x ps             -> M.PatCon l (Embed (M.TyBlank l)) (Embed $ string2Name $ rename Value rn x) <$> mapM (transPat rn) ps
+      PApp l x ps             -> M.PatCon l (Embed (M.TyBlank l)) (Embed $ s2n $ rename Value rn x) <$> mapM (transPat rn) ps
       PVar l x                -> pure $ M.PatVar l (Embed (M.TyBlank l)) (mkUId $ void x)
       p                       -> failAt (ann p) $ "Unsupported syntax in a pattern: " ++ show (void p)
 

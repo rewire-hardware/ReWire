@@ -1,14 +1,14 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, LambdaCase #-}
 {-# LANGUAGE Safe #-}
-module ReWire.FrontEnd.KindCheck (kindCheck) where
+module ReWire.Crust.KindCheck (kindCheck) where
 
 import ReWire.Annotation
 import ReWire.Error
-import ReWire.FrontEnd.Syntax
-import ReWire.FrontEnd.Unbound (fresh, substs, aeq, Subst, string2Name, name2String, runFreshMT)
+import ReWire.Crust.Syntax
+import ReWire.Unbound (fresh, substs, aeq, Subst, s2n, n2s)
 import ReWire.Pretty
 
-import Control.Monad.Reader (ReaderT (..), ask, local)
+import Control.Monad.Reader (ReaderT (..), local, asks)
 import Control.Monad.State (evalStateT, StateT (..), get, modify)
 import Data.Map.Strict (Map)
 
@@ -28,19 +28,19 @@ localCAssumps :: MonadError AstError m => (Map (Name TyConId) Kind -> Map (Name 
 localCAssumps f = local $ \ kce -> kce { cas = f (cas kce) }
 
 askCAssumps :: MonadError AstError m => KCM m (Map (Name TyConId) Kind)
-askCAssumps = ask >>= \ kce -> return $ cas kce
+askCAssumps = asks cas
 
 freshkv :: (Fresh m, MonadError AstError m) => KCM m Kind
 freshkv = do
-      n <- fresh $ string2Name "?"
+      n <- fresh $ s2n "?"
       modify $ Map.insert n $ KVar n
-      return $ KVar n
+      pure $ KVar n
 
 varBind :: (Fresh m, MonadError AstError m) => Annote -> Name Kind -> Kind -> KCM m KiSub
 varBind an u k
-      | k `aeq` KVar u = return mempty
+      | k `aeq` KVar u = pure mempty
       | u `elem` fv k  = failAt an $ "Occurs check fails in kind checking: " ++ show u ++ ", " ++ prettyPrint k
-      | otherwise      = return $ Map.singleton u k
+      | otherwise      = pure $ Map.singleton u k
 
 (@@) :: KiSub -> KiSub -> KiSub
 s1 @@ s2 = Map.mapWithKey (\ _ t -> subst s1 t) s2 `Map.union` s1
@@ -49,10 +49,10 @@ mgu :: (Fresh m, MonadError AstError m) => Annote -> Kind -> Kind -> KCM m KiSub
 mgu an (KFun kl kr) (KFun kl' kr') = do
       s1 <- mgu an kl kl'
       s2 <- mgu an (subst s1 kr) $ subst s1 kr'
-      return $ s2 @@ s1
+      pure $ s2 @@ s1
 mgu an (KVar u) k                  = varBind an u k
 mgu an k (KVar u)                  = varBind an u k
-mgu _ KStar KStar                  = return mempty
+mgu _ KStar KStar                  = pure mempty
 mgu an k1 k2                       = failAt an $ "Kinds do not unify: " ++ prettyPrint k1 ++ ", " ++ prettyPrint k2
 
 unify :: (Fresh m, MonadError AstError m) => Annote -> Kind -> Kind -> KCM m ()
@@ -68,17 +68,16 @@ kcTy = \ case
             k2 <- kcTy t2
             k  <- freshkv
             unify an k1 $ KFun k2 k
-            return k
-      TyCon an i      -> case name2String i of
-                              -- This special case really shouldn't be
-                              -- necessary (bug?).
-                              "->" -> return (KFun KStar (KFun KStar KStar))
-                              _    -> do
-                                cas <- askCAssumps
-                                case Map.lookup i cas of
-                                     Nothing -> failAt an $ "Unknown type constructor: " ++ name2String i
-                                     Just k  -> return k
-      TyVar _ k _     -> return k
+            pure k
+      TyCon an i      -> case n2s i of
+            -- This special case really shouldn't be
+            -- necessary (bug?).
+            "->" -> pure $ KFun KStar $ KFun KStar KStar
+            _    -> do
+                  cas <- askCAssumps
+                  maybe (failAt an $ "Unknown type constructor: " ++ n2s i) pure
+                        $ Map.lookup i cas
+      TyVar _ k _     -> pure k
       TyBlank an      -> failAt an "Something went wrong in the kind checker"
 
 -- | Only needed for debugging.
@@ -90,7 +89,7 @@ kcTy = \ case
 
 kcDataDecl :: (Fresh m, MonadError AstError m) => DataDefn -> KCM m ()
 -- kcDataDecl (DataDefn _ _ _ cs) = mapM_ kcDataCon cs
-kcDataDecl _ = return ()
+kcDataDecl _ = pure ()
 
 kcDefn :: (Fresh m, MonadError AstError m) => Defn -> KCM m ()
 kcDefn (Defn an _ (Embed (Poly t)) _ _) = do
@@ -111,7 +110,7 @@ redecorate :: MonadError AstError m => KiSub -> DataDefn -> KCM m DataDefn
 redecorate s (DataDefn an i _ cs) = do
       cas <- askCAssumps
       case Map.lookup i cas of
-            Just k  -> return $ DataDefn an i (monoize $ subst s k) cs
+            Just k  -> pure $ DataDefn an i (monoize $ subst s k) cs
             Nothing -> failAt an $ "Redecorate: no such assumption: " ++ show i
 
 assump :: DataDefn -> (Name TyConId, Kind)
@@ -125,7 +124,7 @@ kc (ts, vs) = do
             mapM_ kcDefn vs
             s   <- get
             ts' <- mapM (redecorate s) ts
-            return (ts', vs)
+            pure (ts', vs)
 
-kindCheck :: MonadError AstError m => FreeProgram -> m FreeProgram
-kindCheck m = runFreshMT $ evalStateT (runReaderT (kc m) $ KCEnv mempty) mempty
+kindCheck :: (Fresh m, MonadError AstError m) => FreeProgram -> m FreeProgram
+kindCheck m = evalStateT (runReaderT (kc m) $ KCEnv mempty) mempty

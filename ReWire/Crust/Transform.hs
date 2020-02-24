@@ -1,7 +1,7 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, ScopedTypeVariables, GADTs #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, ScopedTypeVariables, GADTs, TupleSections #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
-module ReWire.FrontEnd.Transform
+module ReWire.Crust.Transform
       ( inline, reduce
       , neuterPrims
       , shiftLambdas
@@ -10,59 +10,64 @@ module ReWire.FrontEnd.Transform
       ) where
 
 import ReWire.Error
-import ReWire.FrontEnd.Syntax
-import ReWire.FrontEnd.Unbound
+import ReWire.Unbound
       ( Fresh (..), s2n, n2s
       , substs, subst, unembed
-      , isFreeName, runFreshM, runFreshMT
+      , isFreeName, runFreshM
       , Name (..)
       )
+import ReWire.Annotation (Annote (..))
 import ReWire.SYB
+import ReWire.Crust.Syntax
 
 import Control.Arrow (first)
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.State (State, evalStateT, execState, StateT (..), get, modify)
 import Control.Monad (replicateM)
 import Data.Data (Data)
-import Data.List (nub, find, foldl')
+import Data.List (find, foldl')
 import Data.Maybe (fromJust, fromMaybe)
+import Data.Containers.ListUtils (nubOrdOn)
 
 import Data.Set (Set, union, (\\))
 import qualified Data.Set as Set
 
 -- | Inlines defs marked for inlining. Must run before lambda lifting.
-inline :: Monad m => FreeProgram -> m FreeProgram
-inline (ts, ds) = return (ts, substs subs ds)
+inline :: FreeProgram -> FreeProgram
+inline (ts, ds) = (ts, substs subs ds)
       where toSubst :: Defn -> (Name Exp, Exp)
-            toSubst (Defn _ n _ _ (Embed e)) = runFreshM $ do
-                  (_, e') <- unbind e
-                  return (n, e')
+            toSubst (Defn _ n _ _ (Embed e)) = runFreshM $ unbind e >>= \ case
+                  ([], e') -> pure (n, e')
+                  _        -> error "Inlining: definition not inlinable (this shouldn't happen)"
+
+            subs :: [(Name Exp, Exp)]
             subs = map toSubst $ substs (map toSubst $ filter defnInline ds) $ filter defnInline ds
 
 -- | Replaces the expression in NativeVHDL so we don't descend into it
 --   during other transformations.
 neuterPrims :: MonadCatch m => FreeProgram -> m FreeProgram
 neuterPrims = runT $ transform $
-      \ (NativeVHDL an s e) -> return $ NativeVHDL an s (Error an (typeOf e) "nativeVHDL expression placeholder")
+      \ (NativeVHDL an s e) -> pure $ NativeVHDL an s (Error an (typeOf e) "nativeVHDL expression placeholder")
 
-shiftLambdas :: Monad m => FreeProgram -> m FreeProgram
-shiftLambdas (ts, vs) = return (ts, map shiftLambdas' vs)
-      where shiftLambdas' :: Defn -> Defn
-            shiftLambdas' (Defn an n t inl (Embed e)) = Defn an n t inl (Embed $ mash e)
+-- | Shifts vars bound by top-level lambdas into defs.
+-- > g = \ x1 -> \ x2 -> e
+--   becomes
+-- > g x1 x2 = e
+shiftLambdas :: Fresh m => FreeProgram -> m FreeProgram
+shiftLambdas (ts, vs) = (ts,) <$> mapM shiftLambdas' vs
+      where shiftLambdas' :: Fresh m => Defn -> m Defn
+            shiftLambdas' (Defn an n t inl (Embed e)) = Defn an n t inl . Embed <$> mash e
 
-            mash :: Bind [Name Exp] Exp -> Bind [Name Exp] Exp
-            mash e = runFreshM $ do
-                  (vs, e') <- unbind e
-                  case e' of
-                        Lam _ _ b -> do
-                              (v, b') <- unbind b
-                              return $ mash $ bind (vs ++ [v]) b'
-                        _ -> return e
+            mash :: Fresh m => Bind [Name Exp] Exp -> m (Bind [Name Exp] Exp)
+            mash e = unbind e >>= \ case
+                  (vs, Lam _ _ b) -> do
+                        (v, b') <- unbind b
+                        mash $ bind (vs ++ [v]) b'
+                  _ -> pure e
 
--- | This is a hacky SYB-based lambda lifter, it requires some ugly mucking
---   with the internals of unbound-generics.
-liftLambdas :: MonadCatch m => FreeProgram -> m FreeProgram
-liftLambdas p = runFreshMT $ evalStateT (runT liftLambdas' p) []
+-- | Lifts lambdas and case/match into a top level fun def.
+liftLambdas :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
+liftLambdas p = evalStateT (runT liftLambdas' p) []
       where liftLambdas' :: (MonadCatch m, Fresh m) => Transform (StateT [Defn] m)
             liftLambdas' =  \ case
                   Lam an t b -> do
@@ -77,7 +82,7 @@ liftLambdas p = runFreshMT $ evalStateT (runT liftLambdas' p) []
                         f     <- fresh $ s2n "$LL.lambda"
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs ++ [x]) e')
-                        return $ foldl' (\ e' (v, vt) -> App an e' $ Var an vt v) (Var an t' f) $ map (first promote) bvs
+                        pure $ foldl' (App an) (Var an t' f) $ map (toVar an . first promote) bvs
                   Case an t e1 b e2 -> do
                         (p, e)    <- unbind b
                         let bvs   = bv e
@@ -89,9 +94,8 @@ liftLambdas p = runFreshMT $ evalStateT (runT liftLambdas' p) []
                         f     <- fresh $ s2n "$LL.case"
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs ++ map fst pvs) e')
-                        return $ Match an t e1 (transPat p) (Var an t' f) (map (\ (v, vt) -> Var an vt (promote v)) bvs) e2
-                  -- TODO(chathhorn): This case is really just normalizing
-                  -- Match, consider moving to ToCore.
+                        pure $ Match an t e1 (transPat p) (Var an t' f) (map (toVar an . first promote) bvs) e2
+                  -- TODO(chathhorn): This case is really just normalizing Match, consider moving to ToCore.
                   Match an t e1 p e lvars els -> do
                         let bvs   = bv e
                         (fvs, e') <- freshen e
@@ -100,22 +104,38 @@ liftLambdas p = runFreshMT $ evalStateT (runT liftLambdas' p) []
                         f     <- fresh $ s2n "$LL.match"
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind fvs e')
-                        return $ Match an t e1 p (Var an t' f) (map (\ (v, vt) -> Var an vt v) bvs ++ lvars) els
+                        pure $ Match an t e1 p (Var an t' f) (map (toVar an) bvs ++ lvars) els
+                  -- Lifts matches in the operator position of an application.
+                  -- TODO(chathhorn): move somewhere else?
+                  App an e@Match {} arg -> do
+                        let bvs   = bv e
+                        (fvs, e') <- freshen e
+
+                        let t' = foldr (arr . snd) (typeOf e) bvs
+                        f     <- fresh $ s2n "$LL.matchapp"
+
+                        modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind fvs e')
+                        pure $ App an
+                              (foldl' (App an) (Var an t' f) $ map (toVar an) bvs)
+                              arg
                   ||> (\ ([] :: [Defn]) -> get) -- this is cute!
                   ||> TId
+
+            toVar :: Annote -> (Name Exp, Ty) -> Exp
+            toVar an (v, vt) = Var an vt v
 
             freshen :: (MonadCatch m, Fresh m) => Exp -> m ([Name Exp], Exp)
             freshen e = do
                   let bvs  = bv e
                   fvs      <- replicateM (length bvs) $ fresh $ s2n "$LL"
                   e'       <- substs' (zip (map fst bvs) fvs) e
-                  return (fvs, e')
+                  pure (fvs, e')
 
             substs' :: MonadCatch m => [(Name Exp, Name Exp)] -> Exp -> m Exp
-            substs' subs = runT (transform $ \ n -> return $ fromMaybe n (lookup n subs))
+            substs' subs = runT (transform $ \ n -> pure $ fromMaybe n (lookup n subs))
 
             bv :: Data a => a -> [(Name Exp, Ty)]
-            bv = nub . runQ (query $ \ case
+            bv = nubOrdOn fst . runQ (query $ \ case
                   Var _ t n | not $ isFreeName n -> [(n, t)]
                   _                              -> [])
 
@@ -134,10 +154,10 @@ liftLambdas p = runFreshMT $ evalStateT (runT liftLambdas' p) []
                   PatVar an (Embed t) _            -> MatchPatVar an t
 
 -- | Remove unused definitions.
-purgeUnused :: Monad m => FreeProgram -> m FreeProgram
-purgeUnused (ts, vs) = return (inuseData (fv $ trec $ inuseDefn vs) ts, inuseDefn vs)
+purgeUnused :: FreeProgram -> FreeProgram
+purgeUnused (ts, vs) = (inuseData (fv $ trec $ inuseDefn vs) ts, inuseDefn vs)
       where inuseData :: [Name DataConId] -> [DataDefn] -> [DataDefn]
-            inuseData ns = map $ inuseData' ns
+            inuseData ns = filter (not . null . dataCons) . map (inuseData' ns)
 
             inuseData' :: [Name DataConId] -> DataDefn -> DataDefn
             inuseData' ns d@(DataDefn an n k cs)
@@ -157,7 +177,7 @@ purgeUnused (ts, vs) = return (inuseData (fv $ trec $ inuseDefn vs) ts, inuseDef
 inuseDefn :: [Defn] -> [Defn]
 inuseDefn ds = map toDefn $ Set.elems $ execState (inuseDefn' ds') ds'
       where inuseDefn' :: Set (Name Exp) -> State (Set (Name Exp)) ()
-            inuseDefn' ns | Set.null ns = return ()
+            inuseDefn' ns | Set.null ns = pure ()
                           | otherwise   = do
                   inuse  <- get
                   modify $ union (fvs ns)
@@ -180,15 +200,12 @@ inuseDefn ds = map toDefn $ Set.elems $ execState (inuseDefn' ds') ds'
             toDefn n = fromJust $ find ((==n) . defnName) ds
 
 -- | Partially evaluate expressions.
-reduce :: MonadError AstError m => FreeProgram -> m FreeProgram
-reduce (ts, vs) = do
-      vs'      <- mapM reduceDefn vs
-      return (ts, vs')
+reduce :: (Fresh m, MonadError AstError m) => FreeProgram -> m FreeProgram
+reduce (ts, vs) = (ts, ) <$> mapM reduceDefn vs
 
-reduceDefn :: MonadError AstError m => Defn -> m Defn
-reduceDefn (Defn an n pt b (Embed e)) = runFreshMT $ do
-      (vs, e') <- unbind e
-      (Defn an n pt b . Embed) . bind vs <$> reduceExp e'
+reduceDefn :: (Fresh m, MonadError AstError m) => Defn -> m Defn
+reduceDefn (Defn an n pt b (Embed e)) = unbind e >>= \ case
+      (vs, e') -> (Defn an n pt b . Embed) . bind vs <$> reduceExp e'
 
 reduceExp :: (Fresh m, MonadError AstError m) => Exp -> m Exp
 reduceExp = \ case
@@ -199,7 +216,7 @@ reduceExp = \ case
                   Lam _ _ e -> do
                         (x, e') <- unbind e
                         reduceExp $ subst x e2' e'
-                  _              -> return $ App an e1' e2'
+                  _              -> pure $ App an e1' e2'
       Lam an t e      -> do
             (x, e') <- unbind e
             Lam an t . bind x <$> reduceExp e'
@@ -215,7 +232,7 @@ reduceExp = \ case
                   MatchNo      -> case e2 of
                         Nothing  -> pure $ Error an t "Pattern match failure (reduced)"
                         Just e2' -> reduceExp e2'
-      e -> return e
+      e -> pure e
 
 data MatchResult = MatchYes [(Name Exp, Exp)]
                  | MatchMaybe

@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase, FlexibleContexts #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.FrontEnd.Parse (tryParseInDir) where
+module ReWire.Crust.Parse (tryParseInDir) where
 
 import ReWire.Error
 
@@ -13,19 +13,19 @@ import safe System.Directory (getCurrentDirectory, setCurrentDirectory, doesFile
 tryParseInDir :: (MonadIO m, MonadError AstError m) => FilePath -> FilePath -> m (Maybe (Module SrcSpanInfo))
 tryParseInDir fp dp = do
       dExists <- liftIO $ doesDirectoryExist dp
-      if not dExists then return Nothing else do
+      if not dExists then pure Nothing else do
             oldCwd <- liftIO getCurrentDirectory
             liftIO $ setCurrentDirectory dp
             exists <- liftIO $ doesFileExist fp
-            result <- if not exists then return Nothing else do
+            result <- if not exists then pure Nothing else do
                   pr <- liftIO parse
                   Just <$> pr2Cache pr
             liftIO $ setCurrentDirectory oldCwd
-            return result
+            pure result
 
       where pr2Cache :: MonadError AstError m => ParseResult a -> m a
             pr2Cache = \ case
-                  ParseOk p                       -> return p
+                  ParseOk p                       -> pure p
                   ParseFailed (SrcLoc "" r c) msg -> failAt (SrcLoc fp r c) msg
                   ParseFailed l msg               -> failAt l msg
 

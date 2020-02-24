@@ -11,7 +11,7 @@ module ReWire.Annotation
       ) where
 
 import ReWire.SYB (runPureT,transform)
-import ReWire.FrontEnd.Unbound (Alpha (..))
+import ReWire.Unbound (Alpha (..))
 
 import Control.DeepSeq (NFData (..))
 import Control.Monad.Identity (Identity(..))
@@ -61,7 +61,7 @@ class Annotated a where
       ann :: a -> Annote
 
 unAnn :: Data d => d -> d
-unAnn = runIdentity . runPureT (transform $ \ (_ :: Annote) -> return noAnn)
+unAnn = runIdentity . runPureT (transform $ \ (_ :: Annote) -> pure noAnn)
 
 instance SrcInfo Annote where
       toSrcInfo a b c = LocAnnote $ toSrcInfo a b c
@@ -87,17 +87,17 @@ instance Eq Annote where
       _ == _ = True
 
 instance Alpha Annote where
-      aeq' _ _ _ = True
-      acompare' _ _ _ = EQ
-      fvAny' _ _ = pure
-      close _ _ = id
-      open _ _ = id
-      isPat _ = mempty
-      isTerm _ = mempty
-      nthPatFind _ = mempty
-      namePatFind _ = mempty
-      swaps' _ _ = id
-      freshen' _ i = return (i, mempty)
+      aeq' _ _ _         = True
+      acompare' _ _ _    = EQ
+      fvAny' _ _         = pure
+      close _ _          = id
+      open _ _           = id
+      isPat _            = mempty
+      isTerm _           = mempty
+      nthPatFind _       = mempty
+      namePatFind _      = mempty
+      swaps' _ _         = id
+      freshen' _ i       = pure (i, mempty)
       lfreshen' _ i cont = cont i mempty
 
 instance NFData Annote where

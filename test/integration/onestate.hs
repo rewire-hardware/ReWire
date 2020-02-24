@@ -22,7 +22,7 @@ unfold :: (b -> i -> Either a (o,b)) -> Either a (o,b) -> ReT i o I a
 unfold f (Left a)      = ReacT $ return (Left a)
 unfold f (Right (o,b)) = ReacT $ return (Right (o, unfold f . f b))
 
-extrude :: Monad m => ReT i o (StT s m) a -> s -> ReT i o m (a,s)
+extrude :: Monad m => ReT i o (StT s m) a -> s -> ReT i o m a
 extrude = undefined
     
 ---------------------------------------------
@@ -44,5 +44,5 @@ incr = do
   signal x
   incr
 
-start :: ReT Bit W8 I ((),W8)
+start :: ReT Bit W8 I ()
 start = extrude incr (W8 Zero Zero Zero Zero Zero Zero Zero Zero)
