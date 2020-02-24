@@ -104,23 +104,31 @@ getProgram flags fp = do
       let (Module ts ds) = mod <> imps
 
       p <- pure
+       >=> pDebug "Adding primitives and inlining."
        >=> whenSet FlagDCrust1 (printInfo "Crust 1: Post-desugaring")
-       >=> pure . addPrims
-       >=> pure . inline
-       >=> kindCheck
-       >=> typeCheck
+       >=> pure . addPrims >=> pure . inline
+       >=> pDebug "Typechecking."
+       >=> kindCheck >=> typeCheck
+       >=> pDebug "Simplifying and reducing."
        >=> neuterPrims
        >=> reduce
        >=> shiftLambdas
+       >=> pDebug "Lifting lambdas (pre-purification)."
        >=> liftLambdas
+       >=> pDebug "Removing unused definitions."
        >=> pure . purgeUnused
+       >=> whenSet' FlagDTypes (pDebug "Verifying types pre-purification." >=> typeVerify)
        >=> whenSet FlagDCrust2 (printInfo "Crust 2: Pre-purification")
+       >=> pDebug "Purifying."
        >=> purify
        >=> whenSet FlagDCrust3 (printInfo "Crust 3: Post-purification")
-       >=> whenSet FlagDTypes typeVerify'
+       >=> whenSet' FlagDTypes (pDebug "Verifying types post-purification." >=> typeVerify)
+       >=> pDebug "Lifting lambdas (post-purification)."
        >=> liftLambdas
+       >=> pDebug "Removing unused definitions (again)."
        >=> pure . purgeUnused
        >=> whenSet FlagDCrust4 (printInfo "Crust 4: Post-second-lambda-lifting")
+       >=> pDebug "Translating to core & HDL."
        >=> toCore
        $ (ts, ds)
 
@@ -135,10 +143,13 @@ getProgram flags fp = do
       where whenSet :: Applicative m => Flag -> (Bool -> a -> m a) -> a -> m a
             whenSet f m = if f `elem` flags then m $ FlagV `elem` flags else pure
 
-            typeVerify' :: (Fresh m, MonadError AstError m, MonadIO m) => Bool -> FreeProgram -> m FreeProgram
-            typeVerify' verbose a = do
-                  when verbose $ liftIO $ putStrLn "Debug: verifying post-purification types."
-                  typeVerify a
+            whenSet' :: Applicative m => Flag -> (a -> m a) -> a -> m a
+            whenSet' f m = whenSet f (\ _ -> m)
+
+            pDebug :: MonadIO m => String -> a -> m a
+            pDebug s a = do
+                  when (FlagV `elem` flags) $ liftIO $ putStrLn $ "Debug: " ++ s
+                  pure a
 
 printHeader :: MonadIO m => String -> m ()
 printHeader hd = do
