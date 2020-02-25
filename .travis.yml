@@ -23,4 +23,4 @@ install:
 - stack --no-terminal --install-ghc test --only-dependencies
 
 script:
-- stack --no-terminal test --test-arguments "regression --vhdl-checker='/usr/local/bin/ghdl -s'" --haddock
+- stack --no-terminal test --test-arguments "regression --vhdl-checker=\"/usr/local/bin/ghdl -s\"" --haddock
