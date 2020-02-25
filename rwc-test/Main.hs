@@ -1,3 +1,6 @@
+{-# LANGUAGE LambdaCase #-}
+module Main (main) where
+
 import qualified ReWire.Main as M
 
 import Control.Monad (unless, msum)
@@ -34,7 +37,7 @@ testCompiler :: [Flag] -> FilePath -> [Test]
 testCompiler flags fn = [testCase (takeBaseName fn) $ do
             setCurrentDirectory $ takeDirectory fn
             withArgs (fn : extraFlags) M.main
-      ] ++ if FlagNoGhdl `elem` flags then [] else [testCase (takeBaseName fn ++ " (ghdl -s)") $ do
+      ] ++ if FlagNoGhdl `elem` flags then [] else [testCase (takeBaseName fn ++ " (" ++ checker ++ ")") $ do
             setCurrentDirectory $ takeDirectory fn
             callCommand $ checker ++ " " ++ fn -<.> "vhdl"
       ]
@@ -43,7 +46,13 @@ testCompiler flags fn = [testCase (takeBaseName fn) $ do
                       ++ if FlagV `elem` flags then ["-v"] else []
 
             checker :: String
-            checker = fromMaybe "ghdl -s" $ msum $ map (\ (FlagChecker c) -> Just c) flags
+            checker = fromMaybe "ghdl -s" $ msum $ map (\ (FlagChecker c) -> Just $ sq c) flags
+
+sq :: String -> String
+sq = \ case
+      '"'  : s | last s == '"'  -> init s
+      '\'' : s | last s == '\'' -> init s
+      s                         -> s
 
 getTests :: [Flag] -> FilePath -> IO Test
 getTests flags dirName = do
