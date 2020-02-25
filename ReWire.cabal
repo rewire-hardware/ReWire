@@ -45,9 +45,10 @@ build-type:         Simple
 -- README.
 extra-source-files: README.md
 data-files:         lib/*.hs
-                    test/integration/Mods/*.hs
-                    test/integration/Mods/C/*.hs
                     test/integration/*.hs
+                    test/regression/Mods/*.hs
+                    test/regression/Mods/C/*.hs
+                    test/regression/*.hs
 
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.10
@@ -122,6 +123,8 @@ test-suite rwc-test
                   , HUnit >= 1.2.5 && < 1.7
                   , base >= 4.6 && < 5
                   , directory >= 1.2 && < 1.4
+                  , process >= 1.5 && < 1.7
+                  , filepath >= 1.3 && < 1.5
                   , test-framework >= 0.8 && < 0.9
                   , test-framework-hunit >= 0.3.0.2 && < 0.4
                   , ReWire

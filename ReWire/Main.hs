@@ -2,21 +2,23 @@
 {-# LANGUAGE Safe #-}
 module ReWire.Main (main) where
 
-import ReWire.FrontEnd
-import ReWire.Pretty
-import ReWire.Core.ToMiniHDL
+import ReWire.FrontEnd (loadProgram, LoadPath)
+import ReWire.Pretty (prettyPrint)
+import ReWire.Core.ToMiniHDL (compileProgram)
 import ReWire.Flags (Flag (..))
 import ReWire.Error (runSyntaxError)
 
-import Control.Monad (when, unless)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad (when, unless)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
+import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), ArgDescr (..))
+import System.Environment (getArgs)
+import System.Exit (exitFailure)
 import System.FilePath ((-<.>))
-import System.Console.GetOpt
-import System.Environment
-import System.Exit
-import System.IO
+import System.IO (hPutStr, hPutStrLn, hPrint, stderr)
+
+import Paths_ReWire (getDataFileName)
 
 options :: [OptDescr Flag]
 options =
@@ -38,13 +40,16 @@ options =
 exitUsage :: IO ()
 exitUsage = hPutStr stderr (usageInfo "Usage: rwc [OPTION...] <filename.rw>" options) >> exitFailure
 
+getSystemLoadPath :: IO [FilePath]
+getSystemLoadPath = ("." :) . pure <$> getDataFileName "lib"
+
 main :: IO ()
 main = do
-      args                         <- getArgs
+      (flags, filenames, errs) <-  getOpt Permute options <$> getArgs
 
-      let (flags, filenames, errs) =  getOpt Permute options args
-
-      unless (null errs) (mapM_ (hPutStrLn stderr) errs >> exitUsage)
+      unless (null errs) $ do
+            mapM_ (hPutStrLn stderr) errs
+            exitUsage
 
       let userLP                   =  concatMap getLoadPathEntries flags
       systemLP                     <- getSystemLoadPath
