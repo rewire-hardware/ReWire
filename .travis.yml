@@ -14,6 +14,7 @@ addons:
 before_install:
 - travis_retry curl -L http://ghdl.free.fr/site/uploads/Main/ghdl-i686-linux-latest.tar | tar x
 - sudo tar -C / -jxvf ghdl*/ghdl*.tar.bz2
+- pwd && ls && ls / && ls /usr && ls /usr/local && ls /usr/local/bin
 - mkdir -p ~/.local/bin
 - export PATH=$HOME/.local/bin:/usr/local/bin:$PATH
 - travis_retry curl -L https://get.haskellstack.org/stable/linux-x86_64.tar.gz | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
