@@ -10,7 +10,6 @@ addons:
       apt:
             packages:
                   - libgmp-dev
-                  - ghdl
 
 before_install:
 - travis_retry curl -L http://ghdl.free.fr/site/uploads/Main/ghdl-i686-linux-latest.tar | tar x
