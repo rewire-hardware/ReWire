@@ -275,7 +275,7 @@ instance Pretty Exp where
                               )
                         ]
             NativeVHDL _ n e                             -> text "nativeVHDL" <+> doubleQuotes (text n) <+> mparen e
-            Error _ t m                                  -> text "primError" <+> braces (pretty t) <+> doubleQuotes (text m)
+            Error _ t m                                  -> text "error" <+> braces (pretty t) <+> doubleQuotes (text m)
 
 ---
 

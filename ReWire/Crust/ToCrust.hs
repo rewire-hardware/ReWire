@@ -198,7 +198,7 @@ transExp :: MonadError AstError m => Renamer -> Exp Annote -> m M.Exp
 transExp rn = \ case
       App l (App _ (Var _ (UnQual _ (Ident _ "nativeVhdl"))) (Lit _ (String _ f _))) e
                             -> M.NativeVHDL l f <$> transExp rn e
-      App l (Var _ (UnQual _ (Ident _ "primError"))) (Lit _ (String _ m _))
+      App l (Var _ (UnQual _ (Ident _ "error"))) (Lit _ (String _ m _))
                             -> pure $ M.Error l (M.TyBlank l) m
       App l e1 e2           -> M.App l <$> transExp rn e1 <*> transExp rn e2
       Lambda l [PVar _ x] e -> do

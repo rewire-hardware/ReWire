@@ -17,25 +17,25 @@ data R_ -- Ctors generated during program build.
 data A_ -- Ctors generated during program build.
 
 return :: a -> m a
-return = primError "Prim: return"
+return = error "Prim: return"
 
 (>>=) :: m a -> (a -> m b) -> m b
-(>>=) = primError "Prim: >>="
+(>>=) = error "Prim: >>="
 
 get :: StT s m s
-get = primError "Prim: get"
+get = error "Prim: get"
 
 put :: s -> StT s m ()
-put = primError "Prim: put"
+put = error "Prim: put"
 
 signal :: o -> ReT i o m i
-signal = primError "Prim: signal"
+signal = error "Prim: signal"
 
 lift :: m a -> t m a
-lift = primError "Prim: lift"
+lift = error "Prim: lift"
 
 extrude :: ReT i o (StT s m) a -> s -> ReT i o m a
-extrude = primError "Prim: extrude"
+extrude = error "Prim: extrude"
 
 unfold :: ((R_, s) -> i -> Either (A_, s) (o, (R_, s))) -> Either (A_, s) (o, (R_, s)) -> ReT i o I a
-unfold = primError "Prim: unfold"
+unfold = error "Prim: unfold"

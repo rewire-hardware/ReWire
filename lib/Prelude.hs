@@ -88,7 +88,7 @@ uncurry :: (a -> b -> c) -> ((a, b) -> c)
 uncurry f p = f (fst p) (snd p)
 
 undefined :: a
-undefined = primError "Prelude.undefined"
+undefined = error "Prelude.undefined"
 
 {-# INLINE (>>) #-}
 (>>) :: Monad m => m a -> m b -> m b

@@ -388,7 +388,7 @@ desugarGuards = transform $ \ case
             toLet _ y Nothing rhs      =  foldr toIfs y rhs
 
             err :: Annote -> Exp Annote
-            err l = App l (Var l $ UnQual l $ Ident l "primError") $ Lit l $ String l "pattern match failure" ""
+            err l = App l (Var l $ UnQual l $ Ident l "error") $ Lit l $ String l "pattern match failure" ""
 
 
 -- | Turns where clauses into lets. Only valid after guard desugarage. E.g.:
