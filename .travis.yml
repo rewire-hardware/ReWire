@@ -14,6 +14,7 @@ addons:
 before_install:
 - travis_retry curl -L http://ghdl.free.fr/site/uploads/Main/ghdl-i686-linux-latest.tar | tar x
 - sudo tar -C / -jxvf ghdl*/ghdl*.tar.bz2
+- sudo chown travis:travis /usr/local/bin/ghdl
 - ls -lah /usr/local/bin
 - /usr/local/bin/ghdl --help
 - mkdir -p ~/.local/bin
