@@ -46,7 +46,9 @@ testCompiler flags fn = [testCase (takeBaseName fn) $ do
                       ++ if FlagV `elem` flags then ["-v"] else []
 
             checker :: String
-            checker = fromMaybe "ghdl -s" $ msum $ map (\ (FlagChecker c) -> Just $ sq c) flags
+            checker = fromMaybe "ghdl -s" $ msum $ flip map flags $ \ case
+                  FlagChecker c -> Just $ sq c
+                  _             -> Nothing
 
 sq :: String -> String
 sq = \ case

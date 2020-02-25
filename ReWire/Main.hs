@@ -41,7 +41,10 @@ exitUsage :: IO ()
 exitUsage = hPutStr stderr (usageInfo "Usage: rwc [OPTION...] <filename.rw>" options) >> exitFailure
 
 getSystemLoadPath :: IO [FilePath]
-getSystemLoadPath = ("." :) . pure <$> getDataFileName "lib"
+getSystemLoadPath = do
+      lib <- getDataFileName "lib"
+      rw <- getDataFileName "."
+      pure $ "." : [lib, rw]
 
 main :: IO ()
 main = do

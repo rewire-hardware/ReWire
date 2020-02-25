@@ -29,17 +29,7 @@ nativeVhdl = undefined
 ---------------------------------------------
 -}
 
-data Bit = Zero | One
-
-data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
-
-plusOne :: W8 -> W8
-{-# INLINE plusOne #-}
-plusOne = nativeVhdl "prim_plusOne" undefined
-
-rotl :: W8 -> W8
-{-# INLINE rotl #-}
-rotl = nativeVhdl "prim_rotl" undefined
+import ReWire.Lang.Bits
 
 tick :: ReT Bit W8 (StT W8 I) Bit
 {-# INLINE tick #-}

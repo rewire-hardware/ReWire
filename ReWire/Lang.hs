@@ -1,4 +1,13 @@
-module Prim where
+module ReWire.Lang where
+
+import Prelude hiding ((>>))
+import Control.Monad.Identity (runIdentity, Identity)
+import Control.Monad.State (liftIO, execStateT, lift, get, put, StateT)
+import Control.Monad.Resumption.Reactive (ReacT (..), signal)
+
+type I = Identity
+type ReT = ReacT
+type StT = StateT
 
 -- ReWire primitives.
 
@@ -39,3 +48,4 @@ extrude = error "Prim: extrude"
 
 unfold :: ((R_, s) -> i -> Either (A_, s) (o, (R_, s))) -> Either (A_, s) (o, (R_, s)) -> ReT i o I a
 unfold = error "Prim: unfold"
+

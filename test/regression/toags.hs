@@ -1,12 +1,4 @@
-data Bit = Zero | One
-
-bitAnd :: Bit -> Bit -> Bit
-{-# INLINE bitAnd #-}
-bitAnd = nativeVhdl "prim_bitAnd" undefined
-
-bitNot :: Bit -> Bit
-{-# INLINE bitNot #-}
-bitNot = nativeVhdl "prim_bitNot" undefined
+import ReWire.Lang.Bits
 
 go :: ReT Bit Bit (StT Bit (StT Bit I)) Bit
 go = do

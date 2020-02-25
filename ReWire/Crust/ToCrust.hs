@@ -161,6 +161,7 @@ transDef rn tys inls defs = \ case
       InlineSig {}                                              -> pure defs -- TODO(chathhorn): elide
       TypeSig {}                                                -> pure defs -- TODO(chathhorn): elide
       InfixDecl {}                                              -> pure defs -- TODO(chathhorn): elide
+      TypeDecl {}                                               -> pure defs -- TODO(chathhorn): elide
       d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " ++ show (void d)
 
 transTyVar :: MonadError AstError m => Annote -> S.TyVarBind () -> m (Name M.Ty)
@@ -233,7 +234,7 @@ transPat rn = \ case
 -- TODO(chathhorn): GADT style decls?
 extendWithGlobs :: Annotation a => S.Module a -> Renamer -> Renamer
 extendWithGlobs = \ case
-      Module l (Just (ModuleHead _ (ModuleName _ "Prim") _ _)) _ _ ds -> extendWith ds $ ModuleName l ""
+      Module l (Just (ModuleHead _ (ModuleName _ "ReWire.Lang") _ _)) _ _ ds -> extendWith ds $ ModuleName l ""
       Module _ (Just (ModuleHead _ m _ _)) _ _ ds                     -> extendWith ds m
       _                                                               -> id
       where extendWith :: Annotation a => [Decl a] -> ModuleName a -> Renamer -> Renamer
@@ -309,9 +310,10 @@ extendWithGlobs = \ case
 
 getImps :: Annotation a => S.Module a -> [ImportDecl a]
 getImps = \ case
-      S.Module l _ _ imps _            -> addMod l "Prim" $ addMod l "Prelude" imps
-      S.XmlPage {}                     -> []
-      S.XmlHybrid l _ _ imps _ _ _ _ _ -> addMod l "Prim" $ addMod l "Prelude" imps
+      S.Module l (Just (ModuleHead _ (ModuleName _ "ReWire.Lang") _ _)) _ _ _   -> addMod l "Prelude" [] -- all imports ignored in the Prim module.
+      S.Module l _ _ imps _                           -> addMod l "ReWire.Lang" $ addMod l "Prelude" imps
+      S.XmlPage {}                                    -> []
+      S.XmlHybrid l _ _ imps _ _ _ _ _                -> addMod l "ReWire.Lang" $ addMod l "Prelude" imps
       where addMod :: Annotation a => a -> String -> [ImportDecl a] -> [ImportDecl a]
             addMod l m imps = if any (isMod m) imps then imps
                   else ImportDecl l (ModuleName l m) False False False Nothing Nothing Nothing : imps
