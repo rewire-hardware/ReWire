@@ -312,7 +312,7 @@ compileDefn = \ case
                                                        Port "rst" In TyStdLogic,
                                                        Port "inp" In (TyStdLogicVector insize),
                                                        Port "outp" Out (TyStdLogicVector (1 + max outsize ressize))]
-                                                       -- ^ TODO(chathhorn): suspect "max outsize resize" should be "max ressize (outsize + Rsize + statesize)"
+                                                       -- TODO(chathhorn): suspect "max outsize resize" should be "max ressize (outsize + Rsize + statesize)"
                                         pad_for_out = ExprBitString (replicate (max 0 (ressize - outsize)) Zero)
                                         pad_for_res = ExprBitString (replicate (max 0 (outsize - ressize)) Zero)
                                     (sigs, comps, _) <- get

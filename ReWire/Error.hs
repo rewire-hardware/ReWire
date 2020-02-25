@@ -1,7 +1,5 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses, GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE Trustworthy #-}
--- ^ GeneralizedNewtypeDeriving not allowed in Safe Haskell, though it seems to
---   be safe with recent versions of GHC.
 module ReWire.Error
       ( SyntaxErrorT, AstError
       , MonadError

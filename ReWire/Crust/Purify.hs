@@ -51,6 +51,8 @@ projDefnTy Defn { defnPolyTy = Embed t } = poly2Ty t
 -- TODO(chathhorn): what if we retype extrude and unfold (et al.?) with
 -- concrete types and re-run type inference? Much of the muck here is just
 -- calculating types that could be inferred.
+
+-- | Transforms functions in state and resumption monads into plain first-order functions.
 purify :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) => FreeProgram -> m FreeProgram
 purify (ts, ds) = do
       (smds, pds)         <- partitionEithers <$> mapM isStateMonadicDefn ds
@@ -100,7 +102,7 @@ purify (ts, ds) = do
             isAorR :: DataDefn -> Bool
             isAorR = uncurry (||) . ((== "A_") &&& (== "R_")) . n2s . dataName
 
--- In addition to all the above, we re-tie the recursive knot by adding a new
+-- | In addition to all the above, we re-tie the recursive knot by adding a new
 --   "start" as follows
 --         start :: ReT In Out I T
 --         start = unfold dispatch start_pure
@@ -133,10 +135,10 @@ mkStart i o ms = Defn
             tyApp :: Ty -> Ty -> Ty
             tyApp = TyApp $ MsgAnnote "reT"
 
--- Converts
---    (extrude (extrude (... (extrude dev s1) ...) s(n-1)) sn)
--- Into
---    (dev, [s1, ..., sn])
+-- | Converts
+-- >  (extrude (extrude (... (extrude dev s1) ...) s(n-1)) sn)
+-- into
+-- >  (dev, [s1, ..., sn])
 -- Won't work if called on a non-extrude application.
 flattenExtr :: Exp -> (Exp, [Exp])
 flattenExtr = \ case
@@ -144,7 +146,8 @@ flattenExtr = \ case
       e@(App _ _ rand)                                     -> first (const e) $ flattenExtr rand
       e                                                    -> (e, [])
 
--- dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i
+-- | Generates the dispatch function.
+-- > dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i
 mkDispatch :: (MonadError AstError m, Fresh m) => Ty -> Ty -> [Ty] -> Name Exp -> [(Pat, Exp)] -> m Defn
 mkDispatch _ _ _  _  [] = failAt NoAnnote "Purify: Empty dispatch: invalid ReWire (is recursion guarded by signal?)"
 mkDispatch i o ms iv (p : pes) = do
@@ -287,18 +290,18 @@ purifyTy an ms t = case classifyTy t of
       _             -> failAt an $ "Purify: failed to purify type: " ++ prettyPrint t
 
             -- This takes a Ty of the form
-            --      T1 -> T2 -> ... -> Tn -> ReT In Out (StT S1 (StT S2 (... (StT Sm I)))) T
+            -- >    T1 -> T2 -> ... -> Tn -> ReT In Out (StT S1 (StT S2 (... (StT Sm I)))) T
             -- and returns a Ty of the form
-            --      T1 -> T2 -> ... -> Tn -> In -> S1 -> ... -> Sm -> (Either T (O, R), (S1, (..., Sm)))
+            -- >    T1 -> T2 -> ... -> Tn -> In -> S1 -> ... -> Sm -> (Either T (O, R), (S1, (..., Sm)))
       where purifyResTy :: Ty -> Maybe Ty
             purifyResTy t = do
                   (_, o, _, _) <- dstReT $ rangeTy t
                   pure $ mkArrowTy (paramTys t ++ ms) $ mkRangeTy o ms
 
             -- Takes
-            --      T1 -> T2 -> ... -> Tn -> StT S1 (StT S2 (... (StT Sm I))) T
+            -- >    T1 -> T2 -> ... -> Tn -> StT S1 (StT S2 (... (StT Sm I))) T
             -- and replaces it by
-            --      T1 -> ... -> Tn -> S1 -> ... -> Sm -> (T, (S1, (..., Sm)))
+            -- >    T1 -> ... -> Tn -> S1 -> ... -> Sm -> (T, (S1, (..., Sm)))
             --
             -- I'm going to rewrite this to stick precisely to Adam's description.
             -- N.b., the product in the codomain associates to the right. The
@@ -325,9 +328,9 @@ dstArrow = \ case
       t                                               -> failAt (ann t) "Purify: expecting arrow, encountered non-arrow"
 
 -- | This takes a type of the form
---    StT S1 (StT S2 (... (StT Sm I)))
+-- >  StT S1 (StT S2 (... (StT Sm I)))
 -- and returns
---    [S1, ..., Sm]
+-- >  [S1, ..., Sm]
 dstStT :: Ty -> Maybe [Ty]
 dstStT = \ case
       TyApp _ (TyApp _ (TyCon _ (n2s -> "StT")) s) m -> (s :) <$> dstStT m
@@ -335,27 +338,27 @@ dstStT = \ case
       _                                              -> Nothing
 
 -- | This takes a type of the form
---    m a
+-- >  m a
 -- and returns
---    a
+-- >  a
 dstCompR :: Ty -> Maybe Ty
 dstCompR = \ case
       TyApp _ _ a -> pure a
       _           -> Nothing
 
 -- | This takes a type of the form
---    m a
+-- >  m a
 -- and returns
---    m
+-- >  m
 dstCompM :: Ty -> Maybe Ty
 dstCompM = \ case
       TyApp _ m _ -> pure m
       _           -> Nothing
 
 -- | This takes a type of the form
---    ReT In Out (StT S1 (StT S2 (... (StT Sm I)))) T
+-- >  ReT In Out (StT S1 (StT S2 (... (StT Sm I)))) T
 -- and returns
---    (In, Out, [S1, ..., Sm], T)
+-- >  (In, Out, [S1, ..., Sm], T)
 dstReT :: Ty -> Maybe (Ty, Ty, [Ty], Ty)
 dstReT = \ case
       TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReT")) i) o) m) a -> dstStT m >>= \ ms -> pure (i, o, ms, a)
@@ -413,7 +416,7 @@ purifyStateBody rho stos stys i = classifyCases >=> \ case
 
       Apply an t n es -> mkPureApp an rho t n $ es ++ stos
 
-    -- e1 must be simply-typed, so don't purify it.
+      -- e1 must be simply-typed, so don't purify it.
       SMatch an e1 mp e2 es e3 -> do
             p <- transPat mp
             e2' <- purifyStateBody rho stos stys i $ mkApp an e2 $ es ++ map (mkVar an) (patVars p)
@@ -475,7 +478,7 @@ classifyRCases = \ case
      Var an t x                -> pure $ RVar an t x
      d                         -> failAt (ann d) $ "Unclassifiable R-case: " ++ show d
 
--- classifyApp classifies syntactic applications. Just seemed easier to
+-- | Classifies syntactic applications. Just seemed easier to
 -- make it its own function.
 classifyApp :: MonadError AstError m => Annote -> (Name Exp, Ty, [Exp]) -> m (RCase Annote Ty p Exp)
 classifyApp an (x, t, [])  = pure $ RVar an t x
@@ -534,8 +537,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
 
             (p, xs) <- mkRPat an ts' r_g           -- Pattern (R_g e1 ... ek)
             ns      <- freshVars "s" ms
-            let pairpat = mkTuplePat an $ p : map patVar ns
-            -- ^ Pattern (R_g e1 ... ek, (s1, ..., sn))
+            let pairpat = mkTuplePat an $ p : map patVar ns -- Pattern (R_g e1 ... ek, (s1, ..., sn))
 
             let svars = map (\ (x, t) -> Var an t x) ns  -- [s1, ..., sn]
             let vars  = map (\ (x, t) -> Var an t x) (zip xs ts')   -- [x1, ..., xn]
@@ -545,8 +547,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
             addEquation (pairpat, g_pure_app)
 
             let rGes  = mkApp an (Con an (mkArrowTy ts' rTy) r_g) es
-            let outer = mkTuple $ [e, rGes] ++ stos --  R_g e1 ... ek :: R
-                                             -- ^ (R, (s1, ..., sm))
+            let outer = mkTuple $ [e, rGes] ++ stos
             pure $ mkRight outer             -- Right ((e, R_g e1 ... ek), (s1, (..., sm)))
 
       -- purifyResBody (signal e)         = "(Right ((e, (s1, (..., sm))), R_ret))"
@@ -686,7 +687,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
                   case Map.lookup (unAnn t) as of
                         Nothing -> do
                               c <- freshVar $ "A_" ++ s ++ show (Map.size as)
-                              -- ^ TODO(chathhorn): the num postfixed by Fresh is dropped in toCore because ctors assumed unique.
+                              -- TODO(chathhorn): the num postfixed by Fresh is dropped in toCore because ctors assumed unique.
                               modify (\ (PSto hasSig dcs pes iv as) -> PSto hasSig dcs pes iv $ Map.insert (unAnn t) c as)
                               pure c
                         Just c -> pure c
@@ -709,7 +710,7 @@ mkPair e1 e2 = App (MsgAnnote "Purify: mkPair") (App (MsgAnnote "Purify: mkPair"
 mkPairPat :: Annote -> Pat -> Pat -> Pat
 mkPairPat an p1 p2 = PatCon an (Embed $ mkPairTy (typeOf p1) (typeOf p2)) (Embed (s2n "(,)")) [p1, p2]
 
--- global constant representation of R data type
+-- | Global constant representation of R data type.
 rTy :: Ty
 rTy = TyCon (MsgAnnote "Purify: rTy") (s2n "R_")
 
@@ -780,7 +781,7 @@ dstApp = \ case
       Var _ t n              -> pure (n, t, [])
       d                      -> failAt (ann d) "Tried to dst non-app"
 
--- Lets are desugared already, so use a case instead (with lifted discriminator).
+-- | Lets are desugared already, so use a case instead (with lifted discriminator).
 mkLet :: Fresh m => Annote -> Pat -> Exp -> Exp -> m Exp
 mkLet an p e1 e2 = do
       v <- freshVar "disc"
