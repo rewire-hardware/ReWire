@@ -14,6 +14,8 @@ addons:
 before_install:
 - travis_retry curl -L http://ghdl.free.fr/site/uploads/Main/ghdl-i686-linux-latest.tar | tar x
 - sudo tar -C / -jxvf ghdl*/ghdl*.tar.bz2
+- ls -lah /usr/local/bin
+- /usr/local/bin/ghdl --help
 - mkdir -p ~/.local/bin
 # Doesn't seem to get ghdl into the $PATH.
 - export PATH=$HOME/.local/bin:/usr/local/bin:$PATH
