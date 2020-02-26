@@ -1,4 +1,4 @@
-module ReWire.Lang where
+module ReWire where
 
 import Prelude hiding ((>>))
 import Control.Monad.Identity (runIdentity, Identity)
