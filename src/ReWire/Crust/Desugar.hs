@@ -210,7 +210,7 @@ desugarRecords rn = (\ (Module (l :: Annote) h p imps decls) -> do
             toPat l fpats f = convField f (PWildCard l) pfToField (pfToPat f) fpats
 
             toExp :: Annote -> [FieldUpdate Annote] -> FQName -> Exp Annote
-            toExp l fups f = convField f (Var l $ UnQual l $ Ident l "undefined") fupToField (fupToExp f) fups
+            toExp l fups f = convField f (err l "uninitialized record field") fupToField (fupToExp f) fups
 
             toRUpPat :: Monad m => Annote -> [FieldUpdate Annote] -> FQName -> FreshT m (Pat Annote)
             toRUpPat l fups f = do
@@ -379,7 +379,7 @@ desugarGuards = transform $ \ case
                               Nothing
                         ]
             Case l1 v [Alt l2 p (GuardedRhss l3 rhs) binds] ->
-                  pure $ Case l1 v [ Alt l2 p (UnGuardedRhs l3 $ toLet l3 (err l1) binds rhs) Nothing ]
+                  pure $ Case l1 v [ Alt l2 p (UnGuardedRhs l3 $ toLet l3 (err l1 "pattern match failure") binds rhs) Nothing ]
       where toIfs :: GuardedRhs Annote -> Exp Annote -> Exp Annote
             toIfs (GuardedRhs l [Qualifier _ g1] e1) = If l g1 e1
 
@@ -387,8 +387,8 @@ desugarGuards = transform $ \ case
             toLet l y (Just binds) rhs =  Let l binds $ foldr toIfs y rhs
             toLet _ y Nothing rhs      =  foldr toIfs y rhs
 
-            err :: Annote -> Exp Annote
-            err l = App l (Var l $ UnQual l $ Ident l "error") $ Lit l $ String l "pattern match failure" ""
+err :: Annote -> String -> Exp Annote
+err l s = App l (Var l $ UnQual l $ Ident l "error") $ Lit l $ String l s ""
 
 
 -- | Turns where clauses into lets. Only valid after guard desugarage. E.g.:

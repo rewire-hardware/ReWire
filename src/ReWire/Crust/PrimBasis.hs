@@ -26,10 +26,10 @@ msg :: String -> Annote
 msg = MsgAnnote
 
 mkData :: (String, Kind, [DataCon]) -> DataDefn
-mkData (n, k, cs) = DataDefn (msg $ "Primitive: " ++ n) (s2n n) k cs
+mkData (n, k, cs) = DataDefn (msg $ "Prim: " ++ n) (s2n n) k cs
 
 mkTuple :: Int -> DataDefn
-mkTuple n = DataDefn (msg "Primitive: tuple") (s2n i) k [ctor]
+mkTuple n = DataDefn (msg "Prim: tuple") (s2n i) k [ctor]
       where i    = "(" ++ replicate (n-1) ',' ++ ")"
             tvs  = map s2n $ take n $ [[c] | c <- ['a'..'z']] ++ map (('t':) . show) [0::Integer ..]
             tvs' = map (TyVar (MsgAnnote "Prim: tuple type variable") KStar) tvs

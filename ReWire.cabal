@@ -49,8 +49,7 @@ data-files        : tests/integration/*.hs
                     tests/regression/Mods/C/*.hs
                     tests/regression/*.hs
                     src/lib/*.hs
-                    src/rwlib/*.hs
-                    src/lib/ReWire/Lang/*.hs
+                    src/lib/ReWire/*.hs
 
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version     :  >=1.10
@@ -106,10 +105,12 @@ library
                     ReWire.Pretty
                     ReWire.SYB
                     ReWire.Unbound
+                    ReWire.Prelude
 
   exposed-modules : ReWire.FrontEnd
                     ReWire.Main
                     ReWire
+                    ReWire.Bits
 
 executable rwc
   hs-source-dirs  : src/rwc

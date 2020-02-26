@@ -196,7 +196,6 @@ tcExp = \ case
                         (e2', te2)  <- tcExp e2
                         unify an tv te2
                         pure (Match an tv e' p' f as (Just e2'), tv)
-      nv@(NativeVHDL _ _ (Error _ t _)) -> pure (nv, t)
       NativeVHDL an n e      -> do
             (e', te) <- tcExp e
             pure (NativeVHDL an n e', te)

@@ -26,9 +26,6 @@ atMay []       _ = Nothing
 atMay (x : _)  0 = Just x
 atMay (_ : xs) n = atMay xs $ n - 1
 
-isPrim :: Name Exp -> Bool
-isPrim = notElem '.' . n2s
-
 isStart :: Name Exp -> Bool
 isStart = (== "Main.start") . n2s
 
@@ -487,7 +484,7 @@ classifyApp an (x, _, [e])
       | n2s x == "lift"   = pure $ RLift an e
       | n2s x == "signal" = pure $ Signal an e
 classifyApp an (x, t, [e, g])
-      | n2s x == ">>="     = case isSignal e of
+      | n2s x == ">>="    = case isSignal e of
             Just s -> do
                   (g', t, es) <- dstApp g
                   pure $ SigK an t s g' $ zip es $ paramTys t
@@ -640,7 +637,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
                   let t = typeOf a
                   c <- getACtor s t
                   let anode = App an (Con an (mkArrowTy [t] aTy) c) a
-                  pure $ App an (Con an (mkArrowTy [mkTupleTy $ aTy : ms] $ mkRangeTy o ms) (s2n "Prelude.Left"))
+                  pure $ App an (Con an (mkArrowTy [mkTupleTy $ aTy : ms] $ mkRangeTy o ms) (s2n "Done"))
                               (mkTuple $ anode : stos)
 
             mkLeftPat :: (Fresh m, MonadError AstError m) => String -> Pat -> [Pat] -> StateT PSto m Pat
@@ -649,11 +646,11 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
                   let t = typeOf a
                   c <- getACtor s t
                   let anode =  PatCon an (Embed $ mkArrowTy [t] aTy) (Embed c) [a]
-                  pure $ PatCon an (Embed $ mkArrowTy [mkTupleTy $ aTy : ms] $ mkRangeTy o ms) (Embed $ s2n "Prelude.Left")
+                  pure $ PatCon an (Embed $ mkArrowTy [mkTupleTy $ aTy : ms] $ mkRangeTy o ms) (Embed $ s2n "Done")
                               [mkTuplePat an $ anode : stos]
 
             mkRight :: Exp -> Exp
-            mkRight e = App (ann e) (Con (ann e) (mkArrowTy [typeOf e] $ mkRangeTy o ms) (s2n "Prelude.Right")) e
+            mkRight e = App (ann e) (Con (ann e) (mkArrowTy [typeOf e] $ mkRangeTy o ms) (s2n "Pause")) e
 
             addNakedSignal :: (Fresh m, MonadError AstError m, MonadState PSto m) => Annote -> m ()
             addNakedSignal an = do
@@ -742,14 +739,14 @@ mkVar :: Annote -> (Name Exp, Ty) -> Exp
 mkVar an (n, t) = Var an t n
 
 mkRangeTy :: Ty -> [Ty] -> Ty
-mkRangeTy o ts = mkEitherTy (mkTupleTy $ aTy : ts) (mkTupleTy $ [o, rTy] ++ ts)
+mkRangeTy o ts = mkEitherTy (mkTupleTy ts) o
 
 -- | Takes [T1, ..., Tn-1] Tn and returns (T1 -> (T2 -> ... (T(n-1) -> Tn) ...))
 mkArrowTy :: [Ty] -> Ty -> Ty
 mkArrowTy ps = foldr1 arr . (ps ++) . (: [])
 
 mkEitherTy :: Ty -> Ty -> Ty
-mkEitherTy t1 = TyApp (MsgAnnote "Purify: mkEitherTy") (TyApp (MsgAnnote "Purify: mkEitherTy") (TyCon (MsgAnnote "Purify: mkEitherTy") $ s2n "Prelude.Either") t1)
+mkEitherTy t1 = TyApp (MsgAnnote "Purify: mkEitherTy") (TyApp (MsgAnnote "Purify: mkEitherTy") (TyCon (MsgAnnote "Purify: mkEitherTy") $ s2n "PuRe") t1)
 
 mkRPat :: Fresh m => Annote -> [Ty] -> Name DataConId -> m (Pat, [Name Exp])
 mkRPat an ts r_g = do

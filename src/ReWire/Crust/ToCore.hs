@@ -11,18 +11,15 @@ import Control.Monad ((<=<))
 import Control.Monad.Reader (ReaderT (..), asks)
 import Data.Map.Strict (Map)
 
-import qualified Data.Map.Strict        as Map
-import qualified ReWire.Core.Syntax     as C
+import qualified Data.Map.Strict     as Map
+import qualified ReWire.Core.Syntax  as C
 import qualified ReWire.Crust.Syntax as M
 
 toCore :: (Fresh m, MonadError AstError m) => M.FreeProgram -> m C.Program
 toCore (ts, vs) = do
       ts' <- concat <$> mapM transData ts
-      vs' <- mapM transDefn $ filter (notPrim . M.defnName) vs
+      vs' <- mapM transDefn $ filter (not . M.isPrim . M.defnName) vs
       pure $ C.Program ts' vs'
-
-notPrim :: Name a -> Bool
-notPrim = elem '.' . show
 
 transData :: (MonadError AstError m, Fresh m) => M.DataDefn -> m [C.DataCon]
 transData (M.DataDefn _ _ _ cs) = mapM transDataCon $ zip [0..] cs
@@ -41,7 +38,7 @@ transExp :: (MonadError AstError m, Fresh m) => M.Exp -> ReaderT (Map (Name M.Ex
 transExp = \ case
       M.App an e1 e2                    -> C.App an <$> transExp e1 <*> transExp e2
       M.Var an t x                      -> asks (Map.lookup x) >>= \ case
-            Nothing -> if notPrim x
+            Nothing -> if not $ M.isPrim x
                   then C.GVar an <$> transType t <*> pure (show x)
                   else C.Prim an <$> transType t <*> pure (show x)
             Just i  -> C.LVar an <$> transType t <*> pure i

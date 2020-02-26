@@ -166,7 +166,7 @@ purgeUnused (ts, vs) = (inuseData (fv $ trec $ inuseDefn vs) ts, inuseDefn vs)
 
             reservedData :: [String]
             reservedData =
-                         [ "Prelude.Either"
+                         [ "ReWire.Prelude.Either"
                          , "(,)"
                          , "()"
                          ]

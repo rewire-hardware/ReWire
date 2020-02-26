@@ -135,7 +135,7 @@ transData rn datas = \ case
 transTySig :: (Fresh m, MonadError AstError m) => Renamer -> [(S.Name (), M.Ty)] -> Decl Annote -> m [(S.Name (), M.Ty)]
 transTySig rn sigs = \ case
       TypeSig _ names t -> do
-            t' <- transTy rn [] t
+            t' <- transTy rn t
             pure $ zip (map void names) (repeat t') ++ sigs
       _                 -> pure sigs
 
@@ -151,18 +151,30 @@ transInlineSig inls = \ case
 transDef :: MonadError AstError m => Renamer -> [(S.Name (), M.Ty)] -> [S.Name ()] -> [M.Defn] -> Decl Annote -> m [M.Defn]
 transDef rn tys inls defs = \ case
       PatBind l (PVar _ (void -> x)) (UnGuardedRhs _ e) Nothing -> do
-            e' <- transExp rn e
+            let x' = s2n $ rename Value rn x
             case lookup x tys of
-                  Just t -> pure $ M.Defn l (s2n $ rename Value rn x) (M.fv t |-> t) (x `elem` inls) (Embed (bind [] e')) : defs
-                  Nothing -> if x `elem` inls
-                        then pure $ M.Defn l (s2n $ rename Value rn x) ([] |-> M.TyBlank l) True (Embed (bind [] e')) : defs
-                        else failAt l "No type signature on non-inline toplevel definition"
+                  Just t -> do
+                        -- TODO(chathhorn): hackily elide definition of primitives. Allows providing alternate defs for GHC compat.
+                        e' <- if M.isPrim x' then pure $ M.Error (ann e) t $ "Prim: " ++ n2s x' else transExp rn e
+                        pure $ M.Defn l x' (M.fv t |-> t) (x `elem` inls) (Embed (bind [] e')) : defs
+                  Nothing -> do
+                        -- TODO(chathhorn): so ugly
+                        e' <- if M.isPrim x' then pure $ M.Error (ann e) (M.TyBlank l) $ "Prim: " ++ n2s x' else transExp rn e
+                        if x `elem` inls
+                              then pure $ M.Defn l x' ([] |-> M.TyBlank l) True (Embed (bind [] e')) : defs
+                              else if M.isPrim x'
+                                    -- This is specifically for error, which we
+                                    -- need to type differently from GHC.error (we have no String).
+                                    then pure $ M.Defn l x' (errTy l) True (Embed (bind [] e')) : defs
+                                    else failAt l "No type signature on non-inline toplevel definition"
       DataDecl {}                                               -> pure defs -- TODO(chathhorn): elide
       InlineSig {}                                              -> pure defs -- TODO(chathhorn): elide
       TypeSig {}                                                -> pure defs -- TODO(chathhorn): elide
       InfixDecl {}                                              -> pure defs -- TODO(chathhorn): elide
       TypeDecl {}                                               -> pure defs -- TODO(chathhorn): elide
       d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " ++ show (void d)
+      where errTy :: Annote -> Embed M.Poly
+            errTy l = [s2n "a", s2n "b"] |-> ((M.TyVar l M.KStar (s2n "a")) `M.arr` (M.TyVar l M.KStar (s2n "b")))
 
 transTyVar :: MonadError AstError m => Annote -> S.TyVarBind () -> m (Name M.Ty)
 transTyVar l = \ case
@@ -173,40 +185,33 @@ transCon :: (Fresh m, MonadError AstError m) => Renamer -> [M.Kind] -> [Name M.T
 transCon rn ks tvs tc = \ case
       QualConDecl l Nothing _ (ConDecl _ x tys) -> do
             let tvs' = zipWith (M.TyVar l) ks tvs
-            t <- foldr M.arr (foldl' (M.TyApp l) (M.TyCon l tc) tvs') <$> mapM (transTy rn []) tys
+            t <- foldr M.arr (foldl' (M.TyApp l) (M.TyCon l tc) tvs') <$> mapM (transTy rn) tys
             pure $ M.DataCon l (s2n $ rename Value rn x) (tvs |-> t)
       d                                         -> failAt (ann d) "Unsupported Ctor syntax"
 
-transTy :: (Fresh m, MonadError AstError m) => Renamer -> [S.Name ()] -> Type Annote -> m M.Ty
-transTy rn ms = \ case
-      TyForall _ Nothing (Just (CxTuple _ cs)) t   -> do
-           ms' <- mapM getNad cs
-           transTy rn (ms ++ ms') t
-      TyApp l a b                -> M.TyApp l <$> transTy rn ms a <*> transTy rn ms b
-      TyCon l x                  -> pure $ M.TyCon l (s2n $ rename Type rn x)
-      TyVar l x                  -> M.TyVar l <$> freshKVar (prettyPrint x) <*> pure (mkUId $ void x)
-      t                          -> failAt (ann t) "Unsupported type syntax"
+transTy :: (Fresh m, MonadError AstError m) => Renamer -> Type Annote -> m M.Ty
+transTy rn = \ case
+      TyForall _ _ _ t -> transTy rn t
+      TyApp l a b      -> M.TyApp l <$> transTy rn a <*> transTy rn b
+      TyCon l x        -> pure $ M.TyCon l (s2n $ rename Type rn x)
+      TyVar l x        -> M.TyVar l <$> freshKVar (prettyPrint x) <*> pure (mkUId $ void x)
+      t                -> failAt (ann t) "Unsupported type syntax"
 
 freshKVar :: Fresh m => String -> m M.Kind
 freshKVar n = M.KVar <$> fresh (s2n $ "?K_" ++ n)
 
-getNad :: MonadError AstError m => Asst Annote -> m (S.Name ())
-getNad = \ case
-      ClassA _ (UnQual _ (Ident _ "Monad")) [TyVar _ x] -> pure $ void x
-      a                                                   -> failAt (ann a) "Unsupported typeclass constraint"
-
 transExp :: MonadError AstError m => Renamer -> Exp Annote -> m M.Exp
 transExp rn = \ case
-      App l (App _ (Var _ (UnQual _ (Ident _ "nativeVhdl"))) (Lit _ (String _ f _))) e
-                            -> M.NativeVHDL l f <$> transExp rn e
-      App l (Var _ (UnQual _ (Ident _ "error"))) (Lit _ (String _ m _))
-                            -> pure $ M.Error l (M.TyBlank l) m
-      App l e1 e2           -> M.App l <$> transExp rn e1 <*> transExp rn e2
-      Lambda l [PVar _ x] e -> do
+      App l (App _ (Var _ n) (Lit _ (String _ f _))) e
+            | isNativeVhdl n -> M.NativeVHDL l f <$> transExp rn e
+      App l (Var _ n) (Lit _ (String _ m _))
+            | isError n      -> pure $ M.Error l (M.TyBlank l) m
+      App l e1 e2            -> M.App l <$> transExp rn e1 <*> transExp rn e2
+      Lambda l [PVar _ x] e  -> do
             e' <- transExp (exclude Value [void x] rn) e
             pure $ M.Lam l (M.TyBlank l) $ bind (mkUId $ void x) e'
-      Var l x               -> pure $ M.Var l (M.TyBlank l) (s2n $ rename Value rn x)
-      Con l x               -> pure $ M.Con l (M.TyBlank l) (s2n $ rename Value rn x)
+      Var l x                -> pure $ M.Var l (M.TyBlank l) (s2n $ rename Value rn x)
+      Con l x                -> pure $ M.Con l (M.TyBlank l) (s2n $ rename Value rn x)
       Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _] -> do
             e'  <- transExp rn e
             p'  <- transPat rn p
@@ -218,11 +223,17 @@ transExp rn = \ case
             p'  <- transPat rn p
             e1' <- transExp (exclude Value (getVars p) rn) e1
             pure $ M.Case l (M.TyBlank l) e' (bind p' e1') Nothing
-      e                     -> failAt (ann e) $ "Unsupported expression syntax: " ++ show (void e)
+      e                      -> failAt (ann e) $ "Unsupported expression syntax: " ++ show (void e)
       where getVars :: Pat Annote -> [S.Name ()]
             getVars = runQ $ query $ \ case
                   PVar (_::Annote) x -> [void x]
                   _                  -> []
+
+            isError :: QName Annote -> Bool
+            isError n = prettyPrint (name $ rename Value rn n) == "error"
+
+            isNativeVhdl :: QName Annote -> Bool
+            isNativeVhdl n = prettyPrint (name $ rename Value rn n) == "nativeVhdl"
 
 transPat :: MonadError AstError m => Renamer -> Pat Annote -> m M.Pat
 transPat rn = \ case
@@ -235,8 +246,8 @@ transPat rn = \ case
 extendWithGlobs :: Annotation a => S.Module a -> Renamer -> Renamer
 extendWithGlobs = \ case
       Module l (Just (ModuleHead _ (ModuleName _ "ReWire") _ _)) _ _ ds -> extendWith ds $ ModuleName l ""
-      Module _ (Just (ModuleHead _ m _ _)) _ _ ds                     -> extendWith ds m
-      _                                                               -> id
+      Module _ (Just (ModuleHead _ m _ _)) _ _ ds                       -> extendWith ds m
+      _                                                                 -> id
       where extendWith :: Annotation a => [Decl a] -> ModuleName a -> Renamer -> Renamer
             extendWith ds m = setCtors (getModCtors ds) (getModCtorSigs ds) . extendWith' ds (void m)
 
@@ -310,10 +321,12 @@ extendWithGlobs = \ case
 
 getImps :: Annotation a => S.Module a -> [ImportDecl a]
 getImps = \ case
-      S.Module l (Just (ModuleHead _ (ModuleName _ "ReWire") _ _)) _ _ _   -> addMod l "Prelude" [] -- all imports ignored in the Prim module.
-      S.Module l _ _ imps _                                                -> addMod l "ReWire" $ addMod l "Prelude" imps
-      S.XmlPage {}                                                         -> []
-      S.XmlHybrid l _ _ imps _ _ _ _ _                                     -> addMod l "ReWire" $ addMod l "Prelude" imps
+      -- TODO(chathhorn): hacky. The prim/ReWire module really shouldn't depend on Prelude.
+      S.Module l (Just (ModuleHead _ (ModuleName _ "ReWire") _ _)) _ _ _            -> addMod l "ReWire.Prelude" [] -- all imports ignored in the Prim module.
+      S.Module _ (Just (ModuleHead _ (ModuleName _ "ReWire.Prelude") _ _)) _ imps _ -> filter (not . isMod "Prelude") imps -- TODO(chathhorn) gah!
+      S.Module l _ _ imps _                                                         -> addMod l "ReWire.Prelude" $ addMod l "ReWire" $ filter (not . isMod "Prelude") imps
+      S.XmlPage {}                                                                  -> []
+      S.XmlHybrid l _ _ imps _ _ _ _ _                                              -> addMod l "ReWire.Prelude" $ addMod l "ReWire" $ filter (not . isMod "Prelude") imps
       where addMod :: Annotation a => a -> String -> [ImportDecl a] -> [ImportDecl a]
             addMod l m imps = if any (isMod m) imps then imps
                   else ImportDecl l (ModuleName l m) False False False Nothing Nothing Nothing : imps

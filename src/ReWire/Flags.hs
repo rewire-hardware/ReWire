@@ -9,6 +9,7 @@ data Flag = FlagO String
           | FlagDCrust2
           | FlagDCrust3
           | FlagDCrust4
+          | FlagDCrust5
           | FlagDCore
           | FlagDTypes
           | FlagLoadPath String

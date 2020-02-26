@@ -1,4 +1,4 @@
-module ReWire.Lang.Bits where
+module ReWire.Bits where
 
 data Bit = Zero | One
 data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit

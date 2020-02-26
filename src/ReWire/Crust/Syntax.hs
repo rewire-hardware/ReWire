@@ -24,7 +24,7 @@ module ReWire.Crust.Syntax
       , FieldId
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly
-      , rangeTy, paramTys
+      , rangeTy, paramTys, isPrim
       , kmonad, tycomp
       , TypeAnnotated (..)
       ) where
@@ -274,7 +274,7 @@ instance Pretty Exp where
                               : maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
                               )
                         ]
-            NativeVHDL _ n e                             -> text "nativeVHDL" <+> doubleQuotes (text n) <+> mparen e
+            NativeVHDL _ n e                             -> text "nativeVhdl" <+> doubleQuotes (text n) <+> mparen e
             Error _ t m                                  -> text "error" <+> braces (pretty t) <+> doubleQuotes (text m)
 
 ---
@@ -442,6 +442,9 @@ paramTys = paramTys' []
             paramTys' acc = \ case
                   TyApp    _ (TyApp _ (TyCon _ (n2s -> "->")) t1) t2  -> paramTys' (t1 : acc) t2
                   _                                                   -> reverse acc
+
+isPrim :: Show a => a -> Bool
+isPrim = notElem '.' . show
 
 -- Orphans.
 
