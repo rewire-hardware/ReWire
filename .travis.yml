@@ -8,18 +8,15 @@ cache:
 
 addons:
       apt:
+            sources:
+            - sourceline: 'ppa:mati75/ghdl'
             packages:
-                  - libgmp-dev
+            - libgmp-dev
+            - ghdl
 
 before_install:
-- travis_retry curl -L http://ghdl.free.fr/site/uploads/Main/ghdl-i686-linux-latest.tar | tar x
-- sudo tar -C / -jxvf ghdl*/ghdl*.tar.bz2
-- sudo chown travis:travis /usr/local/bin/ghdl
-- ls -lah /usr/local/bin
-- /usr/local/bin/ghdl --help
 - mkdir -p ~/.local/bin
-# Doesn't seem to get ghdl into the $PATH.
-- export PATH=$HOME/.local/bin:/usr/local/bin:$PATH
+- export PATH=$HOME/.local/bin:$PATH
 - travis_retry curl -L https://get.haskellstack.org/stable/linux-x86_64.tar.gz | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
 
 install:
