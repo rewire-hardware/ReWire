@@ -44,19 +44,20 @@ build-type        : Simple
 -- Extra files to be distributed with the package, such as examples or a
 -- README.
 extra-source-files: README.md
-data-files        : lib/*.hs
-                    test/integration/*.hs
-                    test/regression/Mods/*.hs
-                    test/regression/Mods/C/*.hs
-                    test/regression/*.hs
-                    src/ReWire.hs
-                    src/ReWire/Lang/*.hs
+data-files        : tests/integration/*.hs
+                    tests/regression/Mods/*.hs
+                    tests/regression/Mods/C/*.hs
+                    tests/regression/*.hs
+                    src/lib/*.hs
+                    src/rwlib/*.hs
+                    src/lib/ReWire/Lang/*.hs
 
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version     :  >=1.10
 
 library
   hs-source-dirs  : src
+                  , src/lib
   build-depends   : ghc >=7.10
                   , base >=4.8 && < 5
                   , bytestring >= 0.10

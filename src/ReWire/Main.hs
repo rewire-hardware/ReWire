@@ -42,9 +42,9 @@ exitUsage = hPutStr stderr (usageInfo "Usage: rwc [OPTION...] <filename.rw>" opt
 
 getSystemLoadPath :: IO [FilePath]
 getSystemLoadPath = do
-      lib <- getDataFileName "lib"
-      rw <- getDataFileName "."
-      pure $ "." : [lib, rw]
+      lib <- getDataFileName "src/lib"
+      rwlib <- getDataFileName "src/rwlib"
+      pure $ "." : [lib, rwlib]
 
 main :: IO ()
 main = do

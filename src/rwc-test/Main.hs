@@ -58,7 +58,7 @@ sq = \ case
 
 getTests :: [Flag] -> FilePath -> IO Test
 getTests flags dirName = do
-      dir   <- getDataFileName ("test" </> dirName)
+      dir   <- getDataFileName ("tests" </> dirName)
       files <- map (dir </>) . filter (".hs" `isSuffixOf`) <$> listDirectory dir
       pure $ testGroup dirName $ concatMap (testCompiler flags) files
 
