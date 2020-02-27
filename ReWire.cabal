@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 -- The name of the package.
-name:               ReWire
+name              : ReWire
 
 -- The package version.  See the Haskell package versioning policy (PVP)
 -- for standards guiding when and how versions should be incremented.
@@ -10,49 +10,53 @@ name:               ReWire
 -- PVP summary:     +-+------- breaking API changes
 --                  | | +----- non-breaking API additions
 --                  | | | +--- code changes with no API change
-version:            0.3.0.0
+version           : 0.3.0.0
 
 -- A short (one-line) description of the package.
-synopsis:           A Haskell-to-VHDL compiler
+synopsis          : A Haskell-to-VHDL compiler
 
 -- A longer description of the package.
-description:        An experimental compiler for a subset of Haskell to VHDL.
+description       : An experimental compiler for a subset of Haskell to VHDL.
 
 -- URL for the project homepage or repository.
-homepage:           https://github.com/mu-chaco/ReWire
+homepage          : https://github.com/mu-chaco/ReWire
 
 -- The license under which the package is released.
-license:            AllRightsReserved
+license           : AllRightsReserved
 
 -- The file containing the license text.
-license-file:       LICENSE
+license-file      : LICENSE
 
 -- The package author(s).
-author:             Adam Procter, Chris Hathhorn, Ian Graves, and William L. Harrison
+author            : Adam Procter, Chris Hathhorn, Ian Graves, and William L. Harrison
 
 -- An email address to which users can send suggestions, bug reports, and
 -- patches.
-maintainer:         procteram@missouri.edu
+maintainer        : hathhorn@gmail.com
 
 -- A copyright notice.
 -- copyright:
 
-category:           Language
+category          : Language
 
-build-type:         Simple
+build-type        : Simple
 
 -- Extra files to be distributed with the package, such as examples or a
 -- README.
 extra-source-files: README.md
-data-files:         lib/*.hs
-                    test/integration/Mods/*.hs
-                    test/integration/Mods/C/*.hs
-                    test/integration/*.hs
+data-files        : tests/integration/*.hs
+                    tests/regression/Mods/*.hs
+                    tests/regression/Mods/C/*.hs
+                    tests/regression/*.hs
+                    src/lib/*.hs
+                    src/lib/ReWire/*.hs
 
 -- Constraint on the version of Cabal needed to build this package.
-cabal-version:       >=1.10
+cabal-version     :  >=1.10
 
 library
+  hs-source-dirs  : src
+                  , src/lib
   build-depends   : ghc >=7.10
                   , base >=4.8 && < 5
                   , bytestring >= 0.10
@@ -61,6 +65,7 @@ library
                   , directory >= 1.2 && < 1.4
                   , exceptions >= 0.8 && < 0.11
                   , filepath >= 1.3 && < 1.5
+                  , hashable >= 1.2 && < 1.3
                   , haskell-src-exts >= 1.17 && < 1.22
                   , mtl >= 2.2.1
                   , pretty >= 1.1
@@ -70,12 +75,12 @@ library
                   , unbound-generics >= 0.3
                   , monad-resumption >= 0.1.4.0
   default-language: Haskell2010
-  ghc-options:      -Wall
+  ghc-options     : -Wall
                     -fno-warn-name-shadowing
                     -funbox-strict-fields
                     -O2
 
-  other-modules:    Paths_ReWire
+  other-modules   : Paths_ReWire
                     ReWire.Annotation
                     ReWire.Core.Mangle
                     ReWire.Core.Syntax
@@ -101,36 +106,41 @@ library
                     ReWire.Pretty
                     ReWire.SYB
                     ReWire.Unbound
+                    ReWire.Prelude
 
-  exposed-modules:  ReWire.FrontEnd
+  exposed-modules : ReWire.FrontEnd
                     ReWire.Main
+                    ReWire
+                    ReWire.Bits
 
 executable rwc
-  hs-source-dirs:   rwc
-  main-is:          Main.hs
-  build-depends:    ReWire, base >= 4.8 && < 5
+  hs-source-dirs  : src/rwc
+  main-is         : Main.hs
+  build-depends   : ReWire, base >= 4.8 && < 5
   default-language: Haskell2010
-  ghc-options:      -Wall
+  ghc-options     : -Wall
                     -O2
                     -funbox-strict-fields
 
 test-suite rwc-test
-  type:             exitcode-stdio-1.0
-  hs-source-dirs:   test
-  main-is:          TestMain.hs
+  hs-source-dirs  : src/rwc-test
+  type            : exitcode-stdio-1.0
+  main-is         : Main.hs
   build-depends   : Cabal >= 1.10
                   , HUnit >= 1.2.5 && < 1.7
                   , base >= 4.6 && < 5
                   , directory >= 1.2 && < 1.4
+                  , process >= 1.5 && < 1.7
+                  , filepath >= 1.3 && < 1.5
                   , test-framework >= 0.8 && < 0.9
                   , test-framework-hunit >= 0.3.0.2 && < 0.4
                   , ReWire
-  other-modules:    Paths_ReWire
+  other-modules   : Paths_ReWire
   default-language: Haskell2010
-  ghc-options:      -Wall
+  ghc-options     : -Wall
                     -O2
                     -funbox-strict-fields
 
 source-repository head
-  type:             git
-  location:         git://github.com/mu-chaco/ReWire.git
+  type            : git
+  location        : git://github.com/mu-chaco/ReWire.git
