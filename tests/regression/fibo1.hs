@@ -1,13 +1,18 @@
 import ReWire
 import ReWire.Bits
 
+begin :: ReT Bit W8 (StT W8 (StT W8 I)) ()
+begin = lift (put zeroW8) >>= \zz ->
+        lift (lift (put oneW8)) >>= \zz ->
+        sig
+
 sig :: ReT Bit W8 (StT W8 (StT W8 I)) ()
 sig = do
       r0 <- lift get
       i <- signal r0
       case i of
             C -> sig
-            S -> incr
+            S  -> incr
 
 incr :: ReT Bit W8 (StT W8 (StT W8 I)) ()
 incr = do
@@ -18,6 +23,6 @@ incr = do
       sig
 
 start :: ReT Bit W8 I ()
-start = extrude (extrude sig zeroW8) oneW8
+start = extrude (extrude begin zeroW8) oneW8
 
 main = undefined

@@ -1,3 +1,5 @@
+import ReWire
+
 data Ip = Ip
 data Op = Op
 data So
@@ -10,3 +12,5 @@ incr = do
 
 start :: ReT Ip Op I ()
 start = extrude incr ()
+
+main = undefined

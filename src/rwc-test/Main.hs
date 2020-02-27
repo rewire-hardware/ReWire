@@ -21,6 +21,7 @@ import Paths_ReWire (getDataFileName)
 
 data Flag = FlagV
           | FlagNoGhdl
+          | FlagNoGhc
           | FlagNoDTypes
           | FlagChecker String
       deriving (Eq, Show)
@@ -29,6 +30,7 @@ options :: [OptDescr Flag]
 options =
        [ Option ['v'] ["verbose"]      (NoArg FlagV)                  "More verbose output."
        , Option []    ["no-ghdl"]      (NoArg FlagNoGhdl)             "Disable verification of output VHDL with 'ghdl -s' (which requires 'ghdl' in $PATH)."
+       , Option []    ["no-ghc"]       (NoArg FlagNoGhdl)             "Disable running tests through ghc."
        , Option []    ["no-dtypes"]    (NoArg FlagNoDTypes)           "Disable extra type-checking passes."
        , Option []    ["vhdl-checker"] (ReqArg FlagChecker "command") "Set the command to use for checking generated VHDL (default: 'ghdl -s')."
        ]
@@ -40,6 +42,9 @@ testCompiler flags fn = [testCase (takeBaseName fn) $ do
       ] ++ if FlagNoGhdl `elem` flags then [] else [testCase (takeBaseName fn ++ " (" ++ checker ++ ")") $ do
             setCurrentDirectory $ takeDirectory fn
             callCommand $ checker ++ " " ++ fn -<.> "vhdl"
+      ] ++ if FlagNoGhc `elem` flags then [] else [testCase (takeBaseName fn ++ " (stack ghc)") $ do
+            setCurrentDirectory $ takeDirectory fn
+            callCommand $ "stack ghc " ++ fn
       ]
       where extraFlags :: [String]
             extraFlags = if FlagNoDTypes `elem` flags then [] else ["--dtypes"]

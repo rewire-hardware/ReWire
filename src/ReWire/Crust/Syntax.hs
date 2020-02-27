@@ -46,6 +46,7 @@ import qualified ReWire.Unbound as UB (fv, fvAny)
 import Control.DeepSeq (NFData (..), deepseq)
 import Data.Data (Typeable, Data (..))
 import Data.List (intersperse)
+import Data.Hashable (Hashable)
 import GHC.Generics (Generic)
 import Text.PrettyPrint
       ( Doc, text, nest, hsep, parens, doubleQuotes
@@ -78,11 +79,15 @@ mparen :: (Pretty a, Parenless a) => a -> Doc
 mparen a = if parenless a then pretty a else parens $ pretty a
 
 newtype DataConId = DataConId String
-      deriving (Generic, Typeable, Data)
+      deriving (Eq, Generic, Typeable, Data)
 newtype TyConId = TyConId String
-      deriving (Generic, Typeable, Data)
+      deriving (Eq, Generic, Typeable, Data)
 newtype FieldId  = FieldId String
-      deriving (Generic, Typeable, Data)
+      deriving (Eq, Generic, Typeable, Data)
+
+instance Hashable DataConId
+instance Hashable TyConId
+instance Hashable FieldId
 
 data DataCon = DataCon Annote (Name DataConId) (Embed Poly)
       deriving (Generic, Eq, Show, Typeable, Data)
@@ -104,6 +109,8 @@ data Kind = KStar
 
 infixr `KFun`
 
+instance Hashable Kind
+
 instance Alpha Kind
 
 instance Subst Kind Kind where
@@ -121,6 +128,8 @@ instance Pretty Kind where
 
 newtype Poly = Poly (Bind [Name Ty] Ty)
       deriving (Generic, Show, Typeable, Data)
+
+instance Hashable Poly
 
 instance NFData Poly
 
@@ -147,6 +156,8 @@ data Ty = TyApp Annote Ty Ty
         | TyVar Annote Kind (Name Ty)
         | TyBlank Annote
       deriving (Eq, Ord, Generic, Typeable, Data, Show)
+
+instance Hashable Ty
 
 instance Alpha Ty
 
@@ -197,6 +208,8 @@ data Exp = App        Annote Exp Exp
          | NativeVHDL Annote !String Exp
          | Error      Annote Ty !String
       deriving (Generic, Show, Typeable, Data)
+
+instance Hashable Exp
 
 instance Alpha Exp
 
@@ -281,7 +294,9 @@ instance Pretty Exp where
 
 data Pat = PatCon Annote (Embed Ty) (Embed (Name DataConId)) [Pat]
          | PatVar Annote (Embed Ty) (Name Exp)
-            deriving (Show, Generic, Typeable, Data)
+            deriving (Eq, Show, Generic, Typeable, Data)
+
+instance Hashable Pat
 
 instance Alpha Pat
 
@@ -313,7 +328,9 @@ instance Pretty Pat where
 
 data MatchPat = MatchPatCon Annote Ty (Name DataConId) [MatchPat]
               | MatchPatVar Annote Ty
-                 deriving (Show, Generic, Typeable, Data)
+      deriving (Eq, Show, Generic, Typeable, Data)
+
+instance Hashable MatchPat
 
 instance Alpha MatchPat
 
@@ -355,6 +372,8 @@ data Defn = Defn
       , defnBody   :: Embed (Bind [Name Exp] Exp)
       } deriving (Generic, Show, Typeable, Data)
 
+instance Hashable Defn
+
 instance Alpha Defn
 
 instance NFData Defn
@@ -377,7 +396,7 @@ data DataDefn = DataDefn
       , dataName   :: Name TyConId
       , dataKind   :: Kind
       , dataCons   :: [DataCon]
-      } deriving (Generic, Show, Typeable, Data)
+      } deriving (Eq, Generic, Show, Typeable, Data)
 
 instance Alpha DataDefn
 
@@ -463,3 +482,7 @@ instance Pretty (Name a) where
 
 instance Pretty a => Pretty (Embed a) where
       pretty (Embed a) = pretty a
+
+instance Hashable e => Hashable (Embed e)
+instance Hashable e => Hashable (Name e)
+instance (Hashable a, Hashable b) => Hashable (Bind a b)

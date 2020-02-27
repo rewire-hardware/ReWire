@@ -1,78 +1,5 @@
-data Bit = Zero | One
-data W8  = W8 Bit Bit Bit Bit Bit Bit Bit Bit
-data W32 = W32 Bit Bit Bit Bit Bit Bit Bit Bit
-               Bit Bit Bit Bit Bit Bit Bit Bit
-               Bit Bit Bit Bit Bit Bit Bit Bit
-               Bit Bit Bit Bit Bit Bit Bit Bit
-
-zeroW32 :: W32
-zeroW32 = W32 Zero Zero Zero Zero Zero Zero Zero Zero
-              Zero Zero Zero Zero Zero Zero Zero Zero
-              Zero Zero Zero Zero Zero Zero Zero Zero
-              Zero Zero Zero Zero Zero Zero Zero Zero
-
-
-rotateR2,rotateR6,rotateR7,rotateR11,rotateR13,rotateR17,rotateR18,rotateR19,rotateR22,rotateR25 :: W32 -> W32
-rotateR2 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
-              b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           = (W32 b30 b31 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13
-                  b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29)
-
-rotateR6 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
-              b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           =  (W32 b26 b27 b28 b29 b30 b31 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 
-                   b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25)
-
-rotateR7 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
-              b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           =  (W32 b25 b26 b27 b28 b29 b30 b31 b0 b1 b2 b3 b4 b5 b6 b7 b8 
-                   b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24)
-
-rotateR11 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
-               b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           = (W32 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31 b0 b1 b2 b3 b4 b5 
-                  b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20)
-
-rotateR13 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
-               b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           = (W32 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31 b0 b1 b2 b3 
-                  b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18)
-
-rotateR17 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
-               b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           = (W32 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31  
-                  b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14)
-
-rotateR18 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
-               b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           = (W32 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30
-                  b31 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13)
-
-rotateR19 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
-               b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           = (W32 b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29
-                  b30 b31 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12)
-
-rotateR22 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
-               b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           = (W32 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26
-                  b27 b28 b29 b30 b31 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9)
-
-rotateR25 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
-               b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           = (W32 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23
-                  b24 b25 b26 b27 b28 b29 b30 b31 b0 b1 b2 b3 b4 b5 b6)
-
-shiftR3,shiftR10 :: W32 -> W32
-shiftR3 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
-             b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           = (W32 Zero Zero Zero b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12
-                  b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28)
-
-shiftR10 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
-              b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-            = (W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero b0 b1 b2 b3 b4 b5
-                   b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21)
+import ReWire
+import ReWire.Bits
 
 -------
 -- Tests 1-4.
@@ -82,32 +9,30 @@ shiftR10 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
 
 test1 :: W32 -> W32 -> Bit
 -- test1 i s = let tot = w32sTodouble s i in bool2bit $ ckrange 0 86401 tot
-{-# INLINE test1 #-}
 test1 = nativeVhdl "test1" test1
 
 test2 :: W32 -> W32 -> Bit
 -- test2 i _ = let (doyb,utcy1) = w32Tow16s i in bool2bit $ ckrange 1 366 doyb && ckrange 1993 9999 utcy1
-{-# INLINE test2 #-}
 test2 = nativeVhdl "test2" test2
 
 test3 :: W32 -> W32 -> Bit
 -- test3 i _ = let (pn,pacsrc) = w32Tow16s i in
 --             let (pactyp,_)  = w16Tow8s pn in
 --              bool2bit $ ckrange 0 8 pactyp && ckrange 0 101 pacsrc
-{-# INLINE test3 #-}
 test3 = nativeVhdl "test3" test3
 
 test4 :: W32 -> W32 -> Bit
 -- test4 i _ = let (_,mtver) = w32Tow16s i  in
 --             let (mt,ver)  = w16Tow8s mtver in
 --              bool2bit $ mt==1 && ver==6
-{-# INLINE test4 #-}
 test4 = nativeVhdl "test4" test4
 
 data YN a = Yes a | No
 
 start :: ReT (YN W32) (YN Bit) I (YN W32)
 start = extrude filterOD19 zeroW32
+
+main = undefined
 
 filterOD19 :: ReT (YN W32) (YN Bit) (StT W32 I) (YN W32)
 filterOD19 = word0 No
@@ -1143,166 +1068,3 @@ word126 No          = do
                       i <- signal No
                       word126 i
 
-
-{-
-filterOD19 :: YN W32 -> ReT (YN W32) (YN Bit) (StT W32 I) (YN W32)
-filterOD19 (Yes i) = do
-                       lift (put i)
-                       i <- signal No
-                       word1 i
-filterOD19 No      = do
-                       i <- signal No
-                       filterOD19 i
-
-store :: (YN W32 -> ReT (YN W32) (YN Bit) (StT W32 I) (YN W32)) ->
-         YN W32                                                 ->
-         ReT (YN W32) (YN Bit) (StT W32 I) (YN W32)
-store k (Yes i) = do
-                    lift (put i)
-                    i <- signal No
-                    k i
-store k No      = do
-                    i <- signal No
-                    store k i
-
-{-# INLINE word1 #-}
-word1 :: YN W32 -> ReT (YN W32) (YN Bit) (StT W32 I) (YN W32) 
-word1 = ignore
-
-ignore :: YN W32 -> ReT (YN W32) (YN Bit) (StT W32 I) (YN W32) 
-ignore (Yes i)     = do
-                       i <- signal No
-                       filterOD19 i
-ignore No          = do
-                       i <- signal No
-                       ignore i
-
-filterOD19 w32 = store w32   >>= -- word0
-                 check1 >>= -- word1
-                 store       >>= -- word2
-                 check1 >>= -- word3
---                 check test2 >>= -- word4
---                 check test3 >>= -- word5
---                 check test4 >>= -- word6
-                 ignore      >>= -- word7
-                 ignore      >>= -- word8
-                 ignore      >>= -- word9
-                 ignore      >>= -- word10
-                 ignore      >>= -- word11
-                 ignore      >>= -- word12
-                 ignore      >>= -- word13
-                 ignore      >>= -- word14
-                 ignore      >>= -- word15
-                 ignore      >>= -- word16
-                 ignore      >>= -- word17
-                 ignore      >>= -- word18
-                 ignore      >>= -- word19
-                 ignore      >>= -- word20
-                 ignore      >>= -- word21
-                 ignore      >>= -- word22
-                 ignore      >>= -- word23
-                 ignore      >>= -- word24
-                 ignore      >>= -- word25
-                 ignore      >>= -- word26
-                 ignore      >>= -- word27
-                 ignore      >>= -- word28
-                 ignore      >>= -- word29
-                 ignore      >>= -- word30
-                 ignore      >>= -- word31
-                 ignore      >>= -- word32
-                 ignore      >>= -- word33
-                 ignore      >>= -- word34
-                 ignore      >>= -- word35
-                 ignore      >>= -- word36
-                 ignore      >>= -- word37
-                 ignore      >>= -- word38
-                 ignore      >>= -- word39
-                 ignore      >>= -- word40
-                 ignore      >>= -- word41
-                 ignore      >>= -- word42
-                 ignore      >>= -- word43
-                 ignore      >>= -- word44
-                 ignore      >>= -- word45
-                 ignore      >>= -- word46
-                 ignore      >>= -- word47
-                 ignore      >>= -- word48
-                 ignore      >>= -- word49
-                 ignore      >>= -- word50
-                 ignore      >>= -- word51
-                 ignore      >>= -- word52
-                 ignore      >>= -- word53
-                 ignore      >>= -- word54
-                 ignore      >>= -- word55
-                 ignore      >>= -- word56
-                 ignore      >>= -- word57
-                 ignore      >>= -- word58
-                 ignore      >>= -- word59
-                 ignore      >>= -- word60
-                 ignore      >>= -- word61
-                 ignore      >>= -- word62
-                 ignore      >>= -- word63
-                 ignore      >>= -- word64
-                 ignore      >>= -- word65
-                 ignore      >>= -- word66
-                 ignore      >>= -- word67
-                 ignore      >>= -- word68
-                 ignore      >>= -- word69
-                 ignore      >>= -- word70
-                 ignore      >>= -- word71
-                 ignore      >>= -- word72
-                 ignore      >>= -- word73
-                 ignore      >>= -- word74
-                 ignore      >>= -- word75
-                 ignore      >>= -- word76
-                 ignore      >>= -- word77
-                 ignore      >>= -- word78
-                 ignore      >>= -- word79
-                 ignore      >>= -- word80
-                 ignore      >>= -- word81
-                 ignore      >>= -- word82
-                 ignore      >>= -- word83
-                 ignore      >>= -- word84
-                 ignore      >>= -- word85
-                 ignore      >>= -- word86
-                 ignore      >>= -- word87
-                 ignore      >>= -- word88
-                 ignore      >>= -- word89
-                 ignore      >>= -- word90
-                 ignore      >>= -- word91
-                 ignore      >>= -- word92
-                 ignore      >>= -- word93
-                 ignore      >>= -- word94
-                 ignore      >>= -- word95
-                 ignore      >>= -- word96
-                 ignore      >>= -- word97
-                 ignore      >>= -- word98
-                 ignore      >>= -- word99
-                 ignore      >>= -- word100
-                 ignore      >>= -- word101
-                 ignore      >>= -- word102
-                 ignore      >>= -- word103
-                 ignore      >>= -- word104
-                 ignore      >>= -- word105
-                 ignore      >>= -- word106
-                 ignore      >>= -- word107
-                 ignore      >>= -- word108
-                 ignore      >>= -- word109
-                 ignore      >>= -- word110
-                 ignore      >>= -- word111
-                 ignore      >>= -- word112
-                 ignore      >>= -- word113
-                 ignore      >>= -- word114
-                 ignore      >>= -- word115
-                 ignore      >>= -- word116
-                 ignore      >>= -- word117
-                 ignore      >>= -- word118
-                 ignore      >>= -- word119
-                 ignore      >>= -- word120
-                 ignore      >>= -- word121
-                 ignore      >>= -- word122
-                 ignore      >>= -- word123
-                 ignore      >>= -- word124
-                 ignore      >>= -- word125
-                 ignore      >>= -- word126
-                 filterOD19
--}

@@ -23,14 +23,14 @@ import Paths_ReWire (getDataFileName)
 options :: [OptDescr Flag]
 options =
        [ Option ['v'] ["verbose"]           (NoArg FlagV)       "More verbose output."
-       , Option []    ["dhask1" , "dpass1"] (NoArg FlagDHask1)  "Dump pass 1: pre-desugar haskell source."
-       , Option []    ["dhask2" , "dpass2"] (NoArg FlagDHask2)  "Dump pass 2: post-desugar haskell source."
-       , Option []    ["dcrust1", "dpass3"] (NoArg FlagDCrust1) "Dump pass 3: post-desugar crust source."
-       , Option []    ["dcrust2", "dpass4"] (NoArg FlagDCrust2) "Dump pass 4: post-inlining crust source."
-       , Option []    ["dcrust3", "dpass5"] (NoArg FlagDCrust3) "Dump pass 5: pre-purify crust source."
-       , Option []    ["dcrust4", "dpass6"] (NoArg FlagDCrust4) "Dump pass 6: post-purify crust source."
-       , Option []    ["dcrust5", "dpass7"] (NoArg FlagDCrust5) "Dump pass 7: post-second-lambda-lifting crust source."
-       , Option []    ["dcore"  , "dpass8"] (NoArg FlagDCore)   "Dump pass 8: core source."
+       , Option []    ["dpass1", "dhask1" ] (NoArg FlagDHask1)  "Dump pass 1: pre-desugar haskell source."
+       , Option []    ["dpass2", "dhask2" ] (NoArg FlagDHask2)  "Dump pass 2: post-desugar haskell source."
+       , Option []    ["dpass3", "dcrust1"] (NoArg FlagDCrust1) "Dump pass 3: post-desugar crust source."
+       , Option []    ["dpass4", "dcrust2"] (NoArg FlagDCrust2) "Dump pass 4: post-inlining crust source."
+       , Option []    ["dpass5", "dcrust3"] (NoArg FlagDCrust3) "Dump pass 5: pre-purify crust source."
+       , Option []    ["dpass6", "dcrust4"] (NoArg FlagDCrust4) "Dump pass 6: post-purify crust source."
+       , Option []    ["dpass7", "dcrust5"] (NoArg FlagDCrust5) "Dump pass 7: post-second-lambda-lifting crust source."
+       , Option []    ["dpass8", "dcore"  ] (NoArg FlagDCore)   "Dump pass 8: core source."
        , Option []    ["dtypes"]            (NoArg FlagDTypes)  "Enable extra typechecking after various IR transformations."
        , Option ['o'] []                    (ReqArg FlagO "filename.vhd")
             "Name for VHDL output file."

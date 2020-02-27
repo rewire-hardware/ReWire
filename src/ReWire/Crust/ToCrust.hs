@@ -153,28 +153,21 @@ transDef rn tys inls defs = \ case
       PatBind l (PVar _ (void -> x)) (UnGuardedRhs _ e) Nothing -> do
             let x' = s2n $ rename Value rn x
             case lookup x tys of
+                  -- TODO(chathhorn): hackily elide definition of primitives. Allows providing alternate defs for GHC compat.
                   Just t -> do
-                        -- TODO(chathhorn): hackily elide definition of primitives. Allows providing alternate defs for GHC compat.
-                        e' <- if M.isPrim x' then pure $ M.Error (ann e) t $ "Prim: " ++ n2s x' else transExp rn e
+                        e' <- if M.isPrim x' && x `notElem` inls then pure $ M.Error (ann e) t $ "Prim: " ++ n2s x' else transExp rn e
                         pure $ M.Defn l x' (M.fv t |-> t) (x `elem` inls) (Embed (bind [] e')) : defs
                   Nothing -> do
-                        -- TODO(chathhorn): so ugly
-                        e' <- if M.isPrim x' then pure $ M.Error (ann e) (M.TyBlank l) $ "Prim: " ++ n2s x' else transExp rn e
-                        if x `elem` inls
-                              then pure $ M.Defn l x' ([] |-> M.TyBlank l) True (Embed (bind [] e')) : defs
-                              else if M.isPrim x'
-                                    -- This is specifically for error, which we
-                                    -- need to type differently from GHC.error (we have no String).
-                                    then pure $ M.Defn l x' (errTy l) True (Embed (bind [] e')) : defs
-                                    else failAt l "No type signature on non-inline toplevel definition"
+                        e' <- if M.isPrim x' then pure $ M.Error (ann e) (M.TyBlank $ ann e) $ "Prim: " ++ n2s x' else transExp rn e
+                        -- TODO(chathhorn): would like to raise a warning here about lack of top-level type sig
+                        -- (as opposed to an error).
+                        pure $ M.Defn l x' ([] |-> M.TyBlank l) (x `elem` inls) (Embed (bind [] e')) : defs
       DataDecl {}                                               -> pure defs -- TODO(chathhorn): elide
       InlineSig {}                                              -> pure defs -- TODO(chathhorn): elide
       TypeSig {}                                                -> pure defs -- TODO(chathhorn): elide
       InfixDecl {}                                              -> pure defs -- TODO(chathhorn): elide
       TypeDecl {}                                               -> pure defs -- TODO(chathhorn): elide
       d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " ++ show (void d)
-      where errTy :: Annote -> Embed M.Poly
-            errTy l = [s2n "a", s2n "b"] |-> ((M.TyVar l M.KStar (s2n "a")) `M.arr` (M.TyVar l M.KStar (s2n "b")))
 
 transTyVar :: MonadError AstError m => Annote -> S.TyVarBind () -> m (Name M.Ty)
 transTyVar l = \ case
@@ -322,8 +315,8 @@ extendWithGlobs = \ case
 getImps :: Annotation a => S.Module a -> [ImportDecl a]
 getImps = \ case
       -- TODO(chathhorn): hacky. The prim/ReWire module really shouldn't depend on Prelude.
-      S.Module l (Just (ModuleHead _ (ModuleName _ "ReWire") _ _)) _ _ _            -> addMod l "ReWire.Prelude" [] -- all imports ignored in the Prim module.
-      S.Module _ (Just (ModuleHead _ (ModuleName _ "ReWire.Prelude") _ _)) _ imps _ -> filter (not . isMod "Prelude") imps -- TODO(chathhorn) gah!
+      S.Module _ (Just (ModuleHead _ (ModuleName _ "ReWire") _ _)) _ _ _            -> [] -- all imports ignored in the Prim module.
+      S.Module l (Just (ModuleHead _ (ModuleName _ "ReWire.Prelude") _ _)) _ imps _ -> addMod l "ReWire" $ filter (not . isMod "Prelude") imps -- TODO(chathhorn) gah!
       S.Module l _ _ imps _                                                         -> addMod l "ReWire.Prelude" $ addMod l "ReWire" $ filter (not . isMod "Prelude") imps
       S.XmlPage {}                                                                  -> []
       S.XmlHybrid l _ _ imps _ _ _ _ _                                              -> addMod l "ReWire.Prelude" $ addMod l "ReWire" $ filter (not . isMod "Prelude") imps

@@ -418,9 +418,9 @@ desugarDos :: (MonadCatch m, MonadError AstError m) => Transform (FreshT m)
 desugarDos = transform $ \ (Do l stmts) -> transDo l stmts
       where transDo :: (MonadCatch m, MonadError AstError m) => Annote -> [Stmt Annote] -> FreshT m (Exp Annote)
             transDo l = \ case
-                  Generator l' p e : stmts -> App l' (App l' (Var l' $ UnQual l' $ Ident l' ">>=") e) . Lambda l' [p] <$> transDo l stmts
+                  Generator l' p e : stmts -> App l' (App l' (Var l' $ UnQual l' $ Symbol l' ">>=") e) . Lambda l' [p] <$> transDo l stmts
                   [Qualifier _ e]          -> pure e
-                  Qualifier l' e : stmts   -> App l' (App l' (Var l' $ UnQual l' $ Ident l' ">>=") e) . Lambda l' [PWildCard l'] <$> transDo l stmts
+                  Qualifier l' e : stmts   -> App l' (App l' (Var l' $ UnQual l' $ Symbol l' ">>=") e) . Lambda l' [PWildCard l'] <$> transDo l stmts
                   LetStmt l' binds : stmts -> Let l' binds <$> transDo l stmts
                   s : _                    -> failAt (ann s) $ "Unsupported syntax in do-block: " ++ show (() <$ s)
                   []                       -> failAt l "Ill-formed do-block"

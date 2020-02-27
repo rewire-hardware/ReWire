@@ -1,58 +1,53 @@
-data Bit = Zero | One
-
-eqb :: Bit -> Bit -> Bool
-eqb One  One  = True
-eqb Zero Zero = True
-eqb _    _    = False
+import ReWire
+import ReWire.Bits
 
 eqBool :: Bool -> Bool -> Bool
 eqBool True  True  = True
 eqBool False False = True
 eqBool _     _     = False
 
-eq :: (Bit, Bit, Bit) -> (Bit, Bit, Bit) -> Bool
-(x, y, z) `eq` (x', y', z')
+eq' :: (Bit, Bit, Bit) -> (Bit, Bit, Bit) -> Bool
+(x, y, z) `eq'` (x', y', z')
       | x `eqb` x' = case () of
             () | y `eqb` y' -> case () of
                   () | z `eqb` z' -> True
-                     | True       -> False
-               | True       -> False
-      | True       = False
-
--- FunBind guard.
-odd :: (Bit, Bit, Bit) -> Bool
-odd bits
-      | bits `eq` (Zero, Zero, One)  = True
-      | bits `eq` (Zero, One, One)   = True
-      | bits `eq` (One, Zero, One)   = True
-      | bits `eq` (One, One, One)    = True
+                     | True         -> False
+               | True               -> False
       | True                         = False
 
--- Alt guard.
+-- FunBind guard.
 odd' :: (Bit, Bit, Bit) -> Bool
-odd' x = case x of
+odd' bits
+      | bits `eq'` (C, C, S) = True
+      | bits `eq'` (C, S, S) = True
+      | bits `eq'` (S, C, S) = True
+      | bits `eq'` (S, S, S) = True
+      | True                 = False
+
+-- Alt guard.
+odd'' :: (Bit, Bit, Bit) -> Bool
+odd'' x = case x of
       (_, _, z)
-            | z `eqb` One  -> True
-            | z `eqb` Zero -> False
+            | z `eqb` S -> True
+            | z `eqb` C -> False
             | True      -> False
       _ -> False
 
 -- PatBind guard (??).
 nonsense :: Bool
 nonsense
-      | odd a `eqBool` odd' b = False
-      | odd b `eqBool` odd' b = True
-      | True                  = False
+      | odd' a `eqBool` odd'' b = False
+      | odd' b `eqBool` odd'' b = True
+      | True                    = False
       where a :: (Bit, Bit, Bit)
-            a = (One, One, Zero)
+            a = (S, S, C)
 
             b :: (Bit, Bit, Bit)
-            b = (One, Zero, One)
-
-main :: ReT Bool Bool I ()
-main = do
-  signal nonsense
-  main
+            b = (S, C, S)
 
 start :: ReT Bool Bool I ()
-start = main
+start = do
+  signal nonsense
+  start
+
+main = undefined

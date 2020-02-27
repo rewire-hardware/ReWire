@@ -16,6 +16,7 @@ import ReWire.Unbound (Alpha (..))
 import Control.DeepSeq (NFData (..))
 import Control.Monad.Identity (Identity(..))
 import Data.Data (Typeable,Data(..))
+import Data.Hashable (Hashable (..))
 import Language.Haskell.Exts.ExactPrint (ExactP)
 import Language.Haskell.Exts.SrcLoc
       ( SrcLoc, SrcInfo (..), SrcSpanInfo (..), SrcSpan (..)
@@ -102,6 +103,10 @@ instance Alpha Annote where
 
 instance NFData Annote where
       rnf _ = () -- Probably not ideal.
+
+-- TODO(chathhorn): should implement this for real.
+instance Hashable Annote where
+      hashWithSalt s _ = s
 
 toSrcSpanInfo :: Annote -> SrcSpanInfo
 toSrcSpanInfo = \ case

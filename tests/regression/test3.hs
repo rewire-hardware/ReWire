@@ -1,17 +1,18 @@
-data Bit = Zero | One
-
-data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
+import ReWire
+import ReWire.Bits
 
 tick :: ReT Bit W8 (StT W8 I) Bit
 tick = lift get >>= \ x -> signal x
 
-main :: ReT Bit W8 (StT W8 I) ()
-main = do
+go :: ReT Bit W8 (StT W8 I) ()
+go = do
       b <- tick
       case b of
-            One  -> main
-            Zero -> main
+            S -> go
+            C -> go
 
 
 start :: ReT Bit W8 I ()
-start = extrude main (W8 Zero Zero Zero Zero Zero Zero Zero Zero)
+start = extrude go zeroW8
+
+main = undefined

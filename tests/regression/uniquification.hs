@@ -1,3 +1,5 @@
+import ReWire
+
 data G a b c = G a | Z b | D c
 data Pup a b c d = Q d | R d d | Zuh a b c d
 
@@ -7,10 +9,9 @@ guppy c = let c = c in
              c -> G c
              d -> G d
 
-main :: ReT (Pup () () () ()) (G () () ()) I ()
-main = do
-  signal $ Z ()
-  main
-
 start :: ReT (Pup () () () ()) (G () () ()) I ()
-start = main
+start = do
+  signal $ Z ()
+  start
+
+main = undefined

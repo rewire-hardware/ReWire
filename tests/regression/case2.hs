@@ -1,8 +1,12 @@
+import ReWire
+
 data A = A
 data B = B
 
 data IP = IP
 data OP = OP
+
+main = undefined
 
 start :: ReT IP OP I ()
 start = extrude (extrude (extrude loop A) B) A

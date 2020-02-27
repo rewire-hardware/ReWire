@@ -78,7 +78,7 @@ kcTy = \ case
                   maybe (failAt an $ "Unknown type constructor: " ++ n2s i) pure
                         $ Map.lookup i cas
       TyVar _ k _     -> pure k
-      TyBlank an      -> failAt an "Something went wrong in the kind checker"
+      TyBlank _       -> freshkv
 
 -- | Only needed for debugging.
 -- kcDataCon :: (Fresh m, MonadError AstError m) => DataCon -> KCM m ()

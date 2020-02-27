@@ -1,120 +1,44 @@
-{-
----------------------------------------------
---- ReWire Fig Leaf
----------------------------------------------
+import ReWire
+import ReWire.Bits
 
-import Data.Bits
-import Data.Word
-import Data.Char
-import Control.Monad.Identity
-import Control.Monad.State
-import Control.Monad.Resumption.Reactive
-
-type ReT = ReacT
-type StT = StateT
-type I   = Identity
-
-extrude :: Monad m => ReT i o (StT s m) a -> s -> ReT i o m a
-extrude = undefined
-
-nativeVhdl :: String -> a -> a
-nativeVhdl = flip const
-
----------------------------------------------
---- End of Fig Leaf
----------------------------------------------
--}
-
--- end kludge
-data Bit = Zero | One
-data W8  = W8 Bit Bit Bit Bit Bit Bit Bit Bit
 data Inputs = Inputs W8 Bit Bit           -- (dataIn,rstIn,intIn)
 data Outputs = Outputs W8 W8 Bit Bit      -- (addrOut,dataOut,weOut,iackOut)
 data CPUState = CPUState Inputs Outputs   -- (inputs,outputs) (0-9,10-27)
                           Bit Bit Bit W8  -- (zFlag,cFlag,ieFlag,pc) (28,29,30,31-38)
                           Bit Bit W8      -- (zsFlag,csFlag,pcSave) (39,40,41-48)
                           W8 W8 W8 W8     -- (r0,r1,r2,r3) (49-56,57-64,65-72,73-80)
+
 data Register = R0 | R1 | R2 | R3
 
-notBit   :: Bit -> Bit
-{-# INLINE notBit #-}
-notBit   =  nativeVhdl "prim_notBit" notBit
-eqBit    :: Bit -> Bit -> Bit
-{-# INLINE eqBit    #-}
-eqBit    =  nativeVhdl "prim_eqBit" eqBit
-andBit   :: Bit -> Bit -> Bit
-{-# INLINE andBit   #-}
-andBit   =  nativeVhdl "prim_andBit" andBit
-orBit    :: Bit -> Bit -> Bit
-{-# INLINE orBit    #-}
-orBit    =  nativeVhdl "prim_orBit" orBit
-xorBit   :: Bit -> Bit -> Bit
-{-# INLINE xorBit   #-}
-xorBit   =  nativeVhdl "prim_xorBit" xorBit
-
-zeroW8   :: W8
-{-# INLINE zeroW8   #-}
-zeroW8   =  nativeVhdl "prim_zeroW8" zeroW8
-oneW8    :: W8
-{-# INLINE oneW8    #-}
-oneW8    =  nativeVhdl "prim_oneW8" oneW8
-notW8    :: W8 -> W8
-{-# INLINE notW8    #-}
-notW8    =  nativeVhdl "prim_notW8" notW8
-andW8    :: W8 -> W8 -> W8
-{-# INLINE andW8    #-}
-andW8    =  nativeVhdl "prim_andW8" andW8
-orW8     :: W8 -> W8 -> W8
-{-# INLINE orW8     #-}
-orW8     =  nativeVhdl "prim_orW8" orW8
-xorW8    :: W8 -> W8 -> W8
-{-# INLINE xorW8    #-}
-xorW8    =  nativeVhdl "prim_xorW8" xorW8
-eqW8     :: W8 -> W8 -> Bit
-{-# INLINE eqW8     #-}
-eqW8     =  nativeVhdl "prim_eqW8" eqW8
-rolW8    :: W8 -> W8
-{-# INLINE rolW8    #-}
-rolW8    =  nativeVhdl "prim_rolW8" rolW8
-rorW8    :: W8 -> W8
-{-# INLINE rorW8    #-}
-rorW8    =  nativeVhdl "prim_rorW8" rorW8
 plusCW8  :: W8 -> W8 -> Bit -> (Bit,W8)
-{-# INLINE plusCW8  #-}
 plusCW8  =  nativeVhdl "prim_plusCW8" plusCW8
-plusW8   :: W8 -> W8 -> (Bit,W8)
-{-# INLINE plusW8   #-}
-plusW8   =  nativeVhdl "prim_plusW8" plusW8
-negW8    :: W8 -> W8 -> W8
-{-# INLINE negW8    #-}
-negW8    =  nativeVhdl "prim_negW8" negW8
+
 minusCW8 :: W8 -> W8 -> Bit -> (Bit,W8)
-{-# INLINE minusCW8 #-}
 minusCW8 =  nativeVhdl "prim_minusCW8" minusCW8
+
 shlCW8   :: W8 -> Bit -> (Bit,W8)
-{-# INLINE shlCW8   #-}
 shlCW8   =  nativeVhdl "prim_shlCW8" shlCW8
+
 shrCW8   :: W8 -> Bit -> (Bit,W8)
-{-# INLINE shrCW8   #-}
 shrCW8   =  nativeVhdl "prim_shrCW8" shrCW8
+
 msbW8    :: W8 -> Bit
-{-# INLINE msbW8    #-}
 msbW8    =  nativeVhdl "prim_msbW8" msbW8
+
 lsbW8    :: W8 -> Bit
-{-# INLINE lsbW8    #-}
 lsbW8    =  nativeVhdl "prim_lsbW8" lsbW8
 
 mkReg :: Bit -> Bit -> Register
-mkReg  Zero  Zero = R0
-mkReg  Zero  One  = R1
-mkReg  One   Zero = R2
-mkReg  One   One  = R3
+mkReg  C  C = R0
+mkReg  C  S  = R1
+mkReg  S   C = R2
+mkReg  S   S  = R3
 
 {-# INLINE when #-}
 when :: Monad m => Bit -> m () -> m ()
 when = \ b -> \ m -> case b of
-                       One  -> m
-                       Zero -> return ()
+                       S  -> m
+                       C -> return ()
 
 getState :: ReT Inputs Outputs (StT CPUState I) CPUState
 {-# INLINE getState #-}
@@ -156,15 +80,9 @@ putPC :: W8 -> ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE putPC #-}
 putPC pc = getState >>= \s -> putState (setPC s pc)
 
-fst :: (Bit,W8) -> Bit
-fst (x, _) = x
-
-snd :: (Bit,W8) -> W8
-snd (_, x) = x
-
 incrPC :: ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE incrPC #-}
-incrPC = getPC >>= \pc -> putPC (snd (plusW8 pc oneW8))
+incrPC = getPC >>= \pc -> putPC (snd (plusCW8 pc oneW8 C))
 
 r0 :: CPUState -> W8
 r0 (CPUState _ _ _ _ _ _ _ _ _ r0 _ _ _) = r0
@@ -356,7 +274,7 @@ ld :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE ld #-}
 ld rD rS = do
       a <- getReg rS
-      putWeOut Zero
+      putWeOut C
       putAddrOut a
       tick
       v <- getDataIn
@@ -367,7 +285,7 @@ st :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
 st rD rS = do
       a <- getReg rS
       v <- getReg rD
-      putWeOut One
+      putWeOut S
       putDataOut v
       putAddrOut a
       tick
@@ -377,7 +295,7 @@ add :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
 add rD rS = do
       vD <- getReg rD
       vS <- getReg rS
-      let p    =  plusCW8 vD vS Zero
+      let p    =  plusCW8 vD vS C
       let cout =  fst p
       let vD'  =  snd p
       putCFlag cout
@@ -402,7 +320,7 @@ sub :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
 sub rD rS = do
       vD <- getReg rD
       vS <- getReg rS
-      let p            =  minusCW8 vD vS Zero
+      let p            =  minusCW8 vD vS C
       let cout         =  fst p
       let vD'          =  snd p
       putCFlag cout
@@ -426,26 +344,26 @@ mov :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE mov #-}
 mov rD rS = getReg rS >>= \ x -> putReg rD x >>= \ zzz -> tick
 
-or :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
-{-# INLINE or #-}
-or rD rS = do
+or' :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
+{-# INLINE or' #-}
+or' rD rS = do
       vD <- getReg rD
       vS <- getReg rS
       let vD'      =  orW8 vD vS
       putReg rD vD'
-      putCFlag Zero
-      putZFlag (eqW8 vD' zeroW8)
+      putCFlag C
+      putZFlag (toBit $ eqW8 vD' zeroW8)
       tick
 
-and :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
-{-# INLINE and #-}
-and rD rS = do
+and' :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
+{-# INLINE and' #-}
+and' rD rS = do
       vD <- getReg rD
       vS <- getReg rS
       let vD'      =  andW8 vD vS
       putReg rD vD'
-      putCFlag Zero
-      putZFlag (eqW8 vD' zeroW8)
+      putCFlag C
+      putZFlag (toBit $ eqW8 vD' zeroW8)
       tick
 
 xor :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
@@ -455,8 +373,8 @@ xor rD rS = do
       vS <- getReg rS
       let vD'      =  xorW8 vD vS
       putReg rD vD'
-      putCFlag Zero
-      putZFlag (eqW8 vD' zeroW8)
+      putCFlag C
+      putZFlag (toBit $ eqW8 vD' zeroW8)
       tick
 
 cmp :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
@@ -464,11 +382,11 @@ cmp :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
 cmp rD rS = do
       vD <- getReg rD
       vS <- getReg rS
-      let p    =  minusCW8 vD vS Zero
+      let p    =  minusCW8 vD vS C
       let c    =  fst p
       let r    =  snd p
       putCFlag c
-      putZFlag (eqW8 r zeroW8)
+      putZFlag (toBit $ eqW8 r zeroW8)
       tick
 
 brz :: Register -> ReT Inputs Outputs (StT CPUState I) ()
@@ -482,7 +400,7 @@ brnz :: Register -> ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE brnz #-}
 brnz r = do
       z <- getZFlag
-      when (notBit z) (getReg r >>= \ x -> putPC x)
+      when (notb z) (getReg r >>= \ x -> putPC x)
       tick
 
 brc :: Register -> ReT Inputs Outputs (StT CPUState I) ()
@@ -496,7 +414,7 @@ brnc :: Register -> ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE brnc #-}
 brnc r = do
       c <- getCFlag
-      when (notBit c) (getReg r >>= \ x -> putPC x)
+      when (notb c) (getReg r >>= \ x -> putPC x)
       tick
 
 jmp :: Register -> ReT Inputs Outputs (StT CPUState I) ()
@@ -509,12 +427,12 @@ ien b = putIEFlag b >>= \zzz -> tick
 
 iack :: ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE iack #-}
-iack = putIackOut One >>= \zzz -> tick
+iack = putIackOut S >>= \zzz -> tick
 
 iret :: ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE iret #-}
 iret = do
-      putIEFlag One
+      putIEFlag S
       pc <- getPCSave
       putPC pc
       z <- getZSave
@@ -523,9 +441,9 @@ iret = do
       putCFlag c
       tick
 
-not :: Register -> ReT Inputs Outputs (StT CPUState I) ()
-{-# INLINE not #-}
-not r = do
+not' :: Register -> ReT Inputs Outputs (StT CPUState I) ()
+{-# INLINE not' #-}
+not' r = do
       v <- getReg r
       putReg r (notW8 v)
       tick
@@ -538,33 +456,33 @@ incr :: Register -> ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE incr #-}
 incr r = do
       v <- getReg r
-      let p    =  plusCW8 v oneW8 Zero
+      let p    =  plusCW8 v oneW8 C
       let cout =  fst p
       let v'   =  snd p
       putReg r v'
       putCFlag cout
-      putZFlag (eqW8 v' zeroW8)
+      putZFlag (toBit $ eqW8 v' zeroW8)
       tick
 
 decr :: Register -> ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE decr #-}
 decr r = do
       v <- getReg r
-      let p    =  minusCW8 v oneW8 Zero
+      let p    =  minusCW8 v oneW8 C
       let cout =  fst p
       let v'   =  snd p
       putReg r v'
       putCFlag cout
-      putZFlag (eqW8 v' zeroW8)
+      putZFlag (toBit $ eqW8 v' zeroW8)
       tick
 
 rot :: Bit -> Register -> ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE rot #-}
-rot Zero r = do
+rot C r = do
       v <- getReg r
       putReg r (rolW8 v)
       tick
-rot One  r = do
+rot S  r = do
       v <- getReg r
       putReg r (rorW8 v)
       tick
@@ -574,32 +492,32 @@ shft :: Bit -> Bit -> Register -> ReT Inputs Outputs (StT CPUState I) ()
 shft l d r = do
       v <- getReg r
       let p    = case (d,l) of
-            (Zero,Zero) -> shlCW8 v (msbW8 v)
-            (Zero, One) -> shlCW8 v Zero
-            ( One,Zero) -> shrCW8 v (lsbW8 v)
-            ( One, One) -> shrCW8 v Zero
+            (C,C) -> shlCW8 v (msbW8 v)
+            (C, S) -> shlCW8 v C
+            ( S,C) -> shrCW8 v (lsbW8 v)
+            ( S, S) -> shrCW8 v C
       let cout =  fst p
       let v'   =  snd p
       putReg r v'
       putCFlag cout
-      putZFlag (eqW8 v' zeroW8)
+      putZFlag (toBit $ eqW8 v' zeroW8)
       tick
 
 initOutputs :: Outputs
-initOutputs = Outputs zeroW8 zeroW8 Zero Zero
+initOutputs = Outputs zeroW8 zeroW8 C C
 
 reset :: ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE reset #-}
 reset = do
-      putCFlag Zero
-      putZFlag Zero
+      putCFlag C
+      putZFlag C
       putOutputs initOutputs
       tick
 
 interrupt :: ReT Inputs Outputs (StT CPUState I) ()
 {-# INLINE interrupt #-}
 interrupt = do
-      putIEFlag Zero
+      putIEFlag C
       pc <- getPC
       z <- getZFlag
       c <- getCFlag
@@ -618,52 +536,54 @@ loop :: ReT Inputs Outputs (StT CPUState I) ()
 loop = do
       inp <- getInputs
       case rstIn inp of
-            One  -> reset
-            Zero -> getIEFlag >>= \ie ->
+            S  -> reset
+            C -> getIEFlag >>= \ie ->
                   case (ie,intIn inp) of
-                        { (One,One) -> interrupt
+                        { (S,S) -> interrupt
                         ; _         -> case dataIn inp of
-                                    { W8 Zero Zero Zero Zero  rEn  wEn   b0   b1 -> mem rEn wEn (mkReg b0 b1)
-                                    ; W8 Zero Zero Zero  One   b0   b1   c0   c1 -> ld (mkReg b0 b1) (mkReg c0 c1)
-                                    ; W8 Zero Zero  One Zero   b0   b1   c0   c1 -> st (mkReg b0 b1) (mkReg c0 c1)
-                                    ; W8 Zero Zero  One  One   b0   b1   c0   c1 -> add (mkReg b0 b1) (mkReg c0 c1)
-                                    ; W8 Zero  One Zero Zero   b0   b1   c0   c1 -> addc (mkReg b0 b1) (mkReg c0 c1)
-                                    ; W8 Zero  One Zero  One   b0   b1   c0   c1 -> sub (mkReg b0 b1) (mkReg c0 c1)
-                                    ; W8 Zero  One  One Zero   b0   b1   c0   c1 -> subb (mkReg b0 b1) (mkReg c0 c1)
-                                    ; W8 Zero  One  One  One   b0   b1   c0   c1 -> mov (mkReg b0 b1) (mkReg c0 c1)
-                                    ; W8  One Zero Zero Zero   b0   b1   c0   c1 -> or (mkReg b0 b1) (mkReg c0 c1)
-                                    ; W8  One Zero Zero  One   b0   b1   c0   c1 -> and (mkReg b0 b1) (mkReg c0 c1)
-                                    ; W8  One Zero  One Zero   b0   b1   c0   c1 -> xor (mkReg b0 b1) (mkReg c0 c1)
-                                    ; W8  One Zero  One  One   b0   b1   c0   c1 -> cmp (mkReg b0 b1) (mkReg c0 c1)
-                                    ; W8  One  One Zero Zero Zero Zero   b0   b1 -> brz (mkReg b0 b1)
-                                    ; W8  One  One Zero Zero Zero  One   b0   b1 -> brnz (mkReg b0 b1)
-                                    ; W8  One  One Zero Zero  One Zero   b0   b1 -> brc (mkReg b0 b1)
-                                    ; W8  One  One Zero Zero  One  One   b0   b1 -> brnc (mkReg b0 b1)
-                                    ; W8  One  One Zero  One Zero Zero   b0   b1 -> jmp (mkReg b0 b1)
-                                    ; W8  One  One Zero  One Zero  One Zero   b0 -> ien b0
-                                    ; W8  One  One Zero  One Zero  One  One Zero -> iack
-                                    ; W8  One  One Zero  One Zero  One  One  One -> iret
-                                    ; W8  One  One Zero  One  One Zero   b0   b1 -> not (mkReg b0 b1)
-                                    ; W8  One  One Zero  One  One  One   b0   b1 -> clrr (mkReg b0 b1)
-                                    ; W8  One  One  One Zero Zero Zero   b0   b1 -> incr (mkReg b0 b1)
-                                    ; W8  One  One  One Zero Zero  One   b0   b1 -> decr (mkReg b0 b1)
-                                    ; W8  One  One  One Zero  One    d   b0   b1 -> rot d (mkReg b0 b1)
-                                    ; W8  One  One  One  One    l    d   b0   b1 -> shft l d (mkReg b0 b1)
+                                    { W8 C C C C  rEn  wEn   b0   b1 -> mem rEn wEn (mkReg b0 b1)
+                                    ; W8 C C C  S   b0   b1   c0   c1 -> ld (mkReg b0 b1) (mkReg c0 c1)
+                                    ; W8 C C  S C   b0   b1   c0   c1 -> st (mkReg b0 b1) (mkReg c0 c1)
+                                    ; W8 C C  S  S   b0   b1   c0   c1 -> add (mkReg b0 b1) (mkReg c0 c1)
+                                    ; W8 C  S C C   b0   b1   c0   c1 -> addc (mkReg b0 b1) (mkReg c0 c1)
+                                    ; W8 C  S C  S   b0   b1   c0   c1 -> sub (mkReg b0 b1) (mkReg c0 c1)
+                                    ; W8 C  S  S C   b0   b1   c0   c1 -> subb (mkReg b0 b1) (mkReg c0 c1)
+                                    ; W8 C  S  S  S   b0   b1   c0   c1 -> mov (mkReg b0 b1) (mkReg c0 c1)
+                                    ; W8  S C C C   b0   b1   c0   c1 -> or' (mkReg b0 b1) (mkReg c0 c1)
+                                    ; W8  S C C  S   b0   b1   c0   c1 -> and' (mkReg b0 b1) (mkReg c0 c1)
+                                    ; W8  S C  S C   b0   b1   c0   c1 -> xor (mkReg b0 b1) (mkReg c0 c1)
+                                    ; W8  S C  S  S   b0   b1   c0   c1 -> cmp (mkReg b0 b1) (mkReg c0 c1)
+                                    ; W8  S  S C C C C   b0   b1 -> brz (mkReg b0 b1)
+                                    ; W8  S  S C C C  S   b0   b1 -> brnz (mkReg b0 b1)
+                                    ; W8  S  S C C  S C   b0   b1 -> brc (mkReg b0 b1)
+                                    ; W8  S  S C C  S  S   b0   b1 -> brnc (mkReg b0 b1)
+                                    ; W8  S  S C  S C C   b0   b1 -> jmp (mkReg b0 b1)
+                                    ; W8  S  S C  S C  S C   b0 -> ien b0
+                                    ; W8  S  S C  S C  S  S C -> iack
+                                    ; W8  S  S C  S C  S  S  S -> iret
+                                    ; W8  S  S C  S  S C   b0   b1 -> not' (mkReg b0 b1)
+                                    ; W8  S  S C  S  S  S   b0   b1 -> clrr (mkReg b0 b1)
+                                    ; W8  S  S  S C C C   b0   b1 -> incr (mkReg b0 b1)
+                                    ; W8  S  S  S C C  S   b0   b1 -> decr (mkReg b0 b1)
+                                    ; W8  S  S  S C  S    d   b0   b1 -> rot d (mkReg b0 b1)
+                                    ; W8  S  S  S  S    l    d   b0   b1 -> shft l d (mkReg b0 b1)
                                     ; _                                          -> reset
                                     }
                         }
       loop
 
-begin :: ReT Inputs Outputs (StT CPUState I) ()
-begin = do
+go :: ReT Inputs Outputs (StT CPUState I) ()
+go = do
       reset
       loop
 
 initInputs :: Inputs
-initInputs = Inputs zeroW8 Zero Zero
+initInputs = Inputs zeroW8 C C
 
 initState :: CPUState
-initState = CPUState initInputs initOutputs Zero Zero Zero zeroW8 Zero Zero zeroW8 zeroW8 zeroW8 zeroW8 zeroW8
+initState = CPUState initInputs initOutputs C C C zeroW8 C C zeroW8 zeroW8 zeroW8 zeroW8 zeroW8
 
 start :: ReT Inputs Outputs I ()
-start = extrude begin initState
+start = extrude go initState
+
+main = undefined

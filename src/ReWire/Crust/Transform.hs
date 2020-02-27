@@ -16,7 +16,7 @@ import ReWire.Unbound
       , isFreeName, runFreshM
       , Name (..)
       )
-import ReWire.Annotation (Annote (..))
+import ReWire.Annotation (Annote (..), noAnn)
 import ReWire.SYB
 import ReWire.Crust.Syntax
 
@@ -28,20 +28,29 @@ import Data.Data (Data)
 import Data.List (find, foldl')
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Containers.ListUtils (nubOrdOn)
+import Data.Hashable (Hashable (..))
 
 import Data.Set (Set, union, (\\))
 import qualified Data.Set as Set
 
 -- | Inlines defs marked for inlining. Must run before lambda lifting.
-inline :: FreeProgram -> FreeProgram
-inline (ts, ds) = (ts, substs subs ds)
+inline :: MonadError AstError m => FreeProgram -> m FreeProgram
+inline (ts, ds) = (ts, ) . flip substs ds <$> subs
       where toSubst :: Defn -> (Name Exp, Exp)
             toSubst (Defn _ n _ _ (Embed e)) = runFreshM $ unbind e >>= \ case
                   ([], e') -> pure (n, e')
                   _        -> error "Inlining: definition not inlinable (this shouldn't happen)"
 
-            subs :: [(Name Exp, Exp)]
-            subs = map toSubst $ substs (map toSubst $ filter defnInline ds) $ filter defnInline ds
+            inlineDefs :: [Defn]
+            inlineDefs = filter defnInline ds
+
+            subs :: MonadError AstError m => m [(Name Exp, Exp)]
+            subs = map toSubst <$> fix 10 (substs (map toSubst inlineDefs)) inlineDefs
+
+fix :: (MonadError AstError m, Hashable a) => Int -> (a -> a) -> a -> m a
+fix 0 _ _                        = failAt noAnn "Inlining not terminating (mutually recursive INLINE definitions?)."
+fix _ f a | hash (f a) == hash a = pure a
+fix n f a                        = fix (n - 1) f (f a)
 
 -- | Replaces the expression in NativeVHDL so we don't descend into it
 --   during other transformations.
@@ -166,7 +175,7 @@ purgeUnused (ts, vs) = (inuseData (fv $ trec $ inuseDefn vs) ts, inuseDefn vs)
 
             reservedData :: [String]
             reservedData =
-                         [ "ReWire.Prelude.Either"
+                         [ "PuRe"
                          , "(,)"
                          , "()"
                          ]

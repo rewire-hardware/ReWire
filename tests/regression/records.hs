@@ -1,4 +1,5 @@
-data Bit = Zero | One
+import ReWire
+import ReWire.Bits
 
 data S = S1 { f1, f2 :: Bit, f3 :: (Bit, Bit) } | S2 { f4 :: (Bit, Bit, Bit) }
 
@@ -19,13 +20,12 @@ foo (S1 { f1 = a, f2 = b, f3 = c }) = S1 { f1 = b, f2 = a, f3 = c }
 foo (S2 { f4 = a }) = S2 { f4 = a }
 
 bar :: S -> S
-bar s@(S1 {}) = s { f1 = Zero, f2 = One, f3 = (Zero, One) }
-bar s@(S2 {}) = s { f4 = (Zero, One, Zero) }
-
-main :: ReT Bit Bit I ()
-main = do
-  signal $ x $ foo $ bar (S1 Zero Zero (Zero, Zero))
-  main
+bar s@(S1 {}) = s { f1 = C, f2 = S, f3 = (C, S) }
+bar s@(S2 {}) = s { f4 = (C, S, C) }
 
 start :: ReT Bit Bit I ()
-start = main
+start = do
+  signal $ x $ foo $ bar (S1 C C (C, C))
+  start
+
+main = undefined

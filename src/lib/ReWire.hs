@@ -1,10 +1,6 @@
-module ReWire
-      ( get, put, modify, signal, lift
-      , extrude, unfold
-      , error, return, (>>=)
-      ) where
+module ReWire where
 
-import Prelude (Either) -- TODO(chathhorn): annoying exception
+-- Imports in this file are ignored by rwc.
 import qualified Prelude                           as GHC
 import qualified Control.Monad.Identity            as GHC
 import qualified Control.Monad.Resumption.Reactive as GHC
@@ -32,13 +28,16 @@ data A_ -- Ctors generated during program build.
 
 data PuRe s o = Done (A_, s) | Pause (o, (R_, s))
 
-error = GHC.error -- TODO(chathhorn): can't type in RW.
+-- TODO(chathhorn): can't give a type to these in RW (string lits are only allowed
+-- as arguments to error and are never given a type).
+error = GHC.error
+nativeVhdl _ f = f
 
-return :: GHC.Monad m => a -> m a
-return = GHC.return
+rwReturn :: GHC.Monad m => a -> m a
+rwReturn = GHC.return
 
-(>>=) :: GHC.Monad m => m a -> (a -> m b) -> m b
-(>>=) = (GHC.>>=)
+rwBind :: GHC.Monad m => m a -> (a -> m b) -> m b
+rwBind = (GHC.>>=)
 
 get :: GHC.Monad m => StT s m s
 get = GHC.get
@@ -46,9 +45,10 @@ get = GHC.get
 put :: GHC.Monad m => s -> StT s m ()
 put = GHC.put
 
+-- | Non-inline definitions in this file are ignored by rwc.
 {-# INLINE modify #-}
 modify :: GHC.Monad m => (s -> s) -> StT s m ()
-modify f = get GHC.>>= (put GHC.. f)
+modify f = get `rwBind` (\ x -> put (f x))
 
 signal :: GHC.Monad m => o -> ReT i o m i
 signal = GHC.signal

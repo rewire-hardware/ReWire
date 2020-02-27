@@ -1,3 +1,5 @@
+import ReWire
+
 data In = A | B | C | D
 data Out = Out1 | Out2
 
@@ -16,3 +18,5 @@ starti =  startp A
 
 start :: ReT In Out I ()
 start =  starti
+
+main = undefined

@@ -4,22 +4,21 @@ the SHA-256 Cryptographic Hash Function in ReWire", RSP 2016. I have inlined
 the MetaprogrammingRW and ReWirePrelude files because it works better with
 cabal test.
 -}
--- import MetaprogrammingRW
--- import ReWirePrelude
 
-w32Plus :: W32 -> W32 -> W32
-{-# INLINE w32Plus #-}
-w32Plus = nativeVhdl "w32Plus" w32Plus
-w32Xor :: W32 -> W32 -> W32
-{-# INLINE w32Xor #-}
-w32Xor  = nativeVhdl "w32Xor" w32Xor
-w32And :: W32 -> W32 -> W32
-{-# INLINE w32And #-}
-w32And  = nativeVhdl "w32And" w32And
+import ReWire
+import ReWire.Bits hiding (W32 (..), andW32, xorW32, plusW32, notW32)
 
-w32Not :: W32 -> W32
-{-# INLINE w32Not #-}
-w32Not = nativeVhdl "w32Not" w32Not
+plusW32 :: W32 -> W32 -> W32
+plusW32 = nativeVhdl "plusW32" plusW32
+
+andW32 :: W32 -> W32 -> W32
+andW32 = nativeVhdl "andW32" andW32
+
+xorW32 :: W32 -> W32 -> W32
+xorW32 = nativeVhdl "xorW32" xorW32
+
+notW32 :: W32 -> W32
+notW32 = nativeVhdl "notW32" notW32
 
 data Oct a = Oct a a a a
                  a a a a -- deriving Show
@@ -29,27 +28,32 @@ data Hex a = Hex a a a a
                  a a a a
                  a a a a -- deriving Show
 
+data W32 = W32 Bit Bit Bit Bit Bit Bit Bit Bit
+               Bit Bit Bit Bit Bit Bit Bit Bit
+               Bit Bit Bit Bit Bit Bit Bit Bit
+               Bit Bit Bit Bit Bit Bit Bit Bit
+
 --------------------------------------------
 --- The standard functions
 --------------------------------------------
 
 ch :: W32 -> W32 -> W32 -> W32
-ch x y z = (x `w32And` y) `w32Xor` (w32Not x `w32And` z)
+ch x y z = (x `andW32` y) `xorW32` (notW32 x `andW32` z)
 
 maj :: W32 -> W32 -> W32 -> W32
-maj x y z = (x `w32And` y) `w32Xor` (x `w32And` z) `w32Xor` (y `w32And` z)
+maj x y z = (x `andW32` y) `xorW32` (x `andW32` z) `xorW32` (y `andW32` z)
 
 bigsigma0 :: W32 -> W32
-bigsigma0 x = (rotateR2 x) `w32Xor` (rotateR13 x) `w32Xor` (rotateR22 x)
+bigsigma0 x = (rotateR2 x) `xorW32` (rotateR13 x) `xorW32` (rotateR22 x)
 
 bigsigma1 :: W32 -> W32
-bigsigma1 x = (rotateR6 x) `w32Xor` (rotateR11 x) `w32Xor` (rotateR25 x)
+bigsigma1 x = (rotateR6 x) `xorW32` (rotateR11 x) `xorW32` (rotateR25 x)
 
 sigma0 :: W32 -> W32
-sigma0 x = (rotateR7 x) `w32Xor` (rotateR18 x) `w32Xor` (shiftR3 x)
+sigma0 x = (rotateR7 x) `xorW32` (rotateR18 x) `xorW32` (shiftR3 x)
 
 sigma1 :: W32 -> W32
-sigma1 x = (rotateR17 x) `w32Xor` (rotateR19 x) `w32Xor` (shiftR10 x)
+sigma1 x = (rotateR17 x) `xorW32` (rotateR19 x) `xorW32` (shiftR10 x)
 
 -------------------------------------------
 --- The hashing algorithm
@@ -60,7 +64,7 @@ intermediate :: StT (Oct W32) (StT (Hex W32) (StT (Oct W32) (StT Ctr I))) ()
 intermediate = do
   Oct h1 h2 h3 h4 h5 h6 h7 h8 <- lift (lift get)
   Oct a b c d e f g h         <- get
-  lift (lift (put (Oct (w32Plus a h1) (w32Plus b h2) (w32Plus c h3) (w32Plus d h4) (w32Plus e h5) (w32Plus f h6) (w32Plus g h7) (w32Plus h h8))))
+  lift (lift (put (Oct (plusW32 a h1) (plusW32 b h2) (plusW32 c h3) (plusW32 d h4) (plusW32 e h5) (plusW32 f h6) (plusW32 g h7) (plusW32 h h8))))
 
 -------------------------------------------
 --- SHA-256 scheduler algorithm
@@ -77,7 +81,7 @@ updateSched (Hex w00 w01 w02 w03 w04 w05 w06 w07 w08 w09 w10 w11 w12 w13 w14 w15
             (Hex w01 w02 w03 w04 w05 w06 w07 w08 w09 w10 w11 w12 w13 w14 w15 w16)
   where
     w16 :: W32
-    w16 = w32Plus (w32Plus (sigma1 w14) w09) (w32Plus (sigma0 w01) w00)
+    w16 = plusW32 (plusW32 (sigma1 w14) w09) (plusW32 (sigma0 w01) w00)
 
 -------------------------------------------
 --- SHA-256 compression algorithm
@@ -92,16 +96,16 @@ step256 :: W32 -> W32 -> Oct W32 -> Oct W32
 step256 k w (Oct a b c d e f g h) = Oct a' b' c' d' e' f' g' h'
             where
               t1,t2,h',g',f',e',d',c',b',a' :: W32
-              t1 = w32Plus h (w32Plus (w32Plus (bigsigma1 e) (ch e f g)) (w32Plus k w))
-              t2 = w32Plus (bigsigma0 a) (maj a b c)
+              t1 = plusW32 h (plusW32 (plusW32 (bigsigma1 e) (ch e f g)) (plusW32 k w))
+              t2 = plusW32 (bigsigma0 a) (maj a b c)
               h' = g
               g' = f
               f' = e
-              e' = w32Plus d t1
+              e' = plusW32 d t1
               d' = c
               c' = b
               b' = a
-              a' = w32Plus t1 t2
+              a' = plusW32 t1 t2
 
 initialSHA256State :: Oct W32
 initialSHA256State = Oct w6a09e667 wbb67ae85 w3c6ef372 wa54ff53a
@@ -122,6 +126,8 @@ data Out = DigestR (Oct W32) | Nix | Hashing
 --- semantics which can, I believe, be captured equationally. Compare the two
 --- "go" functions in TestingSHA256.hs.
 -------------------------------------------------------------------------------------------
+
+main = undefined
 
 start :: ReT Inp Out I ()
 start = extrude
@@ -191,7 +197,6 @@ data Ctr = C0  | C1  | C2  | C3  | C4  | C5  | C6  | C7  |
            C56 | C57 | C58 | C59 | C60 | C61 | C62 | C63 
 
 incCtr :: Ctr -> Ctr
-{-# INLINE incCtr #-}
 incCtr = nativeVhdl "incCtr" incCtr
 
 seed :: Ctr -> W32
@@ -260,13 +265,6 @@ seed C61 = wa4506ceb
 seed C62 = wbef9a3f7
 seed C63 = wc67178f2
 
-data Bit = Zero | One
-data W8  = W8 Bit Bit Bit Bit Bit Bit Bit Bit
-data W32 = W32 Bit Bit Bit Bit Bit Bit Bit Bit
-               Bit Bit Bit Bit Bit Bit Bit Bit
-               Bit Bit Bit Bit Bit Bit Bit Bit
-               Bit Bit Bit Bit Bit Bit Bit Bit
-
 rotateR2,rotateR6,rotateR7,rotateR11,rotateR13,rotateR17,rotateR18,rotateR19,rotateR22,rotateR25 :: W32 -> W32
 rotateR2 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
               b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
@@ -321,44 +319,44 @@ rotateR25 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
 shiftR3,shiftR10 :: W32 -> W32
 shiftR3 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
              b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           = (W32 Zero Zero Zero b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12
+           = (W32 C C C b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12
                   b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28)
 
 shiftR10 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
               b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-            = (W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero b0 b1 b2 b3 b4 b5
+            = (W32 C C C C C C C C C C b0 b1 b2 b3 b4 b5
                    b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21)
 
 w00000000 :: W32
-w00000000 = W32 Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero
+w00000000 = W32 C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
 
 {-
 initialstateconsts = [ "6a09e667", "bb67ae85", "3c6ef372", "a54ff53a",
                          "510e527f", "9b05688c", "1f83d9ab", "5be0cd19" ]-}
                          
 w6a09e667 :: W32
-w6a09e667 = W32 Zero One One Zero One Zero One Zero Zero Zero Zero Zero One Zero Zero One One One One Zero Zero One One Zero Zero One One Zero Zero One One One
+w6a09e667 = W32 C S S C S C S C C C C C S C C S S S S C C S S C C S S C C S S S
 
 wbb67ae85 :: W32
-wbb67ae85 = W32 One Zero One One One Zero One One Zero One One Zero Zero One One One One Zero One Zero One One One Zero One Zero Zero Zero Zero One Zero One
+wbb67ae85 = W32 S C S S S C S S C S S C C S S S S C S C S S S C S C C C C S C S
 
 w3c6ef372 :: W32
-w3c6ef372 = W32 Zero Zero One One One One Zero Zero Zero One One Zero One One One Zero One One One One Zero Zero One One Zero One One One Zero Zero One Zero
+w3c6ef372 = W32 C C S S S S C C C S S C S S S C S S S S C C S S C S S S C C S C
 
 wa54ff53a :: W32
-wa54ff53a = W32 One Zero One Zero Zero One Zero One Zero One Zero Zero One One One One One One One One Zero One Zero One Zero Zero One One One Zero One Zero
+wa54ff53a = W32 S C S C C S C S C S C C S S S S S S S S C S C S C C S S S C S C
 
 w510e527f :: W32
-w510e527f = W32 Zero One Zero One Zero Zero Zero One Zero Zero Zero Zero One One One Zero Zero One Zero One Zero Zero One Zero Zero One One One One One One One
+w510e527f = W32 C S C S C C C S C C C C S S S C C S C S C C S C C S S S S S S S
 
 w9b05688c :: W32
-w9b05688c = W32 One Zero Zero One One Zero One One Zero Zero Zero Zero Zero One Zero One Zero One One Zero One Zero Zero Zero One Zero Zero Zero One One Zero Zero
+w9b05688c = W32 S C C S S C S S C C C C C S C S C S S C S C C C S C C C S S C C
 
 w1f83d9ab :: W32
-w1f83d9ab = W32 Zero Zero Zero One One One One One One Zero Zero Zero Zero Zero One One One One Zero One One Zero Zero One One Zero One Zero One Zero One One
+w1f83d9ab = W32 C C C S S S S S S C C C C C S S S S C S S C C S S C S C S C S S
 
 w5be0cd19 :: W32
-w5be0cd19 = W32 Zero One Zero One One Zero One One One One One Zero Zero Zero Zero Zero One One Zero Zero One One Zero One Zero Zero Zero One One Zero Zero One
+w5be0cd19 = W32 C S C S S C S S S S S C C C C C S S C C S S C S C C C S S C C S
 
 -- constants from genhash
 {-
@@ -430,194 +428,194 @@ constantlist = [
            ]-}
 
 w428a2f98 :: W32
-w428a2f98 = W32 Zero One Zero Zero Zero Zero One Zero One Zero Zero Zero One Zero One Zero Zero Zero One Zero One One One One One Zero Zero One One Zero Zero Zero
+w428a2f98 = W32 C S C C C C S C S C C C S C S C C C S C S S S S S C C S S C C C
 
 w71374491 :: W32
-w71374491 = W32 Zero One One One Zero Zero Zero One Zero Zero One One Zero One One One Zero One Zero Zero Zero One Zero Zero One Zero Zero One Zero Zero Zero One
+w71374491 = W32 C S S S C C C S C C S S C S S S C S C C C S C C S C C S C C C S
 
 wb5c0fbcf :: W32
-wb5c0fbcf = W32 One Zero One One Zero One Zero One One One Zero Zero Zero Zero Zero Zero One One One One One Zero One One One One Zero Zero One One One One
+wb5c0fbcf = W32 S C S S C S C S S S C C C C C C S S S S S C S S S S C C S S S S
 
 we9b5dba5 :: W32
-we9b5dba5 = W32 One One One Zero One Zero Zero One One Zero One One Zero One Zero One One One Zero One One Zero One One One Zero One Zero Zero One Zero One
+we9b5dba5 = W32 S S S C S C C S S C S S C S C S S S C S S C S S S C S C C S C S
 
 w3956c25b :: W32
-w3956c25b = W32 Zero Zero One One One Zero Zero One Zero One Zero One Zero One One Zero One One Zero Zero Zero Zero One Zero Zero One Zero One One Zero One One
+w3956c25b = W32 C C S S S C C S C S C S C S S C S S C C C C S C C S C S S C S S
 
 w59f111f1 :: W32
-w59f111f1 = W32 Zero One Zero One One Zero Zero One One One One One Zero Zero Zero One Zero Zero Zero One Zero Zero Zero One One One One One Zero Zero Zero One
+w59f111f1 = W32 C S C S S C C S S S S S C C C S C C C S C C C S S S S S C C C S
 
 w923f82a4 :: W32
-w923f82a4 = W32 One Zero Zero One Zero Zero One Zero Zero Zero One One One One One One One Zero Zero Zero Zero Zero One Zero One Zero One Zero Zero One Zero Zero
+w923f82a4 = W32 S C C S C C S C C C S S S S S S S C C C C C S C S C S C C S C C
 
 wab1c5ed5 :: W32
-wab1c5ed5 = W32 One Zero One Zero One Zero One One Zero Zero Zero One One One Zero Zero Zero One Zero One One One One Zero One One Zero One Zero One Zero One
+wab1c5ed5 = W32 S C S C S C S S C C C S S S C C C S C S S S S C S S C S C S C S
 
 wd807aa98 :: W32
-wd807aa98 = W32 One One Zero One One Zero Zero Zero Zero Zero Zero Zero Zero One One One One Zero One Zero One Zero One Zero One Zero Zero One One Zero Zero Zero
+wd807aa98 = W32 S S C S S C C C C C C C C S S S S C S C S C S C S C C S S C C C
 
 w12835b01 :: W32
-w12835b01 = W32 Zero Zero Zero One Zero Zero One Zero One Zero Zero Zero Zero Zero One One Zero One Zero One One Zero One One Zero Zero Zero Zero Zero Zero Zero One
+w12835b01 = W32 C C C S C C S C S C C C C C S S C S C S S C S S C C C C C C C S
 
 w243185be :: W32
-w243185be = W32 Zero Zero One Zero Zero One Zero Zero Zero Zero One One Zero Zero Zero One One Zero Zero Zero Zero One Zero One One Zero One One One One One Zero
+w243185be = W32 C C S C C S C C C C S S C C C S S C C C C S C S S C S S S S S C
 
 w550c7dc3 :: W32
-w550c7dc3 = W32 Zero One Zero One Zero One Zero One Zero Zero Zero Zero One One Zero Zero Zero One One One One One Zero One One One Zero Zero Zero Zero One One
+w550c7dc3 = W32 C S C S C S C S C C C C S S C C C S S S S S C S S S C C C C S S
 
 w72be5d74 :: W32
-w72be5d74 = W32 Zero One One One Zero Zero One Zero One Zero One One One One One Zero Zero One Zero One One One Zero One Zero One One One Zero One Zero Zero
+w72be5d74 = W32 C S S S C C S C S C S S S S S C C S C S S S C S C S S S C S C C
 
 w80deb1fe :: W32
-w80deb1fe = W32 One Zero Zero Zero Zero Zero Zero Zero One One Zero One One One One Zero One Zero One One Zero Zero Zero One One One One One One One One Zero
+w80deb1fe = W32 S C C C C C C C S S C S S S S C S C S S C C C S S S S S S S S C
 
 w9bdc06a7 :: W32
-w9bdc06a7 = W32 One Zero Zero One One Zero One One One One Zero One One One Zero Zero Zero Zero Zero Zero Zero One One Zero One Zero One Zero Zero One One One
+w9bdc06a7 = W32 S C C S S C S S S S C S S S C C C C C C C S S C S C S C C S S S
 
 wc19bf174 :: W32
-wc19bf174 = W32 One One Zero Zero Zero Zero Zero One One Zero Zero One One Zero One One One One One One Zero Zero Zero One Zero One One One Zero One Zero Zero
+wc19bf174 = W32 S S C C C C C S S C C S S C S S S S S S C C C S C S S S C S C C
 
 we49b69c1 :: W32
-we49b69c1 = W32 One One One Zero Zero One Zero Zero One Zero Zero One One Zero One One Zero One One Zero One Zero Zero One One One Zero Zero Zero Zero Zero One
+we49b69c1 = W32 S S S C C S C C S C C S S C S S C S S C S C C S S S C C C C C S
 
 wefbe4786 :: W32
-wefbe4786 = W32 One One One Zero One One One One One Zero One One One One One Zero Zero One Zero Zero Zero One One One One Zero Zero Zero Zero One One Zero
+wefbe4786 = W32 S S S C S S S S S C S S S S S C C S C C C S S S S C C C C S S C
 
 w0fc19dc6 :: W32
-w0fc19dc6 = W32 Zero Zero Zero Zero One One One One One One Zero Zero Zero Zero Zero One One Zero Zero One One One Zero One One One Zero Zero Zero One One Zero
+w0fc19dc6 = W32 C C C C S S S S S S C C C C C S S C C S S S C S S S C C C S S C
 
 w240ca1cc :: W32
-w240ca1cc = W32 Zero Zero One Zero Zero One Zero Zero Zero Zero Zero Zero One One Zero Zero One Zero One Zero Zero Zero Zero One One One Zero Zero One One Zero Zero
+w240ca1cc = W32 C C S C C S C C C C C C S S C C S C S C C C C S S S C C S S C C
 
 w2de92c6f :: W32
-w2de92c6f = W32 Zero Zero One Zero One One Zero One One One One Zero One Zero Zero One Zero Zero One Zero One One Zero Zero Zero One One Zero One One One One
+w2de92c6f = W32 C C S C S S C S S S S C S C C S C C S C S S C C C S S C S S S S
 
 w4a7484aa :: W32
-w4a7484aa = W32 Zero One Zero Zero One Zero One Zero Zero One One One Zero One Zero Zero One Zero Zero Zero Zero One Zero Zero One Zero One Zero One Zero One Zero
+w4a7484aa = W32 C S C C S C S C C S S S C S C C S C C C C S C C S C S C S C S C
 
 w5cb0a9dc :: W32
-w5cb0a9dc = W32 Zero One Zero One One One Zero Zero One Zero One One Zero Zero Zero Zero One Zero One Zero One Zero Zero One One One Zero One One One Zero Zero
+w5cb0a9dc = W32 C S C S S S C C S C S S C C C C S C S C S C C S S S C S S S C C
 
 w76f988da :: W32
-w76f988da = W32 Zero One One One Zero One One Zero One One One One One Zero Zero One One Zero Zero Zero One Zero Zero Zero One One Zero One One Zero One Zero
+w76f988da = W32 C S S S C S S C S S S S S C C S S C C C S C C C S S C S S C S C
 
 w983e5152 :: W32
-w983e5152 = W32 One Zero Zero One One Zero Zero Zero Zero Zero One One One One One Zero Zero One Zero One Zero Zero Zero One Zero One Zero One Zero Zero One Zero
+w983e5152 = W32 S C C S S C C C C C S S S S S C C S C S C C C S C S C S C C S C
 
 wa831c66d :: W32
-wa831c66d = W32 One Zero One Zero One Zero Zero Zero Zero Zero One One Zero Zero Zero One One One Zero Zero Zero One One Zero Zero One One Zero One One Zero One
+wa831c66d = W32 S C S C S C C C C C S S C C C S S S C C C S S C C S S C S S C S
 
 wb00327c8 :: W32
-wb00327c8 = W32 One Zero One One Zero Zero Zero Zero Zero Zero Zero Zero Zero Zero One One Zero Zero One Zero Zero One One One One One Zero Zero One Zero Zero Zero
+wb00327c8 = W32 S C S S C C C C C C C C C C S S C C S C C S S S S S C C S C C C
 
 wbf597fc7 :: W32
-wbf597fc7 = W32 One Zero One One One One One One Zero One Zero One One Zero Zero One Zero One One One One One One One One One Zero Zero Zero One One One
+wbf597fc7 = W32 S C S S S S S S C S C S S C C S C S S S S S S S S S C C C S S S
 
 wc6e00bf3 :: W32
-wc6e00bf3 = W32 One One Zero Zero Zero One One Zero One One One Zero Zero Zero Zero Zero Zero Zero Zero Zero One Zero One One One One One One Zero Zero One One
+wc6e00bf3 = W32 S S C C C S S C S S S C C C C C C C C C S C S S S S S S C C S S
 
 wd5a79147 :: W32
-wd5a79147 = W32 One One Zero One Zero One Zero One One Zero One Zero Zero One One One One Zero Zero One Zero Zero Zero One Zero One Zero Zero Zero One One One
+wd5a79147 = W32 S S C S C S C S S C S C C S S S S C C S C C C S C S C C C S S S
 
 w06ca6351 :: W32
-w06ca6351 = W32 Zero Zero Zero Zero Zero One One Zero One One Zero Zero One Zero One Zero Zero One One Zero Zero Zero One One Zero One Zero One Zero Zero Zero One
+w06ca6351 = W32 C C C C C S S C S S C C S C S C C S S C C C S S C S C S C C C S
 
 w14292967 :: W32
-w14292967 = W32 Zero Zero Zero One Zero One Zero Zero Zero Zero One Zero One Zero Zero One Zero Zero One Zero One Zero Zero One Zero One One Zero Zero One One One
+w14292967 = W32 C C C S C S C C C C S C S C C S C C S C S C C S C S S C C S S S
 
 w27b70a85 :: W32
-w27b70a85 = W32 Zero Zero One Zero Zero One One One One Zero One One Zero One One One Zero Zero Zero Zero One Zero One Zero One Zero Zero Zero Zero One Zero One
+w27b70a85 = W32 C C S C C S S S S C S S C S S S C C C C S C S C S C C C C S C S
 
 w2e1b2138 :: W32
-w2e1b2138 = W32 Zero Zero One Zero One One One Zero Zero Zero Zero One One Zero One One Zero Zero One Zero Zero Zero Zero One Zero Zero One One One Zero Zero Zero
+w2e1b2138 = W32 C C S C S S S C C C C S S C S S C C S C C C C S C C S S S C C C
 
 w4d2c6dfc :: W32
-w4d2c6dfc = W32 Zero One Zero Zero One One Zero One Zero Zero One Zero One One Zero Zero Zero One One Zero One One Zero One One One One One One One Zero Zero
+w4d2c6dfc = W32 C S C C S S C S C C S C S S C C C S S C S S C S S S S S S S C C
 
 w53380d13 :: W32
-w53380d13 = W32 Zero One Zero One Zero Zero One One Zero Zero One One One Zero Zero Zero Zero Zero Zero Zero One One Zero One Zero Zero Zero One Zero Zero One One
+w53380d13 = W32 C S C S C C S S C C S S S C C C C C C C S S C S C C C S C C S S
 
 w650a7354 :: W32
-w650a7354 = W32 Zero One One Zero Zero One Zero One Zero Zero Zero Zero One Zero One Zero Zero One One One Zero Zero One One Zero One Zero One Zero One Zero Zero
+w650a7354 = W32 C S S C C S C S C C C C S C S C C S S S C C S S C S C S C S C C
 
 w766a0abb :: W32
-w766a0abb = W32 Zero One One One Zero One One Zero Zero One One Zero One Zero One Zero Zero Zero Zero Zero One Zero One Zero One Zero One One One Zero One One
+w766a0abb = W32 C S S S C S S C C S S C S C S C C C C C S C S C S C S S S C S S
 
 w81c2c92e :: W32
-w81c2c92e = W32 One Zero Zero Zero Zero Zero Zero One One One Zero Zero Zero Zero One Zero One One Zero Zero One Zero Zero One Zero Zero One Zero One One One Zero
+w81c2c92e = W32 S C C C C C C S S S C C C C S C S S C C S C C S C C S C S S S C
 
 w92722c85 :: W32
-w92722c85 = W32 One Zero Zero One Zero Zero One Zero Zero One One One Zero Zero One Zero Zero Zero One Zero One One Zero Zero One Zero Zero Zero Zero One Zero One
+w92722c85 = W32 S C C S C C S C C S S S C C S C C C S C S S C C S C C C C S C S
 
 wa2bfe8a1 :: W32
-wa2bfe8a1 = W32 One Zero One Zero Zero Zero One Zero One Zero One One One One One One One One One Zero One Zero Zero Zero One Zero One Zero Zero Zero Zero One
+wa2bfe8a1 = W32 S C S C C C S C S C S S S S S S S S S C S C C C S C S C C C C S
 
 wa81a664b :: W32
-wa81a664b = W32 One Zero One Zero One Zero Zero Zero Zero Zero Zero One One Zero One Zero Zero One One Zero Zero One One Zero Zero One Zero Zero One Zero One One
+wa81a664b = W32 S C S C S C C C C C C S S C S C C S S C C S S C C S C C S C S S
 
 wc24b8b70 :: W32
-wc24b8b70 = W32 One One Zero Zero Zero Zero One Zero Zero One Zero Zero One Zero One One One Zero Zero Zero One Zero One One Zero One One One Zero Zero Zero Zero
+wc24b8b70 = W32 S S C C C C S C C S C C S C S S S C C C S C S S C S S S C C C C
 
 wc76c51a3 :: W32
-wc76c51a3 = W32 One One Zero Zero Zero One One One Zero One One Zero One One Zero Zero Zero One Zero One Zero Zero Zero One One Zero One Zero Zero Zero One One
+wc76c51a3 = W32 S S C C C S S S C S S C S S C C C S C S C C C S S C S C C C S S
 
 wd192e819 :: W32
-wd192e819 = W32 One One Zero One Zero Zero Zero One One Zero Zero One Zero Zero One Zero One One One Zero One Zero Zero Zero Zero Zero Zero One One Zero Zero One
+wd192e819 = W32 S S C S C C C S S C C S C C S C S S S C S C C C C C C S S C C S
 
 wd6990624 :: W32
-wd6990624 = W32 One One Zero One Zero One One Zero One Zero Zero One One Zero Zero One Zero Zero Zero Zero Zero One One Zero Zero Zero One Zero Zero One Zero Zero
+wd6990624 = W32 S S C S C S S C S C C S S C C S C C C C C S S C C C S C C S C C
 
 wf40e3585 :: W32
-wf40e3585 = W32 One One One One Zero One Zero Zero Zero Zero Zero Zero One One One Zero Zero Zero One One Zero One Zero One One Zero Zero Zero Zero One Zero One
+wf40e3585 = W32 S S S S C S C C C C C C S S S C C C S S C S C S S C C C C S C S
 
 w106aa070 :: W32
-w106aa070 = W32 Zero Zero Zero One Zero Zero Zero Zero Zero One One Zero One Zero One Zero One Zero One Zero Zero Zero Zero Zero Zero One One One Zero Zero Zero Zero
+w106aa070 = W32 C C C S C C C C C S S C S C S C S C S C C C C C C S S S C C C C
 
 w19a4c116 :: W32
-w19a4c116 = W32 Zero Zero Zero One One Zero Zero One One Zero One Zero Zero One Zero Zero One One Zero Zero Zero Zero Zero One Zero Zero Zero One Zero One One Zero
+w19a4c116 = W32 C C C S S C C S S C S C C S C C S S C C C C C S C C C S C S S C
 
 w1e376c08 :: W32
-w1e376c08 = W32 Zero Zero Zero One One One One Zero Zero Zero One One Zero One One One Zero One One Zero One One Zero Zero Zero Zero Zero Zero One Zero Zero Zero
+w1e376c08 = W32 C C C S S S S C C C S S C S S S C S S C S S C C C C C C S C C C
 
 w2748774c :: W32
-w2748774c = W32 Zero Zero One Zero Zero One One One Zero One Zero Zero One Zero Zero Zero Zero One One One Zero One One One Zero One Zero Zero One One Zero Zero
+w2748774c = W32 C C S C C S S S C S C C S C C C C S S S C S S S C S C C S S C C
 
 w34b0bcb5 :: W32
-w34b0bcb5 = W32 Zero Zero One One Zero One Zero Zero One Zero One One Zero Zero Zero Zero One Zero One One One One Zero Zero One Zero One One Zero One Zero One
+w34b0bcb5 = W32 C C S S C S C C S C S S C C C C S C S S S S C C S C S S C S C S
 
 w391c0cb3 :: W32
-w391c0cb3 = W32 Zero Zero One One One Zero Zero One Zero Zero Zero One One One Zero Zero Zero Zero Zero Zero One One Zero Zero One Zero One One Zero Zero One One
+w391c0cb3 = W32 C C S S S C C S C C C S S S C C C C C C S S C C S C S S C C S S
 
 w4ed8aa4a :: W32
-w4ed8aa4a = W32 Zero One Zero Zero One One One Zero One One Zero One One Zero Zero Zero One Zero One Zero One Zero One Zero Zero One Zero Zero One Zero One Zero
+w4ed8aa4a = W32 C S C C S S S C S S C S S C C C S C S C S C S C C S C C S C S C
 
 w5b9cca4f :: W32
-w5b9cca4f = W32 Zero One Zero One One Zero One One One Zero Zero One One One Zero Zero One One Zero Zero One Zero One Zero Zero One Zero Zero One One One One
+w5b9cca4f = W32 C S C S S C S S S C C S S S C C S S C C S C S C C S C C S S S S
 
 w682e6ff3 :: W32
-w682e6ff3 = W32 Zero One One Zero One Zero Zero Zero Zero Zero One Zero One One One Zero Zero One One Zero One One One One One One One One Zero Zero One One
+w682e6ff3 = W32 C S S C S C C C C C S C S S S C C S S C S S S S S S S S C C S S
 
 w748f82ee :: W32
-w748f82ee = W32 Zero One One One Zero One Zero Zero One Zero Zero Zero One One One One One Zero Zero Zero Zero Zero One Zero One One One Zero One One One Zero
+w748f82ee = W32 C S S S C S C C S C C C S S S S S C C C C C S C S S S C S S S C
 
 w78a5636f :: W32
-w78a5636f = W32 Zero One One One One Zero Zero Zero One Zero One Zero Zero One Zero One Zero One One Zero Zero Zero One One Zero One One Zero One One One One
+w78a5636f = W32 C S S S S C C C S C S C C S C S C S S C C C S S C S S C S S S S
 
 w84c87814 :: W32
-w84c87814 = W32 One Zero Zero Zero Zero One Zero Zero One One Zero Zero One Zero Zero Zero Zero One One One One Zero Zero Zero Zero Zero Zero One Zero One Zero Zero
+w84c87814 = W32 S C C C C S C C S S C C S C C C C S S S S C C C C C C S C S C C
 
 w8cc70208 :: W32
-w8cc70208 = W32 One Zero Zero Zero One One Zero Zero One One Zero Zero Zero One One One Zero Zero Zero Zero Zero Zero One Zero Zero Zero Zero Zero One Zero Zero Zero
+w8cc70208 = W32 S C C C S S C C S S C C C S S S C C C C C C S C C C C C S C C C
 
 w90befffa :: W32
-w90befffa = W32 One Zero Zero One Zero Zero Zero Zero One Zero One One One One One Zero One One One One One One One One One One One One One Zero One Zero
+w90befffa = W32 S C C S C C C C S C S S S S S C S S S S S S S S S S S S S C S C
 
 wa4506ceb :: W32
-wa4506ceb = W32 One Zero One Zero Zero One Zero Zero Zero One Zero One Zero Zero Zero Zero Zero One One Zero One One Zero Zero One One One Zero One Zero One One
+wa4506ceb = W32 S C S C C S C C C S C S C C C C C S S C S S C C S S S C S C S S
 
 wbef9a3f7 :: W32
-wbef9a3f7 = W32 One Zero One One One One One Zero One One One One One Zero Zero One One Zero One Zero Zero Zero One One One One One One Zero One One One
+wbef9a3f7 = W32 S C S S S S S C S S S S S C C S S C S C C C S S S S S S C S S S
 
 wc67178f2 :: W32
-wc67178f2 = W32 One One Zero Zero Zero One One Zero Zero One One One Zero Zero Zero One Zero One One One One Zero Zero Zero One One One One Zero Zero One Zero
+wc67178f2 = W32 S S C C C S S C C S S S C C C S C S S S S C C C S S S S C C S C
 

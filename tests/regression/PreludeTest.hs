@@ -1,3 +1,5 @@
+import ReWire
+
 x :: Bool
 x = True
 
@@ -12,8 +14,7 @@ loop a = do
 zookus :: Bool -> Bool
 zookus x = fst (x,x)
 
-main :: ReT Bool Bool I ()
-main = loop False
-
 start :: ReT Bool Bool I ()
-start = main
+start = loop False
+
+main = undefined

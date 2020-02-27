@@ -146,14 +146,14 @@ flattenExtr = \ case
 -- | Generates the dispatch function.
 -- > dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i
 mkDispatch :: (MonadError AstError m, Fresh m) => Ty -> Ty -> [Ty] -> Name Exp -> [(Pat, Exp)] -> m Defn
-mkDispatch _ _ _  _  [] = failAt NoAnnote "Purify: Empty dispatch: invalid ReWire (is recursion guarded by signal?)"
+mkDispatch _ _ _  _  [] = failAt NoAnnote "Purify: empty dispatch: invalid ReWire (is recursion guarded by signal?)"
 mkDispatch i o ms iv (p : pes) = do
       let ty    = dispatchTy i o ms
           domTy = mkTupleTy $ rTy : ms
       dsc     <- freshVar "dsc"
       let body  = Embed $ bind [dsc :: Name Exp, iv :: Name Exp] cases
           cases = mkCase an (Var an domTy dsc) p pes
-          an    = MsgAnnote $ "Purify: Generated dispatch function: " ++ prettyPrint cases
+          an    = MsgAnnote $ "Purify: generated dispatch function: " ++ prettyPrint cases
 
       pure Defn
             { defnAnnote = an
@@ -188,7 +188,7 @@ mkADatatype allAs = DataDefn
        }
 
 mkADataCon :: (Ty, Name DataConId) -> DataCon
-mkADataCon (t, n) = DataCon (MsgAnnote "Purify: Generated A data ctor") n $ [] |-> mkArrowTy [t] aTy
+mkADataCon (t, n) = DataCon (MsgAnnote "Purify: generated A data ctor") n $ [] |-> mkArrowTy [t] aTy
 
 type PureEnv = [(Name Exp, Ty)]
 
@@ -248,7 +248,7 @@ liftMaybe an msg = maybe (failAt an msg) pure
 purifyResDefn :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) => PureEnv -> [Ty] -> Defn -> StateT PSto m Defn
 purifyResDefn rho ms d = do
       ty            <- projDefnTy d
-      (i, o, _, a)  <- liftMaybe (ann d) "failed at purifyResDefn" $ dstReT $ rangeTy ty
+      (i, o, _, a)  <- liftMaybe (ann d) "Purify: failed at purifyResDefn" $ dstReT $ rangeTy ty
       pure_ty       <- purifyTy (ann d) ms ty
       (args, e)     <- unbind body
 
@@ -371,17 +371,17 @@ classifyCases = \ case
             | n2s g == "get"    -> pure $ Get an t
             | otherwise         -> pure $ Apply an t g []
       App an (Var _ t x) e
-            | n2s x == "return" -> pure $ Return an t e
+            | n2s x == "rwReturn" -> pure $ Return an t e
             | n2s x == "put"    -> pure $ Put an e
             | n2s x == "lift"   -> pure $ Lift an e
       App an (App _ (Var _ t x) e) g
-            | n2s x == ">>="    -> pure $ Bind an e g
+            | n2s x == "rwBind"    -> pure $ Bind an e g
             | otherwise         -> pure $ Apply an t x [e, g]
       e@App {}                  -> do
             (n, t, es) <- dstApp e
             pure $ Apply (ann e) t n es
       Match an _ e1 mp e2 es me -> pure $ SMatch an e1 mp e2 es me
-      d                         -> failAt (ann d) $ "Unclassifiable case: " ++ show d
+      d                         -> failAt (ann d) $ "Purify: unclassifiable case: " ++ show d
 
 data Cases an p e t = Get an t
                     | Return an t e
@@ -420,7 +420,7 @@ purifyStateBody rho stos stys i = classifyCases >=> \ case
             Case an (typeOf e2') e1 (bind p e2')  <$> maybe' (purifyStateBody rho stos stys i <$> e3)
 
       Bind an e g -> do
-            a           <- liftMaybe (ann e) "Invalid type in bind" $ dstCompR $ typeOf e
+            a           <- liftMaybe (ann e) "Purify: invalid type in bind" $ dstCompR $ typeOf e
             ns          <- freshVars "st" $ a : stys
             (f, tf, es) <- dstApp g
             g_pure_app  <- mkPureApp an rho tf f $ es ++ map (mkVar an) ns
@@ -473,18 +473,18 @@ classifyRCases = \ case
      e@(App an _ _)            -> dstApp e >>= classifyApp an
      Match an _ e1 mp e2 es me -> pure $ RMatch an e1 mp e2 es me
      Var an t x                -> pure $ RVar an t x
-     d                         -> failAt (ann d) $ "Unclassifiable R-case: " ++ show d
+     d                         -> failAt (ann d) $ "Purify: unclassifiable R-case: " ++ show d
 
 -- | Classifies syntactic applications. Just seemed easier to
 -- make it its own function.
 classifyApp :: MonadError AstError m => Annote -> (Name Exp, Ty, [Exp]) -> m (RCase Annote Ty p Exp)
 classifyApp an (x, t, [])  = pure $ RVar an t x
 classifyApp an (x, _, [e])
-      | n2s x == "return" = pure $ RReturn an e
+      | n2s x == "rwReturn" = pure $ RReturn an e
       | n2s x == "lift"   = pure $ RLift an e
       | n2s x == "signal" = pure $ Signal an e
 classifyApp an (x, t, [e, g])
-      | n2s x == ">>="    = case isSignal e of
+      | n2s x == "rwBind"    = case isSignal e of
             Just s -> do
                   (g', t, es) <- dstApp g
                   pure $ SigK an t s g' $ zip es $ paramTys t
@@ -616,7 +616,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
                   (f, t, es) <- dstApp e
                   t'         <- purifyTy (ann e) ms t
                   pure $ mkApp' (ann e) t' f $ es ++ stos
-            (e, _)             -> failAt (ann e) $ "Extruded device is non-variable: " ++ show e
+            (e, _)             -> failAt (ann e) $ "Purify: extruded device is non-variable: " ++ show e
 
       RApp an rty rator rands -> do
             rator' <- purifyResBody rho i o a stos ms (Var an rty rator)
@@ -776,7 +776,7 @@ dstApp = \ case
             (n, t, es) <- dstApp rator
             pure (n, t, es ++ [rand])
       Var _ t n              -> pure (n, t, [])
-      d                      -> failAt (ann d) "Tried to dst non-app"
+      d                      -> failAt (ann d) $ "Purify: tried to dst non-app: " ++ show (unAnn d)
 
 -- | Lets are desugared already, so use a case instead (with lifted discriminator).
 mkLet :: Fresh m => Annote -> Pat -> Exp -> Exp -> m Exp

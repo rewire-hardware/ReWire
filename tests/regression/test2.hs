@@ -1,5 +1,5 @@
-data Bit = Zero | One
-data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
+import ReWire
+import ReWire.Bits
 
 incr :: ReT Bit W8 (StT W8 I) ()
 incr = do
@@ -9,4 +9,6 @@ incr = do
       incr
 
 start :: ReT Bit W8 I ()
-start = extrude incr (W8 Zero Zero Zero Zero Zero Zero Zero Zero)
+start = extrude incr zeroW8
+
+main = undefined

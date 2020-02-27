@@ -1,8 +1,8 @@
 module ReWire.Prelude where
 
-import Prelude ()
+import ReWire
+import Prelude () -- Imports of "Prelude" are always ignored by rwc.
 import qualified Prelude as GHC
-import qualified ReWire  as RW
 
 data Bool = False | True
 data Maybe a = Nothing | Just a
@@ -82,25 +82,28 @@ uncurry f p = f (fst p) (snd p)
 
 {-# INLINE undefined #-}
 undefined :: a
-undefined = RW.error "undefined"
+undefined = error "undefined"
 
 {-# INLINE return #-}
 return :: GHC.Monad m => a -> m a
-return = RW.return
+return = rwReturn
 
 {-# INLINE (>>=) #-}
 (>>=) :: GHC.Monad m => m a -> (a -> m b) -> m b
-(>>=) = (RW.>>=)
+(>>=) = rwBind
 
 {-# INLINE (=<<) #-}
 (=<<) :: GHC.Monad m => (a -> m b) -> m a -> m b
-(=<<) = flip (RW.>>=)
+(=<<) = flip rwBind
 
 {-# INLINE (>>) #-}
 (>>) :: GHC.Monad m => m a -> m b -> m b
 ma >> mb = ma >>= (\ _ -> mb)
 
 infixr 9  .
-infixl 1  >>, >>=
+infixr 3 &&
+infixr 2 ||
 infixr 1  =<<
 infixr 0  $
+
+infixl 1  >>, >>=

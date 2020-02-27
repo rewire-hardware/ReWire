@@ -1,26 +1,6 @@
--- -=-=-=-=[GHC ONLY]=-=-=-=- --
--- {-# LANGUAGE StandaloneDeriving #-}
---
--- import Prelude hiding ((>>))
--- import Control.Monad.Identity (runIdentity, Identity)
--- import Control.Monad.State (liftIO, execStateT, lift, get, put, StateT)
--- import Control.Monad.Resumption.Reactive (ReacT (..), signal)
---
--- type I = Identity
--- type ReT = ReacT
--- type StT = StateT
---
--- deriving instance Show Bit
--- deriving instance Show W2
--- deriving instance Show W10
--- deriving instance Show W32
--- deriving instance Show Sigs
--- deriving instance Show Mem
---
--- main = print $ runIdentity $ execStateT (deReacT start) (zeroSigs, zeroMem)
--- -=-=-=[END GHC ONLY]=-=-=- --
+import ReWire
+import ReWire.Bits
 
-data Bit = C | S
 data W2  = W2 Bit Bit
 data W10 = W10
       { b0 :: Bit
@@ -34,11 +14,6 @@ data W10 = W10
       , b8 :: Bit
       , b9 :: Bit
       }
-
-data W32 = W32 Bit Bit Bit Bit Bit Bit Bit Bit
-               Bit Bit Bit Bit Bit Bit Bit Bit
-               Bit Bit Bit Bit Bit Bit Bit Bit
-               Bit Bit Bit Bit Bit Bit Bit Bit
 
 -- TODO(chathhorn)
 data Mem = Mem
@@ -78,12 +53,6 @@ zeroW2  = W2 C C
 
 zeroW10 :: W10
 zeroW10 = W10 C C C C C C C C C C
-
-zeroW32 :: W32
-zeroW32 = W32 C C C C C C C C
-              C C C C C C C C
-              C C C C C C C C
-              C C C C C C C C
 
 onesW10 :: W10
 onesW10 = W10 S S S S S S S S S S
@@ -199,9 +168,6 @@ connect x = do
     outports :: Sigs -> PortsOut
     outports s = PortsOut { ack_out = ack_reg s , data_out = data_out_reg s }
 
-start :: ReT PortsIn PortsOut I ()
-start = extrude reset (zeroSigs, zeroMem)
-
 reset :: ReT PortsIn PortsOut (StT (Sigs, Mem) I) ()
 reset = do
       ports <- (lift (reset_act >> get) >>= connect)
@@ -294,3 +260,7 @@ perform_write _ = (lift (perform_write_act >> get) >>= connect) >>= idle
       setloc addr _data
       set_ack_reg S
 
+start :: ReT PortsIn PortsOut I ()
+start = extrude reset (zeroSigs, zeroMem)
+
+main = undefined

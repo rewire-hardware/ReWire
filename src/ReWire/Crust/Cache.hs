@@ -31,6 +31,7 @@ import Control.Monad ((>=>), msum, void, when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Reader (runReaderT, ReaderT, MonadReader (..))
 import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify, lift)
+import Data.Containers.ListUtils (nubOrd)
 
 import qualified Data.Map.Strict              as Map
 import qualified Language.Haskell.Exts.Syntax as S (Module (..))
@@ -80,11 +81,15 @@ getModule flags fp = pDebug flags ("fetching module: " ++ fp) >> Map.lookup fp <
 
             -- Phase 1 (haskell-src-exts) transformations.
             (m', exps) <- pure
+                      >=> pDebug' "Fixing fixity."
                       >=> lift . lift . fixFixity rn
+                      >=> pDebug' "Annotating."
                       >=> annotate
                       >=> whenSet FlagDHask1 (printInfoHSE "Haskell 1: Pre-desugaring" rn imps)
+                      >=> pDebug' "Desugaring."
                       >=> desugar rn
                       >=> whenSet FlagDHask2 (printInfoHSE "Haskell 2: Post-desugaring" rn imps)
+                      >=> pDebug' "Translating to crust."
                       >=> toCrust rn
                       $ m
 
@@ -97,6 +102,9 @@ getModule flags fp = pDebug flags ("fetching module: " ++ fp) >> Map.lookup fp <
             whenSet :: Applicative m => Flag -> (Bool -> a -> m a) -> a -> m a
             whenSet f m = if f `elem` flags then m $ FlagV `elem` flags else pure
 
+            pDebug' :: MonadIO m => String -> a -> m a
+            pDebug' s a = pDebug flags (fp ++ ": " ++ s) >> pure a
+
 -- Phase 2 (pre-core) transformations.
 getProgram :: [Flag] -> FilePath -> Cache Core.Program
 getProgram flags fp = do
@@ -106,7 +114,8 @@ getProgram flags fp = do
       p <- pure
        >=> pDebug' "Adding primitives and inlining."
        >=> whenSet FlagDCrust1 (printInfo "Crust 1: Post-desugaring")
-       >=> pure . addPrims >=> pure . inline
+       >=> pure . addPrims
+       >=> inline
        >=> whenSet FlagDCrust2 (printInfo "Crust 2: Post-inlining")
        >=> pDebug' "Typechecking."
        >=> kindCheck >=> typeCheck
@@ -164,15 +173,15 @@ printInfo hd verbose fp = do
       let p = Program $ trec fp
       printHeader hd
       when verbose $ liftIO $ putStrLn "## Free kind vars:\n"
-      when verbose $ liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Kind])
+      when verbose $ liftIO $ putStrLn $ concatMap ((++"\n")) (nubOrd $ map prettyPrint (fv p :: [Name Kind]))
       when verbose $ liftIO $ putStrLn "## Free type vars:\n"
-      when verbose $ liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Ty])
+      when verbose $ liftIO $ putStrLn $ concatMap ((++"\n")) (nubOrd $ map prettyPrint (fv p :: [Name Ty]))
       when verbose $ liftIO $ putStrLn "## Free tycon vars:\n"
-      when verbose $ liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name TyConId])
+      when verbose $ liftIO $ putStrLn $ concatMap ((++"\n")) (nubOrd $ map prettyPrint (fv p :: [Name TyConId]))
       liftIO $ putStrLn "## Free con vars:\n"
-      liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name DataConId])
+      liftIO $ putStrLn $ concatMap ((++"\n")) (nubOrd $ map prettyPrint (fv p :: [Name DataConId]))
       liftIO $ putStrLn "## Free exp vars:\n"
-      liftIO $ putStrLn $ concatMap ((++"\n") . prettyPrint) (fv p :: [Name Exp])
+      liftIO $ putStrLn $ concatMap ((++"\n")) (nubOrd $ map prettyPrint (fv p :: [Name Exp]))
       liftIO $ putStrLn "## Program:\n"
       liftIO $ putStrLn $ prettyPrint p
       when verbose $ liftIO $ putStrLn "\n## Program (show):\n"
