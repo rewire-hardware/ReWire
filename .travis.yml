@@ -23,4 +23,5 @@ install:
 - stack --no-terminal --install-ghc test --only-dependencies
 
 script:
+- stack install
 - stack --no-terminal test --test-arguments "regression" --haddock
