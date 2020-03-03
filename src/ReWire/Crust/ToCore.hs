@@ -5,8 +5,9 @@ module ReWire.Crust.ToCore (toCore) where
 import ReWire.Annotation
 import ReWire.Error
 import ReWire.Pretty
-import ReWire.Unbound (Name, Fresh, Embed (..) , unbind)
+import ReWire.Unbound (Name, Fresh, runFreshM, Embed (..) , unbind)
 
+import Control.Arrow ((&&&))
 import Control.Monad ((<=<))
 import Control.Monad.State (StateT (..), MonadState, get, put)
 import Control.Monad.Reader (MonadReader (..), ReaderT (..), asks, lift)
@@ -17,29 +18,48 @@ import qualified Data.HashMap.Strict as Map
 import qualified ReWire.Core.Syntax  as C
 import qualified ReWire.Crust.Syntax as M
 
-type TCM m = ReaderT [M.DataDefn] (ReaderT (HashMap (Name M.Exp) Int) m)
--- type TCM m = ReaderT [M.DataDefn] (ReaderT (HashMap (Name M.Exp) Int) (StateT (HashMap M.Ty Int) m))
+type SizeMap = HashMap M.Ty Int
+type ConMap = (HashMap (Name M.TyConId) [Name M.DataConId], HashMap (Name M.DataConId) M.Ty)
+type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) Int) m)
 
 toCore :: (Fresh m, MonadError AstError m) => M.FreeProgram -> m C.Program
 toCore (ts, vs) = fst <$> flip runStateT mempty (do
-      ts' <- concat <$> mapM (transData ts) ts
-      vs' <- mapM (transDefn ts) $ filter (not . M.isPrim . M.defnName) vs
+      ts' <- concat <$> mapM (transData conMap) ts
+      vs' <- mapM (transDefn conMap) $ filter (not . M.isPrim . M.defnName) vs
       pure $ C.Program ts' vs')
+      where conMap :: ConMap
+            conMap = ( Map.fromList $ map (M.dataName &&& map projId . M.dataCons) ts
+                     , Map.fromList $ map (projId &&& projType) (concatMap M.dataCons ts)
+                     )
 
-transData :: (MonadError AstError m, Fresh m, MonadState (HashMap M.Ty Int) m) => [M.DataDefn] -> M.DataDefn -> m [C.DataCon]
-transData ts (M.DataDefn _ _ _ cs) = mapM transDataCon $ zip [0..] cs
-      where transDataCon :: (MonadError AstError m, Fresh m, MonadState (HashMap M.Ty Int) m) => (Int, M.DataCon) -> m C.DataCon
-            transDataCon (n, M.DataCon an c (Embed (M.Poly t))) = do
+            projId :: M.DataCon -> Name M.DataConId
+            projId (M.DataCon _ n _) = n
+
+            projType :: M.DataCon -> M.Ty
+            projType (M.DataCon _ _ (Embed (M.Poly t))) = runFreshM (snd <$> unbind t)
+
+-- getCtors n = asks (Map.lookup n)map projId <$> concatMap M.dataCons <$> filter isMine)
+--       where isMine :: M.DataDefn -> Bool
+--             isMine (M.DataDefn _ n' _ _) = n == n'
+-- 
+      -- where isMine :: M.DataCon -> Bool
+      --       isMine (M.DataCon _ d' _) = d == d'
+
+
+transData :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => ConMap -> M.DataDefn -> m [C.DataCon]
+transData conMap (M.DataDefn _ _ _ cs) = mapM (transDataCon $ length cs) $ zip [0..] cs
+      where transDataCon :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => Int -> (Int, M.DataCon) -> m C.DataCon
+            transDataCon nctors (n, M.DataCon an c (Embed (M.Poly t))) = do
                   (_, t') <- unbind t
-                  C.DataCon an (C.DataConId $ show c) n <$> runReaderT (transType t') ts
+                  C.DataCon an (C.DataConId $ show c) n nctors <$> runReaderT (transType t') conMap
 
-transDefn :: (MonadError AstError m, Fresh m, MonadState (HashMap M.Ty Int) m) => [M.DataDefn] -> M.Defn -> m C.Defn
-transDefn ts (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) = do
+transDefn :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => ConMap -> M.Defn -> m C.Defn
+transDefn conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) = do
       (_, t')  <- unbind t
       (xs, e') <- unbind e
-      C.Defn an (show n) <$> runReaderT (transType t') ts <*> runReaderT (runReaderT (transExp e') ts) (Map.fromList $ zip xs [0..])
+      C.Defn an (show n) <$> runReaderT (transType t') conMap <*> runReaderT (runReaderT (transExp e') conMap) (Map.fromList $ zip xs [0..])
 
-transExp :: (MonadError AstError m, Fresh m, MonadState (HashMap M.Ty Int) m) => M.Exp -> TCM m C.Exp
+transExp :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.Exp -> TCM m C.Exp
 transExp = \ case
       M.App an e1 e2                    -> C.App an <$> transExp e1 <*> transExp e2
       M.Var an t x                      -> lift (asks (Map.lookup x)) >>= \ case
@@ -62,12 +82,12 @@ toLId :: MonadError AstError m => C.Exp -> m C.LId
 toLId (C.LVar _ _ x) = pure x
 toLId e              = failAt (ann e) $ "toLId: expected LVar, got: " ++ prettyPrint e
 
-transPat :: (MonadError AstError m, Fresh m, MonadState (HashMap M.Ty Int) m) => M.MatchPat -> ReaderT [M.DataDefn] m C.Pat
+transPat :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.MatchPat -> ReaderT ConMap m C.Pat
 transPat = \ case
       M.MatchPatCon an t d ps -> C.PatCon an <$> transType t <*> pure (C.DataConId $ show d) <*> mapM transPat ps
       M.MatchPatVar an t      -> C.PatVar an <$> transType t
 
-transType :: (Fresh m, MonadError AstError m, MonadState (HashMap M.Ty Int) m) => M.Ty -> ReaderT [M.DataDefn] m C.Ty
+transType :: (Fresh m, MonadError AstError m, MonadState SizeMap m) => M.Ty -> ReaderT ConMap m C.Ty
 transType t = case t of
       M.TyApp an t1 t2  -> C.TyApp an <$> sizeof an t <*> transType t1 <*> transType t2
       M.TyCon an c      -> C.TyCon an (C.TyConId $ show c) <$> sizeof an t
@@ -81,11 +101,6 @@ matchTy an (M.TyApp _ t1 t2) (M.TyApp _ t1' t2') = do
       merge an s1 s2
 matchTy _ (M.TyVar _ _ v) t                    = pure [(show v, t)]
 matchTy _ _ _ = pure []
--- matchTy _ (M.TyCon _ tci) (M.TyCon _ tci')
---       | tci == tci'                          = pure []
--- matchTy an t t'                              = failAt an
---       $ "ToCore: matchTy: can't match "
---       ++ prettyPrint t ++ " with " ++ prettyPrint t'
 
 merge :: MonadError AstError m => Annote -> TySub -> TySub -> m TySub
 merge an s'  = \ case
@@ -100,36 +115,28 @@ merge an s'  = \ case
 type TySub = [(C.TyId, M.Ty)]
 
 apply :: TySub -> M.Ty -> M.Ty
-apply s (M.TyApp an t1 t2)  = M.TyApp an (apply s t1) $ apply s t2
-apply _ t@M.TyCon {}        = t
-apply s t@(M.TyVar _ _ i)     = fromMaybe t $ lookup (show i) s
+apply s (M.TyApp an t1 t2) = M.TyApp an (apply s t1) $ apply s t2
+apply s t@(M.TyVar _ _ i)  = fromMaybe t $ lookup (show i) s
+apply _ t                  = t
 
-ctorWidth :: (Fresh m, MonadError AstError m, MonadReader [M.DataDefn] m, MonadState (HashMap M.Ty Int) m) => M.Ty -> Name M.DataConId -> m Int
+ctorWidth :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => M.Ty -> Name M.DataConId -> m Int
 ctorWidth t d = do
       let t'            =  snd $ M.flattenArrow t
-      cs                <- filter isMine <$> concatMap M.dataCons <$> ask
-      case cs of
-            [c] -> do
-                  (targs, tres)     <- M.flattenArrow <$> projTy c
+      getCtorType d >>= \ case
+            Just ct -> do
+                  let (targs, tres) = M.flattenArrow ct
                   s                 <- matchTy (ann t') tres t'
                   sum <$> mapM (sizeof $ ann t) (map (apply s) targs)
             _ -> pure 0
-      where isMine :: M.DataCon -> Bool
-            isMine (M.DataCon _ d' _) = d == d'
-
-            projTy :: Fresh m => M.DataCon -> m M.Ty
-            projTy (M.DataCon _ _ (Embed (M.Poly t))) = snd <$> unbind t
 
 -- TODO(chathhorn): shouldn't be necessary (should save this info before breaking out ctors)
-getCtors :: MonadReader [M.DataDefn] m => Name M.TyConId -> m [Name M.DataConId]
-getCtors n = asks (map projId <$> concatMap M.dataCons <$> filter isMine)
-      where isMine :: M.DataDefn -> Bool
-            isMine (M.DataDefn _ n' _ _) = n == n'
+getCtors :: MonadReader ConMap m => Name M.TyConId -> m [Name M.DataConId]
+getCtors n = asks (fromMaybe [] . Map.lookup n . fst)
 
-            projId :: M.DataCon -> Name M.DataConId
-            projId (M.DataCon _ n _) = n
+getCtorType :: MonadReader ConMap m => Name M.DataConId -> m (Maybe M.Ty)
+getCtorType n = asks (Map.lookup n . snd)
 
-sizeof :: (Fresh m, MonadError AstError m, MonadReader [M.DataDefn] m, MonadState (HashMap M.Ty Int) m) => Annote -> M.Ty -> m Int
+sizeof :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => Annote -> M.Ty -> m Int
 sizeof an t = do
       m <- get
       s <- case Map.lookup t m of
@@ -139,7 +146,7 @@ sizeof an t = do
                         ctors      <- getCtors c
                         ctorWidths <- mapM (ctorWidth t) ctors
                         pure $ ceilLog2 (length ctors) + maximum (0 : ctorWidths)
-                  M.TyVar {}  -> pure 0
+                  _  -> pure 0
             Just s -> pure s
       put $ Map.insert t s m
       pure s

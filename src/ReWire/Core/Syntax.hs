@@ -197,14 +197,15 @@ instance Pretty Defn where
 
 ---
 
-data DataCon = DataCon Annote DataConId Int Ty
+-- | annotation, id, ctor index (in the range [0, nctors)), nctors, type
+data DataCon = DataCon Annote DataConId Int Int Ty
       deriving (Generic, Eq, Ord, Show, Typeable, Data)
 
 instance Annotated DataCon where
-      ann (DataCon a _ _ _) = a
+      ann (DataCon a _ _ _ _) = a
 
 instance Pretty DataCon where
-      pretty (DataCon _ n _ t) = text (deDataConId n) <+> text "::" <+> pretty t
+      pretty (DataCon _ n _ _ t) = text (deDataConId n) <+> text "::" <+> pretty t
 
 ---
 

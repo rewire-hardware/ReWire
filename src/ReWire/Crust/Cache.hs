@@ -33,7 +33,8 @@ import Control.Monad.Reader (runReaderT, ReaderT, MonadReader (..))
 import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify, lift)
 import Data.Containers.ListUtils (nubOrd)
 
-import qualified Data.Map.Strict              as Map
+import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict          as Map
 import qualified Language.Haskell.Exts.Syntax as S (Module (..))
 import qualified ReWire.Core.Syntax           as Core
 import qualified Language.Haskell.Exts.Pretty as P
@@ -42,7 +43,7 @@ import Language.Haskell.Exts.Syntax hiding (Annotation, Exp, Module (..), Namesp
 
 type Cache = ReaderT LoadPath (StateT ModCache (FreshMT (SyntaxErrorT IO)))
 type LoadPath = [FilePath]
-type ModCache = Map.Map FilePath (Module, (Module, Exports))
+type ModCache = HashMap FilePath (Module, (Module, Exports))
 
 runCache :: Cache a -> LoadPath -> SyntaxErrorT IO a
 runCache m lp = fst <$> runFreshMT (runStateT (runReaderT m lp) mempty)

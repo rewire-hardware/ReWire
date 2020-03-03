@@ -27,27 +27,12 @@ askCtors = asks fst
 askDefns :: Monad m => CM m [Defn]
 askDefns = asks snd
 
-tcictors :: Monad m => TyConId -> CM m [DataCon]
-tcictors tci = filter isMine <$> askCtors
-      where isMine :: DataCon -> Bool
-            isMine (DataCon _ _ _ t) = case flattenTyApp $ snd $ flattenArrow t of
-                  (TyCon _ tci' _ : _) -> tci == tci'
-                  _                  -> False
-
 askDci :: Monad m => DataConId -> CM m DataCon
 askDci dci = do
       ctors <- askCtors
-      case find (\ (DataCon _ dci' _ _) -> dci == dci') ctors of
+      case find (\ (DataCon _ dci' _ _ _) -> dci == dci') ctors of
             Just ctor -> pure ctor
             Nothing   -> lift $ failNowhere $ "askDci: no info for data constructor " ++ show dci
-
-dcitci :: Monad m => DataConId -> CM m TyConId
-dcitci dci = do
-      DataCon l _ _ t <- askDci dci
-      case flattenTyApp (snd $ flattenArrow t) of
-            (TyCon _ tci _ : _) -> pure tci
-            _               -> lift $ failAt l $ "dcitci: malformed type for data constructor "
-                                    ++ show dci ++ " (does not end in application of TyCon)"
 
 nvec :: Int -> Int -> [Bit]
 nvec width n = nvec' 0 []
@@ -56,16 +41,13 @@ nvec width n = nvec' 0 []
 
 dciTagVector :: Monad m => DataConId -> CM m [Bit]
 dciTagVector dci = do
-      tci               <- dcitci dci
-      ctors             <- tcictors tci
-      DataCon _ _ pos _ <- askDci dci
-      pure $ nvec (ceilLog2 $ length ctors) pos
+      DataCon _ _ pos nctors _ <- askDci dci
+      pure $ nvec (ceilLog2 nctors) pos
 
 dciPadVector :: Monad m => DataConId -> Int -> C.Ty -> CM m [Bit]
 dciPadVector dci fieldwidth t = do
-      tci          <- dcitci dci
-      ctors        <- tcictors tci
-      let tot      =  ceilLog2 (length ctors) + fieldwidth
+      DataCon _ _ _ nctors _ <- askDci dci
+      let tot      =  ceilLog2 nctors + fieldwidth
           tysize   =  sizeof t
           padwidth =  tysize - tot
       pure $ nvec padwidth 0
@@ -99,7 +81,7 @@ addSignal n t = do
       put (sigs ++ [Signal n t], comps, ctr)
 
 addComponent :: Monad m => Annote -> GId -> C.Ty -> CM m ()
-addComponent an i t = do
+addComponent _ i t = do
       (sigs, comps, ctr) <- get
       case find ((== mangle i) . componentName) comps of
             Just _ -> pure ()
@@ -108,7 +90,7 @@ addComponent an i t = do
                   put (sigs, Component (mangle i) ps : comps, ctr)
 
 compilePat :: Monad m => Name -> Int -> Pat -> CM m (Expr, [Expr])  -- first Expr is for whether match (std_logic); remaining Exprs are for extracted fields
-compilePat nscr offset (PatCon an _ dci ps) = do
+compilePat nscr offset (PatCon _ _ dci ps) = do
       dcitagvec        <- dciTagVector dci
       let tagw         =  length dcitagvec
           fieldwidths  =  map (sizeof . typeOf) ps
@@ -122,7 +104,7 @@ compilePat nscr offset (PatCon an _ dci ps) = do
                               (ExprBitString dcitagvec))
                             ematchs
       pure (ematch, eslices)
-compilePat nscr offset (PatVar an t)       = do
+compilePat nscr offset (PatVar _ t)       = do
       let size = sizeof t
       pure (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + size - 1)])
 
@@ -153,7 +135,7 @@ compileExp e_ = case e of
       LVar _ _ i       -> case eargs of
             [] -> pure ([], "arg" ++ show i)
             _  -> failAt (ann e_) $ "compileExp: Encountered local variable in function position in " ++ prettyPrint e_
-      Con an t w i       -> do
+      Con _ t w i       -> do
             n           <- (++"_res") <$> freshName (mangle (deDataConId i))
             let tres    =  snd $ flattenArrow t
                 size    = sizeof tres
