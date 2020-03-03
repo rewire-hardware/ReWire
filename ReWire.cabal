@@ -45,6 +45,7 @@ build-type        : Simple
 -- README.
 extra-source-files: README.md
 data-files        : tests/integration/*.hs
+                    tests/integration/OD19Filter/*.hs
                     tests/regression/Mods/*.hs
                     tests/regression/Mods/C/*.hs
                     tests/regression/*.hs
