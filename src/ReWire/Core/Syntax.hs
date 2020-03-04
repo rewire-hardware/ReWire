@@ -9,7 +9,7 @@ module ReWire.Core.Syntax
   , Defn (..)
   , DataCon (..)
   , Program (..)
-  , arrowRight
+  , arrowRight, sizeof
   , flattenArrow, flattenTyApp
   , flattenApp
   , GId, LId, TyId
@@ -50,34 +50,40 @@ instance Pretty TyConId where
 
 ---
 
-data Ty = TyApp Annote Ty Ty
-        | TyCon Annote !TyConId
-        | TyVar Annote !TyId
+data Ty = TyApp Annote !Int Ty Ty
+        | TyCon Annote !TyConId !Int
+        | TyVar Annote !TyId !Int
         deriving (Eq, Ord, Generic, Show, Typeable, Data)
 
 instance Annotated Ty where
       ann = \ case
-            TyApp a _ _  -> a
-            TyCon a _    -> a
-            TyVar a _    -> a
+            TyApp a _ _ _  -> a
+            TyCon a _ _    -> a
+            TyVar a _ _    -> a
 
 instance Pretty Ty where
       pretty = \ case
-            TyApp _ (TyApp _ (TyCon _ c) t1) t2
+            TyApp _ _ (TyApp _ _ (TyCon _ c _) t1) t2
                   | deTyConId c == "->"  -> ppTyArrowL t1 <+> text "->" <+> pretty t2
                   | deTyConId c == "(,)" -> parens $ ppTyArrowL t1 <> (text "," <+> pretty t2)
                   where ppTyArrowL :: Ty -> Doc
                         ppTyArrowL = \ case
-                              t@(TyApp _ (TyApp _ (TyCon _ (TyConId "->")) _) _) -> parens $ pretty t
+                              t@(TyApp _ _ (TyApp _ _ (TyCon _ (TyConId "->") _) _) _) -> parens $ pretty t
                               t                                                  -> pretty t
-            TyApp _ t1 t2                  -> pretty t1 <+> ppTyAppR t2
+            TyApp _ _ t1 t2                  -> pretty t1 <+> ppTyAppR t2
                   where ppTyAppR :: Ty -> Doc
                         ppTyAppR = \ case
-                              t@(TyApp _ (TyApp _ (TyCon _ (TyConId "(,)")) _) _) -> pretty t
+                              t@(TyApp _ _ (TyApp _ _ (TyCon _ (TyConId "(,)") _) _) _) -> pretty t
                               t@TyApp {}                                          -> parens $ pretty t
                               t                                                   -> pretty t
-            TyCon _ n                      -> text $ deTyConId n
-            TyVar _ n                      -> text n
+            TyCon _ n _                      -> text $ deTyConId n
+            TyVar _ n _                      -> text n
+
+sizeof :: Ty -> Int
+sizeof = \ case
+      TyApp _ s _ _ -> s
+      TyCon _ _ s   -> s
+      TyVar _ _ s   -> s
 
 ---
 
@@ -85,7 +91,7 @@ data Exp = App        Annote Exp Exp
          | Prim       Annote Ty  !GId
          | GVar       Annote Ty  !GId
          | LVar       Annote Ty  !LId
-         | Con        Annote Ty  !DataConId
+         | Con        Annote Ty  !Int !DataConId
          | Match      Annote Ty  Exp Pat !GId [LId] (Maybe Exp)
          | NativeVHDL Annote Ty  String
          deriving (Eq, Ord, Show, Typeable, Data)
@@ -96,7 +102,7 @@ instance TypeAnnotated Exp where
             Prim _ t _          -> t
             GVar _ t _          -> t
             LVar _ t _          -> t
-            Con _ t _           -> t
+            Con _ t _ _         -> t
             Match _ t _ _ _ _ _ -> t
             NativeVHDL _ t _    -> t
 
@@ -106,13 +112,13 @@ instance Annotated Exp where
             Prim a _ _          -> a
             GVar a _ _          -> a
             LVar a _ _          -> a
-            Con a _ _           -> a
+            Con a _ _ _           -> a
             Match a _ _ _ _ _ _ -> a
             NativeVHDL a _ _    -> a
 
 instance Parenless Exp where
       parenless = \ case -- simple (non-compound?) expressions
-            App _ (App _ (Con _ _ (DataConId "(,)")) _) _ -> True
+            App _ (App _ (Con _ _ _ (DataConId "(,)")) _) _ -> True
             Con {}                                        -> True
             GVar {}                                       -> True
             LVar {}                                       -> True
@@ -121,10 +127,10 @@ instance Parenless Exp where
 
 instance Pretty Exp where
       pretty = \ case
-            App _ (App _ (Con _ _ (DataConId "(,)")) e1) e2 -> parens $ pretty e1 <> (text "," <+> pretty e2)
+            App _ (App _ (Con _ _ _ (DataConId "(,)")) e1) e2 -> parens $ pretty e1 <> (text "," <+> pretty e2)
             App _ e1@App {} e2                              -> hang (pretty e1) 2 $ mparen e2
             App _ e1 e2                                     -> hang (mparen e1) 2 $ mparen e2
-            Con _ t (DataConId n)                           -> text n <+> braces (pretty t)
+            Con _ t _ (DataConId n)                           -> text n <+> braces (pretty t)
             Prim _ _ n                                      -> text n
             GVar _ t n                                      -> text n <+> braces (pretty t)
             LVar _ _ n                                      -> text $ "$" ++ show n
@@ -191,14 +197,15 @@ instance Pretty Defn where
 
 ---
 
-data DataCon = DataCon Annote DataConId Int Ty
+-- | annotation, id, ctor index (in the range [0, nctors)), nctors, type
+data DataCon = DataCon Annote DataConId Int Int Ty
       deriving (Generic, Eq, Ord, Show, Typeable, Data)
 
 instance Annotated DataCon where
-      ann (DataCon a _ _ _) = a
+      ann (DataCon a _ _ _ _) = a
 
 instance Pretty DataCon where
-      pretty (DataCon _ n _ t) = text (deDataConId n) <+> text "::" <+> pretty t
+      pretty (DataCon _ n _ _ t) = text (deDataConId n) <+> text "::" <+> pretty t
 
 ---
 
@@ -221,17 +228,18 @@ instance Pretty Program where
 -- TODO(chathhorn): should rewrite these to return ([x], x) or non-empty list.
 arity :: Ty -> Int
 arity = \ case
-      TyApp _ (TyApp _ (TyCon _ (TyConId "->")) _) t2 -> 1 + arity t2
+      TyApp _ _ (TyApp _ _ (TyCon _ (TyConId "->") _) _) t2 -> 1 + arity t2
       _                                               -> 0
 
-flattenArrow :: Ty -> [Ty]
+flattenArrow :: Ty -> ([Ty], Ty)
 flattenArrow = \ case
-      TyApp _ (TyApp _ (TyCon _ (TyConId "->")) tl) tr -> tl : flattenArrow tr
-      t                                                -> [t]
+      TyApp _ _ (TyApp _ _ (TyCon _ (TyConId "->") _) t1) t2 -> (t1 : ts, t)
+            where (ts, t) = flattenArrow t2
+      t                                               -> ([], t)
 
 flattenTyApp :: Ty -> [Ty]
 flattenTyApp = \ case
-      TyApp _ t t' -> flattenTyApp t ++ [t']
+      TyApp _ _ t t' -> flattenTyApp t ++ [t']
       t            -> [t]
 
 flattenApp :: Exp -> [Exp]
@@ -241,5 +249,5 @@ flattenApp = \ case
 
 arrowRight :: Ty -> Ty
 arrowRight = \ case
-      TyApp _ (TyApp _ (TyCon _ (TyConId "->")) _) t2 -> t2
+      TyApp _ _ (TyApp _  _ (TyCon _ (TyConId "->") _) _) t2 -> t2
       t                                               -> error $ "arrowRight: got non-arrow type: " ++ show t

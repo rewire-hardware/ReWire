@@ -21,19 +21,19 @@ import Control.Monad.Reader (ReaderT (..), local, asks)
 import Control.Monad.State (evalStateT, StateT (..), get, put, modify)
 import Control.Monad (zipWithM)
 import Data.List (foldl')
-import Data.Map.Strict (Map)
+import Data.HashMap.Strict (HashMap)
 
-import qualified Data.Map.Strict as Map
+import qualified Data.HashMap.Strict as Map
 
-subst :: Subst b a => Map (Name b) b -> a -> a
-subst ss = substs (Map.assocs ss)
+subst :: Subst b a => HashMap (Name b) b -> a -> a
+subst = substs . Map.toList
 
 -- Type checker for core.
 
-type TySub = Map (Name Ty) Ty
+type TySub = HashMap (Name Ty) Ty
 data TCEnv = TCEnv
-      { as  :: Map (Name Exp) Poly
-      , cas :: Map (Name DataConId) Poly
+      { as  :: HashMap (Name Exp) Poly
+      , cas :: HashMap (Name DataConId) Poly
       } deriving Show
 
 type TCM m = ReaderT TCEnv (StateT TySub m)
@@ -41,10 +41,10 @@ type TCM m = ReaderT TCEnv (StateT TySub m)
 typeCheck :: MonadError AstError m => FreeProgram -> m FreeProgram
 typeCheck (ts, vs) = runFreshMT $ evalStateT (runReaderT (tc (ts, vs)) $ TCEnv mempty mempty) mempty
 
-localAssumps :: MonadError AstError m => (Map (Name Exp) Poly -> Map (Name Exp) Poly) -> TCM m a -> TCM m a
+localAssumps :: MonadError AstError m => (HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly) -> TCM m a -> TCM m a
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
 
-localCAssumps :: MonadError AstError m => (Map (Name DataConId) Poly -> Map (Name DataConId) Poly) -> TCM m a -> TCM m a
+localCAssumps :: MonadError AstError m => (HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly) -> TCM m a -> TCM m a
 localCAssumps f = local (\ tce -> tce { cas = f (cas tce) })
 
 freshv :: (Fresh m, MonadError AstError m) => TCM m Ty
@@ -88,16 +88,16 @@ inst (Poly pt) = do
       sub      <- Map.fromList <$> mapM (\ tv -> (tv,) <$> freshv) tvs
       pure $ subst sub t
 
-patAssumps :: Pat -> Map (Name Exp) Poly
+patAssumps :: Pat -> HashMap (Name Exp) Poly
 patAssumps = flip patAssumps' mempty
-      where patAssumps' :: Pat -> Map (Name Exp) Poly -> Map (Name Exp) Poly
+      where patAssumps' :: Pat -> HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly
             patAssumps' = \ case
                   PatCon _ _ _ ps      -> flip (foldr patAssumps') ps
                   PatVar _ (Embed t) n -> Map.insert n $ [] `poly` t
 
-patHoles :: Fresh m => MatchPat -> m (Map (Name Exp) Poly)
+patHoles :: Fresh m => MatchPat -> m (HashMap (Name Exp) Poly)
 patHoles = flip patHoles' $ pure mempty
-      where patHoles' :: Fresh m => MatchPat -> m (Map (Name Exp) Poly) -> m (Map (Name Exp) Poly)
+      where patHoles' :: Fresh m => MatchPat -> m (HashMap (Name Exp) Poly) -> m (HashMap (Name Exp) Poly)
             patHoles' = \ case
                   MatchPatCon _ _ _ ps -> flip (foldr patHoles') ps
                   MatchPatVar _ t      -> (flip Map.insert ([] `poly` t) <$> fresh (s2n "PHOLE") <*>)
@@ -230,11 +230,11 @@ tc (ts, vs) = do
       vs'      <- localAssumps (as `Map.union`) $ localCAssumps (cas `Map.union`) $ mapM tcDefn vs
       pure (ts, vs')
 
-      where defnAssump :: Defn -> Map (Name Exp) Poly -> Map (Name Exp) Poly
+      where defnAssump :: Defn -> HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly
             defnAssump (Defn _ n (Embed pt) _ _) = Map.insert n pt
 
-            dataDeclAssumps :: DataDefn -> Map (Name DataConId) Poly -> Map (Name DataConId) Poly
+            dataDeclAssumps :: DataDefn -> HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly
             dataDeclAssumps (DataDefn _ _ _ cs) = flip (foldr dataConAssump) cs
 
-            dataConAssump :: DataCon -> Map (Name DataConId) Poly -> Map (Name DataConId) Poly
+            dataConAssump :: DataCon -> HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly
             dataConAssump (DataCon _ i (Embed t)) = Map.insert i t

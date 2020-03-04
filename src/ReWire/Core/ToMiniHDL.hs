@@ -14,7 +14,6 @@ import Control.Monad.Reader (ReaderT (..), asks)
 import Control.Monad.State (StateT (..), get, put, lift)
 import Data.List (find, foldl')
 import Data.Bits (testBit)
-import Data.Maybe (fromMaybe)
 
 type CM m = StateT ([Signal], [Component], Int) (
               ReaderT ([DataCon], [Defn]) (
@@ -28,56 +27,12 @@ askCtors = asks fst
 askDefns :: Monad m => CM m [Defn]
 askDefns = asks snd
 
-type TySub = [(TyId, C.Ty)]
-
-matchTy :: MonadError AstError m => Annote -> C.Ty -> C.Ty -> m TySub
-matchTy an (TyApp _ t1 t2) (TyApp _ t1' t2') = do
-      s1 <- matchTy an t1 t1'
-      s2 <- matchTy an t2 t2'
-      merge an s1 s2
-matchTy _ (TyVar _ v) t                      = pure [(v, t)]
-matchTy _ (TyCon _ tci) (TyCon _ tci')
-      | tci == tci'                          = pure []
-matchTy an t t'                              = failAt an
-      $ "ToMiniHDL: sizeof: matchTy: can't match "
-      ++ prettyPrint t ++ " with " ++ prettyPrint t'
-
-merge :: MonadError AstError m => Annote -> TySub -> TySub -> m TySub
-merge an s'  = \ case
-      []          -> pure s'
-      (v, t) : s -> case lookup v s' of
-            Nothing           -> ((v, t) :) <$> merge an s' s
-            Just t' | t == t' -> merge an s' s
-            Just t'           -> failAt an
-                  $ "sizeof: merge: inconsistent assignment of tyvar " ++ v
-                  ++ ": " ++ prettyPrint t ++ " vs. " ++ prettyPrint t'
-
-apply :: TySub -> C.Ty -> C.Ty
-apply s (TyApp an t1 t2)  = TyApp an (apply s t1) $ apply s t2
-apply _ t@TyCon {}        = t
-apply s t@(TyVar _ i)     = fromMaybe t $ lookup i s
-
-tcictors :: Monad m => TyConId -> CM m [DataCon]
-tcictors tci = filter isMine <$> askCtors
-      where isMine :: DataCon -> Bool
-            isMine (DataCon _ _ _ t) = case flattenTyApp $ last $ flattenArrow t of
-                  (TyCon _ tci' : _) -> tci == tci'
-                  _                  -> False
-
 askDci :: Monad m => DataConId -> CM m DataCon
 askDci dci = do
       ctors <- askCtors
-      case find (\ (DataCon _ dci' _ _) -> dci == dci') ctors of
+      case find (\ (DataCon _ dci' _ _ _) -> dci == dci') ctors of
             Just ctor -> pure ctor
             Nothing   -> lift $ failNowhere $ "askDci: no info for data constructor " ++ show dci
-
-dcitci :: Monad m => DataConId -> CM m TyConId
-dcitci dci = do
-      DataCon l _ _ t <- askDci dci
-      case flattenTyApp (last (flattenArrow t)) of
-            (TyCon _ tci:_) -> pure tci
-            _               -> lift $ failAt l $ "dcitci: malformed type for data constructor "
-                                    ++ show dci ++ " (does not end in application of TyCon)"
 
 nvec :: Int -> Int -> [Bit]
 nvec width n = nvec' 0 []
@@ -86,60 +41,33 @@ nvec width n = nvec' 0 []
 
 dciTagVector :: Monad m => DataConId -> CM m [Bit]
 dciTagVector dci = do
-      tci               <- dcitci dci
-      ctors             <- tcictors tci
-      DataCon _ _ pos _ <- askDci dci
-      pure $ nvec (ceilLog2 (length ctors)) pos
+      DataCon _ _ pos nctors _ <- askDci dci
+      pure $ nvec (ceilLog2 nctors) pos
 
-dciPadVector :: Monad m => Annote -> DataConId -> C.Ty -> CM m [Bit]
-dciPadVector an dci t = do
-      ctor         <- askDci dci
-      fieldwidth   <- ctorwidth t ctor
-      tci          <- dcitci dci
-      ctors        <- tcictors tci
-      let tot      =  ceilLog2 (length ctors) + fieldwidth
-      tysize       <- sizeof an t
-      let padwidth =  tysize - tot
+dciPadVector :: Monad m => DataConId -> Int -> C.Ty -> CM m [Bit]
+dciPadVector dci fieldwidth t = do
+      DataCon _ _ _ nctors _ <- askDci dci
+      let tot      =  ceilLog2 nctors + fieldwidth
+          tysize   =  sizeof t
+          padwidth =  tysize - tot
       pure $ nvec padwidth 0
 
 ceilLog2 :: Int -> Int
 ceilLog2 n | n < 1 = 0
 ceilLog2 n = ceiling (logBase 2 (fromIntegral n :: Double))
 
-ctorwidth :: Monad m => C.Ty -> DataCon -> CM m Int
-ctorwidth t (DataCon an _ _ ct) = do
-      let ts     =  flattenArrow ct
-          tres   =  last ts
-          targs  =  init ts
-      s          <- matchTy (ann t) tres t
-      let targs' =  map (apply s) targs
-      sizes      <- mapM (sizeof an) targs'
-      pure $ sum sizes
-
-sizeof :: Monad m => Annote -> C.Ty -> CM m Int
-sizeof an t = case th of
-      TyApp {}     -> failAt an $ "ToMiniHDL: sizeof: Got TyApp after flattening (can't happen): " ++ prettyPrint t
-      TyCon _ tci  -> do
-            ctors      <- tcictors tci
-            ctorwidths <- mapM (ctorwidth t) ctors
-            pure $ ceilLog2 (length ctors) + maximum (0 : ctorwidths)
-      TyVar _ _    -> failAt an $ "ToMiniHDL: sizeof: Encountered type variable: " ++ prettyPrint t
-      where (th : _) = flattenTyApp t
-
-getTyPorts :: Monad m => Annote -> C.Ty -> CM m [Port]
-getTyPorts an t = do
-      let ts       =  flattenArrow t
-          targs    =  init ts
-          tres     =  last ts
-          argnames =  zipWith (\ _ x -> "arg" ++ show x) targs ([0..]::[Int])
-      argsizes     <- mapM (sizeof an) targs
-      ressize      <- sizeof an tres
-      let argports =  zipWith (\ n x -> Port n In (TyStdLogicVector x)) argnames argsizes
-          resport  =  Port "res" Out (TyStdLogicVector ressize)
+getTyPorts :: Monad m => C.Ty -> CM m [Port]
+getTyPorts t = do
+      let (targs, tres) = flattenArrow t
+          argnames = zipWith (\ _ x -> "arg" ++ show x) targs ([0..]::[Int])
+          argsizes = map sizeof targs
+          ressize  = sizeof tres
+          argports = zipWith (\ n x -> Port n In (TyStdLogicVector x)) argnames argsizes
+          resport  = Port "res" Out (TyStdLogicVector ressize)
       pure $ argports ++ [resport]
 
 mkDefnEntity :: Monad m => Defn -> CM m Entity
-mkDefnEntity (Defn an n t _) = Entity (mangle n) <$> getTyPorts an t
+mkDefnEntity (Defn _ n t _) = Entity (mangle n) <$> getTyPorts t
 
 freshName :: Monad m => String -> CM m Name
 freshName s = do
@@ -153,19 +81,19 @@ addSignal n t = do
       put (sigs ++ [Signal n t], comps, ctr)
 
 addComponent :: Monad m => Annote -> GId -> C.Ty -> CM m ()
-addComponent an i t = do
+addComponent _ i t = do
       (sigs, comps, ctr) <- get
       case find ((== mangle i) . componentName) comps of
             Just _ -> pure ()
             Nothing -> do
-                  ps <- getTyPorts an t
+                  ps <- getTyPorts t
                   put (sigs, Component (mangle i) ps : comps, ctr)
 
 compilePat :: Monad m => Name -> Int -> Pat -> CM m (Expr, [Expr])  -- first Expr is for whether match (std_logic); remaining Exprs are for extracted fields
-compilePat nscr offset (PatCon an _ dci ps) = do
+compilePat nscr offset (PatCon _ _ dci ps) = do
       dcitagvec        <- dciTagVector dci
       let tagw         =  length dcitagvec
-      fieldwidths      <- mapM (sizeof an . typeOf) ps
+          fieldwidths  =  map (sizeof . typeOf) ps
       let fieldoffsets =  init $ scanl (+) (offset + tagw) fieldwidths
       rs               <- zipWithM (compilePat nscr) fieldoffsets ps
       let ematchs      =  map fst rs
@@ -176,8 +104,8 @@ compilePat nscr offset (PatCon an _ dci ps) = do
                               (ExprBitString dcitagvec))
                             ematchs
       pure (ematch, eslices)
-compilePat nscr offset (PatVar an t)       = do
-      size <- sizeof an t
+compilePat nscr offset (PatVar _ t)       = do
+      let size = sizeof t
       pure (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + size - 1)])
 
 askGIdTy :: Monad m => GId -> CM m C.Ty
@@ -194,8 +122,8 @@ compileExp e_ = case e of
       GVar an t i   -> do
             n           <- (++ "_res") <$> freshName (mangle i)
             n_inst      <- (++ "_call") <$> freshName (mangle i)
-            let tres    =  last (flattenArrow t)
-            size        <- sizeof an tres
+            let tres    = snd $ flattenArrow t
+                size    = sizeof tres
             addSignal n (TyStdLogicVector size)
             sssns       <- mapM compileExp eargs
             let stmts   =  concatMap fst sssns
@@ -207,16 +135,16 @@ compileExp e_ = case e of
       LVar _ _ i       -> case eargs of
             [] -> pure ([], "arg" ++ show i)
             _  -> failAt (ann e_) $ "compileExp: Encountered local variable in function position in " ++ prettyPrint e_
-      Con an t i       -> do
+      Con _ t w i       -> do
             n           <- (++"_res") <$> freshName (mangle (deDataConId i))
-            let tres    =  last (flattenArrow t)
-            size        <- sizeof an tres
+            let tres    =  snd $ flattenArrow t
+                size    = sizeof tres
             addSignal n (TyStdLogicVector size)
             sssns       <- mapM compileExp eargs
             let stmts   =  concatMap fst sssns
                 ns      =  map snd sssns
             tagvec      <- dciTagVector i
-            padvec      <- dciPadVector an i tres
+            padvec      <- dciPadVector i w tres
             pure (stmts ++ [Assign (LHSName n) (ExprConcat
                                                   (foldl' ExprConcat (ExprBitString tagvec) (map ExprName ns))
                                                      (ExprBitString padvec)
@@ -226,7 +154,7 @@ compileExp e_ = case e of
             [] -> case malt of
                   Just ealt -> do
                         n                   <- (++ "_res") <$> freshName "match"
-                        sizeres             <- sizeof an (last $ flattenArrow t)
+                        let sizeres         = sizeof $ snd $ flattenArrow t
                         addSignal n (TyStdLogicVector sizeres)
                         (stmts_escr, n_escr) <- compileExp escr
                         (ematch, efields)    <- compilePat n_escr 0 p
@@ -249,7 +177,7 @@ compileExp e_ = case e of
                                 stmts_ealt,
                                 n)
                   Nothing   -> do
-                        sizeres              <- sizeof an (last $ flattenArrow t)
+                        let sizeres          = sizeof $ snd $ flattenArrow t
                         (stmts_escr, n_escr) <- compileExp escr
                         (_, efields)         <- compilePat n_escr 0 p
                         n_gid                <- (++ "_res") <$> freshName (mangle gid)
@@ -267,8 +195,8 @@ compileExp e_ = case e of
       NativeVHDL an t i -> do
             n           <- (++ "_res") <$> freshName i
             n_call      <- (++ "_call") <$> freshName i
-            let tres    =  last (flattenArrow t)
-            size        <- sizeof an tres
+            let tres    =  snd $ flattenArrow t
+                size    = sizeof tres
             addSignal n (TyStdLogicVector size)
             sssns       <- mapM compileExp eargs
             let stmts   =  concatMap fst sssns
@@ -282,9 +210,9 @@ compileExp e_ = case e of
 mkDefnArch :: Monad m => Defn -> CM m Architecture
 mkDefnArch (Defn _ n _ e) = do
       put ([], [], 0) -- empty out the signal and component store, reset name counter
-      (stmts, nres)   <- compileExp e
+      (stmts, nres)    <- compileExp e
       (sigs, comps, _) <- get
-      pure (Architecture (mangle n ++ "_impl") (mangle n) sigs comps (stmts ++ [Assign (LHSName "res") (ExprName nres)]))
+      pure $ Architecture (mangle n ++ "_impl") (mangle n) sigs comps (stmts ++ [Assign (LHSName "res") (ExprName nres)])
 
 compileDefn :: Monad m => Defn -> CM m Unit
 compileDefn = \ case
@@ -292,15 +220,15 @@ compileDefn = \ case
             let t = defnTy d
                 e = defnBody d
             case t of
-                  TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (TyConId "ReT")) t_in) t_out) (TyCon _ (TyConId "I"))) t_res ->
+                  TyApp _ _ (TyApp _ _ (TyApp _ _ (TyApp _ _ (TyCon _ (TyConId "ReT") _) t_in) t_out) (TyCon _ (TyConId "I") _)) t_res ->
                         case e of
                               App an (App _ (Prim _ _ "unfold") (GVar _ t_loopfun n_loopfun)) (GVar _ t_startstate n_startstate) -> do
                                     put ([], [], 0) -- empty out signal and component store, reset name counter
-                                    insize    <- sizeof an t_in
-                                    outsize   <- sizeof an t_out
-                                    statesize <- sizeof an t_startstate
-                                    ressize   <- sizeof an t_res
-                                    arg0size  <- sizeof an (head $ flattenArrow t_loopfun)
+                                    let insize    = sizeof t_in
+                                        outsize   = sizeof t_out
+                                        statesize = sizeof t_startstate
+                                        ressize   = sizeof t_res
+                                        arg0size  = sizeof (head $ fst $ flattenArrow t_loopfun)
                                     addComponent an n_startstate t_startstate
                                     addComponent an n_loopfun t_loopfun
                                     addSignal "start_state" (TyStdLogicVector statesize)

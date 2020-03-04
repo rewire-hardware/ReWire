@@ -48,7 +48,7 @@ instance Monad m => MonadFail (SyntaxErrorT m) where
 
 instance Monad m => Monad (SyntaxErrorT m) where
       return = SyntaxErrorT . return
-      (SyntaxErrorT m) >>= f = SyntaxErrorT (m >>= unwrap . f)
+      (SyntaxErrorT m) >>= f = SyntaxErrorT $ m >>= unwrap . f
       fail = failNowhere
 
 instance Monad m => MonadError AstError (SyntaxErrorT m) where

@@ -18,7 +18,7 @@ module ReWire.Crust.Syntax
       , Defn (..), DataDefn (..), DataCon (..)
       , FreeProgram, Program (..)
       , Kind (..), kblank
-      , flattenApp, flattenArrow, arr, arrowRight
+      , flattenApp, flattenArrow, flattenTyApp, arr, arrowRight
       , fv, fvAny
       , Fresh, Name, Embed (..), TRec, Bind
       , FieldId
@@ -147,9 +147,7 @@ instance Eq Poly where
       (==) = aeq
 
 instance Pretty Poly where
-      pretty (Poly pt) = runFreshM $ do
-            (_, t) <- unbind pt
-            pure $ pretty t
+      pretty (Poly pt) = runFreshM (pretty <$> snd <$> unbind pt)
 
 data Ty = TyApp Annote Ty Ty
         | TyCon Annote (Name TyConId)
@@ -438,6 +436,11 @@ flattenArrow = \ case
       TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t1) t2 -> (t1 : ts, t)
             where (ts, t) = flattenArrow t2
       t                                               -> ([], t)
+
+flattenTyApp :: Ty -> [Ty]
+flattenTyApp = \ case
+      TyApp _ t t' -> flattenTyApp t ++ [t']
+      t            -> [t]
 
 rangeTy :: Ty -> Ty
 rangeTy = \ case

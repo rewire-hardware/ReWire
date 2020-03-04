@@ -15,7 +15,7 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
 subst :: Subst b a => Map (Name b) b -> a -> a
-subst ss = substs (Map.assocs ss)
+subst = substs . Map.assocs
 
 -- Kind checking for Core.
 type KiSub = Map (Name Kind) Kind
