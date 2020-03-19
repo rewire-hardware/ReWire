@@ -38,16 +38,8 @@ toCore (ts, vs) = fst <$> flip runStateT mempty (do
             projType :: M.DataCon -> M.Ty
             projType (M.DataCon _ _ (Embed (M.Poly t))) = runFreshM (snd <$> unbind t)
 
--- getCtors n = asks (Map.lookup n)map projId <$> concatMap M.dataCons <$> filter isMine)
---       where isMine :: M.DataDefn -> Bool
---             isMine (M.DataDefn _ n' _ _) = n == n'
--- 
-      -- where isMine :: M.DataCon -> Bool
-      --       isMine (M.DataCon _ d' _) = d == d'
-
-
 transData :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => ConMap -> M.DataDefn -> m [C.DataCon]
-transData conMap (M.DataDefn _ _ _ cs) = mapM (transDataCon $ length cs) $ zip [0..] cs
+transData conMap (M.DataDefn _ _ _ _ cs) = mapM (transDataCon $ length cs) $ zip [0..] cs
       where transDataCon :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => Int -> (Int, M.DataCon) -> m C.DataCon
             transDataCon nctors (n, M.DataCon an c (Embed (M.Poly t))) = do
                   (_, t') <- unbind t

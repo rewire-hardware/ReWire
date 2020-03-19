@@ -129,7 +129,18 @@ transData rn datas = \ case
             tvs' <- mapM (transTyVar l) $ snd hd
             ks   <- replicateM (length tvs') $ freshKVar $ n2s n
             cs'  <- mapM (transCon rn ks tvs' n) cs
-            pure $ M.DataDefn l n (foldr M.KFun M.KStar ks) cs' : datas
+            pure $ M.DataDefn l n (foldr M.KFun M.KStar ks) False cs' : datas
+      TypeDecl l (sDeclHead -> hd) t -> do
+            let n = s2n $ rename Type rn $ fst hd
+            tvs' <- mapM (transTyVar l) $ snd hd
+            ks   <- replicateM (length tvs') $ freshKVar $ n2s n
+            let tvs'' = zipWith (M.TyVar l) ks tvs'
+            t_to   <- M.arr (foldl' (M.TyApp l) (M.TyCon l n) tvs'') <$> transTy rn t
+            t_from <- M.arr <$> transTy rn t <*> pure (foldl' (M.TyApp l) (M.TyCon l n) tvs'')
+            pure $ M.DataDefn l n (foldr M.KFun M.KStar ks) True
+                  [ M.DataCon l (s2n $ "$coerce_to_"   ++ show (fst hd)) (tvs' |-> t_to)
+                  , M.DataCon l (s2n $ "$coerce_from_" ++ show (fst hd)) (tvs' |-> t_from)
+                  ] : datas
       _                                       -> pure datas
 
 transTySig :: (Fresh m, MonadError AstError m) => Renamer -> [(S.Name (), M.Ty)] -> Decl Annote -> m [(S.Name (), M.Ty)]
@@ -159,8 +170,6 @@ transDef rn tys inls defs = \ case
                         pure $ M.Defn l x' (M.fv t |-> t) (x `elem` inls) (Embed (bind [] e')) : defs
                   Nothing -> do
                         e' <- if M.isPrim x' then pure $ M.Error (ann e) (M.TyBlank $ ann e) $ "Prim: " ++ n2s x' else transExp rn e
-                        -- TODO(chathhorn): would like to raise a warning here about lack of top-level type sig
-                        -- (as opposed to an error).
                         pure $ M.Defn l x' ([] |-> M.TyBlank l) (x `elem` inls) (Embed (bind [] e')) : defs
       DataDecl {}                                               -> pure defs -- TODO(chathhorn): elide
       InlineSig {}                                              -> pure defs -- TODO(chathhorn): elide
@@ -259,6 +268,7 @@ extendWithGlobs = \ case
             getGlobTyDefs :: Annotation a => [Decl a] -> [S.Name ()]
             getGlobTyDefs = concatMap $ \ case
                   DataDecl _ _ _ hd _ _ -> [fst $ sDeclHead hd]
+                  TypeDecl _ hd _       -> [fst $ sDeclHead hd]
                   _                     -> []
 
             getModCtors :: Annotation a => [S.Decl a] -> Ctors

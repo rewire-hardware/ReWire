@@ -393,6 +393,7 @@ data DataDefn = DataDefn
       { dataAnnote :: Annote
       , dataName   :: Name TyConId
       , dataKind   :: Kind
+      , dataCoerce :: Bool
       , dataCons   :: [DataCon]
       } deriving (Eq, Generic, Show, Typeable, Data)
 
@@ -401,10 +402,10 @@ instance Alpha DataDefn
 instance NFData DataDefn
 
 instance Annotated DataDefn where
-      ann (DataDefn a _ _ _) = a
+      ann (DataDefn a _ _ _ _) = a
 
 instance Pretty DataDefn where
-      pretty (DataDefn _ n k cs) = foldr ($+$) empty $
+      pretty (DataDefn _ n k _ cs) = foldr ($+$) empty $
                   (text "data" <+> pretty n <+> text "::" <+> pretty k <+> text "where")
                   : map (nest 2 . pretty) cs
 

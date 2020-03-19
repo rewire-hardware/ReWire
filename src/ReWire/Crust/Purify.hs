@@ -173,6 +173,7 @@ mkRDatatype dcs = DataDefn
        { dataAnnote = MsgAnnote "Purify: R Datatype"
        , dataName   = s2n "R_"
        , dataKind   = KStar
+       , dataCoerce = False
        , dataCons   = dcs
        }
 
@@ -184,6 +185,7 @@ mkADatatype allAs = DataDefn
        { dataAnnote = MsgAnnote "Purify: A Datatype"
        , dataName   = s2n "A_"
        , dataKind   = KStar
+       , dataCoerce = False
        , dataCons   = map mkADataCon allAs
        }
 

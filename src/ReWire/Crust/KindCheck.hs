@@ -107,14 +107,14 @@ monoize = \ case
       KVar _     -> KStar
 
 redecorate :: MonadError AstError m => KiSub -> DataDefn -> KCM m DataDefn
-redecorate s (DataDefn an i _ cs) = do
+redecorate s (DataDefn an i _ co cs) = do
       cas <- askCAssumps
       case Map.lookup i cas of
-            Just k  -> pure $ DataDefn an i (monoize $ subst s k) cs
+            Just k  -> pure $ DataDefn an i (monoize $ subst s k) co cs
             Nothing -> failAt an $ "Redecorate: no such assumption: " ++ show i
 
 assump :: DataDefn -> (Name TyConId, Kind)
-assump (DataDefn _ i k _) = (i, k)
+assump (DataDefn _ i k _ _) = (i, k)
 
 kc :: (Fresh m, MonadError AstError m) => FreeProgram -> KCM m FreeProgram
 kc (ts, vs) = do

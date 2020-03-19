@@ -206,7 +206,7 @@ tc (ts, vs) = do
             defnAssump (Defn _ n (Embed pt) _ _) = Map.insert n pt
 
             dataDeclAssumps :: DataDefn -> HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly
-            dataDeclAssumps (DataDefn _ _ _ cs) = flip (foldr dataConAssump) cs
+            dataDeclAssumps (DataDefn _ _ _ _ cs) = flip (foldr dataConAssump) cs
 
             dataConAssump :: DataCon -> HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly
             dataConAssump (DataCon _ i (Embed t)) = Map.insert i t

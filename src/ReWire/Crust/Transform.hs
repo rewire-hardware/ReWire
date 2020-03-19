@@ -169,9 +169,9 @@ purgeUnused (ts, vs) = (inuseData (fv $ trec $ inuseDefn vs) ts, inuseDefn vs)
             inuseData ns = filter (not . null . dataCons) . map (inuseData' ns)
 
             inuseData' :: [Name DataConId] -> DataDefn -> DataDefn
-            inuseData' ns d@(DataDefn an n k cs)
+            inuseData' ns d@(DataDefn an n k co cs)
                   | n2s n `elem` reservedData = d
-                  | otherwise                 = DataDefn an n k $ filter ((`Set.member` Set.fromList ns) . dataConName) cs
+                  | otherwise                 = DataDefn an n k co $ filter ((`Set.member` Set.fromList ns) . dataConName) cs
 
             reservedData :: [String]
             reservedData =
