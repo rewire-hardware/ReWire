@@ -16,12 +16,6 @@ import Unbound.Generics.LocallyNameless.Bind
 import safe Unbound.Generics.LocallyNameless.Name
 import safe Unbound.Generics.LocallyNameless.Internal.Fold
 
-import Control.Monad.Fail (MonadFail (..))
-
 n2s :: Name a -> String
 {-# INLINE n2s #-}
 n2s = name2String
-
--- TODO(chathhorn): Orphan instance
-instance MonadFail m => MonadFail (FreshMT m) where
-      fail = undefined -- TODO(chathhorn)

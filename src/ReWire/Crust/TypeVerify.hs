@@ -13,7 +13,7 @@ import ReWire.Unbound
       ( fresh, substs, aeq, Subst
       , n2s, s2n
       )
-import ReWire.Pretty
+import ReWire.Pretty (prettyPrint)
 import ReWire.Crust.Syntax
 
 import Control.Monad.Reader (ReaderT (..), local, asks)

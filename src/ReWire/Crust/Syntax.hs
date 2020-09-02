@@ -40,7 +40,6 @@ import ReWire.Unbound
       , toListOf
       , n2s, s2n
       )
-import ReWire.Pretty
 import qualified ReWire.Unbound as UB (fv, fvAny)
 
 import Control.DeepSeq (NFData (..), deepseq)
@@ -48,10 +47,11 @@ import Data.Data (Typeable, Data (..))
 import Data.List (intersperse)
 import Data.Hashable (Hashable)
 import GHC.Generics (Generic)
-import Text.PrettyPrint
-      ( Doc, text, nest, hsep, parens, doubleQuotes
-      , hang, braces, vcat, (<+>), ($+$), empty
+import Prettyprinter
+      ( Doc, nest, hsep, parens, dquotes
+      , braces, vcat, (<+>), Pretty (..)
       )
+import ReWire.Pretty (($+$), empty, text, hang)
 
 fv :: (Alpha a, Typeable b) => a -> [Name b]
 fv = toListOf UB.fv
@@ -75,7 +75,7 @@ class Parenless a where
       -- | Parts that never need to be wrapped in parens during pretty printing.
       parenless :: a -> Bool
 
-mparen :: (Pretty a, Parenless a) => a -> Doc
+mparen :: (Pretty a, Parenless a) => a -> Doc ann
 mparen a = if parenless a then pretty a else parens $ pretty a
 
 newtype DataConId = DataConId String
@@ -179,12 +179,12 @@ instance Pretty Ty where
             TyApp _ (TyApp _ (TyCon _ c) t1) t2
                   | n2s c == "->"  -> ppTyArrowL t1 <+> text "->" <+> pretty t2
                   | n2s c == "(,)" -> parens $ ppTyArrowL t1 <> (text "," <+> pretty t2)
-                  where ppTyArrowL :: Ty -> Doc
+                  where ppTyArrowL :: Ty -> Doc ann
                         ppTyArrowL = \ case
                               t@(TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) _) -> parens $ pretty t
                               t                                                 -> pretty t
             TyApp _ t1 t2                  -> pretty t1 <+> ppTyAppR t2
-                  where ppTyAppR :: Ty -> Doc
+                  where ppTyAppR :: Ty -> Doc ann
                         ppTyAppR = \ case
                               t@(TyApp _ (TyApp _ (TyCon _ (n2s -> "(,)")) _) _) -> pretty t
                               t@TyApp {}                                         -> parens $ pretty t
@@ -285,8 +285,8 @@ instance Pretty Exp where
                               : maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
                               )
                         ]
-            NativeVHDL _ n e                             -> text "nativeVhdl" <+> doubleQuotes (text n) <+> mparen e
-            Error _ t m                                  -> text "error" <+> braces (pretty t) <+> doubleQuotes (text m)
+            NativeVHDL _ n e                             -> text "nativeVhdl" <+> dquotes (text n) <+> mparen e
+            Error _ t m                                  -> text "error" <+> braces (pretty t) <+> dquotes (text m)
 
 ---
 

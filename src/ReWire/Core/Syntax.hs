@@ -21,7 +21,7 @@ import ReWire.Annotation
 
 import Data.Data (Typeable, Data(..))
 import Data.List (intersperse)
-import Text.PrettyPrint hiding ((<>))
+import Prettyprinter (Pretty (..), Doc, vcat, (<+>), nest, hsep, parens, braces, dquotes)
 import GHC.Generics (Generic)
 import Data.Containers.ListUtils (nubOrd)
 
@@ -32,7 +32,7 @@ class Parenless a where
       -- | Parts that never need to be wrapped in parens during pretty printing.
       parenless :: a -> Bool
 
-mparen :: (Pretty a, Parenless a) => a -> Doc
+mparen :: (Pretty a, Parenless a) => a -> Doc ann
 mparen a = if parenless a then pretty a else parens $ pretty a
 
 newtype DataConId = DataConId { deDataConId :: String } deriving (Eq, Ord, Generic, Show, Typeable, Data)
@@ -66,12 +66,12 @@ instance Pretty Ty where
             TyApp _ _ (TyApp _ _ (TyCon _ c _) t1) t2
                   | deTyConId c == "->"  -> ppTyArrowL t1 <+> text "->" <+> pretty t2
                   | deTyConId c == "(,)" -> parens $ ppTyArrowL t1 <> (text "," <+> pretty t2)
-                  where ppTyArrowL :: Ty -> Doc
+                  where ppTyArrowL :: Ty -> Doc ann
                         ppTyArrowL = \ case
                               t@(TyApp _ _ (TyApp _ _ (TyCon _ (TyConId "->") _) _) _) -> parens $ pretty t
                               t                                                  -> pretty t
             TyApp _ _ t1 t2                  -> pretty t1 <+> ppTyAppR t2
-                  where ppTyAppR :: Ty -> Doc
+                  where ppTyAppR :: Ty -> Doc ann
                         ppTyAppR = \ case
                               t@(TyApp _ _ (TyApp _ _ (TyCon _ (TyConId "(,)") _) _) _) -> pretty t
                               t@TyApp {}                                          -> parens $ pretty t
@@ -148,7 +148,7 @@ instance Pretty Exp where
                         , text "_" <+> text "->" <+> pretty e2
                         ])
                   ]
-            NativeVHDL _ _ n                                -> text "nativeVHDL" <+> doubleQuotes (text n)
+            NativeVHDL _ _ n                                -> text "nativeVHDL" <+> dquotes (text n)
 
 ---
 
