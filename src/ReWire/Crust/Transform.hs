@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, ScopedTypeVariables, GADTs, TupleSections #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, ScopedTypeVariables, GADTs, TupleSections, OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 module ReWire.Crust.Transform
@@ -29,6 +29,7 @@ import Data.List (find, foldl')
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Containers.ListUtils (nubOrdOn)
 import Data.Hashable (Hashable (..))
+import Data.Text (Text)
 
 import Data.Set (Set, union, (\\))
 import qualified Data.Set as Set
@@ -173,7 +174,7 @@ purgeUnused (ts, vs) = (inuseData (fv $ trec $ inuseDefn vs) ts, inuseDefn vs)
                   | n2s n `elem` reservedData = d
                   | otherwise                 = DataDefn an n k co $ filter ((`Set.member` Set.fromList ns) . dataConName) cs
 
-            reservedData :: [String]
+            reservedData :: [Text]
             reservedData =
                          [ "PuRe"
                          , "(,)"
@@ -193,7 +194,7 @@ inuseDefn ds = map toDefn $ Set.elems $ execState (inuseDefn' ds') ds'
                   inuse' <- get
                   inuseDefn' $ inuse' \\ inuse
 
-            reservedDefn :: [String]
+            reservedDefn :: [Text]
             reservedDefn =
                          [ "Main.start"
                          , "unfold"

@@ -7,6 +7,7 @@ module ReWire.Crust.Annotate
 
 import ReWire.Annotation (Annote (..), toSrcSpanInfo)
 import ReWire.SYB
+import ReWire.HaskellSyntaxOrphans ()
 
 import Control.Monad.Identity (Identity (..))
 import Data.Data (Data (..), cast)
@@ -85,4 +86,3 @@ nodes =   (s :: SF Module)
       where s n = return $ gmapT (\ t -> case cast t :: Maybe Annote of
                   Just _  -> fromJust $ cast $ AstAnnote (toSrcSpanInfo <$> n)
                   Nothing -> t) n
-

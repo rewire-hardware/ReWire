@@ -1,5 +1,5 @@
 {-# LANGUAGE Rank2Types, ScopedTypeVariables, GADTs, TypeOperators, TypeFamilies, LambdaCase, DeriveDataTypeable #-}
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -Wno-missing-methods #-}
 module ReWire.Annotation
       ( Annote (..)
@@ -12,9 +12,11 @@ module ReWire.Annotation
 
 import ReWire.SYB (runPureT,transform)
 import ReWire.Unbound (Alpha (..))
+import ReWire.HaskellSyntaxOrphans ()
 
 import Control.DeepSeq (NFData (..))
 import Control.Monad.Identity (Identity(..))
+import Data.Text (Text)
 import Data.Data (Typeable,Data(..))
 import Data.Hashable (Hashable (..))
 import Language.Haskell.Exts.ExactPrint (ExactP)
@@ -26,10 +28,11 @@ import qualified Language.Haskell.Exts.Syntax as HS (Annotated(..))
 import qualified Language.Haskell.Exts.Pretty as HS (Pretty)
 
 import safe GHC.Generics (Generic (..))
+import TextShow (TextShow (..))
 
 data Annote where
       NoAnnote  :: Annote
-      MsgAnnote :: String -> Annote
+      MsgAnnote :: Text -> Annote
       LocAnnote :: SrcSpanInfo -> Annote
       AstAnnote :: forall ast.
             ( Functor ast
@@ -41,6 +44,7 @@ data Annote where
             , Data (ast SrcSpanInfo)
             , Ord (ast SrcSpanInfo)
             , Show (ast SrcSpanInfo)
+            , TextShow (ast SrcSpanInfo)
             , Generic (ast SrcSpanInfo)
             , HS.Pretty (ast SrcSpanInfo)
             ) => ast SrcSpanInfo -> Annote
@@ -79,6 +83,12 @@ instance Show Annote where
       show (MsgAnnote m) = "MsgAnnote (" ++ show m ++ ")"
       show (LocAnnote l) = "LocAnnote (" ++ show l ++ ")"
       show (AstAnnote a) = "AstAnnote (" ++ show a ++ ")"
+
+instance TextShow Annote where
+      showb NoAnnote      = showb "NoAnnote"
+      showb (MsgAnnote m) = showb "MsgAnnote (" <> showb m <> showb ")"
+      showb (LocAnnote l) = showb "LocAnnote (" <> showb l <> showb ")"
+      showb (AstAnnote a) = showb "AstAnnote (" <> showb a <> showb ")"
 
 -- TODO(chathhorn): afraid of screwing stuff up if the annotation isn't
 -- ignored.

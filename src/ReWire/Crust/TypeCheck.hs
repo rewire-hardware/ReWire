@@ -1,5 +1,5 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, TupleSections #-}
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, TupleSections, OverloadedStrings #-}
+{-# LANGUAGE Trustworthy #-}
 --
 -- This type checker is based loosely on Mark Jones's "Typing Haskell in
 -- Haskell", though since we don't have type classes in core it is much
@@ -22,6 +22,9 @@ import Control.Monad.State (evalStateT, StateT (..), get, put, modify, MonadStat
 import Control.Monad (zipWithM, foldM)
 import Data.List (foldl')
 import Data.HashMap.Strict (HashMap)
+import qualified Data.Text as T
+
+import TextShow (TextShow (..))
 
 import qualified Data.HashMap.Strict as Map
 
@@ -77,7 +80,7 @@ freshv = do
 s1 @@ s2 = Map.mapWithKey (\ _ t -> subst s1 t) s2 `Map.union` s1
 
 isFlex :: Name a -> Bool
-isFlex = (== '?') . head . n2s
+isFlex = (== '?') . T.head . n2s
 
 coerce :: Monad m => Ty -> Ty -> TCM m Ty
 coerce t@TyVar {} _  = pure t
@@ -129,7 +132,7 @@ unify :: MonadError AstError m => Annote -> Ty -> Ty -> TCM m ()
 unify an t1 t2 = do
       s  <- get
       mgu (subst s t1) (subst s t2) >>= maybe
-            (failAt an $ "Types do not unify: " ++ prettyPrint (subst s t1) ++ ", " ++ prettyPrint (subst s t2))
+            (failAt an $ "Types do not unify: " <> prettyPrint (subst s t1) <> ", " <> prettyPrint (subst s t2))
             (modify . (@@))
 
 inst :: (MonadState TySub m, Fresh m) => Poly -> m Ty
@@ -158,7 +161,7 @@ tcPat t = \ case
       PatCon an _ (Embed i) ps -> do
             cas     <- asks cas
             case Map.lookup i cas of
-                  Nothing  -> failAt an $ "Unknown constructor: " ++ prettyPrint i
+                  Nothing  -> failAt an $ "Unknown constructor: " <> prettyPrint i
                   Just pta -> do
                         ta               <- inst pta
                         let (targs, tres) = flattenArrow ta
@@ -175,7 +178,7 @@ tcMatchPat t = \ case
       MatchPatCon an _ i ps -> do
             cas     <- asks cas
             case Map.lookup i cas of
-                  Nothing  -> failAt an $ "Unknown constructor: " ++ prettyPrint i
+                  Nothing  -> failAt an $ "Unknown constructor: " <> prettyPrint i
                   Just pta -> do
                         ta               <- inst pta
                         let (targs, tres) = flattenArrow ta
@@ -208,14 +211,14 @@ tcExp = \ case
       Var an _ v             -> do
             as <- asks as
             case Map.lookup v as of
-                  Nothing -> failAt an $ "Unknown variable: " ++ show v
+                  Nothing -> failAt an $ "Unknown variable: " <> showt v
                   Just pt -> do
                         t <- inst pt
                         pure (Var an t v, t)
       Con an _ i      -> do
             cas <- asks cas
             case Map.lookup i cas of
-                  Nothing -> failAt an $ "Unknown constructor: " ++ prettyPrint i
+                  Nothing -> failAt an $ "Unknown constructor: " <> prettyPrint i
                   Just pt -> do
                         t <- inst pt
                         pure (Con an t i, t)

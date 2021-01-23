@@ -75,7 +75,7 @@ library
                   , text >= 0.11
                   , transformers >= 0.3
                   , text-show >= 3.8 && < 3.9
-                  , unbound-generics >= 0.4 && < 0.5
+                  , unbound-generics >= 0.4.1 && < 0.4.2
                   , monad-resumption >= 0.1.4.0
   default-language: Haskell2010
   ghc-options     : -Wall
@@ -110,6 +110,7 @@ library
                     ReWire.SYB
                     ReWire.Unbound
                     ReWire.Prelude
+                    ReWire.HaskellSyntaxOrphans
 
   exposed-modules : ReWire.FrontEnd
                     ReWire.Main

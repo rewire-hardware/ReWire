@@ -5,6 +5,7 @@ module ReWire.MiniHDL.Syntax where
 import Prelude hiding ((<>))
 import Prettyprinter (Pretty (..), parens, (<>), (<+>), vcat, hcat, semi, colon, punctuate, comma, nest)
 import ReWire.Pretty (($+$))
+import Data.Text (Text)
 
 newtype Program = Program { programUnits :: [Unit] }
       deriving (Eq, Show)
@@ -21,7 +22,7 @@ instance Pretty Unit where
                            $+$ pretty ent
                            $+$ pretty arch
 
-type Name = String
+type Name = Text
 
 data Entity = Entity
       { entityName  :: !Name

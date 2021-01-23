@@ -1,5 +1,5 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings #-}
+{-# LANGUAGE Trustworthy #-}
 module ReWire.Main (main) where
 
 import ReWire.FrontEnd (loadProgram, LoadPath)
@@ -16,7 +16,11 @@ import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), A
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
 import System.FilePath ((-<.>))
-import System.IO (hPutStr, hPutStrLn, hPrint, stderr)
+import System.IO (stderr)
+
+import Data.Text (pack)
+import qualified Data.Text.IO as T
+import TextShow (showt)
 
 import Paths_ReWire (getDataFileName)
 
@@ -39,7 +43,7 @@ options =
        ]
 
 exitUsage :: IO ()
-exitUsage = hPutStr stderr (usageInfo "Usage: rwc [OPTION...] <filename.rw>" options) >> exitFailure
+exitUsage = T.hPutStr stderr (pack $ usageInfo "Usage: rwc [OPTION...] <filename.rw>" options) >> exitFailure
 
 getSystemLoadPath :: IO [FilePath]
 getSystemLoadPath = do
@@ -52,7 +56,7 @@ main = do
       (flags, filenames, errs) <-  getOpt Permute options <$> getArgs
 
       unless (null errs) $ do
-            mapM_ (hPutStrLn stderr) errs
+            mapM_ (T.hPutStrLn stderr . pack) errs
             exitUsage
 
       let userLP                   =  concatMap getLoadPathEntries flags
@@ -67,7 +71,7 @@ main = do
             getOutFile flags filename = case filter (\ case { FlagO {} -> True; _ -> False }) flags of
                   []        -> pure $ filename -<.> "vhdl"
                   [FlagO o] -> pure o
-                  _         -> hPutStrLn stderr "Multiple output files specified on the command line!" >> exitFailure
+                  _         -> T.hPutStrLn stderr "Multiple output files specified on the command line!" >> exitFailure
 
             getLoadPathEntries :: Flag -> [FilePath]
             getLoadPathEntries (FlagLoadPath ds) =  splitOn "," ds
@@ -79,5 +83,5 @@ main = do
 
                   fout <- getOutFile flags filename
 
-                  runSyntaxError (loadProgram flags lp filename >>= compileProgram >>= liftIO . writeFile fout . prettyPrint)
-                        >>= either ((>> exitFailure) . hPrint stderr) pure
+                  runSyntaxError (loadProgram flags lp filename >>= compileProgram >>= liftIO . T.writeFile fout . prettyPrint)
+                        >>= either ((>> exitFailure) . T.hPutStrLn stderr . prettyPrint) pure

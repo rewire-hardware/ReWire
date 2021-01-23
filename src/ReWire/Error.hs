@@ -12,20 +12,21 @@ module ReWire.Error
 
 import ReWire.Annotation (Annotation (..), Annote (..), toSrcSpanInfo, noAnn)
 
-import Prelude hiding ((<>), length, lines, unlines, take)
-import Data.Text
+import Prelude hiding ((<>), lines, unlines)
+import qualified Data.Text as T
 import Control.Monad.Except (MonadError (..), ExceptT (..), runExceptT, throwError)
 import Control.Monad.Trans (MonadTrans (..))
 import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 import Control.Monad.Reader (MonadReader (..))
 import Control.Monad.State (StateT (..), MonadState (..))
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import Language.Haskell.Exts.Syntax (Annotated (..))
 import Language.Haskell.Exts.Pretty (prettyPrim)
 import Language.Haskell.Exts.SrcLoc (SrcLoc (..), SrcInfo (..), SrcSpanInfo, noLoc)
 import Prettyprinter (Pretty (..), (<>), (<+>), nest, Doc)
 import ReWire.Pretty (($$), text, int)
+import TextShow (TextShow (..))
 
 data AstError = AstError !Annote !Text
 
@@ -37,16 +38,16 @@ newtype SyntaxErrorT m a = SyntaxErrorT { unwrap :: StateT Annote (ExceptT AstEr
 instance MonadTrans SyntaxErrorT where
       lift = SyntaxErrorT . lift . lift
 
-instance TextShow AstError where
-      showb (AstError (AstAnnote a) msg) = trunc 50 (showb $ nest 4 $ text "...") $ show $
-            errorHdr (ann a) msg
+instance Pretty AstError where
+      pretty (AstError (AstAnnote a) msg) = text (trunc 50 (showt $ nest 4 $ text "...")
+            (showt $ errorHdr (ann a) msg
             $$ nest 4 (text "In the fragment:")
-            $$ nest 6 (pretty $ show $ prettyPrim a) -- TODO(chathhorn): better way?
-      showb (AstError a@(MsgAnnote m) msg) = showb $ errorHdr (toSrcSpanInfo a) $ msg <> "\n" <> m
-      showb (AstError a msg)               = showb $ errorHdr (toSrcSpanInfo a) msg
+            $$ nest 6 (text $ pack $ show $ prettyPrim a))) -- TODO(chathhorn): better way?
+      pretty (AstError a@(MsgAnnote m) msg) = errorHdr (toSrcSpanInfo a) $ msg <> "\n" <> m
+      pretty (AstError a msg)               = errorHdr (toSrcSpanInfo a) msg
 
 instance Monad m => MonadFail (SyntaxErrorT m) where
-      fail = failNowhere
+      fail = failNowhere . showt
 
 instance Monad m => Monad (SyntaxErrorT m) where
       return = SyntaxErrorT . return
@@ -58,16 +59,18 @@ instance Monad m => MonadError AstError (SyntaxErrorT m) where
 
 errorHdr :: SrcSpanInfo -> Text -> Doc ann
 errorHdr l msg = if getPointLoc l == noLoc
-      then text "Error:" <+> text msg
-      else loc $$ nest 4 (text "Error:" <+> text msg)
-      where loc = text file <> num r <> num c <> text ":"
-            num n = if n == -1 then empty else text ":" <> int n
+      then text "Error:" <+> pretty msg
+      else loc $$ nest 4 (text "Error:" <+> pretty msg)
+      where loc :: Doc ann
+            loc = text (T.pack file) <> num r <> num c <> text ":"
+            num :: Int -> Doc ann
+            num n = if n == -1 then mempty else text ":" <> int n
             SrcLoc file r c = getPointLoc l
 
 trunc :: Int -> Text -> Text -> Text
 trunc n t s
-      | length (lines s) > n = unlines $ take n $ lines s <> [t]
-      | otherwise            = s
+      | length (T.lines s) > n = T.unlines $ take n $ T.lines s <> [t]
+      | otherwise                = s
 
 failAt :: (MonadError AstError m, Annotation an) => an -> Text -> m a
 failAt an msg = throwError $ AstError (toAnnote an) msg

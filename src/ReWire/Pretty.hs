@@ -1,8 +1,11 @@
--- {-# LANGUAGE Safe #-}
+{-# LANGUAGE Trustworthy #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.Pretty (($+$), ($$), prettyPrint, text, int, empty, hang) where
 
 import qualified Prettyprinter as P
+import qualified Prettyprinter.Render.Text as P
 import TextShow
+import Data.Text (Text)
 
 ($$) :: P.Doc ann -> P.Doc ann -> P.Doc ann
 a $$ b = P.vcat [a, b]
@@ -12,7 +15,7 @@ a $$ b = P.vcat [a, b]
 a $+$ b = P.vcat [a, P.nest 2 b]
 infixl 5 $$, $+$
 
-text :: String -> P.Doc ann
+text :: Text -> P.Doc ann
 text = P.pretty
 
 int :: Int -> P.Doc ann
@@ -24,8 +27,9 @@ empty = P.emptyDoc
 hang :: P.Doc ann -> Int -> P.Doc ann -> P.Doc ann
 hang a n b = P.sep [a, P.nest n b]
 
-prettyPrint :: P.Pretty a => a -> String
-prettyPrint = show . P.pretty
+prettyPrint :: P.Pretty a => a -> Text
+prettyPrint = P.renderStrict . P.layoutPretty P.defaultLayoutOptions . P.pretty
 
-instance TextShow (P.Doc a) where
-      showb
+-- TODO(chathhorn): orphan
+instance TextShow (P.Doc ann) where
+      showb = showb . show
