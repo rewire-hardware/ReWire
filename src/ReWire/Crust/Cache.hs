@@ -141,6 +141,8 @@ getProgram flags fp = do
        >=> whenSet' FlagDTypes (pDebug' "Verifying types post-purification." >=> typeVerify)
        >=> pDebug' "Lifting lambdas (post-purification)."
        >=> liftLambdas
+       >=> pDebug' "Fully apply global function definitions."
+       >=> fullyApplyDefs
        >=> pDebug' "Removing unused definitions (again)."
        >=> pure . purgeUnused
        >=> whenSet FlagDCrust5 (printInfo "Crust 5: Post-second-lambda-lifting")

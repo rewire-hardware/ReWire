@@ -1,5 +1,5 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Safe #-}
 module ReWire.Main (main) where
 
 import ReWire.FrontEnd (loadProgram, LoadPath)
@@ -20,7 +20,6 @@ import System.IO (stderr)
 
 import Data.Text (pack)
 import qualified Data.Text.IO as T
-import TextShow (showt)
 
 import Paths_ReWire (getDataFileName)
 

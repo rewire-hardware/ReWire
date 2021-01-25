@@ -126,28 +126,28 @@ instance Annotated Exp where
 instance Parenless Exp where
       parenless = \ case -- simple (non-compound?) expressions
             App _ (App _ (Con _ _ _ (DataConId "(,)")) _) _ -> True
-            Con {}                                        -> True
-            GVar {}                                       -> True
-            LVar {}                                       -> True
-            Prim {}                                       -> True
-            _                                             -> False
+            Con {}                                          -> True
+            GVar {}                                         -> True
+            LVar {}                                         -> True
+            Prim {}                                         -> True
+            _                                               -> False
 
 instance Pretty Exp where
       pretty = \ case
             App _ (App _ (Con _ _ _ (DataConId "(,)")) e1) e2 -> parens $ pretty e1 <> (text "," <+> pretty e2)
-            App _ e1@App {} e2                              -> hang (pretty e1) 2 $ mparen e2
-            App _ e1 e2                                     -> hang (mparen e1) 2 $ mparen e2
-            Con _ t _ (DataConId n)                         -> pretty n <+> braces (pretty t)
-            Prim _ _ n                                      -> pretty n
-            GVar _ t n                                      -> pretty n <+> braces (pretty t)
-            LVar _ _ n                                      -> text $ "$" <> showt n
-            Match _ t e p e1 as Nothing                     -> foldr ($+$) empty
+            App _ e1@App {} e2                                -> hang (pretty e1) 2 $ mparen e2
+            App _ e1 e2                                       -> hang (mparen e1) 2 $ mparen e2
+            Con _ t _ (DataConId n)                           -> pretty n <+> braces (pretty t)
+            Prim _ _ n                                        -> pretty n
+            GVar _ t n                                        -> pretty n <+> braces (pretty t)
+            LVar _ _ n                                        -> text $ "$" <> showt n
+            Match _ t e p e1 as Nothing                       -> foldr ($+$) empty
                   [ text "match" <+> braces (pretty t) <+> pretty e <+> text "of"
                   , nest 2 (vcat
                        [ pretty p <+> text "->" <+> text e1
                              <+> hsep (map (pretty . LVar undefined undefined) as) ])
                   ]
-            Match _ t e p e1 as (Just e2)                   -> foldr ($+$) empty
+            Match _ t e p e1 as (Just e2)                     -> foldr ($+$) empty
                   [ text "match"  <+> braces (pretty t) <+> pretty e <+> text "of"
                   , nest 2 (vcat
                         [ pretty p <+> text "->"
@@ -155,7 +155,7 @@ instance Pretty Exp where
                         , text "_" <+> text "->" <+> pretty e2
                         ])
                   ]
-            NativeVHDL _ _ n                                -> text "nativeVHDL" <+> dquotes (text n)
+            NativeVHDL _ _ n                                  -> text "nativeVHDL" <+> dquotes (text n)
 
 ---
 

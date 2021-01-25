@@ -24,7 +24,8 @@ import Data.Text (Text, pack)
 import Language.Haskell.Exts.Syntax (Annotated (..))
 import Language.Haskell.Exts.Pretty (prettyPrim)
 import Language.Haskell.Exts.SrcLoc (SrcLoc (..), SrcInfo (..), SrcSpanInfo, noLoc)
-import Prettyprinter (Pretty (..), (<>), (<+>), nest, Doc)
+import Prettyprinter (Pretty (..), (<>), (<+>), nest, Doc, defaultLayoutOptions, layoutSmart)
+import Prettyprinter.Render.Text (renderStrict)
 import ReWire.Pretty (($$), text, int)
 import TextShow (TextShow (..))
 
@@ -40,7 +41,7 @@ instance MonadTrans SyntaxErrorT where
 
 instance Pretty AstError where
       pretty (AstError (AstAnnote a) msg) = text (trunc 50 (showt $ nest 4 $ text "...")
-            (showt $ errorHdr (ann a) msg
+            (doc2Text $ errorHdr (ann a) msg
             $$ nest 4 (text "In the fragment:")
             $$ nest 6 (text $ pack $ show $ prettyPrim a))) -- TODO(chathhorn): better way?
       pretty (AstError a@(MsgAnnote m) msg) = errorHdr (toSrcSpanInfo a) $ msg <> "\n" <> m
@@ -86,3 +87,6 @@ runSyntaxError = runExceptT . fmap fst . flip runStateT noAnn . unwrap
 
 mark :: (MonadState Annote m, Annotation an) => an -> m ()
 mark = put . toAnnote
+
+doc2Text :: Doc a -> Text
+doc2Text = renderStrict . layoutSmart defaultLayoutOptions

@@ -1,4 +1,4 @@
-{-# LANGUAGE Rank2Types, ScopedTypeVariables, GADTs, TypeOperators, TypeFamilies, LambdaCase, DeriveDataTypeable #-}
+{-# LANGUAGE Rank2Types, ScopedTypeVariables, GADTs, TypeOperators, TypeFamilies, LambdaCase, DeriveDataTypeable, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -Wno-missing-methods #-}
 module ReWire.Annotation
@@ -28,7 +28,7 @@ import qualified Language.Haskell.Exts.Syntax as HS (Annotated(..))
 import qualified Language.Haskell.Exts.Pretty as HS (Pretty)
 
 import safe GHC.Generics (Generic (..))
-import TextShow (TextShow (..))
+import TextShow (TextShow (..), fromText)
 
 data Annote where
       NoAnnote  :: Annote
@@ -85,10 +85,10 @@ instance Show Annote where
       show (AstAnnote a) = "AstAnnote (" ++ show a ++ ")"
 
 instance TextShow Annote where
-      showb NoAnnote      = showb "NoAnnote"
-      showb (MsgAnnote m) = showb "MsgAnnote (" <> showb m <> showb ")"
-      showb (LocAnnote l) = showb "LocAnnote (" <> showb l <> showb ")"
-      showb (AstAnnote a) = showb "AstAnnote (" <> showb a <> showb ")"
+      showb NoAnnote      = fromText "NoAnnote"
+      showb (MsgAnnote m) = fromText "MsgAnnote (" <> showb m <> fromText ")"
+      showb (LocAnnote l) = fromText "LocAnnote (" <> showb l <> fromText ")"
+      showb (AstAnnote a) = fromText "AstAnnote (" <> showb a <> fromText ")"
 
 -- TODO(chathhorn): afraid of screwing stuff up if the annotation isn't
 -- ignored.

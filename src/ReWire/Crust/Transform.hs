@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, ScopedTypeVariables, GADTs, TupleSections, OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, ScopedTypeVariables, GADTs, TupleSections, OverloadedStrings, ViewPatterns #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 module ReWire.Crust.Transform
@@ -6,6 +6,7 @@ module ReWire.Crust.Transform
       , neuterPrims
       , shiftLambdas
       , liftLambdas
+      , fullyApplyDefs
       , purgeUnused
       ) where
 
@@ -16,7 +17,7 @@ import ReWire.Unbound
       , isFreeName, runFreshM
       , Name (..)
       )
-import ReWire.Annotation (Annote (..), noAnn)
+import ReWire.Annotation (Annote (..), Annotated (..), noAnn)
 import ReWire.SYB
 import ReWire.Crust.Syntax
 
@@ -75,6 +76,30 @@ shiftLambdas (ts, vs) = (ts,) <$> mapM shiftLambdas' vs
                         mash $ bind (vs ++ [v]) b'
                   _ -> pure e
 
+-- | So if e :: a -> b, then
+-- > g = e
+--   becomes
+-- > g x0 = e x0
+-- except don't do this for Match (TODO).
+fullyApplyDefs :: Fresh m => FreeProgram -> m FreeProgram
+fullyApplyDefs (ts, vs) = (ts,) <$> mapM fullyApplyDefs' vs
+      where fullyApplyDefs' :: Fresh m => Defn -> m Defn
+            fullyApplyDefs' (Defn an n t inl (Embed e)) = Defn an n t inl . Embed <$> appl e
+
+            appl :: Fresh m => Bind [Name Exp] Exp -> m (Bind [Name Exp] Exp)
+            appl e = do
+                  (vs, e') <- unbind e
+                  case typeOf e' of
+                        TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t) _ | notMatch e' -> do
+                              x <- fresh $ s2n "$x"
+                              appl $ bind (vs ++ [x]) $ App (ann e') e' $ Var (ann e') t x
+                        _                                             -> pure e
+
+            notMatch :: Exp -> Bool
+            notMatch = \ case
+                  Match {} -> False
+                  _        -> True
+
 -- | Lifts lambdas and case/match into a top level fun def.
 liftLambdas :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
 liftLambdas p = evalStateT (runT liftLambdas' p) []
@@ -106,7 +131,7 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs ++ map fst pvs) e')
                         pure $ Match an t e1 (transPat p) (Var an t' f) (map (toVar an . first promote) bvs) e2
                   -- TODO(chathhorn): This case is really just normalizing Match, consider moving to ToCore.
-                  Match an t e1 p e lvars els -> do
+                  Match an t e1 p e lvars els | liftable e -> do
                         let bvs   = bv e
                         (fvs, e') <- freshen e
 
@@ -130,6 +155,11 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                               arg
                   ||> (\ ([] :: [Defn]) -> get) -- this is cute!
                   ||> TId
+
+            liftable :: Exp -> Bool
+            liftable = \ case
+                  Var _ _ _ -> False
+                  _         -> True
 
             toVar :: Annote -> (Name Exp, Ty) -> Exp
             toVar an (v, vt) = Var an vt v
