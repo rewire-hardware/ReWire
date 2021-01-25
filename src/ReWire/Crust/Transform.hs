@@ -80,25 +80,26 @@ shiftLambdas (ts, vs) = (ts,) <$> mapM shiftLambdas' vs
 -- > g = e
 --   becomes
 -- > g x0 = e x0
--- except don't do this for Match (TODO).
+-- except with Match, we add x0 to the list of local ids.
 fullyApplyDefs :: Fresh m => FreeProgram -> m FreeProgram
 fullyApplyDefs (ts, vs) = (ts,) <$> mapM fullyApplyDefs' vs
       where fullyApplyDefs' :: Fresh m => Defn -> m Defn
-            fullyApplyDefs' (Defn an n t inl (Embed e)) = Defn an n t inl . Embed <$> appl e
+            fullyApplyDefs' (Defn an n t inl (Embed e)) = Defn an n t inl . Embed <$> fullyApply e
 
-            appl :: Fresh m => Bind [Name Exp] Exp -> m (Bind [Name Exp] Exp)
-            appl e = do
+            fullyApply :: Fresh m => Bind [Name Exp] Exp -> m (Bind [Name Exp] Exp)
+            fullyApply e = do
                   (vs, e') <- unbind e
                   case typeOf e' of
-                        TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t) _ | notMatch e' -> do
+                        TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t) _ -> do
                               x <- fresh $ s2n "$x"
-                              appl $ bind (vs ++ [x]) $ App (ann e') e' $ Var (ann e') t x
+                              fullyApply $ bind (vs ++ [x]) $ appl (Var (ann e') t x) e'
                         _                                             -> pure e
 
-            notMatch :: Exp -> Bool
-            notMatch = \ case
-                  Match {} -> False
-                  _        -> True
+            appl :: Exp -> Exp -> Exp
+            appl x = \ case
+                  Match an t e1 p e lvars Nothing    -> Match an (arrowRight t) e1 p e (lvars ++ [x]) Nothing
+                  Match an t e1 p e lvars (Just els) -> Match an (arrowRight t) e1 p e (lvars ++ [x]) $ Just $ appl x els
+                  e                                  -> App (ann e) e x
 
 -- | Lifts lambdas and case/match into a top level fun def.
 liftLambdas :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
