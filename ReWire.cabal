@@ -82,6 +82,7 @@ library
                     -fno-warn-name-shadowing
                     -funbox-strict-fields
                     -O2
+                    -j8 +RTS -A64m -RTS
 
   other-modules   : Paths_ReWire
                     ReWire.Annotation
@@ -125,6 +126,7 @@ executable rwc
   ghc-options     : -Wall
                     -O2
                     -funbox-strict-fields
+                    -j8 +RTS -A64m -RTS
 
 test-suite rwc-test
   hs-source-dirs  : src/rwc-test
@@ -144,6 +146,7 @@ test-suite rwc-test
   ghc-options     : -Wall
                     -O2
                     -funbox-strict-fields
+                    -j8 +RTS -A64m -RTS
 
 source-repository head
   type            : git
