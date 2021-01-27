@@ -3,6 +3,7 @@ module ReWire.Flags where
 
 data Flag = FlagO !String
           | FlagV
+          | FlagFirrtl
           | FlagDHask1
           | FlagDHask2
           | FlagDCrust1

@@ -26,6 +26,7 @@ import Paths_ReWire (getDataFileName)
 options :: [OptDescr Flag]
 options =
        [ Option ['v'] ["verbose"]           (NoArg FlagV)       "More verbose output."
+       , Option ['f'] ["firrtl"]            (NoArg FlagFirrtl)  "Produce FIRRTL output instead of VHDL."
        , Option []    ["dpass1", "dhask1" ] (NoArg FlagDHask1)  "Dump pass 1: pre-desugar haskell source."
        , Option []    ["dpass2", "dhask2" ] (NoArg FlagDHask2)  "Dump pass 2: post-desugar haskell source."
        , Option []    ["dpass3", "dcrust1"] (NoArg FlagDCrust1) "Dump pass 3: post-desugar crust source."
@@ -42,7 +43,7 @@ options =
        ]
 
 exitUsage :: IO ()
-exitUsage = T.hPutStr stderr (pack $ usageInfo "Usage: rwc [OPTION...] <filename.rw>" options) >> exitFailure
+exitUsage = T.hPutStr stderr (pack $ usageInfo "Usage: rwc [OPTION...] <filename.hs>" options) >> exitFailure
 
 getSystemLoadPath :: IO [FilePath]
 getSystemLoadPath = do
@@ -68,7 +69,8 @@ main = do
 
       where getOutFile :: [Flag] -> String -> IO String
             getOutFile flags filename = case filter (\ case { FlagO {} -> True; _ -> False }) flags of
-                  []        -> pure $ filename -<.> "vhdl"
+                  []        | FlagFirrtl `elem` flags -> pure $ filename -<.> "fir"
+                            | otherwise               -> pure $ filename -<.> "vhdl"
                   [FlagO o] -> pure o
                   _         -> T.hPutStrLn stderr "Multiple output files specified on the command line!" >> exitFailure
 
