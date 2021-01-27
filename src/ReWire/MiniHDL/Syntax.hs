@@ -13,7 +13,7 @@ newtype Program = Program { programUnits :: [Unit] }
 instance Pretty Program where
       pretty (Program units) = vcat (map pretty units)
 
-data Unit = Unit Entity Architecture
+data Unit = Unit !Entity !Architecture
       deriving (Eq, Show)
 
 instance Pretty Unit where
@@ -26,7 +26,7 @@ type Name = Text
 
 data Entity = Entity
       { entityName  :: !Name
-      , entityPorts :: [Port]
+      , entityPorts :: ![Port]
       } deriving (Eq, Show)
 
 instance Pretty Entity where
@@ -37,9 +37,9 @@ instance Pretty Entity where
 data Architecture = Architecture
       { archName       :: !Name
       , archEntityName :: !Name
-      , archSignals    :: [Signal]
-      , archComponents :: [Component]
-      , archStmts      :: [Stmt]
+      , archSignals    :: ![Signal]
+      , archComponents :: ![Component]
+      , archStmts      :: ![Stmt]
       } deriving (Eq, Show)
 
 instance Pretty Architecture where
@@ -52,7 +52,7 @@ instance Pretty Architecture where
 
 data Component = Component
       { componentName  :: !Name
-      , componentPorts :: [Port]
+      , componentPorts :: ![Port]
       } deriving (Eq, Show)
 
 instance Pretty Component where
@@ -90,10 +90,10 @@ instance Pretty Ty where
       pretty (TyStdLogicVector n) = pretty "std_logic_vector" <+> parens (pretty "0 to" <+> pretty (n - 1))
       pretty TyBool               = pretty "boolean"
 
-data Stmt = Assign !LHS Expr
-          | WithAssign Expr !LHS [(Expr, Expr)] (Maybe Expr)
+data Stmt = Assign !LHS !Expr
+          | WithAssign !Expr !LHS ![(Expr, Expr)] !(Maybe Expr)
           | Instantiate !Name !Name !PortMap
-          | ClkProcess !Name [Stmt]
+          | ClkProcess !Name ![Stmt]
       deriving (Eq, Show)
 
 instance Pretty Stmt where
@@ -124,12 +124,12 @@ instance Pretty LHS where
 
 data Expr = ExprName !Name
           | ExprBit !Bit
-          | ExprBitString [Bit]
-          | ExprConcat Expr Expr
-          | ExprSlice Expr !Int !Int
-          | ExprIsEq Expr Expr
+          | ExprBitString ![Bit]
+          | ExprConcat !Expr !Expr
+          | ExprSlice !Expr !Int !Int
+          | ExprIsEq !Expr !Expr
           | ExprBoolConst !Bool
-          | ExprAnd Expr Expr
+          | ExprAnd !Expr !Expr
       deriving (Eq, Show)
 
 instance Pretty Expr where

@@ -31,7 +31,7 @@ generalize f = generalizeA f >=> tr
 -- | This is just a list of type
 -- > [exists d. Data d => d -> MaybeT m d]
 data Transform m where
-      TCons :: (forall d. Data d => d -> MaybeT m d) -> Transform m -> Transform m
+      TCons :: !(forall d. Data d => d -> MaybeT m d) -> !(Transform m) -> Transform m
       TId   :: Transform m
 
 type T m = forall d. Data d => d -> MaybeT m d
@@ -67,7 +67,7 @@ mplusE a b = catch a (\ (PatternMatchFail _) -> mzero) `mplus` b
 -- | This is just a list of type
 -- > [exists d. Data d => d -> a]
 data Query a where
-      QCons  :: (forall d. Data d => d -> a) -> Query a -> Query a
+      QCons  :: !(forall d. Data d => d -> a) -> !(Query a) -> Query a
       QEmpty :: Query a
 
 type Q a = forall d. Data d => d -> a

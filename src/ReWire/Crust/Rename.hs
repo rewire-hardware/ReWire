@@ -65,16 +65,16 @@ type FQCtorSigs = Map FQName [(Maybe FQName, Type ())]
 -- different modules), but clearly you can import the same symbol (defined in
 -- the same or different modules) twice with different qualifiers.
 data Exports = Exports
-      { expValues      :: Set FQName                  -- Values
-      , expTypes       :: Set FQName                  -- Types
-      , expFixities    :: Set Fixity                  -- Fixities
-      , expCtors       :: FQCtors
-      , expCtorSigs    :: FQCtorSigs
+      { expValues      :: !(Set FQName)                  -- Values
+      , expTypes       :: !(Set FQName)                  -- Types
+      , expFixities    :: !(Set Fixity)                  -- Fixities
+      , expCtors       :: !FQCtors
+      , expCtorSigs    :: !FQCtorSigs
       }
       deriving (Show, Generic)
       deriving TextShow via FromGeneric Exports
 
-data Module = Module [DataDefn] [Defn]
+data Module = Module ![DataDefn] ![Defn]
       deriving (Show, Generic)
       deriving TextShow via FromGeneric Module
 
@@ -170,11 +170,11 @@ instance QNamish Text where
       fromQNamish n                                       = pack $ prettyPrint n
 
 data Renamer = Renamer
-      { rnNames    :: Map (Namespace, QName ()) FQName
-      , rnExports  :: Map (ModuleName ()) Exports
-      , rnFixities :: Set Fixity
-      , rnCtors    :: Ctors
-      , rnCtorSigs :: CtorSigs
+      { rnNames    :: !(Map (Namespace, QName ()) FQName)
+      , rnExports  :: !(Map (ModuleName ()) Exports)
+      , rnFixities :: !(Set Fixity)
+      , rnCtors    :: !Ctors
+      , rnCtorSigs :: !CtorSigs
       } deriving (Show, Generic)
       deriving TextShow via FromGeneric Renamer
 

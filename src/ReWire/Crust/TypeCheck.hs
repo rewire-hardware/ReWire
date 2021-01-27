@@ -35,9 +35,9 @@ subst = substs . Map.toList
 
 type TySub = HashMap (Name Ty) Ty
 data TCEnv = TCEnv
-      { as        :: HashMap (Name Exp) Poly
-      , cas       :: HashMap (Name DataConId) Poly
-      , coercions :: [(Ty, Ty)]
+      { as        :: !(HashMap (Name Exp) Poly)
+      , cas       :: !(HashMap (Name DataConId) Poly)
+      , coercions :: ![(Ty, Ty)]
       } deriving Show
 
 type TCM m = ReaderT TCEnv (StateT TySub m)

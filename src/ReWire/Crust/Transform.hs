@@ -275,7 +275,7 @@ reduceExp = \ case
                         Just e2' -> reduceExp e2'
       e -> pure e
 
-data MatchResult = MatchYes [(Name Exp, Exp)]
+data MatchResult = MatchYes ![(Name Exp, Exp)]
                  | MatchMaybe
                  | MatchNo
                  deriving Show

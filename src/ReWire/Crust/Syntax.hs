@@ -94,7 +94,7 @@ instance Hashable DataConId
 instance Hashable TyConId
 instance Hashable FieldId
 
-data DataCon = DataCon Annote (Name DataConId) (Embed Poly)
+data DataCon = DataCon Annote !(Name DataConId) !(Embed Poly)
       deriving (Generic, Eq, Show, Typeable, Data)
       deriving TextShow via FromGeneric DataCon
 
@@ -109,8 +109,8 @@ instance Pretty DataCon where
 instance NFData DataCon
 
 data Kind = KStar
-          | KFun Kind Kind
-          | KVar (Name Kind)
+          | KFun !Kind !Kind
+          | KVar !(Name Kind)
       deriving (Generic, Ord, Eq, Show, Typeable, Data)
       deriving TextShow via FromGeneric Kind
 
@@ -157,9 +157,9 @@ instance Eq Poly where
 instance Pretty Poly where
       pretty (Poly pt) = runFreshM (pretty <$> snd <$> unbind pt)
 
-data Ty = TyApp Annote Ty Ty
-        | TyCon Annote (Name TyConId)
-        | TyVar Annote Kind (Name Ty)
+data Ty = TyApp Annote !Ty !Ty
+        | TyCon Annote !(Name TyConId)
+        | TyVar Annote !Kind !(Name Ty)
         | TyBlank Annote
       deriving (Eq, Ord, Generic, Typeable, Data, Show)
       deriving TextShow via FromGeneric Ty
@@ -209,14 +209,14 @@ instance NFData Ty
 instance (TextShow a, TextShow b) => TextShow (Bind a b) where
       showbPrec = genericShowbPrec
 
-data Exp = App        Annote Exp Exp
-         | Lam        Annote Ty (Bind (Name Exp) Exp)
-         | Var        Annote Ty (Name Exp)
-         | Con        Annote Ty (Name DataConId)
-         | Case       Annote Ty Exp (Bind Pat Exp) (Maybe Exp)
-         | Match      Annote Ty Exp MatchPat Exp [Exp] (Maybe Exp)
-         | NativeVHDL Annote !Text Exp
-         | Error      Annote Ty !Text
+data Exp = App        Annote !Exp !Exp
+         | Lam        Annote !Ty !(Bind (Name Exp) Exp)
+         | Var        Annote !Ty !(Name Exp)
+         | Con        Annote !Ty !(Name DataConId)
+         | Case       Annote !Ty !Exp !(Bind Pat Exp) !(Maybe Exp)
+         | Match      Annote !Ty !Exp !MatchPat !Exp ![Exp] !(Maybe Exp)
+         | NativeVHDL Annote !Text !Exp
+         | Error      Annote !Ty !Text
       deriving (Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Exp
 
@@ -313,8 +313,8 @@ instance Pretty Exp where
 
 ---
 
-data Pat = PatCon Annote (Embed Ty) (Embed (Name DataConId)) [Pat]
-         | PatVar Annote (Embed Ty) (Name Exp)
+data Pat = PatCon Annote !(Embed Ty) !(Embed (Name DataConId)) ![Pat]
+         | PatVar Annote !(Embed Ty) !(Name Exp)
       deriving (Eq, Show, Generic, Typeable, Data)
       deriving TextShow via FromGeneric Pat
 
@@ -348,8 +348,8 @@ instance Pretty Pat where
             PatVar _ _ n                               -> text $ showt n
 
 
-data MatchPat = MatchPatCon Annote Ty (Name DataConId) [MatchPat]
-              | MatchPatVar Annote Ty
+data MatchPat = MatchPatCon Annote !Ty !(Name DataConId) ![MatchPat]
+              | MatchPatVar Annote !Ty
       deriving (Eq, Show, Generic, Typeable, Data)
       deriving TextShow via FromGeneric MatchPat
 
@@ -389,10 +389,10 @@ instance Pretty MatchPat where
 
 data Defn = Defn
       { defnAnnote :: Annote
-      , defnName   :: Name Exp
-      , defnPolyTy :: Embed Poly
+      , defnName   :: !(Name Exp)
+      , defnPolyTy :: !(Embed Poly)
       , defnInline :: !Bool
-      , defnBody   :: Embed (Bind [Name Exp] Exp)
+      , defnBody   :: !(Embed (Bind [Name Exp] Exp))
       }
       deriving (Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Defn
@@ -418,10 +418,10 @@ instance Pretty Defn where
 
 data DataDefn = DataDefn
       { dataAnnote :: Annote
-      , dataName   :: Name TyConId
-      , dataKind   :: Kind
-      , dataCoerce :: Bool
-      , dataCons   :: [DataCon]
+      , dataName   :: !(Name TyConId)
+      , dataKind   :: !Kind
+      , dataCoerce :: !Bool
+      , dataCons   :: ![DataCon]
       }
       deriving (Eq, Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric DataDefn

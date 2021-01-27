@@ -277,7 +277,7 @@ purifyResDefn rho ms d = do
 -- Purifying Types
 ---------------------------
 
-data TyVariety = Arrow Ty Ty | ReTApp | StTApp | IdApp | PairApp Ty Ty | Pure
+data TyVariety = Arrow !Ty !Ty | ReTApp | StTApp | IdApp | PairApp !Ty !Ty | Pure
 
 purifyTy :: MonadError AstError m => Annote -> [Ty] -> Ty -> m Ty
 purifyTy an ms t = case classifyTy t of
@@ -387,13 +387,13 @@ classifyCases = \ case
       Match an _ e1 mp e2 es me -> pure $ SMatch an e1 mp e2 es me
       d                         -> failAt (ann d) $ "Purify: unclassifiable case: " <> showt d
 
-data Cases an p e t = Get an t
-                    | Return an t e
-                    | Lift an e
-                    | Put an e
-                    | Bind an e e
-                    | Apply an t (Name Exp) [e]
-                    | SMatch an e MatchPat e [e] (Maybe e)
+data Cases an p e t = Get an !t
+                    | Return an !t !e
+                    | Lift an !e
+                    | Put an !e
+                    | Bind an !e !e
+                    | Apply an !t !(Name Exp) ![e]
+                    | SMatch an !e !MatchPat !e ![e] !(Maybe e)
 
 -- | purifyStateBody
 --   rho  -- pure environment
@@ -451,15 +451,15 @@ patVars = \ case
 
 -- It may be that the type for each subexpression occurring in here should be
 -- part of the annotation here. That is partially accomplished right now.
-data RCase an t p e = RReturn an e
-                    | RLift an e
-                    | RVar an t (Name e)
-                    | Signal an e
-                    | RBind an e e
-                    | SigK an t e (Name e) [(e, t)] -- (signal e >>= g e1 ... ek)
-                    | Extrude an t (Name e) [e]     -- [(e, t)]
-                    | RApp an t (Name e) [e]
-                    | RMatch an e MatchPat e [e] (Maybe e)
+data RCase an t p e = RReturn an !e
+                    | RLift an !e
+                    | RVar an !t !(Name e)
+                    | Signal an !e
+                    | RBind an !e !e
+                    | SigK an !t !e !(Name e) ![(e, t)] -- (signal e >>= g e1 ... ek)
+                    | Extrude an !t !(Name e) ![e]     -- [(e, t)]
+                    | RApp an !t !(Name e) ![e]
+                    | RMatch an !e !MatchPat !e ![e] !(Maybe e)
 
 instance TextShow (RCase an t p e) where
       showb RReturn {} = fromText "RReturn"
@@ -503,7 +503,7 @@ classifyApp an (x, t, es)
       | otherwise          = pure $ RApp an t x es
 
 -- state for res-purification.
-data PSto = PSto Bool [DataCon] [(Pat, Exp)] (Name Exp) (Map Ty (Name DataConId))
+data PSto = PSto !Bool ![DataCon] ![(Pat, Exp)] !(Name Exp) !(Map Ty (Name DataConId))
 
 
 -- | purifyResBody

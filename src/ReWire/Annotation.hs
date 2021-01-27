@@ -32,8 +32,8 @@ import TextShow (TextShow (..), fromText)
 
 data Annote where
       NoAnnote  :: Annote
-      MsgAnnote :: Text -> Annote
-      LocAnnote :: SrcSpanInfo -> Annote
+      MsgAnnote :: !Text -> Annote
+      LocAnnote :: !SrcSpanInfo -> Annote
       AstAnnote :: forall ast.
             ( Functor ast
             , Foldable ast

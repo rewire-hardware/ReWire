@@ -55,7 +55,7 @@ instance Pretty TyConId where
 
 ---
 
-data Ty = TyApp Annote !Int Ty Ty
+data Ty = TyApp Annote !Int !Ty !Ty
         | TyCon Annote !TyConId !Int
         | TyVar Annote !TyId !Int
         deriving (Eq, Ord, Generic, Show, Typeable, Data)
@@ -93,13 +93,13 @@ sizeof = \ case
 
 ---
 
-data Exp = App        Annote Exp Exp
-         | Prim       Annote Ty  !GId
-         | GVar       Annote Ty  !GId
-         | LVar       Annote Ty  !LId
-         | Con        Annote Ty  !Int !DataConId
-         | Match      Annote Ty  Exp Pat !GId [LId] (Maybe Exp)
-         | NativeVHDL Annote Ty  Text
+data Exp = App        Annote !Exp !Exp
+         | Prim       Annote !Ty  !GId
+         | GVar       Annote !Ty  !GId
+         | LVar       Annote !Ty  !LId
+         | Con        Annote !Ty  !Int !DataConId
+         | Match      Annote !Ty  !Exp !Pat !GId ![LId] !(Maybe Exp)
+         | NativeVHDL Annote !Ty  !Text
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Exp
 
@@ -159,8 +159,8 @@ instance Pretty Exp where
 
 ---
 
-data Pat = PatCon Annote Ty !DataConId [Pat]
-         | PatVar Annote Ty
+data Pat = PatCon Annote !Ty !DataConId ![Pat]
+         | PatVar Annote !Ty
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Pat
 
@@ -191,8 +191,8 @@ instance Pretty Pat where
 
 data Defn = Defn { defnAnnote :: Annote,
                    defnName   :: !GId,
-                   defnTy     :: Ty, -- params given by the arity.
-                   defnBody   :: Exp }
+                   defnTy     :: !Ty, -- params given by the arity.
+                   defnBody   :: !Exp }
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric Defn
 
@@ -207,7 +207,7 @@ instance Pretty Defn where
 ---
 
 -- | annotation, id, ctor index (in the range [0, nctors)), nctors, type
-data DataCon = DataCon Annote DataConId Int Int Ty
+data DataCon = DataCon Annote !DataConId !Int !Int !Ty
       deriving (Generic, Eq, Ord, Show, Typeable, Data)
       deriving TextShow via FromGeneric DataCon
 
@@ -219,8 +219,8 @@ instance Pretty DataCon where
 
 ---
 
-data Program = Program { ctors :: [DataCon],
-                         defns :: [Defn] }
+data Program = Program { ctors :: ![DataCon],
+                         defns :: ![Defn] }
       deriving (Generic, Eq, Ord, Show, Typeable, Data)
       deriving TextShow via FromGeneric Program
 
