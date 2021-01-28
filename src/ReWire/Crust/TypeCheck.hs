@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, TupleSections, OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, TupleSections, OverloadedStrings, ViewPatterns #-}
 {-# LANGUAGE Trustworthy #-}
 --
 -- This type checker is based loosely on Mark Jones's "Typing Haskell in
@@ -16,6 +16,7 @@ import ReWire.Unbound
 import ReWire.Pretty
 import ReWire.Crust.Syntax
 
+import Control.Arrow ((***))
 import Control.DeepSeq (deepseq, force)
 import Control.Monad.Reader (ReaderT (..), local, asks)
 import Control.Monad.State (evalStateT, StateT (..), get, put, modify, MonadState)
@@ -82,47 +83,23 @@ s1 @@ s2 = Map.mapWithKey (\ _ t -> subst s1 t) s2 `Map.union` s1
 isFlex :: Name a -> Bool
 isFlex = (== '?') . T.head . n2s
 
-coerce :: Monad m => Ty -> Ty -> TCM m Ty
-coerce t@TyVar {} _  = pure t
-coerce t TyVar {}    = pure t
-coerce t@TyCon {} t' = do
-      cs <- asks coercions
-      foldM (\ t (c, c') -> if t == t' || t /= c then pure t else pure c') t cs
-coerce t t' = do
-      cs <- asks coercions
-      -- TODO(chathhorn): I guess there could be multiple layers of type synonyms and this could miss some cases.
-      -- Perhaps: pass the coercions as an arg and remove coercions if they get used.
-      foldM (\ t (c, c') -> mgu t t' >>= \ case
-                  Just _ -> pure t
-                  Nothing -> mgu t c >>= \ case
-                        Nothing -> pure t
-                        Just s -> pure $ subst s c'
-            ) t cs
-
-
 varBind :: Monad m => Name Ty -> Ty -> TCM m (Maybe TySub)
 varBind u t | t `aeq` TyVar noAnn kblank u = pure $ Just mempty
             | u `elem` fv t                = pure Nothing
             | otherwise                    = pure $ Just $ Map.singleton u t
 
-mguCoerce :: Monad m => Ty -> Ty -> TCM m (Maybe TySub)
-mguCoerce t1 t2 = mgu t1 t2 >>= \ case
-      Nothing -> do
-            t1' <- coerce t1 t2
-            mgu t1' t2
-      s       -> pure s
-
 mgu :: Monad m => Ty -> Ty -> TCM m (Maybe TySub)
 mgu (TyApp _ tl tr) (TyApp _ tl' tr')                        = do
-      s1 <- mguCoerce tl tl'
-      s2 <- maybe (pure Nothing) (\ s1' -> mguCoerce (subst s1' tr) $ subst s1' tr') s1
+      s1 <- mgu tl tl'
+      s2 <- maybe (pure Nothing) (\ s1' -> mgu (subst s1' tr) $ subst s1' tr') s1
       case (s1, s2) of
             (Just s1', Just s2') -> pure $ Just $ s2' @@ s1'
             _                    -> pure Nothing
 mgu (TyCon _ c1)    (TyCon _ c2)  | n2s c1 == n2s c2              = pure $ Just mempty
-mgu t1@TyCon {}   t2@TyCon {}                                     = do
-      t1' <- coerce t1 t2
-      pure $ if show t1' == show t2 then Just mempty else Nothing
+mgu (TyCon _ (n2s -> c1))    (TyCon _ (n2s -> c2))                                  = do
+      cs <- asks coercions
+      c1' <- foldM (\ c1 (c, c') -> if c1 == c2 || c1 /= c then pure c1 else pure c') c1 (map (prettyPrint *** prettyPrint) cs)
+      pure $ if c1' == c2 then Just mempty else Nothing
 mgu (TyVar _ _ u)   t             | isFlex u                      = varBind u t
 mgu t               (TyVar _ _ u) | isFlex u                      = varBind u t
 mgu (TyVar _ _ v)   (TyVar _ _ u) | not (isFlex v) && v == u      = pure $ Just mempty

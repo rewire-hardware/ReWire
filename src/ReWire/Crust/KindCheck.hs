@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, LambdaCase, OverloadedStrings #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, LambdaCase, OverloadedStrings, TupleSections #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Crust.KindCheck (kindCheck) where
 
@@ -114,12 +114,19 @@ redecorate s (DataDefn an i _ co cs) = do
             Just k  -> pure $ DataDefn an i (monoize $ subst s k) co cs
             Nothing -> failAt an $ "Redecorate: no such assumption: " <> showt i
 
-assump :: DataDefn -> (Name TyConId, Kind)
-assump (DataDefn _ i k _ _) = (i, k)
+assump :: (Fresh m, MonadError AstError m) => DataDefn -> KCM m (Name TyConId, Kind)
+assump = \ case
+      DataDefn _ i k False _ -> pure (i, k)
+      DataDefn _ i k True _  -> (i,) <$> estimate k -- TODO(chathhorn): need the real kind here.
+
+estimate :: (Fresh m, MonadError AstError m) => Kind -> KCM m Kind
+estimate = \ case
+      KFun k1 k2  -> KFun k1 <$> estimate k2
+      _           -> freshkv
 
 kc :: (Fresh m, MonadError AstError m) => FreeProgram -> KCM m FreeProgram
 kc (ts, vs) = do
-      let cas  =  Map.fromList $ map assump ts
+      cas  <-  Map.fromList <$> mapM assump ts
       localCAssumps (cas `Map.union`) $ do
             mapM_ kcDataDecl ts
             mapM_ kcDefn vs
