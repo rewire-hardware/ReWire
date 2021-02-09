@@ -108,6 +108,8 @@ library
                     ReWire.Error
                     ReWire.Flags
                     ReWire.MiniHDL.Syntax
+                    ReWire.MiniHDL.ToFIRRTL
+                    ReWire.FIRRTL.Syntax
                     ReWire.Pretty
                     ReWire.SYB
                     ReWire.Unbound
