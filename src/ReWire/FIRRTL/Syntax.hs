@@ -2,24 +2,30 @@
 {-# LANGUAGE Trustworthy #-}
 module ReWire.FIRRTL.Syntax where
 
+-- Syntax for LoFIRRTL.
+
 import safe Data.Data (Typeable, Data (..))
 import safe Data.Text (Text)
 import TextShow (TextShow (..))
 import TextShow.Generic (FromGeneric (..))
 import safe GHC.Generics (Generic (..))
+import safe Prettyprinter
+      ( Doc, nest, hsep, parens, dquotes
+      , braces, vcat, (<+>), Pretty (..)
+      )
 
 data Id = Id !Text
       deriving (Eq, Generic, Typeable, Data)
       deriving TextShow via FromGeneric Id
 
-data Exp = UInt !(Maybe Int) !Int
-      | UIntBits !(Maybe Int) !Text
-      | SInt !(Maybe Int) !Int
-      | SIntBits !(Maybe Int) !Text
+instance Pretty Id where
+      pretty (Id x) = text x
+
+data Exp = UInt !Int !Int
+      | UIntBits !Int !Text
+      | SInt !Int !Int
+      | SIntBits !Int !Text
       | Ref !Id
-      | Subfield !Exp !Id
-      | Subindex !Exp !Int
-      | Subaccess !Exp !Exp
       | Mux !Exp !Exp !Exp
       | Validif !Exp !Exp
       -- Primitive operations
@@ -62,23 +68,32 @@ data Exp = UInt !(Maybe Int) !Int
       deriving (Eq, Generic, Typeable, Data)
       deriving TextShow via FromGeneric Exp
 
-data Field = Forward !Id !Type
-           | Flipped !Id !Type
-      deriving (Eq, Generic, Typeable, Data)
-      deriving TextShow via FromGeneric Field
+-- TODO
+instance Pretty Exp where
+      pretty = \ case
+            _ -> text "exp"
 
-data Type = UIntTy !(Maybe Int)
-          | SIntTy !(Maybe Int)
+data Type = UIntTy !Int
+          | SIntTy !Int
           | ClockTy
-          | BundleTy ![Field]
-          | VecTy !Type !Int
       deriving (Eq, Generic, Typeable, Data)
       deriving TextShow via FromGeneric Type
+
+-- TODO
+instance Pretty Type where
+      pretty = \ case
+            _ -> text "type"
 
 -- Read Under Write flag
 data RUW = Old | New | Undefined
       deriving (Eq, Generic, Typeable, Data)
       deriving TextShow via FromGeneric RUW
+
+instance Pretty RUW where
+      pretty = \ case
+            Old       -> text "old"
+            New       -> text "new"
+            Undefined -> text "undefined"
 
 data Stmt = Wire !Id !Type
           | Reg !Id !Type !Exp
@@ -88,10 +103,7 @@ data Stmt = Wire !Id !Type
           | Inst !Id !Id
           | Node !Id !Exp
           | Connect !Exp !Exp
-          | ConnectPartial !Exp !Exp
           | Invalidate !Exp
-          | If !Exp !Stmt
-          | IfElse !Exp !Stmt !Stmt
           | Stop !Exp !Exp !Int
           | Printf !Exp !Exp !Text ![Exp]
           | Skip
@@ -99,11 +111,7 @@ data Stmt = Wire !Id !Type
       deriving (Eq, Generic, Typeable, Data)
       deriving TextShow via FromGeneric Stmt
 
-data Dir = Input | Output
-      deriving (Eq, Generic, Typeable, Data)
-      deriving TextShow via FromGeneric Dir
-
-data Port = Port !Dir !Id !Type
+data Port = Input !Id !Type | Output !Id !Type
       deriving (Eq, Generic, Typeable, Data)
       deriving TextShow via FromGeneric Port
 
