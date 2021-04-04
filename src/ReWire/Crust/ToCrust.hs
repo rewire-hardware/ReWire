@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, ViewPatterns, ScopedTypeVariables, FlexibleContexts, TupleSections, OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
 module ReWire.Crust.ToCrust (toCrust, extendWithGlobs, getImps) where
 

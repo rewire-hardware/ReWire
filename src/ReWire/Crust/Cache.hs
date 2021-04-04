@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, FlexibleInstances, ViewPatterns, FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances, FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Crust.Cache
       ( runCache

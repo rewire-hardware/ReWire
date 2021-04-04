@@ -8,8 +8,6 @@
            , GADTs
            , ScopedTypeVariables
            , StandaloneDeriving
-           , LambdaCase
-           , ViewPatterns
            , OverloadedStrings
            #-}
 {-# LANGUAGE Trustworthy #-}

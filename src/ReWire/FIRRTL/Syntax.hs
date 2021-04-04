@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, DeriveDataTypeable, DerivingVia #-}
+{-# LANGUAGE DeriveGeneric, DeriveDataTypeable, DerivingVia, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.FIRRTL.Syntax where
 
@@ -13,6 +13,7 @@ import safe Prettyprinter
       ( Doc, nest, hsep, parens, dquotes
       , braces, vcat, (<+>), Pretty (..)
       )
+import ReWire.Pretty (text)
 
 data Id = Id !Text
       deriving (Eq, Generic, Typeable, Data)

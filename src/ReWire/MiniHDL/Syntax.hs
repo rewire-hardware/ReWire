@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE Safe #-}
 module ReWire.MiniHDL.Syntax where
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE NamedFieldPuns, Rank2Types, FlexibleInstances, StandaloneDeriving, DeriveGeneric, DerivingVia, FlexibleContexts, TupleSections, LambdaCase, OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns, Rank2Types, FlexibleInstances, StandaloneDeriving, DeriveGeneric, DerivingVia, FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.Crust.Rename

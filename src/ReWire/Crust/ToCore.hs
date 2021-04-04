@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Crust.ToCore (toCore) where
 

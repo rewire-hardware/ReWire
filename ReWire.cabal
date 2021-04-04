@@ -120,6 +120,9 @@ library
                     ReWire.Main
                     ReWire
                     ReWire.Bits
+  default-extensions : LambdaCase
+                       TupleSections
+                       ViewPatterns
 
 executable rwc
   hs-source-dirs  : src/rwc
@@ -131,6 +134,9 @@ executable rwc
                     -optc-O3
                     -funbox-strict-fields
                     -j8 +RTS -A64m -RTS
+  default-extensions : LambdaCase
+                       TupleSections
+                       ViewPatterns
 
 test-suite rwc-test
   hs-source-dirs  : src/rwc-test
@@ -152,6 +158,9 @@ test-suite rwc-test
                     -optc-O3
                     -funbox-strict-fields
                     -j8 +RTS -A64m -RTS
+  default-extensions : LambdaCase
+                       TupleSections
+                       ViewPatterns
 
 source-repository head
   type            : git

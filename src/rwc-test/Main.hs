@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 module Main (main) where
 
 import qualified ReWire.Main as M
