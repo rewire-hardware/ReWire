@@ -236,10 +236,10 @@ compileDefn = \ case
                                     addComponent an n_loopfun t_loopfun
                                     addSignal "start_state" (TyStdLogicVector statesize)
                                     addSignal "loop_out" (TyStdLogicVector statesize)
-                                    addSignal "current_state" (TyStdLogicVector statesize)
+                                    addSignal "current_state" (TyRegister "clk" statesize)
                                     addSignal "done_or_next_state" (TyStdLogicVector statesize)
                                     addSignal "next_state" (TyStdLogicVector statesize)
-                                    let ports       = [Port "clk" In TyStdLogic,
+                                    let ports       = [Port "clk" In TyClock,
                                                        Port "rst" In TyStdLogic,
                                                        Port "inp" In (TyStdLogicVector insize),
                                                        Port "outp" Out (TyStdLogicVector (1 + max outsize ressize))]

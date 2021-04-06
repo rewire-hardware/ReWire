@@ -1,6 +1,6 @@
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module ReWire.Pretty (($+$), ($$), prettyPrint, text, int, empty, hang) where
+module ReWire.Pretty (($+$), ($$), prettyPrint, text, int, empty, hang, P.Pretty) where
 
 import qualified Prettyprinter as P
 import qualified Prettyprinter.Render.Text as P
@@ -8,11 +8,11 @@ import TextShow
 import Data.Text (Text)
 
 ($$) :: P.Doc ann -> P.Doc ann -> P.Doc ann
-a $$ b = P.vcat [a, b]
+a $$ b = P.vsep [a, b]
 
 -- TODO(chathhorn): nesting
 ($+$) :: P.Doc ann -> P.Doc ann -> P.Doc ann
-a $+$ b = P.vcat [a, P.nest 2 b]
+a $+$ b = P.vsep [a, P.nest 2 b]
 infixl 5 $$, $+$
 
 text :: Text -> P.Doc ann

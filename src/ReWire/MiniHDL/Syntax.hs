@@ -82,12 +82,19 @@ instance Pretty Direction where
       pretty In  = pretty "in"
       pretty Out = pretty "out"
 
-data Ty = TyStdLogic | TyStdLogicVector !Int | TyBool deriving (Eq, Show)
+data Ty = TyStdLogic
+        | TyStdLogicVector !Int
+        | TyBool
+        | TyClock -- not a real VHDL type, represented as std_logic.
+        | TyRegister !Name !Int -- not real VHDL, just a hack.
+        deriving (Eq, Show)
 
 instance Pretty Ty where
       pretty TyStdLogic           = pretty "std_logic"
       pretty (TyStdLogicVector n) = pretty "std_logic_vector" <+> parens (pretty "0 to" <+> pretty (n - 1))
       pretty TyBool               = pretty "boolean"
+      pretty TyClock              = pretty "std_logic"
+      pretty (TyRegister _ n)     = pretty "std_logic_vector" <+> parens (pretty "0 to" <+> pretty (n - 1))
 
 data Stmt = Assign !LHS !Expr
           | WithAssign !Expr !LHS ![(Expr, Expr)] !(Maybe Expr)

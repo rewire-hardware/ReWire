@@ -3,10 +3,12 @@
 module ReWire.Main (main) where
 
 import ReWire.FrontEnd (loadProgram, LoadPath)
-import ReWire.Pretty (prettyPrint)
+import ReWire.Pretty (Pretty, prettyPrint)
+import qualified ReWire.Core.Syntax as C
 import ReWire.Core.ToMiniHDL (compileProgram)
+import ReWire.MiniHDL.ToFIRRTL (toFirrtl)
 import ReWire.Flags (Flag (..))
-import ReWire.Error (runSyntaxError)
+import ReWire.Error (runSyntaxError, SyntaxErrorT)
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (when, unless)
@@ -82,7 +84,15 @@ main = do
             compileFile flags lp filename = do
                   when (FlagV `elem` flags) $ putStrLn $ "Compiling: " ++ filename
 
-                  fout <- getOutFile flags filename
-
-                  runSyntaxError (loadProgram flags lp filename >>= compileProgram >>= liftIO . T.writeFile fout . prettyPrint)
+                  runSyntaxError (loadProgram flags lp filename >>= compile)
                         >>= either ((>> exitFailure) . T.hPutStrLn stderr . prettyPrint) pure
+
+                  where compile :: C.Program -> SyntaxErrorT IO ()
+                        compile a = if FlagFirrtl `elem` flags
+                              then compileProgram a >>= toFirrtl >>= writeOutput
+                              else compileProgram a >>= writeOutput
+
+                        writeOutput :: Pretty a => a -> SyntaxErrorT IO ()
+                        writeOutput a = do
+                              fout <- liftIO $ getOutFile flags filename
+                              liftIO $ T.writeFile fout $ prettyPrint a
