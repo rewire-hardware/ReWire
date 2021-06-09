@@ -8,6 +8,7 @@ import qualified ReWire.FIRRTL.Syntax as F
 import Data.Bits (Bits (..))
 import Control.Monad (foldM)
 import ReWire.Annotation (noAnn)
+import Numeric.Natural (Natural)
 
 toFirrtl :: MonadError AstError m => V.Program -> m F.Circuit
 toFirrtl (V.Program units) = F.Circuit (F.Id "rewire_root") <$> mapM transUnit units
@@ -68,7 +69,11 @@ transExpr = \ case
             F.UInt w v -> pure $ F.UInt (w + 1) (v .|. bit (fromIntegral w))
             _          -> failAt noAnn "ToFirrtl.transExpr: this shouldn't happen."
       V.ExprConcat e1 e2 -> F.Cat <$> transExpr e1 <*> transExpr e2
-      V.ExprSlice e l h -> F.Bits <$> transExpr e <*> pure (fromIntegral h) <*> pure (fromIntegral l)
+      V.ExprSlice e l h -> F.Bits <$> transExpr e <*> pure (toNat h) <*> pure (toNat l)
       V.ExprIsEq e1 e2 -> F.Eq <$> transExpr e1 <*> transExpr e2
       V.ExprAnd e1 e2 -> F.And <$> transExpr e1 <*> transExpr e2
+      where toNat :: Integral a => a -> Natural -- TODO(chathhorn)
+            toNat a | a >= 0 = fromIntegral a
+            toNat _          = 0
+
 
