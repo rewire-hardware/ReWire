@@ -96,7 +96,7 @@ compilePat :: Monad m => Name -> Int -> Pat -> CM m (Expr, [Expr])  -- first Exp
 compilePat nscr offset (PatCon _ _ dci ps) = do
       dcitagvec        <- dciTagVector dci
       let tagw         =  length dcitagvec
-          fieldwidths  =  map (sizeof . typeOf) ps
+          fieldwidths  =  map (sizeof . typeof) ps
       let fieldoffsets =  init $ scanl (+) (offset + tagw) fieldwidths
       rs               <- zipWithM (compilePat nscr) fieldoffsets ps
       let ematchs      =  map fst rs
@@ -148,7 +148,7 @@ compileExp e_ = case e of
                 ns      =  map snd sssns
             tagvec      <- dciTagVector i
             padvec      <- dciPadVector i w tres
-            pure (stmts ++ [Assign (LHSName n) (ExprConcat
+            pure (stmts ++ [Assign (LHSName n) $ simplifyConcat (ExprConcat
                                                   (foldl' ExprConcat (ExprBitString tagvec) (map ExprName ns))
                                                      (ExprBitString padvec)
                                                   )],
@@ -279,6 +279,4 @@ compileDefn = \ case
       d -> Unit <$> mkDefnEntity d <*> mkDefnArch d
 
 compileProgram :: Monad m => C.Program -> SyntaxErrorT m M.Program
-compileProgram p = fmap fst $ flip runReaderT (ctors p, defns p) $ flip runStateT ([], [], 0) $
-      M.Program <$> mapM compileDefn (defns p)
-
+compileProgram p = fmap fst $ flip runReaderT (ctors p, defns p) $ flip runStateT ([], [], 0) $ M.Program <$> mapM compileDefn (defns p)

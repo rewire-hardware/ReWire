@@ -3,7 +3,7 @@ module ReWire.MiniHDL.Syntax where
 
 import Prelude hiding ((<>))
 import Prettyprinter (Pretty (..), parens, (<>), (<+>), vcat, hcat, semi, colon, punctuate, comma, nest)
-import ReWire.Pretty (($+$))
+import ReWire.Pretty (($$))
 import Data.Text (Text)
 
 newtype Program = Program { programUnits :: [Unit] }
@@ -17,9 +17,9 @@ data Unit = Unit !Entity !Architecture
 
 instance Pretty Unit where
       pretty (Unit ent arch) = pretty "library ieee;"
-                           $+$ pretty "use ieee.std_logic_1164.all;"
-                           $+$ pretty ent
-                           $+$ pretty arch
+                           $$ pretty "use ieee.std_logic_1164.all;"
+                           $$ pretty ent
+                           $$ pretty arch
 
 type Name = Text
 
@@ -30,8 +30,8 @@ data Entity = Entity
 
 instance Pretty Entity where
       pretty (Entity n ps) = pretty "entity" <+> pretty n <+> pretty "is"
-                         $+$ nest 2 (pretty "port" <+> parens (vcat (punctuate semi (map pretty ps))) <> semi)
-                         $+$ pretty "end" <+> pretty n <> semi
+                         $$ nest 2 (pretty "port" <+> parens (vcat (punctuate semi (map pretty ps))) <> semi)
+                         $$ pretty "end" <+> pretty n <> semi
 
 data Architecture = Architecture
       { archName       :: !Name
@@ -43,11 +43,11 @@ data Architecture = Architecture
 
 instance Pretty Architecture where
       pretty (Architecture n1 n2 sigs comps ss) = pretty "architecture" <+> pretty n1 <+> pretty "of" <+> pretty n2 <+> pretty "is"
-                                              $+$ nest 2 (vcat (map pretty sigs))
-                                              $+$ nest 2 (vcat (map pretty comps))
-                                              $+$ pretty "begin"
-                                              $+$ nest 2 (vcat (map pretty ss))
-                                              $+$ pretty "end" <+> pretty n1 <> semi
+                                              $$ nest 2 (vcat (map pretty sigs))
+                                              $$ nest 2 (vcat (map pretty comps))
+                                              $$ pretty "begin"
+                                              $$ nest 2 (vcat (map pretty ss))
+                                              $$ pretty "end" <+> pretty n1 <> semi
 
 data Component = Component
       { componentName  :: !Name
@@ -56,8 +56,8 @@ data Component = Component
 
 instance Pretty Component where
       pretty (Component n ps) = pretty "component" <+> pretty n
-                            $+$ nest 2 (pretty "port" <+> parens (vcat (punctuate semi (map pretty ps))) <> semi)
-                            $+$ pretty "end component;"
+                            $$ nest 2 (pretty "port" <+> parens (vcat (punctuate semi (map pretty ps))) <> semi)
+                            $$ pretty "end component;"
 
 data Port = Port
       { portName      :: !Name
@@ -110,11 +110,11 @@ instance Pretty Stmt where
                                 ++ maybe [] (\ e -> [pretty e <+> pretty "when others"]) mb
             Instantiate n1 n2 pm   -> pretty n1 <> colon <+> pretty n2 <+> pretty "port map" <+> parens (pretty pm) <> semi
             ClkProcess n ss        -> pretty "process" <> parens (pretty n)
-                                  $+$ pretty "begin"
-                                  $+$ nest 2 (pretty "if" <+> pretty n <> pretty "'event and" <+> pretty n <+> pretty "= '1' then")
-                                  $+$ nest 4 (vcat (map pretty ss))
-                                  $+$ nest 2 (pretty "end if;")
-                                  $+$ pretty "end process;"
+                                  $$ pretty "begin"
+                                  $$ nest 2 (pretty "if" <+> pretty n <> pretty "'event and" <+> pretty n <+> pretty "= '1' then")
+                                  $$ nest 4 (vcat (map pretty ss))
+                                  $$ nest 2 (pretty "end if;")
+                                  $$ pretty "end process;"
 
 newtype PortMap = PortMap [(Name, Expr)]
       deriving (Eq, Show)
@@ -156,3 +156,15 @@ instance Pretty Bit where
       pretty = \ case
             Zero -> pretty "0"
             One  -> pretty "1"
+
+simplifyConcat :: Expr -> Expr
+simplifyConcat = \ case
+      ExprConcat e1 e2 -> simplify' (simplifyConcat e1) (simplifyConcat e2)
+      e                -> e
+      where simplify' :: Expr -> Expr -> Expr
+            simplify' (ExprBitString []) e                  = e
+            simplify' e (ExprBitString [])                  = e
+            simplify' (ExprBitString s1) (ExprBitString s2) = ExprBitString (s1 ++ s2)
+            simplify' e1 e2                                 = ExprConcat e1 e2
+
+

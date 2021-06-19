@@ -90,6 +90,7 @@ library
                     ReWire.Core.Mangle
                     ReWire.Core.Syntax
                     ReWire.Core.ToMiniHDL
+                    ReWire.Core.Transform
                     ReWire.Crust.Annotate
                     ReWire.Crust.Cache
                     ReWire.Crust.Desugar

@@ -6,6 +6,7 @@ module ReWire.Crust.Cache
       , LoadPath
       , printInfo
       , printInfoHSE
+      , printHeader
       ) where
 
 import ReWire.Annotation
@@ -150,7 +151,7 @@ getProgram flags fp = do
        >=> toCore
        $ (ts, ds)
 
-      when (FlagDCore `elem` flags) $ liftIO $ do
+      when (FlagDCore1 `elem` flags) $ liftIO $ do
             printHeader "Core"
             T.putStrLn $ prettyPrint p
             when (FlagV `elem` flags) $ T.putStrLn "\n## Show core:\n"

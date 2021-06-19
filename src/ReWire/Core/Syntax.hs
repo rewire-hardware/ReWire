@@ -13,6 +13,7 @@ module ReWire.Core.Syntax
   , flattenApp
   , GId, LId, TyId
   , TypeAnnotated (..)
+  , dummyTy
   ) where
 
 import ReWire.Pretty
@@ -29,7 +30,7 @@ import TextShow (TextShow (..), showt)
 import TextShow.Generic (FromGeneric (..))
 
 class TypeAnnotated a where
-      typeOf :: a -> Ty
+      typeof :: a -> Ty
 
 class Parenless a where
       -- | Parts that never need to be wrapped in parens during pretty printing.
@@ -61,6 +62,9 @@ data Ty = TyApp Annote !Int !Ty !Ty
         deriving (Eq, Ord, Generic, Show, Typeable, Data)
         deriving TextShow via FromGeneric Ty
 
+dummyTy :: Ty
+dummyTy = TyVar noAnn "dummy" 0
+
 instance Annotated Ty where
       ann = \ case
             TyApp a _ _ _  -> a
@@ -85,11 +89,13 @@ instance Pretty Ty where
             TyCon _ n _                      -> pretty $ deTyConId n
             TyVar _ n _                      -> pretty n
 
+-- For arrow types, returns the size of the result.
 sizeof :: Ty -> Int
-sizeof = \ case
-      TyApp _ s _ _ -> s
-      TyCon _ _ s   -> s
-      TyVar _ _ s   -> s
+sizeof t = case snd $ flattenArrow t of
+      TyApp _ s _ _     -> s
+      TyCon _ (TyConId "ReT") _   -> 1 -- TODO
+      TyCon _ _ s       -> s
+      TyVar _ _ s       -> s
 
 ---
 
@@ -104,8 +110,8 @@ data Exp = App        Annote !Exp !Exp
          deriving TextShow via FromGeneric Exp
 
 instance TypeAnnotated Exp where
-      typeOf = \ case
-            App _ e _           -> arrowRight (typeOf e)
+      typeof = \ case
+            App _ e _           -> arrowRight (typeof e)
             Prim _ t _          -> t
             GVar _ t _          -> t
             LVar _ t _          -> t
@@ -145,13 +151,13 @@ instance Pretty Exp where
                   [ text "match" <+> braces (pretty t) <+> pretty e <+> text "of"
                   , nest 2 (vcat
                        [ pretty p <+> text "->" <+> text e1
-                             <+> hsep (map (pretty . LVar undefined undefined) as) ])
+                             <+> hsep (map (pretty . LVar noAnn dummyTy) as) ])
                   ]
             Match _ t e p e1 as (Just e2)                     -> foldr ($+$) empty
                   [ text "match"  <+> braces (pretty t) <+> pretty e <+> text "of"
                   , nest 2 (vcat
                         [ pretty p <+> text "->"
-                              <+> text e1 <+> hsep (map (pretty . LVar undefined undefined) as)
+                              <+> text e1 <+> hsep (map (pretty . LVar noAnn dummyTy) as)
                         , text "_" <+> text "->" <+> pretty e2
                         ])
                   ]
@@ -165,7 +171,7 @@ data Pat = PatCon Annote !Ty !DataConId ![Pat]
          deriving TextShow via FromGeneric Pat
 
 instance TypeAnnotated Pat where
-      typeOf = \ case
+      typeof = \ case
             PatCon _ t _ _ -> t
             PatVar _ t     -> t
 
@@ -196,6 +202,9 @@ data Defn = Defn { defnAnnote :: Annote,
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric Defn
 
+instance TypeAnnotated Defn where
+      typeof (Defn _ _ t _) = t
+
 instance Annotated Defn where
       ann (Defn a _ _ _) = a
 
@@ -210,6 +219,9 @@ instance Pretty Defn where
 data DataCon = DataCon Annote !DataConId !Int !Int !Ty
       deriving (Generic, Eq, Ord, Show, Typeable, Data)
       deriving TextShow via FromGeneric DataCon
+
+instance TypeAnnotated DataCon where
+      typeof (DataCon _ _ _ _ t) = t
 
 instance Annotated DataCon where
       ann (DataCon a _ _ _ _) = a
@@ -231,7 +243,7 @@ instance Monoid Program where
       mempty = Program mempty mempty
 
 instance Pretty Program where
-      pretty p = ppDataDecls (ctors p) $+$ text "" $+$ ppDefns (defns p)
+      pretty p = ppDataDecls (ctors p) $$ text "" $$ ppDefns (defns p)
             where ppDefns = vcat . intersperse (text "") . map pretty
                   ppDataDecls = vcat . intersperse (text "") . map pretty
 
@@ -251,7 +263,7 @@ flattenArrow = \ case
 flattenTyApp :: Ty -> [Ty]
 flattenTyApp = \ case
       TyApp _ _ t t' -> flattenTyApp t ++ [t']
-      t            -> [t]
+      t              -> [t]
 
 flattenApp :: Exp -> [Exp]
 flattenApp = \ case

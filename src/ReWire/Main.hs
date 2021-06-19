@@ -1,11 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE Trustworthy #-}
 module ReWire.Main (main) where
 
+import ReWire.Annotation (unAnn)
 import ReWire.FrontEnd (loadProgram, LoadPath)
 import ReWire.Pretty (Pretty, prettyPrint)
 import qualified ReWire.Core.Syntax as C
 import ReWire.Core.ToMiniHDL (compileProgram)
+import ReWire.Core.Transform (removeEmpty)
+import ReWire.Crust.Cache (printHeader)
 import ReWire.MiniHDL.ToFIRRTL (toFirrtl)
 import ReWire.Flags (Flag (..))
 import ReWire.Error (runSyntaxError, SyntaxErrorT)
@@ -19,6 +22,8 @@ import System.Environment (getArgs)
 import System.Exit (exitFailure)
 import System.FilePath ((-<.>))
 import System.IO (stderr)
+
+import TextShow (showt)
 
 import Data.Text (pack)
 import qualified Data.Text.IO as T
@@ -36,7 +41,8 @@ options =
        , Option []    ["dpass5", "dcrust3"] (NoArg FlagDCrust3) "Dump pass 5: pre-purify crust source."
        , Option []    ["dpass6", "dcrust4"] (NoArg FlagDCrust4) "Dump pass 6: post-purify crust source."
        , Option []    ["dpass7", "dcrust5"] (NoArg FlagDCrust5) "Dump pass 7: post-second-lambda-lifting crust source."
-       , Option []    ["dpass8", "dcore"  ] (NoArg FlagDCore)   "Dump pass 8: core source."
+       , Option []    ["dpass8", "dcore1"  ] (NoArg FlagDCore1)   "Dump pass 8: core source."
+       , Option []    ["dpass9", "dcore2"  ] (NoArg FlagDCore2)   "Dump pass 9: core source after purging empty types."
        , Option []    ["dtypes"]            (NoArg FlagDTypes)  "Enable extra typechecking after various IR transformations."
        , Option ['o'] []                    (ReqArg FlagO "filename.vhd")
             "Name for VHDL output file."
@@ -88,9 +94,16 @@ main = do
                         >>= either ((>> exitFailure) . T.hPutStrLn stderr . prettyPrint) pure
 
                   where compile :: C.Program -> SyntaxErrorT IO ()
-                        compile a = if FlagFirrtl `elem` flags
-                              then compileProgram a >>= toFirrtl >>= writeOutput
-                              else compileProgram a >>= writeOutput
+                        compile a = do
+                              b <- removeEmpty a
+                              when (FlagDCore2 `elem` flags) $ liftIO $ do
+                                    printHeader "Emptied Core" -- TODO(chathhorn): pull this out of Crust.Cache
+                                    T.putStrLn $ prettyPrint b
+                                    when (FlagV `elem` flags) $ T.putStrLn "\n## Show core:\n"
+                                    when (FlagV `elem` flags) $ T.putStrLn $ showt $ unAnn b
+                              if FlagFirrtl `elem` flags
+                                    then compileProgram b >>= toFirrtl >>= writeOutput
+                                    else compileProgram a >>= writeOutput
 
                         writeOutput :: Pretty a => a -> SyntaxErrorT IO ()
                         writeOutput a = do

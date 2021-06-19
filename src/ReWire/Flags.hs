@@ -11,7 +11,8 @@ data Flag = FlagO !String
           | FlagDCrust3
           | FlagDCrust4
           | FlagDCrust5
-          | FlagDCore
+          | FlagDCore1
+          | FlagDCore2
           | FlagDTypes
           | FlagLoadPath !String
       deriving (Eq, Show)
