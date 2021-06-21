@@ -29,9 +29,7 @@ lang = L.emptyDef
       , T.reservedNames   = [ "input", "output", "wire", "reg", "when", "else", "mux",
             "of", "node", "is", "invalid", "flip", "circuit",
             "module", "skip", "UInt", "SInt", "SBits", "UBits", "stop",
-            "printf", "old", "new", "undefined", "validif", "read-latency",
-            "reader", "writer", "readwriter", "write-latency", "read-under-write",
-            "depth", "data-type", "with"]
+            "printf", "old", "new", "undefined", "validif", "with"]
       , T.caseSensitive   = True
       }
 
@@ -152,29 +150,6 @@ parseBlock = do s  <- parseStmt
                   (Skip, []) -> []
                   _          -> (s : ss)
 
-parseWhenlessBlock = do s  <- parseWhenless
-                        ss <- many parseWhenless
-                        pure $ case (s, ss) of
-                          (Skip, []) -> []
-                          _          -> (s : ss)
-
-parseWhenless =   try parseSkip
-              <|> try parseStop
-              <|> try parseWire
-              <|> try parsePrintf
-              <|> try parseReg
-              <|> try parseInferMPort
-              <|> try parseReadMPort
-              <|> try parseWriteMPort
-              <|> try parseNode
-              <|> try parsePartialConnect
-              <|> try parseConnect
-              <|> try parseInvalid
-              <|> try parseInstance
-              <|> try parseMem
-              <|> try parseCMem
-              <|> try parseSMem
-
 parseStmt     =   try parseSkip
               <|> try parseWhen
               <|> try parseStop
@@ -214,14 +189,6 @@ parseWhen   = do reserved "when"
                  whenStmts <- parseBlock
                  elseStmts <- optionMaybe (try (reserved "else" *> colon *> parseBlock))
                  return (WhenElse e1 whenStmts elseStmts)
-
-parseWhen'   = do reserved "when"
-                  e1 <- parseExp
-                  colon
-                  _ <- optionMaybe parseInfo
-                  whenStmts <- parseWhenlessBlock
-                  elseStmts <- optionMaybe (try (reserved "else" *> colon *> parseWhenlessBlock))
-                  return (WhenElse e1 whenStmts elseStmts)
 
 parseInstance   = do reserved "inst"
                      s1 <- ident
@@ -308,64 +275,39 @@ parseNode       = do reserved "node"
                      info <- optionMaybe parseInfo
                      return (Node info s e)
 
-parseMem        = do string "mem"
+parseMem        = do reserved "mem"
                      mName <- ident
                      colon
-                     info <- optionMaybe parseInfo
-                     dt <- parseDtype
-                     dep <- parseDepth
-                     rl <- parseRlatency
-                     wl <- parseWlatency
-                     rdrs <- many parseReader
-                     wrtrs <- many parseWriter
-                     rdwriters <- many parseReadWriter
-                     ruw <- parseRUW
+                     info      <- optionMaybe parseInfo
+                     dt        <- parseDtype
+                     dep       <- parseDepth
+                     rl        <- parseRlatency
+                     wl        <- parseWlatency
+                     rdrs      <- many (try parseReader)
+                     wrtrs     <- many (try parseWriter)
+                     rdwriters <- many (try parseReadWriter)
+                     ruw       <- parseRUW
                      let mem = Mem {data_type=dt, depth=dep, readers=rdrs, writers=wrtrs,
                                     readWriters=rdwriters, readLatency=rl, writeLatency=wl,
                                     readUnderWrite=ruw}
                      return (Memory info mName mem)
 
 
-parseDtype      = reserved "data-type"
-               *> symbol "=>"
-               *> parseType
-
-parseDepth      = reserved "depth"
-               *> symbol "=>"
-               *> integer
-
-parseRlatency      = reserved "read-latency"
-                  *> symbol "=>"
-                  *> integer
-
-parseWlatency      = reserved "write-latency"
-                  *> symbol "=>"
-                  *> integer
-
-parseReader      = reserved "reader"
-                *> symbol "=>"
-                *> ident
-
-parseWriter     = reserved "writer"
-               *> symbol "=>"
-               *> ident
-
-parseReadWriter = reserved "read-writer"
-               *> symbol "=>"
-               *> ident
-
-parseRUW         = reserved "read-under-write"
-                *> symbol "=>"
-                *> parseBehavior
+parseDtype      = symbol "data-type" *> symbol "=>" *> parseType
+parseDepth      = symbol "depth" *> symbol "=>" *> integer
+parseRlatency   = symbol "read-latency" *> symbol "=>" *> integer
+parseWlatency   = symbol "write-latency" *> symbol "=>" *> integer
+parseReader     = symbol "reader" *> symbol "=>" *> ident
+parseWriter     = symbol "writer" *> symbol "=>" *> ident
+parseReadWriter = symbol "read-writer" *> symbol "=>" *> ident
+parseRUW        = symbol "read-under-write" *> symbol "=>" *> parseBehavior
 
 parseBehavior    = try parseOld
                <|> try parseNew
                <|> try parseUndefined
 
 parseOld        = Old <$ reserved "old"
-
 parseNew        = New <$ reserved "new"
-
 parseUndefined  = Undefined <$ reserved "undefined"
 
 parsePrintf     = do reserved "printf"
