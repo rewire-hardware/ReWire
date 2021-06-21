@@ -77,6 +77,7 @@ library
                   , text-show >= 3.9 && < 3.10
                   , unbound-generics >= 0.4.1 && < 0.4.2
                   , monad-resumption >= 0.1.4.0
+                  , parsec >= 3.1.14 && < 3.1.15
   default-language: Haskell2010
   ghc-options     : -Wall
                     -fno-warn-name-shadowing
@@ -111,6 +112,7 @@ library
                     ReWire.MiniHDL.Syntax
                     ReWire.MiniHDL.ToFIRRTL
                     ReWire.FIRRTL.Syntax
+                    ReWire.FIRRTL.Sintax
                     ReWire.Pretty
                     ReWire.SYB
                     ReWire.Unbound
@@ -121,6 +123,7 @@ library
                     ReWire.Main
                     ReWire
                     ReWire.Bits
+                    ReWire.FIRRTL.Parse
   default-extensions : LambdaCase
                        TupleSections
                        ViewPatterns
@@ -129,6 +132,23 @@ executable rwc
   hs-source-dirs  : src/rwc
   main-is         : Main.hs
   build-depends   : ReWire, base >= 4.8 && < 5
+  default-language: Haskell2010
+  ghc-options     : -Wall
+                    -O2
+                    -optc-O3
+                    -funbox-strict-fields
+                    -j8 +RTS -A64m -RTS
+  default-extensions : LambdaCase
+                       TupleSections
+                       ViewPatterns
+
+executable firrtl
+  hs-source-dirs  : src/firrtl
+  main-is         : Main.hs
+  build-depends   : ReWire
+                  , base >= 4.8 && < 5
+                  , text-show >= 3.9 && < 3.10
+                  , text >= 0.11
   default-language: Haskell2010
   ghc-options     : -Wall
                     -O2
