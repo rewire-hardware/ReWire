@@ -9,7 +9,7 @@ import qualified ReWire.Core.Syntax as C
 import ReWire.Core.ToMiniHDL (compileProgram)
 import ReWire.Core.Transform (removeEmpty)
 import ReWire.Crust.Cache (printHeader)
-import ReWire.MiniHDL.ToFIRRTL (toFirrtl)
+import ReWire.MiniHDL.ToLoFIRRTL (toLoFirrtl)
 import ReWire.Flags (Flag (..))
 import ReWire.Error (runSyntaxError, SyntaxErrorT)
 
@@ -102,7 +102,7 @@ main = do
                                     when (FlagV `elem` flags) $ T.putStrLn "\n## Show core:\n"
                                     when (FlagV `elem` flags) $ T.putStrLn $ showt $ unAnn b
                               if FlagFirrtl `elem` flags
-                                    then compileProgram b >>= toFirrtl >>= writeOutput
+                                    then compileProgram b >>= toLoFirrtl >>= writeOutput
                                     else compileProgram a >>= writeOutput
 
                         writeOutput :: Pretty a => a -> SyntaxErrorT IO ()

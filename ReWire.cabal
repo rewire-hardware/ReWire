@@ -110,9 +110,9 @@ library
                     ReWire.Error
                     ReWire.Flags
                     ReWire.MiniHDL.Syntax
-                    ReWire.MiniHDL.ToFIRRTL
+                    ReWire.MiniHDL.ToLoFIRRTL
+                    ReWire.LoFIRRTL.Syntax
                     ReWire.FIRRTL.Syntax
-                    ReWire.FIRRTL.Sintax
                     ReWire.Pretty
                     ReWire.SYB
                     ReWire.Unbound

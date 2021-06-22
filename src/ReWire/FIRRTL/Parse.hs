@@ -1,444 +1,331 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Safe #-}
 module ReWire.FIRRTL.Parse (parseFIRRTL) where
 
-import ReWire.FIRRTL.Sintax
+import ReWire.FIRRTL.Syntax
 
+import safe Data.Text (Text, pack, unpack)
+import qualified Data.Text.IO as Txt
+import Data.Functor (void)
 import Data.List (foldl')
-import Text.Parsec
-import qualified Text.Parsec.Language as L
+import Data.Functor.Identity (Identity)
+import Text.Parsec ( Parsec, many, many1, optionMaybe, char
+                   , hexDigit, try, (<|>), sepBy, manyTill
+                   , oneOf, digit, letter, parse, anyChar )
 import qualified Text.Parsec.Token as T
-import qualified Text.Parsec.Expr as E
-import Text.Parsec.Combinator
+import Numeric (readHex)
 
-import System.Environment
-import Control.Monad
-import Numeric
+type Parser = Parsec Text ()
 
 parseFIRRTL :: FilePath -> IO Circuit
-parseFIRRTL p = do s      <- readFile p
-                   let pr =  runParser (whiteSpace >> parseCircuit) () p s
-                   case pr of
-                      Left err -> error $ (show err)
-                      Right ss -> return ss
+parseFIRRTL p = Txt.readFile p
+            >>= pure . parse (whiteSpace >> circuit) p
+            >>= either (error . show) pure
 
-lang :: L.LanguageDef st
-lang = L.emptyDef
-      { T.commentLine     = ";"
-      , T.nestedComments  = True
+lang :: T.GenLanguageDef Text () Identity
+lang = T.LanguageDef
+      { T.commentStart    = ""
+      , T.commentEnd      = ""
+      , T.commentLine     = ";"
+      , T.nestedComments  = False
       , T.identStart      = letter <|> char '_'
       , T.identLetter     = letter <|> char '_' <|> digit
+      , T.opStart         = oneOf ""
+      , T.opLetter        = oneOf ""
       , T.reservedNames   = [ "input", "output", "wire", "reg", "when", "else", "mux",
             "of", "node", "is", "invalid", "flip", "circuit",
             "module", "skip", "UInt", "SInt", "SBits", "UBits", "stop",
-            "printf", "old", "new", "undefined", "validif", "with"]
+            "printf", "undefined", "with"]
+      , T.reservedOpNames = []
       , T.caseSensitive   = True
       }
 
-lexer         = T.makeTokenParser lang
+lexer :: T.GenTokenParser Text () Identity
+lexer = T.makeTokenParser lang
 
-ident         = T.identifier lexer
-semi          = T.semi lexer
-brackets      = T.brackets lexer
-comma         = T.comma lexer
-colon         = T.colon lexer
-braces        = T.braces lexer
-reserved      = T.reserved lexer
-parens        = T.parens lexer
-angles        = T.angles lexer
-whiteSpace    = T.whiteSpace lexer
-integer       = T.integer lexer
-symbol        = T.symbol lexer
-dot           = T.dot lexer
-stringLiteral = T.stringLiteral lexer
+ident :: Parser Text
+ident = pack <$> T.identifier lexer
 
-parseInfo     = do symbol "@["
-                   info <- manyTill anyChar (try (char ']'))
-                   whiteSpace
-                   return (Annotation info)
+brackets :: Parser e -> Parser e
+brackets = T.brackets lexer
 
-parseCircuit  = do reserved "circuit"
-                   circ <- ident
-                   colon
-                   info <- optionMaybe parseInfo
-                   mods <- many1 parseModule
-                   return (Circuit info circ mods)
+comma :: Parser Text
+comma = pack <$> T.comma lexer
 
-parseModule   = do reserved "module"
-                   md <- ident
-                   colon
-                   info  <- optionMaybe (try parseInfo)
-                   ports <- many parsePort
-                   stmts <- parseBlock
-                   return (Module info md ports stmts)
+colon :: Parser Text
+colon = pack <$> T.colon lexer
 
-parsePort     = try parseInput <|> try parseOutput
+braces :: Parser e -> Parser e
+braces = T.braces lexer
 
-parseInput    = do reserved "input"
-                   s <- ident
-                   colon
-                   pt <- parseType
-                   info <- optionMaybe parseInfo
-                   return (Input info s pt)
+reserved :: Text -> Parser ()
+reserved = T.reserved lexer . unpack
 
-parseOutput   = do reserved "output"
-                   s <- ident
-                   colon
-                   pt <- parseType
-                   info <- optionMaybe parseInfo
-                   return (Output info s pt)
+parens :: Parser e -> Parser e
+parens = T.parens lexer
 
-parseCMem = do symbol "cmem"
-               s <- ident
-               colon
-               pt <- parseType
-               info <- optionMaybe parseInfo
-               return (CMem info s pt)
+angles :: Parser e -> Parser e
+angles = T.angles lexer
 
-parseSMem = do symbol "smem"
-               s <- ident
-               colon
-               pt <- parseType
-               info <- optionMaybe parseInfo
-               return (SMem info s pt)
+whiteSpace :: Parser ()
+whiteSpace = T.whiteSpace lexer
 
-parseVectorType =   try parseClock
-                <|> try parseUInt_t
-                <|> try parseSInt_t
-                -- <|> try parseVector
-                <|> try parseBundle
+integer :: Parser Integer
+integer = T.integer lexer
 
-parseType =    try parseClock
-              <|> try parseVector
-              <|> try parseUInt_t
-              <|> try parseSInt_t
-              <|> try parseBundle
+symbol :: Text -> Parser Text
+symbol s = pack <$> (T.symbol lexer $ unpack s)
 
-parseClock      = Clock <$ reserved "Clock"
+dot :: Parser Text
+dot = pack <$> T.dot lexer
 
-parseUInt_t     = do reserved "UInt"
-                     w <- optionMaybe parseWidth
-                     return (UIntTy w)
+stringLiteral :: Parser Text
+stringLiteral = pack <$> T.stringLiteral lexer
 
-parseWidth      = angles integer
-parseSInt_t     = SIntTy <$> (reserved "SInt" *> optionMaybe parseWidth)
-parseVector     = do t <- parseVectorType
-                     (v : vs) <- many1 (brackets integer)
-                     pure $ foldl' Vector (Vector t v) vs
+lparen :: Parser ()
+lparen = void $ symbol "("
 
-parseBundle     = do braces ( do b <- parseSubBundle
-                                 bs <- many ( do comma
-                                                 btemp <- parseSubBundle
-                                                 return btemp
-                                             )
-                                 return (Bundle ( b:bs ) )
-                            )
+rparen :: Parser ()
+rparen = void $ symbol ")"
 
-parseSubBundle  = try (do reserved "flip"
-                          n <- ident
-                          colon
-                          pt <- parseType
-                          return (Flip n pt)
-                      )
-               <|>(do     n <- ident
-                          colon
-                          pt <- parseType
-                          return (Binding n pt)
-                  )
+pair :: Parser a -> Parser (a, a)
+pair p = parens $ (,) <$> p <*> (comma *> p)
 
-parseBlock = do s  <- parseStmt
-                ss <- many parseStmt
-                pure $ case (s, ss) of
-                  (Skip, []) -> []
-                  _          -> (s : ss)
+info :: Parser (Maybe Info)
+info = optionMaybe $ Annotation <$> (pack <$> (symbol "@[" *> manyTill anyChar (try (char ']')) <* whiteSpace))
 
-parseStmt     =   try parseSkip
-              <|> try parseWhen
-              <|> try parseStop
-              <|> try parseWire
-              <|> try parsePrintf
-              <|> try parseReg
-              <|> try parseInferMPort
-              <|> try parseReadMPort
-              <|> try parseWriteMPort
-              <|> try parseNode
-              <|> try parsePartialConnect
-              <|> try parseConnect
-              <|> try parseInvalid
-              <|> try parseInstance
-              <|> try parseMem
-              <|> try parseCMem
-              <|> try parseSMem
+labeled :: Text -> Parser a -> Parser a
+labeled s p = reserved s *> p
 
-parseConnect    = do ref <- parseExp
-                     symbol "<="
-                     e <- parseExp
-                     info <- optionMaybe parseInfo
-                     return (Connect info ref e)
+labeled' :: Text -> Parser a -> Parser a
+labeled' s p = symbol s *> p
 
-parsePartialConnect = do ref <- parseExp
-                         symbol "<-"
-                         e <- parseExp
-                         info <- optionMaybe parseInfo
-                         return (PartialConnect info ref e)
+labeledId :: Text -> Parser Text
+labeledId lbl = labeled lbl ident
 
-parseSkip       = Skip <$ reserved "skip"
+labeledId' :: Text -> Parser Text
+labeledId' lbl = labeled' lbl ident
 
-parseWhen   = do reserved "when"
-                 e1 <- parseExp
-                 colon
-                 _ <- optionMaybe parseInfo
-                 whenStmts <- parseBlock
-                 elseStmts <- optionMaybe (try (reserved "else" *> colon *> parseBlock))
-                 return (WhenElse e1 whenStmts elseStmts)
+circuit :: Parser Circuit
+circuit = Circuit <$> labeledId "circuit" <*> (colon *> info) <*> many1 modul
 
-parseInstance   = do reserved "inst"
-                     s1 <- ident
-                     reserved "of"
-                     s2 <- ident
-                     info <- optionMaybe parseInfo
-                     return (Instance info s1 s2)
+modul :: Parser Module
+modul = Module <$> labeledId "module" <*> (colon *> info) <*> many port <*> block
 
-parseStop       = do reserved "stop"
-                     symbol "("
-                     s1 <- parseExp
-                     comma
-                     s2 <- parseExp
-                     comma
-                     i <- integer
-                     symbol ")"
-                     return (Stop s1 s2 i)
+port :: Parser Port
+port = try input <|> try output
 
-parseWire       = do reserved "wire"
-                     e <- ident
-                     colon
-                     p <- parseType
-                     info <- optionMaybe parseInfo
-                     return (Wire info e p)
+input :: Parser Port
+input = Input <$> labeledId "input" <*> typAnn <*> info
 
-parseReg        = do reserved "reg"
-                     name <- ident
-                     colon
-                     p1 <- parseType
-                     comma
-                     e1 <- parseExp
-                     reset <- optionMaybe (do reserved "with"
-                                              colon
-                                              reserved "reset"
-                                              reserved "=>"
-                                              symbol "("
-                                              e2 <- parseExp
-                                              comma
-                                              e3 <- parseExp
-                                              symbol ")"
-                                              return (e2, e3)
-                                          )
-                     info <- optionMaybe parseInfo
-                     return (Reg info name p1 e1 reset)
+output :: Parser Port
+output = Output <$> labeledId "output" <*> typAnn <*> info
 
-parseInvalid    = Invalid
-                  <$> (parseExp <* reserved "is" <* reserved "invalid")
-                  <*> (optionMaybe parseInfo)
+cmem :: Parser Stmt
+cmem = CMem <$> labeledId' "cmem" <*> typAnn <*> info
 
-parseInferMPort    = do reserved "infer"
-                        reserved "mport"
-                        s <- ident
-                        symbol "="
-                        e1 <- parseExp
-                        comma
-                        e2 <- parseExp
-                        info <- optionMaybe parseInfo
-                        return (InferMPort info s e1 e2)
+smem :: Parser Stmt
+smem = SMem <$> labeledId' "smem" <*> typAnn <*> info
 
-parseReadMPort    = do reserved "read"
-                       reserved "mport"
-                       s <- ident
-                       symbol "="
-                       e1 <- parseExp
-                       comma
-                       e2 <- parseExp
-                       info <- optionMaybe parseInfo
-                       return (ReadMPort info s e1 e2)
+typNoVector :: Parser Type
+typNoVector = try clockTy <|> try uintTy <|> try sintTy <|> try bundleTy
 
-parseWriteMPort    = do reserved "write"
-                        reserved "mport"
-                        s <- ident
-                        symbol "="
-                        e1 <- parseExp
-                        comma
-                        e2 <- parseExp
-                        info <- optionMaybe parseInfo
-                        return (WriteMPort info s e1 e2)
+typ :: Parser Type
+typ = try vectorTy <|> typNoVector
 
-parseNode       = do reserved "node"
-                     s <- ident
-                     symbol "="
-                     e <- parseExp
-                     info <- optionMaybe parseInfo
-                     return (Node info s e)
+typAnn :: Parser Type
+typAnn = colon *> typ
 
-parseMem        = do reserved "mem"
-                     mName <- ident
-                     colon
-                     info      <- optionMaybe parseInfo
-                     dt        <- parseDtype
-                     dep       <- parseDepth
-                     rl        <- parseRlatency
-                     wl        <- parseWlatency
-                     rdrs      <- many (try parseReader)
-                     wrtrs     <- many (try parseWriter)
-                     rdwriters <- many (try parseReadWriter)
-                     ruw       <- parseRUW
-                     let mem = Mem {data_type=dt, depth=dep, readers=rdrs, writers=wrtrs,
-                                    readWriters=rdwriters, readLatency=rl, writeLatency=wl,
-                                    readUnderWrite=ruw}
-                     return (Memory info mName mem)
+clockTy :: Parser Type
+clockTy = ClockTy <$ reserved "Clock"
 
+width :: Parser Integer
+width = angles integer
 
-parseDtype      = symbol "data-type" *> symbol "=>" *> parseType
-parseDepth      = symbol "depth" *> symbol "=>" *> integer
-parseRlatency   = symbol "read-latency" *> symbol "=>" *> integer
-parseWlatency   = symbol "write-latency" *> symbol "=>" *> integer
-parseReader     = symbol "reader" *> symbol "=>" *> ident
-parseWriter     = symbol "writer" *> symbol "=>" *> ident
-parseReadWriter = symbol "read-writer" *> symbol "=>" *> ident
-parseRUW        = symbol "read-under-write" *> symbol "=>" *> parseBehavior
+uintTy :: Parser Type
+uintTy = UIntTy <$> labeled "UInt" (optionMaybe width)
 
-parseBehavior    = try parseOld
-               <|> try parseNew
-               <|> try parseUndefined
+sintTy :: Parser Type
+sintTy = SIntTy <$> labeled "SInt" (optionMaybe width)
 
-parseOld        = Old <$ reserved "old"
-parseNew        = New <$ reserved "new"
-parseUndefined  = Undefined <$ reserved "undefined"
+vectorTy :: Parser Type
+vectorTy = do t <- typNoVector
+              (v : vs) <- many1 (brackets integer)
+              pure $ foldl' VectorTy (VectorTy t v) vs
 
-parsePrintf     = do reserved "printf"
-                     symbol "("
-                     r1 <- parseExp
-                     comma
-                     r2 <- parseExp
-                     comma
-                     s <- stringLiteral
-                     es <- many (do comma
-                                    e <- parseExp
-                                    return e
-                                )
-                     symbol ")"
-                     info <- optionMaybe parseInfo
-                     return (Printf r1 r2 s es info)
+bundleTy :: Parser Type
+bundleTy = BundleTy <$> braces (member `sepBy` comma)
 
-parseExp      = try parseValidIf
-            <|> try parseUInt
-            <|> try parseSInt
-            <|> try parseMux
-            <|> try parsePrimOps
-            <|> try parseLitInt
-            <|> try parseSubAcc
-            <|> try parseSubfield
-            <|> try parseSubindex
-            <|> try parseRef
+member :: Parser Member
+member  = try flipped <|> binding
 
-parseValidIf  = do reserved "validif"
-                   parens (do e1 <- parseExp
-                              comma
-                              e2 <- parseExp
-                              return (Validif e1 e2)
-                          )
+flipped :: Parser Member
+flipped = Flip <$> labeledId "flip" <*> typAnn
 
-parseUInt     = do reserved "UInt"
-                   i1 <- optionMaybe (angles integer)
-                   i2 <- parens parseNum
-                   return (LitUInt i1 i2)
+binding :: Parser Member
+binding = Binding <$> ident <*> typAnn
 
-parseNum    =    try integer
-             <|> try parseHex
+block :: Parser [Stmt]
+block = many1 stmt >>= pure . \ case
+      [Skip] -> []
+      s      -> s
 
-parseHex      = do char '"'
-                   char 'h'
-                   ds <- many hexDigit
-                   let (d,_):_  = readHex ds
-                   char '"'
-                   whiteSpace
-                   return d
+stmt :: Parser Stmt
+stmt = try skip           <|> try when
+   <|> try stop           <|> try wire
+   <|> try printf         <|> try reg
+   <|> try inferMPort     <|> try readMPort
+   <|> try writeMPort     <|> try node
+   <|> try partialConnect <|> try connect
+   <|> try invalid        <|> try inst
+   <|> try mem            <|> try cmem
+   <|> try smem
 
-parseSInt     = do reserved "SInt"
-                   i1 <- optionMaybe (angles integer)
-                   i2 <- parens parseNum
-                   return (LitSInt i1 i2)
+connect :: Parser Stmt
+connect = Connect <$> expr <*> labeled' "<=" expr <*> info
 
-parseLitInt   = LitInt <$> integer
+partialConnect :: Parser Stmt
+partialConnect = PartialConnect <$> expr <*> labeled' "<-" expr <*> info
 
-parseMux      = do reserved "mux"
-                   parens (do e1 <- parseExp
-                              comma
-                              e2 <- parseExp
-                              comma
-                              e3 <- parseExp
-                              return (Mux e1 e2 e3)
-                          )
+skip :: Parser Stmt
+skip = Skip <$ reserved "skip"
 
-parsePrimOps =   try parseAdd     <|>  try parseSub
-            <|>  try parseCat     <|>  try parseBits
-            <|>  try parseHead    <|>  try parseTail
-            <|>  try parseMul     <|>  try parseDiv
-            <|>  try parseMod     <|>  try parseLT
-            <|>  try parseLEQ     <|>  try parseGT
-            <|>  try parseGEQ     <|>  try parseEQ
-            <|>  try parseNEQ     <|>  try parsePad
-            <|>  try parseAsUInt  <|>  try parseAsSInt
-            <|>  try parseAsClock <|>  try parseShl
-            <|>  try parseShr     <|>  try parseDShl
-            <|>  try parseDShr    <|>  try parseCvt
-            <|>  try parseNeg     <|>  try parseNot
-            <|>  try parseAnd     <|>  try parseOr
-            <|>  try parseXor     <|>  try parseAndr
-            <|>  try parseOrr     <|>  try parseXorr
+when :: Parser Stmt
+when = When <$> labeled "when" expr
+      <*> (colon *> info)
+      <*> block
+      <*> (optionMaybe (try (reserved "else" *> colon *> block)))
 
-lparen = symbol "("
-rparen = symbol ")"
+inst :: Parser Stmt
+inst = Instance <$> labeledId "inst" <*> labeledId "of" <*> info
 
-pair = parens $ (,) <$> parseExp <*> (comma *> parseExp)
+stop :: Parser Stmt
+stop = Stop <$> (reserved "stop" *> lparen *> expr)
+      <*> (comma *> expr)
+      <*> (comma *> integer <* rparen)
 
-binop c p = uncurry c <$> (symbol p *> pair)
--- binop c p = c <$> (symbol p *> lparen *> parseExp) <*> (comma *> parseExp <* rparen)
-unop c p  = c <$> (symbol p *> lparen *> parseExp <* rparen)
-triop c p = c <$> (symbol p *> lparen *> parseExp) <*> (comma *> parseExp) <*> (comma *> parseExp <* rparen)
+wire :: Parser Stmt
+wire = Wire <$> labeledId "wire" <*> typAnn <*> info
 
-parseAdd      = binop Add "add"
-parseSub      = binop Sub "sub"
-parseMul      = binop Mul "mul"
-parseDiv      = binop Div "div"
-parseMod      = binop Mod "mod"
-parseLT       = binop Lt "lt"
-parseLEQ      = binop Leq "leq"
-parseGT       = binop Gt "gt"
-parseGEQ      = binop Geq "geq"
-parseEQ       = binop Eq "eq"
-parseNEQ      = binop Neq "neq"
-parsePad      = binop Pad "pad"
-parseAsUInt   = unop AsUInt "asUInt"
-parseAsSInt   = unop AsSInt "asSInt"
-parseAsClock  = unop AsClock "asClock"
-parseShl      = binop Shl "shl"
-parseShr      = binop Shr "shr"
-parseDShl     = binop Dshl "dshl"
-parseDShr     = binop Dshr "dshr"
-parseCvt      = unop Cvt "cvt"
-parseNeg      = unop Neg "neg"
-parseNot      = unop Not "not"
-parseAnd      = binop And "and"
-parseOr       = binop Or "or"
-parseXor      = binop Xor "xor"
-parseAndr     = unop Andr "andr"
-parseOrr      = unop Orr "orr"
-parseXorr     = unop Xorr "xorr"
-parseCat      = binop Cat "cat"
-parseBits     = triop Bits "bits"
-parseHead     = binop Head "head"
-parseTail     = binop Tail "tail"
+reg :: Parser Stmt
+reg = Reg <$> labeledId "reg"
+      <*> typAnn
+      <*> (comma *> expr)
+      <*> optionMaybe (do reserved "with"
+                          colon *> reserved "reset"
+                          symbol "=>" *> pair expr)
+      <*> info
 
-parseSubfield = chainl1 parseRef subHelper
+invalid :: Parser Stmt
+invalid = Invalid <$> (expr <* reserved "is" <* reserved "invalid") <*> info
 
-subHelper = dot >> return (\ x (Ref y) -> x :. y )
+mport :: Text -> Parser Id
+mport s = reserved s *> reserved "mport" *> ident <* symbol "="
 
-parseSubindex = Subind <$> parseRef <*> brackets integer
-parseSubAcc   = Subacc <$> parseRef <*> brackets parseExp
-parseRef      = Ref <$> ident
+inferMPort :: Parser Stmt
+inferMPort    = InferMPort <$> mport "infer" <*> expr <*> (comma *> expr) <*> info
+
+readMPort :: Parser Stmt
+readMPort    = ReadMPort <$> mport "read" <*> expr <*> (comma *> expr) <*> info
+
+writeMPort :: Parser Stmt
+writeMPort    = WriteMPort <$> mport "write" <*> expr <*> (comma *> expr) <*> info
+
+node :: Parser Stmt
+node = Node <$> labeledId "node" <*> labeled' "=" expr <*> info
+
+conf :: Text -> Parser a -> Parser a
+conf s p = symbol s *> symbol "=>" *> p
+
+mem :: Parser Stmt
+mem  = Memory <$> labeledId "mem"
+      <*> (colon *> info)
+      <*> conf "data-type" typ
+      <*> conf "depth" integer
+      <*> conf "read-latency" integer
+      <*> conf "write-latency" integer
+      <*> many (try $ conf "reader" ident)
+      <*> many (try $ conf "writer" ident)
+      <*> many (try $ conf "read-writer" ident)
+      <*> conf "read-under-write" behavior
+
+behavior :: Parser RUW
+behavior = try (Old <$ reserved "old")
+       <|> try (New <$ reserved "new")
+       <|> try (Undefined <$ reserved "undefined")
+
+printf :: Parser Stmt
+printf = Printf <$> (reserved "printf" *> lparen *> expr)
+      <*> (comma *> expr)
+      <*> (comma *> stringLiteral)
+      <*> (many (comma *> expr) <* rparen)
+      <*> info
+
+unop :: (Exp -> Exp) -> Text -> Parser Exp
+unop c p  = c <$> (symbol p *> lparen *> expr <* rparen)
+
+binop :: (Exp -> Exp -> Exp) -> Text -> Parser Exp
+binop c p = uncurry c <$> (symbol p *> pair expr)
+
+triop :: (Exp -> Exp -> Exp -> Exp) -> Text -> Parser Exp
+triop c p = c <$> (symbol p *> lparen *> expr) <*> (comma *> expr) <*> (comma *> expr <* rparen)
+
+exprNoField :: Parser Exp
+exprNoField = try (binop Validif "validif")
+          <|> try uInt
+          <|> try sInt
+          <|> try (triop Mux "mux")
+
+          <|> try (binop Add "add")        <|> try (binop Sub "sub")
+          <|> try (binop Cat "cat")        <|> try (triop Bits "bits")
+          <|> try (binop Head "head")      <|> try (binop Tail "tail")
+          <|> try (binop Mul "mul")        <|> try (binop Div "div")
+          <|> try (binop Mod "mod")        <|> try (binop Lt "lt")
+          <|> try (binop Leq "leq")        <|> try (binop Gt "gt")
+          <|> try (binop Geq "geq")        <|> try (binop Eq "eq")
+          <|> try (binop Neq "neq")        <|> try (binop Pad "pad")
+          <|> try (unop AsUInt "asUInt")   <|> try (unop AsSInt "asSInt")
+          <|> try (unop AsClock "asClock") <|> try (binop Shl "shl")
+          <|> try (binop Shr "shr")        <|> try (binop Dshl "dshl")
+          <|> try (binop Dshr "dshr")      <|> try (unop Cvt "cvt")
+          <|> try (unop Neg "neg")         <|> try (unop Not "not")
+          <|> try (binop And "and")        <|> try (binop Or "or")
+          <|> try (binop Xor "xor")        <|> try (unop Andr "andr")
+          <|> try (unop Orr "orr")         <|> try (unop Xorr "xorr")
+
+          <|> try litInt
+          <|> try unbundle
+          <|> try index
+          <|> try ref
+
+expr :: Parser Exp
+expr = try field <|> exprNoField
+
+num :: Parser Integer
+num = try integer <|> try hex
+
+hex :: Parser Integer
+hex = fst . head . readHex <$> (char '"' *> char 'h' *> many hexDigit <* char '"' <* whiteSpace)
+
+uInt :: Parser Exp
+uInt = UInt <$> (reserved "UInt" *> optionMaybe (angles integer)) <*> parens num
+
+sInt :: Parser Exp
+sInt = SInt <$> (reserved "SInt" *> optionMaybe (angles integer)) <*> parens num
+
+litInt :: Parser Exp
+litInt = LitInt <$> integer
+
+field :: Parser Exp
+field = do e <- exprNoField
+           (x : xs) <- many1 (dot *> ident)
+           pure $ foldl' Field (Field e x) xs
+
+index :: Parser Exp
+index = Index <$> ref <*> brackets integer
+
+unbundle :: Parser Exp
+unbundle = Unbundle <$> ref <*> brackets expr
+
+ref :: Parser Exp
+ref = Ref <$> ident

@@ -1,18 +1,17 @@
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Safe #-}
 module Main (main) where
 
 import ReWire.FIRRTL.Parse (parseFIRRTL)
 
 import Control.Monad (unless, (>=>))
 import Data.Text (pack)
-import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), ArgDescr (..))
+import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..))
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
 import System.IO (stderr)
-import TextShow (showt)
 import qualified Data.Text.IO as T
 
-data Flag = Flag
+type Flag = ()
 
 options :: [OptDescr Flag]
 options = []
@@ -22,7 +21,7 @@ exitUsage = T.hPutStr stderr (pack $ usageInfo "Usage: firrtl [OPTION...] <filen
 
 main :: IO ()
 main = do
-      (flags, filenames, errs) <-  getOpt Permute options <$> getArgs
+      (_flags, filenames, errs) <-  getOpt Permute options <$> getArgs
 
       unless (null errs) $ do
             mapM_ (T.hPutStrLn stderr . pack) errs
