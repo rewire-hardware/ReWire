@@ -31,17 +31,17 @@ data Circuit = Circuit !Id ![Module]
 instance Pretty Circuit where
       pretty (Circuit x mods) = nest 2 (vsep ([text "circuit" <+> pretty x <+> colon] ++ map pretty mods))
 
-data Module = ModuleDef !Id ![Port] !Stmt
+data Module = ModuleDef !Id ![Port] ![Stmt]
             | ExtModule !Id ![Port]
       deriving (Eq, Generic, Typeable, Data, Show)
       deriving TextShow via FromGeneric Module
 
 instance Pretty Module where
       pretty = \ case
-            ModuleDef x ps stmt -> nest 2 ( vsep (
+            ModuleDef x ps stmts -> nest 2 ( vsep (
                   [ text "module" <+> pretty x <+> colon ]
                   ++ map pretty ps
-                  ++ [pretty stmt]))
+                  ++ [vsep $ map pretty stmts]))
             ExtModule x ps      -> nest 2 (vsep ([text "extmodule" <+> pretty x <+> colon] ++ map pretty ps))
 
 data Port = Input !Id !Type
@@ -88,7 +88,6 @@ data Stmt = Wire !Id !Type
           | Invalidate !Exp
           | Printf !Exp !Exp !Text ![Exp]
           | Skip
-          | Block ![Stmt]
       deriving (Eq, Generic, Typeable, Data, Show)
       deriving TextShow via FromGeneric Stmt
 
@@ -105,7 +104,6 @@ instance Pretty Stmt where
             Invalidate e               -> pretty e <+> text "is" <+> text "invalid"
             Printf e1 e2 n es          -> text "printf" <+> args ([pretty e1, pretty e2, pretty n] ++ map pretty es)
             Skip                       -> text "skip"
-            Block ss                   -> vsep (map pretty ss)
 
 
 data Exp = UInt !Natural !Natural

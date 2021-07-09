@@ -10,6 +10,9 @@ import Control.Monad (foldM)
 import ReWire.Annotation (noAnn)
 import Numeric.Natural (Natural)
 
+concatMapM :: (Monad m, Traversable t) => (a -> m [b]) -> t a -> m [b]
+concatMapM f xs = concat <$> mapM f xs
+
 toLoFirrtl :: MonadError AstError m => V.Program -> m F.Circuit
 toLoFirrtl (V.Program units) = F.Circuit (F.Id "rewire_root") <$> mapM transUnit units
 
@@ -29,24 +32,24 @@ transType = \ case
       V.TyClock            -> pure $ F.ClockTy
       V.TyRegister _ n     -> pure $ F.UIntTy n
 
-transArch :: MonadError AstError m => V.Architecture -> m F.Stmt
-transArch (V.Architecture _ _ sigs _ stmts) = F.Block <$> ((++) <$> mapM transSig sigs <*> mapM transStmt stmts)
+transArch :: MonadError AstError m => V.Architecture -> m [F.Stmt]
+transArch (V.Architecture _ _ sigs _ stmts) = (++) <$> mapM transSig sigs <*> concatMapM transStmt stmts
 
 transSig :: Applicative m => V.Signal -> m F.Stmt
 transSig = \ case
       V.Signal n t@(V.TyRegister clk _) -> F.Reg (F.Id n) <$> transType t <*> pure (F.Ref $ F.Id clk)
       V.Signal n t                      -> F.Wire (F.Id n) <$> transType t
 
-transStmt :: MonadError AstError m => V.Stmt -> m F.Stmt
+transStmt :: MonadError AstError m => V.Stmt -> m [F.Stmt]
 transStmt = \ case
-      V.Assign (V.LHSName n) e                 -> F.Connect (F.Ref $ F.Id n) <$> transExpr e
-      V.WithAssign _ _             [] Nothing  -> pure $ F.Block []
-      V.WithAssign e (V.LHSName n) bs Nothing  -> F.Connect (F.Ref $ F.Id n) <$> foldM (transBranch e) (F.Ref $ F.Id n) bs
+      V.Assign (V.LHSName n) e                 -> pure <$> (F.Connect (F.Ref $ F.Id n) <$> transExpr e)
+      V.WithAssign _ _             [] Nothing  -> pure []
+      V.WithAssign e (V.LHSName n) bs Nothing  -> pure <$> (F.Connect (F.Ref $ F.Id n) <$> foldM (transBranch e) (F.Ref $ F.Id n) bs)
       V.WithAssign e (V.LHSName n) bs (Just b) -> do
             b' <- transExpr b
-            F.Connect (F.Ref $ F.Id n) <$> foldM (transBranch e) b' bs
-      V.Instantiate n1 n2 (V.PortMap ports)    -> F.Block <$> ((F.Inst (F.Id n1) (F.Id n2) :) <$> mapM (transPort n1) ports)
-      V.ClkProcess _ stmts                     -> F.Block <$> mapM transStmt stmts
+            pure <$> (F.Connect (F.Ref $ F.Id n) <$> foldM (transBranch e) b' bs)
+      V.Instantiate n1 n2 (V.PortMap ports)    -> (F.Inst (F.Id n1) (F.Id n2) :) <$> mapM (transPort n1) ports
+      V.ClkProcess _ stmts                     -> concatMapM transStmt stmts
       where transBranch :: MonadError AstError m => V.Expr -> F.Exp   -> (V.Expr, V.Expr) -> m F.Exp
             transBranch e d (e1, e2) = F.Mux <$> (F.Eq <$> transExpr e <*> transExpr e1) <*> transExpr e2 <*> pure d
 
