@@ -1,11 +1,12 @@
-{-# LANGUAGE LambdaCase, FlexibleInstances, ViewPatterns, FlexibleContexts #-}
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE FlexibleInstances, FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE Trustworthy #-}
 module ReWire.Crust.Cache
       ( runCache
       , getProgram
       , LoadPath
       , printInfo
       , printInfoHSE
+      , printHeader
       ) where
 
 import ReWire.Annotation
@@ -32,6 +33,11 @@ import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Reader (runReaderT, ReaderT, MonadReader (..))
 import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify, lift)
 import Data.Containers.ListUtils (nubOrd)
+import Data.Text (Text, pack)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
+import TextShow (showt)
 
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict          as Map
@@ -63,7 +69,7 @@ mkRenamer flags m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps m)
 -- Pass 16   Translate to core
 
 getModule :: [Flag] -> FilePath -> Cache (Module, (Module, Exports))
-getModule flags fp = pDebug flags ("fetching module: " ++ fp) >> Map.lookup fp <$> get >>= \ case
+getModule flags fp = pDebug flags ("fetching module: " <> pack fp) >> Map.lookup fp <$> get >>= \ case
       Just p  -> pure p
       Nothing -> do
             modify $ Map.insert fp mempty
@@ -103,8 +109,8 @@ getModule flags fp = pDebug flags ("fetching module: " ++ fp) >> Map.lookup fp <
             whenSet :: Applicative m => Flag -> (Bool -> a -> m a) -> a -> m a
             whenSet f m = if f `elem` flags then m $ FlagV `elem` flags else pure
 
-            pDebug' :: MonadIO m => String -> a -> m a
-            pDebug' s a = pDebug flags (fp ++ ": " ++ s) >> pure a
+            pDebug' :: MonadIO m => Text -> a -> m a
+            pDebug' s a = pDebug flags (pack fp <> ": " <> s) >> pure a
 
 -- Phase 2 (pre-core) transformations.
 getProgram :: [Flag] -> FilePath -> Cache Core.Program
@@ -136,6 +142,8 @@ getProgram flags fp = do
        >=> whenSet' FlagDTypes (pDebug' "Verifying types post-purification." >=> typeVerify)
        >=> pDebug' "Lifting lambdas (post-purification)."
        >=> liftLambdas
+       >=> pDebug' "Fully apply global function definitions."
+       >=> fullyApplyDefs
        >=> pDebug' "Removing unused definitions (again)."
        >=> pure . purgeUnused
        >=> whenSet FlagDCrust5 (printInfo "Crust 5: Post-second-lambda-lifting")
@@ -143,11 +151,11 @@ getProgram flags fp = do
        >=> toCore
        $ (ts, ds)
 
-      when (FlagDCore `elem` flags) $ liftIO $ do
+      when (FlagDCore1 `elem` flags) $ liftIO $ do
             printHeader "Core"
-            putStrLn $ prettyPrint p
-            when (FlagV `elem` flags) $ putStrLn "\n## Show core:\n"
-            when (FlagV `elem` flags) $ print $ unAnn p
+            T.putStrLn $ prettyPrint p
+            when (FlagV `elem` flags) $ T.putStrLn "\n## Show core:\n"
+            when (FlagV `elem` flags) $ T.putStrLn $ showt $ unAnn p
 
       pure p
 
@@ -157,49 +165,49 @@ getProgram flags fp = do
             whenSet' :: Applicative m => Flag -> (a -> m a) -> a -> m a
             whenSet' f m = whenSet f (\ _ -> m)
 
-            pDebug' :: MonadIO m => String -> a -> m a
+            pDebug' :: MonadIO m => Text -> a -> m a
             pDebug' s a = pDebug flags s >> pure a
 
-pDebug :: MonadIO m => [Flag] -> String -> m ()
-pDebug flags s = when (FlagV `elem` flags) $ liftIO $ putStrLn $ "Debug: " ++ s
+pDebug :: MonadIO m => [Flag] -> Text -> m ()
+pDebug flags s = when (FlagV `elem` flags) $ liftIO $ T.putStrLn $ "Debug: " <> s
 
-printHeader :: MonadIO m => String -> m ()
+printHeader :: MonadIO m => Text -> m ()
 printHeader hd = do
-      liftIO $ putStrLn "# ======================================="
-      liftIO $ putStrLn $ "# " ++ hd
-      liftIO $ putStrLn "# =======================================\n"
+      liftIO $ T.putStrLn   "# ======================================="
+      liftIO $ T.putStrLn $ "# " <> hd
+      liftIO $ T.putStrLn   "# =======================================\n"
 
-printInfo :: MonadIO m => String -> Bool -> FreeProgram -> m FreeProgram
+printInfo :: MonadIO m => Text -> Bool -> FreeProgram -> m FreeProgram
 printInfo hd verbose fp = do
       let p = Program $ trec fp
       printHeader hd
-      when verbose $ liftIO $ putStrLn "## Free kind vars:\n"
-      when verbose $ liftIO $ putStrLn $ concatMap ((++"\n")) (nubOrd $ map prettyPrint (fv p :: [Name Kind]))
-      when verbose $ liftIO $ putStrLn "## Free type vars:\n"
-      when verbose $ liftIO $ putStrLn $ concatMap ((++"\n")) (nubOrd $ map prettyPrint (fv p :: [Name Ty]))
-      when verbose $ liftIO $ putStrLn "## Free tycon vars:\n"
-      when verbose $ liftIO $ putStrLn $ concatMap ((++"\n")) (nubOrd $ map prettyPrint (fv p :: [Name TyConId]))
-      liftIO $ putStrLn "## Free con vars:\n"
-      liftIO $ putStrLn $ concatMap ((++"\n")) (nubOrd $ map prettyPrint (fv p :: [Name DataConId]))
-      liftIO $ putStrLn "## Free exp vars:\n"
-      liftIO $ putStrLn $ concatMap ((++"\n")) (nubOrd $ map prettyPrint (fv p :: [Name Exp]))
-      liftIO $ putStrLn "## Program:\n"
-      liftIO $ putStrLn $ prettyPrint p
-      when verbose $ liftIO $ putStrLn "\n## Program (show):\n"
-      when verbose $ liftIO $ print $ unAnn fp
+      when verbose $ liftIO $ T.putStrLn "## Free kind vars:\n"
+      when verbose $ liftIO $ T.putStrLn $ T.concat $ map (<>"\n") (nubOrd $ map prettyPrint (fv p :: [Name Kind]))
+      when verbose $ liftIO $ T.putStrLn "## Free type vars:\n"
+      when verbose $ liftIO $ T.putStrLn $ T.concat $ map ((<>"\n")) (nubOrd $ map prettyPrint (fv p :: [Name Ty]))
+      when verbose $ liftIO $ T.putStrLn "## Free tycon vars:\n"
+      when verbose $ liftIO $ T.putStrLn $ T.concat $ map ((<>"\n")) (nubOrd $ map prettyPrint (fv p :: [Name TyConId]))
+      liftIO $ T.putStrLn "## Free con vars:\n"
+      liftIO $ T.putStrLn $ T.concat $ map ((<>"\n")) (nubOrd $ map prettyPrint (fv p :: [Name DataConId]))
+      liftIO $ T.putStrLn "## Free exp vars:\n"
+      liftIO $ T.putStrLn $ T.concat $ map ((<>"\n")) (nubOrd $ map prettyPrint (fv p :: [Name Exp]))
+      liftIO $ T.putStrLn "## Program:\n"
+      liftIO $ T.putStrLn $ prettyPrint p
+      when verbose $ liftIO $ T.putStrLn "\n## Program (show):\n"
+      when verbose $ liftIO $ T.putStrLn $ showt $ unAnn fp
       pure fp
 
-printInfoHSE :: MonadIO m => String -> Renamer -> Module -> Bool -> S.Module a -> m (S.Module a)
+printInfoHSE :: MonadIO m => Text -> Renamer -> Module -> Bool -> S.Module a -> m (S.Module a)
 printInfoHSE hd rn imps verbose hse = do
       printHeader hd
-      when verbose $ liftIO $ putStrLn "\n## Renamer:\n"
-      when verbose $ liftIO $ print rn
-      when verbose $ liftIO $ putStrLn "\n## Exports:\n"
-      when verbose $ liftIO $ print $ allExports rn
-      when verbose $ liftIO $ putStrLn "\n## Show imps:\n"
-      when verbose $ liftIO $ print imps
-      when verbose $ liftIO $ putStrLn "\n## Show HSE mod:\n"
-      when verbose $ liftIO $ print $ void hse
-      when verbose $ liftIO $ putStrLn "\n## Pretty HSE mod:\n"
+      when verbose $ liftIO $ T.putStrLn "\n## Renamer:\n"
+      when verbose $ liftIO $ T.putStrLn $ showt rn
+      when verbose $ liftIO $ T.putStrLn "\n## Exports:\n"
+      when verbose $ liftIO $ T.putStrLn $ showt $ allExports rn
+      when verbose $ liftIO $ T.putStrLn "\n## Show imps:\n"
+      when verbose $ liftIO $ T.putStrLn $ showt imps
+      when verbose $ liftIO $ T.putStrLn "\n## Show HSE mod:\n"
+      when verbose $ liftIO $ T.putStrLn $ showt $ void hse
+      when verbose $ liftIO $ T.putStrLn "\n## Pretty HSE mod:\n"
       liftIO $ putStrLn $ P.prettyPrint $ void hse
       pure hse

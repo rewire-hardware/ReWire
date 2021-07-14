@@ -1,18 +1,19 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, LambdaCase #-}
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE Trustworthy #-}
 module ReWire.Crust.KindCheck (kindCheck) where
 
-import ReWire.Annotation
-import ReWire.Error
-import ReWire.Crust.Syntax
-import ReWire.Unbound (fresh, substs, aeq, Subst, s2n, n2s)
-import ReWire.Pretty
+import safe ReWire.Annotation
+import safe ReWire.Error
+import safe ReWire.Crust.Syntax
+import safe ReWire.Unbound (fresh, substs, aeq, Subst, s2n, n2s)
+import safe ReWire.Pretty
 
-import Control.Monad.Reader (ReaderT (..), local, asks)
-import Control.Monad.State (evalStateT, StateT (..), get, modify)
-import Data.Map.Strict (Map)
+import safe Control.Monad.Reader (ReaderT (..), local, asks)
+import safe Control.Monad.State (evalStateT, StateT (..), get, modify)
+import safe Data.Map.Strict (Map)
+import TextShow (showt)
 
-import qualified Data.Map.Strict as Map
+import safe qualified Data.Map.Strict as Map
 
 subst :: Subst b a => Map (Name b) b -> a -> a
 subst = substs . Map.assocs
@@ -39,7 +40,7 @@ freshkv = do
 varBind :: (Fresh m, MonadError AstError m) => Annote -> Name Kind -> Kind -> KCM m KiSub
 varBind an u k
       | k `aeq` KVar u = pure mempty
-      | u `elem` fv k  = failAt an $ "Occurs check fails in kind checking: " ++ show u ++ ", " ++ prettyPrint k
+      | u `elem` fv k  = failAt an $ "Occurs check fails in kind checking: " <> showt u <> ", " <> prettyPrint k
       | otherwise      = pure $ Map.singleton u k
 
 (@@) :: KiSub -> KiSub -> KiSub
@@ -53,7 +54,7 @@ mgu an (KFun kl kr) (KFun kl' kr') = do
 mgu an (KVar u) k                  = varBind an u k
 mgu an k (KVar u)                  = varBind an u k
 mgu _ KStar KStar                  = pure mempty
-mgu an k1 k2                       = failAt an $ "Kinds do not unify: " ++ prettyPrint k1 ++ ", " ++ prettyPrint k2
+mgu an k1 k2                       = failAt an $ "Kinds do not unify: " <> prettyPrint k1 <> ", " <> prettyPrint k2
 
 unify :: (Fresh m, MonadError AstError m) => Annote -> Kind -> Kind -> KCM m ()
 unify an k1 k2 = do
@@ -75,7 +76,7 @@ kcTy = \ case
             "->" -> pure $ KFun KStar $ KFun KStar KStar
             _    -> do
                   cas <- askCAssumps
-                  maybe (failAt an $ "Unknown type constructor: " ++ n2s i) pure
+                  maybe (failAt an $ "Unknown type constructor: " <> n2s i) pure
                         $ Map.lookup i cas
       TyVar _ k _     -> pure k
       TyBlank _       -> freshkv
@@ -107,18 +108,25 @@ monoize = \ case
       KVar _     -> KStar
 
 redecorate :: MonadError AstError m => KiSub -> DataDefn -> KCM m DataDefn
-redecorate s (DataDefn an i _ cs) = do
+redecorate s (DataDefn an i _ co cs) = do
       cas <- askCAssumps
       case Map.lookup i cas of
-            Just k  -> pure $ DataDefn an i (monoize $ subst s k) cs
-            Nothing -> failAt an $ "Redecorate: no such assumption: " ++ show i
+            Just k  -> pure $ DataDefn an i (monoize $ subst s k) co cs
+            Nothing -> failAt an $ "Redecorate: no such assumption: " <> showt i
 
-assump :: DataDefn -> (Name TyConId, Kind)
-assump (DataDefn _ i k _) = (i, k)
+assump :: (Fresh m, MonadError AstError m) => DataDefn -> KCM m (Name TyConId, Kind)
+assump = \ case
+      DataDefn _ i k False _ -> pure (i, k)
+      DataDefn _ i k True _  -> (i,) <$> estimate k -- TODO(chathhorn): need the real kind here.
+
+estimate :: (Fresh m, MonadError AstError m) => Kind -> KCM m Kind
+estimate = \ case
+      KFun k1 k2  -> KFun k1 <$> estimate k2
+      _           -> freshkv
 
 kc :: (Fresh m, MonadError AstError m) => FreeProgram -> KCM m FreeProgram
 kc (ts, vs) = do
-      let cas  =  Map.fromList $ map assump ts
+      cas  <-  Map.fromList <$> mapM assump ts
       localCAssumps (cas `Map.union`) $ do
             mapM_ kcDataDecl ts
             mapM_ kcDefn vs

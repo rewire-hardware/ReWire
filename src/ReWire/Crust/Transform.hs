@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, ScopedTypeVariables, GADTs, TupleSections #-}
+{-# LANGUAGE FlexibleContexts, ScopedTypeVariables, GADTs, OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 module ReWire.Crust.Transform
@@ -6,6 +6,7 @@ module ReWire.Crust.Transform
       , neuterPrims
       , shiftLambdas
       , liftLambdas
+      , fullyApplyDefs
       , purgeUnused
       ) where
 
@@ -16,7 +17,7 @@ import ReWire.Unbound
       , isFreeName, runFreshM
       , Name (..)
       )
-import ReWire.Annotation (Annote (..), noAnn)
+import ReWire.Annotation (Annote (..), Annotated (..), noAnn)
 import ReWire.SYB
 import ReWire.Crust.Syntax
 
@@ -29,6 +30,7 @@ import Data.List (find, foldl')
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Containers.ListUtils (nubOrdOn)
 import Data.Hashable (Hashable (..))
+import Data.Text (Text)
 
 import Data.Set (Set, union, (\\))
 import qualified Data.Set as Set
@@ -74,6 +76,31 @@ shiftLambdas (ts, vs) = (ts,) <$> mapM shiftLambdas' vs
                         mash $ bind (vs ++ [v]) b'
                   _ -> pure e
 
+-- | So if e :: a -> b, then
+-- > g = e
+--   becomes
+-- > g x0 = e x0
+-- except with Match, we add x0 to the list of local ids.
+fullyApplyDefs :: Fresh m => FreeProgram -> m FreeProgram
+fullyApplyDefs (ts, vs) = (ts,) <$> mapM fullyApplyDefs' vs
+      where fullyApplyDefs' :: Fresh m => Defn -> m Defn
+            fullyApplyDefs' (Defn an n t inl (Embed e)) = Defn an n t inl . Embed <$> fullyApply e
+
+            fullyApply :: Fresh m => Bind [Name Exp] Exp -> m (Bind [Name Exp] Exp)
+            fullyApply e = do
+                  (vs, e') <- unbind e
+                  case typeOf e' of
+                        TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t) _ -> do
+                              x <- fresh $ s2n "$x"
+                              fullyApply $ bind (vs ++ [x]) $ appl (Var (ann e') t x) e'
+                        _                                             -> pure e
+
+            appl :: Exp -> Exp -> Exp
+            appl x = \ case
+                  Match an t e1 p e lvars Nothing    -> Match an (arrowRight t) e1 p e (lvars ++ [x]) Nothing
+                  Match an t e1 p e lvars (Just els) -> Match an (arrowRight t) e1 p e (lvars ++ [x]) $ Just $ appl x els
+                  e                                  -> App (ann e) e x
+
 -- | Lifts lambdas and case/match into a top level fun def.
 liftLambdas :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
 liftLambdas p = evalStateT (runT liftLambdas' p) []
@@ -105,7 +132,7 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs ++ map fst pvs) e')
                         pure $ Match an t e1 (transPat p) (Var an t' f) (map (toVar an . first promote) bvs) e2
                   -- TODO(chathhorn): This case is really just normalizing Match, consider moving to ToCore.
-                  Match an t e1 p e lvars els -> do
+                  Match an t e1 p e lvars els | liftable e -> do
                         let bvs   = bv e
                         (fvs, e') <- freshen e
 
@@ -129,6 +156,11 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                               arg
                   ||> (\ ([] :: [Defn]) -> get) -- this is cute!
                   ||> TId
+
+            liftable :: Exp -> Bool
+            liftable = \ case
+                  Var _ _ _ -> False
+                  _         -> True
 
             toVar :: Annote -> (Name Exp, Ty) -> Exp
             toVar an (v, vt) = Var an vt v
@@ -169,11 +201,11 @@ purgeUnused (ts, vs) = (inuseData (fv $ trec $ inuseDefn vs) ts, inuseDefn vs)
             inuseData ns = filter (not . null . dataCons) . map (inuseData' ns)
 
             inuseData' :: [Name DataConId] -> DataDefn -> DataDefn
-            inuseData' ns d@(DataDefn an n k cs)
+            inuseData' ns d@(DataDefn an n k co cs)
                   | n2s n `elem` reservedData = d
-                  | otherwise                 = DataDefn an n k $ filter ((`Set.member` Set.fromList ns) . dataConName) cs
+                  | otherwise                 = DataDefn an n k co $ filter ((`Set.member` Set.fromList ns) . dataConName) cs
 
-            reservedData :: [String]
+            reservedData :: [Text]
             reservedData =
                          [ "PuRe"
                          , "(,)"
@@ -193,7 +225,7 @@ inuseDefn ds = map toDefn $ Set.elems $ execState (inuseDefn' ds') ds'
                   inuse' <- get
                   inuseDefn' $ inuse' \\ inuse
 
-            reservedDefn :: [String]
+            reservedDefn :: [Text]
             reservedDefn =
                          [ "Main.start"
                          , "unfold"
@@ -243,7 +275,7 @@ reduceExp = \ case
                         Just e2' -> reduceExp e2'
       e -> pure e
 
-data MatchResult = MatchYes [(Name Exp, Exp)]
+data MatchResult = MatchYes ![(Name Exp, Exp)]
                  | MatchMaybe
                  | MatchNo
                  deriving Show

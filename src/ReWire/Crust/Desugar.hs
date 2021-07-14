@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, ScopedTypeVariables, FlexibleContexts, TupleSections #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 module ReWire.Crust.Desugar (desugar, addMainModuleHead) where
@@ -14,6 +14,7 @@ import Control.Monad.State (runStateT, StateT, MonadState (..), modify)
 import Data.Foldable (foldl', foldrM)
 import Data.Functor.Identity (Identity (..))
 import Data.Maybe (isNothing, mapMaybe)
+import Data.Text (pack)
 
 import Language.Haskell.Exts.Syntax
 import Language.Haskell.Exts.Pretty (prettyPrint)
@@ -72,7 +73,7 @@ fresh :: Monad m => Annote -> FreshT m (Name Annote)
 fresh l = do
       x <- get
       modify (+ 1)
-      pure $ Ident l $ "$" ++ show x
+      pure $ Ident l $ "$" <> show x
 
 -- | record ctor name |-> (field, field place, ctor arity)
 type FieldInfo = (Name Annote, (Name Annote, Type Annote, Int, Int))
@@ -128,9 +129,9 @@ desugarRecords rn = (\ (Module (l :: Annote) h p imps decls) -> do
 
       where fieldDecl :: Monad m => FieldInfo -> FreshT m (Decl Annote, Decl Annote)
             fieldDecl (ctor, (f, t, i, arr)) = do
-                  let an s = MsgAnnote $ "Generated record field accessor for " ++ prettyPrint f ++ " at: " ++ s
-                  x <- fresh (an "x")
-                  x' <- fresh (an "x'")
+                  let an s = MsgAnnote $ "Generated record field accessor for " <> pack (prettyPrint f) <> " at: " <> s
+                  x  <- fresh $ an "x"
+                  x' <- fresh $ an "x'"
                   pure $ (,)
                          ( TypeSig (an "TypeSig") [an "TypeSig Name" <$ f] (an "TypeSig Type" <$ t) )
                          $ PatBind (an "PatBind") (PVar (an "PVar") (an "PVar" <$ f))
@@ -320,7 +321,7 @@ desugarFuns = transform $ \ case
             toAlt :: MonadError AstError m => Match Annote -> FreshT m (Alt Annote)
             toAlt (Match l' _ [p] rhs binds) = pure $ Alt l' p rhs binds
             toAlt (Match l' _ ps  rhs binds) = pure $ Alt l' (PTuple l' Boxed ps) rhs binds
-            toAlt m                          = failAt (ann m) $ "Unsupported decl syntax: " ++ show (() <$ m)
+            toAlt m                          = failAt (ann m) $ "Unsupported decl syntax: " <> pack (show (() <$ m))
 
 -- | Turns
 -- > case e of {...}
@@ -404,7 +405,7 @@ wheresToLets = (\ case
                   PatBind l _ (GuardedRhss _ _) _              -> failAt (l :: Annote) "Guards are not supported")
            ||> (\ case
                   Alt l p (UnGuardedRhs l' e) (Just binds) -> pure $ Alt l p (UnGuardedRhs l' $ Let l' binds e) Nothing
-                  a@(Alt l _ (GuardedRhss _ _) _)          -> failAt (l :: Annote) $ "Guards are not supported: " ++ show (void a))
+                  a@(Alt l _ (GuardedRhss _ _) _)          -> failAt (l :: Annote) $ "Guards are not supported: " <> (pack $ show $ void a))
            ||> TId
 
 -- | Turns do-notation into a series of >>= \ x ->. Turns LetStmts into Lets.
@@ -422,7 +423,7 @@ desugarDos = transform $ \ (Do l stmts) -> transDo l stmts
                   [Qualifier _ e]          -> pure e
                   Qualifier l' e : stmts   -> App l' (App l' (Var l' $ UnQual l' $ Symbol l' ">>=") e) . Lambda l' [PWildCard l'] <$> transDo l stmts
                   LetStmt l' binds : stmts -> Let l' binds <$> transDo l stmts
-                  s : _                    -> failAt (ann s) $ "Unsupported syntax in do-block: " ++ show (() <$ s)
+                  s : _                    -> failAt (ann s) $ "Unsupported syntax in do-block: " <> (pack $ show (() <$ s))
                   []                       -> failAt l "Ill-formed do-block"
 
 normTyContext :: (MonadCatch m, MonadError AstError m) => Transform (FreshT m)
@@ -535,7 +536,7 @@ desugarAsPats = transform $ \ (Alt l p (UnGuardedRhs l' e) Nothing) -> do
                   PatTypeSig _ p _        -> patToExp p
                   -- PViewPat _exp _pat ->
                   PBangPat _ p            -> patToExp p
-                  p                       -> failAt (ann p) $ "Unsupported pattern: " ++ show (() <$ p)
+                  p                       -> failAt (ann p) $ "Unsupported pattern: " <> (pack $ show (() <$ p))
 
 -- | Turns beta-redexes into cases. E.g.:
 -- > (\ x -> e2) e1

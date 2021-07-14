@@ -1,5 +1,6 @@
-{-# LANGUAGE NamedFieldPuns, Rank2Types, FlexibleInstances, FlexibleContexts, TupleSections, LambdaCase #-}
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE NamedFieldPuns, Rank2Types, FlexibleInstances, StandaloneDeriving, DeriveGeneric, DerivingVia, FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE Trustworthy #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.Crust.Rename
       ( Renamer, fixFixity, getExports, allExports
       , exclude, extend, finger, rename
@@ -23,23 +24,26 @@ import ReWire.Crust.Syntax (DataDefn, Defn)
 import Control.Arrow ((&&&), first)
 import Control.Monad (foldM, void)
 import Control.Monad.State (MonadState)
-import Control.Monad.Fail (MonadFail)
 import Data.List (find, foldl')
 import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
+import Data.Text (Text, pack, unpack)
+import GHC.Generics (Generic)
 import Language.Haskell.Exts.Fixity (Fixity (..), AppFixity (..))
 import Language.Haskell.Exts.Pretty (prettyPrint)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo, noSrcSpan)
 import System.FilePath (joinPath, (<.>))
 
-import Data.Map.Strict (Map)
+import Data.Map.Strict.Internal (Map (..))
 import qualified Data.Map.Strict                        as Map
-import Data.Set (Set)
+import Data.Set.Internal (Set (..))
 import qualified Data.Set                               as Set
 import qualified Language.Haskell.Exts.Syntax           as S
 
 import Language.Haskell.Exts.Syntax hiding (Namespace, Annotation, Module)
 
+import TextShow (TextShow (..))
+import TextShow.Generic (FromGeneric (..), genericShowbPrec)
 
 -- | Map from type name to its set of data constructors.
 --   Note: the set of "ctors" also includes fields (things that might appear in
@@ -61,19 +65,21 @@ type FQCtorSigs = Map FQName [(Maybe FQName, Type ())]
 -- different modules), but clearly you can import the same symbol (defined in
 -- the same or different modules) twice with different qualifiers.
 data Exports = Exports
-      { expValues      :: Set FQName                  -- Values
-      , expTypes       :: Set FQName                  -- Types
-      , expFixities    :: Set Fixity                  -- Fixities
-      , expCtors       :: FQCtors
-      , expCtorSigs    :: FQCtorSigs
+      { expValues      :: !(Set FQName)                  -- Values
+      , expTypes       :: !(Set FQName)                  -- Types
+      , expFixities    :: !(Set Fixity)                  -- Fixities
+      , expCtors       :: !FQCtors
+      , expCtorSigs    :: !FQCtorSigs
       }
-      deriving Show
+      deriving (Show, Generic)
+      deriving TextShow via FromGeneric Exports
 
-data Module = Module [DataDefn] [Defn]
-      deriving Show
+data Module = Module ![DataDefn] ![Defn]
+      deriving (Show, Generic)
+      deriving TextShow via FromGeneric Module
 
 instance Semigroup Module where
-      (Module a b) <> (Module a' b') = Module (a ++ a') (b ++ b')
+      (Module a b) <> (Module a' b') = Module (a <> a') (b <> b')
 
 instance Monoid Module where
       mempty = Module [] []
@@ -111,10 +117,12 @@ instance Monoid Exports where
       mempty = Exports mempty mempty mempty mempty mempty
 
 data Namespace = Type | Value
-      deriving (Ord, Eq, Show)
+      deriving (Ord, Eq, Show, Generic)
+      deriving TextShow via FromGeneric Namespace
 
 data FQName = FQName { mod :: !(ModuleName ()), name :: !(Name ())}
-      deriving (Ord, Eq, Show)
+      deriving (Ord, Eq, Show, Generic)
+      deriving TextShow via FromGeneric FQName
 
 -- | Sometimes-partial conversion between name-like things.
 class QNamish a where
@@ -151,23 +159,24 @@ instance QNamish FQName where
       fromQNamish (UnQual _ n) = FQName (ModuleName () "") $ void n
       -- ^ This definition kinda defeats the purpose of FQName.
       fromQNamish n            = FQName (ModuleName () "") $ Ident () $ prettyPrint n
-instance QNamish String where
-      toQNamish = UnQual () . Ident ()
-      fromQNamish (Qual _ (ModuleName _ "") (Ident _ x))  = x
-      fromQNamish (Qual _ (ModuleName _ "") (Symbol _ x)) = x
-      fromQNamish (Qual _ (ModuleName _ m) (Ident _ x))   = m ++ "." ++ x
-      fromQNamish (Qual _ (ModuleName _ m) (Symbol _ x))  = m ++ "." ++ x
-      fromQNamish (UnQual _ (Ident _ x))                  = x
-      fromQNamish (UnQual _ (Symbol _ x))                 = x
-      fromQNamish n                                       = prettyPrint n
+instance QNamish Text where
+      toQNamish = UnQual () . Ident () . unpack
+      fromQNamish (Qual _ (ModuleName _ "") (Ident _ x))  = pack x
+      fromQNamish (Qual _ (ModuleName _ "") (Symbol _ x)) = pack x
+      fromQNamish (Qual _ (ModuleName _ m) (Ident _ x))   = pack m <> "." <> pack x
+      fromQNamish (Qual _ (ModuleName _ m) (Symbol _ x))  = pack m <> "." <> pack x
+      fromQNamish (UnQual _ (Ident _ x))                  = pack x
+      fromQNamish (UnQual _ (Symbol _ x))                 = pack x
+      fromQNamish n                                       = pack $ prettyPrint n
 
 data Renamer = Renamer
-      { rnNames    :: Map (Namespace, QName ()) FQName
-      , rnExports  :: Map (ModuleName ()) Exports
-      , rnFixities :: Set Fixity
-      , rnCtors    :: Ctors
-      , rnCtorSigs :: CtorSigs
-      } deriving Show
+      { rnNames    :: !(Map (Namespace, QName ()) FQName)
+      , rnExports  :: !(Map (ModuleName ()) Exports)
+      , rnFixities :: !(Set Fixity)
+      , rnCtors    :: !Ctors
+      , rnCtorSigs :: !CtorSigs
+      } deriving (Show, Generic)
+      deriving TextShow via FromGeneric Renamer
 
 instance Semigroup Renamer where
       (Renamer a b c d e) <> (Renamer a' b' c' d' e') = Renamer (a <> a') (b <> b') (c <> c') (Map.unionWith (<>) d d') (e <> e')
@@ -222,7 +231,7 @@ lookupExp ns x Exports {expValues, expTypes} = case ns of
       Value -> lkup expValues
       Type  -> lkup expTypes
       where lkup :: MonadError AstError m => Set FQName -> m FQName
-            lkup xs = maybe (failAt (ann x) $ "Attempting to import an unexported symbol: " ++ prettyPrint x) pure
+            lkup xs = maybe (failAt (ann x) $ "Attempting to import an unexported symbol: " <> pack (prettyPrint x)) pure
                     $ find cmp (Set.toList xs)
 
             cmp :: FQName -> Bool
@@ -284,7 +293,7 @@ fromImps' :: (Annotation a, MonadError AstError m) => ModuleName () -> Bool -> M
 fromImps' m' quald Nothing exps = fromImps' m' quald (Just (False, toImports exps)) exps
       where toImports :: Exports -> Imports SrcSpanInfo
             toImports Exports {expValues, expTypes, expFixities} =
-                  ( map ((Value,) . qnamish) (Set.toList expValues) ++ map ((Type,) . qnamish) (Set.toList expTypes)
+                  ( map ((Value,) . qnamish) (Set.toList expValues) <> map ((Type,) . qnamish) (Set.toList expTypes)
                   , Set.toList $ expFixities <> Set.map (requalFixity m') expFixities
                   )
 -- List of imports, no "hiding".
@@ -293,7 +302,7 @@ fromImps' m' quald (Just (False, (imps, fs))) exps = foldM ins mempty imps
             ins tab (ns, x) = do
                   e <- lookupExp ns x exps
                   let xs' = (Qual () m' $ void x, e)                               : [ (UnQual () $ void x, e) | not quald ]
-                      fs' = map (requalFixity m') (filterFixities (== void x) fs) ++ if quald then [] else filterFixities (== void x) fs
+                      fs' = map (requalFixity m') (filterFixities (== void x) fs) <> if quald then [] else filterFixities (== void x) fs
                   pure $ extend ns xs' $ addFixities fs' tab
 -- List of imports with "hiding" -- import everything, then delete the items
 -- from the list.
@@ -306,22 +315,31 @@ getImp :: (MonadError AstError m) => Exports -> Imports SrcSpanInfo -> ImportSpe
 getImp exps (imps, fs) = \ case
       IVar _ x          -> do
             _ <- lookupExp Value x exps
-            pure ((Value, x) : imps, fixities exps [void x] ++ fs)
+            pure ((Value, x) : imps, fixities exps [void x] <> fs)
       IAbs _ _ x        -> do
             _ <- lookupExp Type x exps
             pure ((Type, x) : imps, fs)
       IThingAll _ x     -> do
             _ <- lookupExp Type x exps
-            pure ( (Type, x) : (map ((Value,) . qnamish) (Set.toList $ getCtors (void x) exps) ++ imps)
-                   , fixities exps (map name (Set.toList $ getCtors (void x) exps)) ++ fs
+            pure ( (Type, x) : (map ((Value,) . qnamish) (Set.toList $ getCtors (void x) exps) <> imps)
+                   , fixities exps (map name (Set.toList $ getCtors (void x) exps)) <> fs
                    )
       IThingWith _ x cs -> do
             _ <- lookupExp Type x exps
             mapM_ (flip (lookupExp Value) exps . toName) cs
-            pure ( (Type, x) : (map ((Value,) . toName) cs ++ imps)
-                   , fixities exps (map (void . toName) cs) ++ fs
+            pure ( (Type, x) : (map ((Value,) . toName) cs <> imps)
+                   , fixities exps (map (void . toName) cs) <> fs
                    )
       where toName :: CName a -> Name a
             toName = \ case
                   VarName _ x -> x
                   ConName _ x -> x
+
+-- Orphans
+deriving instance Generic a => Generic (Set a)
+deriving instance (Generic a, Generic b) => Generic (Map a b)
+
+instance (Generic a, TextShow a) => TextShow (Set a) where
+      showbPrec = genericShowbPrec
+instance (Generic a, Generic b, TextShow a, TextShow b) => TextShow (Map a b) where
+      showbPrec = genericShowbPrec

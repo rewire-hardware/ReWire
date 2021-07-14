@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, ScopedTypeVariables, FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts #-}
 {-# LANGUAGE Safe #-}
 module ReWire.Crust.Fixity
       ( fixLocalOps
@@ -11,7 +11,6 @@ import ReWire.Error
 import ReWire.Annotation (Annote)
 
 import Control.Monad (void)
-import Control.Monad.Fail (MonadFail (..))
 import Control.Monad.Identity (Identity (..))
 import Control.Monad.State (MonadState, StateT, runStateT, get, modify, lift)
 import Data.Maybe (fromMaybe)

@@ -1,5 +1,5 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, TupleSections #-}
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE Trustworthy #-}
 --
 -- This type checker is based loosely on Mark Jones's "Typing Haskell in
 -- Haskell", though since we don't have type classes in core it is much
@@ -13,7 +13,7 @@ import ReWire.Unbound
       ( fresh, substs, aeq, Subst
       , n2s, s2n
       )
-import ReWire.Pretty
+import ReWire.Pretty (prettyPrint)
 import ReWire.Crust.Syntax
 
 import Control.Monad.Reader (ReaderT (..), local, asks)
@@ -21,6 +21,9 @@ import Control.Monad.State (evalStateT, StateT (..), get, put, modify)
 import Control.Monad (zipWithM_)
 import Data.List (foldl')
 import Data.HashMap.Strict (HashMap)
+import qualified Data.Text as T
+
+import TextShow (TextShow (..))
 
 import qualified Data.HashMap.Strict as Map
 
@@ -31,8 +34,8 @@ subst = substs . Map.toList
 
 type TySub = HashMap (Name Ty) Ty
 data TCEnv = TCEnv
-      { as  :: HashMap (Name Exp) Poly
-      , cas :: HashMap (Name DataConId) Poly
+      { as  :: !(HashMap (Name Exp) Poly)
+      , cas :: !(HashMap (Name DataConId) Poly)
       } deriving Show
 
 type TCM m = ReaderT TCEnv (StateT TySub m)
@@ -57,11 +60,11 @@ freshv = do
 s1 @@ s2 = Map.mapWithKey (\ _ t -> subst s1 t) s2 `Map.union` s1
 
 isFlex :: Name a -> Bool
-isFlex = (== '?') . head . n2s
+isFlex = (== '?') . T.head . n2s
 
 varBind :: MonadError AstError m => Annote -> Name Ty -> Ty -> TCM m TySub
 varBind an u t | t `aeq` TyVar noAnn kblank u = pure mempty
-               | u `elem` fv t                = failAt an $ "TypeVerify: occurs check fails: " ++ show u ++ ", " ++ prettyPrint t
+               | u `elem` fv t                = failAt an $ "TypeVerify: occurs check fails: " <> showt u <> ", " <> prettyPrint t
                | otherwise                    = pure $ Map.singleton u t
 
 mgu :: MonadError AstError m => Annote -> Ty -> Ty -> TCM m TySub
@@ -75,7 +78,7 @@ mgu _  (TyCon _ c1)    (TyCon _ c2)  | n2s c1 == n2s c2 = pure mempty
 mgu _  TyVar {}   TyVar {}                              = pure mempty -- TODO(chathhorn): maybe something more could be done here.
 mgu _  TyBlank {}  _                                    = pure mempty -- TODO(chathhorn): maybe something more could be done here.
 mgu _  _           TyBlank {}                           = pure mempty -- TODO(chathhorn): maybe something more could be done here.
-mgu an t1 t2 = failAt an $ "TypeVerify: types do not unify: " ++ prettyPrint t1 ++ ", " ++ prettyPrint t2
+mgu an t1 t2 = failAt an $ "TypeVerify: types do not unify: " <> prettyPrint t1 <> ", " <> prettyPrint t2
 
 unify :: MonadError AstError m => Annote -> Ty -> Ty -> TCM m ()
 unify an t1 t2 = do
@@ -109,7 +112,7 @@ tcPat t = \ case
       PatCon an _ (Embed i) ps -> do
             cas     <- asks cas
             case Map.lookup i cas of
-                  Nothing  -> failAt an $ "TypeVerify: unknown constructor: " ++ prettyPrint i
+                  Nothing  -> failAt an $ "TypeVerify: unknown constructor: " <> prettyPrint i
                   Just pta -> do
                         ta               <- inst pta
                         let (targs, tres) = flattenArrow ta
@@ -125,7 +128,7 @@ tcMatchPat t = \ case
       MatchPatCon an _ i ps -> do
             cas     <- asks cas
             case Map.lookup i cas of
-                  Nothing  -> failAt an $ "TypeVerify: unknown constructor: " ++ prettyPrint i
+                  Nothing  -> failAt an $ "TypeVerify: unknown constructor: " <> prettyPrint i
                   Just pta -> do
                         ta               <- inst pta
                         let (targs, tres) = flattenArrow ta
@@ -152,12 +155,12 @@ tcExp = \ case
       Var an t v              -> do
             as <- asks as
             case Map.lookup v as of
-                  Nothing -> failAt an $ "TypeVerify: unknown variable: " ++ show v
+                  Nothing -> failAt an $ "TypeVerify: unknown variable: " <> showt v
                   Just pt -> inst pt >>= unify an t
       Con an t i              -> do
             cas <- asks cas
             case Map.lookup i cas of
-                  Nothing -> failAt an $ "TypeVerify: unknown constructor: " ++ prettyPrint i
+                  Nothing -> failAt an $ "TypeVerify: unknown constructor: " <> prettyPrint i
                   Just pt -> inst pt >>= unify an t
       Case an t e e1 e2       -> do
             (p, e1') <- unbind e1
@@ -206,7 +209,7 @@ tc (ts, vs) = do
             defnAssump (Defn _ n (Embed pt) _ _) = Map.insert n pt
 
             dataDeclAssumps :: DataDefn -> HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly
-            dataDeclAssumps (DataDefn _ _ _ cs) = flip (foldr dataConAssump) cs
+            dataDeclAssumps (DataDefn _ _ _ _ cs) = flip (foldr dataConAssump) cs
 
             dataConAssump :: DataCon -> HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly
             dataConAssump (DataCon _ i (Embed t)) = Map.insert i t

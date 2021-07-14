@@ -1,8 +1,9 @@
 {-# LANGUAGE Safe #-}
 module ReWire.Flags where
 
-data Flag = FlagO String
+data Flag = FlagO !String
           | FlagV
+          | FlagFirrtl
           | FlagDHask1
           | FlagDHask2
           | FlagDCrust1
@@ -10,7 +11,8 @@ data Flag = FlagO String
           | FlagDCrust3
           | FlagDCrust4
           | FlagDCrust5
-          | FlagDCore
+          | FlagDCore1
+          | FlagDCore2
           | FlagDTypes
-          | FlagLoadPath String
+          | FlagLoadPath !String
       deriving (Eq, Show)

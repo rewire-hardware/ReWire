@@ -1,9 +1,10 @@
-{-# LANGUAGE LambdaCase, FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Crust.Parse (tryParseInDir) where
 
 import ReWire.Error
 
+import qualified Data.Text as Txt
 import Language.Haskell.Exts (parseFileWithMode, ParseResult (..), defaultParseMode, ParseMode (..))
 import safe Control.Monad.IO.Class (liftIO, MonadIO)
 import safe Language.Haskell.Exts.SrcLoc (SrcSpanInfo, SrcLoc (..))
@@ -26,8 +27,8 @@ tryParseInDir fp dp = do
       where pr2Cache :: MonadError AstError m => ParseResult a -> m a
             pr2Cache = \ case
                   ParseOk p                       -> pure p
-                  ParseFailed (SrcLoc "" r c) msg -> failAt (SrcLoc fp r c) msg
-                  ParseFailed l msg               -> failAt l msg
+                  ParseFailed (SrcLoc "" r c) msg -> failAt (SrcLoc fp r c) (Txt.pack msg)
+                  ParseFailed l msg               -> failAt l (Txt.pack msg)
 
             parse :: IO (ParseResult (Module SrcSpanInfo))
             parse = parseFileWithMode defaultParseMode { parseFilename = fp, fixities = Nothing } fp

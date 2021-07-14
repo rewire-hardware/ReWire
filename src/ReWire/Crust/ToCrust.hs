@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, ViewPatterns, ScopedTypeVariables, FlexibleContexts, TupleSections #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
 module ReWire.Crust.ToCrust (toCrust, extendWithGlobs, getImps) where
 
@@ -14,6 +14,7 @@ import Control.Arrow ((&&&), second)
 import Control.Monad (foldM, replicateM, void)
 import Data.Foldable (foldl')
 import Data.Maybe (mapMaybe)
+import Data.Text (Text, pack, unpack)
 import Language.Haskell.Exts.Fixity (Fixity (..))
 import Language.Haskell.Exts.Pretty (prettyPrint)
 
@@ -43,8 +44,8 @@ sDeclHead = \ case
 
 mkUId :: S.Name a -> Name b
 mkUId = \ case
-      Ident _ n  -> s2n n
-      Symbol _ n -> s2n n
+      Ident _ n  -> s2n (pack n)
+      Symbol _ n -> s2n (pack n)
 
 -- | Translate a Haskell module into the ReWire abstract syntax.
 toCrust :: (Fresh m, MonadError AstError m) => Renamer -> Module Annote -> m (M.Module, Exports)
@@ -129,7 +130,18 @@ transData rn datas = \ case
             tvs' <- mapM (transTyVar l) $ snd hd
             ks   <- replicateM (length tvs') $ freshKVar $ n2s n
             cs'  <- mapM (transCon rn ks tvs' n) cs
-            pure $ M.DataDefn l n (foldr M.KFun M.KStar ks) cs' : datas
+            pure $ M.DataDefn l n (foldr M.KFun M.KStar ks) False cs' : datas
+      TypeDecl l (sDeclHead -> hd) t -> do
+            let n = s2n $ rename Type rn $ fst hd
+            tvs' <- mapM (transTyVar l) $ snd hd
+            ks   <- replicateM (length tvs') $ freshKVar $ n2s n
+            let tvs'' = zipWith (M.TyVar l) ks tvs'
+            t_to   <- M.arr (foldl' (M.TyApp l) (M.TyCon l n) tvs'') <$> transTy rn t
+            t_from <- M.arr <$> transTy rn t <*> pure (foldl' (M.TyApp l) (M.TyCon l n) tvs'')
+            pure $ M.DataDefn l n (foldr M.KFun M.KStar ks) True
+                  [ M.DataCon l (s2n $ "$coerce_to_"   <> pack (show (fst hd))) (tvs' |-> t_to)
+                  , M.DataCon l (s2n $ "$coerce_from_" <> pack (show (fst hd))) (tvs' |-> t_from)
+                  ] : datas
       _                                       -> pure datas
 
 transTySig :: (Fresh m, MonadError AstError m) => Renamer -> [(S.Name (), M.Ty)] -> Decl Annote -> m [(S.Name (), M.Ty)]
@@ -155,19 +167,17 @@ transDef rn tys inls defs = \ case
             case lookup x tys of
                   -- TODO(chathhorn): hackily elide definition of primitives. Allows providing alternate defs for GHC compat.
                   Just t -> do
-                        e' <- if M.isPrim x' && x `notElem` inls then pure $ M.Error (ann e) t $ "Prim: " ++ n2s x' else transExp rn e
+                        e' <- if M.isPrim x' && x `notElem` inls then pure $ M.Error (ann e) t $ "Prim: " <> n2s x' else transExp rn e
                         pure $ M.Defn l x' (M.fv t |-> t) (x `elem` inls) (Embed (bind [] e')) : defs
                   Nothing -> do
-                        e' <- if M.isPrim x' then pure $ M.Error (ann e) (M.TyBlank $ ann e) $ "Prim: " ++ n2s x' else transExp rn e
-                        -- TODO(chathhorn): would like to raise a warning here about lack of top-level type sig
-                        -- (as opposed to an error).
+                        e' <- if M.isPrim x' then pure $ M.Error (ann e) (M.TyBlank $ ann e) $ "Prim: " <> n2s x' else transExp rn e
                         pure $ M.Defn l x' ([] |-> M.TyBlank l) (x `elem` inls) (Embed (bind [] e')) : defs
       DataDecl {}                                               -> pure defs -- TODO(chathhorn): elide
       InlineSig {}                                              -> pure defs -- TODO(chathhorn): elide
       TypeSig {}                                                -> pure defs -- TODO(chathhorn): elide
       InfixDecl {}                                              -> pure defs -- TODO(chathhorn): elide
       TypeDecl {}                                               -> pure defs -- TODO(chathhorn): elide
-      d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " ++ show (void d)
+      d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " <> pack (show $ void d)
 
 transTyVar :: MonadError AstError m => Annote -> S.TyVarBind () -> m (Name M.Ty)
 transTyVar l = \ case
@@ -187,18 +197,18 @@ transTy rn = \ case
       TyForall _ _ _ t -> transTy rn t
       TyApp l a b      -> M.TyApp l <$> transTy rn a <*> transTy rn b
       TyCon l x        -> pure $ M.TyCon l (s2n $ rename Type rn x)
-      TyVar l x        -> M.TyVar l <$> freshKVar (prettyPrint x) <*> pure (mkUId $ void x)
+      TyVar l x        -> M.TyVar l <$> freshKVar (pack $ prettyPrint x) <*> pure (mkUId $ void x)
       t                -> failAt (ann t) "Unsupported type syntax"
 
-freshKVar :: Fresh m => String -> m M.Kind
-freshKVar n = M.KVar <$> fresh (s2n $ "?K_" ++ n)
+freshKVar :: Fresh m => Text -> m M.Kind
+freshKVar n = M.KVar <$> fresh (s2n $ "?K_" <> n)
 
 transExp :: MonadError AstError m => Renamer -> Exp Annote -> m M.Exp
 transExp rn = \ case
       App l (App _ (Var _ n) (Lit _ (String _ f _))) e
-            | isNativeVhdl n -> M.NativeVHDL l f <$> transExp rn e
+            | isNativeVhdl n -> M.NativeVHDL l (pack f) <$> transExp rn e
       App l (Var _ n) (Lit _ (String _ m _))
-            | isError n      -> pure $ M.Error l (M.TyBlank l) m
+            | isError n      -> pure $ M.Error l (M.TyBlank l) (pack m)
       App l e1 e2            -> M.App l <$> transExp rn e1 <*> transExp rn e2
       Lambda l [PVar _ x] e  -> do
             e' <- transExp (exclude Value [void x] rn) e
@@ -216,7 +226,7 @@ transExp rn = \ case
             p'  <- transPat rn p
             e1' <- transExp (exclude Value (getVars p) rn) e1
             pure $ M.Case l (M.TyBlank l) e' (bind p' e1') Nothing
-      e                      -> failAt (ann e) $ "Unsupported expression syntax: " ++ show (void e)
+      e                      -> failAt (ann e) $ "Unsupported expression syntax: " <> (pack $ show $ void e)
       where getVars :: Pat Annote -> [S.Name ()]
             getVars = runQ $ query $ \ case
                   PVar (_::Annote) x -> [void x]
@@ -232,7 +242,7 @@ transPat :: MonadError AstError m => Renamer -> Pat Annote -> m M.Pat
 transPat rn = \ case
       PApp l x ps             -> M.PatCon l (Embed (M.TyBlank l)) (Embed $ s2n $ rename Value rn x) <$> mapM (transPat rn) ps
       PVar l x                -> pure $ M.PatVar l (Embed (M.TyBlank l)) (mkUId $ void x)
-      p                       -> failAt (ann p) $ "Unsupported syntax in a pattern: " ++ show (void p)
+      p                       -> failAt (ann p) $ "Unsupported syntax in a pattern: " <> (pack $ show $ void p)
 
 -- Note: runs before desugaring.
 -- TODO(chathhorn): GADT style decls?
@@ -259,6 +269,7 @@ extendWithGlobs = \ case
             getGlobTyDefs :: Annotation a => [Decl a] -> [S.Name ()]
             getGlobTyDefs = concatMap $ \ case
                   DataDecl _ _ _ hd _ _ -> [fst $ sDeclHead hd]
+                  TypeDecl _ hd _       -> [fst $ sDeclHead hd]
                   _                     -> []
 
             getModCtors :: Annotation a => [S.Decl a] -> Ctors
@@ -320,9 +331,9 @@ getImps = \ case
       S.Module l _ _ imps _                                                         -> addMod l "ReWire.Prelude" $ addMod l "ReWire" $ filter (not . isMod "Prelude") imps
       S.XmlPage {}                                                                  -> []
       S.XmlHybrid l _ _ imps _ _ _ _ _                                              -> addMod l "ReWire.Prelude" $ addMod l "ReWire" $ filter (not . isMod "Prelude") imps
-      where addMod :: Annotation a => a -> String -> [ImportDecl a] -> [ImportDecl a]
+      where addMod :: Annotation a => a -> Text -> [ImportDecl a] -> [ImportDecl a]
             addMod l m imps = if any (isMod m) imps then imps
-                  else ImportDecl l (ModuleName l m) False False False Nothing Nothing Nothing : imps
+                  else ImportDecl l (ModuleName l (unpack m)) False False False Nothing Nothing Nothing : imps
 
-            isMod :: Annotation a => String -> ImportDecl a -> Bool
-            isMod m ImportDecl { importModule = ModuleName _ n } = n == m
+            isMod :: Annotation a => Text -> ImportDecl a -> Bool
+            isMod m ImportDecl { importModule = ModuleName _ n } = (pack n) == m

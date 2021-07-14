@@ -1,5 +1,5 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, TupleSections #-}
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE Trustworthy #-}
 --
 -- This type checker is based loosely on Mark Jones's "Typing Haskell in
 -- Haskell", though since we don't have type classes in core it is much
@@ -16,12 +16,16 @@ import ReWire.Unbound
 import ReWire.Pretty
 import ReWire.Crust.Syntax
 
+import Control.Arrow ((***))
 import Control.DeepSeq (deepseq, force)
 import Control.Monad.Reader (ReaderT (..), local, asks)
-import Control.Monad.State (evalStateT, StateT (..), get, put, modify)
-import Control.Monad (zipWithM)
+import Control.Monad.State (evalStateT, StateT (..), get, put, modify, MonadState)
+import Control.Monad (zipWithM, foldM)
 import Data.List (foldl')
 import Data.HashMap.Strict (HashMap)
+import qualified Data.Text as T
+
+import TextShow (TextShow (..))
 
 import qualified Data.HashMap.Strict as Map
 
@@ -32,14 +36,33 @@ subst = substs . Map.toList
 
 type TySub = HashMap (Name Ty) Ty
 data TCEnv = TCEnv
-      { as  :: HashMap (Name Exp) Poly
-      , cas :: HashMap (Name DataConId) Poly
+      { as        :: !(HashMap (Name Exp) Poly)
+      , cas       :: !(HashMap (Name DataConId) Poly)
+      , coercions :: ![(Ty, Ty)]
       } deriving Show
 
 type TCM m = ReaderT TCEnv (StateT TySub m)
 
 typeCheck :: MonadError AstError m => FreeProgram -> m FreeProgram
-typeCheck (ts, vs) = runFreshMT $ evalStateT (runReaderT (tc (ts, vs)) $ TCEnv mempty mempty) mempty
+typeCheck (ts, vs) = runFreshMT $ evalStateT (do
+            cs <- getCoercions ts
+            runReaderT (tc (ts, vs)) $ TCEnv mempty mempty cs
+      ) mempty
+
+getCoercions :: (MonadState TySub m, Fresh m) => [DataDefn] -> m [(Ty, Ty)]
+getCoercions = foldM toCoerce []
+      where toCoerce :: (MonadState TySub m, Fresh m) => [(Ty, Ty)] -> DataDefn -> m [(Ty, Ty)]
+            toCoerce cs = \ case 
+                  DataDefn { dataCoerce = True, dataCons = cons } -> (++ cs) <$> mapM conToCoerce cons
+                  _                                               -> pure cs
+
+            conToCoerce :: (MonadState TySub m, Fresh m) => DataCon -> m (Ty, Ty)
+            conToCoerce (DataCon _ _ (Embed pt)) = do
+                  t <- inst pt
+                  case flattenArrow t of
+                        ([t1], t2) -> pure (t1, t2)
+                        _          -> error "TypeCheck: encountered ill-formed coercion"
+
 
 localAssumps :: MonadError AstError m => (HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly) -> TCM m a -> TCM m a
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
@@ -47,7 +70,7 @@ localAssumps f = local (\ tce -> tce { as = f (as tce) })
 localCAssumps :: MonadError AstError m => (HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly) -> TCM m a -> TCM m a
 localCAssumps f = local (\ tce -> tce { cas = f (cas tce) })
 
-freshv :: (Fresh m, MonadError AstError m) => TCM m Ty
+freshv :: (MonadState TySub m, Fresh m) => m Ty
 freshv = do
       n <- fresh $ s2n "?"
       let tv = TyVar (MsgAnnote "TypeCheck: freshv") kblank n
@@ -58,31 +81,38 @@ freshv = do
 s1 @@ s2 = Map.mapWithKey (\ _ t -> subst s1 t) s2 `Map.union` s1
 
 isFlex :: Name a -> Bool
-isFlex = (== '?') . head . n2s
+isFlex = (== '?') . T.head . n2s
 
-varBind :: MonadError AstError m => Annote -> Name Ty -> Ty -> TCM m TySub
-varBind an u t | t `aeq` TyVar noAnn kblank u = pure mempty
-               | u `elem` fv t                = failAt an $ "Occurs check fails: " ++ show u ++ ", " ++ prettyPrint t
-               | otherwise                    = pure $ Map.singleton u t
+varBind :: Monad m => Name Ty -> Ty -> TCM m (Maybe TySub)
+varBind u t | t `aeq` TyVar noAnn kblank u = pure $ Just mempty
+            | u `elem` fv t                = pure Nothing
+            | otherwise                    = pure $ Just $ Map.singleton u t
 
-mgu :: MonadError AstError m => Annote -> Ty -> Ty -> TCM m TySub
-mgu an (TyApp _ tl tr) (TyApp _ tl' tr')                        = do
-      s1 <- mgu an tl tl'
-      s2 <- mgu an (subst s1 tr) $ subst s1 tr'
-      pure $ s2 @@ s1
-mgu an (TyVar _ _ u)   t             | isFlex u                 = varBind an u t
-mgu an t               (TyVar _ _ u) | isFlex u                 = varBind an u t
-mgu _  (TyCon _ c1)    (TyCon _ c2)  | n2s c1 == n2s c2         = pure mempty
-mgu _  (TyVar _ _ v)   (TyVar _ _ u) | not (isFlex v) && v == u = pure mempty
-mgu an t1 t2 = failAt an $ "Types do not unify: " ++ prettyPrint t1 ++ ", " ++ prettyPrint t2
+mgu :: Monad m => Ty -> Ty -> TCM m (Maybe TySub)
+mgu (TyApp _ tl tr) (TyApp _ tl' tr')                        = do
+      s1 <- mgu tl tl'
+      s2 <- maybe (pure Nothing) (\ s1' -> mgu (subst s1' tr) $ subst s1' tr') s1
+      case (s1, s2) of
+            (Just s1', Just s2') -> pure $ Just $ s2' @@ s1'
+            _                    -> pure Nothing
+mgu (TyCon _ c1)    (TyCon _ c2)  | n2s c1 == n2s c2              = pure $ Just mempty
+mgu (TyCon _ (n2s -> c1))    (TyCon _ (n2s -> c2))                                  = do
+      cs <- asks coercions
+      c1' <- foldM (\ c1 (c, c') -> if c1 == c2 || c1 /= c then pure c1 else pure c') c1 (map (prettyPrint *** prettyPrint) cs)
+      pure $ if c1' == c2 then Just mempty else Nothing
+mgu (TyVar _ _ u)   t             | isFlex u                      = varBind u t
+mgu t               (TyVar _ _ u) | isFlex u                      = varBind u t
+mgu (TyVar _ _ v)   (TyVar _ _ u) | not (isFlex v) && v == u      = pure $ Just mempty
+mgu _ _                                                           = pure Nothing
 
 unify :: MonadError AstError m => Annote -> Ty -> Ty -> TCM m ()
 unify an t1 t2 = do
-      s <- get
-      u <- mgu an (subst s t1) $ subst s t2
-      modify (u@@)
+      s  <- get
+      mgu (subst s t1) (subst s t2) >>= maybe
+            (failAt an $ "Types do not unify: " <> prettyPrint (subst s t1) <> ", " <> prettyPrint (subst s t2))
+            (modify . (@@))
 
-inst :: (Fresh m, MonadError AstError m) => Poly -> TCM m Ty
+inst :: (MonadState TySub m, Fresh m) => Poly -> m Ty
 inst (Poly pt) = do
       (tvs, t) <- unbind pt
       sub      <- Map.fromList <$> mapM (\ tv -> (tv,) <$> freshv) tvs
@@ -108,7 +138,7 @@ tcPat t = \ case
       PatCon an _ (Embed i) ps -> do
             cas     <- asks cas
             case Map.lookup i cas of
-                  Nothing  -> failAt an $ "Unknown constructor: " ++ prettyPrint i
+                  Nothing  -> failAt an $ "Unknown constructor: " <> prettyPrint i
                   Just pta -> do
                         ta               <- inst pta
                         let (targs, tres) = flattenArrow ta
@@ -125,7 +155,7 @@ tcMatchPat t = \ case
       MatchPatCon an _ i ps -> do
             cas     <- asks cas
             case Map.lookup i cas of
-                  Nothing  -> failAt an $ "Unknown constructor: " ++ prettyPrint i
+                  Nothing  -> failAt an $ "Unknown constructor: " <> prettyPrint i
                   Just pta -> do
                         ta               <- inst pta
                         let (targs, tres) = flattenArrow ta
@@ -158,14 +188,14 @@ tcExp = \ case
       Var an _ v             -> do
             as <- asks as
             case Map.lookup v as of
-                  Nothing -> failAt an $ "Unknown variable: " ++ show v
+                  Nothing -> failAt an $ "Unknown variable: " <> showt v
                   Just pt -> do
                         t <- inst pt
                         pure (Var an t v, t)
       Con an _ i      -> do
             cas <- asks cas
             case Map.lookup i cas of
-                  Nothing -> failAt an $ "Unknown constructor: " ++ prettyPrint i
+                  Nothing -> failAt an $ "Unknown constructor: " <> prettyPrint i
                   Just pt -> do
                         t <- inst pt
                         pure (Con an t i, t)
@@ -234,7 +264,7 @@ tc (ts, vs) = do
             defnAssump (Defn _ n (Embed pt) _ _) = Map.insert n pt
 
             dataDeclAssumps :: DataDefn -> HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly
-            dataDeclAssumps (DataDefn _ _ _ cs) = flip (foldr dataConAssump) cs
+            dataDeclAssumps (DataDefn _ _ _ _ cs) = flip (foldr dataConAssump) cs
 
             dataConAssump :: DataCon -> HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly
             dataConAssump (DataCon _ i (Embed t)) = Map.insert i t
