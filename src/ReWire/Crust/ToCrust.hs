@@ -177,6 +177,12 @@ transDef rn tys inls defs = \ case
       TypeSig {}                                                -> pure defs -- TODO(chathhorn): elide
       InfixDecl {}                                              -> pure defs -- TODO(chathhorn): elide
       TypeDecl {}                                               -> pure defs -- TODO(chathhorn): elide
+      AnnPragma {}                                              -> pure defs -- TODO(chathhorn): elide
+      MinimalPragma {}                                          -> pure defs -- TODO(chathhorn): elide
+      CompletePragma {}                                         -> pure defs -- TODO(chathhorn): elide
+      RulePragmaDecl {}                                         -> pure defs -- TODO(chathhorn): elide
+      DeprPragmaDecl {}                                         -> pure defs -- TODO(chathhorn): elide
+      WarnPragmaDecl {}                                         -> pure defs -- TODO(chathhorn): elide
       d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " <> pack (show $ void d)
 
 transTyVar :: MonadError AstError m => Annote -> S.TyVarBind () -> m (Name M.Ty)

@@ -1,6 +1,7 @@
 import ReWire
 import ReWire.Bits
 
+{-# ANN grunt "this is ignored" #-}
 grunt :: StT W8 I ()
 grunt = do
   x <- get
