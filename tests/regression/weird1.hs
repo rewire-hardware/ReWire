@@ -1,15 +1,13 @@
 import ReWire
 import ReWire.Bits
 
-type B = Bit
-
-filt :: ReT B B (StT (B, B) I) B
+filt :: ReT Bit Bit (StT (Bit, Bit) I) Bit
 filt = repl C
 
-repl :: B -> ReT B B (StT (B, B) I) B
+repl :: Bit -> ReT Bit Bit (StT (Bit, Bit) I) Bit
 repl _ = signal C >>= repl
 
-start :: ReT B B I B
+start :: ReT Bit Bit I Bit
 start = extrude filt (C, C)
 
 main = undefined
