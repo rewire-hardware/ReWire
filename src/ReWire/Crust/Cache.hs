@@ -92,9 +92,11 @@ getModule flags fp = pDebug flags ("fetching module: " <> pack fp) >> Map.lookup
                       >=> lift . lift . fixFixity rn
                       >=> pDebug' "Annotating."
                       >=> annotate
+                      >=> pDebug' "[Pass 1] Pre-desugaring."
                       >=> whenSet FlagDHask1 (printInfoHSE "Haskell 1: Pre-desugaring" rn imps)
                       >=> pDebug' "Desugaring."
                       >=> desugar rn
+                      >=> pDebug' "[Pass 2] Post-desugaring."
                       >=> whenSet FlagDHask2 (printInfoHSE "Haskell 2: Post-desugaring" rn imps)
                       >=> pDebug' "Translating to crust."
                       >=> toCrust rn
@@ -119,10 +121,11 @@ getProgram flags fp = do
       let (Module ts ds) = mod <> imps
 
       p <- pure
-       >=> pDebug' "Adding primitives and inlining."
+       >=> pDebug' "[Pass 3] Adding primitives and inlining."
        >=> whenSet FlagDCrust1 (printInfo "Crust 1: Post-desugaring")
        >=> pure . addPrims
        >=> inline
+       >=> pDebug' "[Pass 4] Post-inlining, before typechecking."
        >=> whenSet FlagDCrust2 (printInfo "Crust 2: Post-inlining")
        >=> pDebug' "Typechecking."
        >=> kindCheck >=> typeCheck
@@ -134,10 +137,12 @@ getProgram flags fp = do
        >=> liftLambdas
        >=> pDebug' "Removing unused definitions."
        >=> pure . purgeUnused
+       >=> pDebug' "[Pass 5] Pre-purification."
        >=> whenSet' FlagDTypes (pDebug' "Verifying types pre-purification." >=> typeVerify)
        >=> whenSet FlagDCrust3 (printInfo "Crust 3: Pre-purification")
        >=> pDebug' "Purifying."
        >=> purify
+       >=> pDebug' "[Pass 6] Post-purification."
        >=> whenSet FlagDCrust4 (printInfo "Crust 4: Post-purification")
        >=> whenSet' FlagDTypes (pDebug' "Verifying types post-purification." >=> typeVerify)
        >=> pDebug' "Lifting lambdas (post-purification)."
@@ -146,9 +151,11 @@ getProgram flags fp = do
        >=> fullyApplyDefs
        >=> pDebug' "Removing unused definitions (again)."
        >=> pure . purgeUnused
+       >=> pDebug' "[Pass 7] Post-purification."
        >=> whenSet FlagDCrust5 (printInfo "Crust 5: Post-second-lambda-lifting")
        >=> pDebug' "Translating to core & HDL."
        >=> toCore
+       >=> pDebug' "[Pass 8] Core."
        $ (ts, ds)
 
       when (FlagDCore1 `elem` flags) $ liftIO $ do

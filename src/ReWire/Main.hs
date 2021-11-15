@@ -96,6 +96,7 @@ main = do
                   where compile :: C.Program -> SyntaxErrorT IO ()
                         compile a = do
                               b <- removeEmpty a
+                              when (FlagV `elem` flags) $ liftIO $ putStrLn $ "Debug: [Pass 9] Emptied core."
                               when (FlagDCore2 `elem` flags) $ liftIO $ do
                                     printHeader "Emptied Core" -- TODO(chathhorn): pull this out of Crust.Cache
                                     T.putStrLn $ prettyPrint b
