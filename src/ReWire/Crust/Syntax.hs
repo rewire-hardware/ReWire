@@ -15,7 +15,7 @@
 module ReWire.Crust.Syntax
       ( DataConId (..), TyConId
       , Ty (..), Exp (..), Pat (..), MatchPat (..)
-      , Defn (..), DataDefn (..), DataCon (..)
+      , Defn (..), DataDefn (..), TypeSynonym (..), DataCon (..)
       , FreeProgram, Program (..)
       , Kind (..), kblank
       , flattenApp, flattenArrow, flattenTyApp, arr, arrowRight
@@ -418,7 +418,6 @@ data DataDefn = DataDefn
       { dataAnnote :: Annote
       , dataName   :: !(Name TyConId)
       , dataKind   :: !Kind
-      , dataCoerce :: !Bool
       , dataCons   :: ![DataCon]
       }
       deriving (Eq, Generic, Show, Typeable, Data)
@@ -429,18 +428,40 @@ instance Alpha DataDefn
 instance NFData DataDefn
 
 instance Annotated DataDefn where
-      ann (DataDefn a _ _ _ _) = a
+      ann (DataDefn a _ _ _) = a
 
 instance Pretty DataDefn where
-      pretty (DataDefn _ n k _ cs) = foldr ($+$) empty $
+      pretty (DataDefn _ n k cs) = foldr ($+$) empty $
                   (text "data" <+> pretty n <+> text "::" <+> pretty k <+> text "where")
                   : map (nest 2 . pretty) cs
-
 ---
 
-type FreeProgram = ([DataDefn], [Defn])
+data TypeSynonym = TypeSynonym
+      { typeSynAnnote :: Annote
+      , typeSynName   :: !(Name TyConId)
+      , typeSynType   :: !(Embed Poly)
+      }
+      deriving (Eq, Generic, Show, Typeable, Data)
+      deriving TextShow via FromGeneric TypeSynonym
 
-newtype Program = Program (TRec ([DataDefn], [Defn]))
+instance Hashable TypeSynonym
+
+instance Alpha TypeSynonym
+
+instance NFData TypeSynonym
+
+instance Annotated TypeSynonym where
+      ann (TypeSynonym a _ _) = a
+
+instance Pretty TypeSynonym where
+      pretty (TypeSynonym _ n (Embed (Poly t))) = runFreshM $ do
+            (tvs, t') <- unbind t
+            pure (text "type" <+> pretty n <+> hsep (map pretty tvs) <+> "=" <+> pretty t')
+---
+
+type FreeProgram = ([DataDefn], [TypeSynonym], [Defn])
+
+newtype Program = Program (TRec ([DataDefn], [TypeSynonym], [Defn]))
       deriving (Generic, Show, Typeable)
 
 instance Alpha Program
@@ -450,8 +471,10 @@ instance NFData Program where
 
 instance Pretty Program where
       pretty (Program p) = runFreshM $ do
-            (ts, vs) <- untrec p
-            pure $ vcat (intersperse (text "") $ map pretty ts) $+$ text "" $+$ vcat (intersperse (text "") $ map pretty vs)
+            (ts, syns, vs) <- untrec p
+            pure $ vcat $ intersperse (text "")
+                  $ map pretty ts ++ map pretty syns ++ map pretty vs
+
 ---
 
 flattenApp :: Exp -> [Exp]

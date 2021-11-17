@@ -118,13 +118,15 @@ getModule flags fp = pDebug flags ("fetching module: " <> pack fp) >> Map.lookup
 getProgram :: [Flag] -> FilePath -> Cache Core.Program
 getProgram flags fp = do
       (mod, (imps, _))  <- getModule flags fp
-      let (Module ts ds) = mod <> imps
+      let (Module ts syns ds) = mod <> imps
 
       p <- pure
        >=> pDebug' "[Pass 3] Adding primitives and inlining."
        >=> whenSet FlagDCrust1 (printInfo "Crust 1: Post-desugaring")
        >=> pure . addPrims
        >=> inline
+       >=> pDebug' "Expanding type synonyms."
+       >=> expandTypeSynonyms
        >=> pDebug' "[Pass 4] Post-inlining, before typechecking."
        >=> whenSet FlagDCrust2 (printInfo "Crust 2: Post-inlining")
        >=> pDebug' "Typechecking."
@@ -156,7 +158,7 @@ getProgram flags fp = do
        >=> pDebug' "Translating to core & HDL."
        >=> toCore
        >=> pDebug' "[Pass 8] Core."
-       $ (ts, ds)
+       $ (ts, syns, ds)
 
       when (FlagDCore1 `elem` flags) $ liftIO $ do
             printHeader "Core"

@@ -16,11 +16,10 @@ import ReWire.Unbound
 import ReWire.Pretty
 import ReWire.Crust.Syntax
 
-import Control.Arrow ((***))
 import Control.DeepSeq (deepseq, force)
 import Control.Monad.Reader (ReaderT (..), local, asks)
 import Control.Monad.State (evalStateT, StateT (..), get, put, modify, MonadState)
-import Control.Monad (zipWithM, foldM)
+import Control.Monad (zipWithM)
 import Data.List (foldl')
 import Data.HashMap.Strict (HashMap)
 import qualified Data.Text as T
@@ -38,31 +37,12 @@ type TySub = HashMap (Name Ty) Ty
 data TCEnv = TCEnv
       { as        :: !(HashMap (Name Exp) Poly)
       , cas       :: !(HashMap (Name DataConId) Poly)
-      , coercions :: ![(Ty, Ty)]
       } deriving Show
 
 type TCM m = ReaderT TCEnv (StateT TySub m)
 
 typeCheck :: MonadError AstError m => FreeProgram -> m FreeProgram
-typeCheck (ts, vs) = runFreshMT $ evalStateT (do
-            cs <- getCoercions ts
-            runReaderT (tc (ts, vs)) $ TCEnv mempty mempty cs
-      ) mempty
-
-getCoercions :: (MonadState TySub m, Fresh m) => [DataDefn] -> m [(Ty, Ty)]
-getCoercions = foldM toCoerce []
-      where toCoerce :: (MonadState TySub m, Fresh m) => [(Ty, Ty)] -> DataDefn -> m [(Ty, Ty)]
-            toCoerce cs = \ case 
-                  DataDefn { dataCoerce = True, dataCons = cons } -> (++ cs) <$> mapM conToCoerce cons
-                  _                                               -> pure cs
-
-            conToCoerce :: (MonadState TySub m, Fresh m) => DataCon -> m (Ty, Ty)
-            conToCoerce (DataCon _ _ (Embed pt)) = do
-                  t <- inst pt
-                  case flattenArrow t of
-                        ([t1], t2) -> pure (t1, t2)
-                        _          -> error "TypeCheck: encountered ill-formed coercion"
-
+typeCheck (ts, syns, vs) = runFreshMT $ evalStateT (runReaderT (tc (ts, syns, vs)) $ TCEnv mempty mempty) mempty
 
 localAssumps :: MonadError AstError m => (HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly) -> TCM m a -> TCM m a
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
@@ -96,10 +76,6 @@ mgu (TyApp _ tl tr) (TyApp _ tl' tr')                        = do
             (Just s1', Just s2') -> pure $ Just $ s2' @@ s1'
             _                    -> pure Nothing
 mgu (TyCon _ c1)    (TyCon _ c2)  | n2s c1 == n2s c2              = pure $ Just mempty
-mgu (TyCon _ (n2s -> c1))    (TyCon _ (n2s -> c2))                                  = do
-      cs <- asks coercions
-      c1' <- foldM (\ c1 (c, c') -> if c1 == c2 || c1 /= c then pure c1 else pure c') c1 (map (prettyPrint *** prettyPrint) cs)
-      pure $ if c1' == c2 then Just mempty else Nothing
 mgu (TyVar _ _ u)   t             | isFlex u                      = varBind u t
 mgu t               (TyVar _ _ u) | isFlex u                      = varBind u t
 mgu (TyVar _ _ v)   (TyVar _ _ u) | not (isFlex v) && v == u      = pure $ Just mempty
@@ -254,17 +230,17 @@ tcDefn d  = do
       d' `deepseq` pure d'
 
 tc :: (Fresh m, MonadError AstError m) => FreeProgram -> TCM m FreeProgram
-tc (ts, vs) = do
+tc (ts, syns, vs) = do
       let as   =  foldr defnAssump mempty vs
           cas  =  foldr dataDeclAssumps mempty ts
       vs'      <- localAssumps (as `Map.union`) $ localCAssumps (cas `Map.union`) $ mapM tcDefn vs
-      pure (ts, vs')
+      pure (ts, syns, vs')
 
       where defnAssump :: Defn -> HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly
             defnAssump (Defn _ n (Embed pt) _ _) = Map.insert n pt
 
             dataDeclAssumps :: DataDefn -> HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly
-            dataDeclAssumps (DataDefn _ _ _ _ cs) = flip (foldr dataConAssump) cs
+            dataDeclAssumps (DataDefn _ _ _ cs) = flip (foldr dataConAssump) cs
 
             dataConAssump :: DataCon -> HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly
             dataConAssump (DataCon _ i (Embed t)) = Map.insert i t

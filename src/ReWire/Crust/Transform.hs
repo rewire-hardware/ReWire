@@ -2,7 +2,7 @@
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 module ReWire.Crust.Transform
-      ( inline, reduce
+      ( inline, expandTypeSynonyms, reduce
       , neuterPrims
       , shiftLambdas
       , liftLambdas
@@ -37,7 +37,7 @@ import qualified Data.Set as Set
 
 -- | Inlines defs marked for inlining. Must run before lambda lifting.
 inline :: MonadError AstError m => FreeProgram -> m FreeProgram
-inline (ts, ds) = (ts, ) . flip substs ds <$> subs
+inline (ts, syns, ds) = (ts, syns, ) . flip substs ds <$> subs
       where toSubst :: Defn -> (Name Exp, Exp)
             toSubst (Defn _ n _ _ (Embed e)) = runFreshM $ unbind e >>= \ case
                   ([], e') -> pure (n, e')
@@ -47,12 +47,50 @@ inline (ts, ds) = (ts, ) . flip substs ds <$> subs
             inlineDefs = filter defnInline ds
 
             subs :: MonadError AstError m => m [(Name Exp, Exp)]
-            subs = map toSubst <$> fix 10 (substs (map toSubst inlineDefs)) inlineDefs
+            subs = map toSubst <$> fix "INLINE definition" 100 (pure . (substs $ map toSubst inlineDefs)) inlineDefs
 
-fix :: (MonadError AstError m, Hashable a) => Int -> (a -> a) -> a -> m a
-fix 0 _ _                        = failAt noAnn "Inlining not terminating (mutually recursive INLINE definitions?)."
-fix _ f a | hash (f a) == hash a = pure a
-fix n f a                        = fix (n - 1) f (f a)
+-- | Expands type synonyms.
+expandTypeSynonyms :: (MonadCatch m, MonadError AstError m, Fresh m) => FreeProgram -> m FreeProgram
+expandTypeSynonyms (ts, syns, ds) = (ts, , ) <$> syns' <*> (subs >>= flip substs' ds)
+      where toSubst :: TypeSynonym -> (Name TyConId, Bind [Name Ty] Ty)
+            toSubst (TypeSynonym _ n (Embed (Poly t))) = (n, t)
+
+            subs :: (MonadCatch m, MonadError AstError m, Fresh m) => m [(Name TyConId, Bind [Name Ty] Ty)]
+            subs = map toSubst <$> syns'
+
+            syns' :: (MonadCatch m, MonadError AstError m, Fresh m) => m [TypeSynonym]
+            syns' = fix "Type synonym" 100 (substs' $ map toSubst syns) syns
+
+            substs' :: (MonadCatch m, MonadError AstError m, Fresh m, Data d) => [(Name TyConId, Bind [Name Ty] Ty)] -> d -> m d
+            substs' subs' = runT (transform $ \ case
+                  TyCon an n -> case lookup n subs' of
+                        Just pt -> do
+                              (vs, t') <- unbind pt
+                              if length vs == 0
+                                    then pure t'
+                                    else pure $ TyCon an n
+                  TyApp an a b -> case findTyCon a of
+                        Just (n, args) -> case lookup n subs' of
+                              Just pt -> do
+                                    (vs, t') <- unbind pt
+                                    let args' = args ++ [b]
+                                    case () of -- Match failure causes search to move on.
+                                          () | length vs > length args'  -> failAt an "Partially-applied type synonym." -- partially applied type syn
+                                          () | length vs == length args' -> pure $ substs (zip vs args') t')
+
+            findTyCon :: Ty -> Maybe (Name TyConId, [Ty])
+            findTyCon = \ case
+                  TyCon _ n   -> pure (n, [])
+                  TyApp _ a b -> do
+                        (n, args) <- findTyCon a
+                        pure (n, args ++ [b])
+                  _           -> Nothing
+
+fix :: (MonadError AstError m, Hashable a) => Text -> Int -> (a -> m a) -> a -> m a
+fix m 0 _ _ = failAt noAnn $ m <> " expansion not terminating (mutually recursive definitions?)."
+fix m n f a = do
+      a' <- f a
+      if hash a' == hash a then pure a else fix m (n - 1) f a'
 
 -- | Replaces the expression in NativeVHDL so we don't descend into it
 --   during other transformations.
@@ -65,7 +103,7 @@ neuterPrims = runT $ transform $
 --   becomes
 -- > g x1 x2 = e
 shiftLambdas :: Fresh m => FreeProgram -> m FreeProgram
-shiftLambdas (ts, vs) = (ts,) <$> mapM shiftLambdas' vs
+shiftLambdas (ts, syns, vs) = (ts, syns, ) <$> mapM shiftLambdas' vs
       where shiftLambdas' :: Fresh m => Defn -> m Defn
             shiftLambdas' (Defn an n t inl (Embed e)) = Defn an n t inl . Embed <$> mash e
 
@@ -82,7 +120,7 @@ shiftLambdas (ts, vs) = (ts,) <$> mapM shiftLambdas' vs
 -- > g x0 = e x0
 -- except with Match, we add x0 to the list of local ids.
 fullyApplyDefs :: Fresh m => FreeProgram -> m FreeProgram
-fullyApplyDefs (ts, vs) = (ts,) <$> mapM fullyApplyDefs' vs
+fullyApplyDefs (ts, syns, vs) = (ts, syns, ) <$> mapM fullyApplyDefs' vs
       where fullyApplyDefs' :: Fresh m => Defn -> m Defn
             fullyApplyDefs' (Defn an n t inl (Embed e)) = Defn an n t inl . Embed <$> fullyApply e
 
@@ -196,14 +234,14 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
 
 -- | Remove unused definitions.
 purgeUnused :: FreeProgram -> FreeProgram
-purgeUnused (ts, vs) = (inuseData (fv $ trec $ inuseDefn vs) ts, inuseDefn vs)
+purgeUnused (ts, syns, vs) = (inuseData (fv $ trec $ inuseDefn vs) ts, syns, inuseDefn vs)
       where inuseData :: [Name DataConId] -> [DataDefn] -> [DataDefn]
             inuseData ns = filter (not . null . dataCons) . map (inuseData' ns)
 
             inuseData' :: [Name DataConId] -> DataDefn -> DataDefn
-            inuseData' ns d@(DataDefn an n k co cs)
+            inuseData' ns d@(DataDefn an n k cs)
                   | n2s n `elem` reservedData = d
-                  | otherwise                 = DataDefn an n k co $ filter ((`Set.member` Set.fromList ns) . dataConName) cs
+                  | otherwise                 = DataDefn an n k $ filter ((`Set.member` Set.fromList ns) . dataConName) cs
 
             reservedData :: [Text]
             reservedData =
@@ -242,7 +280,7 @@ inuseDefn ds = map toDefn $ Set.elems $ execState (inuseDefn' ds') ds'
 
 -- | Partially evaluate expressions.
 reduce :: (Fresh m, MonadError AstError m) => FreeProgram -> m FreeProgram
-reduce (ts, vs) = (ts, ) <$> mapM reduceDefn vs
+reduce (ts, syns, vs) = (ts, syns, ) <$> mapM reduceDefn vs
 
 reduceDefn :: (Fresh m, MonadError AstError m) => Defn -> m Defn
 reduceDefn (Defn an n pt b (Embed e)) = unbind e >>= \ case

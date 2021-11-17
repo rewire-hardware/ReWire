@@ -53,7 +53,7 @@ projDefnTy Defn { defnPolyTy = Embed t } = poly2Ty t
 
 -- | Transforms functions in state and resumption monads into plain first-order functions.
 purify :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) => FreeProgram -> m FreeProgram
-purify (ts, ds) = do
+purify (ts, syns, ds) = do
       (smds, pds)         <- partitionEithers <$> mapM isStateMonadicDefn ds
       (rmds, ods)         <- partitionEithers <$> mapM isResMonadicDefn pds
 
@@ -78,6 +78,7 @@ purify (ts, ds) = do
       disp <- mkDispatch i o ms iv pes
 
       pure ( filter (not . isAorR) ts ++ [mkRDatatype dcs] ++ [mkADatatype $ Map.toList allAs]
+           , syns
            , mkStart i o ms
            : disp
            : ods ++ pure_smds ++ pure_rmds)
@@ -175,7 +176,6 @@ mkRDatatype dcs = DataDefn
        { dataAnnote = MsgAnnote "Purify: R Datatype"
        , dataName   = s2n "R_"
        , dataKind   = KStar
-       , dataCoerce = False
        , dataCons   = dcs
        }
 
@@ -187,7 +187,6 @@ mkADatatype allAs = DataDefn
        { dataAnnote = MsgAnnote "Purify: A Datatype"
        , dataName   = s2n "A_"
        , dataKind   = KStar
-       , dataCoerce = False
        , dataCons   = map mkADataCon allAs
        }
 
