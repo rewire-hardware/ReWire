@@ -19,7 +19,7 @@ module ReWire.Crust.Rename
 import ReWire.Annotation (Annotation, Annote, noAnn)
 import ReWire.Error
 import ReWire.Crust.Fixity
-import ReWire.Crust.Syntax (DataDefn, Defn)
+import ReWire.Crust.Syntax (DataDefn, TypeSynonym, Defn)
 
 import Control.Arrow ((&&&), first)
 import Control.Monad (foldM, void)
@@ -74,15 +74,15 @@ data Exports = Exports
       deriving (Show, Generic)
       deriving TextShow via FromGeneric Exports
 
-data Module = Module ![DataDefn] ![Defn]
+data Module = Module ![DataDefn] ![TypeSynonym] ![Defn]
       deriving (Show, Generic)
       deriving TextShow via FromGeneric Module
 
 instance Semigroup Module where
-      (Module a b) <> (Module a' b') = Module (a <> a') (b <> b')
+      (Module a b c) <> (Module a' b' c') = Module (a <> a') (b <> b') (c <> c')
 
 instance Monoid Module where
-      mempty = Module [] []
+      mempty = Module [] [] []
 
 ---
 

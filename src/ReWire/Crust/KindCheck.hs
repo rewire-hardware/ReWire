@@ -108,31 +108,25 @@ monoize = \ case
       KVar _     -> KStar
 
 redecorate :: MonadError AstError m => KiSub -> DataDefn -> KCM m DataDefn
-redecorate s (DataDefn an i _ co cs) = do
+redecorate s (DataDefn an i _ cs) = do
       cas <- askCAssumps
       case Map.lookup i cas of
-            Just k  -> pure $ DataDefn an i (monoize $ subst s k) co cs
+            Just k  -> pure $ DataDefn an i (monoize $ subst s k) cs
             Nothing -> failAt an $ "Redecorate: no such assumption: " <> showt i
 
 assump :: (Fresh m, MonadError AstError m) => DataDefn -> KCM m (Name TyConId, Kind)
 assump = \ case
-      DataDefn _ i k False _ -> pure (i, k)
-      DataDefn _ i k True _  -> (i,) <$> estimate k -- TODO(chathhorn): need the real kind here.
-
-estimate :: (Fresh m, MonadError AstError m) => Kind -> KCM m Kind
-estimate = \ case
-      KFun k1 k2  -> KFun k1 <$> estimate k2
-      _           -> freshkv
+      DataDefn _ i k _ -> pure (i, k)
 
 kc :: (Fresh m, MonadError AstError m) => FreeProgram -> KCM m FreeProgram
-kc (ts, vs) = do
+kc (ts, syns, vs) = do
       cas  <-  Map.fromList <$> mapM assump ts
       localCAssumps (cas `Map.union`) $ do
             mapM_ kcDataDecl ts
             mapM_ kcDefn vs
             s   <- get
             ts' <- mapM (redecorate s) ts
-            pure (ts', vs)
+            pure (ts', syns, vs)
 
 kindCheck :: (Fresh m, MonadError AstError m) => FreeProgram -> m FreeProgram
 kindCheck m = evalStateT (runReaderT (kc m) $ KCEnv mempty) mempty

@@ -25,7 +25,7 @@ type ConMap = (HashMap (Name M.TyConId) [Name M.DataConId], HashMap (Name M.Data
 type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) Int) m)
 
 toCore :: (Fresh m, MonadError AstError m) => M.FreeProgram -> m C.Program
-toCore (ts, vs) = fst <$> flip runStateT mempty (do
+toCore (ts, _, vs) = fst <$> flip runStateT mempty (do
       ts' <- concat <$> mapM (transData conMap) ts
       vs' <- mapM (transDefn conMap) $ filter (not . M.isPrim . M.defnName) vs
       pure $ C.Program ts' vs')
@@ -41,7 +41,7 @@ toCore (ts, vs) = fst <$> flip runStateT mempty (do
             projType (M.DataCon _ _ (Embed (M.Poly t))) = runFreshM (snd <$> unbind t)
 
 transData :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => ConMap -> M.DataDefn -> m [C.DataCon]
-transData conMap (M.DataDefn _ _ _ _ cs) = mapM (transDataCon $ length cs) $ zip [0..] cs
+transData conMap (M.DataDefn _ _ _ cs) = mapM (transDataCon $ length cs) $ zip [0..] cs
       where transDataCon :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => Int -> (Int, M.DataCon) -> m C.DataCon
             transDataCon nctors (n, M.DataCon an c (Embed (M.Poly t))) = do
                   (_, t') <- unbind t

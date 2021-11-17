@@ -50,13 +50,15 @@ mkUId = \ case
 -- | Translate a Haskell module into the ReWire abstract syntax.
 toCrust :: (Fresh m, MonadError AstError m) => Renamer -> Module Annote -> m (M.Module, Exports)
 toCrust rn = \ case
-      Module _ (Just (ModuleHead _ _ _ exps)) _ _ (reverse -> ds) -> do
+      Module _ (Just (ModuleHead _ (ModuleName _ mname) _ exps)) _ _ (reverse -> ds) -> do
             tyDefs <- foldM (transData rn) [] ds
+            tySyns <- if mname == "ReWire" -- TODO(chathhorn): ignore type synonyms in ReWire.hs module.
+                  then pure [] else foldM (transTyDecl rn) [] ds
             tySigs <- foldM (transTySig rn) [] ds
             inls   <- foldM transInlineSig [] ds
             fnDefs <- foldM (transDef rn tySigs inls) [] ds
             exps'  <- maybe (pure $ getGlobExps rn ds) (\ (ExportSpecList _ exps') -> foldM (transExport rn ds) [] exps') exps
-            pure (M.Module tyDefs fnDefs, resolveExports rn exps')
+            pure (M.Module tyDefs tySyns fnDefs, resolveExports rn exps')
             where getGlobExps :: Renamer -> [Decl Annote] -> [Export]
                   getGlobExps rn ds = getTypeExports rn
                         ++ getExportFixities ds
@@ -130,19 +132,17 @@ transData rn datas = \ case
             tvs' <- mapM (transTyVar l) $ snd hd
             ks   <- replicateM (length tvs') $ freshKVar $ n2s n
             cs'  <- mapM (transCon rn ks tvs' n) cs
-            pure $ M.DataDefn l n (foldr M.KFun M.KStar ks) False cs' : datas
+            pure $ M.DataDefn l n (foldr M.KFun M.KStar ks) cs' : datas
+      _                                       -> pure datas
+
+transTyDecl :: (MonadError AstError m, Fresh m) => Renamer -> [M.TypeSynonym] -> Decl Annote -> m [M.TypeSynonym]
+transTyDecl rn syns = \ case
       TypeDecl l (sDeclHead -> hd) t -> do
             let n = s2n $ rename Type rn $ fst hd
-            tvs' <- mapM (transTyVar l) $ snd hd
-            ks   <- replicateM (length tvs') $ freshKVar $ n2s n
-            let tvs'' = zipWith (M.TyVar l) ks tvs'
-            t_to   <- M.arr (foldl' (M.TyApp l) (M.TyCon l n) tvs'') <$> transTy rn t
-            t_from <- M.arr <$> transTy rn t <*> pure (foldl' (M.TyApp l) (M.TyCon l n) tvs'')
-            pure $ M.DataDefn l n (foldr M.KFun M.KStar ks) True
-                  [ M.DataCon l (s2n $ "$coerce_to_"   <> pack (show (fst hd))) (tvs' |-> t_to)
-                  , M.DataCon l (s2n $ "$coerce_from_" <> pack (show (fst hd))) (tvs' |-> t_from)
-                  ] : datas
-      _                                       -> pure datas
+            t'   <- transTy rn t
+            -- tvs' <- mapM (transTyVar l) $ snd hd
+            pure $ M.TypeSynonym l n (M.fv t' |-> t') : syns
+      _                              -> pure syns
 
 transTySig :: (Fresh m, MonadError AstError m) => Renamer -> [(S.Name (), M.Ty)] -> Decl Annote -> m [(S.Name (), M.Ty)]
 transTySig rn sigs = \ case

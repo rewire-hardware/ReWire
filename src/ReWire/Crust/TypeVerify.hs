@@ -41,7 +41,7 @@ data TCEnv = TCEnv
 type TCM m = ReaderT TCEnv (StateT TySub m)
 
 typeVerify :: (Fresh m, MonadError AstError m) => FreeProgram -> m FreeProgram
-typeVerify (ts, vs) = evalStateT (runReaderT (tc (ts, vs)) $ TCEnv mempty mempty) mempty
+typeVerify (ts, syns, vs) = evalStateT (runReaderT (tc (ts, syns, vs)) $ TCEnv mempty mempty) mempty
 
 localAssumps :: MonadError AstError m => (HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly) -> TCM m a -> TCM m a
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
@@ -199,17 +199,17 @@ tcDefn (Defn an _ (Embed (Poly pt)) _ (Embed e)) = do
       put mempty
 
 tc :: (Fresh m, MonadError AstError m) => FreeProgram -> TCM m FreeProgram
-tc (ts, vs) = do
+tc (ts, syns, vs) = do
       let as   =  foldr defnAssump mempty vs
           cas  =  foldr dataDeclAssumps mempty ts
       localAssumps (as `Map.union`) $ localCAssumps (cas `Map.union`) $ mapM_ tcDefn vs
-      pure (ts, vs)
+      pure (ts, syns, vs)
 
       where defnAssump :: Defn -> HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly
             defnAssump (Defn _ n (Embed pt) _ _) = Map.insert n pt
 
             dataDeclAssumps :: DataDefn -> HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly
-            dataDeclAssumps (DataDefn _ _ _ _ cs) = flip (foldr dataConAssump) cs
+            dataDeclAssumps (DataDefn _ _ _ cs) = flip (foldr dataConAssump) cs
 
             dataConAssump :: DataCon -> HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly
             dataConAssump (DataCon _ i (Embed t)) = Map.insert i t
