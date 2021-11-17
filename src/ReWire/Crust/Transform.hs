@@ -51,9 +51,12 @@ inline (ts, syns, ds) = (ts, syns, ) . flip substs ds <$> subs
 
 -- | Expands type synonyms.
 expandTypeSynonyms :: (MonadCatch m, MonadError AstError m, Fresh m) => FreeProgram -> m FreeProgram
-expandTypeSynonyms (ts, syns, ds) = (ts, , ) <$> syns' <*> (subs >>= flip substs' ds)
+expandTypeSynonyms (ts, syns, ds) = (,,) <$> expandSyns ts <*> syns' <*> expandSyns ds
       where toSubst :: TypeSynonym -> (Name TyConId, Bind [Name Ty] Ty)
             toSubst (TypeSynonym _ n (Embed (Poly t))) = (n, t)
+
+            expandSyns :: (MonadCatch m, MonadError AstError m, Fresh m, Data d) => d -> m d
+            expandSyns d = subs >>= flip substs' d
 
             subs :: (MonadCatch m, MonadError AstError m, Fresh m) => m [(Name TyConId, Bind [Name Ty] Ty)]
             subs = map toSubst <$> syns'
@@ -63,20 +66,20 @@ expandTypeSynonyms (ts, syns, ds) = (ts, , ) <$> syns' <*> (subs >>= flip substs
 
             substs' :: (MonadCatch m, MonadError AstError m, Fresh m, Data d) => [(Name TyConId, Bind [Name Ty] Ty)] -> d -> m d
             substs' subs' = runT (transform $ \ case
-                  TyCon an n -> case lookup n subs' of
+                  t@(TyCon an n) -> case lookup n subs' of
                         Just pt -> do
                               (vs, t') <- unbind pt
                               if length vs == 0
                                     then pure t'
-                                    else pure $ TyCon an n
-                  TyApp an a b -> case findTyCon a of
+                                    else pure t
+                  t@(TyApp an a b) -> case findTyCon a of
                         Just (n, args) -> case lookup n subs' of
                               Just pt -> do
                                     (vs, t') <- unbind pt
                                     let args' = args ++ [b]
-                                    case () of -- Match failure causes search to move on.
-                                          () | length vs > length args'  -> failAt an "Partially-applied type synonym." -- partially applied type syn
-                                          () | length vs == length args' -> pure $ substs (zip vs args') t')
+                                    if length vs == length args'
+                                          then pure $ substs (zip vs args') t'
+                                          else pure t)
 
             findTyCon :: Ty -> Maybe (Name TyConId, [Ty])
             findTyCon = \ case

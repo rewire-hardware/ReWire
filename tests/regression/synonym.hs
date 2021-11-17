@@ -1,13 +1,20 @@
 import ReWire
 import ReWire.Bits
 
+data DWord = DWord W W W W
+
 type W = W8
 
 type SW = StT W
 
 type S = SW I
 
-type RT s = ReT Bit W s ()
+type RU i o s = ReT i o s ()
+
+type RT s = RU Bit W s
+
+dwordZero :: DWord
+dwordZero = DWord zeroW8 zeroW8 zeroW8 zeroW8
 
 begin :: RT (StT W8 (StT W8 I))
 begin = lift (put zeroW8) >>= \zz ->
