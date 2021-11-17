@@ -13,7 +13,8 @@ import ReWire.SYB
 import Control.Arrow ((&&&), second)
 import Control.Monad (foldM, replicateM, void)
 import Data.Foldable (foldl')
-import Data.Maybe (mapMaybe)
+import Data.List (find)
+import Data.Maybe (mapMaybe, fromMaybe)
 import Data.Text (Text, pack, unpack)
 import Language.Haskell.Exts.Fixity (Fixity (..))
 import Language.Haskell.Exts.Pretty (prettyPrint)
@@ -139,10 +140,17 @@ transTyDecl :: (MonadError AstError m, Fresh m) => Renamer -> [M.TypeSynonym] ->
 transTyDecl rn syns = \ case
       TypeDecl l (sDeclHead -> hd) t -> do
             let n = s2n $ rename Type rn $ fst hd
-            t'   <- transTy rn t
-            -- tvs' <- mapM (transTyVar l) $ snd hd
-            pure $ M.TypeSynonym l n (M.fv t' |-> t') : syns
+            t'  <- transTy rn t
+            lhs <- mapM (transTyVar l) $ snd hd
+            let rhs :: [Name M.Ty]
+                rhs = M.fv t'
+
+            let tvs' = map (renumber rhs) lhs
+            pure $ M.TypeSynonym l n (tvs' |-> t') : syns
       _                              -> pure syns
+
+      where renumber :: [Name M.Ty] -> Name M.Ty -> Name M.Ty
+            renumber rhs n = fromMaybe n $ find ((== n2s n) . n2s) rhs
 
 transTySig :: (Fresh m, MonadError AstError m) => Renamer -> [(S.Name (), M.Ty)] -> Decl Annote -> m [(S.Name (), M.Ty)]
 transTySig rn sigs = \ case

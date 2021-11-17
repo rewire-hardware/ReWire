@@ -66,20 +66,19 @@ expandTypeSynonyms (ts, syns, ds) = (,,) <$> expandSyns ts <*> syns' <*> expandS
 
             substs' :: (MonadCatch m, MonadError AstError m, Fresh m, Data d) => [(Name TyConId, Bind [Name Ty] Ty)] -> d -> m d
             substs' subs' = runT (transform $ \ case
-                  t@(TyCon an n) -> case lookup n subs' of
+                  t@(TyCon _ n) -> case lookup n subs' of
                         Just pt -> do
                               (vs, t') <- unbind pt
-                              if length vs == 0
-                                    then pure t'
-                                    else pure t
-                  t@(TyApp an a b) -> case findTyCon a of
+                              case length vs of
+                                    0 -> pure t'
+                  t@(TyApp _ a b) -> case findTyCon a of
                         Just (n, args) -> case lookup n subs' of
                               Just pt -> do
                                     (vs, t') <- unbind pt
                                     let args' = args ++ [b]
-                                    if length vs == length args'
-                                          then pure $ substs (zip vs args') t'
-                                          else pure t)
+                                    case length vs == length args' of
+                                          True -> pure $ substs (zip vs args') t'
+                  )
 
             findTyCon :: Ty -> Maybe (Name TyConId, [Ty])
             findTyCon = \ case
