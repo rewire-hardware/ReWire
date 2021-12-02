@@ -3,14 +3,15 @@ module ReWire.MiniHDL.Syntax where
 
 import Prelude hiding ((<>))
 import Prettyprinter (Pretty (..), parens, (<>), (<+>), vsep, hcat, semi, colon, punctuate, comma, nest, align)
-import ReWire.Pretty (($$))
+import ReWire.Pretty (($$), empty)
 import Data.Text (Text)
+import Data.List (intersperse)
 
 newtype Program = Program { programUnits :: [Unit] }
       deriving (Eq, Show)
 
 instance Pretty Program where
-      pretty (Program units) = vsep (map pretty units)
+      pretty (Program units) = vsep (intersperse empty $ map pretty units)
 
 data Unit = Unit !Entity !Architecture
       deriving (Eq, Show)
