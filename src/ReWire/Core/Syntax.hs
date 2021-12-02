@@ -22,7 +22,7 @@ import ReWire.Annotation
 import Data.Data (Typeable, Data(..))
 import Data.List (intersperse)
 import Data.Text (Text)
-import Prettyprinter (Pretty (..), Doc, vcat, (<+>), nest, hsep, parens, braces, dquotes)
+import Prettyprinter (Pretty (..), Doc, vsep, (<+>), nest, hsep, parens, braces, dquotes)
 import GHC.Generics (Generic)
 import Data.Containers.ListUtils (nubOrd)
 
@@ -147,19 +147,14 @@ instance Pretty Exp where
             Prim _ _ n                                        -> pretty n
             GVar _ t n                                        -> pretty n <+> braces (pretty t)
             LVar _ _ n                                        -> text $ "$" <> showt n
-            Match _ t e p e1 as Nothing                       -> foldr ($+$) empty
+            Match _ t e p e1 as Nothing                       -> nest 2 $ vsep
                   [ text "match" <+> braces (pretty t) <+> pretty e <+> text "of"
-                  , nest 2 (vcat
-                       [ pretty p <+> text "->" <+> text e1
-                             <+> hsep (map (pretty . LVar noAnn dummyTy) as) ])
+                  , pretty p <+> text "->" <+> text e1 <+> hsep (map (pretty . LVar noAnn dummyTy) as)
                   ]
-            Match _ t e p e1 as (Just e2)                     -> foldr ($+$) empty
+            Match _ t e p e1 as (Just e2)                     -> nest 2 $ vsep
                   [ text "match"  <+> braces (pretty t) <+> pretty e <+> text "of"
-                  , nest 2 (vcat
-                        [ pretty p <+> text "->"
-                              <+> text e1 <+> hsep (map (pretty . LVar noAnn dummyTy) as)
-                        , text "_" <+> text "->" <+> pretty e2
-                        ])
+                  , pretty p <+> text "->" <+> text e1 <+> hsep (map (pretty . LVar noAnn dummyTy) as)
+                  , text "_" <+> text "->" <+> pretty e2
                   ]
             NativeVHDL _ _ n                                  -> text "nativeVHDL" <+> dquotes (text n)
 
@@ -209,9 +204,10 @@ instance Annotated Defn where
       ann (Defn a _ _ _) = a
 
 instance Pretty Defn where
-      pretty (Defn _ n ty e) = foldr ($+$) empty
-                             ( (text n <+> text "::" <+> pretty ty)
-                             : [text n <+> hsep (map (text . ("$" <>) . showt) [0 .. arity ty - 1]) <+> text "=", nest 2 $ pretty e])
+      pretty (Defn _ n ty e) = vsep $
+            [ text n <+> text "::" <+> pretty ty
+            , text n <+> hsep (map (text . ("$" <>) . showt) [0 .. arity ty - 1]) <+> text "=" <+> nest 2 (pretty e)
+            ]
 
 ---
 
@@ -244,11 +240,11 @@ instance Monoid Program where
 
 instance Pretty Program where
       pretty p = ppDataDecls (ctors p) $$ text "" $$ ppDefns (defns p)
-            where ppDefns = vcat . intersperse (text "") . map pretty
-                  ppDataDecls = vcat . intersperse (text "") . map pretty
+            where ppDefns = vsep . intersperse (text "") . map pretty
+                  ppDataDecls = vsep . intersperse (text "") . map pretty
 
 ---
--- TODO(chathhorn): should rewrite these to return ([x], x) or non-empty list.
+
 arity :: Ty -> Int
 arity = \ case
       TyApp _ _ (TyApp _ _ (TyCon _ (TyConId "->") _) _) t2 -> 1 + arity t2

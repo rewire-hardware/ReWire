@@ -50,9 +50,9 @@ import safe Data.Text (Text)
 import safe GHC.Generics (Generic (..))
 import safe Prettyprinter
       ( Doc, nest, hsep, parens, dquotes
-      , braces, vcat, (<+>), Pretty (..)
+      , braces, vsep, (<+>), Pretty (..)
       )
-import safe ReWire.Pretty (($+$), empty, text, hang)
+import safe ReWire.Pretty (($$), ($+$), empty, text, hang)
 import TextShow (TextShow (..), fromString)
 import TextShow.Generic (FromGeneric (..), genericShowbPrec)
 
@@ -293,7 +293,7 @@ instance Pretty Exp where
                   (p, e1') <- unbind e1
                   pure $ foldr ($+$) empty
                         [ text "case" <+> braces (pretty t) <+> pretty e <+> text "of"
-                        , nest 2 (vcat $
+                        , nest 2 (vsep $
                               ( pretty p <+> text "->" <+> pretty e1' )
                               : maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
                               )
@@ -301,7 +301,7 @@ instance Pretty Exp where
             Match _ t e p e1 as e2                       -> runFreshM $
                   pure $ foldr ($+$) empty
                         [ text "match" <+> braces (pretty t) <+> pretty e <+> text "of"
-                        , nest 2 (vcat $
+                        , nest 2 (vsep $
                               ( pretty p <+> text "->" <+> pretty e1 <+> hsep (map pretty as) )
                               : maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
                               )
@@ -431,9 +431,9 @@ instance Annotated DataDefn where
       ann (DataDefn a _ _ _) = a
 
 instance Pretty DataDefn where
-      pretty (DataDefn _ n k cs) = foldr ($+$) empty $
-                  (text "data" <+> pretty n <+> text "::" <+> pretty k <+> text "where")
-                  : map (nest 2 . pretty) cs
+      pretty (DataDefn _ n k cs) = nest 2 $ vsep $
+            (text "data" <+> pretty n <+> text "::" <+> pretty k <+> text "where")
+            : map pretty cs
 ---
 
 data TypeSynonym = TypeSynonym
@@ -472,7 +472,7 @@ instance NFData Program where
 instance Pretty Program where
       pretty (Program p) = runFreshM $ do
             (ts, syns, vs) <- untrec p
-            pure $ vcat $ intersperse (text "")
+            pure $ vsep $ intersperse (text "")
                   $ map pretty ts ++ map pretty syns ++ map pretty vs
 
 ---

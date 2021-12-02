@@ -2,7 +2,7 @@
 module ReWire.MiniHDL.Syntax where
 
 import Prelude hiding ((<>))
-import Prettyprinter (Pretty (..), parens, (<>), (<+>), vcat, hcat, semi, colon, punctuate, comma, nest)
+import Prettyprinter (Pretty (..), parens, (<>), (<+>), vsep, hcat, semi, colon, punctuate, comma, nest, align)
 import ReWire.Pretty (($$))
 import Data.Text (Text)
 
@@ -10,16 +10,16 @@ newtype Program = Program { programUnits :: [Unit] }
       deriving (Eq, Show)
 
 instance Pretty Program where
-      pretty (Program units) = vcat (map pretty units)
+      pretty (Program units) = vsep (map pretty units)
 
 data Unit = Unit !Entity !Architecture
       deriving (Eq, Show)
 
 instance Pretty Unit where
       pretty (Unit ent arch) = pretty "library ieee;"
-                           $$ pretty "use ieee.std_logic_1164.all;"
-                           $$ pretty ent
-                           $$ pretty arch
+            $$ pretty "use ieee.std_logic_1164.all;"
+            $$ pretty ent
+            $$ pretty arch
 
 type Name = Text
 
@@ -29,9 +29,8 @@ data Entity = Entity
       } deriving (Eq, Show)
 
 instance Pretty Entity where
-      pretty (Entity n ps) = pretty "entity" <+> pretty n <+> pretty "is"
-                         $$ nest 2 (pretty "port" <+> parens (vcat (punctuate semi (map pretty ps))) <> semi)
-                         $$ pretty "end" <+> pretty n <> semi
+      pretty (Entity n ps) = nest 2 (pretty "entity" <+> pretty n <+> pretty "is" $$ pretty "port" <+> parens (nest 2 $ vsep $ punctuate semi $ map pretty ps) <> semi)
+            $$ pretty "end" <+> pretty n <> semi
 
 data Architecture = Architecture
       { archName       :: !Name
@@ -42,12 +41,11 @@ data Architecture = Architecture
       } deriving (Eq, Show)
 
 instance Pretty Architecture where
-      pretty (Architecture n1 n2 sigs comps ss) = pretty "architecture" <+> pretty n1 <+> pretty "of" <+> pretty n2 <+> pretty "is"
-                                              $$ nest 2 (vcat (map pretty sigs))
-                                              $$ nest 2 (vcat (map pretty comps))
-                                              $$ pretty "begin"
-                                              $$ nest 2 (vcat (map pretty ss))
-                                              $$ pretty "end" <+> pretty n1 <> semi
+      pretty (Architecture n1 n2 sigs comps ss) = nest 2 (vsep $ [ pretty "architecture" <+> pretty n1 <+> pretty "of" <+> pretty n2 <+> pretty "is" ]
+                ++ map pretty sigs
+                ++ map pretty comps)
+            $$ nest 2 (vsep $ pretty "begin" : map pretty ss)
+            $$ pretty "end" <+> pretty n1 <> semi
 
 data Component = Component
       { componentName  :: !Name
@@ -55,9 +53,8 @@ data Component = Component
       } deriving (Eq, Show)
 
 instance Pretty Component where
-      pretty (Component n ps) = pretty "component" <+> pretty n
-                            $$ nest 2 (pretty "port" <+> parens (vcat (punctuate semi (map pretty ps))) <> semi)
-                            $$ pretty "end component;"
+      pretty (Component n ps) = nest 2 (pretty "component" <+> pretty n $$ pretty "port" <+> parens (nest 2 $ vsep (punctuate semi (map pretty ps))) <> semi)
+            $$ pretty "end component;"
 
 data Port = Port
       { portName      :: !Name
@@ -105,22 +102,24 @@ data Stmt = Assign !LHS !Expr
 instance Pretty Stmt where
       pretty = \ case
             Assign lhs e           -> pretty lhs <+> pretty "<=" <+> pretty e <> semi
-            WithAssign e lhs bs mb -> pretty "with" <+> pretty e <+> pretty "select" <+> pretty lhs <+> pretty "<=" <+> vcat (punctuate comma branches) <> semi
+            WithAssign e lhs bs mb -> nest 2 ((pretty "with" <+> pretty e)
+                        $$ nest 2 (pretty "select" <+> pretty lhs <+> pretty "<=" <+> align (vsep $ punctuate comma branches) <> semi))
                   where branches = map (\ (e1, e2) -> pretty e1 <+> pretty "when" <+> pretty e2) bs
                                 ++ maybe [] (\ e -> [pretty e <+> pretty "when others"]) mb
             Instantiate n1 n2 pm   -> pretty n1 <> colon <+> pretty n2 <+> pretty "port map" <+> parens (pretty pm) <> semi
             ClkProcess n ss        -> pretty "process" <> parens (pretty n)
-                                  $$ pretty "begin"
-                                  $$ nest 2 (pretty "if" <+> pretty n <> pretty "'event and" <+> pretty n <+> pretty "= '1' then")
-                                  $$ nest 4 (vcat (map pretty ss))
-                                  $$ nest 2 (pretty "end if;")
-                                  $$ pretty "end process;"
+                  $$ nest 2 (vsep
+                        [ pretty "begin"
+                        , nest 2 (vsep $ (pretty "if" <+> pretty n <> pretty "'event and" <+> pretty n <+> pretty "= '1' then") : map pretty ss)
+                        , pretty "end if;"
+                        ])
+                  $$ pretty "end process;"
 
 newtype PortMap = PortMap [(Name, Expr)]
       deriving (Eq, Show)
 
 instance Pretty PortMap where
-      pretty (PortMap ps) = vcat (punctuate comma (map (\ (n, e) -> pretty n <+> pretty "=>" <+> pretty e) ps))
+      pretty (PortMap ps) = vsep (punctuate comma (map (\ (n, e) -> pretty n <+> pretty "=>" <+> pretty e) ps))
 
 newtype LHS = LHSName Name
       deriving (Eq, Show)

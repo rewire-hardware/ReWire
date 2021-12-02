@@ -58,23 +58,23 @@ transStmt = \ case
 
 transExpr :: MonadError AstError m => V.Expr -> m F.Exp
 transExpr = \ case
-      V.ExprName n -> pure $ F.Ref $ F.Id n
-      V.ExprBoolConst False -> pure $ F.UInt 1 0
-      V.ExprBoolConst True -> pure $ F.UInt 1 1
-      V.ExprBit V.Zero -> pure $ F.UInt 1 0
-      V.ExprBit V.One -> pure $ F.UInt 1 1
-      V.ExprBitString []  -> pure $ F.UInt 0 0
-      V.ExprBitString [b] -> transExpr $ V.ExprBit b
+      V.ExprName n                -> pure $ F.Ref $ F.Id n
+      V.ExprBoolConst False       -> pure $ F.UInt 1 0
+      V.ExprBoolConst True        -> pure $ F.UInt 1 1
+      V.ExprBit V.Zero            -> pure $ F.UInt 1 0
+      V.ExprBit V.One             -> pure $ F.UInt 1 1
+      V.ExprBitString []          -> pure $ F.UInt 0 0
+      V.ExprBitString [b]         -> transExpr $ V.ExprBit b
       V.ExprBitString (V.Zero:bs) -> transExpr (V.ExprBitString bs) >>= \ case
             F.UInt w v -> pure $ F.UInt (w + 1) v
             _          -> failAt noAnn "ToLoFIRRTL.transExpr: this shouldn't happen."
-      V.ExprBitString (V.One:bs) -> transExpr (V.ExprBitString bs) >>= \ case
+      V.ExprBitString (V.One:bs)  -> transExpr (V.ExprBitString bs) >>= \ case
             F.UInt w v -> pure $ F.UInt (w + 1) (v .|. bit (fromIntegral w))
             _          -> failAt noAnn "ToLoFIRRTL.transExpr: this shouldn't happen."
-      V.ExprConcat e1 e2 -> F.Cat <$> transExpr e1 <*> transExpr e2
-      V.ExprSlice e l h -> F.Bits <$> transExpr e <*> pure (toNat h) <*> pure (toNat l)
-      V.ExprIsEq e1 e2 -> F.Eq <$> transExpr e1 <*> transExpr e2
-      V.ExprAnd e1 e2 -> F.And <$> transExpr e1 <*> transExpr e2
+      V.ExprConcat e1 e2          -> F.Cat <$> transExpr e1 <*> transExpr e2
+      V.ExprSlice e l h           -> F.Bits <$> transExpr e <*> pure (toNat h) <*> pure (toNat l)
+      V.ExprIsEq e1 e2            -> F.Eq <$> transExpr e1 <*> transExpr e2
+      V.ExprAnd e1 e2             -> F.And <$> transExpr e1 <*> transExpr e2
       where toNat :: Integral a => a -> Natural -- TODO(chathhorn)
             toNat a | a >= 0 = fromIntegral a
             toNat _          = 0
