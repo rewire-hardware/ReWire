@@ -30,7 +30,7 @@ data Entity = Entity
       } deriving (Eq, Show)
 
 instance Pretty Entity where
-      pretty (Entity n ps) = nest 2 (pretty "entity" <+> pretty n <+> pretty "is" $$ pretty "port" <+> parens (nest 2 $ vsep $ punctuate semi $ map pretty ps) <> semi)
+      pretty (Entity n ps) = nest 2 (pretty "entity" <+> pretty n <+> pretty "is" $$ pretty "port" <+> parens (align $ vsep $ punctuate semi $ map pretty ps) <> semi)
             $$ pretty "end" <+> pretty n <> semi
 
 data Architecture = Architecture
@@ -54,7 +54,7 @@ data Component = Component
       } deriving (Eq, Show)
 
 instance Pretty Component where
-      pretty (Component n ps) = nest 2 (pretty "component" <+> pretty n $$ pretty "port" <+> parens (nest 2 $ vsep (punctuate semi (map pretty ps))) <> semi)
+      pretty (Component n ps) = nest 2 (pretty "component" <+> pretty n $$ pretty "port" <+> parens (align $ vsep (punctuate semi (map pretty ps))) <> semi)
             $$ pretty "end component;"
 
 data Port = Port
@@ -107,7 +107,7 @@ instance Pretty Stmt where
                         $$ nest 2 (pretty "select" <+> pretty lhs <+> pretty "<=" <+> align (vsep $ punctuate comma branches) <> semi))
                   where branches = map (\ (e1, e2) -> pretty e1 <+> pretty "when" <+> pretty e2) bs
                                 ++ maybe [] (\ e -> [pretty e <+> pretty "when others"]) mb
-            Instantiate n1 n2 pm   -> pretty n1 <> colon <+> pretty n2 <+> pretty "port map" <+> parens (pretty pm) <> semi
+            Instantiate n1 n2 pm   -> pretty n1 <> colon <+> pretty n2 <+> pretty "port map" <+> parens (align $ pretty pm) <> semi
             ClkProcess n ss        -> pretty "process" <> parens (pretty n)
                   $$ nest 2 (vsep
                         [ pretty "begin"
