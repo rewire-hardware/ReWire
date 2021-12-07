@@ -8,13 +8,15 @@ import ReWire.Error
 import ReWire.Core.Mangle
 import ReWire.MiniHDL.Syntax as M
 import ReWire.Pretty
+import ReWire.Flags (Flag (..))
 
 import Control.Monad (zipWithM)
 import Control.Monad.Reader (ReaderT (..), asks)
 import Control.Monad.State (StateT (..), get, put, lift)
 import Data.List (find, foldl')
+import Data.List.Split (splitOn)
 import Data.Bits (testBit)
-import Data.Text (Text)
+import Data.Text (Text, pack)
 
 import TextShow (showt)
 
@@ -226,8 +228,8 @@ mkDefnArch (Defn _ n _ e) = do
       (sigs, comps, _) <- get
       pure $ Architecture (mangle n <> "_impl") (mangle n) sigs comps (stmts ++ [Assign (LHSName "res") (ExprName nres)])
 
-compileDefn :: Monad m => [Text] -> Defn -> CM m Unit
-compileDefn uses = \ case
+compileDefn :: Monad m => [Flag] -> Defn -> CM m Unit
+compileDefn flags = \ case
       d | defnName d == "Main.start" -> do
             let t = defnTy d
                 e = defnBody d
@@ -248,11 +250,11 @@ compileDefn uses = \ case
                                     addSignal "current_state" (TyRegister "clk" statesize)
                                     addSignal "done_or_next_state" (TyStdLogicVector statesize)
                                     addSignal "next_state" (TyStdLogicVector statesize)
-                                    let ports       = [Port "clk" In TyClock,
-                                                       Port "rst" In TyStdLogic,
-                                                       Port "inp" In (TyStdLogicVector insize),
-                                                       Port "outp" Out (TyStdLogicVector (1 + max outsize ressize))]
-                                                       -- TODO(chathhorn): suspect "max outsize resize" should be "max ressize (outsize + Rsize + statesize)"
+                                    let ports       = [Port "clk"  In TyClock,
+                                                       Port rst    In TyStdLogic,
+                                                       Port "inp"  In (TyStdLogicVector insize),
+                                                       -- Port "outp" Out (TyStdLogicVector (1 + max outsize ressize))]
+                                                       Port "outp" Out (TyStdLogicVector outsize)]
                                         pad_for_out = ExprBitString (replicate (max 0 (ressize - outsize)) Zero)
                                         pad_for_res = ExprBitString (replicate (max 0 (outsize - ressize)) Zero)
                                     (sigs, comps, _) <- get
@@ -269,23 +271,40 @@ compileDefn uses = \ case
                                                     (PortMap [("arg0", ExprSlice (ExprName "current_state") (1 + outsize) (1 + outsize + arg0size - 1)),
                                                               ("arg1", ExprName "inp"),
                                                               ("res", ExprName "loop_out")]),
-                                                  WithAssign (ExprName "rst") (LHSName "next_state")
-                                                   [(ExprName "start_state", ExprBit One)]
+                                                  WithAssign (ExprName rst) (LHSName "next_state")
+                                                   [(ExprName "start_state", ExprBit rstSignal)]
                                                    (Just (ExprName "done_or_next_state")),
                                                   WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "done_or_next_state")
                                                    [(ExprName "loop_out", ExprBitString [One])]
                                                    (Just (ExprName "current_state")),
                                                   ClkProcess "clk"
                                                    [Assign (LHSName "current_state") (ExprName "next_state")],
-                                                  WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "outp")
-                                                   [(ExprConcat (ExprBitString [One]) (ExprConcat (ExprSlice (ExprName "current_state") 1 outsize) pad_for_out), ExprBitString [One])]
-                                                   (Just (ExprConcat (ExprBitString [Zero]) (ExprConcat (ExprSlice (ExprName "current_state") 1 ressize) pad_for_res)))
+                                                  -- WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "outp")
+                                                  --  [(ExprConcat (ExprBitString [One]) (ExprConcat (ExprSlice (ExprName "current_state") 1 outsize) pad_for_out), ExprBitString [One])]
+                                                  --  (Just (ExprConcat (ExprBitString [Zero]) (ExprConcat (ExprSlice (ExprName "current_state") 1 ressize) pad_for_res)))
+                                                   Assign (LHSName "outp") (ExprSlice (ExprName "current_state") 1 outsize)
+                                                  --  [(ExprConcat (ExprBitString [One]) (ExprConcat (ExprSlice (ExprName "current_state") 1 outsize) pad_for_out), ExprBitString [One])]
+                                                  --  (Just (ExprConcat (ExprBitString [Zero]) (ExprConcat (ExprSlice (ExprName "current_state") 1 ressize) pad_for_res)))
                                                  ]
                                              )
                                            )
                               _ -> failAt (ann d) $ "compileDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " <> prettyPrint e
                   _ -> failAt (ann d) $ "compileDefn: Main.start has illegal type: " <> prettyPrint t
       d -> Unit uses <$> mkDefnEntity d <*> mkDefnArch d
+      where uses :: [Text]
+            uses = "ieee.std_logic_1164.all" : concatMap getUses flags
 
-compileProgram :: Monad m => [Text] -> C.Program -> SyntaxErrorT m M.Program
-compileProgram uses p = fmap fst $ flip runReaderT (ctors p, defns p) $ flip runStateT ([], [], 0) $ M.Program <$> mapM (compileDefn uses) (defns p)
+            getUses :: Flag -> [Text]
+            getUses (FlagPkgs pkgs) = map pack $ splitOn "," pkgs
+            getUses _               = []
+
+            rstSignal :: Bit
+            rstSignal = if FlagInvertReset `elem` flags then Zero else One
+
+            rst :: Text
+            rst = if FlagInvertReset `elem` flags then "rst_n" else "rst"
+
+compileProgram :: Monad m => [Flag] -> C.Program -> SyntaxErrorT m M.Program
+compileProgram flags p = fmap fst $ flip runReaderT (ctors p, defns p) $ flip runStateT ([], [], 0) $ M.Program <$> mapM (compileDefn flags) (defns p)
+
+

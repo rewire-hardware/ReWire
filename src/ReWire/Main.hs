@@ -34,6 +34,7 @@ options :: [OptDescr Flag]
 options =
        [ Option ['v'] ["verbose"]            (NoArg FlagV)                         "More verbose output."
        , Option ['f'] ["firrtl"]             (NoArg FlagFirrtl)                    "Produce FIRRTL output instead of VHDL."
+       , Option []    ["invert-reset"]       (NoArg FlagInvertReset)               "Invert the implicitly generated reset signal."
        , Option []    ["dpass1", "dhask1" ]  (NoArg FlagDHask1)                    "Dump pass 1: pre-desugar haskell source."
        , Option []    ["dpass2", "dhask2" ]  (NoArg FlagDHask2)                    "Dump pass 2: post-desugar haskell source."
        , Option []    ["dpass3", "dcrust1"]  (NoArg FlagDCrust1)                   "Dump pass 3: post-desugar crust source."
@@ -85,10 +86,6 @@ main = do
             getLoadPathEntries (FlagLoadPath ds) =  splitOn "," ds
             getLoadPathEntries _                 =  []
 
-            getUses :: Flag -> [Text]
-            getUses (FlagPkgs pkgs) = map pack $ splitOn "," pkgs
-            getUses _               = []
-
             compileFile :: [Flag] -> LoadPath -> String -> IO ()
             compileFile flags lp filename = do
                   when (FlagV `elem` flags) $ putStrLn $ "Compiling: " ++ filename
@@ -106,11 +103,8 @@ main = do
                                     when (FlagV `elem` flags) $ T.putStrLn "\n## Show core:\n"
                                     when (FlagV `elem` flags) $ T.putStrLn $ showt $ unAnn b
                               if FlagFirrtl `elem` flags
-                                    then compileProgram uses b >>= toLoFirrtl >>= writeOutput
-                                    else compileProgram uses a >>= writeOutput
-
-                        uses :: [Text]
-                        uses = "ieee.std_logic_1164.all" : concatMap getUses flags
+                                    then compileProgram flags b >>= toLoFirrtl >>= writeOutput
+                                    else compileProgram flags a >>= writeOutput
 
                         writeOutput :: Pretty a => a -> SyntaxErrorT IO ()
                         writeOutput a = do
