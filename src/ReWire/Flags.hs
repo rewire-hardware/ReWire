@@ -14,6 +14,7 @@ data Flag = FlagO !String
           | FlagDCore1
           | FlagDCore2
           | FlagDTypes
+          | FlagInvertReset
           | FlagPkgs !String
           | FlagLoadPath !String
       deriving (Eq, Show)
