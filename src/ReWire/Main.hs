@@ -25,29 +25,28 @@ import System.IO (stderr)
 
 import TextShow (showt)
 
-import Data.Text (pack)
+import Data.Text (pack, Text)
 import qualified Data.Text.IO as T
 
 import Paths_ReWire (getDataFileName)
 
 options :: [OptDescr Flag]
 options =
-       [ Option ['v'] ["verbose"]           (NoArg FlagV)       "More verbose output."
-       , Option ['f'] ["firrtl"]            (NoArg FlagFirrtl)  "Produce FIRRTL output instead of VHDL."
-       , Option []    ["dpass1", "dhask1" ] (NoArg FlagDHask1)  "Dump pass 1: pre-desugar haskell source."
-       , Option []    ["dpass2", "dhask2" ] (NoArg FlagDHask2)  "Dump pass 2: post-desugar haskell source."
-       , Option []    ["dpass3", "dcrust1"] (NoArg FlagDCrust1) "Dump pass 3: post-desugar crust source."
-       , Option []    ["dpass4", "dcrust2"] (NoArg FlagDCrust2) "Dump pass 4: post-inlining crust source."
-       , Option []    ["dpass5", "dcrust3"] (NoArg FlagDCrust3) "Dump pass 5: pre-purify crust source."
-       , Option []    ["dpass6", "dcrust4"] (NoArg FlagDCrust4) "Dump pass 6: post-purify crust source."
-       , Option []    ["dpass7", "dcrust5"] (NoArg FlagDCrust5) "Dump pass 7: post-second-lambda-lifting crust source."
-       , Option []    ["dpass8", "dcore1"  ] (NoArg FlagDCore1)   "Dump pass 8: core source."
-       , Option []    ["dpass9", "dcore2"  ] (NoArg FlagDCore2)   "Dump pass 9: core source after purging empty types."
-       , Option []    ["dtypes"]            (NoArg FlagDTypes)  "Enable extra typechecking after various IR transformations."
-       , Option ['o'] []                    (ReqArg FlagO "filename.vhd")
-            "Name for VHDL output file."
-       , Option []    ["loadpath"]          (ReqArg FlagLoadPath "dir1,dir2,...")
-            "Additional directories for loadpath."
+       [ Option ['v'] ["verbose"]            (NoArg FlagV)                         "More verbose output."
+       , Option ['f'] ["firrtl"]             (NoArg FlagFirrtl)                    "Produce FIRRTL output instead of VHDL."
+       , Option []    ["dpass1", "dhask1" ]  (NoArg FlagDHask1)                    "Dump pass 1: pre-desugar haskell source."
+       , Option []    ["dpass2", "dhask2" ]  (NoArg FlagDHask2)                    "Dump pass 2: post-desugar haskell source."
+       , Option []    ["dpass3", "dcrust1"]  (NoArg FlagDCrust1)                   "Dump pass 3: post-desugar crust source."
+       , Option []    ["dpass4", "dcrust2"]  (NoArg FlagDCrust2)                   "Dump pass 4: post-inlining crust source."
+       , Option []    ["dpass5", "dcrust3"]  (NoArg FlagDCrust3)                   "Dump pass 5: pre-purify crust source."
+       , Option []    ["dpass6", "dcrust4"]  (NoArg FlagDCrust4)                   "Dump pass 6: post-purify crust source."
+       , Option []    ["dpass7", "dcrust5"]  (NoArg FlagDCrust5)                   "Dump pass 7: post-second-lambda-lifting crust source."
+       , Option []    ["dpass8", "dcore1"  ] (NoArg FlagDCore1)                    "Dump pass 8: core source."
+       , Option []    ["dpass9", "dcore2"  ] (NoArg FlagDCore2)                    "Dump pass 9: core source after purging empty types."
+       , Option []    ["dtypes"]             (NoArg FlagDTypes)                    "Enable extra typechecking after various IR transformations."
+       , Option ['o'] []                     (ReqArg FlagO        "filename.vhd")  "Name for VHDL output file."
+       , Option ['p'] ["packages"]           (ReqArg FlagPkgs     "pkg1,pkg2,...") "Packages to use for native VHDL components (e.g., ieee.std_logic_1164.all)."
+       , Option []    ["loadpath"]           (ReqArg FlagLoadPath "dir1,dir2,...") "Additional directories for loadpath."
        ]
 
 exitUsage :: IO ()
@@ -55,7 +54,7 @@ exitUsage = T.hPutStr stderr (pack $ usageInfo "Usage: rwc [OPTION...] <filename
 
 getSystemLoadPath :: IO [FilePath]
 getSystemLoadPath = do
-      lib <- getDataFileName "src/lib"
+      lib   <- getDataFileName "src/lib"
       rwlib <- getDataFileName "src/rwlib"
       pure $ "." : [lib, rwlib]
 
@@ -67,9 +66,9 @@ main = do
             mapM_ (T.hPutStrLn stderr . pack) errs
             exitUsage
 
-      let userLP                   =  concatMap getLoadPathEntries flags
-      systemLP                     <- getSystemLoadPath
-      let lp                       =  userLP ++ systemLP
+      let userLP                = concatMap getLoadPathEntries flags
+      systemLP                 <- getSystemLoadPath
+      let lp                    = userLP ++ systemLP
 
       when (FlagV `elem` flags) $ putStrLn ("loadpath: " ++ intercalate "," lp)
 
@@ -85,6 +84,10 @@ main = do
             getLoadPathEntries :: Flag -> [FilePath]
             getLoadPathEntries (FlagLoadPath ds) =  splitOn "," ds
             getLoadPathEntries _                 =  []
+
+            getUses :: Flag -> [Text]
+            getUses (FlagPkgs pkgs) = map pack $ splitOn "," pkgs
+            getUses _               = []
 
             compileFile :: [Flag] -> LoadPath -> String -> IO ()
             compileFile flags lp filename = do
@@ -103,8 +106,11 @@ main = do
                                     when (FlagV `elem` flags) $ T.putStrLn "\n## Show core:\n"
                                     when (FlagV `elem` flags) $ T.putStrLn $ showt $ unAnn b
                               if FlagFirrtl `elem` flags
-                                    then compileProgram b >>= toLoFirrtl >>= writeOutput
-                                    else compileProgram a >>= writeOutput
+                                    then compileProgram uses b >>= toLoFirrtl >>= writeOutput
+                                    else compileProgram uses a >>= writeOutput
+
+                        uses :: [Text]
+                        uses = "ieee.std_logic_1164.all" : concatMap getUses flags
 
                         writeOutput :: Pretty a => a -> SyntaxErrorT IO ()
                         writeOutput a = do

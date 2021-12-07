@@ -195,7 +195,16 @@ compileExp e_ = case e of
                                                         ++ [("res", ExprName n_gid)])
                         pure (stmts_escr ++ [Instantiate n_call (mangle gid) pm], n_gid)
             _  -> failAt (ann e_) $ "compileExp: Encountered match in function position in " <> prettyPrint e_
-      NativeVHDL an t i -> do
+      NativeVHDL _ t i -> do
+            n           <- (<> "_res") <$> freshName i
+            let tres    = snd $ flattenArrow t
+                size    = sizeof tres
+            addSignal n (TyStdLogicVector size)
+            sssns       <- mapM compileExp eargs
+            let stmts   =  concatMap fst sssns
+                ns      =  map snd sssns
+            pure (stmts ++ [Assign (LHSName n) (ExprFunCall i (map ExprName ns))], n)
+      NativeVHDLComponent an t i -> do
             n           <- (<> "_res") <$> freshName i
             n_call      <- (<> "_call") <$> freshName i
             let tres    =  snd $ flattenArrow t
@@ -217,8 +226,8 @@ mkDefnArch (Defn _ n _ e) = do
       (sigs, comps, _) <- get
       pure $ Architecture (mangle n <> "_impl") (mangle n) sigs comps (stmts ++ [Assign (LHSName "res") (ExprName nres)])
 
-compileDefn :: Monad m => Defn -> CM m Unit
-compileDefn = \ case
+compileDefn :: Monad m => [Text] -> Defn -> CM m Unit
+compileDefn uses = \ case
       d | defnName d == "Main.start" -> do
             let t = defnTy d
                 e = defnBody d
@@ -247,7 +256,7 @@ compileDefn = \ case
                                         pad_for_out = ExprBitString (replicate (max 0 (ressize - outsize)) Zero)
                                         pad_for_res = ExprBitString (replicate (max 0 (outsize - ressize)) Zero)
                                     (sigs, comps, _) <- get
-                                    pure (Unit
+                                    pure (Unit uses
                                              (Entity "top_level" ports)
                                              (Architecture
                                                  "top_level_impl"
@@ -276,7 +285,7 @@ compileDefn = \ case
                                            )
                               _ -> failAt (ann d) $ "compileDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " <> prettyPrint e
                   _ -> failAt (ann d) $ "compileDefn: Main.start has illegal type: " <> prettyPrint t
-      d -> Unit <$> mkDefnEntity d <*> mkDefnArch d
+      d -> Unit uses <$> mkDefnEntity d <*> mkDefnArch d
 
-compileProgram :: Monad m => C.Program -> SyntaxErrorT m M.Program
-compileProgram p = fmap fst $ flip runReaderT (ctors p, defns p) $ flip runStateT ([], [], 0) $ M.Program <$> mapM compileDefn (defns p)
+compileProgram :: Monad m => [Text] -> C.Program -> SyntaxErrorT m M.Program
+compileProgram uses p = fmap fst $ flip runReaderT (ctors p, defns p) $ flip runStateT ([], [], 0) $ M.Program <$> mapM (compileDefn uses) (defns p)

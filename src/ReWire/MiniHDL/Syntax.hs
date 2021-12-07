@@ -1,11 +1,13 @@
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE Safe, OverloadedStrings #-}
 module ReWire.MiniHDL.Syntax where
 
 import Prelude hiding ((<>))
-import Prettyprinter (Pretty (..), parens, (<>), (<+>), vsep, hcat, semi, colon, punctuate, comma, nest, align)
-import ReWire.Pretty (($$), empty)
-import Data.Text (Text)
+import Prettyprinter (Pretty (..), parens, (<>), (<+>), vsep, hcat, hsep, semi, colon, punctuate, comma, nest, align, Doc)
+import ReWire.Pretty (($$), empty, text)
+import Data.Text (Text, splitOn)
 import Data.List (intersperse)
+import Data.Containers.ListUtils (nubOrd)
+import Data.Maybe (catMaybes, listToMaybe)
 
 newtype Program = Program { programUnits :: [Unit] }
       deriving (Eq, Show)
@@ -13,14 +15,20 @@ newtype Program = Program { programUnits :: [Unit] }
 instance Pretty Program where
       pretty (Program units) = vsep (intersperse empty $ map pretty units)
 
-data Unit = Unit !Entity !Architecture
+data Unit = Unit ![Text] !Entity !Architecture
       deriving (Eq, Show)
 
 instance Pretty Unit where
-      pretty (Unit ent arch) = pretty "library ieee;"
-            $$ pretty "use ieee.std_logic_1164.all;"
+      pretty (Unit uses ent arch) = prettyImports "library" (getLibs uses)
+            $$ prettyImports "use" uses
             $$ pretty ent
             $$ pretty arch
+
+            where getLibs :: [Text] -> [Text]
+                  getLibs = filter (/= "work") . nubOrd . catMaybes . map (listToMaybe . splitOn ".")
+
+                  prettyImports :: Text -> [Text] -> Doc ann
+                  prettyImports pre = vsep . map ((pretty pre <+>) . (<> semi) . pretty)
 
 type Name = Text
 
@@ -30,8 +38,8 @@ data Entity = Entity
       } deriving (Eq, Show)
 
 instance Pretty Entity where
-      pretty (Entity n ps) = nest 2 (pretty "entity" <+> pretty n <+> pretty "is" $$ pretty "port" <+> parens (align $ vsep $ punctuate semi $ map pretty ps) <> semi)
-            $$ pretty "end" <+> pretty n <> semi
+      pretty (Entity n ps) = nest 2 (text "entity" <+> text n <+> text "is" $$ text "port" <+> parens (align $ vsep $ punctuate semi $ map pretty ps) <> semi)
+            $$ text "end" <+> text n <> semi
 
 data Architecture = Architecture
       { archName       :: !Name
@@ -42,11 +50,11 @@ data Architecture = Architecture
       } deriving (Eq, Show)
 
 instance Pretty Architecture where
-      pretty (Architecture n1 n2 sigs comps ss) = nest 2 (vsep $ [ pretty "architecture" <+> pretty n1 <+> pretty "of" <+> pretty n2 <+> pretty "is" ]
+      pretty (Architecture n1 n2 sigs comps ss) = nest 2 (vsep $ [ text "architecture" <+> text n1 <+> text "of" <+> text n2 <+> text "is" ]
                 ++ map pretty sigs
                 ++ map pretty comps)
-            $$ nest 2 (vsep $ pretty "begin" : map pretty ss)
-            $$ pretty "end" <+> pretty n1 <> semi
+            $$ nest 2 (vsep $ text "begin" : map pretty ss)
+            $$ text "end" <+> text n1 <> semi
 
 data Component = Component
       { componentName  :: !Name
@@ -54,8 +62,8 @@ data Component = Component
       } deriving (Eq, Show)
 
 instance Pretty Component where
-      pretty (Component n ps) = nest 2 (pretty "component" <+> pretty n $$ pretty "port" <+> parens (align $ vsep (punctuate semi (map pretty ps))) <> semi)
-            $$ pretty "end component;"
+      pretty (Component n ps) = nest 2 (text "component" <+> text n $$ text "port" <+> parens (align $ vsep (punctuate semi (map pretty ps))) <> semi)
+            $$ text "end component;"
 
 data Port = Port
       { portName      :: !Name
@@ -64,7 +72,7 @@ data Port = Port
       } deriving (Eq, Show)
 
 instance Pretty Port where
-      pretty (Port n d t) = pretty n <> colon <+> pretty d <+> pretty t
+      pretty (Port n d t) = text n <> colon <+> pretty d <+> pretty t
 
 data Signal = Signal
       { signalName :: !Name
@@ -72,13 +80,13 @@ data Signal = Signal
       } deriving (Eq, Show)
 
 instance Pretty Signal where
-      pretty (Signal n t) = pretty "signal" <+> pretty n <> colon <+> pretty t <> semi
+      pretty (Signal n t) = text "signal" <+> text n <> colon <+> pretty t <> semi
 
 data Direction = In | Out deriving (Eq, Show)
 
 instance Pretty Direction where
-      pretty In  = pretty "in"
-      pretty Out = pretty "out"
+      pretty In  = text "in"
+      pretty Out = text "out"
 
 data Ty = TyStdLogic
         | TyStdLogicVector !Int
@@ -88,11 +96,11 @@ data Ty = TyStdLogic
         deriving (Eq, Show)
 
 instance Pretty Ty where
-      pretty TyStdLogic           = pretty "std_logic"
-      pretty (TyStdLogicVector n) = pretty "std_logic_vector" <+> parens (pretty "0 to" <+> pretty (n - 1))
-      pretty TyBool               = pretty "boolean"
-      pretty TyClock              = pretty "std_logic"
-      pretty (TyRegister _ n)     = pretty "std_logic_vector" <+> parens (pretty "0 to" <+> pretty (n - 1))
+      pretty TyStdLogic           = text "std_logic"
+      pretty (TyStdLogicVector n) = text "std_logic_vector" <+> parens (text "0 to" <+> pretty (n - 1))
+      pretty TyBool               = text "boolean"
+      pretty TyClock              = text "std_logic"
+      pretty (TyRegister _ n)     = text "std_logic_vector" <+> parens (text "0 to" <+> pretty (n - 1))
 
 data Stmt = Assign !LHS !Expr
           | WithAssign !Expr !LHS ![(Expr, Expr)] !(Maybe Expr)
@@ -102,31 +110,31 @@ data Stmt = Assign !LHS !Expr
 
 instance Pretty Stmt where
       pretty = \ case
-            Assign lhs e           -> pretty lhs <+> pretty "<=" <+> pretty e <> semi
-            WithAssign e lhs bs mb -> nest 2 ((pretty "with" <+> pretty e)
-                        $$ nest 2 (pretty "select" <+> pretty lhs <+> pretty "<=" <+> align (vsep $ punctuate comma branches) <> semi))
-                  where branches = map (\ (e1, e2) -> pretty e1 <+> pretty "when" <+> pretty e2) bs
-                                ++ maybe [] (\ e -> [pretty e <+> pretty "when others"]) mb
-            Instantiate n1 n2 pm   -> pretty n1 <> colon <+> pretty n2 <+> pretty "port map" <+> parens (align $ pretty pm) <> semi
-            ClkProcess n ss        -> pretty "process" <> parens (pretty n)
+            Assign lhs e           -> pretty lhs <+> text "<=" <+> pretty e <> semi
+            WithAssign e lhs bs mb -> nest 2 ((text "with" <+> pretty e)
+                        $$ nest 2 (text "select" <+> pretty lhs <+> text "<=" <+> align (vsep $ punctuate comma branches) <> semi))
+                  where branches = map (\ (e1, e2) -> pretty e1 <+> text "when" <+> pretty e2) bs
+                                ++ maybe [] (\ e -> [pretty e <+> text "when others"]) mb
+            Instantiate n1 n2 pm   -> pretty n1 <> colon <+> pretty n2 <+> text "port map" <+> parens (align $ pretty pm) <> semi
+            ClkProcess n ss        -> text "process" <> parens (pretty n)
                   $$ nest 2 (vsep
-                        [ pretty "begin"
-                        , nest 2 (vsep $ (pretty "if" <+> pretty n <> pretty "'event and" <+> pretty n <+> pretty "= '1' then") : map pretty ss)
-                        , pretty "end if;"
+                        [ text "begin"
+                        , nest 2 (vsep $ (text "if" <+> text n <> text "'event and" <+> text n <+> text "= '1' then") : map pretty ss)
+                        , text "end if;"
                         ])
-                  $$ pretty "end process;"
+                  $$ text "end process;"
 
 newtype PortMap = PortMap [(Name, Expr)]
       deriving (Eq, Show)
 
 instance Pretty PortMap where
-      pretty (PortMap ps) = vsep (punctuate comma (map (\ (n, e) -> pretty n <+> pretty "=>" <+> pretty e) ps))
+      pretty (PortMap ps) = vsep (punctuate comma (map (\ (n, e) -> text n <+> text "=>" <+> pretty e) ps))
 
 newtype LHS = LHSName Name
       deriving (Eq, Show)
 
 instance Pretty LHS where
-      pretty (LHSName n) = pretty n
+      pretty (LHSName n) = text n
 
 data Expr = ExprName !Name
           | ExprBit !Bit
@@ -136,26 +144,28 @@ data Expr = ExprName !Name
           | ExprIsEq !Expr !Expr
           | ExprBoolConst !Bool
           | ExprAnd !Expr !Expr
+          | ExprFunCall !Name ![Expr]
       deriving (Eq, Show)
 
 instance Pretty Expr where
       pretty = \ case
-            ExprName n          -> pretty n
-            ExprBit b           -> pretty "'" <> pretty b <> pretty "'"
-            ExprBitString bs    -> pretty "\"" <> hcat (map pretty bs) <> pretty "\""
-            ExprConcat e1 e2    -> parens (pretty e1 <+> pretty "&" <+> pretty e2)
-            ExprSlice e l h     -> pretty e <> parens (pretty l <+> pretty "to" <+> pretty h)
-            ExprIsEq e1 e2      -> parens (pretty e1 <+> pretty "=" <+> pretty e2)
-            ExprBoolConst True  -> pretty "TRUE"
-            ExprBoolConst False -> pretty "FALSE"
-            ExprAnd e1 e2       -> parens (pretty e1 <+> pretty "AND" <+> pretty e2)
+            ExprName n          -> text n
+            ExprBit b           -> text "'" <> pretty b <> text "'"
+            ExprBitString bs    -> text "\"" <> hcat (map pretty bs) <> text "\""
+            ExprConcat e1 e2    -> parens (pretty e1 <+> text "&" <+> pretty e2)
+            ExprSlice e l h     -> pretty e <> parens (pretty l <+> text "to" <+> pretty h)
+            ExprIsEq e1 e2      -> parens (pretty e1 <+> text "=" <+> pretty e2)
+            ExprBoolConst True  -> text "TRUE"
+            ExprBoolConst False -> text "FALSE"
+            ExprAnd e1 e2       -> parens (pretty e1 <+> text "AND" <+> pretty e2)
+            ExprFunCall n args  -> text n <> parens (hsep $ punctuate comma $ map pretty args)
 
 data Bit = Zero | One deriving (Eq, Show)
 
 instance Pretty Bit where
       pretty = \ case
-            Zero -> pretty "0"
-            One  -> pretty "1"
+            Zero -> text "0"
+            One  -> text "1"
 
 simplifyConcat :: Expr -> Expr
 simplifyConcat = \ case

@@ -106,6 +106,7 @@ data Exp = App        Annote !Exp !Exp
          | Con        Annote !Ty  !Int !DataConId
          | Match      Annote !Ty  !Exp !Pat !GId ![LId] !(Maybe Exp)
          | NativeVHDL Annote !Ty  !Text
+         | NativeVHDLComponent Annote !Ty  !Text
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Exp
 
