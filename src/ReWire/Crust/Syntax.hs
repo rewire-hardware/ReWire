@@ -50,9 +50,9 @@ import safe Data.Text (Text)
 import safe GHC.Generics (Generic (..))
 import safe Prettyprinter
       ( Doc, nest, hsep, parens, dquotes
-      , braces, vcat, (<+>), Pretty (..)
+      , braces, vsep, (<+>), Pretty (..)
       )
-import safe ReWire.Pretty (($+$), empty, text, hang)
+import safe ReWire.Pretty (empty, text, hang)
 import TextShow (TextShow (..), fromString)
 import TextShow.Generic (FromGeneric (..), genericShowbPrec)
 
@@ -291,21 +291,15 @@ instance Pretty Exp where
                   pure $ text "\\" <+> text (showt p) <+> text "->" <+> pretty e'
             Case _ t e e1 e2                             -> runFreshM $ do
                   (p, e1') <- unbind e1
-                  pure $ foldr ($+$) empty
+                  pure $ nest 2 $ vsep $
                         [ text "case" <+> braces (pretty t) <+> pretty e <+> text "of"
-                        , nest 2 (vcat $
-                              ( pretty p <+> text "->" <+> pretty e1' )
-                              : maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
-                              )
-                        ]
+                        , pretty p <+> text "->" <+> pretty e1'
+                        ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
             Match _ t e p e1 as e2                       -> runFreshM $
-                  pure $ foldr ($+$) empty
+                  pure $ nest 2 $ vsep $
                         [ text "match" <+> braces (pretty t) <+> pretty e <+> text "of"
-                        , nest 2 (vcat $
-                              ( pretty p <+> text "->" <+> pretty e1 <+> hsep (map pretty as) )
-                              : maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
-                              )
-                        ]
+                        , pretty p <+> text "->" <+> pretty e1 <+> hsep (map pretty as)
+                        ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
             NativeVHDL _ n e                             -> text "nativeVhdl" <+> dquotes (pretty n) <+> mparen e
             Error _ t m                                  -> text "error" <+> braces (pretty t) <+> dquotes (pretty m)
 
@@ -407,10 +401,10 @@ instance Annotated Defn where
 instance Pretty Defn where
       pretty (Defn _ n t b (Embed e)) = runFreshM $ do
             (vs, e') <- unbind e
-            pure $ foldr ($+$) empty
-                  $  [ text (showt n) <+> text "::" <+> pretty t ]
-                  ++ [ text "{-# INLINE" <+> text (showt n) <+> text "#-}" | b ]
-                  ++ [ text (showt n) <+> hsep (map (text . showt) vs) <+> text "=" <+> pretty e' ]
+            pure $ vsep $ map (nest 2)
+                 $  [ text "{-# INLINE" <+> text (showt n) <+> text "#-}" | b ]
+                 ++ [ text (showt n) <+> text "::" <+> pretty t ]
+                 ++ [ text (showt n) <+> hsep (map (text . showt) vs) <+> text "=" <+> pretty e' ]
 
 ---
 
@@ -431,9 +425,8 @@ instance Annotated DataDefn where
       ann (DataDefn a _ _ _) = a
 
 instance Pretty DataDefn where
-      pretty (DataDefn _ n k cs) = foldr ($+$) empty $
-                  (text "data" <+> pretty n <+> text "::" <+> pretty k <+> text "where")
-                  : map (nest 2 . pretty) cs
+      pretty (DataDefn _ n k cs) = nest 2 $ vsep $ (text "data" <+> pretty n <+> text "::" <+> pretty k <+> text "where") : map (nest 2 . pretty) cs
+
 ---
 
 data TypeSynonym = TypeSynonym
@@ -472,8 +465,7 @@ instance NFData Program where
 instance Pretty Program where
       pretty (Program p) = runFreshM $ do
             (ts, syns, vs) <- untrec p
-            pure $ vcat $ intersperse (text "")
-                  $ map pretty ts ++ map pretty syns ++ map pretty vs
+            pure $ vsep $ intersperse empty $ map pretty ts ++ map pretty syns ++ map pretty vs
 
 ---
 
