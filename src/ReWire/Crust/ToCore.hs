@@ -5,7 +5,7 @@ module ReWire.Crust.ToCore (toCore) where
 import ReWire.Annotation
 import ReWire.Error
 import ReWire.Pretty
-import ReWire.Unbound (Name, Fresh, runFreshM, Embed (..) , unbind)
+import ReWire.Unbound (Name, Fresh, runFreshM, Embed (..) , unbind, n2s)
 
 import Control.Arrow ((&&&))
 import Control.Monad ((<=<))
@@ -13,6 +13,8 @@ import Control.Monad.State (StateT (..), MonadState, get, put)
 import Control.Monad.Reader (MonadReader (..), ReaderT (..), asks, lift)
 import Data.HashMap.Strict (HashMap)
 import Data.Maybe (fromMaybe)
+import Data.Either (partitionEithers)
+import Data.Text (Text)
 
 import qualified Data.HashMap.Strict as Map
 import qualified ReWire.Core.Syntax  as C
@@ -26,9 +28,12 @@ type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) Int) m)
 
 toCore :: (Fresh m, MonadError AstError m) => M.FreeProgram -> m C.Program
 toCore (ts, _, vs) = fst <$> flip runStateT mempty (do
-      ts' <- concat <$> mapM (transData conMap) ts
-      vs' <- mapM (transDefn conMap) $ filter (not . M.isPrim . M.defnName) vs
-      pure $ C.Program ts' vs')
+            ts' <- concat <$> mapM (transData conMap) ts
+            vs' <- mapM (transDefn conMap) $ filter (not . M.isPrim . M.defnName) vs
+            case partitionEithers vs' of
+                  ([startDefn], defns) -> pure $ C.Program ts' startDefn defns
+                  _                    -> failAt noAnn "toCore: no Main.start."
+      )
       where conMap :: ConMap
             conMap = ( Map.fromList $ map (M.dataName &&& map projId . M.dataCons) ts
                      , Map.fromList $ map (projId &&& projType) (concatMap M.dataCons ts)
@@ -47,34 +52,46 @@ transData conMap (M.DataDefn _ _ _ cs) = mapM (transDataCon $ length cs) $ zip [
                   (_, t') <- unbind t
                   C.DataCon an (C.DataConId $ showt c) n nctors <$> runReaderT (transType t') conMap
 
-transDefn :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => ConMap -> M.Defn -> m C.Defn
+transDefn :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => ConMap -> M.Defn -> m (Either C.StartDefn C.Defn)
+transDefn conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) | n2s n == "Main.start" = do
+      (_, t')  <- unbind t
+      case t' of
+            M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyCon _ t_ret) t_in) t_out) (M.TyCon _ t_i)) t_res 
+                        | n2s t_ret == "ReT" && n2s t_i == "I" -> do
+                  (_, e') <- unbind e
+                  Left <$> (C.StartDefn an <$> runReaderT (transType t_in) conMap
+                                           <*> runReaderT (transType t_out) conMap
+                                           <*> runReaderT (transType t_res) conMap
+                                           <*> runReaderT (runReaderT (transExp e') conMap) mempty)
+            _ -> failAt an $ "transDefn: Main.start has illegal type: " <> prettyPrint t'
 transDefn conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) = do
       (_, t')  <- unbind t
       (xs, e') <- unbind e
-      C.Defn an (showt n) <$> runReaderT (transType t') conMap <*> runReaderT (runReaderT (transExp e') conMap) (Map.fromList $ zip xs [0..])
+      Right <$> (C.Defn an (showt n) <$> runReaderT (transType t') conMap <*> runReaderT (runReaderT (transExp e') conMap) (Map.fromList $ zip xs [0..]))
 
 transExp :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.Exp -> TCM m C.Exp
 transExp = \ case
-      M.App an e1 e2                    -> C.App an <$> transExp e1 <*> transExp e2
+      e@(M.App an _ _)                  -> case M.flattenApp e of
+            (M.Var _ _ x : args)        -> C.Call an <$> transType (M.typeOf e) <*> pure (showt x) <*> mapM transExp args
+            (M.Con _ t d : args)        -> C.Con an <$> transType (M.typeOf e) <*> ctorWidth t d <*> pure (C.DataConId $ showt d) <*> mapM transExp args
+            (M.NativeVHDL _ s _ : args) -> C.NativeVHDL an <$> transType (M.typeOf e) <*> pure s <*> mapM transExp args
+            _                                          -> failAt an "transExp: encountered ill-formed application."
       M.Var an t x                      -> lift (asks (Map.lookup x)) >>= \ case
-            Nothing -> if not $ M.isPrim x
-                  then C.GVar an <$> transType t <*> pure (showt x)
-                  else C.Prim an <$> transType t <*> pure (showt x)
+            Nothing -> C.Call an <$> transType t <*> pure (showt x) <*> pure []
             Just i  -> C.LVar an <$> transType t <*> pure i
-      M.Con an t d                      -> C.Con an <$> transType t <*> ctorWidth t d <*> pure (C.DataConId $ showt d)
+      M.Con an t d                      -> C.Con an <$> transType t <*> ctorWidth t d <*> pure (C.DataConId $ showt d) <*> pure []
       M.Match an t e p f as (Just e2)   -> C.Match an <$> transType t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> mapM (toLId <=< transExp) as <*> (Just <$> transExp e2)
       M.Match an t e p f as Nothing     -> C.Match an <$> transType t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> mapM (toLId <=< transExp) as <*> pure Nothing
-      M.NativeVHDL an s (M.Error _ t _) -> C.NativeVHDL an <$> transType t <*> pure s
-      M.Error an t _                    -> C.GVar an <$> transType t <*> pure "ERROR"
+      M.NativeVHDL an s (M.Error _ t _) -> C.NativeVHDL an <$> transType t <*> pure s <*> pure []
+      M.Error an t _                    -> C.Call an <$> transType t <*> pure "ERROR" <*> pure []
       e                                 -> failAt (ann e) $ "ToCore: unsupported expression: " <> prettyPrint e
+      where toGId :: MonadError AstError m => C.Exp -> m C.GId
+            toGId (C.Call _ _ x _) = pure x
+            toGId e                = failAt (ann e) $ "toGId: expected Call, got: " <> prettyPrint e
 
-toGId :: MonadError AstError m => C.Exp -> m C.GId
-toGId (C.GVar _ _ x) = pure x
-toGId e              = failAt (ann e) $ "toGId: expected GVar, got: " <> prettyPrint e
-
-toLId :: MonadError AstError m => C.Exp -> m C.LId
-toLId (C.LVar _ _ x) = pure x
-toLId e              = failAt (ann e) $ "toLId: expected LVar, got: " <> prettyPrint e
+            toLId :: MonadError AstError m => C.Exp -> m C.LId
+            toLId (C.LVar _ _ x) = pure x
+            toLId e              = failAt (ann e) $ "toLId: expected LVar, got: " <> prettyPrint e
 
 transPat :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.MatchPat -> ReaderT ConMap m C.Pat
 transPat = \ case
@@ -83,10 +100,9 @@ transPat = \ case
 
 transType :: (Fresh m, MonadError AstError m, MonadState SizeMap m) => M.Ty -> ReaderT ConMap m C.Ty
 transType t = case t of
-      M.TyApp an t1 t2  -> C.TyApp an <$> sizeof an t <*> transType t1 <*> transType t2
-      M.TyCon an c      -> C.TyCon an (C.TyConId $ showt c) <$> sizeof an t
-      M.TyVar an _ x    -> C.TyVar an (showt x) <$> sizeof an t
-      _                 -> pure $ C.TyVar (ann t) "$$TyBlank$$" 0 -- TODO(chathhorn)
+      M.TyApp an _ _ -> C.Ty an <$> mapM (sizeof an) (fst $ M.flattenArrow t) <*> sizeof an (snd $ M.flattenArrow t)
+      M.TyCon an _   -> C.Ty an [] <$> sizeof an t
+      _              -> pure $ C.Ty (ann t) [] 0
 
 matchTy :: MonadError AstError m => Annote -> M.Ty -> M.Ty -> m TySub
 matchTy an (M.TyApp _ t1 t2) (M.TyApp _ t1' t2') = do
@@ -106,7 +122,7 @@ merge an s'  = \ case
                   $ "ToCore: merge: inconsistent assignment of tyvar " <> v
                   <> ": " <> prettyPrint t <> " vs. " <> prettyPrint t'
 
-type TySub = [(C.TyId, M.Ty)]
+type TySub = [(Text, M.Ty)]
 
 apply :: TySub -> M.Ty -> M.Ty
 apply s (M.TyApp an t1 t2) = M.TyApp an (apply s t1) $ apply s t2
@@ -135,8 +151,9 @@ sizeof an t = do
       m <- get
       s <- case Map.lookup t m of
             Nothing -> case th of
-                  M.TyApp {}     -> failAt an $ "ToCore: sizeof: Got TyApp after flattening (can't happen): " <> prettyPrint t
-                  M.TyCon _ c  -> do
+                  M.TyApp {}                   -> failAt an $ "ToCore: sizeof: Got TyApp after flattening (can't happen): " <> prettyPrint t
+                  M.TyCon _ c | n2s c == "ReT" -> pure 1 -- TODO(chathhorn)
+                  M.TyCon _ c                  -> do
                         ctors      <- getCtors c
                         ctorWidths <- mapM (ctorWidth t) ctors
                         pure $ ceilLog2 (length ctors) + maximum (0 : ctorWidths)

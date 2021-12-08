@@ -25,7 +25,7 @@ import System.IO (stderr)
 
 import TextShow (showt)
 
-import Data.Text (pack, Text)
+import Data.Text (pack)
 import qualified Data.Text.IO as T
 
 import Paths_ReWire (getDataFileName)
@@ -104,7 +104,7 @@ main = do
                                     when (FlagV `elem` flags) $ T.putStrLn $ showt $ unAnn b
                               if FlagFirrtl `elem` flags
                                     then compileProgram flags b >>= toLoFirrtl >>= writeOutput
-                                    else compileProgram flags a >>= writeOutput
+                                    else compileProgram flags b >>= writeOutput
 
                         writeOutput :: Pretty a => a -> SyntaxErrorT IO ()
                         writeOutput a = do
