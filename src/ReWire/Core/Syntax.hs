@@ -6,7 +6,6 @@ module ReWire.Core.Syntax
   , Exp (..)
   , Pat (..)
   , StartDefn (..), Defn (..)
-  , DataCon (..)
   , Program (..)
   , sizeOf
   , GId, LId
@@ -28,15 +27,20 @@ import TextShow.Generic (FromGeneric (..))
 class TypeAnnotated a where
       typeOf :: a -> Ty
 
-newtype DataConId = DataConId { deDataConId :: Text } deriving (Eq, Ord, Generic, Show, Typeable, Data)
+-- | Enough to recover the size and value of the tag vector.
+data DataConId = DataConId
+            { ctorName     :: Text
+            , ctorTagValue :: Int
+            , ctorTagSize  :: Int -- ceilLog2 of nctors.
+            }
+      deriving (Eq, Ord, Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric DataConId
 
 type GId  = Text
 type LId  = Int
 
 instance Pretty DataConId where
-      pretty = pretty . deDataConId
-
+      pretty (DataConId _ idx tagSize) = text "CTOR_" <> pretty idx <> text "_" <> pretty tagSize
 ---
 
 data Ty = Ty Annote ![Int] !Int -- Function ty with sizes of arguments and size of result.
@@ -58,7 +62,7 @@ sizeOf (Ty _ _ s) = s
 ---
 
 data Exp = Call       Annote !Ty !GId            ![Exp]
-         | Con        Annote !Ty !Int !DataConId ![Exp]
+         | Con        Annote !Ty !DataConId      ![Exp]
          | LVar       Annote !Ty !LId
          | Match      Annote !Ty !Exp !Pat !GId ![LId] !(Maybe Exp)
          | NativeVHDL Annote !Ty !Text           ![Exp]
@@ -70,7 +74,7 @@ instance TypeAnnotated Exp where
       typeOf = \ case
             Call _ t _ _        -> t
             LVar _ t _          -> t
-            Con _ t _ _ _       -> t
+            Con _ t _ _         -> t
             Match _ t _ _ _ _ _ -> t
             NativeVHDL _ t _ _  -> t
 
@@ -78,7 +82,7 @@ instance Annotated Exp where
       ann = \ case
             Call a _ _ _        -> a
             LVar a _ _          -> a
-            Con a _ _ _ _       -> a
+            Con a _ _ _         -> a
             Match a _ _ _ _ _ _ -> a
             NativeVHDL a _ _ _  -> a
 
@@ -86,8 +90,8 @@ instance Pretty Exp where
       pretty = \ case
             Call _ t n []                                     -> pretty n <> braces (pretty t)
             Call _ t n args                                   -> pretty n <> braces (pretty t) <> brackets (hsep $ punctuate comma $ map pretty args)
-            Con _ t _ (DataConId n) []                        -> pretty n <> braces (pretty t)
-            Con _ t _ (DataConId n) args                      -> pretty n <> braces (pretty t) <> brackets (hsep $ punctuate comma $ map pretty args)
+            Con _ t d []                                      -> pretty d <> braces (pretty t)
+            Con _ t d args                                    -> pretty d <> braces (pretty t) <> brackets (hsep $ punctuate comma $ map pretty args)
             LVar _ _ n                                        -> text $ "$" <> showt n
             Match _ t e p e1 as Nothing                       -> nest 2 $ vsep
                   [ text "match" <+> braces (pretty t) <+> pretty e <+> text "of"
@@ -118,20 +122,18 @@ instance Annotated Pat where
             PatCon a _ _ _ -> a
             PatVar a _     -> a
 
-mparen :: (Pretty a, Parenless a) => a -> Doc ann
+mparen :: Pat -> Doc ann
 mparen a = if parenless a then pretty a else parens $ pretty a
       where parenless :: Pat -> Bool
             parenless = \ case
-                  PatCon _ _ (DataConId "(,)") _ -> True
-                  PatCon _ _ _ []                -> True
-                  PatVar {}                      -> True
-                  _                              -> False
+                  PatCon _ _ _ [] -> True
+                  PatVar {}       -> True
+                  _               -> False
 
 instance Pretty Pat where
       pretty = \ case
-            PatCon _ _ (DataConId "(,)") [p1, p2] -> parens $ pretty p1 <> (text "," <+> pretty p2)
-            PatCon _ _ (DataConId n) ps           -> text n <+> hsep (map mparen ps)
-            PatVar _ t                            -> braces $ pretty t
+            PatCon _ t d ps -> pretty d <> braces (pretty t) <+> hsep (map mparen ps)
+            PatVar _ t      -> braces $ braces $ pretty t
 
 ---
 
@@ -173,30 +175,13 @@ instance Pretty Defn where
 
 ---
 
--- | annotation, id, ctor index (in the range [0, nctors)), nctors, type
-data DataCon = DataCon Annote !DataConId !Int !Int !Ty
-      deriving (Generic, Eq, Ord, Show, Typeable, Data)
-      deriving TextShow via FromGeneric DataCon
-
-instance TypeAnnotated DataCon where
-      typeOf (DataCon _ _ _ _ t) = t
-
-instance Annotated DataCon where
-      ann (DataCon a _ _ _ _) = a
-
-instance Pretty DataCon where
-      pretty (DataCon _ n _ _ t) = text (deDataConId n) <+> text "::" <+> pretty t
-
----
-
 data Program = Program
-      { ctors :: ![DataCon]
-      , start :: !StartDefn
+      { start :: !StartDefn
       , defns :: ![Defn]
       }
       deriving (Generic, Eq, Ord, Show, Typeable, Data)
       deriving TextShow via FromGeneric Program
 
 instance Pretty Program where
-      pretty p = vsep $ intersperse (text "") $ map pretty (ctors p) <> [pretty (start p)] <> map pretty (defns p)
+      pretty p = vsep $ intersperse (text "") $ pretty (start p) : map pretty (defns p)
 

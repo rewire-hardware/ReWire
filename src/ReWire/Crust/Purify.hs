@@ -640,17 +640,15 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
                   let t = typeOf a
                   c <- getACtor s t
                   let anode = App an (Con an (mkArrowTy [t] aTy) c) a
-                  pure $ App an (Con an (mkArrowTy [mkTupleTy $ aTy : ms] $ mkRangeTy o ms) (s2n "Done"))
-                              (mkTuple $ anode : stos)
+                  pure $ App an (Con an (mkArrowTy [mkTupleTy $ aTy : ms] $ mkRangeTy o ms) (s2n "Done")) (mkTuple $ anode : stos)
 
             mkLeftPat :: (Fresh m, MonadError AstError m) => Text -> Pat -> [Pat] -> StateT PSto m Pat
             mkLeftPat s a stos = do
                   let an = ann a
                   let t = typeOf a
                   c <- getACtor s t
-                  let anode =  PatCon an (Embed $ mkArrowTy [t] aTy) (Embed c) [a]
-                  pure $ PatCon an (Embed $ mkArrowTy [mkTupleTy $ aTy : ms] $ mkRangeTy o ms) (Embed $ s2n "Done")
-                              [mkTuplePat an $ anode : stos]
+                  let anode =  PatCon an (Embed $ aTy) (Embed c) [a]
+                  pure $ PatCon an (Embed $ mkRangeTy o ms) (Embed $ s2n "Done") [mkTuplePat an $ anode : stos]
 
             mkRight :: Exp -> Exp
             mkRight e = App (ann e) (Con (ann e) (mkArrowTy [typeOf e] $ mkRangeTy o ms) (s2n "Pause")) e

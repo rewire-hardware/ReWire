@@ -6,10 +6,7 @@ import Data.Maybe (catMaybes)
 import Data.List (foldl')
 
 removeEmpty :: Monad m => Program -> m Program
-removeEmpty (Program cs start ds) = return $ Program (map reCon $ filter ((>0) . sizeOf . typeOf) cs) start $ map reDefn $ filter ((>0) . sizeOf . typeOf) ds
-
-reCon :: DataCon -> DataCon
-reCon (DataCon a d i nctors t) = DataCon a d i nctors (reTy t)
+removeEmpty (Program start ds) = return $ Program start $ map reDefn $ filter ((>0) . sizeOf . typeOf) ds
 
 reDefn :: Defn -> Defn
 reDefn d = d { defnTy = reTy (defnTy d), defnBody = reExp (renumLVars $ defnTy d) (defnBody d) }
@@ -29,14 +26,11 @@ renumLVars (Ty an szVec _) x = if x >= 0 && x < length szVec && szVec !! x > 0
 
 reExp :: (LId -> Maybe (LId, Int)) -> Exp -> Exp
 reExp rn = \ case
-      -- App _ e1 e2 | sizeOf (typeOf e2) <= 0 -> reExp rn e1
-      -- App a e1 e2                           -> App a (reExp rn e1) (reExp rn e2)
-      -- GVar a t g                            -> GVar a (reTy t) g
       Call a t n args                       -> Call a t n $ map (reExp rn) $ filter ((> 0) . sizeOf . typeOf) args
       LVar a t l                            -> case rn l of
             Just (l', _) -> LVar a t l'
             Nothing      -> LVar a t l
-      Con a t s d args                      -> Con a t s d $ map (reExp rn) $ filter ((> 0) . sizeOf . typeOf) args
+      Con a t d args                        -> Con a t d $ map (reExp rn) $ filter ((> 0) . sizeOf . typeOf) args
       Match a t e _ g ls _  | sizeOf (typeOf e) == 0
                                             -> reExp rn $ toCall a t g (catMaybes $ map rn ls)
       Match a t e p g ls (Just e')          -> Match a t (reExp rn e) (rePat p) g (map fst $ catMaybes $ map rn ls) (Just $ reExp rn e')
@@ -52,7 +46,4 @@ rePat :: Pat -> Pat
 rePat = \ case
       PatCon a t dc ps -> PatCon a t dc $ map rePat $ filter ((> 0) . sizeOf . typeOf) ps
       PatVar a t       -> PatVar a t
-
-dummyTy :: Ty
-dummyTy = Ty noAnn [] 0
 

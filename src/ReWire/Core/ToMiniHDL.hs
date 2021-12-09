@@ -11,7 +11,7 @@ import ReWire.Pretty
 import ReWire.Flags (Flag (..))
 
 import Control.Monad (zipWithM)
-import Control.Monad.Reader (ReaderT (..), asks)
+import Control.Monad.Reader (ReaderT (..), ask)
 import Control.Monad.State (StateT (..), get, put, lift)
 import Data.List (find, foldl')
 import Data.List.Split (splitOn)
@@ -21,23 +21,13 @@ import Data.Text (Text, pack)
 import TextShow (showt)
 
 type CM m = StateT ([Signal], [Component], Int) (
-              ReaderT ([DataCon], [Defn]) (
+              ReaderT [Defn] (
                   SyntaxErrorT m
               )
           )
 
-askCtors :: Monad m => CM m [DataCon]
-askCtors = asks fst
-
 askDefns :: Monad m => CM m [Defn]
-askDefns = asks snd
-
-askDci :: Monad m => DataConId -> CM m DataCon
-askDci dci = do
-      ctors <- askCtors
-      case find (\ (DataCon _ dci' _ _ _) -> dci == dci') ctors of
-            Just ctor -> pure ctor
-            Nothing   -> pure $ DataCon noAnn dci 0 0 (Ty noAnn [] 0) -- TODO(chathhorn): handle this better.
+askDefns = ask
 
 nvec :: Int -> Int -> [Bit]
 nvec width n = nvec' 0 []
@@ -45,20 +35,13 @@ nvec width n = nvec' 0 []
                        | otherwise    = nvec' (pos + 1) ((if testBit n pos then One else Zero):bits)
 
 dciTagVector :: Monad m => DataConId -> CM m [Bit]
-dciTagVector dci = do
-      DataCon _ _ pos nctors _ <- askDci dci
-      pure $ nvec (ceilLog2 nctors) pos
+dciTagVector (DataConId _ pos tagSize) = pure $ nvec tagSize pos
 
 dciPadVector :: Monad m => DataConId -> Int -> Int -> CM m [Bit]
-dciPadVector dci fieldwidth tysize = do
-      DataCon _ _ _ nctors _ <- askDci dci
-      let tot      =  ceilLog2 nctors + fieldwidth
+dciPadVector (DataConId _ _ tagSize) fieldwidth tysize = do
+      let tot      =  tagSize + fieldwidth
           padwidth =  tysize - tot
       pure $ nvec padwidth 0
-
-ceilLog2 :: Int -> Int
-ceilLog2 n | n < 1 = 0
-ceilLog2 n = ceiling (logBase 2 (fromIntegral n :: Double))
 
 getTyPorts :: Monad m => C.Ty -> CM m [Port]
 getTyPorts (Ty _ argsizes ressize) = do
@@ -128,14 +111,14 @@ compileExp = \ case
                 pm      =  PortMap (zip argns (map ExprName ns) ++ [("res", ExprName n)])
             pure (stmts ++ [Instantiate n_inst (mangle i) pm], n)
       LVar _ _ i       -> pure ([], "arg" <> showt i)
-      Con _ (Ty an' _ sz) w i args  -> do
-            n           <- (<> "_res") <$> freshName (mangle (deDataConId i))
+      Con _ (Ty an' _ sz) i args  -> do
+            n           <- (<> "_res") <$> freshName (mangle $ ctorName i)
             addSignal n $ TyStdLogicVector sz
             sssns       <- mapM compileExp args
             let stmts   =  concatMap fst sssns
                 ns      =  map snd sssns
             tagvec      <- dciTagVector i
-            padvec      <- dciPadVector i w sz
+            padvec      <- dciPadVector i (sum $ map (sizeOf . typeOf) args) sz
             pure (stmts ++ [Assign (LHSName n) $ simplifyConcat (ExprConcat
                                                   (foldl' ExprConcat (ExprBitString tagvec) (map ExprName ns))
                                                      (ExprBitString padvec)
@@ -223,10 +206,7 @@ compileStartDefn flags (StartDefn an t_in t_out t_res e) = case e of
             let ports       = [Port "clk"  In TyClock,
                                Port rst    In TyStdLogic,
                                Port "inp"  In (TyStdLogicVector insize),
-                               -- Port "outp" Out (TyStdLogicVector (1 + max outsize ressize))]
                                Port "outp" Out (TyStdLogicVector outsize)]
-                -- pad_for_out = ExprBitString (replicate (max 0 (ressize - outsize)) Zero)
-                -- pad_for_res = ExprBitString (replicate (max 0 (outsize - ressize)) Zero)
             (sigs, comps, _) <- get
             pure (Unit (uses flags)
                      (Entity "top_level" ports)
@@ -249,12 +229,7 @@ compileStartDefn flags (StartDefn an t_in t_out t_res e) = case e of
                            (Just (ExprName "current_state")),
                           ClkProcess "clk"
                            [Assign (LHSName "current_state") (ExprName "next_state")],
-                          -- WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "outp")
-                          --  [(ExprConcat (ExprBitString [One]) (ExprConcat (ExprSlice (ExprName "current_state") 1 outsize) pad_for_out), ExprBitString [One])]
-                          --  (Just (ExprConcat (ExprBitString [Zero]) (ExprConcat (ExprSlice (ExprName "current_state") 1 ressize) pad_for_res)))
                            Assign (LHSName "outp") (ExprSlice (ExprName "current_state") 1 outsize)
-                          --  [(ExprConcat (ExprBitString [One]) (ExprConcat (ExprSlice (ExprName "current_state") 1 outsize) pad_for_out), ExprBitString [One])]
-                          --  (Just (ExprConcat (ExprBitString [Zero]) (ExprConcat (ExprSlice (ExprName "current_state") 1 ressize) pad_for_res)))
                          ]
                      )
                    )
@@ -269,13 +244,11 @@ compileDefn :: Monad m => [Flag] -> Defn -> CM m Unit
 compileDefn flags d = Unit (uses flags) <$> mkDefnEntity d <*> mkDefnArch d
 
 compileProgram :: Monad m => [Flag] -> C.Program -> SyntaxErrorT m M.Program
-compileProgram flags p = fmap fst $ flip runReaderT (ctors p, defns p) $ flip runStateT ([], [], 0) $ M.Program <$> ((:) <$> compileStartDefn flags (start p) <*> mapM (compileDefn flags) (defns p))
+compileProgram flags p = fmap fst $ flip runReaderT (defns p) $ flip runStateT ([], [], 0) $ M.Program <$> ((:) <$> compileStartDefn flags (start p) <*> mapM (compileDefn flags) (defns p))
 
 uses :: [Flag] -> [Text]
 uses flags = "ieee.std_logic_1164.all" : concatMap getUses flags
       where getUses :: Flag -> [Text]
             getUses (FlagPkgs pkgs) = map pack $ splitOn "," pkgs
             getUses _               = []
-
-
 
