@@ -15,6 +15,7 @@ import Data.HashMap.Strict (HashMap)
 import Data.Maybe (fromMaybe)
 import Data.Either (partitionEithers)
 import Data.Text (Text)
+import Data.List (findIndex)
 
 import qualified Data.HashMap.Strict as Map
 import qualified ReWire.Core.Syntax  as C
@@ -28,10 +29,9 @@ type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) Int) m)
 
 toCore :: (Fresh m, MonadError AstError m) => M.FreeProgram -> m C.Program
 toCore (ts, _, vs) = fst <$> flip runStateT mempty (do
-            ts' <- concat <$> mapM (transData conMap) ts
             vs' <- mapM (transDefn conMap) $ filter (not . M.isPrim . M.defnName) vs
             case partitionEithers vs' of
-                  ([startDefn], defns) -> pure $ C.Program ts' startDefn defns
+                  ([startDefn], defns) -> pure $ C.Program startDefn defns
                   _                    -> failAt noAnn "toCore: no Main.start."
       )
       where conMap :: ConMap
@@ -44,13 +44,6 @@ toCore (ts, _, vs) = fst <$> flip runStateT mempty (do
 
             projType :: M.DataCon -> M.Ty
             projType (M.DataCon _ _ (Embed (M.Poly t))) = runFreshM (snd <$> unbind t)
-
-transData :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => ConMap -> M.DataDefn -> m [C.DataCon]
-transData conMap (M.DataDefn _ _ _ cs) = mapM (transDataCon $ length cs) $ zip [0..] cs
-      where transDataCon :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => Int -> (Int, M.DataCon) -> m C.DataCon
-            transDataCon nctors (n, M.DataCon an c (Embed (M.Poly t))) = do
-                  (_, t') <- unbind t
-                  C.DataCon an (C.DataConId $ showt c) n nctors <$> runReaderT (transType t') conMap
 
 transDefn :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => ConMap -> M.Defn -> m (Either C.StartDefn C.Defn)
 transDefn conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) | n2s n == "Main.start" = do
@@ -73,13 +66,13 @@ transExp :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.Exp -> T
 transExp = \ case
       e@(M.App an _ _)                  -> case M.flattenApp e of
             (M.Var _ _ x : args)        -> C.Call an <$> transType (M.typeOf e) <*> pure (showt x) <*> mapM transExp args
-            (M.Con _ t d : args)        -> C.Con an <$> transType (M.typeOf e) <*> ctorWidth t d <*> pure (C.DataConId $ showt d) <*> mapM transExp args
+            (M.Con an t d : args)        -> C.Con an <$> transType (M.typeOf e) <*> ctorId an (snd $ M.flattenArrow t) d <*> mapM transExp args
             (M.NativeVHDL _ s _ : args) -> C.NativeVHDL an <$> transType (M.typeOf e) <*> pure s <*> mapM transExp args
             _                                          -> failAt an "transExp: encountered ill-formed application."
       M.Var an t x                      -> lift (asks (Map.lookup x)) >>= \ case
             Nothing -> C.Call an <$> transType t <*> pure (showt x) <*> pure []
             Just i  -> C.LVar an <$> transType t <*> pure i
-      M.Con an t d                      -> C.Con an <$> transType t <*> ctorWidth t d <*> pure (C.DataConId $ showt d) <*> pure []
+      M.Con an t d                      -> C.Con an <$> transType t <*> ctorId an (snd $ M.flattenArrow t) d <*> pure []
       M.Match an t e p f as (Just e2)   -> C.Match an <$> transType t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> mapM (toLId <=< transExp) as <*> (Just <$> transExp e2)
       M.Match an t e p f as Nothing     -> C.Match an <$> transType t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> mapM (toLId <=< transExp) as <*> pure Nothing
       M.NativeVHDL an s (M.Error _ t _) -> C.NativeVHDL an <$> transType t <*> pure s <*> pure []
@@ -95,7 +88,7 @@ transExp = \ case
 
 transPat :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.MatchPat -> ReaderT ConMap m C.Pat
 transPat = \ case
-      M.MatchPatCon an t d ps -> C.PatCon an <$> transType t <*> pure (C.DataConId $ showt d) <*> mapM transPat ps
+      M.MatchPatCon an t d ps -> C.PatCon an <$> transType t <*> ctorId an t d <*> mapM transPat ps
       M.MatchPatVar an t      -> C.PatVar an <$> transType t
 
 transType :: (Fresh m, MonadError AstError m, MonadState SizeMap m) => M.Ty -> ReaderT ConMap m C.Ty
@@ -135,7 +128,7 @@ ctorWidth t d = do
       getCtorType d >>= \ case
             Just ct -> do
                   let (targs, tres) = M.flattenArrow ct
-                  s                 <- matchTy (ann t') tres t'
+                  s                <- matchTy (ann t') tres t'
                   sum <$> mapM (sizeof $ ann t) (map (apply s) targs)
             _ -> pure 0
 
@@ -146,13 +139,24 @@ getCtors n = asks (fromMaybe [] . Map.lookup n . fst)
 getCtorType :: MonadReader ConMap m => Name M.DataConId -> m (Maybe M.Ty)
 getCtorType n = asks (Map.lookup n . snd)
 
+ctorId :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => Annote -> M.Ty -> Name M.DataConId -> m C.DataConId
+ctorId an t d = case th of
+      M.TyCon _ c | n2s c == "ReT" -> pure $ C.DataConId "ReT" 0 0 -- TODO(chathhorn): ?
+      M.TyCon _ c                  -> do
+            ctors      <- getCtors c
+            case findIndex ((== n2s d) . n2s) ctors of
+                  Just idx -> pure $ C.DataConId (showt d) idx (ceilLog2 $ length ctors)
+                  Nothing  -> failAt an $ "ToCore: ctorId: unknown ctor: " <> prettyPrint (n2s d) <> " of type " <> prettyPrint (n2s c)
+      _                            -> failAt an $ "ToCore: ctorId: unexpected type: " <> prettyPrint t
+      where (th : _) = M.flattenTyApp t
+
 sizeof :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => Annote -> M.Ty -> m Int
 sizeof an t = do
       m <- get
       s <- case Map.lookup t m of
             Nothing -> case th of
                   M.TyApp {}                   -> failAt an $ "ToCore: sizeof: Got TyApp after flattening (can't happen): " <> prettyPrint t
-                  M.TyCon _ c | n2s c == "ReT" -> pure 1 -- TODO(chathhorn)
+                  M.TyCon _ c | n2s c == "ReT" -> pure 1 -- TODO(chathhorn): ?
                   M.TyCon _ c                  -> do
                         ctors      <- getCtors c
                         ctorWidths <- mapM (ctorWidth t) ctors

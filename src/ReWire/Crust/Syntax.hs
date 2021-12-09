@@ -375,7 +375,7 @@ instance Pretty MatchPat where
       pretty = \ case
             MatchPatCon _ _ (n2s -> "(,)") [p1, p2] -> parens $ pretty p1 <> (text "," <+> pretty p2)
             MatchPatCon _ _ n ps                    -> pretty n <+> hsep (map mparen ps)
-            MatchPatVar _ t                         -> text "*" <+> braces (pretty t)
+            MatchPatVar _ t                         -> parens $ text "*" <+> text "::" <+> pretty t
 
 ---
 
