@@ -438,11 +438,13 @@ transPat :: Fresh m => MatchPat -> m Pat
 transPat = \ case
       MatchPatCon an t c ps -> PatCon an (Embed t) (Embed c) <$> mapM transPat ps
       MatchPatVar an t      -> PatVar an (Embed t) <$> freshVar "m2c"
+      MatchPatWildCard an t -> pure $ PatWildCard an (Embed t)
 
 patVars :: Pat -> [(Name Exp, Ty)]
 patVars = \ case
-      PatCon _ _ _ ps      -> concatMap patVars ps
-      PatVar _ (Embed t) x -> [(x, t)]
+      PatCon _ _ _ ps         -> concatMap patVars ps
+      PatVar _ (Embed t) x    -> [(x, t)]
+      PatWildCard _ (Embed t) -> []
 
 ---------------------------
 -- Purifying Resumption Monadic definitions

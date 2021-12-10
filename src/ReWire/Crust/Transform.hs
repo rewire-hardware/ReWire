@@ -230,6 +230,7 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
             patVars = \ case
                   PatCon _ _ _ ps      -> concatMap patVars ps
                   PatVar _ (Embed t) x -> [(x, t)]
+                  _                    -> []
 
             promote :: Name a -> Name a
             promote (Bn l k) | l >= 0 = Bn (l - 1) k
@@ -239,6 +240,7 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
             transPat = \ case
                   PatCon an (Embed t) (Embed c) ps -> MatchPatCon an t c $ map transPat ps
                   PatVar an (Embed t) _            -> MatchPatVar an t
+                  PatWildCard an (Embed t)         -> MatchPatWildCard an t
 
 -- | Remove unused definitions.
 purgeUnused :: FreeProgram -> FreeProgram
@@ -347,3 +349,4 @@ matchPat e = \ case
                   | otherwise                          -> MatchNo
             _                                          -> MatchMaybe
       PatVar _ _ x            -> MatchYes [(x, e)]
+      PatWildCard _ _         -> MatchYes []

@@ -100,6 +100,7 @@ patAssumps = flip patAssumps' mempty
             patAssumps' = \ case
                   PatCon _ _ _ ps      -> flip (foldr patAssumps') ps
                   PatVar _ (Embed t) n -> Map.insert n $ [] `poly` t
+                  PatWildCard _ _      -> id
 
 patHoles :: Fresh m => MatchPat -> m (HashMap (Name Exp) Poly)
 patHoles = flip patHoles' $ pure mempty
@@ -107,10 +108,10 @@ patHoles = flip patHoles' $ pure mempty
             patHoles' = \ case
                   MatchPatCon _ _ _ ps -> flip (foldr patHoles') ps
                   MatchPatVar _ t      -> (flip Map.insert ([] `poly` t) <$> fresh (s2n "PHOLE") <*>)
+                  MatchPatWildCard _ _ -> id
 
 tcPat :: (Fresh m, MonadError AstError m) => Ty -> Pat -> TCM m Pat
 tcPat t = \ case
-      PatVar an _ x  -> pure $ PatVar an (Embed t) x
       PatCon an _ (Embed i) ps -> do
             cas     <- asks cas
             case Map.lookup i cas of
@@ -124,10 +125,11 @@ tcPat t = \ case
                               ps' <- zipWithM tcPat targs ps
                               unify an t tres
                               pure $ PatCon an (Embed t) (Embed i) ps'
+      PatVar an _ x            -> pure $ PatVar an (Embed t) x
+      PatWildCard an _         -> pure $ PatWildCard an (Embed t)
 
 tcMatchPat :: (Fresh m, MonadError AstError m) => Ty -> MatchPat -> TCM m MatchPat
 tcMatchPat t = \ case
-      MatchPatVar an _ -> pure $ MatchPatVar an t
       MatchPatCon an _ i ps -> do
             cas     <- asks cas
             case Map.lookup i cas of
@@ -141,6 +143,8 @@ tcMatchPat t = \ case
                               ps' <- zipWithM tcMatchPat targs ps
                               unify an t tres
                               pure $ MatchPatCon an t i ps'
+      MatchPatVar an _      -> pure $ MatchPatVar an t
+      MatchPatWildCard an _ -> pure $ MatchPatWildCard an t
 
 tcExp :: (Fresh m, MonadError AstError m) => Exp -> TCM m (Exp, Ty)
 tcExp = \ case

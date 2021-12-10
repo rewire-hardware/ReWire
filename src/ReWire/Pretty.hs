@@ -1,6 +1,6 @@
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module ReWire.Pretty (($$), prettyPrint, text, int, empty, hang, P.Pretty) where
+module ReWire.Pretty (($$), prettyPrint, text, int, empty, P.Pretty) where
 
 import qualified Prettyprinter as P
 import qualified Prettyprinter.Render.Text as P
@@ -20,9 +20,6 @@ int = P.pretty
 
 empty :: P.Doc ann
 empty = P.emptyDoc
-
-hang :: P.Doc ann -> Int -> P.Doc ann -> P.Doc ann
-hang a n b = P.sep [a, P.nest n b]
 
 prettyPrint :: P.Pretty a => a -> Text
 prettyPrint = P.renderStrict . P.layoutPretty P.defaultLayoutOptions . P.pretty
