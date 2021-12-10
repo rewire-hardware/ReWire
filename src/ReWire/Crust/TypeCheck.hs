@@ -189,19 +189,19 @@ tcExp = \ case
                         (e2', te2)  <- tcExp e2
                         unify an tv te2
                         pure (Case an tv e' (bind p' e1'') (Just e2'), tv)
-      Match an _ e p f as e2 -> do
+      Match an _ e p f e2 -> do
             (e', te) <- tcExp e
             tv       <- freshv
             p'       <- tcMatchPat te p
             holes    <- patHoles p'
-            (_, te1) <- localAssumps (holes `Map.union`) $ tcExp $ mkApp an f as $ map fst $ Map.toList holes
+            (_, te1) <- localAssumps (holes `Map.union`) $ tcExp $ mkApp an f $ map fst $ Map.toList holes
             unify an tv te1
             case e2 of
-                  Nothing -> pure (Match an tv e' p' f as Nothing, tv)
+                  Nothing -> pure (Match an tv e' p' f Nothing, tv)
                   Just e2 -> do
                         (e2', te2)  <- tcExp e2
                         unify an tv te2
-                        pure (Match an tv e' p' f as (Just e2'), tv)
+                        pure (Match an tv e' p' f (Just e2'), tv)
       NativeVHDL an n e      -> do
             (e', te) <- tcExp e
             pure (NativeVHDL an n e', te)
@@ -209,9 +209,8 @@ tcExp = \ case
             tv <- freshv
             pure (Error an tv m, tv)
 
-mkApp :: Annote -> Exp -> [Exp] -> [Name Exp] -> Exp
-mkApp an f as holes = foldl' (App an) f
-      $ as ++ map (Var an $ TyBlank an) holes
+mkApp :: Annote -> Exp -> [Name Exp] -> Exp
+mkApp an f holes = foldl' (App an) f $ map (Var an $ TyBlank an) holes
 
 tcDefn :: (Fresh m, MonadError AstError m) => Defn -> TCM m Defn
 tcDefn d  = do

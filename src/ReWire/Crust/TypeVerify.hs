@@ -171,11 +171,11 @@ tcExp = \ case
             case e2 of
                   Nothing -> pure ()
                   Just e2 -> tcExp e2 >> unify an t (typeOf e2)
-      Match an t e p f as e2  -> do
+      Match an t e p f e2  -> do
             tcExp e
             tcMatchPat (typeOf e) p
             holes <- patHoles p
-            let e' = mkApp an f as $ map fst $ Map.toList holes
+            let e' = mkApp an f $ map fst $ Map.toList holes
             localAssumps (holes `Map.union`) $ tcExp e'
             unify an t $ typeOf e'
             case e2 of
@@ -185,9 +185,8 @@ tcExp = \ case
       NativeVHDL _ _ e        -> tcExp e
       Error {}                -> pure ()
 
-mkApp :: Annote -> Exp -> [Exp] -> [Name Exp] -> Exp
-mkApp an f as holes = foldl' (App an) f
-      $ as ++ map (Var an $ TyBlank an) holes
+mkApp :: Annote -> Exp -> [Name Exp] -> Exp
+mkApp an f holes = foldl' (App an) f $ map (Var an $ TyBlank an) holes
 
 tcDefn :: (Fresh m, MonadError AstError m) => Defn -> TCM m ()
 tcDefn (Defn an _ (Embed (Poly pt)) _ (Embed e)) = do

@@ -24,7 +24,9 @@ module ReWire.Crust.Syntax
       , FieldId
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly
-      , rangeTy, paramTys, isPrim
+      , rangeTy, paramTys, isPrim, mkArrowTy, nil
+      , mkTuple, mkTuplePat, mkTupleMPat, mkTupleTy
+      , mkPair, mkPairPat, mkPairMPat
       , kmonad, tycomp
       , TypeAnnotated (..)
       ) where
@@ -212,7 +214,7 @@ data Exp = App        Annote !Exp !Exp
          | Var        Annote !Ty !(Name Exp)
          | Con        Annote !Ty !(Name DataConId)
          | Case       Annote !Ty !Exp !(Bind Pat Exp) !(Maybe Exp)
-         | Match      Annote !Ty !Exp !MatchPat !Exp ![Exp] !(Maybe Exp)
+         | Match      Annote !Ty !Exp !MatchPat !Exp !(Maybe Exp)
          | NativeVHDL Annote !Text !Exp
          | Error      Annote !Ty !Text
       deriving (Generic, Show, Typeable, Data)
@@ -251,25 +253,25 @@ instance NFData Exp
 
 instance TypeAnnotated Exp where
       typeOf = \ case
-            App _ e _           -> arrowRight $ typeOf e
-            Lam _ t e           -> arr' t e
-            Var _ t _           -> t
-            Con _ t _           -> t
-            Case _ t _ _ _      -> t
-            Match _ t _ _ _ _ _ -> t
-            NativeVHDL _ _ e    -> typeOf e
-            Error _ t _         -> t
+            App _ e _         -> arrowRight $ typeOf e
+            Lam _ t e         -> arr' t e
+            Var _ t _         -> t
+            Con _ t _         -> t
+            Case _ t _ _ _    -> t
+            Match _ t _ _ _ _ -> t
+            NativeVHDL _ _ e  -> typeOf e
+            Error _ t _       -> t
 
 instance Annotated Exp where
       ann = \ case
-            App a _ _           -> a
-            Lam a _ _           -> a
-            Var a _ _           -> a
-            Con a _ _           -> a
-            Case a _ _ _ _      -> a
-            Match a _ _ _ _ _ _ -> a
-            NativeVHDL a _ _    -> a
-            Error a _ _         -> a
+            App a _ _         -> a
+            Lam a _ _         -> a
+            Var a _ _         -> a
+            Con a _ _         -> a
+            Case a _ _ _ _    -> a
+            Match a _ _ _ _ _ -> a
+            NativeVHDL a _ _  -> a
+            Error a _ _       -> a
 
 
 instance Parenless Exp where
@@ -295,10 +297,10 @@ instance Pretty Exp where
                         [ text "case" <+> braces (pretty t) <+> pretty e <+> text "of"
                         , pretty p <+> text "->" <+> pretty e1'
                         ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
-            Match _ t e p e1 as e2                       -> runFreshM $
+            Match _ t e p e1 e2                          -> runFreshM $
                   pure $ nest 2 $ vsep $
                         [ text "match" <+> braces (pretty t) <+> pretty e <+> text "of"
-                        , pretty p <+> text "->" <+> pretty e1 <+> hsep (map pretty as)
+                        , pretty p <+> text "->" <+> pretty e1
                         ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
             NativeVHDL _ n e                             -> text "nativeVhdl" <+> dquotes (pretty n) <+> mparen e
             Error _ t m                                  -> text "error" <+> braces (pretty t) <+> dquotes (pretty m)
@@ -510,6 +512,47 @@ paramTys = paramTys' []
 
 isPrim :: Show a => a -> Bool
 isPrim = notElem '.' . show
+
+-- | Takes [T1, ..., Tn-1] Tn and returns (T1 -> (T2 -> ... (T(n-1) -> Tn) ...))
+mkArrowTy :: [Ty] -> Ty -> Ty
+mkArrowTy ps = foldr1 arr . (ps ++) . (: [])
+
+nilTy :: Ty
+nilTy = TyCon (MsgAnnote "nilTy") (s2n "()")
+
+nil :: Exp
+nil = Con (MsgAnnote "nil") nilTy (s2n "()")
+
+nilPat :: Pat
+nilPat = PatCon (MsgAnnote "nilPat") (Embed nilTy) (Embed $ s2n "()") []
+
+nilMPat :: MatchPat
+nilMPat = MatchPatCon (MsgAnnote "nilMPat") nilTy (s2n "()") []
+
+mkPairTy :: Annote -> Ty -> Ty -> Ty
+mkPairTy an t = TyApp an $ TyApp an (TyCon an $ s2n "(,)") t
+
+mkPair :: Annote -> Exp -> Exp -> Exp
+mkPair an e1 e2 = App an (App an (Con an t (s2n "(,)")) e1) e2
+      where t = mkArrowTy [typeOf e1, typeOf e2] $ mkPairTy an (typeOf e1) $ typeOf e2
+
+mkPairPat :: Annote -> Pat -> Pat -> Pat
+mkPairPat an p1 p2 = PatCon an (Embed $ mkPairTy an (typeOf p1) (typeOf p2)) (Embed (s2n "(,)")) [p1, p2]
+
+mkPairMPat :: Annote -> MatchPat -> MatchPat -> MatchPat
+mkPairMPat an p1 p2 = MatchPatCon an (mkPairTy an (typeOf p1) (typeOf p2)) (s2n "(,)") [p1, p2]
+
+mkTuple :: Annote -> [Exp] -> Exp
+mkTuple an = foldr (mkPair an) nil
+
+mkTupleTy :: Annote -> [Ty] -> Ty
+mkTupleTy an = foldr (mkPairTy an) nilTy
+
+mkTuplePat :: Annote -> [Pat] -> Pat
+mkTuplePat an = foldr (mkPairPat an) nilPat
+
+mkTupleMPat :: Annote -> [MatchPat] -> MatchPat
+mkTupleMPat an = foldr (mkPairMPat an) nilMPat
 
 -- Orphans.
 

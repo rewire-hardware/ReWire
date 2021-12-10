@@ -30,18 +30,9 @@ askDefns :: Monad m => CM m [Defn]
 askDefns = ask
 
 nvec :: Int -> Int -> [Bit]
-nvec width n = nvec' 0 []
+nvec n width = nvec' 0 []
   where nvec' pos bits | pos >= width = bits
                        | otherwise    = nvec' (pos + 1) ((if testBit n pos then One else Zero):bits)
-
-dciTagVector :: Monad m => DataConId -> CM m [Bit]
-dciTagVector (DataConId _ pos tagSize) = pure $ nvec tagSize pos
-
-dciPadVector :: Monad m => DataConId -> Int -> Int -> CM m [Bit]
-dciPadVector (DataConId _ _ tagSize) fieldwidth tysize = do
-      let tot      =  tagSize + fieldwidth
-          padwidth =  tysize - tot
-      pure $ nvec padwidth 0
 
 getTyPorts :: Monad m => C.Ty -> CM m [Port]
 getTyPorts (Ty _ argsizes ressize) = do
@@ -74,19 +65,15 @@ addComponent _ i t = do
                   put (sigs, Component (mangle i) ps : comps, ctr)
 
 compilePat :: Monad m => Name -> Int -> Pat -> CM m (Expr, [Expr])  -- first Expr is for whether match (std_logic); remaining Exprs are for extracted fields
-compilePat nscr offset (PatCon _ _ dci ps) = do
-      dcitagvec        <- dciTagVector dci
-      let tagw         =  length dcitagvec
-          fieldwidths  =  map (sizeOf . typeOf) ps
-      let fieldoffsets =  init $ scanl (+) (offset + tagw) fieldwidths
-      rs               <- zipWithM (compilePat nscr) fieldoffsets ps
-      let ematchs      =  map fst rs
-          eslices      =  concatMap snd rs
-          ematch       =  foldl' ExprAnd
-                            (ExprIsEq
-                              (ExprSlice (ExprName nscr) offset (offset + tagw - 1))
-                              (ExprBitString dcitagvec))
-                            ematchs
+compilePat nscr offset (PatCon _ _ tagValue tagSize ps) = do
+      let dcitagvec    = nvec tagValue tagSize
+      let tagw         = length dcitagvec
+          fieldwidths  = map (sizeOf . typeOf) ps
+      let fieldoffsets = init $ scanl (+) (offset + tagw) fieldwidths
+      rs              <- zipWithM (compilePat nscr) fieldoffsets ps
+      let ematchs      = map fst rs
+          eslices      = concatMap snd rs
+          ematch       = foldl' ExprAnd (ExprIsEq (ExprSlice (ExprName nscr) offset (offset + tagw - 1)) (ExprBitString dcitagvec)) ematchs
       pure (ematch, eslices)
 compilePat nscr offset (PatVar _ t)       = pure (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + sizeOf t - 1)])
 
@@ -100,31 +87,32 @@ askGIdTy i = do
 compileExp :: Monad m => C.Exp -> CM m ([Stmt], Name)
 compileExp = \ case
       Call an (Ty an' _ sz) i args  -> do
-            n           <- (<> "_res") <$> freshName (mangle i)
-            n_inst      <- (<> "_call") <$> freshName (mangle i)
+            n          <- (<> "_res") <$> freshName (mangle i)
+            n_inst     <- (<> "_call") <$> freshName (mangle i)
             addSignal n $ TyStdLogicVector sz
-            sssns       <- mapM compileExp args
-            let stmts   =  concatMap fst sssns
-                ns      =  map snd sssns
+            sssns      <- mapM compileExp args
+            let stmts   = concatMap fst sssns
+                ns      = map snd sssns
             addComponent an i $ Ty an' (map (sizeOf . typeOf) args) sz
-            let argns   =  map (\ n -> "arg" <> showt n) ([0..] :: [Int])
-                pm      =  PortMap (zip argns (map ExprName ns) ++ [("res", ExprName n)])
+            let argns   = map (\ n -> "arg" <> showt n) ([0..] :: [Int])
+                pm      = PortMap (zip argns (map ExprName ns) ++ [("res", ExprName n)])
             pure (stmts ++ [Instantiate n_inst (mangle i) pm], n)
       LVar _ _ i       -> pure ([], "arg" <> showt i)
-      Con _ (Ty an' _ sz) i args  -> do
-            n           <- (<> "_res") <$> freshName (mangle $ ctorName i)
+      Con _ sz tagValue tagSize args -> do
+            n          <- (<> "_res") <$> freshName (mangle $ "ctor_" <> showt tagValue <> "_" <> showt tagSize)
             addSignal n $ TyStdLogicVector sz
-            sssns       <- mapM compileExp args
-            let stmts   =  concatMap fst sssns
-                ns      =  map snd sssns
-            tagvec      <- dciTagVector i
-            padvec      <- dciPadVector i (sum $ map (sizeOf . typeOf) args) sz
+            sssns      <- mapM compileExp args
+            let stmts   = concatMap fst sssns
+                ns      = map snd sssns
+                tagvec  = nvec tagValue tagSize
+                padvec  = nvec 0 $ sz - tagSize - sum (map (sizeOf . typeOf) args)
             pure (stmts ++ [Assign (LHSName n) $ simplifyConcat (ExprConcat
                                                   (foldl' ExprConcat (ExprBitString tagvec) (map ExprName ns))
                                                      (ExprBitString padvec)
                                                   )],
                     n)
-      Match an (Ty _ _ sz) escr p gid lids malt -> case malt of
+
+      Match an (Ty _ _ sz) escr p gid malt -> case malt of
             Just ealt -> do
                   n                    <- (<> "_res") <$> freshName "match"
                   addSignal n $ TyStdLogicVector sz
@@ -137,10 +125,7 @@ compileExp = \ case
                   t_gid                <- askGIdTy gid
                   addComponent an gid t_gid
                   let argns           =  map (\ n -> "arg" <> showt n) ([0..]::[Int])
-                      pm              =  PortMap (zip argns
-                                                  (map (ExprName . ("arg" <>) . showt) lids
-                                                   ++ efields)
-                                                   ++ [("res", ExprName n_gid)])
+                      pm              =  PortMap (zip argns efields ++ [("res", ExprName n_gid)])
                   pure (stmts_escr ++
                           [WithAssign ematch (LHSName n)
                                       [(ExprName n_gid, ExprBoolConst True)]
@@ -157,10 +142,7 @@ compileExp = \ case
                   t_gid                <- askGIdTy gid
                   addComponent an gid t_gid
                   let argns            =  map (\ n -> "arg" <> showt n) ([0..]::[Int])
-                      pm               =  PortMap (zip argns
-                                                  (map (ExprName . ("arg" <>) . showt) lids
-                                                  ++ efields)
-                                                  ++ [("res", ExprName n_gid)])
+                      pm               =  PortMap (zip argns efields ++ [("res", ExprName n_gid)])
                   pure (stmts_escr ++ [Instantiate n_call (mangle gid) pm], n_gid)
       NativeVHDL _ (Ty _ _ sz) i args -> do
             n           <- (<> "_res") <$> freshName i
@@ -189,51 +171,46 @@ mkDefnArch (Defn _ n _ e) = do
       pure $ Architecture (mangle n <> "_impl") (mangle n) sigs comps (stmts ++ [Assign (LHSName "res") (ExprName nres)])
 
 compileStartDefn :: Monad m => [Flag] -> StartDefn -> CM m Unit
-compileStartDefn flags (StartDefn an t_in t_out t_res e) = case e of
-      Call an _ "unfold" [Call _ t_loopfun@(Ty _ (arg0size:_) _) n_loopfun [], Call _ t_startstate n_startstate []] -> do
-            put ([], [], 0) -- empty out signal and component store, reset name counter
-            let insize    = sizeOf t_in
-                outsize   = sizeOf t_out
-                statesize = sizeOf t_startstate
-                ressize   = sizeOf t_res
-            addComponent an n_startstate t_startstate
-            addComponent an n_loopfun t_loopfun
-            addSignal "start_state" (TyStdLogicVector statesize)
-            addSignal "loop_out" (TyStdLogicVector statesize)
-            addSignal "current_state" (TyRegister "clk" statesize)
-            addSignal "done_or_next_state" (TyStdLogicVector statesize)
-            addSignal "next_state" (TyStdLogicVector statesize)
-            let ports       = [Port "clk"  In TyClock,
-                               Port rst    In TyStdLogic,
-                               Port "inp"  In (TyStdLogicVector insize),
-                               Port "outp" Out (TyStdLogicVector outsize)]
-            (sigs, comps, _) <- get
-            pure (Unit (uses flags)
-                     (Entity "top_level" ports)
-                     (Architecture
-                         "top_level_impl"
-                         "top_level"
-                         sigs
-                         comps
-                         [Instantiate "start_call" (mangle n_startstate)
-                            (PortMap [("res", ExprName "start_state")]),
-                          Instantiate "loop_call" (mangle n_loopfun)
-                            (PortMap [("arg0", ExprSlice (ExprName "current_state") (1 + outsize) (1 + outsize + arg0size - 1)),
-                                      ("arg1", ExprName "inp"),
-                                      ("res", ExprName "loop_out")]),
-                          WithAssign (ExprName rst) (LHSName "next_state")
-                           [(ExprName "start_state", ExprBit rstSignal)]
-                           (Just (ExprName "done_or_next_state")),
-                          WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "done_or_next_state")
-                           [(ExprName "loop_out", ExprBitString [One])]
-                           (Just (ExprName "current_state")),
-                          ClkProcess "clk"
-                           [Assign (LHSName "current_state") (ExprName "next_state")],
-                           Assign (LHSName "outp") (ExprSlice (ExprName "current_state") 1 outsize)
-                         ]
-                     )
-                   )
-      _ -> failAt an $ "compileStartDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " <> prettyPrint e
+compileStartDefn flags (StartDefn an insize outsize _ (n_loopfun, t_loopfun@(Ty _ (arg0size:_) _)) (n_startstate, t_startstate)) = do
+      put ([], [], 0) -- empty out signal and component store, reset name counter
+      let statesize = sizeOf t_startstate
+      addComponent an n_startstate t_startstate
+      addComponent an n_loopfun t_loopfun
+      addSignal "start_state" (TyStdLogicVector statesize)
+      addSignal "loop_out" (TyStdLogicVector statesize)
+      addSignal "current_state" (TyRegister "clk" statesize)
+      addSignal "done_or_next_state" (TyStdLogicVector statesize)
+      addSignal "next_state" (TyStdLogicVector statesize)
+      let ports       = [Port "clk"  In TyClock,
+                         Port rst    In TyStdLogic,
+                         Port "inp"  In (TyStdLogicVector insize),
+                         Port "outp" Out (TyStdLogicVector outsize)]
+      (sigs, comps, _) <- get
+      pure (Unit (uses flags)
+               (Entity "top_level" ports)
+               (Architecture
+                   "top_level_impl"
+                   "top_level"
+                   sigs
+                   comps
+                   [Instantiate "start_call" (mangle n_startstate)
+                      (PortMap [("res", ExprName "start_state")]),
+                    Instantiate "loop_call" (mangle n_loopfun)
+                      (PortMap [("arg0", ExprSlice (ExprName "current_state") (1 + outsize) (1 + outsize + arg0size - 1)),
+                                ("arg1", ExprName "inp"),
+                                ("res", ExprName "loop_out")]),
+                    WithAssign (ExprName rst) (LHSName "next_state")
+                     [(ExprName "start_state", ExprBit rstSignal)]
+                     (Just (ExprName "done_or_next_state")),
+                    WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "done_or_next_state")
+                     [(ExprName "loop_out", ExprBitString [One])]
+                     (Just (ExprName "current_state")),
+                    ClkProcess "clk"
+                     [Assign (LHSName "current_state") (ExprName "next_state")],
+                     Assign (LHSName "outp") (ExprSlice (ExprName "current_state") 1 outsize)
+                   ]
+               )
+             )
       where rstSignal :: Bit
             rstSignal = if FlagInvertReset `elem` flags then Zero else One
 

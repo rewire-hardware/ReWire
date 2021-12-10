@@ -52,10 +52,15 @@ transDefn conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) | n2s n == "Main.s
             M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyCon _ t_ret) t_in) t_out) (M.TyCon _ t_i)) t_res 
                         | n2s t_ret == "ReT" && n2s t_i == "I" -> do
                   (_, e') <- unbind e
-                  Left <$> (C.StartDefn an <$> runReaderT (transType t_in) conMap
-                                           <*> runReaderT (transType t_out) conMap
-                                           <*> runReaderT (transType t_res) conMap
-                                           <*> runReaderT (runReaderT (transExp e') conMap) mempty)
+                  e''     <- runReaderT (runReaderT (transExp e') conMap) mempty
+                  case e'' of
+                        C.Call _ _ "unfold" [C.Call _ loopSig@(C.Ty _ (_:_) _) loop [], C.Call _ state0Sig state0 []] ->
+                              Left <$> (C.StartDefn an <$> runReaderT (sizeOf an t_in) conMap
+                                                       <*> runReaderT (sizeOf an t_out) conMap
+                                                       <*> runReaderT (sizeOf an t_res) conMap
+                                                       <*> pure (loop, loopSig)
+                                                       <*> pure (state0, state0Sig))
+                        _ -> failAt an $ "transDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " <> prettyPrint e''
             _ -> failAt an $ "transDefn: Main.start has illegal type: " <> prettyPrint t'
 transDefn conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) = do
       (_, t')  <- unbind t
@@ -66,15 +71,19 @@ transExp :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.Exp -> T
 transExp = \ case
       e@(M.App an _ _)                  -> case M.flattenApp e of
             (M.Var _ _ x : args)        -> C.Call an <$> transType (M.typeOf e) <*> pure (showt x) <*> mapM transExp args
-            (M.Con an t d : args)        -> C.Con an <$> transType (M.typeOf e) <*> ctorId an (snd $ M.flattenArrow t) d <*> mapM transExp args
+            (M.Con an t d : args)        -> do
+                  (v, w) <- ctorId an (snd $ M.flattenArrow t) d
+                  C.Con an <$> sizeOf an (M.typeOf e) <*> pure v <*> pure w <*> mapM transExp args
             (M.NativeVHDL _ s _ : args) -> C.NativeVHDL an <$> transType (M.typeOf e) <*> pure s <*> mapM transExp args
             _                                          -> failAt an "transExp: encountered ill-formed application."
       M.Var an t x                      -> lift (asks (Map.lookup x)) >>= \ case
             Nothing -> C.Call an <$> transType t <*> pure (showt x) <*> pure []
             Just i  -> C.LVar an <$> transType t <*> pure i
-      M.Con an t d                      -> C.Con an <$> transType t <*> ctorId an (snd $ M.flattenArrow t) d <*> pure []
-      M.Match an t e p f as (Just e2)   -> C.Match an <$> transType t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> mapM (toLId <=< transExp) as <*> (Just <$> transExp e2)
-      M.Match an t e p f as Nothing     -> C.Match an <$> transType t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> mapM (toLId <=< transExp) as <*> pure Nothing
+      M.Con an t d                      -> do
+            (v, w) <- ctorId an (snd $ M.flattenArrow t) d
+            C.Con an <$> sizeOf an t <*> pure v <*> pure w <*> pure []
+      M.Match an t e p f (Just e2)      -> C.Match an <$> transType t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> (Just <$> transExp e2)
+      M.Match an t e p f Nothing        -> C.Match an <$> transType t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> pure Nothing
       M.NativeVHDL an s (M.Error _ t _) -> C.NativeVHDL an <$> transType t <*> pure s <*> pure []
       M.Error an t _                    -> C.Call an <$> transType t <*> pure "ERROR" <*> pure []
       e                                 -> failAt (ann e) $ "ToCore: unsupported expression: " <> prettyPrint e
@@ -88,13 +97,15 @@ transExp = \ case
 
 transPat :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.MatchPat -> ReaderT ConMap m C.Pat
 transPat = \ case
-      M.MatchPatCon an t d ps -> C.PatCon an <$> transType t <*> ctorId an t d <*> mapM transPat ps
+      M.MatchPatCon an t d ps -> do
+            (v, w) <- ctorId an t d
+            C.PatCon an <$> sizeOf an t <*> pure v <*> pure w <*> mapM transPat ps
       M.MatchPatVar an t      -> C.PatVar an <$> transType t
 
 transType :: (Fresh m, MonadError AstError m, MonadState SizeMap m) => M.Ty -> ReaderT ConMap m C.Ty
 transType t = case t of
-      M.TyApp an _ _ -> C.Ty an <$> mapM (sizeof an) (fst $ M.flattenArrow t) <*> sizeof an (snd $ M.flattenArrow t)
-      M.TyCon an _   -> C.Ty an [] <$> sizeof an t
+      M.TyApp an _ _ -> C.Ty an <$> mapM (sizeOf an) (fst $ M.flattenArrow t) <*> sizeOf an (snd $ M.flattenArrow t)
+      M.TyCon an _   -> C.Ty an [] <$> sizeOf an t
       _              -> pure $ C.Ty (ann t) [] 0
 
 matchTy :: MonadError AstError m => Annote -> M.Ty -> M.Ty -> m TySub
@@ -129,7 +140,7 @@ ctorWidth t d = do
             Just ct -> do
                   let (targs, tres) = M.flattenArrow ct
                   s                <- matchTy (ann t') tres t'
-                  sum <$> mapM (sizeof $ ann t) (map (apply s) targs)
+                  sum <$> mapM (sizeOf $ ann t) (map (apply s) targs)
             _ -> pure 0
 
 -- TODO(chathhorn): shouldn't be necessary (should save this info before breaking out ctors)
@@ -139,23 +150,23 @@ getCtors n = asks (fromMaybe [] . Map.lookup n . fst)
 getCtorType :: MonadReader ConMap m => Name M.DataConId -> m (Maybe M.Ty)
 getCtorType n = asks (Map.lookup n . snd)
 
-ctorId :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => Annote -> M.Ty -> Name M.DataConId -> m C.DataConId
+ctorId :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => Annote -> M.Ty -> Name M.DataConId -> m (Int, Int)
 ctorId an t d = case th of
-      M.TyCon _ c | n2s c == "ReT" -> pure $ C.DataConId "ReT" 0 0 -- TODO(chathhorn): ?
+      -- M.TyCon _ c | n2s c == "ReT" -> pure $ C.DataConId "ReT" 0 0 -- TODO(chathhorn): ?
       M.TyCon _ c                  -> do
             ctors      <- getCtors c
             case findIndex ((== n2s d) . n2s) ctors of
-                  Just idx -> pure $ C.DataConId (showt d) idx (ceilLog2 $ length ctors)
+                  Just idx -> pure (idx, ceilLog2 $ length ctors)
                   Nothing  -> failAt an $ "ToCore: ctorId: unknown ctor: " <> prettyPrint (n2s d) <> " of type " <> prettyPrint (n2s c)
       _                            -> failAt an $ "ToCore: ctorId: unexpected type: " <> prettyPrint t
       where (th : _) = M.flattenTyApp t
 
-sizeof :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => Annote -> M.Ty -> m Int
-sizeof an t = do
+sizeOf :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => Annote -> M.Ty -> m Int
+sizeOf an t = do
       m <- get
       s <- case Map.lookup t m of
             Nothing -> case th of
-                  M.TyApp {}                   -> failAt an $ "ToCore: sizeof: Got TyApp after flattening (can't happen): " <> prettyPrint t
+                  M.TyApp {}                   -> failAt an $ "ToCore: sizeOf: Got TyApp after flattening (can't happen): " <> prettyPrint t
                   M.TyCon _ c | n2s c == "ReT" -> pure 1 -- TODO(chathhorn): ?
                   M.TyCon _ c                  -> do
                         ctors      <- getCtors c
