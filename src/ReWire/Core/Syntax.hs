@@ -1,8 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable, DeriveGeneric, DerivingVia, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Core.Syntax
-  ( DataConId (..)
-  , Ty (..)
+  ( Ty (..)
   , Exp (..)
   , Pat (..)
   , StartDefn (..), Defn (..)
@@ -27,23 +26,13 @@ import TextShow.Generic (FromGeneric (..))
 class TypeAnnotated a where
       typeOf :: a -> Ty
 
--- | Enough to recover the size and value of the tag vector.
-data DataConId = DataConId
-            { ctorName     :: Text
-            , ctorTagValue :: Int
-            , ctorTagSize  :: Int -- ceilLog2 of nctors.
-            }
-      deriving (Eq, Ord, Generic, Show, Typeable, Data)
-      deriving TextShow via FromGeneric DataConId
-
+type Size = Int
 type GId  = Text
 type LId  = Int
 
-instance Pretty DataConId where
-      pretty (DataConId _ idx tagSize) = text "CTOR_" <> pretty idx <> text "_" <> pretty tagSize
 ---
 
-data Ty = Ty Annote ![Int] !Int -- Function ty with sizes of arguments and size of result.
+data Ty = Ty Annote ![Size] !Size -- Function ty with sizes of arguments and size of result.
         deriving (Eq, Ord, Generic, Show, Typeable, Data)
         deriving TextShow via FromGeneric Ty
 
@@ -55,51 +44,58 @@ instance Pretty Ty where
             Ty _ [] res   -> pretty res
             Ty _ args res -> (brackets $ hsep $ punctuate comma $ map pretty args) <+> text "->" <+> pretty res
 
--- For arrow types, returns the size of the result.
-sizeOf :: Ty -> Int
+-- | For arrow types, returns the size of the result.
+sizeOf :: Ty -> Size
 sizeOf (Ty _ _ s) = s
 
 ---
 
-data Exp = Call       Annote !Ty !GId            ![Exp]
-         | Con        Annote !Ty !DataConId      ![Exp]
-         | LVar       Annote !Ty !LId
-         | Match      Annote !Ty !Exp !Pat !GId ![LId] !(Maybe Exp)
-         | NativeVHDL Annote !Ty !Text           ![Exp]
+data Exp = Call       Annote !Ty   !GId            ![Exp]
+         | Con        Annote !Size !Int !Size     ![Exp] -- Ints: type size, tag value, tag width (ceilLog2 of nctors)
+         | LVar       Annote !Ty   !LId
+         | Match      Annote !Ty   !Exp !Pat !GId !(Maybe Exp)
+         | NativeVHDL Annote !Ty   !Text           ![Exp]
          | NativeVHDLComponent Annote !Ty  !Text ![Exp]
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Exp
 
+-- TODO(chathhorn):
+-- Call an sz gid args = Match an sz (Tuple args) (TuplePat $ map toVar args) gid [] Nothing
+-- Match an sz e p gid lids e' = Match an sz (Tuple $ (map lidToVar lids) <> [e]) (TuplePat $ map toVar lids <> [p]) gid [] e'
+
 instance TypeAnnotated Exp where
       typeOf = \ case
-            Call _ t _ _        -> t
-            LVar _ t _          -> t
-            Con _ t _ _         -> t
-            Match _ t _ _ _ _ _ -> t
-            NativeVHDL _ t _ _  -> t
+            Call _ t _ _       -> t
+            LVar _ t _         -> t
+            Con a s _ _ _      -> Ty a [] s
+            Match _ t _ _ _ _  -> t
+            NativeVHDL _ t _ _ -> t
 
 instance Annotated Exp where
       ann = \ case
-            Call a _ _ _        -> a
-            LVar a _ _          -> a
-            Con a _ _ _         -> a
-            Match a _ _ _ _ _ _ -> a
-            NativeVHDL a _ _ _  -> a
+            Call a _ _ _       -> a
+            LVar a _ _         -> a
+            Con a _ _ _ _      -> a
+            Match a _ _ _ _ _  -> a
+            NativeVHDL a _ _ _ -> a
 
 instance Pretty Exp where
       pretty = \ case
-            Call _ t n []                                     -> pretty n <> braces (pretty t)
-            Call _ t n args                                   -> pretty n <> braces (pretty t) <> brackets (hsep $ punctuate comma $ map pretty args)
-            Con _ t d []                                      -> pretty d <> braces (pretty t)
-            Con _ t d args                                    -> pretty d <> braces (pretty t) <> brackets (hsep $ punctuate comma $ map pretty args)
+            Call _ (Ty _ [] _) n args                         -> pretty n <+> brackets (hsep $ punctuate comma $ map pretty args)
+            Call _ _ n []                                     -> pretty n
+            Call _ _ n args                                   -> pretty n <+> brackets (hsep $ punctuate comma $ map pretty args <> [text "..."])
+
+            Con _ _ 0 0 args                                  -> brackets $ hsep $ punctuate comma $ map pretty args
+            Con _ _ v w args                                  -> brackets $ hsep $ punctuate comma $ (text "TAG_" <> pretty v <> text "_" <> pretty w) : map pretty args
+
             LVar _ _ n                                        -> text $ "$" <> showt n
-            Match _ t e p e1 as Nothing                       -> nest 2 $ vsep
-                  [ text "match" <+> braces (pretty t) <+> pretty e <+> text "of"
-                  , pretty p <+> text "->" <+> text e1 <+> hsep (map (pretty . LVar noAnn (Ty noAnn [] (-1))) as)
+            Match _ _ e p e1 Nothing                          -> nest 2 $ vsep
+                  [ text "match" <+> pretty e <+> text "of"
+                  , pretty p <+> text "->" <+> text e1
                   ]
-            Match _ t e p e1 as (Just e2)                     -> nest 2 $ vsep
-                  [ text "match"  <+> braces (pretty t) <+> pretty e <+> text "of"
-                  , pretty p <+> text "->" <+> text e1 <+> hsep (map (pretty . LVar noAnn (Ty noAnn [] (-1))) as)
+            Match _ _ e p e1 (Just e2)                        -> nest 2 $ vsep
+                  [ text "match" <+> pretty e <+> text "of"
+                  , pretty p <+> text "->" <+> text e1
                   , text "_" <+> text "->" <+> pretty e2
                   ]
             NativeVHDL _ t n []                               -> parens (text "nativeVHDL" <+> dquotes (text n)) <> braces (pretty t)
@@ -107,47 +103,40 @@ instance Pretty Exp where
 
 ---
 
-data Pat = PatCon Annote !Ty !DataConId ![Pat]
+data Pat = PatCon Annote !Size !Int !Size ![Pat]
          | PatVar Annote !Ty
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Pat
 
 instance TypeAnnotated Pat where
       typeOf = \ case
-            PatCon _ t _ _ -> t
-            PatVar _ t     -> t
+            PatCon a s _ _ _ -> Ty a [] s
+            PatVar _ t       -> t
 
 instance Annotated Pat where
       ann = \ case
-            PatCon a _ _ _ -> a
-            PatVar a _     -> a
-
-mparen :: Pat -> Doc ann
-mparen a = if parenless a then pretty a else parens $ pretty a
-      where parenless :: Pat -> Bool
-            parenless = \ case
-                  PatCon _ _ _ [] -> True
-                  PatVar {}       -> True
-                  _               -> False
+            PatCon a _ _ _ _ -> a
+            PatVar a _       -> a
 
 instance Pretty Pat where
       pretty = \ case
-            PatCon _ t d ps -> pretty d <> braces (pretty t) <+> hsep (map mparen ps)
-            PatVar _ t      -> braces $ braces $ pretty t
+            PatCon _ _ 0 0 ps -> brackets $ hsep $ punctuate comma $ map pretty ps
+            PatCon _ _ v w ps -> brackets $ hsep $ punctuate comma $ (text "TAG_" <> pretty v <> text "_" <> pretty w) : map pretty ps
+            PatVar _ t        -> braces $ pretty t
 
 ---
 
-data StartDefn = StartDefn Annote !Ty !Ty !Ty !Exp -- input, output, res type, body
+data StartDefn = StartDefn Annote !Size !Size !Size !(GId, Ty) !(GId, Ty) -- input, output, res type, (loop, loop ty), (state0, state0 ty)
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric StartDefn
 
 instance Annotated StartDefn where
-      ann (StartDefn a _ _ _ _) = a
+      ann (StartDefn a _ _ _ _ _) = a
 
 instance Pretty StartDefn where
-      pretty (StartDefn _ tin tout tres e) = vsep $
+      pretty (StartDefn _ tin tout tres (loop, _) (state0, _)) = vsep $
             [ text "Main.start" <+> text "::" <+> text "ReT" <+> pretty tin <+> pretty tout <+> text "I" <+> pretty tres
-            , text "Main.start" <+> text "=" <+> nest 2 (pretty e)
+            , text "Main.start" <+> text "=" <+> nest 2 (text "unfold" <+> pretty loop <+> pretty state0)
             ]
 
 ---

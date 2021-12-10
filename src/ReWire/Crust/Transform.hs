@@ -132,14 +132,14 @@ fullyApplyDefs (ts, syns, vs) = (ts, syns, ) <$> mapM fullyApplyDefs' vs
                   case typeOf e' of
                         TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t) _ -> do
                               x <- fresh $ s2n "$x"
-                              fullyApply $ bind (vs ++ [x]) $ appl (Var (ann e') t x) e'
+                              fullyApply $ bind (vs ++ [x]) $ appl t (Var (ann e') t x) e'
                         _                                             -> pure e
 
-            appl :: Exp -> Exp -> Exp
-            appl x = \ case
-                  Match an t e1 p e lvars Nothing    -> Match an (arrowRight t) e1 p e (lvars ++ [x]) Nothing
-                  Match an t e1 p e lvars (Just els) -> Match an (arrowRight t) e1 p e (lvars ++ [x]) $ Just $ appl x els
-                  e                                  -> App (ann e) e x
+            appl :: Ty -> Exp -> Exp -> Exp
+            appl t x = \ case
+                  Match an t' e1 p e Nothing    -> Match an (arrowRight t') (mkPair an e1 x) (mkPairMPat an p $ MatchPatVar an t) e Nothing
+                  Match an t' e1 p e (Just els) -> Match an (arrowRight t') (mkPair an e1 x) (mkPairMPat an p $ MatchPatVar an t) e $ Just $ appl t x els
+                  e                             -> App (ann e) e x
 
 -- | Lifts lambdas and case/match into a top level fun def.
 liftLambdas :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
@@ -170,9 +170,12 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                         f     <- fresh $ s2n "$LL.case"
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs ++ map fst pvs) e')
-                        pure $ Match an t e1 (transPat p) (Var an t' f) (map (toVar an . first promote) bvs) e2
+                        let lvars = map (toVar an . first promote) bvs 
+                        pure $ Match an t (mkTuple an $ lvars <> [e1])
+                                    (mkTupleMPat an $ map (MatchPatVar an . typeOf) lvars <> [transPat p])
+                                    (Var an t' f) e2
                   -- TODO(chathhorn): This case is really just normalizing Match, consider moving to ToCore.
-                  Match an t e1 p e lvars els | liftable e -> do
+                  Match an t e1 p e els | liftable e -> do
                         let bvs   = bv e
                         (fvs, e') <- freshen e
 
@@ -180,7 +183,10 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                         f     <- fresh $ s2n "$LL.match"
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind fvs e')
-                        pure $ Match an t e1 p (Var an t' f) (map (toVar an) bvs ++ lvars) els
+                        let lvars = map (toVar an) bvs 
+                        pure $ Match an t (mkTuple an $ lvars <> [e1])
+                                    (mkTupleMPat an $ map (MatchPatVar an . typeOf) lvars <> [p])
+                                    (Var an t' f) els
                   -- Lifts matches in the operator position of an application.
                   -- TODO(chathhorn): move somewhere else?
                   App an e@Match {} arg -> do

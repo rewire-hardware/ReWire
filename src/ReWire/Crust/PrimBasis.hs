@@ -23,7 +23,7 @@ primDatas = map mkData
       , ("StT", KStar `KFun` (kmonad `KFun` kmonad),                [])
       , ("I",   kmonad,                                             [])
       , ("()",  KStar,                                              [DataCon (MsgAnnote "Prim: () data ctor") (s2n "()") ([] |-> TyCon (MsgAnnote "Prim: () type ctor") (s2n "()"))])
-      ] <> map mkTuple [2..62] -- why 62? 'cause that's what ghc does!
+      ] <> map mkTuple' [2..62] -- why 62? 'cause that's what ghc does!
 
 msg :: Text -> Annote
 msg = MsgAnnote
@@ -31,8 +31,8 @@ msg = MsgAnnote
 mkData :: (Text, Kind, [DataCon]) -> DataDefn
 mkData (n, k, cs) = DataDefn (msg $ "Prim: " <> n) (s2n n) k cs
 
-mkTuple :: Int -> DataDefn
-mkTuple n = DataDefn (msg "Prim: tuple") (s2n i) k [ctor]
+mkTuple' :: Int -> DataDefn
+mkTuple' n = DataDefn (msg "Prim: tuple") (s2n i) k [ctor]
       where i    = "(" <> T.replicate (n-1) "," <> ")"
             tvs  = map (s2n . T.pack) $ take n $ [[c] | c <- ['a'..'z']] <> map (('t':) . show) [0::Integer ..]
             tvs' = map (TyVar (MsgAnnote "Prim: tuple type variable") KStar) tvs
