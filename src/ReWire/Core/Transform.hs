@@ -31,10 +31,10 @@ reExp rn = \ case
             Just (l', _) -> LVar a s l'
             Nothing      -> LVar a s l
       Con a s v w args                      -> Con a s v w $ map (reExp rn) $ filter ((> 0) . sizeOf) args
-      Match a s e _ g _  | sizeOf e == 0
+      Match a s g e _ _  | sizeOf e == 0
                                             -> reExp rn $ Call a (Sig a [] s) g []
-      Match a s e p g (Just e')             -> Match a s (reExp rn e) (rePat p) g $ Just $ reExp rn e'
-      Match a s e p g Nothing               -> Match a s (reExp rn e) (rePat p) g Nothing
+      Match a s g e p (Just e')             -> Match a s g (reExp rn e) (rePat p) $ Just $ reExp rn e'
+      Match a s g e p Nothing               -> Match a s g (reExp rn e) (rePat p) Nothing
       NativeVHDL a s txt args               -> NativeVHDL a s txt $ map (reExp rn) $ filter ((> 0) . sizeOf) args
 
 reSig :: Sig -> Sig

@@ -82,8 +82,8 @@ transExp = \ case
       M.Con an t d                      -> do
             (v, w) <- ctorId an (snd $ M.flattenArrow t) d
             C.Con an <$> sizeOf an t <*> pure v <*> pure w <*> pure []
-      M.Match an t e p f (Just e2)      -> C.Match an <$> sizeOf an t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> (Just <$> transExp e2)
-      M.Match an t e p f Nothing        -> C.Match an <$> sizeOf an t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> pure Nothing
+      M.Match an t e p f (Just e2)      -> C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat p <*> (Just <$> transExp e2)
+      M.Match an t e p f Nothing        -> C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat p <*> pure Nothing
       M.NativeVHDL an s (M.Error _ t _) -> C.NativeVHDL an <$> sizeOf an t <*> pure s <*> pure []
       M.Error an t _                    -> C.Call an <$> transType t <*> pure "ERROR" <*> pure []
       e                                 -> failAt (ann e) $ "ToCore: unsupported expression: " <> prettyPrint e

@@ -112,7 +112,7 @@ compileExp = \ case
                                                   )],
                     n)
 
-      Match an sz escr p gid malt -> case malt of
+      Match an sz gid escr p malt -> case malt of
             Just ealt -> do
                   n                    <- (<> "_res") <$> freshName "match"
                   addSignal n $ TyStdLogicVector sz
