@@ -102,26 +102,30 @@ instance Pretty Exp where
 
 ---
 
-data Pat = PatCon Annote !Size !Int !Size ![Pat]
-         | PatVar Annote !Size
+data Pat = PatCon      Annote !Size !Int !Size ![Pat]
+         | PatVar      Annote !Size
+         | PatWildCard Annote !Size
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Pat
 
 instance SizeAnnotated Pat where
       sizeOf = \ case
-            PatCon _ s _ _ _ -> s
-            PatVar _ s       -> s
+            PatCon      _ s _ _ _ -> s
+            PatVar      _ s       -> s
+            PatWildCard _ s       -> s
 
 instance Annotated Pat where
       ann = \ case
-            PatCon a _ _ _ _ -> a
-            PatVar a _       -> a
+            PatCon      a _ _ _ _ -> a
+            PatVar      a _       -> a
+            PatWildCard a _       -> a
 
 instance Pretty Pat where
       pretty = \ case
             PatCon _ _ 0 0 ps -> brackets $ hsep $ punctuate comma $ map pretty ps
             PatCon _ _ v w ps -> brackets $ hsep $ punctuate comma $ (text "TAG_" <> pretty v <> text "_" <> pretty w) : map pretty ps
             PatVar _ s        -> braces $ pretty s
+            PatWildCard _ s   -> text "_" <> pretty s
 
 ---
 

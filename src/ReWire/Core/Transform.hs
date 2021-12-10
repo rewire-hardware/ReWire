@@ -43,5 +43,5 @@ reSig (Sig an ps r) = Sig an (filter (> 0) ps) r
 rePat :: Pat -> Pat
 rePat = \ case
       PatCon a s v w ps -> PatCon a s v w $ map rePat $ filter ((> 0) . sizeOf) ps
-      PatVar a s        -> PatVar a s
+      p                 -> p
 
