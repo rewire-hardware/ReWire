@@ -51,7 +51,7 @@ instance Pretty Sig where
 data Exp = Call                Annote !Sig  !GId           ![Exp] -- TODO(chathhorn): Sig instead of Size just because of case in ToCore.hs.
          | Con                 Annote !Size !Int !Size     ![Exp] -- Ints: type size, tag value, tag width (ceilLog2 of nctors)
          | LVar                Annote !Size !LId
-         | Match               Annote !Size !Exp !Pat !GId !(Maybe Exp)
+         | Match               Annote !Size !GId !Exp !Pat !(Maybe Exp)
          | NativeVHDL          Annote !Size !Text          ![Exp]
          | NativeVHDLComponent Annote !Size !Text          ![Exp]
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
@@ -86,13 +86,13 @@ instance Pretty Exp where
             Con _ _ v w args                                  -> brackets $ hsep $ punctuate comma $ (text "TAG_" <> pretty v <> text "_" <> pretty w) : map pretty args
 
             LVar _ _ n                                        -> text $ "$" <> showt n
-            Match _ _ e p e1 Nothing                          -> nest 2 $ vsep
+            Match _ _ f e p Nothing                          -> nest 2 $ vsep
                   [ text "match" <+> pretty e <+> text "of"
-                  , pretty p <+> text "->" <+> text e1
+                  , pretty p <+> text "->" <+> text f
                   ]
-            Match _ _ e p e1 (Just e2)                        -> nest 2 $ vsep
+            Match _ _ f e p (Just e2)                        -> nest 2 $ vsep
                   [ text "match" <+> pretty e <+> text "of"
-                  , pretty p <+> text "->" <+> text e1
+                  , pretty p <+> text "->" <+> text f
                   , text "_" <+> text "->" <+> pretty e2
                   ]
             NativeVHDL _ s n []                               -> parens (text "nativeVHDL" <+> dquotes (text n)) <> braces (pretty s)
