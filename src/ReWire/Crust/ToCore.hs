@@ -54,7 +54,7 @@ transDefn conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) | n2s n == "Main.s
                   (_, e') <- unbind e
                   e''     <- runReaderT (runReaderT (transExp e') conMap) mempty
                   case e'' of
-                        C.Call _ _ "unfold" [C.Call _ loopSig@(C.Ty _ (_:_) _) loop [], C.Call _ state0Sig state0 []] ->
+                        C.Call _ _ "unfold" [C.Call _ loopSig@(C.Sig _ (_:_) _) loop [], C.Call _ state0Sig state0 []] ->
                               Left <$> (C.StartDefn an <$> runReaderT (sizeOf an t_in) conMap
                                                        <*> runReaderT (sizeOf an t_out) conMap
                                                        <*> runReaderT (sizeOf an t_res) conMap
@@ -74,17 +74,17 @@ transExp = \ case
             (M.Con an t d : args)        -> do
                   (v, w) <- ctorId an (snd $ M.flattenArrow t) d
                   C.Con an <$> sizeOf an (M.typeOf e) <*> pure v <*> pure w <*> mapM transExp args
-            (M.NativeVHDL _ s _ : args) -> C.NativeVHDL an <$> transType (M.typeOf e) <*> pure s <*> mapM transExp args
+            (M.NativeVHDL _ s _ : args) -> C.NativeVHDL an <$> sizeOf an (M.typeOf e) <*> pure s <*> mapM transExp args
             _                                          -> failAt an "transExp: encountered ill-formed application."
       M.Var an t x                      -> lift (asks (Map.lookup x)) >>= \ case
             Nothing -> C.Call an <$> transType t <*> pure (showt x) <*> pure []
-            Just i  -> C.LVar an <$> transType t <*> pure i
+            Just i  -> C.LVar an <$> sizeOf an t <*> pure i
       M.Con an t d                      -> do
             (v, w) <- ctorId an (snd $ M.flattenArrow t) d
             C.Con an <$> sizeOf an t <*> pure v <*> pure w <*> pure []
-      M.Match an t e p f (Just e2)      -> C.Match an <$> transType t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> (Just <$> transExp e2)
-      M.Match an t e p f Nothing        -> C.Match an <$> transType t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> pure Nothing
-      M.NativeVHDL an s (M.Error _ t _) -> C.NativeVHDL an <$> transType t <*> pure s <*> pure []
+      M.Match an t e p f (Just e2)      -> C.Match an <$> sizeOf an t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> (Just <$> transExp e2)
+      M.Match an t e p f Nothing        -> C.Match an <$> sizeOf an t <*> transExp e <*> transPat p <*> (toGId =<< transExp f) <*> pure Nothing
+      M.NativeVHDL an s (M.Error _ t _) -> C.NativeVHDL an <$> sizeOf an t <*> pure s <*> pure []
       M.Error an t _                    -> C.Call an <$> transType t <*> pure "ERROR" <*> pure []
       e                                 -> failAt (ann e) $ "ToCore: unsupported expression: " <> prettyPrint e
       where toGId :: MonadError AstError m => C.Exp -> m C.GId
@@ -100,13 +100,13 @@ transPat = \ case
       M.MatchPatCon an t d ps -> do
             (v, w) <- ctorId an t d
             C.PatCon an <$> sizeOf an t <*> pure v <*> pure w <*> mapM transPat ps
-      M.MatchPatVar an t      -> C.PatVar an <$> transType t
+      M.MatchPatVar an t      -> C.PatVar an <$> sizeOf an t
 
-transType :: (Fresh m, MonadError AstError m, MonadState SizeMap m) => M.Ty -> ReaderT ConMap m C.Ty
+transType :: (Fresh m, MonadError AstError m, MonadState SizeMap m) => M.Ty -> ReaderT ConMap m C.Sig
 transType t = case t of
-      M.TyApp an _ _ -> C.Ty an <$> mapM (sizeOf an) (fst $ M.flattenArrow t) <*> sizeOf an (snd $ M.flattenArrow t)
-      M.TyCon an _   -> C.Ty an [] <$> sizeOf an t
-      _              -> pure $ C.Ty (ann t) [] 0
+      M.TyApp an _ _ -> C.Sig an <$> mapM (sizeOf an) (fst $ M.flattenArrow t) <*> sizeOf an (snd $ M.flattenArrow t)
+      M.TyCon an _   -> C.Sig an [] <$> sizeOf an t
+      _              -> pure $ C.Sig (ann t) [] 0
 
 matchTy :: MonadError AstError m => Annote -> M.Ty -> M.Ty -> m TySub
 matchTy an (M.TyApp _ t1 t2) (M.TyApp _ t1' t2') = do
