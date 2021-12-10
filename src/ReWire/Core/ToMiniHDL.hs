@@ -65,17 +65,19 @@ addComponent _ i t = do
                   put (sigs, Component (mangle i) ps : comps, ctr)
 
 compilePat :: Monad m => Name -> Int -> Pat -> CM m (Expr, [Expr])  -- first Expr is for whether match (std_logic); remaining Exprs are for extracted fields
-compilePat nscr offset (PatCon _ _ tagValue tagSize ps) = do
-      let dcitagvec    = nvec tagValue tagSize
-      let tagw         = length dcitagvec
-          fieldwidths  = map sizeOf ps
-      let fieldoffsets = init $ scanl (+) (offset + tagw) fieldwidths
-      rs              <- zipWithM (compilePat nscr) fieldoffsets ps
-      let ematchs      = map fst rs
-          eslices      = concatMap snd rs
-          ematch       = foldl' ExprAnd (ExprIsEq (ExprSlice (ExprName nscr) offset (offset + tagw - 1)) (ExprBitString dcitagvec)) ematchs
-      pure (ematch, eslices)
-compilePat nscr offset (PatVar _ s)       = pure (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + s - 1)])
+compilePat nscr offset = \ case
+      PatCon _ _ tagValue tagSize ps -> do
+            let dcitagvec    = nvec tagValue tagSize
+            let tagw         = length dcitagvec
+                fieldwidths  = map sizeOf ps
+            let fieldoffsets = init $ scanl (+) (offset + tagw) fieldwidths
+            rs              <- zipWithM (compilePat nscr) fieldoffsets ps
+            let ematchs      = map fst rs
+                eslices      = concatMap snd rs
+                ematch       = foldl' ExprAnd (ExprIsEq (ExprSlice (ExprName nscr) offset (offset + tagw - 1)) (ExprBitString dcitagvec)) ematchs
+            pure (ematch, eslices)
+      PatVar _ s       -> pure (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + s - 1)])
+      PatWildCard _ _  -> pure (ExprBoolConst True, [])
 
 askGIdTy :: Monad m => GId -> CM m C.Sig
 askGIdTy i = do
