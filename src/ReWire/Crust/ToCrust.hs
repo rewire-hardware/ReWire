@@ -254,9 +254,10 @@ transExp rn = \ case
 
 transPat :: MonadError AstError m => Renamer -> Pat Annote -> m M.Pat
 transPat rn = \ case
-      PApp l x ps             -> M.PatCon l (Embed (M.TyBlank l)) (Embed $ s2n $ rename Value rn x) <$> mapM (transPat rn) ps
-      PVar l x                -> pure $ M.PatVar l (Embed (M.TyBlank l)) (mkUId $ void x)
-      p                       -> failAt (ann p) $ "Unsupported syntax in a pattern: " <> (pack $ show $ void p)
+      PApp l x ps -> M.PatCon l (Embed (M.TyBlank l)) (Embed $ s2n $ rename Value rn x) <$> mapM (transPat rn) ps
+      PVar l x    -> pure $ M.PatVar l (Embed (M.TyBlank l)) (mkUId $ void x)
+      PWildCard l -> pure $ M.PatWildCard l (Embed (M.TyBlank l))
+      p           -> failAt (ann p) $ "Unsupported syntax in a pattern: " <> (pack $ show $ void p)
 
 -- Note: runs before desugaring.
 -- TODO(chathhorn): GADT style decls?

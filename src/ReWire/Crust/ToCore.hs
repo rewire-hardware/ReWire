@@ -101,6 +101,7 @@ transPat = \ case
             (v, w) <- ctorId an t d
             C.PatCon an <$> sizeOf an t <*> pure v <*> pure w <*> mapM transPat ps
       M.MatchPatVar an t      -> C.PatVar an <$> sizeOf an t
+      M.MatchPatWildCard an t -> C.PatWildCard an <$> sizeOf an t
 
 transType :: (Fresh m, MonadError AstError m, MonadState SizeMap m) => M.Ty -> ReaderT ConMap m C.Sig
 transType t = case t of

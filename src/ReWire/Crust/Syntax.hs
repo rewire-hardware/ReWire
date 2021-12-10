@@ -54,7 +54,7 @@ import safe Prettyprinter
       ( Doc, nest, hsep, parens, dquotes
       , braces, vsep, (<+>), Pretty (..)
       )
-import safe ReWire.Pretty (empty, text, hang)
+import safe ReWire.Pretty (empty, text)
 import TextShow (TextShow (..), fromString)
 import TextShow.Generic (FromGeneric (..), genericShowbPrec)
 
@@ -284,8 +284,8 @@ instance Parenless Exp where
 instance Pretty Exp where
       pretty = \ case
             App _ (App _ (Con _ _ (n2s -> "(,)")) e1) e2 -> parens $ pretty e1 <> (text "," <+> pretty e2)
-            App _ e1@App {} e2                           -> hang (pretty e1) 2 $ mparen e2
-            App _ e1 e2                                  -> hang (mparen e1) 2 $ mparen e2
+            App _ e1@App {} e2                           -> nest 2 $ pretty e1 <+> mparen e2
+            App _ e1 e2                                  -> nest 2 $ mparen e1 <+> mparen e2
             Con _ t n                                    -> pretty n <+> braces (pretty t)
             Var _ t n                                    -> text (showt n) <+> braces (pretty t)
             Lam _ _ e                                    -> runFreshM $ do
@@ -307,8 +307,9 @@ instance Pretty Exp where
 
 ---
 
-data Pat = PatCon Annote !(Embed Ty) !(Embed (Name DataConId)) ![Pat]
-         | PatVar Annote !(Embed Ty) !(Name Exp)
+data Pat = PatCon      Annote !(Embed Ty) !(Embed (Name DataConId)) ![Pat]
+         | PatVar      Annote !(Embed Ty) !(Name Exp)
+         | PatWildCard Annote !(Embed Ty)
       deriving (Eq, Show, Generic, Typeable, Data)
       deriving TextShow via FromGeneric Pat
 
@@ -320,19 +321,22 @@ instance NFData Pat
 
 instance TypeAnnotated Pat where
       typeOf = \ case
-            PatCon  _ (Embed t) _ _ -> t
-            PatVar  _ (Embed t) _   -> t
+            PatCon  _ (Embed t) _ _  -> t
+            PatVar  _ (Embed t) _    -> t
+            PatWildCard  _ (Embed t) -> t
 
 instance Annotated Pat where
       ann = \ case
-            PatCon  a _ _ _ -> a
-            PatVar  a _ _   -> a
+            PatCon  a _ _ _  -> a
+            PatVar  a _ _    -> a
+            PatWildCard  a _ -> a
 
 instance Parenless Pat where
       parenless = \ case
             PatCon _ _ (Embed (n2s -> "(,)")) _ -> True
             PatCon _ _ _ []                     -> True
             PatVar {}                           -> True
+            PatWildCard {}                      -> True
             _                                   -> False
 
 instance Pretty Pat where
@@ -340,10 +344,12 @@ instance Pretty Pat where
             PatCon _ _ (Embed (n2s -> "(,)")) [p1, p2] -> parens $ pretty p1 <> (text "," <+> pretty p2)
             PatCon _ _ (Embed n) ps                    -> pretty n <+> hsep (map mparen ps)
             PatVar _ _ n                               -> text $ showt n
+            PatWildCard _ _                            -> text "_"
 
 
 data MatchPat = MatchPatCon Annote !Ty !(Name DataConId) ![MatchPat]
               | MatchPatVar Annote !Ty
+              | MatchPatWildCard Annote !Ty
       deriving (Eq, Show, Generic, Typeable, Data)
       deriving TextShow via FromGeneric MatchPat
 
@@ -360,17 +366,20 @@ instance TypeAnnotated MatchPat where
       typeOf = \ case
             MatchPatCon _ t _ _  -> t
             MatchPatVar _ t      -> t
+            MatchPatWildCard _ t -> t
 
 instance Annotated MatchPat where
       ann = \ case
             MatchPatCon a _ _ _  -> a
             MatchPatVar a _      -> a
+            MatchPatWildCard a _ -> a
 
 instance Parenless MatchPat where
       parenless = \ case
             MatchPatCon _ _ (n2s -> "(,)") _ -> True
             MatchPatCon _ _ _ []             -> True
             MatchPatVar {}                   -> True
+            MatchPatWildCard {}              -> True
             _                                -> False
 
 instance Pretty MatchPat where
@@ -378,6 +387,7 @@ instance Pretty MatchPat where
             MatchPatCon _ _ (n2s -> "(,)") [p1, p2] -> parens $ pretty p1 <> (text "," <+> pretty p2)
             MatchPatCon _ _ n ps                    -> pretty n <+> hsep (map mparen ps)
             MatchPatVar _ t                         -> parens $ text "*" <+> text "::" <+> pretty t
+            MatchPatWildCard _ t                    -> parens $ text "_" <+> text "::" <+> pretty t
 
 ---
 

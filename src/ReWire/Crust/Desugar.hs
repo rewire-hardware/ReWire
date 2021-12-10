@@ -61,8 +61,7 @@ desugar rn = fmap fst . flip runStateT 0 .
             )
       >=> runT flattenAlts -- again
       >=> runT
-            ( desugarWildCards
-           <> desugarAsPats
+            ( desugarAsPats
            <> liftDiscriminator
             )
       )
@@ -473,11 +472,6 @@ desugarNegs :: (MonadCatch m, MonadError AstError m) => Transform (FreshT m)
 desugarNegs = transform $
       \ (NegApp (l :: Annote) e) -> pure $ App l (App l (Var l $ UnQual l $ Ident l "-") $ Lit l $ Int l 0 "0") e
 
--- | Turns wildcard patterns into variable patterns.
-desugarWildCards :: (MonadCatch m, MonadError AstError m) => Transform (FreshT m)
-desugarWildCards = transform $
-      \ (PWildCard (l :: Annote)) -> PVar l <$> fresh l
-
 -- | Turns Lambdas with several bindings into several lambdas with single
 --   bindings. E.g.:
 -- > \ p1 p2 -> e
@@ -506,8 +500,9 @@ depatLambdas = transform $ \ case
 -- > case e1 of { C p -> (\ x -> ((\ y -> e2) p)) (C p) }
 desugarAsPats :: (MonadCatch m, MonadError AstError m) => Transform (FreshT m)
 desugarAsPats = transform $ \ (Alt l p (UnGuardedRhs l' e) Nothing) -> do
-            app <- foldrM (mkApp l) e $ getAses p
-            pure $ Alt l (deAs p) (UnGuardedRhs l' app) Nothing
+            p'  <- deWild p
+            app <- foldrM (mkApp l) e $ getAses p'
+            pure $ Alt l (deAs p') (UnGuardedRhs l' app) Nothing
 
       where mkApp :: (Functor m, MonadError AstError m) => Annote -> (Pat Annote, Pat Annote) -> Exp Annote -> FreshT m (Exp Annote)
             mkApp l (p, p') e = App l (Lambda l [p] e) <$> patToExp p'
@@ -522,10 +517,13 @@ desugarAsPats = transform $ \ (Alt l p (UnGuardedRhs l' e) Nothing) -> do
                   PAsPat (_ :: Annote) _ p -> pure p
                   n                        -> pure n)
 
+            deWild :: MonadCatch m => Pat Annote -> FreshT m (Pat Annote)
+            deWild = runT $ transform $
+                  \ (PWildCard l) -> PVar l <$> fresh l
+
             patToExp :: (Functor m, MonadError AstError m) => Pat Annote -> FreshT m (Exp Annote)
             patToExp = \ case
                   PVar l n                -> pure $ Var l $ UnQual l n
-                  PWildCard l             -> Var l <$> (UnQual l <$> fresh l)
                   PLit l (Signless _) n   -> pure $ Lit l n
                   -- PNPlusK _name _int ->
                   PApp l n ps             -> foldl' (App l) (Con l n) <$> mapM patToExp ps
