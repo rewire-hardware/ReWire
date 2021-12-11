@@ -8,7 +8,6 @@ import ReWire.Pretty
 import ReWire.Unbound (Name, Fresh, runFreshM, Embed (..) , unbind, n2s)
 
 import Control.Arrow ((&&&))
-import Control.Monad ((<=<))
 import Control.Monad.State (StateT (..), MonadState, get, put)
 import Control.Monad.Reader (MonadReader (..), ReaderT (..), asks, lift)
 import Data.HashMap.Strict (HashMap)
@@ -73,15 +72,22 @@ transExp = \ case
             (M.Var _ _ x : args)        -> C.Call an <$> transType (M.typeOf e) <*> pure (showt x) <*> mapM transExp args
             (M.Con an t d : args)        -> do
                   (v, w) <- ctorId an (snd $ M.flattenArrow t) d
-                  C.Con an <$> sizeOf an (M.typeOf e) <*> pure v <*> pure w <*> mapM transExp args
+                  sz     <- sizeOf an $ M.typeOf e
+                  szArgs <- sum <$> mapM (sizeOf an . M.typeOf) args
+                  let tag = C.Lit an w v
+                      pad = C.Lit an (sz - w - szArgs) 0
+                  C.Slice an <$> (([tag, pad] <>) <$> mapM transExp args)
             (M.NativeVHDL _ s _ : args) -> C.NativeVHDL an <$> sizeOf an (M.typeOf e) <*> pure s <*> mapM transExp args
             _                                          -> failAt an "transExp: encountered ill-formed application."
       M.Var an t x                      -> lift (asks (Map.lookup x)) >>= \ case
             Nothing -> C.Call an <$> transType t <*> pure (showt x) <*> pure []
             Just i  -> C.LVar an <$> sizeOf an t <*> pure i
       M.Con an t d                      -> do
-            (v, w) <- ctorId an (snd $ M.flattenArrow t) d
-            C.Con an <$> sizeOf an t <*> pure v <*> pure w <*> pure []
+            (v, w) <- ctorId an t d
+            sz     <- sizeOf an t
+            let tag = C.Lit an w v
+                pad = C.Lit an (sz - w) 0
+            pure $ C.Slice an [tag, pad]
       M.Match an t e p f (Just e2)      -> C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat p <*> (Just <$> transExp e2)
       M.Match an t e p f Nothing        -> C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat p <*> pure Nothing
       M.NativeVHDL an s (M.Error _ t _) -> C.NativeVHDL an <$> sizeOf an t <*> pure s <*> pure []
@@ -91,15 +97,15 @@ transExp = \ case
             toGId (C.Call _ _ x _) = pure x
             toGId e                = failAt (ann e) $ "toGId: expected Call, got: " <> prettyPrint e
 
-            toLId :: MonadError AstError m => C.Exp -> m C.LId
-            toLId (C.LVar _ _ x) = pure x
-            toLId e              = failAt (ann e) $ "toLId: expected LVar, got: " <> prettyPrint e
-
 transPat :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.MatchPat -> ReaderT ConMap m C.Pat
 transPat = \ case
       M.MatchPatCon an t d ps -> do
             (v, w) <- ctorId an t d
-            C.PatCon an <$> sizeOf an t <*> pure v <*> pure w <*> mapM transPat ps
+            sz     <- sizeOf an t
+            szArgs <- sum <$> mapM (sizeOf an . M.typeOf) ps
+            let tag = C.PatLit an w v
+                pad = C.PatLit an (sz - w - szArgs) 0 -- or wildcard?
+            C.PatSlice an <$> (([tag, pad] <>) <$> mapM transPat ps)
       M.MatchPatVar an t      -> C.PatVar an <$> sizeOf an t
       M.MatchPatWildCard an t -> C.PatWildCard an <$> sizeOf an t
 

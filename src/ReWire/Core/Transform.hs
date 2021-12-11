@@ -31,6 +31,8 @@ reExp rn = \ case
             Just (l', _) -> LVar a s l'
             Nothing      -> LVar a s l
       Con a s v w args                      -> Con a s v w $ map (reExp rn) $ filter ((> 0) . sizeOf) args
+      Lit a s v                             -> Lit a s v
+      Slice a args                          -> Slice a $ map (reExp rn) $ filter ((> 0) . sizeOf) args
       Match a s g e _ _  | sizeOf e == 0
                                             -> reExp rn $ Call a (Sig a [] s) g []
       Match a s g e p (Just e')             -> Match a s g (reExp rn e) (rePat p) $ Just $ reExp rn e'
@@ -43,5 +45,6 @@ reSig (Sig an ps r) = Sig an (filter (> 0) ps) r
 rePat :: Pat -> Pat
 rePat = \ case
       PatCon a s v w ps -> PatCon a s v w $ map rePat $ filter ((> 0) . sizeOf) ps
+      PatSlice a ps     -> PatSlice a $ map rePat $ filter ((> 0) . sizeOf) ps
       p                 -> p
 
