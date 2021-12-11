@@ -15,15 +15,21 @@ type DefnMap = HashMap GId [Exp]
 
 -- | Removes all zero-length arguments and parameters.
 mergeSlices :: Monad m => Program -> m Program
-mergeSlices (Program start ds) = do
-      let defnMap = Map.fromList $ map (defnName &&& defnBody) ds
-          ds'     = runReader (mapM reDefn $ filter ((> 0) . sizeOf) ds) defnMap
-      pure $ Program start $ filter (hasParams . defnSig) ds'
-      where hasParams :: Sig -> Bool -- TODO(chathhorn): can't actually eliminate yet.
-            hasParams = \ case
-                  _ -> True
-                  -- Sig _ (_:_) _ -> True
-                  -- _             -> False
+mergeSlices (Program start@(StartDefn _ _ _ _ (loop, _) (state0, _)) ds) = do
+      pure $ Program start $ filter ((`elem` uses) . defnName) ds'
+      where uses :: [GId]
+            uses = [loop, state0] <> concatMap (getUses . defnBody) ds'
+
+            getUses :: [Exp] -> [GId]
+            getUses = concatMap getUses'
+
+            getUses' :: Exp -> [GId]
+            getUses' = \ case
+                  Match _ _ g es _ es' -> [g] <> getUses es <> getUses es'
+                  _                    -> []
+
+            defnMap = Map.fromList $ map (defnName &&& defnBody) ds
+            ds'     = runReader (mapM reDefn $ filter ((> 0) . sizeOf) ds) defnMap
 
 reDefn :: MonadReader DefnMap m => Defn -> m Defn
 reDefn d = do
