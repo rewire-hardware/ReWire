@@ -30,7 +30,7 @@ type GId  = Text
 type LId  = Int
 
 pBV :: Pretty a => [a] -> Doc an
-pBV = brackets . hsep . punctuate comma . map pretty
+pBV = parens . hsep . punctuate comma . map pretty
 
 ---
 
@@ -46,14 +46,14 @@ instance SizeAnnotated Sig where
 
 instance Pretty Sig where
       pretty = \ case
-            Sig _ [] res   -> pretty res
-            Sig _ args res -> pBV args <+> text "->" <+> pretty res
+            Sig _ [] res   -> text "BV" <> pretty res
+            Sig _ args res -> (parens $ hsep $ punctuate comma $ map ((text "BV" <>) . pretty) args) <+> text "->" <+> text "BV" <> pretty res
 
 ---
 
 data Exp = Lit                 Annote !Size !Int
          | LVar                Annote !Size !LId
-         | Match               Annote !Size !GId ![Exp] ![Pat] !(Maybe [Exp])
+         | Match               Annote !Size !GId ![Exp] ![Pat] ![Exp]
          | NativeVHDL          Annote !Size !Text              ![Exp]
          | NativeVHDLComponent Annote !Size !Text              ![Exp]
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
@@ -77,13 +77,9 @@ instance Annotated Exp where
 
 instance Pretty Exp where
       pretty = \ case
-            Lit _ w v                       -> text "LIT_" <> pretty v <> text "_" <> pretty w
+            Lit _ w v                       -> pretty v <> text "::BV" <> pretty w
             LVar _ _ n                      -> text $ "$" <> showt n
-            Match _ _ f es ps Nothing        -> nest 2 $ vsep
-                  [ text "match" <+> pBV es <+> text "of"
-                  , pBV ps <+> text "->" <+> text f
-                  ]
-            Match _ _ f es ps (Just es2)      -> nest 2 $ vsep
+            Match _ _ f es ps es2           -> nest 2 $ vsep
                   [ text "match" <+> pBV es <+> text "of"
                   , pBV ps <+> text "->" <+> text f
                   , text "_" <+> text "->" <+> pBV es2
@@ -115,9 +111,9 @@ instance Annotated Pat where
 
 instance Pretty Pat where
       pretty = \ case
-            PatVar _ s        -> braces $ pretty s
-            PatWildCard _ s   -> text "_" <> pretty s
-            PatLit      _ s v -> text "LIT_" <> pretty v <> text "_" <> pretty s
+            PatVar _ s        -> braces $ text "BV" <> pretty s
+            PatWildCard _ s   -> text "_" <> text "BV" <> pretty s <> text "_"
+            PatLit      _ s v -> pretty v <> text "::BV" <> pretty s
 
 ---
 

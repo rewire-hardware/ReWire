@@ -48,16 +48,26 @@ renumLVars (Sig an szVec _) x = if x >= 0 && x < length szVec && szVec !! x > 0
 
 reExp :: MonadReader DefnMap m => (LId -> Maybe (LId, Int)) -> Exp -> m [Exp]
 reExp rn = \ case
-      LVar a s l                                         -> pure $ [LVar a s $ maybe l fst $ rn l]
-      Lit a s v                                          -> pure $ [Lit a s v]
-      m@(Match _ _ g es _ _)  | sum (map sizeOf es) == 0 -> (fromMaybe [m] <$> asks (Map.lookup g)) >>= reExps rn
-      Match a s g es ps (Just es')                       -> pure <$> (Match a s g <$> reExps rn es <*> pure (rePat ps) <*> (Just <$> reExps rn es'))
-      Match a s g es ps Nothing                          -> pure <$> (Match a s g <$> reExps rn es <*> pure (rePat ps) <*> pure Nothing)
-      NativeVHDL a s txt args                            -> pure <$> (NativeVHDL a s txt <$> reExps rn args)
-      NativeVHDLComponent a s txt args                   -> pure <$> (NativeVHDLComponent a s txt <$> reExps rn args)
+      LVar a s l                                              -> pure $ [LVar a s $ maybe l fst $ rn l]
+      Lit a s v                                               -> pure $ [Lit a s v]
+      m@(Match _ _ g es _ _)  | sum (map sizeOf es) == 0      -> (fromMaybe [m] <$> asks (Map.lookup g)) >>= reExps rn
+      m@(Match _ _ g _ ps []) | length (filter isVar ps) == 0 -> (fromMaybe [m] <$> asks (Map.lookup g)) >>= reExps rn
+      Match a s g es ps es'                                   -> pure <$> (Match a s g <$> reExps rn es <*> pure (rePat ps) <*> reExps rn es')
+      NativeVHDL a s txt args                                 -> pure <$> (NativeVHDL a s txt <$> reExps rn args)
+      NativeVHDLComponent a s txt args                        -> pure <$> (NativeVHDLComponent a s txt <$> reExps rn args)
+      where isVar :: Pat -> Bool
+            isVar = \ case
+                  PatVar {} -> True
+                  _         -> False
 
 reExps :: MonadReader DefnMap m => (LId -> Maybe (LId, Int)) -> [Exp] -> m [Exp]
-reExps rn es = concat <$> mapM (reExp rn) (filter ((> 0) . sizeOf) es)
+reExps rn es = mergeLits <$> (concat <$> mapM (reExp rn) (filter ((> 0) . sizeOf) es))
+
+mergeLits :: [Exp] -> [Exp]
+mergeLits = \ case
+      Lit a s 0 : (Lit a' s' 0) : es -> mergeLits $ Lit a (s + s') 0 : es
+      e : es                         -> e : mergeLits es
+      []                             -> []
 
 reSig :: Sig -> Sig
 reSig (Sig an ps r) = Sig an (filter (> 0) ps) r

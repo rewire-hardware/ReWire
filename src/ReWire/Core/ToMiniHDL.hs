@@ -107,48 +107,47 @@ compileExp = \ case
             pure  ( [ Assign (LHSName n) $ ExprBitString litVec ]
                   , n
                   )
-      Match an sz gid escr ps malt -> case malt of
-            Just ealt -> do
-                  n                    <- (<> "_res") <$> freshName "match"
-                  addSignal n $ TyStdLogicVector sz
-                  (stmts_escr, n_escr) <- compileExps escr
+      Match an sz gid escr ps [] -> do
+            (stmts_escr, n_escr) <- compileExps escr
 
-                  let fieldwidths       = map sizeOf ps
-                      fieldoffsets      = init $ scanl (+) 0 fieldwidths
-                  rs                   <- zipWithM (compilePat n_escr) fieldoffsets ps
-                  let ematch            = foldl' ExprAnd (ExprBoolConst True) $ map fst rs
-                      efields           = concatMap snd rs
+            let fieldwidths       = map sizeOf ps
+                fieldoffsets      = init $ scanl (+) 0 fieldwidths
+            efields              <- concatMap snd <$> zipWithM (compilePat n_escr) fieldoffsets ps
 
-                  n_gid                <- (<> "_res") <$> freshName (mangle gid)
-                  addSignal n_gid $ TyStdLogicVector sz
-                  n_call               <- (<> "_call") <$> freshName (mangle gid)
-                  (stmts_ealt, n_ealt) <- compileExps ealt
-                  t_gid                <- askGIdTy gid
-                  addComponent an gid t_gid
-                  let argns             = map (\ n -> "arg" <> showt n) ([0..]::[Int])
-                      pm                = PortMap (zip argns efields ++ [("res", ExprName n_gid)])
-                  pure (stmts_escr ++
-                          [WithAssign ematch (LHSName n)
-                                      [(ExprName n_gid, ExprBoolConst True)]
-                                       (Just (ExprName n_ealt)),
-                           Instantiate n_call (mangle gid) pm] ++
-                          stmts_ealt,
-                          n)
-            Nothing   -> do
-                  (stmts_escr, n_escr) <- compileExps escr
+            n_gid                <- (<> "_res") <$> freshName (mangle gid)
+            addSignal n_gid $ TyStdLogicVector sz
+            n_call               <- (<> "_call") <$> freshName (mangle gid)
+            t_gid                <- askGIdTy gid
+            addComponent an gid t_gid
+            let argns            =  map (\ n -> "arg" <> showt n) ([0..]::[Int])
+                pm               =  PortMap (zip argns efields ++ [("res", ExprName n_gid)])
+            pure (stmts_escr ++ [Instantiate n_call (mangle gid) pm], n_gid)
+      Match an sz gid escr ps ealt -> do
+            n                    <- (<> "_res") <$> freshName "match"
+            addSignal n $ TyStdLogicVector sz
+            (stmts_escr, n_escr) <- compileExps escr
 
-                  let fieldwidths       = map sizeOf ps
-                      fieldoffsets      = init $ scanl (+) 0 fieldwidths
-                  efields              <- concatMap snd <$> zipWithM (compilePat n_escr) fieldoffsets ps
+            let fieldwidths       = map sizeOf ps
+                fieldoffsets      = init $ scanl (+) 0 fieldwidths
+            rs                   <- zipWithM (compilePat n_escr) fieldoffsets ps
+            let ematch            = foldl' ExprAnd (ExprBoolConst True) $ map fst rs
+                efields           = concatMap snd rs
 
-                  n_gid                <- (<> "_res") <$> freshName (mangle gid)
-                  addSignal n_gid $ TyStdLogicVector sz
-                  n_call               <- (<> "_call") <$> freshName (mangle gid)
-                  t_gid                <- askGIdTy gid
-                  addComponent an gid t_gid
-                  let argns            =  map (\ n -> "arg" <> showt n) ([0..]::[Int])
-                      pm               =  PortMap (zip argns efields ++ [("res", ExprName n_gid)])
-                  pure (stmts_escr ++ [Instantiate n_call (mangle gid) pm], n_gid)
+            n_gid                <- (<> "_res") <$> freshName (mangle gid)
+            addSignal n_gid $ TyStdLogicVector sz
+            n_call               <- (<> "_call") <$> freshName (mangle gid)
+            (stmts_ealt, n_ealt) <- compileExps ealt
+            t_gid                <- askGIdTy gid
+            addComponent an gid t_gid
+            let argns             = map (\ n -> "arg" <> showt n) ([0..]::[Int])
+                pm                = PortMap (zip argns efields ++ [("res", ExprName n_gid)])
+            pure (stmts_escr ++
+                    [WithAssign ematch (LHSName n)
+                                [(ExprName n_gid, ExprBoolConst True)]
+                                 (Just (ExprName n_ealt)),
+                     Instantiate n_call (mangle gid) pm] ++
+                    stmts_ealt,
+                    n)
       NativeVHDL _ sz i args -> do
             n           <- (<> "_res") <$> freshName i
             addSignal n $ TyStdLogicVector sz
