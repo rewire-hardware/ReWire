@@ -29,6 +29,9 @@ type Size = Int
 type GId  = Text
 type LId  = Int
 
+pBV :: Pretty a => [a] -> Doc an
+pBV = brackets . hsep . punctuate comma . map pretty
+
 ---
 
 data Sig = Sig Annote ![Size] !Size -- Function ty with sizes of arguments and size of result.
@@ -44,16 +47,15 @@ instance SizeAnnotated Sig where
 instance Pretty Sig where
       pretty = \ case
             Sig _ [] res   -> pretty res
-            Sig _ args res -> (brackets $ hsep $ punctuate comma $ map pretty args) <+> text "->" <+> pretty res
+            Sig _ args res -> pBV args <+> text "->" <+> pretty res
 
 ---
 
 data Exp = Lit                 Annote !Size !Int
-         | Slice               Annote ![Exp]
          | LVar                Annote !Size !LId
-         | Match               Annote !Size !GId !Exp ![Pat] !(Maybe Exp)
-         | NativeVHDL          Annote !Size !Text          ![Exp]
-         | NativeVHDLComponent Annote !Size !Text          ![Exp]
+         | Match               Annote !Size !GId ![Exp] ![Pat] !(Maybe [Exp])
+         | NativeVHDL          Annote !Size !Text              ![Exp]
+         | NativeVHDLComponent Annote !Size !Text              ![Exp]
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Exp
 
@@ -61,7 +63,6 @@ instance SizeAnnotated Exp where
       sizeOf = \ case
             LVar _ s _                  -> s
             Lit _ s _                   -> s
-            Slice _ es                  -> sum $ map sizeOf es
             Match _ s _ _ _ _           -> s
             NativeVHDL _ s _ _          -> s
             NativeVHDLComponent _ s _ _ -> s
@@ -70,36 +71,33 @@ instance Annotated Exp where
       ann = \ case
             LVar a _ _                  -> a
             Lit a _ _                   -> a
-            Slice a _                   -> a
             Match a _ _ _ _ _           -> a
             NativeVHDL a _ _ _          -> a
             NativeVHDLComponent a _ _ _ -> a
 
 instance Pretty Exp where
       pretty = \ case
-            Lit _ w v                      -> text "LIT_" <> pretty v <> text "_" <> pretty w
-            Slice _ es                     -> brackets $ hsep $ punctuate comma $ map pretty es
-            LVar _ _ n                     -> text $ "$" <> showt n
-            Match _ _ f e ps Nothing        -> nest 2 $ vsep
-                  [ text "match" <+> pretty e <+> text "of"
-                  , brackets (hsep (punctuate comma (map pretty ps))) <+> text "->" <+> text f
+            Lit _ w v                       -> text "LIT_" <> pretty v <> text "_" <> pretty w
+            LVar _ _ n                      -> text $ "$" <> showt n
+            Match _ _ f es ps Nothing        -> nest 2 $ vsep
+                  [ text "match" <+> pBV es <+> text "of"
+                  , pBV ps <+> text "->" <+> text f
                   ]
-            Match _ _ f e ps (Just e2)      -> nest 2 $ vsep
-                  [ text "match" <+> pretty e <+> text "of"
-                  , brackets (hsep (punctuate comma (map pretty ps))) <+> text "->" <+> text f
-                  , text "_" <+> text "->" <+> pretty e2
+            Match _ _ f es ps (Just es2)      -> nest 2 $ vsep
+                  [ text "match" <+> pBV es <+> text "of"
+                  , pBV ps <+> text "->" <+> text f
+                  , text "_" <+> text "->" <+> pBV es2
                   ]
             NativeVHDL _ s n []            -> parens (text "nativeVHDL" <+> dquotes (text n)) <> braces (pretty s)
-            NativeVHDL _ s n args          -> parens (text "nativeVHDL" <+> dquotes (text n)) <> braces (pretty s) <> brackets (hsep $ punctuate comma $ map pretty args)
+            NativeVHDL _ s n args          -> parens (text "nativeVHDL" <+> dquotes (text n)) <> braces (pretty s) <> pBV args
             NativeVHDLComponent _ s n []   -> parens (text "nativeVHDLComponent" <+> dquotes (text n)) <> braces (pretty s)
-            NativeVHDLComponent _ s n args -> parens (text "nativeVHDLComponent" <+> dquotes (text n)) <> braces (pretty s) <> brackets (hsep $ punctuate comma $ map pretty args)
+            NativeVHDLComponent _ s n args -> parens (text "nativeVHDLComponent" <+> dquotes (text n)) <> braces (pretty s) <> pBV args
 
 ---
 
 data Pat = PatVar      Annote !Size
          | PatWildCard Annote !Size
          | PatLit      Annote !Size !Int
-
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Pat
 
@@ -142,7 +140,7 @@ data Defn = Defn
       { defnAnnote :: Annote
       , defnName   :: !GId
       , defnSig    :: !Sig -- params given by the arity.
-      , defnBody   :: !Exp
+      , defnBody   :: ![Exp]
       }
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric Defn
@@ -154,9 +152,9 @@ instance Annotated Defn where
       ann (Defn a _ _ _) = a
 
 instance Pretty Defn where
-      pretty (Defn _ n sig e) = vsep $
+      pretty (Defn _ n sig es) = vsep $
             [ text n <+> text "::" <+> pretty sig
-            , text n <+> hsep (map (text . ("$" <>) . showt) [0 .. arity sig - 1]) <+> text "=" <+> nest 2 (pretty e)
+            , text n <+> hsep (map (text . ("$" <>) . showt) [0 .. arity sig - 1]) <+> text "=" <+> nest 2 (pBV es)
             ]
             where arity :: Sig -> Int
                   arity (Sig _ args _) = length args

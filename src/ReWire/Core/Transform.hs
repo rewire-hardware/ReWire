@@ -11,7 +11,7 @@ import Control.Monad.Reader (runReader, MonadReader (..), asks)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 
-type DefnMap = HashMap GId Exp
+type DefnMap = HashMap GId [Exp]
 
 -- | Removes all zero-length arguments and parameters.
 mergeSlices :: Monad m => Program -> m Program
@@ -27,7 +27,7 @@ mergeSlices (Program start ds) = do
 
 reDefn :: MonadReader DefnMap m => Defn -> m Defn
 reDefn d = do
-      body' <- reExp (renumLVars $ defnSig d) $ defnBody d
+      body' <- reExps (renumLVars $ defnSig d) $ defnBody d
       pure d
             { defnSig  = reSig $ defnSig d
             , defnBody = body'
@@ -46,24 +46,18 @@ renumLVars (Sig an szVec _) x = if x >= 0 && x < length szVec && szVec !! x > 0
             preZeros' (0 : szs) n m = preZeros' szs (n + 1) (m - 1)
             preZeros' (_ : szs) n m = preZeros' szs n (m - 1)
 
-reExp :: MonadReader DefnMap m => (LId -> Maybe (LId, Int)) -> Exp -> m Exp
+reExp :: MonadReader DefnMap m => (LId -> Maybe (LId, Int)) -> Exp -> m [Exp]
 reExp rn = \ case
-      LVar a s l                             -> pure $ LVar a s $ maybe l fst $ rn l
-      Lit a s v                              -> pure $ Lit a s v
-      Slice a args                           -> do
-            args' <- mapM (reExp rn) $ filter ((> 0) . sizeOf) args
-            pure $ merge $ Slice a args'
-      m@(Match _ _ g e _ _)  | sizeOf e == 0 -> do
-            m' <- fromMaybe m <$> asks (Map.lookup g)
-            reExp rn m'
-      Match a s g e ps (Just e')             -> Match a s g <$> reExp rn e <*> pure (rePat ps) <*> (Just <$> reExp rn e')
-      Match a s g e ps Nothing               -> Match a s g <$> reExp rn e <*> pure (rePat ps) <*> pure Nothing
-      NativeVHDL a s txt args                -> NativeVHDL a s txt <$> mapM (reExp rn) (filter ((> 0) . sizeOf) args)
-      NativeVHDLComponent a s txt args       -> NativeVHDLComponent a s txt <$> mapM (reExp rn) (filter ((> 0) . sizeOf) args)
-      where merge :: Exp -> Exp
-            merge = \ case
-                  Slice _ [s] -> merge s
-                  s           -> s
+      LVar a s l                                         -> pure $ [LVar a s $ maybe l fst $ rn l]
+      Lit a s v                                          -> pure $ [Lit a s v]
+      m@(Match _ _ g es _ _)  | sum (map sizeOf es) == 0 -> (fromMaybe [m] <$> asks (Map.lookup g)) >>= reExps rn
+      Match a s g es ps (Just es')                       -> pure <$> (Match a s g <$> reExps rn es <*> pure (rePat ps) <*> (Just <$> reExps rn es'))
+      Match a s g es ps Nothing                          -> pure <$> (Match a s g <$> reExps rn es <*> pure (rePat ps) <*> pure Nothing)
+      NativeVHDL a s txt args                            -> pure <$> (NativeVHDL a s txt <$> reExps rn args)
+      NativeVHDLComponent a s txt args                   -> pure <$> (NativeVHDLComponent a s txt <$> reExps rn args)
+
+reExps :: MonadReader DefnMap m => (LId -> Maybe (LId, Int)) -> [Exp] -> m [Exp]
+reExps rn es = concat <$> mapM (reExp rn) (filter ((> 0) . sizeOf) es)
 
 reSig :: Sig -> Sig
 reSig (Sig an ps r) = Sig an (filter (> 0) ps) r
