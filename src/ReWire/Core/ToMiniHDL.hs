@@ -125,10 +125,11 @@ compileExp = \ case
                         ]
                   , n
                   )
-      Lit _ tagSize tagValue -> do
-            n          <- (<> "_res") <$> freshName (mangle $ "lit_" <> showt tagValue <> "_" <> showt tagSize)
-            let tagvec  = nvec tagValue tagSize
-            pure  ( [ Assign (LHSName n) $ ExprBitString tagvec ]
+      Lit _ litSize litValue -> do
+            n          <- (<> "_res") <$> freshName (mangle $ "lit_" <> showt litValue <> "_" <> showt litSize)
+            addSignal n $ TyStdLogicVector litSize
+            let litVec  = nvec litValue litSize
+            pure  ( [ Assign (LHSName n) $ ExprBitString litVec ]
                   , n
                   )
       Slice _ args -> do
