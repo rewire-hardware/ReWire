@@ -177,4 +177,3 @@ simplifyConcat = \ case
             simplify' (ExprBitString s1) (ExprBitString s2) = ExprBitString (s1 ++ s2)
             simplify' e1 e2                                 = ExprConcat e1 e2
 
-

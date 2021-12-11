@@ -50,6 +50,10 @@ instance Pretty Sig where
 
 data Exp = Call                Annote !Sig  !GId           ![Exp] -- TODO(chathhorn): Sig instead of Size just because of case in ToCore.hs.
          | Con                 Annote !Size !Int !Size     ![Exp] -- Ints: type size, tag value, tag width (ceilLog2 of nctors)
+
+         | Lit                 Annote !Size !Int
+         | Slice               Annote ![Exp]
+
          | LVar                Annote !Size !LId
          | Match               Annote !Size !GId !Exp !Pat !(Maybe Exp)
          | NativeVHDL          Annote !Size !Text          ![Exp]
@@ -64,7 +68,9 @@ instance SizeAnnotated Exp where
       sizeOf = \ case
             Call _ (Sig _ _ s) _ _      -> s
             LVar _ s _                  -> s
-            Con a s _ _ _               -> s
+            Con _ s _ _ _               -> s
+            Lit _ s _                   -> s
+            Slice _ es                  -> sum $ map sizeOf es
             Match _ s _ _ _ _           -> s
             NativeVHDL _ s _ _          -> s
             NativeVHDLComponent _ s _ _ -> s
@@ -74,37 +80,46 @@ instance Annotated Exp where
             Call a _ _ _                -> a
             LVar a _ _                  -> a
             Con a _ _ _ _               -> a
+            Lit a _ _                   -> a
+            Slice a _                   -> a
             Match a _ _ _ _ _           -> a
             NativeVHDL a _ _ _          -> a
             NativeVHDLComponent a _ _ _ -> a
 
 instance Pretty Exp where
       pretty = \ case
-            Call _ _ n args                                   -> pretty n <+> brackets (hsep $ punctuate comma $ map pretty args)
+            Call _ _ n args                -> pretty n <+> brackets (hsep $ punctuate comma $ map pretty args)
 
-            Con _ _ 0 0 args                                  -> brackets $ hsep $ punctuate comma $ map pretty args
-            Con _ _ v w args                                  -> brackets $ hsep $ punctuate comma $ (text "TAG_" <> pretty v <> text "_" <> pretty w) : map pretty args
+            Con _ _ 0 0 args               -> brackets $ hsep $ punctuate comma $ map pretty args
+            Con _ _ v w args               -> brackets $ hsep $ punctuate comma $ (text "TAG_" <> pretty v <> text "_" <> pretty w) : map pretty args
 
-            LVar _ _ n                                        -> text $ "$" <> showt n
-            Match _ _ f e p Nothing                          -> nest 2 $ vsep
+            Lit _ w v                      -> text "LIT_" <> pretty v <> text "_" <> pretty w
+            Slice _ es                     -> brackets $ hsep $ punctuate comma $ map pretty es
+
+            LVar _ _ n                     -> text $ "$" <> showt n
+            Match _ _ f e p Nothing        -> nest 2 $ vsep
                   [ text "match" <+> pretty e <+> text "of"
                   , pretty p <+> text "->" <+> text f
                   ]
-            Match _ _ f e p (Just e2)                        -> nest 2 $ vsep
+            Match _ _ f e p (Just e2)      -> nest 2 $ vsep
                   [ text "match" <+> pretty e <+> text "of"
                   , pretty p <+> text "->" <+> text f
                   , text "_" <+> text "->" <+> pretty e2
                   ]
-            NativeVHDL _ s n []                               -> parens (text "nativeVHDL" <+> dquotes (text n)) <> braces (pretty s)
-            NativeVHDL _ s n args                             -> parens (text "nativeVHDL" <+> dquotes (text n)) <> braces (pretty s) <> brackets (hsep $ punctuate comma $ map pretty args)
-            NativeVHDLComponent _ s n []                      -> parens (text "nativeVHDLComponent" <+> dquotes (text n)) <> braces (pretty s)
-            NativeVHDLComponent _ s n args                    -> parens (text "nativeVHDLComponent" <+> dquotes (text n)) <> braces (pretty s) <> brackets (hsep $ punctuate comma $ map pretty args)
+            NativeVHDL _ s n []            -> parens (text "nativeVHDL" <+> dquotes (text n)) <> braces (pretty s)
+            NativeVHDL _ s n args          -> parens (text "nativeVHDL" <+> dquotes (text n)) <> braces (pretty s) <> brackets (hsep $ punctuate comma $ map pretty args)
+            NativeVHDLComponent _ s n []   -> parens (text "nativeVHDLComponent" <+> dquotes (text n)) <> braces (pretty s)
+            NativeVHDLComponent _ s n args -> parens (text "nativeVHDLComponent" <+> dquotes (text n)) <> braces (pretty s) <> brackets (hsep $ punctuate comma $ map pretty args)
 
 ---
 
 data Pat = PatCon      Annote !Size !Int !Size ![Pat]
          | PatVar      Annote !Size
          | PatWildCard Annote !Size
+
+         | PatLit      Annote !Size !Int
+         | PatSlice    Annote ![Pat]
+
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Pat
 
@@ -113,12 +128,16 @@ instance SizeAnnotated Pat where
             PatCon      _ s _ _ _ -> s
             PatVar      _ s       -> s
             PatWildCard _ s       -> s
+            PatLit      _ s _     -> s
+            PatSlice    _ es      -> sum $ map sizeOf es
 
 instance Annotated Pat where
       ann = \ case
             PatCon      a _ _ _ _ -> a
             PatVar      a _       -> a
             PatWildCard a _       -> a
+            PatLit      a _ _     -> a
+            PatSlice    a _       -> a
 
 instance Pretty Pat where
       pretty = \ case
@@ -126,6 +145,8 @@ instance Pretty Pat where
             PatCon _ _ v w ps -> brackets $ hsep $ punctuate comma $ (text "TAG_" <> pretty v <> text "_" <> pretty w) : map pretty ps
             PatVar _ s        -> braces $ pretty s
             PatWildCard _ s   -> text "_" <> pretty s
+            PatLit      _ s v -> text "LIT_" <> pretty v <> text "_" <> pretty s
+            PatSlice    _ es  -> brackets $ hsep $ punctuate comma $ map pretty es
 
 ---
 
@@ -144,10 +165,12 @@ instance Pretty StartDefn where
 
 ---
 
-data Defn = Defn { defnAnnote :: Annote,
-                   defnName   :: !GId,
-                   defnSig    :: !Sig, -- params given by the arity.
-                   defnBody   :: !Exp }
+data Defn = Defn
+      { defnAnnote :: Annote
+      , defnName   :: !GId
+      , defnSig    :: !Sig -- params given by the arity.
+      , defnBody   :: !Exp
+      }
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric Defn
 
