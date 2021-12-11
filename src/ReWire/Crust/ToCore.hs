@@ -72,7 +72,7 @@ transExp = \ case
                   t'       <- sizeOf an $ M.typeOf e
                   args'    <- concat <$> mapM transExp args
                   argSizes <- mapM (sizeOf an . M.typeOf) args
-                  pure $ [C.Match an t' (showt x) args' (map (C.PatVar an) argSizes) Nothing]
+                  pure $ [C.Match an t' (showt x) args' (map (C.PatVar an) argSizes) []]
             (M.Con an t d : args)       -> do
                   (v, w) <- ctorId an (snd $ M.flattenArrow t) d
                   sz     <- sizeOf an $ M.typeOf e
@@ -83,7 +83,7 @@ transExp = \ case
             (M.NativeVHDL _ s _ : args) -> pure <$> (C.NativeVHDL an <$> sizeOf an (M.typeOf e) <*> pure s <*> (concat <$> mapM transExp args))
             _                           -> failAt an "transExp: encountered ill-formed application."
       M.Var an t x                      -> lift (asks (Map.lookup x)) >>= \ case
-            Nothing -> pure <$> (C.Match an <$> sizeOf an t <*> pure (showt x) <*> pure [] <*> pure [] <*> pure Nothing)
+            Nothing -> pure <$> (C.Match an <$> sizeOf an t <*> pure (showt x) <*> pure [] <*> pure [] <*> pure [])
             Just i  -> pure <$> (C.LVar an  <$> sizeOf an t <*> pure i)
       M.Con an t d                      -> do
             (v, w) <- ctorId an t d
@@ -91,8 +91,8 @@ transExp = \ case
             let tag = C.Lit an w v
                 pad = C.Lit an (sz - w) 0
             pure $ [tag, pad]
-      M.Match an t e ps f (Just e2)     -> pure <$> (C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat ps <*> (Just <$> transExp e2))
-      M.Match an t e ps f Nothing       -> pure <$> (C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat ps <*> pure Nothing)
+      M.Match an t e ps f (Just e2)     -> pure <$> (C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat ps <*> transExp e2)
+      M.Match an t e ps f Nothing       -> pure <$> (C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat ps <*> pure [])
       M.NativeVHDL an s (M.Error _ t _) -> pure <$> (C.NativeVHDL an <$> sizeOf an t <*> pure s <*> pure [])
       M.Error an t _                    -> pure <$> (C.NativeVHDL an <$> sizeOf an t <*> pure "error" <*> pure [])
       e                                 -> failAt (ann e) $ "ToCore: unsupported expression: " <> prettyPrint e
