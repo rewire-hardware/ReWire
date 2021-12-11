@@ -65,39 +65,40 @@ transDefn conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) = do
       (xs, e') <- unbind e
       Right <$> (C.Defn an (showt n) <$> runReaderT (transType t') conMap <*> runReaderT (runReaderT (transExp e') conMap) (Map.fromList $ zip xs [0..]))
 
-transExp :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.Exp -> TCM m C.Exp
+transExp :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.Exp -> TCM m [C.Exp]
 transExp = \ case
       e@(M.App an _ _)                  -> case M.flattenApp e of
             (M.Var _ _ x : args)        -> do
-                  t'    <- sizeOf an $ M.typeOf e
-                  args' <- mapM transExp args
-                  pure $ C.Match an t' (showt x) (C.Slice an args') (map (C.PatVar an . C.sizeOf) args') Nothing
+                  t'       <- sizeOf an $ M.typeOf e
+                  args'    <- concat <$> mapM transExp args
+                  argSizes <- mapM (sizeOf an . M.typeOf) args
+                  pure $ [C.Match an t' (showt x) args' (map (C.PatVar an) argSizes) Nothing]
             (M.Con an t d : args)       -> do
                   (v, w) <- ctorId an (snd $ M.flattenArrow t) d
                   sz     <- sizeOf an $ M.typeOf e
                   szArgs <- sum <$> mapM (sizeOf an . M.typeOf) args
                   let tag = C.Lit an w v
                       pad = C.Lit an (sz - w - szArgs) 0
-                  C.Slice an <$> (([tag, pad] <>) <$> mapM transExp args)
-            (M.NativeVHDL _ s _ : args) -> C.NativeVHDL an <$> sizeOf an (M.typeOf e) <*> pure s <*> mapM transExp args
-            _                                          -> failAt an "transExp: encountered ill-formed application."
+                  ([tag, pad] <>) <$> (concat <$> mapM transExp args)
+            (M.NativeVHDL _ s _ : args) -> pure <$> (C.NativeVHDL an <$> sizeOf an (M.typeOf e) <*> pure s <*> (concat <$> mapM transExp args))
+            _                           -> failAt an "transExp: encountered ill-formed application."
       M.Var an t x                      -> lift (asks (Map.lookup x)) >>= \ case
-            Nothing -> C.Match an <$> sizeOf an t <*> pure (showt x) <*> pure (C.Lit an 0 0) <*> pure [C.PatLit an 0 0] <*> pure Nothing
-            Just i  -> C.LVar an  <$> sizeOf an t <*> pure i
+            Nothing -> pure <$> (C.Match an <$> sizeOf an t <*> pure (showt x) <*> pure [] <*> pure [] <*> pure Nothing)
+            Just i  -> pure <$> (C.LVar an  <$> sizeOf an t <*> pure i)
       M.Con an t d                      -> do
             (v, w) <- ctorId an t d
             sz     <- sizeOf an t
             let tag = C.Lit an w v
                 pad = C.Lit an (sz - w) 0
-            pure $ C.Slice an [tag, pad]
-      M.Match an t e ps f (Just e2)      -> C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat ps <*> (Just <$> transExp e2)
-      M.Match an t e ps f Nothing        -> C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat ps <*> pure Nothing
-      M.NativeVHDL an s (M.Error _ t _) -> C.NativeVHDL an <$> sizeOf an t <*> pure s <*> pure []
-      M.Error an t _                    -> C.NativeVHDL an <$> sizeOf an t <*> pure "error" <*> pure []
+            pure $ [tag, pad]
+      M.Match an t e ps f (Just e2)     -> pure <$> (C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat ps <*> (Just <$> transExp e2))
+      M.Match an t e ps f Nothing       -> pure <$> (C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat ps <*> pure Nothing)
+      M.NativeVHDL an s (M.Error _ t _) -> pure <$> (C.NativeVHDL an <$> sizeOf an t <*> pure s <*> pure [])
+      M.Error an t _                    -> pure <$> (C.NativeVHDL an <$> sizeOf an t <*> pure "error" <*> pure [])
       e                                 -> failAt (ann e) $ "ToCore: unsupported expression: " <> prettyPrint e
-      where toGId :: MonadError AstError m => C.Exp -> m C.GId
-            toGId (C.Match _ _ x _ _ _) = pure x
-            toGId e                     = failAt (ann e) $ "toGId: expected Match, got: " <> prettyPrint e
+      where toGId :: MonadError AstError m => [C.Exp] -> m C.GId
+            toGId [C.Match _ _ x _ _ _] = pure x
+            toGId e                     = failAt noAnn $ "ToCore: toGId: expected Match, got: " <> prettyPrint e
 
 transPat :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.MatchPat -> ReaderT ConMap m [C.Pat]
 transPat = \ case

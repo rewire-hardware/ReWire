@@ -80,6 +80,23 @@ askGIdTy i = do
             Just (Defn _ _ t _) -> pure t
             Nothing             -> lift $ failNowhere $ "askGIdTy: no info for identifier " <> showt i
 
+compileExps :: Monad m => [C.Exp] -> CM m ([Stmt], Name)
+compileExps es = do
+      n          <- (<> "_res") <$> freshName (mangle $ "slice")
+      addSignal n $ TyStdLogicVector $ sum $ map sizeOf es
+      sssns      <- mapM compileExp es
+      let stmts   = concatMap fst sssns
+          ns      = map snd sssns
+      pure  ( stmts ++
+                  [ Assign (LHSName n)
+                        $ simplifyConcat
+                        $ foldl' ExprConcat (ExprBitString [])
+                        $ map ExprName ns
+                  ]
+            , n
+            )
+
+
 compileExp :: Monad m => C.Exp -> CM m ([Stmt], Name)
 compileExp = \ case
       LVar _ _ i       -> pure ([], "arg" <> showt i)
@@ -90,26 +107,11 @@ compileExp = \ case
             pure  ( [ Assign (LHSName n) $ ExprBitString litVec ]
                   , n
                   )
-      Slice _ args -> do
-            n          <- (<> "_res") <$> freshName (mangle $ "slice")
-            addSignal n $ TyStdLogicVector $ sum $ map sizeOf args
-            sssns      <- mapM compileExp args
-            let stmts   = concatMap fst sssns
-                ns      = map snd sssns
-            pure  ( stmts ++
-                        [ Assign (LHSName n)
-                              $ simplifyConcat
-                              $ foldl' ExprConcat (ExprBitString [])
-                              $ map ExprName ns
-                        ]
-                  , n
-                  )
-
       Match an sz gid escr ps malt -> case malt of
             Just ealt -> do
                   n                    <- (<> "_res") <$> freshName "match"
                   addSignal n $ TyStdLogicVector sz
-                  (stmts_escr, n_escr) <- compileExp escr
+                  (stmts_escr, n_escr) <- compileExps escr
 
                   let fieldwidths       = map sizeOf ps
                       fieldoffsets      = init $ scanl (+) 0 fieldwidths
@@ -120,7 +122,7 @@ compileExp = \ case
                   n_gid                <- (<> "_res") <$> freshName (mangle gid)
                   addSignal n_gid $ TyStdLogicVector sz
                   n_call               <- (<> "_call") <$> freshName (mangle gid)
-                  (stmts_ealt, n_ealt) <- compileExp ealt
+                  (stmts_ealt, n_ealt) <- compileExps ealt
                   t_gid                <- askGIdTy gid
                   addComponent an gid t_gid
                   let argns             = map (\ n -> "arg" <> showt n) ([0..]::[Int])
@@ -133,7 +135,7 @@ compileExp = \ case
                           stmts_ealt,
                           n)
             Nothing   -> do
-                  (stmts_escr, n_escr) <- compileExp escr
+                  (stmts_escr, n_escr) <- compileExps escr
 
                   let fieldwidths       = map sizeOf ps
                       fieldoffsets      = init $ scanl (+) 0 fieldwidths
@@ -167,9 +169,9 @@ compileExp = \ case
             pure (stmts ++ [Instantiate n_call i pm], n)
 
 mkDefnArch :: Monad m => Defn -> CM m Architecture
-mkDefnArch (Defn _ n _ e) = do
+mkDefnArch (Defn _ n _ es) = do
       put ([], [], 0) -- empty out the signal and component store, reset name counter
-      (stmts, nres)    <- compileExp e
+      (stmts, nres)    <- compileExps es
       (sigs, comps, _) <- get
       pure $ Architecture (mangle n <> "_impl") (mangle n) sigs comps (stmts ++ [Assign (LHSName "res") (ExprName nres)])
 
