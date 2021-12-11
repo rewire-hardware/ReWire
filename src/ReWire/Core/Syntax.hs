@@ -53,9 +53,9 @@ instance Pretty Sig where
 
 data Exp = Lit                 Annote !Size !Int
          | LVar                Annote !Size !LId
-         | Match               Annote !Size !GId ![Exp] ![Pat] ![Exp]
-         | NativeVHDL          Annote !Size !Text              ![Exp]
-         | NativeVHDLComponent Annote !Size !Text              ![Exp]
+         | Match               Annote !Size !GId   ![Exp] ![Pat]  ![Exp]
+         | NativeVHDL          Annote !Size !Text                 ![Exp]
+         | NativeVHDLComponent Annote !Size !Text                 ![Exp]
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Exp
 
@@ -84,10 +84,10 @@ instance Pretty Exp where
                   , pBV ps <+> text "->" <+> text f
                   , text "_" <+> text "->" <+> pBV es2
                   ]
-            NativeVHDL _ s n []            -> parens (text "nativeVHDL" <+> dquotes (text n)) <> braces (pretty s)
-            NativeVHDL _ s n args          -> parens (text "nativeVHDL" <+> dquotes (text n)) <> braces (pretty s) <> pBV args
-            NativeVHDLComponent _ s n []   -> parens (text "nativeVHDLComponent" <+> dquotes (text n)) <> braces (pretty s)
-            NativeVHDLComponent _ s n args -> parens (text "nativeVHDLComponent" <+> dquotes (text n)) <> braces (pretty s) <> pBV args
+            NativeVHDL _ s n []            -> (text "nativeVHDL"          <+> dquotes (text n))              <+> text "::" <+> text "BV" <> pretty s
+            NativeVHDL _ s n args          -> (text "nativeVHDL"          <+> dquotes (text n)) <+> pBV args <+> text "::" <+> text "BV" <> pretty s
+            NativeVHDLComponent _ s n []   -> (text "nativeVHDLComponent" <+> dquotes (text n))              <+> text "::" <+> text "BV" <> pretty s
+            NativeVHDLComponent _ s n args -> (text "nativeVHDLComponent" <+> dquotes (text n)) <+> pBV args <+> text "::" <+> text "BV" <> pretty s
 
 ---
 
