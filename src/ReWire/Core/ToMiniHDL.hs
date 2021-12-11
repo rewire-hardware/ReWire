@@ -66,27 +66,12 @@ addComponent _ i t = do
 
 compilePat :: Monad m => Name -> Int -> Pat -> CM m (Expr, [Expr])  -- first Expr is for whether match (std_logic); remaining Exprs are for extracted fields
 compilePat nscr offset = \ case
-      PatCon _ _ tagValue tagSize ps -> do
-            let tag          = nvec tagValue tagSize
-                fieldwidths  = map sizeOf ps
-                fieldoffsets = init $ scanl (+) (offset + length tag) fieldwidths
-            rs              <- zipWithM (compilePat nscr) fieldoffsets ps
-            let ematchs      = map fst rs
-                eslices      = concatMap snd rs
-                ematch       = foldl' ExprAnd (ExprIsEq (ExprSlice (ExprName nscr) offset (offset + length tag - 1)) (ExprBitString tag)) ematchs
-            pure (ematch, eslices)
       PatVar _ s       -> pure (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + s - 1)])
       PatWildCard _ _  -> pure (ExprBoolConst True, [])
       PatLit _ tagSize tagValue -> do
             let tag    = nvec tagValue tagSize
                 ematch = ExprIsEq (ExprSlice (ExprName nscr) offset (offset + length tag - 1)) $ ExprBitString tag
             pure (ematch, [])
-      PatSlice _ ps -> do
-            let fieldwidths  = map sizeOf ps
-                fieldoffsets = init $ scanl (+) offset fieldwidths
-            rs              <- zipWithM (compilePat nscr) fieldoffsets ps
-            let ematch       = foldl' ExprAnd (ExprBoolConst True) $ map fst rs
-            pure (ematch, concatMap snd rs)
 
 askGIdTy :: Monad m => GId -> CM m C.Sig
 askGIdTy i = do
@@ -97,34 +82,7 @@ askGIdTy i = do
 
 compileExp :: Monad m => C.Exp -> CM m ([Stmt], Name)
 compileExp = \ case
-      Call an (Sig _ _ sz) i args  -> do
-            n          <- (<> "_res") <$> freshName (mangle i)
-            n_inst     <- (<> "_call") <$> freshName (mangle i)
-            addSignal n $ TyStdLogicVector sz
-            sssns      <- mapM compileExp args
-            let stmts   = concatMap fst sssns
-                ns      = map snd sssns
-            addComponent an i $ Sig an (map sizeOf args) sz
-            let argns   = map (\ n -> "arg" <> showt n) ([0..] :: [Int])
-                pm      = PortMap (zip argns (map ExprName ns) ++ [("res", ExprName n)])
-            pure (stmts ++ [Instantiate n_inst (mangle i) pm], n)
       LVar _ _ i       -> pure ([], "arg" <> showt i)
-      Con _ sz tagValue tagSize args -> do
-            n          <- (<> "_res") <$> freshName (mangle $ "ctor_" <> showt tagValue <> "_" <> showt tagSize)
-            addSignal n $ TyStdLogicVector sz
-            sssns      <- mapM compileExp args
-            let stmts   = concatMap fst sssns
-                ns      = map snd sssns
-                tagvec  = nvec tagValue tagSize
-                padvec  = nvec 0 $ sz - tagSize - sum (map sizeOf args)
-            pure  ( stmts ++
-                        [ Assign (LHSName n)
-                              $ simplifyConcat
-                              $ ExprConcat (foldl' ExprConcat (ExprBitString tagvec) (map ExprName ns))
-                              $ ExprBitString padvec
-                        ]
-                  , n
-                  )
       Lit _ litSize litValue -> do
             n          <- (<> "_res") <$> freshName (mangle $ "lit_" <> showt litValue <> "_" <> showt litSize)
             addSignal n $ TyStdLogicVector litSize
@@ -147,20 +105,26 @@ compileExp = \ case
                   , n
                   )
 
-      Match an sz gid escr p malt -> case malt of
+      Match an sz gid escr ps malt -> case malt of
             Just ealt -> do
                   n                    <- (<> "_res") <$> freshName "match"
                   addSignal n $ TyStdLogicVector sz
                   (stmts_escr, n_escr) <- compileExp escr
-                  (ematch, efields)    <- compilePat n_escr 0 p
+
+                  let fieldwidths       = map sizeOf ps
+                      fieldoffsets      = init $ scanl (+) 0 fieldwidths
+                  rs                   <- zipWithM (compilePat n_escr) fieldoffsets ps
+                  let ematch            = foldl' ExprAnd (ExprBoolConst True) $ map fst rs
+                      efields           = concatMap snd rs
+
                   n_gid                <- (<> "_res") <$> freshName (mangle gid)
                   addSignal n_gid $ TyStdLogicVector sz
                   n_call               <- (<> "_call") <$> freshName (mangle gid)
                   (stmts_ealt, n_ealt) <- compileExp ealt
                   t_gid                <- askGIdTy gid
                   addComponent an gid t_gid
-                  let argns           =  map (\ n -> "arg" <> showt n) ([0..]::[Int])
-                      pm              =  PortMap (zip argns efields ++ [("res", ExprName n_gid)])
+                  let argns             = map (\ n -> "arg" <> showt n) ([0..]::[Int])
+                      pm                = PortMap (zip argns efields ++ [("res", ExprName n_gid)])
                   pure (stmts_escr ++
                           [WithAssign ematch (LHSName n)
                                       [(ExprName n_gid, ExprBoolConst True)]
@@ -170,7 +134,11 @@ compileExp = \ case
                           n)
             Nothing   -> do
                   (stmts_escr, n_escr) <- compileExp escr
-                  (_, efields)         <- compilePat n_escr 0 p
+
+                  let fieldwidths       = map sizeOf ps
+                      fieldoffsets      = init $ scanl (+) 0 fieldwidths
+                  efields              <- concatMap snd <$> zipWithM (compilePat n_escr) fieldoffsets ps
+
                   n_gid                <- (<> "_res") <$> freshName (mangle gid)
                   addSignal n_gid $ TyStdLogicVector sz
                   n_call               <- (<> "_call") <$> freshName (mangle gid)
