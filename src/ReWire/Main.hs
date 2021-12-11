@@ -7,7 +7,7 @@ import ReWire.FrontEnd (loadProgram, LoadPath)
 import ReWire.Pretty (Pretty, prettyPrint)
 import qualified ReWire.Core.Syntax as C
 import ReWire.Core.ToMiniHDL (compileProgram)
-import ReWire.Core.Transform (removeEmpty)
+import ReWire.Core.Transform (mergeSlices)
 import ReWire.Crust.Cache (printHeader)
 import ReWire.MiniHDL.ToLoFIRRTL (toLoFirrtl)
 import ReWire.Flags (Flag (..))
@@ -95,10 +95,10 @@ main = do
 
                   where compile :: C.Program -> SyntaxErrorT IO ()
                         compile a = do
-                              b <- removeEmpty a
-                              when (FlagV `elem` flags) $ liftIO $ putStrLn $ "Debug: [Pass 9] Emptied core."
+                              b <- mergeSlices a
+                              when (FlagV `elem` flags) $ liftIO $ putStrLn $ "Debug: [Pass 9] Reduced core."
                               when (FlagDCore2 `elem` flags) $ liftIO $ do
-                                    printHeader "Emptied Core" -- TODO(chathhorn): pull this out of Crust.Cache
+                                    printHeader "Reduced Core" -- TODO(chathhorn): pull this out of Crust.Cache
                                     T.putStrLn $ prettyPrint b
                                     when (FlagV `elem` flags) $ T.putStrLn "\n## Show core:\n"
                                     when (FlagV `elem` flags) $ T.putStrLn $ showt $ unAnn b

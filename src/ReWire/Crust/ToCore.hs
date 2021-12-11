@@ -51,15 +51,14 @@ transDefn conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) | n2s n == "Main.s
             M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyCon _ t_ret) t_in) t_out) (M.TyCon _ t_i)) t_res 
                         | n2s t_ret == "ReT" && n2s t_i == "I" -> do
                   (_, e') <- unbind e
-                  e''     <- runReaderT (runReaderT (transExp e') conMap) mempty
-                  case e'' of
-                        C.Call _ _ "unfold" [C.Call _ loopSig@(C.Sig _ (_:_) _) loop [], C.Call _ state0Sig state0 []] ->
+                  case e' of
+                        M.App _ (M.App _ (M.Var _ _ (n2s -> "unfold")) (M.Var _ loopTy loop)) (M.Var _ state0Ty state0) -> do
                               Left <$> (C.StartDefn an <$> runReaderT (sizeOf an t_in) conMap
                                                        <*> runReaderT (sizeOf an t_out) conMap
                                                        <*> runReaderT (sizeOf an t_res) conMap
-                                                       <*> pure (loop, loopSig)
-                                                       <*> pure (state0, state0Sig))
-                        _ -> failAt an $ "transDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " <> prettyPrint e''
+                                                       <*> ((n2s loop, )   <$> runReaderT (transType loopTy) conMap)
+                                                       <*> ((n2s state0, ) <$> runReaderT (transType state0Ty) conMap))
+                        _ -> failAt an $ "transDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " <> prettyPrint e'
             _ -> failAt an $ "transDefn: Main.start has illegal type: " <> prettyPrint t'
 transDefn conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) = do
       (_, t')  <- unbind t
@@ -69,8 +68,11 @@ transDefn conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) = do
 transExp :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.Exp -> TCM m C.Exp
 transExp = \ case
       e@(M.App an _ _)                  -> case M.flattenApp e of
-            (M.Var _ _ x : args)        -> C.Call an <$> transType (M.typeOf e) <*> pure (showt x) <*> mapM transExp args
-            (M.Con an t d : args)        -> do
+            (M.Var _ _ x : args)        -> do
+                  t'    <- sizeOf an $ M.typeOf e
+                  args' <- mapM transExp args
+                  pure $ C.Match an t' (showt x) (C.Slice an args') (map (C.PatVar an . C.sizeOf) args') Nothing
+            (M.Con an t d : args)       -> do
                   (v, w) <- ctorId an (snd $ M.flattenArrow t) d
                   sz     <- sizeOf an $ M.typeOf e
                   szArgs <- sum <$> mapM (sizeOf an . M.typeOf) args
@@ -80,34 +82,34 @@ transExp = \ case
             (M.NativeVHDL _ s _ : args) -> C.NativeVHDL an <$> sizeOf an (M.typeOf e) <*> pure s <*> mapM transExp args
             _                                          -> failAt an "transExp: encountered ill-formed application."
       M.Var an t x                      -> lift (asks (Map.lookup x)) >>= \ case
-            Nothing -> C.Call an <$> transType t <*> pure (showt x) <*> pure []
-            Just i  -> C.LVar an <$> sizeOf an t <*> pure i
+            Nothing -> C.Match an <$> sizeOf an t <*> pure (showt x) <*> pure (C.Lit an 0 0) <*> pure [C.PatLit an 0 0] <*> pure Nothing
+            Just i  -> C.LVar an  <$> sizeOf an t <*> pure i
       M.Con an t d                      -> do
             (v, w) <- ctorId an t d
             sz     <- sizeOf an t
             let tag = C.Lit an w v
                 pad = C.Lit an (sz - w) 0
             pure $ C.Slice an [tag, pad]
-      M.Match an t e p f (Just e2)      -> C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat p <*> (Just <$> transExp e2)
-      M.Match an t e p f Nothing        -> C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat p <*> pure Nothing
+      M.Match an t e ps f (Just e2)      -> C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat ps <*> (Just <$> transExp e2)
+      M.Match an t e ps f Nothing        -> C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat ps <*> pure Nothing
       M.NativeVHDL an s (M.Error _ t _) -> C.NativeVHDL an <$> sizeOf an t <*> pure s <*> pure []
-      M.Error an t _                    -> C.Call an <$> transType t <*> pure "ERROR" <*> pure []
+      M.Error an t _                    -> C.NativeVHDL an <$> sizeOf an t <*> pure "error" <*> pure []
       e                                 -> failAt (ann e) $ "ToCore: unsupported expression: " <> prettyPrint e
       where toGId :: MonadError AstError m => C.Exp -> m C.GId
-            toGId (C.Call _ _ x _) = pure x
-            toGId e                = failAt (ann e) $ "toGId: expected Call, got: " <> prettyPrint e
+            toGId (C.Match _ _ x _ _ _) = pure x
+            toGId e                     = failAt (ann e) $ "toGId: expected Match, got: " <> prettyPrint e
 
-transPat :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.MatchPat -> ReaderT ConMap m C.Pat
+transPat :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.MatchPat -> ReaderT ConMap m [C.Pat]
 transPat = \ case
       M.MatchPatCon an t d ps -> do
             (v, w) <- ctorId an t d
             sz     <- sizeOf an t
             szArgs <- sum <$> mapM (sizeOf an . M.typeOf) ps
             let tag = C.PatLit an w v
-                pad = C.PatLit an (sz - w - szArgs) 0 -- or wildcard?
-            C.PatSlice an <$> (([tag, pad] <>) <$> mapM transPat ps)
-      M.MatchPatVar an t      -> C.PatVar an <$> sizeOf an t
-      M.MatchPatWildCard an t -> C.PatWildCard an <$> sizeOf an t
+                pad = C.PatWildCard an (sz - w - szArgs) -- or lit 0 bits?
+            ([tag, pad] <>) <$> (concat <$> mapM transPat ps)
+      M.MatchPatVar an t      -> pure <$> (C.PatVar an <$> sizeOf an t)
+      M.MatchPatWildCard an t -> pure <$> (C.PatWildCard an <$> sizeOf an t)
 
 transType :: (Fresh m, MonadError AstError m, MonadState SizeMap m) => M.Ty -> ReaderT ConMap m C.Sig
 transType t = case t of
