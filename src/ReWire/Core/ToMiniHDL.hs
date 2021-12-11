@@ -32,7 +32,7 @@ askDefns = ask
 nvec :: Int -> Int -> [Bit]
 nvec n width = nvec' 0 []
   where nvec' pos bits | pos >= width = bits
-                       | otherwise    = nvec' (pos + 1) ((if testBit n pos then One else Zero):bits)
+                       | otherwise    = nvec' (pos + 1) $ (if testBit n pos then One else Zero) : bits
 
 getTyPorts :: Monad m => C.Sig -> CM m [Port]
 getTyPorts (Sig _ argsizes ressize) = do
@@ -67,17 +67,26 @@ addComponent _ i t = do
 compilePat :: Monad m => Name -> Int -> Pat -> CM m (Expr, [Expr])  -- first Expr is for whether match (std_logic); remaining Exprs are for extracted fields
 compilePat nscr offset = \ case
       PatCon _ _ tagValue tagSize ps -> do
-            let dcitagvec    = nvec tagValue tagSize
-            let tagw         = length dcitagvec
+            let tag          = nvec tagValue tagSize
                 fieldwidths  = map sizeOf ps
-            let fieldoffsets = init $ scanl (+) (offset + tagw) fieldwidths
+                fieldoffsets = init $ scanl (+) (offset + length tag) fieldwidths
             rs              <- zipWithM (compilePat nscr) fieldoffsets ps
             let ematchs      = map fst rs
                 eslices      = concatMap snd rs
-                ematch       = foldl' ExprAnd (ExprIsEq (ExprSlice (ExprName nscr) offset (offset + tagw - 1)) (ExprBitString dcitagvec)) ematchs
+                ematch       = foldl' ExprAnd (ExprIsEq (ExprSlice (ExprName nscr) offset (offset + length tag - 1)) (ExprBitString tag)) ematchs
             pure (ematch, eslices)
       PatVar _ s       -> pure (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + s - 1)])
       PatWildCard _ _  -> pure (ExprBoolConst True, [])
+      PatLit _ tagSize tagValue -> do
+            let tag    = nvec tagValue tagSize
+                ematch = ExprIsEq (ExprSlice (ExprName nscr) offset (offset + length tag - 1)) $ ExprBitString tag
+            pure (ematch, [])
+      PatSlice _ ps -> do
+            let fieldwidths  = map sizeOf ps
+                fieldoffsets = init $ scanl (+) offset fieldwidths
+            rs              <- zipWithM (compilePat nscr) fieldoffsets ps
+            let ematch       = foldl' ExprAnd (ExprBoolConst True) $ map fst rs
+            pure (ematch, concatMap snd rs)
 
 askGIdTy :: Monad m => GId -> CM m C.Sig
 askGIdTy i = do
@@ -108,11 +117,34 @@ compileExp = \ case
                 ns      = map snd sssns
                 tagvec  = nvec tagValue tagSize
                 padvec  = nvec 0 $ sz - tagSize - sum (map sizeOf args)
-            pure (stmts ++ [Assign (LHSName n) $ simplifyConcat (ExprConcat
-                                                  (foldl' ExprConcat (ExprBitString tagvec) (map ExprName ns))
-                                                     (ExprBitString padvec)
-                                                  )],
-                    n)
+            pure  ( stmts ++
+                        [ Assign (LHSName n)
+                              $ simplifyConcat
+                              $ ExprConcat (foldl' ExprConcat (ExprBitString tagvec) (map ExprName ns))
+                              $ ExprBitString padvec
+                        ]
+                  , n
+                  )
+      Lit _ tagSize tagValue -> do
+            n          <- (<> "_res") <$> freshName (mangle $ "lit_" <> showt tagValue <> "_" <> showt tagSize)
+            let tagvec  = nvec tagValue tagSize
+            pure  ( [ Assign (LHSName n) $ ExprBitString tagvec ]
+                  , n
+                  )
+      Slice _ args -> do
+            n          <- (<> "_res") <$> freshName (mangle $ "slice")
+            addSignal n $ TyStdLogicVector $ sum $ map sizeOf args
+            sssns      <- mapM compileExp args
+            let stmts   = concatMap fst sssns
+                ns      = map snd sssns
+            pure  ( stmts ++
+                        [ Assign (LHSName n)
+                              $ simplifyConcat
+                              $ foldl' ExprConcat (ExprBitString [])
+                              $ map ExprName ns
+                        ]
+                  , n
+                  )
 
       Match an sz gid escr p malt -> case malt of
             Just ealt -> do
