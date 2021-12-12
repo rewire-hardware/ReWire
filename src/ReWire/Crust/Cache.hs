@@ -33,6 +33,7 @@ import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Reader (runReaderT, ReaderT, MonadReader (..))
 import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify, lift)
 import Data.Containers.ListUtils (nubOrd)
+import Data.List.Split (splitOn)
 import Data.Text (Text, pack)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -156,7 +157,7 @@ getProgram flags fp = do
        >=> pDebug' "[Pass 7] Post-purification."
        >=> whenSet FlagDCrust5 (printInfo "Crust 5: Post-second-lambda-lifting")
        >=> pDebug' "Translating to core & HDL."
-       >=> toCore
+       >=> toCore (concatMap getInputNames flags) (concatMap getOutputNames flags)
        >=> pDebug' "[Pass 8] Core."
        $ (ts, syns, ds)
 
@@ -176,6 +177,16 @@ getProgram flags fp = do
 
             pDebug' :: MonadIO m => Text -> a -> m a
             pDebug' s a = pDebug flags s >> pure a
+
+            getInputNames :: Flag -> [Text]
+            getInputNames = \ case
+                  FlagInputNames ns -> map pack $ splitOn "," ns
+                  _                 -> []
+
+            getOutputNames :: Flag -> [Text]
+            getOutputNames = \ case
+                  FlagOutputNames ns -> map pack $ splitOn "," ns
+                  _                  -> []
 
 pDebug :: MonadIO m => [Flag] -> Text -> m ()
 pDebug flags s = when (FlagV `elem` flags) $ liftIO $ T.putStrLn $ "Debug: " <> s

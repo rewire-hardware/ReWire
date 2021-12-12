@@ -32,22 +32,24 @@ import Paths_ReWire (getDataFileName)
 
 options :: [OptDescr Flag]
 options =
-       [ Option ['v'] ["verbose"]            (NoArg FlagV)                         "More verbose output."
-       , Option ['f'] ["firrtl"]             (NoArg FlagFirrtl)                    "Produce FIRRTL output instead of VHDL."
-       , Option []    ["invert-reset"]       (NoArg FlagInvertReset)               "Invert the implicitly generated reset signal."
-       , Option []    ["dpass1", "dhask1" ]  (NoArg FlagDHask1)                    "Dump pass 1: pre-desugar haskell source."
-       , Option []    ["dpass2", "dhask2" ]  (NoArg FlagDHask2)                    "Dump pass 2: post-desugar haskell source."
-       , Option []    ["dpass3", "dcrust1"]  (NoArg FlagDCrust1)                   "Dump pass 3: post-desugar crust source."
-       , Option []    ["dpass4", "dcrust2"]  (NoArg FlagDCrust2)                   "Dump pass 4: post-inlining crust source."
-       , Option []    ["dpass5", "dcrust3"]  (NoArg FlagDCrust3)                   "Dump pass 5: pre-purify crust source."
-       , Option []    ["dpass6", "dcrust4"]  (NoArg FlagDCrust4)                   "Dump pass 6: post-purify crust source."
-       , Option []    ["dpass7", "dcrust5"]  (NoArg FlagDCrust5)                   "Dump pass 7: post-second-lambda-lifting crust source."
-       , Option []    ["dpass8", "dcore1"  ] (NoArg FlagDCore1)                    "Dump pass 8: core source."
-       , Option []    ["dpass9", "dcore2"  ] (NoArg FlagDCore2)                    "Dump pass 9: core source after purging empty types."
-       , Option []    ["dtypes"]             (NoArg FlagDTypes)                    "Enable extra typechecking after various IR transformations."
-       , Option ['o'] []                     (ReqArg FlagO        "filename.vhd")  "Name for VHDL output file."
-       , Option ['p'] ["packages"]           (ReqArg FlagPkgs     "pkg1,pkg2,...") "Packages to use for native VHDL components (e.g., ieee.std_logic_1164.all)."
-       , Option []    ["loadpath"]           (ReqArg FlagLoadPath "dir1,dir2,...") "Additional directories for loadpath."
+       [ Option ['v'] ["verbose"]            (NoArg  FlagV)                             "More verbose output."
+       , Option ['f'] ["firrtl"]             (NoArg  FlagFirrtl)                        "Produce FIRRTL output instead of VHDL."
+       , Option []    ["invert-reset"]       (NoArg  FlagInvertReset)                   "Invert the implicitly generated reset signal."
+       , Option []    ["dpass1", "dhask1" ]  (NoArg  FlagDHask1)                        "Dump pass 1: pre-desugar haskell source."
+       , Option []    ["dpass2", "dhask2" ]  (NoArg  FlagDHask2)                        "Dump pass 2: post-desugar haskell source."
+       , Option []    ["dpass3", "dcrust1"]  (NoArg  FlagDCrust1)                       "Dump pass 3: post-desugar crust source."
+       , Option []    ["dpass4", "dcrust2"]  (NoArg  FlagDCrust2)                       "Dump pass 4: post-inlining crust source."
+       , Option []    ["dpass5", "dcrust3"]  (NoArg  FlagDCrust3)                       "Dump pass 5: pre-purify crust source."
+       , Option []    ["dpass6", "dcrust4"]  (NoArg  FlagDCrust4)                       "Dump pass 6: post-purify crust source."
+       , Option []    ["dpass7", "dcrust5"]  (NoArg  FlagDCrust5)                       "Dump pass 7: post-second-lambda-lifting crust source."
+       , Option []    ["dpass8", "dcore1"  ] (NoArg  FlagDCore1)                        "Dump pass 8: core source."
+       , Option []    ["dpass9", "dcore2"  ] (NoArg  FlagDCore2)                        "Dump pass 9: core source after purging empty types."
+       , Option []    ["dtypes"]             (NoArg  FlagDTypes)                        "Enable extra typechecking after various IR transformations."
+       , Option ['o'] []                     (ReqArg FlagO           "filename.vhd")    "Name for RTL output file."
+       , Option ['p'] ["packages"]           (ReqArg FlagPkgs        "pkg1,pkg2,...")   "Packages to use for native VHDL components (e.g., ieee.std_logic_1164.all)."
+       , Option []    ["inputs"]             (ReqArg FlagInputNames  "name1,name2,...") "Names to use for input signals in generated RTL."
+       , Option []    ["outputs"]            (ReqArg FlagOutputNames "name1,name2,...") "Names to use for output signals in generated RTL."
+       , Option []    ["loadpath"]           (ReqArg FlagLoadPath    "dir1,dir2,...")   "Additional directories for loadpath."
        ]
 
 exitUsage :: IO ()
@@ -83,8 +85,9 @@ main = do
                   _         -> T.hPutStrLn stderr "Multiple output files specified on the command line!" >> exitFailure
 
             getLoadPathEntries :: Flag -> [FilePath]
-            getLoadPathEntries (FlagLoadPath ds) =  splitOn "," ds
-            getLoadPathEntries _                 =  []
+            getLoadPathEntries = \ case
+                  FlagLoadPath ds -> splitOn "," ds
+                  _               -> []
 
             compileFile :: [Flag] -> LoadPath -> String -> IO ()
             compileFile flags lp filename = do
