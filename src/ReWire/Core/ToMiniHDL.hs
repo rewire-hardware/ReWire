@@ -175,34 +175,34 @@ mkDefnArch (Defn _ n _ es) = do
       pure $ Architecture (mangle n <> "_impl") (mangle n) sigs comps (stmts ++ [Assign (LHSName "res") (ExprName nres)])
 
 compileStartDefn :: Monad m => [Flag] -> StartDefn -> CM m Unit
-compileStartDefn flags (StartDefn an insize outsize _ (n_loopfun, t_loopfun@(Sig _ (arg0size:_) _)) (n_startstate, t_startstate)) = do
+compileStartDefn flags (StartDefn an inps outps _ (n_loopfun, t_loopfun@(Sig _ (arg0size:_) _)) (n_startstate, t_startstate)) = do
       put ([], [], 0) -- empty out signal and component store, reset name counter
-      let statesize = sizeOf t_startstate
+      let stateSize = sizeOf t_startstate
+          inpSize   = sum $ map snd inps
+          outpSize  = sum $ map snd outps
       addComponent an n_startstate t_startstate
       addComponent an n_loopfun t_loopfun
-      addSignal "start_state"        $ TyStdLogicVector statesize
-      addSignal "loop_out"           $ TyStdLogicVector statesize
-      addSignal "current_state"      $ TyRegister "clk" statesize
-      addSignal "done_or_next_state" $ TyStdLogicVector statesize
-      addSignal "next_state"         $ TyStdLogicVector statesize
-      addSignal "inp"                $ TyStdLogicVector $ sum insize
-      inps  <- replicateM (length insize) $ freshName "inp"
-      outps <- replicateM (length insize) $ freshName "outp"
+      addSignal "start_state"        $ TyStdLogicVector stateSize
+      addSignal "loop_out"           $ TyStdLogicVector stateSize
+      addSignal "current_state"      $ TyRegister "clk" stateSize
+      addSignal "done_or_next_state" $ TyStdLogicVector stateSize
+      addSignal "next_state"         $ TyStdLogicVector stateSize
+      addSignal "inp"                $ TyStdLogicVector inpSize
       let ports =
             [ Port "clk"  In TyClock
             , Port rst    In TyStdLogic
-            ] <> zipWith (\ n s -> Port n In  (TyStdLogicVector s)) inps  insize
-              <> zipWith (\ n s -> Port n Out (TyStdLogicVector s)) outps outsize
+            ] <> zipWith (\ n s -> Port n In  (TyStdLogicVector s)) (map fst inps)  (map snd inps)
+              <> zipWith (\ n s -> Port n Out (TyStdLogicVector s)) (map fst outps) (map snd outps)
       (sigs, comps, _) <- get
       pure $ Unit (uses flags) (Entity "top_level" ports) $
             Architecture "top_level_impl" "top_level" sigs comps $
                   [ Instantiate "start_call" (mangle n_startstate) (PortMap [("res", ExprName "start_state")])
-                  , Instantiate "loop_call" (mangle n_loopfun) (PortMap [("arg0", ExprSlice (ExprName "current_state") (1 + sum outsize) (1 + sum outsize + arg0size - 1)), ("arg1", ExprName "inp"), ("res", ExprName "loop_out")])
+                  , Instantiate "loop_call" (mangle n_loopfun) (PortMap [("arg0", ExprSlice (ExprName "current_state") (1 + outpSize) (1 + outpSize + arg0size - 1)), ("arg1", ExprName "inp"), ("res", ExprName "loop_out")])
                   , WithAssign (ExprName rst) (LHSName "next_state") [(ExprName "start_state", ExprBit rstSignal)] (Just (ExprName "done_or_next_state"))
                   , WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "done_or_next_state") [(ExprName "loop_out", ExprBitString [One])] (Just (ExprName "current_state"))
                   , ClkProcess "clk" [Assign (LHSName "current_state") (ExprName "next_state")]
-                  , Assign (LHSName "inp") $ foldl' ExprConcat (ExprBitString []) $ map ExprName inps
-                  ] <> fst (foldl' (\ (as, off) (sz, n) -> (as <> [Assign (LHSName n) (ExprSlice (ExprName "current_state") off (off + sz - 1))], off + sz)) ([], 1) $ zip outsize outps)
+                  , Assign (LHSName "inp") $ foldl' ExprConcat (ExprBitString []) $ map (ExprName . fst) inps
+                  ] <> fst (foldl' (\ (as, off) (n, sz) -> (as <> [Assign (LHSName n) (ExprSlice (ExprName "current_state") off (off + sz - 1))], off + sz)) ([], 1) outps)
       where rstSignal :: Bit
             rstSignal = if FlagInvertReset `elem` flags then Zero else One
 

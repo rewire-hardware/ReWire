@@ -26,9 +26,9 @@ type SizeMap = HashMap M.Ty Int
 type ConMap = (HashMap (Name M.TyConId) [Name M.DataConId], HashMap (Name M.DataConId) M.Ty)
 type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) Int) m)
 
-toCore :: (Fresh m, MonadError AstError m) => M.FreeProgram -> m C.Program
-toCore (ts, _, vs) = fst <$> flip runStateT mempty (do
-            vs' <- mapM (transDefn conMap) $ filter (not . M.isPrim . M.defnName) vs
+toCore :: (Fresh m, MonadError AstError m) => [Text] -> [Text] -> M.FreeProgram -> m C.Program
+toCore inps outps (ts, _, vs) = fst <$> flip runStateT mempty (do
+            vs' <- mapM (transDefn inps outps conMap) $ filter (not . M.isPrim . M.defnName) vs
             case partitionEithers vs' of
                   ([startDefn], defns) -> pure $ C.Program startDefn defns
                   _                    -> failAt noAnn "toCore: no Main.start."
@@ -44,22 +44,22 @@ toCore (ts, _, vs) = fst <$> flip runStateT mempty (do
             projType :: M.DataCon -> M.Ty
             projType (M.DataCon _ _ (Embed (M.Poly t))) = runFreshM (snd <$> unbind t)
 
-transDefn :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => ConMap -> M.Defn -> m (Either C.StartDefn C.Defn)
-transDefn conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) | n2s n == "Main.start" = do
+transDefn :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => [Text] -> [Text] -> ConMap -> M.Defn -> m (Either C.StartDefn C.Defn)
+transDefn inps outps conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) | n2s n == "Main.start" = do
       (_, t')  <- unbind t
       case t' of
             M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "ReT")) t_in) t_out) (M.TyCon _ (n2s -> "I"))) t_res -> do
                   (_, e') <- unbind e
                   case e' of
                         M.App _ (M.App _ (M.Var _ _ (n2s -> "unfold")) (M.Var _ loopTy loop)) (M.Var _ state0Ty state0) -> do
-                              Left <$> (C.StartDefn an <$> (filter (> 0) <$> mapM ((`runReaderT` conMap) . sizeOf an) (M.flattenTyApp t_in))
-                                                       <*> (filter (> 0) <$> mapM ((`runReaderT` conMap) . sizeOf an) (M.flattenTyApp t_out))
+                              Left <$> (C.StartDefn an <$> (zip (inps  <> zipWith (<>) (repeat "inp")  (map showt [0::Int ..])) <$> (filter (> 0) <$> mapM ((`runReaderT` conMap) . sizeOf an) (M.flattenTyApp t_in)))
+                                                       <*> (zip (outps <> zipWith (<>) (repeat "outp") (map showt [0::Int ..])) <$> (filter (> 0) <$> mapM ((`runReaderT` conMap) . sizeOf an) (M.flattenTyApp t_out)))
                                                        <*> runReaderT (sizeOf an t_res) conMap
                                                        <*> ((n2s loop, )   <$> runReaderT (transType loopTy) conMap)
                                                        <*> ((n2s state0, ) <$> runReaderT (transType state0Ty) conMap))
                         _ -> failAt an $ "transDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " <> prettyPrint e'
             _ -> failAt an $ "transDefn: Main.start has illegal type: " <> prettyPrint t'
-transDefn conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) = do
+transDefn _ _ conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) = do
       (_, t')  <- unbind t
       (xs, e') <- unbind e
       Right <$> (C.Defn an (showt n) <$> runReaderT (transType t') conMap <*> runReaderT (runReaderT (transExp e') conMap) (Map.fromList $ zip xs [0..]))
