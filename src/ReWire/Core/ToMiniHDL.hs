@@ -10,7 +10,7 @@ import ReWire.MiniHDL.Syntax as M
 import ReWire.Pretty
 import ReWire.Flags (Flag (..))
 
-import Control.Monad (zipWithM)
+import Control.Monad (zipWithM, replicateM)
 import Control.Monad.Reader (ReaderT (..), ask)
 import Control.Monad.State (StateT (..), get, put, lift)
 import Data.List (find, foldl')
@@ -185,36 +185,24 @@ compileStartDefn flags (StartDefn an insize outsize _ (n_loopfun, t_loopfun@(Sig
       addSignal "current_state"      $ TyRegister "clk" statesize
       addSignal "done_or_next_state" $ TyStdLogicVector statesize
       addSignal "next_state"         $ TyStdLogicVector statesize
-      let ports       = [Port "clk"  In TyClock,
-                         Port rst    In TyStdLogic,
-                         Port "inp"  In (TyStdLogicVector insize),
-                         Port "outp" Out (TyStdLogicVector outsize)]
+      addSignal "inp"                $ TyStdLogicVector $ sum insize
+      inps  <- replicateM (length insize) $ freshName "inp"
+      outps <- replicateM (length insize) $ freshName "outp"
+      let ports =
+            [ Port "clk"  In TyClock
+            , Port rst    In TyStdLogic
+            ] <> zipWith (\ n s -> Port n In  (TyStdLogicVector s)) inps  insize
+              <> zipWith (\ n s -> Port n Out (TyStdLogicVector s)) outps outsize
       (sigs, comps, _) <- get
-      pure (Unit (uses flags)
-               (Entity "top_level" ports)
-               (Architecture
-                   "top_level_impl"
-                   "top_level"
-                   sigs
-                   comps
-                   [Instantiate "start_call" (mangle n_startstate)
-                      (PortMap [("res", ExprName "start_state")]),
-                    Instantiate "loop_call" (mangle n_loopfun)
-                      (PortMap [("arg0", ExprSlice (ExprName "current_state") (1 + outsize) (1 + outsize + arg0size - 1)),
-                                ("arg1", ExprName "inp"),
-                                ("res", ExprName "loop_out")]),
-                    WithAssign (ExprName rst) (LHSName "next_state")
-                     [(ExprName "start_state", ExprBit rstSignal)]
-                     (Just (ExprName "done_or_next_state")),
-                    WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "done_or_next_state")
-                     [(ExprName "loop_out", ExprBitString [One])]
-                     (Just (ExprName "current_state")),
-                    ClkProcess "clk"
-                     [Assign (LHSName "current_state") (ExprName "next_state")],
-                     Assign (LHSName "outp") (ExprSlice (ExprName "current_state") 1 outsize)
-                   ]
-               )
-             )
+      pure $ Unit (uses flags) (Entity "top_level" ports) $
+            Architecture "top_level_impl" "top_level" sigs comps $
+                  [ Instantiate "start_call" (mangle n_startstate) (PortMap [("res", ExprName "start_state")])
+                  , Instantiate "loop_call" (mangle n_loopfun) (PortMap [("arg0", ExprSlice (ExprName "current_state") (1 + sum outsize) (1 + sum outsize + arg0size - 1)), ("arg1", ExprName "inp"), ("res", ExprName "loop_out")])
+                  , WithAssign (ExprName rst) (LHSName "next_state") [(ExprName "start_state", ExprBit rstSignal)] (Just (ExprName "done_or_next_state"))
+                  , WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "done_or_next_state") [(ExprName "loop_out", ExprBitString [One])] (Just (ExprName "current_state"))
+                  , ClkProcess "clk" [Assign (LHSName "current_state") (ExprName "next_state")]
+                  , Assign (LHSName "inp") $ foldl' ExprConcat (ExprBitString []) $ map ExprName inps
+                  ] <> fst (foldl' (\ (as, off) (sz, n) -> (as <> [Assign (LHSName n) (ExprSlice (ExprName "current_state") off (off + sz - 1))], off + sz)) ([], 1) $ zip outsize outps)
       where rstSignal :: Bit
             rstSignal = if FlagInvertReset `elem` flags then Zero else One
 

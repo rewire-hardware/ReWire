@@ -117,7 +117,7 @@ instance Pretty Pat where
 
 ---
 
-data StartDefn = StartDefn Annote !Size !Size !Size !(GId, Sig) !(GId, Sig) -- input, output, res type, (loop, loop ty), (state0, state0 ty)
+data StartDefn = StartDefn Annote ![Size] ![Size] !Size !(GId, Sig) !(GId, Sig) -- input, output, res type, (loop, loop ty), (state0, state0 ty)
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric StartDefn
 
@@ -126,7 +126,7 @@ instance Annotated StartDefn where
 
 instance Pretty StartDefn where
       pretty (StartDefn _ tin tout tres (loop, _) (state0, _)) = vsep $
-            [ text "Main.start" <+> text "::" <+> text "ReT" <+> pretty tin <+> pretty tout <+> text "I" <+> pretty tres
+            [ text "Main.start" <+> text "::" <+> text "ReT" <+> pBV tin <+> pBV tout <+> text "I" <+> pretty tres
             , text "Main.start" <+> text "=" <+> nest 2 (text "unfold" <+> pretty loop <+> pretty state0)
             ]
 
