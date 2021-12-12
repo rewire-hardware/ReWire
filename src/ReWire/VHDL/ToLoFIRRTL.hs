@@ -75,6 +75,7 @@ transExpr = \ case
       V.ExprSlice e l h           -> F.Bits <$> transExpr e <*> pure (toNat h) <*> pure (toNat l)
       V.ExprIsEq e1 e2            -> F.Eq <$> transExpr e1 <*> transExpr e2
       V.ExprAnd e1 e2             -> F.And <$> transExpr e1 <*> transExpr e2
+      _                           -> failAt noAnn "TODO"
       where toNat :: Integral a => a -> Natural -- TODO(chathhorn)
             toNat a | a >= 0 = fromIntegral a
             toNat _          = 0

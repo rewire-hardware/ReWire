@@ -7,10 +7,9 @@ import ReWire.Core.Syntax as C
 import ReWire.Error
 import ReWire.Core.Mangle
 import ReWire.VHDL.Syntax as M
-import ReWire.Pretty
 import ReWire.Flags (Flag (..))
 
-import Control.Monad (zipWithM, replicateM)
+import Control.Monad (zipWithM)
 import Control.Monad.Reader (ReaderT (..), ask)
 import Control.Monad.State (StateT (..), get, put, lift)
 import Data.List (find, foldl')
@@ -208,6 +207,7 @@ compileStartDefn flags (StartDefn an inps outps _ (n_loopfun, t_loopfun@(Sig _ (
 
             rst :: Text
             rst = if FlagInvertReset `elem` flags then "rst_n" else "rst"
+compileStartDefn _ (StartDefn an _ _ _ _ _) = failAt an "toVHDL: compileStartDefn: start definition with invalid signature."
 
 compileDefn :: Monad m => [Flag] -> Defn -> CM m Unit
 compileDefn flags d = Unit (uses flags) <$> mkDefnEntity d <*> mkDefnArch d

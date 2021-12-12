@@ -1,10 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 module ReWire.Core.Transform ( mergeSlices ) where
 
-import ReWire.Annotation (Annote, noAnn)
 import ReWire.Core.Syntax
-import Data.Maybe (catMaybes, fromMaybe)
-import Data.List (foldl')
+import Data.Maybe (fromMaybe)
 import Control.Arrow ((&&&))
 import Control.Monad.Reader (runReader, MonadReader (..), asks)
 
@@ -40,7 +38,7 @@ reDefn d = do
             }
 
 renumLVars :: Sig -> LId -> Maybe (LId, Int)
-renumLVars (Sig an szVec _) x = if x >= 0 && x < length szVec && szVec !! x > 0
+renumLVars (Sig _ szVec _) x = if x >= 0 && x < length szVec && szVec !! x > 0
       then Just (x - preZeros, szVec !! x)
       else Nothing
       where preZeros :: Int
@@ -71,7 +69,7 @@ reExps rn es = mergeLits <$> (concat <$> mapM (reExp rn) (filter ((> 0) . sizeOf
 
 mergeLits :: [Exp] -> [Exp]
 mergeLits = \ case
-      Lit a s 0 : (Lit a' s' 0) : es -> mergeLits $ Lit a (s + s') 0 : es
+      Lit a s 0 : (Lit _ s' 0) : es -> mergeLits $ Lit a (s + s') 0 : es
       e : es                         -> e : mergeLits es
       []                             -> []
 

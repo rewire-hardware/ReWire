@@ -96,9 +96,9 @@ patAssumps :: Pat -> HashMap (Name Exp) Poly
 patAssumps = flip patAssumps' mempty
       where patAssumps' :: Pat -> HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly
             patAssumps' = \ case
-                  PatCon _ _ _ ps         -> flip (foldr patAssumps') ps
-                  PatVar _ (Embed t) n    -> Map.insert n $ [] `poly` t
-                  PatWildCard _ (Embed t) -> id
+                  PatCon _ _ _ ps      -> flip (foldr patAssumps') ps
+                  PatVar _ (Embed t) n -> Map.insert n $ [] `poly` t
+                  PatWildCard _ _      -> id
 
 patHoles :: Fresh m => MatchPat -> m (HashMap (Name Exp) Poly)
 patHoles = flip patHoles' $ pure mempty
@@ -106,7 +106,7 @@ patHoles = flip patHoles' $ pure mempty
             patHoles' = \ case
                   MatchPatCon _ _ _ ps -> flip (foldr patHoles') ps
                   MatchPatVar _ t      -> (flip Map.insert ([] `poly` t) <$> fresh (s2n "PHOLE") <*>)
-                  MatchPatWildCard _ t -> id
+                  MatchPatWildCard _ _ -> id
 
 tcPat :: (Fresh m, MonadError AstError m) => Ty -> Pat -> TCM m ()
 tcPat t = \ case
