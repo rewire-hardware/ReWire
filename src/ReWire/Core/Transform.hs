@@ -57,8 +57,7 @@ reExp rn = \ case
       m@(Match _ _ g es _ _)  | sum (map sizeOf es) == 0      -> (fromMaybe [m] <$> asks (Map.lookup g)) >>= reExps rn
       m@(Match _ _ g _ ps []) | length (filter isVar ps) == 0 -> (fromMaybe [m] <$> asks (Map.lookup g)) >>= reExps rn
       Match a s g es ps es'                                   -> pure <$> (Match a s g <$> reExps rn es <*> pure (rePat ps) <*> reExps rn es')
-      NativeVHDL a s txt args                                 -> pure <$> (NativeVHDL a s txt <$> reExps rn args)
-      NativeVHDLComponent a s txt args                        -> pure <$> (NativeVHDLComponent a s txt <$> reExps rn args)
+      Extern a s txt args                                     -> pure <$> (Extern a s txt <$> reExps rn args)
       where isVar :: Pat -> Bool
             isVar = \ case
                   PatVar {} -> True

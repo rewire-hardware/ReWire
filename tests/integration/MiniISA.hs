@@ -11,22 +11,22 @@ data CPUState = CPUState Inputs Outputs   -- (inputs,outputs) (0-9,10-27)
 data Register = R0 | R1 | R2 | R3
 
 plusCW8  :: W8 -> W8 -> Bit -> (Bit,W8)
-plusCW8  =  nativeVhdl "prim_plusCW8" plusCW8
+plusCW8  =  extern "prim_plusCW8" plusCW8
 
 minusCW8 :: W8 -> W8 -> Bit -> (Bit,W8)
-minusCW8 =  nativeVhdl "prim_minusCW8" minusCW8
+minusCW8 =  extern "prim_minusCW8" minusCW8
 
 shlCW8   :: W8 -> Bit -> (Bit,W8)
-shlCW8   =  nativeVhdl "prim_shlCW8" shlCW8
+shlCW8   =  extern "prim_shlCW8" shlCW8
 
 shrCW8   :: W8 -> Bit -> (Bit,W8)
-shrCW8   =  nativeVhdl "prim_shrCW8" shrCW8
+shrCW8   =  extern "prim_shrCW8" shrCW8
 
 msbW8    :: W8 -> Bit
-msbW8    =  nativeVhdl "prim_msbW8" msbW8
+msbW8    =  extern "prim_msbW8" msbW8
 
 lsbW8    :: W8 -> Bit
-lsbW8    =  nativeVhdl "prim_lsbW8" lsbW8
+lsbW8    =  extern "prim_lsbW8" lsbW8
 
 mkReg :: Bit -> Bit -> Register
 mkReg  C  C = R0

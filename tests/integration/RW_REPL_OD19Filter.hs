@@ -1,6 +1,6 @@
 import ReWire
 import ReWire.Bits
-import OD19Filter.ProgramCounter
+import OD19.ProgramCounter
 
 -------
 -- Tests 1-4.
@@ -9,17 +9,16 @@ import OD19Filter.ProgramCounter
 -- Each of the following is implemented in VHDL in vhdl/filterprims.vhd.
 
 test1 :: W32 -> W32 -> Bit
-test1 = nativeVhdl "test1" test1
+test1 = extern "test1" test1
 
 test2 :: W32 -> W32 -> Bit
-test2 = nativeVhdl "test2" test2
+test2 = extern "test2" test2
 
 test3 :: W32 -> W32 -> Bit
-test3 = nativeVhdl "test3" test3
+test3 = extern "test3" test3
 
 test4 :: W32 -> W32 -> Bit
-test4 = nativeVhdl "test4" test4
-
+test4 = extern "test4" test4
 
 -------
 -- end of tests

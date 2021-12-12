@@ -220,7 +220,7 @@ freshKVar n = M.KVar <$> fresh (s2n $ "?K_" <> n)
 transExp :: MonadError AstError m => Renamer -> Exp Annote -> m M.Exp
 transExp rn = \ case
       App l (App _ (Var _ n) (Lit _ (String _ f _))) e
-            | isNativeVhdl n -> M.NativeVHDL l (pack f) <$> transExp rn e
+            | isExtern n -> M.Extern l (pack f) <$> transExp rn e
       App l (Var _ n) (Lit _ (String _ m _))
             | isError n      -> pure $ M.Error l (M.TyBlank l) (pack m)
       App l e1 e2            -> M.App l <$> transExp rn e1 <*> transExp rn e2
@@ -249,8 +249,8 @@ transExp rn = \ case
             isError :: QName Annote -> Bool
             isError n = prettyPrint (name $ rename Value rn n) == "error"
 
-            isNativeVhdl :: QName Annote -> Bool
-            isNativeVhdl n = prettyPrint (name $ rename Value rn n) == "nativeVhdl"
+            isExtern :: QName Annote -> Bool
+            isExtern n = prettyPrint (name $ rename Value rn n) == "extern"
 
 transPat :: MonadError AstError m => Renamer -> Pat Annote -> m M.Pat
 transPat rn = \ case

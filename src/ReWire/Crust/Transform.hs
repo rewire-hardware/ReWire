@@ -94,11 +94,11 @@ fix m n f a = do
       a' <- f a
       if hash a' == hash a then pure a else fix m (n - 1) f a'
 
--- | Replaces the expression in NativeVHDL so we don't descend into it
+-- | Replaces the expression in Extern so we don't descend into it
 --   during other transformations.
 neuterPrims :: MonadCatch m => FreeProgram -> m FreeProgram
 neuterPrims = runT $ transform $
-      \ (NativeVHDL an s e) -> pure $ NativeVHDL an s (Error an (typeOf e) "nativeVHDL expression placeholder")
+      \ (Extern an s e) -> pure $ Extern an s (Error an (typeOf e) "extern expression placeholder")
 
 -- | Shifts vars bound by top-level lambdas into defs.
 -- > g = \ x1 -> \ x2 -> e

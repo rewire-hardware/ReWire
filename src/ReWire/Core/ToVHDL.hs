@@ -147,24 +147,13 @@ compileExp = \ case
                      Instantiate n_call (mangle gid) pm] ++
                     stmts_ealt,
                     n)
-      NativeVHDL _ sz i args -> do
+      Extern _ sz i args -> do
             n           <- (<> "_res") <$> freshName i
             addSignal n $ TyStdLogicVector sz
             sssns       <- mapM compileExp args
             let stmts   =  concatMap fst sssns
                 ns      =  map snd sssns
             pure (stmts ++ [Assign (LHSName n) (ExprFunCall i (map ExprName ns))], n)
-      NativeVHDLComponent an sz i args -> do
-            n           <- (<> "_res") <$> freshName i
-            n_call      <- (<> "_call") <$> freshName i
-            addSignal n $ TyStdLogicVector sz
-            sssns       <- mapM compileExp args
-            let stmts   =  concatMap fst sssns
-                ns      =  map snd sssns
-            addComponent an i $ Sig an (map sizeOf args) sz
-            let argns   =  map (\ n -> "arg" <> showt n) ([0..]::[Int])
-                pm      =  PortMap (zip argns (map ExprName ns) ++ [("res", ExprName n)])
-            pure (stmts ++ [Instantiate n_call i pm], n)
 
 mkDefnArch :: Monad m => Defn -> CM m Architecture
 mkDefnArch (Defn _ n _ es) = do

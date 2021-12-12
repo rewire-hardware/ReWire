@@ -209,14 +209,14 @@ instance NFData Ty
 instance (TextShow a, TextShow b) => TextShow (Bind a b) where
       showbPrec = genericShowbPrec
 
-data Exp = App        Annote !Exp !Exp
-         | Lam        Annote !Ty !(Bind (Name Exp) Exp)
-         | Var        Annote !Ty !(Name Exp)
-         | Con        Annote !Ty !(Name DataConId)
-         | Case       Annote !Ty !Exp !(Bind Pat Exp) !(Maybe Exp)
-         | Match      Annote !Ty !Exp !MatchPat !Exp !(Maybe Exp)
-         | NativeVHDL Annote !Text !Exp
-         | Error      Annote !Ty !Text
+data Exp = App    Annote !Exp !Exp
+         | Lam    Annote !Ty !(Bind (Name Exp) Exp)
+         | Var    Annote !Ty !(Name Exp)
+         | Con    Annote !Ty !(Name DataConId)
+         | Case   Annote !Ty !Exp !(Bind Pat Exp) !(Maybe Exp)
+         | Match  Annote !Ty !Exp !MatchPat !Exp !(Maybe Exp)
+         | Extern Annote !Text !Exp
+         | Error  Annote !Ty !Text
       deriving (Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Exp
 
@@ -259,7 +259,7 @@ instance TypeAnnotated Exp where
             Con _ t _         -> t
             Case _ t _ _ _    -> t
             Match _ t _ _ _ _ -> t
-            NativeVHDL _ _ e  -> typeOf e
+            Extern _ _ e      -> typeOf e
             Error _ t _       -> t
 
 instance Annotated Exp where
@@ -270,7 +270,7 @@ instance Annotated Exp where
             Con a _ _         -> a
             Case a _ _ _ _    -> a
             Match a _ _ _ _ _ -> a
-            NativeVHDL a _ _  -> a
+            Extern a _ _      -> a
             Error a _ _       -> a
 
 
@@ -302,7 +302,7 @@ instance Pretty Exp where
                         [ text "match" <+> braces (pretty t) <+> pretty e <+> text "of"
                         , pretty p <+> text "->" <+> pretty e1
                         ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
-            NativeVHDL _ n e                             -> text "nativeVhdl" <+> dquotes (pretty n) <+> mparen e
+            Extern _ n e                                 -> text "extern" <+> dquotes (pretty n) <+> mparen e
             Error _ t m                                  -> text "error" <+> braces (pretty t) <+> dquotes (pretty m)
 
 ---

@@ -173,7 +173,7 @@ tcExp = \ case
             case e2 of
                   Nothing -> pure ()
                   Just e2 -> tcExp e2 >> unify an t (typeOf e2)
-      Match an t e p f e2  -> do
+      Match an t e p f e2     -> do
             tcExp e
             tcMatchPat (typeOf e) p
             holes <- patHoles p
@@ -183,8 +183,8 @@ tcExp = \ case
             case e2 of
                   Nothing -> pure ()
                   Just e2 -> tcExp e2 >> unify an t (typeOf e2)
-      NativeVHDL _ _ Error {} -> pure ()
-      NativeVHDL _ _ e        -> tcExp e
+      Extern _ _ Error {}     -> pure ()
+      Extern _ _ e            -> tcExp e
       Error {}                -> pure ()
 
 mkApp :: Annote -> Exp -> [Name Exp] -> Exp

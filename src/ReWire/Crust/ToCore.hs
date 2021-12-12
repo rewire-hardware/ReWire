@@ -79,7 +79,7 @@ transExp = \ case
                   let tag = C.Lit an w v
                       pad = C.Lit an (sz - w - szArgs) 0
                   ([tag, pad] <>) <$> (concat <$> mapM transExp args)
-            (M.NativeVHDL _ s _ : args) -> pure <$> (C.NativeVHDL an <$> sizeOf an (M.typeOf e) <*> pure s <*> (concat <$> mapM transExp args))
+            (M.Extern _ s _ : args)     -> pure <$> (C.Extern an <$> sizeOf an (M.typeOf e) <*> pure s <*> (concat <$> mapM transExp args))
             _                           -> failAt an "transExp: encountered ill-formed application."
       M.Var an t x                      -> lift (asks (Map.lookup x)) >>= \ case
             Nothing -> pure <$> (C.Match an <$> sizeOf an t <*> pure (showt x) <*> pure [] <*> pure [] <*> pure [])
@@ -92,8 +92,8 @@ transExp = \ case
             pure $ [tag, pad]
       M.Match an t e ps f (Just e2)     -> pure <$> (C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat ps <*> transExp e2)
       M.Match an t e ps f Nothing       -> pure <$> (C.Match an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat ps <*> pure [])
-      M.NativeVHDL an s (M.Error _ t _) -> pure <$> (C.NativeVHDL an <$> sizeOf an t <*> pure s <*> pure [])
-      M.Error an t _                    -> pure <$> (C.NativeVHDL an <$> sizeOf an t <*> pure "error" <*> pure [])
+      M.Extern an s (M.Error _ t _)     -> pure <$> (C.Extern an <$> sizeOf an t <*> pure s <*> pure [])
+      M.Error an t _                    -> pure <$> (C.Extern an <$> sizeOf an t <*> pure "error" <*> pure [])
       e                                 -> failAt (ann e) $ "ToCore: unsupported expression: " <> prettyPrint e
       where toGId :: MonadError AstError m => [C.Exp] -> m C.GId
             toGId [C.Match _ _ x _ _ _] = pure x

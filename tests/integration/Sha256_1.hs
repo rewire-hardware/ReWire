@@ -9,16 +9,16 @@ import ReWire
 import ReWire.Bits hiding (W32 (..), andW32, xorW32, plusW32, notW32)
 
 plusW32 :: W32 -> W32 -> W32
-plusW32 = nativeVhdl "plusW32" plusW32
+plusW32 = extern "plusW32" plusW32
 
 andW32 :: W32 -> W32 -> W32
-andW32 = nativeVhdl "andW32" andW32
+andW32 = extern "andW32" andW32
 
 xorW32 :: W32 -> W32 -> W32
-xorW32 = nativeVhdl "xorW32" xorW32
+xorW32 = extern "xorW32" xorW32
 
 notW32 :: W32 -> W32
-notW32 = nativeVhdl "notW32" notW32
+notW32 = extern "notW32" notW32
 
 data Oct a = Oct a a a a
                  a a a a -- deriving Show
@@ -197,7 +197,7 @@ data Ctr = C0  | C1  | C2  | C3  | C4  | C5  | C6  | C7  |
            C56 | C57 | C58 | C59 | C60 | C61 | C62 | C63 
 
 incCtr :: Ctr -> Ctr
-incCtr = nativeVhdl "incCtr" incCtr
+incCtr = extern "incCtr" incCtr
 
 seed :: Ctr -> W32
 seed C0  = w428a2f98

@@ -51,43 +51,38 @@ instance Pretty Sig where
 
 ---
 
-data Exp = Lit                 Annote !Size !Int
-         | LVar                Annote !Size !LId
-         | Match               Annote !Size !GId   ![Exp] ![Pat]  ![Exp]
-         | NativeVHDL          Annote !Size !Text                 ![Exp]
-         | NativeVHDLComponent Annote !Size !Text                 ![Exp]
+data Exp = Lit    Annote !Size !Int
+         | LVar   Annote !Size !LId
+         | Match  Annote !Size !GId   ![Exp] ![Pat]  ![Exp]
+         | Extern Annote !Size !Text                 ![Exp]
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Exp
 
 instance SizeAnnotated Exp where
       sizeOf = \ case
-            LVar _ s _                  -> s
-            Lit _ s _                   -> s
-            Match _ s _ _ _ _           -> s
-            NativeVHDL _ s _ _          -> s
-            NativeVHDLComponent _ s _ _ -> s
+            LVar _ s _        -> s
+            Lit _ s _         -> s
+            Match _ s _ _ _ _ -> s
+            Extern _ s _ _    -> s
 
 instance Annotated Exp where
       ann = \ case
-            LVar a _ _                  -> a
-            Lit a _ _                   -> a
-            Match a _ _ _ _ _           -> a
-            NativeVHDL a _ _ _          -> a
-            NativeVHDLComponent a _ _ _ -> a
+            LVar a _ _        -> a
+            Lit a _ _         -> a
+            Match a _ _ _ _ _ -> a
+            Extern a _ _ _    -> a
 
 instance Pretty Exp where
       pretty = \ case
-            Lit _ w v                       -> pretty v <> text "::BV" <> pretty w
-            LVar _ _ n                      -> text $ "$" <> showt n
-            Match _ _ f es ps es2           -> nest 2 $ vsep
+            Lit _ w v             -> pretty v <> text "::BV" <> pretty w
+            LVar _ _ n            -> text $ "$" <> showt n
+            Match _ _ f es ps es2 -> nest 2 $ vsep
                   [ text "match" <+> pBV es <+> text "of"
                   , pBV ps <+> text "->" <+> text f
                   , text "_" <+> text "->" <+> pBV es2
                   ]
-            NativeVHDL _ s n []            -> (text "nativeVHDL"          <+> dquotes (text n))              <+> text "::" <+> text "BV" <> pretty s
-            NativeVHDL _ s n args          -> (text "nativeVHDL"          <+> dquotes (text n)) <+> pBV args <+> text "::" <+> text "BV" <> pretty s
-            NativeVHDLComponent _ s n []   -> (text "nativeVHDLComponent" <+> dquotes (text n))              <+> text "::" <+> text "BV" <> pretty s
-            NativeVHDLComponent _ s n args -> (text "nativeVHDLComponent" <+> dquotes (text n)) <+> pBV args <+> text "::" <+> text "BV" <> pretty s
+            Extern _ s n []       -> (text "extern"          <+> dquotes (text n))              <+> text "::" <+> text "BV" <> pretty s
+            Extern _ s n args     -> (text "extern"          <+> dquotes (text n)) <+> pBV args <+> text "::" <+> text "BV" <> pretty s
 
 ---
 
