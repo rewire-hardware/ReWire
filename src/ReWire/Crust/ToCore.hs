@@ -48,13 +48,12 @@ transDefn :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => ConMap ->
 transDefn conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) | n2s n == "Main.start" = do
       (_, t')  <- unbind t
       case t' of
-            M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyCon _ t_ret) t_in) t_out) (M.TyCon _ t_i)) t_res 
-                        | n2s t_ret == "ReT" && n2s t_i == "I" -> do
+            M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "ReT")) t_in) t_out) (M.TyCon _ (n2s -> "I"))) t_res -> do
                   (_, e') <- unbind e
                   case e' of
                         M.App _ (M.App _ (M.Var _ _ (n2s -> "unfold")) (M.Var _ loopTy loop)) (M.Var _ state0Ty state0) -> do
-                              Left <$> (C.StartDefn an <$> runReaderT (sizeOf an t_in) conMap
-                                                       <*> runReaderT (sizeOf an t_out) conMap
+                              Left <$> (C.StartDefn an <$> (filter (> 0) <$> mapM ((`runReaderT` conMap) . sizeOf an) (M.flattenTyApp t_in))
+                                                       <*> (filter (> 0) <$> mapM ((`runReaderT` conMap) . sizeOf an) (M.flattenTyApp t_out))
                                                        <*> runReaderT (sizeOf an t_res) conMap
                                                        <*> ((n2s loop, )   <$> runReaderT (transType loopTy) conMap)
                                                        <*> ((n2s state0, ) <$> runReaderT (transType state0Ty) conMap))
