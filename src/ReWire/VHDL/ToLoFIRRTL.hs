@@ -1,9 +1,9 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
-module ReWire.MiniHDL.ToLoFIRRTL (toLoFirrtl) where
+module ReWire.VHDL.ToLoFIRRTL (toLoFirrtl) where
 
 import ReWire.Error
-import qualified ReWire.MiniHDL.Syntax as V
+import qualified ReWire.VHDL.Syntax as V
 import qualified ReWire.LoFIRRTL.Syntax as F
 import Data.Bits (Bits (..))
 import Control.Monad (foldM)

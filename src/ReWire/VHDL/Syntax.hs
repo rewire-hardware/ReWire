@@ -1,5 +1,5 @@
 {-# LANGUAGE Safe, OverloadedStrings #-}
-module ReWire.MiniHDL.Syntax where
+module ReWire.VHDL.Syntax where
 
 import Prelude hiding ((<>))
 import Prettyprinter (Pretty (..), parens, (<>), (<+>), vsep, hcat, hsep, semi, colon, punctuate, comma, nest, align, Doc)

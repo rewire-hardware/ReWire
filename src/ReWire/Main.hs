@@ -6,10 +6,10 @@ import ReWire.Annotation (unAnn)
 import ReWire.FrontEnd (loadProgram, LoadPath)
 import ReWire.Pretty (Pretty, prettyPrint)
 import qualified ReWire.Core.Syntax as C
-import ReWire.Core.ToMiniHDL (compileProgram)
+import ReWire.Core.ToVHDL (compileProgram)
 import ReWire.Core.Transform (mergeSlices)
 import ReWire.Crust.Cache (printHeader)
-import ReWire.MiniHDL.ToLoFIRRTL (toLoFirrtl)
+import ReWire.VHDL.ToLoFIRRTL (toLoFirrtl)
 import ReWire.Flags (Flag (..))
 import ReWire.Error (runSyntaxError, SyntaxErrorT)
 

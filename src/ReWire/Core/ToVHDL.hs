@@ -1,12 +1,12 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.Core.ToMiniHDL (compileProgram) where
+module ReWire.Core.ToVHDL (compileProgram) where
 
 import ReWire.Annotation
 import ReWire.Core.Syntax as C
 import ReWire.Error
 import ReWire.Core.Mangle
-import ReWire.MiniHDL.Syntax as M
+import ReWire.VHDL.Syntax as M
 import ReWire.Pretty
 import ReWire.Flags (Flag (..))
 

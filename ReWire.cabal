@@ -90,7 +90,7 @@ library
                     ReWire.Annotation
                     ReWire.Core.Mangle
                     ReWire.Core.Syntax
-                    ReWire.Core.ToMiniHDL
+                    ReWire.Core.ToVHDL
                     ReWire.Core.Transform
                     ReWire.Crust.Annotate
                     ReWire.Crust.Cache
@@ -109,8 +109,8 @@ library
                     ReWire.Crust.TypeVerify
                     ReWire.Error
                     ReWire.Flags
-                    ReWire.MiniHDL.Syntax
-                    ReWire.MiniHDL.ToLoFIRRTL
+                    ReWire.VHDL.Syntax
+                    ReWire.VHDL.ToLoFIRRTL
                     ReWire.LoFIRRTL.Syntax
                     ReWire.FIRRTL.Syntax
                     ReWire.FIRRTL.ToLoFIRRTL
