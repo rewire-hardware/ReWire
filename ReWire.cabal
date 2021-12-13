@@ -91,6 +91,7 @@ library
                     ReWire.Core.Mangle
                     ReWire.Core.Syntax
                     ReWire.Core.ToVHDL
+                    ReWire.Core.ToVerilog
                     ReWire.Core.Transform
                     ReWire.Crust.Annotate
                     ReWire.Crust.Cache

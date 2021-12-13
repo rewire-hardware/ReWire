@@ -6,7 +6,7 @@ import ReWire.Annotation
 import ReWire.Core.Syntax as C
 import ReWire.Error
 import ReWire.Core.Mangle
-import ReWire.VHDL.Syntax as M
+import ReWire.VHDL.Syntax as V
 import ReWire.Flags (Flag (..))
 
 import Control.Monad (zipWithM)
@@ -19,11 +19,7 @@ import Data.Text (Text, pack)
 
 import TextShow (showt)
 
-type CM m = StateT ([Signal], [Component], Int) (
-              ReaderT [Defn] (
-                  SyntaxErrorT m
-              )
-          )
+type CM m = StateT ([Signal], [Component], Int) (ReaderT [Defn] m)
 
 askDefns :: Monad m => CM m [Defn]
 askDefns = ask
@@ -49,7 +45,7 @@ freshName s = do
       put (sigs, comps, ctr + 1)
       pure (s <> "_" <> showt ctr)
 
-addSignal :: Monad m => Text -> M.Ty -> CM m ()
+addSignal :: Monad m => Text -> V.Ty -> CM m ()
 addSignal n t = do
       (sigs, comps, ctr) <- get
       put (sigs ++ [Signal n t], comps, ctr)
@@ -72,14 +68,14 @@ compilePat nscr offset = \ case
                 ematch = ExprIsEq (ExprSlice (ExprName nscr) offset (offset + length tag - 1)) $ ExprBitString tag
             pure (ematch, [])
 
-askGIdTy :: Monad m => GId -> CM m C.Sig
+askGIdTy :: MonadError AstError m => GId -> CM m C.Sig
 askGIdTy i = do
       defns <- askDefns
       case find (\ (Defn _ i' _ _) -> i == i') defns of
             Just (Defn _ _ t _) -> pure t
-            Nothing             -> lift $ failNowhere $ "askGIdTy: no info for identifier " <> showt i
+            Nothing             -> lift $ failAt noAnn $ "askGIdTy: no info for identifier " <> showt i
 
-compileExps :: Monad m => [C.Exp] -> CM m ([Stmt], Name)
+compileExps :: MonadError AstError m => [C.Exp] -> CM m ([Stmt], Name)
 compileExps es = do
       n          <- (<> "_res") <$> freshName (mangle $ "slice")
       addSignal n $ TyStdLogicVector $ sum $ map sizeOf es
@@ -96,7 +92,7 @@ compileExps es = do
             )
 
 
-compileExp :: Monad m => C.Exp -> CM m ([Stmt], Name)
+compileExp :: MonadError AstError m => C.Exp -> CM m ([Stmt], Name)
 compileExp = \ case
       LVar _ _ i       -> pure ([], "arg" <> showt i)
       Lit _ litSize litValue -> do
@@ -155,15 +151,15 @@ compileExp = \ case
                 ns      =  map snd sssns
             pure (stmts ++ [Assign (LHSName n) (ExprFunCall i (map ExprName ns))], n)
 
-mkDefnArch :: Monad m => Defn -> CM m Architecture
+mkDefnArch :: MonadError AstError m => Defn -> CM m Architecture
 mkDefnArch (Defn _ n _ es) = do
       put ([], [], 0) -- empty out the signal and component store, reset name counter
       (stmts, nres)    <- compileExps es
       (sigs, comps, _) <- get
       pure $ Architecture (mangle n <> "_impl") (mangle n) sigs comps (stmts ++ [Assign (LHSName "res") (ExprName nres)])
 
-compileStartDefn :: Monad m => [Flag] -> StartDefn -> CM m Unit
-compileStartDefn flags (StartDefn an inps outps _ (n_loopfun, t_loopfun@(Sig _ (arg0size:_) _)) (n_startstate, t_startstate)) = do
+compileStartDefn :: MonadError AstError m => [Flag] -> StartDefn -> CM m Unit
+compileStartDefn flags (StartDefn an inps outps (n_loopfun, t_loopfun@(Sig _ (arg0size:_) _)) (n_startstate, t_startstate)) = do
       put ([], [], 0) -- empty out signal and component store, reset name counter
       let stateSize = sizeOf t_startstate
           inpSize   = sum $ map snd inps
@@ -196,13 +192,13 @@ compileStartDefn flags (StartDefn an inps outps _ (n_loopfun, t_loopfun@(Sig _ (
 
             rst :: Text
             rst = if FlagInvertReset `elem` flags then "rst_n" else "rst"
-compileStartDefn _ (StartDefn an _ _ _ _ _) = failAt an "toVHDL: compileStartDefn: start definition with invalid signature."
+compileStartDefn _ (StartDefn an _ _ _ _) = failAt an "toVHDL: compileStartDefn: start definition with invalid signature."
 
-compileDefn :: Monad m => [Flag] -> Defn -> CM m Unit
+compileDefn :: MonadError AstError m => [Flag] -> Defn -> CM m Unit
 compileDefn flags d = Unit (uses flags) <$> mkDefnEntity d <*> mkDefnArch d
 
-compileProgram :: Monad m => [Flag] -> C.Program -> SyntaxErrorT m M.Program
-compileProgram flags p = fmap fst $ flip runReaderT (defns p) $ flip runStateT ([], [], 0) $ M.Program <$> ((:) <$> compileStartDefn flags (start p) <*> mapM (compileDefn flags) (defns p))
+compileProgram :: MonadError AstError m => [Flag] -> C.Program -> m V.Program
+compileProgram flags p = fmap fst $ flip runReaderT (defns p) $ flip runStateT ([], [], 0) $ V.Program <$> ((:) <$> compileStartDefn flags (start p) <*> mapM (compileDefn flags) (defns p))
 
 uses :: [Flag] -> [Text]
 uses flags = "ieee.std_logic_1164.all" : concatMap getUses flags

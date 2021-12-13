@@ -13,7 +13,7 @@ type DefnMap = HashMap GId [Exp]
 
 -- | Removes all zero-length arguments and parameters.
 mergeSlices :: Monad m => Program -> m Program
-mergeSlices (Program start@(StartDefn _ _ _ _ (loop, _) (state0, _)) ds) = do
+mergeSlices (Program start@(StartDefn _ _ _ (loop, _) (state0, _)) ds) = do
       pure $ Program start $ filter ((`elem` uses) . defnName) ds'
       where uses :: [GId]
             uses = [loop, state0] <> concatMap (getUses . defnBody) ds'
