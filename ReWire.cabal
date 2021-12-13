@@ -111,6 +111,7 @@ library
                     ReWire.Flags
                     ReWire.VHDL.Syntax
                     ReWire.VHDL.ToLoFIRRTL
+                    ReWire.Verilog.Syntax
                     ReWire.LoFIRRTL.Syntax
                     ReWire.FIRRTL.Syntax
                     ReWire.FIRRTL.ToLoFIRRTL
