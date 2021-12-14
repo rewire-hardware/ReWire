@@ -32,21 +32,21 @@ compileStartDefn flags (C.StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) 
             [ instStart
             , instDispatch
             , assignInp
-            , clkProcess
-            ]
+            , ifDone
+            ] <> assignOutputs
+              <> [clkProcess]
       where inputs :: [Port]
             inputs = [Input $ Wire 1 "clk", Input $ Wire 1 rst] <> map toInput inps
 
             outputs :: [Port]
-            outputs = map toOutput outps
+            outputs = map (Output . uncurry (flip Wire)) outps
 
             sigs :: [Signal]
             sigs =
                   [ Reg stateSize "start_state"
                   , Reg stateSize "loop_out"
                   , Reg stateSize "current_state"
-                  , Reg stateSize "done_or_next_state"
-                  , Reg stateSize "next_state"
+                  , Wire stateSize "done_or_next_state"
                   , Wire inpSize   "inp"
                   ]
 
@@ -65,23 +65,22 @@ compileStartDefn flags (C.StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) 
 
             ifRst :: Stmt
             ifRst = If (Eq (LVal $ Name rst) $ LitBits 1 [rstSignal])
-                  (Block [ParAssign (Name "next_state") (LVal $ Name "start_state")])
-                  (Block [ParAssign (Name "next_state") (LVal $ Name "done_or_next_state")])
+                  (Block [ SeqAssign (Name "current_state") (LVal $ Name "start_state") ])
+                  (Block [ SeqAssign (Name "current_state") (LVal $ Name "done_or_next_state") ])
 
             ifDone :: Stmt
-            ifDone = If (Eq (LVal $ Element (Name "current_state")  0) $ LitBits 1 [One])
-                  (Block [ParAssign (Name "done_or_next_state") (LVal $ Name "loop_out")])
-                  (Block [ParAssign (Name "done_or_next_state") (LVal $ Name "current_state")])
+            ifDone = Assign (Name "done_or_next_state") $
+                  Cond (Eq (LVal $ Element (Name "current_state")  0) $ LitBits 1 [One])
+                        (LVal $ Name "loop_out")
+                        (LVal $ Name "current_state")
 
             clkProcess :: Stmt
             clkProcess = Always [Pos "clk", rstEdge] $ Block $
-                  [ ifRst
-                  , ParAssign (Name "current_state") $ LVal $ Name "next_state"
-                  , ifDone
-                  ] <> assignOutputs
+                  [ ifRst ]
 
             assignOutputs :: [Stmt]
-            assignOutputs = fst $ foldl' (\ (as, off) (n, sz) -> (as <> [ParAssign (Name n) (LVal $ Range (Name "current_state") off (off + sz - 1))], off + sz)) ([], 1) outps
+            assignOutputs = fst $ foldl'
+                  (\ (as, off) (n, sz) -> (as <> [Assign (Name n) (LVal $ Range (Name "current_state") off (off + sz - 1))], off + sz)) ([], 1) outps
 
             ---
 
@@ -107,7 +106,7 @@ compileStartDefn _ (StartDefn an _ _ _ _) = failAt an "toVerilog: compileStartDe
 compileDefn :: MonadState Fresh m => C.Defn -> m V.Module
 compileDefn (C.Defn _ n (Sig _ inps outp) body) = do
       ((ns, stmts), sigs) <- runWriterT (compileExps body)
-      pure $ V.Module n (inputs <> outputs) sigs $ stmts <> [Assign (Name "res") $ Concat $ map LVal ns]
+      pure $ V.Module (mangle n) (inputs <> outputs) sigs $ stmts <> [Assign (Name "res") $ Concat $ map LVal ns]
       where inputs :: [Port]
             inputs = map toInput $ zip (zipWith (\ _ x -> "arg" <> showt x) inps [0::Int ..]) inps
 
@@ -127,19 +126,20 @@ compileExp = \ case
             n'         <- newWire sz n
             inst       <- fresh $ n <> "_inst"
             (ns', ss') <- compileExps es
-            pure (n', ss' <> [Instantiate n inst ns'])
+            pure (n', ss' <> [Instantiate (mangle n) inst ns'])
       Match _ sz g es ps els -> do
-            e <- newWire (sum $ map sizeOf es) "match_exp"
-            m <- newWire sz "match"
+            e  <- newWire (sum $ map sizeOf es) "match_exp"
+            mr <- newWire sz "match_res"
+            m  <- newWire sz "match"
             inst <- fresh g
             (ens, stmts)   <- compileExps es
             (ens', stmts') <- compileExps els
-            let g_inst = Instantiate g inst (patArgs e ps <> [m])
-                cond   = patMatches e ps
-            pure (m, stmts <>
-                  [ Assign e $ Concat $ map LVal ens
-                  , if cond == bTrue || ens' == [] then g_inst -- TODO(chathhorn): should reflect this behavior in the Core syntax.
-                    else If cond (Block [g_inst]) $ Block $ stmts' <> [Assign m $ Concat $ map LVal ens']
+            let cond   = patMatches e ps
+            pure (m, stmts <> stmts' <>
+                  [ Instantiate (mangle g) inst (patArgs e ps <> [mr])
+                  , Assign e $ Concat $ map LVal ens -- TODO(chathhorn): should reflect this behavior in the Core syntax.
+                  , if cond == bTrue || ens' == [] then Assign m (LVal mr)
+                    else Assign m $ Cond cond (LVal mr) $ Concat $ map LVal ens'
                   ])
 
 newWire :: (MonadState Fresh m, MonadWriter [Signal] m) => V.Size -> Name -> m LVal
@@ -167,7 +167,5 @@ patArgs x = snd . foldl' patArg (0, [])
                   PatLit _ sz _    -> (off + sz, lvs)
 
 toInput :: (Text, C.Size) -> Port
-toInput (x, sz) = Input $ Wire sz x
+toInput = Input . uncurry (flip Wire)
 
-toOutput :: (Text, C.Size) -> Port
-toOutput (x, sz) = Output $ Reg sz x

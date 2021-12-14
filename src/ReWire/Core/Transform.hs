@@ -69,8 +69,8 @@ reExps rn es = mergeLits <$> (concat <$> mapM (reExp rn) (filter ((> 0) . sizeOf
 mergeLits :: [Exp] -> [Exp]
 mergeLits = \ case
       Lit a s 0 : (Lit _ s' 0) : es -> mergeLits $ Lit a (s + s') 0 : es
-      e : es                         -> e : mergeLits es
-      []                             -> []
+      e : es                        -> e : mergeLits es
+      []                            -> []
 
 reSig :: Sig -> Sig
 reSig (Sig an ps r) = Sig an (filter (> 0) ps) r

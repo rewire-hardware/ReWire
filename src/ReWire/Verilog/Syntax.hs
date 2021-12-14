@@ -64,7 +64,7 @@ data Stmt = Always [Sensitivity] Stmt
 
 instance Pretty Stmt where
       pretty = \ case
-            Always sens stmt      -> text "always" <+> text "@" <+> parens (hsep $ punctuate (text "or") $ map pretty sens) <+> pretty stmt
+            Always sens stmt      -> text "always" <+> text "@" <+> parens (hsep $ punctuate (text " or") $ map pretty sens) <+> pretty stmt
             If c thn els          -> text "if" <+> parens (pretty c) <+> pretty thn <+> text "else" <+> pretty els
             Assign lv v           -> text "assign" <+> pretty lv <+> text "="  <+> pretty v <> semi
             SeqAssign lv v        ->                   pretty lv <+> text "="  <+> pretty v <> semi
@@ -103,6 +103,7 @@ data Exp = Sub Exp Exp
          | Gt  Exp Exp
          | LtEq  Exp Exp
          | GtEq  Exp Exp
+         | Cond Exp Exp Exp
          | Concat [Exp]
          | Repl Int Exp
          | LitInt Size Int
@@ -141,6 +142,7 @@ instance Pretty Exp where
             Gt a b          -> ppBinOp a ">"   b
             LtEq a b        -> ppBinOp a "<="  b
             GtEq a b        -> ppBinOp a ">="  b
+            Cond e1 e2 e3   -> parens (pretty e1) <+> text "?" <+> parens (pretty e2) <+> colon <+> parens (pretty e3)
             Concat es       -> braces $ hsep $ punctuate comma $ map pretty es
             Repl i e        -> braces $ pretty i <> braces (pretty e)
             LitInt w v      -> pretty w <> text "'d" <> pretty v
@@ -172,6 +174,6 @@ data LVal = Element LVal Int
 instance Pretty LVal where
       pretty = \ case
             Element x i -> pretty x <> brackets (pretty i)
-            Range x i j -> pretty x <> brackets (pretty i <> colon <> pretty j)
+            Range x i j -> pretty x <> brackets (pretty j <> colon <> pretty i)
             Name x      -> text x
             LVals lvs   -> braces $ hsep $ punctuate comma $ map pretty lvs
