@@ -15,12 +15,11 @@ import Data.Maybe (fromMaybe)
 import Data.Either (partitionEithers)
 import Data.Text (Text)
 import Data.List (findIndex)
+import TextShow (showt)
 
 import qualified Data.HashMap.Strict as Map
 import qualified ReWire.Core.Syntax  as C
 import qualified ReWire.Crust.Syntax as M
-
-import TextShow (showt)
 
 type SizeMap = HashMap M.Ty Int
 type ConMap = (HashMap (Name M.TyConId) [Name M.DataConId], HashMap (Name M.DataConId) M.Ty)

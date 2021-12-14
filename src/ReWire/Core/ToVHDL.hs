@@ -31,7 +31,7 @@ nvec n width = nvec' 0 []
 
 getTyPorts :: Monad m => C.Sig -> CM m [Port]
 getTyPorts (Sig _ argsizes ressize) = do
-      let argnames = zipWith (\ _ x -> "arg" <> showt x) argsizes ([0..]::[Int])
+      let argnames = zipWith (\ _ x -> "arg" <> showt x) argsizes [0::Int ..]
           argports = zipWith (\ n x -> Port n In (TyStdLogicVector x)) argnames argsizes
           resport  = Port "res" Out (TyStdLogicVector ressize)
       pure $ argports ++ [resport]
@@ -181,17 +181,31 @@ compileStartDefn flags (StartDefn an inps outps (n_loopfun, t_loopfun@(Sig _ (ar
       pure $ Unit (uses flags) (Entity "top_level" ports) $
             Architecture "top_level_impl" "top_level" sigs comps $
                   [ Instantiate "start_call" (mangle n_startstate) (PortMap [("res", ExprName "start_state")])
-                  , Instantiate "loop_call" (mangle n_loopfun) (PortMap [("arg0", ExprSlice (ExprName "current_state") (1 + outpSize) (1 + outpSize + arg0size - 1)), ("arg1", ExprName "inp"), ("res", ExprName "loop_out")])
-                  , WithAssign (ExprName rst) (LHSName "next_state") [(ExprName "start_state", ExprBit rstSignal)] (Just (ExprName "done_or_next_state"))
-                  , WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "done_or_next_state") [(ExprName "loop_out", ExprBitString [One])] (Just (ExprName "current_state"))
-                  , ClkProcess "clk" [Assign (LHSName "current_state") (ExprName "next_state")]
+                  , Instantiate "loop_call" (mangle n_loopfun) (PortMap
+                        [ ("arg0", ExprSlice (ExprName "current_state") (1 + outpSize) (1 + outpSize + arg0size - 1))
+                        , ("arg1", ExprName "inp")
+                        , ("res", ExprName "loop_out")
+                        ] )
+                  , WithAssign (ExprName rst) (LHSName "next_state")
+                        [ (ExprName "start_state", ExprBit rstSignal) ]
+                        (Just (ExprName "done_or_next_state"))
+                  , WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "done_or_next_state")
+                        [ (ExprName "loop_out", ExprBitString [One]) ]
+                        (Just (ExprName "current_state"))
+                  , ClkProcess "clk" $ Assign (LHSName "current_state") (ExprName "next_state") : outputs
                   , Assign (LHSName "inp") $ foldl' ExprConcat (ExprBitString []) $ map (ExprName . fst) inps
-                  ] <> fst (foldl' (\ (as, off) (n, sz) -> (as <> [Assign (LHSName n) (ExprSlice (ExprName "current_state") off (off + sz - 1))], off + sz)) ([], 1) outps)
+                  ]
       where rstSignal :: Bit
-            rstSignal = if FlagInvertReset `elem` flags then Zero else One
+            rstSignal | FlagInvertReset `elem` flags = Zero
+                      | otherwise                    = One
 
             rst :: Text
-            rst = if FlagInvertReset `elem` flags then "rst_n" else "rst"
+            rst | FlagInvertReset `elem` flags = "rst_n"
+                | otherwise                    = "rst"
+
+            outputs :: [Stmt]
+            outputs = fst $ foldl' (\ (as, off) (n, sz) -> (as <> [Assign (LHSName n) (ExprSlice (ExprName "current_state") off (off + sz - 1))], off + sz)) ([], 1) outps
+
 compileStartDefn _ (StartDefn an _ _ _ _) = failAt an "toVHDL: compileStartDefn: start definition with invalid signature."
 
 compileDefn :: MonadError AstError m => [Flag] -> Defn -> CM m Unit

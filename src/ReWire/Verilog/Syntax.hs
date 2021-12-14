@@ -17,42 +17,60 @@ type Size = Int
 
 data Module = Module
       { modName    :: Name
-      , modInputs  :: [Signal]
-      , modOutputs :: [Signal] -- also inouts, but that seems dumb.
+      , modPorts   :: [Port]
       , modSignals :: [Signal]
-      , modStmt    :: Stmt
+      , modStmt    :: [Stmt]
       }
       deriving (Eq, Show)
 
 instance Pretty Module where
-      pretty (Module n inps outps sigs stmt) = text "module" <+> text n
-            <+> nest 2 (parens $ vsep $ punctuate comma $ map pretty inps <> map pretty outps)
-             <> vsep [nest 2 (vsep ([semi] <> map ((<> semi) . pretty) sigs <> [pretty stmt])), text "endmodule"]
+      pretty (Module n ps sigs stmt) = text "module" <+> text n
+            <+> nest 2 (parens $ vsep $ punctuate comma $ map pretty ps)
+             <> vsep [nest 2 (vsep ([semi] <> map ((<> semi) . pretty) sigs <> map pretty stmt)), text "endmodule"]
 
-data Signal = Wire Size Name
-            | Reg Size Name
+data Port = Input  Signal -- can't be reg
+          | InOut  Signal -- can't be reg
+          | Output Signal
       deriving (Eq, Show)
+
+instance Pretty Port where
+      pretty = \ case
+            Input s  -> text "input" <+> pretty s
+            InOut s  -> text "inout" <+> pretty s
+            Output s -> text "output" <+> pretty s
 
 ppBVName :: Size -> Name -> Doc an
 ppBVName sz n = brackets (pretty (sz - 1) <> colon <> text "0") <+> text n
 
+data Signal = Wire Size Name
+            | Reg  Size Name
+      deriving (Eq, Show)
+
 instance Pretty Signal where
       pretty = \ case
+            Wire 1 n  -> text "wire" <+> text n
             Wire sz n -> text "wire" <+> ppBVName sz n
+            Reg 1 n   -> text "reg"  <+> text n
             Reg sz n  -> text "reg"  <+> ppBVName sz n
 
 data Stmt = Always [Sensitivity] Stmt
           | If Exp Stmt Stmt
-          | Connect Name Exp
+          | Assign LVal Exp
+          | SeqAssign LVal Exp
+          | ParAssign LVal Exp
           | Block [Stmt]
+          | Instantiate Name Name [LVal]
       deriving (Eq, Show)
 
 instance Pretty Stmt where
       pretty = \ case
-            Always sens stmt -> text "always" <+> text "@" <+> parens (hsep $ punctuate (text "or") $ map pretty sens) <+> pretty stmt
-            If c thn els     -> text "if" <+> parens (pretty c) <+> pretty thn <+> text "else" <+> pretty els
-            Connect n v      -> text n <+> text "<=" <+> pretty v <> semi
-            Block stmts      -> vsep [nest 2 $ vsep (text "begin" : map pretty stmts), text "end"]
+            Always sens stmt      -> text "always" <+> text "@" <+> parens (hsep $ punctuate (text "or") $ map pretty sens) <+> pretty stmt
+            If c thn els          -> text "if" <+> parens (pretty c) <+> pretty thn <+> text "else" <+> pretty els
+            Assign lv v           -> text "assign" <+> pretty lv <+> text "="  <+> pretty v <> semi
+            SeqAssign lv v        ->                   pretty lv <+> text "="  <+> pretty v <> semi
+            ParAssign lv v        ->                   pretty lv <+> text "<=" <+> pretty v <> semi
+            Block stmts           -> vsep [nest 2 $ vsep (text "begin" : map pretty stmts), text "end"]
+            Instantiate m inst ss -> text m <+> text inst <+> parens (hsep $ punctuate comma $ map pretty ss) <> semi
 
 data Sensitivity = Pos Name | Neg Name
       deriving (Eq, Show)
@@ -89,7 +107,7 @@ data Exp = Sub Exp Exp
          | Repl Int Exp
          | LitInt Size Int
          | LitBits Size [Bit]
-         | Var Name
+         | LVal LVal
       deriving (Eq, Show)
 
 ppBinOp :: Exp -> Text -> Exp -> Doc an
@@ -127,7 +145,13 @@ instance Pretty Exp where
             Repl i e        -> braces $ pretty i <> braces (pretty e)
             LitInt w v      -> pretty w <> text "'d" <> pretty v
             LitBits w v     -> pretty w <> text "'b" <> hcat (map pretty v)
-            Var n           -> text n
+            LVal x        -> pretty x
+
+bTrue :: Exp
+bTrue = LitBits 1 [One]
+
+bFalse :: Exp
+bFalse = LitBits 1 [Zero]
 
 data Bit = Zero | One | X | Z
       deriving (Eq, Show)
@@ -138,3 +162,16 @@ instance Pretty Bit where
             One  -> text "1"
             X    -> text "x"
             Z    -> text "z"
+
+data LVal = Element LVal Int
+          | Range LVal Int Int
+          | Name Name
+          | LVals [LVal]
+      deriving (Eq, Show)
+
+instance Pretty LVal where
+      pretty = \ case
+            Element x i -> pretty x <> brackets (pretty i)
+            Range x i j -> pretty x <> brackets (pretty i <> colon <> pretty j)
+            Name x      -> text x
+            LVals lvs   -> braces $ hsep $ punctuate comma $ map pretty lvs

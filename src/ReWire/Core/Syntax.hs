@@ -6,7 +6,7 @@ module ReWire.Core.Syntax
   , Pat (..)
   , StartDefn (..), Defn (..)
   , Program (..)
-  , GId, LId
+  , Size, GId, LId
   , SizeAnnotated (..)
   ) where
 
