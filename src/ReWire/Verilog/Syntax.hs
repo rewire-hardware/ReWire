@@ -80,21 +80,30 @@ instance Pretty Sensitivity where
             Pos n -> text "posedge" <+> text n
             Neg n -> text "negedge" <+> text n
 
-data Exp = Sub Exp Exp
+data Exp = Add Exp Exp
+         | Sub Exp Exp
          | Mul Exp Exp
-         | Mod Exp Exp
          | Div Exp Exp
-         | Add Exp Exp
+         | Mod Exp Exp
          | Pow Exp Exp
          | LAnd Exp Exp
          | LOr Exp Exp
          | And Exp Exp
          | Or Exp Exp
+         | XOr Exp Exp
+         | XNor Exp Exp
          | LShift Exp Exp
          | RShift Exp Exp
          | LShiftArith Exp Exp
          | RShiftArith Exp Exp
          | Not Exp
+         | LNot Exp
+         | RAnd Exp
+         | RNAnd Exp
+         | ROr Exp
+         | RNor Exp
+         | RXor Exp
+         | RXNor Exp
          | Eq  Exp Exp
          | NEq Exp Exp
          | CEq  Exp Exp
@@ -119,21 +128,30 @@ ppUnOp op a = text op <> parens (pretty a)
 
 instance Pretty Exp where
       pretty = \ case
+            Add a b         -> ppBinOp a "+"   b
             Sub a b         -> ppBinOp a "-"   b
             Mul a b         -> ppBinOp a "*"   b
-            Mod a b         -> ppBinOp a "%"   b
             Div a b         -> ppBinOp a "/"   b
-            Add a b         -> ppBinOp a "+"   b
+            Mod a b         -> ppBinOp a "%"   b
             Pow a b         -> ppBinOp a "**"  b
             LAnd a b        -> ppBinOp a "&&"  b
             LOr a b         -> ppBinOp a "||"  b
             And a b         -> ppBinOp a "&"   b
             Or a b          -> ppBinOp a "|"   b
+            XOr a b         -> ppBinOp a "^"   b
+            XNor a b        -> ppBinOp a "~^"  b
             LShift a b      -> ppBinOp a "<<"  b
             RShift a b      -> ppBinOp a ">>"  b
             LShiftArith a b -> ppBinOp a "<<<" b
             RShiftArith a b -> ppBinOp a ">>>" b
-            Not a           -> ppUnOp    "!"   a
+            LNot a          -> ppUnOp    "!"   a
+            Not a           -> ppUnOp    "~"   a
+            RAnd a          -> ppUnOp    "&"   a
+            RNAnd a         -> ppUnOp    "~&"  a
+            ROr a           -> ppUnOp    "|"   a
+            RNor a          -> ppUnOp    "~|"  a
+            RXor a          -> ppUnOp    "^"   a
+            RXNor a         -> ppUnOp    "~^"  a
             Eq a b          -> ppBinOp a "=="  b
             NEq a b         -> ppBinOp a "!="  b
             CEq a b         -> ppBinOp a "===" b

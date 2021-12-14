@@ -23,7 +23,7 @@ fresh s = do
       put $ ctr + 1
       pure $ mangle s <> "_" <> showt ctr
 
-compileProgram :: MonadError AstError m => [Flag] -> C.Program -> m V.Program
+compileProgram :: (MonadFail m, MonadError AstError m) => [Flag] -> C.Program -> m V.Program
 compileProgram flags (C.Program st ds) = V.Program <$> ((:) <$> compileStartDefn flags st <*> mapM (flip evalStateT 0 . compileDefn) ds)
 
 compileStartDefn :: MonadError AstError m => [Flag] -> C.StartDefn -> m Module
@@ -103,7 +103,7 @@ compileStartDefn flags (C.StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) 
                 | otherwise                    = "rst"
 compileStartDefn _ (StartDefn an _ _ _ _) = failAt an "toVerilog: compileStartDefn: start definition with invalid signature."
 
-compileDefn :: MonadState Fresh m => C.Defn -> m V.Module
+compileDefn :: (MonadState Fresh m, MonadFail m) => C.Defn -> m V.Module
 compileDefn (C.Defn _ n (Sig _ inps outp) body) = do
       ((ns, stmts), sigs) <- runWriterT (compileExps body)
       pure $ V.Module (mangle n) (inputs <> outputs) sigs $ stmts <> [Assign (Name "res") $ Concat $ map LVal ns]
@@ -113,15 +113,23 @@ compileDefn (C.Defn _ n (Sig _ inps outp) body) = do
             outputs :: [Port]
             outputs = [Output $ Wire outp "res"]
 
-compileExps :: (MonadState Fresh m, MonadWriter [Signal] m) => [C.Exp] -> m ([V.LVal], [Stmt])
+compileExps :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m) => [C.Exp] -> m ([V.LVal], [Stmt])
 compileExps es = (map fst &&& concatMap snd) <$> mapM compileExp es
 
-compileExp :: (MonadState Fresh m, MonadWriter [Signal] m) => C.Exp -> m (V.LVal, [Stmt])
+compileExp :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m) => C.Exp -> m (V.LVal, [Stmt])
 compileExp = \ case
       LVar _ _ x       -> pure (Name $ "arg" <> showt x, [])
       Lit _ sz v       -> do
             n <- newWire sz "lit"
             pure (n, [Assign n $ LitInt sz v])
+      Extern _ sz (binOp -> Just op) [x, y] -> do
+            res             <- newWire sz "binop"
+            ([x', y'], ss') <- compileExps [x, y]
+            pure (res, ss' <> [Assign res $ op (LVal x') $ LVal y'])
+      Extern _ sz (unOp -> Just op) [x] -> do
+            res       <- newWire sz "unop"
+            (x', ss') <- compileExp x
+            pure (res, ss' <> [Assign res $ op $ LVal x'])
       Extern _ sz n es -> do
             n'         <- newWire sz n
             inst       <- fresh $ n <> "_inst"
@@ -141,6 +149,44 @@ compileExp = \ case
                   , if cond == bTrue || ens' == [] then Assign m (LVal mr)
                     else Assign m $ Cond cond (LVal mr) $ Concat $ map LVal ens'
                   ])
+
+binOp :: Name -> Maybe (V.Exp -> V.Exp -> V.Exp)
+binOp = flip lookup primBinOps
+
+unOp :: Name -> Maybe (V.Exp -> V.Exp)
+unOp = flip lookup primUnOps
+
+primBinOps :: [(Name, V.Exp -> V.Exp -> V.Exp)]
+primBinOps =
+      [ ( "+"   , Add)
+      , ( "-"   , Sub)
+      , ( "*"   , Mul)
+      , ( "/"   , Div)
+      , ( "%"   , Mod)
+      , ( "**"  , Pow)
+      , ( "&&"  , LAnd)
+      , ( "||"  , LOr)
+      , ( "&"   , And)
+      , ( "|"   , Or)
+      , ( "^"   , XOr)
+      , ( "~^"  , XNor)
+      , ( "<<"  , LShift)
+      , ( ">>"  , RShift)
+      , ( "<<<" , LShiftArith)
+      , ( ">>>" , RShiftArith)
+      ]
+
+primUnOps :: [(Name, V.Exp -> V.Exp)]
+primUnOps =
+      [ ( "!"  , LNot)
+      , ( "~"  , Not)
+      , ( "&"  , RAnd)
+      , ( "~&" , RNAnd)
+      , ( "|"  , ROr)
+      , ( "~|" , RNor)
+      , ( "^"  , RXor)
+      , ( "~^" , RXNor)
+      ]
 
 newWire :: (MonadState Fresh m, MonadWriter [Signal] m) => V.Size -> Name -> m LVal
 newWire sz n = do
