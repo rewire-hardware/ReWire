@@ -165,7 +165,7 @@ instance Pretty Exp where
             Repl i e        -> braces $ pretty i <> braces (pretty e)
             LitInt w v      -> pretty w <> text "'d" <> pretty v
             LitBits w v     -> pretty w <> text "'b" <> hcat (map pretty v)
-            LVal x        -> pretty x
+            LVal x          -> pretty x
 
 bTrue :: Exp
 bTrue = LitBits 1 [One]

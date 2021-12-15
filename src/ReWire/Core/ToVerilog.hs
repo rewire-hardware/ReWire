@@ -11,11 +11,16 @@ import ReWire.Core.Mangle (mangle)
 import Data.Text (Text)
 import Control.Monad.State (MonadState, get, put, evalStateT)
 import Control.Monad.Writer (MonadWriter, tell, runWriterT)
+import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Arrow ((&&&))
 import TextShow (showt)
 import Data.List (foldl')
 
+import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as Map
+
 type Fresh = Int
+type DefnMap = HashMap GId [C.Exp]
 
 fresh :: MonadState Fresh m => Text -> m Name
 fresh s = do
@@ -24,59 +29,54 @@ fresh s = do
       pure $ mangle s <> "_" <> showt ctr
 
 compileProgram :: (MonadFail m, MonadError AstError m) => [Flag] -> C.Program -> m V.Program
-compileProgram flags (C.Program st ds) = V.Program <$> ((:) <$> compileStartDefn flags st <*> mapM (flip evalStateT 0 . compileDefn) ds)
+compileProgram flags (C.Program st ds)
+      | FlagFlatten `elem` flags = V.Program <$> pure <$> evalStateT (runReaderT (compileStartDefn flags st) defnMap) 0
+      | otherwise                  = V.Program <$> ((:) <$> evalStateT (runReaderT (compileStartDefn flags st) Map.empty) 0 <*> mapM (flip evalStateT 0 . compileDefn flags) ds)
+      where defnMap :: DefnMap
+            defnMap = Map.fromList $ map (defnName &&& defnBody) ds
 
-compileStartDefn :: MonadError AstError m => [Flag] -> C.StartDefn -> m Module
+compileStartDefn :: (MonadError AstError m, MonadState Fresh m, MonadFail m, MonadReader DefnMap m)
+                 => [Flag] -> C.StartDefn -> m Module
 compileStartDefn flags (C.StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) (state0, Sig _ _ stateSize)) = do
-      pure $ Module "top_level" (inputs <> outputs) sigs $
-            [ instStart
-            , instDispatch
-            , assignInp
-            , ifDone
-            ] <> assignOutputs
-              <> [clkProcess]
+      ((rStart, ssStart), startSigs) <- runWriterT $ compileCall flags state0 stateSize []
+      ((rLoop, ssLoop), loopSigs)    <- runWriterT $ compileCall flags loop stateSize
+            [ Range "current_state" (1 + outpSize) (1 + outpSize + arg0Size - 1)
+            , Name "inp"
+            ]
+      pure $ Module "top_level" (inputs <> outputs) (sigs <> startSigs <> loopSigs)
+            $  ssStart
+            <> ssLoop
+            <> assignInp
+            <> ifDone rLoop
+            <> assignOutputs
+            <> [Always [Pos "clk", rstEdge] $ Block $ [ ifRst rStart ]]
+
       where inputs :: [Port]
-            inputs = [Input $ Wire 1 "clk", Input $ Wire 1 rst] <> map toInput inps
+            inputs = [Input $ Wire 1 "clk", Input $ Wire 1 rst] <> map (uncurry toInput) inps
 
             outputs :: [Port]
             outputs = map (Output . uncurry (flip Wire)) outps
 
             sigs :: [Signal]
             sigs =
-                  [ Reg stateSize "start_state"
-                  , Reg stateSize "loop_out"
-                  , Reg stateSize "current_state"
+                  [ Reg stateSize "current_state"
                   , Wire stateSize "done_or_next_state"
                   , Wire inpSize   "inp"
                   ]
 
-            instStart :: Stmt
-            instStart = Instantiate (mangle state0) "start_call" [Name "start_state"]
+            assignInp :: [Stmt]
+            assignInp = [Assign (Name "inp") $ mkConcat $ map (Name . fst) inps]
 
-            instDispatch :: Stmt
-            instDispatch = Instantiate (mangle loop) "loop_call"
-                  [ Range "current_state" (1 + outpSize) (1 + outpSize + arg0Size - 1)
-                  , Name "inp"
-                  , Name "loop_out"
-                  ]
-
-            assignInp :: Stmt
-            assignInp = Assign (Name "inp") $ mkConcat $ map (Name . fst) inps
-
-            ifRst :: Stmt
-            ifRst = If (Eq (LVal $ Name rst) $ LitBits 1 [rstSignal])
-                  (Block [ SeqAssign (Name "current_state") (LVal $ Name "start_state") ])
+            ifRst :: V.Exp -> Stmt
+            ifRst start = If (Eq (LVal $ Name rst) $ LitBits 1 [rstSignal])
+                  (Block [ SeqAssign (Name "current_state") start ])
                   (Block [ SeqAssign (Name "current_state") (LVal $ Name "done_or_next_state") ])
 
-            ifDone :: Stmt
-            ifDone = Assign (Name "done_or_next_state") $
+            ifDone :: V.Exp -> [Stmt]
+            ifDone loop = pure $ Assign (Name "done_or_next_state") $
                   Cond (Eq (LVal $ Element "current_state" 0) $ LitBits 1 [One])
-                        (LVal $ Name "loop_out")
+                        loop
                         (LVal $ Name "current_state")
-
-            clkProcess :: Stmt
-            clkProcess = Always [Pos "clk", rstEdge] $ Block $
-                  [ ifRst ]
 
             assignOutputs :: [Stmt]
             assignOutputs = fst $ foldl'
@@ -103,69 +103,86 @@ compileStartDefn flags (C.StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) 
                 | otherwise                    = "rst"
 compileStartDefn _ (StartDefn an _ _ _ _) = failAt an "ToVerilog: compileStartDefn: start definition with invalid signature."
 
-compileDefn :: (MonadState Fresh m, MonadFail m, MonadError AstError m) => C.Defn -> m V.Module
-compileDefn (C.Defn _ n (Sig _ inps outp) body) = do
-      ((ns, stmts), sigs) <- runWriterT (compileExps body)
+compileDefn :: (MonadState Fresh m, MonadFail m, MonadError AstError m) => [Flag] -> C.Defn -> m V.Module
+compileDefn flags (C.Defn _ n (Sig _ inps outp) body) = do
+      ((ns, stmts), sigs) <- runWriterT (runReaderT (compileExps flags (map Name argNames) body) Map.empty)
       pure $ V.Module (mangle n) (inputs <> outputs) sigs $ stmts <> [Assign (Name "res") $ mkConcat ns]
-      where inputs :: [Port]
-            inputs = map toInput $ zip (zipWith (\ _ x -> "arg" <> showt x) inps [0::Int ..]) inps
+      where argNames :: [Name]
+            argNames = zipWith (\ _ x -> "arg" <> showt x) inps [0::Int ..]
+
+            inputs :: [Port]
+            inputs = zipWith toInput argNames inps
 
             outputs :: [Port]
             outputs = [Output $ Wire outp "res"]
 
-compileExps :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadError AstError m) => [C.Exp] -> m ([V.LVal], [Stmt])
-compileExps es = (map fst &&& concatMap snd) <$> mapM compileExp es
+-- | Inlines a defn.
+compileCall :: (MonadState Fresh m, MonadFail m, MonadError AstError m, MonadReader DefnMap m, MonadWriter [Signal] m)
+             => [Flag] -> GId -> V.Size -> [LVal] -> m (V.Exp, [Stmt])
+compileCall flags g sz lvars
+      | FlagFlatten `elem` flags = do
+            Just body   <- asks (Map.lookup g)
+            (ns, stmts) <- compileExps flags lvars body
+            pure (mkConcat ns, stmts)
+      | otherwise = do
+            mr          <- newWire sz "callRes"
+            inst        <- Instantiate (mangle g) <$> fresh g <*> pure (lvars <> [mr])
+            pure (LVal mr, [inst])
 
-compileExp :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadError AstError m) => C.Exp -> m (V.LVal, [Stmt])
-compileExp = \ case
-      LVar _ _ x       -> pure (Name $ "arg" <> showt x, [])
+compileExps :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
+            => [Flag] -> [LVal] -> [C.Exp] -> m ([V.LVal], [Stmt])
+compileExps flags lvars es = (map fst &&& concatMap snd) <$> mapM (compileExp flags lvars) es
+
+compileExp :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
+            => [Flag] -> [LVal] -> C.Exp -> m (V.LVal, [Stmt])
+compileExp flags lvars = \ case
+      LVar _  _ (lkupLVal -> Just x) -> pure (x, [])
+      LVar an _ _                    -> failAt an $ "ToVerilog: compileExp: encountered unknown LVar."
       Lit _ sz v       -> do
             n <- newWire sz "lit"
             pure (n, [Assign n $ LitInt sz v])
       Call _ sz (Global g) es ps els -> do
-            Name n      <- newWire (sum $ map sizeOf es) "call_exp"
-            mr          <- newWire sz "call_res"
-            inst        <- Instantiate (mangle g) <$> fresh g <*> pure (patArgs n ps <> [mr])
-            (m, stmts)  <- mkCall sz n es ps els (LVal mr)
-            pure (m, stmts <> [inst])
+            Name n               <- newWire (sum $ map sizeOf es) "callPat"
+            (callRes, callStmts) <- compileCall flags g sz (patArgs n ps)
+            (m, stmts)           <- mkCall sz n es ps els callRes
+            pure (m, callStmts <> stmts)
       Call _ sz (Extern (binOp -> Just op)) es ps els -> do
-            Name n     <- newWire (sum $ map sizeOf es) "binop_exp"
+            Name n     <- newWire (sum $ map sizeOf es) "binopPat"
             let [x, y]  = patArgs n ps
             mkCall sz n es ps els $ op (LVal x) $ LVal y
       Call _ sz (Extern (unOp -> Just op)) es ps els -> do
-            Name n  <- newWire (sum $ map sizeOf es) "unop_exp"
+            Name n  <- newWire (sum $ map sizeOf es) "unopPat"
             let [x]  = patArgs n ps
             mkCall sz n es ps els $ op $ LVal x
       Call _ sz (Extern "msbit") es ps els -> do
-            Name n     <- newWire (sum $ map sizeOf es) "msbit_exp"
-            Name arg   <- newWire (argsSize ps) "msbit_arg"
+            Name n     <- newWire (sum $ map sizeOf es) "msbitPat"
+            Name arg   <- newWire (argsSize ps) "msbitArg"
             let [x]     = patArgs n ps
                 assign  = Assign (Name arg) $ LVal x
             (m, stmts) <- mkCall sz n es ps els $ LVal $ Element arg (argsSize ps - 1)
             pure (m, stmts <> [assign])
-      Call _ sz (Extern "resize") es ps els -> do
-            Name n  <- newWire (sum $ map sizeOf es) "resize_exp"
-            let [x]  = patArgs n ps
-            mkCall sz n es ps els $ LVal x
       Call _ sz Id es ps els -> do
-            Name n  <- newWire (sum $ map sizeOf es) "id_exp"
+            Name n  <- newWire (sum $ map sizeOf es) "idPat"
             let args  = patArgs n ps
             mkCall sz n es ps els $ Concat $ map LVal args
       Call _ sz (Const v) es ps els -> do
-            Name n  <- newWire (sum $ map sizeOf es) "lit_exp"
+            Name n  <- newWire (sum $ map sizeOf es) "litPat"
             mkCall sz n es ps els $ LitInt sz v
       Call an _ (Extern ex) _ _ _ -> failAt an $ "ToVerilog: compileExp: unknown extern: " <> ex
-      where mkCall :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadError AstError m) => C.Size -> Name -> [C.Exp] -> [Pat] -> [C.Exp] -> V.Exp -> m (V.LVal, [Stmt])
+      where mkCall :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadError AstError m, MonadReader DefnMap m) => C.Size -> Name -> [C.Exp] -> [Pat] -> [C.Exp] -> V.Exp -> m (V.LVal, [Stmt])
             mkCall sz n es ps els arg = do
                   m              <- newWire sz "call"
-                  (ens, stmts)   <- compileExps es
-                  (ens', stmts') <- compileExps els
+                  (ens, stmts)   <- compileExps flags lvars es
+                  (ens', stmts') <- compileExps flags lvars els
                   let cond        = patMatches n ps
                   pure (m, stmts <> stmts' <>
                         [ Assign (Name n) $ mkConcat ens
                         , if cond == bTrue || ens' == [] then Assign m arg
                           else Assign m $ Cond cond arg $ mkConcat ens'
                         ])
+
+            lkupLVal :: Int -> Maybe LVal
+            lkupLVal = flip lookup (zip [0::Int ..] lvars)
 
 mkConcat :: [LVal] -> V.Exp
 mkConcat = \ case
@@ -200,14 +217,14 @@ primBinOps =
 
 primUnOps :: [(Name, V.Exp -> V.Exp)]
 primUnOps =
-      [ ( "!"  , LNot)
-      , ( "~"  , Not)
-      , ( "&"  , RAnd)
-      , ( "~&" , RNAnd)
-      , ( "|"  , ROr)
-      , ( "~|" , RNor)
-      , ( "^"  , RXor)
-      , ( "~^" , RXNor)
+      [ ( "!"      , LNot)
+      , ( "~"      , Not)
+      , ( "&"      , RAnd)
+      , ( "~&"     , RNAnd)
+      , ( "|"      , ROr)
+      , ( "~|"     , RNor)
+      , ( "^"      , RXor)
+      , ( "~^"     , RXNor)
       , ( "resize" , id)
       ]
 
@@ -242,6 +259,6 @@ argsSize = sum . map patToSize
                   PatVar _ sz -> sz
                   _           -> 0
 
-toInput :: (Text, C.Size) -> Port
-toInput = Input . uncurry (flip Wire)
+toInput :: Text -> C.Size -> Port
+toInput n sz = Input $ Wire sz n
 

@@ -8,6 +8,7 @@ data Flag = FlagO !String
           | FlagDCrust1 | FlagDCrust2 | FlagDCrust3 | FlagDCrust4 | FlagDCrust5
           | FlagDCore1  | FlagDCore2
           | FlagDTypes
+          | FlagFlatten
           | FlagInvertReset
           | FlagPkgs !String
           | FlagInputNames !String | FlagOutputNames !String

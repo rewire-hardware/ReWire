@@ -47,6 +47,7 @@ options =
        , Option []    ["dpass8", "dcore1"  ] (NoArg  FlagDCore1)                        "Dump pass 8: core source."
        , Option []    ["dpass9", "dcore2"  ] (NoArg  FlagDCore2)                        "Dump pass 9: core source after purging empty types."
        , Option []    ["dtypes"]             (NoArg  FlagDTypes)                        "Enable extra typechecking after various IR transformations."
+       , Option []    ["flatten"]            (NoArg  FlagFlatten)                       "Generate a single RTL module."
        , Option ['o'] []                     (ReqArg FlagO           "filename.vhdl")   "Name for RTL output file."
        , Option ['p'] ["packages"]           (ReqArg FlagPkgs        "pkg1,pkg2,...")   "Packages to use for external VHDL components (e.g., ieee.std_logic_1164.all)."
        , Option []    ["inputs"]             (ReqArg FlagInputNames  "name1,name2,...") "Names to use for input signals in generated RTL."

@@ -6,7 +6,7 @@ module ReWire.Core.Syntax
   , Pat (..)
   , StartDefn (..), Defn (..)
   , Program (..)
-  , Size, Name, GId (..), LId
+  , Size, Name, Target (..), GId, LId
   , SizeAnnotated (..)
   ) where
 
@@ -27,16 +27,17 @@ class SizeAnnotated a where
 
 type Size = Int
 type LId  = Int
+type GId = Text
 type Name = Text
 
-data GId = Global Text
-         | Extern Text
-         | Id
-         | Const Int -- TODO(chathhorn)
+data Target = Global GId
+            | Extern Name
+            | Id
+            | Const Int
       deriving (Eq, Ord, Generic, Show, Typeable, Data)
-      deriving TextShow via FromGeneric GId
+      deriving TextShow via FromGeneric Target
 
-instance Pretty GId where
+instance Pretty Target where
       pretty = \ case
             Global n -> text n
             Extern n -> parens $ text "extern" <+> text n
@@ -70,8 +71,7 @@ instance Pretty Sig where
 
 data Exp = Lit  Annote !Size !Int
          | LVar Annote !Size !LId
-         | Call Annote !Size !GId ![Exp] ![Pat] ![Exp]
-         -- | Proj Annote !Size      ![Exp] ![Pat] ![Exp]
+         | Call Annote !Size !Target ![Exp] ![Pat] ![Exp]
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Exp
 
@@ -144,7 +144,7 @@ isPatVar = \ case
 
 ---
 
-data StartDefn = StartDefn Annote ![(Text, Size)] ![(Text, Size)] !(Name, Sig) !(Name, Sig) -- inputs, outputs, res type, (loop, loop ty), (state0, state0 ty)
+data StartDefn = StartDefn Annote ![(Text, Size)] ![(Text, Size)] !(GId, Sig) !(GId, Sig) -- inputs, outputs, res type, (loop, loop ty), (state0, state0 ty)
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric StartDefn
 
@@ -161,7 +161,7 @@ instance Pretty StartDefn where
 
 data Defn = Defn
       { defnAnnote :: Annote
-      , defnName   :: !Name
+      , defnName   :: !GId
       , defnSig    :: !Sig -- params given by the arity.
       , defnBody   :: ![Exp]
       }

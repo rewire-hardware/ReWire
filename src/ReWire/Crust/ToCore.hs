@@ -101,8 +101,8 @@ transExp = \ case
             let tag = C.Lit an w v
                 pad = C.Lit an (sz - w) 0
             pure [tag, pad]
-      M.Match an t e ps f (Just e2)     -> pure <$> (C.Call an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat ps <*> transExp e2)
-      M.Match an t e ps f Nothing       -> pure <$> (C.Call an <$> sizeOf an t <*> (toGId =<< transExp f) <*> transExp e <*> transPat ps <*> pure [])
+      M.Match an t e ps f (Just e2)     -> pure <$> (C.Call an <$> sizeOf an t <*> (callTarget =<< transExp f) <*> transExp e <*> transPat ps <*> transExp e2)
+      M.Match an t e ps f Nothing       -> pure <$> (C.Call an <$> sizeOf an t <*> (callTarget =<< transExp f) <*> transExp e <*> transPat ps <*> pure [])
       M.Extern an s (M.Error _ t _)     -> do
             sz     <- sizeOf an t
             pure [C.Call an sz (C.Extern s) [] [] []]
@@ -110,9 +110,9 @@ transExp = \ case
             sz     <- sizeOf an t
             pure [C.Call an sz (C.Extern "error") [] [] []]
       e                                 -> failAt (ann e) $ "ToCore: unsupported expression: " <> prettyPrint e
-      where toGId :: MonadError AstError m => [C.Exp] -> m C.GId
-            toGId [C.Call _ _ x _ _ _] = pure x
-            toGId e                    = failAt noAnn $ "ToCore: toGId: expected Match, got: " <> prettyPrint e
+      where callTarget :: MonadError AstError m => [C.Exp] -> m C.Target
+            callTarget [C.Call _ _ x _ _ _] = pure x
+            callTarget e                    = failAt noAnn $ "ToCore: callTarget: expected Match, got: " <> prettyPrint e
 
 transPat :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.MatchPat -> ReaderT ConMap m [C.Pat]
 transPat = \ case

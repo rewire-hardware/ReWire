@@ -10,7 +10,7 @@ import Data.Containers.ListUtils (nubOrd)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 
-type DefnMap = HashMap Name [Exp]
+type DefnMap = HashMap GId [Exp]
 
 -- | Removes all zero-length arguments and parameters.
 mergeSlices :: MonadFail m => Program -> m Program
@@ -129,23 +129,18 @@ mergePats = \ case
 purgeUnused :: MonadFail m => Program -> m Program
 purgeUnused (Program start@(StartDefn _ _ _ (loop, _) (state0, _)) ds) = do
       pure $ Program start $ filter ((`elem` uses) . defnName) ds
-      where uses :: [Name]
-            uses = uses' usesInit
+      where uses :: [GId]
+            uses = uses' [loop, state0]
 
-            usesInit :: [Name]
-            usesInit = [loop, state0]
+            uses' :: [GId] -> [GId]
+            uses' u = let u' = nubOrd (concatMap defnUses u) in
+                  if length u' == length u then u else uses' u'
 
-            uses' :: [Name] -> [Name]
-            uses' u = let u' = nubOrd (concatMap defnUses u) in if length u' == length u then u else uses' u'
-
-            defnUses :: Name -> [Name]
+            defnUses :: GId -> [GId]
             defnUses d = maybe [d] ((<>[d]) . getUses) (Map.lookup d defnMap)
 
-            getUses :: [Exp] -> [Name]
-            getUses = concatMap getUses'
-
-            getUses' :: Exp -> [Name]
-            getUses' = \ case
+            getUses :: [Exp] -> [GId]
+            getUses = concatMap $ \ case
                   Call _ _ (Global g) es _ es' -> [g] <> getUses es <> getUses es'
                   Call _ _ _          es _ es' -> getUses es <> getUses es'
                   _                            -> []
