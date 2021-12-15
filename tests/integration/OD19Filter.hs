@@ -9,23 +9,23 @@ import ReWire.Bits
 
 test1 :: W32 -> W32 -> Bit
 -- test1 i s = let tot = w32sTodouble s i in bool2bit $ ckrange 0 86401 tot
-test1 = nativeVhdl "test1" test1
+test1 = extern "test1" test1
 
 test2 :: W32 -> W32 -> Bit
 -- test2 i _ = let (doyb,utcy1) = w32Tow16s i in bool2bit $ ckrange 1 366 doyb && ckrange 1993 9999 utcy1
-test2 = nativeVhdl "test2" test2
+test2 = extern "test2" test2
 
 test3 :: W32 -> W32 -> Bit
 -- test3 i _ = let (pn,pacsrc) = w32Tow16s i in
 --             let (pactyp,_)  = w16Tow8s pn in
 --              bool2bit $ ckrange 0 8 pactyp && ckrange 0 101 pacsrc
-test3 = nativeVhdl "test3" test3
+test3 = extern "test3" test3
 
 test4 :: W32 -> W32 -> Bit
 -- test4 i _ = let (_,mtver) = w32Tow16s i  in
 --             let (mt,ver)  = w16Tow8s mtver in
 --              bool2bit $ mt==1 && ver==6
-test4 = nativeVhdl "test4" test4
+test4 = extern "test4" test4
 
 data YN a = Yes a | No
 

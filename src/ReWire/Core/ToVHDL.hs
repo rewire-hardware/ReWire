@@ -1,16 +1,15 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.Core.ToMiniHDL (compileProgram) where
+module ReWire.Core.ToVHDL (compileProgram) where
 
 import ReWire.Annotation
-import ReWire.Core.Syntax as C
+import ReWire.Core.Syntax as C hiding (Name)
 import ReWire.Error
 import ReWire.Core.Mangle
-import ReWire.MiniHDL.Syntax as M
-import ReWire.Pretty
+import ReWire.VHDL.Syntax as V
 import ReWire.Flags (Flag (..))
 
-import Control.Monad (zipWithM, replicateM)
+import Control.Monad (zipWithM)
 import Control.Monad.Reader (ReaderT (..), ask)
 import Control.Monad.State (StateT (..), get, put, lift)
 import Data.List (find, foldl')
@@ -20,11 +19,7 @@ import Data.Text (Text, pack)
 
 import TextShow (showt)
 
-type CM m = StateT ([Signal], [Component], Int) (
-              ReaderT [Defn] (
-                  SyntaxErrorT m
-              )
-          )
+type CM m = StateT ([Signal], [Component], Int) (ReaderT [Defn] m)
 
 askDefns :: Monad m => CM m [Defn]
 askDefns = ask
@@ -36,7 +31,7 @@ nvec n width = nvec' 0 []
 
 getTyPorts :: Monad m => C.Sig -> CM m [Port]
 getTyPorts (Sig _ argsizes ressize) = do
-      let argnames = zipWith (\ _ x -> "arg" <> showt x) argsizes ([0..]::[Int])
+      let argnames = zipWith (\ _ x -> "arg" <> showt x) argsizes [0::Int ..]
           argports = zipWith (\ n x -> Port n In (TyStdLogicVector x)) argnames argsizes
           resport  = Port "res" Out (TyStdLogicVector ressize)
       pure $ argports ++ [resport]
@@ -50,12 +45,12 @@ freshName s = do
       put (sigs, comps, ctr + 1)
       pure (s <> "_" <> showt ctr)
 
-addSignal :: Monad m => Text -> M.Ty -> CM m ()
+addSignal :: Monad m => Text -> V.Ty -> CM m ()
 addSignal n t = do
       (sigs, comps, ctr) <- get
       put (sigs ++ [Signal n t], comps, ctr)
 
-addComponent :: Monad m => Annote -> GId -> C.Sig -> CM m ()
+addComponent :: Monad m => Annote -> Name -> C.Sig -> CM m ()
 addComponent _ i t = do
       (sigs, comps, ctr) <- get
       case find ((== mangle i) . componentName) comps of
@@ -73,14 +68,14 @@ compilePat nscr offset = \ case
                 ematch = ExprIsEq (ExprSlice (ExprName nscr) offset (offset + length tag - 1)) $ ExprBitString tag
             pure (ematch, [])
 
-askGIdTy :: Monad m => GId -> CM m C.Sig
+askGIdTy :: MonadError AstError m => Name -> CM m C.Sig
 askGIdTy i = do
       defns <- askDefns
       case find (\ (Defn _ i' _ _) -> i == i') defns of
             Just (Defn _ _ t _) -> pure t
-            Nothing             -> lift $ failNowhere $ "askGIdTy: no info for identifier " <> showt i
+            Nothing             -> lift $ failAt noAnn $ "askGIdTy: no info for identifier " <> showt i
 
-compileExps :: Monad m => [C.Exp] -> CM m ([Stmt], Name)
+compileExps :: MonadError AstError m => [C.Exp] -> CM m ([Stmt], Name)
 compileExps es = do
       n          <- (<> "_res") <$> freshName (mangle $ "slice")
       addSignal n $ TyStdLogicVector $ sum $ map sizeOf es
@@ -97,7 +92,7 @@ compileExps es = do
             )
 
 
-compileExp :: Monad m => C.Exp -> CM m ([Stmt], Name)
+compileExp :: MonadError AstError m => C.Exp -> CM m ([Stmt], Name)
 compileExp = \ case
       LVar _ _ i       -> pure ([], "arg" <> showt i)
       Lit _ litSize litValue -> do
@@ -107,7 +102,7 @@ compileExp = \ case
             pure  ( [ Assign (LHSName n) $ ExprBitString litVec ]
                   , n
                   )
-      Match an sz gid escr ps [] -> do
+      Call an sz (Global gid) escr ps [] -> do
             (stmts_escr, n_escr) <- compileExps escr
 
             let fieldwidths       = map sizeOf ps
@@ -122,7 +117,7 @@ compileExp = \ case
             let argns            =  map (\ n -> "arg" <> showt n) ([0..]::[Int])
                 pm               =  PortMap (zip argns efields ++ [("res", ExprName n_gid)])
             pure (stmts_escr ++ [Instantiate n_call (mangle gid) pm], n_gid)
-      Match an sz gid escr ps ealt -> do
+      Call an sz (Global gid) escr ps ealt -> do
             n                    <- (<> "_res") <$> freshName "match"
             addSignal n $ TyStdLogicVector sz
             (stmts_escr, n_escr) <- compileExps escr
@@ -148,34 +143,24 @@ compileExp = \ case
                      Instantiate n_call (mangle gid) pm] ++
                     stmts_ealt,
                     n)
-      NativeVHDL _ sz i args -> do
-            n           <- (<> "_res") <$> freshName i
-            addSignal n $ TyStdLogicVector sz
-            sssns       <- mapM compileExp args
-            let stmts   =  concatMap fst sssns
-                ns      =  map snd sssns
-            pure (stmts ++ [Assign (LHSName n) (ExprFunCall i (map ExprName ns))], n)
-      NativeVHDLComponent an sz i args -> do
-            n           <- (<> "_res") <$> freshName i
-            n_call      <- (<> "_call") <$> freshName i
-            addSignal n $ TyStdLogicVector sz
-            sssns       <- mapM compileExp args
-            let stmts   =  concatMap fst sssns
-                ns      =  map snd sssns
-            addComponent an i $ Sig an (map sizeOf args) sz
-            let argns   =  map (\ n -> "arg" <> showt n) ([0..]::[Int])
-                pm      =  PortMap (zip argns (map ExprName ns) ++ [("res", ExprName n)])
-            pure (stmts ++ [Instantiate n_call i pm], n)
+      -- TODO(chathhorn): extern
+      -- Extern _ sz i args -> do
+      --       n           <- (<> "_res") <$> freshName i
+      --       addSignal n $ TyStdLogicVector sz
+      --       sssns       <- mapM compileExp args
+      --       let stmts   =  concatMap fst sssns
+      --           ns      =  map snd sssns
+      --       pure (stmts ++ [Assign (LHSName n) (ExprFunCall i (map ExprName ns))], n)
 
-mkDefnArch :: Monad m => Defn -> CM m Architecture
+mkDefnArch :: MonadError AstError m => Defn -> CM m Architecture
 mkDefnArch (Defn _ n _ es) = do
       put ([], [], 0) -- empty out the signal and component store, reset name counter
       (stmts, nres)    <- compileExps es
       (sigs, comps, _) <- get
       pure $ Architecture (mangle n <> "_impl") (mangle n) sigs comps (stmts ++ [Assign (LHSName "res") (ExprName nres)])
 
-compileStartDefn :: Monad m => [Flag] -> StartDefn -> CM m Unit
-compileStartDefn flags (StartDefn an inps outps _ (n_loopfun, t_loopfun@(Sig _ (arg0size:_) _)) (n_startstate, t_startstate)) = do
+compileStartDefn :: MonadError AstError m => [Flag] -> StartDefn -> CM m Unit
+compileStartDefn flags (StartDefn an inps outps (n_loopfun, t_loopfun@(Sig _ (arg0size:_) _)) (n_startstate, t_startstate)) = do
       put ([], [], 0) -- empty out signal and component store, reset name counter
       let stateSize = sizeOf t_startstate
           inpSize   = sum $ map snd inps
@@ -197,23 +182,38 @@ compileStartDefn flags (StartDefn an inps outps _ (n_loopfun, t_loopfun@(Sig _ (
       pure $ Unit (uses flags) (Entity "top_level" ports) $
             Architecture "top_level_impl" "top_level" sigs comps $
                   [ Instantiate "start_call" (mangle n_startstate) (PortMap [("res", ExprName "start_state")])
-                  , Instantiate "loop_call" (mangle n_loopfun) (PortMap [("arg0", ExprSlice (ExprName "current_state") (1 + outpSize) (1 + outpSize + arg0size - 1)), ("arg1", ExprName "inp"), ("res", ExprName "loop_out")])
-                  , WithAssign (ExprName rst) (LHSName "next_state") [(ExprName "start_state", ExprBit rstSignal)] (Just (ExprName "done_or_next_state"))
-                  , WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "done_or_next_state") [(ExprName "loop_out", ExprBitString [One])] (Just (ExprName "current_state"))
-                  , ClkProcess "clk" [Assign (LHSName "current_state") (ExprName "next_state")]
+                  , Instantiate "loop_call" (mangle n_loopfun) (PortMap
+                        [ ("arg0", ExprSlice (ExprName "current_state") (1 + outpSize) (1 + outpSize + arg0size - 1))
+                        , ("arg1", ExprName "inp")
+                        , ("res", ExprName "loop_out")
+                        ] )
+                  , WithAssign (ExprName rst) (LHSName "next_state")
+                        [ (ExprName "start_state", ExprBit rstSignal) ]
+                        (Just (ExprName "done_or_next_state"))
+                  , WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "done_or_next_state")
+                        [ (ExprName "loop_out", ExprBitString [One]) ]
+                        (Just (ExprName "current_state"))
+                  , ClkProcess "clk" $ Assign (LHSName "current_state") (ExprName "next_state") : outputs
                   , Assign (LHSName "inp") $ foldl' ExprConcat (ExprBitString []) $ map (ExprName . fst) inps
-                  ] <> fst (foldl' (\ (as, off) (n, sz) -> (as <> [Assign (LHSName n) (ExprSlice (ExprName "current_state") off (off + sz - 1))], off + sz)) ([], 1) outps)
+                  ]
       where rstSignal :: Bit
-            rstSignal = if FlagInvertReset `elem` flags then Zero else One
+            rstSignal | FlagInvertReset `elem` flags = Zero
+                      | otherwise                    = One
 
             rst :: Text
-            rst = if FlagInvertReset `elem` flags then "rst_n" else "rst"
+            rst | FlagInvertReset `elem` flags = "rst_n"
+                | otherwise                    = "rst"
 
-compileDefn :: Monad m => [Flag] -> Defn -> CM m Unit
+            outputs :: [Stmt]
+            outputs = fst $ foldl' (\ (as, off) (n, sz) -> (as <> [Assign (LHSName n) (ExprSlice (ExprName "current_state") off (off + sz - 1))], off + sz)) ([], 1) outps
+
+compileStartDefn _ (StartDefn an _ _ _ _) = failAt an "toVHDL: compileStartDefn: start definition with invalid signature."
+
+compileDefn :: MonadError AstError m => [Flag] -> Defn -> CM m Unit
 compileDefn flags d = Unit (uses flags) <$> mkDefnEntity d <*> mkDefnArch d
 
-compileProgram :: Monad m => [Flag] -> C.Program -> SyntaxErrorT m M.Program
-compileProgram flags p = fmap fst $ flip runReaderT (defns p) $ flip runStateT ([], [], 0) $ M.Program <$> ((:) <$> compileStartDefn flags (start p) <*> mapM (compileDefn flags) (defns p))
+compileProgram :: MonadError AstError m => [Flag] -> C.Program -> m V.Program
+compileProgram flags p = fmap fst $ flip runReaderT (defns p) $ flip runStateT ([], [], 0) $ V.Program <$> ((:) <$> compileStartDefn flags (start p) <*> mapM (compileDefn flags) (defns p))
 
 uses :: [Flag] -> [Text]
 uses flags = "ieee.std_logic_1164.all" : concatMap getUses flags

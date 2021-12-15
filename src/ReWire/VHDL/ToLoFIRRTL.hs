@@ -1,9 +1,9 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
-module ReWire.MiniHDL.ToLoFIRRTL (toLoFirrtl) where
+module ReWire.VHDL.ToLoFIRRTL (toLoFirrtl) where
 
 import ReWire.Error
-import qualified ReWire.MiniHDL.Syntax as V
+import qualified ReWire.VHDL.Syntax as V
 import qualified ReWire.LoFIRRTL.Syntax as F
 import Data.Bits (Bits (..))
 import Control.Monad (foldM)
@@ -75,6 +75,7 @@ transExpr = \ case
       V.ExprSlice e l h           -> F.Bits <$> transExpr e <*> pure (toNat h) <*> pure (toNat l)
       V.ExprIsEq e1 e2            -> F.Eq <$> transExpr e1 <*> transExpr e2
       V.ExprAnd e1 e2             -> F.And <$> transExpr e1 <*> transExpr e2
+      _                           -> failAt noAnn "TODO"
       where toNat :: Integral a => a -> Natural -- TODO(chathhorn)
             toNat a | a >= 0 = fromIntegral a
             toNat _          = 0

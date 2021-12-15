@@ -97,17 +97,17 @@ rorW8 (W8 a b c d e f g h) = W8 h a b c d e f g
 
 -- | Bitwise and.
 andW8 :: W8 -> W8 -> W8
-andW8 = nativeVhdl "andW8" andW8
+andW8 = extern "andW8" andW8
 -- andW8 = bitwiseW8' andb
 
 -- | Bitwise or.
 orW8 :: W8 -> W8 -> W8
-orW8 = nativeVhdl "orW8" orW8
+orW8 = extern "orW8" orW8
 -- orW8 = bitwiseW8' orb
 
 -- | Bitwise xor.
 xorW8 :: W8 -> W8 -> W8
-xorW8 = nativeVhdl "xorW8" xorW8
+xorW8 = extern "xorW8" xorW8
 -- xorW8 = bitwiseW8' xorb
 
 plusW8 :: W8 -> W8 -> W8
@@ -141,16 +141,16 @@ notW32 :: W32 -> W32
 notW32 (W32 a b c d) = W32 (notW8 a) (notW8 b) (notW8 c) (notW8 d)
 
 andW32 :: W32 -> W32 -> W32
-andW32 = nativeVhdl "andW32" andW32
+andW32 = extern "andW32" andW32
 -- andW32 = bitwiseW32' andb
 
 orW32 :: W32 -> W32 -> W32
-orW32 = nativeVhdl "orW32" orW32
+orW32 = extern "orW32" orW32
 -- orW32 = bitwiseW32' orb
 
 xorW32 :: W32 -> W32 -> W32
-xorW32 = nativeVhdl "xorW32" xorW32
+xorW32 = extern "xorW32" xorW32
 -- xorW32 = bitwiseW32' xorb
 
 plusW32 :: W32 -> W32 -> W32
-plusW32 = nativeVhdl "plusW32" plusW32
+plusW32 = extern "plusW32" plusW32

@@ -6,15 +6,16 @@ import ReWire.Annotation (unAnn)
 import ReWire.FrontEnd (loadProgram, LoadPath)
 import ReWire.Pretty (Pretty, prettyPrint)
 import qualified ReWire.Core.Syntax as C
-import ReWire.Core.ToMiniHDL (compileProgram)
-import ReWire.Core.Transform (mergeSlices)
+import ReWire.Core.ToVHDL (compileProgram)
+import qualified ReWire.Core.ToVerilog as Verilog
+import ReWire.Core.Transform (mergeSlices, purgeUnused)
 import ReWire.Crust.Cache (printHeader)
-import ReWire.MiniHDL.ToLoFIRRTL (toLoFirrtl)
+import ReWire.VHDL.ToLoFIRRTL (toLoFirrtl)
 import ReWire.Flags (Flag (..))
 import ReWire.Error (runSyntaxError, SyntaxErrorT)
 
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad (when, unless)
+import Control.Monad ((>=>), when, unless)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
 import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), ArgDescr (..))
@@ -34,6 +35,7 @@ options :: [OptDescr Flag]
 options =
        [ Option ['v'] ["verbose"]            (NoArg  FlagV)                             "More verbose output."
        , Option ['f'] ["firrtl"]             (NoArg  FlagFirrtl)                        "Produce FIRRTL output instead of VHDL."
+       , Option []    ["verilog"]            (NoArg  FlagVerilog)                       "Produce Verilog output instead of VHDL."
        , Option []    ["invert-reset"]       (NoArg  FlagInvertReset)                   "Invert the implicitly generated reset signal."
        , Option []    ["dpass1", "dhask1" ]  (NoArg  FlagDHask1)                        "Dump pass 1: pre-desugar haskell source."
        , Option []    ["dpass2", "dhask2" ]  (NoArg  FlagDHask2)                        "Dump pass 2: post-desugar haskell source."
@@ -45,8 +47,8 @@ options =
        , Option []    ["dpass8", "dcore1"  ] (NoArg  FlagDCore1)                        "Dump pass 8: core source."
        , Option []    ["dpass9", "dcore2"  ] (NoArg  FlagDCore2)                        "Dump pass 9: core source after purging empty types."
        , Option []    ["dtypes"]             (NoArg  FlagDTypes)                        "Enable extra typechecking after various IR transformations."
-       , Option ['o'] []                     (ReqArg FlagO           "filename.vhd")    "Name for RTL output file."
-       , Option ['p'] ["packages"]           (ReqArg FlagPkgs        "pkg1,pkg2,...")   "Packages to use for native VHDL components (e.g., ieee.std_logic_1164.all)."
+       , Option ['o'] []                     (ReqArg FlagO           "filename.vhdl")   "Name for RTL output file."
+       , Option ['p'] ["packages"]           (ReqArg FlagPkgs        "pkg1,pkg2,...")   "Packages to use for external VHDL components (e.g., ieee.std_logic_1164.all)."
        , Option []    ["inputs"]             (ReqArg FlagInputNames  "name1,name2,...") "Names to use for input signals in generated RTL."
        , Option []    ["outputs"]            (ReqArg FlagOutputNames "name1,name2,...") "Names to use for output signals in generated RTL."
        , Option []    ["loadpath"]           (ReqArg FlagLoadPath    "dir1,dir2,...")   "Additional directories for loadpath."
@@ -79,8 +81,9 @@ main = do
 
       where getOutFile :: [Flag] -> String -> IO String
             getOutFile flags filename = case filter (\ case { FlagO {} -> True; _ -> False }) flags of
-                  []        | FlagFirrtl `elem` flags -> pure $ filename -<.> "fir"
-                            | otherwise               -> pure $ filename -<.> "vhdl"
+                  []        | FlagFirrtl  `elem` flags -> pure $ filename -<.> "fir"
+                            | FlagVerilog `elem` flags -> pure $ filename -<.> "v"
+                            | otherwise                -> pure $ filename -<.> "vhdl"
                   [FlagO o] -> pure o
                   _         -> T.hPutStrLn stderr "Multiple output files specified on the command line!" >> exitFailure
 
@@ -98,16 +101,17 @@ main = do
 
                   where compile :: C.Program -> SyntaxErrorT IO ()
                         compile a = do
-                              b <- mergeSlices a
+                              b <- (mergeSlices >=> mergeSlices >=> purgeUnused) a -- TODO(chathhorn)
                               when (FlagV `elem` flags) $ liftIO $ putStrLn $ "Debug: [Pass 9] Reduced core."
                               when (FlagDCore2 `elem` flags) $ liftIO $ do
                                     printHeader "Reduced Core" -- TODO(chathhorn): pull this out of Crust.Cache
                                     T.putStrLn $ prettyPrint b
                                     when (FlagV `elem` flags) $ T.putStrLn "\n## Show core:\n"
                                     when (FlagV `elem` flags) $ T.putStrLn $ showt $ unAnn b
-                              if FlagFirrtl `elem` flags
-                                    then compileProgram flags b >>= toLoFirrtl >>= writeOutput
-                                    else compileProgram flags b >>= writeOutput
+                              case () of
+                                    _ | FlagFirrtl `elem` flags  -> compileProgram flags a >>= toLoFirrtl >>= writeOutput -- TODO(chathhorn): a => b
+                                      | FlagVerilog `elem` flags -> Verilog.compileProgram flags b >>= writeOutput
+                                      | otherwise                -> compileProgram flags a >>= writeOutput
 
                         writeOutput :: Pretty a => a -> SyntaxErrorT IO ()
                         writeOutput a = do

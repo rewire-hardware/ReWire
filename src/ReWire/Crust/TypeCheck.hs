@@ -193,7 +193,7 @@ tcExp = \ case
                         (e2', te2)  <- tcExp e2
                         unify an tv te2
                         pure (Case an tv e' (bind p' e1'') (Just e2'), tv)
-      Match an _ e p f e2 -> do
+      Match an _ e p f e2    -> do
             (e', te) <- tcExp e
             tv       <- freshv
             p'       <- tcMatchPat te p
@@ -206,9 +206,9 @@ tcExp = \ case
                         (e2', te2)  <- tcExp e2
                         unify an tv te2
                         pure (Match an tv e' p' f (Just e2'), tv)
-      NativeVHDL an n e      -> do
+      Extern an n e          -> do
             (e', te) <- tcExp e
-            pure (NativeVHDL an n e', te)
+            pure (Extern an n e', te)
       Error an _ m           -> do
             tv <- freshv
             pure (Error an tv m, tv)

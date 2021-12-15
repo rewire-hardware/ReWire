@@ -31,7 +31,7 @@ data PuRe s o = Done (A_, s) | Pause (o, (R_, s))
 -- TODO(chathhorn): can't give a type to these in RW (string lits are only allowed
 -- as arguments to error and are never given a type).
 error = GHC.error
-nativeVhdl _ f = f
+extern _ f = f
 
 rwReturn :: GHC.Monad m => a -> m a
 rwReturn = GHC.return

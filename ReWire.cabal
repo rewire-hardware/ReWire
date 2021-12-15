@@ -45,7 +45,7 @@ build-type        : Simple
 -- README.
 extra-source-files: README.md
 data-files        : tests/integration/*.hs
-                    tests/integration/OD19Filter/*.hs
+                    tests/integration/OD19/*.hs
                     tests/regression/Mods/*.hs
                     tests/regression/Mods/C/*.hs
                     tests/regression/*.hs
@@ -90,7 +90,8 @@ library
                     ReWire.Annotation
                     ReWire.Core.Mangle
                     ReWire.Core.Syntax
-                    ReWire.Core.ToMiniHDL
+                    ReWire.Core.ToVHDL
+                    ReWire.Core.ToVerilog
                     ReWire.Core.Transform
                     ReWire.Crust.Annotate
                     ReWire.Crust.Cache
@@ -109,8 +110,9 @@ library
                     ReWire.Crust.TypeVerify
                     ReWire.Error
                     ReWire.Flags
-                    ReWire.MiniHDL.Syntax
-                    ReWire.MiniHDL.ToLoFIRRTL
+                    ReWire.VHDL.Syntax
+                    ReWire.VHDL.ToLoFIRRTL
+                    ReWire.Verilog.Syntax
                     ReWire.LoFIRRTL.Syntax
                     ReWire.FIRRTL.Syntax
                     ReWire.FIRRTL.ToLoFIRRTL

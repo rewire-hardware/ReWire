@@ -442,9 +442,9 @@ transPat = \ case
 
 patVars :: Pat -> [(Name Exp, Ty)]
 patVars = \ case
-      PatCon _ _ _ ps         -> concatMap patVars ps
-      PatVar _ (Embed t) x    -> [(x, t)]
-      PatWildCard _ (Embed t) -> []
+      PatCon _ _ _ ps      -> concatMap patVars ps
+      PatVar _ (Embed t) x -> [(x, t)]
+      PatWildCard _ _      -> []
 
 ---------------------------
 -- Purifying Resumption Monadic definitions
