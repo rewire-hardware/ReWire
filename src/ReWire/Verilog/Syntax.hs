@@ -183,8 +183,8 @@ instance Pretty Bit where
             X    -> text "x"
             Z    -> text "z"
 
-data LVal = Element LVal Int
-          | Range LVal Int Int
+data LVal = Element Name Int
+          | Range Name Int Int
           | Name Name
           | LVals [LVal]
       deriving (Eq, Show)

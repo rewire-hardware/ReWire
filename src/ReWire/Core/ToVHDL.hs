@@ -3,7 +3,7 @@
 module ReWire.Core.ToVHDL (compileProgram) where
 
 import ReWire.Annotation
-import ReWire.Core.Syntax as C
+import ReWire.Core.Syntax as C hiding (Name)
 import ReWire.Error
 import ReWire.Core.Mangle
 import ReWire.VHDL.Syntax as V
@@ -50,7 +50,7 @@ addSignal n t = do
       (sigs, comps, ctr) <- get
       put (sigs ++ [Signal n t], comps, ctr)
 
-addComponent :: Monad m => Annote -> GId -> C.Sig -> CM m ()
+addComponent :: Monad m => Annote -> Name -> C.Sig -> CM m ()
 addComponent _ i t = do
       (sigs, comps, ctr) <- get
       case find ((== mangle i) . componentName) comps of
@@ -68,7 +68,7 @@ compilePat nscr offset = \ case
                 ematch = ExprIsEq (ExprSlice (ExprName nscr) offset (offset + length tag - 1)) $ ExprBitString tag
             pure (ematch, [])
 
-askGIdTy :: MonadError AstError m => GId -> CM m C.Sig
+askGIdTy :: MonadError AstError m => Name -> CM m C.Sig
 askGIdTy i = do
       defns <- askDefns
       case find (\ (Defn _ i' _ _) -> i == i') defns of
@@ -102,7 +102,7 @@ compileExp = \ case
             pure  ( [ Assign (LHSName n) $ ExprBitString litVec ]
                   , n
                   )
-      Match an sz gid escr ps [] -> do
+      Call an sz (Global gid) escr ps [] -> do
             (stmts_escr, n_escr) <- compileExps escr
 
             let fieldwidths       = map sizeOf ps
@@ -117,7 +117,7 @@ compileExp = \ case
             let argns            =  map (\ n -> "arg" <> showt n) ([0..]::[Int])
                 pm               =  PortMap (zip argns efields ++ [("res", ExprName n_gid)])
             pure (stmts_escr ++ [Instantiate n_call (mangle gid) pm], n_gid)
-      Match an sz gid escr ps ealt -> do
+      Call an sz (Global gid) escr ps ealt -> do
             n                    <- (<> "_res") <$> freshName "match"
             addSignal n $ TyStdLogicVector sz
             (stmts_escr, n_escr) <- compileExps escr
@@ -143,13 +143,14 @@ compileExp = \ case
                      Instantiate n_call (mangle gid) pm] ++
                     stmts_ealt,
                     n)
-      Extern _ sz i args -> do
-            n           <- (<> "_res") <$> freshName i
-            addSignal n $ TyStdLogicVector sz
-            sssns       <- mapM compileExp args
-            let stmts   =  concatMap fst sssns
-                ns      =  map snd sssns
-            pure (stmts ++ [Assign (LHSName n) (ExprFunCall i (map ExprName ns))], n)
+      -- TODO(chathhorn): extern
+      -- Extern _ sz i args -> do
+      --       n           <- (<> "_res") <$> freshName i
+      --       addSignal n $ TyStdLogicVector sz
+      --       sssns       <- mapM compileExp args
+      --       let stmts   =  concatMap fst sssns
+      --           ns      =  map snd sssns
+      --       pure (stmts ++ [Assign (LHSName n) (ExprFunCall i (map ExprName ns))], n)
 
 mkDefnArch :: MonadError AstError m => Defn -> CM m Architecture
 mkDefnArch (Defn _ n _ es) = do

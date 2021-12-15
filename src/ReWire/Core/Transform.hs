@@ -9,22 +9,22 @@ import Control.Monad.Reader (runReader, MonadReader (..), asks)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 
-type DefnMap = HashMap GId [Exp]
+type DefnMap = HashMap Name [Exp]
 
 -- | Removes all zero-length arguments and parameters.
 mergeSlices :: Monad m => Program -> m Program
 mergeSlices (Program start@(StartDefn _ _ _ (loop, _) (state0, _)) ds) = do
       pure $ Program start $ filter ((`elem` uses) . defnName) ds'
-      where uses :: [GId]
+      where uses :: [Name]
             uses = [loop, state0] <> concatMap (getUses . defnBody) ds'
 
-            getUses :: [Exp] -> [GId]
+            getUses :: [Exp] -> [Name]
             getUses = concatMap getUses'
 
-            getUses' :: Exp -> [GId]
+            getUses' :: Exp -> [Name]
             getUses' = \ case
-                  Match _ _ g es _ es' -> [g] <> getUses es <> getUses es'
-                  _                    -> []
+                  Call _ _ (Global g) es _ es' -> [g] <> getUses es <> getUses es'
+                  _                            -> []
 
             defnMap = Map.fromList $ map (defnName &&& defnBody) ds
             ds'     = runReader (mapM reDefn $ filter ((> 0) . sizeOf) ds) defnMap
@@ -52,16 +52,16 @@ renumLVars (Sig _ szVec _) x = if x >= 0 && x < length szVec && szVec !! x > 0
 
 reExp :: MonadReader DefnMap m => (LId -> Maybe (LId, Int)) -> Exp -> m [Exp]
 reExp rn = \ case
-      LVar a s l                                              -> pure $ [LVar a s $ maybe l fst $ rn l]
-      Lit a s v                                               -> pure $ [Lit a s v]
-      m@(Match _ _ g es _ _)  | sum (map sizeOf es) == 0      -> (fromMaybe [m] <$> asks (Map.lookup g)) >>= reExps rn
-      m@(Match _ _ g _ ps []) | length (filter isVar ps) == 0 -> (fromMaybe [m] <$> asks (Map.lookup g)) >>= reExps rn
-      Match a s g es ps es'                                   -> pure <$> (Match a s g <$> reExps rn es <*> pure (rePat ps) <*> reExps rn es')
-      Extern a s txt args                                     -> pure <$> (Extern a s txt <$> reExps rn args)
+      LVar a s l                                                  -> pure $ [LVar a s $ maybe l fst $ rn l]
+      Lit a s v                                                   -> pure $ [Lit a s v]
+      Call _ _ (Global g) es _ _  | sum (map sizeOf es) == 0      -> (fromMaybe [] <$> asks (Map.lookup g)) >>= reExps rn
+      Call _ _ (Global g) _ ps [] | length (filter isVar ps) == 0 -> (fromMaybe [] <$> asks (Map.lookup g)) >>= reExps rn
+      Call a s g es ps es'                                        -> pure <$> (Call a s g <$> reExps rn es <*> pure (rePat ps) <*> reExps rn es')
       where isVar :: Pat -> Bool
             isVar = \ case
                   PatVar {} -> True
                   _         -> False
+
 
 reExps :: MonadReader DefnMap m => (LId -> Maybe (LId, Int)) -> [Exp] -> m [Exp]
 reExps rn es = mergeLits <$> (concat <$> mapM (reExp rn) (filter ((> 0) . sizeOf) es))
