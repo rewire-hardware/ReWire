@@ -29,7 +29,10 @@ type Size = Int
 type LId  = Int
 type Name = Text
 
-data GId  = Global Text | Extern Text
+data GId = Global Text
+         | Extern Text
+         | Id
+         | Const Int -- TODO(chathhorn)
       deriving (Eq, Ord, Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric GId
 
@@ -37,6 +40,8 @@ instance Pretty GId where
       pretty = \ case
             Global n -> text n
             Extern n -> parens $ text "extern" <+> text n
+            Id       -> text "id"
+            Const v  -> text "const" <+> pretty v 
 
 ppBV :: Pretty a => [a] -> Doc an
 ppBV = ppBV' . map pretty
@@ -65,26 +70,31 @@ instance Pretty Sig where
 
 data Exp = Lit  Annote !Size !Int
          | LVar Annote !Size !LId
-         | Call Annote !Size !GId ![Exp] ![Pat]  ![Exp]
+         | Call Annote !Size !GId ![Exp] ![Pat] ![Exp]
+         -- | Proj Annote !Size      ![Exp] ![Pat] ![Exp]
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Exp
 
 instance SizeAnnotated Exp where
       sizeOf = \ case
-            LVar _ s _        -> s
-            Lit _ s _         -> s
+            LVar _ s _       -> s
+            Lit _ s _        -> s
             Call _ s _ _ _ _ -> s
 
 instance Annotated Exp where
       ann = \ case
-            LVar a _ _        -> a
-            Lit a _ _         -> a
+            LVar a _ _       -> a
+            Lit a _ _        -> a
             Call a _ _ _ _ _ -> a
 
 instance Pretty Exp where
       pretty = \ case
-            Lit _ w v             -> pretty v <> text "::BV" <> pretty w
-            LVar _ _ n            -> text $ "$" <> showt n
+            Lit _ w v            -> pretty v <> text "::BV" <> pretty w
+            LVar _ _ n           -> text $ "$" <> showt n
+            Call _ _ f es ps [] -> nest 2 $ vsep
+                  [ text "case" <+> ppBV es <+> text "of"
+                  , (ppBV' $ ppPats ps) <+> text "->" <+> pretty f <+> ppArgs ps
+                  ]
             Call _ _ f es ps es2 -> nest 2 $ vsep
                   [ text "case" <+> ppBV es <+> text "of"
                   , (ppBV' $ ppPats ps) <+> text "->" <+> pretty f <+> ppArgs ps
@@ -97,7 +107,7 @@ ppPats :: [Pat] -> [Doc an]
 ppPats = zipWith ppPats' [0::Int ..]
       where ppPats' :: Int -> Pat -> Doc an
             ppPats' i = \ case
-                  PatVar {}        -> text "p" <> pretty i
+                  PatVar _ sz      -> text "p" <> pretty i <> text "::" <> text "BV" <> pretty sz
                   PatWildCard _ sz -> text "_" <> text "::" <> text "BV" <> pretty sz
                   PatLit _ sz v    -> pretty v <> text "::" <> text "BV" <> pretty sz
 

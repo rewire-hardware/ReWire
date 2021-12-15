@@ -8,14 +8,14 @@ import ReWire.Pretty (Pretty, prettyPrint)
 import qualified ReWire.Core.Syntax as C
 import ReWire.Core.ToVHDL (compileProgram)
 import qualified ReWire.Core.ToVerilog as Verilog
-import ReWire.Core.Transform (mergeSlices)
+import ReWire.Core.Transform (mergeSlices, purgeUnused)
 import ReWire.Crust.Cache (printHeader)
 import ReWire.VHDL.ToLoFIRRTL (toLoFirrtl)
 import ReWire.Flags (Flag (..))
 import ReWire.Error (runSyntaxError, SyntaxErrorT)
 
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad (when, unless)
+import Control.Monad ((>=>), when, unless)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
 import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), ArgDescr (..))
@@ -101,7 +101,7 @@ main = do
 
                   where compile :: C.Program -> SyntaxErrorT IO ()
                         compile a = do
-                              b <- mergeSlices a
+                              b <- (mergeSlices >=> mergeSlices >=> purgeUnused) a -- TODO(chathhorn)
                               when (FlagV `elem` flags) $ liftIO $ putStrLn $ "Debug: [Pass 9] Reduced core."
                               when (FlagDCore2 `elem` flags) $ liftIO $ do
                                     printHeader "Reduced Core" -- TODO(chathhorn): pull this out of Crust.Cache
@@ -109,9 +109,9 @@ main = do
                                     when (FlagV `elem` flags) $ T.putStrLn "\n## Show core:\n"
                                     when (FlagV `elem` flags) $ T.putStrLn $ showt $ unAnn b
                               case () of
-                                    _ | FlagFirrtl `elem` flags  -> compileProgram flags b >>= toLoFirrtl >>= writeOutput
+                                    _ | FlagFirrtl `elem` flags  -> compileProgram flags a >>= toLoFirrtl >>= writeOutput -- TODO(chathhorn): a => b
                                       | FlagVerilog `elem` flags -> Verilog.compileProgram flags b >>= writeOutput
-                                      | otherwise                -> compileProgram flags b >>= writeOutput
+                                      | otherwise                -> compileProgram flags a >>= writeOutput
 
                         writeOutput :: Pretty a => a -> SyntaxErrorT IO ()
                         writeOutput a = do

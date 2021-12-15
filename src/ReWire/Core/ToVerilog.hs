@@ -141,12 +141,19 @@ compileExp = \ case
             Name arg   <- newWire (argsSize ps) "msbit_arg"
             let [x]     = patArgs n ps
                 assign  = Assign (Name arg) $ LVal x
-            (m, stmts) <- mkCall sz n es ps els $ LVal $ Element (Name arg) (argsSize ps - 1)
+            (m, stmts) <- mkCall sz n es ps els $ LVal $ Element arg (argsSize ps - 1)
             pure (m, stmts <> [assign])
       Call _ sz (Extern "resize") es ps els -> do
             Name n  <- newWire (sum $ map sizeOf es) "resize_exp"
             let [x]  = patArgs n ps
             mkCall sz n es ps els $ LVal x
+      Call _ sz Id es ps els -> do
+            Name n  <- newWire (sum $ map sizeOf es) "id_exp"
+            let args  = patArgs n ps
+            mkCall sz n es ps els $ Concat $ map LVal args
+      Call _ sz (Const v) es ps els -> do
+            Name n  <- newWire (sum $ map sizeOf es) "lit_exp"
+            mkCall sz n es ps els $ LitInt sz v
       Call an _ (Extern ex) _ _ _ -> failAt an $ "ToVerilog: compileExp: unknown extern: " <> ex
       where mkCall :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadError AstError m) => C.Size -> Name -> [C.Exp] -> [Pat] -> [C.Exp] -> V.Exp -> m (V.LVal, [Stmt])
             mkCall sz n es ps els arg = do
