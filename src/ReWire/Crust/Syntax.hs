@@ -44,15 +44,17 @@ import safe ReWire.Unbound
       )
 import safe qualified ReWire.Unbound as UB (fv, fvAny)
 
+import Prelude hiding (replicate)
+
 import safe Control.DeepSeq (NFData (..), deepseq)
 import safe Data.Data (Typeable, Data (..))
 import safe Data.List (intersperse)
 import safe Data.Hashable (Hashable)
-import safe Data.Text (Text)
+import safe Data.Text (Text, unpack, replicate)
 import safe GHC.Generics (Generic (..))
 import safe Prettyprinter
-      ( Doc, nest, hsep, parens, dquotes
-      , braces, vsep, (<+>), Pretty (..)
+      ( Doc, nest, hsep, parens, dquotes, comma
+      , braces, vsep, (<+>), Pretty (..), punctuate
       )
 import safe ReWire.Pretty (empty, text)
 import TextShow (TextShow (..), fromString)
@@ -80,8 +82,8 @@ class Parenless a where
       -- | Parts that never need to be wrapped in parens during pretty printing.
       parenless :: a -> Bool
 
-mparen :: (Pretty a, Parenless a) => a -> Doc ann
-mparen a = if parenless a then pretty a else parens $ pretty a
+mparens :: (Pretty a, Parenless a) => a -> Doc ann
+mparens a = if parenless a then pretty a else parens $ pretty a
 
 newtype DataConId = DataConId Text
       deriving (Eq, Generic, Typeable, Data)
@@ -104,7 +106,7 @@ instance Annotated DataCon where
       ann (DataCon a _ _)  = a
 
 instance Pretty DataCon where
-      pretty (DataCon _ n t)  = pretty n <+> text "::" <+> pretty t
+      pretty (DataCon _ n t)  = text (n2s n) <+> text "::" <+> pretty t
 
 instance NFData DataCon
 
@@ -183,24 +185,29 @@ instance Annotated Ty where
             TyVar a _ _  -> a
             TyBlank a    -> a
 
+instance Parenless Ty where
+      parenless t = case flattenTyApp t of
+            (TyCon _ (n2s -> c) : _)  | isTupleCtor c -> True
+            [TyCon {}]                                -> True
+            [TyVar {}]                                -> True
+            [TyBlank {}]                              -> True
+            _                                         -> False
+
 instance Pretty Ty where
-      pretty = \ case
-            TyApp _ (TyApp _ (TyCon _ c) t1) t2
-                  | n2s c == "->"  -> ppTyArrowL t1 <+> text "->" <+> pretty t2
-                  | n2s c == "(,)" -> parens $ ppTyArrowL t1 <> (text "," <+> pretty t2)
-                  where ppTyArrowL :: Ty -> Doc ann
-                        ppTyArrowL = \ case
-                              t@(TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) _) -> parens $ pretty t
-                              t                                                 -> pretty t
-            TyApp _ t1 t2                  -> pretty t1 <+> ppTyAppR t2
-                  where ppTyAppR :: Ty -> Doc ann
-                        ppTyAppR = \ case
-                              t@(TyApp _ (TyApp _ (TyCon _ (n2s -> "(,)")) _) _) -> pretty t
-                              t@TyApp {}                                         -> parens $ pretty t
-                              t                                                  -> pretty t
-            TyCon _ n                      -> pretty n
-            TyVar _ _ n                    -> pretty n
-            TyBlank _                      -> text "_"
+      pretty t = case flattenTyApp t of
+            (TyCon _ (n2s -> c) : ts)
+                  | isTupleCtor c              -> parens $ hsep $ punctuate comma $ map pretty ts
+            (TyCon _ (n2s -> "->") : [t1, t2])
+                  | needsParens t1             -> parens (pretty t1) <+> text "->" <+> pretty t2
+            (TyCon _ (n2s -> "->") : [t1, t2]) -> pretty t1 <+> text "->" <+> pretty t2
+            [TyCon _ n]                        -> text $ n2s n
+            [TyVar _ _ n]                      -> text $ n2s n
+            [TyBlank _]                        -> text "_"
+            ts                                 -> hsep $ map mparens ts
+            where needsParens :: Ty -> Bool
+                  needsParens t = case flattenTyApp t of
+                        (TyCon _ (n2s -> "->") : _) -> True
+                        _                           -> False
 
 instance NFData Ty
 
@@ -275,35 +282,34 @@ instance Annotated Exp where
 
 
 instance Parenless Exp where
-      parenless = \ case -- simple (non-compound?) expressions
-            App _ (App _ (Con _ _ (n2s -> "(,)")) _) _ -> True
-            Con {}                                     -> True
-            Var {}                                     -> True
-            _                                          -> False
+      parenless e = case flattenApp e of
+            (Con _ _ (n2s -> c) : _)  | isTupleCtor c -> True
+            [Con {}]                                  -> True
+            [Var {}]                                  -> True
+            _                                         -> False
 
 instance Pretty Exp where
-      pretty = \ case
-            App _ (App _ (Con _ _ (n2s -> "(,)")) e1) e2 -> parens $ pretty e1 <> (text "," <+> pretty e2)
-            App _ e1@App {} e2                           -> nest 2 $ pretty e1 <+> mparen e2
-            App _ e1 e2                                  -> nest 2 $ mparen e1 <+> mparen e2
-            Con _ t n                                    -> pretty n <+> braces (pretty t)
-            Var _ t n                                    -> text (showt n) <+> braces (pretty t)
-            Lam _ _ e                                    -> runFreshM $ do
+      pretty e = case flattenApp e of
+            (Con _ _ (n2s -> c) : es) | isTupleCtor c    -> parens $ hsep $ punctuate comma $ map pretty es
+            [Con _ t n]                                  -> text (n2s n) <+> braces (pretty t)
+            [Var _ t n]                                  -> text (showt n) <+> braces (pretty t)
+            [Lam _ _ e]                                  -> runFreshM $ do
                   (p, e') <- unbind e
                   pure $ text "\\" <+> text (showt p) <+> text "->" <+> pretty e'
-            Case _ t e e1 e2                             -> runFreshM $ do
+            [Case _ t e e1 e2]                           -> runFreshM $ do
                   (p, e1') <- unbind e1
                   pure $ nest 2 $ vsep $
                         [ text "case" <+> braces (pretty t) <+> pretty e <+> text "of"
                         , pretty p <+> text "->" <+> pretty e1'
                         ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
-            Match _ t e p e1 e2                          -> runFreshM $
+            [Match _ t e p e1 e2]                        -> runFreshM $
                   pure $ nest 2 $ vsep $
                         [ text "match" <+> braces (pretty t) <+> pretty e <+> text "of"
                         , pretty p <+> text "->" <+> pretty e1
                         ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
-            Extern _ n e                                 -> text "extern" <+> dquotes (pretty n) <+> mparen e
-            Error _ t m                                  -> text "error" <+> braces (pretty t) <+> dquotes (pretty m)
+            [Extern _ n e]                               -> text "extern" <+> dquotes (pretty n) <+> mparens e
+            [Error _ t m]                                -> text "error" <+> braces (pretty t) <+> dquotes (pretty m)
+            es                                           -> nest 2 $ hsep $ map mparens es
 
 ---
 
@@ -333,18 +339,18 @@ instance Annotated Pat where
 
 instance Parenless Pat where
       parenless = \ case
-            PatCon _ _ (Embed (n2s -> "(,)")) _ -> True
-            PatCon _ _ _ []                     -> True
-            PatVar {}                           -> True
-            PatWildCard {}                      -> True
-            _                                   -> False
+            PatCon _ _ (Embed (n2s -> c)) _ | isTupleCtor c -> True
+            PatCon _ _ _ []                                 -> True
+            PatVar {}                                       -> True
+            PatWildCard {}                                  -> True
+            _                                               -> False
 
 instance Pretty Pat where
       pretty = \ case
-            PatCon _ _ (Embed (n2s -> "(,)")) [p1, p2] -> parens $ pretty p1 <> (text "," <+> pretty p2)
-            PatCon _ _ (Embed n) ps                    -> pretty n <+> hsep (map mparen ps)
-            PatVar _ _ n                               -> text $ showt n
-            PatWildCard _ _                            -> text "_"
+            PatCon _ _ (Embed (n2s -> c)) ps | isTupleCtor c -> parens $ hsep $ punctuate comma $ map pretty ps
+            PatCon _ _ (Embed n) ps                          -> text (n2s n) <+> hsep (map mparens ps)
+            PatVar _ _ n                                     -> text $ showt n
+            PatWildCard _ _                                  -> text "_"
 
 
 data MatchPat = MatchPatCon Annote !Ty !(Name DataConId) ![MatchPat]
@@ -376,18 +382,18 @@ instance Annotated MatchPat where
 
 instance Parenless MatchPat where
       parenless = \ case
-            MatchPatCon _ _ (n2s -> "(,)") _ -> True
-            MatchPatCon _ _ _ []             -> True
-            MatchPatVar {}                   -> True
-            MatchPatWildCard {}              -> True
-            _                                -> False
+            MatchPatCon _ _ (n2s -> c) _ | isTupleCtor c -> True
+            MatchPatCon _ _ _ []                         -> True
+            MatchPatVar {}                               -> True
+            MatchPatWildCard {}                          -> True
+            _                                            -> False
 
 instance Pretty MatchPat where
       pretty = \ case
-            MatchPatCon _ _ (n2s -> "(,)") [p1, p2] -> parens $ pretty p1 <> (text "," <+> pretty p2)
-            MatchPatCon _ _ n ps                    -> pretty n <+> hsep (map mparen ps)
-            MatchPatVar _ t                         -> parens $ text "*" <+> text "::" <+> pretty t
-            MatchPatWildCard _ t                    -> parens $ text "_" <+> text "::" <+> pretty t
+            MatchPatCon _ _ (n2s -> c) ps | isTupleCtor c -> parens $ hsep $ punctuate comma $ map pretty ps
+            MatchPatCon _ _ n ps                          -> pretty n <+> hsep (map mparens ps)
+            MatchPatVar _ t                               -> parens $ text "*" <+> text "::" <+> pretty t
+            MatchPatWildCard _ t                          -> parens $ text "_" <+> text "::" <+> pretty t
 
 ---
 
@@ -437,7 +443,9 @@ instance Annotated DataDefn where
       ann (DataDefn a _ _ _) = a
 
 instance Pretty DataDefn where
-      pretty (DataDefn _ n k cs) = nest 2 $ vsep $ (text "data" <+> pretty n <+> text "::" <+> pretty k <+> text "where") : map (nest 2 . pretty) cs
+      pretty (DataDefn _ n k cs) = nest 2 $ vsep
+            $ (text "data" <+> text (n2s n) <+> text "::" <+> pretty k <+> text "where")
+            : map (nest 2 . pretty) cs
 
 ---
 
@@ -461,7 +469,7 @@ instance Annotated TypeSynonym where
 instance Pretty TypeSynonym where
       pretty (TypeSynonym _ n (Embed (Poly t))) = runFreshM $ do
             (tvs, t') <- unbind t
-            pure (text "type" <+> pretty n <+> hsep (map pretty tvs) <+> "=" <+> pretty t')
+            pure (text "type" <+> text (n2s n) <+> hsep (map (text . n2s) tvs) <+> "=" <+> pretty t')
 ---
 
 type FreeProgram = ([DataDefn], [TypeSynonym], [Defn])
@@ -563,6 +571,9 @@ mkTuplePat an = foldr (mkPairPat an) nilPat
 
 mkTupleMPat :: Annote -> [MatchPat] -> MatchPat
 mkTupleMPat an = foldr (mkPairMPat an) nilMPat
+
+isTupleCtor :: Text -> Bool
+isTupleCtor c = c == "(" <> replicate (length (unpack c) - 2) "," <> ")"
 
 -- Orphans.
 

@@ -16,7 +16,7 @@ import ReWire.Annotation
 import Data.Data (Typeable, Data(..))
 import Data.List (intersperse)
 import Data.Text (Text)
-import Prettyprinter (Pretty (..), Doc, vsep, (<+>), nest, hsep, parens, braces, punctuate, comma)
+import Prettyprinter (Pretty (..), Doc, vsep, (<+>), nest, hsep, parens, braces, punctuate, comma, dquotes)
 import GHC.Generics (Generic)
 
 import TextShow (TextShow (..), showt)
@@ -40,9 +40,9 @@ data Target = Global GId
 instance Pretty Target where
       pretty = \ case
             Global n -> text n
-            Extern n -> parens $ text "extern" <+> text n
+            Extern n -> text "extern" <+> dquotes (text n)
             Id       -> text "id"
-            Const v  -> text "const" <+> pretty v 
+            Const v  -> text "const" <+> pretty v
 
 ppBV :: Pretty a => [a] -> Doc an
 ppBV = ppBV' . map pretty
