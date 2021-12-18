@@ -127,10 +127,7 @@ transPat = \ case
       M.MatchPatWildCard an t -> pure <$> (C.PatWildCard an <$> sizeOf an t)
 
 transType :: (Fresh m, MonadError AstError m, MonadState SizeMap m) => M.Ty -> ReaderT ConMap m C.Sig
-transType t = case t of
-      M.TyApp an _ _ -> C.Sig an <$> mapM (sizeOf an) (fst $ M.flattenArrow t) <*> sizeOf an (snd $ M.flattenArrow t)
-      M.TyCon an _   -> C.Sig an [] <$> sizeOf an t
-      _              -> pure $ C.Sig (ann t) [] 0
+transType t = C.Sig (ann t) <$> mapM (sizeOf $ ann t) (fst $ M.flattenArrow t) <*> sizeOf (ann t) (snd $ M.flattenArrow t)
 
 matchTy :: MonadError AstError m => Annote -> M.Ty -> M.Ty -> m TySub
 matchTy an (M.TyApp _ t1 t2) (M.TyApp _ t1' t2') = do
@@ -175,32 +172,28 @@ getCtorType :: MonadReader ConMap m => Name M.DataConId -> m (Maybe M.Ty)
 getCtorType n = asks (Map.lookup n . snd)
 
 ctorId :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => Annote -> M.Ty -> Name M.DataConId -> m (Int, Int)
-ctorId an t d = case th of
-      -- M.TyCon _ c | n2s c == "ReT" -> pure $ C.DataConId "ReT" 0 0 -- TODO(chathhorn): ?
-      M.TyCon _ c                  -> do
+ctorId an t d = case take 1 $ M.flattenTyApp t of
+      [M.TyCon _ c] -> do
             ctors      <- getCtors c
             case findIndex ((== n2s d) . n2s) ctors of
                   Just idx -> pure (idx, ceilLog2 $ length ctors)
                   Nothing  -> failAt an $ "ToCore: ctorId: unknown ctor: " <> prettyPrint (n2s d) <> " of type " <> prettyPrint (n2s c)
-      _                            -> failAt an $ "ToCore: ctorId: unexpected type: " <> prettyPrint t
-      where (th : _) = M.flattenTyApp t
+      _             -> failAt an $ "ToCore: ctorId: unexpected type: " <> prettyPrint t
 
 sizeOf :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => Annote -> M.Ty -> m Int
 sizeOf an t = do
       m <- get
       s <- case Map.lookup t m of
-            Nothing -> case th of
-                  M.TyApp {}                   -> failAt an $ "ToCore: sizeOf: Got TyApp after flattening (can't happen): " <> prettyPrint t
-                  M.TyCon _ c | n2s c == "ReT" -> pure 1 -- TODO(chathhorn): ?
-                  M.TyCon _ c                  -> do
+            Nothing -> case take 1 $ M.flattenTyApp t of
+                  [M.TyApp {}]  -> failAt an $ "ToCore: sizeOf: Got TyApp after flattening (can't happen): " <> prettyPrint t
+                  [M.TyCon _ c] -> do
                         ctors      <- getCtors c
                         ctorWidths <- mapM (ctorWidth t) ctors
                         pure $ ceilLog2 (length ctors) + maximum (0 : ctorWidths)
-                  _  -> pure 0
+                  _             -> pure 0
             Just s -> pure s
       put $ Map.insert t s m
       pure s
-      where (th : _) = M.flattenTyApp t
 
 ceilLog2 :: Int -> Int
 ceilLog2 n | n < 1 = 0

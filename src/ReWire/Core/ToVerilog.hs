@@ -15,7 +15,6 @@ import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Arrow ((&&&))
 import TextShow (showt)
 import Data.List (foldl')
-
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 
@@ -31,14 +30,14 @@ fresh s = do
 compileProgram :: (MonadFail m, MonadError AstError m) => [Flag] -> C.Program -> m V.Program
 compileProgram flags (C.Program st ds)
       | FlagFlatten `elem` flags = V.Program <$> pure <$> evalStateT (runReaderT (compileStartDefn flags st) defnMap) 0
-      | otherwise                  = V.Program <$> ((:) <$> evalStateT (runReaderT (compileStartDefn flags st) Map.empty) 0 <*> mapM (flip evalStateT 0 . compileDefn flags) ds)
+      | otherwise                = V.Program <$> ((:) <$> evalStateT (runReaderT (compileStartDefn flags st) defnMap) 0 <*> mapM (flip evalStateT 0 . compileDefn flags) ds)
       where defnMap :: DefnMap
             defnMap = Map.fromList $ map (defnName &&& defnBody) ds
 
 compileStartDefn :: (MonadError AstError m, MonadState Fresh m, MonadFail m, MonadReader DefnMap m)
                  => [Flag] -> C.StartDefn -> m Module
 compileStartDefn flags (C.StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) (state0, Sig _ _ stateSize)) = do
-      ((rStart, ssStart), startSigs) <- runWriterT $ compileCall flags state0 stateSize []
+      ((rStart, ssStart), startSigs) <- runWriterT $ compileCall (FlagFlatten : flags)state0 stateSize [] -- TODO(chathhorn)
       ((rLoop, ssLoop), loopSigs)    <- runWriterT $ compileCall flags loop stateSize
             [ Range "current_state" (1 + outpSize) (1 + outpSize + arg0Size - 1)
             , Name "inp"
@@ -48,14 +47,15 @@ compileStartDefn flags (C.StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) 
             <> ssLoop
             <> assignInp
             <> ifDone rLoop
-            <> assignOutputs
-            <> [Always [Pos "clk", rstEdge] $ Block $ [ ifRst rStart ]]
+            <> [ Always [Pos "clk", rstEdge] $ Block $
+                  [ ifRst rStart
+                  ] ]
 
       where inputs :: [Port]
             inputs = [Input $ Wire 1 "clk", Input $ Wire 1 rst] <> map (uncurry toInput) inps
 
             outputs :: [Port]
-            outputs = map (Output . uncurry (flip Wire)) outps
+            outputs = map (Output . uncurry (flip Reg)) outps
 
             sigs :: [Signal]
             sigs =
@@ -68,9 +68,15 @@ compileStartDefn flags (C.StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) 
             assignInp = [Assign (Name "inp") $ mkConcat $ map (Name . fst) inps]
 
             ifRst :: V.Exp -> Stmt
-            ifRst start = If (Eq (LVal $ Name rst) $ LitBits 1 [rstSignal])
-                  (Block [ SeqAssign (Name "current_state") start ])
-                  (Block [ SeqAssign (Name "current_state") (LVal $ Name "done_or_next_state") ])
+            ifRst start = IfElse (Eq (LVal $ Name rst) $ LitBits 1 [rstSignal])
+                  (Block
+                        [ SeqAssign (Name "current_state") start
+                        , rstOutputs -- TODO(chathhorn): not sure how to handle.
+                        ])
+                  (Block
+                        [ SeqAssign (Name "current_state") (LVal $ Name "done_or_next_state")
+                        , assignOutputs
+                        ])
 
             ifDone :: V.Exp -> [Stmt]
             ifDone loop = pure $ Assign (Name "done_or_next_state") $
@@ -78,9 +84,13 @@ compileStartDefn flags (C.StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) 
                         loop
                         (LVal $ Name "current_state")
 
-            assignOutputs :: [Stmt]
-            assignOutputs = fst $ foldl'
-                  (\ (as, off) (n, sz) -> (as <> [Assign (Name n) (LVal $ Range "current_state" off (off + sz - 1))], off + sz)) ([], 1) outps
+            rstOutputs :: Stmt
+            rstOutputs = Block $ map (flip SeqAssign LitZero . Name . fst) outps
+
+            assignOutputs :: Stmt
+            assignOutputs = If (Eq (LVal $ Element "current_state" 0) $ LitBits 1 [One]) $ Block $ fst $ foldl'
+                  (\ (as, off) (n, sz) -> (as <> [SeqAssign (Name n) (LVal $ Range "current_state" off (off + sz - 1))], off + sz))
+                  ([], 1) outps
 
             ---
 
@@ -138,7 +148,7 @@ compileExp :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadErr
 compileExp flags lvars = \ case
       LVar _  _ (lkupLVal -> Just x) -> pure (x, [])
       LVar an _ _                    -> failAt an $ "ToVerilog: compileExp: encountered unknown LVar."
-      Lit _ sz v       -> do
+      Lit _ sz v                     -> do
             n <- newWire sz "lit"
             pure (n, [Assign n $ LitInt sz v])
       Call _ sz (Global g) es ps els -> do
@@ -164,7 +174,7 @@ compileExp flags lvars = \ case
       Call _ sz Id es ps els -> do
             Name n  <- newWire (sum $ map sizeOf es) "idPat"
             let args  = patArgs n ps
-            mkCall sz n es ps els $ Concat $ map LVal args
+            mkCall sz n es ps els $ mkConcat args
       Call _ sz (Const v) es ps els -> do
             Name n  <- newWire (sum $ map sizeOf es) "litPat"
             mkCall sz n es ps els $ LitInt sz v
@@ -187,7 +197,7 @@ compileExp flags lvars = \ case
 mkConcat :: [LVal] -> V.Exp
 mkConcat = \ case
       [e] -> LVal e
-      es  -> Concat $ map LVal es
+      es  -> Concat $ map LVal $ reverse es
 
 binOp :: Name -> Maybe (V.Exp -> V.Exp -> V.Exp)
 binOp = flip lookup primBinOps

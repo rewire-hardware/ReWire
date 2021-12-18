@@ -54,7 +54,8 @@ instance Pretty Signal where
             Reg sz n  -> text "reg"  <+> ppBVName sz n
 
 data Stmt = Always [Sensitivity] Stmt
-          | If Exp Stmt Stmt
+          | IfElse Exp Stmt Stmt
+          | If Exp Stmt
           | Assign LVal Exp
           | SeqAssign LVal Exp
           | ParAssign LVal Exp
@@ -65,7 +66,8 @@ data Stmt = Always [Sensitivity] Stmt
 instance Pretty Stmt where
       pretty = \ case
             Always sens stmt      -> text "always" <+> text "@" <+> parens (hsep $ punctuate (text " or") $ map pretty sens) <+> pretty stmt
-            If c thn els          -> text "if" <+> parens (pretty c) <+> pretty thn <+> text "else" <+> pretty els
+            IfElse c thn els      -> text "if" <+> parens (pretty c) <+> pretty thn <+> text "else" <+> pretty els
+            If c thn              -> text "if" <+> parens (pretty c) <+> pretty thn
             Assign lv v           -> text "assign" <+> pretty lv <+> text "="  <+> pretty v <> semi
             SeqAssign lv v        ->                   pretty lv <+> text "="  <+> pretty v <> semi
             ParAssign lv v        ->                   pretty lv <+> text "<=" <+> pretty v <> semi
@@ -115,6 +117,7 @@ data Exp = Add Exp Exp
          | Cond Exp Exp Exp
          | Concat [Exp]
          | Repl Int Exp
+         | LitZero
          | LitInt Size Int
          | LitBits Size [Bit]
          | LVal LVal
@@ -163,6 +166,7 @@ instance Pretty Exp where
             Cond e1 e2 e3   -> parens (pretty e1) <+> text "?" <+> parens (pretty e2) <+> colon <+> parens (pretty e3)
             Concat es       -> braces $ hsep $ punctuate comma $ map pretty es
             Repl i e        -> braces $ pretty i <> braces (pretty e)
+            LitZero         -> text "0"
             LitInt w v      -> pretty w <> text "'d" <> pretty v
             LitBits w v     -> pretty w <> text "'b" <> hcat (map pretty v)
             LVal x          -> pretty x

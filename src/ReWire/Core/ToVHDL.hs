@@ -195,6 +195,20 @@ compileStartDefn flags (StartDefn an inps outps (n_loopfun, t_loopfun@(Sig _ (ar
                         (Just (ExprName "current_state"))
                   , ClkProcess "clk" $ Assign (LHSName "current_state") (ExprName "next_state") : outputs
                   , Assign (LHSName "inp") $ foldl' ExprConcat (ExprBitString []) $ map (ExprName . fst) inps
+
+             -- TODO(chathhorn): fix output.
+             --      , WithAssign (ExprSlice (ExprName "current_state") 0 0) (LHSName "outp")
+             --               [ ( ExprConcat (ExprBitString [One])
+             --                        ( ExprConcat (ExprSlice (ExprName "current_state") 1 outsize)
+             --                              pad_for_out ) -- "1" & (current_state[1 to outsize] & pad_for_out)
+             --                                            -- MSB
+             --                 , ExprBitString [One]
+             --                 )
+             --               ]
+             --           (Just ( ExprConcat (ExprBitString [Zero])
+             --                        ( ExprConcat (ExprSlice (ExprName "current_state") 1 ressize)
+             --                              pad_for_res) ) --  "0" & (current_state[1 to ressize] & pad_for_res)
+             --           )
                   ]
       where rstSignal :: Bit
             rstSignal | FlagInvertReset `elem` flags = Zero

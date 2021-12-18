@@ -391,7 +391,7 @@ instance Parenless MatchPat where
 instance Pretty MatchPat where
       pretty = \ case
             MatchPatCon _ _ (n2s -> c) ps | isTupleCtor c -> parens $ hsep $ punctuate comma $ map pretty ps
-            MatchPatCon _ _ n ps                          -> pretty n <+> hsep (map mparens ps)
+            MatchPatCon _ _ n ps                          -> text (n2s n) <+> hsep (map mparens ps)
             MatchPatVar _ t                               -> parens $ text "*" <+> text "::" <+> pretty t
             MatchPatWildCard _ t                          -> parens $ text "_" <+> text "::" <+> pretty t
 
