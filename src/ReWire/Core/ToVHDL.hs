@@ -3,7 +3,7 @@
 module ReWire.Core.ToVHDL (compileProgram) where
 
 import ReWire.Annotation
-import ReWire.Core.Syntax as C hiding (Name)
+import ReWire.Core.Syntax as C hiding (Name, Index, Size)
 import ReWire.Error
 import ReWire.Core.Mangle
 import ReWire.VHDL.Syntax as V
@@ -12,29 +12,30 @@ import ReWire.Flags (Flag (..))
 import Control.Monad (zipWithM)
 import Control.Monad.Reader (ReaderT (..), ask)
 import Control.Monad.State (StateT (..), get, put, lift)
-import Data.List (find, foldl')
+import Data.List (genericLength, find, foldl')
 import Data.List.Split (splitOn)
 import Data.Bits (testBit)
 import Data.Text (Text, pack)
 
 import TextShow (showt)
 
-type CM m = StateT ([Signal], [Component], Int) (ReaderT [Defn] m)
+type CM m = StateT ([Signal], [Component], Index) (ReaderT [Defn] m)
 
 askDefns :: Monad m => CM m [Defn]
 askDefns = ask
 
-nvec :: Int -> Int -> [Bit]
+nvec :: Value -> Size -> [Bit]
 nvec n width = nvec' 0 []
-  where nvec' pos bits | pos >= width = bits
-                       | otherwise    = nvec' (pos + 1) $ (if testBit n pos then One else Zero) : bits
+      where nvec' :: Index -> [Bit] -> [Bit]
+            nvec' pos bits | pos >= width = bits
+                           | otherwise    = nvec' (pos + 1) $ (if testBit n $ fromEnum pos then One else Zero) : bits
 
 getTyPorts :: Monad m => C.Sig -> CM m [Port]
 getTyPorts (Sig _ argsizes ressize) = do
       let argnames = zipWith (\ _ x -> "arg" <> showt x) argsizes [0::Int ..]
           argports = zipWith (\ n x -> Port n In (TyStdLogicVector x)) argnames argsizes
           resport  = Port "res" Out (TyStdLogicVector ressize)
-      pure $ argports ++ [resport]
+      pure $ argports <> [resport]
 
 mkDefnEntity :: Monad m => Defn -> CM m Entity
 mkDefnEntity (Defn _ n t _) = Entity (mangle n) <$> getTyPorts t
@@ -48,7 +49,7 @@ freshName s = do
 addSignal :: Monad m => Text -> V.Ty -> CM m ()
 addSignal n t = do
       (sigs, comps, ctr) <- get
-      put (sigs ++ [Signal n t], comps, ctr)
+      put (sigs <> [Signal n t], comps, ctr)
 
 addComponent :: Monad m => Annote -> Name -> C.Sig -> CM m ()
 addComponent _ i t = do
@@ -59,13 +60,14 @@ addComponent _ i t = do
                   ps <- getTyPorts t
                   put (sigs, Component (mangle i) ps : comps, ctr)
 
-compilePat :: Monad m => Name -> Int -> Pat -> CM m (Expr, [Expr])  -- first Expr is for whether match (std_logic); remaining Exprs are for extracted fields
+-- | First Expr is for whether match (std_logic); remaining Exprs are for extracted fields.
+compilePat :: Monad m => Name -> Index -> Pat -> CM m (Expr, [Expr])
 compilePat nscr offset = \ case
       PatVar _ s       -> pure (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + s - 1)])
       PatWildCard _ _  -> pure (ExprBoolConst True, [])
       PatLit _ tagSize tagValue -> do
             let tag    = nvec tagValue tagSize
-                ematch = ExprIsEq (ExprSlice (ExprName nscr) offset (offset + length tag - 1)) $ ExprBitString tag
+                ematch = ExprIsEq (ExprSlice (ExprName nscr) offset (offset + genericLength tag - 1)) $ ExprBitString tag
             pure (ematch, [])
 
 askGIdTy :: MonadError AstError m => Name -> CM m C.Sig
@@ -82,7 +84,7 @@ compileExps es = do
       sssns      <- mapM compileExp es
       let stmts   = concatMap fst sssns
           ns      = map snd sssns
-      pure  ( stmts ++
+      pure  ( stmts <>
                   [ Assign (LHSName n)
                         $ simplifyConcat
                         $ foldl' ExprConcat (ExprBitString [])
@@ -114,9 +116,9 @@ compileExp = \ case
             n_call               <- (<> "_call") <$> freshName (mangle gid)
             t_gid                <- askGIdTy gid
             addComponent an gid t_gid
-            let argns            =  map (\ n -> "arg" <> showt n) ([0..]::[Int])
-                pm               =  PortMap (zip argns efields ++ [("res", ExprName n_gid)])
-            pure (stmts_escr ++ [Instantiate n_call (mangle gid) pm], n_gid)
+            let argns            =  map (("arg" <>) . showt) [0::Index ..]
+                pm               =  PortMap (zip argns efields <> [("res", ExprName n_gid)])
+            pure (stmts_escr <> [Instantiate n_call (mangle gid) pm], n_gid)
       Call an sz (Global gid) escr ps ealt -> do
             n                    <- (<> "_res") <$> freshName "match"
             addSignal n $ TyStdLogicVector sz
@@ -134,13 +136,13 @@ compileExp = \ case
             (stmts_ealt, n_ealt) <- compileExps ealt
             t_gid                <- askGIdTy gid
             addComponent an gid t_gid
-            let argns             = map (\ n -> "arg" <> showt n) ([0..]::[Int])
-                pm                = PortMap (zip argns efields ++ [("res", ExprName n_gid)])
-            pure (stmts_escr ++
+            let argns             = map (("arg" <>) . showt) [0::Index ..]
+                pm                = PortMap (zip argns efields <> [("res", ExprName n_gid)])
+            pure (stmts_escr <>
                     [WithAssign ematch (LHSName n)
                                 [(ExprName n_gid, ExprBoolConst True)]
                                  (Just (ExprName n_ealt)),
-                     Instantiate n_call (mangle gid) pm] ++
+                     Instantiate n_call (mangle gid) pm] <>
                     stmts_ealt,
                     n)
       -- TODO(chathhorn): extern
@@ -150,14 +152,14 @@ compileExp = \ case
       --       sssns       <- mapM compileExp args
       --       let stmts   =  concatMap fst sssns
       --           ns      =  map snd sssns
-      --       pure (stmts ++ [Assign (LHSName n) (ExprFunCall i (map ExprName ns))], n)
+      --       pure (stmts <> [Assign (LHSName n) (ExprFunCall i (map ExprName ns))], n)
 
 mkDefnArch :: MonadError AstError m => Defn -> CM m Architecture
 mkDefnArch (Defn _ n _ es) = do
       put ([], [], 0) -- empty out the signal and component store, reset name counter
       (stmts, nres)    <- compileExps es
       (sigs, comps, _) <- get
-      pure $ Architecture (mangle n <> "_impl") (mangle n) sigs comps (stmts ++ [Assign (LHSName "res") (ExprName nres)])
+      pure $ Architecture (mangle n <> "_impl") (mangle n) sigs comps (stmts <> [Assign (LHSName "res") (ExprName nres)])
 
 compileStartDefn :: MonadError AstError m => [Flag] -> StartDefn -> CM m Unit
 compileStartDefn flags (StartDefn an inps outps (n_loopfun, t_loopfun@(Sig _ (arg0size:_) _)) (n_startstate, t_startstate)) = do

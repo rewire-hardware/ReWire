@@ -14,16 +14,16 @@ import Data.HashMap.Strict (HashMap)
 import Data.Maybe (fromMaybe)
 import Data.Either (partitionEithers)
 import Data.Text (Text)
-import Data.List (findIndex)
+import Data.List (findIndex, genericLength)
 import TextShow (showt)
 
 import qualified Data.HashMap.Strict as Map
 import qualified ReWire.Core.Syntax  as C
 import qualified ReWire.Crust.Syntax as M
 
-type SizeMap = HashMap M.Ty Int
+type SizeMap = HashMap M.Ty C.Size
 type ConMap = (HashMap (Name M.TyConId) [Name M.DataConId], HashMap (Name M.DataConId) M.Ty)
-type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) Int) m)
+type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) C.Index) m)
 
 toCore :: (Fresh m, MonadError AstError m) => [Text] -> [Text] -> M.FreeProgram -> m C.Program
 toCore inps outps (ts, _, vs) = fst <$> flip runStateT mempty (do
@@ -55,8 +55,8 @@ transDefn inps outps conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) | n2s n
                               t_out'    <- mapM ((`runReaderT` conMap) . sizeOf an) $ M.flattenTyApp t_out
                               loopTy'   <- runReaderT (transType loopTy) conMap
                               state0Ty' <- runReaderT (transType state0Ty) conMap
-                              pure $ Left $ C.StartDefn an (zip (inps  <> zipWith (<>) (repeat "inp")  (map showt [0::Int ..])) (filter (> 0) t_in'))
-                                                           (zip (outps <> zipWith (<>) (repeat "outp") (map showt [0::Int ..])) (filter (> 0) t_out'))
+                              pure $ Left $ C.StartDefn an (zip (inps  <> zipWith (<>) (repeat "inp")  (map showt [0::C.Index ..])) (filter (> 0) t_in'))
+                                                           (zip (outps <> zipWith (<>) (repeat "outp") (map showt [0::C.Index ..])) (filter (> 0) t_out'))
                                                            (n2s loop, loopTy')
                                                            (n2s state0, state0Ty')
                         _ -> failAt an $ "transDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " <> prettyPrint e'
@@ -80,8 +80,8 @@ transExp = \ case
                   argSizes <- mapM (sizeOf an . M.typeOf) args
                   pure [C.Call an sz (C.Extern s) args' (map (C.PatVar an) argSizes) []]
             (M.Con an t d : args)       -> do
-                  (v, w) <- ctorId an (snd $ M.flattenArrow t) d
-                  args'    <- concat <$> mapM transExp args
+                  (v, w) <- ctorTag an (snd $ M.flattenArrow t) d
+                  args'  <- concat <$> mapM transExp args
                   sz     <- sizeOf an $ M.typeOf e
                   szArgs <- sum <$> mapM (sizeOf an . M.typeOf) args
                   let tag = C.Lit an w v
@@ -96,7 +96,7 @@ transExp = \ case
                   sz <- sizeOf an t
                   pure [C.LVar an sz i]
       M.Con an t d                      -> do
-            (v, w) <- ctorId an t d
+            (v, w) <- ctorTag an t d
             sz     <- sizeOf an t
             let tag = C.Lit an w v
                 pad = C.Lit an (sz - w) 0
@@ -117,7 +117,7 @@ transExp = \ case
 transPat :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.MatchPat -> ReaderT ConMap m [C.Pat]
 transPat = \ case
       M.MatchPatCon an t d ps -> do
-            (v, w) <- ctorId an t d
+            (v, w) <- ctorTag an t d
             sz     <- sizeOf an t
             szArgs <- sum <$> mapM (sizeOf an . M.typeOf) ps
             let tag = C.PatLit an w v
@@ -154,7 +154,7 @@ apply s (M.TyApp an t1 t2) = M.TyApp an (apply s t1) $ apply s t2
 apply s t@(M.TyVar _ _ i)  = fromMaybe t $ lookup (showt i) s
 apply _ t                  = t
 
-ctorWidth :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => M.Ty -> Name M.DataConId -> m Int
+ctorWidth :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => M.Ty -> Name M.DataConId -> m C.Size
 ctorWidth t d = do
       let t'            =  snd $ M.flattenArrow t
       getCtorType d >>= \ case
@@ -171,16 +171,16 @@ getCtors n = asks (fromMaybe [] . Map.lookup n . fst)
 getCtorType :: MonadReader ConMap m => Name M.DataConId -> m (Maybe M.Ty)
 getCtorType n = asks (Map.lookup n . snd)
 
-ctorId :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => Annote -> M.Ty -> Name M.DataConId -> m (Int, Int)
-ctorId an t d = case take 1 $ M.flattenTyApp t of
+ctorTag :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => Annote -> M.Ty -> Name M.DataConId -> m (C.Value, C.Size)
+ctorTag an t d = case take 1 $ M.flattenTyApp t of
       [M.TyCon _ c] -> do
             ctors      <- getCtors c
             case findIndex ((== n2s d) . n2s) ctors of
-                  Just idx -> pure (idx, ceilLog2 $ length ctors)
-                  Nothing  -> failAt an $ "ToCore: ctorId: unknown ctor: " <> prettyPrint (n2s d) <> " of type " <> prettyPrint (n2s c)
-      _             -> failAt an $ "ToCore: ctorId: unexpected type: " <> prettyPrint t
+                  Just idx -> pure (toInteger idx, ceilLog2 $ genericLength ctors)
+                  Nothing  -> failAt an $ "ToCore: ctorTag: unknown ctor: " <> prettyPrint (n2s d) <> " of type " <> prettyPrint (n2s c)
+      _             -> failAt an $ "ToCore: ctorTag: unexpected type: " <> prettyPrint t
 
-sizeOf :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => Annote -> M.Ty -> m Int
+sizeOf :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => Annote -> M.Ty -> m C.Size
 sizeOf an t = do
       m <- get
       s <- case Map.lookup t m of
@@ -189,12 +189,12 @@ sizeOf an t = do
                   [M.TyCon _ c] -> do
                         ctors      <- getCtors c
                         ctorWidths <- mapM (ctorWidth t) ctors
-                        pure $ ceilLog2 (length ctors) + maximum (0 : ctorWidths)
+                        pure $ ceilLog2 (genericLength ctors) + maximum (0 : ctorWidths)
                   _             -> pure 0
             Just s -> pure s
       put $ Map.insert t s m
       pure s
 
-ceilLog2 :: Int -> Int
-ceilLog2 n | n < 1 = 0
-ceilLog2 n = ceiling $ logBase 2 (fromIntegral n :: Double)
+ceilLog2 :: Integral a => a -> a
+ceilLog2 n | toInteger n < 1 = 0
+ceilLog2 n                   = ceiling $ logBase 2 (fromIntegral n :: Double)

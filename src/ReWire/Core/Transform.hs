@@ -6,6 +6,7 @@ import ReWire.Annotation (unAnn)
 import Control.Arrow ((&&&))
 import Control.Monad.Reader (runReaderT, MonadReader (..), asks)
 import Data.Containers.ListUtils (nubOrd)
+import Data.List (genericLength, genericIndex)
 
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
@@ -27,30 +28,32 @@ reDefn d = do
             , defnBody = body'
             }
 
-renumLVars :: Sig -> LId -> Maybe (LId, Int)
-renumLVars (Sig _ szVec _) x = if x >= 0 && x < length szVec && szVec !! x > 0
-      then Just (x - preZeros, szVec !! x)
+renumLVars :: Sig -> LId -> Maybe (LId, Size)
+renumLVars (Sig _ szVec _) x = if x >= 0 && x < genericLength szVec && genericIndex szVec x > 0
+      then Just (x - preZeros, genericIndex szVec x)
       else Nothing
-      where preZeros :: Int
+      where preZeros :: LId
             preZeros = preZeros' szVec 0 x
 
-            preZeros' :: [Int] -> Int -> Int -> Int
-            preZeros' _ n 0  = n
-            preZeros' [] n _ = n
+            preZeros' :: [Size] -> LId -> LId -> LId
+            preZeros' _         n 0 = n
+            preZeros' []        n _ = n
             preZeros' (0 : szs) n m = preZeros' szs (n + 1) (m - 1)
-            preZeros' (_ : szs) n m = preZeros' szs n (m - 1)
+            preZeros' (_ : szs) n m = preZeros' szs n       (m - 1)
 
-reExp :: (MonadReader DefnMap m, MonadFail m) => (LId -> Maybe (LId, Int)) -> Exp -> m [Exp]
+reExp :: (MonadReader DefnMap m, MonadFail m) => (LId -> Maybe (LId, Size)) -> Exp -> m [Exp]
 reExp rn = \ case
-      LVar a s l                                                  -> pure $ [LVar a s $ maybe l fst $ rn l]
-      Lit a s v                                                   -> pure $ [Lit a s v]
-      Call _ _ (Global g) es _ _  | sum (map sizeOf es) == 0      -> do
+      LVar a s l                                   -> pure $ [LVar a s $ maybe l fst $ rn l]
+      Lit a s v                                    -> pure $ [Lit a s v]
+      Call _ _ (Global g) es _ _
+            | sum (map sizeOf es) == 0             -> do
             Just body <- asks (Map.lookup g)
             reExps rn body
-      Call _ _ (Global g) _ ps [] | length (filter isVar ps) == 0 -> do
+      Call _ _ (Global g) _ ps []
+            | length (filter isVar ps) == 0 -> do
             Just body <- asks (Map.lookup g)
             reExps rn body
-      Call a s (Global g) es ps els                               -> do
+      Call a s (Global g) es ps els                -> do
             Just body <- asks (Map.lookup g)
             es'       <- reExps rn es
             els'      <- reExps rn els
@@ -60,7 +63,7 @@ reExp rn = \ case
                 ps' | isConst body = mergePats $ map varToWild ps
                     | otherwise    = mergePats ps
             pure [Call a s g' es' ps' (if alwaysMatches ps' then [] else els')]
-      Call a s g es ps els                                        -> do
+      Call a s g es ps els                         -> do
             es'       <- reExps rn es
             els'      <- reExps rn els
             let ps'    = mergePats ps
@@ -87,14 +90,14 @@ reExp rn = \ case
                   [Lit {}] -> True
                   _        -> False
 
-            toConst :: [Exp] -> Int
+            toConst :: [Exp] -> Value
             toConst = \ case
                   [Lit _ _ v] -> v
                   _           -> (-1)
 
             patToExp :: [Pat] -> [Exp]
-            patToExp = zipWith patToExp' [0::Int ..]
-                  where patToExp' :: Int -> Pat -> Exp
+            patToExp = zipWith patToExp' [0::Index ..]
+                  where patToExp' :: Index -> Pat -> Exp
                         patToExp' i = \ case
                               PatVar      an sz   -> LVar an sz i
                               PatLit      an sz v -> Lit  an sz v
@@ -104,7 +107,7 @@ reExp rn = \ case
             alwaysMatches :: [Pat] -> Bool
             alwaysMatches = all (\ p -> isWild p || isVar p)
 
-reExps :: (MonadReader DefnMap m, MonadFail m) => (LId -> Maybe (LId, Int)) -> [Exp] -> m [Exp]
+reExps :: (MonadReader DefnMap m, MonadFail m) => (LId -> Maybe (LId, Size)) -> [Exp] -> m [Exp]
 reExps rn es = mergeLits <$> (concat <$> mapM (reExp rn) (filter ((> 0) . sizeOf) es))
 
 mergeLits :: [Exp] -> [Exp]

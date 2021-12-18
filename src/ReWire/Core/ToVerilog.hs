@@ -4,7 +4,7 @@ module ReWire.Core.ToVerilog (compileProgram) where
 
 import ReWire.Error
 import ReWire.Flags (Flag (..))
-import ReWire.Core.Syntax as C hiding (Name)
+import ReWire.Core.Syntax as C hiding (Name, Size, Index)
 import ReWire.Verilog.Syntax as V
 import ReWire.Core.Mangle (mangle)
 
@@ -179,7 +179,7 @@ compileExp flags lvars = \ case
             Name n  <- newWire (sum $ map sizeOf es) "litPat"
             mkCall sz n es ps els $ LitInt sz v
       Call an _ (Extern ex) _ _ _ -> failAt an $ "ToVerilog: compileExp: unknown extern: " <> ex
-      where mkCall :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadError AstError m, MonadReader DefnMap m) => C.Size -> Name -> [C.Exp] -> [Pat] -> [C.Exp] -> V.Exp -> m (V.LVal, [Stmt])
+      where mkCall :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadError AstError m, MonadReader DefnMap m) => Size -> Name -> [C.Exp] -> [Pat] -> [C.Exp] -> V.Exp -> m (V.LVal, [Stmt])
             mkCall sz n es ps els arg = do
                   m              <- newWire sz "call"
                   (ens, stmts)   <- compileExps flags lvars es
@@ -191,8 +191,8 @@ compileExp flags lvars = \ case
                           else Assign m $ Cond cond arg $ mkConcat ens'
                         ])
 
-            lkupLVal :: Int -> Maybe LVal
-            lkupLVal = flip lookup (zip [0::Int ..] lvars)
+            lkupLVal :: Index -> Maybe LVal
+            lkupLVal = flip lookup (zip [0::Index ..] lvars)
 
 mkConcat :: [LVal] -> V.Exp
 mkConcat = \ case
@@ -247,7 +247,7 @@ newWire sz n = do
 -- | Returns a boolean expression that is true when the pattern matches.
 patMatches :: Name -> [Pat] -> V.Exp
 patMatches x = snd . foldl' patMatch (0, bTrue)
-      where patMatch :: (Int, V.Exp) -> Pat -> (Int, V.Exp)
+      where patMatch :: (Index, V.Exp) -> Pat -> (Index, V.Exp)
             patMatch (off, e) = \ case
                   PatVar _ sz      -> (off + sz, e)
                   PatWildCard _ sz -> (off + sz, e)
@@ -256,19 +256,19 @@ patMatches x = snd . foldl' patMatch (0, bTrue)
 -- | Returns a list of ranges bound by pattern variables.
 patArgs :: Name -> [Pat] -> [LVal]
 patArgs x = snd . foldl' patArg (0, [])
-      where patArg :: (Int, [LVal]) -> Pat -> (Int, [LVal])
+      where patArg :: (Index, [LVal]) -> Pat -> (Index, [LVal])
             patArg (off, lvs) = \ case
                   PatVar _ sz      -> (off + sz, lvs <> [Range x off (off + sz - 1)])
                   PatWildCard _ sz -> (off + sz, lvs)
                   PatLit _ sz _    -> (off + sz, lvs)
 
-argsSize :: [Pat] -> Int
+argsSize :: [Pat] -> Size
 argsSize = sum . map patToSize
-      where patToSize :: Pat -> Int
+      where patToSize :: Pat -> Size
             patToSize = \ case
                   PatVar _ sz -> sz
                   _           -> 0
 
-toInput :: Text -> C.Size -> Port
+toInput :: Text -> Size -> Port
 toInput n sz = Input $ Wire sz n
 

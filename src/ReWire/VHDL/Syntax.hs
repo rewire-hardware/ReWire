@@ -8,6 +8,9 @@ import Data.List (intersperse)
 import Data.Containers.ListUtils (nubOrd)
 import Data.Maybe (catMaybes, listToMaybe)
 
+type Size  = Word
+type Index = Word
+
 newtype Program = Program { programUnits :: [Unit] }
       deriving (Eq, Show)
 
@@ -88,10 +91,10 @@ instance Pretty Direction where
       pretty Out = text "out"
 
 data Ty = TyStdLogic
-        | TyStdLogicVector !Int
+        | TyStdLogicVector !Size
         | TyBool
         | TyClock -- not a real VHDL type, represented as std_logic.
-        | TyRegister !Name !Int -- not real VHDL, just a hack.
+        | TyRegister !Name !Size -- not real VHDL, just a hack.
         deriving (Eq, Show)
 
 instance Pretty Ty where
@@ -139,7 +142,7 @@ data Expr = ExprName !Name
           | ExprBit !Bit
           | ExprBitString ![Bit]
           | ExprConcat !Expr !Expr
-          | ExprSlice !Expr !Int !Int
+          | ExprSlice !Expr !Index !Index
           | ExprIsEq !Expr !Expr
           | ExprBoolConst !Bool
           | ExprAnd !Expr !Expr

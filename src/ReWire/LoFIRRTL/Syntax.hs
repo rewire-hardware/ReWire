@@ -17,6 +17,8 @@ import safe Prettyprinter
       )
 import ReWire.Pretty (text)
 
+type Size = Word
+
 data Id = Id !Text
       deriving (Eq, Generic, Typeable, Data, Show)
       deriving TextShow via FromGeneric Id
@@ -54,8 +56,8 @@ instance Pretty Port where
             Input x t  -> text "input" <+> pretty x <+> colon <+> pretty t
             Output x t -> text "output" <+> pretty x <+> colon <+> pretty t
 
-data Type = UIntTy !Int
-          | SIntTy !Int
+data Type = UIntTy !Size
+          | SIntTy !Size
           | ClockTy
       deriving (Eq, Generic, Typeable, Data, Show)
       deriving TextShow via FromGeneric Type
@@ -81,7 +83,7 @@ data Stmt = Wire !Id !Type
           | Reg !Id !Type !Exp
           | RegReset !Id !Type !Exp !Exp !Exp
           -- id, type, depth, read latency, write latency, RUW, readers, writers, readwriters
-          | Mem !Id !Type !Int !Int !Int !RUW ![Id] ![Id] ![Id]
+          | Mem !Id !Type !Size !Size !Size !RUW ![Id] ![Id] ![Id]
           | Inst !Id !Id
           | Node !Id !Exp
           | Connect !Exp !Exp

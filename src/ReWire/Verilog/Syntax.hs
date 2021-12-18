@@ -12,8 +12,10 @@ newtype Program = Program { pgmModules :: [Module] }
 instance Pretty Program where
       pretty (Program mods) = vsep (intersperse empty $ map pretty mods)
 
-type Name = Text
-type Size = Int
+type Name  = Text
+type Size  = Word
+type Index = Word
+type Value = Integer
 
 data Module = Module
       { modName    :: Name
@@ -116,9 +118,9 @@ data Exp = Add Exp Exp
          | GtEq  Exp Exp
          | Cond Exp Exp Exp
          | Concat [Exp]
-         | Repl Int Exp
+         | Repl Size Exp
          | LitZero
-         | LitInt Size Int
+         | LitInt Size Value
          | LitBits Size [Bit]
          | LVal LVal
       deriving (Eq, Show)
@@ -187,8 +189,8 @@ instance Pretty Bit where
             X    -> text "x"
             Z    -> text "z"
 
-data LVal = Element Name Int
-          | Range Name Int Int
+data LVal = Element Name Index
+          | Range Name Index Index
           | Name Name
           | LVals [LVal]
       deriving (Eq, Show)

@@ -6,7 +6,8 @@ module ReWire.Core.Syntax
   , Pat (..)
   , StartDefn (..), Defn (..)
   , Program (..)
-  , Size, Name, Target (..), GId, LId
+  , Target (..)
+  , Size, Index, Name, Value, GId, LId
   , SizeAnnotated (..)
   ) where
 
@@ -14,26 +15,27 @@ import ReWire.Pretty
 import ReWire.Annotation
 
 import Data.Data (Typeable, Data(..))
-import Data.List (intersperse)
+import Data.List (intersperse, genericLength)
 import Data.Text (Text)
 import Prettyprinter (Pretty (..), Doc, vsep, (<+>), nest, hsep, parens, braces, punctuate, comma, dquotes)
 import GHC.Generics (Generic)
-
 import TextShow (TextShow (..), showt)
 import TextShow.Generic (FromGeneric (..))
 
 class SizeAnnotated a where
       sizeOf :: a -> Size
 
-type Size = Int
-type LId  = Int
-type GId = Text
-type Name = Text
+type Value = Integer
+type Size  = Word
+type Index = Word
+type LId   = Word
+type GId   = Text
+type Name  = Text
 
 data Target = Global GId
             | Extern Name
             | Id
-            | Const Int
+            | Const Value
       deriving (Eq, Ord, Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Target
 
@@ -69,7 +71,7 @@ instance Pretty Sig where
 
 ---
 
-data Exp = Lit  Annote !Size !Int
+data Exp = Lit  Annote !Size !Value
          | LVar Annote !Size !LId
          | Call Annote !Size !Target ![Exp] ![Pat] ![Exp]
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
@@ -104,8 +106,8 @@ instance Pretty Exp where
                   ppArgs ps = ppBV' $ map snd $ filter (isPatVar . fst) $ zip ps $ ppPats ps
 
 ppPats :: [Pat] -> [Doc an]
-ppPats = zipWith ppPats' [0::Int ..]
-      where ppPats' :: Int -> Pat -> Doc an
+ppPats = zipWith ppPats' [0::Index ..]
+      where ppPats' :: Index -> Pat -> Doc an
             ppPats' i = \ case
                   PatVar _ sz      -> text "p" <> pretty i <> text "::" <> text "BV" <> pretty sz
                   PatWildCard _ sz -> text "_" <> text "::" <> text "BV" <> pretty sz
@@ -115,7 +117,7 @@ ppPats = zipWith ppPats' [0::Int ..]
 
 data Pat = PatVar      Annote !Size
          | PatWildCard Annote !Size
-         | PatLit      Annote !Size !Int
+         | PatLit      Annote !Size !Value
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Pat
 
@@ -179,8 +181,8 @@ instance Pretty Defn where
             [ text n <+> text "::" <+> pretty sig
             , text n <+> hsep (map (text . ("$" <>) . showt) [0 .. arity sig - 1]) <+> text "=" <+> nest 2 (ppBV es)
             ]
-            where arity :: Sig -> Int
-                  arity (Sig _ args _) = length args
+            where arity :: Sig -> Size
+                  arity (Sig _ args _) = genericLength args
 
 ---
 
