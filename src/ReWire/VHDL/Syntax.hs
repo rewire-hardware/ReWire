@@ -9,7 +9,7 @@ import Data.Containers.ListUtils (nubOrd)
 import Data.Maybe (catMaybes, listToMaybe)
 
 type Size  = Word
-type Index = Word
+type Index = Int
 
 newtype Program = Program { programUnits :: [Unit] }
       deriving (Eq, Show)
@@ -99,10 +99,10 @@ data Ty = TyStdLogic
 
 instance Pretty Ty where
       pretty TyStdLogic           = text "std_logic"
-      pretty (TyStdLogicVector n) = text "std_logic_vector" <+> parens (text "0 to" <+> pretty (n - 1))
+      pretty (TyStdLogicVector n) = text "std_logic_vector" <+> parens (text "0 to" <+> pretty (toInteger(n) - 1))
       pretty TyBool               = text "boolean"
       pretty TyClock              = text "std_logic"
-      pretty (TyRegister _ n)     = text "std_logic_vector" <+> parens (text "0 to" <+> pretty (n - 1))
+      pretty (TyRegister _ n)     = text "std_logic_vector" <+> parens (text "0 to" <+> pretty (toInteger(n) - 1))
 
 data Stmt = Assign !LHS !Expr
           | WithAssign !Expr !LHS ![(Expr, Expr)] !(Maybe Expr)

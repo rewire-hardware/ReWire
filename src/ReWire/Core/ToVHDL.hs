@@ -27,8 +27,8 @@ askDefns = ask
 nvec :: Value -> Size -> [Bit]
 nvec n width = nvec' 0 []
       where nvec' :: Index -> [Bit] -> [Bit]
-            nvec' pos bits | pos >= width = bits
-                           | otherwise    = nvec' (pos + 1) $ (if testBit n $ fromEnum pos then One else Zero) : bits
+            nvec' pos bits | pos >= fromIntegral(width) = bits
+                           | otherwise                  = nvec' (pos + 1) $ (if testBit n $ fromEnum pos then One else Zero) : bits
 
 getTyPorts :: Monad m => C.Sig -> CM m [Port]
 getTyPorts (Sig _ argsizes ressize) = do
@@ -44,7 +44,7 @@ freshName :: Monad m => Text -> CM m Name
 freshName s = do
       (sigs, comps, ctr) <- get
       put (sigs, comps, ctr + 1)
-      pure (s <> "_" <> showt ctr)
+      pure (s <> showt ctr)
 
 addSignal :: Monad m => Text -> V.Ty -> CM m ()
 addSignal n t = do
@@ -63,7 +63,7 @@ addComponent _ i t = do
 -- | First Expr is for whether match (std_logic); remaining Exprs are for extracted fields.
 compilePat :: Monad m => Name -> Index -> Pat -> CM m (Expr, [Expr])
 compilePat nscr offset = \ case
-      PatVar _ s       -> pure (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + s - 1)])
+      PatVar _ s       -> pure (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + fromIntegral(s) - 1)])
       PatWildCard _ _  -> pure (ExprBoolConst True, [])
       PatLit _ tagSize tagValue -> do
             let tag    = nvec tagValue tagSize
@@ -79,7 +79,7 @@ askGIdTy i = do
 
 compileExps :: MonadError AstError m => [C.Exp] -> CM m ([Stmt], Name)
 compileExps es = do
-      n          <- (<> "_res") <$> freshName (mangle $ "slice")
+      n          <- (<> "Res") <$> freshName (mangle $ "slice")
       addSignal n $ TyStdLogicVector $ sum $ map sizeOf es
       sssns      <- mapM compileExp es
       let stmts   = concatMap fst sssns
@@ -98,41 +98,39 @@ compileExp :: MonadError AstError m => C.Exp -> CM m ([Stmt], Name)
 compileExp = \ case
       LVar _ _ i       -> pure ([], "arg" <> showt i)
       Lit _ litSize litValue -> do
-            n          <- (<> "_res") <$> freshName (mangle $ "lit_" <> showt litValue <> "_" <> showt litSize)
+            n          <- (<> "Res") <$> freshName (mangle $ "lit" <> showt litValue <> "x" <> showt litSize)
             addSignal n $ TyStdLogicVector litSize
             let litVec  = nvec litValue litSize
-            pure  ( [ Assign (LHSName n) $ ExprBitString litVec ]
-                  , n
-                  )
+            pure  ([ Assign (LHSName n) $ ExprBitString litVec ], n)
       Call an sz (Global gid) escr ps [] -> do
             (stmts_escr, n_escr) <- compileExps escr
 
-            let fieldwidths       = map sizeOf ps
-                fieldoffsets      = init $ scanl (+) 0 fieldwidths
-            efields              <- concatMap snd <$> zipWithM (compilePat n_escr) fieldoffsets ps
+            let fieldWidths       = map sizeOf ps
+                fieldOffsets      = init $ scanl (+) 0 fieldWidths
+            efields              <- concatMap snd <$> zipWithM (compilePat n_escr . fromIntegral) fieldOffsets ps
 
-            n_gid                <- (<> "_res") <$> freshName (mangle gid)
+            n_gid                <- (<> "Res") <$> freshName (mangle gid)
             addSignal n_gid $ TyStdLogicVector sz
-            n_call               <- (<> "_call") <$> freshName (mangle gid)
+            n_call               <- (<> "Call") <$> freshName (mangle gid)
             t_gid                <- askGIdTy gid
             addComponent an gid t_gid
             let argns            =  map (("arg" <>) . showt) [0::Index ..]
                 pm               =  PortMap (zip argns efields <> [("res", ExprName n_gid)])
             pure (stmts_escr <> [Instantiate n_call (mangle gid) pm], n_gid)
       Call an sz (Global gid) escr ps ealt -> do
-            n                    <- (<> "_res") <$> freshName "match"
+            n                    <- (<> "Res") <$> freshName "match"
             addSignal n $ TyStdLogicVector sz
             (stmts_escr, n_escr) <- compileExps escr
 
-            let fieldwidths       = map sizeOf ps
-                fieldoffsets      = init $ scanl (+) 0 fieldwidths
-            rs                   <- zipWithM (compilePat n_escr) fieldoffsets ps
+            let fieldWidths       = map sizeOf ps
+                fieldOffsets      = init $ scanl (+) 0 fieldWidths
+            rs                   <- zipWithM (compilePat n_escr . fromIntegral) fieldOffsets ps
             let ematch            = foldl' ExprAnd (ExprBoolConst True) $ map fst rs
                 efields           = concatMap snd rs
 
-            n_gid                <- (<> "_res") <$> freshName (mangle gid)
+            n_gid                <- (<> "Res") <$> freshName (mangle gid)
             addSignal n_gid $ TyStdLogicVector sz
-            n_call               <- (<> "_call") <$> freshName (mangle gid)
+            n_call               <- (<> "Call") <$> freshName (mangle gid)
             (stmts_ealt, n_ealt) <- compileExps ealt
             t_gid                <- askGIdTy gid
             addComponent an gid t_gid
@@ -147,7 +145,7 @@ compileExp = \ case
                     n)
       -- TODO(chathhorn): extern
       -- Extern _ sz i args -> do
-      --       n           <- (<> "_res") <$> freshName i
+      --       n           <- (<> "Res") <$> freshName i
       --       addSignal n $ TyStdLogicVector sz
       --       sssns       <- mapM compileExp args
       --       let stmts   =  concatMap fst sssns
@@ -159,7 +157,7 @@ mkDefnArch (Defn _ n _ es) = do
       put ([], [], 0) -- empty out the signal and component store, reset name counter
       (stmts, nres)    <- compileExps es
       (sigs, comps, _) <- get
-      pure $ Architecture (mangle n <> "_impl") (mangle n) sigs comps (stmts <> [Assign (LHSName "res") (ExprName nres)])
+      pure $ Architecture (mangle n <> "Impl") (mangle n) sigs comps (stmts <> [Assign (LHSName "res") (ExprName nres)])
 
 compileStartDefn :: MonadError AstError m => [Flag] -> StartDefn -> CM m Unit
 compileStartDefn flags (StartDefn an inps outps (n_loopfun, t_loopfun@(Sig _ (arg0size:_) _)) (n_startstate, t_startstate)) = do
@@ -185,7 +183,7 @@ compileStartDefn flags (StartDefn an inps outps (n_loopfun, t_loopfun@(Sig _ (ar
             Architecture "top_level_impl" "top_level" sigs comps $
                   [ Instantiate "start_call" (mangle n_startstate) (PortMap [("res", ExprName "start_state")])
                   , Instantiate "loop_call" (mangle n_loopfun) (PortMap
-                        [ ("arg0", ExprSlice (ExprName "current_state") (1 + outpSize) (1 + outpSize + arg0size - 1))
+                        [ ("arg0", ExprSlice (ExprName "current_state") (1 + fromIntegral(outpSize)) (1 + fromIntegral(outpSize + arg0size) - 1))
                         , ("arg1", ExprName "inp")
                         , ("res", ExprName "loop_out")
                         ] )
@@ -221,7 +219,9 @@ compileStartDefn flags (StartDefn an inps outps (n_loopfun, t_loopfun@(Sig _ (ar
                 | otherwise                    = "rst"
 
             outputs :: [Stmt]
-            outputs = fst $ foldl' (\ (as, off) (n, sz) -> (as <> [Assign (LHSName n) (ExprSlice (ExprName "current_state") off (off + sz - 1))], off + sz)) ([], 1) outps
+            outputs = fst $ foldl' (\ (as, off) (n, sz) ->
+                  (as <> [Assign (LHSName n) (ExprSlice (ExprName "current_state") off (off + fromIntegral(sz) - 1))], off + fromIntegral(sz)))
+                  ([], 1) outps
 
 compileStartDefn _ (StartDefn an _ _ _ _) = failAt an "toVHDL: compileStartDefn: start definition with invalid signature."
 

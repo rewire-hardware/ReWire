@@ -96,8 +96,8 @@ reExp rn = \ case
                   _           -> (-1)
 
             patToExp :: [Pat] -> [Exp]
-            patToExp = zipWith patToExp' [0::Index ..]
-                  where patToExp' :: Index -> Pat -> Exp
+            patToExp = zipWith patToExp' [0::LId ..]
+                  where patToExp' :: LId -> Pat -> Exp
                         patToExp' i = \ case
                               PatVar      an sz   -> LVar an sz i
                               PatLit      an sz v -> Lit  an sz v

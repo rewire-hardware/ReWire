@@ -42,7 +42,7 @@ instance Pretty Port where
             Output s -> text "output" <+> pretty s
 
 ppBVName :: Size -> Name -> Doc an
-ppBVName sz n = brackets (pretty (sz - 1) <> colon <> text "0") <+> text n
+ppBVName sz n = brackets (pretty (toInteger(sz) - 1) <> colon <> text "0") <+> text n
 
 data Signal = Wire Size Name
             | Reg  Size Name

@@ -23,7 +23,7 @@ import qualified ReWire.Crust.Syntax as M
 
 type SizeMap = HashMap M.Ty C.Size
 type ConMap = (HashMap (Name M.TyConId) [Name M.DataConId], HashMap (Name M.DataConId) M.Ty)
-type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) C.Index) m)
+type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) C.LId) m)
 
 toCore :: (Fresh m, MonadError AstError m) => [Text] -> [Text] -> M.FreeProgram -> m C.Program
 toCore inps outps (ts, _, vs) = fst <$> flip runStateT mempty (do
@@ -55,8 +55,8 @@ transDefn inps outps conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) | n2s n
                               t_out'    <- mapM ((`runReaderT` conMap) . sizeOf an) $ M.flattenTyApp t_out
                               loopTy'   <- runReaderT (transType loopTy) conMap
                               state0Ty' <- runReaderT (transType state0Ty) conMap
-                              pure $ Left $ C.StartDefn an (zip (inps  <> zipWith (<>) (repeat "inp")  (map showt [0::C.Index ..])) (filter (> 0) t_in'))
-                                                           (zip (outps <> zipWith (<>) (repeat "outp") (map showt [0::C.Index ..])) (filter (> 0) t_out'))
+                              pure $ Left $ C.StartDefn an (zip (inps  <> zipWith (<>) (repeat "in")  (map showt [0::C.Index ..])) (filter (> 0) t_in'))
+                                                           (zip (outps <> zipWith (<>) (repeat "out") (map showt [0::C.Index ..])) (filter (> 0) t_out'))
                                                            (n2s loop, loopTy')
                                                            (n2s state0, state0Ty')
                         _ -> failAt an $ "transDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " <> prettyPrint e'
@@ -78,7 +78,7 @@ transExp = \ case
                   sz       <- sizeOf an $ M.typeOf e
                   args'    <- concat <$> mapM transExp args
                   argSizes <- mapM (sizeOf an . M.typeOf) args
-                  pure [C.Call an sz (C.Extern s) args' (map (C.PatVar an) argSizes) []]
+                  pure [C.Call an sz (C.Extern (C.Sig an argSizes sz) s) args' (map (C.PatVar an) argSizes) []]
             (M.Con an t d : args)       -> do
                   (v, w) <- ctorTag an (snd $ M.flattenArrow t) d
                   args'  <- concat <$> mapM transExp args
@@ -105,10 +105,10 @@ transExp = \ case
       M.Match an t e ps f Nothing       -> pure <$> (C.Call an <$> sizeOf an t <*> (callTarget =<< transExp f) <*> transExp e <*> transPat ps <*> pure [])
       M.Extern an s (M.Error _ t _)     -> do
             sz     <- sizeOf an t
-            pure [C.Call an sz (C.Extern s) [] [] []]
+            pure [C.Call an sz (C.Extern (C.Sig an [] sz) s) [] [] []]
       M.Error an t _                    -> do
             sz     <- sizeOf an t
-            pure [C.Call an sz (C.Extern "error") [] [] []]
+            pure [C.Call an sz (C.Extern (C.Sig an [] sz) "error") [] [] []]
       e                                 -> failAt (ann e) $ "ToCore: unsupported expression: " <> prettyPrint e
       where callTarget :: MonadError AstError m => [C.Exp] -> m C.Target
             callTarget [C.Call _ _ x _ _ _] = pure x

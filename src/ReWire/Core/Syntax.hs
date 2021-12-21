@@ -27,24 +27,24 @@ class SizeAnnotated a where
 
 type Value = Integer
 type Size  = Word
-type Index = Word
+type Index = Int
 type LId   = Word
 type GId   = Text
 type Name  = Text
 
-data Target = Global GId
-            | Extern Name
+data Target = Global !GId
+            | Extern !Sig !Name
             | Id
-            | Const Value
+            | Const !Value
       deriving (Eq, Ord, Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Target
 
 instance Pretty Target where
       pretty = \ case
-            Global n -> text n
-            Extern n -> text "extern" <+> dquotes (text n)
-            Id       -> text "id"
-            Const v  -> text "const" <+> pretty v
+            Global n   -> text n
+            Extern _ n -> text "extern" <+> dquotes (text n)
+            Id         -> text "id"
+            Const v    -> text "const" <+> pretty v
 
 ppBV :: Pretty a => [a] -> Doc an
 ppBV = ppBV' . map pretty
@@ -146,7 +146,7 @@ isPatVar = \ case
 
 ---
 
-data StartDefn = StartDefn Annote ![(Text, Size)] ![(Text, Size)] !(GId, Sig) !(GId, Sig) -- inputs, outputs, res type, (loop, loop ty), (state0, state0 ty)
+data StartDefn = StartDefn Annote ![(Name, Size)] ![(Name, Size)] !(GId, Sig) !(GId, Sig) -- inputs, outputs, res type, (loop, loop ty), (state0, state0 ty)
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric StartDefn
 
@@ -181,7 +181,7 @@ instance Pretty Defn where
             [ text n <+> text "::" <+> pretty sig
             , text n <+> hsep (map (text . ("$" <>) . showt) [0 .. arity sig - 1]) <+> text "=" <+> nest 2 (ppBV es)
             ]
-            where arity :: Sig -> Size
+            where arity :: Sig -> Int
                   arity (Sig _ args _) = genericLength args
 
 ---

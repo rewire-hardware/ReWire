@@ -156,15 +156,15 @@ compileExp flags lvars = \ case
             (callRes, callStmts) <- compileCall flags g sz (patArgs n ps)
             (m, stmts)           <- mkCall sz n es ps els callRes
             pure (m, callStmts <> stmts)
-      Call _ sz (Extern (binOp -> Just op)) es ps els -> do
+      Call _ sz (Extern _ (binOp -> Just op)) es ps els -> do
             Name n     <- newWire (sum $ map sizeOf es) "binopPat"
             let [x, y]  = patArgs n ps
             mkCall sz n es ps els $ op (LVal x) $ LVal y
-      Call _ sz (Extern (unOp -> Just op)) es ps els -> do
+      Call _ sz (Extern _ (unOp -> Just op)) es ps els -> do
             Name n  <- newWire (sum $ map sizeOf es) "unopPat"
             let [x]  = patArgs n ps
             mkCall sz n es ps els $ op $ LVal x
-      Call _ sz (Extern "msbit") es ps els -> do
+      Call _ sz (Extern _ "msbit") es ps els -> do
             Name n     <- newWire (sum $ map sizeOf es) "msbitPat"
             Name arg   <- newWire (argsSize ps) "msbitArg"
             let [x]     = patArgs n ps
@@ -178,7 +178,7 @@ compileExp flags lvars = \ case
       Call _ sz (Const v) es ps els -> do
             Name n  <- newWire (sum $ map sizeOf es) "litPat"
             mkCall sz n es ps els $ LitInt sz v
-      Call an _ (Extern ex) _ _ _ -> failAt an $ "ToVerilog: compileExp: unknown extern: " <> ex
+      Call an _ (Extern _ ex) _ _ _ -> failAt an $ "ToVerilog: compileExp: unknown extern: " <> ex
       where mkCall :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadError AstError m, MonadReader DefnMap m) => Size -> Name -> [C.Exp] -> [Pat] -> [C.Exp] -> V.Exp -> m (V.LVal, [Stmt])
             mkCall sz n es ps els arg = do
                   m              <- newWire sz "call"
