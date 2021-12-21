@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.Core.Interp (interp, SV, run) where
+module ReWire.Core.Interp (interp, Ins, Outs, Out, run) where
 
 import ReWire.Flags (Flag (..))
 import ReWire.Core.Syntax
@@ -13,66 +13,75 @@ import ReWire.Core.Syntax
       , Sig (..)
       , StartDefn (..)
       )
+import ReWire.Annotation (noAnn)
 
 import Data.List (foldl')
 import Data.Machine (Mealy (..), auto, (<~), source)
 import qualified Data.Machine as M
 import Control.Arrow ((&&&), (***))
 -- import Data.BitVector.LittleEndian (BitVector, fromNumber, subRange, toUnsignedNumber, toSignedNumber, isZeroVector, dimension)
-import Data.BitVector (BV, bitVec, (@@), uint, int, zeros, width)
+import Data.BitVector (BV, bitVec, (@@), uint, int, zeros, width, showHex)
 import Data.Bits (Bits (..))
 import Data.Maybe (fromMaybe)
 import Data.HashMap.Strict (HashMap)
+import Data.Text (pack)
 import qualified Data.HashMap.Strict as Map
+import qualified Data.Yaml as YAML
 
 -- type BV = BitVector
 fromNumber sz = bitVec (fromIntegral sz)
 subRange (i, j) b = b @@ (j, i)
 toUnsignedNumber = fromIntegral . uint
-
 toSignedNumber :: Num a => BV -> a
 toSignedNumber = fromIntegral . int
-
 isZeroVector = (== zeros 1)
+dimension :: Num a => BV -> a
 dimension = fromIntegral . width
 
-type SV = HashMap Name Value
-type M = Mealy SV SV
+newtype Out = Out BV
+instance Show Out where
+      show (Out bv) = showHex bv
+instance YAML.ToJSON Out where
+      toJSON = YAML.String . pack . show
+
+type Outs = HashMap Name Out
+type Ins = HashMap Name Value
+
 type DefnMap = HashMap GId Defn
 
 -- | Runs non-interactively -- given a stream of inputs, produces a stream of outputs.
-run :: M -> [SV] -> [SV]
+run :: Mealy a b -> [a] -> [b]
 run m ip = M.run (auto m <~ source ip)
 
-interp :: [Flag] -> Program -> M
+interp :: [Flag] -> Program -> Mealy Ins Outs
 interp flags (Program st ds) = interpStartDefn defnMap st
       where defnMap :: DefnMap
             defnMap = Map.fromList $ map (defnName &&& id) ds
 
 -- TODO(chathhorn): make state explicit?
-interpStartDefn :: DefnMap -> StartDefn -> M
+interpStartDefn :: DefnMap -> StartDefn -> Mealy Ins Outs
 interpStartDefn defns (StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) (state0, Sig _ _ initSize)) = do
       let Just loop'   = Map.lookup loop defns
           Just state0' = Map.lookup state0 defns
           f            = splitOutputs . interpDefn defns loop' . joinInputs
-          r so         = Mealy $ \ i -> (so <> i, r $ f $ transferState so i)
+          r so         = Mealy $ \ i -> (so, r $ f $ transferState so i)
       r $ splitOutputs $ interpDefn defns state0' mempty
       -- So:        loop   :: (r, s, i) -> R (o, s)
       --            state0 :: R (o, s)
       --            where R = Done (a, s) | Pause (o, r, s)
       -- Assuming neither should ever be Done.
       -- TODO(chathhorn): handle Done/Pause: need to look at initial bit?
-      where splitOutputs :: BV -> SV
-            splitOutputs b = Map.fromList $ zip (map fst p_outps_st) $ map (toUnsignedNumber :: BV -> Value) $ toSubRanges b $ map snd p_outps_st
+      where splitOutputs :: BV -> Outs
+            splitOutputs b = Map.fromList $ (("__everything", Out b):) $ zip (map fst p_outps_st) $ map Out $ toSubRanges b $ map snd p_outps_st
 
-            joinInputs :: SV -> BV
-            joinInputs vs = mconcat $ zipWith fromNumber (map snd st_inps) $ map snd $ insMap vs $ map (id *** const 0) st_inps
+            joinInputs :: Ins -> BV
+            joinInputs vs = mconcat $ zipWith fromNumber (map snd st_inps) $ map (fromMaybe 0 . flip Map.lookup vs . fst) st_inps
 
             st_inps :: [(Name, Size)]
             st_inps = state : inps
 
             p_outps_st :: [(Name, Size)]
-            p_outps_st = ("__is_pause", 1) : outps <> [state]
+            p_outps_st = ("__continue", 1) : outps <> [state]
 
             state :: (Name, Size)
             state = (stateName, initSize - sum (map snd outps) - 1) -- 1 for __is_pause
@@ -80,16 +89,11 @@ interpStartDefn defns (StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) (st
             stateName :: Name
             stateName = "__state"
 
-            insMap :: SV -> [(Name, Value)] -> [(Name, Value)]
-            insMap m = \ case
-                  []                              -> []
-                  ((k@(lkup -> Just v'), v) : vs) -> (k, v') : insMap m vs
-                  (v : vs)                        -> v : insMap m vs
-                  where lkup :: Name -> Maybe Value
-                        lkup = flip Map.lookup m
+            transferState :: Outs -> Ins -> Ins
+            transferState ops' = Map.insert stateName $ maybe 0 outValue $ Map.lookup stateName ops'
 
-            transferState :: SV -> SV -> SV
-            transferState ops' = Map.insert stateName $ fromMaybe 0 $ Map.lookup stateName ops'
+            outValue :: Out -> Value
+            outValue (Out bv) = toUnsignedNumber bv
 
 interpDefn :: DefnMap -> Defn -> BV -> BV
 interpDefn defns (Defn _ n (Sig _ inSizes outSize) body) = trunc . interpExps defns body . split inSizes
@@ -108,22 +112,22 @@ interpExp defns lvars = \ case
       -- LVar an _  _                    -> failAt an $ "ToVerilog: compileExp: encountered unknown LVar."
       Lit  _ sz v                    -> fromNumber sz v
       Call _ sz (Global (lkupDefn -> Just g')) es ps els -> if patMatches (interpExps' es) ps
-            then interpDefn defns g' (patApply (interpExps' es) ps)
+            then interpDefn defns g' (patApply (interpExps' es) id ps)
             else interpExps defns els lvars
       Call _ sz (Extern (Sig _ argSizes _) (binOp -> Just op)) es ps els -> if patMatches (interpExps' es) ps
-            then let [x, y] = toSubRanges (patApply (interpExps' es) ps) argSizes
+            then let [x, y] = toSubRanges (patApply (interpExps' es) id ps) argSizes
                  in op sz x y
             else interpExps defns els lvars
       Call _ sz (Extern (Sig _ argSizes _) (unOp -> Just op)) es ps els -> if patMatches (interpExps' es) ps
-            then let [x] = toSubRanges (patApply (interpExps' es) ps) argSizes
+            then let [x] = toSubRanges (patApply (interpExps' es) id ps) argSizes
                  in op sz x
             else interpExps defns els lvars
       Call _ sz (Extern (Sig _ argSizes _) "msbit") es ps els -> if patMatches (interpExps' es) ps
-            then let [x] = toSubRanges (patApply (interpExps' es) ps) argSizes
+            then let [x] = toSubRanges (patApply (interpExps' es) id ps) argSizes
                  in fromNumber sz $ fromEnum $ testBit x (fromEnum $ dimension x - 1)
             else interpExps defns els lvars
       Call _  sz Id es ps els -> if patMatches (interpExps' es) ps
-            then patApply (interpExps' es) ps
+            then patApply (interpExps' es) id ps
             else interpExps defns els lvars
       Call _  sz (Const v) es ps els -> if patMatches (interpExps' es) ps
             then fromNumber sz v
@@ -139,39 +143,25 @@ interpExp defns lvars = \ case
             interpExps' = flip (interpExps defns) lvars
 
 patMatches :: BV -> [Pat] -> Bool
-patMatches x = snd . foldl' patMatch (0, True)
+patMatches x = snd . foldl' patMatch (dimension x, True)
       where patMatch :: (Index, Bool) -> Pat -> (Index, Bool)
             patMatch (off, e) = \ case
-                  PatVar _ sz      | sz > 0 -> (off + fromIntegral(sz), e)
-                  PatWildCard _ sz | sz > 0 -> (off + fromIntegral(sz), e)
-                  PatLit _ sz v    | sz > 0 ->
-                        ( off + fromIntegral(sz)
-                        , (&&) e $ subRange (fromIntegral(off), fromIntegral(off) + sz - 1) x == fromNumber sz v
-                        )
-                  _                         -> (off, e)
+                  PatVar _ (fromIntegral -> sz)      | sz > 0 -> (off - sz, e)
+                  PatWildCard _ (fromIntegral -> sz) | sz > 0 -> (off - sz, e)
+                  PatLit _ (fromIntegral -> sz) v    | sz > 0 -> (off - sz , (&&) e $ subRange (off - sz, off - 1) x == fromNumber sz v)
+                  _                                           -> (off, e)
 
-patApply :: BV -> [Pat] -> BV
-patApply x = snd . foldl' patArg (0, mempty)
-      where patArg :: (Index, BV) -> Pat -> (Index, BV)
+patApply :: Monoid m => BV -> (BV -> m) -> [Pat] -> m
+patApply x inj = snd . foldl' patArg (dimension x, mempty)
+      where -- patArg :: Monoid m => (Index, m) -> Pat -> (Index, m)
             patArg (off, lvs) = \ case
-                  PatVar _ sz      | sz > 0 ->
-                        ( off + fromIntegral(sz)
-                        , lvs <> subRange (fromIntegral(off), fromIntegral(off) + sz - 1) x
-                        )
-                  PatWildCard _ sz | sz > 0 -> (off + fromIntegral(sz), lvs)
-                  PatLit _ sz _    | sz > 0 -> (off + fromIntegral(sz), lvs)
-                  _                         -> (off, lvs)
-
--- | Converts a list of sizes to ranges. E.g.,
--- > toRanges [2, 4, 5] == [(0, 1), (2, 5), (6, 10)]
-toRanges :: [Size] -> [(Word, Word)] -- Word to match subRange.
-toRanges s = zipWith (\ a b -> (a, b - 1)) (scanl (+) 0 s) $ tail $ scanl (+) 0 s
+                  PatVar _ (fromIntegral -> sz)      | sz > 0 -> (off - sz, lvs <> inj (subRange (off - sz, off - 1) x))
+                  PatWildCard _ (fromIntegral -> sz) | sz > 0 -> (off - sz, lvs)
+                  PatLit _ (fromIntegral -> sz) _    | sz > 0 -> (off - sz, lvs)
+                  _                                           -> (off, lvs)
 
 toSubRanges :: BV -> [Size] -> [BV]
-toSubRanges bv = map (flip subRange bv) . toRanges . fillSizeVec
-      where fillSizeVec :: [Size] -> [Size]
-            fillSizeVec szs | dimension bv > sum szs = szs <> [dimension bv - sum szs]
-                            | otherwise              = szs
+toSubRanges bv szs = patApply bv pure (map (PatVar noAnn) szs)
 
 binOp :: Name -> Maybe (Size -> BV -> BV -> BV)
 binOp = flip lookup primBinOps

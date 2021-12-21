@@ -78,7 +78,6 @@ library
                   , unbound-generics >= 0.4.1 && < 0.4.2
                   , monad-resumption >= 0.1.4.0
                   , parsec >= 3.1.14 && < 3.1.15
-                  , bv-little >= 1.1.1 && < 1.1.2
                   , bv >= 0.5 && < 0.6
                   , machines >= 0.7.2 && < 0.7.3
                   , yaml >= 0.11.7 && < 0.11.8

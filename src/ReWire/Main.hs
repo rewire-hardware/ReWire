@@ -9,7 +9,7 @@ import qualified ReWire.Core.Syntax as C
 import ReWire.Core.ToVHDL (compileProgram)
 import qualified ReWire.Core.ToVerilog as Verilog
 import ReWire.Core.Transform (mergeSlices, purgeUnused)
-import ReWire.Core.Interp (interp, SV, run)
+import ReWire.Core.Interp (interp, Ins, run)
 import ReWire.Crust.Cache (printHeader)
 import ReWire.VHDL.ToLoFIRRTL (toLoFirrtl)
 import ReWire.Flags (Flag (..))
@@ -147,12 +147,12 @@ main = do
                               liftIO $ T.writeFile fout $ prettyPrint a
 
 -- | Replicates/truncates inputs to fill up exactly ncycles cycles.
-boundInput :: Int -> [SV] -> [SV]
+boundInput :: Int -> [Ins] -> [Ins]
 boundInput ncycles ips = foldl' (\ ms m -> ms <> [Map.union m (last' ms)]) [] ips''
-      where ips' :: [SV]
+      where ips' :: [Ins]
             ips' = take ncycles ips
 
-            ips'' :: [SV]
+            ips'' :: [Ins]
             ips'' = ips' <> replicate (ncycles - length ips') (last' ips')
 
 lastMaybe :: [a] -> Maybe a
@@ -163,4 +163,3 @@ lastMaybe = \ case
 
 last' :: Monoid a => [a] -> a
 last' = fromMaybe mempty . lastMaybe
-
