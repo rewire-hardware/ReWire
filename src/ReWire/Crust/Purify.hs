@@ -408,11 +408,11 @@ purifyStateBody rho stos stys i = classifyCases >=> \ case
                   $ stos `atMay` i
             pure $ mkTuple an $ s : stos
 
-      Return an _ e    -> pure $ mkTuple an $ e : stos
+      Return an _ e   -> pure $ mkTuple an $ e : stos
 
       Lift _ e        -> purifyStateBody rho stos stys (i + 1) e
 
-      Put an e         -> pure $ mkTuple an $ nil : replaceAtIndex i e stos
+      Put an e        -> pure $ mkTuple an $ nil : replaceAtIndex i e stos
 
       Apply an t n es -> mkPureApp an rho t n $ es ++ stos
 
@@ -596,7 +596,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
             v     <- freshVar "v"
             -- the pattern "(v, (s1, (..., sm)))"
             let p       = mkTuplePat an $ map patVar $ (v, a) : s_i
-            body  <- mkLeft "RLift" (Var an a v) stos
+            body  <- mkLeft "RLift" (Var an a v) $ map (mkVar an) s_i
 
             mkLet an p e' body
 
