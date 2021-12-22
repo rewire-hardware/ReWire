@@ -15,6 +15,7 @@ import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Arrow ((&&&))
 import TextShow (showt)
 import Data.List (foldl')
+import Data.BitVector (width, int)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 
@@ -39,7 +40,7 @@ compileStartDefn :: (MonadError AstError m, MonadState Fresh m, MonadFail m, Mon
 compileStartDefn flags (C.StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) (state0, Sig _ _ stateSize)) = do
       ((rStart, ssStart), startSigs) <- runWriterT $ compileCall (FlagFlatten : flags)state0 stateSize [] -- TODO(chathhorn)
       ((rLoop, ssLoop), loopSigs)    <- runWriterT $ compileCall flags loop stateSize
-            [ Range "current_state" (1 + outpSize) (1 + outpSize + arg0Size - 1)
+            [ Range "current_state" (1 + fromIntegral outpSize) (1 + fromIntegral outpSize + fromIntegral arg0Size - 1)
             , Name "inp"
             ]
       pure $ Module "top_level" (inputs <> outputs) (sigs <> startSigs <> loopSigs)
@@ -89,7 +90,7 @@ compileStartDefn flags (C.StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) 
 
             assignOutputs :: Stmt
             assignOutputs = If (Eq (LVal $ Element "current_state" 0) $ LitBits 1 [One]) $ Block $ fst $ foldl'
-                  (\ (as, off) (n, sz) -> (as <> [SeqAssign (Name n) (LVal $ Range "current_state" off (off + sz - 1))], off + sz))
+                  (\ (as, off) (n, fromIntegral -> sz) -> (as <> [SeqAssign (Name n) (LVal $ Range "current_state" off (off + sz - 1))], off + sz))
                   ([], 1) outps
 
             ---
@@ -148,9 +149,9 @@ compileExp :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadErr
 compileExp flags lvars = \ case
       LVar _  _ (lkupLVal -> Just x) -> pure (x, [])
       LVar an _ _                    -> failAt an $ "ToVerilog: compileExp: encountered unknown LVar."
-      Lit _ sz v                     -> do
-            n <- newWire sz "lit"
-            pure (n, [Assign n $ LitInt sz v])
+      Lit _ bv                       -> do
+            n <- newWire (fromIntegral $ width bv) "lit"
+            pure (n, [Assign n $ LitInt (fromIntegral $ width bv) (int bv)])
       Call _ sz (Global g) es ps els -> do
             Name n               <- newWire (sum $ map sizeOf es) "callPat"
             (callRes, callStmts) <- compileCall flags g sz (patArgs n ps)
@@ -169,7 +170,7 @@ compileExp flags lvars = \ case
             Name arg   <- newWire (argsSize ps) "msbitArg"
             let [x]     = patArgs n ps
                 assign  = Assign (Name arg) $ LVal x
-            (m, stmts) <- mkCall sz n es ps els $ LVal $ Element arg (argsSize ps - 1)
+            (m, stmts) <- mkCall sz n es ps els $ LVal $ Element arg (fromIntegral (argsSize ps) - 1)
             pure (m, stmts <> [assign])
       Call _ sz Id es ps els -> do
             Name n  <- newWire (sum $ map sizeOf es) "idPat"
@@ -191,8 +192,8 @@ compileExp flags lvars = \ case
                           else Assign m $ Cond cond arg $ mkConcat ens'
                         ])
 
-            lkupLVal :: Index -> Maybe LVal
-            lkupLVal = flip lookup (zip [0::Index ..] lvars)
+            lkupLVal :: LId -> Maybe LVal
+            lkupLVal = flip lookup (zip [0::LId ..] lvars)
 
 mkConcat :: [LVal] -> V.Exp
 mkConcat = \ case
@@ -249,18 +250,18 @@ patMatches :: Name -> [Pat] -> V.Exp
 patMatches x = snd . foldl' patMatch (0, bTrue)
       where patMatch :: (Index, V.Exp) -> Pat -> (Index, V.Exp)
             patMatch (off, e) = \ case
-                  PatVar _ sz      -> (off + sz, e)
-                  PatWildCard _ sz -> (off + sz, e)
-                  PatLit _ sz v    -> (off + sz, LAnd e $ Eq (LVal $ Range x off (off + sz - 1)) $ LitInt sz v)
+                  PatVar _ (fromIntegral -> sz)      -> (off + sz, e)
+                  PatWildCard _ (fromIntegral -> sz) -> (off + sz, e)
+                  PatLit _ bv                        -> (off + width bv, LAnd e $ Eq (LVal $ Range x off (off + width bv - 1)) $ LitInt (fromIntegral $ width bv) $ int bv)
 
 -- | Returns a list of ranges bound by pattern variables.
 patArgs :: Name -> [Pat] -> [LVal]
 patArgs x = snd . foldl' patArg (0, [])
       where patArg :: (Index, [LVal]) -> Pat -> (Index, [LVal])
             patArg (off, lvs) = \ case
-                  PatVar _ sz      -> (off + sz, lvs <> [Range x off (off + sz - 1)])
-                  PatWildCard _ sz -> (off + sz, lvs)
-                  PatLit _ sz _    -> (off + sz, lvs)
+                  PatVar _ (fromIntegral -> sz)      -> (off + sz, lvs <> [Range x off (off + sz - 1)])
+                  PatWildCard _ (fromIntegral -> sz) -> (off + sz, lvs)
+                  PatLit _ (width -> sz)             -> (off + sz, lvs)
 
 argsSize :: [Pat] -> Size
 argsSize = sum . map patToSize

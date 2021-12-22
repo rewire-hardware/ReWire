@@ -16,6 +16,7 @@ import Data.List (genericLength, find, foldl')
 import Data.List.Split (splitOn)
 import Data.Bits (testBit)
 import Data.Text (Text, pack)
+import Data.BitVector (width, int)
 
 import TextShow (showt)
 
@@ -65,9 +66,11 @@ compilePat :: Monad m => Name -> Index -> Pat -> CM m (Expr, [Expr])
 compilePat nscr offset = \ case
       PatVar _ s       -> pure (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + fromIntegral(s) - 1)])
       PatWildCard _ _  -> pure (ExprBoolConst True, [])
-      PatLit _ tagSize tagValue -> do
-            let tag    = nvec tagValue tagSize
-                ematch = ExprIsEq (ExprSlice (ExprName nscr) offset (offset + genericLength tag - 1)) $ ExprBitString tag
+      PatLit _ bv      -> do
+            let tagSize  = fromIntegral $ width bv
+                tagValue = if tagSize > 0 then int bv else 0
+                tag      = nvec tagValue tagSize
+                ematch   = ExprIsEq (ExprSlice (ExprName nscr) offset (offset + genericLength tag - 1)) $ ExprBitString tag
             pure (ematch, [])
 
 askGIdTy :: MonadError AstError m => Name -> CM m C.Sig
@@ -97,7 +100,9 @@ compileExps es = do
 compileExp :: MonadError AstError m => C.Exp -> CM m ([Stmt], Name)
 compileExp = \ case
       LVar _ _ i       -> pure ([], "arg" <> showt i)
-      Lit _ litSize litValue -> do
+      Lit _ bv -> do
+            let litSize  = fromIntegral $ width bv
+                litValue = if litSize > 0 then int bv else 0
             n          <- (<> "Res") <$> freshName (mangle $ "lit" <> showt litValue <> "x" <> showt litSize)
             addSignal n $ TyStdLogicVector litSize
             let litVec  = nvec litValue litSize

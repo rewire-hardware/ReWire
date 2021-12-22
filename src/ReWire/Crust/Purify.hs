@@ -54,8 +54,8 @@ projDefnTy Defn { defnPolyTy = Embed t } = poly2Ty t
 -- | Transforms functions in state and resumption monads into plain first-order functions.
 purify :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) => FreeProgram -> m FreeProgram
 purify (ts, syns, ds) = do
-      (smds, pds)         <- partitionEithers <$> mapM isStateMonadicDefn ds
-      (rmds, ods)         <- partitionEithers <$> mapM isResMonadicDefn pds
+      (smds, notSmds)     <- partitionEithers <$> mapM isStateMonadicDefn ds
+      (rmds, ods)         <- partitionEithers <$> mapM isResMonadicDefn notSmds
 
       unless (any (isStart . defnName) rmds) $ failAt noAnn "No definition for Main.start found!"
 
@@ -153,7 +153,7 @@ mkDispatch _ _ _  _  [] = failAt NoAnnote "Purify: empty dispatch: invalid ReWir
 mkDispatch i o ms iv (p : pes) = do
       let ty    = dispatchTy i o ms
           domTy = mkTupleTy (MsgAnnote "Purify: mkDispatch: domTy") $ rTy : ms
-      dsc     <- freshVar "dsc"
+      dsc      <- freshVar "dsc"
       let body  = Embed $ bind [dsc :: Name Exp, iv :: Name Exp] cases
           cases = mkCase an (Var an domTy dsc) p pes
           an    = MsgAnnote $ "Purify: generated dispatch function: " <> prettyPrint cases
@@ -486,8 +486,8 @@ classifyApp :: MonadError AstError m => Annote -> (Name Exp, Ty, [Exp]) -> m (RC
 classifyApp an (x, t, [])  = pure $ RVar an t x
 classifyApp an (x, _, [e])
       | n2s x == "rwReturn" = pure $ RReturn an e
-      | n2s x == "lift"   = pure $ RLift an e
-      | n2s x == "signal" = pure $ Signal an e
+      | n2s x == "lift"     = pure $ RLift an e
+      | n2s x == "signal"   = pure $ Signal an e
 classifyApp an (x, t, [e, g])
       | n2s x == "rwBind"    = case isSignal e of
             Just s -> do

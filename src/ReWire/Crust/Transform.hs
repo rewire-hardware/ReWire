@@ -183,7 +183,7 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                         f     <- fresh $ s2n "$LL.match"
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind fvs e')
-                        let lvars = map (toVar an) bvs 
+                        let lvars = map (toVar an) bvs
                         pure $ Match an t (mkTuple an $ lvars <> [e1])
                                     (mkTupleMPat an $ map (MatchPatVar an . typeOf) lvars <> [p])
                                     (Var an t' f) els

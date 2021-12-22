@@ -16,6 +16,7 @@ import Data.Either (partitionEithers)
 import Data.Text (Text)
 import Data.List (findIndex, genericLength)
 import TextShow (showt)
+import Data.BitVector (bitVec, zeros)
 
 import qualified Data.HashMap.Strict as Map
 import qualified ReWire.Core.Syntax  as C
@@ -84,8 +85,8 @@ transExp = \ case
                   args'  <- concat <$> mapM transExp args
                   sz     <- sizeOf an $ M.typeOf e
                   szArgs <- sum <$> mapM (sizeOf an . M.typeOf) args
-                  let tag = C.Lit an w v
-                      pad = C.Lit an (sz - w - szArgs) 0
+                  let tag = C.Lit an (bitVec (fromIntegral w) v)
+                      pad = C.Lit an (zeros $ fromIntegral sz - fromIntegral w - fromIntegral szArgs) -- ugh
                   pure ([tag, pad] <> args')
             _                           -> failAt an "transExp: encountered ill-formed application."
       M.Var an t x                      -> lift (asks (Map.lookup x)) >>= \ case
@@ -98,8 +99,8 @@ transExp = \ case
       M.Con an t d                      -> do
             (v, w) <- ctorTag an t d
             sz     <- sizeOf an t
-            let tag = C.Lit an w v
-                pad = C.Lit an (sz - w) 0
+            let tag = C.Lit an (bitVec (fromIntegral w) v)
+                pad = C.Lit an (zeros $ fromIntegral sz - fromIntegral w)
             pure [tag, pad]
       M.Match an t e ps f (Just e2)     -> pure <$> (C.Call an <$> sizeOf an t <*> (callTarget =<< transExp f) <*> transExp e <*> transPat ps <*> transExp e2)
       M.Match an t e ps f Nothing       -> pure <$> (C.Call an <$> sizeOf an t <*> (callTarget =<< transExp f) <*> transExp e <*> transPat ps <*> pure [])
@@ -120,7 +121,7 @@ transPat = \ case
             (v, w) <- ctorTag an t d
             sz     <- sizeOf an t
             szArgs <- sum <$> mapM (sizeOf an . M.typeOf) ps
-            let tag = C.PatLit an w v
+            let tag = C.PatLit an (bitVec (fromIntegral w) v)
                 pad = C.PatWildCard an (sz - w - szArgs) -- or lit 0 bits?
             ([tag, pad] <>) <$> (concat <$> mapM transPat ps)
       M.MatchPatVar an t      -> pure <$> (C.PatVar an <$> sizeOf an t)

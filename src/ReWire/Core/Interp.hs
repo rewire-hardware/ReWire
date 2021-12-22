@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.Core.Interp (interp, Ins, Outs, Out, run) where
+module ReWire.Core.Interp (interp, interpDefn, Ins, Outs, Out, run, patMatches, patApply, interpExps, DefnMap) where
 
 import ReWire.Flags (Flag (..))
 import ReWire.Core.Syntax
@@ -19,7 +19,6 @@ import Data.List (foldl')
 import Data.Machine (Mealy (..), auto, (<~), source)
 import qualified Data.Machine as M
 import Control.Arrow ((&&&), (***))
--- import Data.BitVector.LittleEndian (BitVector, fromNumber, subRange, toUnsignedNumber, toSignedNumber, isZeroVector, dimension)
 import Data.BitVector (BV, bitVec, (@@), uint, int, zeros, width, showHex)
 import Data.Bits (Bits (..))
 import Data.Maybe (fromMaybe)
@@ -35,12 +34,10 @@ toUnsignedNumber = fromIntegral . uint
 toSignedNumber :: Num a => BV -> a
 toSignedNumber = fromIntegral . int
 isZeroVector = (== zeros 1)
-dimension :: Num a => BV -> a
-dimension = fromIntegral . width
 
 newtype Out = Out BV
 instance Show Out where
-      show (Out bv) = showHex bv
+      show (Out bv) = "[" <> show (width bv) <> "] " <> showHex bv
 instance YAML.ToJSON Out where
       toJSON = YAML.String . pack . show
 
@@ -63,10 +60,11 @@ interpStartDefn :: DefnMap -> StartDefn -> Mealy Ins Outs
 interpStartDefn defns (StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) (state0, Sig _ _ initSize)) = do
       let Just loop'   = Map.lookup loop defns
           Just state0' = Map.lookup state0 defns
-          f            = splitOutputs . interpDefn defns loop' . joinInputs
+          -- f            = splitOutputs . interpDefn defns loop' . joinInputs
+          f i'         = Map.insert "__input" (Out $ joinInputs i') $ splitOutputs $ interpDefn defns loop' $ joinInputs i'
           r so         = Mealy $ \ i -> (so, r $ f $ transferState so i)
       r $ splitOutputs $ interpDefn defns state0' mempty
-      -- So:        loop   :: (r, s, i) -> R (o, s)
+      -- So:        loop   :: ((r, s), i) -> R (o, s)
       --            state0 :: R (o, s)
       --            where R = Done (a, s) | Pause (o, r, s)
       -- Assuming neither should ever be Done.
@@ -80,11 +78,22 @@ interpStartDefn defns (StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) (st
             st_inps :: [(Name, Size)]
             st_inps = state : inps
 
+            outpSize :: Size
+            outpSize = sum $ snd <$> outps
+
             p_outps_st :: [(Name, Size)]
-            p_outps_st = ("__continue", 1) : outps <> [state]
+            p_outps_st = ("__continue", 1) : padding <> outps <> [state]
 
             state :: (Name, Size)
-            state = (stateName, initSize - sum (map snd outps) - 1) -- 1 for __is_pause
+            state = (stateName, arg0Size)
+
+            padding :: [(Name, Size)]
+            padding | paddingSize > 0 = [("__padding", fromIntegral(paddingSize))]
+                    | otherwise       = []
+                  where paddingSize :: Int
+                        paddingSize = fromIntegral(initSize) - 1
+                                    - fromIntegral(outpSize)
+                                    - fromIntegral(arg0Size)
 
             stateName :: Name
             stateName = "__state"
@@ -110,9 +119,9 @@ interpExp :: DefnMap -> [BV] -> Exp -> BV
 interpExp defns lvars = \ case
       LVar _ sz (lkupVal -> Just v) -> v
       -- LVar an _  _                    -> failAt an $ "ToVerilog: compileExp: encountered unknown LVar."
-      Lit  _ sz v                    -> fromNumber sz v
-      Call _ sz (Global (lkupDefn -> Just g')) es ps els -> if patMatches (interpExps' es) ps
-            then interpDefn defns g' (patApply (interpExps' es) id ps)
+      Lit  _ bv                   -> bv
+      Call _ sz (Global (lkupDefn -> Just g)) es ps els -> if patMatches (interpExps' es) ps
+            then interpDefn defns g (patApply (interpExps' es) id ps)
             else interpExps defns els lvars
       Call _ sz (Extern (Sig _ argSizes _) (binOp -> Just op)) es ps els -> if patMatches (interpExps' es) ps
             then let [x, y] = toSubRanges (patApply (interpExps' es) id ps) argSizes
@@ -124,7 +133,7 @@ interpExp defns lvars = \ case
             else interpExps defns els lvars
       Call _ sz (Extern (Sig _ argSizes _) "msbit") es ps els -> if patMatches (interpExps' es) ps
             then let [x] = toSubRanges (patApply (interpExps' es) id ps) argSizes
-                 in fromNumber sz $ fromEnum $ testBit x (fromEnum $ dimension x - 1)
+                 in fromNumber sz $ fromEnum $ testBit x (fromEnum $ width x - 1)
             else interpExps defns els lvars
       Call _  sz Id es ps els -> if patMatches (interpExps' es) ps
             then patApply (interpExps' es) id ps
@@ -143,21 +152,21 @@ interpExp defns lvars = \ case
             interpExps' = flip (interpExps defns) lvars
 
 patMatches :: BV -> [Pat] -> Bool
-patMatches x = snd . foldl' patMatch (dimension x, True)
+patMatches x = snd . foldl' patMatch (width x, True)
       where patMatch :: (Index, Bool) -> Pat -> (Index, Bool)
             patMatch (off, e) = \ case
-                  PatVar _ (fromIntegral -> sz)      | sz > 0 -> (off - sz, e)
-                  PatWildCard _ (fromIntegral -> sz) | sz > 0 -> (off - sz, e)
-                  PatLit _ (fromIntegral -> sz) v    | sz > 0 -> (off - sz , (&&) e $ subRange (off - sz, off - 1) x == fromNumber sz v)
-                  _                                           -> (off, e)
+                  PatVar _ (fromIntegral -> sz)      | sz > 0       -> (off - sz, e)
+                  PatWildCard _ (fromIntegral -> sz) | sz > 0       -> (off - sz, e)
+                  PatLit _ bv                        | width bv > 0 -> (off - width bv , (&&) e $ subRange (off - width bv, off - 1) x == bv)
+                  _                                                 -> (off, e)
 
 patApply :: Monoid m => BV -> (BV -> m) -> [Pat] -> m
-patApply x inj = snd . foldl' patArg (dimension x, mempty)
+patApply x inj = snd . foldl' patArg (width x, mempty)
       where -- patArg :: Monoid m => (Index, m) -> Pat -> (Index, m)
             patArg (off, lvs) = \ case
                   PatVar _ (fromIntegral -> sz)      | sz > 0 -> (off - sz, lvs <> inj (subRange (off - sz, off - 1) x))
                   PatWildCard _ (fromIntegral -> sz) | sz > 0 -> (off - sz, lvs)
-                  PatLit _ (fromIntegral -> sz) _    | sz > 0 -> (off - sz, lvs)
+                  PatLit _ (width -> sz)             | sz > 0 -> (off - sz, lvs)
                   _                                           -> (off, lvs)
 
 toSubRanges :: BV -> [Size] -> [BV]

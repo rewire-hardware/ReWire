@@ -14,7 +14,7 @@ instance Pretty Program where
 
 type Name  = Text
 type Size  = Word
-type Index = Word
+type Index = Int
 type Value = Integer
 
 data Module = Module

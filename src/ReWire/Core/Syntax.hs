@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, DerivingVia, OverloadedStrings #-}
+{-# LANGUAGE StandaloneDeriving, DeriveDataTypeable, DeriveGeneric, DerivingVia, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Core.Syntax
   ( Sig (..)
@@ -16,11 +16,12 @@ import ReWire.Annotation
 
 import Data.Data (Typeable, Data(..))
 import Data.List (intersperse, genericLength)
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import Prettyprinter (Pretty (..), Doc, vsep, (<+>), nest, hsep, parens, braces, punctuate, comma, dquotes)
 import GHC.Generics (Generic)
 import TextShow (TextShow (..), showt)
-import TextShow.Generic (FromGeneric (..))
+import TextShow.Generic (FromGeneric (..), genericShowbPrec)
+import Data.BitVector (BV (..), showHex, width, showHex, zeros)
 
 class SizeAnnotated a where
       sizeOf :: a -> Size
@@ -31,6 +32,9 @@ type Index = Int
 type LId   = Word
 type GId   = Text
 type Name  = Text
+
+instance TextShow BV where
+      showb = showb . showHex
 
 data Target = Global !GId
             | Extern !Sig !Name
@@ -71,7 +75,7 @@ instance Pretty Sig where
 
 ---
 
-data Exp = Lit  Annote !Size !Value
+data Exp = Lit  Annote !BV
          | LVar Annote !Size !LId
          | Call Annote !Size !Target ![Exp] ![Pat] ![Exp]
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
@@ -80,18 +84,18 @@ data Exp = Lit  Annote !Size !Value
 instance SizeAnnotated Exp where
       sizeOf = \ case
             LVar _ s _       -> s
-            Lit _ s _        -> s
+            Lit _ bv         -> fromIntegral $ width bv
             Call _ s _ _ _ _ -> s
 
 instance Annotated Exp where
       ann = \ case
             LVar a _ _       -> a
-            Lit a _ _        -> a
+            Lit a _          -> a
             Call a _ _ _ _ _ -> a
 
 instance Pretty Exp where
       pretty = \ case
-            Lit _ w v            -> pretty v <> text "::BV" <> pretty w
+            Lit _ bv             -> text (pack $ showHex bv) <> text "::BV" <> pretty (width bv)
             LVar _ _ n           -> text $ "$" <> showt n
             Call _ _ f es ps [] -> nest 2 $ vsep
                   [ text "case" <+> ppBV es <+> text "of"
@@ -111,33 +115,33 @@ ppPats = zipWith ppPats' [0::Index ..]
             ppPats' i = \ case
                   PatVar _ sz      -> text "p" <> pretty i <> text "::" <> text "BV" <> pretty sz
                   PatWildCard _ sz -> text "_" <> text "::" <> text "BV" <> pretty sz
-                  PatLit _ sz v    -> pretty v <> text "::" <> text "BV" <> pretty sz
+                  PatLit _ bv      -> text (pack $ showHex bv) <> text "::" <> text "BV" <> pretty (width bv)
 
 ---
 
 data Pat = PatVar      Annote !Size
          | PatWildCard Annote !Size
-         | PatLit      Annote !Size !Value
+         | PatLit      Annote !BV
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Pat
 
 instance SizeAnnotated Pat where
       sizeOf = \ case
-            PatVar      _ s       -> s
-            PatWildCard _ s       -> s
-            PatLit      _ s _     -> s
+            PatVar      _ s  -> s
+            PatWildCard _ s  -> s
+            PatLit      _ bv -> fromIntegral $ width bv
 
 instance Annotated Pat where
       ann = \ case
-            PatVar      a _       -> a
-            PatWildCard a _       -> a
-            PatLit      a _ _     -> a
+            PatVar      a _ -> a
+            PatWildCard a _ -> a
+            PatLit      a _ -> a
 
 instance Pretty Pat where
       pretty = \ case
-            PatVar _ s        -> braces $ text "BV" <> pretty s
-            PatWildCard _ s   -> text "_" <> text "BV" <> pretty s <> text "_"
-            PatLit      _ s v -> pretty v <> text "::BV" <> pretty s
+            PatVar _ s       -> braces $ text "BV" <> pretty s
+            PatWildCard _ s  -> text "_" <> text "BV" <> pretty s <> text "_"
+            PatLit      _ bv -> text (pack $ showHex bv) <> text "::BV" <> pretty (width bv)
 
 isPatVar :: Pat -> Bool
 isPatVar = \ case
