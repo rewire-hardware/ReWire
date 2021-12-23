@@ -18,7 +18,7 @@ type DefnBodyMap = HashMap GId [Exp]
 getBody :: MonadReader DefnMap m => GId -> m (Maybe [Exp])
 getBody g = asks (Map.lookup g) >>= \ case
       Just (Defn _ _ _ body) -> pure $ Just body
-      _                      -> pure $ Nothing
+      _                      -> pure Nothing
 
 -- | Removes all zero-length arguments and parameters.
 mergeSlices :: MonadFail m => Program -> m Program
@@ -50,14 +50,14 @@ renumLVars (Sig _ szVec _) x = if x >= 0 && x < genericLength szVec && genericIn
 
 reExp :: (MonadReader DefnMap m, MonadFail m) => (LId -> Maybe (LId, Size)) -> Exp -> m [Exp]
 reExp rn = \ case
-      LVar a s l                            -> pure $ [LVar a s $ maybe l fst $ rn l]
-      Lit a bv                              -> pure $ [Lit a bv]
+      LVar a s l                            -> pure [LVar a s $ maybe l fst $ rn l]
+      Lit a bv                              -> pure [Lit a bv]
       Call _ _ (Global g) es _ _
             | sum (map sizeOf es) == 0      -> do
             Just body <- getBody g
             reExps rn body
       Call _ _ (Global g) _ ps []
-            | length (getPVars ps) == 0 -> do
+            | null (getPVars ps)            -> do
             Just body <- getBody g
             reExps rn body
       Call a s (Global g) es ps els         -> do

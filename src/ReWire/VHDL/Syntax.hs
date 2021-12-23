@@ -6,7 +6,7 @@ import ReWire.Pretty (($$), empty, text)
 import Data.Text (Text, splitOn)
 import Data.List (intersperse)
 import Data.Containers.ListUtils (nubOrd)
-import Data.Maybe (catMaybes, listToMaybe)
+import Data.Maybe (listToMaybe, mapMaybe)
 
 type Size  = Word
 type Index = Int
@@ -27,7 +27,7 @@ instance Pretty Unit where
             $$ pretty arch
 
             where getLibs :: [Text] -> [Text]
-                  getLibs = filter (/= "work") . nubOrd . catMaybes . map (listToMaybe . splitOn ".")
+                  getLibs = filter (/= "work") . nubOrd . mapMaybe (listToMaybe . splitOn ".")
 
                   prettyImports :: Text -> [Text] -> Doc ann
                   prettyImports pre = vsep . map ((pretty pre <+>) . (<> semi) . pretty)
@@ -99,10 +99,10 @@ data Ty = TyStdLogic
 
 instance Pretty Ty where
       pretty TyStdLogic           = text "std_logic"
-      pretty (TyStdLogicVector n) = text "std_logic_vector" <+> parens (text "0 to" <+> pretty (toInteger(n) - 1))
+      pretty (TyStdLogicVector n) = text "std_logic_vector" <+> parens (text "0 to" <+> pretty (toInteger n - 1))
       pretty TyBool               = text "boolean"
       pretty TyClock              = text "std_logic"
-      pretty (TyRegister _ n)     = text "std_logic_vector" <+> parens (text "0 to" <+> pretty (toInteger(n) - 1))
+      pretty (TyRegister _ n)     = text "std_logic_vector" <+> parens (text "0 to" <+> pretty (toInteger n - 1))
 
 data Stmt = Assign !LHS !Expr
           | WithAssign !Expr !LHS ![(Expr, Expr)] !(Maybe Expr)

@@ -240,7 +240,7 @@ transExp rn = \ case
             p'  <- transPat rn p
             e1' <- transExp (exclude Value (getVars p) rn) e1
             pure $ M.Case l (M.TyBlank l) e' (bind p' e1') Nothing
-      e                      -> failAt (ann e) $ "Unsupported expression syntax: " <> (pack $ show $ void e)
+      e                      -> failAt (ann e) $ "Unsupported expression syntax: " <> pack (show $ void e)
       where getVars :: Pat Annote -> [S.Name ()]
             getVars = runQ $ query $ \ case
                   PVar (_::Annote) x -> [void x]
@@ -257,7 +257,7 @@ transPat rn = \ case
       PApp l x ps -> M.PatCon l (Embed (M.TyBlank l)) (Embed $ s2n $ rename Value rn x) <$> mapM (transPat rn) ps
       PVar l x    -> pure $ M.PatVar l (Embed (M.TyBlank l)) (mkUId $ void x)
       PWildCard l -> pure $ M.PatWildCard l (Embed (M.TyBlank l))
-      p           -> failAt (ann p) $ "Unsupported syntax in a pattern: " <> (pack $ show $ void p)
+      p           -> failAt (ann p) $ "Unsupported syntax in a pattern: " <> pack (show $ void p)
 
 -- Note: runs before desugaring.
 -- TODO(chathhorn): GADT style decls?
@@ -351,4 +351,4 @@ getImps = \ case
                   else ImportDecl l (ModuleName l (unpack m)) False False False Nothing Nothing Nothing : imps
 
             isMod :: Annotation a => Text -> ImportDecl a -> Bool
-            isMod m ImportDecl { importModule = ModuleName _ n } = (pack n) == m
+            isMod m ImportDecl { importModule = ModuleName _ n } = pack n == m

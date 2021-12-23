@@ -6,7 +6,7 @@ import ReWire.FIRRTL.Syntax
 
 import safe Data.Text (Text, pack, unpack)
 import qualified Data.Text.IO as Txt
-import Data.Functor (void)
+import Data.Functor (void, (<&>))
 import Data.List (foldl')
 import Data.Functor.Identity (Identity)
 import Text.Parsec ( Parsec, many, many1, optionMaybe, char
@@ -18,9 +18,7 @@ import Numeric (readHex)
 type Parser = Parsec Text ()
 
 parseFIRRTL :: FilePath -> IO Circuit
-parseFIRRTL p = Txt.readFile p
-            >>= pure . parse (whiteSpace >> circuit) p
-            >>= either (error . show) pure
+parseFIRRTL p = Txt.readFile p >>= either (error . show) pure . parse (whiteSpace >> circuit) p
 
 lang :: T.GenLanguageDef Text () Identity
 lang = T.LanguageDef
@@ -74,7 +72,7 @@ integer :: Parser Integer
 integer = T.integer lexer
 
 symbol :: Text -> Parser Text
-symbol s = pack <$> (T.symbol lexer $ unpack s)
+symbol s = pack <$> T.symbol lexer (unpack s)
 
 dot :: Parser Text
 dot = pack <$> T.dot lexer
@@ -166,9 +164,9 @@ binding :: Parser Member
 binding = Binding <$> ident <*> typAnn
 
 block :: Parser [Stmt]
-block = many1 stmt >>= pure . \ case
+block = many1 stmt <&> (\ case
       [Skip] -> []
-      s      -> s
+      s      -> s)
 
 stmt :: Parser Stmt
 stmt = try skip           <|> try when
@@ -194,7 +192,7 @@ when :: Parser Stmt
 when = When <$> labeled "when" expr
       <*> (colon *> info)
       <*> block
-      <*> (optionMaybe (try (reserved "else" *> colon *> block)))
+      <*> optionMaybe (try (reserved "else" *> colon *> block))
 
 inst :: Parser Stmt
 inst = Instance <$> labeledId "inst" <*> labeledId "of" <*> info

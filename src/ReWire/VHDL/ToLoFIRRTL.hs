@@ -29,7 +29,7 @@ transType = \ case
       V.TyBool             -> pure $ F.UIntTy 1
       V.TyStdLogicVector n -> pure $ F.UIntTy n
       V.TyStdLogic         -> pure $ F.UIntTy 1 -- TODO(chathhorn)
-      V.TyClock            -> pure $ F.ClockTy
+      V.TyClock            -> pure F.ClockTy
       V.TyRegister _ n     -> pure $ F.UIntTy n
 
 transArch :: MonadError AstError m => V.Architecture -> m [F.Stmt]

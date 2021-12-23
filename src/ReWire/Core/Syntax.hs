@@ -1,4 +1,4 @@
-{-# LANGUAGE StandaloneDeriving, DeriveDataTypeable, DeriveGeneric, DerivingVia, OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, DerivingVia, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.Core.Syntax
@@ -79,7 +79,7 @@ instance SizeAnnotated Sig where
 instance Pretty Sig where
       pretty = \ case
             Sig _ [] res   -> text "BV" <> pretty res
-            Sig _ args res -> (parens $ hsep $ punctuate comma $ map ((text "BV" <>) . pretty) args) <+> text "->" <+> text "BV" <> pretty res
+            Sig _ args res -> parens (hsep $ punctuate comma $ map ((text "BV" <>) . pretty) args) <+> text "->" <+> text "BV" <> pretty res
 
 ---
 
@@ -107,11 +107,11 @@ instance Pretty Exp where
             LVar _ _ n           -> text $ "$" <> showt n
             Call _ _ f es ps [] -> nest 2 $ vsep
                   [ text "case" <+> ppBV es <+> text "of"
-                  , (ppBV' $ ppPats ps) <+> text "->" <+> pretty f <+> ppArgs ps
+                  , ppBV' (ppPats ps) <+> text "->" <+> pretty f <+> ppArgs ps
                   ]
             Call _ _ f es ps es2 -> nest 2 $ vsep
                   [ text "case" <+> ppBV es <+> text "of"
-                  , (ppBV' $ ppPats ps) <+> text "->" <+> pretty f <+> ppArgs ps
+                  , ppBV' (ppPats ps) <+> text "->" <+> pretty f <+> ppArgs ps
                   , text "_" <+> text "->" <+> ppBV es2
                   ]
             where ppArgs :: [Pat] -> Doc an
@@ -171,7 +171,7 @@ instance Annotated StartDefn where
       ann (StartDefn a _ _ _ _) = a
 
 instance Pretty StartDefn where
-      pretty (StartDefn _ inps outps (loop, _) (state0, _)) = vsep $
+      pretty (StartDefn _ inps outps (loop, _) (state0, _)) = vsep
             [ text "Main.start" <+> text "::" <+> text "ReT" <+> ppBV (map snd inps) <+> ppBV (map snd outps)
             , text "Main.start" <+> text "=" <+> nest 2 (text "unfold" <+> pretty loop <+> pretty state0)
             ]
@@ -194,7 +194,7 @@ instance Annotated Defn where
       ann (Defn a _ _ _) = a
 
 instance Pretty Defn where
-      pretty (Defn _ n sig es) = vsep $
+      pretty (Defn _ n sig es) = vsep
             [ text n <+> text "::" <+> pretty sig
             , text n <+> hsep (map (text . ("$" <>) . showt) [0 .. arity sig - 1]) <+> text "=" <+> nest 2 (ppBV es)
             ]

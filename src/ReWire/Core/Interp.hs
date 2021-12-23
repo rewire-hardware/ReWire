@@ -20,7 +20,7 @@ import ReWire.Annotation (noAnn)
 import Data.List (foldl')
 import Data.Machine (Mealy (..), auto, (<~), source)
 import qualified Data.Machine as M
-import Control.Arrow ((&&&), (***))
+import Control.Arrow ((&&&), second)
 import Data.BitVector (BV, bitVec, (@@), nat, width, showHex, (>>.), (<<.), ashr)
 import Data.Bits (Bits (..))
 import Data.Maybe (fromMaybe)
@@ -77,7 +77,7 @@ interp flags (Program st ds) = interpStartDefn flags defnMap state st
 
             stateSize :: Size
             stateSize = case st of
-                  StartDefn _ _ _ (_, (Sig _ (arg0Size : _) _)) _ -> arg0Size
+                  StartDefn _ _ _ (_, Sig _ (arg0Size : _) _) _ -> arg0Size
                   _                                               -> 0
 
 -- TODO(chathhorn): make state explicit?
@@ -128,7 +128,7 @@ interpStartDefn flags defns state (StartDefn _ inps outps (loop', _) (state0', S
                                     - fromIntegral stateSize
 
             transferState :: Outs -> Ins -> Ins
-            transferState ops' inp = foldr (\ sn -> Map.insert sn $ maybe 0 outValue $ Map.lookup sn ops') inp (map fst state)
+            transferState ops' inp = foldr ((\ sn -> Map.insert sn $ maybe 0 outValue $ Map.lookup sn ops') . fst) inp state
 
             outValue :: Out -> Value
             outValue (Out bv) = nat bv
@@ -222,7 +222,7 @@ unOp :: Name -> Maybe (Size -> BV -> BV)
 unOp = flip lookup primUnOps
 
 primBinOps :: [(Name, Size -> BV -> BV -> BV)]
-primBinOps = map (id *** binBitify)
+primBinOps = map (second binBitify)
       [ ( "+"   , (+))
       , ( "-"   , (-))
       , ( "*"   , (*))
@@ -231,7 +231,7 @@ primBinOps = map (id *** binBitify)
       , ( "**"  , (^))
       , ( "&&"  , binIntify (&&))
       , ( "||"  , binIntify (||))
-      ] <> map (id *** \ op sz a b -> mkBV sz $ nat $ op a b)
+      ] <> map (second $ \ op sz a b -> mkBV sz $ nat $ op a b)
       [ ( "&"   , (.&.))
       , ( "|"   , (.|.))
       , ( "^"   , xor)
@@ -243,7 +243,7 @@ primBinOps = map (id *** binBitify)
       ]
 
 primUnOps :: [(Name, Size -> BV -> BV)]
-primUnOps = map (id *** \ op sz -> mkBV sz . op) unops
+primUnOps = map (second $ \ op sz -> mkBV sz . op) unops
       where unops :: [(Name, BV -> Integer)]
             unops = [ ( "!"      , fromIntegral . fromEnum . (== bvFalse))
                     , ( "~"      , nat . complement) -- TODO(chathhorn): semantics?

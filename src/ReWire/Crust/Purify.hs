@@ -541,8 +541,8 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
             ns      <- freshVars "s" ms
             let pairpat = mkTuplePat an $ p : map patVar ns -- Pattern (R_g e1 ... ek, (s1, ..., sn))
 
-            let svars = map (\ (x, t) -> Var an t x) ns  -- [s1, ..., sn]
-            let vars  = map (\ (x, t) -> Var an t x) (zip xs ts')   -- [x1, ..., xn]
+            let svars = map (uncurry $ flip $ Var an) ns  -- [s1, ..., sn]
+            let vars  = zipWith (flip $ Var an) xs ts'   -- [x1, ..., xn]
             iv <- getI
             g_pure_app <- mkPureApp an rho a g $ vars ++ Var an i iv : svars
             -- "dispatch (R_g e1 ... ek, (s1, ..., sn)) i = g_pure e1 ... ek i s1 ... sn"
@@ -649,7 +649,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
                   let an = ann a
                   let t = typeOf a
                   c <- getACtor s t
-                  let anode =  PatCon an (Embed $ aTy) (Embed c) [a]
+                  let anode =  PatCon an (Embed aTy) (Embed c) [a]
                   pure $ PatCon an (Embed $ mkRangeTy o ms) (Embed $ s2n "Done") [mkTuplePat an $ anode : stos]
 
             mkRight :: Exp -> Exp

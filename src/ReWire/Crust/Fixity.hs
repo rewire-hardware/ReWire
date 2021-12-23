@@ -10,7 +10,7 @@ import ReWire.SYB
 import ReWire.Error
 import ReWire.Annotation (Annote)
 
-import Control.Monad (void)
+import Control.Monad (void, (>=>))
 import Control.Monad.Identity (Identity (..))
 import Control.Monad.State (MonadState, StateT, runStateT, get, modify, lift)
 import Data.Maybe (fromMaybe)
@@ -68,7 +68,7 @@ getFixities = foldr toFixity []
 --   operators with the same name).
 --   Note: applyFixities annoyingly fixes the annotation type as SrcSpanInfo.
 fixLocalOps :: (MonadState Annote m, MonadFail m) => Module SrcSpanInfo -> m (Module SrcSpanInfo)
-fixLocalOps = (applyGlobFixities =<<) . fmap fst . flip runStateT 0 . runPureT (renameDecl id ||> TId)
+fixLocalOps = (fmap fst . flip runStateT 0 . runPureT (renameDecl id ||> TId)) >=> applyGlobFixities
       where applyGlobFixities :: (MonadState Annote m, MonadFail m) => Module SrcSpanInfo -> m (Module SrcSpanInfo)
             applyGlobFixities m@(Module _ (Just (ModuleHead _ mn _ _)) _ _ ds)
                                                           = mark (ann m) >> applyFixities (getFixities ds ++ getFixities' (void mn) ds) m

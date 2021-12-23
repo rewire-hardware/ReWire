@@ -173,7 +173,7 @@ getProgram flags fp = do
             whenSet f m = if f `elem` flags then m $ FlagV `elem` flags else pure
 
             whenSet' :: Applicative m => Flag -> (a -> m a) -> a -> m a
-            whenSet' f m = whenSet f (\ _ -> m)
+            whenSet' f m = whenSet f $ const m
 
             pDebug' :: MonadIO m => Text -> a -> m a
             pDebug' s a = pDebug flags s >> pure a
@@ -202,15 +202,15 @@ printInfo hd verbose fp = do
       let p = Program $ trec fp
       printHeader hd
       when verbose $ liftIO $ T.putStrLn "## Free kind vars:\n"
-      when verbose $ liftIO $ T.putStrLn $ T.concat $ map (<>"\n") (nubOrd $ map prettyPrint (fv p :: [Name Kind]))
+      when verbose $ liftIO $ T.putStrLn $ T.concat $ map (<> "\n") (nubOrd $ map prettyPrint (fv p :: [Name Kind]))
       when verbose $ liftIO $ T.putStrLn "## Free type vars:\n"
-      when verbose $ liftIO $ T.putStrLn $ T.concat $ map ((<>"\n")) (nubOrd $ map prettyPrint (fv p :: [Name Ty]))
+      when verbose $ liftIO $ T.putStrLn $ T.concat $ map (<> "\n") (nubOrd $ map prettyPrint (fv p :: [Name Ty]))
       when verbose $ liftIO $ T.putStrLn "## Free tycon vars:\n"
-      when verbose $ liftIO $ T.putStrLn $ T.concat $ map ((<>"\n")) (nubOrd $ map prettyPrint (fv p :: [Name TyConId]))
+      when verbose $ liftIO $ T.putStrLn $ T.concat $ map (<> "\n") (nubOrd $ map prettyPrint (fv p :: [Name TyConId]))
       liftIO $ T.putStrLn "## Free con vars:\n"
-      liftIO $ T.putStrLn $ T.concat $ map ((<>"\n")) (nubOrd $ map prettyPrint (fv p :: [Name DataConId]))
+      liftIO $ T.putStrLn $ T.concat $ map (<> "\n") (nubOrd $ map prettyPrint (fv p :: [Name DataConId]))
       liftIO $ T.putStrLn "## Free exp vars:\n"
-      liftIO $ T.putStrLn $ T.concat $ map ((<>"\n")) (nubOrd $ map prettyPrint (fv p :: [Name Exp]))
+      liftIO $ T.putStrLn $ T.concat $ map (<> "\n") (nubOrd $ map prettyPrint (fv p :: [Name Exp]))
       liftIO $ T.putStrLn "## Program:\n"
       liftIO $ T.putStrLn $ prettyPrint p
       when verbose $ liftIO $ T.putStrLn "\n## Program (show):\n"

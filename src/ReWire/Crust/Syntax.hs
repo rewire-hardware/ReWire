@@ -7,7 +7,6 @@
            , Rank2Types
            , GADTs
            , ScopedTypeVariables
-           , StandaloneDeriving
            , OverloadedStrings
            #-}
 {-# LANGUAGE Trustworthy #-}
@@ -157,7 +156,7 @@ instance Eq Poly where
       (==) = aeq
 
 instance Pretty Poly where
-      pretty (Poly pt) = runFreshM (pretty <$> snd <$> unbind pt)
+      pretty (Poly pt) = runFreshM (pretty . snd <$> unbind pt)
 
 data Ty = TyApp Annote !Ty !Ty
         | TyCon Annote !(Name TyConId)

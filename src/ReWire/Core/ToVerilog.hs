@@ -31,7 +31,7 @@ fresh s = do
 
 compileProgram :: (MonadFail m, MonadError AstError m) => [Flag] -> C.Program -> m V.Program
 compileProgram flags (C.Program st ds)
-      | FlagFlatten `elem` flags = V.Program <$> pure <$> evalStateT (runReaderT (compileStartDefn flags st) defnMap) 0
+      | FlagFlatten `elem` flags = V.Program . pure <$> evalStateT (runReaderT (compileStartDefn flags st) defnMap) 0
       | otherwise                = do
             st' <- evalStateT (runReaderT (compileStartDefn flags st) defnMap) 0
             ds' <- mapM (flip evalStateT 0 . compileDefn flags) $ filter ((/= getState0 st) . defnName) ds
@@ -108,8 +108,8 @@ compileStartDefn flags st@(C.StartDefn _ inps outps (loop, _) (state0, Sig _ _ i
 
             stateSize :: Size
             stateSize = case st of
-                  StartDefn _ _ _ (_, (Sig _ (arg0Size : _) _)) _ -> arg0Size
-                  _                                               -> 0
+                  StartDefn _ _ _ (_, Sig _ (arg0Size : _) _) _ -> arg0Size
+                  _                                             -> 0
 
             inpSize :: V.Size
             inpSize = sum $ snd <$> inps
@@ -122,7 +122,7 @@ compileStartDefn flags st@(C.StartDefn _ inps outps (loop, _) (state0, Sig _ _ i
                     | otherwise                    = Pos rst
 
             rstSignal :: Bool
-            rstSignal = not $ FlagInvertReset `elem` flags
+            rstSignal = FlagInvertReset `notElem` flags
 
             rst :: Text
             rst | FlagInvertReset `elem` flags = "rst_n"
@@ -162,7 +162,7 @@ compileExp :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadErr
             => [Flag] -> [LVal] -> C.Exp -> m (V.LVal, [Stmt])
 compileExp flags lvars = \ case
       LVar _  _ (lkupLVal -> Just x) -> pure (x, [])
-      LVar an _ _                    -> failAt an $ "ToVerilog: compileExp: encountered unknown LVar."
+      LVar an _ _                    -> failAt an "ToVerilog: compileExp: encountered unknown LVar."
       Lit _ bv                       -> do
             n <- newWire (fromIntegral $ width bv) "lit"
             pure (n, [Assign n $ bvToExp bv])
@@ -202,7 +202,7 @@ compileExp flags lvars = \ case
                   let cond        = patMatches n ps
                   pure (m, stmts <> stmts' <>
                         [ Assign (Name n) $ mkConcat ens
-                        , if cond == bTrue || ens' == [] then Assign m arg
+                        , if cond == bTrue || null ens' then Assign m arg
                           else Assign m $ Cond cond arg $ mkConcat ens'
                         ])
 
@@ -214,7 +214,7 @@ bvToExp :: BV -> V.Exp
 bvToExp bv | width bv < maxLit      = LitBits bv
            | bv == zeros (width bv) = Repl (fromIntegral $ width bv) $ LitBits (zeros 1)
            | bv == ones (width bv)  = Repl (fromIntegral $ width bv) $ LitBits (ones 1)
-           | zs > 8                 = Concat [LitBits $ subRange (width bv - 1, fromIntegral $ zs) bv, Repl zs $ LitBits $ zeros 1]
+           | zs > 8                 = Concat [LitBits $ subRange (width bv - 1, fromIntegral zs) bv, Repl zs $ LitBits $ zeros 1]
            | otherwise              = LitBits bv -- TODO(chathhorn)
       where zs :: Size -- trailing zeros
             zs = fromIntegral $ lsb1 bv

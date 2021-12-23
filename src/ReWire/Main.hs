@@ -96,7 +96,7 @@ main = do
                   _         -> T.hPutStrLn stderr "Multiple output files specified on the command line!" >> exitFailure
 
             flagInterp :: [Flag] -> Bool
-            flagInterp = or . map (\ case
+            flagInterp = any (\ case
                   FlagInterpret _ -> True
                   _               -> False)
 
@@ -125,7 +125,7 @@ main = do
                   where compile :: C.Program -> SyntaxErrorT IO ()
                         compile a = do
                               b <- (mergeSlices >=> mergeSlices >=> partialEval >=> mergeSlices >=> purgeUnused) a -- TODO(chathhorn)
-                              when (FlagV `elem` flags) $ liftIO $ putStrLn $ "Debug: [Pass 9] Reduced core."
+                              when (FlagV `elem` flags) $ liftIO $ putStrLn "Debug: [Pass 9] Reduced core."
                               when (FlagDCore2 `elem` flags) $ liftIO $ do
                                     printHeader "Reduced Core" -- TODO(chathhorn): pull this out of Crust.Cache
                                     T.putStrLn $ prettyPrint b

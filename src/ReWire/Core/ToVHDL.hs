@@ -82,7 +82,7 @@ askGIdTy i = do
 
 compileExps :: MonadError AstError m => [C.Exp] -> CM m ([Stmt], Name)
 compileExps es = do
-      n          <- (<> "Res") <$> freshName (mangle $ "slice")
+      n          <- (<> "Res") <$> freshName (mangle "slice")
       addSignal n $ TyStdLogicVector $ sum $ map sizeOf es
       sssns      <- mapM compileExp es
       let stmts   = concatMap fst sssns
@@ -148,6 +148,7 @@ compileExp = \ case
                      Instantiate n_call (mangle gid) pm] <>
                     stmts_ealt,
                     n)
+      e -> failAt (ann e) "ToVHDL: compileExp: encountered currently unsupported expression."
       -- TODO(chathhorn): extern
       -- Extern _ sz i args -> do
       --       n           <- (<> "Res") <$> freshName i
@@ -185,7 +186,7 @@ compileStartDefn flags (StartDefn an inps outps (n_loopfun, t_loopfun@(Sig _ (ar
               <> zipWith (\ n s -> Port n Out (TyStdLogicVector s)) (map fst outps) (map snd outps)
       (sigs, comps, _) <- get
       pure $ Unit (uses flags) (Entity "top_level" ports) $
-            Architecture "top_level_impl" "top_level" sigs comps $
+            Architecture "top_level_impl" "top_level" sigs comps
                   [ Instantiate "start_call" (mangle n_startstate) (PortMap [("res", ExprName "start_state")])
                   , Instantiate "loop_call" (mangle n_loopfun) (PortMap
                         [ ("arg0", ExprSlice (ExprName "current_state") (1 + fromIntegral outpSize) (1 + fromIntegral (outpSize + arg0size) - 1))

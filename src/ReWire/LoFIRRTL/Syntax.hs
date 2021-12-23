@@ -19,7 +19,7 @@ import ReWire.Pretty (text)
 
 type Size = Word
 
-data Id = Id !Text
+newtype Id = Id Text
       deriving (Eq, Generic, Typeable, Data, Show)
       deriving TextShow via FromGeneric Id
 
@@ -31,7 +31,7 @@ data Circuit = Circuit !Id ![Module]
       deriving TextShow via FromGeneric Circuit
 
 instance Pretty Circuit where
-      pretty (Circuit x mods) = nest 2 (vsep ([text "circuit" <+> pretty x <+> colon] ++ map pretty mods))
+      pretty (Circuit x mods) = nest 2 (vsep ((text "circuit" <+> pretty x <+> colon) : map pretty mods))
 
 data Module = ModuleDef !Id ![Port] ![Stmt]
             | ExtModule !Id ![Port]
@@ -44,7 +44,7 @@ instance Pretty Module where
                   [ text "module" <+> pretty x <+> colon ]
                   ++ map pretty ps
                   ++ [vsep $ map pretty stmts]))
-            ExtModule x ps      -> nest 2 (vsep ([text "extmodule" <+> pretty x <+> colon] ++ map pretty ps))
+            ExtModule x ps      -> nest 2 (vsep ((text "extmodule" <+> pretty x <+> colon) : map pretty ps))
 
 data Port = Input !Id !Type
           | Output !Id !Type
@@ -95,17 +95,17 @@ data Stmt = Wire !Id !Type
 
 instance Pretty Stmt where
       pretty = \ case
-            Wire x t                   -> text "wire" <+> pretty x <+> colon <+> pretty t
-            Reg x t e                  -> text "reg" <+> pretty x <+> colon <+> pretty t <> comma <+> pretty e
-            RegReset x t e1 e2 e3      -> text "reg" <+> pretty x <+> colon <+> pretty t <> comma <+> pretty e1
-                                                     <+> text "with" <+> parens (text "reset" <+> text "=>" <+> args [pretty e2, pretty e3])
-            Mem _ _ _ _ _ _ _ _ _      -> text "mem"
-            Inst x y                   -> text "inst" <+> pretty x <+> text "of" <+> pretty y
-            Node x e                   -> text "node" <+> pretty x <+> text "=" <+> pretty e
-            Connect e1 e2              -> pretty e1 <+> text "<=" <+> pretty e2
-            Invalidate e               -> pretty e <+> text "is" <+> text "invalid"
-            Printf e1 e2 n es          -> text "printf" <+> args ([pretty e1, pretty e2, pretty n] ++ map pretty es)
-            Skip                       -> text "skip"
+            Wire x t              -> text "wire" <+> pretty x <+> colon <+> pretty t
+            Reg x t e             -> text "reg" <+> pretty x <+> colon <+> pretty t <> comma <+> pretty e
+            RegReset x t e1 e2 e3 -> text "reg" <+> pretty x <+> colon <+> pretty t <> comma <+> pretty e1
+                                                <+> text "with" <+> parens (text "reset" <+> text "=>" <+> args [pretty e2, pretty e3])
+            Mem {}                -> text "mem"
+            Inst x y              -> text "inst" <+> pretty x <+> text "of" <+> pretty y
+            Node x e              -> text "node" <+> pretty x <+> text "=" <+> pretty e
+            Connect e1 e2         -> pretty e1 <+> text "<=" <+> pretty e2
+            Invalidate e          -> pretty e <+> text "is" <+> text "invalid"
+            Printf e1 e2 n es     -> text "printf" <+> args ([pretty e1, pretty e2, pretty n] ++ map pretty es)
+            Skip                  -> text "skip"
 
 
 data Exp = UInt !Natural !Natural

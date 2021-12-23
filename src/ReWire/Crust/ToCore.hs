@@ -27,12 +27,12 @@ type ConMap = (HashMap (Name M.TyConId) [Name M.DataConId], HashMap (Name M.Data
 type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) C.LId) m)
 
 toCore :: (Fresh m, MonadError AstError m, MonadFail m) => [Text] -> [Text] -> M.FreeProgram -> m C.Program
-toCore inps outps (ts, _, vs) = fst <$> flip runStateT mempty (do
+toCore inps outps (ts, _, vs) = fst <$> runStateT (do
             vs' <- mapM (transDefn inps outps conMap) $ filter (not . M.isPrim . M.defnName) vs
             case partitionEithers vs' of
                   ([startDefn], defns) -> pure $ C.Program startDefn defns
                   _                    -> failAt noAnn "toCore: no Main.start."
-      )
+      ) mempty
       where conMap :: ConMap
             conMap = ( Map.fromList $ map (M.dataName &&& map projId . M.dataCons) ts
                      , Map.fromList $ map (projId &&& projType) (concatMap M.dataCons ts)
@@ -58,8 +58,8 @@ transDefn inps outps conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) | n2s n
                                   t_outs'        = t_out' - sum t_outs : t_outs
                               loopTy'           <- runReaderT (transType loopTy) conMap
                               state0Ty'         <- runReaderT (transType state0Ty) conMap
-                              pure $ Left $ C.StartDefn an (zip (inps  <> zipWith (<>) (repeat "in")  (map showt [0::C.Index ..])) (filter (> 0) t_ins'))
-                                                           (zip (outps <> zipWith (<>) (repeat "out") (map showt [0::C.Index ..])) (filter (> 0) t_outs'))
+                              pure $ Left $ C.StartDefn an (zip (inps  <> map (("in" <>) . showt)  [0::C.Index ..]) (filter (> 0) t_ins'))
+                                                           (zip (outps <> map (("out" <>) . showt) [0::C.Index ..]) (filter (> 0) t_outs'))
                                                            (n2s loop, loopTy')
                                                            (n2s state0, state0Ty')
                         _ -> failAt an $ "transDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " <> prettyPrint e'
@@ -164,7 +164,7 @@ ctorWidth t d = do
             Just ct -> do
                   let (targs, tres) = M.flattenArrow ct
                   s                <- matchTy (ann t') tres t'
-                  sum <$> mapM (sizeOf $ ann t) (map (apply s) targs)
+                  sum <$> mapM (sizeOf (ann t) . apply s) targs
             _ -> pure 0
 
 -- TODO(chathhorn): shouldn't be necessary (should save this info before breaking out ctors)

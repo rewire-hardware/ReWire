@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, DeriveDataTypeable, DerivingVia, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, DeriveDataTypeable, DerivingVia #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.FIRRTL.Syntax where
 
@@ -41,7 +41,7 @@ data RUW = Old | New | Undefined
       deriving (Eq, Generic, Typeable, Data, Show)
       deriving TextShow via FromGeneric RUW
 
-data Info = Annotation !Text
+newtype Info = Annotation Text
       deriving (Eq, Generic, Typeable, Data, Show)
       deriving TextShow via FromGeneric Info
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE Rank2Types, ScopedTypeVariables, GADTs, TypeOperators, TypeFamilies, DeriveDataTypeable, OverloadedStrings #-}
+{-# LANGUAGE Rank2Types, ScopedTypeVariables, GADTs, TypeFamilies, DeriveDataTypeable, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -Wno-missing-methods #-}
 module ReWire.Annotation

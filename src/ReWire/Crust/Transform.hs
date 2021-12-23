@@ -47,7 +47,7 @@ inline (ts, syns, ds) = (ts, syns, ) . flip substs ds <$> subs
             inlineDefs = filter defnInline ds
 
             subs :: MonadError AstError m => m [(Name Exp, Exp)]
-            subs = map toSubst <$> fix "INLINE definition" 100 (pure . (substs $ map toSubst inlineDefs)) inlineDefs
+            subs = map toSubst <$> fix "INLINE definition" 100 (pure . substs (map toSubst inlineDefs)) inlineDefs
 
 -- | Expands type synonyms.
 expandTypeSynonyms :: (MonadCatch m, MonadError AstError m, Fresh m) => FreeProgram -> m FreeProgram
@@ -205,8 +205,8 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
 
             liftable :: Exp -> Bool
             liftable = \ case
-                  Var _ _ _ -> False
-                  _         -> True
+                  Var {} -> False
+                  _      -> True
 
             toVar :: Annote -> (Name Exp, Ty) -> Exp
             toVar an (v, vt) = Var an vt v
