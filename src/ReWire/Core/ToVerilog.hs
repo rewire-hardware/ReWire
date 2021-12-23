@@ -8,6 +8,7 @@ import ReWire.Annotation (noAnn)
 import ReWire.Core.Syntax as C hiding (Name, Size, Index)
 import ReWire.Verilog.Syntax as V
 import ReWire.Core.Mangle (mangle)
+import ReWire.Core.Interp (patApply', patMatches')
 
 import Data.Text (Text)
 import Control.Monad.State (MonadState, get, put, evalStateT)
@@ -15,7 +16,6 @@ import Control.Monad.Writer (MonadWriter, tell, runWriterT)
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Arrow ((&&&))
 import TextShow (showt)
-import Data.List (foldl')
 import Data.BitVector (width, bitVec)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
@@ -72,12 +72,8 @@ compileStartDefn flags st@(C.StartDefn _ inps outps (loop, _) (state0, Sig _ _ i
 
             ifRst :: V.Exp -> Stmt
             ifRst start = IfElse (Eq (LVal $ Name rst) $ LitBits $ bitVec 1 $ fromEnum rstSignal)
-                  (Block
-                        [ SeqAssign (Name sCurState) start
-                        ])
-                  (Block
-                        [ SeqAssign (Name sCurState) (LVal $ Name sNxtState)
-                        ])
+                  (Block [ ParAssign (Name sCurState) start ])
+                  (Block [ ParAssign (Name sCurState) (LVal $ Name sNxtState) ])
 
             assignSigs :: V.Exp -> [Stmt]
             assignSigs loop = filterAssigns (zipWith Assign (map (Name . fst) p_outps_st) (map LVal $ toSubRanges sCurState $ map snd p_outps_st))
@@ -209,7 +205,7 @@ compileExp flags lvars = \ case
 mkConcat :: [LVal] -> V.Exp
 mkConcat = \ case
       [e] -> LVal e
-      es  -> Concat $ map LVal $ reverse es
+      es  -> Concat $ map LVal es
 
 binOp :: Name -> Maybe (V.Exp -> V.Exp -> V.Exp)
 binOp = flip lookup primBinOps
@@ -258,23 +254,11 @@ newWire sz n = do
 
 -- | Returns a boolean expression that is true when the pattern matches.
 patMatches :: Name -> [Pat] -> V.Exp
-patMatches x ps = snd $ foldl' patMatch (fromIntegral $ sum $ map sizeOf ps, bTrue) ps
-      where patMatch :: (Index, V.Exp) -> Pat -> (Index, V.Exp)
-            patMatch (off, e) = \ case
-                  PatVar _ (fromIntegral -> sz)      | sz > 0       -> (off - sz, e)
-                  PatWildCard _ (fromIntegral -> sz) | sz > 0       -> (off - sz, e)
-                  PatLit _ bv                        | width bv > 0 -> (off - width bv, LAnd e $ Eq (LVal $ Range x (off - width bv) $ off - 1) $ LitBits bv)
-                  _                                                 -> (off, e)
+patMatches x = foldr LAnd bTrue . patMatches' (\ i j bv -> [Eq (LVal $ Range x i j) $ LitBits bv])
 
 -- | Returns a list of ranges bound by pattern variables.
 patApply :: Name -> [Pat] -> [LVal]
-patApply x ps = snd $ foldl' patArg (fromIntegral $ sum $ map sizeOf ps, []) ps
-      where patArg :: (Index, [LVal]) -> Pat -> (Index, [LVal])
-            patArg (off, lvs) = \ case
-                  PatVar _ (fromIntegral -> sz)      | sz > 0 -> (off - sz, lvs <> [Range x (off - sz) $ off - 1])
-                  PatWildCard _ (fromIntegral -> sz) | sz > 0 -> (off - sz, lvs)
-                  PatLit _ (width -> sz)             | sz > 0 -> (off - sz, lvs)
-                  _                                           -> (off, lvs)
+patApply x = patApply' (\ i j -> [Range x i j])
 
 toSubRanges :: Name -> [Size] -> [LVal]
 toSubRanges n szs = patApply n (map (PatVar noAnn) szs)
@@ -288,4 +272,3 @@ argsSize = sum . map patToSize
 
 toInput :: Text -> Size -> Port
 toInput n sz = Input $ Wire sz n
-

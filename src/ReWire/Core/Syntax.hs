@@ -1,5 +1,6 @@
 {-# LANGUAGE StandaloneDeriving, DeriveDataTypeable, DeriveGeneric, DerivingVia, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.Core.Syntax
   ( Sig (..)
   , Exp (..)
@@ -9,6 +10,7 @@ module ReWire.Core.Syntax
   , Target (..)
   , Size, Index, Name, Value, GId, LId
   , SizeAnnotated (..)
+  , bvTrue, bvFalse
   ) where
 
 import ReWire.Pretty
@@ -21,7 +23,7 @@ import Prettyprinter (Pretty (..), Doc, vsep, (<+>), nest, hsep, parens, braces,
 import GHC.Generics (Generic)
 import TextShow (TextShow (..), showt)
 import TextShow.Generic (FromGeneric (..))
-import Data.BitVector (BV (..), width, showHex)
+import Data.BitVector (BV (..), width, showHex, zeros, ones)
 
 class SizeAnnotated a where
       sizeOf :: a -> Size
@@ -32,6 +34,12 @@ type Index = Int
 type LId   = Word
 type GId   = Text
 type Name  = Text
+
+bvTrue :: BV
+bvTrue = ones 1
+
+bvFalse :: BV
+bvFalse = zeros 1
 
 instance TextShow BV where
       showb = showb . showHex
@@ -48,7 +56,7 @@ instance Pretty Target where
             Global n   -> text n
             Extern _ n -> text "extern" <+> dquotes (text n)
             Id         -> text "id"
-            Const bv   -> text "const" <+> text (pack $ showHex bv)
+            Const bv   -> ppBV [Lit noAnn bv]
 
 ppBV :: Pretty a => [a] -> Doc an
 ppBV = ppBV' . map pretty
@@ -107,7 +115,11 @@ instance Pretty Exp where
                   , text "_" <+> text "->" <+> ppBV es2
                   ]
             where ppArgs :: [Pat] -> Doc an
-                  ppArgs ps = ppBV' $ map snd $ filter (isPatVar . fst) $ zip ps $ ppPats ps
+                  ppArgs (pVars -> []) = mempty
+                  ppArgs (pVars -> ps) = ppBV' $ ppPats ps
+
+                  pVars :: [Pat] -> [Pat]
+                  pVars = filter isPatVar
 
 ppPats :: [Pat] -> [Doc an]
 ppPats = zipWith ppPats' [0::Index ..]

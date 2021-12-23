@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.Core.Interp (interp, interpDefn, Ins, Outs, Out, run, patMatches, patApply, interpExps, DefnMap) where
+module ReWire.Core.Interp (interp, interpDefn, Ins, Outs, Out, run, patMatches, patMatches', patApply, patApply', interpExps, DefnMap, subRange) where
 
 import ReWire.Flags (Flag (..))
 import ReWire.Core.Syntax
@@ -12,6 +12,8 @@ import ReWire.Core.Syntax
       , Defn (..)
       , Sig (..)
       , StartDefn (..)
+      , bvFalse
+      , sizeOf
       )
 import ReWire.Annotation (noAnn)
 
@@ -19,7 +21,7 @@ import Data.List (foldl')
 import Data.Machine (Mealy (..), auto, (<~), source)
 import qualified Data.Machine as M
 import Control.Arrow ((&&&), (***))
-import Data.BitVector (BV, bitVec, (@@), nat, zeros, width, showHex, (>>.), (<<.), ashr)
+import Data.BitVector (BV, bitVec, (@@), nat, width, showHex, (>>.), (<<.), ashr)
 import Data.Bits (Bits (..))
 import Data.Maybe (fromMaybe)
 import Data.HashMap.Strict (HashMap)
@@ -182,23 +184,33 @@ interpExp defns lvars = \ case
             interpExps' :: [Exp] -> BV
             interpExps' = flip (interpExps defns) lvars
 
+data PatMatch = MatchVar Index Index
+              | MatchLit Index Index BV
+
+patInterp :: [Pat] -> [PatMatch]
+patInterp ps = snd $ foldl' patInterp' (fromIntegral $ sum $ map sizeOf ps, []) ps
+      where patInterp' :: (Index, [PatMatch]) -> Pat -> (Index, [PatMatch])
+            patInterp' (off, e) = \ case
+                  PatVar _ (fromIntegral -> sz)      | sz > 0 -> (off - sz, e <> [MatchVar (off - sz) (off - 1)])
+                  PatWildCard _ (fromIntegral -> sz) | sz > 0 -> (off - sz, e)
+                  PatLit _ bv@(width -> sz)          | sz > 0 -> (off - sz, e <> [MatchLit (off - sz) (off - 1) bv])
+                  _                                           -> (off, e)
+
+patMatches' :: Monoid m => (Index -> Index -> BV -> m) -> [Pat] -> m
+patMatches' inj = mconcat . map (\ case
+      MatchLit i j bv -> inj i j bv
+      _               -> mempty) . patInterp
+
+patApply' :: Monoid m => (Index -> Index -> m) -> [Pat] -> m
+patApply' inj = mconcat . map (\ case
+      MatchVar i j -> inj i j
+      _            -> mempty) . patInterp
+
 patMatches :: BV -> [Pat] -> Bool
-patMatches x = snd . foldl' patMatch (width x, True)
-      where patMatch :: (Index, Bool) -> Pat -> (Index, Bool)
-            patMatch (off, e) = \ case
-                  PatVar _ (fromIntegral -> sz)      | sz > 0       -> (off - sz, e)
-                  PatWildCard _ (fromIntegral -> sz) | sz > 0       -> (off - sz, e)
-                  PatLit _ bv                        | width bv > 0 -> (off - width bv , (&&) e $ subRange (off - width bv, off - 1) x == bv)
-                  _                                                 -> (off, e)
+patMatches x = and . patMatches' (\ i j bv -> [subRange (i, j) x == bv])
 
 patApply :: Monoid m => BV -> (BV -> m) -> [Pat] -> m
-patApply x inj = snd . foldl' patArg (width x, mempty)
-      where -- patArg :: Monoid m => (Index, m) -> Pat -> (Index, m)
-            patArg (off, lvs) = \ case
-                  PatVar _ (fromIntegral -> sz)      | sz > 0 -> (off - sz, lvs <> inj (subRange (off - sz, off - 1) x))
-                  PatWildCard _ (fromIntegral -> sz) | sz > 0 -> (off - sz, lvs)
-                  PatLit _ (width -> sz)             | sz > 0 -> (off - sz, lvs)
-                  _                                           -> (off, lvs)
+patApply x inj = patApply' (\ i j -> inj (subRange (i, j) x))
 
 toSubRanges :: BV -> [Size] -> [BV]
 toSubRanges bv szs = patApply bv pure (map (PatVar noAnn) szs)
@@ -233,7 +245,7 @@ primBinOps = map (id *** binBitify)
 primUnOps :: [(Name, Size -> BV -> BV)]
 primUnOps = map (id *** \ op sz -> mkBV sz . op) unops
       where unops :: [(Name, BV -> Integer)]
-            unops = [ ( "!"      , fromIntegral . fromEnum . (== zeros 1))
+            unops = [ ( "!"      , fromIntegral . fromEnum . (== bvFalse))
                     , ( "~"      , nat . complement) -- TODO(chathhorn): semantics?
               --       , ( "&"      , RAnd)
               --       , ( "~&"     , RNAnd)

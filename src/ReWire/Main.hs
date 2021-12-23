@@ -124,7 +124,7 @@ main = do
 
                   where compile :: C.Program -> SyntaxErrorT IO ()
                         compile a = do
-                              b <- (mergeSlices >=> mergeSlices >=> partialEval >=> purgeUnused) a -- TODO(chathhorn)
+                              b <- (mergeSlices >=> mergeSlices >=> partialEval >=> mergeSlices >=> purgeUnused) a -- TODO(chathhorn)
                               when (FlagV `elem` flags) $ liftIO $ putStrLn $ "Debug: [Pass 9] Reduced core."
                               when (FlagDCore2 `elem` flags) $ liftIO $ do
                                     printHeader "Reduced Core" -- TODO(chathhorn): pull this out of Crust.Cache
