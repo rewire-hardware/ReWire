@@ -8,7 +8,7 @@ import ReWire.Annotation (noAnn)
 import ReWire.Core.Syntax as C hiding (Name, Size, Index)
 import ReWire.Verilog.Syntax as V
 import ReWire.Core.Mangle (mangle)
-import ReWire.Core.Interp (patApply', patMatches')
+import ReWire.Core.Interp (patApply', patMatches', subRange)
 
 import Data.Text (Text)
 import Control.Monad.State (MonadState, get, put, evalStateT)
@@ -16,7 +16,7 @@ import Control.Monad.Writer (MonadWriter, tell, runWriterT)
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Arrow ((&&&))
 import TextShow (showt)
-import Data.BitVector (width, bitVec)
+import Data.BitVector (width, bitVec, BV, zeros, ones, lsb1)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 
@@ -32,9 +32,16 @@ fresh s = do
 compileProgram :: (MonadFail m, MonadError AstError m) => [Flag] -> C.Program -> m V.Program
 compileProgram flags (C.Program st ds)
       | FlagFlatten `elem` flags = V.Program <$> pure <$> evalStateT (runReaderT (compileStartDefn flags st) defnMap) 0
-      | otherwise                = V.Program <$> ((:) <$> evalStateT (runReaderT (compileStartDefn flags st) defnMap) 0 <*> mapM (flip evalStateT 0 . compileDefn flags) ds)
+      | otherwise                = do
+            st' <- evalStateT (runReaderT (compileStartDefn flags st) defnMap) 0
+            ds' <- mapM (flip evalStateT 0 . compileDefn flags) $ filter ((/= getState0 st) . defnName) ds
+            pure $ V.Program $ st' : ds'
       where defnMap :: DefnMap
             defnMap = Map.fromList $ map (defnName &&& defnBody) ds
+
+            -- | Initial state should be inlined, so we can filter out its defn.
+            getState0 :: StartDefn -> Name
+            getState0 (C.StartDefn _ _ _ _ (state0, _)) = state0
 
 compileStartDefn :: (MonadError AstError m, MonadState Fresh m, MonadFail m, MonadReader DefnMap m)
                  => [Flag] -> C.StartDefn -> m Module
@@ -158,7 +165,7 @@ compileExp flags lvars = \ case
       LVar an _ _                    -> failAt an $ "ToVerilog: compileExp: encountered unknown LVar."
       Lit _ bv                       -> do
             n <- newWire (fromIntegral $ width bv) "lit"
-            pure (n, [Assign n $ LitBits bv])
+            pure (n, [Assign n $ bvToExp bv])
       Call _ sz (Global g) es ps els -> do
             Name n               <- newWire (sum $ map sizeOf es) "callPat"
             (callRes, callStmts) <- compileCall flags g sz (patApply n ps)
@@ -201,6 +208,19 @@ compileExp flags lvars = \ case
 
             lkupLVal :: LId -> Maybe LVal
             lkupLVal = flip lookup (zip [0::LId ..] lvars)
+
+-- | Breaks up literals for readability and in case of any lexical constraints on their size (though I haven't noticed any).
+bvToExp :: BV -> V.Exp
+bvToExp bv | width bv < maxLit      = LitBits bv
+           | bv == zeros (width bv) = Repl (fromIntegral $ width bv) $ LitBits (zeros 1)
+           | bv == ones (width bv)  = Repl (fromIntegral $ width bv) $ LitBits (ones 1)
+           | zs > 8                 = Concat [LitBits $ subRange (width bv - 1, fromIntegral $ zs) bv, Repl zs $ LitBits $ zeros 1]
+           | otherwise              = LitBits bv -- TODO(chathhorn)
+      where zs :: Size -- trailing zeros
+            zs = fromIntegral $ lsb1 bv
+
+            maxLit :: Int
+            maxLit = 32
 
 mkConcat :: [LVal] -> V.Exp
 mkConcat = \ case
