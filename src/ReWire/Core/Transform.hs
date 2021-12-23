@@ -8,7 +8,7 @@ import Control.Arrow ((&&&))
 import Control.Monad.Reader (runReaderT, MonadReader (..), asks)
 import Data.Containers.ListUtils (nubOrd)
 import Data.List (genericLength, genericIndex)
-import Data.BitVector (BV, bitVec, int, width, zeros)
+import Data.BitVector (BV, nat, zeros, nil)
 
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
@@ -92,10 +92,10 @@ reExp rn = \ case
                   [Lit {}] -> True
                   _        -> False
 
-            toConst :: [Exp] -> Value
+            toConst :: [Exp] -> BV
             toConst = \ case
-                  [Lit _ bv] -> int bv
-                  _          -> (-1)
+                  [Lit _ bv] -> bv
+                  _          -> nil
 
             patToExp :: [Pat] -> [Exp]
             patToExp = zipWith patToExp' [0::LId ..]
@@ -126,7 +126,6 @@ mergePats = \ case
       p : ps | sizeOf p == 0                    -> mergePats ps
       PatLit a bv : (PatLit _ bv') : ps         -> mergePats $ PatLit a (bv <> bv') : ps
       PatWildCard a s : (PatWildCard _ s') : es -> mergePats $ PatWildCard a (s + s') : es
-      [PatWildCard _ _]                         -> [] -- TODO(chathhorn): not sure about this -- removes trailing WCs.
       p : ps                                    -> p : mergePats ps
       []                                        -> []
 
@@ -172,11 +171,6 @@ isValue = \ case
       Lit {} -> True
       _      -> False
 
-isValue' :: [Exp] -> Bool
-isValue' = \ case
-      [e] -> isValue e
-      _   -> False
-
 toValue :: Exp -> Maybe BV
 toValue = \ case
       Lit _ bv -> Just bv
@@ -189,7 +183,7 @@ toValue' = \ case
 
 evalExp :: DefnMap -> Exp -> Exp
 evalExp defns =  \ case
-      Call an sz (Global (lkupDefn -> Just g)) (evalExps' -> Just v) ps els -> if patMatches v ps
+      Call an _ (Global (lkupDefn -> Just g)) (evalExps' -> Just v) ps els -> if patMatches v ps
             then Lit an $ interpDefn defns g $ patApply v id ps
             else deplural an $ evalExps defns els
       Call an sz t es ps els       -> Call an sz t (evalExps defns es) ps (evalExps defns els)

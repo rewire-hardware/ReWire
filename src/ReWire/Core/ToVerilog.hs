@@ -4,6 +4,7 @@ module ReWire.Core.ToVerilog (compileProgram) where
 
 import ReWire.Error
 import ReWire.Flags (Flag (..))
+import ReWire.Annotation (noAnn)
 import ReWire.Core.Syntax as C hiding (Name, Size, Index)
 import ReWire.Verilog.Syntax as V
 import ReWire.Core.Mangle (mangle)
@@ -15,7 +16,7 @@ import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Arrow ((&&&))
 import TextShow (showt)
 import Data.List (foldl')
-import Data.BitVector (width, int)
+import Data.BitVector (width, bitVec)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 
@@ -37,82 +38,92 @@ compileProgram flags (C.Program st ds)
 
 compileStartDefn :: (MonadError AstError m, MonadState Fresh m, MonadFail m, MonadReader DefnMap m)
                  => [Flag] -> C.StartDefn -> m Module
-compileStartDefn flags (C.StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) (state0, Sig _ _ stateSize)) = do
-      ((rStart, ssStart), startSigs) <- runWriterT $ compileCall (FlagFlatten : flags)state0 stateSize [] -- TODO(chathhorn)
-      ((rLoop, ssLoop), loopSigs)    <- runWriterT $ compileCall flags loop stateSize
-            [ Range "current_state" (1 + fromIntegral outpSize) (1 + fromIntegral outpSize + fromIntegral arg0Size - 1)
-            , Name "inp"
+compileStartDefn flags st@(C.StartDefn _ inps outps (loop, _) (state0, Sig _ _ initSize)) = do
+      ((rStart, ssStart), startSigs) <- runWriterT $ compileCall (FlagFlatten : flags) state0 initSize []
+      ((rLoop, ssLoop), loopSigs)    <- runWriterT $ compileCall flags loop initSize
+            [ Name sState
+            , Name sInp
             ]
       pure $ Module "top_level" (inputs <> outputs) (sigs <> startSigs <> loopSigs)
             $  ssStart
             <> ssLoop
-            <> assignInp
-            <> ifDone rLoop
-            <> [ Always [Pos "clk", rstEdge] $ Block $
-                  [ ifRst rStart
-                  ] ]
-
+            <> assignSigs rLoop
+            <> [ Always [Pos sClk, rstEdge] $ Block [ ifRst rStart ] ]
       where inputs :: [Port]
-            inputs = [Input $ Wire 1 "clk", Input $ Wire 1 rst] <> map (uncurry toInput) inps
+            inputs = [Input $ Wire 1 sClk, Input $ Wire 1 rst] <> map (uncurry toInput) inps
 
             outputs :: [Port]
-            outputs = map (Output . uncurry (flip Reg)) outps
+            outputs = map (Output . uncurry (flip Wire)) outps
+
+            sCurState = "current_state"
+            sNxtState = "done_or_next_state"
+            sInp      = "inp"
+            sContinue = "continue"
+            sClk      = "clk"
+            sState    = "state"
 
             sigs :: [Signal]
-            sigs =
-                  [ Reg stateSize "current_state"
-                  , Wire stateSize "done_or_next_state"
-                  , Wire inpSize   "inp"
+            sigs = [ Reg initSize    sCurState
+                  , Wire initSize    sNxtState
+                  , Wire inpSize     sInp
+                  , Wire 1           sContinue
+                  , Wire stateSize   sState
                   ]
 
-            assignInp :: [Stmt]
-            assignInp = [Assign (Name "inp") $ mkConcat $ map (Name . fst) inps]
-
             ifRst :: V.Exp -> Stmt
-            ifRst start = IfElse (Eq (LVal $ Name rst) $ LitBits 1 [rstSignal])
+            ifRst start = IfElse (Eq (LVal $ Name rst) $ LitBits $ bitVec 1 $ fromEnum rstSignal)
                   (Block
-                        [ SeqAssign (Name "current_state") start
-                        , rstOutputs -- TODO(chathhorn): not sure how to handle.
+                        [ SeqAssign (Name sCurState) start
                         ])
                   (Block
-                        [ SeqAssign (Name "current_state") (LVal $ Name "done_or_next_state")
-                        , assignOutputs
+                        [ SeqAssign (Name sCurState) (LVal $ Name sNxtState)
                         ])
 
-            ifDone :: V.Exp -> [Stmt]
-            ifDone loop = pure $ Assign (Name "done_or_next_state") $
-                  Cond (Eq (LVal $ Element "current_state" 0) $ LitBits 1 [One])
-                        loop
-                        (LVal $ Name "current_state")
+            assignSigs :: V.Exp -> [Stmt]
+            assignSigs loop = filterAssigns (zipWith Assign (map (Name . fst) p_outps_st) (map LVal $ toSubRanges sCurState $ map snd p_outps_st))
+                  <> [Assign (Name sNxtState) loop]
+                  <> [Assign (Name sInp) $ mkConcat $ map (Name . fst) inps]
 
-            rstOutputs :: Stmt
-            rstOutputs = Block $ map (flip SeqAssign LitZero . Name . fst) outps
+            filterAssigns :: [Stmt] -> [Stmt] -- TODO(chathhorn): do this in a better way.
+            filterAssigns = filter (not . isPadding)
+                  where isPadding :: Stmt -> Bool
+                        isPadding = \ case
+                              Assign (Name "padding") _ -> True
+                              _                        -> False
 
-            assignOutputs :: Stmt
-            assignOutputs = If (Eq (LVal $ Element "current_state" 0) $ LitBits 1 [One]) $ Block $ fst $ foldl'
-                  (\ (as, off) (n, fromIntegral -> sz) -> (as <> [SeqAssign (Name n) (LVal $ Range "current_state" off (off + sz - 1))], off + sz))
-                  ([], 1) outps
+            p_outps_st :: [(Name, Size)]
+            p_outps_st = (sContinue, 1) : padding <> outps <> [(sState, stateSize)]
 
-            ---
+            padding :: [(Name, Size)]
+            padding | paddingSize > 0 = [("padding", fromIntegral paddingSize)]
+                    | otherwise       = []
+
+            paddingSize :: Int
+            paddingSize = fromIntegral initSize - 1
+                        - fromIntegral outpSize
+                        - fromIntegral stateSize
+
+            stateSize :: Size
+            stateSize = case st of
+                  StartDefn _ _ _ (_, (Sig _ (arg0Size : _) _)) _ -> arg0Size
+                  _                                               -> 0
 
             inpSize :: V.Size
-            inpSize = sum $ map snd inps
+            inpSize = sum $ snd <$> inps
 
             outpSize :: V.Size
-            outpSize = sum $ map snd outps
+            outpSize = sum $ snd <$> outps
 
             rstEdge :: Sensitivity
             rstEdge | FlagInvertReset `elem` flags = Neg rst
                     | otherwise                    = Pos rst
 
-            rstSignal :: Bit
-            rstSignal | FlagInvertReset `elem` flags = Zero
-                      | otherwise                    = One
+            rstSignal :: Bool
+            rstSignal = not $ FlagInvertReset `elem` flags
 
             rst :: Text
             rst | FlagInvertReset `elem` flags = "rst_n"
                 | otherwise                    = "rst"
-compileStartDefn _ (StartDefn an _ _ _ _) = failAt an "ToVerilog: compileStartDefn: start definition with invalid signature."
 
 compileDefn :: (MonadState Fresh m, MonadFail m, MonadError AstError m) => [Flag] -> C.Defn -> m V.Module
 compileDefn flags (C.Defn _ n (Sig _ inps outp) body) = do
@@ -151,34 +162,34 @@ compileExp flags lvars = \ case
       LVar an _ _                    -> failAt an $ "ToVerilog: compileExp: encountered unknown LVar."
       Lit _ bv                       -> do
             n <- newWire (fromIntegral $ width bv) "lit"
-            pure (n, [Assign n $ LitInt (fromIntegral $ width bv) (int bv)])
+            pure (n, [Assign n $ LitBits bv])
       Call _ sz (Global g) es ps els -> do
             Name n               <- newWire (sum $ map sizeOf es) "callPat"
-            (callRes, callStmts) <- compileCall flags g sz (patArgs n ps)
+            (callRes, callStmts) <- compileCall flags g sz (patApply n ps)
             (m, stmts)           <- mkCall sz n es ps els callRes
             pure (m, callStmts <> stmts)
       Call _ sz (Extern _ (binOp -> Just op)) es ps els -> do
             Name n     <- newWire (sum $ map sizeOf es) "binopPat"
-            let [x, y]  = patArgs n ps
+            let [x, y]  = patApply n ps
             mkCall sz n es ps els $ op (LVal x) $ LVal y
       Call _ sz (Extern _ (unOp -> Just op)) es ps els -> do
             Name n  <- newWire (sum $ map sizeOf es) "unopPat"
-            let [x]  = patArgs n ps
+            let [x]  = patApply n ps
             mkCall sz n es ps els $ op $ LVal x
       Call _ sz (Extern _ "msbit") es ps els -> do
             Name n     <- newWire (sum $ map sizeOf es) "msbitPat"
             Name arg   <- newWire (argsSize ps) "msbitArg"
-            let [x]     = patArgs n ps
+            let [x]     = patApply n ps
                 assign  = Assign (Name arg) $ LVal x
             (m, stmts) <- mkCall sz n es ps els $ LVal $ Element arg (fromIntegral (argsSize ps) - 1)
             pure (m, stmts <> [assign])
       Call _ sz Id es ps els -> do
             Name n  <- newWire (sum $ map sizeOf es) "idPat"
-            let args  = patArgs n ps
+            let args  = patApply n ps
             mkCall sz n es ps els $ mkConcat args
-      Call _ sz (Const v) es ps els -> do
+      Call _ sz (Const bv) es ps els -> do
             Name n  <- newWire (sum $ map sizeOf es) "litPat"
-            mkCall sz n es ps els $ LitInt sz v
+            mkCall sz n es ps els $ LitBits bv
       Call an _ (Extern _ ex) _ _ _ -> failAt an $ "ToVerilog: compileExp: unknown extern: " <> ex
       where mkCall :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadError AstError m, MonadReader DefnMap m) => Size -> Name -> [C.Exp] -> [Pat] -> [C.Exp] -> V.Exp -> m (V.LVal, [Stmt])
             mkCall sz n es ps els arg = do
@@ -247,21 +258,26 @@ newWire sz n = do
 
 -- | Returns a boolean expression that is true when the pattern matches.
 patMatches :: Name -> [Pat] -> V.Exp
-patMatches x = snd . foldl' patMatch (0, bTrue)
+patMatches x ps = snd $ foldl' patMatch (fromIntegral $ sum $ map sizeOf ps, bTrue) ps
       where patMatch :: (Index, V.Exp) -> Pat -> (Index, V.Exp)
             patMatch (off, e) = \ case
-                  PatVar _ (fromIntegral -> sz)      -> (off + sz, e)
-                  PatWildCard _ (fromIntegral -> sz) -> (off + sz, e)
-                  PatLit _ bv                        -> (off + width bv, LAnd e $ Eq (LVal $ Range x off (off + width bv - 1)) $ LitInt (fromIntegral $ width bv) $ int bv)
+                  PatVar _ (fromIntegral -> sz)      | sz > 0       -> (off - sz, e)
+                  PatWildCard _ (fromIntegral -> sz) | sz > 0       -> (off - sz, e)
+                  PatLit _ bv                        | width bv > 0 -> (off - width bv, LAnd e $ Eq (LVal $ Range x (off - width bv) $ off - 1) $ LitBits bv)
+                  _                                                 -> (off, e)
 
 -- | Returns a list of ranges bound by pattern variables.
-patArgs :: Name -> [Pat] -> [LVal]
-patArgs x = snd . foldl' patArg (0, [])
+patApply :: Name -> [Pat] -> [LVal]
+patApply x ps = snd $ foldl' patArg (fromIntegral $ sum $ map sizeOf ps, []) ps
       where patArg :: (Index, [LVal]) -> Pat -> (Index, [LVal])
             patArg (off, lvs) = \ case
-                  PatVar _ (fromIntegral -> sz)      -> (off + sz, lvs <> [Range x off (off + sz - 1)])
-                  PatWildCard _ (fromIntegral -> sz) -> (off + sz, lvs)
-                  PatLit _ (width -> sz)             -> (off + sz, lvs)
+                  PatVar _ (fromIntegral -> sz)      | sz > 0 -> (off - sz, lvs <> [Range x (off - sz) $ off - 1])
+                  PatWildCard _ (fromIntegral -> sz) | sz > 0 -> (off - sz, lvs)
+                  PatLit _ (width -> sz)             | sz > 0 -> (off - sz, lvs)
+                  _                                           -> (off, lvs)
+
+toSubRanges :: Name -> [Size] -> [LVal]
+toSubRanges n szs = patApply n (map (PatVar noAnn) szs)
 
 argsSize :: [Pat] -> Size
 argsSize = sum . map patToSize

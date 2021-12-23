@@ -20,8 +20,8 @@ import Data.Text (Text, pack)
 import Prettyprinter (Pretty (..), Doc, vsep, (<+>), nest, hsep, parens, braces, punctuate, comma, dquotes)
 import GHC.Generics (Generic)
 import TextShow (TextShow (..), showt)
-import TextShow.Generic (FromGeneric (..), genericShowbPrec)
-import Data.BitVector (BV (..), showHex, width, showHex, zeros)
+import TextShow.Generic (FromGeneric (..))
+import Data.BitVector (BV (..), width, showHex)
 
 class SizeAnnotated a where
       sizeOf :: a -> Size
@@ -39,7 +39,7 @@ instance TextShow BV where
 data Target = Global !GId
             | Extern !Sig !Name
             | Id
-            | Const !Value
+            | Const !BV
       deriving (Eq, Ord, Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Target
 
@@ -48,7 +48,7 @@ instance Pretty Target where
             Global n   -> text n
             Extern _ n -> text "extern" <+> dquotes (text n)
             Id         -> text "id"
-            Const v    -> text "const" <+> pretty v
+            Const bv   -> text "const" <+> text (pack $ showHex bv)
 
 ppBV :: Pretty a => [a] -> Doc an
 ppBV = ppBV' . map pretty
@@ -150,7 +150,8 @@ isPatVar = \ case
 
 ---
 
-data StartDefn = StartDefn Annote ![(Name, Size)] ![(Name, Size)] !(GId, Sig) !(GId, Sig) -- inputs, outputs, res type, (loop, loop ty), (state0, state0 ty)
+-- | Names for input and output signals, res type, (loop, loop ty), (state0, state0 ty).
+data StartDefn = StartDefn Annote ![(Name, Size)] ![(Name, Size)] !(GId, Sig) !(GId, Sig)
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric StartDefn
 

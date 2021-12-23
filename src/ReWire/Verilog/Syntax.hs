@@ -1,10 +1,11 @@
-{-# LANGUAGE Safe, OverloadedStrings #-}
+{-# LANGUAGE Trustworthy, OverloadedStrings #-}
 module ReWire.Verilog.Syntax where
 
-import Prettyprinter (Pretty (..), parens, (<+>), vsep, hcat, hsep, semi, colon, punctuate, comma, nest, Doc, braces, brackets)
+import Prettyprinter (Pretty (..), parens, (<+>), vsep, hsep, semi, colon, punctuate, comma, nest, Doc, braces, brackets)
 import ReWire.Pretty (empty, text)
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import Data.List (intersperse)
+import Data.BitVector (BV (..), showHex, width, ones, zeros)
 
 newtype Program = Program { pgmModules :: [Module] }
       deriving (Eq, Show)
@@ -120,8 +121,7 @@ data Exp = Add Exp Exp
          | Concat [Exp]
          | Repl Size Exp
          | LitZero
-         | LitInt Size Value
-         | LitBits Size [Bit]
+         | LitBits BV
          | LVal LVal
       deriving (Eq, Show)
 
@@ -169,15 +169,14 @@ instance Pretty Exp where
             Concat es       -> braces $ hsep $ punctuate comma $ map pretty es
             Repl i e        -> braces $ pretty i <> braces (pretty e)
             LitZero         -> text "0"
-            LitInt w v      -> pretty w <> text "'d" <> pretty v
-            LitBits w v     -> pretty w <> text "'b" <> hcat (map pretty v)
+            LitBits bv      -> pretty (width bv) <> text "'h" <> text (pack $ drop 2 $ showHex bv)
             LVal x          -> pretty x
 
 bTrue :: Exp
-bTrue = LitBits 1 [One]
+bTrue = LitBits $ ones 1
 
 bFalse :: Exp
-bFalse = LitBits 1 [Zero]
+bFalse = LitBits $ zeros 1
 
 data Bit = Zero | One | X | Z
       deriving (Eq, Show)

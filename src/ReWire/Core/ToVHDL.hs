@@ -16,7 +16,7 @@ import Data.List (genericLength, find, foldl')
 import Data.List.Split (splitOn)
 import Data.Bits (testBit)
 import Data.Text (Text, pack)
-import Data.BitVector (width, int)
+import Data.BitVector (width, nat)
 
 import TextShow (showt)
 
@@ -28,8 +28,8 @@ askDefns = ask
 nvec :: Value -> Size -> [Bit]
 nvec n width = nvec' 0 []
       where nvec' :: Index -> [Bit] -> [Bit]
-            nvec' pos bits | pos >= fromIntegral(width) = bits
-                           | otherwise                  = nvec' (pos + 1) $ (if testBit n $ fromEnum pos then One else Zero) : bits
+            nvec' pos bits | pos >= fromIntegral width = bits
+                           | otherwise                 = nvec' (pos + 1) $ (if testBit n $ fromEnum pos then One else Zero) : bits
 
 getTyPorts :: Monad m => C.Sig -> CM m [Port]
 getTyPorts (Sig _ argsizes ressize) = do
@@ -64,11 +64,11 @@ addComponent _ i t = do
 -- | First Expr is for whether match (std_logic); remaining Exprs are for extracted fields.
 compilePat :: Monad m => Name -> Index -> Pat -> CM m (Expr, [Expr])
 compilePat nscr offset = \ case
-      PatVar _ s       -> pure (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + fromIntegral(s) - 1)])
+      PatVar _ s       -> pure (ExprBoolConst True, [ExprSlice (ExprName nscr) offset (offset + fromIntegral s - 1)])
       PatWildCard _ _  -> pure (ExprBoolConst True, [])
       PatLit _ bv      -> do
             let tagSize  = fromIntegral $ width bv
-                tagValue = if tagSize > 0 then int bv else 0
+                tagValue = if tagSize > 0 then nat bv else 0
                 tag      = nvec tagValue tagSize
                 ematch   = ExprIsEq (ExprSlice (ExprName nscr) offset (offset + genericLength tag - 1)) $ ExprBitString tag
             pure (ematch, [])
@@ -102,7 +102,7 @@ compileExp = \ case
       LVar _ _ i       -> pure ([], "arg" <> showt i)
       Lit _ bv -> do
             let litSize  = fromIntegral $ width bv
-                litValue = if litSize > 0 then int bv else 0
+                litValue = if litSize > 0 then nat bv else 0
             n          <- (<> "Res") <$> freshName (mangle $ "lit" <> showt litValue <> "x" <> showt litSize)
             addSignal n $ TyStdLogicVector litSize
             let litVec  = nvec litValue litSize
@@ -188,7 +188,7 @@ compileStartDefn flags (StartDefn an inps outps (n_loopfun, t_loopfun@(Sig _ (ar
             Architecture "top_level_impl" "top_level" sigs comps $
                   [ Instantiate "start_call" (mangle n_startstate) (PortMap [("res", ExprName "start_state")])
                   , Instantiate "loop_call" (mangle n_loopfun) (PortMap
-                        [ ("arg0", ExprSlice (ExprName "current_state") (1 + fromIntegral(outpSize)) (1 + fromIntegral(outpSize + arg0size) - 1))
+                        [ ("arg0", ExprSlice (ExprName "current_state") (1 + fromIntegral outpSize) (1 + fromIntegral (outpSize + arg0size) - 1))
                         , ("arg1", ExprName "inp")
                         , ("res", ExprName "loop_out")
                         ] )
@@ -225,7 +225,7 @@ compileStartDefn flags (StartDefn an inps outps (n_loopfun, t_loopfun@(Sig _ (ar
 
             outputs :: [Stmt]
             outputs = fst $ foldl' (\ (as, off) (n, sz) ->
-                  (as <> [Assign (LHSName n) (ExprSlice (ExprName "current_state") off (off + fromIntegral(sz) - 1))], off + fromIntegral(sz)))
+                  (as <> [Assign (LHSName n) (ExprSlice (ExprName "current_state") off (off + fromIntegral sz - 1))], off + fromIntegral sz))
                   ([], 1) outps
 
 compileStartDefn _ (StartDefn an _ _ _ _) = failAt an "toVHDL: compileStartDefn: start definition with invalid signature."

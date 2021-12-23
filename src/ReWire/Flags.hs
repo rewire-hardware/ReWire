@@ -11,7 +11,7 @@ data Flag = FlagO !String
           | FlagFlatten
           | FlagInvertReset
           | FlagPkgs !String
-          | FlagInputNames !String | FlagOutputNames !String
+          | FlagInputNames !String | FlagOutputNames !String | FlagStateNames !String
           | FlagLoadPath !String
           | FlagInterpret !(Maybe String) | FlagCycles !String
       deriving (Eq, Show)

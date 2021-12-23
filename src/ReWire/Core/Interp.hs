@@ -19,25 +19,24 @@ import Data.List (foldl')
 import Data.Machine (Mealy (..), auto, (<~), source)
 import qualified Data.Machine as M
 import Control.Arrow ((&&&), (***))
-import Data.BitVector (BV, bitVec, (@@), uint, int, zeros, width, showHex)
+import Data.BitVector (BV, bitVec, (@@), nat, zeros, width, showHex, (>>.), (<<.), ashr)
 import Data.Bits (Bits (..))
 import Data.Maybe (fromMaybe)
 import Data.HashMap.Strict (HashMap)
+import Data.List.Split (splitOn)
 import Data.Text (pack)
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Yaml as YAML
 
--- type BV = BitVector
-fromNumber sz = bitVec (fromIntegral sz)
+mkBV :: Integral v => Size -> v -> BV
+mkBV sz = bitVec (fromIntegral sz)
+
+subRange :: (Index, Index) -> BV -> BV
 subRange (i, j) b = b @@ (j, i)
-toUnsignedNumber = fromIntegral . uint
-toSignedNumber :: Num a => BV -> a
-toSignedNumber = fromIntegral . int
-isZeroVector = (== zeros 1)
 
 newtype Out = Out BV
 instance Show Out where
-      show (Out bv) = "[" <> show (width bv) <> "] " <> showHex bv
+      show (Out bv) = showHex bv
 instance YAML.ToJSON Out where
       toJSON = YAML.String . pack . show
 
@@ -51,76 +50,107 @@ run :: Mealy a b -> [a] -> [b]
 run m ip = M.run (auto m <~ source ip)
 
 interp :: [Flag] -> Program -> Mealy Ins Outs
-interp flags (Program st ds) = interpStartDefn defnMap st
+interp flags (Program st ds) = interpStartDefn flags defnMap state st
       where defnMap :: DefnMap
             defnMap = Map.fromList $ map (defnName &&& id) ds
 
+            state :: [(Name, Size)]
+            state = state' <> [("__state", stateSize - sum (map snd state'))]
+
+            -- | Take state names from the flags only as long as the sum of their
+            --   sizes is less than the total bits of state we have to divvy up.
+            state' :: [(Name, Size)]
+            state' = snd $ foldl' (\ (tot, st) (n, sz) -> if tot + sz <= stateSize then (tot + sz, st <> [(n, sz)]) else (tot, st)) (0, [])
+                         $ concatMap getState flags
+
+            getState :: Flag -> [(Name, Size)]
+            getState = \ case
+                  FlagStateNames sts -> map toStatePair $ splitOn "," sts
+                  _                  -> []
+
+            toStatePair :: String -> (Name, Size)
+            toStatePair s = case splitOn ":" s of
+                  [n, sz] -> (pack n, read sz)
+                  n       -> (pack $ mconcat n, 1)
+
+            stateSize :: Size
+            stateSize = case st of
+                  StartDefn _ _ _ (_, (Sig _ (arg0Size : _) _)) _ -> arg0Size
+                  _                                               -> 0
+
 -- TODO(chathhorn): make state explicit?
-interpStartDefn :: DefnMap -> StartDefn -> Mealy Ins Outs
-interpStartDefn defns (StartDefn _ inps outps (loop, (Sig _ (arg0Size:_) _)) (state0, Sig _ _ initSize)) = do
-      let Just loop'   = Map.lookup loop defns
-          Just state0' = Map.lookup state0 defns
-          -- f            = splitOutputs . interpDefn defns loop' . joinInputs
-          f i'         = Map.insert "__input" (Out $ joinInputs i') $ splitOutputs $ interpDefn defns loop' $ joinInputs i'
-          r so         = Mealy $ \ i -> (so, r $ f $ transferState so i)
-      r $ splitOutputs $ interpDefn defns state0' mempty
+interpStartDefn :: [Flag] -> DefnMap -> [(Name, Size)] -> StartDefn -> Mealy Ins Outs
+interpStartDefn flags defns state (StartDefn _ inps outps (loop', _) (state0', Sig _ _ initSize)) =
+      r $ filterOutput $ splitOutputs $ interpDefn defns state0 mempty
       -- So:        loop   :: ((r, s), i) -> R (o, s)
       --            state0 :: R (o, s)
       --            where R = Done (a, s) | Pause (o, r, s)
       -- Assuming neither should ever be Done.
-      -- TODO(chathhorn): handle Done/Pause: need to look at initial bit?
-      where splitOutputs :: BV -> Outs
-            splitOutputs b = Map.fromList $ (("__everything", Out b):) $ zip (map fst p_outps_st) $ map Out $ toSubRanges b $ map snd p_outps_st
+      where r :: Outs -> Mealy Ins Outs
+            r so = Mealy $ \ i -> (so, r $ f $ transferState so i)
+
+            f :: Ins -> Outs
+            f i' = filterOutput $ splitInputs (joinInputs i') <> splitOutputs (interpDefn defns loop $ joinInputs i')
+
+            splitOutputs :: BV -> Outs
+            splitOutputs b = Map.fromList $ zip (map fst p_outps_st) $ map Out $ toSubRanges b $ map snd p_outps_st
 
             joinInputs :: Ins -> BV
-            joinInputs vs = mconcat $ zipWith fromNumber (map snd st_inps) $ map (fromMaybe 0 . flip Map.lookup vs . fst) st_inps
+            joinInputs vs = mconcat $ zipWith mkBV (map snd st_inps) $ map (fromMaybe 0 . flip Map.lookup vs . fst) st_inps
+
+            splitInputs :: BV -> Outs
+            splitInputs b = Map.fromList $ zip (map (("__input_" <>) . fst) inps) $ map Out $ drop (length state) $ toSubRanges b $ map snd st_inps
 
             st_inps :: [(Name, Size)]
-            st_inps = state : inps
+            st_inps = state <> inps
 
             outpSize :: Size
             outpSize = sum $ snd <$> outps
 
-            p_outps_st :: [(Name, Size)]
-            p_outps_st = ("__continue", 1) : padding <> outps <> [state]
+            stateSize :: Size
+            stateSize = sum $ snd <$> state
 
-            state :: (Name, Size)
-            state = (stateName, arg0Size)
+            p_outps_st :: [(Name, Size)]
+            p_outps_st = ("__continue", 1) : padding <> outps <> state
+
+            filterOutput :: Outs -> Outs
+            filterOutput | FlagV `elem` flags = id
+                         | otherwise          = Map.filterWithKey (\ k _ -> k `elem` map fst (outps <> state))
 
             padding :: [(Name, Size)]
-            padding | paddingSize > 0 = [("__padding", fromIntegral(paddingSize))]
+            padding | paddingSize > 0 = [("__padding", fromIntegral paddingSize)]
                     | otherwise       = []
                   where paddingSize :: Int
-                        paddingSize = fromIntegral(initSize) - 1
-                                    - fromIntegral(outpSize)
-                                    - fromIntegral(arg0Size)
-
-            stateName :: Name
-            stateName = "__state"
+                        paddingSize = fromIntegral initSize - 1
+                                    - fromIntegral outpSize
+                                    - fromIntegral stateSize
 
             transferState :: Outs -> Ins -> Ins
-            transferState ops' = Map.insert stateName $ maybe 0 outValue $ Map.lookup stateName ops'
+            transferState ops' inp = foldr (\ sn -> Map.insert sn $ maybe 0 outValue $ Map.lookup sn ops') inp (map fst state)
 
             outValue :: Out -> Value
-            outValue (Out bv) = toUnsignedNumber bv
+            outValue (Out bv) = nat bv
+
+            Just loop   = Map.lookup loop' defns
+            Just state0 = Map.lookup state0' defns
 
 interpDefn :: DefnMap -> Defn -> BV -> BV
-interpDefn defns (Defn _ n (Sig _ inSizes outSize) body) = trunc . interpExps defns body . split inSizes
+interpDefn defns (Defn _ _ (Sig _ inSizes outSize) body) = trunc . interpExps defns body . split inSizes
       where split :: [Size] -> BV -> [BV]
             split = flip toSubRanges
 
             trunc :: BV -> BV
-            trunc = subRange (0, outSize - 1)
+            trunc = subRange (0, fromIntegral outSize - 1)
 
 interpExps :: DefnMap -> [Exp] -> [BV] -> BV
 interpExps defns es lvars = foldMap (interpExp defns lvars) es
 
 interpExp :: DefnMap -> [BV] -> Exp -> BV
 interpExp defns lvars = \ case
-      LVar _ sz (lkupVal -> Just v) -> v
+      LVar _ _ (lkupVal -> Just v) -> v
       -- LVar an _  _                    -> failAt an $ "ToVerilog: compileExp: encountered unknown LVar."
       Lit  _ bv                   -> bv
-      Call _ sz (Global (lkupDefn -> Just g)) es ps els -> if patMatches (interpExps' es) ps
+      Call _ _ (Global (lkupDefn -> Just g)) es ps els -> if patMatches (interpExps' es) ps
             then interpDefn defns g (patApply (interpExps' es) id ps)
             else interpExps defns els lvars
       Call _ sz (Extern (Sig _ argSizes _) (binOp -> Just op)) es ps els -> if patMatches (interpExps' es) ps
@@ -133,15 +163,16 @@ interpExp defns lvars = \ case
             else interpExps defns els lvars
       Call _ sz (Extern (Sig _ argSizes _) "msbit") es ps els -> if patMatches (interpExps' es) ps
             then let [x] = toSubRanges (patApply (interpExps' es) id ps) argSizes
-                 in fromNumber sz $ fromEnum $ testBit x (fromEnum $ width x - 1)
+                 in mkBV sz $ fromEnum $ testBit x (fromEnum $ width x - 1)
             else interpExps defns els lvars
-      Call _  sz Id es ps els -> if patMatches (interpExps' es) ps
+      Call _ _ Id es ps els -> if patMatches (interpExps' es) ps
             then patApply (interpExps' es) id ps
             else interpExps defns els lvars
       Call _  sz (Const v) es ps els -> if patMatches (interpExps' es) ps
-            then fromNumber sz v
+            then mkBV sz v
             else interpExps defns els lvars
       -- Call an _ (Extern ex) _ _ _ -> failAt an $ "ToVerilog: compileExp: unknown extern: " <> ex
+      _ -> error "Core.Interp: encountered unsupported expression."
       where lkupVal :: LId -> Maybe BV
             lkupVal = flip lookup (zip [0::LId ..] lvars)
 
@@ -188,38 +219,33 @@ primBinOps = map (id *** binBitify)
       , ( "**"  , (^))
       , ( "&&"  , binIntify (&&))
       , ( "||"  , binIntify (||))
-      ] <> map (id *** \ op sz a b -> fromNumber sz $ toSignedNumber $ op a b)
+      ] <> map (id *** \ op sz a b -> mkBV sz $ nat $ op a b)
       [ ( "&"   , (.&.))
       , ( "|"   , (.|.))
       , ( "^"   , xor)
 --       , ( "~^"  , XNor)
-      , ( "<<"  , lshift)
-      , ( ">>"  , rshift)
+      , ( "<<"  , (<<.))
+      , ( ">>"  , (>>.))
 --       , ( "<<<" , LShiftArith)
---       , ( ">>>" , RShiftArith)
+      , ( ">>>" , ashr)
       ]
 
 primUnOps :: [(Name, Size -> BV -> BV)]
-primUnOps = map (id *** \ op sz -> fromNumber sz . op)
-      [ ( "!"      , fromEnum . isZeroVector)
-      , ( "~"      , toSignedNumber . complement) -- TODO(chathhorn): semantics?
---       , ( "&"      , RAnd)
---       , ( "~&"     , RNAnd)
---       , ( "|"      , ROr)
---       , ( "~|"     , RNor)
---       , ( "^"      , RXor)
---       , ( "~^"     , RXNor)
-      , ( "resize" , toSignedNumber)
-      ]
+primUnOps = map (id *** \ op sz -> mkBV sz . op) unops
+      where unops :: [(Name, BV -> Integer)]
+            unops = [ ( "!"      , fromIntegral . fromEnum . (== zeros 1))
+                    , ( "~"      , nat . complement) -- TODO(chathhorn): semantics?
+              --       , ( "&"      , RAnd)
+              --       , ( "~&"     , RNAnd)
+              --       , ( "|"      , ROr)
+              --       , ( "~|"     , RNor)
+              --       , ( "^"      , RXor)
+              --       , ( "~^"     , RXNor)
+                    , ( "resize" , nat)
+                    ]
 
 binBitify :: (Integer -> Integer -> Integer) -> Size -> BV -> BV -> BV
-binBitify op sz a b = fromNumber sz (toSignedNumber a `op` toSignedNumber b)
+binBitify op sz a b = mkBV sz (nat a `op` nat b)
 
 binIntify :: (Bool -> Bool -> Bool) -> Integer -> Integer -> Integer
 binIntify op a b = if (a /= 0) `op` (b /= 0) then 1 else 0
-
-lshift :: BV -> BV -> BV
-lshift a b = a `shiftL` toSignedNumber b
-
-rshift :: BV -> BV -> BV
-rshift a b = a `shiftR` toSignedNumber b
