@@ -6,12 +6,12 @@ import ReWire.Annotation (unAnn)
 import ReWire.FrontEnd (loadProgram, LoadPath)
 import ReWire.Pretty (Pretty, prettyPrint)
 import qualified ReWire.Core.Syntax as C
-import ReWire.Core.ToVHDL (compileProgram)
+-- import ReWire.Core.ToVHDL (compileProgram)
 import qualified ReWire.Core.ToVerilog as Verilog
 import ReWire.Core.Transform (mergeSlices, purgeUnused, partialEval)
 import ReWire.Core.Interp (interp, Ins, run)
 import ReWire.Crust.Cache (printHeader)
-import ReWire.VHDL.ToLoFIRRTL (toLoFirrtl)
+-- import ReWire.VHDL.ToLoFIRRTL (toLoFirrtl)
 import ReWire.Flags (Flag (..))
 import ReWire.Error (runSyntaxError, SyntaxErrorT)
 
@@ -133,14 +133,16 @@ main = do
                                           T.putStrLn "\n## Show core:\n"
                                           T.putStrLn $ showt $ unAnn b
                               case () of
-                                    _ | FlagFirrtl    `elem` flags -> compileProgram flags a >>= toLoFirrtl >>= writeOutput -- TODO(chathhorn): a => b
+                                    _ | FlagFirrtl    `elem` flags -> liftIO $ putStrLn "FIRRTL backend currently out-of-order. Use '--verilog' or '--interpret'."
+                                          -- compileProgram flags a >>= toLoFirrtl >>= writeOutput -- TODO(chathhorn): a => b
                                       | FlagVerilog   `elem` flags -> Verilog.compileProgram flags b >>= writeOutput
                                       | flagInterp flags           -> do
                                           ips <- liftIO $ YAML.decodeFileEither $ interpInput flags
                                           let outs = run (interp flags b) (boundInput (ncycles flags) $ fromRight mempty ips)
                                           fout <- liftIO $ getOutFile flags filename
                                           liftIO $ YAML.encodeFile fout outs
-                                      | otherwise                  -> compileProgram flags a >>= writeOutput
+                                      | otherwise                  -> liftIO $ putStrLn "VHDL backend currently out-of-order. Use '--verilog' or '--interpret'."
+                                          -- compileProgram flags a >>= writeOutput
 
                         writeOutput :: Pretty a => a -> SyntaxErrorT IO ()
                         writeOutput a = do
