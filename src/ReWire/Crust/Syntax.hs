@@ -215,14 +215,14 @@ instance NFData Ty
 instance (TextShow a, TextShow b) => TextShow (Bind a b) where
       showbPrec = genericShowbPrec
 
-data Exp = App    Annote !Exp !Exp
-         | Lam    Annote !Ty !(Bind (Name Exp) Exp)
-         | Var    Annote !Ty !(Name Exp)
-         | Con    Annote !Ty !(Name DataConId)
-         | Case   Annote !Ty !Exp !(Bind Pat Exp) !(Maybe Exp)
-         | Match  Annote !Ty !Exp !MatchPat !Exp !(Maybe Exp)
+data Exp = App    Annote !Exp  !Exp
+         | Lam    Annote !Ty   !(Bind (Name Exp) Exp)
+         | Var    Annote !Ty   !(Name Exp)
+         | Con    Annote !Ty   !(Name DataConId)
+         | Case   Annote !Ty   !Exp !(Bind Pat Exp) !(Maybe Exp)
+         | Match  Annote !Ty   !Exp !MatchPat !Exp !(Maybe Exp)
          | Extern Annote !Text !Exp
-         | Error  Annote !Ty !Text
+         | Error  Annote !Ty   !Text
       deriving (Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Exp
 

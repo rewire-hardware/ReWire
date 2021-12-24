@@ -362,20 +362,20 @@ dstReT = \ case
 classifyCases :: (Fresh m, MonadError AstError m) => Exp -> m (Cases Annote Pat Exp Ty)
 classifyCases = \ case
       Var an t g
-            | n2s g == "get"    -> pure $ Get an t
-            | otherwise         -> pure $ Apply an t g []
+            | n2s g == "get"      -> pure $ Get an t
+            | otherwise           -> pure $ Apply an t g []
       App an (Var _ t x) e
             | n2s x == "rwReturn" -> pure $ Return an t e
-            | n2s x == "put"    -> pure $ Put an e
-            | n2s x == "lift"   -> pure $ Lift an e
+            | n2s x == "put"      -> pure $ Put an e
+            | n2s x == "lift"     -> pure $ Lift an e
       App an (App _ (Var _ t x) e) g
-            | n2s x == "rwBind"    -> pure $ Bind an e g
-            | otherwise         -> pure $ Apply an t x [e, g]
-      e@App {}                  -> do
+            | n2s x == "rwBind"   -> pure $ Bind an e g
+            | otherwise           -> pure $ Apply an t x [e, g]
+      e@App {}                    -> do
             (n, t, es) <- dstApp e
             pure $ Apply (ann e) t n es
-      Match an _ e1 mp e2 me    -> pure $ SMatch an e1 mp e2 me
-      d                         -> failAt (ann d) $ "Purify: unclassifiable case: " <> showt d
+      Match an _ e1 mp e2 me      -> pure $ SMatch an e1 mp e2 me
+      d                           -> failAt (ann d) $ "Purify: unclassifiable case: " <> showt d
 
 data Cases an p e t = Get an !t
                     | Return an !t !e

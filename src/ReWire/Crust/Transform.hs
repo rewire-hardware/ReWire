@@ -133,36 +133,77 @@ shiftLambdas (ts, syns, vs) = (ts, syns, ) <$> mapM shiftLambdas' vs
 
 -- | Inlines everything to the left of ">>=" and
 -- > (m >>= f) >>= g
+-- > (m >>= (\ x -> s)) >>= g
 -- becomes
 -- > m >>= (\ x -> f x >>= g)
+-- > m >>= (\ x -> s >>= g)
 -- also
 -- > m >>= f
 -- becomes (to trigger lambda lifting)
 -- > m >>= \ x -> f x
 prePurify :: (Fresh m, MonadCatch m, MonadError AstError m) => FreeProgram -> m FreeProgram
-prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM (runT inlineLBind >=> runT reAssocBind >=> runT shiftBind) ds
-      where inlineLBind :: (MonadCatch m, Fresh m, MonadError AstError m) => Transform m
-            inlineLBind =  \ case
-                  (dstBind -> Just (a, t, e1, e2)) -> do
+prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM ppDefn ds
+      where ppDefn :: (MonadError AstError m, Fresh m) => Defn -> m Defn
+            ppDefn (d@Defn { defnBody = Embed e }) = do
+                  (xs, e') <- unbind e
+                  e''      <- ppExp e'
+                  pure $ d { defnBody = Embed (bind xs e'') }
+
+            ppExp :: (MonadError AstError m, Fresh m) => Exp -> m Exp
+            ppExp = \ case
+                  e | needsRejiggering e -> rejiggerBind e
+                  -- Inline everything on the LHS.
+                  (dstBind -> Just (a, e1, e2)) -> do
+                        let t = TyBlank a
                         ds' <- filterM inlineable ds -- TODO(chathhorn): here for typing issues.
                         e1' <- flatten ds' e1
-                        pure $ mkBind a t e1' e2
-                  ||> TId
+                        rejiggerBind $ mkBind a t e1' e2
+                  App an e1 e2 -> App an <$> ppExp e1 <*> ppExp e2
+                  Lam an t  e -> do
+                        (x, e') <- unbind e
+                        Lam an t . bind x <$> ppExp e'
+                  Case an t disc e els -> do
+                        (p, e') <- unbind e
+                        Case an t <$> ppExp disc <*> (bind p <$> ppExp e') <*> mapM ppExp els
+                  Match an t disc p e els -> do
+                        Match an t <$> ppExp disc <*> pure p <*> ppExp e <*> mapM ppExp els
+                  e -> pure e
 
-            reAssocBind :: (MonadCatch m, Fresh m) => Transform m
-            reAssocBind =  \ case
-                  (dstBind -> Just (a, t, (dstBind -> Just (_, t', e1, e2)), e3)) -> do
-                        v <- fresh $ s2n "rabind"
-                        pure $ mkBind a t e1
-                             $ Lam (ann e2) (typeOf e2) (bind v $ mkBind a t' (App (ann e2) e2 $ Var (ann e2) (arrowLeft $ typeOf e2) v) e3)
-                  ||> TId
+            needsRejiggering :: Exp -> Bool
+            needsRejiggering = \ case
+                  (dstBind -> Just (_, (dstBind -> Just (_, _, _)), _)) -> True
+                  (dstBind -> Just (_, _, e2)) | not (isLambda e2)      -> True
+                  _ -> False
+
+            rejiggerBind :: (MonadError AstError m, Fresh m) => Exp -> m Exp
+            rejiggerBind = \ case
+                  -- Associate bind to the right (case with a lambda on the right).
+                  (dstBind -> Just (a, (dstBind -> Just (_, e1, Lam _ t2 e2)), e3)) -> do
+                        let t = TyBlank a
+                        (x, e2') <- unbind e2
+                        ppExp $ mkBind a t e1
+                              $ Lam (ann e2') t (bind x $ mkBind a t e2' e3)
+                  -- Associate bind to the right.
+                  (dstBind -> Just (a, (dstBind -> Just (_, e1, e2)), e3)) -> do
+                        let t = TyBlank a
+                        x <- fresh $ s2n "rabind"
+                        let e' = mkBind a t (App (ann e2) e2 $ Var (ann e2) t x) e3
+                        ppExp $ mkBind a t e1 $ Lam (ann e2) t (bind x e')
+                  -- Lambda-abstract the right side (so it will get lambda-lifted).
+                  (dstBind -> Just (a, e1, e2)) | not (isLambda e2) -> do
+                        x <- fresh $ s2n "sbind"
+                        let t = TyBlank a
+                        ppExp $ mkBind a t e1
+                              $ Lam (ann e2) t (bind x $ App (ann e2) e2 $ Var (ann e2) t x)
+                  e -> pure e
 
             shiftBind :: (MonadCatch m, Fresh m) => Transform m
             shiftBind =  \ case
-                  (dstBind -> Just (a, t, e1, e2)) | not (isLambda e2) -> do
-                        v <- fresh $ s2n "sbind"
+                  (dstBind -> Just (a, e1, e2)) | not (isLambda e2) -> do
+                        x <- fresh $ s2n "sbind"
+                        let t = TyBlank a
                         pure $ mkBind a t e1
-                             $ Lam (ann e2) (typeOf e2) (bind v $ App (ann e2) e2 $ Var (ann e2) (arrowLeft $ typeOf e2) v)
+                             $ Lam (ann e2) t (bind x $ App (ann e2) e2 $ Var (ann e2) t x)
                   ||> TId
 
             isLambda :: Exp -> Bool
@@ -170,10 +211,10 @@ prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM (runT inlineLBind >=> runT reAs
                   Lam {} -> True
                   _      -> False
 
-            dstBind :: Exp -> Maybe (Annote, Ty, Exp, Exp)
+            dstBind :: Exp -> Maybe (Annote, Exp, Exp)
             dstBind = \ case
-                  App a (App _ (Var _ t x) e1) e2 | isFreeName x && n2s x == "rwBind" -> Just (a, t, e1, e2)
-                  _ -> Nothing
+                  App a (App _ (Var _ _ x) e1) e2 | isFreeName x && n2s x == "rwBind" -> Just (a, e1, e2)
+                  _                                                                   -> Nothing
 
             mkBind :: Annote -> Ty -> Exp -> Exp -> Exp
             mkBind a t e1 e2 = App a (App a (Var a t $ s2n "rwBind") e1) e2
@@ -184,8 +225,8 @@ prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM (runT inlineLBind >=> runT reAs
             inlineable :: Fresh m => Defn -> m Bool
             inlineable d = case defnPolyTy d of
                   Embed (Poly t) -> do
-                        (_, t') <- unbind t
-                        pure $ (isStateMonad t' || isResMonad t') && (not (isPrim (defnName d)) || defnInline d)
+                        (_, t') <- unbind t -- only inline ReT defs that aren't prim, unless they're explicitly inlined.
+                        pure $ isResMonad t' && (not (isPrim $ defnName d) || defnInline d)
 
 -- | So if e :: a -> b, then
 -- > g = e
@@ -241,7 +282,7 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                         f     <- fresh $ s2n "$LL.case"
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs ++ map fst pvs) e')
-                        let lvars = map (toVar an . first promote) bvs 
+                        let lvars = map (toVar an . first promote) bvs
                         pure $ Match an t (mkTuple an $ lvars <> [e1])
                                     (mkTupleMPat an $ map (MatchPatVar an . typeOf) lvars <> [transPat p])
                                     (Var an t' f) e2
