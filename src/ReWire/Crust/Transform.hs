@@ -8,6 +8,8 @@ module ReWire.Crust.Transform
       , liftLambdas
       , fullyApplyDefs
       , purgeUnused
+      , prePurify
+      , typeTopLevelExterns
       ) where
 
 import ReWire.Error
@@ -24,7 +26,7 @@ import ReWire.Crust.Syntax
 import Control.Arrow (first)
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.State (State, evalStateT, execState, StateT (..), get, modify)
-import Control.Monad (replicateM)
+import Control.Monad (filterM, replicateM, (>=>))
 import Data.Data (Data)
 import Data.List (find, foldl')
 import Data.Maybe (fromJust, fromMaybe)
@@ -38,16 +40,16 @@ import qualified Data.Set as Set
 -- | Inlines defs marked for inlining. Must run before lambda lifting.
 inline :: MonadError AstError m => FreeProgram -> m FreeProgram
 inline (ts, syns, ds) = (ts, syns, ) . flip substs ds <$> subs
-      where toSubst :: Defn -> (Name Exp, Exp)
-            toSubst (Defn _ n _ _ (Embed e)) = runFreshM $ unbind e >>= \ case
-                  ([], e') -> pure (n, e')
-                  _        -> error "Inlining: definition not inlinable (this shouldn't happen)"
-
-            inlineDefs :: [Defn]
+      where inlineDefs :: [Defn]
             inlineDefs = filter defnInline ds
 
             subs :: MonadError AstError m => m [(Name Exp, Exp)]
-            subs = map toSubst <$> fix "INLINE definition" 100 (pure . substs (map toSubst inlineDefs)) inlineDefs
+            subs = map defnSubst <$> fix "INLINE definition" 100 (pure . substs (map defnSubst inlineDefs)) inlineDefs
+
+defnSubst :: Defn -> (Name Exp, Exp)
+defnSubst (Defn _ n _ _ (Embed e)) = runFreshM $ unbind e >>= \ case
+      ([], e') -> pure (n, e')
+      _        -> error "Inlining: definition not inlinable (this shouldn't happen)"
 
 -- | Expands type synonyms.
 expandTypeSynonyms :: (MonadCatch m, MonadError AstError m, Fresh m) => FreeProgram -> m FreeProgram
@@ -100,11 +102,24 @@ neuterPrims :: MonadCatch m => FreeProgram -> m FreeProgram
 neuterPrims = runT $ transform $
       \ (Extern an s e) -> pure $ Extern an s (Error an (typeOf e) "extern expression placeholder")
 
+-- | Hacky hack
+typeTopLevelExterns :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
+typeTopLevelExterns (ts, syns, vs) = (ts, syns, ) <$> mapM typeExterns vs
+      where typeExterns :: Fresh m => Defn -> m Defn
+            typeExterns (Defn an n (Embed (Poly t)) inl (Embed e)) = Defn an n (Embed (Poly t)) inl . Embed <$> mash t e
+
+            mash :: Fresh m => Bind [Name Ty] Ty -> Bind [Name Exp] Exp -> m (Bind [Name Exp] Exp)
+            mash t e = unbind e >>= \ case
+                  (vs, Extern an s _) -> do
+                        (_, t') <- unbind t
+                        pure $ bind vs $ Extern an s $ Error an t' "extern expression placeholder"
+                  _                   -> pure e
+
 -- | Shifts vars bound by top-level lambdas into defs.
 -- > g = \ x1 -> \ x2 -> e
 --   becomes
 -- > g x1 x2 = e
-shiftLambdas :: Fresh m => FreeProgram -> m FreeProgram
+shiftLambdas :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
 shiftLambdas (ts, syns, vs) = (ts, syns, ) <$> mapM shiftLambdas' vs
       where shiftLambdas' :: Fresh m => Defn -> m Defn
             shiftLambdas' (Defn an n t inl (Embed e)) = Defn an n t inl . Embed <$> mash e
@@ -114,7 +129,63 @@ shiftLambdas (ts, syns, vs) = (ts, syns, ) <$> mapM shiftLambdas' vs
                   (vs, Lam _ _ b) -> do
                         (v, b') <- unbind b
                         mash $ bind (vs ++ [v]) b'
-                  _ -> pure e
+                  _               -> pure e
+
+-- | Inlines everything to the left of ">>=" and
+-- > (m >>= f) >>= g
+-- becomes
+-- > m >>= (\ x -> f x >>= g)
+-- also
+-- > m >>= f
+-- becomes (to trigger lambda lifting)
+-- > m >>= \ x -> f x
+prePurify :: (Fresh m, MonadCatch m, MonadError AstError m) => FreeProgram -> m FreeProgram
+prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM (runT inlineLBind >=> runT reAssocBind >=> runT shiftBind) ds
+      where inlineLBind :: (MonadCatch m, Fresh m, MonadError AstError m) => Transform m
+            inlineLBind =  \ case
+                  (dstBind -> Just (a, t, e1, e2)) -> do
+                        ds' <- filterM inlineable ds -- TODO(chathhorn): here for typing issues.
+                        e1' <- flatten ds' e1
+                        pure $ mkBind a t e1' e2
+                  ||> TId
+
+            reAssocBind :: (MonadCatch m, Fresh m) => Transform m
+            reAssocBind =  \ case
+                  (dstBind -> Just (a, t, (dstBind -> Just (_, t', e1, e2)), e3)) -> do
+                        v <- fresh $ s2n "rabind"
+                        pure $ mkBind a t e1
+                             $ Lam (ann e2) (typeOf e2) (bind v $ mkBind a t' (App (ann e2) e2 $ Var (ann e2) (arrowLeft $ typeOf e2) v) e3)
+                  ||> TId
+
+            shiftBind :: (MonadCatch m, Fresh m) => Transform m
+            shiftBind =  \ case
+                  (dstBind -> Just (a, t, e1, e2)) | not (isLambda e2) -> do
+                        v <- fresh $ s2n "sbind"
+                        pure $ mkBind a t e1
+                             $ Lam (ann e2) (typeOf e2) (bind v $ App (ann e2) e2 $ Var (ann e2) (arrowLeft $ typeOf e2) v)
+                  ||> TId
+
+            isLambda :: Exp -> Bool
+            isLambda = \ case
+                  Lam {} -> True
+                  _      -> False
+
+            dstBind :: Exp -> Maybe (Annote, Ty, Exp, Exp)
+            dstBind = \ case
+                  App a (App _ (Var _ t x) e1) e2 | isFreeName x && n2s x == "rwBind" -> Just (a, t, e1, e2)
+                  _ -> Nothing
+
+            mkBind :: Annote -> Ty -> Exp -> Exp -> Exp
+            mkBind a t e1 e2 = App a (App a (Var a t $ s2n "rwBind") e1) e2
+
+            flatten :: (Fresh m, MonadError AstError m) => [Defn] -> Exp -> m Exp
+            flatten ds = fix "Bind LHS definition" 100 (pure . substs (map defnSubst ds))
+
+            inlineable :: Fresh m => Defn -> m Bool
+            inlineable d = case defnPolyTy d of
+                  Embed (Poly t) -> do
+                        (_, t') <- unbind t
+                        pure $ (isStateMonad t' || isResMonad t') && (not (isPrim (defnName d)) || defnInline d)
 
 -- | So if e :: a -> b, then
 -- > g = e

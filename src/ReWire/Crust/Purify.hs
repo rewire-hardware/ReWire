@@ -214,20 +214,11 @@ isStateMonadicDefn :: Fresh m => Defn -> m (Either Defn Defn)
 isStateMonadicDefn = \ case
       d@Defn { defnName = n } | isPrim n -> pure $ Right d
       d@Defn { defnPolyTy = Embed poly } -> bool (Right d) (Left d) . isStateMonad <$> poly2Ty poly
-      where isStateMonad :: Ty -> Bool
-            isStateMonad ty = case rangeTy ty of
-                  TyApp an (TyApp _ (TyApp _ (TyCon _ (n2s -> "StT")) _) m) a -> isStateMonad (tycomp an m a)
-                  TyApp _ (TyCon _ (n2s -> "I")) _                            -> True
-                  _                                                           -> False
 
 isResMonadicDefn :: Fresh m => Defn -> m (Either Defn Defn)
 isResMonadicDefn = \ case
       d@Defn { defnName = n } | isPrim n -> pure $ Right d
       d@Defn { defnPolyTy = Embed poly } -> bool (Right d) (Left d) . isResMonad <$> poly2Ty poly
-      where isResMonad :: Ty -> Bool
-            isResMonad ty = case rangeTy ty of
-                  TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReT")) _) _) _) _ -> True
-                  _                                                                      -> False
 
 purifyStateDefn :: (Fresh m, MonadError AstError m, MonadIO m) =>
                    PureEnv -> [Ty] -> Defn -> m Defn

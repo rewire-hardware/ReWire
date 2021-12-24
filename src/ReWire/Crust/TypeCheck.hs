@@ -206,6 +206,7 @@ tcExp = \ case
                         (e2', te2)  <- tcExp e2
                         unify an tv te2
                         pure (Match an tv e' p' f (Just e2'), tv)
+      Extern an n e@(Error _ t _) -> pure (Extern an n e, t) -- TODO(chathhorn)
       Extern an n e          -> do
             (e', te) <- tcExp e
             pure (Extern an n e', te)

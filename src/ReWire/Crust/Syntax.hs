@@ -17,13 +17,13 @@ module ReWire.Crust.Syntax
       , Defn (..), DataDefn (..), TypeSynonym (..), DataCon (..)
       , FreeProgram, Program (..)
       , Kind (..), kblank
-      , flattenApp, flattenArrow, flattenTyApp, arr, arrowRight
+      , flattenApp, flattenArrow, flattenTyApp, arr, arrowRight, arrowLeft
       , fv, fvAny
       , Fresh, Name, Embed (..), TRec, Bind
       , FieldId
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly
-      , rangeTy, paramTys, isPrim, mkArrowTy, nil
+      , rangeTy, paramTys, isPrim, mkArrowTy, nil, isResMonad, isStateMonad
       , mkTuple, mkTuplePat, mkTupleMPat, mkTupleTy
       , mkPair, mkPairPat, mkPairMPat
       , kmonad, tycomp
@@ -499,6 +499,9 @@ flattenArrow = \ case
             where (ts, t) = flattenArrow t2
       t                                               -> ([], t)
 
+paramTys :: Ty -> [Ty]
+paramTys = fst . flattenArrow
+
 flattenTyApp :: Ty -> [Ty]
 flattenTyApp = \ case
       TyApp _ t t' -> flattenTyApp t ++ [t']
@@ -520,12 +523,10 @@ arrowRight = \ case
       TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) t' -> t'
       t                                              -> t
 
-paramTys :: Ty -> [Ty]
-paramTys = paramTys' []
-      where paramTys' :: [Ty] -> Ty -> [Ty]
-            paramTys' acc = \ case
-                  TyApp    _ (TyApp _ (TyCon _ (n2s -> "->")) t1) t2  -> paramTys' (t1 : acc) t2
-                  _                                                   -> reverse acc
+arrowLeft :: Ty -> Ty
+arrowLeft = \ case
+      TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t') _ -> t'
+      t                                              -> t
 
 isPrim :: Show a => a -> Bool
 isPrim = notElem '.' . show
@@ -573,6 +574,17 @@ mkTupleMPat an = foldr (mkPairMPat an) nilMPat
 
 isTupleCtor :: Text -> Bool
 isTupleCtor c = c == "(" <> replicate (length (unpack c) - 2) "," <> ")"
+
+isResMonad :: Ty -> Bool
+isResMonad ty = case rangeTy ty of
+      TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReT")) _) _) _) _ -> True
+      _                                                                      -> False
+
+isStateMonad :: Ty -> Bool
+isStateMonad ty = case rangeTy ty of
+      TyApp an (TyApp _ (TyApp _ (TyCon _ (n2s -> "StT")) _) m) a -> isStateMonad (tycomp an m a)
+      TyApp _ (TyCon _ (n2s -> "I")) _                            -> True
+      _                                                           -> False
 
 -- Orphans.
 
