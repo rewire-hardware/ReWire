@@ -16,7 +16,7 @@ import System.Process (callCommand)
 import Test.Framework (defaultMainWithArgs, testGroup, Test)
 import Test.Framework.Providers.HUnit (testCase)
 
-import Paths_ReWire (getDataFileName)
+import Paths_rewire (getDataFileName)
 
 data Flag = FlagV
           | FlagNoGhdl

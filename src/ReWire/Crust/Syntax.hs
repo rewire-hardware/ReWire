@@ -123,8 +123,9 @@ instance Hashable Kind
 instance Alpha Kind
 
 instance Subst Kind Kind where
-      isvar (KVar x) = Just $ SubstName x
-      isvar _        = Nothing
+      isvar = \ case
+            KVar x -> Just $ SubstName x
+            _      -> Nothing
 
 instance NFData Kind
 
@@ -171,8 +172,9 @@ instance Hashable Ty
 instance Alpha Ty
 
 instance Subst Ty Ty where
-      isvar (TyVar _ _ x) = Just $ SubstName x
-      isvar _             = Nothing
+      isvar = \ case
+            TyVar _ _ x -> Just $ SubstName x
+            _           -> Nothing
 instance Subst Ty Annote where
       subst _ _ x = x
       substs _ x  = x
@@ -223,6 +225,8 @@ data Exp = App    Annote !Exp  !Exp
          | Case   Annote !Ty   !Exp !(Bind Pat Exp) !(Maybe Exp)
          | Match  Annote !Ty   !Exp !MatchPat !Exp !(Maybe Exp)
          | Extern Annote !Text !Exp
+         | LitInt Annote !Integer
+         | LitStr Annote !Text
          | Error  Annote !Ty   !Text
       deriving (Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Exp
@@ -241,8 +245,9 @@ instance Subst Ty Text where
       substs _ x  = x
 
 instance Subst Exp Exp where
-      isvar (Var _ _ x) = Just $ SubstName x
-      isvar _           = Nothing
+      isvar = \ case
+            Var _ _ x -> Just $ SubstName x
+            _         -> Nothing
 instance Subst Exp Annote where
       isvar _ = Nothing
       subst _ _ x = x
@@ -267,6 +272,8 @@ instance TypeAnnotated Exp where
             Case _ t _ _ _    -> t
             Match _ t _ _ _ _ -> t
             Extern _ _ e      -> typeOf e
+            LitInt _ _        -> TyBlank noAnn
+            LitStr _ _        -> TyBlank noAnn
             Error _ t _       -> t
 
 instance Annotated Exp where
@@ -278,14 +285,17 @@ instance Annotated Exp where
             Case a _ _ _ _    -> a
             Match a _ _ _ _ _ -> a
             Extern a _ _      -> a
+            LitInt a _        -> a
+            LitStr a _        -> a
             Error a _ _       -> a
-
 
 instance Parenless Exp where
       parenless e = case flattenApp e of
             (Con _ _ (n2s -> c) : _)  | isTupleCtor c -> True
             [Con {}]                                  -> True
             [Var {}]                                  -> True
+            [LitInt {}]                               -> True
+            [LitStr {}]                               -> True
             _                                         -> False
 
 instance Pretty Exp where
@@ -308,6 +318,8 @@ instance Pretty Exp where
                         , pretty p <+> text "->" <+> pretty e1
                         ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
             [Extern _ n e]                               -> text "extern" <+> dquotes (pretty n) <+> mparens e
+            [LitInt _ v]                                 -> pretty v
+            [LitStr _ v]                                 -> pretty v
             [Error _ t m]                                -> text "error" <+> braces (pretty t) <+> dquotes (pretty m)
             es                                           -> nest 2 $ hsep $ map mparens es
 
