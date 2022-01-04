@@ -356,12 +356,16 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
 
 -- | Remove unused definitions.
 purgeUnused :: FreeProgram -> FreeProgram
-purgeUnused (ts, syns, vs) = (inuseData (fv $ trec $ inuseDefn vs) ts, syns, inuseDefn vs)
-      where inuseData :: [Name DataConId] -> [DataDefn] -> [DataDefn]
-            inuseData ns = filter (not . null . dataCons) . map (inuseData' ns)
+purgeUnused (ts, syns, vs) = (inuseData (externCtors vs') (fv $ trec vs') ts, syns, vs')
+      where vs' :: [Defn]
+            vs' = inuseDefn vs
 
-            inuseData' :: [Name DataConId] -> DataDefn -> DataDefn
-            inuseData' ns d@(DataDefn an n k cs)
+            inuseData :: [Name TyConId] -> [Name DataConId] -> [DataDefn] -> [DataDefn]
+            inuseData ts ns = filter (not . null . dataCons) . map (inuseData' ts ns)
+
+            inuseData' :: [Name TyConId] -> [Name DataConId] -> DataDefn -> DataDefn
+            inuseData' ts ns d@(DataDefn an n k cs)
+                  | n     `elem` ts           = d
                   | n2s n `elem` reservedData = d
                   | otherwise                 = DataDefn an n k $ filter ((`Set.member` Set.fromList ns) . dataConName) cs
 
@@ -371,6 +375,13 @@ purgeUnused (ts, syns, vs) = (inuseData (fv $ trec $ inuseDefn vs) ts, syns, inu
                          , "(,)"
                          , "()"
                          ]
+
+            externCtors :: Data a => a -> [Name TyConId]
+            externCtors = runQ (query $ \ case
+                  Extern _ _ e -> case flattenTyApp $ rangeTy $ typeOf e of
+                        [TyCon _ n] -> [n]
+                        _           -> []
+                  _                 -> [])
 
             dataConName :: DataCon -> Name DataConId
             dataConName (DataCon _ n _) = n

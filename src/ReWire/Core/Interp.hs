@@ -151,21 +151,24 @@ interpExp :: DefnMap -> [BV] -> Exp -> BV
 interpExp defns lvars = \ case
       LVar _ _ (lkupVal -> Just v) -> v
       -- LVar an _  _                    -> failAt an $ "ToVerilog: compileExp: encountered unknown LVar."
-      Lit  _ bv                   -> bv
+      Lit  _ bv                    -> bv
       Call _ _ (Global (lkupDefn -> Just g)) es ps els -> if patMatches (interpExps' es) ps
             then interpDefn defns g (patApply (interpExps' es) id ps)
             else interpExps defns els lvars
-      Call _ sz (Extern (Sig _ argSizes _) (binOp -> Just op)) es ps els -> if patMatches (interpExps' es) ps
-            then let [x, y] = toSubRanges (patApply (interpExps' es) id ps) argSizes
-                 in op sz x y
+      Call _ sz (Extern (Sig _ argSizes _) nm@(binOp -> Just op)) es ps els -> if patMatches (interpExps' es) ps
+            then case toSubRanges (patApply (interpExps' es) id ps) argSizes of
+                  [x, y] -> op sz x y
+                  _      -> error $ "Core/Interp: interpExp: arity mismatch (" <> show nm <> ")."
             else interpExps defns els lvars
-      Call _ sz (Extern (Sig _ argSizes _) (unOp -> Just op)) es ps els -> if patMatches (interpExps' es) ps
-            then let [x] = toSubRanges (patApply (interpExps' es) id ps) argSizes
-                 in op sz x
+      Call _ sz (Extern (Sig _ argSizes _) nm@(unOp -> Just op)) es ps els -> if patMatches (interpExps' es) ps
+            then case toSubRanges (patApply (interpExps' es) id ps) argSizes of
+                  [x]    -> op sz x
+                  _      -> error $ "Core/Interp: interpExp: arity mismatch (" <> show nm <> ")."
             else interpExps defns els lvars
       Call _ sz (Extern (Sig _ argSizes _) "msbit") es ps els -> if patMatches (interpExps' es) ps
-            then let [x] = toSubRanges (patApply (interpExps' es) id ps) argSizes
-                 in mkBV sz $ fromEnum $ testBit x (fromEnum $ width x - 1)
+            then case toSubRanges (patApply (interpExps' es) id ps) argSizes of
+                  [x]    -> mkBV sz $ fromEnum $ testBit x (fromEnum $ width x - 1)
+                  _      -> error "Core/Interp: interpExp: arity mismatch (msbit)."
             else interpExps defns els lvars
       Call _ _ Id es ps els -> if patMatches (interpExps' es) ps
             then patApply (interpExps' es) id ps
