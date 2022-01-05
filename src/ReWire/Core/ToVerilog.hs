@@ -10,7 +10,9 @@ import ReWire.Verilog.Syntax as V
 import ReWire.Core.Mangle (mangle)
 import ReWire.Core.Interp (patApply', patMatches', subRange)
 
-import Data.Text (Text)
+import Data.Text (Text, pack)
+import Data.Maybe (fromMaybe)
+import Control.Monad (msum)
 import Control.Monad.State (MonadState, get, put, evalStateT)
 import Control.Monad.Writer (MonadWriter, tell, runWriterT)
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
@@ -55,9 +57,11 @@ compileStartDefn flags st@(C.StartDefn _ inps outps (loop, _) (state0, Sig _ _ i
             $  ssStart
             <> ssLoop
             <> assignSigs rLoop
-            <> [ Always [Pos sClk, rstEdge] $ Block [ ifRst rStart ] ]
+            <> [ Always ([Pos sClk] <> rstEdge) $ Block [ ifRst rStart ] ]
       where inputs :: [Port]
-            inputs = [Input $ Wire 1 sClk, Input $ Wire 1 rst] <> map (uncurry toInput) inps
+            inputs = [Input $ Wire 1 sClk]
+                  <> (if noRst then [] else [Input $ Wire 1 sRst])
+                  <> map (uncurry toInput) inps
 
             outputs :: [Port]
             outputs = map (Output . uncurry (flip Wire)) outps
@@ -66,8 +70,17 @@ compileStartDefn flags st@(C.StartDefn _ inps outps (loop, _) (state0, Sig _ _ i
             sNxtState = "done_or_next_state"
             sInp      = "inp"
             sContinue = "continue"
-            sClk      = "clk"
             sState    = "state"
+
+            sClk :: Text
+            sClk = fromMaybe "clk" $ msum $ map (\ case
+                  FlagClockName s -> Just $ pack s
+                  _               -> Nothing) flags
+
+            sRst :: Text
+            sRst = fromMaybe (if invertRst then "rst_n" else "rst") $ msum $ map (\ case
+                  FlagResetName s -> Just $ pack s
+                  _               -> Nothing) flags
 
             sigs :: [Signal]
             sigs = [ Reg initSize    sCurState
@@ -78,9 +91,13 @@ compileStartDefn flags st@(C.StartDefn _ inps outps (loop, _) (state0, Sig _ _ i
                   ]
 
             ifRst :: V.Exp -> Stmt
-            ifRst start = IfElse (Eq (LVal $ Name rst) $ LitBits $ bitVec 1 $ fromEnum rstSignal)
+            ifRst start | noRst     = assignNextState
+                        | otherwise = IfElse (Eq (LVal $ Name sRst) $ LitBits $ bitVec 1 $ fromEnum $ not invertRst)
                   (Block [ ParAssign (Name sCurState) start ])
-                  (Block [ ParAssign (Name sCurState) (LVal $ Name sNxtState) ])
+                  (Block [ assignNextState ])
+
+            assignNextState :: Stmt
+            assignNextState = ParAssign (Name sCurState) $ LVal $ Name sNxtState
 
             assignSigs :: V.Exp -> [Stmt]
             assignSigs loop = filterAssigns (zipWith Assign (map (Name . fst) p_outps_st) (map LVal $ toSubRanges sCurState $ map snd p_outps_st))
@@ -117,16 +134,16 @@ compileStartDefn flags st@(C.StartDefn _ inps outps (loop, _) (state0, Sig _ _ i
             outpSize :: V.Size
             outpSize = sum $ snd <$> outps
 
-            rstEdge :: Sensitivity
-            rstEdge | FlagInvertReset `elem` flags = Neg rst
-                    | otherwise                    = Pos rst
+            rstEdge :: [Sensitivity]
+            rstEdge | noRst     = []
+                    | invertRst = [Neg sRst]
+                    | otherwise = [Pos sRst]
 
-            rstSignal :: Bool
-            rstSignal = FlagInvertReset `notElem` flags
+            invertRst :: Bool
+            invertRst = FlagInvertReset `elem` flags
 
-            rst :: Text
-            rst | FlagInvertReset `elem` flags = "rst_n"
-                | otherwise                    = "rst"
+            noRst :: Bool
+            noRst = FlagNoReset `elem` flags
 
 compileDefn :: (MonadState Fresh m, MonadFail m, MonadError AstError m) => [Flag] -> C.Defn -> m V.Module
 compileDefn flags (C.Defn _ n (Sig _ inps outp) body) = do

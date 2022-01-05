@@ -10,7 +10,10 @@ data Flag = FlagO !String
           | FlagDTypes
           | FlagFlatten
           | FlagInvertReset
+          | FlagNoReset
           | FlagPkgs !String
+          | FlagClockName !String
+          | FlagResetName !String
           | FlagInputNames !String | FlagOutputNames !String | FlagStateNames !String
           | FlagLoadPath !String
           | FlagInterpret !(Maybe String) | FlagCycles !String
