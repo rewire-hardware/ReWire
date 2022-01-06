@@ -243,6 +243,7 @@ primBinOps = map (second binBitify)
       , ( ">>"  , (>>.))
 --       , ( "<<<" , LShiftArith)
       , ( ">>>" , ashr)
+      , ( "concat" , (<>))
       ]
 
 primUnOps :: [(Name, Size -> BV -> BV)]
