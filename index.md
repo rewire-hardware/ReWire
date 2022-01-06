@@ -30,7 +30,7 @@ Why does all this distinguish us from other research efforts? Read on!
 ### __Announcements__
 * ReWire, Version 2.0, released on July 21, 2021! This included a number of improvements to the VHDL backend and a swathe of bug fixes.
 * The ReWire language and compiler is currently under intense and active development and is, therefore, something of a moving target. E.g., we have added a Verilog backend, among other things.
-* Our development of the language and compiler has outstripped our now quite dusty website; writing documentation is like eating broccoli. If you have any questions, please send us an [email](mailto:rewire-questions@googlegroups.com).
+* Our development of the language and compiler has outstripped our now quite dusty website; writing documentation is like eating broccoli. If you have any questions, please send us an [email](mailto:rewire.questions@gmail.com).
 
 ### __Just Say No! to Semantic Archaeology__
 
@@ -38,7 +38,7 @@ Say you have a hardware design written in a production hardware description lang
 
 Well, you can't reason directly about the HDL code. Why not? _Because the HDL possesses no formal semantics!_ Using traditional formal methods for hardware (e.g., [Kropf 1999](http://dl.acm.org/citation.cfm?id=519876)), one must laboriously formulate a formal model in the logic of a theorem prover. We call this process _semantic archaeology_ and it is expensive, time-consuming and error-prone (i.e., how do you know that your formal specification is related to the concrete HDL design?). Semantic archaeology is the bane of formal methods.
 
-Because ReWire has a formal semantics, one can reason about hardware designs in ReWire directly on the ReWire code itself just as one would about a normal pure functional program. One can also apply tools and techniques from software verification to hardware verification (e.g., as we have with [Coq](https://coq.inria.fr) and [language-based methods in security](http://dl.acm.org/citation.cfm?id=1662663)). For more information, please consult the reading below or send an [email](mailto:rewire-questions@googlegroups.com).
+Because ReWire has a formal semantics, one can reason about hardware designs in ReWire directly on the ReWire code itself just as one would about a normal pure functional program. One can also apply tools and techniques from software verification to hardware verification (e.g., as we have with [Coq](https://coq.inria.fr) and [language-based methods in security](http://dl.acm.org/citation.cfm?id=1662663)). For more information, please consult the reading below or send an [email](mailto:rewire.questions@gmail.com).
 
 
 
