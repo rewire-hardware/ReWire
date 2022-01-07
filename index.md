@@ -3,6 +3,9 @@ layout: default
 title: "ReWire Functional Hardware Description"
 ---
 
+<style>H1{color:Blue;}</style>
+<style>H2{color:DarkOrange;}</style>
+
 {% comment %} Here is the syntax for figures from jekyll_figure.
 {% figure 4Ps pdf 'Your caption here' %}
 {% endcomment %}
