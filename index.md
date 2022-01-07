@@ -30,12 +30,12 @@ ReWire programs, however, may all be translated directly to VHDL using the ReWir
 
 Why does all this distinguish us from other research efforts? Read on!
 
-# __Announcements__
+## __Announcements__
 * ReWire, Version 2.0, released on July 21, 2021! This included a number of improvements to the VHDL backend and a swathe of bug fixes.
 * The ReWire language and compiler is currently under intense and active development and is, therefore, something of a moving target. E.g., we have added a Verilog backend, among other things.
 * Our development of the language and compiler has outstripped our now quite dusty website; writing documentation is like eating broccoli. If you have any questions, please send us an [email](mailto:rewire.questions@gmail.com).
 
-# __Just Say No! to Semantic Archaeology__
+## __Just Say No! to Semantic Archaeology__
 
 Say you have a hardware design written in a production hardware description language (HDL) like VHDL or Verilog and you need to formally verify some properties of the design and implementation. Where do you start?
 
