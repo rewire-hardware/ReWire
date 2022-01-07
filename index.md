@@ -3,8 +3,9 @@ layout: default
 title: "ReWire Functional Hardware Description"
 ---
 
-<style>H1{color:Blue;}</style>
-<style>H2{color:DarkOrange;}</style>
+<style>H1{color:Black;}</style>
+<style>H2{color:Blue;}</style>
+<style>H3{color:DarkRed;}</style>
 
 {% comment %} Here is the syntax for figures from jekyll_figure.
 {% figure 4Ps pdf 'Your caption here' %}
@@ -35,7 +36,7 @@ Why does all this distinguish us from other research efforts? Read on!
 * The ReWire language and compiler is currently under intense and active development and is, therefore, something of a moving target. E.g., we have added a Verilog backend, among other things.
 * Our development of the language and compiler has outstripped our now quite dusty website; writing documentation is like eating broccoli. If you have any questions, please send us an [email](mailto:rewire.questions@gmail.com).
 
-## __Just Say No! to Semantic Archaeology__
+### __Just Say No! to Semantic Archaeology__
 
 Say you have a hardware design written in a production hardware description language (HDL) like VHDL or Verilog and you need to formally verify some properties of the design and implementation. Where do you start?
 
@@ -46,7 +47,7 @@ Because ReWire has a formal semantics, one can reason about hardware designs in 
 
 
 
-##### __Further Reading__
+### __Further Reading__
 
 * _A Mechanized Semantic Metalanguage for High Level Synthesis._, Bill Harrison, Chris Hathhorn, and Gerard Allwein. Proceedings of PPDP 2021: 23rd International Symposium on Principles and Practice of Declarative Programming. [pdf]({{ site.baseurl }}/assets/papers/ppdp21.pdf)
 * _Strongly Bounded Termination with Applications to Security and Hardware Synthesis._, Tom Reynolds, Rohit Chadha, Bill Harrison, and Gerard Allwein. Proceedings of TyDe 2020: ACM Workshop on Type Driven Development. [pdf]({{ site.baseurl }}/assets/papers/tyde20.pdf)
