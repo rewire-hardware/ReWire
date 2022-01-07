@@ -11,7 +11,7 @@ title: "ReWire Functional Hardware Description"
 {% figure 4Ps pdf 'Your caption here' %}
 {% endcomment %}
 
-# __ReWire: Functional Hardware Description__
+## __ReWire: Functional Hardware Description__
 
 [ReWire](https://github.com/mu-chaco/ReWire) is an open source programming language for designing, implementing, and formally verifying hardware artifacts. ReWire is a language for high-level synthesis based in the functional language [Haskell](https://www.haskell.org). Functional languages are a commonly proposed approach to alleviating the well-known FPGA programmability problem---a.k.a., the three P's (Productivity, Performance and Portability). But the ReWire approach takes this one step further with _Provability_.
 
@@ -31,7 +31,7 @@ ReWire programs, however, may all be translated directly to VHDL using the ReWir
 
 Why does all this distinguish us from other research efforts? Read on!
 
-## __Announcements__
+## __What's New?__
 * ReWire, Version 2.0, released on July 21, 2021! This included a number of improvements to the VHDL backend and a swathe of bug fixes.
 * The ReWire language and compiler is currently under intense and active development and is, therefore, something of a moving target. E.g., we have added a Verilog backend, among other things.
 * Our development of the language and compiler has outstripped our now quite dusty website; writing documentation is like eating broccoli. If you have any questions, please send us an [email](mailto:rewire.questions@gmail.com).
