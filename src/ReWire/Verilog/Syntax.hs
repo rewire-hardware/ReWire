@@ -57,6 +57,7 @@ instance Pretty Signal where
             Reg sz n  -> text "reg"  <+> ppBVName sz n
 
 data Stmt = Always [Sensitivity] Stmt
+          | Initial Stmt
           | IfElse Exp Stmt Stmt
           | If Exp Stmt
           | Assign LVal Exp
@@ -69,6 +70,7 @@ data Stmt = Always [Sensitivity] Stmt
 instance Pretty Stmt where
       pretty = \ case
             Always sens stmt      -> text "always" <+> text "@" <+> parens (hsep $ punctuate (text " or") $ map pretty sens) <+> pretty stmt
+            Initial stmt          -> text "initial" <+> pretty stmt
             IfElse c thn els      -> text "if" <+> parens (pretty c) <+> pretty thn <+> text "else" <+> pretty els
             If c thn              -> text "if" <+> parens (pretty c) <+> pretty thn
             Assign lv v           -> text "assign" <+> pretty lv <+> text "="  <+> pretty v <> semi

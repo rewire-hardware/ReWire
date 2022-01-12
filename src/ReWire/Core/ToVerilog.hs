@@ -57,6 +57,7 @@ compileStartDefn flags st@(C.StartDefn _ inps outps (loop, _) (state0, Sig _ _ i
             $  ssStart
             <> ssLoop
             <> assignSigs rLoop
+            <> [ Initial $ ParAssign (Name sCurState) rStart ]
             <> [ Always ([Pos sClk] <> rstEdge) $ Block [ ifRst rStart ] ]
       where inputs :: [Port]
             inputs = [Input $ Wire 1 sClk]
