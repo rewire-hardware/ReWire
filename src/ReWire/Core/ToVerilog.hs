@@ -69,7 +69,7 @@ compileStartDefn flags st@(C.StartDefn _ inps outps (loop, _) (state0, Sig _ _ i
             sCurState = "current_state"
             sNxtState = "done_or_next_state"
             sInp      = "inp"
-            sContinue = "continue"
+            sContinue = "cont"
             sState    = "state"
 
             sClk :: Text
