@@ -241,7 +241,7 @@ primBinOps = map (second binBitify)
 --       , ( "~^"  , XNor)
       , ( "<<"  , (<<.))
       , ( ">>"  , (>>.))
---       , ( "<<<" , LShiftArith)
+      , ( "<<<" , (<<.))
       , ( ">>>" , ashr)
       , ( "concat" , (<>))
       ]

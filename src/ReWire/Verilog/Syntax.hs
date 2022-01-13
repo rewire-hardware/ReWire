@@ -46,15 +46,18 @@ ppBVName :: Size -> Name -> Doc an
 ppBVName sz n = brackets (pretty (toInteger sz - 1) <> colon <> text "0") <+> text n
 
 data Signal = Wire Size Name
+            | Logic Size Name
             | Reg  Size Name
       deriving (Eq, Show)
 
 instance Pretty Signal where
       pretty = \ case
-            Wire 1 n  -> text "wire" <+> text n
-            Wire sz n -> text "wire" <+> ppBVName sz n
-            Reg 1 n   -> text "reg"  <+> text n
-            Reg sz n  -> text "reg"  <+> ppBVName sz n
+            -- Wire 1 n   -> text "wire" <+> text n
+            Wire sz n  -> text "wire" <+> ppBVName sz n
+            -- Logic 1 n  -> text "logic" <+> text n
+            Logic sz n -> text "logic" <+> ppBVName sz n
+            -- Reg 1 n    -> text "reg"  <+> text n
+            Reg sz n   -> text "reg"  <+> ppBVName sz n
 
 data Stmt = Always [Sensitivity] Stmt
           | Initial Stmt
@@ -122,10 +125,61 @@ data Exp = Add Exp Exp
          | Cond Exp Exp Exp
          | Concat [Exp]
          | Repl Size Exp
+         | WCast Size Exp
          | LitZero
          | LitBits BV
          | LVal LVal
       deriving (Eq, Show)
+
+expWidth :: Exp -> Maybe Size
+expWidth = \ case
+      Add e1 e2 -> largest e1 e2
+      Sub e1 e2 -> largest e1 e2
+      Mul e1 e2 -> largest e1 e2
+      Div e1 e2 -> largest e1 e2
+      Mod e1 e2 -> largest e1 e2
+
+      And e1 e2 -> largest e1 e2
+      Or e1 e2 -> largest e1 e2
+      XOr e1 e2 -> largest e1 e2
+      XNor e1 e2 -> largest e1 e2
+
+      Pow e _    -> expWidth e
+      LShift e _ -> expWidth e
+      RShift e _ -> expWidth e
+      LShiftArith e _ -> expWidth e
+      RShiftArith e _ -> expWidth e
+
+      Not e -> expWidth e
+
+      LAnd _ _ -> Just 1
+      LOr _ _ -> Just 1
+      LNot _ -> Just 1
+
+      RAnd _ -> Just 1
+      RNAnd _ -> Just 1
+      ROr _ -> Just 1
+      RNor _ -> Just 1
+      RXor _ -> Just 1
+      RXNor _ -> Just 1
+
+      Eq  _ _  -> Just 1
+      NEq _ _  -> Just 1
+      CEq _ _  -> Just 1
+      CNEq _ _ -> Just 1
+      Lt _ _   -> Just 1
+      Gt _ _   -> Just 1
+      LtEq _ _ -> Just 1
+      GtEq _ _ -> Just 1
+      Cond _ e1 e2 -> largest e1 e2
+      Concat es  -> sumMaybes $ map expWidth es
+      Repl sz e  -> (*sz) <$> expWidth e
+      WCast sz _ -> pure sz
+      LitBits bv -> pure $ fromIntegral $ width bv
+      LVal lv    -> lvalWidth lv
+      _          -> Nothing
+      where largest :: Exp -> Exp -> Maybe Size
+            largest e1 e2 = max <$> expWidth e1 <*> expWidth e2
 
 ppBinOp :: Exp -> Text -> Exp -> Doc an
 ppBinOp a op b = parens (pretty a) <+> text op <+> parens (pretty b)
@@ -170,6 +224,7 @@ instance Pretty Exp where
             Cond e1 e2 e3   -> parens (pretty e1) <+> text "?" <+> parens (pretty e2) <+> colon <+> parens (pretty e3)
             Concat es       -> braces $ hsep $ punctuate comma $ map pretty es
             Repl i e        -> braces $ pretty i <> braces (pretty e)
+            WCast sz e      -> pretty sz <> text "'" <> parens (pretty e)
             LitZero         -> text "0"
             LitBits bv      -> pretty (width bv) <> text "'h" <> text (pack $ drop 2 $ showHex bv)
             LVal x          -> pretty x
@@ -195,6 +250,22 @@ data LVal = Element Name Index
           | Name Name
           | LVals [LVal]
       deriving (Eq, Show)
+
+lvalWidth :: LVal -> Maybe Size
+lvalWidth = \ case
+      Element _ _ -> pure 1
+      Range _ i j -> pure $ fromIntegral $ j - i + 1
+      Name _      -> Nothing
+      LVals lvs   -> sumMaybes $ map lvalWidth lvs
+
+sumMaybes :: Num a => [Maybe a] -> Maybe a
+sumMaybes = foldMaybes (+)
+
+foldMaybes :: (a -> a -> a) -> [Maybe a] -> Maybe a
+foldMaybes f = \ case
+      a : b : ms -> foldMaybes f $ (f <$> a <*> b) : ms
+      [a]        -> a
+      _          -> Nothing
 
 instance Pretty LVal where
       pretty = \ case
