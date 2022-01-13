@@ -64,7 +64,7 @@ data Stmt = Always [Sensitivity] Stmt
           | SeqAssign LVal Exp
           | ParAssign LVal Exp
           | Block [Stmt]
-          | Instantiate Name Name [LVal]
+          | Instantiate Name Name [Exp] -- [Exp] for convenience, should be [LVal]?
       deriving (Eq, Show)
 
 instance Pretty Stmt where
