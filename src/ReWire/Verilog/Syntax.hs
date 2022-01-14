@@ -126,7 +126,6 @@ data Exp = Add Exp Exp
          | Concat [Exp]
          | Repl Size Exp
          | WCast Size Exp
-         | LitZero
          | LitBits BV
          | LVal LVal
       deriving (Eq, Show)
@@ -225,7 +224,6 @@ instance Pretty Exp where
             Concat es       -> braces $ hsep $ punctuate comma $ map pretty es
             Repl i e        -> braces $ pretty i <> braces (pretty e)
             WCast sz e      -> pretty sz <> text "'" <> parens (pretty e)
-            LitZero         -> text "0"
             LitBits bv      -> pretty (width bv) <> text "'h" <> text (pack $ drop 2 $ showHex bv)
             LVal x          -> pretty x
 

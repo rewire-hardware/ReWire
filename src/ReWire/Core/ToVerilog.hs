@@ -221,7 +221,6 @@ compileExp flags lvars = \ case
 
             litVal :: V.Exp -> Maybe BV
             litVal = \ case
-                  LitZero   -> Just $ zeros 1 -- TODO(chathhorn): kludgy zero case.
                   LitBits b -> Just b
                   _         -> Nothing
 
@@ -232,7 +231,6 @@ compileExp flags lvars = \ case
             msbit' sz = \ case
                   LVal (Range n _ j)     -> LVal (Range n j j)
                   LVal (Name n)          -> LVal (Element n $ fromIntegral sz - 1)
-                  LitZero                -> LitBits $ zeros 1
                   LitBits bv | msb bv    -> LitBits $ ones 1
                              | otherwise -> LitBits $ zeros 1
                   e                      -> e -- TODO(chathhorn): kludgy.
@@ -319,9 +317,7 @@ patApply :: Name -> [Pat] -> [LVal]
 patApply x = patApply' (\ i j -> [Range x i j])
 
 patApplyLit :: BV -> [Pat] -> [V.Exp]
-patApplyLit bv
-      | bv == zeros 1 = patApply' (\ _ _ -> [LitZero])
-      | otherwise     = patApply' (\ i j -> [LitBits $ subRange (i, j) bv])
+patApplyLit bv = patApply' (\ i j -> [LitBits $ subRange (i, j) bv])
 
 toSubRanges :: Name -> [Size] -> [LVal]
 toSubRanges n szs = patApply n (map (PatVar noAnn) szs)
