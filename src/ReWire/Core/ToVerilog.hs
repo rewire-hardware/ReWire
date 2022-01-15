@@ -12,11 +12,10 @@ import ReWire.Core.Interp (patApply', patMatches', subRange)
 
 import Data.Text (Text, pack)
 import Data.Maybe (fromMaybe)
-import Control.Monad (msum)
-import Control.Monad.State (MonadState, get, put, evalStateT)
-import Control.Monad.Writer (MonadWriter, tell, runWriterT)
+import Control.Monad (msum, liftM, liftM2)
+import Control.Monad.State (MonadState, get, runStateT, modify)
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
-import Control.Arrow ((&&&))
+import Control.Arrow ((&&&), first, second)
 import TextShow (showt)
 import Data.BitVector (width, bitVec, BV, zeros, ones, lsb1, (==.), msb)
 import Data.HashMap.Strict (HashMap)
@@ -24,19 +23,23 @@ import qualified Data.HashMap.Strict as Map
 
 type Fresh = Int
 type DefnMap = HashMap GId [C.Exp]
+type SigInfo = (Fresh, [Signal])
 
-fresh :: MonadState Fresh m => Text -> m Name
+sigInfo0 :: SigInfo
+sigInfo0 = (0, [])
+
+fresh :: MonadState SigInfo m => Text -> m Name
 fresh s = do
-      ctr <- get
-      put $ ctr + 1
+      (ctr, _) <- get
+      modify $ first $ (+ 1)
       pure $ mangle s <> "_" <> showt ctr
 
 compileProgram :: (MonadFail m, MonadError AstError m) => [Flag] -> C.Program -> m V.Program
 compileProgram flags (C.Program st ds)
-      | FlagFlatten `elem` flags = V.Program . pure <$> evalStateT (runReaderT (compileStartDefn flags st) defnMap) 0
+      | FlagFlatten `elem` flags = V.Program . pure <$> runReaderT (compileStartDefn flags st) defnMap
       | otherwise                = do
-            st' <- evalStateT (runReaderT (compileStartDefn flags st) defnMap) 0
-            ds' <- mapM (flip evalStateT 0 . compileDefn flags) $ filter ((/= getState0 st) . defnName) ds
+            st' <- runReaderT (compileStartDefn flags st) defnMap
+            ds' <- mapM (compileDefn flags) $ filter ((/= getState0 st) . defnName) ds
             pure $ V.Program $ st' : ds'
       where defnMap :: DefnMap
             defnMap = Map.fromList $ map (defnName &&& defnBody) ds
@@ -45,11 +48,11 @@ compileProgram flags (C.Program st ds)
             getState0 :: StartDefn -> Name
             getState0 (C.StartDefn _ _ _ _ (state0, _)) = state0
 
-compileStartDefn :: (MonadError AstError m, MonadState Fresh m, MonadFail m, MonadReader DefnMap m)
+compileStartDefn :: (MonadError AstError m, MonadFail m, MonadReader DefnMap m)
                  => [Flag] -> C.StartDefn -> m Module
 compileStartDefn flags st@(C.StartDefn _ inps outps (loop, _) (state0, Sig _ _ initSize)) = do
-      ((rStart, ssStart), startSigs) <- runWriterT $ compileCall (FlagFlatten : flags) state0 initSize []
-      ((rLoop, ssLoop), loopSigs)    <- runWriterT $ compileCall flags loop initSize
+      ((rStart, ssStart), (fr, startSigs)) <- flip runStateT sigInfo0 $ compileCall (FlagFlatten : flags) state0 initSize []
+      ((rLoop, ssLoop),   (_, loopSigs))   <- flip runStateT (fr, []) $ compileCall flags loop initSize
             [ LVal $ Name sState
             , LVal $ Name sInp
             ]
@@ -146,9 +149,9 @@ compileStartDefn flags st@(C.StartDefn _ inps outps (loop, _) (state0, Sig _ _ i
             noRst :: Bool
             noRst = FlagNoReset `elem` flags
 
-compileDefn :: (MonadState Fresh m, MonadFail m, MonadError AstError m) => [Flag] -> C.Defn -> m V.Module
+compileDefn :: (MonadFail m, MonadError AstError m) => [Flag] -> C.Defn -> m V.Module
 compileDefn flags (C.Defn _ n (Sig _ inps outp) body) = do
-      ((es, stmts), sigs) <- runWriterT (runReaderT (compileExps flags (map (LVal . Name) argNames) body) Map.empty)
+      ((es, stmts), (_, sigs)) <- runStateT (runReaderT (compileExps flags (map (LVal . Name) argNames) body) Map.empty) sigInfo0
       pure $ V.Module (mangle n) (inputs <> outputs) sigs $ stmts <> [Assign (Name "res") $ mkConcat es]
       where argNames :: [Name]
             argNames = zipWith (\ _ x -> "arg" <> showt x) inps [0::Int ..]
@@ -160,36 +163,37 @@ compileDefn flags (C.Defn _ n (Sig _ inps outp) body) = do
             outputs = [Output $ Logic outp "res"]
 
 -- | Inlines a defn or instantiates an already-compiled defn.
-compileCall :: (MonadState Fresh m, MonadFail m, MonadError AstError m, MonadReader DefnMap m, MonadWriter [Signal] m)
+compileCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
              => [Flag] -> GId -> V.Size -> [V.Exp] -> m (V.Exp, [Stmt])
 compileCall flags g sz lvars
       | FlagFlatten `elem` flags = do
             Just body   <- asks (Map.lookup g)
             (es, stmts) <- compileExps flags lvars body
-            pure (wcast sz $ mkConcat es, stmts)
+            es'         <- wcast sz $ mkConcat es
+            pure (es', stmts)
       | otherwise = do
             mr          <- newWire sz "callRes"
             inst        <- Instantiate (mangle g) <$> fresh g <*> pure (lvars <> [LVal mr])
             pure (LVal mr, [inst])
 
-compileExps :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
+compileExps :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
             => [Flag] -> [V.Exp] -> [C.Exp] -> m ([V.Exp], [Stmt])
 compileExps flags lvars es = (map fst &&& concatMap snd) <$> mapM (compileExp flags lvars) es
 
-compileExp :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
+compileExp :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
             => [Flag] -> [V.Exp] -> C.Exp -> m (V.Exp, [Stmt])
 compileExp flags lvars = \ case
       LVar _  _ (lkupLVal -> Just x)                    -> pure (x, [])
       LVar an _ _                                       -> failAt an "ToVerilog: compileExp: encountered unknown LVar."
       Lit _ bv                                          -> pure (bvToExp bv, [])
       Call _ sz (Global g) es ps els                    -> mkCall "glob" es ps els $ compileCall flags g sz
-      Call _ sz (Extern _ (binOp -> Just op)) es ps els -> mkCall "binOp" es ps els $ \ [x, y] -> pure (wcast sz $ op x y, [])
-      Call _ sz (Extern _ (unOp -> Just op)) es ps els  -> mkCall "unOp" es ps els $ \ [x] -> pure (wcast sz $ op x, [])
-      Call _ sz (Extern _ "msbit") es ps els            -> mkCall "msbit" es ps els $ \ [x] -> pure (wcast sz $ msbit' (argsSize ps) x, [])
-      Call _ sz Id es ps els                            -> mkCall "id" es ps els $ \ xs -> pure (wcast sz $ mkConcat xs, [])
-      Call _ sz (Const bv) es ps els                    -> mkCall "lit" es ps els $ \ _ -> pure (wcast sz $ bvToExp bv, [])
+      Call _ sz (Extern _ (binOp -> Just op)) es ps els -> mkCall "binOp" es ps els $ \ [x, y] -> (,[]) <$> wcast sz (op x y)
+      Call _ sz (Extern _ (unOp -> Just op)) es ps els  -> mkCall "unOp" es ps els $ \ [x] -> (,[]) <$> wcast sz (op x)
+      Call _ sz (Extern _ "msbit") es ps els            -> mkCall "msbit" es ps els $ \ [x] -> (,[]) <$> wcast sz (msbit' (argsSize ps) x)
+      Call _ sz Id es ps els                            -> mkCall "id" es ps els $ \ xs -> (,[]) <$> wcast sz (mkConcat xs)
+      Call _ sz (Const bv) es ps els                    -> mkCall "lit" es ps els $ \ _ -> (,[]) <$> wcast sz (bvToExp bv)
       Call an _ (Extern _ ex) _ _ _                     -> failAt an $ "ToVerilog: compileExp: unknown extern: " <> ex
-      where mkCall :: (MonadState Fresh m, MonadWriter [Signal] m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
+      where mkCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
                     => Name -> [C.Exp] -> [Pat] -> [C.Exp] -> ([V.Exp] -> m (V.Exp, [Stmt])) -> m (V.Exp, [Stmt])
             mkCall s es ps els f = do
                   (es', stmts)   <- compileExps flags lvars es
@@ -229,8 +233,8 @@ compileExp flags lvars = \ case
 
             msbit' :: Size -> V.Exp -> V.Exp
             msbit' sz = \ case
-                  LVal (Range n _ j)     -> LVal (Range n j j)
-                  LVal (Name n)          -> LVal (Element n $ fromIntegral sz - 1)
+                  LVal (Range n _ j)     -> LVal $ Element n j
+                  LVal (Name n)          -> LVal $ Element n $ fromIntegral sz - 1
                   LitBits bv | msb bv    -> LitBits $ ones 1
                              | otherwise -> LitBits $ zeros 1
                   e                      -> e -- TODO(chathhorn): kludgy.
@@ -249,15 +253,135 @@ bvToExp bv | width bv < maxLit      = LitBits bv
             maxLit :: Int
             maxLit = 32
 
+-- | Size of the inclusive range [i, j].
+nbits :: Index -> Index -> Size
+nbits i j = fromIntegral (j - i + 1)
+
 mkConcat :: [V.Exp] -> V.Exp
 mkConcat = \ case
       [e] -> e
       es  -> Concat $ es
 
-wcast :: Size -> V.Exp -> V.Exp
-wcast sz e = case expWidth e of
-      Just sz' | sz == sz' -> e
-      _                    -> WCast sz e
+mkRange :: Name -> Index -> Index -> V.LVal
+mkRange n i j | i == j    = Element n i
+              | otherwise = Range n i j
+
+mkWCast :: Size -> V.Exp -> V.Exp
+mkWCast sz = \ case
+      LVal (Range n i j) | sz < nbits i j -> LVal $ mkRange n i (j - fromIntegral (nbits i j - sz))
+      WCast _ e                            -> WCast sz e
+      e                                    -> WCast sz e
+
+-- | Recreates the effect of assignment by adding bitwidth casts to an expression:
+-- > wcast s e
+-- should return an e' that behaves the same as though e appeared as
+-- > x = e
+-- where x has a width of s. I.e., "wcast s e" fixes the "bitwidth context" for
+-- the expression e to s.
+wcast :: MonadState SigInfo m => Size -> V.Exp -> m V.Exp
+wcast sz e = expWidth e >>= \ case
+      Just sz' | sz < sz' -> trunc e
+               | sz > sz' -> case e of
+                  Add  e1 e2      -> Add         <$> pad e1 <*> pad e2
+                  Sub  e1 e2      -> Sub         <$> pad e1 <*> pad e2
+                  Mul  e1 e2      -> Mul         <$> pad e1 <*> pad e2
+                  Div  e1 e2      -> Div         <$> pad e1 <*> pad e2
+                  Mod  e1 e2      -> Mod         <$> pad e1 <*> pad e2
+                  And  e1 e2      -> And         <$> pad e1 <*> pad e2
+                  Or   e1 e2      -> Or          <$> pad e1 <*> pad e2
+                  XOr  e1 e2      -> XOr         <$> pad e1 <*> pad e2
+                  XNor e1 e2      -> XNor        <$> pad e1 <*> pad e2
+                  Cond c e1 e2    -> Cond c      <$> pad e1 <*> pad e2
+                  Pow         e n -> Pow         <$> pad e <*> pure n
+                  LShift      e n -> LShift      <$> pad e <*> pure n
+                  RShift      e n -> RShift      <$> pad e <*> pure n
+                  LShiftArith e n -> LShiftArith <$> pad e <*> pure n
+                  RShiftArith e n -> RShiftArith <$> pad e <*> pure n
+                  Not e           -> Not         <$> pad e
+                  e               -> pad e
+      _                   -> pure e
+      where pad :: MonadState SigInfo m => V.Exp -> m V.Exp
+            pad e = expWidth e >>= \ case
+                        Just sz' | sz > sz' -> pure $ mkWCast sz e
+                        _                   -> pure e
+            trunc :: MonadState SigInfo m => V.Exp -> m V.Exp
+            trunc e = expWidth e >>= \ case
+                        Just sz' | sz < sz' -> pure $ mkWCast sz e
+                        _                   -> pure e
+
+-- Expression                     Bit Length         Notes
+-- -----------------------------------------------------------------------------
+-- Unsized constants              "Same as integer"  (see ** below)
+-- Sized constants                As given
+-- i [+ - * / % & | ^ ^~ ~^] j    max{L(i),L(j)}
+-- [+ - ~] i                      L(i)
+-- i [=== !== == != > >= < <=] j  1 bit              i,j sized to max(L(i),L(j))
+-- i [&& ||] j                    1 bit              i,j self-determined
+-- [& ~& | ~| ^ ~^ ^~ !] i        1 bit              i self-determined
+-- i [>> << ** >>> <<<] j         L(i)               j self-determined
+-- i ? j : k                      max(L(j),L(k))     i self-determined
+-- {i, ..., j}                    L(i)+...+L(j)      all self-determined
+-- {i {j, ..., k}}                i*(L(j)+...+L(k))  all self-determined
+-- -----------------------------------------------------------------------------
+--
+expWidth :: MonadState SigInfo m => V.Exp -> m (Maybe Size)
+expWidth = \ case
+      Add    e1 e2    -> largest e1 e2
+      Sub    e1 e2    -> largest e1 e2
+      Mul    e1 e2    -> largest e1 e2
+      Div    e1 e2    -> largest e1 e2
+      Mod    e1 e2    -> largest e1 e2
+      And    e1 e2    -> largest e1 e2
+      Or     e1 e2    -> largest e1 e2
+      XOr    e1 e2    -> largest e1 e2
+      XNor   e1 e2    -> largest e1 e2
+      Cond _ e1 e2    -> largest e1 e2
+      Pow         e _ -> expWidth e
+      LShift      e _ -> expWidth e
+      RShift      e _ -> expWidth e
+      LShiftArith e _ -> expWidth e
+      RShiftArith e _ -> expWidth e
+      Not         e   -> expWidth e
+      LAnd _ _        -> pure $ Just 1
+      LOr _ _         -> pure $ Just 1
+      LNot _          -> pure $ Just 1
+      RAnd _          -> pure $ Just 1
+      RNAnd _         -> pure $ Just 1
+      ROr _           -> pure $ Just 1
+      RNor _          -> pure $ Just 1
+      RXor _          -> pure $ Just 1
+      RXNor _         -> pure $ Just 1
+      Eq  _ _         -> pure $ Just 1
+      NEq _ _         -> pure $ Just 1
+      CEq _ _         -> pure $ Just 1
+      CNEq _ _        -> pure $ Just 1
+      Lt _ _          -> pure $ Just 1
+      Gt _ _          -> pure $ Just 1
+      LtEq _ _        -> pure $ Just 1
+      GtEq _ _        -> pure $ Just 1
+      Concat es       -> sumMaybes <$> mapM expWidth es
+      Repl sz e       -> liftM (*sz) <$> expWidth e
+      WCast sz _      -> pure $ Just sz
+      LitBits bv      -> pure $ Just $ fromIntegral $ width bv
+      LVal lv         -> lvalWidth lv
+      where largest :: MonadState SigInfo m => V.Exp -> V.Exp -> m (Maybe Size)
+            largest e1 e2 = liftM2 max <$> expWidth e1 <*> expWidth e2
+
+            lvalWidth :: MonadState SigInfo m => LVal -> m (Maybe Size)
+            lvalWidth = \ case
+                  Element _ _ -> pure $ Just 1
+                  Range _ i j -> pure $ Just $ fromIntegral $ nbits i j
+                  Name n      -> lookupWidth n
+                  LVals lvs   -> sumMaybes <$> mapM lvalWidth lvs
+
+sumMaybes :: Num a => [Maybe a] -> Maybe a
+sumMaybes = foldMaybes (+)
+
+foldMaybes :: (a -> a -> a) -> [Maybe a] -> Maybe a
+foldMaybes f = \ case
+      a : b : ms -> foldMaybes f $ (f <$> a <*> b) : ms
+      [a]        -> a
+      _          -> Nothing
 
 binOp :: Name -> Maybe (V.Exp -> V.Exp -> V.Exp)
 binOp = flip lookup primBinOps
@@ -299,22 +423,32 @@ primUnOps =
       , ( "resize" , id)
       ]
 
-newWire :: (MonadState Fresh m, MonadWriter [Signal] m) => V.Size -> Name -> m LVal
+newWire :: MonadState SigInfo m => V.Size -> Name -> m LVal
 newWire sz n = do
       n' <- fresh n
-      tell [Logic sz n']
+      modify $ second (++ [Logic sz n'])
       pure $ Name n'
+
+lookupWidth :: MonadState SigInfo m => Name -> m (Maybe Size)
+lookupWidth n = lookup n <$> map proj <$> snd <$> get
+      where proj :: Signal -> (Name, Size)
+            proj = \ case
+                  Wire  sz n -> (n, sz)
+                  Logic sz n -> (n, sz)
+                  Reg   sz n -> (n, sz)
 
 -- | Returns a boolean expression that is true when the pattern matches.
 patMatches :: Name -> [Pat] -> V.Exp
-patMatches x = foldr LAnd bTrue . patMatches' (\ i j bv -> [Eq (LVal $ Range x i j) $ LitBits bv])
+patMatches x ps =  case patMatches' (\ i j bv -> [Eq (LVal $ mkRange x i j) $ LitBits bv]) ps of
+      ps'@(_ : _) -> foldr1 LAnd ps'
+      []          -> bTrue
 
 patMatchesLit :: BV -> [Pat] -> Bool
 patMatchesLit bv = foldr (&&) True . patMatches' (\ i j bv' -> [subRange (i, j) bv ==. bv'])
 
 -- | Returns a list of ranges bound by pattern variables.
 patApply :: Name -> [Pat] -> [LVal]
-patApply x = patApply' (\ i j -> [Range x i j])
+patApply x = patApply' (\ i j -> [mkRange x i j])
 
 patApplyLit :: BV -> [Pat] -> [V.Exp]
 patApplyLit bv = patApply' (\ i j -> [LitBits $ subRange (i, j) bv])

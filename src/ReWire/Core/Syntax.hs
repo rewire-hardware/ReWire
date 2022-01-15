@@ -107,19 +107,13 @@ instance Pretty Exp where
             LVar _ _ n           -> text $ "$" <> showt n
             Call _ _ f es ps [] -> nest 2 $ vsep
                   [ text "case" <+> ppBV es <+> text "of"
-                  , ppBV' (ppPats ps) <+> text "->" <+> pretty f <+> ppArgs ps
+                  , ppBV' (ppPats ps) <+> text "->" <+> pretty f <+> ppBV' (ppArgs ps)
                   ]
             Call _ _ f es ps es2 -> nest 2 $ vsep
                   [ text "case" <+> ppBV es <+> text "of"
-                  , ppBV' (ppPats ps) <+> text "->" <+> pretty f <+> ppArgs ps
+                  , ppBV' (ppPats ps) <+> text "->" <+> pretty f <+> ppBV' (ppArgs ps)
                   , text "_" <+> text "->" <+> ppBV es2
                   ]
-            where ppArgs :: [Pat] -> Doc an
-                  ppArgs (pVars -> []) = mempty
-                  ppArgs (pVars -> ps) = ppBV' $ ppPats ps
-
-                  pVars :: [Pat] -> [Pat]
-                  pVars = filter isPatVar
 
 ppPats :: [Pat] -> [Doc an]
 ppPats = zipWith ppPats' [0::Index ..]
@@ -128,6 +122,18 @@ ppPats = zipWith ppPats' [0::Index ..]
                   PatVar _ sz      -> text "p" <> pretty i <> text "::" <> text "BV" <> pretty sz
                   PatWildCard _ sz -> text "_" <> text "::" <> text "BV" <> pretty sz
                   PatLit _ bv      -> text (pack $ showHex bv) <> text "::" <> text "BV" <> pretty (width bv)
+
+ppArgs :: [Pat] -> [Doc an]
+ppArgs = map (uncurry ppArgs') . filter (isPatVar . snd) . zip [0::Index ..]
+      where ppArgs' :: Index -> Pat -> Doc an
+            ppArgs' i = \ case
+                  PatVar _ _ -> text "p" <> pretty i
+                  _          -> mempty
+
+            isPatVar :: Pat -> Bool
+            isPatVar = \ case
+                  PatVar _ _ -> True
+                  _          -> False
 
 ---
 
@@ -154,11 +160,6 @@ instance Pretty Pat where
             PatVar _ s       -> braces $ text "BV" <> pretty s
             PatWildCard _ s  -> text "_" <> text "BV" <> pretty s <> text "_"
             PatLit      _ bv -> text (pack $ showHex bv) <> text "::BV" <> pretty (width bv)
-
-isPatVar :: Pat -> Bool
-isPatVar = \ case
-      PatVar {} -> True
-      _         -> False
 
 ---
 
