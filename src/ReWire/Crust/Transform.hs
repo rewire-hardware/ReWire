@@ -278,13 +278,13 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
 
                         let pvs = patVars p
 
-                        let t' = foldr arr (typeOf e) $ map snd bvs ++ map snd pvs
+                        let t' = foldr arr (typeOf e) $ map snd pvs <> map snd bvs
                         f     <- fresh $ s2n "$LL.case"
 
-                        modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs ++ map fst pvs) e')
+                        modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (map fst pvs <> fvs) e')
                         let lvars = map (toVar an . first promote) bvs
-                        pure $ Match an t (mkTuple an $ lvars <> [e1])
-                                    (mkTupleMPat an $ map (MatchPatVar an . typeOf) lvars <> [transPat p])
+                        pure $ Match an t (mkTuple an $ [e1] <> lvars)
+                                    (mkTupleMPat an $  [transPat p] <> map (MatchPatVar an . typeOf) lvars)
                                     (Var an t' f) e2
                   -- TODO(chathhorn): This case is really just normalizing Match, consider moving to ToCore.
                   Match an t e1 p e els | liftable e -> do
@@ -296,8 +296,8 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
 
                         modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind fvs e')
                         let lvars = map (toVar an) bvs
-                        pure $ Match an t (mkTuple an $ lvars <> [e1])
-                                    (mkTupleMPat an $ map (MatchPatVar an . typeOf) lvars <> [p])
+                        pure $ Match an t (mkTuple an $ [e1] <> lvars)
+                                    (mkTupleMPat an $ [p] <> map (MatchPatVar an . typeOf) lvars)
                                     (Var an t' f) els
                   -- Lifts matches in the operator position of an application.
                   -- TODO(chathhorn): move somewhere else?

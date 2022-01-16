@@ -104,8 +104,10 @@ transExp = \ case
             let tag = C.Lit an (bitVec (fromIntegral w) v)
                 pad = C.Lit an (zeros $ fromIntegral sz - fromIntegral w)
             pure [tag, pad]
-      M.Match an t e ps f (Just e2)     -> pure <$> (C.Call an <$> sizeOf an t <*> (callTarget =<< transExp f) <*> transExp e <*> transPat ps <*> transExp e2)
-      M.Match an t e ps f Nothing       -> pure <$> (C.Call an <$> sizeOf an t <*> (callTarget =<< transExp f) <*> transExp e <*> transPat ps <*> pure [])
+      M.Match an t e ps f (Just e2)     -> pure <$>
+            (C.Call an <$> sizeOf an t <*> (callTarget =<< transExp f) <*> transExp e <*> transPat ps <*> transExp e2)
+      M.Match an t e ps f Nothing       -> pure <$>
+            (C.Call an <$> sizeOf an t <*> (callTarget =<< transExp f) <*> transExp e <*> transPat ps <*> pure [])
       M.Extern an s (M.Error _ t _)     -> do
             sz     <- sizeOf an t
             pure [C.Call an sz (C.Extern (C.Sig an [] sz) s) [] [] []]

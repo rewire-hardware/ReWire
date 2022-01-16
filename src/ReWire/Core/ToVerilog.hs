@@ -4,11 +4,10 @@ module ReWire.Core.ToVerilog (compileProgram) where
 
 import ReWire.Error
 import ReWire.Flags (Flag (..))
-import ReWire.Annotation (noAnn)
 import ReWire.Core.Syntax as C hiding (Name, Size, Index)
 import ReWire.Verilog.Syntax as V
 import ReWire.Core.Mangle (mangle)
-import ReWire.Core.Interp (patApply', patMatches', subRange)
+import ReWire.Core.Interp (patApply', patMatches', subRange, stateVars)
 
 import Data.Text (Text, pack)
 import Data.Maybe (fromMaybe)
@@ -18,6 +17,7 @@ import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Arrow ((&&&), first, second)
 import TextShow (showt)
 import Data.BitVector (width, bitVec, BV, zeros, ones, lsb1, (==.), msb)
+import qualified Data.BitVector as BV
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 
@@ -50,18 +50,21 @@ compileProgram flags (C.Program st ds)
 
 compileStartDefn :: (MonadError AstError m, MonadFail m, MonadReader DefnMap m)
                  => [Flag] -> C.StartDefn -> m Module
-compileStartDefn flags st@(C.StartDefn _ inps outps (loop, _) (state0, Sig _ _ initSize)) = do
+compileStartDefn flags st@(C.StartDefn an inps outps (loop, _) (state0, Sig _ _ initSize)) = do
       ((rStart, ssStart), (fr, startSigs)) <- flip runStateT sigInfo0 $ compileCall (FlagFlatten : flags) state0 initSize []
       ((rLoop, ssLoop),   (_, loopSigs))   <- flip runStateT (fr, []) $ compileCall flags loop initSize
-            [ LVal $ Name sState
+            [ LVal lvCurrState
             , LVal $ Name sInp
             ]
-      pure $ Module "top_level" (inputs <> outputs) (sigs <> startSigs <> loopSigs)
+      initState                               <- initState rStart
+      pure $ Module "top_level" (inputs <> outputs) (loopSigs <> startSigs <> sigs)
             $  ssStart
             <> ssLoop
-            <> assignSigs rLoop
-            <> [ Initial $ ParAssign (Name sCurState) rStart ]
-            <> [ Always ([Pos sClk] <> rstEdge) $ Block [ ifRst rStart ] ]
+            <> [ Assign (Name sDoneOrNxtState) rLoop ]
+            <> [ Assign (Name sInp) $ mkConcat $ map (LVal . Name . fst) inps ]
+            <> [ Assign lvDoneOrNxt $ LVal $ Name sDoneOrNxtState ]
+            <> [ Initial $ ParAssign lvCurrState initState ]
+            <> [ Always ([Pos sClk] <> rstEdge) $ Block [ ifRst initState ] ]
       where inputs :: [Port]
             inputs = [Input $ Logic 1 sClk]
                   <> (if noRst then [] else [Input $ Logic 1 sRst])
@@ -70,11 +73,11 @@ compileStartDefn flags st@(C.StartDefn _ inps outps (loop, _) (state0, Sig _ _ i
             outputs :: [Port]
             outputs = map (Output . uncurry (flip Logic)) outps
 
-            sCurState = "current_state"
-            sNxtState = "done_or_next_state"
-            sInp      = "inp"
-            sContinue = "cont"
-            sState    = "state"
+            -- sCurState = "current_state"
+            sDoneOrNxtState = "done_or_next_state"
+            sInp            = "inp"
+            sContinue       = "cont"
+            sPadding        = "padding"
 
             sClk :: Text
             sClk = fromMaybe "clk" $ msum $ map (\ case
@@ -87,40 +90,49 @@ compileStartDefn flags st@(C.StartDefn _ inps outps (loop, _) (state0, Sig _ _ i
                   _               -> Nothing) flags
 
             sigs :: [Signal]
-            sigs = [ Logic initSize    sCurState
-                  , Logic initSize    sNxtState
-                  , Logic inpSize     sInp
-                  , Logic 1           sContinue
-                  , Logic stateSize   sState
-                  ]
+            sigs = [ Logic initSize    sDoneOrNxtState
+                   , Logic inpSize     sInp
+                   , Logic 1           sContinue
+                   ] <> (if paddingSize > 0 then [Logic (fromIntegral paddingSize) sPadding] else [])
+                     <> map (uncurry $ flip Logic) regs
+                     <> map (uncurry $ flip Logic) regsNxt
 
             ifRst :: V.Exp -> Stmt
-            ifRst start | noRst     = assignNextState
-                        | otherwise = IfElse (Eq (LVal $ Name sRst) $ LitBits $ bitVec 1 $ fromEnum $ not invertRst)
-                  (Block [ ParAssign (Name sCurState) start ])
-                  (Block [ assignNextState ])
+            ifRst initState | noRst     = assignNxtState
+                            | otherwise = IfElse (Eq (LVal $ Name sRst) $ LitBits $ bitVec 1 $ fromEnum $ not invertRst)
+                  (Block [ ParAssign lvCurrState initState ])
+                  (Block [ assignNxtState ])
 
-            assignNextState :: Stmt
-            assignNextState = ParAssign (Name sCurState) $ LVal $ Name sNxtState
+            initState :: MonadError AstError m => V.Exp -> m V.Exp
+            initState e = case expToBV e of
+                  Just bv -> pure $ bvToExp $ subRange (0, fromIntegral stateSize - 1) bv
+                  _       -> failAt an "ToVerilog: start state not constant."
 
-            assignSigs :: V.Exp -> [Stmt]
-            assignSigs loop = filterAssigns (zipWith Assign (map (Name . fst) p_outps_st) (map LVal $ toSubRanges sCurState $ map snd p_outps_st))
-                  <> [Assign (Name sNxtState) loop]
-                  <> [Assign (Name sInp) $ mkConcat $ map (LVal . Name . fst) inps]
+            assignNxtState :: Stmt
+            assignNxtState = ParAssign lvCurrState $ LVal lvNxtState
 
-            filterAssigns :: [Stmt] -> [Stmt] -- TODO(chathhorn): do this in a better way.
-            filterAssigns = filter (not . isPadding)
-                  where isPadding :: Stmt -> Bool
-                        isPadding = \ case
-                              Assign (Name "padding") _ -> True
-                              _                         -> False
+            lvDoneOrNxt :: LVal
+            lvDoneOrNxt = LVals $ map (Name . fst) $ (sContinue, 1) : padding <> outps <> regsNxt
 
-            p_outps_st :: [(Name, Size)]
-            p_outps_st = (sContinue, 1) : padding <> outps <> [(sState, stateSize)]
+            lvCurrState :: LVal
+            lvCurrState = case regs of
+                  [(st, _)] -> Name st
+                  _         -> LVals $ map (Name . fst) regs
+
+            lvNxtState :: LVal
+            lvNxtState = case regsNxt of
+                  [(st, _)] -> Name st
+                  _         -> LVals $ map (Name . fst) regsNxt
 
             padding :: [(Name, Size)]
-            padding | paddingSize > 0 = [("padding", fromIntegral paddingSize)]
+            padding | paddingSize > 0 = [(sPadding, fromIntegral paddingSize)]
                     | otherwise       = []
+
+            regs :: [(Name, Size)]
+            regs = stateVars flags stateSize
+
+            regsNxt :: [(Name, Size)]
+            regsNxt = map (first (<> "_next")) regs
 
             paddingSize :: Int
             paddingSize = fromIntegral initSize - 1
@@ -252,6 +264,13 @@ bvToExp bv | width bv < maxLit      = LitBits bv
 
             maxLit :: Int
             maxLit = 32
+
+expToBV :: V.Exp -> Maybe BV
+expToBV = \ case
+      LitBits bv -> Just bv
+      Repl n e   -> BV.replicate n <$> expToBV e
+      Concat es  -> sum <$> mapM expToBV es
+      _          -> Nothing
 
 -- | Size of the inclusive range [i, j].
 nbits :: Index -> Index -> Size
@@ -452,9 +471,6 @@ patApply x = patApply' (\ i j -> [mkRange x i j])
 
 patApplyLit :: BV -> [Pat] -> [V.Exp]
 patApplyLit bv = patApply' (\ i j -> [LitBits $ subRange (i, j) bv])
-
-toSubRanges :: Name -> [Size] -> [LVal]
-toSubRanges n szs = patApply n (map (PatVar noAnn) szs)
 
 argsSize :: [Pat] -> Size
 argsSize = sum . map patToSize

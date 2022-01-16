@@ -73,7 +73,9 @@ purify (ts, syns, ds) = do
 
       iv <- freshVar "i"
 
-      (pure_rmds, PSto _ dcs pes _ allAs) <- runStateT (mapM (purifyResDefn rho ms) rmds) $ PSto False [] [] iv mempty
+      (pure_rmds, PSto points _ allAs) <- runStateT (mapM (purifyResDefn rho ms) rmds) $ PSto mempty iv mempty
+
+      let (dcs, pes) = unzip $ Map.elems points
 
       disp <- mkDispatch i o ms iv pes
 
@@ -495,8 +497,8 @@ classifyApp an (x, t, es)
       | otherwise          = pure $ RApp an t x es
 
 -- state for res-purification.
-data PSto = PSto !Bool ![DataCon] ![(Pat, Exp)] !(Name Exp) !(Map Ty (Name DataConId))
-
+data PSto = PSto !(Map (Name Exp) ResPoint) !(Name Exp) !(Map Ty (Name DataConId))
+type ResPoint = (DataCon, (Pat, Exp))
 
 -- | purifyResBody
 --  rho    -- pure environment
@@ -526,7 +528,6 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
             ts' <- mapM (purifyTy an ms) ts
 
             r_g <- freshVar $ "R_" <> prettyPrint g
-            addClause $ mkRDataCon an r_g ts'      -- "R_g T1 ... Tk"
 
             (p, xs) <- mkRPat an ts' r_g           -- Pattern (R_g e1 ... ek)
             ns      <- freshVars "s" ms
@@ -537,7 +538,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
             iv <- getI
             g_pure_app <- mkPureApp an rho a g $ vars ++ Var an i iv : svars
             -- "dispatch (R_g e1 ... ek, (s1, ..., sn)) i = g_pure e1 ... ek i s1 ... sn"
-            addEquation (pairpat, g_pure_app)
+            addResPoint g (mkRDataCon an r_g ts') (pairpat, g_pure_app) -- "R_g T1 ... Tk"
 
             let rGes  = mkApp an (Con an (mkArrowTy ts' rTy) r_g) es
             let outer = mkTuple an $ [e, rGes] ++ stos
@@ -648,38 +649,31 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
 
             addNakedSignal :: (Fresh m, MonadError AstError m, MonadState PSto m) => Annote -> m ()
             addNakedSignal an = do
-                  PSto hasSig _ _ _ _ <- get
-                  unless hasSig $ do
-                        -- by default, must add the eqn: dispatch R_return i = Left i
-                        let r_return = s2n "R_return"
+                  -- by default, must add the eqn: dispatch R_return i = Left i
+                  let r_return = s2n "R_return"
 
-                        p_ret     <- fst <$> mkRPat an [] r_return
-                        p_ret_ns  <- freshVars "s" ms
-                        let p_ret' = mkTuplePat an $ p_ret : map patVar p_ret_ns
+                  p_ret     <- fst <$> mkRPat an [] r_return
+                  p_ret_ns  <- freshVars "s" ms
+                  let p_ret' = mkTuplePat an $ p_ret : map patVar p_ret_ns
 
-                        iv        <- getI
-                        b_ret'    <- mkLeft "Signal" (Var an i iv) $ map (uncurry $ flip $ Var an) p_ret_ns
-                        addClause $ mkRDataCon an r_return []
-                        addEquation (p_ret', b_ret')
-                        modify (\ (PSto _ dcs pes iv as) -> PSto True dcs pes iv as)
+                  iv        <- getI
+                  b_ret'    <- mkLeft "Signal" (Var an i iv) $ map (uncurry $ flip $ Var an) p_ret_ns
+                  addResPoint r_return (mkRDataCon an r_return []) (p_ret', b_ret')
 
             getI :: MonadState PSto m => m (Name Exp)
-            getI = get >>= (\ (PSto _ _ _ iv _) -> pure iv)
+            getI = get >>= (\ (PSto _ iv _) -> pure iv)
 
-            addClause :: MonadState PSto m => DataCon -> m ()
-            addClause dc   = modify (\ (PSto hasSig dcs pes iv as) -> PSto hasSig (dc : dcs) pes iv as)
-
-            addEquation :: MonadState PSto m => (Pat, Exp) -> m ()
-            addEquation pe = modify (\ (PSto hasSig dcs pes iv as) -> PSto hasSig dcs (pe : pes) iv as)
+            addResPoint :: MonadState PSto m => Name Exp -> DataCon -> (Pat, Exp) -> m ()
+            addResPoint gid dc ps = modify (\ (PSto pts iv as) -> PSto (Map.insert gid (dc, ps) pts) iv as)
 
             getACtor :: (Fresh m, MonadState PSto m) => Text -> Ty -> m (Name DataConId)
             getACtor s t = do
-                  PSto _ _ _ _ as <- get
+                  PSto _ _ as <- get
                   case Map.lookup (unAnn t) as of
                         Nothing -> do
                               c <- freshVar $ "A_" <> s <> showt (Map.size as)
                               -- TODO(chathhorn): the num postfixed by Fresh is dropped in toCore because ctors assumed unique.
-                              modify (\ (PSto hasSig dcs pes iv as) -> PSto hasSig dcs pes iv $ Map.insert (unAnn t) c as)
+                              modify (\ (PSto pes iv as) -> PSto pes iv $ Map.insert (unAnn t) c as)
                               pure c
                         Just c -> pure c
 

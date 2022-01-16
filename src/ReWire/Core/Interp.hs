@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.Core.Interp (interp, interpDefn, Ins, Outs, Out, run, patMatches, patMatches', patApply, patApply', interpExps, DefnMap, subRange) where
+module ReWire.Core.Interp (interp, stateVars, interpDefn, Ins, Outs, Out, run, patMatches, patMatches', patApply, patApply', interpExps, DefnMap, subRange) where
 
 import ReWire.Flags (Flag (..))
 import ReWire.Core.Syntax
@@ -52,18 +52,22 @@ run :: Mealy a b -> [a] -> [b]
 run m ip = M.run (auto m <~ source ip)
 
 interp :: [Flag] -> Program -> Mealy Ins Outs
-interp flags (Program st ds) = interpStartDefn flags defnMap state st
+interp flags (Program st ds) = interpStartDefn flags defnMap (stateVars flags stateSize) st
       where defnMap :: DefnMap
             defnMap = Map.fromList $ map (defnName &&& id) ds
 
-            state :: [(Name, Size)]
-            state = state' <> [("__state", stateSize - sum (map snd state'))]
+            stateSize :: Size
+            stateSize = case st of
+                  StartDefn _ _ _ (_, Sig _ (arg0Size : _) _) _ -> arg0Size
+                  _                                               -> 0
 
-            -- | Take state names from the flags only as long as the sum of their
+stateVars :: [Flag] -> Size -> [(Name, Size)]
+stateVars flags totalSize = stateVars' <> if remainder > 0 then [("__state", remainder)] else []
+      where -- | Take state names from the flags only as long as the sum of their
             --   sizes is less than the total bits of state we have to divvy up.
-            state' :: [(Name, Size)]
-            state' = snd $ foldl' (\ (tot, st) (n, sz) -> if tot + sz <= stateSize then (tot + sz, st <> [(n, sz)]) else (tot, st)) (0, [])
-                         $ concatMap getState flags
+            stateVars' :: [(Name, Size)]
+            stateVars' = snd $ foldl' (\ (tot, st) (n, sz) -> if tot + sz <= totalSize then (tot + sz, st <> [(n, sz)]) else (tot, st)) (0, [])
+                             $ concatMap getState flags
 
             getState :: Flag -> [(Name, Size)]
             getState = \ case
@@ -75,10 +79,8 @@ interp flags (Program st ds) = interpStartDefn flags defnMap state st
                   [n, sz] -> (pack n, read sz)
                   n       -> (pack $ mconcat n, 1)
 
-            stateSize :: Size
-            stateSize = case st of
-                  StartDefn _ _ _ (_, Sig _ (arg0Size : _) _) _ -> arg0Size
-                  _                                               -> 0
+            remainder :: Size
+            remainder = totalSize - sum (map snd stateVars')
 
 -- TODO(chathhorn): make state explicit?
 interpStartDefn :: [Flag] -> DefnMap -> [(Name, Size)] -> StartDefn -> Mealy Ins Outs
