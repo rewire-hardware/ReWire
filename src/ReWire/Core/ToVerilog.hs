@@ -56,15 +56,15 @@ compileStartDefn flags st@(C.StartDefn an inps outps (loop, _) (state0, Sig _ _ 
             [ LVal lvCurrState
             , LVal $ Name sInp
             ]
-      initState                               <- initState rStart
+      initState'                               <- initState rStart
       pure $ Module "top_level" (inputs <> outputs) (loopSigs <> startSigs <> sigs)
             $  ssStart
             <> ssLoop
             <> [ Assign (Name sDoneOrNxtState) rLoop ]
             <> [ Assign (Name sInp) $ mkConcat $ map (LVal . Name . fst) inps ]
             <> [ Assign lvDoneOrNxt $ LVal $ Name sDoneOrNxtState ]
-            <> [ Initial $ ParAssign lvCurrState initState ]
-            <> [ Always ([Pos sClk] <> rstEdge) $ Block [ ifRst initState ] ]
+            <> [ Initial $ ParAssign lvCurrState initState' ]
+            <> [ Always ([Pos sClk] <> rstEdge) $ Block [ ifRst initState' ] ]
       where inputs :: [Port]
             inputs = [Input $ Logic 1 sClk]
                   <> (if noRst then [] else [Input $ Logic 1 sRst])
@@ -98,9 +98,9 @@ compileStartDefn flags st@(C.StartDefn an inps outps (loop, _) (state0, Sig _ _ 
                      <> map (uncurry $ flip Logic) regsNxt
 
             ifRst :: V.Exp -> Stmt
-            ifRst initState | noRst     = assignNxtState
-                            | otherwise = IfElse (Eq (LVal $ Name sRst) $ LitBits $ bitVec 1 $ fromEnum $ not invertRst)
-                  (Block [ ParAssign lvCurrState initState ])
+            ifRst initState' | noRst     = assignNxtState
+                             | otherwise = IfElse (Eq (LVal $ Name sRst) $ LitBits $ bitVec 1 $ fromEnum $ not invertRst)
+                  (Block [ ParAssign lvCurrState initState' ])
                   (Block [ assignNxtState ])
 
             initState :: MonadError AstError m => V.Exp -> m V.Exp
@@ -269,7 +269,7 @@ expToBV :: V.Exp -> Maybe BV
 expToBV = \ case
       LitBits bv -> Just bv
       Repl n e   -> BV.replicate n <$> expToBV e
-      Concat es  -> sum <$> mapM expToBV es
+      Concat es  -> BV.concat <$> mapM expToBV es
       _          -> Nothing
 
 -- | Size of the inclusive range [i, j].
