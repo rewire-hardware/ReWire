@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.Core.Interp (interp, stateVars, interpDefn, Ins, Outs, Out, run, patMatches, patMatches', patApply, patApply', interpExps, DefnMap, subRange) where
+module ReWire.Core.Interp (interp, interpDefn, Ins, Outs, Out, run, patMatches, patMatches', patApply, patApply', interpExps, DefnMap, subRange) where
 
 import ReWire.Flags (Flag (..))
 import ReWire.Core.Syntax
@@ -25,7 +25,6 @@ import Data.BitVector (BV, bitVec, (@@), nat, width, showHex, (>>.), (<<.), ashr
 import Data.Bits (Bits (..))
 import Data.Maybe (fromMaybe)
 import Data.HashMap.Strict (HashMap)
-import Data.List.Split (splitOn)
 import Data.Text (pack)
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Yaml as YAML
@@ -52,39 +51,12 @@ run :: Mealy a b -> [a] -> [b]
 run m ip = M.run (auto m <~ source ip)
 
 interp :: [Flag] -> Program -> Mealy Ins Outs
-interp flags (Program st ds) = interpStartDefn flags defnMap (stateVars flags stateSize) st
+interp flags (Program st ds) = interpStartDefn flags defnMap st
       where defnMap :: DefnMap
             defnMap = Map.fromList $ map (defnName &&& id) ds
 
-            stateSize :: Size
-            stateSize = case st of
-                  StartDefn _ _ _ (_, Sig _ (arg0Size : _) _) _ -> arg0Size
-                  _                                               -> 0
-
-stateVars :: [Flag] -> Size -> [(Name, Size)]
-stateVars flags totalSize = stateVars' <> [("__state", remainder) | remainder > 0]
-      where -- | Take state names from the flags only as long as the sum of their
-            --   sizes is less than the total bits of state we have to divvy up.
-            stateVars' :: [(Name, Size)]
-            stateVars' = snd $ foldl' (\ (tot, st) (n, sz) -> if tot + sz <= totalSize then (tot + sz, st <> [(n, sz)]) else (tot, st)) (0, [])
-                             $ concatMap getState flags
-
-            getState :: Flag -> [(Name, Size)]
-            getState = \ case
-                  FlagStateNames sts -> map toStatePair $ splitOn "," sts
-                  _                  -> []
-
-            toStatePair :: String -> (Name, Size)
-            toStatePair s = case splitOn ":" s of
-                  [n, sz] -> (pack n, read sz)
-                  n       -> (pack $ mconcat n, 1)
-
-            remainder :: Size
-            remainder = totalSize - sum (map snd stateVars')
-
--- TODO(chathhorn): make state explicit?
-interpStartDefn :: [Flag] -> DefnMap -> [(Name, Size)] -> StartDefn -> Mealy Ins Outs
-interpStartDefn flags defns state (StartDefn _ inps outps (loop', _) (state0', Sig _ _ initSize)) =
+interpStartDefn :: [Flag] -> DefnMap -> StartDefn -> Mealy Ins Outs
+interpStartDefn flags defns (StartDefn _ inps outps sts (loop', _) (state0', Sig _ _ initSize)) =
       r $ filterOutput $ splitOutputs $ interpDefn defns state0 mempty
       -- So:        loop   :: ((r, s), i) -> R (o, s)
       --            state0 :: R (o, s)
@@ -103,23 +75,23 @@ interpStartDefn flags defns state (StartDefn _ inps outps (loop', _) (state0', S
             joinInputs vs = mconcat $ zipWith mkBV (map snd st_inps) $ map (fromMaybe 0 . flip Map.lookup vs . fst) st_inps
 
             splitInputs :: BV -> Outs
-            splitInputs b = Map.fromList $ zip (map (("__input_" <>) . fst) inps) $ map Out $ drop (length state) $ toSubRanges b $ map snd st_inps
+            splitInputs b = Map.fromList $ zip (map (("__input_" <>) . fst) inps) $ map Out $ drop (length sts) $ toSubRanges b $ map snd st_inps
 
             st_inps :: [(Name, Size)]
-            st_inps = state <> inps
+            st_inps = sts <> inps
 
             outpSize :: Size
             outpSize = sum $ snd <$> outps
 
             stateSize :: Size
-            stateSize = sum $ snd <$> state
+            stateSize = sum $ snd <$> sts
 
             p_outps_st :: [(Name, Size)]
-            p_outps_st = ("__continue", 1) : padding <> outps <> state
+            p_outps_st = ("__continue", 1) : padding <> outps <> sts
 
             filterOutput :: Outs -> Outs
             filterOutput | FlagV `elem` flags = id
-                         | otherwise          = Map.filterWithKey (\ k _ -> k `elem` map fst (outps <> state))
+                         | otherwise          = Map.filterWithKey (\ k _ -> k `elem` map fst (outps <> sts))
 
             padding :: [(Name, Size)]
             padding | paddingSize > 0 = [("__padding", fromIntegral paddingSize)]
@@ -130,7 +102,7 @@ interpStartDefn flags defns state (StartDefn _ inps outps (loop', _) (state0', S
                                     - fromIntegral stateSize
 
             transferState :: Outs -> Ins -> Ins
-            transferState ops' inp = foldr ((\ sn -> Map.insert sn $ maybe 0 outValue $ Map.lookup sn ops') . fst) inp state
+            transferState ops' inp = foldr ((\ sn -> Map.insert sn $ maybe 0 outValue $ Map.lookup sn ops') . fst) inp sts
 
             outValue :: Out -> Value
             outValue (Out bv) = nat bv

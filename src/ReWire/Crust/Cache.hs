@@ -159,7 +159,7 @@ getProgram flags fp = do
        >=> pDebug' "[Pass 7] Post-purification."
        >=> whenSet FlagDCrust5 (printInfo "Crust 5: Post-second-lambda-lifting")
        >=> pDebug' "Translating to core & HDL."
-       >=> toCore (concatMap getInputNames flags) (concatMap getOutputNames flags)
+       >=> toCore (concatMap getInputNames flags) (concatMap getOutputNames flags) (concatMap getStateNames flags)
        >=> pDebug' "[Pass 8] Core."
        $ (ts, syns, ds)
 
@@ -188,6 +188,11 @@ getProgram flags fp = do
             getOutputNames :: Flag -> [Text]
             getOutputNames = \ case
                   FlagOutputNames ns -> map pack $ splitOn "," ns
+                  _                  -> []
+
+            getStateNames :: Flag -> [Text]
+            getStateNames = \ case
+                  FlagStateNames sts -> map pack $ splitOn "," sts
                   _                  -> []
 
 pDebug :: MonadIO m => [Flag] -> Text -> m ()

@@ -7,7 +7,7 @@ import ReWire.Flags (Flag (..))
 import ReWire.Core.Syntax as C hiding (Name, Size, Index)
 import ReWire.Verilog.Syntax as V
 import ReWire.Core.Mangle (mangle)
-import ReWire.Core.Interp (patApply', patMatches', subRange, stateVars)
+import ReWire.Core.Interp (patApply', patMatches', subRange)
 
 import Data.Text (Text, pack)
 import Data.Maybe (fromMaybe)
@@ -46,11 +46,11 @@ compileProgram flags (C.Program st ds)
 
             -- | Initial state should be inlined, so we can filter out its defn.
             getState0 :: StartDefn -> Name
-            getState0 (C.StartDefn _ _ _ _ (state0, _)) = state0
+            getState0 (C.StartDefn _ _ _ _ _ (state0, _)) = state0
 
 compileStartDefn :: (MonadError AstError m, MonadFail m, MonadReader DefnMap m)
                  => [Flag] -> C.StartDefn -> m Module
-compileStartDefn flags st@(C.StartDefn an inps outps (loop, _) (state0, Sig _ _ initSize)) = do
+compileStartDefn flags (C.StartDefn an inps outps sts (loop, _) (state0, Sig _ _ initSize)) = do
       ((rStart, ssStart), (fr, startSigs)) <- flip runStateT sigInfo0 $ compileCall (FlagFlatten : flags) state0 initSize []
       ((rLoop, ssLoop),   (_, loopSigs))   <- flip runStateT (fr, []) $ compileCall flags loop initSize
             [ LVal lvCurrState
@@ -93,8 +93,8 @@ compileStartDefn flags st@(C.StartDefn an inps outps (loop, _) (state0, Sig _ _ 
                    , Logic inpSize     sInp
                    , Logic 1           sContinue
                    ] <> [Logic (fromIntegral paddingSize) sPadding | paddingSize > 0]
-                     <> map (uncurry $ flip Logic) regs
-                     <> map (uncurry $ flip Logic) regsNxt
+                     <> map (uncurry $ flip Logic) sts
+                     <> map (uncurry $ flip Logic) stsNxt
 
             ifRst :: V.Exp -> Stmt
             ifRst initState' | FlagNoReset `elem` flags = assignNxtState
@@ -111,43 +111,38 @@ compileStartDefn flags st@(C.StartDefn an inps outps (loop, _) (state0, Sig _ _ 
             assignNxtState = ParAssign lvCurrState $ LVal lvNxtState
 
             lvDoneOrNxt :: LVal
-            lvDoneOrNxt = LVals $ map (Name . fst) $ (sContinue, 1) : padding <> outps <> regsNxt
+            lvDoneOrNxt = LVals $ map (Name . fst) $ (sContinue, 1) : padding <> outps <> stsNxt
 
             lvCurrState :: LVal
-            lvCurrState = case regs of
+            lvCurrState = case sts of
                   [(st, _)] -> Name st
-                  _         -> LVals $ map (Name . fst) regs
+                  _         -> LVals $ map (Name . fst) sts
 
             lvNxtState :: LVal
-            lvNxtState = case regsNxt of
+            lvNxtState = case stsNxt of
                   [(st, _)] -> Name st
-                  _         -> LVals $ map (Name . fst) regsNxt
+                  _         -> LVals $ map (Name . fst) stsNxt
 
             padding :: [(Name, Size)]
             padding | paddingSize > 0 = [(sPadding, fromIntegral paddingSize)]
                     | otherwise       = []
 
-            regs :: [(Name, Size)]
-            regs = stateVars flags stateSize
-
-            regsNxt :: [(Name, Size)]
-            regsNxt = map (first (<> "_next")) regs
+            stsNxt :: [(Name, Size)]
+            stsNxt = map (first (<> "_next")) sts
 
             paddingSize :: Int
             paddingSize = fromIntegral initSize - 1
                         - fromIntegral outpSize
                         - fromIntegral stateSize
 
-            stateSize :: Size
-            stateSize = case st of
-                  StartDefn _ _ _ (_, Sig _ (arg0Size : _) _) _ -> arg0Size
-                  _                                             -> 0
-
             inpSize :: V.Size
             inpSize = sum $ snd <$> inps
 
             outpSize :: V.Size
             outpSize = sum $ snd <$> outps
+
+            stateSize :: Size
+            stateSize = sum $ snd <$> sts
 
             rstEdge :: [Sensitivity]
             rstEdge | FlagNoReset `elem` flags = []

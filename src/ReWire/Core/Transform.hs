@@ -149,7 +149,7 @@ mergePats = \ case
 
 -- | Remove unused definitions.
 purgeUnused :: MonadFail m => Program -> m Program
-purgeUnused (Program start@(StartDefn _ _ _ (loop, _) (state0, _)) ds) = do
+purgeUnused (Program start@(StartDefn _ _ _ _ (loop, _) (state0, _)) ds) = do
       pure $ Program start $ filter ((`elem` uses) . defnName) ds
       where uses :: [GId]
             uses = uses' [loop, state0]

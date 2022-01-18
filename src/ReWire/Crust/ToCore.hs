@@ -26,9 +26,9 @@ type SizeMap = HashMap M.Ty C.Size
 type ConMap = (HashMap (Name M.TyConId) [Name M.DataConId], HashMap (Name M.DataConId) M.Ty)
 type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) C.LId) m)
 
-toCore :: (Fresh m, MonadError AstError m, MonadFail m) => [Text] -> [Text] -> M.FreeProgram -> m C.Program
-toCore inps outps (ts, _, vs) = fst <$> runStateT (do
-            vs' <- mapM (transDefn inps outps conMap) $ filter (not . M.isPrim . M.defnName) vs
+toCore :: (Fresh m, MonadError AstError m, MonadFail m) => [Text] -> [Text] -> [Text] -> M.FreeProgram -> m C.Program
+toCore inps outps sts (ts, _, vs) = fst <$> runStateT (do
+            vs' <- mapM (transDefn inps outps sts conMap) $ filter (not . M.isPrim . M.defnName) vs
             case partitionEithers vs' of
                   ([startDefn], defns) -> pure $ C.Program startDefn defns
                   _                    -> failAt noAnn "toCore: no Main.start."
@@ -44,30 +44,39 @@ toCore inps outps (ts, _, vs) = fst <$> runStateT (do
             projType :: M.DataCon -> M.Ty
             projType (M.DataCon _ _ (Embed (M.Poly t))) = runFreshM (snd <$> unbind t)
 
-transDefn :: (MonadError AstError m, Fresh m, MonadState SizeMap m, MonadFail m) => [Text] -> [Text] -> ConMap -> M.Defn -> m (Either C.StartDefn C.Defn)
-transDefn inps outps conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) | n2s n == "Main.start" = do
-      (_, t')  <- unbind t
-      case t' of
-            M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "ReT")) t_in) t_out) (M.TyCon _ (n2s -> "I"))) _ -> do
-                  (_, e') <- unbind e
-                  case e' of
-                        M.App _ (M.App _ (M.Var _ _ (n2s -> "unfold")) (M.Var _ loopTy loop)) (M.Var _ state0Ty state0) -> do
-                              (t_in' : t_ins)   <- mapM ((`runReaderT` conMap) . sizeOf an) $ t_in : M.flattenTyApp t_in
-                              (t_out' : t_outs) <- mapM ((`runReaderT` conMap) . sizeOf an) $ t_out : M.flattenTyApp t_out
-                              let t_ins'         = t_in' - sum t_ins : t_ins
-                                  t_outs'        = t_out' - sum t_outs : t_outs
-                              loopTy'           <- runReaderT (transType loopTy) conMap
-                              state0Ty'         <- runReaderT (transType state0Ty) conMap
-                              pure $ Left $ C.StartDefn an (zip (inps  <> map (("in" <>) . showt)  [0::C.Index ..]) (filter (> 0) t_ins'))
-                                                           (zip (outps <> map (("out" <>) . showt) [0::C.Index ..]) (filter (> 0) t_outs'))
-                                                           (n2s loop, loopTy')
-                                                           (n2s state0, state0Ty')
-                        _ -> failAt an $ "transDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " <> prettyPrint e'
-            _ -> failAt an $ "transDefn: Main.start has illegal type: " <> prettyPrint t'
-transDefn _ _ conMap (M.Defn an n (Embed (M.Poly t)) _ (Embed e)) = do
-      (_, t')  <- unbind t
-      (xs, e') <- unbind e
-      Right <$> (C.Defn an (showt n) <$> runReaderT (transType t') conMap <*> runReaderT (runReaderT (transExp e') conMap) (Map.fromList $ zip xs [0..]))
+transDefn :: (MonadError AstError m, Fresh m, MonadState SizeMap m, MonadFail m) => [Text] -> [Text] -> [Text] -> ConMap -> M.Defn -> m (Either C.StartDefn C.Defn)
+transDefn inps outps sts conMap = \ case
+      M.Defn an n (Embed (M.Poly t)) _ (Embed e) | n2s n == "Main.start" -> do
+            (_, t')  <- unbind t
+            case t' of
+                  M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "ReT")) t_in) t_out) (M.TyCon _ (n2s -> "I"))) _ -> do
+                        (_, e') <- unbind e
+                        case e' of
+                              M.App _ (M.App _ (M.Var _ _ (n2s -> "unfold")) (M.Var _ loopTy loop)) (M.Var _ state0Ty state0) -> do
+                                    t_st              <- getRegsTy state0Ty
+                                    (t_in' : t_ins)   <- mapM ((`runReaderT` conMap) . sizeOf an) $ t_in : M.flattenTyApp t_in
+                                    (t_out' : t_outs) <- mapM ((`runReaderT` conMap) . sizeOf an) $ t_out : M.flattenTyApp t_out
+                                    (t_st' : t_sts)   <- mapM ((`runReaderT` conMap) . sizeOf an) $ t_st : concatMap M.flattenTyApp (M.flattenTyApp t_st)
+                                    let t_ins'         = t_in' - sum t_ins : t_ins
+                                        t_outs'        = t_out' - sum t_outs : t_outs
+                                        t_sts'         = t_st' - sum t_sts : t_sts
+                                    loopTy'           <- runReaderT (transType loopTy) conMap
+                                    state0Ty'         <- runReaderT (transType state0Ty) conMap
+                                    pure $ Left $ C.StartDefn an (zip (inps  <> map (("in" <>) . showt)  [0::C.Index ..]) (filter (> 0) t_ins'))
+                                                                 (zip (outps <> map (("out" <>) . showt) [0::C.Index ..]) (filter (> 0) t_outs'))
+                                                                 (zip (sts <> map (("st" <>) . showt)    [0::C.Index ..]) (filter (> 0) t_sts'))
+                                                                 (n2s loop, loopTy')
+                                                                 (n2s state0, state0Ty')
+                              _ -> failAt an $ "transDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " <> prettyPrint e'
+                  _ -> failAt an $ "transDefn: Main.start has illegal type: " <> prettyPrint t'
+      M.Defn an n (Embed (M.Poly t)) _ (Embed e) -> do
+            (_, t')  <- unbind t
+            (xs, e') <- unbind e
+            Right <$> (C.Defn an (showt n) <$> runReaderT (transType t') conMap <*> runReaderT (runReaderT (transExp e') conMap) (Map.fromList $ zip xs [0..]))
+      where getRegsTy :: MonadError AstError m => M.Ty -> m M.Ty
+            getRegsTy = \ case
+                  M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "PuRe")) s) _ -> pure s
+                  t                                                     -> failAt (ann t) $ "transDefn: definition of Main.start must have form `Main.start = unfold n m' where m has type PuRe s o."
 
 transExp :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.Exp -> TCM m [C.Exp]
 transExp = \ case

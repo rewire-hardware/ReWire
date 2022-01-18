@@ -163,16 +163,16 @@ instance Pretty Pat where
 
 ---
 
--- | Names for input and output signals, res type, (loop, loop ty), (state0, state0 ty).
-data StartDefn = StartDefn Annote ![(Name, Size)] ![(Name, Size)] !(GId, Sig) !(GId, Sig)
+-- | Names for input, output, state signals, res type, (loop, loop ty), (state0, state0 ty).
+data StartDefn = StartDefn Annote ![(Name, Size)] ![(Name, Size)] ![(Name, Size)] !(GId, Sig) !(GId, Sig)
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric StartDefn
 
 instance Annotated StartDefn where
-      ann (StartDefn a _ _ _ _) = a
+      ann (StartDefn a _ _ _ _ _) = a
 
 instance Pretty StartDefn where
-      pretty (StartDefn _ inps outps (loop, _) (state0, _)) = vsep
+      pretty (StartDefn _ inps outps _ (loop, _) (state0, _)) = vsep
             [ text "Main.start" <+> text "::" <+> text "ReT" <+> ppBV (map snd inps) <+> ppBV (map snd outps)
             , text "Main.start" <+> text "=" <+> nest 2 (text "unfold" <+> pretty loop <+> pretty state0)
             ]
