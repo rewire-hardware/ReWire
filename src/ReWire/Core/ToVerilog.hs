@@ -11,8 +11,8 @@ import ReWire.Core.Interp (patApply', patMatches', subRange, stateVars)
 
 import Data.Text (Text, pack)
 import Data.Maybe (fromMaybe)
-import Control.Monad (msum, liftM, liftM2)
-import Control.Monad.State (MonadState, get, runStateT, modify)
+import Control.Monad (msum, liftM2)
+import Control.Monad.State (MonadState, get, runStateT, modify, gets)
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Arrow ((&&&), first, second)
 import TextShow (showt)
@@ -31,7 +31,7 @@ sigInfo0 = (0, [])
 fresh :: MonadState SigInfo m => Text -> m Name
 fresh s = do
       (ctr, _) <- get
-      modify $ first $ (+ 1)
+      modify $ first (+ 1)
       pure $ mangle s <> "_" <> showt ctr
 
 compileProgram :: (MonadFail m, MonadError AstError m) => [Flag] -> C.Program -> m V.Program
@@ -67,13 +67,12 @@ compileStartDefn flags st@(C.StartDefn an inps outps (loop, _) (state0, Sig _ _ 
             <> [ Always ([Pos sClk] <> rstEdge) $ Block [ ifRst initState' ] ]
       where inputs :: [Port]
             inputs = [Input $ Logic 1 sClk]
-                  <> (if noRst then [] else [Input $ Logic 1 sRst])
+                  <> [Input $ Logic 1 sRst | FlagNoReset `notElem` flags]
                   <> map (uncurry toInput) inps
 
             outputs :: [Port]
             outputs = map (Output . uncurry (flip Logic)) outps
 
-            -- sCurState = "current_state"
             sDoneOrNxtState = "done_or_next_state"
             sInp            = "inp"
             sContinue       = "cont"
@@ -93,13 +92,13 @@ compileStartDefn flags st@(C.StartDefn an inps outps (loop, _) (state0, Sig _ _ 
             sigs = [ Logic initSize    sDoneOrNxtState
                    , Logic inpSize     sInp
                    , Logic 1           sContinue
-                   ] <> (if paddingSize > 0 then [Logic (fromIntegral paddingSize) sPadding] else [])
+                   ] <> [Logic (fromIntegral paddingSize) sPadding | paddingSize > 0]
                      <> map (uncurry $ flip Logic) regs
                      <> map (uncurry $ flip Logic) regsNxt
 
             ifRst :: V.Exp -> Stmt
-            ifRst initState' | noRst     = assignNxtState
-                             | otherwise = IfElse (Eq (LVal $ Name sRst) $ LitBits $ bitVec 1 $ fromEnum $ not invertRst)
+            ifRst initState' | FlagNoReset `elem` flags = assignNxtState
+                             | otherwise                = IfElse (Eq (LVal $ Name sRst) $ LitBits $ bitVec 1 $ fromEnum $ not invertRst)
                   (Block [ ParAssign lvCurrState initState' ])
                   (Block [ assignNxtState ])
 
@@ -151,15 +150,12 @@ compileStartDefn flags st@(C.StartDefn an inps outps (loop, _) (state0, Sig _ _ 
             outpSize = sum $ snd <$> outps
 
             rstEdge :: [Sensitivity]
-            rstEdge | noRst     = []
-                    | invertRst = [Neg sRst]
-                    | otherwise = [Pos sRst]
+            rstEdge | FlagNoReset `elem` flags = []
+                    | invertRst                = [Neg sRst]
+                    | otherwise                = [Pos sRst]
 
             invertRst :: Bool
             invertRst = FlagInvertReset `elem` flags
-
-            noRst :: Bool
-            noRst = FlagNoReset `elem` flags
 
 compileDefn :: (MonadFail m, MonadError AstError m) => [Flag] -> C.Defn -> m V.Module
 compileDefn flags (C.Defn _ n (Sig _ inps outp) body) = do
@@ -279,7 +275,7 @@ nbits i j = fromIntegral (j - i + 1)
 mkConcat :: [V.Exp] -> V.Exp
 mkConcat = \ case
       [e] -> e
-      es  -> Concat $ es
+      es  -> Concat es
 
 mkRange :: Name -> Index -> Index -> V.LVal
 mkRange n i j | i == j    = Element n i
@@ -288,8 +284,8 @@ mkRange n i j | i == j    = Element n i
 mkWCast :: Size -> V.Exp -> V.Exp
 mkWCast sz = \ case
       LVal (Range n i j) | sz < nbits i j -> LVal $ mkRange n i (j - fromIntegral (nbits i j - sz))
-      WCast _ e                            -> WCast sz e
-      e                                    -> WCast sz e
+      WCast _ e                           -> WCast sz e
+      e                                   -> WCast sz e
 
 -- | Recreates the effect of assignment by adding bitwidth casts to an expression:
 -- > wcast s e
@@ -379,7 +375,7 @@ expWidth = \ case
       LtEq _ _        -> pure $ Just 1
       GtEq _ _        -> pure $ Just 1
       Concat es       -> sumMaybes <$> mapM expWidth es
-      Repl sz e       -> liftM (*sz) <$> expWidth e
+      Repl sz e       -> fmap (*sz) <$> expWidth e
       WCast sz _      -> pure $ Just sz
       LitBits bv      -> pure $ Just $ fromIntegral $ width bv
       LVal lv         -> lvalWidth lv
@@ -426,7 +422,7 @@ primBinOps =
       , ( ">>"     , RShift)
       , ( "<<<"    , LShiftArith)
       , ( ">>>"    , RShiftArith)
-      , ( "concat" , (\ x y -> Concat [x, y]))
+      , ( "concat" , \ x y -> Concat [x, y])
       ]
 
 primUnOps :: [(Name, V.Exp -> V.Exp)]
@@ -449,7 +445,7 @@ newWire sz n = do
       pure $ Name n'
 
 lookupWidth :: MonadState SigInfo m => Name -> m (Maybe Size)
-lookupWidth n = lookup n <$> map proj <$> snd <$> get
+lookupWidth n = gets (lookup n . map proj <$> snd)
       where proj :: Signal -> (Name, Size)
             proj = \ case
                   Wire  sz n -> (n, sz)
@@ -463,7 +459,7 @@ patMatches x ps =  case patMatches' (\ i j bv -> [Eq (LVal $ mkRange x i j) $ Li
       []          -> bTrue
 
 patMatchesLit :: BV -> [Pat] -> Bool
-patMatchesLit bv = foldr (&&) True . patMatches' (\ i j bv' -> [subRange (i, j) bv ==. bv'])
+patMatchesLit bv = and . patMatches' (\ i j bv' -> [subRange (i, j) bv ==. bv'])
 
 -- | Returns a list of ranges bound by pattern variables.
 patApply :: Name -> [Pat] -> [LVal]

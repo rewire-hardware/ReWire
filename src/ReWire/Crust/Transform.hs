@@ -26,7 +26,7 @@ import ReWire.Crust.Syntax
 import Control.Arrow (first)
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.State (State, evalStateT, execState, StateT (..), get, modify)
-import Control.Monad (filterM, replicateM, (>=>))
+import Control.Monad (filterM, replicateM)
 import Data.Data (Data)
 import Data.List (find, foldl')
 import Data.Maybe (fromJust, fromMaybe)
@@ -144,7 +144,7 @@ shiftLambdas (ts, syns, vs) = (ts, syns, ) <$> mapM shiftLambdas' vs
 prePurify :: (Fresh m, MonadCatch m, MonadError AstError m) => FreeProgram -> m FreeProgram
 prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM ppDefn ds
       where ppDefn :: (MonadError AstError m, Fresh m) => Defn -> m Defn
-            ppDefn (d@Defn { defnBody = Embed e }) = do
+            ppDefn d@Defn { defnBody = Embed e } = do
                   (xs, e') <- unbind e
                   e''      <- ppExp e'
                   pure $ d { defnBody = Embed (bind xs e'') }
@@ -171,20 +171,20 @@ prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM ppDefn ds
 
             needsRejiggering :: Exp -> Bool
             needsRejiggering = \ case
-                  (dstBind -> Just (_, (dstBind -> Just (_, _, _)), _)) -> True
+                  (dstBind -> Just (_, dstBind -> Just (_, _, _), _)) -> True
                   (dstBind -> Just (_, _, e2)) | not (isLambda e2)      -> True
                   _ -> False
 
             rejiggerBind :: (MonadError AstError m, Fresh m) => Exp -> m Exp
             rejiggerBind = \ case
                   -- Associate bind to the right (case with a lambda on the right).
-                  (dstBind -> Just (a, (dstBind -> Just (_, e1, Lam _ t2 e2)), e3)) -> do
+                  (dstBind -> Just (a, dstBind -> Just (_, e1, Lam _ _ e2), e3)) -> do
                         let t = TyBlank a
                         (x, e2') <- unbind e2
                         ppExp $ mkBind a t e1
                               $ Lam (ann e2') t (bind x $ mkBind a t e2' e3)
                   -- Associate bind to the right.
-                  (dstBind -> Just (a, (dstBind -> Just (_, e1, e2)), e3)) -> do
+                  (dstBind -> Just (a, dstBind -> Just (_, e1, e2), e3)) -> do
                         let t = TyBlank a
                         x <- fresh $ s2n "rabind"
                         let e' = mkBind a t (App (ann e2) e2 $ Var (ann e2) t x) e3
@@ -196,15 +196,6 @@ prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM ppDefn ds
                         ppExp $ mkBind a t e1
                               $ Lam (ann e2) t (bind x $ App (ann e2) e2 $ Var (ann e2) t x)
                   e -> pure e
-
-            shiftBind :: (MonadCatch m, Fresh m) => Transform m
-            shiftBind =  \ case
-                  (dstBind -> Just (a, e1, e2)) | not (isLambda e2) -> do
-                        x <- fresh $ s2n "sbind"
-                        let t = TyBlank a
-                        pure $ mkBind a t e1
-                             $ Lam (ann e2) t (bind x $ App (ann e2) e2 $ Var (ann e2) t x)
-                  ||> TId
 
             isLambda :: Exp -> Bool
             isLambda = \ case

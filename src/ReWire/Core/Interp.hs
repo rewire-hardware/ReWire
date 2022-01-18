@@ -62,7 +62,7 @@ interp flags (Program st ds) = interpStartDefn flags defnMap (stateVars flags st
                   _                                               -> 0
 
 stateVars :: [Flag] -> Size -> [(Name, Size)]
-stateVars flags totalSize = stateVars' <> if remainder > 0 then [("__state", remainder)] else []
+stateVars flags totalSize = stateVars' <> [("__state", remainder) | remainder > 0]
       where -- | Take state names from the flags only as long as the sum of their
             --   sizes is less than the total bits of state we have to divvy up.
             stateVars' :: [(Name, Size)]
