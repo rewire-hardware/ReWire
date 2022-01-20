@@ -24,6 +24,7 @@ module ReWire.Crust.Syntax
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly
       , rangeTy, paramTys, isPrim, mkArrowTy, nil, isResMonad, isStateMonad
+      , flattenAllTyApp, resInputTy
       , mkTuple, mkTuplePat, mkTupleMPat, mkTupleTy
       , mkPair, mkPairPat, mkPairMPat
       , kmonad, tycomp
@@ -504,7 +505,12 @@ paramTys = fst . flattenArrow
 
 flattenTyApp :: Ty -> [Ty]
 flattenTyApp = \ case
-      TyApp _ t t' -> flattenTyApp t ++ [t']
+      TyApp _ t t' -> flattenTyApp t <> [t']
+      t            -> [t]
+
+flattenAllTyApp :: Ty -> [Ty]
+flattenAllTyApp = \ case
+      TyApp _ t t' -> flattenAllTyApp t <> flattenAllTyApp t'
       t            -> [t]
 
 rangeTy :: Ty -> Ty
@@ -579,6 +585,11 @@ isResMonad :: Ty -> Bool
 isResMonad ty = case rangeTy ty of
       TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReT")) _) _) _) _ -> True
       _                                                                      -> False
+
+resInputTy :: Ty -> Maybe Ty
+resInputTy ty = case rangeTy ty of
+      TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReT")) ip) _) _) _ -> Just ip
+      _                                                                       -> Nothing
 
 isStateMonad :: Ty -> Bool
 isStateMonad ty = case rangeTy ty of

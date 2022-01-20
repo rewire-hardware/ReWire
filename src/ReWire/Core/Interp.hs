@@ -1,11 +1,22 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.Core.Interp (interp, interpDefn, Ins, Outs, Out, run, patMatches, patMatches', patApply, patApply', interpExps, DefnMap, subRange) where
+module ReWire.Core.Interp
+      ( interp, interpDefn
+      , Ins, Outs, Out, run
+      , patMatches, patMatches'
+      , patApply, patApply'
+      , interpExps, DefnMap
+      , subRange
+      , dispatchWires, pausePrefix, extraWires
+      , resumptionSize
+      , clk, rst
+      ) where
 
 import ReWire.Flags (Flag (..))
 import ReWire.Core.Syntax
       ( Program (..)
       , Name, Value, Index, Size
+      , Wiring (..)
       , GId, LId
       , Pat (..), Exp (..)
       , Target (..)
@@ -20,6 +31,7 @@ import ReWire.Annotation (noAnn)
 import Data.List (foldl')
 import Data.Machine (Mealy (..), auto, (<~), source)
 import qualified Data.Machine as M
+import Control.Monad (msum)
 import Control.Arrow ((&&&), second)
 import Data.BitVector (BV, bitVec, (@@), nat, width, showHex, (>>.), (<<.), ashr)
 import Data.Bits (Bits (..))
@@ -56,7 +68,7 @@ interp flags (Program st ds) = interpStartDefn flags defnMap st
             defnMap = Map.fromList $ map (defnName &&& id) ds
 
 interpStartDefn :: [Flag] -> DefnMap -> StartDefn -> Mealy Ins Outs
-interpStartDefn flags defns (StartDefn _ inps outps sts (loop', _) (state0', Sig _ _ initSize)) =
+interpStartDefn flags defns (StartDefn _ w loop' state0') =
       r $ filterOutput $ splitOutputs $ interpDefn defns state0 mempty
       -- So:        loop   :: ((r, s), i) -> R (o, s)
       --            state0 :: R (o, s)
@@ -69,43 +81,29 @@ interpStartDefn flags defns (StartDefn _ inps outps sts (loop', _) (state0', Sig
             f i' = filterOutput $ splitInputs (joinInputs i') <> splitOutputs (interpDefn defns loop $ joinInputs i')
 
             splitOutputs :: BV -> Outs
-            splitOutputs b = Map.fromList $ zip (map fst p_outps_st) $ map Out $ toSubRanges b $ map snd p_outps_st
+            splitOutputs b = Map.fromList $ zip (map fst $ pauseWires w) $ map Out $ toSubRanges b $ map snd $ pauseWires w
 
             joinInputs :: Ins -> BV
             joinInputs vs = mconcat $ zipWith mkBV (map snd st_inps) $ map (fromMaybe 0 . flip Map.lookup vs . fst) st_inps
 
             splitInputs :: BV -> Outs
-            splitInputs b = Map.fromList $ zip (map (("__input_" <>) . fst) inps) $ map Out $ drop (length sts) $ toSubRanges b $ map snd st_inps
+            splitInputs b = Map.fromList $ zip (map (("__input_" <>) . fst) $ inputWires w) $ map Out $ drop (length $ dispatchWires w) $ toSubRanges b $ map snd st_inps
 
             st_inps :: [(Name, Size)]
-            st_inps = sts <> inps
-
-            outpSize :: Size
-            outpSize = sum $ snd <$> outps
-
-            stateSize :: Size
-            stateSize = sum $ snd <$> sts
-
-            p_outps_st :: [(Name, Size)]
-            p_outps_st = ("__continue", 1) : padding <> outps <> sts
+            st_inps = dispatchWires w <> inputWires w
 
             filterOutput :: Outs -> Outs
             filterOutput | FlagV `elem` flags = id
-                         | otherwise          = Map.filterWithKey (\ k _ -> k `elem` map fst (outps <> sts))
-
-            padding :: [(Name, Size)]
-            padding | paddingSize > 0 = [("__padding", fromIntegral paddingSize)]
-                    | otherwise       = []
-                  where paddingSize :: Int
-                        paddingSize = fromIntegral initSize - 1
-                                    - fromIntegral outpSize
-                                    - fromIntegral stateSize
+                         | otherwise          = Map.filterWithKey (\ k _ -> k `elem` map fst (outputWires w <> dispatchWires w))
 
             transferState :: Outs -> Ins -> Ins
-            transferState ops' inp = foldr ((\ sn -> Map.insert sn $ maybe 0 outValue $ Map.lookup sn ops') . fst) inp sts
+            transferState ops' inp = foldr ((\ sn -> Map.insert sn $ maybe 0 outValue $ Map.lookup sn ops') . fst) inp (dispatchWires w)
 
             outValue :: Out -> Value
             outValue (Out bv) = nat bv
+
+            pauseWires :: Wiring -> [(Name, Size)]
+            pauseWires w = pausePrefix w <> stateWires w
 
             Just loop   = Map.lookup loop' defns
             Just state0 = Map.lookup state0' defns
@@ -239,3 +237,51 @@ binBitify op sz a b = mkBV sz (nat a `op` nat b)
 
 binIntify :: (Bool -> Bool -> Bool) -> Integer -> Integer -> Integer
 binIntify op a b = if (a /= 0) `op` (b /= 0) then 1 else 0
+
+pausePadding :: Wiring -> [(Name, Size)]
+pausePadding w | paddingSize > 0 = [("__padding", paddingSize)]
+               | otherwise       = []
+      where paddingSize :: Size
+            paddingSize = fromIntegral (resumptionSize w) - 1
+                        - fromIntegral (sum $ snd <$> resumptionTag w)
+                        - fromIntegral (sum $ snd <$> outputWires w)
+                        - fromIntegral (sum $ snd <$> stateWires w)
+
+resumptionTag :: Wiring -> [(Name, Size)]
+resumptionTag w | tagSize > 0 = [("__resumption_tag", tagSize)]
+                | otherwise   = []
+      where tagSize :: Size
+            tagSize = case sigLoop w of
+                  Sig _ (a : _) _ -> a - (sum $ snd <$> stateWires w)
+                  _               -> 0
+
+resumptionSize :: Wiring -> Size
+resumptionSize (sigState0 -> Sig _ _ s) = s
+
+continue :: (Name, Size)
+continue = ("__continue", 1)
+
+pausePrefix :: Wiring -> [(Name, Size)]
+pausePrefix w = continue : pausePadding w <> outputWires w <> resumptionTag w
+
+dispatchWires :: Wiring -> [(Name, Size)]
+dispatchWires w = resumptionTag w <> stateWires w
+
+extraWires :: Wiring -> [(Name, Size)]
+extraWires w = continue : pausePadding w <> resumptionTag w
+
+clk :: [Flag] -> [(Name, Size)]
+clk flags = [(sClk, 1)]
+      where sClk :: Name
+            sClk = fromMaybe "clk" $ msum $ map (\ case
+                  FlagClockName s -> Just $ pack s
+                  _               -> Nothing) flags
+
+rst :: [Flag] -> [(Name, Size)]
+rst flags | FlagNoReset `elem` flags = []
+          | otherwise                = [(sRst, 1)]
+      where sRst :: Name
+            sRst = fromMaybe (if FlagInvertReset `elem` flags then "rst_n" else "rst") $ msum $ map (\ case
+                  FlagResetName s -> Just $ pack s
+                  _               -> Nothing) flags
+

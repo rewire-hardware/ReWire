@@ -6,6 +6,7 @@ module ReWire.Core.Syntax
   , Exp (..)
   , Pat (..)
   , StartDefn (..), Defn (..)
+  , Wiring (..)
   , Program (..)
   , Target (..)
   , Size, Index, Name, Value, GId, LId
@@ -164,18 +165,30 @@ instance Pretty Pat where
 ---
 
 -- | Names for input, output, state signals, res type, (loop, loop ty), (state0, state0 ty).
-data StartDefn = StartDefn Annote ![(Name, Size)] ![(Name, Size)] ![(Name, Size)] !(GId, Sig) !(GId, Sig)
+data StartDefn = StartDefn Annote !Wiring !GId !GId
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric StartDefn
 
 instance Annotated StartDefn where
-      ann (StartDefn a _ _ _ _ _) = a
+      ann (StartDefn a _ _ _) = a
 
 instance Pretty StartDefn where
-      pretty (StartDefn _ inps outps _ (loop, _) (state0, _)) = vsep
-            [ text "Main.start" <+> text "::" <+> text "ReT" <+> ppBV (map snd inps) <+> ppBV (map snd outps)
+      pretty (StartDefn _ w loop state0) = vsep
+            [ text "Main.start" <+> text "::" <+> text "ReT" <+> ppBV (map snd $ inputWires w) <+> ppBV (map snd $ outputWires w)
             , text "Main.start" <+> text "=" <+> nest 2 (text "unfold" <+> pretty loop <+> pretty state0)
             ]
+
+---
+
+data Wiring = Wiring
+      { inputWires  :: ![(Name, Size)]
+      , outputWires :: ![(Name, Size)]
+      , stateWires  :: ![(Name, Size)]
+      , sigLoop     :: !Sig
+      , sigState0   :: !Sig
+      }
+      deriving (Eq, Ord, Show, Typeable, Data, Generic)
+      deriving TextShow via FromGeneric Wiring
 
 ---
 

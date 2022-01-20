@@ -167,13 +167,13 @@ mkDefnArch (Defn _ n _ es) = do
 
 -- TODO(chathhorn): support breaking out states (sts).
 compileStartDefn :: MonadError AstError m => [Flag] -> StartDefn -> CM m Unit
-compileStartDefn flags (StartDefn an inps outps _sts (n_loopfun, t_loopfun@(Sig _ (arg0size:_) _)) (n_startstate, t_startstate)) = do
+compileStartDefn flags (StartDefn an w n_loopfun n_startstate) = do
       put ([], [], 0) -- empty out signal and component store, reset name counter
       let stateSize = sizeOf t_startstate
           inpSize   = sum $ map snd inps
           outpSize  = sum $ map snd outps
-      addComponent an n_startstate t_startstate
-      addComponent an n_loopfun t_loopfun
+      addComponent an n_startstate $ sigState0 w
+      addComponent an n_loopfun $ sigLoop w
       addSignal "start_state"        $ TyStdLogicVector stateSize
       addSignal "loop_out"           $ TyStdLogicVector stateSize
       addSignal "current_state"      $ TyRegister "clk" stateSize
@@ -230,7 +230,13 @@ compileStartDefn flags (StartDefn an inps outps _sts (n_loopfun, t_loopfun@(Sig 
                   (as <> [Assign (LHSName n) (ExprSlice (ExprName "current_state") off (off + fromIntegral sz - 1))], off + fromIntegral sz))
                   ([], 1) outps
 
-compileStartDefn _ (StartDefn an _ _ _ _ _) = failAt an "toVHDL: compileStartDefn: start definition with invalid signature."
+            inps = inputWires w
+            outps = outputWires w
+            arg0size = case sigLoop w of
+                  Sig _ (a : _) _ -> a
+            t_startstate = sigState0 w
+
+compileStartDefn _ (StartDefn an _ _ _) = failAt an "toVHDL: compileStartDefn: start definition with invalid signature."
 
 compileDefn :: MonadError AstError m => [Flag] -> Defn -> CM m Unit
 compileDefn flags d = Unit (uses flags) <$> mkDefnEntity d <*> mkDefnArch d

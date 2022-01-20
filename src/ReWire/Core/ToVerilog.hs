@@ -7,11 +7,15 @@ import ReWire.Flags (Flag (..))
 import ReWire.Core.Syntax as C hiding (Name, Size, Index)
 import ReWire.Verilog.Syntax as V
 import ReWire.Core.Mangle (mangle)
-import ReWire.Core.Interp (patApply', patMatches', subRange)
+import ReWire.Core.Interp
+      ( patApply', patMatches', subRange
+      , dispatchWires, pausePrefix, extraWires
+      , resumptionSize
+      , clk, rst
+      )
 
-import Data.Text (Text, pack)
-import Data.Maybe (fromMaybe)
-import Control.Monad (msum, liftM2)
+import Data.Text (Text)
+import Control.Monad (liftM2)
 import Control.Monad.State (MonadState, get, runStateT, modify, gets)
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Arrow ((&&&), first, second)
@@ -46,111 +50,70 @@ compileProgram flags (C.Program st ds)
 
             -- | Initial state should be inlined, so we can filter out its defn.
             getState0 :: StartDefn -> Name
-            getState0 (C.StartDefn _ _ _ _ _ (state0, _)) = state0
+            getState0 (C.StartDefn _ _ _ state0) = state0
 
 compileStartDefn :: (MonadError AstError m, MonadFail m, MonadReader DefnMap m)
                  => [Flag] -> C.StartDefn -> m Module
-compileStartDefn flags (C.StartDefn an inps outps sts (loop, _) (state0, Sig _ _ initSize)) = do
-      ((rStart, ssStart), (fr, startSigs)) <- flip runStateT sigInfo0 $ compileCall (FlagFlatten : flags) state0 initSize []
-      ((rLoop, ssLoop),   (_, loopSigs))   <- flip runStateT (fr, []) $ compileCall flags loop initSize
-            [ LVal lvCurrState
-            , LVal $ Name sInp
+compileStartDefn flags (C.StartDefn an w loop state0) = do
+      ((rStart, ssStart), (fr, startSigs)) <- flip runStateT sigInfo0 $ compileCall (FlagFlatten : flags) state0 (resumptionSize w) []
+      ((rLoop, ssLoop),   (_, loopSigs))   <- flip runStateT (fr, []) $ compileCall flags loop (resumptionSize w)
+            [ mkConcat $ map (LVal . Name . fst) $ dispatchWires w
+            , mkConcat $ map (LVal . Name . fst) $ inputWires w
             ]
       initState'                               <- initState rStart
       pure $ Module "top_level" (inputs <> outputs) (loopSigs <> startSigs <> sigs)
             $  ssStart
             <> ssLoop
-            <> [ Assign (Name sDoneOrNxtState) rLoop ]
-            <> [ Assign (Name sInp) $ mkConcat $ map (LVal . Name . fst) inps ]
-            <> [ Assign lvDoneOrNxt $ LVal $ Name sDoneOrNxtState ]
+            <> [ Assign lvPause rLoop ]
             <> [ Initial $ ParAssign lvCurrState initState' ]
-            <> [ Always ([Pos sClk] <> rstEdge) $ Block [ ifRst initState' ] ]
+            <> [ Always (map (Pos . fst) (clk flags) <> rstEdge) $ Block [ ifRst initState' ] ]
       where inputs :: [Port]
-            inputs = [Input $ Logic 1 sClk]
-                  <> [Input $ Logic 1 sRst | FlagNoReset `notElem` flags]
-                  <> map (uncurry toInput) inps
+            inputs = map (Input . toLogic)  $ clk flags <> rst flags <> inputWires w
 
             outputs :: [Port]
-            outputs = map (Output . uncurry (flip Logic)) outps
-
-            sDoneOrNxtState = "done_or_next_state"
-            sInp            = "inp"
-            sContinue       = "cont"
-            sPadding        = "padding"
-
-            sClk :: Text
-            sClk = fromMaybe "clk" $ msum $ map (\ case
-                  FlagClockName s -> Just $ pack s
-                  _               -> Nothing) flags
-
-            sRst :: Text
-            sRst = fromMaybe (if invertRst then "rst_n" else "rst") $ msum $ map (\ case
-                  FlagResetName s -> Just $ pack s
-                  _               -> Nothing) flags
+            outputs = map (Output . toLogic) $ outputWires w
 
             sigs :: [Signal]
-            sigs = [ Logic initSize    sDoneOrNxtState
-                   , Logic inpSize     sInp
-                   , Logic 1           sContinue
-                   ] <> [Logic (fromIntegral paddingSize) sPadding | paddingSize > 0]
-                     <> map (uncurry $ flip Logic) sts
-                     <> map (uncurry $ flip Logic) stsNxt
+            sigs = map toLogic $ allWires w
 
             ifRst :: V.Exp -> Stmt
-            ifRst initState' | FlagNoReset `elem` flags = assignNxtState
-                             | otherwise                = IfElse (Eq (LVal $ Name sRst) $ LitBits $ bitVec 1 $ fromEnum $ not invertRst)
-                  (Block [ ParAssign lvCurrState initState' ])
-                  (Block [ assignNxtState ])
+            ifRst initState' = case rst flags of
+                  [(sRst, sz)] -> IfElse (Eq (LVal $ Name sRst) $ LitBits $ bitVec (fromIntegral sz) $ fromEnum $ not invertRst)
+                        (Block [ ParAssign lvCurrState initState' ])
+                        (Block [ ParAssign lvCurrState $ LVal lvNxtState ])
+                  _            -> ParAssign lvCurrState $ LVal lvNxtState
 
             initState :: MonadError AstError m => V.Exp -> m V.Exp
             initState e = case expToBV e of
-                  Just bv -> pure $ bvToExp $ subRange (0, fromIntegral stateSize - 1) bv
+                  Just bv -> pure $ bvToExp $ subRange (0, (fromIntegral $ sum $ snd <$> stateWires w) - 1) bv
                   _       -> failAt an "ToVerilog: start state not constant."
 
-            assignNxtState :: Stmt
-            assignNxtState = ParAssign lvCurrState $ LVal lvNxtState
-
-            lvDoneOrNxt :: LVal
-            lvDoneOrNxt = LVals $ map (Name . fst) $ (sContinue, 1) : padding <> outps <> stsNxt
+            lvPause :: LVal
+            lvPause = mkLVals $ map (Name . fst) $ pauseWires w
 
             lvCurrState :: LVal
-            lvCurrState = case sts of
-                  [(st, _)] -> Name st
-                  _         -> LVals $ map (Name . fst) sts
+            lvCurrState = mkLVals $ map (Name . fst) $ stateWires w
 
             lvNxtState :: LVal
-            lvNxtState = case stsNxt of
-                  [(st, _)] -> Name st
-                  _         -> LVals $ map (Name . fst) stsNxt
-
-            padding :: [(Name, Size)]
-            padding | paddingSize > 0 = [(sPadding, fromIntegral paddingSize)]
-                    | otherwise       = []
-
-            stsNxt :: [(Name, Size)]
-            stsNxt = map (first (<> "_next")) sts
-
-            paddingSize :: Int
-            paddingSize = fromIntegral initSize - 1
-                        - fromIntegral outpSize
-                        - fromIntegral stateSize
-
-            inpSize :: V.Size
-            inpSize = sum $ snd <$> inps
-
-            outpSize :: V.Size
-            outpSize = sum $ snd <$> outps
-
-            stateSize :: Size
-            stateSize = sum $ snd <$> sts
+            lvNxtState = mkLVals $ map (Name . fst) $ nextStateWires w
 
             rstEdge :: [Sensitivity]
-            rstEdge | FlagNoReset `elem` flags = []
-                    | invertRst                = [Neg sRst]
-                    | otherwise                = [Pos sRst]
+            rstEdge = case rst flags of
+                  [(sRst, _)] | invertRst -> [Neg sRst]
+                              | otherwise -> [Pos sRst]
+                  _                       -> []
 
             invertRst :: Bool
             invertRst = FlagInvertReset `elem` flags
+
+            pauseWires :: Wiring -> [(Name, Size)]
+            pauseWires w = pausePrefix w <> nextStateWires w
+
+            nextStateWires :: Wiring -> [(Name, Size)]
+            nextStateWires w = map (first (<> "_next")) $ stateWires w
+
+            allWires :: Wiring -> [(Name, Size)]
+            allWires w = extraWires w <> stateWires w <> nextStateWires w
 
 compileDefn :: (MonadFail m, MonadError AstError m) => [Flag] -> C.Defn -> m V.Module
 compileDefn flags (C.Defn _ n (Sig _ inps outp) body) = do
@@ -160,10 +123,10 @@ compileDefn flags (C.Defn _ n (Sig _ inps outp) body) = do
             argNames = zipWith (\ _ x -> "arg" <> showt x) inps [0::Int ..]
 
             inputs :: [Port]
-            inputs = zipWith toInput argNames inps
+            inputs = map (Input . toLogic) (zip argNames inps)
 
             outputs :: [Port]
-            outputs = [Output $ Logic outp "res"]
+            outputs = map (Output . toLogic) [("res", outp)]
 
 -- | Inlines a defn or instantiates an already-compiled defn.
 compileCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
@@ -271,6 +234,11 @@ mkConcat :: [V.Exp] -> V.Exp
 mkConcat = \ case
       [e] -> e
       es  -> Concat es
+
+mkLVals :: [V.LVal] -> V.LVal
+mkLVals = \ case
+      [e] -> e
+      es  -> LVals es
 
 mkRange :: Name -> Index -> Index -> V.LVal
 mkRange n i j | i == j    = Element n i
@@ -470,5 +438,5 @@ argsSize = sum . map patToSize
                   PatVar _ sz -> sz
                   _           -> 0
 
-toInput :: Text -> Size -> Port
-toInput n sz = Input $ Logic sz n
+toLogic :: (Name, Size) -> Signal
+toLogic = uncurry $ flip Logic

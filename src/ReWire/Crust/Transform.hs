@@ -14,10 +14,11 @@ module ReWire.Crust.Transform
 
 import ReWire.Error
 import ReWire.Unbound
-      ( Fresh (..), s2n, n2s
+      ( Fresh (..), s2n, n2s, bn2s
       , substs, subst, unembed
       , isFreeName, runFreshM
       , Name (..)
+      , unsafeUnbind
       )
 import ReWire.Annotation (Annote (..), Annotated (..), noAnn)
 import ReWire.SYB
@@ -204,8 +205,8 @@ prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM ppDefn ds
 
             dstBind :: Exp -> Maybe (Annote, Exp, Exp)
             dstBind = \ case
-                  App a (App _ (Var _ _ x) e1) e2 | isFreeName x && n2s x == "rwBind" -> Just (a, e1, e2)
-                  _                                                                   -> Nothing
+                  App a (App _ (Var _ _ (bn2s -> "rwBind")) e1) e2 -> Just (a, e1, e2)
+                  _                                                -> Nothing
 
             mkBind :: Annote -> Ty -> Exp -> Exp -> Exp
             mkBind a t e1 e2 = App a (App a (Var a t $ s2n "rwBind") e1) e2
@@ -245,6 +246,7 @@ fullyApplyDefs (ts, syns, vs) = (ts, syns, ) <$> mapM fullyApplyDefs' vs
                   e                             -> App (ann e) e x
 
 -- | Lifts lambdas and case/match into a top level fun def.
+-- TODO(chathhorn): a lot of duplicated code here.
 liftLambdas :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
 liftLambdas p = evalStateT (runT liftLambdas' p) []
       where liftLambdas' :: (MonadCatch m, Fresh m) => Transform (StateT [Defn] m)
@@ -303,8 +305,23 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                         pure $ App an
                               (foldl' (App an) (Var an t' f) $ map (toVar an) bvs)
                               arg
+                  -- Lifts the first argument to extrude (required for purification).
+                  App an ex@(Var _ _ (bn2s -> "extrude")) e | liftable e && not (isExtrude e) -> do
+                        let bvs   = bv e
+                        (fvs, e') <- freshen e
+
+                        let t' = foldr (arr . snd) (typeOf e) bvs
+                        f     <- fresh $ s2n "$LL.extrude"
+
+                        modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind fvs e')
+                        pure $ App an ex (foldl' (App an) (Var an t' f) $ map (toVar an) bvs)
                   ||> (\ ([] :: [Defn]) -> get) -- this is cute!
                   ||> TId
+
+            isExtrude :: Exp -> Bool
+            isExtrude = \ case
+                  App _ (App _ (Var _ _ (bn2s -> "extrude")) _) _ -> True
+                  _                                               -> False
 
             liftable :: Exp -> Bool
             liftable = \ case
@@ -367,15 +384,24 @@ purgeUnused (ts, syns, vs) = (inuseData (externCtors vs') (fv $ trec vs') ts, sy
                          , "()"
                          ]
 
+            -- | Also treat as used: all ctors for types returned by externs and ReT inputs.
             externCtors :: Data a => a -> [Name TyConId]
-            externCtors = runQ (query $ \ case
-                  Extern _ _ e -> case flattenTyApp $ rangeTy $ typeOf e of
-                        [TyCon _ n] -> [n]
-                        _           -> []
-                  _                 -> [])
+            externCtors = runQ $ (\ case
+                        Extern _ _ e -> ctorNames $ flattenAllTyApp $ rangeTy $ typeOf e
+                        _            -> [])
+                  ||? (\ case
+                        Defn _ (n2s -> "Main.start") (Embed (Poly (unsafeUnbind -> (_, t)))) _ _ -> maybe [] (ctorNames . flattenAllTyApp) $ resInputTy t
+                        _                                                                        -> [])
+                  ||? QEmpty
 
             dataConName :: DataCon -> Name DataConId
             dataConName (DataCon _ n _) = n
+
+            ctorNames :: [Ty] -> [Name TyConId]
+            ctorNames = \ case
+                  TyCon _ n : cs -> n : ctorNames cs
+                  _ : cs         -> ctorNames cs
+                  _              -> []
 
 inuseDefn :: [Defn] -> [Defn]
 inuseDefn ds = map toDefn $ Set.elems $ execState (inuseDefn' ds') ds'

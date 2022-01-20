@@ -62,11 +62,12 @@ transDefn inps outps sts conMap = \ case
                                         t_sts'         = t_st' - sum t_sts : t_sts
                                     loopTy'           <- runReaderT (transType loopTy) conMap
                                     state0Ty'         <- runReaderT (transType state0Ty) conMap
-                                    pure $ Left $ C.StartDefn an (zip (inps  <> map (("in" <>) . showt)  [0::C.Index ..]) (filter (> 0) t_ins'))
-                                                                 (zip (outps <> map (("out" <>) . showt) [0::C.Index ..]) (filter (> 0) t_outs'))
-                                                                 (zip (sts <> map (("st" <>) . showt)    [0::C.Index ..]) (filter (> 0) t_sts'))
-                                                                 (n2s loop, loopTy')
-                                                                 (n2s state0, state0Ty')
+                                    let wires = C.Wiring (zip (inps  <> map (("__in" <>) . showt)  [0::C.Index ..]) (filter (> 0) t_ins'))
+                                                         (zip (outps <> map (("__out" <>) . showt) [0::C.Index ..]) (filter (> 0) t_outs'))
+                                                         (zip (sts <> map (("__st" <>) . showt)    [0::C.Index ..]) (filter (> 0) t_sts'))
+                                                         loopTy'
+                                                         state0Ty'
+                                    pure $ Left $ C.StartDefn an wires (n2s loop) (n2s state0)
                               _ -> failAt an $ "transDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " <> prettyPrint e'
                   _ -> failAt an $ "transDefn: Main.start has illegal type: " <> prettyPrint t'
       M.Defn an n (Embed (M.Poly t)) _ (Embed e) -> do
