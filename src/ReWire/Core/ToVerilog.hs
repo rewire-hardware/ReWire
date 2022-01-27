@@ -270,11 +270,11 @@ wcast sz e = expWidth e >>= \ case
                   XOr  e1 e2      -> XOr         <$> pad e1 <*> pad e2
                   XNor e1 e2      -> XNor        <$> pad e1 <*> pad e2
                   Cond c e1 e2    -> Cond c      <$> pad e1 <*> pad e2
-                  Pow         e n -> Pow         <$> pad e <*> pure n
-                  LShift      e n -> LShift      <$> pad e <*> pure n
-                  RShift      e n -> RShift      <$> pad e <*> pure n
-                  LShiftArith e n -> LShiftArith <$> pad e <*> pure n
-                  RShiftArith e n -> RShiftArith <$> pad e <*> pure n
+                  Pow         e n -> Pow         <$> pad e  <*> pure n
+                  LShift      e n -> LShift      <$> pad e  <*> pure n
+                  RShift      e n -> RShift      <$> pad e  <*> pure n
+                  LShiftArith e n -> LShiftArith <$> pad e  <*> pure n
+                  RShiftArith e n -> RShiftArith <$> pad e  <*> pure n
                   Not e           -> Not         <$> pad e
                   e               -> pad e
       _                   -> pure e

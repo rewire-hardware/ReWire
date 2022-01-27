@@ -239,20 +239,21 @@ binIntify :: (Bool -> Bool -> Bool) -> Integer -> Integer -> Integer
 binIntify op a b = if (a /= 0) `op` (b /= 0) then 1 else 0
 
 pausePadding :: Wiring -> [(Name, Size)]
-pausePadding w | paddingSize > 0 = [("__padding", paddingSize)]
+pausePadding w | paddingSize > 0 = [("__padding", fromIntegral paddingSize)]
                | otherwise       = []
-      where paddingSize :: Size
-            paddingSize = fromIntegral (resumptionSize w) - 1
-                        - fromIntegral (sum $ snd <$> resumptionTag w)
-                        - fromIntegral (sum $ snd <$> outputWires w)
-                        - fromIntegral (sum $ snd <$> stateWires w)
+      where paddingSize :: Int
+            paddingSize = (fromIntegral $ resumptionSize w)              -- sizeof PuRe
+                        - 1                                              -- count (Done | Pause)
+                        - (fromIntegral $ sum $ snd <$> resumptionTag w) -- count R_ ctors
+                        - (fromIntegral $ sum $ snd <$> outputWires w)   --  
+                        - (fromIntegral $ sum $ snd <$> stateWires w)    -- 
 
 resumptionTag :: Wiring -> [(Name, Size)]
-resumptionTag w | tagSize > 0 = [("__resumption_tag", tagSize)]
+resumptionTag w | tagSize > 0 = [("__resumption_tag", fromIntegral tagSize)]
                 | otherwise   = []
-      where tagSize :: Size
+      where tagSize :: Int
             tagSize = case sigLoop w of
-                  Sig _ (a : _) _ -> a - (sum $ snd <$> stateWires w)
+                  Sig _ (a : _) _ -> fromIntegral a - (fromIntegral $ sum $ snd <$> stateWires w)
                   _               -> 0
 
 resumptionSize :: Wiring -> Size

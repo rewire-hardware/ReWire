@@ -182,16 +182,19 @@ getProgram flags fp = do
 
             getInputNames :: Flag -> [Text]
             getInputNames = \ case
+                  FlagInputNames [] -> []
                   FlagInputNames ns -> map pack $ splitOn "," ns
                   _                 -> []
 
             getOutputNames :: Flag -> [Text]
             getOutputNames = \ case
+                  FlagOutputNames [] -> []
                   FlagOutputNames ns -> map pack $ splitOn "," ns
                   _                  -> []
 
             getStateNames :: Flag -> [Text]
             getStateNames = \ case
+                  FlagStateNames []  -> []
                   FlagStateNames sts -> map pack $ splitOn "," sts
                   _                  -> []
 
