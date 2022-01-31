@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.Main (main) where
+module Main (main) where
 
 import ReWire.Annotation (unAnn)
 import ReWire.FrontEnd (loadProgram, LoadPath)
@@ -32,7 +32,7 @@ import qualified Data.Text.IO as T
 import qualified Data.Yaml as YAML
 import qualified Data.HashMap.Strict as Map
 
-import Paths_ReWire (getDataFileName)
+import Paths_rewire (getDataFileName)
 
 options :: [OptDescr Flag]
 options =
