@@ -60,13 +60,16 @@ compileStartDefn flags (C.StartDefn an w loop state0) = do
             [ mkConcat $ map (LVal . Name . fst) $ dispatchWires w
             , mkConcat $ map (LVal . Name . fst) $ inputWires w
             ]
-      initState'                               <- initState rStart
       pure $ Module "top_level" (inputs <> outputs) (loopSigs <> startSigs <> sigs)
             $  ssStart
             <> ssLoop
             <> [ Assign lvPause rLoop ]
-            <> [ Initial $ ParAssign lvCurrState initState' ]
-            <> [ Always (map (Pos . fst) (clk flags) <> rstEdge) $ Block [ ifRst initState' ] ]
+            <> case clocked rStart of
+                  Just initState ->
+                        [ Initial $ ParAssign lvCurrState initState
+                        , Always (map (Pos . fst) (clk flags) <> rstEdge) $ Block [ ifRst initState ]
+                        ]
+                  _              -> [ ]
       where inputs :: [Port]
             inputs = map (Input . toLogic)  $ clk flags <> rst flags <> inputWires w
 
@@ -77,16 +80,19 @@ compileStartDefn flags (C.StartDefn an w loop state0) = do
             sigs = map toLogic $ allWires w
 
             ifRst :: V.Exp -> Stmt
-            ifRst initState' = case rst flags of
+            ifRst initState = case rst flags of
                   [(sRst, sz)] -> IfElse (Eq (LVal $ Name sRst) $ LitBits $ bitVec (fromIntegral sz) $ fromEnum $ not invertRst)
-                        (Block [ ParAssign lvCurrState initState' ])
+                        (Block [ ParAssign lvCurrState initState ] )
                         (Block [ ParAssign lvCurrState $ LVal lvNxtState ])
                   _            -> ParAssign lvCurrState $ LVal lvNxtState
 
-            initState :: MonadError AstError m => V.Exp -> m V.Exp
-            initState e = case expToBV e of
-                  Just bv -> pure $ bvToExp $ subRange (0, (fromIntegral $ sum $ snd <$> stateWires w) - 1) bv
-                  _       -> failAt an "ToVerilog: start state not constant."
+            -- | If clocked, return initial/reset state, otherwise Nothing.
+            clocked :: V.Exp -> Maybe V.Exp
+            clocked e
+                  | FlagNoClock `elem` flags = Nothing
+                  | otherwise                = case (expToBV e, fromIntegral (sum $ snd <$> stateWires w)) of
+                        (Just bv, n) | n > 0 -> pure $ bvToExp $ subRange (0, n - 1) bv
+                        _                    -> Nothing
 
             lvPause :: LVal
             lvPause = mkLVals $ map (Name . fst) $ pauseWires w

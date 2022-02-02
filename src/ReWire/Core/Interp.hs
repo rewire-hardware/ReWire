@@ -272,15 +272,16 @@ extraWires :: Wiring -> [(Name, Size)]
 extraWires w = continue : pausePadding w <> resumptionTag w
 
 clk :: [Flag] -> [(Name, Size)]
-clk flags = [(sClk, 1)]
+clk flags | FlagNoClock `elem` flags = []
+          | otherwise                = [(sClk, 1)]
       where sClk :: Name
             sClk = fromMaybe "clk" $ msum $ map (\ case
                   FlagClockName s -> Just $ pack s
                   _               -> Nothing) flags
 
 rst :: [Flag] -> [(Name, Size)]
-rst flags | FlagNoReset `elem` flags = []
-          | otherwise                = [(sRst, 1)]
+rst flags | FlagNoReset `elem` flags || FlagNoClock `elem` flags = []
+          | otherwise                                            = [(sRst, 1)]
       where sRst :: Name
             sRst = fromMaybe (if FlagInvertReset `elem` flags then "rst_n" else "rst") $ msum $ map (\ case
                   FlagResetName s -> Just $ pack s

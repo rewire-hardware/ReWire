@@ -41,6 +41,7 @@ options =
        , Option []    ["verilog"]            (NoArg  FlagVerilog)                       "Produce Verilog output instead of VHDL."
        , Option []    ["invert-reset"]       (NoArg  FlagInvertReset)                   "Invert the implicitly generated reset signal."
        , Option []    ["no-reset"]           (NoArg  FlagNoReset)                       "No implicitly generated reset signal."
+       , Option []    ["no-clock"]           (NoArg  FlagNoClock)                       "No implicitly generated clock signal (implies no-reset: generate a purely combinatorial circuit)."
        , Option []    ["dpass1", "dhask1" ]  (NoArg  FlagDHask1)                        "Dump pass 1: pre-desugar haskell source."
        , Option []    ["dpass2", "dhask2" ]  (NoArg  FlagDHask2)                        "Dump pass 2: post-desugar haskell source."
        , Option []    ["dpass3", "dcrust1"]  (NoArg  FlagDCrust1)                       "Dump pass 3: post-desugar crust source."
