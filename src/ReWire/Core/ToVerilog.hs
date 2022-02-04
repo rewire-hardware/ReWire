@@ -20,7 +20,7 @@ import Control.Monad.State (MonadState, get, runStateT, modify, gets)
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Arrow ((&&&), first, second)
 import TextShow (showt)
-import Data.BitVector (width, bitVec, BV, zeros, ones, lsb1, (==.), msb)
+import Data.BitVector (width, bitVec, BV, zeros, ones, lsb1, (==.), (@.))
 import qualified Data.BitVector as BV
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
@@ -161,7 +161,7 @@ compileExp flags lvars = \ case
       Call _ sz (Global g) es ps els                    -> mkCall "glob" es ps els $ compileCall flags g sz
       Call _ sz (Extern _ (binOp -> Just op)) es ps els -> mkCall "binOp" es ps els $ \ [x, y] -> (,[]) <$> wcast sz (op x y)
       Call _ sz (Extern _ (unOp -> Just op)) es ps els  -> mkCall "unOp" es ps els $ \ [x] -> (,[]) <$> wcast sz (op x)
-      Call _ sz (Extern _ "msbit") es ps els            -> mkCall "msbit" es ps els $ \ [x] -> (,[]) <$> wcast sz (msbit' (argsSize ps) x)
+      Call _ sz (Extern _ "msbit") es ps els            -> mkCall "msbit" es ps els $ \ [x] -> (,[]) <$> wcast sz (projBit (fromIntegral (argsSize ps) - 1) x)
       Call _ sz Id es ps els                            -> mkCall "id" es ps els $ \ xs -> (,[]) <$> wcast sz (mkConcat xs)
       Call _ sz (Const bv) es ps els                    -> mkCall "lit" es ps els $ \ _ -> (,[]) <$> wcast sz (bvToExp bv)
       Call an _ (Extern _ ex) _ _ _                     -> failAt an $ "ToVerilog: compileExp: unknown extern: " <> ex
@@ -203,11 +203,11 @@ compileExp flags lvars = \ case
             lkupLVal :: LId -> Maybe V.Exp
             lkupLVal = flip lookup (zip [0::LId ..] lvars)
 
-            msbit' :: Size -> V.Exp -> V.Exp
-            msbit' sz = \ case
-                  LVal (Range n _ j)     -> LVal $ Element n j
-                  LVal (Name n)          -> LVal $ Element n $ fromIntegral sz - 1
-                  LitBits bv | msb bv    -> LitBits $ ones 1
+            projBit :: Index -> V.Exp -> V.Exp
+            projBit ix = \ case
+                  LVal (Range n i _)     -> LVal $ Element n $ ix + i
+                  LVal (Name n)          -> LVal $ Element n ix
+                  LitBits bv | bv @. ix  -> LitBits $ ones 1
                              | otherwise -> LitBits $ zeros 1
                   e                      -> e -- TODO(chathhorn): kludgy.
 

@@ -3,7 +3,7 @@ module ReWire.Bits where
 import ReWire
 
 -- | "Cleared," "set."
-data Bit = C | S
+--data Bit = C | S
 data W8  = W8 Bit Bit Bit Bit Bit Bit Bit Bit
 data W32 = W32 W8 W8 W8 W8
 
@@ -18,6 +18,10 @@ toBit _    = C
 andb :: Bit -> Bit -> Bit
 andb S S = S
 andb _ _ = C
+
+-- | addb x y ci = (x + y + ci, carry-out)
+addb :: Bit -> Bit -> Bit -> (Bit, Bit)
+addb x y ci = ((x `xorb` y) `xorb` ci, ((x `xorb` y) `andb` ci) `orb` (x `andb` y))
 
 orb :: Bit -> Bit -> Bit
 orb C C = C
@@ -76,16 +80,8 @@ decW8 (W8 a S C C C C C C) = W8 a C S S S S S S
 decW8 (W8 S C C C C C C C) = W8 C S S S S S S S
 decW8 (W8 C C C C C C C C) = W8 S S S S S S S S
 
--- bitwiseW8 :: (Bit -> Bit) -> W8 -> W8
--- bitwiseW8 f (W8 b0 b1 b2 b3 b4 b5 b6 b7) = W8 (f b0) (f b1) (f b2) (f b3) (f b4) (f b5) (f b6) (f b7)
---
--- bitwiseW8' :: (Bit -> Bit -> Bit) -> W8 -> W8 -> W8
--- bitwiseW8' f (W8 b0  b1  b2  b3  b4  b5  b6  b7)
---              (W8 b0' b1' b2' b3' b4' b5' b6' b7') = W8 (f b0 b0') (f b1 b1') (f b2 b2') (f b3 b3') (f b4 b4') (f b5 b5') (f b6 b6') (f b7 b7')
-
 notW8 :: W8 -> W8
 notW8 (W8 a b c d e f g h) = W8 (notb a) (notb b) (notb c) (notb d) (notb e) (notb f) (notb g) (notb h)
--- notW8 = bitwiseW8 notb
 
 -- | Rotate left.
 rolW8 :: W8 -> W8
@@ -97,23 +93,34 @@ rorW8 (W8 a b c d e f g h) = W8 h a b c d e f g
 
 -- | Bitwise and.
 andW8 :: W8 -> W8 -> W8
-andW8 = extern "andW8" andW8
--- andW8 = bitwiseW8' andb
+andW8 (W8 a  b  c  d  e  f  g  h )
+      (W8 a' b' c' d' e' f' g' h') = W8 (andb a a') (andb b b') (andb c c') (andb d d') (andb e e') (andb f f') (andb g g') (andb h h')
 
 -- | Bitwise or.
 orW8 :: W8 -> W8 -> W8
-orW8 = extern "orW8" orW8
--- orW8 = bitwiseW8' orb
+orW8 (W8 a  b  c  d  e  f  g  h )
+     (W8 a' b' c' d' e' f' g' h') = W8 (orb a a') (orb b b') (orb c c') (orb d d') (orb e e') (orb f f') (orb g g') (orb h h')
 
 -- | Bitwise xor.
 xorW8 :: W8 -> W8 -> W8
-xorW8 = extern "xorW8" xorW8
--- xorW8 = bitwiseW8' xorb
+xorW8 (W8 a  b  c  d  e  f  g  h )
+      (W8 a' b' c' d' e' f' g' h') = W8 (xorb a a') (xorb b b') (xorb c c') (xorb d d') (xorb e e') (xorb f f') (xorb g g') (xorb h h')
 
 plusW8 :: W8 -> W8 -> W8
-plusW8 a b | isZero a = b
-plusW8 a b | isZero b = a
-plusW8 a b = plusW8 (decW8 a) (incW8 b)
+plusW8 x y = fst (plusW8' x y C)
+
+-- | Ripple-carry adder.
+plusW8' :: W8 -> W8 -> Bit -> (W8, Bit)
+plusW8' (W8 a  b  c  d  e  f  g  h ) (W8 a' b' c' d' e' f' g' h') ci =
+      let (r0, co0) = addb h h' ci   in
+          (r1, co1) = addb g g' co0 in
+          (r2, co2) = addb f f' co1 in
+          (r3, co3) = addb e e' co2 in
+          (r4, co4) = addb d d' co3 in
+          (r5, co5) = addb c c' co4 in
+          (r6, co6) = addb b b' co5 in
+          (r7, co7) = addb a a' co6 in
+      (W8 r7 r6 r5 r4 r3 r2 r1 r0, co7)
 
 eqW8 :: W8 -> W8 -> Bool
 eqW8 (W8 a b c d e f g h) (W8 a' b' c' d' e' f' g' h')
@@ -121,15 +128,6 @@ eqW8 (W8 a b c d e f g h) (W8 a' b' c' d' e' f' g' h')
      && c `eqb` c' && d `eqb` d'
      && e `eqb` e' && f `eqb` f'
      && g `eqb` g' && h `eqb` h'
-
--- {-# INLINE bitwiseW32 #-}
--- bitwiseW32 :: (Bit -> Bit) -> W32 -> W32
--- bitwiseW32 f (W32 b0 b1 b2 b3) = W32 (bitwiseW8 f b0) (bitwiseW8 f b1) (bitwiseW8 f b2) (bitwiseW8 f b3)
---
--- {-# INLINE bitwiseW32' #-}
--- bitwiseW32' :: (Bit -> Bit -> Bit) -> W32 -> W32 -> W32
--- bitwiseW32' f (W32 b0  b1  b2  b3)
---               (W32 b0' b1' b2' b3') = W32 (bitwiseW8' f b0 b0') (bitwiseW8' f b1 b1') (bitwiseW8' f b2 b2') (bitwiseW8' f b3 b3')
 
 zeroW32 :: W32
 zeroW32 = W32 zeroW8 zeroW8 zeroW8 zeroW8
@@ -141,16 +139,21 @@ notW32 :: W32 -> W32
 notW32 (W32 a b c d) = W32 (notW8 a) (notW8 b) (notW8 c) (notW8 d)
 
 andW32 :: W32 -> W32 -> W32
-andW32 = extern "andW32" andW32
--- andW32 = bitwiseW32' andb
+andW32 (W32 a  b  c  d )
+       (W32 a' b' c' d') = W32 (andW8 a a') (andW8 b b') (andW8 c c') (andW8 d d')
 
 orW32 :: W32 -> W32 -> W32
-orW32 = extern "orW32" orW32
--- orW32 = bitwiseW32' orb
+orW32 (W32 a  b  c  d )
+      (W32 a' b' c' d') = W32 (orb a a') (orb b b') (orb c c') (orb d d')
 
 xorW32 :: W32 -> W32 -> W32
-xorW32 = extern "xorW32" xorW32
--- xorW32 = bitwiseW32' xorb
+xorW32 (W32 a  b  c  d )
+       (W32 a' b' c' d') = W32 (xorb a a') (xorb b b') (xorb c c') (xorb d d')
 
 plusW32 :: W32 -> W32 -> W32
-plusW32 = extern "plusW32" plusW32
+plusW32 (W32 a b c d) (W32 a' b' c' d') =
+      let (r0, co0) = plusW8' d d' C   in
+          (r1, co1) = plusW8' c c' co0 in
+          (r2, co2) = plusW8' b b' co1 in
+          (r3, _)   = plusW8' a a' co2 in
+      W32 r3 r2 r1 r0

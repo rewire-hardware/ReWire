@@ -219,16 +219,17 @@ freshKVar n = M.KVar <$> fresh (s2n $ "?K_" <> n)
 
 transExp :: MonadError AstError m => Renamer -> Exp Annote -> m M.Exp
 transExp rn = \ case
-      App l (App _ (Var _ n) (Lit _ (String _ f _))) e
-            | isExtern n -> M.Extern l (pack f) <$> transExp rn e
       App l (Var _ n) (Lit _ (String _ m _))
             | isError n      -> pure $ M.Error l (M.TyBlank l) (pack m)
       App l e1 e2            -> M.App l <$> transExp rn e1 <*> transExp rn e2
       Lambda l [PVar _ x] e  -> do
             e' <- transExp (exclude Value [void x] rn) e
             pure $ M.Lam l (M.TyBlank l) $ bind (mkUId $ void x) e'
-      Var l x                -> pure $ M.Var l (M.TyBlank l) (s2n $ rename Value rn x)
-      Con l x                -> pure $ M.Con l (M.TyBlank l) (s2n $ rename Value rn x)
+      Var l x | isExtern x   -> pure $ M.Extern l $ M.TyBlank l
+      Var l x | isBit x      -> pure $ M.Bit l $ M.TyBlank l
+      Var l x | isBits x     -> pure $ M.Bits l $ M.TyBlank l
+      Var l x                -> pure $ M.Var l (M.TyBlank l) $ s2n $ rename Value rn x
+      Con l x                -> pure $ M.Con l (M.TyBlank l) $ s2n $ rename Value rn x
       Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _] -> do
             e'  <- transExp rn e
             p'  <- transPat rn p
@@ -240,6 +241,8 @@ transExp rn = \ case
             p'  <- transPat rn p
             e1' <- transExp (exclude Value (getVars p) rn) e1
             pure $ M.Case l (M.TyBlank l) e' (bind p' e1') Nothing
+      Lit l (Int _ n _)      -> pure $ M.LitInt l n
+      Lit l (String _ s _)   -> pure $ M.LitStr l $ pack s
       e                      -> failAt (ann e) $ "Unsupported expression syntax: " <> pack (show $ void e)
       where getVars :: Pat Annote -> [S.Name ()]
             getVars = runQ $ query $ \ case
@@ -251,6 +254,12 @@ transExp rn = \ case
 
             isExtern :: QName Annote -> Bool
             isExtern n = prettyPrint (name $ rename Value rn n) == "extern"
+
+            isBit :: QName Annote -> Bool
+            isBit n = prettyPrint (name $ rename Value rn n) == "bit"
+
+            isBits :: QName Annote -> Bool
+            isBits n = prettyPrint (name $ rename Value rn n) == "bits"
 
 transPat :: MonadError AstError m => Renamer -> Pat Annote -> m M.Pat
 transPat rn = \ case

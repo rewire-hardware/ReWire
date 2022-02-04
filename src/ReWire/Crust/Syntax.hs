@@ -24,6 +24,7 @@ module ReWire.Crust.Syntax
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly
       , rangeTy, paramTys, isPrim, mkArrowTy, nil, isResMonad, isStateMonad
+      , strTy, intTy, bitTy
       , flattenAllTyApp, resInputTy
       , mkTuple, mkTuplePat, mkTupleMPat, mkTupleTy
       , mkPair, mkPairPat, mkPairMPat
@@ -224,7 +225,9 @@ data Exp = App    Annote !Exp  !Exp
          | Con    Annote !Ty   !(Name DataConId)
          | Case   Annote !Ty   !Exp !(Bind Pat Exp) !(Maybe Exp)
          | Match  Annote !Ty   !Exp !MatchPat !Exp !(Maybe Exp)
-         | Extern Annote !Text !Exp
+         | Extern Annote !Ty
+         | Bit    Annote !Ty
+         | Bits   Annote !Ty
          | LitInt Annote !Integer
          | LitStr Annote !Text
          | Error  Annote !Ty   !Text
@@ -271,9 +274,11 @@ instance TypeAnnotated Exp where
             Con _ t _         -> t
             Case _ t _ _ _    -> t
             Match _ t _ _ _ _ -> t
-            Extern _ _ e      -> typeOf e
-            LitInt _ _        -> TyBlank noAnn
-            LitStr _ _        -> TyBlank noAnn
+            Extern _ t        -> t
+            Bit _ t           -> t
+            Bits _ t          -> t
+            LitInt a _        -> intTy a
+            LitStr a _        -> strTy a
             Error _ t _       -> t
 
 instance Annotated Exp where
@@ -284,7 +289,9 @@ instance Annotated Exp where
             Con a _ _         -> a
             Case a _ _ _ _    -> a
             Match a _ _ _ _ _ -> a
-            Extern a _ _      -> a
+            Extern a _        -> a
+            Bit a _           -> a
+            Bits a _          -> a
             LitInt a _        -> a
             LitStr a _        -> a
             Error a _ _       -> a
@@ -317,9 +324,11 @@ instance Pretty Exp where
                         [ text "match" <+> braces (pretty t) <+> pretty e <+> text "of"
                         , pretty p <+> text "->" <+> pretty e1
                         ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
-            [Extern _ n e]                               -> text "extern" <+> dquotes (pretty n) <+> mparens e
+            [Extern _ t]                                 -> text "extern" <+> braces (pretty t)
+            [Bit _ t]                                    -> text "bit" <+> braces (pretty t)
+            [Bits _ t]                                   -> text "bits" <+> braces (pretty t)
             [LitInt _ v]                                 -> pretty v
-            [LitStr _ v]                                 -> pretty v
+            [LitStr _ v]                                 -> dquotes $ pretty v
             [Error _ t m]                                -> text "error" <+> braces (pretty t) <+> dquotes (pretty m)
             es                                           -> nest 2 $ hsep $ map mparens es
 
@@ -532,6 +541,17 @@ rangeTy = \ case
 
 arr :: Ty -> Ty -> Ty
 arr t = TyApp (ann t) (TyApp (ann t) (TyCon (ann t) $ s2n "->") t)
+
+infixr 1 `arr`
+
+intTy :: Annote -> Ty
+intTy an = TyCon an $ s2n "Integer"
+
+strTy :: Annote -> Ty
+strTy an = TyCon an $ s2n "String"
+
+bitTy :: Annote -> Ty
+bitTy an = TyCon an $ s2n "Bit"
 
 arr' :: Ty -> Bind (Name Exp) Exp -> Ty
 arr' t b = runFreshM (arr t . typeOf <$> (snd <$> unbind b))

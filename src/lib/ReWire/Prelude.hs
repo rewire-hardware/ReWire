@@ -100,10 +100,10 @@ return = rwReturn
 (>>) :: GHC.Monad m => m a -> m b -> m b
 ma >> mb = ma >>= (\ _ -> mb)
 
-infixr 9  .
+infixr 9 .
 infixr 3 &&
 infixr 2 ||
-infixr 1  =<<
-infixr 0  $
+infixr 1 =<<
+infixr 0 $
 
-infixl 1  >>, >>=
+infixl 1 >>, >>=

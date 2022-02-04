@@ -18,11 +18,14 @@ addPrims (ts, syns, vs) = (ts <> primDatas, syns, vs)
 
 primDatas :: [DataDefn]
 primDatas = map mkData
-      [ ("->",  KStar `KFun` (KStar `KFun` KStar),                  [])
-      , ("ReT", KStar `KFun` (KStar `KFun` (kmonad `KFun` kmonad)), [])
-      , ("StT", KStar `KFun` (kmonad `KFun` kmonad),                [])
-      , ("I",   kmonad,                                             [])
-      , ("()",  KStar,                                              [DataCon (MsgAnnote "Prim: () data ctor") (s2n "()") ([] |-> TyCon (MsgAnnote "Prim: () type ctor") (s2n "()"))])
+      [ ("->",      KStar `KFun` (KStar `KFun` KStar),                  [])
+      , ("ReT",     KStar `KFun` (KStar `KFun` (kmonad `KFun` kmonad)), [])
+      , ("StT",     KStar `KFun` (kmonad `KFun` kmonad),                [])
+      , ("I",       kmonad,                                             [])
+      , ("Integer", KStar,                                              [])
+      , ("Bit",     KStar,                                              [nullDataCon "C" "Bit", nullDataCon "S" "Bit"])
+      , ("String",  KStar,                                              [])
+      , ("()",      KStar,                                              [nullDataCon "()" "()"])
       ] <> map mkTuple' [2..62] -- why 62? 'cause that's what ghc does!
 
 msg :: Text -> Annote
@@ -30,6 +33,9 @@ msg = MsgAnnote
 
 mkData :: (Text, Kind, [DataCon]) -> DataDefn
 mkData (n, k, cs) = DataDefn (msg $ "Prim: " <> n) (s2n n) k cs
+
+nullDataCon :: Text -> Text -> DataCon
+nullDataCon c t = DataCon (MsgAnnote $ "Prim: " <> c <> " data ctor") (s2n c) ([] |-> TyCon (MsgAnnote $ "Prim: " <> t <> " type ctor") (s2n t))
 
 mkTuple' :: Int -> DataDefn
 mkTuple' n = DataDefn (msg "Prim: tuple") (s2n i) k [ctor]

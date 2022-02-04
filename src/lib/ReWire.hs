@@ -9,6 +9,7 @@ import qualified Control.Monad.State               as GHC
 type I = GHC.Identity
 type ReT = GHC.ReacT
 type StT = GHC.StateT
+type Bits = [Bit]
 
 -- ReWire primitives.
 
@@ -17,6 +18,8 @@ type StT = GHC.StateT
 -- data ReT i o m a
 -- data StT s m a
 -- data I a
+-- data Integer
+-- data Bit
 
 -- Also tuples:
 -- data () = ()
@@ -28,10 +31,32 @@ data A_ -- Ctors generated during program build.
 
 data PuRe s o = Done (A_, s) | Pause (o, (R_, s))
 
--- TODO(chathhorn): can't give a type to these in RW (string lits are only allowed
--- as arguments to error and are never given a type).
+data Bit = C | S
+
+error :: String -> a
 error = GHC.error
+
+-- | The String argument must be a string literal (after inlining).
+extern :: String -> a -> a
 extern _ f = f
+
+-- | bits a j i returns bits j (most significant) to i (least significant) from a (j >= i).
+--   The Integer arguments must be non-negative integer literals (after inlining).
+bits :: a -> Integer -> Integer -> a
+bits = GHC.error "Prim: bit string extraction"
+
+-- | bit a i == bits a i i.
+--   The Integer argument must be a non-negative integer literal (after inlining).
+bit :: a -> Integer -> Bit
+bit = GHC.error "Prim: bit extraction"
+
+{-# INLINE (@@) #-}
+(@@) :: a -> (Integer, Integer) -> a
+a @@ (j, i) = bits a j i
+
+{-# INLINE (@.) #-}
+(@.) :: a -> Integer -> Bit
+a @. i = bit a i
 
 rwReturn :: GHC.Monad m => a -> m a
 rwReturn = GHC.return
