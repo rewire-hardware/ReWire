@@ -10,6 +10,8 @@ type I = GHC.Identity
 type ReT = GHC.ReacT
 type StT = GHC.StateT
 type Bits = [Bit]
+type Integer = GHC.Integer
+type String = GHC.String
 
 -- ReWire primitives.
 
@@ -50,13 +52,17 @@ bits = GHC.error "Prim: bit string extraction"
 bit :: a -> Integer -> Bit
 bit = GHC.error "Prim: bit extraction"
 
+-- | Project range of bits.
 {-# INLINE (@@) #-}
 (@@) :: a -> (Integer, Integer) -> a
 a @@ (j, i) = bits a j i
 
+-- | Project single bit.
 {-# INLINE (@.) #-}
 (@.) :: a -> Integer -> Bit
 a @. i = bit a i
+
+infixr 9 @., @@
 
 rwReturn :: GHC.Monad m => a -> m a
 rwReturn = GHC.return

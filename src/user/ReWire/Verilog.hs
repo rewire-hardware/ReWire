@@ -11,7 +11,7 @@ module ReWire.Verilog
       ) where
 
 import ReWire
-import Prelude hiding ((&&), (||), (>>))
+import Prelude (undefined)
 
 -- | Add.
 {-# INLINE (+) #-}
@@ -150,7 +150,7 @@ ashiftr' = undefined
 concat' :: a -> a -> a
 concat' = undefined
 
-infixr 9 **, @., @@
+infixr 9 **
 infixl 8 *, /, %
 infixl 7 +, -
 infixl 6 <<, >>, <<<, >>>
@@ -227,7 +227,7 @@ rXNor' = undefined
 
 -- | Turn an Integer literal into any type! Truncates most significant bits or
 --   zero-pads to make it fit.
-{-# INLINE rXNor #-}
+{-# INLINE lit #-}
 lit :: Integer -> a
 lit = extern "resize" lit'
 

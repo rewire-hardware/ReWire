@@ -112,13 +112,13 @@ plusW8 x y = fst (plusW8' x y C)
 -- | Ripple-carry adder.
 plusW8' :: W8 -> W8 -> Bit -> (W8, Bit)
 plusW8' (W8 a  b  c  d  e  f  g  h ) (W8 a' b' c' d' e' f' g' h') ci =
-      let (r0, co0) = addb h h' ci   in
-          (r1, co1) = addb g g' co0 in
-          (r2, co2) = addb f f' co1 in
-          (r3, co3) = addb e e' co2 in
-          (r4, co4) = addb d d' co3 in
-          (r5, co5) = addb c c' co4 in
-          (r6, co6) = addb b b' co5 in
+      let (r0, co0) = addb h h' ci
+          (r1, co1) = addb g g' co0
+          (r2, co2) = addb f f' co1
+          (r3, co3) = addb e e' co2
+          (r4, co4) = addb d d' co3
+          (r5, co5) = addb c c' co4
+          (r6, co6) = addb b b' co5
           (r7, co7) = addb a a' co6 in
       (W8 r7 r6 r5 r4 r3 r2 r1 r0, co7)
 
@@ -144,16 +144,16 @@ andW32 (W32 a  b  c  d )
 
 orW32 :: W32 -> W32 -> W32
 orW32 (W32 a  b  c  d )
-      (W32 a' b' c' d') = W32 (orb a a') (orb b b') (orb c c') (orb d d')
+      (W32 a' b' c' d') = W32 (orW8 a a') (orW8 b b') (orW8 c c') (orW8 d d')
 
 xorW32 :: W32 -> W32 -> W32
 xorW32 (W32 a  b  c  d )
-       (W32 a' b' c' d') = W32 (xorb a a') (xorb b b') (xorb c c') (xorb d d')
+       (W32 a' b' c' d') = W32 (xorW8 a a') (xorW8 b b') (xorW8 c c') (xorW8 d d')
 
 plusW32 :: W32 -> W32 -> W32
 plusW32 (W32 a b c d) (W32 a' b' c' d') =
-      let (r0, co0) = plusW8' d d' C   in
-          (r1, co1) = plusW8' c c' co0 in
-          (r2, co2) = plusW8' b b' co1 in
+      let (r0, co0) = plusW8' d d' C
+          (r1, co1) = plusW8' c c' co0
+          (r2, co2) = plusW8' b b' co1
           (r3, _)   = plusW8' a a' co2 in
       W32 r3 r2 r1 r0

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
-module Main (main) where
+module RWC (main) where
 
 import ReWire.Annotation (unAnn)
 import ReWire.FrontEnd (loadProgram, LoadPath)
@@ -71,7 +71,7 @@ exitUsage = T.hPutStr stderr (pack $ usageInfo "Usage: rwc [OPTION...] <filename
 
 getSystemLoadPath :: IO [FilePath]
 getSystemLoadPath = do
-      lib   <- getDataFileName "src/lib"
+      lib   <- getDataFileName "lib"
       pure [".", lib]
 
 main :: IO ()
