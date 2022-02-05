@@ -213,7 +213,7 @@ tcExp = \ case
       Bit an _          -> do
             tv <- freshv
             let t = tv `arr` intTy an `arr` bitTy an
-            pure (Bits an t, t)
+            pure (Bit an t, t)
       Bits an _          -> do
             tv <- freshv
             let t = tv `arr` intTy an `arr` intTy an `arr` tv
