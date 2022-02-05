@@ -5,7 +5,11 @@ import ReWire
 -- | "Cleared," "set."
 --data Bit = C | S
 data W8  = W8 Bit Bit Bit Bit Bit Bit Bit Bit
-data W32 = W32 W8 W8 W8 W8
+data W16 = W16 W8 W8
+data W32 = W32 W16 W16
+data W64 = W64 W32 W32
+
+-- Bit operations
 
 isSet :: Bit -> Bool
 isSet S = True
@@ -41,14 +45,10 @@ eqb C C = True
 eqb S S = True
 eqb _ _ = False
 
+-- W8 operations
+
 zeroW8 :: W8
 zeroW8 = W8 C C C C C C C C
-
-isZero :: W8 -> Bool
-isZero = eqW8 zeroW8
-
-isZeroW8 :: W8 -> Bool
-isZeroW8 = isZero
 
 oneW8 :: W8
 oneW8 = W8 C C C C C C C S
@@ -56,29 +56,12 @@ oneW8 = W8 C C C C C C C S
 onesW8 :: W8
 onesW8 = W8 S S S S S S S S
 
+isZeroW8 :: W8 -> Bool
+isZeroW8 = eqW8 zeroW8
+
 -- | Arithmetic mod 2^8 on nats. Increment.
 incW8 :: W8 -> W8
-incW8 (W8 a b c d e f g C) = W8 a b c d e f g S
-incW8 (W8 a b c d e f C S) = W8 a b c d e f S C
-incW8 (W8 a b c d e C S S) = W8 a b c d e S C C
-incW8 (W8 a b c d C S S S) = W8 a b c d S C C C
-incW8 (W8 a b c C S S S S) = W8 a b c S C C C C
-incW8 (W8 a b C S S S S S) = W8 a b S C C C C C
-incW8 (W8 a C S S S S S S) = W8 a S C C C C C C
-incW8 (W8 C S S S S S S S) = W8 S C C C C C C C
-incW8 (W8 S S S S S S S S) = W8 C C C C C C C C
-
--- | Decrement.
-decW8 :: W8 -> W8
-decW8 (W8 a b c d e f g S) = W8 a b c d e f g C
-decW8 (W8 a b c d e f S C) = W8 a b c d e f C S
-decW8 (W8 a b c d e S C C) = W8 a b c d e C S S
-decW8 (W8 a b c d S C C C) = W8 a b c d C S S S
-decW8 (W8 a b c S C C C C) = W8 a b c C S S S S
-decW8 (W8 a b S C C C C C) = W8 a b C S S S S S
-decW8 (W8 a S C C C C C C) = W8 a C S S S S S S
-decW8 (W8 S C C C C C C C) = W8 C S S S S S S S
-decW8 (W8 C C C C C C C C) = W8 S S S S S S S S
+incW8 = plusW8 oneW8
 
 notW8 :: W8 -> W8
 notW8 (W8 a b c d e f g h) = W8 (notb a) (notb b) (notb c) (notb d) (notb e) (notb f) (notb g) (notb h)
@@ -119,8 +102,8 @@ plusW8' (W8 a  b  c  d  e  f  g  h ) (W8 a' b' c' d' e' f' g' h') ci =
           (r4, co4) = addb d d' co3
           (r5, co5) = addb c c' co4
           (r6, co6) = addb b b' co5
-          (r7, co7) = addb a a' co6 in
-      (W8 r7 r6 r5 r4 r3 r2 r1 r0, co7)
+          (r7, co7) = addb a a' co6
+      in (W8 r7 r6 r5 r4 r3 r2 r1 r0, co7)
 
 eqW8 :: W8 -> W8 -> Bool
 eqW8 (W8 a b c d e f g h) (W8 a' b' c' d' e' f' g' h')
@@ -129,31 +112,140 @@ eqW8 (W8 a b c d e f g h) (W8 a' b' c' d' e' f' g' h')
      && e `eqb` e' && f `eqb` f'
      && g `eqb` g' && h `eqb` h'
 
+-- W16 operations
+
+zeroW16 :: W16
+zeroW16 = W16 zeroW8 zeroW8
+
+oneW16 :: W16
+oneW16 = W16 zeroW8 oneW8
+
+onesW16 :: W16
+onesW16 = W16 onesW8 onesW8
+
+isZeroW16 :: W16 -> Bool
+isZeroW16 = eqW16 zeroW16
+
+-- | Arithmetic mod 2^8 on nats. Increment.
+incW16 :: W16 -> W16
+incW16 = plusW16 oneW16
+
+notW16 :: W16 -> W16
+notW16 (W16 w1 w0) = W16 (notW8 w1) (notW8 w0)
+
+-- | Bitwise and.
+andW16 :: W16 -> W16 -> W16
+andW16 (W16 w1 w0) (W16 w1' w0') = W16 (andW8 w1 w1') (andW8 w0 w0')
+
+-- | Bitwise or.
+orW16 :: W16 -> W16 -> W16
+orW16 (W16 w1 w0) (W16 w1' w0') = W16 (orW8 w1 w1') (orW8 w0 w0')
+
+-- | Bitwise xor.
+xorW16 :: W16 -> W16 -> W16
+xorW16 (W16 w1 w0) (W16 w1' w0') = W16 (xorW8 w1 w1') (xorW8 w0 w0')
+
+plusW16 :: W16 -> W16 -> W16
+plusW16 x y = fst (plusW16' x y C)
+
+-- | Ripple-carry adder.
+plusW16' :: W16 -> W16 -> Bit -> (W16, Bit)
+plusW16' (W16 w1 w0) (W16 w1' w0') ci =
+      let (r0, co0) = plusW8' w0 w0' ci
+          (r1, co1) = plusW8' w1 w1' co0
+      in (W16 r1 r0, co1)
+
+eqW16 :: W16 -> W16 -> Bool
+eqW16 (W16 w1 w0) (W16 w1' w0') = w1 `eqW8` w1' && w0 `eqW8` w0'
+
+-- W32 operations
+
 zeroW32 :: W32
-zeroW32 = W32 zeroW8 zeroW8 zeroW8 zeroW8
+zeroW32 = W32 zeroW16 zeroW16
 
 oneW32 :: W32
-oneW32 = W32 zeroW8 zeroW8 zeroW8 oneW8
+oneW32 = W32 zeroW16 oneW16
+
+onesW32 :: W32
+onesW32 = W32 onesW16 onesW16
+
+isZeroW32 :: W32 -> Bool
+isZeroW32 = eqW32 zeroW32
+
+-- | Arithmetic mod 2^8 on nats. Increment.
+incW32 :: W32 -> W32
+incW32 = plusW32 oneW32
 
 notW32 :: W32 -> W32
-notW32 (W32 a b c d) = W32 (notW8 a) (notW8 b) (notW8 c) (notW8 d)
+notW32 (W32 w1 w0) = W32 (notW16 w1) (notW16 w0)
 
+-- | Bitwise and.
 andW32 :: W32 -> W32 -> W32
-andW32 (W32 a  b  c  d )
-       (W32 a' b' c' d') = W32 (andW8 a a') (andW8 b b') (andW8 c c') (andW8 d d')
+andW32 (W32 w1 w0) (W32 w1' w0') = W32 (andW16 w1 w1') (andW16 w0 w0')
 
+-- | Bitwise or.
 orW32 :: W32 -> W32 -> W32
-orW32 (W32 a  b  c  d )
-      (W32 a' b' c' d') = W32 (orW8 a a') (orW8 b b') (orW8 c c') (orW8 d d')
+orW32 (W32 w1 w0) (W32 w1' w0') = W32 (orW16 w1 w1') (orW16 w0 w0')
 
+-- | Bitwise xor.
 xorW32 :: W32 -> W32 -> W32
-xorW32 (W32 a  b  c  d )
-       (W32 a' b' c' d') = W32 (xorW8 a a') (xorW8 b b') (xorW8 c c') (xorW8 d d')
+xorW32 (W32 w1 w0) (W32 w1' w0') = W32 (xorW16 w1 w1') (xorW16 w0 w0')
 
 plusW32 :: W32 -> W32 -> W32
-plusW32 (W32 a b c d) (W32 a' b' c' d') =
-      let (r0, co0) = plusW8' d d' C
-          (r1, co1) = plusW8' c c' co0
-          (r2, co2) = plusW8' b b' co1
-          (r3, _)   = plusW8' a a' co2 in
-      W32 r3 r2 r1 r0
+plusW32 x y = fst (plusW32' x y C)
+
+-- | Ripple-carry adder.
+plusW32' :: W32 -> W32 -> Bit -> (W32, Bit)
+plusW32' (W32 w1 w0) (W32 w1' w0') ci =
+      let (r0, co0) = plusW16' w0 w0' ci
+          (r1, co1) = plusW16' w1 w1' co0
+      in (W32 r1 r0, co1)
+
+eqW32 :: W32 -> W32 -> Bool
+eqW32 (W32 w1 w0) (W32 w1' w0') = w1 `eqW16` w1' && w0 `eqW16` w0'
+
+-- W64 operations
+
+zeroW64 :: W64
+zeroW64 = W64 zeroW32 zeroW32
+
+oneW64 :: W64
+oneW64 = W64 zeroW32 oneW32
+
+onesW64 :: W64
+onesW64 = W64 onesW32 onesW32
+
+isZeroW64 :: W64 -> Bool
+isZeroW64 = eqW64 zeroW64
+
+-- | Arithmetic mod 2^8 on nats. Increment.
+incW64 :: W64 -> W64
+incW64 = plusW64 oneW64
+
+notW64 :: W64 -> W64
+notW64 (W64 w1 w0) = W64 (notW32 w1) (notW32 w0)
+
+-- | Bitwise and.
+andW64 :: W64 -> W64 -> W64
+andW64 (W64 w1 w0) (W64 w1' w0') = W64 (andW32 w1 w1') (andW32 w0 w0')
+
+-- | Bitwise or.
+orW64 :: W64 -> W64 -> W64
+orW64 (W64 w1 w0) (W64 w1' w0') = W64 (orW32 w1 w1') (orW32 w0 w0')
+
+-- | Bitwise xor.
+xorW64 :: W64 -> W64 -> W64
+xorW64 (W64 w1 w0) (W64 w1' w0') = W64 (xorW32 w1 w1') (xorW32 w0 w0')
+
+plusW64 :: W64 -> W64 -> W64
+plusW64 x y = fst (plusW64' x y C)
+
+-- | Ripple-carry adder.
+plusW64' :: W64 -> W64 -> Bit -> (W64, Bit)
+plusW64' (W64 w1 w0) (W64 w1' w0') ci =
+      let (r0, co0) = plusW32' w0 w0' ci
+          (r1, co1) = plusW32' w1 w1' co0
+      in (W64 r1 r0, co1)
+
+eqW64 :: W64 -> W64 -> Bool
+eqW64 (W64 w1 w0) (W64 w1' w0') = w1 `eqW32` w1' && w0 `eqW32` w0'
