@@ -55,19 +55,23 @@ compileProgram flags (C.Program st ds)
 compileStartDefn :: (MonadError AstError m, MonadFail m, MonadReader DefnMap m)
                  => [Flag] -> C.StartDefn -> m Module
 compileStartDefn flags (C.StartDefn an w loop state0) = do
+
       ((rStart, ssStart), (fr, startSigs)) <- flip runStateT sigInfo0 $ compileCall (FlagFlatten : flags) state0 (resumptionSize w) []
-      ((rLoop, ssLoop),   (_, loopSigs))   <- flip runStateT (fr, []) $ compileCall flags loop (resumptionSize w)
+
+      let (rStart', ssStart', fr', startSigs') = if clocked then (initState rStart, ssStart, fr, startSigs) else (Nothing, [], 0, [])
+
+      ((rLoop, ssLoop),   (_, loopSigs))   <- flip runStateT (fr', []) $ compileCall flags loop (resumptionSize w)
             [ mkConcat $ map (LVal . Name . fst) $ dispatchWires w
             , mkConcat $ map (LVal . Name . fst) $ inputWires w
             ]
-      pure $ Module "top_level" (inputs <> outputs) (loopSigs <> startSigs <> sigs)
-            $  ssStart
+      pure $ Module "top_level" (inputs <> outputs) (loopSigs <> startSigs' <> sigs)
+            $  ssStart'
             <> ssLoop
             <> [ Assign lvPause rLoop ]
-            <> case clocked rStart of
-                  Just initState ->
-                        [ Initial $ ParAssign lvCurrState initState
-                        , Always (map (Pos . fst) (clk flags) <> rstEdge) $ Block [ ifRst initState ]
+            <> case rStart' of
+                  Just init ->
+                        [ Initial $ ParAssign lvCurrState init
+                        , Always (map (Pos . fst) (clk flags) <> rstEdge) $ Block [ ifRst init ]
                         ]
                   _              -> [ ]
       where inputs :: [Port]
@@ -80,19 +84,20 @@ compileStartDefn flags (C.StartDefn an w loop state0) = do
             sigs = map toLogic $ allWires w
 
             ifRst :: V.Exp -> Stmt
-            ifRst initState = case rst flags of
+            ifRst init = case rst flags of
                   [(sRst, sz)] -> IfElse (Eq (LVal $ Name sRst) $ LitBits $ bitVec (fromIntegral sz) $ fromEnum $ not invertRst)
-                        (Block [ ParAssign lvCurrState initState ] )
+                        (Block [ ParAssign lvCurrState init ] )
                         (Block [ ParAssign lvCurrState $ LVal lvNxtState ])
                   _            -> ParAssign lvCurrState $ LVal lvNxtState
 
-            -- | If clocked, return initial/reset state, otherwise Nothing.
-            clocked :: V.Exp -> Maybe V.Exp
-            clocked e
-                  | FlagNoClock `elem` flags = Nothing
-                  | otherwise                = case (expToBV e, fromIntegral (sum $ snd <$> stateWires w)) of
-                        (Just bv, n) | n > 0 -> pure $ bvToExp $ subRange (0, n - 1) bv
-                        _                    -> Nothing
+            clocked :: Bool
+            clocked = FlagNoClock `notElem` flags
+
+            -- | Initial/reset state.
+            initState :: V.Exp -> Maybe V.Exp
+            initState e = case (expToBV e, fromIntegral (sum $ snd <$> stateWires w)) of
+                  (Just bv, n) | n > 0 -> pure $ bvToExp $ subRange (0, n - 1) bv
+                  _                    -> Nothing
 
             lvPause :: LVal
             lvPause = mkLVals $ map (Name . fst) $ pauseWires w

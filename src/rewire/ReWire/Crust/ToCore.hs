@@ -137,9 +137,9 @@ transExp = \ case
             (C.Call an <$> sizeOf an t <*> (callTarget =<< transExp f) <*> transExp e <*> transPat ps <*> transExp e2)
       M.Match an t e ps f Nothing       -> pure <$>
             (C.Call an <$> sizeOf an t <*> (callTarget =<< transExp f) <*> transExp e <*> transPat ps <*> pure [])
-      M.LitInt an n | n < 0             -> pure [C.Lit an $ bitVec (fromIntegral $ 1 + ceilLog2 n) n]
-      M.LitInt an 0                     -> pure [C.Lit an $ zeros 1]
-      M.LitInt an n                     -> pure [C.Lit an $ bitVec (fromIntegral $ ceilLog2 n) n]
+      e@(M.LitInt an n)                 -> do
+            sz <- sizeOf an $ M.typeOf e
+            pure [C.Lit an $ bitVec (fromIntegral sz) n]
       M.Error an t _                    -> do
             sz     <- sizeOf an t
             pure [C.Call an sz (C.Extern (C.Sig an [] sz) "error") [] [] []]
