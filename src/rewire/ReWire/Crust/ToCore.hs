@@ -26,15 +26,15 @@ type SizeMap = HashMap M.Ty C.Size
 type ConMap = (HashMap (Name M.TyConId) [Name M.DataConId], HashMap (Name M.DataConId) M.Ty)
 type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) C.LId) m)
 
-toCore :: (Fresh m, MonadError AstError m, MonadFail m) => [Text] -> [Text] -> [Text] -> M.FreeProgram -> m C.Program
-toCore inps outps sts (ts, _, vs) = fst <$> (flip runStateT mempty $ do
+toCore :: (Fresh m, MonadError AstError m, MonadFail m) => Text -> [Text] -> [Text] -> [Text] -> M.FreeProgram -> m C.Program
+toCore start inps outps sts (ts, _, vs) = fst <$> (flip runStateT mempty $ do
       mapM_ ((`runReaderT` conMap) . sizeOf noAnn . M.TyCon noAnn . M.dataName) ts
       intSz <- maximum <$> Map.elems <$> get
       put $ Map.singleton (M.intTy noAnn) intSz -- TODO(chathhorn): note the sizeof Integer is the max of all non-Integer-containing types.
-      vs'    <- mapM (transDefn inps outps sts conMap) $ filter (not . M.isPrim . M.defnName) vs
+      vs'    <- mapM (transDefn start inps outps sts conMap) $ filter (not . M.isPrim . M.defnName) vs
       case partitionEithers vs' of
             ([startDefn], defns) -> pure $ C.Program startDefn defns
-            _                    -> failAt noAnn "toCore: no Main.start.")
+            _                    -> failAt noAnn $ "toCore: no definition found: " <> start)
       where conMap :: ConMap
             conMap = ( Map.fromList $ map (M.dataName &&& map projId . M.dataCons) ts
                      , Map.fromList $ map (projId &&& projType) (concatMap M.dataCons ts)
@@ -46,9 +46,9 @@ toCore inps outps sts (ts, _, vs) = fst <$> (flip runStateT mempty $ do
             projType :: M.DataCon -> M.Ty
             projType (M.DataCon _ _ (Embed (M.Poly t))) = runFreshM (snd <$> unbind t)
 
-transDefn :: (MonadError AstError m, Fresh m, MonadState SizeMap m, MonadFail m) => [Text] -> [Text] -> [Text] -> ConMap -> M.Defn -> m (Either C.StartDefn C.Defn)
-transDefn inps outps sts conMap = \ case
-      M.Defn an n (Embed (M.Poly t)) _ (Embed e) | n2s n == "Main.start" -> do
+transDefn :: (MonadError AstError m, Fresh m, MonadState SizeMap m, MonadFail m) => Text -> [Text] -> [Text] -> [Text] -> ConMap -> M.Defn -> m (Either C.StartDefn C.Defn)
+transDefn start inps outps sts conMap = \ case
+      M.Defn an n (Embed (M.Poly t)) _ (Embed e) | n2s n == start -> do
             (_, t')  <- unbind t
             case t' of
                   M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "ReT")) t_in) t_out) (M.TyCon _ (n2s -> "I"))) _ -> do
@@ -70,8 +70,8 @@ transDefn inps outps sts conMap = \ case
                                                          loopTy'
                                                          state0Ty'
                                     pure $ Left $ C.StartDefn an wires (n2s loop) (n2s state0)
-                              _ -> failAt an $ "transDefn: definition of Main.start must have form `Main.start = unfold n m' where n and m are global IDs; got " <> prettyPrint e'
-                  _ -> failAt an $ "transDefn: Main.start has illegal type: " <> prettyPrint t'
+                              _ -> failAt an $ "transDefn: definition of " <> start <> " must have form `unfold n m' where n and m are global IDs; got " <> prettyPrint e'
+                  _ -> failAt an $ "transDefn: " <> start <> " has illegal type: " <> prettyPrint t'
       M.Defn an n (Embed (M.Poly t)) _ (Embed e) -> do
             (_, t')  <- unbind t
             (xs, e') <- unbind e

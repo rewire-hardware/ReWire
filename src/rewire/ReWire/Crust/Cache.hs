@@ -143,12 +143,12 @@ getProgram flags fp = do
        >=> pDebug' "Lifting lambdas (pre-purification)."
        >=> liftLambdas
        >=> pDebug' "Removing unused definitions."
-       >=> pure . purgeUnused
+       >=> pure . (purgeUnused start)
        >=> pDebug' "[Pass 5] Pre-purification."
        >=> whenSet' FlagDTypes (pDebug' "Verifying types pre-purification." >=> typeVerify)
        >=> whenSet FlagDCrust3 (printInfo "Crust 3: Pre-purification")
        >=> pDebug' "Purifying."
-       >=> purify
+       >=> purify start
        >=> pDebug' "[Pass 6] Post-purification."
        >=> whenSet FlagDCrust4 (printInfo "Crust 4: Post-purification")
        >=> whenSet' FlagDTypes (pDebug' "Verifying types post-purification." >=> typeVerify)
@@ -157,11 +157,11 @@ getProgram flags fp = do
        >=> pDebug' "Fully apply global function definitions."
        >=> fullyApplyDefs
        >=> pDebug' "Removing unused definitions (again)."
-       >=> pure . purgeUnused
+       >=> pure . (purgeUnused start)
        >=> pDebug' "[Pass 7] Post-purification."
        >=> whenSet FlagDCrust5 (printInfo "Crust 5: Post-second-lambda-lifting")
        >=> pDebug' "Translating to core & HDL."
-       >=> toCore (concatMap getInputNames flags) (concatMap getOutputNames flags) (concatMap getStateNames flags)
+       >=> toCore start (concatMap getInputNames flags) (concatMap getOutputNames flags) (concatMap getStateNames flags)
        >=> pDebug' "[Pass 8] Core."
        $ (ts, syns, ds)
 
@@ -199,6 +199,16 @@ getProgram flags fp = do
                   FlagStateNames []  -> []
                   FlagStateNames sts -> map pack $ splitOn "," sts
                   _                  -> []
+
+            start :: Text
+            start = case filter isFlagTopLevel flags of
+                  FlagTopLevel s : _ -> pack s
+                  _                  -> "Main.start"
+
+            isFlagTopLevel :: Flag -> Bool
+            isFlagTopLevel = \ case
+                  FlagTopLevel _ -> True
+                  _              -> False
 
 pDebug :: MonadIO m => [Flag] -> Text -> m ()
 pDebug flags s = when (FlagV `elem` flags) $ liftIO $ T.putStrLn $ "Debug: " <> s

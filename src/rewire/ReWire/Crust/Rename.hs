@@ -19,11 +19,14 @@ module ReWire.Crust.Rename
 import ReWire.Annotation (Annotation, Annote, noAnn)
 import ReWire.Error
 import ReWire.Crust.Fixity
-import ReWire.Crust.Syntax (DataDefn, TypeSynonym, Defn)
+import ReWire.Crust.Syntax (DataDefn (..), TypeSynonym (..), Defn (..))
+import ReWire.Pretty (text)
+import ReWire.Unbound (n2s)
 
 import Control.Arrow ((&&&), first)
 import Control.Monad (foldM, void)
 import Control.Monad.State (MonadState)
+import Data.Containers.ListUtils (nubOrdOn)
 import Data.List (find, foldl')
 import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
@@ -34,7 +37,6 @@ import Language.Haskell.Exts.Pretty (prettyPrint)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo, noSrcSpan)
 import System.FilePath (joinPath, (<.>))
 import Prettyprinter (Pretty (..), nest, vsep, (<+>))
-import ReWire.Pretty (text)
 
 import Data.Map.Strict.Internal (Map (..))
 import qualified Data.Map.Strict                        as Map
@@ -84,7 +86,8 @@ instance Pretty Module where
       pretty (Module cs ts ds) = nest 2 $ vsep (text "module" : map pretty cs <> map pretty ts <> map pretty ds)
 
 instance Semigroup Module where
-      (Module a b c) <> (Module a' b' c') = Module (a <> a') (b <> b') (c <> c')
+      -- TODO(chathhorn): shouldn't be necessary
+      (Module a b c) <> (Module a' b' c') = Module (nubOrdOn (n2s . dataName) $ a <> a') (nubOrdOn (n2s . typeSynName) $ b <> b') (nubOrdOn (n2s . defnName) $ c <> c')
 
 instance Monoid Module where
       mempty = Module [] [] []

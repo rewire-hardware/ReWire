@@ -363,10 +363,10 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                   PatWildCard an (Embed t)         -> MatchPatWildCard an t
 
 -- | Remove unused definitions.
-purgeUnused :: FreeProgram -> FreeProgram
-purgeUnused (ts, syns, vs) = (inuseData (externCtors vs') (fv $ trec vs') ts, syns, vs')
+purgeUnused :: Text -> FreeProgram -> FreeProgram
+purgeUnused start (ts, syns, vs) = (inuseData (externCtors vs') (fv $ trec vs') ts, syns, vs')
       where vs' :: [Defn]
-            vs' = inuseDefn vs
+            vs' = inuseDefn start vs
 
             inuseData :: [Name TyConId] -> [Name DataConId] -> [DataDefn] -> [DataDefn]
             inuseData ts ns = filter (not . null . dataCons) . map (inuseData' ts ns)
@@ -390,8 +390,8 @@ purgeUnused (ts, syns, vs) = (inuseData (externCtors vs') (fv $ trec vs') ts, sy
                         e@Extern {} -> ctorNames $ flattenAllTyApp $ rangeTy $ typeOf e
                         _           -> [])
                   ||? (\ case
-                        Defn _ (n2s -> "Main.start") (Embed (Poly (unsafeUnbind -> (_, t)))) _ _ -> maybe [] (ctorNames . flattenAllTyApp) $ resInputTy t
-                        _                                                                        -> [])
+                        Defn _ (n2s -> n) (Embed (Poly (unsafeUnbind -> (_, t)))) _ _ | n == start -> maybe [] (ctorNames . flattenAllTyApp) $ resInputTy t
+                        _                                                                          -> [])
                   ||? QEmpty
 
             dataConName :: DataCon -> Name DataConId
@@ -403,8 +403,8 @@ purgeUnused (ts, syns, vs) = (inuseData (externCtors vs') (fv $ trec vs') ts, sy
                   _ : cs         -> ctorNames cs
                   _              -> []
 
-inuseDefn :: [Defn] -> [Defn]
-inuseDefn ds = map toDefn $ Set.elems $ execState (inuseDefn' ds') ds'
+inuseDefn :: Text -> [Defn] -> [Defn]
+inuseDefn start ds = map toDefn $ Set.elems $ execState (inuseDefn' ds') ds'
       where inuseDefn' :: Set (Name Exp) -> State (Set (Name Exp)) ()
             inuseDefn' ns | Set.null ns = pure ()
                           | otherwise   = do
@@ -415,7 +415,7 @@ inuseDefn ds = map toDefn $ Set.elems $ execState (inuseDefn' ds') ds'
 
             reservedDefn :: [Text]
             reservedDefn =
-                         [ "Main.start"
+                         [ start
                          , "unfold"
                          ]
 

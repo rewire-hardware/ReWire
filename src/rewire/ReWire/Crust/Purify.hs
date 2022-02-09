@@ -28,9 +28,6 @@ atMay []       _ = Nothing
 atMay (x : _)  0 = Just x
 atMay (_ : xs) n = atMay xs $ n - 1
 
-isStart :: Name Exp -> Bool
-isStart = (== "Main.start") . n2s
-
 freshVar :: Fresh m => Text -> m (Name a)
 freshVar = fresh . s2n
 
@@ -52,12 +49,12 @@ projDefnTy Defn { defnPolyTy = Embed t } = poly2Ty t
 -- calculating types that could be inferred.
 
 -- | Transforms functions in state and resumption monads into plain first-order functions.
-purify :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) => FreeProgram -> m FreeProgram
-purify (ts, syns, ds) = do
+purify :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) => Text -> FreeProgram -> m FreeProgram
+purify start (ts, syns, ds) = do
       (smds, notSmds)     <- partitionEithers <$> mapM isStateMonadicDefn ds
       (rmds, ods)         <- partitionEithers <$> mapM isResMonadicDefn notSmds
 
-      unless (any (isStart . defnName) rmds) $ failAt noAnn "No definition for Main.start found!"
+      unless (any (isStart . defnName) rmds) $ failAt noAnn $ "No definition for " <> start <> " found!"
 
       let nameNpolyS = map (defnName &&& defnPolyTy) smds
           nameNpolyR = map (defnName &&& defnPolyTy) rmds
@@ -73,7 +70,7 @@ purify (ts, syns, ds) = do
 
       iv <- freshVar "i"
 
-      (pure_rmds, PSto points _ allAs) <- runStateT (mapM (purifyResDefn rho ms) rmds) $ PSto mempty iv mempty
+      (pure_rmds, PSto points _ allAs) <- runStateT (mapM (purifyResDefn start rho ms) rmds) $ PSto mempty iv mempty
 
       let (dcs, pes) = unzip $ Map.elems points
 
@@ -81,7 +78,7 @@ purify (ts, syns, ds) = do
 
       pure ( filter (not . isAorR) ts ++ [mkRDatatype dcs] ++ [mkADatatype $ Map.toList allAs]
            , syns
-           , mkStart i o ms
+           , mkStart start i o ms
            : disp
            : ods ++ pure_smds ++ pure_rmds)
 
@@ -104,6 +101,9 @@ purify (ts, syns, ds) = do
             isAorR :: DataDefn -> Bool
             isAorR = uncurry (||) . ((== "A_") &&& (== "R_")) . n2s . dataName
 
+            isStart :: Name Exp -> Bool
+            isStart = (== start) . n2s
+
 -- | In addition to all the above, we re-tie the recursive knot by adding a new
 --   "start" as follows
 --         start :: ReT In Out I T
@@ -113,10 +113,10 @@ purify (ts, syns, ds) = do
 -- Correcting mkStart.
 -- In the type of Main.start.
 -- t (return type of Main.start) needs to be combined with ms (list of StT s, stores).
-mkStart :: Ty -> Ty -> [Ty] -> Defn
-mkStart i o ms = Defn
+mkStart :: Text -> Ty -> Ty -> [Ty] -> Defn
+mkStart start i o ms = Defn
       { defnAnnote = MsgAnnote "start function"
-      , defnName   = s2n "Main.start"
+      , defnName   = s2n start
       , defnPolyTy = [] |-> startTy
       , defnInline = False
       , defnBody   = appl
@@ -241,15 +241,15 @@ purifyStateDefn rho ms d = do
 liftMaybe :: MonadError AstError m => Annote -> Text -> Maybe a -> m a
 liftMaybe an msg = maybe (failAt an msg) pure
 
-purifyResDefn :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) => PureEnv -> [Ty] -> Defn -> StateT PSto m Defn
-purifyResDefn rho ms d = do
+purifyResDefn :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) => Text -> PureEnv -> [Ty] -> Defn -> StateT PSto m Defn
+purifyResDefn start rho ms d = do
       ty            <- projDefnTy d
       (i, o, _, a)  <- liftMaybe (ann d) "Purify: failed at purifyResDefn" $ dstReT $ rangeTy ty
       pure_ty       <- purifyTy (ann d) ms ty
       (args, e)     <- unbind body
 
       (nstos, stos) <- (map fst &&& map (mkVar an)) <$> freshVars "sto" ms
-      e'            <- purifyResBody rho i o a stos ms e
+      e'            <- purifyResBody start rho i o a stos ms e
 
       --
       -- Below is an egregious hack to compile the start symbol slightly differently.
@@ -264,6 +264,9 @@ purifyResDefn rho ms d = do
       where dname      = defnName d
             Embed body = defnBody d
             an         = defnAnnote d
+
+            isStart :: Name Exp -> Bool
+            isStart = (== start) . n2s
 
 ---------------------------
 -- Purifying Types
@@ -508,9 +511,9 @@ type ResPoint = (DataCon, (Pat, Exp))
 --  stys   -- state types [S1, ..., Sm]
 --  stos   -- input states [s1, ..., sm]
 --  tm     -- term to be purified
-purifyResBody :: (Fresh m, MonadError AstError m, MonadIO m) =>
-                   PureEnv -> Ty -> Ty -> Ty -> [Exp] -> [Ty] -> Exp -> StateT PSto m Exp
-purifyResBody rho i o a stos ms = classifyRCases >=> \ case
+purifyResBody :: (Fresh m, MonadError AstError m, MonadIO m)
+              => Text -> PureEnv -> Ty -> Ty -> Ty -> [Exp] -> [Ty] -> Exp -> StateT PSto m Exp
+purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
       -- purifyResBody (return e)         = "(Left (e, (s1, (..., sm))))"
       RReturn _ e -> mkLeft "RReturn" e stos
 
@@ -565,7 +568,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
             tg'         <- purifyTy an ms $ typeOf g
             -- ert is the return type of e; ty is the type of the whole expression
             (ert, _)    <- dstArrow tg'
-            e'          <- purifyResBody rho i o ert stos ms e
+            e'          <- purifyResBody start rho i o ert stos ms e
 
             -- start calculating pattern: p = (Left (v, (s1, (..., sm))))
             svars       <- freshVars "s" ms
@@ -616,7 +619,7 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
             (e, _)             -> failAt (ann e) $ "Purify: extruded device is non-variable: " <> showt e
 
       RApp an rty rator rands -> do
-            rator' <- purifyResBody rho i o a stos ms (Var an rty rator)
+            rator' <- purifyResBody start rho i o a stos ms (Var an rty rator)
             -- N.b., don't think it's necessary to purify the rands because
             -- they're simply typed.
             (f, t, stos') <- dstApp rator'
@@ -625,8 +628,8 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
        -- e1 must be simply-typed, so don't purify it.
       RMatch an e1 mp e2 e3 -> do
             p <- transPat mp
-            e2' <- purifyResBody rho i o a stos ms $ mkApp an e2 $ map (mkVar an) (patVars p)
-            Case an (typeOf e2') e1 (bind p e2') <$> maybe' (purifyResBody rho i o a stos ms <$> e3)
+            e2' <- purifyResBody start rho i o a stos ms $ mkApp an e2 $ map (mkVar an) (patVars p)
+            Case an (typeOf e2') e1 (bind p e2') <$> maybe' (purifyResBody start rho i o a stos ms <$> e3)
 
       where mkLeft :: (Fresh m, MonadError AstError m, MonadState PSto m) => Text -> Exp -> [Exp] -> m Exp
             mkLeft s a stos = do
@@ -677,6 +680,8 @@ purifyResBody rho i o a stos ms = classifyRCases >=> \ case
                               pure c
                         Just c -> pure c
 
+            isStart :: Name Exp -> Bool
+            isStart = (== start) . n2s
 
 dispatchTy :: Ty -> Ty -> [Ty] -> Ty
 dispatchTy i o ms = mkArrowTy [domTy, i] etor
