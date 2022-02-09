@@ -236,8 +236,6 @@ compileStartDefn flags (StartDefn an w n_loopfun n_startstate) = do
                   Sig _ (a : _) _ -> a
             t_startstate = sigState0 w
 
-compileStartDefn _ (StartDefn an _ _ _) = failAt an "toVHDL: compileStartDefn: start definition with invalid signature."
-
 compileDefn :: MonadError AstError m => [Flag] -> Defn -> CM m Unit
 compileDefn flags d = Unit (uses flags) <$> mkDefnEntity d <*> mkDefnArch d
 

@@ -1,6 +1,6 @@
 module Main (main) where
 
-import qualified ReWire.Main as M
+import qualified RWC
 
 import Control.Monad (unless, msum)
 import Data.List (isSuffixOf)
@@ -16,7 +16,7 @@ import System.Process (callCommand)
 import Test.Framework (defaultMainWithArgs, testGroup, Test)
 import Test.Framework.Providers.HUnit (testCase)
 
-import Paths_ReWire (getDataFileName)
+import Paths_rewire (getDataFileName)
 
 data Flag = FlagV
           | FlagNoGhdl
@@ -37,7 +37,7 @@ options =
 testCompiler :: [Flag] -> FilePath -> [Test]
 testCompiler flags fn = [testCase (takeBaseName fn) $ do
             setCurrentDirectory $ takeDirectory fn
-            withArgs (fn : extraFlags) M.main
+            withArgs (fn : extraFlags) RWC.main
       ] ++ if FlagNoGhdl `elem` flags then [] else [testCase (takeBaseName fn ++ " (" ++ checker ++ ")") $ do
             setCurrentDirectory $ takeDirectory fn
             callCommand $ checker ++ " " ++ fn -<.> "vhdl"

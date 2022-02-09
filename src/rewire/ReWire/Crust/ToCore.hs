@@ -8,7 +8,7 @@ import ReWire.Pretty
 import ReWire.Unbound (Name, Fresh, runFreshM, Embed (..) , unbind, n2s)
 
 import Control.Arrow ((&&&))
-import Control.Monad.State (StateT (..), MonadState, get, put)
+import Control.Monad.State (StateT (..), MonadState, get, put, unless)
 import Control.Monad.Reader (MonadReader (..), ReaderT (..), asks, lift)
 import Data.HashMap.Strict (HashMap)
 import Data.Maybe (fromMaybe)
@@ -27,12 +27,14 @@ type ConMap = (HashMap (Name M.TyConId) [Name M.DataConId], HashMap (Name M.Data
 type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) C.LId) m)
 
 toCore :: (Fresh m, MonadError AstError m, MonadFail m) => [Text] -> [Text] -> [Text] -> M.FreeProgram -> m C.Program
-toCore inps outps sts (ts, _, vs) = fst <$> runStateT (do
-            vs' <- mapM (transDefn inps outps sts conMap) $ filter (not . M.isPrim . M.defnName) vs
-            case partitionEithers vs' of
-                  ([startDefn], defns) -> pure $ C.Program startDefn defns
-                  _                    -> failAt noAnn "toCore: no Main.start."
-      ) mempty
+toCore inps outps sts (ts, _, vs) = fst <$> (flip runStateT mempty $ do
+      mapM_ ((`runReaderT` conMap) . sizeOf noAnn . M.TyCon noAnn . M.dataName) ts
+      intSz <- maximum <$> Map.elems <$> get
+      put $ Map.singleton (M.intTy noAnn) intSz -- TODO(chathhorn): note the sizeof Integer is the max of all non-Integer-containing types.
+      vs'    <- mapM (transDefn inps outps sts conMap) $ filter (not . M.isPrim . M.defnName) vs
+      case partitionEithers vs' of
+            ([startDefn], defns) -> pure $ C.Program startDefn defns
+            _                    -> failAt noAnn "toCore: no Main.start.")
       where conMap :: ConMap
             conMap = ( Map.fromList $ map (M.dataName &&& map projId . M.dataCons) ts
                      , Map.fromList $ map (projId &&& projType) (concatMap M.dataCons ts)
@@ -87,11 +89,25 @@ transExp = \ case
                   args'    <- concat <$> mapM transExp args
                   argSizes <- mapM (sizeOf an . M.typeOf) args
                   pure [C.Call an sz (C.Global $ showt x) args' (map (C.PatVar an) argSizes) []]
-            (M.Extern _ s _ : args)     -> do
+            (M.Extern _ _ : M.LitStr _ s : _ : args)     -> do
                   sz       <- sizeOf an $ M.typeOf e
                   args'    <- concat <$> mapM transExp args
                   argSizes <- mapM (sizeOf an . M.typeOf) args
                   pure [C.Call an sz (C.Extern (C.Sig an argSizes sz) s) args' (map (C.PatVar an) argSizes) []]
+            (M.Bit an _ : [arg, M.LitInt _ i])     -> do -- TODO(chathhorn): should probably just do a pass to rewrite this in terms of Bits.
+                  sz       <- sizeOf an $ M.typeOf e
+                  arg'     <- transExp arg
+                  argSize  <- fromIntegral <$> sizeOf an (M.typeOf arg)
+                  unless (i < argSize && i >= 0) $
+                        failAt an $ "transExp: invalid bit index " <> showt i <> " in object size " <> showt argSize <> "."
+                  pure [C.Call an sz C.Id arg' [C.PatWildCard an $ fromIntegral $ argSize - i - 1, C.PatVar an 1, C.PatWildCard an $ fromIntegral i] []]
+            (M.Bits an _ : [arg, M.LitInt _ j, M.LitInt _ i])     -> do
+                  sz       <- sizeOf an $ M.typeOf e
+                  arg'     <- transExp arg
+                  argSize  <- fromIntegral <$> sizeOf an (M.typeOf arg)
+                  unless (j < argSize && i >= 0 && j >= 0 && j - i + 1 > 0) $
+                        failAt an $ "transExp: invalid bit range (" <> showt j <> ", " <> showt i <> ") from object size " <> showt argSize <> "."
+                  pure [C.Call an sz C.Id arg' [C.PatWildCard an $ fromIntegral $ argSize - j - 1, C.PatVar an $ fromIntegral $ j - i + 1, C.PatWildCard an $ fromIntegral i] []]
             (M.Con an t d : args)       -> do
                   (v, w) <- ctorTag an (snd $ M.flattenArrow t) d
                   args'  <- concat <$> mapM transExp args
@@ -100,6 +116,9 @@ transExp = \ case
                   let tag = C.Lit an (bitVec (fromIntegral w) v)
                       pad = C.Lit an (zeros $ fromIntegral sz - fromIntegral w - fromIntegral szArgs) -- ugh
                   pure ([tag, pad] <> args')
+            (M.Error an _ _ : _)        -> do
+                  sz     <- sizeOf an $ M.typeOf e
+                  pure [C.Call an sz (C.Extern (C.Sig an [] sz) "error") [] [] []]
             _                           -> failAt an "transExp: encountered ill-formed application."
       M.Var an t x                      -> lift (asks (Map.lookup x)) >>= \ case
             Nothing -> do
@@ -111,23 +130,24 @@ transExp = \ case
       M.Con an t d                      -> do
             (v, w) <- ctorTag an t d
             sz     <- sizeOf an t
-            let tag = C.Lit an (bitVec (fromIntegral w) v)
+            let tag = C.Lit an $ bitVec (fromIntegral w) v
                 pad = C.Lit an (zeros $ fromIntegral sz - fromIntegral w)
             pure [tag, pad]
       M.Match an t e ps f (Just e2)     -> pure <$>
             (C.Call an <$> sizeOf an t <*> (callTarget =<< transExp f) <*> transExp e <*> transPat ps <*> transExp e2)
       M.Match an t e ps f Nothing       -> pure <$>
             (C.Call an <$> sizeOf an t <*> (callTarget =<< transExp f) <*> transExp e <*> transPat ps <*> pure [])
-      M.Extern an s (M.Error _ t _)     -> do
-            sz     <- sizeOf an t
-            pure [C.Call an sz (C.Extern (C.Sig an [] sz) s) [] [] []]
+      e@(M.LitInt an n)                 -> do
+            sz <- sizeOf an $ M.typeOf e
+            pure [C.Lit an $ bitVec (fromIntegral sz) n]
       M.Error an t _                    -> do
             sz     <- sizeOf an t
             pure [C.Call an sz (C.Extern (C.Sig an [] sz) "error") [] [] []]
       e                                 -> failAt (ann e) $ "ToCore: unsupported expression: " <> prettyPrint e
       where callTarget :: MonadError AstError m => [C.Exp] -> m C.Target
-            callTarget [C.Call _ _ x _ _ _] = pure x
-            callTarget e                    = failAt noAnn $ "ToCore: callTarget: expected Match, got: " <> prettyPrint e
+            callTarget = \ case
+                  [C.Call _ _ x _ _ _] -> pure x
+                  e                    -> failAt noAnn $ "ToCore: callTarget: expected Match, got: " <> prettyPrint e
 
 transPat :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.MatchPat -> ReaderT ConMap m [C.Pat]
 transPat = \ case

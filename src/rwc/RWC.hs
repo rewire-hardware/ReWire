@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.Main (main) where
+module RWC (main) where
 
 import ReWire.Annotation (unAnn)
 import ReWire.FrontEnd (loadProgram, LoadPath)
 import ReWire.Pretty (Pretty, prettyPrint)
 import qualified ReWire.Core.Syntax as C
--- import ReWire.Core.ToVHDL (compileProgram)
+import qualified ReWire.Core.ToVHDL as VHDL
 import qualified ReWire.Core.ToVerilog as Verilog
 import ReWire.Core.Transform (mergeSlices, purgeUnused, partialEval)
 import ReWire.Core.Interp (interp, Ins, run)
@@ -32,7 +32,7 @@ import qualified Data.Text.IO as T
 import qualified Data.Yaml as YAML
 import qualified Data.HashMap.Strict as Map
 
-import Paths_ReWire (getDataFileName)
+import Paths_rewire (getDataFileName)
 
 options :: [OptDescr Flag]
 options =
@@ -41,15 +41,17 @@ options =
        , Option []    ["verilog"]            (NoArg  FlagVerilog)                       "Produce Verilog output instead of VHDL."
        , Option []    ["invert-reset"]       (NoArg  FlagInvertReset)                   "Invert the implicitly generated reset signal."
        , Option []    ["no-reset"]           (NoArg  FlagNoReset)                       "No implicitly generated reset signal."
-       , Option []    ["dpass1", "dhask1" ]  (NoArg  FlagDHask1)                        "Dump pass 1: pre-desugar haskell source."
-       , Option []    ["dpass2", "dhask2" ]  (NoArg  FlagDHask2)                        "Dump pass 2: post-desugar haskell source."
-       , Option []    ["dpass3", "dcrust1"]  (NoArg  FlagDCrust1)                       "Dump pass 3: post-desugar crust source."
-       , Option []    ["dpass4", "dcrust2"]  (NoArg  FlagDCrust2)                       "Dump pass 4: post-inlining crust source."
-       , Option []    ["dpass5", "dcrust3"]  (NoArg  FlagDCrust3)                       "Dump pass 5: pre-purify crust source."
-       , Option []    ["dpass6", "dcrust4"]  (NoArg  FlagDCrust4)                       "Dump pass 6: post-purify crust source."
-       , Option []    ["dpass7", "dcrust5"]  (NoArg  FlagDCrust5)                       "Dump pass 7: post-second-lambda-lifting crust source."
-       , Option []    ["dpass8", "dcore1"  ] (NoArg  FlagDCore1)                        "Dump pass 8: core source."
-       , Option []    ["dpass9", "dcore2"  ] (NoArg  FlagDCore2)                        "Dump pass 9: core source after purging empty types."
+       , Option []    ["no-clock"]           (NoArg  FlagNoClock)                       "No implicitly generated clock signal (implies no-reset: generate a purely combinatorial circuit)."
+       , Option []    ["dpass1" , "dhask1" ] (NoArg  FlagDHask1)                        "Dump pass 1: pre-desugar haskell source."
+       , Option []    ["dpass2" , "dhask2" ] (NoArg  FlagDHask2)                        "Dump pass 2: post-desugar haskell source."
+       , Option []    ["dpass2b", "dcrust0"] (NoArg  FlagDCrust0)                       "Dump pass 2b: synthetic per-module crust source."
+       , Option []    ["dpass3" , "dcrust1"] (NoArg  FlagDCrust1)                       "Dump pass 3: post-desugar crust source."
+       , Option []    ["dpass4" , "dcrust2"] (NoArg  FlagDCrust2)                       "Dump pass 4: post-inlining crust source."
+       , Option []    ["dpass5" , "dcrust3"] (NoArg  FlagDCrust3)                       "Dump pass 5: pre-purify crust source."
+       , Option []    ["dpass6" , "dcrust4"] (NoArg  FlagDCrust4)                       "Dump pass 6: post-purify crust source."
+       , Option []    ["dpass7" , "dcrust5"] (NoArg  FlagDCrust5)                       "Dump pass 7: post-second-lambda-lifting crust source."
+       , Option []    ["dpass8" , "dcore1" ] (NoArg  FlagDCore1)                        "Dump pass 8: core source."
+       , Option []    ["dpass9" , "dcore2" ] (NoArg  FlagDCore2)                        "Dump pass 9: core source after purging empty types."
        , Option []    ["dtypes"]             (NoArg  FlagDTypes)                        "Enable extra typechecking after various IR transformations."
        , Option []    ["flatten"]            (NoArg  FlagFlatten)                       "Generate a single RTL module."
        , Option ['o'] []                     (ReqArg FlagO           "filename.vhdl")   "Name for RTL output file."
@@ -69,9 +71,8 @@ exitUsage = T.hPutStr stderr (pack $ usageInfo "Usage: rwc [OPTION...] <filename
 
 getSystemLoadPath :: IO [FilePath]
 getSystemLoadPath = do
-      lib   <- getDataFileName "src/lib"
-      rwlib <- getDataFileName "src/rwlib"
-      pure $ "." : [lib, rwlib]
+      lib   <- getDataFileName "src/user"
+      pure [".", lib]
 
 main :: IO ()
 main = do
@@ -144,8 +145,7 @@ main = do
                                           let outs = run (interp flags b) (boundInput (ncycles flags) $ fromRight mempty ips)
                                           fout <- liftIO $ getOutFile flags filename
                                           liftIO $ YAML.encodeFile fout outs
-                                      | otherwise                  -> liftIO $ putStrLn "VHDL backend currently out-of-order. Use '--verilog' or '--interpret'."
-                                          -- compileProgram flags a >>= writeOutput
+                                      | otherwise                  -> VHDL.compileProgram flags a >>= writeOutput
 
                         writeOutput :: Pretty a => a -> SyntaxErrorT IO ()
                         writeOutput a = do

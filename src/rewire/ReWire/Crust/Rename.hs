@@ -33,6 +33,8 @@ import Language.Haskell.Exts.Fixity (Fixity (..), AppFixity (..))
 import Language.Haskell.Exts.Pretty (prettyPrint)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo, noSrcSpan)
 import System.FilePath (joinPath, (<.>))
+import Prettyprinter (Pretty (..), nest, vsep, (<+>))
+import ReWire.Pretty (text)
 
 import Data.Map.Strict.Internal (Map (..))
 import qualified Data.Map.Strict                        as Map
@@ -77,6 +79,9 @@ data Exports = Exports
 data Module = Module ![DataDefn] ![TypeSynonym] ![Defn]
       deriving (Show, Generic)
       deriving TextShow via FromGeneric Module
+
+instance Pretty Module where
+      pretty (Module cs ts ds) = nest 2 $ vsep (text "module" : map pretty cs <> map pretty ts <> map pretty ds)
 
 instance Semigroup Module where
       (Module a b c) <> (Module a' b' c') = Module (a <> a') (b <> b') (c <> c')

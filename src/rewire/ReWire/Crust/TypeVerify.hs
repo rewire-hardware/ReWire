@@ -183,8 +183,11 @@ tcExp = \ case
             case e2 of
                   Nothing -> pure ()
                   Just e2 -> tcExp e2 >> unify an t (typeOf e2)
-      Extern _ _ Error {}     -> pure ()
-      Extern _ _ e            -> tcExp e
+      Extern {}               -> pure ()
+      Bit {}                  -> pure ()
+      Bits {}                 -> pure ()
+      LitInt {}               -> pure ()
+      LitStr {}               -> pure ()
       Error {}                -> pure ()
 
 mkApp :: Annote -> Exp -> [Name Exp] -> Exp

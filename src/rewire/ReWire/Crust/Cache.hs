@@ -50,7 +50,7 @@ import Language.Haskell.Exts.Syntax hiding (Annotation, Exp, Module (..), Namesp
 
 type Cache = ReaderT LoadPath (StateT ModCache (FreshMT (SyntaxErrorT IO)))
 type LoadPath = [FilePath]
-type ModCache = HashMap FilePath (Module, (Module, Exports))
+type ModCache = HashMap FilePath (Module, Exports)
 
 runCache :: Cache a -> LoadPath -> SyntaxErrorT IO a
 runCache m lp = fst <$> runFreshMT (runStateT (runReaderT m lp) mempty)
@@ -59,7 +59,7 @@ mkRenamer :: [Flag] -> S.Module SrcSpanInfo -> Cache Renamer
 mkRenamer flags m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps m)
       where mkRenamer' :: ImportDecl SrcSpanInfo -> Cache Renamer
             mkRenamer' (ImportDecl _ (void -> m) quald _ _ _ (fmap void -> as) specs) = do
-                  (_, (_, exps)) <- getModule flags $ toFilePath m
+                  (_, exps) <- getModule flags $ toFilePath m
                   fromImps m quald exps as specs
 
 -- Pass 1    Parse.
@@ -69,7 +69,7 @@ mkRenamer flags m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps m)
 -- Pass 15   Translate to mantle + rename globals.
 -- Pass 16   Translate to core
 
-getModule :: [Flag] -> FilePath -> Cache (Module, (Module, Exports))
+getModule :: [Flag] -> FilePath -> Cache (Module, Exports)
 getModule flags fp = pDebug flags ("fetching module: " <> pack fp) >> Map.lookup fp <$> get >>= \ case
       Just p  -> pure p
       Nothing -> do
@@ -103,8 +103,11 @@ getModule flags fp = pDebug flags ("fetching module: " <> pack fp) >> Map.lookup
                       >=> toCrust rn
                       $ m
 
-            modify $ Map.insert fp (m', (imps, exps))
-            pure (m', (imps, exps))
+            let Module ts syns ds = m' <> imps
+            _ <- whenSet FlagDCrust0 (printInfo $ "Crust 0: Synthetic per-module: " <> pack fp) (ts, syns, ds)
+
+            modify $ Map.insert fp (m' <> imps, exps)
+            pure (m' <> imps, exps)
 
       where loadImports :: Annotation a => S.Module a -> Cache Module
             loadImports = fmap mconcat . mapM (fmap fst . getModule flags . toFilePath . void . importModule) . getImps
@@ -118,14 +121,13 @@ getModule flags fp = pDebug flags ("fetching module: " <> pack fp) >> Map.lookup
 -- Phase 2 (pre-core) transformations.
 getProgram :: [Flag] -> FilePath -> Cache Core.Program
 getProgram flags fp = do
-      (mod, (imps, _))  <- getModule flags fp
-      let (Module ts syns ds) = mod <> imps
+      (Module ts syns ds,  _)  <- getModule flags fp
 
       p <- pure
        >=> pDebug' "[Pass 3] Adding primitives and inlining."
        >=> whenSet FlagDCrust1 (printInfo "Crust 1: Post-desugaring")
        >=> pure . addPrims
-       >=> typeTopLevelExterns -- hacky hack to make externs inlineable
+       -- >=> typeTopLevelExterns -- hacky hack to make externs inlineable
        >=> inline
        >=> prePurify
        >=> pDebug' "Expanding type synonyms."
@@ -135,7 +137,7 @@ getProgram flags fp = do
        >=> pDebug' "Typechecking."
        >=> kindCheck >=> typeCheck
        >=> pDebug' "Simplifying and reducing."
-       >=> neuterPrims
+       -- >=> neuterPrims
        >=> reduce
        >=> shiftLambdas
        >=> pDebug' "Lifting lambdas (pre-purification)."

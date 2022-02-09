@@ -85,7 +85,7 @@ unify :: MonadError AstError m => Annote -> Ty -> Ty -> TCM m ()
 unify an t1 t2 = do
       s  <- get
       mgu (subst s t1) (subst s t2) >>= maybe
-            (failAt an $ "Types do not unify: " <> prettyPrint (subst s t1) <> ", " <> prettyPrint (subst s t2))
+            (failAt an $ "Types do not unify:\n" <> prettyPrint (subst s t1) <> "\n" <> prettyPrint (subst s t2))
             (modify . (@@))
 
 inst :: (MonadState TySub m, Fresh m) => Poly -> m Ty
@@ -206,10 +206,20 @@ tcExp = \ case
                         (e2', te2)  <- tcExp e2
                         unify an tv te2
                         pure (Match an tv e' p' f (Just e2'), tv)
-      Extern an n e@(Error _ t _) -> pure (Extern an n e, t) -- TODO(chathhorn)
-      Extern an n e          -> do
-            (e', te) <- tcExp e
-            pure (Extern an n e', te)
+      Extern an _          -> do
+            tv <- freshv
+            let t = strTy an `arr` tv `arr` tv
+            pure (Extern an t, t)
+      Bit an _          -> do
+            tv <- freshv
+            let t = tv `arr` intTy an `arr` bitTy an
+            pure (Bit an t, t)
+      Bits an _          -> do
+            tv <- freshv
+            let t = tv `arr` intTy an `arr` intTy an `arr` tv
+            pure (Bits an t, t)
+      e@LitInt {}            -> pure (e, typeOf e)
+      e@LitStr {}            -> pure (e, typeOf e)
       Error an _ m           -> do
             tv <- freshv
             pure (Error an tv m, tv)

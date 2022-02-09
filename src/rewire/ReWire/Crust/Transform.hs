@@ -9,7 +9,7 @@ module ReWire.Crust.Transform
       , fullyApplyDefs
       , purgeUnused
       , prePurify
-      , typeTopLevelExterns
+      -- , typeTopLevelExterns
       ) where
 
 import ReWire.Error
@@ -97,24 +97,24 @@ fix m n f a = do
       a' <- f a
       if hash a' == hash a then pure a else fix m (n - 1) f a'
 
--- | Replaces the expression in Extern so we don't descend into it
+-- | Replaces the second argument to Extern so we don't descend into it
 --   during other transformations.
 neuterPrims :: MonadCatch m => FreeProgram -> m FreeProgram
 neuterPrims = runT $ transform $
-      \ (Extern an s e) -> pure $ Extern an s (Error an (typeOf e) "extern expression placeholder")
+      \ (App a e@(App _ Extern {} _) e') -> pure $ App a e $ Error a (typeOf e') "extern expression placeholder"
 
 -- | Hacky hack
-typeTopLevelExterns :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
-typeTopLevelExterns (ts, syns, vs) = (ts, syns, ) <$> mapM typeExterns vs
-      where typeExterns :: Fresh m => Defn -> m Defn
-            typeExterns (Defn an n (Embed (Poly t)) inl (Embed e)) = Defn an n (Embed (Poly t)) inl . Embed <$> mash t e
-
-            mash :: Fresh m => Bind [Name Ty] Ty -> Bind [Name Exp] Exp -> m (Bind [Name Exp] Exp)
-            mash t e = unbind e >>= \ case
-                  (vs, Extern an s _) -> do
-                        (_, t') <- unbind t
-                        pure $ bind vs $ Extern an s $ Error an t' "extern expression placeholder"
-                  _                   -> pure e
+-- typeTopLevelExterns :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
+-- typeTopLevelExterns (ts, syns, vs) = (ts, syns, ) <$> mapM typeExterns vs
+--       where typeExterns :: Fresh m => Defn -> m Defn
+--             typeExterns (Defn an n (Embed (Poly t)) inl (Embed e)) = Defn an n (Embed (Poly t)) inl . Embed <$> mash t e
+-- 
+--             mash :: Fresh m => Bind [Name Ty] Ty -> Bind [Name Exp] Exp -> m (Bind [Name Exp] Exp)
+--             mash t e = unbind e >>= \ case
+--                   (vs, Extern an s _) -> do
+--                         (_, t') <- unbind t
+--                         pure $ bind vs $ Extern an s $ Error an t' "extern expression placeholder"
+--                   _                   -> pure e
 
 -- | Shifts vars bound by top-level lambdas into defs.
 -- > g = \ x1 -> \ x2 -> e
@@ -387,8 +387,8 @@ purgeUnused (ts, syns, vs) = (inuseData (externCtors vs') (fv $ trec vs') ts, sy
             -- | Also treat as used: all ctors for types returned by externs and ReT inputs.
             externCtors :: Data a => a -> [Name TyConId]
             externCtors = runQ $ (\ case
-                        Extern _ _ e -> ctorNames $ flattenAllTyApp $ rangeTy $ typeOf e
-                        _            -> [])
+                        e@Extern {} -> ctorNames $ flattenAllTyApp $ rangeTy $ typeOf e
+                        _           -> [])
                   ||? (\ case
                         Defn _ (n2s -> "Main.start") (Embed (Poly (unsafeUnbind -> (_, t)))) _ _ -> maybe [] (ctorNames . flattenAllTyApp) $ resInputTy t
                         _                                                                        -> [])
