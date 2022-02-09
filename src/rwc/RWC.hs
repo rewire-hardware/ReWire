@@ -6,7 +6,7 @@ import ReWire.Annotation (unAnn)
 import ReWire.FrontEnd (loadProgram, LoadPath)
 import ReWire.Pretty (Pretty, prettyPrint)
 import qualified ReWire.Core.Syntax as C
--- import ReWire.Core.ToVHDL (compileProgram)
+import qualified ReWire.Core.ToVHDL as VHDL
 import qualified ReWire.Core.ToVerilog as Verilog
 import ReWire.Core.Transform (mergeSlices, purgeUnused, partialEval)
 import ReWire.Core.Interp (interp, Ins, run)
@@ -145,8 +145,7 @@ main = do
                                           let outs = run (interp flags b) (boundInput (ncycles flags) $ fromRight mempty ips)
                                           fout <- liftIO $ getOutFile flags filename
                                           liftIO $ YAML.encodeFile fout outs
-                                      | otherwise                  -> liftIO $ putStrLn "VHDL backend currently out-of-order. Use '--verilog' or '--interpret'."
-                                          -- compileProgram flags a >>= writeOutput
+                                      | otherwise                  -> VHDL.compileProgram flags a >>= writeOutput
 
                         writeOutput :: Pretty a => a -> SyntaxErrorT IO ()
                         writeOutput a = do
