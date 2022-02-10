@@ -144,10 +144,10 @@ ashiftr' = undefined
 
 -- | Concatenate.
 {-# INLINE (<>) #-}
-(<>) :: a -> a -> a
+(<>) :: a -> b -> c
 (<>) = extern "concat" concat'
 
-concat' :: a -> a -> a
+concat' :: a -> b -> c
 concat' = undefined
 
 infixr 9 **

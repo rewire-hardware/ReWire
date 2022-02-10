@@ -44,7 +44,7 @@ extern _ f = f
 
 -- | bits a j i returns bits j (most significant) to i (least significant) from a (j >= i).
 --   The Integer arguments must be non-negative integer literals (after inlining).
-bits :: a -> Integer -> Integer -> a
+bits :: a -> Integer -> Integer -> b
 bits = GHC.error "Prim: bit string extraction"
 
 -- | bit a i == bits a i i.

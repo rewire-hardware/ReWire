@@ -216,7 +216,8 @@ tcExp = \ case
             pure (Bit an t, t)
       Bits an _          -> do
             tv <- freshv
-            let t = tv `arr` intTy an `arr` intTy an `arr` tv
+            tv' <- freshv
+            let t = tv `arr` intTy an `arr` intTy an `arr` tv'
             pure (Bits an t, t)
       e@LitInt {}            -> pure (e, typeOf e)
       e@LitStr {}            -> pure (e, typeOf e)
