@@ -382,6 +382,7 @@ purgeUnused start (ts, syns, vs) = (inuseData (externCtors vs') (fv $ trec vs') 
                          [ "PuRe"
                          , "(,)"
                          , "()"
+                         , "Bit"
                          ]
 
             -- | Also treat as used: all ctors for types returned by externs and ReT inputs.
