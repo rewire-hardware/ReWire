@@ -29,9 +29,9 @@ import Control.Monad.Catch (MonadCatch)
 import Control.Monad.State (State, evalStateT, execState, StateT (..), get, modify)
 import Control.Monad (filterM, replicateM)
 import Data.Data (Data)
-import Data.List (find, foldl')
+import Data.List (find, foldl', sort)
 import Data.Maybe (fromJust, fromMaybe)
-import Data.Containers.ListUtils (nubOrdOn)
+import Data.Containers.ListUtils (nubOrd, nubOrdOn)
 import Data.Hashable (Hashable (..))
 import Data.Text (Text)
 
@@ -96,6 +96,9 @@ fix m 0 _ _ = failAt noAnn $ m <> " expansion not terminating (mutually recursiv
 fix m n f a = do
       a' <- f a
       if hash a' == hash a then pure a else fix m (n - 1) f a'
+
+fix' :: Hashable a => (a -> a) -> a -> a
+fix' f a = if hash (f a) == hash a then a else fix' f (f a)
 
 -- | Replaces the second argument to Extern so we don't descend into it
 --   during other transformations.
@@ -364,7 +367,7 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
 
 -- | Remove unused definitions.
 purgeUnused :: Text -> FreeProgram -> FreeProgram
-purgeUnused start (ts, syns, vs) = (inuseData (externCtors vs') (fv $ trec vs') ts, syns, vs')
+purgeUnused start (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ externCtors vs') (fv $ trec vs') ts, syns, vs')
       where vs' :: [Defn]
             vs' = inuseDefn start vs
 
@@ -394,6 +397,14 @@ purgeUnused start (ts, syns, vs) = (inuseData (externCtors vs') (fv $ trec vs') 
                         Defn _ (n2s -> n) (Embed (Poly (unsafeUnbind -> (_, t)))) _ _ | n == start -> maybe [] (ctorNames . flattenAllTyApp) $ resInputTy t
                         _                                                                          -> [])
                   ||? QEmpty
+
+            extendWithCtorParams :: [Name TyConId] -> [Name TyConId]
+            extendWithCtorParams = nubOrd . sort . foldr extend' []
+                  where extend' :: Name TyConId -> [Name TyConId] -> [Name TyConId]
+                        extend' n = (<> concatMap (concatMap ctorTypes . dataCons) (filter ((== n2s n) . n2s . dataName) ts))
+
+                        ctorTypes :: DataCon -> [Name TyConId]
+                        ctorTypes (DataCon _ _ (Embed (Poly (unsafeUnbind -> (_, t))))) = ctorNames $ flattenAllTyApp t
 
             dataConName :: DataCon -> Name DataConId
             dataConName (DataCon _ n _) = n
