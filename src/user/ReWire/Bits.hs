@@ -2,12 +2,80 @@ module ReWire.Bits where
 
 import ReWire
 
--- | "Cleared," "set."
---data Bit = C | S
-data W8  = W8 Bit Bit Bit Bit Bit Bit Bit Bit
+data W2  = W2  Bit Bit
+data W3  = W3  Bit Bit Bit
+data W4  = W4  Bit Bit Bit Bit
+data W5  = W5  Bit Bit Bit Bit Bit
+data W6  = W6  Bit Bit Bit Bit Bit Bit
+data W7  = W7  Bit Bit Bit Bit Bit Bit Bit
+
+data W8  = W8  Bit Bit Bit Bit Bit Bit Bit Bit
+
+data W9  = W9  Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W10 = W10 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W11 = W11 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W12 = W12 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W13 = W13 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W14 = W14 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W15 = W15 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+
 data W16 = W16 W8 W8
+data W17 = W17 Bit W16
+
+data W18 = W18 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W19 = W19 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W20 = W20 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W21 = W21 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W22 = W22 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W23 = W23 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W24 = W24 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W25 = W25 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W26 = W26 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W27 = W27 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W28 = W28 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W29 = W29 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W30 = W30 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W31 = W31 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+
 data W32 = W32 W16 W16
+data W33 = W33 Bit W16 W16
+
+data W34 = W34 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W35 = W35 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W36 = W36 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W37 = W37 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W38 = W38 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W39 = W39 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W40 = W40 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W41 = W41 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W42 = W42 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W43 = W43 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W44 = W44 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W45 = W45 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W46 = W46 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W47 = W47 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W48 = W48 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W49 = W49 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W50 = W50 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W51 = W51 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W52 = W52 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W53 = W53 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W54 = W54 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W55 = W55 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W56 = W56 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W57 = W57 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W58 = W58 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W59 = W59 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W60 = W60 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W61 = W61 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W62 = W62 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W63 = W63 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+
 data W64 = W64 W32 W32
+
+data W256 = W256 W64 W64 W64 W64
+data W259 = W259 W3 W256
+data W275 = W275 W16 W259
 
 -- Bit operations
 
@@ -126,7 +194,7 @@ onesW16 = W16 onesW8 onesW8
 isZeroW16 :: W16 -> Bool
 isZeroW16 = eqW16 zeroW16
 
--- | Arithmetic mod 2^8 on nats. Increment.
+-- | Increment.
 incW16 :: W16 -> W16
 incW16 = plusW16 oneW16
 
@@ -172,7 +240,7 @@ onesW32 = W32 onesW16 onesW16
 isZeroW32 :: W32 -> Bool
 isZeroW32 = eqW32 zeroW32
 
--- | Arithmetic mod 2^8 on nats. Increment.
+-- | Increment.
 incW32 :: W32 -> W32
 incW32 = plusW32 oneW32
 
@@ -218,7 +286,7 @@ onesW64 = W64 onesW32 onesW32
 isZeroW64 :: W64 -> Bool
 isZeroW64 = eqW64 zeroW64
 
--- | Arithmetic mod 2^8 on nats. Increment.
+-- | Increment.
 incW64 :: W64 -> W64
 incW64 = plusW64 oneW64
 
@@ -251,11 +319,17 @@ eqW64 :: W64 -> W64 -> Bool
 eqW64 (W64 w1 w0) (W64 w1' w0') = w1 `eqW32` w1' && w0 `eqW32` w0'
 
 -- |
+<<<<<<< HEAD
 -- | W3 Operations
 -- |
 
 data W3 = W3 Bit Bit Bit
 
+=======
+-- | W3 operations
+-- |
+
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 zeroW3 :: W3
 zeroW3  = W3 C C C
 
@@ -267,8 +341,12 @@ onesW3  = W3 S S S
 
 eqW3 :: W3 -> W3 -> Bool
 eqW3 (W3 a b c) (W3 a' b' c')
+<<<<<<< HEAD
       = a `eqb` a' && b `eqb` b'
      && c `eqb` c' 
+=======
+      = a `eqb` a' && b `eqb` b' && c `eqb` c'
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 
 isZeroW3 :: W3 -> Bool
 isZeroW3 = eqW3 zeroW3
@@ -310,15 +388,22 @@ plusW3' :: W3 -> W3 -> Bit -> (W3, Bit)
 plusW3' (W3 a  b  c) (W3 a' b' c') ci =
       let (r0, co0) = addb c c' ci
           (r1, co1) = addb b b' co0
+<<<<<<< HEAD
           (r2, co2) = addb a a' co2
+=======
+          (r2, co2) = addb a a' co1
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
       in (W3 r2 r1 r0, co2)
 
 -- |
 -- | W7 operations
 -- |
 
+<<<<<<< HEAD
 data W7 = W7 Bit Bit Bit Bit Bit Bit Bit 
 
+=======
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 zeroW7, oneW7, onesW7 :: W7
 zeroW7 = W7 C C C C C C C
 oneW7  = W7 C C C C C C S
@@ -331,7 +416,10 @@ eqW7 (W7 a6 a5 a4 a3 a2 a1 a0) (W7 b6 b5 b4 b3 b2 b1 b0) = eqb a6 b6 && eqb a5 b
 isZeroW7 :: W7 -> Bool
 isZeroW7 = eqW7 zeroW7
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 andW7 , orW7 , xorW7 :: W7 -> W7 -> W7
 andW7 (W7 a06 a05 a04 a03 a02 a01 a00) 
       (W7 b06 b05 b04 b03 b02 b01 b00) =
@@ -352,6 +440,7 @@ plusW7 :: W7 -> W7 -> W7
 plusW7 x y = fst (plusW7' x y C)
 
 -- | Ripple-carry adder.
+<<<<<<< HEAD
 plusW7' (W7 a6 a5 a4 a3 a2 a1 a0) (W7 b6 b5 b4 b3 b2 b1 b0) c = (W7 c6 c5 c4 c3 c2 c1 c0 , c')
     where
       (carry0,c0) = addb a0 b0 c
@@ -362,6 +451,20 @@ plusW7' (W7 a6 a5 a4 a3 a2 a1 a0) (W7 b6 b5 b4 b3 b2 b1 b0) c = (W7 c6 c5 c4 c3 
       (carry5,c5) = addb a5 b5 carry4
       (c',c6)     = addb a6 b6 carry5
 
+=======
+plusW7' :: W7 -> W7 -> Bit -> (W7, Bit)
+plusW7' (W7 a6 a5 a4 a3 a2 a1 a0) (W7 b6 b5 b4 b3 b2 b1 b0) c = (W7 r6 r5 r4 r3 r2 r1 r0 , c')
+    where
+      (r0, co0) = addb a0 b0 c
+      (r1, co1) = addb a1 b1 co0
+      (r2, co2) = addb a2 b2 co1
+      (r3, co3) = addb a3 b3 co2
+      (r4, co4) = addb a4 b4 co3
+      (r5, co5) = addb a5 b5 co4
+      (r6, c') = addb a6 b6 co5
+
+-- | Increment.
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 incW7 :: W7 -> W7
 incW7 = plusW7 oneW7
 
@@ -369,8 +472,11 @@ incW7 = plusW7 oneW7
 -- | W17 operations
 -- |
 
+<<<<<<< HEAD
 data W17 = W17 Bit W16
 
+=======
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 zeroW17 :: W17
 zeroW17 = W17 C zeroW16
 
@@ -411,7 +517,11 @@ plusW17' (W17 b w0) (W17 b' w0') ci =
           (r, co1)  = addb b b' co0
       in (W17 r r0, co1)
 
+<<<<<<< HEAD
 -- | Arithmetic mod 2^8 on nats. Increment.
+=======
+-- | Increment.
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 incW17 :: W17 -> W17
 incW17 = plusW17 oneW17
 
@@ -419,8 +529,11 @@ incW17 = plusW17 oneW17
 -- | W33 operations
 -- |
 
+<<<<<<< HEAD
 data W33 = W33 Bit W16 W16
 
+=======
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 zeroW33 :: W33
 zeroW33 = W33 C zeroW16 zeroW16
 
@@ -451,7 +564,10 @@ orW33 (W33 b w1 w0) (W33 b' w1' w0') = W33 (orb b b') (orW16 w1 w1') (orW16 w0 w
 xorW33 :: W33 -> W33 -> W33
 xorW33 (W33 b w1 w0) (W33 b' w1' w0') = W33 (xorb b b') (xorW16 w1 w1') (xorW16 w0 w0')
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 plusW33 :: W33 -> W33 -> W33
 plusW33 x y = fst (plusW33' x y C)
 
@@ -463,7 +579,11 @@ plusW33' (W33 b w1 w0) (W33 b' w1' w0') ci =
           (r, co2)  = addb b b' co1
       in (W33 r r1 r0, co2)
 
+<<<<<<< HEAD
 -- | Arithmetic mod 2^8 on nats. Increment.
+=======
+-- | Increment.
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 incW33 :: W33 -> W33
 incW33 = plusW33 oneW33
 
@@ -471,8 +591,11 @@ incW33 = plusW33 oneW33
 -- | W256
 -- |
 
+<<<<<<< HEAD
 data W256 = W256 W64 W64 W64 W64
 
+=======
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 zeroW256, oneW256, onesW256 :: W256
 zeroW256 = W256 zeroW64 zeroW64 zeroW64 zeroW64
 oneW256  = W256 zeroW64 zeroW64 zeroW64 oneW64
@@ -511,7 +634,11 @@ plusW256' (W256 w3 w2 w1 w0) (W256 w3' w2' w1' w0') ci =
           (r3, co3) = plusW64' w3 w3' co2
       in (W256 r3 r2 r1 r0 , co3)
 
+<<<<<<< HEAD
 -- | Arithmetic mod 2^8 on nats. Increment.
+=======
+-- | Increment.
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 incW256 :: W256 -> W256
 incW256 = plusW256 oneW256
 
@@ -519,8 +646,11 @@ incW256 = plusW256 oneW256
 -- | W259
 -- |
 
+<<<<<<< HEAD
 data W259 = W259 W3 W256
 
+=======
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 zeroW259, oneW259, onesW259 :: W259
 zeroW259 = W259 zeroW3 zeroW256
 oneW259  = W259 zeroW3 zeroW256
@@ -532,7 +662,10 @@ eqW259 (W259 w1 w0) (W259 w1' w0') = w1 `eqW3` w1' && w0 `eqW256` w0'
 isZeroW259 :: W259 -> Bool
 isZeroW259 = eqW259 zeroW259
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 notW259 :: W259 -> W259
 notW259 (W259 w1 w0) = W259 (notW3 w1) (notW256 w0)
 
@@ -540,7 +673,10 @@ notW259 (W259 w1 w0) = W259 (notW3 w1) (notW256 w0)
 andW259 :: W259 -> W259 -> W259
 andW259 (W259 w1 w0) (W259 w1' w0') = W259 (andW3 w1 w1') (andW256 w0 w0')
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 -- | Bitwise or.
 orW259 :: W259 -> W259 -> W259
 orW259 (W259 w1 w0) (W259 w1' w0') = W259 (orW3 w1 w1') (orW256 w0 w0')
@@ -559,17 +695,27 @@ plusW259' (W259 w1 w0) (W259 w1' w0') ci =
           (r1, co1) = plusW3' w1 w1' co0
       in (W259 r1 r0 , co1)
 
+<<<<<<< HEAD
 -- | Arithmetic mod 2^8 on nats. Increment.
 incW259 :: W259 -> W259
 incW259 = plusW259 oneW259
 
 
+=======
+-- | Increment.
+incW259 :: W259 -> W259
+incW259 = plusW259 oneW259
+
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 -- |
 -- | W275
 -- |
 
+<<<<<<< HEAD
 data W275 = W275 W16 W259
 
+=======
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 zeroW275, oneW275, onesW275 :: W275
 zeroW275 = W275 zeroW16 zeroW259
 oneW275  = W275 zeroW16 zeroW259
@@ -588,7 +734,10 @@ notW275 (W275 w1 w0) = W275 (notW16 w1) (notW259 w0)
 andW275 :: W275 -> W275 -> W275
 andW275 (W275 w1 w0) (W275 w1' w0') = W275 (andW16 w1 w1') (andW259 w0 w0')
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
 -- | Bitwise or.
 orW275 :: W275 -> W275 -> W275
 orW275 (W275 w1 w0) (W275 w1' w0') = W275 (orW16 w1 w1') (orW259 w0 w0')
@@ -607,6 +756,13 @@ plusW275' (W275 w1 w0) (W275 w1' w0') ci =
           (r1, co1) = plusW16' w1 w1' co0
       in (W275 r1 r0 , co1)
 
+<<<<<<< HEAD
 -- | Arithmetic mod 2^8 on nats. Increment.
 incW275 :: W275 -> W275
 incW275 = plusW275 oneW275
+=======
+-- | Increment.
+incW275 :: W275 -> W275
+incW275 = plusW275 oneW275
+
+>>>>>>> 2203757a57aa1cec894c011dfc0dd2191cec5ae6
