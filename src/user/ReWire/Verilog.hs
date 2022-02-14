@@ -5,9 +5,9 @@ module ReWire.Verilog
       , (||), (&&)
       , (<<), (>>), (<<<), (>>>)
       , (<>)
-      , lnot, not, rAnd, rNAnd
+      , lnot, bnot, rAnd, rNAnd
       , rOr, rNor, rXor, rXNor
-      , lit
+      , lit, resize
       ) where
 
 import ReWire
@@ -170,12 +170,12 @@ lnot' :: a -> Bit
 lnot' = undefined
 
 -- | Bitwise not.
-{-# INLINE not #-}
-not :: a -> a
-not = extern "~" not'
+{-# INLINE bnot #-}
+bnot :: a -> a
+bnot = extern "~" bnot'
 
-not' :: a -> a
-not' = undefined
+bnot' :: a -> a
+bnot' = undefined
 
 -- | Reduction and.
 {-# INLINE rAnd #-}
@@ -233,3 +233,12 @@ lit = extern "resize" lit'
 
 lit' :: Integer -> a
 lit' = undefined
+
+-- | Turns any type into any other type! Truncates most significant bits or
+--   zero-pads to make it fit.
+{-# INLINE resize #-}
+resize :: a -> b
+resize = extern "resize" resize'
+
+resize' :: a -> b
+resize' = undefined

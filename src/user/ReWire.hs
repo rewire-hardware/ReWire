@@ -54,7 +54,7 @@ bit = GHC.error "Prim: bit extraction"
 
 -- | Project range of bits.
 {-# INLINE (@@) #-}
-(@@) :: a -> (Integer, Integer) -> a
+(@@) :: a -> (Integer, Integer) -> b
 a @@ (j, i) = bits a j i
 
 -- | Project single bit.

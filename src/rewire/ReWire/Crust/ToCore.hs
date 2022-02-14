@@ -82,8 +82,12 @@ transDefn start inps outps sts conMap = \ case
                   t                                                     -> failAt (ann t) $ "transDefn: definition of Main.start must have form `Main.start = unfold n m' where m has type PuRe s o."
 
 transExp :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.Exp -> TCM m [C.Exp]
-transExp = \ case
-      e@(M.App an _ _)                  -> case M.flattenApp e of
+transExp e = case e of
+      M.App an _ _                  -> case M.flattenApp e of
+            (M.Error an _ _ : _)        -> do
+                  sz     <- sizeOf an $ M.typeOf e
+                  pure [C.Call an sz (C.Extern (C.Sig an [] sz) "error") [] [] []]
+            (e' : _) | not $ M.concrete $ M.typeOf e' -> failAt an "transExp: could not infer a concrete type in an application."
             (M.Var _ _ x : args)        -> do
                   sz       <- sizeOf an $ M.typeOf e
                   args'    <- concat <$> mapM transExp args
@@ -99,14 +103,14 @@ transExp = \ case
                   arg'     <- transExp arg
                   argSize  <- fromIntegral <$> sizeOf an (M.typeOf arg)
                   unless (i < argSize && i >= 0) $
-                        failAt an $ "transExp: invalid bit index " <> showt i <> " in object size " <> showt argSize <> "."
+                        failAt (ann arg) $ "transExp: invalid bit index " <> showt i <> " in object size " <> showt argSize <> "."
                   pure [C.Call an sz C.Id arg' [C.PatWildCard an $ fromIntegral $ argSize - i - 1, C.PatVar an 1, C.PatWildCard an $ fromIntegral i] []]
             (M.Bits an _ : [arg, M.LitInt _ j, M.LitInt _ i])     -> do
                   sz       <- sizeOf an $ M.typeOf e
                   arg'     <- transExp arg
                   argSize  <- fromIntegral <$> sizeOf an (M.typeOf arg)
                   unless (j < argSize && i >= 0 && j >= 0 && j - i + 1 > 0) $
-                        failAt an $ "transExp: invalid bit range (" <> showt j <> ", " <> showt i <> ") from object size " <> showt argSize <> "."
+                        failAt (ann arg) $ "transExp: invalid bit slice (" <> showt j <> ", " <> showt i <> ") from object size " <> showt argSize <> "."
                   pure [C.Call an sz C.Id arg' [C.PatWildCard an $ fromIntegral $ argSize - j - 1, C.PatVar an $ fromIntegral $ j - i + 1, C.PatWildCard an $ fromIntegral i] []]
             (M.Con an t d : args)       -> do
                   (v, w) <- ctorTag an (snd $ M.flattenArrow t) d
@@ -116,9 +120,6 @@ transExp = \ case
                   let tag = C.Lit an (bitVec (fromIntegral w) v)
                       pad = C.Lit an (zeros $ fromIntegral sz - fromIntegral w - fromIntegral szArgs) -- ugh
                   pure ([tag, pad] <> args')
-            (M.Error an _ _ : _)        -> do
-                  sz     <- sizeOf an $ M.typeOf e
-                  pure [C.Call an sz (C.Extern (C.Sig an [] sz) "error") [] [] []]
             _                           -> failAt an "transExp: encountered ill-formed application."
       M.Var an t x                      -> lift (asks (Map.lookup x)) >>= \ case
             Nothing -> do
@@ -137,13 +138,13 @@ transExp = \ case
             (C.Call an <$> sizeOf an t <*> (callTarget =<< transExp f) <*> transExp e <*> transPat ps <*> transExp e2)
       M.Match an t e ps f Nothing       -> pure <$>
             (C.Call an <$> sizeOf an t <*> (callTarget =<< transExp f) <*> transExp e <*> transPat ps <*> pure [])
-      e@(M.LitInt an n)                 -> do
+      M.LitInt an n                 -> do
             sz <- sizeOf an $ M.typeOf e
             pure [C.Lit an $ bitVec (fromIntegral sz) n]
       M.Error an t _                    -> do
             sz     <- sizeOf an t
             pure [C.Call an sz (C.Extern (C.Sig an [] sz) "error") [] [] []]
-      e                                 -> failAt (ann e) $ "ToCore: unsupported expression: " <> prettyPrint e
+      _                                 -> failAt (ann e) $ "ToCore: unsupported expression: " <> prettyPrint e
       where callTarget :: MonadError AstError m => [C.Exp] -> m C.Target
             callTarget = \ case
                   [C.Call _ _ x _ _ _] -> pure x

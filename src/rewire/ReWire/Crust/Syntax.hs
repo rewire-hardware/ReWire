@@ -28,7 +28,7 @@ module ReWire.Crust.Syntax
       , flattenAllTyApp, resInputTy
       , mkTuple, mkTuplePat, mkTupleMPat, mkTupleTy
       , mkPair, mkPairPat, mkPairMPat
-      , kmonad, tycomp
+      , kmonad, tycomp, concrete
       , TypeAnnotated (..)
       ) where
 
@@ -628,6 +628,13 @@ isStateMonad ty = case rangeTy ty of
       TyApp an (TyApp _ (TyApp _ (TyCon _ (n2s -> "StT")) _) m) a -> isStateMonad (tycomp an m a)
       TyApp _ (TyCon _ (n2s -> "I")) _                            -> True
       _                                                           -> False
+
+concrete :: Ty -> Bool
+concrete = \ case
+      TyBlank _   -> False
+      TyVar _ _ _ -> False
+      TyCon _ _   -> True
+      TyApp _ a b -> concrete a && concrete b
 
 -- Orphans.
 

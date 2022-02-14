@@ -392,6 +392,7 @@ purgeUnused start (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ exter
             externCtors :: Data a => a -> [Name TyConId]
             externCtors = runQ $ (\ case
                         e@Extern {} -> ctorNames $ flattenAllTyApp $ rangeTy $ typeOf e
+                        e@Bits {}   -> ctorNames $ flattenAllTyApp $ rangeTy $ typeOf e
                         _           -> [])
                   ||? (\ case
                         Defn _ (n2s -> n) (Embed (Poly (unsafeUnbind -> (_, t)))) _ _ | n == start -> maybe [] (ctorNames . flattenAllTyApp) $ resInputTy t
