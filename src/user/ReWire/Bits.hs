@@ -22,7 +22,7 @@ data W15 = W15 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W16 = W16 W8 W8
 data W17 = W17 Bit W16
 
-data W18 = W18 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+-- data W18 = W18 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W19 = W19 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W20 = W20 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W21 = W21 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
@@ -74,8 +74,12 @@ data W63 = W63 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit B
 data W64 = W64 W32 W32
 
 data W256 = W256 W64 W64 W64 W64
+data W258 = W258 W2 W256
 data W259 = W259 W3 W256
+data W274 = W274 W7 W8 W259
 data W275 = W275 W16 W259
+
+data W257 = W257 Bit W256
 
 -- Bit operations
 
@@ -225,6 +229,56 @@ plusW16' (W16 w1 w0) (W16 w1' w0') ci =
 
 eqW16 :: W16 -> W16 -> Bool
 eqW16 (W16 w1 w0) (W16 w1' w0') = w1 `eqW8` w1' && w0 `eqW8` w0'
+-- |
+-- | W18 operations
+-- |
+
+data W18 = W18 Bit Bit W16
+
+zeroW18 :: W18
+zeroW18 = W18 C C zeroW16
+
+oneW18 :: W18
+oneW18 = W18 C C oneW16
+
+onesW18 :: W18
+onesW18 = W18 S S onesW16
+
+eqW18 :: W18 -> W18 -> Bool
+eqW18 (W18 b1 b0 w0) (W18 b1' b0' w0') = eqb b1 b1' && eqb b0 b0' && w0 `eqW16` w0'
+
+isZeroW18 :: W18 -> Bool
+isZeroW18 = eqW18 zeroW18
+
+notW18 :: W18 -> W18
+notW18 (W18 b1 b0 w0) = W18 (notb b1) (notb b0) (notW16 w0)
+
+-- | Bitwise and.
+andW18 :: W18 -> W18 -> W18
+andW18 (W18 b1 b0 w0) (W18 b1' b0' w0') = W18 (andb b1 b1') (andb b0 b0') (andW16 w0 w0')
+
+-- | Bitwise or.
+orW18 :: W18 -> W18 -> W18
+orW18 (W18 b1 b0 w0) (W18 b1' b0' w0') = W18 (orb b1 b1') (orb b0 b0') (orW16 w0 w0')
+
+-- | Bitwise xor.
+xorW18 :: W18 -> W18 -> W18
+xorW18 (W18 b1 b0 w0) (W18 b1' b0' w0') = W18 (xorb b1 b1') (xorb b0 b0') (xorW16 w0 w0')
+
+plusW18 :: W18 -> W18 -> W18
+plusW18 x y = fst (plusW18' x y C)
+
+-- | Ripple-carry adder.
+plusW18' :: W18 -> W18 -> Bit -> (W18, Bit)
+plusW18' (W18 b1 b0 w0) (W18 b1' b0' w0') ci =
+      let (r0, co0) = plusW16' w0 w0' ci
+          (r1, co1) = addb b0 b0' co0
+          (r2, co2) = addb b1 b1' co1
+      in (W18 r2 r1 r0, co2)
+
+-- | Arithmetic mod 2^8 on nats. Increment.
+incW18 :: W18 -> W18
+incW18 = plusW18 oneW18
 
 -- W32 operations
 
@@ -393,6 +447,9 @@ eqW7 (W7 a6 a5 a4 a3 a2 a1 a0) (W7 b6 b5 b4 b3 b2 b1 b0) = eqb a6 b6 && eqb a5 b
 
 isZeroW7 :: W7 -> Bool
 isZeroW7 = eqW7 zeroW7
+
+notW7 :: W7 -> W7
+notW7 (W7 a06 a05 a04 a03 a02 a01 a00) = W7 (notb a06) (notb a05) (notb a04) (notb a03) (notb a02) (notb a01) (notb a00)
 
 andW7 , orW7 , xorW7 :: W7 -> W7 -> W7
 andW7 (W7 a06 a05 a04 a03 a02 a01 a00) 
@@ -572,6 +629,53 @@ plusW256' (W256 w3 w2 w1 w0) (W256 w3' w2' w1' w0') ci =
 incW256 :: W256 -> W256
 incW256 = plusW256 oneW256
 
+
+-- |
+-- | W257
+-- |
+
+zeroW257, oneW257, onesW257 :: W257
+zeroW257 = W257 C zeroW256
+oneW257  = W257 C oneW256
+onesW257 = W257 S onesW256
+
+eqW257 :: W257 -> W257 -> Bool
+eqW257 (W257 w1 w0) (W257 w1' w0') = w1 `eqb` w1' && w0 `eqW256` w0'
+
+isZeroW257 :: W257 -> Bool
+isZeroW257 = eqW257 zeroW257
+
+
+notW257 :: W257 -> W257
+notW257 (W257 w1 w0) = W257 (notb w1) (notW256 w0)
+
+-- | Bitwise and.
+andW257 :: W257 -> W257 -> W257
+andW257 (W257 w1 w0) (W257 w1' w0') = W257 (andb w1 w1') (andW256 w0 w0')
+
+
+-- | Bitwise or.
+orW257 :: W257 -> W257 -> W257
+orW257 (W257 w1 w0) (W257 w1' w0') = W257 (orb w1 w1') (orW256 w0 w0')
+
+-- | Bitwise xor.
+xorW257 :: W257 -> W257 -> W257
+xorW257 (W257 w1 w0) (W257 w1' w0') = W257 (xorb w1 w1') (xorW256 w0 w0')
+
+plusW257 :: W257 -> W257 -> W257
+plusW257 x y = fst (plusW257' x y C)
+
+-- | Ripple-carry adder.
+plusW257' :: W257 -> W257 -> Bit -> (W257, Bit)
+plusW257' (W257 w1 w0) (W257 w1' w0') ci =
+      let (r0, co0) = plusW256' w0 w0' ci
+          (r1, co1) = addb w1 w1' co0
+      in (W257 r1 r0 , co1)
+
+-- | Arithmetic mod 2^8 on nats. Increment.
+incW257 :: W257 -> W257
+incW257 = plusW257 oneW257
+
 -- |
 -- | W259
 -- |
@@ -615,6 +719,53 @@ plusW259' (W259 w1 w0) (W259 w1' w0') ci =
 -- | Increment.
 incW259 :: W259 -> W259
 incW259 = plusW259 oneW259
+
+-- |
+-- | W274
+-- |
+
+zeroW274, oneW274, onesW274 :: W274
+zeroW274 = W274 zeroW7 zeroW8 zeroW259
+oneW274  = W274 zeroW7 zeroW8 oneW259
+onesW274 = W274 onesW7 onesW8 onesW259
+
+
+eqW274 :: W274 -> W274 -> Bool
+eqW274 (W274 w2 w1 w0) (W274 w2' w1' w0') = w2 `eqW7` w2' && w1 `eqW8` w1' && w0 `eqW259` w0'
+
+isZeroW274 :: W274 -> Bool
+isZeroW274 = eqW274 zeroW274
+
+notW274 :: W274 -> W274
+notW274 (W274 w2 w1 w0) = W274 (notW7 w2) (notW8 w1) (notW259 w0)
+
+-- | Bitwise and.
+andW274 :: W274 -> W274 -> W274
+andW274 (W274 w2 w1 w0) (W274 w2' w1' w0') = W274 (andW7 w2 w2') (andW8 w1 w1') (andW259 w0 w0')
+
+-- | Bitwise or.
+orW274 :: W274 -> W274 -> W274
+orW274 (W274 w2 w1 w0) (W274 w2' w1' w0') = W274 (orW7 w2 w2') (orW8 w1 w1') (orW259 w0 w0')
+
+-- | Bitwise xor.
+xorW274 :: W274 -> W274 -> W274
+xorW274 (W274 w2 w1 w0) (W274 w2' w1' w0') = W274 (xorW7 w2 w2') (xorW8 w1 w1') (xorW259 w0 w0')
+
+plusW274 :: W274 -> W274 -> W274
+plusW274 x y = fst (plusW274' x y C)
+
+-- | Ripple-carry adder.
+plusW274' :: W274 -> W274 -> Bit -> (W274, Bit)
+plusW274' (W274 w2 w1 w0) (W274 w2' w1' w0') ci =
+      let (r0, co0) = plusW259' w0 w0' ci
+          (r1, co1) = plusW8' w1 w1' co0
+          (r2, co2) = plusW7' w2 w2' co1
+      in (W274 r2 r1 r0 , co2)
+
+-- | Increment.
+incW274 :: W274 -> W274
+incW274 = plusW274 oneW274
+
 
 -- |
 -- | W275
