@@ -85,7 +85,7 @@ unify :: MonadError AstError m => Annote -> Ty -> Ty -> TCM m ()
 unify an t1 t2 = do
       s  <- get
       mgu (subst s t1) (subst s t2) >>= maybe
-            (failAt an $ "Types do not unify:\n" <> prettyPrint (subst s t1) <> "\n" <> prettyPrint (subst s t2))
+            (failAt an $ "Types do not unify. Expected and got, respectively:\n" <> prettyPrint (subst s t1) <> "\n" <> prettyPrint (subst s t2))
             (modify . (@@))
 
 inst :: (MonadState TySub m, Fresh m) => Poly -> m Ty
@@ -123,7 +123,7 @@ tcPat t = \ case
                         then failAt an "Pattern is not applied to enough arguments"
                         else do
                               ps' <- zipWithM tcPat targs ps
-                              unify an t tres
+                              unify an tres t
                               pure $ PatCon an (Embed t) (Embed i) ps'
       PatVar an _ x            -> pure $ PatVar an (Embed t) x
       PatWildCard an _         -> pure $ PatWildCard an (Embed t)
@@ -141,7 +141,7 @@ tcMatchPat t = \ case
                         then failAt an "Pattern is not applied to enough arguments"
                         else do
                               ps' <- zipWithM tcMatchPat targs ps
-                              unify an t tres
+                              unify an tres t
                               pure $ MatchPatCon an t i ps'
       MatchPatVar an _      -> pure $ MatchPatVar an t
       MatchPatWildCard an _ -> pure $ MatchPatWildCard an t
@@ -156,7 +156,7 @@ tcExp = \ case
                   tes   =  map snd ress
             tv          <- freshv
             let tf'     =  foldr arr tv tes
-            unify (ann e) tf tf'
+            unify (ann e) tf' tf
             pure (foldl' (App $ ann e) ef' es', tv)
       Lam an _ e             -> do
             (x, e')   <- unbind e
