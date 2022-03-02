@@ -13,7 +13,7 @@ import ReWire.Core.Interp (interp, Ins, run)
 import ReWire.Crust.Cache (printHeader)
 -- import ReWire.VHDL.ToLoFIRRTL (toLoFirrtl)
 import ReWire.Flags (Flag (..))
-import ReWire.Error (runSyntaxError, SyntaxErrorT)
+import ReWire.Error (AstError, runSyntaxError, SyntaxErrorT)
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad ((>=>), when, unless, msum)
@@ -127,7 +127,7 @@ main = do
                   runSyntaxError (loadProgram flags lp filename >>= compile)
                         >>= either ((>> exitFailure) . T.hPutStrLn stderr . prettyPrint) pure
 
-                  where compile :: C.Program -> SyntaxErrorT IO ()
+                  where compile :: C.Program -> SyntaxErrorT AstError IO ()
                         compile a = do
                               b <- (mergeSlices >=> mergeSlices >=> partialEval >=> mergeSlices >=> purgeUnused) a -- TODO(chathhorn)
                               when (FlagV `elem` flags) $ liftIO $ putStrLn "Debug: [Pass 9] Reduced core."
@@ -142,13 +142,13 @@ main = do
                                           -- compileProgram flags a >>= toLoFirrtl >>= writeOutput -- TODO(chathhorn): a => b
                                       | FlagVerilog   `elem` flags -> Verilog.compileProgram flags b >>= writeOutput
                                       | flagInterp flags           -> do
-                                          ips <- liftIO $ YAML.decodeFileEither $ interpInput flags
-                                          let outs = run (interp flags b) (boundInput (ncycles flags) $ fromRight mempty ips)
+                                          ips  <- liftIO $ YAML.decodeFileEither $ interpInput flags
+                                          outs <- run (interp flags b) (boundInput (ncycles flags) $ fromRight mempty ips)
                                           fout <- liftIO $ getOutFile flags filename
                                           liftIO $ YAML.encodeFile fout outs
                                       | otherwise                  -> VHDL.compileProgram flags a >>= writeOutput
 
-                        writeOutput :: Pretty a => a -> SyntaxErrorT IO ()
+                        writeOutput :: Pretty a => a -> SyntaxErrorT AstError IO ()
                         writeOutput a = do
                               fout <- liftIO $ getOutFile flags filename
                               liftIO $ T.writeFile fout $ prettyPrint a

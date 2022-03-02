@@ -37,4 +37,3 @@ pass guts = do
             printBind dflags bndr@(Rec bs) = do
                   putMsgS $ "Recursive binding, names: " ++ concatMap ((++ " ") . showSDoc dflags . ppr . fst) bs
                   pure bndr
-            printBind _ bndr = pure bndr

@@ -2,8 +2,8 @@
 module ReWire.Core.Transform ( mergeSlices , purgeUnused, partialEval ) where
 
 import ReWire.Core.Syntax
-import ReWire.Core.Interp (interpDefn, interpExps, patMatches, patApply', DefnMap, subRange)
-import ReWire.Annotation (Annote, unAnn, ann)
+import ReWire.Core.Interp (interpExps, DefnMap)
+import ReWire.Annotation (unAnn)
 import Control.Arrow ((&&&))
 import Control.Monad.Reader (runReaderT, MonadReader (..), asks)
 import Data.Containers.ListUtils (nubOrd)
@@ -170,52 +170,15 @@ purgeUnused (Program start@(StartDefn _ _ loop state0) ds) = do
             defns :: DefnBodyMap
             defns = Map.fromList $ map (defnName &&& defnBody) ds
 
+-- | Attempt to reduce definition bodies to a constant literal value.
 partialEval :: MonadFail m => Program -> m Program
 partialEval (Program start ds) = pure $ Program start $ map (evalDefn defns) ds
       where defns :: DefnMap
             defns = Map.fromList $ map (defnName &&& id) ds
 
 evalDefn :: DefnMap -> Defn -> Defn
-evalDefn defns (Defn an n sig body) = Defn an n sig $ evalExps defns body
-
-evalExps :: DefnMap -> [Exp] -> [Exp]
-evalExps _     []         = []
-evalExps defns es@(e : _) = if all isValue es' then [Lit (ann e) $ interpExps defns es' []] else es'
-      where es' :: [Exp]
-            es' = map (evalExp defns) es
-
-isValue :: Exp -> Bool
-isValue = \ case
-      Lit {} -> True
-      _      -> False
-
-toValue :: Exp -> Maybe BV
-toValue = \ case
-      Lit _ bv -> Just bv
-      _        -> Nothing
-
-toValue' :: [Exp] -> Maybe BV
-toValue' = \ case
-      [e] -> toValue e
-      _   -> Nothing
-
-evalExp :: DefnMap -> Exp -> Exp
-evalExp defns =  \ case
-      Call an _ (Global (lkupDefn -> Just g)) (evalExps' -> Just v) ps els -> if patMatches v ps
-            then Lit an $ interpDefn defns g $ patApply v ps
-            else deplural an $ evalExps defns els
-      Call an sz t es ps els       -> Call an sz t (evalExps defns es) ps (evalExps defns els)
-      e                            -> e
-      where lkupDefn :: Name -> Maybe Defn
-            lkupDefn = flip Map.lookup defns
-
-            evalExps' :: [Exp] -> Maybe BV
-            evalExps' = toValue' . evalExps defns
-
-            deplural :: Annote -> [Exp] -> Exp
-            deplural an = \ case
-                  [e] -> e
-                  es  -> let sz = sum $ map sizeOf es in Call an sz Id es [PatVar an sz] []
-
-patApply :: BV -> [Pat] -> BV
-patApply x = patApply' (\ i j -> subRange (i, j) x)
+evalDefn defns (Defn an n sig body) = Defn an n sig $ evalExps body
+      where evalExps :: [Exp] -> [Exp]
+            evalExps es = case interpExps defns [] es of
+                  Left (es', _) -> es'
+                  Right bv      -> [Lit an bv]

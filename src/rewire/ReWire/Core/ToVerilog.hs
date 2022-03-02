@@ -25,6 +25,10 @@ import qualified Data.BitVector as BV
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 
+import Debug.Trace (trace)
+import ReWire.Pretty (prettyPrint)
+import Data.Text (unpack)
+
 type Fresh = Int
 type DefnMap = HashMap GId [C.Exp]
 type SigInfo = (Fresh, [Signal])
@@ -54,7 +58,7 @@ compileProgram flags (C.Program st ds)
 
 compileStartDefn :: (MonadError AstError m, MonadFail m, MonadReader DefnMap m)
                  => [Flag] -> C.StartDefn -> m Module
-compileStartDefn flags (C.StartDefn an w loop state0) = do
+compileStartDefn flags (C.StartDefn _ w loop state0) = do
 
       ((rStart, ssStart), (fr, startSigs)) <- flip runStateT sigInfo0 $ compileCall (FlagFlatten : flags) state0 (resumptionSize w) []
 
@@ -96,8 +100,8 @@ compileStartDefn flags (C.StartDefn an w loop state0) = do
             -- | Initial/reset state.
             initState :: V.Exp -> Maybe V.Exp
             initState e = case (expToBV e, fromIntegral (sum $ snd <$> stateWires w)) of
-                  (Just bv, n) | n > 0 -> pure $ bvToExp $ subRange (0, n - 1) bv
-                  _                    -> Nothing
+                  (Just bv, n) | n > 0 -> trace ("State0: " <> show n) $ pure $ bvToExp $ subRange (0, n - 1) bv
+                  (_, n)               -> trace ("State1: " <> show n) $ Nothing
 
             lvPause :: LVal
             lvPause = mkLVals $ map (Name . fst) $ pauseWires w
@@ -235,7 +239,7 @@ expToBV = \ case
       LitBits bv -> Just bv
       Repl n e   -> BV.replicate n <$> expToBV e
       Concat es  -> BV.concat <$> mapM expToBV es
-      _          -> Nothing
+      e          -> trace ("\n\nexpToBV got:\n" <> unpack (prettyPrint e) <> "\n\n") $ Nothing
 
 -- | Size of the inclusive range [i, j].
 nbits :: Index -> Index -> Size

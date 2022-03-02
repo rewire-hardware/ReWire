@@ -36,7 +36,7 @@ import Language.Haskell.Exts.Fixity (Fixity (..), AppFixity (..))
 import Language.Haskell.Exts.Pretty (prettyPrint)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo, noSrcSpan)
 import System.FilePath (joinPath, (<.>))
-import Prettyprinter (Pretty (..), nest, vsep, (<+>))
+import Prettyprinter (Pretty (..), nest, vsep)
 
 import Data.Map.Strict.Internal (Map (..))
 import qualified Data.Map.Strict                        as Map
@@ -201,7 +201,7 @@ extend ns kvs rn@Renamer { rnNames } = rn { rnNames = Map.fromList (map (((ns,) 
 exclude :: QNamish a => Namespace -> [a] -> Renamer -> Renamer
 exclude ns ks rn@Renamer { rnNames } = rn { rnNames = foldr (Map.delete . (ns,) . toQNamish) rnNames ks }
 
-fixFixity :: (MonadFail m, MonadState Annote m) => Renamer -> S.Module SrcSpanInfo -> m (S.Module SrcSpanInfo)
+fixFixity :: (MonadFail m, MonadState AstError m) => Renamer -> S.Module SrcSpanInfo -> m (S.Module SrcSpanInfo)
 fixFixity Renamer { rnFixities } m = do
       mark $ ann m
       deuniquifyLocalOps <$> (fixLocalOps m >>= applyFixities (Set.toList rnFixities))

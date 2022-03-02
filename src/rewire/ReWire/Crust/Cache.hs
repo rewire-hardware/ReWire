@@ -48,11 +48,11 @@ import qualified Language.Haskell.Exts.Pretty as P
 
 import Language.Haskell.Exts.Syntax hiding (Annotation, Exp, Module (..), Namespace, Name, Kind)
 
-type Cache = ReaderT LoadPath (StateT ModCache (FreshMT (SyntaxErrorT IO)))
+type Cache = ReaderT LoadPath (StateT ModCache (FreshMT (SyntaxErrorT AstError IO)))
 type LoadPath = [FilePath]
 type ModCache = HashMap FilePath (Module, Exports)
 
-runCache :: Cache a -> LoadPath -> SyntaxErrorT IO a
+runCache :: Cache a -> LoadPath -> SyntaxErrorT AstError IO a
 runCache m lp = fst <$> runFreshMT (runStateT (runReaderT m lp) mempty)
 
 mkRenamer :: [Flag] -> S.Module SrcSpanInfo -> Cache Renamer

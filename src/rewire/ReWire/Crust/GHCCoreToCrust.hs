@@ -8,9 +8,7 @@ import qualified ReWire.Crust.Syntax          as M
 import ReWire.Crust.Syntax ((|->))
 
 import GHC.Plugins
-      ( CoreProgram (..)
-      , CoreBind
-      , Bind (..), Expr (..)
+      ( Bind (..), Expr (..)
       , TypeEnv, ppr, Type, Var
       , splitTyConApp_maybe, getTyVar_maybe, splitForAllTy_maybe
       , splitFunTy_maybe
@@ -85,9 +83,9 @@ toCase scr = \ case
             alts' <- toCase scr alts
             pat'  <- toPat c vs
             pure $ Just $ M.Case noAnn tblank scr (bind pat' e') alts'
-      ((LitAlt lit, _, e) : alts) -> do
-            e'    <- toExp e
-            alts' <- toCase scr alts
+      ((LitAlt _lit, _, e) : alts) -> do
+            _e'    <- toExp e
+            _alts' <- toCase scr alts
             -- pat'  <- toPat c vs
             pure $ Just $ M.Error noAnn tblank "lit case"
       [(DEFAULT, _, e)] -> do

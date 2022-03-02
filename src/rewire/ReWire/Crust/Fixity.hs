@@ -8,7 +8,6 @@ module ReWire.Crust.Fixity
 
 import ReWire.SYB
 import ReWire.Error
-import ReWire.Annotation (Annote)
 
 import Control.Monad (void, (>=>))
 import Control.Monad.Identity (Identity (..))
@@ -22,7 +21,7 @@ import Language.Haskell.Exts.Syntax
 type FreshT = StateT Int
 type OpRenamer = QOp SrcSpanInfo -> QOp SrcSpanInfo
 
-mark' :: MonadState Annote m => SrcSpanInfo -> FreshT m ()
+mark' :: MonadState AstError m => SrcSpanInfo -> FreshT m ()
 mark' = lift . mark
 
 fresh :: Monad m => FreshT m (ModuleName ())
@@ -67,9 +66,9 @@ getFixities = foldr toFixity []
 --   to be buggy and not allow inner fixity declarations to shadow outer ones (on
 --   operators with the same name).
 --   Note: applyFixities annoyingly fixes the annotation type as SrcSpanInfo.
-fixLocalOps :: (MonadState Annote m, MonadFail m) => Module SrcSpanInfo -> m (Module SrcSpanInfo)
+fixLocalOps :: (MonadState AstError m, MonadFail m) => Module SrcSpanInfo -> m (Module SrcSpanInfo)
 fixLocalOps = (fmap fst . flip runStateT 0 . runPureT (renameDecl id ||> TId)) >=> applyGlobFixities
-      where applyGlobFixities :: (MonadState Annote m, MonadFail m) => Module SrcSpanInfo -> m (Module SrcSpanInfo)
+      where applyGlobFixities :: (MonadState AstError m, MonadFail m) => Module SrcSpanInfo -> m (Module SrcSpanInfo)
             applyGlobFixities m@(Module _ (Just (ModuleHead _ mn _ _)) _ _ ds)
                                                           = mark (ann m) >> applyFixities (getFixities ds ++ getFixities' (void mn) ds) m
             applyGlobFixities m@(Module _ Nothing _ _ ds) = mark (ann m) >> applyFixities (getFixities ds) m
@@ -80,7 +79,7 @@ deuniquifyLocalOps = runIdentity . runPureT ((||> TId) $ \ case
       QVarOp l1 (Qual l2 (ModuleName _ ('$' : _)) n) -> pure $ QVarOp l1 $ UnQual l2 n
       (x :: QOp SrcSpanInfo)                         -> pure x)
 
-renameDecl :: (MonadState Annote m, MonadFail m) => OpRenamer -> Decl SrcSpanInfo -> FreshT m (Decl SrcSpanInfo)
+renameDecl :: (MonadState AstError m, MonadFail m) => OpRenamer -> Decl SrcSpanInfo -> FreshT m (Decl SrcSpanInfo)
 renameDecl rn = \ case
       PatBind l1 p (UnGuardedRhs l2 e) Nothing -> do
             mark' l1
@@ -95,7 +94,7 @@ renameDecl rn = \ case
             FunBind l <$> mapM (renameMatch rn) ms
       d -> pure d
 
-renameMatch :: (MonadState Annote m, MonadFail m) => OpRenamer -> Match SrcSpanInfo -> FreshT m (Match SrcSpanInfo)
+renameMatch :: (MonadState AstError m, MonadFail m) => OpRenamer -> Match SrcSpanInfo -> FreshT m (Match SrcSpanInfo)
 renameMatch rn = \ case
       Match l1 n ps (UnGuardedRhs l2 e) Nothing -> do
             mark' l1
@@ -116,7 +115,7 @@ renameMatch rn = \ case
             pure $ InfixMatch l1 p n ps (UnGuardedRhs l2 e') $ Just (BDecls l3 ds')
       m -> pure m
 
-renameExp :: (MonadState Annote m, MonadFail m) => OpRenamer -> Exp SrcSpanInfo -> FreshT m (Exp SrcSpanInfo)
+renameExp :: (MonadState AstError m, MonadFail m) => OpRenamer -> Exp SrcSpanInfo -> FreshT m (Exp SrcSpanInfo)
 renameExp rn = \ case
       InfixApp l e1 op e2     -> do
             mark' l
@@ -140,7 +139,7 @@ renameExp rn = \ case
       RightSection l op e     -> mark' l >> RightSection l op <$> renameExp rn e
       e                       -> pure e
 
-renameAlt :: (MonadState Annote m, MonadFail m) => OpRenamer -> Alt SrcSpanInfo -> FreshT m (Alt SrcSpanInfo)
+renameAlt :: (MonadState AstError m, MonadFail m) => OpRenamer -> Alt SrcSpanInfo -> FreshT m (Alt SrcSpanInfo)
 renameAlt rn = \ case
       Alt l1 p (UnGuardedRhs l2 e) Nothing -> do
             mark' l1
@@ -152,7 +151,7 @@ renameAlt rn = \ case
             pure $ Alt l1 p (UnGuardedRhs l2 e') $ Just $ BDecls l3 ds'
       a                                  -> pure a
 
-renameStmts :: (MonadState Annote m, MonadFail m) => OpRenamer -> [Stmt SrcSpanInfo] -> FreshT m [Stmt SrcSpanInfo]
+renameStmts :: (MonadState AstError m, MonadFail m) => OpRenamer -> [Stmt SrcSpanInfo] -> FreshT m [Stmt SrcSpanInfo]
 renameStmts _ [] = pure []
 renameStmts rn (Generator l p e : stmts) = do
       mark' l
@@ -174,7 +173,7 @@ renameStmts rn (LetStmt l1 (BDecls l2 ds) : stmts) = do
       pure $ LetStmt l1 (BDecls l2 ds'') : stmts''
 renameStmts _ stmts = pure stmts
 
-renameExpInScope :: (MonadState Annote m, MonadFail m) => OpRenamer -> [Decl SrcSpanInfo] -> Exp SrcSpanInfo -> FreshT m (Exp SrcSpanInfo, [Decl SrcSpanInfo])
+renameExpInScope :: (MonadState AstError m, MonadFail m) => OpRenamer -> [Decl SrcSpanInfo] -> Exp SrcSpanInfo -> FreshT m (Exp SrcSpanInfo, [Decl SrcSpanInfo])
 renameExpInScope rn ds e = do
       m    <- fresh
       e'   <- renameExp (enterScope m ds rn) e
