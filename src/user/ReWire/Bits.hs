@@ -72,14 +72,26 @@ data W62 = W62 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit B
 data W63 = W63 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 
 data W64 = W64 W32 W32
+data W65 = W65 Bit W32 W32
+data W66 = W66 Bit Bit W32 W32
+data W67 = W67 Bit Bit Bit W32 W32
+
+data W128 = W128 W64 W64
+data W129 = W129 Bit W64 W64
+data W130 = W130 Bit Bit W64 W64
+data W131 = W131 Bit Bit Bit W64 W64
+data W132 = W132 Bit Bit Bit Bit W64 W64
+data W133 = W133 Bit Bit Bit Bit Bit W64 W64
+data W134 = W134 Bit Bit Bit Bit Bit Bit W64 W64
 
 data W256 = W256 W64 W64 W64 W64
+data W257 = W257 Bit W256
 data W258 = W258 W2 W256
 data W259 = W259 W3 W256
+data W260 = W260 W4 W256
+
 data W274 = W274 W7 W8 W259
 data W275 = W275 W16 W259
-
-data W257 = W257 Bit W256
 
 -- Bit operations
 
@@ -582,6 +594,27 @@ plusW33' (W33 b w1 w0) (W33 b' w1' w0') ci =
 -- | Increment.
 incW33 :: W33 -> W33
 incW33 = plusW33 oneW33
+
+-- |
+-- | W128
+-- |
+
+zeroW128 :: W128
+zeroW128  = W128 zeroW64 zeroW64
+
+-- |
+-- | W129
+-- |
+
+zeroW129 :: W129
+zeroW129  = W129 C zeroW64 zeroW64
+
+-- |
+-- | W131
+-- |
+
+zeroW131 :: W131
+zeroW131  = W131 C C C zeroW64 zeroW64
 
 -- |
 -- | W256
