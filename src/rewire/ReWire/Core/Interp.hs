@@ -35,6 +35,7 @@ import Control.Monad.Except (throwError)
 import Data.BitVector (BV, bitVec, (@@), nat, width, showHex, (>>.), (<<.), ashr)
 import Data.Bits (Bits (..))
 import Data.Foldable (foldlM)
+import Data.Functor ((<&>))
 import Data.HashMap.Strict (HashMap)
 import Data.List (foldl')
 import Data.Machine ((<~), source)
@@ -75,14 +76,14 @@ interp _flags (Program st ds) = interpStartDefn defnMap st
 
 interpStartDefn :: MonadError AstError m => DefnMap -> StartDefn -> MealyT m Ins Outs
 interpStartDefn defns (StartDefn _ w loop' state0') = MealyT $ \ _ -> do
-            so <- splitOutputs <$> reThrow (interpDefn defns state0 mempty)
+            so <- splitOutputs <$> interpDefn defns state0 mempty
             pure (filterOutput so, unfoldMealyT f $ filterState so)
       -- So:        loop   :: ((r, s), i) -> R (o, s)
       --            state0 :: R (o, s)
       --            where R = Done (a, s) | Pause (o, r, s)
       -- Assuming neither should ever be Done.
       where f :: MonadError AstError m => Sts -> Ins -> m (Outs, Sts)
-            f s i = (filterOutput &&& filterState) <$> splitOutputs <$> (reThrow $ interpDefn defns loop $ joinInputs $ (Map.map outValue s) <> i)
+            f s i = (filterOutput &&& filterState) . splitOutputs <$> interpDefn defns loop (joinInputs $ Map.map outValue s <> i)
 
             splitOutputs :: BV -> Outs
             splitOutputs b = Map.fromList $ zip (map fst $ pauseWires w) $ map Out $ toSubRanges b $ map snd $ pauseWires w
@@ -108,12 +109,7 @@ interpStartDefn defns (StartDefn _ w loop' state0') = MealyT $ \ _ -> do
             Just loop   = Map.lookup loop' defns
             Just state0 = Map.lookup state0' defns
 
-            reThrow :: MonadError AstError m => Either AstError BV -> m BV
-            reThrow = \ case
-                  Left err -> throwError err
-                  Right bv -> pure bv
-
-interpDefn :: DefnMap -> Defn -> BV -> Either AstError BV
+interpDefn :: MonadError AstError m => DefnMap -> Defn -> BV -> m BV
 interpDefn defns (Defn _ _ (Sig _ inSizes outSize) body) v = trunc <$> reThrow (interpExps defns (split inSizes v) body)
       where split :: [Size] -> BV -> [BV]
             split = flip toSubRanges
@@ -135,10 +131,12 @@ interpExps defns lvars es = case foldMapM (interpExp defns lvars) es of
                   Left (e', _) -> e'
                   Right bv     -> Lit (ann e) bv
 
+-- | Attempts to evalute a Core expression to a value. On error, returns a
+--  potentially-partially-evaluated expression.
 interpExp :: DefnMap -> [BV] -> Exp -> Either (Exp, AstError) BV
 interpExp defns lvars e = case e of
       LVar _ _ (lkupVal -> Just v) -> pure v
-      LVar an _  _                 -> failAt' e an $ "Core/Interp: interpExp: encountered unknown LVar."
+      LVar {}                      -> failAt' e (ann e) "Core/Interp: interpExp: encountered unknown LVar."
       Lit  _ bv                    -> pure bv
       Call _ _ (Global (lkupDefn -> Just g)) es ps els -> do
             (es', els', call')  <- callExps es els
@@ -182,14 +180,12 @@ interpExp defns lvars e = case e of
             lkupDefn = flip Map.lookup defns
 
             callExps :: MonadError (Exp, AstError) m => [Exp] -> [Exp] -> m (BV, BV, Exp)
-            callExps es els =
-                  let mes   = interpExps defns lvars es
-                      mels  = interpExps defns lvars els
-                      call' = reCall mes mels e
-                  in case (mes, mels) of
-                        (Left (_, err), _)      -> throwError (call', err)
-                        (_, Left (_, err))      -> throwError (call', err)
-                        (Right es', Right els') -> pure (es', els', call')
+            callExps es els = case (,) <$> mes <*> mels of
+                  Left (_, err)     -> throwError (call', err)
+                  Right (es', els') -> pure (es', els', call')
+                  where mes   = interpExps defns lvars es
+                        mels  = interpExps defns lvars els
+                        call' = reCall mes mels e
 
             reCall :: Either ([Exp], AstError) BV -> Either ([Exp], AstError) BV -> Exp -> Exp
             reCall mes mels = \ case
@@ -284,18 +280,18 @@ pausePadding :: Wiring -> [(Name, Size)]
 pausePadding w | paddingSize > 0 = [("__padding", fromIntegral paddingSize)]
                | otherwise       = []
       where paddingSize :: Int
-            paddingSize = (fromIntegral $ resumptionSize w)              -- sizeof PuRe
+            paddingSize = fromIntegral (resumptionSize w)              -- sizeof PuRe
                         - 1                                              -- count (Done | Pause)
-                        - (fromIntegral $ sum $ snd <$> resumptionTag w) -- count R_ ctors
-                        - (fromIntegral $ sum $ snd <$> outputWires w)   --  
-                        - (fromIntegral $ sum $ snd <$> stateWires w)    -- 
+                        - fromIntegral (sum $ snd <$> resumptionTag w) -- count R_ ctors
+                        - fromIntegral (sum $ snd <$> outputWires w)   --  
+                        - fromIntegral (sum $ snd <$> stateWires w)    -- 
 
 resumptionTag :: Wiring -> [(Name, Size)]
 resumptionTag w | tagSize > 0 = [("__resumption_tag", fromIntegral tagSize)]
                 | otherwise   = []
       where tagSize :: Int
             tagSize = case sigLoop w of
-                  Sig _ (a : _) _ -> fromIntegral a - (fromIntegral $ sum $ snd <$> stateWires w)
+                  Sig _ (a : _) _ -> fromIntegral a - fromIntegral (sum $ snd <$> stateWires w)
                   _               -> 0
 
 resumptionSize :: Wiring -> Size
@@ -330,8 +326,8 @@ rst flags | FlagNoReset `elem` flags || FlagNoClock `elem` flags = []
                   _               -> Nothing) flags
 
 foldMapM :: (Monad m, Monoid w, Foldable t) => (a -> m w) -> t a -> m w
-foldMapM f = foldlM (\ acc a -> f a >>= pure . mappend acc) mempty
+foldMapM f = foldlM (\ acc a -> f a <&> mappend acc) mempty
 
 unfoldMealyT :: Applicative m => (s -> a -> m (b, s)) -> s -> MealyT m a b
 unfoldMealyT f = go
-      where go s = MealyT $ \ a -> (,) <$> (fst <$> f s a) <*> (go <$> snd <$> f s a)
+      where go s = MealyT $ \ a -> (,) <$> (fst <$> f s a) <*> (go . snd <$> f s a)

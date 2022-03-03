@@ -631,9 +631,9 @@ isStateMonad ty = case rangeTy ty of
 
 concrete :: Ty -> Bool
 concrete = \ case
-      TyBlank _   -> False
-      TyVar _ _ _ -> False
-      TyCon _ _   -> True
+      TyBlank {}  -> False
+      TyVar {}    -> False
+      TyCon {}    -> True
       TyApp _ a b -> concrete a && concrete b
 
 -- Orphans.

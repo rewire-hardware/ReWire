@@ -8,7 +8,7 @@ import ReWire.Pretty
 import ReWire.Unbound (Name, Fresh, runFreshM, Embed (..) , unbind, n2s)
 
 import Control.Arrow ((&&&))
-import Control.Monad.State (StateT (..), MonadState, get, put, unless)
+import Control.Monad.State (StateT (..), MonadState, get, gets, put, unless)
 import Control.Monad.Reader (MonadReader (..), ReaderT (..), asks, lift)
 import Data.HashMap.Strict (HashMap)
 import Data.Maybe (fromMaybe)
@@ -27,9 +27,9 @@ type ConMap = (HashMap (Name M.TyConId) [Name M.DataConId], HashMap (Name M.Data
 type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) C.LId) m)
 
 toCore :: (Fresh m, MonadError AstError m, MonadFail m) => Text -> [Text] -> [Text] -> [Text] -> M.FreeProgram -> m C.Program
-toCore start inps outps sts (ts, _, vs) = fst <$> (flip runStateT mempty $ do
+toCore start inps outps sts (ts, _, vs) = fst <$> flip runStateT mempty (do
       mapM_ ((`runReaderT` conMap) . sizeOf noAnn . M.TyCon noAnn . M.dataName) ts
-      intSz <- maximum <$> Map.elems <$> get
+      intSz <- gets $ maximum . Map.elems
       put $ Map.singleton (M.intTy noAnn) intSz -- TODO(chathhorn): note the sizeof Integer is the max of all non-Integer-containing types.
       vs'    <- mapM (transDefn start inps outps sts conMap) $ filter (not . M.isPrim . M.defnName) vs
       case partitionEithers vs' of
@@ -79,7 +79,7 @@ transDefn start inps outps sts conMap = \ case
       where getRegsTy :: MonadError AstError m => M.Ty -> m M.Ty
             getRegsTy = \ case
                   M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "PuRe")) s) _ -> pure s
-                  t                                                     -> failAt (ann t) $ "transDefn: definition of Main.start must have form `Main.start = unfold n m' where m has type PuRe s o."
+                  t                                                     -> failAt (ann t) "transDefn: definition of Main.start must have form `Main.start = unfold n m' where m has type PuRe s o."
 
 transExp :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.Exp -> TCM m [C.Exp]
 transExp e = case e of

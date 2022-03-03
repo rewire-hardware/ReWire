@@ -143,7 +143,7 @@ getProgram flags fp = do
        >=> pDebug' "Lifting lambdas (pre-purification)."
        >=> liftLambdas
        >=> pDebug' "Removing unused definitions."
-       >=> pure . (purgeUnused start)
+       >=> pure . purgeUnused start
        >=> pDebug' "[Pass 5] Pre-purification."
        >=> whenSet' FlagDTypes (pDebug' "Verifying types pre-purification." >=> typeVerify)
        >=> whenSet FlagDCrust3 (printInfo "Crust 3: Pre-purification")
@@ -157,7 +157,7 @@ getProgram flags fp = do
        >=> pDebug' "Fully apply global function definitions."
        >=> fullyApplyDefs
        >=> pDebug' "Removing unused definitions (again)."
-       >=> pure . (purgeUnused start)
+       >=> pure . purgeUnused start
        >=> pDebug' "[Pass 7] Post-purification."
        >=> whenSet FlagDCrust5 (printInfo "Crust 5: Post-second-lambda-lifting")
        >=> pDebug' "Translating to core & HDL."

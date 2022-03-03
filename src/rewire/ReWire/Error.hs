@@ -84,7 +84,7 @@ failAt an msg = throwError $ AstError (toAnnote an) msg
 
 -- | Like failAt, but include an extra bit of data on failure.
 failAt' :: (MonadError (ex, AstError) m, Annotation an) => ex -> an -> Text -> m a
-failAt' ex an msg = throwError $ (ex, AstError (toAnnote an) msg)
+failAt' ex an msg = throwError (ex, AstError (toAnnote an) msg)
 
 failNowhere :: (PutMsg ex, Monad m, MonadState ex m, MonadError ex m) => Text -> m a
 failNowhere msg = get >>= throwError . putMsg msg
