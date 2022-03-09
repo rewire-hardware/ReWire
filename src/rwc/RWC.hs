@@ -73,7 +73,7 @@ exitUsage = T.hPutStr stderr (pack $ usageInfo "Usage: rwc [OPTION...] <filename
 getSystemLoadPath :: IO [FilePath]
 getSystemLoadPath = do
       lib   <- getDataFileName "src/user"
-      pure [".", lib]
+      pure [lib]
 
 main :: IO ()
 main = do

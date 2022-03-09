@@ -28,13 +28,16 @@ import ReWire.Unbound (runFreshMT, FreshMT (..))
 import ReWire.Pretty
 import ReWire.Flags (Flag (..))
 
+import Control.Arrow ((***))
 import Control.Monad ((>=>), msum, void, when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
-import Control.Monad.Reader (runReaderT, ReaderT, MonadReader (..))
+import Control.Monad.Reader (runReaderT, ReaderT, asks)
 import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify, lift)
 import Data.Containers.ListUtils (nubOrd)
 import Data.List.Split (splitOn)
+import Data.Maybe (isJust)
 import Data.Text (Text, pack)
+import System.FilePath ((</>), takeDirectory)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
@@ -55,11 +58,11 @@ type ModCache = HashMap FilePath (Module, Exports)
 runCache :: Cache a -> LoadPath -> SyntaxErrorT AstError IO a
 runCache m lp = fst <$> runFreshMT (runStateT (runReaderT m lp) mempty)
 
-mkRenamer :: [Flag] -> S.Module SrcSpanInfo -> Cache Renamer
-mkRenamer flags m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps m)
+mkRenamer :: [Flag] -> FilePath -> S.Module SrcSpanInfo -> Cache Renamer
+mkRenamer flags pwd' m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps m)
       where mkRenamer' :: ImportDecl SrcSpanInfo -> Cache Renamer
             mkRenamer' (ImportDecl _ (void -> m) quald _ _ _ (fmap void -> as) specs) = do
-                  (_, exps) <- getModule flags $ toFilePath m
+                  (_, exps) <- getModule flags pwd' $ toFilePath m
                   fromImps m quald exps as specs
 
 -- Pass 1    Parse.
@@ -69,23 +72,24 @@ mkRenamer flags m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps m)
 -- Pass 15   Translate to mantle + rename globals.
 -- Pass 16   Translate to core
 
-getModule :: [Flag] -> FilePath -> Cache (Module, Exports)
-getModule flags fp = pDebug flags ("fetching module: " <> pack fp) >> Map.lookup fp <$> get >>= \ case
+getModule :: [Flag] -> FilePath -> FilePath -> Cache (Module, Exports)
+getModule flags pwd fp = pDebug flags ("fetching module: " <> pack fp <> " (pwd: " <> pack pwd <> ")") >> Map.lookup fp <$> get >>= \ case
       Just p  -> pure p
       Nothing -> do
             modify $ Map.insert fp mempty
 
-            lp         <- ask
+            lp         <- asks (pwd :)
+
             mmods      <- mapM (tryParseInDir fp) lp
             -- FIXME: The directory crawling could be more robust here. (Should
             -- use exception handling.)
-            m          <- maybe
+            (pwd', m)  <- maybe
                               (failAt (filePath fp) "File not found in load-path")
-                              (pure . addMainModuleHead)
+                              (pure . (elideDot *** addMainModuleHead))
                         $ msum mmods
 
-            rn         <- mkRenamer flags m
-            imps       <- loadImports m
+            rn         <- mkRenamer flags pwd' m
+            imps       <- loadImports pwd' m
 
             -- Phase 1 (haskell-src-exts) transformations.
             (m', exps) <- pure
@@ -109,8 +113,8 @@ getModule flags fp = pDebug flags ("fetching module: " <> pack fp) >> Map.lookup
             modify $ Map.insert fp (m' <> imps, exps)
             pure (m' <> imps, exps)
 
-      where loadImports :: Annotation a => S.Module a -> Cache Module
-            loadImports = fmap mconcat . mapM (fmap fst . getModule flags . toFilePath . void . importModule) . getImps
+      where loadImports :: Annotation a => FilePath -> S.Module a -> Cache Module
+            loadImports pwd' = fmap mconcat . mapM (fmap fst . getModule flags pwd' . toFilePath . void . importModule) . getImps
 
             whenSet :: Applicative m => Flag -> (Bool -> a -> m a) -> a -> m a
             whenSet f m = if f `elem` flags then m $ FlagV `elem` flags else pure
@@ -118,10 +122,15 @@ getModule flags fp = pDebug flags ("fetching module: " <> pack fp) >> Map.lookup
             pDebug' :: MonadIO m => Text -> a -> m a
             pDebug' s a = pDebug flags (pack fp <> ": " <> s) >> pure a
 
+            elideDot :: FilePath -> FilePath
+            elideDot = \ case
+                  "." -> takeDirectory fp
+                  d   -> d </> takeDirectory fp
+
 -- Phase 2 (pre-core) transformations.
 getProgram :: [Flag] -> FilePath -> Cache Core.Program
 getProgram flags fp = do
-      (Module ts syns ds,  _)  <- getModule flags fp
+      (Module ts syns ds,  _)  <- getModule flags "." fp
 
       p <- pure
        >=> pDebug' "[Pass 3] Adding primitives and inlining."

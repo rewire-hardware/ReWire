@@ -11,7 +11,7 @@ import safe Language.Haskell.Exts.SrcLoc (SrcSpanInfo, SrcLoc (..))
 import safe Language.Haskell.Exts.Syntax (Module (..))
 import safe System.Directory (getCurrentDirectory, setCurrentDirectory, doesFileExist, doesDirectoryExist)
 
-tryParseInDir :: (MonadIO m, MonadError AstError m) => FilePath -> FilePath -> m (Maybe (Module SrcSpanInfo))
+tryParseInDir :: (MonadIO m, MonadError AstError m) => FilePath -> FilePath -> m (Maybe (FilePath, Module SrcSpanInfo))
 tryParseInDir fp dp = do
       dExists <- liftIO $ doesDirectoryExist dp
       if not dExists then pure Nothing else do
@@ -20,12 +20,12 @@ tryParseInDir fp dp = do
             exists <- liftIO $ doesFileExist fp
             result <- if not exists then pure Nothing else do
                   pr <- liftIO parse
-                  Just <$> pr2Cache pr
+                  Just . (dp, ) <$> pr2Err pr
             liftIO $ setCurrentDirectory oldCwd
             pure result
 
-      where pr2Cache :: MonadError AstError m => ParseResult a -> m a
-            pr2Cache = \ case
+      where pr2Err :: MonadError AstError m => ParseResult a -> m a
+            pr2Err = \ case
                   ParseOk p                       -> pure p
                   ParseFailed (SrcLoc "" r c) msg -> failAt (SrcLoc fp r c) (Txt.pack msg)
                   ParseFailed l msg               -> failAt l (Txt.pack msg)
