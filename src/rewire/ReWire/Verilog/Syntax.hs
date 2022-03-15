@@ -121,7 +121,7 @@ data Exp = Add Exp Exp
          | GtEq  Exp Exp
          | Cond Exp Exp Exp
          | Concat [Exp]
-         | Repl Size Exp
+         | Repl Exp Exp
          | WCast Size Exp
          | LitBits BV
          | LVal LVal
@@ -185,7 +185,7 @@ instance Pretty Exp where
             GtEq a b        -> ppBinOp a ">="  b
             Cond e1 e2 e3   -> mparens e1 <+> text "?" <+> mparens e2 <+> colon <+> mparens e3
             Concat es       -> braces $ hsep $ punctuate comma $ map pretty es
-            Repl i e        -> braces $ pretty i <> braces (pretty e)
+            Repl e1 e2      -> braces $ pretty e1 <> braces (pretty e2)
             WCast sz e      -> pretty sz <> text "'" <> parens (pretty e)
             LitBits bv      -> pretty (width bv) <> text "'h" <> text (pack $ drop 2 $ showHex bv)
             LVal x          -> pretty x

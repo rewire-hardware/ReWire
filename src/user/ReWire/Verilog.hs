@@ -7,7 +7,7 @@ module ReWire.Verilog
       , (<>)
       , lnot, bnot, rAnd, rNAnd
       , rOr, rNor, rXor, rXNor
-      , lit, resize
+      , msbit, lit, resize, replicate
       ) where
 
 import ReWire
@@ -224,6 +224,22 @@ rXNor = extern "~^" rXNor'
 
 rXNor' :: a -> Bit
 rXNor' = undefined
+
+-- | Most significant bit.
+{-# INLINE msbit #-}
+msbit :: a -> Bit
+msbit = extern "msbit" msbit'
+
+msbit' :: a -> Bit
+msbit' = undefined
+
+-- | Repeat.
+{-# INLINE replicate #-}
+replicate :: Integer -> a -> b
+replicate = extern "replicate" replicate'
+
+replicate' :: Integer -> a -> b
+replicate' = undefined
 
 -- | Turn an Integer literal into any type! Truncates most significant bits or
 --   zero-pads to make it fit.

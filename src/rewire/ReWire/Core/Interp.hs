@@ -43,6 +43,7 @@ import Data.Machine.MealyT (MealyT (..))
 import Data.Maybe (fromMaybe)
 import Data.Text (pack)
 import TextShow (showt)
+import qualified Data.BitVector as BV
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Machine as M
 import qualified Data.Yaml as YAML
@@ -254,6 +255,8 @@ primBinOps = map (second binBitify)
       , ( "<<<" , (<<.))
       , ( ">>>" , ashr)
       , ( "concat" , (<>))
+      ] <>
+      [ ("replicate", \ sz a b -> mkBV sz $ BV.replicate (nat a) b)
       ]
 
 primUnOps :: [(Name, Size -> BV -> BV)]

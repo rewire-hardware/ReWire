@@ -219,9 +219,9 @@ compileExp flags lvars = \ case
 -- | Attempt to break up giant literals.
 bvToExp :: BV -> V.Exp
 bvToExp bv | width bv < maxLit      = LitBits bv
-           | bv == zeros 1          = Repl (fromIntegral $ width bv) $ LitBits (zeros 1)
-           | bv == ones (width bv)  = Repl (fromIntegral $ width bv) $ LitBits (ones 1)
-           | zs > 8                 = Concat [LitBits $ subRange (fromIntegral zs, width bv - 1) bv, Repl zs $ LitBits $ zeros 1]
+           | bv == zeros 1          = Repl (toLit $ width bv) $ LitBits (zeros 1)
+           | bv == ones (width bv)  = Repl (toLit $ width bv) $ LitBits (ones 1)
+           | zs > 8                 = Concat [LitBits $ subRange (fromIntegral zs, width bv - 1) bv, Repl (toLit zs) $ LitBits $ zeros 1]
            | otherwise              = LitBits bv -- TODO(chathhorn)
       where zs :: Size -- trailing zeros
             zs | bv == zeros 1 = fromIntegral $ width bv
@@ -230,12 +230,15 @@ bvToExp bv | width bv < maxLit      = LitBits bv
             maxLit :: Int
             maxLit = 32
 
+toLit :: Integral a => a -> V.Exp
+toLit v = LitBits $ bitVec (fromIntegral $ ceilLog2 v) v
+
 expToBV :: V.Exp -> Maybe BV
 expToBV = \ case
-      LitBits bv -> Just bv
-      Repl n e   -> BV.replicate n <$> expToBV e
-      Concat es  -> BV.concat <$> mapM expToBV es
-      _          -> Nothing
+      LitBits bv                 -> Just bv
+      Repl (expToBV -> Just n) e -> BV.replicate (BV.nat n) <$> expToBV e
+      Concat es                  -> BV.concat <$> mapM expToBV es
+      _                          -> Nothing
 
 -- | Size of the inclusive range [i, j].
 nbits :: Index -> Index -> Size
@@ -315,44 +318,45 @@ wcast sz e = expWidth e >>= \ case
 --
 expWidth :: MonadState SigInfo m => V.Exp -> m (Maybe Size)
 expWidth = \ case
-      Add    e1 e2    -> largest e1 e2
-      Sub    e1 e2    -> largest e1 e2
-      Mul    e1 e2    -> largest e1 e2
-      Div    e1 e2    -> largest e1 e2
-      Mod    e1 e2    -> largest e1 e2
-      And    e1 e2    -> largest e1 e2
-      Or     e1 e2    -> largest e1 e2
-      XOr    e1 e2    -> largest e1 e2
-      XNor   e1 e2    -> largest e1 e2
-      Cond _ e1 e2    -> largest e1 e2
-      Pow         e _ -> expWidth e
-      LShift      e _ -> expWidth e
-      RShift      e _ -> expWidth e
-      LShiftArith e _ -> expWidth e
-      RShiftArith e _ -> expWidth e
-      Not         e   -> expWidth e
-      LAnd _ _        -> pure $ Just 1
-      LOr _ _         -> pure $ Just 1
-      LNot _          -> pure $ Just 1
-      RAnd _          -> pure $ Just 1
-      RNAnd _         -> pure $ Just 1
-      ROr _           -> pure $ Just 1
-      RNor _          -> pure $ Just 1
-      RXor _          -> pure $ Just 1
-      RXNor _         -> pure $ Just 1
-      Eq  _ _         -> pure $ Just 1
-      NEq _ _         -> pure $ Just 1
-      CEq _ _         -> pure $ Just 1
-      CNEq _ _        -> pure $ Just 1
-      Lt _ _          -> pure $ Just 1
-      Gt _ _          -> pure $ Just 1
-      LtEq _ _        -> pure $ Just 1
-      GtEq _ _        -> pure $ Just 1
-      Concat es       -> sumMaybes <$> mapM expWidth es
-      Repl sz e       -> fmap (*sz) <$> expWidth e
-      WCast sz _      -> pure $ Just sz
-      LitBits bv      -> pure $ Just $ fromIntegral $ width bv
-      LVal lv         -> lvalWidth lv
+      Add    e1 e2                -> largest e1 e2
+      Sub    e1 e2                -> largest e1 e2
+      Mul    e1 e2                -> largest e1 e2
+      Div    e1 e2                -> largest e1 e2
+      Mod    e1 e2                -> largest e1 e2
+      And    e1 e2                -> largest e1 e2
+      Or     e1 e2                -> largest e1 e2
+      XOr    e1 e2                -> largest e1 e2
+      XNor   e1 e2                -> largest e1 e2
+      Cond _ e1 e2                -> largest e1 e2
+      Pow         e _             -> expWidth e
+      LShift      e _             -> expWidth e
+      RShift      e _             -> expWidth e
+      LShiftArith e _             -> expWidth e
+      RShiftArith e _             -> expWidth e
+      Not         e               -> expWidth e
+      LAnd _ _                    -> pure $ Just 1
+      LOr _ _                     -> pure $ Just 1
+      LNot _                      -> pure $ Just 1
+      RAnd _                      -> pure $ Just 1
+      RNAnd _                     -> pure $ Just 1
+      ROr _                       -> pure $ Just 1
+      RNor _                      -> pure $ Just 1
+      RXor _                      -> pure $ Just 1
+      RXNor _                     -> pure $ Just 1
+      Eq  _ _                     -> pure $ Just 1
+      NEq _ _                     -> pure $ Just 1
+      CEq _ _                     -> pure $ Just 1
+      CNEq _ _                    -> pure $ Just 1
+      Lt _ _                      -> pure $ Just 1
+      Gt _ _                      -> pure $ Just 1
+      LtEq _ _                    -> pure $ Just 1
+      GtEq _ _                    -> pure $ Just 1
+      Concat es                   -> sumMaybes <$> mapM expWidth es
+      Repl (expToBV -> Just sz) e -> fmap (* fromIntegral (BV.nat sz)) <$> expWidth e
+      Repl (expToBV -> Nothing) _ -> pure Nothing
+      WCast sz _                  -> pure $ Just sz
+      LitBits bv                  -> pure $ Just $ fromIntegral $ width bv
+      LVal lv                     -> lvalWidth lv
       where largest :: MonadState SigInfo m => V.Exp -> V.Exp -> m (Maybe Size)
             largest e1 e2 = liftM2 max <$> expWidth e1 <*> expWidth e2
 
@@ -380,23 +384,24 @@ unOp = flip lookup primUnOps
 
 primBinOps :: [(Name, V.Exp -> V.Exp -> V.Exp)]
 primBinOps =
-      [ ( "+"      , Add)
-      , ( "-"      , Sub)
-      , ( "*"      , Mul)
-      , ( "/"      , Div)
-      , ( "%"      , Mod)
-      , ( "**"     , Pow)
-      , ( "&&"     , LAnd)
-      , ( "||"     , LOr)
-      , ( "&"      , And)
-      , ( "|"      , Or)
-      , ( "^"      , XOr)
-      , ( "~^"     , XNor)
-      , ( "<<"     , LShift)
-      , ( ">>"     , RShift)
-      , ( "<<<"    , LShiftArith)
-      , ( ">>>"    , RShiftArith)
-      , ( "concat" , \ x y -> Concat [x, y])
+      [ ( "+"         , Add)
+      , ( "-"         , Sub)
+      , ( "*"         , Mul)
+      , ( "/"         , Div)
+      , ( "%"         , Mod)
+      , ( "**"        , Pow)
+      , ( "&&"        , LAnd)
+      , ( "||"        , LOr)
+      , ( "&"         , And)
+      , ( "|"         , Or)
+      , ( "^"         , XOr)
+      , ( "~^"        , XNor)
+      , ( "<<"        , LShift)
+      , ( ">>"        , RShift)
+      , ( "<<<"       , LShiftArith)
+      , ( ">>>"       , RShiftArith)
+      , ( "concat"    , \ x y -> Concat [x, y])
+      , ( "replicate" , Repl)
       ]
 
 primUnOps :: [(Name, V.Exp -> V.Exp)]
@@ -451,3 +456,8 @@ argsSize = sum . map patToSize
 
 toLogic :: (Name, Size) -> Signal
 toLogic = uncurry $ flip Logic
+
+-- TODO(chathhorn): duplicated from Crust/ToCore.hs
+ceilLog2 :: Integral a => a -> a
+ceilLog2 n | toInteger n < 1 = 0
+ceilLog2 n                   = ceiling $ logBase 2 (fromIntegral n :: Double)
