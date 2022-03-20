@@ -35,7 +35,6 @@ import Control.Monad.Reader (runReaderT, ReaderT, asks)
 import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify, lift)
 import Data.Containers.ListUtils (nubOrd)
 import Data.List.Split (splitOn)
-import Data.Maybe (isJust)
 import Data.Text (Text, pack)
 import System.FilePath ((</>), takeDirectory)
 import qualified Data.Text as T

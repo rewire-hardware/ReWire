@@ -14,19 +14,19 @@ import ReWire.Core.Interp
       , clk, rst
       )
 
-import Data.Text (Text)
-import Control.Monad (liftM2)
-import Control.Monad.State (MonadState, get, runStateT, modify, gets)
-import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Arrow ((&&&), first, second)
-import TextShow (showt)
+import Control.Monad (liftM2)
+import Control.Monad.Reader (MonadReader, asks, runReaderT)
+import Control.Monad.State (MonadState, get, runStateT, modify, gets)
 import Data.BitVector (width, bitVec, BV, zeros, ones, lsb1, (==.), (@.))
-import qualified Data.BitVector as BV
 import Data.HashMap.Strict (HashMap)
+import Data.Text (Text)
+import TextShow (showt)
+import qualified Data.BitVector as BV
 import qualified Data.HashMap.Strict as Map
 
 type Fresh = Int
-type DefnMap = HashMap GId [C.Exp]
+type DefnMap = HashMap GId C.Exp
 type SigInfo = (Fresh, [Signal])
 
 sigInfo0 :: SigInfo
@@ -128,8 +128,8 @@ compileStartDefn flags (C.StartDefn _ w loop state0) = do
 
 compileDefn :: (MonadFail m, MonadError AstError m) => [Flag] -> C.Defn -> m V.Module
 compileDefn flags (C.Defn _ n (Sig _ inps outp) body) = do
-      ((es, stmts), (_, sigs)) <- runStateT (runReaderT (compileExps flags (map (LVal . Name) argNames) body) Map.empty) sigInfo0
-      pure $ V.Module (mangle n) (inputs <> outputs) sigs $ stmts <> [Assign (Name "res") $ mkConcat es]
+      ((e, stmts), (_, sigs)) <- runStateT (runReaderT (compileExp flags (map (LVal . Name) argNames) body) Map.empty) sigInfo0
+      pure $ V.Module (mangle n) (inputs <> outputs) sigs $ stmts <> [Assign (Name "res") e]
       where argNames :: [Name]
             argNames = zipWith (\ _ x -> "arg" <> showt x) inps [0::Int ..]
 
@@ -144,10 +144,10 @@ compileCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadR
              => [Flag] -> GId -> V.Size -> [V.Exp] -> m (V.Exp, [Stmt])
 compileCall flags g sz lvars
       | FlagFlatten `elem` flags = do
-            Just body   <- asks (Map.lookup g)
-            (es, stmts) <- compileExps flags lvars body
-            es'         <- wcast sz $ mkConcat es
-            pure (es', stmts)
+            Just body  <- asks (Map.lookup g)
+            (e, stmts) <- compileExp flags lvars body
+            e'         <- wcast sz e
+            pure (e', stmts)
       | otherwise = do
             mr          <- newWire sz "callRes"
             inst        <- Instantiate (mangle g) <$> fresh g <*> pure (lvars <> [LVal mr])
@@ -163,6 +163,7 @@ compileExp flags lvars = \ case
       LVar _  _ (lkupLVal -> Just x)                    -> pure (x, [])
       LVar an _ _                                       -> failAt an "ToVerilog: compileExp: encountered unknown LVar."
       Lit _ bv                                          -> pure (bvToExp bv, [])
+      C.Concat _ es                                     -> first mkConcat <$> compileExps flags lvars es
       Call _ sz (Global g) es ps els                    -> mkCall "glob" es ps els $ compileCall flags g sz
       Call _ sz (Extern _ (binOp -> Just op)) es ps els -> mkCall "binOp" es ps els $ \ [x, y] -> (,[]) <$> wcast sz (op x y)
       Call _ sz (Extern _ (unOp -> Just op)) es ps els  -> mkCall "unOp" es ps els $ \ [x] -> (,[]) <$> wcast sz (op x)
@@ -171,23 +172,22 @@ compileExp flags lvars = \ case
       Call _ sz (Const bv) es ps els                    -> mkCall "lit" es ps els $ \ _ -> (,[]) <$> wcast sz (bvToExp bv)
       Call an _ (Extern _ ex) _ _ _                     -> failAt an $ "ToVerilog: compileExp: unknown extern: " <> ex
       where mkCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
-                    => Name -> [C.Exp] -> [Pat] -> [C.Exp] -> ([V.Exp] -> m (V.Exp, [Stmt])) -> m (V.Exp, [Stmt])
+                    => Name -> C.Exp -> [Pat] -> C.Exp -> ([V.Exp] -> m (V.Exp, [Stmt])) -> m (V.Exp, [Stmt])
             mkCall s es ps els f = do
-                  (es', stmts)   <- compileExps flags lvars es
-                  (els', stmts') <- compileExps flags lvars els
-                  let (es'', els'') = (mkConcat es', mkConcat els')
-                  case litVal es'' of
+                  (es', stmts)   <- compileExp flags lvars es
+                  (els', stmts') <- compileExp flags lvars els
+                  case litVal es' of
                         Just bv -> do
                               (fes, fstmts) <- f $ patApplyLit bv ps
-                              pure (if patMatchesLit bv ps then fes else els'', stmts <> stmts' <> fstmts)
+                              pure (if patMatchesLit bv ps then fes else els', stmts <> stmts' <> fstmts)
                         _      -> do
-                              Name n <- newWire (sum $ map sizeOf es) s
+                              Name n <- newWire (sizeOf es) s
                               (fes, fstmts) <- f $ map LVal $ patApply n ps
                               pure  ( case patMatches n ps of
-                                          cond | litTrue cond || null els' -> fes
-                                               | litFalse cond             -> els''
-                                               | otherwise                 -> Cond cond fes els''
-                                    , stmts <> stmts' <> [ Assign (Name n) es'' ] <> fstmts
+                                          cond | litTrue cond || isNil els -> fes
+                                               | litFalse cond             -> els'
+                                               | otherwise                 -> Cond cond fes els'
+                                    , stmts <> stmts' <> [ Assign (Name n) es' ] <> fstmts
                                     )
 
             litTrue :: V.Exp -> Bool
@@ -221,7 +221,7 @@ bvToExp :: BV -> V.Exp
 bvToExp bv | width bv < maxLit      = LitBits bv
            | bv == zeros 1          = Repl (toLit $ width bv) $ LitBits (zeros 1)
            | bv == ones (width bv)  = Repl (toLit $ width bv) $ LitBits (ones 1)
-           | zs > 8                 = Concat [LitBits $ subRange (fromIntegral zs, width bv - 1) bv, Repl (toLit zs) $ LitBits $ zeros 1]
+           | zs > 8                 = V.Concat [LitBits $ subRange (fromIntegral zs, width bv - 1) bv, Repl (toLit zs) $ LitBits $ zeros 1]
            | otherwise              = LitBits bv -- TODO(chathhorn)
       where zs :: Size -- trailing zeros
             zs | bv == zeros 1 = fromIntegral $ width bv
@@ -237,7 +237,7 @@ expToBV :: V.Exp -> Maybe BV
 expToBV = \ case
       LitBits bv                 -> Just bv
       Repl (expToBV -> Just n) e -> BV.replicate (BV.nat n) <$> expToBV e
-      Concat es                  -> BV.concat <$> mapM expToBV es
+      V.Concat es                -> BV.concat <$> mapM expToBV es
       _                          -> Nothing
 
 -- | Size of the inclusive range [i, j].
@@ -247,7 +247,7 @@ nbits i j = fromIntegral (j - i + 1)
 mkConcat :: [V.Exp] -> V.Exp
 mkConcat = \ case
       [e] -> e
-      es  -> Concat es
+      es  -> V.Concat es
 
 mkLVals :: [V.LVal] -> V.LVal
 mkLVals = \ case
@@ -351,7 +351,7 @@ expWidth = \ case
       Gt _ _                      -> pure $ Just 1
       LtEq _ _                    -> pure $ Just 1
       GtEq _ _                    -> pure $ Just 1
-      Concat es                   -> sumMaybes <$> mapM expWidth es
+      V.Concat es                 -> sumMaybes <$> mapM expWidth es
       Repl (expToBV -> Just sz) e -> fmap (* fromIntegral (BV.nat sz)) <$> expWidth e
       Repl (expToBV -> Nothing) _ -> pure Nothing
       WCast sz _                  -> pure $ Just sz
@@ -400,7 +400,7 @@ primBinOps =
       , ( ">>"        , RShift)
       , ( "<<<"       , LShiftArith)
       , ( ">>>"       , RShiftArith)
-      , ( "concat"    , \ x y -> Concat [x, y])
+      , ( "concat"    , \ x y -> V.Concat [x, y])
       , ( "replicate" , Repl)
       ]
 

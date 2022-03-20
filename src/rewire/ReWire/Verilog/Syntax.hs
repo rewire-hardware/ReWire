@@ -187,6 +187,7 @@ instance Pretty Exp where
             Concat es       -> braces $ hsep $ punctuate comma $ map pretty es
             Repl e1 e2      -> braces $ pretty e1 <> braces (pretty e2)
             WCast sz e      -> pretty sz <> text "'" <> parens (pretty e)
+            LitBits bv | width bv == 0 -> text "0'h0"
             LitBits bv      -> pretty (width bv) <> text "'h" <> text (pack $ drop 2 $ showHex bv)
             LVal x          -> pretty x
 

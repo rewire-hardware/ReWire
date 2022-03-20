@@ -1,21 +1,22 @@
 {-# LANGUAGE FlexibleContexts #-}
 module ReWire.Core.Transform ( mergeSlices , purgeUnused, partialEval ) where
 
+import ReWire.Annotation (unAnn, noAnn, Annote)
+import ReWire.Core.Interp (interpExp, DefnMap)
 import ReWire.Core.Syntax
-import ReWire.Core.Interp (interpExps, DefnMap)
-import ReWire.Annotation (unAnn)
+
 import Control.Arrow ((&&&))
 import Control.Monad.Reader (runReaderT, MonadReader (..), asks)
+import Data.BitVector (BV, zeros)
 import Data.Containers.ListUtils (nubOrd)
-import Data.List (genericLength, genericIndex)
-import Data.BitVector (BV, zeros, nil)
-
 import Data.HashMap.Strict (HashMap)
+import Data.List (genericLength, genericIndex)
+import qualified Data.BitVector as BV
 import qualified Data.HashMap.Strict as Map
 
-type DefnBodyMap = HashMap GId [Exp]
+type DefnBodyMap = HashMap GId Exp
 
-getBody :: MonadReader DefnMap m => GId -> m (Maybe [Exp])
+getBody :: MonadReader DefnMap m => GId -> m (Maybe Exp)
 getBody g = asks (Map.lookup g) >>= \ case
       Just (Defn _ _ _ body) -> pure $ Just body
       _                      -> pure Nothing
@@ -29,7 +30,7 @@ mergeSlices (Program start ds) = do
 
 reDefn :: (MonadReader DefnMap m, MonadFail m) => Defn -> m Defn
 reDefn d = do
-      body' <- reExps (renumLVars $ defnSig d) $ defnBody d
+      body' <- reExp (renumLVars $ defnSig d) $ defnBody d
       pure d
             { defnSig  = reSig $ defnSig d
             , defnBody = body'
@@ -48,36 +49,30 @@ renumLVars (Sig _ szVec _) x = if x >= 0 && x < genericLength szVec && genericIn
             preZeros' (0 : szs) n m = preZeros' szs (n + 1) (m - 1)
             preZeros' (_ : szs) n m = preZeros' szs n       (m - 1)
 
-reExp :: (MonadReader DefnMap m, MonadFail m) => (LId -> Maybe (LId, Size)) -> Exp -> m [Exp]
+reExp :: MonadReader DefnMap m => (LId -> Maybe (LId, Size)) -> Exp -> m Exp
 reExp rn = \ case
-      LVar a s l                            -> pure [LVar a s $ maybe l fst $ rn l]
-      Lit a bv                              -> pure [Lit a bv]
-      Call _ _ (Global g) es _ _
-            | sum (map sizeOf es) == 0      -> do
-            Just body <- getBody g
-            reExps rn body
-      Call _ _ (Global g) _ ps []
-            | null (getPVars ps)            -> do
-            Just body <- getBody g
-            reExps rn body
-      Call a s (Global g) es ps els         -> do
-            Just body <- getBody g
+      LVar a s l                                                         -> pure $ LVar a s $ maybe l fst $ rn l
+      Lit a bv                                                           -> pure $ Lit a bv
+      Concat a es                                                        -> packExps a <$> mapM (reExp rn) es
+      c@(Call _ _ (Global g) e _ _)    | isNil e                         -> getBody g >>= maybe (pure c) (reExp rn)
+      c@(Call _ _ (Global g) _ ps els) | null (getPVars ps) && isNil els -> getBody g >>= maybe (pure c) (reExp rn)
+      c@(Call a s (Global g) e ps els)                                   -> getBody g >>= maybe (pure c) (\ body ->
             case inline ps body of
-                  Just g' -> reExp rn $ Call a s g' es ps els
+                  Just g' -> reExp rn $ Call a s g' e ps els
                   Nothing -> do
-                        es'       <- reExps rn es
-                        els'      <- reExps rn els
-                        let g'  | isId ps body = Id
+                        e'   <- reExp rn e
+                        els' <- reExp rn els
+                        let g'  | isId ps body = Id -- TODO(chathhorn): refactor this.
                                 | isConst body = Const $ toConst body
                                 | otherwise    = Global g
                             ps' | isConst body = mergePats $ map varToWild ps
                                 | otherwise    = mergePats ps
-                        pure [Call a s g' es' ps' (if alwaysMatches ps' then [] else els')]
-      Call a s g es ps els                  -> do
-            es'       <- reExps rn es
-            els'      <- reExps rn els
+                        pure $ Call a s g' e' ps' $ if alwaysMatches ps' then nil else els')
+      Call a s g e ps els                              -> do
+            e'   <- reExp rn e
+            els' <- reExp rn els
             let ps'    = mergePats ps
-            pure [Call a s g es' ps' (if alwaysMatches ps' then [] else els')]
+            pure $ Call a s g e' ps' $ if alwaysMatches ps' then nil else els'
       where isVar :: Pat -> Bool
             isVar = \ case
                   PatVar {} -> True
@@ -92,8 +87,8 @@ reExp rn = \ case
                   PatVar an sz -> PatWildCard an sz
                   p            -> p
 
-            isId :: [Pat] -> [Exp] -> Bool
-            isId (getPVars -> [PatVar _ 1]) [Call _ _ (Const bv1) [LVar _ _ 0] [PatLit _ bv1'] [Lit _ bv0]]
+            isId :: [Pat] -> Exp -> Bool
+            isId (getPVars -> [PatVar _ 1]) (Call _ _ (Const bv1) (LVar _ _ 0) [PatLit _ bv1'] (Lit _ bv0))
                   | bv1 == bvTrue  && bv1' == bvTrue  && bv0 == bvFalse = True
                   | bv1 == bvFalse && bv1' == bvFalse && bv0 == bvTrue = True
             isId (getPVars -> p) body = unAnn (patToExp p) == unAnn body
@@ -101,18 +96,18 @@ reExp rn = \ case
             getPVars :: [Pat] -> [Pat]
             getPVars = filter isVar
 
-            isConst :: [Exp] -> Bool
+            isConst :: Exp -> Bool
             isConst = \ case
-                  [Lit {}] -> True
-                  _        -> False
+                  Lit {} -> True
+                  _      -> False
 
-            toConst :: [Exp] -> BV
+            toConst :: Exp -> BV
             toConst = \ case
-                  [Lit _ bv] -> bv
-                  _          -> nil
+                  Lit _ bv -> bv
+                  _        -> BV.nil
 
-            patToExp :: [Pat] -> [Exp]
-            patToExp = zipWith patToExp' [0::LId ..]
+            patToExp :: [Pat] -> Exp
+            patToExp = packExps noAnn . zipWith patToExp' [0::LId ..]
                   where patToExp' :: LId -> Pat -> Exp
                         patToExp' i = \ case
                               PatVar      an sz -> LVar an sz i
@@ -122,13 +117,18 @@ reExp rn = \ case
             alwaysMatches :: [Pat] -> Bool
             alwaysMatches = all (\ p -> isWild p || isVar p)
 
-            inline :: [Pat] -> [Exp] -> Maybe Target
-            inline ar [Call _ _ g' es ps _]
+            inline :: [Pat] -> Exp -> Maybe Target
+            inline ar (Call _ _ g' es ps _)
                   | unAnn (patToExp ar) == unAnn es && unAnn es == unAnn (patToExp ps) = Just g'
+                  -- TODO(chathhorn): better normalization
             inline _ _                                                                 = Nothing
 
-reExps :: (MonadReader DefnMap m, MonadFail m) => (LId -> Maybe (LId, Size)) -> [Exp] -> m [Exp]
-reExps rn es = mergeLits <$> (concat <$> mapM (reExp rn) (filter ((> 0) . sizeOf) es))
+packExps :: Annote -> [Exp] -> Exp
+packExps an = pack' . mergeLits . filter ((> 0) . sizeOf)
+      where pack' :: [Exp] -> Exp
+            pack' = \ case
+                  [e] -> e
+                  es  -> Concat an es
 
 mergeLits :: [Exp] -> [Exp]
 mergeLits = \ case
@@ -141,7 +141,7 @@ reSig (Sig an ps r) = Sig an (filter (> 0) ps) r
 
 mergePats :: [Pat] -> [Pat]
 mergePats = \ case
-      p : ps | sizeOf p == 0                    -> mergePats ps
+      p : ps | isNilPat p                       -> mergePats ps
       PatLit a bv : (PatLit _ bv') : ps         -> mergePats $ PatLit a (bv <> bv') : ps
       PatWildCard a s : (PatWildCard _ s') : es -> mergePats $ PatWildCard a (s + s') : es
       p : ps                                    -> p : mergePats ps
@@ -161,11 +161,12 @@ purgeUnused (Program start@(StartDefn _ _ loop state0) ds) = do
             defnUses :: GId -> [GId]
             defnUses d = maybe [d] ((<>[d]) . getUses) (Map.lookup d defns)
 
-            getUses :: [Exp] -> [GId]
-            getUses = concatMap $ \ case
-                  Call _ _ (Global g) es _ es' -> [g] <> getUses es <> getUses es'
-                  Call _ _ _          es _ es' -> getUses es <> getUses es'
-                  _                            -> []
+            getUses :: Exp -> [GId]
+            getUses = \ case
+                  Concat _ es                 -> concatMap getUses es
+                  Call _ _ (Global g) e _ els -> [g] <> getUses e <> getUses els
+                  Call _ _ _          e _ els ->        getUses e <> getUses els
+                  _                           -> []
 
             defns :: DefnBodyMap
             defns = Map.fromList $ map (defnName &&& defnBody) ds
@@ -177,8 +178,8 @@ partialEval (Program start ds) = pure $ Program start $ map (evalDefn defns) ds
             defns = Map.fromList $ map (defnName &&& id) ds
 
 evalDefn :: DefnMap -> Defn -> Defn
-evalDefn defns (Defn an n sig body) = Defn an n sig $ evalExps body
-      where evalExps :: [Exp] -> [Exp]
-            evalExps es = case interpExps defns [] es of
-                  Left (es', _) -> es'
-                  Right bv      -> [Lit an bv]
+evalDefn defns (Defn an n sig body) = Defn an n sig body'
+      where body' :: Exp
+            body' = case interpExp defns [] body of
+                  Left (body', _) -> body'
+                  Right bv        -> Lit an bv

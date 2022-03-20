@@ -12,19 +12,22 @@ module ReWire.Core.Syntax
   , Size, Index, Name, Value, GId, LId
   , SizeAnnotated (..)
   , bvTrue, bvFalse
+  , isNil, nil
+  , isNilPat, nilPat
   ) where
 
 import ReWire.Pretty
 import ReWire.Annotation
 
+import Data.BitVector (BV (..), width, showHex, zeros, ones, (==.))
 import Data.Data (Typeable, Data(..))
 import Data.List (intersperse, genericLength)
 import Data.Text (Text, pack)
-import Prettyprinter (Pretty (..), Doc, vsep, (<+>), nest, hsep, parens, braces, punctuate, comma, dquotes)
 import GHC.Generics (Generic)
+import Prettyprinter (Pretty (..), Doc, vsep, (<+>), nest, hsep, parens, braces, punctuate, comma, dquotes)
 import TextShow (TextShow (..), showt)
 import TextShow.Generic (FromGeneric (..))
-import Data.BitVector (BV (..), width, showHex, zeros, ones)
+import qualified Data.BitVector as BV
 
 class SizeAnnotated a where
       sizeOf :: a -> Size
@@ -84,36 +87,56 @@ instance Pretty Sig where
 
 ---
 
-data Exp = Lit  Annote !BV
-         | LVar Annote !Size !LId
-         | Call Annote !Size !Target ![Exp] ![Pat] ![Exp]
-         deriving (Eq, Ord, Show, Typeable, Data, Generic)
+data Exp = Lit    Annote !BV
+         | LVar   Annote !Size !LId
+         | Concat Annote ![Exp] -- TODO(chathhorn): make binary operator: Concat Annote Exp Exp
+         | Call   Annote !Size !Target !Exp ![Pat] !Exp
+         deriving (Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Exp
+
+instance Eq Exp where
+      (Lit    a bv)           == (Lit    a' bv')               = a == a' && bv ==. bv' -- Eq instance just for "==." instead of "==" here.
+      (LVar   a sz lid)       == (LVar   a' sz' lid')          = a == a' && sz == sz' && lid == lid'
+      (Concat a es)           == (Concat a' es')               = a == a' && es == es'
+      (Call   a sz t e1 p e2) == (Call   a' sz' t' e1' p' e2') = a == a' && sz == sz' && t == t' && e1 == e1' && p == p' && e2 == e2'
+      _                       == _                             = False
 
 instance SizeAnnotated Exp where
       sizeOf = \ case
             LVar _ s _       -> s
             Lit _ bv         -> fromIntegral $ width bv
+            Concat _ es      -> sum $ map sizeOf es
             Call _ s _ _ _ _ -> s
 
 instance Annotated Exp where
       ann = \ case
             LVar a _ _       -> a
             Lit a _          -> a
+            Concat a _       -> a
             Call a _ _ _ _ _ -> a
 
 instance Pretty Exp where
       pretty = \ case
             Lit _ bv             -> text (pack $ showHex bv) <> text "::BV" <> pretty (width bv)
             LVar _ _ n           -> text $ "$" <> showt n
-            Call _ _ f es ps [] -> nest 2 $ vsep
-                  [ text "case" <+> ppBV es <+> text "of"
+            Concat _ es          -> ppBV es
+            Call _ _ f@(Const {}) e ps els | isNil els -> nest 2 $ vsep
+                  [ text "case" <+> pretty e <+> text "of"
+                  , ppBV' (ppPats ps) <+> text "->" <+> pretty f
+                  ]
+            Call _ _ f@(Const {}) e ps els -> nest 2 $ vsep
+                  [ text "case" <+> pretty e <+> text "of"
+                  , ppBV' (ppPats ps) <+> text "->" <+> pretty f
+                  , text "_" <+> text "->" <+> pretty els
+                  ]
+            Call _ _ f e ps els | isNil els -> nest 2 $ vsep
+                  [ text "case" <+> pretty e <+> text "of"
                   , ppBV' (ppPats ps) <+> text "->" <+> pretty f <+> ppBV' (ppArgs ps)
                   ]
-            Call _ _ f es ps es2 -> nest 2 $ vsep
-                  [ text "case" <+> ppBV es <+> text "of"
+            Call _ _ f e ps els -> nest 2 $ vsep
+                  [ text "case" <+> pretty e <+> text "of"
                   , ppBV' (ppPats ps) <+> text "->" <+> pretty f <+> ppBV' (ppArgs ps)
-                  , text "_" <+> text "->" <+> ppBV es2
+                  , text "_" <+> text "->" <+> pretty els
                   ]
 
 ppPats :: [Pat] -> [Doc an]
@@ -135,6 +158,12 @@ ppArgs = map (uncurry ppArgs') . filter (isPatVar . snd) . zip [0::Index ..]
             isPatVar = \ case
                   PatVar _ _ -> True
                   _          -> False
+
+nil :: Exp
+nil = Lit noAnn BV.nil
+
+isNil :: Exp -> Bool
+isNil e = sizeOf e == 0
 
 ---
 
@@ -161,6 +190,12 @@ instance Pretty Pat where
             PatVar _ s       -> braces $ text "BV" <> pretty s
             PatWildCard _ s  -> text "_" <> text "BV" <> pretty s <> text "_"
             PatLit      _ bv -> text (pack $ showHex bv) <> text "::BV" <> pretty (width bv)
+
+nilPat :: Pat
+nilPat = PatLit noAnn BV.nil
+
+isNilPat :: Pat -> Bool
+isNilPat p = sizeOf p == 0
 
 ---
 
@@ -196,7 +231,7 @@ data Defn = Defn
       { defnAnnote :: Annote
       , defnName   :: !GId
       , defnSig    :: !Sig -- params given by the arity.
-      , defnBody   :: ![Exp]
+      , defnBody   :: !Exp
       }
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric Defn
@@ -208,9 +243,9 @@ instance Annotated Defn where
       ann (Defn a _ _ _) = a
 
 instance Pretty Defn where
-      pretty (Defn _ n sig es) = vsep
+      pretty (Defn _ n sig e) = vsep
             [ text n <+> text "::" <+> pretty sig
-            , text n <+> hsep (map (text . ("$" <>) . showt) [0 .. arity sig - 1]) <+> text "=" <+> nest 2 (ppBV es)
+            , text n <+> hsep (map (text . ("$" <>) . showt) [0 .. arity sig - 1]) <+> text "=" <+> nest 2 (pretty e)
             ]
             where arity :: Sig -> Int
                   arity (Sig _ args _) = genericLength args

@@ -96,19 +96,19 @@ compileExps es = do
             , n
             )
 
-
 compileExp :: MonadError AstError m => C.Exp -> CM m ([Stmt], Name)
 compileExp = \ case
       LVar _ _ i       -> pure ([], "arg" <> showt i)
-      Lit _ bv -> do
+      Concat _ es      -> compileExps es
+      Lit _ bv         -> do
             let litSize  = fromIntegral $ width bv
                 litValue = if litSize > 0 then nat bv else 0
             n          <- (<> "Res") <$> freshName (mangle $ "lit" <> showt litValue <> "x" <> showt litSize)
             addSignal n $ TyStdLogicVector litSize
             let litVec  = nvec litValue litSize
             pure  ([ Assign (LHSName n) $ ExprBitString litVec ], n)
-      Call an sz (Global gid) escr ps [] -> do
-            (stmts_escr, n_escr) <- compileExps escr
+      Call an sz (Global gid) escr ps ealt | isNil ealt -> do
+            (stmts_escr, n_escr) <- compileExp escr
 
             let fieldWidths       = map sizeOf ps
                 fieldOffsets      = init $ scanl (+) 0 fieldWidths
@@ -125,7 +125,7 @@ compileExp = \ case
       Call an sz (Global gid) escr ps ealt -> do
             n                    <- (<> "Res") <$> freshName "match"
             addSignal n $ TyStdLogicVector sz
-            (stmts_escr, n_escr) <- compileExps escr
+            (stmts_escr, n_escr) <- compileExp escr
 
             let fieldWidths       = map sizeOf ps
                 fieldOffsets      = init $ scanl (+) 0 fieldWidths
@@ -136,7 +136,7 @@ compileExp = \ case
             n_gid                <- (<> "Res") <$> freshName (mangle gid)
             addSignal n_gid $ TyStdLogicVector sz
             n_call               <- (<> "Call") <$> freshName (mangle gid)
-            (stmts_ealt, n_ealt) <- compileExps ealt
+            (stmts_ealt, n_ealt) <- compileExp ealt
             t_gid                <- askGIdTy gid
             addComponent an gid t_gid
             let argns             = map (("arg" <>) . showt) [0::Index ..]
@@ -159,9 +159,9 @@ compileExp = \ case
       --       pure (stmts <> [Assign (LHSName n) (ExprFunCall i (map ExprName ns))], n)
 
 mkDefnArch :: MonadError AstError m => Defn -> CM m Architecture
-mkDefnArch (Defn _ n _ es) = do
+mkDefnArch (Defn _ n _ body) = do
       put ([], [], 0) -- empty out the signal and component store, reset name counter
-      (stmts, nres)    <- compileExps es
+      (stmts, nres)    <- compileExp body
       (sigs, comps, _) <- get
       pure $ Architecture (mangle n <> "Impl") (mangle n) sigs comps (stmts <> [Assign (LHSName "res") (ExprName nres)])
 

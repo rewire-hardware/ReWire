@@ -4,8 +4,8 @@ module ReWire.Core.Interp
       ( interp, interpDefn
       , Ins, Outs, Out, run
       , patMatches, patMatches'
-      , patApply, patApply'
-      , interpExps, DefnMap
+      , patApply'
+      , interpExp, DefnMap
       , subRange
       , dispatchWires, pausePrefix, extraWires
       , resumptionSize
@@ -29,10 +29,10 @@ import ReWire.Core.Syntax
 import ReWire.Annotation (ann, noAnn, Annote)
 import ReWire.Error (failAt', MonadError, AstError)
 
-import Control.Arrow ((&&&), second)
+import Control.Arrow ((&&&), first, second)
 import Control.Monad (msum)
 import Control.Monad.Except (throwError)
-import Data.BitVector (BV, bitVec, (@@), nat, width, showHex, (>>.), (<<.), ashr)
+import Data.BitVector (BV, bitVec, (@@), nat, width, showHex, (>>.), (<<.), (==.), ashr)
 import Data.Bits (Bits (..))
 import Data.Foldable (foldlM)
 import Data.Functor ((<&>))
@@ -111,14 +111,14 @@ interpStartDefn defns (StartDefn _ w loop' state0') = MealyT $ \ _ -> do
             Just state0 = Map.lookup state0' defns
 
 interpDefn :: MonadError AstError m => DefnMap -> Defn -> BV -> m BV
-interpDefn defns (Defn _ _ (Sig _ inSizes outSize) body) v = trunc <$> reThrow (interpExps defns (split inSizes v) body)
+interpDefn defns (Defn _ _ (Sig _ inSizes outSize) body) v = trunc <$> reThrow (interpExp defns (split inSizes v) body)
       where split :: [Size] -> BV -> [BV]
             split = flip toSubRanges
 
             trunc :: BV -> BV
             trunc = subRange (0, fromIntegral outSize - 1)
 
-            reThrow :: MonadError AstError m => Either ([Exp], AstError) BV -> m BV
+            reThrow :: MonadError AstError m => Either (Exp, AstError) BV -> m BV
             reThrow = \ case
                   Left (_, err) -> throwError err
                   Right bv      -> return bv
@@ -139,34 +139,38 @@ interpExp defns lvars e = case e of
       LVar _ _ (lkupVal -> Just v) -> pure v
       LVar {}                      -> failAt' e (ann e) "Core/Interp: interpExp: encountered unknown LVar."
       Lit  _ bv                    -> pure bv
+      Concat a es                  -> either (throwError . first (Concat a)) pure $ interpExps defns lvars es
       Call _ _ (Global (lkupDefn -> Just g)) es ps els -> do
             (es', els', call')  <- callExps es els
             if patMatches es' ps then
-                  case interpDefn defns g (patApply es' id ps) of
+                  case interpDefn defns g (patApply es' ps) of
                         Left err -> throwError (call', err)
                         Right bv -> pure bv
             else pure els'
       Call an sz (Extern (Sig _ argSizes _) nm@(binOp -> Just op)) es ps els -> do
             (es', els', call')  <- callExps es els
-            if patMatches es' ps then case toSubRanges (patApply es' id ps) argSizes of
+            if patMatches es' ps then case toSubRanges (patApply es' ps) argSizes of
                   [x, y] -> pure $ op sz x y
                   _      -> failAt' call' an $ "Core/Interp: interpExp: arity mismatch (" <> showt nm <> ")."
             else pure els'
       Call an sz (Extern (Sig _ argSizes _) nm@(unOp -> Just op)) es ps els -> do
             (es', els', call')  <- callExps es els
-            if patMatches es' ps then case toSubRanges (patApply es' id ps) argSizes of
+            if patMatches es' ps then case toSubRanges (patApply es' ps) argSizes of
                   [x]    -> pure $ op sz x
                   _      -> failAt' call' an $ "Core/Interp: interpExp: arity mismatch (" <> showt nm <> ")."
             else pure els'
       Call an sz (Extern (Sig _ argSizes _) "msbit") es ps els -> do
             (es', els', call')  <- callExps es els
-            if patMatches es' ps then case toSubRanges (patApply es' id ps) argSizes of
+            if patMatches es' ps then case toSubRanges (patApply es' ps) argSizes of
                   [x]    -> pure $ mkBV sz $ fromEnum $ testBit x (fromEnum $ width x - 1)
                   _      -> failAt' call' an "Core/Interp: interpExp: arity mismatch (msbit)."
             else pure els'
       Call _ _ Id es ps els -> do
+            -- TODO(chathhorn): (1) add [Exp] -> Exp ctor to Core Exp syntax (2) make patApply version for un-evaluated Exp
+            -- if patMatches (bitVec 0 0) ps then pure $ patApply es ps
+            -- else pure els'
             (es', els', _)  <- callExps es els
-            if patMatches es' ps then pure $ patApply es' id ps
+            if patMatches es' ps then pure $ patApply es' ps
             else pure els'
       Call _  sz (Const v) es ps els -> do
             (es', els', _)  <- callExps es els
@@ -180,23 +184,23 @@ interpExp defns lvars e = case e of
             lkupDefn :: Name -> Maybe Defn
             lkupDefn = flip Map.lookup defns
 
-            callExps :: MonadError (Exp, AstError) m => [Exp] -> [Exp] -> m (BV, BV, Exp)
+            callExps :: MonadError (Exp, AstError) m => Exp -> Exp -> m (BV, BV, Exp)
             callExps es els = case (,) <$> mes <*> mels of
                   Left (_, err)     -> throwError (call', err)
                   Right (es', els') -> pure (es', els', call')
-                  where mes   = interpExps defns lvars es
-                        mels  = interpExps defns lvars els
+                  where mes   = interpExp defns lvars es
+                        mels  = interpExp defns lvars els
                         call' = reCall mes mels e
 
-            reCall :: Either ([Exp], AstError) BV -> Either ([Exp], AstError) BV -> Exp -> Exp
+            reCall :: Either (Exp, AstError) BV -> Either (Exp, AstError) BV -> Exp -> Exp
             reCall mes mels = \ case
-                  Call an sz t _ ps _ -> Call an sz t (toExps an mes) ps (toExps an mels)
-                  e                   -> e
+                  Call an sz t _ ps _ -> Call an sz t (toExp an mes) ps (toExp an mels)
+                  c                   -> c
 
-            toExps :: Annote -> Either ([Exp], a) BV -> [Exp]
-            toExps an = \ case
-                  Left (es, _) -> es
-                  Right bv     -> [Lit an bv]
+            toExp :: Annote -> Either (Exp, a) BV -> Exp
+            toExp an = \ case
+                  Left (e', _) -> e'
+                  Right bv     -> Lit an bv
 
 data PatMatch = MatchVar Index Index
               | MatchLit Index Index BV
@@ -215,19 +219,19 @@ patMatches' inj = mconcat . map (\ case
       MatchLit i j bv -> inj i j bv
       _               -> mempty) . patInterp
 
+patMatches :: BV -> [Pat] -> Bool
+patMatches x = and . patMatches' (\ i j bv -> [subRange (i, j) x ==. bv])
+
 patApply' :: Monoid m => (Index -> Index -> m) -> [Pat] -> m
 patApply' inj = mconcat . map (\ case
       MatchVar i j -> inj i j
       _            -> mempty) . patInterp
 
-patMatches :: BV -> [Pat] -> Bool
-patMatches x = and . patMatches' (\ i j bv -> [subRange (i, j) x == bv])
-
-patApply :: Monoid m => BV -> (BV -> m) -> [Pat] -> m
-patApply x inj = patApply' (\ i j -> inj (subRange (i, j) x))
+patApply :: BV -> [Pat] -> BV
+patApply x = patApply' $ \ i j -> subRange (i, j) x
 
 toSubRanges :: BV -> [Size] -> [BV]
-toSubRanges bv szs = patApply bv pure (map (PatVar noAnn) szs)
+toSubRanges bv = patApply' (\ i j -> pure (subRange (i, j) bv)) . map (PatVar noAnn)
 
 binOp :: Name -> Maybe (Size -> BV -> BV -> BV)
 binOp = flip lookup primBinOps
@@ -256,7 +260,7 @@ primBinOps = map (second binBitify)
       , ( ">>>" , ashr)
       , ( "concat" , (<>))
       ] <>
-      [ ("replicate", \ sz a b -> mkBV sz $ BV.replicate (nat a) b)
+      [ ("replicate", \ sz a b -> mkBV sz $ nat $ BV.replicate (nat a) b)
       ]
 
 primUnOps :: [(Name, Size -> BV -> BV)]
