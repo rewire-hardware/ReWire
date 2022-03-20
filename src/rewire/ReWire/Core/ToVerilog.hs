@@ -163,7 +163,7 @@ compileExp flags lvars = \ case
       LVar _  _ (lkupLVal -> Just x)                    -> pure (x, [])
       LVar an _ _                                       -> failAt an "ToVerilog: compileExp: encountered unknown LVar."
       Lit _ bv                                          -> pure (bvToExp bv, [])
-      C.Concat _ es                                     -> first mkConcat <$> compileExps flags lvars es
+      C.Concat _ e1 e2                                  -> first mkConcat <$> compileExps flags lvars (gather e1 <> gather e2)
       Call _ sz (Global g) es ps els                    -> mkCall "glob" es ps els $ compileCall flags g sz
       Call _ sz (Extern _ (binOp -> Just op)) es ps els -> mkCall "binOp" es ps els $ \ [x, y] -> (,[]) <$> wcast sz (op x y)
       Call _ sz (Extern _ (unOp -> Just op)) es ps els  -> mkCall "unOp" es ps els $ \ [x] -> (,[]) <$> wcast sz (op x)

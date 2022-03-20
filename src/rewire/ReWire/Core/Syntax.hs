@@ -14,6 +14,7 @@ module ReWire.Core.Syntax
   , bvTrue, bvFalse
   , isNil, nil
   , isNilPat, nilPat
+  , cat, gather
   ) where
 
 import ReWire.Pretty
@@ -89,7 +90,7 @@ instance Pretty Sig where
 
 data Exp = Lit    Annote !BV
          | LVar   Annote !Size !LId
-         | Concat Annote ![Exp] -- TODO(chathhorn): make binary operator: Concat Annote Exp Exp
+         | Concat Annote !Exp  !Exp
          | Call   Annote !Size !Target !Exp ![Pat] !Exp
          deriving (Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Exp
@@ -97,7 +98,7 @@ data Exp = Lit    Annote !BV
 instance Eq Exp where
       (Lit    a bv)           == (Lit    a' bv')               = a == a' && bv ==. bv' -- Eq instance just for "==." instead of "==" here.
       (LVar   a sz lid)       == (LVar   a' sz' lid')          = a == a' && sz == sz' && lid == lid'
-      (Concat a es)           == (Concat a' es')               = a == a' && es == es'
+      (Concat a e1 e2)        == (Concat a' e1' e2')           = a == a' && e1 == e1' && e2 == e2'
       (Call   a sz t e1 p e2) == (Call   a' sz' t' e1' p' e2') = a == a' && sz == sz' && t == t' && e1 == e1' && p == p' && e2 == e2'
       _                       == _                             = False
 
@@ -105,21 +106,21 @@ instance SizeAnnotated Exp where
       sizeOf = \ case
             LVar _ s _       -> s
             Lit _ bv         -> fromIntegral $ width bv
-            Concat _ es      -> sum $ map sizeOf es
+            Concat _ e1 e2   -> sizeOf e1 + sizeOf e2
             Call _ s _ _ _ _ -> s
 
 instance Annotated Exp where
       ann = \ case
             LVar a _ _       -> a
             Lit a _          -> a
-            Concat a _       -> a
+            Concat a _ _     -> a
             Call a _ _ _ _ _ -> a
 
 instance Pretty Exp where
       pretty = \ case
             Lit _ bv             -> text (pack $ showHex bv) <> text "::BV" <> pretty (width bv)
             LVar _ _ n           -> text $ "$" <> showt n
-            Concat _ es          -> ppBV es
+            Concat _ e1 e2       -> ppBV $ gather e1 <> gather e2
             Call _ _ f@(Const {}) e ps els | isNil els -> nest 2 $ vsep
                   [ text "case" <+> pretty e <+> text "of"
                   , ppBV' (ppPats ps) <+> text "->" <+> pretty f
@@ -138,6 +139,17 @@ instance Pretty Exp where
                   , ppBV' (ppPats ps) <+> text "->" <+> pretty f <+> ppBV' (ppArgs ps)
                   , text "_" <+> text "->" <+> pretty els
                   ]
+
+cat :: [Exp] -> Exp
+cat = (\ case
+            []         -> nil
+            es@(e : _) -> foldl1 (Concat $ ann e) es
+      ) . filter (not . isNil)
+
+gather :: Exp -> [Exp]
+gather = filter (not . isNil) . \ case
+      Concat _ e1 e2 -> gather e1 <> gather e2
+      e              -> [e]
 
 ppPats :: [Pat] -> [Doc an]
 ppPats = zipWith ppPats' [0::Index ..]
@@ -163,7 +175,7 @@ nil :: Exp
 nil = Lit noAnn BV.nil
 
 isNil :: Exp -> Bool
-isNil e = sizeOf e == 0
+isNil e = sizeOf e <= 0
 
 ---
 

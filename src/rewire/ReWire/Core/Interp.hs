@@ -23,19 +23,16 @@ import ReWire.Core.Syntax
       , Defn (..)
       , Sig (..)
       , StartDefn (..)
-      , bvFalse
-      , sizeOf
+      , bvFalse, sizeOf, gather, cat, nil
       )
 import ReWire.Annotation (ann, noAnn, Annote)
 import ReWire.Error (failAt', MonadError, AstError)
 
-import Control.Arrow ((&&&), first, second)
+import Control.Arrow ((&&&), second)
 import Control.Monad (msum)
 import Control.Monad.Except (throwError)
 import Data.BitVector (BV, bitVec, (@@), nat, width, showHex, (>>.), (<<.), (==.), ashr)
 import Data.Bits (Bits (..))
-import Data.Foldable (foldlM)
-import Data.Functor ((<&>))
 import Data.HashMap.Strict (HashMap)
 import Data.List (foldl')
 import Data.Machine ((<~), source)
@@ -123,78 +120,66 @@ interpDefn defns (Defn _ _ (Sig _ inSizes outSize) body) v = trunc <$> reThrow (
                   Left (_, err) -> throwError err
                   Right bv      -> return bv
 
-interpExps :: DefnMap -> [BV] -> [Exp] -> Either ([Exp], AstError) BV
-interpExps defns lvars es = case foldMapM (interpExp defns lvars) es of
-      Left (_, err) -> Left (map part es, err)
-      Right bv      -> pure bv
-      where part :: Exp -> Exp
-            part e = case interpExp defns lvars e of
-                  Left (e', _) -> e'
-                  Right bv     -> Lit (ann e) bv
-
 -- | Attempts to evalute a Core expression to a value. On error, returns a
 --  potentially-partially-evaluated expression.
 interpExp :: DefnMap -> [BV] -> Exp -> Either (Exp, AstError) BV
-interpExp defns lvars e = case e of
+interpExp defns lvars exp = case exp of
       LVar _ _ (lkupVal -> Just v) -> pure v
-      LVar {}                      -> failAt' e (ann e) "Core/Interp: interpExp: encountered unknown LVar."
+      lv@LVar {}                   -> failAt' lv (ann lv) "Core/Interp: interpExp: encountered unknown LVar."
       Lit  _ bv                    -> pure bv
-      Concat a es                  -> either (throwError . first (Concat a)) pure $ interpExps defns lvars es
-      Call _ _ (Global (lkupDefn -> Just g)) es ps els -> do
-            (es', els', call')  <- callExps es els
-            if patMatches es' ps then
-                  case interpDefn defns g (patApply es' ps) of
+      Concat an e1 e2              -> do
+            (v1, v2, _) <- evaluate e1 e2 (Concat an)
+            pure $ v1 <> v2
+      Call _ _ (Global (lkupDefn -> Just g)) e ps els -> do
+            (e', els', call')  <- evaluate e els reCall
+            if patMatches e' ps then
+                  case interpDefn defns g (patApply e' ps) of
                         Left err -> throwError (call', err)
                         Right bv -> pure bv
             else pure els'
-      Call an sz (Extern (Sig _ argSizes _) nm@(binOp -> Just op)) es ps els -> do
-            (es', els', call')  <- callExps es els
-            if patMatches es' ps then case toSubRanges (patApply es' ps) argSizes of
+      Call an sz (Extern (Sig _ argSizes _) nm@(binOp -> Just op)) e ps els -> do
+            (e', els', call')  <- evaluate e els reCall
+            if patMatches e' ps then case toSubRanges (patApply e' ps) argSizes of
                   [x, y] -> pure $ op sz x y
                   _      -> failAt' call' an $ "Core/Interp: interpExp: arity mismatch (" <> showt nm <> ")."
             else pure els'
-      Call an sz (Extern (Sig _ argSizes _) nm@(unOp -> Just op)) es ps els -> do
-            (es', els', call')  <- callExps es els
-            if patMatches es' ps then case toSubRanges (patApply es' ps) argSizes of
+      Call an sz (Extern (Sig _ argSizes _) nm@(unOp -> Just op)) e ps els -> do
+            (e', els', call')  <- evaluate e els reCall
+            if patMatches e' ps then case toSubRanges (patApply e' ps) argSizes of
                   [x]    -> pure $ op sz x
                   _      -> failAt' call' an $ "Core/Interp: interpExp: arity mismatch (" <> showt nm <> ")."
             else pure els'
-      Call an sz (Extern (Sig _ argSizes _) "msbit") es ps els -> do
-            (es', els', call')  <- callExps es els
-            if patMatches es' ps then case toSubRanges (patApply es' ps) argSizes of
+      Call an sz (Extern (Sig _ argSizes _) "msbit") e ps els -> do
+            (e', els', call')  <- evaluate e els reCall
+            if patMatches e' ps then case toSubRanges (patApply e' ps) argSizes of
                   [x]    -> pure $ mkBV sz $ fromEnum $ testBit x (fromEnum $ width x - 1)
                   _      -> failAt' call' an "Core/Interp: interpExp: arity mismatch (msbit)."
             else pure els'
-      Call _ _ Id es ps els -> do
-            -- TODO(chathhorn): (1) add [Exp] -> Exp ctor to Core Exp syntax (2) make patApply version for un-evaluated Exp
-            -- if patMatches (bitVec 0 0) ps then pure $ patApply es ps
-            -- else pure els'
-            (es', els', _)  <- callExps es els
-            if patMatches es' ps then pure $ patApply es' ps
-            else pure els'
-      Call _  sz (Const v) es ps els -> do
-            (es', els', _)  <- callExps es els
-            if patMatches es' ps then pure $ mkBV sz v
-            else pure els'
-      Call an _ (Extern _ ex) _ _ _  -> failAt' e an $ "Core/Interp: interpExp: unknown extern: " <> ex
-      _                              -> failAt' e (ann e) "Core/Interp: interpExp: encountered unsupported expression."
+      Call _ _ Id e ps els -> if patMatchesE e ps then interpExp defns lvars $ patApplyE e ps else do
+            (e', els', _)  <- evaluate e els reCall
+            pure $ if patMatches e' ps then patApply e' ps else els'
+      Call _  sz (Const v) e ps els -> if patMatchesE e ps then pure $ mkBV sz v else do
+            (e', els', _)  <- evaluate e els reCall
+            pure $ if patMatches e' ps then mkBV sz v else els'
+      Call an _ (Extern _ s) _ _ _   -> failAt' exp an $ "Core/Interp: interpExp: unknown extern: " <> s
+      e                              -> failAt' e (ann e) "Core/Interp: interpExp: encountered unsupported expression."
       where lkupVal :: LId -> Maybe BV
             lkupVal = flip lookup (zip [0::LId ..] lvars)
 
             lkupDefn :: Name -> Maybe Defn
             lkupDefn = flip Map.lookup defns
 
-            callExps :: MonadError (Exp, AstError) m => Exp -> Exp -> m (BV, BV, Exp)
-            callExps es els = case (,) <$> mes <*> mels of
-                  Left (_, err)     -> throwError (call', err)
-                  Right (es', els') -> pure (es', els', call')
-                  where mes   = interpExp defns lvars es
+            evaluate :: MonadError (Exp, AstError) m => Exp -> Exp -> (Exp -> Exp -> Exp) -> m (BV, BV, Exp)
+            evaluate e els inst = case (,) <$> me <*> mels of
+                  Left (_, err)    -> throwError (call', err)
+                  Right (e', els') -> pure (e', els', call')
+                  where me    = interpExp defns lvars e
                         mels  = interpExp defns lvars els
-                        call' = reCall mes mels e
+                        call' = inst (toExp (ann e) me) (toExp (ann els) mels)
 
-            reCall :: Either (Exp, AstError) BV -> Either (Exp, AstError) BV -> Exp -> Exp
-            reCall mes mels = \ case
-                  Call an sz t _ ps _ -> Call an sz t (toExp an mes) ps (toExp an mels)
+            reCall :: Exp -> Exp -> Exp
+            reCall e' els' = case exp of
+                  Call an sz t _ ps _ -> Call an sz t e' ps els'
                   c                   -> c
 
             toExp :: Annote -> Either (Exp, a) BV -> Exp
@@ -222,6 +207,14 @@ patMatches' inj = mconcat . map (\ case
 patMatches :: BV -> [Pat] -> Bool
 patMatches x = and . patMatches' (\ i j bv -> [subRange (i, j) x ==. bv])
 
+patMatchesE :: Exp -> [Pat] -> Bool
+patMatchesE es ps = and $ (length (gather es) == length ps) : zipWith match' (gather es) ps
+      where match' :: Exp -> Pat -> Bool
+            match' (Lit _ bv) (PatLit _ bv')     = bv ==. bv'
+            match' e          (PatVar _ sz)      = sizeOf e == sz
+            match' e          (PatWildCard _ sz) = sizeOf e == sz
+            match' _          _                  = False
+
 patApply' :: Monoid m => (Index -> Index -> m) -> [Pat] -> m
 patApply' inj = mconcat . map (\ case
       MatchVar i j -> inj i j
@@ -229,6 +222,13 @@ patApply' inj = mconcat . map (\ case
 
 patApply :: BV -> [Pat] -> BV
 patApply x = patApply' $ \ i j -> subRange (i, j) x
+
+patApplyE :: Exp -> [Pat] -> Exp
+patApplyE e = cat . zipWith apply' (gather e)
+      where apply' :: Exp -> Pat -> Exp
+            apply' e = \ case
+                  PatVar _ _ -> e
+                  _          -> nil
 
 toSubRanges :: BV -> [Size] -> [BV]
 toSubRanges bv = patApply' (\ i j -> pure (subRange (i, j) bv)) . map (PatVar noAnn)
@@ -331,9 +331,6 @@ rst flags | FlagNoReset `elem` flags || FlagNoClock `elem` flags = []
             sRst = fromMaybe (if FlagInvertReset `elem` flags then "rst_n" else "rst") $ msum $ map (\ case
                   FlagResetName s -> Just $ pack s
                   _               -> Nothing) flags
-
-foldMapM :: (Monad m, Monoid w, Foldable t) => (a -> m w) -> t a -> m w
-foldMapM f = foldlM (\ acc a -> f a <&> mappend acc) mempty
 
 unfoldMealyT :: Applicative m => (s -> a -> m (b, s)) -> s -> MealyT m a b
 unfoldMealyT f = go

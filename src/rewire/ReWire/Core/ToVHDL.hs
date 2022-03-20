@@ -99,7 +99,7 @@ compileExps es = do
 compileExp :: MonadError AstError m => C.Exp -> CM m ([Stmt], Name)
 compileExp = \ case
       LVar _ _ i       -> pure ([], "arg" <> showt i)
-      Concat _ es      -> compileExps es
+      Concat _ e1 e2   -> compileExps $ gather e1 <> gather e2
       Lit _ bv         -> do
             let litSize  = fromIntegral $ width bv
                 litValue = if litSize > 0 then nat bv else 0

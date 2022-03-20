@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 module ReWire.Core.Transform ( mergeSlices , purgeUnused, partialEval ) where
 
-import ReWire.Annotation (unAnn, noAnn, Annote)
+import ReWire.Annotation (unAnn)
 import ReWire.Core.Interp (interpExp, DefnMap)
 import ReWire.Core.Syntax
 
@@ -53,7 +53,7 @@ reExp :: MonadReader DefnMap m => (LId -> Maybe (LId, Size)) -> Exp -> m Exp
 reExp rn = \ case
       LVar a s l                                                         -> pure $ LVar a s $ maybe l fst $ rn l
       Lit a bv                                                           -> pure $ Lit a bv
-      Concat a es                                                        -> packExps a <$> mapM (reExp rn) es
+      Concat _ e1 e2                                                     -> packExps <$> mapM (reExp rn) (gather e1 <> gather e2)
       c@(Call _ _ (Global g) e _ _)    | isNil e                         -> getBody g >>= maybe (pure c) (reExp rn)
       c@(Call _ _ (Global g) _ ps els) | null (getPVars ps) && isNil els -> getBody g >>= maybe (pure c) (reExp rn)
       c@(Call a s (Global g) e ps els)                                   -> getBody g >>= maybe (pure c) (\ body ->
@@ -107,7 +107,7 @@ reExp rn = \ case
                   _        -> BV.nil
 
             patToExp :: [Pat] -> Exp
-            patToExp = packExps noAnn . zipWith patToExp' [0::LId ..]
+            patToExp = packExps . zipWith patToExp' [0::LId ..]
                   where patToExp' :: LId -> Pat -> Exp
                         patToExp' i = \ case
                               PatVar      an sz -> LVar an sz i
@@ -118,17 +118,12 @@ reExp rn = \ case
             alwaysMatches = all (\ p -> isWild p || isVar p)
 
             inline :: [Pat] -> Exp -> Maybe Target
-            inline ar (Call _ _ g' es ps _)
-                  | unAnn (patToExp ar) == unAnn es && unAnn es == unAnn (patToExp ps) = Just g'
-                  -- TODO(chathhorn): better normalization
-            inline _ _                                                                 = Nothing
+            inline ar (Call _ _ g' e ps _)
+                  | unAnn (patToExp ar) == unAnn e && unAnn e == unAnn (patToExp ps) = Just g'
+            inline _ _                                                               = Nothing
 
-packExps :: Annote -> [Exp] -> Exp
-packExps an = pack' . mergeLits . filter ((> 0) . sizeOf)
-      where pack' :: [Exp] -> Exp
-            pack' = \ case
-                  [e] -> e
-                  es  -> Concat an es
+packExps :: [Exp] -> Exp
+packExps = cat . mergeLits . filter (not . isNil)
 
 mergeLits :: [Exp] -> [Exp]
 mergeLits = \ case
@@ -163,7 +158,7 @@ purgeUnused (Program start@(StartDefn _ _ loop state0) ds) = do
 
             getUses :: Exp -> [GId]
             getUses = \ case
-                  Concat _ es                 -> concatMap getUses es
+                  Concat _ e1 e2              -> getUses e1 <> getUses e2
                   Call _ _ (Global g) e _ els -> [g] <> getUses e <> getUses els
                   Call _ _ _          e _ els ->        getUses e <> getUses els
                   _                           -> []
