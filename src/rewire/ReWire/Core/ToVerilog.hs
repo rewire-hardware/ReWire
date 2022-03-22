@@ -160,34 +160,34 @@ compileExps flags lvars es = (map fst &&& concatMap snd) <$> mapM (compileExp fl
 compileExp :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
             => [Flag] -> [V.Exp] -> C.Exp -> m (V.Exp, [Stmt])
 compileExp flags lvars = \ case
-      LVar _  _ (lkupLVal -> Just x)                    -> pure (x, [])
-      LVar an _ _                                       -> failAt an "ToVerilog: compileExp: encountered unknown LVar."
-      Lit _ bv                                          -> pure (bvToExp bv, [])
-      C.Concat _ e1 e2                                  -> first mkConcat <$> compileExps flags lvars (gather e1 <> gather e2)
-      Call _ sz (Global g) es ps els                    -> mkCall "glob" es ps els $ compileCall flags g sz
-      Call _ sz (Extern _ (binOp -> Just op)) es ps els -> mkCall "binOp" es ps els $ \ [x, y] -> (,[]) <$> wcast sz (op x y)
-      Call _ sz (Extern _ (unOp -> Just op)) es ps els  -> mkCall "unOp" es ps els $ \ [x] -> (,[]) <$> wcast sz (op x)
-      Call _ sz (Extern _ "msbit") es ps els            -> mkCall "msbit" es ps els $ \ [x] -> (,[]) <$> wcast sz (projBit (fromIntegral (argsSize ps) - 1) x)
-      Call _ sz Id es ps els                            -> mkCall "id" es ps els $ \ xs -> (,[]) <$> wcast sz (mkConcat xs)
-      Call _ sz (Const bv) es ps els                    -> mkCall "lit" es ps els $ \ _ -> (,[]) <$> wcast sz (bvToExp bv)
-      Call an _ (Extern _ ex) _ _ _                     -> failAt an $ "ToVerilog: compileExp: unknown extern: " <> ex
+      LVar _  _ (lkupLVal -> Just x)                   -> pure (x, [])
+      LVar an _ _                                      -> failAt an "ToVerilog: compileExp: encountered unknown LVar."
+      Lit _ bv                                         -> pure (bvToExp bv, [])
+      C.Concat _ e1 e2                                 -> first mkConcat <$> compileExps flags lvars (gather e1 <> gather e2)
+      Call _ sz (Global g) e ps els                    -> mkCall "glob"  e ps els $ compileCall flags g sz
+      Call _ sz (Extern _ (binOp -> Just op)) e ps els -> mkCall "binOp" e ps els $ \ [x, y] -> (,[]) <$> wcast sz (op x y)
+      Call _ sz (Extern _ (unOp -> Just op)) e ps els  -> mkCall "unOp"  e ps els $ \ [x]    -> (,[]) <$> wcast sz (op x)
+      Call _ sz (Extern _ "msbit") e ps els            -> mkCall "msbit" e ps els $ \ [x]    -> (,[]) <$> wcast sz (projBit (fromIntegral (argsSize ps) - 1) x)
+      Call _ sz Id e ps els                            -> mkCall "id"    e ps els $ \ xs     -> (,[]) <$> wcast sz (mkConcat xs)
+      Call _ sz (Const bv) e ps els                    -> mkCall "lit"   e ps els $ \ _      -> (,[]) <$> wcast sz (bvToExp bv)
+      Call an _ (Extern _ ex) _ _ _                    -> failAt an $ "ToVerilog: compileExp: unknown extern: " <> ex
       where mkCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
                     => Name -> C.Exp -> [Pat] -> C.Exp -> ([V.Exp] -> m (V.Exp, [Stmt])) -> m (V.Exp, [Stmt])
-            mkCall s es ps els f = do
-                  (es', stmts)   <- compileExp flags lvars es
+            mkCall s e ps els f = do
+                  (e', stmts)    <- compileExp flags lvars e
                   (els', stmts') <- compileExp flags lvars els
-                  case litVal es' of
+                  case litVal e' of
                         Just bv -> do
                               (fes, fstmts) <- f $ patApplyLit bv ps
                               pure (if patMatchesLit bv ps then fes else els', stmts <> stmts' <> fstmts)
                         _      -> do
-                              Name n <- newWire (sizeOf es) s
+                              Name n <- newWire (sizeOf e) s
                               (fes, fstmts) <- f $ map LVal $ patApply n ps
                               pure  ( case patMatches n ps of
                                           cond | litTrue cond || isNil els -> fes
                                                | litFalse cond             -> els'
                                                | otherwise                 -> Cond cond fes els'
-                                    , stmts <> stmts' <> [ Assign (Name n) es' ] <> fstmts
+                                    , stmts <> stmts' <> [ Assign (Name n) e' ] <> fstmts
                                     )
 
             litTrue :: V.Exp -> Bool

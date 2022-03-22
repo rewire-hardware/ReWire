@@ -82,9 +82,7 @@ instance SizeAnnotated Sig where
       sizeOf (Sig _ _ s) = s
 
 instance Pretty Sig where
-      pretty = \ case
-            Sig _ [] res   -> text "BV" <> pretty res
-            Sig _ args res -> parens (hsep $ punctuate comma $ map ((text "BV" <>) . pretty) args) <+> text "->" <+> text "BV" <> pretty res
+      pretty (Sig _ args res) = hsep $ punctuate (text " ->") $ map ((text "BV" <>) . pretty) $ args <> [res]
 
 ---
 

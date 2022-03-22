@@ -30,7 +30,7 @@ import Control.Monad.State (State, evalStateT, execState, StateT (..), get, modi
 import Control.Monad (filterM, replicateM)
 import Data.Data (Data)
 import Data.List (find, foldl', sort)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromMaybe)
 import Data.Containers.ListUtils (nubOrd, nubOrdOn)
 import Data.Hashable (Hashable (..))
 import Data.Text (Text)
@@ -439,7 +439,9 @@ inuseDefn start ds = map toDefn $ Set.elems $ execState (inuseDefn' ds') ds'
             fvs = Set.fromList . concatMap (fv . unembed . defnBody . toDefn) . Set.elems
 
             toDefn :: Name Exp -> Defn
-            toDefn n = fromJust $ find ((==n) . defnName) ds
+            toDefn n = case find ((==n) . defnName) ds of
+                  Just d  -> d
+                  Nothing -> error $ "Something went wrong: can't find symbol: " <> show n
 
 -- | Partially evaluate expressions.
 reduce :: (Fresh m, MonadError AstError m) => FreeProgram -> m FreeProgram
