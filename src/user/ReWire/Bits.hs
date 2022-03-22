@@ -70,7 +70,6 @@ data W60 = W60 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit B
 data W61 = W61 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W62 = W62 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W63 = W63 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
-
 data W64 = W64 W32 W32
 data W65 = W65 Bit W32 W32
 data W66 = W66 W2 W32 W32
@@ -87,6 +86,12 @@ data W132 = W132 W4 W64 W64
 data W133 = W133 W5 W64 W64
 data W134 = W134 W6 W64 W64
 
+data W250 = W250 W58 W64 W64 W64
+data W251 = W251 W59 W64 W64 W64
+data W252 = W252 W60 W64 W64 W64
+data W253 = W253 W61 W64 W64 W64
+data W254 = W254 W62 W64 W64 W64
+data W255 = W255 W63 W64 W64 W64
 data W256 = W256 W64 W64 W64 W64
 data W257 = W257 Bit W256
 data W258 = W258 W2 W256
