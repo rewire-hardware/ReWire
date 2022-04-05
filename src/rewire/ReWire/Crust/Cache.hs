@@ -23,7 +23,6 @@ import ReWire.Crust.ToCore
 import ReWire.Crust.ToCrust
 import ReWire.Crust.Transform
 import ReWire.Crust.TypeCheck
-import ReWire.Crust.TypeVerify
 import ReWire.Unbound (runFreshMT, FreshMT (..))
 import ReWire.Pretty
 import ReWire.Flags (Flag (..))
@@ -153,13 +152,11 @@ getProgram flags fp = do
        >=> pDebug' "Removing unused definitions."
        >=> pure . purgeUnused start
        >=> pDebug' "[Pass 5] Pre-purification."
-       >=> whenSet' FlagDTypes (pDebug' "Verifying types pre-purification." >=> typeVerify)
        >=> whenSet FlagDCrust3 (printInfo "Crust 3: Pre-purification")
        >=> pDebug' "Purifying."
        >=> purify start
        >=> pDebug' "[Pass 6] Post-purification."
        >=> whenSet FlagDCrust4 (printInfo "Crust 4: Post-purification")
-       >=> whenSet' FlagDTypes (pDebug' "Verifying types post-purification." >=> typeVerify)
        >=> pDebug' "Lifting lambdas (post-purification)."
        >=> liftLambdas
        >=> pDebug' "Fully apply global function definitions."
@@ -183,9 +180,6 @@ getProgram flags fp = do
 
       where whenSet :: Applicative m => Flag -> (Bool -> a -> m a) -> a -> m a
             whenSet f m = if f `elem` flags then m $ FlagV `elem` flags else pure
-
-            whenSet' :: Applicative m => Flag -> (a -> m a) -> a -> m a
-            whenSet' f m = whenSet f $ const m
 
             pDebug' :: MonadIO m => Text -> a -> m a
             pDebug' s a = pDebug flags s >> pure a

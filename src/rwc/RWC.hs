@@ -52,7 +52,6 @@ options =
        , Option []    ["dpass7" , "dcrust5"] (NoArg  FlagDCrust5)                       "Dump pass 7: post-second-lambda-lifting crust source."
        , Option []    ["dpass8" , "dcore1" ] (NoArg  FlagDCore1)                        "Dump pass 8: core source."
        , Option []    ["dpass9" , "dcore2" ] (NoArg  FlagDCore2)                        "Dump pass 9: core source after purging empty types."
-       , Option []    ["dtypes"]             (NoArg  FlagDTypes)                        "Enable extra typechecking after various IR transformations."
        , Option []    ["flatten"]            (NoArg  FlagFlatten)                       "Generate a single RTL module."
        , Option ['o'] []                     (ReqArg FlagO           "filename.vhdl")   "Name for RTL output file."
        , Option ['p'] ["packages"]           (ReqArg FlagPkgs        "pkg1,pkg2,...")   "Packages to use for external VHDL components (e.g., ieee.std_logic_1164.all)."

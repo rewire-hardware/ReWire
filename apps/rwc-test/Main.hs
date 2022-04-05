@@ -30,7 +30,6 @@ options =
        [ Option ['v'] ["verbose"]      (NoArg FlagV)                  "More verbose output."
        , Option []    ["no-ghdl"]      (NoArg FlagNoGhdl)             "Disable verification of output VHDL with 'ghdl -s' (which requires 'ghdl' in $PATH)."
        , Option []    ["no-ghc"]       (NoArg FlagNoGhdl)             "Disable running tests through ghc."
-       , Option []    ["no-dtypes"]    (NoArg FlagNoDTypes)           "Disable extra type-checking passes."
        , Option []    ["vhdl-checker"] (ReqArg FlagChecker "command") "Set the command to use for checking generated VHDL (default: 'ghdl -s')."
        ]
 
@@ -46,8 +45,7 @@ testCompiler flags fn = [testCase (takeBaseName fn) $ do
             callCommand $ "stack ghc " ++ fn
       ]
       where extraFlags :: [String]
-            extraFlags = if FlagNoDTypes `elem` flags then [] else ["--dtypes"]
-                      ++ if FlagV `elem` flags then ["-v"] else []
+            extraFlags = if FlagV `elem` flags then ["-v"] else []
 
             checker :: String
             checker = fromMaybe "ghdl -s" $ msum $ flip map flags $ \ case
