@@ -2,7 +2,7 @@
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.Core.Syntax
-  ( Sig (..)
+  ( Sig (..), ExternSig (..)
   , Exp (..)
   , Pat (..)
   , StartDefn (..), Defn (..)
@@ -50,7 +50,7 @@ instance TextShow BV where
       showb = showb . showHex
 
 data Target = Global !GId
-            | Extern !Sig !Name
+            | Extern !ExternSig !Name
             | Id
             | Const !BV
       deriving (Eq, Ord, Generic, Show, Typeable, Data)
@@ -71,7 +71,22 @@ ppBV' = parens . hsep . punctuate comma
 
 ---
 
-data Sig = Sig Annote ![Size] !Size -- Function ty with sizes of arguments and size of result.
+data ExternSig = ExternSig Annote ![(Text, Size)] ![(Text, Size)] -- Names and sizes of inputs and outputs, respectively.
+        deriving (Eq, Ord, Generic, Show, Typeable, Data)
+        deriving TextShow via FromGeneric ExternSig
+
+instance Annotated ExternSig where
+      ann (ExternSig a _ _) = a
+
+instance SizeAnnotated ExternSig where
+      sizeOf (ExternSig _ _ rs) = sum (snd <$> rs)
+
+instance Pretty ExternSig where
+      pretty (ExternSig _ args res) = hsep $ punctuate (text " ->") $ (map ((text "BV" <>) . pretty . snd) args) <> [parens $ hsep $ punctuate comma $ map ((text "BV" <>) . pretty . snd) res]
+
+---
+
+data Sig = Sig Annote ![Size] !Size
         deriving (Eq, Ord, Generic, Show, Typeable, Data)
         deriving TextShow via FromGeneric Sig
 

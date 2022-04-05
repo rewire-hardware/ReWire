@@ -14,7 +14,7 @@ module ReWire.Core.Interp
 
 import ReWire.Flags (Flag (..))
 import ReWire.Core.Syntax
-      ( Program (..)
+      ( Program (..), ExternSig (..)
       , Name, Value, Index, Size
       , Wiring (..)
       , GId, LId
@@ -137,19 +137,23 @@ interpExp defns lvars exp = case exp of
                         Left err -> throwError (call', err)
                         Right bv -> pure bv
             else pure els'
-      Call an sz (Extern (Sig _ argSizes _) nm@(binOp -> Just op)) e ps els -> do
+      Call an sz (Extern (ExternSig _ args _) nm@(binOp -> Just op)) e ps els -> do
+            let argSizes = snd <$> args
             (e', els', call')  <- evaluate e els reCall
+            -- TODO(chathhorn): I think this is a bit different from how ToVerilog does it: note use of argSizes
             if patMatches e' ps then case toSubRanges (patApply e' ps) argSizes of
                   [x, y] -> pure $ op sz x y
                   _      -> failAt' call' an $ "Core/Interp: interpExp: arity mismatch (" <> showt nm <> ")."
             else pure els'
-      Call an sz (Extern (Sig _ argSizes _) nm@(unOp -> Just op)) e ps els -> do
+      Call an sz (Extern (ExternSig _ args _) nm@(unOp -> Just op)) e ps els -> do
+            let argSizes = snd <$> args
             (e', els', call')  <- evaluate e els reCall
             if patMatches e' ps then case toSubRanges (patApply e' ps) argSizes of
                   [x]    -> pure $ op sz x
                   _      -> failAt' call' an $ "Core/Interp: interpExp: arity mismatch (" <> showt nm <> ")."
             else pure els'
-      Call an sz (Extern (Sig _ argSizes _) "msbit") e ps els -> do
+      Call an sz (Extern (ExternSig _ args _) "msbit") e ps els -> do
+            let argSizes = snd <$> args
             (e', els', call')  <- evaluate e els reCall
             if patMatches e' ps then case toSubRanges (patApply e' ps) argSizes of
                   [x]    -> pure $ mkBV sz $ fromEnum $ testBit x (fromEnum $ width x - 1)

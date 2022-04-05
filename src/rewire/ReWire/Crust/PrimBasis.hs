@@ -25,6 +25,7 @@ primDatas = map mkData
       , ("Integer", KStar,                                              [])
       , ("Bit",     KStar,                                              [nullDataCon "C" "Bit", nullDataCon "S" "Bit"])
       , ("String",  KStar,                                              [])
+      , ("List",    KStar `KFun` KStar,                                 [])
       , ("()",      KStar,                                              [nullDataCon "()" "()"])
       ] <> map mkTuple' [2..62] -- why 62? 'cause that's what ghc does!
 

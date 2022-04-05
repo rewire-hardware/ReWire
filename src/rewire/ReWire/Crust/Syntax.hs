@@ -24,9 +24,9 @@ module ReWire.Crust.Syntax
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly
       , rangeTy, paramTys, isPrim, mkArrowTy, nil, isResMonad, isStateMonad
-      , strTy, intTy, bitTy
+      , strTy, intTy, bitTy, listTy, pairTy
       , flattenAllTyApp, resInputTy
-      , mkTuple, mkTuplePat, mkTupleMPat, mkTupleTy
+      , mkTuple, mkTuplePat, mkTupleMPat, tupleTy
       , mkPair, mkPairPat, mkPairMPat
       , kmonad, tycomp, concrete
       , TypeAnnotated (..)
@@ -54,7 +54,7 @@ import safe Data.Hashable (Hashable)
 import safe Data.Text (Text, unpack, replicate)
 import safe GHC.Generics (Generic (..))
 import safe Prettyprinter
-      ( Doc, nest, hsep, parens, dquotes, comma
+      ( Doc, nest, hsep, parens, dquotes, comma, brackets
       , braces, vsep, (<+>), Pretty (..), punctuate
       )
 import safe ReWire.Pretty (empty, text)
@@ -230,6 +230,7 @@ data Exp = App    Annote !Exp  !Exp
          | Bits   Annote !Ty
          | LitInt Annote !Integer
          | LitStr Annote !Text
+         | LitList Annote !Ty ![Exp]
          | Error  Annote !Ty   !Text
       deriving (Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Exp
@@ -279,6 +280,7 @@ instance TypeAnnotated Exp where
             Bits _ t          -> t
             LitInt a _        -> intTy a
             LitStr a _        -> strTy a
+            LitList _ t _     -> t
             Error _ t _       -> t
 
 instance Annotated Exp where
@@ -294,6 +296,7 @@ instance Annotated Exp where
             Bits a _          -> a
             LitInt a _        -> a
             LitStr a _        -> a
+            LitList a _ _     -> a
             Error a _ _       -> a
 
 instance Parenless Exp where
@@ -303,6 +306,7 @@ instance Parenless Exp where
             [Var {}]                                  -> True
             [LitInt {}]                               -> True
             [LitStr {}]                               -> True
+            [LitList {}]                              -> True
             _                                         -> False
 
 instance Pretty Exp where
@@ -324,11 +328,12 @@ instance Pretty Exp where
                         [ text "match" <+> braces (pretty t) <+> pretty e <+> text "of"
                         , pretty p <+> text "->" <+> pretty e1
                         ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
-            [Extern _ t]                                 -> text "extern" <+> braces (pretty t)
+            [Extern _ t]                                 -> text "externWithSig" <+> braces (pretty t)
             [Bit _ t]                                    -> text "bit" <+> braces (pretty t)
             [Bits _ t]                                   -> text "bits" <+> braces (pretty t)
             [LitInt _ v]                                 -> pretty v
             [LitStr _ v]                                 -> dquotes $ pretty v
+            [LitList _ _ vs]                             -> brackets $ hsep $ punctuate comma $ map pretty vs
             [Error _ t m]                                -> text "error" <+> braces (pretty t) <+> dquotes (pretty m)
             es                                           -> nest 2 $ hsep $ map mparens es
 
@@ -550,6 +555,9 @@ intTy an = TyCon an $ s2n "Integer"
 strTy :: Annote -> Ty
 strTy an = TyCon an $ s2n "String"
 
+listTy :: Annote -> Ty -> Ty
+listTy an = TyApp an $ TyCon an $ s2n "List"
+
 bitTy :: Annote -> Ty
 bitTy an = TyCon an $ s2n "Bit"
 
@@ -585,24 +593,24 @@ nilPat = PatCon (MsgAnnote "nilPat") (Embed nilTy) (Embed $ s2n "()") []
 nilMPat :: MatchPat
 nilMPat = MatchPatCon (MsgAnnote "nilMPat") nilTy (s2n "()") []
 
-mkPairTy :: Annote -> Ty -> Ty -> Ty
-mkPairTy an t = TyApp an $ TyApp an (TyCon an $ s2n "(,)") t
+pairTy :: Annote -> Ty -> Ty -> Ty
+pairTy an t = TyApp an $ TyApp an (TyCon an $ s2n "(,)") t
 
 mkPair :: Annote -> Exp -> Exp -> Exp
 mkPair an e1 e2 = App an (App an (Con an t (s2n "(,)")) e1) e2
-      where t = mkArrowTy [typeOf e1, typeOf e2] $ mkPairTy an (typeOf e1) $ typeOf e2
+      where t = mkArrowTy [typeOf e1, typeOf e2] $ pairTy an (typeOf e1) $ typeOf e2
 
 mkPairPat :: Annote -> Pat -> Pat -> Pat
-mkPairPat an p1 p2 = PatCon an (Embed $ mkPairTy an (typeOf p1) (typeOf p2)) (Embed (s2n "(,)")) [p1, p2]
+mkPairPat an p1 p2 = PatCon an (Embed $ pairTy an (typeOf p1) (typeOf p2)) (Embed (s2n "(,)")) [p1, p2]
 
 mkPairMPat :: Annote -> MatchPat -> MatchPat -> MatchPat
-mkPairMPat an p1 p2 = MatchPatCon an (mkPairTy an (typeOf p1) (typeOf p2)) (s2n "(,)") [p1, p2]
+mkPairMPat an p1 p2 = MatchPatCon an (pairTy an (typeOf p1) (typeOf p2)) (s2n "(,)") [p1, p2]
 
 mkTuple :: Annote -> [Exp] -> Exp
 mkTuple an = foldr (mkPair an) nil
 
-mkTupleTy :: Annote -> [Ty] -> Ty
-mkTupleTy an = foldr (mkPairTy an) nilTy
+tupleTy :: Annote -> [Ty] -> Ty
+tupleTy an = foldr (pairTy an) nilTy
 
 mkTuplePat :: Annote -> [Pat] -> Pat
 mkTuplePat an = foldr (mkPairPat an) nilPat

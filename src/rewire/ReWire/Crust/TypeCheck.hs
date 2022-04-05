@@ -208,19 +208,27 @@ tcExp = \ case
                         pure (Match an tv e' p' f (Just e2'), tv)
       Extern an _          -> do
             tv <- freshv
-            let t = strTy an `arr` tv `arr` tv
+            let t = strTy an `arr` pairTy an (listTy an paramTy) (listTy an paramTy) `arr` tv `arr` tv
             pure (Extern an t, t)
+            where paramTy :: Ty
+                  paramTy = pairTy an (strTy an) (intTy an)
       Bit an _          -> do
             tv <- freshv
             let t = tv `arr` intTy an `arr` bitTy an
             pure (Bit an t, t)
       Bits an _          -> do
-            tv <- freshv
+            tv  <- freshv
             tv' <- freshv
             let t = tv `arr` intTy an `arr` intTy an `arr` tv'
             pure (Bits an t, t)
       e@LitInt {}            -> pure (e, typeOf e)
       e@LitStr {}            -> pure (e, typeOf e)
+      LitList an _ es    -> do
+            tv  <- freshv
+            es' <- mapM tcExp es
+            mapM_ (unify an tv) (snd <$> es')
+            let t = listTy an tv
+            pure (LitList an t (fst <$> es'), t)
       Error an _ m           -> do
             tv <- freshv
             pure (Error an tv m, tv)

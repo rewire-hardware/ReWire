@@ -168,18 +168,15 @@ transInlineSig inls = \ case
       _                                  -> pure inls
 
 -- TODO(chathhorn): should be a map, not a fold
-transDef :: MonadError AstError m => Renamer -> [(S.Name (), M.Ty)] -> [S.Name ()] -> [M.Defn] -> Decl Annote -> m [M.Defn]
+transDef :: (Fresh m, MonadError AstError m) => Renamer -> [(S.Name (), M.Ty)] -> [S.Name ()] -> [M.Defn] -> Decl Annote -> m [M.Defn]
 transDef rn tys inls defs = \ case
       PatBind l (PVar _ (void -> x)) (UnGuardedRhs _ e) Nothing -> do
+            k <- freshKVar "def"
             let x' = s2n $ rename Value rn x
-            case lookup x tys of
-                  -- TODO(chathhorn): hackily elide definition of primitives. Allows providing alternate defs for GHC compat.
-                  Just t -> do
-                        e' <- if M.isPrim x' && x `notElem` inls then pure $ M.Error (ann e) t $ "Prim: " <> n2s x' else transExp rn e
-                        pure $ M.Defn l x' (M.fv t |-> t) (x `elem` inls) (Embed (bind [] e')) : defs
-                  Nothing -> do
-                        e' <- if M.isPrim x' then pure $ M.Error (ann e) (M.TyBlank $ ann e) $ "Prim: " <> n2s x' else transExp rn e
-                        pure $ M.Defn l x' ([] |-> M.TyBlank l) (x `elem` inls) (Embed (bind [] e')) : defs
+                t  = fromMaybe (M.TyVar l k $ s2n "?a") $ lookup x tys
+            -- TODO(chathhorn): hackily elide definition of primitives. Allows providing alternate defs for GHC compat.
+            e' <- if M.isPrim x' && x `notElem` inls then pure $ M.Error (ann e) t $ "Prim: " <> n2s x' else transExp rn e
+            pure $ M.Defn l x' (M.fv t |-> t)                      (x `elem` inls) (Embed (bind [] e')) : defs
       DataDecl {}                                               -> pure defs -- TODO(chathhorn): elide
       InlineSig {}                                              -> pure defs -- TODO(chathhorn): elide
       TypeSig {}                                                -> pure defs -- TODO(chathhorn): elide
@@ -212,6 +209,7 @@ transTy rn = \ case
       TyApp l a b      -> M.TyApp l <$> transTy rn a <*> transTy rn b
       TyCon l x        -> pure $ M.TyCon l (s2n $ rename Type rn x)
       TyVar l x        -> M.TyVar l <$> freshKVar (pack $ prettyPrint x) <*> pure (mkUId $ void x)
+      TyList l a       -> M.listTy l <$> transTy rn a
       t                -> failAt (ann t) "Unsupported type syntax"
 
 freshKVar :: Fresh m => Text -> m M.Kind
@@ -243,6 +241,7 @@ transExp rn = \ case
             pure $ M.Case l (M.TyBlank l) e' (bind p' e1') Nothing
       Lit l (Int _ n _)      -> pure $ M.LitInt l n
       Lit l (String _ s _)   -> pure $ M.LitStr l $ pack s
+      List l es              -> M.LitList l (M.TyBlank l) <$> mapM (transExp rn) es
       e                      -> failAt (ann e) $ "Unsupported expression syntax: " <> pack (show $ void e)
       where getVars :: Pat Annote -> [S.Name ()]
             getVars = runQ $ query $ \ case
@@ -253,7 +252,7 @@ transExp rn = \ case
             isError n = prettyPrint (name $ rename Value rn n) == "error"
 
             isExtern :: QName Annote -> Bool
-            isExtern n = prettyPrint (name $ rename Value rn n) == "extern"
+            isExtern n = prettyPrint (name $ rename Value rn n) == "externWithSig"
 
             isBit :: QName Annote -> Bool
             isBit n = prettyPrint (name $ rename Value rn n) == "bit"

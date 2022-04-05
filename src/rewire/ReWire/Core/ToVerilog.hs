@@ -2,11 +2,12 @@
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Core.ToVerilog (compileProgram) where
 
+import ReWire.Annotation (noAnn)
+import ReWire.Core.Mangle (mangle)
+import ReWire.Core.Syntax as C hiding (Name, Size, Index)
 import ReWire.Error
 import ReWire.Flags (Flag (..))
-import ReWire.Core.Syntax as C hiding (Name, Size, Index)
 import ReWire.Verilog.Syntax as V
-import ReWire.Core.Mangle (mangle)
 import ReWire.Core.Interp
       ( patApply', patMatches', subRange
       , dispatchWires, pausePrefix, extraWires
@@ -150,10 +151,18 @@ compileCall flags g sz lvars
             (e, stmts) <- compileExp flags lvars body
             e'         <- wcast sz e
             pure (e', stmts)
-      | otherwise = do
+      | otherwise = instantiate Nothing g sz lvars
+
+instantiate :: (MonadFail m, MonadState SigInfo m, MonadError AstError m) => Maybe ExternSig -> GId -> V.Size -> [V.Exp] -> m (V.Exp, [Stmt])
+instantiate sig g sz lvars = case sig of
+      Nothing -> do
             mr          <- newWire sz "callRes"
-            inst        <- Instantiate g <$> fresh g <*> pure (lvars <> [LVal mr])
+            inst        <- Instantiate g <$> fresh g <*> pure (zip (repeat mempty) $ lvars <> [LVal mr])
             pure (LVal mr, [inst])
+      Just (ExternSig _ args res) -> do
+            Name mr     <- newWire sz "callRes"
+            inst        <- Instantiate g <$> fresh g <*> pure (zip (fst <$> args) lvars <> zip (fst <$> res) (toSubRanges mr (snd <$> res)))
+            pure (LVal (Name mr), [inst])
 
 compileExps :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
             => [Flag] -> [V.Exp] -> [C.Exp] -> m ([V.Exp], [Stmt])
@@ -170,9 +179,9 @@ compileExp flags lvars = \ case
       Call _ sz (Extern _ (binOp -> Just op)) e ps els -> mkCall "binOp" e ps els $ \ [x, y] -> (,[]) <$> wcast sz (op x y)
       Call _ sz (Extern _ (unOp -> Just op)) e ps els  -> mkCall "unOp"  e ps els $ \ [x]    -> (,[]) <$> wcast sz (op x)
       Call _ sz (Extern _ "msbit") e ps els            -> mkCall "msbit" e ps els $ \ [x]    -> (,[]) <$> wcast sz (projBit (fromIntegral (argsSize ps) - 1) x)
+      Call _ sz (Extern sig ex) e ps els               -> mkCall ex      e ps els $ instantiate (Just sig) ex sz
       Call _ sz Id e ps els                            -> mkCall "id"    e ps els $ \ xs     -> (,[]) <$> wcast sz (mkConcat xs)
       Call _ sz (Const bv) e ps els                    -> mkCall "lit"   e ps els $ \ _      -> (,[]) <$> wcast sz (bvToExp bv)
-      Call _ sz (Extern _ ex) e ps els                 -> mkCall ex      e ps els $ compileCall (filter (/= FlagFlatten) flags) ex sz
       where mkCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
                     => Name -> C.Exp -> [Pat] -> C.Exp -> ([V.Exp] -> m (V.Exp, [Stmt])) -> m (V.Exp, [Stmt])
             mkCall s e ps els f = do
@@ -317,7 +326,6 @@ wcast sz e = expWidth e >>= \ case
 -- {i, ..., j}                    L(i)+...+L(j)      all self-determined
 -- {i {j, ..., k}}                i*(L(j)+...+L(k))  all self-determined
 -- -----------------------------------------------------------------------------
---
 expWidth :: MonadState SigInfo m => V.Exp -> m (Maybe Size)
 expWidth = \ case
       Add    e1 e2                -> largest e1 e2
@@ -448,6 +456,9 @@ patApply x = patApply' (\ i j -> [mkRange x i j])
 
 patApplyLit :: BV -> [Pat] -> [V.Exp]
 patApplyLit bv = patApply' (\ i j -> [LitBits $ subRange (i, j) bv])
+
+toSubRanges :: Name -> [Size] -> [V.Exp]
+toSubRanges n = patApply' (\ i j -> [LVal $ mkRange n i j]) . map (PatVar noAnn)
 
 argsSize :: [Pat] -> Size
 argsSize = sum . map patToSize

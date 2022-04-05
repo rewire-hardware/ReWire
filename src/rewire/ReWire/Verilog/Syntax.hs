@@ -64,20 +64,24 @@ data Stmt = Always [Sensitivity] Stmt
           | SeqAssign LVal Exp
           | ParAssign LVal Exp
           | Block [Stmt]
-          | Instantiate Name Name [Exp] -- [Exp] for convenience, should be [LVal]?
+          | Instantiate Name Name [(Name, Exp)] -- [Exp] for convenience, should be [LVal]?
       deriving (Eq, Show)
 
 instance Pretty Stmt where
       pretty = \ case
-            Always sens stmt      -> text "always" <+> text "@" <+> parens (hsep $ punctuate (text " or") $ map pretty sens) <+> pretty stmt
-            Initial stmt          -> text "initial" <+> pretty stmt
-            IfElse c thn els      -> text "if" <+> parens (pretty c) <+> pretty thn <+> text "else" <+> pretty els
-            If c thn              -> text "if" <+> parens (pretty c) <+> pretty thn
-            Assign lv v           -> text "assign" <+> pretty lv <+> text "="  <+> pretty v <> semi
-            SeqAssign lv v        ->                   pretty lv <+> text "="  <+> pretty v <> semi
-            ParAssign lv v        ->                   pretty lv <+> text "<=" <+> pretty v <> semi
-            Block stmts           -> vsep [nest 2 $ vsep (text "begin" : map pretty stmts), text "end"]
-            Instantiate m inst ss -> text m <+> text inst <+> parens (hsep $ punctuate comma $ map pretty ss) <> semi
+            Always sens stmt         -> text "always" <+> text "@" <+> parens (hsep $ punctuate (text " or") $ map pretty sens) <+> pretty stmt
+            Initial stmt             -> text "initial" <+> pretty stmt
+            IfElse c thn els         -> text "if" <+> parens (pretty c) <+> pretty thn <+> text "else" <+> pretty els
+            If c thn                 -> text "if" <+> parens (pretty c) <+> pretty thn
+            Assign lv v              -> text "assign" <+> pretty lv <+> text "="  <+> pretty v <> semi
+            SeqAssign lv v           ->                   pretty lv <+> text "="  <+> pretty v <> semi
+            ParAssign lv v           ->                   pretty lv <+> text "<=" <+> pretty v <> semi
+            Block stmts              -> vsep [nest 2 $ vsep (text "begin" : map pretty stmts), text "end"]
+            Instantiate m inst ss    -> text m <+> text inst <+> parens (hsep $ punctuate comma $ map param ss) <> semi
+                  where param :: (Name, Exp) -> Doc an
+                        param = \ case
+                              ("", e) -> pretty e
+                              (n, e)  -> text "." <> pretty n <> parens (pretty e)
 
 data Sensitivity = Pos Name | Neg Name
       deriving (Eq, Show)

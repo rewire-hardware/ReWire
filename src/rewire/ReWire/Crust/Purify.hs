@@ -122,7 +122,7 @@ mkStart start i o ms = Defn
       , defnBody   = appl
       }
       where etor       = mkRangeTy o ms
-            resultTy   = mkTupleTy (MsgAnnote "Purify: mkStart: resultTy") $ aTy : ms
+            resultTy   = tupleTy (MsgAnnote "Purify: mkStart: resultTy") $ aTy : ms
 
             reT i o a  = TyCon (MsgAnnote "Purify: reT") (s2n "ReT") `tyApp` i `tyApp` o `tyApp` a
             startTy    = tycomp (MsgAnnote "Purify: startTy")
@@ -154,7 +154,7 @@ mkDispatch :: (MonadError AstError m, Fresh m) => Ty -> Ty -> [Ty] -> Name Exp -
 mkDispatch _ _ _  _  [] = failAt NoAnnote "Purify: empty dispatch: invalid ReWire (is recursion guarded by signal?)"
 mkDispatch i o ms iv (p : pes) = do
       let ty    = dispatchTy i o ms
-          domTy = mkTupleTy (MsgAnnote "Purify: mkDispatch: domTy") $ rTy : ms
+          domTy = tupleTy (MsgAnnote "Purify: mkDispatch: domTy") $ rTy : ms
       dsc      <- freshVar "dsc"
       let body  = Embed $ bind [dsc :: Name Exp, iv :: Name Exp] cases
           cases = mkCase an (Var an domTy dsc) p pes
@@ -307,7 +307,7 @@ purifyTy an ms t = case classifyTy t of
             purifyStTTy ms t = do
                   let r        = rangeTy t
                   a           <- dstCompR r
-                  pure $ mkArrowTy (paramTys t ++ ms) $ mkTupleTy (MsgAnnote "Purify: purifyStTTy") $ a : ms
+                  pure $ mkArrowTy (paramTys t ++ ms) $ tupleTy (MsgAnnote "Purify: purifyStTTy") $ a : ms
 
             classifyTy :: Ty -> TyVariety
             classifyTy = \ case
@@ -637,7 +637,7 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
                   let t = typeOf a
                   c <- getACtor s t
                   let anode = App an (Con an (mkArrowTy [t] aTy) c) a
-                  pure $ App an (Con an (mkArrowTy [mkTupleTy an $ aTy : ms] $ mkRangeTy o ms) (s2n "Done")) (mkTuple an $ anode : stos)
+                  pure $ App an (Con an (mkArrowTy [tupleTy an $ aTy : ms] $ mkRangeTy o ms) (s2n "Done")) (mkTuple an $ anode : stos)
 
             mkLeftPat :: (Fresh m, MonadError AstError m) => Text -> Pat -> [Pat] -> StateT PSto m Pat
             mkLeftPat s a stos = do
@@ -686,7 +686,7 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
 dispatchTy :: Ty -> Ty -> [Ty] -> Ty
 dispatchTy i o ms = mkArrowTy [domTy, i] etor
     where etor  = mkRangeTy o ms
-          domTy = mkTupleTy (MsgAnnote "Purify: dispatchTy") $ rTy : ms
+          domTy = tupleTy (MsgAnnote "Purify: dispatchTy") $ rTy : ms
 
 -- | Global constant representation of R data type.
 rTy :: Ty
@@ -702,7 +702,7 @@ mkVar :: Annote -> (Name Exp, Ty) -> Exp
 mkVar an (n, t) = Var an t n
 
 mkRangeTy :: Ty -> [Ty] -> Ty
-mkRangeTy o ts = mkEitherTy (mkTupleTy (MsgAnnote "Purify: mkRangeTy") ts) o
+mkRangeTy o ts = mkEitherTy (tupleTy (MsgAnnote "Purify: mkRangeTy") ts) o
 
 mkEitherTy :: Ty -> Ty -> Ty
 mkEitherTy t1 = TyApp (MsgAnnote "Purify: mkEitherTy") (TyApp (MsgAnnote "Purify: mkEitherTy") (TyCon (MsgAnnote "Purify: mkEitherTy") $ s2n "PuRe") t1)
