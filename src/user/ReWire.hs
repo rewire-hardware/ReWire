@@ -41,11 +41,11 @@ error = GHC.error
 -- | The String argument must be a string literal (after inlining).
 {-# INLINE extern #-}
 extern :: String -> a -> a
-extern n = externWithSig n ([], [])
+extern = externWithSig [] [] []
 
 -- | The String and list arguments must be literals (after inlining).
-externWithSig :: String -> ([(String, Integer)], [(String, Integer)]) -> a -> a
-externWithSig _ _ f = f
+externWithSig :: [(String, Integer)] -> [(String, Integer)] -> [(String, Integer)] -> String -> a -> a
+externWithSig _ _ _ _ f = f
 
 -- | bits a j i returns bits j (most significant) to i (least significant) from a (j >= i).
 --   The Integer arguments must be non-negative integer literals (after inlining).

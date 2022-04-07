@@ -226,7 +226,7 @@ desugarRecords rn = (\ (Module (l :: Annote) h p imps decls) -> do
 normIds :: (MonadCatch m, MonadError AstError m) => Transform (FreshT m)
 normIds = (\ x -> case x :: QName Annote of
             Special l (UnitCon _)      -> pure $ UnQual l $ Ident l "()"
-            Special l (ListCon _)      -> pure $ UnQual l $ Ident l "List"
+            Special l (ListCon _)      -> pure $ UnQual l $ Ident l "[_]"
             Special l (FunCon _)       -> pure $ UnQual l $ Ident l "->"
             -- I think this is only for the prefix constructor.
             Special l (TupleCon _ _ i) -> pure $ UnQual l $ mkTuple l i

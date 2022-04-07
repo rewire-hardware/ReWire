@@ -203,6 +203,7 @@ instance Pretty Ty where
             (TyCon _ (n2s -> "->") : [t1, t2])
                   | needsParens t1             -> parens (pretty t1) <+> text "->" <+> pretty t2
             (TyCon _ (n2s -> "->") : [t1, t2]) -> pretty t1 <+> text "->" <+> pretty t2
+            (TyCon _ (n2s -> "[_]") : [t'])    -> brackets $ pretty t'
             [TyCon _ n]                        -> text $ n2s n
             [TyVar _ _ n]                      -> text $ n2s n
             [TyBlank _]                        -> text "_"
@@ -556,7 +557,7 @@ strTy :: Annote -> Ty
 strTy an = TyCon an $ s2n "String"
 
 listTy :: Annote -> Ty -> Ty
-listTy an = TyApp an $ TyCon an $ s2n "List"
+listTy an = TyApp an $ TyCon an $ s2n "[_]"
 
 bitTy :: Annote -> Ty
 bitTy an = TyCon an $ s2n "Bit"

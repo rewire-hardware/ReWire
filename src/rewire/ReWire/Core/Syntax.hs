@@ -71,18 +71,18 @@ ppBV' = parens . hsep . punctuate comma
 
 ---
 
-data ExternSig = ExternSig Annote ![(Text, Size)] ![(Text, Size)] -- Names and sizes of inputs and outputs, respectively.
+data ExternSig = ExternSig Annote ![(Text, Size)] ![(Text, Size)] ![(Text, Size)] -- Names and sizes of params, inputs, and outputs, respectively.
         deriving (Eq, Ord, Generic, Show, Typeable, Data)
         deriving TextShow via FromGeneric ExternSig
 
 instance Annotated ExternSig where
-      ann (ExternSig a _ _) = a
+      ann (ExternSig a _ _ _) = a
 
 instance SizeAnnotated ExternSig where
-      sizeOf (ExternSig _ _ rs) = sum (snd <$> rs)
+      sizeOf (ExternSig _ _ _ rs) = sum (snd <$> rs)
 
 instance Pretty ExternSig where
-      pretty (ExternSig _ args res) = hsep $ punctuate (text " ->") $ (map ((text "BV" <>) . pretty . snd) args) <> [parens $ hsep $ punctuate comma $ map ((text "BV" <>) . pretty . snd) res]
+      pretty (ExternSig _ _ args res) = hsep $ punctuate (text " ->") $ (map ((text "BV" <>) . pretty . snd) args) <> [parens $ hsep $ punctuate comma $ map ((text "BV" <>) . pretty . snd) res]
 
 ---
 

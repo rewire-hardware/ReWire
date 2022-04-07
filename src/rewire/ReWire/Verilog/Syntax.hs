@@ -64,7 +64,7 @@ data Stmt = Always [Sensitivity] Stmt
           | SeqAssign LVal Exp
           | ParAssign LVal Exp
           | Block [Stmt]
-          | Instantiate Name Name [(Name, Exp)] -- [Exp] for convenience, should be [LVal]?
+          | Instantiate Name Name [(Name, Exp)] [(Name, Exp)] -- Exp for convenience, should be LVal?
       deriving (Eq, Show)
 
 instance Pretty Stmt where
@@ -77,11 +77,14 @@ instance Pretty Stmt where
             SeqAssign lv v           ->                   pretty lv <+> text "="  <+> pretty v <> semi
             ParAssign lv v           ->                   pretty lv <+> text "<=" <+> pretty v <> semi
             Block stmts              -> vsep [nest 2 $ vsep (text "begin" : map pretty stmts), text "end"]
-            Instantiate m inst ss    -> text m <+> text inst <+> parens (hsep $ punctuate comma $ map param ss) <> semi
+            Instantiate m inst ps ss -> text m <+> (if null ps then mempty else text "#" <> params ps) <+> text inst <+> params ss <> semi
                   where param :: (Name, Exp) -> Doc an
                         param = \ case
                               ("", e) -> pretty e
                               (n, e)  -> text "." <> pretty n <> parens (pretty e)
+
+                        params :: [(Name, Exp)] -> Doc an
+                        params = parens . hsep . punctuate comma . map param
 
 data Sensitivity = Pos Name | Neg Name
       deriving (Eq, Show)

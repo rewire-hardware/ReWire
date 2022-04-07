@@ -157,11 +157,11 @@ instantiate :: (MonadFail m, MonadState SigInfo m, MonadError AstError m) => May
 instantiate sig g sz lvars = case sig of
       Nothing -> do
             mr          <- newWire sz "callRes"
-            inst        <- Instantiate g <$> fresh g <*> pure (zip (repeat mempty) $ lvars <> [LVal mr])
+            inst        <- Instantiate g <$> fresh g <*> pure [] <*> pure (zip (repeat mempty) $ lvars <> [LVal mr])
             pure (LVal mr, [inst])
-      Just (ExternSig _ args res) -> do
+      Just (ExternSig _ ps args res) -> do
             Name mr     <- newWire sz "callRes"
-            inst        <- Instantiate g <$> fresh g <*> pure (zip (fst <$> args) lvars <> zip (fst <$> res) (toSubRanges mr (snd <$> res)))
+            inst        <- Instantiate g <$> fresh g <*> pure (map (second $ LitBits . bitVec 32) ps) <*> pure (zip (fst <$> args) lvars <> zip (fst <$> res) (toSubRanges mr (snd <$> res)))
             pure (LVal (Name mr), [inst])
 
 compileExps :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
