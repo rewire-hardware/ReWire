@@ -41,11 +41,17 @@ error = GHC.error
 -- | The String argument must be a string literal (after inlining).
 {-# INLINE extern #-}
 extern :: String -> a -> a
-extern = externWithSig [] [] []
+extern n a = externWithSig [] [] [] n a n
 
 -- | The String and list arguments must be literals (after inlining).
-externWithSig :: [(String, Integer)] -> [(String, Integer)] -> [(String, Integer)] -> String -> a -> a
-externWithSig _ _ _ _ f = f
+externWithSig :: [(String, Integer)] -- ^ Module parameters (name and integer literal value).
+              -> [(String, Integer)] -- ^ Module inputs (name and integer literal bitwidth).
+              -> [(String, Integer)] -- ^ Module outputs (name and integer literal bitwidth).
+              -> String              -- ^ Module name.
+              -> a                   -- ^ Haskell definition to use when interpreting.
+              -> String              -- ^ Instance name to use in generated Verilog.
+              -> a
+externWithSig _ _ _ _ f _ = f
 
 -- | bits a j i returns bits j (most significant) to i (least significant) from a (j >= i).
 --   The Integer arguments must be non-negative integer literals (after inlining).

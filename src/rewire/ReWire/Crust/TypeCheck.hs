@@ -208,7 +208,7 @@ tcExp = \ case
                         pure (Match an tv e' p' f (Just e2'), tv)
       Extern an _          -> do
             tv <- freshv
-            let t = listTy an paramTy `arr` listTy an paramTy `arr` listTy an paramTy `arr` strTy an `arr` tv `arr` tv
+            let t = listTy an paramTy `arr` listTy an paramTy `arr` listTy an paramTy `arr` strTy an `arr` tv `arr` strTy an `arr` tv
             pure (Extern an t, t)
             where paramTy :: Ty
                   paramTy = pairTy an (strTy an) (intTy an)

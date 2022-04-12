@@ -50,7 +50,7 @@ instance TextShow BV where
       showb = showb . showHex
 
 data Target = Global !GId
-            | Extern !ExternSig !Name
+            | Extern !ExternSig !Name !Name
             | Id
             | Const !BV
       deriving (Eq, Ord, Generic, Show, Typeable, Data)
@@ -58,10 +58,10 @@ data Target = Global !GId
 
 instance Pretty Target where
       pretty = \ case
-            Global n   -> text n
-            Extern _ n -> text "extern" <+> dquotes (text n)
-            Id         -> text "id"
-            Const bv   -> ppBV [Lit noAnn bv]
+            Global n     -> text n
+            Extern _ n _ -> text "extern" <+> dquotes (text n)
+            Id           -> text "id"
+            Const bv     -> ppBV [Lit noAnn bv]
 
 ppBV :: Pretty a => [a] -> Doc an
 ppBV = ppBV' . map pretty

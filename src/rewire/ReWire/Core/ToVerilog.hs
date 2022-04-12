@@ -18,26 +18,44 @@ import ReWire.Core.Interp
 import Control.Arrow ((&&&), first, second)
 import Control.Monad (liftM2)
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
-import Control.Monad.State (MonadState, get, runStateT, modify, gets)
+import Control.Monad.State (MonadState, runStateT, modify, gets)
 import Data.BitVector (width, bitVec, BV, zeros, ones, lsb1, (==.), (@.))
 import Data.HashMap.Strict (HashMap)
 import Data.Text (Text)
+import Data.Maybe (fromMaybe)
 import TextShow (showt)
 import qualified Data.BitVector as BV
 import qualified Data.HashMap.Strict as Map
 
-type Fresh = Int
+data FreshMode = FreshInit | FreshRun
+type Fresh = (FreshMode, HashMap Text Int)
 type DefnMap = HashMap GId C.Exp
 type SigInfo = (Fresh, [Signal])
 
 sigInfo0 :: SigInfo
-sigInfo0 = (0, [])
+sigInfo0 = ((FreshInit, mempty), [])
+
+sigInfo0' :: SigInfo
+sigInfo0' = ((FreshRun, mempty), [])
+
+fresh' :: MonadState SigInfo m => Text -> m Name
+fresh' s = do
+      (mode, ctrs) <- gets fst
+      let ctr = fromMaybe 0 $ Map.lookup s ctrs
+      modify $ \ ((m, c), ss) -> ((m, Map.insert s (ctr + 1) c), ss)
+      pure $ s <> modeTag mode <> ctrTag ctr
+      where modeTag :: FreshMode -> Text
+            modeTag = \ case
+                  FreshInit -> "_s0"
+                  _         -> mempty
+
+            ctrTag :: Int -> Text
+            ctrTag = \ case
+                  n | n > 0 -> "_" <> showt n
+                  _         -> mempty
 
 fresh :: MonadState SigInfo m => Text -> m Name
-fresh s = do
-      (ctr, _) <- get
-      modify $ first (+ 1)
-      pure $ mangle s <> "_" <> showt ctr
+fresh s = mangle <$> fresh' s
 
 compileProgram :: (MonadFail m, MonadError AstError m) => [Flag] -> C.Program -> m V.Program
 compileProgram flags (C.Program st ds)
@@ -57,12 +75,12 @@ compileStartDefn :: (MonadError AstError m, MonadFail m, MonadReader DefnMap m)
                  => [Flag] -> C.StartDefn -> m Module
 compileStartDefn flags (C.StartDefn _ w loop state0) = do
 
-      ((rStart, ssStart), (fr, startSigs)) <- flip runStateT sigInfo0 $ compileCall (FlagFlatten : flags) (mangle state0) (resumptionSize w) []
+      ((rStart, ssStart), (_, startSigs)) <- runStateT (compileCall (FlagFlatten : flags) (mangle state0) (resumptionSize w) []) sigInfo0
 
-      let (stateInit, stateReset, ssStart', fr', startSigs') = if clocked then (initState rStart, Just rStart, ssStart, fr, startSigs)
-                                                                          else (Nothing,          Nothing,     [],      0,  [])
+      let (stateInit, stateReset, ssStart', startSigs') = if clocked then (initState rStart, Just rStart, ssStart, startSigs)
+                                                                     else (Nothing,          Nothing,     mempty,  mempty)
 
-      ((rLoop, ssLoop),   (_, loopSigs))   <- flip runStateT (fr', []) $ compileCall flags (mangle loop) (resumptionSize w)
+      ((rLoop, ssLoop),   (_, loopSigs))   <- flip runStateT sigInfo0' $ compileCall flags (mangle loop) (resumptionSize w)
             [ mkConcat $ map (LVal . Name . fst) $ dispatchWires w
             , mkConcat $ map (LVal . Name . fst) $ inputWires w
             ]
@@ -151,18 +169,16 @@ compileCall flags g sz lvars
             (e, stmts) <- compileExp flags lvars body
             e'         <- wcast sz e
             pure (e', stmts)
-      | otherwise = instantiate Nothing g sz lvars
-
-instantiate :: (MonadFail m, MonadState SigInfo m, MonadError AstError m) => Maybe ExternSig -> GId -> V.Size -> [V.Exp] -> m (V.Exp, [Stmt])
-instantiate sig g sz lvars = case sig of
-      Nothing -> do
+      | otherwise = do
             mr          <- newWire sz "callRes"
-            inst        <- Instantiate g <$> fresh g <*> pure [] <*> pure (zip (repeat mempty) $ lvars <> [LVal mr])
+            inst        <- Instantiate g <$> fresh' g <*> pure [] <*> pure (zip (repeat mempty) $ lvars <> [LVal mr])
             pure (LVal mr, [inst])
-      Just (ExternSig _ ps args res) -> do
-            Name mr     <- newWire sz "callRes"
-            inst        <- Instantiate g <$> fresh g <*> pure (map (second $ LitBits . bitVec 32) ps) <*> pure (zip (fst <$> args) lvars <> zip (fst <$> res) (toSubRanges mr (snd <$> res)))
-            pure (LVal (Name mr), [inst])
+
+instantiate :: (MonadFail m, MonadState SigInfo m, MonadError AstError m) => ExternSig -> GId -> Text -> V.Size -> [V.Exp] -> m (V.Exp, [Stmt])
+instantiate (ExternSig _ ps args res) g inst sz lvars = do
+      Name mr     <- newWire sz "extRes"
+      inst        <- Instantiate g <$> fresh' inst <*> pure (map (second $ LitBits . bitVec 32) ps) <*> pure (zip (fst <$> args) lvars <> zip (fst <$> res) (toSubRanges mr (snd <$> res)))
+      pure (LVal (Name mr), [inst])
 
 compileExps :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
             => [Flag] -> [V.Exp] -> [C.Exp] -> m ([V.Exp], [Stmt])
@@ -171,17 +187,17 @@ compileExps flags lvars es = (map fst &&& concatMap snd) <$> mapM (compileExp fl
 compileExp :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
             => [Flag] -> [V.Exp] -> C.Exp -> m (V.Exp, [Stmt])
 compileExp flags lvars = \ case
-      LVar _  _ (lkupLVal -> Just x)                   -> pure (x, [])
-      LVar an _ _                                      -> failAt an "ToVerilog: compileExp: encountered unknown LVar."
-      Lit _ bv                                         -> pure (bvToExp bv, [])
-      C.Concat _ e1 e2                                 -> first mkConcat <$> compileExps flags lvars (gather e1 <> gather e2)
-      Call _ sz (Global g) e ps els                    -> mkCall "glob"  e ps els $ compileCall flags (mangle g) sz
-      Call _ sz (Extern _ (binOp -> Just op)) e ps els -> mkCall "binOp" e ps els $ \ [x, y] -> (,[]) <$> wcast sz (op x y)
-      Call _ sz (Extern _ (unOp -> Just op)) e ps els  -> mkCall "unOp"  e ps els $ \ [x]    -> (,[]) <$> wcast sz (op x)
-      Call _ sz (Extern _ "msbit") e ps els            -> mkCall "msbit" e ps els $ \ [x]    -> (,[]) <$> wcast sz (projBit (fromIntegral (argsSize ps) - 1) x)
-      Call _ sz (Extern sig ex) e ps els               -> mkCall ex      e ps els $ instantiate (Just sig) ex sz
-      Call _ sz Id e ps els                            -> mkCall "id"    e ps els $ \ xs     -> (,[]) <$> wcast sz (mkConcat xs)
-      Call _ sz (Const bv) e ps els                    -> mkCall "lit"   e ps els $ \ _      -> (,[]) <$> wcast sz (bvToExp bv)
+      LVar _  _ (lkupLVal -> Just x)                     -> pure (x, [])
+      LVar an _ _                                        -> failAt an "ToVerilog: compileExp: encountered unknown LVar."
+      Lit _ bv                                           -> pure (bvToExp bv, [])
+      C.Concat _ e1 e2                                   -> first mkConcat <$> compileExps flags lvars (gather e1 <> gather e2)
+      Call _ sz (Global g) e ps els                      -> mkCall "glob"  e ps els $ compileCall flags (mangle g) sz
+      Call _ sz (Extern _ (binOp -> Just op) _) e ps els -> mkCall "binOp" e ps els $ \ [x, y] -> (,[]) <$> wcast sz (op x y)
+      Call _ sz (Extern _ (unOp -> Just op) _) e ps els  -> mkCall "unOp"  e ps els $ \ [x]    -> (,[]) <$> wcast sz (op x)
+      Call _ sz (Extern _ "msbit" _) e ps els            -> mkCall "msbit" e ps els $ \ [x]    -> (,[]) <$> wcast sz (projBit (fromIntegral (argsSize ps) - 1) x)
+      Call _ sz (Extern sig ex inst) e ps els            -> mkCall ex      e ps els $ instantiate sig ex inst sz
+      Call _ sz Id e ps els                              -> mkCall "id"    e ps els $ \ xs     -> (,[]) <$> wcast sz (mkConcat xs)
+      Call _ sz (Const bv) e ps els                      -> mkCall "lit"   e ps els $ \ _      -> (,[]) <$> wcast sz (bvToExp bv)
       where mkCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
                     => Name -> C.Exp -> [Pat] -> C.Exp -> ([V.Exp] -> m (V.Exp, [Stmt])) -> m (V.Exp, [Stmt])
             mkCall s e ps els f = do

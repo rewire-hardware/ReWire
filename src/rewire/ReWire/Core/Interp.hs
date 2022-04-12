@@ -137,7 +137,7 @@ interpExp defns lvars exp = case exp of
                         Left err -> throwError (call', err)
                         Right bv -> pure bv
             else pure els'
-      Call an sz (Extern (ExternSig _ _ args _) nm@(binOp -> Just op)) e ps els -> do
+      Call an sz (Extern (ExternSig _ _ args _) nm@(binOp -> Just op) _) e ps els -> do
             let argSizes = snd <$> args
             (e', els', call')  <- evaluate e els reCall
             -- TODO(chathhorn): I think this is a bit different from how ToVerilog does it: note use of argSizes
@@ -145,28 +145,28 @@ interpExp defns lvars exp = case exp of
                   [x, y] -> pure $ op sz x y
                   _      -> failAt' call' an $ "Core/Interp: interpExp: arity mismatch (" <> showt nm <> ")."
             else pure els'
-      Call an sz (Extern (ExternSig _ _ args _) nm@(unOp -> Just op)) e ps els -> do
+      Call an sz (Extern (ExternSig _ _ args _) nm@(unOp -> Just op) _) e ps els -> do
             let argSizes = snd <$> args
             (e', els', call')  <- evaluate e els reCall
             if patMatches e' ps then case toSubRanges (patApply e' ps) argSizes of
                   [x]    -> pure $ op sz x
                   _      -> failAt' call' an $ "Core/Interp: interpExp: arity mismatch (" <> showt nm <> ")."
             else pure els'
-      Call an sz (Extern (ExternSig _ _ args _) "msbit") e ps els -> do
+      Call an sz (Extern (ExternSig _ _ args _) "msbit" _) e ps els -> do
             let argSizes = snd <$> args
             (e', els', call')  <- evaluate e els reCall
             if patMatches e' ps then case toSubRanges (patApply e' ps) argSizes of
                   [x]    -> pure $ mkBV sz $ fromEnum $ testBit x (fromEnum $ width x - 1)
                   _      -> failAt' call' an "Core/Interp: interpExp: arity mismatch (msbit)."
             else pure els'
-      Call _ _ Id e ps els -> if patMatchesE e ps then interpExp defns lvars $ patApplyE e ps else do
+      Call _ _ Id e ps els             -> if patMatchesE e ps then interpExp defns lvars $ patApplyE e ps else do
             (e', els', _)  <- evaluate e els reCall
             pure $ if patMatches e' ps then patApply e' ps else els'
-      Call _  sz (Const v) e ps els -> if patMatchesE e ps then pure $ mkBV sz v else do
+      Call _  sz (Const v) e ps els    -> if patMatchesE e ps then pure $ mkBV sz v else do
             (e', els', _)  <- evaluate e els reCall
             pure $ if patMatches e' ps then mkBV sz v else els'
-      Call an _ (Extern _ s) _ _ _   -> failAt' exp an $ "Core/Interp: interpExp: unknown extern: " <> s
-      e                              -> failAt' e (ann e) "Core/Interp: interpExp: encountered unsupported expression."
+      Call an _ (Extern _ s _) _ _ _   -> failAt' exp an $ "Core/Interp: interpExp: unknown extern: " <> s
+      e                                -> failAt' e (ann e) "Core/Interp: interpExp: encountered unsupported expression."
       where lkupVal :: LId -> Maybe BV
             lkupVal = flip lookup (zip [0::LId ..] lvars)
 
