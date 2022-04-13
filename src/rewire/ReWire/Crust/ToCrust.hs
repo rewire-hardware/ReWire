@@ -16,6 +16,7 @@ import Data.Foldable (foldl')
 import Data.List (find)
 import Data.Maybe (mapMaybe, fromMaybe)
 import Data.Text (Text, pack, unpack)
+import Data.Char (isUpper)
 import Language.Haskell.Exts.Fixity (Fixity (..))
 import Language.Haskell.Exts.Pretty (prettyPrint)
 
@@ -71,18 +72,24 @@ toCrust rn = \ case
                         _                        -> []
 
                   getTypeExports :: Renamer -> [Export]
-                  getTypeExports rn = map (exportAll rn) (Set.toList $ getLocalTypes rn)
+                  getTypeExports rn = map (exportAll rn) $ (Set.toList $ getLocalTypes rn) <> tysynNames ds
 
                   resolveExports :: Renamer -> [Export] -> Exports
                   resolveExports rn = foldr (resolveExport rn) mempty
 
+                  isValueName :: FQName -> Bool
+                  isValueName = \ case
+                        (name -> Ident _ (c : _)) | isUpper c -> False
+                        _                                     -> True
+
                   resolveExport :: Renamer -> Export -> Exports -> Exports
                   resolveExport rn = \ case
-                        Export x               -> expValue x
-                        ExportAll x            -> expType x (lookupCtors rn x) (lookupCtorSigsForType rn x)
-                        ExportWith x cs fs     -> expType x cs fs
-                        ExportMod m            -> (<> getExports m rn)
-                        ExportFixity asc lvl x -> expFixity asc lvl x
+                        Export x              | isValueName x -> expValue x
+                        Export x                              -> expType x mempty mempty
+                        ExportAll x                           -> expType x (lookupCtors rn x) (lookupCtorSigsForType rn x)
+                        ExportWith x cs fs                    -> expType x cs fs
+                        ExportMod m                           -> (<> getExports m rn)
+                        ExportFixity asc lvl x                -> expFixity asc lvl x
       m                                                           -> failAt (ann m) "Unsupported module syntax"
 
 exportAll :: QNamish a => Renamer -> a -> Export
@@ -135,6 +142,13 @@ transData rn datas = \ case
             cs'  <- mapM (transCon rn ks tvs' n) cs
             pure $ M.DataDefn l n (foldr M.KFun M.KStar ks) cs' : datas
       _                                       -> pure datas
+
+tysynNames :: [Decl Annote] -> [S.Name ()]
+tysynNames = concatMap tySynName
+      where tySynName :: Decl Annote -> [S.Name ()]
+            tySynName = \ case
+                  TypeDecl _ (sDeclHead -> hd) _ -> [fst hd]
+                  _                              -> []
 
 transTyDecl :: (MonadError AstError m, Fresh m) => Renamer -> [M.TypeSynonym] -> Decl Annote -> m [M.TypeSynonym]
 transTyDecl rn syns = \ case

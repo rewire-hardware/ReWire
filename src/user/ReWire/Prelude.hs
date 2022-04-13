@@ -1,7 +1,7 @@
 module ReWire.Prelude where
 
 import ReWire
-import Prelude () -- Imports of "Prelude" are always ignored by rwc.
+import Prelude ()
 import qualified Prelude as GHC
 
 data Bool = False | True

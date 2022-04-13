@@ -1,6 +1,7 @@
 module ReWire where
 
 -- Imports in this file are ignored by rwc.
+import Prelude (Integer, String)
 import qualified Prelude                           as GHC
 import qualified Control.Monad.Identity            as GHC
 import qualified Control.Monad.Resumption.Reactive as GHC
@@ -10,8 +11,6 @@ type I = GHC.Identity
 type ReT = GHC.ReacT
 type StT = GHC.StateT
 type Bits = [Bit]
-type Integer = GHC.Integer
-type String = GHC.String
 
 -- ReWire primitives.
 

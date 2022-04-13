@@ -11,7 +11,7 @@ module ReWire.Verilog
       ) where
 
 import ReWire
-import Prelude (undefined)
+import Prelude (undefined, Integer)
 
 -- | Add.
 {-# INLINE (+) #-}
