@@ -8,9 +8,7 @@ data W4  = W4  Bit Bit Bit Bit
 data W5  = W5  Bit Bit Bit Bit Bit
 data W6  = W6  Bit Bit Bit Bit Bit Bit
 data W7  = W7  Bit Bit Bit Bit Bit Bit Bit
-
 data W8  = W8  Bit Bit Bit Bit Bit Bit Bit Bit
-
 data W9  = W9  Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W10 = W10 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W11 = W11 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
@@ -18,11 +16,9 @@ data W12 = W12 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W13 = W13 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W14 = W14 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W15 = W15 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
-
 data W16 = W16 W8 W8
 data W17 = W17 Bit W16
-
--- data W18 = W18 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
+data W18 = W18 Bit Bit W16
 data W19 = W19 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W20 = W20 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W21 = W21 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
@@ -36,10 +32,8 @@ data W28 = W28 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit B
 data W29 = W29 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W30 = W30 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W31 = W31 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
-
 data W32 = W32 W16 W16
 data W33 = W33 Bit W16 W16
-
 data W34 = W34 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W35 = W35 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
 data W36 = W36 Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit
@@ -102,8 +96,42 @@ data W262 = W262 W6 W256
 data W263 = W263 W7 W256
 data W264 = W264 W8 W256
 
+data W272 = W272 W5 W8 W259
+data W273 = W273 W6 W8 W259
 data W274 = W274 W7 W8 W259
 data W275 = W275 W16 W259
+data W276 = W276 W20 W256
+data W277 = W277 W21 W256
+data W278 = W278 W22 W256
+data W279 = W279 W23 W256
+data W280 = W280 W24 W256
+data W281 = W281 W25 W256
+data W282 = W282 W26 W256
+data W283 = W283 W27 W256
+data W284 = W284 W28 W256
+data W285 = W285 W29 W256
+data W286 = W286 W30 W256
+data W287 = W287 W31 W256
+data W288 = W288 W32 W256
+data W289 = W289 W33 W256
+data W290 = W290 W34 W256
+data W291 = W291 W35 W256
+data W292 = W292 W36 W256
+data W293 = W293 W37 W256
+data W294 = W294 W38 W256
+data W295 = W295 W39 W256
+data W296 = W296 W40 W256
+data W297 = W297 W41 W256
+data W298 = W298 W42 W256
+data W299 = W299 W43 W256
+data W300 = W300 W44 W256
+data W301 = W301 W45 W256
+data W302 = W302 W46 W256
+data W303 = W303 W47 W256
+data W304 = W304 W48 W256
+data W305 = W305 W49 W256
+data W306 = W306 W50 W256
+data W307 = W307 W51 W256
 
 data W512 = W512 W256 W256
 data W513 = W513 Bit W256 W256
@@ -122,6 +150,12 @@ data W1029 = W1029 W5 W512 W512
 data W1030 = W1030 W6 W512 W512
 
 data W2048 = W2048 W1024 W1024
+
+data W4096 = W4096 W2048 W2048
+
+data W4352 = W4352 W256 W4096
+
+data W4403 = W4403 W307 W4096
 
 -- Bit operations
 
@@ -271,12 +305,10 @@ plusW16' (W16 w1 w0) (W16 w1' w0') ci =
 
 eqW16 :: W16 -> W16 -> Bool
 eqW16 (W16 w1 w0) (W16 w1' w0') = w1 `eqW8` w1' && w0 `eqW8` w0'
+
 -- |
 -- | W18 operations
 -- |
-
-data W18 = W18 Bit Bit W16
-
 zeroW18 :: W18
 zeroW18 = W18 C C zeroW16
 
