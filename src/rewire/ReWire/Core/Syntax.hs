@@ -53,6 +53,8 @@ data Target = Global !GId
             | Extern !ExternSig !Name !Name
             | Id
             | Const !BV
+            | SetRef !Name
+            | GetRef !Name
       deriving (Eq, Ord, Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Target
 
@@ -62,6 +64,8 @@ instance Pretty Target where
             Extern _ n _ -> text "extern" <+> dquotes (text n)
             Id           -> text "id"
             Const bv     -> ppBV [Lit noAnn bv]
+            SetRef n     -> text "setRef" <+> dquotes (text n)
+            GetRef n     -> text "getRef" <+> dquotes (text n)
 
 ppBV :: Pretty a => [a] -> Doc an
 ppBV = ppBV' . map pretty
@@ -71,18 +75,18 @@ ppBV' = parens . hsep . punctuate comma
 
 ---
 
-data ExternSig = ExternSig Annote ![(Text, Size)] ![(Text, Size)] ![(Text, Size)] -- Names and sizes of params, inputs, and outputs, respectively.
+data ExternSig = ExternSig Annote ![(Text, Size)] !Text ![(Text, Size)] ![(Text, Size)] -- Names and sizes of params, clock signal, inputs, and outputs, respectively.
         deriving (Eq, Ord, Generic, Show, Typeable, Data)
         deriving TextShow via FromGeneric ExternSig
 
 instance Annotated ExternSig where
-      ann (ExternSig a _ _ _) = a
+      ann (ExternSig a _ _ _ _) = a
 
 instance SizeAnnotated ExternSig where
-      sizeOf (ExternSig _ _ _ rs) = sum (snd <$> rs)
+      sizeOf (ExternSig _ _ _ _ rs) = sum (snd <$> rs)
 
 instance Pretty ExternSig where
-      pretty (ExternSig _ _ args res) = hsep $ punctuate (text " ->") $ (map ((text "BV" <>) . pretty . snd) args) <> [parens $ hsep $ punctuate comma $ map ((text "BV" <>) . pretty . snd) res]
+      pretty (ExternSig _ _ _ args res) = hsep $ punctuate (text " ->") $ (map ((text "BV" <>) . pretty . snd) args) <> [parens $ hsep $ punctuate comma $ map ((text "BV" <>) . pretty . snd) res]
 
 ---
 

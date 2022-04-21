@@ -6,6 +6,7 @@ import ReWire.Pretty (empty, text)
 import Data.Text (Text, pack)
 import Data.List (intersperse)
 import Data.BitVector (BV (..), showHex, width, ones, zeros)
+import qualified Data.BitVector as BV
 
 newtype Program = Program { pgmModules :: [Module] }
       deriving (Eq, Show)
@@ -55,6 +56,12 @@ instance Pretty Signal where
             Wire sz n  -> text "wire"  <+> ppBVName sz n
             Logic sz n -> text "logic" <+> ppBVName sz n
             Reg sz n   -> text "reg"   <+> ppBVName sz n
+
+sigName :: Signal -> Name
+sigName = \ case
+      Wire _ n  -> n
+      Logic _ n -> n
+      Reg _ n   -> n
 
 data Stmt = Always [Sensitivity] Stmt
           | Initial Stmt
@@ -226,3 +233,18 @@ instance Pretty LVal where
             Range x i j -> pretty x <> brackets (pretty j <> colon <> pretty i)
             Name x      -> text x
             LVals lvs   -> braces $ hsep $ punctuate comma $ map pretty lvs
+
+cat :: [Exp] -> Exp
+cat = (\ case
+            [] -> nil
+            es -> Concat es
+      ) . filter (not . isNil)
+
+nil :: Exp
+nil = LitBits BV.nil
+
+isNil :: Exp -> Bool
+isNil = \ case
+      LitBits bv -> width bv <= 0
+      WCast sz _ -> sz <= 0
+      _          -> False

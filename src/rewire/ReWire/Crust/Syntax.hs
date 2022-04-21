@@ -24,7 +24,7 @@ module ReWire.Crust.Syntax
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly
       , rangeTy, paramTys, isPrim, mkArrowTy, nil, isResMonad, isStateMonad
-      , strTy, intTy, bitTy, listTy, pairTy
+      , strTy, intTy, bitTy, listTy, pairTy, refTy
       , flattenAllTyApp, resInputTy
       , mkTuple, mkTuplePat, mkTupleMPat, tupleTy
       , mkPair, mkPairPat, mkPairMPat
@@ -220,19 +220,21 @@ instance NFData Ty
 instance (TextShow a, TextShow b) => TextShow (Bind a b) where
       showbPrec = genericShowbPrec
 
-data Exp = App    Annote !Exp  !Exp
-         | Lam    Annote !Ty   !(Bind (Name Exp) Exp)
-         | Var    Annote !Ty   !(Name Exp)
-         | Con    Annote !Ty   !(Name DataConId)
-         | Case   Annote !Ty   !Exp !(Bind Pat Exp) !(Maybe Exp)
-         | Match  Annote !Ty   !Exp !MatchPat !Exp !(Maybe Exp)
-         | Extern Annote !Ty
-         | Bit    Annote !Ty
-         | Bits   Annote !Ty
-         | LitInt Annote !Integer
-         | LitStr Annote !Text
+data Exp = App     Annote !Exp  !Exp
+         | Lam     Annote !Ty   !(Bind (Name Exp) Exp)
+         | Var     Annote !Ty   !(Name Exp)
+         | Con     Annote !Ty   !(Name DataConId)
+         | Case    Annote !Ty   !Exp !(Bind Pat Exp) !(Maybe Exp)
+         | Match   Annote !Ty   !Exp !MatchPat !Exp !(Maybe Exp)
+         | Extern  Annote !Ty
+         | Bit     Annote !Ty
+         | Bits    Annote !Ty
+         | SetRef  Annote !Ty
+         | GetRef  Annote !Ty
+         | LitInt  Annote !Integer
+         | LitStr  Annote !Text
          | LitList Annote !Ty ![Exp]
-         | Error  Annote !Ty   !Text
+         | Error   Annote !Ty   !Text
       deriving (Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Exp
 
@@ -279,6 +281,8 @@ instance TypeAnnotated Exp where
             Extern _ t        -> t
             Bit _ t           -> t
             Bits _ t          -> t
+            SetRef _ t        -> t
+            GetRef _ t        -> t
             LitInt a _        -> intTy a
             LitStr a _        -> strTy a
             LitList _ t _     -> t
@@ -295,6 +299,8 @@ instance Annotated Exp where
             Extern a _        -> a
             Bit a _           -> a
             Bits a _          -> a
+            SetRef a _        -> a
+            GetRef a _        -> a
             LitInt a _        -> a
             LitStr a _        -> a
             LitList a _ _     -> a
@@ -332,6 +338,8 @@ instance Pretty Exp where
             [Extern _ t]                                 -> text "externWithSig" <+> braces (pretty t)
             [Bit _ t]                                    -> text "bit" <+> braces (pretty t)
             [Bits _ t]                                   -> text "bits" <+> braces (pretty t)
+            [SetRef _ t]                                 -> text "set" <+> braces (pretty t)
+            [GetRef _ t]                                 -> text "get" <+> braces (pretty t)
             [LitInt _ v]                                 -> pretty v
             [LitStr _ v]                                 -> dquotes $ pretty v
             [LitList _ _ vs]                             -> brackets $ hsep $ punctuate comma $ map pretty vs
@@ -558,6 +566,9 @@ strTy an = TyCon an $ s2n "String"
 
 listTy :: Annote -> Ty -> Ty
 listTy an = TyApp an $ TyCon an $ s2n "[_]"
+
+refTy :: Annote -> Ty -> Ty
+refTy an = TyApp an $ TyCon an $ s2n "Ref"
 
 bitTy :: Annote -> Ty
 bitTy an = TyCon an $ s2n "Bit"

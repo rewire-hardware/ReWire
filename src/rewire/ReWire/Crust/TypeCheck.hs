@@ -208,7 +208,7 @@ tcExp = \ case
                         pure (Match an tv e' p' f (Just e2'), tv)
       Extern an _          -> do
             tv <- freshv
-            let t = listTy an paramTy `arr` listTy an paramTy `arr` listTy an paramTy `arr` strTy an `arr` tv `arr` strTy an `arr` tv
+            let t = listTy an paramTy `arr` strTy an `arr` listTy an paramTy `arr` listTy an paramTy `arr` strTy an `arr` tv `arr` strTy an `arr` tv
             pure (Extern an t, t)
             where paramTy :: Ty
                   paramTy = pairTy an (strTy an) (intTy an)
@@ -221,6 +221,15 @@ tcExp = \ case
             tv' <- freshv
             let t = tv `arr` intTy an `arr` intTy an `arr` tv'
             pure (Bits an t, t)
+      SetRef an _     -> do
+            ta  <- freshv
+            tb  <- freshv
+            let t = refTy an ta `arr` ta `arr` tb `arr` tb
+            pure (SetRef an t, t)
+      GetRef an _     -> do
+            ta  <- freshv
+            let t = refTy an ta `arr` ta
+            pure (GetRef an t, t)
       e@LitInt {}            -> pure (e, typeOf e)
       e@LitStr {}            -> pure (e, typeOf e)
       LitList an _ es    -> do

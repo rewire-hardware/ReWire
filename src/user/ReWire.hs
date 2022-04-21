@@ -40,17 +40,18 @@ error = GHC.error
 -- | The String argument must be a string literal (after inlining).
 {-# INLINE extern #-}
 extern :: String -> a -> a
-extern n a = externWithSig [] [] [] n a n
+extern n a = externWithSig [] "" [] [] n a n
 
 -- | The String and list arguments must be literals (after inlining).
 externWithSig :: [(String, Integer)] -- ^ Module parameters (name and integer literal value).
+              -> String              -- ^ Clock signal name or empty for no clock.
               -> [(String, Integer)] -- ^ Module inputs (name and integer literal bitwidth).
               -> [(String, Integer)] -- ^ Module outputs (name and integer literal bitwidth).
               -> String              -- ^ Module name.
               -> a                   -- ^ Haskell definition to use when interpreting.
               -> String              -- ^ Instance name to use in generated Verilog.
               -> a
-externWithSig _ _ _ _ f _ = f
+externWithSig _ _ _ _ _ f _ = f
 
 -- | bits a j i returns bits j (most significant) to i (least significant) from a (j >= i).
 --   The Integer arguments must be non-negative integer literals (after inlining).
@@ -61,6 +62,13 @@ bits = GHC.error "Prim: bit string extraction"
 --   The Integer argument must be a non-negative integer literal (after inlining).
 bit :: a -> Integer -> Bit
 bit = GHC.error "Prim: bit extraction"
+
+data Ref a = Ref String
+setRef :: Ref a -> a -> b -> b
+setRef _ _ b = b
+
+getRef :: Ref a -> a 
+getRef = GHC.error "Prim: get"
 
 -- | Project range of bits.
 {-# INLINE (@@) #-}

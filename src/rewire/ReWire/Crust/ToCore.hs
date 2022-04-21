@@ -81,10 +81,10 @@ transDefn start inps outps sts conMap = \ case
                   M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "PuRe")) s) _ -> pure s
                   t                                                     -> failAt (ann t) "transDefn: definition of Main.start must have form `Main.start = unfold n m' where m has type PuRe s o."
 
-externSig :: Annote -> [C.Size] -> C.Size -> ([M.Exp], [M.Exp], [M.Exp]) -> C.ExternSig
-externSig an args res = \ case
-      (params -> Just ps, params -> Just as, params -> Just rs) -> C.ExternSig an ps (if null as then args' else as) (if null rs then res' else rs)
-      _                                                         -> C.ExternSig an [] args' res'
+externSig :: Annote -> [C.Size] -> C.Size -> Text -> ([M.Exp], [M.Exp], [M.Exp]) -> C.ExternSig
+externSig an args res clk = \ case
+      (params -> Just ps, params -> Just as, params -> Just rs) -> C.ExternSig an ps clk (if null as then args' else as) (if null rs then res' else rs)
+      _                                                         -> C.ExternSig an [] clk args' res'
       where params :: [M.Exp] -> Maybe [(Text, C.Size)]
             params = mapM $ \ case
                   M.App _ (M.App _ (M.Con _ _ (n2s -> "(,)")) (M.LitStr _ p)) (M.LitInt _ v) -> pure (p, fromIntegral v)
@@ -95,23 +95,26 @@ externSig an args res = \ case
             res' :: [(Text, C.Size)]
             res'  = [(mempty, res)]
 
+callError :: Annote -> C.Size -> C.Exp
+callError an sz = C.Call an sz (C.Extern (C.ExternSig an [] mempty [] [(mempty, sz)]) "error" "error") C.nil [] C.nil
+
 transExp :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.Exp -> TCM m C.Exp
 transExp e = case e of
       M.App an _ _                  -> case M.flattenApp e of
             (M.Error an _ _ : _)        -> do
                   sz     <- sizeOf an $ M.typeOf e
-                  pure $ C.Call an sz (C.Extern (C.ExternSig an [] [] [(mempty, sz)]) "error" "error") C.nil [] C.nil
+                  pure $ callError an sz
             (e' : _) | not $ M.concrete $ M.typeOf e' -> failAt an "transExp: could not infer a concrete type in an application."
             (M.Var _ _ x : args)        -> do
                   sz       <- sizeOf an $ M.typeOf e
                   args'    <- C.cat <$> mapM transExp args
                   argSizes <- mapM (sizeOf an . M.typeOf) args
                   pure $ C.Call an sz (C.Global $ showt x) args' (map (C.PatVar an) argSizes) C.nil
-            (M.Extern _ _ : M.LitList _ _ ps : M.LitList _ _ as : M.LitList _ _ rs : M.LitStr _ s : _ : M.LitStr _ inst : args)     -> do
+            (M.Extern _ _ : M.LitList _ _ ps : M.LitStr _ clk : M.LitList _ _ as : M.LitList _ _ rs : M.LitStr _ s : _ : M.LitStr _ inst : args) -> do
                   sz       <- sizeOf an $ M.typeOf e
                   args'    <- C.cat <$> mapM transExp args
                   argSizes <- mapM (sizeOf an . M.typeOf) args
-                  pure $ C.Call an sz (C.Extern (externSig an argSizes sz (ps, as, rs)) s inst) args' (map (C.PatVar an) argSizes) C.nil
+                  pure $ C.Call an sz (C.Extern (externSig an argSizes sz clk (ps, as, rs)) s inst) args' (map (C.PatVar an) argSizes) C.nil
             (M.Bit an _ : [arg, M.LitInt _ i])     -> do -- TODO(chathhorn): should probably just do a pass to rewrite this in terms of Bits.
                   sz       <- sizeOf an $ M.typeOf e
                   arg'     <- transExp arg
@@ -126,6 +129,14 @@ transExp e = case e of
                   unless (j < argSize && i >= 0 && j >= 0 && j - i + 1 > 0) $
                         failAt (ann arg) $ "transExp: invalid bit slice (" <> showt j <> ", " <> showt i <> ") from object size " <> showt argSize <> "."
                   pure $ C.Call an sz C.Id arg' [C.PatWildCard an $ fromIntegral $ argSize - j - 1, C.PatVar an $ fromIntegral $ j - i + 1, C.PatWildCard an $ fromIntegral i] C.nil
+            (M.SetRef an _ : M.App _ _ (M.LitStr _ r) : args) -> do
+                  sz       <- sizeOf an $ M.typeOf e
+                  args'    <- C.cat <$> mapM transExp args
+                  argSizes <- mapM (sizeOf an . M.typeOf) args
+                  pure $ C.Call an sz (C.SetRef r) args' (map (C.PatVar an) argSizes) C.nil
+            (M.GetRef an _ : [M.App _ _ (M.LitStr _ r)])     -> do
+                  sz       <- sizeOf an $ M.typeOf e
+                  pure $ C.Call an sz (C.GetRef r) C.nil [] C.nil
             (M.Con an t d : args)       -> do
                   (v, w) <- ctorTag an (snd $ M.flattenArrow t) d
                   args'  <- mapM transExp args
@@ -155,7 +166,7 @@ transExp e = case e of
             pure $ C.Lit an $ bitVec (fromIntegral sz) n
       M.Error an t _                    -> do
             sz     <- sizeOf an t
-            pure $ C.Call an sz (C.Extern (C.ExternSig an [] [] [(mempty, sz)]) "error" "error") C.nil [] C.nil
+            pure $ callError an sz
       _                                 -> failAt (ann e) $ "ToCore: unsupported expression: " <> prettyPrint e
       where callTarget :: MonadError AstError m => C.Exp -> m C.Target
             callTarget = \ case

@@ -24,6 +24,7 @@ primDatas = map mkData
       , ("I",       kmonad,                                             [])
       , ("Integer", KStar,                                              [])
       , ("Bit",     KStar,                                              [nullDataCon "C" "Bit", nullDataCon "S" "Bit"])
+      , ("Ref",     KStar `KFun` KStar,                                 [refCtor])
       , ("String",  KStar,                                              [])
       , ("[_]",     KStar `KFun` KStar,                                 [])
       , ("()",      KStar,                                              [nullDataCon "()" "()"])
@@ -37,6 +38,11 @@ mkData (n, k, cs) = DataDefn (msg $ "Prim: " <> n) (s2n n) k cs
 
 nullDataCon :: Text -> Text -> DataCon
 nullDataCon c t = DataCon (MsgAnnote $ "Prim: " <> c <> " data ctor") (s2n c) ([] |-> TyCon (MsgAnnote $ "Prim: " <> t <> " type ctor") (s2n t))
+
+refCtor :: DataCon
+refCtor = DataCon an (s2n "Ref") $ [s2n "a"] |-> (strTy an `arr` refTy an (TyVar an KStar $ s2n "a"))
+      where an :: Annote
+            an = MsgAnnote $ "Prim: Ref data/type ctor"
 
 mkTuple' :: Int -> DataDefn
 mkTuple' n = DataDefn (msg "Prim: tuple") (s2n i) k [ctor]

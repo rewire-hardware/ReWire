@@ -240,6 +240,8 @@ transExp rn = \ case
       Var l x | isExtern x   -> pure $ M.Extern l $ M.TyBlank l
       Var l x | isBit x      -> pure $ M.Bit l $ M.TyBlank l
       Var l x | isBits x     -> pure $ M.Bits l $ M.TyBlank l
+      Var l x | isSetRef x   -> pure $ M.SetRef l $ M.TyBlank l
+      Var l x | isGetRef x   -> pure $ M.GetRef l $ M.TyBlank l
       Var l x                -> pure $ M.Var l (M.TyBlank l) $ s2n $ rename Value rn x
       Con l x                -> pure $ M.Con l (M.TyBlank l) $ s2n $ rename Value rn x
       Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _] -> do
@@ -273,6 +275,12 @@ transExp rn = \ case
 
             isBits :: QName Annote -> Bool
             isBits n = prettyPrint (name $ rename Value rn n) == "bits"
+
+            isSetRef :: QName Annote -> Bool
+            isSetRef n = prettyPrint (name $ rename Value rn n) == "setRef"
+
+            isGetRef :: QName Annote -> Bool
+            isGetRef n = prettyPrint (name $ rename Value rn n) == "getRef"
 
 transPat :: MonadError AstError m => Renamer -> Pat Annote -> m M.Pat
 transPat rn = \ case
