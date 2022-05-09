@@ -190,14 +190,14 @@ transDef rn tys inls defs = \ case
                 t  = fromMaybe (M.TyVar l k $ s2n "?a") $ lookup x tys
             -- TODO(chathhorn): hackily elide definition of primitives. Allows providing alternate defs for GHC compat.
             e' <- if M.isPrim x' && x `notElem` inls then pure $ M.Error (ann e) t $ "Prim: " <> n2s x' else transExp rn e
-            pure $ M.Defn l x' (M.fv t |-> t)                      (x `elem` inls) (Embed (bind [] e')) : defs
-      DataDecl {}                                               -> pure defs -- TODO(chathhorn): elide
-      InlineSig {}                                              -> pure defs -- TODO(chathhorn): elide
-      TypeSig {}                                                -> pure defs -- TODO(chathhorn): elide
-      InfixDecl {}                                              -> pure defs -- TODO(chathhorn): elide
-      TypeDecl {}                                               -> pure defs -- TODO(chathhorn): elide
-      AnnPragma {}                                              -> pure defs -- TODO(chathhorn): elide
-      MinimalPragma {}                                          -> pure defs -- TODO(chathhorn): elide
+            pure $ M.Defn l x' (M.fv t |-> t) (x `elem` inls) (Embed (bind [] e')) : defs
+      DataDecl       {}                                         -> pure defs -- TODO(chathhorn): elide
+      InlineSig      {}                                         -> pure defs -- TODO(chathhorn): elide
+      TypeSig        {}                                         -> pure defs -- TODO(chathhorn): elide
+      InfixDecl      {}                                         -> pure defs -- TODO(chathhorn): elide
+      TypeDecl       {}                                         -> pure defs -- TODO(chathhorn): elide
+      AnnPragma      {}                                         -> pure defs -- TODO(chathhorn): elide
+      MinimalPragma  {}                                         -> pure defs -- TODO(chathhorn): elide
       CompletePragma {}                                         -> pure defs -- TODO(chathhorn): elide
       RulePragmaDecl {}                                         -> pure defs -- TODO(chathhorn): elide
       DeprPragmaDecl {}                                         -> pure defs -- TODO(chathhorn): elide
