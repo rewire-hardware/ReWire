@@ -22,7 +22,7 @@ import ReWire.Crust.Syntax
 import ReWire.Crust.ToCore
 import ReWire.Crust.ToCrust
 import ReWire.Crust.Transform
-import ReWire.Crust.TypeCheck
+import ReWire.Crust.TypeCheck (typeCheck, untype)
 import ReWire.Unbound (runFreshMT, FreshMT (..))
 import ReWire.Pretty
 import ReWire.Flags (Flag (..))
@@ -134,18 +134,19 @@ getProgram flags fp = do
        >=> pDebug' "[Pass 3] Adding primitives and inlining."
        >=> whenSet FlagDCrust1 (printInfo "Crust 1: Post-desugaring")
        >=> pure . addPrims
-       -- >=> typeTopLevelExterns -- hacky hack to make externs inlineable
        >=> inline
        >=> prePurify
-       >=> pDebug' "Expanding type synonyms."
+       >=> pDebug' "Expanding type synonyms and simplifying."
        >=> expandTypeSynonyms
        >=> pDebug' "[Pass 4] Post-inlining, before typechecking."
        >=> whenSet FlagDCrust2 (printInfo "Crust 2: Post-inlining")
        >=> pDebug' "Typechecking."
        >=> kindCheck >=> typeCheck
+       >=> pDebug' "[Pass 4b] Post-typechecking."
+       >=> whenSet FlagDCrust2b (printInfo "Crust 2b: Post-typechecking")
        >=> pDebug' "Simplifying and reducing."
-       -- >=> neuterPrims
-       >=> reduce
+       >=> pure . purgeUnused start
+       >=> simplify
        >=> shiftLambdas
        >=> pDebug' "Lifting lambdas (pre-purification)."
        >=> liftLambdas
@@ -236,10 +237,16 @@ printInfo hd verbose fp = do
       liftIO $ T.putStrLn "## Free exp vars:\n"
       liftIO $ T.putStrLn $ T.concat $ map (<> "\n") (nubOrd $ map prettyPrint (fv p :: [Name Exp]))
       liftIO $ T.putStrLn "## Program:\n"
-      liftIO $ T.putStrLn $ prettyPrint p
+      liftIO $ T.putStrLn $ prettyPrint' $ prettyFP $ if verbose then fp else untype' fp
       when verbose $ liftIO $ T.putStrLn "\n## Program (show):\n"
       when verbose $ liftIO $ T.putStrLn $ showt $ unAnn fp
       pure fp
+
+      where untype' :: FreeProgram -> FreeProgram
+            untype' (ts, syns, vs) = (ts, syns, map untype'' vs)
+
+            untype'' :: Defn -> Defn
+            untype'' d = d { defnBody = untype $ defnBody d }
 
 printInfoHSE :: MonadIO m => Text -> Renamer -> Module -> Bool -> S.Module a -> m (S.Module a)
 printInfoHSE hd rn imps verbose hse = do

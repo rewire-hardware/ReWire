@@ -5,7 +5,7 @@ data Flag = FlagO !String
           | FlagV
           | FlagFirrtl  | FlagVerilog
           | FlagDHask1  | FlagDHask2 | FlagDCrust0
-          | FlagDCrust1 | FlagDCrust2 | FlagDCrust3 | FlagDCrust4 | FlagDCrust5
+          | FlagDCrust1 | FlagDCrust2 | FlagDCrust2b | FlagDCrust3 | FlagDCrust4 | FlagDCrust5
           | FlagDCore1  | FlagDCore2
           | FlagFlatten
           | FlagInvertReset

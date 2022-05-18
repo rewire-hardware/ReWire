@@ -47,6 +47,7 @@ options =
        , Option []    ["dpass2b", "dcrust0"] (NoArg  FlagDCrust0)                       "Dump pass 2b: synthetic per-module crust source."
        , Option []    ["dpass3" , "dcrust1"] (NoArg  FlagDCrust1)                       "Dump pass 3: post-desugar crust source."
        , Option []    ["dpass4" , "dcrust2"] (NoArg  FlagDCrust2)                       "Dump pass 4: post-inlining crust source."
+       , Option []    ["dpass4b", "dcrust2b"] (NoArg  FlagDCrust2b)                    "Dump pass 4b: post-typechecking crust source."
        , Option []    ["dpass5" , "dcrust3"] (NoArg  FlagDCrust3)                       "Dump pass 5: pre-purify crust source."
        , Option []    ["dpass6" , "dcrust4"] (NoArg  FlagDCrust4)                       "Dump pass 6: post-purify crust source."
        , Option []    ["dpass7" , "dcrust5"] (NoArg  FlagDCrust5)                       "Dump pass 7: post-second-lambda-lifting crust source."

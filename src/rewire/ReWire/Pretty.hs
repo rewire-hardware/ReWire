@@ -1,6 +1,6 @@
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module ReWire.Pretty (($$), prettyPrint, text, int, empty, P.Pretty) where
+module ReWire.Pretty (($$), prettyPrint, prettyPrint', text, int, empty, P.Pretty) where
 
 import qualified Prettyprinter as P
 import qualified Prettyprinter.Render.Text as P
@@ -22,7 +22,10 @@ empty :: P.Doc ann
 empty = P.emptyDoc
 
 prettyPrint :: P.Pretty a => a -> Text
-prettyPrint = P.renderStrict . P.layoutPretty P.defaultLayoutOptions . P.pretty
+prettyPrint = prettyPrint' . P.pretty
+
+prettyPrint' :: P.Doc ann -> Text
+prettyPrint' = P.renderStrict . P.layoutPretty P.defaultLayoutOptions
 
 -- TODO(chathhorn): orphan
 instance TextShow (P.Doc ann) where

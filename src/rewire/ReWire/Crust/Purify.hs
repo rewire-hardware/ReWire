@@ -78,9 +78,8 @@ purify start (ts, syns, ds) = do
 
       pure ( filter (not . isAorR) ts ++ [mkRDatatype dcs] ++ [mkADatatype $ Map.toList allAs]
            , syns
-           , mkStart start i o ms
-           : disp
-           : ods ++ pure_smds ++ pure_rmds)
+           , mkStart start i o ms : disp : ods ++ pure_smds ++ pure_rmds
+           )
 
       where getCanonReTy :: Fresh m => [Defn] -> m (Maybe (Ty, Ty, [Ty], Set Ty))
             getCanonReTy = (getCanonReTy' . catMaybes <$>) . mapM (projDefnTy >=> pure . dstReT . rangeTy)
@@ -92,17 +91,32 @@ purify start (ts, syns, ds) = do
 
             mergeReTys :: (Ty, Ty, [Ty], Ty) -> Maybe (Ty, Ty, [Ty], Set Ty) -> Maybe (Ty, Ty, [Ty], Set Ty)
             mergeReTys (i, o, ms, a) = \ case
-                  Just (i', o', ms', a') | length ms >= length ms' && isSuffixOf ms' ms
-                                                && i == i' && o == o' -> Just (i, o, ms, insert a a')
-                                         | length ms < length ms'  && isSuffixOf ms ms'
-                                                && i == i' && o == o' -> Just (i, o, ms', insert a a')
-                  _                                                   -> Nothing
+                  Just (i', o', ms', a')
+                        | length ms >= length ms'
+                        , isSuffixOf ms' ms
+                        , Just ui <- unify i i', Just uo <- unify o o'
+                              -> Just (ui, uo, ms, insert a a')
+                        | length ms < length ms'
+                        , isSuffixOf ms ms'
+                        , Just ui <- unify i i', Just uo <- unify o o'
+                              -> Just (ui, uo, ms', insert a a')
+                  _           -> Nothing
 
             isAorR :: DataDefn -> Bool
             isAorR = uncurry (||) . ((== "A_") &&& (== "R_")) . n2s . dataName
 
             isStart :: Name Exp -> Bool
             isStart = (== start) . n2s
+
+            -- | Unify types but do it the most dumbly.
+            unify :: Ty -> Ty -> Maybe Ty
+            unify (TyApp an a b) (TyApp _ a' b') | Just ua <- unify a a', Just ub <- unify b b'
+                                  = pure $ TyApp an ua ub
+            unify (TyCon an n) (TyCon _ n') | n == n'
+                                  = pure $ TyCon an n
+            unify (TyVar _ _ _) t = pure t
+            unify t (TyVar _ _ _) = pure t
+            unify _ _             = Nothing
 
 -- | In addition to all the above, we re-tie the recursive knot by adding a new
 --   "start" as follows

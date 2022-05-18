@@ -19,8 +19,7 @@ module ReWire.Crust.Syntax
       , Kind (..), kblank
       , flattenApp, flattenArrow, flattenTyApp, arr, arrowRight, arrowLeft
       , fv, fvAny
-      , Fresh, Name, Embed (..), TRec, Bind
-      , FieldId
+      , Fresh, Name, Embed (..), TRec, Bind, FieldId
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly
       , rangeTy, paramTys, isPrim, mkArrowTy, nil, isResMonad, isStateMonad
@@ -28,8 +27,8 @@ module ReWire.Crust.Syntax
       , flattenAllTyApp, resInputTy
       , mkTuple, mkTuplePat, mkTupleMPat, tupleTy
       , mkPair, mkPairPat, mkPairMPat
-      , kmonad, tycomp, concrete
-      , TypeAnnotated (..)
+      , kmonad, tycomp, concrete, higherOrder
+      , TypeAnnotated (..), prettyFP
       ) where
 
 import safe ReWire.Annotation
@@ -50,7 +49,7 @@ import Prelude hiding (replicate)
 import safe Control.DeepSeq (NFData (..), deepseq)
 import safe Data.Data (Typeable, Data (..))
 import safe Data.List (intersperse)
-import safe Data.Hashable (Hashable)
+import safe Data.Hashable (Hashable (..))
 import safe Data.Text (Text, unpack, replicate)
 import safe GHC.Generics (Generic (..))
 import safe Prettyprinter
@@ -198,16 +197,16 @@ instance Parenless Ty where
 
 instance Pretty Ty where
       pretty t = case flattenTyApp t of
-            (TyCon _ (n2s -> c) : ts)
-                  | isTupleCtor c              -> parens $ hsep $ punctuate comma $ map pretty ts
-            (TyCon _ (n2s -> "->") : [t1, t2])
-                  | needsParens t1             -> parens (pretty t1) <+> text "->" <+> pretty t2
-            (TyCon _ (n2s -> "->") : [t1, t2]) -> pretty t1 <+> text "->" <+> pretty t2
-            (TyCon _ (n2s -> "[_]") : [t'])    -> brackets $ pretty t'
-            [TyCon _ n]                        -> text $ n2s n
-            [TyVar _ _ n]                      -> text $ n2s n
-            [TyBlank _]                        -> text "_"
-            ts                                 -> hsep $ map mparens ts
+            (TyCon _ (n2s -> c)     : ts)
+                  | isTupleCtor c               -> parens $ hsep $ punctuate comma $ map pretty ts
+            (TyCon _ (n2s -> "->")  : [t1, t2])
+                  | needsParens t1              -> parens (pretty t1) <+> text "->" <+> pretty t2
+            (TyCon _ (n2s -> "->")  : [t1, t2]) -> pretty t1 <+> text "->" <+> pretty t2
+            (TyCon _ (n2s -> "[_]") : [t'])     -> brackets $ pretty t'
+            [TyCon _ n]                         -> text $ n2s n
+            [TyVar _ _ n]                       -> text $ n2s n
+            [TyBlank _]                         -> text "_"
+            ts                                  -> hsep $ map mparens ts
             where needsParens :: Ty -> Bool
                   needsParens t = case flattenTyApp t of
                         (TyCon _ (n2s -> "->") : _) -> True
@@ -220,12 +219,12 @@ instance NFData Ty
 instance (TextShow a, TextShow b) => TextShow (Bind a b) where
       showbPrec = genericShowbPrec
 
-data Exp = App     Annote !Exp  !Exp
-         | Lam     Annote !Ty   !(Bind (Name Exp) Exp)
-         | Var     Annote !Ty   !(Name Exp)
-         | Con     Annote !Ty   !(Name DataConId)
-         | Case    Annote !Ty   !Exp !(Bind Pat Exp) !(Maybe Exp)
-         | Match   Annote !Ty   !Exp !MatchPat !Exp !(Maybe Exp)
+data Exp = App     Annote !Exp      !Exp
+         | Lam     Annote !Ty       !(Bind (Name Exp) Exp)
+         | Var     Annote !Ty       !(Name Exp)
+         | Con     Annote !Ty       !(Name DataConId)
+         | Case    Annote !Ty       !Exp !(Bind Pat Exp) !(Maybe Exp)
+         | Match   Annote !Ty       !Exp !MatchPat !Exp !(Maybe Exp)
          | Extern  Annote !Ty
          | Bit     Annote !Ty
          | Bits    Annote !Ty
@@ -233,12 +232,15 @@ data Exp = App     Annote !Exp  !Exp
          | GetRef  Annote !Ty
          | LitInt  Annote !Integer
          | LitStr  Annote !Text
-         | LitList Annote !Ty ![Exp]
-         | Error   Annote !Ty   !Text
+         | LitList Annote !Ty       ![Exp]
+         | Error   Annote !Ty       !Text
       deriving (Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Exp
 
 instance Hashable Exp
+
+instance Eq Exp where
+      a == b = hash a == hash b
 
 instance Alpha Exp
 
@@ -319,33 +321,37 @@ instance Parenless Exp where
 instance Pretty Exp where
       pretty e = case flattenApp e of
             (Con _ _ (n2s -> c) : es) | isTupleCtor c    -> parens $ hsep $ punctuate comma $ map pretty es
-            [Con _ t n]                                  -> text (n2s n) <+> braces (pretty t)
-            [Var _ t n]                                  -> text (showt n) <+> braces (pretty t)
+            [Con _ t n]                                  -> tyAnn (text $ n2s n) t
+            [Var _ t n]                                  -> tyAnn (text $ showt n) t
             [Lam _ _ e]                                  -> runFreshM $ do
                   (p, e') <- unbind e
                   pure $ text "\\" <+> text (showt p) <+> text "->" <+> pretty e'
             [Case _ t e e1 e2]                           -> runFreshM $ do
                   (p, e1') <- unbind e1
                   pure $ nest 2 $ vsep $
-                        [ text "case" <+> braces (pretty t) <+> pretty e <+> text "of"
+                        [ tyAnn (text "case") t <+> pretty e <+> text "of"
                         , pretty p <+> text "->" <+> pretty e1'
                         ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
             [Match _ t e p e1 e2]                        -> runFreshM $
                   pure $ nest 2 $ vsep $
-                        [ text "match" <+> braces (pretty t) <+> pretty e <+> text "of"
+                        [ tyAnn (text "match") t <+> pretty e <+> text "of"
                         , pretty p <+> text "->" <+> pretty e1
                         ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
-            [Extern _ t]                                 -> text "externWithSig" <+> braces (pretty t)
-            [Bit _ t]                                    -> text "bit" <+> braces (pretty t)
-            [Bits _ t]                                   -> text "bits" <+> braces (pretty t)
-            [SetRef _ t]                                 -> text "set" <+> braces (pretty t)
-            [GetRef _ t]                                 -> text "get" <+> braces (pretty t)
+            [Extern _ t]                                 -> tyAnn (text "externWithSig") t
+            [Bit _ t]                                    -> tyAnn (text "bit") t
+            [Bits _ t]                                   -> tyAnn (text "bits") t
+            [SetRef _ t]                                 -> tyAnn (text "set") t
+            [GetRef _ t]                                 -> tyAnn (text "get") t
             [LitInt _ v]                                 -> pretty v
             [LitStr _ v]                                 -> dquotes $ pretty v
             [LitList _ _ vs]                             -> brackets $ hsep $ punctuate comma $ map pretty vs
-            [Error _ t m]                                -> text "error" <+> braces (pretty t) <+> dquotes (pretty m)
+            [Error _ t m]                                -> tyAnn (text "error") t <+> dquotes (pretty m)
             es                                           -> nest 2 $ hsep $ map mparens es
 
+            where tyAnn :: Doc ann -> Ty -> Doc ann
+                  tyAnn d = \ case
+                        t | not $ isBlank t -> d <+> braces (pretty t)
+                        _                   -> d
 ---
 
 data Pat = PatCon      Annote !(Embed Ty) !(Embed (Name DataConId)) ![Pat]
@@ -509,6 +515,10 @@ instance Pretty TypeSynonym where
 
 type FreeProgram = ([DataDefn], [TypeSynonym], [Defn])
 
+-- TODO(chathhorn): make FreeProgram newtype.
+prettyFP :: FreeProgram -> Doc ann
+prettyFP (ts, syns, vs) = vsep $ intersperse empty $ map pretty ts <> map pretty syns <> map pretty vs
+
 newtype Program = Program (TRec ([DataDefn], [TypeSynonym], [Defn]))
       deriving (Generic, Show, Typeable)
 
@@ -518,15 +528,13 @@ instance NFData Program where
       rnf (Program p) = p `deepseq` ()
 
 instance Pretty Program where
-      pretty (Program p) = runFreshM $ do
-            (ts, syns, vs) <- untrec p
-            pure $ vsep $ intersperse empty $ map pretty ts ++ map pretty syns ++ map pretty vs
+      pretty (Program p) = runFreshM $ prettyFP <$> untrec p
 
 ---
 
 flattenApp :: Exp -> [Exp]
 flattenApp = \ case
-      App _ e e' -> flattenApp e ++ [e']
+      App _ e e' -> flattenApp e <> [e']
       e          -> [e]
 
 flattenArrow :: Ty -> ([Ty], Ty)
@@ -649,12 +657,25 @@ isStateMonad ty = case rangeTy ty of
       TyApp _ (TyCon _ (n2s -> "I")) _                            -> True
       _                                                           -> False
 
+isBlank :: Ty -> Bool
+isBlank = \ case
+      TyBlank _ -> True
+      _         -> False
+
 concrete :: Ty -> Bool
 concrete = \ case
       TyBlank {}  -> False
       TyVar {}    -> False
       TyCon {}    -> True
       TyApp _ a b -> concrete a && concrete b
+
+higherOrder :: Ty -> Bool
+higherOrder (flattenArrow -> (ats, rt)) = or $ map isArrow $ rt : ats
+
+isArrow :: Ty -> Bool
+isArrow = \ case
+      TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) _ -> True
+      _                                             -> False
 
 -- Orphans.
 

@@ -198,11 +198,12 @@ compileDefn flags (C.Defn _ n (Sig _ inps outp) body) = do
 compileCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
              => [Flag] -> GId -> V.Size -> [V.Exp] -> m (V.Exp, [Stmt])
 compileCall flags g sz lvars
-      | FlagFlatten `elem` flags = do
-            Just body  <- asks (Map.lookup g)
-            (e, stmts) <- compileExp flags lvars body
-            e'         <- wcast sz e
-            pure (e', stmts)
+      | FlagFlatten `elem` flags = asks (Map.lookup g) >>= \ case
+            Just body -> do
+                  (e, stmts) <- compileExp flags lvars body
+                  e'         <- wcast sz e
+                  pure (e', stmts)
+            _ -> failAt noAnn $ "ToVerilog: compileCall: failed to find definition for " <> g <> " while flattening."
       | otherwise = do
             mr         <- newWire sz "callRes"
             inst'      <- fresh' g

@@ -42,8 +42,9 @@ instance Monoid (Transform m) where
       mempty                 = TId
 
 foldT :: Monad m => (T m -> T m -> T m) -> Transform m -> T m
-foldT op (TCons f fs) = f `op` foldT op fs
-foldT _ TId           = lift . pure
+foldT op = \ case
+      TCons f fs -> f `op` foldT op fs
+      TId        -> lift . pure
 
 (||>) :: (Monad m, Typeable d) => (d -> m d) -> Transform m -> Transform m
 f ||> fs = generalize f `TCons` fs
@@ -88,8 +89,9 @@ query :: (Typeable d, Monoid a) => (d -> a) -> Query a
 query = (||? QEmpty)
 
 foldQ :: Monoid a => (Q a -> Q a -> Q a) -> Query a -> Q a
-foldQ op (QCons f fs) = f `op` foldQ op fs
-foldQ _ QEmpty        = const mempty
+foldQ op = \ case
+      QCons f fs -> f `op` foldQ op fs
+      QEmpty     -> const mempty
 
 everywhereQ :: (Data a, Monoid b) => (forall d. Data d => d -> b) -> a -> b
 everywhereQ f n = f n <> gmapQr (<>) mempty (everywhereQ f) n

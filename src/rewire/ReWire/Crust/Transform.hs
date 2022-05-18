@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, ScopedTypeVariables, GADTs, OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts, ScopedTypeVariables, GADTs, OverloadedStrings, MultiWayIf #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 module ReWire.Crust.Transform
@@ -9,7 +9,9 @@ module ReWire.Crust.Transform
       , fullyApplyDefs
       , purgeUnused
       , prePurify
-      -- , typeTopLevelExterns
+      , simplify
+      , specialize
+      , fix, fixOn
       ) where
 
 import ReWire.Error
@@ -20,22 +22,26 @@ import ReWire.Unbound
       , Name (..)
       , unsafeUnbind
       )
-import ReWire.Annotation (Annote (..), Annotated (..), noAnn)
+import ReWire.Annotation (Annote (..), Annotated (..), noAnn, unAnn)
 import ReWire.SYB
 import ReWire.Crust.Syntax
 
-import Control.Arrow (first)
+import Control.Arrow (first, (&&&))
+import Control.Monad (zipWithM, filterM, replicateM, (>=>))
 import Control.Monad.Catch (MonadCatch)
-import Control.Monad.State (State, evalStateT, execState, StateT (..), get, modify)
-import Control.Monad (filterM, replicateM)
-import Data.Data (Data)
-import Data.List (find, foldl', sort)
-import Data.Maybe (fromMaybe)
+import Control.Monad.State (State, evalStateT, execState, StateT (..), get, gets, modify)
+import Control.Monad.Writer (MonadWriter, tell, WriterT, runWriterT)
 import Data.Containers.ListUtils (nubOrd, nubOrdOn)
+import Data.Data (Data)
+import Data.Either (lefts)
+import Data.HashMap.Strict (HashMap)
 import Data.Hashable (Hashable (..))
+import Data.List (find, foldl', sort)
+import Data.Maybe (fromMaybe, catMaybes, isNothing)
+import Data.Set (Set, union, (\\))
 import Data.Text (Text)
 
-import Data.Set (Set, union, (\\))
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 -- | Inlines defs marked for inlining. Must run before lambda lifting.
@@ -78,7 +84,7 @@ expandTypeSynonyms (ts, syns, ds) = (,,) <$> expandSyns ts <*> syns' <*> expandS
                         Just (n, args) -> case lookup n subs' of
                               Just pt -> do
                                     (vs, t') <- unbind pt
-                                    let args' = args ++ [b]
+                                    let args' = args <> [b]
                                     case length vs == length args' of
                                           True -> pure $ substs (zip vs args') t'
                   )
@@ -88,14 +94,15 @@ expandTypeSynonyms (ts, syns, ds) = (,,) <$> expandSyns ts <*> syns' <*> expandS
                   TyCon _ n   -> pure (n, [])
                   TyApp _ a b -> do
                         (n, args) <- findTyCon a
-                        pure (n, args ++ [b])
+                        pure (n, args <> [b])
                   _           -> Nothing
 
 fix :: (MonadError AstError m, Hashable a) => Text -> Int -> (a -> m a) -> a -> m a
-fix m 0 _ _ = failAt noAnn $ m <> " expansion not terminating (mutually recursive definitions?)."
-fix m n f a = do
-      a' <- f a
-      if hash a' == hash a then pure a else fix m (n - 1) f a'
+fix = fixOn hash
+
+fixOn :: (MonadError AstError m, Eq b) => (a -> b) -> Text -> Int -> (a -> m a) -> a -> m a
+fixOn _ m 0 _ _ = failAt noAnn $ m <> " expansion not terminating (mutually recursive definitions?)."
+fixOn h m n f a = f a >>= \ a' -> if h a' == h a then pure a else fixOn h m (n - 1) f a'
 
 fix' :: Hashable a => (a -> a) -> a -> a
 fix' f a = if hash (f a) == hash a then a else fix' f (f a)
@@ -105,19 +112,6 @@ fix' f a = if hash (f a) == hash a then a else fix' f (f a)
 neuterPrims :: MonadCatch m => FreeProgram -> m FreeProgram
 neuterPrims = runT $ transform $
       \ (App a e@(App _ Extern {} _) e') -> pure $ App a e $ Error a (typeOf e') "extern expression placeholder"
-
--- | Hacky hack
--- typeTopLevelExterns :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
--- typeTopLevelExterns (ts, syns, vs) = (ts, syns, ) <$> mapM typeExterns vs
---       where typeExterns :: Fresh m => Defn -> m Defn
---             typeExterns (Defn an n (Embed (Poly t)) inl (Embed e)) = Defn an n (Embed (Poly t)) inl . Embed <$> mash t e
--- 
---             mash :: Fresh m => Bind [Name Ty] Ty -> Bind [Name Exp] Exp -> m (Bind [Name Exp] Exp)
---             mash t e = unbind e >>= \ case
---                   (vs, Extern an s _) -> do
---                         (_, t') <- unbind t
---                         pure $ bind vs $ Extern an s $ Error an t' "extern expression placeholder"
---                   _                   -> pure e
 
 -- | Shifts vars bound by top-level lambdas into defs.
 -- > g = \ x1 -> \ x2 -> e
@@ -132,7 +126,7 @@ shiftLambdas (ts, syns, vs) = (ts, syns, ) <$> mapM shiftLambdas' vs
             mash e = unbind e >>= \ case
                   (vs, Lam _ _ b) -> do
                         (v, b') <- unbind b
-                        mash $ bind (vs ++ [v]) b'
+                        mash $ bind (vs <> [v]) b'
                   _               -> pure e
 
 -- | Inlines everything to the left of ">>=" and
@@ -239,7 +233,7 @@ fullyApplyDefs (ts, syns, vs) = (ts, syns, ) <$> mapM fullyApplyDefs' vs
                   case typeOf e' of
                         TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t) _ -> do
                               x <- fresh $ s2n "$x"
-                              fullyApply $ bind (vs ++ [x]) $ appl t (Var (ann e') t x) e'
+                              fullyApply $ bind (vs <> [x]) $ appl t (Var (ann e') t x) e'
                         _                                             -> pure e
 
             appl :: Ty -> Exp -> Exp -> Exp
@@ -250,6 +244,7 @@ fullyApplyDefs (ts, syns, vs) = (ts, syns, ) <$> mapM fullyApplyDefs' vs
 
 -- | Lifts lambdas and case/match into a top level fun def.
 -- TODO(chathhorn): a lot of duplicated code here.
+-- TODO(chathhorn): use Writer instead of State
 liftLambdas :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
 liftLambdas p = evalStateT (runT liftLambdas' p) []
       where liftLambdas' :: (MonadCatch m, Fresh m) => Transform (StateT [Defn] m)
@@ -262,10 +257,10 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                         let bvs   = bv e
                         (fvs, e') <- freshen e
 
-                        let t' = foldr arr (typeOf e') $ map snd bvs ++ [t]
+                        let t' = foldr arr (typeOf e') $ map snd bvs <> [t]
                         f     <- fresh $ s2n "$LL.lambda"
 
-                        modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs ++ [x]) e')
+                        modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs <> [x]) e')
                         pure $ foldl' (App an) (Var an t' f) $ map (toVar an . first promote) bvs
                   Case an t e1 b e2 -> do
                         (p, e)    <- unbind b
@@ -356,8 +351,9 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                   _                    -> []
 
             promote :: Name a -> Name a
-            promote (Bn l k) | l >= 0 = Bn (l - 1) k
-            promote b = b
+            promote = \ case
+                  Bn l k | l >= 0 -> Bn (l - 1) k
+                  b               -> b
 
             transPat :: Pat -> MatchPat
             transPat = \ case
@@ -370,6 +366,33 @@ purgeUnused :: Text -> FreeProgram -> FreeProgram
 purgeUnused start (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ externCtors vs') (fv $ trec vs') ts, syns, vs')
       where vs' :: [Defn]
             vs' = inuseDefn start vs
+
+            inuseDefn :: Text -> [Defn] -> [Defn]
+            inuseDefn start ds = map toDefn $ Set.elems $ execState (inuseDefn' ds') ds'
+                  where inuseDefn' :: Set (Name Exp) -> State (Set (Name Exp)) ()
+                        inuseDefn' ns | Set.null ns = pure () -- TODO(chathhorn): rewrite using fix?
+                                      | otherwise   = do
+                              inuse  <- get
+                              modify $ union $ fvs ns
+                              inuse' <- get
+                              inuseDefn' $ inuse' \\ inuse
+
+                        reservedDefn :: [Text]
+                        reservedDefn =
+                                     [ start
+                                     , "unfold"
+                                     ]
+
+                        ds' :: Set (Name Exp)
+                        ds' = Set.fromList $ filter (flip elem reservedDefn . n2s) $ map defnName ds
+
+                        fvs :: Set (Name Exp) -> Set (Name Exp)
+                        fvs = Set.fromList . concatMap (fv . unembed . defnBody . toDefn) . Set.elems
+
+                        toDefn :: Name Exp -> Defn
+                        toDefn n | Just d <- find ((== n) . defnName) ds = d
+                                 | otherwise                             = error $ "Something went wrong: can't find symbol: " <> show n
+
 
             inuseData :: [Name TyConId] -> [Name DataConId] -> [DataDefn] -> [DataDefn]
             inuseData ts ns = filter (not . null . dataCons) . map (inuseData' ts ns)
@@ -416,92 +439,187 @@ purgeUnused start (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ exter
                   _ : cs         -> ctorNames cs
                   _              -> []
 
-inuseDefn :: Text -> [Defn] -> [Defn]
-inuseDefn start ds = map toDefn $ Set.elems $ execState (inuseDefn' ds') ds'
-      where inuseDefn' :: Set (Name Exp) -> State (Set (Name Exp)) ()
-            inuseDefn' ns | Set.null ns = pure ()
-                          | otherwise   = do
-                  inuse  <- get
-                  modify $ union (fvs ns)
-                  inuse' <- get
-                  inuseDefn' $ inuse' \\ inuse
+-- | Repeatedly calls "reduce" and "specialize" -- attempts to remove
+-- higher-order functions by partially evaluating them.
+simplify :: (Fresh m, MonadError AstError m) => FreeProgram -> m FreeProgram
+simplify = flip evalStateT mempty
+         . ( specialize
+         >=> reduce
+         >=> specialize
+         >=> reduce
+         >=> specialize
+         >=> reduce
+         >=> specialize
+         ) -- TODO(chathhorn): fix?
 
-            reservedDefn :: [Text]
-            reservedDefn =
-                         [ start
-                         , "unfold"
-                         ]
+type SpecState = StateT (HashMap (Name Exp, [AppSig]) Defn)
+type AppSig = Maybe Exp
 
-            ds' :: Set (Name Exp)
-            ds' = Set.fromList $ filter (flip elem reservedDefn . n2s) $ map defnName ds
+-- | If b has no bound variables (i.e., not bound by a global def), then
+-- > f :: A -> Y
+-- > f = \ a -> g a b
+-- > g :: A -> X -> Y
+-- > g = ...g...
+--   becomes
+-- > f :: A -> Y
+-- > f = \ a -> g' a
+-- > g :: A -> X -> Y
+-- > g = ...g...
+-- > g' :: A -> Y
+-- > g' = \ a' -> (...g...) a' b
+specialize :: Fresh m => FreeProgram -> SpecState m FreeProgram
+specialize (ts, syns, vs) = do
+      vs'     <- mapM specDefn vs
+      newDefs <- filter (not . isGlobal . defnName) <$> gets Map.elems
+      pure $ (ts, syns, vs' <> newDefs)
+      where gs :: HashMap (Name Exp) Defn
+            gs = Map.fromList $ map (defnName &&& id) vs
 
-            fvs :: Set (Name Exp) -> Set (Name Exp)
-            fvs = Set.fromList . concatMap (fv . unembed . defnBody . toDefn) . Set.elems
+            isGlobal :: Name Exp -> Bool
+            isGlobal = flip Map.member gs
 
-            toDefn :: Name Exp -> Defn
-            toDefn n = case find ((==n) . defnName) ds of
-                  Just d  -> d
-                  Nothing -> error $ "Something went wrong: can't find symbol: " <> show n
+            specDefn :: Fresh m => Defn -> SpecState m Defn
+            specDefn (Defn ann n pt inl (Embed body)) = do
+                  (vs, body') <- unbind body
+                  Defn ann n pt inl <$> Embed <$> bind vs <$> specExp body'
 
--- | Partially evaluate expressions.
-reduce :: (Fresh m, MonadError AstError m) => FreeProgram -> m FreeProgram
-reduce (ts, syns, vs) = (ts, syns, ) <$> mapM reduceDefn vs
+            specExp :: Fresh m => Exp -> SpecState m Exp
+            specExp = \ case
+                  e@(App an e' a') | Var _ _ g : args <- flattenApp e
+                                   , Just d           <- Map.lookup g gs
+                                   , not $ isPrim g
+                                               -> do
+                        args' <- mapM specExp args
+                        let s = sig args'
+                        if | all isNothing s -> App an <$> specExp e' <*> specExp a'
+                           | otherwise       -> do
+                              defs <- get
+                              d' <- case Map.lookup (g, s) defs of
+                                    Just d' -> pure d'
+                                    _       -> do
+                                          d' <- mkDefn s d
+                                          modify $ Map.insert (g, s) d'
+                                          pure d'
+                              mkApp an (defnName d') <$> getTy d' <*> pure args' <*> pure s
+                  App an e arg                 -> App an <$> specExp e <*> specExp arg
+                  Lam an t b                   -> do
+                        (vs, b') <- unbind b
+                        Lam an t <$> bind vs <$> specExp b'
+                  Case an t e p (Just e')      -> do
+                        (ps, p') <- unbind p
+                        Case an t <$> specExp e <*> (bind ps <$> specExp p') <*> (Just <$> specExp e')
+                  Case an t e p Nothing        -> do
+                        (ps, p') <- unbind p
+                        Case an t <$> specExp e <*> (bind ps <$> specExp p') <*> pure Nothing
+                  Match an t e p e' (Just e'') -> Match an t <$> specExp e <*> pure p <*> specExp e' <*> (Just <$> specExp e'')
+                  Match an t e p e' Nothing    -> Match an t <$> specExp e <*> pure p <*> specExp e' <*> pure Nothing
+                  LitList an t es              -> LitList an t <$> mapM specExp es
+                  e                            -> pure e
 
-reduceDefn :: (Fresh m, MonadError AstError m) => Defn -> m Defn
-reduceDefn (Defn an n pt b (Embed e)) = unbind e >>= \ case
-      (vs, e') -> (Defn an n pt b . Embed) . bind vs <$> reduceExp e'
+            sig :: [Exp] -> [AppSig]
+            sig es = map sig' es
+                  where sig' :: Exp -> AppSig
+                        sig' = \ case
+                              e | all isGlobal $ fv e -> Just $ unAnn e
+                              _                       -> Nothing
 
-reduceExp :: (Fresh m, MonadError AstError m) => Exp -> m Exp
-reduceExp = \ case
-      App an e1 e2      -> do
-            e1' <- reduceExp e1
-            e2' <- reduceExp e2
-            case e1' of
-                  Lam _ _ e -> do
-                        (x, e') <- unbind e
-                        reduceExp $ subst x e2' e'
-                  _              -> pure $ App an e1' e2'
-      Lam an t e      -> do
-            (x, e') <- unbind e
-            Lam an t . bind x <$> reduceExp e'
-      Case an t e e1 e2 -> do
-            (p, e1') <- unbind e1
-            e' <- reduceExp e
-            let mr = matchPat e' p
-            case mr of
-                  MatchYes sub -> reduceExp $ substs sub e1'
-                  MatchMaybe   -> case e2 of
-                        Nothing  -> Case an t e' <$> (bind p <$> reduceExp e1') <*> pure Nothing
-                        Just e2' -> Case an t e' <$> (bind p <$> reduceExp e1') <*> (Just <$> reduceExp e2')
-                  MatchNo      -> case e2 of
-                        Nothing  -> pure $ Error an t "Pattern match failure (reduced)"
-                        Just e2' -> reduceExp e2'
-      e -> pure e
+            getTy :: Fresh m => Defn -> m Ty
+            getTy Defn { defnPolyTy = Embed (Poly pt) } = snd <$> unbind pt
+
+            mkDefn :: Fresh m => [AppSig] -> Defn -> m Defn
+            mkDefn s (Defn an g (Embed (Poly bgt)) inl (Embed body)) = do
+                  g'              <- fresh g
+                  gt              <- snd <$> unbind bgt
+                  (tinfo, t')     <- mkTy s gt
+                  (bodyvs, body') <- unbind body
+                  pure $ Defn an g' (Embed $ Poly $ bind (fv t') t') inl
+                       $ Embed $ bind [] $ mkLam (lefts tinfo) $ foldl' (App an) (mkLam (zip (fst $ flattenArrow gt) bodyvs) body')
+                       $ map (either (uncurry $ Var an) id) $ tinfo
+
+                  where mkLam :: [(Ty, Name Exp)] -> Exp -> Exp
+                        mkLam vs b = foldr (\ (t, v) e -> Lam an (t `arr` typeOf e) $ bind v e) b vs
+
+            mkTy :: Fresh m => [AppSig] -> Ty -> m ([Either (Ty, Name Exp) Exp], Ty)
+            mkTy s (flattenArrow -> (gtas, gtr)) = do
+                  (gtas', subs) <- runWriterT $ zipWithM mkTy' gtas s
+                  pure $ substs subs (gtas', foldr arr gtr $ map fst $ lefts gtas')
+                  where mkTy' :: Fresh m => Ty -> AppSig -> WriterT [(Name Ty, Ty)] m (Either (Ty, Name Exp) Exp)
+                        mkTy' t = \ case
+                              Just e -> do
+                                    unify t (typeOf e)
+                                    pure $ Right e
+                              Nothing -> do
+                                    n <- fresh $ s2n "sp"
+                                    pure $ Left (t, n)
+
+                        unify :: MonadWriter [(Name Ty, Ty)] m => Ty -> Ty -> m ()
+                        unify (TyApp _ tl tr) (TyApp _ tl' tr')                = unify tl tl' >> unify tr tr'
+                        unify (TyVar _ _ u)   t'                               = tell [(u, t')]
+                        unify _               _                                = pure ()
+
+            mkApp :: Annote -> Name Exp -> Ty -> [Exp] -> [AppSig] -> Exp
+            mkApp an g t es = foldl' (App an) (Var an t g) . catMaybes . zipWith mkApp' es
+                  where mkApp' :: Exp -> AppSig -> Maybe Exp
+                        mkApp' e = maybe (Just e) (const Nothing)
 
 data MatchResult = MatchYes ![(Name Exp, Exp)]
                  | MatchMaybe
                  | MatchNo
-                 deriving Show
+      deriving Show
 
-mergeMatches :: [MatchResult] -> MatchResult
-mergeMatches []     = MatchYes []
-mergeMatches (m:ms) = case mergeMatches ms of
-      MatchYes bs -> case m of
-            MatchYes bs' -> MatchYes $ bs' ++ bs
-            MatchNo      -> MatchNo
-            MatchMaybe   -> MatchMaybe
-      MatchNo     -> MatchNo
-      MatchMaybe  -> case m of
-            MatchYes _ -> MatchMaybe
-            MatchNo    -> MatchNo
-            MatchMaybe -> MatchMaybe
+-- | Partially evaluate expressions.
+reduce :: (Fresh m, MonadError AstError m) => FreeProgram -> m FreeProgram
+reduce (ts, syns, vs) = (ts, syns, ) <$> mapM reduceDefn vs
+      where reduceDefn :: (Fresh m, MonadError AstError m) => Defn -> m Defn
+            reduceDefn (Defn an n pt b (Embed e)) = unbind e >>= \ case
+                  (vs, e') -> (Defn an n pt b . Embed) . bind vs <$> reduceExp e'
 
-matchPat :: Exp -> Pat -> MatchResult
-matchPat e = \ case
-      PatCon _ _ (Embed i) pats -> case flattenApp e of
-            Con _ _ c : es
-                  | c == i && length es == length pats -> mergeMatches $ zipWith matchPat es pats
-                  | otherwise                          -> MatchNo
-            _                                          -> MatchMaybe
-      PatVar _ _ x            -> MatchYes [(x, e)]
-      PatWildCard _ _         -> MatchYes []
+            reduceExp :: (Fresh m, MonadError AstError m) => Exp -> m Exp
+            reduceExp = \ case
+                  App an e1 e2      -> do
+                        e1' <- reduceExp e1
+                        e2' <- reduceExp e2
+                        case e1' of
+                              Lam _ _ e -> do
+                                    (x, e') <- unbind e
+                                    reduceExp $ subst x e2' e'
+                              _              -> pure $ App an e1' e2'
+                  Lam an t e      -> do
+                        (x, e') <- unbind e
+                        Lam an t . bind x <$> reduceExp e'
+                  Case an t e e1 e2 -> do
+                        (p, e1') <- unbind e1
+                        e' <- reduceExp e
+                        let mr = matchPat e' p
+                        case mr of
+                              MatchYes sub -> reduceExp $ substs sub e1'
+                              MatchMaybe   -> case e2 of
+                                    Nothing  -> Case an t e' <$> (bind p <$> reduceExp e1') <*> pure Nothing
+                                    Just e2' -> Case an t e' <$> (bind p <$> reduceExp e1') <*> (Just <$> reduceExp e2')
+                              MatchNo      -> case e2 of
+                                    Nothing  -> pure $ Error an t "Pattern match failure (reduced)"
+                                    Just e2' -> reduceExp e2'
+                  e -> pure e
+
+            mergeMatches :: [MatchResult] -> MatchResult
+            mergeMatches []     = MatchYes []
+            mergeMatches (m:ms) = case mergeMatches ms of
+                  MatchYes bs -> case m of
+                        MatchYes bs' -> MatchYes $ bs' <> bs
+                        MatchNo      -> MatchNo
+                        MatchMaybe   -> MatchMaybe
+                  MatchNo     -> MatchNo
+                  MatchMaybe  -> case m of
+                        MatchYes _ -> MatchMaybe
+                        MatchNo    -> MatchNo
+                        MatchMaybe -> MatchMaybe
+
+            matchPat :: Exp -> Pat -> MatchResult
+            matchPat e = \ case
+                  PatCon _ _ (Embed i) pats -> case flattenApp e of
+                        Con _ _ c : es
+                              | c == i && length es == length pats -> mergeMatches $ zipWith matchPat es pats
+                              | otherwise                          -> MatchNo
+                        _                                          -> MatchMaybe
+                  PatVar _ _ x            -> MatchYes [(x, e)]
+                  PatWildCard _ _         -> MatchYes []

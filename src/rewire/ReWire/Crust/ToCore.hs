@@ -75,7 +75,8 @@ transDefn start inps outps sts conMap = \ case
       M.Defn an n (Embed (M.Poly t)) _ (Embed e) -> do
             (_, t')  <- unbind t
             (xs, e') <- unbind e
-            Right <$> (C.Defn an (showt n) <$> runReaderT (transType t') conMap <*> runReaderT (runReaderT (transExp e') conMap) (Map.fromList $ zip xs [0..]))
+            if M.higherOrder t' then failAt an $ "transDefn: " <> prettyPrint n <> " has illegal higher-order type."
+            else Right <$> (C.Defn an (showt n) <$> runReaderT (transType t') conMap <*> runReaderT (runReaderT (transExp e') conMap) (Map.fromList $ zip xs [0..]))
       where getRegsTy :: MonadError AstError m => M.Ty -> m M.Ty
             getRegsTy = \ case
                   M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "PuRe")) s) _ -> pure s
@@ -146,7 +147,7 @@ transExp e = case e of
                       pad = C.Lit an (zeros $ fromIntegral sz - fromIntegral w - fromIntegral szArgs) -- ugh
                   pure $ C.cat $ ([tag, pad] <> args')
             _                           -> failAt an "transExp: encountered ill-formed application."
-      M.Var an t x                      -> lift (asks (Map.lookup x)) >>= \ case
+      M.Var an t x                      -> lift (asks $ Map.lookup x) >>= \ case
             Nothing -> do
                   sz <- sizeOf an t
                   pure $ C.Call an sz (C.Global $ showt x) C.nil [] C.nil

@@ -1,32 +1,36 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings, ScopedTypeVariables #-}
 {-# LANGUAGE Trustworthy #-}
 --
 -- This type checker is based loosely on Mark Jones's "Typing Haskell in
 -- Haskell", though since we don't have type classes in core it is much
 -- simpler.
 --
-module ReWire.Crust.TypeCheck (typeCheck) where
+module ReWire.Crust.TypeCheck (typeCheck, untype) where
 
 import ReWire.Annotation
 import ReWire.Error
-import ReWire.Unbound
-      ( fresh, substs, aeq, Subst, runFreshMT
-      , n2s, s2n
-      )
+import ReWire.Unbound (fresh, substs, aeq, Subst, n2s, s2n)
 import ReWire.Pretty
 import ReWire.Crust.Syntax
+import ReWire.SYB (runT, runPureT, transform, runQ, query)
 
 import Control.DeepSeq (deepseq, force)
+import Control.Monad (zipWithM)
+import Control.Monad.Catch (MonadCatch (..))
+import Control.Monad.Identity (Identity (..))
 import Control.Monad.Reader (ReaderT (..), local, asks)
 import Control.Monad.State (evalStateT, StateT (..), get, put, modify, MonadState)
-import Control.Monad (zipWithM)
-import Data.List (foldl')
+import Data.Containers.ListUtils (nubOrd)
+import Data.Data (Data)
 import Data.HashMap.Strict (HashMap)
-import qualified Data.Text as T
-
+import Data.Set (Set)
+import Data.List (foldl')
+import Data.Maybe (mapMaybe)
 import TextShow (TextShow (..))
 
 import qualified Data.HashMap.Strict as Map
+import qualified Data.Set as Set
+import qualified Data.Text as T
 
 subst :: Subst b a => HashMap (Name b) b -> a -> a
 subst = substs . Map.toList
@@ -34,6 +38,7 @@ subst = substs . Map.toList
 -- Type checker for core.
 
 type TySub = HashMap (Name Ty) Ty
+type Concretes = HashMap (Name Exp, Ty) (Name Exp)
 data TCEnv = TCEnv
       { as        :: !(HashMap (Name Exp) Poly)
       , cas       :: !(HashMap (Name DataConId) Poly)
@@ -41,14 +46,40 @@ data TCEnv = TCEnv
 
 type TCM m = ReaderT TCEnv (StateT TySub m)
 
-typeCheck :: MonadError AstError m => FreeProgram -> m FreeProgram
-typeCheck (ts, syns, vs) = runFreshMT $ evalStateT (runReaderT (tc (ts, syns, vs)) $ TCEnv mempty mempty) mempty
+lookupAll :: Eq a => a -> [(a, b)] -> [b]
+lookupAll a = map snd . filter ((== a) . fst)
 
-localAssumps :: MonadError AstError m => (HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly) -> TCM m a -> TCM m a
-localAssumps f = local (\ tce -> tce { as = f (as tce) })
+typeCheck :: (Fresh m, MonadError AstError m, MonadCatch m) => FreeProgram -> m FreeProgram
+typeCheck (ts, syns, vs) = do
+      vs' <- evalStateT (runReaderT (tc' vs) $ TCEnv mempty mempty) mempty
+      pure (ts, syns, vs')
+      where conc :: Concretes -> Defn -> [Defn]
+            conc cs (Defn an n _ b e) = mapMaybe conc' $ lookupAll n $ Map.keys cs
+                  where conc' :: Ty -> Maybe Defn
+                        conc' t = do
+                              n' <- Map.lookup (n, t) cs
+                              pure $ Defn an n' ([] |-> t) b e
 
-localCAssumps :: MonadError AstError m => (HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly) -> TCM m a -> TCM m a
-localCAssumps f = local (\ tce -> tce { cas = f (cas tce) })
+            tc' :: (MonadCatch m, Fresh m, MonadError AstError m) => [Defn] -> TCM m [Defn]
+            tc' vs = do
+                  vs'   <- tc ts vs
+                  polys <- getPolys vs'
+                  cs    <- Map.fromList <$> mapM (\ c -> (c,) <$> fresh (fst c)) (uses polys vs')
+                  cvs   <- withAssumps ts vs' $ mapM tcDefn $ concatMap (conc cs) vs'
+                  concretize cs $ vs' <> cvs
+
+            getPolys :: Fresh m => [Defn] -> m (Set (Name Exp))
+            getPolys vs = Set.fromList <$> map fst <$> filter (not . concrete . snd) <$> mapM getPolys' vs
+                  where getPolys' :: Fresh m => Defn -> m (Name Exp, Ty)
+                        getPolys' (Defn _ n (Embed (Poly pt)) _ _) = (n, ) <$> snd <$> unbind pt
+
+            uses :: Data a => Set (Name Exp) -> a -> [(Name Exp, Ty)]
+            uses polys = nubOrd . runQ (query $ \ case
+                  Var _ t n | concrete t, Set.member n polys -> [(n, unAnn t)]
+                  _                                          -> [])
+
+            concretize :: (MonadCatch m, Data d) => Concretes -> d -> m d
+            concretize cs = runT (transform $ \ v@(Var an t n) -> pure $ maybe v (Var an t) $ Map.lookup (n, unAnn t) cs)
 
 freshv :: (MonadState TySub m, Fresh m) => m Ty
 freshv = do
@@ -261,14 +292,15 @@ tcDefn d  = do
       let d' = Defn an n (tvs |-> t) b $ Embed $ bind vs $ subst s e''
       d' `deepseq` pure d'
 
-tc :: (Fresh m, MonadError AstError m) => FreeProgram -> TCM m FreeProgram
-tc (ts, syns, vs) = do
-      let as   =  foldr defnAssump mempty vs
-          cas  =  foldr dataDeclAssumps mempty ts
-      vs'      <- localAssumps (as `Map.union`) $ localCAssumps (cas `Map.union`) $ mapM tcDefn vs
-      pure (ts, syns, vs')
+tc :: (Fresh m, MonadError AstError m) => [DataDefn] -> [Defn] -> TCM m [Defn]
+tc ts vs = withAssumps ts vs $ mapM tcDefn vs
 
-      where defnAssump :: Defn -> HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly
+withAssumps :: MonadError AstError m => [DataDefn] -> [Defn] -> TCM m [Defn] -> TCM m [Defn]
+withAssumps ts vs = localAssumps (as `Map.union`) . localCAssumps (cas `Map.union`)
+      where as  = foldr defnAssump mempty vs
+            cas = foldr dataDeclAssumps mempty ts
+
+            defnAssump :: Defn -> HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly
             defnAssump (Defn _ n (Embed pt) _ _) = Map.insert n pt
 
             dataDeclAssumps :: DataDefn -> HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly
@@ -276,3 +308,12 @@ tc (ts, syns, vs) = do
 
             dataConAssump :: DataCon -> HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly
             dataConAssump (DataCon _ i (Embed t)) = Map.insert i t
+
+localAssumps :: MonadError AstError m => (HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly) -> TCM m a -> TCM m a
+localAssumps f = local (\ tce -> tce { as = f (as tce) })
+
+localCAssumps :: MonadError AstError m => (HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly) -> TCM m a -> TCM m a
+localCAssumps f = local (\ tce -> tce { cas = f (cas tce) })
+
+untype :: Data d => d -> d
+untype = runIdentity . runPureT (transform $ \ (t :: Ty) -> pure $ TyBlank $ ann t)
