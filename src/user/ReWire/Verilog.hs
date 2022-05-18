@@ -14,141 +14,73 @@ import ReWire
 import Prelude (undefined, Integer)
 
 -- | Add.
-{-# INLINE (+) #-}
 (+) :: a -> a -> a
-(+) = extern "+" add'
-
-add' :: a -> a -> a
-add' = undefined
+(+) = extern "+" undefined
 
 -- | Subtract.
-{-# INLINE (-) #-}
 (-) :: a -> a -> a
-(-) = extern "-" sub'
-
-sub' :: a -> a -> a
-sub' = undefined
+(-) = extern "-" undefined
 
 -- | Multiply.
-{-# INLINE (*) #-}
 (*) :: a -> a -> a
-(*) = extern "*" mul'
-
-mul' :: a -> a -> a
-mul' = undefined
+(*) = extern "*" undefined
 
 -- | Divide.
-{-# INLINE (/) #-}
 (/) :: a -> a -> a
-(/) = extern "/" div'
-
-div' :: a -> a -> a
-div' = undefined
+(/) = extern "/" undefined
 
 -- | Modulus.
-{-# INLINE (%) #-}
 (%) :: a -> a -> a
-(%) = extern "%" mod'
-
-mod' :: a -> a -> a
-mod' = undefined
+(%) = extern "%" undefined
 
 -- | Power.
-{-# INLINE (**) #-}
 (**) :: a -> a -> a
-(**) = extern "**" pow'
-
-pow' :: a -> a -> a
-pow' = undefined
+(**) = extern "**" undefined
 
 -- | Logical and.
-{-# INLINE (&&) #-}
 (&&) :: a -> a -> Bit
-(&&) = extern "&&" land'
-
-land' :: a -> a -> Bit
-land' = undefined
+(&&) = extern "&&" undefined
 
 -- | Logical or.
-{-# INLINE (||) #-}
 (||) :: a -> a -> Bit
-(||) = extern "||" lor'
-
-lor' :: a -> a -> Bit
-lor' = undefined
+(||) = extern "||" undefined
 
 -- | Bitwise and.
-{-# INLINE (.&.) #-}
 (.&.) :: a -> a -> a
-(.&.) = extern "&" and'
-
-and' :: a -> a -> a
-and' = undefined
+(.&.) = extern "&" undefined
 
 -- TODO(chathhorn): removing the dot causes the parser to choke.
 -- | Bitwise or.
-{-# INLINE (.|.) #-}
 (.|.) :: a -> a -> a
-(.|.) = extern "|" or'
-
-or' :: a -> a -> a
-or' = undefined
+(.|.) = extern "|" undefined
 
 -- | Bitwise exclusive or.
-{-# INLINE (^) #-}
 (^) :: a -> a -> a
-(^) = extern "^" xor'
-
-xor' :: a -> a -> a
-xor' = undefined
+(^) = extern "^" undefined
 
 -- | Bitwise exclusive nor.
-{-# INLINE (~^) #-}
 (~^) :: a -> a -> a
-(~^) = extern "~^" xnor'
-
-xnor' :: a -> a -> a
-xnor' = undefined
+(~^) = extern "~^" undefined
 
 -- | Shift left.
-{-# INLINE (<<) #-}
 (<<) :: a -> a -> a
-(<<) = extern "<<" shiftl'
-
-shiftl' :: a -> a -> a
-shiftl' = undefined
+(<<) = extern "<<" undefined
 
 -- | Shift right.
-{-# INLINE (>>) #-}
 (>>) :: a -> a -> a
-(>>) = extern ">>" shiftr'
-
-shiftr' :: a -> a -> a
-shiftr' = undefined
+(>>) = extern ">>" undefined
 
 -- | Shift left.
-{-# INLINE (<<<) #-}
 (<<<) :: a -> a -> a
-(<<<) = extern "<<<" ashiftl'
-
-ashiftl' :: a -> a -> a
-ashiftl' = undefined
+(<<<) = extern "<<<" undefined
 
 -- | Shift right, sign-extend.
-{-# INLINE (>>>) #-}
 (>>>) :: a -> a -> a
-(>>>) = extern ">>>" ashiftr'
-
-ashiftr' :: a -> a -> a
-ashiftr' = undefined
+(>>>) = extern ">>>" undefined
 
 -- | Concatenate.
-{-# INLINE (<>) #-}
 (<>) :: a -> b -> c
-(<>) = extern "concat" concat'
-
-concat' :: a -> b -> c
-concat' = undefined
+(<>) = extern "concat" undefined
 
 infixr 9 **
 infixl 8 *, /, %
@@ -162,99 +94,51 @@ infixr 1 ||
 infixl 0 <>
 
 -- | Logical not.
-{-# INLINE lnot #-}
 lnot :: a -> Bit
-lnot = extern "!" lnot'
-
-lnot' :: a -> Bit
-lnot' = undefined
+lnot = extern "!" undefined
 
 -- | Bitwise not.
-{-# INLINE bnot #-}
 bnot :: a -> a
-bnot = extern "~" bnot'
-
-bnot' :: a -> a
-bnot' = undefined
+bnot = extern "~" undefined
 
 -- | Reduction and.
-{-# INLINE rAnd #-}
 rAnd :: a -> Bit
-rAnd = extern "&" rAnd'
-
-rAnd' :: a -> Bit
-rAnd' = undefined
+rAnd = extern "&" undefined
 
 -- | Reduction nand.
-{-# INLINE rNAnd #-}
 rNAnd :: a -> Bit
-rNAnd = extern "~&" rNAnd'
-
-rNAnd' :: a -> Bit
-rNAnd' = undefined
+rNAnd = extern "~&" undefined
 
 -- | Reduction or.
-{-# INLINE rOr #-}
 rOr :: a -> Bit
-rOr = extern "|" rOr'
-
-rOr' :: a -> Bit
-rOr' = undefined
+rOr = extern "|" undefined
 
 -- | Reduction nor.
-{-# INLINE rNor #-}
 rNor :: a -> Bit
-rNor = extern "~|" rNor'
-
-rNor' :: a -> Bit
-rNor' = undefined
+rNor = extern "~|" undefined
 
 -- | Reduction xor.
-{-# INLINE rXor #-}
 rXor :: a -> Bit
-rXor = extern "^" rXor'
-
-rXor' :: a -> Bit
-rXor' = undefined
+rXor = extern "^" undefined
 
 -- | Reduction xnor.
-{-# INLINE rXNor #-}
 rXNor :: a -> Bit
-rXNor = extern "~^" rXNor'
-
-rXNor' :: a -> Bit
-rXNor' = undefined
+rXNor = extern "~^" undefined
 
 -- | Most significant bit.
-{-# INLINE msbit #-}
 msbit :: a -> Bit
-msbit = extern "msbit" msbit'
-
-msbit' :: a -> Bit
-msbit' = undefined
+msbit = extern "msbit" undefined
 
 -- | Repeat.
-{-# INLINE replicate #-}
 replicate :: Integer -> a -> b
-replicate = extern "replicate" replicate'
-
-replicate' :: Integer -> a -> b
-replicate' = undefined
+replicate = extern "replicate" undefined
 
 -- | Turn an Integer literal into any type! Truncates most significant bits or
 --   zero-pads to make it fit.
-{-# INLINE lit #-}
 lit :: Integer -> a
-lit = extern "resize" lit'
-
-lit' :: Integer -> a
-lit' = undefined
+lit = extern "resize" undefined
 
 -- | Turns any type into any other type! Truncates most significant bits or
 --   zero-pads to make it fit.
-{-# INLINE resize #-}
 resize :: a -> b
-resize = extern "resize" resize'
-
-resize' :: a -> b
-resize' = undefined
+resize = extern "resize" undefined
