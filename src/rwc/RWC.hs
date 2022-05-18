@@ -8,7 +8,7 @@ import ReWire.Pretty (Pretty, prettyPrint)
 import qualified ReWire.Core.Syntax as C
 import qualified ReWire.Core.ToVHDL as VHDL
 import qualified ReWire.Core.ToVerilog as Verilog
-import ReWire.Core.Transform (mergeSlices, purgeUnused, partialEval)
+import ReWire.Core.Transform (mergeSlices, purgeUnused, partialEval, dedupe)
 import ReWire.Core.Interp (interp, Ins, run)
 import ReWire.Crust.Cache (printHeader)
 -- import ReWire.VHDL.ToLoFIRRTL (toLoFirrtl)
@@ -129,7 +129,7 @@ main = do
 
                   where compile :: C.Program -> SyntaxErrorT AstError IO ()
                         compile a = do
-                              b <- (mergeSlices >=> mergeSlices >=> partialEval >=> mergeSlices >=> purgeUnused) a -- TODO(chathhorn)
+                              b <- (mergeSlices >=> mergeSlices >=> partialEval >=> mergeSlices >=> dedupe >=> purgeUnused) a -- TODO(chathhorn)
                               when (FlagV `elem` flags) $ liftIO $ putStrLn "Debug: [Pass 9] Reduced core."
                               when (FlagDCore2 `elem` flags) $ liftIO $ do
                                     printHeader "Reduced Core" -- TODO(chathhorn): pull this out of Crust.Cache

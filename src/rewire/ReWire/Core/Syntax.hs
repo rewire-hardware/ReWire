@@ -22,6 +22,7 @@ import ReWire.Annotation
 
 import Data.BitVector (BV (..), width, showHex, zeros, ones, (==.))
 import Data.Data (Typeable, Data(..))
+import Data.Hashable (Hashable (hash, hashWithSalt))
 import Data.List (intersperse, genericLength)
 import Data.Text (Text, pack)
 import GHC.Generics (Generic)
@@ -58,6 +59,8 @@ data Target = Global !GId
       deriving (Eq, Ord, Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Target
 
+instance Hashable Target
+
 instance Pretty Target where
       pretty = \ case
             Global n     -> text n
@@ -79,6 +82,8 @@ data ExternSig = ExternSig Annote ![(Text, Size)] !Text ![(Text, Size)] ![(Text,
         deriving (Eq, Ord, Generic, Show, Typeable, Data)
         deriving TextShow via FromGeneric ExternSig
 
+instance Hashable ExternSig
+
 instance Annotated ExternSig where
       ann (ExternSig a _ _ _ _) = a
 
@@ -93,6 +98,8 @@ instance Pretty ExternSig where
 data Sig = Sig Annote ![Size] !Size
         deriving (Eq, Ord, Generic, Show, Typeable, Data)
         deriving TextShow via FromGeneric Sig
+
+instance Hashable Sig
 
 instance Annotated Sig where
       ann (Sig a _ _) = a
@@ -111,6 +118,8 @@ data Exp = Lit    Annote !BV
          | Call   Annote !Size !Target !Exp ![Pat] !Exp
          deriving (Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Exp
+
+instance Hashable Exp
 
 instance Eq Exp where
       (Lit    a bv)           == (Lit    a' bv')               = a == a' && bv ==. bv' -- Eq instance just for "==." instead of "==" here.
@@ -202,6 +211,8 @@ data Pat = PatVar      Annote !Size
          deriving (Eq, Ord, Show, Typeable, Data, Generic)
          deriving TextShow via FromGeneric Pat
 
+instance Hashable Pat
+
 instance SizeAnnotated Pat where
       sizeOf = \ case
             PatVar      _ s  -> s
@@ -233,6 +244,8 @@ data StartDefn = StartDefn Annote !Wiring !GId !GId
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric StartDefn
 
+instance Hashable StartDefn
+
 instance Annotated StartDefn where
       ann (StartDefn a _ _ _) = a
 
@@ -254,6 +267,8 @@ data Wiring = Wiring
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric Wiring
 
+instance Hashable Wiring
+
 ---
 
 data Defn = Defn
@@ -264,6 +279,8 @@ data Defn = Defn
       }
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric Defn
+
+instance Hashable Defn
 
 instance SizeAnnotated Defn where
       sizeOf (Defn _ _ (Sig _ _ s) _) = s
@@ -288,6 +305,14 @@ data Program = Program
       deriving (Generic, Eq, Ord, Show, Typeable, Data)
       deriving TextShow via FromGeneric Program
 
+instance Hashable Program
+
 instance Pretty Program where
       pretty p = vsep $ intersperse (text "") $ pretty (start p) : map pretty (defns p)
+
+-- Orphans
+
+instance Hashable BV where
+      hashWithSalt s bv = hashWithSalt s (BV.width bv, BV.nat bv)
+      hash bv = hash (BV.width bv, BV.nat bv)
 
