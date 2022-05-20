@@ -3,7 +3,7 @@
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 module ReWire.Crust.Transform
       ( inline, expandTypeSynonyms, reduce
-      , neuterPrims
+      , neuterExterns
       , shiftLambdas
       , liftLambdas
       , fullyApplyDefs
@@ -11,10 +11,8 @@ module ReWire.Crust.Transform
       , prePurify
       , simplify
       , specialize
-      , fix, fixOn
       ) where
 
-import ReWire.Error
 import ReWire.Unbound
       ( Fresh (..), s2n, n2s, bn2s
       , substs, subst, unembed
@@ -22,12 +20,15 @@ import ReWire.Unbound
       , Name (..)
       , unsafeUnbind
       )
-import ReWire.Annotation (Annote (..), Annotated (..), noAnn, unAnn)
+import ReWire.Annotation (Annote (..), Annotated (..), unAnn)
 import ReWire.SYB
 import ReWire.Crust.Syntax
+import ReWire.Crust.TypeCheck (typeCheckDefn)
+import ReWire.Error (AstError, MonadError)
+import ReWire.Fix (fix, fix')
 
 import Control.Arrow (first, (&&&))
-import Control.Monad (zipWithM, filterM, replicateM, (>=>))
+import Control.Monad (zipWithM, replicateM, (>=>))
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.State (State, evalStateT, execState, StateT (..), get, gets, modify)
 import Control.Monad.Writer (MonadWriter, tell, WriterT, runWriterT)
@@ -35,7 +36,6 @@ import Data.Containers.ListUtils (nubOrd, nubOrdOn)
 import Data.Data (Data)
 import Data.Either (lefts)
 import Data.HashMap.Strict (HashMap)
-import Data.Hashable (Hashable (..))
 import Data.List (find, foldl', sort)
 import Data.Maybe (fromMaybe, catMaybes, isNothing)
 import Data.Set (Set, union, (\\))
@@ -48,10 +48,10 @@ import qualified Data.Set as Set
 inline :: MonadError AstError m => FreeProgram -> m FreeProgram
 inline (ts, syns, ds) = (ts, syns, ) . flip substs ds <$> subs
       where inlineDefs :: [Defn]
-            inlineDefs = filter defnInline ds
+            inlineDefs = filter ((== Just Inline) . defnAttr) ds
 
             subs :: MonadError AstError m => m [(Name Exp, Exp)]
-            subs = map defnSubst <$> fix "INLINE definition" 100 (pure . substs (map defnSubst inlineDefs)) inlineDefs
+            subs = map defnSubst <$> fix "INLINE definition expansion" 100 (pure . substs (map defnSubst inlineDefs)) inlineDefs
 
 defnSubst :: Defn -> (Name Exp, Exp)
 defnSubst (Defn _ n _ _ (Embed e)) = runFreshM $ unbind e >>= \ case
@@ -71,7 +71,7 @@ expandTypeSynonyms (ts, syns, ds) = (,,) <$> expandSyns ts <*> syns' <*> expandS
             subs = map toSubst <$> syns'
 
             syns' :: (MonadCatch m, MonadError AstError m, Fresh m) => m [TypeSynonym]
-            syns' = fix "Type synonym" 100 (substs' $ map toSubst syns) syns
+            syns' = fix "Type synonym expansion" 100 (substs' $ map toSubst syns) syns
 
             substs' :: (MonadCatch m, MonadError AstError m, Fresh m, Data d) => [(Name TyConId, Bind [Name Ty] Ty)] -> d -> m d
             substs' subs' = runT (transform $ \ case
@@ -97,21 +97,15 @@ expandTypeSynonyms (ts, syns, ds) = (,,) <$> expandSyns ts <*> syns' <*> expandS
                         pure (n, args <> [b])
                   _           -> Nothing
 
-fix :: (MonadError AstError m, Hashable a) => Text -> Int -> (a -> m a) -> a -> m a
-fix = fixOn hash
-
-fixOn :: (MonadError AstError m, Eq b) => (a -> b) -> Text -> Int -> (a -> m a) -> a -> m a
-fixOn _ m 0 _ _ = failAt noAnn $ m <> " expansion not terminating (mutually recursive definitions?)."
-fixOn h m n f a = f a >>= \ a' -> if h a' == h a then pure a else fixOn h m (n - 1) f a'
-
-fix' :: Hashable a => (a -> a) -> a -> a
-fix' f a = if hash (f a) == hash a then a else fix' f (f a)
-
 -- | Replaces the second argument to Extern so we don't descend into it
 --   during other transformations.
-neuterPrims :: MonadCatch m => FreeProgram -> m FreeProgram
-neuterPrims = runT $ transform $
-      \ (App a e@(App _ Extern {} _) e') -> pure $ App a e $ Error a (typeOf e') "extern expression placeholder"
+neuterExterns :: MonadCatch m => FreeProgram -> m FreeProgram
+neuterExterns = runT $ transform $ \ case
+      App an ex e | isExtern ex -> pure $ App an ex $ TypeAnn (ann e) (poly' $ typeOf e) $ Error (ann e) (typeOf e) "extern expression placeholder"
+      where isExtern :: Exp -> Bool
+            isExtern = \ case
+                  (flattenApp -> Extern {} : args) -> length args == 5
+                  _                                -> False
 
 -- | Shifts vars bound by top-level lambdas into defs.
 -- > g = \ x1 -> \ x2 -> e
@@ -153,8 +147,7 @@ prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM ppDefn ds
                   -- Inline everything on the LHS.
                   (dstBind -> Just (a, e1, e2)) -> do
                         let t = TyBlank a
-                        ds' <- filterM inlineable ds -- TODO(chathhorn): here for typing issues.
-                        e1' <- flatten ds' e1
+                        e1' <- flatten (filter (\ d -> isReT d && inlineable d) ds) e1
                         rejiggerBind $ mkBind a t e1' e2
                   App an e1 e2 -> App an <$> ppExp e1 <*> ppExp e2
                   Lam an t  e -> do
@@ -209,13 +202,10 @@ prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM ppDefn ds
             mkBind a t e1 e2 = App a (App a (Var a t $ s2n "rwBind") e1) e2
 
             flatten :: (Fresh m, MonadError AstError m) => [Defn] -> Exp -> m Exp
-            flatten ds = fix "Bind LHS definition" 100 (pure . substs (map defnSubst ds))
+            flatten ds = fix "Bind LHS definition expansion" 100 (pure . substs (map defnSubst ds))
 
-            inlineable :: Fresh m => Defn -> m Bool
-            inlineable d = case defnPolyTy d of
-                  Embed (Poly t) -> do
-                        (_, t') <- unbind t -- only inline ReT defs that aren't prim, unless they're explicitly inlined.
-                        pure $ isResMonad t' && (not (isPrim $ defnName d) || defnInline d)
+            isReT :: Defn -> Bool
+            isReT Defn { defnPolyTy = Embed (Poly (unsafeUnbind -> (_, t))) } = isResMonad t
 
 -- | So if e :: a -> b, then
 -- > g = e
@@ -260,7 +250,7 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                         let t' = foldr arr (typeOf e') $ map snd bvs <> [t]
                         f     <- fresh $ s2n "$LL.lambda"
 
-                        modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (fvs <> [x]) e')
+                        modify $ (:) $ Defn an f (fv t' |-> t') Nothing (Embed $ bind (fvs <> [x]) e')
                         pure $ foldl' (App an) (Var an t' f) $ map (toVar an . first promote) bvs
                   Case an t e1 b e2 -> do
                         (p, e)    <- unbind b
@@ -272,7 +262,7 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                         let t' = foldr arr (typeOf e) $ map snd pvs <> map snd bvs
                         f     <- fresh $ s2n "$LL.case"
 
-                        modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind (map fst pvs <> fvs) e')
+                        modify $ (:) $ Defn an f (fv t' |-> t') Nothing (Embed $ bind (map fst pvs <> fvs) e')
                         let lvars = map (toVar an . first promote) bvs
                         pure $ Match an t (mkTuple an $ [e1] <> lvars)
                                     (mkTupleMPat an $  [transPat p] <> map (MatchPatVar an . typeOf) lvars)
@@ -285,7 +275,7 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                         let t' = foldr (arr . snd) (typeOf e) bvs
                         f     <- fresh $ s2n "$LL.match"
 
-                        modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind fvs e')
+                        modify $ (:) $ Defn an f (fv t' |-> t') Nothing (Embed $ bind fvs e')
                         let lvars = map (toVar an) bvs
                         pure $ Match an t (mkTuple an $ [e1] <> lvars)
                                     (mkTupleMPat an $ [p] <> map (MatchPatVar an . typeOf) lvars)
@@ -299,7 +289,7 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                         let t' = foldr (arr . snd) (typeOf e) bvs
                         f     <- fresh $ s2n "$LL.matchapp"
 
-                        modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind fvs e')
+                        modify $ (:) $ Defn an f (fv t' |-> t') Nothing (Embed $ bind fvs e')
                         pure $ App an
                               (foldl' (App an) (Var an t' f) $ map (toVar an) bvs)
                               arg
@@ -311,7 +301,7 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
                         let t' = foldr (arr . snd) (typeOf e) bvs
                         f     <- fresh $ s2n "$LL.extrude"
 
-                        modify $ (:) $ Defn an f (fv t' |-> t') False (Embed $ bind fvs e')
+                        modify $ (:) $ Defn an f (fv t' |-> t') Nothing (Embed $ bind fvs e')
                         pure $ App an ex (foldl' (App an) (Var an t' f) $ map (toVar an) bvs)
                   ||> (\ ([] :: [Defn]) -> get) -- this is cute!
                   ||> TId
@@ -467,27 +457,27 @@ type AppSig = Maybe Exp
 -- > g = ...g...
 -- > g' :: A -> Y
 -- > g' = \ a' -> (...g...) a' b
-specialize :: Fresh m => FreeProgram -> SpecState m FreeProgram
+specialize :: (MonadError AstError m, Fresh m) => FreeProgram -> SpecState m FreeProgram
 specialize (ts, syns, vs) = do
       vs'     <- mapM specDefn vs
-      newDefs <- filter (not . isGlobal . defnName) <$> gets Map.elems
-      pure $ (ts, syns, vs' <> newDefs)
+      newDefs <- gets $ filter (not . isGlobal . defnName) . Map.elems
+      pure (ts, syns, vs' <> newDefs)
       where gs :: HashMap (Name Exp) Defn
             gs = Map.fromList $ map (defnName &&& id) vs
 
             isGlobal :: Name Exp -> Bool
             isGlobal = flip Map.member gs
 
-            specDefn :: Fresh m => Defn -> SpecState m Defn
+            specDefn :: (MonadError AstError m, Fresh m) => Defn -> SpecState m Defn
             specDefn (Defn ann n pt inl (Embed body)) = do
                   (vs, body') <- unbind body
                   Defn ann n pt inl <$> Embed <$> bind vs <$> specExp body'
 
-            specExp :: Fresh m => Exp -> SpecState m Exp
+            specExp :: (MonadError AstError m, Fresh m) => Exp -> SpecState m Exp
             specExp = \ case
                   e@(App an e' a') | Var _ _ g : args <- flattenApp e
                                    , Just d           <- Map.lookup g gs
-                                   , not $ isPrim g
+                                   , inlineable d
                                                -> do
                         args' <- mapM specExp args
                         let s = sig args'
@@ -504,7 +494,7 @@ specialize (ts, syns, vs) = do
                   App an e arg                 -> App an <$> specExp e <*> specExp arg
                   Lam an t b                   -> do
                         (vs, b') <- unbind b
-                        Lam an t <$> bind vs <$> specExp b'
+                        Lam an t . bind vs <$> specExp b'
                   Case an t e p (Just e')      -> do
                         (ps, p') <- unbind p
                         Case an t <$> specExp e <*> (bind ps <$> specExp p') <*> (Just <$> specExp e')
@@ -526,15 +516,16 @@ specialize (ts, syns, vs) = do
             getTy :: Fresh m => Defn -> m Ty
             getTy Defn { defnPolyTy = Embed (Poly pt) } = snd <$> unbind pt
 
-            mkDefn :: Fresh m => [AppSig] -> Defn -> m Defn
+            mkDefn :: (MonadError AstError m, Fresh m) => [AppSig] -> Defn -> m Defn
             mkDefn s (Defn an g (Embed (Poly bgt)) inl (Embed body)) = do
                   g'              <- fresh g
                   gt              <- snd <$> unbind bgt
                   (tinfo, t')     <- mkTy s gt
                   (bodyvs, body') <- unbind body
-                  pure $ Defn an g' (Embed $ Poly $ bind (fv t') t') inl
+                  typeCheckDefn ts vs
+                       $ Defn an g' (Embed $ Poly $ bind (fv t') t') inl
                        $ Embed $ bind [] $ mkLam (lefts tinfo) $ foldl' (App an) (mkLam (zip (fst $ flattenArrow gt) bodyvs) body')
-                       $ map (either (uncurry $ Var an) id) $ tinfo
+                       $ map (either (uncurry $ Var an) id) tinfo
 
                   where mkLam :: [(Ty, Name Exp)] -> Exp -> Exp
                         mkLam vs b = foldr (\ (t, v) e -> Lam an (t `arr` typeOf e) $ bind v e) b vs
@@ -542,7 +533,7 @@ specialize (ts, syns, vs) = do
             mkTy :: Fresh m => [AppSig] -> Ty -> m ([Either (Ty, Name Exp) Exp], Ty)
             mkTy s (flattenArrow -> (gtas, gtr)) = do
                   (gtas', subs) <- runWriterT $ zipWithM mkTy' gtas s
-                  pure $ substs subs (gtas', foldr arr gtr $ map fst $ lefts gtas')
+                  pure $ substs subs (gtas', foldr arr gtr $ map fst (lefts gtas') <> drop (length gtas') gtas)
                   where mkTy' :: Fresh m => Ty -> AppSig -> WriterT [(Name Ty, Ty)] m (Either (Ty, Name Exp) Exp)
                         mkTy' t = \ case
                               Just e -> do

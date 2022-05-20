@@ -91,7 +91,7 @@ instance SizeAnnotated ExternSig where
       sizeOf (ExternSig _ _ _ _ rs) = sum (snd <$> rs)
 
 instance Pretty ExternSig where
-      pretty (ExternSig _ _ _ args res) = hsep $ punctuate (text " ->") $ (map ((text "BV" <>) . pretty . snd) args) <> [parens $ hsep $ punctuate comma $ map ((text "BV" <>) . pretty . snd) res]
+      pretty (ExternSig _ _ _ args res) = hsep $ punctuate (text " ->") $ map ((text "BV" <>) . pretty . snd) args <> [parens $ hsep $ punctuate comma $ map ((text "BV" <>) . pretty . snd) res]
 
 ---
 
@@ -147,11 +147,11 @@ instance Pretty Exp where
             Lit _ bv             -> text (pack $ showHex bv) <> text "::BV" <> pretty (width bv)
             LVar _ _ n           -> text $ "$" <> showt n
             Concat _ e1 e2       -> ppBV $ gather e1 <> gather e2
-            Call _ _ f@(Const {}) e ps els | isNil els -> nest 2 $ vsep
+            Call _ _ f@Const {} e ps els | isNil els -> nest 2 $ vsep
                   [ text "case" <+> pretty e <+> text "of"
                   , ppBV' (ppPats ps) <+> text "->" <+> pretty f
                   ]
-            Call _ _ f@(Const {}) e ps els -> nest 2 $ vsep
+            Call _ _ f@Const {} e ps els -> nest 2 $ vsep
                   [ text "case" <+> pretty e <+> text "of"
                   , ppBV' (ppPats ps) <+> text "->" <+> pretty f
                   , text "_" <+> text "->" <+> pretty els

@@ -5,22 +5,22 @@
 -- Haskell", though since we don't have type classes in core it is much
 -- simpler.
 --
-module ReWire.Crust.TypeCheck (typeCheck, untype) where
+module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype) where
 
 import ReWire.Annotation
-import ReWire.Error
-import ReWire.Unbound (fresh, substs, aeq, Subst, n2s, s2n)
+import ReWire.Error (AstError, MonadError, failAt)
+import ReWire.Fix (fixOn)
+import ReWire.Unbound (fresh, substs, aeq, Subst, n2s, s2n, unsafeUnbind)
 import ReWire.Pretty
 import ReWire.Crust.Syntax
-import ReWire.SYB (runT, runPureT, transform, runQ, query)
+import ReWire.SYB (runPureT, transform, runQ, query)
 
 import Control.DeepSeq (deepseq, force)
-import Control.Monad (zipWithM)
+import Control.Monad (zipWithM, foldM)
 import Control.Monad.Catch (MonadCatch (..))
 import Control.Monad.Identity (Identity (..))
 import Control.Monad.Reader (ReaderT (..), local, asks)
 import Control.Monad.State (evalStateT, StateT (..), get, put, modify, MonadState)
-import Data.Containers.ListUtils (nubOrd)
 import Data.Data (Data)
 import Data.HashMap.Strict (HashMap)
 import Data.Set (Set)
@@ -44,15 +44,25 @@ data TCEnv = TCEnv
       , cas       :: !(HashMap (Name DataConId) Poly)
       } deriving Show
 
+instance Semigroup TCEnv where
+      TCEnv a b <> TCEnv a' b' = TCEnv (a <> a') $ b <> b'
+
+instance Monoid TCEnv where
+      mempty = TCEnv mempty mempty
+
 type TCM m = ReaderT TCEnv (StateT TySub m)
 
 lookupAll :: Eq a => a -> [(a, b)] -> [b]
 lookupAll a = map snd . filter ((== a) . fst)
 
+typeCheckDefn :: (Fresh m, MonadError AstError m) => [DataDefn] -> [Defn] -> Defn -> m Defn
+typeCheckDefn ts vs d = evalTCM $ withAssumps ts vs $ tcDefn d
+
+evalTCM :: Monad m => TCM m a -> m a
+evalTCM m = evalStateT (runReaderT m mempty) mempty
+
 typeCheck :: (Fresh m, MonadError AstError m, MonadCatch m) => FreeProgram -> m FreeProgram
-typeCheck (ts, syns, vs) = do
-      vs' <- evalStateT (runReaderT (tc' vs) $ TCEnv mempty mempty) mempty
-      pure (ts, syns, vs')
+typeCheck (ts, syns, vs) = (ts, syns, ) <$> evalTCM tc
       where conc :: Concretes -> Defn -> [Defn]
             conc cs (Defn an n _ b e) = mapMaybe conc' $ lookupAll n $ Map.keys cs
                   where conc' :: Ty -> Maybe Defn
@@ -60,26 +70,45 @@ typeCheck (ts, syns, vs) = do
                               n' <- Map.lookup (n, t) cs
                               pure $ Defn an n' ([] |-> t) b e
 
-            tc' :: (MonadCatch m, Fresh m, MonadError AstError m) => [Defn] -> TCM m [Defn]
-            tc' vs = do
-                  vs'   <- tc ts vs
-                  polys <- getPolys vs'
-                  cs    <- Map.fromList <$> mapM (\ c -> (c,) <$> fresh (fst c)) (uses polys vs')
-                  cvs   <- withAssumps ts vs' $ mapM tcDefn $ concatMap (conc cs) vs'
-                  concretize cs $ vs' <> cvs
+            tc :: (MonadCatch m, Fresh m, MonadError AstError m) => TCM m [Defn]
+            tc = do
+                  vs' <- withAssumps ts vs $ mapM tcDefn vs
+                  cs  <- concretes vs' -- TODO(chathhorn): don't think this needs to use fix.
+                  fst . fst <$> fixOn (Map.keys . snd) "polymorphic function instantiation" 10 tc' ((vs', mempty), cs)
 
-            getPolys :: Fresh m => [Defn] -> m (Set (Name Exp))
-            getPolys vs = Set.fromList <$> map fst <$> filter (not . concrete . snd) <$> mapM getPolys' vs
-                  where getPolys' :: Fresh m => Defn -> m (Name Exp, Ty)
-                        getPolys' (Defn _ n (Embed (Poly pt)) _ _) = (n, ) <$> snd <$> unbind pt
+            tc' :: (MonadCatch m, Fresh m, MonadError AstError m) => (([Defn], Concretes), Concretes) -> TCM m (([Defn], Concretes), Concretes)
+            tc' ((acc, cs), cs') = do
+                  let ep = concatMap (conc cs') polyDefs
+                  ep' <- concretize (cs <> cs') <$> withAssumps ts (acc <> ep) (mapM tcDefn ep)
+                  ((concretize (cs <> cs') acc <> ep', cs <> cs'), ) <$> concretes ep'
 
-            uses :: Data a => Set (Name Exp) -> a -> [(Name Exp, Ty)]
-            uses polys = nubOrd . runQ (query $ \ case
-                  Var _ t n | concrete t, Set.member n polys -> [(n, unAnn t)]
-                  _                                          -> [])
+            concretes :: Fresh m => [Defn] -> m Concretes
+            concretes = foldM (\ m c -> Map.insert c <$> fresh (fst c) <*> pure m) mempty . uses
 
-            concretize :: (MonadCatch m, Data d) => Concretes -> d -> m d
-            concretize cs = runT (transform $ \ v@(Var an t n) -> pure $ maybe v (Var an t) $ Map.lookup (n, unAnn t) cs)
+            polys :: Set (Name Exp)
+            polys = foldr polys' mempty vs
+                  where polys' :: Defn -> Set (Name Exp) -> Set (Name Exp)
+                        polys' d | isPoly d  = Set.insert $ defnName d
+                                 | otherwise = id
+
+            polyDefs :: [Defn]
+            polyDefs = foldr polys' mempty vs
+                  where polys' :: Defn -> [Defn] -> [Defn]
+                        polys' d | isPoly d  = (d :)
+                                 | otherwise = id
+
+            isPoly :: Defn -> Bool
+            isPoly (Defn _ _ (Embed (Poly (unsafeUnbind -> (_, t)))) _ _) = not $ concrete t
+
+            uses :: Data a => a -> Set (Name Exp, Ty)
+            uses = runQ (query $ \ case
+                  Var _ t n | concrete t, Set.member n polys -> Set.singleton (n, unAnn t)
+                  _                                          -> mempty)
+
+            concretize :: Data d => Concretes -> d -> d
+            concretize cs = runIdentity . runPureT (transform $ \ case
+                  v@(Var an t n) -> pure $ maybe v (Var an t) $ Map.lookup (n, unAnn t) cs
+                  e              -> pure e)
 
 freshv :: (MonadState TySub m, Fresh m) => m Ty
 freshv = do
@@ -91,7 +120,7 @@ freshv = do
 (@@) :: TySub -> TySub -> TySub
 s1 @@ s2 = Map.mapWithKey (\ _ t -> subst s1 t) s2 `Map.union` s1
 
-isFlex :: Name a -> Bool
+isFlex :: Name a -> Bool -- TODO(chahthorn): !!
 isFlex = (== '?') . T.head . n2s
 
 varBind :: Monad m => Name Ty -> Ty -> TCM m (Maybe TySub)
@@ -179,38 +208,34 @@ tcMatchPat t = \ case
 
 tcExp :: (Fresh m, MonadError AstError m) => Exp -> TCM m (Exp, Ty)
 tcExp = \ case
-      e@App {}        -> do
-            let (ef:es) =  flattenApp e
-            (ef', tf)   <- tcExp ef
-            ress        <- mapM tcExp es
-            let   es'   =  map fst ress
-                  tes   =  map snd ress
-            tv          <- freshv
-            let tf'     =  foldr arr tv tes
-            unify (ann e) tf' tf
-            pure (foldl' (App $ ann e) ef' es', tv)
-      Lam an _ e             -> do
+      App an e1 e2 -> do
+            (e1', te1) <- tcExp e1
+            (e2', te2) <- tcExp e2
+            tv         <- freshv
+            unify an te1 $ te2 `arr` tv
+            pure (App an e1' e2', tv)
+      Lam an _ e -> do
             (x, e')   <- unbind e
             tvx       <- freshv
             tvr       <- freshv
             (e'', te) <- localAssumps (Map.insert x ([] `poly` tvx)) $ tcExp e'
             unify an tvr $ arr tvx te
             pure (Lam an tvx $ bind x e'', tvr)
-      Var an _ v             -> do
+      Var an _ v -> do
             as <- asks as
             case Map.lookup v as of
                   Nothing -> failAt an $ "Unknown variable: " <> showt v
                   Just pt -> do
                         t <- inst pt
                         pure (Var an t v, t)
-      Con an _ i      -> do
+      Con an _ i -> do
             cas <- asks cas
             case Map.lookup i cas of
                   Nothing -> failAt an $ "Unknown constructor: " <> prettyPrint i
                   Just pt -> do
                         t <- inst pt
                         pure (Con an t i, t)
-      Case an _ e e1 e2      -> do
+      Case an _ e e1 e2 -> do
             (p, e1')    <- unbind e1
             (e', te)    <- tcExp e
             tv          <- freshv
@@ -224,7 +249,7 @@ tcExp = \ case
                         (e2', te2)  <- tcExp e2
                         unify an tv te2
                         pure (Case an tv e' (bind p' e1'') (Just e2'), tv)
-      Match an _ e p f e2    -> do
+      Match an _ e p f e2 -> do
             (e', te) <- tcExp e
             tv       <- freshv
             p'       <- tcMatchPat te p
@@ -237,41 +262,46 @@ tcExp = \ case
                         (e2', te2)  <- tcExp e2
                         unify an tv te2
                         pure (Match an tv e' p' f (Just e2'), tv)
-      Extern an _          -> do
+      Extern an _ -> do
             tv <- freshv
             let t = listTy an paramTy `arr` strTy an `arr` listTy an paramTy `arr` listTy an paramTy `arr` strTy an `arr` tv `arr` strTy an `arr` tv
             pure (Extern an t, t)
             where paramTy :: Ty
                   paramTy = pairTy an (strTy an) (intTy an)
-      Bit an _          -> do
+      Bit an _ -> do
             tv <- freshv
             let t = tv `arr` intTy an `arr` bitTy an
             pure (Bit an t, t)
-      Bits an _          -> do
+      Bits an _ -> do
             tv  <- freshv
             tv' <- freshv
             let t = tv `arr` intTy an `arr` intTy an `arr` tv'
             pure (Bits an t, t)
-      SetRef an _     -> do
+      SetRef an _ -> do
             ta  <- freshv
             tb  <- freshv
             let t = refTy an ta `arr` ta `arr` tb `arr` tb
             pure (SetRef an t, t)
-      GetRef an _     -> do
+      GetRef an _ -> do
             ta  <- freshv
             let t = refTy an ta `arr` ta
             pure (GetRef an t, t)
-      e@LitInt {}            -> pure (e, typeOf e)
-      e@LitStr {}            -> pure (e, typeOf e)
-      LitList an _ es    -> do
+      e@LitInt {} -> pure (e, typeOf e)
+      e@LitStr {} -> pure (e, typeOf e)
+      LitList an _ es -> do
             tv  <- freshv
             es' <- mapM tcExp es
             mapM_ (unify an tv) (snd <$> es')
             let t = listTy an tv
             pure (LitList an t (fst <$> es'), t)
-      Error an _ m           -> do
+      Error an _ m -> do
             tv <- freshv
             pure (Error an tv m, tv)
+      TypeAnn an pt e -> do
+            (e', te) <- tcExp e
+            t        <- inst pt
+            unify an t te
+            pure (TypeAnn an pt e', te)
 
 mkApp :: Annote -> Exp -> [Name Exp] -> Exp
 mkApp an f holes = foldl' (App an) f $ map (Var an $ TyBlank an) holes
@@ -283,8 +313,7 @@ tcDefn d  = do
       (tvs, t) <- unbind pt
       (vs, e') <- unbind e
       let (targs, _) = flattenArrow t
-      (e'', te) <- localAssumps (Map.union $ Map.fromList $ zip vs $ map (poly []) targs)
-            $ tcExp e'
+      (e'', te) <- localAssumps (Map.union $ Map.fromList $ zip vs $ map (poly []) targs) $ tcExp e'
       let te' = iterate arrowRight t !! length vs
       unify an te' te
       s <- get
@@ -292,10 +321,7 @@ tcDefn d  = do
       let d' = Defn an n (tvs |-> t) b $ Embed $ bind vs $ subst s e''
       d' `deepseq` pure d'
 
-tc :: (Fresh m, MonadError AstError m) => [DataDefn] -> [Defn] -> TCM m [Defn]
-tc ts vs = withAssumps ts vs $ mapM tcDefn vs
-
-withAssumps :: MonadError AstError m => [DataDefn] -> [Defn] -> TCM m [Defn] -> TCM m [Defn]
+withAssumps :: MonadError AstError m => [DataDefn] -> [Defn] -> TCM m a -> TCM m a
 withAssumps ts vs = localAssumps (as `Map.union`) . localCAssumps (cas `Map.union`)
       where as  = foldr defnAssump mempty vs
             cas = foldr dataDeclAssumps mempty ts

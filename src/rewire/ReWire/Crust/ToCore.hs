@@ -99,6 +99,9 @@ externSig an args res clk = \ case
 callError :: Annote -> C.Size -> C.Exp
 callError an sz = C.Call an sz (C.Extern (C.ExternSig an [] mempty [] [(mempty, sz)]) "error" "error") C.nil [] C.nil
 
+arity :: M.Ty -> Int
+arity = length . fst . M.flattenArrow
+
 transExp :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.Exp -> TCM m C.Exp
 transExp e = case e of
       M.App an _ _                  -> case M.flattenApp e of
@@ -111,11 +114,13 @@ transExp e = case e of
                   args'    <- C.cat <$> mapM transExp args
                   argSizes <- mapM (sizeOf an . M.typeOf) args
                   pure $ C.Call an sz (C.Global $ showt x) args' (map (C.PatVar an) argSizes) C.nil
-            (M.Extern _ _ : M.LitList _ _ ps : M.LitStr _ clk : M.LitList _ _ as : M.LitList _ _ rs : M.LitStr _ s : _ : M.LitStr _ inst : args) -> do
+            (M.Extern _ t : M.LitList _ _ ps : M.LitStr _ clk : M.LitList _ _ as : M.LitList _ _ rs : M.LitStr _ s : _ : M.LitStr _ inst : args)
+                  | arity t == 7 + length args -> do
                   sz       <- sizeOf an $ M.typeOf e
                   args'    <- C.cat <$> mapM transExp args
                   argSizes <- mapM (sizeOf an . M.typeOf) args
                   pure $ C.Call an sz (C.Extern (externSig an argSizes sz clk (ps, as, rs)) s inst) args' (map (C.PatVar an) argSizes) C.nil
+            (M.Extern _ _ : _) -> failAt an "transExp: encountered not-fully-applied extern (after inlining)."
             (M.Bit an _ : [arg, M.LitInt _ i])     -> do -- TODO(chathhorn): should probably just do a pass to rewrite this in terms of Bits.
                   sz       <- sizeOf an $ M.typeOf e
                   arg'     <- transExp arg
@@ -145,7 +150,7 @@ transExp e = case e of
                   szArgs <- sum <$> mapM (sizeOf an . M.typeOf) args
                   let tag = C.Lit an (bitVec (fromIntegral w) v)
                       pad = C.Lit an (zeros $ fromIntegral sz - fromIntegral w - fromIntegral szArgs) -- ugh
-                  pure $ C.cat $ ([tag, pad] <> args')
+                  pure $ C.cat ([tag, pad] <> args')
             _                           -> failAt an "transExp: encountered ill-formed application."
       M.Var an t x                      -> lift (asks $ Map.lookup x) >>= \ case
             Nothing -> do
@@ -168,6 +173,7 @@ transExp e = case e of
       M.Error an t _                    -> do
             sz     <- sizeOf an t
             pure $ callError an sz
+      M.TypeAnn _ _ e                   -> transExp e
       _                                 -> failAt (ann e) $ "ToCore: unsupported expression: " <> prettyPrint e
       where callTarget :: MonadError AstError m => C.Exp -> m C.Target
             callTarget = \ case

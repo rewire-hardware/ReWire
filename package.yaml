@@ -37,6 +37,7 @@ data-files:
   - tests/regression/*.hs
   - src/user/*.hs
   - src/user/ReWire/*.hs
+  - src/user/RWC/*.hs
 
 dependencies:
   - base ^>= 4.15

@@ -110,13 +110,12 @@ purify start (ts, syns, ds) = do
 
             -- | Unify types but do it the most dumbly.
             unify :: Ty -> Ty -> Maybe Ty
-            unify (TyApp an a b) (TyApp _ a' b') | Just ua <- unify a a', Just ub <- unify b b'
-                                  = pure $ TyApp an ua ub
-            unify (TyCon an n) (TyCon _ n') | n == n'
-                                  = pure $ TyCon an n
-            unify (TyVar _ _ _) t = pure t
-            unify t (TyVar _ _ _) = pure t
-            unify _ _             = Nothing
+            unify (TyApp an a b) (TyApp _ a' b') | Just ua <- unify a a'
+                                                 , Just ub <- unify b b' = pure $ TyApp an ua ub
+            unify (TyCon an n) (TyCon _ n')      | n == n'               = pure $ TyCon an n
+            unify TyVar {} t                                             = pure t
+            unify t TyVar {}                                             = pure t
+            unify _ _                                                    = Nothing
 
 -- | In addition to all the above, we re-tie the recursive knot by adding a new
 --   "start" as follows
@@ -132,7 +131,7 @@ mkStart start i o ms = Defn
       { defnAnnote = MsgAnnote "start function"
       , defnName   = s2n start
       , defnPolyTy = [] |-> startTy
-      , defnInline = False
+      , defnAttr   = Just NoInline
       , defnBody   = appl
       }
       where etor       = mkRangeTy o ms
@@ -178,7 +177,7 @@ mkDispatch i o ms iv (p : pes) = do
             { defnAnnote = an
             , defnName   = s2n "$Pure.dispatch"
             , defnPolyTy = [] |-> ty
-            , defnInline = False
+            , defnAttr   = Just NoInline
             , defnBody   = body
             }
 

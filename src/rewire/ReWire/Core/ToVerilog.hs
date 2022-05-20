@@ -102,14 +102,14 @@ compileStartDefn :: (MonadError AstError m, MonadFail m, MonadReader DefnMap m)
                  => [Flag] -> C.StartDefn -> m Module
 compileStartDefn flags (C.StartDefn _ w loop state0) = do
 
-      ((rStart, ssStart), (_, (_:_:startSigs))) <- flip runStateT (freshInit0, sigs0) (compileCall (FlagFlatten : flags) (mangle state0) (resumptionSize w) [])
+      ((rStart, ssStart), (_, _ : _ : startSigs)) <- flip runStateT (freshInit0, sigs0) (compileCall (FlagFlatten : flags) (mangle state0) (resumptionSize w) [])
 
       let (stateInit, stateReset, ssStart', startSigs') = if clocked then (initState rStart, Just rStart, ssStart, startSigs)
                                                                      else (Nothing,          Nothing,     mempty,  mempty)
 
-      ((rLoop, ssLoop),   (_, (_:_:loopSigs)))  <- flip runStateT (freshRun0, sigs0) $ compileCall flags (mangle loop) (resumptionSize w)
-            $  (if null $ dispatchWires w then [] else [ V.cat $ map (LVal . Name . fst) $ dispatchWires w ])
-            <>  if null $ inputWires w    then [] else [ V.cat $ map (LVal . Name . fst) $ inputWires w ]
+      ((rLoop, ssLoop),   (_, _ : _ : loopSigs))  <- flip runStateT (freshRun0, sigs0) $ compileCall flags (mangle loop) (resumptionSize w)
+            $  [ V.cat $ map (LVal . Name . fst) $ dispatchWires w | not (null $ dispatchWires w) ]
+            <> [ V.cat $ map (LVal . Name . fst) $ inputWires w    | not (null $ inputWires w) ]
 
       pure $ Module "top_level" (inputs <> outputs) (loopSigs <> startSigs' <> sigs)
             $  ssStart'
@@ -249,9 +249,9 @@ compileExp flags lvars = \ case
                   wa  <- fromMaybe 0 <$> lookupWidth a
                   r' <- newWire' wa r
                   b' <- wcast sz b
-                  pure (b', [Assign r' $ LVal $ Name $ a])
+                  pure (b', [Assign r' $ LVal $ Name a])
             a -> error $ T.unpack $ "Got: " <> prettyPrint a
-      Call _ sz (GetRef r) _ _ _                         -> (,[]) <$> (wcast sz $ LVal $ Name r)
+      Call _ sz (GetRef r) _ _ _                         -> (,[]) <$> wcast sz (LVal $ Name r)
       Call _ sz (Extern _ (binOp -> Just op) _) e ps els -> mkCall "binOp"  e ps els $ \ [x, y] -> (,[]) <$> wcast sz (op x y)
       Call _ sz (Extern _ (unOp -> Just op) _) e ps els  -> mkCall "unOp"   e ps els $ \ [x]    -> (,[]) <$> wcast sz (op x)
       Call _ sz (Extern _ "msbit" _) e ps els            -> mkCall "msbit"  e ps els $ \ [x]    -> (,[]) <$> wcast sz (projBit (fromIntegral (argsSize ps) - 1) x)

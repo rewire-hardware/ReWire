@@ -145,6 +145,7 @@ getProgram flags fp = do
        >=> pDebug' "[Pass 4b] Post-typechecking."
        >=> whenSet FlagDCrust2b (printInfo "Crust 2b: Post-typechecking")
        >=> pDebug' "Simplifying and reducing."
+       >=> neuterExterns
        >=> pure . purgeUnused start
        >=> simplify
        >=> shiftLambdas

@@ -42,7 +42,7 @@ nullDataCon c t = DataCon (MsgAnnote $ "Prim: " <> c <> " data ctor") (s2n c) ([
 refCtor :: DataCon
 refCtor = DataCon an (s2n "Ref") $ [s2n "a"] |-> (strTy an `arr` refTy an (TyVar an KStar $ s2n "a"))
       where an :: Annote
-            an = MsgAnnote $ "Prim: Ref data/type ctor"
+            an = MsgAnnote "Prim: Ref data/type ctor"
 
 mkTuple' :: Int -> DataDefn
 mkTuple' n = DataDefn (msg "Prim: tuple") (s2n i) k [ctor]

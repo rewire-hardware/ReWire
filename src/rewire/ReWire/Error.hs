@@ -14,20 +14,21 @@ module ReWire.Error
 import ReWire.Annotation (Annotation (..), Annote (..), toSrcSpanInfo, noAnn)
 
 import Prelude hiding ((<>), lines, unlines)
-import qualified Data.Text as T
-import Control.Monad.Except (MonadError (..), ExceptT (..), runExceptT, throwError)
-import Control.Monad.Trans (MonadTrans (..))
-import Control.Monad.IO.Class (MonadIO (..))
+
 import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
+import Control.Monad.Except (MonadError (..), ExceptT (..), runExceptT, throwError)
+import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.State (StateT (..), MonadState (..))
+import Control.Monad.Trans (MonadTrans (..))
 import Data.Text (Text, pack)
-import Language.Haskell.Exts.Syntax (Annotated (..))
 import Language.Haskell.Exts.Pretty (prettyPrim)
 import Language.Haskell.Exts.SrcLoc (SrcLoc (..), SrcInfo (..), SrcSpanInfo, noLoc)
+import Language.Haskell.Exts.Syntax (Annotated (..))
 import Prettyprinter (Pretty (..), (<>), (<+>), nest, Doc, defaultLayoutOptions, layoutSmart)
 import Prettyprinter.Render.Text (renderStrict)
 import ReWire.Pretty (($$), text, int)
 import TextShow (TextShow (..))
+import qualified Data.Text as T
 
 data AstError = AstError !Annote !Text
 

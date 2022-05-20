@@ -179,7 +179,7 @@ dedupe p = pure $ p { defns = map ddDefn $ defns p }
                   t                                        -> t
 
             ddMap :: HashMap GId GId
-            ddMap = foldr (\ (Defn _ g sig body) -> maybe id (\ g' -> Map.insert g g') $ Map.lookup (unAnn sig, unAnn body) bodies) mempty $ defns p
+            ddMap = foldr (\ (Defn _ g sig body) -> maybe id (Map.insert g) $ Map.lookup (unAnn sig, unAnn body) bodies) mempty $ defns p
                   where bodies :: HashMap (Sig, Exp) GId
                         bodies = foldr (\ (Defn _ g sig body) -> Map.insert (unAnn sig, unAnn body) g) mempty $ defns p
 

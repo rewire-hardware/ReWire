@@ -45,7 +45,7 @@ toDefn = \ case
                   e' <- toExp e
                   t' <- toType $ varType v
                   v' <- toName v
-                  pure $ M.Defn noAnn v' ([] |-> t') False $ Embed $ bind [] e'
+                  pure $ M.Defn noAnn v' ([] |-> t') Nothing $ Embed $ bind [] e'
 
 toExp :: GhcMonad m => Expr Var -> m M.Exp
 toExp = \ case

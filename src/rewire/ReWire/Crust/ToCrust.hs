@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverloadedStrings, MultiWayIf #-}
 {-# LANGUAGE Safe #-}
 module ReWire.Crust.ToCrust (toCrust, extendWithGlobs, getImps) where
 
@@ -12,11 +12,12 @@ import ReWire.SYB
 
 import Control.Arrow ((&&&), second)
 import Control.Monad (foldM, replicateM, void)
+import Data.Char (isUpper)
 import Data.Foldable (foldl')
 import Data.List (find)
+import Data.Map.Strict (Map)
 import Data.Maybe (mapMaybe, fromMaybe)
 import Data.Text (Text, pack, unpack)
-import Data.Char (isUpper)
 import Language.Haskell.Exts.Fixity (Fixity (..))
 import Language.Haskell.Exts.Pretty (prettyPrint)
 
@@ -27,6 +28,9 @@ import qualified ReWire.Crust.Rename          as M
 import qualified ReWire.Crust.Syntax          as M
 
 import Language.Haskell.Exts.Syntax hiding (Annotation, Name, Kind)
+
+isPrimMod :: String -> Bool
+isPrimMod = (== "RWC.Primitives")
 
 -- | An intermediate form for exports. TODO(chathhorn): get rid of it.
 data Export = Export FQName
@@ -54,17 +58,14 @@ toCrust :: (Fresh m, MonadError AstError m) => Renamer -> Module Annote -> m (M.
 toCrust rn = \ case
       Module _ (Just (ModuleHead _ (ModuleName _ mname) _ exps)) _ _ (reverse -> ds) -> do
             tyDefs <- foldM (transData rn) [] ds
-            tySyns <- if mname == "ReWire" -- TODO(chathhorn): ignore type synonyms in ReWire.hs module.
-                  then pure [] else foldM (transTyDecl rn) [] ds
+            tySyns <- if | isPrimMod mname -> pure [] -- TODO(chathhorn): ignore type synonyms in ReWire.hs module.
+                         | otherwise       -> foldM (transTyDecl rn) [] ds
             tySigs <- foldM (transTySig rn) [] ds
-            inls   <- foldM transInlineSig [] ds
             fnDefs <- foldM (transDef rn tySigs inls) [] ds
             exps'  <- maybe (pure $ getGlobExps rn ds) (\ (ExportSpecList _ exps') -> foldM (transExport rn ds) [] exps') exps
             pure (M.Module tyDefs tySyns fnDefs, resolveExports rn exps')
             where getGlobExps :: Renamer -> [Decl Annote] -> [Export]
-                  getGlobExps rn ds = getTypeExports rn
-                        ++ getExportFixities ds
-                        ++ concatMap (getFunExports rn) ds
+                  getGlobExps rn ds = getTypeExports rn <> getExportFixities ds <> concatMap (getFunExports rn) ds
 
                   getFunExports :: Renamer -> Decl Annote -> [Export]
                   getFunExports rn = \ case
@@ -72,7 +73,7 @@ toCrust rn = \ case
                         _                        -> []
 
                   getTypeExports :: Renamer -> [Export]
-                  getTypeExports rn = map (exportAll rn) $ (Set.toList $ getLocalTypes rn) <> tysynNames ds
+                  getTypeExports rn = map (exportAll rn) $ Set.toList (getLocalTypes rn) <> tysynNames ds
 
                   resolveExports :: Renamer -> [Export] -> Exports
                   resolveExports rn = foldr (resolveExport rn) mempty
@@ -90,7 +91,17 @@ toCrust rn = \ case
                         ExportWith x cs fs                    -> expType x cs fs
                         ExportMod m                           -> (<> getExports m rn)
                         ExportFixity asc lvl x                -> expFixity asc lvl x
+
+                  inls :: Map (S.Name ()) M.DefnAttr
+                  inls = foldr inl' mempty ds
+                        where inl' :: Decl Annote -> Map (S.Name ()) M.DefnAttr -> Map (S.Name ()) M.DefnAttr
+                              inl' = \ case
+                                    InlineSig _ b Nothing (Qual _ _ x) -> Map.insert (void x) $ if b then M.Inline else M.NoInline
+                                    InlineSig _ b Nothing (UnQual _ x) -> Map.insert (void x) $ if b then M.Inline else M.NoInline
+                                    _                                  -> id
       m                                                           -> failAt (ann m) "Unsupported module syntax"
+
+
 
 exportAll :: QNamish a => Renamer -> a -> Export
 exportAll rn x = let x' = rename Type rn x in
@@ -170,27 +181,20 @@ transTySig :: (Fresh m, MonadError AstError m) => Renamer -> [(S.Name (), M.Ty)]
 transTySig rn sigs = \ case
       TypeSig _ names t -> do
             t' <- transTy rn t
-            pure $ zip (map void names) (repeat t') ++ sigs
+            pure $ zip (map void names) (repeat t') <> sigs
       _                 -> pure sigs
 
--- I guess this doesn't need to be in the monad, really, but whatever...  --adam
--- Not sure what the boolean field means here, so we ignore it!  --adam
-transInlineSig :: MonadError AstError m => [S.Name ()] -> Decl Annote -> m [S.Name ()]
-transInlineSig inls = \ case
-      InlineSig _ _ Nothing (Qual _ _ x) -> pure $ void x : inls
-      InlineSig _ _ Nothing (UnQual _ x) -> pure $ void x : inls
-      _                                  -> pure inls
-
 -- TODO(chathhorn): should be a map, not a fold
-transDef :: (Fresh m, MonadError AstError m) => Renamer -> [(S.Name (), M.Ty)] -> [S.Name ()] -> [M.Defn] -> Decl Annote -> m [M.Defn]
+transDef :: (Fresh m, MonadError AstError m) => Renamer -> [(S.Name (), M.Ty)] -> Map (S.Name ()) M.DefnAttr -> [M.Defn] -> Decl Annote -> m [M.Defn]
 transDef rn tys inls defs = \ case
       PatBind l (PVar _ (void -> x)) (UnGuardedRhs _ e) Nothing -> do
             k <- freshKVar "def"
             let x' = s2n $ rename Value rn x
                 t  = fromMaybe (M.TyVar l k $ s2n "?a") $ lookup x tys
-            -- TODO(chathhorn): hackily elide definition of primitives. Allows providing alternate defs for GHC compat.
-            e' <- if M.isPrim x' && x `notElem` inls then pure $ M.Error (ann e) t $ "Prim: " <> n2s x' else transExp rn e
-            pure $ M.Defn l x' (M.fv t |-> t) (x `elem` inls) (Embed (bind [] e')) : defs
+            -- Elide definition of primitives. Allows providing alternate defs for GHC compat.
+            e' <- if | M.isPrim x' -> pure $ M.Error (ann e) t $ "Prim: " <> n2s x'
+                     | otherwise   -> transExp rn e
+            pure $ M.Defn l x' (M.fv t |-> t) (Map.lookup x inls) (Embed (bind [] e')) : defs
       DataDecl       {}                                         -> pure defs -- TODO(chathhorn): elide
       InlineSig      {}                                         -> pure defs -- TODO(chathhorn): elide
       TypeSig        {}                                         -> pure defs -- TODO(chathhorn): elide
@@ -229,7 +233,7 @@ transTy rn = \ case
 freshKVar :: Fresh m => Text -> m M.Kind
 freshKVar n = M.KVar <$> fresh (s2n $ "?K_" <> n)
 
-transExp :: MonadError AstError m => Renamer -> Exp Annote -> m M.Exp
+transExp :: (Fresh m, MonadError AstError m) => Renamer -> Exp Annote -> m M.Exp
 transExp rn = \ case
       App l (Var _ n) (Lit _ (String _ m _))
             | isError n      -> pure $ M.Error l (M.TyBlank l) (pack m)
@@ -258,6 +262,7 @@ transExp rn = \ case
       Lit l (Int _ n _)      -> pure $ M.LitInt l n
       Lit l (String _ s _)   -> pure $ M.LitStr l $ pack s
       List l es              -> M.LitList l (M.TyBlank l) <$> mapM (transExp rn) es
+      ExpTypeSig l e t       -> M.TypeAnn l <$> (M.poly' <$> transTy rn t) <*> transExp rn e
       e                      -> failAt (ann e) $ "Unsupported expression syntax: " <> pack (show $ void e)
       where getVars :: Pat Annote -> [S.Name ()]
             getVars = runQ $ query $ \ case
@@ -293,9 +298,9 @@ transPat rn = \ case
 -- TODO(chathhorn): GADT style decls?
 extendWithGlobs :: Annotation a => S.Module a -> Renamer -> Renamer
 extendWithGlobs = \ case
-      Module l (Just (ModuleHead _ (ModuleName _ "ReWire") _ _)) _ _ ds -> extendWith ds $ ModuleName l ""
-      Module _ (Just (ModuleHead _ m _ _)) _ _ ds                       -> extendWith ds m
-      _                                                                 -> id
+      Module l (Just (ModuleHead _ (ModuleName _ m) _ _)) _ _ ds | isPrimMod m -> extendWith ds $ ModuleName l ""
+      Module _ (Just (ModuleHead _ m _ _)) _ _ ds                              -> extendWith ds m
+      _                                                                        -> id
       where extendWith :: Annotation a => [Decl a] -> ModuleName a -> Renamer -> Renamer
             extendWith ds m = setCtors (getModCtors ds) (getModCtorSigs ds) . extendWith' ds (void m)
 
@@ -371,7 +376,7 @@ extendWithGlobs = \ case
 getImps :: Annotation a => S.Module a -> [ImportDecl a]
 getImps = \ case
       -- TODO(chathhorn): hacky. The prim/ReWire module really shouldn't depend on Prelude.
-      S.Module _ (Just (ModuleHead _ (ModuleName _ "ReWire") _ _)) _ _ _            -> [] -- all imports ignored in the Prim module.
+      S.Module _ (Just (ModuleHead _ (ModuleName _ m) _ _)) _ _ _ | isPrimMod m     -> [] -- all imports ignored in the Prim module.
       S.Module l (Just (ModuleHead _ (ModuleName _ "ReWire.Prelude") _ _)) _ imps _ -> addMod l "ReWire" $ filter (not . isMod "Prelude") imps -- TODO(chathhorn) gah!
       S.Module l _ _ imps _                                                         -> addMod l "ReWire.Prelude" $ addMod l "ReWire" $ filter (not . isMod "Prelude") imps
       S.XmlPage {}                                                                  -> []

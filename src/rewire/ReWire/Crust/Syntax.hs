@@ -14,15 +14,16 @@
 module ReWire.Crust.Syntax
       ( DataConId (..), TyConId
       , Ty (..), Exp (..), Pat (..), MatchPat (..)
-      , Defn (..), DataDefn (..), TypeSynonym (..), DataCon (..)
+      , Defn (..), DefnAttr (..), DataDefn (..), TypeSynonym (..), DataCon (..)
       , FreeProgram, Program (..)
       , Kind (..), kblank
       , flattenApp, flattenArrow, flattenTyApp, arr, arrowRight, arrowLeft
       , fv, fvAny
       , Fresh, Name, Embed (..), TRec, Bind, FieldId
       , trec, untrec, bind, unbind
-      , Poly (..), (|->), poly
-      , rangeTy, paramTys, isPrim, mkArrowTy, nil, isResMonad, isStateMonad
+      , Poly (..), (|->), poly, poly'
+      , rangeTy, paramTys, isPrim, inlineable
+      , mkArrowTy, nil, isResMonad, isStateMonad
       , strTy, intTy, bitTy, listTy, pairTy, refTy
       , flattenAllTyApp, resInputTy
       , mkTuple, mkTuplePat, mkTupleMPat, tupleTy
@@ -147,6 +148,9 @@ instance NFData Poly
 poly :: [Name Ty] -> Ty -> Poly
 poly vs t = Poly $ bind vs t
 
+poly' :: Ty -> Poly
+poly' t = poly (fv t) t
+
 (|->) :: [Name Ty] -> Ty -> Embed Poly
 vs |-> t = Embed $ poly vs t
 
@@ -234,6 +238,7 @@ data Exp = App     Annote !Exp      !Exp
          | LitStr  Annote !Text
          | LitList Annote !Ty       ![Exp]
          | Error   Annote !Ty       !Text
+         | TypeAnn Annote !Poly     !Exp
       deriving (Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Exp
 
@@ -265,10 +270,12 @@ instance Subst Exp Ty
 instance Subst Exp Kind
 instance Subst Exp Pat
 instance Subst Exp Defn
+instance Subst Exp DefnAttr
 instance Subst Exp Poly
 
 instance Subst Ty Exp
 instance Subst Ty Pat
+instance Subst Ty Poly
 
 instance NFData Exp
 
@@ -289,6 +296,7 @@ instance TypeAnnotated Exp where
             LitStr a _        -> strTy a
             LitList _ t _     -> t
             Error _ t _       -> t
+            TypeAnn _ _ e     -> typeOf e
 
 instance Annotated Exp where
       ann = \ case
@@ -307,6 +315,7 @@ instance Annotated Exp where
             LitStr a _        -> a
             LitList a _ _     -> a
             Error a _ _       -> a
+            TypeAnn a _ _     -> a
 
 instance Parenless Exp where
       parenless e = case flattenApp e of
@@ -346,6 +355,7 @@ instance Pretty Exp where
             [LitStr _ v]                                 -> dquotes $ pretty v
             [LitList _ _ vs]                             -> brackets $ hsep $ punctuate comma $ map pretty vs
             [Error _ t m]                                -> tyAnn (text "error") t <+> dquotes (pretty m)
+            [TypeAnn _ pt e]                             -> pretty e <+> text "::" <+> pretty pt
             es                                           -> nest 2 $ hsep $ map mparens es
 
             where tyAnn :: Doc ann -> Ty -> Doc ann
@@ -442,7 +452,7 @@ data Defn = Defn
       { defnAnnote :: Annote
       , defnName   :: !(Name Exp)
       , defnPolyTy :: !(Embed Poly)
-      , defnInline :: !Bool
+      , defnAttr   :: !(Maybe DefnAttr)
       , defnBody   :: !(Embed (Bind [Name Exp] Exp))
       }
       deriving (Generic, Show, Typeable, Data)
@@ -461,9 +471,22 @@ instance Pretty Defn where
       pretty (Defn _ n t b (Embed e)) = runFreshM $ do
             (vs, e') <- unbind e
             pure $ vsep $ map (nest 2)
-                 $  [ text "{-# INLINE" <+> text (showt n) <+> text "#-}" | b ]
-                 ++ [ text (showt n) <+> text "::" <+> pretty t ]
-                 ++ [ text (showt n) <+> hsep (map (text . showt) vs) <+> text "=" <+> pretty e' ]
+                 $  [ text "{-# INLINE" <+> text (showt n) <+> text "#-}"   | b == Just Inline   ]
+                 <> [ text "{-# NOINLINE" <+> text (showt n) <+> text "#-}" | b == Just NoInline ]
+                 <> [ text (showt n) <+> text "::" <+> pretty t ]
+                 <> [ text (showt n) <+> hsep (map (text . showt) vs) <+> text "=" <+> pretty e' ]
+
+---
+
+data DefnAttr = Inline | NoInline
+      deriving (Eq, Generic, Show, Typeable, Data)
+      deriving TextShow via FromGeneric DefnAttr
+
+instance Hashable DefnAttr
+
+instance Alpha DefnAttr
+
+instance NFData DefnAttr
 
 ---
 
@@ -597,6 +620,12 @@ arrowLeft = \ case
 isPrim :: Show a => a -> Bool
 isPrim = notElem '.' . show
 
+inlineable :: Defn -> Bool
+inlineable d = case defnAttr d of
+      Just Inline   -> True
+      Just NoInline -> False
+      Nothing       -> not $ isPrim $ defnName d
+
 -- | Takes [T1, ..., Tn-1] Tn and returns (T1 -> (T2 -> ... (T(n-1) -> Tn) ...))
 mkArrowTy :: [Ty] -> Ty -> Ty
 mkArrowTy ps = foldr1 arr . (ps ++) . (: [])
@@ -670,7 +699,7 @@ concrete = \ case
       TyApp _ a b -> concrete a && concrete b
 
 higherOrder :: Ty -> Bool
-higherOrder (flattenArrow -> (ats, rt)) = or $ map isArrow $ rt : ats
+higherOrder (flattenArrow -> (ats, rt)) = any isArrow $ rt : ats
 
 isArrow :: Ty -> Bool
 isArrow = \ case

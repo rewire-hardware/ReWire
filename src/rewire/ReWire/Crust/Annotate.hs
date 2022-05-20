@@ -16,8 +16,8 @@ import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
 
 import Language.Haskell.Exts.Syntax
 
-annotate :: (Data (ast Annote), Functor ast, Monad m) => ast SrcSpanInfo -> m (ast Annote)
-annotate m = return $ runIdentity $ runPureT nodes $ LocAnnote <$> m
+annotate :: (Data (ast Annote), Functor ast, Applicative m) => ast SrcSpanInfo -> m (ast Annote)
+annotate m = pure $ runIdentity $ runPureT nodes $ LocAnnote <$> m
 
 type SF a = a Annote -> Identity (a Annote)
 
