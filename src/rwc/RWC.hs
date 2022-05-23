@@ -61,7 +61,7 @@ options =
        , Option []    ["inputs"]             (ReqArg FlagInputNames  "name1,name2,...") "Names to use for input signals in generated RTL."
        , Option []    ["outputs"]            (ReqArg FlagOutputNames "name1,name2,...") "Names to use for output signals in generated RTL."
        , Option []    ["states"]             (ReqArg FlagStateNames  "name1,name2,...") "Names to use for internal state signals."
-       , Option []    ["top-level"]          (ReqArg FlagTopLevel    "name")            "Symbol to use for the definition of the top-level module (default: Main.start)."
+       , Option []    ["top"]                (ReqArg FlagTop         "name")            "Symbol to use for the definition of the top-level module (default: Main.start)."
        , Option []    ["loadpath"]           (ReqArg FlagLoadPath    "dir1,dir2,...")   "Additional directories for loadpath."
        , Option []    ["interpret"]          (OptArg FlagInterpret   "inputs.yaml")     "Interpret instead of compile, using inputs from the optional argument file (default: inputs.yaml)."
        , Option []    ["cycles"]             (ReqArg FlagCycles      "ncycles")         "Number of cycles to interpret (default: 10)."

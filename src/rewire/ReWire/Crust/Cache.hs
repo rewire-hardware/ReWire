@@ -205,14 +205,14 @@ getProgram flags fp = do
                   _                  -> []
 
             start :: Text
-            start = case filter isFlagTopLevel flags of
-                  FlagTopLevel s : _ -> pack s
-                  _                  -> "Main.start"
+            start = case filter isFlagTop flags of
+                  FlagTop s : _ -> pack s
+                  _             -> "Main.start"
 
-            isFlagTopLevel :: Flag -> Bool
-            isFlagTopLevel = \ case
-                  FlagTopLevel _ -> True
-                  _              -> False
+            isFlagTop :: Flag -> Bool
+            isFlagTop = \ case
+                  FlagTop _ -> True
+                  _         -> False
 
 pDebug :: MonadIO m => [Flag] -> Text -> m ()
 pDebug flags s = when (FlagV `elem` flags) $ liftIO $ T.putStrLn $ "Debug: " <> s
