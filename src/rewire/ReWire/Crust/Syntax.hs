@@ -22,13 +22,13 @@ module ReWire.Crust.Syntax
       , Fresh, Name, Embed (..), TRec, Bind, FieldId
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly, poly'
-      , rangeTy, paramTys, isPrim, inlineable
+      , rangeTy, paramTys, isPrim, inlineable, mustInline
       , mkArrowTy, nil, isResMonad, isStateMonad
       , strTy, intTy, bitTy, listTy, pairTy, refTy
       , flattenAllTyApp, resInputTy
       , mkTuple, mkTuplePat, mkTupleMPat, tupleTy
       , mkPair, mkPairPat, mkPairMPat
-      , kmonad, tycomp, concrete, higherOrder
+      , kmonad, tycomp, concrete, higherOrder, fundamental
       , TypeAnnotated (..), prettyFP
       ) where
 
@@ -38,7 +38,7 @@ import safe ReWire.Unbound
       , Embed (..)
       , TRec (..), trec, untrec
       , Name, AnyName (..), SubstName (..)
-      , Bind (..), bind, unbind
+      , Bind (..), bind, unbind, unsafeUnbind
       , Alpha (..), aeq, Subst (..)
       , toListOf
       , n2s, s2n
@@ -626,6 +626,12 @@ inlineable d = case defnAttr d of
       Just NoInline -> False
       Nothing       -> not $ isPrim $ defnName d
 
+mustInline :: Defn -> Bool
+mustInline = \ case
+      Defn { defnAttr = Just Inline }                    -> True
+      Defn { defnPolyTy = Embed (Poly (unsafeUnbind -> (_, t)))
+           , defnName   = n }                            -> not (isPrim n || fundamental t)
+
 -- | Takes [T1, ..., Tn-1] Tn and returns (T1 -> (T2 -> ... (T(n-1) -> Tn) ...))
 mkArrowTy :: [Ty] -> Ty -> Ty
 mkArrowTy ps = foldr1 arr . (ps ++) . (: [])
@@ -691,12 +697,24 @@ isBlank = \ case
       TyBlank _ -> True
       _         -> False
 
+-- | Types containing no type variables (or blanks).
 concrete :: Ty -> Bool
 concrete = \ case
       TyBlank {}  -> False
       TyVar {}    -> False
       TyCon {}    -> True
       TyApp _ a b -> concrete a && concrete b
+
+-- | Types with no built-ins (Strings, Integers, lists).
+fundamental :: Ty -> Bool
+fundamental = \ case
+      TyCon _ (n2s -> "String")  -> False
+      TyCon _ (n2s -> "Integer") -> False
+      TyCon _ (n2s -> "[_]")     -> False
+      TyCon {}                   -> True
+      TyBlank {}                 -> True
+      TyVar {}                   -> True
+      TyApp _ a b                -> fundamental a && fundamental b
 
 higherOrder :: Ty -> Bool
 higherOrder (flattenArrow -> (ats, rt)) = any isArrow $ rt : ats

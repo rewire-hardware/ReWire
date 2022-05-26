@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings, MultiWayIf #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Crust.ToCore (toCore) where
 
@@ -75,8 +75,9 @@ transDefn start inps outps sts conMap = \ case
       M.Defn an n (Embed (M.Poly t)) _ (Embed e) -> do
             (_, t')  <- unbind t
             (xs, e') <- unbind e
-            if M.higherOrder t' then failAt an $ "transDefn: " <> prettyPrint n <> " has illegal higher-order type."
-            else Right <$> (C.Defn an (showt n) <$> runReaderT (transType t') conMap <*> runReaderT (runReaderT (transExp e') conMap) (Map.fromList $ zip xs [0..]))
+            if | M.higherOrder t'       -> failAt an $ "transDefn: " <> prettyPrint n <> " has illegal higher-order type."
+               | not $ M.fundamental t' -> failAt an $ "transDefn: " <> prettyPrint n <> " has un-translatable String or Integer arguments."
+               | otherwise              -> Right <$> (C.Defn an (showt n) <$> runReaderT (transType t') conMap <*> runReaderT (runReaderT (transExp e') conMap) (Map.fromList $ zip xs [0..]))
       where getRegsTy :: MonadError AstError m => M.Ty -> m M.Ty
             getRegsTy = \ case
                   M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "PuRe")) s) _ -> pure s
@@ -108,7 +109,7 @@ transExp e = case e of
             (M.Error an _ _ : _)        -> do
                   sz     <- sizeOf an $ M.typeOf e
                   pure $ callError an sz
-            (e' : _) | not $ M.concrete $ M.typeOf e' -> failAt an "transExp: could not infer a concrete type in an application."
+            (e' : _) | not $ M.concrete $ M.typeOf e' -> failAt an $ "transExp: could not infer a concrete type in an application. Inferred type: " <> prettyPrint (M.typeOf e')
             (M.Var _ _ x : args)        -> do
                   sz       <- sizeOf an $ M.typeOf e
                   args'    <- C.cat <$> mapM transExp args

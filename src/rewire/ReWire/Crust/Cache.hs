@@ -148,6 +148,7 @@ getProgram flags fp = do
        >=> neuterExterns
        >=> pure . purgeUnused start
        >=> simplify
+       >=> removeExpTypeAnn
        >=> shiftLambdas
        >=> pDebug' "Lifting lambdas (pre-purification)."
        >=> liftLambdas

@@ -11,6 +11,7 @@ module ReWire.Crust.Transform
       , prePurify
       , simplify
       , specialize
+      , removeExpTypeAnn
       ) where
 
 import ReWire.Unbound
@@ -25,7 +26,7 @@ import ReWire.SYB
 import ReWire.Crust.Syntax
 import ReWire.Crust.TypeCheck (typeCheckDefn)
 import ReWire.Error (AstError, MonadError)
-import ReWire.Fix (fix, fix')
+import ReWire.Fix (fix, fix', boundedFix)
 
 import Control.Arrow (first, (&&&))
 import Control.Monad (zipWithM, replicateM, (>=>))
@@ -36,6 +37,7 @@ import Data.Containers.ListUtils (nubOrd, nubOrdOn)
 import Data.Data (Data)
 import Data.Either (lefts)
 import Data.HashMap.Strict (HashMap)
+import Data.Hashable (Hashable (hash))
 import Data.List (find, foldl', sort)
 import Data.Maybe (fromMaybe, catMaybes, isNothing)
 import Data.Set (Set, union, (\\))
@@ -48,14 +50,14 @@ import qualified Data.Set as Set
 inline :: MonadError AstError m => FreeProgram -> m FreeProgram
 inline (ts, syns, ds) = (ts, syns, ) . flip substs ds <$> subs
       where inlineDefs :: [Defn]
-            inlineDefs = filter ((== Just Inline) . defnAttr) ds
+            inlineDefs = filter mustInline ds
 
             subs :: MonadError AstError m => m [(Name Exp, Exp)]
             subs = map defnSubst <$> fix "INLINE definition expansion" 100 (pure . substs (map defnSubst inlineDefs)) inlineDefs
 
 defnSubst :: Defn -> (Name Exp, Exp)
-defnSubst (Defn _ n _ _ (Embed e)) = runFreshM $ unbind e >>= \ case
-      ([], e') -> pure (n, e')
+defnSubst (Defn _ n (Embed pt) _ (Embed e)) = runFreshM $ unbind e >>= \ case
+      ([], e') -> pure (n, TypeAnn (ann e') pt e')
       _        -> error "Inlining: definition not inlinable (this shouldn't happen)"
 
 -- | Expands type synonyms.
@@ -107,6 +109,10 @@ neuterExterns = runT $ transform $ \ case
                   (flattenApp -> Extern {} : args) -> length args == 5
                   _                                -> False
 
+-- | Removes type annotations on expressions.
+removeExpTypeAnn :: MonadCatch m => FreeProgram -> m FreeProgram
+removeExpTypeAnn = runT $ transform $ \ (TypeAnn _ _ e) -> pure e
+
 -- | Shifts vars bound by top-level lambdas into defs.
 -- > g = \ x1 -> \ x2 -> e
 --   becomes
@@ -156,8 +162,9 @@ prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM ppDefn ds
                   Case an t disc e els -> do
                         (p, e') <- unbind e
                         Case an t <$> ppExp disc <*> (bind p <$> ppExp e') <*> mapM ppExp els
-                  Match an t disc p e els -> do
-                        Match an t <$> ppExp disc <*> pure p <*> ppExp e <*> mapM ppExp els
+                  Match an t disc p e els -> Match an t <$> ppExp disc <*> pure p <*> ppExp e <*> mapM ppExp els
+                  LitList an t es -> LitList an t <$> mapM ppExp es
+                  TypeAnn an pt e -> TypeAnn an pt <$> ppExp e
                   e -> pure e
 
             needsRejiggering :: Exp -> Bool
@@ -432,15 +439,9 @@ purgeUnused start (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ exter
 -- | Repeatedly calls "reduce" and "specialize" -- attempts to remove
 -- higher-order functions by partially evaluating them.
 simplify :: (Fresh m, MonadError AstError m) => FreeProgram -> m FreeProgram
-simplify = flip evalStateT mempty
-         . ( specialize
-         >=> reduce
-         >=> specialize
-         >=> reduce
-         >=> specialize
-         >=> reduce
-         >=> specialize
-         ) -- TODO(chathhorn): fix?
+simplify = flip evalStateT mempty . boundedFix tst 10 (specialize >=> reduce)
+      where tst :: FreeProgram -> FreeProgram -> Bool
+            tst (_, _, vs) (_, _, vs') = hash (unAnn vs) == hash (unAnn vs')
 
 type SpecState = StateT (HashMap (Name Exp, [AppSig]) Defn)
 type AppSig = Maybe Exp
@@ -504,6 +505,7 @@ specialize (ts, syns, vs) = do
                   Match an t e p e' (Just e'') -> Match an t <$> specExp e <*> pure p <*> specExp e' <*> (Just <$> specExp e'')
                   Match an t e p e' Nothing    -> Match an t <$> specExp e <*> pure p <*> specExp e' <*> pure Nothing
                   LitList an t es              -> LitList an t <$> mapM specExp es
+                  TypeAnn an pt e              -> TypeAnn an pt <$> specExp e
                   e                            -> pure e
 
             sig :: [Exp] -> [AppSig]
@@ -524,7 +526,7 @@ specialize (ts, syns, vs) = do
                   (bodyvs, body') <- unbind body
                   typeCheckDefn ts vs
                        $ Defn an g' (Embed $ Poly $ bind (fv t') t') inl
-                       $ Embed $ bind [] $ mkLam (lefts tinfo) $ foldl' (App an) (mkLam (zip (fst $ flattenArrow gt) bodyvs) body')
+                       $ Embed $ bind [] $ mkLam (lefts tinfo) $ foldl' (App an) (mkLam (zip (fst $ flattenArrow gt) bodyvs) (TypeAnn (ann body') (Poly bgt) body'))
                        $ map (either (uncurry $ Var an) id) tinfo
 
                   where mkLam :: [(Ty, Name Exp)] -> Exp -> Exp
@@ -574,6 +576,9 @@ reduce (ts, syns, vs) = (ts, syns, ) <$> mapM reduceDefn vs
                               Lam _ _ e -> do
                                     (x, e') <- unbind e
                                     reduceExp $ subst x e2' e'
+                              TypeAnn _ _ (Lam _ _ e) -> do
+                                    (x, e') <- unbind e
+                                    reduceExp $ subst x e2' e'
                               _              -> pure $ App an e1' e2'
                   Lam an t e      -> do
                         (x, e') <- unbind e
@@ -590,6 +595,12 @@ reduce (ts, syns, vs) = (ts, syns, ) <$> mapM reduceDefn vs
                               MatchNo      -> case e2 of
                                     Nothing  -> pure $ Error an t "Pattern match failure (reduced)"
                                     Just e2' -> reduceExp e2'
+                  -- TODO(chathhorn): handle match?
+                  Match an t e p e' Nothing    -> Match an t <$> reduceExp e <*> pure p <*> reduceExp e' <*> pure Nothing
+                  Match an t e p e' (Just e'') -> Match an t <$> reduceExp e <*> pure p <*> reduceExp e' <*> (Just <$> reduceExp e'')
+                  LitList an t es -> LitList an t <$> mapM reduceExp es
+                  TypeAnn an pt (TypeAnn _ _ e) -> TypeAnn an pt <$> reduceExp e -- TODO(chathhorn)
+                  TypeAnn an pt e               -> TypeAnn an pt <$> reduceExp e
                   e -> pure e
 
             mergeMatches :: [MatchResult] -> MatchResult

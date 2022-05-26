@@ -393,6 +393,7 @@ classifyCases = \ case
             (n, t, es) <- dstApp e
             pure $ Apply (ann e) t n es
       Match an _ e1 mp e2 me      -> pure $ SMatch an e1 mp e2 me
+      TypeAnn _ _ e               -> classifyCases e
       d                           -> failAt (ann d) $ "Purify: unclassifiable case: " <> showt d
 
 data Cases an p e t = Get an !t
@@ -487,6 +488,7 @@ classifyRCases = \ case
      e@(App an _ _)         -> dstApp e >>= classifyApp an
      Match an _ e1 mp e2 me -> pure $ RMatch an e1 mp e2 me
      Var an t x             -> pure $ RVar an t x
+     TypeAnn _ _ e          -> classifyRCases e
      d                      -> failAt (ann d) $ "Purify: unclassifiable R-case: " <> showt d
 
 -- | Classifies syntactic applications. Just seemed easier to
@@ -748,6 +750,7 @@ dstApp = \ case
             (n, t, es) <- dstApp rator
             pure (n, t, es ++ [rand])
       Var _ t n              -> pure (n, t, [])
+      TypeAnn _ _ e          -> dstApp e
       d                      -> failAt (ann d) $ "Purify: tried to dst non-app: " <> showt (unAnn d)
 
 -- | Lets are desugared already, so use a case instead (with lifted discriminator).

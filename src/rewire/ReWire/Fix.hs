@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
-module ReWire.Fix (fix, fix', fixOn, fixUntil) where
+module ReWire.Fix (fix, fix', fixOn, fixUntil, boundedFix) where
 
 import ReWire.Error (MonadError, AstError, failAt)
 import ReWire.Annotation (noAnn)
@@ -22,3 +22,7 @@ fixOn' h m n f a = f a >>= \ a' -> if h a' a then pure a else fixOn' h m (n - 1)
 
 fix' :: Hashable a => (a -> a) -> a -> a
 fix' f a = if hash (f a) == hash a then a else fix' f (f a)
+
+boundedFix :: Monad m => (a -> a -> Bool) -> Int -> (a -> m a) -> a -> m a
+boundedFix _ 0 _ a = pure a
+boundedFix h n f a = f a >>= \ a' -> if h a' a then pure a else boundedFix h (n - 1) f a'
