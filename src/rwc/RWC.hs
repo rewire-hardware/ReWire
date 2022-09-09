@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE Trustworthy #-}
 module RWC (main) where
 
@@ -137,16 +138,15 @@ main = do
                                     when (FlagV `elem` flags) $ do
                                           T.putStrLn "\n## Show core:\n"
                                           T.putStrLn $ showt $ unAnn b
-                              case () of
-                                    _ | FlagFirrtl    `elem` flags -> liftIO $ putStrLn "FIRRTL backend currently out-of-order. Use '--verilog' or '--interpret'."
-                                          -- compileProgram flags a >>= toLoFirrtl >>= writeOutput -- TODO(chathhorn): a => b
-                                      | FlagVerilog   `elem` flags -> Verilog.compileProgram flags b >>= writeOutput
-                                      | flagInterp flags           -> do
-                                          ips  <- liftIO $ YAML.decodeFileEither $ interpInput flags
-                                          outs <- run (interp flags b) (boundInput (ncycles flags) $ fromRight mempty ips)
-                                          fout <- liftIO $ getOutFile flags filename
-                                          liftIO $ YAML.encodeFile fout outs
-                                      | otherwise                  -> VHDL.compileProgram flags a >>= writeOutput
+                              if | FlagFirrtl    `elem` flags -> liftIO $ putStrLn "FIRRTL backend currently out-of-order. Use '--verilog' or '--interpret'."
+                                 -- compileProgram flags a >>= toLoFirrtl >>= writeOutput -- TODO(chathhorn): a => b
+                                 | FlagVerilog   `elem` flags -> Verilog.compileProgram flags b >>= writeOutput
+                                 | flagInterp flags           -> do
+                                     ips  <- liftIO $ YAML.decodeFileEither $ interpInput flags
+                                     outs <- run (interp flags b) (boundInput (ncycles flags) $ fromRight mempty ips)
+                                     fout <- liftIO $ getOutFile flags filename
+                                     liftIO $ YAML.encodeFile fout outs
+                                 | otherwise                  -> VHDL.compileProgram flags a >>= writeOutput
 
                         writeOutput :: Pretty a => a -> SyntaxErrorT AstError IO ()
                         writeOutput a = do
