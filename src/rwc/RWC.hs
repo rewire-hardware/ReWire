@@ -37,35 +37,37 @@ import Paths_rewire (getDataFileName)
 
 options :: [OptDescr Flag]
 options =
-       [ Option ['v'] ["verbose"]            (NoArg  FlagV)                             "More verbose output."
-       , Option ['f'] ["firrtl"]             (NoArg  FlagFirrtl)                        "Produce FIRRTL output instead of VHDL."
-       , Option []    ["verilog"]            (NoArg  FlagVerilog)                       "Produce Verilog output instead of VHDL."
-       , Option []    ["invert-reset"]       (NoArg  FlagInvertReset)                   "Invert the implicitly generated reset signal."
-       , Option []    ["no-reset"]           (NoArg  FlagNoReset)                       "No implicitly generated reset signal."
-       , Option []    ["no-clock"]           (NoArg  FlagNoClock)                       "No implicitly generated clock signal (implies no-reset: generate a purely combinatorial circuit)."
-       , Option []    ["dpass1" , "dhask1" ] (NoArg  FlagDHask1)                        "Dump pass 1: pre-desugar haskell source."
-       , Option []    ["dpass2" , "dhask2" ] (NoArg  FlagDHask2)                        "Dump pass 2: post-desugar haskell source."
-       , Option []    ["dpass2b", "dcrust0"] (NoArg  FlagDCrust0)                       "Dump pass 2b: synthetic per-module crust source."
-       , Option []    ["dpass3" , "dcrust1"] (NoArg  FlagDCrust1)                       "Dump pass 3: post-desugar crust source."
-       , Option []    ["dpass4" , "dcrust2"] (NoArg  FlagDCrust2)                       "Dump pass 4: post-inlining crust source."
-       , Option []    ["dpass4b", "dcrust2b"] (NoArg  FlagDCrust2b)                    "Dump pass 4b: post-typechecking crust source."
-       , Option []    ["dpass5" , "dcrust3"] (NoArg  FlagDCrust3)                       "Dump pass 5: pre-purify crust source."
-       , Option []    ["dpass6" , "dcrust4"] (NoArg  FlagDCrust4)                       "Dump pass 6: post-purify crust source."
-       , Option []    ["dpass7" , "dcrust5"] (NoArg  FlagDCrust5)                       "Dump pass 7: post-second-lambda-lifting crust source."
-       , Option []    ["dpass8" , "dcore1" ] (NoArg  FlagDCore1)                        "Dump pass 8: core source."
-       , Option []    ["dpass9" , "dcore2" ] (NoArg  FlagDCore2)                        "Dump pass 9: core source after purging empty types."
-       , Option []    ["flatten"]            (NoArg  FlagFlatten)                       "Generate a single RTL module."
-       , Option ['o'] []                     (ReqArg FlagO           "filename.vhdl")   "Name for RTL output file."
-       , Option ['p'] ["packages"]           (ReqArg FlagPkgs        "pkg1,pkg2,...")   "Packages to use for external VHDL components (e.g., ieee.std_logic_1164.all)."
-       , Option []    ["reset"]              (ReqArg FlagResetName   "name")            "Name to use for reset signal in generated RTL."
-       , Option []    ["clock"]              (ReqArg FlagClockName   "name")            "Name to use for clock signal in generated RTL."
-       , Option []    ["inputs"]             (ReqArg FlagInputNames  "name1,name2,...") "Names to use for input signals in generated RTL."
-       , Option []    ["outputs"]            (ReqArg FlagOutputNames "name1,name2,...") "Names to use for output signals in generated RTL."
-       , Option []    ["states"]             (ReqArg FlagStateNames  "name1,name2,...") "Names to use for internal state signals."
-       , Option []    ["top"]                (ReqArg FlagTop         "name")            "Symbol to use for the definition of the top-level module (default: Main.start)."
-       , Option []    ["loadpath"]           (ReqArg FlagLoadPath    "dir1,dir2,...")   "Additional directories for loadpath."
-       , Option []    ["interpret"]          (OptArg FlagInterpret   "inputs.yaml")     "Interpret instead of compile, using inputs from the optional argument file (default: inputs.yaml)."
-       , Option []    ["cycles"]             (ReqArg FlagCycles      "ncycles")         "Number of cycles to interpret (default: 10)."
+       [ Option ['h'] ["help"]                (NoArg  FlagH)                             "This help message."
+       , Option ['v'] ["verbose"]             (NoArg  FlagV)                             "More verbose output."
+       , Option ['f'] ["firrtl"]              (NoArg  FlagFirrtl)                        "Produce FIRRTL output (experimental)."
+       , Option []    ["verilog"]             (NoArg  FlagVerilog)                       "Produce Verilog output (default)."
+       , Option []    ["vhdl"]                (NoArg  FlagVhdl)                          "Produce VHDL output (experimental)."
+       , Option []    ["invert-reset"]        (NoArg  FlagInvertReset)                   "Invert the implicitly generated reset signal."
+       , Option []    ["no-reset"]            (NoArg  FlagNoReset)                       "No implicitly generated reset signal."
+       , Option []    ["no-clock"]            (NoArg  FlagNoClock)                       "No implicitly generated clock signal (implies no-reset: generate a purely combinatorial circuit)."
+       , Option []    ["dpass1" , "dhask1" ]  (NoArg  FlagDHask1)                        "Dump pass 1: pre-desugar haskell source."
+       , Option []    ["dpass2" , "dhask2" ]  (NoArg  FlagDHask2)                        "Dump pass 2: post-desugar haskell source."
+       , Option []    ["dpass2b", "dcrust0"]  (NoArg  FlagDCrust0)                       "Dump pass 2b: synthetic per-module crust source."
+       , Option []    ["dpass3" , "dcrust1"]  (NoArg  FlagDCrust1)                       "Dump pass 3: post-desugar crust source."
+       , Option []    ["dpass4" , "dcrust2"]  (NoArg  FlagDCrust2)                       "Dump pass 4: post-inlining crust source."
+       , Option []    ["dpass4b", "dcrust2b"] (NoArg  FlagDCrust2b)                      "Dump pass 4b: post-typechecking crust source."
+       , Option []    ["dpass5" , "dcrust3"]  (NoArg  FlagDCrust3)                       "Dump pass 5: pre-purify crust source."
+       , Option []    ["dpass6" , "dcrust4"]  (NoArg  FlagDCrust4)                       "Dump pass 6: post-purify crust source."
+       , Option []    ["dpass7" , "dcrust5"]  (NoArg  FlagDCrust5)                       "Dump pass 7: post-second-lambda-lifting crust source."
+       , Option []    ["dpass8" , "dcore1" ]  (NoArg  FlagDCore1)                        "Dump pass 8: core source."
+       , Option []    ["dpass9" , "dcore2" ]  (NoArg  FlagDCore2)                        "Dump pass 9: core source after purging empty types."
+       , Option []    ["flatten"]             (NoArg  FlagFlatten)                       "Generate a single RTL module."
+       , Option ['o'] []                      (ReqArg FlagO           "filename.vhdl")   "Name for RTL output file."
+       , Option ['p'] ["packages"]            (ReqArg FlagPkgs        "pkg1,pkg2,...")   "Packages to use for external VHDL components (e.g., ieee.std_logic_1164.all)."
+       , Option []    ["reset"]               (ReqArg FlagResetName   "name")            "Name to use for reset signal in generated RTL."
+       , Option []    ["clock"]               (ReqArg FlagClockName   "name")            "Name to use for clock signal in generated RTL."
+       , Option []    ["inputs"]              (ReqArg FlagInputNames  "name1,name2,...") "Names to use for input signals in generated RTL."
+       , Option []    ["outputs"]             (ReqArg FlagOutputNames "name1,name2,...") "Names to use for output signals in generated RTL."
+       , Option []    ["states"]              (ReqArg FlagStateNames  "name1,name2,...") "Names to use for internal state signals."
+       , Option []    ["top"]                 (ReqArg FlagTop         "name")            "Symbol to use for the definition of the top-level module (default: Main.start)."
+       , Option []    ["loadpath"]            (ReqArg FlagLoadPath    "dir1,dir2,...")   "Additional directories for loadpath."
+       , Option []    ["interpret"]           (OptArg FlagInterpret   "inputs.yaml")     "Interpret instead of compile, using inputs from the optional argument file (default: inputs.yaml)."
+       , Option []    ["cycles"]              (ReqArg FlagCycles      "ncycles")         "Number of cycles to interpret (default: 10)."
        ]
 
 exitUsage :: IO ()
@@ -80,7 +82,7 @@ main :: IO ()
 main = do
       (flags, filenames, errs) <-  getOpt Permute options <$> getArgs
 
-      unless (null errs) $ do
+      when (FlagH `elem` flags || not (null errs)) $ do
             mapM_ (T.hPutStrLn stderr . pack) errs
             exitUsage
 
@@ -95,9 +97,9 @@ main = do
       where getOutFile :: [Flag] -> String -> IO String
             getOutFile flags filename = case filter (\ case { FlagO {} -> True; _ -> False }) flags of
                   []        | FlagFirrtl  `elem` flags -> pure $ filename -<.> "fir"
-                            | FlagVerilog `elem` flags -> pure $ filename -<.> "v"
+                            | FlagVhdl `elem` flags    -> pure $ filename -<.> "vhdl"
                             | flagInterp flags         -> pure $ filename -<.> "yaml"
-                            | otherwise                -> pure $ filename -<.> "vhdl"
+                            | otherwise                -> pure $ filename -<.> "v"
                   [FlagO o] -> pure o
                   _         -> T.hPutStrLn stderr "Multiple output files specified on the command line!" >> exitFailure
 
@@ -140,13 +142,13 @@ main = do
                                           T.putStrLn $ showt $ unAnn b
                               if | FlagFirrtl    `elem` flags -> liftIO $ putStrLn "FIRRTL backend currently out-of-order. Use '--verilog' or '--interpret'."
                                  -- compileProgram flags a >>= toLoFirrtl >>= writeOutput -- TODO(chathhorn): a => b
-                                 | FlagVerilog   `elem` flags -> Verilog.compileProgram flags b >>= writeOutput
+                                 | FlagVhdl      `elem` flags -> VHDL.compileProgram flags a >>= writeOutput
                                  | flagInterp flags           -> do
                                      ips  <- liftIO $ YAML.decodeFileEither $ interpInput flags
                                      outs <- run (interp flags b) (boundInput (ncycles flags) $ fromRight mempty ips)
                                      fout <- liftIO $ getOutFile flags filename
                                      liftIO $ YAML.encodeFile fout outs
-                                 | otherwise                  -> VHDL.compileProgram flags a >>= writeOutput
+                                 | otherwise                  -> Verilog.compileProgram flags b >>= writeOutput
 
                         writeOutput :: Pretty a => a -> SyntaxErrorT AstError IO ()
                         writeOutput a = do
