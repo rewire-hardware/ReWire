@@ -58,7 +58,6 @@ instance (PutMsg ex, Monad m) => MonadFail (SyntaxErrorT ex m) where
       fail = failNowhere . showt
 
 instance Monad m => Monad (SyntaxErrorT ex m) where
-      return = SyntaxErrorT . return
       (SyntaxErrorT m) >>= f = SyntaxErrorT $ m >>= unwrap . f
 
 instance Monad m => MonadError ex (SyntaxErrorT ex m) where

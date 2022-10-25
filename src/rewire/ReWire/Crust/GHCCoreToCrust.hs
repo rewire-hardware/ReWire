@@ -9,8 +9,8 @@ import ReWire.Crust.Syntax ((|->))
 
 import GHC.Plugins
       ( Bind (..), Expr (..)
-      , TypeEnv, ppr, Type, Var
-      , splitTyConApp_maybe, getTyVar_maybe, splitForAllTy_maybe
+      , ppr, Type, Var
+      , splitTyConApp_maybe, getTyVar_maybe
       , splitFunTy_maybe
       , varType, varName, tyConName
       , showSDoc, Outputable
@@ -23,18 +23,20 @@ import GHC
       , getSessionDynFlags
       , GhcMonad
       )
+import GHC.Core (Alt (..))
 import GHC.Utils.Monad (concatMapM)
 import Data.Text (pack, unpack, Text)
 import Data.List (foldl')
 
 toCrust :: GhcMonad m => CoreModule -> m (M.Module, M.Exports)
 toCrust c = do
-      cs <- toDataDefns $ cm_types c
+--    cs <- toDataDefns $ cm_types c
+      cs <- pure []
       ds <- concatMapM toDefn $ cm_binds c
       pure (M.Module cs [] ds, mempty)
 
-toDataDefns :: GhcMonad m => TypeEnv -> m [M.DataDefn]
-toDataDefns _ = pure []
+-- toDataDefns :: GhcMonad m => TypeEnv -> m [M.DataDefn]
+-- toDataDefns _ = pure []
 
 toDefn :: GhcMonad m => Bind Var -> m [M.Defn]
 toDefn = \ case
@@ -76,21 +78,22 @@ toExp = \ case
       Type _type                -> pure $ ph "Type"
       Coercion _coercion        -> pure $ ph "Coercion"
 
-toCase :: GhcMonad m => M.Exp -> [(AltCon, [Var], Expr Var)] -> m (Maybe M.Exp)
+-- toCase :: GhcMonad m => M.Exp -> [(AltCon, [Var], Expr Var)] -> m (Maybe M.Exp)
+toCase :: GhcMonad m => M.Exp -> [Alt Var] -> m (Maybe M.Exp)
 toCase scr = \ case
-      ((DataAlt c, vs, e) : alts) -> do
-            e'  <- toExp e
-            alts' <- toCase scr alts
-            pat'  <- toPat c vs
-            pure $ Just $ M.Case noAnn tblank scr (bind pat' e') alts'
-      ((LitAlt _lit, _, e) : alts) -> do
-            _e'    <- toExp e
-            _alts' <- toCase scr alts
-            -- pat'  <- toPat c vs
-            pure $ Just $ M.Error noAnn tblank "lit case"
-      [(DEFAULT, _, e)] -> do
-            e'  <- toExp e
-            pure $ Just e'
+--       ((DataAlt c, vs, e) : alts) -> do
+--             e'  <- toExp e
+--             alts' <- toCase scr alts
+--             pat'  <- toPat c vs
+--             pure $ Just $ M.Case noAnn tblank scr (bind pat' e') alts'
+--       ((LitAlt _lit, _, e) : alts) -> do
+--             _e'    <- toExp e
+--             _alts' <- toCase scr alts
+--             -- pat'  <- toPat c vs
+--             pure $ Just $ M.Error noAnn tblank "lit case"
+--       [(DEFAULT, _, e)] -> do
+--             e'  <- toExp e
+--             pure $ Just e'
       []                  -> pure Nothing
       where toPat :: GhcMonad m => DataCon -> [Var] -> m M.Pat
             toPat c vs = do
@@ -110,7 +113,7 @@ toName v = do
 
 toType :: GhcMonad m => Type -> m M.Ty
 toType = \ case
-      (splitForAllTy_maybe -> Just (_tycovar, t)) -> toType t
+      -- (splitForAllTy_maybe -> Just (_tycovar, t)) -> toType t
       (splitFunTy_maybe -> Just (_mult, t1, tr)) -> do
             t1' <- toType t1
             tr' <- toType tr

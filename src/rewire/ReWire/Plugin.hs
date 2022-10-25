@@ -1,6 +1,6 @@
 module ReWire.Plugin (plugin) where
 
-import ReWire.Crust.GHCCoreToCrust (toCrust)
+-- import ReWire.Crust.GHCCoreToCrust (toCrust)
 
 import GHC.Plugins
       ( ModGuts

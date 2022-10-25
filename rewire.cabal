@@ -1,0 +1,409 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.35.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           rewire
+version:        2.2.0
+synopsis:       A Haskell-to-Verilog/VHDL compiler
+description:    An experimental compiler for a subset of Haskell to Verilog and VHDL.
+category:       Language
+homepage:       https://github.com/mu-chaco/ReWire
+bug-reports:    https://github.com/mu-chaco/ReWire.git/issues
+author:         Adam Procter,
+                Chris Hathhorn <hathhorn@gmail.com>,
+                Ian Graves,
+                William L. Harrison
+maintainer:     Chris Hathhorn <hathhorn@gmail.com>
+license:        NONE
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+data-files:
+    tests/integration/InlinedMiniISA.hs
+    tests/integration/MiniISA.hs
+    tests/integration/OD19Filter.hs
+    tests/integration/RW_REPL_OD19Filter.hs
+    tests/integration/SecMemCon.hs
+    tests/integration/Sha256_1.hs
+    tests/integration/Sha256_2.hs
+    tests/integration/OD19/ProgramCounter.hs
+    tests/regression/Mods/Infix.hs
+    tests/regression/Mods/X.hs
+    tests/regression/Mods/Y.hs
+    tests/regression/Mods/C/X.hs
+    tests/regression/case1.hs
+    tests/regression/case2.hs
+    tests/regression/dissex.hs
+    tests/regression/extern.hs
+    tests/regression/fibo1.hs
+    tests/regression/fibo2.hs
+    tests/regression/fully.hs
+    tests/regression/funcase.hs
+    tests/regression/guards.hs
+    tests/regression/HigherOrderBug.hs
+    tests/regression/Infix.hs
+    tests/regression/ModsMain.hs
+    tests/regression/onestate.hs
+    tests/regression/pats.hs
+    tests/regression/PreludeTest.hs
+    tests/regression/putBug.hs
+    tests/regression/records.hs
+    tests/regression/synonym.hs
+    tests/regression/test.hs
+    tests/regression/test2.hs
+    tests/regression/test3.hs
+    tests/regression/test_main.hs
+    tests/regression/toag.hs
+    tests/regression/toags.hs
+    tests/regression/uniquification.hs
+    tests/regression/UpCounter.hs
+    tests/regression/weird1.hs
+    src/user/ReWire.hs
+    src/user/ReWire/Bits.hs
+    src/user/ReWire/Monad.hs
+    src/user/ReWire/Prelude.hs
+    src/user/ReWire/Verilog.hs
+    src/user/RWC/Primitives.hs
+
+source-repository head
+  type: git
+  location: https://github.com/mu-chaco/ReWire.git
+
+library
+  exposed-modules:
+      ReWire
+      ReWire.Bits
+      ReWire.Monad
+      ReWire.Prelude
+      ReWire.Verilog
+      RWC.Primitives
+  other-modules:
+      Paths_rewire
+  autogen-modules:
+      Paths_rewire
+  hs-source-dirs:
+      src/user
+  default-extensions:
+      LambdaCase
+      TupleSections
+      ViewPatterns
+  ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
+  build-depends:
+      base ==4.16.*
+    , bv ==0.5.*
+    , bytestring ==0.11.*
+    , containers ==0.6.*
+    , deepseq ==1.4.*
+    , directory ==1.3.*
+    , exceptions ==0.10.*
+    , filepath ==1.4.*
+    , ghc ==9.2.*
+    , ghc-boot ==9.2.*
+    , hashable ==1.4.*
+    , haskell-src-exts ==1.23.*
+    , machines ==0.7.*
+    , monad-resumption ==0.1.*
+    , mtl ==2.2.*
+    , parsec >=3.1.14 && <3.2
+    , prettyprinter ==1.7.*
+    , split ==0.2.*
+    , text ==1.2.*
+    , text-show ==3.10.*
+    , transformers ==0.5.*
+    , unbound-generics ==0.4.*
+    , unordered-containers ==0.2.*
+    , yaml ==0.11.*
+  default-language: Haskell2010
+
+library rewire-core
+  exposed-modules:
+      ReWire.Annotation
+      ReWire.Core.Interp
+      ReWire.Core.Mangle
+      ReWire.Core.Syntax
+      ReWire.Core.ToVerilog
+      ReWire.Core.ToVHDL
+      ReWire.Core.Transform
+      ReWire.Crust.Annotate
+      ReWire.Crust.Cache
+      ReWire.Crust.Desugar
+      ReWire.Crust.Fixity
+      ReWire.Crust.GHCCoreToCrust
+      ReWire.Crust.KindCheck
+      ReWire.Crust.Parse
+      ReWire.Crust.PrimBasis
+      ReWire.Crust.Purify
+      ReWire.Crust.Rename
+      ReWire.Crust.Syntax
+      ReWire.Crust.ToCore
+      ReWire.Crust.ToCrust
+      ReWire.Crust.Transform
+      ReWire.Crust.TypeCheck
+      ReWire.Error
+      ReWire.FIRRTL.Parse
+      ReWire.FIRRTL.Syntax
+      ReWire.FIRRTL.ToLoFIRRTL
+      ReWire.Fix
+      ReWire.Flags
+      ReWire.FrontEnd
+      ReWire.HaskellSyntaxOrphans
+      ReWire.LoFIRRTL.Syntax
+      ReWire.Plugin
+      ReWire.Pretty
+      ReWire.SYB
+      ReWire.Unbound
+      ReWire.Verilog.Syntax
+      ReWire.VHDL.Syntax
+      ReWire.VHDL.ToLoFIRRTL
+  other-modules:
+      Paths_rewire
+  autogen-modules:
+      Paths_rewire
+  hs-source-dirs:
+      src/rewire
+  default-extensions:
+      LambdaCase
+      TupleSections
+      ViewPatterns
+  ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
+  build-depends:
+      base ==4.16.*
+    , bv ==0.5.*
+    , bytestring ==0.11.*
+    , containers ==0.6.*
+    , deepseq ==1.4.*
+    , directory ==1.3.*
+    , exceptions ==0.10.*
+    , filepath ==1.4.*
+    , ghc ==9.2.*
+    , ghc-boot ==9.2.*
+    , hashable ==1.4.*
+    , haskell-src-exts ==1.23.*
+    , machines ==0.7.*
+    , monad-resumption ==0.1.*
+    , mtl ==2.2.*
+    , parsec >=3.1.14 && <3.2
+    , prettyprinter ==1.7.*
+    , split ==0.2.*
+    , text ==1.2.*
+    , text-show ==3.10.*
+    , transformers ==0.5.*
+    , unbound-generics ==0.4.*
+    , unordered-containers ==0.2.*
+    , yaml ==0.11.*
+  default-language: Haskell2010
+
+library rwc-lib
+  exposed-modules:
+      RWC
+  other-modules:
+      Paths_rewire
+  autogen-modules:
+      Paths_rewire
+  hs-source-dirs:
+      src/rwc
+  default-extensions:
+      LambdaCase
+      TupleSections
+      ViewPatterns
+  ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
+  build-depends:
+      base ==4.16.*
+    , bv ==0.5.*
+    , bytestring ==0.11.*
+    , containers ==0.6.*
+    , deepseq ==1.4.*
+    , directory ==1.3.*
+    , exceptions ==0.10.*
+    , filepath ==1.4.*
+    , ghc ==9.2.*
+    , ghc-boot ==9.2.*
+    , hashable ==1.4.*
+    , haskell-src-exts ==1.23.*
+    , machines ==0.7.*
+    , monad-resumption ==0.1.*
+    , mtl ==2.2.*
+    , parsec >=3.1.14 && <3.2
+    , prettyprinter ==1.7.*
+    , rewire-core
+    , split ==0.2.*
+    , text ==1.2.*
+    , text-show ==3.10.*
+    , transformers ==0.5.*
+    , unbound-generics ==0.4.*
+    , unordered-containers ==0.2.*
+    , yaml ==0.11.*
+  default-language: Haskell2010
+
+executable firrtl
+  main-is: Main.hs
+  other-modules:
+      Paths_rewire
+  autogen-modules:
+      Paths_rewire
+  hs-source-dirs:
+      apps/firrtl
+  default-extensions:
+      LambdaCase
+      TupleSections
+      ViewPatterns
+  ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
+  build-depends:
+      base ==4.16.*
+    , bv ==0.5.*
+    , bytestring ==0.11.*
+    , containers ==0.6.*
+    , deepseq ==1.4.*
+    , directory ==1.3.*
+    , exceptions ==0.10.*
+    , filepath ==1.4.*
+    , ghc ==9.2.*
+    , ghc-boot ==9.2.*
+    , hashable ==1.4.*
+    , haskell-src-exts ==1.23.*
+    , machines ==0.7.*
+    , monad-resumption ==0.1.*
+    , mtl ==2.2.*
+    , parsec >=3.1.14 && <3.2
+    , prettyprinter ==1.7.*
+    , rewire-core
+    , split ==0.2.*
+    , text ==1.2.*
+    , text-show ==3.10.*
+    , transformers ==0.5.*
+    , unbound-generics ==0.4.*
+    , unordered-containers ==0.2.*
+    , yaml ==0.11.*
+  default-language: Haskell2010
+
+executable rwc
+  main-is: Main.hs
+  other-modules:
+      Paths_rewire
+  autogen-modules:
+      Paths_rewire
+  hs-source-dirs:
+      apps/rwc
+  default-extensions:
+      LambdaCase
+      TupleSections
+      ViewPatterns
+  ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
+  build-depends:
+      base ==4.16.*
+    , bv ==0.5.*
+    , bytestring ==0.11.*
+    , containers ==0.6.*
+    , deepseq ==1.4.*
+    , directory ==1.3.*
+    , exceptions ==0.10.*
+    , filepath ==1.4.*
+    , ghc ==9.2.*
+    , ghc-boot ==9.2.*
+    , hashable ==1.4.*
+    , haskell-src-exts ==1.23.*
+    , machines ==0.7.*
+    , monad-resumption ==0.1.*
+    , mtl ==2.2.*
+    , parsec >=3.1.14 && <3.2
+    , prettyprinter ==1.7.*
+    , rwc-lib
+    , split ==0.2.*
+    , text ==1.2.*
+    , text-show ==3.10.*
+    , transformers ==0.5.*
+    , unbound-generics ==0.4.*
+    , unordered-containers ==0.2.*
+    , yaml ==0.11.*
+  default-language: Haskell2010
+
+executable rwcx
+  main-is: Main.hs
+  other-modules:
+      Paths_rewire
+  autogen-modules:
+      Paths_rewire
+  hs-source-dirs:
+      apps/rwcx
+  default-extensions:
+      LambdaCase
+      TupleSections
+      ViewPatterns
+  ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
+  build-depends:
+      base ==4.16.*
+    , bv ==0.5.*
+    , bytestring ==0.11.*
+    , containers ==0.6.*
+    , deepseq ==1.4.*
+    , directory ==1.3.*
+    , exceptions ==0.10.*
+    , filepath ==1.4.*
+    , ghc ==9.2.*
+    , ghc-boot ==9.2.*
+    , ghc-paths >=0.1.0.12 && <0.2
+    , hashable ==1.4.*
+    , haskell-src-exts ==1.23.*
+    , machines ==0.7.*
+    , monad-resumption ==0.1.*
+    , mtl ==2.2.*
+    , parsec >=3.1.14 && <3.2
+    , prettyprinter ==1.7.*
+    , rewire-core
+    , split ==0.2.*
+    , text ==1.2.*
+    , text-show ==3.10.*
+    , transformers ==0.5.*
+    , unbound-generics ==0.4.*
+    , unordered-containers ==0.2.*
+    , yaml ==0.11.*
+  default-language: Haskell2010
+
+test-suite rwc-test
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Paths_rewire
+  autogen-modules:
+      Paths_rewire
+  hs-source-dirs:
+      apps/rwc-test
+  default-extensions:
+      LambdaCase
+      TupleSections
+      ViewPatterns
+  ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
+  build-depends:
+      HUnit ==1.6.*
+    , base ==4.16.*
+    , bv ==0.5.*
+    , bytestring ==0.11.*
+    , containers ==0.6.*
+    , deepseq ==1.4.*
+    , directory ==1.3.*
+    , exceptions ==0.10.*
+    , filepath ==1.4.*
+    , ghc ==9.2.*
+    , ghc-boot ==9.2.*
+    , hashable ==1.4.*
+    , haskell-src-exts ==1.23.*
+    , machines ==0.7.*
+    , monad-resumption ==0.1.*
+    , mtl ==2.2.*
+    , parsec >=3.1.14 && <3.2
+    , prettyprinter ==1.7.*
+    , process ==1.6.*
+    , rwc-lib
+    , split ==0.2.*
+    , test-framework ==0.8.*
+    , test-framework-hunit >=0.3.0.2 && <0.4
+    , text ==1.2.*
+    , text-show ==3.10.*
+    , transformers ==0.5.*
+    , unbound-generics ==0.4.*
+    , unordered-containers ==0.2.*
+    , yaml ==0.11.*
+  default-language: Haskell2010

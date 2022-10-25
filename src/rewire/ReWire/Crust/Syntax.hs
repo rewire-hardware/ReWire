@@ -455,7 +455,7 @@ data Defn = Defn
       , defnAttr   :: !(Maybe DefnAttr)
       , defnBody   :: !(Embed (Bind [Name Exp] Exp))
       }
-      deriving (Generic, Show, Typeable, Data)
+      deriving (Eq, Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Defn
 
 instance Hashable Defn
@@ -725,6 +725,9 @@ isArrow = \ case
       _                                             -> False
 
 -- Orphans.
+
+instance (Eq a, Eq b) => Eq (Bind a b) where
+      (B a b) == (B a' b') = a == a' && b == b'
 
 instance Alpha Text where
       aeq' _ctx i j = i == j

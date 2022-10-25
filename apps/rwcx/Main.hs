@@ -8,7 +8,7 @@ import GHC.Paths (libdir)
 import GHC.Plugins
       ( CoreM
       , CoreBind
-      , DynFlags (..), HscTarget (..)
+      , DynFlags (..)
       , Bind (..)
       , ppr, showSDoc
       , ModGuts (..)

@@ -17,7 +17,7 @@ import ReWire.Flags (Flag (..))
 import ReWire.Error (AstError, runSyntaxError, SyntaxErrorT)
 
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad ((>=>), when, unless, msum)
+import Control.Monad ((>=>), when, msum)
 import Data.List (intercalate, foldl')
 import Data.Maybe (fromMaybe)
 import Data.List.Split (splitOn)
