@@ -1,20 +1,20 @@
 import ReWire
 
-data In = A | B | C | D
+data In = IA | IB | IC | ID
 data Out = Out1 | Out2
 
 proc :: In -> Out
 proc i = case i of
-      A -> Out1
-      B -> Out1
-      C -> Out1
+      IA -> Out1
+      IB -> Out1
+      IC -> Out1
       _ -> Out2
 
 startp :: In -> ReT In Out I ()
 startp i = signal (proc i) >>= \ x -> startp x
 
 starti :: ReT In Out I ()
-starti =  startp A
+starti =  startp IA
 
 start :: ReT In Out I ()
 start =  starti

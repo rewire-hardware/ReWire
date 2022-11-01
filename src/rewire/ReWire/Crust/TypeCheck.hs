@@ -241,7 +241,7 @@ tcExp = \ case
             tv          <- freshv
             p'          <- tcPat te p
             let as      = patAssumps p'
-            (e1'', te1) <- localAssumps (as `Map.union`) $ tcExp e1'
+            (e1'', te1) <- localAssumps (`Map.union` as) $ tcExp e1'
             unify an tv te1
             case e2 of
                   Nothing -> pure (Case an tv e' (bind p' e1'') Nothing, tv)
@@ -254,7 +254,7 @@ tcExp = \ case
             tv       <- freshv
             p'       <- tcMatchPat te p
             holes    <- patHoles p'
-            (_, te1) <- localAssumps (holes `Map.union`) $ tcExp $ mkApp an f $ map fst $ Map.toList holes
+            (_, te1) <- localAssumps (`Map.union` holes) $ tcExp $ mkApp an f $ map fst $ Map.toList holes
             unify an tv te1
             case e2 of
                   Nothing -> pure (Match an tv e' p' f Nothing, tv)
@@ -313,7 +313,7 @@ tcDefn d  = do
       (tvs, t) <- unbind pt
       (vs, e') <- unbind e
       let (targs, _) = flattenArrow t
-      (e'', te) <- localAssumps (Map.union $ Map.fromList $ zip vs $ map (poly []) targs) $ tcExp e'
+      (e'', te) <- localAssumps (`Map.union` (Map.fromList $ zip vs $ map (poly []) targs)) $ tcExp e'
       let te' = iterate arrowRight t !! length vs
       unify an te' te
       s <- get
@@ -322,7 +322,7 @@ tcDefn d  = do
       d' `deepseq` pure d'
 
 withAssumps :: MonadError AstError m => [DataDefn] -> [Defn] -> TCM m a -> TCM m a
-withAssumps ts vs = localAssumps (as `Map.union`) . localCAssumps (cas `Map.union`)
+withAssumps ts vs = localAssumps (`Map.union` as) . localCAssumps (`Map.union` cas)
       where as  = foldr defnAssump mempty vs
             cas = foldr dataDeclAssumps mempty ts
 

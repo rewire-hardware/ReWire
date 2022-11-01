@@ -37,10 +37,11 @@ testCompiler :: [Flag] -> FilePath -> [Test]
 testCompiler flags fn = [testCase (takeBaseName fn) $ do
             setCurrentDirectory $ takeDirectory fn
             withArgs (fn : extraFlags) RWC.main
-      ] ++ if FlagNoGhdl `elem` flags then [] else [testCase (takeBaseName fn ++ " (" ++ checker ++ ")") $ do
-            setCurrentDirectory $ takeDirectory fn
-            callCommand $ checker ++ " " ++ fn -<.> "vhdl"
-      ] ++ if FlagNoGhc `elem` flags then [] else [testCase (takeBaseName fn ++ " (stack ghc)") $ do
+-- TODO(chathhorn): re-enable vhdl output
+--      ] <> if FlagNoGhdl `elem` flags then [] else [testCase (takeBaseName fn ++ " (" ++ checker ++ ")") $ do
+--            setCurrentDirectory $ takeDirectory fn
+--            callCommand $ checker ++ " " ++ fn -<.> "vhdl"
+      ] <> if FlagNoGhc `elem` flags then [] else [testCase (takeBaseName fn ++ " (stack ghc)") $ do
             setCurrentDirectory $ takeDirectory fn
             callCommand $ "stack ghc " ++ fn
       ]

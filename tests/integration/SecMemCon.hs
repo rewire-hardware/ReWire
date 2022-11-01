@@ -1,7 +1,6 @@
 import ReWire
-import ReWire.Bits
+import ReWire.Bits hiding (W10 (..))
 
-data W2  = W2 Bit Bit
 data W10 = W10
       { b0 :: Bit
       , b1 :: Bit

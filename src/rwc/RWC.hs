@@ -88,11 +88,11 @@ main = do
 
       let userLP                = concatMap getLoadPathEntries flags
       systemLP                 <- getSystemLoadPath
-      let lp                    = userLP ++ systemLP
+      let lp                    = userLP <> systemLP <> ["."]
 
-      when (FlagV `elem` flags) $ putStrLn ("loadpath: " ++ intercalate "," lp)
+      when (FlagV `elem` flags) $ putStrLn ("loadpath: " <> intercalate "," lp)
 
-      mapM_ (compileFile flags $ userLP ++ systemLP) filenames
+      mapM_ (compileFile flags lp) filenames
 
       where getOutFile :: [Flag] -> String -> IO String
             getOutFile flags filename = case filter (\ case { FlagO {} -> True; _ -> False }) flags of
@@ -125,7 +125,7 @@ main = do
 
             compileFile :: [Flag] -> LoadPath -> String -> IO ()
             compileFile flags lp filename = do
-                  when (FlagV `elem` flags) $ putStrLn $ "Compiling: " ++ filename
+                  when (FlagV `elem` flags) $ putStrLn $ "Compiling: " <> filename
 
                   runSyntaxError (loadProgram flags lp filename >>= compile)
                         >>= either ((>> exitFailure) . T.hPutStrLn stderr . prettyPrint) pure

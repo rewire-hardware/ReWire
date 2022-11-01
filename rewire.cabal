@@ -52,10 +52,8 @@ data-files:
     tests/regression/putBug.hs
     tests/regression/records.hs
     tests/regression/synonym.hs
-    tests/regression/test.hs
     tests/regression/test2.hs
     tests/regression/test3.hs
-    tests/regression/test_main.hs
     tests/regression/toag.hs
     tests/regression/toags.hs
     tests/regression/uniquification.hs

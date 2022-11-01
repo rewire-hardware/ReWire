@@ -17,12 +17,12 @@ eq' :: (Bit, Bit, Bit) -> (Bit, Bit, Bit) -> Bool
 
 -- FunBind guard.
 odd' :: (Bit, Bit, Bit) -> Bool
-odd' bits
-      | bits `eq'` (C, C, S) = True
-      | bits `eq'` (C, S, S) = True
-      | bits `eq'` (S, C, S) = True
-      | bits `eq'` (S, S, S) = True
-      | True                 = False
+odd' bs
+      | bs `eq'` (C, C, S) = True
+      | bs `eq'` (C, S, S) = True
+      | bs `eq'` (S, C, S) = True
+      | bs `eq'` (S, S, S) = True
+      | True               = False
 
 -- Alt guard.
 odd'' :: (Bit, Bit, Bit) -> Bool
