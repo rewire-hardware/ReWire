@@ -165,12 +165,16 @@ compileStartDefn flags (C.StartDefn _ w loop state0) = do
 
             rstEdge :: [Sensitivity]
             rstEdge = case reset flags of
-                  [(sRst, _)] | invertRst -> [Neg sRst]
+                  [(sRst, _)] | syncRst   -> []
+                              | invertRst -> [Neg sRst]
                               | otherwise -> [Pos sRst]
                   _                       -> []
 
             invertRst :: Bool
             invertRst = FlagInvertReset `elem` flags
+
+            syncRst :: Bool
+            syncRst = FlagSyncReset `elem` flags
 
             pauseWires :: Wiring -> [(Name, Size)]
             pauseWires w = pausePrefix w <> nextStateWires w

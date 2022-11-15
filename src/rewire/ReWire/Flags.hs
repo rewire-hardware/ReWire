@@ -10,6 +10,7 @@ data Flag = FlagO !String
           | FlagFlatten
           | FlagInvertReset
           | FlagNoReset | FlagNoClock
+          | FlagSyncReset
           | FlagPkgs !String
           | FlagClockName !String
           | FlagResetName !String

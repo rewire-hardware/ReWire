@@ -45,6 +45,7 @@ options =
        , Option []    ["invert-reset"]        (NoArg  FlagInvertReset)                   "Invert the implicitly generated reset signal."
        , Option []    ["no-reset"]            (NoArg  FlagNoReset)                       "No implicitly generated reset signal."
        , Option []    ["no-clock"]            (NoArg  FlagNoClock)                       "No implicitly generated clock signal (implies no-reset: generate a purely combinatorial circuit)."
+       , Option []    ["sync-reset"]          (NoArg  FlagSyncReset)                     "Only reset on positive clock edge."
        , Option []    ["dpass1" , "dhask1" ]  (NoArg  FlagDHask1)                        "Dump pass 1: pre-desugar haskell source."
        , Option []    ["dpass2" , "dhask2" ]  (NoArg  FlagDHask2)                        "Dump pass 2: post-desugar haskell source."
        , Option []    ["dpass2b", "dcrust0"]  (NoArg  FlagDCrust0)                       "Dump pass 2b: synthetic per-module crust source."
