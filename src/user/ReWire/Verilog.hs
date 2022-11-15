@@ -4,6 +4,7 @@ module ReWire.Verilog
       , (.|.), (.&.)
       , (||), (&&)
       , (<<), (>>), (<<<), (>>>)
+      , (>), (>=), (<), (<=)
       , (<>)
       , lnot, bnot, rAnd, rNAnd
       , rOr, rNor, rXor, rXNor
@@ -12,6 +13,18 @@ module ReWire.Verilog
 
 import ReWire
 import Prelude (undefined, Integer)
+
+infixr 9 **
+infixl 8  *, /, %
+infixl 7  +, -
+infixl 6  <<, >>, <<<, >>>
+infixl 6  >, >=, <, <=
+infixl 5  .&.
+infixl 4  ^, ~^
+infixl 3  .|.
+infixr 2  &&
+infixr 1  ||
+infixl 0  <>
 
 -- | Add.
 (+) :: a -> a -> a
@@ -33,7 +46,7 @@ import Prelude (undefined, Integer)
 (%) :: a -> a -> a
 (%) = extern "%" undefined
 
--- | Power.
+-- | Exponentiation.
 (**) :: a -> a -> a
 (**) = extern "**" undefined
 
@@ -78,20 +91,25 @@ import Prelude (undefined, Integer)
 (>>>) :: a -> a -> a
 (>>>) = extern ">>>" undefined
 
+-- | Greater-than.
+(>) :: a -> b -> Bit
+(>) = extern ">" undefined
+
+-- | Greater-than or equal.
+(>=) :: a -> b -> Bit
+(>=) = extern ">=" undefined
+
+-- | Less-than.
+(<) :: a -> b -> Bit
+(<) = extern "<" undefined
+
+-- | Less-than or equal.
+(<=) :: a -> b -> Bit
+(<=) = extern "<=" undefined
+
 -- | Concatenate.
 (<>) :: a -> b -> c
 (<>) = extern "concat" undefined
-
-infixr 9 **
-infixl 8 *, /, %
-infixl 7 +, -
-infixl 6 <<, >>, <<<, >>>
-infixl 5 .&.
-infixl 4 ^, ~^
-infixl 3 .|.
-infixr 2 &&
-infixr 1 ||
-infixl 0 <>
 
 -- | Logical not.
 lnot :: a -> Bit

@@ -481,6 +481,10 @@ primBinOps =
       , ( ">>"        , RShift)
       , ( "<<<"       , LShiftArith)
       , ( ">>>"       , RShiftArith)
+      , ( ">"         , Gt)
+      , ( ">="        , GtEq)
+      , ( "<"         , Lt)
+      , ( "<="        , LtEq)
       , ( "concat"    , \ x y -> V.cat [x, y])
       , ( "replicate" , Repl)
       ]
