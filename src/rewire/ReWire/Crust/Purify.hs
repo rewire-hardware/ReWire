@@ -394,6 +394,7 @@ classifyCases = \ case
             pure $ Apply (ann e) t n es
       Match an _ e1 mp e2 me      -> pure $ SMatch an e1 mp e2 me
       TypeAnn _ _ e               -> classifyCases e
+      Error a _ _                 -> failAt a "Purify: encountered unsynthesizable definition."
       d                           -> failAt (ann d) $ "Purify: unclassifiable case: " <> showt d
 
 data Cases an p e t = Get an !t
@@ -489,6 +490,7 @@ classifyRCases = \ case
      Match an _ e1 mp e2 me -> pure $ RMatch an e1 mp e2 me
      Var an t x             -> pure $ RVar an t x
      TypeAnn _ _ e          -> classifyRCases e
+     Error a _ _            -> failAt a "Purify: encountered unsynthesizable definition."
      d                      -> failAt (ann d) $ "Purify: unclassifiable R-case: " <> showt d
 
 -- | Classifies syntactic applications. Just seemed easier to
