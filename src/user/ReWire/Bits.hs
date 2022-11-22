@@ -2,6 +2,7 @@ module ReWire.Bits where
 
 import ReWire
 
+data W1  = W1  Bit
 data W2  = W2  Bit Bit
 data W3  = W3  Bit Bit Bit
 data W4  = W4  Bit Bit Bit Bit
