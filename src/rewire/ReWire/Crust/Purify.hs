@@ -54,7 +54,7 @@ purify start (ts, syns, ds) = do
       (smds, notSmds)     <- partitionEithers <$> mapM isStateMonadicDefn ds
       (rmds, ods)         <- partitionEithers <$> mapM isResMonadicDefn notSmds
 
-      unless (any (isStart . defnName) rmds) $ failAt noAnn $ "No definition for " <> start <> " found!"
+      unless (any (isStart . defnName) rmds) $ failAt noAnn $ "No definition for start function (" <> start <> ") found!"
 
       let nameNpolyS = map (defnName &&& defnPolyTy) smds
           nameNpolyR = map (defnName &&& defnPolyTy) rmds
