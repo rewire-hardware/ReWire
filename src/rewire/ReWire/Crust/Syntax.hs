@@ -58,6 +58,7 @@ import safe Prettyprinter
       , braces, vsep, (<+>), Pretty (..), punctuate
       )
 import safe ReWire.Pretty (empty, text)
+import Numeric.Natural (Natural)
 import TextShow (TextShow (..), fromString)
 import TextShow.Generic (FromGeneric (..), genericShowbPrec)
 
@@ -112,6 +113,7 @@ instance Pretty DataCon where
 instance NFData DataCon
 
 data Kind = KStar
+          | KNat
           | KFun !Kind !Kind
           | KVar !(Name Kind)
       deriving (Generic, Ord, Eq, Show, Typeable, Data)
@@ -133,6 +135,7 @@ instance NFData Kind
 instance Pretty Kind where
       pretty = \ case
             KStar            -> text "*"
+            KNat             -> text "Nat"
             KVar n           -> text $ showt n
             KFun a@KFun {} b -> parens (pretty a) <+> text "->" <+> pretty b
             KFun a b         -> pretty a <+> text "->" <+> pretty b
@@ -167,6 +170,7 @@ instance Pretty Poly where
 data Ty = TyApp Annote !Ty !Ty
         | TyCon Annote !(Name TyConId)
         | TyVar Annote !Kind !(Name Ty)
+        | TyNat Annote !Natural
         | TyBlank Annote
       deriving (Eq, Ord, Generic, Typeable, Data, Show)
       deriving TextShow via FromGeneric Ty
@@ -182,6 +186,10 @@ instance Subst Ty Ty where
 instance Subst Ty Annote where
       subst _ _ x = x
       substs _ x  = x
+instance Subst Ty Natural where
+      isvar _ = Nothing
+      subst _ _ x = x
+      substs _ x = x
 instance Subst Ty Kind
 
 instance Annotated Ty where
@@ -190,6 +198,7 @@ instance Annotated Ty where
             TyCon a _    -> a
             TyVar a _ _  -> a
             TyBlank a    -> a
+            TyNat a _    -> a
 
 instance Parenless Ty where
       parenless t = case flattenTyApp t of
@@ -197,6 +206,7 @@ instance Parenless Ty where
             [TyCon {}]                                -> True
             [TyVar {}]                                -> True
             [TyBlank {}]                              -> True
+            [TyNat {}]                                -> True
             _                                         -> False
 
 instance Pretty Ty where
@@ -210,6 +220,7 @@ instance Pretty Ty where
             [TyCon _ n]                         -> text $ n2s n
             [TyVar _ _ n]                       -> text $ n2s n
             [TyBlank _]                         -> text "_"
+            [TyNat _ n]                         -> text $ showt n
             ts                                  -> hsep $ map mparens ts
             where needsParens :: Ty -> Bool
                   needsParens t = case flattenTyApp t of
@@ -263,6 +274,10 @@ instance Subst Exp Exp where
             Var _ _ x -> Just $ SubstName x
             _         -> Nothing
 instance Subst Exp Annote where
+      isvar _ = Nothing
+      subst _ _ x = x
+      substs _ x = x
+instance Subst Exp Natural where
       isvar _ = Nothing
       subst _ _ x = x
       substs _ x = x
@@ -703,6 +718,7 @@ concrete = \ case
       TyBlank {}  -> False
       TyVar {}    -> False
       TyCon {}    -> True
+      TyNat {}    -> True
       TyApp _ a b -> concrete a && concrete b
 
 -- | Types with no built-ins (Strings, Integers, lists).
@@ -711,6 +727,7 @@ fundamental = \ case
       TyCon _ (n2s -> "String")  -> False
       TyCon _ (n2s -> "Integer") -> False
       TyCon _ (n2s -> "[_]")     -> False
+      TyNat {}                   -> True
       TyCon {}                   -> True
       TyBlank {}                 -> True
       TyVar {}                   -> True
@@ -730,6 +747,20 @@ instance (Eq a, Eq b) => Eq (Bind a b) where
       (B a b) == (B a' b') = a == a' && b == b'
 
 instance Alpha Text where
+      aeq' _ctx i j = i == j
+      fvAny' _ctx _nfn i = pure i
+      close _ctx _b i = i
+      open _ctx _b i = i
+      isPat _ = mempty
+      isTerm _ = mempty
+      nthPatFind _ = mempty
+      namePatFind _ = mempty
+      swaps' _ctx _p i = i
+      freshen' _ctx i = return (i, mempty)
+      lfreshen' _ctx i cont = cont i mempty
+      acompare' _ctx i j = compare i j
+
+instance Alpha Natural where
       aeq' _ctx i j = i == j
       fvAny' _ctx _nfn i = pure i
       close _ctx _b i = i

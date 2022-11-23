@@ -54,6 +54,7 @@ mgu an (KFun kl kr) (KFun kl' kr') = do
 mgu an (KVar u) k                  = varBind an u k
 mgu an k (KVar u)                  = varBind an u k
 mgu _ KStar KStar                  = pure mempty
+mgu _ KNat KNat                    = pure mempty
 mgu an k1 k2                       = failAt an $ "Kinds do not unify: " <> prettyPrint k1 <> ", " <> prettyPrint k2
 
 unify :: (Fresh m, MonadError AstError m) => Annote -> Kind -> Kind -> KCM m ()
@@ -80,6 +81,7 @@ kcTy = \ case
                         $ Map.lookup i cas
       TyVar _ k _     -> pure k
       TyBlank _       -> freshkv
+      TyNat _ _       -> pure KNat
 
 -- | Only needed for debugging.
 -- kcDataCon :: (Fresh m, MonadError AstError m) => DataCon -> KCM m ()
@@ -105,6 +107,7 @@ monoize :: Kind -> Kind
 monoize = \ case
       KFun k1 k2 -> KFun (monoize k1) $ monoize k2
       KStar      -> KStar
+      KNat       -> KNat
       KVar _     -> KStar
 
 redecorate :: MonadError AstError m => KiSub -> DataDefn -> KCM m DataDefn

@@ -102,7 +102,6 @@ toCrust rn = \ case
       m                                                           -> failAt (ann m) "Unsupported module syntax"
 
 
-
 exportAll :: QNamish a => Renamer -> a -> Export
 exportAll rn x = let x' = rename Type rn x in
       ExportWith x' (lookupCtors rn x') (lookupCtorSigsForType rn x')
@@ -228,7 +227,12 @@ transTy rn = \ case
       TyCon l x        -> pure $ M.TyCon l (s2n $ rename Type rn x)
       TyVar l x        -> M.TyVar l <$> freshKVar (pack $ prettyPrint x) <*> pure (mkUId $ void x)
       TyList l a       -> M.listTy l <$> transTy rn a
-      t                -> failAt (ann t) "Unsupported type syntax"
+      TyPromoted l (PromotedInteger _ n _)
+            | n >= 0   -> pure $ M.TyNat l $ fromInteger n
+      TyInfix l a x b -> M.TyApp l <$> (M.TyApp l (M.TyCon l (s2n $ rename Type rn x')) <$> transTy rn a) <*> transTy rn b
+            where x' | PromotedName   _ qn <- x = qn
+                     | UnpromotedName _ qn <- x = qn
+      t                -> failAt (ann t) $ "Unsupported type syntax: " <> pack (show t)
 
 freshKVar :: Fresh m => Text -> m M.Kind
 freshKVar n = M.KVar <$> fresh (s2n $ "?K_" <> n)
