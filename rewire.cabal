@@ -59,62 +59,16 @@ data-files:
     tests/regression/uniquification.hs
     tests/regression/UpCounter.hs
     tests/regression/weird1.hs
-    src/user/ReWire.hs
-    src/user/ReWire/Bits.hs
-    src/user/ReWire/Monad.hs
-    src/user/ReWire/Prelude.hs
-    src/user/ReWire/Verilog.hs
-    src/user/RWC/Primitives.hs
+    rewire-user/src/ReWire.hs
+    rewire-user/src/RWC/Primitives.hs
+    rewire-user/src/ReWire/Bits.hs
+    rewire-user/src/ReWire/Monad.hs
+    rewire-user/src/ReWire/Prelude.hs
+    rewire-user/src/ReWire/Verilog.hs
 
 source-repository head
   type: git
   location: https://github.com/mu-chaco/ReWire.git
-
-library
-  exposed-modules:
-      ReWire
-      ReWire.Bits
-      ReWire.Monad
-      ReWire.Prelude
-      ReWire.Verilog
-      RWC.Primitives
-  other-modules:
-      Paths_rewire
-  autogen-modules:
-      Paths_rewire
-  hs-source-dirs:
-      src/user
-  default-extensions:
-      LambdaCase
-      TupleSections
-      ViewPatterns
-  ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
-  build-depends:
-      base ==4.16.*
-    , bv ==0.5.*
-    , bytestring ==0.11.*
-    , containers ==0.6.*
-    , deepseq ==1.4.*
-    , directory ==1.3.*
-    , exceptions ==0.10.*
-    , filepath ==1.4.*
-    , ghc ==9.2.*
-    , ghc-boot ==9.2.*
-    , hashable ==1.4.*
-    , haskell-src-exts ==1.23.*
-    , machines ==0.7.*
-    , monad-resumption ==0.1.*
-    , mtl ==2.2.*
-    , parsec >=3.1.14 && <3.2
-    , prettyprinter ==1.7.*
-    , split ==0.2.*
-    , text ==1.2.*
-    , text-show ==3.10.*
-    , transformers ==0.5.*
-    , unbound-generics ==0.4.*
-    , unordered-containers ==0.2.*
-    , yaml ==0.11.*
-  default-language: Haskell2010
 
 library rewire-core
   exposed-modules:
@@ -185,6 +139,7 @@ library rewire-core
     , mtl ==2.2.*
     , parsec >=3.1.14 && <3.2
     , prettyprinter ==1.7.*
+    , rewire-user ==0.1.*
     , split ==0.2.*
     , text ==1.2.*
     , text-show ==3.10.*
@@ -227,6 +182,7 @@ library rwc-lib
     , parsec >=3.1.14 && <3.2
     , prettyprinter ==1.7.*
     , rewire-core
+    , rewire-user ==0.1.*
     , split ==0.2.*
     , text ==1.2.*
     , text-show ==3.10.*
@@ -268,6 +224,7 @@ executable firrtl
     , parsec >=3.1.14 && <3.2
     , prettyprinter ==1.7.*
     , rewire-core
+    , rewire-user ==0.1.*
     , split ==0.2.*
     , text ==1.2.*
     , text-show ==3.10.*
@@ -308,6 +265,7 @@ executable rwc
     , mtl ==2.2.*
     , parsec >=3.1.14 && <3.2
     , prettyprinter ==1.7.*
+    , rewire-user ==0.1.*
     , rwc-lib
     , split ==0.2.*
     , text ==1.2.*
@@ -351,6 +309,7 @@ executable rwcx
     , parsec >=3.1.14 && <3.2
     , prettyprinter ==1.7.*
     , rewire-core
+    , rewire-user ==0.1.*
     , split ==0.2.*
     , text ==1.2.*
     , text-show ==3.10.*
@@ -394,6 +353,7 @@ test-suite rwc-test
     , parsec >=3.1.14 && <3.2
     , prettyprinter ==1.7.*
     , process ==1.6.*
+    , rewire-user ==0.1.*
     , rwc-lib
     , split ==0.2.*
     , test-framework ==0.8.*

@@ -3,28 +3,7 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages:
-- completed:
-    hackage: monad-resumption-0.1.4.0@sha256:7594929cac7a3d2007683144ef951d808b4bb842876f5e3a9ffd3aba216d66a1,1218
-    pantry-tree:
-      sha256: dd13f6b0b39821a516fb554f1b3aa080e4361d4cf73dd0e25d2fbf92842e7fee
-      size: 432
-  original:
-    hackage: monad-resumption-0.1.4.0
-- completed:
-    hackage: unbound-generics-0.4.2@sha256:bd8f77bb4414af56510d3a7a5f5b3f0e9b019ca0fb78862d51ab21fcd9a58859,5513
-    pantry-tree:
-      sha256: 124d5b438a735f925abd523490c8ca8103d6beef496bfa2df6519c284c999422
-      size: 3046
-  original:
-    hackage: unbound-generics-0.4.2
-- completed:
-    hackage: prettyprinter-1.7.1@sha256:9c43c9d8c3cd9f445596e5a2379574bba87f935a4d1fa41b5407ee3cf4edc743,6987
-    pantry-tree:
-      sha256: cd6f393bf7cba603a1958a139915fc343efd5488e36fd7b3b5c6956c002d04fa
-      size: 3460
-  original:
-    hackage: prettyprinter-1.7.1
+packages: []
 snapshots:
 - completed:
     sha256: deca5d235f498c2216605522633fbee795993dcca1d94c4c6db9023fe8a1775b
