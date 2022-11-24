@@ -24,7 +24,7 @@ import Data.List.Split (splitOn)
 import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), ArgDescr (..))
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
-import System.FilePath ((-<.>))
+import System.FilePath ((-<.>), (</>))
 import System.IO (stderr)
 import TextShow (showt)
 import Data.Text (pack)
@@ -76,7 +76,7 @@ exitUsage = T.hPutStr stderr (pack $ usageInfo "Usage: rwc [OPTION...] <filename
 
 getSystemLoadPath :: IO [FilePath]
 getSystemLoadPath = do
-      lib   <- getDataFileName "src/user"
+      lib   <- getDataFileName $ "rewire-user" </> "src"
       pure [lib]
 
 main :: IO ()
