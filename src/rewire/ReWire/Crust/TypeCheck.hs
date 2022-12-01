@@ -10,7 +10,7 @@ module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype, unify, unify') 
 import ReWire.Annotation
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fixOn)
-import ReWire.Unbound (fresh, substs, aeq, Subst, n2s, s2n, unsafeUnbind)
+import ReWire.Unbound (fresh, substs, Subst, n2s, s2n, unsafeUnbind)
 import ReWire.Pretty
 import ReWire.Crust.Syntax
 import ReWire.SYB (runPureT, transform, runQ, query)
@@ -33,7 +33,7 @@ import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Text as T
 
-import Debug.Trace (trace)
+-- import Debug.Trace (trace)
 
 subst :: Subst b a => HashMap (Name b) b -> a -> a
 subst = substs . Map.toList
@@ -140,11 +140,15 @@ mgu (plus -> Just (TyVar _ _ v, t)) (TyVar _ _ u)                   | u == v   =
 mgu (TyNat _ n)                     (plus -> Just (TyNat _ m, t))   | n >= m   = mgu (TyNat (ann t) $ n - m) t
 mgu (plus -> Just (TyNat _ m, t))   (TyNat _ n)                     | n >= m   = mgu (TyNat (ann t) $ n - m) t
 
-mgu (TyVar _ _ u)                   (TyVar _ _ v)                   | u == v   = pure mempty
-mgu (TyVar _ _ u)                   t                               | isFlex u = varBind u t
-mgu t                               (TyVar _ _ u)                   | isFlex u = varBind u t
+mgu (TyVar _ _ u)                   (TyVar _ _ v)          | n2s u == n2s v    = pure mempty
+mgu (TyVar _ _ u)                   t                      | isFlex u          = varBind u t
+mgu t                               (TyVar _ _ u)          | isFlex u          = varBind u t
 
-mgu _ _                                                                        = Nothing
+mgu t1 t2                                                                      = Nothing
+--      trace ("     MGU: " <> T.unpack (prettyPrint t1)
+--        <> "\n    with: " <> T.unpack (prettyPrint t2)) $
+--      trace ("      t1: " <> show (unAnn t1)) $
+--      trace ("      t2: " <> show (unAnn t2)) $ Nothing
 
 mapNat :: (Ty -> Ty) -> Ty -> Ty
 mapNat norm = \ case
@@ -184,15 +188,15 @@ unify an t1 t2 = do
       t2' <- tySub t2
       let fwd = mapNat normNat
           rev = mapNat normNat'
-      trace ("Unifying: " <> T.unpack (prettyPrint $ fwd t1')
-        <> "\n    with: " <> T.unpack (prettyPrint $ fwd t2')) $ pure ()
-      trace ("     t1': " <> show (unAnn $ fwd t1')) $ pure ()
-      trace ("     t2': " <> show (unAnn $ fwd t2')) $ pure ()
-
-      trace ("Unifying: " <> T.unpack (prettyPrint $ fwd t1')
-        <> "\n    with: " <> T.unpack (prettyPrint $ rev t2')) $ pure ()
-      trace ("     t1': " <> show (unAnn $ fwd t1')) $ pure ()
-      trace (" rev t2': " <> show (unAnn $ rev t2')) $ pure ()
+--      trace ("Unifying: " <> T.unpack (prettyPrint $ fwd t1')
+--        <> "\n    with: " <> T.unpack (prettyPrint $ fwd t2')) $ pure ()
+--      trace ("     t1': " <> show (unAnn $ fwd t1')) $ pure ()
+--      trace ("     t2': " <> show (unAnn $ fwd t2')) $ pure ()
+--
+--      trace ("Unifying: " <> T.unpack (prettyPrint $ fwd t1')
+--        <> "\n    with: " <> T.unpack (prettyPrint $ rev t2')) $ pure ()
+--      trace ("     t1': " <> show (unAnn $ fwd t1')) $ pure ()
+--      trace (" rev t2': " <> show (unAnn $ rev t2')) $ pure ()
 
       case mgu (fwd t1') (fwd t2') `mplus` mgu (fwd t1') (rev t2') of
             Just s' -> modify (s' @@)
@@ -371,15 +375,15 @@ mkApp an f holes = foldl' (App an) f $ map (Var an $ TyBlank an) holes
 
 tcDefn :: (Fresh m, MonadError AstError m, MonadReader TCEnv m) => Defn -> m Defn
 tcDefn d  = flip evalStateT mempty $ do
-      let Defn an n (Embed (Poly pt)) b (Embed e) = force d
-      (tvs, t) <- unbind pt
+      let Defn an n (Embed pt) b (Embed e) = force d
+      t'       <- inst pt
       (vs, e') <- unbind e
-      let (targs, _) = flattenArrow t
+      let (targs, _) = flattenArrow t'
       (e'', te) <- localAssumps (`Map.union` (Map.fromList $ zip vs $ map (poly []) targs)) $ tcExp e'
-      let te' = iterate arrowRight t !! length vs
+      let te' = iterate arrowRight t' !! length vs
       unify an te' te
       e''' <- tySub e''
-      let d' = Defn an n (tvs |-> t) b $ Embed $ bind vs e'''
+      let d' = Defn an n (Embed pt) b $ Embed $ bind vs e'''
       d' `deepseq` pure d'
 
 withAssumps :: (MonadError AstError m, MonadReader TCEnv m) => [DataDefn] -> [Defn] -> m a -> m a

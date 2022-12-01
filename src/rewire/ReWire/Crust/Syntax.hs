@@ -48,6 +48,7 @@ import safe qualified ReWire.Unbound as UB (fv, fvAny)
 import Prelude hiding (replicate)
 
 import safe Control.DeepSeq (NFData (..), deepseq)
+import safe Data.Containers.ListUtils (nubOrd)
 import safe Data.Data (Typeable, Data (..))
 import safe Data.Hashable (Hashable (..))
 import safe Data.List (intersperse)
@@ -154,7 +155,7 @@ poly :: [Name Ty] -> Ty -> Poly
 poly vs t = Poly $ bind vs t
 
 poly' :: Ty -> Poly
-poly' t = poly (fv t) t
+poly' t = poly (nubOrd $ fv t) t
 
 (|->) :: [Name Ty] -> Ty -> Embed Poly
 vs |-> t = Embed $ poly vs t

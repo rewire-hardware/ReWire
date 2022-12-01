@@ -194,11 +194,11 @@ transDef rn tys inls defs = \ case
       PatBind l (PVar _ (void -> x)) (UnGuardedRhs _ e) Nothing -> do
             k <- freshKVar "def"
             let x' = s2n $ rename Value rn x
-                t  = fromMaybe (M.TyVar l k $ s2n "?a") $ lookup x tys
+                t  = fromMaybe (M.TyVar l k $ s2n "a") $ lookup x tys
             -- Elide definition of primitives. Allows providing alternate defs for GHC compat.
             e' <- if | M.isPrim x' -> pure $ M.Error (ann e) t $ "Prim: " <> n2s x'
                      | otherwise   -> transExp rn e
-            pure $ M.Defn l x' (M.fv t |-> t) (Map.lookup x inls) (Embed (bind [] e')) : defs
+            pure $ M.Defn l x' (Embed $ M.poly' t) (Map.lookup x inls) (Embed (bind [] e')) : defs
       DataDecl       {}                                         -> pure defs -- TODO(chathhorn): elide
       InlineSig      {}                                         -> pure defs -- TODO(chathhorn): elide
       TypeSig        {}                                         -> pure defs -- TODO(chathhorn): elide
