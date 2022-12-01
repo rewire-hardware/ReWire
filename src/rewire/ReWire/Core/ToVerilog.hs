@@ -62,22 +62,25 @@ fresh s = mangle <$> fresh' s
 newWire :: MonadState SigInfo m => V.Size -> Name -> m LVal
 newWire sz n = do
       n' <- fresh n
-      modify $ second (++ [Logic sz n'])
+      modify $ second (++ [mkSignal (n', sz)])
       pure $ Name n'
 
 newWire' :: MonadState SigInfo m => V.Size -> Name -> m LVal
 newWire' sz n = do
       n' <- fresh' n
-      modify $ second (++ [Logic sz n'])
+      modify $ second (++ [mkSignal (n', sz)])
       pure $ Name n'
 
 lookupWidth :: MonadState SigInfo m => Name -> m (Maybe Size)
 lookupWidth n = gets (lookup n . map proj <$> snd)
       where proj :: Signal -> (Name, Size)
             proj = \ case
-                  Wire  sz n -> (n, sz)
-                  Logic sz n -> (n, sz)
-                  Reg   sz n -> (n, sz)
+                  Wire  []   n _ -> (n, 0)
+                  Wire  [sz] n _ -> (n, sz)
+                  Logic []   n _ -> (n, 0)
+                  Logic [sz] n _ -> (n, sz)
+                  Reg   []   n _ -> (n, 0)
+                  Reg   [sz] n _ -> (n, sz)
 
 getClock :: MonadState SigInfo m => m LVal
 getClock = gets snd >>= pure . \ case
@@ -122,20 +125,20 @@ compileStartDefn flags (C.StartDefn _ w loop state0) = do
                   Just rstExp -> [ Always (map (Pos . fst) (clock flags) <> rstEdge) $ Block [ ifRst rstExp ] ]
                   _           -> [ ]
       where sigs0 :: [Signal]
-            sigs0 = map toLogic [clk0, rst0]
+            sigs0 = map mkSignal [clk0, rst0]
                   where clk0 :: (Name, Size)
                         clk0 = fromMaybe ("clk", 0) $ listToMaybe $ clock flags
                         rst0 :: (Name, Size)
                         rst0 = fromMaybe ("rst", 0) $ listToMaybe $ reset flags
 
             inputs :: [Port]
-            inputs = map (Input . toLogic)  $ clock flags <> reset flags <> inputWires w
+            inputs = map (Input . mkSignal)  $ clock flags <> reset flags <> inputWires w
 
             outputs :: [Port]
-            outputs = map (Output . toLogic) $ outputWires w
+            outputs = map (Output . mkSignal) $ outputWires w
 
             sigs :: [Signal]
-            sigs = map toLogic $ allWires w
+            sigs = map mkSignal $ allWires w
 
             ifRst :: V.Exp -> Stmt
             ifRst init = case reset flags of
@@ -193,10 +196,10 @@ compileDefn flags (C.Defn _ n (Sig _ inps outp) body) = do
             argNames = zipWith (\ _ x -> "arg" <> showt x) inps [0::Int ..]
 
             inputs :: [Port]
-            inputs = zipWith (curry $ Input . toLogic) argNames inps
+            inputs = zipWith (curry $ Input . mkSignal) argNames inps
 
             outputs :: [Port]
-            outputs = map (Output . toLogic) [("res", outp)]
+            outputs = map (Output . mkSignal) [("res", outp)]
 
 -- | Inlines a defn or instantiates an already-compiled defn.
 compileCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
@@ -260,6 +263,7 @@ compileExp flags lvars = \ case
       Call _ sz (Extern _ (unOp -> Just op) _) e ps els  -> mkCall "unOp"   e ps els $ \ [x]    -> (,[]) <$> wcast sz (op x)
       Call _ sz (Extern _ "msbit" _) e ps els            -> mkCall "msbit"  e ps els $ \ [x]    -> (,[]) <$> wcast sz (projBit (fromIntegral (argsSize ps) - 1) x)
       Call _ sz (Extern sig ex inst) e ps els            -> mkCall ex       e ps els $ instantiate sig ex inst sz
+      Call _ sz Resize e ps els                          -> mkCall "resize" e ps els $ \ [x]    -> (,[]) <$> wcast sz x
       Call _ sz Id e ps els                              -> mkCall "id"     e ps els $ \ xs     -> (,[]) <$> wcast sz (V.cat xs)
       Call _ sz (Const bv) e ps els                      -> mkCall "lit"    e ps els $ \ _      -> (,[]) <$> wcast sz (bvToExp bv)
       where mkCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
@@ -503,7 +507,6 @@ primUnOps =
       , ( "~|"     , RNor)
       , ( "^"      , RXor)
       , ( "~^"     , RXNor)
-      , ( "resize" , id)
       ]
 
 -- | Returns a boolean expression that is true when the pattern matches.
@@ -532,8 +535,8 @@ argsSize = sum . map patToSize
                   PatVar _ sz -> sz
                   _           -> 0
 
-toLogic :: (Name, Size) -> Signal
-toLogic = uncurry $ flip Logic
+mkSignal :: (Name, Size) -> Signal
+mkSignal (n, sz) = Logic [sz] n []
 
 -- TODO(chathhorn): duplicated from Crust/ToCore.hs
 ceilLog2 :: Integral a => a -> a

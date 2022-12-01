@@ -67,7 +67,7 @@ mkRenamer flags pwd' m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImp
 -- Pass 2-4  Fixity fixing (uniquify + fix + deuniquify, because bug in applyFixities).
 -- Pass 5    Annotate.
 -- Pass 6-14 Desugar.
--- Pass 15   Translate to mantle + rename globals.
+-- Pass 15   Translate to crust + rename globals.
 -- Pass 16   Translate to core
 
 getModule :: [Flag] -> FilePath -> FilePath -> Cache (Module, Exports)

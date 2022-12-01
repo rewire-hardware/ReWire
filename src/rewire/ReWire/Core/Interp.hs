@@ -159,6 +159,9 @@ interpExp defns lvars exp = case exp of
                   [x]    -> pure $ mkBV sz $ fromEnum $ testBit x (fromEnum $ width x - 1)
                   _      -> failAt' call' an "Core/Interp: interpExp: arity mismatch (msbit)."
             else pure els'
+      Call an sz Resize e ps els -> do
+            (e', els', call')  <- evaluate e els reCall
+            if patMatches e' ps then pure $ mkBV sz $ nat $ patApply e' ps else pure els'
       Call _ _ Id e ps els             -> if patMatchesE e ps then interpExp defns lvars $ patApplyE e ps else do
             (e', els', _)  <- evaluate e els reCall
             pure $ if patMatches e' ps then patApply e' ps else els'
@@ -278,7 +281,7 @@ primUnOps = map (second $ \ op sz -> mkBV sz . op) unops
               --       , ( "~|"     , RNor)
               --       , ( "^"      , RXor)
               --       , ( "~^"     , RXNor)
-                    , ( "resize" , nat)
+--                     , ( "resize" , nat)
                     ]
 
 binBitify :: (Integer -> Integer -> Integer) -> Size -> BV -> BV -> BV

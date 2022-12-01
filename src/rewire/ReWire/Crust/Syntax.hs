@@ -13,7 +13,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.Crust.Syntax
       ( DataConId (..), TyConId
-      , Ty (..), Exp (..), Pat (..), MatchPat (..)
+      , Ty (..), Exp (..), Pat (..), MatchPat (..), Builtin (..), builtins, builtin, builtinName
       , Defn (..), DefnAttr (..), DataDefn (..), TypeSynonym (..), DataCon (..)
       , FreeProgram, Program (..)
       , Kind (..), kblank
@@ -24,7 +24,7 @@ module ReWire.Crust.Syntax
       , Poly (..), (|->), poly, poly'
       , rangeTy, paramTys, isPrim, inlineable, mustInline
       , mkArrowTy, nil, isResMonad, isStateMonad
-      , strTy, intTy, bitTy, listTy, pairTy, refTy
+      , strTy, intTy, bitTy, listTy, pairTy, refTy, vecTy, plusTy
       , flattenAllTyApp, resInputTy
       , mkTuple, mkTuplePat, mkTupleMPat, tupleTy
       , mkPair, mkPairPat, mkPairMPat
@@ -49,16 +49,18 @@ import Prelude hiding (replicate)
 
 import safe Control.DeepSeq (NFData (..), deepseq)
 import safe Data.Data (Typeable, Data (..))
-import safe Data.List (intersperse)
 import safe Data.Hashable (Hashable (..))
+import safe Data.List (intersperse)
+import safe Data.Maybe (fromMaybe)
 import safe Data.Text (Text, unpack, replicate)
+import safe Data.Tuple (swap)
 import safe GHC.Generics (Generic (..))
 import safe Prettyprinter
       ( Doc, nest, hsep, parens, dquotes, comma, brackets
       , braces, vsep, (<+>), Pretty (..), punctuate
       )
 import safe ReWire.Pretty (empty, text)
-import Numeric.Natural (Natural)
+import safe Numeric.Natural (Natural)
 import TextShow (TextShow (..), fromString)
 import TextShow.Generic (FromGeneric (..), genericShowbPrec)
 
@@ -187,10 +189,21 @@ instance Subst Ty Annote where
       subst _ _ x = x
       substs _ x  = x
 instance Subst Ty Natural where
-      isvar _ = Nothing
+      subst _ _ x = x
+      substs _ x  = x
+instance Subst Ty Text where
       subst _ _ x = x
       substs _ x = x
-instance Subst Ty Kind
+instance Subst Ty Kind where
+      subst _ _ x = x
+      substs _ x = x
+instance Subst Ty Builtin where
+      subst _ _ x = x
+      substs _ x = x
+instance Subst Ty Exp
+instance Subst Ty Pat
+instance Subst Ty MatchPat
+instance Subst Ty Poly
 
 instance Annotated Ty where
       ann = \ case
@@ -231,6 +244,51 @@ instance NFData Ty
 
 ----
 
+data Builtin = Extern
+             | BitIndex
+             | BitSlice
+             | SetRef | GetRef
+             | Put    | Get
+             | Bind   | Return  | Lift
+             | Signal | Extrude | Unfold
+             | Resize | Bits
+      deriving (Eq, Generic, Show, Typeable, Data)
+      deriving TextShow via FromGeneric Builtin
+
+instance Hashable Builtin
+instance Alpha Builtin
+instance NFData Builtin
+
+instance Pretty Builtin where
+      pretty = pretty . builtinName
+
+builtins :: [(Text, Builtin)]
+builtins =
+      [ ("externWithSig" , Extern)
+      , ("bitIndex"      , BitIndex)
+      , ("bitSlice"      , BitSlice)
+      , ("setRef"        , SetRef)
+      , ("getRef"        , GetRef)
+      , ("put"           , Put)
+      , ("get"           , Get)
+      , ("rwBind"        , Bind)
+      , ("rwReturn"      , Return)
+      , ("lift"          , Lift)
+      , ("signal"        , Signal)
+      , ("extrude"       , Extrude)
+      , ("unfold"        , Unfold)
+      , ("resize"        , Resize)
+      , ("bits"          , Bits)
+      ]
+
+builtin :: Text -> Maybe Builtin
+builtin b = lookup b builtins
+
+builtinName :: Builtin -> Text
+builtinName b = fromMaybe "" $ lookup b $ map swap builtins
+
+----
+
 instance (TextShow a, TextShow b) => TextShow (Bind a b) where
       showbPrec = genericShowbPrec
 
@@ -240,13 +298,10 @@ data Exp = App     Annote !Exp      !Exp
          | Con     Annote !Ty       !(Name DataConId)
          | Case    Annote !Ty       !Exp !(Bind Pat Exp) !(Maybe Exp)
          | Match   Annote !Ty       !Exp !MatchPat !Exp !(Maybe Exp)
-         | Extern  Annote !Ty
-         | Bit     Annote !Ty
-         | Bits    Annote !Ty
-         | SetRef  Annote !Ty
-         | GetRef  Annote !Ty
+         | Builtin Annote !Ty       !Builtin
          | LitInt  Annote !Integer
          | LitStr  Annote !Text
+         | LitVec  Annote !Ty       ![Exp]
          | LitList Annote !Ty       ![Exp]
          | Error   Annote !Ty       !Text
          | TypeAnn Annote !Poly     !Exp
@@ -260,37 +315,41 @@ instance Eq Exp where
 
 instance Alpha Exp
 
-instance Subst Exp Text where
-      isvar _ = Nothing
-      subst _ _ x = x
-      substs _ x  = x
-instance Subst Ty Text where
-      isvar _ = Nothing
-      subst _ _ x = x
-      substs _ x  = x
-
 instance Subst Exp Exp where
       isvar = \ case
             Var _ _ x -> Just $ SubstName x
             _         -> Nothing
 instance Subst Exp Annote where
-      isvar _ = Nothing
       subst _ _ x = x
       substs _ x = x
 instance Subst Exp Natural where
-      isvar _ = Nothing
       subst _ _ x = x
       substs _ x = x
-instance Subst Exp Ty
-instance Subst Exp Kind
-instance Subst Exp Pat
+instance Subst Exp Text where
+      subst _ _ x = x
+      substs _ x = x
+instance Subst Exp Ty where
+      subst _ _ x = x
+      substs _ x = x
+instance Subst Exp Kind where
+      subst _ _ x = x
+      substs _ x = x
+instance Subst Exp Pat where
+      subst _ _ x = x
+      substs _ x = x
+instance Subst Exp MatchPat where
+      subst _ _ x = x
+      substs _ x = x
+instance Subst Exp DefnAttr where
+      subst _ _ x = x
+      substs _ x = x
+instance Subst Exp Poly where
+      subst _ _ x = x
+      substs _ x = x
+instance Subst Exp Builtin where
+      subst _ _ x = x
+      substs _ x = x
 instance Subst Exp Defn
-instance Subst Exp DefnAttr
-instance Subst Exp Poly
-
-instance Subst Ty Exp
-instance Subst Ty Pat
-instance Subst Ty Poly
 
 instance NFData Exp
 
@@ -302,14 +361,11 @@ instance TypeAnnotated Exp where
             Con _ t _         -> t
             Case _ t _ _ _    -> t
             Match _ t _ _ _ _ -> t
-            Extern _ t        -> t
-            Bit _ t           -> t
-            Bits _ t          -> t
-            SetRef _ t        -> t
-            GetRef _ t        -> t
+            Builtin _ t _     -> t
             LitInt a _        -> intTy a
             LitStr a _        -> strTy a
             LitList _ t _     -> t
+            LitVec _ t _      -> t
             Error _ t _       -> t
             TypeAnn _ _ e     -> typeOf e
 
@@ -321,14 +377,11 @@ instance Annotated Exp where
             Con a _ _         -> a
             Case a _ _ _ _    -> a
             Match a _ _ _ _ _ -> a
-            Extern a _        -> a
-            Bit a _           -> a
-            Bits a _          -> a
-            SetRef a _        -> a
-            GetRef a _        -> a
+            Builtin a _ _     -> a
             LitInt a _        -> a
             LitStr a _        -> a
             LitList a _ _     -> a
+            LitVec a _ _      -> a
             Error a _ _       -> a
             TypeAnn a _ _     -> a
 
@@ -337,9 +390,11 @@ instance Parenless Exp where
             (Con _ _ (n2s -> c) : _)  | isTupleCtor c -> True
             [Con {}]                                  -> True
             [Var {}]                                  -> True
+            [Builtin {}]                              -> True
             [LitInt {}]                               -> True
             [LitStr {}]                               -> True
             [LitList {}]                              -> True
+            [LitVec {}]                               -> True
             _                                         -> False
 
 instance Pretty Exp where
@@ -361,18 +416,14 @@ instance Pretty Exp where
                         [ tyAnn (text "match") t <+> pretty e <+> text "of"
                         , pretty p <+> text "->" <+> pretty e1
                         ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
-            [Extern _ t]                                 -> tyAnn (text "externWithSig") t
-            [Bit _ t]                                    -> tyAnn (text "bit") t
-            [Bits _ t]                                   -> tyAnn (text "bits") t
-            [SetRef _ t]                                 -> tyAnn (text "set") t
-            [GetRef _ t]                                 -> tyAnn (text "get") t
+            [Builtin _ t b]                              -> tyAnn (pretty b) t
             [LitInt _ v]                                 -> pretty v
             [LitStr _ v]                                 -> dquotes $ pretty v
             [LitList _ _ vs]                             -> brackets $ hsep $ punctuate comma $ map pretty vs
+            [LitVec _ _ vs]                              -> brackets $ hsep $ punctuate comma $ map pretty vs
             [Error _ t m]                                -> tyAnn (text "error") t <+> dquotes (pretty m)
             [TypeAnn _ pt e]                             -> pretty e <+> text "::" <+> pretty pt
             es                                           -> nest 2 $ hsep $ map mparens es
-
             where tyAnn :: Doc ann -> Ty -> Doc ann
                   tyAnn d = \ case
                         t | not $ isBlank t -> d <+> braces (pretty t)
@@ -428,9 +479,6 @@ data MatchPat = MatchPatCon Annote !Ty !(Name DataConId) ![MatchPat]
 instance Hashable MatchPat
 
 instance Alpha MatchPat
-
-instance Subst Exp MatchPat
-instance Subst Ty MatchPat
 
 instance NFData MatchPat
 
@@ -570,10 +618,16 @@ instance Pretty Program where
 
 ---
 
+-- | Turns:
+-- > (App (App (App v e1) e2) e3)
+-- into
+-- > [v, e1, e2, e3]
+-- Descends through type annotations.
 flattenApp :: Exp -> [Exp]
 flattenApp = \ case
-      App _ e e' -> flattenApp e <> [e']
-      e          -> [e]
+      App _ e e'    -> flattenApp e <> [e']
+      TypeAnn _ _ e -> flattenApp e
+      e             -> [e]
 
 flattenArrow :: Ty -> ([Ty], Ty)
 flattenArrow = \ case
@@ -618,6 +672,12 @@ refTy an = TyApp an $ TyCon an $ s2n "Ref"
 
 bitTy :: Annote -> Ty
 bitTy an = TyCon an $ s2n "Bit"
+
+vecTy :: Annote -> Ty -> Ty -> Ty
+vecTy an n t = TyApp an (TyApp an (TyCon an $ s2n "Vec") n) t
+
+plusTy :: Annote -> Ty -> Ty -> Ty
+plusTy an n t = TyApp an (TyApp an (TyCon an $ s2n "+") n) t
 
 arr' :: Ty -> Bind (Name Exp) Exp -> Ty
 arr' t b = runFreshM (arr t . typeOf <$> (snd <$> unbind b))

@@ -56,6 +56,7 @@ data Target = Global !GId
             | Const !BV
             | SetRef !Name
             | GetRef !Name
+            | Resize
       deriving (Eq, Ord, Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Target
 
@@ -69,6 +70,7 @@ instance Pretty Target where
             Const bv     -> ppBV [Lit noAnn bv]
             SetRef n     -> text "setRef" <+> dquotes (text n)
             GetRef n     -> text "getRef" <+> dquotes (text n)
+            Resize       -> text "resize"
 
 ppBV :: Pretty a => [a] -> Doc an
 ppBV = ppBV' . map pretty

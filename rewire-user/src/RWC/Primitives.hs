@@ -1,4 +1,20 @@
-module RWC.Primitives where
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE DataKinds #-}
+module RWC.Primitives
+      ( I, ReT, StT, R_, A_, PuRe (..), Bit (..), Ref (..)
+      , error, externWithSig
+      , rwReturn, rwBind
+      , extrude, unfold
+      , signal, get, put, lift
+      , setRef, getRef
+      , Proxy (..)
+      , Vec
+      , fromList, replicate
+      , reverse, slice, slice', index, (++), bits
+      , bitIndex, bitSlice
+      , type (+)
+      ) where
 
 -- Imports in this file are ignored by rwc.
 import Prelude (Integer, String)
@@ -6,11 +22,11 @@ import qualified Prelude                           as GHC
 import qualified Control.Monad.Identity            as GHC
 import qualified Control.Monad.Resumption.Reactive as GHC
 import qualified Control.Monad.State               as GHC
+import GHC.TypeLits (Nat, type (+))
 
 type I = GHC.Identity
 type ReT = GHC.ReacT
 type StT = GHC.StateT
-type Bits = [Bit]
 
 -- ReWire primitives.
 
@@ -29,6 +45,8 @@ type Bits = [Bit]
 
 data R_ -- Ctors generated during program build.
 data A_ -- Ctors generated during program build.
+data Vec (n :: Nat) a -- Ctors built in.
+data Proxy (n :: Nat) = Proxy
 
 data PuRe s o = Done (A_, s) | Pause (o, (R_, s))
 
@@ -50,21 +68,11 @@ externWithSig :: [(String, Integer)] -- ^ Module parameters (name and integer li
               -> a
 externWithSig _ _ _ _ _ f _ = f
 
--- | bits a j i returns bits j (most significant) to i (least significant) from a (j >= i).
---   The Integer arguments must be non-negative integer literals (after inlining).
-bits :: a -> Integer -> Integer -> b
-bits = GHC.error "Prim: bit string extraction"
-
--- | bit a i == bits a i i.
---   The Integer argument must be a non-negative integer literal (after inlining).
-bit :: a -> Integer -> Bit
-bit = GHC.error "Prim: bit extraction"
-
 data Ref a = Ref String
 setRef :: Ref a -> a -> b -> b
 setRef _ _ b = b
 
-getRef :: Ref a -> a 
+getRef :: Ref a -> a
 getRef = GHC.error "Prim: get"
 
 rwReturn :: GHC.Monad m => a -> m a
@@ -90,3 +98,51 @@ extrude = GHC.error "Prim: extrude"
 
 unfold :: ((R_, s) -> i -> PuRe s o) -> PuRe s o -> ReT i o I a
 unfold = GHC.error "Prim: unfold"
+
+-- *** Built-in Vec functions. ***
+
+-- | Turns a List literal into a Vec with fixed length. I.e.,
+-- > [x, y, z] :: Vec 3 a
+fromList :: [a] -> Vec n a
+fromList = GHC.error "fromList"
+
+replicate :: a -> Vec n a
+replicate = GHC.error "replicate"
+
+reverse :: Vec n a -> Vec n a
+reverse = GHC.error "reverse"
+
+slice :: Proxy i -> Vec ((i + n) + m) a -> Vec n a
+slice = GHC.error "slice"
+
+-- | Slice indexed from the end of the Vec. Could be defined as:
+-- > slice' i = reverse . slice i . reverse
+slice' :: Proxy i -> Vec ((i + n) + m) a -> Vec n a
+slice' = GHC.error "slice"
+
+index :: Vec ((n + m) + 1) a -> Proxy n -> a
+index = GHC.error "index"
+
+-- | Concatenate vectors.
+(++) :: Vec n a -> Vec m a -> Vec (n + m) a
+(++) = GHC.error "(++)"
+
+-- | Interpret anything as a bit vector.
+bits :: a -> Vec n Bit
+bits = GHC.error "bits"
+
+-- | Truncates or zero-pads most significant bits.
+resize :: Vec n Bit -> Vec m Bit
+resize = GHC.error "resize"
+
+-- | bitSlice a j i returns bits j (most significant) to i (least significant) from a (j >= i).
+--   The Integer arguments must be non-negative integer literals (after inlining).
+-- NOTE: deprecated!
+bitSlice :: Vec n Bit -> Integer -> Integer -> Vec m Bit
+bitSlice = GHC.error "Prim: bitSlice"
+
+-- | bitIndex a i == bitSlice a i i.
+--   The Integer argument must be a non-negative integer literal (after inlining).
+-- NOTE: deprecated!
+bitIndex :: Vec n Bit -> Integer -> Bit
+bitIndex = GHC.error "Prim: bit extraction"

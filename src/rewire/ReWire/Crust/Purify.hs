@@ -4,10 +4,11 @@
 module ReWire.Crust.Purify (purify) where
 
 import safe ReWire.Annotation
-import safe ReWire.Unbound (Fresh (..), s2n, n2s)
-import safe ReWire.Error
 import safe ReWire.Crust.Syntax
+import safe ReWire.Crust.TypeCheck (unify')
+import safe ReWire.Error
 import safe ReWire.Pretty
+import safe ReWire.Unbound (Fresh (..), s2n, n2s)
 
 import safe Control.Arrow (first, second, (&&&))
 import safe Control.Monad.State
@@ -19,7 +20,7 @@ import safe Data.Text (Text)
 
 import safe Data.Set (Set, singleton, insert)
 import safe Data.Map.Strict (Map)
-import safe qualified Data.Map.Strict as Map
+import safe qualified Data.Map.Strict     as Map
 
 import TextShow (TextShow (..), fromText)
 
@@ -94,11 +95,11 @@ purify start (ts, syns, ds) = do
                   Just (i', o', ms', a')
                         | length ms >= length ms'
                         , isSuffixOf ms' ms
-                        , Just ui <- unify i i', Just uo <- unify o o'
+                        , Just ui <- unify' i i', Just uo <- unify' o o'
                               -> Just (ui, uo, ms, insert a a')
                         | length ms < length ms'
                         , isSuffixOf ms ms'
-                        , Just ui <- unify i i', Just uo <- unify o o'
+                        , Just ui <- unify' i i', Just uo <- unify' o o'
                               -> Just (ui, uo, ms', insert a a')
                   _           -> Nothing
 
@@ -107,15 +108,6 @@ purify start (ts, syns, ds) = do
 
             isStart :: Name Exp -> Bool
             isStart = (== start) . n2s
-
-            -- | Unify types but do it the most dumbly.
-            unify :: Ty -> Ty -> Maybe Ty
-            unify (TyApp an a b) (TyApp _ a' b') | Just ua <- unify a a'
-                                                 , Just ub <- unify b b' = pure $ TyApp an ua ub
-            unify (TyCon an n) (TyCon _ n')      | n == n'               = pure $ TyCon an n
-            unify TyVar {} t                                             = pure t
-            unify t TyVar {}                                             = pure t
-            unify _ _                                                    = Nothing
 
 -- | In addition to all the above, we re-tie the recursive knot by adding a new
 --   "start" as follows
@@ -142,7 +134,7 @@ mkStart start i o ms = Defn
                               (reT i o (TyCon (MsgAnnote "Purify: startTy") (s2n "I")))
                               resultTy
 
-            unfold     = Var (MsgAnnote "Purify: unfold") (mkArrowTy [dispatchTy i o ms, etor] startTy) $ s2n "unfold"
+            unfold     = Builtin (MsgAnnote "Purify: unfold") (mkArrowTy [dispatchTy i o ms, etor] startTy) Unfold
             dispatch   = Var (MsgAnnote "Purify: dispatch") (dispatchTy i o ms) $ s2n "$Pure.dispatch"
             start_pure = Var (MsgAnnote "Purify: $Pure.start") etor $ s2n "$Pure.start"
             appl       = Embed $ bind [] $ App (MsgAnnote "Purify: appl") (App (MsgAnnote "Purify: appl") unfold dispatch) start_pure
@@ -157,9 +149,9 @@ mkStart start i o ms = Defn
 -- Won't work if called on a non-extrude application.
 flattenExtr :: Exp -> (Exp, [Exp])
 flattenExtr = \ case
-      App _ (App _ (Var _ _ (n2s -> "extrude")) arg1) arg2 -> second (++ [arg2]) $ flattenExtr arg1
-      e@(App _ _ rand)                                     -> first (const e) $ flattenExtr rand
-      e                                                    -> (e, [])
+      App _ (App _ (Builtin _ _ Extrude) arg1) arg2 -> second (++ [arg2]) $ flattenExtr arg1
+      e@(App _ _ rand)                              -> first (const e) $ flattenExtr rand
+      e                                             -> (e, [])
 
 -- | Generates the dispatch function.
 -- > dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i
@@ -378,32 +370,24 @@ dstReT = \ case
 ---------------------------
 
 classifyCases :: (Fresh m, MonadError AstError m) => Exp -> m (Cases Annote Pat Exp Ty)
-classifyCases = \ case
-      Var an t g
-            | n2s g == "get"      -> pure $ Get an t
-            | otherwise           -> pure $ Apply an t g []
-      App an (Var _ t x) e
-            | n2s x == "rwReturn" -> pure $ Return an t e
-            | n2s x == "put"      -> pure $ Put an e
-            | n2s x == "lift"     -> pure $ Lift an e
-      App an (App _ (Var _ t x) e) g
-            | n2s x == "rwBind"   -> pure $ Bind an e g
-            | otherwise           -> pure $ Apply an t x [e, g]
-      e@App {}                    -> do
-            (n, t, es) <- dstApp e
-            pure $ Apply (ann e) t n es
-      Match an _ e1 mp e2 me      -> pure $ SMatch an e1 mp e2 me
-      TypeAnn _ _ e               -> classifyCases e
-      Error a _ _                 -> failAt a "Purify: encountered unsynthesizable definition."
-      d                           -> failAt (ann d) $ "Purify: unclassifiable case: " <> showt d
+classifyCases ex = case flattenApp ex of
+      [Builtin an t Get]        -> pure $ CGet an t
+      [Builtin an t Return, e]  -> pure $ CReturn an t e
+      [Builtin an _ Put, e]     -> pure $ CPut an e
+      [Builtin an _ Lift, e]    -> pure $ CLift an e
+      [Builtin an _ Bind, e, g] -> pure $ CBind an e g
+      [Match an _ e1 mp e2 me]  -> pure $ CMatch an e1 mp e2 me
+      [Error a _ _]             -> failAt a "Purify: encountered unsynthesizable definition."
+      Var an t g : es           -> pure $ CApply an t g es
+      d                         -> failAt (ann ex) $ "Purify: unclassifiable case: " <> showt d
 
-data Cases an p e t = Get an !t
-                    | Return an !t !e
-                    | Lift an !e
-                    | Put an !e
-                    | Bind an !e !e
-                    | Apply an !t !(Name Exp) ![e]
-                    | SMatch an !e !MatchPat !e !(Maybe e)
+data Cases an p e t = CGet an !t
+                    | CReturn an !t !e
+                    | CLift an !e
+                    | CPut an !e
+                    | CBind an !e !e
+                    | CApply an !t !(Name Exp) ![e]
+                    | CMatch an !e !MatchPat !e !(Maybe e)
 
 -- | purifyStateBody
 --   rho  -- pure environment
@@ -414,26 +398,26 @@ data Cases an p e t = Get an !t
 purifyStateBody :: (Fresh m, MonadError AstError m, MonadIO m) =>
                      PureEnv -> [Exp] -> [Ty] -> Int -> Exp -> m Exp
 purifyStateBody rho stos stys i = classifyCases >=> \ case
-      Get an _        -> do
+      CGet an _        -> do
             s <- liftMaybe an ("Purify: state-layer mismatch: length stos == " <> showt (length stos) <> ", i == " <> showt i)
                   $ stos `atMay` i
             pure $ mkTuple an $ s : stos
 
-      Return an _ e   -> pure $ mkTuple an $ e : stos
+      CReturn an _ e   -> pure $ mkTuple an $ e : stos
 
-      Lift _ e        -> purifyStateBody rho stos stys (i + 1) e
+      CLift _ e        -> purifyStateBody rho stos stys (i + 1) e
 
-      Put an e        -> pure $ mkTuple an $ nil : replaceAtIndex i e stos
+      CPut an e        -> pure $ mkTuple an $ nil : replaceAtIndex i e stos
 
-      Apply an t n es -> mkPureApp an rho t n $ es ++ stos
+      CApply an t n es -> mkPureApp an rho t n $ es ++ stos
 
       -- e1 must be simply-typed, so don't purify it.
-      SMatch an e1 mp e2 e3 -> do
+      CMatch an e1 mp e2 e3 -> do
             p <- transPat mp
             e2' <- purifyStateBody rho stos stys i $ mkApp an e2 $ map (mkVar an) (patVars p)
             Case an (typeOf e2') e1 (bind p e2')  <$> maybe' (purifyStateBody rho stos stys i <$> e3)
 
-      Bind an e g -> do
+      CBind an e g -> do
             a           <- liftMaybe (ann e) "Purify: invalid type in bind" $ dstCompR $ typeOf e
             ns          <- freshVars "st" $ a : stys
             (f, tf, es) <- dstApp g
@@ -466,55 +450,44 @@ patVars = \ case
 data RCase an t p e = RReturn an !e
                     | RLift an !e
                     | RVar an !t !(Name e)
-                    | Signal an !e
+                    | RSignal an !e
                     | RBind an !e !e
-                    | SigK an !t !e !(Name e) ![(e, t)] -- (signal e >>= g e1 ... ek)
-                    | Extrude an !t !(Name e) ![e]     -- [(e, t)]
+                    | RSigK an !t !e !(Name e) ![(e, t)] -- (signal e >>= g e1 ... ek)
+                    | RExtrude an !t ![e]                -- [(e, t)]
                     | RApp an !t !(Name e) ![e]
                     | RMatch an !e !MatchPat !e !(Maybe e)
 
 instance TextShow (RCase an t p e) where
-      showb RReturn {} = fromText "RReturn"
-      showb RLift   {} = fromText "RLift"
-      showb RVar    {} = fromText "RVar"
-      showb Signal  {} = fromText "Signal"
-      showb RBind   {} = fromText "RBind"
-      showb SigK    {} = fromText "SigK"
-      showb Extrude {} = fromText "Extrude"
-      showb RApp    {} = fromText "RApp"
-      showb RMatch  {} = fromText "RMatch"
+      showb = \ case
+            RReturn  {} -> fromText "RReturn"
+            RLift    {} -> fromText "RLift"
+            RVar     {} -> fromText "RVar"
+            RSignal  {} -> fromText "RSignal"
+            RBind    {} -> fromText "RBind"
+            RSigK    {} -> fromText "RSigK"
+            RExtrude {} -> fromText "RExtrude"
+            RApp     {} -> fromText "RApp"
+            RMatch   {} -> fromText "RMatch"
 
 classifyRCases :: (Fresh m, MonadError AstError m) => Exp -> m (RCase Annote Ty Pat Exp)
-classifyRCases = \ case
-     e@(App an _ _)         -> dstApp e >>= classifyApp an
-     Match an _ e1 mp e2 me -> pure $ RMatch an e1 mp e2 me
-     Var an t x             -> pure $ RVar an t x
-     TypeAnn _ _ e          -> classifyRCases e
-     Error a _ _            -> failAt a "Purify: encountered unsynthesizable definition."
-     d                      -> failAt (ann d) $ "Purify: unclassifiable R-case: " <> showt d
-
--- | Classifies syntactic applications. Just seemed easier to
--- make it its own function.
-classifyApp :: MonadError AstError m => Annote -> (Name Exp, Ty, [Exp]) -> m (RCase Annote Ty p Exp)
-classifyApp an (x, t, [])  = pure $ RVar an t x
-classifyApp an (x, _, [e])
-      | n2s x == "rwReturn" = pure $ RReturn an e
-      | n2s x == "lift"     = pure $ RLift an e
-      | n2s x == "signal"   = pure $ Signal an e
-classifyApp an (x, t, [e, g])
-      | n2s x == "rwBind"    = case isSignal e of
-            Just s -> do
-                  (g', t, es) <- dstApp g
-                  pure $ SigK an t s g' $ zip es $ paramTys t
-            Nothing -> pure $ RBind an e g
-      | n2s x == "extrude" = pure $ Extrude an t x [e, g]
-      where isSignal :: Exp -> Maybe Exp
-            isSignal = \ case
-                  App _ (Var _ _ (n2s -> "signal")) e -> pure e
-                  _                                   -> Nothing
-classifyApp an (x, t, es)
-      | n2s x == "extrude" = pure $ Extrude an t x es
-      | otherwise          = pure $ RApp an t x es
+classifyRCases ex = case flattenApp ex of
+      [Match an _ e1 mp e2 me]      -> pure $ RMatch an e1 mp e2 me
+      [TypeAnn _ _ e]               -> classifyRCases e
+      [Error a _ _]                 -> failAt a "Purify: encountered unsynthesizable definition."
+      Builtin an _ Return  : [e]    -> pure $ RReturn an e
+      Builtin an _ Lift    : [e]    -> pure $ RLift an e
+      Builtin an _ Signal  : [e]    -> pure $ RSignal an e
+      Builtin an _ Bind    : [sig -> Just s, flattenApp -> Var _ t g' : es]
+                                    -> pure $ RSigK an t s g' $ zip es $ paramTys t
+      Builtin an _ Bind    : [e, g] -> pure $ RBind an e g
+      Builtin an t Extrude : es     -> pure $ RExtrude an t es
+      [Var an t x]                  -> pure $ RVar an t x
+      Var an t x           : es     -> pure $ RApp an t x es
+      d                             -> failAt (ann ex) $ "Purify: unclassifiable R-case: " <> showt d
+      where sig :: Exp -> Maybe Exp
+            sig ex = case flattenApp ex of
+                  [Builtin _ _ Signal, arg] -> pure arg
+                  _                         -> Nothing
 
 -- state for res-purification.
 data PSto = PSto !(Map (Name Exp) ResPoint) !(Name Exp) !(Map Ty (Name DataConId))
@@ -543,7 +516,7 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
       --         dispatch ((R_g e1 ... ek), (s1, ..., sm)) i
       --      = g_pure e1 ... ek i s1 ... sm
       -- to defn of dispatch
-      SigK an _ e g bes -> do
+      RSigK an _ e g bes -> do
             let (es, ts) = unzip bes
             ts' <- mapM (purifyTy an ms) ts
 
@@ -565,7 +538,7 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
             pure $ mkRight outer             -- Right ((e, R_g e1 ... ek), (s1, (..., sm)))
 
       -- purifyResBody (signal e)         = "(Right ((e, (s1, (..., sm))), R_ret))"
-      Signal an e -> do
+      RSignal an e -> do
             addNakedSignal an
             pure $ mkRight $ mkTuple an $ [e, Con an rTy $ s2n "R_return"] ++ stos
 
@@ -614,7 +587,7 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
 
       RVar an tx x   -> do
             tx' <- purifyTy an ms tx
-            pure $ mkApp' an tx' x' stos
+            pure $ mkApp an (Var an tx' x') stos
                   where x' = if isStart x then s2n "$Pure.start" else x
 
       -- extrude :: Monad m => ReT i o (StT s m) a -> s -> ReT i o m a
@@ -625,14 +598,14 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
       -- 2. phi' <- purifyResBody phi
       -- 3. make definition and addit to definitions: $LL = phi'
       -- 4. return $ (...($LL s1)...sn)
-      Extrude an t rator rands -> case flattenExtr $ mkApp' an t rator rands of
+      RExtrude an t rands -> case flattenExtr $ mkApp an (Builtin an t Extrude) rands of
             (Var an t d, stos) -> do
                   t'  <- purifyTy an ms t
-                  pure $ mkApp' an t' d stos
+                  pure $ mkApp an (Var an t' d) stos
             (e@App {}, stos)   -> do
                   (f, t, es) <- dstApp e
                   t'         <- purifyTy (ann e) ms t
-                  pure $ mkApp' (ann e) t' f $ es ++ stos
+                  pure $ mkApp (ann e) (Var (ann e) t' f) $ es ++ stos
             (e, _)             -> failAt (ann e) $ "Purify: extruded device is non-variable: " <> showt e
 
       RApp an rty rator rands -> do
@@ -731,29 +704,18 @@ mkRPat an ts r_g = do
       pure (PatCon an (Embed $ TyCon an $ s2n "R_") (Embed r_g) varpats, map fst xs)
 
 mkPureVar :: MonadError AstError m => Annote -> PureEnv -> Ty -> Name Exp -> m Exp
-mkPureVar an rho t x = case n2s x of
-      "extrude" -> pure $ Var an t x
-      "unfold"  -> pure $ Var an t x
-      _         -> Var an <$> lookupPure an x rho <*> pure x
+mkPureVar an rho _ x = Var an <$> lookupPure an x rho <*> pure x
 
 mkApp :: Annote -> Exp -> [Exp] -> Exp
 mkApp an = foldl' $ App an
-
-mkApp' :: Annote -> Ty -> Name Exp -> [Exp] -> Exp
-mkApp' an t n = mkApp an (Var an t n)
 
 mkPureApp :: MonadError AstError m => Annote -> PureEnv -> Ty -> Name Exp -> [Exp] -> m Exp
 mkPureApp an rho t rator es = flip (mkApp an) es <$> mkPureVar an rho t rator
 
 dstApp :: MonadError AstError m => Exp -> m (Name Exp, Ty, [Exp])
-dstApp = \ case
-      App _ (Var _ t n) rand -> pure (n, t, [rand])
-      App _ rator rand       -> do
-            (n, t, es) <- dstApp rator
-            pure (n, t, es ++ [rand])
-      Var _ t n              -> pure (n, t, [])
-      TypeAnn _ _ e          -> dstApp e
-      d                      -> failAt (ann d) $ "Purify: tried to dst non-app: " <> showt (unAnn d)
+dstApp e = case flattenApp e of
+      Var _ t n : es -> pure (n, t, es)
+      d              -> failAt (ann e) $ "Purify: tried to dst non-app: " <> showt (unAnn d)
 
 -- | Lets are desugared already, so use a case instead (with lifted discriminator).
 mkLet :: Fresh m => Annote -> Pat -> Exp -> Exp -> m Exp

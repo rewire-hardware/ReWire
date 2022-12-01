@@ -99,7 +99,7 @@ toCrust rn = \ case
                                     InlineSig _ b Nothing (Qual _ _ x) -> Map.insert (void x) $ if b then M.Inline else M.NoInline
                                     InlineSig _ b Nothing (UnQual _ x) -> Map.insert (void x) $ if b then M.Inline else M.NoInline
                                     _                                  -> id
-      m                                                           -> failAt (ann m) "Unsupported module syntax"
+      m                                                                -> failAt (ann m) "Unsupported module syntax"
 
 
 exportAll :: QNamish a => Renamer -> a -> Export
@@ -118,6 +118,11 @@ transExport rn ds exps = \ case
             if finger Value rn x
             then pure $ Export (rename Value rn x) : fixities (qnamish x) ++ exps
             else failAt l "Unknown variable name in export list"
+      -- TODO(chathhorn): Ignore type exports.
+      -- This is to ease compatibility with GHC -- we can have built-in type
+      -- operators while ignoring parts exported from GHC.TypeLits in the
+      -- RWC.Primitives module.
+      EAbs _ (TypeNamespace _) _         -> pure exps
       EAbs l _ (void -> x)               ->
             if finger Type rn x
             then pure $ Export (rename Type rn x) : exps
@@ -210,6 +215,7 @@ transDef rn tys inls defs = \ case
 transTyVar :: MonadError AstError m => Annote -> S.TyVarBind () -> m (Name M.Ty)
 transTyVar l = \ case
       S.UnkindedVar _ x -> pure $ mkUId x
+      S.KindedVar _ x _ -> pure $ mkUId x
       _                 -> failAt l "Unsupported type syntax"
 
 transCon :: (Fresh m, MonadError AstError m) => Renamer -> [M.Kind] -> [Name M.Ty] -> Name M.TyConId -> QualConDecl Annote -> m M.DataCon
@@ -241,15 +247,14 @@ transExp :: (Fresh m, MonadError AstError m) => Renamer -> Exp Annote -> m M.Exp
 transExp rn = \ case
       App l (Var _ n) (Lit _ (String _ m _))
             | isError n      -> pure $ M.Error l (M.TyBlank l) (pack m)
+      App l (Var _ x) (List _ es)
+            | isFromList x   -> M.LitVec l (M.TyBlank l) <$> mapM (transExp rn) es
       App l e1 e2            -> M.App l <$> transExp rn e1 <*> transExp rn e2
       Lambda l [PVar _ x] e  -> do
             e' <- transExp (exclude Value [void x] rn) e
             pure $ M.Lam l (M.TyBlank l) $ bind (mkUId $ void x) e'
-      Var l x | isExtern x   -> pure $ M.Extern l $ M.TyBlank l
-      Var l x | isBit x      -> pure $ M.Bit l $ M.TyBlank l
-      Var l x | isBits x     -> pure $ M.Bits l $ M.TyBlank l
-      Var l x | isSetRef x   -> pure $ M.SetRef l $ M.TyBlank l
-      Var l x | isGetRef x   -> pure $ M.GetRef l $ M.TyBlank l
+      Var l x | Just b <- builtin x
+                             -> pure $ M.Builtin l (M.TyBlank l) b
       Var l x                -> pure $ M.Var l (M.TyBlank l) $ s2n $ rename Value rn x
       Con l x                -> pure $ M.Con l (M.TyBlank l) $ s2n $ rename Value rn x
       Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _] -> do
@@ -273,23 +278,14 @@ transExp rn = \ case
                   PVar (_::Annote) x -> [void x]
                   _                  -> []
 
+            builtin :: QName Annote -> Maybe M.Builtin
+            builtin = M.builtin . pack . prettyPrint . name . rename Value rn
+
             isError :: QName Annote -> Bool
             isError n = prettyPrint (name $ rename Value rn n) == "error"
 
-            isExtern :: QName Annote -> Bool
-            isExtern n = prettyPrint (name $ rename Value rn n) == "externWithSig"
-
-            isBit :: QName Annote -> Bool
-            isBit n = prettyPrint (name $ rename Value rn n) == "bit"
-
-            isBits :: QName Annote -> Bool
-            isBits n = prettyPrint (name $ rename Value rn n) == "bits"
-
-            isSetRef :: QName Annote -> Bool
-            isSetRef n = prettyPrint (name $ rename Value rn n) == "setRef"
-
-            isGetRef :: QName Annote -> Bool
-            isGetRef n = prettyPrint (name $ rename Value rn n) == "getRef"
+            isFromList :: QName Annote -> Bool
+            isFromList n = prettyPrint (name $ rename Value rn n) == "fromList"
 
 transPat :: MonadError AstError m => Renamer -> Pat Annote -> m M.Pat
 transPat rn = \ case

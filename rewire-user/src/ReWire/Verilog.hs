@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 module ReWire.Verilog
       ( (+), (-), (*), (/)
       , (%), (**), (^), (~^)
@@ -8,11 +9,12 @@ module ReWire.Verilog
       , (<>)
       , lnot, bnot, rAnd, rNAnd
       , rOr, rNor, rXor, rXNor
-      , msbit, lit, resize, replicate
+      , msbit
       ) where
 
 import ReWire
-import Prelude (undefined, Integer)
+import ReWire.Bits
+import Prelude (undefined)
 
 infixr 9 **
 infixl 8  *, /, %
@@ -27,136 +29,122 @@ infixr 1  ||
 infixl 0  <>
 
 -- | Add.
-(+) :: a -> a -> a
+(+) :: W n -> W n -> W n
 (+) = extern "+" undefined
 
 -- | Subtract.
-(-) :: a -> a -> a
+(-) :: W n -> W n -> W n
 (-) = extern "-" undefined
 
 -- | Multiply.
-(*) :: a -> a -> a
+(*) :: W n -> W n -> W n
 (*) = extern "*" undefined
 
 -- | Divide.
-(/) :: a -> a -> a
+(/) :: W n -> W n -> W n
 (/) = extern "/" undefined
 
 -- | Modulus.
-(%) :: a -> a -> a
+(%) :: W n -> W n -> W n
 (%) = extern "%" undefined
 
 -- | Exponentiation.
-(**) :: a -> a -> a
+(**) :: W n -> W n -> W n
 (**) = extern "**" undefined
 
 -- | Logical and.
-(&&) :: a -> a -> Bit
+(&&) :: W n -> W n -> Bit
 (&&) = extern "&&" undefined
 
 -- | Logical or.
-(||) :: a -> a -> Bit
+(||) :: W n -> W n -> Bit
 (||) = extern "||" undefined
 
 -- | Bitwise and.
-(.&.) :: a -> a -> a
+(.&.) :: W n -> W n -> W n
 (.&.) = extern "&" undefined
 
 -- TODO(chathhorn): removing the dot causes the parser to choke.
 -- | Bitwise or.
-(.|.) :: a -> a -> a
+(.|.) :: W n -> W n -> W n
 (.|.) = extern "|" undefined
 
 -- | Bitwise exclusive or.
-(^) :: a -> a -> a
+(^) :: W n -> W n -> W n
 (^) = extern "^" undefined
 
 -- | Bitwise exclusive nor.
-(~^) :: a -> a -> a
+(~^) :: W n -> W n -> W n
 (~^) = extern "~^" undefined
 
 -- | Shift left.
-(<<) :: a -> a -> a
+(<<) :: W n -> W n -> W n
 (<<) = extern "<<" undefined
 
 -- | Shift right.
-(>>) :: a -> a -> a
+(>>) :: W n -> W n -> W n
 (>>) = extern ">>" undefined
 
 -- | Shift left.
-(<<<) :: a -> a -> a
+(<<<) :: W n -> W n -> W n
 (<<<) = extern "<<<" undefined
 
 -- | Shift right, sign-extend.
-(>>>) :: a -> a -> a
+(>>>) :: W n -> W n -> W n
 (>>>) = extern ">>>" undefined
 
 -- | Greater-than.
-(>) :: a -> b -> Bit
+(>) :: W n -> W m -> Bit
 (>) = extern ">" undefined
 
 -- | Greater-than or equal.
-(>=) :: a -> b -> Bit
+(>=) :: W n -> W m -> Bit
 (>=) = extern ">=" undefined
 
 -- | Less-than.
-(<) :: a -> b -> Bit
+(<) :: W n -> W m -> Bit
 (<) = extern "<" undefined
 
 -- | Less-than or equal.
-(<=) :: a -> b -> Bit
+(<=) :: W n -> W m -> Bit
 (<=) = extern "<=" undefined
 
 -- | Concatenate.
-(<>) :: a -> b -> c
+(<>) :: W n -> W m -> W (n + m)
 (<>) = extern "concat" undefined
 
 -- | Logical not.
-lnot :: a -> Bit
+lnot :: W n -> Bit
 lnot = extern "!" undefined
 
 -- | Bitwise not.
-bnot :: a -> a
+bnot :: W n -> W n
 bnot = extern "~" undefined
 
 -- | Reduction and.
-rAnd :: a -> Bit
+rAnd :: W n -> Bit
 rAnd = extern "&" undefined
 
 -- | Reduction nand.
-rNAnd :: a -> Bit
+rNAnd :: W n -> Bit
 rNAnd = extern "~&" undefined
 
 -- | Reduction or.
-rOr :: a -> Bit
+rOr :: W n -> Bit
 rOr = extern "|" undefined
 
 -- | Reduction nor.
-rNor :: a -> Bit
+rNor :: W n -> Bit
 rNor = extern "~|" undefined
 
 -- | Reduction xor.
-rXor :: a -> Bit
+rXor :: W n -> Bit
 rXor = extern "^" undefined
 
 -- | Reduction xnor.
-rXNor :: a -> Bit
+rXNor :: W n -> Bit
 rXNor = extern "~^" undefined
 
 -- | Most significant bit.
-msbit :: a -> Bit
+msbit :: W n -> Bit
 msbit = extern "msbit" undefined
-
--- | Repeat.
-replicate :: Integer -> a -> b
-replicate = extern "replicate" undefined
-
--- | Turn an Integer literal into any type! Truncates most significant bits or
---   zero-pads to make it fit.
-lit :: Integer -> a
-lit = extern "resize" undefined
-
--- | Turns any type into any other type! Truncates most significant bits or
---   zero-pads to make it fit.
-resize :: a -> b
-resize = extern "resize" undefined

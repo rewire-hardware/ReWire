@@ -5,7 +5,7 @@
 -- Haskell", though since we don't have type classes in core it is much
 -- simpler.
 --
-module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype) where
+module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype, unify, unify') where
 
 import ReWire.Annotation
 import ReWire.Error (AstError, MonadError, failAt)
@@ -16,21 +16,24 @@ import ReWire.Crust.Syntax
 import ReWire.SYB (runPureT, transform, runQ, query)
 
 import Control.DeepSeq (deepseq, force)
-import Control.Monad (zipWithM, foldM)
+import Control.Monad (zipWithM, foldM, mplus)
 import Control.Monad.Catch (MonadCatch (..))
 import Control.Monad.Identity (Identity (..))
-import Control.Monad.Reader (ReaderT (..), local, asks)
-import Control.Monad.State (evalStateT, StateT (..), get, put, modify, MonadState)
+import Control.Monad.Reader (MonadReader, ReaderT (..), local, asks)
+import Control.Monad.State (evalStateT, gets, modify, MonadState)
 import Data.Data (Data)
 import Data.HashMap.Strict (HashMap)
-import Data.Set (Set)
 import Data.List (foldl')
 import Data.Maybe (mapMaybe)
+import Data.Set (Set)
+import Numeric.Natural (Natural)
 import TextShow (TextShow (..))
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Text as T
+
+import Debug.Trace (trace)
 
 subst :: Subst b a => HashMap (Name b) b -> a -> a
 subst = substs . Map.toList
@@ -50,19 +53,14 @@ instance Semigroup TCEnv where
 instance Monoid TCEnv where
       mempty = TCEnv mempty mempty
 
-type TCM m = ReaderT TCEnv (StateT TySub m)
-
 lookupAll :: Eq a => a -> [(a, b)] -> [b]
 lookupAll a = map snd . filter ((== a) . fst)
 
 typeCheckDefn :: (Fresh m, MonadError AstError m) => [DataDefn] -> [Defn] -> Defn -> m Defn
-typeCheckDefn ts vs d = evalTCM $ withAssumps ts vs $ tcDefn d
-
-evalTCM :: Monad m => TCM m a -> m a
-evalTCM m = evalStateT (runReaderT m mempty) mempty
+typeCheckDefn ts vs d = runReaderT (withAssumps ts vs $ tcDefn d) mempty
 
 typeCheck :: (Fresh m, MonadError AstError m, MonadCatch m) => FreeProgram -> m FreeProgram
-typeCheck (ts, syns, vs) = (ts, syns, ) <$> evalTCM tc
+typeCheck (ts, syns, vs) = (ts, syns, ) <$> runReaderT tc mempty
       where conc :: Concretes -> Defn -> [Defn]
             conc cs (Defn an n _ b e) = mapMaybe conc' $ lookupAll n $ Map.keys cs
                   where conc' :: Ty -> Maybe Defn
@@ -70,13 +68,13 @@ typeCheck (ts, syns, vs) = (ts, syns, ) <$> evalTCM tc
                               n' <- Map.lookup (n, t) cs
                               pure $ Defn an n' ([] |-> t) b e
 
-            tc :: (MonadCatch m, Fresh m, MonadError AstError m) => TCM m [Defn]
+            tc :: (MonadCatch m, Fresh m, MonadError AstError m, MonadReader TCEnv m) => m [Defn]
             tc = do
                   vs' <- withAssumps ts vs $ mapM tcDefn vs
                   cs  <- concretes vs' -- TODO(chathhorn): don't think this needs to use fix.
                   fst . fst <$> fixOn (Map.keys . snd) "polymorphic function instantiation" 10 tc' ((vs', mempty), cs)
 
-            tc' :: (MonadCatch m, Fresh m, MonadError AstError m) => (([Defn], Concretes), Concretes) -> TCM m (([Defn], Concretes), Concretes)
+            tc' :: (MonadCatch m, Fresh m, MonadError AstError m, MonadReader TCEnv m) => (([Defn], Concretes), Concretes) -> m (([Defn], Concretes), Concretes)
             tc' ((acc, cs), cs') = do
                   let ep = concatMap (conc cs') polyDefs
                   ep' <- concretize (cs <> cs') <$> withAssumps ts (acc <> ep) (mapM tcDefn ep)
@@ -123,30 +121,106 @@ s1 @@ s2 = Map.mapWithKey (\ _ t -> subst s1 t) s2 `Map.union` s1
 isFlex :: Name a -> Bool -- TODO(chahthorn): !!
 isFlex = (== '?') . T.head . n2s
 
-varBind :: Monad m => Name Ty -> Ty -> TCM m (Maybe TySub)
-varBind u t | t `aeq` TyVar noAnn kblank u = pure $ Just mempty
-            | u `elem` fv t                = pure Nothing
-            | otherwise                    = pure $ Just $ Map.singleton u t
+varBind :: Name Ty -> Ty -> Maybe TySub
+varBind u t | u `elem` fv t = Nothing
+            | otherwise     = pure $ Map.singleton u t
 
-mgu :: Monad m => Ty -> Ty -> TCM m (Maybe TySub)
-mgu (TyApp _ tl tr) (TyApp _ tl' tr')                        = do
+mgu :: Ty -> Ty -> Maybe TySub
+mgu (TyApp _ tl tr)                 (TyApp _ tl' tr')                          = do
       s1 <- mgu tl tl'
-      s2 <- maybe (pure Nothing) (\ s1' -> mgu (subst s1' tr) $ subst s1' tr') s1
-      case (s1, s2) of
-            (Just s1', Just s2') -> pure $ Just $ s2' @@ s1'
-            _                    -> pure Nothing
-mgu (TyCon _ c1)    (TyCon _ c2)  | n2s c1 == n2s c2              = pure $ Just mempty
-mgu (TyVar _ _ u)   t             | isFlex u                      = varBind u t
-mgu t               (TyVar _ _ u) | isFlex u                      = varBind u t
-mgu (TyVar _ _ v)   (TyVar _ _ u) | not (isFlex v) && v == u      = pure $ Just mempty
-mgu _ _                                                           = pure Nothing
+      s2 <- mgu (subst s1 tr) $ subst s1 tr' 
+      pure $ s2 @@ s1
+mgu (TyCon _ c1)                    (TyCon _ c2) | n2s c1 == n2s c2            = pure mempty
 
-unify :: MonadError AstError m => Annote -> Ty -> Ty -> TCM m ()
+mgu (TyNat _ n1)                    (TyNat _ n2) | n1 == n2                    = pure mempty
+
+mgu (TyVar _ _ u)                   (plus -> Just (TyVar _ _ v, t)) | u == v   = mgu (TyNat (ann t) 0) t
+mgu (plus -> Just (TyVar _ _ v, t)) (TyVar _ _ u)                   | u == v   = mgu (TyNat (ann t) 0) t
+
+mgu (TyNat _ n)                     (plus -> Just (TyNat _ m, t))   | n >= m   = mgu (TyNat (ann t) $ n - m) t
+mgu (plus -> Just (TyNat _ m, t))   (TyNat _ n)                     | n >= m   = mgu (TyNat (ann t) $ n - m) t
+
+mgu (TyVar _ _ u)                   (TyVar _ _ v)                   | u == v   = pure mempty
+mgu (TyVar _ _ u)                   t                               | isFlex u = varBind u t
+mgu t                               (TyVar _ _ u)                   | isFlex u = varBind u t
+
+mgu _ _                                                                        = Nothing
+
+mapNat :: (Ty -> Ty) -> Ty -> Ty
+mapNat norm = \ case
+      TyApp a c n | isVec c || isProxy c -> TyApp a c $ norm n
+      TyApp a t1 t2                      -> TyApp a (mapNat norm t1) $ mapNat norm t2
+      t                                  -> t
+
+normNat :: Ty -> Ty
+normNat t = case evalNats $ plus' t of
+      (0, ts@(_ : _)) -> foldr1 (plusTy $ ann t) ts
+      (n, ts        ) -> foldr1 (plusTy $ ann t) $ TyNat (ann t) n : ts
+
+normNat' :: Ty -> Ty
+normNat' t = case evalNats $ plus' t of
+      (0, ts@(_ : _)) -> foldr1 (plusTy $ ann t) $ reverse ts
+      (n, ts        ) -> foldr1 (plusTy $ ann t) $ reverse $ TyNat (ann t) n : ts
+
+evalNats :: [Ty] -> (Natural, [Ty])
+evalNats = \ case
+      TyNat _ n : (evalNats -> (n', ts')) -> (n' + n,     ts')
+      t         : (evalNats -> (n', ts')) -> (n',     t : ts')
+      _                                   -> (0,           [])
+
+plus' :: Ty -> [Ty]
+plus' t | Just (a, b) <- plus t = plus' a <> plus' b
+        | otherwise             = [t]
+
+unify' :: Ty -> Ty -> Maybe Ty
+unify' t1 t2 = subst <$> mgu t1 t2 <*> pure t1
+
+tySub :: (MonadState TySub m, Subst Ty a) => a -> m a
+tySub = gets . flip subst
+
+unify :: (MonadError AstError m, MonadState TySub m) => Annote -> Ty -> Ty -> m ()
 unify an t1 t2 = do
-      s  <- get
-      mgu (subst s t1) (subst s t2) >>= maybe
-            (failAt an $ "Types do not unify. Expected and got, respectively:\n" <> prettyPrint (subst s t1) <> "\n" <> prettyPrint (subst s t2))
-            (modify . (@@))
+      t1' <- tySub t1
+      t2' <- tySub t2
+      let fwd = mapNat normNat
+          rev = mapNat normNat'
+      trace ("Unifying: " <> T.unpack (prettyPrint $ fwd t1')
+        <> "\n    with: " <> T.unpack (prettyPrint $ fwd t2')) $ pure ()
+      trace ("     t1': " <> show (unAnn $ fwd t1')) $ pure ()
+      trace ("     t2': " <> show (unAnn $ fwd t2')) $ pure ()
+
+      trace ("Unifying: " <> T.unpack (prettyPrint $ fwd t1')
+        <> "\n    with: " <> T.unpack (prettyPrint $ rev t2')) $ pure ()
+      trace ("     t1': " <> show (unAnn $ fwd t1')) $ pure ()
+      trace (" rev t2': " <> show (unAnn $ rev t2')) $ pure ()
+
+      case mgu (fwd t1') (fwd t2') `mplus` mgu (fwd t1') (rev t2') of
+            Just s' -> modify (s' @@)
+            _       -> failAt an $ "Types do not unify. Expected and got, respectively:\n"
+                              <> prettyPrint t1' <> "\n"
+                              <> prettyPrint t2'
+--                              <> "\nSHOW t1: " <> T.pack (show $ unAnn t1')
+--                              <> "\nSHOW t2: " <> T.pack (show $ unAnn t2')
+
+isVec :: Ty -> Bool
+isVec = \ case
+      TyCon _ (n2s -> "Vec") -> True
+      _                      -> False
+
+isProxy :: Ty -> Bool
+isProxy = \ case
+      TyCon _ (n2s -> "Proxy") -> True
+      _                        -> False
+
+isPlus :: Ty -> Bool
+isPlus = \ case
+      TyCon _ (n2s -> "+") -> True
+      _                    -> False
+
+plus :: Ty -> Maybe (Ty, Ty)
+plus = \ case
+      TyApp _ (TyApp _ c t1) t2 | isPlus c -> pure (t1, t2)
+      _                                    -> Nothing
 
 inst :: (MonadState TySub m, Fresh m) => Poly -> m Ty
 inst (Poly pt) = do
@@ -170,7 +244,7 @@ patHoles = flip patHoles' $ pure mempty
                   MatchPatVar _ t      -> (flip Map.insert ([] `poly` t) <$> fresh (s2n "PHOLE") <*>)
                   MatchPatWildCard _ _ -> id
 
-tcPat :: (Fresh m, MonadError AstError m) => Ty -> Pat -> TCM m Pat
+tcPat :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Ty -> Pat -> m Pat
 tcPat t = \ case
       PatCon an _ (Embed i) ps -> do
             cas     <- asks cas
@@ -188,7 +262,7 @@ tcPat t = \ case
       PatVar an _ x            -> pure $ PatVar an (Embed t) x
       PatWildCard an _         -> pure $ PatWildCard an (Embed t)
 
-tcMatchPat :: (Fresh m, MonadError AstError m) => Ty -> MatchPat -> TCM m MatchPat
+tcMatchPat :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Ty -> MatchPat -> m MatchPat
 tcMatchPat t = \ case
       MatchPatCon an _ i ps -> do
             cas     <- asks cas
@@ -206,7 +280,7 @@ tcMatchPat t = \ case
       MatchPatVar an _      -> pure $ MatchPatVar an t
       MatchPatWildCard an _ -> pure $ MatchPatWildCard an t
 
-tcExp :: (Fresh m, MonadError AstError m) => Exp -> TCM m (Exp, Ty)
+tcExp :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Exp -> m (Exp, Ty)
 tcExp = \ case
       App an e1 e2 -> do
             (e1', te1) <- tcExp e1
@@ -262,30 +336,13 @@ tcExp = \ case
                         (e2', te2)  <- tcExp e2
                         unify an tv te2
                         pure (Match an tv e' p' f (Just e2'), tv)
-      Extern an _ -> do
-            tv <- freshv
-            let t = listTy an paramTy `arr` strTy an `arr` listTy an paramTy `arr` listTy an paramTy `arr` strTy an `arr` tv `arr` strTy an `arr` tv
-            pure (Extern an t, t)
-            where paramTy :: Ty
-                  paramTy = pairTy an (strTy an) (intTy an)
-      Bit an _ -> do
-            tv <- freshv
-            let t = tv `arr` intTy an `arr` bitTy an
-            pure (Bit an t, t)
-      Bits an _ -> do
-            tv  <- freshv
-            tv' <- freshv
-            let t = tv `arr` intTy an `arr` intTy an `arr` tv'
-            pure (Bits an t, t)
-      SetRef an _ -> do
-            ta  <- freshv
-            tb  <- freshv
-            let t = refTy an ta `arr` ta `arr` tb `arr` tb
-            pure (SetRef an t, t)
-      GetRef an _ -> do
-            ta  <- freshv
-            let t = refTy an ta `arr` ta
-            pure (GetRef an t, t)
+      Builtin an _ b -> do
+            as <- asks as
+            case Map.lookup (s2n $ builtinName b) as of
+                  Nothing -> failAt an $ "Unknown builtin: " <> builtinName b
+                  Just pt -> do
+                        t <- inst pt
+                        pure (Builtin an t b, t)
       e@LitInt {} -> pure (e, typeOf e)
       e@LitStr {} -> pure (e, typeOf e)
       LitList an _ es -> do
@@ -294,6 +351,12 @@ tcExp = \ case
             mapM_ (unify an tv) (snd <$> es')
             let t = listTy an tv
             pure (LitList an t (fst <$> es'), t)
+      LitVec an _ es -> do
+            tv  <- freshv
+            es' <- mapM tcExp es
+            mapM_ (unify an tv) (snd <$> es')
+            let t = vecTy an (TyNat an $ fromInteger $ toInteger $ length es) tv
+            pure (LitVec an t (fst <$> es'), t)
       Error an _ m -> do
             tv <- freshv
             pure (Error an tv m, tv)
@@ -306,9 +369,8 @@ tcExp = \ case
 mkApp :: Annote -> Exp -> [Name Exp] -> Exp
 mkApp an f holes = foldl' (App an) f $ map (Var an $ TyBlank an) holes
 
-tcDefn :: (Fresh m, MonadError AstError m) => Defn -> TCM m Defn
-tcDefn d  = do
-      put mempty
+tcDefn :: (Fresh m, MonadError AstError m, MonadReader TCEnv m) => Defn -> m Defn
+tcDefn d  = flip evalStateT mempty $ do
       let Defn an n (Embed (Poly pt)) b (Embed e) = force d
       (tvs, t) <- unbind pt
       (vs, e') <- unbind e
@@ -316,12 +378,11 @@ tcDefn d  = do
       (e'', te) <- localAssumps (`Map.union` (Map.fromList $ zip vs $ map (poly []) targs)) $ tcExp e'
       let te' = iterate arrowRight t !! length vs
       unify an te' te
-      s <- get
-      put mempty
-      let d' = Defn an n (tvs |-> t) b $ Embed $ bind vs $ subst s e''
+      e''' <- tySub e''
+      let d' = Defn an n (tvs |-> t) b $ Embed $ bind vs e'''
       d' `deepseq` pure d'
 
-withAssumps :: MonadError AstError m => [DataDefn] -> [Defn] -> TCM m a -> TCM m a
+withAssumps :: (MonadError AstError m, MonadReader TCEnv m) => [DataDefn] -> [Defn] -> m a -> m a
 withAssumps ts vs = localAssumps (`Map.union` as) . localCAssumps (`Map.union` cas)
       where as  = foldr defnAssump mempty vs
             cas = foldr dataDeclAssumps mempty ts
@@ -335,10 +396,10 @@ withAssumps ts vs = localAssumps (`Map.union` as) . localCAssumps (`Map.union` c
             dataConAssump :: DataCon -> HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly
             dataConAssump (DataCon _ i (Embed t)) = Map.insert i t
 
-localAssumps :: MonadError AstError m => (HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly) -> TCM m a -> TCM m a
+localAssumps :: (MonadReader TCEnv m, MonadError AstError m) => (HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly) -> m a -> m a
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
 
-localCAssumps :: MonadError AstError m => (HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly) -> TCM m a -> TCM m a
+localCAssumps :: (MonadReader TCEnv m, MonadError AstError m) => (HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly) -> m a -> m a
 localCAssumps f = local (\ tce -> tce { cas = f (cas tce) })
 
 untype :: Data d => d -> d

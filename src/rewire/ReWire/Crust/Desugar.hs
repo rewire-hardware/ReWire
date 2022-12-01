@@ -230,7 +230,7 @@ normIds = (\ x -> case x :: QName Annote of
             Special l (FunCon _)       -> pure $ UnQual l $ Ident l "->"
             -- I think this is only for the prefix constructor.
             Special l (TupleCon _ _ i) -> pure $ UnQual l $ mkTuple l i
-            Special l (Cons _)         -> pure $ UnQual l $ Ident l "Cons")
+            Special l (Cons _)         -> pure $ UnQual l $ Ident l "(:)")
       ||> TId
 
 mkTuple :: Annote -> Int -> Name Annote

@@ -25,7 +25,6 @@ primDatas = map mkData
       , ("Integer", KStar,                                              [])
       , ("Vec",     KNat `KFun` KStar `KFun` KStar,                     [])
       , ("+",       KNat `KFun` KNat  `KFun` KNat,                      [])
-      , ("Bit",     KStar,                                              [nullDataCon "C" "Bit", nullDataCon "S" "Bit"])
       , ("Ref",     KStar `KFun` KStar,                                 [refCtor])
       , ("String",  KStar,                                              [])
       , ("[_]",     KStar `KFun` KStar,                                 [])

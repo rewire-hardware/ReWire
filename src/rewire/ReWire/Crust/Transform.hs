@@ -103,11 +103,13 @@ expandTypeSynonyms (ts, syns, ds) = (,,) <$> expandSyns ts <*> syns' <*> expandS
 --   during other transformations.
 neuterExterns :: MonadCatch m => FreeProgram -> m FreeProgram
 neuterExterns = runT $ transform $ \ case
-      App an ex e | isExtern ex -> pure $ App an ex $ TypeAnn (ann e) (poly' $ typeOf e) $ Error (ann e) (typeOf e) "extern expression placeholder"
+      App an ex e | isExtern ex -> pure $ App an ex
+                                        $ TypeAnn (ann e) (poly' $ typeOf e)
+                                        $ Error (ann e) (typeOf e) "extern expression placeholder"
       where isExtern :: Exp -> Bool
             isExtern = \ case
-                  (flattenApp -> Extern {} : args) -> length args == 5
-                  _                                -> False
+                  (flattenApp -> Builtin _ _ Extern : args) -> length args == 5
+                  _                                         -> False
 
 -- | Removes type annotations on expressions.
 removeExpTypeAnn :: MonadCatch m => FreeProgram -> m FreeProgram
@@ -202,11 +204,11 @@ prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM ppDefn ds
 
             dstBind :: Exp -> Maybe (Annote, Exp, Exp)
             dstBind = \ case
-                  App a (App _ (Var _ _ (bn2s -> "rwBind")) e1) e2 -> Just (a, e1, e2)
+                  App a (App _ (Builtin _ _ Bind) e1) e2 -> Just (a, e1, e2)
                   _                                                -> Nothing
 
             mkBind :: Annote -> Ty -> Exp -> Exp -> Exp
-            mkBind a t e1 e2 = App a (App a (Var a t $ s2n "rwBind") e1) e2
+            mkBind a t e1 e2 = App a (App a (Builtin a t Bind) e1) e2
 
             flatten :: (Fresh m, MonadError AstError m) => [Defn] -> Exp -> m Exp
             flatten ds = fix "Bind LHS definition expansion" 100 (pure . substs (map defnSubst ds))
@@ -375,10 +377,7 @@ purgeUnused start (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ exter
                               inuseDefn' $ inuse' \\ inuse
 
                         reservedDefn :: [Text]
-                        reservedDefn =
-                                     [ start
-                                     , "unfold"
-                                     ]
+                        reservedDefn = start : (fst <$> builtins)
 
                         ds' :: Set (Name Exp)
                         ds' = Set.fromList $ filter (flip elem reservedDefn . n2s) $ map defnName ds
@@ -389,7 +388,6 @@ purgeUnused start (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ exter
                         toDefn :: Name Exp -> Defn
                         toDefn n | Just d <- find ((== n) . defnName) ds = d
                                  | otherwise                             = error $ "Something went wrong: can't find symbol: " <> show n
-
 
             inuseData :: [Name TyConId] -> [Name DataConId] -> [DataDefn] -> [DataDefn]
             inuseData ts ns = filter (not . null . dataCons) . map (inuseData' ts ns)
@@ -411,9 +409,8 @@ purgeUnused start (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ exter
             -- | Also treat as used: all ctors for types returned by externs and ReT inputs.
             externCtors :: Data a => a -> [Name TyConId]
             externCtors = runQ $ (\ case
-                        e@Extern {} -> ctorNames $ flattenAllTyApp $ rangeTy $ typeOf e
-                        e@Bits {}   -> ctorNames $ flattenAllTyApp $ rangeTy $ typeOf e
-                        _           -> [])
+                        e@Builtin {} -> ctorNames $ flattenAllTyApp $ rangeTy $ typeOf e
+                        _            -> [])
                   ||? (\ case
                         Defn _ (n2s -> n) (Embed (Poly (unsafeUnbind -> (_, t)))) _ _ | n == start -> maybe [] (ctorNames . flattenAllTyApp) $ resInputTy t
                         _                                                                          -> [])
