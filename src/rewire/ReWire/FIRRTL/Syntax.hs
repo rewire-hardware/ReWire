@@ -6,24 +6,19 @@ module ReWire.FIRRTL.Syntax where
 
 import safe Data.Data (Typeable, Data (..))
 import safe Data.Text (Text)
-import TextShow (TextShow (..))
-import TextShow.Generic (FromGeneric (..))
 import safe GHC.Generics (Generic (..))
 
 type Id = Text
 
 data Circuit = Circuit !Id !(Maybe Info) ![Module]
       deriving (Eq, Generic, Typeable, Data, Show)
-      deriving TextShow via FromGeneric Circuit
 
 data Module = Module !Id !(Maybe Info) ![Port] ![Stmt]
       deriving (Eq, Generic, Typeable, Data, Show)
-      deriving TextShow via FromGeneric Module
 
 data Port = Input !Id !Type !(Maybe Info)
           | Output !Id !Type !(Maybe Info)
       deriving (Eq, Generic, Typeable, Data, Show)
-      deriving TextShow via FromGeneric Port
 
 data Type = UIntTy !(Maybe Integer)
           | SIntTy !(Maybe Integer)
@@ -31,19 +26,15 @@ data Type = UIntTy !(Maybe Integer)
           | VectorTy !Type !Integer
           | ClockTy
       deriving (Eq, Generic, Typeable, Data, Show)
-      deriving TextShow via FromGeneric Type
 
 data Member = Binding !Id !Type | Flip !Id !Type
       deriving (Eq, Generic, Typeable, Data, Show)
-      deriving TextShow via FromGeneric Member
 
 data RUW = Old | New | Undefined
       deriving (Eq, Generic, Typeable, Data, Show)
-      deriving TextShow via FromGeneric RUW
 
 newtype Info = Annotation Text
       deriving (Eq, Generic, Typeable, Data, Show)
-      deriving TextShow via FromGeneric Info
 
 data Stmt = Wire !Id !Type !(Maybe Info)
           | Reg !Id !Type !Exp !(Maybe (Exp, Exp)) !(Maybe Info)
@@ -63,7 +54,6 @@ data Stmt = Wire !Id !Type !(Maybe Info)
           | Stop !Exp !Exp !Integer
           | Printf !Exp !Exp !Text ![Exp] !(Maybe Info)
       deriving (Eq, Generic, Typeable, Data, Show)
-      deriving TextShow via FromGeneric Stmt
 
 data Exp = UInt !(Maybe Integer) !Integer -- examining the example code generated
          | SInt !(Maybe Integer) !Integer -- these are in the format UInt<3>("hA")
@@ -111,4 +101,3 @@ data Exp = UInt !(Maybe Integer) !Integer -- examining the example code generate
          | Head !Exp !Exp
          | Tail !Exp !Exp
       deriving (Eq, Generic, Typeable, Data, Show)
-      deriving TextShow via FromGeneric Exp

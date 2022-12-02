@@ -1,4 +1,4 @@
-resolver: nightly-2022-10-25
+resolver: nightly-2022-12-02
 packages:
 - .
 - rewire-user
