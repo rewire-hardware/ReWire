@@ -12,7 +12,7 @@ import safe ReWire.Unbound (Fresh (..), s2n, n2s)
 
 import safe Control.Arrow (first, second, (&&&))
 import safe Control.Monad.State
-import safe Data.List (foldl', isSuffixOf)
+import safe Data.List (find, foldl', isSuffixOf)
 import safe Data.Either (partitionEithers)
 import safe Data.Maybe (fromMaybe, catMaybes)
 import safe Data.Bool (bool)
@@ -55,7 +55,9 @@ purify start (ts, syns, ds) = do
       (smds, notSmds)     <- partitionEithers <$> mapM isStateMonadicDefn ds
       (rmds, ods)         <- partitionEithers <$> mapM isResMonadicDefn notSmds
 
-      unless (any (isStart . defnName) rmds) $ failAt noAnn $ "No definition for start function (" <> start <> ") found!"
+      maybe (failAt noAnn $ "No definition for start function (" <> start <> ") found!")
+            (projDefnTy >=> checkStartType)
+            $ find (isStart . defnName) rmds
 
       let nameNpolyS = map (defnName &&& defnPolyTy) smds
           nameNpolyR = map (defnName &&& defnPolyTy) rmds
@@ -108,6 +110,12 @@ purify start (ts, syns, ds) = do
 
             isStart :: Name Exp -> Bool
             isStart = (== start) . n2s
+
+            checkStartType :: MonadError AstError m => Ty -> m ()
+            checkStartType t = case dstReT t of
+                  Just (_, _, [], _) -> pure ()
+                  Just (_, _,  _, _) -> failAt (ann t) "Start definition must have type ReT i o I (). Use the extrude function to remove state layers."
+                  _                  -> failAt (ann t) "Start definition must have type ReT i o I ()."
 
 -- | In addition to all the above, we re-tie the recursive knot by adding a new
 --   "start" as follows

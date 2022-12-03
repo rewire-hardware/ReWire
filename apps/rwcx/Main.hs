@@ -36,7 +36,7 @@ main = defaultErrorHandler defaultFatalMessager defaultFlushOut $ do
             -- setSessionDynFlags $ updOptLevel 2 $ dflags { hscTarget = HscNothing }
             setSessionDynFlags dflags
             setTargets []
-            target <- guessTarget "test_main.hs" Nothing Nothing
+            target <- guessTarget "test_main.hs" Nothing
             setTargets [target]
             _ <- load LoadAllTargets
             c <- compileToCoreSimplified "test_main.hs"

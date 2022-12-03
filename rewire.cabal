@@ -123,7 +123,7 @@ library rewire-core
       ViewPatterns
   ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
-      base ==4.17.*
+      base ==4.16.*
     , bv ==0.5.*
     , bytestring ==0.11.*
     , containers ==0.6.*
@@ -131,8 +131,8 @@ library rewire-core
     , directory ==1.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
-    , ghc ==9.4.*
-    , ghc-boot ==9.4.*
+    , ghc ==9.2.*
+    , ghc-boot ==9.2.*
     , hashable ==1.4.*
     , haskell-src-exts ==1.23.*
     , machines ==0.7.*
@@ -142,7 +142,7 @@ library rewire-core
     , prettyprinter ==1.7.*
     , rewire-user ==0.1.*
     , split ==0.2.*
-    , text ==2.0.*
+    , text ==1.2.*
     , text-show ==3.10.*
     , transformers ==0.5.*
     , unbound-generics ==0.4.*
@@ -165,7 +165,7 @@ library rwc-lib
       ViewPatterns
   ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
-      base ==4.17.*
+      base ==4.16.*
     , bv ==0.5.*
     , bytestring ==0.11.*
     , containers ==0.6.*
@@ -173,8 +173,8 @@ library rwc-lib
     , directory ==1.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
-    , ghc ==9.4.*
-    , ghc-boot ==9.4.*
+    , ghc ==9.2.*
+    , ghc-boot ==9.2.*
     , hashable ==1.4.*
     , haskell-src-exts ==1.23.*
     , machines ==0.7.*
@@ -185,7 +185,7 @@ library rwc-lib
     , rewire-core
     , rewire-user ==0.1.*
     , split ==0.2.*
-    , text ==2.0.*
+    , text ==1.2.*
     , text-show ==3.10.*
     , transformers ==0.5.*
     , unbound-generics ==0.4.*
@@ -207,7 +207,7 @@ executable firrtl
       ViewPatterns
   ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
-      base ==4.17.*
+      base ==4.16.*
     , bv ==0.5.*
     , bytestring ==0.11.*
     , containers ==0.6.*
@@ -215,8 +215,8 @@ executable firrtl
     , directory ==1.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
-    , ghc ==9.4.*
-    , ghc-boot ==9.4.*
+    , ghc ==9.2.*
+    , ghc-boot ==9.2.*
     , hashable ==1.4.*
     , haskell-src-exts ==1.23.*
     , machines ==0.7.*
@@ -227,7 +227,7 @@ executable firrtl
     , rewire-core
     , rewire-user ==0.1.*
     , split ==0.2.*
-    , text ==2.0.*
+    , text ==1.2.*
     , text-show ==3.10.*
     , transformers ==0.5.*
     , unbound-generics ==0.4.*
@@ -249,7 +249,7 @@ executable rwc
       ViewPatterns
   ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
-      base ==4.17.*
+      base ==4.16.*
     , bv ==0.5.*
     , bytestring ==0.11.*
     , containers ==0.6.*
@@ -257,8 +257,8 @@ executable rwc
     , directory ==1.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
-    , ghc ==9.4.*
-    , ghc-boot ==9.4.*
+    , ghc ==9.2.*
+    , ghc-boot ==9.2.*
     , hashable ==1.4.*
     , haskell-src-exts ==1.23.*
     , machines ==0.7.*
@@ -269,7 +269,7 @@ executable rwc
     , rewire-user ==0.1.*
     , rwc-lib
     , split ==0.2.*
-    , text ==2.0.*
+    , text ==1.2.*
     , text-show ==3.10.*
     , transformers ==0.5.*
     , unbound-generics ==0.4.*
@@ -291,7 +291,7 @@ executable rwcx
       ViewPatterns
   ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
-      base ==4.17.*
+      base ==4.16.*
     , bv ==0.5.*
     , bytestring ==0.11.*
     , containers ==0.6.*
@@ -299,8 +299,8 @@ executable rwcx
     , directory ==1.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
-    , ghc ==9.4.*
-    , ghc-boot ==9.4.*
+    , ghc ==9.2.*
+    , ghc-boot ==9.2.*
     , ghc-paths >=0.1.0.12 && <0.2
     , hashable ==1.4.*
     , haskell-src-exts ==1.23.*
@@ -312,7 +312,7 @@ executable rwcx
     , rewire-core
     , rewire-user ==0.1.*
     , split ==0.2.*
-    , text ==2.0.*
+    , text ==1.2.*
     , text-show ==3.10.*
     , transformers ==0.5.*
     , unbound-generics ==0.4.*
@@ -336,7 +336,7 @@ test-suite rwc-test
   ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
       HUnit ==1.6.*
-    , base ==4.17.*
+    , base ==4.16.*
     , bv ==0.5.*
     , bytestring ==0.11.*
     , containers ==0.6.*
@@ -344,8 +344,8 @@ test-suite rwc-test
     , directory ==1.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
-    , ghc ==9.4.*
-    , ghc-boot ==9.4.*
+    , ghc ==9.2.*
+    , ghc-boot ==9.2.*
     , hashable ==1.4.*
     , haskell-src-exts ==1.23.*
     , machines ==0.7.*
@@ -359,7 +359,7 @@ test-suite rwc-test
     , split ==0.2.*
     , test-framework ==0.8.*
     , test-framework-hunit >=0.3.0.2 && <0.4
-    , text ==2.0.*
+    , text ==1.2.*
     , text-show ==3.10.*
     , transformers ==0.5.*
     , unbound-generics ==0.4.*

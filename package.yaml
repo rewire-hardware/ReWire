@@ -40,9 +40,9 @@ data-files:
 - rewire-user/src/ReWire/*.hs
 
 dependencies:
-- base ^>= 4.17
-- ghc ^>= 9.4
-- ghc-boot ^>= 9.4
+- base ^>= 4.16
+- ghc ^>= 9.2
+- ghc-boot ^>= 9.2
 - bytestring ^>= 0.11
 - containers ^>= 0.6
 - unordered-containers ^>= 0.2
@@ -55,7 +55,7 @@ dependencies:
 - mtl ^>= 2.2
 - prettyprinter ^>= 1.7
 - split ^>= 0.2
-- text ^>= 2.0
+- text ^>= 1.2
 - transformers ^>= 0.5
 - text-show ^>= 3.10
 - unbound-generics ^>= 0.4
