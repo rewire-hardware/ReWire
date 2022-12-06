@@ -96,17 +96,17 @@ getModule flags pwd fp = pDebug flags ("fetching module: " <> pack fp <> " (pwd:
                       >=> pDebug' "Annotating."
                       >=> annotate
                       >=> pDebug' "[Pass 1] Pre-desugaring."
-                      >=> whenSet FlagDHask1 (printInfoHSE "Haskell 1: Pre-desugaring" rn imps)
+                      >=> whenSet FlagDPass1 (printInfoHSE "[Pass 1] Haskell: Pre-desugaring" rn imps)
                       >=> pDebug' "Desugaring."
                       >=> desugar rn
                       >=> pDebug' "[Pass 2] Post-desugaring."
-                      >=> whenSet FlagDHask2 (printInfoHSE "Haskell 2: Post-desugaring" rn imps)
+                      >=> whenSet FlagDPass2 (printInfoHSE "[Pass 2] Haskell: Post-desugaring" rn imps)
                       >=> pDebug' "Translating to crust."
                       >=> toCrust rn
                       $ m
 
             let Module ts syns ds = m' <> imps
-            _ <- whenSet FlagDCrust0 (printInfo $ "Crust 0: Synthetic per-module: " <> pack fp) (ts, syns, ds)
+            _ <- whenSet FlagDPass3 (printInfo $ "[Pass 3] Crust: Synthetic per-module: " <> pack fp) (ts, syns, ds)
 
             modify $ Map.insert fp (m' <> imps, exps)
             pure (m' <> imps, exps)
@@ -131,19 +131,19 @@ getProgram flags fp = do
       (Module ts syns ds,  _)  <- getModule flags "." fp
 
       p <- pure
-       >=> pDebug' "[Pass 3] Adding primitives and inlining."
-       >=> whenSet FlagDCrust1 (printInfo "Crust 1: Post-desugaring")
+       >=> pDebug' "[Pass 4] Adding primitives and inlining."
+       >=> whenSet FlagDPass4 (printInfo "[Pass 4] Crust: Post-desugaring")
        >=> pure . addPrims
        >=> inline
        >=> prePurify
        >=> pDebug' "Expanding type synonyms and simplifying."
        >=> expandTypeSynonyms
-       >=> pDebug' "[Pass 4] Post-inlining, before typechecking."
-       >=> whenSet FlagDCrust2 (printInfo "Crust 2: Post-inlining")
+       >=> pDebug' "[Pass 5] Post-inlining, before typechecking."
+       >=> whenSet FlagDPass5 (printInfo "[Pass 5] Crust: Post-inlining")
        >=> pDebug' "Typechecking."
        >=> kindCheck >=> typeCheck start
-       >=> pDebug' "[Pass 4b] Post-typechecking."
-       >=> whenSet FlagDCrust2b (printInfo "Crust 2b: Post-typechecking")
+       >=> pDebug' "[Pass 6] Post-typechecking."
+       >=> whenSet FlagDPass6 (printInfo "[Pass 6] Crust: Post-typechecking")
        >=> removeExpTypeAnn
        >=> pDebug' "Simplifying and reducing."
        >=> neuterExterns
@@ -154,29 +154,29 @@ getProgram flags fp = do
        >=> liftLambdas
        >=> pDebug' "Removing unused definitions."
        >=> pure . purgeUnused (start : (fst <$> builtins))
-       >=> pDebug' "[Pass 5] Pre-purification."
-       >=> whenSet FlagDCrust3 (printInfo "Crust 3: Pre-purification")
+       >=> pDebug' "[Pass 7] Pre-purification."
+       >=> whenSet FlagDPass7 (printInfo "[Pass 7] Crust: Pre-purification")
        >=> pDebug' "Purifying."
        >=> purify start
-       >=> pDebug' "[Pass 6] Post-purification."
-       >=> whenSet FlagDCrust4 (printInfo "Crust 4: Post-purification")
+       >=> pDebug' "[Pass 8] Post-purification."
+       >=> whenSet FlagDPass8 (printInfo "[Pass 8] Crust: Post-purification")
        >=> pDebug' "Lifting lambdas (post-purification)."
        >=> liftLambdas
        >=> pDebug' "Fully apply global function definitions."
        >=> fullyApplyDefs
        >=> pDebug' "Removing unused definitions (again)."
        >=> pure . purgeUnused [start]
-       >=> pDebug' "[Pass 7] Post-purification."
-       >=> whenSet FlagDCrust5 (printInfo "Crust 5: Post-second-lambda-lifting")
+       >=> pDebug' "[Pass 9] Post-purification."
+       >=> whenSet FlagDPass9 (printInfo "[Pass 9] Crust: Post-second-lambda-lifting")
        -- >=> pDebug' "Substituting the unit/nil type for remaining free type variables."
        -- >=> pure . freeTyVarsToNil
        >=> pDebug' "Translating to core & HDL."
        >=> toCore start (concatMap getInputNames flags) (concatMap getOutputNames flags) (concatMap getStateNames flags)
-       >=> pDebug' "[Pass 8] Core."
+       >=> pDebug' "[Pass 10] Core."
        $ (ts, syns, ds)
 
-      when (FlagDCore1 `elem` flags) $ liftIO $ do
-            printHeader "Core"
+      when (FlagDPass10 `elem` flags) $ liftIO $ do
+            printHeader "[Pass 10] Core"
             T.putStrLn $ prettyPrint p
             when (FlagV `elem` flags) $ T.putStrLn "\n## Show core:\n"
             when (FlagV `elem` flags) $ T.putStrLn $ showt $ unAnn p

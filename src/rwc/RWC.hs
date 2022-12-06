@@ -46,17 +46,17 @@ options =
        , Option []    ["no-reset"]            (NoArg  FlagNoReset)                       "No implicitly generated reset signal."
        , Option []    ["no-clock"]            (NoArg  FlagNoClock)                       "No implicitly generated clock signal (implies no-reset: generate a purely combinatorial circuit)."
        , Option []    ["sync-reset"]          (NoArg  FlagSyncReset)                     "Only reset on positive clock edge."
-       , Option []    ["dpass1" , "dhask1" ]  (NoArg  FlagDHask1)                        "Dump pass 1: pre-desugar haskell source."
-       , Option []    ["dpass2" , "dhask2" ]  (NoArg  FlagDHask2)                        "Dump pass 2: post-desugar haskell source."
-       , Option []    ["dpass2b", "dcrust0"]  (NoArg  FlagDCrust0)                       "Dump pass 2b: synthetic per-module crust source."
-       , Option []    ["dpass3" , "dcrust1"]  (NoArg  FlagDCrust1)                       "Dump pass 3: post-desugar crust source."
-       , Option []    ["dpass4" , "dcrust2"]  (NoArg  FlagDCrust2)                       "Dump pass 4: post-inlining crust source."
-       , Option []    ["dpass4b", "dcrust2b"] (NoArg  FlagDCrust2b)                      "Dump pass 4b: post-typechecking crust source."
-       , Option []    ["dpass5" , "dcrust3"]  (NoArg  FlagDCrust3)                       "Dump pass 5: pre-purify crust source."
-       , Option []    ["dpass6" , "dcrust4"]  (NoArg  FlagDCrust4)                       "Dump pass 6: post-purify crust source."
-       , Option []    ["dpass7" , "dcrust5"]  (NoArg  FlagDCrust5)                       "Dump pass 7: post-second-lambda-lifting crust source."
-       , Option []    ["dpass8" , "dcore1" ]  (NoArg  FlagDCore1)                        "Dump pass 8: core source."
-       , Option []    ["dpass9" , "dcore2" ]  (NoArg  FlagDCore2)                        "Dump pass 9: core source after purging empty types."
+       , Option []    ["dpass1"]              (NoArg  FlagDPass1)                        "Dump pass 1: pre-desugar haskell source."
+       , Option []    ["dpass2"]              (NoArg  FlagDPass2)                        "Dump pass 2: post-desugar haskell source."
+       , Option []    ["dpass3"]              (NoArg  FlagDPass3)                       "Dump pass 2b: synthetic per-module crust source."
+       , Option []    ["dpass4"]              (NoArg  FlagDPass4)                       "Dump pass 3: post-desugar crust source."
+       , Option []    ["dpass5"]              (NoArg  FlagDPass5)                       "Dump pass 4: post-inlining crust source."
+       , Option []    ["dpass6"]              (NoArg  FlagDPass6)                      "Dump pass 4b: post-typechecking crust source."
+       , Option []    ["dpass7"]              (NoArg  FlagDPass7)                       "Dump pass 5: pre-purify crust source."
+       , Option []    ["dpass8"]              (NoArg  FlagDPass8)                       "Dump pass 6: post-purify crust source."
+       , Option []    ["dpass9"]              (NoArg  FlagDPass9)                       "Dump pass 7: post-second-lambda-lifting crust source."
+       , Option []    ["dpass10"]             (NoArg  FlagDPass10)                        "Dump pass 8: core source."
+       , Option []    ["dpass11"]             (NoArg  FlagDPass11)                        "Dump pass 9: core source after purging empty types."
        , Option []    ["flatten"]             (NoArg  FlagFlatten)                       "Generate a single RTL module."
        , Option ['o'] []                      (ReqArg FlagO           "filename.vhdl")   "Name for RTL output file."
        , Option ['p'] ["packages"]            (ReqArg FlagPkgs        "pkg1,pkg2,...")   "Packages to use for external VHDL components (e.g., ieee.std_logic_1164.all)."
@@ -135,8 +135,8 @@ main = do
                         compile a = do
                               b <- (mergeSlices >=> mergeSlices >=> partialEval >=> mergeSlices >=> dedupe >=> purgeUnused) a -- TODO(chathhorn)
                               when (FlagV `elem` flags) $ liftIO $ putStrLn "Debug: [Pass 9] Reduced core."
-                              when (FlagDCore2 `elem` flags) $ liftIO $ do
-                                    printHeader "Reduced Core" -- TODO(chathhorn): pull this out of Crust.Cache
+                              when (FlagDPass11 `elem` flags) $ liftIO $ do
+                                    printHeader "[Pass 11] Reduced Core" -- TODO(chathhorn): pull this out of Crust.Cache
                                     T.putStrLn $ prettyPrint b
                                     when (FlagV `elem` flags) $ do
                                           T.putStrLn "\n## Show core:\n"
