@@ -17,18 +17,18 @@ module ReWire.Crust.Syntax
       , Defn (..), DefnAttr (..), DataDefn (..), TypeSynonym (..), DataCon (..)
       , FreeProgram, Program (..)
       , Kind (..), kblank
-      , flattenApp, flattenArrow, flattenTyApp, arr, arrowRight, arrowLeft
+      , flattenApp, flattenApp', flattenArrow, flattenTyApp, arr, arrowRight, arrowLeft
       , fv, fvAny
       , Fresh, Name, Embed (..), TRec, Bind, FieldId
       , trec, untrec, bind, unbind
       , Poly (..), (|->), poly, poly'
       , rangeTy, paramTys, isPrim, inlineable, mustInline
       , mkArrowTy, nil, isResMonad, isStateMonad
-      , strTy, intTy, bitTy, listTy, pairTy, refTy, vecTy, plusTy
+      , strTy, intTy, bitTy, listTy, pairTy, refTy, vecTy, plusTy, nilTy
       , flattenAllTyApp, resInputTy
       , mkTuple, mkTuplePat, mkTupleMPat, tupleTy
       , mkPair, mkPairPat, mkPairMPat
-      , kmonad, tycomp, concrete, higherOrder, fundamental
+      , kmonad, tycomp, concrete, higherOrder, fundamental, unTyAnn, mkApp
       , TypeAnnotated (..), prettyFP
       ) where
 
@@ -51,7 +51,7 @@ import safe Control.DeepSeq (NFData (..), deepseq)
 import safe Data.Containers.ListUtils (nubOrd)
 import safe Data.Data (Typeable, Data (..))
 import safe Data.Hashable (Hashable (..))
-import safe Data.List (intersperse)
+import safe Data.List (intersperse, foldl')
 import safe Data.Maybe (fromMaybe)
 import safe Data.Text (Text, unpack, replicate)
 import safe Data.Tuple (swap)
@@ -232,7 +232,7 @@ instance Pretty Ty where
             (TyCon _ (n2s -> "->")  : [t1, t2]) -> pretty t1 <+> text "->" <+> pretty t2
             (TyCon _ (n2s -> "[_]") : [t'])     -> brackets $ pretty t'
             [TyCon _ n]                         -> text $ n2s n
-            [TyVar _ _ n]                       -> text $ n2s n
+            [TyVar _ _ n]                       -> text $ showt n
             [TyBlank _]                         -> text "_"
             [TyNat _ n]                         -> text $ showt n
             ts                                  -> hsep $ map mparens ts
@@ -293,7 +293,7 @@ builtinName b = fromMaybe "" $ lookup b $ map swap builtins
 instance (TextShow a, TextShow b) => TextShow (Bind a b) where
       showbPrec = genericShowbPrec
 
-data Exp = App     Annote !Exp      !Exp
+data Exp = App     Annote !Ty       !Exp !Exp
          | Lam     Annote !Ty       !(Bind (Name Exp) Exp)
          | Var     Annote !Ty       !(Name Exp)
          | Con     Annote !Ty       !(Name DataConId)
@@ -356,7 +356,7 @@ instance NFData Exp
 
 instance TypeAnnotated Exp where
       typeOf = \ case
-            App _ e _         -> arrowRight $ typeOf e
+            App _ t _ _       -> t
             Lam _ t e         -> arr' t e
             Var _ t _         -> t
             Con _ t _         -> t
@@ -372,7 +372,7 @@ instance TypeAnnotated Exp where
 
 instance Annotated Exp where
       ann = \ case
-            App a _ _         -> a
+            App a _ _ _       -> a
             Lam a _ _         -> a
             Var a _ _         -> a
             Con a _ _         -> a
@@ -623,11 +623,15 @@ instance Pretty Program where
 -- > (App (App (App v e1) e2) e3)
 -- into
 -- > [v, e1, e2, e3]
--- Descends through type annotations.
 flattenApp :: Exp -> [Exp]
 flattenApp = \ case
-      App _ e e'    -> flattenApp e <> [e']
-      TypeAnn _ _ e -> flattenApp e
+      App _ _ e e'  -> flattenApp e <> [e']
+      e             -> [e]
+
+-- | flatenApp, but ignore type annotations.
+flattenApp' :: Exp -> [Exp]
+flattenApp' e = case unTyAnn e of
+      App _ _ e e'  -> flattenApp' e <> [e']
       e             -> [e]
 
 flattenArrow :: Ty -> ([Ty], Ty)
@@ -728,8 +732,10 @@ pairTy :: Annote -> Ty -> Ty -> Ty
 pairTy an t = TyApp an $ TyApp an (TyCon an $ s2n "(,)") t
 
 mkPair :: Annote -> Exp -> Exp -> Exp
-mkPair an e1 e2 = App an (App an (Con an t (s2n "(,)")) e1) e2
-      where t = mkArrowTy [typeOf e1, typeOf e2] $ pairTy an (typeOf e1) $ typeOf e2
+mkPair an e1 e2 = App an t'' (App an t' (Con an t (s2n "(,)")) e1) e2
+      where t   = pairTy an (typeOf e1) $ typeOf e2
+            t'  = mkArrowTy [typeOf e2] $ t
+            t'' = mkArrowTy [typeOf e1] $ t'
 
 mkPairPat :: Annote -> Pat -> Pat -> Pat
 mkPairPat an p1 p2 = PatCon an (Embed $ pairTy an (typeOf p1) (typeOf p2)) (Embed (s2n "(,)")) [p1, p2]
@@ -801,6 +807,14 @@ isArrow :: Ty -> Bool
 isArrow = \ case
       TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) _ -> True
       _                                             -> False
+
+unTyAnn :: Exp -> Exp
+unTyAnn = \ case
+      TypeAnn _ _ e -> unTyAnn e
+      e             -> e
+
+mkApp :: Annote -> Exp -> [Exp] -> Exp
+mkApp an = foldl' (\ fx -> App an (arrowRight $ typeOf fx) fx)
 
 -- Orphans.
 

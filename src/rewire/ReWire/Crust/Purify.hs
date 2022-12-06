@@ -12,7 +12,7 @@ import safe ReWire.Unbound (Fresh (..), s2n, n2s)
 
 import safe Control.Arrow (first, second, (&&&))
 import safe Control.Monad.State
-import safe Data.List (find, foldl', isSuffixOf)
+import safe Data.List (find, isSuffixOf)
 import safe Data.Either (partitionEithers)
 import safe Data.Maybe (fromMaybe, catMaybes)
 import safe Data.Bool (bool)
@@ -145,7 +145,7 @@ mkStart start i o ms = Defn
             unfold     = Builtin (MsgAnnote "Purify: unfold") (mkArrowTy [dispatchTy i o ms, etor] startTy) Unfold
             dispatch   = Var (MsgAnnote "Purify: dispatch") (dispatchTy i o ms) $ s2n "$Pure.dispatch"
             start_pure = Var (MsgAnnote "Purify: $Pure.start") etor $ s2n "$Pure.start"
-            appl       = Embed $ bind [] $ App (MsgAnnote "Purify: appl") (App (MsgAnnote "Purify: appl") unfold dispatch) start_pure
+            appl       = Embed $ bind [] $ App (MsgAnnote "Purify: appl") startTy (App (MsgAnnote "Purify: appl") (mkArrowTy [etor] startTy) unfold dispatch) start_pure
 
             tyApp :: Ty -> Ty -> Ty
             tyApp = TyApp $ MsgAnnote "reT"
@@ -157,9 +157,9 @@ mkStart start i o ms = Defn
 -- Won't work if called on a non-extrude application.
 flattenExtr :: Exp -> (Exp, [Exp])
 flattenExtr = \ case
-      App _ (App _ (Builtin _ _ Extrude) arg1) arg2 -> second (++ [arg2]) $ flattenExtr arg1
-      e@(App _ _ rand)                              -> first (const e) $ flattenExtr rand
-      e                                             -> (e, [])
+      App _ _ (App _ _ (Builtin _ _ Extrude) arg1) arg2 -> second (++ [arg2]) $ flattenExtr arg1
+      e@(App _ _ _ rand)                                -> first (const e) $ flattenExtr rand
+      e                                                 -> (e, [])
 
 -- | Generates the dispatch function.
 -- > dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i
@@ -378,7 +378,7 @@ dstReT = \ case
 ---------------------------
 
 classifyCases :: (Fresh m, MonadError AstError m) => Exp -> m (Cases Annote Pat Exp Ty)
-classifyCases ex = case flattenApp ex of
+classifyCases ex = case flattenApp' ex of
       [Builtin an t Get]        -> pure $ CGet an t
       [Builtin an t Return, e]  -> pure $ CReturn an t e
       [Builtin an _ Put, e]     -> pure $ CPut an e
@@ -478,14 +478,13 @@ instance TextShow (RCase an t p e) where
             RMatch   {} -> fromText "RMatch"
 
 classifyRCases :: (Fresh m, MonadError AstError m) => Exp -> m (RCase Annote Ty Pat Exp)
-classifyRCases ex = case flattenApp ex of
+classifyRCases ex = case flattenApp' ex of
       [Match an _ e1 mp e2 me]      -> pure $ RMatch an e1 mp e2 me
-      [TypeAnn _ _ e]               -> classifyRCases e
       [Error a _ _]                 -> failAt a "Purify: encountered unsynthesizable definition."
       Builtin an _ Return  : [e]    -> pure $ RReturn an e
       Builtin an _ Lift    : [e]    -> pure $ RLift an e
       Builtin an _ Signal  : [e]    -> pure $ RSignal an e
-      Builtin an _ Bind    : [sig -> Just s, flattenApp -> Var _ t g' : es]
+      Builtin an _ Bind    : [sig -> Just s, flattenApp' -> Var _ t g' : es]
                                     -> pure $ RSigK an t s g' $ zip es $ paramTys t
       Builtin an _ Bind    : [e, g] -> pure $ RBind an e g
       Builtin an t Extrude : es     -> pure $ RExtrude an t es
@@ -493,7 +492,7 @@ classifyRCases ex = case flattenApp ex of
       Var an t x           : es     -> pure $ RApp an t x es
       d                             -> failAt (ann ex) $ "Purify: unclassifiable R-case: " <> showt d
       where sig :: Exp -> Maybe Exp
-            sig ex = case flattenApp ex of
+            sig ex = case flattenApp' ex of
                   [Builtin _ _ Signal, arg] -> pure arg
                   _                         -> Nothing
 
@@ -634,8 +633,11 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
                   let an = ann a
                   let t = typeOf a
                   c <- getACtor s t
-                  let anode = App an (Con an (mkArrowTy [t] aTy) c) a
-                  pure $ App an (Con an (mkArrowTy [tupleTy an $ aTy : ms] $ mkRangeTy o ms) (s2n "Done")) (mkTuple an $ anode : stos)
+                  let anode = App an aTy (Con an (mkArrowTy [t] aTy) c) a
+                  pure $ App an rangeTy (Con an (mkArrowTy [tupleTy an $ aTy : ms] rangeTy) (s2n "Done")) (mkTuple an $ anode : stos)
+
+            rangeTy :: Ty
+            rangeTy = mkRangeTy o ms
 
             mkLeftPat :: (Fresh m, MonadError AstError m) => Text -> Pat -> [Pat] -> StateT PSto m Pat
             mkLeftPat s a stos = do
@@ -643,10 +645,10 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
                   let t = typeOf a
                   c <- getACtor s t
                   let anode =  PatCon an (Embed aTy) (Embed c) [a]
-                  pure $ PatCon an (Embed $ mkRangeTy o ms) (Embed $ s2n "Done") [mkTuplePat an $ anode : stos]
+                  pure $ PatCon an (Embed rangeTy) (Embed $ s2n "Done") [mkTuplePat an $ anode : stos]
 
             mkRight :: Exp -> Exp
-            mkRight e = App (ann e) (Con (ann e) (mkArrowTy [typeOf e] $ mkRangeTy o ms) (s2n "Pause")) e
+            mkRight e = App (ann e) rangeTy (Con (ann e) (mkArrowTy [typeOf e] rangeTy) (s2n "Pause")) e
 
             addNakedSignal :: (Fresh m, MonadError AstError m, MonadState PSto m) => Annote -> m ()
             addNakedSignal an = do
@@ -714,14 +716,11 @@ mkRPat an ts r_g = do
 mkPureVar :: MonadError AstError m => Annote -> PureEnv -> Ty -> Name Exp -> m Exp
 mkPureVar an rho _ x = Var an <$> lookupPure an x rho <*> pure x
 
-mkApp :: Annote -> Exp -> [Exp] -> Exp
-mkApp an = foldl' $ App an
-
 mkPureApp :: MonadError AstError m => Annote -> PureEnv -> Ty -> Name Exp -> [Exp] -> m Exp
 mkPureApp an rho t rator es = flip (mkApp an) es <$> mkPureVar an rho t rator
 
 dstApp :: MonadError AstError m => Exp -> m (Name Exp, Ty, [Exp])
-dstApp e = case flattenApp e of
+dstApp e = case flattenApp' e of
       Var _ t n : es -> pure (n, t, es)
       d              -> failAt (ann e) $ "Purify: tried to dst non-app: " <> showt (unAnn d)
 
@@ -730,4 +729,4 @@ mkLet :: Fresh m => Annote -> Pat -> Exp -> Exp -> m Exp
 mkLet an p e1 e2 = do
       v <- freshVar "disc"
       -- Need to lift the discriminator.
-      pure $ App an (Lam an (typeOf e1) $ bind v $ Case an (typeOf e2) (Var an (typeOf e1) v) (bind p e2) Nothing) e1
+      pure $ App an (arrowRight $ typeOf e1) (Lam an (typeOf e1) $ bind v $ Case an (typeOf e2) (Var an (typeOf e1) v) (bind p e2) Nothing) e1

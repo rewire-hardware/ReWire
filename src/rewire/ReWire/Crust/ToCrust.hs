@@ -249,7 +249,7 @@ transExp rn = \ case
             | isError n      -> pure $ M.Error l (M.TyBlank l) (pack m)
       App l (Var _ x) (List _ es)
             | isFromList x   -> M.LitVec l (M.TyBlank l) <$> mapM (transExp rn) es
-      App l e1 e2            -> M.App l <$> transExp rn e1 <*> transExp rn e2
+      App l e1 e2            -> M.App l (M.TyBlank l) <$> transExp rn e1 <*> transExp rn e2
       Lambda l [PVar _ x] e  -> do
             e' <- transExp (exclude Value [void x] rn) e
             pure $ M.Lam l (M.TyBlank l) $ bind (mkUId $ void x) e'
