@@ -293,7 +293,7 @@ builtinName b = fromMaybe "" $ lookup b $ map swap builtins
 instance (TextShow a, TextShow b) => TextShow (Bind a b) where
       showbPrec = genericShowbPrec
 
-data Exp = App     Annote !Ty       !Exp !Exp
+data Exp = App     Annote           !Exp !Exp
          | Lam     Annote !Ty       !(Bind (Name Exp) Exp)
          | Var     Annote !Ty       !(Name Exp)
          | Con     Annote !Ty       !(Name DataConId)
@@ -356,7 +356,7 @@ instance NFData Exp
 
 instance TypeAnnotated Exp where
       typeOf = \ case
-            App _ t _ _       -> t
+            App _   e _       -> arrowRight $ typeOf e
             Lam _ t e         -> arr' t e
             Var _ t _         -> t
             Con _ t _         -> t
@@ -372,7 +372,7 @@ instance TypeAnnotated Exp where
 
 instance Annotated Exp where
       ann = \ case
-            App a _ _ _       -> a
+            App a _ _         -> a
             Lam a _ _         -> a
             Var a _ _         -> a
             Con a _ _         -> a
@@ -625,14 +625,14 @@ instance Pretty Program where
 -- > [v, e1, e2, e3]
 flattenApp :: Exp -> [Exp]
 flattenApp = \ case
-      App _ _ e e'  -> flattenApp e <> [e']
-      e             -> [e]
+      App _ e e'  -> flattenApp e <> [e']
+      e           -> [e]
 
 -- | flatenApp, but ignore type annotations.
 flattenApp' :: Exp -> [Exp]
 flattenApp' e = case unTyAnn e of
-      App _ _ e e'  -> flattenApp' e <> [e']
-      e             -> [e]
+      App _ e e'  -> flattenApp' e <> [e']
+      e           -> [e]
 
 flattenArrow :: Ty -> ([Ty], Ty)
 flattenArrow = \ case
@@ -643,6 +643,9 @@ flattenArrow = \ case
 paramTys :: Ty -> [Ty]
 paramTys = fst . flattenArrow
 
+rangeTy :: Ty -> Ty
+rangeTy = snd . flattenArrow
+
 flattenTyApp :: Ty -> [Ty]
 flattenTyApp = \ case
       TyApp _ t t' -> flattenTyApp t <> [t']
@@ -652,11 +655,6 @@ flattenAllTyApp :: Ty -> [Ty]
 flattenAllTyApp = \ case
       TyApp _ t t' -> flattenAllTyApp t <> flattenAllTyApp t'
       t            -> [t]
-
-rangeTy :: Ty -> Ty
-rangeTy = \ case
-      TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) t' -> rangeTy t'
-      t                                              -> t
 
 arr :: Ty -> Ty -> Ty
 arr t = TyApp (ann t) (TyApp (ann t) (TyCon (ann t) $ s2n "->") t)
@@ -679,10 +677,10 @@ bitTy :: Annote -> Ty
 bitTy an = TyCon an $ s2n "Bit"
 
 vecTy :: Annote -> Ty -> Ty -> Ty
-vecTy an n t = TyApp an (TyApp an (TyCon an $ s2n "Vec") n) t
+vecTy an n = TyApp an $ TyApp an (TyCon an $ s2n "Vec") n
 
 plusTy :: Annote -> Ty -> Ty -> Ty
-plusTy an n t = TyApp an (TyApp an (TyCon an $ s2n "+") n) t
+plusTy an n = TyApp an $ TyApp an (TyCon an $ s2n "+") n
 
 arr' :: Ty -> Bind (Name Exp) Exp -> Ty
 arr' t b = runFreshM (arr t . typeOf <$> (snd <$> unbind b))
@@ -732,10 +730,8 @@ pairTy :: Annote -> Ty -> Ty -> Ty
 pairTy an t = TyApp an $ TyApp an (TyCon an $ s2n "(,)") t
 
 mkPair :: Annote -> Exp -> Exp -> Exp
-mkPair an e1 e2 = App an t'' (App an t' (Con an t (s2n "(,)")) e1) e2
-      where t   = pairTy an (typeOf e1) $ typeOf e2
-            t'  = mkArrowTy [typeOf e2] $ t
-            t'' = mkArrowTy [typeOf e1] $ t'
+mkPair an e1 e2 = mkApp an (Con an t (s2n "(,)")) [e1, e2]
+      where t = mkArrowTy [typeOf e1, typeOf e2] $ pairTy an (typeOf e1) $ typeOf e2
 
 mkPairPat :: Annote -> Pat -> Pat -> Pat
 mkPairPat an p1 p2 = PatCon an (Embed $ pairTy an (typeOf p1) (typeOf p2)) (Embed (s2n "(,)")) [p1, p2]
@@ -814,7 +810,7 @@ unTyAnn = \ case
       e             -> e
 
 mkApp :: Annote -> Exp -> [Exp] -> Exp
-mkApp an = foldl' (\ fx -> App an (arrowRight $ typeOf fx) fx)
+mkApp an = foldl' $ App an
 
 -- Orphans.
 
@@ -823,7 +819,7 @@ instance (Eq a, Eq b) => Eq (Bind a b) where
 
 instance Alpha Text where
       aeq' _ctx i j = i == j
-      fvAny' _ctx _nfn i = pure i
+      fvAny' _ctx _nfn = pure
       close _ctx _b i = i
       open _ctx _b i = i
       isPat _ = mempty
@@ -833,11 +829,11 @@ instance Alpha Text where
       swaps' _ctx _p i = i
       freshen' _ctx i = return (i, mempty)
       lfreshen' _ctx i cont = cont i mempty
-      acompare' _ctx i j = compare i j
+      acompare' _ctx = compare
 
 instance Alpha Natural where
       aeq' _ctx i j = i == j
-      fvAny' _ctx _nfn i = pure i
+      fvAny' _ctx _nfn = pure
       close _ctx _b i = i
       open _ctx _b i = i
       isPat _ = mempty
@@ -847,7 +843,7 @@ instance Alpha Natural where
       swaps' _ctx _p i = i
       freshen' _ctx i = return (i, mempty)
       lfreshen' _ctx i cont = cont i mempty
-      acompare' _ctx i j = compare i j
+      acompare' _ctx = compare
 
 instance NFData a => NFData (TRec a) where
       rnf (TRec r) = r `deepseq` ()

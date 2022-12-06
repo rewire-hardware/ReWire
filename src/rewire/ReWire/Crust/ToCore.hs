@@ -23,9 +23,6 @@ import qualified Data.HashMap.Strict as Map
 import qualified ReWire.Core.Syntax  as C
 import qualified ReWire.Crust.Syntax as M
 
-import Debug.Trace (trace)
-import Data.Text (unpack)
-
 type SizeMap = HashMap M.Ty C.Size
 type ConMap = (HashMap (Name M.TyConId) [Name M.DataConId], HashMap (Name M.DataConId) M.Ty)
 type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) C.LId) m)
@@ -57,8 +54,8 @@ transDefn start inps outps sts conMap = \ case
             case t' of
                   M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "ReT")) t_in) t_out) (M.TyCon _ (n2s -> "I"))) _ -> do
                         (_, e') <- unbind e
-                        case e' of
-                              M.App _ _ (M.App _ _ (M.Builtin _ _ M.Unfold) (M.Var _ loopTy loop)) (M.Var _ state0Ty state0) -> do
+                        case M.flattenApp' e' of
+                              [M.Builtin _ _ M.Unfold, M.Var _ loopTy loop, M.Var _ state0Ty state0] -> do
                                     t_st              <- getRegsTy state0Ty
                                     (t_in' : t_ins)   <- mapM ((`runReaderT` conMap) . sizeOf an) $ t_in  : detuple t_in
                                     (t_out' : t_outs) <- mapM ((`runReaderT` conMap) . sizeOf an) $ t_out : detuple t_out
@@ -98,8 +95,8 @@ externSig an args res clk = \ case
       _                                                         -> C.ExternSig an [] clk args' res'
       where params :: [M.Exp] -> Maybe [(Text, C.Size)]
             params = mapM $ \ case
-                  M.App _ _ (M.App _ _ (M.Con _ _ (n2s -> "(,)")) (M.LitStr _ p)) (M.LitInt _ v) -> pure (p, fromIntegral v)
-                  _                                                                              -> Nothing
+                  M.App _ (M.App _ (M.Con _ _ (n2s -> "(,)")) (M.LitStr _ p)) (M.LitInt _ v) -> pure (p, fromIntegral v)
+                  _                                                                          -> Nothing
             args' :: [(Text, C.Size)]
             args' = map (mempty, ) args
 
@@ -110,11 +107,11 @@ callError :: Annote -> C.Size -> C.Exp
 callError an sz = C.Call an sz (C.Extern (C.ExternSig an [] mempty [] [(mempty, sz)]) "error" "error") C.nil [] C.nil
 
 arity :: M.Ty -> Int
-arity = length . fst . M.flattenArrow
+arity = length . M.paramTys
 
 transExp :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.Exp -> TCM m C.Exp
 transExp e = case e of
-      M.App an _ _ _                -> case M.flattenApp' e of
+      M.App an _ _                  -> case M.flattenApp' e of
             M.Error an _ _          : _                                  -> do
                   sz     <- sizeOf an $ M.typeOf e
                   pure $ callError an sz
@@ -145,12 +142,12 @@ transExp e = case e of
                   unless (j < argSize && i >= 0 && j >= 0 && j - i + 1 > 0) $
                         failAt (ann arg) $ "transExp: invalid bit slice (" <> showt j <> ", " <> showt i <> ") from object size " <> showt argSize <> "."
                   pure $ C.Call an sz C.Id arg' [C.PatWildCard an $ fromIntegral $ argSize - j - 1, C.PatVar an $ fromIntegral $ j - i + 1, C.PatWildCard an $ fromIntegral i] C.nil
-            M.Builtin an _ M.SetRef : M.App _ _ _ (M.LitStr _ r) : args -> do
+            M.Builtin an _ M.SetRef : M.App _ _ (M.LitStr _ r) : args   -> do
                   sz       <- sizeOf an $ M.typeOf e
                   args'    <- C.cat <$> mapM transExp args
                   argSizes <- mapM (sizeOf an . M.typeOf) args
                   pure $ C.Call an sz (C.SetRef r) args' (map (C.PatVar an) argSizes) C.nil
-            M.Builtin an _ M.GetRef : [M.App _ _ _ (M.LitStr _ r)]      -> do
+            M.Builtin an _ M.GetRef : [M.App _ _ (M.LitStr _ r)]        -> do
                   sz       <- sizeOf an $ M.typeOf e
                   pure $ C.Call an sz (C.GetRef r) C.nil [] C.nil
             M.Builtin an _ b : [arg] | b == M.Resize || b == M.Bits     -> do
@@ -159,11 +156,9 @@ transExp e = case e of
                   argSize  <- fromIntegral <$> sizeOf an (M.typeOf arg)
                   pure $ C.Call an sz C.Resize arg' [C.PatVar an argSize] C.nil
             M.Con an t d            : args                              -> do
-                  (v, w)     <- ctorTag an (snd $ M.flattenArrow t) d
+                  (v, w)     <- ctorTag an (M.rangeTy t) d
                   args'      <- mapM transExp args
                   szArgs     <- sum <$> mapM (sizeOf an . M.typeOf) args
-                  trace "ARGS:" $ pure ()
-                  mapM_ (\ ar -> trace (unpack $ prettyPrint ar) $ pure ()) args
                   (tag, pad) <- ctorRep an (M.typeOf e) (v, w) szArgs
                   pure $ C.cat ([C.Lit an tag, C.Lit an pad] <> args')
             _                           -> failAt an "transExp: encountered ill-formed application."
@@ -214,7 +209,7 @@ transPat = \ case
       M.MatchPatWildCard an t -> pure <$> (C.PatWildCard an <$> sizeOf an t)
 
 transType :: (Fresh m, MonadError AstError m, MonadState SizeMap m) => M.Ty -> ReaderT ConMap m C.Sig
-transType t = C.Sig (ann t) <$> mapM (sizeOf $ ann t) (fst $ M.flattenArrow t) <*> sizeOf (ann t) (snd $ M.flattenArrow t)
+transType t = C.Sig (ann t) <$> mapM (sizeOf $ ann t) (M.paramTys t) <*> sizeOf (ann t) (M.rangeTy t)
 
 matchTy :: MonadError AstError m => Annote -> M.Ty -> M.Ty -> m TySub
 matchTy an (M.TyApp _ t1 t2) (M.TyApp _ t1' t2') = do
@@ -243,7 +238,7 @@ apply _ t                  = t
 
 ctorWidth :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => M.Ty -> Name M.DataConId -> m C.Size
 ctorWidth t d = do
-      let t'            =  snd $ M.flattenArrow t
+      let t'            =  M.rangeTy t
       getCtorType d >>= \ case
             Just ct -> do
                   let (targs, tres) = M.flattenArrow ct
@@ -291,7 +286,7 @@ sizeOf an t = do
                   M.TyNat _ n                                          -> pure $ toWord n
                   M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "+")) n1) n2 -> (+) <$> evalNat n1 <*> evalNat n2
                   -- t                                                    -> failAt (ann t) "ToCore: sizeOf: Could not evalute type-level Nat to a constant value."
-                  t                                                    -> pure 0
+                  _                                                    -> pure 0
 
 ceilLog2 :: Integral a => a -> a
 ceilLog2 n | toInteger n < 1 = 0

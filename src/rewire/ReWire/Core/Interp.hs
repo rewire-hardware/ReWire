@@ -104,8 +104,8 @@ interpStartDefn defns (StartDefn _ w loop' state0') = MealyT $ \ _ -> do
             pauseWires :: Wiring -> [(Name, Size)]
             pauseWires w = pausePrefix w <> stateWires w
 
-            Just loop   = Map.lookup loop' defns
-            Just state0 = Map.lookup state0' defns
+            loop   = fromMaybe (error "Core: interpStartDefn: no loop.")   $ Map.lookup loop' defns
+            state0 = fromMaybe (error "Core: interpStartDefn: no state0.") $ Map.lookup state0' defns
 
 interpDefn :: MonadError AstError m => DefnMap -> Defn -> BV -> m BV
 interpDefn defns (Defn _ _ (Sig _ inSizes outSize) body) v = trunc <$> reThrow (interpExp defns (split inSizes v) body)
@@ -159,8 +159,8 @@ interpExp defns lvars exp = case exp of
                   [x]    -> pure $ mkBV sz $ fromEnum $ testBit x (fromEnum $ width x - 1)
                   _      -> failAt' call' an "Core/Interp: interpExp: arity mismatch (msbit)."
             else pure els'
-      Call an sz Resize e ps els -> do
-            (e', els', call')  <- evaluate e els reCall
+      Call _ sz Resize e ps els -> do
+            (e', els', _)  <- evaluate e els reCall
             if patMatches e' ps then pure $ mkBV sz $ nat $ patApply e' ps else pure els'
       Call _ _ Id e ps els             -> if patMatchesE e ps then interpExp defns lvars $ patApplyE e ps else do
             (e', els', _)  <- evaluate e els reCall

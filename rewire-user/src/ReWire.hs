@@ -5,7 +5,7 @@
 module ReWire
       ( module RWC.Primitives
       , extern
-      -- , (@@), (@.)
+      , (@@), (@.)
       , modify
       , empty, singleton, cons, snoc, head, last, length
       , take, init, drop, tail
@@ -25,14 +25,12 @@ extern n a = externWithSig [] "" [] [] n a ""
 --   The Integer arguments must be non-negative integer literals (after inlining).
 {-# INLINE (@@) #-}
 (@@) :: Vec n Bit -> (Integer, Integer) -> Vec m Bit
--- a @@ (j, i) = slice Proxy (bits a)
 a @@ (j, i) = bitSlice a j i
 
 -- | Project single bit.
 {-# INLINE (@.) #-}
 (@.) :: Vec n Bit -> Integer -> Bit
--- a @. i = head (slice Proxy (bits a))
-a @. i = head (slice Proxy (bits a))
+a @. i = head (bitSlice a i i)
 
 -- infixr 9 @., @@
 

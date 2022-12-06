@@ -151,8 +151,8 @@ transExport rn ds exps = \ case
 transData :: (MonadError AstError m, Fresh m) => Renamer -> [M.DataDefn] -> Decl Annote -> m [M.DataDefn]
 transData rn datas = \ case
       DataDecl l _ _ (sDeclHead -> hd) cs _ -> do
-            let n = s2n $ rename Type rn $ fst hd
-            tvs' <- mapM (transTyVar l) $ snd hd
+            let n    = s2n $ rename Type rn $ fst hd
+                tvs' = map transTyVar $ snd hd
             ks   <- replicateM (length tvs') $ freshKVar $ n2s n
             cs'  <- mapM (transCon rn ks tvs' n) cs
             pure $ M.DataDefn l n (foldr M.KFun M.KStar ks) cs' : datas
@@ -168,9 +168,9 @@ tysynNames = concatMap tySynName
 transTyDecl :: (MonadError AstError m, Fresh m) => Renamer -> [M.TypeSynonym] -> Decl Annote -> m [M.TypeSynonym]
 transTyDecl rn syns = \ case
       TypeDecl l (sDeclHead -> hd) t -> do
-            let n = s2n $ rename Type rn $ fst hd
+            let n   = s2n $ rename Type rn $ fst hd
+                lhs = map transTyVar $ snd hd
             t'  <- transTy rn t
-            lhs <- mapM (transTyVar l) $ snd hd
             let rhs :: [Name M.Ty]
                 rhs = M.fv t'
 
@@ -212,11 +212,10 @@ transDef rn tys inls defs = \ case
       WarnPragmaDecl {}                                         -> pure defs -- TODO(chathhorn): elide
       d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " <> pack (show $ void d)
 
-transTyVar :: MonadError AstError m => Annote -> S.TyVarBind () -> m (Name M.Ty)
-transTyVar l = \ case
-      S.UnkindedVar _ x -> pure $ mkUId x
-      S.KindedVar _ x _ -> pure $ mkUId x
-      _                 -> failAt l "Unsupported type syntax"
+transTyVar :: S.TyVarBind () -> Name M.Ty
+transTyVar = \ case
+      S.UnkindedVar _ x -> mkUId x
+      S.KindedVar _ x _ -> mkUId x
 
 transCon :: (Fresh m, MonadError AstError m) => Renamer -> [M.Kind] -> [Name M.Ty] -> Name M.TyConId -> QualConDecl Annote -> m M.DataCon
 transCon rn ks tvs tc = \ case
@@ -249,7 +248,7 @@ transExp rn = \ case
             | isError n      -> pure $ M.Error l (M.TyBlank l) (pack m)
       App l (Var _ x) (List _ es)
             | isFromList x   -> M.LitVec l (M.TyBlank l) <$> mapM (transExp rn) es
-      App l e1 e2            -> M.App l (M.TyBlank l) <$> transExp rn e1 <*> transExp rn e2
+      App l e1 e2            -> M.App l <$> transExp rn e1 <*> transExp rn e2
       Lambda l [PVar _ x] e  -> do
             e' <- transExp (exclude Value [void x] rn) e
             pure $ M.Lam l (M.TyBlank l) $ bind (mkUId $ void x) e'

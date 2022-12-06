@@ -24,7 +24,6 @@ import Control.Monad.State (evalStateT, gets, modify, MonadState)
 import Data.Data (Data)
 import Data.HashMap.Strict (HashMap)
 import Data.Hashable (Hashable (hash))
-import Data.List (foldl')
 import Data.Maybe (mapMaybe)
 import Data.Set (Set)
 import Data.Text (Text)
@@ -33,9 +32,6 @@ import TextShow (TextShow (..))
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
-import qualified Data.Text as T
-
-import Debug.Trace (trace)
 
 subst :: Subst b a => HashMap (Name b) b -> a -> a
 subst = substs . Map.toList
@@ -111,11 +107,7 @@ typeCheck start (ts, syns, vs) = (ts, syns, ) <$> runReaderT tc mempty
                   e              -> pure e)
 
 freshv :: Fresh m => m Ty
-freshv = do
-      n <- fresh $ s2n "?"
-      let tv = TyVar (MsgAnnote "TypeCheck: freshv") kblank n
-      -- modify $ Map.insert n tv
-      pure tv
+freshv = TyVar (MsgAnnote "TypeCheck: freshv") kblank <$> fresh (s2n "?")
 
 fixTySub :: TySub -> TySub
 fixTySub = fixOn' norm subst'
@@ -123,13 +115,7 @@ fixTySub = fixOn' norm subst'
             subst' s = Map.map (subst s) s
 
             norm :: TySub -> Int
-            norm = hash . Map.map (blank . unAnn)
-
-            blank :: Ty -> Ty
-            blank = \ case
-                  TyApp a t1 t2 -> TyApp a (blank t1) (blank t2)
-                  TyVar a _ _   -> TyBlank a
-                  t             -> t
+            norm = hash . Map.map unAnn
 
 mergeTySub :: TySub -> TySub -> TySub
 mergeTySub ts = fixTySub . Map.unionWith merge ts
@@ -159,7 +145,10 @@ mgu (TyNat _ n)                     (plus -> Just (TyNat _ m, t))   | n >= m  = 
 mgu (plus -> Just (TyNat _ m, t))   (TyNat _ n)                     | n >= m  = mgu (TyNat (ann t) $ n - m) t
 
 mgu (TyVar _ _ u)                   (TyVar _ _ v)          | u == v           = pure mempty
--- mgu tu@(TyVar _ _ u)                tv@(TyVar _ _ v)                          = pure $ Map.fromList [(u, tv)]
+
+mgu (TyVar _ _ u)                   tv@(TyVar _ _ v)       | hash (show u) > hash (show v) = pure $ Map.fromList [(u, tv)]
+mgu tu@TyVar {}                     (TyVar _ _ v)                                          = pure $ Map.fromList [(v, tu)]
+
 mgu (TyVar _ _ u)                   t                      | u `notElem` fv t = pure $ Map.fromList [(u, t)]
 mgu t                               (TyVar _ _ u)          | u `notElem` fv t = pure $ Map.fromList [(u, t)]
 mgu _                               _                                         = Nothing
@@ -222,8 +211,6 @@ unify an t1 t2 = do
             _       -> failAt an $ "Types do not unify. Expected and got, respectively:\n"
                               <> prettyPrint t1' <> "\n"
                               <> prettyPrint t2'
---                              <> "\nSHOW t1: " <> T.pack (show $ unAnn t1')
---                              <> "\nSHOW t2: " <> T.pack (show $ unAnn t2')
 
 isVec :: Ty -> Bool
 isVec = \ case
@@ -246,11 +233,7 @@ plus = \ case
       _                                    -> Nothing
 
 inst :: Fresh m => Poly -> m Ty
-inst (Poly pt) = do
-      -- (tvs, t) <- unbind pt
-      -- sub      <- Map.fromList <$> mapM (\ tv -> (tv,) <$> freshv) tvs
-      -- pure $ subst sub t
-      snd <$> unbind pt
+inst (Poly pt) = snd <$> unbind pt
 
 patAssumps :: Pat -> HashMap (Name Exp) Poly
 patAssumps = flip patAssumps' mempty
@@ -306,21 +289,19 @@ tcMatchPat t = \ case
 
 tcExp :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Exp -> m (Exp, Ty)
 tcExp = \ case
-      App an _ e1 e2 -> do
+      App an e1 e2 -> do
             (e1', te1) <- tcExp e1
             (e2', te2) <- tcExp e2
-            tva        <- freshv
-            tvb        <- freshv
-            unify an tva te2
-            unify an (tva `arr` tvb) te1
-            pure (App an tvb e1' e2', tvb)
+            tvr        <- freshv
+            unify an te1 (te2 `arr` tvr)
+            pure (App an e1' e2', tvr)
       Lam an _ e -> do
             (x, e')   <- unbind e
             tvx       <- freshv
             tvr       <- freshv
             (e'', te) <- localAssumps (Map.insert x (poly [] tvx)) $ tcExp e'
             unify an tvr $ tvx `arr` te
-            pure (Lam an tvr $ bind x e'', tvr)
+            pure (Lam an tvx $ bind x e'', tvr)
       Var an _ v -> do
             as <- asks as
             case Map.lookup v as of
@@ -407,13 +388,6 @@ tcDefn start d  = flip evalStateT mempty $ do
       when (isStart $ defnName d) $ do
             startTy <- inst globalStartTy
             unify an startTy t'
-      -- s <- gets id
-      -- trace ("TC " <> T.unpack (n2s n) <> ":") $ pure ()
-      -- trace (show $ unAnn $ Map.toList s) $ pure ()
-      -- modify fixTySub -- not needed?
-      -- s <- gets id
-      -- trace ("FIXED TC " <> T.unpack (n2s n) <> ":") $ pure ()
-      -- trace (show $ unAnn $ Map.toList s) $ pure ()
       d' <- Defn an n (Embed pt) b <$> Embed <$> bind vs <$> tySub e''
       d' `deepseq` pure d'
 
@@ -451,7 +425,7 @@ oTy :: Ty
 oTy = TyVar (MsgAnnote "ReT output type.") KStar (s2n "?o")
 
 globalReT :: Ty -> Ty -> Ty
-globalReT s a = TyApp an (TyApp an (TyApp an (TyApp an (TyCon an $ s2n "ReT") iTy) oTy) s) a
+globalReT s = TyApp an $ TyApp an (TyApp an (TyApp an (TyCon an $ s2n "ReT") iTy) oTy) s
       where an :: Annote
             an = MsgAnnote "Expected ReT type."
 

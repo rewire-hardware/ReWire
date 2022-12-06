@@ -6,15 +6,9 @@ import ReWire.Pretty (prettyPrint)
 
 import GHC.Paths (libdir)
 import GHC.Plugins
-      ( CoreM
-      , CoreBind
-      , DynFlags (..)
-      , Bind (..)
-      , ppr, showSDoc
-      , ModGuts (..)
+      ( ppr, showSDoc
       , defaultFatalMessager
       , defaultFlushOut
-      , updOptLevel
       )
 import GHC
       ( setSessionDynFlags, getSessionDynFlags
@@ -26,10 +20,9 @@ import GHC
       , guessTarget, load, LoadHowMuch (..)
       )
 import GHC.Driver.Monad (liftIO)
-import Control.Monad.IO.Class (MonadIO)
-import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
+main :: IO ()
 main = defaultErrorHandler defaultFatalMessager defaultFlushOut $ do
       runGhc (Just libdir) $ do
             dflags <- getSessionDynFlags
@@ -41,12 +34,12 @@ main = defaultErrorHandler defaultFatalMessager defaultFlushOut $ do
             _ <- load LoadAllTargets
             c <- compileToCoreSimplified "test_main.hs"
             liftIO $ putStrLn "************* GHC Core ***************"
-            mapM (liftIO . putStrLn . showSDoc dflags . ppr) $ cm_binds c
+            _ <- mapM (liftIO . putStrLn . showSDoc dflags . ppr) $ cm_binds c
             liftIO $ putStrLn "************* Crust ***************"
             (c', _) <- toCrust c
             liftIO $ T.putStrLn $ prettyPrint c'
-      where printBind :: MonadIO m => DynFlags -> CoreBind -> m ()
-            printBind dflags bndr@(NonRec b _) = do
-                  liftIO $ putStrLn $ "Non-recursive(??) binding named " <> showSDoc dflags (ppr b)
-            printBind dflags bndr@(Rec bs) = do
-                  liftIO $ putStrLn $ "Recursive binding, names: " <> concatMap ((<> " ") . showSDoc dflags . ppr . fst) bs
+--      where printBind :: MonadIO m => DynFlags -> CoreBind -> m ()
+--            printBind dflags bndr@(NonRec b _) = do
+--                  liftIO $ putStrLn $ "Non-recursive(??) binding named " <> showSDoc dflags (ppr b)
+--            printBind dflags bndr@(Rec bs) = do
+--                  liftIO $ putStrLn $ "Recursive binding, names: " <> concatMap ((<> " ") . showSDoc dflags . ppr . fst) bs

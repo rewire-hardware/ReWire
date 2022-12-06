@@ -11,6 +11,7 @@ module RWC.Primitives
       , Proxy (..)
       , Vec
       , fromList, replicate
+      , resize
       , reverse, slice, slice', index, (++), bits
       , bitIndex, bitSlice
       , type (+)

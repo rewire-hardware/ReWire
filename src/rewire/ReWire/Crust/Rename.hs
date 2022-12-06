@@ -148,9 +148,9 @@ instance QNamish (QName Annote) where
       fromQNamish = (noAnn <$)
 instance QNamish (Name ()) where
       toQNamish = UnQual () . void
-      fromQNamish (Qual _ _ n) = () <$ n
-      fromQNamish (UnQual _ n) = () <$ n
-      fromQNamish n            = (() <$) $ Ident () $ prettyPrint n
+      fromQNamish (Qual _ _ n) = void n
+      fromQNamish (UnQual _ n) = void n
+      fromQNamish n            = void $ Ident () $ prettyPrint n
 instance QNamish (Name SrcSpanInfo) where
       toQNamish = UnQual () . void
       fromQNamish (Qual _ _ n) = noSrcSpan <$ n

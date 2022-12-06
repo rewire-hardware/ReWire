@@ -13,9 +13,7 @@ import GHC.Plugins
       , splitTyConApp_maybe, getTyVar_maybe
       , splitFunTy_maybe
       , varType, varName, tyConName
-      , showSDoc, Outputable
-      , DynFlags, AltCon (..), DataCon
-      , dataConName
+      , showSDoc, Outputable, DynFlags
       , Literal (..)
       )
 import GHC
@@ -31,7 +29,7 @@ import Data.List (foldl')
 toCrust :: GhcMonad m => CoreModule -> m (M.Module, M.Exports)
 toCrust c = do
 --    cs <- toDataDefns $ cm_types c
-      cs <- pure []
+      let cs = []
       ds <- concatMapM toDefn $ cm_binds c
       pure (M.Module cs [] ds, mempty)
 
@@ -55,7 +53,7 @@ toExp = \ case
       Lit (LitNumber _ v)       -> pure $ M.LitInt noAnn v
       Lit (LitString v)         -> pure $ M.LitStr noAnn $ pack $ show v
       Lit _                     -> pure $ M.Error noAnn tblank "lit"
-      App e1 e2                 -> M.App noAnn tblank <$> toExp e1 <*> toExp e2
+      App e1 e2                 -> M.App noAnn <$> toExp e1 <*> toExp e2
       Lam v e                   -> do
             v' <- toName v
             e' <- toExp e
@@ -64,15 +62,15 @@ toExp = \ case
             v'    <- toName v
             e'    <- toExp e
             body' <- toExp body
-            pure $ M.App noAnn tblank (M.Lam noAnn tblank $ bind v' body') e'
+            pure $ M.App noAnn (M.Lam noAnn tblank $ bind v' body') e'
       Let _ _   -> pure $ ph "Let"
       Case e v _type alts -> do
             e'         <- toExp e
             v'         <- toName v
             alts' <- toCase (M.Var noAnn tblank v') $ reverse alts
             pure $ case alts' of
-                  Just alts'' -> M.App noAnn tblank (M.Lam noAnn tblank $ bind v' alts'') e'
-                  Nothing     -> M.App noAnn tblank (M.Lam noAnn tblank $ bind v' $ M.Error noAnn tblank "GHCCoreToCrust: case: empty alts.") e'
+                  Just alts'' -> M.App noAnn (M.Lam noAnn tblank $ bind v' alts'') e'
+                  Nothing     -> M.App noAnn (M.Lam noAnn tblank $ bind v' $ M.Error noAnn tblank "GHCCoreToCrust: case: empty alts.") e'
       Cast e _coercion          -> toExp e
       Tick _tickish e           -> toExp e
       Type _type                -> pure $ ph "Type"
@@ -80,7 +78,7 @@ toExp = \ case
 
 -- toCase :: GhcMonad m => M.Exp -> [(AltCon, [Var], Expr Var)] -> m (Maybe M.Exp)
 toCase :: GhcMonad m => M.Exp -> [Alt Var] -> m (Maybe M.Exp)
-toCase scr = \ case
+toCase _scr = \ case
 --       ((DataAlt c, vs, e) : alts) -> do
 --             e'  <- toExp e
 --             alts' <- toCase scr alts
@@ -95,16 +93,18 @@ toCase scr = \ case
 --             e'  <- toExp e
 --             pure $ Just e'
       []                  -> pure Nothing
-      where toPat :: GhcMonad m => DataCon -> [Var] -> m M.Pat
-            toPat c vs = do
-                  vs' <- mapM toName vs
-                  c'  <- dcToName c
-                  pure $ M.PatCon noAnn (M.Embed tblank) (M.Embed c') $ map (M.PatVar noAnn $ Embed tblank) vs'
+      _                   -> pure Nothing
+--      where
+--          toPat :: GhcMonad m => DataCon -> [Var] -> m M.Pat
+--          toPat c vs = do
+--                vs' <- mapM toName vs
+--                c'  <- dcToName c
+--                pure $ M.PatCon noAnn (M.Embed tblank) (M.Embed c') $ map (M.PatVar noAnn $ Embed tblank) vs'
 
-            dcToName :: GhcMonad m => DataCon -> m (M.Name M.DataConId)
-            dcToName c = do
-                  dflags <- getSessionDynFlags
-                  pure $ s2n $ showGhc dflags $ dataConName c
+--          dcToName :: GhcMonad m => DataCon -> m (M.Name M.DataConId)
+--          dcToName c = do
+--                dflags <- getSessionDynFlags
+--                pure $ s2n $ showGhc dflags $ dataConName c
 
 toName :: GhcMonad m => Var -> m (M.Name a)
 toName v = do
