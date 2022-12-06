@@ -4,9 +4,9 @@ module ReWire.Flags where
 data Flag = FlagO !String
           | FlagV       | FlagH
           | FlagFirrtl  | FlagVerilog | FlagVhdl
-          | FlagDPass1  | FlagDPass2 | FlagDPass3
-          | FlagDPass4 | FlagDPass5 | FlagDPass6 | FlagDPass7 | FlagDPass8 | FlagDPass9
-          | FlagDPass10  | FlagDPass11
+          | FlagDPass1  | FlagDPass2  | FlagDPass3
+          | FlagDPass4  | FlagDPass5  | FlagDPass6  | FlagDPass7  | FlagDPass8
+          | FlagDPass9  | FlagDPass10 | FlagDPass11 | FlagDPass12 | FlagDPass13
           | FlagFlatten
           | FlagInvertReset
           | FlagNoReset | FlagNoClock

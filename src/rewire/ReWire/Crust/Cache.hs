@@ -144,39 +144,46 @@ getProgram flags fp = do
        >=> kindCheck >=> typeCheck start
        >=> pDebug' "[Pass 6] Post-typechecking."
        >=> whenSet FlagDPass6 (printInfo "[Pass 6] Crust: Post-typechecking")
-       >=> removeExpTypeAnn
        >=> pDebug' "Simplifying and reducing."
+       >=> pDebug' "Removing type annotations."
+       >=> removeExpTypeAnn
+       >=> pDebug' "Removing Haskell definitions for externs."
        >=> neuterExterns
-       >=> pure . purgeUnused (start : (fst <$> builtins))
-       >=> simplify
-       >=> shiftLambdas
-       >=> pDebug' "Lifting lambdas (pre-purification)."
-       >=> liftLambdas
        >=> pDebug' "Removing unused definitions."
        >=> pure . purgeUnused (start : (fst <$> builtins))
-       >=> pDebug' "[Pass 7] Pre-purification."
-       >=> whenSet FlagDPass7 (printInfo "[Pass 7] Crust: Pre-purification")
+       >=> pDebug' "Simplifying."
+       >=> pDebug' "[Pass 7] Pre-simplification."
+       >=> whenSet FlagDPass7 (printInfo "[Pass 7] Crust: Pre-simplify")
+       >=> simplify
+       >=> pDebug' "[Pass 8] Post-simplification."
+       >=> whenSet FlagDPass8 (printInfo "[Pass 8] Crust: Post-simplify")
+       >=> pDebug' "Lifting lambdas (pre-purification)."
+       >=> shiftLambdas >=> liftLambdas
+       >=> pDebug' "Removing unused definitions (again)."
+       >=> pure . purgeUnused (start : (fst <$> builtins))
+       >=> pDebug' "[Pass 9] Pre-purification."
+       >=> whenSet FlagDPass9 (printInfo "[Pass 9] Crust: Pre-purification")
        >=> pDebug' "Purifying."
        >=> purify start
-       >=> pDebug' "[Pass 8] Post-purification."
-       >=> whenSet FlagDPass8 (printInfo "[Pass 8] Crust: Post-purification")
+       >=> pDebug' "[Pass 10] Post-purification."
+       >=> whenSet FlagDPass10 (printInfo "[Pass 10] Crust: Post-purification")
        >=> pDebug' "Lifting lambdas (post-purification)."
        >=> liftLambdas
        >=> pDebug' "Fully apply global function definitions."
        >=> fullyApplyDefs
        >=> pDebug' "Removing unused definitions (again)."
        >=> pure . purgeUnused [start]
-       >=> pDebug' "[Pass 9] Post-purification."
-       >=> whenSet FlagDPass9 (printInfo "[Pass 9] Crust: Post-second-lambda-lifting")
+       >=> pDebug' "[Pass 11] Post-purification."
+       >=> whenSet FlagDPass11 (printInfo "[Pass 11] Crust: Post-second-lambda-lifting")
        -- >=> pDebug' "Substituting the unit/nil type for remaining free type variables."
        -- >=> pure . freeTyVarsToNil
        >=> pDebug' "Translating to core & HDL."
        >=> toCore start (concatMap getInputNames flags) (concatMap getOutputNames flags) (concatMap getStateNames flags)
-       >=> pDebug' "[Pass 10] Core."
+       >=> pDebug' "[Pass 12] Core."
        $ (ts, syns, ds)
 
       when (FlagDPass10 `elem` flags) $ liftIO $ do
-            printHeader "[Pass 10] Core"
+            printHeader "[Pass 12] Core"
             T.putStrLn $ prettyPrint p
             when (FlagV `elem` flags) $ T.putStrLn "\n## Show core:\n"
             when (FlagV `elem` flags) $ T.putStrLn $ showt $ unAnn p
