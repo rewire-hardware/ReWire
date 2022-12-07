@@ -144,11 +144,11 @@ data Exp = UInt !Natural !Natural
       | Not !Exp
       | And !Exp !Exp
       | Or !Exp !Exp
-      | Xor !Exp !Exp
+      | XOr !Exp !Exp
       -- Bitwise reduction
       | Andr !Exp
       | Orr !Exp
-      | Xorr !Exp
+      | XOrr !Exp
       | Cat !Exp !Exp
       | Bits !Exp !Natural !Natural
       | Head !Exp !Natural
@@ -193,10 +193,10 @@ instance Pretty Exp where
             Not a        -> op "not" [a]
             And a b      -> op "and" [a, b]
             Or a b       -> op "or" [a, b]
-            Xor a b      -> op "xor" [a, b]
+            XOr a b      -> op "xor" [a, b]
             Andr a       -> op "andr" [a]
             Orr a        -> op "orr" [a]
-            Xorr a       -> op "xorr" [a]
+            XOrr a       -> op "xorr" [a]
             Cat a b      -> op "cat" [a, b]
             Bits a b c   -> op' "bits" [pretty a, pretty b, pretty c]
             Head a b     -> op' "head" [pretty a, pretty b]

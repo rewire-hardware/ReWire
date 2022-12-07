@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
+{-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 module ReWire.Crust.Desugar (desugar, addMainModuleHead) where
 
 import ReWire.Annotation (noAnn, Annote (..))
@@ -230,7 +231,7 @@ normIds = (\ x -> case x :: QName Annote of
             Special l (FunCon _)       -> pure $ UnQual l $ Ident l "->"
             -- I think this is only for the prefix constructor.
             Special l (TupleCon _ _ i) -> pure $ UnQual l $ mkTuple l i
-            Special l (Cons _)         -> pure $ UnQual l $ Ident l "Cons")
+            Special l (Cons _)         -> pure $ UnQual l $ Ident l "(:)")
       ||> TId
 
 mkTuple :: Annote -> Int -> Name Annote
@@ -320,7 +321,7 @@ desugarFuns = transform $ \ case
             toAlt :: MonadError AstError m => Match Annote -> FreshT m (Alt Annote)
             toAlt (Match l' _ [p] rhs binds) = pure $ Alt l' p rhs binds
             toAlt (Match l' _ ps  rhs binds) = pure $ Alt l' (PTuple l' Boxed ps) rhs binds
-            toAlt m                          = failAt (ann m) $ "Unsupported decl syntax: " <> pack (show (() <$ m))
+            toAlt m                          = failAt (ann m) $ "Unsupported decl syntax: " <> pack (show $ void m)
 
 -- | Turns
 -- > case e of {...}
@@ -422,7 +423,7 @@ desugarDos = transform $ \ (Do l stmts) -> transDo l stmts
                   [Qualifier _ e]          -> pure e
                   Qualifier l' e : stmts   -> App l' (App l' (Var l' $ UnQual l' $ Symbol l' ">>=") e) . Lambda l' [PWildCard l'] <$> transDo l stmts
                   LetStmt l' binds : stmts -> Let l' binds <$> transDo l stmts
-                  s : _                    -> failAt (ann s) $ "Unsupported syntax in do-block: " <> pack (show (() <$ s))
+                  s : _                    -> failAt (ann s) $ "Unsupported syntax in do-block: " <> pack (show $ void s)
                   []                       -> failAt l "Ill-formed do-block"
 
 normTyContext :: (MonadCatch m, MonadError AstError m) => Transform (FreshT m)
@@ -534,7 +535,7 @@ desugarAsPats = transform $ \ (Alt l p (UnGuardedRhs l' e) Nothing) -> do
                   PatTypeSig _ p _        -> patToExp p
                   -- PViewPat _exp _pat ->
                   PBangPat _ p            -> patToExp p
-                  p                       -> failAt (ann p) $ "Unsupported pattern: " <> pack (show (() <$ p))
+                  p                       -> failAt (ann p) $ "Unsupported pattern: " <> pack (show $ void p)
 
 -- | Turns beta-redexes into cases. E.g.:
 -- > (\ x -> e2) e1

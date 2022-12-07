@@ -5,7 +5,7 @@ import ReWire
 f :: (() -> ()) -> () -> ()
 f = \ f -> \ x -> f x
 
-start :: ReT () () I ()
+start :: ReacT () () Identity ()
 start = do
   signal ()
   start

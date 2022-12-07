@@ -5,32 +5,33 @@
 -- Haskell", though since we don't have type classes in core it is much
 -- simpler.
 --
-module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype) where
+module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype, unify, unify') where
 
 import ReWire.Annotation
 import ReWire.Error (AstError, MonadError, failAt)
-import ReWire.Fix (fixOn)
-import ReWire.Unbound (fresh, substs, aeq, Subst, n2s, s2n, unsafeUnbind)
+import ReWire.Fix (fixOn, fixOn')
+import ReWire.Unbound (fresh, substs, Subst, n2s, s2n, unsafeUnbind)
 import ReWire.Pretty
 import ReWire.Crust.Syntax
 import ReWire.SYB (runPureT, transform, runQ, query)
 
 import Control.DeepSeq (deepseq, force)
-import Control.Monad (zipWithM, foldM)
+import Control.Monad (zipWithM, foldM, mplus, when)
 import Control.Monad.Catch (MonadCatch (..))
 import Control.Monad.Identity (Identity (..))
-import Control.Monad.Reader (ReaderT (..), local, asks)
-import Control.Monad.State (evalStateT, StateT (..), get, put, modify, MonadState)
+import Control.Monad.Reader (MonadReader, ReaderT (..), local, asks)
+import Control.Monad.State (evalStateT, gets, modify, MonadState)
 import Data.Data (Data)
 import Data.HashMap.Strict (HashMap)
-import Data.Set (Set)
-import Data.List (foldl')
+import Data.Hashable (Hashable (hash))
 import Data.Maybe (mapMaybe)
+import Data.Set (Set)
+import Data.Text (Text)
+import Numeric.Natural (Natural)
 import TextShow (TextShow (..))
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
-import qualified Data.Text as T
 
 subst :: Subst b a => HashMap (Name b) b -> a -> a
 subst = substs . Map.toList
@@ -50,19 +51,14 @@ instance Semigroup TCEnv where
 instance Monoid TCEnv where
       mempty = TCEnv mempty mempty
 
-type TCM m = ReaderT TCEnv (StateT TySub m)
-
 lookupAll :: Eq a => a -> [(a, b)] -> [b]
 lookupAll a = map snd . filter ((== a) . fst)
 
 typeCheckDefn :: (Fresh m, MonadError AstError m) => [DataDefn] -> [Defn] -> Defn -> m Defn
-typeCheckDefn ts vs d = evalTCM $ withAssumps ts vs $ tcDefn d
+typeCheckDefn ts vs d = runReaderT (withAssumps ts vs $ tcDefn "" d) mempty
 
-evalTCM :: Monad m => TCM m a -> m a
-evalTCM m = evalStateT (runReaderT m mempty) mempty
-
-typeCheck :: (Fresh m, MonadError AstError m, MonadCatch m) => FreeProgram -> m FreeProgram
-typeCheck (ts, syns, vs) = (ts, syns, ) <$> evalTCM tc
+typeCheck :: (Fresh m, MonadError AstError m, MonadCatch m) => Text -> FreeProgram -> m FreeProgram
+typeCheck start (ts, syns, vs) = (ts, syns, ) <$> runReaderT tc mempty
       where conc :: Concretes -> Defn -> [Defn]
             conc cs (Defn an n _ b e) = mapMaybe conc' $ lookupAll n $ Map.keys cs
                   where conc' :: Ty -> Maybe Defn
@@ -70,16 +66,16 @@ typeCheck (ts, syns, vs) = (ts, syns, ) <$> evalTCM tc
                               n' <- Map.lookup (n, t) cs
                               pure $ Defn an n' ([] |-> t) b e
 
-            tc :: (MonadCatch m, Fresh m, MonadError AstError m) => TCM m [Defn]
+            tc :: (MonadCatch m, Fresh m, MonadError AstError m, MonadReader TCEnv m) => m [Defn]
             tc = do
-                  vs' <- withAssumps ts vs $ mapM tcDefn vs
+                  vs' <- withAssumps ts vs $ mapM (tcDefn start) vs
                   cs  <- concretes vs' -- TODO(chathhorn): don't think this needs to use fix.
                   fst . fst <$> fixOn (Map.keys . snd) "polymorphic function instantiation" 10 tc' ((vs', mempty), cs)
 
-            tc' :: (MonadCatch m, Fresh m, MonadError AstError m) => (([Defn], Concretes), Concretes) -> TCM m (([Defn], Concretes), Concretes)
+            tc' :: (MonadCatch m, Fresh m, MonadError AstError m, MonadReader TCEnv m) => (([Defn], Concretes), Concretes) -> m (([Defn], Concretes), Concretes)
             tc' ((acc, cs), cs') = do
                   let ep = concatMap (conc cs') polyDefs
-                  ep' <- concretize (cs <> cs') <$> withAssumps ts (acc <> ep) (mapM tcDefn ep)
+                  ep' <- concretize (cs <> cs') <$> withAssumps ts (acc <> ep) (mapM (tcDefn start) ep)
                   ((concretize (cs <> cs') acc <> ep', cs <> cs'), ) <$> concretes ep'
 
             concretes :: Fresh m => [Defn] -> m Concretes
@@ -110,49 +106,134 @@ typeCheck (ts, syns, vs) = (ts, syns, ) <$> evalTCM tc
                   v@(Var an t n) -> pure $ maybe v (Var an t) $ Map.lookup (n, unAnn t) cs
                   e              -> pure e)
 
-freshv :: (MonadState TySub m, Fresh m) => m Ty
-freshv = do
-      n <- fresh $ s2n "?"
-      let tv = TyVar (MsgAnnote "TypeCheck: freshv") kblank n
-      modify $ Map.insert n tv
-      pure tv
+freshv :: Fresh m => m Ty
+freshv = TyVar (MsgAnnote "TypeCheck: freshv") kblank <$> fresh (s2n "?")
 
-(@@) :: TySub -> TySub -> TySub
-s1 @@ s2 = Map.mapWithKey (\ _ t -> subst s1 t) s2 `Map.union` s1
+fixTySub :: TySub -> TySub
+fixTySub = fixOn' norm subst'
+      where subst' :: TySub -> TySub
+            subst' s = Map.map (subst s) s
 
-isFlex :: Name a -> Bool -- TODO(chahthorn): !!
-isFlex = (== '?') . T.head . n2s
+            norm :: TySub -> Int
+            norm = hash . Map.map unAnn
 
-varBind :: Monad m => Name Ty -> Ty -> TCM m (Maybe TySub)
-varBind u t | t `aeq` TyVar noAnn kblank u = pure $ Just mempty
-            | u `elem` fv t                = pure Nothing
-            | otherwise                    = pure $ Just $ Map.singleton u t
+mergeTySub :: TySub -> TySub -> TySub
+mergeTySub ts = fixTySub . Map.unionWith merge ts
+      where merge :: Ty -> Ty -> Ty
+            merge (TyApp an t1 t2) (TyApp _ t1' t2') = TyApp an (merge t1 t1') (merge t2 t2')
+            merge TyVar {}         t'                = t'
+            merge t                _                 = t
 
-mgu :: Monad m => Ty -> Ty -> TCM m (Maybe TySub)
-mgu (TyApp _ tl tr) (TyApp _ tl' tr')                        = do
+mgu :: Ty -> Ty -> Maybe TySub
+mgu (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) ti ) to )
+    (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) ti') to')                    = do
+      s1 <- mgu iTy ti
+      s2 <- mergeTySub s1 <$> mgu (subst s1 ti) (subst s1 ti')
+      s3 <- mergeTySub s2 <$> mgu (subst s2 oTy) (subst s2 to)
+      mergeTySub s3 <$> mgu (subst s3 to) (subst s3 to')
+mgu (TyApp _ tl tr)                 (TyApp _ tl' tr')                         = do
       s1 <- mgu tl tl'
-      s2 <- maybe (pure Nothing) (\ s1' -> mgu (subst s1' tr) $ subst s1' tr') s1
-      case (s1, s2) of
-            (Just s1', Just s2') -> pure $ Just $ s2' @@ s1'
-            _                    -> pure Nothing
-mgu (TyCon _ c1)    (TyCon _ c2)  | n2s c1 == n2s c2              = pure $ Just mempty
-mgu (TyVar _ _ u)   t             | isFlex u                      = varBind u t
-mgu t               (TyVar _ _ u) | isFlex u                      = varBind u t
-mgu (TyVar _ _ v)   (TyVar _ _ u) | not (isFlex v) && v == u      = pure $ Just mempty
-mgu _ _                                                           = pure Nothing
+      mergeTySub s1 <$> mgu (subst s1 tr) (subst s1 tr')
+mgu (TyCon _ c1)                    (TyCon _ c2) | n2s c1 == n2s c2           = pure mempty
 
-unify :: MonadError AstError m => Annote -> Ty -> Ty -> TCM m ()
+mgu (TyNat _ n1)                    (TyNat _ n2) | n1 == n2                   = pure mempty
+
+mgu (TyVar _ _ u)                   (plus -> Just (TyVar _ _ v, t)) | u == v  = mgu (TyNat (ann t) 0) t
+mgu (plus -> Just (TyVar _ _ v, t)) (TyVar _ _ u)                   | u == v  = mgu (TyNat (ann t) 0) t
+
+mgu (TyNat _ n)                     (plus -> Just (TyNat _ m, t))   | n >= m  = mgu (TyNat (ann t) $ n - m) t
+mgu (plus -> Just (TyNat _ m, t))   (TyNat _ n)                     | n >= m  = mgu (TyNat (ann t) $ n - m) t
+
+mgu (TyVar _ _ u)                   (TyVar _ _ v)          | u == v           = pure mempty
+
+mgu (TyVar _ _ u)                   tv@(TyVar _ _ v)       | hash (show u) > hash (show v) = pure $ Map.fromList [(u, tv)]
+mgu tu@TyVar {}                     (TyVar _ _ v)                                          = pure $ Map.fromList [(v, tu)]
+
+mgu (TyVar _ _ u)                   t                      | u `notElem` fv t = pure $ Map.fromList [(u, t)]
+mgu t                               (TyVar _ _ u)          | u `notElem` fv t = pure $ Map.fromList [(u, t)]
+mgu _                               _                                         = Nothing
+
+--      trace ("     MGU: " <> T.unpack (prettyPrint t1)
+--        <> "\n    with: " <> T.unpack (prettyPrint t2)) $
+--      trace ("      t1: " <> show (unAnn t1)) $
+--      trace ("      t2: " <> show (unAnn t2)) $ Nothing
+
+mapNat :: (Ty -> Ty) -> Ty -> Ty
+mapNat norm = \ case
+      TyApp a c n | isVec c || isProxy c -> TyApp a c $ norm n
+      TyApp a t1 t2                      -> TyApp a (mapNat norm t1) $ mapNat norm t2
+      t                                  -> t
+
+normNat :: Ty -> Ty
+normNat t = case evalNats $ plus' t of
+      (0, ts@(_ : _)) -> foldr1 (plusTy $ ann t) ts
+      (n, ts        ) -> foldr1 (plusTy $ ann t) $ TyNat (ann t) n : ts
+
+normNat' :: Ty -> Ty
+normNat' t = case evalNats $ plus' t of
+      (0, ts@(_ : _)) -> foldr1 (plusTy $ ann t) $ reverse ts
+      (n, ts        ) -> foldr1 (plusTy $ ann t) $ reverse $ TyNat (ann t) n : ts
+
+evalNats :: [Ty] -> (Natural, [Ty])
+evalNats = \ case
+      TyNat _ n : (evalNats -> (n', ts')) -> (n' + n,     ts')
+      t         : (evalNats -> (n', ts')) -> (n',     t : ts')
+      _                                   -> (0,           [])
+
+plus' :: Ty -> [Ty]
+plus' t | Just (a, b) <- plus t = plus' a <> plus' b
+        | otherwise             = [t]
+
+unify' :: Ty -> Ty -> Maybe Ty
+unify' t1 t2 = subst <$> mgu t1 t2 <*> pure t1
+
+tySub :: (MonadState TySub m, Subst Ty a) => a -> m a
+tySub = gets . flip subst
+
+unify :: (MonadError AstError m, MonadState TySub m) => Annote -> Ty -> Ty -> m ()
 unify an t1 t2 = do
-      s  <- get
-      mgu (subst s t1) (subst s t2) >>= maybe
-            (failAt an $ "Types do not unify. Expected and got, respectively:\n" <> prettyPrint (subst s t1) <> "\n" <> prettyPrint (subst s t2))
-            (modify . (@@))
+      t1' <- tySub t1
+      t2' <- tySub t2
+      let fwd = mapNat normNat
+          rev = mapNat normNat'
+--      trace ("Unifying: " <> T.unpack (prettyPrint $ fwd t1')
+--        <> "\n    with: " <> T.unpack (prettyPrint $ fwd t2')) $ pure ()
+--      trace ("     t1': " <> show (unAnn $ fwd t1')) $ pure ()
+--      trace ("     t2': " <> show (unAnn $ fwd t2')) $ pure ()
+--
+--      trace ("Unifying: " <> T.unpack (prettyPrint $ fwd t1')
+--        <> "\n    with: " <> T.unpack (prettyPrint $ rev t2')) $ pure ()
+--      trace ("     t1': " <> show (unAnn $ fwd t1')) $ pure ()
+--      trace (" rev t2': " <> show (unAnn $ rev t2')) $ pure ()
 
-inst :: (MonadState TySub m, Fresh m) => Poly -> m Ty
-inst (Poly pt) = do
-      (tvs, t) <- unbind pt
-      sub      <- Map.fromList <$> mapM (\ tv -> (tv,) <$> freshv) tvs
-      pure $ subst sub t
+      case mgu (fwd t1') (fwd t2') `mplus` mgu (fwd t1') (rev t2') of
+            Just s' -> modify (mergeTySub s')
+            _       -> failAt an $ "Types do not unify. Expected and got, respectively:\n"
+                              <> prettyPrint t1' <> "\n"
+                              <> prettyPrint t2'
+
+isVec :: Ty -> Bool
+isVec = \ case
+      TyCon _ (n2s -> "Vec") -> True
+      _                      -> False
+
+isProxy :: Ty -> Bool
+isProxy = \ case
+      TyCon _ (n2s -> "Proxy") -> True
+      _                        -> False
+
+isPlus :: Ty -> Bool
+isPlus = \ case
+      TyCon _ (n2s -> "+") -> True
+      _                    -> False
+
+plus :: Ty -> Maybe (Ty, Ty)
+plus = \ case
+      TyApp _ (TyApp _ c t1) t2 | isPlus c -> pure (t1, t2)
+      _                                    -> Nothing
+
+inst :: Fresh m => Poly -> m Ty
+inst (Poly pt) = snd <$> unbind pt
 
 patAssumps :: Pat -> HashMap (Name Exp) Poly
 patAssumps = flip patAssumps' mempty
@@ -170,7 +251,7 @@ patHoles = flip patHoles' $ pure mempty
                   MatchPatVar _ t      -> (flip Map.insert ([] `poly` t) <$> fresh (s2n "PHOLE") <*>)
                   MatchPatWildCard _ _ -> id
 
-tcPat :: (Fresh m, MonadError AstError m) => Ty -> Pat -> TCM m Pat
+tcPat :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Ty -> Pat -> m Pat
 tcPat t = \ case
       PatCon an _ (Embed i) ps -> do
             cas     <- asks cas
@@ -188,7 +269,7 @@ tcPat t = \ case
       PatVar an _ x            -> pure $ PatVar an (Embed t) x
       PatWildCard an _         -> pure $ PatWildCard an (Embed t)
 
-tcMatchPat :: (Fresh m, MonadError AstError m) => Ty -> MatchPat -> TCM m MatchPat
+tcMatchPat :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Ty -> MatchPat -> m MatchPat
 tcMatchPat t = \ case
       MatchPatCon an _ i ps -> do
             cas     <- asks cas
@@ -206,20 +287,20 @@ tcMatchPat t = \ case
       MatchPatVar an _      -> pure $ MatchPatVar an t
       MatchPatWildCard an _ -> pure $ MatchPatWildCard an t
 
-tcExp :: (Fresh m, MonadError AstError m) => Exp -> TCM m (Exp, Ty)
+tcExp :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Exp -> m (Exp, Ty)
 tcExp = \ case
       App an e1 e2 -> do
             (e1', te1) <- tcExp e1
             (e2', te2) <- tcExp e2
-            tv         <- freshv
-            unify an te1 $ te2 `arr` tv
-            pure (App an e1' e2', tv)
+            tvr        <- freshv
+            unify an te1 (te2 `arr` tvr)
+            pure (App an e1' e2', tvr)
       Lam an _ e -> do
             (x, e')   <- unbind e
             tvx       <- freshv
             tvr       <- freshv
-            (e'', te) <- localAssumps (Map.insert x ([] `poly` tvx)) $ tcExp e'
-            unify an tvr $ arr tvx te
+            (e'', te) <- localAssumps (Map.insert x (poly [] tvx)) $ tcExp e'
+            unify an tvr $ tvx `arr` te
             pure (Lam an tvx $ bind x e'', tvr)
       Var an _ v -> do
             as <- asks as
@@ -236,8 +317,8 @@ tcExp = \ case
                         t <- inst pt
                         pure (Con an t i, t)
       Case an _ e e1 e2 -> do
-            (p, e1')    <- unbind e1
             (e', te)    <- tcExp e
+            (p, e1')    <- unbind e1
             tv          <- freshv
             p'          <- tcPat te p
             let as      = patAssumps p'
@@ -254,7 +335,7 @@ tcExp = \ case
             tv       <- freshv
             p'       <- tcMatchPat te p
             holes    <- patHoles p'
-            (_, te1) <- localAssumps (`Map.union` holes) $ tcExp $ mkApp an f $ map fst $ Map.toList holes
+            (_, te1) <- localAssumps (`Map.union` holes) $ tcExp $ mkApp' an f $ map fst $ Map.toList holes
             unify an tv te1
             case e2 of
                   Nothing -> pure (Match an tv e' p' f Nothing, tv)
@@ -262,30 +343,13 @@ tcExp = \ case
                         (e2', te2)  <- tcExp e2
                         unify an tv te2
                         pure (Match an tv e' p' f (Just e2'), tv)
-      Extern an _ -> do
-            tv <- freshv
-            let t = listTy an paramTy `arr` strTy an `arr` listTy an paramTy `arr` listTy an paramTy `arr` strTy an `arr` tv `arr` strTy an `arr` tv
-            pure (Extern an t, t)
-            where paramTy :: Ty
-                  paramTy = pairTy an (strTy an) (intTy an)
-      Bit an _ -> do
-            tv <- freshv
-            let t = tv `arr` intTy an `arr` bitTy an
-            pure (Bit an t, t)
-      Bits an _ -> do
-            tv  <- freshv
-            tv' <- freshv
-            let t = tv `arr` intTy an `arr` intTy an `arr` tv'
-            pure (Bits an t, t)
-      SetRef an _ -> do
-            ta  <- freshv
-            tb  <- freshv
-            let t = refTy an ta `arr` ta `arr` tb `arr` tb
-            pure (SetRef an t, t)
-      GetRef an _ -> do
-            ta  <- freshv
-            let t = refTy an ta `arr` ta
-            pure (GetRef an t, t)
+      Builtin an _ b -> do
+            as <- asks as
+            case Map.lookup (s2n $ builtinName b) as of
+                  Nothing -> failAt an $ "Unknown builtin: " <> builtinName b
+                  Just pt -> do
+                        t <- inst pt
+                        pure (Builtin an t b, t)
       e@LitInt {} -> pure (e, typeOf e)
       e@LitStr {} -> pure (e, typeOf e)
       LitList an _ es -> do
@@ -294,34 +358,41 @@ tcExp = \ case
             mapM_ (unify an tv) (snd <$> es')
             let t = listTy an tv
             pure (LitList an t (fst <$> es'), t)
-      Error an _ m -> do
-            tv <- freshv
-            pure (Error an tv m, tv)
+      LitVec an _ es -> do
+            tv  <- freshv
+            es' <- mapM tcExp es
+            mapM_ (unify an tv) (snd <$> es')
+            let t = vecTy an (TyNat an $ fromInteger $ toInteger $ length es) tv
+            pure (LitVec an t (fst <$> es'), t)
       TypeAnn an pt e -> do
             (e', te) <- tcExp e
             t        <- inst pt
             unify an t te
             pure (TypeAnn an pt e', te)
 
-mkApp :: Annote -> Exp -> [Name Exp] -> Exp
-mkApp an f holes = foldl' (App an) f $ map (Var an $ TyBlank an) holes
+mkApp' :: Annote -> Exp -> [Name Exp] -> Exp
+mkApp' an f holes = mkApp an f $ map (Var an $ TyBlank an) holes
 
-tcDefn :: (Fresh m, MonadError AstError m) => Defn -> TCM m Defn
-tcDefn d  = do
-      put mempty
-      let Defn an n (Embed (Poly pt)) b (Embed e) = force d
-      (tvs, t) <- unbind pt
+tcDefn :: (Fresh m, MonadError AstError m, MonadReader TCEnv m) => Text -> Defn -> m Defn
+tcDefn start d  = flip evalStateT mempty $ do
+      let Defn an n (Embed pt) b (Embed e) = force d
+      t'       <- inst pt
       (vs, e') <- unbind e
-      let (targs, _) = flattenArrow t
-      (e'', te) <- localAssumps (`Map.union` (Map.fromList $ zip vs $ map (poly []) targs)) $ tcExp e'
-      let te' = iterate arrowRight t !! length vs
-      unify an te' te
-      s <- get
-      put mempty
-      let d' = Defn an n (tvs |-> t) b $ Embed $ bind vs $ subst s e''
+      let (targs, _) = flattenArrow t'
+      (e'', te) <- localAssumps (`Map.union` (Map.fromList $ zip vs $ map (poly []) targs))
+                 $ tcExp e'
+      unify an (iterate arrowRight t' !! length vs) te
+      when (isStart $ defnName d) $ do
+            startTy <- inst globalStartTy
+            unify an startTy t'
+      d' <- Defn an n (Embed pt) b <$> Embed <$> bind vs <$> tySub e''
       d' `deepseq` pure d'
 
-withAssumps :: MonadError AstError m => [DataDefn] -> [Defn] -> TCM m a -> TCM m a
+      where isStart :: Name Exp -> Bool
+            isStart = (== start) . n2s
+
+
+withAssumps :: (MonadError AstError m, MonadReader TCEnv m) => [DataDefn] -> [Defn] -> m a -> m a
 withAssumps ts vs = localAssumps (`Map.union` as) . localCAssumps (`Map.union` cas)
       where as  = foldr defnAssump mempty vs
             cas = foldr dataDeclAssumps mempty ts
@@ -335,11 +406,30 @@ withAssumps ts vs = localAssumps (`Map.union` as) . localCAssumps (`Map.union` c
             dataConAssump :: DataCon -> HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly
             dataConAssump (DataCon _ i (Embed t)) = Map.insert i t
 
-localAssumps :: MonadError AstError m => (HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly) -> TCM m a -> TCM m a
+localAssumps :: (MonadReader TCEnv m, MonadError AstError m) => (HashMap (Name Exp) Poly -> HashMap (Name Exp) Poly) -> m a -> m a
 localAssumps f = local (\ tce -> tce { as = f (as tce) })
 
-localCAssumps :: MonadError AstError m => (HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly) -> TCM m a -> TCM m a
+localCAssumps :: (MonadReader TCEnv m, MonadError AstError m) => (HashMap (Name DataConId) Poly -> HashMap (Name DataConId) Poly) -> m a -> m a
 localCAssumps f = local (\ tce -> tce { cas = f (cas tce) })
 
 untype :: Data d => d -> d
 untype = runIdentity . runPureT (transform $ \ (t :: Ty) -> pure $ TyBlank $ ann t)
+
+iTy :: Ty
+iTy = TyVar (MsgAnnote "ReacT input type.") KStar (s2n "?i")
+
+oTy :: Ty
+oTy = TyVar (MsgAnnote "ReacT output type.") KStar (s2n "?o")
+
+globalReacT :: Ty -> Ty -> Ty
+globalReacT s = TyApp an $ TyApp an (TyApp an (TyApp an (TyCon an $ s2n "ReacT") iTy) oTy) s
+      where an :: Annote
+            an = MsgAnnote "Expected ReacT type."
+
+globalStartTy :: Poly
+globalStartTy = poly [a] $ globalReacT (TyCon an $ s2n "Identity") $ TyVar an KStar a
+      where an :: Annote
+            an = MsgAnnote "Expected start function type."
+
+            a :: Name Ty
+            a = s2n "a"

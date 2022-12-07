@@ -1,4 +1,6 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Core.ToVerilog (compileProgram) where
 
@@ -62,22 +64,25 @@ fresh s = mangle <$> fresh' s
 newWire :: MonadState SigInfo m => V.Size -> Name -> m LVal
 newWire sz n = do
       n' <- fresh n
-      modify $ second (++ [Logic sz n'])
+      modify $ second (++ [mkSignal (n', sz)])
       pure $ Name n'
 
 newWire' :: MonadState SigInfo m => V.Size -> Name -> m LVal
 newWire' sz n = do
       n' <- fresh' n
-      modify $ second (++ [Logic sz n'])
+      modify $ second (++ [mkSignal (n', sz)])
       pure $ Name n'
 
 lookupWidth :: MonadState SigInfo m => Name -> m (Maybe Size)
 lookupWidth n = gets (lookup n . map proj <$> snd)
       where proj :: Signal -> (Name, Size)
             proj = \ case
-                  Wire  sz n -> (n, sz)
-                  Logic sz n -> (n, sz)
-                  Reg   sz n -> (n, sz)
+                  Wire  []   n _ -> (n, 0)
+                  Wire  [sz] n _ -> (n, sz)
+                  Logic []   n _ -> (n, 0)
+                  Logic [sz] n _ -> (n, sz)
+                  Reg   []   n _ -> (n, 0)
+                  Reg   [sz] n _ -> (n, sz)
 
 getClock :: MonadState SigInfo m => m LVal
 getClock = gets snd >>= pure . \ case
@@ -122,24 +127,24 @@ compileStartDefn flags (C.StartDefn _ w loop state0) = do
                   Just rstExp -> [ Always (map (Pos . fst) (clock flags) <> rstEdge) $ Block [ ifRst rstExp ] ]
                   _           -> [ ]
       where sigs0 :: [Signal]
-            sigs0 = map toLogic [clk0, rst0]
+            sigs0 = map mkSignal [clk0, rst0]
                   where clk0 :: (Name, Size)
                         clk0 = fromMaybe ("clk", 0) $ listToMaybe $ clock flags
                         rst0 :: (Name, Size)
                         rst0 = fromMaybe ("rst", 0) $ listToMaybe $ reset flags
 
             inputs :: [Port]
-            inputs = map (Input . toLogic)  $ clock flags <> reset flags <> inputWires w
+            inputs = map (Input . mkSignal)  $ clock flags <> reset flags <> inputWires w
 
             outputs :: [Port]
-            outputs = map (Output . toLogic) $ outputWires w
+            outputs = map (Output . mkSignal) $ outputWires w
 
             sigs :: [Signal]
-            sigs = map toLogic $ allWires w
+            sigs = map mkSignal $ allWires w
 
             ifRst :: V.Exp -> Stmt
             ifRst init = case reset flags of
-                  [(sRst, sz)] -> IfElse (Eq (LVal $ Name sRst) $ LitBits $ bitVec (fromIntegral sz) $ fromEnum $ not invertRst)
+                  [(sRst, sz)] -> IfElse (V.Eq (LVal $ Name sRst) $ LitBits $ bitVec (fromIntegral sz) $ fromEnum $ not invertRst)
                         (Block [ ParAssign lvCurrState init ] )
                         (Block [ ParAssign lvCurrState $ LVal lvNxtState ])
                   _            -> ParAssign lvCurrState $ LVal lvNxtState
@@ -193,10 +198,10 @@ compileDefn flags (C.Defn _ n (Sig _ inps outp) body) = do
             argNames = zipWith (\ _ x -> "arg" <> showt x) inps [0::Int ..]
 
             inputs :: [Port]
-            inputs = zipWith (curry $ Input . toLogic) argNames inps
+            inputs = zipWith (curry $ Input . mkSignal) argNames inps
 
             outputs :: [Port]
-            outputs = map (Output . toLogic) [("res", outp)]
+            outputs = map (Output . mkSignal) [("res", outp)]
 
 -- | Inlines a defn or instantiates an already-compiled defn.
 compileCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
@@ -233,12 +238,12 @@ compileExps flags lvars es = (map fst &&& concatMap snd) <$> mapM (compileExp fl
 compileExp :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
             => [Flag] -> [V.Exp] -> C.Exp -> m (V.Exp, [Stmt])
 compileExp flags lvars = \ case
-      LVar _  _ (lkupLVal -> Just x)                     -> pure (x, [])
-      LVar an _ _                                        -> failAt an "ToVerilog: compileExp: encountered unknown LVar."
-      Lit _ bv                                           -> pure (bvToExp bv, [])
-      C.Concat _ e1 e2                                   -> first V.cat <$> compileExps flags lvars (gather e1 <> gather e2)
-      Call _ sz (Global g) e ps els                      -> mkCall ("g" <> g) e ps els $ compileCall flags (mangle g) sz
-      Call _ sz (SetRef r) e ps els                      -> mkCall "setRef" e ps els $ \ [a, b] -> case a of
+      LVar _  _ (lkupLVal -> Just x)                -> pure (x, [])
+      LVar an _ _                                   -> failAt an "ToVerilog: compileExp: encountered unknown LVar."
+      Lit _ bv                                      -> pure (bvToExp bv, [])
+      C.Concat _ e1 e2                              -> first V.cat <$> compileExps flags lvars (gather e1 <> gather e2)
+      Call _ sz (Global g) e ps els                 -> mkCall ("g" <> g) e ps els $ compileCall flags (mangle g) sz
+      Call _ sz (SetRef r) e ps els                 -> mkCall "setRef" e ps els $ \ [a, b] -> case a of
             a@(LVal (Element _ _)) -> do -- TODO(chathhorn) TODO TODO
                   let wa  = 1
                   r' <- newWire' wa r
@@ -256,12 +261,14 @@ compileExp flags lvars = \ case
                   pure (b', [Assign r' $ LVal $ Name a])
             a -> error $ T.unpack $ "Got: " <> prettyPrint a
       Call _ sz (GetRef r) _ _ _                         -> (,[]) <$> wcast sz (LVal $ Name r)
-      Call _ sz (Extern _ (binOp -> Just op) _) e ps els -> mkCall "binOp"  e ps els $ \ [x, y] -> (,[]) <$> wcast sz (op x y)
-      Call _ sz (Extern _ (unOp -> Just op) _) e ps els  -> mkCall "unOp"   e ps els $ \ [x]    -> (,[]) <$> wcast sz (op x)
-      Call _ sz (Extern _ "msbit" _) e ps els            -> mkCall "msbit"  e ps els $ \ [x]    -> (,[]) <$> wcast sz (projBit (fromIntegral (argsSize ps) - 1) x)
-      Call _ sz (Extern sig ex inst) e ps els            -> mkCall ex       e ps els $ instantiate sig ex inst sz
-      Call _ sz Id e ps els                              -> mkCall "id"     e ps els $ \ xs     -> (,[]) <$> wcast sz (V.cat xs)
-      Call _ sz (Const bv) e ps els                      -> mkCall "lit"    e ps els $ \ _      -> (,[]) <$> wcast sz (bvToExp bv)
+      Call _ sz (Prim (binOp -> Just op)) e ps els -> mkCall "binOp"  e ps els $ \ [x, y] -> (,[]) <$> wcast sz (op x y)
+      Call _ sz (Prim (unOp -> Just op)) e ps els  -> mkCall "unOp"   e ps els $ \ [x]    -> (,[]) <$> wcast sz (op x)
+      Call _ sz (Prim MSBit) e ps els              -> mkCall "msbit"  e ps els $ \ [x]    -> (,[]) <$> wcast sz (projBit (fromIntegral (argsSize ps) - 1) x)
+      Call _ sz (Prim Resize) e ps els             -> mkCall "resize" e ps els $ \ [x]    -> (,[]) <$> wcast sz x
+      Call _ sz (Prim Id) e ps els                 -> mkCall "id"     e ps els $ \ xs     -> (,[]) <$> wcast sz (V.cat xs)
+      Call a _  (Prim p) _ _ _                     -> failAt a $ "ToVerilog: compileExp: encountered unknown primitive: " <> showt p
+      Call _ sz (Extern sig ex inst) e ps els      -> mkCall ex       e ps els $ instantiate sig ex inst sz
+      Call _ sz (Const bv) e ps els                -> mkCall "lit"    e ps els $ \ _      -> (,[]) <$> wcast sz (bvToExp bv)
       where mkCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
                     => Name -> C.Exp -> [Pat] -> C.Exp -> ([V.Exp] -> m (V.Exp, [Stmt])) -> m (V.Exp, [Stmt])
             mkCall s e ps els f = do
@@ -274,10 +281,10 @@ compileExp flags lvars = \ case
                         _      -> do
                               Name n <- newWire (sizeOf e) s
                               (fes, fstmts) <- f $ map LVal $ patApply n ps
-                              pure  ( case patMatches n ps of
-                                          cond | litTrue cond || C.isNil els -> fes
-                                               | litFalse cond               -> els'
-                                               | otherwise                   -> Cond cond fes els'
+                              pure  ( let c = patMatches n ps in
+                                      if | litTrue c || C.isNil els -> fes
+                                         | litFalse c               -> els'
+                                         | otherwise                -> Cond c fes els'
                                     , stmts <> stmts' <> [ Assign (Name n) e' ] <> fstmts
                                     )
 
@@ -360,23 +367,23 @@ wcast :: MonadState SigInfo m => Size -> V.Exp -> m V.Exp
 wcast sz e = expWidth e >>= \ case
       Just sz' | sz < sz' -> trunc e
                | sz > sz' -> case e of
-                  Add  e1 e2      -> Add         <$> pad e1 <*> pad e2
-                  Sub  e1 e2      -> Sub         <$> pad e1 <*> pad e2
-                  Mul  e1 e2      -> Mul         <$> pad e1 <*> pad e2
-                  Div  e1 e2      -> Div         <$> pad e1 <*> pad e2
-                  Mod  e1 e2      -> Mod         <$> pad e1 <*> pad e2
-                  And  e1 e2      -> And         <$> pad e1 <*> pad e2
-                  Or   e1 e2      -> Or          <$> pad e1 <*> pad e2
-                  XOr  e1 e2      -> XOr         <$> pad e1 <*> pad e2
-                  XNor e1 e2      -> XNor        <$> pad e1 <*> pad e2
-                  Cond c e1 e2    -> Cond c      <$> pad e1 <*> pad e2
-                  Pow         e n -> Pow         <$> pad e  <*> pure n
-                  LShift      e n -> LShift      <$> pad e  <*> pure n
-                  RShift      e n -> RShift      <$> pad e  <*> pure n
-                  LShiftArith e n -> LShiftArith <$> pad e  <*> pure n
-                  RShiftArith e n -> RShiftArith <$> pad e  <*> pure n
-                  Not e           -> Not         <$> pad e
-                  e               -> pad e
+                  V.Add  e1 e2      -> V.Add         <$> pad e1 <*> pad e2
+                  V.Sub  e1 e2      -> V.Sub         <$> pad e1 <*> pad e2
+                  V.Mul  e1 e2      -> V.Mul         <$> pad e1 <*> pad e2
+                  V.Div  e1 e2      -> V.Div         <$> pad e1 <*> pad e2
+                  V.Mod  e1 e2      -> V.Mod         <$> pad e1 <*> pad e2
+                  V.And  e1 e2      -> V.And         <$> pad e1 <*> pad e2
+                  V.Or   e1 e2      -> V.Or          <$> pad e1 <*> pad e2
+                  V.XOr  e1 e2      -> V.XOr         <$> pad e1 <*> pad e2
+                  V.XNor e1 e2      -> V.XNor        <$> pad e1 <*> pad e2
+                  V.Cond c e1 e2    -> V.Cond c      <$> pad e1 <*> pad e2
+                  V.Pow         e n -> V.Pow         <$> pad e  <*> pure n
+                  V.LShift      e n -> V.LShift      <$> pad e  <*> pure n
+                  V.RShift      e n -> V.RShift      <$> pad e  <*> pure n
+                  V.LShiftArith e n -> V.LShiftArith <$> pad e  <*> pure n
+                  V.RShiftArith e n -> V.RShiftArith <$> pad e  <*> pure n
+                  V.Not e           -> V.Not         <$> pad e
+                  e                 -> pad e
       _                   -> pure e
       where pad :: MonadState SigInfo m => V.Exp -> m V.Exp
             pad e = expWidth e >>= \ case
@@ -403,45 +410,45 @@ wcast sz e = expWidth e >>= \ case
 -- -----------------------------------------------------------------------------
 expWidth :: MonadState SigInfo m => V.Exp -> m (Maybe Size)
 expWidth = \ case
-      Add    e1 e2                -> largest e1 e2
-      Sub    e1 e2                -> largest e1 e2
-      Mul    e1 e2                -> largest e1 e2
-      Div    e1 e2                -> largest e1 e2
-      Mod    e1 e2                -> largest e1 e2
-      And    e1 e2                -> largest e1 e2
-      Or     e1 e2                -> largest e1 e2
-      XOr    e1 e2                -> largest e1 e2
-      XNor   e1 e2                -> largest e1 e2
-      Cond _ e1 e2                -> largest e1 e2
-      Pow         e _             -> expWidth e
-      LShift      e _             -> expWidth e
-      RShift      e _             -> expWidth e
-      LShiftArith e _             -> expWidth e
-      RShiftArith e _             -> expWidth e
-      Not         e               -> expWidth e
-      LAnd _ _                    -> pure $ Just 1
-      LOr _ _                     -> pure $ Just 1
-      LNot _                      -> pure $ Just 1
-      RAnd _                      -> pure $ Just 1
-      RNAnd _                     -> pure $ Just 1
-      ROr _                       -> pure $ Just 1
-      RNor _                      -> pure $ Just 1
-      RXor _                      -> pure $ Just 1
-      RXNor _                     -> pure $ Just 1
-      Eq  _ _                     -> pure $ Just 1
-      NEq _ _                     -> pure $ Just 1
-      CEq _ _                     -> pure $ Just 1
-      CNEq _ _                    -> pure $ Just 1
-      Lt _ _                      -> pure $ Just 1
-      Gt _ _                      -> pure $ Just 1
-      LtEq _ _                    -> pure $ Just 1
-      GtEq _ _                    -> pure $ Just 1
-      V.Concat es                 -> sumMaybes <$> mapM expWidth es
-      Repl (expToBV -> Just sz) e -> fmap (* fromIntegral (BV.nat sz)) <$> expWidth e
-      Repl (expToBV -> Nothing) _ -> pure Nothing
-      WCast sz _                  -> pure $ Just sz
-      LitBits bv                  -> pure $ Just $ fromIntegral $ width bv
-      LVal lv                     -> lvalWidth lv
+      V.Add    e1 e2                -> largest e1 e2
+      V.Sub    e1 e2                -> largest e1 e2
+      V.Mul    e1 e2                -> largest e1 e2
+      V.Div    e1 e2                -> largest e1 e2
+      V.Mod    e1 e2                -> largest e1 e2
+      V.And    e1 e2                -> largest e1 e2
+      V.Or     e1 e2                -> largest e1 e2
+      V.XOr    e1 e2                -> largest e1 e2
+      V.XNor   e1 e2                -> largest e1 e2
+      V.Cond _ e1 e2                -> largest e1 e2
+      V.Pow         e _             -> expWidth e
+      V.LShift      e _             -> expWidth e
+      V.RShift      e _             -> expWidth e
+      V.LShiftArith e _             -> expWidth e
+      V.RShiftArith e _             -> expWidth e
+      V.Not         e               -> expWidth e
+      V.LAnd _ _                    -> pure $ Just 1
+      V.LOr _ _                     -> pure $ Just 1
+      V.LNot _                      -> pure $ Just 1
+      V.RAnd _                      -> pure $ Just 1
+      V.RNAnd _                     -> pure $ Just 1
+      V.ROr _                       -> pure $ Just 1
+      V.RNor _                      -> pure $ Just 1
+      V.RXOr _                      -> pure $ Just 1
+      V.RXNor _                     -> pure $ Just 1
+      V.Eq  _ _                     -> pure $ Just 1
+      V.NEq _ _                     -> pure $ Just 1
+      V.CEq _ _                     -> pure $ Just 1
+      V.CNEq _ _                    -> pure $ Just 1
+      V.Lt _ _                      -> pure $ Just 1
+      V.Gt _ _                      -> pure $ Just 1
+      V.LtEq _ _                    -> pure $ Just 1
+      V.GtEq _ _                    -> pure $ Just 1
+      V.Concat es                   -> sumMaybes <$> mapM expWidth es
+      V.Repl (expToBV -> Just sz) e -> fmap (* fromIntegral (BV.nat sz)) <$> expWidth e
+      V.Repl (expToBV -> Nothing) _ -> pure Nothing
+      V.WCast sz _                  -> pure $ Just sz
+      V.LitBits bv                  -> pure $ Just $ fromIntegral $ width bv
+      V.LVal lv                     -> lvalWidth lv
       where largest :: MonadState SigInfo m => V.Exp -> V.Exp -> m (Maybe Size)
             largest e1 e2 = liftM2 max <$> expWidth e1 <*> expWidth e2
 
@@ -461,55 +468,53 @@ foldMaybes f = \ case
       [a]        -> a
       _          -> Nothing
 
-binOp :: Name -> Maybe (V.Exp -> V.Exp -> V.Exp)
+binOp :: Prim -> Maybe (V.Exp -> V.Exp -> V.Exp)
 binOp = flip lookup primBinOps
 
-unOp :: Name -> Maybe (V.Exp -> V.Exp)
+unOp :: Prim -> Maybe (V.Exp -> V.Exp)
 unOp = flip lookup primUnOps
 
-primBinOps :: [(Name, V.Exp -> V.Exp -> V.Exp)]
+primBinOps :: [(Prim, V.Exp -> V.Exp -> V.Exp)]
 primBinOps =
-      [ ( "+"         , Add)
-      , ( "-"         , Sub)
-      , ( "*"         , Mul)
-      , ( "/"         , Div)
-      , ( "%"         , Mod)
-      , ( "**"        , Pow)
-      , ( "&&"        , LAnd)
-      , ( "||"        , LOr)
-      , ( "&"         , And)
-      , ( "|"         , Or)
-      , ( "^"         , XOr)
-      , ( "~^"        , XNor)
-      , ( "<<"        , LShift)
-      , ( ">>"        , RShift)
-      , ( "<<<"       , LShiftArith)
-      , ( ">>>"       , RShiftArith)
-      , ( ">"         , Gt)
-      , ( ">="        , GtEq)
-      , ( "<"         , Lt)
-      , ( "<="        , LtEq)
-      , ( "concat"    , \ x y -> V.cat [x, y])
-      , ( "replicate" , Repl)
+      [ ( C.Add         , V.Add)
+      , ( C.Sub         , V.Sub)
+      , ( C.Mul         , V.Mul)
+      , ( C.Div         , V.Div)
+      , ( C.Mod         , V.Mod)
+      , ( C.Pow         , V.Pow)
+      , ( C.LAnd        , V.LAnd)
+      , ( C.LOr         , V.LOr)
+      , ( C.And         , V.And)
+      , ( C.Or          , V.Or)
+      , ( C.XOr         , V.XOr)
+      , ( C.XNor        , V.XNor)
+      , ( C.LShift      , V.LShift)
+      , ( C.RShift      , V.RShift)
+      , ( C.RShiftArith , V.RShiftArith)
+      , ( C.Eq          , V.Eq)
+      , ( C.Gt          , V.Gt)
+      , ( C.GtEq        , V.GtEq)
+      , ( C.Lt          , V.Lt)
+      , ( C.LtEq        , V.LtEq)
+      , ( C.Replicate   , V.Repl)
       ]
 
-primUnOps :: [(Name, V.Exp -> V.Exp)]
+primUnOps :: [(Prim, V.Exp -> V.Exp)]
 primUnOps =
-      [ ( "!"      , LNot)
-      , ( "~"      , Not)
-      , ( "&"      , RAnd)
-      , ( "~&"     , RNAnd)
-      , ( "|"      , ROr)
-      , ( "~|"     , RNor)
-      , ( "^"      , RXor)
-      , ( "~^"     , RXNor)
-      , ( "resize" , id)
+      [ ( C.LNot  , V.LNot)
+      , ( C.Not   , V.Not)
+      , ( C.RAnd  , V.RAnd)
+      , ( C.RNAnd , V.RNAnd)
+      , ( C.ROr   , V.ROr)
+      , ( C.RNor  , V.RNor)
+      , ( C.RXOr  , V.RXOr)
+      , ( C.RXNor , V.RXNor)
       ]
 
 -- | Returns a boolean expression that is true when the pattern matches.
 patMatches :: Name -> [Pat] -> V.Exp
-patMatches x ps =  case patMatches' (\ i j bv -> [Eq (LVal $ mkRange x i j) $ LitBits bv]) ps of
-      ps'@(_ : _) -> foldr1 LAnd ps'
+patMatches x ps =  case patMatches' (\ i j bv -> [V.Eq (LVal $ mkRange x i j) $ LitBits bv]) ps of
+      ps'@(_ : _) -> foldr1 V.LAnd ps'
       []          -> bTrue
 
 patMatchesLit :: BV -> [Pat] -> Bool
@@ -532,8 +537,8 @@ argsSize = sum . map patToSize
                   PatVar _ sz -> sz
                   _           -> 0
 
-toLogic :: (Name, Size) -> Signal
-toLogic = uncurry $ flip Logic
+mkSignal :: (Name, Size) -> Signal
+mkSignal (n, sz) = Logic [sz] n []
 
 -- TODO(chathhorn): duplicated from Crust/ToCore.hs
 ceilLog2 :: Integral a => a -> a

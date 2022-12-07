@@ -1,5 +1,116 @@
 import ReWire
-import ReWire.Bits
+
+data Bit = C | S
+data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
+
+zeroW8 :: W8
+zeroW8 = W8 S S S S S S S S
+
+oneW8 :: W8
+oneW8 = W8 C C C C C C C S
+
+toBit :: Bool -> Bit
+toBit False = C
+toBit True  = S
+
+eqb :: Bit -> Bit -> Bool
+eqb C C = True
+eqb S S = True
+eqb _ _ = False
+
+notb :: Bit -> Bit
+notb C = S
+notb S = C
+
+orb :: Bit -> Bit -> Bit
+orb a b | eqb a S || eqb b S = S
+        | otherwise          = C
+
+xorb :: Bit -> Bit -> Bit
+xorb a b | eqb a S && eqb b C = S
+         | eqb a C && eqb b S = S
+         | otherwise          = C
+
+andb :: Bit -> Bit -> Bit
+andb a b | eqb a S && eqb b S = S
+         | otherwise          = C
+
+eqW8 :: W8 -> W8 -> Bool
+eqW8 (W8 b1 b2 b3 b4 b5 b6 b7 b8) (W8 b1' b2' b3' b4' b5' b6' b7' b8')
+      = eqb b1 b1'
+      && eqb b2 b2'
+      && eqb b3 b3'
+      && eqb b4 b4'
+      && eqb b5 b5'
+      && eqb b6 b6'
+      && eqb b7 b7'
+      && eqb b8 b8'
+
+rolW8 :: W8 -> W8
+rolW8 (W8 b1 b2 b3 b4 b5 b6 b7 b8)
+      = W8 b2
+           b3
+           b4
+           b5
+           b6
+           b7
+           b8
+           b1
+
+rorW8 :: W8 -> W8
+rorW8 (W8 b1 b2 b3 b4 b5 b6 b7 b8)
+      = W8 b8
+           b1
+           b2
+           b3
+           b4
+           b5
+           b6
+           b7
+
+notW8 :: W8 -> W8
+notW8 (W8 b1 b2 b3 b4 b5 b6 b7 b8)
+      = W8 (notb b1)
+           (notb b2)
+           (notb b3)
+           (notb b4)
+           (notb b5)
+           (notb b6)
+           (notb b7)
+           (notb b8)
+
+orW8 :: W8 -> W8 -> W8
+orW8 (W8 b1 b2 b3 b4 b5 b6 b7 b8) (W8 b1' b2' b3' b4' b5' b6' b7' b8')
+      = W8 (orb b1 b1')
+           (orb b2 b2')
+           (orb b3 b3')
+           (orb b4 b4')
+           (orb b5 b5')
+           (orb b6 b6')
+           (orb b7 b7')
+           (orb b8 b8')
+
+xorW8 :: W8 -> W8 -> W8
+xorW8 (W8 b1 b2 b3 b4 b5 b6 b7 b8) (W8 b1' b2' b3' b4' b5' b6' b7' b8')
+      = W8 (xorb b1 b1')
+           (xorb b2 b2')
+           (xorb b3 b3')
+           (xorb b4 b4')
+           (xorb b5 b5')
+           (xorb b6 b6')
+           (xorb b7 b7')
+           (xorb b8 b8')
+
+andW8 :: W8 -> W8 -> W8
+andW8 (W8 b1 b2 b3 b4 b5 b6 b7 b8) (W8 b1' b2' b3' b4' b5' b6' b7' b8')
+      = W8 (andb b1 b1')
+           (andb b2 b2')
+           (andb b3 b3')
+           (andb b4 b4')
+           (andb b5 b5')
+           (andb b6 b6')
+           (andb b7 b7')
+           (andb b8 b8')
 
 data Inputs = Inputs W8 Bit Bit          -- (dataIn,rstIn,intIn)
 data Outputs = Outputs W8 W8 Bit Bit     -- (addrOut,dataOut,weOut,iackOut)
@@ -41,47 +152,47 @@ when = \ b -> \ m -> case b of
                        C -> return ()
 -}
 
-getState :: ReT Inputs Outputs (StT CPUState I) CPUState
+getState :: ReacT Inputs Outputs (StateT CPUState Identity) CPUState
 {-# INLINE getState #-}
 getState = lift get
 
 outputs :: CPUState -> Outputs
 outputs (CPUState _ o _ _ _ _ _ _ _ _ _ _ _) = o
 
-getOutputs :: ReT Inputs Outputs (StT CPUState I) Outputs
+getOutputs :: ReacT Inputs Outputs (StateT CPUState Identity) Outputs
 {-# INLINE getOutputs #-}
 getOutputs = getState >>= \s -> return (outputs s)
 
 setInputs :: CPUState -> Inputs -> CPUState
 setInputs (CPUState _ o z c ie pc zs cs pcs r0 r1 r2 r3) i = CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3
 
-putState :: CPUState -> ReT Inputs Outputs (StT CPUState I) ()
+putState :: CPUState -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE putState #-}
 putState s = lift (put s)
 
-putInputs :: Inputs -> ReT Inputs Outputs (StT CPUState I) ()
+putInputs :: Inputs -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE putInputs #-}
 putInputs i = getState >>= \s -> putState (setInputs s i)
 
-tick :: ReT Inputs Outputs (StT CPUState I) ()
+tick :: ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE tick #-}
 tick = getOutputs >>= \o -> signal o >>= \i -> putInputs i
 
 pc :: CPUState -> W8
 pc (CPUState _ _ _ _ _ pc _ _ _ _ _ _ _) = pc
 
-getPC :: ReT Inputs Outputs (StT CPUState I) W8
+getPC :: ReacT Inputs Outputs (StateT CPUState Identity) W8
 {-# INLINE getPC #-}
 getPC = getState >>= \s -> return (pc s)
 
 setPC :: CPUState -> W8 -> CPUState
 setPC (CPUState i o z c ie  _ zs cs pcs r0 r1 r2 r3) pc = CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3
 
-putPC :: W8 -> ReT Inputs Outputs (StT CPUState I) ()
+putPC :: W8 -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE putPC #-}
 putPC pc = getState >>= \s -> putState (setPC s pc)
 
-incrPC :: ReT Inputs Outputs (StT CPUState I) ()
+incrPC :: ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE incrPC #-}
 incrPC = getPC >>= \pc -> putPC (snd (plusCW8 pc oneW8 C))
 
@@ -97,7 +208,7 @@ r2 (CPUState _ _ _ _ _ _ _ _ _ _ _ r2 _) = r2
 r3 :: CPUState -> W8
 r3 (CPUState _ _ _ _ _ _ _ _ _ _ _ _ r3) = r3
 
-getReg :: Register -> ReT Inputs Outputs (StT CPUState I) W8
+getReg :: Register -> ReacT Inputs Outputs (StateT CPUState Identity) W8
 {-# INLINE getReg #-}
 getReg R0 = getState >>= \s -> return (r0 s)
 getReg R1 = getState >>= \s -> return (r1 s)
@@ -116,7 +227,7 @@ setR2 (CPUState i o z c ie pc zs cs pcs r0 r1 _ r3) r2 = CPUState i o z c ie pc 
 setR3 :: CPUState -> W8 -> CPUState
 setR3 (CPUState i o z c ie pc zs cs pcs r0 r1 r2 _) r3 = CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3
 
-putReg :: Register -> W8 -> ReT Inputs Outputs (StT CPUState I) ()
+putReg :: Register -> W8 -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE putReg #-}
 putReg R0 v = getState >>= \s -> putState (setR0 s v)
 putReg R1 v = getState >>= \s -> putState (setR1 s v)
@@ -126,77 +237,77 @@ putReg R3 v = getState >>= \s -> putState (setR3 s v)
 setPCSave :: CPUState -> W8 -> CPUState
 setPCSave (CPUState i o z c ie pc zs cs _ r0 r1 r2 r3) pcs = CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3
 
-putPCSave :: W8 -> ReT Inputs Outputs (StT CPUState I) ()
+putPCSave :: W8 -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE putPCSave #-}
 putPCSave v = getState >>= \s -> putState (setPCSave s v)
 
 pcSave :: CPUState -> W8
 pcSave (CPUState _ _ _ _ _ _ _ _ pcs _ _ _ _) = pcs
 
-getPCSave :: ReT Inputs Outputs (StT CPUState I) W8
+getPCSave :: ReacT Inputs Outputs (StateT CPUState Identity) W8
 {-# INLINE getPCSave #-}
 getPCSave = getState >>= \s -> return (pcSave s)
 
 zFlag :: CPUState -> Bit
 zFlag (CPUState _ _ z _ _ _ _ _ _ _ _ _ _) = z
 
-getZFlag :: ReT Inputs Outputs (StT CPUState I) Bit
+getZFlag :: ReacT Inputs Outputs (StateT CPUState Identity) Bit
 {-# INLINE getZFlag #-}
 getZFlag = getState >>= \s -> return (zFlag s)
 
 zsFlag :: CPUState -> Bit
 zsFlag (CPUState _ _ _ _ _ _ zs _ _ _ _ _ _) = zs
 
-getZSave :: ReT Inputs Outputs (StT CPUState I) Bit
+getZSave :: ReacT Inputs Outputs (StateT CPUState Identity) Bit
 {-# INLINE getZSave #-}
 getZSave = getState >>= \s -> return (zsFlag s)
 
 setZFlag :: CPUState -> Bit -> CPUState
 setZFlag (CPUState i o _ c ie pc zs cs pcs r0 r1 r2 r3) z = CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3
 
-putZFlag :: Bit -> ReT Inputs Outputs (StT CPUState I) ()
+putZFlag :: Bit -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE putZFlag #-}
 putZFlag b = getState >>= \s -> putState (setZFlag s b)
 
 setZSave :: CPUState -> Bit -> CPUState
 setZSave (CPUState i o z c ie pc  _ cs pcs r0 r1 r2 r3) zs = CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3
 
-putZSave :: Bit -> ReT Inputs Outputs (StT CPUState I) ()
+putZSave :: Bit -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE putZSave #-}
 putZSave b = getState >>= \s -> putState (setZSave s b)
 
 cFlag :: CPUState -> Bit
 cFlag (CPUState _ _ _ c _ _ _ _ _ _ _ _ _) = c
 
-getCFlag :: ReT Inputs Outputs (StT CPUState I) Bit
+getCFlag :: ReacT Inputs Outputs (StateT CPUState Identity) Bit
 {-# INLINE getCFlag #-}
 getCFlag = getState >>= \s -> return (cFlag s)
 
 csFlag :: CPUState -> Bit
 csFlag (CPUState _ _ _ _ _ _ _ cs _ _ _ _ _) = cs
 
-getCSave :: ReT Inputs Outputs (StT CPUState I) Bit
+getCSave :: ReacT Inputs Outputs (StateT CPUState Identity) Bit
 {-# INLINE getCSave #-}
 getCSave = getState >>= \s -> return (csFlag s)
 
 setCFlag :: CPUState -> Bit -> CPUState
 setCFlag (CPUState i o z _ ie pc zs cs pcs r0 r1 r2 r3) c = CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3
 
-putCFlag :: Bit -> ReT Inputs Outputs (StT CPUState I) ()
+putCFlag :: Bit -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE putCFlag #-}
 putCFlag b = getState >>= \s -> putState (setCFlag s b)
 
 setCSave :: CPUState -> Bit -> CPUState
 setCSave (CPUState i o z c ie pc zs  _ pcs r0 r1 r2 r3) cs = CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3
 
-putCSave :: Bit -> ReT Inputs Outputs (StT CPUState I) ()
+putCSave :: Bit -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE putCSave #-}
 putCSave b = getState >>= \s -> putState (setCSave s b)
 
 setIEFlag :: CPUState -> Bit -> CPUState
 setIEFlag (CPUState i o z c  _ pc zs cs pcs r0 r1 r2 r3) ie = CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3
 
-putIEFlag :: Bit -> ReT Inputs Outputs (StT CPUState I) ()
+putIEFlag :: Bit -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE putIEFlag #-}
 putIEFlag b = getState >>= \s -> putState (setIEFlag s b)
 
@@ -204,60 +315,60 @@ ieFlag :: CPUState -> Bit
 {-# INLINE ieFlag #-}
 ieFlag (CPUState _ _ _ _ ie _ _ _ _ _ _ _ _) = ie
 
-getIEFlag :: ReT Inputs Outputs (StT CPUState I) Bit
+getIEFlag :: ReacT Inputs Outputs (StateT CPUState Identity) Bit
 {-# INLINE getIEFlag #-}
 getIEFlag = getState >>= \s -> return (ieFlag s)
 
 inputs :: CPUState -> Inputs
 inputs (CPUState i _ _ _ _ _ _ _ _ _ _ _ _) = i
 
-getInputs :: ReT Inputs Outputs (StT CPUState I) Inputs
+getInputs :: ReacT Inputs Outputs (StateT CPUState Identity) Inputs
 {-# INLINE getInputs #-}
 getInputs = getState >>= \s -> return (inputs s)
 
 setOutputs :: CPUState -> Outputs -> CPUState
 setOutputs (CPUState i _ z c ie pc zs cs pcs r0 r1 r2 r3) o = CPUState i o z c ie pc zs cs pcs r0 r1 r2 r3
 
-putOutputs :: Outputs -> ReT Inputs Outputs (StT CPUState I) ()
+putOutputs :: Outputs -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE putOutputs #-}
 putOutputs o = getState >>= \s -> putState (setOutputs s o)
 
 setAddrOut :: Outputs -> W8 -> Outputs
 setAddrOut (Outputs _ d_o we_o iack_o) a_o = Outputs a_o d_o we_o iack_o
 
-putAddrOut :: W8 -> ReT Inputs Outputs (StT CPUState I) ()
+putAddrOut :: W8 -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE putAddrOut #-}
 putAddrOut a = getOutputs >>= \o -> putOutputs (setAddrOut o a)
 
 setDataOut :: Outputs -> W8 -> Outputs
 setDataOut (Outputs a_o _ we_o iack_o) d_o = Outputs a_o d_o we_o iack_o
 
-putDataOut :: W8 -> ReT Inputs Outputs (StT CPUState I) ()
+putDataOut :: W8 -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE putDataOut #-}
 putDataOut d = getOutputs >>= \o -> putOutputs (setDataOut o d)
 
 dataIn :: Inputs -> W8
 dataIn (Inputs d_i _ _) = d_i
 
-getDataIn :: ReT Inputs Outputs (StT CPUState I) W8
+getDataIn :: ReacT Inputs Outputs (StateT CPUState Identity) W8
 {-# INLINE getDataIn #-}
 getDataIn = getInputs >>= \i -> return (dataIn i)
 
 setWeOut :: Outputs -> Bit -> Outputs
 setWeOut (Outputs a_o d_o _ iack_o) we_o = Outputs a_o d_o we_o iack_o
 
-putWeOut :: Bit -> ReT Inputs Outputs (StT CPUState I) ()
+putWeOut :: Bit -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE putWeOut #-}
 putWeOut we = getOutputs >>= \o -> putOutputs (setWeOut o we)
 
 setIackOut :: Outputs -> Bit -> Outputs
 setIackOut (Outputs a_o d_o we_o _) iack_o = Outputs a_o d_o we_o iack_o
 
-putIackOut :: Bit -> ReT Inputs Outputs (StT CPUState I) ()
+putIackOut :: Bit -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE putIackOut #-}
 putIackOut iack = getOutputs >>= \o -> putOutputs (setIackOut o iack)
 
-mem :: Bit -> Bit -> Register -> ReT Inputs Outputs (StT CPUState I) ()
+mem :: Bit -> Bit -> Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE mem #-}
 mem rEn wEn r = do
       pc <- getPC
@@ -275,7 +386,7 @@ mem rEn wEn r = do
        S  -> (getDataIn >>= \ x -> putReg r x)
        C -> return ()
 
-ld :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
+ld :: Register -> Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE ld #-}
 ld rD rS = do
       a <- getReg rS
@@ -285,7 +396,7 @@ ld rD rS = do
       v <- getDataIn
       putReg rD v
 
-st :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
+st :: Register -> Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE st #-}
 st rD rS = do
       a <- getReg rS
@@ -295,7 +406,7 @@ st rD rS = do
       putAddrOut a
       tick
 
-add :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
+add :: Register -> Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE add #-}
 add rD rS = do
       vD <- getReg rD
@@ -307,7 +418,7 @@ add rD rS = do
       putReg rD vD'
       tick
 
-addc :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
+addc :: Register -> Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE addc #-}
 addc rD rS = do
       vD <- getReg rD
@@ -320,7 +431,7 @@ addc rD rS = do
       putReg rD vD'
       tick
 
-sub :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
+sub :: Register -> Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE sub #-}
 sub rD rS = do
       vD <- getReg rD
@@ -332,7 +443,7 @@ sub rD rS = do
       putReg rD vD'
       tick
 
-subb :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
+subb :: Register -> Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE subb #-}
 subb rD rS = do
       vD <- getReg rD
@@ -345,11 +456,11 @@ subb rD rS = do
       putReg rD vD'
       tick
 
-mov :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
+mov :: Register -> Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE mov #-}
 mov rD rS = getReg rS >>= \ x -> putReg rD x >>= \ zzz -> tick
 
-or' :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
+or' :: Register -> Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE or' #-}
 or' rD rS = do
       vD <- getReg rD
@@ -360,7 +471,7 @@ or' rD rS = do
       putZFlag (toBit $ eqW8 vD' zeroW8)
       tick
 
-and' :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
+and' :: Register -> Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE and' #-}
 and' rD rS = do
       vD <- getReg rD
@@ -371,7 +482,7 @@ and' rD rS = do
       putZFlag (toBit $ eqW8 vD' zeroW8)
       tick
 
-xor :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
+xor :: Register -> Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE xor #-}
 xor rD rS = do
       vD <- getReg rD
@@ -382,7 +493,7 @@ xor rD rS = do
       putZFlag (toBit $ eqW8 vD' zeroW8)
       tick
 
-cmp :: Register -> Register -> ReT Inputs Outputs (StT CPUState I) ()
+cmp :: Register -> Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE cmp #-}
 cmp rD rS = do
       vD <- getReg rD
@@ -394,7 +505,7 @@ cmp rD rS = do
       putZFlag (toBit $ eqW8 r zeroW8)
       tick
 
-brz :: Register -> ReT Inputs Outputs (StT CPUState I) ()
+brz :: Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE brz #-}
 brz r = do
       z <- getZFlag
@@ -403,7 +514,7 @@ brz r = do
         C -> return ()
       tick
 
-brnz :: Register -> ReT Inputs Outputs (StT CPUState I) ()
+brnz :: Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE brnz #-}
 brnz r = do
       z <- getZFlag
@@ -412,7 +523,7 @@ brnz r = do
         C -> return ()
       tick
 
-brc :: Register -> ReT Inputs Outputs (StT CPUState I) ()
+brc :: Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE brc #-}
 brc r = do
       c <- getCFlag
@@ -421,7 +532,7 @@ brc r = do
         C -> return ()
       tick
 
-brnc :: Register -> ReT Inputs Outputs (StT CPUState I) ()
+brnc :: Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE brnc #-}
 brnc r = do
       c <- getCFlag
@@ -430,19 +541,19 @@ brnc r = do
         C -> return ()
       tick
 
-jmp :: Register -> ReT Inputs Outputs (StT CPUState I) ()
+jmp :: Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE jmp #-}
 jmp r = getReg r >>= \ x -> putPC x >>= \zzz -> tick
 
-ien :: Bit -> ReT Inputs Outputs (StT CPUState I) ()
+ien :: Bit -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE ien #-}
 ien b = putIEFlag b >>= \zzz -> tick
 
-iack :: ReT Inputs Outputs (StT CPUState I) ()
+iack :: ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE iack #-}
 iack = putIackOut S >>= \zzz -> tick
 
-iret :: ReT Inputs Outputs (StT CPUState I) ()
+iret :: ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE iret #-}
 iret = do
       putIEFlag S
@@ -454,18 +565,18 @@ iret = do
       putCFlag c
       tick
 
-not' :: Register -> ReT Inputs Outputs (StT CPUState I) ()
+not' :: Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE not' #-}
 not' r = do
       v <- getReg r
       putReg r (notW8 v)
       tick
 
-clrr :: Register -> ReT Inputs Outputs (StT CPUState I) ()
+clrr :: Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE clrr #-}
 clrr r = putReg r zeroW8 >>= \zzz -> tick
 
-incr :: Register -> ReT Inputs Outputs (StT CPUState I) ()
+incr :: Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE incr #-}
 incr r = do
       v <- getReg r
@@ -477,7 +588,7 @@ incr r = do
       putZFlag (toBit $ eqW8 v' zeroW8)
       tick
 
-decr :: Register -> ReT Inputs Outputs (StT CPUState I) ()
+decr :: Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE decr #-}
 decr r = do
       v <- getReg r
@@ -489,7 +600,7 @@ decr r = do
       putZFlag (toBit $ eqW8 v' zeroW8)
       tick
 
-rot :: Bit -> Register -> ReT Inputs Outputs (StT CPUState I) ()
+rot :: Bit -> Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE rot #-}
 rot C r = do
       v <- getReg r
@@ -500,7 +611,7 @@ rot S  r = do
       putReg r (rorW8 v)
       tick
 
-shft :: Bit -> Bit -> Register -> ReT Inputs Outputs (StT CPUState I) ()
+shft :: Bit -> Bit -> Register -> ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE shft #-}
 shft l d r = do
       v <- getReg r
@@ -519,7 +630,7 @@ shft l d r = do
 initOutputs :: Outputs
 initOutputs = Outputs zeroW8 zeroW8 C C
 
-reset :: ReT Inputs Outputs (StT CPUState I) ()
+reset :: ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE reset #-}
 reset = do
       putCFlag C
@@ -527,7 +638,7 @@ reset = do
       putOutputs initOutputs
       tick
 
-interrupt :: ReT Inputs Outputs (StT CPUState I) ()
+interrupt :: ReacT Inputs Outputs (StateT CPUState Identity) ()
 {-# INLINE interrupt #-}
 interrupt = do
       putIEFlag C
@@ -545,7 +656,7 @@ rstIn (Inputs _ r_i _) = r_i
 intIn :: Inputs -> Bit
 intIn (Inputs _ _ i_i) = i_i
 
-loop :: ReT Inputs Outputs (StT CPUState I) ()
+loop :: ReacT Inputs Outputs (StateT CPUState Identity) ()
 loop = do
       inp <- getInputs
       case rstIn inp of
@@ -585,10 +696,8 @@ loop = do
                         }
       loop
 
-go :: ReT Inputs Outputs (StT CPUState I) ()
-go = do
-      reset
-      loop
+go :: ReacT Inputs Outputs (StateT CPUState Identity) ()
+go = reset >> loop
 
 initInputs :: Inputs
 initInputs = Inputs zeroW8 C C
@@ -596,7 +705,7 @@ initInputs = Inputs zeroW8 C C
 initState :: CPUState
 initState = CPUState initInputs initOutputs C C C zeroW8 C C zeroW8 zeroW8 zeroW8 zeroW8 zeroW8
 
-start :: ReT Inputs Outputs I ()
+start :: ReacT Inputs Outputs Identity ()
 start = extrude go initState
 
 main = undefined

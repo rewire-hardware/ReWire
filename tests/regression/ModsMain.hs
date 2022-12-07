@@ -17,7 +17,7 @@ y :: BX.Y
 y = BY.y
 
 
-start :: ReT BY.X BX.Y I ()
+start :: ReacT BY.X BX.Y Identity ()
 start = do
   signal y
   start

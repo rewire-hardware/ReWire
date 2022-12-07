@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
-module ReWire.Fix (fix, fix', fixOn, fixUntil, boundedFix) where
+module ReWire.Fix (fix, fix', fixOn, boundedFixOn, fixOn', fixUntil, boundedFix) where
 
 import ReWire.Error (MonadError, AstError, failAt)
 import ReWire.Annotation (noAnn)
@@ -11,17 +11,21 @@ fix :: (MonadError AstError m, Hashable a) => Text -> Int -> (a -> m a) -> a -> 
 fix = fixOn hash
 
 fixUntil :: MonadError AstError m => (a -> Bool) -> Text -> Int -> (a -> m a) -> a -> m a
-fixUntil h = fixOn' (const h)
+fixUntil h = boundedFixOn (const h)
 
 fixOn :: (MonadError AstError m, Eq b) => (a -> b) -> Text -> Int -> (a -> m a) -> a -> m a
-fixOn h = fixOn' (\ a' a -> h a' == h a)
+fixOn h = boundedFixOn (\ a' a -> h a' == h a)
 
-fixOn' :: MonadError AstError m => (a -> a -> Bool) -> Text -> Int -> (a -> m a) -> a -> m a
-fixOn' _ m 0 _ _ = failAt noAnn $ m <> " not terminating (mutually recursive definitions?)."
-fixOn' h m n f a = f a >>= \ a' -> if h a' a then pure a else fixOn' h m (n - 1) f a'
+boundedFixOn :: MonadError AstError m => (a -> a -> Bool) -> Text -> Int -> (a -> m a) -> a -> m a
+boundedFixOn _ m 0 _ _ = failAt noAnn $ m <> " not terminating (mutually recursive definitions?)."
+boundedFixOn h m n f a = f a >>= \ a' -> if h a' a then pure a else boundedFixOn h m (n - 1) f a'
 
 fix' :: Hashable a => (a -> a) -> a -> a
-fix' f a = if hash (f a) == hash a then a else fix' f (f a)
+fix' = fixOn' hash
+
+fixOn' :: Eq b => (a -> b) -> (a -> a) -> a -> a
+fixOn' h f a | h (f a) == h a = a
+             | otherwise      = fixOn' h f (f a)
 
 boundedFix :: Monad m => (a -> a -> Bool) -> Int -> (a -> m a) -> a -> m a
 boundedFix _ 0 _ a = pure a

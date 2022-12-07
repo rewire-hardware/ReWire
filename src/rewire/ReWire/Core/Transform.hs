@@ -53,7 +53,7 @@ mergeSlices (Program start ds) = Program start <$> runReaderT (mapM reDefn $ fil
                               Nothing -> do
                                     e'   <- reExp rn e
                                     els' <- reExp rn els
-                                    let g'  | isId ps body = Id -- TODO(chathhorn): refactor this.
+                                    let g'  | isId ps body = Prim Id -- TODO(chathhorn): refactor this.
                                             | isConst body = Const $ toConst body
                                             | otherwise    = Global g
                                         ps' | isConst body = mergePats $ map varToWild ps

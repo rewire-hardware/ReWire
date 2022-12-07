@@ -24,6 +24,7 @@ dependencies:
 - base >= 4.7 && < 5
 - mtl
 - monad-resumption
+- ghc-typelits-natnormalise
 
 library:
   source-dirs: src

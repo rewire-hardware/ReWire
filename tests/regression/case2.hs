@@ -8,15 +8,15 @@ data OP = OP
 
 main = undefined
 
-start :: ReT IP OP I ()
+start :: ReacT IP OP Identity ()
 start = extrude (extrude (extrude loop A) B) A
 
-intr :: StT A (StT B (StT A I)) ()
+intr :: StateT A (StateT B (StateT A Identity)) ()
 intr = do
       A <- get
       lift (lift (put A))
 
-loop :: ReT IP OP (StT A (StT B (StT A I))) ()
+loop :: ReacT IP OP (StateT A (StateT B (StateT A Identity))) ()
 loop = do
       signal OP
       lift intr

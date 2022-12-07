@@ -27,7 +27,6 @@ library
       ReWire.Bits
       ReWire.Monad
       ReWire.Prelude
-      ReWire.Verilog
       RWC.Primitives
   other-modules:
       Paths_rewire_user
@@ -38,6 +37,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , ghc-typelits-natnormalise
     , monad-resumption
     , mtl
   default-language: Haskell2010
@@ -54,6 +54,7 @@ test-suite rewire-user-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , ghc-typelits-natnormalise
     , monad-resumption
     , mtl
     , rewire-user

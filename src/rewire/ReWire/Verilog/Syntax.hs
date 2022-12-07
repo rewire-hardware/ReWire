@@ -1,7 +1,7 @@
 {-# LANGUAGE Trustworthy, OverloadedStrings #-}
 module ReWire.Verilog.Syntax where
 
-import Prettyprinter (Pretty (..), parens, (<+>), vsep, hsep, semi, colon, punctuate, comma, nest, Doc, braces, brackets)
+import Prettyprinter (Pretty (..), parens, (<+>), vsep, hsep, semi, colon, punctuate, comma, nest, Doc, braces, brackets, hcat)
 import ReWire.Pretty (empty, text)
 import Data.Text (Text, pack)
 import Data.List (intersperse)
@@ -43,25 +43,29 @@ instance Pretty Port where
             InOut s  -> text "inout"  <+> pretty s
             Output s -> text "output" <+> pretty s
 
-ppBVName :: Size -> Name -> Doc an
-ppBVName sz n = brackets (pretty (toInteger sz - 1) <> colon <> text "0") <+> text n
+ppDims :: [Size] -> Doc an
+ppDims = \ case
+      [] -> mempty
+      ds -> mempty <+> hcat (map ppDim ds)
+      where ppDim :: Size -> Doc an
+            ppDim sz = brackets (pretty (toInteger sz - 1) <> colon <> text "0")
 
-data Signal = Wire  Size Name
-            | Logic Size Name
-            | Reg   Size Name
+data Signal = Wire  [Size] Name [Size]
+            | Logic [Size] Name [Size]
+            | Reg   [Size] Name [Size]
       deriving (Eq, Show)
 
 instance Pretty Signal where
       pretty = \ case
-            Wire sz n  -> text "wire"  <+> ppBVName sz n
-            Logic sz n -> text "logic" <+> ppBVName sz n
-            Reg sz n   -> text "reg"   <+> ppBVName sz n
+            Wire  ds n ds' -> text "wire"  <> ppDims ds <+> text n <> ppDims ds'
+            Logic ds n ds' -> text "logic" <> ppDims ds <+> text n <> ppDims ds'
+            Reg   ds n ds' -> text "reg"   <> ppDims ds <+> text n <> ppDims ds'
 
 sigName :: Signal -> Name
 sigName = \ case
-      Wire _ n  -> n
-      Logic _ n -> n
-      Reg _ n   -> n
+      Wire  _ n _ -> n
+      Logic _ n _ -> n
+      Reg   _ n _ -> n
 
 data Stmt = Always [Sensitivity] Stmt
           | Initial Stmt
@@ -123,7 +127,7 @@ data Exp = Add Exp Exp
          | RNAnd Exp
          | ROr Exp
          | RNor Exp
-         | RXor Exp
+         | RXOr Exp
          | RXNor Exp
          | Eq  Exp Exp
          | NEq Exp Exp
@@ -187,7 +191,7 @@ instance Pretty Exp where
             RNAnd a         -> ppUnOp    "~&"  a
             ROr a           -> ppUnOp    "|"   a
             RNor a          -> ppUnOp    "~|"  a
-            RXor a          -> ppUnOp    "^"   a
+            RXOr a          -> ppUnOp    "^"   a
             RXNor a         -> ppUnOp    "~^"  a
             Eq a b          -> ppBinOp a "=="  b
             NEq a b         -> ppBinOp a "!="  b

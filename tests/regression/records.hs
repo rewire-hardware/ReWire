@@ -20,12 +20,12 @@ foo (S1 { f1 = a, f2 = b, f3 = c }) = S1 { f1 = b, f2 = a, f3 = c }
 foo (S2 { f4 = a }) = S2 { f4 = a }
 
 bar :: S -> S
-bar s@(S1 {}) = s { f1 = C, f2 = S, f3 = (C, S) }
-bar s@(S2 {}) = s { f4 = (C, S, C) }
+bar s@(S1 {}) = s { f1 = zero, f2 = one, f3 = (zero, one) }
+bar s@(S2 {}) = s { f4 = (zero, one, zero) }
 
-start :: ReT Bit Bit I ()
+start :: ReacT Bit Bit Identity ()
 start = do
-  signal $ x $ foo $ bar (S1 C C (C, C))
+  signal $ x $ foo $ bar (S1 zero zero (zero, zero))
   start
 
 main = undefined

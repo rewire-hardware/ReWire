@@ -99,8 +99,7 @@ toCrust rn = \ case
                                     InlineSig _ b Nothing (Qual _ _ x) -> Map.insert (void x) $ if b then M.Inline else M.NoInline
                                     InlineSig _ b Nothing (UnQual _ x) -> Map.insert (void x) $ if b then M.Inline else M.NoInline
                                     _                                  -> id
-      m                                                           -> failAt (ann m) "Unsupported module syntax"
-
+      m                                                                -> failAt (ann m) "Unsupported module syntax"
 
 
 exportAll :: QNamish a => Renamer -> a -> Export
@@ -119,6 +118,11 @@ transExport rn ds exps = \ case
             if finger Value rn x
             then pure $ Export (rename Value rn x) : fixities (qnamish x) ++ exps
             else failAt l "Unknown variable name in export list"
+      -- TODO(chathhorn): Ignore type exports.
+      -- This is to ease compatibility with GHC -- we can have built-in type
+      -- operators while ignoring parts exported from GHC.TypeLits in the
+      -- RWC.Primitives module.
+      EAbs _ (TypeNamespace _) _         -> pure exps
       EAbs l _ (void -> x)               ->
             if finger Type rn x
             then pure $ Export (rename Type rn x) : exps
@@ -147,8 +151,8 @@ transExport rn ds exps = \ case
 transData :: (MonadError AstError m, Fresh m) => Renamer -> [M.DataDefn] -> Decl Annote -> m [M.DataDefn]
 transData rn datas = \ case
       DataDecl l _ _ (sDeclHead -> hd) cs _ -> do
-            let n = s2n $ rename Type rn $ fst hd
-            tvs' <- mapM (transTyVar l) $ snd hd
+            let n    = s2n $ rename Type rn $ fst hd
+                tvs' = map transTyVar $ snd hd
             ks   <- replicateM (length tvs') $ freshKVar $ n2s n
             cs'  <- mapM (transCon rn ks tvs' n) cs
             pure $ M.DataDefn l n (foldr M.KFun M.KStar ks) cs' : datas
@@ -164,9 +168,9 @@ tysynNames = concatMap tySynName
 transTyDecl :: (MonadError AstError m, Fresh m) => Renamer -> [M.TypeSynonym] -> Decl Annote -> m [M.TypeSynonym]
 transTyDecl rn syns = \ case
       TypeDecl l (sDeclHead -> hd) t -> do
-            let n = s2n $ rename Type rn $ fst hd
+            let n   = s2n $ rename Type rn $ fst hd
+                lhs = map transTyVar $ snd hd
             t'  <- transTy rn t
-            lhs <- mapM (transTyVar l) $ snd hd
             let rhs :: [Name M.Ty]
                 rhs = M.fv t'
 
@@ -190,11 +194,11 @@ transDef rn tys inls defs = \ case
       PatBind l (PVar _ (void -> x)) (UnGuardedRhs _ e) Nothing -> do
             k <- freshKVar "def"
             let x' = s2n $ rename Value rn x
-                t  = fromMaybe (M.TyVar l k $ s2n "?a") $ lookup x tys
+                t  = fromMaybe (M.TyVar l k $ s2n "a") $ lookup x tys
             -- Elide definition of primitives. Allows providing alternate defs for GHC compat.
-            e' <- if | M.isPrim x' -> pure $ M.Error (ann e) t $ "Prim: " <> n2s x'
+            e' <- if | M.isPrim x' -> pure $ M.mkError (ann e) t $ "Prim: " <> n2s x'
                      | otherwise   -> transExp rn e
-            pure $ M.Defn l x' (M.fv t |-> t) (Map.lookup x inls) (Embed (bind [] e')) : defs
+            pure $ M.Defn l x' (Embed $ M.poly' t) (Map.lookup x inls) (Embed (bind [] e')) : defs
       DataDecl       {}                                         -> pure defs -- TODO(chathhorn): elide
       InlineSig      {}                                         -> pure defs -- TODO(chathhorn): elide
       TypeSig        {}                                         -> pure defs -- TODO(chathhorn): elide
@@ -208,10 +212,10 @@ transDef rn tys inls defs = \ case
       WarnPragmaDecl {}                                         -> pure defs -- TODO(chathhorn): elide
       d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " <> pack (show $ void d)
 
-transTyVar :: MonadError AstError m => Annote -> S.TyVarBind () -> m (Name M.Ty)
-transTyVar l = \ case
-      S.UnkindedVar _ x -> pure $ mkUId x
-      _                 -> failAt l "Unsupported type syntax"
+transTyVar :: S.TyVarBind () -> Name M.Ty
+transTyVar = \ case
+      S.UnkindedVar _ x -> mkUId x
+      S.KindedVar _ x _ -> mkUId x
 
 transCon :: (Fresh m, MonadError AstError m) => Renamer -> [M.Kind] -> [Name M.Ty] -> Name M.TyConId -> QualConDecl Annote -> m M.DataCon
 transCon rn ks tvs tc = \ case
@@ -228,7 +232,12 @@ transTy rn = \ case
       TyCon l x        -> pure $ M.TyCon l (s2n $ rename Type rn x)
       TyVar l x        -> M.TyVar l <$> freshKVar (pack $ prettyPrint x) <*> pure (mkUId $ void x)
       TyList l a       -> M.listTy l <$> transTy rn a
-      t                -> failAt (ann t) "Unsupported type syntax"
+      TyPromoted l (PromotedInteger _ n _)
+            | n >= 0   -> pure $ M.TyNat l $ fromInteger n
+      TyInfix l a x b -> M.TyApp l <$> (M.TyApp l (M.TyCon l (s2n $ rename Type rn x')) <$> transTy rn a) <*> transTy rn b
+            where x' | PromotedName   _ qn <- x = qn
+                     | UnpromotedName _ qn <- x = qn
+      t                -> failAt (ann t) $ "Unsupported type syntax: " <> pack (show t)
 
 freshKVar :: Fresh m => Text -> m M.Kind
 freshKVar n = M.KVar <$> fresh (s2n $ "?K_" <> n)
@@ -236,16 +245,15 @@ freshKVar n = M.KVar <$> fresh (s2n $ "?K_" <> n)
 transExp :: (Fresh m, MonadError AstError m) => Renamer -> Exp Annote -> m M.Exp
 transExp rn = \ case
       App l (Var _ n) (Lit _ (String _ m _))
-            | isError n      -> pure $ M.Error l (M.TyBlank l) (pack m)
+            | isError n      -> pure $ M.mkError l (M.TyBlank l) (pack m)
+      App l (Var _ x) (List _ es)
+            | isFromList x   -> M.LitVec l (M.TyBlank l) <$> mapM (transExp rn) es
       App l e1 e2            -> M.App l <$> transExp rn e1 <*> transExp rn e2
       Lambda l [PVar _ x] e  -> do
             e' <- transExp (exclude Value [void x] rn) e
             pure $ M.Lam l (M.TyBlank l) $ bind (mkUId $ void x) e'
-      Var l x | isExtern x   -> pure $ M.Extern l $ M.TyBlank l
-      Var l x | isBit x      -> pure $ M.Bit l $ M.TyBlank l
-      Var l x | isBits x     -> pure $ M.Bits l $ M.TyBlank l
-      Var l x | isSetRef x   -> pure $ M.SetRef l $ M.TyBlank l
-      Var l x | isGetRef x   -> pure $ M.GetRef l $ M.TyBlank l
+      Var l x | Just b <- builtin x
+                             -> pure $ M.Builtin l (M.TyBlank l) b
       Var l x                -> pure $ M.Var l (M.TyBlank l) $ s2n $ rename Value rn x
       Con l x                -> pure $ M.Con l (M.TyBlank l) $ s2n $ rename Value rn x
       Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _] -> do
@@ -269,23 +277,14 @@ transExp rn = \ case
                   PVar (_::Annote) x -> [void x]
                   _                  -> []
 
+            builtin :: QName Annote -> Maybe M.Builtin
+            builtin = M.builtin . pack . prettyPrint . name . rename Value rn
+
             isError :: QName Annote -> Bool
             isError n = prettyPrint (name $ rename Value rn n) == "error"
 
-            isExtern :: QName Annote -> Bool
-            isExtern n = prettyPrint (name $ rename Value rn n) == "externWithSig"
-
-            isBit :: QName Annote -> Bool
-            isBit n = prettyPrint (name $ rename Value rn n) == "bit"
-
-            isBits :: QName Annote -> Bool
-            isBits n = prettyPrint (name $ rename Value rn n) == "bits"
-
-            isSetRef :: QName Annote -> Bool
-            isSetRef n = prettyPrint (name $ rename Value rn n) == "setRef"
-
-            isGetRef :: QName Annote -> Bool
-            isGetRef n = prettyPrint (name $ rename Value rn n) == "getRef"
+            isFromList :: QName Annote -> Bool
+            isFromList n = prettyPrint (name $ rename Value rn n) == "fromList"
 
 transPat :: MonadError AstError m => Renamer -> Pat Annote -> m M.Pat
 transPat rn = \ case

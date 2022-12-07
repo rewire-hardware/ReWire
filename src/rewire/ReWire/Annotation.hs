@@ -80,15 +80,15 @@ instance Data Annote
 
 instance Show Annote where
       show NoAnnote      = "NoAnnote"
-      show (MsgAnnote m) = "MsgAnnote (" ++ show m ++ ")"
-      show (LocAnnote l) = "LocAnnote (" ++ show l ++ ")"
-      show (AstAnnote a) = "AstAnnote (" ++ show a ++ ")"
+      show (MsgAnnote m) = "(MsgAnnote (" ++ show m ++ "))"
+      show (LocAnnote l) = "(LocAnnote (" ++ show l ++ "))"
+      show (AstAnnote a) = "(AstAnnote (" ++ show a ++ "))"
 
 instance TextShow Annote where
       showb NoAnnote      = fromText "NoAnnote"
-      showb (MsgAnnote m) = fromText "MsgAnnote (" <> showb m <> fromText ")"
-      showb (LocAnnote l) = fromText "LocAnnote (" <> showb l <> fromText ")"
-      showb (AstAnnote a) = fromText "AstAnnote (" <> showb a <> fromText ")"
+      showb (MsgAnnote m) = fromText "(MsgAnnote (" <> showb m <> fromText "))"
+      showb (LocAnnote l) = fromText "(LocAnnote (" <> showb l <> fromText "))"
+      showb (AstAnnote a) = fromText "(AstAnnote (" <> showb a <> fromText "))"
 
 -- TODO(chathhorn): afraid of screwing stuff up if the annotation isn't
 -- ignored.

@@ -9,7 +9,7 @@ guppy c = let c = c in
              c -> G c
              d -> G d
 
-start :: ReT (Pup () () () ()) (G () () ()) I ()
+start :: ReacT (Pup () () () ()) (G () () ()) Identity ()
 start = do
   signal $ Z ()
   start

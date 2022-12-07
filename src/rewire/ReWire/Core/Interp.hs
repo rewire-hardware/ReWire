@@ -14,9 +14,9 @@ module ReWire.Core.Interp
 
 import ReWire.Flags (Flag (..))
 import ReWire.Core.Syntax
-      ( Program (..), ExternSig (..)
+      ( Program (..)
       , Name, Value, Index, Size
-      , Wiring (..)
+      , Wiring (..), Prim (..)
       , GId, LId
       , Pat (..), Exp (..)
       , Target (..)
@@ -104,8 +104,8 @@ interpStartDefn defns (StartDefn _ w loop' state0') = MealyT $ \ _ -> do
             pauseWires :: Wiring -> [(Name, Size)]
             pauseWires w = pausePrefix w <> stateWires w
 
-            Just loop   = Map.lookup loop' defns
-            Just state0 = Map.lookup state0' defns
+            loop   = fromMaybe (error "Core: interpStartDefn: no loop.")   $ Map.lookup loop' defns
+            state0 = fromMaybe (error "Core: interpStartDefn: no state0.") $ Map.lookup state0' defns
 
 interpDefn :: MonadError AstError m => DefnMap -> Defn -> BV -> m BV
 interpDefn defns (Defn _ _ (Sig _ inSizes outSize) body) v = trunc <$> reThrow (interpExp defns (split inSizes v) body)
@@ -137,29 +137,22 @@ interpExp defns lvars exp = case exp of
                         Left err -> throwError (call', err)
                         Right bv -> pure bv
             else pure els'
-      Call an sz (Extern (ExternSig _ _ _ args _) nm@(binOp -> Just op) _) e ps els -> do
-            let argSizes = snd <$> args
+      Call an sz (Prim nm@(binOp -> Just op)) e ps els -> do
             (e', els', call')  <- evaluate e els reCall
-            -- TODO(chathhorn): I think this is a bit different from how ToVerilog does it: note use of argSizes
-            if patMatches e' ps then case toSubRanges (patApply e' ps) argSizes of
+            if patMatches e' ps then case patApplyR e' ps of
                   [x, y] -> pure $ op sz x y
                   _      -> failAt' call' an $ "Core/Interp: interpExp: arity mismatch (" <> showt nm <> ")."
             else pure els'
-      Call an sz (Extern (ExternSig _ _ _ args _) nm@(unOp -> Just op) _) e ps els -> do
-            let argSizes = snd <$> args
+      Call an sz (Prim nm@(unOp -> Just op)) e ps els -> do
             (e', els', call')  <- evaluate e els reCall
-            if patMatches e' ps then case toSubRanges (patApply e' ps) argSizes of
+            if patMatches e' ps then case patApplyR e' ps of
                   [x]    -> pure $ op sz x
                   _      -> failAt' call' an $ "Core/Interp: interpExp: arity mismatch (" <> showt nm <> ")."
             else pure els'
-      Call an sz (Extern (ExternSig _ _ _ args _) "msbit" _) e ps els -> do
-            let argSizes = snd <$> args
-            (e', els', call')  <- evaluate e els reCall
-            if patMatches e' ps then case toSubRanges (patApply e' ps) argSizes of
-                  [x]    -> pure $ mkBV sz $ fromEnum $ testBit x (fromEnum $ width x - 1)
-                  _      -> failAt' call' an "Core/Interp: interpExp: arity mismatch (msbit)."
-            else pure els'
-      Call _ _ Id e ps els             -> if patMatchesE e ps then interpExp defns lvars $ patApplyE e ps else do
+      Call _ sz (Prim Resize) e ps els -> do
+            (e', els', _)  <- evaluate e els reCall
+            if patMatches e' ps then pure $ mkBV sz $ nat $ patApply e' ps else pure els'
+      Call _ _ (Prim Id) e ps els      -> if patMatchesE e ps then interpExp defns lvars $ patApplyE e ps else do
             (e', els', _)  <- evaluate e els reCall
             pure $ if patMatches e' ps then patApply e' ps else els'
       Call _  sz (Const v) e ps els    -> if patMatchesE e ps then pure $ mkBV sz v else do
@@ -227,6 +220,9 @@ patApply' inj = mconcat . map (\ case
 patApply :: BV -> [Pat] -> BV
 patApply x = patApply' $ \ i j -> subRange (i, j) x
 
+patApplyR :: BV -> [Pat] -> [BV]
+patApplyR x = patApply' $ \ i j -> [subRange (i, j) x]
+
 patApplyE :: Exp -> [Pat] -> Exp
 patApplyE e = cat . zipWith apply' (gather e)
       where apply' :: Exp -> Pat -> Exp
@@ -235,50 +231,41 @@ patApplyE e = cat . zipWith apply' (gather e)
                   _          -> nil
 
 toSubRanges :: BV -> [Size] -> [BV]
-toSubRanges bv = patApply' (\ i j -> pure (subRange (i, j) bv)) . map (PatVar noAnn)
+toSubRanges x = patApplyR x . map (PatVar noAnn)
 
-binOp :: Name -> Maybe (Size -> BV -> BV -> BV)
+binOp :: Prim -> Maybe (Size -> BV -> BV -> BV)
 binOp = flip lookup primBinOps
 
-unOp :: Name -> Maybe (Size -> BV -> BV)
+unOp :: Prim -> Maybe (Size -> BV -> BV)
 unOp = flip lookup primUnOps
 
-primBinOps :: [(Name, Size -> BV -> BV -> BV)]
+primBinOps :: [(Prim, Size -> BV -> BV -> BV)]
 primBinOps = map (second binBitify)
-      [ ( "+"   , (+))
-      , ( "-"   , (-))
-      , ( "*"   , (*))
-      , ( "/"   , div)
-      , ( "%"   , mod)
-      , ( "**"  , (^))
-      , ( "&&"  , binIntify (&&))
-      , ( "||"  , binIntify (||))
+      [ (Add         , (+))
+      , (Sub         , (-))
+      , (Mul         , (*))
+      , (Div         , div)
+      , (Mod         , mod)
+      , (Pow         , (^))
+      , (LAnd        , binIntify (&&))
+      , (LOr         , binIntify (||))
       ] <> map (second $ \ op sz a b -> mkBV sz $ nat $ op a b)
-      [ ( "&"   , (.&.))
-      , ( "|"   , (.|.))
-      , ( "^"   , xor)
---       , ( "~^"  , XNor)
-      , ( "<<"  , (<<.))
-      , ( ">>"  , (>>.))
-      , ( "<<<" , (<<.))
-      , ( ">>>" , ashr)
-      , ( "concat" , (<>))
+      [ (And         , (.&.))
+      , (Or          , (.|.))
+      , (XOr         , xor)
+      , (LShift      , (<<.))
+      , (RShift      , (>>.))
+      , (RShiftArith , ashr)
       ] <>
-      [ ("replicate", \ sz a b -> mkBV sz $ nat $ BV.replicate (nat a) b)
+      [ (Replicate, \ sz a b -> mkBV sz $ nat $ BV.replicate (nat a) b)
       ]
 
-primUnOps :: [(Name, Size -> BV -> BV)]
+primUnOps :: [(Prim, Size -> BV -> BV)]
 primUnOps = map (second $ \ op sz -> mkBV sz . op) unops
-      where unops :: [(Name, BV -> Integer)]
-            unops = [ ( "!"      , fromIntegral . fromEnum . (== bvFalse))
-                    , ( "~"      , nat . complement) -- TODO(chathhorn): semantics?
-              --       , ( "&"      , RAnd)
-              --       , ( "~&"     , RNAnd)
-              --       , ( "|"      , ROr)
-              --       , ( "~|"     , RNor)
-              --       , ( "^"      , RXor)
-              --       , ( "~^"     , RXNor)
-                    , ( "resize" , nat)
+      where unops :: [(Prim, BV -> Integer)]
+            unops = [ (LNot  , fromIntegral . fromEnum . (== bvFalse))
+                    , (Not   , nat . complement) -- TODO(chathhorn): semantics?
+                    , (MSBit , \ x -> toInteger $ fromEnum $ testBit x (fromEnum $ width x - 1))
                     ]
 
 binBitify :: (Integer -> Integer -> Integer) -> Size -> BV -> BV -> BV

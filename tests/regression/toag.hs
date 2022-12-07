@@ -1,14 +1,14 @@
 import ReWire
 import ReWire.Bits
 
-go :: ReT Bit Bit I Bit
+go :: ReacT Bit Bit Identity Bit
 go = do
-      x <- signal C
-      y <- case x of { S  -> signal C ; C -> signal x }
-      z <- signal (andb (case y of { S -> x ; C -> andb x x }) y)
+      x <- signal False
+      y <- case x of { True  -> signal False ; False -> signal x }
+      z <- signal ((case y of { True -> x ; False -> x && x }) && y)
       go
 
-start :: ReT Bit Bit I Bit
+start :: ReacT Bit Bit Identity Bit
 start = go
 
 main = undefined

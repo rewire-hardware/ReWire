@@ -91,11 +91,11 @@ data Exp = UInt !(Maybe Integer) !Integer -- examining the example code generate
          | Not !Exp
          | And !Exp !Exp
          | Or !Exp !Exp
-         | Xor !Exp !Exp
+         | XOr !Exp !Exp
          -- Bitwise reduction
          | Andr !Exp
          | Orr !Exp
-         | Xorr !Exp
+         | XOrr !Exp
          | Cat !Exp !Exp
          | Bits !Exp !Exp !Exp
          | Head !Exp !Exp

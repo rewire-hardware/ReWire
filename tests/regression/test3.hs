@@ -1,18 +1,16 @@
+{-# LANGUAGE DataKinds #-}
 import ReWire
 import ReWire.Bits
 
-tick :: ReT Bit W8 (StT W8 I) Bit
+tick :: ReacT Bit (W 8) (StateT (W 8) Identity) Bit
 tick = lift get >>= \ x -> signal x
 
-go :: ReT Bit W8 (StT W8 I) ()
+go :: ReacT Bit (W 8) (StateT (W 8) Identity) ()
 go = do
       b <- tick
-      case b of
-            S -> go
-            C -> go
+      if b then go else go
 
-
-start :: ReT Bit W8 I ()
-start = extrude go zeroW8
+start :: ReacT Bit (W 8) Identity ()
+start = extrude go $ lit 0
 
 main = undefined

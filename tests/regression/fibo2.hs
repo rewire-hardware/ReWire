@@ -1,16 +1,16 @@
+{-# LANGUAGE DataKinds #-}
+import Prelude hiding ((+))
 import ReWire
 import ReWire.Bits
 
-start :: ReT Bit W8 I ()
+start :: ReacT Bit (W 8) Identity ()
 start = go
 
-go :: ReT Bit W8 I ()
-go = loop zeroW8 oneW8
+go :: ReacT Bit (W 8) Identity ()
+go = loop (lit 0) $ lit 1
 
-loop :: W8 -> W8 -> ReT Bit W8 I ()
+loop :: W 8 -> W 8 -> ReacT Bit (W 8) Identity ()
 loop n m = do b <- signal n
-              case b of
-                  S -> loop n m
-                  C -> loop m (plusW8 n m)
+              if b then loop n m else loop m (n + m)
 
 main = undefined
