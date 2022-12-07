@@ -2,16 +2,13 @@ import ReWire
 import ReWire.Bits
 
 baz :: Bit -> Bit -> Bit
-baz b = case b of
-      C -> f
-      S -> id
-      where f S = C
-            f C = S
-            c   = S
+baz b = if b then id else f
+      where f = not
+            c = one
 
-start :: ReT Bit Bit I ()
+start :: ReacT Bit Bit Identity ()
 start = do
-  signal $ notb $ baz C S
+  signal $ not $ baz zero one
   start
 
 main = undefined

@@ -18,17 +18,18 @@ addPrims (ts, syns, vs) = (ts <> primDatas, syns, vs)
 
 primDatas :: [DataDefn]
 primDatas = map mkData
-      [ ("->",      KStar `KFun` (KStar `KFun` KStar),                  [])
-      , ("ReT",     KStar `KFun` (KStar `KFun` (kmonad `KFun` kmonad)), [])
-      , ("StT",     KStar `KFun` (kmonad `KFun` kmonad),                [])
-      , ("I",       kmonad,                                             [])
-      , ("Integer", KStar,                                              [])
-      , ("Vec",     KNat `KFun` KStar `KFun` KStar,                     [])
-      , ("+",       KNat `KFun` KNat  `KFun` KNat,                      [])
-      , ("Ref",     KStar `KFun` KStar,                                 [refCtor])
-      , ("String",  KStar,                                              [])
-      , ("[_]",     KStar `KFun` KStar,                                 [])
-      , ("()",      KStar,                                              [nullDataCon "()" "()"])
+      [ ("->",       KStar `KFun` (KStar `KFun` KStar),                  [])
+      , ("ReacT",    KStar `KFun` (KStar `KFun` (kmonad `KFun` kmonad)), [])
+      , ("StateT",   KStar `KFun` (kmonad `KFun` kmonad),                [])
+      , ("Identity", kmonad,                                             [])
+      , ("Vec",      KNat `KFun` KStar `KFun` KStar,                     [])
+      , ("+",        KNat `KFun` KNat  `KFun` KNat,                      [])
+      , ("Ref",      KStar `KFun` KStar,                                 [refCtor])
+      , ("Integer",  KStar,                                              [])
+      , ("String",   KStar,                                              [])
+      , ("Bool",     KStar,                                              [nullDataCon "False" "Bool", nullDataCon "True" "Bool"])
+      , ("[_]",      KStar `KFun` KStar,                                 [])
+      , ("()",       KStar,                                              [nullDataCon "()" "()"])
       ] <> map mkTuple' [2..62] -- why 62? 'cause that's what ghc does!
 
 msg :: Text -> Annote

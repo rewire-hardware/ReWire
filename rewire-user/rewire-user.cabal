@@ -27,7 +27,6 @@ library
       ReWire.Bits
       ReWire.Monad
       ReWire.Prelude
-      ReWire.Verilog
       RWC.Primitives
   other-modules:
       Paths_rewire_user

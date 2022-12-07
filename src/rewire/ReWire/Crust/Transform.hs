@@ -27,11 +27,11 @@ import ReWire.Annotation (Annote (..), Annotated (..), unAnn)
 import ReWire.SYB
 import ReWire.Crust.Syntax
 import ReWire.Crust.TypeCheck (typeCheckDefn)
-import ReWire.Error (AstError, MonadError)
+import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fix, fix', boundedFix)
 
 import Control.Arrow (first, (&&&))
-import Control.Monad (zipWithM, replicateM, (>=>))
+import Control.Monad (foldM_, zipWithM, replicateM, (>=>))
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.State (State, evalStateT, execState, StateT (..), get, gets, modify)
 import Control.Monad.Writer (MonadWriter, tell, WriterT, runWriterT)
@@ -64,18 +64,25 @@ defnSubst (Defn _ n (Embed pt) _ (Embed e)) = runFreshM $ unbind e >>= \ case
 
 -- | Expands type synonyms.
 expandTypeSynonyms :: (MonadCatch m, MonadError AstError m, Fresh m) => FreeProgram -> m FreeProgram
-expandTypeSynonyms (ts, syns, ds) = (,,) <$> expandSyns ts <*> syns' <*> expandSyns ds
+expandTypeSynonyms (ts, syns0, ds) = (,,) <$> expandSyns ts <*> syns' <*> expandSyns ds
       where toSubst :: TypeSynonym -> (Name TyConId, Bind [Name Ty] Ty)
             toSubst (TypeSynonym _ n (Embed (Poly t))) = (n, t)
 
             expandSyns :: (MonadCatch m, MonadError AstError m, Fresh m, Data d) => d -> m d
-            expandSyns d = subs >>= flip substs' d
+            expandSyns d = subs' >>= flip substs' d
 
-            subs :: (MonadCatch m, MonadError AstError m, Fresh m) => m [(Name TyConId, Bind [Name Ty] Ty)]
-            subs = map toSubst <$> syns'
+            subs' :: (MonadCatch m, MonadError AstError m, Fresh m) => m [(Name TyConId, Bind [Name Ty] Ty)]
+            subs' = map toSubst <$> syns'
 
+            -- | First expand type synonyms in type synonym definitions.
             syns' :: (MonadCatch m, MonadError AstError m, Fresh m) => m [TypeSynonym]
-            syns' = fix "Type synonym expansion" 100 (substs' $ map toSubst syns) syns
+            syns' = do
+                  foldM_ checkDupe [] syns0
+                  fix "Type synonym expansion" 100 (substs' $ map toSubst syns0) syns0
+                  where checkDupe :: MonadError AstError m => [Text] -> TypeSynonym -> m [Text]
+                        checkDupe ss (TypeSynonym an n _)
+                              | n2s n `elem` ss = failAt an $ "Duplicate type synonym: " <> n2s n
+                              | otherwise       = pure $ n2s n : ss
 
             substs' :: (MonadCatch m, MonadError AstError m, Fresh m, Data d) => [(Name TyConId, Bind [Name Ty] Ty)] -> d -> m d
             substs' subs' = runT (transform $ \ case
@@ -107,7 +114,7 @@ neuterExterns :: MonadCatch m => FreeProgram -> m FreeProgram
 neuterExterns = runT $ transform $ \ case
       App an ex e | isExtern ex -> pure $ App an ex
                                         $ TypeAnn (ann e) (poly' $ typeOf e)
-                                        $ Error (ann e) (typeOf e) "extern expression placeholder"
+                                        $ mkError (ann e) (typeOf e) "Extern expression placeholder"
       where isExtern :: Exp -> Bool
             isExtern e = case flattenApp' e of
                   [Builtin _ _ Extern, _ , _, _, _, _] -> True
@@ -157,7 +164,7 @@ prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM ppDefn ds
                   -- Inline everything on the LHS.
                   (dstBind -> Just (a, e1, e2)) -> do
                         let t = TyBlank a
-                        e1' <- flatten (filter (\ d -> isReT d && inlineable d) ds) e1
+                        e1' <- flatten (filter (\ d -> isReacT d && inlineable d) ds) e1
                         rejiggerBind $ mkBind a t e1' e2
                   App an e1 e2 -> App an <$> ppExp e1 <*> ppExp e2
                   Lam an t  e -> do
@@ -216,8 +223,8 @@ prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM ppDefn ds
             flatten :: (Fresh m, MonadError AstError m) => [Defn] -> Exp -> m Exp
             flatten ds = fix "Bind LHS definition expansion" 100 (pure . substs (map defnSubst ds))
 
-            isReT :: Defn -> Bool
-            isReT Defn { defnPolyTy = Embed (Poly (unsafeUnbind -> (_, t))) } = isResMonad t
+            isReacT :: Defn -> Bool
+            isReacT Defn { defnPolyTy = Embed (Poly (unsafeUnbind -> (_, t))) } = isResMonad t
 
 -- | So if e :: a -> b, then
 -- > g = e
@@ -401,10 +408,10 @@ purgeUnused except (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ exte
                          [ "PuRe"
                          , "(,)"
                          , "()"
-                         , "Bit"
+                         , "Bool"
                          ]
 
-            -- | Also treat as used: all ctors for types returned by externs and ReT inputs.
+            -- | Also treat as used: all ctors for types returned by externs and ReacT inputs.
             externCtors :: Data a => a -> [Name TyConId]
             externCtors = runQ $ (\ case
                         e@Builtin {} -> ctorNames $ flattenAllTyApp $ rangeTy $ typeOf e
@@ -605,7 +612,7 @@ reduce (ts, syns, vs) = (ts, syns, ) <$> mapM reduceDefn vs
                                     Nothing  -> Case an t e' <$> (bind p <$> reduceExp e1') <*> pure Nothing
                                     Just e2' -> Case an t e' <$> (bind p <$> reduceExp e1') <*> (Just <$> reduceExp e2')
                               MatchNo      -> case e2 of
-                                    Nothing  -> pure $ Error an t "Pattern match failure (reduced)"
+                                    Nothing  -> pure $ mkError an t "Pattern match failure (reduced)"
                                     Just e2' -> reduceExp e2'
                   -- TODO(chathhorn): handle match?
                   Match an t e p e' Nothing    -> Match an t <$> reduceExp e <*> pure p <*> reduceExp e' <*> pure Nothing

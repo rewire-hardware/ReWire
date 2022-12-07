@@ -1,5 +1,15 @@
 import ReWire
-import ReWire.Bits hiding (W10 (..))
+
+data Bit = C | S
+data W2 = W2 Bit Bit
+data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
+data W32 = W32 W8 W8 W8 W8
+
+zeroW8 :: W8
+zeroW8 = W8 S S S S S S S S
+
+zeroW32 :: W32
+zeroW32 = W32 zeroW8 zeroW8 zeroW8 zeroW8
 
 data W10 = W10
       { b0 :: Bit
@@ -110,41 +120,41 @@ zeroSigs = Sigs
 -- Some Helpers
 ---------------------
 
-set_partition_reg :: W2 -> StT (Sigs, Mem) I ()
+set_partition_reg :: W2 -> StateT (Sigs, Mem) Identity ()
 set_partition_reg w2 = modify (\ (s, m) -> (s { partition_reg = w2 }, m))
 
-get_partition_reg :: StT (Sigs, Mem) I W2
+get_partition_reg :: StateT (Sigs, Mem) Identity W2
 get_partition_reg = get >>= \ (s, _) -> return (partition_reg s)
 
-set_ack_reg :: Bit -> StT (Sigs, Mem) I ()
+set_ack_reg :: Bit -> StateT (Sigs, Mem) Identity ()
 set_ack_reg b = modify (\ (s, m) -> (s { ack_reg = b }, m))
 
-get_ack_reg :: StT (Sigs, Mem) I Bit
+get_ack_reg :: StateT (Sigs, Mem) Identity Bit
 get_ack_reg = get >>= \ (s, _) -> return (ack_reg s)
 
-set_data_reg :: W32 -> StT (Sigs, Mem) I ()
+set_data_reg :: W32 -> StateT (Sigs, Mem) Identity ()
 set_data_reg w32 = modify (\ (s, m) -> (s { data_reg = w32 }, m))
 
-get_data_reg :: StT (Sigs, Mem) I W32
+get_data_reg :: StateT (Sigs, Mem) Identity W32
 get_data_reg = get >>= \ (s, _) -> return (data_reg s)
 
-set_data_out_reg :: W32 -> StT (Sigs, Mem) I ()
+set_data_out_reg :: W32 -> StateT (Sigs, Mem) Identity ()
 set_data_out_reg w32 = modify (\ (s, m) -> (s { data_out_reg = w32 }, m))
 
-get_data_out_reg :: StT (Sigs, Mem) I W32
+get_data_out_reg :: StateT (Sigs, Mem) Identity W32
 get_data_out_reg = get >>= \ (s, _) -> return (data_out_reg s)
 
-set_addr_reg :: W10 -> StT (Sigs, Mem) I ()
+set_addr_reg :: W10 -> StateT (Sigs, Mem) Identity ()
 set_addr_reg w10 = modify (\ (s, m) -> (s { addr_reg = w10 }, m))
 
-get_addr_reg :: StT (Sigs, Mem) I W10
+get_addr_reg :: StateT (Sigs, Mem) Identity W10
 get_addr_reg = get >>= \ (s, _) -> return (addr_reg s)
 
 -- Memory operations
-getloc :: W10 -> StT (Sigs, Mem) I W32
+getloc :: W10 -> StateT (Sigs, Mem) Identity W32
 getloc a = get >>= \ (_, mem) -> return (memLookup a mem)
 
-setloc :: W10 -> W32 -> StT (Sigs, Mem) I ()
+setloc :: W10 -> W32 -> StateT (Sigs, Mem) Identity ()
 setloc i e = modify (\ (s, m) -> (s, memTweak i e m))
 
 ------------------------------------------
@@ -159,7 +169,7 @@ setloc i e = modify (\ (s, m) -> (s, memTweak i e m))
 ------------------------------------------
 ------------------------------------------
 
-connect :: (Sigs, Mem) -> ReT PortsIn PortsOut (StT (Sigs, Mem) I) PortsIn
+connect :: (Sigs, Mem) -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) PortsIn
 connect x = do
       lift $ put x
       signal $ outports $ fst x
@@ -167,7 +177,7 @@ connect x = do
     outports :: Sigs -> PortsOut
     outports s = PortsOut { ack_out = ack_reg s , data_out = data_out_reg s }
 
-reset :: ReT PortsIn PortsOut (StT (Sigs, Mem) I) ()
+reset :: ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) ()
 reset = do
       ports <- (lift (reset_act >> get) >>= connect)
       scrub_ram ports
@@ -180,10 +190,10 @@ reset = do
       set_addr_reg onesW10
       setloc zeroW10 zeroW32
 
-scrub_ram :: PortsIn -> ReT PortsIn PortsOut (StT (Sigs, Mem) I) ()
+scrub_ram :: PortsIn -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) ()
 scrub_ram ips = (lift (scrub_ram_act >> get) >>= while_addr_reg_0) >>= idle
   where
-    scrub_ram_act :: StT (Sigs, Mem) I ()
+    scrub_ram_act :: StateT (Sigs, Mem) Identity ()
     scrub_ram_act = do
       addr <- get_addr_reg
       setloc addr zeroW32
@@ -191,7 +201,7 @@ scrub_ram ips = (lift (scrub_ram_act >> get) >>= while_addr_reg_0) >>= idle
 
 while_addr_reg_0
       :: (Sigs, Mem)
-      -> ReT PortsIn PortsOut (StT (Sigs, Mem) I) PortsIn
+      -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) PortsIn
 while_addr_reg_0 x = do
   addr <- lift get_addr_reg
   if positiveW10 addr
@@ -206,7 +216,7 @@ while_addr_reg_0 x = do
     outports :: Sigs -> PortsOut
     outports s = PortsOut { ack_out = ack_reg s , data_out = data_out_reg s }
 
-idle :: PortsIn -> ReT PortsIn PortsOut (StT (Sigs, Mem) I) ()
+idle :: PortsIn -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) ()
 idle ip = let
              _go  = go ip
              _rnw = rnw ip
@@ -220,14 +230,14 @@ idle ip = let
               _      -> (lift (pre_idle >> get) >>= connect) >>= idle
           where
 
-            pre_read :: W2 -> W10 -> StT (Sigs, Mem) I ()
+            pre_read :: W2 -> W10 -> StateT (Sigs, Mem) Identity ()
             pre_read p_i a_i = do
               set_addr_reg (p_i <&> a_i)
               set_partition_reg p_i
               set_ack_reg C
               set_data_out_reg zeroW32
 
-            pre_write :: W2 -> W10 -> W32 -> StT (Sigs, Mem) I ()
+            pre_write :: W2 -> W10 -> W32 -> StateT (Sigs, Mem) Identity ()
             pre_write p_i a_i d_i = do
               set_addr_reg (p_i <&> a_i)
               set_data_reg d_i
@@ -235,12 +245,12 @@ idle ip = let
               set_ack_reg C
               set_data_out_reg zeroW32
 
-            pre_idle :: StT (Sigs, Mem) I ()
+            pre_idle :: StateT (Sigs, Mem) Identity ()
             pre_idle = do
               set_ack_reg C
               set_data_out_reg zeroW32
 
-perform_read :: PortsIn -> ReT PortsIn PortsOut (StT (Sigs, Mem) I) ()
+perform_read :: PortsIn -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) ()
 perform_read _ = (lift (perform_read_act >> get) >>= connect) >>= idle
   where
     perform_read_act = do
@@ -249,7 +259,7 @@ perform_read _ = (lift (perform_read_act >> get) >>= connect) >>= idle
       set_data_out_reg d_o_r'
       set_ack_reg S
 
-perform_write :: PortsIn -> ReT PortsIn PortsOut (StT (Sigs, Mem) I) ()
+perform_write :: PortsIn -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) ()
 perform_write _ = (lift (perform_write_act >> get) >>= connect) >>= idle
   where
     perform_write_act = do
@@ -259,7 +269,7 @@ perform_write _ = (lift (perform_write_act >> get) >>= connect) >>= idle
       setloc addr _data
       set_ack_reg S
 
-start :: ReT PortsIn PortsOut I ()
+start :: ReacT PortsIn PortsOut Identity ()
 start = extrude reset (zeroSigs, zeroMem)
 
 main = undefined

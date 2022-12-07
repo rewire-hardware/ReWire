@@ -72,7 +72,7 @@ e' = L `lt` R `lt` L `rt` L `Mods.Infix.lt` R
 a'' :: L'
 a'' = L' :> R' :> L' Mods.Infix.:< L' :< R'
 
-start :: ReT L R I ()
+start :: ReacT L R Identity ()
 start = do
   signal d
   start

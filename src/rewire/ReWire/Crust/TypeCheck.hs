@@ -125,8 +125,8 @@ mergeTySub ts = fixTySub . Map.unionWith merge ts
             merge t                _                 = t
 
 mgu :: Ty -> Ty -> Maybe TySub
-mgu (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReT")) ti ) to )
-    (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReT")) ti') to')                      = do
+mgu (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) ti ) to )
+    (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) ti') to')                    = do
       s1 <- mgu iTy ti
       s2 <- mergeTySub s1 <$> mgu (subst s1 ti) (subst s1 ti')
       s3 <- mergeTySub s2 <$> mgu (subst s2 oTy) (subst s2 to)
@@ -364,9 +364,6 @@ tcExp = \ case
             mapM_ (unify an tv) (snd <$> es')
             let t = vecTy an (TyNat an $ fromInteger $ toInteger $ length es) tv
             pure (LitVec an t (fst <$> es'), t)
-      Error an _ m -> do
-            tv <- freshv
-            pure (Error an tv m, tv)
       TypeAnn an pt e -> do
             (e', te) <- tcExp e
             t        <- inst pt
@@ -419,18 +416,18 @@ untype :: Data d => d -> d
 untype = runIdentity . runPureT (transform $ \ (t :: Ty) -> pure $ TyBlank $ ann t)
 
 iTy :: Ty
-iTy = TyVar (MsgAnnote "ReT input type.") KStar (s2n "?i")
+iTy = TyVar (MsgAnnote "ReacT input type.") KStar (s2n "?i")
 
 oTy :: Ty
-oTy = TyVar (MsgAnnote "ReT output type.") KStar (s2n "?o")
+oTy = TyVar (MsgAnnote "ReacT output type.") KStar (s2n "?o")
 
-globalReT :: Ty -> Ty -> Ty
-globalReT s = TyApp an $ TyApp an (TyApp an (TyApp an (TyCon an $ s2n "ReT") iTy) oTy) s
+globalReacT :: Ty -> Ty -> Ty
+globalReacT s = TyApp an $ TyApp an (TyApp an (TyApp an (TyCon an $ s2n "ReacT") iTy) oTy) s
       where an :: Annote
-            an = MsgAnnote "Expected ReT type."
+            an = MsgAnnote "Expected ReacT type."
 
 globalStartTy :: Poly
-globalStartTy = poly [a] $ globalReT (TyCon an $ s2n "I") $ TyVar an KStar a
+globalStartTy = poly [a] $ globalReacT (TyCon an $ s2n "Identity") $ TyVar an KStar a
       where an :: Annote
             an = MsgAnnote "Expected start function type."
 

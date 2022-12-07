@@ -77,7 +77,7 @@ kcTy = \ case
             "->" -> pure $ KFun KStar $ KFun KStar KStar
             _    -> do
                   cas <- askCAssumps
-                  maybe (failAt an $ "Unknown type constructor: " <> n2s i) pure
+                  maybe (failAt an $ "Unknown type constructor or not fully-applied type synonym: " <> n2s i) pure
                         $ Map.lookup i cas
       TyVar _ k _     -> pure k
       TyBlank _       -> freshkv

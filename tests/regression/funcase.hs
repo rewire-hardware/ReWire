@@ -10,13 +10,13 @@ proc i = case i of
       IC -> Out1
       _ -> Out2
 
-startp :: In -> ReT In Out I ()
+startp :: In -> ReacT In Out Identity ()
 startp i = signal (proc i) >>= \ x -> startp x
 
-starti :: ReT In Out I ()
+starti :: ReacT In Out Identity ()
 starti =  startp IA
 
-start :: ReT In Out I ()
+start :: ReacT In Out Identity ()
 start =  starti
 
 main = undefined

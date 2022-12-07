@@ -52,7 +52,7 @@ toExp = \ case
       Var v                     -> M.Var noAnn tblank <$> toName v
       Lit (LitNumber _ v)       -> pure $ M.LitInt noAnn v
       Lit (LitString v)         -> pure $ M.LitStr noAnn $ pack $ show v
-      Lit _                     -> pure $ M.Error noAnn tblank "lit"
+      Lit _                     -> pure $ M.mkError noAnn tblank "lit"
       App e1 e2                 -> M.App noAnn <$> toExp e1 <*> toExp e2
       Lam v e                   -> do
             v' <- toName v
@@ -70,7 +70,7 @@ toExp = \ case
             alts' <- toCase (M.Var noAnn tblank v') $ reverse alts
             pure $ case alts' of
                   Just alts'' -> M.App noAnn (M.Lam noAnn tblank $ bind v' alts'') e'
-                  Nothing     -> M.App noAnn (M.Lam noAnn tblank $ bind v' $ M.Error noAnn tblank "GHCCoreToCrust: case: empty alts.") e'
+                  Nothing     -> M.App noAnn (M.Lam noAnn tblank $ bind v' $ M.mkError noAnn tblank "GHCCoreToCrust: case: empty alts.") e'
       Cast e _coercion          -> toExp e
       Tick _tickish e           -> toExp e
       Type _type                -> pure $ ph "Type"
@@ -88,7 +88,7 @@ toCase _scr = \ case
 --             _e'    <- toExp e
 --             _alts' <- toCase scr alts
 --             -- pat'  <- toPat c vs
---             pure $ Just $ M.Error noAnn tblank "lit case"
+--             pure $ Just $ M.mkError noAnn tblank "lit case"
 --       [(DEFAULT, _, e)] -> do
 --             e'  <- toExp e
 --             pure $ Just e'
@@ -130,7 +130,7 @@ toType = \ case
             error $ "what type is this: " <> unpack (showGhc dflags t)
 
 ph :: Text -> M.Exp
-ph m = M.Error noAnn tblank $ "GHCCoreToCrust: " <> m
+ph m = M.mkError noAnn tblank $ "GHCCoreToCrust: " <> m
 
 showGhc :: Outputable a => DynFlags -> a -> Text
 showGhc dflags = pack . showSDoc dflags . ppr

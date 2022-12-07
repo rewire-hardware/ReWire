@@ -196,7 +196,7 @@ transDef rn tys inls defs = \ case
             let x' = s2n $ rename Value rn x
                 t  = fromMaybe (M.TyVar l k $ s2n "a") $ lookup x tys
             -- Elide definition of primitives. Allows providing alternate defs for GHC compat.
-            e' <- if | M.isPrim x' -> pure $ M.Error (ann e) t $ "Prim: " <> n2s x'
+            e' <- if | M.isPrim x' -> pure $ M.mkError (ann e) t $ "Prim: " <> n2s x'
                      | otherwise   -> transExp rn e
             pure $ M.Defn l x' (Embed $ M.poly' t) (Map.lookup x inls) (Embed (bind [] e')) : defs
       DataDecl       {}                                         -> pure defs -- TODO(chathhorn): elide
@@ -245,7 +245,7 @@ freshKVar n = M.KVar <$> fresh (s2n $ "?K_" <> n)
 transExp :: (Fresh m, MonadError AstError m) => Renamer -> Exp Annote -> m M.Exp
 transExp rn = \ case
       App l (Var _ n) (Lit _ (String _ m _))
-            | isError n      -> pure $ M.Error l (M.TyBlank l) (pack m)
+            | isError n      -> pure $ M.mkError l (M.TyBlank l) (pack m)
       App l (Var _ x) (List _ es)
             | isFromList x   -> M.LitVec l (M.TyBlank l) <$> mapM (transExp rn) es
       App l e1 e2            -> M.App l <$> transExp rn e1 <*> transExp rn e2

@@ -127,7 +127,7 @@ data Exp = Add Exp Exp
          | RNAnd Exp
          | ROr Exp
          | RNor Exp
-         | RXor Exp
+         | RXOr Exp
          | RXNor Exp
          | Eq  Exp Exp
          | NEq Exp Exp
@@ -191,7 +191,7 @@ instance Pretty Exp where
             RNAnd a         -> ppUnOp    "~&"  a
             ROr a           -> ppUnOp    "|"   a
             RNor a          -> ppUnOp    "~|"  a
-            RXor a          -> ppUnOp    "^"   a
+            RXOr a          -> ppUnOp    "^"   a
             RXNor a         -> ppUnOp    "~^"  a
             Eq a b          -> ppBinOp a "=="  b
             NEq a b         -> ppBinOp a "!="  b

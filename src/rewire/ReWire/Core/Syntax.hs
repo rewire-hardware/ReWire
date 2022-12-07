@@ -5,6 +5,7 @@ module ReWire.Core.Syntax
   ( Sig (..), ExternSig (..)
   , Exp (..)
   , Pat (..)
+  , Prim (..)
   , StartDefn (..), Defn (..)
   , Wiring (..)
   , Program (..)
@@ -50,13 +51,33 @@ bvFalse = zeros 1
 instance TextShow BV where
       showb = showb . showHex
 
+data Prim = Add | Sub
+          | Mul | Div | Mod
+          | Pow
+          | LAnd | LOr
+          | And | Or
+          | XOr | XNor
+          | LShift | RShift
+          | RShiftArith
+          | Eq | Gt | GtEq | Lt | LtEq
+          | Replicate
+          | LNot | Not
+          | RAnd | RNAnd
+          | ROr | RNor | RXOr | RXNor
+          | MSBit
+          | Resize
+          | Id
+      deriving (Eq, Ord, Generic, Show, Typeable, Data)
+      deriving TextShow via FromGeneric Prim
+
+instance Hashable Prim
+
 data Target = Global !GId
             | Extern !ExternSig !Name !Name
-            | Id
+            | Prim !Prim
             | Const !BV
             | SetRef !Name
             | GetRef !Name
-            | Resize
       deriving (Eq, Ord, Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Target
 
@@ -66,11 +87,10 @@ instance Pretty Target where
       pretty = \ case
             Global n     -> text n
             Extern _ n _ -> text "extern" <+> dquotes (text n)
-            Id           -> text "id"
             Const bv     -> ppBV [Lit noAnn bv]
             SetRef n     -> text "setRef" <+> dquotes (text n)
             GetRef n     -> text "getRef" <+> dquotes (text n)
-            Resize       -> text "resize"
+            Prim p       -> text $ showt p
 
 ppBV :: Pretty a => [a] -> Doc an
 ppBV = ppBV' . map pretty
@@ -80,7 +100,8 @@ ppBV' = parens . hsep . punctuate comma
 
 ---
 
-data ExternSig = ExternSig Annote ![(Text, Size)] !Text ![(Text, Size)] ![(Text, Size)] -- Names and sizes of params, clock signal, inputs, and outputs, respectively.
+data ExternSig = ExternSig Annote ![(Text, Size)] !Text ![(Text, Size)] ![(Text, Size)]
+        -- ^ Names and sizes of params, clock signal, inputs, and outputs, respectively.
         deriving (Eq, Ord, Generic, Show, Typeable, Data)
         deriving TextShow via FromGeneric ExternSig
 
@@ -253,7 +274,7 @@ instance Annotated StartDefn where
 
 instance Pretty StartDefn where
       pretty (StartDefn _ w loop state0) = vsep
-            [ text "Main.start" <+> text "::" <+> text "ReT" <+> ppBV (map snd $ inputWires w) <+> ppBV (map snd $ outputWires w)
+            [ text "Main.start" <+> text "::" <+> text "ReacT" <+> ppBV (map snd $ inputWires w) <+> ppBV (map snd $ outputWires w)
             , text "Main.start" <+> text "=" <+> nest 2 (text "unfold" <+> pretty loop <+> pretty state0)
             ]
 

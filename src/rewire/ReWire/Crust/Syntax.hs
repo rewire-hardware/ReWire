@@ -28,7 +28,7 @@ module ReWire.Crust.Syntax
       , flattenAllTyApp, resInputTy
       , mkTuple, mkTuplePat, mkTupleMPat, tupleTy
       , mkPair, mkPairPat, mkPairMPat
-      , kmonad, tycomp, concrete, higherOrder, fundamental, unTyAnn, mkApp
+      , kmonad, tycomp, concrete, higherOrder, fundamental, unTyAnn, mkApp, mkError
       , TypeAnnotated (..), prettyFP
       ) where
 
@@ -47,6 +47,7 @@ import safe qualified ReWire.Unbound as UB (fv, fvAny)
 
 import Prelude hiding (replicate)
 
+import safe Control.Arrow ((&&&))
 import safe Control.DeepSeq (NFData (..), deepseq)
 import safe Data.Containers.ListUtils (nubOrd)
 import safe Data.Data (Typeable, Data (..))
@@ -245,15 +246,24 @@ instance NFData Ty
 
 ----
 
-data Builtin = Extern
-             | BitIndex
-             | BitSlice
+data Builtin = Error | Extern
              | SetRef | GetRef
-             | Put    | Get
-             | Bind   | Return  | Lift
-             | Signal | Extrude | Unfold
-             | Resize | Bits
-      deriving (Eq, Generic, Show, Typeable, Data)
+             | Bind | Return
+             | Put | Get
+             | Signal | Lift | Extrude | Unfold
+             | VecFromList | VecReplicate | VecReverse | VecSlice | VecRSlice | VecIndex | VecConcat
+             | Bits | Resize | BitSlice | BitIndex
+             | Add | Sub | Mul | Div | Mod | Pow
+             | LAnd | LOr
+             | And | Or
+             | XOr | XNor
+             | LShift | RShift | RShiftArith
+             | Eq | Gt | GtEq | Lt | LtEq
+             | Concat
+             | LNot | Not
+             | RAnd | RNAnd | ROr | RNor | RXOr | RXNor
+             | MSBit
+      deriving (Eq, Generic, Show, Typeable, Data, Bounded, Enum)
       deriving TextShow via FromGeneric Builtin
 
 instance Hashable Builtin
@@ -264,23 +274,7 @@ instance Pretty Builtin where
       pretty = pretty . builtinName
 
 builtins :: [(Text, Builtin)]
-builtins =
-      [ ("externWithSig" , Extern)
-      , ("bitIndex"      , BitIndex)
-      , ("bitSlice"      , BitSlice)
-      , ("setRef"        , SetRef)
-      , ("getRef"        , GetRef)
-      , ("put"           , Put)
-      , ("get"           , Get)
-      , ("rwBind"        , Bind)
-      , ("rwReturn"      , Return)
-      , ("lift"          , Lift)
-      , ("signal"        , Signal)
-      , ("extrude"       , Extrude)
-      , ("unfold"        , Unfold)
-      , ("resize"        , Resize)
-      , ("bits"          , Bits)
-      ]
+builtins = map ((("rwPrim" <>) . showt) &&& id) [minBound .. maxBound]
 
 builtin :: Text -> Maybe Builtin
 builtin b = lookup b builtins
@@ -304,7 +298,6 @@ data Exp = App     Annote           !Exp !Exp
          | LitStr  Annote !Text
          | LitVec  Annote !Ty       ![Exp]
          | LitList Annote !Ty       ![Exp]
-         | Error   Annote !Ty       !Text
          | TypeAnn Annote !Poly     !Exp
       deriving (Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Exp
@@ -367,7 +360,6 @@ instance TypeAnnotated Exp where
             LitStr a _        -> strTy a
             LitList _ t _     -> t
             LitVec _ t _      -> t
-            Error _ t _       -> t
             TypeAnn _ _ e     -> typeOf e
 
 instance Annotated Exp where
@@ -383,7 +375,6 @@ instance Annotated Exp where
             LitStr a _        -> a
             LitList a _ _     -> a
             LitVec a _ _      -> a
-            Error a _ _       -> a
             TypeAnn a _ _     -> a
 
 instance Parenless Exp where
@@ -422,7 +413,6 @@ instance Pretty Exp where
             [LitStr _ v]                                 -> dquotes $ pretty v
             [LitList _ _ vs]                             -> brackets $ hsep $ punctuate comma $ map pretty vs
             [LitVec _ _ vs]                              -> brackets $ hsep $ punctuate comma $ map pretty vs
-            [Error _ t m]                                -> tyAnn (text "error") t <+> dquotes (pretty m)
             [TypeAnn _ pt e]                             -> pretty e <+> text "::" <+> pretty pt
             es                                           -> nest 2 $ hsep $ map mparens es
             where tyAnn :: Doc ann -> Ty -> Doc ann
@@ -756,19 +746,19 @@ isTupleCtor c = c == "(" <> replicate (length (unpack c) - 2) "," <> ")"
 
 isResMonad :: Ty -> Bool
 isResMonad ty = case rangeTy ty of
-      TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReT")) _) _) _) _ -> True
-      _                                                                      -> False
+      TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) _) _) _) _ -> True
+      _                                                                        -> False
 
 resInputTy :: Ty -> Maybe Ty
 resInputTy ty = case rangeTy ty of
-      TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReT")) ip) _) _) _ -> Just ip
-      _                                                                       -> Nothing
+      TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) ip) _) _) _ -> Just ip
+      _                                                                         -> Nothing
 
 isStateMonad :: Ty -> Bool
 isStateMonad ty = case rangeTy ty of
-      TyApp an (TyApp _ (TyApp _ (TyCon _ (n2s -> "StT")) _) m) a -> isStateMonad (tycomp an m a)
-      TyApp _ (TyCon _ (n2s -> "I")) _                            -> True
-      _                                                           -> False
+      TyApp an (TyApp _ (TyApp _ (TyCon _ (n2s -> "StateT")) _) m) a -> isStateMonad (tycomp an m a)
+      TyApp _ (TyCon _ (n2s -> "Identity")) _                        -> True
+      _                                                              -> False
 
 isBlank :: Ty -> Bool
 isBlank = \ case
@@ -811,6 +801,9 @@ unTyAnn = \ case
 
 mkApp :: Annote -> Exp -> [Exp] -> Exp
 mkApp an = foldl' $ App an
+
+mkError :: Annote -> Ty -> Text -> Exp
+mkError an t err = App an (Builtin an (strTy an `arr` t) Error) $ LitStr an err
 
 -- Orphans.
 

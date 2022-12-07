@@ -1,10 +1,9 @@
 module ReWire.Prelude where
 
 import ReWire
-import Prelude ()
+import Prelude (Bool (..))
 import qualified Prelude as GHC
 
-data Bool = False | True
 data Maybe a = Nothing | Just a
 data Either a b = Left a | Right b
 
@@ -86,15 +85,19 @@ undefined = error "undefined"
 
 {-# INLINE return #-}
 return :: GHC.Monad m => a -> m a
-return = rwReturn
+return = rwPrimReturn
+
+{-# INLINE pure #-}
+pure :: GHC.Monad m => a -> m a
+pure = rwPrimReturn
 
 {-# INLINE (>>=) #-}
 (>>=) :: GHC.Monad m => m a -> (a -> m b) -> m b
-(>>=) = rwBind
+(>>=) = rwPrimBind
 
 {-# INLINE (=<<) #-}
 (=<<) :: GHC.Monad m => (a -> m b) -> m a -> m b
-(=<<) = flip rwBind
+(=<<) = flip rwPrimBind
 
 {-# INLINE (>>) #-}
 (>>) :: GHC.Monad m => m a -> m b -> m b

@@ -6,7 +6,8 @@ cabal test.
 -}
 
 import ReWire
-import ReWire.Bits hiding (W32 (..), andW32, xorW32, plusW32, notW32)
+
+data Bit = C | S
 
 plusW32 :: W32 -> W32 -> W32
 plusW32 = extern "plusW32" plusW32
@@ -59,7 +60,7 @@ sigma1 x = (rotateR17 x) `xorW32` (rotateR19 x) `xorW32` (shiftR10 x)
 --- The hashing algorithm
 -------------------------------------------
 
-intermediate :: StT (Oct W32) (StT (Hex W32) (StT (Oct W32) (StT Ctr I))) ()
+intermediate :: StateT (Oct W32) (StateT (Hex W32) (StateT (Oct W32) (StateT Ctr Identity))) ()
 {-# INLINE intermediate #-}
 intermediate = do
   Oct h1 h2 h3 h4 h5 h6 h7 h8 <- lift (lift get)
@@ -70,7 +71,7 @@ intermediate = do
 --- SHA-256 scheduler algorithm
 -------------------------------------------
 
-sched :: StT (Oct W32) (StT (Hex W32) (StT (Oct W32) (StT Ctr I))) W32
+sched :: StateT (Oct W32) (StateT (Hex W32) (StateT (Oct W32) (StateT Ctr Identity))) W32
 {-# INLINE sched #-}
 sched = lift (get >>= \ s ->
               case s of
@@ -87,7 +88,7 @@ updateSched (Hex w00 w01 w02 w03 w04 w05 w06 w07 w08 w09 w10 w11 w12 w13 w14 w15
 --- SHA-256 compression algorithm
 -------------------------------------------
 
-compress :: W32 -> W32 -> StT (Oct W32) (StT (Hex W32) (StT (Oct W32) (StT Ctr I))) ()
+compress :: W32 -> W32 -> StateT (Oct W32) (StateT (Hex W32) (StateT (Oct W32) (StateT Ctr Identity))) ()
 {-# INLINE compress #-}
 compress k w = do s <- get
                   put (step256 k w s)
@@ -129,7 +130,7 @@ data Out = DigestR (Oct W32) | Nix | Hashing
 
 main = undefined
 
-start :: ReT Inp Out I ()
+start :: ReacT Inp Out Identity ()
 start = extrude
          (extrude
            (extrude
@@ -140,10 +141,10 @@ start = extrude
          (Oct w00000000 w00000000 w00000000 w00000000 w00000000 w00000000 w00000000 w00000000)) C0
 
 
-devsha256' :: ReT Inp Out (StT (Oct W32) (StT (Hex W32) (StT (Oct W32) (StT Ctr I)))) ()
+devsha256' :: ReacT Inp Out (StateT (Oct W32) (StateT (Hex W32) (StateT (Oct W32) (StateT Ctr Identity)))) ()
 devsha256' = signal Nix >>= \ i -> dev i
 
-dev :: Inp -> ReT Inp Out (StT (Oct W32) (StT (Hex W32) (StT (Oct W32) (StT Ctr I)))) ()
+dev :: Inp -> ReacT Inp Out (StateT (Oct W32) (StateT (Hex W32) (StateT (Oct W32) (StateT Ctr Identity)))) ()
 dev (Init hw32) = do
                      lift (do
                               lift (lift (put initialSHA256State))
@@ -166,7 +167,7 @@ dev DigestQ     = do
                      i <- signal (DigestR h_n)
                      dev i
 
-genhash' :: StT (Oct W32) (StT (Hex W32) (StT (Oct W32) (StT Ctr I))) Ctr
+genhash' :: StateT (Oct W32) (StateT (Hex W32) (StateT (Oct W32) (StateT Ctr Identity))) Ctr
 {-# INLINE genhash' #-}
 genhash' = do
              ctr <- (lift (lift (lift get)))
@@ -174,7 +175,7 @@ genhash' = do
              lift (lift (lift (put (incCtr ctr))))
              return ctr
 
-loop :: ReT Inp Out (StT (Oct W32) (StT (Hex W32) (StT (Oct W32) (StT Ctr I)))) ()
+loop :: ReacT Inp Out (StateT (Oct W32) (StateT (Hex W32) (StateT (Oct W32) (StateT Ctr Identity)))) ()
 loop   = do
             ctr <- lift genhash'
             i <- signal Hashing

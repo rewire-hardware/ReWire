@@ -1,28 +1,28 @@
+{-# LANGUAGE DataKinds #-}
+import Prelude hiding ((+))
 import ReWire
 import ReWire.Bits
 
-begin :: ReT Bit W8 (StT W8 (StT W8 I)) ()
-begin = lift (put zeroW8) >>= \zz ->
-        lift (lift (put oneW8)) >>= \zz ->
+begin :: ReacT Bit (W 8) (StateT (W 8) (StateT (W 8) Identity)) ()
+begin = lift (put $ lit 0) >>= \zz ->
+        lift (lift (put $ lit 1)) >>= \zz ->
         sig
 
-sig :: ReT Bit W8 (StT W8 (StT W8 I)) ()
+sig :: ReacT Bit (W 8) (StateT (W 8) (StateT (W 8) Identity)) ()
 sig = do
       r0 <- lift get
       i <- signal r0
-      case i of
-            C -> sig
-            S  -> incr
+      if i then incr else sig
 
-incr :: ReT Bit W8 (StT W8 (StT W8 I)) ()
+incr :: ReacT Bit (W 8) (StateT (W 8) (StateT (W 8) Identity)) ()
 incr = do
       r0 <- lift get
       r1 <- lift (lift get)
       lift (put r1)
-      lift (lift (put (plusW8 r0 r1)))
+      lift (lift (put (r0 + r1)))
       sig
 
-start :: ReT Bit W8 I ()
-start = extrude (extrude begin zeroW8) oneW8
+start :: ReacT Bit (W 8) Identity ()
+start = extrude (extrude begin $ lit 0) $ lit 1
 
 main = undefined

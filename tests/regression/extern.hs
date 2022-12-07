@@ -1,37 +1,37 @@
+{-# LANGUAGE DataKinds #-}
+import Prelude hiding ((+))
 import ReWire
 import ReWire.Bits
-import ReWire.Verilog
 
--- plus :: W8 -> W8 -> (W4, W4)
--- plus = externWithSig "plus" (["a", "b"], [("c1", 4), ("c2", 4)]) plus
-plus :: W8 -> W8 -> (W4, W4)
-plus = extern "plus" plus
+plus :: W 8 -> W 8 -> W 8
+plus = (+)
 
-detup :: (W4, W4) -> W8
-detup = resize
+zeroW8 :: W 8
+zeroW8 = lit 0
 
-begin :: ReT Bit W8 (StT W8 (StT W8 I)) ()
+oneW8 :: W 8
+oneW8 = lit 1
+
+begin :: ReacT Bit (W 8) (StateT (W 8) (StateT (W 8) Identity)) ()
 begin = lift (put zeroW8) >>= \zz ->
         lift (lift (put oneW8)) >>= \zz ->
         sig
 
-sig :: ReT Bit W8 (StT W8 (StT W8 I)) ()
+sig :: ReacT Bit (W 8) (StateT (W 8) (StateT (W 8) Identity)) ()
 sig = do
       r0 <- lift get
       i <- signal r0
-      case i of
-            C -> sig
-            S  -> incr
+      if i then incr else sig
 
-incr :: ReT Bit W8 (StT W8 (StT W8 I)) ()
+incr :: ReacT Bit (W 8) (StateT (W 8) (StateT (W 8) Identity)) ()
 incr = do
       r0 <- lift get
       r1 <- lift (lift get)
       lift (put r1)
-      lift (lift (put (detup $ plus r0 r1)))
+      lift (lift (put (plus r0 r1)))
       sig
 
-start :: ReT Bit W8 I ()
+start :: ReacT Bit (W 8) Identity ()
 start = extrude (extrude begin zeroW8) oneW8
 
 main = undefined

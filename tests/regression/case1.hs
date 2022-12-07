@@ -4,13 +4,13 @@ data Ip = Ip
 data Op = Op
 data So
 
-incr :: ReT Ip Op (StT () I) ()
+incr :: ReacT Ip Op (StateT () Identity) ()
 incr = do
       i <- signal Op
       case i of
             Ip -> incr
 
-start :: ReT Ip Op I ()
+start :: ReacT Ip Op Identity ()
 start = extrude incr ()
 
 main = undefined

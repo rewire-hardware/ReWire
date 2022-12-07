@@ -6,7 +6,7 @@ x = True
 y :: Bool
 y = x && x
 
-loop :: Bool -> ReT Bool Bool I ()
+loop :: Bool -> ReacT Bool Bool Identity ()
 loop a = do
   b <- signal ((zookus . zookus) a)
   loop (a && x && y)
@@ -14,7 +14,7 @@ loop a = do
 zookus :: Bool -> Bool
 zookus x = fst (x,x)
 
-start :: ReT Bool Bool I ()
+start :: ReacT Bool Bool Identity ()
 start = loop False
 
 main = undefined

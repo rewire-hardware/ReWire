@@ -5,7 +5,7 @@ cabal-version: 2.2
 -- see: https://github.com/sol/hpack
 
 name:           rewire
-version:        2.2.1
+version:        2.3.0
 synopsis:       A Haskell-to-Verilog/VHDL compiler
 description:    An experimental compiler for a subset of Haskell to Verilog and VHDL.
 category:       Language
@@ -51,7 +51,7 @@ data-files:
     tests/regression/PreludeTest.hs
     tests/regression/putBug.hs
     tests/regression/records.hs
-    tests/regression/salsa.hs
+    tests/regression/sigNothing.hs
     tests/regression/synonym.hs
     tests/regression/test2.hs
     tests/regression/test3.hs
@@ -65,7 +65,6 @@ data-files:
     rewire-user/src/ReWire/Bits.hs
     rewire-user/src/ReWire/Monad.hs
     rewire-user/src/ReWire/Prelude.hs
-    rewire-user/src/ReWire/Verilog.hs
 
 source-repository head
   type: git

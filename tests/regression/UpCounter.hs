@@ -1,10 +1,10 @@
 {-# LANGUAGE DataKinds #-}
+import Prelude hiding ((+))
 import ReWire
-import ReWire.Bits (W, lit)
-import ReWire.Verilog ((+), (<<), (.|.), msbit)
+import ReWire.Bits (Bit, W, lit, resize, msbit, (+), (|.), (<<.))
 
-tick :: ReT Bit (W 8) (StT (W 8) I) Bit
 {-# INLINE tick #-}
+tick :: ReacT Bit (W 8) (StateT (W 8) Identity) Bit
 tick = lift get >>= \ x -> signal x
 
 msbitW8 :: W 8 -> W 8
@@ -14,20 +14,19 @@ incW8 :: W 8 -> W 8
 incW8 n = n + lit 1
 
 rolW8 :: W 8 -> W 8
-rolW8 n = (n << lit 1) .|. msbitW8 n
+rolW8 n = (n <<. (lit 1 :: W 8)) |. msbitW8 n
 
 zeroW8 :: W 8
 zeroW8 = lit 0
 
-go :: ReT Bit (W 8) (StT (W 8) I) ()
+go :: ReacT Bit (W 8) (StateT (W 8) Identity) ()
 go = do
       b <- tick
-      case b of
-            S -> lift get >>= \n -> lift (put (incW8 n))
-            C -> lift get >>= \n -> lift (put (rolW8 n))
+      if b then lift get >>= \n -> lift (put (incW8 n))
+           else lift get >>= \n -> lift (put (rolW8 n))
       go
 
-start :: ReT Bit (W 8) I ()
+start :: ReacT Bit (W 8) Identity ()
 start = extrude go zeroW8
 
 main = undefined

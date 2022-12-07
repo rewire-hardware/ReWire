@@ -1,13 +1,13 @@
 import ReWire
 import ReWire.Bits
 
-convtest :: Bit -> ReT Bit Bit (StT Bit I) ()
+convtest :: Bit -> ReacT Bit Bit (StateT Bit Identity) ()
 convtest b = do
       signal b
       lift (put b)
       convtest b
 
-start :: ReT Bit Bit I ()
-start = extrude (convtest C) C
+start :: ReacT Bit Bit Identity ()
+start = extrude (convtest zero) zero
 
 main = undefined

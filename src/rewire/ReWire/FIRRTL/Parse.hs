@@ -288,8 +288,8 @@ exprNoField = try (binop Validif "validif")
           <|> try (binop Dshr "dshr")      <|> try (unop Cvt "cvt")
           <|> try (unop Neg "neg")         <|> try (unop Not "not")
           <|> try (binop And "and")        <|> try (binop Or "or")
-          <|> try (binop Xor "xor")        <|> try (unop Andr "andr")
-          <|> try (unop Orr "orr")         <|> try (unop Xorr "xorr")
+          <|> try (binop XOr "xor")        <|> try (unop Andr "andr")
+          <|> try (unop Orr "orr")         <|> try (unop XOrr "xorr")
 
           <|> try litInt
           <|> try unbundle
