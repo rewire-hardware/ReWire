@@ -289,6 +289,12 @@ tcMatchPat t = \ case
 
 tcExp :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Exp -> m (Exp, Ty)
 tcExp = \ case
+      App an e1 e2 | isFromList e1 -> do
+            (e2', _) <- tcExp e2
+            case litListElems e2' of
+                  Nothing -> failAt an $ "fromList: argument not a list literal."
+                  -- Note: we instantiate LitVec here. TODO(chathhorn): move this to the inlining pass?
+                  Just es -> tcExp $ LitVec an (TyBlank an) es
       App an e1 e2 -> do
             (e1', te1) <- tcExp e1
             (e2', te2) <- tcExp e2
@@ -369,6 +375,16 @@ tcExp = \ case
             t        <- inst pt
             unify an t te
             pure (TypeAnn an pt e', te)
+
+      where isFromList :: Exp -> Bool
+            isFromList e = case unTyAnn e of
+                  Builtin _ _ VecFromList -> True
+                  _                       -> False
+
+            litListElems :: Exp -> Maybe [Exp]
+            litListElems e = case unTyAnn e of
+                  LitList _ _ es -> pure es
+                  _              -> Nothing
 
 mkApp' :: Annote -> Exp -> [Name Exp] -> Exp
 mkApp' an f holes = mkApp an f $ map (Var an $ TyBlank an) holes

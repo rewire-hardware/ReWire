@@ -244,10 +244,6 @@ freshKVar n = M.KVar <$> fresh (s2n $ "?K_" <> n)
 
 transExp :: (Fresh m, MonadError AstError m) => Renamer -> Exp Annote -> m M.Exp
 transExp rn = \ case
-      App l (Var _ n) (Lit _ (String _ m _))
-            | isError n      -> pure $ M.mkError l (M.TyBlank l) (pack m)
-      App l (Var _ x) (List _ es)
-            | isFromList x   -> M.LitVec l (M.TyBlank l) <$> mapM (transExp rn) es
       App l e1 e2            -> M.App l <$> transExp rn e1 <*> transExp rn e2
       Lambda l [PVar _ x] e  -> do
             e' <- transExp (exclude Value [void x] rn) e

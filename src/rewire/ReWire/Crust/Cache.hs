@@ -182,7 +182,7 @@ getProgram flags fp = do
        >=> pDebug' "[Pass 12] Core."
        $ (ts, syns, ds)
 
-      when (FlagDPass10 `elem` flags) $ liftIO $ do
+      when (FlagDPass12 `elem` flags) $ liftIO $ do
             printHeader "[Pass 12] Core"
             T.putStrLn $ prettyPrint p
             when (FlagV `elem` flags) $ T.putStrLn "\n## Show core:\n"
