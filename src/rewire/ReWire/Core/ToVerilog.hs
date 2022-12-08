@@ -109,8 +109,9 @@ compileStartDefn flags (C.StartDefn _ w loop state0) = do
 
       ((rStart, ssStart), (_, _ : _ : startSigs)) <- flip runStateT (freshInit0, sigs0) (compileCall (FlagFlatten : flags) (mangle state0) (resumptionSize w) [])
 
-      let (stateInit, stateReset, ssStart', startSigs') = if clocked then (initState rStart, Just rStart, ssStart, startSigs)
-                                                                     else (Nothing,          Nothing,     mempty,  mempty)
+      let (stateInit, ssStart', startSigs')
+            | unclocked = (Nothing,          mempty,  mempty)
+            | otherwise = (initState rStart, ssStart, startSigs)
 
       ((rLoop, ssLoop),   (_, _ : _ : loopSigs))  <- flip runStateT (freshRun0, sigs0) $ compileCall flags (mangle loop) (resumptionSize w)
             $  [ V.cat $ map (LVal . Name . fst) $ dispatchWires w | not (null $ dispatchWires w) ]
@@ -122,10 +123,8 @@ compileStartDefn flags (C.StartDefn _ w loop state0) = do
             <> [ Assign lvPause rLoop ]
             <> case stateInit of
                   Just initExp -> [ Initial $ ParAssign lvCurrState initExp ]
+                               <> [ Always (map (Pos . fst) (clock flags) <> rstEdge) $ Block [ ifRst initExp ] ]
                   _            -> [ ]
-            <> case stateReset of
-                  Just rstExp -> [ Always (map (Pos . fst) (clock flags) <> rstEdge) $ Block [ ifRst rstExp ] ]
-                  _           -> [ ]
       where sigs0 :: [Signal]
             sigs0 = map mkSignal [clk0, rst0]
                   where clk0 :: (Name, Size)
@@ -149,12 +148,12 @@ compileStartDefn flags (C.StartDefn _ w loop state0) = do
                         (Block [ ParAssign lvCurrState $ LVal lvNxtState ])
                   _            -> ParAssign lvCurrState $ LVal lvNxtState
 
-            clocked :: Bool
-            clocked = FlagNoClock `notElem` flags && not (null $ stateWires w)
+            unclocked :: Bool
+            unclocked = FlagNoClock `elem` flags || null (dispatchWires w)
 
             -- | Initial/reset state.
             initState :: V.Exp -> Maybe V.Exp
-            initState e = case (expToBV e, fromIntegral (sum $ snd <$> stateWires w)) of
+            initState e = case (expToBV e, fromIntegral (sum $ snd <$> dispatchWires w)) of
                   (Just bv, n) | n > 0 -> pure $ bvToExp $ subRange (0, n - 1) bv
                   (_, n)       | n > 0 -> pure $ bvToExp $ zeros n -- TODO(chathhorn): make configurable?
                   _                    -> Nothing
@@ -163,10 +162,10 @@ compileStartDefn flags (C.StartDefn _ w loop state0) = do
             lvPause = mkLVals $ map (Name . fst) $ pauseWires w
 
             lvCurrState :: LVal
-            lvCurrState = mkLVals $ map (Name . fst) $ stateWires w
+            lvCurrState = mkLVals $ map (Name . fst) $ dispatchWires w
 
             lvNxtState :: LVal
-            lvNxtState = mkLVals $ map (Name . fst) $ nextStateWires w
+            lvNxtState = mkLVals $ map (Name . fst) $ nextDispatchWires w
 
             rstEdge :: [Sensitivity]
             rstEdge = case reset flags of
@@ -182,13 +181,13 @@ compileStartDefn flags (C.StartDefn _ w loop state0) = do
             syncRst = FlagSyncReset `elem` flags
 
             pauseWires :: Wiring -> [(Name, Size)]
-            pauseWires w = pausePrefix w <> nextStateWires w
+            pauseWires w = pausePrefix w <> nextDispatchWires w
 
-            nextStateWires :: Wiring -> [(Name, Size)]
-            nextStateWires w = map (first (<> "_next")) $ stateWires w
+            nextDispatchWires :: Wiring -> [(Name, Size)]
+            nextDispatchWires w = map (first (<> "_next")) $ dispatchWires w
 
             allWires :: Wiring -> [(Name, Size)]
-            allWires w = extraWires w <> stateWires w <> nextStateWires w
+            allWires w = extraWires w <> dispatchWires w <> nextDispatchWires w
 
 compileDefn :: (MonadFail m, MonadError AstError m) => [Flag] -> C.Defn -> m V.Module
 compileDefn flags (C.Defn _ n (Sig _ inps outp) body) = do

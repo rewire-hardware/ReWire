@@ -524,8 +524,13 @@ specialize (ts, syns, vs) = do
                   Match an t e p e' (Just e'') -> Match an t <$> specExp e <*> pure p <*> specExp e' <*> (Just <$> specExp e'')
                   Match an t e p e' Nothing    -> Match an t <$> specExp e <*> pure p <*> specExp e' <*> pure Nothing
                   LitList an t es              -> LitList an t <$> mapM specExp es
+                  LitVec an t es               -> LitVec an t <$> mapM specExp es
                   TypeAnn an pt e              -> TypeAnn an pt <$> specExp e
-                  e                            -> pure e
+                  e@LitInt {}                  -> pure e
+                  e@LitStr {}                  -> pure e
+                  e@Var {}                     -> pure e
+                  e@Con {}                     -> pure e
+                  e@Builtin {}                 -> pure e
 
             sig :: [Exp] -> [AppSig]
             sig = map sig'
@@ -591,22 +596,18 @@ reduce (ts, syns, vs) = (ts, syns, ) <$> mapM reduceDefn vs
                   App an e1 e2      -> do
                         e1' <- reduceExp e1
                         e2' <- reduceExp e2
-                        case e1' of
+                        case unTyAnn e1' of
                               Lam _ _ e -> do
                                     (x, e') <- unbind e
                                     reduceExp $ subst x e2' e'
-                              TypeAnn _ _ (Lam _ _ e) -> do
-                                    (x, e') <- unbind e
-                                    reduceExp $ subst x e2' e'
                               _              -> pure $ App an e1' e2'
-                  Lam an t e      -> do
+                  Lam an t e        -> do
                         (x, e') <- unbind e
                         Lam an t . bind x <$> reduceExp e'
                   Case an t e e1 e2 -> do
                         (p, e1') <- unbind e1
                         e' <- reduceExp e
-                        let mr = matchPat e' p
-                        case mr of
+                        case matchPat e' p of
                               MatchYes sub -> reduceExp $ substs sub e1'
                               MatchMaybe   -> case e2 of
                                     Nothing  -> Case an t e' <$> (bind p <$> reduceExp e1') <*> pure Nothing
@@ -617,10 +618,14 @@ reduce (ts, syns, vs) = (ts, syns, ) <$> mapM reduceDefn vs
                   -- TODO(chathhorn): handle match?
                   Match an t e p e' Nothing    -> Match an t <$> reduceExp e <*> pure p <*> reduceExp e' <*> pure Nothing
                   Match an t e p e' (Just e'') -> Match an t <$> reduceExp e <*> pure p <*> reduceExp e' <*> (Just <$> reduceExp e'')
-                  LitList an t es -> LitList an t <$> mapM reduceExp es
-                  TypeAnn an pt (TypeAnn _ _ e) -> TypeAnn an pt <$> reduceExp e -- TODO(chathhorn)
-                  TypeAnn an pt e               -> TypeAnn an pt <$> reduceExp e
-                  e -> pure e
+                  LitList an t es              -> LitList an t <$> mapM reduceExp es
+                  LitVec an t es               -> LitVec an t <$> mapM reduceExp es
+                  TypeAnn an pt e              -> TypeAnn an pt <$> reduceExp e
+                  e@LitInt {}                  -> pure e
+                  e@LitStr {}                  -> pure e
+                  e@Var {}                     -> pure e
+                  e@Con {}                     -> pure e
+                  e@Builtin {}                 -> pure e
 
             mergeMatches :: [MatchResult] -> MatchResult
             mergeMatches []     = MatchYes []

@@ -75,13 +75,13 @@ interp _flags (Program st ds) = interpStartDefn defnMap st
 interpStartDefn :: MonadError AstError m => DefnMap -> StartDefn -> MealyT m Ins Outs
 interpStartDefn defns (StartDefn _ w loop' state0') = MealyT $ \ _ -> do
             so <- splitOutputs <$> interpDefn defns state0 mempty
-            pure (filterOutput so, unfoldMealyT f $ filterState so)
+            pure (filterOutput so, unfoldMealyT f $ filterDispatch so)
       -- So:        loop   :: ((r, s), i) -> R (o, s)
       --            state0 :: R (o, s)
       --            where R = Done (a, s) | Pause (o, r, s)
       -- Assuming neither should ever be Done.
       where f :: MonadError AstError m => Sts -> Ins -> m (Outs, Sts)
-            f s i = (filterOutput &&& filterState) . splitOutputs <$> interpDefn defns loop (joinInputs $ Map.map outValue s <> i)
+            f s i = (filterOutput &&& filterDispatch) . splitOutputs <$> interpDefn defns loop (joinInputs $ Map.map outValue s <> i)
 
             splitOutputs :: BV -> Outs
             splitOutputs b = Map.fromList $ zip (map fst $ pauseWires w) $ map Out $ toSubRanges b $ map snd $ pauseWires w
@@ -95,14 +95,14 @@ interpStartDefn defns (StartDefn _ w loop' state0') = MealyT $ \ _ -> do
             filterOutput :: Outs -> Outs
             filterOutput = Map.filterWithKey (\ k _ -> k `elem` map fst (outputWires w))
 
-            filterState :: Outs -> Sts
-            filterState = Map.filterWithKey (\ k _ -> k `elem` map fst (stateWires w))
+            filterDispatch :: Outs -> Sts
+            filterDispatch = Map.filterWithKey (\ k _ -> k `elem` map fst (dispatchWires w))
 
             outValue :: Out -> Value
             outValue (Out bv) = nat bv
 
             pauseWires :: Wiring -> [(Name, Size)]
-            pauseWires w = pausePrefix w <> stateWires w
+            pauseWires w = pausePrefix w <> dispatchWires w
 
             loop   = fromMaybe (error "Core: interpStartDefn: no loop.")   $ Map.lookup loop' defns
             state0 = fromMaybe (error "Core: interpStartDefn: no state0.") $ Map.lookup state0' defns
@@ -299,13 +299,13 @@ continue :: (Name, Size)
 continue = ("__continue", 1)
 
 pausePrefix :: Wiring -> [(Name, Size)]
-pausePrefix w = continue : pausePadding w <> outputWires w <> resumptionTag w
+pausePrefix w = continue : pausePadding w <> outputWires w
 
 dispatchWires :: Wiring -> [(Name, Size)]
 dispatchWires w = resumptionTag w <> stateWires w
 
 extraWires :: Wiring -> [(Name, Size)]
-extraWires w = continue : pausePadding w <> resumptionTag w
+extraWires w = continue : pausePadding w
 
 clock :: [Flag] -> [(Name, Size)]
 clock flags | FlagNoClock `elem` flags = []
