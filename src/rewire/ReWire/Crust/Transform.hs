@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts, ScopedTypeVariables, GADTs, OverloadedStrings, MultiWayIf #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
+{-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 module ReWire.Crust.Transform
       ( inline, expandTypeSynonyms, reduce
       , neuterExterns

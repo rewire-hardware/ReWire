@@ -1,4 +1,6 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Core.Interp
       ( interp, interpDefn
@@ -239,16 +241,23 @@ binOp = flip lookup primBinOps
 unOp :: Prim -> Maybe (Size -> BV -> BV)
 unOp = flip lookup primUnOps
 
+type ZB = Integer -> Integer -> Bool
+
 primBinOps :: [(Prim, Size -> BV -> BV -> BV)]
-primBinOps = map (second binBitify)
+primBinOps = map (second zToBV)
       [ (Add         , (+))
       , (Sub         , (-))
       , (Mul         , (*))
       , (Div         , div)
       , (Mod         , mod)
       , (Pow         , (^))
-      , (LAnd        , binIntify (&&))
-      , (LOr         , binIntify (||))
+      , (LAnd        , coerceZ (&&))
+      , (LOr         , coerceZ (||))
+      , (Gt          , coerceZ' (>))
+      , (GtEq        , coerceZ' (>=))
+      , (Lt          , coerceZ' (<))
+      , (LtEq        , coerceZ' (<=))
+      , (Eq          , coerceZ' (==))
       ] <> map (second $ \ op sz a b -> mkBV sz $ nat $ op a b)
       [ (And         , (.&.))
       , (Or          , (.|.))
@@ -268,8 +277,21 @@ primUnOps = map (second $ \ op sz -> mkBV sz . op) unops
                     , (MSBit , \ x -> toInteger $ fromEnum $ testBit x (fromEnum $ width x - 1))
                     ]
 
-binBitify :: (Integer -> Integer -> Integer) -> Size -> BV -> BV -> BV
-binBitify op sz a b = mkBV sz (nat a `op` nat b)
+coerceZ :: (Bounded a, Bounded b, Enum a, Enum b, Enum c) => (a -> b -> c) -> Integer -> Integer -> Integer
+coerceZ f a b = toZ $ f (fromZ a) (fromZ b)
+      where fromZ :: forall a. (Bounded a, Enum a) => Integer -> a
+            fromZ n | fromEnum n >= fromEnum (minBound :: a)
+                    , fromEnum n <= fromEnum (maxBound :: a) = toEnum $ fromEnum n
+                    | otherwise                              = maxBound
+
+coerceZ' :: Enum a => (Integer -> Integer -> a) -> Integer -> Integer -> Integer
+coerceZ' f a b = toZ $ f a b
+
+toZ :: Enum a => a -> Integer
+toZ = toInteger . fromEnum
+
+zToBV :: (Integer -> Integer -> Integer) -> Size -> BV -> BV -> BV
+zToBV op sz a b = mkBV sz (nat a `op` nat b)
 
 binIntify :: (Bool -> Bool -> Bool) -> Integer -> Integer -> Integer
 binIntify op a b = if (a /= 0) `op` (b /= 0) then 1 else 0

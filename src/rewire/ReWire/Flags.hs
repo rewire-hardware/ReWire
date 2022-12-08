@@ -7,7 +7,7 @@ data Flag = FlagO !String
           | FlagDPass1  | FlagDPass2  | FlagDPass3
           | FlagDPass4  | FlagDPass5  | FlagDPass6  | FlagDPass7  | FlagDPass8
           | FlagDPass9  | FlagDPass10 | FlagDPass11 | FlagDPass12 | FlagDPass13
-          | FlagFlatten
+          | FlagNoFlatten
           | FlagInvertReset
           | FlagNoReset | FlagNoClock
           | FlagSyncReset
