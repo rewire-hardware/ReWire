@@ -6,10 +6,11 @@ import ReWire.Annotation
 import ReWire.Error
 import ReWire.Pretty
 import ReWire.Unbound (Name, Fresh, runFreshM, Embed (..) , unbind, n2s)
+import ReWire.Crust.TypeCheck (unify)
 
 import Control.Arrow ((&&&))
 import Control.Monad.Reader (MonadReader (..), ReaderT (..), asks, lift)
-import Control.Monad.State (StateT (..), MonadState, get, gets, put, unless)
+import Control.Monad.State (StateT (..), MonadState, get, gets, put, unless, evalStateT)
 import Data.BitVector (bitVec, zeros, BV)
 import Data.Either (partitionEithers)
 import Data.HashMap.Strict (HashMap)
@@ -150,16 +151,16 @@ transExp e = case e of
             M.Builtin an _ M.GetRef : [M.App _ _ (M.LitStr _ r)]        -> do
                   sz       <- sizeOf an $ M.typeOf e
                   pure $ C.Call an sz (C.GetRef r) C.nil [] C.nil
-            M.Builtin an _ b : [arg] | b == M.Resize || b == M.Bits     -> do
+            M.Builtin an t b : [arg] | b == M.Resize || b == M.Bits     -> do
                   sz       <- sizeOf an $ M.typeOf e
                   arg'     <- transExp arg
                   argSize  <- fromIntegral <$> sizeOf an (M.typeOf arg)
+                  flip evalStateT mempty $ unify an
+                        (M.arrowRight t)
+                        (M.vecTy an (M.TyNat an $ fromIntegral argSize) (M.bitTy an))
                   pure $ C.Call an sz (C.Prim C.Resize) arg' [C.PatVar an argSize] C.nil
-            M.Builtin an _ M.VecConcat : [arg1, arg2]                   -> do
-                  -- TODO(chathhorn): just works for bitvectors
+            M.Builtin _ _ M.VecConcat : [arg1, arg2]                   -> do
                   C.cat <$> mapM transExp [arg1, arg2]
-            M.Builtin an _ M.VecFromList : [M.LitList _ _ args]           -> do
-                  C.cat <$> mapM transExp args
             M.Builtin an _ b : args                                     -> do
                   sz       <- sizeOf an $ M.typeOf e
                   args'    <- C.cat <$> mapM transExp args

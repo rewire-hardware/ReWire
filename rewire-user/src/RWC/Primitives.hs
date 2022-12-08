@@ -226,7 +226,6 @@ rwPrimLOr = GHC.error "Prim: logical or"
 rwPrimAnd :: Vec n Bool -> Vec n Bool -> Vec n Bool
 rwPrimAnd = GHC.error "Prim: bitwise and"
 
--- TODO(chathhorn): removing the dot causes the parser to choke.
 -- | Bitwise or.
 rwPrimOr :: Vec n Bool -> Vec n Bool -> Vec n Bool
 rwPrimOr = GHC.error "Prim: bitwise or"
