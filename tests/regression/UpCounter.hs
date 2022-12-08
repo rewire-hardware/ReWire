@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 import Prelude hiding ((+))
 import ReWire
-import ReWire.Bits (Bit, W, lit, resize, msbit, (+), (|.), (<<.))
+import ReWire.Bits (Bit, W, lit, resize, msbit, (+), (.|.), (<<.))
 
 {-# INLINE tick #-}
 tick :: ReacT Bit (W 8) (StateT (W 8) Identity) Bit
@@ -14,7 +14,7 @@ incW8 :: W 8 -> W 8
 incW8 n = n + lit 1
 
 rolW8 :: W 8 -> W 8
-rolW8 n = (n <<. (lit 1 :: W 8)) |. msbitW8 n
+rolW8 n = (n <<. (lit 1 :: W 8)) .|. msbitW8 n
 
 zeroW8 :: W 8
 zeroW8 = lit 0

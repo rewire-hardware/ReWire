@@ -39,9 +39,9 @@ infixl 8  *, /, %
 infixl 7  +, -
 infixl 6  <<., >>., >>>
 infixl 6  >, >=, <, <=
-infixl 5  &.
+infixl 5  .&.
 infixl 4  ^, ~^
-infixl 3  |.
+infixl 3  .|.
 infixr 2  &&.
 infixr 1  ||.
 infixl 0  <>
@@ -111,15 +111,15 @@ bitIndex = rwPrimBitIndex
 (||.) = rwPrimLOr
 
 -- | Bitwise and.
-{-# INLINE (&.) #-}
-(&.) :: W n -> W n -> W n
-(&.) = rwPrimAnd
+{-# INLINE (.&.) #-}
+(.&.) :: W n -> W n -> W n
+(.&.) = rwPrimAnd
 
 -- TODO(chathhorn): removing the dot causes the parser to choke.
 -- | Bitwise or.
-{-# INLINE (|.) #-}
-(|.) :: W n -> W n -> W n
-(|.) = rwPrimOr
+{-# INLINE (.|.) #-}
+(.|.) :: W n -> W n -> W n
+(.|.) = rwPrimOr
 
 -- | Bitwise exclusive or.
 {-# INLINE (^) #-}
