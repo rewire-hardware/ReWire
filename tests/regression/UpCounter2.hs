@@ -22,8 +22,8 @@ zeroW8 = lit 0
 go :: ReacT Bit (W 8) (StateT (W 8) Identity) ()
 go = do
       b <- tick
-      if b then lift get >>= \n -> lift (put (incW8 n))
-           else lift get >>= \n -> lift (put (rolW8 n))
+      if b then lift get >>= \n -> lift (put (rolW8 n))
+           else lift get >>= \n -> lift (put (incW8 n))
       go
 
 start :: ReacT Bit (W 8) Identity ()

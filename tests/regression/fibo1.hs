@@ -12,7 +12,7 @@ sig :: ReacT Bit (W 8) (StateT (W 8) (StateT (W 8) Identity)) ()
 sig = do
       r0 <- lift get
       i <- signal r0
-      if i then incr else sig
+      if i then sig else incr
 
 incr :: ReacT Bit (W 8) (StateT (W 8) (StateT (W 8) Identity)) ()
 incr = do
