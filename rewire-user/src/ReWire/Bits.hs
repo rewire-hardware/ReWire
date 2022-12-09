@@ -50,7 +50,7 @@ infixl 0  <>
 --   bits or zero-pads to make it fit.
 {-# INLINE lit #-}
 lit :: Integer -> W n
-lit = bits
+lit n = resize (bits n)
 
 -- | Bitvector representation.
 {-# INLINE bits #-}

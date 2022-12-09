@@ -145,15 +145,24 @@ interpExp defns lvars exp = case exp of
                   [x, y] -> pure $ op sz x y
                   _      -> failAt' call' an $ "Core/Interp: interpExp: arity mismatch (" <> showt nm <> ")."
             else pure els'
+      Call an sz (Prim (Replicate n)) e ps els -> do
+            (e', els', call')  <- evaluate e els reCall
+            if patMatches e' ps then case patApplyR e' ps of
+                  [x] -> pure $ mkBV sz $ nat $ BV.replicate n x
+                  _   -> failAt' call' an $ "Core/Interp: interpExp: arity mismatch (Replicate)."
+            else pure els'
       Call an sz (Prim nm@(unOp -> Just op)) e ps els -> do
             (e', els', call')  <- evaluate e els reCall
             if patMatches e' ps then case patApplyR e' ps of
                   [x]    -> pure $ op sz x
                   _      -> failAt' call' an $ "Core/Interp: interpExp: arity mismatch (" <> showt nm <> ")."
             else pure els'
+      Call _ _ (Prim Reverse) e ps els -> do
+            (e', els', _)  <- evaluate e els reCall
+            pure $ if patMatches e' ps then mconcat $ reverse $ patApplyR e' ps else els'
       Call _ sz (Prim Resize) e ps els -> do
             (e', els', _)  <- evaluate e els reCall
-            if patMatches e' ps then pure $ mkBV sz $ nat $ patApply e' ps else pure els'
+            pure $ if patMatches e' ps then mkBV sz $ nat $ patApply e' ps else els'
       Call _ _ (Prim Id) e ps els      -> if patMatchesE e ps then interpExp defns lvars $ patApplyE e ps else do
             (e', els', _)  <- evaluate e els reCall
             pure $ if patMatches e' ps then patApply e' ps else els'
@@ -241,8 +250,6 @@ binOp = flip lookup primBinOps
 unOp :: Prim -> Maybe (Size -> BV -> BV)
 unOp = flip lookup primUnOps
 
-type ZB = Integer -> Integer -> Bool
-
 primBinOps :: [(Prim, Size -> BV -> BV -> BV)]
 primBinOps = map (second zToBV)
       [ (Add         , (+))
@@ -265,8 +272,6 @@ primBinOps = map (second zToBV)
       , (LShift      , (<<.))
       , (RShift      , (>>.))
       , (RShiftArith , ashr)
-      ] <>
-      [ (Replicate, \ sz a b -> mkBV sz $ nat $ BV.replicate (nat a) b)
       ]
 
 primUnOps :: [(Prim, Size -> BV -> BV)]
@@ -292,9 +297,6 @@ toZ = toInteger . fromEnum
 
 zToBV :: (Integer -> Integer -> Integer) -> Size -> BV -> BV -> BV
 zToBV op sz a b = mkBV sz (nat a `op` nat b)
-
-binIntify :: (Bool -> Bool -> Bool) -> Integer -> Integer -> Integer
-binIntify op a b = if (a /= 0) `op` (b /= 0) then 1 else 0
 
 pausePadding :: Wiring -> [(Name, Size)]
 pausePadding w | paddingSize > 0 = [("__padding", fromIntegral paddingSize)]

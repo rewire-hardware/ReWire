@@ -27,7 +27,8 @@ import Data.Hashable (Hashable (hash, hashWithSalt))
 import Data.List (intersperse, genericLength)
 import Data.Text (Text, pack)
 import GHC.Generics (Generic)
-import Prettyprinter (Pretty (..), Doc, vsep, (<+>), nest, hsep, parens, braces, punctuate, comma, dquotes)
+import Numeric.Natural (Natural)
+import Prettyprinter (Pretty (..), Doc, vsep, (<+>), nest, hsep, parens, braces, punctuate, comma, dquotes, tupled)
 import TextShow (TextShow (..), showt)
 import TextShow.Generic (FromGeneric (..))
 import qualified Data.BitVector as BV
@@ -60,12 +61,12 @@ data Prim = Add | Sub
           | LShift | RShift
           | RShiftArith
           | Eq | Gt | GtEq | Lt | LtEq
-          | Replicate
+          | Replicate Natural
           | LNot | Not
           | RAnd | RNAnd
           | ROr | RNor | RXOr | RXNor
           | MSBit
-          | Resize
+          | Resize | Reverse
           | Id
       deriving (Eq, Ord, Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Prim
@@ -92,11 +93,11 @@ instance Pretty Target where
             GetRef n     -> text "getRef" <+> dquotes (text n)
             Prim p       -> text $ showt p
 
-ppBV :: Pretty a => [a] -> Doc an
-ppBV = ppBV' . map pretty
+ppBVTy :: Integral n => n -> Doc an
+ppBVTy n = text "W" <> pretty (fromIntegral n :: Int)
 
-ppBV' :: [Doc an] -> Doc an
-ppBV' = parens . hsep . punctuate comma
+ppBV :: Pretty a => [a] -> Doc an
+ppBV = tupled . map pretty
 
 ---
 
@@ -114,7 +115,7 @@ instance SizeAnnotated ExternSig where
       sizeOf (ExternSig _ _ _ _ rs) = sum (snd <$> rs)
 
 instance Pretty ExternSig where
-      pretty (ExternSig _ _ _ args res) = hsep $ punctuate (text " ->") $ map ((text "BV" <>) . pretty . snd) args <> [parens $ hsep $ punctuate comma $ map ((text "BV" <>) . pretty . snd) res]
+      pretty (ExternSig _ _ _ args res) = hsep $ punctuate (text " ->") $ map (ppBVTy . snd) args <> [parens $ hsep $ punctuate comma $ map (ppBVTy . snd) res]
 
 ---
 
@@ -131,7 +132,7 @@ instance SizeAnnotated Sig where
       sizeOf (Sig _ _ s) = s
 
 instance Pretty Sig where
-      pretty (Sig _ args res) = hsep $ punctuate (text " ->") $ map ((text "BV" <>) . pretty) $ args <> [res]
+      pretty (Sig _ args res) = hsep $ punctuate (text " ->") $ map ppBVTy $ args <> [res]
 
 ---
 
@@ -167,25 +168,25 @@ instance Annotated Exp where
 
 instance Pretty Exp where
       pretty = \ case
-            Lit _ bv             -> text (pack $ showHex bv) <> text "::BV" <> pretty (width bv)
+            Lit _ bv             -> text (pack $ showHex bv) <> text "::" <> ppBVTy (width bv)
             LVar _ _ n           -> text $ "$" <> showt n
             Concat _ e1 e2       -> ppBV $ gather e1 <> gather e2
             Call _ _ f@Const {} e ps els | isNil els -> nest 2 $ vsep
                   [ text "case" <+> pretty e <+> text "of"
-                  , ppBV' (ppPats ps) <+> text "->" <+> pretty f
+                  , tupled (ppPats ps) <+> text "->" <+> pretty f
                   ]
             Call _ _ f@Const {} e ps els -> nest 2 $ vsep
                   [ text "case" <+> pretty e <+> text "of"
-                  , ppBV' (ppPats ps) <+> text "->" <+> pretty f
+                  , tupled (ppPats ps) <+> text "->" <+> pretty f
                   , text "_" <+> text "->" <+> pretty els
                   ]
             Call _ _ f e ps els | isNil els -> nest 2 $ vsep
                   [ text "case" <+> pretty e <+> text "of"
-                  , ppBV' (ppPats ps) <+> text "->" <+> pretty f <+> ppBV' (ppArgs ps)
+                  , tupled (ppPats ps) <+> text "->" <+> pretty f <+> tupled (ppArgs ps)
                   ]
             Call _ _ f e ps els -> nest 2 $ vsep
                   [ text "case" <+> pretty e <+> text "of"
-                  , ppBV' (ppPats ps) <+> text "->" <+> pretty f <+> ppBV' (ppArgs ps)
+                  , tupled (ppPats ps) <+> text "->" <+> pretty f <+> tupled (ppArgs ps)
                   , text "_" <+> text "->" <+> pretty els
                   ]
 
@@ -204,9 +205,9 @@ ppPats :: [Pat] -> [Doc an]
 ppPats = zipWith ppPats' [0::Index ..]
       where ppPats' :: Index -> Pat -> Doc an
             ppPats' i = \ case
-                  PatVar _ sz      -> text "p" <> pretty i <> text "::" <> text "BV" <> pretty sz
-                  PatWildCard _ sz -> text "_" <> text "::" <> text "BV" <> pretty sz
-                  PatLit _ bv      -> text (pack $ showHex bv) <> text "::" <> text "BV" <> pretty (width bv)
+                  PatVar _ sz      -> text "p" <> pretty i <> text "::" <> ppBVTy sz
+                  PatWildCard _ sz -> text "_" <> text "::" <> ppBVTy sz
+                  PatLit _ bv      -> text (pack $ showHex bv) <> text "::" <> ppBVTy (width bv)
 
 ppArgs :: [Pat] -> [Doc an]
 ppArgs = map (uncurry ppArgs') . filter (isPatVar . snd) . zip [0::Index ..]
@@ -250,9 +251,9 @@ instance Annotated Pat where
 
 instance Pretty Pat where
       pretty = \ case
-            PatVar _ s       -> braces $ text "BV" <> pretty s
-            PatWildCard _ s  -> text "_" <> text "BV" <> pretty s <> text "_"
-            PatLit      _ bv -> text (pack $ showHex bv) <> text "::BV" <> pretty (width bv)
+            PatVar _ s       -> braces $ ppBVTy s
+            PatWildCard _ s  -> text "_" <> ppBVTy s <> text "_"
+            PatLit      _ bv -> text (pack $ showHex bv) <> text "::" <> ppBVTy (width bv)
 
 nilPat :: Pat
 nilPat = PatLit noAnn BV.nil
@@ -274,7 +275,7 @@ instance Annotated StartDefn where
 
 instance Pretty StartDefn where
       pretty (StartDefn _ w loop state0) = vsep
-            [ text "Main.start" <+> text "::" <+> text "ReacT" <+> ppBV (map snd $ inputWires w) <+> ppBV (map snd $ outputWires w)
+            [ text "Main.start" <+> text "::" <+> text "ReacT" <+> tupled (map (ppBVTy . snd) $ inputWires w) <+> tupled (map (ppBVTy . snd) $ outputWires w)
             , text "Main.start" <+> text "=" <+> nest 2 (text "unfold" <+> pretty loop <+> pretty state0)
             ]
 

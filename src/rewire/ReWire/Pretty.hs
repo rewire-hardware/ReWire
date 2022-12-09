@@ -25,7 +25,8 @@ prettyPrint :: P.Pretty a => a -> Text
 prettyPrint = prettyPrint' . P.pretty
 
 prettyPrint' :: P.Doc ann -> Text
-prettyPrint' = P.renderStrict . P.layoutPretty P.defaultLayoutOptions
+prettyPrint' = P.renderStrict . P.layoutPretty (P.defaultLayoutOptions
+      { P.layoutPageWidth = P.AvailablePerLine 120 1.0 })
 
 -- TODO(chathhorn): orphan
 instance TextShow (P.Doc ann) where

@@ -24,7 +24,7 @@ module ReWire.Crust.Syntax
       , Poly (..), (|->), poly, poly'
       , rangeTy, paramTys, isPrim, inlineable, mustInline
       , mkArrowTy, nil, isResMonad, isStateMonad
-      , strTy, intTy, bitTy, listTy, pairTy, refTy, vecTy, plusTy, nilTy
+      , strTy, intTy, boolTy, listTy, pairTy, refTy, vecTy, plusTy, nilTy, vecElemTy, vecSize, proxyNat
       , flattenAllTyApp, resInputTy
       , mkTuple, mkTuplePat, mkTupleMPat, tupleTy
       , mkPair, mkPairPat, mkPairMPat
@@ -663,11 +663,26 @@ listTy an = TyApp an $ TyCon an $ s2n "[_]"
 refTy :: Annote -> Ty -> Ty
 refTy an = TyApp an $ TyCon an $ s2n "Ref"
 
-bitTy :: Annote -> Ty
-bitTy an = TyCon an $ s2n "Bit"
+boolTy :: Annote -> Ty
+boolTy an = TyCon an $ s2n "Bool"
 
 vecTy :: Annote -> Ty -> Ty -> Ty
 vecTy an n = TyApp an $ TyApp an (TyCon an $ s2n "Vec") n
+
+vecElemTy :: Ty -> Maybe Ty
+vecElemTy t = case flattenTyApp t of
+      TyCon _ (n2s -> "Vec") : [_, c] -> pure c
+      _                               -> Nothing
+
+vecSize :: Ty -> Maybe Natural
+vecSize t = case flattenTyApp t of
+      TyCon _ (n2s -> "Vec") : [TyNat _ n, _] -> pure n
+      _                                       -> Nothing
+
+proxyNat :: Ty -> Maybe Natural
+proxyNat t = case flattenTyApp t of
+      TyCon _ (n2s -> "Proxy") : [TyNat _ n] -> pure n
+      _                                      -> Nothing
 
 plusTy :: Annote -> Ty -> Ty -> Ty
 plusTy an n = TyApp an $ TyApp an (TyCon an $ s2n "+") n

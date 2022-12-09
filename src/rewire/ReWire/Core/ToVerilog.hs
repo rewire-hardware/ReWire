@@ -260,14 +260,16 @@ compileExp flags lvars = \ case
                   pure (b', [Assign r' $ LVal $ Name a])
             a -> error $ T.unpack $ "Got: " <> prettyPrint a
       Call _ sz (GetRef r) _ _ _                         -> (,[]) <$> wcast sz (LVal $ Name r)
-      Call _ sz (Prim (binOp -> Just op)) e ps els -> mkCall "binOp"  e ps els $ \ [x, y] -> (,[]) <$> wcast sz (op x y)
-      Call _ sz (Prim (unOp -> Just op)) e ps els  -> mkCall "unOp"   e ps els $ \ [x]    -> (,[]) <$> wcast sz (op x)
-      Call _ sz (Prim MSBit) e ps els              -> mkCall "msbit"  e ps els $ \ [x]    -> (,[]) <$> wcast sz (projBit (fromIntegral (argsSize ps) - 1) x)
-      Call _ sz (Prim Resize) e ps els             -> mkCall "resize" e ps els $ \ [x]    -> (,[]) <$> wcast sz x
-      Call _ sz (Prim Id) e ps els                 -> mkCall "id"     e ps els $ \ xs     -> (,[]) <$> wcast sz (V.cat xs)
+      Call _ sz (Prim (binOp -> Just op)) e ps els -> mkCall "binOp"     e ps els $ \ [x, y] -> (,[]) <$> wcast sz (op x y)
+      Call _ sz (Prim (unOp -> Just op)) e ps els  -> mkCall "unOp"      e ps els $ \ [x]    -> (,[]) <$> wcast sz (op x)
+      Call _ sz (Prim MSBit) e ps els              -> mkCall "msbit"     e ps els $ \ [x]    -> (,[]) <$> wcast sz (projBit (fromIntegral (argsSize ps) - 1) x)
+      Call _ sz (Prim Resize) e ps els             -> mkCall "resize"    e ps els $ \ [x]    -> (,[]) <$> wcast sz x
+      Call _ sz (Prim Id) e ps els                 -> mkCall "id"        e ps els $ \ xs     -> (,[]) <$> wcast sz (V.cat xs)
+      Call _ sz (Prim Reverse) e ps els            -> mkCall "reverse"   e ps els $ \ xs     -> (,[]) <$> wcast sz (V.cat $ reverse xs)
+      Call _ sz (Prim (Replicate n)) e ps els      -> mkCall "replicate" e ps els $ \ [x]    -> (,[]) <$> wcast sz (V.Repl (toLit n) x)
       Call a _  (Prim p) _ _ _                     -> failAt a $ "ToVerilog: compileExp: encountered unknown primitive: " <> showt p
-      Call _ sz (Extern sig ex inst) e ps els      -> mkCall ex       e ps els $ instantiate sig ex inst sz
-      Call _ sz (Const bv) e ps els                -> mkCall "lit"    e ps els $ \ _      -> (,[]) <$> wcast sz (bvToExp bv)
+      Call _ sz (Extern sig ex inst) e ps els      -> mkCall ex          e ps els $ instantiate sig ex inst sz
+      Call _ sz (Const bv) e ps els                -> mkCall "lit"       e ps els $ \ _      -> (,[]) <$> wcast sz (bvToExp bv)
       where mkCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
                     => Name -> C.Exp -> [Pat] -> C.Exp -> ([V.Exp] -> m (V.Exp, [Stmt])) -> m (V.Exp, [Stmt])
             mkCall s e ps els f = do
@@ -495,7 +497,6 @@ primBinOps =
       , ( C.GtEq        , V.GtEq)
       , ( C.Lt          , V.Lt)
       , ( C.LtEq        , V.LtEq)
-      , ( C.Replicate   , V.Repl)
       ]
 
 primUnOps :: [(Prim, V.Exp -> V.Exp)]

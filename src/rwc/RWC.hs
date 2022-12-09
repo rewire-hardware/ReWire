@@ -71,6 +71,7 @@ options =
        , Option []    ["loadpath"]            (ReqArg FlagLoadPath    "dir1,dir2,...")   "Additional directories for loadpath."
        , Option []    ["interpret"]           (OptArg FlagInterpret   "inputs.yaml")     "Interpret instead of compile, using inputs from the optional argument file (default: inputs.yaml)."
        , Option []    ["cycles"]              (ReqArg FlagCycles      "ncycles")         "Number of cycles to interpret (default: 10)."
+       , Option []    ["depth"]               (ReqArg FlagEvalDepth   "depth")           "Partial evaluation depth. Higher values can cause non-termination. (default: 8)."
        ]
 
 exitUsage :: IO ()
