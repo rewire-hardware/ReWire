@@ -187,15 +187,16 @@ plus' t | Just (a, b) <- plus t = plus' a <> plus' b
 unify' :: Ty -> Ty -> Maybe Ty
 unify' t1 t2 = subst <$> mgu t1 t2 <*> pure t1
 
-tySub :: (MonadState TySub m, Subst Ty a) => a -> m a
-tySub = gets . flip subst
+tySub :: (Data a, MonadState TySub m, Subst Ty a) => a -> m a
+tySub a = gets (normNats . flip subst a)
+      where normNats :: Data d => d -> d
+            normNats = runIdentity . runPureT (transform $ \ (t :: Ty) -> pure $ mapNat normNat t)
 
 unify :: (MonadError AstError m, MonadState TySub m) => Annote -> Ty -> Ty -> m ()
 unify an t1 t2 = do
       t1' <- tySub t1
       t2' <- tySub t2
-      let fwd = mapNat normNat
-          rev = mapNat normNat'
+      let rev = mapNat normNat'
 --      trace ("Unifying: " <> T.unpack (prettyPrint $ fwd t1')
 --        <> "\n    with: " <> T.unpack (prettyPrint $ fwd t2')) $ pure ()
 --      trace ("     t1': " <> show (unAnn $ fwd t1')) $ pure ()
@@ -206,7 +207,7 @@ unify an t1 t2 = do
 --      trace ("     t1': " <> show (unAnn $ fwd t1')) $ pure ()
 --      trace (" rev t2': " <> show (unAnn $ rev t2')) $ pure ()
 
-      case mgu (fwd t1') (fwd t2') `mplus` mgu (fwd t1') (rev t2') of
+      case mgu t1' t2' `mplus` mgu t1' (rev t2') of
             Just s' -> modify (mergeTySub s')
             _       -> failAt an $ "Types do not unify. Expected and got, respectively:\n"
                               <> prettyPrint t1' <> "\n"
@@ -406,7 +407,6 @@ tcDefn start d  = flip evalStateT mempty $ do
 
       where isStart :: Name Exp -> Bool
             isStart = (== start) . n2s
-
 
 withAssumps :: (MonadError AstError m, MonadReader TCEnv m) => [DataDefn] -> [Defn] -> m a -> m a
 withAssumps ts vs = localAssumps (`Map.union` as) . localCAssumps (`Map.union` cas)

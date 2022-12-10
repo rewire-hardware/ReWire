@@ -8,12 +8,12 @@ type St = StateT (Vec 2 (W 8)) Identity
 first :: St (W 8)
 first = do
       v <- get
-      pure $ index v (Proxy :: Proxy 0)
+      pure $ head v
 
 second :: St (W 8)
 second = do
       v <- get
-      pure $ index v (Proxy :: Proxy 1)
+      pure $ last v
 
 begin :: ReacT Bit (W 8) St ()
 begin = do

@@ -40,6 +40,7 @@ data-files:
     tests/regression/extern.hs
     tests/regression/fibo1.hs
     tests/regression/fibo2.hs
+    tests/regression/fibo3.hs
     tests/regression/fully.hs
     tests/regression/funcase.hs
     tests/regression/guards.hs
@@ -58,7 +59,8 @@ data-files:
     tests/regression/toag.hs
     tests/regression/toags.hs
     tests/regression/uniquification.hs
-    tests/regression/UpCounter.hs
+    tests/regression/UpCounter1.hs
+    tests/regression/UpCounter2.hs
     tests/regression/weird1.hs
     rewire-user/src/ReWire.hs
     rewire-user/src/RWC/Primitives.hs

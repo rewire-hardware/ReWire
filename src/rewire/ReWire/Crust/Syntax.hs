@@ -252,6 +252,7 @@ data Builtin = Error | Extern
              | Put | Get
              | Signal | Lift | Extrude | Unfold
              | VecFromList | VecReplicate | VecReverse | VecSlice | VecRSlice | VecIndex | VecConcat
+             | VecMap | VecFoldR | VecFoldL
              | Bits | Resize | BitSlice | BitIndex
              | Add | Sub | Mul | Div | Mod | Pow
              | LAnd | LOr
