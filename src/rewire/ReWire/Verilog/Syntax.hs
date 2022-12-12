@@ -28,9 +28,15 @@ data Module = Module
       deriving (Eq, Show)
 
 instance Pretty Module where
-      pretty (Module n ps sigs stmt) = text "module" <+> text n
-            <+> nest 2 (parens $ vsep $ punctuate comma $ map pretty ps)
-             <> vsep [nest 2 (vsep ([semi] <> map ((<> semi) . pretty) sigs <> map pretty stmt)), text "endmodule"]
+      pretty (Module n ps sigs stmt) = vsep
+            [ nest 2 ( vsep
+                         ([ text "module" <+> text n <+> (parens $ vsep $ punctuate comma $ map pretty ps) <> semi ]
+                         <> map ((<> semi) . pretty) sigs
+                         <> map pretty stmt
+                         )
+                     )
+            , text "endmodule"
+            ]
 
 data Port = Input  Signal -- can't be reg
           | InOut  Signal -- can't be reg

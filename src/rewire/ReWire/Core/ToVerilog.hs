@@ -91,11 +91,11 @@ getClock = gets snd >>= pure . \ case
 
 compileProgram :: (MonadFail m, MonadError AstError m) => [Flag] -> C.Program -> m V.Program
 compileProgram flags (C.Program st ds)
-      | FlagNoFlatten `elem` flags = do
+      | FlagFlatten `elem` flags = V.Program . pure <$> runReaderT (compileStartDefn flags st) defnMap
+      | otherwise                = do
             st' <- runReaderT (compileStartDefn flags st) defnMap
             ds' <- mapM (compileDefn flags) $ filter ((/= getState0 st) . defnName) ds
             pure $ V.Program $ st' : ds'
-      | otherwise                  = V.Program . pure <$> runReaderT (compileStartDefn flags st) defnMap
       where defnMap :: DefnMap
             defnMap = Map.fromList $ map ((mangle . defnName) &&& defnBody) ds
 
@@ -106,8 +106,7 @@ compileProgram flags (C.Program st ds)
 compileStartDefn :: (MonadError AstError m, MonadFail m, MonadReader DefnMap m)
                  => [Flag] -> C.StartDefn -> m Module
 compileStartDefn flags (C.StartDefn _ w loop state0) = do
-
-      ((rStart, ssStart), (_, _ : _ : startSigs)) <- flip runStateT (freshInit0, sigs0) (compileCall (filter (/= FlagNoFlatten) flags) (mangle state0) (resumptionSize w) [])
+      ((rStart, ssStart), (_, _ : _ : startSigs)) <- flip runStateT (freshInit0, sigs0) (compileCall (FlagFlatten : flags) (mangle state0) (resumptionSize w) [])
 
       let (stateInit, ssStart', startSigs')
             | unclocked = (Nothing,          mempty,  mempty)
@@ -206,17 +205,17 @@ compileDefn flags (C.Defn _ n (Sig _ inps outp) body) = do
 compileCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
              => [Flag] -> GId -> V.Size -> [V.Exp] -> m (V.Exp, [Stmt])
 compileCall flags g sz lvars
-      | FlagNoFlatten `elem` flags = do
-            mr         <- newWire sz "callRes"
-            inst'      <- fresh' g
-            let stmt   =  Instantiate g inst' [] $ zip (repeat mempty) $ lvars <> [LVal mr]
-            pure (LVal mr, [stmt])
-      | otherwise = asks (Map.lookup g) >>= \ case
+      | FlagFlatten `elem` flags = asks (Map.lookup g) >>= \ case
             Just body -> do
                   (e, stmts) <- compileExp flags lvars body
                   e'         <- wcast sz e
                   pure (e', stmts)
             _ -> failAt noAnn $ "ToVerilog: compileCall: failed to find definition for " <> g <> " while flattening."
+      | otherwise = do
+            mr         <- newWire sz "callRes"
+            inst'      <- fresh' g
+            let stmt   =  Instantiate g inst' [] $ zip (repeat mempty) $ lvars <> [LVal mr]
+            pure (LVal mr, [stmt])
 
 instantiate :: (MonadFail m, MonadState SigInfo m, MonadError AstError m) => ExternSig -> GId -> Text -> V.Size -> [V.Exp] -> m (V.Exp, [Stmt])
 instantiate (ExternSig _ ps clk args res) g inst sz lvars = do
@@ -259,7 +258,7 @@ compileExp flags lvars = \ case
                   b' <- wcast sz b
                   pure (b', [Assign r' $ LVal $ Name a])
             a -> error $ T.unpack $ "Got: " <> prettyPrint a
-      Call _ sz (GetRef r) _ _ _                         -> (,[]) <$> wcast sz (LVal $ Name r)
+      Call _ sz (GetRef r) _ _ _                   -> (,[]) <$> wcast sz (LVal $ Name r)
       Call _ sz (Prim (binOp -> Just op)) e ps els -> mkCall "binOp"     e ps els $ \ [x, y] -> (,[]) <$> wcast sz (op x y)
       Call _ sz (Prim (unOp -> Just op)) e ps els  -> mkCall "unOp"      e ps els $ \ [x]    -> (,[]) <$> wcast sz (op x)
       Call _ sz (Prim MSBit) e ps els              -> mkCall "msbit"     e ps els $ \ [x]    -> (,[]) <$> wcast sz (projBit (fromIntegral (argsSize ps) - 1) x)

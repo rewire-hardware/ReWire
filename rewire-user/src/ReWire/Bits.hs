@@ -3,7 +3,7 @@
 module ReWire.Bits where
 
 import ReWire
-import Prelude hiding (head, (<>))
+import Prelude hiding (head, (<>), (==))
 
 type Bit = Bool
 type W n = Vec n Bit
@@ -148,8 +148,13 @@ bitIndex = rwPrimBitIndex
 
 -- | Equal.
 {-# INLINE (==) #-}
-(==) :: W n -> W m -> Bool
+(==) :: W n -> W n -> Bool
 (==) = rwPrimEq
+
+-- | Not equal.
+{-# INLINE (/=) #-}
+(/=) :: W n -> W n -> Bool
+(/=) a b = not (a == b)
 
 -- | Greater-than.
 {-# INLINE (>) #-}

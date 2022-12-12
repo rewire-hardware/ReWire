@@ -33,6 +33,9 @@ import TextShow (TextShow (..))
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
+-- import Debug.Trace (trace)
+-- import Data.Text (unpack)
+
 subst :: Subst b a => HashMap (Name b) b -> a -> a
 subst = substs . Map.toList
 
@@ -121,7 +124,7 @@ mergeTySub :: TySub -> TySub -> TySub
 mergeTySub ts = fixTySub . Map.unionWith merge ts
       where merge :: Ty -> Ty -> Ty
             merge (TyApp an t1 t2) (TyApp _ t1' t2') = TyApp an (merge t1 t1') (merge t2 t2')
-            merge TyVar {}         t'                = t'
+            merge TyVar {}         t                 = t
             merge t                _                 = t
 
 mgu :: Ty -> Ty -> Maybe TySub
@@ -131,9 +134,11 @@ mgu (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) ti ) to )
       s2 <- mergeTySub s1 <$> mgu (subst s1 ti) (subst s1 ti')
       s3 <- mergeTySub s2 <$> mgu (subst s2 oTy) (subst s2 to)
       mergeTySub s3 <$> mgu (subst s3 to) (subst s3 to')
+
 mgu (TyApp _ tl tr)                 (TyApp _ tl' tr')                         = do
-      s1 <- mgu tl tl'
-      mergeTySub s1 <$> mgu (subst s1 tr) (subst s1 tr')
+      let fwd = mgu tl tl' >>= \ s -> mergeTySub s <$> mgu (subst s tr) (subst s tr')
+          rev = mgu tr tr' >>= \ s -> mergeTySub s <$> mgu (subst s tl) (subst s tl')
+      fwd `mplus` rev
 mgu (TyCon _ c1)                    (TyCon _ c2) | n2s c1 == n2s c2           = pure mempty
 
 mgu (TyNat _ n1)                    (TyNat _ n2) | n1 == n2                   = pure mempty
@@ -152,9 +157,8 @@ mgu tu@TyVar {}                     (TyVar _ _ v)                               
 mgu (TyVar _ _ u)                   t                      | u `notElem` fv t = pure $ Map.fromList [(u, t)]
 mgu t                               (TyVar _ _ u)          | u `notElem` fv t = pure $ Map.fromList [(u, t)]
 mgu _                               _                                         = Nothing
-
---      trace ("     MGU: " <> T.unpack (prettyPrint t1)
---        <> "\n    with: " <> T.unpack (prettyPrint t2)) $
+--      trace ("     MGU: " <> unpack (prettyPrint t1)
+--        <> "\n    with: " <> unpack (prettyPrint t2)) $
 --      trace ("      t1: " <> show (unAnn t1)) $
 --      trace ("      t2: " <> show (unAnn t2)) $ Nothing
 
@@ -197,14 +201,13 @@ unify an t1 t2 = do
       t1' <- tySub t1
       t2' <- tySub t2
       let rev = mapNat normNat'
---      trace ("Unifying: " <> T.unpack (prettyPrint $ fwd t1')
---        <> "\n    with: " <> T.unpack (prettyPrint $ fwd t2')) $ pure ()
---      trace ("     t1': " <> show (unAnn $ fwd t1')) $ pure ()
---      trace ("     t2': " <> show (unAnn $ fwd t2')) $ pure ()
---
---      trace ("Unifying: " <> T.unpack (prettyPrint $ fwd t1')
---        <> "\n    with: " <> T.unpack (prettyPrint $ rev t2')) $ pure ()
---      trace ("     t1': " <> show (unAnn $ fwd t1')) $ pure ()
+--      trace ("Unifying: " <> unpack (prettyPrint t1')
+--        <> "\n    with: " <> unpack (prettyPrint t2')) $ pure ()
+--      trace ("     t1': " <> show (unAnn t1')) $ pure ()
+--      trace ("     t2': " <> show (unAnn t2')) $ pure ()
+-- 
+--      trace ("Unifying: " <> unpack (prettyPrint t1')
+--        <> "\n    with: " <> unpack (prettyPrint $ rev t2')) $ pure ()
 --      trace (" rev t2': " <> show (unAnn $ rev t2')) $ pure ()
 
       case mgu t1' t2' `mplus` mgu t1' (rev t2') of

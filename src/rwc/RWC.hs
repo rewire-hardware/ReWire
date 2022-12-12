@@ -5,7 +5,7 @@ module RWC (main) where
 
 import ReWire.Annotation (unAnn)
 import ReWire.FrontEnd (loadProgram, LoadPath)
-import ReWire.Pretty (Pretty, prettyPrint)
+import ReWire.Pretty (Pretty, prettyPrint, fastPrint)
 import qualified ReWire.Core.Syntax as C
 import qualified ReWire.Core.ToVHDL as VHDL
 import qualified ReWire.Core.ToVerilog as Verilog
@@ -59,7 +59,7 @@ options =
        , Option []    ["dpass11"]             (NoArg  FlagDPass11)                       "Dump pass 11: post-second-lambda-lifting crust source."
        , Option []    ["dpass12"]             (NoArg  FlagDPass12)                       "Dump pass 12: core source."
        , Option []    ["dpass13"]             (NoArg  FlagDPass13)                       "Dump pass 13: core source after purging empty types."
-       , Option []    ["no-flatten"]          (NoArg  FlagNoFlatten)                     "Don't flatten RTL output into a single module."
+       , Option []    ["flatten"]             (NoArg  FlagFlatten)                       "Flatten RTL output into a single module (flattening is currently slow, memory-intensive)."
        , Option ['o'] []                      (ReqArg FlagO           "filename.vhdl")   "Name for RTL output file."
        , Option ['p'] ["packages"]            (ReqArg FlagPkgs        "pkg1,pkg2,...")   "Packages to use for external VHDL components (e.g., ieee.std_logic_1164.all)."
        , Option []    ["reset"]               (ReqArg FlagResetName   "name")            "Name to use for reset signal in generated RTL."
@@ -72,6 +72,7 @@ options =
        , Option []    ["interpret"]           (OptArg FlagInterpret   "inputs.yaml")     "Interpret instead of compile, using inputs from the optional argument file (default: inputs.yaml)."
        , Option []    ["cycles"]              (ReqArg FlagCycles      "ncycles")         "Number of cycles to interpret (default: 10)."
        , Option []    ["depth"]               (ReqArg FlagEvalDepth   "depth")           "Partial evaluation depth. Higher values can cause non-termination. (default: 8)."
+       , Option []    ["pretty"]              (NoArg FlagPretty)                         "Attempt to write prettier RTL output at the expense of performance."
        ]
 
 exitUsage :: IO ()
@@ -136,7 +137,13 @@ main = do
 
                   where compile :: C.Program -> SyntaxErrorT AstError IO ()
                         compile a = do
-                              b <- (mergeSlices >=> mergeSlices >=> partialEval >=> mergeSlices >=> dedupe >=> purgeUnused) a -- TODO(chathhorn)
+                              b <-  (    mergeSlices
+                                    >=> mergeSlices
+                                    >=> partialEval
+                                    >=> mergeSlices
+                                    >=> dedupe
+                                    >=> purgeUnused
+                                    ) a -- TODO(chathhorn)
                               when (FlagV `elem` flags) $ liftIO $ putStrLn "Debug: [Pass 13] Reduced core."
                               when (FlagDPass13 `elem` flags) $ liftIO $ do
                                     printHeader "[Pass 13] Reduced Core" -- TODO(chathhorn): pull this out of Crust.Cache
@@ -157,7 +164,8 @@ main = do
                         writeOutput :: Pretty a => a -> SyntaxErrorT AstError IO ()
                         writeOutput a = do
                               fout <- liftIO $ getOutFile flags filename
-                              liftIO $ T.writeFile fout $ prettyPrint a
+                              liftIO $ T.writeFile fout $ if | FlagPretty `elem` flags -> prettyPrint a
+                                                             | otherwise               -> fastPrint a
 
 -- | Replicates/truncates inputs to fill up exactly ncycles cycles.
 boundInput :: Int -> [Ins] -> [Ins]
