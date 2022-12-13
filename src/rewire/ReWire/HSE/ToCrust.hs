@@ -1,11 +1,11 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverloadedStrings, MultiWayIf #-}
 {-# LANGUAGE Safe #-}
-module ReWire.Crust.ToCrust (toCrust, extendWithGlobs, getImps) where
+module ReWire.HSE.ToCrust (toCrust, extendWithGlobs, getImps) where
 
 import ReWire.Annotation hiding (ann)
 import ReWire.Error
-import ReWire.Crust.Fixity
-import ReWire.Crust.Rename hiding (Module)
+import ReWire.HSE.Fixity
+import ReWire.HSE.Rename
 import ReWire.Crust.Syntax ((|->))
 import ReWire.Unbound (s2n, n2s, fresh, Fresh, Name, Embed (..), bind)
 import ReWire.SYB
@@ -24,7 +24,6 @@ import Language.Haskell.Exts.Pretty (prettyPrint)
 import qualified Data.Set                     as Set
 import qualified Data.Map.Strict              as Map
 import qualified Language.Haskell.Exts.Syntax as S
-import qualified ReWire.Crust.Rename          as M
 import qualified ReWire.Crust.Syntax          as M
 
 import Language.Haskell.Exts.Syntax hiding (Annotation, Name, Kind)
@@ -275,12 +274,6 @@ transExp rn = \ case
 
             builtin :: QName Annote -> Maybe M.Builtin
             builtin = M.builtin . pack . prettyPrint . name . rename Value rn
-
-            isError :: QName Annote -> Bool
-            isError n = prettyPrint (name $ rename Value rn n) == "error"
-
-            isFromList :: QName Annote -> Bool
-            isFromList n = prettyPrint (name $ rename Value rn n) == "fromList"
 
 transPat :: MonadError AstError m => Renamer -> Pat Annote -> m M.Pat
 transPat rn = \ case

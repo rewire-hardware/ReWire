@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleContexts #-}
 {-# LANGUAGE Safe #-}
-module ReWire.Crust.Fixity
+module ReWire.HSE.Fixity
       ( fixLocalOps
       , deuniquifyLocalOps
       , getFixities

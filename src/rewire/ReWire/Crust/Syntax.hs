@@ -12,7 +12,7 @@
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.Crust.Syntax
-      ( DataConId (..), TyConId
+      ( Module (..), DataConId (..), TyConId
       , Ty (..), Exp (..), Pat (..), MatchPat (..), Builtin (..), builtins, builtin, builtinName
       , Defn (..), DefnAttr (..), DataDefn (..), TypeSynonym (..), DataCon (..)
       , FreeProgram, Program (..)
@@ -50,6 +50,7 @@ import Prelude hiding (replicate)
 import safe Control.Arrow ((&&&))
 import safe Control.DeepSeq (NFData (..), deepseq)
 import safe Data.Containers.ListUtils (nubOrd)
+import safe Data.Containers.ListUtils (nubOrdOn)
 import safe Data.Data (Typeable, Data (..))
 import safe Data.Hashable (Hashable (..))
 import safe Data.List (intersperse, foldl')
@@ -80,6 +81,22 @@ kmonad = KStar `KFun` KStar
 
 tycomp :: Annote -> Ty -> Ty -> Ty
 tycomp = TyApp
+
+data Module = Module ![DataDefn] ![TypeSynonym] ![Defn]
+      deriving (Show, Generic)
+      deriving TextShow via FromGeneric Module
+
+instance Pretty Module where
+      pretty (Module cs ts ds) = nest 2 $ vsep (text "module" : map pretty cs <> map pretty ts <> map pretty ds)
+
+instance Semigroup Module where
+      -- TODO(chathhorn): shouldn't be necessary
+      (Module a b c) <> (Module a' b' c') = Module (nubOrdOn (n2s . dataName) $ a <> a') (nubOrdOn (n2s . typeSynName) $ b <> b') (nubOrdOn (n2s . defnName) $ c <> c')
+
+instance Monoid Module where
+      mempty = Module [] [] []
+
+---
 
 class TypeAnnotated a where
       typeOf :: a -> Ty

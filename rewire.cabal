@@ -81,19 +81,11 @@ library rewire-core
       ReWire.Core.ToVerilog
       ReWire.Core.ToVHDL
       ReWire.Core.Transform
-      ReWire.Crust.Annotate
-      ReWire.Crust.Cache
-      ReWire.Crust.Desugar
-      ReWire.Crust.Fixity
-      ReWire.Crust.GHCCoreToCrust
       ReWire.Crust.KindCheck
-      ReWire.Crust.Parse
       ReWire.Crust.PrimBasis
       ReWire.Crust.Purify
-      ReWire.Crust.Rename
       ReWire.Crust.Syntax
       ReWire.Crust.ToCore
-      ReWire.Crust.ToCrust
       ReWire.Crust.Transform
       ReWire.Crust.TypeCheck
       ReWire.Error
@@ -103,8 +95,16 @@ library rewire-core
       ReWire.Fix
       ReWire.Flags
       ReWire.FrontEnd
-      ReWire.HaskellSyntaxOrphans
+      ReWire.HSE.Annotate
+      ReWire.HSE.Desugar
+      ReWire.HSE.Fixity
+      ReWire.HSE.GHCCoreToCrust
+      ReWire.HSE.Orphans
+      ReWire.HSE.Parse
+      ReWire.HSE.Rename
+      ReWire.HSE.ToCrust
       ReWire.LoFIRRTL.Syntax
+      ReWire.ModCache
       ReWire.Plugin
       ReWire.Pretty
       ReWire.SYB
@@ -136,6 +136,7 @@ library rewire-core
     , ghc-boot ==9.2.*
     , hashable ==1.4.*
     , haskell-src-exts ==1.23.*
+    , lens
     , machines ==0.7.*
     , monad-resumption ==0.1.*
     , mtl ==2.2.*
@@ -178,6 +179,7 @@ library rwc-lib
     , ghc-boot ==9.2.*
     , hashable ==1.4.*
     , haskell-src-exts ==1.23.*
+    , lens
     , machines ==0.7.*
     , monad-resumption ==0.1.*
     , mtl ==2.2.*
@@ -220,6 +222,7 @@ executable firrtl
     , ghc-boot ==9.2.*
     , hashable ==1.4.*
     , haskell-src-exts ==1.23.*
+    , lens
     , machines ==0.7.*
     , monad-resumption ==0.1.*
     , mtl ==2.2.*
@@ -262,6 +265,7 @@ executable rwc
     , ghc-boot ==9.2.*
     , hashable ==1.4.*
     , haskell-src-exts ==1.23.*
+    , lens
     , machines ==0.7.*
     , monad-resumption ==0.1.*
     , mtl ==2.2.*
@@ -305,6 +309,7 @@ executable rwcx
     , ghc-paths >=0.1.0.12 && <0.2
     , hashable ==1.4.*
     , haskell-src-exts ==1.23.*
+    , lens
     , machines ==0.7.*
     , monad-resumption ==0.1.*
     , mtl ==2.2.*
@@ -349,6 +354,7 @@ test-suite rwc-test
     , ghc-boot ==9.2.*
     , hashable ==1.4.*
     , haskell-src-exts ==1.23.*
+    , lens
     , machines ==0.7.*
     , monad-resumption ==0.1.*
     , mtl ==2.2.*

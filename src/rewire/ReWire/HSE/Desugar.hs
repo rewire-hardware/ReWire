@@ -2,11 +2,11 @@
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
-module ReWire.Crust.Desugar (desugar, addMainModuleHead) where
+module ReWire.HSE.Desugar (desugar, addMainModuleHead) where
 
 import ReWire.Annotation (noAnn, Annote (..))
 import ReWire.Error
-import ReWire.Crust.Rename hiding (Module)
+import ReWire.HSE.Rename
 import ReWire.SYB
 
 import Control.Monad.Catch (MonadCatch)
@@ -20,7 +20,7 @@ import Data.Text (pack)
 import Language.Haskell.Exts.Syntax
 import Language.Haskell.Exts.Pretty (prettyPrint)
 
-import qualified Data.Map.Strict              as Map
+import qualified Data.Map.Strict as Map
 
 -- | Adds the "module Main where" if no module given (but not the "main"
 --   export).

@@ -1,10 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
-module ReWire.Crust.GHCCoreToCrust (toCrust) where
+module ReWire.HSE.GHCCoreToCrust (toCrust) where
 
 import ReWire.Annotation (noAnn)
 import ReWire.Unbound (Embed (..), bind, s2n)
-import qualified ReWire.Crust.Rename          as M
-import qualified ReWire.Crust.Syntax          as M
+import qualified ReWire.HSE.Rename   as M
+import qualified ReWire.Crust.Syntax as M
 import ReWire.Crust.Syntax ((|->))
 
 import GHC.Plugins

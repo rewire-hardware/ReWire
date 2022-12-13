@@ -12,7 +12,7 @@ module ReWire.Annotation
 
 import ReWire.SYB (runPureT,transform)
 import ReWire.Unbound (Alpha (..))
-import ReWire.HaskellSyntaxOrphans ()
+import ReWire.HSE.Orphans ()
 
 import Control.DeepSeq (NFData (..))
 import Control.Monad.Identity (Identity(..))

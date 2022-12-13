@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main (main) where
 
-import ReWire.Crust.GHCCoreToCrust (toCrust)
+import ReWire.HSE.GHCCoreToCrust (toCrust)
 import ReWire.Pretty (prettyPrint)
 
 import GHC.Paths (libdir)

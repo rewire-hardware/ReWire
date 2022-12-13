@@ -1,12 +1,12 @@
 {-# LANGUAGE NamedFieldPuns, Rank2Types, FlexibleInstances, StandaloneDeriving, DeriveGeneric, DerivingVia, FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module ReWire.Crust.Rename
+module ReWire.HSE.Rename
       ( Renamer, fixFixity, getExports, allExports
       , exclude, extend, finger, rename
       , FQName (mod, name), qnamish
       , QNamish
-      , Namespace (..), Module (..)
+      , Namespace (..)
       , Exports, expValue, expType, expFixity, expCtorSigs, getCtors
       , Ctors, FQCtors, CtorSigs, FQCtorSigs
       , setCtors, getLocalTypes, getLocalCtorSigs
@@ -18,15 +18,11 @@ module ReWire.Crust.Rename
 
 import ReWire.Annotation (Annotation, Annote, noAnn)
 import ReWire.Error
-import ReWire.Crust.Fixity
-import ReWire.Crust.Syntax (DataDefn (..), TypeSynonym (..), Defn (..))
-import ReWire.Pretty (text)
-import ReWire.Unbound (n2s)
+import ReWire.HSE.Fixity
 
 import Control.Arrow ((&&&), first)
 import Control.Monad (foldM, void)
 import Control.Monad.State (MonadState)
-import Data.Containers.ListUtils (nubOrdOn)
 import Data.List (find, foldl')
 import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
@@ -36,7 +32,6 @@ import Language.Haskell.Exts.Fixity (Fixity (..), AppFixity (..))
 import Language.Haskell.Exts.Pretty (prettyPrint)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo, noSrcSpan)
 import System.FilePath (joinPath, (<.>))
-import Prettyprinter (Pretty (..), nest, vsep)
 
 import Data.Map.Strict.Internal (Map (..))
 import qualified Data.Map.Strict                        as Map
@@ -77,22 +72,6 @@ data Exports = Exports
       }
       deriving (Show, Generic)
       deriving TextShow via FromGeneric Exports
-
-data Module = Module ![DataDefn] ![TypeSynonym] ![Defn]
-      deriving (Show, Generic)
-      deriving TextShow via FromGeneric Module
-
-instance Pretty Module where
-      pretty (Module cs ts ds) = nest 2 $ vsep (text "module" : map pretty cs <> map pretty ts <> map pretty ds)
-
-instance Semigroup Module where
-      -- TODO(chathhorn): shouldn't be necessary
-      (Module a b c) <> (Module a' b' c') = Module (nubOrdOn (n2s . dataName) $ a <> a') (nubOrdOn (n2s . typeSynName) $ b <> b') (nubOrdOn (n2s . defnName) $ c <> c')
-
-instance Monoid Module where
-      mempty = Module [] [] []
-
----
 
 expValue :: FQName -> Exports -> Exports
 expValue x e@Exports { expValues } = e { expValues = Set.insert x expValues }

@@ -1,13 +1,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Safe #-}
-module ReWire.Crust.Annotate
+module ReWire.HSE.Annotate
       ( annotate
       , Annote
       ) where
 
 import ReWire.Annotation (Annote (..), toSrcSpanInfo)
+import ReWire.HSE.Orphans ()
 import ReWire.SYB
-import ReWire.HaskellSyntaxOrphans ()
 
 import Control.Monad.Identity (Identity (..))
 import Data.Data (Data (..), cast)

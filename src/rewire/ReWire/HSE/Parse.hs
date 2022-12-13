@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.Crust.Parse (tryParseInDir) where
+module ReWire.HSE.Parse (tryParseInDir) where
 
 import ReWire.Error
 

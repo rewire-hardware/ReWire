@@ -11,7 +11,7 @@ import qualified ReWire.Core.ToVHDL as VHDL
 import qualified ReWire.Core.ToVerilog as Verilog
 import ReWire.Core.Transform (mergeSlices, purgeUnused, partialEval, dedupe)
 import ReWire.Core.Interp (interp, Ins, run)
-import ReWire.Crust.Cache (printHeader)
+import ReWire.ModCache (printHeader)
 -- import ReWire.VHDL.ToLoFIRRTL (toLoFirrtl)
 import ReWire.Flags (Flag (..))
 import ReWire.Error (AstError, runSyntaxError, SyntaxErrorT)

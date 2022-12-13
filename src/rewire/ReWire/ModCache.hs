@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.Crust.Cache
+module ReWire.ModCache
       ( runCache
       , getProgram
       , LoadPath
@@ -10,22 +10,22 @@ module ReWire.Crust.Cache
       ) where
 
 import ReWire.Annotation
-import ReWire.Error
-import ReWire.Crust.Annotate
-import ReWire.Crust.Desugar
 import ReWire.Crust.KindCheck
-import ReWire.Crust.Parse
 import ReWire.Crust.PrimBasis
 import ReWire.Crust.Purify
-import ReWire.Crust.Rename
 import ReWire.Crust.Syntax
 import ReWire.Crust.ToCore
-import ReWire.Crust.ToCrust
 import ReWire.Crust.Transform
 import ReWire.Crust.TypeCheck (typeCheck, untype)
-import ReWire.Unbound (runFreshMT, FreshMT (..))
-import ReWire.Pretty
+import ReWire.Error
 import ReWire.Flags (Flag (..))
+import ReWire.HSE.Annotate
+import ReWire.HSE.Desugar
+import ReWire.HSE.Parse
+import ReWire.HSE.Rename
+import ReWire.HSE.ToCrust
+import ReWire.Pretty
+import ReWire.Unbound (runFreshMT, FreshMT (..))
 
 import Control.Arrow ((***))
 import Control.Monad ((>=>), msum, void, when)

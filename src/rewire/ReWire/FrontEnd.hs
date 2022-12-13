@@ -6,7 +6,7 @@ module ReWire.FrontEnd
 
 import ReWire.Core.Syntax (Program)
 import ReWire.Error (SyntaxErrorT, AstError)
-import ReWire.Crust.Cache (runCache, getProgram, LoadPath)
+import ReWire.ModCache (runCache, getProgram, LoadPath)
 import ReWire.Flags (Flag (..))
 
 -- | Opens and parses a file and, recursively, its imports.

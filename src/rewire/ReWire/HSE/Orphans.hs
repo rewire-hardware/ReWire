@@ -1,7 +1,7 @@
 {-# LANGUAGE StandaloneDeriving, DeriveGeneric, DerivingVia #-}
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module ReWire.HaskellSyntaxOrphans () where
+module ReWire.HSE.Orphans () where
 
 import Language.Haskell.Exts.Fixity (Fixity (..))
 import Language.Haskell.Exts.SrcLoc (SrcSpan, SrcSpanInfo)
