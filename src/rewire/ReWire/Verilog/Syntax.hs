@@ -208,6 +208,7 @@ instance Pretty Exp where
             LtEq a b        -> ppBinOp a "<="  b
             GtEq a b        -> ppBinOp a ">="  b
             Cond e1 e2 e3   -> mparens e1 <+> text "?" <+> mparens e2 <+> colon <+> mparens e3
+            Concat [e]      -> pretty e
             Concat es       -> braces $ hsep $ punctuate comma $ map pretty es
             Repl e1 e2      -> braces $ pretty e1 <> braces (pretty e2)
             WCast sz e      -> pretty sz <> text "'" <> parens (pretty e)
