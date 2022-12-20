@@ -49,9 +49,9 @@ options =
        , Option []    ["no-reset"]      (NoArg  FlagNoReset)                       "No implicitly generated reset signal."
        , Option []    ["no-clock"]      (NoArg  FlagNoClock)                       "No implicitly generated clock signal (implies no-reset: generate a purely combinatorial circuit)."
        , Option []    ["sync-reset"]    (NoArg  FlagSyncReset)                     "Only reset on positive clock edge."
-       , Option ['d'] ["dump"]          (ReqArg FlagDump        "1,2,...")         "Dump the itermediate form from the corresponding pass number (1-13)."
-       , Option []    ["flatten"]       (NoArg  FlagFlatten)                       "Flatten RTL output into a single module (flattening is currently slow, memory-intensive)."
-       , Option ['o'] []                (ReqArg FlagO           "filename.vhdl")   "Name for RTL output file."
+       , Option ['d'] ["dump"]          (ReqArg FlagDump        "1,2,...")         "Dump the intermediate form of the corresponding pass number (1-13; see -v output)."
+       , Option []    ["flatten"]       (NoArg  FlagFlatten)                       "Flatten RTL output into a single module (currently slow, memory-intensive)."
+       , Option ['o'] []                (ReqArg FlagO           "filename.vhdl")   "Name for output file."
        , Option ['p'] ["vhdl-packages"] (ReqArg FlagVhdlPkgs    "pkg1,pkg2,...")   "Packages to use for external VHDL components (e.g., ieee.std_logic_1164.all)."
        , Option []    ["reset"]         (ReqArg FlagResetName   "name")            "Name to use for reset signal in generated RTL."
        , Option []    ["clock"]         (ReqArg FlagClockName   "name")            "Name to use for clock signal in generated RTL."
@@ -63,11 +63,11 @@ options =
        , Option []    ["interpret"]     (OptArg FlagInterpret   "inputs.yaml")     "Interpret instead of compile, using inputs from the optional argument file (default: inputs.yaml)."
        , Option []    ["cycles"]        (ReqArg FlagCycles      "ncycles")         "Number of cycles to interpret (default: 10)."
        , Option []    ["depth"]         (ReqArg FlagEvalDepth   "depth")           "Partial evaluation depth. Higher values can cause non-termination. (default: 8)."
-       , Option []    ["pretty"]        (NoArg  FlagPretty)                        "Attempt to write prettier RTL output at the expense of performance."
+       , Option []    ["pretty"]        (NoArg  FlagPretty)                        "Attempt to output prettier RTL at the expense of performance."
        ]
 
 exitUsage :: IO a
-exitUsage = T.hPutStr stderr (pack $ usageInfo "Usage: rwc [OPTION...] <filename.hs>" options) >> exitFailure
+exitUsage = T.hPutStr stderr (pack $ usageInfo "\nUsage: rwc [OPTION...] <filename.hs>" options) >> exitFailure
 
 -- | Print errors, usage, then exit.
 exitUsage' :: [Text] -> IO a
@@ -76,20 +76,17 @@ exitUsage' errs = do
       exitUsage
 
 getSystemLoadPath :: IO [FilePath]
-getSystemLoadPath = do
-      lib   <- getDataFileName $ "rewire-user" </> "src"
-      pure [lib]
+getSystemLoadPath = pure <$> getDataFileName ("rewire-user" </> "src")
 
 main :: IO ()
 main = do
       (flags, filenames, errs) <-  getOpt Permute options <$> getArgs
 
-      when (not (null errs)) $ exitUsage' (map pack errs)
+      when (not $ null errs) $ exitUsage' (map pack errs)
 
-      conf <- either (exitUsage' . pure) pure $ Config.interpret flags
-
+      conf     <- either (exitUsage' . pure) pure $ Config.interpret flags
       systemLP <- getSystemLoadPath
-      let lp   = conf^.loadPath <> systemLP <> ["."]
+      let lp    = conf^.loadPath <> systemLP <> ["."]
 
       when (conf^.verbose) $ putStrLn ("loadpath: " <> intercalate "," lp)
 
@@ -111,7 +108,7 @@ compileFile conf lp filename = do
                         >=> dedupe
                         >=> purgeUnused
                         ) a -- TODO(chathhorn)
-                  when (conf^.verbose) $ liftIO $ putStrLn "Debug: [Pass 13] Reduced core."
+                  when (conf^.verbose)   $ liftIO $ putStrLn "Debug: [Pass 13] Reduced core."
                   when (conf^.dump $ 13) $ liftIO $ do
                         printHeader "[Pass 13] Reduced Core" -- TODO(chathhorn): pull this out of Crust.Cache
                         T.putStrLn $ prettyPrint b
