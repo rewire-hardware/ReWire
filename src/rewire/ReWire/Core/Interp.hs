@@ -11,10 +11,9 @@ module ReWire.Core.Interp
       , subRange
       , dispatchWires, pausePrefix, extraWires
       , resumptionSize
-      , clock, reset
       ) where
 
-import ReWire.Flags (Flag (..))
+import ReWire.Config (Config)
 import ReWire.Core.Syntax
       ( Program (..)
       , Name, Value, Index, Size
@@ -31,7 +30,6 @@ import ReWire.Annotation (ann, noAnn, Annote)
 import ReWire.Error (failAt', MonadError, AstError)
 
 import Control.Arrow ((&&&), second)
-import Control.Monad (msum)
 import Control.Monad.Except (throwError)
 import Data.BitVector (BV, bitVec, (@@), nat, width, showHex, (>>.), (<<.), (==.), ashr)
 import Data.Bits (Bits (..))
@@ -69,8 +67,8 @@ type DefnMap = HashMap GId Defn
 run :: Monad m => MealyT m a b -> [a] -> m [b]
 run m ip = M.runT (M.autoT m <~ source ip)
 
-interp :: MonadError AstError m => [Flag] -> Program -> MealyT m Ins Outs
-interp _flags (Program st ds) = interpStartDefn defnMap st
+interp :: MonadError AstError m => Config -> Program -> MealyT m Ins Outs
+interp _conf (Program st ds) = interpStartDefn defnMap st
       where defnMap :: DefnMap
             defnMap = Map.fromList $ map (defnName &&& id) ds
 
@@ -330,22 +328,6 @@ dispatchWires w = resumptionTag w <> stateWires w
 
 extraWires :: Wiring -> [(Name, Size)]
 extraWires w = continue : pausePadding w
-
-clock :: [Flag] -> [(Name, Size)]
-clock flags | FlagNoClock `elem` flags = []
-            | otherwise                = [(sClk, 1)]
-      where sClk :: Name
-            sClk = fromMaybe "clk" $ msum $ map (\ case
-                  FlagClockName s -> Just $ pack s
-                  _               -> Nothing) flags
-
-reset :: [Flag] -> [(Name, Size)]
-reset flags | FlagNoReset `elem` flags || FlagNoClock `elem` flags = []
-            | otherwise                                            = [(sRst, 1)]
-      where sRst :: Name
-            sRst = fromMaybe (if FlagInvertReset `elem` flags then "rst_n" else "rst") $ msum $ map (\ case
-                  FlagResetName s -> Just $ pack s
-                  _               -> Nothing) flags
 
 unfoldMealyT :: Applicative m => (s -> a -> m (b, s)) -> s -> MealyT m a b
 unfoldMealyT f = go

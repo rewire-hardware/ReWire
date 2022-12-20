@@ -4,11 +4,11 @@ module ReWire.FrontEnd
       , LoadPath
       ) where
 
+import ReWire.Config (Config)
 import ReWire.Core.Syntax (Program)
 import ReWire.Error (SyntaxErrorT, AstError)
 import ReWire.ModCache (runCache, getProgram, LoadPath)
-import ReWire.Flags (Flag (..))
 
 -- | Opens and parses a file and, recursively, its imports.
-loadProgram :: [Flag] -> LoadPath -> FilePath -> SyntaxErrorT AstError IO Program
-loadProgram flags lp fp = runCache (getProgram flags fp) lp
+loadProgram :: Config -> LoadPath -> FilePath -> SyntaxErrorT AstError IO Program
+loadProgram conf lp fp = runCache (getProgram conf fp) lp

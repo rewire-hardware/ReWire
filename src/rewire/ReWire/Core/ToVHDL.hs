@@ -2,21 +2,21 @@
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Core.ToVHDL (compileProgram) where
 
+import ReWire.Config (Config, vhdlPackages, reset, resetFlags, ResetFlag (..))
 import ReWire.Annotation
 import ReWire.Core.Syntax as C hiding (Name, Index, Size)
 import ReWire.Error
 import ReWire.Core.Mangle
 import ReWire.VHDL.Syntax as V
-import ReWire.Flags (Flag (..))
 
+import Control.Lens ((^.))
 import Control.Monad (zipWithM)
 import Control.Monad.Reader (ReaderT (..), ask)
 import Control.Monad.State (StateT (..), get, put, lift)
-import Data.List (genericLength, find, foldl')
-import Data.List.Split (splitOn)
-import Data.Bits (testBit)
-import Data.Text (Text, pack)
 import Data.BitVector (width, nat)
+import Data.Bits (testBit)
+import Data.List (genericLength, find, foldl')
+import Data.Text (Text)
 
 import TextShow (showt)
 
@@ -166,8 +166,8 @@ mkDefnArch (Defn _ n _ body) = do
       pure $ Architecture (mangle n <> "Impl") (mangle n) sigs comps (stmts <> [Assign (LHSName "res") (ExprName nres)])
 
 -- TODO(chathhorn): support breaking out states (sts).
-compileStartDefn :: MonadError AstError m => [Flag] -> StartDefn -> CM m Unit
-compileStartDefn flags (StartDefn an w n_loopfun n_startstate) = do
+compileStartDefn :: MonadError AstError m => Config -> StartDefn -> CM m Unit
+compileStartDefn conf (StartDefn an w n_loopfun n_startstate) = do
       put ([], [], 0) -- empty out signal and component store, reset name counter
       let stateSize = sizeOf t_startstate
           inpSize   = sum $ map snd inps
@@ -186,7 +186,7 @@ compileStartDefn flags (StartDefn an w n_loopfun n_startstate) = do
             ] <> zipWith (\ n s -> Port n In  (TyStdLogicVector s)) (map fst inps)  (map snd inps)
               <> zipWith (\ n s -> Port n Out (TyStdLogicVector s)) (map fst outps) (map snd outps)
       (sigs, comps, _) <- get
-      pure $ Unit (uses flags) (Entity "top_level" ports) $
+      pure $ Unit (conf^.vhdlPackages) (Entity "top_level" ports) $
             Architecture "top_level_impl" "top_level" sigs comps
                   [ Instantiate "start_call" (mangle n_startstate) (PortMap [("res", ExprName "start_state")])
                   , Instantiate "loop_call" (mangle n_loopfun) (PortMap
@@ -218,12 +218,11 @@ compileStartDefn flags (StartDefn an w n_loopfun n_startstate) = do
              --           )
                   ]
       where rstSignal :: Bit
-            rstSignal | FlagInvertReset `elem` flags = Zero
-                      | otherwise                    = One
+            rstSignal | Inverted `elem` (conf^.resetFlags) = Zero
+                      | otherwise                          = One
 
             rst :: Text
-            rst | FlagInvertReset `elem` flags = "rst_n"
-                | otherwise                    = "rst"
+            rst = conf^.reset
 
             outputs :: [Stmt]
             outputs = fst $ foldl' (\ (as, off) (n, sz) ->
@@ -236,15 +235,9 @@ compileStartDefn flags (StartDefn an w n_loopfun n_startstate) = do
                   Sig _ (a : _) _ -> a
             t_startstate = sigState0 w
 
-compileDefn :: MonadError AstError m => [Flag] -> Defn -> CM m Unit
-compileDefn flags d = Unit (uses flags) <$> mkDefnEntity d <*> mkDefnArch d
+compileDefn :: MonadError AstError m => Config -> Defn -> CM m Unit
+compileDefn conf d = Unit (conf^.vhdlPackages) <$> mkDefnEntity d <*> mkDefnArch d
 
-compileProgram :: MonadError AstError m => [Flag] -> C.Program -> m V.Program
-compileProgram flags p = fmap fst $ flip runReaderT (defns p) $ flip runStateT ([], [], 0) $ V.Program <$> ((:) <$> compileStartDefn flags (start p) <*> mapM (compileDefn flags) (defns p))
-
-uses :: [Flag] -> [Text]
-uses flags = "ieee.std_logic_1164.all" : concatMap getUses flags
-      where getUses :: Flag -> [Text]
-            getUses (FlagPkgs pkgs) = map pack $ splitOn "," pkgs
-            getUses _               = []
+compileProgram :: MonadError AstError m => Config -> C.Program -> m V.Program
+compileProgram conf p = fmap fst $ flip runReaderT (defns p) $ flip runStateT ([], [], 0) $ V.Program <$> ((:) <$> compileStartDefn conf (start p) <*> mapM (compileDefn conf) (defns p))
 

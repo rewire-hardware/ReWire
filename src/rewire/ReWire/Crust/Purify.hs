@@ -35,10 +35,6 @@ freshVar = fresh . s2n
 freshVars :: Fresh m => Text -> [b] -> m [(Name a, b)]
 freshVars v = mapM (\ (i, b) -> (, b) <$> freshVar (v <> showt i)) . zip [0 :: Int ..]
 
-replaceAtIndex :: Int -> a -> [a] -> [a]
-replaceAtIndex n item ls = a ++ (item : b)
-      where (a, _ : b) = splitAt n ls
-
 poly2Ty :: Fresh m => Poly -> m Ty
 poly2Ty (Poly p) = snd <$> unbind p
 
@@ -67,7 +63,7 @@ purify start (ts, syns, ds) = do
 
       rhoS      <- mkPureEnv ms nameNpolyS
       rhoR      <- mkPureEnv ms nameNpolyR
-      let rho = rhoS ++ rhoR
+      let rho = rhoS <> rhoR
 
       pure_smds <- mapM (purifyStateDefn rho ms) smds
 
@@ -79,9 +75,9 @@ purify start (ts, syns, ds) = do
 
       disp <- mkDispatch i o ms iv pes
 
-      pure ( filter (not . isAorR) ts ++ [mkRDatatype dcs] ++ [mkADatatype $ Map.toList allAs]
+      pure ( filter (not . isAorR) ts <> [mkRDatatype dcs] <> [mkADatatype $ Map.toList allAs]
            , syns
-           , mkStart start i o ms : disp : ods ++ pure_smds ++ pure_rmds
+           , mkStart start i o ms : disp : ods <> pure_smds <> pure_rmds
            )
 
       where getCanonReacTy :: Fresh m => [Defn] -> m (Maybe (Ty, Ty, [Ty], Set Ty))
@@ -157,7 +153,7 @@ mkStart start i o ms = Defn
 -- Won't work if called on a non-extrude application.
 flattenExtr :: Exp -> (Exp, [Exp])
 flattenExtr = \ case
-      App _ (App _ (Builtin _ _ Extrude) arg1) arg2 -> second (++ [arg2]) $ flattenExtr arg1
+      App _ (App _ (Builtin _ _ Extrude) arg1) arg2 -> second (<> [arg2]) $ flattenExtr arg1
       e@(App _ _ rand)                              -> first (const e) $ flattenExtr rand
       e                                             -> (e, [])
 
@@ -246,7 +242,7 @@ purifyStateDefn rho ms d = do
       nstos        <- freshVars "sigma" ms
       let stos      = map (mkVar $ ann d) nstos
       e'           <- purifyStateBody rho stos ms (length ms - length ms') e
-      let b_pure    = bind (args ++ map fst nstos) e'
+      let b_pure    = bind (args <> map fst nstos) e'
       pure $ d { defnName = d_pure, defnPolyTy = [] |-> p_pure, defnBody = Embed b_pure }
       where Embed body = defnBody d
             Embed phi  = defnPolyTy d
@@ -269,7 +265,7 @@ purifyResDefn start rho ms d = do
       --
       let args'  = if isStart dname then [] else args
           nstos' = if isStart dname then [] else nstos
-          b_pure = bind (args' ++ nstos') e'
+          b_pure = bind (args' <> nstos') e'
           p_pure = if isStart dname then [] |-> rangeTy pure_ty else [] |-> pure_ty
           d_pure = if isStart dname then s2n "$Pure.start" else dname
 
@@ -305,7 +301,7 @@ purifyTy an ms t = case classifyTy t of
       where purifyResTy :: Ty -> Maybe Ty
             purifyResTy t = do
                   (_, o, _, _) <- dstReacT $ rangeTy t
-                  pure $ mkArrowTy (paramTys t ++ ms) $ mkRangeTy o ms
+                  pure $ mkArrowTy (paramTys t <> ms) $ mkRangeTy o ms
 
             -- Takes
             -- >    T1 -> T2 -> ... -> Tn -> StateT S1 (StateT S2 (... (StateT Sm I))) T
@@ -320,7 +316,7 @@ purifyTy an ms t = case classifyTy t of
             purifyStateTTy ms t = do
                   let r        = rangeTy t
                   a           <- dstCompR r
-                  pure $ mkArrowTy (paramTys t ++ ms) $ tupleTy (MsgAnnote "Purify: purifyStateTTy") $ a : ms
+                  pure $ mkArrowTy (paramTys t <> ms) $ tupleTy (MsgAnnote "Purify: purifyStateTTy") $ a : ms
 
             classifyTy :: Ty -> TyVariety
             classifyTy = \ case
@@ -415,9 +411,9 @@ purifyStateBody rho stos stys i = classifyCases >=> \ case
 
       CLift _ e        -> purifyStateBody rho stos stys (i + 1) e
 
-      CPut an e        -> pure $ mkTuple an $ nil : replaceAtIndex i e stos
+      CPut an e        -> mkTuple an . (nil :) <$> replaceAtIndex an i e stos
 
-      CApply an t n es -> mkPureApp an rho t n $ es ++ stos
+      CApply an t n es -> mkPureApp an rho t n $ es <> stos
 
       -- e1 must be simply-typed, so don't purify it.
       CMatch an e1 mp e2 e3 -> do
@@ -429,10 +425,15 @@ purifyStateBody rho stos stys i = classifyCases >=> \ case
             a           <- liftMaybe (ann e) "Purify: invalid type in bind" $ dstCompR $ typeOf e
             ns          <- freshVars "st" $ a : stys
             (f, tf, es) <- dstApp g
-            g_pure_app  <- mkPureApp an rho tf f $ es ++ map (mkVar an) ns
+            g_pure_app  <- mkPureApp an rho tf f $ es <> map (mkVar an) ns
             let p        = mkTuplePat an $ map patVar ns
             e'          <- purifyStateBody rho stos stys i e
             mkLet an p e' g_pure_app
+
+      where replaceAtIndex :: MonadError AstError m => Annote -> Int -> a -> [a] -> m [a]
+            replaceAtIndex an n item ls = case splitAt n ls of
+                  (a, _ : b) | n >= 0 -> pure $ a <> (item : b)
+                  _                   -> failAt an "Purify: replaceAtIndex: invalid index (this should never happen)"
 
 maybe' :: Monad m => Maybe (m a) -> m (Maybe a)
 maybe' = maybe (pure Nothing) (Just <$>)
@@ -536,18 +537,18 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
             let svars = map (uncurry $ flip $ Var an) ns  -- [s1, ..., sn]
             let vars  = zipWith (flip $ Var an) xs ts'   -- [x1, ..., xn]
             iv <- getI
-            g_pure_app <- mkPureApp an rho a g $ vars ++ Var an i iv : svars
+            g_pure_app <- mkPureApp an rho a g $ vars <> (Var an i iv : svars)
             -- "dispatch (R_g e1 ... ek, (s1, ..., sn)) i = g_pure e1 ... ek i s1 ... sn"
             addResPoint g (mkRDataCon an r_g ts') (pairpat, g_pure_app) -- "R_g T1 ... Tk"
 
             let rGes  = mkApp an (Con an (mkArrowTy ts' rTy) r_g) es
-            let outer = mkTuple an $ [e, rGes] ++ stos
+            let outer = mkTuple an $ [e, rGes] <> stos
             pure $ mkRight outer             -- Right ((e, R_g e1 ... ek), (s1, (..., sm)))
 
       -- purifyResBody (signal e)         = "(Right ((e, (s1, (..., sm))), R_ret))"
       RSignal an e -> do
             addNakedSignal an
-            pure $ mkRight $ mkTuple an $ [e, Con an rTy $ s2n "R_return"] ++ stos
+            pure $ mkRight $ mkTuple an $ [e, Con an rTy $ s2n "R_return"] <> stos
 
       -- purifyResBody (e >>= g)          = "let
       --   -- N.B.: The irrefutable pattern here is
@@ -576,7 +577,7 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
             -- calculating g_pure_app = "g_pure v s1 ... sm"
             let vars     = map (mkVar an) svars
             (f, t, es)  <- dstApp g
-            g_pure_app  <- mkPureApp an rho t f $ es ++ Var an ert v : vars
+            g_pure_app  <- mkPureApp an rho t f $ es <> (Var an ert v : vars)
             -- done calculating g_pure_app
             mkLet an p e' g_pure_app
 
@@ -612,7 +613,7 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
             (e@App {}, stos)   -> do
                   (f, t, es) <- dstApp e
                   t'         <- purifyTy (ann e) ms t
-                  pure $ mkApp (ann e) (Var (ann e) t' f) $ es ++ stos
+                  pure $ mkApp (ann e) (Var (ann e) t' f) $ es <> stos
             (e, _)             -> failAt (ann e) $ "Purify: extruded device is non-variable: " <> showt e
 
       RApp an rty rator rands -> do
@@ -620,7 +621,7 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
             -- N.b., don't think it's necessary to purify the rands because
             -- they're simply typed.
             (f, t, stos') <- dstApp rator'
-            mkPureApp an rho t f $ rands ++ stos'
+            mkPureApp an rho t f $ rands <> stos'
 
        -- e1 must be simply-typed, so don't purify it.
       RMatch an e1 mp e2 e3 -> do

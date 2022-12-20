@@ -16,6 +16,7 @@ module ReWire.Crust.Transform
       , freeTyVarsToNil
       ) where
 
+import ReWire.Config (Config, depth)
 import ReWire.Unbound
       ( Fresh (..), s2n, n2s
       , substs, subst, unembed
@@ -29,9 +30,9 @@ import ReWire.Crust.Syntax
 import ReWire.Crust.TypeCheck (typeCheckDefn)
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fix, fix', boundedFix)
-import ReWire.Flags (Flag (..))
 import ReWire.SYB
 
+import Control.Lens ((^.))
 import Control.Arrow (first, (&&&))
 import Control.Monad (foldM_, zipWithM, replicateM, (>=>))
 import Control.Monad.Catch (MonadCatch)
@@ -443,20 +444,10 @@ purgeUnused except (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ exte
 
 -- | Repeatedly calls "reduce" and "specialize" -- attempts to remove
 -- higher-order functions by partially evaluating them.
-simplify :: (Fresh m, MonadError AstError m) => [Flag] -> FreeProgram -> m FreeProgram
-simplify flags = flip evalStateT mempty . boundedFix tst depth (specialize >=> reduce)
+simplify :: (Fresh m, MonadError AstError m) => Config -> FreeProgram -> m FreeProgram
+simplify conf = flip evalStateT mempty . boundedFix tst (conf^.depth) (specialize >=> reduce)
       where tst :: FreeProgram -> FreeProgram -> Bool
             tst (_, _, vs) (_, _, vs') = hash (unAnn vs) == hash (unAnn vs')
-
-            depth :: Int
-            depth = case filter isFlagEvalDepth flags of
-                  FlagEvalDepth d : _ -> read d
-                  _                   -> 8
-
-            isFlagEvalDepth :: Flag -> Bool
-            isFlagEvalDepth = \ case
-                  FlagEvalDepth _ -> True
-                  _               -> False
 
 type SpecState = StateT (HashMap (Name Exp, [AppSig]) Defn)
 type AppSig = Maybe Exp

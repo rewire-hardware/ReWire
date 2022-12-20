@@ -2,6 +2,7 @@
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Crust.ToCore (toCore) where
 
+import ReWire.Config (Config, inputSigs, outputSigs, stateSigs)
 import ReWire.Annotation
 import ReWire.Error
 import ReWire.Pretty
@@ -9,6 +10,7 @@ import ReWire.Unbound (Name, Fresh, runFreshM, Embed (..) , unbind, n2s)
 import ReWire.Crust.TypeCheck (unify)
 
 import Control.Arrow ((&&&))
+import Control.Lens ((^.))
 import Control.Monad.Reader (MonadReader (..), ReaderT (..), asks, lift)
 import Control.Monad.State (StateT (..), MonadState, get, gets, put, unless, evalStateT)
 import Data.BitVector (bitVec, zeros, BV)
@@ -28,12 +30,12 @@ type SizeMap = HashMap M.Ty C.Size
 type ConMap = (HashMap (Name M.TyConId) [Name M.DataConId], HashMap (Name M.DataConId) M.Ty)
 type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) C.LId) m)
 
-toCore :: (Fresh m, MonadError AstError m, MonadFail m) => Text -> [Text] -> [Text] -> [Text] -> M.FreeProgram -> m C.Program
-toCore start inps outps sts (ts, _, vs) = fst <$> flip runStateT mempty (do
+toCore :: (Fresh m, MonadError AstError m, MonadFail m) => Config -> Text -> M.FreeProgram -> m C.Program
+toCore conf start (ts, _, vs) = fst <$> flip runStateT mempty (do
       mapM_ ((`runReaderT` conMap) . sizeOf noAnn . M.TyCon noAnn . M.dataName) ts
       intSz <- gets $ maximum . Map.elems
       put $ Map.singleton (M.intTy noAnn) intSz -- TODO(chathhorn): note the sizeof Integer is the max of all non-Integer-containing types.
-      vs'    <- mapM (transDefn start inps outps sts conMap) $ filter (not . M.isPrim . M.defnName) vs
+      vs'    <- mapM (transDefn conf start conMap) $ filter (not . M.isPrim . M.defnName) vs
       case partitionEithers vs' of
             ([startDefn], defns) -> pure $ C.Program startDefn defns
             _                    -> failAt noAnn $ "toCore: no definition found: " <> start)
@@ -48,8 +50,8 @@ toCore start inps outps sts (ts, _, vs) = fst <$> flip runStateT mempty (do
             projType :: M.DataCon -> M.Ty
             projType (M.DataCon _ _ (Embed (M.Poly t))) = runFreshM (snd <$> unbind t)
 
-transDefn :: (MonadError AstError m, Fresh m, MonadState SizeMap m, MonadFail m) => Text -> [Text] -> [Text] -> [Text] -> ConMap -> M.Defn -> m (Either C.StartDefn C.Defn)
-transDefn start inps outps sts conMap = \ case
+transDefn :: (MonadError AstError m, Fresh m, MonadState SizeMap m, MonadFail m) => Config -> Text -> ConMap -> M.Defn -> m (Either C.StartDefn C.Defn)
+transDefn conf start conMap = \ case
       M.Defn an n (Embed (M.Poly t)) _ (Embed e) | n2s n == start -> do
             (_, t')  <- unbind t
             case t' of
@@ -66,9 +68,9 @@ transDefn start inps outps sts conMap = \ case
                                         t_sts'         = t_st' - sum t_sts : t_sts
                                     loopTy'           <- runReaderT (transType loopTy) conMap
                                     state0Ty'         <- runReaderT (transType state0Ty) conMap
-                                    let wires = C.Wiring (zip (inps  <> map (("__in" <>) . showt)  [0::C.Index ..]) (filter (> 0) t_ins'))
-                                                         (zip (outps <> map (("__out" <>) . showt) [0::C.Index ..]) (filter (> 0) t_outs'))
-                                                         (zip (sts <> map (("__st" <>) . showt)    [0::C.Index ..]) (filter (> 0) t_sts'))
+                                    let wires = C.Wiring (zip (conf^.inputSigs)  (filter (> 0) t_ins'))
+                                                         (zip (conf^.outputSigs) (filter (> 0) t_outs'))
+                                                         (zip (conf^.stateSigs)  (filter (> 0) t_sts'))
                                                          loopTy'
                                                          state0Ty'
                                     pure $ Left $ C.StartDefn an wires (n2s loop) (n2s state0)
@@ -241,7 +243,7 @@ transExp e = case e of
             subElems :: (Fresh m, MonadError AstError m, MonadState SizeMap m) => Annote -> M.Exp -> Integer -> Natural -> TCM m C.Exp
             subElems an arg i nElems = do
                   sz     <- fromIntegral <$> sizeOf an (M.typeOf arg)
-                  elemTy <- maybe (failAt (ann arg) $ "ToCore: subElems: non-vector type argument") pure
+                  elemTy <- maybe (failAt (ann arg) "ToCore: subElems: non-vector type argument") pure
                               $ M.vecElemTy $ M.typeOf arg
                   elemSz <- fromIntegral <$> sizeOf an elemTy
                   arg'   <- transExp arg

@@ -75,6 +75,7 @@ source-repository head
 library rewire-core
   exposed-modules:
       ReWire.Annotation
+      ReWire.Config
       ReWire.Core.Interp
       ReWire.Core.Mangle
       ReWire.Core.Syntax

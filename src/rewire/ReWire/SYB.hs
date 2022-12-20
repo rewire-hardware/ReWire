@@ -19,7 +19,7 @@ everywhere :: (Monad m, Data a) => (forall d. Data d => d -> m d) -> a -> m a
 everywhere f = gmapM (everywhere f) >=> f
 
 generalizeA :: (Monad m, Typeable a) => (a -> m b) -> forall d. Typeable d => d -> MaybeT m b
-generalizeA f x = maybe mzero lift (f <$> cast x)
+generalizeA f x = maybe mzero (lift . f) $ cast x
 
 generalize :: (Monad m, Typeable a) => (a -> m a) -> forall d. Typeable d => d -> MaybeT m d
 generalize f = generalizeA f >=> tr

@@ -9,6 +9,7 @@ module ReWire.ModCache
       , printHeader
       ) where
 
+import ReWire.Config (Config, verbose, top, dump)
 import ReWire.Annotation
 import ReWire.Crust.KindCheck
 import ReWire.Crust.PrimBasis
@@ -18,7 +19,6 @@ import ReWire.Crust.ToCore
 import ReWire.Crust.Transform
 import ReWire.Crust.TypeCheck (typeCheck, untype)
 import ReWire.Error
-import ReWire.Flags (Flag (..))
 import ReWire.HSE.Annotate
 import ReWire.HSE.Desugar
 import ReWire.HSE.Parse
@@ -27,27 +27,26 @@ import ReWire.HSE.ToCrust
 import ReWire.Pretty
 import ReWire.Unbound (runFreshMT, FreshMT (..))
 
+import Control.Lens ((^.))
 import Control.Arrow ((***))
 import Control.Monad ((>=>), msum, void, when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Reader (runReaderT, ReaderT, asks)
 import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify, lift)
 import Data.Containers.ListUtils (nubOrd)
-import Data.List.Split (splitOn)
+import Data.HashMap.Strict (HashMap)
 import Data.Text (Text, pack)
+import Language.Haskell.Exts.Syntax hiding (Annotation, Exp, Module (..), Namespace, Name, Kind)
+import Numeric.Natural (Natural)
 import System.FilePath ((</>), takeDirectory)
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-
 import TextShow (showt)
 
-import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict          as Map
+import qualified Data.Text                    as T
+import qualified Data.Text.IO                 as T
+import qualified Language.Haskell.Exts.Pretty as P
 import qualified Language.Haskell.Exts.Syntax as S (Module (..))
 import qualified ReWire.Core.Syntax           as Core
-import qualified Language.Haskell.Exts.Pretty as P
-
-import Language.Haskell.Exts.Syntax hiding (Annotation, Exp, Module (..), Namespace, Name, Kind)
 
 type Cache = ReaderT LoadPath (StateT ModCache (FreshMT (SyntaxErrorT AstError IO)))
 type LoadPath = [FilePath]
@@ -56,11 +55,11 @@ type ModCache = HashMap FilePath (Module, Exports)
 runCache :: Cache a -> LoadPath -> SyntaxErrorT AstError IO a
 runCache m lp = fst <$> runFreshMT (runStateT (runReaderT m lp) mempty)
 
-mkRenamer :: [Flag] -> FilePath -> S.Module SrcSpanInfo -> Cache Renamer
-mkRenamer flags pwd' m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps m)
+mkRenamer :: Config -> FilePath -> S.Module SrcSpanInfo -> Cache Renamer
+mkRenamer conf pwd' m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps m)
       where mkRenamer' :: ImportDecl SrcSpanInfo -> Cache Renamer
             mkRenamer' (ImportDecl _ (void -> m) quald _ _ _ (fmap void -> as) specs) = do
-                  (_, exps) <- getModule flags pwd' $ toFilePath m
+                  (_, exps) <- getModule conf pwd' $ toFilePath m
                   fromImps m quald exps as specs
 
 -- Pass 1    Parse.
@@ -70,8 +69,8 @@ mkRenamer flags pwd' m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImp
 -- Pass 15   Translate to crust + rename globals.
 -- Pass 16   Translate to core
 
-getModule :: [Flag] -> FilePath -> FilePath -> Cache (Module, Exports)
-getModule flags pwd fp = pDebug flags ("fetching module: " <> pack fp <> " (pwd: " <> pack pwd <> ")") >> Map.lookup fp <$> get >>= \ case
+getModule :: Config -> FilePath -> FilePath -> Cache (Module, Exports)
+getModule conf pwd fp = pDebug conf ("fetching module: " <> pack fp <> " (pwd: " <> pack pwd <> ")") >> Map.lookup fp <$> get >>= \ case
       Just p  -> pure p
       Nothing -> do
             modify $ Map.insert fp mempty
@@ -86,7 +85,7 @@ getModule flags pwd fp = pDebug flags ("fetching module: " <> pack fp <> " (pwd:
                               (pure . (elideDot *** addMainModuleHead))
                         $ msum mmods
 
-            rn         <- mkRenamer flags pwd' m
+            rn         <- mkRenamer conf pwd' m
             imps       <- loadImports pwd' m
 
             -- Phase 1 (haskell-src-exts) transformations.
@@ -96,29 +95,29 @@ getModule flags pwd fp = pDebug flags ("fetching module: " <> pack fp <> " (pwd:
                       >=> pDebug' "Annotating."
                       >=> annotate
                       >=> pDebug' "[Pass 1] Pre-desugaring."
-                      >=> whenSet FlagDPass1 (printInfoHSE "[Pass 1] Haskell: Pre-desugaring" rn imps)
+                      >=> whenDump 1 (printInfoHSE "[Pass 1] Haskell: Pre-desugaring" rn imps)
                       >=> pDebug' "Desugaring."
                       >=> desugar rn
                       >=> pDebug' "[Pass 2] Post-desugaring."
-                      >=> whenSet FlagDPass2 (printInfoHSE "[Pass 2] Haskell: Post-desugaring" rn imps)
+                      >=> whenDump 2 (printInfoHSE "[Pass 2] Haskell: Post-desugaring" rn imps)
                       >=> pDebug' "Translating to crust."
                       >=> toCrust rn
                       $ m
 
             let Module ts syns ds = m' <> imps
-            _ <- whenSet FlagDPass3 (printInfo $ "[Pass 3] Crust: Synthetic per-module: " <> pack fp) (ts, syns, ds)
+            _ <- whenDump 3 (printInfo $ "[Pass 3] Crust: Synthetic per-module: " <> pack fp) (ts, syns, ds)
 
             modify $ Map.insert fp (m' <> imps, exps)
             pure (m' <> imps, exps)
 
       where loadImports :: Annotation a => FilePath -> S.Module a -> Cache Module
-            loadImports pwd' = fmap mconcat . mapM (fmap fst . getModule flags pwd' . toFilePath . void . importModule) . getImps
+            loadImports pwd' = fmap mconcat . mapM (fmap fst . getModule conf pwd' . toFilePath . void . importModule) . getImps
 
-            whenSet :: Applicative m => Flag -> (Bool -> a -> m a) -> a -> m a
-            whenSet f m = if f `elem` flags then m $ FlagV `elem` flags else pure
+            whenDump :: Applicative m => Natural -> (Bool -> a -> m a) -> a -> m a
+            whenDump n m = if (conf^.dump) n then m $ conf^.verbose else pure
 
             pDebug' :: MonadIO m => Text -> a -> m a
-            pDebug' s a = pDebug flags (pack fp <> ": " <> s) >> pure a
+            pDebug' s a = pDebug conf (pack fp <> ": " <> s) >> pure a
 
             elideDot :: FilePath -> FilePath
             elideDot = \ case
@@ -126,24 +125,24 @@ getModule flags pwd fp = pDebug flags ("fetching module: " <> pack fp <> " (pwd:
                   d   -> d </> takeDirectory fp
 
 -- Phase 2 (pre-core) transformations.
-getProgram :: [Flag] -> FilePath -> Cache Core.Program
-getProgram flags fp = do
-      (Module ts syns ds,  _)  <- getModule flags "." fp
+getProgram :: Config -> FilePath -> Cache Core.Program
+getProgram conf fp = do
+      (Module ts syns ds,  _)  <- getModule conf "." fp
 
       p <- pure
        >=> pDebug' "[Pass 4] Adding primitives and inlining."
-       >=> whenSet FlagDPass4 (printInfo "[Pass 4] Crust: Post-desugaring")
+       >=> whenDump 4 (printInfo "[Pass 4] Crust: Post-desugaring")
        >=> pure . addPrims
        >=> inline
        >=> prePurify
        >=> pDebug' "Expanding type synonyms and simplifying."
        >=> expandTypeSynonyms
        >=> pDebug' "[Pass 5] Post-inlining, before typechecking."
-       >=> whenSet FlagDPass5 (printInfo "[Pass 5] Crust: Post-inlining")
+       >=> whenDump 5 (printInfo "[Pass 5] Crust: Post-inlining")
        >=> pDebug' "Typechecking."
        >=> kindCheck >=> typeCheck start
        >=> pDebug' "[Pass 6] Post-typechecking."
-       >=> whenSet FlagDPass6 (printInfo "[Pass 6] Crust: Post-typechecking")
+       >=> whenDump 6 (printInfo "[Pass 6] Crust: Post-typechecking")
        >=> pDebug' "Simplifying and reducing."
        >=> pDebug' "Removing type annotations."
        >=> pDebug' "Removing Haskell definitions for externs."
@@ -151,22 +150,22 @@ getProgram flags fp = do
        >=> pDebug' "Removing unused definitions."
        >=> pure . purgeUnused (start : (fst <$> builtins))
        >=> pDebug' "[Pass 7] Pre-simplification."
-       >=> whenSet FlagDPass7 (printInfo "[Pass 7] Crust: Pre-simplify")
+       >=> whenDump 7 (printInfo "[Pass 7] Crust: Pre-simplify")
        >=> pDebug' "Simplifying."
-       >=> simplify flags
+       >=> simplify conf
        >=> removeExpTypeAnn
        >=> pDebug' "[Pass 8] Post-simplification."
-       >=> whenSet FlagDPass8 (printInfo "[Pass 8] Crust: Post-simplify")
+       >=> whenDump 8 (printInfo "[Pass 8] Crust: Post-simplify")
        >=> pDebug' "Lifting lambdas (pre-purification)."
        >=> shiftLambdas >=> liftLambdas
        >=> pDebug' "Removing unused definitions (again)."
        >=> pure . purgeUnused (start : (fst <$> builtins))
        >=> pDebug' "[Pass 9] Pre-purification."
-       >=> whenSet FlagDPass9 (printInfo "[Pass 9] Crust: Pre-purification")
+       >=> whenDump 9 (printInfo "[Pass 9] Crust: Pre-purification")
        >=> pDebug' "Purifying."
        >=> purify start
        >=> pDebug' "[Pass 10] Post-purification."
-       >=> whenSet FlagDPass10 (printInfo "[Pass 10] Crust: Post-purification")
+       >=> whenDump 10 (printInfo "[Pass 10] Crust: Post-purification")
        >=> pDebug' "Lifting lambdas (post-purification)."
        >=> liftLambdas
        >=> pDebug' "Fully apply global function definitions."
@@ -174,58 +173,34 @@ getProgram flags fp = do
        >=> pDebug' "Removing unused definitions (again)."
        >=> pure . purgeUnused [start]
        >=> pDebug' "[Pass 11] Post-purification."
-       >=> whenSet FlagDPass11 (printInfo "[Pass 11] Crust: Post-second-lambda-lifting")
+       >=> whenDump 11 (printInfo "[Pass 11] Crust: Post-second-lambda-lifting")
        -- >=> pDebug' "Substituting the unit/nil type for remaining free type variables."
        -- >=> pure . freeTyVarsToNil
        >=> pDebug' "Translating to core & HDL."
-       >=> toCore start (concatMap getInputNames flags) (concatMap getOutputNames flags) (concatMap getStateNames flags)
+       >=> toCore conf start
        >=> pDebug' "[Pass 12] Core."
        $ (ts, syns, ds)
 
-      when (FlagDPass12 `elem` flags) $ liftIO $ do
+      when ((conf^.dump) 12) $ liftIO $ do
             printHeader "[Pass 12] Core"
             T.putStrLn $ prettyPrint p
-            when (FlagV `elem` flags) $ T.putStrLn "\n## Show core:\n"
-            when (FlagV `elem` flags) $ T.putStrLn $ showt $ unAnn p
+            when (conf^.verbose) $ do
+                  T.putStrLn "\n## Show core:\n"
+                  T.putStrLn $ showt $ unAnn p
 
       pure p
 
-      where whenSet :: Applicative m => Flag -> (Bool -> a -> m a) -> a -> m a
-            whenSet f m = if f `elem` flags then m $ FlagV `elem` flags else pure
+      where whenDump :: Applicative m => Natural -> (Bool -> a -> m a) -> a -> m a
+            whenDump n m = if (conf^.dump) n then m $ conf^.verbose else pure
 
             pDebug' :: MonadIO m => Text -> a -> m a
-            pDebug' s a = pDebug flags s >> pure a
-
-            getInputNames :: Flag -> [Text]
-            getInputNames = \ case
-                  FlagInputNames [] -> []
-                  FlagInputNames ns -> map pack $ splitOn "," ns
-                  _                 -> []
-
-            getOutputNames :: Flag -> [Text]
-            getOutputNames = \ case
-                  FlagOutputNames [] -> []
-                  FlagOutputNames ns -> map pack $ splitOn "," ns
-                  _                  -> []
-
-            getStateNames :: Flag -> [Text]
-            getStateNames = \ case
-                  FlagStateNames []  -> []
-                  FlagStateNames sts -> map pack $ splitOn "," sts
-                  _                  -> []
+            pDebug' s a = pDebug conf s >> pure a
 
             start :: Text
-            start = case filter isFlagTop flags of
-                  FlagTop s : _ -> pack s
-                  _             -> "Main.start"
+            start = conf^.top
 
-            isFlagTop :: Flag -> Bool
-            isFlagTop = \ case
-                  FlagTop _ -> True
-                  _         -> False
-
-pDebug :: MonadIO m => [Flag] -> Text -> m ()
-pDebug flags s = when (FlagV `elem` flags) $ liftIO $ T.putStrLn $ "Debug: " <> s
+pDebug :: MonadIO m => Config -> Text -> m ()
+pDebug conf s = when (conf^.verbose) $ liftIO $ T.putStrLn $ "Debug: " <> s
 
 printHeader :: MonadIO m => Text -> m ()
 printHeader hd = do

@@ -296,7 +296,7 @@ tcExp = \ case
       App an e1 e2 | isFromList e1 -> do
             (e2', _) <- tcExp e2
             case litListElems e2' of
-                  Nothing -> failAt an $ "fromList: argument not a list literal."
+                  Nothing -> failAt an "fromList: argument not a list literal."
                   -- Note: we instantiate LitVec here. TODO(chathhorn): move this to the inlining pass?
                   Just es -> tcExp $ LitVec an (TyBlank an) es
       App an e1 e2 -> do
