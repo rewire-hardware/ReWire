@@ -23,6 +23,11 @@ source-repository head
 
 library
   exposed-modules:
+      PreWire
+      PreWire.Bit
+      PreWire.BitWord
+      PreWire.Primitives
+      PreWire.Word
       ReWire
       ReWire.Bits
       ReWire.Monad
@@ -40,6 +45,7 @@ library
     , ghc-typelits-natnormalise
     , monad-resumption
     , mtl
+    , vector-sized
   default-language: Haskell2010
 
 test-suite rewire-user-test
@@ -58,4 +64,5 @@ test-suite rewire-user-test
     , monad-resumption
     , mtl
     , rewire-user
+    , vector-sized
   default-language: Haskell2010
