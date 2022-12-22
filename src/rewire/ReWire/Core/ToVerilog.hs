@@ -102,10 +102,10 @@ compileProgram conf (C.Program st ds)
 compileStartDefn :: (MonadError AstError m, MonadFail m, MonadReader DefnMap m)
                  => Config -> C.StartDefn -> m Module
 compileStartDefn conf (C.StartDefn an w loop state0) = do
-      ((rStart, ssStart), (_, startSigs)) <- flip runStateT (freshInit0, sigs0)
+      ((rStart, ssStart), (_, startSigs)) <- flip runStateT (freshInit0, [])
             $ compileCall (flatten.~True $ clock.~clock' $ conf) (mangle state0) (resumptionSize w) []
 
-      ((rLoop, ssLoop),   (_, loopSigs))  <- flip runStateT (freshRun0, sigs0)
+      ((rLoop, ssLoop),   (_, loopSigs))  <- flip runStateT (freshRun0, [])
             $ compileCall (clock.~clock' $ conf) (mangle loop) (resumptionSize w)
                   $  [ V.cat $ map (LVal . Name . fst) $ dispatchWires w | not (null $ dispatchWires w) ]
                   <> [ V.cat $ map (LVal . Name . fst) $ inputWires w    | not (null $ inputWires w) ]
@@ -122,12 +122,7 @@ compileStartDefn conf (C.StartDefn an w loop state0) = do
                     , Always (Pos clock' : rstEdge) $ Block [ ifRst initExp ]
                     ]
 
-      where -- sigs0 :: [Signal]
-            -- sigs0 = catMaybes [clockSig, resetSig]
-            sigs0 :: [Signal]
-            sigs0 = []
-
-            clockSig :: Maybe Signal
+      where clockSig :: Maybe Signal
             clockSig | T.null clock' = Nothing
                      | otherwise     = pure $ mkSignal (clock', 1)
 

@@ -39,12 +39,12 @@ infixl 8  *, /, %
 infixl 7  +, -
 infixl 6  <<., >>., >>>
 infixl 6  >, >=, <, <=
+infixr 6  <>
 infixl 5  .&.
 infixl 4  ^, ~^
 infixl 3  .|.
 infixr 2  &&.
 infixr 1  ||.
-infixl 0  <>
 
 -- | Interpret an Integer literal into a bit vector. Truncates most significant
 --   bits or zero-pads to make it fit.
@@ -179,7 +179,7 @@ bitIndex = rwPrimBitIndex
 -- | Concatenate.
 {-# INLINE (<>) #-}
 (<>) :: W n -> W m -> W (n + m)
-(<>) = rwPrimConcat
+(<>) = rwPrimVecConcat
 
 -- | Logical not.
 {-# INLINE lnot #-}

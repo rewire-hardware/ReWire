@@ -24,6 +24,7 @@ dependencies:
 - base >= 4.7 && < 5
 - mtl
 - monad-resumption
+- vector-sized
 - ghc-typelits-natnormalise
 
 library:

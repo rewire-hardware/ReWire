@@ -276,7 +276,6 @@ data Builtin = Error | Extern
              | XOr | XNor
              | LShift | RShift | RShiftArith
              | Eq | Gt | GtEq | Lt | LtEq
-             | Concat
              | LNot | Not
              | RAnd | RNAnd | ROr | RNor | RXOr | RXNor
              | MSBit

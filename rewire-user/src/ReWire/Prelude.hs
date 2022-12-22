@@ -44,6 +44,7 @@ not :: Bool -> Bool
 not True  = False
 not False = True
 
+{-# INLINE otherwise #-}
 otherwise :: Bool
 otherwise = True
 

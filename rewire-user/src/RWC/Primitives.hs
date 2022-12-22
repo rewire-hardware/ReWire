@@ -46,7 +46,6 @@ module RWC.Primitives
       , rwPrimGtEq
       , rwPrimLt
       , rwPrimLtEq
-      , rwPrimConcat
       , rwPrimLNot
       , rwPrimNot
       , rwPrimRAnd
@@ -269,10 +268,6 @@ rwPrimLt = GHC.error "Prim: less-than"
 -- | Less-than or equal.
 rwPrimLtEq :: Vec n Bool -> Vec m Bool -> Bool
 rwPrimLtEq = GHC.error "Prim: less-than or equal"
-
--- | Concatenate.
-rwPrimConcat :: Vec n Bool -> Vec m Bool -> Vec (n + m) Bool
-rwPrimConcat = GHC.error "Prim: bitvector concatenation"
 
 -- | Logical not.
 rwPrimLNot :: Vec n Bool -> Bool

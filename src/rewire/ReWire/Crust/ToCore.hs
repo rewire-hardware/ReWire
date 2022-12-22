@@ -12,7 +12,7 @@ import ReWire.Crust.TypeCheck (unify)
 import Control.Arrow ((&&&))
 import Control.Lens ((^.))
 import Control.Monad.Reader (MonadReader (..), ReaderT (..), asks, lift)
-import Control.Monad.State (StateT (..), MonadState, get, gets, put, unless, evalStateT)
+import Control.Monad.State (StateT (..), MonadState, get, put, unless, evalStateT)
 import Data.BitVector (bitVec, zeros, BV)
 import Data.Either (partitionEithers)
 import Data.HashMap.Strict (HashMap)
@@ -33,8 +33,8 @@ type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) C.LId) m)
 toCore :: (Fresh m, MonadError AstError m, MonadFail m) => Config -> Text -> M.FreeProgram -> m C.Program
 toCore conf start (ts, _, vs) = fst <$> flip runStateT mempty (do
       mapM_ ((`runReaderT` conMap) . sizeOf noAnn . M.TyCon noAnn . M.dataName) ts
-      intSz <- gets $ maximum . Map.elems
-      put $ Map.singleton (M.intTy noAnn) intSz -- TODO(chathhorn): note the sizeof Integer is the max of all non-Integer-containing types.
+      let intSz = 128 -- TODO(chathhorn)
+      put $ Map.singleton (M.intTy noAnn) intSz
       vs'    <- mapM (transDefn conf start conMap) $ filter (not . M.isPrim . M.defnName) vs
       case partitionEithers vs' of
             ([startDefn], defns) -> pure $ C.Program startDefn defns
@@ -106,18 +106,13 @@ externSig an args res clk = \ case
             res' :: [(Text, C.Size)]
             res'  = [(mempty, res)]
 
-callError :: Annote -> C.Size -> C.Exp
-callError an sz = C.Call an sz (C.Extern (C.ExternSig an [] mempty [] [(mempty, sz)]) "error" "error") C.nil [] C.nil
-
 arity :: M.Ty -> Int
 arity = length . M.paramTys
 
 transExp :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.Exp -> TCM m C.Exp
 transExp e = case e of
       M.App an _ _                  -> case M.flattenApp' e of
-            M.Builtin an _ M.Error  : _                                  -> do
-                  sz     <- sizeOf an $ M.typeOf e
-                  pure $ callError an sz
+            M.Builtin _ _ M.Error  : _                                  -> transError
             M.Builtin an t M.Bits : [arg]      -> do
                   arg'     <- transExp arg
                   let argSize = C.sizeOf arg'
@@ -220,10 +215,8 @@ transExp e = case e of
             sz <- sizeOf an $ M.typeOf e
             pure $ C.Lit an $ bitVec (fromIntegral sz) n
       M.LitVec _ _ es                   -> C.cat <$> mapM transExp es
-      M.Builtin an t M.Error            -> do
-            sz <- sizeOf an t
-            pure $ callError an sz
-      M.Builtin an _ (toPrim -> Just p)   -> do
+      M.Builtin _ _ M.Error             -> transError
+      M.Builtin an _ (toPrim -> Just p) -> do
             sz       <- sizeOf an $ M.typeOf e
             pure $ C.Call an sz (C.Prim p) C.nil [] C.nil
       M.TypeAnn _ _ e                   -> transExp e
@@ -299,7 +292,6 @@ transExp e = case e of
                   M.GtEq        -> pure C.GtEq
                   M.Lt          -> pure C.Lt
                   M.LtEq        -> pure C.LtEq
-                  -- M.Concat      ->
                   M.LNot        -> pure C.LNot
                   M.Not         -> pure C.Not
                   M.RAnd        -> pure C.RAnd
@@ -310,6 +302,16 @@ transExp e = case e of
                   M.RXNor       -> pure C.RXNor
                   M.MSBit       -> pure C.MSBit
                   _             -> Nothing
+
+            -- TODO(chathhorn): possibly make this optional.
+            -- callError :: Annote -> C.Size -> C.Exp
+            -- callError an sz = C.Call an sz (C.Extern (C.ExternSig an [] mempty [] [(mempty, sz)]) "error" "error") C.nil [] C.nil
+
+            transError :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState SizeMap m) => m C.Exp
+            transError = do
+                  -- sz     <- sizeOf (ann e) $ M.typeOf e
+                  -- pure $ callError (ann e) sz
+                  failAt (ann e) $ "Encountered call to built-in \"error\" function that was not eliminated: " <> prettyPrint e
 
 transPat :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.MatchPat -> ReaderT ConMap m [C.Pat]
 transPat = \ case
