@@ -208,18 +208,18 @@ power' w n = iter' n (times' w) (resize' (length w) one')
 -- returns (quotient,remainder) 
 nonrestoringDivide' :: [Bool] -> [Bool] -> [Bool] -> ([Bool],[Bool])
 nonrestoringDivide' n d b =
-   let rq = n
-       shiftd = shiftL' (resize' (length n) d) b
-       rq' = iter' b (loopbody shiftd) rq in
-        (resize' (length n) (take (toInt' b) rq')
-        ,shiftR' rq' b)
+   let rq = False : n
+       b' = plus' (False : b) (resize' (1 Prelude.+ length b) one')
+       shiftd = shiftL' (resize' (length rq) d) b
+       rq' = iter' b' (loopbody shiftd) rq in
+        (resize' (toInt' b') rq'
+        ,shiftR' rq' b')
     where 
       loopbody :: [Bool] -> [Bool] -> [Bool]
       loopbody shiftd rq = 
-        let rq' =  shiftL' rq one' in
-        if msBit' rq' -- rq < 0
-          then plus' rq' shiftd
-          else minus' (bitwiseOr' rq' (resize' (length rq') one')) shiftd
+        if shiftd Prelude.> rq
+          then shiftL' rq one'
+          else bitwiseOr' (resize' (length rq) one') $ shiftL' (minus' rq shiftd) one'
 
 -- assumes n and d are the same length and n >= d
 divCounter' :: [Bool] -> [Bool] -> Int
