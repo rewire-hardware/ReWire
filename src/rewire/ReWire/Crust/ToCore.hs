@@ -128,8 +128,9 @@ transExp e = case e of
             M.Builtin an _ M.BitSlice   : [arg, M.LitInt _ j, M.LitInt _ i] -> do
                   unless (j + 1 >= i) $
                         failAt (ann arg) $ "transExp: invalid bit slice (j: " <> showt j <> ", i: " <> showt i <> ")."
-                  subElems an arg ((-i) - 1) ((fromIntegral j + 1) - fromIntegral i)
-
+                  let nBits = fromIntegral $ j + 1 - i
+                      off   = (-i) - fromIntegral nBits
+                  subElems an arg off nBits
             M.Builtin an _ M.VecIndex   : [arg, p]                      -> do
                   i      <- maybe (failAt (ann p) "transExp: rwPrimVecIndex: invalid proxy argument.") pure
                               $ M.proxyNat $ M.typeOf p
