@@ -5,7 +5,7 @@
 -- Haskell", though since we don't have type classes in core it is much
 -- simpler.
 --
-module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype, unify, unify') where
+module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype, unify, unify', TySub) where
 
 import ReWire.Annotation
 import ReWire.Error (AstError, MonadError, failAt)

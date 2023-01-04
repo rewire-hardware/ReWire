@@ -28,7 +28,7 @@ module ReWire.Crust.Syntax
       , flattenAllTyApp, resInputTy
       , mkTuple, mkTuplePat, mkTupleMPat, tupleTy
       , mkPair, mkPairPat, mkPairMPat
-      , kmonad, tycomp, concrete, higherOrder, fundamental, unTyAnn, mkApp, mkError
+      , kmonad, tycomp, concrete, higherOrder, fundamental, tyAnn, unTyAnn, mkApp, mkError
       , TypeAnnotated (..), prettyFP
       ) where
 
@@ -408,31 +408,31 @@ instance Parenless Exp where
 instance Pretty Exp where
       pretty e = case flattenApp e of
             (Con _ _ (n2s -> c) : es) | isTupleCtor c    -> parens $ hsep $ punctuate comma $ map pretty es
-            [Con _ t n]                                  -> tyAnn (text $ n2s n) t
-            [Var _ t n]                                  -> tyAnn (text $ showt n) t
+            [Con _ t n]                                  -> ppTyAnn (text $ n2s n) t
+            [Var _ t n]                                  -> ppTyAnn (text $ showt n) t
             [Lam _ _ e]                                  -> runFreshM $ do
                   (p, e') <- unbind e
                   pure $ text "\\" <+> text (showt p) <+> text "->" <+> pretty e'
             [Case _ t e e1 e2]                           -> runFreshM $ do
                   (p, e1') <- unbind e1
                   pure $ nest 2 $ vsep $
-                        [ tyAnn (text "case") t <+> pretty e <+> text "of"
+                        [ ppTyAnn (text "case") t <+> pretty e <+> text "of"
                         , pretty p <+> text "->" <+> pretty e1'
                         ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
             [Match _ t e p e1 e2]                        -> runFreshM $
                   pure $ nest 2 $ vsep $
-                        [ tyAnn (text "match") t <+> pretty e <+> text "of"
+                        [ ppTyAnn (text "match") t <+> pretty e <+> text "of"
                         , pretty p <+> text "->" <+> pretty e1
                         ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
-            [Builtin _ t b]                              -> tyAnn (pretty b) t
+            [Builtin _ t b]                              -> ppTyAnn (pretty b) t
             [LitInt _ v]                                 -> pretty v
             [LitStr _ v]                                 -> dquotes $ pretty v
             [LitList _ _ vs]                             -> brackets $ hsep $ punctuate comma $ map pretty vs
             [LitVec _ _ vs]                              -> brackets $ hsep $ punctuate comma $ map pretty vs
             [TypeAnn _ pt e]                             -> pretty e <+> text "::" <+> pretty pt
             es                                           -> nest 2 $ hsep $ map mparens es
-            where tyAnn :: Doc ann -> Ty -> Doc ann
-                  tyAnn d = \ case
+            where ppTyAnn :: Doc ann -> Ty -> Doc ann
+                  ppTyAnn d = \ case
                         t | not $ isBlank t -> d <+> braces (pretty t)
                         _                   -> d
 ---
@@ -829,6 +829,10 @@ unTyAnn :: Exp -> Exp
 unTyAnn = \ case
       TypeAnn _ _ e -> unTyAnn e
       e             -> e
+
+-- | TODO(chathhorn): really need to handle type annotations better.
+tyAnn :: Annote -> Poly -> Exp -> Exp
+tyAnn an t = TypeAnn an t . unTyAnn
 
 mkApp :: Annote -> Exp -> [Exp] -> Exp
 mkApp an = foldl' $ App an

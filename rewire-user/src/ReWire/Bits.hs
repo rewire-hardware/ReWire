@@ -3,7 +3,7 @@
 module ReWire.Bits where
 
 import ReWire
-import Prelude hiding (head, (<>), (==))
+import Prelude hiding (head, (<>), (==), (^), (&&), (||))
 
 type Bit = Bool
 type W n = Vec n Bit
@@ -28,7 +28,7 @@ a @@ (j, i) = bitSlice a j i
 -- | Project single bit.
 {-# INLINE (@.) #-}
 (@.) :: W n -> Integer -> Bit
-a @. i = head (bitSlice a i i)
+a @. i = bitIndex a i
 
 -- infixr 9 @., @@
 
@@ -41,10 +41,10 @@ infixl 6  <<., >>., >>>
 infixl 6  >, >=, <, <=
 infixr 6  <>
 infixl 5  .&.
-infixl 4  ^, ~^
+infixl 4  ^, ~^, `xor`
 infixl 3  .|.
-infixr 2  &&.
-infixr 1  ||.
+infixr 2  &&., &&
+infixr 1  ||., ||
 
 -- | Interpret an Integer literal into a bit vector. Truncates most significant
 --   bits or zero-pads to make it fit.
@@ -105,17 +105,26 @@ bitIndex = rwPrimBitIndex
 (&&.) :: W n -> W n -> Bool
 (&&.) = rwPrimLAnd
 
+-- | Prelude (&&), but using built-ins.
+{-# INLINE (&&) #-}
+(&&) :: Bool -> Bool -> Bool
+(&&) a b = bit $ fromList [a] .&. fromList [b]
+
 -- | Logical or.
 {-# INLINE (||.) #-}
 (||.) :: W n -> W n -> Bool
 (||.) = rwPrimLOr
+
+-- | Prelude (||), but using built-ins.
+{-# INLINE (||) #-}
+(||) :: Bool -> Bool -> Bool
+(||) a b = bit $ fromList [a] .|. fromList [b]
 
 -- | Bitwise and.
 {-# INLINE (.&.) #-}
 (.&.) :: W n -> W n -> W n
 (.&.) = rwPrimAnd
 
--- TODO(chathhorn): removing the dot causes the parser to choke.
 -- | Bitwise or.
 {-# INLINE (.|.) #-}
 (.|.) :: W n -> W n -> W n
@@ -125,6 +134,11 @@ bitIndex = rwPrimBitIndex
 {-# INLINE (^) #-}
 (^) :: W n -> W n -> W n
 (^) = rwPrimXOr
+
+-- | Logical xor, for Bit/Bool (using the built-in operator).
+{-# INLINE xor #-}
+xor :: Bool -> Bool -> Bool
+xor a b = bit $ fromList [a] ^ fromList [b]
 
 -- | Bitwise exclusive nor.
 {-# INLINE (~^) #-}
