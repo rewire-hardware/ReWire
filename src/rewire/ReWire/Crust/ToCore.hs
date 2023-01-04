@@ -133,20 +133,20 @@ transExp e = case e of
                   subElems an arg off nBits
             M.Builtin an _ M.VecIndex   : [arg, p]                      -> do
                   i      <- maybe (failAt (ann p) "transExp: rwPrimVecIndex: invalid proxy argument.") pure
-                              $ M.proxyNat $ M.typeOf p
-                  subElems an arg (fromIntegral i) 1
+                              $ fmap fromIntegral $ M.proxyNat $ M.typeOf p
+                  subElems an arg i 1
             M.Builtin an _ M.VecSlice   : [p, arg]                      -> do
                   i      <- maybe (failAt (ann p) "transExp: rwPrimVecSlice: invalid proxy argument.") pure
-                              $ M.proxyNat $ M.typeOf p
+                              $ fmap fromIntegral $ M.proxyNat $ M.typeOf p
                   nElems <- maybe (failAt (ann p) "transExp: rwPrimVecSlice: invalid Vec argument.") pure
                               $ M.vecSize $ M.typeOf e
-                  subElems an arg (fromIntegral i) nElems
+                  subElems an arg i nElems
             M.Builtin an _ M.VecRSlice  : [p, arg]                      -> do
                   i      <- maybe (failAt (ann p) "transExp: rwPrimVecRSlice: invalid proxy argument.") pure
-                              $ M.proxyNat $ M.typeOf p
+                              $ fmap fromIntegral $ M.proxyNat $ M.typeOf p
                   nElems <- maybe (failAt (ann p) "transExp: rwPrimVecRSlice: invalid Vec argument.") pure
                               $ M.vecSize $ M.typeOf e
-                  subElems an arg (- fromIntegral i) nElems
+                  subElems an arg ((- i) - i * fromIntegral nElems) nElems
             M.Builtin an _ M.VecReverse : [arg]                      -> do
                   sz     <- sizeOf an $ M.typeOf e
                   arg'   <- transExp arg
