@@ -1,6 +1,7 @@
 hpc_*.html
 .hpc
 dist
+dist-*
 cabal-dev
 rewire.cmd.out
 show.out
@@ -11,6 +12,7 @@ tc.out
 *.p_o
 *.p_hi
 *.hi
+*.hie
 *.chi
 *.chs.h
 .virthualenv
@@ -24,6 +26,19 @@ tc.out
 *.pdf
 *.synctex.gz
 .cabal-sandbox
+*.dyn_o
+*.dyn_hi
+.hpc
+.hsenv
+.cabal-sandbox/
 cabal.sandbox.config
+*.prof
+*.aux
 *.hp
 *.vhd
+*.eventlog
+.stack-work/
+cabal.project.local
+cabal.project.local~
+.HTF/
+.ghc.environment.*

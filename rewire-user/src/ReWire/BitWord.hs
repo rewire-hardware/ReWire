@@ -1,13 +1,88 @@
 {-# LANGUAGE ConstrainedClassMethods #-}
 
-module PreWire.BitWord where 
+module ReWire.BitWord where 
 
 import Prelude hiding ((+),(*),(-),(||),(&&))
 import qualified Prelude
 import Data.Bits
-import PreWire.Bit
-           
+import qualified Data.Vector.Sized as V
 
+type Vec n a = V.Vector n a
+type Bit = Bool
+
+zero :: Bit
+zero = False
+
+one :: Bit
+one = True
+
+
+toInt :: Bit -> Int
+toInt True = 1
+toInt False = 0
+
+notBit :: Bit -> Bit
+notBit = not
+
+-- AND
+(>&&<) :: Bit -> Bit -> Bit
+True >&&< True = True
+_ >&&< _ = False
+
+-- OR
+(>||<) :: Bit -> Bit -> Bit
+False >||< False = False
+_ >||< _ = True
+
+-- XOR
+(>^<) :: Bit -> Bit -> Bit
+False >^< True = True
+True >^< False = True
+_ >^< _ = False
+
+-- Eq
+(>==<) :: Bit -> Bit -> Bit
+False >==< False = True
+True >==< True = True
+_ >==< _ = False
+
+-- NAND
+(>~&<) :: Bit -> Bit -> Bit
+True >~&< True = False
+_ >~&< _ = True
+
+-- NOR
+(>~|<) :: Bit -> Bit -> Bit
+False >~|< False = True
+_ >~|< _ = False
+
+-- XNOR
+(>~^<) :: Bit -> Bit -> Bit
+False >~^< True = False
+True >~^< False = False
+_ >~^< _ = True
+
+
+-- a b c ~> (a+b+c,carry_out)
+rca :: Bit -> Bit -> Bit -> (Bit,Bit)
+rca False False False = (False,False)
+rca False False True = (True,False)
+rca False True False = (True,False)
+rca False True True = (False,True)
+rca True False False = (True,False)
+rca True False True = (False,True)
+rca True True False = (False,True)
+rca True True True = (True,True)
+
+
+
+int2bin :: Int -> [Bit]
+int2bin i | i==0      = []
+          | otherwise = b : int2bin (i `div` 2)
+              where b = case i `mod` 2 of
+                      0 -> False
+                      1 -> True
+                      _ -> Prelude.error "can't happen"
 
 -- assumes inputs are same length
 carryadd' :: [Bool] -> [Bool] -> Bool -> ([Bool],Bool)
@@ -75,6 +150,15 @@ pad' n v | n Prelude.== 0 = v
          | n Prelude.> 0 = False : pad' (n Prelude.- 1) v
          | otherwise = error "negative padding"
 
+-- w is bigendian
+padTrunc' :: Int -> [Bool] -> [Bool]
+padTrunc' d w 
+      | l == d    = w
+      | l < d     = pad' (d Prelude.- l) w
+      | otherwise = reverse . take d . reverse $ w
+         where
+           l = length w
+
 -- takes little endian bits 
 toIntLE' :: [Bool] -> Int
 toIntLE' [] = 0
@@ -82,6 +166,13 @@ toIntLE' (b:bs) = toInt b Prelude.+ 2 Prelude.* toIntLE' bs
 
 toInt' :: [Bool] -> Int
 toInt' = toIntLE' . reverse
+
+fromBool :: Bool -> Integer
+fromBool = toInteger . fromEnum
+
+-- should check that this works on big-endian
+toInteger' :: Vec n Bool -> Integer
+toInteger' = foldr (\ x s -> fromBool x Prelude.+ 2 Prelude.* s) 0
 
 -- w is bigendian
 resize' :: Int -> [Bool] -> [Bool]
@@ -230,21 +321,12 @@ divCounter' n d =
 
 -- assumes the same length inputs
 divide' :: [Bool] -> [Bool] -> [Bool]
+divide' n d = resize' (length n) $ int2bits' $ toInteger $ toInt' n `div` toInt' d
+
+{- PREFERRED DIVIDE IMPLEMENTATION (long division); but broken for now
 divide' n d = resize' (length n) $ fst $ nonrestoringDivide' n d b
   where 
   b = lit' $ toInteger $ divCounter' (False:n) (False:d)  -- start positive unsigned
-
-{-
-b = lit' $ to Integer $ divCounter' (False:n) (False:d)
-
-16/1 = 8
-16/2 = 4
-16/4 = 2
-16/8 = 0
-20/1 = 10
-20/2 = 4
-20/4 = 2
-
 -}
 
 -- assumes the same length inputs

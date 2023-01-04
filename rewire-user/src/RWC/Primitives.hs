@@ -1,6 +1,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ConstraintKinds #-}
 module RWC.Primitives
       ( Identity, ReacT, StateT, Vec, R_, A_, PuRe (..), Ref (..), Proxy (..)
       , rwPrimError
@@ -24,6 +26,9 @@ module RWC.Primitives
       , rwPrimVecConcat
       , rwPrimBits
       , rwPrimResize
+      , rwPrimVecUpdate
+      , rwPrimVecBulkUpdate
+      , rwPrimVecLen
       , rwPrimBitSlice
       , rwPrimBitIndex
       , rwPrimAdd
@@ -55,23 +60,30 @@ module RWC.Primitives
       , rwPrimRXOr
       , rwPrimRXNor
       , rwPrimMSBit
-      , type (+), type GHC.Monad, type GHC.MonadTrans
+      , type (+), type GHC.Monad, type GHC.MonadTrans, KnownNat
       ) where
 
 -- Imports in this file are ignored by rwc.
-import Prelude ()
+import Prelude ((.),($),fromEnum)
 import qualified Prelude                           as GHC
 import qualified Control.Monad.Identity            as GHC
 import qualified Control.Monad.Resumption.Reactive as GHC
 import qualified Control.Monad.State               as GHC
-import GHC.TypeLits (Nat, type (+))
+import qualified Data.Bits                         as GHC
+import qualified Data.Bifunctor                    as BF
+import GHC.TypeLits (Nat, type (+), natVal)
+import qualified GHC.TypeLits                      as TL 
+import qualified Data.Vector.Sized                 as V
+import qualified ReWire.BitWord                    as BW
 
-type Identity = GHC.Identity
-type ReacT    = GHC.ReacT
-type StateT   = GHC.StateT
-type Integer  = GHC.Integer
-type String   = GHC.String
-type Bool     = GHC.Bool
+type Identity   = GHC.Identity
+type ReacT      = GHC.ReacT
+type StateT     = GHC.StateT
+type Integer    = GHC.Integer
+type String     = GHC.String
+type Bool       = GHC.Bool
+type Vec n a    = V.Vector n a
+type KnownNat n = TL.KnownNat n
 
 -- ReWire primitives.
 
@@ -90,7 +102,6 @@ type Bool     = GHC.Bool
 
 data R_ -- Ctors generated during program build.
 data A_ -- Ctors generated during program build.
-data Vec (n :: Nat) a -- Ctors built in.
 data Proxy (n :: Nat) = Proxy
 data Ref a = Ref String
 data PuRe s o = Done (A_, s) | Pause (o, (R_, s))
@@ -135,47 +146,75 @@ rwPrimSignal = GHC.signal
 rwPrimLift :: (GHC.MonadTrans t, GHC.Monad m) => m a -> t m a
 rwPrimLift = GHC.lift
 
-rwPrimExtrude :: ReacT i o (StateT s m) a -> s -> ReacT i o m a
-rwPrimExtrude = GHC.error "Prim: extrude"
+rwPrimExtrude :: GHC.Monad m => ReacT i o (StateT s m) a -> s -> ReacT i o m a
+rwPrimExtrude (GHC.ReacT (GHC.StateT m)) s = 
+   GHC.ReacT GHC.$ 
+     do (res,s') <- m s
+        case res of
+            GHC.Left y -> GHC.return (GHC.Left y)
+            GHC.Right (o,k) -> GHC.return (GHC.Right (o, \ i -> rwPrimExtrude (k i) s'))
 
-rwPrimUnfold :: ((R_, s) -> i -> PuRe s o) -> PuRe s o -> ReacT i o Identity a
-rwPrimUnfold = GHC.error "Prim: unfold"
+rwPrimUnfold :: ((R_, s) -> i -> PuRe s o) -> PuRe s o -> ReacT i o Identity A_
+rwPrimUnfold _ (Done (a,_)) = GHC.return a
+rwPrimUnfold f (Pause (o,b)) = do i <- GHC.signal o
+                                  rwPrimUnfold f (f b i)
 
 -- *** Built-in Vec functions. ***
 
 -- | Turns a List literal into a Vec with fixed length. I.e.,
 -- > [x, y, z] :: Vec 3 a
-rwPrimVecFromList :: [a] -> Vec n a
-rwPrimVecFromList = GHC.error "Prim: construct vector"
+rwPrimVecFromList :: KnownNat n => [a] -> Vec n a
+rwPrimVecFromList v = case V.fromList v of
+       GHC.Just v' -> v'
+       GHC.Nothing -> GHC.error "failed fromList: list is a different length than expected"
 
-rwPrimVecReplicate :: a -> Vec n a
-rwPrimVecReplicate = GHC.error "Prim: vector replicate"
+rwPrimVecReplicate :: KnownNat n => a -> Vec n a
+rwPrimVecReplicate = V.replicate
 
 rwPrimVecReverse :: Vec n a -> Vec n a
-rwPrimVecReverse = GHC.error "Prim: vector reverse"
+rwPrimVecReverse = V.reverse
 
-rwPrimVecSlice :: Proxy i -> Vec ((i + n) + m) a -> Vec n a
-rwPrimVecSlice = GHC.error "Prim: vector slice"
+rwPrimVecSlice :: (KnownNat i, KnownNat n) => Proxy i -> Vec ((i + n) + m) a -> Vec n a
+rwPrimVecSlice = V.slice
 
--- | Slice indexed from the end of the Vec. Could be defined as:
--- > slice' i = reverse . slice i . reverse
-rwPrimVecRSlice :: Proxy i -> Vec ((i + n) + m) a -> Vec n a
-rwPrimVecRSlice = GHC.error "Prim: rear vector slice"
+-- | Slice indexed from the end of the Vec.
+rwPrimVecRSlice :: (KnownNat i, KnownNat n) => Proxy i -> Vec ((i + n) + m) a -> Vec n a
+rwPrimVecRSlice i = V.reverse . V.slice i . V.reverse
 
-rwPrimVecIndex :: Vec ((n + m) + 1) a -> Proxy n -> a
-rwPrimVecIndex = GHC.error "Prim: vector indexing"
+rwPrimVecIndex :: KnownNat n => Vec ((n + m) + 1) a -> Proxy n -> a
+rwPrimVecIndex = V.index'
 
 -- | Concatenate vectors.
 rwPrimVecConcat :: Vec n a -> Vec m a -> Vec (n + m) a
-rwPrimVecConcat = GHC.error "Prim: vector concatenation"
+rwPrimVecConcat = (V.++)
 
--- | Interpret anything as a bit vector.
-rwPrimBits :: a -> Vec n Bool
-rwPrimBits = GHC.error "Prim: bitvector representation"
+-- | Interpret an Integer as a bit vector.
+rwPrimBits :: forall n. KnownNat n => Integer -> Vec n Bool
+rwPrimBits = 
+      rwPrimVecFromList . BW.padTrunc' i 
+                        . GHC.reverse . BW.int2bits'
+        where
+          i = GHC.fromIntegral (natVal (Proxy :: Proxy n))
+
 
 -- | Truncates or zero-pads most significant bits.
-rwPrimResize :: Vec n Bool -> Vec m Bool
-rwPrimResize = GHC.error "Prim: bitvector resize"
+rwPrimResize :: forall m n . KnownNat m => Vec n Bool -> Vec m Bool
+rwPrimResize v = rwPrimVecFromList vs'
+    where
+      vs = V.toList v
+      vs' = BW.resize' (GHC.fromEnum (natVal (Proxy :: Proxy m))) vs
+
+-- | Update index i to value a
+rwPrimVecUpdate :: KnownNat n => Vec ((n + m) + 1) a -> Proxy n -> a -> Vec ((n + m) + 1) a
+rwPrimVecUpdate v i a = V.update v (V.singleton (fromEnum $ natVal i,a))
+
+-- | Update multiple indices
+rwPrimVecBulkUpdate :: Vec n a -> Vec m (Integer,a) -> Vec n a
+rwPrimVecBulkUpdate v a = V.update v (V.map (BF.first fromEnum) a)
+
+-- | Length of vector as an Integer
+rwPrimVecLen :: KnownNat n => Vec n a -> Integer
+rwPrimVecLen = GHC.toInteger . V.length
 
 -- | bitSlice a j i returns bits j (most significant) to i (least significant) from a (j >= i).
 --   The Integer arguments must be non-negative integer literals (after inlining).
@@ -190,117 +229,117 @@ rwPrimBitIndex = GHC.error "Prim: bit extraction"
 -- *** Primitive bitwise operations based on Verilog operators. ***
 
 -- | Add.
-rwPrimAdd :: Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimAdd = GHC.error "Prim: add"
+rwPrimAdd :: KnownNat n => Vec n Bool -> Vec n Bool -> Vec n Bool
+rwPrimAdd v w = rwPrimVecFromList $ BW.plus' (V.toList v) (V.toList w)
 
 -- | Subtract.
-rwPrimSub :: Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimSub = GHC.error "Prim: sub"
+rwPrimSub :: KnownNat n => Vec n Bool -> Vec n Bool -> Vec n Bool
+rwPrimSub v w = rwPrimVecFromList $ BW.minus' (V.toList v) (V.toList w)
 
 -- | Multiply.
-rwPrimMul :: Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimMul = GHC.error "Prim: multiply"
+rwPrimMul :: KnownNat n => Vec n Bool -> Vec n Bool -> Vec n Bool
+rwPrimMul v w = rwPrimVecFromList $ BW.times' (V.toList v) (V.toList w)
 
 -- | Divide.
-rwPrimDiv :: Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimDiv = GHC.error "Prim: divide"
+rwPrimDiv :: KnownNat n => Vec n Bool -> Vec n Bool -> Vec n Bool
+rwPrimDiv v w = rwPrimVecFromList $ BW.divide' (V.toList v) (V.toList w)
 
 -- | Modulus.
-rwPrimMod :: Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimMod = GHC.error "Prim: modulus"
+rwPrimMod :: KnownNat n => Vec n Bool -> Vec n Bool -> Vec n Bool
+rwPrimMod v w = rwPrimVecFromList $ BW.mod' (V.toList v) (V.toList w)
 
 -- | Exponentiation.
-rwPrimPow :: Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimPow = GHC.error "Prim: exponentiation"
+rwPrimPow :: KnownNat n => Vec n Bool -> Vec n Bool -> Vec n Bool
+rwPrimPow v w = rwPrimVecFromList $ BW.power' (V.toList v) (V.toList w)
 
 -- | Logical and.
 rwPrimLAnd :: Vec n Bool -> Vec n Bool -> Bool
-rwPrimLAnd = GHC.error "Prim: logical and"
+rwPrimLAnd v w = V.or v GHC.&& V.or w
 
 -- | Logical or.
 rwPrimLOr :: Vec n Bool -> Vec n Bool -> Bool
-rwPrimLOr = GHC.error "Prim: logical or"
-
--- | Bitwise and.
-rwPrimAnd :: Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimAnd = GHC.error "Prim: bitwise and"
-
--- | Bitwise or.
-rwPrimOr :: Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimOr = GHC.error "Prim: bitwise or"
-
--- | Bitwise exclusive or.
-rwPrimXOr :: Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimXOr = GHC.error "Prim: bitwise exclusive or"
-
--- | Bitwise exclusive nor.
-rwPrimXNor :: Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimXNor = GHC.error "Prim: bitwise exclusive nor"
-
--- | Shift left.
-rwPrimLShift :: Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimLShift = GHC.error "Prim: bitwise shift left"
-
--- | Shift right.
-rwPrimRShift :: Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimRShift = GHC.error "Prim: bitwise shift right"
-
--- | Shift right, sign-extend.
-rwPrimRShiftArith :: Vec n Bool -> Vec n Bool -> Vec n Bool
-rwPrimRShiftArith = GHC.error "Prim: bitwise shift right, sign-extend"
-
--- | Equal.
-rwPrimEq :: Vec n Bool -> Vec m Bool -> Bool
-rwPrimEq = GHC.error "Prim: equal"
-
--- | Greater-than.
-rwPrimGt :: Vec n Bool -> Vec m Bool -> Bool
-rwPrimGt = GHC.error "Prim: greater-than"
-
--- | Greater-than or equal.
-rwPrimGtEq :: Vec n Bool -> Vec m Bool -> Bool
-rwPrimGtEq = GHC.error "Prim: greater-than or equal"
-
--- | Less-than.
-rwPrimLt :: Vec n Bool -> Vec m Bool -> Bool
-rwPrimLt = GHC.error "Prim: less-than"
-
--- | Less-than or equal.
-rwPrimLtEq :: Vec n Bool -> Vec m Bool -> Bool
-rwPrimLtEq = GHC.error "Prim: less-than or equal"
+rwPrimLOr v w = V.or v GHC.|| V.or w
 
 -- | Logical not.
 rwPrimLNot :: Vec n Bool -> Bool
-rwPrimLNot = GHC.error "Prim: logical not"
+rwPrimLNot v = GHC.not (V.or v)  -- note that 'or' acts as 'toBool'
+
+-- | Bitwise and.
+rwPrimAnd :: Vec n Bool -> Vec n Bool -> Vec n Bool
+rwPrimAnd = V.zipWith (GHC.&&)
+
+-- | Bitwise or.
+rwPrimOr :: Vec n Bool -> Vec n Bool -> Vec n Bool
+rwPrimOr = V.zipWith (GHC.||)
 
 -- | Bitwise not.
 rwPrimNot :: Vec n Bool -> Vec n Bool
-rwPrimNot = GHC.error "Prim: bitwise not"
+rwPrimNot = V.map GHC.not
+
+-- | Bitwise exclusive or.
+rwPrimXOr :: Vec n Bool -> Vec n Bool -> Vec n Bool
+rwPrimXOr = V.zipWith GHC.xor
+
+-- | Bitwise exclusive nor.
+rwPrimXNor :: Vec n Bool -> Vec n Bool -> Vec n Bool
+rwPrimXNor = V.zipWith (\ x y -> GHC.not (GHC.xor x y))
+
+-- | Shift left.
+rwPrimLShift :: KnownNat n => Vec n Bool -> Vec n Bool -> Vec n Bool
+rwPrimLShift v i = rwPrimVecFromList $ BW.shiftL' (V.toList v) (V.toList i)
+
+-- | Shift right.
+rwPrimRShift :: KnownNat n => Vec n Bool -> Vec n Bool -> Vec n Bool
+rwPrimRShift v i = rwPrimVecFromList $ BW.shiftR' (V.toList v) (V.toList i)
+
+-- | Shift right, sign-extend.
+rwPrimRShiftArith :: KnownNat n => Vec n Bool -> Vec n Bool -> Vec n Bool
+rwPrimRShiftArith v i = rwPrimVecFromList $ BW.arithShiftR' (V.toList v) (V.toList i)
+
+-- | Equal.
+rwPrimEq :: Vec n Bool -> Vec m Bool -> Bool
+rwPrimEq v w = BW.toInteger' v GHC.== BW.toInteger' w
+
+-- | Greater-than.
+rwPrimGt :: Vec n Bool -> Vec m Bool -> Bool
+rwPrimGt v w = BW.toInteger' v GHC.> BW.toInteger' w
+
+-- | Greater-than or equal.
+rwPrimGtEq :: Vec n Bool -> Vec m Bool -> Bool
+rwPrimGtEq v w = BW.toInteger' v GHC.<= BW.toInteger' w
+
+-- | Less-than.
+rwPrimLt :: Vec n Bool -> Vec m Bool -> Bool
+rwPrimLt v w = BW.toInteger' v GHC.< BW.toInteger' w
+
+-- | Less-than or equal.
+rwPrimLtEq :: Vec n Bool -> Vec m Bool -> Bool
+rwPrimLtEq v w = BW.toInteger' v GHC.<= BW.toInteger' w
 
 -- | Reduction and.
 rwPrimRAnd :: Vec n Bool -> Bool
-rwPrimRAnd = GHC.error "Prim: bitwise reduction and"
+rwPrimRAnd = V.and
 
 -- | Reduction nand.
-rwPrimRNAnd :: Vec n Bool -> Bool
-rwPrimRNAnd = GHC.error "Prim: bitwise reduction nand"
+rwPrimRNAnd :: Vec (1 + n) Bool -> Bool
+rwPrimRNAnd = V.foldl1 (\ x y -> GHC.not (x GHC.&& y)) 
 
 -- | Reduction or.
 rwPrimROr :: Vec n Bool -> Bool
-rwPrimROr = GHC.error "Prim: bitwise reduction or"
+rwPrimROr = V.or
 
 -- | Reduction nor.
-rwPrimRNor :: Vec n Bool -> Bool
-rwPrimRNor = GHC.error "Prim: bitwise reduction nor"
+rwPrimRNor :: Vec (1 + n) Bool -> Bool
+rwPrimRNor = V.foldl1 (\ x y -> GHC.not (x GHC.|| y))
 
 -- | Reduction xor.
-rwPrimRXOr :: Vec n Bool -> Bool
-rwPrimRXOr = GHC.error "Prim: bitwise reduction exclusive or"
+rwPrimRXOr :: Vec (1 + n) Bool -> Bool
+rwPrimRXOr = V.foldl1 GHC.xor
 
 -- | Reduction xnor.
-rwPrimRXNor :: Vec n Bool -> Bool
-rwPrimRXNor = GHC.error "Prim: bitwise reduction exclusive nor"
+rwPrimRXNor :: Vec (1 + n) Bool -> Bool
+rwPrimRXNor = V.foldl1 (\ x y -> GHC.not (GHC.xor x y))
 
 -- | Most significant bit.
-rwPrimMSBit :: Vec n Bool -> Bool
-rwPrimMSBit = GHC.error "Prim: most significant bit"
+rwPrimMSBit :: Vec (1 + n) Bool -> Bool
+rwPrimMSBit = V.head

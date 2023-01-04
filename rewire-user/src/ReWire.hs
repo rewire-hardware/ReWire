@@ -8,15 +8,14 @@ module ReWire
       , setRef, getRef, put, get
       , signal, lift, extrude, unfold
       , fromList, replicate, reverse
-      , index, (++)
+      , index, (++), update, bulkUpdate
       , slice, rslice
       , modify
-      , empty, singleton, cons, snoc, head, last, length
+      , empty, singleton, cons, snoc, head, last, length, len
       , take, init, drop, tail
       ) where
 
 import RWC.Primitives
-
 import Prelude (String, Integer)
 
 {-# INLINE error #-}
@@ -64,19 +63,19 @@ lift :: (MonadTrans t, Monad m) => m a -> t m a
 lift = rwPrimLift
 
 {-# INLINE extrude #-}
-extrude :: ReacT i o (StateT s m) a -> s -> ReacT i o m a
+extrude :: Monad m => ReacT i o (StateT s m) a -> s -> ReacT i o m a
 extrude = rwPrimExtrude
 
 {-# INLINE unfold #-}
-unfold :: ((R_, s) -> i -> PuRe s o) -> PuRe s o -> ReacT i o Identity a
+unfold :: ((R_, s) -> i -> PuRe s o) -> PuRe s o -> ReacT i o Identity A_
 unfold = rwPrimUnfold
 
 {-# INLINE fromList #-}
-fromList :: [a] -> Vec n a
+fromList :: KnownNat n => [a] -> Vec n a
 fromList = rwPrimVecFromList
 
 {-# INLINE replicate #-}
-replicate :: a -> Vec n a
+replicate :: KnownNat n => a -> Vec n a
 replicate = rwPrimVecReplicate
 
 {-# INLINE reverse #-}
@@ -84,15 +83,15 @@ reverse :: Vec n a -> Vec n a
 reverse = rwPrimVecReverse
 
 {-# INLINE slice #-}
-slice :: Proxy i -> Vec ((i + n) + m) a -> Vec n a
+slice :: (KnownNat i, KnownNat n) => Proxy i -> Vec ((i + n) + m) a -> Vec n a
 slice = rwPrimVecSlice
 
 {-# INLINE rslice #-}
-rslice :: Proxy i -> Vec ((i + n) + m) a -> Vec n a
+rslice :: (KnownNat i, KnownNat n) => Proxy i -> Vec ((i + n) + m) a -> Vec n a
 rslice = rwPrimVecRSlice
 
 {-# INLINE index #-}
-index :: Vec ((n + m) + 1) a -> Proxy n -> a
+index :: KnownNat n => Vec ((n + m) + 1) a -> Proxy n -> a
 index = rwPrimVecIndex
 
 {-# INLINE (++) #-}
@@ -115,30 +114,50 @@ cons a v = fromList [a] ++ v
 snoc :: Vec n a -> a -> Vec (n + 1) a
 snoc v a = v ++ fromList [a]
 
+{-# INLINE head #-}
 head :: Vec (1 + n) a -> a
 head v = index v (Proxy :: Proxy 0)
 
-last :: Vec (n + 1) a -> a
+{-# INLINE last #-}
+last :: KnownNat n => Vec (n + 1) a -> a
 last v = index v (lastIndex v)
 
+{-# INLINE lastIndex #-}
 lastIndex :: Vec (n + 1) a -> Proxy n
 lastIndex _ = Proxy
 
+{-# INLINE length #-}
 length :: Vec n a -> Proxy n
 length _ = Proxy
 
-take :: Vec (n + m) a -> Vec n a
+{-# INLINE take #-}
+take :: KnownNat n => Vec (n + m) a -> Vec n a
 take v = slice (Proxy :: Proxy 0) v
 
-init :: Vec (n + 1) a -> Vec n a
+{-# INLINE init #-}
+init :: KnownNat n => Vec (n + 1) a -> Vec n a
 init v = take v
 
-drop :: Vec (n + m) a -> Vec m a
+{-# INLINE drop #-}
+drop :: KnownNat m => Vec (n + m) a -> Vec m a
 drop v = rslice (Proxy :: Proxy 0) v
 
-tail :: Vec (1 + n) a -> Vec n a
+{-# INLINE tail #-}
+tail :: KnownNat n => Vec (1 + n) a -> Vec n a
 tail v = drop v
 
 {-# INLINE modify #-}
 modify :: Monad m => (s -> s) -> StateT s m ()
 modify f = get `rwPrimBind` (\ x -> put (f x))
+
+{-# INLINE update #-}
+update :: KnownNat n => Vec ((n + m) + 1) a -> Proxy n -> a -> Vec ((n + m) + 1) a
+update = rwPrimVecUpdate
+
+{-# INLINE bulkUpdate #-}
+bulkUpdate :: Vec n a -> Vec n (Integer,a) -> Vec n a
+bulkUpdate = rwPrimVecBulkUpdate
+
+{-# INLINE len #-}
+len :: KnownNat n => Vec n a -> Integer
+len = rwPrimVecLen

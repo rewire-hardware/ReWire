@@ -23,13 +23,9 @@ source-repository head
 
 library
   exposed-modules:
-      PreWire
-      PreWire.Bit
-      PreWire.BitWord
-      PreWire.Primitives
-      PreWire.Word
       ReWire
       ReWire.Bits
+      ReWire.BitWord
       ReWire.Monad
       ReWire.Prelude
       RWC.Primitives

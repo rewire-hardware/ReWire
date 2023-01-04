@@ -3,7 +3,7 @@
 module ReWire.Bits where
 
 import ReWire
-import Prelude hiding (head, (<>), (==), (^), (&&), (||))
+import Prelude hiding (head, (<>), (==), (-), (^), (&&), (||))
 
 type Bit = Bool
 type W n = Vec n Bit
@@ -35,6 +35,7 @@ a @. i = bitIndex a i
 -- *** Primitive bitwise operations based on Verilog operators. ***
 
 infixr 9 **
+infixl 9 !
 infixl 8  *, /, %
 infixl 7  +, -
 infixl 6  <<., >>., >>>
@@ -43,23 +44,18 @@ infixr 6  <>
 infixl 5  .&.
 infixl 4  ^, ~^, `xor`
 infixl 3  .|.
-infixr 2  &&., &&
+infixr 2  &&., &&, !=
 infixr 1  ||., ||
 
 -- | Interpret an Integer literal into a bit vector. Truncates most significant
 --   bits or zero-pads to make it fit.
 {-# INLINE lit #-}
-lit :: Integer -> W n
-lit n = resize (bits n)
-
--- | Bitvector representation.
-{-# INLINE bits #-}
-bits :: a -> W n
-bits = rwPrimBits
+lit :: KnownNat n => Integer -> W n
+lit i = rwPrimResize (rwPrimBits i :: W 128)
 
 -- | Resize bitvector, truncating or zero padding most significant bits.
 {-# INLINE resize #-}
-resize :: W n -> W m
+resize :: KnownNat m => W n -> W m
 resize = rwPrimResize
 
 {-# INLINE bitSlice #-}
@@ -70,34 +66,44 @@ bitSlice = rwPrimBitSlice
 bitIndex :: W n -> Integer -> Bit
 bitIndex = rwPrimBitIndex
 
+-- | lookup value at index n in vector
+{-# INLINE (!) #-}
+(!) :: KnownNat n => Vec ((n + m) + 1) a -> Proxy n -> a
+(!) = index
+
+-- | assign new value a to index i
+{-# INLINE (!=) #-}
+(!=) :: KnownNat n => Vec ((n + m) + 1) a -> Proxy n -> a -> Vec ((n + m) + 1) a
+v != i = update v i
+
 -- | Add.
 {-# INLINE (+) #-}
-(+) :: W n -> W n -> W n
+(+) :: KnownNat n => W n -> W n -> W n
 (+) = rwPrimAdd
 
 -- | Subtract.
 {-# INLINE (-) #-}
-(-) :: W n -> W n -> W n
+(-) :: KnownNat n => W n -> W n -> W n
 (-) = rwPrimSub
 
 -- | Multiply.
 {-# INLINE (*) #-}
-(*) :: W n -> W n -> W n
+(*) :: KnownNat n => W n -> W n -> W n
 (*) = rwPrimMul
 
 -- | Divide.
 {-# INLINE (/) #-}
-(/) :: W n -> W n -> W n
+(/) :: KnownNat n => W n -> W n -> W n
 (/) = rwPrimDiv
 
 -- | Modulus.
 {-# INLINE (%) #-}
-(%) :: W n -> W n -> W n
+(%) :: KnownNat n => W n -> W n -> W n
 (%) = rwPrimMod
 
 -- | Exponentiation.
 {-# INLINE (**) #-}
-(**) :: W n -> W n -> W n
+(**) :: KnownNat n => W n -> W n -> W n
 (**) = rwPrimPow
 
 -- | Logical and.
@@ -115,6 +121,11 @@ bitIndex = rwPrimBitIndex
 (||.) :: W n -> W n -> Bool
 (||.) = rwPrimLOr
 
+-- | Logical not.
+{-# INLINE lnot #-}
+lnot :: W n -> Bit
+lnot = rwPrimLNot
+
 -- | Prelude (||), but using built-ins.
 {-# INLINE (||) #-}
 (||) :: Bool -> Bool -> Bool
@@ -129,6 +140,11 @@ bitIndex = rwPrimBitIndex
 {-# INLINE (.|.) #-}
 (.|.) :: W n -> W n -> W n
 (.|.) = rwPrimOr
+
+-- | Bitwise not.
+{-# INLINE bnot #-}
+bnot :: W n -> W n
+bnot = rwPrimNot
 
 -- | Bitwise exclusive or.
 {-# INLINE (^) #-}
@@ -147,18 +163,30 @@ xor a b = bit $ fromList [a] ^ fromList [b]
 
 -- | Shift left.
 {-# INLINE (<<.) #-}
-(<<.) :: W n -> W n -> W n
+(<<.) :: KnownNat n => W n -> W n -> W n
 (<<.) = rwPrimLShift
 
 -- | Shift right.
 {-# INLINE (>>.) #-}
-(>>.) :: W n -> W n -> W n
+(>>.) :: KnownNat n => W n -> W n -> W n
 (>>.) = rwPrimRShift
 
 -- | Shift right, sign-extend.
 {-# INLINE (>>>) #-}
-(>>>) :: W n -> W n -> W n
+(>>>) :: KnownNat n => W n -> W n -> W n
 (>>>) = rwPrimRShiftArith
+
+-- Note: rotates feel like they won't compile
+-- Could implement on Vec (m + n)? Could also reimplement Lshift/Rshift to use Proxy?
+-- | Rotate right
+{-# INLINE rotR #-}
+rotR :: KnownNat m => Vec m Bool -> Vec m Bool -> Vec m Bool
+rotR n w = (w >>. n) .|. (w <<. (lit (ReWire.len w) - n))
+
+-- | Rotate left
+{-# INLINE rotL #-}
+rotL :: KnownNat m => Vec m Bool -> Vec m Bool -> Vec m Bool
+rotL n w = (w <<. n) .|. (w >>. (lit (ReWire.len w) - n))
 
 -- | Equal.
 {-# INLINE (==) #-}
@@ -195,16 +223,6 @@ xor a b = bit $ fromList [a] ^ fromList [b]
 (<>) :: W n -> W m -> W (n + m)
 (<>) = rwPrimVecConcat
 
--- | Logical not.
-{-# INLINE lnot #-}
-lnot :: W n -> Bit
-lnot = rwPrimLNot
-
--- | Bitwise not.
-{-# INLINE bnot #-}
-bnot :: W n -> W n
-bnot = rwPrimNot
-
 -- | Reduction and.
 {-# INLINE rAnd #-}
 rAnd :: W n -> Bit
@@ -212,7 +230,7 @@ rAnd = rwPrimRAnd
 
 -- | Reduction nand.
 {-# INLINE rNAnd #-}
-rNAnd :: W n -> Bit
+rNAnd :: W (1 + n) -> Bit
 rNAnd = rwPrimRNAnd
 
 -- | Reduction or.
@@ -222,20 +240,20 @@ rOr = rwPrimROr
 
 -- | Reduction nor.
 {-# INLINE rNor #-}
-rNor :: W n -> Bit
+rNor :: W (1 + n) -> Bit
 rNor = rwPrimRNor
 
 -- | Reduction xor.
 {-# INLINE rXOr #-}
-rXOr :: W n -> Bit
+rXOr :: W (1 + n) -> Bit
 rXOr = rwPrimRXOr
 
 -- | Reduction xnor.
 {-# INLINE rXNor #-}
-rXNor :: W n -> Bit
+rXNor :: W (1 + n) -> Bit
 rXNor = rwPrimRXNor
 
 -- | Most significant bit.
 {-# INLINE msbit #-}
-msbit :: W n -> Bit
+msbit :: W (1 + n) -> Bit
 msbit = rwPrimMSBit

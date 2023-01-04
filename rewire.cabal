@@ -62,10 +62,10 @@ data-files:
     tests/regression/UpCounter1.hs
     tests/regression/UpCounter2.hs
     tests/regression/weird1.hs
-    rewire-user/src/PreWire.hs
     rewire-user/src/ReWire.hs
     rewire-user/src/RWC/Primitives.hs
     rewire-user/src/ReWire/Bits.hs
+    rewire-user/src/ReWire/BitWord.hs
     rewire-user/src/ReWire/Monad.hs
     rewire-user/src/ReWire/Prelude.hs
 

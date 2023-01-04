@@ -1,5 +1,5 @@
 {-# LANGUAGE DataKinds #-}
-import Prelude hiding ((+))
+import Prelude hiding ((+), head, last)
 import ReWire
 import ReWire.Bits
 
