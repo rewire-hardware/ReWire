@@ -26,3 +26,9 @@ $ stack install
 
 See `rwc --help` for a list of supported options and the `tests` directory for
 some examples.
+
+Acknowledgments
+Distribution Statement ‘A’ (Approved for Public Release, Distribution Unlimited).
+This work is supported in part by DARPA. The views, opinions, and/or findings expressed 
+are those of the author(s) and should not be interpreted as representing the official 
+views or policies of the Department of Defense or the U.S. Government.
