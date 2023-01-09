@@ -1,0 +1,3 @@
+#!/bin/sh
+
+yosys -p "read_verilog -sv $1; prep -flatten -top top_level; check -assert; opt -full -purge; clean -purge; write_verilog -noattr $1"

@@ -1,0 +1,3 @@
+#!/bin/sh
+
+yosys -p "read_verilog -sv $1; hierarchy -check; check -assert"
