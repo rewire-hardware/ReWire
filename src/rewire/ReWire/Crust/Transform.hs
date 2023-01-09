@@ -567,8 +567,8 @@ specialize (ts, syns, vs) = do
                   where mkTy' :: (Fresh m, MonadState TySub m, MonadError AstError m) => Ty -> Maybe Exp -> m (Either (Ty, Name Exp) Exp)
                         mkTy' t = \ case
                               Just e -> do
-                                    unify (ann e) t $ typeOf e
-                                    pure $ Right $ tyAnn (ann e) (poly' t) e
+                                    t' <- unify (ann e) t $ typeOf e
+                                    pure $ Right $ tyAnn (ann e) (poly' t') e
                               Nothing -> do
                                     n <- fresh $ s2n "sp"
                                     pure $ Left (t, n)

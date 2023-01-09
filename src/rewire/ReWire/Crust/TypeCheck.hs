@@ -21,9 +21,11 @@ import Control.Monad.Catch (MonadCatch (..))
 import Control.Monad.Identity (Identity (..))
 import Control.Monad.Reader (MonadReader, ReaderT (..), local, asks)
 import Control.Monad.State (evalStateT, gets, modify, MonadState)
+import Data.Containers.ListUtils (nubOrd)
 import Data.Data (Data)
 import Data.HashMap.Strict (HashMap)
 import Data.Hashable (Hashable (hash))
+import Data.List (sort)
 import Data.Maybe (mapMaybe)
 import Data.Set (Set)
 import Data.Text (Text)
@@ -112,77 +114,90 @@ typeCheck start (ts, syns, vs) = (ts, syns, ) <$> runReaderT tc mempty
 freshv :: Fresh m => m Ty
 freshv = TyVar (MsgAnnote "TypeCheck: freshv") kblank <$> fresh (s2n "?")
 
-fixTySub :: TySub -> TySub
-fixTySub = fixOn' norm subst'
+tsFix :: TySub -> TySub
+tsFix = fixOn' norm subst'
       where subst' :: TySub -> TySub
             subst' s = Map.map (subst s) s
 
             norm :: TySub -> Int
             norm = hash . Map.map unAnn
 
-mergeTySub :: TySub -> TySub -> TySub
-mergeTySub ts = fixTySub . Map.unionWith merge ts
+tsUnion :: TySub -> TySub -> TySub
+tsUnion ts = Map.unionWith merge ts
       where merge :: Ty -> Ty -> Ty
             merge (TyApp an t1 t2) (TyApp _ t1' t2') = TyApp an (merge t1 t1') (merge t2 t2')
             merge TyVar {}         t                 = t
             merge t                _                 = t
 
+mguNats :: (Natural, [Name Ty]) -> (Natural, [Name Ty]) -> Maybe TySub
+mguNats ns      ns'       | ns == ns' = pure mempty
+mguNats (n, []) (n', [])  | n /= n'   = Nothing
+mguNats (n, vs) (n', vs') | n >= n'   = mguNats' (n - n', sort vs)  $ sort vs'
+                          | otherwise = mguNats' (n' - n, sort vs') $ sort vs
+      where mguNats' :: (Natural, [Name Ty]) -> [Name Ty] -> Maybe TySub
+            mguNats' (0, us)  []                                 = pure $ mkSub0 us
+            mguNats' (0, [])  vs                                 = pure $ mkSub0 vs
+            mguNats' (0, [u]) vs                | u `notElem` vs = pure $ Map.fromList [(u, foldr1 (plusTy noAnn) $ map (TyVar noAnn KNat) vs)]
+            mguNats' (n, us)  [v]               | v `notElem` us = pure $ Map.fromList [(v, foldr (plusTy noAnn . TyVar noAnn KNat) (TyNat noAnn n) us)]
+
+            mguNats' (n, []) vs@(v : _)         | dups <- fromIntegral $ length $ takeWhile (== v) vs
+                                                                 = tsUnion (mkSubN v $ n `div` dups) <$> mguNats' (n `mod` dups, []) (drop (fromIntegral dups) vs)
+            mguNats' (n, u : us) (v : vs)       | u == v         = mguNats' (n, us) vs
+
+
+            mguNats' (n, us@(u : _)) vs@(v : _) | hash (show u) > hash (show v)
+                                                , dups <- length $ takeWhile (== u) us
+                                                                 = tsUnion (mkSubV u v) <$> mguNats' (n, take dups (repeat v) <> drop dups us) vs
+            mguNats' (n, us@(u : _)) vs@(v : _) | dups <- length $ takeWhile (== v) vs
+                                                                 = tsUnion (mkSubV v u) <$> mguNats' (n, us) (take dups (repeat u) <> drop dups vs)
+            mguNats' _ _                                         = Nothing
+
+            mkSubV :: Name Ty -> Name Ty -> TySub
+            mkSubV u v = Map.fromList [(u, TyVar noAnn KNat v)]
+
+            mkSubN :: Name Ty -> Natural -> TySub
+            mkSubN u n = Map.fromList [(u, TyNat noAnn n)]
+
+            mkSub0 :: [Name Ty] -> TySub
+            mkSub0 = Map.fromList . map (, TyNat noAnn 0) . nubOrd
+
 mgu :: Ty -> Ty -> Maybe TySub
+mgu t                    t'                          | unAnn t == unAnn t'           = pure mempty
+mgu (dstNats -> Just ns) (dstNats -> Just ns')                                       = mguNats ns ns'
+
 mgu (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) ti ) to )
-    (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) ti') to')                    = do
+    (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) ti') to')                           = do
       s1 <- mgu iTy ti
-      s2 <- mergeTySub s1 <$> mgu (subst s1 ti) (subst s1 ti')
-      s3 <- mergeTySub s2 <$> mgu (subst s2 oTy) (subst s2 to)
-      mergeTySub s3 <$> mgu (subst s3 to) (subst s3 to')
+      s2 <- tsUnion s1 <$> mgu (subst s1 ti) (subst s1 ti')
+      s3 <- tsUnion s2 <$> mgu (subst s2 oTy) (subst s2 to)
+      tsUnion s3 <$> mgu (subst s3 to) (subst s3 to')
 
-mgu (TyApp _ tl tr)                 (TyApp _ tl' tr')                         = do
-      let fwd = mgu tl tl' >>= \ s -> mergeTySub s <$> mgu (subst s tr) (subst s tr')
-          rev = mgu tr tr' >>= \ s -> mergeTySub s <$> mgu (subst s tl) (subst s tl')
+mgu (TyApp _ tl tr)                 (TyApp _ tl' tr')                                = do
+      let fwd = mgu tl tl' >>= \ s -> tsUnion s <$> mgu (subst s tr) (subst s tr')
+          rev = mgu tr tr' >>= \ s -> tsUnion s <$> mgu (subst s tl) (subst s tl')
       fwd `mplus` rev
-mgu (TyCon _ c1)                    (TyCon _ c2) | n2s c1 == n2s c2           = pure mempty
 
-mgu (TyNat _ n1)                    (TyNat _ n2) | n1 == n2                   = pure mempty
+mgu (TyCon _ c1)                    (TyCon _ c2)     | n2s c1 == n2s c2              = pure mempty
 
-mgu (TyVar _ _ u)                   (plus -> Just (TyVar _ _ v, t)) | u == v  = mgu (TyNat (ann t) 0) t
-mgu (plus -> Just (TyVar _ _ v, t)) (TyVar _ _ u)                   | u == v  = mgu (TyNat (ann t) 0) t
+mgu (TyVar _ _ u)                   tv@(TyVar _ _ v) | hash (show u) > hash (show v) = pure $ Map.fromList [(u, tv)]
+mgu tu@TyVar {}                     (TyVar _ _ v)                                    = pure $ Map.fromList [(v, tu)]
 
-mgu (TyNat _ n)                     (plus -> Just (TyNat _ m, t))   | n >= m  = mgu (TyNat (ann t) $ n - m) t
-mgu (plus -> Just (TyNat _ m, t))   (TyNat _ n)                     | n >= m  = mgu (TyNat (ann t) $ n - m) t
+mgu (TyVar _ _ u)                   t                | u `notElem` fv t              = pure $ Map.fromList [(u, t)]
+mgu t                               (TyVar _ _ u)    | u `notElem` fv t              = pure $ Map.fromList [(u, t)]
 
-mgu (TyVar _ _ u)                   (TyVar _ _ v)          | u == v           = pure mempty
-
-mgu (TyVar _ _ u)                   tv@(TyVar _ _ v)       | hash (show u) > hash (show v) = pure $ Map.fromList [(u, tv)]
-mgu tu@TyVar {}                     (TyVar _ _ v)                                          = pure $ Map.fromList [(v, tu)]
-
-mgu (TyVar _ _ u)                   t                      | u `notElem` fv t = pure $ Map.fromList [(u, t)]
-mgu t                               (TyVar _ _ u)          | u `notElem` fv t = pure $ Map.fromList [(u, t)]
-mgu _                               _                                         = Nothing
+mgu _                               _                                                = Nothing
 --      trace ("     MGU: " <> unpack (prettyPrint t1)
 --        <> "\n    with: " <> unpack (prettyPrint t2)) $
 --      trace ("      t1: " <> show (unAnn t1)) $
 --      trace ("      t2: " <> show (unAnn t2)) $ Nothing
 
-mapNat :: (Ty -> Ty) -> Ty -> Ty
-mapNat norm = \ case
-      TyApp a c n | isVec c || isProxy c -> TyApp a c $ norm n
-      TyApp a t1 t2                      -> TyApp a (mapNat norm t1) $ mapNat norm t2
-      t                                  -> t
-
-normNat :: Ty -> Ty
-normNat t = case evalNats $ plus' t of
-      (0, ts@(_ : _)) -> foldr1 (plusTy $ ann t) ts
-      (n, ts        ) -> foldr1 (plusTy $ ann t) $ TyNat (ann t) n : ts
-
-normNat' :: Ty -> Ty
-normNat' t = case evalNats $ plus' t of
-      (0, ts@(_ : _)) -> foldr1 (plusTy $ ann t) $ reverse ts
-      (n, ts        ) -> foldr1 (plusTy $ ann t) $ reverse $ TyNat (ann t) n : ts
-
-evalNats :: [Ty] -> (Natural, [Ty])
-evalNats = \ case
-      TyNat _ n : (evalNats -> (n', ts')) -> (n' + n,     ts')
-      t         : (evalNats -> (n', ts')) -> (n',     t : ts')
-      _                                   -> (0,           [])
+dstNats :: Ty -> Maybe (Natural, [Name Ty])
+dstNats t = foldM dstNat (0, []) $ plus' t
+      where dstNat :: (Natural, [Name Ty]) -> Ty -> Maybe (Natural, [Name Ty])
+            dstNat (n, ts) = \ case
+                  TyNat _ n'  -> pure (n + n', ts)
+                  TyVar _ _ v -> pure (n, ts <> [v])
+                  _           -> Nothing
 
 plus' :: Ty -> [Ty]
 plus' t | Just (a, b) <- plus t = plus' a <> plus' b
@@ -191,50 +206,21 @@ plus' t | Just (a, b) <- plus t = plus' a <> plus' b
 unify' :: Ty -> Ty -> Maybe Ty
 unify' t1 t2 = subst <$> mgu t1 t2 <*> pure t1
 
-tySub :: (Data a, MonadState TySub m, Subst Ty a) => a -> m a
-tySub a = gets (normNats . flip subst a)
-      where normNats :: Data d => d -> d
-            normNats = runIdentity . runPureT (transform $ \ (t :: Ty) -> pure $ mapNat normNat t)
-
-unify :: (MonadError AstError m, MonadState TySub m) => Annote -> Ty -> Ty -> m ()
+unify :: (MonadError AstError m, MonadState TySub m) => Annote -> Ty -> Ty -> m Ty
 unify an t1 t2 = do
-      t1' <- tySub t1
-      t2' <- tySub t2
-      let rev = mapNat normNat'
---      trace ("Unifying: " <> unpack (prettyPrint t1')
---        <> "\n    with: " <> unpack (prettyPrint t2')) $ pure ()
---      trace ("     t1': " <> show (unAnn t1')) $ pure ()
---      trace ("     t2': " <> show (unAnn t2')) $ pure ()
--- 
---      trace ("Unifying: " <> unpack (prettyPrint t1')
---        <> "\n    with: " <> unpack (prettyPrint $ rev t2')) $ pure ()
---      trace (" rev t2': " <> show (unAnn $ rev t2')) $ pure ()
-
-      case mgu t1' t2' `mplus` mgu t1' (rev t2') of
-            Just s' -> modify (mergeTySub s')
-            _       -> failAt an $ "Types do not unify. Expected and got, respectively:\n"
+      t1' <- gets $ flip subst t1
+      t2' <- gets $ flip subst t2
+--       trace ("Unifying: " <> unpack (prettyPrint t1')
+--         <> "\n    with: " <> unpack (prettyPrint t2')) $ pure ()
+--       trace ("     t1': " <> show (unAnn t1')) $ pure ()
+--       trace ("     t2': " <> show (unAnn t2')) $ pure ()
+      case mgu t1' t2' of
+            Just s -> do
+                  modify $ tsUnion s
+                  gets $ flip subst t1'
+            _      -> failAt an $ "Types do not unify. Expected and got, respectively:\n"
                               <> prettyPrint t1' <> "\n"
                               <> prettyPrint t2'
-
-isVec :: Ty -> Bool
-isVec = \ case
-      TyCon _ (n2s -> "Vec") -> True
-      _                      -> False
-
-isProxy :: Ty -> Bool
-isProxy = \ case
-      TyCon _ (n2s -> "Proxy") -> True
-      _                        -> False
-
-isPlus :: Ty -> Bool
-isPlus = \ case
-      TyCon _ (n2s -> "+") -> True
-      _                    -> False
-
-plus :: Ty -> Maybe (Ty, Ty)
-plus = \ case
-      TyApp _ (TyApp _ c t1) t2 | isPlus c -> pure (t1, t2)
-      _                                    -> Nothing
 
 inst :: Fresh m => Poly -> m Ty
 inst (Poly pt) = snd <$> unbind pt
@@ -255,44 +241,35 @@ patHoles = flip patHoles' $ pure mempty
                   MatchPatVar _ t      -> (flip Map.insert ([] `poly` t) <$> fresh (s2n "PHOLE") <*>)
                   MatchPatWildCard _ _ -> id
 
+tcPatCon :: (MonadReader TCEnv m, MonadState TySub m, Fresh m, MonadError AstError m) => Annote -> Ty -> (Ty -> pat -> m pat) -> Name DataConId -> [pat] -> m ([pat], Ty)
+tcPatCon an t tc i ps = do
+      cas     <- asks cas
+      case Map.lookup i cas of
+            Nothing  -> failAt an $ "Unknown constructor: " <> prettyPrint i
+            Just pta -> do
+                  ta               <- inst pta
+                  let (targs, tres) = flattenArrow ta
+                  when (length ps /= length targs) $ failAt an "Pattern is not applied to enough arguments"
+                  (,) <$> zipWithM tc targs ps <*> unify an tres t
+
 tcPat :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Ty -> Pat -> m Pat
 tcPat t = \ case
       PatCon an _ (Embed i) ps -> do
-            cas     <- asks cas
-            case Map.lookup i cas of
-                  Nothing  -> failAt an $ "Unknown constructor: " <> prettyPrint i
-                  Just pta -> do
-                        ta               <- inst pta
-                        let (targs, tres) = flattenArrow ta
-                        if length ps /= length targs
-                        then failAt an "Pattern is not applied to enough arguments"
-                        else do
-                              ps' <- zipWithM tcPat targs ps
-                              unify an tres t
-                              pure $ PatCon an (Embed t) (Embed i) ps'
+            (ps', t') <- tcPatCon an t tcPat i ps
+            pure $ PatCon an (Embed t') (Embed i) ps'
       PatVar an _ x            -> pure $ PatVar an (Embed t) x
       PatWildCard an _         -> pure $ PatWildCard an (Embed t)
 
 tcMatchPat :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Ty -> MatchPat -> m MatchPat
 tcMatchPat t = \ case
       MatchPatCon an _ i ps -> do
-            cas     <- asks cas
-            case Map.lookup i cas of
-                  Nothing  -> failAt an $ "Unknown constructor: " <> prettyPrint i
-                  Just pta -> do
-                        ta               <- inst pta
-                        let (targs, tres) = flattenArrow ta
-                        if length ps /= length targs
-                        then failAt an "Pattern is not applied to enough arguments"
-                        else do
-                              ps' <- zipWithM tcMatchPat targs ps
-                              unify an tres t
-                              pure $ MatchPatCon an t i ps'
+            (ps', t') <- tcPatCon an t tcMatchPat i ps
+            pure $ MatchPatCon an t' i ps'
       MatchPatVar an _      -> pure $ MatchPatVar an t
       MatchPatWildCard an _ -> pure $ MatchPatWildCard an t
 
 tcExp :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Exp -> m (Exp, Ty)
-tcExp = \ case
+tcExp eye = case eye of
       App an e1 e2 | isFromList e1 -> do
             (e2', _) <- tcExp e2
             case litListElems e2' of
@@ -303,15 +280,14 @@ tcExp = \ case
             (e1', te1) <- tcExp e1
             (e2', te2) <- tcExp e2
             tvr        <- freshv
-            unify an te1 (te2 `arr` tvr)
-            pure (App an e1' e2', tvr)
+            t'         <- unify an te1 (te2 `arr` tvr)
+            pure (App an e1' e2', arrowRight t')
       Lam an _ e -> do
             (x, e')   <- unbind e
             tvx       <- freshv
-            tvr       <- freshv
             (e'', te) <- localAssumps (Map.insert x (poly [] tvx)) $ tcExp e'
-            unify an tvr $ tvx `arr` te
-            pure (Lam an tvx $ bind x e'', tvr)
+            let t' = tvx `arr` te
+            pure (Lam an tvx $ bind x e'', t')
       Var an _ v -> do
             as <- asks as
             case Map.lookup v as of
@@ -329,30 +305,26 @@ tcExp = \ case
       Case an _ e e1 e2 -> do
             (e', te)    <- tcExp e
             (p, e1')    <- unbind e1
-            tv          <- freshv
             p'          <- tcPat te p
             let as      = patAssumps p'
-            (e1'', te1) <- localAssumps (`Map.union` as) $ tcExp e1'
-            unify an tv te1
+            (e1'', t') <- localAssumps (`Map.union` as) $ tcExp e1'
             case e2 of
-                  Nothing -> pure (Case an tv e' (bind p' e1'') Nothing, tv)
+                  Nothing -> pure (Case an t' e' (bind p' e1'') Nothing, t')
                   Just e2 -> do
                         (e2', te2)  <- tcExp e2
-                        unify an tv te2
-                        pure (Case an tv e' (bind p' e1'') (Just e2'), tv)
+                        t'' <- unify an t' te2
+                        pure (Case an t' e' (bind p' e1'') (Just e2'), t'')
       Match an _ e p f e2 -> do
             (e', te) <- tcExp e
-            tv       <- freshv
             p'       <- tcMatchPat te p
             holes    <- patHoles p'
-            (_, te1) <- localAssumps (`Map.union` holes) $ tcExp $ mkApp' an f $ map fst $ Map.toList holes
-            unify an tv te1
+            (_, t') <- localAssumps (`Map.union` holes) $ tcExp $ mkApp' an f $ map fst $ Map.toList holes
             case e2 of
-                  Nothing -> pure (Match an tv e' p' f Nothing, tv)
+                  Nothing -> pure (Match an t' e' p' f Nothing, t')
                   Just e2 -> do
                         (e2', te2)  <- tcExp e2
-                        unify an tv te2
-                        pure (Match an tv e' p' f (Just e2'), tv)
+                        t'' <- unify an t' te2
+                        pure (Match an t'' e' p' f (Just e2'), t'')
       Builtin an _ b -> do
             as <- asks as
             case Map.lookup (s2n $ builtinName b) as of
@@ -365,20 +337,18 @@ tcExp = \ case
       LitList an _ es -> do
             tv  <- freshv
             es' <- mapM tcExp es
-            mapM_ (unify an tv) (snd <$> es')
-            let t = listTy an tv
-            pure (LitList an t (fst <$> es'), t)
+            t' <- listTy an <$> foldM (unify an) tv (snd <$> es')
+            pure (LitList an t' (fst <$> es'), t')
       LitVec an _ es -> do
             tv  <- freshv
             es' <- mapM tcExp es
-            mapM_ (unify an tv) (snd <$> es')
-            let t = vecTy an (TyNat an $ fromInteger $ toInteger $ length es) tv
-            pure (LitVec an t (fst <$> es'), t)
+            t' <- vecTy an (TyNat an $ fromInteger $ toInteger $ length es) <$> foldM (unify an) tv (snd <$> es')
+            pure (LitVec an t' (fst <$> es'), t')
       TypeAnn an pt e -> do
             (e', te) <- tcExp e
-            t        <- inst pt
-            unify an t te
-            pure (TypeAnn an pt e', te)
+            ta       <- inst pt
+            t'       <- unify an ta te
+            pure (TypeAnn an pt e', t')
 
       where isFromList :: Exp -> Bool
             isFromList e = case unTyAnn e of
@@ -401,13 +371,17 @@ tcDefn start d  = flip evalStateT mempty $ do
       let (targs, _) = flattenArrow t'
       (e'', te) <- localAssumps (`Map.union` (Map.fromList $ zip vs $ map (poly []) targs))
                  $ tcExp e'
-      unify an (iterate arrowRight t' !! length vs) te
-      when (isStart $ defnName d) $ do
-            startTy <- inst globalStartTy
-            unify an startTy t'
-      d' <- Defn an n (Embed pt) b <$> Embed <$> bind vs <$> tySub e''
-      d' `deepseq` pure d'
 
+      startTy <- inst globalStartTy
+
+      t'' <- if isStart $ defnName d then unify an startTy t' else pure t'
+      _   <- unify an (iterate arrowRight t'' !! length vs) te
+
+      modify tsFix
+      e''' <- gets $ flip subst e''
+
+      let d'  = Defn an n (Embed pt) b $ Embed $ bind vs e'''
+      d' `deepseq` pure d'
       where isStart :: Name Exp -> Bool
             isStart = (== start) . n2s
 

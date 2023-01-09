@@ -24,8 +24,8 @@ module ReWire.Crust.Syntax
       , Poly (..), (|->), poly, poly'
       , rangeTy, paramTys, isPrim, inlineable, mustInline
       , mkArrowTy, nil, isResMonad, isStateMonad
-      , strTy, intTy, boolTy, listTy, pairTy, refTy, vecTy, plusTy, nilTy, vecElemTy, vecSize, proxyNat
-      , flattenAllTyApp, resInputTy
+      , strTy, intTy, boolTy, listTy, pairTy, refTy, vecTy, plusTy, plus, nilTy, vecElemTy, vecSize, proxyNat
+      , evalNat, flattenAllTyApp, resInputTy
       , mkTuple, mkTuplePat, mkTupleMPat, tupleTy
       , mkPair, mkPairPat, mkPairMPat
       , kmonad, tycomp, concrete, higherOrder, fundamental, tyAnn, unTyAnn, mkApp, mkError
@@ -692,25 +692,42 @@ vecElemTy t = case flattenTyApp t of
 
 vecSize :: Ty -> Maybe Natural
 vecSize t = case flattenTyApp t of
-      TyCon _ (n2s -> "Vec") : [TyNat _ n, _] -> pure n
-      _                                       -> Nothing
+      TyCon _ (n2s -> "Vec") : [n, _] -> evalNat n
+      _                               -> Nothing
 
 proxyNat :: Ty -> Maybe Natural
 proxyNat t = case flattenTyApp t of
-      TyCon _ (n2s -> "Proxy") : [TyNat _ n] -> pure n
-      _                                      -> Nothing
+      TyCon _ (n2s -> "Proxy") : [n] -> evalNat n
+      _                              -> Nothing
 
 plusTy :: Annote -> Ty -> Ty -> Ty
 plusTy an n = TyApp an $ TyApp an (TyCon an $ s2n "+") n
 
+plus :: Ty -> Maybe (Ty, Ty)
+plus = \ case
+      TyApp _ (TyApp _ c t1) t2 | isPlus c -> pure (t1, t2)
+      _                                    -> Nothing
+      where isPlus :: Ty -> Bool
+            isPlus = \ case
+                  TyCon _ (n2s -> "+") -> True
+                  _                    -> False
+
+evalNat :: Ty -> Maybe Natural
+evalNat = \ case
+      TyNat _ n               -> pure n
+      (plus -> Just (n1, n2)) -> (+) <$> evalNat n1 <*> evalNat n2
+      _                       -> Nothing
+
 arr' :: Ty -> Bind (Name Exp) Exp -> Ty
 arr' t b = runFreshM (arr t . typeOf <$> (snd <$> unbind b))
 
+-- | Given 'a -> (b -> c)' returns 'b -> c'.
 arrowRight :: Ty -> Ty
 arrowRight = \ case
       TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) t' -> t'
       t                                              -> t
 
+-- | Given 'a -> (b -> c)' returns 'a'.
 arrowLeft :: Ty -> Ty
 arrowLeft = \ case
       TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t') _ -> t'

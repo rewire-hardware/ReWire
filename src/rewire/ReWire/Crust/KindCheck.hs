@@ -65,23 +65,22 @@ unify an k1 k2 = do
 
 kcTy :: (Fresh m, MonadError AstError m) => Ty -> KCM m Kind
 kcTy = \ case
-      TyApp an t1 t2  -> do
+      TyApp an t1 t2         -> do
             k1 <- kcTy t1
             k2 <- kcTy t2
             k  <- freshkv
             unify an k1 $ KFun k2 k
             pure k
-      TyCon an i      -> case n2s i of
-            -- This special case really shouldn't be
-            -- necessary (bug?).
-            "->" -> pure $ KFun KStar $ KFun KStar KStar
-            _    -> do
-                  cas <- askCAssumps
-                  maybe (failAt an $ "Unknown type constructor or not fully-applied type synonym: " <> n2s i) pure
-                        $ Map.lookup i cas
-      TyVar _ k _     -> pure k
-      TyBlank _       -> freshkv
-      TyNat _ _       -> pure KNat
+      -- This special case really shouldn't be
+      -- necessary (bug?).
+      TyCon _  (n2s -> "->") -> pure $ KFun KStar $ KFun KStar KStar
+      TyCon an i             -> do
+            cas <- askCAssumps
+            maybe (failAt an $ "Unknown type constructor or not fully-applied type synonym: " <> n2s i) pure
+                  $ Map.lookup i cas
+      TyVar _ k _            -> pure k
+      TyBlank _              -> freshkv
+      TyNat _ _              -> pure KNat
 
 -- | Only needed for debugging.
 -- kcDataCon :: (Fresh m, MonadError AstError m) => DataCon -> KCM m ()

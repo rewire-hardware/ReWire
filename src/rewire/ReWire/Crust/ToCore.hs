@@ -112,42 +112,42 @@ arity = length . M.paramTys
 transExp :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.Exp -> TCM m C.Exp
 transExp e = case e of
       M.App an _ _                  -> case M.flattenApp' e of
-            M.Builtin _ _ M.Error  : _                                  -> transError
+            M.Builtin _ _ M.Error  : _                                    -> transError
             M.Builtin an t M.Bits : [arg]      -> do
                   arg'     <- transExp arg
                   let argSize = C.sizeOf arg'
-                  flip evalStateT mempty $ unify (ann e)
+                  _ <- flip evalStateT mempty $ unify (ann e)
                         (M.arrowRight t)
                         (M.vecTy an (M.TyNat an $ fromIntegral argSize) (M.boolTy an))
                   pure $ C.Call an argSize (C.Prim C.Resize) arg' [C.PatVar an argSize] C.nil
-            M.Builtin an _ M.Resize : [arg]                             -> do
+            M.Builtin an _ M.Resize : [arg]                               -> do
                   sz       <- sizeOf an $ M.typeOf e
                   arg'     <- transExp arg
                   pure $ C.Call an sz (C.Prim C.Resize) arg' [C.PatVar an $ C.sizeOf arg'] C.nil
-            M.Builtin an _ M.BitIndex   : [arg, M.LitInt _ i]           -> subElems an arg ((-i) - 1) 1
-            M.Builtin an _ M.BitSlice   : [arg, M.LitInt _ j, M.LitInt _ i] -> do
+            M.Builtin _ _ M.BitIndex   : [arg, M.LitInt _ i]               -> subElems an arg ((-i) - 1) 1
+            M.Builtin _ _ M.BitSlice   : [arg, M.LitInt _ j, M.LitInt _ i] -> do
                   unless (j + 1 >= i) $
                         failAt (ann arg) $ "transExp: invalid bit slice (j: " <> showt j <> ", i: " <> showt i <> ")."
                   let nBits = fromIntegral $ j + 1 - i
                       off   = (-i) - fromIntegral nBits
                   subElems an arg off nBits
             M.Builtin an _ M.VecIndex   : [arg, p]                      -> do
-                  i      <- maybe (failAt (ann p) "transExp: rwPrimVecIndex: invalid proxy argument.") pure
+                  i      <- maybe (failAt (ann e) "transExp: rwPrimVecIndex: invalid proxy argument.") pure
                               $ fmap fromIntegral $ M.proxyNat $ M.typeOf p
                   subElems an arg i 1
             M.Builtin an _ M.VecSlice   : [p, arg]                      -> do
-                  i      <- maybe (failAt (ann p) "transExp: rwPrimVecSlice: invalid proxy argument.") pure
+                  i      <- maybe (failAt (ann e) "transExp: rwPrimVecSlice: invalid proxy argument.") pure
                               $ fmap fromIntegral $ M.proxyNat $ M.typeOf p
-                  nElems <- maybe (failAt (ann p) "transExp: rwPrimVecSlice: invalid Vec argument.") pure
+                  nElems <- maybe (failAt (ann e) "transExp: rwPrimVecSlice: invalid Vec argument.") pure
                               $ M.vecSize $ M.typeOf e
                   subElems an arg i nElems
             M.Builtin an _ M.VecRSlice  : [p, arg]                      -> do
-                  i      <- maybe (failAt (ann p) "transExp: rwPrimVecRSlice: invalid proxy argument.") pure
+                  i      <- maybe (failAt (ann e) "transExp: rwPrimVecRSlice: invalid proxy argument.") pure
                               $ fmap fromIntegral $ M.proxyNat $ M.typeOf p
-                  nElems <- maybe (failAt (ann p) "transExp: rwPrimVecRSlice: invalid Vec argument.") pure
+                  nElems <- maybe (failAt (ann e) "transExp: rwPrimVecRSlice: invalid Vec argument.") pure
                               $ M.vecSize $ M.typeOf e
                   subElems an arg ((- i) - i * fromIntegral nElems) nElems
-            M.Builtin an _ M.VecReverse : [arg]                      -> do
+            M.Builtin an _ M.VecReverse : [arg]                         -> do
                   sz     <- sizeOf an $ M.typeOf e
                   arg'   <- transExp arg
                   nElems <- maybe (failAt (ann e) "transExp: rwPrimVecReverse: invalid Vec argument.") pure
@@ -156,7 +156,7 @@ transExp e = case e of
                               $ M.vecElemTy $ M.typeOf e
                   elemSz <- sizeOf an elemTy
                   pure $ C.Call an sz (C.Prim C.Reverse) arg' (replicate (fromIntegral nElems) $ C.PatVar an elemSz) C.nil
-            M.Builtin an _ M.VecReplicate : [arg]                      -> do
+            M.Builtin an _ M.VecReplicate : [arg]                       -> do
                   sz     <- sizeOf an $ M.typeOf e
                   arg'   <- transExp arg
                   nElems <- maybe (failAt (ann e) "transExp: rwPrimVecReverse: invalid Vec argument.") pure
@@ -165,41 +165,41 @@ transExp e = case e of
                               $ M.vecElemTy $ M.typeOf e
                   elemSz <- sizeOf an elemTy
                   pure $ C.Call an sz (C.Prim $ C.Replicate nElems) arg' [C.PatVar an elemSz] C.nil
-            M.Builtin an _ M.SetRef : M.App _ _ (M.LitStr _ r) : args   -> do
+            M.Builtin an _ M.SetRef : M.App _ _ (M.LitStr _ r) : args    -> do
                   sz       <- sizeOf an $ M.typeOf e
                   args'    <- mapM transExp args
                   let argSizes = map C.sizeOf args'
                   pure $ C.Call an sz (C.SetRef r) (C.cat args') (map (C.PatVar an) argSizes) C.nil
-            M.Builtin an _ M.GetRef : [M.App _ _ (M.LitStr _ r)]        -> do
+            M.Builtin an _ M.GetRef : [M.App _ _ (M.LitStr _ r)]         -> do
                   sz       <- sizeOf an $ M.typeOf e
                   pure $ C.Call an sz (C.GetRef r) C.nil [] C.nil
-            M.Builtin _ _ M.VecConcat : [arg1, arg2]                   -> do
+            M.Builtin _ _ M.VecConcat : [arg1, arg2]                     -> do
                   C.cat <$> mapM transExp [arg1, arg2]
-            M.Builtin an _ (toPrim -> Just p) : args                -> do
+            M.Builtin an _ (toPrim -> Just p) : args                     -> do
                   sz       <- sizeOf an $ M.typeOf e
                   args'    <- mapM transExp args
                   let argSizes = map C.sizeOf args'
                   pure $ C.Call an sz (C.Prim p) (C.cat args') (map (C.PatVar an) argSizes) C.nil
+            M.Builtin _ _ M.Extern  : M.LitList _ _ ps : M.LitStr _ clk : M.LitList _ _ as : M.LitList _ _ rs : M.LitStr _ s : a : M.LitStr _ inst : args
+                  | arity (M.typeOf a) == length args                    -> do
+                  sz       <- sizeOf an $ M.typeOf e
+                  args'    <- mapM transExp args
+                  let argSizes = map C.sizeOf args'
+                  pure $ C.Call an sz (C.Extern (externSig an argSizes sz clk (ps, as, rs)) s inst) (C.cat args') (map (C.PatVar an) argSizes) C.nil
+            M.Builtin _ _ M.Extern  : _                                  -> failAt an "transExp: encountered not-fully-applied extern (after inlining)."
             e'                      : _ | not $ M.concrete $ M.typeOf e' -> failAt an $ "transExp: could not infer a concrete type in an application. Inferred type: " <> prettyPrint (M.typeOf e')
             M.Var _ _ x             : args                               -> do
                   sz       <- sizeOf an $ M.typeOf e
                   args'    <- mapM transExp args
                   let argSizes = map C.sizeOf args'
                   pure $ C.Call an sz (C.Global $ showt x) (C.cat args') (map (C.PatVar an) argSizes) C.nil
-            M.Builtin _ t M.Extern  : M.LitList _ _ ps : M.LitStr _ clk : M.LitList _ _ as : M.LitList _ _ rs : M.LitStr _ s : _ : M.LitStr _ inst : args
-                  | arity t == 7 + length args                           -> do
-                  sz       <- sizeOf an $ M.typeOf e
-                  args'    <- mapM transExp args
-                  let argSizes = map C.sizeOf args'
-                  pure $ C.Call an sz (C.Extern (externSig an argSizes sz clk (ps, as, rs)) s inst) (C.cat args') (map (C.PatVar an) argSizes) C.nil
-            M.Builtin _ _ M.Extern  : _                                 -> failAt an "transExp: encountered not-fully-applied extern (after inlining)."
-            M.Con an t d            : args                              -> do
+            M.Con an t d            : args                               -> do
                   (v, w)     <- ctorTag an (M.rangeTy t) d
                   args'      <- mapM transExp args
                   let argSizes = map C.sizeOf args'
                   (tag, pad) <- ctorRep an (M.typeOf e) (v, w) $ sum argSizes
                   pure $ C.cat ([C.Lit an tag, C.Lit an pad] <> args')
-            _                           -> failAt an "transExp: encountered ill-formed application."
+            _                                                            -> failAt an "transExp: encountered ill-formed application."
       M.Var an t x                      -> lift (asks $ Map.lookup x) >>= \ case
             Nothing -> do
                   sz <- sizeOf an t
@@ -238,7 +238,7 @@ transExp e = case e of
             -- | If i is negative, it represents an offset from the end, where '-1' is the offset for the last element.
             subElems :: (Fresh m, MonadError AstError m, MonadState SizeMap m) => Annote -> M.Exp -> Integer -> Natural -> TCM m C.Exp
             subElems an arg i nElems = do
-                  elemTy <- maybe (failAt an "ToCore: subElems: non-vector type argument") pure
+                  elemTy <- maybe (failAt (ann arg) "ToCore: subElems: non-vector type argument to built-in vector function") pure
                           $ M.vecElemTy $ M.typeOf arg
                   elemSz <- fromIntegral <$> sizeOf an elemTy
                   arg'   <- transExp arg
@@ -386,26 +386,16 @@ sizeOf an t = do
       m <- get
       s <- case Map.lookup t m of
             Nothing -> case M.flattenTyApp t of
-                  M.TyCon _ (n2s -> "Vec") : [n, t]           -> (*) <$> evalNat n <*> sizeOf an t
-                  M.TyCon _ c              : _                -> do
+                  M.TyCon _ (n2s -> "Vec") : [M.evalNat -> Just n, t] -> (fromIntegral n *) <$> sizeOf an t
+                  M.TyCon _ c              : _                        -> do
                         ctors      <- getCtors c
                         ctorWidths <- mapM (ctorWidth t) ctors
                         pure $ ceilLog2 (genericLength ctors) + maximum (0 : ctorWidths)
-                  M.TyApp {}               : _                -> failAt an $ "ToCore: sizeOf: Got TyApp after flattening (can't happen): " <> prettyPrint t
-                  _                                           -> pure 0
+                  M.TyApp {}               : _                        -> failAt an $ "ToCore: sizeOf: Got TyApp after flattening (can't happen): " <> prettyPrint t
+                  _                                                   -> pure 0
             Just s -> pure s
       put $ Map.insert t s m
       pure s
-
-      where toWord :: Natural -> Word
-            toWord = fromInteger . toInteger
-
-            evalNat :: MonadError AstError m => M.Ty -> m Word
-            evalNat = \ case
-                  M.TyNat _ n                                          -> pure $ toWord n
-                  M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "+")) n1) n2 -> (+) <$> evalNat n1 <*> evalNat n2
-                  -- t                                                    -> failAt (ann t) "ToCore: sizeOf: Could not evalute type-level Nat to a constant value."
-                  _                                                    -> pure 0
 
 ceilLog2 :: Integral a => a -> a
 ceilLog2 n | toInteger n < 1 = 0
