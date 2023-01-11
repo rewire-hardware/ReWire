@@ -243,7 +243,7 @@ freshKVar n = M.KVar <$> fresh (s2n $ "?K_" <> n)
 
 transExp :: (Fresh m, MonadError AstError m) => Renamer -> Exp Annote -> m M.Exp
 transExp rn = \ case
-      App l e1 e2            -> M.App l <$> transExp rn e1 <*> transExp rn e2
+      App l e1 e2            -> M.mkApp l <$> transExp rn e1 <*> (pure <$> transExp rn e2)
       Lambda l [PVar _ x] e  -> do
             e' <- transExp (exclude Value [void x] rn) e
             pure $ M.Lam l (M.TyBlank l) $ bind (mkUId $ void x) e'

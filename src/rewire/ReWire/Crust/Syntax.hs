@@ -303,7 +303,7 @@ builtinName b = fromMaybe "" $ lookup b $ map swap builtins
 instance (TextShow a, TextShow b) => TextShow (Bind a b) where
       showbPrec = genericShowbPrec
 
-data Exp = App     Annote           !Exp !Exp
+data Exp = App     Annote !Ty       !Exp !Exp
          | Lam     Annote !Ty       !(Bind (Name Exp) Exp)
          | Var     Annote !Ty       !(Name Exp)
          | Con     Annote !Ty       !(Name DataConId)
@@ -365,7 +365,7 @@ instance NFData Exp
 
 instance TypeAnnotated Exp where
       typeOf = \ case
-            App _   e _       -> arrowRight $ typeOf e
+            App _ t _ _       -> t
             Lam _ t e         -> arr' t e
             Var _ t _         -> t
             Con _ t _         -> t
@@ -380,7 +380,7 @@ instance TypeAnnotated Exp where
 
 instance Annotated Exp where
       ann = \ case
-            App a _ _         -> a
+            App a _ _ _       -> a
             Lam a _ _         -> a
             Var a _ _         -> a
             Con a _ _         -> a
@@ -631,14 +631,14 @@ instance Pretty Program where
 -- > [v, e1, e2, e3]
 flattenApp :: Exp -> [Exp]
 flattenApp = \ case
-      App _ e e'  -> flattenApp e <> [e']
-      e           -> [e]
+      App _ _ e e'  -> flattenApp e <> [e']
+      e             -> [e]
 
 -- | flatenApp, but ignore type annotations.
 flattenApp' :: Exp -> [Exp]
 flattenApp' e = case unTyAnn e of
-      App _ e e'  -> flattenApp' e <> [e']
-      e           -> [e]
+      App _ _ e e'  -> flattenApp' e <> [e']
+      e             -> [e]
 
 flattenArrow :: Ty -> ([Ty], Ty)
 flattenArrow = \ case
@@ -852,10 +852,10 @@ tyAnn :: Annote -> Poly -> Exp -> Exp
 tyAnn an t = TypeAnn an t . unTyAnn
 
 mkApp :: Annote -> Exp -> [Exp] -> Exp
-mkApp an = foldl' $ App an
+mkApp an = foldl' $ \ e -> App an (arrowRight $ typeOf e) e
 
 mkError :: Annote -> Ty -> Text -> Exp
-mkError an t err = App an (Builtin an (strTy an `arr` t) Error) $ LitStr an err
+mkError an t err = App an t (Builtin an (strTy an `arr` t) Error) $ LitStr an err
 
 -- Orphans.
 

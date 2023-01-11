@@ -7,12 +7,11 @@ import ReWire.Annotation
 import ReWire.Error
 import ReWire.Pretty
 import ReWire.Unbound (Name, Fresh, runFreshM, Embed (..) , unbind, n2s)
-import ReWire.Crust.TypeCheck (unify)
 
 import Control.Arrow ((&&&))
 import Control.Lens ((^.))
 import Control.Monad.Reader (MonadReader (..), ReaderT (..), asks, lift)
-import Control.Monad.State (StateT (..), MonadState, get, put, unless, evalStateT)
+import Control.Monad.State (StateT (..), MonadState, get, put, unless)
 import Data.BitVector (bitVec, zeros, BV)
 import Data.Either (partitionEithers)
 import Data.HashMap.Strict (HashMap)
@@ -75,11 +74,11 @@ transDefn conf start conMap = \ case
                                                          state0Ty'
                                     pure $ Left $ C.StartDefn an wires (n2s loop) (n2s state0)
                               _ -> failAt an $ "transDefn: definition of " <> start <> " must have form `unfold n m' where n and m are global IDs; got " <> prettyPrint e'
-                  _ -> failAt an $ "transDefn: " <> start <> " has illegal type: " <> prettyPrint t'
+                  _ -> failAt an $ "transDefn: " <> start <> " has unsupported type: " <> prettyPrint t'
       M.Defn an n (Embed (M.Poly t)) _ (Embed e) -> do
             (_, t')  <- unbind t
             (xs, e') <- unbind e
-            if | M.higherOrder t'       -> failAt an $ "transDefn: " <> prettyPrint n <> " has illegal higher-order type."
+            if | M.higherOrder t'       -> failAt an $ "transDefn: " <> prettyPrint n <> " has unsupported higher-order type."
                | not $ M.fundamental t' -> failAt an $ "transDefn: " <> prettyPrint n <> " has un-translatable String or Integer arguments."
                | otherwise              -> Right <$> (C.Defn an (showt n) <$> runReaderT (transType t') conMap <*> runReaderT (runReaderT (transExp e') conMap) (Map.fromList $ zip xs [0..]))
       where getRegsTy :: MonadError AstError m => M.Ty -> m M.Ty
@@ -98,8 +97,8 @@ externSig an args res clk = \ case
       _                                                         -> C.ExternSig an [] clk args' res'
       where params :: [M.Exp] -> Maybe [(Text, C.Size)]
             params = mapM $ \ case
-                  M.App _ (M.App _ (M.Con _ _ (n2s -> "(,)")) (M.LitStr _ p)) (M.LitInt _ v) -> pure (p, fromIntegral v)
-                  _                                                                          -> Nothing
+                  M.App _ _ (M.App _ _ (M.Con _ _ (n2s -> "(,)")) (M.LitStr _ p)) (M.LitInt _ v) -> pure (p, fromIntegral v)
+                  _                                                                              -> Nothing
             args' :: [(Text, C.Size)]
             args' = map (mempty, ) args
 
@@ -111,14 +110,11 @@ arity = length . M.paramTys
 
 transExp :: (MonadError AstError m, Fresh m, MonadState SizeMap m) => M.Exp -> TCM m C.Exp
 transExp e = case e of
-      M.App an _ _                  -> case M.flattenApp' e of
+      M.App an _ _ _                -> case M.flattenApp' e of
             M.Builtin _ _ M.Error  : _                                    -> transError
-            M.Builtin an t M.Bits : [arg]      -> do
+            M.Builtin an _ M.Bits : [arg]      -> do
                   arg'     <- transExp arg
                   let argSize = C.sizeOf arg'
-                  _ <- flip evalStateT mempty $ unify (ann e)
-                        (M.arrowRight t)
-                        (M.vecTy an (M.TyNat an $ fromIntegral argSize) (M.boolTy an))
                   pure $ C.Call an argSize (C.Prim C.Resize) arg' [C.PatVar an argSize] C.nil
             M.Builtin an _ M.Resize : [arg]                               -> do
                   sz       <- sizeOf an $ M.typeOf e
@@ -165,12 +161,12 @@ transExp e = case e of
                               $ M.vecElemTy $ M.typeOf e
                   elemSz <- sizeOf an elemTy
                   pure $ C.Call an sz (C.Prim $ C.Replicate nElems) arg' [C.PatVar an elemSz] C.nil
-            M.Builtin an _ M.SetRef : M.App _ _ (M.LitStr _ r) : args    -> do
+            M.Builtin an _ M.SetRef : M.App _ _ _ (M.LitStr _ r) : args  -> do
                   sz       <- sizeOf an $ M.typeOf e
                   args'    <- mapM transExp args
                   let argSizes = map C.sizeOf args'
                   pure $ C.Call an sz (C.SetRef r) (C.cat args') (map (C.PatVar an) argSizes) C.nil
-            M.Builtin an _ M.GetRef : [M.App _ _ (M.LitStr _ r)]         -> do
+            M.Builtin an _ M.GetRef : [M.App _ _ _ (M.LitStr _ r)]       -> do
                   sz       <- sizeOf an $ M.typeOf e
                   pure $ C.Call an sz (C.GetRef r) C.nil [] C.nil
             M.Builtin _ _ M.VecConcat : [arg1, arg2]                     -> do
@@ -392,7 +388,8 @@ sizeOf an t = do
                         ctorWidths <- mapM (ctorWidth t) ctors
                         pure $ ceilLog2 (genericLength ctors) + maximum (0 : ctorWidths)
                   M.TyApp {}               : _                        -> failAt an $ "ToCore: sizeOf: Got TyApp after flattening (can't happen): " <> prettyPrint t
-                  _                                                   -> pure 0
+                  M.TyVar {}               : _                        -> pure 0 -- TODO(chathhorn): shouldn't need this.
+                  _                                                   -> failAt an $ "ToCore: sizeOf: couldn't calculate the size of a type: " <> prettyPrint t
             Just s -> pure s
       put $ Map.insert t s m
       pure s

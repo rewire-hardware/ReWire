@@ -189,12 +189,12 @@ rwPrimVecConcat :: Vec n a -> Vec m a -> Vec (n + m) a
 rwPrimVecConcat = (V.++)
 
 -- | Interpret an Integer as a bit vector.
-rwPrimBits :: forall n. KnownNat n => Integer -> Vec n Bool
-rwPrimBits = 
+rwPrimBits :: Integer -> Vec 128 Bool
+rwPrimBits =
       rwPrimVecFromList . BW.padTrunc' i 
                         . GHC.reverse . BW.int2bits'
         where
-          i = GHC.fromIntegral (natVal (Proxy :: Proxy n))
+          i = GHC.fromIntegral (natVal (Proxy :: Proxy 128))
 
 
 -- | Truncates or zero-pads most significant bits.
@@ -297,23 +297,23 @@ rwPrimRShiftArith :: KnownNat n => Vec n Bool -> Vec n Bool -> Vec n Bool
 rwPrimRShiftArith v i = rwPrimVecFromList $ BW.arithShiftR' (V.toList v) (V.toList i)
 
 -- | Equal.
-rwPrimEq :: Vec n Bool -> Vec m Bool -> Bool
+rwPrimEq :: Vec n Bool -> Vec n Bool -> Bool
 rwPrimEq v w = BW.toInteger' v GHC.== BW.toInteger' w
 
 -- | Greater-than.
-rwPrimGt :: Vec n Bool -> Vec m Bool -> Bool
+rwPrimGt :: Vec n Bool -> Vec n Bool -> Bool
 rwPrimGt v w = BW.toInteger' v GHC.> BW.toInteger' w
 
 -- | Greater-than or equal.
-rwPrimGtEq :: Vec n Bool -> Vec m Bool -> Bool
+rwPrimGtEq :: Vec n Bool -> Vec n Bool -> Bool
 rwPrimGtEq v w = BW.toInteger' v GHC.<= BW.toInteger' w
 
 -- | Less-than.
-rwPrimLt :: Vec n Bool -> Vec m Bool -> Bool
+rwPrimLt :: Vec n Bool -> Vec n Bool -> Bool
 rwPrimLt v w = BW.toInteger' v GHC.< BW.toInteger' w
 
 -- | Less-than or equal.
-rwPrimLtEq :: Vec n Bool -> Vec m Bool -> Bool
+rwPrimLtEq :: Vec n Bool -> Vec n Bool -> Bool
 rwPrimLtEq v w = BW.toInteger' v GHC.<= BW.toInteger' w
 
 -- | Reduction and.

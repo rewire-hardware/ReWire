@@ -200,22 +200,22 @@ rotL n w = (w <<. n) .|. (w >>. (lit (ReWire.len w) - n))
 
 -- | Greater-than.
 {-# INLINE (>) #-}
-(>) :: W n -> W m -> Bool
+(>) :: W n -> W n -> Bool
 (>) = rwPrimGt
 
 -- | Greater-than or equal.
 {-# INLINE (>=) #-}
-(>=) :: W n -> W m -> Bool
+(>=) :: W n -> W n -> Bool
 (>=) = rwPrimGtEq
 
 -- | Less-than.
 {-# INLINE (<) #-}
-(<) :: W n -> W m -> Bit
+(<) :: W n -> W n -> Bit
 (<) = rwPrimLt
 
 -- | Less-than or equal.
 {-# INLINE (<=) #-}
-(<=) :: W n -> W m -> Bit
+(<=) :: W n -> W n -> Bit
 (<=) = rwPrimLtEq
 
 -- | Concatenate.
