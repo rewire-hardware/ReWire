@@ -79,7 +79,6 @@ kcTy = \ case
             maybe (failAt an $ "Unknown type constructor or not fully-applied type synonym: " <> n2s i) pure
                   $ Map.lookup i cas
       TyVar _ k _            -> pure k
-      TyBlank _              -> freshkv
       TyNat _ _              -> pure KNat
 
 -- | Only needed for debugging.

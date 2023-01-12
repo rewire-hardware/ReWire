@@ -155,7 +155,6 @@ getProgram conf fp = do
        >=> simplify conf
        >=> pDebug' "[Pass 8] Post-simplification."
        >=> whenDump 8 (printInfo "[Pass 8] Crust: Post-simplify")
-       >=> removeExpTypeAnn
        >=> pDebug' "Lifting lambdas (pre-purification)."
        >=> shiftLambdas >=> liftLambdas
        >=> pDebug' "Removing unused definitions (again)."

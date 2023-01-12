@@ -49,28 +49,28 @@ toDefn = \ case
 
 toExp :: GhcMonad m => Expr Var -> m M.Exp
 toExp = \ case
-      Var v                     -> M.Var noAnn tblank <$> toName v
-      Lit (LitNumber _ v)       -> pure $ M.LitInt noAnn v
-      Lit (LitString v)         -> pure $ M.LitStr noAnn $ pack $ show v
-      Lit _                     -> pure $ M.mkError noAnn tblank "lit"
+      Var v                     -> M.Var noAnn Nothing Nothing <$> toName v
+      Lit (LitNumber _ v)       -> pure $ M.LitInt noAnn Nothing v
+      Lit (LitString v)         -> pure $ M.LitStr noAnn Nothing $ pack $ show v
+      Lit _                     -> pure $ M.mkError noAnn Nothing "lit"
       App e1 e2                 -> M.mkApp noAnn <$> toExp e1 <*> (pure <$> toExp e2)
       Lam v e                   -> do
             v' <- toName v
             e' <- toExp e
-            pure $ M.Lam noAnn tblank $ bind v' e'
+            pure $ M.Lam noAnn Nothing Nothing $ bind v' e'
       Let (NonRec v e) body   -> do
             v'    <- toName v
             e'    <- toExp e
             body' <- toExp body
-            pure $ M.mkApp noAnn (M.Lam noAnn tblank $ bind v' body') [e']
+            pure $ M.mkApp noAnn (M.Lam noAnn Nothing Nothing $ bind v' body') [e']
       Let _ _   -> pure $ ph "Let"
       Case e v _type alts -> do
             e'         <- toExp e
             v'         <- toName v
-            alts' <- toCase (M.Var noAnn tblank v') $ reverse alts
+            alts' <- toCase (M.Var noAnn Nothing Nothing v') $ reverse alts
             pure $ case alts' of
-                  Just alts'' -> M.mkApp noAnn (M.Lam noAnn tblank $ bind v' alts'') [e']
-                  Nothing     -> M.mkApp noAnn (M.Lam noAnn tblank $ bind v' $ M.mkError noAnn tblank "GHCCoreToCrust: case: empty alts.") [e']
+                  Just alts'' -> M.mkApp noAnn (M.Lam noAnn Nothing Nothing $ bind v' alts'') [e']
+                  Nothing     -> M.mkApp noAnn (M.Lam noAnn Nothing Nothing $ bind v' $ M.mkError noAnn Nothing "GHCCoreToCrust: case: empty alts.") [e']
       Cast e _coercion          -> toExp e
       Tick _tickish e           -> toExp e
       Type _type                -> pure $ ph "Type"
@@ -83,12 +83,12 @@ toCase _scr = \ case
 --             e'  <- toExp e
 --             alts' <- toCase scr alts
 --             pat'  <- toPat c vs
---             pure $ Just $ M.Case noAnn tblank scr (bind pat' e') alts'
+--             pure $ Just $ M.Case noAnn Nothing scr (bind pat' e') alts'
 --       ((LitAlt _lit, _, e) : alts) -> do
 --             _e'    <- toExp e
 --             _alts' <- toCase scr alts
 --             -- pat'  <- toPat c vs
---             pure $ Just $ M.mkError noAnn tblank "lit case"
+--             pure $ Just $ M.mkError noAnn Nothing "lit case"
 --       [(DEFAULT, _, e)] -> do
 --             e'  <- toExp e
 --             pure $ Just e'
@@ -99,7 +99,7 @@ toCase _scr = \ case
 --          toPat c vs = do
 --                vs' <- mapM toName vs
 --                c'  <- dcToName c
---                pure $ M.PatCon noAnn (M.Embed tblank) (M.Embed c') $ map (M.PatVar noAnn $ Embed tblank) vs'
+--                pure $ M.PatCon noAnn (M.Embed Nothing) (M.Embed c') $ map (M.PatVar noAnn $ Embed Nothing) vs'
 
 --          dcToName :: GhcMonad m => DataCon -> m (M.Name M.DataConId)
 --          dcToName c = do
@@ -130,10 +130,7 @@ toType = \ case
             error $ "what type is this: " <> unpack (showGhc dflags t)
 
 ph :: Text -> M.Exp
-ph m = M.mkError noAnn tblank $ "GHCCoreToCrust: " <> m
+ph m = M.mkError noAnn Nothing $ "GHCCoreToCrust: " <> m
 
 showGhc :: Outputable a => DynFlags -> a -> Text
 showGhc dflags = pack . showSDoc dflags . ppr
-
-tblank :: M.Ty
-tblank = M.TyBlank noAnn

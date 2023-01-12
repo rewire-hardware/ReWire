@@ -195,7 +195,7 @@ transDef rn tys inls defs = \ case
             let x' = s2n $ rename Value rn x
                 t  = fromMaybe (M.TyVar l k $ s2n "a") $ lookup x tys
             -- Elide definition of primitives. Allows providing alternate defs for GHC compat.
-            e' <- if | M.isPrim x' -> pure $ M.mkError (ann e) t $ "Prim: " <> n2s x'
+            e' <- if | M.isPrim x' -> pure $ M.mkError (ann e) (Just t) $ "Prim: " <> n2s x'
                      | otherwise   -> transExp rn e
             pure $ M.Defn l x' (Embed $ M.poly' t) (Map.lookup x inls) (Embed (bind [] e')) : defs
       DataDecl       {}                                         -> pure defs -- TODO(chathhorn): elide
@@ -246,26 +246,26 @@ transExp rn = \ case
       App l e1 e2            -> M.mkApp l <$> transExp rn e1 <*> (pure <$> transExp rn e2)
       Lambda l [PVar _ x] e  -> do
             e' <- transExp (exclude Value [void x] rn) e
-            pure $ M.Lam l (M.TyBlank l) $ bind (mkUId $ void x) e'
+            pure $ M.Lam l Nothing Nothing $ bind (mkUId $ void x) e'
       Var l x | Just b <- builtin x
-                             -> pure $ M.Builtin l (M.TyBlank l) b
-      Var l x                -> pure $ M.Var l (M.TyBlank l) $ s2n $ rename Value rn x
-      Con l x                -> pure $ M.Con l (M.TyBlank l) $ s2n $ rename Value rn x
+                             -> pure $ M.Builtin l Nothing Nothing b
+      Var l x                -> pure $ M.Var l Nothing Nothing $ s2n $ rename Value rn x
+      Con l x                -> pure $ M.Con l Nothing Nothing $ s2n $ rename Value rn x
       Case l e [Alt _ p (UnGuardedRhs _ e1) _, Alt _ _ (UnGuardedRhs _ e2) _] -> do
             e'  <- transExp rn e
             p'  <- transPat rn p
             e1' <- transExp (exclude Value (getVars p) rn) e1
             e2' <- transExp rn e2
-            pure $ M.Case l (M.TyBlank l) e' (bind p' e1') (Just e2')
+            pure $ M.Case l Nothing Nothing e' (bind p' e1') (Just e2')
       Case l e [Alt _ p (UnGuardedRhs _ e1) _] -> do
             e'  <- transExp rn e
             p'  <- transPat rn p
             e1' <- transExp (exclude Value (getVars p) rn) e1
-            pure $ M.Case l (M.TyBlank l) e' (bind p' e1') Nothing
-      Lit l (Int _ n _)      -> pure $ M.LitInt l n
-      Lit l (String _ s _)   -> pure $ M.LitStr l $ pack s
-      List l es              -> M.LitList l (M.TyBlank l) <$> mapM (transExp rn) es
-      ExpTypeSig l e t       -> M.TypeAnn l <$> (M.poly' <$> transTy rn t) <*> transExp rn e
+            pure $ M.Case l Nothing Nothing e' (bind p' e1') Nothing
+      Lit l (Int _ n _)      -> pure $ M.LitInt l Nothing n
+      Lit l (String _ s _)   -> pure $ M.LitStr l Nothing $ pack s
+      List l es              -> M.LitList l Nothing Nothing <$> mapM (transExp rn) es
+      ExpTypeSig _ e t       -> M.setTyAnn <$> (Just . M.poly' <$> transTy rn t) <*> transExp rn e
       e                      -> failAt (ann e) $ "Unsupported expression syntax: " <> pack (show $ void e)
       where getVars :: Pat Annote -> [S.Name ()]
             getVars = runQ $ query $ \ case
@@ -275,12 +275,13 @@ transExp rn = \ case
             builtin :: QName Annote -> Maybe M.Builtin
             builtin = M.builtin . pack . prettyPrint . name . rename Value rn
 
-transPat :: MonadError AstError m => Renamer -> Pat Annote -> m M.Pat
+transPat :: (Fresh m, MonadError AstError m) => Renamer -> Pat Annote -> m M.Pat
 transPat rn = \ case
-      PApp l x ps -> M.PatCon l (Embed (M.TyBlank l)) (Embed $ s2n $ rename Value rn x) <$> mapM (transPat rn) ps
-      PVar l x    -> pure $ M.PatVar l (Embed (M.TyBlank l)) (mkUId $ void x)
-      PWildCard l -> pure $ M.PatWildCard l (Embed (M.TyBlank l))
-      p           -> failAt (ann p) $ "Unsupported syntax in a pattern: " <> pack (show $ void p)
+      PApp l x ps      -> M.PatCon l (Embed Nothing) (Embed Nothing) (Embed $ s2n $ rename Value rn x) <$> mapM (transPat rn) ps
+      PVar l x         -> pure $ M.PatVar l (Embed Nothing) (Embed Nothing) (mkUId $ void x)
+      PWildCard l      -> pure $ M.PatWildCard l (Embed Nothing) (Embed Nothing)
+      PatTypeSig _ p t -> M.setTyAnn <$> (Just . M.poly' <$> transTy rn t) <*> transPat rn p
+      p                -> failAt (ann p) $ "Unsupported syntax in a pattern: " <> pack (show $ void p)
 
 -- Note: runs before desugaring.
 -- TODO(chathhorn): GADT style decls?

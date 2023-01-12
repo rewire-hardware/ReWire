@@ -17,7 +17,7 @@ module ReWire.Crust.Syntax
       , Defn (..), DefnAttr (..), DataDefn (..), TypeSynonym (..), DataCon (..)
       , FreeProgram, Program (..)
       , Kind (..), kblank
-      , flattenApp, flattenApp', flattenArrow, flattenTyApp, arr, arrowRight, arrowLeft
+      , flattenApp, flattenArrow, flattenTyApp, arr, arrowRight, arrowLeft
       , fv, fvAny
       , Fresh, Name, Embed (..), TRec, Bind, FieldId
       , trec, untrec, bind, unbind
@@ -28,7 +28,7 @@ module ReWire.Crust.Syntax
       , evalNat, flattenAllTyApp, resInputTy
       , mkTuple, mkTuplePat, mkTupleMPat, tupleTy
       , mkPair, mkPairPat, mkPairMPat
-      , kmonad, tycomp, concrete, higherOrder, fundamental, tyAnn, unTyAnn, mkApp, mkError
+      , kmonad, tycomp, concrete, higherOrder, fundamental, mkApp, mkError
       , TypeAnnotated (..), prettyFP
       ) where
 
@@ -59,7 +59,7 @@ import safe Data.Tuple (swap)
 import safe GHC.Generics (Generic (..))
 import safe Prettyprinter
       ( Doc, nest, hsep, parens, dquotes, comma, brackets
-      , braces, vsep, (<+>), Pretty (..), punctuate
+      , vsep, (<+>), Pretty (..), punctuate
       )
 import safe ReWire.Pretty (empty, text)
 import safe Numeric.Natural (Natural)
@@ -98,7 +98,9 @@ instance Monoid Module where
 ---
 
 class TypeAnnotated a where
-      typeOf :: a -> Ty
+      typeOf   :: a -> Maybe Ty
+      tyAnn    :: a -> Maybe Poly
+      setTyAnn :: Maybe Poly -> a -> a
 
 class Parenless a where
       -- | Parts that never need to be wrapped in parens during pretty printing.
@@ -191,7 +193,6 @@ data Ty = TyApp Annote !Ty !Ty
         | TyCon Annote !(Name TyConId)
         | TyVar Annote !Kind !(Name Ty)
         | TyNat Annote !Natural
-        | TyBlank Annote
       deriving (Eq, Ord, Generic, Typeable, Data, Show)
       deriving TextShow via FromGeneric Ty
 
@@ -228,7 +229,6 @@ instance Annotated Ty where
             TyApp a _ _  -> a
             TyCon a _    -> a
             TyVar a _ _  -> a
-            TyBlank a    -> a
             TyNat a _    -> a
 
 instance Parenless Ty where
@@ -236,7 +236,6 @@ instance Parenless Ty where
             (TyCon _ (n2s -> c) : _)  | isTupleCtor c -> True
             [TyCon {}]                                -> True
             [TyVar {}]                                -> True
-            [TyBlank {}]                              -> True
             [TyNat {}]                                -> True
             _                                         -> False
 
@@ -250,7 +249,6 @@ instance Pretty Ty where
             (TyCon _ (n2s -> "[_]") : [t'])     -> brackets $ pretty t'
             [TyCon _ n]                         -> text $ n2s n
             [TyVar _ _ n]                       -> text $ showt n
-            [TyBlank _]                         -> text "_"
             [TyNat _ n]                         -> text $ showt n
             ts                                  -> hsep $ map mparens ts
             where needsParens :: Ty -> Bool
@@ -303,18 +301,17 @@ builtinName b = fromMaybe "" $ lookup b $ map swap builtins
 instance (TextShow a, TextShow b) => TextShow (Bind a b) where
       showbPrec = genericShowbPrec
 
-data Exp = App     Annote !Ty       !Exp !Exp
-         | Lam     Annote !Ty       !(Bind (Name Exp) Exp)
-         | Var     Annote !Ty       !(Name Exp)
-         | Con     Annote !Ty       !(Name DataConId)
-         | Case    Annote !Ty       !Exp !(Bind Pat Exp) !(Maybe Exp)
-         | Match   Annote !Ty       !Exp !MatchPat !Exp !(Maybe Exp)
-         | Builtin Annote !Ty       !Builtin
-         | LitInt  Annote !Integer
-         | LitStr  Annote !Text
-         | LitVec  Annote !Ty       ![Exp]
-         | LitList Annote !Ty       ![Exp]
-         | TypeAnn Annote !Poly     !Exp
+data Exp = App     Annote !(Maybe Poly) !(Maybe Ty) !Exp !Exp
+         | Lam     Annote !(Maybe Poly) !(Maybe Ty) !(Bind (Name Exp) Exp)
+         | Var     Annote !(Maybe Poly) !(Maybe Ty) !(Name Exp)
+         | Con     Annote !(Maybe Poly) !(Maybe Ty) !(Name DataConId)
+         | Case    Annote !(Maybe Poly) !(Maybe Ty) !Exp !(Bind Pat Exp) !(Maybe Exp)
+         | Match   Annote !(Maybe Poly) !(Maybe Ty) !Exp !MatchPat !Exp !(Maybe Exp)
+         | Builtin Annote !(Maybe Poly) !(Maybe Ty) !Builtin
+         | LitInt  Annote !(Maybe Poly) !Integer
+         | LitStr  Annote !(Maybe Poly) !Text
+         | LitVec  Annote !(Maybe Poly) !(Maybe Ty) ![Exp]
+         | LitList Annote !(Maybe Poly) !(Maybe Ty) ![Exp]
       deriving (Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric Exp
 
@@ -327,8 +324,8 @@ instance Alpha Exp
 
 instance Subst Exp Exp where
       isvar = \ case
-            Var _ _ x -> Just $ SubstName x
-            _         -> Nothing
+            Var _ _ _ x -> Just $ SubstName x
+            _           -> Nothing
 instance Subst Exp Annote where
       subst _ _ x = x
       substs _ x = x
@@ -365,81 +362,101 @@ instance NFData Exp
 
 instance TypeAnnotated Exp where
       typeOf = \ case
-            App _ t _ _       -> t
-            Lam _ t e         -> arr' t e
-            Var _ t _         -> t
-            Con _ t _         -> t
-            Case _ t _ _ _    -> t
-            Match _ t _ _ _ _ -> t
-            Builtin _ t _     -> t
-            LitInt a _        -> intTy a
-            LitStr a _        -> strTy a
-            LitList _ t _     -> t
-            LitVec _ t _      -> t
-            TypeAnn _ _ e     -> typeOf e
+            App _ _ t _ _         -> t
+            Lam _ _ t e           -> arr <$> t <*> (typeOf $ snd $ unsafeUnbind e)
+            Var _ _ t _           -> t
+            Con _ _ t _           -> t
+            Case _ _ t _ _ _      -> t
+            Match _ _ t _ _ _ _   -> t
+            Builtin _ _ t _       -> t
+            LitInt a _ _          -> pure $ intTy a
+            LitStr a _ _          -> pure $ strTy a
+            LitList _ _ t _       -> t
+            LitVec _ _ t _        -> t
+      tyAnn = \ case
+            App _ pt _ _ _        -> pt
+            Lam _ pt _ _          -> pt
+            Var _ pt _ _          -> pt
+            Con _ pt _ _          -> pt
+            Case _ pt _ _ _ _     -> pt
+            Match _ pt _ _ _ _ _  -> pt
+            Builtin _ pt _ _      -> pt
+            LitInt _ pt _         -> pt
+            LitStr _ pt _         -> pt
+            LitList _ pt _ _      -> pt
+            LitVec _ pt _ _       -> pt
+      setTyAnn pt = \ case
+            App a _ t e1 e2       -> App a pt t e1 e2
+            Lam a _ t e           -> Lam a pt t e
+            Var a _ t e           -> Var a pt t e
+            Con a _ t e           -> Con a pt t e
+            Case a _ t e e1 e2    -> Case a pt t e e1 e2
+            Match a _ t e p e1 e2 -> Match a pt t e p e1 e2
+            Builtin a _ t b       -> Builtin a pt t b
+            LitInt a _ n          -> LitInt a pt n
+            LitStr a _ n          -> LitStr a pt n
+            LitList a _ t n       -> LitList a pt t n
+            LitVec a _ t n        -> LitVec a pt t n
 
 instance Annotated Exp where
       ann = \ case
-            App a _ _ _       -> a
-            Lam a _ _         -> a
-            Var a _ _         -> a
-            Con a _ _         -> a
-            Case a _ _ _ _    -> a
-            Match a _ _ _ _ _ -> a
-            Builtin a _ _     -> a
-            LitInt a _        -> a
-            LitStr a _        -> a
-            LitList a _ _     -> a
-            LitVec a _ _      -> a
-            TypeAnn a _ _     -> a
+            App a _ _ _ _       -> a
+            Lam a _ _ _         -> a
+            Var a _ _ _         -> a
+            Con a _ _ _         -> a
+            Case a _ _ _ _ _    -> a
+            Match a _ _ _ _ _ _ -> a
+            Builtin a _ _ _     -> a
+            LitInt a _ _        -> a
+            LitStr a _ _        -> a
+            LitList a _ _ _     -> a
+            LitVec a _ _ _      -> a
 
 instance Parenless Exp where
       parenless e = case flattenApp e of
-            (Con _ _ (n2s -> c) : _)  | isTupleCtor c -> True
-            [Con {}]                                  -> True
-            [Var {}]                                  -> True
-            [Builtin {}]                              -> True
-            [LitInt {}]                               -> True
-            [LitStr {}]                               -> True
-            [LitList {}]                              -> True
-            [LitVec {}]                               -> True
-            _                                         -> False
+            -- TODO(chathhorn): rework pretty printing to handle type annotations on applications.
+            (Con _ Nothing _ (n2s -> c) : _)  | isTupleCtor c -> True
+            [e'] | Just _ <- tyAnn e'                         -> False
+            [Con {}]                                          -> True
+            [Var {}]                                          -> True
+            [Builtin {}]                                      -> True
+            [LitInt {}]                                       -> True
+            [LitStr {}]                                       -> True
+            [LitList {}]                                      -> True
+            [LitVec {}]                                       -> True
+            _                                                 -> False
 
 instance Pretty Exp where
       pretty e = case flattenApp e of
-            (Con _ _ (n2s -> c) : es) | isTupleCtor c    -> parens $ hsep $ punctuate comma $ map pretty es
-            [Con _ t n]                                  -> ppTyAnn (text $ n2s n) t
-            [Var _ t n]                                  -> ppTyAnn (text $ showt n) t
-            [Lam _ _ e]                                  -> runFreshM $ do
+            (Con _ pt _ (n2s -> c) : es) | isTupleCtor c -> ppTyAnn pt $ parens $ hsep $ punctuate comma $ map pretty es
+            [Con _ pt _ n]                               -> ppTyAnn pt $ text $ n2s n
+            [Var _ pt _ n]                               -> ppTyAnn pt $ text $ showt n
+            [Lam _ pt _ e]                               -> ppTyAnn pt $ runFreshM $ do
                   (p, e') <- unbind e
                   pure $ text "\\" <+> text (showt p) <+> text "->" <+> pretty e'
-            [Case _ t e e1 e2]                           -> runFreshM $ do
+            [Case _ pt _ e e1 e2]                        -> ppTyAnn pt $ runFreshM $ do
                   (p, e1') <- unbind e1
                   pure $ nest 2 $ vsep $
-                        [ ppTyAnn (text "case") t <+> pretty e <+> text "of"
+                        [ text "case" <+> pretty e <+> text "of"
                         , pretty p <+> text "->" <+> pretty e1'
                         ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
-            [Match _ t e p e1 e2]                        -> runFreshM $
+            [Match _ pt _ e p e1 e2]                     -> ppTyAnn pt $ runFreshM $
                   pure $ nest 2 $ vsep $
-                        [ ppTyAnn (text "match") t <+> pretty e <+> text "of"
+                        [ text "match" <+> pretty e <+> text "of"
                         , pretty p <+> text "->" <+> pretty e1
                         ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
-            [Builtin _ t b]                              -> ppTyAnn (pretty b) t
-            [LitInt _ v]                                 -> pretty v
-            [LitStr _ v]                                 -> dquotes $ pretty v
-            [LitList _ _ vs]                             -> brackets $ hsep $ punctuate comma $ map pretty vs
-            [LitVec _ _ vs]                              -> brackets $ hsep $ punctuate comma $ map pretty vs
-            [TypeAnn _ pt e]                             -> pretty e <+> text "::" <+> pretty pt
+            [Builtin _ pt _ b]                           -> ppTyAnn pt $ pretty b
+            [LitInt _ pt v]                              -> ppTyAnn pt $ pretty v
+            [LitStr _ pt v]                              -> ppTyAnn pt $ dquotes $ pretty v
+            [LitList _ pt _ vs]                          -> ppTyAnn pt $ brackets $ hsep $ punctuate comma $ map pretty vs
+            [LitVec _ pt _ vs]                           -> ppTyAnn pt $ brackets $ hsep $ punctuate comma $ map pretty vs
             es                                           -> nest 2 $ hsep $ map mparens es
-            where ppTyAnn :: Doc ann -> Ty -> Doc ann
-                  ppTyAnn d = \ case
-                        t | not $ isBlank t -> d <+> braces (pretty t)
-                        _                   -> d
+
 ---
 
-data Pat = PatCon      Annote !(Embed Ty) !(Embed (Name DataConId)) ![Pat]
-         | PatVar      Annote !(Embed Ty) !(Name Exp)
-         | PatWildCard Annote !(Embed Ty)
+data Pat = PatCon      Annote !(Embed (Maybe Poly)) !(Embed (Maybe Ty)) !(Embed (Name DataConId)) ![Pat]
+         | PatVar      Annote !(Embed (Maybe Poly)) !(Embed (Maybe Ty)) !(Name Exp)
+         | PatWildCard Annote !(Embed (Maybe Poly)) !(Embed (Maybe Ty))
       deriving (Eq, Show, Generic, Typeable, Data)
       deriving TextShow via FromGeneric Pat
 
@@ -451,35 +468,42 @@ instance NFData Pat
 
 instance TypeAnnotated Pat where
       typeOf = \ case
-            PatCon  _ (Embed t) _ _  -> t
-            PatVar  _ (Embed t) _    -> t
-            PatWildCard  _ (Embed t) -> t
+            PatCon _ _ (Embed t) _ _   -> t
+            PatVar _ _ (Embed t) _     -> t
+            PatWildCard _ _ (Embed t)  -> t
+      tyAnn = \ case
+            PatCon _ (Embed pt) _ _ _  -> pt
+            PatVar _ (Embed pt) _ _    -> pt
+            PatWildCard _ (Embed pt) _ -> pt
+      setTyAnn pt = \ case
+            PatCon a _ t c ps          -> PatCon a (Embed pt) t c ps
+            PatVar a _ t x             -> PatVar a (Embed pt) t x
+            PatWildCard a _ t          -> PatWildCard a (Embed pt) t
 
 instance Annotated Pat where
       ann = \ case
-            PatCon  a _ _ _  -> a
-            PatVar  a _ _    -> a
-            PatWildCard  a _ -> a
+            PatCon a _ _ _ _  -> a
+            PatVar a _ _ _    -> a
+            PatWildCard a _ _ -> a
 
 instance Parenless Pat where
       parenless = \ case
-            PatCon _ _ (Embed (n2s -> c)) _ | isTupleCtor c -> True
-            PatCon _ _ _ []                                 -> True
-            PatVar {}                                       -> True
-            PatWildCard {}                                  -> True
-            _                                               -> False
+            PatCon _ _ _ (Embed (n2s -> c)) _ | isTupleCtor c -> True
+            PatCon _ _ _ _ []                                 -> True
+            PatVar {}                                         -> True
+            PatWildCard {}                                    -> True
+            _                                                 -> False
 
 instance Pretty Pat where
       pretty = \ case
-            PatCon _ _ (Embed (n2s -> c)) ps | isTupleCtor c -> parens $ hsep $ punctuate comma $ map pretty ps
-            PatCon _ _ (Embed n) ps                          -> text (n2s n) <+> hsep (map mparens ps)
-            PatVar _ _ n                                     -> text $ showt n
-            PatWildCard _ _                                  -> text "_"
+            PatCon _ (Embed pt) _ (Embed (n2s -> c)) ps | isTupleCtor c -> ppTyAnn pt $ parens $ hsep $ punctuate comma $ map pretty ps
+            PatCon _ (Embed pt) _ (Embed n) ps                          -> ppTyAnn pt $ text (n2s n) <+> hsep (map mparens ps)
+            PatVar _ (Embed pt) _ n                                     -> ppTyAnn pt $ text $ showt n
+            PatWildCard _ (Embed pt) _                                  -> ppTyAnn pt $ text "_"
 
-
-data MatchPat = MatchPatCon Annote !Ty !(Name DataConId) ![MatchPat]
-              | MatchPatVar Annote !Ty
-              | MatchPatWildCard Annote !Ty
+data MatchPat = MatchPatCon Annote !(Maybe Poly) !(Maybe Ty) !(Name DataConId) ![MatchPat]
+              | MatchPatVar Annote !(Maybe Poly) !(Maybe Ty)
+              | MatchPatWildCard Annote !(Maybe Poly) !(Maybe Ty)
       deriving (Eq, Show, Generic, Typeable, Data)
       deriving TextShow via FromGeneric MatchPat
 
@@ -491,30 +515,38 @@ instance NFData MatchPat
 
 instance TypeAnnotated MatchPat where
       typeOf = \ case
-            MatchPatCon _ t _ _  -> t
-            MatchPatVar _ t      -> t
-            MatchPatWildCard _ t -> t
+            MatchPatCon _ _ t _ _   -> t
+            MatchPatVar _ _ t       -> t
+            MatchPatWildCard _ _ t  -> t
+      tyAnn = \ case
+            MatchPatCon _ pt _ _ _  -> pt
+            MatchPatVar _ pt _      -> pt
+            MatchPatWildCard _ pt _ -> pt
+      setTyAnn pt = \ case
+            MatchPatCon a _ t c ps -> MatchPatCon a pt t c ps
+            MatchPatVar a _ t      -> MatchPatVar a pt t
+            MatchPatWildCard a _ t -> MatchPatWildCard a pt t
 
 instance Annotated MatchPat where
       ann = \ case
-            MatchPatCon a _ _ _  -> a
-            MatchPatVar a _      -> a
-            MatchPatWildCard a _ -> a
+            MatchPatCon a _ _ _ _  -> a
+            MatchPatVar a _ _      -> a
+            MatchPatWildCard a _ _ -> a
 
 instance Parenless MatchPat where
       parenless = \ case
-            MatchPatCon _ _ (n2s -> c) _ | isTupleCtor c -> True
-            MatchPatCon _ _ _ []                         -> True
-            MatchPatVar {}                               -> True
-            MatchPatWildCard {}                          -> True
-            _                                            -> False
+            MatchPatCon _ _ _ (n2s -> c) _ | isTupleCtor c -> True
+            MatchPatCon _ _ _ _ []                         -> True
+            MatchPatVar {}                                 -> True
+            MatchPatWildCard {}                            -> True
+            _                                              -> False
 
 instance Pretty MatchPat where
       pretty = \ case
-            MatchPatCon _ _ (n2s -> c) ps | isTupleCtor c -> parens $ hsep $ punctuate comma $ map pretty ps
-            MatchPatCon _ _ n ps                          -> text (n2s n) <+> hsep (map mparens ps)
-            MatchPatVar _ t                               -> parens $ text "*" <+> text "::" <+> pretty t
-            MatchPatWildCard _ t                          -> parens $ text "_" <+> text "::" <+> pretty t
+            MatchPatCon _ pt _ (n2s -> c) ps | isTupleCtor c -> ppTyAnn pt $ parens $ hsep $ punctuate comma $ map pretty ps
+            MatchPatCon _ pt _ n ps                          -> ppTyAnn pt $ text (n2s n) <+> hsep (map mparens ps)
+            MatchPatVar _ pt t                               -> ppTyAnn pt $ parens $ text "*" <+> text "::" <+> pretty t
+            MatchPatWildCard _ pt t                          -> ppTyAnn pt $ parens $ text "_" <+> text "::" <+> pretty t
 
 ---
 
@@ -608,6 +640,10 @@ instance Pretty TypeSynonym where
 
 type FreeProgram = ([DataDefn], [TypeSynonym], [Defn])
 
+ppTyAnn :: Maybe Poly -> Doc ann -> Doc ann
+ppTyAnn Nothing d = d
+ppTyAnn (Just pt) d = d <+> text "::" <+> pretty pt
+
 -- TODO(chathhorn): make FreeProgram newtype.
 prettyFP :: FreeProgram -> Doc ann
 prettyFP (ts, syns, vs) = vsep $ intersperse empty $ map pretty ts <> map pretty syns <> map pretty vs
@@ -631,14 +667,8 @@ instance Pretty Program where
 -- > [v, e1, e2, e3]
 flattenApp :: Exp -> [Exp]
 flattenApp = \ case
-      App _ _ e e'  -> flattenApp e <> [e']
-      e             -> [e]
-
--- | flatenApp, but ignore type annotations.
-flattenApp' :: Exp -> [Exp]
-flattenApp' e = case unTyAnn e of
-      App _ _ e e'  -> flattenApp' e <> [e']
-      e             -> [e]
+      App _ _ _ e e' -> flattenApp e <> [e']
+      e              -> [e]
 
 flattenArrow :: Ty -> ([Ty], Ty)
 flattenArrow = \ case
@@ -718,9 +748,6 @@ evalNat = \ case
       (plus -> Just (n1, n2)) -> (+) <$> evalNat n1 <*> evalNat n2
       _                       -> Nothing
 
-arr' :: Ty -> Bind (Name Exp) Exp -> Ty
-arr' t b = runFreshM (arr t . typeOf <$> (snd <$> unbind b))
-
 -- | Given 'a -> (b -> c)' returns 'b -> c'.
 arrowRight :: Ty -> Ty
 arrowRight = \ case
@@ -756,32 +783,36 @@ nilTy :: Ty
 nilTy = TyCon (MsgAnnote "nilTy") (s2n "()")
 
 nil :: Exp
-nil = Con (MsgAnnote "nil") nilTy (s2n "()")
+nil = Con (MsgAnnote "nil") Nothing (Just nilTy) (s2n "()")
 
 nilPat :: Pat
-nilPat = PatCon (MsgAnnote "nilPat") (Embed nilTy) (Embed $ s2n "()") []
+nilPat = PatCon (MsgAnnote "nilPat") (Embed Nothing) (Embed $ Just nilTy) (Embed $ s2n "()") []
 
 nilMPat :: MatchPat
-nilMPat = MatchPatCon (MsgAnnote "nilMPat") nilTy (s2n "()") []
+nilMPat = MatchPatCon (MsgAnnote "nilMPat") Nothing (Just nilTy) (s2n "()") []
 
 pairTy :: Annote -> Ty -> Ty -> Ty
 pairTy an t = TyApp an $ TyApp an (TyCon an $ s2n "(,)") t
 
 mkPair :: Annote -> Exp -> Exp -> Exp
-mkPair an e1 e2 = mkApp an (Con an t (s2n "(,)")) [e1, e2]
-      where t = mkArrowTy [typeOf e1, typeOf e2] $ pairTy an (typeOf e1) $ typeOf e2
+mkPair an e1 e2 = mkApp an (Con an Nothing t (s2n "(,)")) [e1, e2]
+      where t :: Maybe Ty
+            t = do
+                  t1 <- typeOf e1
+                  t2 <- typeOf e2
+                  pure $ mkArrowTy [t1, t2] $ pairTy an t1 t2
 
 mkPairPat :: Annote -> Pat -> Pat -> Pat
-mkPairPat an p1 p2 = PatCon an (Embed $ pairTy an (typeOf p1) (typeOf p2)) (Embed (s2n "(,)")) [p1, p2]
+mkPairPat an p1 p2 = PatCon an (Embed Nothing) (Embed $ pairTy an <$> typeOf p1 <*> typeOf p2) (Embed (s2n "(,)")) [p1, p2]
 
 mkPairMPat :: Annote -> MatchPat -> MatchPat -> MatchPat
-mkPairMPat an p1 p2 = MatchPatCon an (pairTy an (typeOf p1) (typeOf p2)) (s2n "(,)") [p1, p2]
+mkPairMPat an p1 p2 = MatchPatCon an Nothing (pairTy an <$> typeOf p1 <*> typeOf p2) (s2n "(,)") [p1, p2]
 
 mkTuple :: Annote -> [Exp] -> Exp
 mkTuple an = foldr (mkPair an) nil
 
 tupleTy :: Annote -> [Ty] -> Ty
-tupleTy an = foldr (pairTy an) nilTy
+tupleTy an = foldr (pairTy an) $ nilTy
 
 mkTuplePat :: Annote -> [Pat] -> Pat
 mkTuplePat an = foldr (mkPairPat an) nilPat
@@ -808,15 +839,9 @@ isStateMonad ty = case rangeTy ty of
       TyApp _ (TyCon _ (n2s -> "Identity")) _                        -> True
       _                                                              -> False
 
-isBlank :: Ty -> Bool
-isBlank = \ case
-      TyBlank _ -> True
-      _         -> False
-
 -- | Types containing no type variables (or blanks).
 concrete :: Ty -> Bool
 concrete = \ case
-      TyBlank {}  -> False
       TyVar {}    -> False
       TyCon {}    -> True
       TyNat {}    -> True
@@ -830,7 +855,6 @@ fundamental = \ case
       TyCon _ (n2s -> "[_]")     -> False
       TyNat {}                   -> True
       TyCon {}                   -> True
-      TyBlank {}                 -> True
       TyVar {}                   -> True
       TyApp _ a b                -> fundamental a && fundamental b
 
@@ -842,20 +866,11 @@ isArrow = \ case
       TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) _ -> True
       _                                             -> False
 
-unTyAnn :: Exp -> Exp
-unTyAnn = \ case
-      TypeAnn _ _ e -> unTyAnn e
-      e             -> e
-
--- | TODO(chathhorn): really need to handle type annotations better.
-tyAnn :: Annote -> Poly -> Exp -> Exp
-tyAnn an t = TypeAnn an t . unTyAnn
-
 mkApp :: Annote -> Exp -> [Exp] -> Exp
-mkApp an = foldl' $ \ e -> App an (arrowRight $ typeOf e) e
+mkApp an = foldl' $ \ e -> App an Nothing (arrowRight <$> typeOf e) e
 
-mkError :: Annote -> Ty -> Text -> Exp
-mkError an t err = App an t (Builtin an (strTy an `arr` t) Error) $ LitStr an err
+mkError :: Annote -> Maybe Ty -> Text -> Exp
+mkError an t err = App an Nothing t (Builtin an Nothing (arr (strTy an) <$> t) Error) $ LitStr an Nothing err
 
 -- Orphans.
 
