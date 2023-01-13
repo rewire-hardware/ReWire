@@ -221,8 +221,8 @@ unify' t1 t2 = subst <$> mgu t1 t2 <*> pure t1
 
 unify :: (MonadError AstError m, MonadState TySub m) => Annote -> Ty -> Ty -> m Ty
 unify an t1 t2 = do
-      t1' <- gets $ flip subst t1
-      t2' <- gets $ flip subst t2
+      t1' <- gets $ flip tsFix t1
+      t2' <- gets $ flip tsFix t2
       -- trace ("Unifying: " <> unpack (prettyPrint t1')
       --   <> "\n    with: " <> unpack (prettyPrint t2')) $ pure ()
       -- trace ("     t1': " <> show (unAnn t1')) $ pure ()
@@ -405,18 +405,23 @@ tcDefn start d  = flip evalStateT mempty $ do
       t'       <- inst pt
       (vs, e') <- unbind e
       let (targs, _) = flattenArrow t'
+
+      (fvs, fe) <- flattenLam e'
       -- trace ("tcDefn body: " <> unpack (prettyPrint (unAnn $ untype e'))) $ pure ()
-      (e'', te'') <- localAssumps (`Map.union` (Map.fromList $ zip vs $ map (poly []) targs)) $ tcExp e'
+      (fe', te'') <- localAssumps (`Map.union` (Map.fromList $ zip (vs <> fvs) $ map (poly []) targs))
+                   $ tcExp fe
+
+      let e'' = mkLam (ann e') (zip (drop (length vs) targs) fvs) fe'
       -- trace ("e'':\n" <> show (unAnn e'')) $ pure ()
 
       startTy <- inst globalStartTy
 
       t'' <- if isStart $ defnName d then unify an startTy t' else pure t'
-      _   <- unify an (iterate arrowRight t'' !! length vs) te''
+      _   <- unify an (iterate arrowRight t'' !! length (vs <> fvs)) te''
 
       -- subs <- gets unAnn
       -- trace ("prefixed:\n" <> unpack (prettyPrint  (Map.toList subs))) $ pure ()
-      modify tsFix
+      modify tsFixAll
       -- subs <- gets unAnn
       -- trace ("fixed:\n" <> unpack (prettyPrint  (Map.toList subs))) $ pure ()
       e''' <- gets $ flip subst e''
@@ -427,13 +432,18 @@ tcDefn start d  = flip evalStateT mempty $ do
             isStart = (== start) . n2s
 
 -- | Calculates the transitive closure of the type var unifier set.
-tsFix :: TySub -> TySub
-tsFix = fixOn' norm subst'
+tsFixAll :: TySub -> TySub
+tsFixAll = fixOn' norm subst'
       where subst' :: TySub -> TySub
             subst' s = Map.map (subst s) s
 
             norm :: TySub -> Int
             norm = hash . Map.map unAnn
+
+tsFix :: TySub -> Ty -> Ty
+tsFix ts = fixOn' norm (subst ts)
+      where norm :: Ty -> Int
+            norm = hash . unAnn
 
 withAssumps :: (MonadError AstError m, MonadReader TCEnv m) => [DataDefn] -> [Defn] -> m a -> m a
 withAssumps ts vs = localAssumps (`Map.union` as) . localCAssumps (`Map.union` cas)

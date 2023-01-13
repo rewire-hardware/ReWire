@@ -27,7 +27,7 @@ module ReWire.Crust.Syntax
       , strTy, intTy, boolTy, listTy, pairTy, refTy, vecTy, plusTy, plus, nilTy, vecElemTy, vecSize, proxyNat
       , evalNat, flattenAllTyApp, resInputTy
       , mkTuple, mkTuplePat, mkTupleMPat, tupleTy
-      , mkPair, mkPairPat, mkPairMPat
+      , mkPair, mkPairPat, mkPairMPat, flattenLam, mkLam
       , kmonad, tycomp, concrete, higherOrder, fundamental, mkApp, mkError
       , TypeAnnotated (..), prettyFP
       ) where
@@ -871,6 +871,17 @@ mkApp an = foldl' $ \ e -> App an Nothing (arrowRight <$> typeOf e) e
 
 mkError :: Annote -> Maybe Ty -> Text -> Exp
 mkError an t err = App an Nothing t (Builtin an Nothing (arr (strTy an) <$> t) Error) $ LitStr an Nothing err
+
+flattenLam :: Fresh m => Exp -> m ([Name Exp], Exp)
+flattenLam = \ case
+      Lam _ _ _ e -> do
+            (x, e')   <- unbind e
+            (xs, e'') <- flattenLam e'
+            pure (x : xs, e'')
+      e           -> pure ([], e)
+
+mkLam :: Annote -> [(Ty, Name Exp)] -> Exp -> Exp
+mkLam an vs b = foldr (\ (t, v) e -> Lam an Nothing (Just t) $ bind v e) b vs
 
 -- Orphans.
 

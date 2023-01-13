@@ -132,9 +132,8 @@ desugarRecords rn = (\ (Module (l :: Annote) h p imps decls) -> do
                   let an s = MsgAnnote $ "Generated record field accessor for " <> pack (prettyPrint f) <> " at: " <> s
                   x  <- fresh $ an "x"
                   x' <- fresh $ an "x'"
-                  pure $ (,)
-                         ( TypeSig (an "TypeSig") [an "TypeSig Name" <$ f] (an "TypeSig Type" <$ t) )
-                         $ PatBind (an "PatBind") (PVar (an "PVar") (an "PVar" <$ f))
+                  pure   ( TypeSig (an "TypeSig") [an "TypeSig Name" <$ f] (an "TypeSig Type" <$ t)
+                         , PatBind (an "PatBind") (PVar (an "PVar") (an "PVar" <$ f))
                                ( UnGuardedRhs (an "UnGuardedRhs")
                                      ( Lambda (an "Lambda") [PVar (an "PVar") x]
                                            ( Case (an "Case") (Var (an "Var") (UnQual (an "Var") x))
@@ -145,6 +144,7 @@ desugarRecords rn = (\ (Module (l :: Annote) h p imps decls) -> do
                                            )
                                      )
                                ) Nothing
+                        )
 
             tupList :: (a, a) -> [a]
             tupList (x, y) = [x, y]
@@ -447,16 +447,25 @@ desugarTyFuns = transform $
 -- > case e1 of { p -> (case e2 of { q -> e3 } }
 desugarLets :: (MonadCatch m, MonadError AstError m) => Transform (FreshT m)
 desugarLets = transform $ \ case
-      Let _ (BDecls _ ds) e -> foldrM transLet e $ filter isPatBind ds
+      Let _ (BDecls _ ds) e -> foldrM (transLet $ concatMap tySig ds) e $ filter isPatBind ds
       n@Let{}               -> failAt (ann n) "Unsupported let syntax"
-
-      where transLet :: MonadError AstError m => Decl Annote -> Exp Annote -> FreshT m (Exp Annote)
-            transLet (PatBind l p (UnGuardedRhs l' e1) Nothing) inner = pure $ Case l e1 [Alt l p (UnGuardedRhs l' inner) Nothing]
-            transLet n _                                              = failAt (ann n) "Unsupported syntax in a let binding"
+      where transLet :: MonadError AstError m => [(Name Annote, Type Annote)] -> Decl Annote -> Exp Annote -> FreshT m (Exp Annote)
+            transLet ts (PatBind l p (UnGuardedRhs l' e1) Nothing) inner = pure $ Case l e1 [Alt l (annotePVars ts p) (UnGuardedRhs l' inner) Nothing]
+            transLet _ n _                                               = failAt (ann n) "Unsupported syntax in a let binding"
 
             isPatBind :: Decl Annote -> Bool
             isPatBind PatBind {} = True
             isPatBind _          = False
+
+            tySig :: Decl Annote -> [(Name Annote, Type Annote)]
+            tySig = \ case
+                  TypeSig _ ns t -> (,t) <$> ns
+                  _              -> []
+
+            annotePVars :: [(Name Annote, Type Annote)] -> Pat Annote -> Pat Annote
+            annotePVars ts = runIdentity . runPureT (transform $ \ case
+                  PVar an n | Just t <- lookup n ts -> pure $ PatTypeSig an (PVar an n) t
+                  n                                 -> pure n)
 
 -- | Turns ifs into cases.
 -- > if e1 then e2 else e3

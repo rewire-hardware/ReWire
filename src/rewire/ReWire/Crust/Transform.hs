@@ -571,12 +571,9 @@ specialize (ts, syns, vs) = do
                   typeCheckDefn ts vs
                        $ Defn an g' (Embed $ Poly $ bind (fv t') t') inl
                        $ Embed $ bind []
-                               $ mkLam (lefts tinfo)
-                               $ mkApp an (mkLam (zip (fst $ flattenArrow gt) bodyvs) (setTyAnn (Just $ Poly bgt) body'))
+                               $ mkLam an (lefts tinfo)
+                               $ mkApp an (mkLam an (zip (fst $ flattenArrow gt) bodyvs) (setTyAnn (Just $ Poly bgt) body'))
                                $ map (either (uncurry $ Var an Nothing . Just) id) tinfo
-
-                  where mkLam :: [(Ty, Name Exp)] -> Exp -> Exp
-                        mkLam vs b = foldr (\ (t, v) e -> Lam an Nothing (Just t) $ bind v e) b vs
 
             mkTy :: (Fresh m, MonadError AstError m) => AppSig -> Ty -> m ([Either (Ty, Name Exp) Exp], Ty)
             mkTy s (flattenArrow -> (gtas, gtr)) = do
