@@ -2,8 +2,9 @@
 {-# LANGUAGE Safe #-}
 module ReWire.Crust.PrimBasis (addPrims) where
 
-import ReWire.Annotation
-import ReWire.Crust.Syntax
+import ReWire.Annotation (Annote (MsgAnnote))
+import ReWire.Crust.Syntax (Kind (..), Ty (..), DataCon (..), DataDefn (..), FreeProgram)
+import ReWire.Crust.Types (refTy, strTy, (|->), arr, kmonad)
 
 import Data.List (foldl')
 import Data.Text (Text)

@@ -1,15 +1,22 @@
 {-# LANGUAGE Trustworthy #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.Pretty
-      ( ($$), text, int, empty, P.Pretty
+      ( ($$), text, int, empty, P.Pretty (pretty), P.Doc
       , prettyPrint, prettyPrint'
       , fastPrint, fastPrint'
+      , TextShow (showt, showb, showbPrec), fromString, fromText
+      , genericShowbPrec, P.space, P.angles, P.dot
+      , (P.<>), (P.<+>), P.nest, P.defaultLayoutOptions, P.layoutSmart, P.renderStrict
+      , P.vsep, P.hsep, P.parens, P.braces, P.punctuate, P.comma, P.dquotes, P.tupled
+      , P.brackets, FromGeneric (..), P.semi, P.colon, P.hcat, P.align
       ) where
+
+import Prelude hiding ((<>), lines, unlines)
 
 import qualified Prettyprinter as P
 import qualified Prettyprinter.Render.Text as P
-import TextShow
 import Data.Text (Text)
+import TextShow (TextShow (showt, showb, showbPrec), fromString, fromText)
+import TextShow.Generic (genericShowbPrec, FromGeneric (..))
 
 ($$) :: P.Doc ann -> P.Doc ann -> P.Doc ann
 a $$ b = P.vsep [a, b]
@@ -37,7 +44,3 @@ fastPrint = fastPrint' . P.pretty
 
 fastPrint' :: P.Doc ann -> Text
 fastPrint' = P.renderStrict . P.layoutCompact
-
--- TODO(chathhorn): orphan
-instance TextShow (P.Doc ann) where
-      showb = showb . show

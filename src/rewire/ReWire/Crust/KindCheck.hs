@@ -1,17 +1,16 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, OverloadedStrings #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Safe #-}
 module ReWire.Crust.KindCheck (kindCheck) where
 
-import safe ReWire.Annotation
-import safe ReWire.Error
-import safe ReWire.Crust.Syntax
-import safe ReWire.Unbound (fresh, substs, aeq, Subst, s2n, n2s)
-import safe ReWire.Pretty
+import ReWire.Annotation (Annote)
+import ReWire.Error (failAt, MonadError, AstError)
+import ReWire.Crust.Syntax (Ty (..), Kind (..), DataDefn (..), FreeProgram, TyConId, Poly (Poly), Defn (..))
+import ReWire.Unbound (fv, Fresh (fresh), substs, aeq, Subst, s2n, n2s, Name, Embed (Embed), unbind)
+import ReWire.Pretty (prettyPrint, showt)
 
-import safe Control.Monad.Reader (ReaderT (..), local, asks)
-import safe Control.Monad.State (evalStateT, StateT (..), get, modify)
-import safe Data.Map.Strict (Map)
-import TextShow (showt)
+import Control.Monad.Reader (ReaderT (..), local, asks)
+import Control.Monad.State (evalStateT, StateT (..), get, modify)
+import Data.Map.Strict (Map)
 
 import safe qualified Data.Map.Strict as Map
 

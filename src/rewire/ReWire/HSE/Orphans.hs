@@ -1,13 +1,15 @@
-{-# LANGUAGE StandaloneDeriving, DeriveGeneric, DerivingVia #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.HSE.Orphans () where
 
+import ReWire.Pretty (TextShow (showbPrec), genericShowbPrec)
+
 import Language.Haskell.Exts.Fixity (Fixity (..))
 import Language.Haskell.Exts.SrcLoc (SrcSpan, SrcSpanInfo)
 import Language.Haskell.Exts.Syntax
-import TextShow (TextShow (..))
-import TextShow.Generic (genericShowbPrec)
 
 import GHC.Generics (Generic (..))
 

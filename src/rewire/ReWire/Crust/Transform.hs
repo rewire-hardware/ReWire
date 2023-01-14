@@ -15,21 +15,16 @@ module ReWire.Crust.Transform
       , freeTyVarsToNil
       ) where
 
-import ReWire.Config (Config, depth)
-import ReWire.Unbound
-      ( Fresh (..), s2n, n2s
-      , substs, subst, unembed
-      , isFreeName, runFreshM
-      , Name (..)
-      , unsafeUnbind
-      , Subst (..), Alpha
-      )
 import ReWire.Annotation (Annote (..), Annotated (..), unAnn)
-import ReWire.Crust.Syntax
+import ReWire.Config (Config, depth)
+import ReWire.Crust.Syntax (Exp (..), Ty (..), Poly (..), Pat (..), MatchPat (..), Defn (..), FreeProgram, DataCon (..), DataConId, TyConId, DataDefn (..), Builtin (..), TypeSynonym (..), flattenApp)
 import ReWire.Crust.TypeCheck (typeCheckDefn, unify, TySub)
+import ReWire.Crust.Types (typeOf, setTyAnn, poly, poly', flattenArrow, arr, nilTy, flattenAllTyApp, resInputTy, rangeTy, (|->), arrowRight, arrowLeft, isResMonad)
+import ReWire.Crust.Util (mkApp, mkError, mkLam, inlineable, mkTupleMPat, mkTuple, mkPairMPat, mkPair, mustInline)
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fix, fix', boundedFix)
-import ReWire.SYB
+import ReWire.SYB (runT, transform, runQ, query, Transform (TId), (||?), Query (QEmpty), (||>))
+import ReWire.Unbound (fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, Name (..), unsafeUnbind, bind, unbind, Subst (..), Alpha, Embed (Embed), Bind, trec)
 
 import Control.Lens ((^.))
 import Control.Arrow (first, (&&&))
@@ -662,4 +657,4 @@ reduce (ts, syns, vs) = (ts, syns, ) <$> mapM reduceDefn vs
                               | otherwise                          -> MatchNo
                         _                                          -> MatchMaybe
                   PatVar _ _ _ x              -> MatchYes [(x, e)]
-                  PatWildCard _ _ _           -> MatchYes []
+                  PatWildCard {}              -> MatchYes []

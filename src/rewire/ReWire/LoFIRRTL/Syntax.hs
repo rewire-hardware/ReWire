@@ -1,21 +1,17 @@
-{-# LANGUAGE DeriveGeneric, DeriveDataTypeable, DerivingVia, OverloadedStrings #-}
+-- Syntax for LoFIRRTL.
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.LoFIRRTL.Syntax where
 
--- Syntax for LoFIRRTL.
+import ReWire.Pretty (text, TextShow, FromGeneric (..), Doc, nest, parens, punctuate, vsep, (<+>), Pretty (..), space, angles, colon, comma, dot, hsep)
 
-import safe Data.Data (Typeable, Data (..))
-import safe Data.Text (Text)
-import TextShow (TextShow (..))
-import TextShow.Generic (FromGeneric (..))
-import safe GHC.Generics (Generic (..))
+import Data.Data (Typeable, Data (..))
+import Data.Text (Text)
+import GHC.Generics (Generic (..))
 import Numeric.Natural (Natural)
-import safe Prettyprinter
-      ( Doc, nest, parens, punctuate
-      , vsep, (<+>), Pretty (..), space
-      , angles, colon, comma, dot, hsep
-      )
-import ReWire.Pretty (text)
 
 type Size = Word
 

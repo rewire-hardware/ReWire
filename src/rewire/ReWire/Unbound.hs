@@ -1,42 +1,41 @@
-{-# LANGUAGE StandaloneDeriving, DeriveDataTypeable #-}
 {-# LANGUAGE Trustworthy #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.Unbound
-      ( module Unbound.Generics.LocallyNameless.Internal.Fold
-      , Alpha (..), Fresh (..), FreshMT (..), Embed (..)
-      , TRec (..), Bind (..)
-      , Subst (..), SubstName (..)
-      , runFreshM, runFreshMT, fv, fvAny, aeq
-      , trec, untrec, bind, unbind, unembed
-      , UB.Name (UB.Bn), AnyName (..), isFreeName
-      , n2s, s2n, bn2s
-      , unsafeUnbind
+      ( UB.Alpha (..), UB.Fresh (..), UB.FreshMT (..), UB.Embed (..)
+      , UB.TRec (..), UB.Bind (..)
+      , UB.Subst (..), UB.SubstName (..)
+      , UB.runFreshM, UB.runFreshMT, UB.aeq
+      , UB.trec, UB.untrec, UB.bind, UB.unbind, UB.unembed
+      , UB.Name (..), UB.AnyName (..), UB.isFreeName
+      , UB.unsafeUnbind
+      , n2s, s2n, bn2s, fv, fvAny
       ) where
 
-import safe Data.Data (Data (..))
-import Unbound.Generics.LocallyNameless hiding (s2n)
-import Unbound.Generics.LocallyNameless.Bind
-import safe qualified Unbound.Generics.LocallyNameless.Name as UB
-import safe Unbound.Generics.LocallyNameless.Internal.Fold
-import Unbound.Generics.LocallyNameless.Unsafe (unsafeUnbind)
+import qualified Unbound.Generics.LocallyNameless                    as UB
+import qualified Unbound.Generics.LocallyNameless.Bind               as UB
+import safe qualified Unbound.Generics.LocallyNameless.Name          as UB
+import safe qualified Unbound.Generics.LocallyNameless.Internal.Fold as UB
+import qualified Unbound.Generics.LocallyNameless.Unsafe             as UB
 
+import safe Data.Data (Typeable)
 import safe Data.Text (pack, unpack, Text)
 
-n2s :: Name a -> Text
+n2s :: UB.Name a -> Text
 {-# INLINE n2s #-}
-n2s = pack . name2String
+n2s = pack . UB.name2String
 
-s2n :: Text -> Name a
+s2n :: Text -> UB.Name a
 {-# INLINE s2n #-}
 s2n = UB.s2n . unpack
 
 -- | Version of name2String that returns an empty string instead of error for
 --   bound variables.
-bn2s :: Name a -> Text
-bn2s n | isFreeName n = n2s n
-       | otherwise    = mempty
+bn2s :: UB.Name a -> Text
+bn2s n | UB.isFreeName n = n2s n
+       | otherwise       = mempty
 
-deriving instance Data a => Data (Embed a)
-deriving instance Data a => Data (Name a)
-deriving instance (Data a, Data b) => Data (Bind a b)
+fv :: (UB.Alpha a, Typeable b) => a -> [UB.Name b]
+fv = UB.toListOf UB.fv
+
+fvAny :: UB.Alpha a => a -> [UB.AnyName]
+fvAny = UB.toListOf UB.fvAny
 

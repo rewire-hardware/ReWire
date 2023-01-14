@@ -1,8 +1,9 @@
-{-# LANGUAGE Safe, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Safe #-}
 module ReWire.VHDL.Syntax where
 
-import Prettyprinter (Pretty (..), parens, (<+>), vsep, hcat, hsep, semi, colon, punctuate, comma, nest, align, Doc)
-import ReWire.Pretty (($$), empty, text)
+import ReWire.Pretty (($$), empty, text, Pretty (pretty), parens, (<+>), vsep, hcat, hsep, semi, colon, punctuate, comma, nest, align, Doc)
+
 import Data.Text (Text, splitOn)
 import Data.List (intersperse)
 import Data.Containers.ListUtils (nubOrd)

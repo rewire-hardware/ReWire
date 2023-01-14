@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Safe #-}
 module ReWire.Core.Interp
       ( interp, interpDefn
       , Ins, Outs, Out, run
@@ -27,23 +27,21 @@ import ReWire.Core.Syntax
       , bvFalse, sizeOf, gather, cat, nil
       )
 import ReWire.Annotation (ann, noAnn, Annote)
+import ReWire.BitVector (BV, bitVec, (@@), nat, width, (>>.), (<<.), (==.), ashr)
 import ReWire.Error (failAt', MonadError, AstError)
+import ReWire.Pretty (showt)
+import qualified ReWire.BitVector as BV
 
 import Control.Arrow ((&&&), second)
 import Control.Monad.Except (throwError)
-import Data.BitVector (BV, bitVec, (@@), nat, width, showHex, (>>.), (<<.), (==.), ashr)
 import Data.Bits (Bits (..))
 import Data.HashMap.Strict (HashMap)
 import Data.List (foldl')
 import Data.Machine ((<~), source)
 import Data.Machine.MealyT (MealyT (..))
 import Data.Maybe (fromMaybe)
-import Data.Text (pack)
-import TextShow (showt)
-import qualified Data.BitVector as BV
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Machine as M
-import qualified Data.Yaml as YAML
 
 mkBV :: Integral v => Size -> v -> BV
 mkBV sz = bitVec (fromIntegral sz)
@@ -51,12 +49,7 @@ mkBV sz = bitVec (fromIntegral sz)
 subRange :: (Index, Index) -> BV -> BV
 subRange (i, j) b = b @@ (j, i)
 
-newtype Out = Out BV
-instance Show Out where
-      show (Out bv) = showHex bv
-instance YAML.ToJSON Out where
-      toJSON = YAML.String . pack . show
-
+type Out = BV
 type Ins = HashMap Name Value
 type Outs = HashMap Name Out
 type Sts = HashMap Name Out
@@ -81,10 +74,10 @@ interpStartDefn defns (StartDefn _ w loop' state0') = MealyT $ \ _ -> do
       --            where R = Done (a, s) | Pause (o, r, s)
       -- Assuming neither should ever be Done.
       where f :: MonadError AstError m => Sts -> Ins -> m (Outs, Sts)
-            f s i = (filterOutput &&& filterDispatch) . splitOutputs <$> interpDefn defns loop (joinInputs $ Map.map outValue s <> i)
+            f s i = (filterOutput &&& filterDispatch) . splitOutputs <$> interpDefn defns loop (joinInputs $ Map.map nat s <> i)
 
             splitOutputs :: BV -> Outs
-            splitOutputs b = Map.fromList $ zip (map fst $ pauseWires w) $ map Out $ toSubRanges b $ map snd $ pauseWires w
+            splitOutputs b = Map.fromList $ zip (map fst $ pauseWires w) $ toSubRanges b $ map snd $ pauseWires w
 
             joinInputs :: Ins -> BV
             joinInputs vs = mconcat $ zipWith mkBV (map snd st_inps) $ map (fromMaybe 0 . flip Map.lookup vs . fst) st_inps
@@ -97,9 +90,6 @@ interpStartDefn defns (StartDefn _ w loop' state0') = MealyT $ \ _ -> do
 
             filterDispatch :: Outs -> Sts
             filterDispatch = Map.filterWithKey (\ k _ -> k `elem` map fst (dispatchWires w))
-
-            outValue :: Out -> Value
-            outValue (Out bv) = nat bv
 
             pauseWires :: Wiring -> [(Name, Size)]
             pauseWires w = pausePrefix w <> dispatchWires w
@@ -147,7 +137,7 @@ interpExp defns lvars exp = case exp of
             (e', els', call')  <- evaluate e els reCall
             if patMatches e' ps then case patApplyR e' ps of
                   [x] -> pure $ mkBV sz $ nat $ BV.replicate n x
-                  _   -> failAt' call' an $ "Core/Interp: interpExp: arity mismatch (Replicate)."
+                  _   -> failAt' call' an "Core/Interp: interpExp: arity mismatch (Replicate)."
             else pure els'
       Call an sz (Prim nm@(unOp -> Just op)) e ps els -> do
             (e', els', call')  <- evaluate e els reCall

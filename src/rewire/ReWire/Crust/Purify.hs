@@ -1,28 +1,28 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
-{-# LANGUAGE Trustworthy #-}
-
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Safe #-}
 module ReWire.Crust.Purify (purify) where
 
-import safe ReWire.Annotation
-import safe ReWire.Crust.Syntax
-import safe ReWire.Crust.TypeCheck (unify')
-import safe ReWire.Error
-import safe ReWire.Pretty
-import safe ReWire.Unbound (Fresh (..), s2n, n2s)
+import ReWire.Annotation (Annote (MsgAnnote, NoAnnote), ann, unAnn, noAnn)
+import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Pat (..), MatchPat (..), DefnAttr (..), DataConId, DataCon (..), Builtin (..), Defn (..), Poly (..), DataDefn (..), FreeProgram, flattenApp)
+import ReWire.Crust.TypeCheck (unify')
+import ReWire.Crust.Types (tupleTy, mkArrowTy, typeOf, arrowLeft, paramTys, isResMonad, rangeTy, (|->), isStateMonad)
+import ReWire.Crust.Util (mkApp, mkTuplePat, mkTuple, nil, isPrim)
+import ReWire.Error (failAt, MonadError, AstError)
+import ReWire.Pretty (TextShow (showb, showt), fromText, prettyPrint)
+import ReWire.Unbound (Fresh (fresh), s2n, n2s, bind, Name, Embed (Embed), unbind)
 
-import safe Control.Arrow (first, second, (&&&))
-import safe Control.Monad.State
-import safe Data.List (find, isSuffixOf)
-import safe Data.Either (partitionEithers)
-import safe Data.Maybe (fromMaybe, catMaybes)
-import safe Data.Bool (bool)
-import safe Data.Text (Text)
+import Control.Arrow (first, second, (&&&))
+import Control.Monad.State
+import Data.List (find, isSuffixOf)
+import Data.Either (partitionEithers)
+import Data.Maybe (fromMaybe, catMaybes)
+import Data.Bool (bool)
+import Data.Text (Text)
 
-import safe Data.Set (Set, singleton, insert)
-import safe Data.Map.Strict (Map)
-import safe qualified Data.Map.Strict     as Map
-
-import TextShow (TextShow (..), fromText)
+import Data.Set (Set, singleton, insert)
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict     as Map
 
 atMay :: (Eq i, Num i) => [a] -> i -> Maybe a
 atMay []       _ = Nothing
@@ -134,7 +134,7 @@ mkStart start i o ms = Defn
             resultTy   = tupleTy (MsgAnnote "Purify: mkStart: resultTy") $ aTy : ms
 
             reacT i o a = TyCon (MsgAnnote "Purify: reacT") (s2n "ReacT") `tyApp` i `tyApp` o `tyApp` a
-            startTy     = tycomp (MsgAnnote "Purify: startTy")
+            startTy     = TyApp (MsgAnnote "Purify: startTy")
                               (reacT i o (TyCon (MsgAnnote "Purify: startTy") (s2n "Identity")))
                               resultTy
 
@@ -450,8 +450,8 @@ patVars :: Pat -> [(Name Exp, Ty)]
 patVars = \ case
       PatCon _ _ _ _ ps             -> concatMap patVars ps
       PatVar _ _ (Embed (Just t)) x -> [(x, t)]
-      PatVar _ _ _ _                -> []
-      PatWildCard _ _ _             -> []
+      PatVar {}                     -> []
+      PatWildCard {}                -> []
 
 ---------------------------
 -- Purifying Resumption Monadic definitions

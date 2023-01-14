@@ -1,4 +1,9 @@
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses, GeneralizedNewtypeDeriving, OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Error
       ( SyntaxErrorT, AstError
@@ -11,9 +16,11 @@ module ReWire.Error
       , PutMsg (..)
       ) where
 
-import ReWire.Annotation (Annotation (..), Annote (..), toSrcSpanInfo, noAnn)
-
 import Prelude hiding ((<>), lines, unlines)
+
+import ReWire.Annotation (Annotation (..), Annote (..), toSrcSpanInfo, noAnn)
+import ReWire.Pretty (($$), text, int, showt, Pretty (pretty), (<>), (<+>), nest, Doc, defaultLayoutOptions, layoutSmart, renderStrict)
+import ReWire.Orphans ()
 
 import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 import Control.Monad.Except (MonadError (..), ExceptT (..), runExceptT, throwError)
@@ -24,10 +31,6 @@ import Data.Text (Text, pack)
 import Language.Haskell.Exts.Pretty (prettyPrim)
 import Language.Haskell.Exts.SrcLoc (SrcLoc (..), SrcInfo (..), SrcSpanInfo, noLoc)
 import Language.Haskell.Exts.Syntax (Annotated (..))
-import Prettyprinter (Pretty (..), (<>), (<+>), nest, Doc, defaultLayoutOptions, layoutSmart)
-import Prettyprinter.Render.Text (renderStrict)
-import ReWire.Pretty (($$), text, int)
-import TextShow (TextShow (..))
 import qualified Data.Text as T
 
 data AstError = AstError !Annote !Text

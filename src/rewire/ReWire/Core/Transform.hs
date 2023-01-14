@@ -1,17 +1,18 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE Safe #-}
 module ReWire.Core.Transform (mergeSlices, purgeUnused, partialEval, dedupe) where
 
 import ReWire.Annotation (unAnn, ann)
+import ReWire.BitVector (BV, zeros)
 import ReWire.Core.Interp (interpExp, DefnMap)
 import ReWire.Core.Syntax
+import qualified ReWire.BitVector as BV
 
 import Control.Arrow ((&&&))
 import Control.Monad.Reader (runReaderT, MonadReader (..), asks)
-import Data.BitVector (BV, zeros)
 import Data.Containers.ListUtils (nubOrd)
 import Data.HashMap.Strict (HashMap)
 import Data.List (genericLength, genericIndex)
-import qualified Data.BitVector as BV
 import qualified Data.HashMap.Strict as Map
 
 type DefnBodyMap = HashMap GId Exp

@@ -5,7 +5,9 @@ import ReWire.Annotation (noAnn)
 import ReWire.Unbound (Embed (..), bind, s2n)
 import qualified ReWire.HSE.Rename   as M
 import qualified ReWire.Crust.Syntax as M
-import ReWire.Crust.Syntax ((|->))
+import qualified ReWire.Crust.Util   as M
+import qualified ReWire.Crust.Types  as M
+import ReWire.Crust.Types ((|->))
 
 import GHC.Plugins
       ( Bind (..), Expr (..)

@@ -11,7 +11,7 @@ import ReWire.Error (AstError, runSyntaxError, SyntaxErrorT)
 import ReWire.Flags (Flag (..))
 import ReWire.FrontEnd (loadProgram, LoadPath)
 import ReWire.ModCache (printHeader)
-import ReWire.Pretty (Pretty, prettyPrint, fastPrint)
+import ReWire.Pretty (Pretty, prettyPrint, fastPrint, showt)
 
 import qualified ReWire.Config         as Config
 import qualified ReWire.Core.Syntax    as C
@@ -19,7 +19,7 @@ import qualified ReWire.Core.ToVHDL    as VHDL
 import qualified ReWire.Core.ToVerilog as Verilog
 
 import Control.Lens ((^.))
-import Control.Monad ((>=>), when)
+import Control.Monad ((>=>), when, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.Either (fromRight)
 import Data.List (intercalate, foldl')
@@ -31,7 +31,6 @@ import System.Environment (getArgs)
 import System.Exit (exitFailure)
 import System.FilePath ((</>))
 import System.IO (stderr)
-import TextShow (showt)
 import qualified Data.Text.IO as T
 import qualified Data.Yaml as YAML
 import qualified Data.HashMap.Strict as Map
@@ -82,7 +81,7 @@ main :: IO ()
 main = do
       (flags, filenames, errs) <-  getOpt Permute options <$> getArgs
 
-      when (not $ null errs) $ exitUsage' (map pack errs)
+      unless (null errs) $ exitUsage' (map pack errs)
 
       conf     <- either (exitUsage' . pure) pure $ Config.interpret flags
       systemLP <- getSystemLoadPath

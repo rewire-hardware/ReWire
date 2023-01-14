@@ -1,34 +1,29 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Safe #-}
 module ReWire.Core.ToVerilog (compileProgram) where
 
 import ReWire.Config (Config, flatten, resetFlags, ResetFlag (..), clock, reset)
 import ReWire.Annotation (noAnn, ann)
 import ReWire.Core.Mangle (mangle)
 import ReWire.Core.Syntax as C hiding (Name, Size, Index)
-import ReWire.Error
+import ReWire.Error (failAt, AstError, MonadError)
 import ReWire.Verilog.Syntax as V
-import ReWire.Core.Interp
-      ( patApply', patMatches', subRange
-      , dispatchWires, pausePrefix, extraWires
-      , resumptionSize
-      )
-import ReWire.Pretty (prettyPrint)
+import ReWire.Core.Interp (patApply', patMatches', subRange, dispatchWires, pausePrefix, extraWires, resumptionSize)
+import ReWire.Pretty (prettyPrint, showt)
+import ReWire.BitVector (width, bitVec, BV, zeros, ones, lsb1, (==.), (@.))
+import qualified ReWire.BitVector as BV
 
 import Control.Arrow ((&&&), first, second)
 import Control.Lens ((^.), (.~))
 import Control.Monad (liftM2)
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Monad.State (MonadState, runStateT, modify, gets)
-import Data.BitVector (width, bitVec, BV, zeros, ones, lsb1, (==.), (@.))
 import Data.HashMap.Strict (HashMap)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Text (Text)
-import TextShow (showt)
 
-import qualified Data.BitVector      as BV
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Text           as T
 
@@ -74,16 +69,19 @@ newWire' sz n = do
       modify $ second (<> [mkSignal (n', sz)])
       pure $ Name n'
 
-lookupWidth :: MonadState SigInfo m => Name -> m (Maybe Size)
-lookupWidth n = gets (lookup n . map proj <$> snd)
-      where proj :: Signal -> (Name, Size)
+lookupWidth :: (MonadError AstError m, MonadState SigInfo m) => Name -> m (Maybe Size)
+lookupWidth n = do
+      sigs <- gets snd >>= mapM proj
+      pure $ lookup n sigs
+      where proj :: MonadError AstError m => Signal -> m (Name, Size)
             proj = \ case
-                  Wire  []   n _ -> (n, 0)
-                  Wire  [sz] n _ -> (n, sz)
-                  Logic []   n _ -> (n, 0)
-                  Logic [sz] n _ -> (n, sz)
-                  Reg   []   n _ -> (n, 0)
-                  Reg   [sz] n _ -> (n, sz)
+                  Wire  []   n _ -> pure (n, 0)
+                  Wire  [sz] n _ -> pure (n, sz)
+                  Logic []   n _ -> pure (n, 0)
+                  Logic [sz] n _ -> pure (n, sz)
+                  Reg   []   n _ -> pure (n, 0)
+                  Reg   [sz] n _ -> pure (n, sz)
+                  _              -> failAt noAnn $ "toVerilog: lookupWidth: unexpected multi-dimensional signal (rwc bug): " <> showt n
 
 compileProgram :: (MonadFail m, MonadError AstError m) => Config -> C.Program -> m V.Program
 compileProgram conf (C.Program st ds)
@@ -224,7 +222,7 @@ instantiate :: (MonadFail m, MonadState SigInfo m, MonadError AstError m) => Con
 instantiate conf (ExternSig an ps theirClock args res) g inst sz lvars = do
       Name mr         <- newWire sz "extRes"
       (args', lvars') <- if | T.null theirClock       -> pure (args, lvars)
-                            | not (T.null $ ourClock) -> pure $ ((theirClock, 1) : args, LVal (Name ourClock) : lvars)
+                            | not (T.null $ ourClock) -> pure ((theirClock, 1) : args, LVal (Name ourClock) : lvars)
                             | otherwise               -> failAt an "ToVerilog: external module requires a clock signal, but we have no clock to give it."
       inst'           <- fresh' inst
       let stmt = Instantiate g inst' (map (second $ LitBits . bitVec 32) ps)
@@ -245,7 +243,7 @@ compileExp conf lvars = \ case
       Lit _ bv                                      -> pure (bvToExp bv, [])
       C.Concat _ e1 e2                              -> first V.cat <$> compileExps conf lvars (gather e1 <> gather e2)
       Call _ sz (Global g) e ps els                 -> mkCall ("g" <> g) e ps els $ compileCall conf (mangle g) sz
-      Call _ sz (SetRef r) e ps els                 -> mkCall "setRef" e ps els $ \ [a, b] -> case a of
+      Call _ sz (SetRef r) e ps els                 -> mkCall2' "setRef" e ps els $ \ (a, b) -> case a of
             a@(LVal (Element _ _)) -> do -- TODO(chathhorn) TODO TODO
                   let wa  = 1
                   r' <- newWire' wa r
@@ -275,8 +273,12 @@ compileExp conf lvars = \ case
       Call _ sz (Const bv) e ps els                -> mkCall "lit"       e ps els $ \ _      -> (,[]) <$> wcast sz (bvToExp bv)
       where mkCall2 :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
                     => Name -> C.Exp -> [Pat] -> C.Exp -> ((V.Exp, V.Exp) -> m V.Exp) -> m (V.Exp, [Stmt])
-            mkCall2 s e ps els f = mkCall s e ps els $ \ case
-                  [e1, e2] -> (, []) <$> f (e1, e2)
+            mkCall2 s e ps els f = mkCall2' s e ps els $ fmap (, []) . f
+
+            mkCall2' :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
+                    => Name -> C.Exp -> [Pat] -> C.Exp -> ((V.Exp, V.Exp) -> m (V.Exp, [V.Stmt])) -> m (V.Exp, [Stmt])
+            mkCall2' s e ps els f = mkCall s e ps els $ \ case
+                  [e1, e2] -> f (e1, e2)
                   es       -> failAt (ann e) $ "primitive: expected two arguments, got: " <> showt (length es)
 
             mkCall1 :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
@@ -379,7 +381,7 @@ mkWCast sz = \ case
 -- > x = e
 -- where x has a width of s. I.e., "wcast s e" fixes the "bitwidth context" for
 -- the expression e to s.
-wcast :: MonadState SigInfo m => Size -> V.Exp -> m V.Exp
+wcast :: (MonadError AstError m, MonadState SigInfo m) => Size -> V.Exp -> m V.Exp
 wcast sz e = expWidth e >>= \ case
       Just sz' | sz < sz' -> trunc e
                | sz > sz' -> case e of
@@ -401,11 +403,11 @@ wcast sz e = expWidth e >>= \ case
                   V.Not e           -> V.Not         <$> pad e
                   e                 -> pad e
       _                   -> pure e
-      where pad :: MonadState SigInfo m => V.Exp -> m V.Exp
+      where pad :: (MonadError AstError m, MonadState SigInfo m) => V.Exp -> m V.Exp
             pad e = expWidth e >>= \ case
                         Just sz' | sz > sz' -> pure $ mkWCast sz e
                         _                   -> pure e
-            trunc :: MonadState SigInfo m => V.Exp -> m V.Exp
+            trunc :: (MonadError AstError m, MonadState SigInfo m) => V.Exp -> m V.Exp
             trunc e = expWidth e >>= \ case
                         Just sz' | sz < sz' -> pure $ mkWCast sz e
                         _                   -> pure e
@@ -424,7 +426,7 @@ wcast sz e = expWidth e >>= \ case
 -- {i, ..., j}                    L(i)+...+L(j)      all self-determined
 -- {i {j, ..., k}}                i*(L(j)+...+L(k))  all self-determined
 -- -----------------------------------------------------------------------------
-expWidth :: MonadState SigInfo m => V.Exp -> m (Maybe Size)
+expWidth :: (MonadError AstError m, MonadState SigInfo m) => V.Exp -> m (Maybe Size)
 expWidth = \ case
       V.Add    e1 e2                -> largest e1 e2
       V.Sub    e1 e2                -> largest e1 e2
@@ -465,10 +467,11 @@ expWidth = \ case
       V.WCast sz _                  -> pure $ Just sz
       V.LitBits bv                  -> pure $ Just $ fromIntegral $ width bv
       V.LVal lv                     -> lvalWidth lv
-      where largest :: MonadState SigInfo m => V.Exp -> V.Exp -> m (Maybe Size)
+      e                             -> failAt noAnn ("ToVerilog: expWidth: unsupported expression (rwc bug): " <> prettyPrint e)
+      where largest :: (MonadError AstError m, MonadState SigInfo m) => V.Exp -> V.Exp -> m (Maybe Size)
             largest e1 e2 = liftM2 max <$> expWidth e1 <*> expWidth e2
 
-            lvalWidth :: MonadState SigInfo m => LVal -> m (Maybe Size)
+            lvalWidth :: (MonadError AstError m, MonadState SigInfo m) => LVal -> m (Maybe Size)
             lvalWidth = \ case
                   Element _ _ -> pure $ Just 1
                   Range _ i j -> pure $ Just $ fromIntegral $ nbits i j

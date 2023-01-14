@@ -96,6 +96,7 @@ carryadd' (a:as) (b:bs) c =
 
 msBit' :: [Bool] -> Bool
 msBit' (b:_) = b
+msBit' []    = Prelude.error "msBit: empty list"
 
 lsBit' :: [Bool] -> Bool
 lsBit' = last
@@ -207,6 +208,7 @@ minus' as bs = plus' as (negate' bs)
 
 nudgeL' :: ([Bool] , Bool) -> (Bool , [Bool])
 nudgeL' (b:bs,q) = (b,bs ++ [q])
+nudgeL' _        = Prelude.error "nudgeL': empty list"
 
 nudgeR' :: (Bool,[Bool]) -> ([Bool],Bool)
 nudgeR' (q,w) = (q : init w , last w)

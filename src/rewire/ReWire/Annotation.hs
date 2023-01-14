@@ -1,5 +1,5 @@
 {-# LANGUAGE Rank2Types, ScopedTypeVariables, GADTs, TypeFamilies, DeriveDataTypeable, OverloadedStrings #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -Wno-missing-methods #-}
 module ReWire.Annotation
       ( Annote (..)
@@ -13,6 +13,7 @@ module ReWire.Annotation
 import ReWire.SYB (runPureT,transform)
 import ReWire.Unbound (Alpha (..))
 import ReWire.HSE.Orphans ()
+import ReWire.Pretty (TextShow (showb), fromText)
 
 import Control.DeepSeq (NFData (..))
 import Control.Monad.Identity (Identity(..))
@@ -27,8 +28,7 @@ import Language.Haskell.Exts.SrcLoc
 import qualified Language.Haskell.Exts.Syntax as HS (Annotated(..))
 import qualified Language.Haskell.Exts.Pretty as HS (Pretty)
 
-import safe GHC.Generics (Generic (..))
-import TextShow (TextShow (..), fromText)
+import GHC.Generics (Generic (..))
 
 data Annote where
       NoAnnote  :: Annote

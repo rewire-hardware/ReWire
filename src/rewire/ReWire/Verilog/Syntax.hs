@@ -1,12 +1,13 @@
-{-# LANGUAGE Trustworthy, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Safe #-}
 module ReWire.Verilog.Syntax where
 
-import Prettyprinter (Pretty (..), parens, (<+>), vsep, hsep, semi, colon, punctuate, comma, nest, Doc, braces, brackets, hcat)
-import ReWire.Pretty (empty, text)
-import Data.Text (Text, pack)
+import ReWire.Pretty (empty, text, Pretty (..), parens, (<+>), vsep, hsep, semi, colon, punctuate, comma, nest, Doc, braces, brackets, hcat)
+import ReWire.BitVector (BV (..), showHex', width, ones, zeros)
+import qualified ReWire.BitVector as BV
+
+import Data.Text (Text)
 import Data.List (intersperse)
-import Data.BitVector (BV (..), showHex, width, ones, zeros)
-import qualified Data.BitVector as BV
 
 newtype Program = Program { pgmModules :: [Module] }
       deriving (Eq, Show)
@@ -30,7 +31,7 @@ data Module = Module
 instance Pretty Module where
       pretty (Module n ps sigs stmt) = vsep
             [ nest 2 ( vsep
-                         ([ text "module" <+> text n <+> (parens $ vsep $ punctuate comma $ map pretty ps) <> semi ]
+                         ([ text "module" <+> text n <+> parens (vsep $ punctuate comma $ map pretty ps) <> semi ]
                          <> map ((<> semi) . pretty) sigs
                          <> map pretty stmt
                          )
@@ -213,7 +214,7 @@ instance Pretty Exp where
             Repl e1 e2      -> braces $ pretty e1 <> braces (pretty e2)
             WCast sz e      -> pretty sz <> text "'" <> parens (pretty e)
             LitBits bv | width bv == 0 -> text "0'h0"
-            LitBits bv      -> pretty (width bv) <> text "'h" <> text (pack $ drop 2 $ showHex bv)
+            LitBits bv      -> pretty (width bv) <> text "'h" <> text (showHex' bv)
             LVal x          -> pretty x
 
 bTrue :: Exp

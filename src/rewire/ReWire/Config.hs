@@ -13,6 +13,7 @@ module ReWire.Config
       ) where
 
 import ReWire.Flags (Flag (..))
+import ReWire.Pretty (showt)
 
 import Control.Lens (makeLenses, over, (.~), (^.), Lens', lens)
 import Control.Monad (foldM)
@@ -21,7 +22,6 @@ import Data.Set (Set)
 import Data.Text (Text, pack, unpack, splitOn)
 import Numeric.Natural (Natural)
 import System.FilePath ((-<.>))
-import TextShow (showt)
 
 import qualified Data.Set as Set
 

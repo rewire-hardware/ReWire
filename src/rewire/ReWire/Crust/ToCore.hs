@@ -1,29 +1,32 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings, MultiWayIf #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE Safe #-}
 module ReWire.Crust.ToCore (toCore) where
 
 import ReWire.Config (Config, inputSigs, outputSigs, stateSigs)
-import ReWire.Annotation
-import ReWire.Error
-import ReWire.Pretty
+import ReWire.Annotation (Annote, noAnn, Annotated (ann))
+import ReWire.Error (failAt, AstError, MonadError)
+import ReWire.Pretty (showt, prettyPrint)
 import ReWire.Unbound (Name, Fresh, runFreshM, Embed (..) , unbind, n2s)
+import ReWire.BitVector (bitVec, zeros, BV)
 
 import Control.Arrow ((&&&))
 import Control.Lens ((^.))
 import Control.Monad.Reader (MonadReader (..), ReaderT (..), asks, lift)
 import Control.Monad.State (StateT (..), MonadState, get, put, unless)
-import Data.BitVector (bitVec, zeros, BV)
 import Data.Either (partitionEithers)
 import Data.HashMap.Strict (HashMap)
 import Data.List (findIndex, genericLength)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Numeric.Natural (Natural)
-import TextShow (showt)
 
 import qualified Data.HashMap.Strict as Map
 import qualified ReWire.Core.Syntax  as C
 import qualified ReWire.Crust.Syntax as M
+import qualified ReWire.Crust.Types  as M
+import qualified ReWire.Crust.Util   as M
 
 type SizeMap = HashMap M.Ty C.Size
 type ConMap = (HashMap (Name M.TyConId) [Name M.DataConId], HashMap (Name M.DataConId) M.Ty)
@@ -129,18 +132,18 @@ transExp e = case e of
                       off   = (-i) - fromIntegral nBits
                   subElems an arg off nBits
             M.Builtin an _ _ M.VecIndex   : [arg, p]                      -> do
-                  i      <- maybe (failAt (ann e) "transExp: rwPrimVecIndex: invalid proxy argument.") pure
-                              $ fromIntegral <$> (M.typeOf p >>= M.proxyNat)
+                  i      <- maybe (failAt (ann e) "transExp: rwPrimVecIndex: invalid proxy argument.") (pure . fromIntegral)
+                              $ M.typeOf p >>= M.proxyNat
                   subElems an arg i 1
             M.Builtin an _ _ M.VecSlice   : [p, arg]                      -> do
-                  i      <- maybe (failAt (ann e) "transExp: rwPrimVecSlice: invalid proxy argument.") pure
-                              $ fromIntegral <$> (M.typeOf p >>= M.proxyNat)
+                  i      <- maybe (failAt (ann e) "transExp: rwPrimVecSlice: invalid proxy argument.") (pure . fromIntegral)
+                              $ M.typeOf p >>= M.proxyNat
                   nElems <- maybe (failAt (ann e) "transExp: rwPrimVecSlice: invalid Vec argument.") pure
                               $ M.typeOf e >>= M.vecSize
                   subElems an arg i nElems
             M.Builtin an _ _ M.VecRSlice  : [p, arg]                      -> do
-                  i      <- maybe (failAt (ann e) "transExp: rwPrimVecRSlice: invalid proxy argument.") pure
-                              $ fromIntegral <$> (M.typeOf p >>= M.proxyNat)
+                  i      <- maybe (failAt (ann e) "transExp: rwPrimVecRSlice: invalid proxy argument.") (pure . fromIntegral)
+                              $ M.typeOf p >>= M.proxyNat
                   nElems <- maybe (failAt (ann e) "transExp: rwPrimVecRSlice: invalid Vec argument.") pure
                               $ M.typeOf e >>= M.vecSize
                   subElems an arg ((- i) - i * fromIntegral nElems) nElems

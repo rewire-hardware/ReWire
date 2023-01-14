@@ -76,6 +76,7 @@ source-repository head
 library rewire-core
   exposed-modules:
       ReWire.Annotation
+      ReWire.BitVector
       ReWire.Config
       ReWire.Core.Interp
       ReWire.Core.Mangle
@@ -90,6 +91,8 @@ library rewire-core
       ReWire.Crust.ToCore
       ReWire.Crust.Transform
       ReWire.Crust.TypeCheck
+      ReWire.Crust.Types
+      ReWire.Crust.Util
       ReWire.Error
       ReWire.FIRRTL.Parse
       ReWire.FIRRTL.Syntax
@@ -107,6 +110,7 @@ library rewire-core
       ReWire.HSE.ToCrust
       ReWire.LoFIRRTL.Syntax
       ReWire.ModCache
+      ReWire.Orphans
       ReWire.Plugin
       ReWire.Pretty
       ReWire.SYB

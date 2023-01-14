@@ -1,4 +1,11 @@
-{-# LANGUAGE NamedFieldPuns, Rank2Types, FlexibleInstances, StandaloneDeriving, DeriveGeneric, DerivingVia, FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.HSE.Rename
@@ -17,8 +24,9 @@ module ReWire.HSE.Rename
       ) where
 
 import ReWire.Annotation (Annotation, Annote, noAnn)
-import ReWire.Error
-import ReWire.HSE.Fixity
+import ReWire.Error (failAt, mark, MonadError, AstError)
+import ReWire.HSE.Fixity (fixLocalOps, deuniquifyLocalOps)
+import ReWire.Pretty (TextShow (showbPrec), FromGeneric (..), genericShowbPrec)
 
 import Control.Arrow ((&&&), first)
 import Control.Monad (foldM, void)
@@ -40,9 +48,6 @@ import qualified Data.Set                               as Set
 import qualified Language.Haskell.Exts.Syntax           as S
 
 import Language.Haskell.Exts.Syntax hiding (Namespace, Annotation, Module)
-
-import TextShow (TextShow (..))
-import TextShow.Generic (FromGeneric (..), genericShowbPrec)
 
 -- | Map from type name to its set of data constructors.
 --   Note: the set of "ctors" also includes fields (things that might appear in

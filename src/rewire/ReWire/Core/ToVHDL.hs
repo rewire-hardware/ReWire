@@ -1,24 +1,24 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Safe #-}
 module ReWire.Core.ToVHDL (compileProgram) where
 
 import ReWire.Config (Config, vhdlPackages, reset, resetFlags, ResetFlag (..))
-import ReWire.Annotation
+import ReWire.Annotation (Annote, Annotated (ann), noAnn)
 import ReWire.Core.Syntax as C hiding (Name, Index, Size)
-import ReWire.Error
-import ReWire.Core.Mangle
+import ReWire.Error (failAt, MonadError, AstError)
+import ReWire.Core.Mangle (mangle)
 import ReWire.VHDL.Syntax as V
+import ReWire.BitVector (width, nat)
+import ReWire.Pretty (showt)
 
 import Control.Lens ((^.))
 import Control.Monad (zipWithM)
 import Control.Monad.Reader (ReaderT (..), ask)
 import Control.Monad.State (StateT (..), get, put, lift)
-import Data.BitVector (width, nat)
 import Data.Bits (testBit)
 import Data.List (genericLength, find, foldl')
 import Data.Text (Text)
-
-import TextShow (showt)
 
 type CM m = StateT ([Signal], [Component], Index) (ReaderT [Defn] m)
 
@@ -233,6 +233,7 @@ compileStartDefn conf (StartDefn an w n_loopfun n_startstate) = do
             outps = outputWires w
             arg0size = case sigLoop w of
                   Sig _ (a : _) _ -> a
+                  _               -> error "ToVHDL: arg0size: empty arg0 (rwc bug)."
             t_startstate = sigState0 w
 
 compileDefn :: MonadError AstError m => Config -> Defn -> CM m Unit

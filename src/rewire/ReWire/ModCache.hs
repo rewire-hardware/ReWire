@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, OverloadedStrings #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Safe #-}
 module ReWire.ModCache
       ( runCache
       , getProgram
@@ -9,23 +9,23 @@ module ReWire.ModCache
       , printHeader
       ) where
 
+import ReWire.Annotation (Annotation, SrcSpanInfo, unAnn)
 import ReWire.Config (Config, verbose, top, dump)
-import ReWire.Annotation
-import ReWire.Crust.KindCheck
-import ReWire.Crust.PrimBasis
-import ReWire.Crust.Purify
-import ReWire.Crust.Syntax
-import ReWire.Crust.ToCore
-import ReWire.Crust.Transform
+import ReWire.Crust.KindCheck (kindCheck)
+import ReWire.Crust.PrimBasis (addPrims)
+import ReWire.Crust.Purify (purify)
+import ReWire.Crust.Syntax (FreeProgram, Defn (..), Module (Module), Exp, Ty, Kind, DataConId, TyConId, builtins, Program (Program), prettyFP)
+import ReWire.Crust.ToCore (toCore)
+import ReWire.Crust.Transform (simplify, liftLambdas, purgeUnused, fullyApplyDefs, shiftLambdas, neuterExterns, expandTypeSynonyms, inline, prePurify)
 import ReWire.Crust.TypeCheck (typeCheck, untype)
-import ReWire.Error
-import ReWire.HSE.Annotate
-import ReWire.HSE.Desugar
-import ReWire.HSE.Parse
-import ReWire.HSE.Rename
-import ReWire.HSE.ToCrust
-import ReWire.Pretty
-import ReWire.Unbound (runFreshMT, FreshMT (..))
+import ReWire.Error (failAt, AstError, SyntaxErrorT, filePath)
+import ReWire.HSE.Annotate (annotate)
+import ReWire.HSE.Desugar (desugar, addMainModuleHead)
+import ReWire.HSE.Parse (tryParseInDir)
+import ReWire.HSE.Rename (Exports, Renamer, fromImps, allExports, toFilePath, fixFixity)
+import ReWire.HSE.ToCrust (extendWithGlobs, toCrust, getImps)
+import ReWire.Pretty (prettyPrint, prettyPrint', showt)
+import ReWire.Unbound (fv, trec, runFreshMT, FreshMT, Name)
 
 import Control.Lens ((^.))
 import Control.Arrow ((***))
@@ -39,7 +39,6 @@ import Data.Text (Text, pack)
 import Language.Haskell.Exts.Syntax hiding (Annotation, Exp, Module (..), Namespace, Name, Kind)
 import Numeric.Natural (Natural)
 import System.FilePath ((</>), takeDirectory)
-import TextShow (showt)
 
 import qualified Data.HashMap.Strict          as Map
 import qualified Data.Text                    as T

@@ -6,9 +6,9 @@ import ReWire.Annotation hiding (ann)
 import ReWire.Error
 import ReWire.HSE.Fixity
 import ReWire.HSE.Rename
-import ReWire.Crust.Syntax ((|->))
-import ReWire.Unbound (s2n, n2s, fresh, Fresh, Name, Embed (..), bind)
-import ReWire.SYB
+import ReWire.Crust.Types ((|->))
+import ReWire.Unbound (fv, s2n, n2s, fresh, Fresh, Name, Embed (..), bind)
+import ReWire.SYB (runQ, query)
 
 import Control.Arrow ((&&&), second)
 import Control.Monad (foldM, replicateM, void)
@@ -25,6 +25,8 @@ import qualified Data.Set                     as Set
 import qualified Data.Map.Strict              as Map
 import qualified Language.Haskell.Exts.Syntax as S
 import qualified ReWire.Crust.Syntax          as M
+import qualified ReWire.Crust.Util            as M
+import qualified ReWire.Crust.Types           as M
 
 import Language.Haskell.Exts.Syntax hiding (Annotation, Name, Kind)
 
@@ -171,7 +173,7 @@ transTyDecl rn syns = \ case
                 lhs = map transTyVar $ snd hd
             t'  <- transTy rn t
             let rhs :: [Name M.Ty]
-                rhs = M.fv t'
+                rhs = fv t'
 
             let tvs' = map (renumber rhs) lhs
             pure $ M.TypeSynonym l n (tvs' |-> t') : syns

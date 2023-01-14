@@ -1,19 +1,16 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings, ScopedTypeVariables #-}
-{-# LANGUAGE Trustworthy #-}
---
--- This type checker is based loosely on Mark Jones's "Typing Haskell in
--- Haskell", though since we don't have type classes in core it is much
--- simpler.
---
+{-# LANGUAGE Safe #-}
 module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype, unify, unify', TySub) where
 
-import ReWire.Annotation
+import ReWire.Annotation (Annote (MsgAnnote), unAnn, ann, noAnn)
+import ReWire.Crust.Syntax (Exp (..), Ty (..), Kind (..), Poly (..), Pat (..), MatchPat (..), FreeProgram, Defn (..), DataDefn (..), Builtin (..), DataCon (..), DataConId, builtinName)
+import ReWire.Crust.Types (poly, arrowRight, (|->), concrete, kblank, plusTy, tyAnn, setTyAnn, flattenArrow, plus, strTy, intTy, listTy, vecTy, arr)
+import ReWire.Crust.Util (mkLam, flattenLam, mkApp)
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fixOn, fixOn')
-import ReWire.Unbound (fresh, substs, Subst, n2s, s2n, unsafeUnbind)
-import ReWire.Pretty
-import ReWire.Crust.Syntax
+import ReWire.Pretty (showt, prettyPrint)
 import ReWire.SYB (runPureT, transform, runQ, query)
+import ReWire.Unbound (fresh, substs, Subst, n2s, s2n, unsafeUnbind, Fresh, Embed (Embed), Name, bind, unbind, fv)
 
 import Control.Arrow (first)
 import Control.DeepSeq (deepseq, force)
@@ -31,7 +28,6 @@ import Data.Maybe (mapMaybe)
 import Data.Set (Set)
 import Data.Text (Text)
 import Numeric.Natural (Natural)
-import TextShow (TextShow (..))
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
@@ -146,14 +142,14 @@ mguNats (n, us) (n', vs)  | n >= n'   = mguNats' (n - n', sort' us) $ sort' vs
             mguNats' (n, []) vs@(v : _)         | dups <- fromIntegral $ length $ takeWhile (== v) vs
                                                                  = tsUnion (mkSubN v $ n `div` dups) <$> mguNats' (n `mod` dups, []) (drop (fromIntegral dups) vs)
             -- n + u1 + ... + un ~ v1 + ... + vn
-            mguNats' (n, (u : us)) vs           | u `elem` vs    = mguNats' (n, us) $ dropFirst (== u) vs
+            mguNats' (n, u : us) vs             | u `elem` vs    = mguNats' (n, us) $ dropFirst (== u) vs
             mguNats' (n, us) (v : vs)           | v `elem` us    = mguNats' (n, dropFirst (== v) us) vs
 
             mguNats' (n, us@(u : _)) vs@(v : _) | hash (show u) > hash (show v)
                                                 , dups <- length $ takeWhile (== u) us
-                                                                 = tsUnion (mkSubV u v) <$> mguNats' (n, take dups (repeat v) <> drop dups us) vs
+                                                                 = tsUnion (mkSubV u v) <$> mguNats' (n, replicate dups v <> drop dups us) vs
             mguNats' (n, us@(u : _)) vs@(v : _) | dups <- length $ takeWhile (== v) vs
-                                                                 = tsUnion (mkSubV v u) <$> mguNats' (n, us) (take dups (repeat u) <> drop dups vs)
+                                                                 = tsUnion (mkSubV v u) <$> mguNats' (n, us) (replicate dups u <> drop dups vs)
             mguNats' _ _                                         = Nothing
 
             mkSubV :: Name Ty -> Name Ty -> TySub
@@ -245,8 +241,8 @@ patAssumps = flip patAssumps' mempty
             patAssumps' = \ case
                   PatCon _ _ _ _ ps             -> flip (foldr patAssumps') ps
                   PatVar _ _ (Embed (Just t)) n -> Map.insert n $ [] `poly` t
-                  PatVar _ _ _ _                -> id
-                  PatWildCard _ _ _             -> id
+                  PatVar {}                     -> id
+                  PatWildCard {}                -> id
 
 patHoles :: Fresh m => MatchPat -> m (HashMap (Name Exp) Poly)
 patHoles = flip patHoles' $ pure mempty
@@ -254,8 +250,8 @@ patHoles = flip patHoles' $ pure mempty
             patHoles' = \ case
                   MatchPatCon _ _ _ _ ps   -> flip (foldr patHoles') ps
                   MatchPatVar _ _ (Just t) -> (flip Map.insert ([] `poly` t) <$> fresh (s2n "PHOLE") <*>)
-                  MatchPatVar _ _ _        -> id
-                  MatchPatWildCard _ _ _   -> id
+                  MatchPatVar {}           -> id
+                  MatchPatWildCard {}      -> id
 
 tcPatCon :: (MonadReader TCEnv m, MonadState TySub m, Fresh m, MonadError AstError m) => Annote -> Ty -> (Ty -> pat -> m pat) -> Name DataConId -> [pat] -> m ([pat], Ty)
 tcPatCon an t tc i ps = do

@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable, DeriveGeneric, DerivingVia, OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.Core.Syntax
   ( Sig (..), ExternSig (..)
   , Exp (..)
@@ -18,20 +17,18 @@ module ReWire.Core.Syntax
   , cat, gather
   ) where
 
-import ReWire.Pretty
-import ReWire.Annotation
+import ReWire.Annotation (Annote, Annotated (ann), noAnn)
+import ReWire.BitVector (BV (..), width, showHex, zeros, ones, (==.))
+import ReWire.Orphans ()
+import ReWire.Pretty (text, Pretty (pretty), Doc, vsep, (<+>), nest, hsep, parens, braces, punctuate, comma, dquotes, tupled, TextShow (showt), FromGeneric (..))
+import qualified ReWire.BitVector as BV
 
-import Data.BitVector (BV (..), width, showHex, zeros, ones, (==.))
 import Data.Data (Typeable, Data(..))
-import Data.Hashable (Hashable (hash, hashWithSalt))
+import Data.Hashable (Hashable)
 import Data.List (intersperse, genericLength)
-import Data.Text (Text, pack)
+import Data.Text (Text)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
-import Prettyprinter (Pretty (..), Doc, vsep, (<+>), nest, hsep, parens, braces, punctuate, comma, dquotes, tupled)
-import TextShow (TextShow (..), showt)
-import TextShow.Generic (FromGeneric (..))
-import qualified Data.BitVector as BV
 
 class SizeAnnotated a where
       sizeOf :: a -> Size
@@ -48,9 +45,6 @@ bvTrue = ones 1
 
 bvFalse :: BV
 bvFalse = zeros 1
-
-instance TextShow BV where
-      showb = showb . showHex
 
 data Prim = Add | Sub
           | Mul | Div | Mod
@@ -168,7 +162,7 @@ instance Annotated Exp where
 
 instance Pretty Exp where
       pretty = \ case
-            Lit _ bv             -> text (pack $ showHex bv) <> text "::" <> ppBVTy (width bv)
+            Lit _ bv             -> text (showHex bv) <> text "::" <> ppBVTy (width bv)
             LVar _ _ n           -> text $ "$" <> showt n
             Concat _ e1 e2       -> ppBV $ gather e1 <> gather e2
             Call _ _ f@Const {} e ps els | isNil els -> nest 2 $ vsep
@@ -207,7 +201,7 @@ ppPats = zipWith ppPats' [0::Index ..]
             ppPats' i = \ case
                   PatVar _ sz      -> text "p" <> pretty i <> text "::" <> ppBVTy sz
                   PatWildCard _ sz -> text "_" <> text "::" <> ppBVTy sz
-                  PatLit _ bv      -> text (pack $ showHex bv) <> text "::" <> ppBVTy (width bv)
+                  PatLit _ bv      -> text (showHex bv) <> text "::" <> ppBVTy (width bv)
 
 ppArgs :: [Pat] -> [Doc an]
 ppArgs = map (uncurry ppArgs') . filter (isPatVar . snd) . zip [0::Index ..]
@@ -253,7 +247,7 @@ instance Pretty Pat where
       pretty = \ case
             PatVar _ s       -> braces $ ppBVTy s
             PatWildCard _ s  -> text "_" <> ppBVTy s <> text "_"
-            PatLit      _ bv -> text (pack $ showHex bv) <> text "::" <> ppBVTy (width bv)
+            PatLit      _ bv -> text (showHex bv) <> text "::" <> ppBVTy (width bv)
 
 nilPat :: Pat
 nilPat = PatLit noAnn BV.nil
@@ -335,8 +329,4 @@ instance Pretty Program where
       pretty p = vsep $ intersperse (text "") $ pretty (start p) : map pretty (defns p)
 
 -- Orphans
-
-instance Hashable BV where
-      hashWithSalt s bv = hashWithSalt s (BV.width bv, BV.nat bv)
-      hash bv = hash (BV.width bv, BV.nat bv)
 
