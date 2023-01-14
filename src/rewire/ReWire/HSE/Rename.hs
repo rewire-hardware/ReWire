@@ -1,13 +1,12 @@
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Trustworthy #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.HSE.Rename
       ( Renamer, fixFixity, getExports, allExports
       , exclude, extend, finger, rename
@@ -26,14 +25,17 @@ module ReWire.HSE.Rename
 import ReWire.Annotation (Annotation, Annote, noAnn)
 import ReWire.Error (failAt, mark, MonadError, AstError)
 import ReWire.HSE.Fixity (fixLocalOps, deuniquifyLocalOps)
-import ReWire.Pretty (TextShow (showbPrec), FromGeneric (..), genericShowbPrec)
+import ReWire.Orphans ()
+import ReWire.Pretty (TextShow, FromGeneric (..))
 
 import Control.Arrow ((&&&), first)
 import Control.Monad (foldM, void)
 import Control.Monad.State (MonadState)
 import Data.List (find, foldl')
 import Data.List.Split (splitOn)
+import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe)
+import Data.Set (Set)
 import Data.Text (Text, pack, unpack)
 import GHC.Generics (Generic)
 import Language.Haskell.Exts.Fixity (Fixity (..), AppFixity (..))
@@ -41,9 +43,7 @@ import Language.Haskell.Exts.Pretty (prettyPrint)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo, noSrcSpan)
 import System.FilePath (joinPath, (<.>))
 
-import Data.Map.Strict.Internal (Map (..))
 import qualified Data.Map.Strict                        as Map
-import Data.Set.Internal (Set (..))
 import qualified Data.Set                               as Set
 import qualified Language.Haskell.Exts.Syntax           as S
 
@@ -326,12 +326,3 @@ getImp exps (imps, fs) = \ case
             toName = \ case
                   VarName _ x -> x
                   ConName _ x -> x
-
--- Orphans
-deriving instance Generic a => Generic (Set a)
-deriving instance (Generic a, Generic b) => Generic (Map a b)
-
-instance (Generic a, TextShow a) => TextShow (Set a) where
-      showbPrec = genericShowbPrec
-instance (Generic a, Generic b, TextShow a, TextShow b) => TextShow (Map a b) where
-      showbPrec = genericShowbPrec

@@ -1,70 +1,54 @@
-{-# LANGUAGE RankNTypes, GADTs #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE Safe #-}
 module ReWire.SYB
       ( Transform (TId)
-      , transform, (||>), runT, runPureT
+      , transform, (||>), runT
       , Query (QEmpty)
       , query, (||?), runQ
+      , everywhere, gmapT
       ) where
 
-import Control.Exception (PatternMatchFail (..))
-import Control.Monad.Catch (MonadCatch (..))
-import Control.Monad ((>=>), MonadPlus (..))
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Maybe (MaybeT (..))
-import Data.Data (Data, Typeable, gmapM, gmapQr, cast)
-import Data.Maybe (fromJust)
+import Control.Monad ((>=>))
+import Data.Data (Data, Typeable, gmapQr, cast, gmapT)
 
-everywhere :: (Monad m, Data a) => (forall d. Data d => d -> m d) -> a -> m a
-everywhere f = gmapM (everywhere f) >=> f
+import Data.Data.Lens (biplate, uniplate)
+import Control.Lens.Plated (transformMOnOf)
 
-generalizeA :: (Monad m, Typeable a) => (a -> m b) -> forall d. Typeable d => d -> MaybeT m b
-generalizeA f x = maybe mzero (lift . f) $ cast x
+everywhere :: Data a => (forall d. Data d => d -> d) -> a -> a
+everywhere f = f . gmapT (everywhere f)
 
-generalize :: (Monad m, Typeable a) => (a -> m a) -> forall d. Typeable d => d -> MaybeT m d
-generalize f = generalizeA f >=> tr
-      where tr :: (Monad m, Typeable a, Typeable b) => a -> m b
-            tr = pure . fromJust . cast
+everywhereQ :: (Data a, Monoid b) => (forall d. Data d => d -> b) -> a -> b
+everywhereQ f n = f n <> gmapQr (<>) mempty (everywhereQ f) n
 
--- | This is just a list of type
--- > [exists d. Data d => d -> MaybeT m d]
-data Transform m where
-      TCons :: !(forall d. Data d => d -> MaybeT m d) -> !(Transform m) -> Transform m
-      TId   :: Transform m
+data Transform m d where
+      TCons :: Data d => (d -> m d) -> !(Transform m d) -> Transform m d
+      TId   :: Transform m d
 
-type T m = forall d. Data d => d -> MaybeT m d
-
-instance Semigroup (Transform m) where
+instance Semigroup (Transform m d) where
       (TCons f fs) <> g = f `TCons` (fs <> g)
       TId          <> g = g
 
-instance Monoid (Transform m) where
+instance Monoid (Transform m d) where
       mempty                 = TId
 
-foldT :: Monad m => (T m -> T m -> T m) -> Transform m -> T m
+foldT :: Monad m => ((d -> m d) -> (d -> m d) -> (d -> m d)) -> Transform m d -> d -> m d
 foldT op = \ case
       TCons f fs -> f `op` foldT op fs
-      TId        -> lift . pure
+      TId        -> pure
 
-(||>) :: (Monad m, Typeable d) => (d -> m d) -> Transform m -> Transform m
-f ||> fs = generalize f `TCons` fs
+(||>) :: (Monad m, Data d, Data a) => (a -> m a) -> Transform m d -> Transform m d
+f ||> fs = transformMOnOf biplate uniplate f `TCons` fs
 infixr 1 ||>
 
-transform :: (Monad m, Typeable d) => (d -> m d) -> Transform m
+transform :: (Monad m, Data a, Data d) => (a -> m a) -> Transform m d
 transform = (||> TId)
 
-runPureT :: (Monad m, Data d) => Transform m -> d -> m d
-runPureT t = everywhere $ fmap fromJust . runMaybeT . foldT (\ f g x -> f x `mplus` g x) t
-
-runT :: (MonadCatch m, Data d) => Transform m -> d -> m d
-runT t = everywhere $ fmap fromJust . runMaybeT . foldT (\ f g x -> f x `mplusE` g x) t
-
--- | mplus + match fail treated as mzero.
-mplusE :: (MonadCatch m, MonadPlus m) => m a -> m a -> m a
-mplusE a b = catch a (\ (PatternMatchFail _) -> mzero) `mplus` b
+runT :: (Monad m, Data d) => Transform m d -> d -> m d
+runT = foldT (>=>)
 
 -- | This is just a list of type
--- > [exists d. Data d => d -> a]
+-- > [forall d. Data d => d -> a]
 data Query a where
       QCons  :: !(forall d. Data d => d -> a) -> !(Query a) -> Query a
       QEmpty :: Query a
@@ -93,10 +77,6 @@ foldQ op = \ case
       QCons f fs -> f `op` foldQ op fs
       QEmpty     -> const mempty
 
-everywhereQ :: (Data a, Monoid b) => (forall d. Data d => d -> b) -> a -> b
-everywhereQ f n = f n <> gmapQr (<>) mempty (everywhereQ f) n
-
--- | Returns the mappend sum of the result of all matches. No impure version,
---   so pattern match failures aren't caught.
+-- | Returns the mappend sum of the result of all matches.
 runQ :: (Data d, Monoid a) => Query a -> d -> a
 runQ q = everywhereQ $ foldQ (\ f g x -> f x <> g x) q

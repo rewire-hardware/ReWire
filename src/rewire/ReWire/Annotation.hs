@@ -1,4 +1,9 @@
-{-# LANGUAGE Rank2Types, ScopedTypeVariables, GADTs, TypeFamilies, DeriveDataTypeable, OverloadedStrings #-}
+{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_GHC -Wno-missing-methods #-}
 module ReWire.Annotation
@@ -10,7 +15,7 @@ module ReWire.Annotation
       , noAnn, unAnn
       ) where
 
-import ReWire.SYB (runPureT,transform)
+import ReWire.SYB (runT, transform)
 import ReWire.Unbound (Alpha (..))
 import ReWire.HSE.Orphans ()
 import ReWire.Pretty (TextShow (showb), fromText)
@@ -66,7 +71,7 @@ class Annotated a where
       ann :: a -> Annote
 
 unAnn :: Data d => d -> d
-unAnn = runIdentity . runPureT (transform $ \ (_ :: Annote) -> pure noAnn)
+unAnn = runIdentity . runT (transform $ \ (_ :: Annote) -> pure noAnn)
 
 instance SrcInfo Annote where
       toSrcInfo a b c = LocAnnote $ toSrcInfo a b c

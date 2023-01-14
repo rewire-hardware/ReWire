@@ -1,4 +1,5 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE Safe #-}
 module ReWire.HSE.Fixity
       ( fixLocalOps
@@ -6,8 +7,8 @@ module ReWire.HSE.Fixity
       , getFixities
       ) where
 
-import ReWire.SYB
-import ReWire.Error
+import ReWire.SYB ((||>), Transform (TId), runT)
+import ReWire.Error (AstError, mark)
 
 import Control.Monad (void, (>=>))
 import Control.Monad.Identity (Identity (..))
@@ -53,7 +54,7 @@ getFixities' m = map qualFixity . getFixities
 getFixities :: [Decl a] -> [Fixity]
 getFixities = foldr toFixity []
       where toFixity :: Decl a -> [Fixity] -> [Fixity]
-            toFixity (InfixDecl _ asc lvl ops) = (++) $ map (Fixity (void asc) (fromMaybe 9 lvl) . UnQual () . deOp) ops
+            toFixity (InfixDecl _ asc lvl ops) = (<>) $ map (Fixity (void asc) (fromMaybe 9 lvl) . UnQual () . deOp) ops
             toFixity _                         = id
 
             deOp :: Op a -> Name ()
@@ -67,15 +68,15 @@ getFixities = foldr toFixity []
 --   operators with the same name).
 --   Note: applyFixities annoyingly fixes the annotation type as SrcSpanInfo.
 fixLocalOps :: (MonadState AstError m, MonadFail m) => Module SrcSpanInfo -> m (Module SrcSpanInfo)
-fixLocalOps = (fmap fst . flip runStateT 0 . runPureT (renameDecl id ||> TId)) >=> applyGlobFixities
+fixLocalOps = (fmap fst . flip runStateT 0 . runT (renameDecl id ||> TId)) >=> applyGlobFixities
       where applyGlobFixities :: (MonadState AstError m, MonadFail m) => Module SrcSpanInfo -> m (Module SrcSpanInfo)
             applyGlobFixities m@(Module _ (Just (ModuleHead _ mn _ _)) _ _ ds)
-                                                          = mark (ann m) >> applyFixities (getFixities ds ++ getFixities' (void mn) ds) m
+                                                          = mark (ann m) >> applyFixities (getFixities ds <> getFixities' (void mn) ds) m
             applyGlobFixities m@(Module _ Nothing _ _ ds) = mark (ann m) >> applyFixities (getFixities ds) m
             applyGlobFixities m                           = pure m
 
 deuniquifyLocalOps :: Module SrcSpanInfo -> Module SrcSpanInfo
-deuniquifyLocalOps = runIdentity . runPureT ((||> TId) $ \ case
+deuniquifyLocalOps = runIdentity . runT ((||> TId) $ \ case
       QVarOp l1 (Qual l2 (ModuleName _ ('$' : _)) n) -> pure $ QVarOp l1 $ UnQual l2 n
       (x :: QOp SrcSpanInfo)                         -> pure x)
 

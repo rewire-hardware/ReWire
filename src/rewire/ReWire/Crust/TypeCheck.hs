@@ -1,4 +1,6 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Safe #-}
 module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype, unify, unify', TySub) where
 
@@ -9,7 +11,7 @@ import ReWire.Crust.Util (mkLam, flattenLam, mkApp)
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fixOn, fixOn')
 import ReWire.Pretty (showt, prettyPrint)
-import ReWire.SYB (runPureT, transform, runQ, query)
+import ReWire.SYB (runT, transform, runQ, query)
 import ReWire.Unbound (fresh, substs, Subst, n2s, s2n, unsafeUnbind, Fresh, Embed (Embed), Name, bind, unbind, fv)
 
 import Control.Arrow (first)
@@ -106,7 +108,7 @@ typeCheck start (ts, syns, vs) = (ts, syns, ) <$> runReaderT tc mempty
                   _                                                   -> mempty)
 
             concretize :: Data d => Concretes -> d -> d
-            concretize cs = runIdentity . runPureT (transform $ \ case
+            concretize cs = runIdentity . runT (transform $ \ case
                   v@(Var an tan t n) -> pure $ maybe v (Var an tan t) $ (unAnn <$> t) >>= \ t' -> Map.lookup (n, t') cs
                   e                  -> pure e)
 
@@ -462,7 +464,7 @@ localCAssumps :: (MonadReader TCEnv m, MonadError AstError m) => (HashMap (Name 
 localCAssumps f = local (\ tce -> tce { cas = f (cas tce) })
 
 untype :: Data d => d -> d
-untype = runIdentity . runPureT (transform $ \ (_ :: Maybe Ty) -> pure Nothing)
+untype = runIdentity . runT (transform $ \ (_ :: Maybe Ty) -> pure Nothing)
 
 iTy :: Ty
 iTy = TyVar (MsgAnnote "ReacT input type.") KStar (s2n "?i")

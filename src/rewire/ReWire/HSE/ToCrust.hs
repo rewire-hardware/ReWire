@@ -1,4 +1,7 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverloadedStrings, MultiWayIf #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE Safe #-}
 module ReWire.HSE.ToCrust (toCrust, extendWithGlobs, getImps) where
 

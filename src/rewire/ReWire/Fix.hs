@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 module ReWire.Fix (fix, fix', fixOn, boundedFixOn, fixOn', fixUntil, boundedFix) where
 
 import ReWire.Error (MonadError, AstError, failAt)

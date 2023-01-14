@@ -7,21 +7,21 @@ module ReWire.HSE.Annotate
 
 import ReWire.Annotation (Annote (..), toSrcSpanInfo)
 import ReWire.HSE.Orphans ()
-import ReWire.SYB
+import ReWire.SYB (runT, gmapT, Transform (TId), (||>))
 
 import Control.Monad.Identity (Identity (..))
-import Data.Data (Data (..), cast)
+import Data.Data (Data, cast)
 import Data.Maybe (fromJust)
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
 
 import Language.Haskell.Exts.Syntax
 
-annotate :: (Data (ast Annote), Functor ast, Applicative m) => ast SrcSpanInfo -> m (ast Annote)
-annotate m = pure $ runIdentity $ runPureT nodes $ LocAnnote <$> m
+annotate :: (Data (ast Annote), Functor ast) => ast SrcSpanInfo -> ast Annote
+annotate m = runIdentity $ runT nodes $ LocAnnote <$> m
 
 type SF a = a Annote -> Identity (a Annote)
 
-nodes :: Transform Identity
+nodes :: Data a => Transform Identity a
 nodes =   (s :: SF Module)
       ||> (s :: SF ModuleHead)
       ||> (s :: SF ExportSpecList)
@@ -83,6 +83,6 @@ nodes =   (s :: SF Module)
       ||> (s :: SF Activation)
       ||> (s :: SF Annotation)
       ||> TId
-      where s n = return $ gmapT (\ t -> case cast t :: Maybe Annote of
+      where s n = pure $ gmapT (\ t -> case cast t :: Maybe Annote of
                   Just _  -> fromJust $ cast $ AstAnnote (toSrcSpanInfo <$> n)
                   Nothing -> t) n

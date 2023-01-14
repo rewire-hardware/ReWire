@@ -1,7 +1,9 @@
-{-# LANGUAGE FlexibleContexts, ScopedTypeVariables, GADTs, OverloadedStrings, MultiWayIf #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE Safe #-}
-{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
-{-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 module ReWire.Crust.Transform
       ( inline, expandTypeSynonyms, reduce
       , neuterExterns
@@ -59,19 +61,19 @@ defnSubst (Defn _ n (Embed pt) _ (Embed e)) = runFreshM $ unbind e >>= \ case
       _        -> error "Inlining: definition not inlinable (rwc bug)"
 
 -- | Expands type synonyms.
-expandTypeSynonyms :: (MonadCatch m, MonadError AstError m, Fresh m) => FreeProgram -> m FreeProgram
+expandTypeSynonyms :: (MonadError AstError m, Fresh m) => FreeProgram -> m FreeProgram
 expandTypeSynonyms (ts, syns0, ds) = (,,) <$> expandSyns ts <*> syns' <*> expandSyns ds
       where toSubst :: TypeSynonym -> (Name TyConId, Bind [Name Ty] Ty)
             toSubst (TypeSynonym _ n (Embed (Poly t))) = (n, t)
 
-            expandSyns :: (MonadCatch m, MonadError AstError m, Fresh m, Data d) => d -> m d
+            expandSyns :: (MonadError AstError m, Fresh m, Data d) => d -> m d
             expandSyns d = subs' >>= flip substs' d
 
-            subs' :: (MonadCatch m, MonadError AstError m, Fresh m) => m [(Name TyConId, Bind [Name Ty] Ty)]
+            subs' :: (MonadError AstError m, Fresh m) => m [(Name TyConId, Bind [Name Ty] Ty)]
             subs' = map toSubst <$> syns'
 
             -- | First expand type synonyms in type synonym definitions.
-            syns' :: (MonadCatch m, MonadError AstError m, Fresh m) => m [TypeSynonym]
+            syns' :: (MonadError AstError m, Fresh m) => m [TypeSynonym]
             syns' = do
                   foldM_ checkDupe [] syns0
                   fix "Type synonym expansion" 100 (substs' $ map toSubst syns0) syns0
@@ -80,20 +82,17 @@ expandTypeSynonyms (ts, syns0, ds) = (,,) <$> expandSyns ts <*> syns' <*> expand
                               | n2s n `elem` ss = failAt an $ "Duplicate type synonym: " <> n2s n
                               | otherwise       = pure $ n2s n : ss
 
-            substs' :: (MonadCatch m, MonadError AstError m, Fresh m, Data d) => [(Name TyConId, Bind [Name Ty] Ty)] -> d -> m d
+            substs' :: (MonadError AstError m, Fresh m, Data d) => [(Name TyConId, Bind [Name Ty] Ty)] -> d -> m d
             substs' subs' = runT (transform $ \ case
-                  TyCon _ n -> case lookup n subs' of
-                        Just pt -> do
-                              (vs, t') <- unbind pt
-                              case length vs of
-                                    0 -> pure t'
-                  TyApp _ a b -> case findTyCon a of
-                        Just (n, args) -> case lookup n subs' of
-                              Just pt -> do
-                                    (vs, t') <- unbind pt
-                                    let args' = args <> [b]
-                                    case length vs == length args' of
-                                          True -> pure $ substs (zip vs args') t'
+                  t@(TyCon _ n)   | Just pt <- lookup n subs'        -> do
+                        (vs, t') <- unbind pt
+                        pure $ if length vs == 0 then t' else t
+                  t@(TyApp _ a b) | Just (n, args) <- findTyCon a 
+                                  , Just pt        <- lookup n subs' -> do
+                        (vs, t') <- unbind pt
+                        let args' = args <> [b]
+                        pure $ if length vs == length args' then substs (zip vs args') t' else t
+                  t                                                  -> pure t
                   )
 
             findTyCon :: Ty -> Maybe (Name TyConId, [Ty])
@@ -111,6 +110,7 @@ neuterExterns = runT $ transform $ \ case
       App an tan t ex e | isExtern ex -> pure $ App an tan t ex
                                               $ setTyAnn (poly' <$> typeOf e)
                                               $ mkError (ann e) (typeOf e) "Extern expression placeholder"
+      e                               -> pure e
       where isExtern :: Exp -> Bool
             isExtern e = case flattenApp e of
                   [Builtin _ _ _ Extern, _ , _, _, _, _] -> True
@@ -270,7 +270,7 @@ fullyApplyDefs (ts, syns, vs) = (ts, syns, ) <$> mapM fullyApplyDefs' vs
 -- TODO(chathhorn): use Writer instead of State
 liftLambdas :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
 liftLambdas p = evalStateT (runT liftLambdas' p) []
-      where liftLambdas' :: (MonadCatch m, Fresh m) => Transform (StateT [Defn] m)
+      where liftLambdas' :: (MonadCatch m, Fresh m) => Transform (StateT [Defn] m) FreeProgram
             liftLambdas' =  \ case
                   Lam an tan (Just t) b | Just te <- typeOf $ snd $ unsafeUnbind b-> do
                         (x, e)    <- unbind b
@@ -334,7 +334,10 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
 
                         modify $ (:) $ Defn an f (fv t' |-> t') Nothing (Embed $ bind fvs e')
                         pure $ App an tan t ex (mkApp an (Var an Nothing (Just t') f) $ map (toVar an) bvs)
-                  ||> (\ ([] :: [Defn]) -> get) -- this is cute!
+                  e -> pure e
+                  ||> (\ case
+                        ([] :: [Defn]) -> get
+                        ds             -> pure ds)
                   ||> TId
 
             isExtrude :: Exp -> Bool
@@ -607,9 +610,9 @@ reduce (ts, syns, vs) = (ts, syns, ) <$> mapM reduceDefn vs
                         e1' <- reduceExp e1
                         e2' <- reduceExp e2
                         case e1' of
-                              Lam _ _ _ e -> do
+                              Lam _ _ tx e -> do
                                     (x, e') <- unbind e
-                                    reduceExp $ subst x e2' e'
+                                    reduceExp $ subst x (setTyAnn (poly' <$> tx) e2') e' -- TODO(chathhorn): ad-hoc promoting current type to annotation.
                               _              -> pure $ App an tan t e1' e2'
                   Lam an tan t e        -> do
                         (x, e') <- unbind e

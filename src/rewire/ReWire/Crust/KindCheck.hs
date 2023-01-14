@@ -1,4 +1,6 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
 module ReWire.Crust.KindCheck (kindCheck) where
 

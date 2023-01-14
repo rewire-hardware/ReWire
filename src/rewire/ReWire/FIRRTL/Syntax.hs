@@ -1,4 +1,6 @@
-{-# LANGUAGE DeriveGeneric, DeriveDataTypeable, DerivingVia #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.FIRRTL.Syntax where
 

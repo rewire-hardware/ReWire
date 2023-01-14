@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
 module ReWire.VHDL.ToLoFIRRTL (toLoFirrtl) where
 

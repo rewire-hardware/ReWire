@@ -1,4 +1,6 @@
-{-# LANGUAGE FlexibleInstances, FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
 module ReWire.ModCache
       ( runCache
@@ -92,7 +94,7 @@ getModule conf pwd fp = pDebug conf ("fetching module: " <> pack fp <> " (pwd: "
                       >=> pDebug' "Fixing fixity."
                       >=> lift . lift . fixFixity rn
                       >=> pDebug' "Annotating."
-                      >=> annotate
+                      >=> pure . annotate
                       >=> pDebug' "[Pass 1] Pre-desugaring."
                       >=> whenDump 1 (printInfoHSE "[Pass 1] Haskell: Pre-desugaring" rn imps)
                       >=> pDebug' "Desugaring."
@@ -150,7 +152,7 @@ getProgram conf fp = do
        >=> pure . purgeUnused (start : (fst <$> builtins))
        >=> pDebug' "[Pass 7] Pre-simplification."
        >=> whenDump 7 (printInfo "[Pass 7] Crust: Pre-simplify")
-       >=> pDebug' "Simplifying."
+       >=> pDebug' "Partially evaluating and reducing."
        >=> simplify conf
        >=> pDebug' "[Pass 8] Post-simplification."
        >=> whenDump 8 (printInfo "[Pass 8] Crust: Post-simplify")

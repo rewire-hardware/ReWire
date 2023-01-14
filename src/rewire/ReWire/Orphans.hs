@@ -1,5 +1,6 @@
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module ReWire.Orphans where
@@ -11,7 +12,10 @@ import safe ReWire.BitVector (BV (nat), width, showHex)
 import safe Control.DeepSeq (NFData (rnf), deepseq)
 import safe Data.Data (Data)
 import safe Data.Hashable (Hashable (hashWithSalt, hash))
+import safe Data.Map.Strict.Internal (Map (..))
+import safe Data.Set.Internal (Set (..))
 import safe Data.Text (Text)
+import safe GHC.Generics (Generic)
 import safe Numeric.Natural (Natural)
 
 import qualified Data.Yaml as YAML
@@ -88,3 +92,11 @@ deriving instance (Data a, Data b) => Data (Bind a b)
 
 instance YAML.ToJSON BV where
       toJSON = YAML.String . showHex
+
+deriving instance Generic a => Generic (Set a)
+deriving instance (Generic a, Generic b) => Generic (Map a b)
+
+instance (Generic a, TextShow a) => TextShow (Set a) where
+      showbPrec = genericShowbPrec
+instance (Generic a, Generic b, TextShow a, TextShow b) => TextShow (Map a b) where
+      showbPrec = genericShowbPrec
