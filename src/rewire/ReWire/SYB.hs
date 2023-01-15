@@ -15,9 +15,6 @@ import Data.Data (Data, Typeable, gmapQr, cast, gmapT)
 import Data.Data.Lens (biplate, uniplate)
 import Control.Lens.Plated (transformMOnOf)
 
-everywhereQ :: (Data a, Monoid b) => (forall d. Data d => d -> b) -> a -> b
-everywhereQ f n = f n <> gmapQr (<>) mempty (everywhereQ f) n
-
 data Transform m d where
       TCons :: Data d => (d -> m d) -> !(Transform m d) -> Transform m d
       TId   :: Transform m d
@@ -59,12 +56,12 @@ instance Semigroup (Query a) where
 instance Monoid (Query a) where
       mempty                 = QEmpty
 
-generalizeQ :: (Typeable a, Monoid b) => (a -> b) -> forall d. Typeable d => d -> b
-generalizeQ f x = maybe mempty f $ cast x
-
 (||?) :: (Typeable d, Monoid a) => (d -> a) -> Query a -> Query a
 f ||? fs = generalizeQ f `QCons` fs
 infixr 1 ||?
+
+generalizeQ :: (Typeable a, Monoid b) => (a -> b) -> forall d. Typeable d => d -> b
+generalizeQ f x = maybe mempty f $ cast x
 
 query :: (Typeable d, Monoid a) => (d -> a) -> Query a
 query = (||? QEmpty)
@@ -77,3 +74,6 @@ foldQ op = \ case
 -- | Returns the mappend sum of the result of all matches.
 runQ :: (Data d, Monoid a) => Query a -> d -> a
 runQ q = everywhereQ $ foldQ (\ f g x -> f x <> g x) q
+
+everywhereQ :: (Data a, Monoid b) => (forall d. Data d => d -> b) -> a -> b
+everywhereQ f n = f n <> gmapQr (<>) mempty (everywhereQ f) n
