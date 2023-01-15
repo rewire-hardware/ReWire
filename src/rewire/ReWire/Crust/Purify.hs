@@ -6,7 +6,7 @@ module ReWire.Crust.Purify (purify) where
 import ReWire.Annotation (Annote (MsgAnnote, NoAnnote), ann, unAnn, noAnn)
 import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Pat (..), MatchPat (..), DefnAttr (..), DataConId, DataCon (..), Builtin (..), Defn (..), Poly (..), DataDefn (..), FreeProgram, flattenApp)
 import ReWire.Crust.TypeCheck (unify')
-import ReWire.Crust.Types (tupleTy, mkArrowTy, typeOf, arrowLeft, paramTys, isResMonad, rangeTy, (|->), isStateMonad)
+import ReWire.Crust.Types (tupleTy, mkArrowTy, typeOf, arrowLeft, paramTys, isReacT, rangeTy, (|->), isStateT, dstArrow, dstStateT, dstTyApp, dstReacT)
 import ReWire.Crust.Util (mkApp, mkTuplePat, mkTuple, nil, isPrim)
 import ReWire.Error (failAt, MonadError, AstError)
 import ReWire.Pretty (TextShow (showb, showt), fromText, prettyPrint)
@@ -49,7 +49,7 @@ projDefnTy Defn { defnPolyTy = Embed t } = poly2Ty t
 purify :: (Fresh m, MonadError AstError m, MonadIO m, MonadFail m) => Text -> FreeProgram -> m FreeProgram
 purify start (ts, syns, ds) = do
       (smds, notSmds)     <- partitionEithers <$> mapM isStateMonadicDefn ds
-      (rmds, ods)         <- partitionEithers <$> mapM isResMonadicDefn notSmds
+      (rmds, ods)         <- partitionEithers <$> mapM isReacMonadicDefn notSmds
 
       maybe (failAt noAnn $ "No definition for start function (" <> start <> ") found!")
             (projDefnTy >=> checkStartType)
@@ -216,7 +216,7 @@ mkPureEnv ms ((n, Embed phi) : nps) = do
 getStates :: Ty -> [Ty]
 getStates t = case dstReacT $ rangeTy t of
       Just (_, _, sts', _) -> sts'
-      _                    -> fromMaybe [] $ dstCompM (rangeTy t) >>= dstStateT
+      _                    -> fromMaybe [] $ (fst <$> dstTyApp (rangeTy t)) >>= dstStateT
 
 lookupPure :: MonadError AstError m => Annote -> Name Exp -> PureEnv -> m Ty
 lookupPure an x = maybe (failAt an $ "No pure binding for variable: " <> n2s x) pure . lookup x
@@ -224,12 +224,12 @@ lookupPure an x = maybe (failAt an $ "No pure binding for variable: " <> n2s x) 
 isStateMonadicDefn :: Fresh m => Defn -> m (Either Defn Defn)
 isStateMonadicDefn = \ case
       d@Defn { defnName = n } | isPrim n -> pure $ Right d
-      d@Defn { defnPolyTy = Embed poly } -> bool (Right d) (Left d) . isStateMonad <$> poly2Ty poly
+      d@Defn { defnPolyTy = Embed poly } -> bool (Right d) (Left d) . isStateT <$> poly2Ty poly
 
-isResMonadicDefn :: Fresh m => Defn -> m (Either Defn Defn)
-isResMonadicDefn = \ case
+isReacMonadicDefn :: Fresh m => Defn -> m (Either Defn Defn)
+isReacMonadicDefn = \ case
       d@Defn { defnName = n } | isPrim n -> pure $ Right d
-      d@Defn { defnPolyTy = Embed poly } -> bool (Right d) (Left d) . isResMonad <$> poly2Ty poly
+      d@Defn { defnPolyTy = Embed poly } -> bool (Right d) (Left d) . isReacT <$> poly2Ty poly
 
 purifyStateDefn :: (Fresh m, MonadError AstError m, MonadIO m) =>
                    PureEnv -> [Ty] -> Defn -> m Defn
@@ -315,60 +315,17 @@ purifyTy an ms (Just t) = case classifyTy t of
             -- into that form.
             purifyStateTTy :: [Ty] -> Ty -> Maybe Ty
             purifyStateTTy ms t = do
-                  let r        = rangeTy t
-                  a           <- dstCompR r
+                  a <- snd <$> dstTyApp (rangeTy t)
                   pure $ mkArrowTy (paramTys t <> ms) $ tupleTy (MsgAnnote "Purify: purifyStateTTy") $ a : ms
 
             classifyTy :: Ty -> TyVariety
             classifyTy = \ case
-                  t | isResMonad t                                               -> ReacTApp
+                  t | isReacT t                                                  -> ReacTApp
                   TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t1) t2                -> Arrow t1 t2
                   TyApp _ (TyApp _ (TyCon _ (n2s -> "(,)")) t1) t2               -> PairApp t1 t2
                   TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "StateT")) _) _) _  -> StateTApp
                   TyApp _ (TyCon _ (n2s -> "Identity")) _                        -> IdApp
                   _                                                              -> Pure
-
-dstArrow :: MonadError AstError m => Ty -> m (Ty, Ty)
-dstArrow = \ case
-      TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t1) t2 -> pure (t1, t2)
-      t                                               -> failAt (ann t) "Purify: expecting arrow, encountered non-arrow"
-
--- | This takes a type of the form
--- >  StateT S1 (StateT S2 (... (StateT Sm I)))
--- and returns
--- >  [S1, ..., Sm]
-dstStateT :: Ty -> Maybe [Ty]
-dstStateT = \ case
-      TyApp _ (TyApp _ (TyCon _ (n2s -> "StateT")) s) m -> (s :) <$> dstStateT m
-      TyCon _ (n2s -> "Identity")                       -> pure []
-      _                                                 -> Nothing
-
--- | This takes a type of the form
--- >  m a
--- and returns
--- >  a
-dstCompR :: Ty -> Maybe Ty
-dstCompR = \ case
-      TyApp _ _ a -> pure a
-      _           -> Nothing
-
--- | This takes a type of the form
--- >  m a
--- and returns
--- >  m
-dstCompM :: Ty -> Maybe Ty
-dstCompM = \ case
-      TyApp _ m _ -> pure m
-      _           -> Nothing
-
--- | This takes a type of the form
--- >  ReacT In Out (StateT S1 (StateT S2 (... (StateT Sm I)))) T
--- and returns
--- >  (In, Out, [S1, ..., Sm], T)
-dstReacT :: Ty -> Maybe (Ty, Ty, [Ty], Ty)
-dstReacT = \ case
-      TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) i) o) m) a -> dstStateT m >>= \ ms -> pure (i, o, ms, a)
-      _                                                                        -> Nothing
 
 ---------------------------
 -- Purifying State Monadic definitions
@@ -423,7 +380,7 @@ purifyStateBody rho stos stys i = classifyCases >=> \ case
             Case an Nothing (typeOf e2') e1 (bind p e2')  <$> maybe' (purifyStateBody rho stos stys i <$> e3)
 
       CBind an e g -> do
-            a           <- liftMaybe (ann e) "Purify: invalid type in bind" $ typeOf e >>= dstCompR
+            a           <- liftMaybe (ann e) "Purify: invalid type in bind" $ typeOf e >>= (fmap snd . dstTyApp)
             ns          <- freshVars "st" $ a : stys
             (f, es)     <- dstApp g
             g_pure_app  <- mkPureApp an rho f $ es <> map (mkVar an) ns
@@ -569,7 +526,8 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
             -- purify the types of e and g
             tg'         <- purifyTy an ms $ typeOf g
             -- ert is the return type of e; ty is the type of the whole expression
-            (ert, _)    <- dstArrow tg'
+            (ert, _)    <- maybe (failAt (ann tg') "Purify: expecting arrow, encountered non-arrow") pure
+                              $ dstArrow tg'
             e'          <- purifyResBody start rho i o ert stos ms e
 
             -- start calculating pattern: p = (Left (v, (s1, (..., sm))))

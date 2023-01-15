@@ -196,7 +196,7 @@ mgu tu@TyVar {}                     (TyVar _ _ v)                               
 mgu (TyVar _ _ u)                   t                | u `notElem` fv t              = pure $ Map.fromList [(u, t)]
 mgu t                               (TyVar _ _ u)    | u `notElem` fv t              = pure $ Map.fromList [(u, t)]
 
-mgu _                               _                                               = Nothing
+mgu _                               _                                                = Nothing
       -- trace ("     MGU: " <> unpack (prettyPrint t1)
       --   <> "\n    with: " <> unpack (prettyPrint t2)) $
       -- trace ("      t1: " <> show (unAnn t1)) $
@@ -215,7 +215,7 @@ plus' t | Just (a, b) <- plus t = plus' a <> plus' b
         | otherwise             = [t]
 
 unify' :: Ty -> Ty -> Maybe Ty
-unify' t1 t2 = subst <$> mgu t1 t2 <*> pure t1
+unify' t1 t2 = flip subst t1 <$> mgu t1 t2
 
 unify :: (MonadError AstError m, MonadState TySub m) => Annote -> Ty -> Ty -> m Ty
 unify an t1 t2 = do

@@ -6,7 +6,7 @@ module ReWire.SYB
       , transform, (||>), runT
       , Query (QEmpty)
       , query, (||?), runQ
-      , everywhere, gmapT
+      , gmapT
       ) where
 
 import Control.Monad ((>=>))
@@ -14,9 +14,6 @@ import Data.Data (Data, Typeable, gmapQr, cast, gmapT)
 
 import Data.Data.Lens (biplate, uniplate)
 import Control.Lens.Plated (transformMOnOf)
-
-everywhere :: Data a => (forall d. Data d => d -> d) -> a -> a
-everywhere f = f . gmapT (everywhere f)
 
 everywhereQ :: (Data a, Monoid b) => (forall d. Data d => d -> b) -> a -> b
 everywhereQ f n = f n <> gmapQr (<>) mempty (everywhereQ f) n

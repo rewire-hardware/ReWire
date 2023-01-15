@@ -21,7 +21,7 @@ import ReWire.Annotation (Annote (..), Annotated (..), unAnn)
 import ReWire.Config (Config, depth)
 import ReWire.Crust.Syntax (Exp (..), Ty (..), Poly (..), Pat (..), MatchPat (..), Defn (..), FreeProgram, DataCon (..), DataConId, TyConId, DataDefn (..), Builtin (..), TypeSynonym (..), flattenApp)
 import ReWire.Crust.TypeCheck (typeCheckDefn, unify, TySub)
-import ReWire.Crust.Types (typeOf, setTyAnn, poly, poly', flattenArrow, arr, nilTy, flattenAllTyApp, resInputTy, rangeTy, (|->), arrowRight, arrowLeft, isResMonad)
+import ReWire.Crust.Types (typeOf, setTyAnn, poly, poly', flattenArrow, arr, nilTy, ctorNames, resInputTy, rangeTy, (|->), arrowRight, arrowLeft, isReacT)
 import ReWire.Crust.Util (mkApp, mkError, mkLam, inlineable, mkTupleMPat, mkTuple, mkPairMPat, mkPair, mustInline)
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fix, fix', boundedFix)
@@ -155,7 +155,7 @@ prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM ppDefn ds
                   e | needsRejiggering e -> rejiggerBind e
                   -- Inline everything on the LHS.
                   (dstBind -> Just (a, e1, e2)) -> do
-                        e1' <- flatten (filter (\ d -> isReacT d && inlineable d) ds) e1
+                        e1' <- flatten (filter (\ d -> isReacDefn d && inlineable d) ds) e1
                         rejiggerBind $ mkBind a e1' e2
                   App an tan t e1 e2 -> App an tan t <$> ppExp e1 <*> ppExp e2
                   Lam an tan t  e -> do
@@ -237,8 +237,8 @@ prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM ppDefn ds
             flatten :: (Fresh m, MonadError AstError m) => [Defn] -> Exp -> m Exp
             flatten ds = fix "Bind LHS definition expansion" 100 (pure . substs (map defnSubst ds))
 
-            isReacT :: Defn -> Bool
-            isReacT Defn { defnPolyTy = Embed (Poly (unsafeUnbind -> (_, t))) } = isResMonad t
+            isReacDefn :: Defn -> Bool
+            isReacDefn Defn { defnPolyTy = Embed (Poly (unsafeUnbind -> (_, t))) } = isReacT t
 
 -- | So if e :: a -> b, then
 -- > g = e
@@ -433,11 +433,11 @@ purgeUnused except (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ exte
             -- | Also treat as used: all ctors for types returned by externs and ReacT inputs.
             externCtors :: Data a => a -> [Name TyConId]
             externCtors = runQ $ (\ case
-                        e@Builtin {} | Just t <- typeOf e -> ctorNames $ flattenAllTyApp $ rangeTy t
+                        e@Builtin {} | Just t <- typeOf e -> ctorNames $ rangeTy t
                         _                                 -> [])
                   ||? (\ case
                         Defn _ (n2s -> n) (Embed (Poly (unsafeUnbind -> (_, t)))) _ _
-                              | n `elem` except -> maybe [] (ctorNames . flattenAllTyApp) $ resInputTy t
+                              | n `elem` except -> maybe [] ctorNames $ resInputTy t
                         _                       -> [])
                   ||? QEmpty
 
@@ -447,16 +447,10 @@ purgeUnused except (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ exte
                         extend' n = (<> concatMap (concatMap ctorTypes . dataCons) (filter ((== n2s n) . n2s . dataName) ts))
 
                         ctorTypes :: DataCon -> [Name TyConId]
-                        ctorTypes (DataCon _ _ (Embed (Poly (unsafeUnbind -> (_, t))))) = ctorNames $ flattenAllTyApp t
+                        ctorTypes (DataCon _ _ (Embed (Poly (unsafeUnbind -> (_, t))))) = ctorNames t
 
             dataConName :: DataCon -> Name DataConId
             dataConName (DataCon _ n _) = n
-
-            ctorNames :: [Ty] -> [Name TyConId]
-            ctorNames = \ case
-                  TyCon _ n : cs -> n : ctorNames cs
-                  _ : cs         -> ctorNames cs
-                  _              -> []
 
 -- | Repeatedly calls "reduce" and "specialize" -- attempts to remove
 -- higher-order functions by partially evaluating them.

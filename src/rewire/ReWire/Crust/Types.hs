@@ -7,14 +7,16 @@ module ReWire.Crust.Types
       , higherOrder, fundamental, concrete, paramTys
       , proxyNat, vecSize, vecElemTy, vecTy, evalNat
       , mkArrowTy, poly, poly', listTy, kblank, plusTy, plus
-      , isResMonad, isStateMonad, flattenAllTyApp, resInputTy
+      , isReacT, isStateT, ctorNames, resInputTy
+      , dstArrow, dstStateT, dstTyApp, dstReacT
       ) where
 
 import ReWire.Annotation (Annote (MsgAnnote), Annotated (ann))
-import ReWire.Crust.Syntax (Exp (..), Ty (..), Poly (Poly), Pat (..), Kind (..), MatchPat (..), flattenTyApp)
+import ReWire.Crust.Syntax (Exp (..), Ty (..), Poly (Poly), Pat (..), Kind (..), MatchPat (..), flattenTyApp, TyConId)
 import ReWire.Unbound (Name, Embed (Embed), unsafeUnbind, n2s, s2n, fv, bind)
 
 import Data.Containers.ListUtils (nubOrd)
+import Data.Maybe (fromMaybe, isJust)
 import Numeric.Natural (Natural)
 
 --- TypeAnnotated instances
@@ -98,11 +100,6 @@ kblank = KVar $ s2n "_"
 kmonad :: Kind
 kmonad = KStar `KFun` KStar
 
-arr :: Ty -> Ty -> Ty
-arr t = TyApp (ann t) (TyApp (ann t) (TyCon (ann t) $ s2n "->") t)
-
-infixr 1 `arr`
-
 intTy :: Annote -> Ty
 intTy an = TyCon an $ s2n "Integer"
 
@@ -120,6 +117,11 @@ vs |-> t = Embed $ poly vs t
 
 infix 1 |->
 
+arr :: Ty -> Ty -> Ty
+arr t = TyApp (ann t) (TyApp (ann t) (TyCon (ann t) $ s2n "->") t)
+
+infixr 1 `arr`
+
 flattenArrow :: Ty -> ([Ty], Ty)
 flattenArrow = \ case
       TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t1) t2 -> (t1 : ts, t)
@@ -132,10 +134,27 @@ paramTys = fst . flattenArrow
 rangeTy :: Ty -> Ty
 rangeTy = snd . flattenArrow
 
-flattenAllTyApp :: Ty -> [Ty]
-flattenAllTyApp = \ case
-      TyApp _ t t' -> flattenAllTyApp t <> flattenAllTyApp t'
-      t            -> [t]
+isArrow :: Ty -> Bool
+isArrow = isJust . dstArrow
+
+dstArrow :: Ty -> Maybe (Ty, Ty)
+dstArrow = \ case
+      TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t1) t2 -> pure (t1, t2)
+      _                                               -> Nothing
+
+-- | Given 'a -> (b -> c)' returns 'b -> c'.
+arrowRight :: Ty -> Ty
+arrowRight t = fromMaybe t $ snd <$> dstArrow t
+
+-- | Given 'a -> (b -> c)' returns 'a'.
+arrowLeft :: Ty -> Ty
+arrowLeft t = fromMaybe t $ fst <$> dstArrow t
+
+ctorNames :: Ty -> [Name TyConId]
+ctorNames = \ case
+      TyCon _ n    -> [n]
+      TyApp _ t t' -> ctorNames t <> ctorNames t'
+      _            -> []
 
 listTy :: Annote -> Ty -> Ty
 listTy an = TyApp an $ TyCon an $ s2n "[_]"
@@ -179,18 +198,6 @@ evalNat = \ case
       (plus -> Just (n1, n2)) -> (+) <$> evalNat n1 <*> evalNat n2
       _                       -> Nothing
 
--- | Given 'a -> (b -> c)' returns 'b -> c'.
-arrowRight :: Ty -> Ty
-arrowRight = \ case
-      TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) t' -> t'
-      t                                              -> t
-
--- | Given 'a -> (b -> c)' returns 'a'.
-arrowLeft :: Ty -> Ty
-arrowLeft = \ case
-      TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) t') _ -> t'
-      t                                              -> t
-
 -- | Takes [T1, ..., Tn-1] Tn and returns (T1 -> (T2 -> ... (T(n-1) -> Tn) ...))
 mkArrowTy :: [Ty] -> Ty -> Ty
 mkArrowTy ps = foldr1 arr . (ps ++) . (: [])
@@ -204,21 +211,48 @@ pairTy an t = TyApp an $ TyApp an (TyCon an $ s2n "(,)") t
 tupleTy :: Annote -> [Ty] -> Ty
 tupleTy an = foldr (pairTy an) nilTy
 
-isResMonad :: Ty -> Bool
-isResMonad ty = case rangeTy ty of
-      TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) _) _) _) _ -> True
-      _                                                                        -> False
+isReacT :: Ty -> Bool
+isReacT = isJust . dstReacT . rangeTy
 
 resInputTy :: Ty -> Maybe Ty
 resInputTy ty = case rangeTy ty of
       TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) ip) _) _) _ -> Just ip
       _                                                                         -> Nothing
 
-isStateMonad :: Ty -> Bool
-isStateMonad ty = case rangeTy ty of
-      TyApp an (TyApp _ (TyApp _ (TyCon _ (n2s -> "StateT")) _) m) a -> isStateMonad (TyApp an m a)
+isStateT :: Ty -> Bool
+isStateT ty = case rangeTy ty of
+      TyApp an (TyApp _ (TyApp _ (TyCon _ (n2s -> "StateT")) _) m) a -> isStateT (TyApp an m a)
       TyApp _ (TyCon _ (n2s -> "Identity")) _                        -> True
       _                                                              -> False
+
+-- | This takes a type of the form
+-- >  StateT S1 (StateT S2 (... (StateT Sm I)))
+-- and returns
+-- >  [S1, ..., Sm]
+dstStateT :: Ty -> Maybe [Ty]
+dstStateT = \ case
+      TyApp _ (TyApp _ (TyCon _ (n2s -> "StateT")) s) m -> (s :) <$> dstStateT m
+      TyCon _ (n2s -> "Identity")                       -> pure []
+      _                                                 -> Nothing
+
+-- | This takes a type of the form
+-- >  m a
+-- and returns
+-- >  Just (m, a)
+dstTyApp :: Ty -> Maybe (Ty, Ty)
+dstTyApp = \ case
+      TyApp _ m a -> pure (m, a)
+      _           -> Nothing
+
+-- | This takes a type of the form
+-- >  ReacT In Out (StateT S1 (StateT S2 (... (StateT Sm I)))) T
+-- and returns
+-- >  (In, Out, [S1, ..., Sm], T)
+dstReacT :: Ty -> Maybe (Ty, Ty, [Ty], Ty)
+dstReacT = \ case
+      TyApp _ (TyApp _ (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) i) o) m) a -> dstStateT m >>= \ ms -> pure (i, o, ms, a)
+      _                                                                        -> Nothing
+
 
 -- | Types containing no type variables (or blanks).
 concrete :: Ty -> Bool
@@ -241,8 +275,3 @@ fundamental = \ case
 
 higherOrder :: Ty -> Bool
 higherOrder (flattenArrow -> (ats, rt)) = any isArrow $ rt : ats
-
-isArrow :: Ty -> Bool
-isArrow = \ case
-      TyApp _ (TyApp _ (TyCon _ (n2s -> "->")) _) _ -> True
-      _                                             -> False
