@@ -6,8 +6,8 @@ module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype, unify, unify', 
 
 import ReWire.Annotation (Annote (MsgAnnote), unAnn, ann, noAnn)
 import ReWire.Crust.Syntax (Exp (..), Ty (..), Kind (..), Poly (..), Pat (..), MatchPat (..), FreeProgram, Defn (..), DataDefn (..), Builtin (..), DataCon (..), DataConId, builtinName)
-import ReWire.Crust.Types (poly, arrowRight, (|->), concrete, kblank, plusTy, tyAnn, setTyAnn, flattenArrow, plus, strTy, intTy, listTy, vecTy, arr)
-import ReWire.Crust.Util (mkLam, flattenLam, mkApp)
+import ReWire.Crust.Types (poly, arrowRight, (|->), concrete, kblank, plusTy, tyAnn, setTyAnn, flattenArrow, plus, strTy, intTy, listTy, vecTy, arr, arrowLeft)
+import ReWire.Crust.Util (mkApp)
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fixOn, fixOn')
 import ReWire.Pretty (showt, prettyPrint)
@@ -39,6 +39,12 @@ import qualified Data.Set as Set
 
 subst :: Subst b a => HashMap (Name b) b -> a -> a
 subst = substs . Map.toList
+
+-- | `subst` until a fix point.
+rewrite :: (Data a, Hashable a, Subst b a) => HashMap (Name b) b -> a -> a
+rewrite = fixOn' norm . subst
+      where norm :: (Data a, Hashable a) => a -> Int
+            norm = hash . unAnn
 
 -- Type checker for core.
 
@@ -219,8 +225,8 @@ unify' t1 t2 = flip subst t1 <$> mgu t1 t2
 
 unify :: (MonadError AstError m, MonadState TySub m) => Annote -> Ty -> Ty -> m Ty
 unify an t1 t2 = do
-      t1' <- gets $ flip tsFix t1
-      t2' <- gets $ flip tsFix t2
+      t1' <- gets $ flip rewrite t1
+      t2' <- gets $ flip rewrite t2
       -- trace ("Unifying: " <> unpack (prettyPrint t1')
       --   <> "\n    with: " <> unpack (prettyPrint t2')) $ pure ()
       -- trace ("     t1': " <> show (unAnn t1')) $ pure ()
@@ -290,35 +296,42 @@ tcMatchPat t = \ case
       MatchPatVar an tan _      -> pure $ MatchPatVar an tan $ Just t
       MatchPatWildCard an tan _ -> pure $ MatchPatWildCard an tan $ Just t
 
-tcExp :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Exp -> m (Exp, Ty)
-tcExp = \ case
+tcExp :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Ty -> Exp -> m (Exp, Ty)
+tcExp tt = \ case
       e | Just pt <- tyAnn e -> do
             -- trace "tc: type annotation" $ pure ()
-            (e', t) <- first (setTyAnn $ Just pt) <$> tcExp (setTyAnn Nothing e)
-            ta      <- inst pt
-            t'      <- unify (ann e) ta t
+            ta       <- inst pt
+            t        <- unify (ann e) ta tt
+            (e', t') <- first (setTyAnn $ Just pt) <$> tcExp t (setTyAnn Nothing e)
             pure (e', t')
       App an tan _ e1 e2 | isFromList e1 -> do
             -- trace "tc: fromList" $ pure ()
-            (e2', _) <- tcExp e2
+            tve      <- freshv
+            (e2', _) <- tcExp tve e2
             case litListElems e2' of
                   Nothing -> failAt an "fromList: argument not a list literal."
                   -- Note: we instantiate LitVec here. TODO(chathhorn): move this to the inlining pass?
-                  Just es -> tcExp $ LitVec an tan Nothing es
+                  Just es -> tcExp tt $ LitVec an tan Nothing es
       App an tan _ e1 e2 -> do
             -- trace "tc: app" $ pure ()
-            (e1', t1) <- tcExp e1
-            (e2', t2) <- tcExp e2
-            tvr       <- freshv
+            tvx      <- freshv
+            (e2', t2) <- tcExp tvx e2
+            (e1', t1) <- tcExp (t2 `arr` tt) e1
+            --- tvr       <- freshv
             -- trace ("tc: app: e2':\n" <> show (unAnn e2')) $ pure ()
-            t         <- unify an t1 (t2 `arr` tvr)
-            pure (App an tan (Just $ arrowRight t) e1' e2', arrowRight t)
+            --- t         <- unify an t1 (t2 `arr` tvr)
+            pure (App an tan (Just $ arrowRight t1) e1' e2', arrowRight t1)
       Lam an tan _ e -> do
             -- trace "tc: lam" $ pure ()
-            (x, e')  <- unbind e
-            tvx      <- freshv
-            (e'', t) <- localAssumps (Map.insert x (poly [] tvx)) $ tcExp e'
-            pure (Lam an tan (Just tvx) $ bind x e'', tvx `arr` t)
+            tvx          <- freshv
+            tvr          <- freshv
+            tt'          <- unify an tt $ tvx `arr` tvr
+            let tvx'     = arrowLeft tt'
+                tvr'     = arrowRight tt'
+            (x, e')      <- unbind e
+            (e'', tvr'') <- localAssumps (Map.insert x (poly [] tvx'))
+                        $ tcExp tvr' e'
+            pure (Lam an tan (Just tvx') $ bind x e'', tvx' `arr` tvr'')
       Var an tan _ v -> do
             -- trace "tc: var" $ pure ()
             as <- asks as
@@ -326,7 +339,8 @@ tcExp = \ case
                   Nothing -> failAt an $ "Unknown variable: " <> showt v
                   Just pt -> do
                         t <- inst pt
-                        pure (Var an tan (Just t) v, t)
+                        t' <- unify an tt t
+                        pure (Var an tan (Just t') v, t')
       Con an tan _ i -> do
             -- trace "tc: con" $ pure ()
             cas <- asks cas
@@ -334,32 +348,33 @@ tcExp = \ case
                   Nothing -> failAt an $ "Unknown constructor: " <> prettyPrint i
                   Just pt -> do
                         t <- inst pt
-                        pure (Con an tan (Just t) i, t)
+                        t' <- unify an tt t
+                        pure (Con an tan (Just t') i, t')
       Case an tan _ e e1 e2 -> do
             -- trace "tc: case" $ pure ()
-            (e', tp)   <- tcExp e
+            tve        <- freshv
+            (e', tp)   <- tcExp tve e
             (p, e1')   <- unbind e1
             p'         <- tcPat tp p
             let as     = patAssumps p'
-            (e1'', t1) <- localAssumps (`Map.union` as) $ tcExp e1'
+            (e1'', t1) <- localAssumps (`Map.union` as) $ tcExp tt e1'
             case e2 of
                   Nothing -> pure (Case an tan (Just t1) e' (bind p' e1'') Nothing, t1)
                   Just e2 -> do
-                        (e2', t2) <- tcExp e2
-                        t         <- unify an t1 t2
-                        pure (Case an tan (Just t) e' (bind p' e1'') (Just e2'), t)
+                        (e2', t2) <- tcExp t1 e2
+                        pure (Case an tan (Just t2) e' (bind p' e1'') (Just e2'), t2)
       Match an tan _ e p f e2 -> do
             -- trace "tc: match" $ pure ()
-            (e', tp) <- tcExp e
+            tve      <- freshv
+            (e', tp) <- tcExp tve e
             p'       <- tcMatchPat tp p
             holes    <- patHoles p'
-            (_, tb)  <- localAssumps (`Map.union` holes) $ tcExp $ mkApp' an f $ map fst $ Map.toList holes
+            (_, tb)  <- localAssumps (`Map.union` holes) $ tcExp tt $ mkApp' an f $ map fst $ Map.toList holes
             case e2 of
                   Nothing -> pure (Match an tan (Just tb) e' p' f Nothing, tb)
                   Just e2 -> do
-                        (e2', t2) <- tcExp e2
-                        t         <- unify an tb t2
-                        pure (Match an tan (Just t) e' p' f (Just e2'), t)
+                        (e2', t2) <- tcExp tb e2
+                        pure (Match an tan (Just t2) e' p' f (Just e2'), t2)
       Builtin an tan _ b -> do
             -- trace ("tc: builtin: " <> show b) $ pure ()
             as <- asks as
@@ -367,21 +382,23 @@ tcExp = \ case
                   Nothing -> failAt an $ "Unknown builtin: " <> builtinName b
                   Just pt -> do
                         t <- inst pt
-                        pure (Builtin an tan (Just t) b, t)
-      e@LitInt {} -> pure (e, intTy $ ann e)
-      e@LitStr {} -> pure (e, strTy $ ann e)
+                        t' <- unify an tt t
+                        pure (Builtin an tan (Just t') b, t')
+      e@LitInt {} -> (e, ) <$> unify (ann e) tt (intTy $ ann e)
+      e@LitStr {} -> (e, ) <$> unify (ann e) tt (strTy $ ann e)
       LitList an tan _ es -> do
             -- trace "tc: LitList" $ pure ()
-            tv  <- freshv
-            es' <- mapM tcExp es
-            t   <- listTy an <$> foldM (unify an) tv (snd <$> es')
-            pure (LitList an tan (Just t) (fst <$> es'), t)
+            te  <- freshv
+            _ <- unify an tt $ listTy an te
+            (es', te') <- foldM tcElem ([], te) es
+            tt' <- unify an tt $ listTy an te'
+            pure (LitList an tan (Just tt') es', tt')
       LitVec an tan _ es -> do
             -- trace "tc: LitVec" $ pure ()
-            tv  <- freshv
-            es' <- mapM tcExp es
-            t   <- vecTy an (TyNat an $ fromInteger $ toInteger $ length es) <$> foldM (unify an) tv (snd <$> es')
-            pure (LitVec an tan (Just t) (fst <$> es'), t)
+            te  <- freshv
+            (es', te') <- foldM tcElem ([], te) es
+            tt'   <- unify an tt $ vecTy an (TyNat an $ fromInteger $ toInteger $ length es') te'
+            pure (LitVec an tan (Just tt') es', tt')
 
       where isFromList :: Exp -> Bool
             isFromList = \ case
@@ -396,52 +413,34 @@ tcExp = \ case
             mkApp' :: Annote -> Exp -> [Name Exp] -> Exp
             mkApp' an f holes = mkApp an f $ map (Var an Nothing Nothing) holes
 
+            tcElem :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => ([Exp], Ty) -> Exp -> m ([Exp], Ty)
+            tcElem (els, tel) el = do
+                  (el', tel') <- tcExp tel el
+                  pure (els <> [el'], tel')
+
+
 tcDefn :: (Fresh m, MonadError AstError m, MonadReader TCEnv m) => Text -> Defn -> m Defn
 tcDefn start d  = flip evalStateT mempty $ do
       -- trace ("tcDefn: " <> show (defnName d)) $ pure ()
       let Defn an n (Embed pt) b (Embed e) = force d
-      t'       <- inst pt
-      (vs, e') <- unbind e
-      let (targs, _) = flattenArrow t'
+      startTy  <- inst globalStartTy
+      t        <- if isStart $ defnName d then inst pt >>= unify an startTy else inst pt
+      (vs, body) <- unbind e
+      let (targs, _) = flattenArrow t
+          tbody      = iterate arrowRight t !! length vs
 
-      (fvs, fe) <- flattenLam e'
-      -- trace ("tcDefn body: " <> unpack (prettyPrint (unAnn $ untype e'))) $ pure ()
-      (fe', te'') <- localAssumps (`Map.union` (Map.fromList $ zip (vs <> fvs) $ map (poly []) targs))
-                   $ tcExp fe
+      -- trace ("tcDefn body: " <> unpack (prettyPrint (unAnn $ untype body))) $ pure ()
+      (body', _) <- localAssumps (`Map.union` (Map.fromList $ zip vs $ map (poly []) targs))
+                         $ tcExp tbody body
 
-      let e'' = mkLam (ann e') (zip (drop (length vs) targs) fvs) fe'
-      -- trace ("e'':\n" <> show (unAnn e'')) $ pure ()
+      -- trace ("body':\n" <> show (unAnn body')) $ pure ()
 
-      startTy <- inst globalStartTy
+      body'' <- gets $ flip rewrite body'
 
-      t'' <- if isStart $ defnName d then unify an startTy t' else pure t'
-      _   <- unify an (iterate arrowRight t'' !! length (vs <> fvs)) te''
-
-      -- subs <- gets unAnn
-      -- trace ("prefixed:\n" <> unpack (prettyPrint  (Map.toList subs))) $ pure ()
-      modify tsFixAll
-      -- subs <- gets unAnn
-      -- trace ("fixed:\n" <> unpack (prettyPrint  (Map.toList subs))) $ pure ()
-      e''' <- gets $ flip subst e''
-
-      let d'  = Defn an n (Embed pt) b $ Embed $ bind vs e'''
+      let d'  = Defn an n (Embed pt) b $ Embed $ bind vs body''
       d' `deepseq` pure d'
       where isStart :: Name Exp -> Bool
             isStart = (== start) . n2s
-
--- | Calculates the transitive closure of the type var unifier set.
-tsFixAll :: TySub -> TySub
-tsFixAll = fixOn' norm subst'
-      where subst' :: TySub -> TySub
-            subst' s = Map.map (subst s) s
-
-            norm :: TySub -> Int
-            norm = hash . Map.map unAnn
-
-tsFix :: TySub -> Ty -> Ty
-tsFix ts = fixOn' norm (subst ts)
-      where norm :: Ty -> Int
-            norm = hash . unAnn
 
 withAssumps :: (MonadError AstError m, MonadReader TCEnv m) => [DataDefn] -> [Defn] -> m a -> m a
 withAssumps ts vs = localAssumps (`Map.union` as) . localCAssumps (`Map.union` cas)
