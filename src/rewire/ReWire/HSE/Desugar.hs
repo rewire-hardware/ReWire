@@ -7,7 +7,7 @@ module ReWire.HSE.Desugar (desugar, addMainModuleHead) where
 import ReWire.Annotation (noAnn, Annote (..))
 import ReWire.Error (MonadError, AstError, failAt)
 import ReWire.HSE.Rename (Renamer, FQName, CtorSigs, qnamish, name, Namespace (Value), rename, getLocalCtorSigs, lookupCtorSig, findCtorSigFromField)
-import ReWire.SYB (Transform (TId), (||>), runT, transform, query, runQ)
+import ReWire.SYB (Transform (TId), (||>), runT, transform, query)
 
 import Control.Monad (replicateM, (>=>), void, when, msum, unless)
 import Control.Monad.State (runStateT, StateT, MonadState (..), modify)
@@ -605,9 +605,7 @@ desugarAsPats = transform $ \ case
             mkApp l (p, p') e = App l (Lambda l [p] e) <$> patToExp p'
 
             getAses :: Pat Annote -> [(Pat Annote, Pat Annote)]
-            getAses = runQ $ query $ \ case
-                  PAsPat (l :: Annote) n p -> [(PVar l n, p)]
-                  _                        -> []
+            getAses p = [(PVar l n, p) | PAsPat (l :: Annote) n p <- query p]
 
             deAs :: Pat Annote -> Pat Annote
             deAs = runIdentity . runT (transform $ \ case

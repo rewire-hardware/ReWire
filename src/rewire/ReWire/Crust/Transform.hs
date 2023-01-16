@@ -25,7 +25,7 @@ import ReWire.Crust.Types (typeOf, setTyAnn, poly, poly', flattenArrow, arr, nil
 import ReWire.Crust.Util (mkApp, mkError, mkLam, inlineable, mkTupleMPat, mkTuple, mkPairMPat, mkPair, mustInline)
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fix, fix', boundedFix)
-import ReWire.SYB (runT, transform, runQ, query, Transform (TId), (||?), Query (QEmpty), (||>))
+import ReWire.SYB (runT, transform, query, Transform (TId), (||>))
 import ReWire.Unbound (fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, Name (..), unsafeUnbind, bind, unbind, Subst (..), Alpha, Embed (Embed), Bind, trec)
 
 import Control.Lens ((^.))
@@ -365,9 +365,7 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
 
             -- | Get well-typed(!) bound variables.
             bv :: Data a => a -> [(Name Exp, Ty)]
-            bv = nubOrdOn fst . runQ (query $ \ case
-                  Var _ _ (Just t) n        | not $ isFreeName n -> [(n, t)]
-                  _                                              -> [])
+            bv a = nubOrdOn fst [(n, t) | Var _ _ (Just t) n <- query a, not $ isFreeName n]
 
             -- | Get well-typed(!) pat variables.
             patVars :: Pat -> [(Name Exp, Ty)]
@@ -432,14 +430,8 @@ purgeUnused except (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ exte
 
             -- | Also treat as used: all ctors for types returned by externs and ReacT inputs.
             externCtors :: Data a => a -> [Name TyConId]
-            externCtors = runQ $ (\ case
-                        e@Builtin {} | Just t <- typeOf e -> ctorNames $ rangeTy t
-                        _                                 -> [])
-                  ||? (\ case
-                        Defn _ (n2s -> n) (Embed (Poly (unsafeUnbind -> (_, t)))) _ _
-                              | n `elem` except -> maybe [] ctorNames $ resInputTy t
-                        _                       -> [])
-                  ||? QEmpty
+            externCtors a = concat $ [maybe [] (ctorNames . rangeTy) $ typeOf e | e@Builtin {} <- query a]
+                  <> [maybe [] ctorNames $ resInputTy t | Defn _ (n2s -> n) (Embed (Poly (unsafeUnbind -> (_, t)))) _ _ <- query a, n `elem` except]
 
             extendWithCtorParams :: [Name TyConId] -> [Name TyConId]
             extendWithCtorParams = nubOrd . sort . foldr extend' []

@@ -11,7 +11,7 @@ import ReWire.Crust.Util (mkApp)
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fixOn, fixOn')
 import ReWire.Pretty (showt, prettyPrint)
-import ReWire.SYB (runT, transform, runQ, query)
+import ReWire.SYB (runT, transform, query)
 import ReWire.Unbound (fresh, substs, Subst, n2s, s2n, unsafeUnbind, Fresh, Embed (Embed), Name, bind, unbind, fv)
 
 import Control.Arrow (first)
@@ -109,9 +109,7 @@ typeCheck start (ts, syns, vs) = (ts, syns, ) <$> runReaderT tc mempty
             isPoly (Defn _ _ (Embed (Poly (unsafeUnbind -> (_, t)))) _ _) = not $ concrete t
 
             uses :: Data a => a -> Set (Name Exp, Ty)
-            uses = runQ (query $ \ case
-                  Var _ _ (Just t) n | concrete t, Set.member n polys -> Set.singleton (n, unAnn t)
-                  _                                                   -> mempty)
+            uses a = Set.fromList [(n, unAnn t) | Var _ _ (Just t) n <- query a, concrete t, Set.member n polys]
 
             concretize :: Data d => Concretes -> d -> d
             concretize cs = runIdentity . runT (transform $ \ case

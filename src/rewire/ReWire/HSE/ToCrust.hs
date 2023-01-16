@@ -11,7 +11,7 @@ import ReWire.HSE.Fixity
 import ReWire.HSE.Rename
 import ReWire.Crust.Types ((|->))
 import ReWire.Unbound (fv, s2n, n2s, fresh, Fresh, Name, Embed (..), bind)
-import ReWire.SYB (runQ, query)
+import ReWire.SYB (query)
 
 import Control.Arrow ((&&&), second)
 import Control.Monad (foldM, replicateM, void)
@@ -273,9 +273,7 @@ transExp rn = \ case
       ExpTypeSig _ e t       -> M.setTyAnn <$> (Just . M.poly' <$> transTy rn t) <*> transExp rn e
       e                      -> failAt (ann e) $ "Unsupported expression syntax: " <> pack (show $ void e)
       where getVars :: Pat Annote -> [S.Name ()]
-            getVars = runQ $ query $ \ case
-                  PVar (_::Annote) x -> [void x]
-                  _                  -> []
+            getVars p = [void x | PVar (_::Annote) x <- query p]
 
             builtin :: QName Annote -> Maybe M.Builtin
             builtin = M.builtin . pack . prettyPrint . name . rename Value rn
