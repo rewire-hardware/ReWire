@@ -11,14 +11,12 @@ import ReWire.Crust.Util (mkApp)
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fixOn, fixOn')
 import ReWire.Pretty (showt, prettyPrint)
-import ReWire.SYB (runT, transform, query)
+import ReWire.SYB (transform, query)
 import ReWire.Unbound (fresh, substs, Subst, n2s, s2n, unsafeUnbind, Fresh, Embed (Embed), Name, bind, unbind, fv)
 
 import Control.Arrow (first)
 import Control.DeepSeq (deepseq, force)
 import Control.Monad (zipWithM, foldM, mplus, when)
-import Control.Monad.Catch (MonadCatch (..))
-import Control.Monad.Identity (Identity (..))
 import Control.Monad.Reader (MonadReader, ReaderT (..), local, asks)
 import Control.Monad.State (evalStateT, gets, modify, MonadState)
 import Data.Containers.ListUtils (nubOrd)
@@ -69,7 +67,7 @@ typeCheckDefn ts vs d = runReaderT (withAssumps ts vs $ tcDefn "" d) mempty
 
 -- | Type-annotate the AST, but also eliminate uses of polymorphic
 --   definitions by creating new definitions specialized to non-polymorphic types.
-typeCheck :: (Fresh m, MonadError AstError m, MonadCatch m) => Text -> FreeProgram -> m FreeProgram
+typeCheck :: (Fresh m, MonadError AstError m) => Text -> FreeProgram -> m FreeProgram
 typeCheck start (ts, syns, vs) = (ts, syns, ) <$> runReaderT tc mempty
       where conc :: Concretes -> Defn -> [Defn]
             conc cs (Defn an n _ b e) = mapMaybe conc' $ lookupAll n $ Map.keys cs
@@ -78,13 +76,13 @@ typeCheck start (ts, syns, vs) = (ts, syns, ) <$> runReaderT tc mempty
                               n' <- Map.lookup (n, t) cs
                               pure $ Defn an n' ([] |-> t) b e
 
-            tc :: (MonadCatch m, Fresh m, MonadError AstError m, MonadReader TCEnv m) => m [Defn]
+            tc :: (Fresh m, MonadError AstError m, MonadReader TCEnv m) => m [Defn]
             tc = do
                   vs' <- withAssumps ts vs $ mapM (tcDefn start) vs
                   cs  <- concretes vs' -- TODO(chathhorn): don't think this needs to use fix.
                   fst . fst <$> fixOn (Map.keys . snd) "polymorphic function instantiation" 10 tc' ((vs', mempty), cs)
 
-            tc' :: (MonadCatch m, Fresh m, MonadError AstError m, MonadReader TCEnv m) => (([Defn], Concretes), Concretes) -> m (([Defn], Concretes), Concretes)
+            tc' :: (Fresh m, MonadError AstError m, MonadReader TCEnv m) => (([Defn], Concretes), Concretes) -> m (([Defn], Concretes), Concretes)
             tc' ((acc, cs), cs') = do
                   let ep = concatMap (conc cs') polyDefs
                   ep' <- concretize (cs <> cs') <$> withAssumps ts (acc <> ep) (mapM (tcDefn start) ep)
@@ -112,9 +110,9 @@ typeCheck start (ts, syns, vs) = (ts, syns, ) <$> runReaderT tc mempty
             uses a = Set.fromList [(n, unAnn t) | Var _ _ (Just t) n <- query a, concrete t, Set.member n polys]
 
             concretize :: Data d => Concretes -> d -> d
-            concretize cs = runIdentity . runT (transform $ \ case
-                  v@(Var an tan t n) -> pure $ maybe v (Var an tan t) $ (unAnn <$> t) >>= \ t' -> Map.lookup (n, t') cs
-                  e                  -> pure e)
+            concretize cs = transform $ \ case
+                  v@(Var an tan t n) -> maybe v (Var an tan t) $ (unAnn <$> t) >>= \ t' -> Map.lookup (n, t') cs
+                  e                  -> e
 
 freshv :: Fresh m => m Ty
 freshv = TyVar (MsgAnnote "TypeCheck: freshv") kblank <$> fresh (s2n "?")
@@ -461,7 +459,7 @@ localCAssumps :: (MonadReader TCEnv m, MonadError AstError m) => (HashMap (Name 
 localCAssumps f = local (\ tce -> tce { cas = f (cas tce) })
 
 untype :: Data d => d -> d
-untype = runIdentity . runT (transform $ \ (_ :: Maybe Ty) -> pure Nothing)
+untype = transform $ \ (_ :: Maybe Ty) -> Nothing
 
 iTy :: Ty
 iTy = TyVar (MsgAnnote "ReacT input type.") KStar (s2n "?i")

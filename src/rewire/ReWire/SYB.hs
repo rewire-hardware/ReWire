@@ -1,45 +1,44 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE Safe #-}
 module ReWire.SYB
-      ( Transform (TId)
-      , transform, (||>), runT
-      , query
-      , gmapT
+      ( Tr (TId, TM, T), transformTr
+      , transform, transformM
+      , query, gmapT
       ) where
 
+import Control.Lens.Plated (transformOnOf, transformMOnOf, universeOnOf)
 import Control.Monad ((>=>))
 import Data.Data (Data, gmapT)
-
 import Data.Data.Lens (biplate, uniplate)
-import Control.Lens.Plated (transformMOnOf, universeOnOf)
 
-data Transform m d where
-      TCons :: Data d => (d -> m d) -> !(Transform m d) -> Transform m d
-      TId   :: Transform m d
+data Tr m a = TId
+            | TM (a -> m a)
+            | T  (a -> a)
 
-instance Semigroup (Transform m d) where
-      (TCons f fs) <> g = f `TCons` (fs <> g)
-      TId          <> g = g
+instance Monad m => Semigroup (Tr m a) where
+      TId  <> d    = d
+      d    <> TId  = d
+      TM f <> TM g = TM (f >=> g)
+      TM f <> T g  = TM f <> TM (pure . g)
+      T f  <> TM g = TM (pure . f) <> TM g
+      T f  <> T g  = T (f . g)
 
-instance Monoid (Transform m d) where
-      mempty            = TId
+instance Monad m => Monoid (Tr m a) where
+      mempty = TId
 
-foldT :: Monad m => ((d -> m d) -> (d -> m d) -> (d -> m d)) -> Transform m d -> d -> m d
-foldT op = \ case
-      TCons f fs -> f `op` foldT op fs
-      TId        -> pure
+transformTr :: (Data a, Data b, Monad m) => Tr m a -> b -> m b
+transformTr = \ case
+      TId  -> pure
+      TM f -> transformM f
+      T f  -> pure . transform f
 
-(||>) :: (Monad m, Data d, Data a) => (a -> m a) -> Transform m d -> Transform m d
-f ||> fs = transformMOnOf biplate uniplate f `TCons` fs
-infixr 1 ||>
+transform :: (Data a, Data b) => (a -> a) -> b -> b
+transform = transformOnOf biplate uniplate
 
-transform :: (Monad m, Data a, Data d) => (a -> m a) -> Transform m d
-transform = (||> TId)
-
-runT :: (Monad m, Data d) => Transform m d -> d -> m d
-runT = foldT (>=>)
+transformM :: (Monad m, Data a, Data b) => (a -> m a) -> b -> m b
+transformM = transformMOnOf biplate uniplate
 
 query :: (Data a, Data b) => a -> [b]
 query = universeOnOf biplate uniplate
-

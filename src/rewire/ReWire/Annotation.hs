@@ -15,13 +15,12 @@ module ReWire.Annotation
       , noAnn, unAnn
       ) where
 
-import ReWire.SYB (runT, transform)
+import ReWire.SYB (transform)
 import ReWire.Unbound (Alpha (..))
 import ReWire.HSE.Orphans ()
 import ReWire.Pretty (TextShow (showb), fromText)
 
 import Control.DeepSeq (NFData (..))
-import Control.Monad.Identity (Identity(..))
 import Data.Text (Text)
 import Data.Data (Typeable,Data(..))
 import Data.Hashable (Hashable (..))
@@ -71,7 +70,7 @@ class Annotated a where
       ann :: a -> Annote
 
 unAnn :: Data d => d -> d
-unAnn = runIdentity . runT (transform $ \ (_ :: Annote) -> pure noAnn)
+unAnn = transform $ \ (_ :: Annote) -> noAnn
 
 instance SrcInfo Annote where
       toSrcInfo a b c = LocAnnote $ toSrcInfo a b c

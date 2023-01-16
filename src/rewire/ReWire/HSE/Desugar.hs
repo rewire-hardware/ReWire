@@ -7,12 +7,11 @@ module ReWire.HSE.Desugar (desugar, addMainModuleHead) where
 import ReWire.Annotation (noAnn, Annote (..))
 import ReWire.Error (MonadError, AstError, failAt)
 import ReWire.HSE.Rename (Renamer, FQName, CtorSigs, qnamish, name, Namespace (Value), rename, getLocalCtorSigs, lookupCtorSig, findCtorSigFromField)
-import ReWire.SYB (Transform (TId), (||>), runT, transform, query)
+import ReWire.SYB (Tr (TId, TM, T), transformTr, transform, transformM, query)
 
 import Control.Monad (replicateM, (>=>), void, when, msum, unless)
-import Control.Monad.State (runStateT, StateT, MonadState (..), modify)
+import Control.Monad.State (evalStateT, MonadState (..), modify)
 import Data.Foldable (foldl', foldrM)
-import Data.Functor.Identity (Identity (..))
 import Data.Maybe (isNothing, mapMaybe)
 import Data.Text (pack)
 
@@ -21,7 +20,51 @@ import Language.Haskell.Exts.Pretty (prettyPrint)
 
 import qualified Data.Map.Strict as Map
 
-type Desugar m = Transform (FreshT m) (Module Annote)
+data Desugar m = Desugar
+      { dsModule   :: Tr m (Module Annote)
+      , dsPat      :: Tr m (Pat Annote)
+      , dsConDecl  :: Tr m (ConDecl Annote)
+      , dsExp      :: Tr m (Exp Annote)
+      , dsType     :: Tr m (Type Annote)
+      , dsDeclHead :: Tr m (DeclHead Annote)
+      , dsBinds    :: Tr m (Binds Annote)
+      , dsMatch    :: Tr m (Match Annote)
+      , dsAlt      :: Tr m (Alt Annote)
+      , dsQName    :: Tr m (QName Annote)
+      , dsDecl     :: Tr m (Decl Annote)
+      }
+
+instance Monad m => Semigroup (Desugar m) where
+      (<>) (Desugar f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11)
+           (Desugar g1 g2 g3 g4 g5 g6 g7 g8 g9 g10 g11)
+            = Desugar (f1  <> g1)
+                      (f2  <> g2)
+                      (f3  <> g3)
+                      (f4  <> g4)
+                      (f5  <> g5)
+                      (f6  <> g6)
+                      (f7  <> g7)
+                      (f8  <> g8)
+                      (f9  <> g9)
+                      (f10 <> g10)
+                      (f11 <> g11)
+
+instance Monad m => Monoid (Desugar m) where
+      mempty = Desugar TId TId TId TId TId TId TId TId TId TId TId
+
+pass :: Monad m => Desugar m -> Module Annote -> m (Module Annote)
+pass (Desugar f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11)
+      =   transformTr f11
+      >=> transformTr f10
+      >=> transformTr f9
+      >=> transformTr f8
+      >=> transformTr f7
+      >=> transformTr f6
+      >=> transformTr f5
+      >=> transformTr f4
+      >=> transformTr f3
+      >=> transformTr f2
+      >=> transformTr f1
 
 -- | Adds the "module Main where" if no module given (but not the "main"
 --   export).
@@ -32,27 +75,28 @@ addMainModuleHead = \ case
 
 -- | Desugar into lambdas then normalize the lambdas.
 desugar :: MonadError AstError m => Renamer -> Module Annote -> m (Module Annote)
-desugar rn = fmap fst . flip runStateT 0 .
+desugar rn = flip evalStateT 0 .
       ( pure
-      >=> runT  -- Each "runT" is intended be a separate pass over the AST (but that's not currently how it works).
+      >=> pass desugarInfix
+      >=> pass
             ( desugarNegs
            <> desugarDos
            <> desugarInfix
            <> desugarFuns
            <> desugarRecords rn
             )
-      >=> runT flattenLambdas
-      >=> runT
+      >=> pass flattenLambdas
+      >=> pass
             ( depatLambdas
            <> lambdasToCases
             )
-      >=> runT flattenAlts
-      >=> runT desugarGuards
-      >=> runT
+      >=> pass flattenAlts
+      >=> pass desugarGuards
+      >=> pass
             ( desugarIfs
            <> wheresToLets
             )
-      >=> runT
+      >=> pass
             ( desugarLets
            <> desugarNegLitPats
            <> desugarTuples
@@ -61,16 +105,16 @@ desugar rn = fmap fst . flip runStateT 0 .
            <> normTyContext
            <> desugarTyFuns
             )
-      >=> runT flattenAlts -- again
-      >=> runT
+      >=> pass flattenAlts -- again
+      >=> pass
             ( desugarAsPats
            <> liftDiscriminator
             )
       )
 
-type FreshT = StateT Int
+type Fresh = Int
 
-fresh :: Monad m => Annote -> FreshT m (Name Annote)
+fresh :: (MonadState Fresh m, Monad m) => Annote -> m (Name Annote)
 fresh l = do
       x <- get
       modify (+ 1)
@@ -88,25 +132,27 @@ type FieldInfo = (Name Annote, (Name Annote, Type Annote, Int, Int))
 -- > r { f = a }
 -- becomes
 -- > case r of R x0 _ x1 -> R x0 a x1
-desugarRecords :: MonadError AstError m => Renamer -> Desugar m
-desugarRecords rn = (\ case
-            Module (l :: Annote) h p imps decls -> do
+desugarRecords :: (MonadState Fresh m, MonadError AstError m) => Renamer -> Desugar m
+desugarRecords rn = mempty
+      { dsModule = TM $ \ case
+            Module l h p imps decls -> do
                   let fs = concatMap fieldInfo $ Map.assocs $ filterRecords $ getLocalCtorSigs rn
                   ds <- concatMap tupList <$> mapM fieldDecl fs
-                  pure $ Module l h p imps (decls ++ ds)
-            e -> pure e)
-      ||> (\ case
-            PRec (l :: Annote) c fpats -> do
+                  pure $ Module l h p imps (decls <> ds)
+            e                       -> pure e
+      , dsPat = TM $ \ case
+            PRec l c fpats -> do
                   let sig  = lookupCtorSig rn (rename Value rn c :: FQName)
                   let flds = mapMaybe fst sig
                   when (fpats /= [] && not (isRecordSig sig)) $ failAt l "Record pattern found, but not a record"
                   unless (all (inSig flds pfToField) fpats)   $ failAt l "Field pattern for nonexistent field"
                   pure $ PApp l c $ map (toPat l fpats) flds
-            e -> pure e)
-      ||> (\ case
-            RecDecl (l :: Annote) n fs -> pure $ ConDecl l n $ map (\ (FieldDecl _ _ t) -> t) $ concatMap flatten fs
-            e                          -> pure e)
-      ||> (\ x -> case x :: Exp Annote of
+            e              -> pure e
+
+      , dsConDecl = T $ \ case
+            RecDecl l n fs -> ConDecl l n $ map (\ (FieldDecl _ _ t) -> t) $ concatMap flatten fs
+            e              -> e
+      , dsExp = TM $ \ case
             -- R { b = e } becomes R undefined e undefined
             RecConstr l c fups -> do
                   let sig  = lookupCtorSig rn (rename Value rn c :: FQName)
@@ -131,10 +177,9 @@ desugarRecords rn = (\ case
                               Nothing
                         ]
             e -> pure e
-            )
-      ||> TId
+      }
 
-      where fieldDecl :: Monad m => FieldInfo -> FreshT m (Decl Annote, Decl Annote)
+      where fieldDecl :: MonadState Fresh m => FieldInfo -> m (Decl Annote, Decl Annote)
             fieldDecl (ctor, (f, t, i, arr)) = do
                   let an s = MsgAnnote $ "Generated record field accessor for " <> pack (prettyPrint f) <> " at: " <> s
                   x  <- fresh $ an "x"
@@ -178,7 +223,7 @@ desugarRecords rn = (\ case
 
             argPats :: Name Annote -> Int -> Int -> [Pat Annote]
             argPats x i tot = let a = ann x in
-                  replicate i (PWildCard a) ++ [PVar a x] ++ replicate (tot - i - 1) (PWildCard a)
+                  replicate i (PWildCard a) <> [PVar a x] <> replicate (tot - i - 1) (PWildCard a)
 
             inSig :: [FQName] -> (a -> Maybe FQName) -> a -> Bool
             inSig sig proj = maybe True (flip any sig . (==)) . proj
@@ -220,7 +265,7 @@ desugarRecords rn = (\ case
             toExp :: Annote -> [FieldUpdate Annote] -> FQName -> Exp Annote
             toExp l fups f = convField f (err l "uninitialized record field") fupToField (fupToExp f) fups
 
-            toRUpPat :: Monad m => Annote -> [FieldUpdate Annote] -> FQName -> FreshT m (Pat Annote)
+            toRUpPat :: MonadState Fresh m => Annote -> [FieldUpdate Annote] -> FQName -> m (Pat Annote)
             toRUpPat l fups f = do
                   x <- fresh l
                   pure $ convField f (PVar l x) fupToField (PWildCard . ann) fups
@@ -231,41 +276,42 @@ desugarRecords rn = (\ case
                                                 fupToField (pure . fupToExp f) fups
 
 -- | Turns Specials into normal identifiers.
-normIds :: MonadError AstError m => Desugar m
-normIds = (\ x -> case x :: QName Annote of
-            Special l (UnitCon _)      -> pure $ UnQual l $ Ident l "()"
-            Special l (ListCon _)      -> pure $ UnQual l $ Ident l "[_]"
-            Special l (FunCon _)       -> pure $ UnQual l $ Ident l "->"
-            -- I think this is only for the prefix constructor.
-            Special l (TupleCon _ _ i) -> pure $ UnQual l $ mkTuple l i
-            Special l (Cons _)         -> pure $ UnQual l $ Ident l "(:)"
-            e                          -> pure e
-            )
-      ||> TId
+normIds :: Monad m => Desugar m
+normIds = mempty { dsQName = T $ \ case
+      Special l (UnitCon _)      -> UnQual l $ Ident l "()"
+      Special l (ListCon _)      -> UnQual l $ Ident l "[_]"
+      Special l (FunCon _)       -> UnQual l $ Ident l "->"
+      -- I think this is only for the prefix constructor.
+      Special l (TupleCon _ _ i) -> UnQual l $ mkTuple l i
+      Special l (Cons _)         -> UnQual l $ Ident l "(:)"
+      e                          -> e }
 
 mkTuple :: Annote -> Int -> Name Annote
-mkTuple l n = Ident l $ "(" ++ replicate (n - 1) ',' ++ ")"
+mkTuple l n = Ident l $ "(" <> replicate (n - 1) ',' <> ")"
 
 -- | Removes parens in types, expressions, and patterns so they don't confuddle
 --   everything.
-deparenify :: MonadError AstError m => Desugar m
-deparenify = (\ case
-            Paren   (_ :: Annote) n -> pure n
-            e                       -> pure e)
-      ||> (\ case
-            PParen  (_ :: Annote) n -> pure n
-            e                       -> pure e)
-      ||> (\ case
-            TyParen (_ :: Annote) n -> pure n
-            e                       -> pure e)
-      ||> (\ case
-            DHParen (_ :: Annote) n -> pure n
-            e                       -> pure e)
-      ||> TId
+deparenify :: Monad m => Desugar m
+deparenify = mempty
+      { dsExp = T $ \ case
+            Paren   _ n -> n
+            e           -> e
+      , dsPat = T $ \ case
+            PParen  _ n -> n
+            e           -> e
+      , dsType = T $ \ case
+            TyParen _ n -> n
+            e           -> e
+      , dsDeclHead = T $ \ case
+            DHParen _ n -> n
+            e           -> e
+      }
 
+-- BEFORE: desugarFuns
 -- | Turns sections and infix ops into regular applications and lambdas.
-desugarInfix :: MonadError AstError m => Desugar m
-desugarInfix = (\ case
+desugarInfix :: MonadState Fresh m => Desugar m
+desugarInfix = mempty
+      { dsExp = TM $ \ case
             LeftSection l e (QVarOp l' op)  -> pure $ App l (Var l' op) e
             LeftSection l e (QConOp l' op)  -> pure $ App l (Con l' op) e
             RightSection l (QVarOp l' op) e -> do
@@ -276,26 +322,26 @@ desugarInfix = (\ case
                   pure $ Lambda l [PVar l x] $ App l (App l (Con l' op) $ Var l $ UnQual l x) e
             InfixApp l e1 (QVarOp l' op) e2 -> pure $ App l (App l (Var l' op) e1) e2
             InfixApp l e1 (QConOp l' op) e2 -> pure $ App l (App l (Con l' op) e1) e2
-            e                              -> pure e)
-     ||> (\ case
-            InfixConDecl (l :: Annote) a n b -> pure $ ConDecl l n [a, b]
-            e -> pure e)
-     ||> (\ case
-            InfixMatch (l :: Annote) p1 n p2 rhs bs -> pure $ Match l n (p1:p2) rhs bs
-            e -> pure e)
-     ||> (\ case
-            DHInfix (l :: Annote) bind n -> pure $ DHApp l (DHead l n) bind
-            e -> pure e)
-     ||> TId
+            e                               -> pure e
+      , dsConDecl = T $ \ case
+            InfixConDecl l a n b -> ConDecl l n [a, b]
+            e                    -> e
+      , dsMatch = T $ \ case
+            InfixMatch l p1 n p2 rhs bs -> Match l n (p1:p2) rhs bs
+            e                           -> e
+      , dsDeclHead = T $ \ case
+            DHInfix l bind n -> DHApp l (DHead l n) bind
+            e                -> e
+      }
 
 -- | TODO Apparently this should actually desugar to guards:
 -- > f (-k) = v
 -- is actually sugar for
 -- > f z | z == negate (fromInteger k) = v
-desugarNegLitPats :: MonadError AstError m => Desugar m
-desugarNegLitPats = transform $ \ case
-      PLit (l :: Annote) (Negative l') lit -> pure $ PLit l (Signless l') $ neg lit
-      p                                    -> pure p
+desugarNegLitPats :: Monad m => Desugar m
+desugarNegLitPats = mempty {dsPat = T $ \ case
+      PLit l (Negative l') lit -> PLit l (Signless l') $ neg lit
+      p                        -> p}
 
 neg :: Literal Annote -> Literal Annote
 neg = \ case
@@ -312,45 +358,48 @@ neg = \ case
 -- > (x, y, z)
 -- becomes
 -- > (Tuple3 x y z)
-desugarTuples :: MonadError AstError m => Desugar m
-desugarTuples = (\ case
-            Tuple l _ es   -> pure $ foldl' (App l) (Con l $ UnQual l $ mkTuple l $ length es) es
-            e              -> pure e)
-      ||> (\ case
-            TyTuple l _ ts -> pure $ foldl' (TyApp l) (TyCon l $ UnQual l $ mkTuple l $ length ts) ts
-            t              -> pure t)
-      ||> (\ case
-            PTuple l _ ps  -> pure $ PApp l (UnQual l $ mkTuple l $ length ps) ps
-            p              -> pure p)
-      ||> TId
+desugarTuples :: Monad m => Desugar m
+desugarTuples = mempty
+      { dsExp = T $ \ case
+            Tuple l _ es   -> foldl' (App l) (Con l $ UnQual l $ mkTuple l $ length es) es
+            e              -> e
+      , dsType = T $ \ case
+            TyTuple l _ ts -> foldl' (TyApp l) (TyCon l $ UnQual l $ mkTuple l $ length ts) ts
+            t              -> t
+      , dsPat = T $ \ case
+            PTuple l _ ps  -> PApp l (UnQual l $ mkTuple l $ length ps) ps
+            p              -> p
+      }
 
 -- BEFORE: desugarTyFuns
+-- AFTER: desugarInfix
 -- | Turns piece-wise function definitions into a single PatBind with a lambda
 --   and case expression on the RHS. E.g.:
 -- > f p1 p2 = rhs1
 -- > f q1 q2 = rhs2
 -- becomes
 -- > f = \ $1 $2 -> case ($1, $2) of { (p1, p2) -> rhs1; (q1, q2) -> rhs2 }
-desugarFuns :: MonadError AstError m => Desugar m
-desugarFuns = (\ case
+desugarFuns :: (MonadState Fresh m, MonadError AstError m) => Desugar m
+desugarFuns = mempty
+      { dsModule = TM $ \ case
             Module man hd prags imps ds -> Module man hd prags imps <$> mapM (desugarFun $ tySigMap ds) ds
-            m                           -> pure m)
-      ||> (\ case
+            m                           -> pure m
+      , dsBinds = TM $ \ case
             BDecls ban ds               -> BDecls ban <$> mapM (desugarFun $ tySigMap ds) ds
-            b                           -> pure b)
-      ||> TId
-      where desugarFun :: MonadError AstError m => [(Name Annote, Type Annote)] -> Decl Annote -> FreshT m (Decl Annote)
+            b                           -> pure b
+      }
+      where desugarFun :: (MonadState Fresh m, MonadError AstError m) => [(Name Annote, Type Annote)] -> Decl Annote -> m (Decl Annote)
             desugarFun ts = \ case
-                  FunBind l ms@(Match l' name pats _ _:_) -> do
+                  FunBind l ms@(Match l' name pats _ _:_)  -> do
                         let tps = paramTys <$> lookup name ts
                         alts <- mapM (toAlt ts tps) ms
-                        e <- buildLambda l tps alts $ length pats
+                        e    <- buildLambda l tps alts $ length pats
                         pure $ PatBind l (PVar l' name) (UnGuardedRhs l e) Nothing
                   -- Turn guards on PatBind into guards on case (of unit) alts.
                   PatBind l p rhs@(GuardedRhss l' _) binds -> pure $ PatBind l p (UnGuardedRhs l' $ Case l' (Con l' $ Special l' $ UnitCon l') [Alt l' (PWildCard l') rhs binds]) Nothing
-                  d -> pure d
+                  d                                        -> pure d
 
-            buildLambda :: MonadError AstError m => Annote -> Maybe [Type Annote] -> [Alt Annote] -> Int -> FreshT m (Exp Annote)
+            buildLambda :: (MonadState Fresh m, MonadError AstError m) => Annote -> Maybe [Type Annote] -> [Alt Annote] -> Int -> m (Exp Annote)
             buildLambda l tps alts 1 = do
                   x <- fresh l
                   pure $ Lambda l (annotateParams l [PVar l x] tps) $ Case l (Var l $ UnQual l x) alts
@@ -358,7 +407,7 @@ desugarFuns = (\ case
                   xs <- replicateM arity (fresh l)
                   pure $ Lambda l (annotateParams l (PVar l <$> xs) tps) $ Case l (Tuple l Boxed (map (Var l . UnQual l) xs)) alts
 
-            toAlt :: MonadError AstError m => [(Name Annote, Type Annote)] -> Maybe [Type Annote] -> Match Annote -> FreshT m (Alt Annote)
+            toAlt :: (MonadState Fresh m, MonadError AstError m) => [(Name Annote, Type Annote)] -> Maybe [Type Annote] -> Match Annote -> m (Alt Annote)
             toAlt ts tps = \ case
                   Match l' _ [p] rhs binds -> pure $ Alt l' (annotatePVars ts $ annotateParam l' p tps) rhs binds
                   Match l' _ ps  rhs binds -> pure $ Alt l' (PTuple l' Boxed $ map (annotatePVars ts) $ annotateParams l' ps tps) rhs binds
@@ -391,12 +440,12 @@ desugarFuns = (\ case
 -- > case e of {...}
 -- into
 -- > (\ x -> case x of {...}) e
-liftDiscriminator :: MonadError AstError m => Desugar m
-liftDiscriminator = transform $ \ case
+liftDiscriminator :: MonadState Fresh m => Desugar m
+liftDiscriminator = mempty {dsExp = TM $ \ case
       Case l e alts -> do
             x <- fresh l
             pure $ App l (Lambda l [PVar l x] $ Case l (Var l $ UnQual l x) alts) e
-      e             -> pure e
+      e             -> pure e}
 
 -- | Turn cases with multiple alts into cases with two alts: an alt with a
 -- pattern and another with a default, wildcard branch.
@@ -412,10 +461,10 @@ liftDiscriminator = transform $ \ case
 -- >            _ -> case x of
 -- >                   p3 -> e3
 -- >                    _ -> undefined
-flattenAlts :: MonadError AstError m => Desugar m
-flattenAlts = transform $ \ case
-      Case l e alts -> pure $ Case l e $ flatten l e alts
-      e             -> pure e
+flattenAlts :: Monad m => Desugar m
+flattenAlts = mempty {dsExp = T $ \ case
+      Case l e alts -> Case l e $ flatten l e alts
+      e             -> e}
       where flatten :: Annote -> Exp Annote -> [Alt Annote] -> [Alt Annote]
             flatten l e = \ case
                   [a@Alt {}]                           -> [ a ]
@@ -435,8 +484,8 @@ flattenAlts = transform $ \ case
 -- >     p -> let { decls } in
 -- >       if g1 then e1 else if gn then en else y
 -- >     _ -> y
-desugarGuards :: MonadError AstError m => Desugar m
-desugarGuards = transform $ \ case
+desugarGuards :: MonadState Fresh m => Desugar m
+desugarGuards = mempty { dsExp = TM $ \ case
             Case l1 v [Alt l2 p (GuardedRhss l3 rhs) binds, Alt l4 (PWildCard l5) (UnGuardedRhs l6 e') Nothing] -> do
                   y <- fresh l1
                   pure $ Case l1 e'
@@ -450,7 +499,7 @@ desugarGuards = transform $ \ case
                         ]
             Case l1 v [Alt l2 p (GuardedRhss l3 rhs) binds] ->
                   pure $ Case l1 v [ Alt l2 p (UnGuardedRhs l3 $ toLet l3 (err l1 "pattern match failure") binds rhs) Nothing ]
-            e -> pure e
+            e -> pure e}
       where toLet :: Annote -> Exp Annote -> Maybe (Binds Annote) -> [GuardedRhs Annote] -> Exp Annote
             toLet l y binds rhs = maybe id (Let l) binds $ foldr toIfs y rhs
 
@@ -462,25 +511,25 @@ desugarGuards = transform $ \ case
 err :: Annote -> String -> Exp Annote
 err l s = App l (Var l $ UnQual l $ Ident l "error") $ Lit l $ String l s ""
 
-
 -- | Turns where clauses into lets. Only valid after guard desugarage. E.g.:
 -- > f x = a where a = b
 -- becomes
 -- > f x = let a = b in a
 wheresToLets :: MonadError AstError m => Desugar m
-wheresToLets = (\ case
-                  Match l name ps (UnGuardedRhs l' e) (Just binds) -> pure $ Match l name ps (UnGuardedRhs l' $ Let l' binds e) Nothing
-                  Match l _ _ (GuardedRhss _ _) _                  -> failAt (l :: Annote) "Guards are not supported"
-                  m                                                -> pure m)
-           ||> (\ case
-                  PatBind l p (UnGuardedRhs l' e) (Just binds) -> pure $ PatBind l p (UnGuardedRhs l' $ Let l' binds e) Nothing
-                  PatBind l _ (GuardedRhss _ _) _              -> failAt (l :: Annote) "Guards are not supported"
-                  p                                            -> pure p)
-           ||> (\ case
-                  Alt l p (UnGuardedRhs l' e) (Just binds) -> pure $ Alt l p (UnGuardedRhs l' $ Let l' binds e) Nothing
-                  a@(Alt l _ (GuardedRhss _ _) _)          -> failAt (l :: Annote) $ "Guards are not supported: " <> pack (show $ void a)
-                  a                                        -> pure a)
-           ||> TId
+wheresToLets = mempty
+      { dsMatch = TM $ \ case
+            Match l name ps (UnGuardedRhs l' e) (Just binds) -> pure $ Match l name ps (UnGuardedRhs l' $ Let l' binds e) Nothing
+            Match l _ _ (GuardedRhss _ _) _                  -> failAt (l :: Annote) "Guards are not supported"
+            m                                                -> pure m
+      , dsDecl = TM $ \ case
+            PatBind l p (UnGuardedRhs l' e) (Just binds) -> pure $ PatBind l p (UnGuardedRhs l' $ Let l' binds e) Nothing
+            PatBind l _ (GuardedRhss _ _) _              -> failAt (l :: Annote) "Guards are not supported"
+            p                                            -> pure p
+      , dsAlt = TM $ \ case
+            Alt l p (UnGuardedRhs l' e) (Just binds) -> pure $ Alt l p (UnGuardedRhs l' $ Let l' binds e) Nothing
+            a@(Alt l _ (GuardedRhss _ _) _)          -> failAt (l :: Annote) $ "Guards are not supported: " <> pack (show $ void a)
+            a                                        -> pure a
+      }
 
 -- | Turns do-notation into a series of >>= \ x ->. Turns LetStmts into Lets.
 --   E.g.:
@@ -489,11 +538,11 @@ wheresToLets = (\ case
 -- >    return e
 -- becomes
 -- > m >>= (\ p1 -> (let p2 = e in return e))
-desugarDos :: MonadError AstError m => Desugar m
-desugarDos = transform $ \ case
+desugarDos :: (MonadState Fresh m, MonadError AstError m) => Desugar m
+desugarDos = mempty { dsExp = TM $ \ case
       Do l stmts -> transDo l stmts
-      e          -> pure e
-      where transDo :: MonadError AstError m => Annote -> [Stmt Annote] -> FreshT m (Exp Annote)
+      e          -> pure e}
+      where transDo :: (MonadState Fresh m, MonadError AstError m) => Annote -> [Stmt Annote] -> m (Exp Annote)
             transDo l = \ case
                   Generator l' p e : stmts -> App l' (App l' (Var l' $ UnQual l' $ Symbol l' ">>=") e) . Lambda l' [p] <$> transDo l stmts
                   [Qualifier _ e]          -> pure e
@@ -502,18 +551,18 @@ desugarDos = transform $ \ case
                   s : _                    -> failAt (ann s) $ "Unsupported syntax in do-block: " <> pack (show $ void s)
                   []                       -> failAt l "Ill-formed do-block"
 
-normTyContext :: MonadError AstError m => Desugar m
-normTyContext = transform $ \ x -> case x :: Type Annote of
-      TyForall l tvs Nothing t               -> pure $ TyForall l tvs (Just $ CxTuple l []) t
-      TyForall l tvs (Just (CxEmpty _)) t    -> pure $ TyForall l tvs (Just $ CxTuple l []) t
-      TyForall l tvs (Just (CxSingle _ a)) t -> pure $ TyForall l tvs (Just $ CxTuple l [a]) t
-      t                                      -> pure t
+normTyContext :: Monad m => Desugar m
+normTyContext = mempty { dsType = T $ \ case
+      TyForall l tvs Nothing t               -> TyForall l tvs (Just $ CxTuple l []) t
+      TyForall l tvs (Just (CxEmpty _)) t    -> TyForall l tvs (Just $ CxTuple l []) t
+      TyForall l tvs (Just (CxSingle _ a)) t -> TyForall l tvs (Just $ CxTuple l [a]) t
+      t                                      -> t}
 
 -- | Turns the type a -> b into (->) a b.
-desugarTyFuns :: MonadError AstError m => Desugar m
-desugarTyFuns = transform $ \ case
-      TyFun (l :: Annote) a b -> pure $ TyApp l (TyApp l (TyCon l (UnQual l (Ident l "->"))) a) b
-      t                       -> pure t
+desugarTyFuns :: Monad m => Desugar m
+desugarTyFuns = mempty { dsType = T $ \ case
+      TyFun (l :: Annote) a b -> TyApp l (TyApp l (TyCon l (UnQual l (Ident l "->"))) a) b
+      t                       -> t}
 
 -- TODO(chathhorn): recursive bindings?
 -- | Turns Lets into Cases. Assumes functions in Lets are already desugared.
@@ -523,12 +572,12 @@ desugarTyFuns = transform $ \ case
 -- > in e3
 -- becomes
 -- > case e1 of { p -> (case e2 of { q -> e3 } }
-desugarLets :: MonadError AstError m => Desugar m
-desugarLets = transform $ \ case
+desugarLets :: (MonadState Fresh m, MonadError AstError m) => Desugar m
+desugarLets = mempty { dsExp = TM $ \ case
       Let _ (BDecls _ ds) e -> foldrM (transLet $ tySigMap ds) e $ filter isPatBind ds
       n@Let{}               -> failAt (ann n) "Unsupported let syntax"
-      e                     -> pure e
-      where transLet :: MonadError AstError m => [(Name Annote, Type Annote)] -> Decl Annote -> Exp Annote -> FreshT m (Exp Annote)
+      e                     -> pure e}
+      where transLet :: (MonadState Fresh m, MonadError AstError m) => [(Name Annote, Type Annote)] -> Decl Annote -> Exp Annote -> m (Exp Annote)
             transLet ts (PatBind l p (UnGuardedRhs l' e1) Nothing) inner = pure $ Case l e1 [Alt l (annotatePVars ts p) (UnGuardedRhs l' inner) Nothing]
             transLet _ n _                                               = failAt (ann n) "Unsupported syntax in a let binding"
 
@@ -544,48 +593,48 @@ tySigMap = concatMap tySig
                   _              -> []
 
 annotatePVars :: [(Name Annote, Type Annote)] -> Pat Annote -> Pat Annote
-annotatePVars ts = runIdentity . runT (transform $ \ case
-      PVar an n | Just t <- lookup n ts -> pure $ PatTypeSig an (PVar an n) t
-      n                                 -> pure n)
+annotatePVars ts = transform $ \ case
+      PVar an n | Just t <- lookup n ts -> PatTypeSig an (PVar an n) t
+      n                                 -> n
 
 -- | Turns ifs into cases.
 -- > if e1 then e2 else e3
 -- becomes
 -- > case e1 of { True -> e2; False -> e3 }
-desugarIfs :: MonadError AstError m => Desugar m
-desugarIfs = transform $ \ case
-      If (l :: Annote) e1 e2 e3 -> pure $ Case l e1
+desugarIfs :: Monad m => Desugar m
+desugarIfs = mempty { dsExp = T $ \ case
+      If l e1 e2 e3 -> Case l e1
             [ Alt l (PApp l (UnQual l $ Ident l "True")  []) (UnGuardedRhs l e2) Nothing
             , Alt l (PApp l (UnQual l $ Ident l "False") []) (UnGuardedRhs l e3) Nothing
             ]
-      e                         -> pure e
+      e             -> e}
 
-desugarNegs :: MonadError AstError m => Desugar m
-desugarNegs = transform $ \ case
-      NegApp (l :: Annote) e -> pure $ App l (App l (Var l $ UnQual l $ Ident l "-") $ Lit l $ Int l 0 "0") e
-      e                      -> pure e
+desugarNegs :: Monad m => Desugar m
+desugarNegs = mempty { dsExp = T $ \ case
+      NegApp l e -> App l (App l (Var l $ UnQual l $ Ident l "-") $ Lit l $ Int l 0 "0") e
+      e          -> e}
 
 -- | Turns Lambdas with several bindings into several lambdas with single
 --   bindings. E.g.:
 -- > \ p1 p2 -> e
 -- becomes
 -- > \ p1 -> \ p2 -> e
-flattenLambdas :: MonadError AstError m => Desugar m
-flattenLambdas = transform $ \ case
-      Lambda (l :: Annote) ps e -> pure $ foldr (Lambda l . pure) e ps
-      e                         -> pure e
+flattenLambdas :: Monad m => Desugar m
+flattenLambdas = mempty { dsExp = T $ \ case
+      Lambda l ps e -> foldr (Lambda l . pure) e ps
+      e             -> e}
 
 -- | Replaces non-var patterns in lambdas with a fresh var and a case. E.g.:
 -- > \ (a, b) -> e
 -- becomes
 -- > \ $x -> case $x of { (a, b) -> e }
-depatLambdas :: MonadError AstError m => Desugar m
-depatLambdas = transform $ \ case
+depatLambdas :: MonadState Fresh m => Desugar m
+depatLambdas = mempty { dsExp = TM $ \ case
       n@(Lambda _ [PVar _ _] _) -> pure n
       Lambda l [p] e            -> do
             x <- fresh l
             pure $ Lambda l [PVar l x] (Case l (Var l $ UnQual l x) [Alt l p (UnGuardedRhs l e) Nothing])
-      e                         -> pure e
+      e                         -> pure e}
 
 -- | Desugars as-patterns in (and only in) cases into more cases. Should run
 --   after depatLambdas. E.g.:
@@ -593,31 +642,31 @@ depatLambdas = transform $ \ case
 -- >   x@(C y@p) -> e2
 -- becomes
 -- > case e1 of { C p -> (\ x -> ((\ y -> e2) p)) (C p) }
-desugarAsPats :: MonadError AstError m => Desugar m
-desugarAsPats = transform $ \ case
+desugarAsPats :: (MonadState Fresh m, MonadError AstError m) => Desugar m
+desugarAsPats = mempty { dsAlt = TM $ \ case
       Alt l p (UnGuardedRhs l' e) Nothing -> do
             p'  <- deWild p
             app <- foldrM (mkApp l) e $ getAses p'
             pure $ Alt l (deAs p') (UnGuardedRhs l' app) Nothing
-      e                                   -> pure e
+      e                                   -> pure e}
 
-      where mkApp :: (Functor m, MonadError AstError m) => Annote -> (Pat Annote, Pat Annote) -> Exp Annote -> FreshT m (Exp Annote)
+      where mkApp :: (MonadState Fresh m, MonadError AstError m) => Annote -> (Pat Annote, Pat Annote) -> Exp Annote -> m (Exp Annote)
             mkApp l (p, p') e = App l (Lambda l [p] e) <$> patToExp p'
 
             getAses :: Pat Annote -> [(Pat Annote, Pat Annote)]
             getAses p = [(PVar l n, p) | PAsPat (l :: Annote) n p <- query p]
 
             deAs :: Pat Annote -> Pat Annote
-            deAs = runIdentity . runT (transform $ \ case
-                  PAsPat (_ :: Annote) _ p -> pure p
-                  n                        -> pure n)
+            deAs = transform $ \ case
+                  PAsPat (_ :: Annote) _ p -> p
+                  n                        -> n
 
-            deWild :: Monad m => Pat Annote -> FreshT m (Pat Annote)
-            deWild = runT $ transform $ \ case
+            deWild :: MonadState Fresh m => Pat Annote -> m (Pat Annote)
+            deWild = transformM $ \ case
                   PWildCard l -> PVar l <$> fresh l
                   p           -> pure p
 
-            patToExp :: (Functor m, MonadError AstError m) => Pat Annote -> FreshT m (Exp Annote)
+            patToExp :: (MonadState Fresh m, MonadError AstError m) => Pat Annote -> m (Exp Annote)
             patToExp = \ case
                   PVar l n                -> pure $ Var l $ UnQual l n
                   PLit l (Signless _) n   -> pure $ Lit l n
@@ -636,7 +685,7 @@ desugarAsPats = transform $ \ case
 -- > (\ x -> e2) e1
 -- becomes
 -- > case e1 of { x -> e2 }
-lambdasToCases :: MonadError AstError m => Desugar m
-lambdasToCases = transform $ \ case
-      App (l :: Annote) (Lambda _ [p] e2) e1 -> pure $ Case l e1 [Alt l p (UnGuardedRhs l e2) Nothing]
-      e                                      -> pure e
+lambdasToCases :: Monad m => Desugar m
+lambdasToCases = mempty { dsExp = T $ \ case
+      App l (Lambda _ [p] e2) e1 -> Case l e1 [Alt l p (UnGuardedRhs l e2) Nothing]
+      e                          -> e}

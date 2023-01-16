@@ -7,7 +7,7 @@ module ReWire.HSE.Fixity
       , getFixities
       ) where
 
-import ReWire.SYB ((||>), Transform (TId), runT)
+import ReWire.SYB (transformM)
 import ReWire.Error (AstError, mark)
 
 import Control.Monad (void, (>=>))
@@ -68,7 +68,7 @@ getFixities = foldr toFixity []
 --   operators with the same name).
 --   Note: applyFixities annoyingly fixes the annotation type as SrcSpanInfo.
 fixLocalOps :: (MonadState AstError m, MonadFail m) => Module SrcSpanInfo -> m (Module SrcSpanInfo)
-fixLocalOps = (fmap fst . flip runStateT 0 . runT (renameDecl id ||> TId)) >=> applyGlobFixities
+fixLocalOps = (fmap fst . flip runStateT 0 . (transformM $ renameDecl id)) >=> applyGlobFixities
       where applyGlobFixities :: (MonadState AstError m, MonadFail m) => Module SrcSpanInfo -> m (Module SrcSpanInfo)
             applyGlobFixities m@(Module _ (Just (ModuleHead _ mn _ _)) _ _ ds)
                                                           = mark (ann m) >> applyFixities (getFixities ds <> getFixities' (void mn) ds) m
@@ -76,7 +76,7 @@ fixLocalOps = (fmap fst . flip runStateT 0 . runT (renameDecl id ||> TId)) >=> a
             applyGlobFixities m                           = pure m
 
 deuniquifyLocalOps :: Module SrcSpanInfo -> Module SrcSpanInfo
-deuniquifyLocalOps = runIdentity . runT ((||> TId) $ \ case
+deuniquifyLocalOps = runIdentity . (transformM $ \ case
       QVarOp l1 (Qual l2 (ModuleName _ ('$' : _)) n) -> pure $ QVarOp l1 $ UnQual l2 n
       (x :: QOp SrcSpanInfo)                         -> pure x)
 

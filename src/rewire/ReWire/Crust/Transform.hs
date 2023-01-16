@@ -25,13 +25,12 @@ import ReWire.Crust.Types (typeOf, setTyAnn, poly, poly', flattenArrow, arr, nil
 import ReWire.Crust.Util (mkApp, mkError, mkLam, inlineable, mkTupleMPat, mkTuple, mkPairMPat, mkPair, mustInline)
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fix, fix', boundedFix)
-import ReWire.SYB (runT, transform, query, Transform (TId), (||>))
+import ReWire.SYB (transform, transformM, query)
 import ReWire.Unbound (fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, Name (..), unsafeUnbind, bind, unbind, Subst (..), Alpha, Embed (Embed), Bind, trec)
 
 import Control.Lens ((^.))
 import Control.Arrow (first, (&&&))
 import Control.Monad (liftM2, foldM_, zipWithM, replicateM, (>=>))
-import Control.Monad.Catch (MonadCatch)
 import Control.Monad.State (MonadState, State, evalStateT, execState, StateT (..), get, gets, modify)
 import Data.Containers.ListUtils (nubOrd, nubOrdOn)
 import Data.Data (Data)
@@ -83,7 +82,7 @@ expandTypeSynonyms (ts, syns0, ds) = (,,) <$> expandSyns ts <*> syns' <*> expand
                               | otherwise       = pure $ n2s n : ss
 
             substs' :: (MonadError AstError m, Fresh m, Data d) => [(Name TyConId, Bind [Name Ty] Ty)] -> d -> m d
-            substs' subs' = runT (transform $ \ case
+            substs' subs' = transformM $ \ case
                   t@(TyCon _ n)   | Just pt <- lookup n subs'        -> do
                         (vs, t') <- unbind pt
                         pure $ if length vs == 0 then t' else t
@@ -93,7 +92,6 @@ expandTypeSynonyms (ts, syns0, ds) = (,,) <$> expandSyns ts <*> syns' <*> expand
                         let args' = args <> [b]
                         pure $ if length vs == length args' then substs (zip vs args') t' else t
                   t                                                  -> pure t
-                  )
 
             findTyCon :: Ty -> Maybe (Name TyConId, [Ty])
             findTyCon = \ case
@@ -105,12 +103,12 @@ expandTypeSynonyms (ts, syns0, ds) = (,,) <$> expandSyns ts <*> syns' <*> expand
 
 -- | Replaces the second argument to Extern so we don't descend into it
 --   during other transformations.
-neuterExterns :: MonadCatch m => FreeProgram -> m FreeProgram
-neuterExterns = runT $ transform $ \ case
-      App an tan t ex e | isExtern ex -> pure $ App an tan t ex
+neuterExterns :: FreeProgram -> FreeProgram
+neuterExterns = transform $ \ case
+      App an tan t ex e | isExtern ex -> App an tan t ex
                                               $ setTyAnn (poly' <$> typeOf e)
                                               $ mkError (ann e) (typeOf e) "Extern expression placeholder"
-      e                               -> pure e
+      e                               -> e
       where isExtern :: Exp -> Bool
             isExtern e = case flattenApp e of
                   [Builtin _ _ _ Extern, _ , _, _, _, _] -> True
@@ -120,7 +118,7 @@ neuterExterns = runT $ transform $ \ case
 -- > g = \ x1 -> \ x2 -> e
 --   becomes
 -- > g x1 x2 = e
-shiftLambdas :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
+shiftLambdas :: Fresh m => FreeProgram -> m FreeProgram
 shiftLambdas (ts, syns, vs) = (ts, syns, ) <$> mapM shiftLambdas' vs
       where shiftLambdas' :: Fresh m => Defn -> m Defn
             shiftLambdas' (Defn an n t inl (Embed e)) = Defn an n t inl . Embed <$> mash e
@@ -142,7 +140,7 @@ shiftLambdas (ts, syns, vs) = (ts, syns, ) <$> mapM shiftLambdas' vs
 -- > m >>= f
 -- becomes (to trigger lambda lifting)
 -- > m >>= \ x -> f x
-prePurify :: (Fresh m, MonadCatch m, MonadError AstError m) => FreeProgram -> m FreeProgram
+prePurify :: (Fresh m, MonadError AstError m) => FreeProgram -> m FreeProgram
 prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM ppDefn ds
       where ppDefn :: (MonadError AstError m, Fresh m) => Defn -> m Defn
             ppDefn d@Defn { defnBody = Embed e } = do
@@ -268,10 +266,10 @@ fullyApplyDefs (ts, syns, vs) = (ts, syns, ) <$> mapM fullyApplyDefs' vs
 -- | Lifts lambdas and case/match into a top level fun def.
 -- TODO(chathhorn): a lot of duplicated code here.
 -- TODO(chathhorn): use Writer instead of State
-liftLambdas :: (Fresh m, MonadCatch m) => FreeProgram -> m FreeProgram
-liftLambdas p = evalStateT (runT liftLambdas' p) []
-      where liftLambdas' :: (MonadCatch m, Fresh m) => Transform (StateT [Defn] m) FreeProgram
-            liftLambdas' =  \ case
+liftLambdas :: Fresh m => FreeProgram -> m FreeProgram
+liftLambdas p = evalStateT (liftLambdas' p) []
+      where liftLambdas' :: (MonadState [Defn] m, Fresh m) => FreeProgram -> m FreeProgram
+            liftLambdas' =  transformM (\ case
                   Lam an tan (Just t) b | Just te <- typeOf $ snd $ unsafeUnbind b-> do
                         (x, e)    <- unbind b
                         -- The only free names should be globally-bound
@@ -334,11 +332,9 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
 
                         modify $ (:) $ Defn an f (fv t' |-> t') Nothing (Embed $ bind fvs e')
                         pure $ App an tan t ex (mkApp an (Var an Nothing (Just t') f) $ map (toVar an) bvs)
-                  e -> pure e
-                  ||> (\ case
-                        ([] :: [Defn]) -> get
-                        ds             -> pure ds)
-                  ||> TId
+                  e -> pure e)
+                 >=> (\ (ts, syns, ds) -> (ts, syns,) <$> gets (ds <>))
+
 
             isExtrude :: Exp -> Bool
             isExtrude e = case flattenApp e of
@@ -353,15 +349,14 @@ liftLambdas p = evalStateT (runT liftLambdas' p) []
             toVar :: Annote -> (Name Exp, Ty) -> Exp
             toVar an (v, vt) = Var an Nothing (Just vt) v
 
-            freshen :: (MonadCatch m, Fresh m) => Exp -> m ([Name Exp], Exp)
+            freshen :: Fresh m => Exp -> m ([Name Exp], Exp)
             freshen e = do
                   let bvs  = bv e
                   fvs      <- replicateM (length bvs) $ fresh $ s2n "$LL"
-                  e'       <- substs' (zip (map fst bvs) fvs) e
-                  pure (fvs, e')
+                  pure (fvs, substs' (zip (fst <$> bvs) fvs) e)
 
-            substs' :: MonadCatch m => [(Name Exp, Name Exp)] -> Exp -> m Exp
-            substs' subs = runT (transform $ \ n -> pure $ fromMaybe n (lookup n subs))
+            substs' :: [(Name Exp, Name Exp)] -> Exp -> Exp
+            substs' subs = transform (\ n -> fromMaybe n (lookup n subs))
 
             -- | Get well-typed(!) bound variables.
             bv :: Data a => a -> [(Name Exp, Ty)]
