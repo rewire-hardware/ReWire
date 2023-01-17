@@ -18,7 +18,7 @@ import ReWire.Crust.PrimBasis (addPrims)
 import ReWire.Crust.Purify (purify)
 import ReWire.Crust.Syntax (FreeProgram, Defn (..), Module (Module), Exp, Ty, Kind, DataConId, TyConId, builtins, Program (Program), prettyFP)
 import ReWire.Crust.ToCore (toCore)
-import ReWire.Crust.Transform (simplify, liftLambdas, purgeUnused, fullyApplyDefs, shiftLambdas, neuterExterns, expandTypeSynonyms, inline, prePurify)
+import ReWire.Crust.Transform (removeMain, simplify, liftLambdas, purgeUnused, fullyApplyDefs, shiftLambdas, neuterExterns, expandTypeSynonyms, inline, prePurify)
 import ReWire.Crust.TypeCheck (typeCheck, untype)
 import ReWire.Error (failAt, AstError, SyntaxErrorT, filePath)
 import ReWire.HSE.Annotate (annotate)
@@ -134,6 +134,8 @@ getProgram conf fp = do
        >=> pDebug' "[Pass 4] Adding primitives and inlining."
        >=> whenDump 4 (printInfo "[Pass 4] Crust: Post-desugaring")
        >=> pure . addPrims
+       >=> pDebug' "Removing the Main.main definition (before attempting to typecheck it)."
+       >=> pure . removeMain
        >=> inline
        >=> prePurify
        >=> pDebug' "Expanding type synonyms and simplifying."

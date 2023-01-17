@@ -15,6 +15,7 @@ module ReWire.Crust.Transform
       , simplify
       , specialize
       , freeTyVarsToNil
+      , removeMain
       ) where
 
 import ReWire.Annotation (Annote (..), Annotated (..), unAnn)
@@ -44,6 +45,12 @@ import Data.Text (Text)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
+
+-- | Removes the Main.main function definition, which is unused by rwc.
+removeMain :: FreeProgram -> FreeProgram
+removeMain (ts, syns, ds) = (ts, syns, filter (not . isMain) ds)
+      where isMain :: Defn -> Bool
+            isMain = (== "Main.main") . n2s . defnName
 
 -- | Inlines defs marked for inlining. Must run before lambda lifting.
 inline :: MonadError AstError m => FreeProgram -> m FreeProgram
