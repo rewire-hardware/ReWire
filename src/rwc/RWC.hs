@@ -19,7 +19,7 @@ import qualified ReWire.Core.ToVHDL    as VHDL
 import qualified ReWire.Core.ToVerilog as Verilog
 
 import Control.Lens ((^.))
-import Control.Monad ((>=>), when, unless)
+import Control.Monad ((>=>), when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Either (fromRight)
 import Data.List (intercalate, foldl')
@@ -81,7 +81,8 @@ main :: IO ()
 main = do
       (flags, filenames, errs) <-  getOpt Permute options <$> getArgs
 
-      unless (null errs) $ exitUsage' (map pack errs)
+      when (not $ null errs) $ exitUsage' (map pack errs)
+      when (null filenames)  $ exitUsage' ["No input files"]
 
       conf     <- either (exitUsage' . pure) pure $ Config.interpret flags
       systemLP <- getSystemLoadPath
