@@ -21,9 +21,9 @@ module ReWire.Core.Syntax
   ) where
 
 import ReWire.Annotation (Annote, Annotated (ann), noAnn)
-import ReWire.BitVector (BV (..), width, showHex, zeros, ones, (==.))
+import ReWire.BitVector (BV (..), width, showHex', zeros, ones, (==.))
 import ReWire.Orphans ()
-import ReWire.Pretty (text, Pretty (pretty), Doc, vsep, (<+>), nest, hsep, parens, braces, punctuate, comma, dquotes, tupled, TextShow (showt), FromGeneric (..), colon, brackets)
+import ReWire.Pretty (text, Pretty (pretty), Doc, vsep, (<+>), nest, hsep, parens, punctuate, comma, squote, dquotes, braced, TextShow (showt), FromGeneric (..), colon)
 import qualified ReWire.BitVector as BV
 
 import Data.Data (Typeable, Data(..))
@@ -94,8 +94,10 @@ ppBVTy :: Integral n => n -> Doc an
 ppBVTy n = text "W" <> pretty (fromIntegral n :: Int)
 
 ppBV :: Pretty a => [a] -> Doc an
-ppBV = tupled . map pretty
-
+ppBV = \ case
+      []  -> mempty
+      [v] -> pretty v
+      vs  -> braced $ pretty <$> vs
 ---
 
 data ExternSig = ExternSig Annote ![(Text, Size)] !Text ![(Text, Size)] ![(Text, Size)]
@@ -165,25 +167,25 @@ instance Annotated Exp where
 
 instance Pretty Exp where
       pretty = \ case
-            Lit _ bv             -> text (showHex bv) <> text "::" <> ppBVTy (width bv)
+            Lit _ bv             -> pretty (width bv) <> squote <> text (showHex' bv)
             LVar _ _ n           -> text $ "$" <> showt n
             Concat _ e1 e2       -> ppBV $ gather e1 <> gather e2
             Call _ _ f@Const {} e ps els | isNil els -> nest 2 $ vsep
                   [ text "case" <+> pretty e <+> text "of"
-                  , tupled (ppPats ps) <+> text "->" <+> pretty f
+                  , braced (ppPats ps) <+> text "->" <+> pretty f
                   ]
             Call _ _ f@Const {} e ps els -> nest 2 $ vsep
                   [ text "case" <+> pretty e <+> text "of"
-                  , tupled (ppPats ps) <+> text "->" <+> pretty f
+                  , braced (ppPats ps) <+> text "->" <+> pretty f
                   , text "_" <+> text "->" <+> pretty els
                   ]
             Call _ _ f e ps els | isNil els -> nest 2 $ vsep
                   [ text "case" <+> pretty e <+> text "of"
-                  , tupled (ppPats ps) <+> text "->" <+> pretty f <+> tupled (ppArgs ps)
+                  , braced (ppPats ps) <+> text "->" <+> pretty f <+> hsep (ppArgs ps)
                   ]
             Call _ _ f e ps els -> nest 2 $ vsep
                   [ text "case" <+> pretty e <+> text "of"
-                  , tupled (ppPats ps) <+> text "->" <+> pretty f <+> tupled (ppArgs ps)
+                  , braced (ppPats ps) <+> text "->" <+> pretty f <+> hsep (ppArgs ps)
                   , text "_" <+> text "->" <+> pretty els
                   ]
 
@@ -202,9 +204,9 @@ ppPats :: [Pat] -> [Doc an]
 ppPats = zipWith ppPats' [0::Index ..]
       where ppPats' :: Index -> Pat -> Doc an
             ppPats' i = \ case
-                  PatVar _ sz      -> text "p" <> pretty i <> text "::" <> ppBVTy sz
-                  PatWildCard _ sz -> text "_" <> text "::" <> ppBVTy sz
-                  PatLit _ bv      -> text (showHex bv) <> text "::" <> ppBVTy (width bv)
+                  PatVar _ sz      -> pretty sz <> squote <> text "p" <> pretty i
+                  PatWildCard _ sz -> pretty sz <> squote <> text "_"
+                  PatLit _ bv      -> pretty (width bv) <> squote <> text (showHex' bv)
 
 ppArgs :: [Pat] -> [Doc an]
 ppArgs = map (uncurry ppArgs') . filter (isPatVar . snd) . zip [0::Index ..]
@@ -248,9 +250,9 @@ instance Annotated Pat where
 
 instance Pretty Pat where
       pretty = \ case
-            PatVar _ s       -> braces $ ppBVTy s
-            PatWildCard _ s  -> text "_" <> ppBVTy s <> text "_"
-            PatLit      _ bv -> text (showHex bv) <> text "::" <> ppBVTy (width bv)
+            PatVar _ sz       -> pretty sz <> squote <> text "p?"
+            PatWildCard _ sz  -> pretty sz <> squote <> text "_"
+            PatLit      _ bv  -> pretty (width bv) <> squote <> text (showHex' bv)
 
 nilPat :: Pat
 nilPat = PatLit noAnn BV.nil
@@ -264,8 +266,6 @@ data Wiring = Wiring
       { inputWires  :: ![(Name, Size)]
       , outputWires :: ![(Name, Size)]
       , stateWires  :: ![(Name, Size)]
-      , sigLoop     :: !Sig
-      , sigState0   :: !Sig
       }
       deriving (Eq, Ord, Show, Typeable, Data, Generic)
       deriving TextShow via FromGeneric Wiring
@@ -277,14 +277,12 @@ instance Pretty Wiring where
             [ text "inputs" <+> ppWires (inputWires w)
             , text "outputs" <+> ppWires (outputWires w)
             , text "states" <+> ppWires (stateWires w)
-            , text "loop" <> colon <+> pretty (sigLoop w)
-            , text "state0" <> colon <+> pretty (sigState0 w)
             ]
             where ppWire :: (Name, Size) -> Doc a
                   ppWire (n, s) = text n <> colon <+> pretty s
 
                   ppWires :: [(Name, Size)] -> Doc a
-                  ppWires = brackets . hsep . punctuate comma . map ppWire
+                  ppWires = braced . (ppWire <$>)
 
 ---
 
@@ -318,8 +316,8 @@ instance Pretty Defn where
 data Program = Program
       { topLevel :: !Name
       , wiring   :: !Wiring
-      , loop     :: !GId
-      , state0   :: !GId
+      , loop     :: !Defn
+      , state0   :: !Defn
       , defns    :: ![Defn]
       }
       deriving (Generic, Eq, Ord, Show, Typeable, Data)
@@ -329,6 +327,8 @@ instance Hashable Program
 
 instance Pretty Program where
       pretty (Program n w loop state0 defns) = vsep $ intersperse (text "") $
-            [ text "device" <+> text n <+> pretty loop <+> pretty state0
+            [ text "device" <+> text n <> colon
             , pretty w
+            , pretty loop
+            , pretty state0
             ] <> map pretty defns

@@ -6,8 +6,8 @@ module ReWire.Pretty
       , TextShow (showt, showb, showbPrec), fromString, fromText
       , genericShowbPrec, P.space, P.angles, P.dot
       , (P.<>), (P.<+>), P.nest, P.defaultLayoutOptions, P.layoutSmart, P.renderStrict
-      , P.vsep, P.hsep, P.parens, P.braces, P.punctuate, P.comma, P.dquotes, P.tupled
-      , P.brackets, FromGeneric (..), P.semi, P.colon, P.hcat, P.align
+      , P.vsep, P.hsep, P.parens, P.braces, P.punctuate, P.comma, P.squote, P.dquote, P.dquotes, P.tupled
+      , P.brackets, FromGeneric (..), P.semi, P.colon, P.hcat, P.align, braced
       ) where
 
 import Prelude hiding ((<>), lines, unlines)
@@ -32,15 +32,21 @@ int = P.pretty
 empty :: P.Doc ann
 empty = P.emptyDoc
 
+braced :: [P.Doc ann] -> P.Doc ann
+braced = P.encloseSep P.lbrace P.rbrace (P.comma P.<> P.space)
+
+layoutOptions :: P.LayoutOptions
+layoutOptions = P.defaultLayoutOptions { P.layoutPageWidth = P.AvailablePerLine 120 1.0 }
+
 prettyPrint :: P.Pretty a => a -> Text
 prettyPrint = prettyPrint' . P.pretty
 
 prettyPrint' :: P.Doc ann -> Text
-prettyPrint' = P.renderStrict . P.layoutSmart (P.defaultLayoutOptions
-      { P.layoutPageWidth = P.AvailablePerLine 120 1.0 })
+prettyPrint' = P.renderStrict . P.layoutSmart layoutOptions
 
 fastPrint :: P.Pretty a => a -> Text
 fastPrint = fastPrint' . P.pretty
 
+-- | Performance-wise, in theory: P.layoutCompact > P.layoutPretty > P.layoutSmart
 fastPrint' :: P.Doc ann -> Text
-fastPrint' = P.renderStrict . P.layoutCompact
+fastPrint' = P.renderStrict . P.layoutPretty layoutOptions

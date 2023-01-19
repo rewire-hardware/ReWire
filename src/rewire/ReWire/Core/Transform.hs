@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE Safe #-}
 module ReWire.Core.Transform (mergeSlices, purgeUnused, partialEval, dedupe) where
 
@@ -9,7 +10,6 @@ import ReWire.Core.Syntax
 import qualified ReWire.BitVector as BV
 
 import Control.Arrow ((&&&))
-import Control.Monad.Reader (runReader, MonadReader (..), asks)
 import Data.Containers.ListUtils (nubOrd)
 import Data.HashMap.Strict (HashMap)
 import Data.List (genericLength, genericIndex)
@@ -19,12 +19,15 @@ type DefnBodyMap = HashMap GId Exp
 
 -- | Removes all zero-length arguments and parameters.
 mergeSlices :: Program -> Program
-mergeSlices p = p { defns = runReader (mapM reDefn $ filter ((> 0) . sizeOf) $ defns p) defns' }
+mergeSlices p@Program {loop, state0, defns}  = p { loop = reDefn loop, state0 = reDefn state0, defns = reDefn <$> filter ((> 0) . sizeOf) defns }
       where defns' :: DefnMap
-            defns' = Map.fromList $ map (defnName &&& id) $ defns p
+            defns' = Map.fromList $ map (defnName &&& id) allDefns
 
-            reDefn :: MonadReader DefnMap m => Defn -> m Defn
-            reDefn (Defn an n sig body) = Defn an n (reSig sig) <$> reExp (renumLVars sig) body
+            allDefns :: [Defn]
+            allDefns = loop : state0 : defns
+
+            reDefn :: Defn -> Defn
+            reDefn (Defn an n sig body) = Defn an n (reSig sig) $ reExp (renumLVars sig) body
 
             reSig :: Sig -> Sig
             reSig (Sig an ps r) = Sig an (filter (> 0) ps) r
@@ -41,30 +44,31 @@ mergeSlices p = p { defns = runReader (mapM reDefn $ filter ((> 0) . sizeOf) $ d
                         preZeros' (0 : szs) n m = preZeros' szs (n + 1) (m - 1)
                         preZeros' (_ : szs) n m = preZeros' szs n       (m - 1)
 
-            reExp :: MonadReader DefnMap m => (LId -> Maybe (LId, Size)) -> Exp -> m Exp
+            reExp :: (LId -> Maybe (LId, Size)) -> Exp -> Exp
             reExp rn = \ case
-                  LVar a s l                                                         -> pure $ LVar a s $ maybe l fst $ rn l
-                  Lit a bv                                                           -> pure $ Lit a bv
-                  Concat _ e1 e2                                                     -> packExps <$> mapM (reExp rn) (gather e1 <> gather e2)
-                  c@(Call _ _ (Global g) e _ _)    | isNil e                         -> getBody g >>= maybe (pure c) (reExp rn)
-                  c@(Call _ _ (Global g) _ ps els) | null (getPVars ps) && isNil els -> getBody g >>= maybe (pure c) (reExp rn)
-                  c@(Call a s (Global g) e ps els)                                   -> getBody g >>= maybe (pure c) (\ body ->
-                        case inline ps body of
-                              Just g' -> reExp rn $ Call a s g' e ps els
-                              Nothing -> do
-                                    e'   <- reExp rn e
-                                    els' <- reExp rn els
-                                    let g'  | isId ps body = Prim Id -- TODO(chathhorn): refactor this.
-                                            | isConst body = Const $ toConst body
-                                            | otherwise    = Global g
-                                        ps' | isConst body = mergePats $ map varToWild ps
-                                            | otherwise    = mergePats ps
-                                    pure $ Call a s g' e' ps' $ if alwaysMatches ps' then nil else els')
-                  Call a s g e ps els                              -> do
-                        e'   <- reExp rn e
-                        els' <- reExp rn els
-                        let ps'    = mergePats ps
-                        pure $ Call a s g e' ps' $ if alwaysMatches ps' then nil else els'
+                  LVar a s l                                                      -> LVar a s $ maybe l fst $ rn l
+                  Lit a bv                                                        -> Lit a bv
+                  Concat _ e1 e2                                                  -> packExps $ map (reExp rn) $ gather e1 <> gather e2
+                  c@(Call _ _ (Global g) _ _ _) | Nothing <- getBody g            -> c
+                  Call _ _ (Global g) e _ _     | Just body <- getBody g, isNil e -> reExp rn body
+                  Call _ _ (Global g) _ ps els  | Just body <- getBody g
+                                                , null (getPVars ps), isNil els   -> reExp rn body
+                  Call a s (Global g) e ps els  | Just body  <- getBody g
+                                                , Just body' <- inline ps body    -> reExp rn $ Call a s body' e ps els
+                                                | Just body  <- getBody g         ->
+                        let e'                  = reExp rn e
+                            els'                = reExp rn els
+                            g'   | isId ps body = Prim Id -- TODO(chathhorn): refactor this.
+                                 | isConst body = Const $ toConst body
+                                 | otherwise    = Global g
+                            ps'  | isConst body = mergePats $ map varToWild ps
+                                 | otherwise    = mergePats ps
+                        in Call a s g' e' ps' $ if alwaysMatches ps' then nil else els'
+                  Call a s g e ps els                                             ->
+                        let e'   = reExp rn e
+                            els' = reExp rn els
+                            ps'  = mergePats ps
+                        in Call a s g e' ps' $ if alwaysMatches ps' then nil else els'
                   where isVar :: Pat -> Bool
                         isVar = \ case
                               PatVar {} -> True
@@ -131,24 +135,24 @@ mergeSlices p = p { defns = runReader (mapM reDefn $ filter ((> 0) . sizeOf) $ d
                               p : ps                                    -> p : mergePats ps
                               []                                        -> []
 
-                        getBody :: MonadReader DefnMap m => GId -> m (Maybe Exp)
-                        getBody g = asks (Map.lookup g) >>= \ case
-                              Just (Defn _ _ _ body) -> pure $ Just body
-                              _                      -> pure Nothing
+                        getBody :: GId -> Maybe Exp
+                        getBody g = case Map.lookup g defns' of
+                              Just (Defn _ _ _ body) -> Just body
+                              _                      -> Nothing
 
 
 -- | Remove unused definitions.
 purgeUnused :: Program -> Program
-purgeUnused p = p { defns = filter ((`elem` uses) . defnName) $ defns p }
+purgeUnused p@Program { loop, state0, defns } = p { defns = filter ((`elem` uses) . defnName) defns }
       where uses :: [GId]
-            uses = uses' [loop p, state0 p]
+            uses = uses' [defnName loop, defnName state0]
 
             uses' :: [GId] -> [GId]
             uses' u = let u' = nubOrd (concatMap defnUses u) in
                   if length u' == length u then u else uses' u'
 
             defnUses :: GId -> [GId]
-            defnUses d = maybe [d] ((<>[d]) . getUses) (Map.lookup d defns')
+            defnUses d = maybe [d] ((<> [d]) . getUses) $ Map.lookup d defns'
 
             getUses :: Exp -> [GId]
             getUses = \ case
@@ -158,12 +162,15 @@ purgeUnused p = p { defns = filter ((`elem` uses) . defnName) $ defns p }
                   _                           -> []
 
             defns' :: DefnBodyMap
-            defns' = Map.fromList $ map (defnName &&& defnBody) $ defns p
+            defns' = Map.fromList $ (defnName &&& defnBody) <$> allDefns
+
+            allDefns :: [Defn]
+            allDefns = loop : state0 : defns
 
 -- | Substitute all calls to functions with duplicate bodies to the same
 --   function. Should follow with `purgeUnused`.
 dedupe :: Program -> Program
-dedupe p = p { defns = map ddDefn $ defns p }
+dedupe p@Program { loop, state0, defns } = p { loop = ddDefn loop, state0 = ddDefn state0, defns = ddDefn <$> defns }
       where ddDefn :: Defn -> Defn
             ddDefn d = d { defnBody = ddExp $ defnBody d }
 
@@ -179,18 +186,24 @@ dedupe p = p { defns = map ddDefn $ defns p }
                   t                                        -> t
 
             ddMap :: HashMap GId GId
-            ddMap = foldr (\ (Defn _ g sig body) -> maybe id (Map.insert g) $ Map.lookup (unAnn sig, unAnn body) bodies) mempty $ defns p
+            ddMap = foldr (\ (Defn _ g sig body) -> maybe id (Map.insert g) $ Map.lookup (unAnn sig, unAnn body) bodies) mempty allDefns
                   where bodies :: HashMap (Sig, Exp) GId
-                        bodies = foldr (\ (Defn _ g sig body) -> Map.insert (unAnn sig, unAnn body) g) mempty $ defns p
+                        bodies = foldr (\ (Defn _ g sig body) -> Map.insert (unAnn sig, unAnn body) g) mempty allDefns
+
+            allDefns :: [Defn]
+            allDefns = loop : state0 : defns
 
 -- | Attempt to reduce definition bodies to a constant literal value.
 partialEval :: Program -> Program
-partialEval p = p { defns = map evalDefn $ defns p }
+partialEval p@Program { loop, state0, defns } = p { loop = evalDefn loop, state0 = evalDefn state0, defns = evalDefn <$> defns }
       where defns' :: DefnMap
-            defns' = Map.fromList $ map (defnName &&& id) $ defns p
+            defns' = Map.fromList $ map (defnName &&& id) allDefns
 
             evalDefn :: Defn -> Defn
             evalDefn d = d { defnBody = evalExp $ defnBody d }
 
             evalExp :: Exp -> Exp
             evalExp e = either fst (Lit $ ann e) $ interpExp defns' [] e
+
+            allDefns :: [Defn]
+            allDefns = loop : state0 : defns

@@ -10,7 +10,7 @@ import ReWire.Core.Mangle (mangle)
 import ReWire.Core.Syntax as C hiding (Name, Size, Index)
 import ReWire.Error (failAt, AstError, MonadError)
 import ReWire.Verilog.Syntax as V
-import ReWire.Core.Interp (patApply', patMatches', subRange, dispatchWires, pausePrefix, extraWires, resumptionSize)
+import ReWire.Core.Interp (patApply', patMatches', subRange, dispatchWires, pausePrefix, extraWires, resumptionSize, Wiring')
 import ReWire.Pretty (prettyPrint, showt)
 import ReWire.BitVector (width, bitVec, BV, zeros, ones, lsb1, (==.), (@.))
 import qualified ReWire.BitVector as BV
@@ -89,21 +89,21 @@ compileProgram conf (C.Program topLevel w loop state0 ds)
       | otherwise     = do
             st' <- runReaderT (compileStart conf topLevel w loop state0) defnMap
             -- Initial state should be inlined, so we can filter out its defn.
-            ds' <- mapM (compileDefn conf) $ filter ((/= state0) . defnName) ds
+            ds' <- mapM (compileDefn conf) $ loop : ds
             pure $ V.Program $ st' : ds'
       where defnMap :: DefnMap
-            defnMap = Map.fromList $ map ((mangle . defnName) &&& defnBody) ds
+            defnMap = Map.fromList $ map ((mangle . defnName) &&& defnBody) $ loop : state0 : ds
 
 compileStart :: (MonadError AstError m, MonadFail m, MonadReader DefnMap m)
-                 => Config -> Name -> C.Wiring -> C.GId -> C.GId -> m Module
+                 => Config -> Name -> C.Wiring -> C.Defn -> C.Defn -> m Module
 compileStart conf topLevel w loop state0 = do
       ((rStart, ssStart), (_, startSigs)) <- flip runStateT (freshInit0, [])
-            $ compileCall (flatten.~True $ clock.~clock' $ conf) (mangle state0) (resumptionSize w) []
+            $ compileCall (flatten.~True $ clock.~clock' $ conf) (mangle $ defnName state0) (resumptionSize w') []
 
       ((rLoop, ssLoop),   (_, loopSigs))  <- flip runStateT (freshRun0, [])
-            $ compileCall (clock.~clock' $ conf) (mangle loop) (resumptionSize w)
-                  $  [ V.cat $ map (LVal . Name . fst) $ dispatchWires w | not (null $ dispatchWires w) ]
-                  <> [ V.cat $ map (LVal . Name . fst) $ inputWires w    | not (null $ inputWires w) ]
+            $ compileCall (clock.~clock' $ conf) (mangle $ defnName loop) (resumptionSize w')
+                  $  [ V.cat $ map (LVal . Name . fst) $ dispatchWires w' | not (null $ dispatchWires w') ]
+                  <> [ V.cat $ map (LVal . Name . fst) $ inputWires w     | not (null $ inputWires w) ]
 
       let mod       = Module topLevel $ inputs <> outputs
           loopStmts = ssLoop <> [ Assign lvPause rLoop ]
@@ -132,7 +132,7 @@ compileStart conf topLevel w loop state0 = do
             outputs = map (Output . mkSignal) $ outputWires w
 
             sigs :: [Signal]
-            sigs = map mkSignal $ allWires w
+            sigs = map mkSignal allWires
 
             ifRst :: V.Exp -> Stmt
             ifRst init = case resetSig of
@@ -142,8 +142,8 @@ compileStart conf topLevel w loop state0 = do
                   _            -> ParAssign lvCurrState $ LVal lvNxtState
 
             clock' :: Text
-            clock' | null (dispatchWires w) = mempty
-                   | otherwise              = conf^.clock
+            clock' | null (dispatchWires w') = mempty
+                   | otherwise               = conf^.clock
 
             reset' :: Text
             reset' | T.null clock' = mempty
@@ -151,19 +151,19 @@ compileStart conf topLevel w loop state0 = do
 
             -- | Initial/reset state.
             initState :: MonadError AstError m => V.Exp -> m V.Exp
-            initState e = case (expToBV e, fromIntegral (sum $ snd <$> dispatchWires w)) of
+            initState e = case (expToBV e, fromIntegral (sum $ snd <$> dispatchWires w')) of
                   (Just bv, n) | n > 0 -> pure $ bvToExp $ subRange (0, n - 1) bv
                   (_, n)       | n > 0 -> pure $ bvToExp $ zeros n -- TODO(chathhorn): make configurable?
                   _                    -> failAt noAnn "compileStart: could not calculate initial state."
 
             lvPause :: LVal
-            lvPause = mkLVals $ map (Name . fst) $ pauseWires w
+            lvPause = mkLVals $ (Name . fst) <$> pauseWires
 
             lvCurrState :: LVal
-            lvCurrState = mkLVals $ map (Name . fst) $ dispatchWires w
+            lvCurrState = mkLVals $ (Name . fst) <$> dispatchWires w'
 
             lvNxtState :: LVal
-            lvNxtState = mkLVals $ map (Name . fst) $ nextDispatchWires w
+            lvNxtState = mkLVals $ (Name . fst) <$> nextDispatchWires
 
             rstEdge :: [Sensitivity]
             rstEdge | T.null reset' = []
@@ -177,14 +177,17 @@ compileStart conf topLevel w loop state0 = do
             syncRst :: Bool
             syncRst = Synchronous `elem` (conf^.resetFlags)
 
-            pauseWires :: Wiring -> [(Name, Size)]
-            pauseWires w = pausePrefix w <> nextDispatchWires w
+            pauseWires :: [(Name, Size)]
+            pauseWires = pausePrefix w' <> nextDispatchWires
 
-            nextDispatchWires :: Wiring -> [(Name, Size)]
-            nextDispatchWires w = map (first (<> "_next")) $ dispatchWires w
+            nextDispatchWires :: [(Name, Size)]
+            nextDispatchWires = (first (<> "_next")) <$> dispatchWires w'
 
-            allWires :: Wiring -> [(Name, Size)]
-            allWires w = extraWires w <> dispatchWires w <> nextDispatchWires w
+            allWires :: [(Name, Size)]
+            allWires = extraWires w' <> dispatchWires w' <> nextDispatchWires
+
+            w' :: Wiring'
+            w' = (w, defnSig loop, defnSig state0)
 
 compileDefn :: (MonadFail m, MonadError AstError m) => Config -> C.Defn -> m V.Module
 compileDefn conf (C.Defn _ n (Sig _ inps outp) body) = do

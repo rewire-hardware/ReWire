@@ -166,14 +166,14 @@ mkDefnArch (Defn _ n _ body) = do
       pure $ Architecture (mangle n <> "Impl") (mangle n) sigs comps (stmts <> [Assign (LHSName "res") (ExprName nres)])
 
 -- TODO(chathhorn): support breaking out states (sts).
-compileStart :: MonadError AstError m => Config -> Name -> C.Wiring -> C.GId -> C.GId -> CM m Unit
-compileStart conf topLevel w n_loopfun n_startstate = do
+compileStart :: MonadError AstError m => Config -> Name -> C.Wiring -> C.GId -> C.Sig -> C.GId -> C.Sig -> CM m Unit
+compileStart conf topLevel w n_loopfun sigLoop n_startstate sigState0 = do
       put ([], [], 0) -- empty out signal and component store, reset name counter
-      let stateSize = sizeOf t_startstate
+      let stateSize = sizeOf sigState0
           inpSize   = sum $ map snd inps
           outpSize  = sum $ map snd outps
-      addComponent noAnn n_startstate $ sigState0 w
-      addComponent noAnn n_loopfun $ sigLoop w
+      addComponent noAnn n_startstate sigState0
+      addComponent noAnn n_loopfun sigLoop
       addSignal "start_state"        $ TyStdLogicVector stateSize
       addSignal "loop_out"           $ TyStdLogicVector stateSize
       addSignal "current_state"      $ TyRegister "clk" stateSize
@@ -231,15 +231,24 @@ compileStart conf topLevel w n_loopfun n_startstate = do
 
             inps = inputWires w
             outps = outputWires w
-            arg0size = case sigLoop w of
+            arg0size = case sigLoop of
                   Sig _ (a : _) _ -> a
                   _               -> error "ToVHDL: arg0size: empty arg0 (rwc bug)."
-            t_startstate = sigState0 w
 
 compileDefn :: MonadError AstError m => Config -> Defn -> CM m Unit
 compileDefn conf d = Unit (conf^.vhdlPackages) <$> mkDefnEntity d <*> mkDefnArch d
 
 compileProgram :: MonadError AstError m => Config -> C.Program -> m V.Program
 compileProgram conf p = fmap fst $ flip runReaderT (defns p) $ flip runStateT ([], [], 0)
-      $ V.Program <$> ((:) <$> compileStart conf (C.topLevel p) (C.wiring p) (C.loop p) (C.state0 p) <*> mapM (compileDefn conf) (defns p))
+      $ V.Program
+            <$> ((:)
+            <$> compileStart
+                  conf
+                  (C.topLevel p)
+                  (C.wiring p)
+                  (defnName $ C.loop p)
+                  (defnSig $ C.loop p)
+                  (defnName $ C.state0 p)
+                  (defnSig $ C.state0 p)
+            <*> mapM (compileDefn conf) (C.loop p : C.state0 p : defns p))
 

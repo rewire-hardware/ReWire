@@ -17,7 +17,7 @@ import Control.Monad.Reader (MonadReader (..), ReaderT (..), asks, lift)
 import Control.Monad.State (StateT (..), MonadState, get, put, unless)
 import Data.Either (partitionEithers)
 import Data.HashMap.Strict (HashMap)
-import Data.List (findIndex, genericLength)
+import Data.List (find, findIndex, genericLength)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Numeric.Natural (Natural)
@@ -40,8 +40,11 @@ toCore conf start (ts, _, vs) = fst <$> flip runStateT mempty (do
       put $ Map.singleton (M.intTy noAnn) intSz
       vs'    <- mapM (transDefn conf start conMap) $ filter (not . M.isPrim . M.defnName) vs
       case partitionEithers vs' of
-            ([(topLevel, w, loop, state0)], defns) -> pure $ C.Program topLevel w loop state0 defns
-            _                                      -> failAt noAnn $ "toCore: no definition found: " <> start)
+            ([(topLevel, w, loop, state0)], defns)
+                  | Just defLoop   <- find ((== loop) . C.defnName) defns
+                  , Just defState0 <- find ((== state0) . C.defnName) defns
+                        -> pure $ C.Program topLevel w defLoop defState0 $ filter (neither loop state0 . C.defnName) defns
+            _           -> failAt noAnn $ "toCore: no definition found: " <> start)
       where conMap :: ConMap
             conMap = ( Map.fromList $ map (M.dataName &&& map projId . M.dataCons) ts
                      , Map.fromList $ map (projId &&& projType) (concatMap M.dataCons ts)
@@ -53,6 +56,9 @@ toCore conf start (ts, _, vs) = fst <$> flip runStateT mempty (do
             projType :: M.DataCon -> M.Ty
             projType (M.DataCon _ _ (Embed (M.Poly t))) = runFreshM (snd <$> unbind t)
 
+            neither :: Eq a => a -> a -> a -> Bool
+            neither a b c = (c /= a) && (c /= b)
+
 transDefn :: (MonadError AstError m, Fresh m, MonadState SizeMap m, MonadFail m) => Config -> Text -> ConMap -> M.Defn -> m (Either StartDefn C.Defn)
 transDefn conf start conMap = \ case
       M.Defn an n (Embed (M.Poly t)) _ (Embed e) | n2s n == start -> do
@@ -61,7 +67,7 @@ transDefn conf start conMap = \ case
                   M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "ReacT")) t_in) t_out) (M.TyCon _ (n2s -> "Identity"))) _ -> do
                         (_, e') <- unbind e
                         case M.flattenApp e' of
-                              [M.Builtin _ _ _ M.Unfold, M.Var _ _ (Just loopTy) loop, M.Var _ _ (Just state0Ty) state0] -> do
+                              [M.Builtin _ _ _ M.Unfold, M.Var _ _ _ loop, M.Var _ _ (Just state0Ty) state0] -> do
                                     t_st              <- getRegsTy state0Ty
                                     (t_in' : t_ins)   <- mapM ((`runReaderT` conMap) . sizeOf an) $ t_in  : detuple t_in
                                     (t_out' : t_outs) <- mapM ((`runReaderT` conMap) . sizeOf an) $ t_out : detuple t_out
@@ -69,13 +75,9 @@ transDefn conf start conMap = \ case
                                     let t_ins'         = t_in' - sum t_ins : t_ins
                                         t_outs'        = t_out' - sum t_outs : t_outs
                                         t_sts'         = t_st' - sum t_sts : t_sts
-                                    loopTy'           <- runReaderT (transType loopTy) conMap
-                                    state0Ty'         <- runReaderT (transType state0Ty) conMap
                                     let wires = C.Wiring (zip (conf^.inputSigs)  (filter (> 0) t_ins'))
                                                          (zip (conf^.outputSigs) (filter (> 0) t_outs'))
                                                          (zip (conf^.stateSigs)  (filter (> 0) t_sts'))
-                                                         loopTy'
-                                                         state0Ty'
                                     pure $ Left (conf^.top, wires, n2s loop, n2s state0)
                               _ -> failAt an $ "transDefn: definition of " <> start <> " must have form `unfold n m' where n and m are global IDs; got " <> prettyPrint e'
                   _ -> failAt an $ "transDefn: " <> start <> " has unsupported type: " <> prettyPrint t'

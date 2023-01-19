@@ -120,9 +120,9 @@ compileFile conf lp filename = do
                               T.putStrLn $ showt $ unAnn b
                   case conf^.target of
                         FIRRTL    -> liftIO $ T.putStrLn "FIRRTL backend currently out-of-order. Use '--verilog' or '--interpret'."
-                                     -- compileProgram flags a >>= toLoFirrtl >>= writeOutput -- TODO(chathhorn): a => b
-                        VHDL      -> VHDL.compileProgram conf a >>= writeOutput
-                        RWCore    -> writeOutput a
+                                     -- compileProgram flags b >>= toLoFirrtl >>= writeOutput
+                        VHDL      -> VHDL.compileProgram conf b >>= writeOutput
+                        RWCore    -> writeOutput b
                         Interpret -> do
                               when (conf^.verbose) $ liftIO $ T.putStrLn $ "Debug: Interpreting core: reading inputs: " <> pack (conf^.inputsFile)
                               ips  <- boundInput (conf^.cycles) . fromRight mempty <$> liftIO (YAML.decodeFileEither $ conf^.inputsFile)

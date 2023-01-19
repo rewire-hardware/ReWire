@@ -12,5 +12,6 @@ import qualified Data.BitVector as BV
 showHex :: BV.BV -> Text
 showHex = pack . BV.showHex
 
+-- | Like `showHex`, but prefix with `h` instead of `0x`.
 showHex' :: BV.BV -> Text
-showHex' = pack . drop 2 . BV.showHex
+showHex' = pack . ("h" <>) . drop 2 . BV.showHex

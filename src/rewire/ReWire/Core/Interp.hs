@@ -4,7 +4,7 @@
 {-# LANGUAGE Safe #-}
 module ReWire.Core.Interp
       ( interp, interpDefn
-      , Ins, Outs, Out, run
+      , Ins, Outs, Out, Wiring', run
       , patMatches, patMatches'
       , patApply'
       , interpExp, DefnMap
@@ -57,6 +57,9 @@ type Sts = HashMap Name Out
 
 type DefnMap = HashMap GId Defn
 
+-- | (wires, sigLoop, sigState0)
+type Wiring' = (Wiring, Sig, Sig) -- TODO(chathhorn): rename
+
 -- | Runs non-interactively -- given a stream of inputs, produces a stream of outputs.
 -- run :: Monad m => MealyT m a b -> [a] -> m [b]
 -- run m ip = M.runT (M.autoT m <~ source ip)
@@ -71,12 +74,12 @@ run conf m = \ case
             (b :) <$> run conf m' ips
 
 interp :: MonadError AstError m => Config -> Program -> MealyT m Ins Outs
-interp _conf (Program _ w loop' state0' ds) = interpStart defnMap w loop' state0'
+interp _conf (Program _ w loop state0 ds) = interpStart defnMap w loop state0
       where defnMap :: DefnMap
             defnMap = Map.fromList $ map (defnName &&& id) ds
 
-interpStart :: MonadError AstError m => DefnMap -> Wiring -> GId -> GId -> MealyT m Ins Outs
-interpStart defns w loop' state0' = MealyT $ \ _ -> do
+interpStart :: MonadError AstError m => DefnMap -> Wiring -> Defn -> Defn -> MealyT m Ins Outs
+interpStart defns w loop state0 = MealyT $ \ _ -> do
             so <- splitOutputs <$> interpDefn defns state0 mempty
             pure (filterOutput so, unfoldMealyT f $ filterDispatch so)
       -- So:        loop   :: ((r, s), i) -> R (o, s)
@@ -87,25 +90,25 @@ interpStart defns w loop' state0' = MealyT $ \ _ -> do
             f s i = (filterOutput &&& filterDispatch) . splitOutputs <$> interpDefn defns loop (joinInputs $ Map.map nat s <> i)
 
             splitOutputs :: BV -> Outs
-            splitOutputs b = Map.fromList $ zip (map fst $ pauseWires w) $ toSubRanges b $ map snd $ pauseWires w
+            splitOutputs b = Map.fromList $ zip (map fst pauseWires) $ toSubRanges b $ map snd pauseWires
 
             joinInputs :: Ins -> BV
             joinInputs vs = mconcat $ zipWith mkBV (map snd st_inps) $ map (fromMaybe 0 . flip Map.lookup vs . fst) st_inps
 
             st_inps :: [(Name, Size)]
-            st_inps = dispatchWires w <> inputWires w
+            st_inps = dispatchWires w' <> inputWires w
 
             filterOutput :: Outs -> Outs
             filterOutput = Map.filterWithKey (\ k _ -> k `elem` map fst (outputWires w))
 
             filterDispatch :: Outs -> Sts
-            filterDispatch = Map.filterWithKey (\ k _ -> k `elem` map fst (dispatchWires w))
+            filterDispatch = Map.filterWithKey (\ k _ -> k `elem` map fst (dispatchWires w'))
 
-            pauseWires :: Wiring -> [(Name, Size)]
-            pauseWires w = pausePrefix w <> dispatchWires w
+            pauseWires :: [(Name, Size)]
+            pauseWires = pausePrefix w' <> dispatchWires w'
 
-            loop   = fromMaybe (error "Core: interpStart: no loop.")   $ Map.lookup loop' defns
-            state0 = fromMaybe (error "Core: interpStart: no state0.") $ Map.lookup state0' defns
+            w' :: Wiring'
+            w' = (w, defnSig loop, defnSig state0)
 
 interpDefn :: MonadError AstError m => DefnMap -> Defn -> BV -> m BV
 interpDefn defns (Defn _ _ (Sig _ inSizes outSize) body) v = trunc <$> reThrow (interpExp defns (split inSizes v) body)
@@ -296,38 +299,38 @@ toZ = toInteger . fromEnum
 zToBV :: (Integer -> Integer -> Integer) -> Size -> BV -> BV -> BV
 zToBV op sz a b = mkBV sz (nat a `op` nat b)
 
-pausePadding :: Wiring -> [(Name, Size)]
-pausePadding w | paddingSize > 0 = [("__padding", fromIntegral paddingSize)]
-               | otherwise       = []
+pausePadding :: Wiring' -> [(Name, Size)]
+pausePadding s@(w, _, _) | paddingSize > 0 = [("__padding", fromIntegral paddingSize)]
+                         | otherwise       = []
       where paddingSize :: Int
-            paddingSize = fromIntegral (resumptionSize w)              -- sizeof PuRe
-                        - 1                                              -- count (Done | Pause)
-                        - fromIntegral (sum $ snd <$> resumptionTag w) -- count R_ ctors
-                        - fromIntegral (sum $ snd <$> outputWires w)   --  
-                        - fromIntegral (sum $ snd <$> stateWires w)    -- 
+            paddingSize = fromIntegral (resumptionSize s)              -- sizeof PuRe
+                        - 1                                                    -- count (Done | Pause)
+                        - fromIntegral (sum $ snd <$> resumptionTag s) -- count R_ ctors
+                        - fromIntegral (sum $ snd <$> outputWires w)
+                        - fromIntegral (sum $ snd <$> stateWires w)
 
-resumptionTag :: Wiring -> [(Name, Size)]
-resumptionTag w | tagSize > 0 = [("__resumption_tag", fromIntegral tagSize)]
-                | otherwise   = []
+resumptionTag :: Wiring' -> [(Name, Size)]
+resumptionTag (w, sigLoop, _) | tagSize > 0 = [("__resumption_tag", fromIntegral tagSize)]
+                              | otherwise   = []
       where tagSize :: Int
-            tagSize = case sigLoop w of
+            tagSize = case sigLoop of
                   Sig _ (a : _) _ -> fromIntegral a - fromIntegral (sum $ snd <$> stateWires w)
                   _               -> 0
 
-resumptionSize :: Wiring -> Size
-resumptionSize (sigState0 -> Sig _ _ s) = s
+resumptionSize :: Wiring' -> Size
+resumptionSize (_, _, Sig _ _ s) = s
 
 continue :: (Name, Size)
 continue = ("__continue", 1)
 
-pausePrefix :: Wiring -> [(Name, Size)]
-pausePrefix w = continue : pausePadding w <> outputWires w
+pausePrefix :: Wiring' -> [(Name, Size)]
+pausePrefix s@(w, _, _) = continue : pausePadding s <> outputWires w
 
-dispatchWires :: Wiring -> [(Name, Size)]
-dispatchWires w = resumptionTag w <> stateWires w
+dispatchWires :: Wiring' -> [(Name, Size)]
+dispatchWires s@(w, _, _) = resumptionTag s <> stateWires w
 
-extraWires :: Wiring -> [(Name, Size)]
-extraWires w = continue : pausePadding w
+extraWires :: Wiring' -> [(Name, Size)]
+extraWires s = continue : pausePadding s
 
 unfoldMealyT :: Applicative m => (s -> a -> m (b, s)) -> s -> MealyT m a b
 unfoldMealyT f = go

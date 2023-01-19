@@ -330,7 +330,7 @@ liftLambdas p = evalStateT (liftLambdas' p) []
                         (fvs, e') <- freshen e
 
                         let t' = foldr (arr . snd) te bvs
-                        f     <- fresh $ s2n "$LL.matchapp"
+                        f     <- fresh $ s2n "$LL.matchApp"
 
                         modify $ (:) $ Defn an f (fv t' |-> t') Nothing (Embed $ bind fvs e')
                         pure $ setTyAnn tan $ mkApp an (Var an Nothing (Just t') f) $ map (toVar an) bvs <> [arg]
@@ -340,7 +340,7 @@ liftLambdas p = evalStateT (liftLambdas' p) []
                         (fvs, e') <- freshen e
 
                         let t' = foldr (arr . snd) te bvs
-                        f     <- fresh $ s2n "$LL.extrude"
+                        f     <- fresh $ s2n "$LL.extrudeApp"
 
                         modify $ (:) $ Defn an f (fv t' |-> t') Nothing (Embed $ bind fvs e')
                         pure $ App an tan t ex (mkApp an (Var an Nothing (Just t') f) $ map (toVar an) bvs)
