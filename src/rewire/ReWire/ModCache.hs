@@ -12,7 +12,7 @@ module ReWire.ModCache
       ) where
 
 import ReWire.Annotation (Annotation, SrcSpanInfo, unAnn)
-import ReWire.Config (Config, verbose, top, dump)
+import ReWire.Config (Config, verbose, dump)
 import ReWire.Crust.KindCheck (kindCheck)
 import ReWire.Crust.PrimBasis (addPrims)
 import ReWire.Crust.Purify (purify)
@@ -48,6 +48,7 @@ import qualified Data.Text.IO                 as T
 import qualified Language.Haskell.Exts.Pretty as P
 import qualified Language.Haskell.Exts.Syntax as S (Module (..))
 import qualified ReWire.Core.Syntax           as Core
+import qualified ReWire.Config                as C
 
 type Cache = ReaderT LoadPath (StateT ModCache (FreshMT (SyntaxErrorT AstError IO)))
 type LoadPath = [FilePath]
@@ -71,7 +72,7 @@ mkRenamer conf pwd' m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps
 -- Pass 16   Translate to core
 
 getModule :: Config -> FilePath -> FilePath -> Cache (Module, Exports)
-getModule conf pwd fp = pDebug conf ("fetching module: " <> pack fp <> " (pwd: " <> pack pwd <> ")") >> Map.lookup fp <$> get >>= \ case
+getModule conf pwd fp = pDebug conf ("Fetching module: " <> pack fp <> " (pwd: " <> pack pwd <> ")") >> Map.lookup fp <$> get >>= \ case
       Just p  -> pure p
       Nothing -> do
             modify $ Map.insert fp mempty
@@ -199,7 +200,7 @@ getProgram conf fp = do
             pDebug' s a = pDebug conf s >> pure a
 
             start :: Text
-            start = conf^.top
+            start = conf^.C.start
 
 pDebug :: MonadIO m => Config -> Text -> m ()
 pDebug conf s = when (conf^.verbose) $ liftIO $ T.putStrLn $ "Debug: " <> s

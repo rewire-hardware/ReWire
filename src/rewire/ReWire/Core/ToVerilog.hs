@@ -84,22 +84,19 @@ lookupWidth n = do
                   _              -> failAt noAnn $ "toVerilog: lookupWidth: unexpected multi-dimensional signal (rwc bug): " <> showt n
 
 compileProgram :: (MonadFail m, MonadError AstError m) => Config -> C.Program -> m V.Program
-compileProgram conf (C.Program st ds)
-      | conf^.flatten = V.Program . pure <$> runReaderT (compileStartDefn conf st) defnMap
+compileProgram conf (C.Program topLevel w loop state0 ds)
+      | conf^.flatten = V.Program . pure <$> runReaderT (compileStart conf topLevel w loop state0) defnMap
       | otherwise     = do
-            st' <- runReaderT (compileStartDefn conf st) defnMap
-            ds' <- mapM (compileDefn conf) $ filter ((/= getState0 st) . defnName) ds
+            st' <- runReaderT (compileStart conf topLevel w loop state0) defnMap
+            -- Initial state should be inlined, so we can filter out its defn.
+            ds' <- mapM (compileDefn conf) $ filter ((/= state0) . defnName) ds
             pure $ V.Program $ st' : ds'
       where defnMap :: DefnMap
             defnMap = Map.fromList $ map ((mangle . defnName) &&& defnBody) ds
 
-            -- | Initial state should be inlined, so we can filter out its defn.
-            getState0 :: StartDefn -> Name
-            getState0 (C.StartDefn _ _ _ state0) = state0
-
-compileStartDefn :: (MonadError AstError m, MonadFail m, MonadReader DefnMap m)
-                 => Config -> C.StartDefn -> m Module
-compileStartDefn conf (C.StartDefn an w loop state0) = do
+compileStart :: (MonadError AstError m, MonadFail m, MonadReader DefnMap m)
+                 => Config -> Name -> C.Wiring -> C.GId -> C.GId -> m Module
+compileStart conf topLevel w loop state0 = do
       ((rStart, ssStart), (_, startSigs)) <- flip runStateT (freshInit0, [])
             $ compileCall (flatten.~True $ clock.~clock' $ conf) (mangle state0) (resumptionSize w) []
 
@@ -108,7 +105,7 @@ compileStartDefn conf (C.StartDefn an w loop state0) = do
                   $  [ V.cat $ map (LVal . Name . fst) $ dispatchWires w | not (null $ dispatchWires w) ]
                   <> [ V.cat $ map (LVal . Name . fst) $ inputWires w    | not (null $ inputWires w) ]
 
-      let mod       = Module "top_level" $ inputs <> outputs
+      let mod       = Module topLevel $ inputs <> outputs
           loopStmts = ssLoop <> [ Assign lvPause rLoop ]
 
       if | T.null clock' -> pure $ mod (loopSigs <> sigs) loopStmts
@@ -157,7 +154,7 @@ compileStartDefn conf (C.StartDefn an w loop state0) = do
             initState e = case (expToBV e, fromIntegral (sum $ snd <$> dispatchWires w)) of
                   (Just bv, n) | n > 0 -> pure $ bvToExp $ subRange (0, n - 1) bv
                   (_, n)       | n > 0 -> pure $ bvToExp $ zeros n -- TODO(chathhorn): make configurable?
-                  _                    -> failAt an "compileStartDefn: could not calculate initial state."
+                  _                    -> failAt noAnn "compileStart: could not calculate initial state."
 
             lvPause :: LVal
             lvPause = mkLVals $ map (Name . fst) $ pauseWires w

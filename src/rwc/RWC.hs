@@ -18,8 +18,9 @@ import qualified ReWire.Core.Syntax    as C
 import qualified ReWire.Core.ToVHDL    as VHDL
 import qualified ReWire.Core.ToVerilog as Verilog
 
+import Control.Arrow ((>>>))
 import Control.Lens ((^.))
-import Control.Monad ((>=>), when)
+import Control.Monad (when, zipWithM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.Either (fromRight)
 import Data.List (intercalate, foldl')
@@ -44,6 +45,7 @@ options =
        , Option ['f'] ["firrtl"]        (NoArg  FlagFirrtl)                        "Produce FIRRTL output (experimental)."
        , Option []    ["verilog"]       (NoArg  FlagVerilog)                       "Produce Verilog output (default)."
        , Option []    ["vhdl"]          (NoArg  FlagVhdl)                          "Produce VHDL output (experimental)."
+       , Option []    ["core"]          (NoArg  FlagCore)                          "Produce ReWire core language output."
        , Option []    ["invert-reset"]  (NoArg  FlagInvertReset)                   "Invert the implicitly generated reset signal."
        , Option []    ["no-reset"]      (NoArg  FlagNoReset)                       "No implicitly generated reset signal."
        , Option []    ["no-clock"]      (NoArg  FlagNoClock)                       "No implicitly generated clock signal (implies no-reset: generate a purely combinatorial circuit)."
@@ -57,7 +59,8 @@ options =
        , Option []    ["inputs"]        (ReqArg FlagInputNames  "name1,name2,...") "Names to use for input signals in generated RTL."
        , Option []    ["outputs"]       (ReqArg FlagOutputNames "name1,name2,...") "Names to use for output signals in generated RTL."
        , Option []    ["states"]        (ReqArg FlagStateNames  "name1,name2,...") "Names to use for internal state signals."
-       , Option []    ["top"]           (ReqArg FlagTop         "name")            "Symbol to use for the definition of the top-level module (default: Main.start)."
+       , Option []    ["start"]         (ReqArg FlagStart       "name")            "Symbol to use for the definition of the top-level module (default: Main.start)."
+       , Option []    ["top"]           (ReqArg FlagTop         "name")            "Name to use for the top-level module in generated RTL (default: top_level)."
        , Option []    ["loadpath"]      (ReqArg FlagLoadPath    "dir1,dir2,...")   "Additional directories for loadpath."
        , Option []    ["interpret"]     (OptArg FlagInterpret   "inputs.yaml")     "Interpret instead of compile, using inputs from the optional argument file (default: inputs.yaml)."
        , Option []    ["cycles"]        (ReqArg FlagCycles      "ncycles")         "Number of cycles to interpret (default: 10)."
@@ -101,28 +104,34 @@ compileFile conf lp filename = do
 
       where compile :: C.Program -> SyntaxErrorT AstError IO ()
             compile a = do
-                  b <-  (    mergeSlices
-                        >=> mergeSlices
-                        >=> partialEval
-                        >=> mergeSlices
-                        >=> dedupe
-                        >=> purgeUnused
-                        ) a -- TODO(chathhorn)
-                  when (conf^.verbose)   $ liftIO $ putStrLn "Debug: [Pass 13] Reduced core."
+                  let b = ( mergeSlices
+                        >>> mergeSlices
+                        >>> partialEval
+                        >>> mergeSlices
+                        >>> dedupe
+                        >>> purgeUnused
+                        ) a
+                  when (conf^.verbose)   $ liftIO $ T.putStrLn "Debug: [Pass 13] Reduced core."
                   when (conf^.dump $ 13) $ liftIO $ do
-                        printHeader "[Pass 13] Reduced Core" -- TODO(chathhorn): pull this out of Crust.Cache
+                        printHeader "[Pass 13] Reduced Core"
                         T.putStrLn $ prettyPrint b
                         when (conf^.verbose) $ do
                               T.putStrLn "\n## Show core:\n"
                               T.putStrLn $ showt $ unAnn b
                   case conf^.target of
-                        FIRRTL    -> liftIO $ putStrLn "FIRRTL backend currently out-of-order. Use '--verilog' or '--interpret'."
+                        FIRRTL    -> liftIO $ T.putStrLn "FIRRTL backend currently out-of-order. Use '--verilog' or '--interpret'."
                                      -- compileProgram flags a >>= toLoFirrtl >>= writeOutput -- TODO(chathhorn): a => b
                         VHDL      -> VHDL.compileProgram conf a >>= writeOutput
+                        RWCore    -> writeOutput a
                         Interpret -> do
-                              ips  <- liftIO $ YAML.decodeFileEither $ conf^.inputsFile
-                              outs <- run (interp conf b) (boundInput (conf^.cycles) $ fromRight mempty ips)
+                              when (conf^.verbose) $ liftIO $ T.putStrLn $ "Debug: Interpreting core: reading inputs: " <> pack (conf^.inputsFile)
+                              ips  <- boundInput (conf^.cycles) . fromRight mempty <$> liftIO (YAML.decodeFileEither $ conf^.inputsFile)
+                              when (conf^.verbose) $ liftIO $ do
+                                    T.putStrLn $ "Debug: Interpreting core: running for " <> showt (conf^.cycles) <> " cycles. Inputs:"
+                                    zipWithM_ (\ c ip -> T.putStrLn ("\t--- " <> showt c <> " ---\n" <> mconcat ((\ (k, v) -> "\t" <> k <> ": " <> showt v <> "\n") <$> Map.toList ip))) [1 :: Int ..] ips
+                              outs <- run conf (interp conf b) ips
                               let fout = getOutFile conf filename
+                              when (conf^.verbose) $ liftIO $ T.putStrLn $ "Debug: Interpreting core: done running; writing YAML output to file: " <> pack fout
                               liftIO $ YAML.encodeFile fout outs
                         Verilog   -> Verilog.compileProgram conf b >>= writeOutput
 

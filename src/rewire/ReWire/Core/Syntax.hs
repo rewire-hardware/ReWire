@@ -8,7 +8,7 @@ module ReWire.Core.Syntax
   , Exp (..)
   , Pat (..)
   , Prim (..)
-  , StartDefn (..), Defn (..)
+  , Defn (..)
   , Wiring (..)
   , Program (..)
   , Target (..)
@@ -23,7 +23,7 @@ module ReWire.Core.Syntax
 import ReWire.Annotation (Annote, Annotated (ann), noAnn)
 import ReWire.BitVector (BV (..), width, showHex, zeros, ones, (==.))
 import ReWire.Orphans ()
-import ReWire.Pretty (text, Pretty (pretty), Doc, vsep, (<+>), nest, hsep, parens, braces, punctuate, comma, dquotes, tupled, TextShow (showt), FromGeneric (..))
+import ReWire.Pretty (text, Pretty (pretty), Doc, vsep, (<+>), nest, hsep, parens, braces, punctuate, comma, dquotes, tupled, TextShow (showt), FromGeneric (..), colon, brackets)
 import qualified ReWire.BitVector as BV
 
 import Data.Data (Typeable, Data(..))
@@ -260,24 +260,6 @@ isNilPat p = sizeOf p == 0
 
 ---
 
--- | Names for input, output, state signals, res type, (loop, loop ty), (state0, state0 ty).
-data StartDefn = StartDefn Annote !Wiring !GId !GId
-      deriving (Eq, Ord, Show, Typeable, Data, Generic)
-      deriving TextShow via FromGeneric StartDefn
-
-instance Hashable StartDefn
-
-instance Annotated StartDefn where
-      ann (StartDefn a _ _ _) = a
-
-instance Pretty StartDefn where
-      pretty (StartDefn _ w loop state0) = vsep
-            [ text "Main.start" <+> text "::" <+> text "ReacT" <+> tupled (map (ppBVTy . snd) $ inputWires w) <+> tupled (map (ppBVTy . snd) $ outputWires w)
-            , text "Main.start" <+> text "=" <+> nest 2 (text "unfold" <+> pretty loop <+> pretty state0)
-            ]
-
----
-
 data Wiring = Wiring
       { inputWires  :: ![(Name, Size)]
       , outputWires :: ![(Name, Size)]
@@ -289,6 +271,20 @@ data Wiring = Wiring
       deriving TextShow via FromGeneric Wiring
 
 instance Hashable Wiring
+
+instance Pretty Wiring where
+      pretty w = vsep
+            [ text "inputs" <+> ppWires (inputWires w)
+            , text "outputs" <+> ppWires (outputWires w)
+            , text "states" <+> ppWires (stateWires w)
+            , text "loop" <> colon <+> pretty (sigLoop w)
+            , text "state0" <> colon <+> pretty (sigState0 w)
+            ]
+            where ppWire :: (Name, Size) -> Doc a
+                  ppWire (n, s) = text n <> colon <+> pretty s
+
+                  ppWires :: [(Name, Size)] -> Doc a
+                  ppWires = brackets . hsep . punctuate comma . map ppWire
 
 ---
 
@@ -320,8 +316,11 @@ instance Pretty Defn where
 ---
 
 data Program = Program
-      { start :: !StartDefn
-      , defns :: ![Defn]
+      { topLevel :: !Name
+      , wiring   :: !Wiring
+      , loop     :: !GId
+      , state0   :: !GId
+      , defns    :: ![Defn]
       }
       deriving (Generic, Eq, Ord, Show, Typeable, Data)
       deriving TextShow via FromGeneric Program
@@ -329,7 +328,7 @@ data Program = Program
 instance Hashable Program
 
 instance Pretty Program where
-      pretty p = vsep $ intersperse (text "") $ pretty (start p) : map pretty (defns p)
-
--- Orphans
-
+      pretty (Program n w loop state0 defns) = vsep $ intersperse (text "") $
+            [ text "device" <+> text n <+> pretty loop <+> pretty state0
+            , pretty w
+            ] <> map pretty defns

@@ -9,7 +9,7 @@ module ReWire.Config
       , resetFlags, outFlags
       , inputSigs, stateSigs, outputSigs
       , vhdlPackages, inputsFile, outFile
-      , top, loadPath, cycles, depth, dump
+      , start, top, loadPath, cycles, depth, dump
       ) where
 
 import ReWire.Flags (Flag (..))
@@ -25,7 +25,7 @@ import System.FilePath ((-<.>))
 
 import qualified Data.Set as Set
 
-data Target = Interpret | FIRRTL | VHDL | Verilog
+data Target = Interpret | FIRRTL | VHDL | Verilog | RWCore
       deriving (Eq, Ord, Show)
 data ResetFlag = Inverted | Synchronous
       deriving (Eq, Ord, Show)
@@ -44,6 +44,7 @@ data Config = Config
       , _vhdlPackages :: [Text]
       , _inputsFile   :: FilePath
       , _outFile      :: Maybe FilePath
+      , _start        :: Text
       , _top          :: Text
       , _loadPath     :: [FilePath]
       , _cycles       :: Natural
@@ -66,7 +67,8 @@ defaultConfig = Config
       , _vhdlPackages = ["ieee.std_logic_1164.all"]
       , _inputsFile   = "inputs.yaml"
       , _outFile      = Nothing
-      , _top          = "Main.start"
+      , _start        = "Main.start"
+      , _top          = "top_level"
       , _loadPath     = []
       , _cycles       = 10
       , _depth        = 8
@@ -97,6 +99,7 @@ getOutFile c filename = flip fromMaybe (c^.outFile) $ case c^.target of
       FIRRTL    -> filename -<.> "fir"
       VHDL      -> filename -<.> "vhdl"
       Interpret -> filename -<.> "yaml"
+      RWCore    -> filename -<.> "rwc"
 
 -- TODO(chathhorn): separate validation pass.
 interpret :: [Flag] -> Either ErrorMsg Config
@@ -112,6 +115,7 @@ interpret = foldM interp defaultConfig
                   FlagVhdl                        -> pure $ target .~ VHDL      $ c
                   FlagInterpret Nothing           -> pure $ target .~ Interpret $ c
                   FlagInterpret (Just ip)         -> pure $ target .~ Interpret $ inputsFile .~ ip $ c
+                  FlagCore                        -> pure $ target .~ RWCore    $ c
                   FlagClockName (pack -> n)       -> pure $ clock  .~ n         $ c
                   FlagNoClock                     -> pure $ clock  .~ ""        $ reset .~ ""      $ c
                   FlagResetName (pack -> n)       -> pure $ reset  .~ n         $ c
@@ -126,6 +130,7 @@ interpret = foldM interp defaultConfig
                   FlagInputNames (pack -> n)      -> pure $ over inputSigs  (splitOn' "," n <>) c
                   FlagStateNames (pack -> n)      -> pure $ over stateSigs  (splitOn' "," n <>) c
                   FlagOutputNames (pack -> n)     -> pure $ over outputSigs (splitOn' "," n <>) c
+                  FlagStart (pack -> n)           -> pure $ start .~ n $ c
                   FlagTop (pack -> n)             -> pure $ top .~ n $ c
                   FlagCycles n                    -> pure $ cycles .~ read n $ c
                   FlagEvalDepth n                 -> pure $ depth .~ read n $ c

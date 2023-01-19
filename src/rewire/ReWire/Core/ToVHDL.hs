@@ -166,14 +166,14 @@ mkDefnArch (Defn _ n _ body) = do
       pure $ Architecture (mangle n <> "Impl") (mangle n) sigs comps (stmts <> [Assign (LHSName "res") (ExprName nres)])
 
 -- TODO(chathhorn): support breaking out states (sts).
-compileStartDefn :: MonadError AstError m => Config -> StartDefn -> CM m Unit
-compileStartDefn conf (StartDefn an w n_loopfun n_startstate) = do
+compileStart :: MonadError AstError m => Config -> Name -> C.Wiring -> C.GId -> C.GId -> CM m Unit
+compileStart conf topLevel w n_loopfun n_startstate = do
       put ([], [], 0) -- empty out signal and component store, reset name counter
       let stateSize = sizeOf t_startstate
           inpSize   = sum $ map snd inps
           outpSize  = sum $ map snd outps
-      addComponent an n_startstate $ sigState0 w
-      addComponent an n_loopfun $ sigLoop w
+      addComponent noAnn n_startstate $ sigState0 w
+      addComponent noAnn n_loopfun $ sigLoop w
       addSignal "start_state"        $ TyStdLogicVector stateSize
       addSignal "loop_out"           $ TyStdLogicVector stateSize
       addSignal "current_state"      $ TyRegister "clk" stateSize
@@ -186,8 +186,8 @@ compileStartDefn conf (StartDefn an w n_loopfun n_startstate) = do
             ] <> zipWith (\ n s -> Port n In  (TyStdLogicVector s)) (map fst inps)  (map snd inps)
               <> zipWith (\ n s -> Port n Out (TyStdLogicVector s)) (map fst outps) (map snd outps)
       (sigs, comps, _) <- get
-      pure $ Unit (conf^.vhdlPackages) (Entity "top_level" ports) $
-            Architecture "top_level_impl" "top_level" sigs comps
+      pure $ Unit (conf^.vhdlPackages) (Entity topLevel ports) $
+            Architecture (topLevel <> "_impl") topLevel sigs comps
                   [ Instantiate "start_call" (mangle n_startstate) (PortMap [("res", ExprName "start_state")])
                   , Instantiate "loop_call" (mangle n_loopfun) (PortMap
                         [ ("arg0", ExprSlice (ExprName "current_state") (1 + fromIntegral outpSize) (1 + fromIntegral (outpSize + arg0size) - 1))
@@ -240,5 +240,6 @@ compileDefn :: MonadError AstError m => Config -> Defn -> CM m Unit
 compileDefn conf d = Unit (conf^.vhdlPackages) <$> mkDefnEntity d <*> mkDefnArch d
 
 compileProgram :: MonadError AstError m => Config -> C.Program -> m V.Program
-compileProgram conf p = fmap fst $ flip runReaderT (defns p) $ flip runStateT ([], [], 0) $ V.Program <$> ((:) <$> compileStartDefn conf (start p) <*> mapM (compileDefn conf) (defns p))
+compileProgram conf p = fmap fst $ flip runReaderT (defns p) $ flip runStateT ([], [], 0)
+      $ V.Program <$> ((:) <$> compileStart conf (C.topLevel p) (C.wiring p) (C.loop p) (C.state0 p) <*> mapM (compileDefn conf) (defns p))
 

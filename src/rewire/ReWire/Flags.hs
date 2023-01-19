@@ -3,7 +3,7 @@ module ReWire.Flags where
 
 data Flag = FlagO !String
           | FlagVerbose | FlagHelp
-          | FlagFirrtl  | FlagVerilog | FlagVhdl
+          | FlagFirrtl  | FlagVerilog | FlagVhdl | FlagCore
           | FlagDump !String
           | FlagFlatten
           | FlagInvertReset
@@ -14,6 +14,7 @@ data Flag = FlagO !String
           | FlagResetName !String
           | FlagInputNames !String | FlagOutputNames !String | FlagStateNames !String
           | FlagLoadPath !String
+          | FlagStart !String
           | FlagTop !String
           | FlagInterpret !(Maybe String) | FlagCycles !String
           | FlagEvalDepth !String

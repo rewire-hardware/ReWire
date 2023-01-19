@@ -4,7 +4,7 @@
 {-# LANGUAGE Safe #-}
 module ReWire.Crust.ToCore (toCore) where
 
-import ReWire.Config (Config, inputSigs, outputSigs, stateSigs)
+import ReWire.Config (Config, inputSigs, outputSigs, stateSigs, top)
 import ReWire.Annotation (Annote, noAnn, Annotated (ann))
 import ReWire.Error (failAt, AstError, MonadError)
 import ReWire.Pretty (showt, prettyPrint)
@@ -31,6 +31,7 @@ import qualified ReWire.Crust.Util   as M
 type SizeMap = HashMap M.Ty C.Size
 type ConMap = (HashMap (Name M.TyConId) [Name M.DataConId], HashMap (Name M.DataConId) M.Ty)
 type TCM m = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) C.LId) m)
+type StartDefn = (C.Name, C.Wiring, C.GId, C.GId)
 
 toCore :: (Fresh m, MonadError AstError m, MonadFail m) => Config -> Text -> M.FreeProgram -> m C.Program
 toCore conf start (ts, _, vs) = fst <$> flip runStateT mempty (do
@@ -39,8 +40,8 @@ toCore conf start (ts, _, vs) = fst <$> flip runStateT mempty (do
       put $ Map.singleton (M.intTy noAnn) intSz
       vs'    <- mapM (transDefn conf start conMap) $ filter (not . M.isPrim . M.defnName) vs
       case partitionEithers vs' of
-            ([startDefn], defns) -> pure $ C.Program startDefn defns
-            _                    -> failAt noAnn $ "toCore: no definition found: " <> start)
+            ([(topLevel, w, loop, state0)], defns) -> pure $ C.Program topLevel w loop state0 defns
+            _                                      -> failAt noAnn $ "toCore: no definition found: " <> start)
       where conMap :: ConMap
             conMap = ( Map.fromList $ map (M.dataName &&& map projId . M.dataCons) ts
                      , Map.fromList $ map (projId &&& projType) (concatMap M.dataCons ts)
@@ -52,7 +53,7 @@ toCore conf start (ts, _, vs) = fst <$> flip runStateT mempty (do
             projType :: M.DataCon -> M.Ty
             projType (M.DataCon _ _ (Embed (M.Poly t))) = runFreshM (snd <$> unbind t)
 
-transDefn :: (MonadError AstError m, Fresh m, MonadState SizeMap m, MonadFail m) => Config -> Text -> ConMap -> M.Defn -> m (Either C.StartDefn C.Defn)
+transDefn :: (MonadError AstError m, Fresh m, MonadState SizeMap m, MonadFail m) => Config -> Text -> ConMap -> M.Defn -> m (Either StartDefn C.Defn)
 transDefn conf start conMap = \ case
       M.Defn an n (Embed (M.Poly t)) _ (Embed e) | n2s n == start -> do
             (_, t')  <- unbind t
@@ -75,7 +76,7 @@ transDefn conf start conMap = \ case
                                                          (zip (conf^.stateSigs)  (filter (> 0) t_sts'))
                                                          loopTy'
                                                          state0Ty'
-                                    pure $ Left $ C.StartDefn an wires (n2s loop) (n2s state0)
+                                    pure $ Left (conf^.top, wires, n2s loop, n2s state0)
                               _ -> failAt an $ "transDefn: definition of " <> start <> " must have form `unfold n m' where n and m are global IDs; got " <> prettyPrint e'
                   _ -> failAt an $ "transDefn: " <> start <> " has unsupported type: " <> prettyPrint t'
       M.Defn an n (Embed (M.Poly t)) _ (Embed e) -> do

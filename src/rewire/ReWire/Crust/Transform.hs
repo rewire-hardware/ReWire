@@ -32,7 +32,7 @@ import ReWire.Unbound (fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFr
 import Control.Lens ((^.))
 import Control.Arrow (first, (&&&))
 import Control.Monad (liftM2, foldM_, zipWithM, replicateM, (>=>))
-import Control.Monad.State (MonadState, State, evalStateT, execState, StateT (..), get, gets, modify)
+import Control.Monad.State (MonadState, evalStateT, execState, StateT (..), get, gets, modify)
 import Data.Containers.ListUtils (nubOrd, nubOrdOn)
 import Data.Data (Data)
 import Data.Either (lefts)
@@ -291,20 +291,25 @@ liftLambdas p = evalStateT (liftLambdas' p) []
                         modify $ (:) $ Defn an f (fv t' |-> t') Nothing (Embed $ bind (fvs <> [x]) e')
                         pure $ setTyAnn tan $ mkApp an (Var an Nothing (Just t') f) $ map (toVar an . first promote) bvs
                   Case an tan t e1 b e2 | Just te <- typeOf $ snd $ unsafeUnbind b -> do
-                        (p, e)    <- unbind b
-                        let bvs   = bv e
-                        (fvs, e') <- freshen e
+                        (p, b')    <- unbind b
+                        let lvars = toVar an . first promote <$> bv b'
 
-                        let pvs = patVars p
+                        b''   <- case b' of
+                              Var _ _ _ n | isFreeName n, n `notElem` (fst <$> patVars p)
+                                    -> pure b'
+                              _     -> do
+                                    (fvs, body) <- freshen b'
+                                    f           <- fresh $ s2n "$LL.case"
+                                    let t'       = foldr arr te $ (snd <$> patVars p) <> map snd (bv b')
+                                    modify $ (:) $ Defn an f (fv t' |-> t') Nothing (Embed $ bind ((fst <$> patVars p) <> fvs) body)
+                                    pure $ Var an Nothing (Just t') f
 
-                        let t' = foldr arr te $ map snd pvs <> map snd bvs
-                        f     <- fresh $ s2n "$LL.case"
+                        let (disc, pat) | null lvars = (e1, transPat p)
+                                        | otherwise  = ( mkTuple an $ [e1] <> lvars
+                                                       , mkTupleMPat an $ [transPat p] <> map (MatchPatVar an Nothing . typeOf) lvars
+                                                       )
 
-                        modify $ (:) $ Defn an f (fv t' |-> t') Nothing (Embed $ bind (map fst pvs <> fvs) e')
-                        let lvars = map (toVar an . first promote) bvs
-                        pure $ Match an tan t (mkTuple an $ [e1] <> lvars)
-                                    (mkTupleMPat an $  [transPat p] <> map (MatchPatVar an Nothing . typeOf) lvars)
-                                    (Var an Nothing (Just t') f) e2
+                        pure $ Match an tan t disc pat b'' e2
                   -- TODO(chathhorn): This case is really just normalizing Match, consider moving to ToCore.
                   Match an tan t e1 p e els | Just te <- typeOf e, liftable e -> do
                         let bvs   = bv e
@@ -358,9 +363,8 @@ liftLambdas p = evalStateT (liftLambdas' p) []
 
             freshen :: Fresh m => Exp -> m ([Name Exp], Exp)
             freshen e = do
-                  let bvs  = bv e
-                  fvs      <- replicateM (length bvs) $ fresh $ s2n "$LL"
-                  pure (fvs, substs' (zip (fst <$> bvs) fvs) e)
+                  fvs      <- replicateM (length $ bv e) $ fresh $ s2n "$LL"
+                  pure (fvs, substs' (zip (fst <$> bv e) fvs) e)
 
             substs' :: [(Name Exp, Name Exp)] -> Exp -> Exp
             substs' subs = transform (\ n -> fromMaybe n (lookup n subs))
@@ -395,7 +399,7 @@ purgeUnused except (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ exte
 
             inuseDefn :: [Text] -> [Defn] -> [Defn]
             inuseDefn except ds = map toDefn $ Set.elems $ execState (inuseDefn' ds') ds'
-                  where inuseDefn' :: Set (Name Exp) -> State (Set (Name Exp)) ()
+                  where inuseDefn' :: MonadState (Set (Name Exp)) m => Set (Name Exp) -> m ()
                         inuseDefn' ns | Set.null ns = pure () -- TODO(chathhorn): rewrite using fix?
                                       | otherwise   = do
                               inuse  <- get

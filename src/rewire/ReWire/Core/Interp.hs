@@ -13,7 +13,7 @@ module ReWire.Core.Interp
       , resumptionSize
       ) where
 
-import ReWire.Config (Config)
+import ReWire.Config (Config, verbose)
 import ReWire.Core.Syntax
       ( Program (..)
       , Name, Value, Index, Size
@@ -23,7 +23,6 @@ import ReWire.Core.Syntax
       , Target (..)
       , Defn (..)
       , Sig (..)
-      , StartDefn (..)
       , bvFalse, sizeOf, gather, cat, nil
       )
 import ReWire.Annotation (ann, noAnn, Annote)
@@ -33,15 +32,17 @@ import ReWire.Pretty (showt)
 import qualified ReWire.BitVector as BV
 
 import Control.Arrow ((&&&), second)
+import Control.Lens ((^.))
+import Control.Monad (when)
 import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bits (Bits (..))
 import Data.HashMap.Strict (HashMap)
 import Data.List (foldl')
-import Data.Machine ((<~), source)
 import Data.Machine.MealyT (MealyT (..))
 import Data.Maybe (fromMaybe)
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Machine as M
+import qualified Data.Text.IO as T
 
 mkBV :: Integral v => Size -> v -> BV
 mkBV sz = bitVec (fromIntegral sz)
@@ -57,16 +58,25 @@ type Sts = HashMap Name Out
 type DefnMap = HashMap GId Defn
 
 -- | Runs non-interactively -- given a stream of inputs, produces a stream of outputs.
-run :: Monad m => MealyT m a b -> [a] -> m [b]
-run m ip = M.runT (M.autoT m <~ source ip)
+-- run :: Monad m => MealyT m a b -> [a] -> m [b]
+-- run m ip = M.runT (M.autoT m <~ source ip)
+run :: MonadIO m => Config -> MealyT m Ins Outs -> [Ins] -> m [Outs]
+run conf m = \ case
+      []         -> pure []
+      (ip : ips) -> do
+            (b, m') <- runMealyT m ip
+            when (conf^.verbose) $ liftIO $ do
+                  T.putStrLn "Debug: Interpreting core: completed cycle."
+                  T.putStr $ mconcat $ (\ (k, v) -> "\t" <> k <> ": " <> BV.showHex v <> "\n") <$> Map.toList b
+            (b :) <$> run conf m' ips
 
 interp :: MonadError AstError m => Config -> Program -> MealyT m Ins Outs
-interp _conf (Program st ds) = interpStartDefn defnMap st
+interp _conf (Program _ w loop' state0' ds) = interpStart defnMap w loop' state0'
       where defnMap :: DefnMap
             defnMap = Map.fromList $ map (defnName &&& id) ds
 
-interpStartDefn :: MonadError AstError m => DefnMap -> StartDefn -> MealyT m Ins Outs
-interpStartDefn defns (StartDefn _ w loop' state0') = MealyT $ \ _ -> do
+interpStart :: MonadError AstError m => DefnMap -> Wiring -> GId -> GId -> MealyT m Ins Outs
+interpStart defns w loop' state0' = MealyT $ \ _ -> do
             so <- splitOutputs <$> interpDefn defns state0 mempty
             pure (filterOutput so, unfoldMealyT f $ filterDispatch so)
       -- So:        loop   :: ((r, s), i) -> R (o, s)
@@ -94,8 +104,8 @@ interpStartDefn defns (StartDefn _ w loop' state0') = MealyT $ \ _ -> do
             pauseWires :: Wiring -> [(Name, Size)]
             pauseWires w = pausePrefix w <> dispatchWires w
 
-            loop   = fromMaybe (error "Core: interpStartDefn: no loop.")   $ Map.lookup loop' defns
-            state0 = fromMaybe (error "Core: interpStartDefn: no state0.") $ Map.lookup state0' defns
+            loop   = fromMaybe (error "Core: interpStart: no loop.")   $ Map.lookup loop' defns
+            state0 = fromMaybe (error "Core: interpStart: no state0.") $ Map.lookup state0' defns
 
 interpDefn :: MonadError AstError m => DefnMap -> Defn -> BV -> m BV
 interpDefn defns (Defn _ _ (Sig _ inSizes outSize) body) v = trunc <$> reThrow (interpExp defns (split inSizes v) body)

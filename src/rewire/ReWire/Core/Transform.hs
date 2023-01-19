@@ -9,7 +9,7 @@ import ReWire.Core.Syntax
 import qualified ReWire.BitVector as BV
 
 import Control.Arrow ((&&&))
-import Control.Monad.Reader (runReaderT, MonadReader (..), asks)
+import Control.Monad.Reader (runReader, MonadReader (..), asks)
 import Data.Containers.ListUtils (nubOrd)
 import Data.HashMap.Strict (HashMap)
 import Data.List (genericLength, genericIndex)
@@ -18,12 +18,12 @@ import qualified Data.HashMap.Strict as Map
 type DefnBodyMap = HashMap GId Exp
 
 -- | Removes all zero-length arguments and parameters.
-mergeSlices :: MonadFail m => Program -> m Program
-mergeSlices (Program start ds) = Program start <$> runReaderT (mapM reDefn $ filter ((> 0) . sizeOf) ds) defns
-      where defns :: DefnMap
-            defns = Map.fromList $ map (defnName &&& id) ds
+mergeSlices :: Program -> Program
+mergeSlices p = p { defns = runReader (mapM reDefn $ filter ((> 0) . sizeOf) $ defns p) defns' }
+      where defns' :: DefnMap
+            defns' = Map.fromList $ map (defnName &&& id) $ defns p
 
-            reDefn :: (MonadReader DefnMap m, MonadFail m) => Defn -> m Defn
+            reDefn :: MonadReader DefnMap m => Defn -> m Defn
             reDefn (Defn an n sig body) = Defn an n (reSig sig) <$> reExp (renumLVars sig) body
 
             reSig :: Sig -> Sig
@@ -138,18 +138,17 @@ mergeSlices (Program start ds) = Program start <$> runReaderT (mapM reDefn $ fil
 
 
 -- | Remove unused definitions.
-purgeUnused :: MonadFail m => Program -> m Program
-purgeUnused (Program start@(StartDefn _ _ loop state0) ds) = do
-      pure $ Program start $ filter ((`elem` uses) . defnName) ds
+purgeUnused :: Program -> Program
+purgeUnused p = p { defns = filter ((`elem` uses) . defnName) $ defns p }
       where uses :: [GId]
-            uses = uses' [loop, state0]
+            uses = uses' [loop p, state0 p]
 
             uses' :: [GId] -> [GId]
             uses' u = let u' = nubOrd (concatMap defnUses u) in
                   if length u' == length u then u else uses' u'
 
             defnUses :: GId -> [GId]
-            defnUses d = maybe [d] ((<>[d]) . getUses) (Map.lookup d defns)
+            defnUses d = maybe [d] ((<>[d]) . getUses) (Map.lookup d defns')
 
             getUses :: Exp -> [GId]
             getUses = \ case
@@ -158,13 +157,13 @@ purgeUnused (Program start@(StartDefn _ _ loop state0) ds) = do
                   Call _ _ _          e _ els ->        getUses e <> getUses els
                   _                           -> []
 
-            defns :: DefnBodyMap
-            defns = Map.fromList $ map (defnName &&& defnBody) ds
+            defns' :: DefnBodyMap
+            defns' = Map.fromList $ map (defnName &&& defnBody) $ defns p
 
 -- | Substitute all calls to functions with duplicate bodies to the same
 --   function. Should follow with `purgeUnused`.
-dedupe :: Applicative m => Program -> m Program
-dedupe p = pure $ p { defns = map ddDefn $ defns p }
+dedupe :: Program -> Program
+dedupe p = p { defns = map ddDefn $ defns p }
       where ddDefn :: Defn -> Defn
             ddDefn d = d { defnBody = ddExp $ defnBody d }
 
@@ -185,13 +184,13 @@ dedupe p = pure $ p { defns = map ddDefn $ defns p }
                         bodies = foldr (\ (Defn _ g sig body) -> Map.insert (unAnn sig, unAnn body) g) mempty $ defns p
 
 -- | Attempt to reduce definition bodies to a constant literal value.
-partialEval :: MonadFail m => Program -> m Program
-partialEval (Program start ds) = pure $ Program start $ map evalDefn ds
-      where defns :: DefnMap
-            defns = Map.fromList $ map (defnName &&& id) ds
+partialEval :: Program -> Program
+partialEval p = p { defns = map evalDefn $ defns p }
+      where defns' :: DefnMap
+            defns' = Map.fromList $ map (defnName &&& id) $ defns p
 
             evalDefn :: Defn -> Defn
             evalDefn d = d { defnBody = evalExp $ defnBody d }
 
             evalExp :: Exp -> Exp
-            evalExp e = either fst (Lit $ ann e) $ interpExp defns [] e
+            evalExp e = either fst (Lit $ ann e) $ interpExp defns' [] e
