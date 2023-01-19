@@ -20,7 +20,7 @@ import qualified ReWire.Core.ToVerilog as Verilog
 
 import Control.Arrow ((>>>))
 import Control.Lens ((^.))
-import Control.Monad (when, zipWithM_)
+import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Either (fromRight)
 import Data.List (intercalate, foldl')
@@ -126,9 +126,7 @@ compileFile conf lp filename = do
                         Interpret -> do
                               when (conf^.verbose) $ liftIO $ T.putStrLn $ "Debug: Interpreting core: reading inputs: " <> pack (conf^.inputsFile)
                               ips  <- boundInput (conf^.cycles) . fromRight mempty <$> liftIO (YAML.decodeFileEither $ conf^.inputsFile)
-                              when (conf^.verbose) $ liftIO $ do
-                                    T.putStrLn $ "Debug: Interpreting core: running for " <> showt (conf^.cycles) <> " cycles. Inputs:"
-                                    zipWithM_ (\ c ip -> T.putStrLn ("\t--- " <> showt c <> " ---\n" <> mconcat ((\ (k, v) -> "\t" <> k <> ": " <> showt v <> "\n") <$> Map.toList ip))) [1 :: Int ..] ips
+                              when (conf^.verbose) $ liftIO $ T.putStrLn $ "Debug: Interpreting core: running for " <> showt (conf^.cycles) <> " cycles."
                               outs <- run conf (interp conf b) ips
                               let fout = getOutFile conf filename
                               when (conf^.verbose) $ liftIO $ T.putStrLn $ "Debug: Interpreting core: done running; writing YAML output to file: " <> pack fout
