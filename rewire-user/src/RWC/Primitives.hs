@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ConstraintKinds #-}
 module RWC.Primitives
-      ( Identity, ReacT, StateT, Vec, R_, A_, PuRe (..), Ref (..), Proxy (..)
+      ( Identity, ReacT, A_, R_, StateT, Vec, PuRe, Ref (..), Proxy (..)
       , rwPrimError
       , rwPrimExtern
       , rwPrimSetRef
@@ -72,7 +72,7 @@ import qualified Control.Monad.State               as GHC
 import qualified Data.Bits                         as GHC
 import qualified Data.Bifunctor                    as BF
 import GHC.TypeLits (Nat, type (+), natVal)
-import qualified GHC.TypeLits                      as TL 
+import qualified GHC.TypeLits                      as TL
 import qualified Data.Vector.Sized                 as V
 import qualified ReWire.BitWord                    as BW
 
@@ -147,8 +147,8 @@ rwPrimLift :: (GHC.MonadTrans t, GHC.Monad m) => m a -> t m a
 rwPrimLift = GHC.lift
 
 rwPrimExtrude :: GHC.Monad m => ReacT i o (StateT s m) a -> s -> ReacT i o m a
-rwPrimExtrude (GHC.ReacT (GHC.StateT m)) s = 
-   GHC.ReacT GHC.$ 
+rwPrimExtrude (GHC.ReacT (GHC.StateT m)) s =
+   GHC.ReacT GHC.$
      do (res,s') <- m s
         case res of
             GHC.Left y -> GHC.return (GHC.Left y)
@@ -191,7 +191,7 @@ rwPrimVecConcat = (V.++)
 -- | Interpret an Integer as a bit vector.
 rwPrimBits :: Integer -> Vec 128 Bool
 rwPrimBits =
-      rwPrimVecFromList . BW.padTrunc' i 
+      rwPrimVecFromList . BW.padTrunc' i
                         . GHC.reverse . BW.int2bits'
         where
           i = GHC.fromIntegral (natVal (Proxy :: Proxy 128))
@@ -322,7 +322,7 @@ rwPrimRAnd = V.and
 
 -- | Reduction nand.
 rwPrimRNAnd :: Vec (1 + n) Bool -> Bool
-rwPrimRNAnd = V.foldl1 (\ x y -> GHC.not (x GHC.&& y)) 
+rwPrimRNAnd = V.foldl1 (\ x y -> GHC.not (x GHC.&& y))
 
 -- | Reduction or.
 rwPrimROr :: Vec n Bool -> Bool
