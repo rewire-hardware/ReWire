@@ -160,4 +160,4 @@ bulkUpdate = rwPrimVecBulkUpdate
 
 {-# INLINE len #-}
 len :: KnownNat n => Vec n a -> Integer
-len = rwPrimVecLen
+len v = rwPrimNatVal (length v)

@@ -28,7 +28,7 @@ module RWC.Primitives
       , rwPrimResize
       , rwPrimVecUpdate
       , rwPrimVecBulkUpdate
-      , rwPrimVecLen
+      , rwPrimNatVal
       , rwPrimBitSlice
       , rwPrimBitIndex
       , rwPrimAdd
@@ -212,9 +212,9 @@ rwPrimVecUpdate v i a = V.update v (V.singleton (fromEnum $ natVal i,a))
 rwPrimVecBulkUpdate :: Vec n a -> Vec m (Integer,a) -> Vec n a
 rwPrimVecBulkUpdate v a = V.update v (V.map (BF.first fromEnum) a)
 
--- | Length of vector as an Integer
-rwPrimVecLen :: KnownNat n => Vec n a -> Integer
-rwPrimVecLen = GHC.toInteger . V.length
+-- | Produce integer associated with type-level natural.
+rwPrimNatVal :: KnownNat n => Proxy n -> Integer
+rwPrimNatVal = natVal
 
 -- | bitSlice a j i returns bits j (most significant) to i (least significant) from a (j >= i).
 --   The Integer arguments must be non-negative integer literals (after inlining).
