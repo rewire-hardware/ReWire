@@ -4,81 +4,93 @@ module ReWire.FIRRTL.Parse (parseFIRRTL) where
 
 import ReWire.FIRRTL.Syntax
 
-import safe Data.Text (Text, pack, unpack)
+import safe Data.Text (Text, singleton, pack)
 import qualified Data.Text.IO as Txt
-import Data.Functor (void, (<&>))
+import Data.Functor (void, (<&>), ($>))
 import Data.List (foldl')
 import Data.Functor.Identity (Identity)
-import Text.Parsec ( Parsec, many, many1, optionMaybe, char
-                   , hexDigit, try, (<|>), sepBy, manyTill
-                   , oneOf, digit, letter, parse, anyChar )
-import qualified Text.Parsec.Token as T
+import Text.Megaparsec ( Parsec, many, some, optional, try, (<|>), sepBy, manyTill, oneOf, parse, Token, Tokens, between, empty )
+import Text.Megaparsec.Char ( hexDigitChar, digitChar, letterChar, char, spaceChar, string )
+import qualified Text.Megaparsec.Char.Lexer as L
 import Numeric (readHex)
 
-type Parser = Parsec Text ()
+type Parser = Parsec () Text
 
 parseFIRRTL :: FilePath -> IO Circuit
 parseFIRRTL p = Txt.readFile p >>= either (error . show) pure . parse (whiteSpace >> circuit) p
 
-lang :: T.GenLanguageDef Text () Identity
-lang = T.LanguageDef
-      { T.commentStart    = ""
-      , T.commentEnd      = ""
-      , T.commentLine     = ";"
-      , T.nestedComments  = False
-      , T.identStart      = letter <|> char '_'
-      , T.identLetter     = letter <|> char '_' <|> digit
-      , T.opStart         = oneOf ""
-      , T.opLetter        = oneOf ""
-      , T.reservedNames   = [ "input", "output", "wire", "reg", "when", "else", "mux",
-            "of", "node", "is", "invalid", "flip", "circuit",
-            "module", "skip", "UInt", "SInt", "SBits", "UBits", "stop",
-            "printf", "undefined", "with"]
-      , T.reservedOpNames = []
-      , T.caseSensitive   = True
-      }
+sc :: Parser ()
+sc = L.space (void spaceChar) lineComment empty
+      where lineComment :: Parser ()
+            lineComment  = L.skipLineComment ";"
 
-lexer :: T.GenTokenParser Text () Identity
-lexer = T.makeTokenParser lang
-
-ident :: Parser Text
-ident = pack <$> T.identifier lexer
-
-brackets :: Parser e -> Parser e
-brackets = T.brackets lexer
-
-comma :: Parser Text
-comma = pack <$> T.comma lexer
-
-colon :: Parser Text
-colon = pack <$> T.colon lexer
-
-braces :: Parser e -> Parser e
-braces = T.braces lexer
-
-reserved :: Text -> Parser ()
-reserved = T.reserved lexer . unpack
-
-parens :: Parser e -> Parser e
-parens = T.parens lexer
-
-angles :: Parser e -> Parser e
-angles = T.angles lexer
-
-whiteSpace :: Parser ()
-whiteSpace = T.whiteSpace lexer
-
-integer :: Parser Integer
-integer = T.integer lexer
+lexeme :: Parser a -> Parser a
+lexeme = L.lexeme sc
 
 symbol :: Text -> Parser Text
-symbol s = pack <$> T.symbol lexer (unpack s)
+symbol = L.symbol sc
+
+-- lang :: L.GenLanguageDef Text () Identity
+-- lang = L.LanguageDef
+--       { L.commentStart    = ""
+--       , L.commentEnd      = ""
+--       , L.commentLine     = ";"
+--       , L.nestedComments  = False
+--       , L.identStart      = letterChar <|> char '_'
+--       , L.identLetter     = letterChar <|> char '_' <|> digitChar
+--       , L.opStart         = oneOf ""
+--       , L.opLetter        = oneOf ""
+--       , L.reservedNames   = [ "input", "output", "wire", "reg", "when", "else", "mux",
+--             "of", "node", "is", "invalid", "flip", "circuit",
+--             "module", "skip", "UInt", "SInt", "SBits", "UBits", "stop",
+--             "printf", "undefined", "with"]
+--       , L.reservedOpNames = []
+--       , L.caseSensitive   = True
+--       }
+
+-- lexer :: L.GenTokenParser Text () Identity
+-- lexer = L.makeTokenParser lang
+
+ident :: Parser Text
+ident = lexeme $ identStart <> (pack <$> many identLetter)
+      where identStart :: Parser Text
+            identStart = singleton <$> (letterChar <|> char '_')
+
+            identLetter :: Parser Char
+            identLetter = letterChar <|> char '_' <|> digitChar
+
+brackets :: Parser e -> Parser e
+brackets = between (symbol "[") $ symbol "]"
+
+comma :: Parser Text
+comma = symbol ","
+
+colon :: Parser Text
+colon = symbol ":"
+
+braces :: Parser e -> Parser e
+braces = between (symbol "{") $ symbol "}"
+
+reserved :: Text -> Parser ()
+reserved x = symbol x $> ()
+
+parens :: Parser e -> Parser e
+parens = between (symbol "(") $ symbol ")"
+
+angles :: Parser e -> Parser e
+angles = between (symbol "<") $ symbol ">"
+
+whiteSpace :: Parser ()
+whiteSpace = sc
+
+decimal :: Parser Integer
+decimal = lexeme L.decimal
 
 dot :: Parser Text
-dot = pack <$> T.dot lexer
+dot = symbol "."
 
 stringLiteral :: Parser Text
-stringLiteral = pack <$> T.stringLiteral lexer
+stringLiteral = char '"' >> pack <$> manyTill L.charLiteral (char '"')
 
 lparen :: Parser ()
 lparen = void $ symbol "("
@@ -90,7 +102,7 @@ pair :: Parser a -> Parser (a, a)
 pair p = parens $ (,) <$> p <*> (comma *> p)
 
 info :: Parser (Maybe Info)
-info = optionMaybe $ Annotation <$> (pack <$> (symbol "@[" *> manyTill anyChar (try (char ']')) <* whiteSpace))
+info = optional $ Annotation . pack <$> (symbol "@[" *> manyTill L.charLiteral (try (char ']')) <* whiteSpace)
 
 labeled :: Text -> Parser a -> Parser a
 labeled s p = reserved s *> p
@@ -105,7 +117,7 @@ labeledId' :: Text -> Parser Text
 labeledId' lbl = labeled' lbl ident
 
 circuit :: Parser Circuit
-circuit = Circuit <$> labeledId "circuit" <*> (colon *> info) <*> many1 modul
+circuit = Circuit <$> labeledId "circuit" <*> (colon *> info) <*> some modul
 
 modul :: Parser Module
 modul = Module <$> labeledId "module" <*> (colon *> info) <*> many port <*> block
@@ -138,17 +150,17 @@ clockTy :: Parser Type
 clockTy = ClockTy <$ reserved "Clock"
 
 width :: Parser Integer
-width = angles integer
+width = angles decimal
 
 uintTy :: Parser Type
-uintTy = UIntTy <$> labeled "UInt" (optionMaybe width)
+uintTy = UIntTy <$> labeled "UInt" (optional width)
 
 sintTy :: Parser Type
-sintTy = SIntTy <$> labeled "SInt" (optionMaybe width)
+sintTy = SIntTy <$> labeled "SInt" (optional width)
 
 vectorTy :: Parser Type
 vectorTy = do t <- typNoVector
-              (v : vs) <- many1 (brackets integer)
+              (v : vs) <- some (brackets decimal)
               pure $ foldl' VectorTy (VectorTy t v) vs
 
 bundleTy :: Parser Type
@@ -164,7 +176,7 @@ binding :: Parser Member
 binding = Binding <$> ident <*> typAnn
 
 block :: Parser [Stmt]
-block = many1 stmt <&> (\ case
+block = some stmt <&> (\ case
       [Skip] -> []
       s      -> s)
 
@@ -192,7 +204,7 @@ when :: Parser Stmt
 when = When <$> labeled "when" expr
       <*> (colon *> info)
       <*> block
-      <*> optionMaybe (try (reserved "else" *> colon *> block))
+      <*> optional (try (reserved "else" *> colon *> block))
 
 inst :: Parser Stmt
 inst = Instance <$> labeledId "inst" <*> labeledId "of" <*> info
@@ -200,7 +212,7 @@ inst = Instance <$> labeledId "inst" <*> labeledId "of" <*> info
 stop :: Parser Stmt
 stop = Stop <$> (reserved "stop" *> lparen *> expr)
       <*> (comma *> expr)
-      <*> (comma *> integer <* rparen)
+      <*> (comma *> decimal <* rparen)
 
 wire :: Parser Stmt
 wire = Wire <$> labeledId "wire" <*> typAnn <*> info
@@ -209,9 +221,9 @@ reg :: Parser Stmt
 reg = Reg <$> labeledId "reg"
       <*> typAnn
       <*> (comma *> expr)
-      <*> optionMaybe (do reserved "with"
-                          colon *> reserved "reset"
-                          symbol "=>" *> pair expr)
+      <*> optional (do reserved "with"
+                       colon *> reserved "reset"
+                       symbol "=>" *> pair expr)
       <*> info
 
 invalid :: Parser Stmt
@@ -239,9 +251,9 @@ mem :: Parser Stmt
 mem  = Memory <$> labeledId "mem"
       <*> (colon *> info)
       <*> conf "data-type" typ
-      <*> conf "depth" integer
-      <*> conf "read-latency" integer
-      <*> conf "write-latency" integer
+      <*> conf "depth" decimal
+      <*> conf "read-latency" decimal
+      <*> conf "write-latency" decimal
       <*> many (try $ conf "reader" ident)
       <*> many (try $ conf "writer" ident)
       <*> many (try $ conf "read-writer" ident)
@@ -299,28 +311,34 @@ exprNoField = try (binop Validif "validif")
 expr :: Parser Exp
 expr = try field <|> exprNoField
 
-num :: Parser Integer
-num = try integer <|> try hex
+numLit :: Parser Integer
+numLit = try decimal <|> try hexLit <|> try octLit <|> try binLit
 
-hex :: Parser Integer
-hex = fst . head . readHex <$> (char '"' *> char 'h' *> many hexDigit <* char '"' <* whiteSpace)
+hexLit :: Parser Integer
+hexLit = between (string "\"h") (char '"') L.hexadecimal
+
+binLit :: Parser Integer
+binLit = between (string "\"b") (char '"') L.binary
+
+octLit :: Parser Integer
+octLit = between (string "\"o") (char '"') L.octal
 
 uInt :: Parser Exp
-uInt = UInt <$> (reserved "UInt" *> optionMaybe (angles integer)) <*> parens num
+uInt = UInt <$> (reserved "UInt" *> optional (angles decimal)) <*> parens numLit
 
 sInt :: Parser Exp
-sInt = SInt <$> (reserved "SInt" *> optionMaybe (angles integer)) <*> parens num
+sInt = SInt <$> (reserved "SInt" *> optional (angles decimal)) <*> parens numLit
 
 litInt :: Parser Exp
-litInt = LitInt <$> integer
+litInt = LitInt <$> numLit
 
 field :: Parser Exp
 field = do e <- exprNoField
-           (x : xs) <- many1 (dot *> ident)
+           (x : xs) <- some (dot *> ident)
            pure $ foldl' Field (Field e x) xs
 
 index :: Parser Exp
-index = Index <$> ref <*> brackets integer
+index = Index <$> ref <*> brackets decimal
 
 unbundle :: Parser Exp
 unbundle = Unbundle <$> ref <*> brackets expr

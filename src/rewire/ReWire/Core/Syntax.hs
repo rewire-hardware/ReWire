@@ -170,22 +170,13 @@ instance Pretty Exp where
             Lit _ bv             -> pretty (width bv) <> squote <> text (showHex' bv)
             LVar _ _ n           -> text $ "$" <> showt n
             Concat _ e1 e2       -> ppBV $ gather e1 <> gather e2
-            Call _ _ f@Const {} e ps els | isNil els -> nest 2 $ vsep
-                  [ text "case" <+> pretty e <+> text "of"
-                  , braced (ppPats ps) <+> text "->" <+> pretty f
-                  ]
-            Call _ _ f@Const {} e ps els -> nest 2 $ vsep
-                  [ text "case" <+> pretty e <+> text "of"
-                  , braced (ppPats ps) <+> text "->" <+> pretty f
-                  , text "_" <+> text "->" <+> pretty els
-                  ]
             Call _ _ f e ps els | isNil els -> nest 2 $ vsep
                   [ text "case" <+> pretty e <+> text "of"
-                  , braced (ppPats ps) <+> text "->" <+> pretty f <+> hsep (ppArgs ps)
+                  , braced (pretty <$> ps) <+> text "->" <+> pretty f
                   ]
             Call _ _ f e ps els -> nest 2 $ vsep
                   [ text "case" <+> pretty e <+> text "of"
-                  , braced (ppPats ps) <+> text "->" <+> pretty f <+> hsep (ppArgs ps)
+                  , braced (pretty <$> ps) <+> text "->" <+> pretty f
                   , text "_" <+> text "->" <+> pretty els
                   ]
 
@@ -199,26 +190,6 @@ gather :: Exp -> [Exp]
 gather = filter (not . isNil) . \ case
       Concat _ e1 e2 -> gather e1 <> gather e2
       e              -> [e]
-
-ppPats :: [Pat] -> [Doc an]
-ppPats = zipWith ppPats' [0::Index ..]
-      where ppPats' :: Index -> Pat -> Doc an
-            ppPats' i = \ case
-                  PatVar _ sz      -> pretty sz <> squote <> text "p" <> pretty i
-                  PatWildCard _ sz -> pretty sz <> squote <> text "_"
-                  PatLit _ bv      -> pretty (width bv) <> squote <> text (showHex' bv)
-
-ppArgs :: [Pat] -> [Doc an]
-ppArgs = map (uncurry ppArgs') . filter (isPatVar . snd) . zip [0::Index ..]
-      where ppArgs' :: Index -> Pat -> Doc an
-            ppArgs' i = \ case
-                  PatVar _ _ -> text "p" <> pretty i
-                  _          -> mempty
-
-            isPatVar :: Pat -> Bool
-            isPatVar = \ case
-                  PatVar _ _ -> True
-                  _          -> False
 
 nil :: Exp
 nil = Lit noAnn BV.nil
@@ -250,7 +221,7 @@ instance Annotated Pat where
 
 instance Pretty Pat where
       pretty = \ case
-            PatVar _ sz       -> pretty sz <> squote <> text "p?"
+            PatVar _ sz       -> pretty sz <> squote <> text "@"
             PatWildCard _ sz  -> pretty sz <> squote <> text "_"
             PatLit      _ bv  -> pretty (width bv) <> squote <> text (showHex' bv)
 
