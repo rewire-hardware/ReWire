@@ -65,7 +65,7 @@ data Prim = Add | Sub
           | MSBit
           | Resize | Reverse
           | Id
-      deriving (Eq, Ord, Generic, Show, Typeable, Data)
+      deriving (Eq, Ord, Generic, Show, Typeable, Data, Read)
       deriving TextShow via FromGeneric Prim
 
 instance Hashable Prim
@@ -168,14 +168,14 @@ instance Annotated Exp where
 instance Pretty Exp where
       pretty = \ case
             Lit _ bv             -> pretty (width bv) <> squote <> text (showHex' bv)
-            LVar _ _ n           -> text $ "$" <> showt n
+            LVar _ sz n          -> pretty sz <> squote <> text ("$" <> showt n)
             Concat _ e1 e2       -> ppBV $ gather e1 <> gather e2
-            Call _ _ f e ps els | isNil els -> nest 2 $ vsep
-                  [ text "case" <+> pretty e <+> text "of"
+            Call _ sz f e ps els | isNil els -> nest 2 $ vsep
+                  [ pretty sz <> squote <> text "case" <+> pretty e <+> text "of"
                   , braced (pretty <$> ps) <+> text "->" <+> pretty f
                   ]
-            Call _ _ f e ps els -> nest 2 $ vsep
-                  [ text "case" <+> pretty e <+> text "of"
+            Call _ sz f e ps els -> nest 2 $ vsep
+                  [ pretty sz <> squote <> text "case" <+> pretty e <+> text "of"
                   , braced (pretty <$> ps) <+> text "->" <+> pretty f
                   , text "_" <+> text "->" <+> pretty els
                   ]

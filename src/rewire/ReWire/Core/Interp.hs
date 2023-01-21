@@ -61,8 +61,6 @@ type DefnMap = HashMap GId Defn
 type Wiring' = (Wiring, Sig, Sig) -- TODO(chathhorn): rename
 
 -- | Runs non-interactively -- given a stream of inputs, produces a stream of outputs.
--- run :: Monad m => MealyT m a b -> [a] -> m [b]
--- run m ip = M.runT (M.autoT m <~ source ip)
 run :: MonadIO m => Config -> MealyT m Ins Outs -> [Ins] -> m [Outs]
 run conf m = \ case
       []         -> pure []
@@ -82,9 +80,9 @@ interpStart :: MonadError AstError m => DefnMap -> Wiring -> Defn -> Defn -> Mea
 interpStart defns w loop state0 = MealyT $ \ _ -> do
             so <- splitOutputs <$> interpDefn defns state0 mempty
             pure (filterOutput so, unfoldMealyT f $ filterDispatch so)
-      -- So:        loop   :: ((r, s), i) -> R (o, s)
-      --            state0 :: R (o, s)
-      --            where R = Done (a, s) | Pause (o, r, s)
+      -- So:        loop   :: ((R_, s), i) -> R (o, s)
+      --            (state0 :: R (o, s)) = Pause (o0, R_0, s0)
+      --            where R a = Done (a, s) | Pause (o, R_, s)
       -- Assuming neither should ever be Done.
       where f :: MonadError AstError m => Sts -> Ins -> m (Outs, Sts)
             f s i = (filterOutput &&& filterDispatch) . splitOutputs <$> interpDefn defns loop (joinInputs $ Map.map nat s <> i)

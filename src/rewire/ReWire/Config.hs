@@ -3,13 +3,13 @@
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Config
       ( interpret, Config, getOutFile
-      , Target (..), ResetFlag (..), OutFlag (..)
+      , Language (..), ResetFlag (..), OutFlag (..)
       , verbose, pretty, flatten
       , target, clock, reset
       , resetFlags, outFlags
       , inputSigs, stateSigs, outputSigs
       , vhdlPackages, inputsFile, outFile
-      , start, top, loadPath, cycles, depth, dump
+      , start, top, loadPath, cycles, depth, dump, source
       ) where
 
 import ReWire.Flags (Flag (..))
@@ -25,7 +25,7 @@ import System.FilePath ((-<.>))
 
 import qualified Data.Set as Set
 
-data Target = Interpret | FIRRTL | VHDL | Verilog | RWCore
+data Language = Interpret | FIRRTL | VHDL | Verilog | RWCore | Haskell
       deriving (Eq, Ord, Show)
 data ResetFlag = Inverted | Synchronous
       deriving (Eq, Ord, Show)
@@ -33,7 +33,8 @@ data OutFlag   = Flatten | Pretty | Verbose
       deriving (Eq, Ord, Show)
 
 data Config = Config
-      { _target       :: Target
+      { _source       :: Language
+      , _target       :: Language
       , _clock        :: Text -- No clock if null.
       , _reset        :: Text -- No reset if null.
       , _resetFlags   :: Set ResetFlag
@@ -56,7 +57,8 @@ makeLenses ''Config
 
 defaultConfig :: Config
 defaultConfig = Config
-      { _target       = Verilog
+      { _source       = Haskell
+      , _target       = Verilog
       , _clock        = "clk"
       , _reset        = "rst"
       , _resetFlags   = mempty
@@ -100,6 +102,7 @@ getOutFile c filename = flip fromMaybe (c^.outFile) $ case c^.target of
       VHDL      -> filename -<.> "vhdl"
       Interpret -> filename -<.> "yaml"
       RWCore    -> filename -<.> "rwc"
+      Haskell   -> filename -<.> "hs"
 
 -- TODO(chathhorn): separate validation pass.
 interpret :: [Flag] -> Either ErrorMsg Config
@@ -116,6 +119,7 @@ interpret = foldM interp defaultConfig
                   FlagInterpret Nothing           -> pure $ target .~ Interpret $ c
                   FlagInterpret (Just ip)         -> pure $ target .~ Interpret $ inputsFile .~ ip $ c
                   FlagCore                        -> pure $ target .~ RWCore    $ c
+                  FlagFromCore                    -> pure $ source .~ RWCore    $ c
                   FlagClockName (pack -> n)       -> pure $ clock  .~ n         $ c
                   FlagNoClock                     -> pure $ clock  .~ ""        $ reset .~ ""      $ c
                   FlagResetName (pack -> n)       -> pure $ reset  .~ n         $ c

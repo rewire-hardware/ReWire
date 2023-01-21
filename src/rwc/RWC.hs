@@ -1,13 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE Trustworthy #-}
 module RWC (main) where
 
-import ReWire.Annotation (unAnn)
-import ReWire.Config (Config, Target (..), loadPath, getOutFile, verbose, target, dump, cycles, inputsFile)
+import ReWire.Annotation (unAnn, noAnn)
+import ReWire.Config (Config, Language (..), loadPath, getOutFile, verbose, target, dump, cycles, inputsFile, source)
 import ReWire.Core.Interp (interp, Ins, run)
+import ReWire.Core.Parse (parseCore)
 import ReWire.Core.Transform (mergeSlices, purgeUnused, partialEval, dedupe)
-import ReWire.Error (AstError, runSyntaxError, SyntaxErrorT)
+import ReWire.Error (MonadError, AstError, runSyntaxError, failAt)
 import ReWire.Flags (Flag (..))
 import ReWire.FrontEnd (loadProgram, LoadPath)
 import ReWire.ModCache (printHeader)
@@ -21,7 +23,8 @@ import qualified ReWire.Core.ToVerilog as Verilog
 import Control.Arrow ((>>>))
 import Control.Lens ((^.))
 import Control.Monad (when)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.State (MonadState)
 import Data.Either (fromRight)
 import Data.List (intercalate, foldl')
 import Data.Maybe (fromMaybe)
@@ -32,9 +35,9 @@ import System.Environment (getArgs)
 import System.Exit (exitFailure)
 import System.FilePath ((</>))
 import System.IO (stderr)
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Text.IO as T
 import qualified Data.Yaml as YAML
-import qualified Data.HashMap.Strict as Map
 
 import Paths_rewire (getDataFileName)
 
@@ -45,6 +48,7 @@ options =
        , Option ['f'] ["firrtl"]        (NoArg  FlagFirrtl)                        "Produce FIRRTL output (experimental)."
        , Option []    ["verilog"]       (NoArg  FlagVerilog)                       "Produce Verilog output (default)."
        , Option []    ["vhdl"]          (NoArg  FlagVhdl)                          "Produce VHDL output (experimental)."
+       , Option []    ["from-core"]     (NoArg  FlagFromCore)                      "Ingest ReWire core language files instead of Haskell."
        , Option []    ["core"]          (NoArg  FlagCore)                          "Produce ReWire core language output."
        , Option []    ["invert-reset"]  (NoArg  FlagInvertReset)                   "Invert the implicitly generated reset signal."
        , Option []    ["no-reset"]      (NoArg  FlagNoReset)                       "No implicitly generated reset signal."
@@ -95,14 +99,20 @@ main = do
 
       mapM_ (compileFile conf lp) filenames
 
-compileFile :: Config -> LoadPath -> String -> IO ()
+compileFile :: MonadIO m => Config -> LoadPath -> String -> m ()
 compileFile conf lp filename = do
-      when (conf^.verbose) $ putStrLn $ "Compiling: " <> filename
+      when (conf^.verbose) $ liftIO $ T.putStrLn $ "Compiling: " <> pack filename
 
-      runSyntaxError (loadProgram conf lp filename >>= compile)
-            >>= either ((>> exitFailure) . T.hPutStrLn stderr . prettyPrint) pure
+      runSyntaxError (loadCore >>= compile)
+            >>= either (liftIO . (>> exitFailure) . T.hPutStrLn stderr . prettyPrint) pure
 
-      where compile :: C.Program -> SyntaxErrorT AstError IO ()
+      where loadCore :: (MonadError AstError m, MonadState AstError m, MonadFail m, MonadIO m) => m C.Program
+            loadCore = case conf^.source of
+                  Haskell -> loadProgram conf lp filename
+                  RWCore  -> parseCore filename
+                  s       -> failAt noAnn $ "Not a supported source language: " <> pack (show s)
+
+            compile :: (MonadFail m, MonadError AstError m, MonadIO m) => C.Program -> m ()
             compile a = do
                   let b = ( mergeSlices
                         >>> mergeSlices
@@ -114,10 +124,10 @@ compileFile conf lp filename = do
                   when (conf^.verbose)   $ liftIO $ T.putStrLn "Debug: [Pass 13] Reduced core."
                   when (conf^.dump $ 13) $ liftIO $ do
                         printHeader "[Pass 13] Reduced Core"
-                        T.putStrLn $ prettyPrint b
+                        liftIO $ T.putStrLn $ prettyPrint b
                         when (conf^.verbose) $ do
-                              T.putStrLn "\n## Show core:\n"
-                              T.putStrLn $ showt $ unAnn b
+                              liftIO $ T.putStrLn "\n## Show core:\n"
+                              liftIO $ T.putStrLn $ showt $ unAnn b
                   case conf^.target of
                         FIRRTL    -> liftIO $ T.putStrLn "FIRRTL backend currently out-of-order. Use '--verilog' or '--interpret'."
                                      -- compileProgram flags b >>= toLoFirrtl >>= writeOutput
@@ -132,8 +142,9 @@ compileFile conf lp filename = do
                               when (conf^.verbose) $ liftIO $ T.putStrLn $ "Debug: Interpreting core: done running; writing YAML output to file: " <> pack fout
                               liftIO $ YAML.encodeFile fout outs
                         Verilog   -> Verilog.compileProgram conf b >>= writeOutput
+                        Haskell   -> failAt noAnn "Haskell is not a supported target language."
 
-            writeOutput :: Pretty a => a -> SyntaxErrorT AstError IO ()
+            writeOutput :: (MonadError AstError m, MonadIO m, Pretty a) => a -> m ()
             writeOutput a = do
                   let fout = getOutFile conf filename
                   liftIO $ T.writeFile fout $ if | conf^.Config.pretty -> prettyPrint a

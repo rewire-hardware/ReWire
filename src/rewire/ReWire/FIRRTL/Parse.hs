@@ -4,52 +4,30 @@ module ReWire.FIRRTL.Parse (parseFIRRTL) where
 
 import ReWire.FIRRTL.Syntax
 
-import safe Data.Text (Text, singleton, pack)
-import qualified Data.Text.IO as Txt
 import Data.Functor (void, (<&>), ($>))
 import Data.List (foldl')
-import Data.Functor.Identity (Identity)
-import Text.Megaparsec ( Parsec, many, some, optional, try, (<|>), sepBy, manyTill, oneOf, parse, Token, Tokens, between, empty )
-import Text.Megaparsec.Char ( hexDigitChar, digitChar, letterChar, char, spaceChar, string )
+import Data.Text (Text, singleton, pack)
+import Data.Void (Void)
+import Text.Megaparsec ( Parsec, many, some, optional, try, (<|>), sepBy, manyTill, parse, between, empty )
+import Text.Megaparsec.Char ( digitChar, letterChar, char, spaceChar, string )
+import qualified Data.Text.IO as T
 import qualified Text.Megaparsec.Char.Lexer as L
-import Numeric (readHex)
 
-type Parser = Parsec () Text
+type Parser = Parsec Void Text
 
 parseFIRRTL :: FilePath -> IO Circuit
-parseFIRRTL p = Txt.readFile p >>= either (error . show) pure . parse (whiteSpace >> circuit) p
+parseFIRRTL p = T.readFile p >>= either (error . show) pure . parse (space >> circuit) p
 
-sc :: Parser ()
-sc = L.space (void spaceChar) lineComment empty
+space :: Parser ()
+space = L.space (void spaceChar) lineComment empty
       where lineComment :: Parser ()
             lineComment  = L.skipLineComment ";"
 
 lexeme :: Parser a -> Parser a
-lexeme = L.lexeme sc
+lexeme = L.lexeme space
 
 symbol :: Text -> Parser Text
-symbol = L.symbol sc
-
--- lang :: L.GenLanguageDef Text () Identity
--- lang = L.LanguageDef
---       { L.commentStart    = ""
---       , L.commentEnd      = ""
---       , L.commentLine     = ";"
---       , L.nestedComments  = False
---       , L.identStart      = letterChar <|> char '_'
---       , L.identLetter     = letterChar <|> char '_' <|> digitChar
---       , L.opStart         = oneOf ""
---       , L.opLetter        = oneOf ""
---       , L.reservedNames   = [ "input", "output", "wire", "reg", "when", "else", "mux",
---             "of", "node", "is", "invalid", "flip", "circuit",
---             "module", "skip", "UInt", "SInt", "SBits", "UBits", "stop",
---             "printf", "undefined", "with"]
---       , L.reservedOpNames = []
---       , L.caseSensitive   = True
---       }
-
--- lexer :: L.GenTokenParser Text () Identity
--- lexer = L.makeTokenParser lang
+symbol = L.symbol space
 
 ident :: Parser Text
 ident = lexeme $ identStart <> (pack <$> many identLetter)
@@ -59,7 +37,7 @@ ident = lexeme $ identStart <> (pack <$> many identLetter)
             identLetter :: Parser Char
             identLetter = letterChar <|> char '_' <|> digitChar
 
-brackets :: Parser e -> Parser e
+brackets :: Parser a -> Parser a
 brackets = between (symbol "[") $ symbol "]"
 
 comma :: Parser Text
@@ -68,20 +46,17 @@ comma = symbol ","
 colon :: Parser Text
 colon = symbol ":"
 
-braces :: Parser e -> Parser e
+braces :: Parser a -> Parser a
 braces = between (symbol "{") $ symbol "}"
 
 reserved :: Text -> Parser ()
 reserved x = symbol x $> ()
 
-parens :: Parser e -> Parser e
+parens :: Parser a -> Parser a
 parens = between (symbol "(") $ symbol ")"
 
-angles :: Parser e -> Parser e
+angles :: Parser a -> Parser a
 angles = between (symbol "<") $ symbol ">"
-
-whiteSpace :: Parser ()
-whiteSpace = sc
 
 decimal :: Parser Integer
 decimal = lexeme L.decimal
@@ -102,7 +77,7 @@ pair :: Parser a -> Parser (a, a)
 pair p = parens $ (,) <$> p <*> (comma *> p)
 
 info :: Parser (Maybe Info)
-info = optional $ Annotation . pack <$> (symbol "@[" *> manyTill L.charLiteral (try (char ']')) <* whiteSpace)
+info = optional $ Annotation . pack <$> (symbol "@[" *> manyTill L.charLiteral (try (char ']')) <* space)
 
 labeled :: Text -> Parser a -> Parser a
 labeled s p = reserved s *> p

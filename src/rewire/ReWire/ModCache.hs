@@ -20,7 +20,7 @@ import ReWire.Crust.Syntax (FreeProgram, Defn (..), Module (Module), Exp, Ty, Ki
 import ReWire.Crust.ToCore (toCore)
 import ReWire.Crust.Transform (removeMain, simplify, liftLambdas, purgeUnused, fullyApplyDefs, shiftLambdas, neuterExterns, expandTypeSynonyms, inline, prePurify)
 import ReWire.Crust.TypeCheck (typeCheck, untype)
-import ReWire.Error (failAt, AstError, SyntaxErrorT, filePath)
+import ReWire.Error (failAt, AstError, MonadError, filePath)
 import ReWire.HSE.Annotate (annotate)
 import ReWire.HSE.Desugar (desugar, addMainModuleHead)
 import ReWire.HSE.Parse (tryParseInDir)
@@ -50,16 +50,16 @@ import qualified Language.Haskell.Exts.Syntax as S (Module (..))
 import qualified ReWire.Core.Syntax           as Core
 import qualified ReWire.Config                as C
 
-type Cache = ReaderT LoadPath (StateT ModCache (FreshMT (SyntaxErrorT AstError IO)))
+type Cache m = ReaderT LoadPath (StateT ModCache (FreshMT m))
 type LoadPath = [FilePath]
 type ModCache = HashMap FilePath (Module, Exports)
 
-runCache :: Cache a -> LoadPath -> SyntaxErrorT AstError IO a
+runCache :: (MonadIO m, MonadError AstError m) => Cache m a -> LoadPath -> m a
 runCache m lp = fst <$> runFreshMT (runStateT (runReaderT m lp) mempty)
 
-mkRenamer :: Config -> FilePath -> S.Module SrcSpanInfo -> Cache Renamer
+mkRenamer :: (MonadFail m, MonadIO m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> S.Module SrcSpanInfo -> Cache m Renamer
 mkRenamer conf pwd' m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps m)
-      where mkRenamer' :: ImportDecl SrcSpanInfo -> Cache Renamer
+      where mkRenamer' :: (MonadFail m, MonadIO m, MonadError AstError m, MonadState AstError m) => ImportDecl SrcSpanInfo -> Cache m Renamer
             mkRenamer' (ImportDecl _ (void -> m) quald _ _ _ (fmap void -> as) specs) = do
                   (_, exps) <- getModule conf pwd' $ toFilePath m
                   fromImps m quald exps as specs
@@ -71,7 +71,7 @@ mkRenamer conf pwd' m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps
 -- Pass 15   Translate to crust + rename globals.
 -- Pass 16   Translate to core
 
-getModule :: Config -> FilePath -> FilePath -> Cache (Module, Exports)
+getModule :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> FilePath -> Cache m (Module, Exports)
 getModule conf pwd fp = pDebug conf ("Fetching module: " <> pack fp <> " (pwd: " <> pack pwd <> ")") >> Map.lookup fp <$> get >>= \ case
       Just p  -> pure p
       Nothing -> do
@@ -112,7 +112,7 @@ getModule conf pwd fp = pDebug conf ("Fetching module: " <> pack fp <> " (pwd: "
             modify $ Map.insert fp (m' <> imps, exps)
             pure (m' <> imps, exps)
 
-      where loadImports :: Annotation a => FilePath -> S.Module a -> Cache Module
+      where loadImports :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m, Annotation a) => FilePath -> S.Module a -> Cache m Module
             loadImports pwd' = fmap mconcat . mapM (fmap fst . getModule conf pwd' . toFilePath . void . importModule) . getImps
 
             whenDump :: Applicative m => Natural -> (Bool -> a -> m a) -> a -> m a
@@ -127,7 +127,7 @@ getModule conf pwd fp = pDebug conf ("Fetching module: " <> pack fp <> " (pwd: "
                   d   -> d </> takeDirectory fp
 
 -- Phase 2 (pre-core) transformations.
-getProgram :: Config -> FilePath -> Cache Core.Program
+getProgram :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> Cache m Core.Program
 getProgram conf fp = do
       (Module ts syns ds,  _)  <- getModule conf "." fp
 
