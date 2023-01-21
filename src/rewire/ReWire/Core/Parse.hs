@@ -14,7 +14,7 @@ import Data.List (foldl')
 import Data.Text (Text, pack, unpack)
 import Data.Void (Void)
 import Text.Megaparsec ( Parsec, many, try, (<|>), manyTill, parse, between, empty, errorBundlePretty, sepBy )
-import Text.Megaparsec.Char ( alphaNumChar, char, spaceChar )
+import Text.Megaparsec.Char ( alphaNumChar, char, space1 )
 import Text.Read (readMaybe)
 import qualified Data.Text.IO as T
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -26,10 +26,10 @@ parseCore p = liftIO (T.readFile p) >>= either (failAt noAnn . pack . errorBundl
 
 program :: Parser Program
 program = Program <$> (symbol "device" *> name <* colon) 
-                    <*> wiring
-                    <*> loop
-                    <*> state0
-                    <*> defns
+                  <*> wiring
+                  <*> loop
+                  <*> state0
+                  <*> defns
 
 wiring :: Parser Wiring
 wiring = Wiring <$> wires "inputs" <*> wires "outputs" <*> wires "states"
@@ -99,10 +99,10 @@ pat :: Parser Pat
 pat = try patVar <|> try patWild <|> try patLit
 
 patVar :: Parser Pat
-patVar = PatVar noAnn <$> (sizeAnn <* char '@') 
+patVar = PatVar noAnn <$> (sizeAnn <* symbol "@")
 
 patWild :: Parser Pat
-patWild = PatWildCard noAnn <$> (sizeAnn <* char '_')
+patWild = PatWildCard noAnn <$> (sizeAnn <* symbol "_")
 
 patLit :: Parser Pat
 patLit = PatLit noAnn <$> bv
@@ -142,7 +142,7 @@ externSig = ExternSig noAnn [] "" [] []
 ---
 
 space :: Parser ()
-space = L.space (void spaceChar) lineComment empty
+space = L.space (void space1) lineComment empty
       where lineComment :: Parser ()
             lineComment = L.skipLineComment "--"
 
@@ -189,3 +189,6 @@ name = lexeme $ pack <$> many gidLetter
                   <|> char '$'
                   <|> char '.'
                   <|> char '_'
+                  <|> char '<'
+                  <|> char '>'
+                  <|> char '#'
