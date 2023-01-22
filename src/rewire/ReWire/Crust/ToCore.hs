@@ -153,7 +153,7 @@ transExp e = case e of
                               $ M.typeOf p >>= M.proxyNat
                   nElems <- maybe (failAt (ann e) "transExp: rwPrimVecRSlice: invalid Vec argument.") pure
                               $ M.typeOf e >>= M.vecSize
-                  subElems an arg ((- i) - i * fromIntegral nElems) nElems
+                  subElems an arg ((- i) - fromIntegral nElems) nElems
             M.Builtin an _ _ M.VecReverse   : [arg]                         -> do
                   sz     <- sizeOf' an $ M.typeOf e
                   arg'   <- transExp arg
