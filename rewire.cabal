@@ -78,6 +78,7 @@ library rewire-core
       ReWire.Annotation
       ReWire.BitVector
       ReWire.Config
+      ReWire.Core.Check
       ReWire.Core.Interp
       ReWire.Core.Mangle
       ReWire.Core.Parse

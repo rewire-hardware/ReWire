@@ -16,7 +16,8 @@ import ReWire.ModCache (printHeader)
 import ReWire.Pretty (Pretty, prettyPrint, fastPrint, showt)
 
 import qualified ReWire.Config         as Config
-import qualified ReWire.Core.Syntax    as C
+import qualified ReWire.Core.Syntax    as Core
+import qualified ReWire.Core.Check     as Core
 import qualified ReWire.Core.ToVHDL    as VHDL
 import qualified ReWire.Core.ToVerilog as Verilog
 
@@ -106,13 +107,13 @@ compileFile conf lp filename = do
       runSyntaxError (loadCore >>= compile)
             >>= either (liftIO . (>> exitFailure) . T.hPutStrLn stderr . prettyPrint) pure
 
-      where loadCore :: (MonadError AstError m, MonadState AstError m, MonadFail m, MonadIO m) => m C.Program
+      where loadCore :: (MonadError AstError m, MonadState AstError m, MonadFail m, MonadIO m) => m Core.Program
             loadCore = case conf^.source of
                   Haskell -> loadProgram conf lp filename
-                  RWCore  -> parseCore filename
+                  RWCore  -> parseCore filename >>= Core.check
                   s       -> failAt noAnn $ "Not a supported source language: " <> pack (show s)
 
-            compile :: (MonadFail m, MonadError AstError m, MonadIO m) => C.Program -> m ()
+            compile :: (MonadFail m, MonadError AstError m, MonadIO m) => Core.Program -> m ()
             compile a = do
                   let b = ( mergeSlices
                         >>> mergeSlices
