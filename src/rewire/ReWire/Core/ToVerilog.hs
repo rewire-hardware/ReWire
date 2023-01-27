@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
 module ReWire.Core.ToVerilog (compileProgram) where
 
@@ -23,6 +24,7 @@ import Control.Monad.State (MonadState, runStateT, modify, gets)
 import Data.HashMap.Strict (HashMap)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Text (Text)
+import Numeric.Natural (Natural)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Text           as T
@@ -84,24 +86,30 @@ lookupWidth n = do
                   _              -> failAt noAnn $ "toVerilog: lookupWidth: unexpected multi-dimensional signal (rwc bug): " <> showt n
 
 compileProgram :: (MonadFail m, MonadError AstError m) => Config -> C.Program -> m V.Program
-compileProgram conf (C.Program topLevel w loop state0 ds)
-      | conf^.flatten = V.Program . pure <$> runReaderT (compileStart conf topLevel w loop state0) defnMap
-      | otherwise     = do
-            st' <- runReaderT (compileStart conf topLevel w loop state0) defnMap
+compileProgram conf p@(C.Program topLevel w loop state0 ds)
+      | conf^.flatten = V.Program . pure <$> runReaderT (compileStart conf singles' topLevel w loop state0) defnMap
+      | otherwise     = flip runReaderT defnMap $ do
+            st' <- compileStart conf singles' topLevel w loop state0
             -- Initial state should be inlined, so we can filter out its defn.
-            ds' <- mapM (compileDefn conf) $ loop : ds
+            ds' <- mapM (compileDefn conf singles') $ filter ((`notElem` singles) . defnName) $ loop : ds
             pure $ V.Program $ st' : ds'
       where defnMap :: DefnMap
             defnMap = Map.fromList $ map ((mangle . defnName) &&& defnBody) $ loop : state0 : ds
 
+            singles :: [GId]
+            singles = singleUseDefns p
+
+            singles' :: [GId]
+            singles' = mangle <$> singles
+
 compileStart :: (MonadError AstError m, MonadFail m, MonadReader DefnMap m)
-                 => Config -> Name -> C.Wiring -> C.Defn -> C.Defn -> m Module
-compileStart conf topLevel w loop state0 = do
+                 => Config -> [GId] -> Name -> C.Wiring -> C.Defn -> C.Defn -> m Module
+compileStart conf singles topLevel w loop state0 = do
       ((rStart, ssStart), (_, startSigs)) <- flip runStateT (freshInit0, [])
-            $ compileCall (flatten.~True $ clock.~clock' $ conf) (mangle $ defnName state0) (resumptionSize w') []
+            $ compileCall (flatten.~True $ clock.~clock' $ conf) singles (mangle $ defnName state0) (resumptionSize w') []
 
       ((rLoop, ssLoop),   (_, loopSigs))  <- flip runStateT (freshRun0, [])
-            $ compileCall (clock.~clock' $ conf) (mangle $ defnName loop) (resumptionSize w')
+            $ compileCall (clock.~clock' $ conf) singles (mangle $ defnName loop) (resumptionSize w')
                   $  [ V.cat $ map (LVal . Name . fst) $ dispatchWires w' | not (null $ dispatchWires w') ]
                   <> [ V.cat $ map (LVal . Name . fst) $ inputWires w     | not (null $ inputWires w) ]
 
@@ -189,9 +197,9 @@ compileStart conf topLevel w loop state0 = do
             w' :: Wiring'
             w' = (w, defnSig loop, defnSig state0)
 
-compileDefn :: (MonadFail m, MonadError AstError m) => Config -> C.Defn -> m V.Module
-compileDefn conf (C.Defn _ n (Sig _ inps outp) body) = do
-      ((e, stmts), (_, sigs)) <- flip runStateT (freshRun0, []) (runReaderT (compileExp conf (map (LVal . Name) argNames) body) Map.empty)
+compileDefn :: (MonadFail m, MonadError AstError m, MonadReader DefnMap m) => Config -> [GId] -> C.Defn -> m V.Module
+compileDefn conf singles (C.Defn _ n (Sig _ inps outp) body) = do
+      ((e, stmts), (_, sigs)) <- flip runStateT (freshRun0, []) $ compileExp conf singles (map (LVal . Name) argNames) body
       pure $ V.Module (mangle n) (inputs <> outputs) sigs $ stmts <> [Assign (Name "res") e]
       where argNames :: [Name]
             argNames = zipWith (\ _ x -> "arg" <> showt x) inps [0::Int ..]
@@ -204,11 +212,11 @@ compileDefn conf (C.Defn _ n (Sig _ inps outp) body) = do
 
 -- | Inlines a defn or instantiates an already-compiled defn.
 compileCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
-             => Config -> GId -> V.Size -> [V.Exp] -> m (V.Exp, [Stmt])
-compileCall conf g sz lvars
-      | conf^.flatten = asks (Map.lookup g) >>= \ case
+             => Config -> [GId] -> GId -> V.Size -> [V.Exp] -> m (V.Exp, [Stmt])
+compileCall conf singles g sz lvars
+      | conf^.flatten || g `elem` singles = asks (Map.lookup g) >>= \ case
             Just body -> do
-                  (e, stmts) <- compileExp conf lvars body
+                  (e, stmts) <- compileExp conf singles lvars body
                   e'         <- wcast sz e
                   pure (e', stmts)
             _ -> failAt noAnn $ "ToVerilog: compileCall: failed to find definition for " <> g <> " while flattening."
@@ -232,17 +240,17 @@ instantiate conf (ExternSig an ps theirClock args res) g inst sz lvars = do
             ourClock = conf^.clock
 
 compileExps :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
-            => Config -> [V.Exp] -> [C.Exp] -> m ([V.Exp], [Stmt])
-compileExps conf lvars es = (map fst &&& concatMap snd) <$> mapM (compileExp conf lvars) es
+            => Config -> [GId] -> [V.Exp] -> [C.Exp] -> m ([V.Exp], [Stmt])
+compileExps conf singles lvars es = (map fst &&& concatMap snd) <$> mapM (compileExp conf singles lvars) es
 
 compileExp :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
-            => Config -> [V.Exp] -> C.Exp -> m (V.Exp, [Stmt])
-compileExp conf lvars = \ case
+            => Config -> [GId] -> [V.Exp] -> C.Exp -> m (V.Exp, [Stmt])
+compileExp conf singles lvars = \ case
       LVar _  _ (lkupLVal -> Just x)                -> pure (x, [])
       LVar an _ _                                   -> failAt an "ToVerilog: compileExp: encountered unknown LVar."
       Lit _ bv                                      -> pure (bvToExp bv, [])
-      C.Concat _ e1 e2                              -> first V.cat <$> compileExps conf lvars (gather e1 <> gather e2)
-      Call _ sz (Global g) e ps els                 -> mkCall ("g" <> g) e ps els $ compileCall conf (mangle g) sz
+      C.Concat _ e1 e2                              -> first V.cat <$> compileExps conf singles lvars (gather e1 <> gather e2)
+      Call _ sz (Global g) e ps els                 -> mkCall ("g" <> g) e ps els $ compileCall conf singles (mangle g) sz
       Call _ sz (SetRef r) e ps els                 -> mkCall2' "setRef" e ps els $ \ (a, b) -> case a of
             a@(LVal (Element _ _)) -> do -- TODO(chathhorn) TODO TODO
                   let wa  = 1
@@ -267,7 +275,7 @@ compileExp conf lvars = \ case
       Call _ sz (Prim Resize) e ps els             -> mkCall1 "resize"    e ps els $ \ x      -> wcast sz x
       Call _ sz (Prim Id) e ps els                 -> mkCall "id"         e ps els $ \ xs     -> (,[]) <$> wcast sz (V.cat xs)
       Call _ sz (Prim Reverse) e ps els            -> mkCall "reverse"    e ps els $ \ xs     -> (,[]) <$> wcast sz (V.cat $ reverse xs)
-      Call _ sz (Prim (Replicate n)) e ps els      -> mkCall1 "replicate" e ps els $ \ x      -> wcast sz (V.Repl (toLit n) x)
+      Call _ sz (Prim (Replicate n)) e ps els      -> mkCall1 "replicate" e ps els $ \ x      -> wcast sz (if n > 0 then V.Repl (toLit n) x else V.nil)
       Call a _  (Prim p) _ _ _                     -> failAt a $ "ToVerilog: compileExp: encountered unknown primitive: " <> showt p
       Call _ sz (Extern sig ex inst) e ps els      -> mkCall ex          e ps els $ instantiate conf sig ex inst sz
       Call _ sz (Const bv) e ps els                -> mkCall "lit"       e ps els $ \ _      -> (,[]) <$> wcast sz (bvToExp bv)
@@ -290,8 +298,8 @@ compileExp conf lvars = \ case
             mkCall :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
                     => Name -> C.Exp -> [Pat] -> C.Exp -> ([V.Exp] -> m (V.Exp, [Stmt])) -> m (V.Exp, [Stmt])
             mkCall s e ps els f = do
-                  (e', stmts)    <- compileExp conf lvars e
-                  (els', stmts') <- compileExp conf lvars els
+                  (e', stmts)    <- compileExp conf singles lvars e
+                  (els', stmts') <- compileExp conf singles lvars els
                   case litVal e' of
                         Just bv -> do
                               (fes, fstmts) <- f $ patApplyLit bv ps
@@ -557,6 +565,20 @@ argsSize = sum . map patToSize
 
 mkSignal :: (Name, Size) -> Signal
 mkSignal (n, sz) = Logic [sz] n []
+
+singleUseDefns :: C.Program -> [GId]
+singleUseDefns C.Program { loop, state0, defns } = Map.keys $ Map.filter (== 1)
+      $ Map.fromList [(defnName loop, 1), (defnName state0, 1)]
+      <+> foldr (<+>) Map.empty ((expUses . defnBody) <$> defns)
+      where expUses :: C.Exp -> HashMap GId Natural
+            expUses = \ case
+                  C.Concat _ e1 e2              -> expUses e1 <+> expUses e2
+                  C.Call _ _ (Global g) e _ els -> Map.singleton g 1 <+> expUses e <+> expUses els
+                  C.Call _ _ _          e _ els ->                       expUses e <+> expUses els
+                  _                             -> Map.empty
+
+            (<+>) :: HashMap GId Natural -> HashMap GId Natural -> HashMap GId Natural
+            (<+>) = Map.unionWith (+)
 
 -- TODO(chathhorn): duplicated from Crust/ToCore.hs
 ceilLog2 :: Integral a => a -> a
