@@ -31,7 +31,7 @@ primDatas = map mkData
       , ("Bool",     KStar,                                              [nullDataCon "False" "Bool", nullDataCon "True" "Bool"])
       , ("[_]",      KStar `KFun` KStar,                                 [])
       , ("()",       KStar,                                              [nullDataCon "()" "()"])
-      ] <> map mkTuple' [2..62] -- why 62? 'cause that's what ghc does!
+      ] <> map mkTuple' [2..128]
 
 msg :: Text -> Annote
 msg = MsgAnnote
