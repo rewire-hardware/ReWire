@@ -1,6 +1,6 @@
 {-# LANGUAGE ConstrainedClassMethods #-}
 
-module ReWire.BitWord where 
+module ReWire.BitWord where
 
 import Prelude hiding ((+),(*),(-),(||),(&&))
 import qualified Prelude
@@ -88,7 +88,7 @@ int2bin i | i==0      = []
 carryadd' :: [Bool] -> [Bool] -> Bool -> ([Bool],Bool)
 carryadd' [] _ c = ([],c)
 carryadd' (_:_) [] c = ([],c)
-carryadd' (a:as) (b:bs) c = 
+carryadd' (a:as) (b:bs) c =
   (ab:res, c'')
   where
    (res, c') = carryadd' as bs c
@@ -153,14 +153,14 @@ pad' n v | n Prelude.== 0 = v
 
 -- w is bigendian
 padTrunc' :: Int -> [Bool] -> [Bool]
-padTrunc' d w 
+padTrunc' d w
       | l == d    = w
       | l < d     = pad' (d Prelude.- l) w
       | otherwise = reverse . take d . reverse $ w
          where
            l = length w
 
--- takes little endian bits 
+-- takes little endian bits
 toIntLE' :: [Bool] -> Int
 toIntLE' [] = 0
 toIntLE' (b:bs) = toInt b Prelude.+ 2 Prelude.* toIntLE' bs
@@ -182,7 +182,7 @@ resize' d w | l Prelude.== d = w
             | otherwise = reverse . take d . reverse $ w
        where
          l = length w
-    
+
 false' :: [Bool] -> Bool
 false' [] = True
 false' (False:bs) = false' bs
@@ -226,7 +226,7 @@ boothround (a,q,q_1,m) = let
       (False,False) -> (a',q',q_1',m)
         where
           (a',q',q_1') = rNudge' (a,q)
-        
+
       (True,False) -> (a'',q',q_1',m)           -- A - M
         where
           a'            = minus' a m
@@ -258,8 +258,8 @@ shiftR1' :: [Bool] -> [Bool]
 shiftR1' w = fst $ nudgeR' (False,w)
 
 arithShiftR1' :: [Bool] -> [Bool]
-arithShiftR1' w = 
-   if msBit' w 
+arithShiftR1' w =
+   if msBit' w
    then fst $ nudgeR' (True,w)
    else fst $ nudgeR' (False,w)
 
@@ -277,7 +277,7 @@ shiftL' w n = iter' n shiftL1' w
 
 shiftR' :: [Bool] -> [Bool] -> [Bool]
 shiftR' w n = iter' n shiftR1' w
-  
+
 arithShiftR' :: [Bool] -> [Bool] -> [Bool]
 arithShiftR' w n = iter' n arithShiftR1' w
 
@@ -286,7 +286,7 @@ arithShiftR' w n = iter' n arithShiftR1' w
 -- so we can use (lexicographic) ordering as defined on lists
 -- so we need a function pad the shorter word
 padMax' :: [Bool] -> [Bool] -> ([Bool],[Bool])
-padMax' v w = 
+padMax' v w =
   case compare (length v) (length w) of
        EQ -> (v,w)
        LT -> (pad' (length w Prelude.- length v) v , w)
@@ -298,7 +298,7 @@ power' w n = iter' n (times' w) (resize' (length w) one')
 
 -- assumed positive inputs, n = dividend, d = divisor
 -- b is s.t. d << b <= n , d << b+1 > n
--- returns (quotient,remainder) 
+-- returns (quotient,remainder)
 nonrestoringDivide' :: [Bool] -> [Bool] -> [Bool] -> ([Bool],[Bool])
 nonrestoringDivide' n d b =
    let rq = False : n
@@ -307,18 +307,18 @@ nonrestoringDivide' n d b =
        rq' = iter' b' (loopbody shiftd) rq in
         (resize' (toInt' b') rq'
         ,shiftR' rq' b')
-    where 
+    where
       loopbody :: [Bool] -> [Bool] -> [Bool]
-      loopbody shiftd rq = 
+      loopbody shiftd rq =
         if shiftd Prelude.> rq
           then shiftL' rq one'
           else bitwiseOr' (resize' (length rq) one') $ shiftL' (minus' rq shiftd) one'
 
 -- assumes n and d are the same length and n >= d
 divCounter' :: [Bool] -> [Bool] -> Int
-divCounter' n d = 
-  if n Prelude.< d 
-    then -1 
+divCounter' n d =
+  if n Prelude.< d
+    then -1
     else 1 Prelude.+ divCounter' n (shiftL' d one')
 
 -- assumes the same length inputs
@@ -327,7 +327,7 @@ divide' n d = resize' (length n) $ int2bits' $ toInteger $ toInt' n `div` toInt'
 
 {- PREFERRED DIVIDE IMPLEMENTATION (long division); but broken for now
 divide' n d = resize' (length n) $ fst $ nonrestoringDivide' n d b
-  where 
+  where
   b = lit' $ toInteger $ divCounter' (False:n) (False:d)  -- start positive unsigned
 -}
 
