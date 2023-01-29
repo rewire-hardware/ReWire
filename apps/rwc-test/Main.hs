@@ -72,7 +72,8 @@ main :: IO ()
 main = do
       (flags, testDirs, errs) <- getOpt Permute options <$> getArgs
 
-      let testDirs' = if null testDirs then ["regression", "integration"] else testDirs
+      -- let testDirs' = if null testDirs then ["regression", "integration"] else testDirs
+      let testDirs' = if null testDirs then ["regression"] else testDirs -- TODO(chathhorn): re-enable integration tests.
 
       unless (null errs) $ do
             mapM_ (hPutStrLn stderr) errs

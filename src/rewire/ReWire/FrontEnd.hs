@@ -14,5 +14,5 @@ import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.State (MonadState)
 
 -- | Opens and parses a file and, recursively, its imports.
-loadProgram :: (MonadFail m, MonadError AstError m, MonadState AstError m, MonadIO m) => Config -> LoadPath -> FilePath -> m Program
-loadProgram conf lp fp = runCache (getProgram conf fp) lp
+loadProgram :: (MonadFail m, MonadError AstError m, MonadState AstError m, MonadIO m) => Config -> FilePath -> m Program
+loadProgram conf fp = runCache $ getProgram conf fp

@@ -12,7 +12,7 @@ module ReWire.ModCache
       ) where
 
 import ReWire.Annotation (Annotation, SrcSpanInfo, unAnn)
-import ReWire.Config (Config, verbose, dump)
+import ReWire.Config (Config, verbose, dump, loadPath)
 import ReWire.Crust.KindCheck (kindCheck)
 import ReWire.Crust.PrimBasis (addPrims)
 import ReWire.Crust.Purify (purify)
@@ -33,7 +33,6 @@ import Control.Lens ((^.))
 import Control.Arrow ((***))
 import Control.Monad ((>=>), msum, void, when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
-import Control.Monad.Reader (runReaderT, ReaderT, asks)
 import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify, lift)
 import Data.Containers.ListUtils (nubOrd)
 import Data.HashMap.Strict (HashMap)
@@ -50,12 +49,12 @@ import qualified Language.Haskell.Exts.Syntax as S (Module (..))
 import qualified ReWire.Core.Syntax           as Core
 import qualified ReWire.Config                as C
 
-type Cache m = ReaderT LoadPath (StateT ModCache (FreshMT m))
+type Cache m = StateT ModCache (FreshMT m)
 type LoadPath = [FilePath]
 type ModCache = HashMap FilePath (Module, Exports)
 
-runCache :: (MonadIO m, MonadError AstError m) => Cache m a -> LoadPath -> m a
-runCache m lp = fst <$> runFreshMT (runStateT (runReaderT m lp) mempty)
+runCache :: (MonadIO m, MonadError AstError m) => Cache m a -> m a
+runCache m = fst <$> runFreshMT (runStateT m mempty)
 
 mkRenamer :: (MonadFail m, MonadIO m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> S.Module SrcSpanInfo -> Cache m Renamer
 mkRenamer conf pwd' m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps m)
@@ -77,7 +76,7 @@ getModule conf pwd fp = pDebug conf ("Fetching module: " <> pack fp <> " (pwd: "
       Nothing -> do
             modify $ Map.insert fp mempty
 
-            lp         <- asks (pwd :)
+            let lp     = pwd : conf^.loadPath
 
             mmods      <- mapM (tryParseInDir fp) lp
             -- FIXME: The directory crawling could be more robust here. (Should

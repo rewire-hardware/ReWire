@@ -2,7 +2,7 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE Trustworthy #-}
-module RWC (main) where
+module RWC (main, compileFile) where
 
 import ReWire.Annotation (unAnn, noAnn)
 import ReWire.Config (Config, Language (..), loadPath, getOutFile, verbose, target, dump, cycles, inputsFile, source)
@@ -11,7 +11,7 @@ import ReWire.Core.Parse (parseCore)
 import ReWire.Core.Transform (mergeSlices, purgeUnused, partialEval, dedupe)
 import ReWire.Error (MonadError, AstError, runSyntaxError, failAt)
 import ReWire.Flags (Flag (..))
-import ReWire.FrontEnd (loadProgram, LoadPath)
+import ReWire.FrontEnd (loadProgram)
 import ReWire.ModCache (printHeader)
 import ReWire.Pretty (Pretty, prettyPrint, fastPrint, showt)
 
@@ -22,7 +22,7 @@ import qualified ReWire.Core.ToVHDL    as VHDL
 import qualified ReWire.Core.ToVerilog as Verilog
 
 import Control.Arrow ((>>>))
-import Control.Lens ((^.))
+import Control.Lens ((^.), over)
 import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State (MonadState)
@@ -93,15 +93,16 @@ main = do
       when (null filenames)  $ exitUsage' ["No input files"]
 
       conf     <- either (exitUsage' . pure) pure $ Config.interpret flags
+
       systemLP <- getSystemLoadPath
-      let lp    = conf^.loadPath <> systemLP <> ["."]
+      let conf' = over loadPath (<> (systemLP <> ["."])) conf
 
-      when (conf^.verbose) $ putStrLn ("loadpath: " <> intercalate "," lp)
+      when (conf'^.verbose) $ putStrLn ("loadpath: " <> intercalate "," (conf'^.loadPath))
 
-      mapM_ (compileFile conf lp) filenames
+      mapM_ (compileFile conf') filenames
 
-compileFile :: MonadIO m => Config -> LoadPath -> String -> m ()
-compileFile conf lp filename = do
+compileFile :: MonadIO m => Config -> FilePath -> m ()
+compileFile conf filename = do
       when (conf^.verbose) $ liftIO $ T.putStrLn $ "Compiling: " <> pack filename
 
       runSyntaxError (loadCore >>= compile)
@@ -109,7 +110,7 @@ compileFile conf lp filename = do
 
       where loadCore :: (MonadError AstError m, MonadState AstError m, MonadFail m, MonadIO m) => m Core.Program
             loadCore = case conf^.source of
-                  Haskell -> loadProgram conf lp filename
+                  Haskell -> loadProgram conf filename
                   RWCore  -> parseCore filename >>= Core.check
                   s       -> failAt noAnn $ "Not a supported source language: " <> pack (show s)
 
