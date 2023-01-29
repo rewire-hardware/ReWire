@@ -2,3 +2,4 @@ resolver: lts-20.2
 packages:
 - .
 - rewire-user
+- rewire-core

@@ -1,0 +1,110 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.35.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           rewire-core
+version:        2.4.0
+synopsis:       A Haskell-to-Verilog/VHDL compiler, core library
+description:    An experimental compiler for a subset of Haskell to Verilog and VHDL.
+category:       Language
+homepage:       https://github.com/mu-chaco/ReWire
+bug-reports:    https://github.com/twosixlabs/ReWire.git/issues
+author:         Adam Procter,
+                Chris Hathhorn <hathhorn@gmail.com>,
+                Ian Graves,
+                William L. Harrison
+maintainer:     Chris Hathhorn <hathhorn@gmail.com>
+license:        NONE
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/twosixlabs/ReWire.git
+
+library
+  exposed-modules:
+      ReWire.Annotation
+      ReWire.BitVector
+      ReWire.Config
+      ReWire.Core.Check
+      ReWire.Core.Interp
+      ReWire.Core.Mangle
+      ReWire.Core.Parse
+      ReWire.Core.Syntax
+      ReWire.Core.ToVerilog
+      ReWire.Core.ToVHDL
+      ReWire.Core.Transform
+      ReWire.Crust.KindCheck
+      ReWire.Crust.PrimBasis
+      ReWire.Crust.Purify
+      ReWire.Crust.Syntax
+      ReWire.Crust.ToCore
+      ReWire.Crust.Transform
+      ReWire.Crust.TypeCheck
+      ReWire.Crust.Types
+      ReWire.Crust.Util
+      ReWire.Error
+      ReWire.FIRRTL.Parse
+      ReWire.FIRRTL.Syntax
+      ReWire.FIRRTL.ToLoFIRRTL
+      ReWire.Fix
+      ReWire.Flags
+      ReWire.FrontEnd
+      ReWire.HSE.Annotate
+      ReWire.HSE.Desugar
+      ReWire.HSE.Fixity
+      ReWire.HSE.GHCCoreToCrust
+      ReWire.HSE.Orphans
+      ReWire.HSE.Parse
+      ReWire.HSE.Rename
+      ReWire.HSE.ToCrust
+      ReWire.LoFIRRTL.Syntax
+      ReWire.ModCache
+      ReWire.Orphans
+      ReWire.Plugin
+      ReWire.Pretty
+      ReWire.SYB
+      ReWire.Unbound
+      ReWire.Verilog.Syntax
+      ReWire.VHDL.Syntax
+      ReWire.VHDL.ToLoFIRRTL
+  other-modules:
+      Paths_rewire_core
+  autogen-modules:
+      Paths_rewire_core
+  hs-source-dirs:
+      src
+  default-extensions:
+      LambdaCase
+      TupleSections
+      ViewPatterns
+  ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
+  build-depends:
+      base ==4.16.*
+    , bv ==0.5.*
+    , containers ==0.6.*
+    , deepseq ==1.4.*
+    , directory ==1.3.*
+    , exceptions ==0.10.*
+    , filepath ==1.4.*
+    , ghc ==9.2.*
+    , ghc-boot ==9.2.*
+    , hashable ==1.4.*
+    , haskell-src-exts ==1.23.*
+    , lens ==5.1.*
+    , machines ==0.7.*
+    , megaparsec ==9.2.*
+    , mtl ==2.2.*
+    , prettyprinter ==1.7.*
+    , split ==0.2.*
+    , text ==1.2.*
+    , text-show ==3.10.*
+    , unbound-generics ==0.4.*
+    , unordered-containers ==0.2.*
+    , yaml ==0.11.*
+  default-language: Haskell2010
