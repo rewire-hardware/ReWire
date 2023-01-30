@@ -45,11 +45,8 @@ dependencies:
 - directory ^>= 1.3
 - filepath ^>= 1.4
 - lens ^>= 5.1
-- mtl ^>= 2.2
 - rewire-user ^>= 0.1
 - text ^>= 1.2
-- unordered-containers ^>= 0.2
-- yaml ^>= 0.11
 
 library:
   source-dirs: src

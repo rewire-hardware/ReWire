@@ -93,12 +93,9 @@ library
     , filepath ==1.4.*
     , ghc ==9.2.*
     , lens ==5.1.*
-    , mtl ==2.2.*
     , rewire-core
     , rewire-user ==0.1.*
     , text ==1.2.*
-    , unordered-containers ==0.2.*
-    , yaml ==0.11.*
   default-language: Haskell2010
 
 executable firrtl
@@ -120,12 +117,9 @@ executable firrtl
     , filepath ==1.4.*
     , ghc ==9.2.*
     , lens ==5.1.*
-    , mtl ==2.2.*
     , rewire-core
     , rewire-user ==0.1.*
     , text ==1.2.*
-    , unordered-containers ==0.2.*
-    , yaml ==0.11.*
   default-language: Haskell2010
 
 executable rwc
@@ -147,12 +141,9 @@ executable rwc
     , filepath ==1.4.*
     , ghc ==9.2.*
     , lens ==5.1.*
-    , mtl ==2.2.*
     , rewire
     , rewire-user ==0.1.*
     , text ==1.2.*
-    , unordered-containers ==0.2.*
-    , yaml ==0.11.*
   default-language: Haskell2010
 
 executable rwcx
@@ -175,12 +166,9 @@ executable rwcx
     , ghc ==9.2.*
     , ghc-paths >=0.1.0.12 && <0.2
     , lens ==5.1.*
-    , mtl ==2.2.*
     , rewire-core
     , rewire-user ==0.1.*
     , text ==1.2.*
-    , unordered-containers ==0.2.*
-    , yaml ==0.11.*
   default-language: Haskell2010
 
 test-suite rwc-test
@@ -204,13 +192,10 @@ test-suite rwc-test
     , filepath ==1.4.*
     , ghc ==9.2.*
     , lens ==5.1.*
-    , mtl ==2.2.*
     , process ==1.6.*
     , rewire
     , rewire-user ==0.1.*
     , test-framework ==0.8.*
     , test-framework-hunit >=0.3.0.2 && <0.4
     , text ==1.2.*
-    , unordered-containers ==0.2.*
-    , yaml ==0.11.*
   default-language: Haskell2010
