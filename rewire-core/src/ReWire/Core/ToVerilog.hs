@@ -343,6 +343,7 @@ compileExp conf singles lvars = \ case
 -- | Attempt to break up giant literals.
 bvToExp :: BV -> V.Exp
 bvToExp bv | width bv < maxLit      = LitBits bv
+           | width bv == 0          = V.nil
            | bv == zeros 1          = Repl (toLit $ width bv) $ LitBits (zeros 1)
            | bv == ones (width bv)  = Repl (toLit $ width bv) $ LitBits (ones 1)
            | zs > 8                 = V.cat [LitBits $ subRange (fromIntegral zs, width bv - 1) bv, Repl (toLit zs) $ LitBits $ zeros 1]
