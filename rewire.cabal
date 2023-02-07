@@ -53,6 +53,7 @@ data-files:
     tests/regression/putBug.hs
     tests/regression/records.hs
     tests/regression/sigNothing.hs
+    tests/regression/state0.hs
     tests/regression/synonym.hs
     tests/regression/test2.hs
     tests/regression/test3.hs

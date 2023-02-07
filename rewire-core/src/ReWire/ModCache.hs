@@ -137,7 +137,6 @@ getProgram conf fp = do
        >=> pDebug' "Removing the Main.main definition (before attempting to typecheck it)."
        >=> pure . removeMain
        >=> inline
-       >=> prePurify
        >=> pDebug' "Expanding type synonyms and simplifying."
        >=> expandTypeSynonyms
        >=> pDebug' "[Pass 5] Post-inlining, before typechecking."
@@ -159,6 +158,7 @@ getProgram conf fp = do
        >=> pDebug' "[Pass 8] Post-simplification."
        >=> whenDump 8 (printInfo "[Pass 8] Crust: Post-simplify")
        >=> pDebug' "Lifting lambdas (pre-purification)."
+       >=> prePurify
        >=> shiftLambdas >=> liftLambdas
        >=> pDebug' "Removing unused definitions (again)."
        >=> pure . purgeUnused (start : (fst <$> builtins))

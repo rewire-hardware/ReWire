@@ -161,7 +161,9 @@ prePurify (ts, syns, ds) = (ts, syns, ) <$> mapM ppDefn ds
                   -- Inline everything on the LHS.
                   (dstBind -> Just (a, e1, e2)) -> do
                         e1' <- flatten (filter (\ d -> isReacDefn d && inlineable d) ds) e1
-                        rejiggerBind $ mkBind a e1' e2
+                        e1'' <- ppExp e1'
+                        e2' <- ppExp e2
+                        rejiggerBind $ mkBind a e1'' e2'
                   App an tan t e1 e2 -> App an tan t <$> ppExp e1 <*> ppExp e2
                   Lam an tan t  e -> do
                         (x, e') <- unbind e

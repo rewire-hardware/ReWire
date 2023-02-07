@@ -172,17 +172,17 @@ transExp e = case e of
                               $ M.typeOf e >>= M.vecElemTy
                   elemSz <- sizeOf an elemTy
                   pure $ C.Call an sz (C.Prim $ C.Replicate nElems) arg' [C.PatVar an elemSz] C.nil
-            M.Builtin an _ _ M.SetRef       : M.App _ _ _ _ (M.LitStr _ _ r) : args  -> do
+            M.Builtin an _ _ M.SetRef       : M.App _ _ _ _ (M.LitStr _ _ r) : args -> do
                   sz       <- sizeOf' an $ M.typeOf e
                   args'    <- mapM transExp args
                   let argSizes = map C.sizeOf args'
                   pure $ C.Call an sz (C.SetRef r) (C.cat args') (map (C.PatVar an) argSizes) C.nil
-            M.Builtin an _ _ M.GetRef       : [M.App _ _ _ _ (M.LitStr _ _ r)]       -> do
+            M.Builtin an _ _ M.GetRef       : [M.App _ _ _ _ (M.LitStr _ _ r)]      -> do
                   sz       <- sizeOf' an $ M.typeOf e
                   pure $ C.Call an sz (C.GetRef r) C.nil [] C.nil
-            M.Builtin _ _ _ M.VecConcat     : [arg1, arg2]                     -> do
+            M.Builtin _ _ _ M.VecConcat     : [arg1, arg2]                          -> do
                   C.cat <$> mapM transExp [arg1, arg2]
-            M.Builtin an _ _ (toPrim -> Just p) : args                     -> do
+            M.Builtin an _ _ (toPrim -> Just p) : args                              -> do
                   sz       <- sizeOf' an $ M.typeOf e
                   args'    <- mapM transExp args
                   let argSizes = map C.sizeOf args'
