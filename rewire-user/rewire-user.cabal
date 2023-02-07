@@ -9,7 +9,8 @@ version:        0.1.0.0
 description:    Please see the README.
 homepage:       https://github.com/githubuser/rewire-user#readme
 bug-reports:    https://github.com/githubuser/rewire-user/issues
-author:         Two Six Tech
+author:         Matthew Heimerdinger,
+                Chris Hathhorn
 maintainer:     Chris Hathhorn <hathhorn@gmail.com>
 license:        NONE
 license-file:   LICENSE

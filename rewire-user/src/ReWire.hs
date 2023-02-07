@@ -12,7 +12,7 @@ module ReWire
       , slice, rslice
       , modify
       , empty, singleton, cons, snoc, head, last, length, len
-      , take, init, drop, tail
+      , take, init, drop, tail, map
       ) where
 
 import RWC.Primitives
@@ -53,6 +53,10 @@ put = rwPrimPut
 {-# INLINE get #-}
 get :: Monad m => StateT s m s
 get = rwPrimGet
+
+{-# INLINE modify #-}
+modify :: Monad m => (s -> s) -> StateT s m ()
+modify f = get `rwPrimBind` (\ x -> put (f x))
 
 {-# INLINE signal #-}
 signal :: Monad m => o -> ReacT i o m i
@@ -146,10 +150,6 @@ drop v = rslice (Proxy :: Proxy 0) v
 tail :: KnownNat n => Vec (1 + n) a -> Vec n a
 tail v = drop v
 
-{-# INLINE modify #-}
-modify :: Monad m => (s -> s) -> StateT s m ()
-modify f = get `rwPrimBind` (\ x -> put (f x))
-
 {-# INLINE update #-}
 update :: KnownNat n => Vec ((n + m) + 1) a -> Proxy n -> a -> Vec ((n + m) + 1) a
 update = rwPrimVecUpdate
@@ -161,3 +161,8 @@ bulkUpdate = rwPrimVecBulkUpdate
 {-# INLINE len #-}
 len :: KnownNat n => Vec n a -> Integer
 len v = rwPrimNatVal (length v)
+
+{-# INLINE map #-}
+map :: (a -> b) -> Vec n a -> Vec n b
+map = rwPrimVecMap
+

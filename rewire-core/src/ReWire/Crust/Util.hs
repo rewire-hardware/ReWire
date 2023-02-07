@@ -5,16 +5,17 @@ module ReWire.Crust.Util
       , paramTys, isPrim, inlineable, mustInline, nil
       , mkTuple, mkTuplePat, mkTupleMPat
       , mkPair, mkPairPat, mkPairMPat, flattenLam, mkLam
-      , mkApp, mkError, builtin
+      , mkApp, mkError, builtin, proxy
       ) where
 
 import ReWire.Annotation (Annote (MsgAnnote))
 import ReWire.Crust.Syntax (Exp (..), Ty (..), MatchPat (..), Pat (..), Defn (..), DefnAttr (..), Builtin (..), Poly (..), FieldId, builtins)
-import ReWire.Crust.Types (nilTy, strTy, arr, typeOf, arrowRight, pairTy, fundamental, mkArrowTy, paramTys)
+import ReWire.Crust.Types (proxyTy, nilTy, strTy, arr, typeOf, arrowRight, pairTy, fundamental, mkArrowTy, paramTys)
 import ReWire.Unbound (Name, Fresh, Embed (Embed), unbind, bind, s2n, unsafeUnbind, Bind, TRec)
 
 import Data.List (foldl')
 import Data.Text (Text)
+import Numeric.Natural (Natural)
 
 builtin :: Text -> Maybe Builtin
 builtin b = lookup b builtins
@@ -36,6 +37,11 @@ mustInline = \ case
 
 nil :: Exp
 nil = Con (MsgAnnote "nil") Nothing (Just nilTy) (s2n "()")
+
+proxy :: Natural -> Exp
+proxy n = Con an Nothing (Just $ proxyTy an n) $ s2n "Proxy"
+      where an :: Annote
+            an = MsgAnnote "Proxy"
 
 nilPat :: Pat
 nilPat = PatCon (MsgAnnote "nilPat") (Embed Nothing) (Embed $ Just nilTy) (Embed $ s2n "()") []

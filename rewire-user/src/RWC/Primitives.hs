@@ -5,61 +5,62 @@
 {-# LANGUAGE ConstraintKinds #-}
 module RWC.Primitives
       ( Identity, ReacT, A_, R_, StateT, Vec, PuRe, Ref (..), Proxy (..)
+      , rwPrimAdd
+      , rwPrimAnd
+      , rwPrimBind
+      , rwPrimBitIndex
+      , rwPrimBitSlice
+      , rwPrimBits
+      , rwPrimDiv
+      , rwPrimEq
       , rwPrimError
       , rwPrimExtern
-      , rwPrimSetRef
-      , rwPrimGetRef
-      , rwPrimBind
-      , rwPrimReturn
-      , rwPrimPut
-      , rwPrimGet
-      , rwPrimSignal
-      , rwPrimLift
       , rwPrimExtrude
+      , rwPrimGet
+      , rwPrimGetRef
+      , rwPrimGt
+      , rwPrimGtEq
+      , rwPrimLAnd
+      , rwPrimLNot
+      , rwPrimLOr
+      , rwPrimLShift
+      , rwPrimLift
+      , rwPrimLt
+      , rwPrimLtEq
+      , rwPrimMSBit
+      , rwPrimMod
+      , rwPrimMul
+      , rwPrimNatVal
+      , rwPrimNot
+      , rwPrimOr
+      , rwPrimPow
+      , rwPrimPut
+      , rwPrimRAnd
+      , rwPrimRNAnd
+      , rwPrimRNor
+      , rwPrimROr
+      , rwPrimRShift
+      , rwPrimRShiftArith
+      , rwPrimRXNor
+      , rwPrimRXOr
+      , rwPrimResize
+      , rwPrimReturn
+      , rwPrimSetRef
+      , rwPrimSignal
+      , rwPrimSub
       , rwPrimUnfold
+      , rwPrimVecBulkUpdate
+      , rwPrimVecConcat
       , rwPrimVecFromList
+      , rwPrimVecIndex
+      , rwPrimVecMap
+      , rwPrimVecRSlice
       , rwPrimVecReplicate
       , rwPrimVecReverse
       , rwPrimVecSlice
-      , rwPrimVecRSlice
-      , rwPrimVecIndex
-      , rwPrimVecConcat
-      , rwPrimBits
-      , rwPrimResize
       , rwPrimVecUpdate
-      , rwPrimVecBulkUpdate
-      , rwPrimNatVal
-      , rwPrimBitSlice
-      , rwPrimBitIndex
-      , rwPrimAdd
-      , rwPrimSub
-      , rwPrimMul
-      , rwPrimDiv
-      , rwPrimMod
-      , rwPrimPow
-      , rwPrimLAnd
-      , rwPrimLOr
-      , rwPrimAnd
-      , rwPrimOr
-      , rwPrimXOr
       , rwPrimXNor
-      , rwPrimLShift
-      , rwPrimRShift
-      , rwPrimRShiftArith
-      , rwPrimEq
-      , rwPrimGt
-      , rwPrimGtEq
-      , rwPrimLt
-      , rwPrimLtEq
-      , rwPrimLNot
-      , rwPrimNot
-      , rwPrimRAnd
-      , rwPrimRNAnd
-      , rwPrimROr
-      , rwPrimRNor
-      , rwPrimRXOr
-      , rwPrimRXNor
-      , rwPrimMSBit
+      , rwPrimXOr
       , type (+), type GHC.Monad, type GHC.MonadTrans, KnownNat
       ) where
 
@@ -183,6 +184,9 @@ rwPrimVecRSlice i = V.reverse . V.slice i . V.reverse
 
 rwPrimVecIndex :: KnownNat n => Vec ((n + m) + 1) a -> Proxy n -> a
 rwPrimVecIndex = V.index'
+
+rwPrimVecMap :: (a -> b) -> Vec n a -> Vec n b
+rwPrimVecMap = V.map
 
 -- | Concatenate vectors.
 rwPrimVecConcat :: Vec n a -> Vec m a -> Vec (n + m) a

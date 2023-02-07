@@ -8,7 +8,7 @@ module ReWire.Crust.Types
       , proxyNat, vecSize, vecElemTy, vecTy, evalNat
       , mkArrowTy, poly, poly', listTy, kblank, plusTy, plus
       , isReacT, isStateT, ctorNames, resInputTy
-      , dstArrow, dstStateT, dstTyApp, dstReacT
+      , dstArrow, dstStateT, dstTyApp, dstReacT, proxyTy
       ) where
 
 import ReWire.Annotation (Annote (MsgAnnote), Annotated (ann))
@@ -179,6 +179,9 @@ proxyNat :: Ty -> Maybe Natural
 proxyNat t = case flattenTyApp t of
       TyCon _ (n2s -> "Proxy") : [n] -> evalNat n
       _                              -> Nothing
+
+proxyTy :: Annote -> Natural -> Ty
+proxyTy an n = TyApp an (TyCon an (s2n "Proxy")) $ TyNat an n
 
 plusTy :: Annote -> Ty -> Ty -> Ty
 plusTy an n = TyApp an $ TyApp an (TyCon an $ s2n "+") n

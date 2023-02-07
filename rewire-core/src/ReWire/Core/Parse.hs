@@ -192,3 +192,4 @@ name = lexeme $ pack <$> many gidLetter
                   <|> char '<'
                   <|> char '>'
                   <|> char '#'
+                  <|> char '\''

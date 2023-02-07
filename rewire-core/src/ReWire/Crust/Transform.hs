@@ -93,7 +93,7 @@ expandTypeSynonyms (ts, syns0, ds) = (,,) <$> expandSyns ts <*> syns' <*> expand
                   t@(TyCon _ n)   | Just pt <- lookup n subs'        -> do
                         (vs, t') <- unbind pt
                         pure $ if length vs == 0 then t' else t
-                  t@(TyApp _ a b) | Just (n, args) <- findTyCon a 
+                  t@(TyApp _ a b) | Just (n, args) <- findTyCon a
                                   , Just pt        <- lookup n subs' -> do
                         (vs, t') <- unbind pt
                         let args' = args <> [b]

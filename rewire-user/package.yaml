@@ -5,7 +5,9 @@ github:       "githubuser/rewire-user"
 license:      NONE
 license-file: LICENSE
 maintainer:   Chris Hathhorn <hathhorn@gmail.com>
-author:       Two Six Tech
+author:
+- Matthew Heimerdinger
+- Chris Hathhorn
 
 ghc-options:
 - -Wall

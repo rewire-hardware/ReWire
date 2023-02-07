@@ -176,7 +176,6 @@ xor a b = bit $ fromList [a] ^ fromList [b]
 (>>>) :: KnownNat n => W n -> W n -> W n
 (>>>) = rwPrimRShiftArith
 
--- Note: rotates feel like they won't compile
 -- Could implement on Vec (m + n)? Could also reimplement Lshift/Rshift to use Proxy?
 -- | Rotate right
 {-# INLINE rotR #-}

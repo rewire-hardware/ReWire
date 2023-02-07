@@ -172,6 +172,10 @@ transExp e = case e of
                               $ M.typeOf e >>= M.vecElemTy
                   elemSz <- sizeOf an elemTy
                   pure $ C.Call an sz (C.Prim $ C.Replicate nElems) arg' [C.PatVar an elemSz] C.nil
+            M.Builtin an _ _ M.VecMap   : [f, arg]                                 -> do
+                  nElems <- maybe (failAt (ann e) "transExp: rwPrimVecMap: invalid Vec argument.") pure
+                              $ M.typeOf e >>= M.vecSize
+                  transExp $ M.LitVec an Nothing Nothing $ map (M.mkApp an f . pure . vecIndex an arg) [0 .. nElems - 1]
             M.Builtin an _ _ M.SetRef       : M.App _ _ _ _ (M.LitStr _ _ r) : args -> do
                   sz       <- sizeOf' an $ M.typeOf e
                   args'    <- mapM transExp args
@@ -259,7 +263,7 @@ transExp e = case e of
                       rem         = if sz >= off + n then sz - off - n else 0
 
                   unless (sz >= off + n) $
-                        failAt an $ "ToCore: subElems: invalid bit slice (offset: " <> showt i <> ", num elems: " <> showt n <> ") from object size " <> showt sz <> "."
+                        failAt an $ "ToCore: subElems: invalid bit slice (offset: " <> showt i <> ", num elems: " <> showt nElems <> ") from object size " <> showt sz <> "."
 
                   pure $ subBits an arg' off n rem
 
@@ -323,6 +327,9 @@ transExp e = case e of
                   -- sz     <- sizeOf (ann e) $ M.typeOf e
                   -- pure $ callError (ann e) sz
                   failAt (ann e) $ "Encountered call to built-in \"error\" function that was not eliminated: " <> prettyPrint e
+
+            vecIndex :: Annote -> M.Exp -> Natural -> M.Exp
+            vecIndex an v i = M.mkApp an (M.Builtin an Nothing Nothing M.VecIndex) [v, M.proxy i]
 
 transPat :: (MonadError AstError m, Fresh m, MonadState SizeMap m, MonadReader ConMap m) => M.MatchPat -> m [C.Pat]
 transPat = \ case
