@@ -5,7 +5,7 @@
 module ReWire.Crust.ToCore (toCore) where
 
 import ReWire.Config (Config, inputSigs, outputSigs, stateSigs, top)
-import ReWire.Annotation (Annote, noAnn, Annotated (ann))
+import ReWire.Annotation (Annote, noAnn, Annotated (ann), unAnn)
 import ReWire.Error (failAt, AstError, MonadError)
 import ReWire.Pretty (showt, prettyPrint)
 import ReWire.Unbound (Name, Fresh, runFreshM, Embed (..) , unbind, n2s)
@@ -151,7 +151,7 @@ transExp e = case e of
             M.Builtin an _ _ M.VecRSlice    : [p, arg]                      -> do
                   i      <- maybe (failAt (ann e) "transExp: rwPrimVecRSlice: invalid proxy argument.") (pure . fromIntegral)
                               $ M.typeOf p >>= M.proxyNat
-                  nElems <- maybe (failAt (ann e) "transExp: rwPrimVecRSlice: invalid Vec argument.") pure
+                  nElems <- maybe (failAt (ann e) $ "transExp: rwPrimVecRSlice: invalid Vec argument: " <> showt (unAnn e)) pure
                               $ M.typeOf e >>= M.vecSize
                   subElems an arg ((- i) - fromIntegral nElems) nElems
             M.Builtin an _ _ M.VecReverse   : [arg]                         -> do

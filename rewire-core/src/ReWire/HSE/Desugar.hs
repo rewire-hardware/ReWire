@@ -391,50 +391,30 @@ desugarFuns = mempty
       where desugarFun :: (MonadState Fresh m, MonadError AstError m) => [(Name Annote, Type Annote)] -> Decl Annote -> m (Decl Annote)
             desugarFun ts = \ case
                   FunBind l ms@(Match l' name pats _ _:_)  -> do
-                        let tps = paramTys <$> lookup name ts
-                        alts <- mapM (toAlt ts tps) ms
-                        e    <- buildLambda l tps alts $ length pats
+                        alts <- mapM (toAlt ts) ms
+                        e    <- buildLambda l alts $ length pats
                         pure $ PatBind l (PVar l' name) (UnGuardedRhs l e) Nothing
                   -- Turn guards on PatBind into guards on case (of unit) alts.
                   PatBind l p rhs@(GuardedRhss l' _) binds -> pure $ PatBind l p (UnGuardedRhs l' $ Case l' (Con l' $ Special l' $ UnitCon l') [Alt l' (PWildCard l') rhs binds]) Nothing
                   d                                        -> pure d
 
-            buildLambda :: (MonadState Fresh m, MonadError AstError m) => Annote -> Maybe [Type Annote] -> [Alt Annote] -> Int -> m (Exp Annote)
-            buildLambda l tps alts 1 = do
-                  x <- fresh l
-                  pure $ Lambda l (annotateParams l [PVar l x] tps) $ Case l (Var l $ UnQual l x) alts
-            buildLambda l tps alts arity = do
-                  xs <- replicateM arity (fresh l)
-                  pure $ Lambda l (annotateParams l (PVar l <$> xs) tps) $ Case l (Tuple l Boxed (map (Var l . UnQual l) xs)) alts
+            buildLambda :: (MonadState Fresh m, MonadError AstError m) => Annote -> [Alt Annote] -> Int -> m (Exp Annote)
+            buildLambda l alts = \ case
+                  1     -> do
+                        x <- fresh l
+                        -- NOTE: can't type-annotate params without expanding type synonyms.
+                        pure $ Lambda l ([PVar l x]) $ Case l (Var l $ UnQual l x) alts
+                  arity -> do
+                        xs <- replicateM arity (fresh l)
+                        -- NOTE: can't type-annotate params without expanding type synonyms.
+                        pure $ Lambda l (PVar l <$> xs) $ Case l (Tuple l Boxed (map (Var l . UnQual l) xs)) alts
 
-            toAlt :: (MonadState Fresh m, MonadError AstError m) => [(Name Annote, Type Annote)] -> Maybe [Type Annote] -> Match Annote -> m (Alt Annote)
-            toAlt ts tps = \ case
-                  Match l' _ [p] rhs binds -> pure $ Alt l' (annotatePVars ts $ annotateParam l' p tps) rhs binds
-                  Match l' _ ps  rhs binds -> pure $ Alt l' (PTuple l' Boxed $ map (annotatePVars ts) $ annotateParams l' ps tps) rhs binds
+            toAlt :: (MonadState Fresh m, MonadError AstError m) => [(Name Annote, Type Annote)] -> Match Annote -> m (Alt Annote)
+            toAlt ts = \ case
+                  -- NOTE: can't type-annotate params without expanding type synonyms.
+                  Match l' _ [p] rhs binds -> pure $ Alt l' (annotatePVars ts p) rhs binds
+                  Match l' _ ps  rhs binds -> pure $ Alt l' (PTuple l' Boxed $ map (annotatePVars ts) ps) rhs binds
                   m                        -> failAt (ann m) $ "Unsupported decl syntax: " <> pack (show $ void m)
-
-            annotateParams :: Annote -> [Pat Annote] -> Maybe [Type Annote] -> [Pat Annote]
-            annotateParams an (p : ps')  pts@(Just (_ : pts')) = annotateParam an p pts : annotateParams an ps' (Just pts')
-            annotateParams _  ps _                             = ps
-
-            annotateParam :: Annote -> Pat Annote -> Maybe [Type Annote] -> Pat Annote
-            annotateParam an p (Just (t : _)) = PatTypeSig an p t
-            annotateParam _  p _              = p
-
-            paramTys :: Type Annote -> [Type Annote]
-            paramTys = paramTys' . rmTyContext
-
-            paramTys' :: Type Annote -> [Type Annote]
-            paramTys' = \ case
-                  TyFun _ t1 t2 -> t1 : paramTys t2
-                  TyParen _ t   -> paramTys' t
-                  t             -> [t]
-
-            rmTyContext :: Type Annote -> Type Annote
-            rmTyContext = \ case
-                  TyParen _ t      -> rmTyContext t
-                  TyForall _ _ _ t -> t
-                  t                -> t
 
 -- | Turns
 -- > case e of {...}

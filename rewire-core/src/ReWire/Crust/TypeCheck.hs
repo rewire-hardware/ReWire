@@ -4,9 +4,9 @@
 {-# LANGUAGE Safe #-}
 module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype, unify, unify', TySub) where
 
-import ReWire.Annotation (Annote (MsgAnnote), unAnn, ann, noAnn)
+import ReWire.Annotation (Annote (MsgAnnote), unAnn, ann)
 import ReWire.Crust.Syntax (Exp (..), Ty (..), Kind (..), Poly (..), Pat (..), MatchPat (..), FreeProgram, Defn (..), DataDefn (..), Builtin (..), DataCon (..), DataConId, builtinName)
-import ReWire.Crust.Types (poly, arrowRight, (|->), concrete, kblank, plusTy, tyAnn, setTyAnn, flattenArrow, plus, strTy, intTy, listTy, vecTy, arr, arrowLeft)
+import ReWire.Crust.Types (poly, arrowRight, (|->), concrete, kblank, tyAnn, setTyAnn, flattenArrow, strTy, intTy, listTy, vecTy, arr, arrowLeft, dstPoly1, zeroP1, minusP1, pickVar, poly1Ty)
 import ReWire.Crust.Util (mkApp)
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fixOn, fixOn')
@@ -19,15 +19,12 @@ import Control.DeepSeq (deepseq, force)
 import Control.Monad (zipWithM, foldM, mplus, when)
 import Control.Monad.Reader (MonadReader, ReaderT (..), local, asks)
 import Control.Monad.State (evalStateT, gets, modify, MonadState)
-import Data.Containers.ListUtils (nubOrd)
 import Data.Data (Data)
 import Data.HashMap.Strict (HashMap)
 import Data.Hashable (Hashable (hash))
-import Data.List (sortOn)
 import Data.Maybe (mapMaybe)
 import Data.Set (Set)
 import Data.Text (Text)
-import Numeric.Natural (Natural)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
@@ -123,60 +120,21 @@ tsUnion ts = foldr insert ts . Map.toList
             insert (v, t) ts' | Just t' <- Map.lookup v ts', Just s <- mgu t t' = Map.insert v (subst s t) ts' `tsUnion` s
                               | otherwise                                       = Map.insert v t ts'
 
-mguNats :: (Natural, [Name Ty]) -> (Natural, [Name Ty]) -> Maybe TySub
-mguNats ns      ns'       | ns == ns' = pure mempty
-mguNats (n, []) (n', [])  | n /= n'   = Nothing
-mguNats (n, us) (n', vs)  | n >= n'   = mguNats' (n - n', sort' us) $ sort' vs
-                          | otherwise = mguNats' (n' - n, sort' vs) $ sort' us
-      -- (0, [x1, x2]) [x2]
-      where mguNats' :: (Natural, [Name Ty]) -> [Name Ty] -> Maybe TySub
-            -- u1 + ... + un ~ 0
-            mguNats' (0, us)  []                                 = pure $ mkSub0 us
-            -- 0 ~ v1 + ... + vn
-            mguNats' (0, [])  vs                                 = pure $ mkSub0 vs
-            -- u ~ v
-            mguNats' (0, [u]) [v]               | hash (show u) > hash (show v)
-                                                                 = pure $ mkSubV u v
-            mguNats' (0, [u]) [v]                                = pure $ mkSubV v u
-            -- u ~ v1 + ... + vn
-            mguNats' (0, [u]) vs                | u `notElem` vs = pure $ Map.fromList [(u, foldr1 (plusTy noAnn) $ map (TyVar noAnn KNat) vs)]
-            -- n + u1 + ... + un ~ v
-            mguNats' (n, us)  [v]               | v `notElem` us = pure $ Map.fromList [(v, foldr (plusTy noAnn . TyVar noAnn KNat) (TyNat noAnn n) us)]
-            -- n ~ v1 + ... + vn
-            mguNats' (n, []) vs@(v : _)         | dups <- fromIntegral $ length $ takeWhile (== v) vs
-                                                                 = tsUnion (mkSubN v $ n `div` dups) <$> mguNats' (n `mod` dups, []) (drop (fromIntegral dups) vs)
-            -- n + u1 + ... + un ~ v1 + ... + vn
-            mguNats' (n, u : us) vs             | u `elem` vs    = mguNats' (n, us) $ dropFirst (== u) vs
-            mguNats' (n, us) (v : vs)           | v `elem` us    = mguNats' (n, dropFirst (== v) us) vs
-
-            mguNats' (n, us@(u : _)) vs@(v : _) | hash (show u) > hash (show v)
-                                                , dups <- length $ takeWhile (== u) us
-                                                                 = tsUnion (mkSubV u v) <$> mguNats' (n, replicate dups v <> drop dups us) vs
-            mguNats' (n, us@(u : _)) vs@(v : _) | dups <- length $ takeWhile (== v) vs
-                                                                 = tsUnion (mkSubV v u) <$> mguNats' (n, us) (replicate dups u <> drop dups vs)
-            mguNats' _ _                                         = Nothing
-
-            mkSubV :: Name Ty -> Name Ty -> TySub
-            mkSubV u v = Map.fromList [(u, TyVar noAnn KNat v)]
-
-            mkSubN :: Name Ty -> Natural -> TySub
-            mkSubN u n = Map.fromList [(u, TyNat noAnn n)]
-
-            mkSub0 :: [Name Ty] -> TySub
-            mkSub0 = Map.fromList . map (, TyNat noAnn 0) . nubOrd
-
-            sort' :: [Name Ty] -> [Name Ty]
-            sort' = sortOn (hash . show)
-
-            dropFirst :: (a -> Bool) -> [a] -> [a]
-            dropFirst p = \ case
-                  []                 -> []
-                  a : as | p a       -> as
-                         | otherwise -> a : dropFirst p as
-
 mgu :: Ty -> Ty -> Maybe TySub
-mgu t                    t'                          | unAnn t == unAnn t'           = pure mempty
-mgu (dstNats -> Just ns) (dstNats -> Just ns')                                       = mguNats ns ns'
+mgu t                               t'               | unAnn t == unAnn t'           = pure mempty
+
+mgu (TyCon _ c1)                    (TyCon _ c2)     | n2s c1 == n2s c2              = pure mempty
+
+mgu (TyVar _ _ u)                   tv@(TyVar _ _ v) | hash (show u) > hash (show v) = pure $ Map.fromList [(u, tv)]
+mgu tu@TyVar {}                     (TyVar _ _ v)                                    = pure $ Map.fromList [(v, tu)]
+
+mgu (TyVar _ _ u)                   t                | u `notElem` fv t              = pure $ Map.fromList [(u, t)]
+mgu t                               (TyVar _ _ u)    | u `notElem` fv t              = pure $ Map.fromList [(u, t)]
+
+mgu (dstPoly1 -> Just p1)           (dstPoly1 -> Just p2)                            = case p1 `minusP1` p2 of
+                  p' | p' == zeroP1         -> pure mempty
+                  (pickVar -> Just (x, p')) -> pure $ Map.singleton x $ poly1Ty p'
+                  _                         -> Nothing
 
 mgu (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) ti ) to )
     (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) ti') to')                           = do
@@ -190,31 +148,9 @@ mgu (TyApp _ tl tr)                 (TyApp _ tl' tr')                           
           rev = mgu tr tr' >>= \ s -> tsUnion s <$> mgu (subst s tl) (subst s tl')
       fwd `mplus` rev
 
-mgu (TyCon _ c1)                    (TyCon _ c2)     | n2s c1 == n2s c2              = pure mempty
-
-mgu (TyVar _ _ u)                   tv@(TyVar _ _ v) | hash (show u) > hash (show v) = pure $ Map.fromList [(u, tv)]
-mgu tu@TyVar {}                     (TyVar _ _ v)                                    = pure $ Map.fromList [(v, tu)]
-
-mgu (TyVar _ _ u)                   t                | u `notElem` fv t              = pure $ Map.fromList [(u, t)]
-mgu t                               (TyVar _ _ u)    | u `notElem` fv t              = pure $ Map.fromList [(u, t)]
-
 mgu _                               _                                                = Nothing
-      -- trace ("     MGU: " <> unpack (prettyPrint t1)
-      --   <> "\n    with: " <> unpack (prettyPrint t2)) $
-      -- trace ("      t1: " <> show (unAnn t1)) $
-      -- trace ("      t2: " <> show (unAnn t2)) $ Nothing
-
-dstNats :: Ty -> Maybe (Natural, [Name Ty])
-dstNats t = foldM dstNat (0, []) $ plus' t
-      where dstNat :: (Natural, [Name Ty]) -> Ty -> Maybe (Natural, [Name Ty])
-            dstNat (n, ts) = \ case
-                  TyNat _ n'  -> pure (n + n', ts)
-                  TyVar _ _ v -> pure (n, ts <> [v])
-                  _           -> Nothing
-
-plus' :: Ty -> [Ty]
-plus' t | Just (a, b) <- plus t = plus' a <> plus' b
-        | otherwise             = [t]
+--       trace ("     MGU: " <> unpack (prettyPrint t1)
+--         <> "\n    with: " <> unpack (prettyPrint t2)) $ Nothing
 
 unify' :: Ty -> Ty -> Maybe Ty
 unify' t1 t2 = flip subst t1 <$> mgu t1 t2
@@ -225,8 +161,6 @@ unify an t1 t2 = do
       t2' <- gets $ flip rewrite t2
       -- trace ("Unifying: " <> unpack (prettyPrint t1')
       --   <> "\n    with: " <> unpack (prettyPrint t2')) $ pure ()
-      -- trace ("     t1': " <> show (unAnn t1')) $ pure ()
-      -- trace ("     t2': " <> show (unAnn t2')) $ pure ()
       case mgu t1' t2' of
             Just s -> do
                   -- trace ("    result:\n" <> unpack (prettyPrint  (Map.toList s))) $ pure ()
@@ -295,7 +229,7 @@ tcMatchPat t = \ case
 tcExp :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Ty -> Exp -> m (Exp, Ty)
 tcExp tt = \ case
       e | Just pt <- tyAnn e -> do
-            -- trace "tc: type annotation" $ pure ()
+            -- trace ("tc: type annotation") $ pure ()
             ta       <- inst pt
             t        <- unify (ann e) ta tt
             (e', t') <- first (setTyAnn $ Just pt) <$> tcExp t (setTyAnn Nothing e)
@@ -309,13 +243,12 @@ tcExp tt = \ case
                   -- Note: we instantiate LitVec here. TODO(chathhorn): move this to the inlining pass?
                   Just es -> tcExp tt $ LitVec an tan Nothing es
       App an tan _ e1 e2 -> do
-            -- trace "tc: app" $ pure ()
+            -- trace "tc: app (1): tc e2" $ pure ()
             tvx      <- freshv
             (e2', t2) <- tcExp tvx e2
+            -- trace "tc: app (2): tc e1" $ pure ()
             (e1', t1) <- tcExp (t2 `arr` tt) e1
-            --- tvr       <- freshv
             -- trace ("tc: app: e2':\n" <> show (unAnn e2')) $ pure ()
-            --- t         <- unify an t1 (t2 `arr` tvr)
             pure (App an tan (Just $ arrowRight t1) e1' e2', arrowRight t1)
       Lam an tan _ e -> do
             -- trace "tc: lam" $ pure ()
@@ -329,7 +262,7 @@ tcExp tt = \ case
                         $ tcExp tvr' e'
             pure (Lam an tan (Just tvx') $ bind x e'', tvx' `arr` tvr'')
       Var an tan _ v -> do
-            -- trace "tc: var" $ pure ()
+            -- trace ("tc: var: " <> show v) $ pure ()
             as <- asks as
             case Map.lookup v as of
                   Nothing -> failAt an $ "Unknown variable: " <> showt v
@@ -353,10 +286,12 @@ tcExp tt = \ case
             (p, e1')   <- unbind e1
             p'         <- tcPat tp p
             let as     = patAssumps p'
+            -- trace "tc: case: tc then" $ pure ()
             (e1'', t1) <- localAssumps (`Map.union` as) $ tcExp tt e1'
             case e2 of
                   Nothing -> pure (Case an tan (Just t1) e' (bind p' e1'') Nothing, t1)
                   Just e2 -> do
+                        -- trace "tc: case: tc else" $ pure ()
                         (e2', t2) <- tcExp t1 e2
                         pure (Case an tan (Just t2) e' (bind p' e1'') (Just e2'), t2)
       Match an tan _ e p f e2 -> do
@@ -387,6 +322,7 @@ tcExp tt = \ case
             te  <- freshv
             _ <- unify an tt $ listTy an te
             (es', te') <- foldM tcElem ([], te) es
+            -- trace "tc: LitList: unify2" $ pure ()
             tt' <- unify an tt $ listTy an te'
             pure (LitList an tan (Just tt') es', tt')
       LitVec an tan _ es -> do
@@ -411,6 +347,7 @@ tcExp tt = \ case
 
             tcElem :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => ([Exp], Ty) -> Exp -> m ([Exp], Ty)
             tcElem (els, tel) el = do
+                  -- trace "tc: tcElem" $ pure ()
                   (el', tel') <- tcExp tel el
                   pure (els <> [el'], tel')
 
@@ -425,11 +362,8 @@ tcDefn start d  = flip evalStateT mempty $ do
       let (targs, _) = flattenArrow t
           tbody      = iterate arrowRight t !! length vs
 
-      -- trace ("tcDefn body: " <> unpack (prettyPrint (unAnn $ untype body))) $ pure ()
       (body', _) <- localAssumps (`Map.union` (Map.fromList $ zip vs $ map (poly []) targs))
                          $ tcExp tbody body
-
-      -- trace ("body':\n" <> show (unAnn body')) $ pure ()
 
       body'' <- gets $ flip rewrite body'
 

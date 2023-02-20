@@ -37,6 +37,7 @@ data-files:
     tests/regression/case1.hs
     tests/regression/case2.hs
     tests/regression/dissex.hs
+    tests/regression/exp2.hs
     tests/regression/extern.hs
     tests/regression/fibo1.hs
     tests/regression/fibo2.hs

@@ -9,15 +9,23 @@ module ReWire.Crust.Types
       , mkArrowTy, poly, poly', listTy, kblank, plusTy, plus
       , isReacT, isStateT, ctorNames, resInputTy
       , dstArrow, dstStateT, dstTyApp, dstReacT, proxyTy
+      , dstNegTy, negTy, dstPoly1, Poly1, minusP1, zeroP1, pickVar, poly1Ty
       ) where
 
-import ReWire.Annotation (Annote (MsgAnnote), Annotated (ann))
+import ReWire.Annotation (Annote (MsgAnnote), Annotated (ann), noAnn)
 import ReWire.Crust.Syntax (Exp (..), Ty (..), Poly (Poly), Pat (..), Kind (..), MatchPat (..), flattenTyApp, TyConId)
 import ReWire.Unbound (Name, Embed (Embed), unsafeUnbind, n2s, s2n, fv, bind)
+import ReWire.Pretty (Pretty (pretty), Doc, hsep, text, punctuate, parens, showt)
 
 import Data.Containers.ListUtils (nubOrd)
+import Data.HashMap.Strict (HashMap)
+import Data.Hashable (Hashable (hash))
+import Data.List (sortOn)
 import Data.Maybe (fromMaybe, isJust)
+import Data.Ratio (numerator, denominator, (%))
 import Numeric.Natural (Natural)
+
+import qualified Data.HashMap.Strict as Map
 
 --- TypeAnnotated instances
 
@@ -195,11 +203,22 @@ plus = \ case
                   TyCon _ (n2s -> "+") -> True
                   _                    -> False
 
+dstNegTy :: Ty -> Maybe Ty
+dstNegTy = \ case
+      TyApp _ c t | isNeg c -> pure t
+      _                     -> Nothing
+      where isNeg :: Ty -> Bool
+            isNeg = \ case
+                  TyCon _ (n2s -> "-") -> True
+                  _                    -> False
+
+negTy :: Ty -> Ty
+negTy = TyApp noAnn (TyCon noAnn $ s2n "-")
+
 evalNat :: Ty -> Maybe Natural
-evalNat = \ case
-      TyNat _ n               -> pure n
-      (plus -> Just (n1, n2)) -> (+) <$> evalNat n1 <*> evalNat n2
-      _                       -> Nothing
+evalNat t | Just (Poly1 r cs) <- dstPoly1 t
+          , r >= 0, denominator r == 1, cs == mempty = pure $ fromIntegral $ numerator r
+          | otherwise                                = Nothing
 
 -- | Takes [T1, ..., Tn-1] Tn and returns (T1 -> (T2 -> ... (T(n-1) -> Tn) ...))
 mkArrowTy :: [Ty] -> Ty -> Ty
@@ -247,6 +266,11 @@ dstTyApp = \ case
       TyApp _ m a -> pure (m, a)
       _           -> Nothing
 
+dstTyBinOp :: Ty -> Maybe (Name TyConId, Ty, Ty)
+dstTyBinOp = \ case
+      TyApp _ (TyApp _ (TyCon _ op) t1) t2 -> pure (op, t1, t2)
+      _                                    -> Nothing
+
 -- | This takes a type of the form
 -- >  ReacT In Out (StateT S1 (StateT S2 (... (StateT Sm I)))) T
 -- and returns
@@ -278,3 +302,108 @@ fundamental = \ case
 
 higherOrder :: Ty -> Bool
 higherOrder (flattenArrow -> (ats, rt)) = any isArrow $ rt : ats
+
+-- Degree-1 polynomial with rational coefficients.
+data Poly1 = Poly1 Rational (HashMap (Name Ty) Rational)
+      deriving (Show)
+
+instance Eq Poly1 where
+      (normP1 -> Poly1 r cs) == (normP1 -> Poly1 r' cs') = r == r' && cs == cs'
+
+instance Pretty Poly1 where
+      pretty = \ case
+            (normP1 -> Poly1 r (Map.toList -> cs)) | r == 0 -> hsep $ punctuate (text " +") $ map pretty' cs
+            (normP1 -> Poly1 r (Map.toList -> cs))          -> hsep $ punctuate (text " +") $ rat r : map pretty' cs
+            where pretty' :: (Name Ty, Rational) -> Doc a
+                  pretty' (x, cx) | cx == 1   = pretty x
+                                  | otherwise = rat cx <> pretty x
+
+                  rat :: Rational -> Doc a
+                  rat r | denominator r == 1 = text $ showt $ numerator r
+                        | otherwise          = parens $ text $ showt r
+
+zeroP1 :: Poly1
+zeroP1 = Poly1 0 mempty
+
+normP1 :: Poly1 -> Poly1
+normP1 (Poly1 r cs) = Poly1 r $ Map.filter (/= 0) cs
+
+monoP1 :: Rational -> Maybe (Name Ty) -> Poly1
+monoP1 r = \ case
+      Just x  -> Poly1 0 $ Map.singleton x r
+      Nothing -> Poly1 r mempty
+
+minusP1 :: Poly1 -> Poly1 -> Poly1
+minusP1 p1 p2 = plusP1 p1 $ multP1 (-1) p2
+
+plusP1 :: Poly1 -> Poly1 -> Poly1
+plusP1 (Poly1 r cs) (Poly1 r' cs') = normP1 $ Poly1 (r + r') $ Map.unionWith (+) cs cs'
+
+multP1 :: Rational -> Poly1 -> Poly1
+multP1 r' (Poly1 r cs) = Poly1 (r' * r) $ Map.map (r' *) cs
+
+pickVar :: Poly1 -> Maybe (Name Ty, Poly1)
+pickVar = pickVar' . normP1
+      where pickVar' :: Poly1 -> Maybe (Name Ty, Poly1)
+            pickVar' p | ((x, cx) : cs) <- vars p = pure (x, multP1 ((-1) / cx) $ setCoeffs (Map.fromList cs) p)
+                       | otherwise                = Nothing
+
+            vars :: Poly1 -> [(Name Ty, Rational)]
+            vars (Poly1 _ cs) = sort' $ Map.toList cs
+
+            setCoeffs :: HashMap (Name Ty) Rational -> Poly1 -> Poly1
+            setCoeffs cs (Poly1 r _) = Poly1 r cs
+
+            sort' :: [(Name Ty, Rational)] -> [(Name Ty, Rational)]
+            sort' = sortOn (hash . show . fst)
+
+poly1Ty :: Poly1 -> Ty
+poly1Ty (Poly1 r cs) | (c : cs') <- Map.toList cs, r == 0 = foldr plus' (mono c) $ map mono cs'
+                     | (c : cs') <- Map.toList cs         = ratTy r `plus'` foldr plus' (mono c) (map mono cs')
+                     | otherwise                          = ratTy r
+      where mono :: (Name Ty, Rational) -> Ty
+            mono (x, cx) | cx == 1   = tyVar x
+                         | otherwise = multTy cx $ tyVar x
+
+            plus' :: Ty -> Ty -> Ty
+            plus' = plusTy noAnn
+
+            tyVar :: Name Ty -> Ty
+            tyVar x = TyVar noAnn KNat x
+
+ratTy :: Rational -> Ty
+ratTy r | r < 0              = negTy $ posRatTy (-r)
+        | otherwise          = posRatTy r
+      where posRatTy :: Rational -> Ty
+            posRatTy r' | denominator r' == 1 = TyNat noAnn $ fromIntegral $ numerator r'
+                        | otherwise           = TyApp noAnn (TyApp noAnn (TyCon noAnn $ s2n "/") $ TyNat noAnn $ fromIntegral $ numerator r') $ TyNat noAnn $ fromIntegral $ denominator r'
+
+multTy :: Rational -> Ty -> Ty
+multTy r = TyApp noAnn $ TyApp noAnn (TyCon noAnn $ s2n "*") $ ratTy r
+
+dstRat :: Ty -> Maybe Rational
+dstRat = \ case
+      TyNat _ n             -> pure $ fromIntegral n
+      (dstNegTy -> Just t') -> ((-1) *) <$> dstRat t'
+      (dstTyBinOp -> Just (n2s -> "/", TyNat _ a, TyNat _ b))
+                            -> pure $ fromIntegral a % fromIntegral b
+      _                     -> Nothing
+
+dstPoly1 :: Ty -> Maybe Poly1
+dstPoly1 = \ case
+      TyNat _ n               -> pure $ monoP1 (fromIntegral n) Nothing
+      TyVar _ _ x             -> pure $ monoP1 1 $ Just x
+      (dstNegTy -> Just t)    -> multP1 (-1) <$> dstPoly1 t
+      (plus -> Just (t1, t2)) -> plusP1 <$> dstPoly1 t1 <*> dstPoly1 t2
+      (rmult -> Just (r, t))  -> multP1 r <$> dstPoly1 t
+      (rdiv -> Just (t, r))   -> multP1 (1/r) <$> dstPoly1 t
+      _                       -> Nothing
+      where rmult :: Ty -> Maybe (Rational, Ty)
+            rmult = \ case
+                  (dstTyBinOp -> Just (n2s -> "*", dstRat -> Just r, t)) -> pure (r, t)
+                  _                                                      -> Nothing
+
+            rdiv :: Ty -> Maybe (Ty, Rational)
+            rdiv = \ case
+                  (dstTyBinOp -> Just (n2s -> "/", t, dstRat -> Just r)) -> pure (t, r)
+                  _                                                      -> Nothing
