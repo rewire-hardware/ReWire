@@ -123,11 +123,11 @@ head :: Vec (1 + n) a -> a
 head v = index v (Proxy :: Proxy 0)
 
 {-# INLINE last #-}
-last :: KnownNat n => Vec (n + 1) a -> a
+last :: KnownNat n => Vec (1 + n) a -> a
 last v = index v (lastIndex v)
 
 {-# INLINE lastIndex #-}
-lastIndex :: Vec (n + 1) a -> Proxy n
+lastIndex :: Vec (1 + n) a -> Proxy n
 lastIndex _ = Proxy
 
 {-# INLINE length #-}
