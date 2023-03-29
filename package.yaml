@@ -1,5 +1,5 @@
 name:         rewire
-version:      2.4.0
+version:      2.5.0
 synopsis:     A Haskell-to-Verilog/VHDL compiler
 description:  An experimental compiler for a subset of Haskell to Verilog and VHDL.
 homepage:     https://github.com/mu-chaco/ReWire

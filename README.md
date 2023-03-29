@@ -1,7 +1,5 @@
 # ReWire
 
-[![Build Status](https://travis-ci.org/mu-chaco/ReWire.svg?branch=master)](https://travis-ci.org/mu-chaco/ReWire)
-
 ReWire is an experimental compiler for a subset of
 [Haskell](http://haskell.org/) to Verilog and VHDL, suitable for synthesis and
 implementation on FPGAs. ReWire enables a semantics-directed style of
@@ -26,6 +24,34 @@ $ stack install
 
 See `rwc --help` for a list of supported options and the `tests` directory for
 some examples.
+
+## Changelog
+
+### 2.5
+
+* Support for a vector library with lengths encoded using type-level natural
+  numbers (compatible with GHC using the `GHC.TypeLits.Normalise` typechecker
+  plugin). E.g.,
+```
+{-# LANGUAGE DataKinds #-}
+import ReWire
+
+type W n = Vec n Bool
+
+a :: W 2
+a = fromList [False, True]
+
+c :: W 4
+c = a ++ (fromList [False] :: W 1)
+```
+
+  See `rewire-user/src/{ReWire.hs, ReWire/Bits.hs, RWC/Primitives.hs}` for
+  supported operations.
+
+* Improved the ability to test ReWire programs with GHC by giving many more RWC
+  primitives GHC-compatible implementations. See
+  `rewire-user/src/RWC/Primitives/hs` for a list of RWC primitives and their
+  GHC-compatible implementations.
 
 ## Acknowledgments
 
