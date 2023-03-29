@@ -32,19 +32,18 @@ some examples.
 * Support for a vector library with lengths encoded using type-level natural
   numbers (compatible with GHC using the `GHC.TypeLits.Normalise` typechecker
   plugin). E.g.,
-```
-{-# LANGUAGE DataKinds #-}
-import ReWire
+  ```hs
+  {-# LANGUAGE DataKinds #-}
+  import ReWire
 
-type W n = Vec n Bool
+  type W n = Vec n Bool
 
-a :: W 2
-a = fromList [False, True]
+  a :: W 2
+  a = fromList [False, True]
 
-c :: W 4
-c = a ++ (fromList [False] :: W 1)
-```
-
+  c :: W 4
+  c = a ++ (fromList [False] :: W 1)
+  ```
   See `rewire-user/src/{ReWire.hs, ReWire/Bits.hs, RWC/Primitives.hs}` for
   supported operations.
 
