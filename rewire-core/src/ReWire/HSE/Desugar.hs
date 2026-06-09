@@ -12,13 +12,13 @@ import ReWire.SYB (Tr (TId, TM, T), transformTr, transform, transformM, query)
 import Control.Monad (replicateM, (>=>), void, when, msum, unless)
 import Control.Monad.State (evalStateT, MonadState (..), modify)
 import Data.Foldable (foldrM)
-import Data.HashMap.Strict (HashMap)
+import Data.Map.Strict (Map)
 import Data.Maybe (isNothing, mapMaybe)
 import Data.Text (pack)
 import Language.Haskell.Exts.Pretty (prettyPrint)
 import Language.Haskell.Exts.Syntax
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.Map.Strict as Map
 
 data Desugar m = Desugar
       { dsModule   :: Tr m (Module Annote)
@@ -211,7 +211,7 @@ desugarRecords rn = mempty
             fieldInfo' :: Name () -> Int -> (Int, (Name (), Type ())) -> FieldInfo
             fieldInfo' ctor arr (i, (f, t)) = (noAnn <$ ctor, (noAnn <$ f, noAnn <$ t, i, arr))
 
-            filterRecords :: CtorSigs -> HashMap (Name ()) [(Name (), Type ())]
+            filterRecords :: CtorSigs -> Map (Name ()) [(Name (), Type ())]
             filterRecords = Map.mapMaybe $ \ a -> if isRecordSig a then Just $ toRecordSig a else Nothing
 
             isRecordSig :: [(Maybe a, t)] -> Bool

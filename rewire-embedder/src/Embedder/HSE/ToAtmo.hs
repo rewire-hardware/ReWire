@@ -8,7 +8,7 @@ module Embedder.HSE.ToAtmo (toAtmo, extendWithGlobs, getImps) where
 import ReWire.Annotation hiding (ann)
 import ReWire.Error
 import ReWire.HSE.Fixity
-import Embedder.HSE.Rename
+import ReWire.HSE.Rename
 import Embedder.Atmo.Types ((|->))
 import ReWire.SYB (query)
 

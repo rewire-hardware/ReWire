@@ -17,15 +17,15 @@ import Control.Arrow ((&&&), second)
 import Control.Monad (foldM, replicateM, void)
 import Data.Char (isUpper)
 import Data.List (find)
-import Data.HashMap.Strict (HashMap)
+import Data.Map.Strict (Map)
 import Data.Maybe (mapMaybe, fromMaybe)
-import Data.HashSet (HashSet)
+import Data.Set (Set)
 import Data.Text (Text, pack, unpack)
 import Language.Haskell.Exts.Fixity (Fixity (..))
 import Language.Haskell.Exts.Pretty (prettyPrint)
 
-import qualified Data.HashSet                 as Set
-import qualified Data.HashMap.Strict          as Map
+import qualified Data.Set                     as Set
+import qualified Data.Map.Strict              as Map
 import qualified Language.Haskell.Exts.Syntax as S
 import qualified ReWire.Crust.Syntax          as M
 import qualified ReWire.Crust.Util            as M
@@ -39,7 +39,7 @@ isPrimMod = (== "RWC.Primitives")
 -- | An intermediate form for exports. TODO(chathhorn): get rid of it.
 data Export = Export FQName
             -- ExportWith: Type name, ctors
-            | ExportWith FQName (HashSet FQName) FQCtorSigs
+            | ExportWith FQName (Set FQName) FQCtorSigs
             | ExportAll FQName
             | ExportMod (S.ModuleName ())
             | ExportFixity (S.Assoc ()) Int (S.Name ())
@@ -97,9 +97,9 @@ toCrust rn = \ case
                         ExportMod m                           -> (<> getExports m rn)
                         ExportFixity asc lvl x                -> expFixity asc lvl x
 
-                  inls :: HashMap (S.Name ()) M.DefnAttr
+                  inls :: Map (S.Name ()) M.DefnAttr
                   inls = foldr inl' mempty ds
-                        where inl' :: Decl Annote -> HashMap (S.Name ()) M.DefnAttr -> HashMap (S.Name ()) M.DefnAttr
+                        where inl' :: Decl Annote -> Map (S.Name ()) M.DefnAttr -> Map (S.Name ()) M.DefnAttr
                               inl' = \ case
                                     InlineSig _ b Nothing (Qual _ _ x) -> Map.insert (void x) $ if b then M.Inline else M.NoInline
                                     InlineSig _ b Nothing (UnQual _ x) -> Map.insert (void x) $ if b then M.Inline else M.NoInline
@@ -134,7 +134,7 @@ transExport rn ds exps = \ case
             else failAt l "Unknown class or type name in export list"
       EThingWith l (NoWildcard _) (void -> x) cs       -> let cs' = Set.fromList $ map (rename Value rn . unwrap) cs in
             if and $ finger Type rn x : map (finger Value rn . name) (Set.toList cs')
-            then pure $ ExportWith (rename Type rn x) cs' (Map.mapWithKey (const . lookupCtorSig rn) $ Set.toMap cs')
+            then pure $ ExportWith (rename Type rn x) cs' (Map.fromSet (lookupCtorSig rn) cs')
                   : concatMap (fixities . unwrap) cs ++ exps
             else failAt l "Unknown class or type name in export list"
       -- TODO(chathhorn): I don't know what it means for a wildcard to appear in the middle of an export list.
@@ -194,7 +194,7 @@ transTySig rn sigs = \ case
       _                 -> pure sigs
 
 -- TODO(chathhorn): should be a map, not a fold
-transDef :: (Fresh m, MonadError AstError m) => Renamer -> [(S.Name (), M.Ty)] -> HashMap (S.Name ()) M.DefnAttr -> [M.Defn] -> Decl Annote -> m [M.Defn]
+transDef :: (Fresh m, MonadError AstError m) => Renamer -> [(S.Name (), M.Ty)] -> Map (S.Name ()) M.DefnAttr -> [M.Defn] -> Decl Annote -> m [M.Defn]
 transDef rn tys inls defs = \ case
       PatBind l (PVar _ (void -> x)) (UnGuardedRhs _ e) Nothing -> do
             k <- freshKVar "def"
@@ -345,7 +345,7 @@ extendWithGlobs = \ case
             extendCtorSig :: S.Type () -> (n, S.Type ()) -> (n, S.Type ())
             extendCtorSig t = second $ S.TyFun () t
 
-            getCtor :: QualConDecl l -> HashSet (S.Name ())
+            getCtor :: QualConDecl l -> Set (S.Name ())
             getCtor d = Set.fromList $ getCtorName d : getFieldNames (getFields d)
 
             getCtorName :: QualConDecl l -> S.Name ()

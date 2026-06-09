@@ -19,7 +19,7 @@ import ReWire.Error (failAt, AstError, MonadError, filePath)
 import ReWire.HSE.Annotate (annotate)
 import Embedder.HSE.Desugar (desugar, addMainModuleHead)
 import ReWire.HSE.Parse (tryParseInDir)
-import Embedder.HSE.Rename (Exports, Renamer, fromImps, allExports, toFilePath, fixFixity)
+import ReWire.HSE.Rename (Exports, Renamer, fromImps, allExports, toFilePath, fixFixity)
 import Embedder.HSE.ToAtmo (extendWithGlobs, toAtmo, getImps)
 import ReWire.Pretty (Pretty (..), prettyPrint, prettyPrint', fastPrint, showt)
 

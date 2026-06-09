@@ -42,7 +42,6 @@ library
       Embedder.Flags
       Embedder.FrontEnd
       Embedder.HSE.Desugar
-      Embedder.HSE.Rename
       Embedder.HSE.ToAtmo
       Embedder.Isabelle.Syntax
       Embedder.ModCache

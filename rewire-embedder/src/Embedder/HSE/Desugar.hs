@@ -6,7 +6,7 @@ module Embedder.HSE.Desugar (desugar, addMainModuleHead) where
 
 import ReWire.Annotation (noAnn, Annote (..))
 import ReWire.Error (MonadError, AstError, failAt)
-import Embedder.HSE.Rename (Renamer, FQName, CtorSigs, qnamish, name, Namespace (Value), rename, getLocalCtorSigs, lookupCtorSig, findCtorSigFromField)
+import ReWire.HSE.Rename (Renamer, FQName, CtorSigs, qnamish, name, Namespace (Value), rename, getLocalCtorSigs, lookupCtorSig, findCtorSigFromField)
 import ReWire.SYB (Tr (TId, TM, T), transformTr, transform, transformM, query)
 
 import Control.Monad (replicateM, (>=>), void, when, msum, unless)
