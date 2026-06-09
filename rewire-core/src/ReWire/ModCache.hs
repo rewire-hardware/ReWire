@@ -11,8 +11,8 @@ module ReWire.ModCache
       , printHeader
       ) where
 
-import ReWire.Annotation (Annotation, SrcSpanInfo, unAnn)
-import ReWire.Config (Config, loadPath, typecheck, pDebug)
+import ReWire.Annotation (unAnn)
+import ReWire.Config (Config, typecheck, pDebug)
 import ReWire.Crust.KindCheck (kindCheck)
 import ReWire.Crust.PrimBasis (addPrims)
 import ReWire.Crust.Purify (purify)
@@ -20,48 +20,35 @@ import ReWire.Crust.Syntax (FreeProgram, Defn (..), Module (Module), Exp, Ty, Ki
 import ReWire.Crust.ToCore (toCore)
 import ReWire.Crust.Transform (removeMain, simplify, liftLambdas, etaAbsDefs, shiftLambdas, neuterExterns, expandTypeSynonyms, inlineAnnotated, normalizeBind, elimCase, purge, purgeAll, inlineExtrudes, reduce)
 import ReWire.Crust.TypeCheck (typeCheck, untype)
-import ReWire.Error (failAt, AstError, MonadError, filePath)
+import ReWire.Error (AstError, MonadError)
 import ReWire.HSE.Annotate (annotate)
-import ReWire.HSE.Desugar (desugar, addMainModuleHead)
-import ReWire.HSE.Parse (tryParseInDir)
-import ReWire.HSE.Rename (Exports, Renamer, fromImps, allExports, toFilePath, fixFixity)
-import ReWire.HSE.ToCrust (extendWithGlobs, toCrust, getImps)
+import ReWire.HSE.Cache (LoadPath, getModuleWith)
+import ReWire.HSE.Desugar (desugar)
+import ReWire.HSE.Rename (Exports, Renamer, allExports, fixFixity)
+import ReWire.HSE.ToCrust (toCrust)
 import ReWire.Pretty (prettyPrint, prettyPrint', showt)
 import ReWire.Unbound (fv, trec, runFreshMT, FreshMT, Name, Fresh, s2n)
 
 import Control.Lens ((^.))
-import Control.Arrow ((***))
-import Control.Monad ((>=>), msum, void, when)
+import Control.Monad ((>=>), void, when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
-import Control.Monad.State.Strict (runStateT, StateT, MonadState (..), modify, lift)
+import Control.Monad.State.Strict (MonadState, lift)
 import Data.Containers.ListUtils (nubOrd)
-import Data.HashMap.Strict (HashMap)
 import Data.Text (Text, pack)
-import Language.Haskell.Exts.Syntax hiding (Annotation, Exp, Module (..), Namespace, Name, Kind)
 import Numeric.Natural (Natural)
-import System.FilePath ((</>), takeDirectory)
 
-import qualified Data.HashMap.Strict          as Map
 import qualified Data.Text                    as T
 import qualified Data.Text.IO                 as T
 import qualified Language.Haskell.Exts.Pretty as P
 import qualified Language.Haskell.Exts.Syntax as S (Module (..))
 import qualified ReWire.Core.Syntax           as Core
+import qualified ReWire.HSE.Cache             as Cache
 import qualified ReWire.Config                as C
 
-type Cache m = StateT ModCache (FreshMT m)
-type LoadPath = [FilePath]
-type ModCache = HashMap FilePath (Module, Exports)
+type Cache m = Cache.Cache Module (FreshMT m)
 
 runCache :: (MonadIO m, MonadError AstError m) => Cache m a -> m a
-runCache m = fst <$> runFreshMT (runStateT m mempty)
-
-mkRenamer :: (MonadFail m, MonadIO m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> S.Module SrcSpanInfo -> Cache m Renamer
-mkRenamer conf pwd' m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps m)
-      where mkRenamer' :: (MonadFail m, MonadIO m, MonadError AstError m, MonadState AstError m) => ImportDecl SrcSpanInfo -> Cache m Renamer
-            mkRenamer' (ImportDecl _ (void -> m) quald _ _ _ (fmap void -> as) specs) = do
-                  (_, exps) <- getModule conf pwd' $ toFilePath m
-                  fromImps m quald exps as specs
+runCache = runFreshMT . Cache.runCache
 
 -- Pass 1    Parse.
 -- Pass 2-4  Fixity fixing (uniquify + fix + deuniquify, because bug in applyFixities).
@@ -71,50 +58,27 @@ mkRenamer conf pwd' m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps
 -- Pass 16   Translate to core
 
 getModule :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> FilePath -> Cache m (Module, Exports)
-getModule conf pwd fp = pDebug conf ("Fetching module: " <> pack fp <> " (pwd: " <> pack pwd <> ")") >> Map.lookup fp <$> get >>= \ case
-      Just p  -> pure p
-      Nothing -> do
-            modify $ Map.insert fp mempty
+getModule conf = getModuleWith translate conf
+      where translate fp rn imps m = do
+                  let pass :: MonadIO m => Natural -> Text -> S.Module a -> m (S.Module a)
+                      pass = passHSE conf rn imps
 
-            let lp     = pwd : conf^.loadPath
+                  -- Phase 1 (haskell-src-exts) transformations.
+                  (m', exps) <- pure
+                            >=> pass 1 "(Haskell) Fixing fixity."
+                            >=> lift . lift . fixFixity rn
+                            >=> pass 2 "(Haskell) Annotating."
+                            >=> pure . annotate
+                            >=> pass 3 "(Haskell) Desugaring."
+                            >=> desugar rn
+                            >=> pass 4 "(Haskell) Translating to Crust IR."
+                            >=> toCrust rn
+                            $ m
 
-            mmods      <- mapM (tryParseInDir fp) lp
-            (pwd', m)  <- maybe
-                              (failAt (filePath fp) "File not found in load-path")
-                              (pure . (elideDot *** addMainModuleHead))
-                        $ msum mmods
+                  let Module ts syns ds = m' <> imps
+                  _ <- passCrust conf 5 ("Concatenating Crust IR for module: " <> pack fp) (ts, syns, ds)
 
-            rn         <- mkRenamer conf pwd' m
-            imps       <- loadImports pwd' m
-
-            let pass :: MonadIO m => Natural -> Text -> S.Module a -> m (S.Module a)
-                pass = passHSE conf rn imps
-
-            -- Phase 1 (haskell-src-exts) transformations.
-            (m', exps) <- pure
-                      >=> pass 1 "(Haskell) Fixing fixity."
-                      >=> lift . lift . fixFixity rn
-                      >=> pass 2 "(Haskell) Annotating."
-                      >=> pure . annotate
-                      >=> pass 3 "(Haskell) Desugaring."
-                      >=> desugar rn
-                      >=> pass 4 "(Haskell) Translating to Crust IR."
-                      >=> toCrust rn
-                      $ m
-
-            let Module ts syns ds = m' <> imps
-            _ <- passCrust conf 5 ("Concatenating Crust IR for module: " <> pack fp) (ts, syns, ds)
-
-            modify $ Map.insert fp (m' <> imps, exps)
-            pure (m' <> imps, exps)
-
-      where loadImports :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m, Annotation a) => FilePath -> S.Module a -> Cache m Module
-            loadImports pwd' = fmap mconcat . mapM (fmap fst . getModule conf pwd' . toFilePath . void . importModule) . getImps
-
-            elideDot :: FilePath -> FilePath
-            elideDot = \ case
-                  "." -> takeDirectory fp
-                  d   -> d </> takeDirectory fp
+                  pure (m' <> imps, exps)
 
 -- Phase 2 (pre-core) transformations.
 getDevice :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> Cache m Core.Device
