@@ -2,7 +2,18 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
-module ReWire.HSE.Desugar (desugar, addMainModuleHead) where
+module ReWire.HSE.Desugar
+      ( desugar, addMainModuleHead
+      -- | The 'Desugar' machinery and individual sub-passes, exported so
+      --   that alternative front ends (e.g., the rewire-embedder package)
+      --   can compose their own desugaring pipelines.
+      , Desugar (..), pass, Fresh, fresh, err, mkTuple
+      , desugarRecords, normIds, deparenify, desugarInfix, desugarNegLitPats
+      , desugarTuples, desugarFuns, liftDiscriminator, flattenAlts
+      , desugarGuards, wheresToLets, desugarDos, normTyContext, desugarTyFuns
+      , desugarLets, desugarIfs, desugarNegs, flattenLambdas, depatLambdas
+      , desugarAsPats, lambdasToCases
+      ) where
 
 import ReWire.Annotation (noAnn, Annote (..))
 import ReWire.Error (MonadError, AstError, failAt)
