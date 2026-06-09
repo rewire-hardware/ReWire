@@ -206,8 +206,6 @@ module
   v |-> error "Prim: rwPrimResize"
   rwPrimSignextend :: ((Vec n Bool) -> (Vec m Bool))
   v |-> error "Prim: rwPrimSignextend"
-  rwPrimVecUpdate :: ((Vec n a) -> ((Finite n) -> (a -> (Vec n a))))
-  v i a |-> error "Prim: rwPrimVecUpdate"
   rwPrimNatVal :: ((Proxy n) -> Integer)
    |-> error "Prim: rwPrimNatVal"
   rwPrimBitSlice :: ((Vec n Bool) -> ((Finite n) -> ((Finite n) -> (Vec m Bool))))
@@ -342,7 +340,9 @@ module
    |-> ReWire.Vectors.drop
   {-# INLINE ReWire.Vectors.update #-}
   ReWire.Vectors.update :: ((Vec n a) -> ((Finite n) -> (a -> (Vec n a))))
-   |-> rwPrimVecUpdate
+  v i x |-> generate (\ j -> case == j i of
+      [True  x]
+      [False  index v j])
   {-# INLINE ReWire.Vectors.map #-}
   ReWire.Vectors.map :: (((a -> b)) -> ((Vec n a) -> (Vec n b)))
    |-> map
