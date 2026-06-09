@@ -4,7 +4,7 @@
 module RWE (main) where
 
 import Embedder.Config (loadPath, verbose)
-import Embedder.Flags (Flag (..))
+import ReWire.Flags (Flag (..))
 import Embedder.FrontEnd (embedFile)
 import qualified Embedder.Config as Config
 

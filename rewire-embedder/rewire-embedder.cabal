@@ -39,7 +39,6 @@ library
       Embedder.Atmo.Util
       Embedder.Builtins
       Embedder.Config
-      Embedder.Flags
       Embedder.FrontEnd
       Embedder.HSE.Desugar
       Embedder.HSE.ToAtmo
