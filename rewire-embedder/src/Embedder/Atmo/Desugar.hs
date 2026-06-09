@@ -4,10 +4,10 @@
 {-# LANGUAGE Safe #-}
 module Embedder.Atmo.Desugar (desugarAtmo) where
 
-import Embedder.Annotation (noAnn, Annote (..))
-import Embedder.Error (MonadError, AstError, failAt)
-import Embedder.HSE.Rename (Renamer, FQName, CtorSigs, qnamish, name, Namespace (Value), rename, getLocalCtorSigs, lookupCtorSig, findCtorSigFromField, Exports)
-import Embedder.SYB (Tr (TId, TM, T), transformTr, transform, transformM, query)
+import ReWire.Annotation (noAnn, Annote (..))
+import ReWire.Error (MonadError, AstError, failAt)
+import ReWire.HSE.Rename (Renamer, FQName, CtorSigs, qnamish, name, Namespace (Value), rename, getLocalCtorSigs, lookupCtorSig, findCtorSigFromField, Exports)
+import ReWire.SYB (Tr (TId, TM, T), transformTr, transform, transformM, query)
 
 import Control.Monad (replicateM, (>=>), void, when, msum, unless)
 import Control.Monad.State (evalStateT, MonadState (..), modify)
@@ -21,7 +21,7 @@ import Embedder.Atmo.Syntax (Exp(..),Module(..),Pat(..),Ty(..),
       TypeSynonym(..), DataDefn(..), Defn(..), Poly (..) -- Rhs(..), GuardedRhs(..), 
       )
 -- import Language.Haskell.Exts.Pretty (prettyPrint)
-import Embedder.Pretty(prettyPrint)
+import ReWire.Pretty(prettyPrint)
 
 import qualified Data.Map.Strict as Map
 import Embedder.Atmo.Util (mkTupleCtor, isPrim)

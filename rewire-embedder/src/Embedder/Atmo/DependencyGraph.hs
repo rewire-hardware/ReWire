@@ -13,7 +13,7 @@ import safe Embedder.Atmo.Syntax as C
       Exp(..), Ty(..), Poly(..),
       DataCon(..), Pat (..), FunBinding (..), PatBind (..), RecDefn (..), -- Rhs (..), GuardedRhs (..), 
       )
-import Embedder.Orphans ()
+import ReWire.Orphans ()
 
 import Data.List ((\\), groupBy)
 import Data.Text (Text, splitOn, pack, empty)

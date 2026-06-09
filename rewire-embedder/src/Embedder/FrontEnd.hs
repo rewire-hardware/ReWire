@@ -8,9 +8,9 @@ module Embedder.FrontEnd
       ) where
 
 import Embedder.Config (Config, getEmbedFile, getAtmoFile, verbose)
-import Embedder.Error (MonadError, AstError, runSyntaxError, failAt)
+import ReWire.Error (MonadError, AstError, runSyntaxError, failAt)
 import Embedder.ModCache (runCache, LoadPath, getModule)
-import Embedder.Pretty (Pretty, prettyPrint, fastPrint)
+import ReWire.Pretty (Pretty, prettyPrint, fastPrint)
 import qualified Embedder.Config         as Config
 
 import Control.Monad (when)

@@ -25,12 +25,12 @@ module Embedder.Atmo.Syntax
 
 import Prelude hiding (replicate)
 
-import Embedder.Annotation (Annote, Annotated (ann))
-import Embedder.Orphans ()
-import Embedder.Pretty (empty, text, TextShow (showt), FromGeneric (..), Doc,
+import ReWire.Annotation (Annote, Annotated (ann))
+import ReWire.Orphans ()
+import ReWire.Pretty (empty, text, TextShow (showt), FromGeneric (..), Doc,
   nest, hsep, parens, dquotes, comma, brackets, vsep, (<+>), Pretty (pretty),
   punctuate, line, softline, align, braces, dot)
-import Embedder.SYB (transform)
+import ReWire.SYB (transform)
 import Control.DeepSeq (NFData (..), deepseq)
 import Data.Containers.ListUtils (nubOrdOn)
 import Data.Data (Typeable, Data (..))
@@ -42,7 +42,7 @@ import GHC.Generics (Generic (..))
 import Numeric.Natural (Natural)
 import Embedder.Builtins (TyBuiltin (..), RWUserOp, rwu2s)
 import Control.Monad.Identity (Identity(..))
-import Embedder.Error (MonadError, AstError)
+import ReWire.Error (MonadError, AstError)
 
 data Module = Module ![DataDefn] ![RecDefn] ![TypeSynonym] ![Defn]
       deriving (Show, Generic, Data)

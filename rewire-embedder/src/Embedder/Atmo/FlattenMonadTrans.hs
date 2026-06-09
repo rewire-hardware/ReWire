@@ -10,11 +10,11 @@ module Embedder.Atmo.FlattenMonadTrans where
 
 import safe Embedder.Atmo.Syntax as A
     ( Ty(..), TyBuiltin (..),)
-import Embedder.Orphans ()
-import Embedder.Annotation (Annote)
+import ReWire.Orphans ()
+import ReWire.Annotation (Annote)
 
 import Debug.Trace (trace)
-import Embedder.Pretty (pretty)
+import ReWire.Pretty (pretty)
 import Embedder.Atmo.Types (nilTy, pairTy)
 
 -- transMonadT

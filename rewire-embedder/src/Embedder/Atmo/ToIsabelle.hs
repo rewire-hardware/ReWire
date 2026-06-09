@@ -18,11 +18,11 @@ import safe Embedder.Atmo.Syntax as A
       DataCon(..), Pat (..), PatBind (..), FunBinding (..), getPatVars, RecDefn (..),
       -- getFunBody,
       )
-import Embedder.Orphans ()
-import Embedder.Error (AstError, MonadError, failAt)
+import ReWire.Orphans ()
+import ReWire.Error (AstError, MonadError, failAt)
 import Embedder.Atmo.Types (flattenSig, nilTy, pairTy, TypeAnnotated (..))
 import Embedder.Atmo.Util(isPrim, flattenLam)
-import Embedder.Annotation (noAnn)
+import ReWire.Annotation (noAnn)
 
 import System.FilePath(takeBaseName)
 import Data.Char (isDigit)

@@ -4,7 +4,7 @@ module ReWire.Pretty
       , prettyPrint, prettyPrint'
       , fastPrint, fastPrint'
       , TextShow (showt, showb, showbPrec), fromString, fromText
-      , genericShowbPrec, P.space, P.angles, P.dot
+      , genericShowbPrec, P.space, P.angles, P.dot, P.line, P.softline
       , (P.<>), (P.<+>), P.nest, P.defaultLayoutOptions, P.layoutSmart, P.renderStrict
       , P.vsep, P.hsep, P.parens, P.braces, P.punctuate, P.comma, P.squote, P.dquote, P.dquotes, P.tupled
       , P.brackets, FromGeneric (..), P.semi, P.colon, P.hcat, P.align, braced

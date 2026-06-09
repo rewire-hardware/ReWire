@@ -12,10 +12,10 @@ module Embedder.Atmo.Types
       , dstNegTy, negTy, dstPoly1, Poly1, minusP1, zeroP1, pickVar, poly1Ty
       ) where
 
-import Embedder.Annotation (Annote (MsgAnnote), Annotated (ann), noAnn)
+import ReWire.Annotation (Annote (MsgAnnote), Annotated (ann), noAnn)
 import Embedder.Atmo.Syntax (Exp (..), Ty (..), TyBuiltin (..), Poly (Poly), Pat (..))
 import Embedder.Builtins (tb2s)
-import Embedder.Pretty (Pretty (pretty), Doc, hsep, text, punctuate, parens, showt)
+import ReWire.Pretty (Pretty (pretty), Doc, hsep, text, punctuate, parens, showt)
 
 import Data.Containers.ListUtils (nubOrd)
 import Data.HashMap.Strict (HashMap)
