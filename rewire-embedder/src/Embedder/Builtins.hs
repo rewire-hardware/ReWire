@@ -18,46 +18,9 @@ import Data.Hashable (Hashable)
 import Control.DeepSeq (NFData)
 import Control.Arrow ((&&&))
 
-import ReWire.Pretty (Pretty (..), TextShow, FromGeneric(..), showt)
+import ReWire.Builtins (Builtin (..), builtinName, builtins)
+import ReWire.Pretty (Pretty (..), TextShow, FromGeneric(..))
 import ReWire.Unbound (Alpha)
-import Data.Maybe (fromMaybe)
-
-data Builtin = Error | Extern
-             | SetRef | GetRef
-             | Bind | Return
-             | Put | Get
-             | Signal | Lift | Extrude | Unfold
-             | VecFromList | VecReplicate | VecReverse | VecSlice | VecRSlice
-             | VecIndex | VecIndexProxy
-             | VecConcat
-             | VecMap | VecFoldR | VecFoldL | VecGenerate
-             | Finite | FiniteMinBound | FiniteMaxBound | ToFinite | ToFiniteMod | FromFinite
-             | NatVal
-             | Bits | Resize | BitSlice | BitIndex
-             | Add | Sub | Mul | Div | Mod | Pow
-             | LAnd | LOr | LNot
-             | And | Or | Not
-             | XOr | XNor
-             | LShift | RShift | RShiftArith
-             | Eq | Gt | GtEq | Lt | LtEq
-             | RAnd | RNAnd | ROr | RNor | RXOr | RXNor
-             | MSBit
-      deriving (Eq, Ord, Generic, Show, Typeable, Data, Bounded, Enum)
-      deriving TextShow via FromGeneric Builtin
-
-instance Hashable Builtin
-instance Alpha Builtin
-instance NFData Builtin
-
-builtinName :: Builtin -> Text
-builtinName b = fromMaybe "" $ lookup b $ map swap builtins
-
-builtins :: [(Text, Builtin)]
-builtins = map ((("rwPrim" <>) . showt) &&& id) [minBound .. maxBound]
-
-instance Pretty Builtin where
-      pretty = pretty . builtinName
-
 
 -- | Note: this is not injective (e.g., VecConcat has two notations)
 -- | Note: there are rwPrim defs in ReWire that don't have Builtins (e.g. ToInteger)

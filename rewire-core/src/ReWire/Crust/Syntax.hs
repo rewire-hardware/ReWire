@@ -22,19 +22,19 @@ module ReWire.Crust.Syntax
 import Prelude hiding (replicate)
 
 import ReWire.Annotation (Annote, Annotated (ann))
+import ReWire.Builtins (Builtin (..), builtins, builtinName)
 import ReWire.Orphans ()
 import ReWire.Pretty (empty, text, TextShow (showt), FromGeneric (..), Doc, nest, hsep, parens, dquotes, comma, brackets, vsep, (<+>), Pretty (pretty), punctuate)
 import ReWire.Unbound(runFreshM, Embed (..), TRec (..), untrec, Name, SubstName (..), Bind (..), unbind, Alpha (..), aeq, Subst (..), n2s)
 
-import Control.Arrow ((&&&), second)
+import Control.Arrow (second)
 import Control.DeepSeq (NFData (..), deepseq)
 import Data.Containers.ListUtils (nubOrdOn)
 import Data.Data (Typeable, Data (..))
 import Data.Hashable (Hashable (..))
 import Data.List (intersperse)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (isJust)
 import Data.Text (Text, unpack, replicate)
-import Data.Tuple (swap)
 import GHC.Generics (Generic (..))
 import Numeric.Natural (Natural)
 
@@ -185,40 +185,6 @@ instance Pretty Ty where
                         _                           -> False
 
 instance NFData Ty
-
-----
-
-data Builtin = Error | Extern
-             | SetRef | GetRef
-             | Bind | Return
-             | Put | Get
-             | Signal | Lift | Extrude | Unfold
-             | VecFromList | VecReplicate | VecReverse | VecSlice | VecRSlice
-             | VecIndex | VecIndexProxy
-             | VecConcat
-             | VecMap | VecFoldR | VecFoldL | VecGenerate
-             | Finite | FiniteMinBound | FiniteMaxBound | ToFinite | ToFiniteMod | FromFinite
-             | NatVal
-             | Bits | Resize | BitSlice | BitIndex
-             | Add | Sub | Mul | Div | Mod | Pow
-             | LAnd | LOr
-             | And | Or
-             | XOr | XNor
-             | LShift | RShift | RShiftArith
-             | Eq | Gt | GtEq | Lt | LtEq
-             | LNot | Not
-             | RAnd | RNAnd | ROr | RNor | RXOr | RXNor
-             | MSBit
-             | UsingExtern
-      deriving (Eq, Generic, Show, Typeable, Data, Bounded, Enum)
-      deriving TextShow via FromGeneric Builtin
-
-instance Hashable Builtin
-instance Alpha Builtin
-instance NFData Builtin
-
-instance Pretty Builtin where
-      pretty = pretty . builtinName
 
 ----
 
@@ -543,8 +509,3 @@ flattenTyApp = \ case
       TyApp _ t t' -> flattenTyApp t <> [t']
       t            -> [t]
 
-builtinName :: Builtin -> Text
-builtinName b = fromMaybe "" $ lookup b $ map swap builtins
-
-builtins :: [(Text, Builtin)]
-builtins = map ((("rwPrim" <>) . showt) &&& id) [minBound .. maxBound]

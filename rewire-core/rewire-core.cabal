@@ -31,6 +31,7 @@ library
   exposed-modules:
       ReWire.Annotation
       ReWire.BitVector
+      ReWire.Builtins
       ReWire.Config
       ReWire.Core.Check
       ReWire.Core.Interp
