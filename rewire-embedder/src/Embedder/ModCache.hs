@@ -10,18 +10,18 @@ module Embedder.ModCache
       , printHeader
       ) where
 
-import Embedder.Annotation (Annotation, SrcSpanInfo, unAnn, noAnn)
+import ReWire.Annotation (Annotation, SrcSpanInfo, unAnn, noAnn)
 import Embedder.Config (Config, verbose, dump, loadPath)
 import Embedder.Builtins (builtins)
 import qualified Embedder.Atmo.Syntax as A (Module (..), Defn (..), FreeProgram (..), FunBinding (..), Ty (..), TyConId (..), DataConId (..), Exp (..), untype)
 import qualified Embedder.Atmo.ToIsabelle as AtmoIsabelle
-import Embedder.Error (failAt, AstError, MonadError, filePath)
-import Embedder.HSE.Annotate (annotate)
+import ReWire.Error (failAt, AstError, MonadError, filePath)
+import ReWire.HSE.Annotate (annotate)
 import Embedder.HSE.Desugar (desugar, addMainModuleHead)
-import Embedder.HSE.Parse (tryParseInDir)
+import ReWire.HSE.Parse (tryParseInDir)
 import Embedder.HSE.Rename (Exports, Renamer, fromImps, allExports, toFilePath, fixFixity)
 import Embedder.HSE.ToAtmo (extendWithGlobs, toAtmo, getImps)
-import Embedder.Pretty (Pretty (..), prettyPrint, prettyPrint', fastPrint, showt)
+import ReWire.Pretty (Pretty (..), prettyPrint, prettyPrint', fastPrint, showt)
 
 import Control.Lens ((^.))
 import Control.Arrow ((***))

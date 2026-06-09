@@ -4,10 +4,10 @@
 {-# LANGUAGE Safe #-}
 module Embedder.HSE.Desugar (desugar, addMainModuleHead) where
 
-import Embedder.Annotation (noAnn, Annote (..))
-import Embedder.Error (MonadError, AstError, failAt)
+import ReWire.Annotation (noAnn, Annote (..))
+import ReWire.Error (MonadError, AstError, failAt)
 import Embedder.HSE.Rename (Renamer, FQName, CtorSigs, qnamish, name, Namespace (Value), rename, getLocalCtorSigs, lookupCtorSig, findCtorSigFromField)
-import Embedder.SYB (Tr (TId, TM, T), transformTr, transform, transformM, query)
+import ReWire.SYB (Tr (TId, TM, T), transformTr, transform, transformM, query)
 
 import Control.Monad (replicateM, (>=>), void, when, msum, unless)
 import Control.Monad.State (evalStateT, MonadState (..), modify)

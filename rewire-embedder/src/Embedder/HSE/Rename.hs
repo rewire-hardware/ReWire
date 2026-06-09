@@ -22,11 +22,11 @@ module Embedder.HSE.Rename
       , fromImps
       ) where
 
-import Embedder.Annotation (Annotation, Annote, noAnn)
-import Embedder.Error (failAt, mark, MonadError, AstError)
-import Embedder.HSE.Fixity (fixLocalOps, deuniquifyLocalOps)
-import Embedder.Orphans ()
-import Embedder.Pretty (TextShow, FromGeneric (..))
+import ReWire.Annotation (Annotation, Annote, noAnn)
+import ReWire.Error (failAt, mark, MonadError, AstError)
+import ReWire.HSE.Fixity (fixLocalOps, deuniquifyLocalOps)
+import ReWire.Orphans ()
+import ReWire.Pretty (TextShow, FromGeneric (..))
 
 import Control.Arrow ((&&&), first)
 import Control.Monad (foldM, void)

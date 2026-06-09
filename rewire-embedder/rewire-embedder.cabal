@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.39.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -30,7 +30,6 @@ source-repository head
 
 library
   exposed-modules:
-      Embedder.Annotation
       Embedder.Atmo.DependencyGraph
       Embedder.Atmo.Desugar
       Embedder.Atmo.FlattenMonadTrans
@@ -38,26 +37,15 @@ library
       Embedder.Atmo.ToIsabelle
       Embedder.Atmo.Types
       Embedder.Atmo.Util
-      Embedder.BitVector
       Embedder.Builtins
       Embedder.Config
-      Embedder.Error
-      Embedder.Fix
       Embedder.Flags
       Embedder.FrontEnd
-      Embedder.HSE.Annotate
       Embedder.HSE.Desugar
-      Embedder.HSE.Fixity
-      Embedder.HSE.Orphans
-      Embedder.HSE.Parse
       Embedder.HSE.Rename
       Embedder.HSE.ToAtmo
       Embedder.Isabelle.Syntax
       Embedder.ModCache
-      Embedder.Orphans
-      Embedder.Pretty
-      Embedder.SYB
-      Embedder.Unbound
   other-modules:
       Paths_rewire_embedder
   autogen-modules:
@@ -86,6 +74,7 @@ library
     , megaparsec ==9.7.*
     , mtl ==2.3.*
     , prettyprinter ==1.7.*
+    , rewire-core >=2.6
     , rewire-user >=0.1
     , split ==0.2.*
     , text ==2.1.*

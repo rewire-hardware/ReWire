@@ -18,8 +18,8 @@ import Data.Hashable (Hashable)
 import Control.DeepSeq (NFData)
 import Control.Arrow ((&&&))
 
-import Embedder.Pretty (Pretty (..), TextShow, FromGeneric(..), showt)
-import Embedder.Unbound (Alpha)
+import ReWire.Pretty (Pretty (..), TextShow, FromGeneric(..), showt)
+import ReWire.Unbound (Alpha)
 import Data.Maybe (fromMaybe)
 
 data Builtin = Error | Extern

@@ -10,7 +10,7 @@
 module Embedder.Isabelle.Syntax where
 
 import Data.Data ( Typeable, Data(..) )
-import Embedder.Pretty
+import ReWire.Pretty
     ( (<+>), punctuate, vsep, brackets, comma, dquotes,
       parens, space, Doc, Pretty(..), text, empty, TextShow (..) )
 import Data.List (intersperse)

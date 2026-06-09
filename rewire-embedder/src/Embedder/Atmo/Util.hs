@@ -9,7 +9,7 @@ module Embedder.Atmo.Util
       , mkRecVal, mkRecUpd, mkRecSel, mkPatRec
       ) where
 
-import Embedder.Annotation (Annote (MsgAnnote))
+import ReWire.Annotation (Annote (MsgAnnote))
 import Embedder.Atmo.Syntax (Exp (..), Ty (..), Pat (..), Defn (..), DefnAttr (..), Poly (..), FieldId, TyBuiltin)
 import Embedder.Atmo.Types (proxyTy, nilTy, strTy, arr, typeOf, arrowRight, pairTy, fundamental, mkArrowTy, paramTys)
 import Embedder.Builtins ( builtins, Builtin (..), tybuiltins, builtinUserQName, RWUserOp (..) )

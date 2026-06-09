@@ -5,12 +5,12 @@
 {-# LANGUAGE Trustworthy #-}
 module Embedder.HSE.ToAtmo (toAtmo, extendWithGlobs, getImps) where
 
-import Embedder.Annotation hiding (ann)
-import Embedder.Error
-import Embedder.HSE.Fixity
+import ReWire.Annotation hiding (ann)
+import ReWire.Error
+import ReWire.HSE.Fixity
 import Embedder.HSE.Rename
 import Embedder.Atmo.Types ((|->))
-import Embedder.SYB (query)
+import ReWire.SYB (query)
 
 import Control.Arrow ((&&&), second)
 import Control.Monad (foldM, void, when)
