@@ -18,7 +18,8 @@ import ReWire.Unbound (fresh, substs, Subst, n2s, s2n, unsafeUnbind, Fresh, Embe
 
 import Control.Arrow (first)
 import Control.DeepSeq (deepseq, force)
-import Control.Monad (zipWithM, foldM, mplus, when)
+import Control.Monad (zipWithM, foldM, mplus, when, unless)
+import Data.Containers.ListUtils (nubOrd)
 import Control.Monad.Reader (MonadReader, ReaderT (..), local, asks)
 import Control.Monad.State (evalStateT, gets, modify, MonadState)
 import Data.Data (Data)
@@ -28,6 +29,7 @@ import Data.Maybe (mapMaybe)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet        as Set
+import qualified Data.Text           as Text
 
 -- import ReWire.Pretty (hsep)
 -- import Debug.Trace (trace)
@@ -406,7 +408,18 @@ tcDefn start d  = flip evalStateT mempty $ do
       (body', _) <- localAssumps (`Map.union` (Map.fromList $ zip vs $ map (poly []) targs))
                          $ tcExp tbody body
 
-      body'' <- gets $ \ s -> transform (substTy $ compress s) body'
+      s <- gets compress
+      let body'' = transform (substTy s) body'
+
+      -- Type variables in the body that aren't fixed by the type of the
+      -- definition are ambiguous: nothing further constrains them, so they'd
+      -- otherwise flow to the back end unresolved (e.g., as 0-width wires).
+      let ambig = filter (`notElem` fv (substTy s t)) $ nubOrd (fv body'' :: [Name Ty])
+      unless (null ambig) $ failAt an
+            $ "Ambiguous type variable(s) in the definition of " <> n2s n
+           <> " (not determined by its type): "
+           <> Text.intercalate ", " (map showt ambig)
+           <> ". Try adding a type annotation."
 
       let d'  = Defn an n (Embed pt) b $ Embed $ bind vs body''
       d' `deepseq` pure d'
