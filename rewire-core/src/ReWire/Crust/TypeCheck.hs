@@ -43,14 +43,24 @@ subst = substs . Map.toList
 --   with map lookups instead of repeated full passes over the term and the
 --   substitution (`subst` is linear in the size of the substitution even
 --   when the term is a single variable).
+--
+--   Any chain of variable lookups longer than the size of the substitution
+--   must revisit a variable, i.e., the substitution contains a cycle.
+--   Unification shouldn't create cycles (mgu does occurs checks and orients
+--   var-var bindings consistently), so a cycle is an rwc bug -- but panic
+--   instead of hanging if one slips through (e.g., via tsUnion composition,
+--   which doesn't re-check occurrence across entries).
 substTy :: TySub -> Ty -> Ty
-substTy s = \ case
-      TyApp an t1 t2  -> TyApp an (substTy s t1) $ substTy s t2
-      t@(TyVar _ _ v) -> case Map.lookup v s of
-            Just (TyVar _ _ v') | v' == v -> t -- Identity bindings occur; don't chase them.
-            Just t'                       -> substTy s t'
-            Nothing                       -> t
-      t               -> t
+substTy s = go $ Map.size s
+      where go :: Int -> Ty -> Ty
+            go n = \ case
+                  TyApp an t1 t2  -> TyApp an (go n t1) $ go n t2
+                  t@(TyVar _ _ v) -> case Map.lookup v s of
+                        Just (TyVar _ _ v') | v' == v -> t -- Identity bindings occur; don't chase them.
+                        Just t' | n > 0               -> go (n - 1) t'
+                                | otherwise           -> error "rwc bug (TypeCheck): cyclic type substitution."
+                        Nothing                       -> t
+                  t               -> t
 
 -- | Close a substitution over itself, so a single `subst` pass suffices to
 --   fully rewrite a term.
