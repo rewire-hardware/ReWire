@@ -20,7 +20,7 @@ $ brew install haskell-stack
 
 To clone this repo, build, and install the `rwc` executable to `~/.local/bin`:
 ```
-$ git clone https://github.com/twosixlabs/ReWire
+$ git clone https://github.com/rewire-hardware/ReWire
 $ cd ReWire
 $ stack install
 ```

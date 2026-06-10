@@ -1,4 +1,4 @@
-cabal-version: 2.2
+cabal-version: 1.12
 
 -- This file has been generated from package.yaml by hpack version 0.39.1.
 --
@@ -9,15 +9,15 @@ version:        2.6
 synopsis:       A Haskell-to-Verilog/VHDL compiler, core library
 description:    An experimental compiler for a subset of Haskell to Verilog and VHDL.
 category:       Language
-homepage:       https://github.com/mu-chaco/ReWire
-bug-reports:    https://github.com/twosixlabs/ReWire.git/issues
+homepage:       https://github.com/rewire-hardware/ReWire#readme
+bug-reports:    https://github.com/rewire-hardware/ReWire/issues
 author:         Adam Procter,
                 Chris Hathhorn <hathhorn@gmail.com>,
                 Ian Graves,
                 William L. Harrison,
                 Matthew Heimerdinger
 maintainer:     Chris Hathhorn <hathhorn@gmail.com>
-license:        NONE
+license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
@@ -25,7 +25,8 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/twosixlabs/ReWire.git
+  location: https://github.com/rewire-hardware/ReWire
+  subdir: rewire-core
 
 library
   exposed-modules:
@@ -60,6 +61,7 @@ library
       ReWire.HSE.Annotate
       ReWire.HSE.Cache
       ReWire.HSE.Desugar
+      ReWire.HSE.Exports
       ReWire.HSE.Fixity
       ReWire.HSE.Orphans
       ReWire.HSE.Parse
@@ -68,6 +70,7 @@ library
       ReWire.LoFIRRTL.Syntax
       ReWire.ModCache
       ReWire.Orphans
+      ReWire.Pass
       ReWire.Pretty
       ReWire.SYB
       ReWire.Unbound
@@ -75,8 +78,6 @@ library
       ReWire.VHDL.Syntax
       ReWire.VHDL.ToLoFIRRTL
   other-modules:
-      Paths_rewire_core
-  autogen-modules:
       Paths_rewire_core
   hs-source-dirs:
       src

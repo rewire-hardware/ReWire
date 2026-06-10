@@ -9,8 +9,8 @@ version:        2.6
 synopsis:       A Haskell-to-Verilog compiler
 description:    A compiler for a subset of Haskell to Verilog and VHDL.
 category:       Language
-homepage:       https://github.com/mu-chaco/ReWire
-bug-reports:    https://github.com/twosixlabs/ReWire.git/issues
+homepage:       https://github.com/rewire-hardware/ReWire#readme
+bug-reports:    https://github.com/rewire-hardware/ReWire/issues
 author:         Adam Procter,
                 Chris Hathhorn <hathhorn@gmail.com>,
                 Ian Graves,
@@ -306,10 +306,11 @@ data-files:
 
 source-repository head
   type: git
-  location: https://github.com/twosixlabs/ReWire.git
+  location: https://github.com/rewire-hardware/ReWire
 
 library
   exposed-modules:
+      Driver
       RWC
       RWE
   other-modules:

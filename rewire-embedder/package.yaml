@@ -2,12 +2,11 @@ name:         rewire-embedder
 version:      2.6
 synopsis:     A ReWire-to-Isabelle embedder
 description:  For verification using the ReWire hardware description language
-homepage:     https://github.com/mu-chaco/ReWire
-license:      NONE
+license:      BSD3
 license-file: LICENSE
 category:     Language
 build-type:   Simple
-github:       twosixlabs/ReWire.git
+github:       rewire-hardware/ReWire/rewire-embedder
 maintainer:
 - Matthew Heimerdinger <matthew.heimerdinger@gmail.com>
 - Chris Hathhorn <hathhorn@gmail.com>
