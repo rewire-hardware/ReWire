@@ -25,7 +25,7 @@ import Control.Monad.State (evalStateT, gets, modify, MonadState)
 import Data.Data (Data)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
-import Data.Maybe (mapMaybe)
+import Numeric.Natural (Natural)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet        as Set
@@ -82,9 +82,6 @@ instance Semigroup TCEnv where
 instance Monoid TCEnv where
       mempty = TCEnv mempty mempty
 
-lookupAll :: Eq a => a -> [(a, b)] -> [b]
-lookupAll a = map snd . filter ((== a) . fst)
-
 typeCheckDefn :: (Fresh m, MonadError AstError m) => [DataDefn] -> [Defn] -> Defn -> m Defn
 typeCheckDefn ts vs d = runReaderT (withAssumps ts vs $ tcDefn (s2n "") d) mempty
 
@@ -92,27 +89,41 @@ typeCheckDefn ts vs d = runReaderT (withAssumps ts vs $ tcDefn (s2n "") d) mempt
 --   definitions by creating new definitions specialized to non-polymorphic types.
 typeCheck :: (Fresh m, MonadError AstError m) => Name Exp -> FreeProgram -> m FreeProgram
 typeCheck start (ts, syns, vs) = (ts, syns, ) <$> runReaderT tc mempty
-      where conc :: Concretes -> Defn -> [Defn]
-            conc cs (Defn an n _ b e) = mapMaybe conc' $ lookupAll n $ Map.keys cs
-                  where conc' :: Ty -> Maybe Defn
-                        conc' t = do
-                              n' <- Map.lookup (n, t) cs
-                              pure $ Defn an n' ([] |-> t) b e
+      where -- | Make a defn for each specialization of this defn's name in the index.
+            conc :: HashMap (Name Exp) [(Ty, Name Exp)] -> Defn -> [Defn]
+            conc idx (Defn an n _ b e) = map conc' $ Map.lookupDefault [] n idx
+                  where conc' :: (Ty, Name Exp) -> Defn
+                        conc' (t, n') = Defn an n' ([] |-> t) b e
+
+            byName :: Concretes -> HashMap (Name Exp) [(Ty, Name Exp)]
+            byName cs = Map.fromListWith (flip (<>)) [(n, [(t, n')]) | ((n, t), n') <- Map.toList cs]
 
             tc :: (Fresh m, MonadError AstError m, MonadReader TCEnv m) => m [Defn]
             tc = do
-                  vs' <- withAssumps ts vs $ mapM (tcDefn start) vs
-                  cs  <- concretes vs' -- TODO(chathhorn): don't think this needs to use fix.
-                  fst . fst <$> fixOn (Map.keys . snd) "polymorphic function instantiation" 10 tc' ((vs', mempty), cs)
+                  vs'       <- withAssumps ts vs $ mapM (tcDefn start) vs
+                  cs0       <- concretes mempty vs'
+                  (acc, cs) <- fst <$> fixOn (Map.keys . snd) "polymorphic function instantiation" specDepth tc' ((vs', mempty), cs0)
+                  -- Note: renaming uses to point at the specialized defns
+                  -- (concretize) only happens here, after the loop.
+                  pure $ concretize cs acc
 
+            -- | Each round: make and typecheck a defn for each use of a poly
+            --   defn at a concrete type discovered last round (cs'), then
+            --   collect the uses (of poly defns at concrete types) those new
+            --   defns contain, less any already-seen ones, for the next round.
             tc' :: (Fresh m, MonadError AstError m, MonadReader TCEnv m) => (([Defn], Concretes), Concretes) -> m (([Defn], Concretes), Concretes)
             tc' ((acc, cs), cs') = do
-                  let ep = concatMap (conc cs') polyDefs
-                  ep' <- concretize (cs <> cs') <$> withAssumps ts (acc <> ep) (mapM (tcDefn start) ep)
-                  ((concretize (cs <> cs') acc <> ep', cs <> cs'), ) <$> concretes ep'
+                  let ep   = concatMap (conc $ byName cs') polyDefs
+                      cs'' = cs <> cs'
+                  ep' <- withAssumps ts (acc <> ep) $ mapM (tcDefn start) ep
+                  ((acc <> ep', cs''), ) <$> concretes cs'' ep'
 
-            concretes :: Fresh m => [Defn] -> m Concretes
-            concretes = foldM (\ m c -> Map.insert c <$> fresh (fst c) <*> pure m) mempty . uses
+            concretes :: Fresh m => Concretes -> [Defn] -> m Concretes
+            concretes known = foldM (\ m c -> Map.insert c <$> fresh (fst c) <*> pure m) mempty
+                            . Set.filter (not . (`Map.member` known)) . uses
+
+            specDepth :: Natural
+            specDepth = 10 -- TODO: make configurable.
 
             polys :: HashSet (Name Exp)
             polys = foldr polys' mempty vs
