@@ -6,7 +6,7 @@
 -- {-# LANGUAGE Trustworthy #-}
 module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype, unify, unify', TySub) where
 
-import ReWire.Annotation (Annote (MsgAnnote), unAnn, ann)
+import ReWire.Annotation (Annote (MsgAnnote), ann)
 import ReWire.Crust.Syntax (Exp (..), Ty (..), Kind (..), Poly (..), Pat (..), MatchPat (..), FreeProgram, Defn (..), DataDefn (..), Builtin (..), DataCon (..), DataConId, builtinName)
 import ReWire.Crust.Types (mkArrowTy, poly, arrowRight, (|->), concrete, kblank, tyAnn, setTyAnn, flattenArrow, strTy, intTy, listTy, vecTy, arr, arrowLeft, dstPoly1, zeroP1, minusP1, pickVar, poly1Ty, prettyTy)
 import ReWire.Crust.Util (transMPat, patVars)
@@ -24,7 +24,6 @@ import Control.Monad.State (evalStateT, gets, modify, MonadState)
 import Data.Data (Data)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
-import Data.Hashable (Hashable (hash))
 import Data.Maybe (mapMaybe)
 
 import qualified Data.HashMap.Strict as Map
@@ -118,12 +117,15 @@ typeCheck start (ts, syns, vs) = (ts, syns, ) <$> runReaderT tc mempty
             isPoly :: Defn -> Bool
             isPoly (Defn _ _ (Embed (Poly (unsafeUnbind -> (_, t)))) _ _) = not $ concrete t
 
+            -- Note: Eq and Hashable on Ty both ignore annotations, so the
+            -- use types here don't need annotations stripped (with unAnn)
+            -- for use as map keys.
             uses :: Data a => a -> HashSet (Name Exp, Ty)
-            uses a = Set.fromList [(n, unAnn t) | Var _ _ (Just t) n <- query a, concrete t, Set.member n polys]
+            uses a = Set.fromList [(n, t) | Var _ _ (Just t) n <- query a, concrete t, Set.member n polys]
 
             concretize :: Data d => Concretes -> d -> d
             concretize cs = transform $ \ case
-                  v@(Var an tan t n) -> maybe v (Var an tan t) $ t >>= (\ t' -> Map.lookup (n, t') cs) . unAnn
+                  v@(Var an tan t n) -> maybe v (Var an tan t) $ t >>= \ t' -> Map.lookup (n, t') cs
                   e                  -> e
 
 freshv :: Fresh m => m Ty
@@ -136,11 +138,13 @@ tsUnion ts = foldr insert ts . Map.toList
                               | otherwise                                       = Map.insert v t ts'
 
 mgu :: Ty -> Ty -> Maybe TySub
-mgu t                               t'               | unAnn t == unAnn t'           = pure mempty
+-- Note: Eq on Ty ignores annotations (Eq Annote is trivially true), so
+-- there's no need to strip them (with unAnn) before comparing.
+mgu t                               t'               | t == t'                       = pure mempty
 
 mgu (TyCon _ c1)                    (TyCon _ c2)     | n2s c1 == n2s c2              = pure mempty
 
-mgu (TyVar _ _ u)                   tv@(TyVar _ _ v) | hash (show u) > hash (show v) = pure $ Map.fromList [(u, tv)]
+mgu (TyVar _ _ u)                   tv@(TyVar _ _ v) | u > v                         = pure $ Map.fromList [(u, tv)]
 mgu tu@TyVar {}                     (TyVar _ _ v)                                    = pure $ Map.fromList [(v, tu)]
 
 -- TODO: the special-case unifying with ReacT/PuRe is a hack and doesn't cover all cases. Should be removed eventually.
@@ -348,14 +352,14 @@ tcExp tt = \ case
             -- trace "tcExp: LitList" $ pure ()
             te  <- freshv
             _ <- unify an tt $ listTy an te
-            (es', te') <- foldM tcElem ([], te) es
+            (es', te') <- tcElems te es
             -- trace "tc: LitList: unify2" $ pure ()
             tt' <- unify an tt $ listTy an te'
             pure (LitList an tan (Just tt') es', tt')
       LitVec an tan _ es -> do
             -- trace "tcExp: LitVec" $ pure ()
             te  <- freshv
-            (es', te') <- foldM tcElem ([], te) es
+            (es', te') <- tcElems te es
             tt'   <- unify an tt $ vecTy an (TyNat an $ fromInteger $ toInteger $ length es') te'
             pure (LitVec an tan (Just tt') es', tt')
 
@@ -369,11 +373,16 @@ tcExp tt = \ case
                   LitList _ _ _ es -> pure es
                   _                -> Nothing
 
+            -- Note: accumulates the checked elements in reverse to avoid
+            -- quadratic list appends on long (e.g., bit-vector) literals.
+            tcElems :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Ty -> [Exp] -> m ([Exp], Ty)
+            tcElems te = (first reverse <$>) . foldM tcElem ([], te)
+
             tcElem :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => ([Exp], Ty) -> Exp -> m ([Exp], Ty)
             tcElem (els, tel) el = do
                   -- trace "tc: tcElem" $ pure ()
                   (el', tel') <- tcExp tel el
-                  pure (els <> [el'], tel')
+                  pure (el' : els, tel')
 
 
 tcDefn :: (Fresh m, MonadError AstError m, MonadReader TCEnv m) => Name Exp -> Defn -> m Defn
