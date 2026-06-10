@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Safe #-}
 module ReWire.Core.Check (check) where
 
@@ -9,10 +10,13 @@ import ReWire.Core.Syntax (isNil, sizeOf, LId, GId, Size, ExternSig (..), Device
 import ReWire.Error (MonadError, AstError, failAt)
 import ReWire.Pretty (showt, prettyPrint)
 
-import Data.HashMap.Strict (HashMap)
 import Control.Arrow ((&&&))
+import Control.Monad (foldM_)
+import Data.HashMap.Strict (HashMap)
+import Data.HashSet (HashSet)
 
 import qualified Data.HashMap.Strict as Map
+import qualified Data.HashSet        as Set
 
 type LIds = HashMap LId Size
 type DefnSigs = HashMap GId (Sig, Exp)
@@ -22,6 +26,7 @@ check p = do
       checkLoop
       checkState0
       mapM_ (checkDefn defnSigs) $ defns p
+      checkRecursion defnSigs $ loop p : state0 p : defns p
       pure p
       where defnSigs :: DefnSigs
             defnSigs = Map.fromList $ map (defnName &&& (defnSig &&& defnBody)) $ loop p : state0 p : defns p
@@ -48,9 +53,7 @@ check p = do
 checkDefn :: MonadError AstError m => DefnSigs -> Defn -> m ()
 checkDefn dsigs (Defn an n (Sig _ args res) body)
       | sizeOf body /= res = failAt an $ "core check: " <> n <> ": function body size mismatch: expected " <> showt res <> ", got " <> showt (sizeOf body) <> "."
-      | otherwise          = do
-            checkExp dsigs (Map.fromList $ zip [0..] args) body
-            checkRecursion dsigs [n] body
+      | otherwise          = checkExp dsigs (Map.fromList $ zip [0..] args) body
 
 checkExp :: MonadError AstError m => DefnSigs -> LIds -> Exp -> m ()
 checkExp dsigs args = \ case
@@ -68,19 +71,33 @@ checkExp dsigs args = \ case
       Call an sz (Const bv) _ ps _       | mkSig ps sz `neq` constSig bv       -> failAt an "core check: call: const sig mismatch"
       Call _ _ _ disc _ e                                                      -> checkExp dsigs args disc >> checkExp dsigs args e
 
-checkRecursion :: MonadError AstError m => DefnSigs -> [GId] -> Exp -> m ()
-checkRecursion dsigs gids = \ case
-      Concat _ e1 e2                                                            -> checkRecursion dsigs gids e1 >> checkRecursion dsigs gids e2
-      Call an _ (Global g) _ _ _ | g `elem` gids                                -> failAt an $ "core check: unsupported use of recursion (core id: " <> g <> ")."
-      Call _ _ (Global g) e1 _ e2 | Just (_, body) <- Map.lookup g dsigs
-                                  , g `notElem` gids                            -> do
-            checkRecursion dsigs gids e1
-            checkRecursion dsigs gids e2
-            checkRecursion dsigs (g : gids) body
-      Call _ _ _ e1 _ e2                                                        -> do
-            checkRecursion dsigs gids e1
-            checkRecursion dsigs gids e2
-      _                                                                         -> pure ()
+-- | Check that the call graph is acyclic: a depth-first search over global
+--   calls, reporting a cycle at the call site that closes it. Defns already
+--   checked (done) are skipped, so each defn body is walked at most once --
+--   re-walking callee bodies at every call site, as previously, could blow
+--   up combinatorially on deep call graphs.
+checkRecursion :: forall m. MonadError AstError m => DefnSigs -> [Defn] -> m ()
+checkRecursion dsigs = foldM_ visitDefn mempty
+      where visitDefn :: HashSet GId -> Defn -> m (HashSet GId)
+            visitDefn done (Defn _ n _ body)
+                  | n `Set.member` done = pure done
+                  | otherwise           = Set.insert n <$> visitExp (Set.singleton n) done body
+
+            visitExp :: HashSet GId -> HashSet GId -> Exp -> m (HashSet GId)
+            visitExp stack done = \ case
+                  Concat _ e1 e2                                       -> visitExp stack done e1 >>= flip (visitExp stack) e2
+                  Call an _ (Global g) _ _ _ | g `Set.member` stack    -> failAt an $ "core check: unsupported use of recursion (core id: " <> g <> ")."
+                  Call _ _ (Global g) e1 _ e2                          -> do
+                        done' <- visitExp stack done e1 >>= flip (visitExp stack) e2
+                        visitCallee stack done' g
+                  Call _ _ _ e1 _ e2                                   -> visitExp stack done e1 >>= flip (visitExp stack) e2
+                  _                                                    -> pure done
+
+            visitCallee :: HashSet GId -> HashSet GId -> GId -> m (HashSet GId)
+            visitCallee stack done g
+                  | g `Set.member` done                  = pure done
+                  | Just (_, body) <- Map.lookup g dsigs = Set.insert g <$> visitExp (Set.insert g stack) done body
+                  | otherwise                            = pure done
 
 mkSig :: [Pat] -> Size -> Sig
 mkSig ps = Sig noAnn (sizeOf <$> filter isVar ps)
