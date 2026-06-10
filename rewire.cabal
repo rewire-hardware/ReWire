@@ -346,29 +346,6 @@ library
     , text ==2.1.*
   default-language: Haskell2010
 
-executable firrtl
-  main-is: Main.hs
-  other-modules:
-      Paths_rewire
-  hs-source-dirs:
-      apps/firrtl
-  default-extensions:
-      LambdaCase
-      TupleSections
-      ViewPatterns
-  ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
-  build-depends:
-      base ==4.20.*
-    , directory ==1.3.*
-    , filepath ==1.5.*
-    , ghc ==9.10.*
-    , lens ==5.3.*
-    , rewire-core
-    , rewire-embedder
-    , rewire-user ==0.2.*
-    , text ==2.1.*
-  default-language: Haskell2010
-
 executable rwc
   main-is: Main.hs
   other-modules:

@@ -31,7 +31,7 @@ import System.FilePath ((-<.>))
 import qualified Data.HashSet as Set
 import qualified Data.Text.IO as T
 
-data Language = Interpret | FIRRTL | VHDL | Verilog | RWCore | Haskell
+data Language = Interpret | VHDL | Verilog | RWCore | Haskell
       deriving (Eq, Ord, Show)
 data ResetFlag = Inverted | Synchronous
       deriving (Eq, Ord, Show, Generic)
@@ -110,7 +110,6 @@ type ErrorMsg = Text
 getOutFile :: Config -> FilePath -> FilePath
 getOutFile c filename = flip fromMaybe (c^.outFile) $ case c^.target of
       Verilog   -> filename -<.> "sv"
-      FIRRTL    -> filename -<.> "fir"
       VHDL      -> filename -<.> "vhdl"
       Interpret -> filename -<.> "yaml"
       RWCore    -> filename -<.> "rwc"
@@ -125,7 +124,6 @@ interpret = foldM interp defaultConfig
                   FlagLoadPath (pack -> p)        -> pure $ over loadPath (<> map unpack (splitOn' "," p)) c
                   FlagO p | Nothing <- c^.outFile -> pure $ outFile .~ pure p   $ c
                           | otherwise             -> Left "Multiple output files specified on the command line."
-                  FlagFirrtl                      -> pure $ target .~ FIRRTL    $ c
                   FlagVerilog                     -> pure $ target .~ Verilog   $ c
                   FlagVhdl                        -> pure $ target .~ VHDL      $ c
                   FlagInterpret Nothing           -> pure $ target .~ Interpret $ c

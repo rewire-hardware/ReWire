@@ -67,7 +67,6 @@ compileFile conf filename = do
                               ) a
                   b' <- Core.check b
                   case conf^.target of
-                        FIRRTL    -> liftIO $ T.putStrLn "FIRRTL backend currently out-of-order. Use '--verilog' or '--interpret'."
                         VHDL      -> VHDL.compileProgram conf b' >>= writeOutput
                         RWCore    -> writeOutput b'
                         Interpret -> do

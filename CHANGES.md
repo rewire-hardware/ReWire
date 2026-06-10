@@ -18,6 +18,9 @@
   tests.
 * Documentation refresh: changelog split out of the README (this file);
   stale tutorial and design-doc material updated or archived.
+* Removed the experimental FIRRTL backend, which had been non-functional
+  since 2.1: the `rwc --firrtl` flag, the `firrtl` executable, and the
+  `ReWire.FIRRTL.*`/`ReWire.LoFIRRTL.*` modules are gone.
 
 ## 2.6 (2025-02)
 

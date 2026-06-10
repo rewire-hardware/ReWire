@@ -52,9 +52,6 @@ library
       ReWire.Crust.Types
       ReWire.Crust.Util
       ReWire.Error
-      ReWire.FIRRTL.Parse
-      ReWire.FIRRTL.Syntax
-      ReWire.FIRRTL.ToLoFIRRTL
       ReWire.Fix
       ReWire.Flags
       ReWire.FrontEnd
@@ -67,7 +64,6 @@ library
       ReWire.HSE.Parse
       ReWire.HSE.Rename
       ReWire.HSE.ToCrust
-      ReWire.LoFIRRTL.Syntax
       ReWire.ModCache
       ReWire.Orphans
       ReWire.Pass
@@ -76,7 +72,6 @@ library
       ReWire.Unbound
       ReWire.Verilog.Syntax
       ReWire.VHDL.Syntax
-      ReWire.VHDL.ToLoFIRRTL
   other-modules:
       Paths_rewire_core
   hs-source-dirs:

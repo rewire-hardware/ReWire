@@ -75,12 +75,6 @@ executables:
     dependencies:
     - rewire
 
-  firrtl:
-    source-dirs: apps/firrtl
-    main: Main.hs
-    dependencies:
-    - rewire-core
-
 benchmarks:
   rwc-perf:
     source-dirs: apps/rwc-perf
