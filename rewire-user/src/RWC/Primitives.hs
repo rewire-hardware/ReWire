@@ -267,19 +267,20 @@ rwPrimNatVal :: KnownNat n => Proxy n -> Integer
 rwPrimNatVal = natVal
 
 -- | bitSlice a j i returns bits j (most significant) to i (least significant) from a (j >= i).
+--   Bits are numbered with the least significant bit at 0 (Verilog convention);
+--   the head of the Vec is the most significant bit.
 --   The Finite arguments must be known/literals (after inlining).
 rwPrimBitSlice :: KnownNat m => Vec n Bool -> Finite n -> Finite n -> Vec m Bool
-rwPrimBitSlice v j i = case V.toSized 
-                           (VU.slice (GHC.fromIntegral (F.getFinite i))
-                                     (GHC.fromIntegral (F.getFinite j))
-                                     (V.fromSized v)) of
-      GHC.Nothing -> GHC.error "rwPrimBitSlice: slice size mismatch" 
+rwPrimBitSlice v j i = case V.toSized (VU.slice start len (V.fromSized v)) of
+      GHC.Nothing -> GHC.error "rwPrimBitSlice: slice size mismatch"
       GHC.Just w  -> w
+      where start = VU.length (V.fromSized v) GHC.- 1 GHC.- GHC.fromIntegral (F.getFinite j)
+            len   = GHC.fromIntegral (F.getFinite j GHC.- F.getFinite i GHC.+ 1)
 
 -- | bitIndex a i == bitSlice a i i.
 --   The Finite argument must be known/literal (after inlining).
 rwPrimBitIndex :: Vec n Bool -> Finite n -> Bool
-rwPrimBitIndex = V.index
+rwPrimBitIndex v i = V.fromSized v VU.! (VU.length (V.fromSized v) GHC.- 1 GHC.- GHC.fromIntegral (F.getFinite i))
 
 -- *** Primitive bitwise operations based on Verilog operators. ***
 
@@ -376,25 +377,25 @@ rwPrimLtEq v w = BW.toInteger' v GHC.<= BW.toInteger' w
 rwPrimRAnd :: Vec n Bool -> Bool
 rwPrimRAnd = V.and
 
--- | Reduction nand.
+-- | Reduction nand (NOT of the and-reduction, following the Verilog ~& operator).
 rwPrimRNAnd :: Vec (1 + n) Bool -> Bool
-rwPrimRNAnd = V.foldl1 (\ x y -> GHC.not (x GHC.&& y))
+rwPrimRNAnd = GHC.not . V.and
 
 -- | Reduction or.
 rwPrimROr :: Vec n Bool -> Bool
 rwPrimROr = V.or
 
--- | Reduction nor.
+-- | Reduction nor (NOT of the or-reduction, following the Verilog ~| operator).
 rwPrimRNor :: Vec (1 + n) Bool -> Bool
-rwPrimRNor = V.foldl1 (\ x y -> GHC.not (x GHC.|| y))
+rwPrimRNor = GHC.not . V.or
 
 -- | Reduction xor.
 rwPrimRXOr :: Vec (1 + n) Bool -> Bool
 rwPrimRXOr = V.foldl1 GHC.xor
 
--- | Reduction xnor.
+-- | Reduction xnor (NOT of the xor-reduction, following the Verilog ~^ operator).
 rwPrimRXNor :: Vec (1 + n) Bool -> Bool
-rwPrimRXNor = V.foldl1 (\ x y -> GHC.not (GHC.xor x y))
+rwPrimRXNor = GHC.not . V.foldl1 GHC.xor
 
 -- | Most significant bit.
 rwPrimMSBit :: Vec (1 + n) Bool -> Bool
