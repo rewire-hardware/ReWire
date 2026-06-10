@@ -44,3 +44,5 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - rewire-user
+    - tasty
+    - tasty-hunit
