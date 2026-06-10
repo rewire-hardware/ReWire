@@ -1,3 +1,10 @@
+[Note: these are design notes for what is now the Crust.Purify pass; they
+predate some renaming in the implementation. Read ReT as ReacT, StT as
+StateT, and I as Identity. The "compilable form" restrictions described in
+Section (I) are established by the passes that run before purification
+(specialization during type checking, lambda lifting, etc.) rather than
+imposed on source programs directly.]
+
 (The background assumption here is that we are working in basically Haskell
 98, minus type classes, plus the ReWire primitives.)
 

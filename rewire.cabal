@@ -284,6 +284,7 @@ data-files:
     rewire-user/src/ReWire/Monad.hs
     rewire-user/src/ReWire/Prelude.hs
     rewire-user/src/ReWire/Vectors.hs
+    tutorial/rewire-by-example/book.toml
     tutorial/rewire-by-example/README.md
     tutorial/rewire-by-example/src/carrysaveadders.md
     tutorial/rewire-by-example/src/chapter_1.md

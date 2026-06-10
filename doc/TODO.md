@@ -10,8 +10,9 @@
 3. Add some simple tests using the new user-level interface in
    `tests/regression`.
 
-4. Add the new primitive as a constructor for the `Builtin` type around line
-   191 in `rewire-core/src/ReWire/Crust/Syntax.hs`.
+4. Add the new primitive as a constructor for the `Builtin` type in
+   `rewire-core/src/ReWire/Builtins.hs` (re-exported by
+   `ReWire.Crust.Syntax`).
 
 5. Add a translation for the new primitive from RWCrust to the RWCore IR (i.e.,
    define it in terms of RWCore). Extend the `transBuiltin` function in
@@ -27,11 +28,12 @@
    output should look something like:
    ```
    [...]
+   Debug: [1] (Haskell) Fixing fixity.
    Debug: [2] (Haskell) Annotating.
    Debug: [3] (Haskell) Desugaring.
    Debug: [4] (Haskell) Translating to Crust IR.
-   Debug: [5] Concatenating Crust IR for module: fibo2.hs
-   Debug: [6] Adding primitives
+   Debug: [5] Concatenating Crust IR for module: tests/regression/fibo2.hs
+   Debug: [6] Adding primitives.
    Debug: [7] Removing the Main.main definition (before attempting to typecheck it).
    Debug: [8] Inlining INLINE-annotated definitions.
    Debug: [9] Expanding type synonyms.
@@ -39,60 +41,56 @@
    Debug: [11] Removing Haskell definitions for externs.
    Debug: [12] Removing unused definitions.
    Debug: [13] Eliminating pattern bindings (case expressions).
-   Debug: [14] Partial evaluation.
+   Debug: [14] Lifting lambdas.
+   Debug: [15] Partial evaluation.
    Debug: > Specializing...
    Debug: > Purging...
    Debug: > Reducing...
-   Debug: [15] Normalizing bind.
-   Debug: [16] Lifting, shifting, eta-abstracting lambdas.
-   Debug: [17] Purifying.
-   Debug: [18] Final lifting, shifting, eta-abstracting lambdas.
-   Debug: [19] Final purging of unused definitions.
-   Debug: [20] Translating to core & HDL.
-   Debug: [21] Core.
+   Debug: [16] Normalizing bind.
+   Debug: [17] Lifting lambdas.
+   Debug: [18] Removing unused definitions.
+   Debug: [19] Inlining extrudes.
+   Debug: [20] Reducing.
+   Debug: [21] Shifting lambdas.
+   Debug: [22] Eta-abstracting definitions.
+   Debug: [23] Purifying.
+   Debug: [24] Final lifting of lambdas.
+   Debug: [25] Final shifting of lambdas.
+   Debug: [26] Final eta-abstraction of definitions.
+   Debug: [27] Final purging of unused definitions.
+   Debug: [28] Translating to core & HDL.
+   Debug: [29] Core.
    Debug: Partially evaluating/reducing core IR. If this is taking too long, consider disabling with --rtl-opt=0.
    ```
+   (Passes 1-5 run once per module; the exact numbering of the later passes
+   may shift as passes are added or removed, so check the `-v` output.)
 
 8. Dump the IR for the passes leading up to the point of failure. The numbers
    in brackets above indicate the current "pass", which are points in the
-   compilation process for which IR can be dumped. Passes 1-4 are Haskell (HSE),
-   passes 5-20 are RWCrust, and pass 21 is RWCore. The corresponding IR for a
-   certain pass (or several passes) can be dumped with `-d` flag, e.g., `rwc -d
-   1,3,4 myfile.hs > output.hs`. Note that if you add `-v` you'll also get the
-   `show` output for the IR in addition to the `prettyPrint` output.
+   compilation process for which IR can be dumped. Passes 1-4 are Haskell
+   (HSE), passes 5 through second-to-last are RWCrust, and the final pass is
+   RWCore. The corresponding IR for a certain pass (or several passes) can be
+   dumped with `-d` flag, e.g., `rwc -d 1,3,4 myfile.hs > output.hs`. Note
+   that if you add `-v` you'll also get the `show` output for the IR in
+   addition to the `prettyPrint` output.
 
-9. Debug the issue. Most of the RWC pipeline can be found in
+9. Debug the issue. The RWC pipeline is defined by the pass lists
+   (`frontPasses`, `midPasses`, `backPasses`) in `getDevice` in
    `rewire-core/src/ReWire/ModCache.hs`:
    ```haskell
-    -- [...]
-    >=> pass 6 "Adding primitives"
-    >=> pure . addPrims
-    >=> pass 7 "Removing the Main.main definition (before attempting to typecheck it)."
-    >=> pure . removeMain
-    >=> pass 8 "Inlining INLINE-annotated definitions."
-    >=> inlineAnnotated
-    >=> pass 9 "Expanding type synonyms."
-    >=> expandTypeSynonyms
-    >=> pass 10 "Typechecking, inference."
-    >=> kindCheck >=> typeCheck start
-    >=> pass 11 "Removing Haskell definitions for externs."
-    >=> pure . neuterExterns
-    >=> pass 12 "Removing unused definitions."
-    >=> purge start >=> extraTC
-    >=> pass 13 "Eliminating pattern bindings (case expressions)."
-    >=> elimCase >=> liftLambdas >=> extraTC
-    >=> pass 14 "Partial evaluation."
-    >=> simplify conf >=> extraTC
-    >=> pass 15 "Normalizing bind."
-    >=> normalizeBind >=> extraTC
-    -- [...]
+   midPasses =
+         [ ("Removing unused definitions.",                     purge start)
+         , ("Eliminating pattern bindings (case expressions).", elimCase)
+         , ("Lifting lambdas.",                                 liftLambdas)
+         , ("Partial evaluation.",                              simplify conf)
+         , ("Normalizing bind.",                                normalizeBind)
+         -- [...]
    ```
    If e.g. the IR from pass 13 does not exhibit the bug, but the IR from pass
-   14 does, then the problem is likely caused by either the `elimCase` or
-   `liftLambdas` transformations. Note that the RWC `--debug-typecheck` flag
-   can also be used to enable extra typechecking of the Crust IR after most major
-   transformations (at points indicated by `extraTC` in the pipeline excerpt
-   above).
+   14 does, then the problem is likely caused by the `liftLambdas`
+   transformation. Note that the RWC `--debug-typecheck` flag can also be
+   used to enable extra typechecking of the Crust IR after each of the
+   mid-pipeline transformations.
 
 # TODOs
 

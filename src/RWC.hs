@@ -23,7 +23,7 @@ options =
        , Option ['d'] ["dump"]            (ReqArg FlagDump        "1,2,...")         "Dump the intermediate form of the corresponding pass number (in brackets; see -v output)."
        , Option []    ["debug-typecheck"] (NoArg  FlagDebugTypeCheck)                "Re-run type-checking after every transformation to possibly catch compiler bugs."
        , Option []    ["flatten"]         (NoArg  FlagFlatten)                       "Flatten RTL output into a single module (currently slow, memory-intensive)."
-       , Option ['o'] []                  (ReqArg FlagO           "filename.vhdl")   "Name for output file."
+       , Option ['o'] []                  (ReqArg FlagO           "filename")        "Name for output file."
        , Option ['p'] ["vhdl-packages"]   (ReqArg FlagVhdlPkgs    "pkg1,pkg2,...")   "Packages to use for external VHDL components (e.g., ieee.std_logic_1164.all)."
        , Option []    ["reset"]           (ReqArg FlagResetName   "name")            "Name to use for reset signal in generated RTL."
        , Option []    ["clock"]           (ReqArg FlagClockName   "name")            "Name to use for clock signal in generated RTL."
