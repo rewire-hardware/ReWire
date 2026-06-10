@@ -283,6 +283,12 @@ primUnOps = map (second $ \ op sz -> mkBV sz . op) unops
             unops = [ (LNot  , fromIntegral . fromEnum . (== bvFalse))
                     , (Not   , nat . complement) -- TODO(chathhorn): semantics?
                     , (MSBit , \ x -> toInteger $ fromEnum $ testBit x (fromEnum $ width x - 1))
+                    , (RAnd  , \ x -> toZ $ x == BV.ones (fromEnum $ width x))
+                    , (RNAnd , \ x -> toZ $ x /= BV.ones (fromEnum $ width x))
+                    , (ROr   , \ x -> toZ $ nat x /= 0)
+                    , (RNor  , \ x -> toZ $ nat x == 0)
+                    , (RXOr  , \ x -> toZ $ odd $ popCount $ nat x)
+                    , (RXNor , \ x -> toZ $ even $ popCount $ nat x)
                     ]
 
 coerceZ :: (Bounded a, Bounded b, Enum a, Enum b, Enum c) => (a -> b -> c) -> Integer -> Integer -> Integer

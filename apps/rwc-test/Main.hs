@@ -4,16 +4,16 @@ import qualified RWC
 
 import Control.Exception (try, finally)
 import Control.Monad (unless, when, msum)
-import Data.List (isSuffixOf, isInfixOf, stripPrefix)
+import Data.List (isSuffixOf, isInfixOf, stripPrefix, intercalate)
 import Data.Maybe (fromMaybe, mapMaybe)
 import GHC.IO.Handle (hDuplicate, hDuplicateTo)
 import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), ArgDescr (..))
-import System.Directory (listDirectory, setCurrentDirectory, doesFileExist)
+import System.Directory (listDirectory, setCurrentDirectory, getCurrentDirectory, doesFileExist)
 import System.Environment (getArgs)
 import System.Environment (withArgs)
 import System.Exit (exitFailure, ExitCode (..))
 import System.FilePath ((</>), (-<.>), takeBaseName, takeDirectory)
-import System.IO (hPutStr, hPutStrLn, hClose, hFlush, openFile, stderr, IOMode (WriteMode))
+import System.IO (hPutStr, hPutStrLn, hClose, hFlush, openFile, stderr, stdout, Handle, IOMode (WriteMode))
 import System.Process (callCommand)
 import Test.Tasty (defaultMain, sequentialTestGroup, TestTree, DependencyType (..))
 import Test.Tasty.HUnit (testCase, assertFailure, assertBool)
@@ -103,7 +103,13 @@ testCompiler flags fn = do
                   callCommand $ verilator <> " " <> verilog <> " " <> ofile "sv"
                ])
 
-      let vhdlTests = []
+      vhdlTests <-
+            -- Test: compile Core to VHDL with RWC. Opt-in per test: only runs
+            -- when a .vhdl golden exists, since the VHDL backend supports less
+            -- than the Verilog one.
+            maybeGolden "vhdl" (do
+                  cdTestdir
+                  withArgs ((fn -<.> "rwc") : ["--from-core", "--vhdl", "-o", ofile "vhdl"] <> extraFlags) RWC.main)
 
       pure $ ghcTests <> coreTests <> verilogTests <> vhdlTests
 
@@ -175,17 +181,52 @@ testNegative fn = testCase (takeBaseName fn <> " (expected error)") $ do
       where expectedErrors :: String -> [String]
             expectedErrors = mapMaybe (stripPrefix "-- EXPECT-ERROR: ") . lines
 
-            -- | Run an action with stderr redirected to a file.
-            withStderrTo :: FilePath -> IO a -> IO a
-            withStderrTo f io = do
-                  saved <- hDuplicate stderr
-                  h     <- openFile f WriteMode
-                  hDuplicateTo h stderr
-                  io `finally` do
-                        hFlush stderr
-                        hDuplicateTo saved stderr
-                        hClose h
-                        hClose saved
+-- | Run an action with a handle (stdout, stderr) redirected to a file.
+withHandleTo :: Handle -> FilePath -> IO a -> IO a
+withHandleTo hdl f io = do
+      saved <- hDuplicate hdl
+      h     <- openFile f WriteMode
+      hDuplicateTo h hdl
+      io `finally` do
+            hFlush hdl
+            hDuplicateTo saved hdl
+            hClose h
+            hClose saved
+
+withStderrTo :: FilePath -> IO a -> IO a
+withStderrTo = withHandleTo stderr
+
+withStdoutTo :: FilePath -> IO a -> IO a
+withStdoutTo = withHandleTo stdout
+
+-- | Compile fixed test programs with flag combinations the golden tests don't
+--   exercise (verbose tracing, pass dumps, alternate signal names, reset/clock
+--   variations, interpreter cycle bounds, VHDL target). These only assert that
+--   rwc succeeds; outputs are not compared against goldens. Stdout (verbose
+--   trace, IR dumps) is redirected to a log file next to the other outputs.
+getSmokeTests :: IO TestTree
+getSmokeTests = do
+      dir <- getDataFileName ("tests" </> "regression")
+      pure $ sequentialTestGroup "flags" AllFinish
+            [ smoke dir "fibo1.hs" "dumps" "sv"
+                  [ "-v", "--flatten", "--pretty", "--sync-reset", "--invert-reset"
+                  , "--start", "Main.start", "--top", "smoke_top"
+                  , "--inputs", "i0", "--outputs", "o0", "--states", "s0,s1"
+                  , "--depth", "4", "--rtl-opt", "2", "--loadpath", "."
+                  , "-d", intercalate "," (map show [1 :: Int .. 25])
+                  ]
+            , smoke dir "onestate.hs" "vhdl"      "vhdl" ["--vhdl", "-p", "ieee.std_logic_1164.all"]
+            , smoke dir "fibo1.hs"    "noclock"   "sv"   ["--no-clock", "--no-reset"]
+            , smoke dir "fibo1.hs"    "interp"    "yaml" ["--interpret", "--cycles", "3"]
+            , smoke dir "fibo1.hs"    "typecheck" "rwc"  ["--debug-typecheck", "--core"]
+            ]
+      where smoke :: FilePath -> FilePath -> String -> String -> [String] -> TestTree
+            smoke dir file name ext args = testCase (takeBaseName file <> " (flags: " <> name <> ")") $ do
+                  let fn   = dir </> file
+                      out  = fn -<.> ("out.smoke-" <> name <> "." <> ext)
+                  setCurrentDirectory dir
+                  withStdoutTo (fn -<.> ("out.smoke-" <> name <> ".log")) $
+                        withArgs ([fn, "-o", out] <> args) RWC.main
 
 getNegTests :: FilePath -> IO TestTree
 getNegTests dirName = do
@@ -212,10 +253,15 @@ main = do
             mapM_ (hPutStrLn stderr) errs
             exitUsage
 
-      tests    <- mapM (getTests flags) testDirs
-      negTests <- getNegTests "negative"
+      tests      <- mapM (getTests flags) testDirs
+      negTests   <- getNegTests "negative"
+      smokeTests <- getSmokeTests
 
-      withArgs (injectTastyArgs flags) $ defaultMain $ sequentialTestGroup "Tests" AllFinish $ tests <> [negTests]
+      -- The tests change the working directory, so restore it on exit (HPC
+      -- writes its .tix relative to the final working directory).
+      cwd0 <- getCurrentDirectory
+      withArgs (injectTastyArgs flags) (defaultMain $ sequentialTestGroup "Tests" AllFinish $ tests <> [smokeTests, negTests])
+            `finally` setCurrentDirectory cwd0
 
       where injectTastyArgs :: [Flag] -> [String]
             injectTastyArgs = concatMap toTastyArg

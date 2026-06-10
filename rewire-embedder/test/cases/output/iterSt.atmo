@@ -209,7 +209,7 @@ module
   rwPrimBitSlice :: ((Vec n Bool) -> ((Finite n) -> ((Finite n) -> (Vec m Bool))))
   v j i |-> error "Prim: rwPrimBitSlice"
   rwPrimBitIndex :: ((Vec n Bool) -> ((Finite n) -> Bool))
-   |-> error "Prim: rwPrimBitIndex"
+  v i |-> error "Prim: rwPrimBitIndex"
   rwPrimAdd :: ((Vec n Bool) -> ((Vec n Bool) -> (Vec n Bool)))
   v w |-> error "Prim: rwPrimAdd"
   rwPrimSub :: ((Vec n Bool) -> ((Vec n Bool) -> (Vec n Bool)))

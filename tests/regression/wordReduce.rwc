@@ -1,0 +1,26 @@
+device top_level:
+
+inputs [("__in0",8)]
+outputs [("__out0",6)]
+states []
+
+$Pure.dispatch :: W8 -> W6
+$Pure.dispatch $0 = 6'case 8'$0 of
+    {8'@} -> $LL.Main.compute1
+
+$Pure.start :: W6
+$Pure.start  = 6'h15
+
+$LL.Main.compute1 :: W8 -> W6
+$LL.Main.compute1 $0 = {1'case 8'$0 of
+    {8'@} -> RAnd
+  , 1'case 8'$0 of
+    {8'@} -> RNAnd
+  , 1'case 8'$0 of
+    {8'@} -> ROr
+  , 1'case 8'$0 of
+    {8'@} -> RNor
+  , 1'case 8'$0 of
+    {8'@} -> RXOr
+  , 1'case 8'$0 of
+    {8'@} -> RXNor}

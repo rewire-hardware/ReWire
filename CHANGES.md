@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+* Test coverage expansion across the suites: VHDL golden tests
+  (`tests/regression/*.vhdl`, opt-in per test since the VHDL backend supports
+  less than the Verilog one), a CLI-flags smoke group exercising verbose
+  tracing, pass dumps, and signal-naming options, new negative tests, a
+  regression test for the bitvector reduction operators, and a much larger
+  rewire-user suite (GHC-side device simulation, bit slicing, Finite
+  arithmetic).
+* Fixed GHC-compatible implementations of several rewire-user primitives that
+  disagreed with the compiler: `rwPrimBitSlice`/`rwPrimBitIndex` (bits are
+  numbered LSB-at-0, Verilog style) and `rwPrimRNAnd`/`rwPrimRNor`/
+  `rwPrimRXNor` (NOT-of-reduction rather than a pairwise fold).
+* The Core interpreter now supports the reduction primitives (`RAnd`,
+  `RNAnd`, `ROr`, `RNor`, `RXOr`, `RXNor`); as a consequence the Core
+  partial evaluator can now constant-fold them.
+
 ## 2.7 (2026-06)
 
 * Compile-time performance overhaul, especially for large files: type

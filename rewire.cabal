@@ -31,13 +31,18 @@ data-files:
     tests/negative/illtyped-dead-code.hs
     tests/negative/illtyped-use.hs
     tests/negative/kind-error.hs
+    tests/negative/live-error-call.hs
+    tests/negative/missing-import.hs
     tests/negative/negative-vec-size.hs
     tests/negative/no-start.hs
     tests/negative/parse-error.hs
     tests/negative/recursive-datatype.hs
+    tests/negative/slice-invalid-range.hs
+    tests/negative/slice-nonliteral-index.hs
     tests/negative/start-wrong-type.hs
     tests/negative/unbounded-recursion.hs
     tests/negative/unknown-var.hs
+    tests/negative/unsupported-instance.hs
     tests/regression/Mods/Infix.hs
     tests/regression/Mods/X.hs
     tests/regression/Mods/Y.hs
@@ -102,6 +107,7 @@ data-files:
     tests/regression/wordArith.hs
     tests/regression/wordBitwise.hs
     tests/regression/wordLit.hs
+    tests/regression/wordReduce.hs
     tests/regression/wordShift.hs
     tests/regression/wordSlice.hs
     tests/regression/case1.sv
@@ -160,6 +166,7 @@ data-files:
     tests/regression/wordArith.sv
     tests/regression/wordBitwise.sv
     tests/regression/wordLit.sv
+    tests/regression/wordReduce.sv
     tests/regression/wordShift.sv
     tests/regression/wordSlice.sv
     tests/regression/case1.rwc
@@ -218,8 +225,23 @@ data-files:
     tests/regression/wordArith.rwc
     tests/regression/wordBitwise.rwc
     tests/regression/wordLit.rwc
+    tests/regression/wordReduce.rwc
     tests/regression/wordShift.rwc
     tests/regression/wordSlice.rwc
+    tests/regression/fully.vhdl
+    tests/regression/guards.vhdl
+    tests/regression/ModsMain.vhdl
+    tests/regression/onestate.vhdl
+    tests/regression/pats.vhdl
+    tests/regression/pats2.vhdl
+    tests/regression/putBug.vhdl
+    tests/regression/records.vhdl
+    tests/regression/sigNothing.vhdl
+    tests/regression/state0.vhdl
+    tests/regression/test2.vhdl
+    tests/regression/test3.vhdl
+    tests/regression/uniquification.vhdl
+    tests/regression/weird1.vhdl
     tests/regression/case1.yaml
     tests/regression/case2.yaml
     tests/regression/cubehash.yaml
@@ -272,6 +294,7 @@ data-files:
     tests/regression/wordArith.yaml
     tests/regression/wordBitwise.yaml
     tests/regression/wordLit.yaml
+    tests/regression/wordReduce.yaml
     tests/regression/wordShift.yaml
     tests/regression/wordSlice.yaml
     rewire-user/src/ReWire.hs
