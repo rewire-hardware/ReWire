@@ -44,7 +44,7 @@ import Data.Either (lefts)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet, union, difference)
 import Data.Hashable (Hashable)
-import Data.List (find, sort)
+import Data.List (sort)
 import Data.Maybe (catMaybes, isNothing)
 import Data.Text (Text, isPrefixOf)
 import Data.Tuple (swap)
@@ -460,10 +460,16 @@ purgeUnused :: [Name Exp] -> [Name TyConId] -> FreeProgram -> FreeProgram
 -- over the whole program (trec) is quadratic in the number of binders.
 purgeUnused except exceptTs (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ externCtors vs') (query vs' :: [Name DataConId]) ts, syns, vs')
       where vs' :: [Defn]
-            vs' = inuseDefn except vs
+            vs' = inuseDefn vs
 
-            inuseDefn :: [Name Exp] -> [Defn] -> [Defn]
-            inuseDefn except ds = map toDefn $ Set.toList $ execState (inuseDefn' ds') ds'
+            exceptSet :: HashSet (Name Exp)
+            exceptSet = Set.fromList except
+
+            exceptTsSet :: HashSet (Name TyConId)
+            exceptTsSet = Set.fromList exceptTs
+
+            inuseDefn :: [Defn] -> [Defn]
+            inuseDefn ds = map toDefn $ Set.toList $ execState (inuseDefn' ds') ds'
                   where inuseDefn' :: MonadState (HashSet (Name Exp)) m => HashSet (Name Exp) -> m ()
                         inuseDefn' ns | Set.null ns = pure () -- TODO(chathhorn): rewrite using fix?
                                       | otherwise   = do
@@ -473,36 +479,42 @@ purgeUnused except exceptTs (ts, syns, vs) = (inuseData (fix' extendWithCtorPara
                               inuseDefn' $ inuse' `difference` inuse
 
                         ds' :: HashSet (Name Exp)
-                        ds' = Set.fromList $ filter (`elem` except) $ map defnName ds
+                        ds' = Set.fromList $ filter (`Set.member` exceptSet) $ map defnName ds
 
                         fvs :: HashSet (Name Exp) -> HashSet (Name Exp)
                         fvs = Set.fromList . concatMap (fv . unembed . defnBody . toDefn) . Set.toList
 
+                        byName :: HashMap (Name Exp) Defn
+                        byName = Map.fromList $ map (\ d -> (defnName d, d)) ds
+
                         toDefn :: Name Exp -> Defn
-                        toDefn n | Just d <- find ((== n) . defnName) ds = d
-                                 | otherwise                             = error $ "Something went wrong: can't find symbol: " <> show n
+                        toDefn n | Just d <- Map.lookup n byName = d
+                                 | otherwise                     = error $ "Something went wrong: can't find symbol: " <> show n
 
             inuseData :: [Name TyConId] -> [Name DataConId] -> [DataDefn] -> [DataDefn]
-            inuseData ts ns = filter (\ DataDefn {dataName = n, dataCons = cs} -> not (null cs) || n `elem` exceptTs)
+            inuseData (Set.fromList -> ts) (Set.fromList -> ns) = filter (\ DataDefn {dataName = n, dataCons = cs} -> not (null cs) || n `Set.member` exceptTsSet)
                             . map (inuseData' ts ns)
 
-            inuseData' :: [Name TyConId] -> [Name DataConId] -> DataDefn -> DataDefn
+            inuseData' :: HashSet (Name TyConId) -> HashSet (Name DataConId) -> DataDefn -> DataDefn
             inuseData' ts ns d@(DataDefn an n k cs)
-                  | n `elem` ts       = d
-                  | n `elem` exceptTs = d
-                  | otherwise         = DataDefn an n k $ filter ((`Set.member` Set.fromList ns) . dataConName) cs
+                  | n `Set.member` ts          = d
+                  | n `Set.member` exceptTsSet = d
+                  | otherwise                  = DataDefn an n k $ filter ((`Set.member` ns) . dataConName) cs
 
             -- | Also treat as used: all ctors for types returned by externs and ReacT inputs.
             externCtors :: Data a => a -> [Name TyConId]
             externCtors a = concat $ [maybe [] (ctorNames . codomTy) $ typeOf e | e@Builtin {} <- query a]
-                  <> [maybe [] ctorNames $ resInputTy t | Defn _ n (Embed (Poly (unsafeUnbind -> (_, t)))) _ _ <- query a, n `elem` except]
+                  <> [maybe [] ctorNames $ resInputTy t | Defn _ n (Embed (Poly (unsafeUnbind -> (_, t)))) _ _ <- query a, n `Set.member` exceptSet]
 
             extendWithCtorParams :: [Name TyConId] -> [Name TyConId]
             extendWithCtorParams = nubOrd . sort . foldr extend' []
                   where extend' :: Name TyConId -> [Name TyConId] -> [Name TyConId]
-                        extend' n = (<> concatMap (concatMap ctorTypes . dataCons) (filter ((== n2s n) . n2s . dataName) ts))
+                        extend' n = (<> Map.lookupDefault [] (n2s n) ctorParams)
 
-                        ctorTypes :: DataCon -> [Name TyConId]
+            -- | Type constructors appearing in ctor fields, by datatype name.
+            ctorParams :: HashMap Text [Name TyConId]
+            ctorParams = Map.fromListWith (<>) [(n2s $ dataName d, concatMap ctorTypes $ dataCons d) | d <- ts]
+                  where ctorTypes :: DataCon -> [Name TyConId]
                         ctorTypes (DataCon _ _ (Embed (Poly (unsafeUnbind -> (_, t))))) = ctorNames t
 
             dataConName :: DataCon -> Name DataConId
