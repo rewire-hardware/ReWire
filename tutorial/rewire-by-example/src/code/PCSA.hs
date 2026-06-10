@@ -3,7 +3,8 @@ import Prelude hiding ((^))
 import ReWire
 import ReWire.Bits
 
--- | RWC will complain in this is imported
+-- | This file is for interactive exploration with GHCi only: rwc can't
+-- | compile it (it imports ReWire.Interactive and declares a class instance).
 import ReWire.Interactive 
 
 type W8 = W 8

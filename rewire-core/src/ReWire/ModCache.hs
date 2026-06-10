@@ -48,12 +48,14 @@ type Cache m = Cache.Cache Module (FreshMT m)
 runCache :: (MonadIO m, MonadError AstError m) => Cache m a -> m a
 runCache = runFreshMT . Cache.runCache
 
--- Pass 1    Parse.
--- Pass 2-4  Fixity fixing (uniquify + fix + deuniquify, because bug in applyFixities).
--- Pass 5    Annotate.
--- Pass 6-14 Desugar.
--- Pass 15   Translate to crust + rename globals.
--- Pass 16   Translate to core
+-- Per-module passes (numbered in -v output):
+-- Pass 1   Fixity fixing.
+-- Pass 2   Annotation.
+-- Pass 3   Desugaring.
+-- Pass 4   Translation to the Crust IR.
+-- Pass 5   Concatenation with imports.
+-- Whole-program passes are numbered from 6 (see getDevice; run rwc -v for
+-- the full list).
 
 getModule :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> FilePath -> Cache m (Module, Exports)
 getModule conf = getModuleWith translate conf

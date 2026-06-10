@@ -36,10 +36,9 @@ import qualified Data.Text           as Text
 -- import Data.Text (unpack)
 
 -- | Apply a substitution to a type, chasing bindings until a normal form:
---   equivalent to `subst` until a fix point, but each variable is resolved
---   with map lookups instead of repeated full passes over the term and the
---   substitution (`subst` is linear in the size of the substitution even
---   when the term is a single variable).
+--   equivalent to substituting until a fix point, but each variable is
+--   resolved with map lookups instead of repeated full passes over the term
+--   and the substitution.
 --
 --   Any chain of variable lookups longer than the size of the substitution
 --   must revisit a variable, i.e., the substitution contains a cycle.
@@ -59,8 +58,8 @@ substTy s = go $ Map.size s
                         Nothing                       -> t
                   t               -> t
 
--- | Close a substitution over itself, so a single `subst` pass suffices to
---   fully rewrite a term.
+-- | Close a substitution over itself, so every variable in its range
+--   resolves with a single lookup (no chasing).
 compress :: TySub -> TySub
 compress s = Map.map (substTy s) s
 
@@ -72,7 +71,7 @@ occurs v = \ case
       TyVar _ _ v'  -> v' == v
       _             -> False
 
--- Type checker for core.
+-- Type checker for the Crust IR.
 
 type TySub = HashMap (Name Ty) Ty
 type Concretes = HashMap (Name Exp, Ty) (Name Exp)

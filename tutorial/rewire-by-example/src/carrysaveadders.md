@@ -135,6 +135,6 @@ $ ls -l CSA.*
 $ rwc CSA.hs --verilog
 $ ls -l CSA.*         
 -rw-r--r--  1 william.harrison  staff  1039 Jun 13 09:02 CSA.hs
--rw-r--r--  1 william.harrison  staff  2159 Jun 13 09:04 CSA.v
+-rw-r--r--  1 william.harrison  staff  2159 Jun 13 09:04 CSA.sv
 $ 
 ```

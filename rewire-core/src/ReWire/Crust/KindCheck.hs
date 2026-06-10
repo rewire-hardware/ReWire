@@ -19,7 +19,7 @@ import safe qualified Data.HashMap.Strict as Map
 subst :: Subst b a => HashMap (Name b) b -> a -> a
 subst = substs . Map.toList
 
--- Kind checking for Core.
+-- Kind checking for the Crust IR.
 type KiSub = HashMap (Name Kind) Kind
 newtype KCEnv = KCEnv { cas :: HashMap (Name TyConId) Kind }
       deriving Show

@@ -1,0 +1,5 @@
+[book]
+title = "ReWire by Example"
+authors = ["William L. Harrison"]
+language = "en"
+src = "src"

@@ -29,7 +29,7 @@ for the AFP that directory will be `<your afp directory>/thys`.
 
 #### 4. Build and Test Installation
 
-From within your rewire-embedder directory, use `stack build`, `stack install`, and `stack test rewire-embedder`
+From the root of the ReWire repository, use `stack build`, `stack install`, and `stack test rewire:rwe-test`
 
 ## Testing
 
