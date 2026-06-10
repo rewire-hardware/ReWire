@@ -2,19 +2,21 @@ module Main (main) where
 
 import qualified RWC
 
-import Control.Monad (unless, msum)
-import Data.List (isSuffixOf)
-import Data.Maybe (fromMaybe)
+import Control.Exception (try, finally)
+import Control.Monad (unless, when, msum)
+import Data.List (isSuffixOf, isInfixOf, stripPrefix)
+import Data.Maybe (fromMaybe, mapMaybe)
+import GHC.IO.Handle (hDuplicate, hDuplicateTo)
 import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), ArgDescr (..))
 import System.Directory (listDirectory, setCurrentDirectory, doesFileExist)
 import System.Environment (getArgs)
 import System.Environment (withArgs)
-import System.Exit (exitFailure)
+import System.Exit (exitFailure, ExitCode (..))
 import System.FilePath ((</>), (-<.>), takeBaseName, takeDirectory)
-import System.IO (hPutStr, hPutStrLn, stderr)
+import System.IO (hPutStr, hPutStrLn, hClose, hFlush, openFile, stderr, IOMode (WriteMode))
 import System.Process (callCommand)
 import Test.Tasty (defaultMain, sequentialTestGroup, TestTree, DependencyType (..))
-import Test.Tasty.HUnit (testCase)
+import Test.Tasty.HUnit (testCase, assertFailure, assertBool)
 import Test.Tasty.Golden (goldenVsFileDiff)
 
 import Paths_rewire (getDataFileName)
@@ -147,6 +149,50 @@ sq = \ case
       '\'' : s | last s == '\'' -> init s
       s                         -> s
 
+-- | A test that must fail to compile with rwc. Each test file declares (one
+--   or more of) the expected error with a comment line:
+--
+-- > -- EXPECT-ERROR: <substring of the expected error message>
+--
+--   The test asserts that rwc exits with failure and that its stderr
+--   contains every expected substring. These files are never run through
+--   GHC or the HDL checkers.
+testNegative :: FilePath -> TestTree
+testNegative fn = testCase (takeBaseName fn <> " (expected error)") $ do
+      setCurrentDirectory $ takeDirectory fn
+      expected <- expectedErrors <$> readFile fn
+      when (null expected) $ assertFailure $ "no \"-- EXPECT-ERROR:\" line in " <> fn
+      let errFile = fn -<.> "out.error"
+      r      <- withStderrTo errFile $ try $ withArgs [fn, "-o", fn -<.> "out.sv"] RWC.main
+      errTxt <- readFile errFile
+      case r of
+            Left (ExitFailure _) -> mapM_ (\ e ->
+                  assertBool ("compilation failed as expected, but the error does not mention " <> show e <> "; stderr:\n" <> errTxt)
+                        $ e `isInfixOf` errTxt) expected
+            Left ExitSuccess     -> assertFailure "expected compilation to fail, but rwc exited successfully"
+            Right ()             -> assertFailure "expected compilation to fail, but it succeeded"
+
+      where expectedErrors :: String -> [String]
+            expectedErrors = mapMaybe (stripPrefix "-- EXPECT-ERROR: ") . lines
+
+            -- | Run an action with stderr redirected to a file.
+            withStderrTo :: FilePath -> IO a -> IO a
+            withStderrTo f io = do
+                  saved <- hDuplicate stderr
+                  h     <- openFile f WriteMode
+                  hDuplicateTo h stderr
+                  io `finally` do
+                        hFlush stderr
+                        hDuplicateTo saved stderr
+                        hClose h
+                        hClose saved
+
+getNegTests :: FilePath -> IO TestTree
+getNegTests dirName = do
+      dir   <- getDataFileName ("tests" </> dirName)
+      files <- map (dir </>) . filter (".hs" `isSuffixOf`) <$> listDirectory dir
+      pure $ sequentialTestGroup dirName AllFinish $ map testNegative files
+
 getTests :: [Flag] -> FilePath -> IO TestTree
 getTests flags dirName = do
       dir   <- getDataFileName ("tests" </> dirName)
@@ -166,9 +212,10 @@ main = do
             mapM_ (hPutStrLn stderr) errs
             exitUsage
 
-      tests <- mapM (getTests flags) testDirs
+      tests    <- mapM (getTests flags) testDirs
+      negTests <- getNegTests "negative"
 
-      withArgs (injectTastyArgs flags) $ defaultMain $ sequentialTestGroup "Tests" AllFinish tests
+      withArgs (injectTastyArgs flags) $ defaultMain $ sequentialTestGroup "Tests" AllFinish $ tests <> [negTests]
 
       where injectTastyArgs :: [Flag] -> [String]
             injectTastyArgs = concatMap toTastyArg

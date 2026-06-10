@@ -27,6 +27,17 @@ data-files:
     tests/integration/MiniISA.hs
     tests/integration/SecMemCon.hs
     tests/integration/Sha256_2.hs
+    tests/negative/ambiguous-size.hs
+    tests/negative/illtyped-dead-code.hs
+    tests/negative/illtyped-use.hs
+    tests/negative/kind-error.hs
+    tests/negative/negative-vec-size.hs
+    tests/negative/no-start.hs
+    tests/negative/parse-error.hs
+    tests/negative/recursive-datatype.hs
+    tests/negative/start-wrong-type.hs
+    tests/negative/unbounded-recursion.hs
+    tests/negative/unknown-var.hs
     tests/regression/Mods/Infix.hs
     tests/regression/Mods/X.hs
     tests/regression/Mods/Y.hs
