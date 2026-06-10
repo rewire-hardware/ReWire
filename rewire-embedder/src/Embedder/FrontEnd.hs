@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Safe #-}
 module Embedder.FrontEnd
       ( embedFile
       , LoadPath
       ) where
 
-import Embedder.Config (Config, getEmbedFile, getAtmoFile, verbose)
-import ReWire.Error (MonadError, AstError, runSyntaxError, failAt)
+import Embedder.Config (Config, getAtmoFile, verbose)
+import ReWire.Error (MonadError, AstError, runSyntaxError)
 import Embedder.ModCache (runCache, LoadPath, getModule)
 import ReWire.Pretty (Pretty, prettyPrint, fastPrint)
 import qualified Embedder.Config         as Config
@@ -17,7 +17,6 @@ import Control.Monad (when)
 import Control.Lens ((^.))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State (MonadState)
-import Data.Maybe (fromMaybe)
 import Data.Text (pack)
 import qualified Data.Text.IO        as T
 import System.Exit (exitFailure)
