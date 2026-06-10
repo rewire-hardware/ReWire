@@ -497,14 +497,14 @@ merge an s'  = \ case
 
 type TySub = [(Text, M.Ty)]
 
-ctorWidth :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState S m) => M.Ty -> Name M.DataConId -> m C.Size
-ctorWidth t d = do
+ctorWidth :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState S m) => HashSet M.Ty -> M.Ty -> Name M.DataConId -> m C.Size
+ctorWidth visited t d = do
       let t'            =  M.codomTy t
       getCtorType d >>= \ case
             Just ct -> do
                   let (targs, tres) = M.flattenArrow ct
                   s                <- matchTy (ann t') tres t'
-                  sum <$> mapM (sizeOf "ctorWidth" (ann t) . apply s) targs
+                  sum <$> mapM (sizeOfW "ctorWidth" (ann t) visited . apply s) targs
             _ -> pure 0
       where apply :: TySub -> M.Ty -> M.Ty
             apply s = \ case
@@ -536,20 +536,31 @@ sizeOf' s an = \ case
       Just t  -> sizeOf s an t
 
 sizeOf :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState S m) => Text -> Annote -> M.Ty -> m C.Size
-sizeOf s an t = do
+sizeOf s an = sizeOfW s an mempty
+
+-- | The worker for sizeOf: tracks the (fully applied) datatypes the
+--   computation has descended through (visited) so that sizing a recursive
+--   datatype (which has no fixed bit width) is an error instead of an
+--   infinite loop. Note: visiting the same constructor twice at different
+--   argument types is fine (e.g., nested tuples), so this only catches
+--   regular recursion -- which is the only kind ToCrust can produce.
+sizeOfW :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState S m) => Text -> Annote -> HashSet M.Ty -> M.Ty -> m C.Size
+sizeOfW s an visited t = do
       m <- szMap
       s <- case Map.lookup t m of
             Nothing -> case M.flattenTyApp t of
-                  M.TyCon _ (n2s -> "Vec") : [M.evalNat -> Just n, t] -> (fromIntegral n *) <$> sizeOf s an t
+                  M.TyCon _ (n2s -> "Vec") : [M.evalNat -> Just n, t] -> (fromIntegral n *) <$> sizeOfW s an visited t
                   M.TyCon _ (n2s -> "Vec") : [n,t]                    -> failAt an $ "ToCore: " <> s <> ": sizeOf: can't determine the size of a Vec."
                                                                                   <> " (Vec " <> M.prettyTy n <> " " <> M.prettyTy t <> ")"
                   M.TyCon _ (n2s -> "Finite") : [M.evalNat -> Just n] -> pure $ fromIntegral $ nbits n
                   M.TyCon _ (n2s -> "Finite") : [n]                   -> failAt an $ "ToCore: " <> s <> ": sizeOf: can't determine the size of a Finite."
                                                                                   <> " (Finite " <> M.prettyTy n <> ")"
-                  M.TyCon _ c              : _                        -> do
-                        ctors      <- getCtors c
-                        ctorWidths <- mapM (ctorWidth t) ctors
-                        pure $ fromIntegral (nbits $ genericLength ctors) + maximum (0 : ctorWidths)
+                  M.TyCon _ c              : _
+                        | t `Set.member` visited                      -> failAt an $ "ToCore: " <> s <> ": sizeOf: can't determine the size of a recursive datatype: " <> n2s c
+                        | otherwise                                   -> do
+                              ctors      <- getCtors c
+                              ctorWidths <- mapM (ctorWidth (Set.insert t visited) t) ctors
+                              pure $ fromIntegral (nbits $ genericLength ctors) + maximum (0 : ctorWidths)
                   M.TyApp {}               : _                        -> failAt an $ "ToCore: " <> s <> ": sizeOf: got TyApp after flattening (rwc bug): " <> M.prettyTy t
                   M.TyVar {}               : _                        -> pure 0 -- TODO(chathhorn): shouldn't need this.
                   _                                                   -> failAt an $ "ToCore: sizeOf: " <> s <> ": couldn't calculate the size of a type: " <> M.prettyTy t

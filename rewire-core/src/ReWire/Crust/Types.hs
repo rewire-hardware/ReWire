@@ -10,7 +10,7 @@ module ReWire.Crust.Types
       , mkArrowTy, poly, poly', listTy, kblank, plusTy, plus
       , isReacT, isStateT, ctorNames, resInputTy
       , dstArrow, dstStateT, dstTyApp, dstReacT, proxyTy
-      , dstNegTy, negTy, dstPoly1, Poly1, minusP1, zeroP1, pickVar, poly1Ty
+      , dstNegTy, negTy, dstPoly1, Poly1, minusP1, zeroP1, pickVar, poly1Ty, natP1
       , renumTyVars, prettyTy, synthable
       ) where
 
@@ -399,6 +399,12 @@ pickVar = pickVar' . normP1
 
             sort' :: [(Name Ty, Rational)] -> [(Name Ty, Rational)]
             sort' = sortOn (hash . show . fst)
+
+-- | True unless the polynomial is a constant that no type-level natural can
+--   equal (i.e., negative or non-integral). Solutions still mentioning
+--   variables can't be judged yet, so they count as plausible.
+natP1 :: Poly1 -> Bool
+natP1 (normP1 -> Poly1 r cs) = not (Map.null cs) || (r >= 0 && denominator r == 1)
 
 poly1Ty :: Poly1 -> Ty
 poly1Ty (Poly1 r cs) | (c : cs') <- Map.toList cs, r == 0 = foldr (plus' . mono) (mono c) cs'

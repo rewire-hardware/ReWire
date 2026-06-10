@@ -21,7 +21,7 @@ module ReWire.Crust.Transform
       , removeMain
       ) where
 
-import ReWire.Annotation (Annote (..), Annotated (..), unAnn)
+import ReWire.Annotation (Annote (..), Annotated (..))
 import ReWire.Config (Config, depth, start, pDebug)
 import ReWire.Crust.PrimBasis (primDatas)
 import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Poly (..), Pat (..), MatchPat (..), Defn (..), FreeProgram, DataCon (..), DataConId, TyConId, DataDefn (..), Builtin (..), DefnAttr (..), TypeSynonym (..), flattenApp, builtins)
@@ -31,7 +31,7 @@ import ReWire.Crust.Util (mkApp, mkError, mkLam, inlinable, synthableDefn, mkTup
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fix, fix', fixUntil)
 import ReWire.SYB (transform, transformM, query)
-import ReWire.Unbound (freshVar, fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, Name (..), unsafeUnbind, bind, unbind, Subst (..), Alpha, Embed (Embed), Bind, trec)
+import ReWire.Unbound (freshVar, fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, Name (..), unsafeUnbind, bind, unbind, Subst (..), Alpha, Embed (Embed), Bind)
 
 import Control.Arrow ((&&&))
 import Control.Lens ((^.))
@@ -44,7 +44,7 @@ import Data.Either (lefts)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet, union, difference)
 import Data.Hashable (Hashable)
-import Data.List (find, sort)
+import Data.List (sort)
 import Data.Maybe (catMaybes, isNothing)
 import Data.Text (Text, isPrefixOf)
 import Data.Tuple (swap)
@@ -453,53 +453,78 @@ purge start = pure . purgeUnused (start : (s2n . fst <$> builtins)) (dataName <$
 purgeAll :: Applicative m => Name Exp -> FreeProgram -> m FreeProgram
 purgeAll start = pure . purgeUnused [start] []
 
+-- | Like purge, but only removes defns, without pruning datatypes. Cheaper
+--   (datatype pruning needs full scans for extern and ctor uses): meant for
+--   keeping the working set small inside the simplify loop, with the
+--   datatypes pruned by a full purge afterward.
+purgeDefns :: Applicative m => Name Exp -> FreeProgram -> m FreeProgram
+purgeDefns start (ts, syns, vs) = pure (ts, syns, liveDefns roots vs)
+      where roots :: HashSet (Name Exp)
+            roots = Set.fromList $ start : (s2n . fst <$> builtins)
+
+-- | Definitions transitively reachable from the given roots.
+liveDefns :: HashSet (Name Exp) -> [Defn] -> [Defn]
+liveDefns roots ds = map toDefn $ Set.toList $ execState (live ds') ds'
+      where live :: MonadState (HashSet (Name Exp)) m => HashSet (Name Exp) -> m ()
+            live ns | Set.null ns = pure () -- TODO(chathhorn): rewrite using fix?
+                    | otherwise   = do
+                  inuse  <- get
+                  modify $ union $ fvs ns
+                  inuse' <- get
+                  live $ inuse' `difference` inuse
+
+            ds' :: HashSet (Name Exp)
+            ds' = Set.fromList $ filter (`Set.member` roots) $ map defnName ds
+
+            fvs :: HashSet (Name Exp) -> HashSet (Name Exp)
+            fvs = Set.fromList . concatMap (fv . unembed . defnBody . toDefn) . Set.toList
+
+            byName :: HashMap (Name Exp) Defn
+            byName = Map.fromList $ map (\ d -> (defnName d, d)) ds
+
+            toDefn :: Name Exp -> Defn
+            toDefn n | Just d <- Map.lookup n byName = d
+                     | otherwise                     = error $ "Something went wrong: can't find symbol: " <> show n
+
 -- | Remove all definitions and types unused by those in the given lists.
 purgeUnused :: [Name Exp] -> [Name TyConId] -> FreeProgram -> FreeProgram
-purgeUnused except exceptTs (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ externCtors vs') (fv $ trec vs') ts, syns, vs')
+-- Note: collect ctor names with a query instead of `fv $ trec vs'`: no
+-- binder can capture a DataConId, so every occurrence is free, and closing
+-- over the whole program (trec) is quadratic in the number of binders.
+purgeUnused except exceptTs (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ externCtors vs') (query vs' :: [Name DataConId]) ts, syns, vs')
       where vs' :: [Defn]
-            vs' = inuseDefn except vs
+            vs' = liveDefns exceptSet vs
 
-            inuseDefn :: [Name Exp] -> [Defn] -> [Defn]
-            inuseDefn except ds = map toDefn $ Set.toList $ execState (inuseDefn' ds') ds'
-                  where inuseDefn' :: MonadState (HashSet (Name Exp)) m => HashSet (Name Exp) -> m ()
-                        inuseDefn' ns | Set.null ns = pure () -- TODO(chathhorn): rewrite using fix?
-                                      | otherwise   = do
-                              inuse  <- get
-                              modify $ union $ fvs ns
-                              inuse' <- get
-                              inuseDefn' $ inuse' `difference` inuse
+            exceptSet :: HashSet (Name Exp)
+            exceptSet = Set.fromList except
 
-                        ds' :: HashSet (Name Exp)
-                        ds' = Set.fromList $ filter (`elem` except) $ map defnName ds
-
-                        fvs :: HashSet (Name Exp) -> HashSet (Name Exp)
-                        fvs = Set.fromList . concatMap (fv . unembed . defnBody . toDefn) . Set.toList
-
-                        toDefn :: Name Exp -> Defn
-                        toDefn n | Just d <- find ((== n) . defnName) ds = d
-                                 | otherwise                             = error $ "Something went wrong: can't find symbol: " <> show n
+            exceptTsSet :: HashSet (Name TyConId)
+            exceptTsSet = Set.fromList exceptTs
 
             inuseData :: [Name TyConId] -> [Name DataConId] -> [DataDefn] -> [DataDefn]
-            inuseData ts ns = filter (\ DataDefn {dataName = n, dataCons = cs} -> not (null cs) || n `elem` exceptTs)
+            inuseData (Set.fromList -> ts) (Set.fromList -> ns) = filter (\ DataDefn {dataName = n, dataCons = cs} -> not (null cs) || n `Set.member` exceptTsSet)
                             . map (inuseData' ts ns)
 
-            inuseData' :: [Name TyConId] -> [Name DataConId] -> DataDefn -> DataDefn
+            inuseData' :: HashSet (Name TyConId) -> HashSet (Name DataConId) -> DataDefn -> DataDefn
             inuseData' ts ns d@(DataDefn an n k cs)
-                  | n `elem` ts       = d
-                  | n `elem` exceptTs = d
-                  | otherwise         = DataDefn an n k $ filter ((`Set.member` Set.fromList ns) . dataConName) cs
+                  | n `Set.member` ts          = d
+                  | n `Set.member` exceptTsSet = d
+                  | otherwise                  = DataDefn an n k $ filter ((`Set.member` ns) . dataConName) cs
 
             -- | Also treat as used: all ctors for types returned by externs and ReacT inputs.
-            externCtors :: Data a => a -> [Name TyConId]
-            externCtors a = concat $ [maybe [] (ctorNames . codomTy) $ typeOf e | e@Builtin {} <- query a]
-                  <> [maybe [] ctorNames $ resInputTy t | Defn _ n (Embed (Poly (unsafeUnbind -> (_, t)))) _ _ <- query a, n `elem` except]
+            externCtors :: [Defn] -> [Name TyConId]
+            externCtors ds = concat $ [maybe [] (ctorNames . codomTy) $ typeOf e | e@Builtin {} <- query ds]
+                  <> [maybe [] ctorNames $ resInputTy t | Defn _ n (Embed (Poly (unsafeUnbind -> (_, t)))) _ _ <- ds, n `Set.member` exceptSet]
 
             extendWithCtorParams :: [Name TyConId] -> [Name TyConId]
             extendWithCtorParams = nubOrd . sort . foldr extend' []
                   where extend' :: Name TyConId -> [Name TyConId] -> [Name TyConId]
-                        extend' n = (<> concatMap (concatMap ctorTypes . dataCons) (filter ((== n2s n) . n2s . dataName) ts))
+                        extend' n = (<> Map.lookupDefault [] (n2s n) ctorParams)
 
-                        ctorTypes :: DataCon -> [Name TyConId]
+            -- | Type constructors appearing in ctor fields, by datatype name.
+            ctorParams :: HashMap Text [Name TyConId]
+            ctorParams = Map.fromListWith (<>) [(n2s $ dataName d, concatMap ctorTypes $ dataCons d) | d <- ts]
+                  where ctorTypes :: DataCon -> [Name TyConId]
                         ctorTypes (DataCon _ _ (Embed (Poly (unsafeUnbind -> (_, t))))) = ctorNames t
 
             dataConName :: DataCon -> Name DataConId
@@ -513,7 +538,10 @@ simplify conf = flip evalStateT mempty . fixUntil (\(_, _, vs) -> all synthableD
                 verb "> Specializing..."
                 >=> specialize'
                 >=> verb "> Purging..."
-                >=> purge (s2n $ conf^.start)
+                -- Note: only purge defns here; pruning datatypes needs
+                -- relatively expensive full scans and the pipeline runs a
+                -- full purge after this pass anyway.
+                >=> purgeDefns (s2n $ conf^.start)
                 >=> verb "> Reducing..."
                 >=> reduce
                 )
@@ -608,8 +636,12 @@ specialize' (ts, syns, vs) = do
                   e@Con {}                         -> pure e
                   e@Builtin {}                     -> pure e
 
+            -- Note: no need to strip annotations (unAnn) on the argument
+            -- here: Eq and Hashable ignore them, so they don't affect the
+            -- SpecMap keying, and the argument is otherwise spliced into the
+            -- specialized defn body as-is.
             sig :: [Exp] -> AppSig
-            sig = map $ \ e -> if | all isGlobal $ fv e -> Just $ unAnn e
+            sig = map $ \ e -> if | all isGlobal $ fv e -> Just e
                                   | otherwise           -> Nothing
 
             getTy :: Fresh m => Defn -> m Ty

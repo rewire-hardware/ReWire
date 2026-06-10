@@ -6,42 +6,71 @@
 -- {-# LANGUAGE Trustworthy #-}
 module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype, unify, unify', TySub) where
 
-import ReWire.Annotation (Annote (MsgAnnote), unAnn, ann)
+import ReWire.Annotation (Annote (MsgAnnote), ann)
 import ReWire.Crust.Syntax (Exp (..), Ty (..), Kind (..), Poly (..), Pat (..), MatchPat (..), FreeProgram, Defn (..), DataDefn (..), Builtin (..), DataCon (..), DataConId, builtinName)
-import ReWire.Crust.Types (mkArrowTy, poly, arrowRight, (|->), concrete, kblank, tyAnn, setTyAnn, flattenArrow, strTy, intTy, listTy, vecTy, arr, arrowLeft, dstPoly1, zeroP1, minusP1, pickVar, poly1Ty, prettyTy)
+import ReWire.Crust.Types (mkArrowTy, poly, arrowRight, (|->), concrete, kblank, tyAnn, setTyAnn, flattenArrow, strTy, intTy, listTy, vecTy, arr, arrowLeft, dstPoly1, zeroP1, minusP1, pickVar, poly1Ty, natP1, prettyTy)
 import ReWire.Crust.Util (transMPat, patVars)
 import ReWire.Error (AstError, MonadError, failAt)
-import ReWire.Fix (fixOn, fixOn')
+import ReWire.Fix (fixOn)
 import ReWire.Pretty (showt, prettyPrint, Pretty (..))
 import ReWire.SYB (transform, query)
-import ReWire.Unbound (fresh, substs, Subst, n2s, s2n, unsafeUnbind, Fresh, Embed (Embed), Name, bind, unbind, fv)
+import ReWire.Unbound (fresh, n2s, s2n, unsafeUnbind, Fresh, Embed (Embed), Name, bind, unbind, fv)
 
 import Control.Arrow (first)
 import Control.DeepSeq (deepseq, force)
-import Control.Monad (zipWithM, foldM, mplus, when)
+import Control.Monad (zipWithM, foldM, mplus, when, unless)
+import Data.Containers.ListUtils (nubOrd)
 import Control.Monad.Reader (MonadReader, ReaderT (..), local, asks)
-import Control.Monad.State (evalStateT, gets, modify, MonadState)
+import Control.Monad.State.Strict (evalStateT, gets, modify', MonadState)
 import Data.Data (Data)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
-import Data.Hashable (Hashable (hash))
-import Data.Maybe (mapMaybe)
+import Numeric.Natural (Natural)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet        as Set
+import qualified Data.Text           as Text
 
 -- import ReWire.Pretty (hsep)
 -- import Debug.Trace (trace)
 -- import Data.Text (unpack)
 
-subst :: Subst b a => HashMap (Name b) b -> a -> a
-subst = substs . Map.toList
+-- | Apply a substitution to a type, chasing bindings until a normal form:
+--   equivalent to `subst` until a fix point, but each variable is resolved
+--   with map lookups instead of repeated full passes over the term and the
+--   substitution (`subst` is linear in the size of the substitution even
+--   when the term is a single variable).
+--
+--   Any chain of variable lookups longer than the size of the substitution
+--   must revisit a variable, i.e., the substitution contains a cycle.
+--   Unification shouldn't create cycles (mgu does occurs checks and orients
+--   var-var bindings consistently), so a cycle is an rwc bug -- but panic
+--   instead of hanging if one slips through (e.g., via tsUnion composition,
+--   which doesn't re-check occurrence across entries).
+substTy :: TySub -> Ty -> Ty
+substTy s = go $ Map.size s
+      where go :: Int -> Ty -> Ty
+            go n = \ case
+                  TyApp an t1 t2  -> TyApp an (go n t1) $ go n t2
+                  t@(TyVar _ _ v) -> case Map.lookup v s of
+                        Just (TyVar _ _ v') | v' == v -> t -- Identity bindings occur; don't chase them.
+                        Just t' | n > 0               -> go (n - 1) t'
+                                | otherwise           -> error "rwc bug (TypeCheck): cyclic type substitution."
+                        Nothing                       -> t
+                  t               -> t
 
--- | `subst` until a fix point.
-rewrite :: (Data a, Hashable a, Subst b a) => HashMap (Name b) b -> a -> a
-rewrite = fixOn' norm . subst
-      where norm :: (Data a, Hashable a) => a -> Int
-            norm = hash . unAnn
+-- | Close a substitution over itself, so a single `subst` pass suffices to
+--   fully rewrite a term.
+compress :: TySub -> TySub
+compress s = Map.map (substTy s) s
+
+-- | Occurs check: like `elem` over `fv`, but without building the free-var
+--   list through the generic machinery (Ty contains no binders).
+occurs :: Name Ty -> Ty -> Bool
+occurs v = \ case
+      TyApp _ t1 t2 -> occurs v t1 || occurs v t2
+      TyVar _ _ v'  -> v' == v
+      _             -> False
 
 -- Type checker for core.
 
@@ -58,9 +87,6 @@ instance Semigroup TCEnv where
 instance Monoid TCEnv where
       mempty = TCEnv mempty mempty
 
-lookupAll :: Eq a => a -> [(a, b)] -> [b]
-lookupAll a = map snd . filter ((== a) . fst)
-
 typeCheckDefn :: (Fresh m, MonadError AstError m) => [DataDefn] -> [Defn] -> Defn -> m Defn
 typeCheckDefn ts vs d = runReaderT (withAssumps ts vs $ tcDefn (s2n "") d) mempty
 
@@ -68,27 +94,41 @@ typeCheckDefn ts vs d = runReaderT (withAssumps ts vs $ tcDefn (s2n "") d) mempt
 --   definitions by creating new definitions specialized to non-polymorphic types.
 typeCheck :: (Fresh m, MonadError AstError m) => Name Exp -> FreeProgram -> m FreeProgram
 typeCheck start (ts, syns, vs) = (ts, syns, ) <$> runReaderT tc mempty
-      where conc :: Concretes -> Defn -> [Defn]
-            conc cs (Defn an n _ b e) = mapMaybe conc' $ lookupAll n $ Map.keys cs
-                  where conc' :: Ty -> Maybe Defn
-                        conc' t = do
-                              n' <- Map.lookup (n, t) cs
-                              pure $ Defn an n' ([] |-> t) b e
+      where -- | Make a defn for each specialization of this defn's name in the index.
+            conc :: HashMap (Name Exp) [(Ty, Name Exp)] -> Defn -> [Defn]
+            conc idx (Defn an n _ b e) = map conc' $ Map.lookupDefault [] n idx
+                  where conc' :: (Ty, Name Exp) -> Defn
+                        conc' (t, n') = Defn an n' ([] |-> t) b e
+
+            byName :: Concretes -> HashMap (Name Exp) [(Ty, Name Exp)]
+            byName cs = Map.fromListWith (flip (<>)) [(n, [(t, n')]) | ((n, t), n') <- Map.toList cs]
 
             tc :: (Fresh m, MonadError AstError m, MonadReader TCEnv m) => m [Defn]
             tc = do
-                  vs' <- withAssumps ts vs $ mapM (tcDefn start) vs
-                  cs  <- concretes vs' -- TODO(chathhorn): don't think this needs to use fix.
-                  fst . fst <$> fixOn (Map.keys . snd) "polymorphic function instantiation" 10 tc' ((vs', mempty), cs)
+                  vs'       <- withAssumps ts vs $ mapM (tcDefn start) vs
+                  cs0       <- concretes mempty vs'
+                  (acc, cs) <- fst <$> fixOn (Map.keys . snd) "polymorphic function instantiation" specDepth tc' ((vs', mempty), cs0)
+                  -- Note: renaming uses to point at the specialized defns
+                  -- (concretize) only happens here, after the loop.
+                  pure $ concretize cs acc
 
+            -- | Each round: make and typecheck a defn for each use of a poly
+            --   defn at a concrete type discovered last round (cs'), then
+            --   collect the uses (of poly defns at concrete types) those new
+            --   defns contain, less any already-seen ones, for the next round.
             tc' :: (Fresh m, MonadError AstError m, MonadReader TCEnv m) => (([Defn], Concretes), Concretes) -> m (([Defn], Concretes), Concretes)
             tc' ((acc, cs), cs') = do
-                  let ep = concatMap (conc cs') polyDefs
-                  ep' <- concretize (cs <> cs') <$> withAssumps ts (acc <> ep) (mapM (tcDefn start) ep)
-                  ((concretize (cs <> cs') acc <> ep', cs <> cs'), ) <$> concretes ep'
+                  let ep   = concatMap (conc $ byName cs') polyDefs
+                      cs'' = cs <> cs'
+                  ep' <- withAssumps ts (acc <> ep) $ mapM (tcDefn start) ep
+                  ((acc <> ep', cs''), ) <$> concretes cs'' ep'
 
-            concretes :: Fresh m => [Defn] -> m Concretes
-            concretes = foldM (\ m c -> Map.insert c <$> fresh (fst c) <*> pure m) mempty . uses
+            concretes :: Fresh m => Concretes -> [Defn] -> m Concretes
+            concretes known = foldM (\ m c -> Map.insert c <$> fresh (fst c) <*> pure m) mempty
+                            . Set.filter (not . (`Map.member` known)) . uses
+
+            specDepth :: Natural
+            specDepth = 10 -- TODO: make configurable.
 
             polys :: HashSet (Name Exp)
             polys = foldr polys' mempty vs
@@ -105,12 +145,15 @@ typeCheck start (ts, syns, vs) = (ts, syns, ) <$> runReaderT tc mempty
             isPoly :: Defn -> Bool
             isPoly (Defn _ _ (Embed (Poly (unsafeUnbind -> (_, t)))) _ _) = not $ concrete t
 
+            -- Note: Eq and Hashable on Ty both ignore annotations, so the
+            -- use types here don't need annotations stripped (with unAnn)
+            -- for use as map keys.
             uses :: Data a => a -> HashSet (Name Exp, Ty)
-            uses a = Set.fromList [(n, unAnn t) | Var _ _ (Just t) n <- query a, concrete t, Set.member n polys]
+            uses a = Set.fromList [(n, t) | Var _ _ (Just t) n <- query a, concrete t, Set.member n polys]
 
             concretize :: Data d => Concretes -> d -> d
             concretize cs = transform $ \ case
-                  v@(Var an tan t n) -> maybe v (Var an tan t) $ t >>= (\ t' -> Map.lookup (n, t') cs) . unAnn
+                  v@(Var an tan t n) -> maybe v (Var an tan t) $ t >>= \ t' -> Map.lookup (n, t') cs
                   e                  -> e
 
 freshv :: Fresh m => m Ty
@@ -119,49 +162,53 @@ freshv = TyVar (MsgAnnote "TypeCheck: freshv") kblank <$> fresh (s2n "?")
 tsUnion :: TySub -> TySub -> TySub
 tsUnion ts = foldr insert ts . Map.toList
       where insert :: (Name Ty, Ty) -> TySub -> TySub
-            insert (v, t) ts' | Just t' <- Map.lookup v ts', Just s <- mgu t t' = Map.insert v (subst s t) ts' `tsUnion` s
+            insert (v, t) ts' | Just t' <- Map.lookup v ts', Just s <- mgu t t' = Map.insert v (substTy s t) ts' `tsUnion` s
                               | otherwise                                       = Map.insert v t ts'
 
 mgu :: Ty -> Ty -> Maybe TySub
-mgu t                               t'               | unAnn t == unAnn t'           = pure mempty
+-- Note: Eq on Ty ignores annotations (Eq Annote is trivially true), so
+-- there's no need to strip them (with unAnn) before comparing.
+mgu t                               t'               | t == t'                       = pure mempty
 
 mgu (TyCon _ c1)                    (TyCon _ c2)     | n2s c1 == n2s c2              = pure mempty
 
-mgu (TyVar _ _ u)                   tv@(TyVar _ _ v) | hash (show u) > hash (show v) = pure $ Map.fromList [(u, tv)]
+mgu (TyVar _ _ u)                   tv@(TyVar _ _ v) | u > v                         = pure $ Map.fromList [(u, tv)]
 mgu tu@TyVar {}                     (TyVar _ _ v)                                    = pure $ Map.fromList [(v, tu)]
 
 -- TODO: the special-case unifying with ReacT/PuRe is a hack and doesn't cover all cases. Should be removed eventually.
-mgu (TyVar _ _ u)                   t                | u `notElem` fv t, isReacT' t  = tsUnion (Map.fromList [(u, t)]) <$> mgu globalReacT' t
-mgu (TyVar _ _ u)                   t                | u `notElem` fv t, isPuRe' t   = tsUnion (Map.fromList [(u, t)]) <$> mgu globalPuRe t
-mgu (TyVar _ _ u)                   t                | u `notElem` fv t              = pure $ Map.fromList [(u, t)]
-mgu t                               (TyVar _ _ u)    | u `notElem` fv t, isReacT' t  = tsUnion (Map.fromList [(u, t)]) <$> mgu globalReacT' t
-mgu t                               (TyVar _ _ u)    | u `notElem` fv t, isPuRe' t   = tsUnion (Map.fromList [(u, t)]) <$> mgu globalPuRe t
-mgu t                               (TyVar _ _ u)    | u `notElem` fv t              = pure $ Map.fromList [(u, t)]
+mgu (TyVar _ _ u)                   t                | not (occurs u t), isReacT' t  = tsUnion (Map.fromList [(u, t)]) <$> mgu globalReacT' t
+mgu (TyVar _ _ u)                   t                | not (occurs u t), isPuRe' t   = tsUnion (Map.fromList [(u, t)]) <$> mgu globalPuRe t
+mgu (TyVar _ _ u)                   t                | not (occurs u t)              = pure $ Map.fromList [(u, t)]
+mgu t                               (TyVar _ _ u)    | not (occurs u t), isReacT' t  = tsUnion (Map.fromList [(u, t)]) <$> mgu globalReacT' t
+mgu t                               (TyVar _ _ u)    | not (occurs u t), isPuRe' t   = tsUnion (Map.fromList [(u, t)]) <$> mgu globalPuRe t
+mgu t                               (TyVar _ _ u)    | not (occurs u t)              = pure $ Map.fromList [(u, t)]
 
 mgu (dstPoly1 -> Just p1)           (dstPoly1 -> Just p2)                            = case p1 `minusP1` p2 of
                   p' | p' == zeroP1         -> pure mempty
-                  (pickVar -> Just (x, p')) -> pure $ Map.singleton x $ poly1Ty p'
+                  -- Note: a type-level nat var can't be bound to a negative
+                  -- or non-integral constant (natP1).
+                  (pickVar -> Just (x, p')) | natP1 p' -> pure $ Map.singleton x $ poly1Ty p'
                   _                         -> Nothing
 
 -- TODO: one ReacT assumption.
 mgu (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) ti ) to )
     (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) ti') to')                           = do
       s1 <- mgu iTy ti
-      s2 <- tsUnion s1 <$> mgu (subst s1 ti) (subst s1 ti')
-      s3 <- tsUnion s2 <$> mgu (subst s2 oTy) (subst s2 to)
-      tsUnion s3 <$> mgu (subst s3 to) (subst s3 to')
+      s2 <- tsUnion s1 <$> mgu (substTy s1 ti) (substTy s1 ti')
+      s3 <- tsUnion s2 <$> mgu (substTy s2 oTy) (substTy s2 to)
+      tsUnion s3 <$> mgu (substTy s3 to) (substTy s3 to')
 
 -- TODO: one PuRe assumption.
 mgu (TyApp _ (TyApp _ (TyCon _ (n2s -> "PuRe")) ts ) to )
     (TyApp _ (TyApp _ (TyCon _ (n2s -> "PuRe")) ts') to')                            = do
       s1 <- mgu sPTy ts
-      s2 <- tsUnion s1 <$> mgu (subst s1 ts) (subst s1 ts')
-      s3 <- tsUnion s2 <$> mgu (subst s2 oPTy) (subst s2 to)
-      tsUnion s3 <$> mgu (subst s3 to) (subst s3 to')
+      s2 <- tsUnion s1 <$> mgu (substTy s1 ts) (substTy s1 ts')
+      s3 <- tsUnion s2 <$> mgu (substTy s2 oPTy) (substTy s2 to)
+      tsUnion s3 <$> mgu (substTy s3 to) (substTy s3 to')
 
 mgu (TyApp _ tl tr)                 (TyApp _ tl' tr')                                = do
-      let fwd = mgu tl tl' >>= \ s -> tsUnion s <$> mgu (subst s tr) (subst s tr')
-          rev = mgu tr tr' >>= \ s -> tsUnion s <$> mgu (subst s tl) (subst s tl')
+      let fwd = mgu tl tl' >>= \ s -> tsUnion s <$> mgu (substTy s tr) (substTy s tr')
+          rev = mgu tr tr' >>= \ s -> tsUnion s <$> mgu (substTy s tl) (substTy s tl')
       fwd `mplus` rev
 
 mgu _                               _                                                = Nothing
@@ -169,19 +216,19 @@ mgu _                               _                                           
 --         <> "\n    with: " <> unpack (prettyPrint t2)) $ Nothing
 
 unify' :: Ty -> Ty -> Maybe Ty
-unify' t1 t2 = flip subst t1 <$> mgu t1 t2
+unify' t1 t2 = flip substTy t1 <$> mgu t1 t2
 
 unify :: (MonadError AstError m, MonadState TySub m) => Annote -> Ty -> Ty -> m Ty
 unify an t1 t2 = do
-      t1' <- gets $ flip rewrite t1
-      t2' <- gets $ flip rewrite t2
+      t1' <- gets $ flip substTy t1
+      t2' <- gets $ flip substTy t2
       -- trace ("... Unifying: " <> unpack (prettyPrint t1')
       --    <> "\n...     with: " <> unpack (prettyPrint t2')) $ pure ()
       case mgu t1' t2' of
             Just s -> do
                   -- trace ("    result:\n" <> unpack (prettyPrint  (Map.toList s))) $ pure ()
-                  modify $ tsUnion s
-                  gets $ flip subst t1'
+                  modify' $ tsUnion s
+                  gets $ flip substTy t1'
             _      -> failAt an $ "Types do not unify. Expected and got, respectively:\n"
                               <> prettyTy t1' <> "\n"
                               <> prettyTy t2'
@@ -335,14 +382,14 @@ tcExp tt = \ case
             -- trace "tcExp: LitList" $ pure ()
             te  <- freshv
             _ <- unify an tt $ listTy an te
-            (es', te') <- foldM tcElem ([], te) es
+            (es', te') <- tcElems te es
             -- trace "tc: LitList: unify2" $ pure ()
             tt' <- unify an tt $ listTy an te'
             pure (LitList an tan (Just tt') es', tt')
       LitVec an tan _ es -> do
             -- trace "tcExp: LitVec" $ pure ()
             te  <- freshv
-            (es', te') <- foldM tcElem ([], te) es
+            (es', te') <- tcElems te es
             tt'   <- unify an tt $ vecTy an (TyNat an $ fromInteger $ toInteger $ length es') te'
             pure (LitVec an tan (Just tt') es', tt')
 
@@ -356,11 +403,16 @@ tcExp tt = \ case
                   LitList _ _ _ es -> pure es
                   _                -> Nothing
 
+            -- Note: accumulates the checked elements in reverse to avoid
+            -- quadratic list appends on long (e.g., bit-vector) literals.
+            tcElems :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Ty -> [Exp] -> m ([Exp], Ty)
+            tcElems te = (first reverse <$>) . foldM tcElem ([], te)
+
             tcElem :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => ([Exp], Ty) -> Exp -> m ([Exp], Ty)
             tcElem (els, tel) el = do
                   -- trace "tc: tcElem" $ pure ()
                   (el', tel') <- tcExp tel el
-                  pure (els <> [el'], tel')
+                  pure (el' : els, tel')
 
 
 tcDefn :: (Fresh m, MonadError AstError m, MonadReader TCEnv m) => Name Exp -> Defn -> m Defn
@@ -382,7 +434,18 @@ tcDefn start d  = flip evalStateT mempty $ do
       (body', _) <- localAssumps (`Map.union` (Map.fromList $ zip vs $ map (poly []) targs))
                          $ tcExp tbody body
 
-      body'' <- gets $ flip rewrite body'
+      s <- gets compress
+      let body'' = transform (substTy s) body'
+
+      -- Type variables in the body that aren't fixed by the type of the
+      -- definition are ambiguous: nothing further constrains them, so they'd
+      -- otherwise flow to the back end unresolved (e.g., as 0-width wires).
+      let ambig = filter (`notElem` fv (substTy s t)) $ nubOrd (fv body'' :: [Name Ty])
+      unless (null ambig) $ failAt an
+            $ "Ambiguous type variable(s) in the definition of " <> n2s n
+           <> " (not determined by its type): "
+           <> Text.intercalate ", " (map showt ambig)
+           <> ". Try adding a type annotation."
 
       let d'  = Defn an n (Embed pt) b $ Embed $ bind vs body''
       d' `deepseq` pure d'
