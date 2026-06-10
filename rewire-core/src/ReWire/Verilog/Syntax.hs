@@ -191,7 +191,9 @@ instance Pretty Exp where
             LShift a b      -> ppBinOp a "<<"  b
             RShift a b      -> ppBinOp a ">>"  b
             LShiftArith a b -> ppBinOp a "<<<" b
-            RShiftArith a b -> ppBinOp a ">>>" b
+            -- | The left operand must be cast to signed for >>> to actually
+            --   sign-extend (matching the Core interpreter's semantics).
+            RShiftArith a b -> text "$signed" <> parens (pretty a) <+> text ">>>" <+> mparens b
             LNot a          -> ppUnOp    "!"   a
             Not a           -> ppUnOp    "~"   a
             RAnd a          -> ppUnOp    "&"   a

@@ -40,7 +40,7 @@ module top_level (input logic [7:0] __in0,
   assign binop_inR6 = {8'h8, zll_main_myarithrotr5_in[7:0]};
   assign binop_inR7 = {zll_main_myarithrotr5_in[15:8], binop_inR6[15:8] - binop_inR6[7:0]};
   assign binop_inR8 = {zll_main_myarithrotr5_in[15:8], zll_main_myarithrotr5_in[7:0]};
-  assign binop_inR9 = {binop_inR7[15:8] << binop_inR7[7:0], binop_inR8[15:8] >>> binop_inR8[7:0]};
+  assign binop_inR9 = {binop_inR7[15:8] << binop_inR7[7:0], $signed(binop_inR8[15:8]) >>> binop_inR8[7:0]};
   assign zll_main_loop_in = {1'h0, binop_inR9[15:8] | binop_inR9[7:0]};
   assign zll_main_loop1_in = zll_main_loop_in[8:0];
   assign {__padding, __out0} = {1'h1, zll_main_loop1_in[7:0]};

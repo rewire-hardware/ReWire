@@ -12,7 +12,7 @@ options =
        [ Option ['h'] ["help"]            (NoArg  FlagHelp)                          "This help message."
        , Option ['v'] ["verbose"]         (NoArg  FlagVerbose)                       "More verbose output."
        , Option []    ["verilog"]         (NoArg  FlagVerilog)                       "Produce Verilog output (default)."
-       , Option []    ["vhdl"]            (NoArg  FlagVhdl)                          "Produce VHDL output (experimental)."
+       , Option []    ["vhdl"]            (NoArg  FlagVhdl)                          "Produce VHDL output."
        , Option []    ["from-core"]       (NoArg  FlagFromCore)                      "Ingest ReWire core language files instead of Haskell."
        , Option []    ["core"]            (NoArg  FlagCore)                          "Produce ReWire core language output."
        , Option []    ["invert-reset"]    (NoArg  FlagInvertReset)                   "Invert the implicitly generated reset signal."

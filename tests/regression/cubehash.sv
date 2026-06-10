@@ -676,7 +676,7 @@ module Main_rot (input logic [31:0] arg0,
   assign zll_main_rot12_in = {zll_main_rot5_in[64:33], zll_main_rot5_in[32:1]};
   assign binop_inR4 = {zll_main_rot12_in[31:0], zll_main_rot12_in[63:32]};
   assign id_in = {zll_main_rot2_in[32:1], zll_main_rot2_in[0]};
-  assign res = (id_in[0] == 1'h1) ? id_in[32:1] : (binop_inR4[63:32] >>> binop_inR4[31:0]);
+  assign res = (id_in[0] == 1'h1) ? id_in[32:1] : ($signed(binop_inR4[63:32]) >>> binop_inR4[31:0]);
 endmodule
 
 module ZLL_Main_nopipeline24 (input logic [1023:0] arg0,

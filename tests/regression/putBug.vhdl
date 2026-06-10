@@ -1,214 +1,256 @@
 library ieee;
 use ieee.std_logic_1164.all;
-entity top_level is
-  port (clk: in std_logic;
-        rst: in std_logic;
-        __in0: in std_logic_vector (0 to 0);
-        __out0: out std_logic_vector (0 to 0));
-end top_level;
-architecture top_level_impl of top_level is
-  signal start_state: std_logic_vector (0 to 3);
-  signal loop_out: std_logic_vector (0 to 3);
-  signal current_state: std_logic_vector (0 to 3);
-  signal done_or_next_state: std_logic_vector (0 to 3);
-  signal next_state: std_logic_vector (0 to 3);
-  signal inp: std_logic_vector (0 to 0);
-  component zdPurezidispatch
-    port (arg0: in std_logic_vector (0 to 1);
-          arg1: in std_logic_vector (0 to 0);
-          res: out std_logic_vector (0 to 3));
-  end component;
-  component zdPurezistart
-    port (res: out std_logic_vector (0 to 3));
-  end component;
-begin
-  start_call: zdPurezistart port map (res => start_state);
-  loop_call: zdPurezidispatch port map (arg0 => current_state(2 to 3),
-                                        arg1 => inp,
-                                        res => loop_out);
-  with rst
-    select next_state <= start_state when '1',
-                         done_or_next_state when others;
-  with current_state(0 to 0)
-    select done_or_next_state <= loop_out when "1",
-                                 current_state when others;
-  process(clk)
+use ieee.numeric_std.all;
+
+package rw_helpers is
+  function rw_resize (v : std_logic_vector; n : natural) return std_logic_vector;
+  function rw_add (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_sub (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_mul (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_div (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_mod (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_pow (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_and (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_or (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_xor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_xnor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_not (a : std_logic_vector) return std_logic_vector;
+  function rw_shiftl (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_shiftr (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_ashiftr (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_land (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_lor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_lnot (a : std_logic_vector) return std_logic_vector;
+  function rw_rand (a : std_logic_vector) return std_logic_vector;
+  function rw_rnand (a : std_logic_vector) return std_logic_vector;
+  function rw_ror (a : std_logic_vector) return std_logic_vector;
+  function rw_rnor (a : std_logic_vector) return std_logic_vector;
+  function rw_rxor (a : std_logic_vector) return std_logic_vector;
+  function rw_rxnor (a : std_logic_vector) return std_logic_vector;
+  function rw_eq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_neq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_lt (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_gt (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_lteq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_gteq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_cond (c : std_logic_vector; a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_repl (n : natural; v : std_logic_vector) return std_logic_vector;
+end package;
+
+package body rw_helpers is
+  function rw_max (a : natural; b : natural) return natural is
   begin
-    if clk'event and clk = '1' then
-      current_state <= next_state;
-      __out0 <= current_state(1 to 1);
-    end if;
-  end process;
-  inp <= ("" & __in0);
-end top_level_impl;
+    if a > b then return a; else return b; end if;
+  end;
+  function rw_b2v (b : boolean) return std_logic_vector is
+  begin
+    if b then return "1"; else return "0"; end if;
+  end;
+  function rw_resize (v : std_logic_vector; n : natural) return std_logic_vector is
+  begin
+    return std_logic_vector(resize(unsigned(v), n));
+  end;
+  function rw_add (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := rw_max(a'length, b'length);
+  begin
+    return std_logic_vector(resize(unsigned(a), n) + resize(unsigned(b), n));
+  end;
+  function rw_sub (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := rw_max(a'length, b'length);
+  begin
+    return std_logic_vector(resize(unsigned(a), n) - resize(unsigned(b), n));
+  end;
+  function rw_mul (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := rw_max(a'length, b'length);
+  begin
+    return std_logic_vector(resize(resize(unsigned(a), n) * resize(unsigned(b), n), n));
+  end;
+  function rw_div (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := rw_max(a'length, b'length);
+  begin
+    if unsigned(b) = 0 then return std_logic_vector(to_unsigned(0, n) - 1); end if;
+    return std_logic_vector(resize(resize(unsigned(a), n) / resize(unsigned(b), n), n));
+  end;
+  function rw_mod (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := rw_max(a'length, b'length);
+  begin
+    if unsigned(b) = 0 then return std_logic_vector(to_unsigned(0, n) - 1); end if;
+    return std_logic_vector(resize(resize(unsigned(a), n) mod resize(unsigned(b), n), n));
+  end;
+  function rw_pow (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := a'length;
+    variable r : unsigned(n - 1 downto 0) := to_unsigned(1, n);
+  begin
+    for i in 1 to to_integer(unsigned(b)) loop
+      r := resize(r * unsigned(a), n);
+    end loop;
+    return std_logic_vector(r);
+  end;
+  function rw_and (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := rw_max(a'length, b'length);
+  begin
+    return rw_resize(a, n) and rw_resize(b, n);
+  end;
+  function rw_or (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := rw_max(a'length, b'length);
+  begin
+    return rw_resize(a, n) or rw_resize(b, n);
+  end;
+  function rw_xor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := rw_max(a'length, b'length);
+  begin
+    return rw_resize(a, n) xor rw_resize(b, n);
+  end;
+  function rw_xnor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := rw_max(a'length, b'length);
+  begin
+    return rw_resize(a, n) xnor rw_resize(b, n);
+  end;
+  function rw_not (a : std_logic_vector) return std_logic_vector is
+  begin
+    return not a;
+  end;
+  function rw_shiftl (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    if unsigned(b) >= a'length then return std_logic_vector(to_unsigned(0, a'length)); end if;
+    return std_logic_vector(shift_left(unsigned(a), to_integer(unsigned(b))));
+  end;
+  function rw_shiftr (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    if unsigned(b) >= a'length then return std_logic_vector(to_unsigned(0, a'length)); end if;
+    return std_logic_vector(shift_right(unsigned(a), to_integer(unsigned(b))));
+  end;
+  function rw_ashiftr (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    variable sh : natural;
+  begin
+    if unsigned(b) >= a'length then sh := a'length; else sh := to_integer(unsigned(b)); end if;
+    return std_logic_vector(shift_right(signed(a), sh));
+  end;
+  function rw_land (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(unsigned(a) /= 0 and unsigned(b) /= 0);
+  end;
+  function rw_lor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(unsigned(a) /= 0 or unsigned(b) /= 0);
+  end;
+  function rw_lnot (a : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(unsigned(a) = 0);
+  end;
+  function rw_rand (a : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v((and a) = '1');
+  end;
+  function rw_rnand (a : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v((and a) /= '1');
+  end;
+  function rw_ror (a : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v((or a) = '1');
+  end;
+  function rw_rnor (a : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v((or a) /= '1');
+  end;
+  function rw_rxor (a : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v((xor a) = '1');
+  end;
+  function rw_rxnor (a : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v((xor a) /= '1');
+  end;
+  function rw_eq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := rw_max(a'length, b'length);
+  begin
+    return rw_b2v(resize(unsigned(a), n) = resize(unsigned(b), n));
+  end;
+  function rw_neq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := rw_max(a'length, b'length);
+  begin
+    return rw_b2v(resize(unsigned(a), n) /= resize(unsigned(b), n));
+  end;
+  function rw_lt (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := rw_max(a'length, b'length);
+  begin
+    return rw_b2v(resize(unsigned(a), n) < resize(unsigned(b), n));
+  end;
+  function rw_gt (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := rw_max(a'length, b'length);
+  begin
+    return rw_b2v(resize(unsigned(a), n) > resize(unsigned(b), n));
+  end;
+  function rw_lteq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := rw_max(a'length, b'length);
+  begin
+    return rw_b2v(resize(unsigned(a), n) <= resize(unsigned(b), n));
+  end;
+  function rw_gteq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := rw_max(a'length, b'length);
+  begin
+    return rw_b2v(resize(unsigned(a), n) >= resize(unsigned(b), n));
+  end;
+  function rw_cond (c : std_logic_vector; a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+    constant n : natural := rw_max(a'length, b'length);
+  begin
+    if unsigned(c) /= 0 then return rw_resize(a, n); else return rw_resize(b, n); end if;
+  end;
+  function rw_repl (n : natural; v : std_logic_vector) return std_logic_vector is
+    variable r : std_logic_vector(n * v'length - 1 downto 0);
+  begin
+    for i in 0 to n - 1 loop
+      r((i + 1) * v'length - 1 downto i * v'length) := v;
+    end loop;
+    return r;
+  end;
+end package body;
 
 library ieee;
 use ieee.std_logic_1164.all;
-entity zdPurezidispatch is
-  port (arg0: in std_logic_vector (0 to 1);
-        arg1: in std_logic_vector (0 to 0);
-        res: out std_logic_vector (0 to 3));
-end zdPurezidispatch;
-architecture zdPurezidispatchImpl of zdPurezidispatch is
-  signal slice0Res: std_logic_vector (0 to 2);
-  signal zdLLziPurezidispatch1Res: std_logic_vector (0 to 3);
-  component zdLLziPurezidispatch
-    port (arg0: in std_logic_vector (0 to 0);
-          arg1: in std_logic_vector (0 to 0);
-          arg2: in std_logic_vector (0 to 0);
-          res: out std_logic_vector (0 to 3));
-  end component;
-begin
-  slice0Res <= (arg1 & arg0);
-  zdLLziPurezidispatch2Call: zdLLziPurezidispatch port map (arg0 => slice0Res(0 to 0),
-                                                            arg1 => slice0Res(1 to 1),
-                                                            arg2 => slice0Res(2 to 2),
-                                                            res => zdLLziPurezidispatch1Res);
-  res <= zdLLziPurezidispatch1Res;
-end zdPurezidispatchImpl;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity top_level is
+port (clk : in std_logic_vector (0 downto 0);
+      rst : in std_logic_vector (0 downto 0);
+      \__in0\ : in std_logic_vector (0 downto 0);
+      \__out0\ : out std_logic_vector (0 downto 0));
+end entity;
 
-library ieee;
-use ieee.std_logic_1164.all;
-entity zdPurezistart is
-  port (res: out std_logic_vector (0 to 3));
-end zdPurezistart;
-architecture zdPurezistartImpl of zdPurezistart is
-  signal lit8x40Res: std_logic_vector (0 to 3);
+architecture rtl of top_level is
+signal zll_pure_dispatch_in : std_logic_vector (2 downto 0);
+      signal zll_main_convtest10_in : std_logic_vector (2 downto 0);
+      signal zll_main_convtest4_in : std_logic_vector (0 downto 0);
+      signal zll_main_convtest8_in : std_logic_vector (4 downto 0);
+      signal zll_main_convtest15_in : std_logic_vector (4 downto 0);
+      signal zll_main_convtest14_in : std_logic_vector (1 downto 0);
+      signal \__padding\ : std_logic_vector (0 downto 0);
+      signal \__resumption_tag\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
+      signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
+      signal \__resumption_tag_next\ : std_logic_vector (0 downto 0);
+      signal \__st0_next\ : std_logic_vector (0 downto 0);
+      signal rwtmp0 : std_logic_vector (3 downto 0);
 begin
-  lit8x40Res <= "1000";
-  res <= lit8x40Res;
-end zdPurezistartImpl;
-
-library ieee;
-use ieee.std_logic_1164.all;
-entity zdLLziMainziconvtest15 is
-  port (arg0: in std_logic_vector (0 to 0);
-        arg1: in std_logic_vector (0 to 0);
-        res: out std_logic_vector (0 to 3));
-end zdLLziMainziconvtest15;
-architecture zdLLziMainziconvtest15Impl of zdLLziMainziconvtest15 is
-  signal slice0Res: std_logic_vector (0 to 1);
-  signal zdLLziMainziconvtest141Res: std_logic_vector (0 to 3);
-  component zdLLziMainziconvtest14
-    port (arg0: in std_logic_vector (0 to 0);
-          arg1: in std_logic_vector (0 to 0);
-          res: out std_logic_vector (0 to 3));
-  end component;
-begin
-  slice0Res <= (arg0 & arg1);
-  zdLLziMainziconvtest142Call: zdLLziMainziconvtest14 port map (arg0 => slice0Res(0 to 0),
-                                                                arg1 => slice0Res(1 to 1),
-                                                                res => zdLLziMainziconvtest141Res);
-  res <= zdLLziMainziconvtest141Res;
-end zdLLziMainziconvtest15Impl;
-
-library ieee;
-use ieee.std_logic_1164.all;
-entity zdLLziMainziconvtest14 is
-  port (arg0: in std_logic_vector (0 to 0);
-        arg1: in std_logic_vector (0 to 0);
-        res: out std_logic_vector (0 to 3));
-end zdLLziMainziconvtest14;
-architecture zdLLziMainziconvtest14Impl of zdLLziMainziconvtest14 is
-  signal slice0Res: std_logic_vector (0 to 3);
-  signal lit1x11Res: std_logic_vector (0 to 0);
-begin
-  lit1x11Res <= "1";
-  slice0Res <= (((lit1x11Res & arg0) & arg0) & arg1);
-  res <= slice0Res;
-end zdLLziMainziconvtest14Impl;
-
-library ieee;
-use ieee.std_logic_1164.all;
-entity zdLLziMainziconvtest10 is
-  port (arg0: in std_logic_vector (0 to 0);
-        arg1: in std_logic_vector (0 to 0);
-        arg2: in std_logic_vector (0 to 0);
-        res: out std_logic_vector (0 to 3));
-end zdLLziMainziconvtest10;
-architecture zdLLziMainziconvtest10Impl of zdLLziMainziconvtest10 is
-  signal slice0Res: std_logic_vector (0 to 4);
-  signal zdLLziMainziconvtest41Res: std_logic_vector (0 to 3);
-  signal zdLLziMainziconvtest83Res: std_logic_vector (0 to 3);
-  component zdLLziMainziconvtest8
-    port (arg0: in std_logic_vector (0 to 0);
-          arg1: in std_logic_vector (0 to 3);
-          res: out std_logic_vector (0 to 3));
-  end component;
-  component zdLLziMainziconvtest4
-    port (arg0: in std_logic_vector (0 to 0);
-          res: out std_logic_vector (0 to 3));
-  end component;
-begin
-  zdLLziMainziconvtest42Call: zdLLziMainziconvtest4 port map (arg0 => arg0(0 to 0),
-                                                              res => zdLLziMainziconvtest41Res);
-  slice0Res <= (arg0 & zdLLziMainziconvtest41Res);
-  zdLLziMainziconvtest84Call: zdLLziMainziconvtest8 port map (arg0 => slice0Res(0 to 0),
-                                                              arg1 => slice0Res(1 to 4),
-                                                              res => zdLLziMainziconvtest83Res);
-  res <= zdLLziMainziconvtest83Res;
-end zdLLziMainziconvtest10Impl;
-
-library ieee;
-use ieee.std_logic_1164.all;
-entity zdLLziMainziconvtest8 is
-  port (arg0: in std_logic_vector (0 to 0);
-        arg1: in std_logic_vector (0 to 3);
-        res: out std_logic_vector (0 to 3));
-end zdLLziMainziconvtest8;
-architecture zdLLziMainziconvtest8Impl of zdLLziMainziconvtest8 is
-  signal slice0Res: std_logic_vector (0 to 4);
-  signal zdLLziMainziconvtest151Res: std_logic_vector (0 to 3);
-  component zdLLziMainziconvtest15
-    port (arg0: in std_logic_vector (0 to 0);
-          arg1: in std_logic_vector (0 to 0);
-          res: out std_logic_vector (0 to 3));
-  end component;
-begin
-  slice0Res <= (arg0 & arg1);
-  zdLLziMainziconvtest152Call: zdLLziMainziconvtest15 port map (arg0 => slice0Res(0 to 0),
-                                                                arg1 => slice0Res(4 to 4),
-                                                                res => zdLLziMainziconvtest151Res);
-  res <= zdLLziMainziconvtest151Res;
-end zdLLziMainziconvtest8Impl;
-
-library ieee;
-use ieee.std_logic_1164.all;
-entity zdLLziMainziconvtest4 is
-  port (arg0: in std_logic_vector (0 to 0);
-        res: out std_logic_vector (0 to 3));
-end zdLLziMainziconvtest4;
-architecture zdLLziMainziconvtest4Impl of zdLLziMainziconvtest4 is
-  signal slice0Res: std_logic_vector (0 to 3);
-  signal lit0x31Res: std_logic_vector (0 to 2);
-begin
-  lit0x31Res <= "000";
-  slice0Res <= (lit0x31Res & arg0);
-  res <= slice0Res;
-end zdLLziMainziconvtest4Impl;
-
-library ieee;
-use ieee.std_logic_1164.all;
-entity zdLLziPurezidispatch is
-  port (arg0: in std_logic_vector (0 to 0);
-        arg1: in std_logic_vector (0 to 0);
-        arg2: in std_logic_vector (0 to 0);
-        res: out std_logic_vector (0 to 3));
-end zdLLziPurezidispatch;
-architecture zdLLziPurezidispatchImpl of zdLLziPurezidispatch is
-  signal slice0Res: std_logic_vector (0 to 2);
-  signal zdLLziMainziconvtest101Res: std_logic_vector (0 to 3);
-  component zdLLziMainziconvtest10
-    port (arg0: in std_logic_vector (0 to 0);
-          arg1: in std_logic_vector (0 to 0);
-          arg2: in std_logic_vector (0 to 0);
-          res: out std_logic_vector (0 to 3));
-  end component;
-begin
-  slice0Res <= ((arg1 & arg0) & arg2);
-  zdLLziMainziconvtest102Call: zdLLziMainziconvtest10 port map (arg0 => slice0Res(0 to 0),
-                                                                arg1 => slice0Res(1 to 1),
-                                                                arg2 => slice0Res(2 to 2),
-                                                                res => zdLLziMainziconvtest101Res);
-  res <= zdLLziMainziconvtest101Res;
-end zdLLziPurezidispatchImpl;
+zll_pure_dispatch_in <= (\__in0\ & (\__resumption_tag\ & \__st0\));
+      zll_main_convtest10_in <= (zll_pure_dispatch_in(1 downto 1) & zll_pure_dispatch_in(2 downto 2) & zll_pure_dispatch_in(0 downto 0));
+      zll_main_convtest4_in <= zll_main_convtest10_in(2 downto 2);
+      zll_main_convtest8_in <= (zll_main_convtest10_in(2 downto 2) & (std_logic_vector'(B"000") & zll_main_convtest4_in(0 downto 0)));
+      zll_main_convtest15_in <= (zll_main_convtest8_in(4 downto 4) & zll_main_convtest8_in(3 downto 0));
+      zll_main_convtest14_in <= (zll_main_convtest15_in(4 downto 4) & zll_main_convtest15_in(0 downto 0));
+      rwtmp0 <= (std_logic_vector'(B"1") & zll_main_convtest14_in(1 downto 1) & zll_main_convtest14_in(1 downto 1) & zll_main_convtest14_in(0 downto 0));
+      \__padding\ <= rwtmp0(3 downto 3);
+      \__out0\ <= rwtmp0(2 downto 2);
+      \__resumption_tag_next\ <= rwtmp0(1 downto 1);
+      \__st0_next\ <= rwtmp0(0 downto 0);
+      process (clk, rst)
+      begin
+      if rst = std_logic_vector'(B"1") then
+                  \__resumption_tag\ <= std_logic_vector'(B"0");
+                  \__st0\ <= std_logic_vector'(B"0");
+            elsif rising_edge(clk(0)) then
+                  \__resumption_tag\ <= \__resumption_tag_next\;
+                  \__st0\ <= \__st0_next\;
+            end if;
+      end process;
+end architecture;
