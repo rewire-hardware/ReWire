@@ -362,7 +362,7 @@ rwPrimGt v w = BW.toInteger' v GHC.> BW.toInteger' w
 
 -- | Greater-than or equal.
 rwPrimGtEq :: Vec n Bool -> Vec n Bool -> Bool
-rwPrimGtEq v w = BW.toInteger' v GHC.<= BW.toInteger' w
+rwPrimGtEq v w = BW.toInteger' v GHC.>= BW.toInteger' w
 
 -- | Less-than.
 rwPrimLt :: Vec n Bool -> Vec n Bool -> Bool

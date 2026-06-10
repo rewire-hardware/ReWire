@@ -2,12 +2,11 @@ name:         rewire-core
 version:      2.6
 synopsis:     A Haskell-to-Verilog/VHDL compiler, core library
 description:  An experimental compiler for a subset of Haskell to Verilog and VHDL.
-homepage:     https://github.com/mu-chaco/ReWire
-license:      NONE
+license:      BSD3
 license-file: LICENSE
 category:     Language
 build-type:   Simple
-github:       twosixlabs/ReWire.git
+github:       rewire-hardware/ReWire/rewire-core
 maintainer:   Chris Hathhorn <hathhorn@gmail.com>
 author:
 - Adam Procter

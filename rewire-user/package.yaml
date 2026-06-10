@@ -1,8 +1,8 @@
 name:         rewire-user
 version:      0.2
 description:  Please see the README.
-github:       "githubuser/rewire-user"
-license:      NONE
+github:       rewire-hardware/ReWire/rewire-user
+license:      BSD3
 license-file: LICENSE
 maintainer:   Chris Hathhorn <hathhorn@gmail.com>
 author:
@@ -44,3 +44,5 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - rewire-user
+    - tasty
+    - tasty-hunit

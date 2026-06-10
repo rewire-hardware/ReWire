@@ -6,8 +6,6 @@ module Embedder.ModCache
       ( runCache
       , LoadPath
       , getModule
-      , printInfoHSE
-      , printHeader
       ) where
 
 import Embedder.Config (Config, verbose, dump, pDebug, getEmbedFile)
@@ -19,11 +17,12 @@ import ReWire.Annotation (SrcSpanInfo)
 import ReWire.Error (AstError, MonadError)
 import ReWire.HSE.Annotate (annotate)
 import ReWire.HSE.Cache (LoadPath, getModuleWith)
-import ReWire.HSE.Rename (Exports, Renamer, allExports, fixFixity)
-import ReWire.Pretty (Pretty (..), prettyPrint, fastPrint, showt)
+import ReWire.HSE.Rename (Exports, Renamer, fixFixity)
+import ReWire.Pass (printInfoTop, printInfoHSE)
+import ReWire.Pretty (Pretty (..), prettyPrint, fastPrint)
 
 import Control.Lens ((^.))
-import Control.Monad ((>=>), void, when)
+import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.State.Strict (MonadState, lift)
 import Data.Foldable (forM_)
@@ -32,7 +31,6 @@ import Numeric.Natural (Natural)
 import System.FilePath (takeBaseName)
 
 import qualified Data.Text.IO                 as T
-import qualified Language.Haskell.Exts.Pretty as P
 import qualified Language.Haskell.Exts.Syntax as S (Module (..))
 import qualified ReWire.HSE.Cache             as Cache
 import qualified Embedder.Config              as C
@@ -84,38 +82,8 @@ getModule conf = getModuleWith translate conf
             embedAST fout a =
                   liftIO $ T.writeFile fout (if conf^.C.pretty then prettyPrint a else fastPrint a)
 
-printHeader :: MonadIO m => Text -> m ()
-printHeader hd = do
-      liftIO $ T.putStrLn   "# ======================================="
-      liftIO $ T.putStrLn $ "# " <> hd
-      liftIO $ T.putStrLn   "# =======================================\n"
-
-printInfoHSE :: MonadIO m => Text -> Renamer -> A.Module -> Bool -> S.Module a -> m (S.Module a)
-printInfoHSE hd rn imps verbose hse = do
-      printHeader hd
-      when verbose $ liftIO $ T.putStrLn "\n## Renamer:\n"
-      when verbose $ liftIO $ T.putStrLn $ showt rn
-      when verbose $ liftIO $ T.putStrLn "\n## Exports:\n"
-      when verbose $ liftIO $ T.putStrLn $ showt $ allExports rn
-      when verbose $ liftIO $ T.putStrLn "\n## Show imps:\n"
-      when verbose $ liftIO $ T.putStrLn $ showt imps
-      when verbose $ liftIO $ T.putStrLn "\n## Show HSE mod:\n"
-      when verbose $ liftIO $ T.putStrLn $ showt $ void hse
-      when verbose $ liftIO $ T.putStrLn "\n## Pretty HSE mod:\n"
-      liftIO $ putStrLn $ P.prettyPrint $ void hse
-      pure hse
-
 printInfoAtmo :: MonadIO m => Text -> Renamer -> A.Module -> Bool -> (A.Module, Exports) -> m (A.Module, Exports)
-printInfoAtmo hd rn imps verbose hse = do
-      printHeader hd
-      when verbose $ liftIO $ T.putStrLn "\n## Renamer:\n"
-      when verbose $ liftIO $ T.putStrLn $ showt rn
-      when verbose $ liftIO $ T.putStrLn "\n## Exports:\n"
-      when verbose $ liftIO $ T.putStrLn $ showt $ allExports rn
-      when verbose $ liftIO $ T.putStrLn "\n## Show imps:\n"
-      when verbose $ liftIO $ T.putStrLn $ showt imps
-      when verbose $ liftIO $ T.putStrLn "\n## Show HSE mod:\n"
-      when verbose $ liftIO $ T.putStrLn $ showt $ void hse
-      when verbose $ liftIO $ T.putStrLn "\n## Pretty HSE mod:\n"
-      liftIO $ T.putStrLn $ prettyPrint $ fst hse
-      pure hse
+printInfoAtmo hd rn imps verbose m = do
+      printInfoTop hd rn imps verbose m
+      liftIO $ T.putStrLn $ prettyPrint $ fst m
+      pure m

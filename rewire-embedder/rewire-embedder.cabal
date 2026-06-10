@@ -1,4 +1,4 @@
-cabal-version: 2.2
+cabal-version: 1.12
 
 -- This file has been generated from package.yaml by hpack version 0.39.1.
 --
@@ -9,8 +9,8 @@ version:        2.6
 synopsis:       A ReWire-to-Isabelle embedder
 description:    For verification using the ReWire hardware description language
 category:       Language
-homepage:       https://github.com/mu-chaco/ReWire
-bug-reports:    https://github.com/twosixlabs/ReWire.git/issues
+homepage:       https://github.com/rewire-hardware/ReWire#readme
+bug-reports:    https://github.com/rewire-hardware/ReWire/issues
 author:         Adam Procter,
                 Chris Hathhorn <hathhorn@gmail.com>,
                 Ian Graves,
@@ -18,7 +18,7 @@ author:         Adam Procter,
                 Matthew Heimerdinger
 maintainer:     Matthew Heimerdinger <matthew.heimerdinger@gmail.com>,
                 Chris Hathhorn <hathhorn@gmail.com>
-license:        NONE
+license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
@@ -26,7 +26,8 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/twosixlabs/ReWire.git
+  location: https://github.com/rewire-hardware/ReWire
+  subdir: rewire-embedder
 
 library
   exposed-modules:
@@ -45,8 +46,6 @@ library
       Embedder.Isabelle.Syntax
       Embedder.ModCache
   other-modules:
-      Paths_rewire_embedder
-  autogen-modules:
       Paths_rewire_embedder
   hs-source-dirs:
       src

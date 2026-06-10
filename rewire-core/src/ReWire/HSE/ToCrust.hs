@@ -7,7 +7,7 @@ module ReWire.HSE.ToCrust (toCrust, extendWithGlobs, getImps) where
 
 import ReWire.Annotation hiding (ann)
 import ReWire.Error
-import ReWire.HSE.Fixity
+import ReWire.HSE.Exports (Export (..), sDeclHead, exportAll, getExportFixities, transExport, tysynNames, getTypeExports, resolveExports, getInlines)
 import ReWire.HSE.Rename
 import ReWire.Crust.Types ((|->))
 import ReWire.Unbound (fv, s2n, n2s, fresh, Fresh, Name, Embed (..), bind)
@@ -15,13 +15,11 @@ import ReWire.SYB (query)
 
 import Control.Arrow ((&&&), second)
 import Control.Monad (foldM, replicateM, void)
-import Data.Char (isUpper)
 import Data.List (find)
 import Data.Map.Strict (Map)
 import Data.Maybe (mapMaybe, fromMaybe)
 import Data.Set (Set)
 import Data.Text (Text, pack, unpack)
-import Language.Haskell.Exts.Fixity (Fixity (..))
 import Language.Haskell.Exts.Pretty (prettyPrint)
 
 import qualified Data.Set                     as Set
@@ -35,22 +33,6 @@ import Language.Haskell.Exts.Syntax hiding (Annotation, Name, Kind)
 
 isPrimMod :: String -> Bool
 isPrimMod = (== "RWC.Primitives")
-
--- | An intermediate form for exports. TODO(chathhorn): get rid of it.
-data Export = Export FQName
-            -- ExportWith: Type name, ctors
-            | ExportWith FQName (Set FQName) FQCtorSigs
-            | ExportAll FQName
-            | ExportMod (S.ModuleName ())
-            | ExportFixity (S.Assoc ()) Int (S.Name ())
-      deriving Show
-
-sDeclHead :: S.DeclHead a -> (S.Name (), [S.TyVarBind ()])
-sDeclHead = \ case
-      DHead _ n                          -> (void n, [])
-      DHInfix _ tv n                     -> (void n, [void tv])
-      DHParen _ dh                       -> sDeclHead dh
-      DHApp _ (sDeclHead -> (n, tvs)) tv -> (n, tvs ++ [void tv])
 
 mkUId :: S.Name a -> Name b
 mkUId = \ case
@@ -70,88 +52,16 @@ toCrust rn = \ case
             exps'  <- maybe (pure $ getGlobExps rn ds) (\ (ExportSpecList _ exps') -> foldM (transExport rn ds) [] exps') exps
             pure (M.Module tyDefs tySyns fnDefs, resolveExports rn exps')
             where getGlobExps :: Renamer -> [Decl Annote] -> [Export]
-                  getGlobExps rn ds = getTypeExports rn <> getExportFixities ds <> concatMap (getFunExports rn) ds
+                  getGlobExps rn ds = getTypeExports rn ds <> getExportFixities ds <> concatMap (getFunExports rn) ds
 
                   getFunExports :: Renamer -> Decl Annote -> [Export]
                   getFunExports rn = \ case
                         PatBind _ (PVar _ n) _ _ -> [Export $ rename Value rn $ void n]
                         _                        -> []
 
-                  getTypeExports :: Renamer -> [Export]
-                  getTypeExports rn = map (exportAll rn) $ Set.toList (getLocalTypes rn) <> tysynNames ds
-
-                  resolveExports :: Renamer -> [Export] -> Exports
-                  resolveExports rn = foldr (resolveExport rn) mempty
-
-                  isValueName :: FQName -> Bool
-                  isValueName = \ case
-                        (name -> Ident _ (c : _)) | isUpper c -> False
-                        _                                     -> True
-
-                  resolveExport :: Renamer -> Export -> Exports -> Exports
-                  resolveExport rn = \ case
-                        Export x              | isValueName x -> expValue x
-                        Export x                              -> expType x mempty mempty
-                        ExportAll x                           -> expType x (lookupCtors rn x) (lookupCtorSigsForType rn x)
-                        ExportWith x cs fs                    -> expType x cs fs
-                        ExportMod m                           -> (<> getExports m rn)
-                        ExportFixity asc lvl x                -> expFixity asc lvl x
-
                   inls :: Map (S.Name ()) M.DefnAttr
-                  inls = foldr inl' mempty ds
-                        where inl' :: Decl Annote -> Map (S.Name ()) M.DefnAttr -> Map (S.Name ()) M.DefnAttr
-                              inl' = \ case
-                                    InlineSig _ b Nothing (Qual _ _ x) -> Map.insert (void x) $ if b then M.Inline else M.NoInline
-                                    InlineSig _ b Nothing (UnQual _ x) -> Map.insert (void x) $ if b then M.Inline else M.NoInline
-                                    _                                  -> id
+                  inls = getInlines (\ b -> if b then M.Inline else M.NoInline) ds
       m                                                                -> failAt (ann m) "Unsupported module syntax"
-
-
-exportAll :: QNamish a => Renamer -> a -> Export
-exportAll rn x = let x' = rename Type rn x in
-      ExportWith x' (lookupCtors rn x') (lookupCtorSigsForType rn x')
-
-getExportFixities :: [Decl Annote] -> [Export]
-getExportFixities = map toExportFixity . getFixities
-      where toExportFixity :: Fixity -> Export
-            toExportFixity (Fixity asc lvl (S.UnQual () n)) = ExportFixity asc lvl n
-            toExportFixity _                                = undefined
-
-transExport :: MonadError AstError m => Renamer -> [Decl Annote] -> [Export] -> ExportSpec Annote -> m [Export]
-transExport rn ds exps = \ case
-      EVar l (void -> x)                 ->
-            if finger Value rn x
-            then pure $ Export (rename Value rn x) : fixities (qnamish x) ++ exps
-            else failAt l "Unknown variable name in export list"
-      -- TODO(chathhorn): Ignore type exports.
-      -- This is to ease compatibility with GHC -- we can have built-in type
-      -- operators while ignoring parts exported from GHC.TypeLits in the
-      -- RWC.Primitives module.
-      EAbs _ (TypeNamespace _) _         -> pure exps
-      EAbs l _ (void -> x)               ->
-            if finger Type rn x
-            then pure $ Export (rename Type rn x) : exps
-            else failAt l "Unknown class or type name in export list"
-      EThingWith l (NoWildcard _) (void -> x) cs       -> let cs' = Set.fromList $ map (rename Value rn . unwrap) cs in
-            if and $ finger Type rn x : map (finger Value rn . name) (Set.toList cs')
-            then pure $ ExportWith (rename Type rn x) cs' (Map.fromSet (lookupCtorSig rn) cs')
-                  : concatMap (fixities . unwrap) cs ++ exps
-            else failAt l "Unknown class or type name in export list"
-      -- TODO(chathhorn): I don't know what it means for a wildcard to appear in the middle of an export list.
-      EThingWith l (EWildcard _ _) (void -> x) _       ->
-            if finger Type rn x
-            then pure $ exportAll rn x : concatMap (fixities . name) (Set.toList $ lookupCtors rn x) ++ exps
-            else failAt l "Unknown class or type name in export list"
-      EModuleContents _ (void -> m) ->
-            pure $ ExportMod m : exps
-      where unwrap :: CName Annote -> S.Name ()
-            unwrap (VarName _ x) = void x
-            unwrap (ConName _ x) = void x
-
-            fixities :: S.Name () -> [Export]
-            fixities n = flip filter (getExportFixities ds) $ \ case
-                  ExportFixity _ _ n' -> n == n'
-                  _                   -> False
 
 transData :: (MonadError AstError m, Fresh m) => Renamer -> [M.DataDefn] -> Decl Annote -> m [M.DataDefn]
 transData rn datas = \ case
@@ -162,13 +72,6 @@ transData rn datas = \ case
             cs'  <- mapM (transCon rn ks tvs' n) cs
             pure $ M.DataDefn l n (foldr M.KFun M.KStar ks) cs' : datas
       _                                       -> pure datas
-
-tysynNames :: [Decl Annote] -> [S.Name ()]
-tysynNames = concatMap tySynName
-      where tySynName :: Decl Annote -> [S.Name ()]
-            tySynName = \ case
-                  TypeDecl _ (sDeclHead -> hd) _ -> [fst hd]
-                  _                              -> []
 
 transTyDecl :: (MonadError AstError m, Fresh m) => Renamer -> [M.TypeSynonym] -> Decl Annote -> m [M.TypeSynonym]
 transTyDecl rn syns = \ case

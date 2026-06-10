@@ -6,13 +6,10 @@ module ReWire.ModCache
       ( runCache
       , getDevice
       , LoadPath
-      , printInfo
-      , printInfoHSE
-      , printHeader
       ) where
 
 import ReWire.Annotation (unAnn)
-import ReWire.Config (Config, typecheck, pDebug)
+import ReWire.Config (Config, typecheck)
 import ReWire.Crust.KindCheck (kindCheck)
 import ReWire.Crust.PrimBasis (addPrims)
 import ReWire.Crust.Purify (purify)
@@ -24,22 +21,23 @@ import ReWire.Error (AstError, MonadError)
 import ReWire.HSE.Annotate (annotate)
 import ReWire.HSE.Cache (LoadPath, getModuleWith)
 import ReWire.HSE.Desugar (desugar)
-import ReWire.HSE.Rename (Exports, Renamer, allExports, fixFixity)
+import ReWire.HSE.Rename (Exports, Renamer, fixFixity)
 import ReWire.HSE.ToCrust (toCrust)
+import ReWire.Pass (runPasses, printHeader, printInfoHSE, verb')
 import ReWire.Pretty (prettyPrint, prettyPrint', showt)
 import ReWire.Unbound (fv, trec, runFreshMT, FreshMT, Name, Fresh, s2n)
 
 import Control.Lens ((^.))
-import Control.Monad ((>=>), void, when)
+import Control.Monad ((>=>), when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.State.Strict (MonadState, lift)
 import Data.Containers.ListUtils (nubOrd)
+import Data.List (genericLength)
 import Data.Text (Text, pack)
 import Numeric.Natural (Natural)
 
 import qualified Data.Text                    as T
 import qualified Data.Text.IO                 as T
-import qualified Language.Haskell.Exts.Pretty as P
 import qualified Language.Haskell.Exts.Syntax as S (Module (..))
 import qualified ReWire.Core.Syntax           as Core
 import qualified ReWire.HSE.Cache             as Cache
@@ -86,49 +84,16 @@ getDevice conf fp = do
       (Module ts syns ds,  _)  <- getModule conf "." fp
 
       p <- pure
-       >=> pass 6 "Adding primitives"
-       >=> pure . addPrims
-       >=> pass 7 "Removing the Main.main definition (before attempting to typecheck it)."
-       >=> pure . removeMain
-       >=> pass 8 "Inlining INLINE-annotated definitions."
-       >=> inlineAnnotated
-       >=> pass 9 "Expanding type synonyms."
-       >=> expandTypeSynonyms
-       >=> pass 10 "Typechecking, inference."
-       >=> kindCheck >=> typeCheck start
-       >=> pass 11 "Removing Haskell definitions for externs."
-       >=> pure . neuterExterns
-       >=> pass 12 "Removing unused definitions."
-       >=> purge start >=> extraTC
-       >=> pass 13 "Eliminating pattern bindings (case expressions)."
-       >=> elimCase >=> liftLambdas >=> extraTC
-       >=> pass 14 "Partial evaluation."
-       >=> simplify conf >=> extraTC
-       >=> pass 15 "Normalizing bind."
-       >=> normalizeBind >=> extraTC
-       >=> pass 16 "Lifting, shifting, eta-abstracting lambdas."
-       >=> liftLambdas >=> purge start >=> extraTC
-       >=> inlineExtrudes >=> reduce >=> extraTC -- TODO: reduce here really just for start defn.
-       >=> shiftLambdas >=> etaAbsDefs >=> extraTC
-       >=> pass 17 "Purifying."
-       -- TODO: typechecking before or after purify seems to subtly effect
-       --       ordering of things.
-       -- >=> verb "Mystery round of type-checking/inference."
-       -- >=> kindCheck >=> typeCheck start
-       >=> purify start >=> extraTC
-       -- >=> verb "Mystery round of type-checking/inference."
-       -- >=> kindCheck >=> typeCheck start
-       >=> pass 18 "Final lifting, shifting, eta-abstracting lambdas."
-       >=> liftLambdas >=> shiftLambdas >=> etaAbsDefs
-       >=> pass 19 "Final purging of unused definitions."
-       >=> purgeAll start
-       >=> pass 20 "Translating to core & HDL."
+       >=> runPasses pass pure    nFront frontPasses
+       >=> runPasses pass extraTC nMid   midPasses
+       >=> runPasses pass pure    nBack  backPasses
+       >=> pass nCore "Translating to core & HDL."
        >=> toCore conf start
-       >=> verb "[21] Core."
+       >=> verb ("[" <> showt nFinal <> "] Core.")
        $ (ts, syns, ds)
 
-      when ((conf^.C.dump) 21) $ liftIO $ do
-            printHeader "[21] Core"
+      when ((conf^.C.dump) nFinal) $ liftIO $ do
+            printHeader $ "[" <> showt nFinal <> "] Core"
             T.putStrLn $ prettyPrint p
             when (conf^.C.verbose) $ do
                   T.putStrLn "\n## Show core:\n"
@@ -136,7 +101,53 @@ getDevice conf fp = do
 
       pure p
 
-      where start :: Name Exp
+      where -- Transformations applied up to and including typechecking.
+            frontPasses =
+                  [ ("Adding primitives.",                                                     pure . addPrims)
+                  , ("Removing the Main.main definition (before attempting to typecheck it).", pure . removeMain)
+                  , ("Inlining INLINE-annotated definitions.",                                 inlineAnnotated)
+                  , ("Expanding type synonyms.",                                               expandTypeSynonyms)
+                  , ("Typechecking, inference.",                                               kindCheck >=> typeCheck start)
+                  , ("Removing Haskell definitions for externs.",                              pure . neuterExterns)
+                  ]
+
+            -- Transformations on the typechecked program: each one is
+            -- followed by re-typechecking when --debug-typecheck is on.
+            midPasses =
+                  [ ("Removing unused definitions.",                     purge start)
+                  , ("Eliminating pattern bindings (case expressions).", elimCase)
+                  , ("Lifting lambdas.",                                 liftLambdas)
+                  , ("Partial evaluation.",                              simplify conf)
+                  , ("Normalizing bind.",                                normalizeBind)
+                  , ("Lifting lambdas.",                                 liftLambdas)
+                  , ("Removing unused definitions.",                     purge start)
+                  , ("Inlining extrudes.",                               inlineExtrudes)
+                  , ("Reducing.",                                        reduce) -- TODO: reduce here really just for the start defn.
+                  -- TODO: typechecking before or after purify seems to
+                  --       subtly effect ordering of things.
+                  , ("Shifting lambdas.",                                shiftLambdas)
+                  , ("Eta-abstracting definitions.",                     etaAbsDefs)
+                  , ("Purifying.",                                       purify start)
+                  ]
+
+            -- Final cleanup before translation to core: no --debug-typecheck
+            -- re-typechecking here (e.g., kindCheck fails once purgeAll has
+            -- purged type synonyms).
+            backPasses =
+                  [ ("Final lifting of lambdas.",                        liftLambdas)
+                  , ("Final shifting of lambdas.",                       shiftLambdas)
+                  , ("Final eta-abstraction of definitions.",            etaAbsDefs)
+                  , ("Final purging of unused definitions.",             purgeAll start)
+                  ]
+
+            nFront, nMid, nBack, nCore, nFinal :: Natural
+            nFront = 6 -- HSE passes are numbered 1-5 (see getModule).
+            nMid   = nFront + genericLength frontPasses
+            nBack  = nMid   + genericLength midPasses
+            nCore  = nBack  + genericLength backPasses
+            nFinal = nCore  + 1
+
+            start :: Name Exp
             start = s2n $ conf^.C.start
 
             extraTC :: (Fresh m, MonadIO m, MonadError AstError m) => FreeProgram -> m FreeProgram
@@ -149,18 +160,9 @@ getDevice conf fp = do
             verb :: MonadIO m => Text -> a -> m a
             verb = verb' conf
 
-printHeader :: MonadIO m => Text -> m ()
-printHeader hd = do
-      liftIO $ T.putStrLn   "-- # ==================================================="
-      liftIO $ T.putStrLn $ "-- # " <> hd
-      liftIO $ T.putStrLn   "-- # ===================================================\n"
-
-verb' :: MonadIO m => Config -> Text -> a -> m a
-verb' conf s a = pDebug conf s >> pure a
-
 passHSE :: MonadIO m => Config -> Renamer -> Module -> Natural -> Text -> S.Module a -> m (S.Module a)
 passHSE conf rn imps n m = verb' conf msg
-            >=> if (conf^.C.dump) n then printInfoHSE conf msg rn imps else pure
+            >=> if (conf^.C.dump) n then printInfoHSE msg rn imps (conf^.C.verbose) else pure
       where msg = "[" <> showt n <> "] " <> m
 
 passCrust :: MonadIO m => Config -> Natural -> Text -> FreeProgram -> m FreeProgram
@@ -203,21 +205,3 @@ printInfo conf hd fp = do
 
             start :: Name Exp
             start = s2n $ conf^.C.start
-
-printInfoHSE :: MonadIO m => Config -> Text -> Renamer -> Module -> S.Module a -> m (S.Module a)
-printInfoHSE conf hd rn imps hse = do
-      printHeader hd
-      when verbose $ liftIO $ T.putStrLn "\n-- ## Renamer:\n"
-      when verbose $ liftIO $ T.putStrLn $ showt rn
-      when verbose $ liftIO $ T.putStrLn "\n-- ## Exports:\n"
-      when verbose $ liftIO $ T.putStrLn $ showt $ allExports rn
-      when verbose $ liftIO $ T.putStrLn "\n-- ## Show imps:\n"
-      when verbose $ liftIO $ T.putStrLn $ showt imps
-      when verbose $ liftIO $ T.putStrLn "\n-- ## Show HSE mod:\n"
-      when verbose $ liftIO $ T.putStrLn $ showt $ void hse
-      when verbose $ liftIO $ T.putStrLn "\n-- ## Pretty HSE mod:\n"
-      liftIO $ putStrLn $ P.prettyPrint $ void hse
-      pure hse
-
-      where verbose :: Bool
-            verbose = conf^.C.verbose
