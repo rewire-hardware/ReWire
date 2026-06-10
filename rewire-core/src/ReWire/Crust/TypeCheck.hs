@@ -14,14 +14,14 @@ import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fixOn)
 import ReWire.Pretty (showt, prettyPrint, Pretty (..))
 import ReWire.SYB (transform, query)
-import ReWire.Unbound (fresh, substs, Subst, n2s, s2n, unsafeUnbind, Fresh, Embed (Embed), Name, bind, unbind, fv)
+import ReWire.Unbound (fresh, n2s, s2n, unsafeUnbind, Fresh, Embed (Embed), Name, bind, unbind, fv)
 
 import Control.Arrow (first)
 import Control.DeepSeq (deepseq, force)
 import Control.Monad (zipWithM, foldM, mplus, when, unless)
 import Data.Containers.ListUtils (nubOrd)
 import Control.Monad.Reader (MonadReader, ReaderT (..), local, asks)
-import Control.Monad.State (evalStateT, gets, modify, MonadState)
+import Control.Monad.State.Strict (evalStateT, gets, modify', MonadState)
 import Data.Data (Data)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
@@ -34,9 +34,6 @@ import qualified Data.Text           as Text
 -- import ReWire.Pretty (hsep)
 -- import Debug.Trace (trace)
 -- import Data.Text (unpack)
-
-subst :: Subst b a => HashMap (Name b) b -> a -> a
-subst = substs . Map.toList
 
 -- | Apply a substitution to a type, chasing bindings until a normal form:
 --   equivalent to `subst` until a fix point, but each variable is resolved
@@ -66,6 +63,14 @@ substTy s = go $ Map.size s
 --   fully rewrite a term.
 compress :: TySub -> TySub
 compress s = Map.map (substTy s) s
+
+-- | Occurs check: like `elem` over `fv`, but without building the free-var
+--   list through the generic machinery (Ty contains no binders).
+occurs :: Name Ty -> Ty -> Bool
+occurs v = \ case
+      TyApp _ t1 t2 -> occurs v t1 || occurs v t2
+      TyVar _ _ v'  -> v' == v
+      _             -> False
 
 -- Type checker for core.
 
@@ -157,7 +162,7 @@ freshv = TyVar (MsgAnnote "TypeCheck: freshv") kblank <$> fresh (s2n "?")
 tsUnion :: TySub -> TySub -> TySub
 tsUnion ts = foldr insert ts . Map.toList
       where insert :: (Name Ty, Ty) -> TySub -> TySub
-            insert (v, t) ts' | Just t' <- Map.lookup v ts', Just s <- mgu t t' = Map.insert v (subst s t) ts' `tsUnion` s
+            insert (v, t) ts' | Just t' <- Map.lookup v ts', Just s <- mgu t t' = Map.insert v (substTy s t) ts' `tsUnion` s
                               | otherwise                                       = Map.insert v t ts'
 
 mgu :: Ty -> Ty -> Maybe TySub
@@ -171,12 +176,12 @@ mgu (TyVar _ _ u)                   tv@(TyVar _ _ v) | u > v                    
 mgu tu@TyVar {}                     (TyVar _ _ v)                                    = pure $ Map.fromList [(v, tu)]
 
 -- TODO: the special-case unifying with ReacT/PuRe is a hack and doesn't cover all cases. Should be removed eventually.
-mgu (TyVar _ _ u)                   t                | u `notElem` fv t, isReacT' t  = tsUnion (Map.fromList [(u, t)]) <$> mgu globalReacT' t
-mgu (TyVar _ _ u)                   t                | u `notElem` fv t, isPuRe' t   = tsUnion (Map.fromList [(u, t)]) <$> mgu globalPuRe t
-mgu (TyVar _ _ u)                   t                | u `notElem` fv t              = pure $ Map.fromList [(u, t)]
-mgu t                               (TyVar _ _ u)    | u `notElem` fv t, isReacT' t  = tsUnion (Map.fromList [(u, t)]) <$> mgu globalReacT' t
-mgu t                               (TyVar _ _ u)    | u `notElem` fv t, isPuRe' t   = tsUnion (Map.fromList [(u, t)]) <$> mgu globalPuRe t
-mgu t                               (TyVar _ _ u)    | u `notElem` fv t              = pure $ Map.fromList [(u, t)]
+mgu (TyVar _ _ u)                   t                | not (occurs u t), isReacT' t  = tsUnion (Map.fromList [(u, t)]) <$> mgu globalReacT' t
+mgu (TyVar _ _ u)                   t                | not (occurs u t), isPuRe' t   = tsUnion (Map.fromList [(u, t)]) <$> mgu globalPuRe t
+mgu (TyVar _ _ u)                   t                | not (occurs u t)              = pure $ Map.fromList [(u, t)]
+mgu t                               (TyVar _ _ u)    | not (occurs u t), isReacT' t  = tsUnion (Map.fromList [(u, t)]) <$> mgu globalReacT' t
+mgu t                               (TyVar _ _ u)    | not (occurs u t), isPuRe' t   = tsUnion (Map.fromList [(u, t)]) <$> mgu globalPuRe t
+mgu t                               (TyVar _ _ u)    | not (occurs u t)              = pure $ Map.fromList [(u, t)]
 
 mgu (dstPoly1 -> Just p1)           (dstPoly1 -> Just p2)                            = case p1 `minusP1` p2 of
                   p' | p' == zeroP1         -> pure mempty
@@ -189,21 +194,21 @@ mgu (dstPoly1 -> Just p1)           (dstPoly1 -> Just p2)                       
 mgu (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) ti ) to )
     (TyApp _ (TyApp _ (TyCon _ (n2s -> "ReacT")) ti') to')                           = do
       s1 <- mgu iTy ti
-      s2 <- tsUnion s1 <$> mgu (subst s1 ti) (subst s1 ti')
-      s3 <- tsUnion s2 <$> mgu (subst s2 oTy) (subst s2 to)
-      tsUnion s3 <$> mgu (subst s3 to) (subst s3 to')
+      s2 <- tsUnion s1 <$> mgu (substTy s1 ti) (substTy s1 ti')
+      s3 <- tsUnion s2 <$> mgu (substTy s2 oTy) (substTy s2 to)
+      tsUnion s3 <$> mgu (substTy s3 to) (substTy s3 to')
 
 -- TODO: one PuRe assumption.
 mgu (TyApp _ (TyApp _ (TyCon _ (n2s -> "PuRe")) ts ) to )
     (TyApp _ (TyApp _ (TyCon _ (n2s -> "PuRe")) ts') to')                            = do
       s1 <- mgu sPTy ts
-      s2 <- tsUnion s1 <$> mgu (subst s1 ts) (subst s1 ts')
-      s3 <- tsUnion s2 <$> mgu (subst s2 oPTy) (subst s2 to)
-      tsUnion s3 <$> mgu (subst s3 to) (subst s3 to')
+      s2 <- tsUnion s1 <$> mgu (substTy s1 ts) (substTy s1 ts')
+      s3 <- tsUnion s2 <$> mgu (substTy s2 oPTy) (substTy s2 to)
+      tsUnion s3 <$> mgu (substTy s3 to) (substTy s3 to')
 
 mgu (TyApp _ tl tr)                 (TyApp _ tl' tr')                                = do
-      let fwd = mgu tl tl' >>= \ s -> tsUnion s <$> mgu (subst s tr) (subst s tr')
-          rev = mgu tr tr' >>= \ s -> tsUnion s <$> mgu (subst s tl) (subst s tl')
+      let fwd = mgu tl tl' >>= \ s -> tsUnion s <$> mgu (substTy s tr) (substTy s tr')
+          rev = mgu tr tr' >>= \ s -> tsUnion s <$> mgu (substTy s tl) (substTy s tl')
       fwd `mplus` rev
 
 mgu _                               _                                                = Nothing
@@ -211,7 +216,7 @@ mgu _                               _                                           
 --         <> "\n    with: " <> unpack (prettyPrint t2)) $ Nothing
 
 unify' :: Ty -> Ty -> Maybe Ty
-unify' t1 t2 = flip subst t1 <$> mgu t1 t2
+unify' t1 t2 = flip substTy t1 <$> mgu t1 t2
 
 unify :: (MonadError AstError m, MonadState TySub m) => Annote -> Ty -> Ty -> m Ty
 unify an t1 t2 = do
@@ -222,7 +227,7 @@ unify an t1 t2 = do
       case mgu t1' t2' of
             Just s -> do
                   -- trace ("    result:\n" <> unpack (prettyPrint  (Map.toList s))) $ pure ()
-                  modify $ tsUnion s
+                  modify' $ tsUnion s
                   gets $ flip substTy t1'
             _      -> failAt an $ "Types do not unify. Expected and got, respectively:\n"
                               <> prettyTy t1' <> "\n"
