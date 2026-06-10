@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           rewire-core
-version:        2.6
+version:        2.7
 synopsis:       A Haskell-to-Verilog/VHDL compiler, core library
 description:    An experimental compiler for a subset of Haskell to Verilog and VHDL.
 category:       Language
