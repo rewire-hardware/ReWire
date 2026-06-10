@@ -11,8 +11,10 @@ import Data.Hashable (Hashable (hash))
 import Data.Text (Text)
 import Numeric.Natural (Natural)
 
-fixPure :: Hashable a => Natural -> (a -> a) -> a -> a
-fixPure n f = runIdentity . boundedFix (\ a a' -> hash a == hash a') n (pure . f)
+-- | Note: direct equality rather than comparing hashes: equality can stop at
+--   the first difference, while hashing always traverses both terms fully.
+fixPure :: Eq a => Natural -> (a -> a) -> a -> a
+fixPure n f = runIdentity . boundedFix (==) n (pure . f)
 
 fix :: (MonadError AstError m, Hashable a) => Text -> Natural -> (a -> m a) -> a -> m a
 fix = fixOn hash

@@ -3,7 +3,7 @@
 {-# LANGUAGE Safe #-}
 module ReWire.Core.Transform (mergeSlices, purgeUnused, partialEval, dedupe) where
 
-import ReWire.Annotation (unAnn, ann)
+import ReWire.Annotation (ann)
 import ReWire.BitVector (BV, zeros)
 import ReWire.Core.Interp (interpExp, DefnMap)
 import ReWire.Core.Syntax
@@ -90,7 +90,7 @@ mergeSlices p@Device {loop, state0, defns}  = p { loop = reDefn loop, state0 = r
                         isId (getPVars -> [PatVar _ 1]) (Call _ _ (Const bv1) (LVar _ _ 0) [PatLit _ bv1'] (Lit _ bv0))
                               | bv1 == bvTrue  && bv1' == bvTrue  && bv0 == bvFalse = True
                               | bv1 == bvFalse && bv1' == bvFalse && bv0 == bvTrue = True
-                        isId (getPVars -> p) body = unAnn (patToExp p) == unAnn body
+                        isId (getPVars -> p) body = patToExp p == body
 
                         getPVars :: [Pat] -> [Pat]
                         getPVars = filter isVar
@@ -116,10 +116,12 @@ mergeSlices p@Device {loop, state0, defns}  = p { loop = reDefn loop, state0 = r
                         alwaysMatches :: [Pat] -> Bool
                         alwaysMatches = all $ \ p -> isWild p || isVar p
 
+                        -- Note: Eq on Exp ignores annotations, so no need to
+                        -- strip them (unAnn) before comparing.
                         inline :: [Pat] -> Exp -> Maybe Target
                         inline ar (Call _ _ g' e ps _)
-                              | unAnn (patToExp ar) == unAnn e && unAnn e == unAnn (patToExp ps) = Just g'
-                        inline _ _                                                               = Nothing
+                              | patToExp ar == e && e == patToExp ps = Just g'
+                        inline _ _                                   = Nothing
 
                         packExps :: [Exp] -> Exp
                         packExps = cat . mergeLits . filter (not . isNil)
@@ -188,10 +190,12 @@ dedupe p@Device { loop, state0, defns } = p { loop = ddDefn loop, state0 = ddDef
                   Global g | Just g' <- Map.lookup g ddMap -> Global g'
                   t                                        -> t
 
+            -- Note: Eq and Hashable on Sig and Exp ignore annotations, so
+            -- the keys here don't need them stripped (unAnn).
             ddMap :: HashMap GId GId
-            ddMap = foldr (\ (Defn _ g sig body) -> maybe id (Map.insert g) $ Map.lookup (unAnn sig, unAnn body) bodies) mempty allDefns
+            ddMap = foldr (\ (Defn _ g sig body) -> maybe id (Map.insert g) $ Map.lookup (sig, body) bodies) mempty allDefns
                   where bodies :: HashMap (Sig, Exp) GId
-                        bodies = foldr (\ (Defn _ g sig body) -> Map.insert (unAnn sig, unAnn body) g) mempty allDefns
+                        bodies = foldr (\ (Defn _ g sig body) -> Map.insert (sig, body) g) mempty allDefns
 
             allDefns :: [Defn]
             allDefns = loop : state0 : defns
