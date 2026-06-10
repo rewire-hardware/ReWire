@@ -11,7 +11,7 @@ import ReWire.Crust.Syntax (Exp (..), Ty (..), Kind (..), Poly (..), Pat (..), M
 import ReWire.Crust.Types (mkArrowTy, poly, arrowRight, (|->), concrete, kblank, tyAnn, setTyAnn, flattenArrow, strTy, intTy, listTy, vecTy, arr, arrowLeft, dstPoly1, zeroP1, minusP1, pickVar, poly1Ty, prettyTy)
 import ReWire.Crust.Util (transMPat, patVars)
 import ReWire.Error (AstError, MonadError, failAt)
-import ReWire.Fix (fixOn, fixOn')
+import ReWire.Fix (fixOn)
 import ReWire.Pretty (showt, prettyPrint, Pretty (..))
 import ReWire.SYB (transform, query)
 import ReWire.Unbound (fresh, substs, Subst, n2s, s2n, unsafeUnbind, Fresh, Embed (Embed), Name, bind, unbind, fv)
@@ -37,11 +37,24 @@ import qualified Data.HashSet        as Set
 subst :: Subst b a => HashMap (Name b) b -> a -> a
 subst = substs . Map.toList
 
--- | `subst` until a fix point.
-rewrite :: (Data a, Hashable a, Subst b a) => HashMap (Name b) b -> a -> a
-rewrite = fixOn' norm . subst
-      where norm :: (Data a, Hashable a) => a -> Int
-            norm = hash . unAnn
+-- | Apply a substitution to a type, chasing bindings until a normal form:
+--   equivalent to `subst` until a fix point, but each variable is resolved
+--   with map lookups instead of repeated full passes over the term and the
+--   substitution (`subst` is linear in the size of the substitution even
+--   when the term is a single variable).
+substTy :: TySub -> Ty -> Ty
+substTy s = \ case
+      TyApp an t1 t2  -> TyApp an (substTy s t1) $ substTy s t2
+      t@(TyVar _ _ v) -> case Map.lookup v s of
+            Just (TyVar _ _ v') | v' == v -> t -- Identity bindings occur; don't chase them.
+            Just t'                       -> substTy s t'
+            Nothing                       -> t
+      t               -> t
+
+-- | Close a substitution over itself, so a single `subst` pass suffices to
+--   fully rewrite a term.
+compress :: TySub -> TySub
+compress s = Map.map (substTy s) s
 
 -- Type checker for core.
 
@@ -173,15 +186,15 @@ unify' t1 t2 = flip subst t1 <$> mgu t1 t2
 
 unify :: (MonadError AstError m, MonadState TySub m) => Annote -> Ty -> Ty -> m Ty
 unify an t1 t2 = do
-      t1' <- gets $ flip rewrite t1
-      t2' <- gets $ flip rewrite t2
+      t1' <- gets $ flip substTy t1
+      t2' <- gets $ flip substTy t2
       -- trace ("... Unifying: " <> unpack (prettyPrint t1')
       --    <> "\n...     with: " <> unpack (prettyPrint t2')) $ pure ()
       case mgu t1' t2' of
             Just s -> do
                   -- trace ("    result:\n" <> unpack (prettyPrint  (Map.toList s))) $ pure ()
                   modify $ tsUnion s
-                  gets $ flip subst t1'
+                  gets $ flip substTy t1'
             _      -> failAt an $ "Types do not unify. Expected and got, respectively:\n"
                               <> prettyTy t1' <> "\n"
                               <> prettyTy t2'
@@ -382,7 +395,7 @@ tcDefn start d  = flip evalStateT mempty $ do
       (body', _) <- localAssumps (`Map.union` (Map.fromList $ zip vs $ map (poly []) targs))
                          $ tcExp tbody body
 
-      body'' <- gets $ flip rewrite body'
+      body'' <- gets $ \ s -> transform (substTy $ compress s) body'
 
       let d'  = Defn an n (Embed pt) b $ Embed $ bind vs body''
       d' `deepseq` pure d'

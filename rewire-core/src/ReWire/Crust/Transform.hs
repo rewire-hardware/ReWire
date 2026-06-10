@@ -31,7 +31,7 @@ import ReWire.Crust.Util (mkApp, mkError, mkLam, inlinable, synthableDefn, mkTup
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fix, fix', fixUntil)
 import ReWire.SYB (transform, transformM, query)
-import ReWire.Unbound (freshVar, fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, Name (..), unsafeUnbind, bind, unbind, Subst (..), Alpha, Embed (Embed), Bind, trec)
+import ReWire.Unbound (freshVar, fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, Name (..), unsafeUnbind, bind, unbind, Subst (..), Alpha, Embed (Embed), Bind)
 
 import Control.Arrow ((&&&))
 import Control.Lens ((^.))
@@ -455,7 +455,10 @@ purgeAll start = pure . purgeUnused [start] []
 
 -- | Remove all definitions and types unused by those in the given lists.
 purgeUnused :: [Name Exp] -> [Name TyConId] -> FreeProgram -> FreeProgram
-purgeUnused except exceptTs (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ externCtors vs') (fv $ trec vs') ts, syns, vs')
+-- Note: collect ctor names with a query instead of `fv $ trec vs'`: no
+-- binder can capture a DataConId, so every occurrence is free, and closing
+-- over the whole program (trec) is quadratic in the number of binders.
+purgeUnused except exceptTs (ts, syns, vs) = (inuseData (fix' extendWithCtorParams $ externCtors vs') (query vs' :: [Name DataConId]) ts, syns, vs')
       where vs' :: [Defn]
             vs' = inuseDefn except vs
 
