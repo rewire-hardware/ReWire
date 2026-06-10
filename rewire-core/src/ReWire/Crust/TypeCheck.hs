@@ -8,7 +8,7 @@ module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype, unify, unify', 
 
 import ReWire.Annotation (Annote (MsgAnnote), ann)
 import ReWire.Crust.Syntax (Exp (..), Ty (..), Kind (..), Poly (..), Pat (..), MatchPat (..), FreeProgram, Defn (..), DataDefn (..), Builtin (..), DataCon (..), DataConId, builtinName)
-import ReWire.Crust.Types (mkArrowTy, poly, arrowRight, (|->), concrete, kblank, tyAnn, setTyAnn, flattenArrow, strTy, intTy, listTy, vecTy, arr, arrowLeft, dstPoly1, zeroP1, minusP1, pickVar, poly1Ty, prettyTy)
+import ReWire.Crust.Types (mkArrowTy, poly, arrowRight, (|->), concrete, kblank, tyAnn, setTyAnn, flattenArrow, strTy, intTy, listTy, vecTy, arr, arrowLeft, dstPoly1, zeroP1, minusP1, pickVar, poly1Ty, natP1, prettyTy)
 import ReWire.Crust.Util (transMPat, patVars)
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fixOn)
@@ -157,7 +157,9 @@ mgu t                               (TyVar _ _ u)    | u `notElem` fv t         
 
 mgu (dstPoly1 -> Just p1)           (dstPoly1 -> Just p2)                            = case p1 `minusP1` p2 of
                   p' | p' == zeroP1         -> pure mempty
-                  (pickVar -> Just (x, p')) -> pure $ Map.singleton x $ poly1Ty p'
+                  -- Note: a type-level nat var can't be bound to a negative
+                  -- or non-integral constant (natP1).
+                  (pickVar -> Just (x, p')) | natP1 p' -> pure $ Map.singleton x $ poly1Ty p'
                   _                         -> Nothing
 
 -- TODO: one ReacT assumption.
