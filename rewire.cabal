@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           rewire
-version:        2.6
+version:        2.7
 synopsis:       A Haskell-to-Verilog compiler
 description:    A compiler for a subset of Haskell to Verilog and VHDL.
 category:       Language
@@ -342,7 +342,7 @@ library
     , lens ==5.3.*
     , rewire-core
     , rewire-embedder
-    , rewire-user ==0.2.*
+    , rewire-user ==2.7.*
     , text ==2.1.*
   default-language: Haskell2010
 
@@ -365,7 +365,7 @@ executable rwc
     , lens ==5.3.*
     , rewire
     , rewire-embedder
-    , rewire-user ==0.2.*
+    , rewire-user ==2.7.*
     , text ==2.1.*
   default-language: Haskell2010
 
@@ -388,7 +388,7 @@ executable rwe
     , lens ==5.3.*
     , rewire
     , rewire-embedder
-    , rewire-user ==0.2.*
+    , rewire-user ==2.7.*
     , text ==2.1.*
   default-language: Haskell2010
 
@@ -414,7 +414,7 @@ test-suite rwc-test
     , process ==1.6.*
     , rewire
     , rewire-embedder
-    , rewire-user ==0.2.*
+    , rewire-user ==2.7.*
     , tasty ==1.5.*
     , tasty-golden ==2.3.*
     , tasty-hunit ==0.10.*
@@ -443,7 +443,7 @@ test-suite rwe-test
     , process ==1.6.*
     , rewire
     , rewire-embedder
-    , rewire-user ==0.2.*
+    , rewire-user ==2.7.*
     , tasty ==1.5.*
     , tasty-hunit ==0.10.*
     , text ==2.1.*
@@ -469,6 +469,6 @@ benchmark rwc-perf
     , lens ==5.3.*
     , rewire
     , rewire-embedder
-    , rewire-user ==0.2.*
+    , rewire-user ==2.7.*
     , text ==2.1.*
   default-language: Haskell2010

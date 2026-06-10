@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.7 (2026-06)
 
 * Compile-time performance overhaul, especially for large files: type
   checking, dead-code purging, the partial evaluator, and the Core recursion
@@ -14,8 +14,10 @@
 * New negative test suite (`tests/negative/`) checking that invalid programs
   are rejected with the expected errors.
 * CLI scaffolding, module loading, export resolution, and pass running are
-  now shared between `rwc` and `rwe`; `rewire-user` gained GHC-compatibility
-  tests.
+  now shared between `rwc` and `rwe`.
+* rewire-user (now versioned in lockstep with the other packages): vector
+  `update` now has a real (GHC-compatible) implementation; fixed the GHC
+  implementation of `rwPrimGtEq`; new GHC-compatibility test suite.
 * Documentation refresh: changelog split out of the README (this file);
   stale tutorial and design-doc material updated or archived.
 * Removed the experimental FIRRTL backend, which had been non-functional
