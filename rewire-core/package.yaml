@@ -29,6 +29,7 @@ default-extensions:
 
 extra-source-files:
 - README.md
+- vhdl/rw_helpers.vhdl
 
 dependencies:
 - base ^>= 4.20
@@ -48,6 +49,7 @@ dependencies:
 - mtl ^>= 2.3
 - prettyprinter ^>= 1.7
 - split ^>= 0.2
+- template-haskell ^>= 2.22
 - text ^>= 2.1
 - text-show ^>= 3.11
 - unbound-generics ^>= 0.4
