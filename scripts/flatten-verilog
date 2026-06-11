@@ -1,3 +1,0 @@
-#!/bin/sh
-
-yosys -p "read_verilog -sv $1; synth -top top_level; flatten; clean -purge; write_verilog -noattr $1"
