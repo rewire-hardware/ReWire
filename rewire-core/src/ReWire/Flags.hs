@@ -21,6 +21,7 @@ data Flag = FlagO !String
           | FlagStart !String
           | FlagTop !String
           | FlagInterpret !(Maybe String) | FlagCycles !String
+          | FlagTestbench !(Maybe String)
           | FlagEvalDepth !String
           | FlagPretty
           | FlagDebugTypeCheck

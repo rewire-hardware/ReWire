@@ -11,6 +11,7 @@ module ReWire.Config
       , inputSigs, stateSigs, outputSigs
       , vhdlPackages, inputsFile, outFile
       , start, top, loadPath, cycles, depth, dump, source, typecheck, rtlOpt
+      , testbench
       , pDebug
       ) where
 
@@ -61,6 +62,7 @@ data Config = Config
       , _dump         :: Natural -> Bool
       , _typecheck    :: Bool
       , _rtlOpt       :: Natural
+      , _testbench    :: Bool
       }
 
 makeLenses ''Config
@@ -87,6 +89,7 @@ defaultConfig = Config
       , _dump         = const False
       , _typecheck    = False
       , _rtlOpt       = 8
+      , _testbench    = False
       }
 
 verbose :: Lens' Config Bool
@@ -128,6 +131,8 @@ interpret = foldM interp defaultConfig
                   FlagVhdl                        -> pure $ target .~ VHDL      $ c
                   FlagInterpret Nothing           -> pure $ target .~ Interpret $ c
                   FlagInterpret (Just ip)         -> pure $ target .~ Interpret $ inputsFile .~ ip $ c
+                  FlagTestbench Nothing           -> pure $ testbench .~ True   $ c
+                  FlagTestbench (Just ip)         -> pure $ testbench .~ True   $ inputsFile .~ ip $ c
                   FlagCore                        -> pure $ target .~ RWCore    $ c
                   FlagFromCore                    -> pure $ source .~ RWCore    $ c
                   FlagClockName (pack -> n)       -> pure $ clock  .~ n         $ c

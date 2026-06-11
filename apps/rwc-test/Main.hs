@@ -4,12 +4,13 @@ import qualified RWC
 
 import Control.Exception (try, finally)
 import Control.Monad (unless, when, msum)
-import Data.Bits (xor)
+import Data.Bits (xor, shiftL, shiftR)
 import Data.List (isSuffixOf, isInfixOf, isPrefixOf, stripPrefix, intercalate)
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Word (Word32)
 import GHC.IO.Handle (hDuplicate, hDuplicateTo)
-import Numeric (showHex)
+import Data.Char (isHexDigit)
+import Numeric (readHex)
 import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), ArgDescr (..))
 import System.Directory (listDirectory, setCurrentDirectory, getCurrentDirectory, doesFileExist, createDirectoryIfMissing)
 import System.Environment (getArgs)
@@ -209,41 +210,99 @@ withStdoutTo = withHandleTo stdout
 cosimCycles :: Int
 cosimCycles = 20
 
--- | Drive the generated Verilog and VHDL with identical pseudorandom inputs
---   and check that the simulators (iverilog/vvp and ghdl) produce identical
---   output traces. Assumes the working directory is the test directory and
---   that the .out.sv and .out.vhdl outputs have been generated. Skipped for
---   degenerate devices with no outputs.
+-- | Three-way agreement check: compile the design with rwc --testbench for
+--   both backends, drive both testbenches with the same pseudorandom inputs
+--   file, and require that the iverilog/vvp trace, the ghdl trace, and the
+--   Core interpreter (--interpret) output all agree, cycle by cycle. Assumes
+--   the working directory is the test directory and the .out.sv output has
+--   been generated. Skipped for degenerate devices with no outputs.
 runCosim :: FilePath -> IO ()
 runCosim fn = do
       src <- readFile $ ofl "sv"
       let (ins, outs) = parsePorts src
       unless (null outs) $ do
-            writeFile tbsv   $ verilogTb ins outs
-            writeFile tbvhdl $ vhdlTb ins outs
-            callCommand $ unwords ["iverilog -g2012 -o", vvpf, tbsv, ofl "sv", "verilog/*.sv"]
-            callCommand $ unwords ["vvp", vvpf, ">", ofl "cosim.vtrace"]
+            writeFile inputsF $ inputsYaml (takeBaseName fn) $ dataIns ins
+            rwc ["--testbench=" <> inputsF, "-o", ofl "cosim.sv"]
+            rwc ["--vhdl", "--testbench=" <> inputsF, "-o", ofl "cosim.vhdl"]
+            -- The interpreter cannot evaluate externs, so the check degrades
+            -- to two-way (simulator vs. simulator) when it fails.
+            iok <- withStderrTo (ofl "cosim.interp.err")
+                  (try (rwc ["--interpret=" <> inputsF, "-o", ofl "cosim.interp.yaml"]) :: IO (Either ExitCode ()))
+            callCommand $ unwords ["iverilog -g2012 -o", ofl "cosim.vvp", ofl "cosim_tb.sv", ofl "cosim.sv", "verilog/*.sv"]
+            callCommand $ unwords ["vvp", ofl "cosim.vvp", ">", ofl "cosim.vtrace"]
+            callCommand $ unwords ["rm -rf", wk] -- a stale workdir makes ghdl bind old units
             createDirectoryIfMissing False wk
-            callCommand $ unwords ["ghdl -a --std=08 --workdir=" <> wk, ofl "vhdl", "vhdl/*.vhdl", tbvhdl]
+            callCommand $ unwords ["ghdl -a --std=08 --workdir=" <> wk, ofl "cosim.vhdl", "vhdl/*.vhdl", ofl "cosim_tb.vhdl"]
             callCommand $ unwords ["ghdl -e --std=08 --workdir=" <> wk, "-o", wk </> "tbexe", "tb"]
             callCommand $ unwords [wk </> "tbexe", "--ieee-asserts=disable", ">", ofl "cosim.htrace"]
-            tv <- bitLines <$> readFile (ofl "cosim.vtrace")
-            th <- bitLines <$> readFile (ofl "cosim.htrace")
+            tv <- outTrace <$> readFile (ofl "cosim.vtrace")
+            th <- outTrace <$> readFile (ofl "cosim.htrace")
+            ti <- either (const $ pure tv) (const $ outTrace <$> readFile (ofl "cosim.interp.yaml")) iok
             assertBool (  "cosimulation traces differ (or have the wrong length):"
                        <> "\niverilog: " <> show tv
-                       <> "\nghdl:     " <> show th)
-                  $ tv == th && length tv == cosimCycles
+                       <> "\nghdl:     " <> show th
+                       <> "\ninterp:   " <> show ti)
+                  $ tv == th && tv == ti && length tv == cosimCycles * length outs
       where ofl :: String -> FilePath
             ofl ext = fn -<.> ("out." <> ext)
 
-            tbsv, tbvhdl, vvpf, wk :: FilePath
-            tbsv   = ofl "cosim.tb.sv"
-            tbvhdl = ofl "cosim.tb.vhdl"
-            vvpf   = ofl "cosim.vvp"
-            wk     = ofl "ghdlwork"
+            inputsF, wk :: FilePath
+            inputsF = ofl "cosim.inputs.yaml"
+            wk      = ofl "ghdlwork"
 
-            bitLines :: String -> [String]
-            bitLines = filter (not . null) . map (filter (/= ' ')) . filter (all (`elem` ("01xzuXZU " :: String))) . lines
+            rwc :: [String] -> IO ()
+            rwc args = withArgs ((fn -<.> "rwc") : "--from-core" : "--cycles" : show cosimCycles : args) RWC.main
+
+            dataIns :: [(String, Int)] -> [(String, Int)]
+            dataIns = filter ((`notElem` ["clk", "rst"]) . fst)
+
+-- | Output records parsed from a simulation trace or interpreter output:
+--   lines of the form "- name: '0xHEX'" (or indented continuation lines);
+--   anything else (simulator noise) is ignored. Comparing parsed values makes
+--   the check robust to hex formatting differences (e.g., ghdl pads, the
+--   interpreter does not).
+outTrace :: String -> [(String, Integer)]
+outTrace = mapMaybe entry . lines
+      where entry :: String -> Maybe (String, Integer)
+            entry l = case words l of
+                  ["-", n, v] | ":" `isSuffixOf` n -> (init n, ) <$> hexVal v
+                  [n, v]      | ":" `isSuffixOf` n -> (init n, ) <$> hexVal v
+                  _                                -> Nothing
+
+            hexVal :: String -> Maybe Integer
+            hexVal v = case dropWhile (/= 'x') v of
+                  'x' : rest | [(x, _)] <- readHex $ takeWhile isHexDigit rest -> Just x
+                  _                                                           -> Nothing
+
+-- | A deterministic pseudorandom interp-style inputs file (one map of
+--   input-name-to-value per cycle, decimal values).
+inputsYaml :: String -> [(String, Int)] -> String
+inputsYaml nm ins
+      | null ins  = "[]\n"
+      | otherwise = unlines $ concat $ go (seed0 nm) cosimCycles
+      where go :: Word32 -> Int -> [[String]]
+            go _ 0 = []
+            go s n = let (s', ls) = cyc s in ls : go s' (n - 1)
+
+            cyc :: Word32 -> (Word32, [String])
+            cyc s0 = fmap (zipWith fmt ("- " : repeat "  ")) $ foldl draw (s0, []) ins
+                  where draw :: (Word32, [(String, Integer)]) -> (String, Int) -> (Word32, [(String, Integer)])
+                        draw (s, acc) (n, w) =
+                              let chunks      = (w + 31) `div` 32
+                                  (s', v)     = foldl (\ (sAcc, vAcc) _ -> let sN = xorshift32 sAcc in (sN, vAcc * (2 ^ (32 :: Integer)) + toInteger sN))
+                                                      (s, 0) [1 .. chunks]
+                              in (s', acc <> [(n, v `mod` (2 ^ toInteger w))])
+
+            fmt :: String -> (String, Integer) -> String
+            fmt pre (n, v) = pre <> n <> ": " <> show v
+
+            seed0 :: String -> Word32
+            seed0 = foldl (\ h c -> h * 31 + fromIntegral (fromEnum c)) 0x12345678
+
+            xorshift32 :: Word32 -> Word32
+            xorshift32 x0 = let x1 = x0 `xor` (x0 `shiftL` 13)
+                                x2 = x1 `xor` (x1 `shiftR` 17)
+                            in       x2 `xor` (x2 `shiftL` 5)
 
 -- | The port list of the generated top_level Verilog module: input and output
 --   names with bit widths.
@@ -267,166 +326,6 @@ parsePorts src = go (words $ map unPunct header) ([], [])
             dropAfter pat s | pat `isPrefixOf` s = drop (length pat) s
             dropAfter _ []                       = []
             dropAfter pat (_ : s)                = dropAfter pat s
-
--- | Stimulus shared by the two testbenches: a per-input xorshift32 PRNG,
---   stepped once per 32-bit chunk of the input per cycle.
-cosimSeed :: Int -> Word32
-cosimSeed k = 0x12345678 `xor` (fromIntegral k * 0x9E3779B9)
-
-hex8 :: Word32 -> String
-hex8 w = let h = showHex w "" in replicate (8 - length h) '0' <> h
-
-cosimDataIns :: [(String, Int)] -> [(String, Int)]
-cosimDataIns = filter ((`notElem` ["clk", "rst"]) . fst)
-
-cosimChunks :: Int -> Int
-cosimChunks w = (w + 31) `div` 32
-
-verilogTb :: [(String, Int)] -> [(String, Int)] -> String
-verilogTb ins outs = unlines $
-      [ "module tb;" ]
-      <> map (\ (n, w) -> "  logic [" <> show (w - 1) <> ":0] " <> n <> ";") ins
-      <> map (\ (n, w) -> "  wire [" <> show (w - 1) <> ":0] " <> n <> ";") outs
-      <> zipWith (\ k _ -> "  reg [31:0] s" <> show k <> " = 32'h" <> hex8 (cosimSeed k) <> ";") [0 :: Int ..] dataIns
-      <> [ "  reg [" <> show (maxch * 32 - 1) <> ":0] acc;"
-         , "  integer c;"
-         , "  top_level dut (" <> intercalate ", " (map fst $ ins <> outs) <> ");"
-         , "  function [31:0] xs (input [31:0] x);"
-         , "    begin"
-         , "      xs = x ^ (x << 13);"
-         , "      xs = xs ^ (xs >> 17);"
-         , "      xs = xs ^ (xs << 5);"
-         , "    end"
-         , "  endfunction"
-         , "  task drv;"
-         , "    begin"
-         ]
-      <> driveLines
-      <> [ "    end"
-         , "  endtask"
-         , "  initial begin"
-         ]
-      <> body
-      <> [ "    $finish;"
-         , "  end"
-         , "endmodule"
-         ]
-      where dataIns = cosimDataIns ins
-            clocked = "clk" `elem` map fst ins
-            maxch   = maximum $ 1 : map (cosimChunks . snd) dataIns
-
-            driveLines | null dataIns = ["      ;"]
-                       | otherwise    = concat $ zipWith drive [0 :: Int ..] dataIns
-
-            drive k (n, w) = ["      acc = 0;"]
-                  <> replicate (cosimChunks w) ("      s" <> show k <> " = xs(s" <> show k <> "); acc = (acc << 32) | s" <> show k <> ";")
-                  <> ["      " <> n <> " = acc[" <> show (w - 1) <> ":0];"]
-
-            disp = "$display(\"%b\", {" <> intercalate ", " (map fst outs) <> "});"
-
-            body | clocked =
-                       [ "    clk = 0; rst = 1;"
-                       , "    drv; #5 clk = 1; #5 clk = 0;"
-                       , "    drv; #5 clk = 1; #5 clk = 0;"
-                       , "    rst = 0;"
-                       , "    for (c = 0; c < " <> show cosimCycles <> "; c = c + 1) begin"
-                       , "      drv;"
-                       , "      #4 " <> disp
-                       , "      #1 clk = 1; #5 clk = 0;"
-                       , "    end"
-                       ]
-                 | otherwise =
-                       [ "    for (c = 0; c < " <> show cosimCycles <> "; c = c + 1) begin"
-                       , "      drv;"
-                       , "      #5 " <> disp
-                       , "      #5;"
-                       , "    end"
-                       ]
-
-vhdlTb :: [(String, Int)] -> [(String, Int)] -> String
-vhdlTb ins outs = unlines $
-      [ "library ieee;"
-      , "use ieee.std_logic_1164.all;"
-      , "use ieee.numeric_std.all;"
-      , "use std.textio.all;"
-      , ""
-      , "entity tb is"
-      , "end entity;"
-      , ""
-      , "architecture sim of tb is"
-      ]
-      <> map (\ (n, w) -> "  signal " <> vhdlName n <> " : std_logic_vector (" <> show (w - 1) <> " downto 0);") (ins <> outs)
-      <> [ "  function xs (x : unsigned(31 downto 0)) return unsigned is"
-         , "    variable r : unsigned(31 downto 0);"
-         , "  begin"
-         , "    r := x xor shift_left(x, 13);"
-         , "    r := r xor shift_right(r, 17);"
-         , "    r := r xor shift_left(r, 5);"
-         , "    return r;"
-         , "  end function;"
-         , "begin"
-         , "  dut : entity work.top_level port map (" <> intercalate ", " (map (vhdlName . fst) $ ins <> outs) <> ");"
-         , "  stim : process"
-         ]
-      <> zipWith (\ k _ -> "    variable s" <> show k <> " : unsigned(31 downto 0) := x\"" <> hex8 (cosimSeed k) <> "\";") [0 :: Int ..] dataIns
-      <> [ "    variable acc : unsigned(" <> show (maxch * 32 - 1) <> " downto 0);"
-         , "    variable l : line;"
-         , "    procedure drv is"
-         , "    begin"
-         ]
-      <> driveLines
-      <> [ "    end procedure;"
-         , "  begin"
-         ]
-      <> body
-      <> [ "    std.env.finish;"
-         , "  end process;"
-         , "end architecture;"
-         ]
-      where dataIns = cosimDataIns ins
-            clocked = "clk" `elem` map fst ins
-            maxch   = maximum $ 1 : map (cosimChunks . snd) dataIns
-
-            driveLines | null dataIns = ["      null;"]
-                       | otherwise    = concat $ zipWith drive [0 :: Int ..] dataIns
-
-            drive k (n, w) = ["      acc := (others => '0');"]
-                  <> replicate (cosimChunks w) ("      s" <> show k <> " := xs(s" <> show k <> "); acc := shift_left(acc, 32) or resize(s" <> show k <> ", " <> show (maxch * 32) <> ");")
-                  <> ["      " <> vhdlName n <> " <= std_logic_vector(resize(acc, " <> show w <> "));"]
-
-            disp = "write(l, " <> intercalate " & " (map (\ (n, _) -> "to_string(" <> vhdlName n <> ")") outs) <> "); writeline(output, l);"
-
-            body | clocked =
-                       [ "    clk <= \"0\"; rst <= \"1\";"
-                       , "    drv; wait for 5 ns; clk <= \"1\"; wait for 5 ns; clk <= \"0\";"
-                       , "    drv; wait for 5 ns; clk <= \"1\"; wait for 5 ns; clk <= \"0\";"
-                       , "    rst <= \"0\";"
-                       , "    for c in 0 to " <> show (cosimCycles - 1) <> " loop"
-                       , "      drv;"
-                       , "      wait for 4 ns;"
-                       , "      " <> disp
-                       , "      wait for 1 ns; clk <= \"1\"; wait for 5 ns; clk <= \"0\";"
-                       , "    end loop;"
-                       ]
-                 | otherwise =
-                       [ "    for c in 0 to " <> show (cosimCycles - 1) <> " loop"
-                       , "      drv;"
-                       , "      wait for 5 ns;"
-                       , "      " <> disp
-                       , "      wait for 5 ns;"
-                       , "    end loop;"
-                       ]
-
--- | VHDL identifiers: names that aren't valid (lowercase) basic identifiers
---   are printed as extended identifiers, matching ReWire.VHDL.Syntax.
-vhdlName :: String -> String
-vhdlName n | basicOk   = n
-           | otherwise = "\\" <> n <> "\\"
-      where basicOk = case n of
-                  c : cs -> c `elem` lc && all (`elem` ('_' : lc <> ['0' .. '9'])) cs
-                         && not ("__" `isInfixOf` n) && not ("_" `isSuffixOf` n) && not ("rw_" `isPrefixOf` n)
-                  _      -> False
-            lc = ['a' .. 'z']
 
 -- | Compile fixed test programs with flag combinations the golden tests don't
 --   exercise (verbose tracing, pass dumps, alternate signal names, reset/clock

@@ -1,18 +1,27 @@
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Trustworthy #-}
 -- | Target-independent analyses over the Core IR shared by the RTL backends.
-module ReWire.Core.Analysis (DefnMap, Uses, IsPure, defnMap, defnUses, pureDefns, isPure) where
+module ReWire.Core.Analysis
+      ( DefnMap, Uses, IsPure, defnMap, defnUses, pureDefns, isPure
+      , clockReset, inputValue, yamlPrefixes
+      ) where
 
+import ReWire.Config (Config, ResetFlag (..))
+import ReWire.Core.Interp (Ins, dispatchWires, Wiring')
 import ReWire.Core.Syntax
 import ReWire.Fix (fix')
 
+import Control.Lens ((^.))
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
+import Data.Text (Text)
 import Numeric.Natural (Natural)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet        as Set
 import qualified Data.Text           as T
+import qualified ReWire.Config       as C
 
 type Uses    = Natural
 type IsPure  = Bool
@@ -58,6 +67,33 @@ defnUses Device { loop, state0, defns } = Map.fromList [(defnName loop, 1), (def
 
             (<+>) :: HashMap GId Uses -> HashMap GId Uses -> HashMap GId Uses
             (<+>) = Map.unionWith (+)
+
+-- | Clock and reset port names, when the device has them: no clock when
+--   there are no state registers and no clocked submodules, and no reset
+--   without a clock. This is the single source of truth for the backends and
+--   for testbench generation.
+clockReset :: Config -> Device -> (Maybe Text, Maybe Text)
+clockReset conf dev@(Device _ w loop state0 _)
+      | null (dispatchWires w') && noClockedMods = (Nothing, Nothing)
+      | T.null (conf^.C.clock)                   = (Nothing, Nothing)
+      | T.null (conf^.C.reset)                   = (Just $ conf^.C.clock, Nothing)
+      | otherwise                                = (Just $ conf^.C.clock, Just $ conf^.C.reset)
+      where w' :: Wiring'
+            w' = (w, defnSig loop, defnSig state0)
+
+            noClockedMods :: Bool
+            noClockedMods = Map.null $ Map.filter (not . snd . snd) $ defnMap dev
+
+-- | The value driven onto an input wire for a cycle (interp-style inputs:
+--   missing wires are driven to zero; values are truncated to the wire
+--   width).
+inputValue :: Size -> Ins -> Name -> Value
+inputValue w ins n = Map.findWithDefault 0 n ins `mod` (2 ^ toInteger w)
+
+-- | Per-cycle output records in the interpreter's YAML format: the first
+--   output prefixed with "- ", the rest indented, in port order.
+yamlPrefixes :: [Text]
+yamlPrefixes = "- " : repeat "  "
 
 isPure :: HashSet GId -> Exp -> Bool
 isPure m = \ case

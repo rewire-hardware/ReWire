@@ -8,13 +8,13 @@
 --   this. Verilog expression semantics (unsigned operations, self-determined
 --   width rules, assignment truncation/extension) are implemented by the
 --   rw_helpers package emitted with every design (see ReWire.VHDL.Syntax).
-module ReWire.Core.ToVHDL (compileProgram) where
+module ReWire.Core.ToVHDL (compileProgram, testbench) where
 
 import ReWire.Annotation (noAnn, ann)
 import ReWire.BitVector (BV, width, bitVec, zeros, ones, lsb1, (==.), (@.))
 import ReWire.Config (Config, ResetFlag (..), vhdlPackages)
-import ReWire.Core.Analysis (DefnMap, defnMap, defnUses)
-import ReWire.Core.Interp (patApply', patMatches', subRange, dispatchWires, pausePadding, resumptionSize, Wiring')
+import ReWire.Core.Analysis (DefnMap, defnMap, defnUses, clockReset, inputValue, yamlPrefixes)
+import ReWire.Core.Interp (Ins, patApply', patMatches', subRange, dispatchWires, pausePadding, resumptionSize, Wiring')
 import ReWire.Core.Mangle (mangleFresh, mangleMod)
 import ReWire.Core.Syntax as C hiding (Name, Size, Index)
 import ReWire.Error (failAt, AstError, MonadError)
@@ -103,12 +103,12 @@ lookupWidth n = gets $ Map.lookup n . tsWidths
 
 compileProgram :: (MonadFail m, MonadError AstError m) => Config -> C.Device -> m H.Device
 compileProgram conf p@(C.Device topLevel w loop state0 ds)
-      | conf^.C.flatten = H.Device (conf^.vhdlPackages) . pure <$> runReaderT (compileStart conf' topLevel w loop state0) env
+      | conf^.C.flatten = H.Device . pure <$> runReaderT (compileStart conf' topLevel w loop state0) env
       | otherwise       = flip runReaderT env $ do
             st' <- compileStart conf' topLevel w loop state0
             -- Initial state should be inlined, so we can filter out its defn.
             ds' <- mapM (compileDefn conf') $ filter (inuse . defnName) $ loop : ds
-            pure $ H.Device (conf^.vhdlPackages) $ st' : ds'
+            pure $ H.Device $ st' : ds'
       where env :: Env
             env = ( Map.mapKeys mangleMod $ defnMap p
                   , Map.fromList $ map (mangleMod . defnName &&& defnSig) $ loop : state0 : ds
@@ -121,23 +121,10 @@ compileProgram conf p@(C.Device topLevel w loop state0 ds)
                   Just 1  -> False
                   _       -> True
 
-            noClockedMods :: Bool
-            noClockedMods = Map.null $ Map.filter (not . snd . snd) $ fst env
-
             conf' :: Config
-            conf' = C.clock.~clock' $ C.reset.~reset' $ conf
+            conf' = C.clock.~maybe mempty id mclk $ C.reset.~maybe mempty id mrst $ conf
 
-            clock' :: Text
-            clock' | null (dispatchWires w')
-                   , noClockedMods = mempty
-                   | otherwise     = conf^.C.clock
-
-            reset' :: Text
-            reset' | T.null clock' = mempty
-                   | otherwise     = conf^.C.reset
-
-            w' :: Wiring'
-            w' = (w, defnSig loop, defnSig state0)
+            (mclk, mrst) = clockReset conf p
 
 compileStart :: (MonadError AstError m, MonadFail m, MonadReader Env m)
                  => Config -> Name -> C.Wiring -> C.Defn -> C.Defn -> m H.Unit
@@ -163,7 +150,7 @@ compileStart conf topLevel w loop state0 = do
       let sigs = map (uncurry sig') (pausePadding w' <> nextDispatchWires)
               <> map (dispatchSig $ fromMaybe BV.nil initBV) (dispatchWires w')
               <> tsSigs ts
-      pure $ H.Unit topLevel (map (portIn . portSig) inputs <> map (portOut . portSig) outputs)
+      pure $ H.Unit topLevel (unitPackages conf) (map (portIn . portSig) inputs <> map (portOut . portSig) outputs)
                    (sortOn compName $ Map.elems $ tsComps ts) sigs stmts
 
       where clockSig :: Maybe (Name, H.Size)
@@ -204,11 +191,11 @@ compileStart conf topLevel w loop state0 = do
             --   configured reset flags.
             stateProcess :: BV -> H.Stmt
             stateProcess initBV = case (resetSig, syncRst) of
-                  (Just (rstn, _), False) -> H.Process [conf^.C.clock, rstn]
+                  (Just (rstn, _), False) -> H.Process [conf^.C.clock, rstn] []
                         [H.SIf [(rstCond rstn, rstAssigns initBV), (H.CondRising $ conf^.C.clock, nextAssigns)] []]
-                  (Just (rstn, _), True)  -> H.Process [conf^.C.clock]
+                  (Just (rstn, _), True)  -> H.Process [conf^.C.clock] []
                         [H.SIf [(H.CondRising $ conf^.C.clock, [H.SIf [(rstCond rstn, rstAssigns initBV)] nextAssigns])] []]
-                  (Nothing, _)            -> H.Process [conf^.C.clock]
+                  (Nothing, _)            -> H.Process [conf^.C.clock] []
                         [H.SIf [(H.CondRising $ conf^.C.clock, nextAssigns)] []]
 
             rstCond :: Name -> H.Cond
@@ -255,7 +242,7 @@ compileDefn conf (C.Defn _ n (Sig _ inps outp) body) = do
             (e, stmts) <- compileExp conf (map (H.Var . fst) $ zip argNames inps) body
             e'         <- wcast outp e
             pure (e', stmts)
-      pure $ H.Unit (mangleMod n) (map (\ (pn, sz) -> H.Port pn H.In sz) ports <> [H.Port "res" H.Out outp])
+      pure $ H.Unit (mangleMod n) (unitPackages conf) (map (\ (pn, sz) -> H.Port pn H.In sz) ports <> [H.Port "res" H.Out outp])
                     (sortOn (\ (H.Component cn _ _) -> cn) $ Map.elems $ tsComps ts)
                     (tsSigs ts)
                     (stmts <> [H.Assign (H.LVName "res") e])
@@ -637,3 +624,68 @@ assignMulti tgts e = case tgts of
             sliceParts total ts = snd $ foldl' part' (fromIntegral total - 1, []) ts
                   where part' :: (Int, [(Name, (H.Index, H.Index))]) -> (Name, H.Size) -> (Int, [(Name, (H.Index, H.Index))])
                         part' (hi, acc) (t, w) = (hi - fromIntegral w, acc <> [(t, (hi - fromIntegral w + 1, hi))])
+
+-- | The context clause for generated units: the configured VHDL packages
+--   (--vhdl-packages) plus the defaults and the emitted rw_helpers package.
+unitPackages :: Config -> [Text]
+unitPackages conf = foldr (\ pk pks -> if pk `elem` pks then pks else pk : pks)
+                          ["ieee.std_logic_1164.all", "ieee.numeric_std.all"]
+                          (conf^.vhdlPackages)
+                  <> ["work.rw_helpers.all"]
+
+-- | A testbench driving the device with interp-style inputs (one map of
+--   input-name-to-value per cycle, already padded to the cycle count) and
+--   printing the outputs each cycle in the same YAML format the Core
+--   interpreter produces, so a simulation trace can be compared directly
+--   against rwc --interpret output. Timing matches the Verilog testbench
+--   (see ReWire.Core.ToVerilog.testbench).
+testbench :: Config -> C.Device -> [Ins] -> H.Unit
+testbench conf dev@(C.Device top w _ _ _) inps = H.Unit "tb"
+      ["ieee.std_logic_1164.all", "ieee.numeric_std.all", "std.textio.all"]
+      []
+      [H.Component top [] $ map (\ (n, sz) -> H.Port n H.In sz) (clkRst <> ins) <> map (\ (n, sz) -> H.Port n H.Out sz) outs]
+      (map (\ (n, sz) -> H.Signal n sz Nothing) $ clkRst <> ins <> outs)
+      [ H.Instantiate top "dut" [] $ map ((mempty, ) . H.Var . fst) $ clkRst <> ins <> outs
+      , H.Process [] [H.LineVar "l" | not (null outs)] $ resetSeq <> concatMap cyc inps <> [H.SFinish]
+      ]
+      where (mclk, mrst) = clockReset conf dev
+
+            clkRst, ins, outs :: [(Text, H.Size)]
+            clkRst = map (, 1) $ concatMap (maybe [] pure) [mclk, mrst]
+            ins    = inputWires w
+            outs   = outputWires w
+
+            drive :: Ins -> [H.SeqStmt]
+            drive i = map (\ (n, sz) -> H.SAssign (H.LVName n) $ H.Lit $ bitVec (fromIntegral sz) $ inputValue sz i n) ins
+
+            bit :: Bool -> H.Exp
+            bit = H.Lit . bitVec 1 . fromEnum
+
+            rstActive :: Bool
+            rstActive = Inverted `notElem` (conf^.C.resetFlags)
+
+            tick :: Text -> [H.SeqStmt]
+            tick clk = [H.SWait 1, H.SAssign (H.LVName clk) $ bit True, H.SWait 5, H.SAssign (H.LVName clk) $ bit False]
+
+            resetSeq :: [H.SeqStmt]
+            resetSeq = case (mclk, mrst) of
+                  (Just clk, Just rst) ->
+                        [ H.SAssign (H.LVName clk) $ bit False, H.SAssign (H.LVName rst) $ bit rstActive ]
+                        <> drive (headIns inps)
+                        <> concat (replicate 2 [H.SWait 5, H.SAssign (H.LVName clk) $ bit True, H.SWait 5, H.SAssign (H.LVName clk) $ bit False])
+                        <> [ H.SAssign (H.LVName rst) $ bit $ not rstActive ]
+                  (Just clk, Nothing)  -> [ H.SAssign (H.LVName clk) $ bit False ]
+                  _                    -> []
+
+            cyc :: Ins -> [H.SeqStmt]
+            cyc i = drive i <> case mclk of
+                  Just clk -> [H.SWait 4] <> writes <> tick clk
+                  Nothing  -> [H.SWait 5] <> writes <> [H.SWait 5]
+
+            writes :: [H.SeqStmt]
+            writes = zipWith (\ pre (n, _) -> H.SWriteLn [H.ChunkLit (pre <> n <> ": '0x"), H.ChunkHex (H.Var n), H.ChunkLit "'"]) yamlPrefixes outs
+
+            headIns :: [Ins] -> Ins
+            headIns = \ case
+                  i : _ -> i
+                  _     -> mempty

@@ -4,6 +4,22 @@
 
 * The VHDL backend (`rwc --vhdl`) works again, with full feature parity with
   the Verilog backend.
+* New `rwc --testbench[=inputs.yaml]` flag: alongside the Verilog or VHDL
+  output, also generate a testbench (`foo_tb.sv`/`foo_tb.vhdl`) that drives
+  the design with interp-style inputs for `--cycles` cycles and prints the
+  outputs each cycle in the same YAML format `--interpret` produces, so a
+  simulation trace can be compared directly against the interpreter. The
+  rwc-test cosimulation check now uses it for a three-way agreement test
+  (iverilog/vvp vs. ghdl vs. the Core interpreter) with random stimulus.
+* Core interpreter fixes, found by the three-way check:
+  - The first cycle's output is now computed by the loop function from the
+    initial state and first input, like every other cycle, instead of
+    reporting the output value stored in the start resumption (which the
+    backends discard).
+  - A call with a nil (impossible) alternative now takes its branch even when
+    the pattern does not match, mirroring how the backends compile it; this
+    matters for ill-typed input stimulus (e.g., invalid constructor tags) and
+    also makes the partial evaluator consistent with the backends.
 * Fixed the Verilog backend's arithmetic right shift (`rwPrimRShiftArith`):
   `>>>` on an unsigned operand simulates as a logical shift, so the left
   operand is now wrapped in `$signed(...)`, matching the Core interpreter's

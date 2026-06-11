@@ -22,26 +22,28 @@ type Name  = Text
 type Size  = Word
 type Index = Int
 
-data Device = Device
-      { devPackages :: [Text] -- ^ use clauses (e.g., ieee.std_logic_1164.all).
-      , devUnits    :: [Unit]
-      }
+newtype Device = Device { devUnits :: [Unit] }
       deriving (Eq, Show)
 
 instance Pretty Device where
-      pretty (Device pkgs units) = vsep $ intersperse empty $ ppHelpers : map (ppUnit pkgs) units
+      pretty (Device units) = vsep $ intersperse empty $ ppHelpers : map pretty units
             where ppHelpers :: Doc an
                   ppHelpers = vsep $ map text $ T.lines helpersPackage
 
--- | An entity/architecture pair.
+-- | An entity/architecture pair with its context clause (use clauses, e.g.,
+--   ieee.std_logic_1164.all; library clauses are derived).
 data Unit = Unit
       { unitName       :: !Name
+      , unitPackages   :: ![Text]
       , unitPorts      :: ![Port]
       , unitComponents :: ![Component]
       , unitSignals    :: ![Signal]
       , unitStmts      :: ![Stmt]
       }
       deriving (Eq, Show)
+
+instance Pretty Unit where
+      pretty = ppUnit
 
 data Direction = In | Out
       deriving (Eq, Show)
@@ -80,19 +82,28 @@ instance Pretty Signal where
       pretty (Signal n sz mbv) = text "signal" <+> ppName n <+> colon <+> ppVecTy sz <> maybe mempty ((text " :=" <+>) . ppLit) mbv <> semi
 
 data Stmt = Assign !LVal !Exp
-          | Process ![Name] ![SeqStmt]                                -- ^ Sensitivity list, body.
+          | Process ![Name] ![ProcVar] ![SeqStmt]                     -- ^ Sensitivity list (empty: none), variables, body.
           | Instantiate !Name !Name ![(Name, Integer)] ![(Name, Exp)] -- ^ Component, instance label, generic map, port map (empty name: positional).
       deriving (Eq, Show)
+
+-- | Process-local variable declarations.
+data ProcVar = LineVar !Name -- ^ variable n : line;
+      deriving (Eq, Show)
+
+instance Pretty ProcVar where
+      pretty = \ case
+            LineVar n -> text "variable" <+> ppName n <+> colon <+> text "line" <> semi
 
 instance Pretty Stmt where
       pretty = \ case
             Assign lv e               -> pretty lv <+> text "<=" <+> pretty e <> semi
-            Process sens body         -> vsep
-                  [ text "process" <+> parens (hsep $ punctuate comma $ map ppName sens)
-                  , text "begin"
-                  , nest 6 $ vsep $ map pretty body
-                  , text "end process" <> semi
-                  ]
+            Process sens vars body    -> vsep $
+                  [ text "process" <> (if null sens then mempty else mempty <+> parens (hsep $ punctuate comma $ map ppName sens)) ]
+                  <> (if null vars then [] else [nest 6 $ vsep $ map pretty vars])
+                  <> [ text "begin"
+                     , nest 6 $ vsep $ map pretty body
+                     , text "end process" <> semi
+                     ]
             Instantiate c inst gm pm  -> ppName inst <+> colon <+> ppName c
                   <> (if null gm then mempty else mempty <+> text "generic map" <+> parens (hsep $ punctuate comma $ map ppGenAssoc gm))
                   <+> text "port map" <+> parens (hsep $ punctuate comma $ map ppPortAssoc pm) <> semi
@@ -107,11 +118,27 @@ instance Pretty Stmt where
 -- | Sequential statements (process bodies).
 data SeqStmt = SIf ![(Cond, [SeqStmt])] ![SeqStmt] -- ^ if/elsif branches, else branch.
              | SAssign !LVal !Exp
+             | SWait !Natural                      -- ^ wait for n ns;
+             | SWriteLn ![Chunk]                   -- ^ write(l, ...); writeline(output, l);
+             | SFinish                             -- ^ std.env.finish;
       deriving (Eq, Show)
+
+-- | A piece of a line written by SWriteLn: a string literal or the
+--   hex-string rendering of an expression.
+data Chunk = ChunkLit !Text | ChunkHex !Exp
+      deriving (Eq, Show)
+
+instance Pretty Chunk where
+      pretty = \ case
+            ChunkLit t  -> text "string'(\"" <> text t <> text "\")"
+            ChunkHex e  -> text "to_hstring" <> parens (pretty e)
 
 instance Pretty SeqStmt where
       pretty = \ case
             SAssign lv e       -> pretty lv <+> text "<=" <+> pretty e <> semi
+            SWait n            -> text "wait for" <+> pretty (toInteger n) <+> text "ns" <> semi
+            SWriteLn chunks    -> text "write(l, " <> hsep (punctuate (mempty <+> text "&") $ map pretty chunks) <> text "); writeline(output, l)" <> semi
+            SFinish            -> text "std.env.finish" <> semi
             SIf brs els        -> vsep $ zipWith ppBranch kws brs <> ppElse els <> [text "end if" <> semi]
                   where kws :: [Text]
                         kws = "if" : repeat "elsif"
@@ -179,8 +206,11 @@ ppVecTy sz = text "std_logic_vector" <+> parens (pretty (toInteger sz - 1) <+> t
 --   unambiguous: all-lowercase, since basic identifiers are case-insensitive),
 --   otherwise a VHDL-2008 extended identifier (\name\).
 ppName :: Name -> Doc an
-ppName n | basicOk   = text n
-         | otherwise = text "\\" <> text n <> text "\\"
+ppName = text . vhdlName
+
+vhdlName :: Name -> Text
+vhdlName n | basicOk   = n
+           | otherwise = "\\" <> n <> "\\"
       where basicOk :: Bool
             basicOk = case T.unpack n of
                   c : cs -> isAsciiLower c
@@ -208,8 +238,8 @@ reservedWords = Set.fromList
       , "xnor", "xor"
       ]
 
-ppUnit :: [Text] -> Unit -> Doc an
-ppUnit pkgs (Unit n ps comps sigs stmts) = vsep $
+ppUnit :: Unit -> Doc an
+ppUnit (Unit n pkgs ps comps sigs stmts) = vsep $
       [ ppContext pkgs
       , text "entity" <+> ppName n <+> text "is"
       ]
@@ -224,9 +254,12 @@ ppUnit pkgs (Unit n ps comps sigs stmts) = vsep $
          , text "end architecture" <> semi
          ]
 
+-- | Library clauses are derived from the package names (the work and std
+--   libraries are implicit).
 ppContext :: [Text] -> Doc an
 ppContext pkgs = vsep $
-      [ text "library ieee" <> semi ]
-      <> map (\ p -> text "use" <+> text p <> semi) (pkgs' <> ["work.rw_helpers.all"])
-      where pkgs' :: [Text]
-            pkgs' = foldr (\ p ps -> if p `elem` ps then ps else p : ps) ["ieee.std_logic_1164.all", "ieee.numeric_std.all"] pkgs
+      map (\ l -> text "library" <+> text l <> semi) libs
+      <> map (\ p -> text "use" <+> text p <> semi) pkgs
+      where libs :: [Text]
+            libs = foldr (\ l ls -> if l `elem` ls then ls else l : ls) []
+                 $ filter (`notElem` ["work", "std"]) $ map (T.takeWhile (/= '.')) pkgs

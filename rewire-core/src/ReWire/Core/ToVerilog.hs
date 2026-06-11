@@ -3,13 +3,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE Safe #-}
-module ReWire.Core.ToVerilog (compileProgram) where
+module ReWire.Core.ToVerilog (compileProgram, testbench) where
 
 import ReWire.Annotation (noAnn, ann)
 import ReWire.BitVector (width, bitVec, BV, zeros, ones, lsb1, (==.), (@.), szBitRep)
 import ReWire.Config (Config, ResetFlag (..))
-import ReWire.Core.Interp (patApply', patMatches', subRange, dispatchWires, pausePadding, resumptionSize, Wiring')
-import ReWire.Core.Analysis (DefnMap, defnMap, defnUses)
+import ReWire.Core.Interp (Ins, patApply', patMatches', subRange, dispatchWires, pausePadding, resumptionSize, Wiring')
+import ReWire.Core.Analysis (DefnMap, defnMap, defnUses, clockReset, inputValue, yamlPrefixes)
 import ReWire.Core.Mangle (mangle, mangleFresh, mangleMod)
 import ReWire.Core.Syntax as C hiding (Name, Size, Index)
 import ReWire.Error (failAt, AstError, MonadError)
@@ -107,23 +107,10 @@ compileProgram conf p@(C.Device topLevel w loop state0 ds)
                   Just 1  -> False
                   _       -> True
 
-            noClockedMods :: Bool
-            noClockedMods = Map.null $ Map.filter (not . snd . snd) defnMap'
-
             conf' :: Config
-            conf' = C.clock.~clock' $ C.reset.~reset' $ conf
+            conf' = C.clock.~maybe mempty id mclk $ C.reset.~maybe mempty id mrst $ conf
 
-            clock' :: Text
-            clock' | null (dispatchWires w')
-                   , noClockedMods = mempty
-                   | otherwise     = conf^.C.clock
-
-            reset' :: Text
-            reset' | T.null clock' = mempty
-                   | otherwise     = conf^.C.reset
-
-            w' :: Wiring'
-            w' = (w, defnSig loop, defnSig state0)
+            (mclk, mrst) = clockReset conf p
 
 compileStart :: (MonadError AstError m, MonadFail m, MonadReader DefnMap m)
                  => Config -> Name -> C.Wiring -> C.Defn -> C.Defn -> m Module
@@ -627,3 +614,62 @@ argsSize = sum . map patToSize
 
 mkSignal :: (Name, Size) -> Signal
 mkSignal (n, sz) = Logic [sz] n []
+
+-- | A testbench driving the device with interp-style inputs (one map of
+--   input-name-to-value per cycle, already padded to the cycle count) and
+--   printing the outputs each cycle in the same YAML format the Core
+--   interpreter produces, so a simulation trace can be compared directly
+--   against rwc --interpret output.
+--
+--   Timing: inputs are driven at the start of each cycle and outputs sampled
+--   just before the clock edge (Mealy-style, matching the interpreter's
+--   semantics). Clocked designs get two reset cycles first; since the reset
+--   state equals the initial register state, the first sampled cycle still
+--   corresponds to the interpreter's first cycle.
+testbench :: Config -> C.Device -> [Ins] -> V.Module
+testbench conf dev@(C.Device top w _ _ _) inps = Module "tb" []
+      (  map mkSignal (clkRst <> ins)
+      <> map (\ (n, sz) -> Wire [sz] n []) outs )
+      (  Instantiate top "dut" [] (map ((mempty, ) . LVal . Name . fst) $ clkRst <> ins <> outs)
+      :  [ Initial $ Block $ resetStmts <> concatMap cyc inps <> [Finish] ] )
+      where (mclk, mrst) = clockReset conf dev
+
+            clkRst, ins, outs :: [(Name, Size)]
+            clkRst = map (, 1) $ concatMap (maybe [] pure) [mclk, mrst]
+            ins    = inputWires w
+            outs   = outputWires w
+
+            drive :: Ins -> [Stmt]
+            drive i = map (\ (n, sz) -> SeqAssign (Name n) $ LitBits $ bitVec (fromIntegral sz) $ inputValue sz i n) ins
+
+            bit :: Bool -> V.Exp
+            bit = LitBits . bitVec 1 . fromEnum
+
+            rstActive :: Bool
+            rstActive = Inverted `notElem` (conf^.C.resetFlags)
+
+            tick :: Name -> [Stmt]
+            tick clk = [Delay 1, SeqAssign (Name clk) $ bit True, Delay 5, SeqAssign (Name clk) $ bit False]
+
+            resetStmts :: [Stmt]
+            resetStmts = case (mclk, mrst) of
+                  (Just clk, Just rst) ->
+                        [ SeqAssign (Name clk) $ bit False, SeqAssign (Name rst) $ bit rstActive ]
+                        <> drive (headIns inps)
+                        <> concat (replicate 2 [Delay 5, SeqAssign (Name clk) $ bit True, Delay 5, SeqAssign (Name clk) $ bit False])
+                        <> [ SeqAssign (Name rst) $ bit $ not rstActive ]
+                  (Just clk, Nothing)  -> [ SeqAssign (Name clk) $ bit False ]
+                  _                    -> []
+
+            cyc :: Ins -> [Stmt]
+            cyc i = drive i <> case mclk of
+                  Just clk -> [Delay 4] <> disps <> tick clk
+                  Nothing  -> [Delay 5] <> disps <> [Delay 5]
+
+            disps :: [Stmt]
+            disps = zipWith (\ pre (n, _) -> Display (pre <> n <> ": '0x%0h'") [LVal $ Name n]) yamlPrefixes outs
+
+            headIns :: [Ins] -> Ins
+            headIns = \ case
+                  i : _ -> i
+                  _     -> mempty
