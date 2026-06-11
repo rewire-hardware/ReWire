@@ -3,16 +3,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE Safe #-}
-module ReWire.Core.ToVerilog (compileProgram) where
+module ReWire.Core.ToVerilog (compileProgram, testbench) where
 
 import ReWire.Annotation (noAnn, ann)
 import ReWire.BitVector (width, bitVec, BV, zeros, ones, lsb1, (==.), (@.), szBitRep)
 import ReWire.Config (Config, ResetFlag (..))
-import ReWire.Core.Interp (patApply', patMatches', subRange, dispatchWires, pausePadding, resumptionSize, Wiring')
-import ReWire.Core.Mangle (mangle)
+import ReWire.Core.Interp (Ins, patApply', patMatches', subRange, dispatchWires, pausePadding, resumptionSize, Wiring')
+import ReWire.Core.Analysis (DefnMap, defnMap, defnUses, clockReset, inputValue, yamlPrefixes)
+import ReWire.Core.Mangle (mangle, mangleFresh, mangleMod)
 import ReWire.Core.Syntax as C hiding (Name, Size, Index)
 import ReWire.Error (failAt, AstError, MonadError)
-import ReWire.Fix (fix')
 import ReWire.Pretty (prettyPrint, showt)
 import ReWire.Verilog.Syntax as V
 
@@ -23,7 +23,6 @@ import Control.Lens ((^.), (.~))
 import Control.Monad (liftM2)
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Monad.State (MonadState, runStateT, modify, gets)
-import Data.Char (isAlphaNum)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
 import Data.Maybe (catMaybes, fromMaybe)
@@ -37,7 +36,6 @@ import qualified ReWire.Config       as C
 
 data FreshMode = FreshInit | FreshRun
 type Fresh = (FreshMode, HashMap Text Int)
-type DefnMap = HashMap GId (C.Exp, (Natural, Bool))
 type SigInfo = (Fresh, [Signal])
 
 freshInit0 :: Fresh
@@ -45,43 +43,6 @@ freshInit0 = (FreshInit, mempty)
 
 freshRun0 :: Fresh
 freshRun0 = (FreshRun, mempty)
-
-mangleFresh :: Text -> Text
-mangleFresh x = if isVerilogId x' then x' else mangle x'
-      where subDots :: Text -> Text
-            subDots = T.replace "." "_"
-
-            subDollar :: Text -> Text
-            subDollar = \ case
-                  (T.stripPrefix "$" -> Just x') -> "Z" <> x'
-                  x                              -> x
-
-            subTick :: Text -> Text
-            subTick = T.replace "'" "$"
-
-            isVerilogId :: Text -> Bool
-            isVerilogId = T.all isVerilogId'
-
-            isVerilogId' :: Char -> Bool
-            isVerilogId' c = isAlphaNum c || c == '_' || c == '$'
-
-            x' :: Text
-            x' = subTick $ subDollar $ subDots x
-
--- | Module names need to be de-conflicted because they aren't immediately
---   freshened.
-mangleMod :: Text -> Text
-mangleMod x = mangleFresh x'
-      where subDots :: Text -> Text
-            subDots = T.replace "_" "__"
-
-            subDollar :: Text -> Text
-            subDollar = \ case
-                  (T.stripPrefix "Z" -> Just x') -> "ZZ" <> x'
-                  x                              -> x
-
-            x' :: Text
-            x' = subDollar $ subDots x
 
 fresh' :: MonadState SigInfo m => Text -> m Name
 fresh' s = do
@@ -146,23 +107,10 @@ compileProgram conf p@(C.Device topLevel w loop state0 ds)
                   Just 1  -> False
                   _       -> True
 
-            noClockedMods :: Bool
-            noClockedMods = Map.null $ Map.filter (not . snd . snd) defnMap'
-
             conf' :: Config
-            conf' = C.clock.~clock' $ C.reset.~reset' $ conf
+            conf' = C.clock.~maybe mempty id mclk $ C.reset.~maybe mempty id mrst $ conf
 
-            clock' :: Text
-            clock' | null (dispatchWires w')
-                   , noClockedMods = mempty
-                   | otherwise     = conf^.C.clock
-
-            reset' :: Text
-            reset' | T.null clock' = mempty
-                   | otherwise     = conf^.C.reset
-
-            w' :: Wiring'
-            w' = (w, defnSig loop, defnSig state0)
+            (mclk, mrst) = clockReset conf p
 
 compileStart :: (MonadError AstError m, MonadFail m, MonadReader DefnMap m)
                  => Config -> Name -> C.Wiring -> C.Defn -> C.Defn -> m Module
@@ -667,60 +615,61 @@ argsSize = sum . map patToSize
 mkSignal :: (Name, Size) -> Signal
 mkSignal (n, sz) = Logic [sz] n []
 
-type Uses   = Natural
-type IsPure = Bool
+-- | A testbench driving the device with interp-style inputs (one map of
+--   input-name-to-value per cycle, already padded to the cycle count) and
+--   printing the outputs each cycle in the same YAML format the Core
+--   interpreter produces, so a simulation trace can be compared directly
+--   against rwc --interpret output.
+--
+--   Timing: inputs are driven at the start of each cycle and outputs sampled
+--   just before the clock edge (Mealy-style, matching the interpreter's
+--   semantics). Clocked designs get two reset cycles first; since the reset
+--   state equals the initial register state, the first sampled cycle still
+--   corresponds to the interpreter's first cycle.
+testbench :: Config -> C.Device -> [Ins] -> V.Module
+testbench conf dev@(C.Device top w _ _ _) inps = Module "tb" []
+      (  map mkSignal (clkRst <> ins)
+      <> map (\ (n, sz) -> Wire [sz] n []) outs )
+      (  Instantiate top "dut" [] (map ((mempty, ) . LVal . Name . fst) $ clkRst <> ins <> outs)
+      :  [ Initial $ Block $ resetStmts <> concatMap cyc inps <> [Finish] ] )
+      where (mclk, mrst) = clockReset conf dev
 
-defnMap :: C.Device -> HashMap GId (C.Exp, (Uses, IsPure))
-defnMap p@C.Device { loop, state0, defns } = foldl' defnInfo mempty defns'
-      where defnInfo :: HashMap GId (C.Exp, (Uses, IsPure)) -> C.Defn -> HashMap GId (C.Exp, (Uses, IsPure))
-            defnInfo m (Defn _ g _ e) = Map.insert g (e, (Map.findWithDefault 0 g uses, Set.member g pures)) m
+            clkRst, ins, outs :: [(Name, Size)]
+            clkRst = map (, 1) $ concatMap (maybe [] pure) [mclk, mrst]
+            ins    = inputWires w
+            outs   = outputWires w
 
-            uses :: HashMap GId Uses
-            uses = defnUses p
+            drive :: Ins -> [Stmt]
+            drive i = map (\ (n, sz) -> SeqAssign (Name n) $ LitBits $ bitVec (fromIntegral sz) $ inputValue sz i n) ins
 
-            pures :: HashSet GId
-            pures = pureDefns p
+            bit :: Bool -> V.Exp
+            bit = LitBits . bitVec 1 . fromEnum
 
-            defns' :: [Defn]
-            defns' = loop : state0 : defns
+            rstActive :: Bool
+            rstActive = Inverted `notElem` (conf^.C.resetFlags)
 
--- | Defns that do not require an implicit clock/reset.
-pureDefns :: C.Device -> HashSet GId
-pureDefns C.Device { loop, state0, defns } = fix' purity mempty
-      where purity :: HashSet GId -> HashSet GId
-            purity m = foldl' purity' m defns'
+            tick :: Name -> [Stmt]
+            tick clk = [Delay 1, SeqAssign (Name clk) $ bit True, Delay 5, SeqAssign (Name clk) $ bit False]
 
-            purity' :: HashSet GId -> Defn -> HashSet GId
-            purity' ps (Defn _ g _ e) = if isPure ps e then Set.insert g ps else ps
+            resetStmts :: [Stmt]
+            resetStmts = case (mclk, mrst) of
+                  (Just clk, Just rst) ->
+                        [ SeqAssign (Name clk) $ bit False, SeqAssign (Name rst) $ bit rstActive ]
+                        <> drive (headIns inps)
+                        <> concat (replicate 2 [Delay 5, SeqAssign (Name clk) $ bit True, Delay 5, SeqAssign (Name clk) $ bit False])
+                        <> [ SeqAssign (Name rst) $ bit $ not rstActive ]
+                  (Just clk, Nothing)  -> [ SeqAssign (Name clk) $ bit False ]
+                  _                    -> []
 
-            defns' :: [Defn]
-            defns' = loop : state0 : defns
+            cyc :: Ins -> [Stmt]
+            cyc i = drive i <> case mclk of
+                  Just clk -> [Delay 4] <> disps <> tick clk
+                  Nothing  -> [Delay 5] <> disps <> [Delay 5]
 
-defnUses :: C.Device -> HashMap GId Uses
-defnUses C.Device { loop, state0, defns } = Map.fromList [(defnName loop, 1), (defnName state0, 1)]
-      <+> foldr (<+>) Map.empty (expUses . defnBody <$> loop : defns) -- drop state0 body.
-      where expUses :: C.Exp -> HashMap GId Uses
-            expUses = \ case
-                  C.Concat _ e1 e2              -> expUses e1 <+> expUses e2
-                  C.Call _ _ (Global g) e _ els -> Map.singleton g 1 <+> expUses e <+> expUses els
-                  C.Call _ _ _          e _ els ->                       expUses e <+> expUses els
-                  _                             -> Map.empty
+            disps :: [Stmt]
+            disps = zipWith (\ pre (n, _) -> Display (pre <> n <> ": '0x%0h'") [LVal $ Name n]) yamlPrefixes outs
 
-            (<+>) :: HashMap GId Uses -> HashMap GId Uses -> HashMap GId Uses
-            (<+>) = Map.unionWith (+)
-
-isPure :: HashSet GId -> C.Exp -> Bool
-isPure m = \ case
-      C.Call _ _ (C.Extern (C.ExternSig _ _ c r _ _) _ _) a _ b
-                                    -> T.null c && T.null r && pur a && pur b
-      C.Call _ _ (C.Global g) a _ b -> purG g && pur a && pur b
-      C.Call _ _ _ a _ b            -> pur a && pur b
-      C.Concat _ a b                -> pur a && pur b
-      C.LVar {}                     -> True
-      C.Lit {}                      -> True
-      where pur :: C.Exp -> Bool
-            pur = isPure m
-
-            purG :: GId -> Bool
-            purG = flip Set.member m
-
+            headIns :: [Ins] -> Ins
+            headIns = \ case
+                  i : _ -> i
+                  _     -> mempty

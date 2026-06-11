@@ -8,6 +8,7 @@ import qualified ReWire.BitVector as BV
 
 import Data.Text (Text)
 import Data.List (intersperse)
+import Numeric.Natural (Natural)
 
 newtype Device = Device { pgmModules :: [Module] }
       deriving (Eq, Show)
@@ -83,6 +84,10 @@ data Stmt = Always [Sensitivity] Stmt
           | ParAssign LVal Exp
           | Block [Stmt]
           | Instantiate Name Name [(Name, Exp)] [(Name, Exp)] -- Exp for convenience, should be LVal?
+          -- Procedural statements for testbenches.
+          | Delay Natural           -- ^ #n;
+          | Display Text [Exp]      -- ^ $display("fmt", args);
+          | Finish                  -- ^ $finish;
       deriving (Eq, Show)
 
 instance Pretty Stmt where
@@ -95,6 +100,9 @@ instance Pretty Stmt where
             SeqAssign lv v           ->                   pretty lv <+> text "="  <+> pretty v <> semi
             ParAssign lv v           ->                   pretty lv <+> text "<=" <+> pretty v <> semi
             Block stmts              -> vsep [nest 2 $ vsep (text "begin" : map pretty stmts), text "end"]
+            Delay n                  -> text "#" <> pretty (toInteger n) <> semi
+            Display fmt args         -> text "$display(\"" <> text fmt <> text "\"" <> hcat (map ((comma <+>) . pretty) args) <> text ")" <> semi
+            Finish                   -> text "$finish" <> semi
             Instantiate m inst ps ss -> text m <+> (if null ps then mempty else text "#" <> params ps) <+> text inst <+> params ss <> semi
                   where param :: (Name, Exp) -> Doc an
                         param = \ case
@@ -191,7 +199,9 @@ instance Pretty Exp where
             LShift a b      -> ppBinOp a "<<"  b
             RShift a b      -> ppBinOp a ">>"  b
             LShiftArith a b -> ppBinOp a "<<<" b
-            RShiftArith a b -> ppBinOp a ">>>" b
+            -- | The left operand must be cast to signed for >>> to actually
+            --   sign-extend (matching the Core interpreter's semantics).
+            RShiftArith a b -> text "$signed" <> parens (pretty a) <+> text ">>>" <+> mparens b
             LNot a          -> ppUnOp    "!"   a
             Not a           -> ppUnOp    "~"   a
             RAnd a          -> ppUnOp    "&"   a

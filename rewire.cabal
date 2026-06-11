@@ -51,6 +51,9 @@ data-files:
     tests/regression/verilog/filterprims.sv
     tests/regression/verilog/mymod.sv
     tests/regression/verilog/w32ops.sv
+    tests/regression/vhdl/filterprims.vhdl
+    tests/regression/vhdl/mymod.vhdl
+    tests/regression/vhdl/w32ops.vhdl
     tests/regression/case1.hs
     tests/regression/case2.hs
     tests/regression/cubehash.hs
@@ -228,20 +231,65 @@ data-files:
     tests/regression/wordReduce.rwc
     tests/regression/wordShift.rwc
     tests/regression/wordSlice.rwc
+    tests/regression/case1.vhdl
+    tests/regression/case2.vhdl
+    tests/regression/cubehash.vhdl
+    tests/regression/dependencyGraph.vhdl
+    tests/regression/dissex.vhdl
+    tests/regression/dissex2.vhdl
+    tests/regression/exp2.vhdl
+    tests/regression/extern.vhdl
+    tests/regression/fibo1.vhdl
+    tests/regression/fibo2.vhdl
+    tests/regression/fibo3.vhdl
+    tests/regression/Finite.vhdl
+    tests/regression/finite2.vhdl
     tests/regression/fully.vhdl
+    tests/regression/funcase.vhdl
+    tests/regression/gfmult.vhdl
     tests/regression/guards.vhdl
+    tests/regression/HigherOrderBug.vhdl
+    tests/regression/Infix.vhdl
+    tests/regression/iter.vhdl
+    tests/regression/iterSt.vhdl
+    tests/regression/matchBind.vhdl
     tests/regression/ModsMain.vhdl
+    tests/regression/OD19Filter.vhdl
     tests/regression/onestate.vhdl
+    tests/regression/PackUnpack.vhdl
     tests/regression/pats.vhdl
     tests/regression/pats2.vhdl
+    tests/regression/PreludeTest.vhdl
     tests/regression/putBug.vhdl
+    tests/regression/pvartype.vhdl
+    tests/regression/react.vhdl
     tests/regression/records.vhdl
+    tests/regression/RW_REPL_OD19Filter.vhdl
+    tests/regression/Sha256_1.vhdl
     tests/regression/sigNothing.vhdl
+    tests/regression/state.vhdl
     tests/regression/state0.vhdl
+    tests/regression/stateTower.vhdl
+    tests/regression/synonym.vhdl
     tests/regression/test2.vhdl
     tests/regression/test3.vhdl
+    tests/regression/TinyISA.vhdl
+    tests/regression/toag.vhdl
+    tests/regression/toags.vhdl
     tests/regression/uniquification.vhdl
+    tests/regression/UpCounter1.vhdl
+    tests/regression/UpCounter2.vhdl
+    tests/regression/vectorAppend.vhdl
+    tests/regression/vectorCons.vhdl
+    tests/regression/vectorIndexProxy.vhdl
+    tests/regression/vectorPack.vhdl
     tests/regression/weird1.vhdl
+    tests/regression/wordArith.vhdl
+    tests/regression/wordBitwise.vhdl
+    tests/regression/wordLit.vhdl
+    tests/regression/wordReduce.vhdl
+    tests/regression/wordShift.vhdl
+    tests/regression/wordSlice.vhdl
     tests/regression/case1.yaml
     tests/regression/case2.yaml
     tests/regression/cubehash.yaml

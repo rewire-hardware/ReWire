@@ -4,11 +4,15 @@ import qualified RWC
 
 import Control.Exception (try, finally)
 import Control.Monad (unless, when, msum)
-import Data.List (isSuffixOf, isInfixOf, stripPrefix, intercalate)
+import Data.Bits (xor, shiftL, shiftR)
+import Data.List (isSuffixOf, isInfixOf, isPrefixOf, stripPrefix, intercalate)
 import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Word (Word32)
 import GHC.IO.Handle (hDuplicate, hDuplicateTo)
+import Data.Char (isHexDigit)
+import Numeric (readHex)
 import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), ArgDescr (..))
-import System.Directory (listDirectory, setCurrentDirectory, getCurrentDirectory, doesFileExist)
+import System.Directory (listDirectory, setCurrentDirectory, getCurrentDirectory, doesFileExist, createDirectoryIfMissing)
 import System.Environment (getArgs)
 import System.Environment (withArgs)
 import System.Exit (exitFailure, ExitCode (..))
@@ -28,8 +32,6 @@ data Flag = FlagH
           | FlagV
           | FlagIVerilog String
           | FlagVerilator String
-          | FlagVhdl
-          | FlagVhdlChecker String
           -- Tasty options.
           | FlagP String
           | FlagQ
@@ -48,10 +50,8 @@ options :: [OptDescr Flag]
 options =
        [ Option ['h'] ["help"]         (NoArg FlagH)                          "Show this help text."
        , Option ['v'] ["verbose"]      (NoArg FlagV)                          "More verbose output."
-       , Option []    ["vhdl"]         (NoArg FlagVhdl)                       "Test VHDL code generation in addition to Verilog."
        , Option []    ["no-check"]     (NoArg FlagNoCheck)                    "Disable verification of output HDL with checker."
        , Option []    ["no-ghc"]       (NoArg FlagNoGhc)                      "Disable running tests through ghc."
-       , Option []    ["vhdl-checker"] (ReqArg FlagVhdlChecker "command")     "Set the command to use for checking generated VHDL (default: 'ghdl -s')."
        , Option []    ["iverilog"]     (ReqArg FlagIVerilog "command")      $ "Set the command to use for checking generated Verilog with iverilog (default: " <> defaultIVerilog <> ")."
        , Option []    ["verilator"]    (ReqArg FlagVerilator "command")     $ "Set the command to use for checking generated Verilog with verilator (default: " <> defaultVerilator <> ")."
 
@@ -104,14 +104,21 @@ testCompiler flags fn = do
                ])
 
       vhdlTests <-
-            -- Test: compile Core to VHDL with RWC. Opt-in per test: only runs
-            -- when a .vhdl golden exists, since the VHDL backend supports less
-            -- than the Verilog one.
+            -- Test: compile Core to VHDL with RWC (when a .vhdl golden exists).
             maybeGolden "vhdl" (do
                   cdTestdir
                   withArgs ((fn -<.> "rwc") : ["--from-core", "--vhdl", "-o", ofile "vhdl"] <> extraFlags) RWC.main)
 
-      pure $ ghcTests <> coreTests <> verilogTests <> vhdlTests
+      cosimTests <-
+            -- Test: cosimulation. Drive the generated Verilog (iverilog/vvp)
+            -- and VHDL (ghdl) with identical pseudorandom stimulus and check
+            -- that the two simulations produce the same outputs, cycle by
+            -- cycle.
+            if FlagNoCheck `elem` flags then pure [] else do
+                  ex <- doesFileExist $ fn -<.> "vhdl"
+                  pure [ testCase (takeBaseName fn <> " (cosim iverilog/ghdl)") (cdTestdir >> runCosim fn) | ex ]
+
+      pure $ ghcTests <> coreTests <> verilogTests <> vhdlTests <> cosimTests
 
       where extraFlags :: [String]
             extraFlags = if FlagV `elem` flags then ["-v"] else []
@@ -198,6 +205,127 @@ withStderrTo = withHandleTo stderr
 
 withStdoutTo :: FilePath -> IO a -> IO a
 withStdoutTo = withHandleTo stdout
+
+-- | Number of cycles to cosimulate.
+cosimCycles :: Int
+cosimCycles = 20
+
+-- | Three-way agreement check: compile the design with rwc --testbench for
+--   both backends, drive both testbenches with the same pseudorandom inputs
+--   file, and require that the iverilog/vvp trace, the ghdl trace, and the
+--   Core interpreter (--interpret) output all agree, cycle by cycle. Assumes
+--   the working directory is the test directory and the .out.sv output has
+--   been generated. Skipped for degenerate devices with no outputs.
+runCosim :: FilePath -> IO ()
+runCosim fn = do
+      src <- readFile $ ofl "sv"
+      let (ins, outs) = parsePorts src
+      unless (null outs) $ do
+            writeFile inputsF $ inputsYaml (takeBaseName fn) $ dataIns ins
+            rwc ["--testbench=" <> inputsF, "-o", ofl "cosim.sv"]
+            rwc ["--vhdl", "--testbench=" <> inputsF, "-o", ofl "cosim.vhdl"]
+            -- The interpreter cannot evaluate externs, so the check degrades
+            -- to two-way (simulator vs. simulator) when it fails.
+            iok <- withStderrTo (ofl "cosim.interp.err")
+                  (try (rwc ["--interpret=" <> inputsF, "-o", ofl "cosim.interp.yaml"]) :: IO (Either ExitCode ()))
+            callCommand $ unwords ["iverilog -g2012 -o", ofl "cosim.vvp", ofl "cosim_tb.sv", ofl "cosim.sv", "verilog/*.sv"]
+            callCommand $ unwords ["vvp", ofl "cosim.vvp", ">", ofl "cosim.vtrace"]
+            callCommand $ unwords ["rm -rf", wk] -- a stale workdir makes ghdl bind old units
+            createDirectoryIfMissing False wk
+            callCommand $ unwords ["ghdl -a --std=08 --workdir=" <> wk, ofl "cosim.vhdl", "vhdl/*.vhdl", ofl "cosim_tb.vhdl"]
+            callCommand $ unwords ["ghdl -e --std=08 --workdir=" <> wk, "-o", wk </> "tbexe", "tb"]
+            callCommand $ unwords [wk </> "tbexe", "--ieee-asserts=disable", ">", ofl "cosim.htrace"]
+            tv <- outTrace <$> readFile (ofl "cosim.vtrace")
+            th <- outTrace <$> readFile (ofl "cosim.htrace")
+            ti <- either (const $ pure tv) (const $ outTrace <$> readFile (ofl "cosim.interp.yaml")) iok
+            assertBool (  "cosimulation traces differ (or have the wrong length):"
+                       <> "\niverilog: " <> show tv
+                       <> "\nghdl:     " <> show th
+                       <> "\ninterp:   " <> show ti)
+                  $ tv == th && tv == ti && length tv == cosimCycles * length outs
+      where ofl :: String -> FilePath
+            ofl ext = fn -<.> ("out." <> ext)
+
+            inputsF, wk :: FilePath
+            inputsF = ofl "cosim.inputs.yaml"
+            wk      = ofl "ghdlwork"
+
+            rwc :: [String] -> IO ()
+            rwc args = withArgs ((fn -<.> "rwc") : "--from-core" : "--cycles" : show cosimCycles : args) RWC.main
+
+            dataIns :: [(String, Int)] -> [(String, Int)]
+            dataIns = filter ((`notElem` ["clk", "rst"]) . fst)
+
+-- | Output records parsed from a simulation trace or interpreter output:
+--   lines of the form "- name: '0xHEX'" (or indented continuation lines);
+--   anything else (simulator noise) is ignored. Comparing parsed values makes
+--   the check robust to hex formatting differences (e.g., ghdl pads, the
+--   interpreter does not).
+outTrace :: String -> [(String, Integer)]
+outTrace = mapMaybe entry . lines
+      where entry :: String -> Maybe (String, Integer)
+            entry l = case words l of
+                  ["-", n, v] | ":" `isSuffixOf` n -> (init n, ) <$> hexVal v
+                  [n, v]      | ":" `isSuffixOf` n -> (init n, ) <$> hexVal v
+                  _                                -> Nothing
+
+            hexVal :: String -> Maybe Integer
+            hexVal v = case dropWhile (/= 'x') v of
+                  'x' : rest | [(x, _)] <- readHex $ takeWhile isHexDigit rest -> Just x
+                  _                                                           -> Nothing
+
+-- | A deterministic pseudorandom interp-style inputs file (one map of
+--   input-name-to-value per cycle, decimal values).
+inputsYaml :: String -> [(String, Int)] -> String
+inputsYaml nm ins
+      | null ins  = "[]\n"
+      | otherwise = unlines $ concat $ go (seed0 nm) cosimCycles
+      where go :: Word32 -> Int -> [[String]]
+            go _ 0 = []
+            go s n = let (s', ls) = cyc s in ls : go s' (n - 1)
+
+            cyc :: Word32 -> (Word32, [String])
+            cyc s0 = fmap (zipWith fmt ("- " : repeat "  ")) $ foldl draw (s0, []) ins
+                  where draw :: (Word32, [(String, Integer)]) -> (String, Int) -> (Word32, [(String, Integer)])
+                        draw (s, acc) (n, w) =
+                              let chunks      = (w + 31) `div` 32
+                                  (s', v)     = foldl (\ (sAcc, vAcc) _ -> let sN = xorshift32 sAcc in (sN, vAcc * (2 ^ (32 :: Integer)) + toInteger sN))
+                                                      (s, 0) [1 .. chunks]
+                              in (s', acc <> [(n, v `mod` (2 ^ toInteger w))])
+
+            fmt :: String -> (String, Integer) -> String
+            fmt pre (n, v) = pre <> n <> ": " <> show v
+
+            seed0 :: String -> Word32
+            seed0 = foldl (\ h c -> h * 31 + fromIntegral (fromEnum c)) 0x12345678
+
+            xorshift32 :: Word32 -> Word32
+            xorshift32 x0 = let x1 = x0 `xor` (x0 `shiftL` 13)
+                                x2 = x1 `xor` (x1 `shiftR` 17)
+                            in       x2 `xor` (x2 `shiftL` 5)
+
+-- | The port list of the generated top_level Verilog module: input and output
+--   names with bit widths.
+parsePorts :: String -> ([(String, Int)], [(String, Int)])
+parsePorts src = go (words $ map unPunct header) ([], [])
+      where header = takeWhile (/= ';') $ dropAfter "module top_level" src
+
+            unPunct :: Char -> Char
+            unPunct c = if c `elem` ("(),." :: String) then ' ' else c
+
+            go :: [String] -> ([(String, Int)], [(String, Int)]) -> ([(String, Int)], [(String, Int)])
+            go ("input"  : "logic" : dim : n : rest) (is, os) = go rest (is <> [(n, dimW dim)], os)
+            go ("output" : "logic" : dim : n : rest) (is, os) = go rest (is, os <> [(n, dimW dim)])
+            go (_ : rest) acc                                 = go rest acc
+            go [] acc                                         = acc
+
+            dimW :: String -> Int
+            dimW d = read (takeWhile (/= ':') $ drop 1 d) + 1
+
+            dropAfter :: String -> String -> String
+            dropAfter pat s | pat `isPrefixOf` s = drop (length pat) s
+            dropAfter _ []                       = []
+            dropAfter pat (_ : s)                = dropAfter pat s
 
 -- | Compile fixed test programs with flag combinations the golden tests don't
 --   exercise (verbose tracing, pass dumps, alternate signal names, reset/clock

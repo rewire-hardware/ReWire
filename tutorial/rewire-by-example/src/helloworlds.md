@@ -4,7 +4,7 @@ This first chapter introduces ReWire and collects the simplest possible examples
 
 ## What is ReWire?
 
-ReWire is a domain-specific language embedded in the Haskell functional programming language (<https://haskell.org>). *Every* ReWire program is a Haskell program that can be executed just as any other Haskell program. This fact is simple and also very powerful, because it means that development of a hardware design can proceed *incrementally*, one function at a time, with the resulting new code being type-checked and/or tested. Once a developer is satisfied with their ReWire design, they can compile it automatically into a synthesizable HDL (hardware description language): Verilog by default, or VHDL (experimental).
+ReWire is a domain-specific language embedded in the Haskell functional programming language (<https://haskell.org>). *Every* ReWire program is a Haskell program that can be executed just as any other Haskell program. This fact is simple and also very powerful, because it means that development of a hardware design can proceed *incrementally*, one function at a time, with the resulting new code being type-checked and/or tested. Once a developer is satisfied with their ReWire design, they can compile it automatically into a synthesizable HDL (hardware description language): Verilog by default, or VHDL.
 
 <img src="images/ReWireInColor.png"  style="height:60%; width:60%" >
 

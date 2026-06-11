@@ -36,6 +36,7 @@ data-files:
 - tests/regression/OD19/*.hs
 - tests/regression/Mods/C/*.hs
 - tests/regression/verilog/*.sv
+- tests/regression/vhdl/*.vhdl
 - tests/regression/*.hs
 - tests/regression/*.sv
 - tests/regression/*.rwc

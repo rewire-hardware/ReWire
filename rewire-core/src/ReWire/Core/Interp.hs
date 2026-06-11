@@ -23,7 +23,7 @@ import ReWire.Core.Syntax
       , Target (..)
       , Defn (..)
       , Sig (..)
-      , bvFalse, sizeOf, gather, cat, nil
+      , bvFalse, isNil, sizeOf, gather, cat, nil
       )
 import ReWire.Annotation (ann, noAnn, Annote)
 import ReWire.BitVector (BV, bitVec, (@@), nat, width, (>>.), (<<.), (==.), ashr)
@@ -79,14 +79,19 @@ interp _conf (Device _ w loop state0 ds) = interpStart defnMap w loop state0
             defnMap = Map.fromList $ map (defnName &&& id) ds
 
 interpStart :: MonadError AstError m => DefnMap -> Wiring -> Defn -> Defn -> MealyT m Ins Outs
-interpStart defns w loop state0 = MealyT $ \ _ -> do
+interpStart defns w loop state0 = MealyT $ \ i -> do
             so <- splitOutputs <$> interpDefn defns state0 mempty
-            pure (filterOutput so, unfoldMealyT f $ filterDispatch so)
+            runMealyT (unfoldMealyT f $ filterDispatch so) i
       -- So:        loop   :: (R_, s, i) -> PuRe (o, s)
       --            state0 :: PuRe (o, s)
       --            state0 = Pause (o0, R_0, s0)
       --            where PuRe (o, s) = Done (a, s) | Pause (o, R_, s)
       -- Note: the "Done" ctor may be eliminated, but even if not it should never be returned by "loop."
+      -- Note: the output stored in the start resumption (o0) is discarded and
+      -- the first cycle's output computed by "loop", because that is what the
+      -- generated hardware does: the backends keep only the dispatch bits of
+      -- the start state, and outputs are a combinational function of state
+      -- and input on every cycle.
       where f :: MonadError AstError m => Sts -> Ins -> m (Outs, Sts)
             f s i = (filterOutput &&& filterDispatch) . splitOutputs <$> interpDefn defns loop (joinInputs $ Map.map nat s <> i)
 
@@ -124,7 +129,11 @@ interpDefn defns (Defn _ _ (Sig _ inSizes outSize) body) v = trunc <$> reThrow (
                   Left (_, err) -> throwError err
                   Right bv      -> return bv
 
--- | Attempts to evalute a Core expression to a value. On error, returns a
+-- | Attempts to evalute a Core expression to a value. A call with a nil
+--   alternative takes its branch even when the pattern does not match,
+--   because that is how the backends compile it (the non-matching case is
+--   unreachable for well-typed inputs, and the hardware treats it as
+--   don't-care). On error, returns a
 --  potentially-partially-evaluated expression.
 interpExp :: DefnMap -> [BV] -> Exp -> Either (Exp, AstError) BV
 interpExp defns lvars exp = case exp of
@@ -136,41 +145,41 @@ interpExp defns lvars exp = case exp of
             pure $ v1 <> v2
       Call _ _ (Global (lkupDefn -> Just g)) e ps els -> do
             (e', els', call')  <- evaluate e els reCall
-            if patMatches e' ps then
+            if patMatches e' ps || isNil els then
                   case interpDefn defns g (patApply e' ps) of
                         Left err -> throwError (call', err)
                         Right bv -> pure bv
             else pure els'
       Call an sz (Prim nm@(binOp -> Just op)) e ps els -> do
             (e', els', call')  <- evaluate e els reCall
-            if patMatches e' ps then case patApplyR e' ps of
+            if patMatches e' ps || isNil els then case patApplyR e' ps of
                   [x, y] -> pure $ op sz x y
                   _      -> failAt' call' an $ "Core/Interp: interpExp: arity mismatch (" <> showt nm <> ")."
             else pure els'
       Call an sz (Prim (Replicate n)) e ps els -> do
             (e', els', call')  <- evaluate e els reCall
-            if patMatches e' ps then case patApplyR e' ps of
+            if patMatches e' ps || isNil els then case patApplyR e' ps of
                   [x] -> pure $ mkBV sz $ nat $ BV.replicate n x
                   _   -> failAt' call' an "Core/Interp: interpExp: arity mismatch (Replicate)."
             else pure els'
       Call an sz (Prim nm@(unOp -> Just op)) e ps els -> do
             (e', els', call')  <- evaluate e els reCall
-            if patMatches e' ps then case patApplyR e' ps of
+            if patMatches e' ps || isNil els then case patApplyR e' ps of
                   [x]    -> pure $ op sz x
                   _      -> failAt' call' an $ "Core/Interp: interpExp: arity mismatch (" <> showt nm <> ")."
             else pure els'
       Call _ _ (Prim Reverse) e ps els -> do
             (e', els', _)  <- evaluate e els reCall
-            pure $ if patMatches e' ps then mconcat $ reverse $ patApplyR e' ps else els'
+            pure $ if patMatches e' ps || isNil els then mconcat $ reverse $ patApplyR e' ps else els'
       Call _ sz (Prim Resize) e ps els -> do
             (e', els', _)  <- evaluate e els reCall
-            pure $ if patMatches e' ps then mkBV sz $ nat $ patApply e' ps else els'
+            pure $ if patMatches e' ps || isNil els then mkBV sz $ nat $ patApply e' ps else els'
       Call _ _ (Prim Id) e ps els      -> if patMatchesE e ps then interpExp defns lvars $ patApplyE e ps else do
             (e', els', _)  <- evaluate e els reCall
-            pure $ if patMatches e' ps then patApply e' ps else els'
+            pure $ if patMatches e' ps || isNil els then patApply e' ps else els'
       Call _  sz (Const v) e ps els    -> if patMatchesE e ps then pure $ mkBV sz v else do
             (e', els', _)  <- evaluate e els reCall
-            pure $ if patMatches e' ps then mkBV sz v else els'
+            pure $ if patMatches e' ps || isNil els then mkBV sz v else els'
       Call an _ (Extern _ s _) _ _ _   -> failAt' exp an $ "Core/Interp: interpExp: unknown extern: " <> s
       e                                -> failAt' e (ann e) "Core/Interp: interpExp: encountered unsupported expression."
       where lkupVal :: LId -> Maybe BV
