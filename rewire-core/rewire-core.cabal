@@ -34,6 +34,7 @@ library
       ReWire.BitVector
       ReWire.Builtins
       ReWire.Config
+      ReWire.Core.Analysis
       ReWire.Core.Check
       ReWire.Core.Interp
       ReWire.Core.Mangle

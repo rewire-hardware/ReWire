@@ -3,16 +3,7 @@
 ## Unreleased
 
 * The VHDL backend (`rwc --vhdl`) works again, with full feature parity with
-  the Verilog backend: it now compiles Core to the Verilog AST and translates
-  that to VHDL-2008, so the two backends agree behaviorally by construction.
-  Verilog expression semantics (unsigned operations, width rules, assignment
-  truncation/extension) are implemented by an `rw_helpers` package emitted
-  with every design; names that aren't valid VHDL basic identifiers are
-  emitted as extended identifiers (e.g., `\__in0\`). Every regression test
-  now has a `.vhdl` golden, and `rwc-test` gained a cosimulation check that
-  drives the generated Verilog (iverilog/vvp) and VHDL (ghdl) with identical
-  pseudorandom stimulus and requires cycle-identical outputs (so the test
-  suite's HDL checks now also need `ghdl`).
+  the Verilog backend.
 * Fixed the Verilog backend's arithmetic right shift (`rwPrimRShiftArith`):
   `>>>` on an unsigned operand simulates as a logical shift, so the left
   operand is now wrapped in `$signed(...)`, matching the Core interpreter's

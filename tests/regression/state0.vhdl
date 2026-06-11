@@ -220,7 +220,9 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal main_dev_in : std_logic_vector (7 downto 0);
+signal \__resumption_tag_next\ : std_logic_vector (4 downto 0);
+      signal \__resumption_tag\ : std_logic_vector (4 downto 0) := std_logic_vector'(B"10000");
+      signal main_dev_in : std_logic_vector (7 downto 0);
       signal zll_main_dev3_in : std_logic_vector (2 downto 0);
       signal zll_pure_dispatch3_in : std_logic_vector (7 downto 0);
       signal zll_pure_dispatch4_in : std_logic_vector (5 downto 0);
@@ -228,9 +230,7 @@ signal main_dev_in : std_logic_vector (7 downto 0);
       signal zll_pure_dispatch1_in : std_logic_vector (7 downto 0);
       signal zll_pure_dispatch_in : std_logic_vector (5 downto 0);
       signal zll_main_dev2_in : std_logic_vector (5 downto 0);
-      signal \__resumption_tag\ : std_logic_vector (4 downto 0) := std_logic_vector'(B"10000");
-      signal \__resumption_tag_next\ : std_logic_vector (4 downto 0);
-      signal rwtmp0 : std_logic_vector (8 downto 0);
+      signal pause : std_logic_vector (8 downto 0);
 begin
 main_dev_in <= (\__in0\ & \__resumption_tag\);
       zll_main_dev3_in <= main_dev_in(7 downto 5);
@@ -240,10 +240,10 @@ main_dev_in <= (\__in0\ & \__resumption_tag\);
       zll_pure_dispatch1_in <= (\__in0\ & \__resumption_tag\);
       zll_pure_dispatch_in <= (zll_pure_dispatch1_in(7 downto 5) & zll_pure_dispatch1_in(2 downto 0));
       zll_main_dev2_in <= (zll_pure_dispatch_in(2 downto 0) & zll_pure_dispatch_in(5 downto 3));
-      rwtmp0 <= rw_resize(rw_cond(rw_eq(zll_pure_dispatch1_in(4 downto 3), std_logic_vector'(B"01")), (std_logic_vector'(B"1") & zll_main_dev2_in(5 downto 3) & std_logic_vector'(B"00000")), rw_cond(rw_eq(zll_pure_dispatch3_in(4 downto 3), std_logic_vector'(B"10")), (std_logic_vector'(B"000001") & zll_main_dev1_in(5 downto 3)), (std_logic_vector'(B"000010") & zll_main_dev3_in(2 downto 0)))), 9);
-      \__out0\ <= rwtmp0(8 downto 8);
-      \__out1\ <= rwtmp0(7 downto 5);
-      \__resumption_tag_next\ <= rwtmp0(4 downto 0);
+      pause <= rw_cond(rw_eq(zll_pure_dispatch1_in(4 downto 3), std_logic_vector'(B"01")), (std_logic_vector'(B"1") & zll_main_dev2_in(5 downto 3) & std_logic_vector'(B"00000")), rw_cond(rw_eq(zll_pure_dispatch3_in(4 downto 3), std_logic_vector'(B"10")), (std_logic_vector'(B"000001") & zll_main_dev1_in(5 downto 3)), (std_logic_vector'(B"000010") & zll_main_dev3_in(2 downto 0))));
+      \__out0\ <= pause(8 downto 8);
+      \__out1\ <= pause(7 downto 5);
+      \__resumption_tag_next\ <= pause(4 downto 0);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then

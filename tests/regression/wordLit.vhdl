@@ -217,20 +217,20 @@ port (\__in0\ : in std_logic_vector (7 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal zll_main_loop2_in : std_logic_vector (7 downto 0);
+signal \__padding\ : std_logic_vector (0 downto 0);
+      signal zll_main_loop2_in : std_logic_vector (7 downto 0);
       signal resize_in : std_logic_vector (7 downto 0);
       signal binop_in : std_logic_vector (31 downto 0);
       signal zll_main_loop_in : std_logic_vector (16 downto 0);
       signal zll_main_loop1_in : std_logic_vector (16 downto 0);
-      signal \__padding\ : std_logic_vector (0 downto 0);
-      signal rwtmp0 : std_logic_vector (16 downto 0);
+      signal pause : std_logic_vector (16 downto 0);
 begin
 zll_main_loop2_in <= \__in0\;
       resize_in <= zll_main_loop2_in(7 downto 0);
       binop_in <= (rw_resize(resize_in(7 downto 0), 16) & std_logic_vector'(B"0000000000000001"));
-      zll_main_loop_in <= rw_resize((std_logic_vector'(B"0") & rw_xor(binop_in(31 downto 16), binop_in(15 downto 0))), 17);
+      zll_main_loop_in <= (std_logic_vector'(B"0") & rw_xor(binop_in(31 downto 16), binop_in(15 downto 0)));
       zll_main_loop1_in <= zll_main_loop_in(16 downto 0);
-      rwtmp0 <= (std_logic_vector'(B"1") & zll_main_loop1_in(15 downto 0));
-      \__padding\ <= rwtmp0(16 downto 16);
-      \__out0\ <= rwtmp0(15 downto 0);
+      pause <= (std_logic_vector'(B"1") & zll_main_loop1_in(15 downto 0));
+      \__padding\ <= pause(16 downto 16);
+      \__out0\ <= pause(15 downto 0);
 end architecture;

@@ -219,18 +219,18 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal zll_pure_dispatch_in : std_logic_vector (2 downto 0);
+signal \__padding\ : std_logic_vector (0 downto 0);
+      signal \__resumption_tag_next\ : std_logic_vector (0 downto 0);
+      signal \__st0_next\ : std_logic_vector (0 downto 0);
+      signal \__resumption_tag\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
+      signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
+      signal zll_pure_dispatch_in : std_logic_vector (2 downto 0);
       signal zll_main_convtest10_in : std_logic_vector (2 downto 0);
       signal zll_main_convtest4_in : std_logic_vector (0 downto 0);
       signal zll_main_convtest8_in : std_logic_vector (4 downto 0);
       signal zll_main_convtest15_in : std_logic_vector (4 downto 0);
       signal zll_main_convtest14_in : std_logic_vector (1 downto 0);
-      signal \__padding\ : std_logic_vector (0 downto 0);
-      signal \__resumption_tag\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
-      signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
-      signal \__resumption_tag_next\ : std_logic_vector (0 downto 0);
-      signal \__st0_next\ : std_logic_vector (0 downto 0);
-      signal rwtmp0 : std_logic_vector (3 downto 0);
+      signal pause : std_logic_vector (3 downto 0);
 begin
 zll_pure_dispatch_in <= (\__in0\ & (\__resumption_tag\ & \__st0\));
       zll_main_convtest10_in <= (zll_pure_dispatch_in(1 downto 1) & zll_pure_dispatch_in(2 downto 2) & zll_pure_dispatch_in(0 downto 0));
@@ -238,11 +238,11 @@ zll_pure_dispatch_in <= (\__in0\ & (\__resumption_tag\ & \__st0\));
       zll_main_convtest8_in <= (zll_main_convtest10_in(2 downto 2) & (std_logic_vector'(B"000") & zll_main_convtest4_in(0 downto 0)));
       zll_main_convtest15_in <= (zll_main_convtest8_in(4 downto 4) & zll_main_convtest8_in(3 downto 0));
       zll_main_convtest14_in <= (zll_main_convtest15_in(4 downto 4) & zll_main_convtest15_in(0 downto 0));
-      rwtmp0 <= (std_logic_vector'(B"1") & zll_main_convtest14_in(1 downto 1) & zll_main_convtest14_in(1 downto 1) & zll_main_convtest14_in(0 downto 0));
-      \__padding\ <= rwtmp0(3 downto 3);
-      \__out0\ <= rwtmp0(2 downto 2);
-      \__resumption_tag_next\ <= rwtmp0(1 downto 1);
-      \__st0_next\ <= rwtmp0(0 downto 0);
+      pause <= (std_logic_vector'(B"1") & zll_main_convtest14_in(1 downto 1) & zll_main_convtest14_in(1 downto 1) & zll_main_convtest14_in(0 downto 0));
+      \__padding\ <= pause(3 downto 3);
+      \__out0\ <= pause(2 downto 2);
+      \__resumption_tag_next\ <= pause(1 downto 1);
+      \__st0_next\ <= pause(0 downto 0);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then

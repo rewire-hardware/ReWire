@@ -223,6 +223,9 @@ component \ZLL_Main_go8\ is
       port (arg0 : in std_logic_vector (7 downto 0);
             res : out std_logic_vector (16 downto 0));
       end component;
+      signal \__padding\ : std_logic_vector (0 downto 0);
+      signal \__st0_next\ : std_logic_vector (7 downto 0);
+      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
       signal zll_main_go3_in : std_logic_vector (8 downto 0);
       signal zll_main_go1_in : std_logic_vector (9 downto 0);
       signal zll_main_go10_in : std_logic_vector (8 downto 0);
@@ -230,10 +233,7 @@ component \ZLL_Main_go8\ is
       signal zll_main_go8_out : std_logic_vector (16 downto 0);
       signal \zll_main_go8_inR1\ : std_logic_vector (8 downto 0);
       signal \zll_main_go8_outR1\ : std_logic_vector (16 downto 0);
-      signal \__padding\ : std_logic_vector (0 downto 0);
-      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
-      signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal rwtmp0 : std_logic_vector (16 downto 0);
+      signal pause : std_logic_vector (16 downto 0);
 begin
 zll_main_go3_in <= (\__in0\ & \__st0\);
       zll_main_go1_in <= (zll_main_go3_in(8 downto 8) & zll_main_go3_in(8 downto 8) & zll_main_go3_in(7 downto 0));
@@ -242,10 +242,10 @@ zll_main_go3_in <= (\__in0\ & \__st0\);
       inst : \ZLL_Main_go8\ port map (zll_main_go8_in(8 downto 1), zll_main_go8_out);
       \zll_main_go8_inR1\ <= (zll_main_go1_in(7 downto 0) & zll_main_go1_in(8 downto 8));
       \instR1\ : \ZLL_Main_go8\ port map (\zll_main_go8_inR1\(8 downto 1), \zll_main_go8_outR1\);
-      rwtmp0 <= rw_resize(rw_cond(rw_eq(\zll_main_go8_inR1\(0 downto 0), std_logic_vector'(B"1")), \zll_main_go8_outR1\, zll_main_go8_out), 17);
-      \__padding\ <= rwtmp0(16 downto 16);
-      \__out0\ <= rwtmp0(15 downto 8);
-      \__st0_next\ <= rwtmp0(7 downto 0);
+      pause <= rw_cond(rw_eq(\zll_main_go8_inR1\(0 downto 0), std_logic_vector'(B"1")), \zll_main_go8_outR1\, zll_main_go8_out);
+      \__padding\ <= pause(16 downto 16);
+      \__out0\ <= pause(15 downto 8);
+      \__st0_next\ <= pause(7 downto 0);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then

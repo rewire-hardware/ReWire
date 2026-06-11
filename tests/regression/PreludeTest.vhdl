@@ -223,6 +223,8 @@ component \ZLL_Main_zookus2\ is
       port (arg0 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
+      signal \__resumption_tag_next\ : std_logic_vector (0 downto 0);
+      signal \__resumption_tag\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
       signal zll_pure_dispatch_in : std_logic_vector (1 downto 0);
       signal zll_main_loop_in : std_logic_vector (1 downto 0);
       signal rewirezupreludezuzazazuin : std_logic_vector (1 downto 0);
@@ -235,9 +237,7 @@ component \ZLL_Main_zookus2\ is
       signal zll_main_zookus2_out : std_logic_vector (0 downto 0);
       signal \zll_main_zookus2_inR1\ : std_logic_vector (0 downto 0);
       signal \zll_main_zookus2_outR1\ : std_logic_vector (0 downto 0);
-      signal \__resumption_tag\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
-      signal \__resumption_tag_next\ : std_logic_vector (0 downto 0);
-      signal rwtmp0 : std_logic_vector (1 downto 0);
+      signal pause : std_logic_vector (1 downto 0);
 begin
 zll_pure_dispatch_in <= (\__in0\ & \__resumption_tag\);
       zll_main_loop_in <= (zll_pure_dispatch_in(0 downto 0) & zll_pure_dispatch_in(1 downto 1));
@@ -246,14 +246,14 @@ zll_pure_dispatch_in <= (\__in0\ & \__resumption_tag\);
       zzllzurewirezupreludezuzazazuin <= (zzllzurewirezupreludezuzaza2zuin(3 downto 3) & zzllzurewirezupreludezuzaza2zuin(2 downto 2));
       lit_in <= zzllzurewirezupreludezuzazazuin(1 downto 0);
       id_in <= zzllzurewirezupreludezuzaza2zuin(1 downto 0);
-      zll_main_loop1_in <= rw_resize(rw_cond(rw_eq(id_in(1 downto 1), std_logic_vector'(B"1")), id_in(0 downto 0), std_logic_vector'(B"0")), 1);
+      zll_main_loop1_in <= rw_cond(rw_eq(id_in(1 downto 1), std_logic_vector'(B"1")), id_in(0 downto 0), std_logic_vector'(B"0"));
       zll_main_zookus2_in <= zll_main_loop1_in(0 downto 0);
       inst : \ZLL_Main_zookus2\ port map (zll_main_zookus2_in(0 downto 0), zll_main_zookus2_out);
       \zll_main_zookus2_inR1\ <= zll_main_zookus2_out;
       \instR1\ : \ZLL_Main_zookus2\ port map (\zll_main_zookus2_inR1\(0 downto 0), \zll_main_zookus2_outR1\);
-      rwtmp0 <= (\zll_main_zookus2_outR1\ & zll_main_loop1_in(0 downto 0));
-      \__out0\ <= rwtmp0(1 downto 1);
-      \__resumption_tag_next\ <= rwtmp0(0 downto 0);
+      pause <= (\zll_main_zookus2_outR1\ & zll_main_loop1_in(0 downto 0));
+      \__out0\ <= pause(1 downto 1);
+      \__resumption_tag_next\ <= pause(0 downto 0);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then

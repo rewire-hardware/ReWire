@@ -218,7 +218,8 @@ port (\__in0\ : in std_logic_vector (63 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal zll_main_loop3_in : std_logic_vector (127 downto 0);
+signal \__padding\ : std_logic_vector (0 downto 0);
+      signal zll_main_loop3_in : std_logic_vector (127 downto 0);
       signal zll_main_compute3_in : std_logic_vector (127 downto 0);
       signal zll_main_compute1_in : std_logic_vector (127 downto 0);
       signal id_in : std_logic_vector (63 downto 0);
@@ -226,8 +227,7 @@ signal zll_main_loop3_in : std_logic_vector (127 downto 0);
       signal \id_inR1\ : std_logic_vector (63 downto 0);
       signal zll_main_loop2_in : std_logic_vector (64 downto 0);
       signal zll_main_loop1_in : std_logic_vector (64 downto 0);
-      signal \__padding\ : std_logic_vector (0 downto 0);
-      signal rwtmp0 : std_logic_vector (64 downto 0);
+      signal pause : std_logic_vector (64 downto 0);
 begin
 zll_main_loop3_in <= (\__in0\ & \__in1\);
       zll_main_compute3_in <= zll_main_loop3_in(127 downto 0);
@@ -237,7 +237,7 @@ zll_main_loop3_in <= (\__in0\ & \__in1\);
       \id_inR1\ <= zll_main_compute1_in(63 downto 0);
       zll_main_loop2_in <= (std_logic_vector'(B"0") & ((reverse_in(7 downto 0) & reverse_in(15 downto 8) & reverse_in(23 downto 16) & reverse_in(31 downto 24)) & std_logic_vector'(B"00000000") & \id_inR1\(23 downto 0)));
       zll_main_loop1_in <= zll_main_loop2_in(64 downto 0);
-      rwtmp0 <= (std_logic_vector'(B"1") & zll_main_loop1_in(63 downto 0));
-      \__padding\ <= rwtmp0(64 downto 64);
-      \__out0\ <= rwtmp0(63 downto 0);
+      pause <= (std_logic_vector'(B"1") & zll_main_loop1_in(63 downto 0));
+      \__padding\ <= pause(64 downto 64);
+      \__out0\ <= pause(63 downto 0);
 end architecture;

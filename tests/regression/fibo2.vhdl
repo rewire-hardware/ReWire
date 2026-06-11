@@ -224,6 +224,8 @@ component \Main_loop\ is
             arg1 : in std_logic_vector (7 downto 0);
             res : out std_logic_vector (23 downto 0));
       end component;
+      signal \__resumption_tag_next\ : std_logic_vector (15 downto 0);
+      signal \__resumption_tag\ : std_logic_vector (15 downto 0) := std_logic_vector'(B"0000000100000000");
       signal zll_pure_dispatch1_in : std_logic_vector (16 downto 0);
       signal zll_pure_dispatch_in : std_logic_vector (16 downto 0);
       signal zll_main_loop_in : std_logic_vector (16 downto 0);
@@ -238,9 +240,7 @@ component \Main_loop\ is
       signal zll_main_loop2_in : std_logic_vector (15 downto 0);
       signal \main_loop_inR1\ : std_logic_vector (15 downto 0);
       signal \main_loop_outR1\ : std_logic_vector (23 downto 0);
-      signal \__resumption_tag\ : std_logic_vector (15 downto 0) := std_logic_vector'(B"0000000100000000");
-      signal \__resumption_tag_next\ : std_logic_vector (15 downto 0);
-      signal rwtmp0 : std_logic_vector (23 downto 0);
+      signal pause : std_logic_vector (23 downto 0);
 begin
 zll_pure_dispatch1_in <= (\__in0\ & \__resumption_tag\);
       zll_pure_dispatch_in <= (zll_pure_dispatch1_in(15 downto 8) & zll_pure_dispatch1_in(16 downto 16) & zll_pure_dispatch1_in(7 downto 0));
@@ -250,15 +250,15 @@ zll_pure_dispatch1_in <= (\__in0\ & \__resumption_tag\);
       zll_main_loop10_in <= (zll_main_loop3_in(16 downto 9) & zll_main_loop3_in(8 downto 1) & zll_main_loop3_in(0 downto 0));
       zll_main_loop6_in <= (zll_main_loop10_in(16 downto 9) & zll_main_loop10_in(8 downto 1));
       binop_in <= (zll_main_loop6_in(7 downto 0) & zll_main_loop6_in(15 downto 8));
-      main_loop_in <= rw_resize((zll_main_loop6_in(15 downto 8) & rw_add(binop_in(15 downto 8), binop_in(7 downto 0))), 16);
+      main_loop_in <= (zll_main_loop6_in(15 downto 8) & rw_add(binop_in(15 downto 8), binop_in(7 downto 0)));
       inst : \Main_loop\ port map (main_loop_in(15 downto 8), main_loop_in(7 downto 0), main_loop_out);
       zll_main_loop5_in <= (zll_main_loop7_in(17 downto 10) & zll_main_loop7_in(9 downto 2) & zll_main_loop7_in(0 downto 0));
       zll_main_loop2_in <= (zll_main_loop5_in(16 downto 9) & zll_main_loop5_in(8 downto 1));
       \main_loop_inR1\ <= (zll_main_loop2_in(7 downto 0) & zll_main_loop2_in(15 downto 8));
       \instR1\ : \Main_loop\ port map (\main_loop_inR1\(15 downto 8), \main_loop_inR1\(7 downto 0), \main_loop_outR1\);
-      rwtmp0 <= rw_resize(rw_cond(rw_eq(zll_main_loop5_in(0 downto 0), std_logic_vector'(B"1")), \main_loop_outR1\, main_loop_out), 24);
-      \__out0\ <= rwtmp0(23 downto 16);
-      \__resumption_tag_next\ <= rwtmp0(15 downto 0);
+      pause <= rw_cond(rw_eq(zll_main_loop5_in(0 downto 0), std_logic_vector'(B"1")), \main_loop_outR1\, main_loop_out);
+      \__out0\ <= pause(23 downto 16);
+      \__resumption_tag_next\ <= pause(15 downto 0);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then

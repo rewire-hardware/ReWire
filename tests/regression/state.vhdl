@@ -219,7 +219,10 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal zll_main_loop2_in : std_logic_vector (1 downto 0);
+signal \__padding\ : std_logic_vector (0 downto 0);
+      signal \__st0_next\ : std_logic_vector (0 downto 0);
+      signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
+      signal zll_main_loop2_in : std_logic_vector (1 downto 0);
       signal zll_main_stateaction8_in : std_logic_vector (1 downto 0);
       signal zll_main_stateaction1_in : std_logic_vector (2 downto 0);
       signal zll_main_stateaction2_in : std_logic_vector (2 downto 0);
@@ -233,10 +236,7 @@ signal zll_main_loop2_in : std_logic_vector (1 downto 0);
       signal zll_main_loop4_in : std_logic_vector (2 downto 0);
       signal zll_main_loop3_in : std_logic_vector (2 downto 0);
       signal zll_main_loop5_in : std_logic_vector (1 downto 0);
-      signal \__padding\ : std_logic_vector (0 downto 0);
-      signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
-      signal \__st0_next\ : std_logic_vector (0 downto 0);
-      signal rwtmp0 : std_logic_vector (2 downto 0);
+      signal pause : std_logic_vector (2 downto 0);
 begin
 zll_main_loop2_in <= (\__in0\ & \__st0\);
       zll_main_stateaction8_in <= (zll_main_loop2_in(1 downto 1) & zll_main_loop2_in(0 downto 0));
@@ -246,16 +246,16 @@ zll_main_loop2_in <= (\__in0\ & \__st0\);
       zll_main_stateaction12_in <= (zll_main_stateaction3_in(1 downto 1) & zll_main_stateaction3_in(0 downto 0));
       zll_main_stateaction4_in <= zll_main_stateaction12_in(1 downto 0);
       binop_in <= (zll_main_stateaction4_in(1 downto 1) & zll_main_stateaction4_in(0 downto 0));
-      msbit_in <= rw_resize(rw_xor(binop_in(1 downto 1), binop_in(0 downto 0)), 1);
+      msbit_in <= rw_xor(binop_in(1 downto 1), binop_in(0 downto 0));
       zll_main_loop_in <= (zll_main_stateaction2_in(1 downto 1) & msbit_in(0 downto 0));
       zll_main_loop7_in <= zll_main_loop_in(1 downto 0);
       zll_main_loop4_in <= (std_logic_vector'(B"0") & zll_main_loop7_in(1 downto 1) & zll_main_loop7_in(0 downto 0));
       zll_main_loop3_in <= zll_main_loop4_in(2 downto 0);
       zll_main_loop5_in <= (zll_main_loop3_in(1 downto 1) & zll_main_loop3_in(0 downto 0));
-      rwtmp0 <= (std_logic_vector'(B"1") & zll_main_loop5_in(1 downto 1) & zll_main_loop5_in(0 downto 0));
-      \__padding\ <= rwtmp0(2 downto 2);
-      \__out0\ <= rwtmp0(1 downto 1);
-      \__st0_next\ <= rwtmp0(0 downto 0);
+      pause <= (std_logic_vector'(B"1") & zll_main_loop5_in(1 downto 1) & zll_main_loop5_in(0 downto 0));
+      \__padding\ <= pause(2 downto 2);
+      \__out0\ <= pause(1 downto 1);
+      \__st0_next\ <= pause(0 downto 0);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then

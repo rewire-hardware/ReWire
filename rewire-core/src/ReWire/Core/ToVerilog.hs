@@ -9,10 +9,10 @@ import ReWire.Annotation (noAnn, ann)
 import ReWire.BitVector (width, bitVec, BV, zeros, ones, lsb1, (==.), (@.), szBitRep)
 import ReWire.Config (Config, ResetFlag (..))
 import ReWire.Core.Interp (patApply', patMatches', subRange, dispatchWires, pausePadding, resumptionSize, Wiring')
-import ReWire.Core.Mangle (mangle)
+import ReWire.Core.Analysis (DefnMap, defnMap, defnUses)
+import ReWire.Core.Mangle (mangle, mangleFresh, mangleMod)
 import ReWire.Core.Syntax as C hiding (Name, Size, Index)
 import ReWire.Error (failAt, AstError, MonadError)
-import ReWire.Fix (fix')
 import ReWire.Pretty (prettyPrint, showt)
 import ReWire.Verilog.Syntax as V
 
@@ -23,7 +23,6 @@ import Control.Lens ((^.), (.~))
 import Control.Monad (liftM2)
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Monad.State (MonadState, runStateT, modify, gets)
-import Data.Char (isAlphaNum)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
 import Data.Maybe (catMaybes, fromMaybe)
@@ -37,7 +36,6 @@ import qualified ReWire.Config       as C
 
 data FreshMode = FreshInit | FreshRun
 type Fresh = (FreshMode, HashMap Text Int)
-type DefnMap = HashMap GId (C.Exp, (Natural, Bool))
 type SigInfo = (Fresh, [Signal])
 
 freshInit0 :: Fresh
@@ -45,43 +43,6 @@ freshInit0 = (FreshInit, mempty)
 
 freshRun0 :: Fresh
 freshRun0 = (FreshRun, mempty)
-
-mangleFresh :: Text -> Text
-mangleFresh x = if isVerilogId x' then x' else mangle x'
-      where subDots :: Text -> Text
-            subDots = T.replace "." "_"
-
-            subDollar :: Text -> Text
-            subDollar = \ case
-                  (T.stripPrefix "$" -> Just x') -> "Z" <> x'
-                  x                              -> x
-
-            subTick :: Text -> Text
-            subTick = T.replace "'" "$"
-
-            isVerilogId :: Text -> Bool
-            isVerilogId = T.all isVerilogId'
-
-            isVerilogId' :: Char -> Bool
-            isVerilogId' c = isAlphaNum c || c == '_' || c == '$'
-
-            x' :: Text
-            x' = subTick $ subDollar $ subDots x
-
--- | Module names need to be de-conflicted because they aren't immediately
---   freshened.
-mangleMod :: Text -> Text
-mangleMod x = mangleFresh x'
-      where subDots :: Text -> Text
-            subDots = T.replace "_" "__"
-
-            subDollar :: Text -> Text
-            subDollar = \ case
-                  (T.stripPrefix "Z" -> Just x') -> "ZZ" <> x'
-                  x                              -> x
-
-            x' :: Text
-            x' = subDollar $ subDots x
 
 fresh' :: MonadState SigInfo m => Text -> m Name
 fresh' s = do
@@ -666,61 +627,3 @@ argsSize = sum . map patToSize
 
 mkSignal :: (Name, Size) -> Signal
 mkSignal (n, sz) = Logic [sz] n []
-
-type Uses   = Natural
-type IsPure = Bool
-
-defnMap :: C.Device -> HashMap GId (C.Exp, (Uses, IsPure))
-defnMap p@C.Device { loop, state0, defns } = foldl' defnInfo mempty defns'
-      where defnInfo :: HashMap GId (C.Exp, (Uses, IsPure)) -> C.Defn -> HashMap GId (C.Exp, (Uses, IsPure))
-            defnInfo m (Defn _ g _ e) = Map.insert g (e, (Map.findWithDefault 0 g uses, Set.member g pures)) m
-
-            uses :: HashMap GId Uses
-            uses = defnUses p
-
-            pures :: HashSet GId
-            pures = pureDefns p
-
-            defns' :: [Defn]
-            defns' = loop : state0 : defns
-
--- | Defns that do not require an implicit clock/reset.
-pureDefns :: C.Device -> HashSet GId
-pureDefns C.Device { loop, state0, defns } = fix' purity mempty
-      where purity :: HashSet GId -> HashSet GId
-            purity m = foldl' purity' m defns'
-
-            purity' :: HashSet GId -> Defn -> HashSet GId
-            purity' ps (Defn _ g _ e) = if isPure ps e then Set.insert g ps else ps
-
-            defns' :: [Defn]
-            defns' = loop : state0 : defns
-
-defnUses :: C.Device -> HashMap GId Uses
-defnUses C.Device { loop, state0, defns } = Map.fromList [(defnName loop, 1), (defnName state0, 1)]
-      <+> foldr (<+>) Map.empty (expUses . defnBody <$> loop : defns) -- drop state0 body.
-      where expUses :: C.Exp -> HashMap GId Uses
-            expUses = \ case
-                  C.Concat _ e1 e2              -> expUses e1 <+> expUses e2
-                  C.Call _ _ (Global g) e _ els -> Map.singleton g 1 <+> expUses e <+> expUses els
-                  C.Call _ _ _          e _ els ->                       expUses e <+> expUses els
-                  _                             -> Map.empty
-
-            (<+>) :: HashMap GId Uses -> HashMap GId Uses -> HashMap GId Uses
-            (<+>) = Map.unionWith (+)
-
-isPure :: HashSet GId -> C.Exp -> Bool
-isPure m = \ case
-      C.Call _ _ (C.Extern (C.ExternSig _ _ c r _ _) _ _) a _ b
-                                    -> T.null c && T.null r && pur a && pur b
-      C.Call _ _ (C.Global g) a _ b -> purG g && pur a && pur b
-      C.Call _ _ _ a _ b            -> pur a && pur b
-      C.Concat _ a b                -> pur a && pur b
-      C.LVar {}                     -> True
-      C.Lit {}                      -> True
-      where pur :: C.Exp -> Bool
-            pur = isPure m
-
-            purG :: GId -> Bool
-            purG = flip Set.member m
-

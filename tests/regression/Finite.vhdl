@@ -227,8 +227,8 @@ begin
 zll_main_dev_in <= \__in0\;
       resize_in <= zll_main_dev_in(6 downto 0);
       binop_in <= (resize_in(6 downto 0) & std_logic_vector'(B"0000001"));
-      \resize_inR1\ <= rw_resize(rw_add(binop_in(13 downto 7), binop_in(6 downto 0)), 7);
+      \resize_inR1\ <= rw_add(binop_in(13 downto 7), binop_in(6 downto 0));
       \binop_inR1\ <= (rw_resize(\resize_inR1\(6 downto 0), 128) & std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001100100"));
-      \resize_inR2\ <= rw_resize(rw_mod(\binop_inR1\(255 downto 128), \binop_inR1\(127 downto 0)), 128);
-      \__out0\ <= \resize_inR2\(6 downto 0);
+      \resize_inR2\ <= rw_mod(\binop_inR1\(255 downto 128), \binop_inR1\(127 downto 0));
+      \__out0\ <= rw_resize(\resize_inR2\(127 downto 0), 7);
 end architecture;

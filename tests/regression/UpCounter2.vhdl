@@ -231,6 +231,9 @@ component \ZLL_Main_go29\ is
       port (arg0 : in std_logic_vector (7 downto 0);
             res : out std_logic_vector (17 downto 0));
       end component;
+      signal \__padding\ : std_logic_vector (1 downto 0);
+      signal \__st0_next\ : std_logic_vector (7 downto 0);
+      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
       signal zll_main_go24_in : std_logic_vector (8 downto 0);
       signal zll_main_go_in : std_logic_vector (8 downto 0);
       signal zll_main_go30_in : std_logic_vector (7 downto 0);
@@ -262,10 +265,7 @@ component \ZLL_Main_go29\ is
       signal \zll_main_go33_outR1\ : std_logic_vector (17 downto 0);
       signal \zll_main_go32_inR1\ : std_logic_vector (17 downto 0);
       signal \zll_main_go32_outR1\ : std_logic_vector (17 downto 0);
-      signal \__padding\ : std_logic_vector (1 downto 0);
-      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
-      signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal rwtmp0 : std_logic_vector (17 downto 0);
+      signal pause : std_logic_vector (17 downto 0);
 begin
 zll_main_go24_in <= (\__in0\ & \__st0\);
       zll_main_go_in <= (zll_main_go24_in(7 downto 0) & zll_main_go24_in(8 downto 8));
@@ -277,7 +277,7 @@ zll_main_go24_in <= (\__in0\ & \__st0\);
       zll_main_go17_in <= (zll_main_go9_in(15 downto 8) & zll_main_go9_in(7 downto 0));
       zll_main_incw81_in <= zll_main_go17_in(15 downto 8);
       binop_in <= (zll_main_incw81_in(7 downto 0) & std_logic_vector'(B"00000001"));
-      zll_main_go33_in <= rw_resize(rw_add(binop_in(15 downto 8), binop_in(7 downto 0)), 8);
+      zll_main_go33_in <= rw_add(binop_in(15 downto 8), binop_in(7 downto 0));
       \instR1\ : \ZLL_Main_go33\ port map (zll_main_go33_in(7 downto 0), zll_main_go33_out);
       zll_main_go32_in <= zll_main_go33_out;
       \instR2\ : \ZLL_Main_go32\ port map (zll_main_go32_in(17 downto 0), zll_main_go32_out);
@@ -293,15 +293,15 @@ zll_main_go24_in <= (\__in0\ & \__st0\);
       zll_main_msbitw8_in <= zll_main_rolw81_in(7 downto 0);
       msbit_in <= zll_main_msbitw8_in(7 downto 0);
       resize_in <= msbit_in(7 downto 7);
-      \binop_inR2\ <= rw_resize((rw_shiftl(\binop_inR1\(15 downto 8), \binop_inR1\(7 downto 0)) & rw_resize(resize_in(0 downto 0), 8)), 16);
-      \zll_main_go33_inR1\ <= rw_resize(rw_or(\binop_inR2\(15 downto 8), \binop_inR2\(7 downto 0)), 8);
+      \binop_inR2\ <= (rw_shiftl(\binop_inR1\(15 downto 8), \binop_inR1\(7 downto 0)) & rw_resize(resize_in(0 downto 0), 8));
+      \zll_main_go33_inR1\ <= rw_or(\binop_inR2\(15 downto 8), \binop_inR2\(7 downto 0));
       \instR4\ : \ZLL_Main_go33\ port map (\zll_main_go33_inR1\(7 downto 0), \zll_main_go33_outR1\);
       \zll_main_go32_inR1\ <= \zll_main_go33_outR1\;
       \instR5\ : \ZLL_Main_go32\ port map (\zll_main_go32_inR1\(17 downto 0), \zll_main_go32_outR1\);
-      rwtmp0 <= rw_resize(rw_cond(rw_eq(zll_main_go21_in(0 downto 0), std_logic_vector'(B"1")), \zll_main_go32_outR1\, zll_main_go32_out), 18);
-      \__padding\ <= rwtmp0(17 downto 16);
-      \__out0\ <= rwtmp0(15 downto 8);
-      \__st0_next\ <= rwtmp0(7 downto 0);
+      pause <= rw_cond(rw_eq(zll_main_go21_in(0 downto 0), std_logic_vector'(B"1")), \zll_main_go32_outR1\, zll_main_go32_out);
+      \__padding\ <= pause(17 downto 16);
+      \__out0\ <= pause(15 downto 8);
+      \__st0_next\ <= pause(7 downto 0);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then

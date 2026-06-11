@@ -222,6 +222,7 @@ component \ReWirezuPreludezuzaza\ is
             arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
+      signal \__padding\ : std_logic_vector (0 downto 0);
       signal zll_main_loop1_in : std_logic_vector (15 downto 0);
       signal zll_main_compute3_in : std_logic_vector (15 downto 0);
       signal msbit_in : std_logic_vector (15 downto 0);
@@ -240,8 +241,7 @@ component \ReWirezuPreludezuzaza\ is
       signal \id_inR3\ : std_logic_vector (15 downto 0);
       signal zll_main_loop_in : std_logic_vector (8 downto 0);
       signal zll_main_loop2_in : std_logic_vector (8 downto 0);
-      signal \__padding\ : std_logic_vector (0 downto 0);
-      signal rwtmp0 : std_logic_vector (8 downto 0);
+      signal pause : std_logic_vector (8 downto 0);
 begin
 zll_main_loop1_in <= \__in0\;
       zll_main_compute3_in <= zll_main_loop1_in(15 downto 0);
@@ -259,11 +259,11 @@ zll_main_loop1_in <= \__in0\;
       \id_inR2\ <= zll_main_compute5_in(16 downto 1);
       zll_main_compute_in <= (zll_main_compute4_in(16 downto 1) & zll_main_compute4_in(0 downto 0));
       \id_inR3\ <= zll_main_compute_in(16 downto 1);
-      zll_main_loop_in <= rw_resize((std_logic_vector'(B"0") & rw_cond(rw_eq(zll_main_compute_in(0 downto 0), std_logic_vector'(B"1")), \id_inR3\(7 downto 0), \id_inR2\(15 downto 8))), 9);
+      zll_main_loop_in <= (std_logic_vector'(B"0") & rw_cond(rw_eq(zll_main_compute_in(0 downto 0), std_logic_vector'(B"1")), \id_inR3\(7 downto 0), \id_inR2\(15 downto 8)));
       zll_main_loop2_in <= zll_main_loop_in(8 downto 0);
-      rwtmp0 <= (std_logic_vector'(B"1") & zll_main_loop2_in(7 downto 0));
-      \__padding\ <= rwtmp0(8 downto 8);
-      \__out0\ <= rwtmp0(7 downto 0);
+      pause <= (std_logic_vector'(B"1") & zll_main_loop2_in(7 downto 0));
+      \__padding\ <= pause(8 downto 8);
+      \__out0\ <= pause(7 downto 0);
 end architecture;
 
 library ieee;
@@ -286,5 +286,5 @@ zzllzurewirezupreludezuzaza1zuin <= (arg0 & arg1 & arg0 & arg1);
       zzllzurewirezupreludezuzazazuin <= (zzllzurewirezupreludezuzaza1zuin(3 downto 3) & zzllzurewirezupreludezuzaza1zuin(2 downto 2));
       lit_in <= zzllzurewirezupreludezuzazazuin(1 downto 0);
       id_in <= zzllzurewirezupreludezuzaza1zuin(1 downto 0);
-      res <= rw_resize(rw_cond(rw_eq(id_in(1 downto 1), std_logic_vector'(B"1")), id_in(0 downto 0), std_logic_vector'(B"0")), 1);
+      res <= rw_cond(rw_eq(id_in(1 downto 1), std_logic_vector'(B"1")), id_in(0 downto 0), std_logic_vector'(B"0"));
 end architecture;

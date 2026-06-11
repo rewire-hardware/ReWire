@@ -223,6 +223,7 @@ component \ZLL_Main_compute\ is
             arg1 : in std_logic_vector (63 downto 0);
             res : out std_logic_vector (7 downto 0));
       end component;
+      signal \__padding\ : std_logic_vector (0 downto 0);
       signal zll_main_loop4_in : std_logic_vector (1055 downto 0);
       signal zll_main_loop3_in : std_logic_vector (1055 downto 0);
       signal main_compute_in : std_logic_vector (1055 downto 0);
@@ -262,8 +263,7 @@ component \ZLL_Main_compute\ is
       signal \zll_main_compute_outR7\ : std_logic_vector (7 downto 0);
       signal zll_main_loop1_in : std_logic_vector (64 downto 0);
       signal zll_main_loop5_in : std_logic_vector (64 downto 0);
-      signal \__padding\ : std_logic_vector (0 downto 0);
-      signal rwtmp0 : std_logic_vector (64 downto 0);
+      signal pause : std_logic_vector (64 downto 0);
 begin
 zll_main_loop4_in <= (\__in0\ & \__in1\);
       zll_main_loop3_in <= zll_main_loop4_in(1055 downto 0);
@@ -304,9 +304,9 @@ zll_main_loop4_in <= (\__in0\ & \__in1\);
       \instR7\ : \ZLL_Main_compute\ port map (\zll_main_compute_inR7\(95 downto 64), \zll_main_compute_inR7\(63 downto 0), \zll_main_compute_outR7\);
       zll_main_loop1_in <= (std_logic_vector'(B"0") & (zll_main_compute_out & \zll_main_compute_outR1\ & \zll_main_compute_outR2\ & \zll_main_compute_outR3\ & \zll_main_compute_outR4\ & \zll_main_compute_outR5\ & \zll_main_compute_outR6\ & \zll_main_compute_outR7\));
       zll_main_loop5_in <= zll_main_loop1_in(64 downto 0);
-      rwtmp0 <= (std_logic_vector'(B"1") & zll_main_loop5_in(63 downto 0));
-      \__padding\ <= rwtmp0(64 downto 64);
-      \__out0\ <= rwtmp0(63 downto 0);
+      pause <= (std_logic_vector'(B"1") & zll_main_loop5_in(63 downto 0));
+      \__padding\ <= pause(64 downto 64);
+      \__out0\ <= pause(63 downto 0);
 end architecture;
 
 library ieee;
@@ -327,5 +327,5 @@ begin
 id_in <= arg0;
       \id_inR1\ <= arg1;
       binop_in <= (id_in(7 downto 0) & \id_inR1\(39 downto 32));
-      res <= rw_resize(rw_add(binop_in(15 downto 8), binop_in(7 downto 0)), 8);
+      res <= rw_add(binop_in(15 downto 8), binop_in(7 downto 0));
 end architecture;

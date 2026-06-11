@@ -232,5 +232,5 @@ zll_main_proc4_in <= \__in0\;
       lit_in <= zll_main_proc7_in(1 downto 0);
       \lit_inR1\ <= zll_main_proc2_in(1 downto 0);
       \lit_inR2\ <= zll_main_proc_in(1 downto 0);
-      \__out0\ <= rw_resize(rw_cond(rw_eq(\lit_inR2\(1 downto 0), std_logic_vector'(B"00")), std_logic_vector'(B"0"), rw_cond(rw_eq(\lit_inR1\(1 downto 0), std_logic_vector'(B"01")), std_logic_vector'(B"0"), rw_cond(rw_eq(lit_in(1 downto 0), std_logic_vector'(B"10")), std_logic_vector'(B"0"), std_logic_vector'(B"1")))), 1);
+      \__out0\ <= rw_cond(rw_eq(\lit_inR2\(1 downto 0), std_logic_vector'(B"00")), std_logic_vector'(B"0"), rw_cond(rw_eq(\lit_inR1\(1 downto 0), std_logic_vector'(B"01")), std_logic_vector'(B"0"), rw_cond(rw_eq(lit_in(1 downto 0), std_logic_vector'(B"10")), std_logic_vector'(B"0"), std_logic_vector'(B"1"))));
 end architecture;

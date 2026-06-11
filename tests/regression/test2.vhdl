@@ -219,7 +219,10 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal zll_main_incr16_in : std_logic_vector (8 downto 0);
+signal \__padding\ : std_logic_vector (1 downto 0);
+      signal \__st0_next\ : std_logic_vector (7 downto 0);
+      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
+      signal zll_main_incr16_in : std_logic_vector (8 downto 0);
       signal main_incr_in : std_logic_vector (7 downto 0);
       signal zll_main_incr4_in : std_logic_vector (15 downto 0);
       signal zll_main_incr13_in : std_logic_vector (15 downto 0);
@@ -230,10 +233,7 @@ signal zll_main_incr16_in : std_logic_vector (8 downto 0);
       signal zll_main_incr9_in : std_logic_vector (25 downto 0);
       signal zll_main_incr12_in : std_logic_vector (25 downto 0);
       signal zll_main_incr10_in : std_logic_vector (15 downto 0);
-      signal \__padding\ : std_logic_vector (1 downto 0);
-      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
-      signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal rwtmp0 : std_logic_vector (17 downto 0);
+      signal pause : std_logic_vector (17 downto 0);
 begin
 zll_main_incr16_in <= (\__in0\ & \__st0\);
       main_incr_in <= zll_main_incr16_in(7 downto 0);
@@ -246,10 +246,10 @@ zll_main_incr16_in <= (\__in0\ & \__st0\);
       zll_main_incr9_in <= (zll_main_incr5_in(15 downto 8) & (std_logic_vector'(B"0100000000") & zll_main_incr17_in(7 downto 0)));
       zll_main_incr12_in <= (zll_main_incr9_in(25 downto 18) & zll_main_incr9_in(17 downto 0));
       zll_main_incr10_in <= (zll_main_incr12_in(25 downto 18) & zll_main_incr12_in(7 downto 0));
-      rwtmp0 <= (std_logic_vector'(B"10") & zll_main_incr10_in(15 downto 8) & zll_main_incr10_in(7 downto 0));
-      \__padding\ <= rwtmp0(17 downto 16);
-      \__out0\ <= rwtmp0(15 downto 8);
-      \__st0_next\ <= rwtmp0(7 downto 0);
+      pause <= (std_logic_vector'(B"10") & zll_main_incr10_in(15 downto 8) & zll_main_incr10_in(7 downto 0));
+      \__padding\ <= pause(17 downto 16);
+      \__out0\ <= pause(15 downto 8);
+      \__st0_next\ <= pause(7 downto 0);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then

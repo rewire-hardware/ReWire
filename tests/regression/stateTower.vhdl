@@ -235,6 +235,11 @@ component \ReWire_Prelude_not\ is
       port (arg0 : in std_logic_vector (2 downto 0);
             res : out std_logic_vector (4 downto 0));
       end component;
+      signal \__padding\ : std_logic_vector (1 downto 0);
+      signal \__st0_next\ : std_logic_vector (0 downto 0);
+      signal \__st1_next\ : std_logic_vector (0 downto 0);
+      signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
+      signal \__st1\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal zll_main_sig34_in : std_logic_vector (2 downto 0);
       signal rewire_prelude_not_in : std_logic_vector (0 downto 0);
       signal rewire_prelude_not_out : std_logic_vector (0 downto 0);
@@ -273,12 +278,7 @@ component \ReWire_Prelude_not\ is
       signal \zll_main_sig15_outR1\ : std_logic_vector (4 downto 0);
       signal \zll_main_sig24_inR1\ : std_logic_vector (4 downto 0);
       signal \zll_main_sig24_outR1\ : std_logic_vector (4 downto 0);
-      signal \__padding\ : std_logic_vector (1 downto 0);
-      signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
-      signal \__st1\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
-      signal \__st0_next\ : std_logic_vector (0 downto 0);
-      signal \__st1_next\ : std_logic_vector (0 downto 0);
-      signal rwtmp0 : std_logic_vector (4 downto 0);
+      signal pause : std_logic_vector (4 downto 0);
 begin
 zll_main_sig34_in <= (\__in0\ & (\__st0\ & \__st1\));
       rewire_prelude_not_in <= zll_main_sig34_in(2 downto 2);
@@ -313,16 +313,16 @@ zll_main_sig34_in <= (\__in0\ & (\__st0\ & \__st1\));
       zll_main_incr2_in <= (zll_main_incr3_in(1 downto 1) & zll_main_incr3_in(0 downto 0));
       zll_main_incr1_in <= zll_main_incr2_in(1 downto 0);
       binop_in <= (zll_main_incr1_in(1 downto 1) & zll_main_incr1_in(0 downto 0));
-      msbit_in <= rw_resize(rw_xor(binop_in(1 downto 1), binop_in(0 downto 0)), 1);
+      msbit_in <= rw_xor(binop_in(1 downto 1), binop_in(0 downto 0));
       \zll_main_sig15_inR1\ <= (zll_main_sig3_in(1 downto 1) & msbit_in(0 downto 0));
       \instR5\ : \ZLL_Main_sig15\ port map (\zll_main_sig15_inR1\(1 downto 0), \zll_main_sig15_outR1\);
       \zll_main_sig24_inR1\ <= \zll_main_sig15_outR1\;
       \instR6\ : \ZLL_Main_sig24\ port map (\zll_main_sig24_inR1\(4 downto 0), \zll_main_sig24_outR1\);
-      rwtmp0 <= rw_resize(rw_cond(rw_eq(zll_main_sig39_in(0 downto 0), std_logic_vector'(B"1")), \zll_main_sig24_outR1\, zll_main_sig24_out), 5);
-      \__padding\ <= rwtmp0(4 downto 3);
-      \__out0\ <= rwtmp0(2 downto 2);
-      \__st0_next\ <= rwtmp0(1 downto 1);
-      \__st1_next\ <= rwtmp0(0 downto 0);
+      pause <= rw_cond(rw_eq(zll_main_sig39_in(0 downto 0), std_logic_vector'(B"1")), \zll_main_sig24_outR1\, zll_main_sig24_out);
+      \__padding\ <= pause(4 downto 3);
+      \__out0\ <= pause(2 downto 2);
+      \__st0_next\ <= pause(1 downto 1);
+      \__st1_next\ <= pause(0 downto 0);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then
@@ -350,7 +350,7 @@ signal zll_rewire_prelude_not1_in : std_logic_vector (1 downto 0);
 begin
 zll_rewire_prelude_not1_in <= (arg0 & arg0);
       lit_in <= zll_rewire_prelude_not1_in(0 downto 0);
-      res <= rw_resize(rw_cond(rw_eq(lit_in(0 downto 0), std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1")), 1);
+      res <= rw_cond(rw_eq(lit_in(0 downto 0), std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
 end architecture;
 
 library ieee;

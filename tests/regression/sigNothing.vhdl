@@ -220,18 +220,18 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal \zll_main_start$_in\ : std_logic_vector (15 downto 0);
-      signal \main_start$_in\ : std_logic_vector (7 downto 0);
+signal \__st0_next\ : std_logic_vector (7 downto 0);
       signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
-      signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal rwtmp0 : std_logic_vector (16 downto 0);
+      signal \zll_main_start$_in\ : std_logic_vector (15 downto 0);
+      signal \main_start$_in\ : std_logic_vector (7 downto 0);
+      signal pause : std_logic_vector (16 downto 0);
 begin
 \zll_main_start$_in\ <= (\__in0\ & \__st0\);
       \main_start$_in\ <= \zll_main_start$_in\(7 downto 0);
-      rwtmp0 <= (std_logic_vector'(B"000000000") & \main_start$_in\(7 downto 0));
-      \__out0\ <= rwtmp0(16 downto 16);
-      \__out1\ <= rwtmp0(15 downto 8);
-      \__st0_next\ <= rwtmp0(7 downto 0);
+      pause <= (std_logic_vector'(B"000000000") & \main_start$_in\(7 downto 0));
+      \__out0\ <= pause(16 downto 16);
+      \__out1\ <= pause(15 downto 8);
+      \__st0_next\ <= pause(7 downto 0);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then

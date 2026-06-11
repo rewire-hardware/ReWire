@@ -219,7 +219,10 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal rewire_monad_iterst1_in : std_logic_vector (1 downto 0);
+signal \__padding\ : std_logic_vector (2 downto 0);
+      signal \__st0_next\ : std_logic_vector (0 downto 0);
+      signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
+      signal rewire_monad_iterst1_in : std_logic_vector (1 downto 0);
       signal zll_rewire_monad_iterst34_in : std_logic_vector (2 downto 0);
       signal zll_rewire_monad_iterst12_in : std_logic_vector (2 downto 0);
       signal main_f1_in : std_logic_vector (1 downto 0);
@@ -241,10 +244,7 @@ signal rewire_monad_iterst1_in : std_logic_vector (1 downto 0);
       signal zll_rewire_monad_iterst40_in : std_logic_vector (5 downto 0);
       signal zll_rewire_monad_iterst38_in : std_logic_vector (5 downto 0);
       signal zll_rewire_monad_iterst31_in : std_logic_vector (1 downto 0);
-      signal \__padding\ : std_logic_vector (2 downto 0);
-      signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
-      signal \__st0_next\ : std_logic_vector (0 downto 0);
-      signal rwtmp0 : std_logic_vector (4 downto 0);
+      signal pause : std_logic_vector (4 downto 0);
 begin
 rewire_monad_iterst1_in <= (\__in0\ & \__st0\);
       zll_rewire_monad_iterst34_in <= (rewire_monad_iterst1_in(1 downto 1) & rewire_monad_iterst1_in(0 downto 0) & rewire_monad_iterst1_in(0 downto 0));
@@ -256,7 +256,7 @@ rewire_monad_iterst1_in <= (\__in0\ & \__st0\);
       zll_main_f6_in <= (zll_main_f1_in(1 downto 1) & zll_main_f1_in(0 downto 0));
       zll_main_f7_in <= zll_main_f6_in(1 downto 0);
       binop_in <= (zll_main_f7_in(1 downto 1) & zll_main_f7_in(0 downto 0));
-      msbit_in <= rw_resize(rw_xor(binop_in(1 downto 1), binop_in(0 downto 0)), 1);
+      msbit_in <= rw_xor(binop_in(1 downto 1), binop_in(0 downto 0));
       zll_rewire_monad_iterst4_in <= ((msbit_in(0 downto 0) & zll_main_f_in(0 downto 0)) & zll_rewire_monad_iterst12_in(0 downto 0));
       zll_rewire_monad_iterst26_in <= zll_rewire_monad_iterst4_in(2 downto 0);
       zll_rewire_monad_iterst_in <= (std_logic_vector'(B"00") & zll_rewire_monad_iterst26_in(2 downto 1) & zll_rewire_monad_iterst26_in(0 downto 0));
@@ -268,10 +268,10 @@ rewire_monad_iterst1_in <= (\__in0\ & \__st0\);
       zll_rewire_monad_iterst40_in <= (zll_rewire_monad_iterst22_in(2 downto 2) & (std_logic_vector'(B"0100") & zll_rewire_monad_iterst17_in(0 downto 0)));
       zll_rewire_monad_iterst38_in <= (zll_rewire_monad_iterst40_in(5 downto 5) & zll_rewire_monad_iterst40_in(4 downto 0));
       zll_rewire_monad_iterst31_in <= (zll_rewire_monad_iterst38_in(5 downto 5) & zll_rewire_monad_iterst38_in(0 downto 0));
-      rwtmp0 <= (std_logic_vector'(B"100") & zll_rewire_monad_iterst31_in(1 downto 1) & zll_rewire_monad_iterst31_in(0 downto 0));
-      \__padding\ <= rwtmp0(4 downto 2);
-      \__out0\ <= rwtmp0(1 downto 1);
-      \__st0_next\ <= rwtmp0(0 downto 0);
+      pause <= (std_logic_vector'(B"100") & zll_rewire_monad_iterst31_in(1 downto 1) & zll_rewire_monad_iterst31_in(0 downto 0));
+      \__padding\ <= pause(4 downto 2);
+      \__out0\ <= pause(1 downto 1);
+      \__st0_next\ <= pause(0 downto 0);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then

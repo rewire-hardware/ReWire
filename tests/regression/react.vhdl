@@ -217,22 +217,22 @@ port (\__in0\ : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal zll_main_loop_in : std_logic_vector (0 downto 0);
+signal \__padding\ : std_logic_vector (0 downto 0);
+      signal zll_main_loop_in : std_logic_vector (0 downto 0);
       signal rewire_prelude_not_in : std_logic_vector (0 downto 0);
       signal zll_rewire_prelude_not1_in : std_logic_vector (1 downto 0);
       signal lit_in : std_logic_vector (0 downto 0);
       signal zll_main_loop1_in : std_logic_vector (1 downto 0);
       signal zll_main_loop2_in : std_logic_vector (1 downto 0);
-      signal \__padding\ : std_logic_vector (0 downto 0);
-      signal rwtmp0 : std_logic_vector (1 downto 0);
+      signal pause : std_logic_vector (1 downto 0);
 begin
 zll_main_loop_in <= \__in0\;
       rewire_prelude_not_in <= zll_main_loop_in(0 downto 0);
       zll_rewire_prelude_not1_in <= (rewire_prelude_not_in(0 downto 0) & rewire_prelude_not_in(0 downto 0));
       lit_in <= zll_rewire_prelude_not1_in(0 downto 0);
-      zll_main_loop1_in <= rw_resize((std_logic_vector'(B"0") & rw_cond(rw_eq(lit_in(0 downto 0), std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"))), 2);
+      zll_main_loop1_in <= (std_logic_vector'(B"0") & rw_cond(rw_eq(lit_in(0 downto 0), std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1")));
       zll_main_loop2_in <= zll_main_loop1_in(1 downto 0);
-      rwtmp0 <= (std_logic_vector'(B"1") & zll_main_loop2_in(0 downto 0));
-      \__padding\ <= rwtmp0(1 downto 1);
-      \__out0\ <= rwtmp0(0 downto 0);
+      pause <= (std_logic_vector'(B"1") & zll_main_loop2_in(0 downto 0));
+      \__padding\ <= pause(1 downto 1);
+      \__out0\ <= pause(0 downto 0);
 end architecture;

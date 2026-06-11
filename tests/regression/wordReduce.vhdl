@@ -232,5 +232,5 @@ zll_main_compute1_in <= \__in0\;
       \unop_inR3\ <= zll_main_compute1_in(7 downto 0);
       \unop_inR4\ <= zll_main_compute1_in(7 downto 0);
       \unop_inR5\ <= zll_main_compute1_in(7 downto 0);
-      \__out0\ <= rw_resize((rw_rand(unop_in(7 downto 0)) & rw_rnand(\unop_inR1\(7 downto 0)) & rw_ror(\unop_inR2\(7 downto 0)) & rw_rnor(\unop_inR3\(7 downto 0)) & rw_rxor(\unop_inR4\(7 downto 0)) & rw_rxnor(\unop_inR5\(7 downto 0))), 6);
+      \__out0\ <= (rw_rand(unop_in(7 downto 0)) & rw_rnand(\unop_inR1\(7 downto 0)) & rw_ror(\unop_inR2\(7 downto 0)) & rw_rnor(\unop_inR3\(7 downto 0)) & rw_rxor(\unop_inR4\(7 downto 0)) & rw_rxnor(\unop_inR5\(7 downto 0)));
 end architecture;

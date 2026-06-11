@@ -224,5 +224,5 @@ begin
 rewire_prelude_not1_in <= \__in0\;
       zll_rewire_prelude_not_in <= (rewire_prelude_not1_in(0 downto 0) & rewire_prelude_not1_in(0 downto 0));
       lit_in <= zll_rewire_prelude_not_in(0 downto 0);
-      \__out0\ <= rw_resize(rw_cond(rw_eq(lit_in(0 downto 0), std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1")), 1);
+      \__out0\ <= rw_cond(rw_eq(lit_in(0 downto 0), std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
 end architecture;

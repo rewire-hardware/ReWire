@@ -218,7 +218,12 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal zll_main_go5_in : std_logic_vector (15 downto 0);
+signal \__padding\ : std_logic_vector (0 downto 0);
+      signal \__resumption_tag_next\ : std_logic_vector (7 downto 0);
+      signal \__st0_next\ : std_logic_vector (7 downto 0);
+      signal \__resumption_tag\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
+      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
+      signal zll_main_go5_in : std_logic_vector (15 downto 0);
       signal binop_in : std_logic_vector (15 downto 0);
       signal zll_main_go13_in : std_logic_vector (7 downto 0);
       signal zll_main_go10_in : std_logic_vector (24 downto 0);
@@ -229,16 +234,11 @@ signal zll_main_go5_in : std_logic_vector (15 downto 0);
       signal zll_main_go12_in : std_logic_vector (24 downto 0);
       signal zll_main_go_in : std_logic_vector (24 downto 0);
       signal zll_main_go2_in : std_logic_vector (15 downto 0);
-      signal \__padding\ : std_logic_vector (0 downto 0);
-      signal \__resumption_tag\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
-      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
-      signal \__resumption_tag_next\ : std_logic_vector (7 downto 0);
-      signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal rwtmp0 : std_logic_vector (24 downto 0);
+      signal pause : std_logic_vector (24 downto 0);
 begin
 zll_main_go5_in <= (\__resumption_tag\ & \__st0\);
       binop_in <= (zll_main_go5_in(15 downto 8) & std_logic_vector'(B"00000001"));
-      zll_main_go13_in <= rw_resize(rw_add(binop_in(15 downto 8), binop_in(7 downto 0)), 8);
+      zll_main_go13_in <= rw_add(binop_in(15 downto 8), binop_in(7 downto 0));
       zll_main_go10_in <= (std_logic_vector'(B"00000000100000000") & zll_main_go13_in(7 downto 0));
       zll_main_go16_in <= zll_main_go10_in(24 downto 0);
       main_go_in <= zll_main_go16_in(7 downto 0);
@@ -247,11 +247,11 @@ zll_main_go5_in <= (\__resumption_tag\ & \__st0\);
       zll_main_go12_in <= (std_logic_vector'(B"000000000") & zll_main_go9_in(15 downto 8) & zll_main_go9_in(7 downto 0));
       zll_main_go_in <= zll_main_go12_in(24 downto 0);
       zll_main_go2_in <= (zll_main_go_in(15 downto 8) & zll_main_go_in(7 downto 0));
-      rwtmp0 <= (std_logic_vector'(B"1") & zll_main_go2_in(15 downto 8) & zll_main_go2_in(15 downto 8) & zll_main_go2_in(7 downto 0));
-      \__padding\ <= rwtmp0(24 downto 24);
-      \__out0\ <= rwtmp0(23 downto 16);
-      \__resumption_tag_next\ <= rwtmp0(15 downto 8);
-      \__st0_next\ <= rwtmp0(7 downto 0);
+      pause <= (std_logic_vector'(B"1") & zll_main_go2_in(15 downto 8) & zll_main_go2_in(15 downto 8) & zll_main_go2_in(7 downto 0));
+      \__padding\ <= pause(24 downto 24);
+      \__out0\ <= pause(23 downto 16);
+      \__resumption_tag_next\ <= pause(15 downto 8);
+      \__st0_next\ <= pause(7 downto 0);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then

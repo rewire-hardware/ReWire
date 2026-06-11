@@ -268,6 +268,11 @@ component \Main_getIns\ is
             arg1 : in std_logic_vector (69 downto 0);
             res : out std_logic_vector (142 downto 0));
       end component;
+      signal \__padding\ : std_logic_vector (53 downto 0);
+      signal \__resumption_tag_next\ : std_logic_vector (3 downto 0);
+      signal \__st0_next\ : std_logic_vector (69 downto 0);
+      signal \__resumption_tag\ : std_logic_vector (3 downto 0) := std_logic_vector'(B"0101");
+      signal \__st0\ : std_logic_vector (69 downto 0) := std_logic_vector'(B"0000000000000000000000000000000000000000000000000000000000000000000000");
       signal zll_pure_dispatch7_in : std_logic_vector (90 downto 0);
       signal zll_pure_dispatch7_out : std_logic_vector (142 downto 0);
       signal \zll_pure_dispatch7_inR1\ : std_logic_vector (90 downto 0);
@@ -391,12 +396,7 @@ component \Main_getIns\ is
       signal zll_main_loop24_in : std_logic_vector (84 downto 0);
       signal \zll_pure_dispatch7_inR4\ : std_logic_vector (90 downto 0);
       signal \zll_pure_dispatch7_outR4\ : std_logic_vector (142 downto 0);
-      signal \__padding\ : std_logic_vector (53 downto 0);
-      signal \__resumption_tag\ : std_logic_vector (3 downto 0) := std_logic_vector'(B"0101");
-      signal \__st0\ : std_logic_vector (69 downto 0) := std_logic_vector'(B"0000000000000000000000000000000000000000000000000000000000000000000000");
-      signal \__resumption_tag_next\ : std_logic_vector (3 downto 0);
-      signal \__st0_next\ : std_logic_vector (69 downto 0);
-      signal rwtmp0 : std_logic_vector (142 downto 0);
+      signal pause : std_logic_vector (142 downto 0);
 begin
 zll_pure_dispatch7_in <= (\__in0\ & (\__resumption_tag\ & \__st0\));
       inst : \ZLL_Pure_dispatch7\ port map (zll_pure_dispatch7_in(90 downto 74), zll_pure_dispatch7_in(69 downto 0), zll_pure_dispatch7_out);
@@ -521,11 +521,11 @@ zll_pure_dispatch7_in <= (\__in0\ & (\__resumption_tag\ & \__st0\));
       zll_main_loop24_in <= (zll_main_loop2_in(84 downto 70) & zll_main_loop2_in(69 downto 0));
       \zll_pure_dispatch7_inR4\ <= (\__in0\ & (\__resumption_tag\ & \__st0\));
       \instR35\ : \ZLL_Pure_dispatch7\ port map (\zll_pure_dispatch7_inR4\(90 downto 74), \zll_pure_dispatch7_inR4\(69 downto 0), \zll_pure_dispatch7_outR4\);
-      rwtmp0 <= rw_resize(rw_cond(rw_eq(\zll_pure_dispatch7_inR4\(73 downto 70), std_logic_vector'(B"0001")), \zll_pure_dispatch7_outR4\, rw_cond(rw_eq(zll_pure_dispatch2_in(73 downto 70), std_logic_vector'(B"0010")), ((std_logic_vector'(B"1") & rw_repl(53, std_logic_vector'(B"0"))) & zll_main_loop24_in(84 downto 70) & std_logic_vector'(B"1000") & zll_main_loop24_in(69 downto 0)), rw_cond(rw_eq(\zll_pure_dispatch7_inR3\(73 downto 70), std_logic_vector'(B"0011")), \zll_pure_dispatch7_outR3\, rw_cond(rw_eq(\zll_pure_dispatch7_inR2\(73 downto 70), std_logic_vector'(B"0100")), \zll_pure_dispatch7_outR2\, rw_cond(rw_eq(zll_pure_dispatch_in(73 downto 70), std_logic_vector'(B"0101")), ((std_logic_vector'(B"1") & rw_repl(53, std_logic_vector'(B"0"))) & zll_main_reset36_in(84 downto 70) & std_logic_vector'(B"0001") & zll_main_reset36_in(69 downto 0)), rw_cond(rw_eq(zll_pure_dispatch3_in(73 downto 70), std_logic_vector'(B"0110")), zll_main_loop221_out, rw_cond(rw_eq(zll_pure_dispatch8_in(73 downto 70), std_logic_vector'(B"0111")), ((std_logic_vector'(B"1") & rw_repl(53, std_logic_vector'(B"0"))) & zll_main_loop47_in(84 downto 70) & std_logic_vector'(B"0110") & zll_main_loop47_in(69 downto 0)), rw_cond(rw_eq(\zll_pure_dispatch7_inR1\(73 downto 70), std_logic_vector'(B"1000")), \zll_pure_dispatch7_outR1\, zll_pure_dispatch7_out)))))))), 143);
-      \__padding\ <= rwtmp0(142 downto 89);
-      \__out0\ <= rwtmp0(88 downto 74);
-      \__resumption_tag_next\ <= rwtmp0(73 downto 70);
-      \__st0_next\ <= rwtmp0(69 downto 0);
+      pause <= rw_cond(rw_eq(\zll_pure_dispatch7_inR4\(73 downto 70), std_logic_vector'(B"0001")), \zll_pure_dispatch7_outR4\, rw_cond(rw_eq(zll_pure_dispatch2_in(73 downto 70), std_logic_vector'(B"0010")), ((std_logic_vector'(B"1") & rw_repl(53, std_logic_vector'(B"0"))) & zll_main_loop24_in(84 downto 70) & std_logic_vector'(B"1000") & zll_main_loop24_in(69 downto 0)), rw_cond(rw_eq(\zll_pure_dispatch7_inR3\(73 downto 70), std_logic_vector'(B"0011")), \zll_pure_dispatch7_outR3\, rw_cond(rw_eq(\zll_pure_dispatch7_inR2\(73 downto 70), std_logic_vector'(B"0100")), \zll_pure_dispatch7_outR2\, rw_cond(rw_eq(zll_pure_dispatch_in(73 downto 70), std_logic_vector'(B"0101")), ((std_logic_vector'(B"1") & rw_repl(53, std_logic_vector'(B"0"))) & zll_main_reset36_in(84 downto 70) & std_logic_vector'(B"0001") & zll_main_reset36_in(69 downto 0)), rw_cond(rw_eq(zll_pure_dispatch3_in(73 downto 70), std_logic_vector'(B"0110")), zll_main_loop221_out, rw_cond(rw_eq(zll_pure_dispatch8_in(73 downto 70), std_logic_vector'(B"0111")), ((std_logic_vector'(B"1") & rw_repl(53, std_logic_vector'(B"0"))) & zll_main_loop47_in(84 downto 70) & std_logic_vector'(B"0110") & zll_main_loop47_in(69 downto 0)), rw_cond(rw_eq(\zll_pure_dispatch7_inR1\(73 downto 70), std_logic_vector'(B"1000")), \zll_pure_dispatch7_outR1\, zll_pure_dispatch7_out))))))));
+      \__padding\ <= pause(142 downto 89);
+      \__out0\ <= pause(88 downto 74);
+      \__resumption_tag_next\ <= pause(73 downto 70);
+      \__st0_next\ <= pause(69 downto 0);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then
@@ -550,7 +550,7 @@ end entity;
 architecture rtl of \ZLL_Main_loop225\ is
 
 begin
-res <= rw_resize(((std_logic_vector'(B"01") & rw_repl(71, std_logic_vector'(B"0"))) & arg0), 143);
+res <= ((std_logic_vector'(B"01") & rw_repl(71, std_logic_vector'(B"0"))) & arg0);
 end architecture;
 
 library ieee;
@@ -851,7 +851,7 @@ zll_main_loop214_in <= arg0;
       zll_main_instrin1_in <= zll_main_instrin_in(16 downto 0);
       zll_main_loop158_in <= (zll_main_instrin1_in(16 downto 8) & zll_main_getinstr1_in(69 downto 0));
       zll_main_loop167_in <= zll_main_loop158_in(78 downto 0);
-      zll_main_loop18_in <= rw_resize((rw_repl(64, std_logic_vector'(B"0")) & zll_main_loop167_in(78 downto 70) & zll_main_loop167_in(69 downto 0)), 143);
+      zll_main_loop18_in <= (rw_repl(64, std_logic_vector'(B"0")) & zll_main_loop167_in(78 downto 70) & zll_main_loop167_in(69 downto 0));
       zll_main_loop_in <= zll_main_loop18_in(142 downto 0);
       zll_main_loop211_in <= (zll_main_loop_in(78 downto 70) & zll_main_loop_in(69 downto 0));
       zll_main_loop73_in <= (zll_main_loop211_in(69 downto 0) & zll_main_loop211_in(69 downto 0));
@@ -867,9 +867,9 @@ zll_main_loop214_in <= arg0;
       zll_main_loop222_in <= (zll_main_loop52_in(75 downto 70) & main_getreg1_out);
       zll_main_bnz2_in <= (zll_main_loop222_in(83 downto 78) & zll_main_loop222_in(77 downto 0));
       binop_in <= (zll_main_bnz2_in(77 downto 70) & std_logic_vector'(B"00000000"));
-      zll_main_bnz4_in <= rw_resize((zll_main_bnz2_in(77 downto 70) & zll_main_bnz2_in(83 downto 78) & rw_eq(binop_in(15 downto 8), binop_in(7 downto 0)) & zll_main_bnz2_in(69 downto 0)), 85);
+      zll_main_bnz4_in <= (zll_main_bnz2_in(77 downto 70) & zll_main_bnz2_in(83 downto 78) & rw_eq(binop_in(15 downto 8), binop_in(7 downto 0)) & zll_main_bnz2_in(69 downto 0));
       \binop_inR1\ <= (zll_main_bnz4_in(84 downto 77) & std_logic_vector'(B"00000000"));
-      zll_main_bnz3_in <= rw_resize((zll_main_bnz4_in(76 downto 71) & rw_eq(\binop_inR1\(15 downto 8), \binop_inR1\(7 downto 0)) & zll_main_bnz4_in(69 downto 0)), 77);
+      zll_main_bnz3_in <= (zll_main_bnz4_in(76 downto 71) & rw_eq(\binop_inR1\(15 downto 8), \binop_inR1\(7 downto 0)) & zll_main_bnz4_in(69 downto 0));
       zll_main_bnz6_in <= (zll_main_bnz3_in(69 downto 0) & zll_main_bnz3_in(76 downto 71) & zll_main_bnz3_in(70 downto 70));
       zll_main_bnz1_in <= (zll_main_bnz6_in(76 downto 7) & zll_main_bnz6_in(6 downto 1));
       zll_main_putpc14_in <= (zll_main_bnz1_in(5 downto 0) & zll_main_bnz1_in(75 downto 6));
@@ -877,7 +877,7 @@ zll_main_loop214_in <= arg0;
       zll_main_nand9_in <= (zll_main_bnz4_in(69 downto 0) & zll_main_bnz4_in(70 downto 70));
       main_incrpc_in <= zll_main_nand9_in(70 downto 1);
       \instR3\ : \Main_incrPC\ port map (main_incrpc_in(69 downto 0), main_incrpc_out);
-      zll_main_loop225_in <= rw_resize(rw_cond(rw_eq(zll_main_nand9_in(0 downto 0), std_logic_vector'(B"1")), main_incrpc_out, zll_main_putpc14_out), 70);
+      zll_main_loop225_in <= rw_cond(rw_eq(zll_main_nand9_in(0 downto 0), std_logic_vector'(B"1")), main_incrpc_out, zll_main_putpc14_out);
       \instR4\ : \ZLL_Main_loop225\ port map (zll_main_loop225_in(69 downto 0), zll_main_loop225_out);
       zll_main_loop179_in <= zll_main_loop225_out;
       zll_main_loop116_in <= zll_main_loop179_in(142 downto 0);
@@ -913,8 +913,8 @@ zll_main_loop214_in <= arg0;
       zll_main_nand5_in <= (zll_main_nand4_in(77 downto 70) & zll_main_nand4_in(79 downto 78) & \main_getreg_outR1\);
       zll_main_nand3_in <= (zll_main_nand5_in(87 downto 80) & zll_main_nand5_in(79 downto 78) & zll_main_nand5_in(77 downto 0));
       \binop_inR2\ <= (zll_main_nand3_in(87 downto 80) & zll_main_nand3_in(77 downto 70));
-      unop_in <= rw_resize(rw_and(\binop_inR2\(15 downto 8), \binop_inR2\(7 downto 0)), 8);
-      main_putreg_in <= rw_resize((zll_main_nand3_in(79 downto 78) & rw_not(unop_in(7 downto 0)) & zll_main_nand3_in(69 downto 0)), 80);
+      unop_in <= rw_and(\binop_inR2\(15 downto 8), \binop_inR2\(7 downto 0));
+      main_putreg_in <= (zll_main_nand3_in(79 downto 78) & rw_not(unop_in(7 downto 0)) & zll_main_nand3_in(69 downto 0));
       zll_main_putreg27_in <= (main_putreg_in(77 downto 70) & main_putreg_in(79 downto 78) & main_putreg_in(79 downto 78) & main_putreg_in(77 downto 70) & main_putreg_in(69 downto 0));
       \instR12\ : \ZLL_Main_putReg27\ port map (zll_main_putreg27_in(89 downto 82), zll_main_putreg27_in(81 downto 80), zll_main_putreg27_in(79 downto 70), zll_main_putreg27_in(69 downto 0), zll_main_putreg27_out);
       \main_incrpc_inR1\ <= zll_main_putreg27_out;
@@ -1019,7 +1019,7 @@ zll_main_loop214_in <= arg0;
       zll_main_loop13_in <= \zll_main_loop140_outR4\;
       zll_main_loop198_in <= zll_main_loop13_in(142 downto 0);
       zll_main_loop200_in <= (zll_main_loop198_in(84 downto 70) & zll_main_loop198_in(69 downto 0));
-      res <= rw_resize(rw_cond(rw_eq(zll_main_loop9_in(8 downto 6), std_logic_vector'(B"000")), ((std_logic_vector'(B"1") & rw_repl(53, std_logic_vector'(B"0"))) & zll_main_loop200_in(84 downto 70) & std_logic_vector'(B"0000") & zll_main_loop200_in(69 downto 0)), rw_cond(rw_eq(zll_main_loop100_in(8 downto 6), std_logic_vector'(B"001")), ((std_logic_vector'(B"1") & rw_repl(53, std_logic_vector'(B"0"))) & zll_main_loop21_in(84 downto 70) & std_logic_vector'(B"0111") & zll_main_loop21_in(69 downto 0)), rw_cond(rw_eq(zll_main_loop71_in(8 downto 6), std_logic_vector'(B"010")), ((std_logic_vector'(B"1") & rw_repl(53, std_logic_vector'(B"0"))) & zll_main_loop41_in(84 downto 70) & std_logic_vector'(B"0010") & zll_main_loop41_in(69 downto 0)), rw_cond(rw_eq(zll_main_loop187_in(8 downto 6), std_logic_vector'(B"011")), ((std_logic_vector'(B"1") & rw_repl(53, std_logic_vector'(B"0"))) & zll_main_loop209_in(84 downto 70) & std_logic_vector'(B"0100") & zll_main_loop209_in(69 downto 0)), ((std_logic_vector'(B"1") & rw_repl(53, std_logic_vector'(B"0"))) & zll_main_loop89_in(84 downto 70) & std_logic_vector'(B"0011") & zll_main_loop89_in(69 downto 0)))))), 143);
+      res <= rw_cond(rw_eq(zll_main_loop9_in(8 downto 6), std_logic_vector'(B"000")), ((std_logic_vector'(B"1") & rw_repl(53, std_logic_vector'(B"0"))) & zll_main_loop200_in(84 downto 70) & std_logic_vector'(B"0000") & zll_main_loop200_in(69 downto 0)), rw_cond(rw_eq(zll_main_loop100_in(8 downto 6), std_logic_vector'(B"001")), ((std_logic_vector'(B"1") & rw_repl(53, std_logic_vector'(B"0"))) & zll_main_loop21_in(84 downto 70) & std_logic_vector'(B"0111") & zll_main_loop21_in(69 downto 0)), rw_cond(rw_eq(zll_main_loop71_in(8 downto 6), std_logic_vector'(B"010")), ((std_logic_vector'(B"1") & rw_repl(53, std_logic_vector'(B"0"))) & zll_main_loop41_in(84 downto 70) & std_logic_vector'(B"0010") & zll_main_loop41_in(69 downto 0)), rw_cond(rw_eq(zll_main_loop187_in(8 downto 6), std_logic_vector'(B"011")), ((std_logic_vector'(B"1") & rw_repl(53, std_logic_vector'(B"0"))) & zll_main_loop209_in(84 downto 70) & std_logic_vector'(B"0100") & zll_main_loop209_in(69 downto 0)), ((std_logic_vector'(B"1") & rw_repl(53, std_logic_vector'(B"0"))) & zll_main_loop89_in(84 downto 70) & std_logic_vector'(B"0011") & zll_main_loop89_in(69 downto 0))))));
 end architecture;
 
 library ieee;
@@ -1205,7 +1205,7 @@ architecture rtl of \ZLL_Main_loop140\ is
 signal zll_main_loop207_in : std_logic_vector (84 downto 0);
 begin
 zll_main_loop207_in <= arg0;
-      res <= rw_resize(((std_logic_vector'(B"001") & rw_repl(55, std_logic_vector'(B"0"))) & zll_main_loop207_in(84 downto 70) & zll_main_loop207_in(69 downto 0)), 143);
+      res <= ((std_logic_vector'(B"001") & rw_repl(55, std_logic_vector'(B"0"))) & zll_main_loop207_in(84 downto 70) & zll_main_loop207_in(69 downto 0));
 end architecture;
 
 library ieee;
@@ -1440,7 +1440,7 @@ zll_main_putreg57_in <= (arg0 & arg1 & arg1 & arg0 & arg3);
       zll_main_putreg19_in <= (zll_main_putreg47_in(61 downto 54) & zll_main_putreg47_in(69 downto 62) & zll_main_putreg47_in(53 downto 46) & zll_main_putreg47_in(45 downto 38) & zll_main_putreg47_in(37 downto 32) & zll_main_putreg47_in(31 downto 15) & zll_main_putreg47_in(14 downto 0));
       zll_main_putreg49_in <= (zll_main_putreg19_in(69 downto 62) & zll_main_putreg19_in(53 downto 46) & zll_main_putreg19_in(61 downto 54) & zll_main_putreg19_in(45 downto 38) & zll_main_putreg19_in(37 downto 32) & zll_main_putreg19_in(31 downto 15) & zll_main_putreg19_in(14 downto 0));
       zll_main_putreg_in <= (zll_main_putreg49_in(69 downto 62) & zll_main_putreg49_in(61 downto 54) & zll_main_putreg49_in(37 downto 32) & zll_main_putreg49_in(53 downto 46) & zll_main_putreg49_in(45 downto 38) & zll_main_putreg49_in(31 downto 15) & zll_main_putreg49_in(14 downto 0));
-      res <= rw_resize(rw_cond(rw_eq(zll_main_putreg11_in(9 downto 8), std_logic_vector'(B"00")), (zll_main_putreg_in(47 downto 40) & zll_main_putreg_in(69 downto 62) & zll_main_putreg_in(61 downto 54) & zll_main_putreg_in(39 downto 32) & zll_main_putreg_in(53 downto 48) & zll_main_putreg_in(31 downto 15) & zll_main_putreg_in(14 downto 0)), rw_cond(rw_eq(zll_main_putreg52_in(9 downto 8), std_logic_vector'(B"01")), (zll_main_putreg24_in(69 downto 62) & zll_main_putreg24_in(55 downto 48) & zll_main_putreg24_in(39 downto 32) & zll_main_putreg24_in(47 downto 40) & zll_main_putreg24_in(61 downto 56) & zll_main_putreg24_in(31 downto 15) & zll_main_putreg24_in(14 downto 0)), rw_cond(rw_eq(zll_main_putreg36_in(9 downto 8), std_logic_vector'(B"10")), (zll_main_putreg22_in(69 downto 62) & zll_main_putreg22_in(45 downto 38) & zll_main_putreg22_in(53 downto 46) & zll_main_putreg22_in(61 downto 54) & zll_main_putreg22_in(37 downto 32) & zll_main_putreg22_in(31 downto 15) & zll_main_putreg22_in(14 downto 0)), (zll_main_putreg4_in(45 downto 38) & zll_main_putreg4_in(61 downto 54) & zll_main_putreg4_in(69 downto 62) & zll_main_putreg4_in(53 downto 46) & zll_main_putreg4_in(37 downto 32) & zll_main_putreg4_in(31 downto 15) & zll_main_putreg4_in(14 downto 0))))), 70);
+      res <= rw_cond(rw_eq(zll_main_putreg11_in(9 downto 8), std_logic_vector'(B"00")), (zll_main_putreg_in(47 downto 40) & zll_main_putreg_in(69 downto 62) & zll_main_putreg_in(61 downto 54) & zll_main_putreg_in(39 downto 32) & zll_main_putreg_in(53 downto 48) & zll_main_putreg_in(31 downto 15) & zll_main_putreg_in(14 downto 0)), rw_cond(rw_eq(zll_main_putreg52_in(9 downto 8), std_logic_vector'(B"01")), (zll_main_putreg24_in(69 downto 62) & zll_main_putreg24_in(55 downto 48) & zll_main_putreg24_in(39 downto 32) & zll_main_putreg24_in(47 downto 40) & zll_main_putreg24_in(61 downto 56) & zll_main_putreg24_in(31 downto 15) & zll_main_putreg24_in(14 downto 0)), rw_cond(rw_eq(zll_main_putreg36_in(9 downto 8), std_logic_vector'(B"10")), (zll_main_putreg22_in(69 downto 62) & zll_main_putreg22_in(45 downto 38) & zll_main_putreg22_in(53 downto 46) & zll_main_putreg22_in(61 downto 54) & zll_main_putreg22_in(37 downto 32) & zll_main_putreg22_in(31 downto 15) & zll_main_putreg22_in(14 downto 0)), (zll_main_putreg4_in(45 downto 38) & zll_main_putreg4_in(61 downto 54) & zll_main_putreg4_in(69 downto 62) & zll_main_putreg4_in(53 downto 46) & zll_main_putreg4_in(37 downto 32) & zll_main_putreg4_in(31 downto 15) & zll_main_putreg4_in(14 downto 0)))));
 end architecture;
 
 library ieee;
@@ -1609,7 +1609,7 @@ main_getpc_in <= arg0;
       zll_main_incrpc1_in <= main_getpc_out;
       zll_main_incrpc_in <= zll_main_incrpc1_in(75 downto 0);
       binop_in <= (zll_main_incrpc_in(75 downto 70) & std_logic_vector'(B"000001"));
-      zll_main_putpc14_in <= rw_resize((rw_add(binop_in(11 downto 6), binop_in(5 downto 0)) & zll_main_incrpc_in(69 downto 0)), 76);
+      zll_main_putpc14_in <= (rw_add(binop_in(11 downto 6), binop_in(5 downto 0)) & zll_main_incrpc_in(69 downto 0));
       \instR1\ : \ZLL_Main_putPC14\ port map (zll_main_putpc14_in(75 downto 70), zll_main_putpc14_in(69 downto 0), zll_main_putpc14_out);
       res <= zll_main_putpc14_out;
 end architecture;
@@ -1727,7 +1727,7 @@ zll_main_getreg13_in <= (arg0 & arg0 & arg2);
       zll_main_r05_in <= zll_main_r0_in(69 downto 0);
       \zll_main_r13_inR1\ <= (zll_main_r05_in(69 downto 62) & zll_main_r05_in(53 downto 46) & zll_main_r05_in(45 downto 38) & zll_main_r05_in(37 downto 32) & zll_main_r05_in(31 downto 15) & zll_main_r05_in(14 downto 0));
       \instR3\ : \ZLL_Main_r13\ port map (\zll_main_r13_inR1\(61 downto 54), \zll_main_r13_inR1\(53 downto 46), \zll_main_r13_inR1\(45 downto 38), \zll_main_r13_inR1\(37 downto 32), \zll_main_r13_inR1\(31 downto 15), \zll_main_r13_inR1\(14 downto 0), \zll_main_r13_outR1\);
-      res <= rw_resize(rw_cond(rw_eq(zll_main_getreg1_in(1 downto 0), std_logic_vector'(B"00")), (\zll_main_r13_outR1\ & zll_main_getreg15_in(69 downto 0)), rw_cond(rw_eq(zll_main_getreg7_in(1 downto 0), std_logic_vector'(B"01")), (zll_main_r13_out & zll_main_getreg18_in(69 downto 0)), rw_cond(rw_eq(zll_main_getreg9_in(1 downto 0), std_logic_vector'(B"10")), (zll_main_r27_out & zll_main_getreg20_in(69 downto 0)), (zll_main_r35_out & zll_main_getreg14_in(69 downto 0))))), 78);
+      res <= rw_cond(rw_eq(zll_main_getreg1_in(1 downto 0), std_logic_vector'(B"00")), (\zll_main_r13_outR1\ & zll_main_getreg15_in(69 downto 0)), rw_cond(rw_eq(zll_main_getreg7_in(1 downto 0), std_logic_vector'(B"01")), (zll_main_r13_out & zll_main_getreg18_in(69 downto 0)), rw_cond(rw_eq(zll_main_getreg9_in(1 downto 0), std_logic_vector'(B"10")), (zll_main_r27_out & zll_main_getreg20_in(69 downto 0)), (zll_main_r35_out & zll_main_getreg14_in(69 downto 0)))));
 end architecture;
 
 library ieee;
