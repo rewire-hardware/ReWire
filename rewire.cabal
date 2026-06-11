@@ -31,7 +31,6 @@ data-files:
     tests/negative/illtyped-dead-code.hs
     tests/negative/illtyped-use.hs
     tests/negative/kind-error.hs
-    tests/negative/live-error-call.hs
     tests/negative/missing-import.hs
     tests/negative/negative-vec-size.hs
     tests/negative/no-start.hs
@@ -43,6 +42,11 @@ data-files:
     tests/negative/unbounded-recursion.hs
     tests/negative/unknown-var.hs
     tests/negative/unsupported-instance.hs
+    tests/warning/extern-model-clocked.hs
+    tests/warning/extern-model-rejected.hs
+    tests/warning/live-error-call.hs
+    tests/warning/missing-inputs.hs
+    tests/warning/testbench-ignored.hs
     tests/regression/Mods/Infix.hs
     tests/regression/Mods/X.hs
     tests/regression/Mods/Y.hs
@@ -62,6 +66,7 @@ data-files:
     tests/regression/dissex2.hs
     tests/regression/exp2.hs
     tests/regression/extern.hs
+    tests/regression/externModel.hs
     tests/regression/fibo1.hs
     tests/regression/fibo2.hs
     tests/regression/fibo3.hs
@@ -121,6 +126,7 @@ data-files:
     tests/regression/dissex2.sv
     tests/regression/exp2.sv
     tests/regression/extern.sv
+    tests/regression/externModel.sv
     tests/regression/fibo1.sv
     tests/regression/fibo2.sv
     tests/regression/fibo3.sv
@@ -180,6 +186,7 @@ data-files:
     tests/regression/dissex2.rwc
     tests/regression/exp2.rwc
     tests/regression/extern.rwc
+    tests/regression/externModel.rwc
     tests/regression/fibo1.rwc
     tests/regression/fibo2.rwc
     tests/regression/fibo3.rwc
@@ -239,6 +246,7 @@ data-files:
     tests/regression/dissex2.vhdl
     tests/regression/exp2.vhdl
     tests/regression/extern.vhdl
+    tests/regression/externModel.vhdl
     tests/regression/fibo1.vhdl
     tests/regression/fibo2.vhdl
     tests/regression/fibo3.vhdl
@@ -297,6 +305,7 @@ data-files:
     tests/regression/dissex.cry
     tests/regression/dissex2.cry
     tests/regression/exp2.cry
+    tests/regression/externModel.cry
     tests/regression/fibo1.cry
     tests/regression/fibo2.cry
     tests/regression/fibo3.cry
@@ -355,6 +364,7 @@ data-files:
     tests/regression/dissex.yaml
     tests/regression/dissex2.yaml
     tests/regression/exp2.yaml
+    tests/regression/externModel.yaml
     tests/regression/fibo1.yaml
     tests/regression/fibo2.yaml
     tests/regression/fibo3.yaml

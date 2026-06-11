@@ -9,7 +9,8 @@ module ReWire.Config
       , target, clock, reset
       , resetFlags, outFlags
       , inputSigs, stateSigs, outputSigs
-      , vhdlPackages, inputsFile, outFile
+      , vhdlPackages, inputsFile, defaultInputsFile, outFile
+      , noWarn, wError
       , start, top, loadPath, cycles, depth, dump, source, typecheck, rtlOpt
       , testbench
       , pDebug
@@ -63,6 +64,8 @@ data Config = Config
       , _typecheck    :: Bool
       , _rtlOpt       :: Natural
       , _testbench    :: Bool
+      , _noWarn       :: Bool -- ^ -w: suppress warnings.
+      , _wError       :: Bool -- ^ -Werror: warnings are fatal.
       }
 
 makeLenses ''Config
@@ -79,7 +82,7 @@ defaultConfig = Config
       , _stateSigs    = map (("__st" <>) . showt) [0::Int ..]
       , _outputSigs   = map (("__out" <>) . showt) [0::Int ..]
       , _vhdlPackages = ["ieee.std_logic_1164.all"]
-      , _inputsFile   = "inputs.yaml"
+      , _inputsFile   = defaultInputsFile
       , _outFile      = Nothing
       , _start        = "Main.start"
       , _top          = "top_level"
@@ -90,7 +93,14 @@ defaultConfig = Config
       , _typecheck    = False
       , _rtlOpt       = 8
       , _testbench    = False
+      , _noWarn       = False
+      , _wError       = False
       }
+
+-- | The default value of the inputsFile field: when the user hasn't named an
+--   inputs file explicitly, its absence is not warning-worthy.
+defaultInputsFile :: FilePath
+defaultInputsFile = "inputs.yaml"
 
 verbose :: Lens' Config Bool
 verbose = lens (getOutFlag Verbose) (setOutFlag Verbose)
@@ -157,6 +167,9 @@ interpret = foldM interp defaultConfig
                   FlagEvalDepth n                 -> pure $ depth .~ read n $ c
                   FlagDebugTypeCheck              -> pure $ typecheck .~ True $ c
                   FlagRtlOpt n                    -> pure $ rtlOpt .~ read n $ c
+                  FlagNoWarn                      -> pure $ noWarn .~ True $ c
+                  FlagW "error"                   -> pure $ wError .~ True $ c
+                  FlagW w                         -> Left $ "Unknown warning option: -W" <> pack w
 
             augment :: [Natural] -> (Natural -> Bool) -> Natural -> Bool
             augment ns f n | n `elem` ns = True

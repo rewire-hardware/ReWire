@@ -7,12 +7,12 @@ module ReWire.FrontEnd
       ) where
 
 import ReWire.Annotation (noAnn)
-import ReWire.Config (Config, Language (..), getOutFile, target, cycles, inputsFile, source, rtlOpt, testbench, pDebug)
+import ReWire.Config (Config, Language (..), getOutFile, target, cycles, inputsFile, defaultInputsFile, source, rtlOpt, testbench, pDebug)
 import ReWire.Core.Interp (interp, Ins, run)
 import ReWire.Core.Parse (parseCore)
 import ReWire.Core.Syntax (Device)
 import ReWire.Core.Transform (mergeSlices, purgeUnused, partialEval, dedupe)
-import ReWire.Error (MonadError, AstError, runSyntaxError, failAt)
+import ReWire.Error (MonadError, AstError, runSyntaxError, failAt, warnAt)
 import ReWire.Fix (fixPure)
 import ReWire.ModCache (runCache, getDevice, LoadPath)
 import ReWire.Pretty (Pretty, prettyPrint, fastPrint, showt)
@@ -29,8 +29,8 @@ import Control.Lens ((^.))
 import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State (MonadState)
-import Data.Either (fromRight)
 import Data.Maybe (fromMaybe)
+import System.Directory (doesFileExist)
 import Data.Text (Text, pack)
 import Numeric.Natural (Natural)
 import System.Exit (exitFailure)
@@ -60,6 +60,8 @@ compileFile conf filename = do
 
             compile :: (MonadFail m, MonadError AstError m, MonadIO m) => Core.Device -> m ()
             compile a = do
+                  when (conf^.testbench && (conf^.target) `notElem` [VHDL, Verilog]) $
+                        warnAt conf noAnn "--testbench: no testbench generated (only the Verilog and VHDL targets support testbench generation)."
                   verb "Partially evaluating/reducing core IR. If this is taking too long, consider disabling with --rtl-opt=0."
                   let b = fixPure (conf^.rtlOpt) -- TODO: re-work these passes to avoid fix if possible
                               ( mergeSlices
@@ -88,13 +90,25 @@ compileFile conf filename = do
                         Haskell   -> failAt noAnn "Haskell is not a supported target language."
 
             -- | Inputs for --interpret and --testbench, padded/truncated to
-            --   the cycle count (missing file: all wires driven to zero).
-            loadInputs :: MonadIO m => m [Ins]
+            --   the cycle count. An unreadable inputs file means all wires
+            --   are driven to zero -- warn, unless the file is missing and
+            --   the user never named one explicitly (driving a device with
+            --   no inputs file is a legitimate workflow).
+            loadInputs :: (MonadError AstError m, MonadIO m) => m [Ins]
             loadInputs = do
                   verb $ "Reading inputs: " <> pack (conf^.inputsFile)
-                  boundInput (conf^.cycles) . fromRight mempty <$> liftIO (YAML.decodeFileEither $ conf^.inputsFile)
+                  r <- liftIO $ YAML.decodeFileEither $ conf^.inputsFile
+                  case r of
+                        Right ips -> pure $ boundInput (conf^.cycles) ips
+                        Left err  -> do
+                              exists <- liftIO $ doesFileExist $ conf^.inputsFile
+                              when (exists || conf^.inputsFile /= defaultInputsFile) $ warnAt conf noAnn
+                                    $ "could not read inputs from " <> pack (conf^.inputsFile)
+                                    <> (if exists then " (" <> pack (YAML.prettyPrintParseException err) <> ")" else " (file does not exist)")
+                                    <> "; driving all inputs with zeros."
+                              pure $ boundInput (conf^.cycles) mempty
 
-            writeTestbench :: (MonadIO m, Pretty tb) => (Config -> Core.Device -> [Ins] -> tb) -> Core.Device -> m ()
+            writeTestbench :: (MonadError AstError m, MonadIO m, Pretty tb) => (Config -> Core.Device -> [Ins] -> tb) -> Core.Device -> m ()
             writeTestbench gen d = when (conf^.testbench) $ do
                   ips <- loadInputs
                   let fout = getOutFile conf filename

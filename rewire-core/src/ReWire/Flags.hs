@@ -7,6 +7,7 @@ import GHC.Generics (Generic (..))
 
 data Flag = FlagO !String
           | FlagVerbose | FlagHelp
+          | FlagNoWarn | FlagW !String
           | FlagVerilog | FlagVhdl | FlagCryptol | FlagCore | FlagFromCore
           | FlagDump !String
           | FlagFlatten

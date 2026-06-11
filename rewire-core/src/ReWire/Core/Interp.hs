@@ -22,7 +22,7 @@ import ReWire.Core.Syntax
       , Pat (..), Exp (..)
       , Target (..)
       , Defn (..)
-      , Sig (..)
+      , Sig (..), ExternSig (..)
       , bvFalse, isNil, sizeOf, gather, cat, nil
       )
 import ReWire.Annotation (ann, noAnn, Annote)
@@ -143,13 +143,13 @@ interpExp defns lvars exp = case exp of
       Concat an e1 e2              -> do
             (v1, v2, _) <- evaluate e1 e2 (Concat an)
             pure $ v1 <> v2
-      Call _ _ (Global (lkupDefn -> Just g)) e ps els -> do
-            (e', els', call')  <- evaluate e els reCall
-            if patMatches e' ps || isNil els then
-                  case interpDefn defns g (patApply e' ps) of
-                        Left err -> throwError (call', err)
-                        Right bv -> pure bv
-            else pure els'
+      Call _ _ (Global (lkupDefn -> Just g)) e ps els -> callDefn g e ps els
+      -- | An unclocked extern with a user-supplied Haskell model is evaluated
+      --   by calling the model defn; clocked externs are stateful, so a pure
+      --   per-cycle model can't be cycle-accurate and they remain
+      --   uninterpretable.
+      Call _ _ (Extern (ExternSig _ _ clk rst _ _) _ _ (Just (lkupDefn -> Just g))) e ps els
+            | clk == "", rst == "" -> callDefn g e ps els
       Call an sz (Prim nm@(binOp -> Just op)) e ps els -> do
             (e', els', call')  <- evaluate e els reCall
             if patMatches e' ps || isNil els then case patApplyR e' ps of
@@ -180,9 +180,19 @@ interpExp defns lvars exp = case exp of
       Call _  sz (Const v) e ps els    -> if patMatchesE e ps then pure $ mkBV sz v else do
             (e', els', _)  <- evaluate e els reCall
             pure $ if patMatches e' ps || isNil els then mkBV sz v else els'
-      Call an _ (Extern _ s _) _ _ _   -> failAt' exp an $ "Core/Interp: interpExp: unknown extern: " <> s
+      Call an _ (Extern _ s _ _) _ _ _ -> failAt' exp an $ "Core/Interp: interpExp: cannot evaluate extern " <> s
+                                                        <> " (no usable Haskell model: see the rwPrimExtern documentation)."
       e                                -> failAt' e (ann e) "Core/Interp: interpExp: encountered unsupported expression."
-      where lkupVal :: LId -> Maybe BV
+      where callDefn :: Defn -> Exp -> [Pat] -> Exp -> Either (Exp, AstError) BV
+            callDefn g e ps els = do
+                  (e', els', call')  <- evaluate e els reCall
+                  if patMatches e' ps || isNil els then
+                        case interpDefn defns g (patApply e' ps) of
+                              Left err -> throwError (call', err)
+                              Right bv -> pure bv
+                  else pure els'
+
+            lkupVal :: LId -> Maybe BV
             lkupVal = flip lookup (zip [0::LId ..] lvars)
 
             lkupDefn :: Name -> Maybe Defn

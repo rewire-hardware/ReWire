@@ -26,12 +26,12 @@ import ReWire.Config (Config, depth, start, pDebug)
 import ReWire.Crust.PrimBasis (primDatas)
 import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Poly (..), Pat (..), MatchPat (..), Defn (..), FreeProgram, DataCon (..), DataConId, TyConId, DataDefn (..), Builtin (..), DefnAttr (..), TypeSynonym (..), flattenApp, builtins)
 import ReWire.Crust.TypeCheck (typeCheckDefn, unify, unify', TySub)
-import ReWire.Crust.Types (typeOf, tyAnn, setTyAnn, dstArrow, maybeSetTyAnn, poly, poly', flattenArrow, arr, nilTy, ctorNames, resInputTy, codomTy, (|->), arrowRight, arrowLeft, isReacT, prettyTy, synthable)
+import ReWire.Crust.Types (typeOf, tyAnn, setTyAnn, dstArrow, maybeSetTyAnn, poly, poly', flattenArrow, arr, nilTy, ctorNames, resInputTy, codomTy, (|->), arrowRight, arrowLeft, isReacT, prettyTy, synthable, higherOrder, fundamental, concrete)
 import ReWire.Crust.Util (mkApp, mkError, mkLam, inlinable, synthableDefn, mkTupleMPat, mkTuple, mkPairMPat, mkPair, patVars, toVar, transPat, transMPat, isExtrude, extrudeDefn)
-import ReWire.Error (AstError, MonadError, failAt)
+import ReWire.Error (AstError, MonadError, failAt, Warning (..))
 import ReWire.Fix (fix, fix', fixUntil)
 import ReWire.SYB (transform, transformM, query)
-import ReWire.Unbound (freshVar, fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, Name (..), unsafeUnbind, bind, unbind, Subst (..), Alpha, Embed (Embed), Bind)
+import ReWire.Unbound (freshVar, fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, runFreshMT, Name (..), unsafeUnbind, bind, unbind, Subst (..), Alpha, Embed (Embed), Bind)
 
 import Control.Arrow ((&&&))
 import Control.Lens ((^.))
@@ -45,7 +45,7 @@ import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet, union, difference)
 import Data.Hashable (Hashable)
 import Data.List (sort)
-import Data.Maybe (catMaybes, isNothing)
+import Data.Maybe (catMaybes, isNothing, isJust)
 import Data.Text (Text, isPrefixOf)
 import Data.Tuple (swap)
 
@@ -134,15 +134,127 @@ expandTypeSynonyms (ts, syns0, ds) = (,,) <$> expandSyns ts <*> syns' <*> expand
                         pure (n, args <> [b])
                   _           -> Nothing
 
--- | Replaces the second argument to Extern so we don't descend into it
---   during other transformations.
-neuterExterns :: FreeProgram -> FreeProgram
-neuterExterns = transform $ \ case
-      App an tan t ex e | isExtern ex -> App an tan t ex
-                                              $ setTyAnn (poly' <$> typeOf e)
-                                              $ mkError (ann e) (typeOf e) "Extern expression placeholder"
-      e                               -> e
-      where isExtern :: Exp -> Bool
+-- | Decides, per extern, whether the user-supplied Haskell implementation
+--   (rwPrimExtern's seventh argument) can serve as a model for the Core
+--   interpreter, and replaces it with an inert placeholder otherwise (so
+--   later transformations don't descend into it). An implementation is kept
+--   only when it is a reference to a top-level definition -- other than the
+--   extern's own enclosing definition, since @f = extern "f" f@ is the
+--   conventional way to declare an extern with no model -- whose reachable
+--   definitions are all non-recursive, first-order, monomorphic, and free of
+--   un-synthesizable types; kept references survive to ToCore, which attaches
+--   them to the Core extern. Implementations that look like real models but
+--   fail these checks are neutered with a warning.
+--
+--   Right after typechecking, an extern application is still a beta-redex
+--   from inlining the extern/externWithSig wrappers (with the implementation
+--   bound to a lambda parameter), so defns containing externs are
+--   beta-reduced first to expose the implementation argument. The reduction
+--   runs in an isolated FreshMT (safe, since every name it unbinds is
+--   re-bound in the result), so the pipeline's freshness counter -- and
+--   hence the generated names in every non-extern program -- is unaffected.
+neuterExterns :: MonadError AstError m => FreeProgram -> m (FreeProgram, [Warning])
+neuterExterns (ts, syns, ds) = do
+      ds' <- mapM reduce1 ds
+      pure $ neuterExterns' (ts, syns, ds')
+      where reduce1 :: MonadError AstError m => Defn -> m Defn
+            reduce1 d@(Defn an n pt b (Embed e))
+                  | hasExtern d = runFreshMT $ unbind e >>= \ (vs, e') -> Defn an n pt b . Embed . bind vs <$> reduceExp e'
+                  | otherwise   = pure d
+
+            hasExtern :: Defn -> Bool
+            hasExtern d = or [ True | Builtin _ _ _ Extern <- query d :: [Exp] ]
+
+neuterExterns' :: FreeProgram -> (FreeProgram, [Warning])
+neuterExterns' (ts, syns, ds) = ((ts, syns, ds2), warns)
+      where -- Stage 1: neuter self-referential implementations (silently:
+            -- the no-model idiom), so they don't appear as spurious cycles in
+            -- stage 2's recursion check.
+            ds1 :: [Defn]
+            ds1 = map (\ d -> transform (neuterImpl (isSelf d)) d) ds
+
+            -- Stage 2: neuter everything else that isn't a usable model.
+            ds2 :: [Defn]
+            ds2 = map (transform (neuterImpl (isJust . disposition))) ds1
+
+            isSelf :: Defn -> Exp -> Bool
+            isSelf d = \ case
+                  Var _ _ _ x -> x == defnName d
+                  _           -> False
+
+            -- | Nothing: keep as a model. Just Nothing: neuter silently
+            --   (already a placeholder, or a lambda-bound name -- meaning
+            --   this is the body of a generic wrapper like rewire-user's
+            --   "extern", not a use site). Just (Just r): neuter, warning r.
+            disposition :: Exp -> Maybe (Maybe Text)
+            disposition = \ case
+                  e | isPlaceholder e        -> Just Nothing
+                  Var _ _ _ x | isFreeName x -> Just <$> verdict mempty (n2s x)
+                              | otherwise    -> Just Nothing
+                  _                          -> Just $ Just "only a reference to a top-level definition can be used as a model"
+
+            warns :: [Warning]
+            warns = [ Warning (ann e) $ "ignoring the Haskell model for extern " <> exName ex <> ": " <> reason
+                          <> "; the interpreter will not be able to evaluate this extern."
+                    | App _ _ _ ex e <- concatMap (\ d -> query d :: [Exp]) ds1
+                    , isExtern ex
+                    , Just (Just reason) <- [disposition e]
+                    ]
+
+            -- | DFS from a defn: every reachable defn must exist, have a
+            --   usable type, and the call graph must be acyclic. Returns the
+            --   first reason for rejection, or Nothing if usable as a model.
+            verdict :: HashSet Text -> Text -> Maybe Text
+            verdict stack x
+                  | x `Set.member` stack = Just $ x <> " is recursive"
+                  | otherwise            = case Map.lookup x dmap of
+                        Nothing -> Just $ x <> " does not refer to a top-level definition"
+                        Just d  -> case typeReason d of
+                              Just r  -> Just r
+                              Nothing -> foldr (orElse . verdict (Set.insert x stack)) Nothing $ succs d
+                  where orElse :: Maybe a -> Maybe a -> Maybe a
+                        orElse a b = maybe b Just a
+
+            typeReason :: Defn -> Maybe Text
+            typeReason (Defn _ n (Embed (Poly pt)) _ _)
+                  | higherOrder t       = reason "has a higher-order type"
+                  | not (fundamental t) = reason "has String or Integer arguments"
+                  | not (concrete t)    = reason "is polymorphic"
+                  | not (synthable t)   = reason "has an unsynthesizable type"
+                  | otherwise           = Nothing
+                  where t :: Ty
+                        t = runFreshM $ snd <$> unbind pt
+
+                        reason :: Text -> Maybe Text
+                        reason r = Just $ n2s n <> " " <> r
+
+            -- | Free variables of the defn body (n.b., fv on the Embed
+            --   wrapper itself, a pattern-position type, finds nothing).
+            succs :: Defn -> [Text]
+            succs d = nubOrd $ map n2s $ filter isFreeName (fv (unembed $ defnBody d) :: [Name Exp])
+
+            dmap :: HashMap Text Defn
+            dmap = Map.fromList $ map ((n2s . defnName) &&& id) ds1
+
+            neuterImpl :: (Exp -> Bool) -> Exp -> Exp
+            neuterImpl p = \ case
+                  App an tan t ex e | isExtern ex, p e, not (isPlaceholder e)
+                              -> App an tan t ex
+                                       $ setTyAnn (poly' <$> typeOf e)
+                                       $ mkError (ann e) (typeOf e) "Extern expression placeholder"
+                  e           -> e
+
+            isPlaceholder :: Exp -> Bool
+            isPlaceholder e = case flattenApp e of
+                  (Builtin _ _ _ Error, _) -> True
+                  _                        -> False
+
+            exName :: Exp -> Text
+            exName e = case flattenApp e of
+                  (_, [_, _, _, _, _, LitStr _ _ s]) -> s
+                  _                                  -> "<unknown>"
+
+            isExtern :: Exp -> Bool
             isExtern e = case flattenApp e of
                   (Builtin _ _ _ Extern, [_, _, _, _, _, _]) -> True
                   _                                          -> False

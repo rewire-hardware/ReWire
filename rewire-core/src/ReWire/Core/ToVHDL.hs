@@ -358,7 +358,7 @@ compileExp conf lvars = \ case
       Call _ sz (Prim Reverse) e ps els            -> mkCall "reverse"    e ps els $ \ xs     -> (, []) <$> wcast sz (hCat $ reverse xs)
       Call _ sz (Prim (Replicate n)) e ps els      -> mkCall1 "replicate" e ps els $ \ x      -> wcast sz (if n > 0 then H.FunCall "rw_repl" [H.Num n, x] else H.Lit BV.nil)
       Call a _  (Prim p) _ _ _                     -> failAt a $ "ToVHDL: compileExp: encountered unknown primitive: " <> showt p
-      Call _ sz (Extern sig ex inst) e ps els      -> mkCall ex           e ps els $ instantiate conf sig ex inst sz
+      Call _ sz (Extern sig ex inst _) e ps els    -> mkCall ex           e ps els $ instantiate conf sig ex inst sz
       Call _ sz (Const bv) e ps els                -> mkCall "lit"        e ps els $ \ _      -> (, []) <$> wcast sz (litExp bv)
       where mkCall2 :: (MonadState TS m, MonadFail m, MonadError AstError m, MonadReader Env m)
                     => Name -> C.Exp -> [Pat] -> C.Exp -> ((H.Exp, H.Exp) -> m H.Exp) -> m (H.Exp, [H.Stmt])

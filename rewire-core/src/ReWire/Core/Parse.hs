@@ -151,8 +151,11 @@ global = Global <$> name
       <?> "global"
 
 extern :: Parser Target
-extern = symbol "extern" *> (Extern <$> externSig <*> stringLit <*> stringLit)
+extern = symbol "extern" *> (Extern <$> externSig <*> stringLit <*> stringLit <*> model)
       <?> "extern"
+      where model :: Parser (Maybe Name)
+            model = try (Just <$> (symbol "model" *> name))
+                <|> pure Nothing
 
 externSig :: Parser ExternSig
 externSig = parens (symbol "Sig" *> (ExternSig noAnn <$> wires <*> stringLit <*> stringLit <*> wires <*> wires))

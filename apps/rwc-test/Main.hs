@@ -194,6 +194,45 @@ testNegative fn = testCase (takeBaseName fn <> " (expected error)") $ do
       where expectedErrors :: String -> [String]
             expectedErrors = mapMaybe (stripPrefix "-- EXPECT-ERROR: ") . lines
 
+-- | A test that must compile successfully while emitting expected warnings,
+--   declared with one or more comment lines:
+--
+-- > -- EXPECT-WARNING: <substring of the expected warning>
+--
+--   Extra rwc flags may be supplied with a "-- FLAGS: ..." comment line.
+--   Each file is compiled three times: with default flags (must succeed,
+--   with stderr containing every expected substring), with -Werror (must
+--   fail), and with -w (must succeed printing no warnings).
+testWarning :: FilePath -> TestTree
+testWarning fn = testCase (takeBaseName fn <> " (expected warning)") $ do
+      setCurrentDirectory $ takeDirectory fn
+      src <- readFile fn
+      let expected = mapMaybe (stripPrefix "-- EXPECT-WARNING: ") $ lines src
+          flags    = concatMap words $ mapMaybe (stripPrefix "-- FLAGS: ") $ lines src
+          run extra ext = let ef = fn -<.> ("out." <> ext) in
+                (, ef) <$> withStderrTo ef (try $ withArgs ([fn, "-o", fn -<.> "out.sv"] <> flags <> extra) RWC.main :: IO (Either ExitCode ()))
+      when (null expected) $ assertFailure $ "no \"-- EXPECT-WARNING:\" line in " <> fn
+
+      (r1, ef1) <- run [] "warn"
+      w1        <- readFile ef1
+      case r1 of
+            Right () -> mapM_ (\ e ->
+                  assertBool ("compilation succeeded, but stderr does not mention " <> show e <> "; stderr:\n" <> w1)
+                        $ e `isInfixOf` w1) expected
+            Left e   -> assertFailure $ "expected compilation to succeed (with warnings), but rwc exited (" <> show e <> "); stderr:\n" <> w1
+
+      (r2, ef2) <- run ["-Werror"] "werror"
+      w2        <- readFile ef2
+      case r2 of
+            Left (ExitFailure _) -> pure ()
+            _                    -> assertFailure $ "expected compilation to fail under -Werror, but it succeeded; stderr:\n" <> w2
+
+      (r3, ef3) <- run ["-w"] "nowarn"
+      w3        <- readFile ef3
+      case r3 of
+            Right () -> assertBool ("expected no warnings under -w; stderr:\n" <> w3) $ not ("Warning" `isInfixOf` w3)
+            Left e   -> assertFailure $ "expected compilation to succeed under -w, but rwc exited (" <> show e <> "); stderr:\n" <> w3
+
 -- | Run an action with a handle (stdout, stderr) redirected to a file.
 withHandleTo :: Handle -> FilePath -> IO a -> IO a
 withHandleTo hdl f io = do
@@ -420,6 +459,12 @@ getNegTests dirName = do
       files <- map (dir </>) . filter (".hs" `isSuffixOf`) <$> listDirectory dir
       pure $ sequentialTestGroup dirName AllFinish $ map testNegative files
 
+getWarnTests :: FilePath -> IO TestTree
+getWarnTests dirName = do
+      dir   <- getDataFileName ("tests" </> dirName)
+      files <- map (dir </>) . filter (".hs" `isSuffixOf`) <$> listDirectory dir
+      pure $ sequentialTestGroup dirName AllFinish $ map testWarning files
+
 getTests :: [Flag] -> FilePath -> IO TestTree
 getTests flags dirName = do
       dir   <- getDataFileName ("tests" </> dirName)
@@ -441,12 +486,13 @@ main = do
 
       tests      <- mapM (getTests flags) testDirs
       negTests   <- getNegTests "negative"
+      warnTests  <- getWarnTests "warning"
       smokeTests <- getSmokeTests
 
       -- The tests change the working directory, so restore it on exit (HPC
       -- writes its .tix relative to the final working directory).
       cwd0 <- getCurrentDirectory
-      withArgs (injectTastyArgs flags) (defaultMain $ sequentialTestGroup "Tests" AllFinish $ tests <> [smokeTests, negTests])
+      withArgs (injectTastyArgs flags) (defaultMain $ sequentialTestGroup "Tests" AllFinish $ tests <> [smokeTests, negTests, warnTests])
             `finally` setCurrentDirectory cwd0
 
       where injectTastyArgs :: [Flag] -> [String]

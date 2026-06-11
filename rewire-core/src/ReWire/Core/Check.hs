@@ -66,7 +66,12 @@ checkExp dsigs args = \ case
       Call an _ (Global g) _ _ _         | Nothing <- Map.lookup g dsigs       -> failAt an $ "core check: call: unknown global: " <> g
       Call an sz (Global g) _ ps _       | Just (sig, _) <- Map.lookup g dsigs
                                          , mkSig ps sz `neq` sig               -> failAt an $ "core check: call: global sig mismatch: " <> g
-      Call an sz (Extern sig _ _) _ ps _ | mkSig ps sz `neq` toSig sig         -> failAt an "core check: call: extern sig mismatch"
+      Call an sz (Extern sig _ _ _) _ ps _ | mkSig ps sz `neq` toSig sig       -> failAt an "core check: call: extern sig mismatch"
+      Call an _ (Extern _ ex _ (Just g)) _ _ _
+                                         | Nothing <- Map.lookup g dsigs       -> failAt an $ "core check: call: unknown model defn " <> g <> " for extern " <> ex
+      Call an sz (Extern _ ex _ (Just g)) _ ps _
+                                         | Just (sig, _) <- Map.lookup g dsigs
+                                         , mkSig ps sz `neq` sig               -> failAt an $ "core check: call: sig mismatch between extern " <> ex <> " and its model defn " <> g
       Call an sz (Prim pr) _ ps _        | not (primCompat (mkSig ps sz) pr)   -> failAt an $ "core check: call: prim sig mismatch: " <> showt pr <> " failed to match pattern type " <> showt (mkSig ps sz)
       Call an sz (Const bv) _ ps _       | mkSig ps sz `neq` constSig bv       -> failAt an "core check: call: const sig mismatch"
       Call _ _ _ disc _ e                                                      -> checkExp dsigs args disc >> checkExp dsigs args e
@@ -86,12 +91,21 @@ checkRecursion dsigs = foldM_ visitDefn mempty
             visitExp :: HashSet GId -> HashSet GId -> Exp -> m (HashSet GId)
             visitExp stack done = \ case
                   Concat _ e1 e2                                       -> visitExp stack done e1 >>= flip (visitExp stack) e2
-                  Call an _ (Global g) _ _ _ | g `Set.member` stack    -> failAt an $ "core check: unsupported use of recursion (core id: " <> g <> ")."
-                  Call _ _ (Global g) e1 _ e2                          -> do
+                  Call an _ (callee -> Just g) _ _ _
+                                             | g `Set.member` stack    -> failAt an $ "core check: unsupported use of recursion (core id: " <> g <> ")."
+                  Call _ _ (callee -> Just g) e1 _ e2                  -> do
                         done' <- visitExp stack done e1 >>= flip (visitExp stack) e2
                         visitCallee stack done' g
                   Call _ _ _ e1 _ e2                                   -> visitExp stack done e1 >>= flip (visitExp stack) e2
                   _                                                    -> pure done
+
+            -- | An extern's model defn is followed like a call edge (the
+            --   interpreter calls it).
+            callee :: Target -> Maybe GId
+            callee = \ case
+                  Global g             -> Just g
+                  Extern _ _ _ (Just g) -> Just g
+                  _                    -> Nothing
 
             visitCallee :: HashSet GId -> HashSet GId -> GId -> m (HashSet GId)
             visitCallee stack done g

@@ -1,5 +1,6 @@
--- EXPECT-ERROR: Encountered call to built-in "error" function that was not eliminated
--- A call to ReWire.error on a live path cannot be compiled to hardware.
+-- EXPECT-WARNING: encountered a live call to the built-in "error" function
+-- A call to ReWire.error on a live path compiles to a zero (don't-care)
+-- value, with a warning (fatal under -Werror).
 {-# LANGUAGE DataKinds #-}
 import ReWire
 import ReWire.Bits (lit)

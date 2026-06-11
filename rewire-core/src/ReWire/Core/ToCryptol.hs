@@ -162,7 +162,11 @@ transCall env lvars an sz tgt e ps els = do
                   Global g           -> applyGlobal env an g sz args
                   Prim p             -> applyPrim an p sz args
                   Const bv           -> pure (Cry.Lit $ bitVec (fromIntegral sz) (nat bv), sz)
-                  Extern sig ex _    -> applyExtern an sig ex sz args
+                  -- An extern with a Haskell model is an ordinary call to the
+                  -- model defn; without one it becomes an uninterpreted
+                  -- function in the parameter block.
+                  Extern _ _ _ (Just g) -> applyGlobal env an g sz args
+                  Extern sig ex _ _  -> applyExtern an sig ex sz args
                   SetRef r           -> failAt an $ "ToCryptol: references are not supported by the Cryptol backend (rwPrimSetRef " <> r <> ")."
                   GetRef r           -> failAt an $ "ToCryptol: references are not supported by the Cryptol backend (rwPrimGetRef " <> r <> ")."
 

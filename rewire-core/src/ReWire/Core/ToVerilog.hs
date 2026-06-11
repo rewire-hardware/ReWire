@@ -325,7 +325,7 @@ compileExp conf lvars = \ case
       Call _ sz (Prim Reverse) e ps els            -> mkCall "reverse"    e ps els $ \ xs     -> (,[]) <$> wcast sz (V.cat $ reverse xs)
       Call _ sz (Prim (Replicate n)) e ps els      -> mkCall1 "replicate" e ps els $ \ x      -> wcast sz (if n > 0 then V.Repl (toLit n) x else V.nil)
       Call a _  (Prim p) _ _ _                     -> failAt a $ "ToVerilog: compileExp: encountered unknown primitive: " <> showt p
-      Call _ sz (Extern sig ex inst) e ps els      -> mkCall ex          e ps els $ instantiate conf sig ex inst sz
+      Call _ sz (Extern sig ex inst _) e ps els    -> mkCall ex          e ps els $ instantiate conf sig ex inst sz
       Call _ sz (Const bv) e ps els                -> mkCall "lit"       e ps els $ \ _      -> (,[]) <$> wcast sz (bvToExp bv)
       where mkCall2 :: (MonadState SigInfo m, MonadFail m, MonadError AstError m, MonadReader DefnMap m)
                     => Name -> C.Exp -> [Pat] -> C.Exp -> ((V.Exp, V.Exp) -> m V.Exp) -> m (V.Exp, [Stmt])

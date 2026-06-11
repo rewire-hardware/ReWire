@@ -163,6 +163,9 @@ purgeUnused p@Device { loop, state0, defns } = p { defns = filter ((`Set.member`
             getUses us = \ case -- TODO: refactor
                   Concat _ e1 e2              -> getUses (getUses us e1) e2
                   Call _ _ (Global g) e _ els -> getUses (getUses (Set.insert g us) e) els
+                  -- An extern's model defn is live (the interpreter calls it).
+                  Call _ _ (Extern _ _ _ (Just g)) e _ els
+                                              -> getUses (getUses (Set.insert g us) e) els
                   Call _ _ _          e _ els -> getUses (getUses us e) els
                   _                           -> us
 
@@ -188,6 +191,8 @@ dedupe p@Device { loop, state0, defns } = p { loop = ddDefn loop, state0 = ddDef
             ddTarget :: Target -> Target
             ddTarget = \ case
                   Global g | Just g' <- Map.lookup g ddMap -> Global g'
+                  Extern sig n inst (Just g)
+                           | Just g' <- Map.lookup g ddMap -> Extern sig n inst $ Just g'
                   t                                        -> t
 
             -- Note: Eq and Hashable on Sig and Exp ignore annotations, so

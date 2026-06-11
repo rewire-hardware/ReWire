@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+* The Core interpreter can now evaluate externs with a user-supplied Haskell
+  model: the seventh argument of `rwPrimExtern` is now compiled like any other
+  definition when it is a reference to a top-level definition whose reachable
+  definitions are non-recursive, first-order, monomorphic, and synthesizable --
+  the conventional self-referential idiom (`f = extern "f" f`) still means "no
+  model". The model is attached to the extern in the Core IR (a `model <defn>`
+  suffix in `.rwc` files), the interpreter calls it for unclocked externs, and
+  the Cryptol backend emits a call to it instead of an uninterpreted `parameter`.
+  Implementations that look like real models but fail the usability checks are
+  dropped with a warning, as are models for clocked externs (which are stateful,
+  so a pure per-cycle model can't be cycle-accurate).
+* Compiler warnings: rwc and rwe can now emit non-fatal warnings
+  (`file:line:col: Warning: ...` on stderr), with `-w`/`--no-warn` to
+  suppress them and `-Werror` to make them fatal. Initial warnings: a live
+  call to the built-in `error` function now compiles to a zero (don't-care)
+  value with a warning instead of failing outright; an explicitly named
+  `--interpret`/`--testbench` inputs file that can't be read warns before
+  driving all inputs with zeros; `--testbench` with a target other than
+  Verilog or VHDL warns that no testbench is generated. New warning test
+  suite (`tests/warning/`): each test declares expected-warning substrings
+  with `-- EXPECT-WARNING:` comments and is checked under default flags,
+  `-Werror` (must fail), and `-w` (must be silent).
 * New Cryptol backend (`rwc --cryptol`): translates Core to a self-contained
   Cryptol module -- one pure function per Core defn plus a `rw_device` stream
   function modeling the whole device (a sequence of per-cycle inputs to a
@@ -31,6 +53,7 @@
   regression test for the bitvector reduction operators, and a much larger
   rewire-user suite (GHC-side device simulation, bit slicing, Finite
   arithmetic).
+* rewire-user: new `mod` operation in `ReWire.FiniteComp`.
 * Fixed GHC-compatible implementations of several rewire-user primitives that
   disagreed with the compiler: `rwPrimBitSlice`/`rwPrimBitIndex` (bits are
   numbered LSB-at-0, Verilog style) and `rwPrimRNAnd`/`rwPrimRNor`/
