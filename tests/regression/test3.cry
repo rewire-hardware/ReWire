@@ -13,75 +13,82 @@ rw'repl x = join (repeat`{n} x)
 rw'parity : {n} (fin n) => [n] -> Bit
 rw'parity x = foldr (^) False x
 
+rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
+rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
+
 // $Pure.dispatch
 rw__Pure_dispatch : [8] -> [1] -> [17]
-rw__Pure_dispatch arg0 arg1 = rw__LL_Main_go3 (take`{1} s0) (drop`{1} s0)
+rw__Pure_dispatch x0 x1 = rw__LL_Pure_dispatch (take`{1} s0) (drop`{1} s0)
   where
     s0 : [9]
-    s0 = arg1 # arg0
-
-// $Pure.start
-rw__Pure_start : [17]
-rw__Pure_start = 0b10000000000000000
+    s0 = x1 # x0
 
 // $LL.Main.go10
 rw__LL_Main_go10 : [1] -> [8] -> [17]
-rw__LL_Main_go10 arg0 arg1 = rw__LL_Main_go8 (take`{8} s0)
+rw__LL_Main_go10 x0 x1 = rw__LL_Main_go8 (take`{8} s0)
   where
     s0 : [9]
-    s0 = arg1 # arg0
+    s0 = x1 # x0
 
 // $LL.Main.go9
 rw__LL_Main_go9 : [16] -> [17]
-rw__LL_Main_go9 arg0 = rw__LL_Main_go2 (take`{8} arg0) (drop`{8} arg0)
+rw__LL_Main_go9 x0 = rw__LL_Main_go (take`{8} x0) (drop`{8} x0)
 
 // $LL.Main.go8
 rw__LL_Main_go8 : [8] -> [17]
-rw__LL_Main_go8 arg0 = rw_Main_go arg0
+rw__LL_Main_go8 x0 = rw_Main_go x0
 
 // $LL.Main.go7
 rw__LL_Main_go7 : [8] -> [8] -> [17]
-rw__LL_Main_go7 arg0 arg1 = 0b1 # (arg0 # arg1)
+rw__LL_Main_go7 x0 x1 = 0b1 # (x0 # x1)
 
 // $LL.Main.go5
 rw__LL_Main_go5 : [8] -> [8] -> [17]
-rw__LL_Main_go5 arg0 arg1 = rw__LL_Main_go7 (take`{8} s0) (drop`{8} s0)
-  where
-    s0 : [16]
-    s0 = arg0 # arg1
+rw__LL_Main_go5 x0 x1 = rw__LL_Main_go7 x0 x1
 
 // $LL.Main.go4
 rw__LL_Main_go4 : [17] -> [17]
-rw__LL_Main_go4 arg0 = rw__LL_Main_go5 (take`{8} (drop`{1} arg0)) (drop`{9} arg0)
+rw__LL_Main_go4 x0 = rw__LL_Main_go5 (take`{8} (drop`{1} x0)) (drop`{9} x0)
+
+// $LL.Pure.dispatch
+rw__LL_Pure_dispatch : [1] -> [8] -> [17]
+rw__LL_Pure_dispatch x0 x1 = rw__LL_Main_go3 x0 x1
 
 // $LL.Main.go3
 rw__LL_Main_go3 : [1] -> [8] -> [17]
-rw__LL_Main_go3 arg0 arg1 = rw__LL_Main_go1 (take`{1} s0) (take`{1} (drop`{1} s0)) (drop`{2} s0)
-  where
-    s0 : [10]
-    s0 = arg0 # (arg0 # arg1)
+rw__LL_Main_go3 x0 x1 = rw__LL_Main_go1 x0 x0 x1
 
 // $LL.Main.go2
 rw__LL_Main_go2 : [8] -> [8] -> [17]
-rw__LL_Main_go2 arg0 arg1 = 0b0 # (arg0 # arg1)
+rw__LL_Main_go2 x0 x1 = 0b0 # (x0 # x1)
 
 // $LL.Main.go1
 rw__LL_Main_go1 : [1] -> [1] -> [8] -> [17]
-rw__LL_Main_go1 arg0 arg1 arg2 = if (drop`{8} s0) == 0b1 then (rw__LL_Main_go8 (take`{8} s0)) else (rw__LL_Main_go10 (take`{1} s1) (drop`{1} s1))
+rw__LL_Main_go1 x0 x1 x2 = if (drop`{8} s0) == 0b1 then (rw__LL_Main_go8 (take`{8} s0)) else (rw__LL_Main_go10 x0 x2)
   where
     s0 : [9]
-    s0 = arg2 # arg1
-    s1 : [9]
-    s1 = arg0 # arg2
+    s0 = x2 # x1
+
+// $LL.Main.go
+rw__LL_Main_go : [8] -> [8] -> [17]
+rw__LL_Main_go x0 x1 = rw__LL_Main_go2 x0 x1
 
 // Main.go
 rw_Main_go : [8] -> [17]
-rw_Main_go arg0 = rw__LL_Main_go4 s1
+rw_Main_go x0 = rw__LL_Main_go4 (rw__LL_Main_go9 (x0 # x0))
+
+// Per-cycle step: outputs # next register values.
+rw_step : [8] -> [1] -> [16]
+rw_step st i = (take`{8} (drop`{1} s3)) # (drop`{9} s3)
   where
-    s0 : [16]
-    s0 = arg0 # arg0
-    s1 : [17]
-    s1 = rw__LL_Main_go9 s0
+    s0 : [8]
+    s0 = st
+    s1 : [1]
+    s1 = i
+    s2 : [9]
+    s2 = s0 # s1
+    s3 : [17]
+    s3 = rw__Pure_dispatch (take`{8} s2) (drop`{8} s2)
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [1]
@@ -89,9 +96,9 @@ rw_Main_go arg0 = rw__LL_Main_go4 s1
 rw_device : {n} (fin n) => [n][1] -> [n][8]
 rw_device ins = outs
   where
-    rs : [n][17]
-    rs = [rw__Pure_dispatch st i | st <- sts | i <- ins]
+    rs : [n][16]
+    rs = [rw_step st i | st <- sts | i <- ins]
     sts : [1 + n][8]
-    sts = [drop`{9} rw__Pure_start] # [drop`{9} r | r <- rs]
+    sts = [0x00] # [drop`{8} r | r <- rs]
     outs : [n][8]
-    outs = [take`{8} (drop`{1} r) | r <- rs]
+    outs = [take`{8} r | r <- rs]

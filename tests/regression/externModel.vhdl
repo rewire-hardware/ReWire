@@ -35,6 +35,11 @@ package rw_helpers is
   function rw_gteq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_cond (c : std_logic_vector; a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_repl (n : natural; v : std_logic_vector) return std_logic_vector;
+  function rw_sext (v : std_logic_vector; n : natural) return std_logic_vector;
+  function rw_lts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_lteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_gts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_gteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
 end package;
 
 package body rw_helpers is
@@ -74,7 +79,7 @@ package body rw_helpers is
   function rw_mod (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
     constant n : natural := rw_max(a'length, b'length);
   begin
-    if unsigned(b) = 0 then return std_logic_vector(to_unsigned(0, n) - 1); end if;
+    if unsigned(b) = 0 then return std_logic_vector(resize(unsigned(a), n)); end if;
     return std_logic_vector(resize(resize(unsigned(a), n) mod resize(unsigned(b), n), n));
   end;
   function rw_pow (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
@@ -205,6 +210,26 @@ package body rw_helpers is
     end loop;
     return r;
   end;
+  function rw_sext (v : std_logic_vector; n : natural) return std_logic_vector is
+  begin
+    return std_logic_vector(resize(signed(v), n));
+  end;
+  function rw_lts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) < signed(b));
+  end;
+  function rw_lteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) <= signed(b));
+  end;
+  function rw_gts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) > signed(b));
+  end;
+  function rw_gteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) >= signed(b));
+  end;
 end package body;
 
 library ieee;
@@ -236,28 +261,102 @@ component \andW32\ is
             p1 : in std_logic_vector (31 downto 0);
             p2 : out std_logic_vector (31 downto 0));
       end component;
-      signal zll_main_f_in : std_logic_vector (31 downto 0);
-      signal main_andw32_in : std_logic_vector (31 downto 0);
-      signal andw32_in : std_logic_vector (63 downto 0);
+      signal zin : std_logic_vector (31 downto 0);
       signal extres : std_logic_vector (31 downto 0);
-      signal notw32_in : std_logic_vector (31 downto 0);
+      signal zi0 : std_logic_vector (31 downto 0);
       signal \extresR1\ : std_logic_vector (31 downto 0);
-      signal main_xorw32_in : std_logic_vector (31 downto 0);
-      signal xorw32_in : std_logic_vector (63 downto 0);
+      signal zi1 : std_logic_vector (31 downto 0);
       signal \extresR2\ : std_logic_vector (31 downto 0);
-      signal plusw32_in : std_logic_vector (63 downto 0);
+      signal zi2 : std_logic_vector (31 downto 0);
       signal \extresR3\ : std_logic_vector (31 downto 0);
+      signal zres : std_logic_vector (31 downto 0);
 begin
-zll_main_f_in <= \__in0\;
-      main_andw32_in <= zll_main_f_in(31 downto 0);
-      andw32_in <= (main_andw32_in(31 downto 0) & std_logic_vector'(B"11110000111100001111000011110000"));
-      inst : \andW32\ port map (andw32_in(63 downto 32), andw32_in(31 downto 0), extres(31 downto 0));
-      notw32_in <= zll_main_f_in(31 downto 0);
-      \instR1\ : \notW32\ port map (notw32_in(31 downto 0), \extresR1\(31 downto 0));
-      main_xorw32_in <= \extresR1\;
-      xorw32_in <= (main_xorw32_in(31 downto 0) & std_logic_vector'(B"00010010001101000101011001111000"));
-      \instR2\ : \xorW32\ port map (xorw32_in(63 downto 32), xorw32_in(31 downto 0), \extresR2\(31 downto 0));
-      plusw32_in <= (extres & \extresR2\);
-      \instR3\ : \plusW32\ port map (plusw32_in(63 downto 32), plusw32_in(31 downto 0), \extresR3\(31 downto 0));
-      \__out0\ <= \extresR3\;
+zin <= \__in0\;
+      inst : \andW32\ port map (p0 => zin, p1 => std_logic_vector'(B"11110000111100001111000011110000"), p2 => extres(31 downto 0));
+      zi0 <= extres;
+      \instR1\ : \notW32\ port map (p0 => zin, p1 => \extresR1\(31 downto 0));
+      zi1 <= \extresR1\;
+      \instR2\ : \xorW32\ port map (p0 => zi1, p1 => std_logic_vector'(B"00010010001101000101011001111000"), p2 => \extresR2\(31 downto 0));
+      zi2 <= \extresR2\;
+      \instR3\ : \plusW32\ port map (p0 => zi0, p1 => zi2, p2 => \extresR3\(31 downto 0));
+      zres <= \extresR3\;
+      \__out0\ <= zres;
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \Main_xorModel\ is
+port (arg0 : in std_logic_vector (31 downto 0);
+      arg1 : in std_logic_vector (31 downto 0);
+      res : out std_logic_vector (31 downto 0));
+end entity;
+
+architecture rtl of \Main_xorModel\ is
+signal zi0 : std_logic_vector (63 downto 0);
+      signal zi1 : std_logic_vector (31 downto 0);
+      signal zi2 : std_logic_vector (31 downto 0);
+begin
+zi0 <= (arg0 & arg1);
+      zi1 <= zi0(63 downto 32);
+      zi2 <= zi0(31 downto 0);
+      res <= rw_xor(zi1, zi2);
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \Main_plusModel\ is
+port (arg0 : in std_logic_vector (31 downto 0);
+      arg1 : in std_logic_vector (31 downto 0);
+      res : out std_logic_vector (31 downto 0));
+end entity;
+
+architecture rtl of \Main_plusModel\ is
+signal zi0 : std_logic_vector (63 downto 0);
+      signal zi1 : std_logic_vector (31 downto 0);
+      signal zi2 : std_logic_vector (31 downto 0);
+begin
+zi0 <= (arg0 & arg1);
+      zi1 <= zi0(63 downto 32);
+      zi2 <= zi0(31 downto 0);
+      res <= rw_add(zi1, zi2);
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \Main_andModel\ is
+port (arg0 : in std_logic_vector (31 downto 0);
+      arg1 : in std_logic_vector (31 downto 0);
+      res : out std_logic_vector (31 downto 0));
+end entity;
+
+architecture rtl of \Main_andModel\ is
+signal zi0 : std_logic_vector (63 downto 0);
+      signal zi1 : std_logic_vector (31 downto 0);
+      signal zi2 : std_logic_vector (31 downto 0);
+begin
+zi0 <= (arg0 & arg1);
+      zi1 <= zi0(63 downto 32);
+      zi2 <= zi0(31 downto 0);
+      res <= rw_and(zi1, zi2);
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \Main_notModel\ is
+port (arg0 : in std_logic_vector (31 downto 0);
+      res : out std_logic_vector (31 downto 0));
+end entity;
+
+architecture rtl of \Main_notModel\ is
+
+begin
+res <= rw_not(arg0);
 end architecture;

@@ -1,60 +1,124 @@
-device top_level:
+$Pure.dispatch : ([1], [1]) -> [3]
+$Pure.dispatch $0 $1 =
+      let $t0 = $1 # $0 in
+      $LL.Pure.dispatch $t0[1 +: 1] $t0[0 +: 1]
 
-inputs [("__in0",1)]
-outputs [("__out0",1)]
-states [("__st0",1)]
+$LL.Main.stateAction15 : ([1], [1]) -> [2]
+$LL.Main.stateAction15 $0 $1 =
+      $LL.Main.stateAction8 $0 $1
 
-$Pure.dispatch :: W1 -> W1 -> W3
-$Pure.dispatch $0 $1 = 3'case {1'$1, 1'$0} of
-    {1'@, 1'@} -> $LL.Main.loop2
+$LL.Main.stateAction14 : ([1], [1], [1]) -> [2]
+$LL.Main.stateAction14 $0 $1 $2 =
+      $LL.Main.stateAction2 $0 $1 $2
 
-$Pure.start :: W3
-$Pure.start  = 3'h6
+$LL.Main.stateAction13 : ([1], [1], [1]) -> [2]
+$LL.Main.stateAction13 $0 $1 $2 =
+      $LL.Main.stateAction14 $0 $1 $2
 
-$LL.Main.stateAction12 :: W2 -> W1
-$LL.Main.stateAction12 $0 = 1'case 2'$0 of
-    {1'@, 1'@} -> $LL.Main.stateAction4
+$LL.Main.stateAction12 : ([2]) -> [1]
+$LL.Main.stateAction12 $0 =
+      $LL.Main.stateAction6 $0[1 +: 1] $0[0 +: 1]
 
-$LL.Main.loop7 :: W1 -> W1 -> W3
-$LL.Main.loop7 $0 $1 = {1'h0, 1'$0, 1'$1}
+$LL.Main.stateAction11 : ([1], [1]) -> [1]
+$LL.Main.stateAction11 $0 $1 =
+      $LL.Main.stateAction3 $0 $1
 
-$LL.Main.loop5 :: W1 -> W1 -> W3
-$LL.Main.loop5 $0 $1 = {1'h1, 1'$0, 1'$1}
+$LL.Main.loop7 : ([1], [1]) -> [3]
+$LL.Main.loop7 $0 $1 =
+      1'h0 # $0 # $1
 
-$LL.Main.loop4 :: W3 -> W3
-$LL.Main.loop4 $0 = 3'case 3'$0 of
-    {1'h0, 1'@, 1'@} -> $LL.Main.loop3
+$LL.Main.loop6 : ([1], [1]) -> [3]
+$LL.Main.loop6 $0 $1 =
+      $LL.Main.loop2 $0 $1
 
-$LL.Main.loop3 :: W1 -> W1 -> W3
-$LL.Main.loop3 $0 $1 = 3'case {1'$0, 1'$1} of
-    {1'@, 1'@} -> $LL.Main.loop5
+$LL.Main.stateAction10 : ([1], [1]) -> [2]
+$LL.Main.stateAction10 $0 $2 =
+      $LL.Main.stateAction9 $0 $2
 
-$LL.Main.loop2 :: W1 -> W1 -> W3
-$LL.Main.loop2 $0 $1 = 3'case 3'case 2'case {1'$0, 1'$1} of
-        {1'@, 1'@} -> $LL.Main.stateAction8 of
-      {2'@} -> $LL.Main.loop of
-    {3'@} -> $LL.Main.loop4
+$LL.Main.stateAction9 : ([1], [1]) -> [2]
+$LL.Main.stateAction9 $0 $2 =
+      $LL.Main.stateAction5 $0 $2
 
-$LL.Main.stateAction8 :: W1 -> W1 -> W2
-$LL.Main.stateAction8 $0 $1 = 2'case {1'$0, 1'$1, 1'$1} of
-    {1'@, 2'@} -> $LL.Main.stateAction1
+$LL.Main.loop5 : ([1], [1]) -> [3]
+$LL.Main.loop5 $0 $1 =
+      1'h1 # $0 # $1
 
-$LL.Main.stateAction4 :: W1 -> W1 -> W1
-$LL.Main.stateAction4 $0 $1 = 1'case 1'case {1'$0, 1'$1} of
-      {1'@, 1'@} -> XOr of
-    {1'@} -> MSBit
+Main.loop1 : ([1], [1]) -> [3]
+Main.loop1 $0 $1 =
+      $LL.Main.loop6 $0 $1
 
-$LL.Main.stateAction3 :: W1 -> W1 -> W1
-$LL.Main.stateAction3 $0 $1 = 1'case {1'$0, 1'$1} of
-    {2'@} -> $LL.Main.stateAction12
+$LL.Main.loop4 : ([3]) -> [3]
+$LL.Main.loop4 $0 =
+      $LL.Main.loop3 $0[1 +: 1] $0[0 +: 1]
 
-$LL.Main.stateAction2 :: W1 -> W1 -> W1 -> W2
-$LL.Main.stateAction2 $0 $1 $2 = {1'$1, 1'case {1'$0, 1'$1} of {1'@, 1'@} -> $LL.Main.stateAction3}
+$LL.Main.loop3 : ([1], [1]) -> [3]
+$LL.Main.loop3 $0 $1 =
+      $LL.Main.loop5 $0 $1
 
-$LL.Main.loop :: W2 -> W3
-$LL.Main.loop $0 = 3'case 2'$0 of
-    {1'@, 1'@} -> $LL.Main.loop7
+$LL.Main.loop2 : ([1], [1]) -> [3]
+$LL.Main.loop2 $0 $1 =
+      $LL.Main.loop4 ($LL.Main.loop (Main.stateAction $0 $1))
 
-$LL.Main.stateAction1 :: W1 -> W2 -> W2
-$LL.Main.stateAction1 $0 $1 = 2'case {1'$0, 2'$1} of
-    {1'@, 1'@, 1'@} -> $LL.Main.stateAction2
+$LL.Main.stateAction8 : ([1], [1]) -> [2]
+$LL.Main.stateAction8 $0 $1 =
+      $LL.Main.stateAction1 $0 ($1 # $1)
+
+$LL.Main.stateAction7 : ([1], [1]) -> [2]
+$LL.Main.stateAction7 $0 $1 =
+      let $t0 = $0 # $1 in
+      $LL.Main.stateAction10 $t0[1 +: 1] $t0[0 +: 1]
+
+$LL.Main.stateAction6 : ([1], [1]) -> [1]
+$LL.Main.stateAction6 $0 $1 =
+      $LL.Main.stateAction4 $0 $1
+
+$LL.Main.loop1 : ([1], [1]) -> [3]
+$LL.Main.loop1 $0 $1 =
+      $LL.Main.loop7 $0 $1
+
+$LL.Main.stateAction5 : ([1], [1]) -> [2]
+$LL.Main.stateAction5 $0 $2 =
+      $0 # $2
+
+$LL.Main.stateAction4 : ([1], [1]) -> [1]
+$LL.Main.stateAction4 $0 $1 =
+      let $t1 = xor $0 $1 in
+      $t1
+
+$LL.Main.stateAction3 : ([1], [1]) -> [1]
+$LL.Main.stateAction3 $0 $1 =
+      $LL.Main.stateAction12 ($0 # $1)
+
+$LL.Pure.dispatch : ([1], [1]) -> [3]
+$LL.Pure.dispatch $0 $1 =
+      Main.loop1 $0 $1
+
+$LL.Main.stateAction2 : ([1], [1], [1]) -> [2]
+$LL.Main.stateAction2 $0 $1 $2 =
+      $LL.Main.stateAction7 $1 ($LL.Main.stateAction11 $0 $1)
+
+$LL.Main.loop : ([2]) -> [3]
+$LL.Main.loop $0 =
+      $LL.Main.loop1 $0[1 +: 1] $0[0 +: 1]
+
+$LL.Main.stateAction1 : ([1], [2]) -> [2]
+$LL.Main.stateAction1 $0 $1 =
+      let $t0 = $0 # $1 in
+      $LL.Main.stateAction $t0[2 +: 1] $t0[1 +: 1] $t0[0 +: 1]
+
+Main.stateAction : ([1], [1]) -> [2]
+Main.stateAction $0 $1 =
+      $LL.Main.stateAction15 $0 $1
+
+$LL.Main.stateAction : ([1], [1], [1]) -> [2]
+$LL.Main.stateAction $0 $1 $2 =
+      $LL.Main.stateAction13 $0 $1 $2
+
+device top_level
+      input __in0 : [1]
+      output __out0 : [1]
+      register __st0 : [1] init 1'h0
+      let $in = __st0 # __in0
+      let $res = $Pure.dispatch $in[1 +: 1] $in[0 +: 1]
+      __out0 := $res[1 +: 1]
+      next __st0 := $res[0 +: 1]

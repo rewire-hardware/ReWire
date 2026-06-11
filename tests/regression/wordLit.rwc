@@ -1,23 +1,34 @@
-device top_level:
+$Pure.dispatch : ([8]) -> [17]
+$Pure.dispatch $1 =
+      $LL.Pure.dispatch $1
 
-inputs [("__in0",8)]
-outputs [("__out0",16)]
-states []
+$LL.Main.loop3 : ([8]) -> [17]
+$LL.Main.loop3 $0 =
+      $LL.Main.loop2 $0
 
-$Pure.dispatch :: W8 -> W17
-$Pure.dispatch $0 = 17'case 8'$0 of
-    {8'@} -> $LL.Main.loop2
+$LL.Main.loop2 : ([8]) -> [17]
+$LL.Main.loop2 $0 =
+      $LL.Main.loop (1'h0 # xor (zext 16 $0) 16'h1)
 
-$Pure.start :: W17
-$Pure.start  = 17'h100fe
+Main.loop : ([8]) -> [17]
+Main.loop $0 =
+      $LL.Main.loop3 $0
 
-$LL.Main.loop2 :: W8 -> W17
-$LL.Main.loop2 $0 = 17'case {1'h0, 16'case {16'case 8'$0 of {8'@} -> Resize, 16'h1} of {16'@, 16'@} -> XOr} of
-    {17'@} -> $LL.Main.loop
+$LL.Main.loop1 : ([16]) -> [17]
+$LL.Main.loop1 $0 =
+      1'h1 # $0
 
-$LL.Main.loop1 :: W16 -> W17
-$LL.Main.loop1 $0 = {1'h1, 16'$0}
+$LL.Main.loop : ([17]) -> [17]
+$LL.Main.loop $0 =
+      $LL.Main.loop1 $0[0 +: 16]
 
-$LL.Main.loop :: W17 -> W17
-$LL.Main.loop $0 = 17'case 17'$0 of
-    {1'h0, 16'@} -> $LL.Main.loop1
+$LL.Pure.dispatch : ([8]) -> [17]
+$LL.Pure.dispatch $0 =
+      Main.loop $0
+
+device top_level
+      input __in0 : [8]
+      output __out0 : [16]
+      let $in = __in0
+      let $res = $Pure.dispatch $in
+      __out0 := $res[0 +: 16]

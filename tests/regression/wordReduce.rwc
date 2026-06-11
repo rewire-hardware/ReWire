@@ -1,26 +1,30 @@
-device top_level:
+$Pure.dispatch : ([8]) -> [6]
+$Pure.dispatch $1 =
+      $LL.Pure.dispatch $1
 
-inputs [("__in0",8)]
-outputs [("__out0",6)]
-states []
+Main.compute1 : ([8]) -> [6]
+Main.compute1 $0 =
+      $LL.Main.compute3 $0
 
-$Pure.dispatch :: W8 -> W6
-$Pure.dispatch $0 = 6'case 8'$0 of
-    {8'@} -> $LL.Main.compute1
+ReWire.Monad.iter1 : ([8]) -> [6]
+ReWire.Monad.iter1 $0 =
+      Main.compute1 $0
 
-$Pure.start :: W6
-$Pure.start  = 6'h15
+$LL.Main.compute3 : ([8]) -> [6]
+$LL.Main.compute3 $0 =
+      $LL.Main.compute1 $0
 
-$LL.Main.compute1 :: W8 -> W6
-$LL.Main.compute1 $0 = {1'case 8'$0 of
-    {8'@} -> RAnd
-  , 1'case 8'$0 of
-    {8'@} -> RNAnd
-  , 1'case 8'$0 of
-    {8'@} -> ROr
-  , 1'case 8'$0 of
-    {8'@} -> RNor
-  , 1'case 8'$0 of
-    {8'@} -> RXOr
-  , 1'case 8'$0 of
-    {8'@} -> RXNor}
+$LL.Pure.dispatch : ([8]) -> [6]
+$LL.Pure.dispatch $0 =
+      ReWire.Monad.iter1 $0
+
+$LL.Main.compute1 : ([8]) -> [6]
+$LL.Main.compute1 $0 =
+      redand $0 # not (redand $0) # redor $0 # not (redor $0) # redxor $0 # not (redxor $0)
+
+device top_level
+      input __in0 : [8]
+      output __out0 : [6]
+      let $in = __in0
+      let $res = $Pure.dispatch $in
+      __out0 := $res

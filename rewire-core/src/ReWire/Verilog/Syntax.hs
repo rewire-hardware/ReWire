@@ -156,6 +156,8 @@ data Exp = Add Exp Exp
          | Concat [Exp]
          | Repl Exp Exp
          | WCast Size Exp
+         | Signed Exp   -- ^ > $signed(e)
+         | Unsigned Exp -- ^ > $unsigned(e)
          | LitBits BV
          | LVal LVal
       deriving (Eq, Show)
@@ -170,6 +172,8 @@ instance Parenless Exp where
             Repl    {} -> True
             WCast   {} -> True
             Concat  {} -> True
+            Signed  {} -> True -- self-parenthesizing
+            Unsigned {} -> True
             _          -> False
 
 mparens :: (Pretty a, Parenless a) => a -> Doc an
@@ -219,6 +223,8 @@ instance Pretty Exp where
             LtEq a b        -> ppBinOp a "<="  b
             GtEq a b        -> ppBinOp a ">="  b
             Cond e1 e2 e3   -> mparens e1 <+> text "?" <+> mparens e2 <+> colon <+> mparens e3
+            Signed e        -> text "$signed" <> parens (pretty e)
+            Unsigned e      -> text "$unsigned" <> parens (pretty e)
             Concat [e]      -> pretty e
             Concat es       -> braces $ hsep $ punctuate comma $ map pretty es
             Repl e1 e2      -> braces $ pretty e1 <> braces (pretty e2)

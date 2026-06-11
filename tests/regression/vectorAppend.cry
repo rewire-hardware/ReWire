@@ -13,42 +13,71 @@ rw'repl x = join (repeat`{n} x)
 rw'parity : {n} (fin n) => [n] -> Bit
 rw'parity x = foldr (^) False x
 
+rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
+rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
+
 // $Pure.dispatch
 rw__Pure_dispatch : [128] -> [65]
-rw__Pure_dispatch arg0 = rw__LL_Main_loop arg0
-
-// $Pure.start
-rw__Pure_start : [65]
-rw__Pure_start = 0b10000000000000000000000000000000000000000000000000000000000000000
+rw__Pure_dispatch x0 = rw__LL_Pure_dispatch x0
 
 // $LL.Main.compute4
 rw__LL_Main_compute4 : [64] -> [64] -> [64]
-rw__LL_Main_compute4 arg0 arg1 = ((drop`{24} s0) # ((take`{8} (drop`{16} s0)) # ((take`{8} (drop`{8} s0)) # (take`{8} s0)))) # (0x00 # (drop`{40} arg1))
+rw__LL_Main_compute4 x0 x1 = ((drop`{24} s0) # ((take`{8} (drop`{16} s0)) # ((take`{8} (drop`{8} s0)) # (take`{8} s0)))) # (0x00 # (drop`{40} x1))
   where
     s0 : [32]
-    s0 = take`{32} arg0
+    s0 = take`{32} x0
+
+// Main.compute
+rw_Main_compute : [128] -> [64]
+rw_Main_compute x0 = rw__LL_Main_compute x0
 
 // $LL.Main.loop3
 rw__LL_Main_loop3 : [64] -> [65]
-rw__LL_Main_loop3 arg0 = 0b1 # arg0
+rw__LL_Main_loop3 x0 = 0b1 # x0
+
+// $LL.Main.compute3
+rw__LL_Main_compute3 : [64] -> [64] -> [64]
+rw__LL_Main_compute3 x0 x1 = rw__LL_Main_compute4 x0 x1
 
 // $LL.Main.loop2
 rw__LL_Main_loop2 : [65] -> [65]
-rw__LL_Main_loop2 arg0 = rw__LL_Main_loop3 (drop`{1} arg0)
+rw__LL_Main_loop2 x0 = rw__LL_Main_loop3 (drop`{1} x0)
+
+// $LL.Main.loop1
+rw__LL_Main_loop1 : [128] -> [65]
+rw__LL_Main_loop1 x0 = rw__LL_Main_loop x0
+
+// Main.loop1
+rw_Main_loop1 : [128] -> [65]
+rw_Main_loop1 x0 = rw__LL_Main_loop1 x0
 
 // $LL.Main.compute
 rw__LL_Main_compute : [128] -> [64]
-rw__LL_Main_compute arg0 = rw__LL_Main_compute4 (take`{64} arg0) (drop`{64} arg0)
+rw__LL_Main_compute x0 = rw__LL_Main_compute3 (take`{64} x0) (drop`{64} x0)
 
 // $LL.Main.loop
 rw__LL_Main_loop : [128] -> [65]
-rw__LL_Main_loop arg0 = rw__LL_Main_loop2 s0
+rw__LL_Main_loop x0 = rw__LL_Main_loop2 (0b0 # (rw_Main_compute x0))
+
+// $LL.Pure.dispatch
+rw__LL_Pure_dispatch : [128] -> [65]
+rw__LL_Pure_dispatch x0 = rw_Main_loop1 x0
+
+// Per-cycle step: outputs # next register values.
+rw_step : [128] -> [64]
+rw_step i = drop`{1} s3
   where
-    s0 : [65]
-    s0 = 0b0 # (rw__LL_Main_compute arg0)
+    s0 : [64]
+    s0 = take`{64} i
+    s1 : [64]
+    s1 = drop`{64} i
+    s2 : [128]
+    s2 = s0 # s1
+    s3 : [65]
+    s3 = rw__Pure_dispatch s2
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [64], __in1 : [64]
 // Outputs, MSB-first: __out0 : [64]
 rw_device : {n} (fin n) => [n][128] -> [n][64]
-rw_device ins = [drop`{1} (rw__Pure_dispatch i) | i <- ins]
+rw_device ins = [rw_step i | i <- ins]

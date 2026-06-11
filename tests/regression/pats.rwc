@@ -1,11 +1,22 @@
-device top_level:
+$Pure.dispatch : ([1]) -> [1]
+$Pure.dispatch $1 =
+      $LL.Pure.dispatch $1
 
-inputs [("__in0",1)]
-outputs [("__out0",1)]
-states []
+$LL.Main.baz4 : ([1]) -> [1]
+$LL.Main.baz4 $0 =
+      1'h1
 
-$Pure.dispatch :: W1 -> W1
-$Pure.dispatch $0 = 1'h1
+$LL.Main.start : ([1]) -> [1]
+$LL.Main.start $0 =
+      $LL.Main.baz4 $0
 
-$Pure.start :: W1
-$Pure.start  = 1'h1
+$LL.Pure.dispatch : ([1]) -> [1]
+$LL.Pure.dispatch $0 =
+      $LL.Main.start $0
+
+device top_level
+      input __in0 : [1]
+      output __out0 : [1]
+      let $in = __in0
+      let $res = $Pure.dispatch $in
+      __out0 := $res

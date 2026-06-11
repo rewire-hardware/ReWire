@@ -13,765 +13,604 @@ rw'repl x = join (repeat`{n} x)
 rw'parity : {n} (fin n) => [n] -> Bit
 rw'parity x = foldr (^) False x
 
+rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
+rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
+
 // $Pure.dispatch
 rw__Pure_dispatch : [8] -> [32]
-rw__Pure_dispatch arg0 = rw__LL_Main_dev69 arg0
-
-// $Pure.start
-rw__Pure_start : [32]
-rw__Pure_start = 0xe6668ff0
+rw__Pure_dispatch x0 = rw__LL_Pure_dispatch x0
 
 // $LL.Main.dev286
 rw__LL_Main_dev286 : [8] -> [3] -> [8] -> [3] -> [3] -> [8]
-rw__LL_Main_dev286 arg0 arg1 arg2 arg3 arg4 = rw__LL_Main_dev151 (take`{8} s1) (take`{3} (drop`{8} s1)) (take`{8} (drop`{11} s1)) (take`{3} (drop`{19} s1)) (drop`{22} s1)
-  where
-    s0 : [15]
-    s0 = arg0 # (arg3 # (arg4 # 0b0))
-    s1 : [25]
-    s1 = arg0 # (arg1 # (arg2 # (arg3 # (rw__LL_Main_dev45 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{3} (drop`{11} s0)) (drop`{14} s0)))))
+rw__LL_Main_dev286 x0 x1 x2 x3 x4 = rw__LL_Main_dev281 x0 x1 x2 x3 (rw__LL_Main_dev45 x0 x3 x4 (rw__LL_Main_dev284 (rw__LL_Main_dev285 x0)))
+
+// $LL.Main.dev285
+rw__LL_Main_dev285 : [8] -> [3]
+rw__LL_Main_dev285 x0 = rw__LL_Main_dev280 x0
+
+// $LL.Main.dev284
+rw__LL_Main_dev284 : [3] -> [1]
+rw__LL_Main_dev284 x0 = rw__LL_Main_dev269 x0
 
 // $LL.Main.dev283
 rw__LL_Main_dev283 : [3] -> [3] -> [3]
-rw__LL_Main_dev283 arg0 arg1 = rw'resize`{3} s2
-  where
-    s0 : [256]
-    s0 = (rw'resize`{128} arg0) # (rw'resize`{128} arg1)
-    s1 : [256]
-    s1 = ((take`{128} s0) - (drop`{128} s0)) # 0x00000000000000000000000000000008
-    s2 : [128]
-    s2 = (take`{128} s1) % (drop`{128} s1)
+rw__LL_Main_dev283 x0 x1 = rw'resize`{3} (if 0x00000000000000000000000000000008 == zero then ((rw'resize`{128} x0) - (rw'resize`{128} x1)) else (((rw'resize`{128} x0) - (rw'resize`{128} x1)) % 0x00000000000000000000000000000008))
 
 // $LL.Main.dev282
 rw__LL_Main_dev282 : [3] -> [3] -> [3]
-rw__LL_Main_dev282 arg0 arg1 = rw'resize`{3} s2
-  where
-    s0 : [256]
-    s0 = (rw'resize`{128} arg0) # (rw'resize`{128} arg1)
-    s1 : [256]
-    s1 = ((take`{128} s0) / (drop`{128} s0)) # 0x00000000000000000000000000000008
-    s2 : [128]
-    s2 = (take`{128} s1) % (drop`{128} s1)
+rw__LL_Main_dev282 x0 x1 = rw'resize`{3} (if 0x00000000000000000000000000000008 == zero then (if (rw'resize`{128} x1) == zero then 0xffffffffffffffffffffffffffffffff else ((rw'resize`{128} x0) / (rw'resize`{128} x1))) else ((if (rw'resize`{128} x1) == zero then 0xffffffffffffffffffffffffffffffff else ((rw'resize`{128} x0) / (rw'resize`{128} x1))) % 0x00000000000000000000000000000008))
+
+// $LL.Main.dev281
+rw__LL_Main_dev281 : [8] -> [3] -> [8] -> [3] -> [3] -> [8]
+rw__LL_Main_dev281 x0 x1 x2 x3 x4 = rw__LL_Main_dev180 x0 x1 x2 x3 x4
+
+// $LL.Main.dev280
+rw__LL_Main_dev280 : [8] -> [3]
+rw__LL_Main_dev280 x0 = 0b111
+
+// $LL.Main.dev279
+rw__LL_Main_dev279 : [8] -> [8] -> [32]
+rw__LL_Main_dev279 x0 x1 = rw__LL_Main_dev207 x0 x1
 
 // $LL.Main.dev278
 rw__LL_Main_dev278 : [6] -> [3]
-rw__LL_Main_dev278 arg0 = rw__LL_Main_dev235 (take`{3} arg0) (drop`{3} arg0)
+rw__LL_Main_dev278 x0 = rw__LL_Main_dev271 (take`{3} x0) (drop`{3} x0)
 
 // $LL.Main.dev277
 rw__LL_Main_dev277 : [8] -> [3] -> [3] -> [1]
-rw__LL_Main_dev277 arg0 arg1 arg2 = rw'resize`{1} s6
-  where
-    s0 : [6]
-    s0 = arg1 # arg2
-    s1 : [3]
-    s1 = rw__LL_Main_dev261 (take`{3} s0) (drop`{3} s0)
-    s2 : [256]
-    s2 = 0x00000000000000000000000000000008 # (rw'resize`{128} s1)
-    s3 : [256]
-    s3 = ((take`{128} s2) - (drop`{128} s2)) # 0x00000000000000000000000000000001
-    s4 : [256]
-    s4 = ((take`{128} s3) - (drop`{128} s3)) # 0x00000000000000000000000000000001
-    s5 : [256]
-    s5 = (rw'resize`{128} arg0) # ((take`{128} s4) * (drop`{128} s4))
-    s6 : [128]
-    s6 = (take`{128} s5) >> (drop`{128} s5)
+rw__LL_Main_dev277 x0 x1 x2 = rw'resize`{1} (x0 >> (((0x00000000000000000000000000000008 - (rw'resize`{128} (rw__LL_Main_dev264 x1 x2))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000001))
 
 // $LL.Main.dev276
 rw__LL_Main_dev276 : [8] -> [3] -> [3] -> [3] -> [8] -> [3] -> [1]
-rw__LL_Main_dev276 arg0 arg1 arg2 arg3 arg4 arg5 = rw__LL_Main_dev5 (take`{8} s1) (take`{3} (drop`{8} s1)) (take`{3} (drop`{11} s1)) (take`{3} (drop`{14} s1)) (take`{3} (drop`{17} s1)) (take`{8} (drop`{20} s1)) (drop`{28} s1)
-  where
-    s0 : [6]
-    s0 = arg5 # arg1
-    s1 : [29]
-    s1 = arg0 # (arg5 # (arg1 # (arg2 # (arg3 # (arg4 # (rw__LL_Main_dev255 (take`{3} s0) (drop`{3} s0)))))))
+rw__LL_Main_dev276 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev5 x0 x5 x1 x2 x3 x4 (rw__LL_Main_dev274 x5 x1)
+
+// $LL.Main.dev275
+rw__LL_Main_dev275 : [8] -> [8] -> [3] -> [8]
+rw__LL_Main_dev275 x0 x1 x2 = rw__LL_Main_dev2 x0 x1 x2
+
+// $LL.Main.dev274
+rw__LL_Main_dev274 : [3] -> [3] -> [1]
+rw__LL_Main_dev274 x0 x1 = rw__LL_Main_dev255 x0 x1
 
 // $LL.Main.dev273
 rw__LL_Main_dev273 : [8] -> [8] -> [8]
-rw__LL_Main_dev273 arg0 arg1 = rw__LL_Main_dev185 s0
-  where
-    s0 : [16]
-    s0 = arg0 # arg1
+rw__LL_Main_dev273 x0 x1 = rw__LL_Main_dev185 (x0 # x1)
+
+// $LL.ReWire.Prelude.not3
+rw__LL_ReWire_Prelude_not3 : [1] -> [1]
+rw__LL_ReWire_Prelude_not3 x0 = 0b1
+
+// $LL.Main.dev272
+rw__LL_Main_dev272 : [128] -> [1]
+rw__LL_Main_dev272 x0 = rw__LL_Main_dev265 x0
+
+// $LL.Main.dev271
+rw__LL_Main_dev271 : [3] -> [3] -> [3]
+rw__LL_Main_dev271 x0 x1 = rw__LL_Main_dev235 x0 x1
 
 // $LL.Main.dev270
 rw__LL_Main_dev270 : [3] -> [3] -> [1]
-rw__LL_Main_dev270 arg0 arg1 = [(take`{128} s0) < (drop`{128} s0)]
-  where
-    s0 : [256]
-    s0 = (rw'resize`{128} arg0) # (rw'resize`{128} arg1)
+rw__LL_Main_dev270 x0 x1 = [(rw'resize`{128} x0) < (rw'resize`{128} x1)]
+
+// $LL.Main.dev269
+rw__LL_Main_dev269 : [3] -> [1]
+rw__LL_Main_dev269 x0 = rw__LL_Main_dev272 (rw'resize`{128} x0)
 
 // $LL.Main.dev268
 rw__LL_Main_dev268 : [8] -> [3] -> [8] -> [3] -> [8]
-rw__LL_Main_dev268 arg0 arg1 arg2 arg3 = (rw__LL_Main_dev171 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{3} (drop`{11} s0)) (take`{8} (drop`{14} s0)) (drop`{22} s0)) # ((rw__LL_Main_dev171 (take`{8} s1) (take`{3} (drop`{8} s1)) (take`{3} (drop`{11} s1)) (take`{8} (drop`{14} s1)) (drop`{22} s1)) # ((rw__LL_Main_dev171 (take`{8} s2) (take`{3} (drop`{8} s2)) (take`{3} (drop`{11} s2)) (take`{8} (drop`{14} s2)) (drop`{22} s2)) # ((rw__LL_Main_dev171 (take`{8} s3) (take`{3} (drop`{8} s3)) (take`{3} (drop`{11} s3)) (take`{8} (drop`{14} s3)) (drop`{22} s3)) # ((rw__LL_Main_dev171 (take`{8} s4) (take`{3} (drop`{8} s4)) (take`{3} (drop`{11} s4)) (take`{8} (drop`{14} s4)) (drop`{22} s4)) # ((rw__LL_Main_dev171 (take`{8} s5) (take`{3} (drop`{8} s5)) (take`{3} (drop`{11} s5)) (take`{8} (drop`{14} s5)) (drop`{22} s5)) # ((rw__LL_Main_dev171 (take`{8} s6) (take`{3} (drop`{8} s6)) (take`{3} (drop`{11} s6)) (take`{8} (drop`{14} s6)) (drop`{22} s6)) # (rw__LL_Main_dev171 (take`{8} s7) (take`{3} (drop`{8} s7)) (take`{3} (drop`{11} s7)) (take`{8} (drop`{14} s7)) (drop`{22} s7))))))))
-  where
-    s0 : [25]
-    s0 = arg0 # (arg1 # (arg3 # (arg2 # 0b000)))
-    s1 : [25]
-    s1 = arg0 # (arg1 # (arg3 # (arg2 # 0b001)))
-    s2 : [25]
-    s2 = arg0 # (arg1 # (arg3 # (arg2 # 0b010)))
-    s3 : [25]
-    s3 = arg0 # (arg1 # (arg3 # (arg2 # 0b011)))
-    s4 : [25]
-    s4 = arg0 # (arg1 # (arg3 # (arg2 # 0b100)))
-    s5 : [25]
-    s5 = arg0 # (arg1 # (arg3 # (arg2 # 0b101)))
-    s6 : [25]
-    s6 = arg0 # (arg1 # (arg3 # (arg2 # 0b110)))
-    s7 : [25]
-    s7 = arg0 # (arg1 # (arg3 # (arg2 # 0b111)))
+rw__LL_Main_dev268 x0 x1 x2 x3 = (rw__LL_Main_dev171 x0 x1 x3 x2 0b000) # ((rw__LL_Main_dev171 x0 x1 x3 x2 0b001) # ((rw__LL_Main_dev171 x0 x1 x3 x2 0b010) # ((rw__LL_Main_dev171 x0 x1 x3 x2 0b011) # ((rw__LL_Main_dev171 x0 x1 x3 x2 0b100) # ((rw__LL_Main_dev171 x0 x1 x3 x2 0b101) # ((rw__LL_Main_dev171 x0 x1 x3 x2 0b110) # (rw__LL_Main_dev171 x0 x1 x3 x2 0b111)))))))
 
 // $LL.Main.dev267
 rw__LL_Main_dev267 : [6] -> [1]
-rw__LL_Main_dev267 arg0 = rw__LL_Main_dev270 (take`{3} arg0) (drop`{3} arg0)
-
-// $LL.Main.dev266
-rw__LL_Main_dev266 : [3] -> [1]
-rw__LL_Main_dev266 arg0 = rw__LL_Main_dev265 s0
-  where
-    s0 : [128]
-    s0 = rw'resize`{128} arg0
+rw__LL_Main_dev267 x0 = rw__LL_Main_dev205 (take`{3} x0) (drop`{3} x0)
 
 // $LL.Main.dev265
 rw__LL_Main_dev265 : [128] -> [1]
-rw__LL_Main_dev265 arg0 = rw_ReWire_Prelude_not s1
+rw__LL_Main_dev265 x0 = rw_ReWire_Prelude_not s0
   where
     s0 : [1]
-    s0 = rw'resize`{1} arg0
-    s1 : [1]
-    s1 = [s0 @ 0]
+    s0 = rw'resize`{1} x0
+
+// $LL.Main.dev264
+rw__LL_Main_dev264 : [3] -> [3] -> [3]
+rw__LL_Main_dev264 x0 x1 = rw__LL_Main_dev261 x0 x1
+
+// $LL.Main.dev263
+rw__LL_Main_dev263 : [3] -> [3] -> [3]
+rw__LL_Main_dev263 x0 x1 = rw__LL_Main_dev262 x0 x1
 
 // $LL.Main.dev262
 rw__LL_Main_dev262 : [3] -> [3] -> [3]
-rw__LL_Main_dev262 arg0 arg1 = rw__LL_Main_dev278 s0
-  where
-    s0 : [6]
-    s0 = arg0 # arg1
+rw__LL_Main_dev262 x0 x1 = rw__LL_Main_dev278 (x0 # x1)
 
 // $LL.Main.dev261
 rw__LL_Main_dev261 : [3] -> [3] -> [3]
-rw__LL_Main_dev261 arg0 arg1 = rw__LL_Main_dev244 s0
-  where
-    s0 : [6]
-    s0 = arg0 # arg1
+rw__LL_Main_dev261 x0 x1 = rw__LL_Main_dev244 (x0 # x1)
 
 // $LL.Main.dev260
 rw__LL_Main_dev260 : [3] -> [3] -> [8] -> [1] -> [3]
-rw__LL_Main_dev260 arg0 arg1 arg2 arg3 = if (drop`{3} s0) == 0b1 then (take`{3} s0) else (rw__LL_Main_dev158 (take`{3} s1) (take`{3} (drop`{3} s1)) (drop`{6} s1))
+rw__LL_Main_dev260 x0 x1 x2 x3 = if (drop`{3} s0) == 0b1 then (rw__LL_Main_dev143 (take`{3} s0)) else (rw__LL_Main_dev158 x0 x1 (rw__LL_Main_dev284 (rw__LL_Main_dev285 x2)))
   where
     s0 : [4]
-    s0 = arg1 # arg3
-    s1 : [7]
-    s1 = arg0 # (arg1 # 0b0)
+    s0 = x1 # x3
 
 // $LL.Main.dev256
 rw__LL_Main_dev256 : [3] -> [3] -> [3]
-rw__LL_Main_dev256 arg0 arg1 = rw__LL_Main_dev159 s0
-  where
-    s0 : [6]
-    s0 = arg0 # arg1
+rw__LL_Main_dev256 x0 x1 = rw__LL_Main_dev159 (x0 # x1)
 
 // $LL.Main.dev255
 rw__LL_Main_dev255 : [3] -> [3] -> [1]
-rw__LL_Main_dev255 arg0 arg1 = rw__LL_Main_dev267 s0
-  where
-    s0 : [6]
-    s0 = arg0 # arg1
+rw__LL_Main_dev255 x0 x1 = rw__LL_Main_dev267 (x0 # x1)
 
 // $LL.Main.dev254
 rw__LL_Main_dev254 : [8] -> [3] -> [3] -> [8] -> [3] -> [8]
-rw__LL_Main_dev254 arg0 arg1 arg2 arg3 arg4 = (rw__LL_Main_dev276 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{3} (drop`{11} s0)) (take`{3} (drop`{14} s0)) (take`{8} (drop`{17} s0)) (drop`{25} s0)) # ((rw__LL_Main_dev276 (take`{8} s1) (take`{3} (drop`{8} s1)) (take`{3} (drop`{11} s1)) (take`{3} (drop`{14} s1)) (take`{8} (drop`{17} s1)) (drop`{25} s1)) # ((rw__LL_Main_dev276 (take`{8} s2) (take`{3} (drop`{8} s2)) (take`{3} (drop`{11} s2)) (take`{3} (drop`{14} s2)) (take`{8} (drop`{17} s2)) (drop`{25} s2)) # ((rw__LL_Main_dev276 (take`{8} s3) (take`{3} (drop`{8} s3)) (take`{3} (drop`{11} s3)) (take`{3} (drop`{14} s3)) (take`{8} (drop`{17} s3)) (drop`{25} s3)) # ((rw__LL_Main_dev276 (take`{8} s4) (take`{3} (drop`{8} s4)) (take`{3} (drop`{11} s4)) (take`{3} (drop`{14} s4)) (take`{8} (drop`{17} s4)) (drop`{25} s4)) # ((rw__LL_Main_dev276 (take`{8} s5) (take`{3} (drop`{8} s5)) (take`{3} (drop`{11} s5)) (take`{3} (drop`{14} s5)) (take`{8} (drop`{17} s5)) (drop`{25} s5)) # ((rw__LL_Main_dev276 (take`{8} s6) (take`{3} (drop`{8} s6)) (take`{3} (drop`{11} s6)) (take`{3} (drop`{14} s6)) (take`{8} (drop`{17} s6)) (drop`{25} s6)) # (rw__LL_Main_dev276 (take`{8} s7) (take`{3} (drop`{8} s7)) (take`{3} (drop`{11} s7)) (take`{3} (drop`{14} s7)) (take`{8} (drop`{17} s7)) (drop`{25} s7))))))))
-  where
-    s0 : [28]
-    s0 = arg0 # (arg4 # (arg1 # (arg2 # (arg3 # 0b000))))
-    s1 : [28]
-    s1 = arg0 # (arg4 # (arg1 # (arg2 # (arg3 # 0b001))))
-    s2 : [28]
-    s2 = arg0 # (arg4 # (arg1 # (arg2 # (arg3 # 0b010))))
-    s3 : [28]
-    s3 = arg0 # (arg4 # (arg1 # (arg2 # (arg3 # 0b011))))
-    s4 : [28]
-    s4 = arg0 # (arg4 # (arg1 # (arg2 # (arg3 # 0b100))))
-    s5 : [28]
-    s5 = arg0 # (arg4 # (arg1 # (arg2 # (arg3 # 0b101))))
-    s6 : [28]
-    s6 = arg0 # (arg4 # (arg1 # (arg2 # (arg3 # 0b110))))
-    s7 : [28]
-    s7 = arg0 # (arg4 # (arg1 # (arg2 # (arg3 # 0b111))))
+rw__LL_Main_dev254 x0 x1 x2 x3 x4 = (rw__LL_Main_dev276 x0 x4 x1 x2 x3 0b000) # ((rw__LL_Main_dev276 x0 x4 x1 x2 x3 0b001) # ((rw__LL_Main_dev276 x0 x4 x1 x2 x3 0b010) # ((rw__LL_Main_dev276 x0 x4 x1 x2 x3 0b011) # ((rw__LL_Main_dev276 x0 x4 x1 x2 x3 0b100) # ((rw__LL_Main_dev276 x0 x4 x1 x2 x3 0b101) # ((rw__LL_Main_dev276 x0 x4 x1 x2 x3 0b110) # (rw__LL_Main_dev276 x0 x4 x1 x2 x3 0b111)))))))
 
 // $LL.Main.dev253
 rw__LL_Main_dev253 : [8] -> [8] -> [8]
-rw__LL_Main_dev253 arg0 arg1 = rw__LL_Main_dev42 s0
-  where
-    s0 : [16]
-    s0 = arg0 # arg1
+rw__LL_Main_dev253 x0 x1 = rw__LL_Main_dev42 (x0 # x1)
+
+// $LL.Main.dev251
+rw__LL_Main_dev251 : [3] -> [3] -> [3]
+rw__LL_Main_dev251 x0 x1 = rw__LL_Main_dev179 x0 x1
+
+// $LL.Main.dev250
+rw__LL_Main_dev250 : [3] -> [3] -> [3]
+rw__LL_Main_dev250 x0 x1 = rw__LL_Main_dev282 x0 x1
 
 // $LL.Main.dev249
 rw__LL_Main_dev249 : [8] -> [3] -> [3] -> [8] -> [3] -> [8]
-rw__LL_Main_dev249 arg0 arg1 arg2 arg3 arg4 = rw__LL_Main_dev254 (take`{8} s1) (take`{3} (drop`{8} s1)) (take`{3} (drop`{11} s1)) (take`{8} (drop`{14} s1)) (drop`{22} s1)
-  where
-    s0 : [15]
-    s0 = arg0 # (arg4 # (arg2 # 0b0))
-    s1 : [25]
-    s1 = arg0 # (arg1 # (arg2 # (arg3 # (rw__LL_Main_dev63 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{3} (drop`{11} s0)) (drop`{14} s0)))))
+rw__LL_Main_dev249 x0 x1 x2 x3 x4 = rw__LL_Main_dev64 x0 x1 x2 x3 (rw__LL_Main_dev63 x0 x4 x2 (rw__LL_Main_dev284 (rw__LL_Main_dev285 x0)))
+
+// $LL.Main.dev248
+rw__LL_Main_dev248 : [3] -> [3] -> [3]
+rw__LL_Main_dev248 x0 x1 = rw__LL_Main_dev200 x0 x1
+
+// $LL.Main.dev245
+rw__LL_Main_dev245 : [8] -> [8] -> [3] -> [8]
+rw__LL_Main_dev245 x0 x1 x2 = rw__LL_Main_dev57 x0 x1 x2
 
 // $LL.Main.dev244
 rw__LL_Main_dev244 : [6] -> [3]
-rw__LL_Main_dev244 arg0 = rw__LL_Main_dev282 (take`{3} arg0) (drop`{3} arg0)
+rw__LL_Main_dev244 x0 = rw__LL_Main_dev250 (take`{3} x0) (drop`{3} x0)
+
+// $LL.Main.dev243
+rw__LL_Main_dev243 : [3] -> [3] -> [3]
+rw__LL_Main_dev243 x0 x1 = rw__LL_Main_dev283 x0 x1
 
 // $LL.Main.dev242
 rw__LL_Main_dev242 : [3] -> [3] -> [8] -> [3] -> [3] -> [1]
-rw__LL_Main_dev242 arg0 arg1 arg2 arg3 arg4 = rw'resize`{1} s8
-  where
-    s0 : [6]
-    s0 = arg0 # arg3
-    s1 : [6]
-    s1 = (rw__LL_Main_dev179 (take`{3} s0) (drop`{3} s0)) # arg1
-    s2 : [6]
-    s2 = arg4 # (rw__LL_Main_dev261 (take`{3} s1) (drop`{3} s1))
-    s3 : [3]
-    s3 = rw__LL_Main_dev262 (take`{3} s2) (drop`{3} s2)
-    s4 : [256]
-    s4 = 0x00000000000000000000000000000008 # (rw'resize`{128} s3)
-    s5 : [256]
-    s5 = ((take`{128} s4) - (drop`{128} s4)) # 0x00000000000000000000000000000001
-    s6 : [256]
-    s6 = ((take`{128} s5) - (drop`{128} s5)) # 0x00000000000000000000000000000001
-    s7 : [256]
-    s7 = (rw'resize`{128} arg2) # ((take`{128} s6) * (drop`{128} s6))
-    s8 : [128]
-    s8 = (take`{128} s7) >> (drop`{128} s7)
+rw__LL_Main_dev242 x0 x1 x2 x3 x4 = rw'resize`{1} (x2 >> (((0x00000000000000000000000000000008 - (rw'resize`{128} (rw__LL_Main_dev263 x4 (rw__LL_Main_dev264 (rw__LL_Main_dev251 x0 x3) x1)))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000001))
+
+// $LL.Main.dev238
+rw__LL_Main_dev238 : [8] -> [3] -> [3] -> [8] -> [3] -> [8]
+rw__LL_Main_dev238 x0 x1 x2 x3 x4 = rw__LL_Main_dev254 x0 x1 x2 x3 x4
+
+// $LL.Main.x21
+rw__LL_Main_x21 : [8] -> [8]
+rw__LL_Main_x21 x0 = rw__LL_Main_x2 x0
+
+// $LL.Main.dev236
+rw__LL_Main_dev236 : [8] -> [8] -> [3] -> [3] -> [8]
+rw__LL_Main_dev236 x0 x1 x2 x3 = rw__LL_Main_dev234 x0 x1 x2 x3
 
 // $LL.Main.dev235
 rw__LL_Main_dev235 : [3] -> [3] -> [3]
-rw__LL_Main_dev235 arg0 arg1 = rw'resize`{3} s2
-  where
-    s0 : [256]
-    s0 = (rw'resize`{128} arg0) # (rw'resize`{128} arg1)
-    s1 : [256]
-    s1 = ((take`{128} s0) + (drop`{128} s0)) # 0x00000000000000000000000000000008
-    s2 : [128]
-    s2 = (take`{128} s1) % (drop`{128} s1)
+rw__LL_Main_dev235 x0 x1 = rw'resize`{3} (if 0x00000000000000000000000000000008 == zero then ((rw'resize`{128} x0) + (rw'resize`{128} x1)) else (((rw'resize`{128} x0) + (rw'resize`{128} x1)) % 0x00000000000000000000000000000008))
 
 // $LL.Main.dev234
 rw__LL_Main_dev234 : [8] -> [8] -> [3] -> [3] -> [8]
-rw__LL_Main_dev234 arg0 arg1 arg2 arg3 = rw__LL_Main_dev286 (take`{8} s1) (take`{3} (drop`{8} s1)) (take`{8} (drop`{11} s1)) (take`{3} (drop`{19} s1)) (drop`{22} s1)
-  where
-    s0 : [6]
-    s0 = 0b111 # arg3
-    s1 : [25]
-    s1 = arg0 # (arg3 # (arg1 # (arg2 # (rw__LL_Main_dev261 (take`{3} s0) (drop`{3} s0)))))
+rw__LL_Main_dev234 x0 x1 x2 x3 = rw__LL_Main_dev62 x0 x3 x1 x2 (rw__LL_Main_dev264 (rw__LL_Main_dev285 x0) x3)
+
+// $LL.Main.dev233
+rw__LL_Main_dev233 : [3] -> [3] -> [3]
+rw__LL_Main_dev233 x0 x1 = rw__LL_Main_dev256 x0 x1
 
 // $LL.Main.dev231
 rw__LL_Main_dev231 : [3] -> [3] -> [3]
-rw__LL_Main_dev231 arg0 arg1 = rw__LL_Main_dev262 (take`{3} s0) (drop`{3} s0)
-  where
-    s0 : [6]
-    s0 = arg1 # arg0
+rw__LL_Main_dev231 x0 x1 = rw__LL_Main_dev263 x1 x0
 
 // ReWire.Prelude.not
 rw_ReWire_Prelude_not : [1] -> [1]
-rw_ReWire_Prelude_not arg0 = rw__LL_ReWire_Prelude_not (take`{1} s0) (drop`{1} s0)
-  where
-    s0 : [2]
-    s0 = arg0 # arg0
+rw_ReWire_Prelude_not x0 = rw__LL_ReWire_Prelude_not x0 x0
 
 // $LL.Main.dev230
 rw__LL_Main_dev230 : [8] -> [3] -> [8] -> [3] -> [8]
-rw__LL_Main_dev230 arg0 arg1 arg2 arg3 = rw__LL_Main_dev249 (take`{8} s1) (take`{3} (drop`{8} s1)) (take`{3} (drop`{11} s1)) (take`{8} (drop`{14} s1)) (drop`{22} s1)
-  where
-    s0 : [6]
-    s0 = 0b111 # arg3
-    s1 : [25]
-    s1 = arg0 # (arg3 # (arg1 # (arg2 # (rw__LL_Main_dev261 (take`{3} s0) (drop`{3} s0)))))
+rw__LL_Main_dev230 x0 x1 x2 x3 = rw__LL_Main_dev52 x0 x3 x1 x2 (rw__LL_Main_dev264 (rw__LL_Main_dev285 x0) x3)
 
 // $LL.Main.dev221
 rw__LL_Main_dev221 : [8] -> [3] -> [3] -> [3] -> [1] -> [1]
-rw__LL_Main_dev221 arg0 arg1 arg2 arg3 arg4 = rw__LL_Main_dev175 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{3} (drop`{11} s0)) (take`{3} (drop`{14} s0))
+rw__LL_Main_dev221 x0 x1 x2 x3 x4 = rw__LL_Main_dev175 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{3} (drop`{11} s0)) (take`{3} (drop`{14} s0))
   where
     s0 : [18]
-    s0 = arg0 # (arg1 # (arg2 # (arg3 # arg4)))
+    s0 = x0 # (x1 # (x2 # (x3 # x4)))
+
+// $LL.Main.dev216
+rw__LL_Main_dev216 : [8] -> [8] -> [3] -> [3] -> [8]
+rw__LL_Main_dev216 x0 x1 x2 x3 = rw__LL_Main_dev x0 x1 x2 x3
 
 // $LL.Main.dev214
 rw__LL_Main_dev214 : [3] -> [8] -> [8] -> [3] -> [8]
-rw__LL_Main_dev214 arg0 arg1 arg2 arg3 = rw__LL_Main_dev29 (take`{3} s1) (take`{8} (drop`{3} s1)) (take`{3} (drop`{11} s1)) (take`{8} (drop`{14} s1)) (drop`{22} s1)
-  where
-    s0 : [6]
-    s0 = 0b111 # arg3
-    s1 : [25]
-    s1 = arg0 # (arg1 # (arg3 # (arg2 # (rw__LL_Main_dev261 (take`{3} s0) (drop`{3} s0)))))
-
-// $LL.Main.dev213
-rw__LL_Main_dev213 : [3] -> [3] -> [3]
-rw__LL_Main_dev213 arg0 arg1 = rw__LL_Main_dev262 (take`{3} s0) (drop`{3} s0)
-  where
-    s0 : [6]
-    s0 = arg0 # arg1
+rw__LL_Main_dev214 x0 x1 x2 x3 = rw__LL_Main_dev145 x0 x1 x3 x2 (rw__LL_Main_dev264 (rw__LL_Main_dev285 x2) x3)
 
 // $LL.Main.dev207
 rw__LL_Main_dev207 : [8] -> [8] -> [32]
-rw__LL_Main_dev207 arg0 arg1 = (rw__LL_Main_dev253 (take`{8} s0) (drop`{8} s0)) # ((rw__LL_Main_dev89 (take`{8} s1) (drop`{8} s1)) # ((rw__LL_Main_dev32 (take`{8} s2) (drop`{8} s2)) # (rw__LL_Main_dev273 (take`{8} s3) (drop`{8} s3))))
-  where
-    s0 : [16]
-    s0 = arg0 # arg1
-    s1 : [16]
-    s1 = arg0 # arg1
-    s2 : [16]
-    s2 = arg0 # arg1
-    s3 : [16]
-    s3 = arg0 # arg1
+rw__LL_Main_dev207 x0 x1 = (rw__LL_Main_dev61 x0 x1) # ((rw__LL_Main_dev161 x0 x1) # ((rw__LL_Main_dev182 x0 x1) # (rw__LL_Main_dev27 x0 x1)))
+
+// $LL.Main.dev205
+rw__LL_Main_dev205 : [3] -> [3] -> [1]
+rw__LL_Main_dev205 x0 x1 = rw__LL_Main_dev270 x0 x1
+
+// Main.dev
+rw_Main_dev : [8] -> [32]
+rw_Main_dev x0 = rw__LL_Main_dev11 x0
 
 // $LL.Main.dev204
 rw__LL_Main_dev204 : [8] -> [3] -> [8] -> [3] -> [3] -> [3] -> [1]
-rw__LL_Main_dev204 arg0 arg1 arg2 arg3 arg4 arg5 = rw__LL_Main_dev88 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{3} (drop`{11} s0)) (take`{8} (drop`{14} s0)) (take`{3} (drop`{22} s0)) (take`{3} (drop`{25} s0)) (drop`{28} s0)
-  where
-    s0 : [29]
-    s0 = arg0 # (arg5 # (arg1 # (arg2 # (arg3 # (arg4 # (rw__LL_Main_dev266 arg5))))))
+rw__LL_Main_dev204 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev88 x0 x5 x1 x2 x3 x4 (rw__LL_Main_dev284 x5)
 
 // $LL.Main.dev200
 rw__LL_Main_dev200 : [3] -> [3] -> [3]
-rw__LL_Main_dev200 arg0 arg1 = rw'resize`{3} s2
-  where
-    s0 : [256]
-    s0 = (rw'resize`{128} arg0) # (rw'resize`{128} arg1)
-    s1 : [256]
-    s1 = ((take`{128} s0) * (drop`{128} s0)) # 0x00000000000000000000000000000008
-    s2 : [128]
-    s2 = (take`{128} s1) % (drop`{128} s1)
+rw__LL_Main_dev200 x0 x1 = rw'resize`{3} (if 0x00000000000000000000000000000008 == zero then ((rw'resize`{128} x0) * (rw'resize`{128} x1)) else (((rw'resize`{128} x0) * (rw'resize`{128} x1)) % 0x00000000000000000000000000000008))
 
 // $LL.Main.dev197
 rw__LL_Main_dev197 : [8] -> [3] -> [3] -> [3] -> [1]
-rw__LL_Main_dev197 arg0 arg1 arg2 arg3 = rw'resize`{1} s7
-  where
-    s0 : [6]
-    s0 = arg2 # arg1
-    s1 : [6]
-    s1 = (rw__LL_Main_dev179 (take`{3} s0) (drop`{3} s0)) # arg3
-    s2 : [3]
-    s2 = rw__LL_Main_dev261 (take`{3} s1) (drop`{3} s1)
-    s3 : [256]
-    s3 = 0x00000000000000000000000000000008 # (rw'resize`{128} s2)
-    s4 : [256]
-    s4 = ((take`{128} s3) - (drop`{128} s3)) # 0x00000000000000000000000000000001
-    s5 : [256]
-    s5 = ((take`{128} s4) - (drop`{128} s4)) # 0x00000000000000000000000000000001
-    s6 : [256]
-    s6 = (rw'resize`{128} arg0) # ((take`{128} s5) * (drop`{128} s5))
-    s7 : [128]
-    s7 = (take`{128} s6) >> (drop`{128} s6)
+rw__LL_Main_dev197 x0 x1 x2 x3 = rw'resize`{1} (x0 >> (((0x00000000000000000000000000000008 - (rw'resize`{128} (rw__LL_Main_dev264 (rw__LL_Main_dev251 x2 x1) x3))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000001))
+
+// $LL.Main.dev196
+rw__LL_Main_dev196 : [8] -> [3] -> [3] -> [8] -> [3] -> [8]
+rw__LL_Main_dev196 x0 x1 x2 x3 x4 = rw__LL_Main_dev249 x0 x1 x2 x3 x4
+
+// $LL.Main.dev192
+rw__LL_Main_dev192 : [8] -> [8] -> [3] -> [8]
+rw__LL_Main_dev192 x0 x1 x2 = rw__LL_Main_dev144 x0 x1 x2
 
 // $LL.Main.dev187
 rw__LL_Main_dev187 : [8] -> [8] -> [3] -> [8]
-rw__LL_Main_dev187 arg0 arg1 arg2 = rw__LL_Main_dev97 (take`{3} s0) (take`{8} (drop`{3} s0)) (drop`{11} s0)
-  where
-    s0 : [19]
-    s0 = arg2 # (arg0 # arg1)
+rw__LL_Main_dev187 x0 x1 x2 = rw__LL_Main_dev97 x2 x0 x1
 
 // $LL.Main.dev185
 rw__LL_Main_dev185 : [16] -> [8]
-rw__LL_Main_dev185 arg0 = rw__LL_Main_dev121 (take`{8} arg0) (drop`{8} arg0)
+rw__LL_Main_dev185 x0 = rw__LL_Main_dev28 (take`{8} x0) (drop`{8} x0)
+
+// $LL.Main.dev184
+rw__LL_Main_dev184 : [8] -> [8] -> [8]
+rw__LL_Main_dev184 x0 x1 = rw__LL_Main_dev8 x0 x1
+
+// $LL.Main.dev182
+rw__LL_Main_dev182 : [8] -> [8] -> [8]
+rw__LL_Main_dev182 x0 x1 = rw__LL_Main_dev32 x0 x1
+
+// $LL.Main.dev180
+rw__LL_Main_dev180 : [8] -> [3] -> [8] -> [3] -> [3] -> [8]
+rw__LL_Main_dev180 x0 x1 x2 x3 x4 = rw__LL_Main_dev151 x0 x1 x2 x3 x4
 
 // $LL.Main.dev179
 rw__LL_Main_dev179 : [3] -> [3] -> [3]
-rw__LL_Main_dev179 arg0 arg1 = rw__LL_Main_dev152 s0
-  where
-    s0 : [6]
-    s0 = arg0 # arg1
+rw__LL_Main_dev179 x0 x1 = rw__LL_Main_dev152 (x0 # x1)
 
 // $LL.Main.dev175
 rw__LL_Main_dev175 : [8] -> [3] -> [3] -> [3] -> [1]
-rw__LL_Main_dev175 arg0 arg1 arg2 arg3 = rw'resize`{1} s7
-  where
-    s0 : [6]
-    s0 = arg3 # arg2
-    s1 : [6]
-    s1 = (rw__LL_Main_dev179 (take`{3} s0) (drop`{3} s0)) # arg1
-    s2 : [3]
-    s2 = rw__LL_Main_dev256 (take`{3} s1) (drop`{3} s1)
-    s3 : [256]
-    s3 = 0x00000000000000000000000000000008 # (rw'resize`{128} s2)
-    s4 : [256]
-    s4 = ((take`{128} s3) - (drop`{128} s3)) # 0x00000000000000000000000000000001
-    s5 : [256]
-    s5 = ((take`{128} s4) - (drop`{128} s4)) # 0x00000000000000000000000000000001
-    s6 : [256]
-    s6 = (rw'resize`{128} arg0) # ((take`{128} s5) * (drop`{128} s5))
-    s7 : [128]
-    s7 = (take`{128} s6) >> (drop`{128} s6)
+rw__LL_Main_dev175 x0 x1 x2 x3 = rw'resize`{1} (x0 >> (((0x00000000000000000000000000000008 - (rw'resize`{128} (rw__LL_Main_dev233 (rw__LL_Main_dev251 x3 x2) x1))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000001))
+
+// $LL.Main.dev174
+rw__LL_Main_dev174 : [8] -> [3] -> [8] -> [3] -> [3] -> [8]
+rw__LL_Main_dev174 x0 x1 x2 x3 x4 = rw__LL_Main_dev286 x0 x1 x2 x3 x4
 
 // $LL.Main.dev171
 rw__LL_Main_dev171 : [8] -> [3] -> [3] -> [8] -> [3] -> [1]
-rw__LL_Main_dev171 arg0 arg1 arg2 arg3 arg4 = rw__LL_Main_dev67 (take`{8} s1) (take`{3} (drop`{8} s1)) (take`{3} (drop`{11} s1)) (take`{8} (drop`{14} s1)) (take`{3} (drop`{22} s1)) (drop`{25} s1)
-  where
-    s0 : [6]
-    s0 = arg4 # arg2
-    s1 : [26]
-    s1 = arg0 # (arg1 # (arg2 # (arg3 # (arg4 # (rw__LL_Main_dev255 (take`{3} s0) (drop`{3} s0))))))
+rw__LL_Main_dev171 x0 x1 x2 x3 x4 = rw__LL_Main_dev67 x0 x1 x2 x3 x4 (rw__LL_Main_dev274 x4 x2)
 
 // $LL.Main.dev170
 rw__LL_Main_dev170 : [3] -> [3] -> [1] -> [3]
-rw__LL_Main_dev170 arg0 arg1 arg2 = rw__LL_Main_dev213 (take`{3} s0) (take`{3} (drop`{3} s0))
+rw__LL_Main_dev170 x0 x1 x2 = rw__LL_Main_dev33 (take`{3} s0) (take`{3} (drop`{3} s0))
   where
     s0 : [7]
-    s0 = arg0 # (arg1 # arg2)
+    s0 = x0 # (x1 # x2)
+
+// $LL.Main.dev169
+rw__LL_Main_dev169 : [8] -> [8] -> [32]
+rw__LL_Main_dev169 x0 x1 = rw__LL_Main_dev279 x0 x1
 
 // $LL.Main.dev167
 rw__LL_Main_dev167 : [8] -> [8] -> [3] -> [3] -> [3] -> [1] -> [1]
-rw__LL_Main_dev167 arg0 arg1 arg2 arg3 arg4 arg5 = if (drop`{14} s0) == 0b1 then (rw__LL_Main_dev277 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{3} (drop`{11} s0))) else (rw__LL_Main_dev24 (take`{8} s1) (take`{3} (drop`{8} s1)) (take`{3} (drop`{11} s1)) (take`{3} (drop`{14} s1)) (drop`{17} s1))
+rw__LL_Main_dev167 x0 x1 x2 x3 x4 x5 = if (drop`{14} s0) == 0b1 then (rw__LL_Main_dev277 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{3} (drop`{11} s0))) else (rw__LL_Main_dev24 x0 x2 x3 x4 (rw__LL_Main_dev284 x3))
   where
     s0 : [15]
-    s0 = arg1 # (arg3 # (arg4 # arg5))
-    s1 : [18]
-    s1 = arg0 # (arg2 # (arg3 # (arg4 # (rw__LL_Main_dev266 arg3))))
+    s0 = x1 # (x3 # (x4 # x5))
 
 // $LL.Main.dev165
 rw__LL_Main_dev165 : [3] -> [3] -> [3] -> [3] -> [8] -> [1]
-rw__LL_Main_dev165 arg0 arg1 arg2 arg3 arg4 = rw'resize`{1} s8
-  where
-    s0 : [6]
-    s0 = arg0 # arg1
-    s1 : [6]
-    s1 = (rw__LL_Main_dev179 (take`{3} s0) (drop`{3} s0)) # arg2
-    s2 : [6]
-    s2 = (rw__LL_Main_dev256 (take`{3} s1) (drop`{3} s1)) # arg3
-    s3 : [3]
-    s3 = rw__LL_Main_dev262 (take`{3} s2) (drop`{3} s2)
-    s4 : [256]
-    s4 = 0x00000000000000000000000000000008 # (rw'resize`{128} s3)
-    s5 : [256]
-    s5 = ((take`{128} s4) - (drop`{128} s4)) # 0x00000000000000000000000000000001
-    s6 : [256]
-    s6 = ((take`{128} s5) - (drop`{128} s5)) # 0x00000000000000000000000000000001
-    s7 : [256]
-    s7 = (rw'resize`{128} arg4) # ((take`{128} s6) * (drop`{128} s6))
-    s8 : [128]
-    s8 = (take`{128} s7) >> (drop`{128} s7)
+rw__LL_Main_dev165 x0 x1 x2 x3 x4 = rw'resize`{1} (x4 >> (((0x00000000000000000000000000000008 - (rw'resize`{128} (rw__LL_Main_dev263 (rw__LL_Main_dev233 (rw__LL_Main_dev251 x0 x1) x2) x3))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000001))
+
+// $LL.Main.dev161
+rw__LL_Main_dev161 : [8] -> [8] -> [8]
+rw__LL_Main_dev161 x0 x1 = rw__LL_Main_dev89 x0 x1
 
 // $LL.Main.dev159
 rw__LL_Main_dev159 : [6] -> [3]
-rw__LL_Main_dev159 arg0 = rw__LL_Main_dev200 (take`{3} arg0) (drop`{3} arg0)
+rw__LL_Main_dev159 x0 = rw__LL_Main_dev248 (take`{3} x0) (drop`{3} x0)
 
 // $LL.Main.dev158
 rw__LL_Main_dev158 : [3] -> [3] -> [1] -> [3]
-rw__LL_Main_dev158 arg0 arg1 arg2 = rw__LL_Main_dev231 (take`{3} s0) (take`{3} (drop`{3} s0))
+rw__LL_Main_dev158 x0 x1 x2 = rw__LL_Main_dev231 (take`{3} s0) (take`{3} (drop`{3} s0))
   where
     s0 : [7]
-    s0 = arg0 # (arg1 # arg2)
+    s0 = x0 # (x1 # x2)
+
+// $LL.Main.dev154
+rw__LL_Main_dev154 : [3] -> [8] -> [3] -> [8] -> [3] -> [8]
+rw__LL_Main_dev154 x0 x1 x2 x3 x4 = rw__LL_Main_dev29 x0 x1 x2 x3 x4
 
 // $LL.Main.dev152
 rw__LL_Main_dev152 : [6] -> [3]
-rw__LL_Main_dev152 arg0 = rw__LL_Main_dev283 (take`{3} arg0) (drop`{3} arg0)
+rw__LL_Main_dev152 x0 = rw__LL_Main_dev243 (take`{3} x0) (drop`{3} x0)
 
 // $LL.Main.dev151
 rw__LL_Main_dev151 : [8] -> [3] -> [8] -> [3] -> [3] -> [8]
-rw__LL_Main_dev151 arg0 arg1 arg2 arg3 arg4 = (rw__LL_Main_dev204 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{8} (drop`{11} s0)) (take`{3} (drop`{19} s0)) (take`{3} (drop`{22} s0)) (drop`{25} s0)) # ((rw__LL_Main_dev204 (take`{8} s1) (take`{3} (drop`{8} s1)) (take`{8} (drop`{11} s1)) (take`{3} (drop`{19} s1)) (take`{3} (drop`{22} s1)) (drop`{25} s1)) # ((rw__LL_Main_dev204 (take`{8} s2) (take`{3} (drop`{8} s2)) (take`{8} (drop`{11} s2)) (take`{3} (drop`{19} s2)) (take`{3} (drop`{22} s2)) (drop`{25} s2)) # ((rw__LL_Main_dev204 (take`{8} s3) (take`{3} (drop`{8} s3)) (take`{8} (drop`{11} s3)) (take`{3} (drop`{19} s3)) (take`{3} (drop`{22} s3)) (drop`{25} s3)) # ((rw__LL_Main_dev204 (take`{8} s4) (take`{3} (drop`{8} s4)) (take`{8} (drop`{11} s4)) (take`{3} (drop`{19} s4)) (take`{3} (drop`{22} s4)) (drop`{25} s4)) # ((rw__LL_Main_dev204 (take`{8} s5) (take`{3} (drop`{8} s5)) (take`{8} (drop`{11} s5)) (take`{3} (drop`{19} s5)) (take`{3} (drop`{22} s5)) (drop`{25} s5)) # ((rw__LL_Main_dev204 (take`{8} s6) (take`{3} (drop`{8} s6)) (take`{8} (drop`{11} s6)) (take`{3} (drop`{19} s6)) (take`{3} (drop`{22} s6)) (drop`{25} s6)) # (rw__LL_Main_dev204 (take`{8} s7) (take`{3} (drop`{8} s7)) (take`{8} (drop`{11} s7)) (take`{3} (drop`{19} s7)) (take`{3} (drop`{22} s7)) (drop`{25} s7))))))))
-  where
-    s0 : [28]
-    s0 = arg0 # (arg1 # (arg2 # (arg3 # (arg4 # 0b000))))
-    s1 : [28]
-    s1 = arg0 # (arg1 # (arg2 # (arg3 # (arg4 # 0b001))))
-    s2 : [28]
-    s2 = arg0 # (arg1 # (arg2 # (arg3 # (arg4 # 0b010))))
-    s3 : [28]
-    s3 = arg0 # (arg1 # (arg2 # (arg3 # (arg4 # 0b011))))
-    s4 : [28]
-    s4 = arg0 # (arg1 # (arg2 # (arg3 # (arg4 # 0b100))))
-    s5 : [28]
-    s5 = arg0 # (arg1 # (arg2 # (arg3 # (arg4 # 0b101))))
-    s6 : [28]
-    s6 = arg0 # (arg1 # (arg2 # (arg3 # (arg4 # 0b110))))
-    s7 : [28]
-    s7 = arg0 # (arg1 # (arg2 # (arg3 # (arg4 # 0b111))))
+rw__LL_Main_dev151 x0 x1 x2 x3 x4 = (rw__LL_Main_dev204 x0 x1 x2 x3 x4 0b000) # ((rw__LL_Main_dev204 x0 x1 x2 x3 x4 0b001) # ((rw__LL_Main_dev204 x0 x1 x2 x3 x4 0b010) # ((rw__LL_Main_dev204 x0 x1 x2 x3 x4 0b011) # ((rw__LL_Main_dev204 x0 x1 x2 x3 x4 0b100) # ((rw__LL_Main_dev204 x0 x1 x2 x3 x4 0b101) # ((rw__LL_Main_dev204 x0 x1 x2 x3 x4 0b110) # (rw__LL_Main_dev204 x0 x1 x2 x3 x4 0b111)))))))
+
+// $LL.Main.dev145
+rw__LL_Main_dev145 : [3] -> [8] -> [3] -> [8] -> [3] -> [8]
+rw__LL_Main_dev145 x0 x1 x2 x3 x4 = rw__LL_Main_dev154 x0 x1 x2 x3 x4
+
+// $LL.Main.dev144
+rw__LL_Main_dev144 : [8] -> [8] -> [3] -> [8]
+rw__LL_Main_dev144 x0 x1 x2 = rw__LL_Main_dev73 x0 x1 x2
+
+// $LL.Main.dev143
+rw__LL_Main_dev143 : [3] -> [3]
+rw__LL_Main_dev143 x0 = x0
+
+// $LL.Main.dev131
+rw__LL_Main_dev131 : [8] -> [8] -> [8]
+rw__LL_Main_dev131 x0 x1 = rw__LL_Main_dev23 x0 x1
 
 // $LL.Main.dev124
 rw__LL_Main_dev124 : [8] -> [8] -> [8]
-rw__LL_Main_dev124 arg0 arg1 = rw__LL_Main_dev73 (take`{8} s0) (take`{8} (drop`{8} s0)) (drop`{16} s0)
-  where
-    s0 : [19]
-    s0 = arg0 # (arg1 # 0b001)
+rw__LL_Main_dev124 x0 x1 = rw__LL_Main_dev192 x0 x1 0b001
 
 // $LL.Main.dev121
 rw__LL_Main_dev121 : [8] -> [8] -> [8]
-rw__LL_Main_dev121 arg0 arg1 = rw__LL_Main_dev2 (take`{8} s0) (take`{8} (drop`{8} s0)) (drop`{16} s0)
-  where
-    s0 : [19]
-    s0 = arg0 # (arg1 # 0b001)
+rw__LL_Main_dev121 x0 x1 = rw__LL_Main_dev275 x0 x1 0b001
 
 // $LL.Main.dev115
 rw__LL_Main_dev115 : [8] -> [8] -> [8]
-rw__LL_Main_dev115 arg0 arg1 = rw__LL_Main_dev59 (take`{8} s0) (drop`{8} s0)
-  where
-    s0 : [16]
-    s0 = arg1 # arg0
+rw__LL_Main_dev115 x0 x1 = rw__LL_Main_dev59 x1 x0
 
 // $LL.Main.dev114
 rw__LL_Main_dev114 : [3] -> [3] -> [3] -> [3] -> [8] -> [1] -> [1]
-rw__LL_Main_dev114 arg0 arg1 arg2 arg3 arg4 arg5 = rw__LL_Main_dev165 (take`{3} s0) (take`{3} (drop`{3} s0)) (take`{3} (drop`{6} s0)) (take`{3} (drop`{9} s0)) (take`{8} (drop`{12} s0))
+rw__LL_Main_dev114 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev165 (take`{3} s0) (take`{3} (drop`{3} s0)) (take`{3} (drop`{6} s0)) (take`{3} (drop`{9} s0)) (take`{8} (drop`{12} s0))
   where
     s0 : [21]
-    s0 = arg0 # (arg1 # (arg2 # (arg3 # (arg4 # arg5))))
+    s0 = x0 # (x1 # (x2 # (x3 # (x4 # x5))))
+
+// $LL.Main.dev108
+rw__LL_Main_dev108 : [8] -> [8] -> [8]
+rw__LL_Main_dev108 x0 x1 = rw__LL_Main_dev121 x0 x1
+
+// $LL.Main.dev106
+rw__LL_Main_dev106 : [3] -> [8] -> [8] -> [3] -> [8]
+rw__LL_Main_dev106 x0 x1 x2 x3 = rw__LL_Main_dev214 x0 x1 x2 x3
 
 // $LL.ReWire.Prelude.not
 rw__LL_ReWire_Prelude_not : [1] -> [1] -> [1]
-rw__LL_ReWire_Prelude_not arg0 arg1 = if arg1 == 0b1 then 0b0 else 0b1
+rw__LL_ReWire_Prelude_not x0 x1 = if x1 == 0b1 then 0b0 else (rw__LL_ReWire_Prelude_not3 x0)
 
 // $LL.Main.dev100
 rw__LL_Main_dev100 : [8] -> [3] -> [3] -> [3] -> [1]
-rw__LL_Main_dev100 arg0 arg1 arg2 arg3 = rw'resize`{1} s7
-  where
-    s0 : [6]
-    s0 = arg1 # arg2
-    s1 : [6]
-    s1 = arg3 # (rw__LL_Main_dev261 (take`{3} s0) (drop`{3} s0))
-    s2 : [3]
-    s2 = rw__LL_Main_dev262 (take`{3} s1) (drop`{3} s1)
-    s3 : [256]
-    s3 = 0x00000000000000000000000000000008 # (rw'resize`{128} s2)
-    s4 : [256]
-    s4 = ((take`{128} s3) - (drop`{128} s3)) # 0x00000000000000000000000000000001
-    s5 : [256]
-    s5 = ((take`{128} s4) - (drop`{128} s4)) # 0x00000000000000000000000000000001
-    s6 : [256]
-    s6 = (rw'resize`{128} arg0) # ((take`{128} s5) * (drop`{128} s5))
-    s7 : [128]
-    s7 = (take`{128} s6) >> (drop`{128} s6)
+rw__LL_Main_dev100 x0 x1 x2 x3 = rw'resize`{1} (x0 >> (((0x00000000000000000000000000000008 - (rw'resize`{128} (rw__LL_Main_dev263 x3 (rw__LL_Main_dev264 x1 x2)))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000001))
 
 // $LL.Main.dev97
 rw__LL_Main_dev97 : [3] -> [8] -> [8] -> [8]
-rw__LL_Main_dev97 arg0 arg1 arg2 = rw__LL_Main_dev214 (take`{3} s0) (take`{8} (drop`{3} s0)) (take`{8} (drop`{11} s0)) (drop`{19} s0)
-  where
-    s0 : [22]
-    s0 = arg0 # (arg1 # (arg2 # 0b010))
+rw__LL_Main_dev97 x0 x1 x2 = rw__LL_Main_dev106 x0 x1 x2 0b010
 
 // $LL.Main.dev95
 rw__LL_Main_dev95 : [8] -> [8] -> [3] -> [8]
-rw__LL_Main_dev95 arg0 arg1 arg2 = rw__LL_Main_dev234 (take`{8} s0) (take`{8} (drop`{8} s0)) (take`{3} (drop`{16} s0)) (drop`{19} s0)
-  where
-    s0 : [22]
-    s0 = arg0 # (arg1 # (arg2 # 0b010))
+rw__LL_Main_dev95 x0 x1 x2 = rw__LL_Main_dev236 x0 x1 x2 0b010
+
+// $LL.Main.dev94
+rw__LL_Main_dev94 : [8] -> [3] -> [8] -> [3] -> [8]
+rw__LL_Main_dev94 x0 x1 x2 x3 = rw__LL_Main_dev43 x0 x1 x2 x3
 
 // $LL.Main.dev93
 rw__LL_Main_dev93 : [3] -> [8] -> [3] -> [1]
-rw__LL_Main_dev93 arg0 arg1 arg2 = rw'resize`{1} s6
-  where
-    s0 : [6]
-    s0 = arg2 # arg0
-    s1 : [3]
-    s1 = rw__LL_Main_dev256 (take`{3} s0) (drop`{3} s0)
-    s2 : [256]
-    s2 = 0x00000000000000000000000000000008 # (rw'resize`{128} s1)
-    s3 : [256]
-    s3 = ((take`{128} s2) - (drop`{128} s2)) # 0x00000000000000000000000000000001
-    s4 : [256]
-    s4 = ((take`{128} s3) - (drop`{128} s3)) # 0x00000000000000000000000000000001
-    s5 : [256]
-    s5 = (rw'resize`{128} arg1) # ((take`{128} s4) * (drop`{128} s4))
-    s6 : [128]
-    s6 = (take`{128} s5) >> (drop`{128} s5)
+rw__LL_Main_dev93 x0 x1 x2 = rw'resize`{1} (x1 >> (((0x00000000000000000000000000000008 - (rw'resize`{128} (rw__LL_Main_dev233 x2 x0))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000001))
 
 // $LL.Main.dev89
 rw__LL_Main_dev89 : [8] -> [8] -> [8]
-rw__LL_Main_dev89 arg0 arg1 = rw__LL_Main_dev31 s0
-  where
-    s0 : [16]
-    s0 = arg0 # arg1
+rw__LL_Main_dev89 x0 x1 = rw__LL_Main_dev31 (x0 # x1)
 
 // $LL.Main.dev88
 rw__LL_Main_dev88 : [8] -> [3] -> [3] -> [8] -> [3] -> [3] -> [1] -> [1]
-rw__LL_Main_dev88 arg0 arg1 arg2 arg3 arg4 arg5 arg6 = if (drop`{17} s0) == 0b1 then (rw__LL_Main_dev100 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{3} (drop`{11} s0)) (take`{3} (drop`{14} s0))) else (rw__LL_Main_dev74 (take`{3} s1) (take`{3} (drop`{3} s1)) (take`{8} (drop`{6} s1)) (take`{3} (drop`{14} s1)) (take`{3} (drop`{17} s1)) (drop`{20} s1))
+rw__LL_Main_dev88 x0 x1 x2 x3 x4 x5 x6 = if (drop`{17} s0) == 0b1 then (rw__LL_Main_dev100 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{3} (drop`{11} s0)) (take`{3} (drop`{14} s0))) else (rw__LL_Main_dev74 x1 x2 x3 x4 x5 (rw__LL_Main_dev284 x1))
   where
     s0 : [18]
-    s0 = arg0 # (arg1 # (arg2 # (arg5 # arg6)))
-    s1 : [21]
-    s1 = arg1 # (arg2 # (arg3 # (arg4 # (arg5 # (rw__LL_Main_dev266 arg1)))))
+    s0 = x0 # (x1 # (x2 # (x5 # x6)))
 
 // $LL.Main.dev86
 rw__LL_Main_dev86 : [16] -> [8]
-rw__LL_Main_dev86 arg0 = rw__LL_Main_dev115 (take`{8} arg0) (drop`{8} arg0)
+rw__LL_Main_dev86 x0 = rw__LL_Main_dev37 (take`{8} x0) (drop`{8} x0)
 
 // $LL.Main.dev84
 rw__LL_Main_dev84 : [8] -> [3] -> [8] -> [8]
-rw__LL_Main_dev84 arg0 arg1 arg2 = rw__LL_Main_dev230 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{8} (drop`{11} s0)) (drop`{19} s0)
-  where
-    s0 : [22]
-    s0 = arg0 # (arg1 # (arg2 # 0b010))
+rw__LL_Main_dev84 x0 x1 x2 = rw__LL_Main_dev54 x0 x1 x2 0b010
 
 // $LL.Main.dev81
 rw__LL_Main_dev81 : [8] -> [3] -> [3] -> [3] -> [1]
-rw__LL_Main_dev81 arg0 arg1 arg2 arg3 = rw'resize`{1} s7
-  where
-    s0 : [6]
-    s0 = arg1 # arg2
-    s1 : [6]
-    s1 = (rw__LL_Main_dev256 (take`{3} s0) (drop`{3} s0)) # arg3
-    s2 : [3]
-    s2 = rw__LL_Main_dev262 (take`{3} s1) (drop`{3} s1)
-    s3 : [256]
-    s3 = 0x00000000000000000000000000000008 # (rw'resize`{128} s2)
-    s4 : [256]
-    s4 = ((take`{128} s3) - (drop`{128} s3)) # 0x00000000000000000000000000000001
-    s5 : [256]
-    s5 = ((take`{128} s4) - (drop`{128} s4)) # 0x00000000000000000000000000000001
-    s6 : [256]
-    s6 = (rw'resize`{128} arg0) # ((take`{128} s5) * (drop`{128} s5))
-    s7 : [128]
-    s7 = (take`{128} s6) >> (drop`{128} s6)
+rw__LL_Main_dev81 x0 x1 x2 x3 = rw'resize`{1} (x0 >> (((0x00000000000000000000000000000008 - (rw'resize`{128} (rw__LL_Main_dev263 (rw__LL_Main_dev233 x1 x2) x3))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000001))
 
 // $LL.Main.dev74
 rw__LL_Main_dev74 : [3] -> [3] -> [8] -> [3] -> [3] -> [1] -> [1]
-rw__LL_Main_dev74 arg0 arg1 arg2 arg3 arg4 arg5 = rw__LL_Main_dev242 (take`{3} s0) (take`{3} (drop`{3} s0)) (take`{8} (drop`{6} s0)) (take`{3} (drop`{14} s0)) (take`{3} (drop`{17} s0))
+rw__LL_Main_dev74 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev242 (take`{3} s0) (take`{3} (drop`{3} s0)) (take`{8} (drop`{6} s0)) (take`{3} (drop`{14} s0)) (take`{3} (drop`{17} s0))
   where
     s0 : [21]
-    s0 = arg0 # (arg1 # (arg2 # (arg3 # (arg4 # arg5))))
+    s0 = x0 # (x1 # (x2 # (x3 # (x4 # x5))))
 
 // $LL.Main.dev73
 rw__LL_Main_dev73 : [8] -> [8] -> [3] -> [8]
-rw__LL_Main_dev73 arg0 arg1 arg2 = rw__LL_Main_dev (take`{8} s0) (take`{8} (drop`{8} s0)) (take`{3} (drop`{16} s0)) (drop`{19} s0)
-  where
-    s0 : [22]
-    s0 = arg0 # (arg1 # (arg2 # 0b010))
+rw__LL_Main_dev73 x0 x1 x2 = rw__LL_Main_dev216 x0 x1 x2 0b010
 
 // $LL.Main.dev72
 rw__LL_Main_dev72 : [8] -> [8] -> [3] -> [3] -> [3] -> [1]
-rw__LL_Main_dev72 arg0 arg1 arg2 arg3 arg4 = rw__LL_Main_dev167 (take`{8} s0) (take`{8} (drop`{8} s0)) (take`{3} (drop`{16} s0)) (take`{3} (drop`{19} s0)) (take`{3} (drop`{22} s0)) (drop`{25} s0)
-  where
-    s0 : [26]
-    s0 = arg0 # (arg1 # (arg2 # (arg4 # (arg3 # (rw__LL_Main_dev266 arg4)))))
+rw__LL_Main_dev72 x0 x1 x2 x3 x4 = rw__LL_Main_dev167 x0 x1 x2 x4 x3 (rw__LL_Main_dev284 x4)
 
 // $LL.Main.dev69
 rw__LL_Main_dev69 : [8] -> [32]
-rw__LL_Main_dev69 arg0 = rw__LL_Main_dev207 (take`{8} s0) (drop`{8} s0)
-  where
-    s0 : [16]
-    s0 = arg0 # (rw__LL_Main_x2 arg0)
+rw__LL_Main_dev69 x0 = rw__LL_Main_dev169 x0 (rw_Main_x2 x0)
 
 // $LL.Main.dev67
 rw__LL_Main_dev67 : [8] -> [3] -> [3] -> [8] -> [3] -> [1] -> [1]
-rw__LL_Main_dev67 arg0 arg1 arg2 arg3 arg4 arg5 = if (drop`{14} s0) == 0b1 then (rw__LL_Main_dev93 (take`{3} s0) (take`{8} (drop`{3} s0)) (take`{3} (drop`{11} s0))) else (rw__LL_Main_dev221 (take`{8} s2) (take`{3} (drop`{8} s2)) (take`{3} (drop`{11} s2)) (take`{3} (drop`{14} s2)) (drop`{17} s2))
+rw__LL_Main_dev67 x0 x1 x2 x3 x4 x5 = if (drop`{14} s0) == 0b1 then (rw__LL_Main_dev93 (take`{3} s0) (take`{8} (drop`{3} s0)) (take`{3} (drop`{11} s0))) else (rw__LL_Main_dev221 x0 x1 x2 x4 (rw__LL_Main_dev274 x4 x2))
   where
     s0 : [15]
-    s0 = arg1 # (arg3 # (arg4 # arg5))
-    s1 : [6]
-    s1 = arg4 # arg2
-    s2 : [18]
-    s2 = arg0 # (arg1 # (arg2 # (arg4 # (rw__LL_Main_dev255 (take`{3} s1) (drop`{3} s1)))))
+    s0 = x1 # (x3 # (x4 # x5))
+
+// $LL.Main.dev64
+rw__LL_Main_dev64 : [8] -> [3] -> [3] -> [8] -> [3] -> [8]
+rw__LL_Main_dev64 x0 x1 x2 x3 x4 = rw__LL_Main_dev238 x0 x1 x2 x3 x4
 
 // $LL.Main.dev63
 rw__LL_Main_dev63 : [8] -> [3] -> [3] -> [1] -> [3]
-rw__LL_Main_dev63 arg0 arg1 arg2 arg3 = if (drop`{3} s0) == 0b1 then (take`{3} s0) else (rw__LL_Main_dev170 (take`{3} s1) (take`{3} (drop`{3} s1)) (drop`{6} s1))
+rw__LL_Main_dev63 x0 x1 x2 x3 = if (drop`{3} s0) == 0b1 then (rw__LL_Main_dev143 (take`{3} s0)) else (rw__LL_Main_dev170 x1 x2 (rw__LL_Main_dev284 (rw__LL_Main_dev285 x0)))
   where
     s0 : [4]
-    s0 = arg1 # arg3
-    s1 : [7]
-    s1 = arg1 # (arg2 # 0b0)
+    s0 = x1 # x3
+
+// $LL.Main.dev62
+rw__LL_Main_dev62 : [8] -> [3] -> [8] -> [3] -> [3] -> [8]
+rw__LL_Main_dev62 x0 x1 x2 x3 x4 = rw__LL_Main_dev174 x0 x1 x2 x3 x4
+
+// $LL.Main.dev61
+rw__LL_Main_dev61 : [8] -> [8] -> [8]
+rw__LL_Main_dev61 x0 x1 = rw__LL_Main_dev253 x0 x1
 
 // $LL.Main.dev59
 rw__LL_Main_dev59 : [8] -> [8] -> [8]
-rw__LL_Main_dev59 arg0 arg1 = rw__LL_Main_dev187 (take`{8} s0) (take`{8} (drop`{8} s0)) (drop`{16} s0)
-  where
-    s0 : [19]
-    s0 = arg0 # (arg1 # 0b001)
+rw__LL_Main_dev59 x0 x1 = rw__LL_Main_dev51 x0 x1 0b001
+
+// $LL.Main.dev57
+rw__LL_Main_dev57 : [8] -> [8] -> [3] -> [8]
+rw__LL_Main_dev57 x0 x1 x2 = rw__LL_Main_dev95 x0 x1 x2
+
+// $LL.Main.dev54
+rw__LL_Main_dev54 : [8] -> [3] -> [8] -> [3] -> [8]
+rw__LL_Main_dev54 x0 x1 x2 x3 = rw__LL_Main_dev230 x0 x1 x2 x3
+
+// $LL.Main.dev52
+rw__LL_Main_dev52 : [8] -> [3] -> [3] -> [8] -> [3] -> [8]
+rw__LL_Main_dev52 x0 x1 x2 x3 x4 = rw__LL_Main_dev196 x0 x1 x2 x3 x4
+
+// $LL.Main.dev51
+rw__LL_Main_dev51 : [8] -> [8] -> [3] -> [8]
+rw__LL_Main_dev51 x0 x1 x2 = rw__LL_Main_dev187 x0 x1 x2
 
 // $LL.Main.dev45
 rw__LL_Main_dev45 : [8] -> [3] -> [3] -> [1] -> [3]
-rw__LL_Main_dev45 arg0 arg1 arg2 arg3 = if (drop`{3} s0) == 0b1 then (take`{3} s0) else (rw__LL_Main_dev158 (take`{3} s1) (take`{3} (drop`{3} s1)) (drop`{6} s1))
+rw__LL_Main_dev45 x0 x1 x2 x3 = if (drop`{3} s0) == 0b1 then (rw__LL_Main_dev143 (take`{3} s0)) else (rw__LL_Main_dev158 x1 x2 (rw__LL_Main_dev284 (rw__LL_Main_dev285 x0)))
   where
     s0 : [4]
-    s0 = arg2 # arg3
-    s1 : [7]
-    s1 = arg1 # (arg2 # 0b0)
+    s0 = x2 # x3
+
+// $LL.Main.dev43
+rw__LL_Main_dev43 : [8] -> [3] -> [8] -> [3] -> [8]
+rw__LL_Main_dev43 x0 x1 x2 x3 = rw__LL_Main_dev268 x0 x1 x2 x3
 
 // $LL.Main.dev42
 rw__LL_Main_dev42 : [16] -> [8]
-rw__LL_Main_dev42 arg0 = rw__LL_Main_dev8 (take`{8} arg0) (drop`{8} arg0)
+rw__LL_Main_dev42 x0 = rw__LL_Main_dev184 (take`{8} x0) (drop`{8} x0)
+
+// $LL.Main.dev39
+rw__LL_Main_dev39 : [8] -> [8] -> [8]
+rw__LL_Main_dev39 x0 x1 = rw__LL_Main_dev131 x0 x1
+
+// $LL.Main.dev37
+rw__LL_Main_dev37 : [8] -> [8] -> [8]
+rw__LL_Main_dev37 x0 x1 = rw__LL_Main_dev115 x0 x1
+
+// $LL.Main.dev33
+rw__LL_Main_dev33 : [3] -> [3] -> [3]
+rw__LL_Main_dev33 x0 x1 = rw__LL_Main_dev263 x0 x1
 
 // $LL.Main.dev32
 rw__LL_Main_dev32 : [8] -> [8] -> [8]
-rw__LL_Main_dev32 arg0 arg1 = rw__LL_Main_dev86 s0
-  where
-    s0 : [16]
-    s0 = arg0 # arg1
+rw__LL_Main_dev32 x0 x1 = rw__LL_Main_dev86 (x0 # x1)
 
 // $LL.Main.dev31
 rw__LL_Main_dev31 : [16] -> [8]
-rw__LL_Main_dev31 arg0 = rw__LL_Main_dev23 (take`{8} arg0) (drop`{8} arg0)
+rw__LL_Main_dev31 x0 = rw__LL_Main_dev39 (take`{8} x0) (drop`{8} x0)
+
+// Main.x2
+rw_Main_x2 : [8] -> [8]
+rw_Main_x2 x0 = rw__LL_Main_x21 x0
 
 // $LL.Main.dev29
 rw__LL_Main_dev29 : [3] -> [8] -> [3] -> [8] -> [3] -> [8]
-rw__LL_Main_dev29 arg0 arg1 arg2 arg3 arg4 = rw__LL_Main_dev268 (take`{8} s1) (take`{3} (drop`{8} s1)) (take`{8} (drop`{11} s1)) (drop`{19} s1)
-  where
-    s0 : [15]
-    s0 = arg0 # (arg4 # (arg3 # 0b0))
-    s1 : [22]
-    s1 = arg1 # (arg2 # (arg3 # (rw__LL_Main_dev260 (take`{3} s0) (take`{3} (drop`{3} s0)) (take`{8} (drop`{6} s0)) (drop`{14} s0))))
+rw__LL_Main_dev29 x0 x1 x2 x3 x4 = rw__LL_Main_dev94 x1 x2 x3 (rw__LL_Main_dev260 x0 x4 x3 (rw__LL_Main_dev284 (rw__LL_Main_dev285 x3)))
+
+// $LL.Main.dev28
+rw__LL_Main_dev28 : [8] -> [8] -> [8]
+rw__LL_Main_dev28 x0 x1 = rw__LL_Main_dev108 x0 x1
+
+// $LL.Main.dev27
+rw__LL_Main_dev27 : [8] -> [8] -> [8]
+rw__LL_Main_dev27 x0 x1 = rw__LL_Main_dev273 x0 x1
 
 // $LL.Main.dev24
 rw__LL_Main_dev24 : [8] -> [3] -> [3] -> [3] -> [1] -> [1]
-rw__LL_Main_dev24 arg0 arg1 arg2 arg3 arg4 = rw__LL_Main_dev197 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{3} (drop`{11} s0)) (take`{3} (drop`{14} s0))
+rw__LL_Main_dev24 x0 x1 x2 x3 x4 = rw__LL_Main_dev197 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{3} (drop`{11} s0)) (take`{3} (drop`{14} s0))
   where
     s0 : [18]
-    s0 = arg0 # (arg1 # (arg2 # (arg3 # arg4)))
+    s0 = x0 # (x1 # (x2 # (x3 # x4)))
 
 // $LL.Main.dev23
 rw__LL_Main_dev23 : [8] -> [8] -> [8]
-rw__LL_Main_dev23 arg0 arg1 = rw__LL_Main_dev95 (take`{8} s0) (take`{8} (drop`{8} s0)) (drop`{16} s0)
-  where
-    s0 : [19]
-    s0 = arg0 # (arg1 # 0b001)
+rw__LL_Main_dev23 x0 x1 = rw__LL_Main_dev245 x0 x1 0b001
+
+// $LL.Pure.dispatch
+rw__LL_Pure_dispatch : [8] -> [32]
+rw__LL_Pure_dispatch x0 = rw_Main_dev x0
+
+// $LL.Main.dev11
+rw__LL_Main_dev11 : [8] -> [32]
+rw__LL_Main_dev11 x0 = rw__LL_Main_dev69 x0
 
 // $LL.Main.x2
 rw__LL_Main_x2 : [8] -> [8]
-rw__LL_Main_x2 arg0 = (take`{8} s0) * (drop`{8} s0)
-  where
-    s0 : [16]
-    s0 = arg0 # 0x02
+rw__LL_Main_x2 x0 = x0 * 0x02
 
 // $LL.Main.dev8
 rw__LL_Main_dev8 : [8] -> [8] -> [8]
-rw__LL_Main_dev8 arg0 arg1 = rw__LL_Main_dev124 (take`{8} s0) (drop`{8} s0)
-  where
-    s0 : [16]
-    s0 = arg1 # arg0
+rw__LL_Main_dev8 x0 x1 = rw__LL_Main_dev124 x1 x0
 
 // $LL.Main.dev5
 rw__LL_Main_dev5 : [8] -> [3] -> [3] -> [3] -> [3] -> [8] -> [1] -> [1]
-rw__LL_Main_dev5 arg0 arg1 arg2 arg3 arg4 arg5 arg6 = if (drop`{17} s0) == 0b1 then (rw__LL_Main_dev81 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{3} (drop`{11} s0)) (take`{3} (drop`{14} s0))) else (rw__LL_Main_dev114 (take`{3} s2) (take`{3} (drop`{3} s2)) (take`{3} (drop`{6} s2)) (take`{3} (drop`{9} s2)) (take`{8} (drop`{12} s2)) (drop`{20} s2))
+rw__LL_Main_dev5 x0 x1 x2 x3 x4 x5 x6 = if (drop`{17} s0) == 0b1 then (rw__LL_Main_dev81 (take`{8} s0) (take`{3} (drop`{8} s0)) (take`{3} (drop`{11} s0)) (take`{3} (drop`{14} s0))) else (rw__LL_Main_dev114 x1 x2 x3 x4 x5 (rw__LL_Main_dev274 x1 x2))
   where
     s0 : [18]
-    s0 = arg0 # (arg1 # (arg3 # (arg4 # arg6)))
-    s1 : [6]
-    s1 = arg1 # arg2
-    s2 : [21]
-    s2 = arg1 # (arg2 # (arg3 # (arg4 # (arg5 # (rw__LL_Main_dev255 (take`{3} s1) (drop`{3} s1))))))
+    s0 = x0 # (x1 # (x3 # (x4 # x6)))
 
 // $LL.Main.dev2
 rw__LL_Main_dev2 : [8] -> [8] -> [3] -> [8]
-rw__LL_Main_dev2 arg0 arg1 arg2 = rw__LL_Main_dev84 (take`{8} s0) (take`{3} (drop`{8} s0)) (drop`{11} s0)
-  where
-    s0 : [19]
-    s0 = arg0 # (arg2 # arg1)
+rw__LL_Main_dev2 x0 x1 x2 = rw__LL_Main_dev84 x0 x2 x1
 
 // $LL.Main.dev
 rw__LL_Main_dev : [8] -> [8] -> [3] -> [3] -> [8]
-rw__LL_Main_dev arg0 arg1 arg2 arg3 = (rw__LL_Main_dev72 (take`{8} s0) (take`{8} (drop`{8} s0)) (take`{3} (drop`{16} s0)) (take`{3} (drop`{19} s0)) (drop`{22} s0)) # ((rw__LL_Main_dev72 (take`{8} s1) (take`{8} (drop`{8} s1)) (take`{3} (drop`{16} s1)) (take`{3} (drop`{19} s1)) (drop`{22} s1)) # ((rw__LL_Main_dev72 (take`{8} s2) (take`{8} (drop`{8} s2)) (take`{3} (drop`{16} s2)) (take`{3} (drop`{19} s2)) (drop`{22} s2)) # ((rw__LL_Main_dev72 (take`{8} s3) (take`{8} (drop`{8} s3)) (take`{3} (drop`{16} s3)) (take`{3} (drop`{19} s3)) (drop`{22} s3)) # ((rw__LL_Main_dev72 (take`{8} s4) (take`{8} (drop`{8} s4)) (take`{3} (drop`{16} s4)) (take`{3} (drop`{19} s4)) (drop`{22} s4)) # ((rw__LL_Main_dev72 (take`{8} s5) (take`{8} (drop`{8} s5)) (take`{3} (drop`{16} s5)) (take`{3} (drop`{19} s5)) (drop`{22} s5)) # ((rw__LL_Main_dev72 (take`{8} s6) (take`{8} (drop`{8} s6)) (take`{3} (drop`{16} s6)) (take`{3} (drop`{19} s6)) (drop`{22} s6)) # (rw__LL_Main_dev72 (take`{8} s7) (take`{8} (drop`{8} s7)) (take`{3} (drop`{16} s7)) (take`{3} (drop`{19} s7)) (drop`{22} s7))))))))
+rw__LL_Main_dev x0 x1 x2 x3 = (rw__LL_Main_dev72 x0 x1 x2 x3 0b000) # ((rw__LL_Main_dev72 x0 x1 x2 x3 0b001) # ((rw__LL_Main_dev72 x0 x1 x2 x3 0b010) # ((rw__LL_Main_dev72 x0 x1 x2 x3 0b011) # ((rw__LL_Main_dev72 x0 x1 x2 x3 0b100) # ((rw__LL_Main_dev72 x0 x1 x2 x3 0b101) # ((rw__LL_Main_dev72 x0 x1 x2 x3 0b110) # (rw__LL_Main_dev72 x0 x1 x2 x3 0b111)))))))
+
+// Per-cycle step: outputs # next register values.
+rw_step : [8] -> [32]
+rw_step i = (take`{8} s2) # ((take`{8} (drop`{8} s2)) # ((take`{8} (drop`{16} s2)) # (drop`{24} s2)))
   where
-    s0 : [25]
-    s0 = arg0 # (arg1 # (arg2 # (arg3 # 0b000)))
-    s1 : [25]
-    s1 = arg0 # (arg1 # (arg2 # (arg3 # 0b001)))
-    s2 : [25]
-    s2 = arg0 # (arg1 # (arg2 # (arg3 # 0b010)))
-    s3 : [25]
-    s3 = arg0 # (arg1 # (arg2 # (arg3 # 0b011)))
-    s4 : [25]
-    s4 = arg0 # (arg1 # (arg2 # (arg3 # 0b100)))
-    s5 : [25]
-    s5 = arg0 # (arg1 # (arg2 # (arg3 # 0b101)))
-    s6 : [25]
-    s6 = arg0 # (arg1 # (arg2 # (arg3 # 0b110)))
-    s7 : [25]
-    s7 = arg0 # (arg1 # (arg2 # (arg3 # 0b111)))
+    s0 : [8]
+    s0 = i
+    s1 : [8]
+    s1 = s0
+    s2 : [32]
+    s2 = rw__Pure_dispatch s1
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [8]
 // Outputs, MSB-first: __out0 : [8], __out1 : [8], __out2 : [8], __out3 : [8]
 rw_device : {n} (fin n) => [n][8] -> [n][32]
-rw_device ins = [rw__Pure_dispatch i | i <- ins]
+rw_device ins = [rw_step i | i <- ins]

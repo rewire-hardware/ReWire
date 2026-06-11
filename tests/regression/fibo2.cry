@@ -13,98 +13,98 @@ rw'repl x = join (repeat`{n} x)
 rw'parity : {n} (fin n) => [n] -> Bit
 rw'parity x = foldr (^) False x
 
+rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
+rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
+
 // $Pure.dispatch
 rw__Pure_dispatch : [16] -> [1] -> [24]
-rw__Pure_dispatch arg0 arg1 = rw__LL_Pure_dispatch1 (take`{1} s0) (take`{8} (drop`{1} s0)) (drop`{9} s0)
+rw__Pure_dispatch x0 x1 = rw__LL_Pure_dispatch2 (take`{1} s0) (take`{8} (drop`{1} s0)) (drop`{9} s0)
   where
     s0 : [17]
-    s0 = arg1 # arg0
+    s0 = x1 # x0
 
-// $Pure.start
-rw__Pure_start : [24]
-rw__Pure_start = 0x000100
+// $LL.Pure.dispatch2
+rw__LL_Pure_dispatch2 : [1] -> [8] -> [8] -> [24]
+rw__LL_Pure_dispatch2 x0 x1 x2 = rw__LL_Pure_dispatch1 x0 x1 x2
+
+// $LL.Main.loop11
+rw__LL_Main_loop11 : [8] -> [8] -> [1] -> [24]
+rw__LL_Main_loop11 x0 x1 x2 = rw__LL_Main_loop x0 x1 x2
 
 // Main.loop
 rw_Main_loop : [8] -> [8] -> [24]
-rw_Main_loop arg0 arg1 = rw__LL_Main_loop8 s0
-  where
-    s0 : [16]
-    s0 = arg0 # arg1
+rw_Main_loop x0 x1 = rw__LL_Main_loop8 (x0 # x1)
 
 // $LL.Main.loop10
 rw__LL_Main_loop10 : [8] -> [8] -> [24]
-rw__LL_Main_loop10 arg0 arg1 = rw__LL_Main_loop6 (take`{8} s0) (drop`{8} s0)
-  where
-    s0 : [16]
-    s0 = arg0 # arg1
+rw__LL_Main_loop10 x0 x1 = rw__LL_Main_loop6 x0 x1
 
 // $LL.Pure.dispatch1
 rw__LL_Pure_dispatch1 : [1] -> [8] -> [8] -> [24]
-rw__LL_Pure_dispatch1 arg0 arg1 arg2 = rw__LL_Pure_dispatch (take`{8} s0) (take`{1} (drop`{8} s0)) (drop`{9} s0)
-  where
-    s0 : [17]
-    s0 = arg1 # (arg0 # arg2)
+rw__LL_Pure_dispatch1 x0 x1 x2 = rw__LL_Pure_dispatch x1 x0 x2
+
+// $LL.Main.loop9
+rw__LL_Main_loop9 : [8] -> [8] -> [24]
+rw__LL_Main_loop9 x0 x1 = rw__LL_Main_loop1 x0 x1
 
 // $LL.Pure.dispatch
 rw__LL_Pure_dispatch : [8] -> [1] -> [8] -> [24]
-rw__LL_Pure_dispatch arg0 arg1 arg2 = rw__LL_Main_loop (take`{8} s0) (take`{8} (drop`{8} s0)) (drop`{16} s0)
-  where
-    s0 : [17]
-    s0 = arg0 # (arg2 # arg1)
+rw__LL_Pure_dispatch x0 x1 x2 = rw__LL_Main_loop11 x0 x2 x1
 
 // $LL.Main.loop8
 rw__LL_Main_loop8 : [16] -> [24]
-rw__LL_Main_loop8 arg0 = rw__LL_Main_loop4 (take`{8} arg0) (drop`{8} arg0)
+rw__LL_Main_loop8 x0 = rw__LL_Main_loop9 (take`{8} x0) (drop`{8} x0)
 
 // $LL.Main.loop7
 rw__LL_Main_loop7 : [8] -> [8] -> [1] -> [1] -> [24]
-rw__LL_Main_loop7 arg0 arg1 arg2 arg3 = if (drop`{16} s0) == 0b1 then (rw__LL_Main_loop5 (take`{8} s0) (take`{8} (drop`{8} s0))) else (rw__LL_Main_loop3 (take`{8} s1) (take`{8} (drop`{8} s1)) (drop`{16} s1))
+rw__LL_Main_loop7 x0 x1 x2 x3 = if (drop`{16} s0) == 0b1 then (rw__LL_Main_loop5 (take`{8} s0) (take`{8} (drop`{8} s0))) else (rw__LL_Main_loop3 x0 x1 x2)
   where
     s0 : [17]
-    s0 = arg0 # (arg1 # arg3)
-    s1 : [17]
-    s1 = arg0 # (arg1 # arg2)
+    s0 = x0 # (x1 # x3)
 
 // $LL.Main.loop6
 rw__LL_Main_loop6 : [8] -> [8] -> [24]
-rw__LL_Main_loop6 arg0 arg1 = rw_Main_loop (take`{8} s1) (drop`{8} s1)
-  where
-    s0 : [16]
-    s0 = arg1 # arg0
-    s1 : [16]
-    s1 = arg0 # ((take`{8} s0) + (drop`{8} s0))
+rw__LL_Main_loop6 x0 x1 = rw_Main_loop x0 (x1 + x0)
 
 // $LL.Main.loop5
 rw__LL_Main_loop5 : [8] -> [8] -> [24]
-rw__LL_Main_loop5 arg0 arg1 = rw__LL_Main_loop2 (take`{8} s0) (drop`{8} s0)
-  where
-    s0 : [16]
-    s0 = arg0 # arg1
+rw__LL_Main_loop5 x0 x1 = rw__LL_Main_loop2 x0 x1
 
 // $LL.Main.loop4
 rw__LL_Main_loop4 : [8] -> [8] -> [24]
-rw__LL_Main_loop4 arg0 arg1 = arg0 # (arg1 # arg0)
+rw__LL_Main_loop4 x0 x1 = x0 # (x1 # x0)
 
 // $LL.Main.loop3
 rw__LL_Main_loop3 : [8] -> [8] -> [1] -> [24]
-rw__LL_Main_loop3 arg0 arg1 arg2 = rw__LL_Main_loop10 (take`{8} s0) (take`{8} (drop`{8} s0))
+rw__LL_Main_loop3 x0 x1 x2 = rw__LL_Main_loop10 (take`{8} s0) (take`{8} (drop`{8} s0))
   where
     s0 : [17]
-    s0 = arg0 # (arg1 # arg2)
+    s0 = x0 # (x1 # x2)
 
 // $LL.Main.loop2
 rw__LL_Main_loop2 : [8] -> [8] -> [24]
-rw__LL_Main_loop2 arg0 arg1 = rw_Main_loop (take`{8} s0) (drop`{8} s0)
-  where
-    s0 : [16]
-    s0 = arg1 # arg0
+rw__LL_Main_loop2 x0 x1 = rw_Main_loop x1 x0
+
+// $LL.Main.loop1
+rw__LL_Main_loop1 : [8] -> [8] -> [24]
+rw__LL_Main_loop1 x0 x1 = rw__LL_Main_loop4 x0 x1
 
 // $LL.Main.loop
 rw__LL_Main_loop : [8] -> [8] -> [1] -> [24]
-rw__LL_Main_loop arg0 arg1 arg2 = rw__LL_Main_loop7 (take`{8} s0) (take`{8} (drop`{8} s0)) (take`{1} (drop`{16} s0)) (drop`{17} s0)
+rw__LL_Main_loop x0 x1 x2 = rw__LL_Main_loop7 x0 x1 x2 x2
+
+// Per-cycle step: outputs # next register values.
+rw_step : [16] -> [1] -> [24]
+rw_step st i = (take`{8} s3) # (drop`{8} s3)
   where
-    s0 : [18]
-    s0 = arg0 # (arg1 # (arg2 # arg2))
+    s0 : [16]
+    s0 = st
+    s1 : [1]
+    s1 = i
+    s2 : [17]
+    s2 = s0 # s1
+    s3 : [24]
+    s3 = rw__Pure_dispatch (take`{16} s2) (drop`{16} s2)
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [1]
@@ -113,8 +113,8 @@ rw_device : {n} (fin n) => [n][1] -> [n][8]
 rw_device ins = outs
   where
     rs : [n][24]
-    rs = [rw__Pure_dispatch st i | st <- sts | i <- ins]
+    rs = [rw_step st i | st <- sts | i <- ins]
     sts : [1 + n][16]
-    sts = [drop`{8} rw__Pure_start] # [drop`{8} r | r <- rs]
+    sts = [0x0100] # [drop`{8} r | r <- rs]
     outs : [n][8]
     outs = [take`{8} r | r <- rs]

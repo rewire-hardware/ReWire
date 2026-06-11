@@ -35,6 +35,11 @@ package rw_helpers is
   function rw_gteq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_cond (c : std_logic_vector; a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_repl (n : natural; v : std_logic_vector) return std_logic_vector;
+  function rw_sext (v : std_logic_vector; n : natural) return std_logic_vector;
+  function rw_lts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_lteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_gts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_gteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
 end package;
 
 package body rw_helpers is
@@ -74,7 +79,7 @@ package body rw_helpers is
   function rw_mod (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
     constant n : natural := rw_max(a'length, b'length);
   begin
-    if unsigned(b) = 0 then return std_logic_vector(to_unsigned(0, n) - 1); end if;
+    if unsigned(b) = 0 then return std_logic_vector(resize(unsigned(a), n)); end if;
     return std_logic_vector(resize(resize(unsigned(a), n) mod resize(unsigned(b), n), n));
   end;
   function rw_pow (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
@@ -205,6 +210,26 @@ package body rw_helpers is
     end loop;
     return r;
   end;
+  function rw_sext (v : std_logic_vector; n : natural) return std_logic_vector is
+  begin
+    return std_logic_vector(resize(signed(v), n));
+  end;
+  function rw_lts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) < signed(b));
+  end;
+  function rw_lteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) <= signed(b));
+  end;
+  function rw_gts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) > signed(b));
+  end;
+  function rw_gteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) >= signed(b));
+  end;
 end package body;
 
 library ieee;
@@ -223,90 +248,58 @@ component \ZLL_Main_compute\ is
             arg1 : in std_logic_vector (63 downto 0);
             res : out std_logic_vector (7 downto 0));
       end component;
-      signal \__padding\ : std_logic_vector (0 downto 0);
-      signal zll_main_loop_in : std_logic_vector (1055 downto 0);
-      signal zll_main_loop2_in : std_logic_vector (1055 downto 0);
-      signal main_compute_in : std_logic_vector (1055 downto 0);
-      signal zll_main_compute1_in : std_logic_vector (1055 downto 0);
-      signal zll_main_compute3_in : std_logic_vector (1055 downto 0);
-      signal id_in : std_logic_vector (1023 downto 0);
-      signal \id_inR1\ : std_logic_vector (511 downto 0);
-      signal zll_main_compute_in : std_logic_vector (95 downto 0);
+      signal zin : std_logic_vector (1055 downto 0);
+      signal zi0 : std_logic_vector (1023 downto 0);
+      signal zi1 : std_logic_vector (31 downto 0);
+      signal zi2 : std_logic_vector (1055 downto 0);
+      signal zi3 : std_logic_vector (1023 downto 0);
+      signal zi4 : std_logic_vector (31 downto 0);
+      signal zi5 : std_logic_vector (511 downto 0);
       signal zll_main_compute_out : std_logic_vector (7 downto 0);
-      signal \id_inR2\ : std_logic_vector (1023 downto 0);
-      signal \id_inR3\ : std_logic_vector (511 downto 0);
-      signal \zll_main_compute_inR1\ : std_logic_vector (95 downto 0);
+      signal zi6 : std_logic_vector (511 downto 0);
       signal \zll_main_compute_outR1\ : std_logic_vector (7 downto 0);
-      signal \id_inR4\ : std_logic_vector (1023 downto 0);
-      signal \id_inR5\ : std_logic_vector (511 downto 0);
-      signal \zll_main_compute_inR2\ : std_logic_vector (95 downto 0);
+      signal zi7 : std_logic_vector (511 downto 0);
       signal \zll_main_compute_outR2\ : std_logic_vector (7 downto 0);
-      signal \id_inR6\ : std_logic_vector (1023 downto 0);
-      signal \id_inR7\ : std_logic_vector (511 downto 0);
-      signal \zll_main_compute_inR3\ : std_logic_vector (95 downto 0);
+      signal zi8 : std_logic_vector (511 downto 0);
       signal \zll_main_compute_outR3\ : std_logic_vector (7 downto 0);
-      signal \id_inR8\ : std_logic_vector (1023 downto 0);
-      signal \id_inR9\ : std_logic_vector (511 downto 0);
-      signal \zll_main_compute_inR4\ : std_logic_vector (95 downto 0);
+      signal zi9 : std_logic_vector (511 downto 0);
       signal \zll_main_compute_outR4\ : std_logic_vector (7 downto 0);
-      signal \id_inR10\ : std_logic_vector (1023 downto 0);
-      signal \id_inR11\ : std_logic_vector (511 downto 0);
-      signal \zll_main_compute_inR5\ : std_logic_vector (95 downto 0);
+      signal zi10 : std_logic_vector (511 downto 0);
       signal \zll_main_compute_outR5\ : std_logic_vector (7 downto 0);
-      signal \id_inR12\ : std_logic_vector (1023 downto 0);
-      signal \id_inR13\ : std_logic_vector (511 downto 0);
-      signal \zll_main_compute_inR6\ : std_logic_vector (95 downto 0);
+      signal zi11 : std_logic_vector (511 downto 0);
       signal \zll_main_compute_outR6\ : std_logic_vector (7 downto 0);
-      signal \id_inR14\ : std_logic_vector (1023 downto 0);
-      signal \id_inR15\ : std_logic_vector (511 downto 0);
-      signal \zll_main_compute_inR7\ : std_logic_vector (95 downto 0);
+      signal zi12 : std_logic_vector (511 downto 0);
       signal \zll_main_compute_outR7\ : std_logic_vector (7 downto 0);
-      signal zll_main_loop4_in : std_logic_vector (64 downto 0);
-      signal zll_main_loop5_in : std_logic_vector (64 downto 0);
-      signal pause : std_logic_vector (64 downto 0);
+      signal zi13 : std_logic_vector (64 downto 0);
+      signal zi14 : std_logic_vector (63 downto 0);
+      signal zres : std_logic_vector (64 downto 0);
 begin
-zll_main_loop_in <= (\__in0\ & \__in1\);
-      zll_main_loop2_in <= zll_main_loop_in(1055 downto 0);
-      main_compute_in <= (zll_main_loop2_in(1055 downto 32) & zll_main_loop2_in(31 downto 0));
-      zll_main_compute1_in <= (main_compute_in(1055 downto 32) & main_compute_in(31 downto 0));
-      zll_main_compute3_in <= zll_main_compute1_in(1055 downto 0);
-      id_in <= zll_main_compute3_in(1055 downto 32);
-      \id_inR1\ <= id_in(1023 downto 512);
-      zll_main_compute_in <= (zll_main_compute3_in(31 downto 0) & \id_inR1\(511 downto 448));
-      inst : \ZLL_Main_compute\ port map (zll_main_compute_in(95 downto 64), zll_main_compute_in(63 downto 0), zll_main_compute_out);
-      \id_inR2\ <= zll_main_compute3_in(1055 downto 32);
-      \id_inR3\ <= \id_inR2\(1023 downto 512);
-      \zll_main_compute_inR1\ <= (zll_main_compute3_in(31 downto 0) & \id_inR3\(447 downto 384));
-      \instR1\ : \ZLL_Main_compute\ port map (\zll_main_compute_inR1\(95 downto 64), \zll_main_compute_inR1\(63 downto 0), \zll_main_compute_outR1\);
-      \id_inR4\ <= zll_main_compute3_in(1055 downto 32);
-      \id_inR5\ <= \id_inR4\(1023 downto 512);
-      \zll_main_compute_inR2\ <= (zll_main_compute3_in(31 downto 0) & \id_inR5\(383 downto 320));
-      \instR2\ : \ZLL_Main_compute\ port map (\zll_main_compute_inR2\(95 downto 64), \zll_main_compute_inR2\(63 downto 0), \zll_main_compute_outR2\);
-      \id_inR6\ <= zll_main_compute3_in(1055 downto 32);
-      \id_inR7\ <= \id_inR6\(1023 downto 512);
-      \zll_main_compute_inR3\ <= (zll_main_compute3_in(31 downto 0) & \id_inR7\(319 downto 256));
-      \instR3\ : \ZLL_Main_compute\ port map (\zll_main_compute_inR3\(95 downto 64), \zll_main_compute_inR3\(63 downto 0), \zll_main_compute_outR3\);
-      \id_inR8\ <= zll_main_compute3_in(1055 downto 32);
-      \id_inR9\ <= \id_inR8\(1023 downto 512);
-      \zll_main_compute_inR4\ <= (zll_main_compute3_in(31 downto 0) & \id_inR9\(255 downto 192));
-      \instR4\ : \ZLL_Main_compute\ port map (\zll_main_compute_inR4\(95 downto 64), \zll_main_compute_inR4\(63 downto 0), \zll_main_compute_outR4\);
-      \id_inR10\ <= zll_main_compute3_in(1055 downto 32);
-      \id_inR11\ <= \id_inR10\(1023 downto 512);
-      \zll_main_compute_inR5\ <= (zll_main_compute3_in(31 downto 0) & \id_inR11\(191 downto 128));
-      \instR5\ : \ZLL_Main_compute\ port map (\zll_main_compute_inR5\(95 downto 64), \zll_main_compute_inR5\(63 downto 0), \zll_main_compute_outR5\);
-      \id_inR12\ <= zll_main_compute3_in(1055 downto 32);
-      \id_inR13\ <= \id_inR12\(1023 downto 512);
-      \zll_main_compute_inR6\ <= (zll_main_compute3_in(31 downto 0) & \id_inR13\(127 downto 64));
-      \instR6\ : \ZLL_Main_compute\ port map (\zll_main_compute_inR6\(95 downto 64), \zll_main_compute_inR6\(63 downto 0), \zll_main_compute_outR6\);
-      \id_inR14\ <= zll_main_compute3_in(1055 downto 32);
-      \id_inR15\ <= \id_inR14\(1023 downto 512);
-      \zll_main_compute_inR7\ <= (zll_main_compute3_in(31 downto 0) & \id_inR15\(63 downto 0));
-      \instR7\ : \ZLL_Main_compute\ port map (\zll_main_compute_inR7\(95 downto 64), \zll_main_compute_inR7\(63 downto 0), \zll_main_compute_outR7\);
-      zll_main_loop4_in <= (std_logic_vector'(B"0") & (zll_main_compute_out & \zll_main_compute_outR1\ & \zll_main_compute_outR2\ & \zll_main_compute_outR3\ & \zll_main_compute_outR4\ & \zll_main_compute_outR5\ & \zll_main_compute_outR6\ & \zll_main_compute_outR7\));
-      zll_main_loop5_in <= zll_main_loop4_in(64 downto 0);
-      pause <= (std_logic_vector'(B"1") & zll_main_loop5_in(63 downto 0));
-      \__padding\ <= pause(64 downto 64);
-      \__out0\ <= pause(63 downto 0);
+zin <= (\__in0\ & \__in1\);
+      zi0 <= zin(1055 downto 32);
+      zi1 <= zin(31 downto 0);
+      zi2 <= (zi0 & zi1);
+      zi3 <= zi2(1055 downto 32);
+      zi4 <= zi2(31 downto 0);
+      zi5 <= zi3(1023 downto 512);
+      inst : \ZLL_Main_compute\ port map (zi4, zi5(511 downto 448), zll_main_compute_out);
+      zi6 <= zi3(1023 downto 512);
+      \instR1\ : \ZLL_Main_compute\ port map (zi4, zi6(447 downto 384), \zll_main_compute_outR1\);
+      zi7 <= zi3(1023 downto 512);
+      \instR2\ : \ZLL_Main_compute\ port map (zi4, zi7(383 downto 320), \zll_main_compute_outR2\);
+      zi8 <= zi3(1023 downto 512);
+      \instR3\ : \ZLL_Main_compute\ port map (zi4, zi8(319 downto 256), \zll_main_compute_outR3\);
+      zi9 <= zi3(1023 downto 512);
+      \instR4\ : \ZLL_Main_compute\ port map (zi4, zi9(255 downto 192), \zll_main_compute_outR4\);
+      zi10 <= zi3(1023 downto 512);
+      \instR5\ : \ZLL_Main_compute\ port map (zi4, zi10(191 downto 128), \zll_main_compute_outR5\);
+      zi11 <= zi3(1023 downto 512);
+      \instR6\ : \ZLL_Main_compute\ port map (zi4, zi11(127 downto 64), \zll_main_compute_outR6\);
+      zi12 <= zi3(1023 downto 512);
+      \instR7\ : \ZLL_Main_compute\ port map (zi4, zi12(63 downto 0), \zll_main_compute_outR7\);
+      zi13 <= (std_logic_vector'(B"0") & (zll_main_compute_out & \zll_main_compute_outR1\ & \zll_main_compute_outR2\ & \zll_main_compute_outR3\ & \zll_main_compute_outR4\ & \zll_main_compute_outR5\ & \zll_main_compute_outR6\ & \zll_main_compute_outR7\));
+      zi14 <= zi13(63 downto 0);
+      zres <= (std_logic_vector'(B"1") & zi14);
+      \__out0\ <= zres(63 downto 0);
 end architecture;
 
 library ieee;
@@ -320,12 +313,7 @@ port (arg0 : in std_logic_vector (31 downto 0);
 end entity;
 
 architecture rtl of \ZLL_Main_compute\ is
-signal id_in : std_logic_vector (31 downto 0);
-      signal \id_inR1\ : std_logic_vector (63 downto 0);
-      signal binop_in : std_logic_vector (15 downto 0);
+
 begin
-id_in <= arg0;
-      \id_inR1\ <= arg1;
-      binop_in <= (id_in(7 downto 0) & \id_inR1\(39 downto 32));
-      res <= rw_add(binop_in(15 downto 8), binop_in(7 downto 0));
+res <= rw_add(arg0(7 downto 0), arg1(39 downto 32));
 end architecture;

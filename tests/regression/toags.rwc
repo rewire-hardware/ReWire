@@ -1,140 +1,209 @@
-device top_level:
+$Pure.dispatch : ([5], [1]) -> [7]
+$Pure.dispatch $0 $1 =
+      let $t2 = $1 # $0 in
+      if eq $t2[3 +: 2] 2'h1 then $LL.Pure.dispatch2 $t2[5 +: 1] $t2[2 +: 1] $t2[1 +: 1] $t2[0 +: 1]
+            else let $t1 = $1 # $0 in
+            if eq $t1[3 +: 2] 2'h2 then $LL.Pure.dispatch1 $t1[5 +: 1] $t1[1 +: 1] $t1[0 +: 1]
+                  else let $t0 = $1 # $0 in
+                  $LL.Pure.dispatch6 $t0[5 +: 1] $t0[2 +: 1] $t0[1 +: 1] $t0[0 +: 1]
 
-inputs [("__in0",1)]
-outputs [("__out0",1)]
-states [("__st0",1),("__st1",1)]
+$LL.Main.go33 : ([1], [1]) -> [1]
+$LL.Main.go33 $0 $1 =
+      let $t0 = $0 # $1 in
+      $LL.Main.go14 $t0[1 +: 1]
 
-$Pure.dispatch :: W5 -> W1 -> W7
-$Pure.dispatch $0 $1 = 7'case {1'$1, 5'$0} of
-    {1'@, 2'h1, 1'@, 1'@, 1'@} -> $LL.Pure.dispatch2
-    _ -> 7'case {1'$1, 5'$0} of
-      {1'@, 2'h2, 1'_, 1'@, 1'@} -> $LL.Pure.dispatch3
-      _ -> 7'case {1'$1, 5'$0} of
-        {1'@, 2'h0, 1'@, 1'@, 1'@} -> $LL.Pure.dispatch6
+$LL.Pure.dispatch7 : ([1], [1], [1], [1]) -> [7]
+$LL.Pure.dispatch7 $0 $1 $2 $3 =
+      $LL.Main.go28 $1 $0 $2 $3
 
-$Pure.start :: W7
-$Pure.start  = 7'h51
+$LL.Main.go32 : ([1], [1], [1], [1]) -> [7]
+$LL.Main.go32 $0 $1 $2 $3 =
+      $LL.Main.go27 $0 $1 $2 $3
 
-$LL.Main.go33 :: W1 -> W1 -> W1
-$LL.Main.go33 $0 $1 = 1'case {1'$0, 1'$1} of
-    {1'@, 1'h0} -> $LL.Main.go14
+$LL.Main.go31 : ([1], [1], [1]) -> [7]
+$LL.Main.go31 $0 $1 $2 =
+      $LL.Main.go7 $0 $1 $2
 
-$LL.Pure.dispatch7 :: W1 -> W1 -> W1 -> W1 -> W7
-$LL.Pure.dispatch7 $0 $1 $2 $3 = 7'case {1'$1, 1'$0, 1'$2, 1'$3} of
-    {1'@, 1'@, 1'@, 1'@} -> $LL.Main.go27
+$LL.Main.go30 : ([1], [1], [1]) -> [1]
+$LL.Main.go30 $0 $1 $2 =
+      let $t0 = $0 # $2 in
+      if eq $t0[0 +: 1] 1'h1 then $LL.Main.go23 $t0[1 +: 1]
+            else $LL.Main.go33 $0 $1
 
-$LL.Main.go32 :: W1 -> W1 -> W1 -> W1 -> W7
-$LL.Main.go32 $0 $1 $2 $3 = 7'case {1'$0, 1'$1, 1'$2, 1'$3} of
-    {1'@, 1'@, 1'@, 1'@} -> $LL.Main.go27
+$LL.Pure.dispatch6 : ([1], [1], [1], [1]) -> [7]
+$LL.Pure.dispatch6 $0 $1 $2 $3 =
+      $LL.Pure.dispatch7 $0 $1 $2 $3
 
-$LL.Main.go30 :: W1 -> W1 -> W1 -> W1
-$LL.Main.go30 $0 $1 $2 = 1'case {1'$0, 1'$2} of
-    {1'@, 1'h1} -> Id
-    _ -> 1'case {1'$0, 1'$1} of
-      {1'@, 1'@} -> $LL.Main.go33
+$LL.Pure.dispatch5 : ([1], [1], [1], [1]) -> [7]
+$LL.Pure.dispatch5 $0 $1 $2 $3 =
+      $LL.Pure.dispatch $1 $0 $2 $3
 
-$LL.Pure.dispatch6 :: W1 -> W1 -> W1 -> W1 -> W7
-$LL.Pure.dispatch6 $0 $1 $2 $3 = 7'case {1'$0, 1'$1, 1'$2, 1'$3} of
-    {1'@, 1'@, 1'@, 1'@} -> $LL.Pure.dispatch7
+$LL.Main.go29 : ([1], [1]) -> [7]
+$LL.Main.go29 $0 $2 =
+      5'h2 # $0 # $2
 
-$LL.Pure.dispatch5 :: W1 -> W1 -> W1 -> W1 -> W7
-$LL.Pure.dispatch5 $0 $1 $2 $3 = 7'case {1'$1, 1'$0, 1'$2, 1'$3} of
-    {1'@, 1'@, 1'@, 1'@} -> $LL.Main.go
+$LL.Main.go28 : ([1], [1], [1], [1]) -> [7]
+$LL.Main.go28 $0 $1 $2 $3 =
+      $LL.Main.go21 $0 $1 $2 $3
 
-$LL.Main.go29 :: W1 -> W1 -> W7
-$LL.Main.go29 $0 $1 = {5'h2, 1'$0, 1'$1}
+$LL.Main.go27 : ([1], [1], [1], [1]) -> [7]
+$LL.Main.go27 $0 $1 $2 $3 =
+      1'h1 # "ReWire.Prelude.&&" ($LL.Main.go30 $0 $1 $1) $1 # 2'h1 # $1 # $2 # $3
 
-$LL.Main.go27 :: W1 -> W1 -> W1 -> W1 -> W7
-$LL.Main.go27 $0 $1 $2 $3 = {1'h1
-  , 1'case {1'case {1'$0, 1'$1, 1'$1} of {1'@, 1'@, 1'@} -> $LL.Main.go30, 1'$1} of
-    {1'@, 1'@} -> ReWire.Prelude.&&
-  , 2'h1
-  , 1'$1
-  , 1'$2
-  , 1'$3}
+$LL.Main.go26 : ([1], [1], [1], [1]) -> [7]
+$LL.Main.go26 $0 $1 $2 $3 =
+      $LL.Main.go15 $0 $1 $2 $3
 
-$LL.Main.go22 :: W1 -> W1 -> W1 -> W7
-$LL.Main.go22 $0 $1 $2 = {4'h0, 1'$0, 1'$1, 1'$2}
+"$LL.ReWire.Prelude.&&3" : ([1]) -> [1]
+"$LL.ReWire.Prelude.&&3" $0 =
+      1'h0
 
-$LL.Main.go20 :: W1 -> W1 -> W1 -> W7
-$LL.Main.go20 $0 $1 $2 = {4'h8, 1'$0, 1'$1, 1'$2}
+$LL.Main.go25 : ([1], [1]) -> [7]
+$LL.Main.go25 $1 $2 =
+      $LL.Main.go24 $1 $2
 
-$LL.Pure.dispatch3 :: W1 -> W1 -> W1 -> W7
-$LL.Pure.dispatch3 $0 $1 $2 = 7'case {1'$0, 1'$1, 1'$2} of
-    {1'@, 1'@, 1'@} -> $LL.Main.go4
+$LL.Main.go24 : ([1], [1]) -> [7]
+$LL.Main.go24 $1 $2 =
+      $LL.Main.go29 $1 $2
 
-$LL.Main.go18 :: W2 -> W7
-$LL.Main.go18 $0 = 7'case 2'$0 of
-    {1'@, 1'@} -> $LL.Main.go29
+$LL.Main.go23 : ([1]) -> [1]
+$LL.Main.go23 $0 =
+      $0
 
-$LL.Main.go17 :: W1 -> W1 -> W7
-$LL.Main.go17 $0 $1 = 7'case {1'$0, 1'$1} of
-    {1'@, 1'@} -> Main.go
+$LL.Main.go22 : ([1], [1], [1]) -> [7]
+$LL.Main.go22 $0 $1 $2 =
+      4'h0 # $0 # $1 # $2
 
-$LL.ReWire.Prelude.&&1 :: W1 -> W1 -> W2 -> W1
-$LL.ReWire.Prelude.&&1 $0 $1 $2 = 1'case 2'$2 of
-    {1'h1, 1'@} -> Id
-    _ -> 1'case {1'$0, 1'$1} of
-      {2'@} -> $LL.ReWire.Prelude.&&
+$LL.Main.go21 : ([1], [1], [1], [1]) -> [7]
+$LL.Main.go21 $0 $1 $2 $3 =
+      $LL.Main.go32 $0 $1 $2 $3
 
-$LL.Main.go14 :: W1 -> W1
-$LL.Main.go14 $0 = 1'case {1'$0, 1'$0} of
-    {1'@, 1'@} -> ReWire.Prelude.&&
+$LL.Main.go20 : ([1], [1], [1]) -> [7]
+$LL.Main.go20 $0 $1 $2 =
+      4'h8 # $0 # $1 # $2
 
-$LL.Pure.dispatch2 :: W1 -> W1 -> W1 -> W1 -> W7
-$LL.Pure.dispatch2 $0 $1 $2 $3 = 7'case {1'$0, 1'$1, 1'$2, 1'$3} of
-    {1'@, 1'@, 1'@, 1'@} -> $LL.Pure.dispatch5
+$LL.Pure.dispatch3 : ([1], [1], [1]) -> [7]
+$LL.Pure.dispatch3 $0 $1 $2 =
+      $LL.Main.go4 $0 $1 $2
 
-$LL.ReWire.Prelude.&& :: W2 -> W1
-$LL.ReWire.Prelude.&& $0 = 1'case 2'$0 of
-    {1'h0, 1'_} -> 1'h0
+$LL.Main.go18 : ([2]) -> [7]
+$LL.Main.go18 $0 =
+      $LL.Main.go25 $0[1 +: 1] $0[0 +: 1]
 
-$LL.Main.go13 :: W1 -> W7 -> W7
-$LL.Main.go13 $0 $1 = 7'case {1'$0, 7'$1} of
-    {1'@, 1'h0, 2'_, 1'h0, 1'@, 1'@, 1'@} -> $LL.Main.go32
+$LL.Main.go17 : ([1], [1]) -> [7]
+$LL.Main.go17 $1 $2 =
+      $LL.Main.go12 $1 $2
 
-$LL.Main.go11 :: W3 -> W7
-$LL.Main.go11 $0 = 7'case 3'$0 of
-    {1'@, 1'@, 1'@} -> $LL.Main.go22
+$LL.Main.go16 : ([1], [1]) -> [7]
+$LL.Main.go16 $1 $2 =
+      Main.go $1 $2
 
-ReWire.Prelude.&& :: W1 -> W1 -> W1
-ReWire.Prelude.&& $0 $1 = 1'case {1'$0, 1'$1, 1'$0, 1'$1} of
-    {1'@, 1'@, 2'@} -> $LL.ReWire.Prelude.&&1
+$LL.Main.go15 : ([1], [1], [1], [1]) -> [7]
+$LL.Main.go15 $0 $1 $2 $3 =
+      $LL.Main.go28 $0 $1 $2 $3
 
-$LL.Main.go10 :: W1 -> W1 -> W1 -> W7
-$LL.Main.go10 $0 $1 $2 = 7'case {1'$0, 7'case {1'$1, 1'$1, 1'$2} of {3'@} -> $LL.Main.go11} of
-    {1'@, 7'@} -> $LL.Main.go13
+"$LL.ReWire.Prelude.&&1" : ([1], [1], [2]) -> [1]
+"$LL.ReWire.Prelude.&&1" $0 $1 $2 =
+      if eq $2[1 +: 1] 1'h1 then $LL.Main.go23 $2[0 +: 1]
+            else "$LL.ReWire.Prelude.&&" ($0 # $1)
 
-$LL.Main.go9 :: W1 -> W1 -> W1 -> W7
-$LL.Main.go9 $0 $1 $2 = 7'case {1'$0, 1'$1, 1'$2} of
-    {1'@, 1'@, 1'@} -> $LL.Main.go1
+$LL.Main.go14 : ([1]) -> [1]
+$LL.Main.go14 $0 =
+      "ReWire.Prelude.&&" $0 $0
 
-$LL.Main.go8 :: W7 -> W7
-$LL.Main.go8 $0 = 7'case 7'$0 of
-    {1'h0, 2'_, 1'h1, 1'_, 1'@, 1'@} -> $LL.Main.go17
+$LL.Pure.dispatch2 : ([1], [1], [1], [1]) -> [7]
+$LL.Pure.dispatch2 $0 $1 $2 $3 =
+      $LL.Pure.dispatch5 $0 $1 $2 $3
 
-$LL.Main.go5 :: W1 -> W1 -> W1 -> W7
-$LL.Main.go5 $0 $1 $2 = 7'case {1'$0, 1'$1, 1'$2} of
-    {1'@, 1'@, 1'@} -> $LL.Main.go2
+"$LL.ReWire.Prelude.&&" : ([2]) -> [1]
+"$LL.ReWire.Prelude.&&" $0 =
+      "$LL.ReWire.Prelude.&&3" $0[0 +: 1]
 
-$LL.Main.go4 :: W1 -> W1 -> W1 -> W7
-$LL.Main.go4 $0 $1 $2 = 7'case {1'$2, 1'$1, 1'$0, 1'$0} of
-    {1'@, 1'@, 1'@, 1'h1} -> $LL.Main.go5
-    _ -> 7'case {1'$2, 1'$1, 1'$0, 1'$0} of
-      {1'@, 1'@, 1'@, 1'h0} -> $LL.Main.go9
+$LL.Main.go13 : ([1], [7]) -> [7]
+$LL.Main.go13 $0 $1 =
+      let $t0 = $0 # $1 in
+      $LL.Main.go26 $t0[7 +: 1] $t0[2 +: 1] $t0[1 +: 1] $t0[0 +: 1]
 
-$LL.Main.go2 :: W1 -> W1 -> W1 -> W7
-$LL.Main.go2 $0 $1 $2 = 7'case {1'$2, 1'$1, 1'$0} of
-    {1'@, 1'@, 1'@} -> $LL.Main.go20
+$LL.Main.go12 : ([1], [1]) -> [7]
+$LL.Main.go12 $1 $2 =
+      $LL.Main.go3 $1 $2
 
-$LL.Main.go1 :: W1 -> W1 -> W1 -> W7
-$LL.Main.go1 $0 $1 $2 = 7'case {1'$2, 1'$1, 1'$0} of
-    {1'@, 1'@, 1'@} -> $LL.Main.go10
+$LL.Pure.dispatch1 : ([1], [1], [1]) -> [7]
+$LL.Pure.dispatch1 $0 $1 $2 =
+      $LL.Pure.dispatch3 $0 $1 $2
 
-$LL.Main.go :: W1 -> W1 -> W1 -> W1 -> W7
-$LL.Main.go $0 $1 $2 $3 = 7'case 7'case {1'$2, 1'$0} of
-      {2'@} -> $LL.Main.go18 of
-    {7'@} -> $LL.Main.go8
+$LL.Main.go11 : ([3]) -> [7]
+$LL.Main.go11 $0 =
+      $LL.Main.go31 $0[2 +: 1] $0[1 +: 1] $0[0 +: 1]
 
-Main.go :: W1 -> W1 -> W7
-Main.go $0 $1 = {5'h14, 1'$0, 1'$1}
+"ReWire.Prelude.&&" : ([1], [1]) -> [1]
+"ReWire.Prelude.&&" $0 $1 =
+      "$LL.ReWire.Prelude.&&1" $0 $1 ($0 # $1)
+
+$LL.Main.go10 : ([1], [1], [1]) -> [7]
+$LL.Main.go10 $0 $1 $2 =
+      $LL.Main.go13 $0 ($LL.Main.go11 ($1 # $1 # $2))
+
+$LL.Main.go9 : ([1], [1], [1]) -> [7]
+$LL.Main.go9 $0 $1 $2 =
+      $LL.Main.go1 $0 $1 $2
+
+$LL.Main.go8 : ([7]) -> [7]
+$LL.Main.go8 $0 =
+      $LL.Main.go17 $0[1 +: 1] $0[0 +: 1]
+
+$LL.Main.go7 : ([1], [1], [1]) -> [7]
+$LL.Main.go7 $0 $1 $2 =
+      $LL.Main.go22 $0 $1 $2
+
+$LL.Main.go6 : ([1], [1], [1], [1]) -> [7]
+$LL.Main.go6 $0 $1 $2 $3 =
+      $LL.Main.go $0 $1 $2 $3
+
+$LL.Main.go5 : ([1], [1], [1]) -> [7]
+$LL.Main.go5 $0 $1 $2 =
+      $LL.Main.go2 $0 $1 $2
+
+$LL.Main.go4 : ([1], [1], [1]) -> [7]
+$LL.Main.go4 $0 $1 $2 =
+      let $t1 = $2 # $1 # $0 # $0 in
+      if eq $t1[0 +: 1] 1'h1 then $LL.Main.go5 $t1[3 +: 1] $t1[2 +: 1] $t1[1 +: 1]
+            else let $t0 = $2 # $1 # $0 # $0 in
+            $LL.Main.go9 $t0[3 +: 1] $t0[2 +: 1] $t0[1 +: 1]
+
+$LL.Main.go3 : ([1], [1]) -> [7]
+$LL.Main.go3 $1 $2 =
+      $LL.Main.go16 $1 $2
+
+$LL.Main.go2 : ([1], [1], [1]) -> [7]
+$LL.Main.go2 $0 $1 $2 =
+      $LL.Main.go20 $2 $1 $0
+
+$LL.Main.go1 : ([1], [1], [1]) -> [7]
+$LL.Main.go1 $0 $1 $2 =
+      $LL.Main.go10 $2 $1 $0
+
+$LL.Pure.dispatch : ([1], [1], [1], [1]) -> [7]
+$LL.Pure.dispatch $0 $1 $2 $3 =
+      $LL.Main.go6 $0 $1 $2 $3
+
+$LL.Main.go : ([1], [1], [1], [1]) -> [7]
+$LL.Main.go $0 $1 $2 $3 =
+      $LL.Main.go8 ($LL.Main.go18 ($2 # $0))
+
+Main.go : ([1], [1]) -> [7]
+Main.go $0 $1 =
+      5'h14 # $0 # $1
+
+device top_level
+      input __in0 : [1]
+      output __out0 : [1]
+      register __resumption_tag : [3] init 3'h4
+      register __st0 : [1] init 1'h0
+      register __st1 : [1] init 1'h1
+      let $in = __resumption_tag # __st0 # __st1 # __in0
+      let $res = $Pure.dispatch $in[1 +: 5] $in[0 +: 1]
+      __out0 := $res[5 +: 1]
+      next __resumption_tag := $res[2 +: 3]
+      next __st0 := $res[1 +: 1]
+      next __st1 := $res[0 +: 1]

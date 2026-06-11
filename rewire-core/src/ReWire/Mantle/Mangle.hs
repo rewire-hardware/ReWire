@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.Core.Mangle (mangle, mangleFresh, mangleMod) where
+module ReWire.Mantle.Mangle (mangle, mangleFresh, mangleMod) where
 
 import GHC.Utils.Encoding (zEncodeString)   -- this is from the ghc package
 import Data.Char (isAlphaNum)

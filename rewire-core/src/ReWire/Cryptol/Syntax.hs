@@ -65,6 +65,9 @@ helpers = vsep $ map text
       , ""
       , "rw'parity : {n} (fin n) => [n] -> Bit"
       , "rw'parity x = foldr (^) False x"
+      , ""
+      , "rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]"
+      , "rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x"
       ]
 
 -- | An uninterpreted function declared in a @parameter@ block: name, argument

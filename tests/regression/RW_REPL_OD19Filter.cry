@@ -13,6 +13,9 @@ rw'repl x = join (repeat`{n} x)
 rw'parity : {n} (fin n) => [n] -> Bit
 rw'parity x = foldr (^) False x
 
+rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
+rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
+
 parameter
   ext_test1 : [32] -> [32] -> [1]
   ext_test2 : [32] -> [32] -> [1]
@@ -21,1414 +24,1040 @@ parameter
 
 // $Pure.dispatch
 rw__Pure_dispatch : [39] -> [33] -> [81]
-rw__Pure_dispatch arg0 arg1 = rw_Main_repl1 (take`{33} s0) (drop`{33} s0)
+rw__Pure_dispatch x0 x1 = rw__LL_Pure_dispatch (take`{33} s0) (drop`{33} s0)
   where
     s0 : [72]
-    s0 = arg1 # arg0
-
-// $Pure.start
-rw__Pure_start : [81]
-rw__Pure_start = 0b100000000000000000000000000000000000000010000000000000000000000000000000000000000
+    s0 = x1 # x0
 
 // $LL.Main.repl114
 rw__LL_Main_repl114 : [32] -> [32] -> [39] -> [81]
-rw__LL_Main_repl114 arg0 arg1 arg2 = rw__LL_Main_repl91 (take`{32} s0) (take`{32} (drop`{32} s0)) (drop`{64} s0)
-  where
-    s0 : [103]
-    s0 = arg0 # (arg1 # arg2)
+rw__LL_Main_repl114 x0 x1 x2 = rw__LL_Main_repl44 x0 x1 x2
 
 // $LL.OD19.ProgramCounter.incPC253
 rw__LL_OD19_ProgramCounter_incPC253 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC253 arg0 arg1 = if arg1 == 0b1011000 then 0b1011001 else (rw__LL_OD19_ProgramCounter_incPC65 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC253 x0 x1 = if x1 == 0b1011000 then 0b1011001 else (rw__LL_OD19_ProgramCounter_incPC65 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC252
 rw__LL_OD19_ProgramCounter_incPC252 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC252 arg0 arg1 = if arg1 == 0b1110011 then 0b1110100 else (rw__LL_OD19_ProgramCounter_incPC169 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC252 x0 x1 = if x1 == 0b1110011 then 0b1110100 else (rw__LL_OD19_ProgramCounter_incPC169 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC251
 rw__LL_OD19_ProgramCounter_incPC251 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC251 arg0 arg1 = if arg1 == 0b1111001 then 0b1111010 else (rw__LL_OD19_ProgramCounter_incPC234 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC251 x0 x1 = if x1 == 0b1111001 then 0b1111010 else (rw__LL_OD19_ProgramCounter_incPC234 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC249
 rw__LL_OD19_ProgramCounter_incPC249 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC249 arg0 arg1 = if arg1 == 0b1000001 then 0b1000010 else (rw__LL_OD19_ProgramCounter_incPC108 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC249 x0 x1 = if x1 == 0b1000001 then 0b1000010 else (rw__LL_OD19_ProgramCounter_incPC108 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC248
 rw__LL_OD19_ProgramCounter_incPC248 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC248 arg0 arg1 = if arg1 == 0b1101101 then 0b1101110 else (rw__LL_OD19_ProgramCounter_incPC146 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC248 x0 x1 = if x1 == 0b1101101 then 0b1101110 else (rw__LL_OD19_ProgramCounter_incPC146 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC246
 rw__LL_OD19_ProgramCounter_incPC246 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC246 arg0 arg1 = if arg1 == 0b1100001 then 0b1100010 else (rw__LL_OD19_ProgramCounter_incPC44 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC246 x0 x1 = if x1 == 0b1100001 then 0b1100010 else (rw__LL_OD19_ProgramCounter_incPC44 x0 x0)
 
 // $LL.Main.repl113
 rw__LL_Main_repl113 : [7] -> [32] -> [7] -> [39] -> [81]
-rw__LL_Main_repl113 arg0 arg1 arg2 arg3 = if (drop`{71} s0) == 0b0000000 then (rw__LL_Main_repl77 (take`{39} s0) (take`{32} (drop`{39} s0))) else (rw__LL_Main_repl81 (take`{7} s1) (take`{32} (drop`{7} s1)) (take`{7} (drop`{39} s1)) (drop`{46} s1))
+rw__LL_Main_repl113 x0 x1 x2 x3 = if (drop`{71} s0) == 0b0000000 then (rw__LL_Main_repl77 (take`{39} s0) (take`{32} (drop`{39} s0))) else (rw__LL_Main_repl81 x0 x1 x0 x3)
   where
     s0 : [78]
-    s0 = arg3 # (arg1 # arg2)
-    s1 : [85]
-    s1 = arg0 # (arg1 # (arg0 # arg3))
+    s0 = x3 # (x1 # x2)
 
 // $LL.OD19.ProgramCounter.incPC240
 rw__LL_OD19_ProgramCounter_incPC240 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC240 arg0 arg1 = if arg1 == 0b0100001 then 0b0100010 else (rw__LL_OD19_ProgramCounter_incPC118 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC240 x0 x1 = if x1 == 0b0100001 then 0b0100010 else (rw__LL_OD19_ProgramCounter_incPC118 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC239
 rw__LL_OD19_ProgramCounter_incPC239 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC239 arg0 arg1 = if arg1 == 0b0010110 then 0b0010111 else (rw__LL_OD19_ProgramCounter_incPC212 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC239 x0 x1 = if x1 == 0b0010110 then 0b0010111 else (rw__LL_OD19_ProgramCounter_incPC212 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC236
 rw__LL_OD19_ProgramCounter_incPC236 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC236 arg0 arg1 = if arg1 == 0b0001010 then 0b0001011 else (rw__LL_OD19_ProgramCounter_incPC13 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC236 x0 x1 = if x1 == 0b0001010 then 0b0001011 else (rw__LL_OD19_ProgramCounter_incPC13 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC234
 rw__LL_OD19_ProgramCounter_incPC234 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC234 arg0 arg1 = if arg1 == 0b1111010 then 0b1111011 else (rw__LL_OD19_ProgramCounter_incPC207 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC234 x0 x1 = if x1 == 0b1111010 then 0b1111011 else (rw__LL_OD19_ProgramCounter_incPC207 x0 x0)
 
 // $LL.Main.repl112
 rw__LL_Main_repl112 : [39] -> [32] -> [81]
-rw__LL_Main_repl112 arg0 arg1 = rw__LL_Main_repl97 (take`{39} s0) (drop`{39} s0)
-  where
-    s0 : [71]
-    s0 = arg0 # arg1
+rw__LL_Main_repl112 x0 x1 = rw__LL_Main_repl97 x0 x1
 
 // $LL.OD19.ProgramCounter.incPC233
 rw__LL_OD19_ProgramCounter_incPC233 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC233 arg0 arg1 = if arg1 == 0b0110010 then 0b0110011 else (rw__LL_OD19_ProgramCounter_incPC5 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC233 x0 x1 = if x1 == 0b0110010 then 0b0110011 else (rw__LL_OD19_ProgramCounter_incPC5 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC232
 rw__LL_OD19_ProgramCounter_incPC232 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC232 arg0 arg1 = if arg1 == 0b1110010 then 0b1110011 else (rw__LL_OD19_ProgramCounter_incPC252 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC232 x0 x1 = if x1 == 0b1110010 then 0b1110011 else (rw__LL_OD19_ProgramCounter_incPC252 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC231
 rw__LL_OD19_ProgramCounter_incPC231 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC231 arg0 arg1 = if arg1 == 0b0111110 then 0b0111111 else (rw__LL_OD19_ProgramCounter_incPC89 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC231 x0 x1 = if x1 == 0b0111110 then 0b0111111 else (rw__LL_OD19_ProgramCounter_incPC89 x0 x0)
+
+// $LL.Main.repl111
+rw__LL_Main_repl111 : [39] -> [39] -> [81]
+rw__LL_Main_repl111 x0 x1 = rw__LL_Main_repl59 x0 x1
 
 // $LL.OD19.ProgramCounter.incPC227
 rw__LL_OD19_ProgramCounter_incPC227 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC227 arg0 arg1 = if arg1 == 0b0000001 then 0b0000010 else (rw__LL_OD19_ProgramCounter_incPC2 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC227 x0 x1 = if x1 == 0b0000001 then 0b0000010 else (rw__LL_OD19_ProgramCounter_incPC2 x0 x0)
 
 // $LL.Main.repl110
 rw__LL_Main_repl110 : [7] -> [32] -> [7] -> [39] -> [81]
-rw__LL_Main_repl110 arg0 arg1 arg2 arg3 = if (drop`{71} s0) == 0b0000101 then (rw__LL_Main_repl23 (take`{39} s0) (take`{32} (drop`{39} s0))) else (rw__LL_Main_repl108 (take`{32} s1) (take`{7} (drop`{32} s1)) (drop`{39} s1))
+rw__LL_Main_repl110 x0 x1 x2 x3 = if (drop`{71} s0) == 0b0000101 then (rw__LL_Main_repl23 (take`{39} s0) (take`{32} (drop`{39} s0))) else (rw__LL_Main_repl108 x1 x0 x3)
   where
     s0 : [78]
-    s0 = arg3 # (arg1 # arg2)
-    s1 : [78]
-    s1 = arg1 # (arg0 # arg3)
+    s0 = x3 # (x1 # x2)
 
 // $LL.OD19.ProgramCounter.incPC226
 rw__LL_OD19_ProgramCounter_incPC226 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC226 arg0 arg1 = if arg1 == 0b0001100 then 0b0001101 else (rw__LL_OD19_ProgramCounter_incPC179 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC226 x0 x1 = if x1 == 0b0001100 then 0b0001101 else (rw__LL_OD19_ProgramCounter_incPC179 x0 x0)
+
+// $LL.Main.getReg7
+rw__LL_Main_getReg7 : [39] -> [32] -> [7] -> [71]
+rw__LL_Main_getReg7 x0 x1 x2 = rw__LL_Main_getReg3 x0 x1 x2
 
 // $LL.Main.repl109
 rw__LL_Main_repl109 : [7] -> [32] -> [7] -> [39] -> [81]
-rw__LL_Main_repl109 arg0 arg1 arg2 arg3 = if (drop`{71} s0) == 0b0000011 then (rw__LL_Main_repl112 (take`{39} s0) (take`{32} (drop`{39} s0))) else (rw__LL_Main_repl32 (take`{7} s1) (take`{32} (drop`{7} s1)) (take`{7} (drop`{39} s1)) (drop`{46} s1))
+rw__LL_Main_repl109 x0 x1 x2 x3 = if (drop`{71} s0) == 0b0000011 then (rw__LL_Main_repl112 (take`{39} s0) (take`{32} (drop`{39} s0))) else (rw__LL_Main_repl32 x0 x1 x0 x3)
   where
     s0 : [78]
-    s0 = arg3 # (arg1 # arg2)
-    s1 : [85]
-    s1 = arg0 # (arg1 # (arg0 # arg3))
+    s0 = x3 # (x1 # x2)
 
 // Main.repl1
 rw_Main_repl1 : [33] -> [39] -> [81]
-rw_Main_repl1 arg0 arg1 = rw__LL_Main_repl76 (take`{33} s0) (take`{33} (drop`{33} s0)) (drop`{66} s0)
-  where
-    s0 : [105]
-    s0 = arg0 # (arg0 # arg1)
+rw_Main_repl1 x0 x1 = rw__LL_Main_repl76 x0 x0 x1
 
 // $LL.Main.repl108
 rw__LL_Main_repl108 : [32] -> [7] -> [39] -> [81]
-rw__LL_Main_repl108 arg0 arg1 arg2 = if (drop`{71} s0) == 0b0000110 then (rw__LL_Main_repl49 (take`{39} s0) (take`{32} (drop`{39} s0))) else (rw__LL_Main_repl43 s2)
+rw__LL_Main_repl108 x0 x1 x2 = if (drop`{71} s0) == 0b0000110 then (rw__LL_Main_repl49 (take`{39} s0) (take`{32} (drop`{39} s0))) else (rw__LL_Main_repl43 (rw__LL_Main_repl101 (rw_Main_nextPC x2)))
   where
     s0 : [78]
-    s0 = arg2 # (arg0 # arg1)
-    s1 : [39]
-    s1 = rw_Main_nextPC arg2
-    s2 : [81]
-    s2 = rw__LL_Main_repl107 s1
+    s0 = x2 # (x0 # x1)
 
 // $LL.Main.repl107
 rw__LL_Main_repl107 : [39] -> [81]
-rw__LL_Main_repl107 arg0 = 0b001000000000000000000000000000000000000000 # arg0
+rw__LL_Main_repl107 x0 = 0b001000000000000000000000000000000000000000 # x0
+
+// $LL.Main.putReg13
+rw__LL_Main_putReg13 : [32] -> [32] -> [7] -> [39] -> [39]
+rw__LL_Main_putReg13 x0 x1 x2 x3 = rw__LL_Main_putReg x0 x1 x2 x3
+
+// $LL.OD19.ProgramCounter.incPC225
+rw__LL_OD19_ProgramCounter_incPC225 : [7] -> [7]
+rw__LL_OD19_ProgramCounter_incPC225 x0 = 0b0000000
 
 // $LL.OD19.ProgramCounter.incPC223
 rw__LL_OD19_ProgramCounter_incPC223 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC223 arg0 arg1 = if arg1 == 0b0110100 then 0b0110101 else (rw__LL_OD19_ProgramCounter_incPC36 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC223 x0 x1 = if x1 == 0b0110100 then 0b0110101 else (rw__LL_OD19_ProgramCounter_incPC36 x0 x0)
+
+// $LL.Main.putReg12
+rw__LL_Main_putReg12 : [39] -> [32] -> [32] -> [7] -> [39]
+rw__LL_Main_putReg12 x0 x1 x2 x3 = rw__LL_Main_putReg9 x0 x1 x2 x3
 
 // $LL.OD19.ProgramCounter.incPC221
 rw__LL_OD19_ProgramCounter_incPC221 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC221 arg0 arg1 = if arg1 == 0b0010000 then 0b0010001 else (rw__LL_OD19_ProgramCounter_incPC175 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC221 x0 x1 = if x1 == 0b0010000 then 0b0010001 else (rw__LL_OD19_ProgramCounter_incPC175 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC220
 rw__LL_OD19_ProgramCounter_incPC220 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC220 arg0 arg1 = if arg1 == 0b1010010 then 0b1010011 else (rw__LL_OD19_ProgramCounter_incPC110 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC220 x0 x1 = if x1 == 0b1010010 then 0b1010011 else (rw__LL_OD19_ProgramCounter_incPC110 x0 x0)
 
 // OD19.ProgramCounter.incPC
 rw_OD19_ProgramCounter_incPC : [7] -> [7]
-rw_OD19_ProgramCounter_incPC arg0 = rw__LL_OD19_ProgramCounter_incPC126 (take`{7} s0) (drop`{7} s0)
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw_OD19_ProgramCounter_incPC x0 = rw__LL_OD19_ProgramCounter_incPC126 x0 x0
 
 // $LL.Main.repl105
 rw__LL_Main_repl105 : [39] -> [32] -> [81]
-rw__LL_Main_repl105 arg0 arg1 = rw__LL_Main_repl37 (take`{39} s0) (drop`{39} s0)
-  where
-    s0 : [71]
-    s0 = arg0 # arg1
+rw__LL_Main_repl105 x0 x1 = rw__LL_Main_repl37 x0 x1
+
+// $LL.Main.repl104
+rw__LL_Main_repl104 : [32] -> [39] -> [81]
+rw__LL_Main_repl104 x0 x1 = rw__LL_Main_repl50 x0 x1
 
 // $LL.OD19.ProgramCounter.incPC219
 rw__LL_OD19_ProgramCounter_incPC219 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC219 arg0 arg1 = if arg1 == 0b0101000 then 0b0101001 else (rw__LL_OD19_ProgramCounter_incPC186 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC219 x0 x1 = if x1 == 0b0101000 then 0b0101001 else (rw__LL_OD19_ProgramCounter_incPC186 x0 x0)
+
+// Main.test2
+rw_Main_test2 : [32] -> [32] -> [1]
+rw_Main_test2 x0 x1 = ext_test2 x0 x1
 
 // $LL.Main.repl103
 rw__LL_Main_repl103 : [81] -> [81]
-rw__LL_Main_repl103 arg0 = rw__LL_Main_repl87 (drop`{42} arg0)
+rw__LL_Main_repl103 x0 = rw__LL_Main_repl87 (drop`{42} x0)
 
 // $LL.Main.repl102
 rw__LL_Main_repl102 : [32] -> [32] -> [39] -> [81]
-rw__LL_Main_repl102 arg0 arg1 arg2 = rw__LL_Main_repl79 (take`{32} s0) (take`{32} (drop`{32} s0)) (drop`{64} s0)
-  where
-    s0 : [103]
-    s0 = arg0 # (arg1 # arg2)
+rw__LL_Main_repl102 x0 x1 x2 = rw__LL_Main_repl98 x0 x1 x2
+
+// Main.test1
+rw_Main_test1 : [32] -> [32] -> [1]
+rw_Main_test1 x0 x1 = ext_test1 x0 x1
+
+// $LL.Main.repl101
+rw__LL_Main_repl101 : [39] -> [81]
+rw__LL_Main_repl101 x0 = rw__LL_Main_repl82 x0
 
 // $LL.OD19.ProgramCounter.incPC214
 rw__LL_OD19_ProgramCounter_incPC214 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC214 arg0 arg1 = if arg1 == 0b0100011 then 0b0100100 else (rw__LL_OD19_ProgramCounter_incPC206 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC214 x0 x1 = if x1 == 0b0100011 then 0b0100100 else (rw__LL_OD19_ProgramCounter_incPC206 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC212
 rw__LL_OD19_ProgramCounter_incPC212 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC212 arg0 arg1 = if arg1 == 0b0010111 then 0b0011000 else (rw__LL_OD19_ProgramCounter_incPC71 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC212 x0 x1 = if x1 == 0b0010111 then 0b0011000 else (rw__LL_OD19_ProgramCounter_incPC71 x0 x0)
 
 // $LL.Main.putReg11
 rw__LL_Main_putReg11 : [32] -> [7] -> [39] -> [39]
-rw__LL_Main_putReg11 arg0 arg1 arg2 = arg0 # arg1
+rw__LL_Main_putReg11 x0 x1 x2 = x0 # x1
 
 // $LL.OD19.ProgramCounter.incPC211
 rw__LL_OD19_ProgramCounter_incPC211 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC211 arg0 arg1 = if arg1 == 0b1001100 then 0b1001101 else (rw__LL_OD19_ProgramCounter_incPC64 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC211 x0 x1 = if x1 == 0b1001100 then 0b1001101 else (rw__LL_OD19_ProgramCounter_incPC64 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC209
 rw__LL_OD19_ProgramCounter_incPC209 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC209 arg0 arg1 = if arg1 == 0b0010010 then 0b0010011 else (rw__LL_OD19_ProgramCounter_incPC4 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC209 x0 x1 = if x1 == 0b0010010 then 0b0010011 else (rw__LL_OD19_ProgramCounter_incPC4 x0 x0)
 
 // $LL.Main.repl99
 rw__LL_Main_repl99 : [39] -> [81]
-rw__LL_Main_repl99 arg0 = rw__LL_Main_repl80 arg0
+rw__LL_Main_repl99 x0 = rw__LL_Main_repl71 x0
 
 // $LL.OD19.ProgramCounter.incPC208
 rw__LL_OD19_ProgramCounter_incPC208 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC208 arg0 arg1 = if arg1 == 0b1110110 then 0b1110111 else (rw__LL_OD19_ProgramCounter_incPC170 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC208 x0 x1 = if x1 == 0b1110110 then 0b1110111 else (rw__LL_OD19_ProgramCounter_incPC170 x0 x0)
 
 // $LL.Main.putReg10
 rw__LL_Main_putReg10 : [32] -> [39] -> [39]
-rw__LL_Main_putReg10 arg0 arg1 = rw__LL_Main_putReg4 (take`{32} s0) (drop`{32} s0)
-  where
-    s0 : [110]
-    s0 = arg0 # (arg1 # arg1)
+rw__LL_Main_putReg10 x0 x1 = rw__LL_Main_putReg4 x0 (x1 # x1)
 
 // $LL.OD19.ProgramCounter.incPC207
 rw__LL_OD19_ProgramCounter_incPC207 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC207 arg0 arg1 = if arg1 == 0b1111011 then 0b1111100 else (rw__LL_OD19_ProgramCounter_incPC130 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC207 x0 x1 = if x1 == 0b1111011 then 0b1111100 else (rw__LL_OD19_ProgramCounter_incPC130 x0 x0)
+
+// $LL.Main.repl98
+rw__LL_Main_repl98 : [32] -> [32] -> [39] -> [81]
+rw__LL_Main_repl98 x0 x1 x2 = rw__LL_Main_repl79 x0 x1 x2
 
 // $LL.OD19.ProgramCounter.incPC206
 rw__LL_OD19_ProgramCounter_incPC206 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC206 arg0 arg1 = if arg1 == 0b0100100 then 0b0100101 else (rw__LL_OD19_ProgramCounter_incPC41 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC206 x0 x1 = if x1 == 0b0100100 then 0b0100101 else (rw__LL_OD19_ProgramCounter_incPC41 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC205
 rw__LL_OD19_ProgramCounter_incPC205 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC205 arg0 arg1 = if arg1 == 0b0011110 then 0b0011111 else (rw__LL_OD19_ProgramCounter_incPC92 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC205 x0 x1 = if x1 == 0b0011110 then 0b0011111 else (rw__LL_OD19_ProgramCounter_incPC92 x0 x0)
 
 // $LL.Main.repl97
 rw__LL_Main_repl97 : [39] -> [32] -> [81]
-rw__LL_Main_repl97 arg0 arg1 = rw__LL_Main_repl67 (take`{32} s0) (drop`{32} s0)
-  where
-    s0 : [71]
-    s0 = arg1 # arg0
+rw__LL_Main_repl97 x0 x1 = rw__LL_Main_repl67 x1 x0
 
 // $LL.OD19.ProgramCounter.incPC203
 rw__LL_OD19_ProgramCounter_incPC203 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC203 arg0 arg1 = if arg1 == 0b0001001 then 0b0001010 else (rw__LL_OD19_ProgramCounter_incPC236 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC203 x0 x1 = if x1 == 0b0001001 then 0b0001010 else (rw__LL_OD19_ProgramCounter_incPC236 x0 x0)
+
+// $LL.Main.repl95
+rw__LL_Main_repl95 : [39] -> [32] -> [32] -> [7] -> [81]
+rw__LL_Main_repl95 x0 x1 x2 x3 = rw__LL_Main_repl88 x0 x1 x2 x3
 
 // $LL.Main.repl94
 rw__LL_Main_repl94 : [32] -> [7] -> [39] -> [81]
-rw__LL_Main_repl94 arg0 arg1 arg2 = rw__LL_Main_repl113 (take`{7} s0) (take`{32} (drop`{7} s0)) (take`{7} (drop`{39} s0)) (drop`{46} s0)
-  where
-    s0 : [85]
-    s0 = arg1 # (arg0 # (arg1 # arg2))
+rw__LL_Main_repl94 x0 x1 x2 = rw__LL_Main_repl113 x1 x0 x1 x2
 
 // $LL.OD19.ProgramCounter.incPC200
 rw__LL_OD19_ProgramCounter_incPC200 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC200 arg0 arg1 = if arg1 == 0b1011110 then 0b1011111 else (rw__LL_OD19_ProgramCounter_incPC152 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC200 x0 x1 = if x1 == 0b1011110 then 0b1011111 else (rw__LL_OD19_ProgramCounter_incPC152 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC198
 rw__LL_OD19_ProgramCounter_incPC198 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC198 arg0 arg1 = if arg1 == 0b0101101 then 0b0101110 else (rw__LL_OD19_ProgramCounter_incPC149 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC198 x0 x1 = if x1 == 0b0101101 then 0b0101110 else (rw__LL_OD19_ProgramCounter_incPC149 x0 x0)
 
 // $LL.Main.repl92
 rw__LL_Main_repl92 : [71] -> [81]
-rw__LL_Main_repl92 arg0 = rw__LL_Main_repl50 (take`{32} arg0) (drop`{32} arg0)
+rw__LL_Main_repl92 x0 = rw__LL_Main_repl104 (take`{32} x0) (drop`{32} x0)
 
 // $LL.Main.putReg9
 rw__LL_Main_putReg9 : [39] -> [32] -> [32] -> [7] -> [39]
-rw__LL_Main_putReg9 arg0 arg1 arg2 arg3 = rw__LL_Main_putReg (take`{32} s0) (take`{32} (drop`{32} s0)) (take`{7} (drop`{64} s0)) (drop`{71} s0)
-  where
-    s0 : [110]
-    s0 = arg1 # (arg2 # (arg3 # arg0))
+rw__LL_Main_putReg9 x0 x1 x2 x3 = rw__LL_Main_putReg13 x1 x2 x3 x0
 
 // $LL.OD19.ProgramCounter.incPC197
 rw__LL_OD19_ProgramCounter_incPC197 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC197 arg0 arg1 = if arg1 == 0b0011011 then 0b0011100 else (rw__LL_OD19_ProgramCounter_incPC23 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC197 x0 x1 = if x1 == 0b0011011 then 0b0011100 else (rw__LL_OD19_ProgramCounter_incPC23 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC194
 rw__LL_OD19_ProgramCounter_incPC194 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC194 arg0 arg1 = if arg1 == 0b1111000 then 0b1111001 else (rw__LL_OD19_ProgramCounter_incPC251 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC194 x0 x1 = if x1 == 0b1111000 then 0b1111001 else (rw__LL_OD19_ProgramCounter_incPC251 x0 x0)
 
 // Main.getReg
 rw_Main_getReg : [39] -> [71]
-rw_Main_getReg arg0 = rw__LL_Main_getReg4 s0
-  where
-    s0 : [78]
-    s0 = arg0 # arg0
+rw_Main_getReg x0 = rw__LL_Main_getReg4 (x0 # x0)
 
 // $LL.OD19.ProgramCounter.incPC193
 rw__LL_OD19_ProgramCounter_incPC193 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC193 arg0 arg1 = if arg1 == 0b1001001 then 0b1001010 else (rw__LL_OD19_ProgramCounter_incPC117 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC193 x0 x1 = if x1 == 0b1001001 then 0b1001010 else (rw__LL_OD19_ProgramCounter_incPC117 x0 x0)
 
 // $LL.Main.repl91
 rw__LL_Main_repl91 : [32] -> [32] -> [39] -> [81]
-rw__LL_Main_repl91 arg0 arg1 arg2 = 0b10000000000000000000000000000000000000000 # ((ext_test4 (take`{32} s0) (drop`{32} s0)) # arg2)
-  where
-    s0 : [64]
-    s0 = arg0 # arg1
+rw__LL_Main_repl91 x0 x1 x2 = 0b10000000000000000000000000000000000000000 # ((rw_Main_test4 x0 x1) # x2)
+
+// $LL.Main.repl90
+rw__LL_Main_repl90 : [39] -> [81]
+rw__LL_Main_repl90 x0 = rw__LL_Main_repl80 x0
 
 // $LL.OD19.ProgramCounter.incPC192
 rw__LL_OD19_ProgramCounter_incPC192 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC192 arg0 arg1 = if arg1 == 0b1000000 then 0b1000001 else (rw__LL_OD19_ProgramCounter_incPC249 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC192 x0 x1 = if x1 == 0b1000000 then 0b1000001 else (rw__LL_OD19_ProgramCounter_incPC249 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC191
 rw__LL_OD19_ProgramCounter_incPC191 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC191 arg0 arg1 = if arg1 == 0b0111100 then 0b0111101 else (rw__LL_OD19_ProgramCounter_incPC78 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC191 x0 x1 = if x1 == 0b0111100 then 0b0111101 else (rw__LL_OD19_ProgramCounter_incPC78 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC190
 rw__LL_OD19_ProgramCounter_incPC190 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC190 arg0 arg1 = if arg1 == 0b0111010 then 0b0111011 else (rw__LL_OD19_ProgramCounter_incPC38 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC190 x0 x1 = if x1 == 0b0111010 then 0b0111011 else (rw__LL_OD19_ProgramCounter_incPC38 x0 x0)
 
 // $LL.Main.getReg6
 rw__LL_Main_getReg6 : [32] -> [7] -> [39] -> [71]
-rw__LL_Main_getReg6 arg0 arg1 arg2 = arg0 # arg2
+rw__LL_Main_getReg6 x0 x1 x2 = x0 # x2
 
 // $LL.OD19.ProgramCounter.incPC189
 rw__LL_OD19_ProgramCounter_incPC189 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC189 arg0 arg1 = if arg1 == 0b1001011 then 0b1001100 else (rw__LL_OD19_ProgramCounter_incPC211 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC189 x0 x1 = if x1 == 0b1001011 then 0b1001100 else (rw__LL_OD19_ProgramCounter_incPC211 x0 x0)
 
 // $LL.Main.nextPC7
 rw__LL_Main_nextPC7 : [78] -> [39]
-rw__LL_Main_nextPC7 arg0 = rw__LL_Main_nextPC4 (take`{39} arg0) (drop`{39} arg0)
+rw__LL_Main_nextPC7 x0 = rw__LL_Main_nextPC2 (take`{39} x0) (drop`{39} x0)
 
 // $LL.Main.repl88
 rw__LL_Main_repl88 : [39] -> [32] -> [32] -> [7] -> [81]
-rw__LL_Main_repl88 arg0 arg1 arg2 arg3 = rw__LL_Main_repl33 (take`{32} s0) (take`{39} (drop`{32} s0)) (take`{32} (drop`{71} s0)) (drop`{103} s0)
-  where
-    s0 : [110]
-    s0 = arg1 # (arg0 # (arg2 # arg3))
+rw__LL_Main_repl88 x0 x1 x2 x3 = rw__LL_Main_repl33 x1 x0 x2 x3
 
 // $LL.Main.repl87
 rw__LL_Main_repl87 : [39] -> [81]
-rw__LL_Main_repl87 arg0 = rw__LL_Main_repl72 arg0
+rw__LL_Main_repl87 x0 = rw__LL_Main_repl72 x0
 
 // $LL.OD19.ProgramCounter.incPC186
 rw__LL_OD19_ProgramCounter_incPC186 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC186 arg0 arg1 = if arg1 == 0b0101001 then 0b0101010 else (rw__LL_OD19_ProgramCounter_incPC68 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC186 x0 x1 = if x1 == 0b0101001 then 0b0101010 else (rw__LL_OD19_ProgramCounter_incPC68 x0 x0)
 
 // $LL.Main.repl86
 rw__LL_Main_repl86 : [32] -> [81] -> [81]
-rw__LL_Main_repl86 arg0 arg1 = rw__LL_Main_repl102 (take`{32} s0) (take`{32} (drop`{42} s0)) (drop`{74} s0)
+rw__LL_Main_repl86 x0 x1 = rw__LL_Main_repl102 (take`{32} s0) (take`{32} (drop`{42} s0)) (drop`{74} s0)
   where
     s0 : [113]
-    s0 = arg0 # arg1
+    s0 = x0 # x1
 
 // $LL.OD19.ProgramCounter.incPC182
 rw__LL_OD19_ProgramCounter_incPC182 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC182 arg0 arg1 = if arg1 == 0b0010100 then 0b0010101 else (rw__LL_OD19_ProgramCounter_incPC62 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC182 x0 x1 = if x1 == 0b0010100 then 0b0010101 else (rw__LL_OD19_ProgramCounter_incPC62 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC180
 rw__LL_OD19_ProgramCounter_incPC180 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC180 arg0 arg1 = if arg1 == 0b1100000 then 0b1100001 else (rw__LL_OD19_ProgramCounter_incPC246 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC180 x0 x1 = if x1 == 0b1100000 then 0b1100001 else (rw__LL_OD19_ProgramCounter_incPC246 x0 x0)
 
 // $LL.Main.repl84
 rw__LL_Main_repl84 : [33] -> [39] -> [81]
-rw__LL_Main_repl84 arg0 arg1 = rw__LL_Main_repl99 (take`{39} s0)
+rw__LL_Main_repl84 x0 x1 = rw__LL_Main_repl99 (take`{39} s0)
   where
     s0 : [72]
-    s0 = arg1 # arg0
+    s0 = x1 # x0
 
 // $LL.OD19.ProgramCounter.incPC179
 rw__LL_OD19_ProgramCounter_incPC179 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC179 arg0 arg1 = if arg1 == 0b0001101 then 0b0001110 else (rw__LL_OD19_ProgramCounter_incPC25 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC179 x0 x1 = if x1 == 0b0001101 then 0b0001110 else (rw__LL_OD19_ProgramCounter_incPC25 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC175
 rw__LL_OD19_ProgramCounter_incPC175 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC175 arg0 arg1 = if arg1 == 0b0010001 then 0b0010010 else (rw__LL_OD19_ProgramCounter_incPC209 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC175 x0 x1 = if x1 == 0b0010001 then 0b0010010 else (rw__LL_OD19_ProgramCounter_incPC209 x0 x0)
 
 // $LL.Main.repl83
 rw__LL_Main_repl83 : [32] -> [32] -> [39] -> [81]
-rw__LL_Main_repl83 arg0 arg1 arg2 = rw__LL_Main_repl61 (take`{32} s0) (take`{32} (drop`{32} s0)) (drop`{64} s0)
-  where
-    s0 : [103]
-    s0 = arg0 # (arg1 # arg2)
+rw__LL_Main_repl83 x0 x1 x2 = rw__LL_Main_repl61 x0 x1 x2
+
+// $LL.Main.repl82
+rw__LL_Main_repl82 : [39] -> [81]
+rw__LL_Main_repl82 x0 = rw__LL_Main_repl107 x0
 
 // $LL.Main.repl81
 rw__LL_Main_repl81 : [7] -> [32] -> [7] -> [39] -> [81]
-rw__LL_Main_repl81 arg0 arg1 arg2 arg3 = if (drop`{71} s0) == 0b0000001 then (rw__LL_Main_repl112 (take`{39} s0) (take`{32} (drop`{39} s0))) else (rw__LL_Main_repl48 (take`{7} s1) (take`{32} (drop`{7} s1)) (take`{7} (drop`{39} s1)) (drop`{46} s1))
+rw__LL_Main_repl81 x0 x1 x2 x3 = if (drop`{71} s0) == 0b0000001 then (rw__LL_Main_repl112 (take`{39} s0) (take`{32} (drop`{39} s0))) else (rw__LL_Main_repl48 x0 x1 x0 x3)
   where
     s0 : [78]
-    s0 = arg3 # (arg1 # arg2)
-    s1 : [85]
-    s1 = arg0 # (arg1 # (arg0 # arg3))
+    s0 = x3 # (x1 # x2)
 
 // $LL.OD19.ProgramCounter.incPC171
 rw__LL_OD19_ProgramCounter_incPC171 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC171 arg0 arg1 = if arg1 == 0b1000100 then 0b1000101 else (rw__LL_OD19_ProgramCounter_incPC120 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC171 x0 x1 = if x1 == 0b1000100 then 0b1000101 else (rw__LL_OD19_ProgramCounter_incPC120 x0 x0)
 
 // $LL.Main.repl80
 rw__LL_Main_repl80 : [39] -> [81]
-rw__LL_Main_repl80 arg0 = 0b100000000000000000000000000000000000000010 # arg0
+rw__LL_Main_repl80 x0 = 0b100000000000000000000000000000000000000010 # x0
 
 // $LL.Main.repl79
 rw__LL_Main_repl79 : [32] -> [32] -> [39] -> [81]
-rw__LL_Main_repl79 arg0 arg1 arg2 = 0b10000000000000000000000000000000000000000 # ((ext_test1 (take`{32} s0) (drop`{32} s0)) # arg2)
-  where
-    s0 : [64]
-    s0 = arg0 # arg1
+rw__LL_Main_repl79 x0 x1 x2 = 0b10000000000000000000000000000000000000000 # ((rw_Main_test1 x0 x1) # x2)
 
 // $LL.Main.putReg8
 rw__LL_Main_putReg8 : [32] -> [39] -> [39] -> [39]
-rw__LL_Main_putReg8 arg0 arg1 arg2 = rw__LL_Main_putReg9 (take`{39} s0) (take`{32} (drop`{39} s0)) (take`{32} (drop`{71} s0)) (drop`{103} s0)
+rw__LL_Main_putReg8 x0 x1 x2 = rw__LL_Main_putReg6 (take`{39} s0) (take`{32} (drop`{39} s0)) (take`{32} (drop`{71} s0)) (drop`{103} s0)
   where
     s0 : [110]
-    s0 = arg2 # (arg0 # arg1)
+    s0 = x2 # (x0 # x1)
 
 // $LL.OD19.ProgramCounter.incPC170
 rw__LL_OD19_ProgramCounter_incPC170 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC170 arg0 arg1 = if arg1 == 0b1110111 then 0b1111000 else (rw__LL_OD19_ProgramCounter_incPC194 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC170 x0 x1 = if x1 == 0b1110111 then 0b1111000 else (rw__LL_OD19_ProgramCounter_incPC194 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC169
 rw__LL_OD19_ProgramCounter_incPC169 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC169 arg0 arg1 = if arg1 == 0b1110100 then 0b1110101 else (rw__LL_OD19_ProgramCounter_incPC145 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC169 x0 x1 = if x1 == 0b1110100 then 0b1110101 else (rw__LL_OD19_ProgramCounter_incPC145 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC168
 rw__LL_OD19_ProgramCounter_incPC168 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC168 arg0 arg1 = if arg1 == 0b0000100 then 0b0000101 else (rw__LL_OD19_ProgramCounter_incPC96 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC168 x0 x1 = if x1 == 0b0000100 then 0b0000101 else (rw__LL_OD19_ProgramCounter_incPC96 x0 x0)
 
 // $LL.Main.repl77
 rw__LL_Main_repl77 : [39] -> [32] -> [81]
-rw__LL_Main_repl77 arg0 arg1 = rw__LL_Main_repl47 (take`{39} s0) (drop`{39} s0)
-  where
-    s0 : [71]
-    s0 = arg0 # arg1
+rw__LL_Main_repl77 x0 x1 = rw__LL_Main_repl47 x0 x1
 
 // $LL.Main.repl76
 rw__LL_Main_repl76 : [33] -> [33] -> [39] -> [81]
-rw__LL_Main_repl76 arg0 arg1 arg2 = if (take`{1} (drop`{39} s0)) == 0b0 then (rw__LL_Main_repl105 (take`{39} s0) (drop`{40} s0)) else (rw__LL_Main_repl84 (take`{33} s1) (drop`{33} s1))
+rw__LL_Main_repl76 x0 x1 x2 = if (take`{1} (drop`{39} s0)) == 0b0 then (rw__LL_Main_repl105 (take`{39} s0) (drop`{40} s0)) else (rw__LL_Main_repl84 x0 x2)
   where
     s0 : [72]
-    s0 = arg2 # arg1
-    s1 : [72]
-    s1 = arg0 # arg2
+    s0 = x2 # x1
 
 // $LL.Main.repl75
 rw__LL_Main_repl75 : [39] -> [32] -> [81]
-rw__LL_Main_repl75 arg0 arg1 = rw__LL_Main_repl62 (take`{32} s0) (drop`{32} s0)
-  where
-    s0 : [71]
-    s0 = arg1 # arg0
+rw__LL_Main_repl75 x0 x1 = rw__LL_Main_repl62 x1 x0
 
 // $LL.Main.repl73
 rw__LL_Main_repl73 : [32] -> [39] -> [81]
-rw__LL_Main_repl73 arg0 arg1 = rw__LL_Main_repl103 s2
-  where
-    s0 : [71]
-    s0 = arg0 # arg1
-    s1 : [39]
-    s1 = rw__LL_Main_putReg10 (take`{32} s0) (drop`{32} s0)
-    s2 : [81]
-    s2 = rw__LL_Main_repl107 s1
+rw__LL_Main_repl73 x0 x1 = rw__LL_Main_repl103 (rw__LL_Main_repl101 (rw_Main_putReg x0 x1))
 
 // $LL.Main.repl72
 rw__LL_Main_repl72 : [39] -> [81]
-rw__LL_Main_repl72 arg0 = rw__LL_Main_repl43 s1
-  where
-    s0 : [39]
-    s0 = rw_Main_nextPC arg0
-    s1 : [81]
-    s1 = rw__LL_Main_repl107 s0
+rw__LL_Main_repl72 x0 = rw__LL_Main_repl43 (rw__LL_Main_repl101 (rw_Main_nextPC x0))
+
+// $LL.Main.repl71
+rw__LL_Main_repl71 : [39] -> [81]
+rw__LL_Main_repl71 x0 = 0b100000000000000000000000000000000000000010 # x0
 
 // $LL.OD19.ProgramCounter.incPC155
 rw__LL_OD19_ProgramCounter_incPC155 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC155 arg0 arg1 = if arg1 == 0b1101001 then 0b1101010 else (rw__LL_OD19_ProgramCounter_incPC12 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC155 x0 x1 = if x1 == 0b1101001 then 0b1101010 else (rw__LL_OD19_ProgramCounter_incPC12 x0 x0)
+
+// $LL.Main.repl70
+rw__LL_Main_repl70 : [32] -> [32] -> [39] -> [81]
+rw__LL_Main_repl70 x0 x1 x2 = rw__LL_Main_repl83 x0 x1 x2
 
 // $LL.OD19.ProgramCounter.incPC153
 rw__LL_OD19_ProgramCounter_incPC153 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC153 arg0 arg1 = if arg1 == 0b0101100 then 0b0101101 else (rw__LL_OD19_ProgramCounter_incPC198 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC153 x0 x1 = if x1 == 0b0101100 then 0b0101101 else (rw__LL_OD19_ProgramCounter_incPC198 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC152
 rw__LL_OD19_ProgramCounter_incPC152 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC152 arg0 arg1 = if arg1 == 0b1011111 then 0b1100000 else (rw__LL_OD19_ProgramCounter_incPC180 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC152 x0 x1 = if x1 == 0b1011111 then 0b1100000 else (rw__LL_OD19_ProgramCounter_incPC180 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC150
 rw__LL_OD19_ProgramCounter_incPC150 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC150 arg0 arg1 = if arg1 == 0b0000011 then 0b0000100 else (rw__LL_OD19_ProgramCounter_incPC168 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC150 x0 x1 = if x1 == 0b0000011 then 0b0000100 else (rw__LL_OD19_ProgramCounter_incPC168 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC149
 rw__LL_OD19_ProgramCounter_incPC149 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC149 arg0 arg1 = if arg1 == 0b0101110 then 0b0101111 else (rw__LL_OD19_ProgramCounter_incPC124 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC149 x0 x1 = if x1 == 0b0101110 then 0b0101111 else (rw__LL_OD19_ProgramCounter_incPC124 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC147
 rw__LL_OD19_ProgramCounter_incPC147 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC147 arg0 arg1 = if arg1 == 0b0011101 then 0b0011110 else (rw__LL_OD19_ProgramCounter_incPC205 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC147 x0 x1 = if x1 == 0b0011101 then 0b0011110 else (rw__LL_OD19_ProgramCounter_incPC205 x0 x0)
 
 // $LL.Main.nextPC6
 rw__LL_Main_nextPC6 : [39] -> [32] -> [7] -> [39]
-rw__LL_Main_nextPC6 arg0 arg1 arg2 = rw__LL_Main_nextPC5 (take`{32} s0) (take`{7} (drop`{32} s0)) (drop`{39} s0)
-  where
-    s0 : [78]
-    s0 = arg1 # (arg2 # arg0)
+rw__LL_Main_nextPC6 x0 x1 x2 = rw__LL_Main_nextPC1 x1 x2 x0
 
 // $LL.Main.repl69
 rw__LL_Main_repl69 : [32] -> [39] -> [39] -> [81]
-rw__LL_Main_repl69 arg0 arg1 arg2 = rw__LL_Main_repl52 (take`{32} s0) (take`{39} (drop`{32} s0)) (drop`{71} s0)
-  where
-    s0 : [110]
-    s0 = arg0 # (arg1 # arg2)
+rw__LL_Main_repl69 x0 x1 x2 = rw__LL_Main_repl35 x0 x1 x2
 
 // $LL.OD19.ProgramCounter.incPC146
 rw__LL_OD19_ProgramCounter_incPC146 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC146 arg0 arg1 = if arg1 == 0b1101110 then 0b1101111 else (rw__LL_OD19_ProgramCounter_incPC57 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC146 x0 x1 = if x1 == 0b1101110 then 0b1101111 else (rw__LL_OD19_ProgramCounter_incPC57 x0 x0)
 
 // $LL.Main.repl68
 rw__LL_Main_repl68 : [39] -> [32] -> [81]
-rw__LL_Main_repl68 arg0 arg1 = rw__LL_Main_repl75 (take`{39} s0) (drop`{39} s0)
-  where
-    s0 : [71]
-    s0 = arg0 # arg1
+rw__LL_Main_repl68 x0 x1 = rw__LL_Main_repl75 x0 x1
 
 // $LL.OD19.ProgramCounter.incPC145
 rw__LL_OD19_ProgramCounter_incPC145 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC145 arg0 arg1 = if arg1 == 0b1110101 then 0b1110110 else (rw__LL_OD19_ProgramCounter_incPC208 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC145 x0 x1 = if x1 == 0b1110101 then 0b1110110 else (rw__LL_OD19_ProgramCounter_incPC208 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC144
 rw__LL_OD19_ProgramCounter_incPC144 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC144 arg0 arg1 = if arg1 == 0b0111001 then 0b0111010 else (rw__LL_OD19_ProgramCounter_incPC190 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC144 x0 x1 = if x1 == 0b0111001 then 0b0111010 else (rw__LL_OD19_ProgramCounter_incPC190 x0 x0)
 
 // $LL.Main.repl67
 rw__LL_Main_repl67 : [32] -> [39] -> [81]
-rw__LL_Main_repl67 arg0 arg1 = rw__LL_Main_repl86 (take`{32} s1) (drop`{32} s1)
-  where
-    s0 : [71]
-    s0 = rw_Main_getReg arg1
-    s1 : [113]
-    s1 = arg0 # (rw__LL_Main_repl92 s0)
+rw__LL_Main_repl67 x0 x1 = rw__LL_Main_repl86 x0 (rw__LL_Main_repl92 (rw_Main_getReg x1))
 
 // $LL.OD19.ProgramCounter.incPC143
 rw__LL_OD19_ProgramCounter_incPC143 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC143 arg0 arg1 = if arg1 == 0b0101011 then 0b0101100 else (rw__LL_OD19_ProgramCounter_incPC153 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC143 x0 x1 = if x1 == 0b0101011 then 0b0101100 else (rw__LL_OD19_ProgramCounter_incPC153 x0 x0)
 
 // $LL.Main.repl66
 rw__LL_Main_repl66 : [32] -> [81] -> [81]
-rw__LL_Main_repl66 arg0 arg1 = rw__LL_Main_repl83 (take`{32} s0) (take`{32} (drop`{42} s0)) (drop`{74} s0)
+rw__LL_Main_repl66 x0 x1 = rw__LL_Main_repl70 (take`{32} s0) (take`{32} (drop`{42} s0)) (drop`{74} s0)
   where
     s0 : [113]
-    s0 = arg0 # arg1
+    s0 = x0 # x1
 
 // $LL.OD19.ProgramCounter.incPC141
 rw__LL_OD19_ProgramCounter_incPC141 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC141 arg0 arg1 = if arg1 == 0b1011011 then 0b1011100 else (rw__LL_OD19_ProgramCounter_incPC111 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC141 x0 x1 = if x1 == 0b1011011 then 0b1011100 else (rw__LL_OD19_ProgramCounter_incPC111 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC137
 rw__LL_OD19_ProgramCounter_incPC137 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC137 arg0 arg1 = if arg1 == 0b1110000 then 0b1110001 else (rw__LL_OD19_ProgramCounter_incPC70 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC137 x0 x1 = if x1 == 0b1110000 then 0b1110001 else (rw__LL_OD19_ProgramCounter_incPC70 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC135
 rw__LL_OD19_ProgramCounter_incPC135 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC135 arg0 arg1 = if arg1 == 0b0001000 then 0b0001001 else (rw__LL_OD19_ProgramCounter_incPC203 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC135 x0 x1 = if x1 == 0b0001000 then 0b0001001 else (rw__LL_OD19_ProgramCounter_incPC203 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC134
 rw__LL_OD19_ProgramCounter_incPC134 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC134 arg0 arg1 = if arg1 == 0b1100111 then 0b1101000 else (rw__LL_OD19_ProgramCounter_incPC109 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC134 x0 x1 = if x1 == 0b1100111 then 0b1101000 else (rw__LL_OD19_ProgramCounter_incPC109 x0 x0)
+
+// $LL.Main.putReg7
+rw__LL_Main_putReg7 : [39] -> [32] -> [32] -> [7] -> [39]
+rw__LL_Main_putReg7 x0 x1 x2 x3 = rw__LL_Main_putReg12 x0 x1 x2 x3
 
 // $LL.Main.repl63
 rw__LL_Main_repl63 : [78] -> [81]
-rw__LL_Main_repl63 arg0 = rw__LL_Main_repl59 (take`{39} arg0) (drop`{39} arg0)
+rw__LL_Main_repl63 x0 = rw__LL_Main_repl111 (take`{39} x0) (drop`{39} x0)
+
+// Main.putReg
+rw_Main_putReg : [32] -> [39] -> [39]
+rw_Main_putReg x0 x1 = rw__LL_Main_putReg2 x0 x1
 
 // $LL.Main.repl62
 rw__LL_Main_repl62 : [32] -> [39] -> [81]
-rw__LL_Main_repl62 arg0 arg1 = rw__LL_Main_repl66 (take`{32} s1) (drop`{32} s1)
-  where
-    s0 : [71]
-    s0 = rw_Main_getReg arg1
-    s1 : [113]
-    s1 = arg0 # (rw__LL_Main_repl92 s0)
+rw__LL_Main_repl62 x0 x1 = rw__LL_Main_repl66 x0 (rw__LL_Main_repl92 (rw_Main_getReg x1))
 
 // $LL.Main.repl61
 rw__LL_Main_repl61 : [32] -> [32] -> [39] -> [81]
-rw__LL_Main_repl61 arg0 arg1 arg2 = 0b10000000000000000000000000000000000000000 # ((ext_test2 (take`{32} s0) (drop`{32} s0)) # arg2)
-  where
-    s0 : [64]
-    s0 = arg0 # arg1
+rw__LL_Main_repl61 x0 x1 x2 = 0b10000000000000000000000000000000000000000 # ((rw_Main_test2 x0 x1) # x2)
 
 // $LL.Main.nextPC5
 rw__LL_Main_nextPC5 : [32] -> [7] -> [39] -> [39]
-rw__LL_Main_nextPC5 arg0 arg1 arg2 = arg0 # (rw_OD19_ProgramCounter_incPC arg1)
+rw__LL_Main_nextPC5 x0 x1 x2 = x0 # (rw_OD19_ProgramCounter_incPC x1)
+
+// $LL.Main.getReg5
+rw__LL_Main_getReg5 : [39] -> [39] -> [71]
+rw__LL_Main_getReg5 x0 x1 = rw__LL_Main_getReg x0 x1
 
 // $LL.OD19.ProgramCounter.incPC132
 rw__LL_OD19_ProgramCounter_incPC132 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC132 arg0 arg1 = if arg1 == 0b1100110 then 0b1100111 else (rw__LL_OD19_ProgramCounter_incPC134 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC132 x0 x1 = if x1 == 0b1100110 then 0b1100111 else (rw__LL_OD19_ProgramCounter_incPC134 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC130
 rw__LL_OD19_ProgramCounter_incPC130 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC130 arg0 arg1 = if arg1 == 0b1111100 then 0b1111101 else (rw__LL_OD19_ProgramCounter_incPC105 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC130 x0 x1 = if x1 == 0b1111100 then 0b1111101 else (rw__LL_OD19_ProgramCounter_incPC105 x0 x0)
+
+// $LL.Main.putReg6
+rw__LL_Main_putReg6 : [39] -> [32] -> [32] -> [7] -> [39]
+rw__LL_Main_putReg6 x0 x1 x2 x3 = rw__LL_Main_putReg7 x0 x1 x2 x3
 
 // $LL.OD19.ProgramCounter.incPC129
 rw__LL_OD19_ProgramCounter_incPC129 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC129 arg0 arg1 = if arg1 == 0b1010110 then 0b1010111 else (rw__LL_OD19_ProgramCounter_incPC42 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC129 x0 x1 = if x1 == 0b1010110 then 0b1010111 else (rw__LL_OD19_ProgramCounter_incPC42 x0 x0)
 
 // $LL.Main.repl59
 rw__LL_Main_repl59 : [39] -> [39] -> [81]
-rw__LL_Main_repl59 arg0 arg1 = 0b010 # (arg0 # arg1)
+rw__LL_Main_repl59 x0 x1 = 0b010 # (x0 # x1)
 
 // $LL.OD19.ProgramCounter.incPC126
 rw__LL_OD19_ProgramCounter_incPC126 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC126 arg0 arg1 = if arg1 == 0b0000000 then 0b0000001 else (rw__LL_OD19_ProgramCounter_incPC227 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC126 x0 x1 = if x1 == 0b0000000 then 0b0000001 else (rw__LL_OD19_ProgramCounter_incPC227 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC124
 rw__LL_OD19_ProgramCounter_incPC124 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC124 arg0 arg1 = if arg1 == 0b0101111 then 0b0110000 else (rw__LL_OD19_ProgramCounter_incPC18 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC124 x0 x1 = if x1 == 0b0101111 then 0b0110000 else (rw__LL_OD19_ProgramCounter_incPC18 x0 x0)
+
+// $LL.Main.repl56
+rw__LL_Main_repl56 : [32] -> [39] -> [39] -> [81]
+rw__LL_Main_repl56 x0 x1 x2 = rw__LL_Main_repl52 x0 x1 x2
 
 // $LL.OD19.ProgramCounter.incPC120
 rw__LL_OD19_ProgramCounter_incPC120 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC120 arg0 arg1 = if arg1 == 0b1000101 then 0b1000110 else (rw__LL_OD19_ProgramCounter_incPC10 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC120 x0 x1 = if x1 == 0b1000101 then 0b1000110 else (rw__LL_OD19_ProgramCounter_incPC10 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC119
 rw__LL_OD19_ProgramCounter_incPC119 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC119 arg0 arg1 = if arg1 == 0b0011010 then 0b0011011 else (rw__LL_OD19_ProgramCounter_incPC197 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC119 x0 x1 = if x1 == 0b0011010 then 0b0011011 else (rw__LL_OD19_ProgramCounter_incPC197 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC118
 rw__LL_OD19_ProgramCounter_incPC118 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC118 arg0 arg1 = if arg1 == 0b0100010 then 0b0100011 else (rw__LL_OD19_ProgramCounter_incPC214 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC118 x0 x1 = if x1 == 0b0100010 then 0b0100011 else (rw__LL_OD19_ProgramCounter_incPC214 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC117
 rw__LL_OD19_ProgramCounter_incPC117 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC117 arg0 arg1 = if arg1 == 0b1001010 then 0b1001011 else (rw__LL_OD19_ProgramCounter_incPC189 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC117 x0 x1 = if x1 == 0b1001010 then 0b1001011 else (rw__LL_OD19_ProgramCounter_incPC189 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC116
 rw__LL_OD19_ProgramCounter_incPC116 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC116 arg0 arg1 = if arg1 == 0b1010000 then 0b1010001 else (rw__LL_OD19_ProgramCounter_incPC115 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC116 x0 x1 = if x1 == 0b1010000 then 0b1010001 else (rw__LL_OD19_ProgramCounter_incPC115 x0 x0)
 
 // $LL.Main.repl53
 rw__LL_Main_repl53 : [32] -> [32] -> [39] -> [81]
-rw__LL_Main_repl53 arg0 arg1 arg2 = rw__LL_Main_repl1 (take`{32} s0) (take`{32} (drop`{32} s0)) (drop`{64} s0)
-  where
-    s0 : [103]
-    s0 = arg0 # (arg1 # arg2)
+rw__LL_Main_repl53 x0 x1 x2 = rw__LL_Main_repl1 x0 x1 x2
 
 // $LL.OD19.ProgramCounter.incPC115
 rw__LL_OD19_ProgramCounter_incPC115 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC115 arg0 arg1 = if arg1 == 0b1010001 then 0b1010010 else (rw__LL_OD19_ProgramCounter_incPC220 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC115 x0 x1 = if x1 == 0b1010001 then 0b1010010 else (rw__LL_OD19_ProgramCounter_incPC220 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC114
 rw__LL_OD19_ProgramCounter_incPC114 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC114 arg0 arg1 = if arg1 == 0b1010100 then 0b1010101 else (rw__LL_OD19_ProgramCounter_incPC66 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC114 x0 x1 = if x1 == 0b1010100 then 0b1010101 else (rw__LL_OD19_ProgramCounter_incPC66 x0 x0)
 
 // $LL.Main.repl52
 rw__LL_Main_repl52 : [32] -> [39] -> [39] -> [81]
-rw__LL_Main_repl52 arg0 arg1 arg2 = rw__LL_Main_repl88 (take`{39} s0) (take`{32} (drop`{39} s0)) (take`{32} (drop`{71} s0)) (drop`{103} s0)
+rw__LL_Main_repl52 x0 x1 x2 = rw__LL_Main_repl95 (take`{39} s0) (take`{32} (drop`{39} s0)) (take`{32} (drop`{71} s0)) (drop`{103} s0)
   where
     s0 : [110]
-    s0 = arg2 # (arg0 # arg1)
+    s0 = x2 # (x0 # x1)
 
 // $LL.OD19.ProgramCounter.incPC113
 rw__LL_OD19_ProgramCounter_incPC113 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC113 arg0 arg1 = if arg1 == 0b1100101 then 0b1100110 else (rw__LL_OD19_ProgramCounter_incPC132 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC113 x0 x1 = if x1 == 0b1100101 then 0b1100110 else (rw__LL_OD19_ProgramCounter_incPC132 x0 x0)
 
 // $LL.Main.repl51
 rw__LL_Main_repl51 : [39] -> [32] -> [81]
-rw__LL_Main_repl51 arg0 arg1 = rw__LL_Main_repl31 (take`{32} s0) (drop`{32} s0)
-  where
-    s0 : [71]
-    s0 = arg1 # arg0
+rw__LL_Main_repl51 x0 x1 = rw__LL_Main_repl31 x1 x0
 
 // $LL.OD19.ProgramCounter.incPC112
 rw__LL_OD19_ProgramCounter_incPC112 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC112 arg0 arg1 = if arg1 == 0b1001110 then 0b1001111 else (rw__LL_OD19_ProgramCounter_incPC67 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC112 x0 x1 = if x1 == 0b1001110 then 0b1001111 else (rw__LL_OD19_ProgramCounter_incPC67 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC111
 rw__LL_OD19_ProgramCounter_incPC111 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC111 arg0 arg1 = if arg1 == 0b1011100 then 0b1011101 else (rw__LL_OD19_ProgramCounter_incPC49 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC111 x0 x1 = if x1 == 0b1011100 then 0b1011101 else (rw__LL_OD19_ProgramCounter_incPC49 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC110
 rw__LL_OD19_ProgramCounter_incPC110 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC110 arg0 arg1 = if arg1 == 0b1010011 then 0b1010100 else (rw__LL_OD19_ProgramCounter_incPC114 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC110 x0 x1 = if x1 == 0b1010011 then 0b1010100 else (rw__LL_OD19_ProgramCounter_incPC114 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC109
 rw__LL_OD19_ProgramCounter_incPC109 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC109 arg0 arg1 = if arg1 == 0b1101000 then 0b1101001 else (rw__LL_OD19_ProgramCounter_incPC155 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC109 x0 x1 = if x1 == 0b1101000 then 0b1101001 else (rw__LL_OD19_ProgramCounter_incPC155 x0 x0)
 
 // $LL.Main.repl50
 rw__LL_Main_repl50 : [32] -> [39] -> [81]
-rw__LL_Main_repl50 arg0 arg1 = 0b0000000000 # (arg0 # arg1)
+rw__LL_Main_repl50 x0 x1 = 0b0000000000 # (x0 # x1)
 
 // $LL.Main.getReg4
 rw__LL_Main_getReg4 : [78] -> [71]
-rw__LL_Main_getReg4 arg0 = rw__LL_Main_getReg (take`{39} arg0) (drop`{39} arg0)
+rw__LL_Main_getReg4 x0 = rw__LL_Main_getReg5 (take`{39} x0) (drop`{39} x0)
 
 // $LL.Main.getReg3
 rw__LL_Main_getReg3 : [39] -> [32] -> [7] -> [71]
-rw__LL_Main_getReg3 arg0 arg1 arg2 = rw__LL_Main_getReg6 (take`{32} s0) (take`{7} (drop`{32} s0)) (drop`{39} s0)
-  where
-    s0 : [78]
-    s0 = arg1 # (arg2 # arg0)
+rw__LL_Main_getReg3 x0 x1 x2 = rw__LL_Main_getReg1 x1 x2 x0
+
+// $LL.Pure.dispatch
+rw__LL_Pure_dispatch : [33] -> [39] -> [81]
+rw__LL_Pure_dispatch x0 x1 = rw_Main_repl1 x0 x1
 
 // $LL.OD19.ProgramCounter.incPC108
 rw__LL_OD19_ProgramCounter_incPC108 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC108 arg0 arg1 = if arg1 == 0b1000010 then 0b1000011 else (rw__LL_OD19_ProgramCounter_incPC52 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC108 x0 x1 = if x1 == 0b1000010 then 0b1000011 else (rw__LL_OD19_ProgramCounter_incPC52 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC107
 rw__LL_OD19_ProgramCounter_incPC107 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC107 arg0 arg1 = if arg1 == 0b1100100 then 0b1100101 else (rw__LL_OD19_ProgramCounter_incPC113 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC107 x0 x1 = if x1 == 0b1100100 then 0b1100101 else (rw__LL_OD19_ProgramCounter_incPC113 x0 x0)
+
+// $LL.Main.putReg5
+rw__LL_Main_putReg5 : [32] -> [39] -> [39] -> [39]
+rw__LL_Main_putReg5 x0 x1 x2 = rw__LL_Main_putReg3 x0 x1 x2
 
 // $LL.Main.repl49
 rw__LL_Main_repl49 : [39] -> [32] -> [81]
-rw__LL_Main_repl49 arg0 arg1 = rw__LL_Main_repl45 (take`{39} s0) (drop`{39} s0)
-  where
-    s0 : [71]
-    s0 = arg0 # arg1
+rw__LL_Main_repl49 x0 x1 = rw__LL_Main_repl45 x0 x1
 
 // $LL.Main.repl48
 rw__LL_Main_repl48 : [7] -> [32] -> [7] -> [39] -> [81]
-rw__LL_Main_repl48 arg0 arg1 arg2 arg3 = if (drop`{71} s0) == 0b0000010 then (rw__LL_Main_repl77 (take`{39} s0) (take`{32} (drop`{39} s0))) else (rw__LL_Main_repl109 (take`{7} s1) (take`{32} (drop`{7} s1)) (take`{7} (drop`{39} s1)) (drop`{46} s1))
+rw__LL_Main_repl48 x0 x1 x2 x3 = if (drop`{71} s0) == 0b0000010 then (rw__LL_Main_repl77 (take`{39} s0) (take`{32} (drop`{39} s0))) else (rw__LL_Main_repl109 x0 x1 x0 x3)
   where
     s0 : [78]
-    s0 = arg3 # (arg1 # arg2)
-    s1 : [85]
-    s1 = arg0 # (arg1 # (arg0 # arg3))
+    s0 = x3 # (x1 # x2)
+
+// $LL.Main.getReg2
+rw__LL_Main_getReg2 : [39] -> [32] -> [7] -> [71]
+rw__LL_Main_getReg2 x0 x1 x2 = rw__LL_Main_getReg7 x0 x1 x2
 
 // $LL.Main.repl47
 rw__LL_Main_repl47 : [39] -> [32] -> [81]
-rw__LL_Main_repl47 arg0 arg1 = rw__LL_Main_repl73 (take`{32} s0) (drop`{32} s0)
-  where
-    s0 : [71]
-    s0 = arg1 # arg0
+rw__LL_Main_repl47 x0 x1 = rw__LL_Main_repl73 x1 x0
 
 // $LL.Main.putReg4
 rw__LL_Main_putReg4 : [32] -> [78] -> [39]
-rw__LL_Main_putReg4 arg0 arg1 = rw__LL_Main_putReg8 (take`{32} s0) (take`{39} (drop`{32} s0)) (drop`{71} s0)
+rw__LL_Main_putReg4 x0 x1 = rw__LL_Main_putReg5 (take`{32} s0) (take`{39} (drop`{32} s0)) (drop`{71} s0)
   where
     s0 : [110]
-    s0 = arg0 # arg1
+    s0 = x0 # x1
 
 // $LL.OD19.ProgramCounter.incPC105
 rw__LL_OD19_ProgramCounter_incPC105 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC105 arg0 arg1 = if arg1 == 0b1111101 then 0b1111110 else 0b0000000
+rw__LL_OD19_ProgramCounter_incPC105 x0 x1 = if x1 == 0b1111101 then 0b1111110 else (rw__LL_OD19_ProgramCounter_incPC225 x0)
 
 // $LL.Main.repl46
 rw__LL_Main_repl46 : [32] -> [81] -> [81]
-rw__LL_Main_repl46 arg0 arg1 = rw__LL_Main_repl53 (take`{32} s0) (take`{32} (drop`{42} s0)) (drop`{74} s0)
+rw__LL_Main_repl46 x0 x1 = rw__LL_Main_repl20 (take`{32} s0) (take`{32} (drop`{42} s0)) (drop`{74} s0)
   where
     s0 : [113]
-    s0 = arg0 # arg1
+    s0 = x0 # x1
 
 // $LL.OD19.ProgramCounter.incPC96
 rw__LL_OD19_ProgramCounter_incPC96 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC96 arg0 arg1 = if arg1 == 0b0000101 then 0b0000110 else (rw__LL_OD19_ProgramCounter_incPC47 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC96 x0 x1 = if x1 == 0b0000101 then 0b0000110 else (rw__LL_OD19_ProgramCounter_incPC47 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC93
 rw__LL_OD19_ProgramCounter_incPC93 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC93 arg0 arg1 = if arg1 == 0b0100110 then 0b0100111 else (rw__LL_OD19_ProgramCounter_incPC8 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC93 x0 x1 = if x1 == 0b0100110 then 0b0100111 else (rw__LL_OD19_ProgramCounter_incPC8 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC92
 rw__LL_OD19_ProgramCounter_incPC92 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC92 arg0 arg1 = if arg1 == 0b0011111 then 0b0100000 else (rw__LL_OD19_ProgramCounter_incPC14 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC92 x0 x1 = if x1 == 0b0011111 then 0b0100000 else (rw__LL_OD19_ProgramCounter_incPC14 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC89
 rw__LL_OD19_ProgramCounter_incPC89 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC89 arg0 arg1 = if arg1 == 0b0111111 then 0b1000000 else (rw__LL_OD19_ProgramCounter_incPC192 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC89 x0 x1 = if x1 == 0b0111111 then 0b1000000 else (rw__LL_OD19_ProgramCounter_incPC192 x0 x0)
+
+// Main.test3
+rw_Main_test3 : [32] -> [32] -> [1]
+rw_Main_test3 x0 x1 = ext_test3 x0 x1
+
+// $LL.Main.putReg3
+rw__LL_Main_putReg3 : [32] -> [39] -> [39] -> [39]
+rw__LL_Main_putReg3 x0 x1 x2 = rw__LL_Main_putReg1 x0 x1 x2
 
 // $LL.Main.repl45
 rw__LL_Main_repl45 : [39] -> [32] -> [81]
-rw__LL_Main_repl45 arg0 arg1 = rw__LL_Main_repl17 (take`{32} s0) (drop`{32} s0)
-  where
-    s0 : [71]
-    s0 = arg1 # arg0
+rw__LL_Main_repl45 x0 x1 = rw__LL_Main_repl17 x1 x0
+
+// $LL.Main.repl44
+rw__LL_Main_repl44 : [32] -> [32] -> [39] -> [81]
+rw__LL_Main_repl44 x0 x1 x2 = rw__LL_Main_repl91 x0 x1 x2
 
 // $LL.Main.nextPC4
 rw__LL_Main_nextPC4 : [39] -> [39] -> [39]
-rw__LL_Main_nextPC4 arg0 arg1 = rw__LL_Main_nextPC6 (take`{39} s0) (take`{32} (drop`{39} s0)) (drop`{71} s0)
+rw__LL_Main_nextPC4 x0 x1 = rw__LL_Main_nextPC (take`{39} s0) (take`{32} (drop`{39} s0)) (drop`{71} s0)
   where
     s0 : [78]
-    s0 = arg1 # arg0
+    s0 = x1 # x0
 
 // $LL.Main.repl43
 rw__LL_Main_repl43 : [81] -> [81]
-rw__LL_Main_repl43 arg0 = rw__LL_Main_repl99 (drop`{42} arg0)
+rw__LL_Main_repl43 x0 = rw__LL_Main_repl90 (drop`{42} x0)
 
 // $LL.OD19.ProgramCounter.incPC84
 rw__LL_OD19_ProgramCounter_incPC84 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC84 arg0 arg1 = if arg1 == 0b0110001 then 0b0110010 else (rw__LL_OD19_ProgramCounter_incPC233 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC84 x0 x1 = if x1 == 0b0110001 then 0b0110010 else (rw__LL_OD19_ProgramCounter_incPC233 x0 x0)
 
 // Main.nextPC
 rw_Main_nextPC : [39] -> [39]
-rw_Main_nextPC arg0 = rw__LL_Main_nextPC7 s0
-  where
-    s0 : [78]
-    s0 = arg0 # arg0
+rw_Main_nextPC x0 = rw__LL_Main_nextPC7 (x0 # x0)
 
 // $LL.OD19.ProgramCounter.incPC80
 rw__LL_OD19_ProgramCounter_incPC80 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC80 arg0 arg1 = if arg1 == 0b0110110 then 0b0110111 else (rw__LL_OD19_ProgramCounter_incPC43 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC80 x0 x1 = if x1 == 0b0110110 then 0b0110111 else (rw__LL_OD19_ProgramCounter_incPC43 x0 x0)
+
+// $LL.Main.getReg1
+rw__LL_Main_getReg1 : [32] -> [7] -> [39] -> [71]
+rw__LL_Main_getReg1 x0 x1 x2 = rw__LL_Main_getReg6 x0 x1 x2
 
 // $LL.Main.repl37
 rw__LL_Main_repl37 : [39] -> [32] -> [81]
-rw__LL_Main_repl37 arg0 arg1 = rw__LL_Main_repl22 (take`{32} s0) (drop`{32} s0)
-  where
-    s0 : [71]
-    s0 = arg1 # arg0
+rw__LL_Main_repl37 x0 x1 = rw__LL_Main_repl22 x1 x0
 
 // $LL.OD19.ProgramCounter.incPC78
 rw__LL_OD19_ProgramCounter_incPC78 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC78 arg0 arg1 = if arg1 == 0b0111101 then 0b0111110 else (rw__LL_OD19_ProgramCounter_incPC231 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC78 x0 x1 = if x1 == 0b0111101 then 0b0111110 else (rw__LL_OD19_ProgramCounter_incPC231 x0 x0)
+
+// $LL.Main.repl35
+rw__LL_Main_repl35 : [32] -> [39] -> [39] -> [81]
+rw__LL_Main_repl35 x0 x1 x2 = rw__LL_Main_repl56 x0 x1 x2
 
 // $LL.Main.repl33
 rw__LL_Main_repl33 : [32] -> [39] -> [32] -> [7] -> [81]
-rw__LL_Main_repl33 arg0 arg1 arg2 arg3 = rw__LL_Main_repl4 (take`{32} s0) (take`{32} (drop`{32} s0)) (take`{39} (drop`{64} s0)) (drop`{103} s0)
-  where
-    s0 : [110]
-    s0 = arg0 # (arg2 # (arg1 # arg3))
+rw__LL_Main_repl33 x0 x1 x2 x3 = rw__LL_Main_repl4 x0 x2 x1 x3
 
 // $LL.Main.repl32
 rw__LL_Main_repl32 : [7] -> [32] -> [7] -> [39] -> [81]
-rw__LL_Main_repl32 arg0 arg1 arg2 arg3 = if (drop`{71} s0) == 0b0000100 then (rw__LL_Main_repl68 (take`{39} s0) (take`{32} (drop`{39} s0))) else (rw__LL_Main_repl110 (take`{7} s1) (take`{32} (drop`{7} s1)) (take`{7} (drop`{39} s1)) (drop`{46} s1))
+rw__LL_Main_repl32 x0 x1 x2 x3 = if (drop`{71} s0) == 0b0000100 then (rw__LL_Main_repl68 (take`{39} s0) (take`{32} (drop`{39} s0))) else (rw__LL_Main_repl110 x0 x1 x0 x3)
   where
     s0 : [78]
-    s0 = arg3 # (arg1 # arg2)
-    s1 : [85]
-    s1 = arg0 # (arg1 # (arg0 # arg3))
+    s0 = x3 # (x1 # x2)
 
 // $LL.Main.repl31
 rw__LL_Main_repl31 : [32] -> [39] -> [81]
-rw__LL_Main_repl31 arg0 arg1 = rw__LL_Main_repl46 (take`{32} s1) (drop`{32} s1)
-  where
-    s0 : [71]
-    s0 = rw_Main_getReg arg1
-    s1 : [113]
-    s1 = arg0 # (rw__LL_Main_repl92 s0)
+rw__LL_Main_repl31 x0 x1 = rw__LL_Main_repl46 x0 (rw__LL_Main_repl92 (rw_Main_getReg x1))
 
 // $LL.OD19.ProgramCounter.incPC75
 rw__LL_OD19_ProgramCounter_incPC75 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC75 arg0 arg1 = if arg1 == 0b1101011 then 0b1101100 else (rw__LL_OD19_ProgramCounter_incPC74 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC75 x0 x1 = if x1 == 0b1101011 then 0b1101100 else (rw__LL_OD19_ProgramCounter_incPC74 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC74
 rw__LL_OD19_ProgramCounter_incPC74 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC74 arg0 arg1 = if arg1 == 0b1101100 then 0b1101101 else (rw__LL_OD19_ProgramCounter_incPC248 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC74 x0 x1 = if x1 == 0b1101100 then 0b1101101 else (rw__LL_OD19_ProgramCounter_incPC248 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC71
 rw__LL_OD19_ProgramCounter_incPC71 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC71 arg0 arg1 = if arg1 == 0b0011000 then 0b0011001 else (rw__LL_OD19_ProgramCounter_incPC22 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC71 x0 x1 = if x1 == 0b0011000 then 0b0011001 else (rw__LL_OD19_ProgramCounter_incPC22 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC70
 rw__LL_OD19_ProgramCounter_incPC70 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC70 arg0 arg1 = if arg1 == 0b1110001 then 0b1110010 else (rw__LL_OD19_ProgramCounter_incPC232 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC70 x0 x1 = if x1 == 0b1110001 then 0b1110010 else (rw__LL_OD19_ProgramCounter_incPC232 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC68
 rw__LL_OD19_ProgramCounter_incPC68 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC68 arg0 arg1 = if arg1 == 0b0101010 then 0b0101011 else (rw__LL_OD19_ProgramCounter_incPC143 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC68 x0 x1 = if x1 == 0b0101010 then 0b0101011 else (rw__LL_OD19_ProgramCounter_incPC143 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC67
 rw__LL_OD19_ProgramCounter_incPC67 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC67 arg0 arg1 = if arg1 == 0b1001111 then 0b1010000 else (rw__LL_OD19_ProgramCounter_incPC116 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC67 x0 x1 = if x1 == 0b1001111 then 0b1010000 else (rw__LL_OD19_ProgramCounter_incPC116 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC66
 rw__LL_OD19_ProgramCounter_incPC66 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC66 arg0 arg1 = if arg1 == 0b1010101 then 0b1010110 else (rw__LL_OD19_ProgramCounter_incPC129 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC66 x0 x1 = if x1 == 0b1010101 then 0b1010110 else (rw__LL_OD19_ProgramCounter_incPC129 x0 x0)
 
 // $LL.Main.repl24
 rw__LL_Main_repl24 : [32] -> [81] -> [81]
-rw__LL_Main_repl24 arg0 arg1 = rw__LL_Main_repl114 (take`{32} s0) (take`{32} (drop`{42} s0)) (drop`{74} s0)
+rw__LL_Main_repl24 x0 x1 = rw__LL_Main_repl114 (take`{32} s0) (take`{32} (drop`{42} s0)) (drop`{74} s0)
   where
     s0 : [113]
-    s0 = arg0 # arg1
+    s0 = x0 # x1
+
+// Main.test4
+rw_Main_test4 : [32] -> [32] -> [1]
+rw_Main_test4 x0 x1 = ext_test4 x0 x1
 
 // $LL.OD19.ProgramCounter.incPC65
 rw__LL_OD19_ProgramCounter_incPC65 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC65 arg0 arg1 = if arg1 == 0b1011001 then 0b1011010 else (rw__LL_OD19_ProgramCounter_incPC15 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC65 x0 x1 = if x1 == 0b1011001 then 0b1011010 else (rw__LL_OD19_ProgramCounter_incPC15 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC64
 rw__LL_OD19_ProgramCounter_incPC64 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC64 arg0 arg1 = if arg1 == 0b1001101 then 0b1001110 else (rw__LL_OD19_ProgramCounter_incPC112 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC64 x0 x1 = if x1 == 0b1001101 then 0b1001110 else (rw__LL_OD19_ProgramCounter_incPC112 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC62
 rw__LL_OD19_ProgramCounter_incPC62 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC62 arg0 arg1 = if arg1 == 0b0010101 then 0b0010110 else (rw__LL_OD19_ProgramCounter_incPC239 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC62 x0 x1 = if x1 == 0b0010101 then 0b0010110 else (rw__LL_OD19_ProgramCounter_incPC239 x0 x0)
 
 // $LL.Main.repl23
 rw__LL_Main_repl23 : [39] -> [32] -> [81]
-rw__LL_Main_repl23 arg0 arg1 = rw__LL_Main_repl51 (take`{39} s0) (drop`{39} s0)
-  where
-    s0 : [71]
-    s0 = arg0 # arg1
+rw__LL_Main_repl23 x0 x1 = rw__LL_Main_repl51 x0 x1
 
 // $LL.OD19.ProgramCounter.incPC57
 rw__LL_OD19_ProgramCounter_incPC57 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC57 arg0 arg1 = if arg1 == 0b1101111 then 0b1110000 else (rw__LL_OD19_ProgramCounter_incPC137 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC57 x0 x1 = if x1 == 0b1101111 then 0b1110000 else (rw__LL_OD19_ProgramCounter_incPC137 x0 x0)
 
 // $LL.Main.repl22
 rw__LL_Main_repl22 : [32] -> [39] -> [81]
-rw__LL_Main_repl22 arg0 arg1 = rw__LL_Main_repl9 (take`{32} s1) (drop`{32} s1)
-  where
-    s0 : [78]
-    s0 = arg1 # arg1
-    s1 : [113]
-    s1 = arg0 # (rw__LL_Main_repl63 s0)
+rw__LL_Main_repl22 x0 x1 = rw__LL_Main_repl9 x0 (rw__LL_Main_repl63 (x1 # x1))
+
+// $LL.Main.repl20
+rw__LL_Main_repl20 : [32] -> [32] -> [39] -> [81]
+rw__LL_Main_repl20 x0 x1 x2 = rw__LL_Main_repl53 x0 x1 x2
 
 // $LL.OD19.ProgramCounter.incPC52
 rw__LL_OD19_ProgramCounter_incPC52 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC52 arg0 arg1 = if arg1 == 0b1000011 then 0b1000100 else (rw__LL_OD19_ProgramCounter_incPC171 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC52 x0 x1 = if x1 == 0b1000011 then 0b1000100 else (rw__LL_OD19_ProgramCounter_incPC171 x0 x0)
 
 // $LL.Main.repl17
 rw__LL_Main_repl17 : [32] -> [39] -> [81]
-rw__LL_Main_repl17 arg0 arg1 = rw__LL_Main_repl24 (take`{32} s1) (drop`{32} s1)
-  where
-    s0 : [71]
-    s0 = rw_Main_getReg arg1
-    s1 : [113]
-    s1 = arg0 # (rw__LL_Main_repl92 s0)
+rw__LL_Main_repl17 x0 x1 = rw__LL_Main_repl24 x0 (rw__LL_Main_repl92 (rw_Main_getReg x1))
 
 // $LL.OD19.ProgramCounter.incPC49
 rw__LL_OD19_ProgramCounter_incPC49 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC49 arg0 arg1 = if arg1 == 0b1011101 then 0b1011110 else (rw__LL_OD19_ProgramCounter_incPC200 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC49 x0 x1 = if x1 == 0b1011101 then 0b1011110 else (rw__LL_OD19_ProgramCounter_incPC200 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC47
 rw__LL_OD19_ProgramCounter_incPC47 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC47 arg0 arg1 = if arg1 == 0b0000110 then 0b0000111 else (rw__LL_OD19_ProgramCounter_incPC46 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC47 x0 x1 = if x1 == 0b0000110 then 0b0000111 else (rw__LL_OD19_ProgramCounter_incPC46 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC46
 rw__LL_OD19_ProgramCounter_incPC46 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC46 arg0 arg1 = if arg1 == 0b0000111 then 0b0001000 else (rw__LL_OD19_ProgramCounter_incPC135 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC46 x0 x1 = if x1 == 0b0000111 then 0b0001000 else (rw__LL_OD19_ProgramCounter_incPC135 x0 x0)
+
+// $LL.Main.putReg2
+rw__LL_Main_putReg2 : [32] -> [39] -> [39]
+rw__LL_Main_putReg2 x0 x1 = rw__LL_Main_putReg10 x0 x1
+
+// $LL.Main.repl12
+rw__LL_Main_repl12 : [32] -> [32] -> [7] -> [39] -> [81]
+rw__LL_Main_repl12 x0 x1 x2 x3 = rw__LL_Main_repl8 x0 x1 x2 x3
 
 // $LL.OD19.ProgramCounter.incPC44
 rw__LL_OD19_ProgramCounter_incPC44 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC44 arg0 arg1 = if arg1 == 0b1100010 then 0b1100011 else (rw__LL_OD19_ProgramCounter_incPC34 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC44 x0 x1 = if x1 == 0b1100010 then 0b1100011 else (rw__LL_OD19_ProgramCounter_incPC34 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC43
 rw__LL_OD19_ProgramCounter_incPC43 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC43 arg0 arg1 = if arg1 == 0b0110111 then 0b0111000 else (rw__LL_OD19_ProgramCounter_incPC39 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC43 x0 x1 = if x1 == 0b0110111 then 0b0111000 else (rw__LL_OD19_ProgramCounter_incPC39 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC42
 rw__LL_OD19_ProgramCounter_incPC42 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC42 arg0 arg1 = if arg1 == 0b1010111 then 0b1011000 else (rw__LL_OD19_ProgramCounter_incPC253 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC42 x0 x1 = if x1 == 0b1010111 then 0b1011000 else (rw__LL_OD19_ProgramCounter_incPC253 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC41
 rw__LL_OD19_ProgramCounter_incPC41 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC41 arg0 arg1 = if arg1 == 0b0100101 then 0b0100110 else (rw__LL_OD19_ProgramCounter_incPC93 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC41 x0 x1 = if x1 == 0b0100101 then 0b0100110 else (rw__LL_OD19_ProgramCounter_incPC93 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC39
 rw__LL_OD19_ProgramCounter_incPC39 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC39 arg0 arg1 = if arg1 == 0b0111000 then 0b0111001 else (rw__LL_OD19_ProgramCounter_incPC144 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC39 x0 x1 = if x1 == 0b0111000 then 0b0111001 else (rw__LL_OD19_ProgramCounter_incPC144 x0 x0)
+
+// $LL.Main.nextPC3
+rw__LL_Main_nextPC3 : [39] -> [32] -> [7] -> [39]
+rw__LL_Main_nextPC3 x0 x1 x2 = rw__LL_Main_nextPC6 x0 x1 x2
+
+// $LL.Main.nextPC2
+rw__LL_Main_nextPC2 : [39] -> [39] -> [39]
+rw__LL_Main_nextPC2 x0 x1 = rw__LL_Main_nextPC4 x0 x1
 
 // $LL.Main.getReg
 rw__LL_Main_getReg : [39] -> [39] -> [71]
-rw__LL_Main_getReg arg0 arg1 = rw__LL_Main_getReg3 (take`{39} s0) (take`{32} (drop`{39} s0)) (drop`{71} s0)
+rw__LL_Main_getReg x0 x1 = rw__LL_Main_getReg2 (take`{39} s0) (take`{32} (drop`{39} s0)) (drop`{71} s0)
   where
     s0 : [78]
-    s0 = arg1 # arg0
+    s0 = x1 # x0
 
 // $LL.OD19.ProgramCounter.incPC38
 rw__LL_OD19_ProgramCounter_incPC38 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC38 arg0 arg1 = if arg1 == 0b0111011 then 0b0111100 else (rw__LL_OD19_ProgramCounter_incPC191 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC38 x0 x1 = if x1 == 0b0111011 then 0b0111100 else (rw__LL_OD19_ProgramCounter_incPC191 x0 x0)
 
 // $LL.Main.repl9
 rw__LL_Main_repl9 : [32] -> [81] -> [81]
-rw__LL_Main_repl9 arg0 arg1 = rw__LL_Main_repl69 (take`{32} s0) (take`{39} (drop`{35} s0)) (drop`{74} s0)
+rw__LL_Main_repl9 x0 x1 = rw__LL_Main_repl69 (take`{32} s0) (take`{39} (drop`{35} s0)) (drop`{74} s0)
   where
     s0 : [113]
-    s0 = arg0 # arg1
+    s0 = x0 # x1
 
 // $LL.OD19.ProgramCounter.incPC36
 rw__LL_OD19_ProgramCounter_incPC36 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC36 arg0 arg1 = if arg1 == 0b0110101 then 0b0110110 else (rw__LL_OD19_ProgramCounter_incPC80 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC36 x0 x1 = if x1 == 0b0110101 then 0b0110110 else (rw__LL_OD19_ProgramCounter_incPC80 x0 x0)
+
+// $LL.Main.nextPC1
+rw__LL_Main_nextPC1 : [32] -> [7] -> [39] -> [39]
+rw__LL_Main_nextPC1 x0 x1 x2 = rw__LL_Main_nextPC5 x0 x1 x2
 
 // $LL.OD19.ProgramCounter.incPC34
 rw__LL_OD19_ProgramCounter_incPC34 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC34 arg0 arg1 = if arg1 == 0b1100011 then 0b1100100 else (rw__LL_OD19_ProgramCounter_incPC107 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC34 x0 x1 = if x1 == 0b1100011 then 0b1100100 else (rw__LL_OD19_ProgramCounter_incPC107 x0 x0)
 
 // $LL.Main.repl8
 rw__LL_Main_repl8 : [32] -> [32] -> [7] -> [39] -> [81]
-rw__LL_Main_repl8 arg0 arg1 arg2 arg3 = rw__LL_Main_repl94 (take`{32} s0) (take`{7} (drop`{32} s0)) (drop`{39} s0)
-  where
-    s0 : [78]
-    s0 = arg0 # (arg2 # arg3)
+rw__LL_Main_repl8 x0 x1 x2 x3 = rw__LL_Main_repl94 x0 x2 x3
+
+// $LL.Main.putReg1
+rw__LL_Main_putReg1 : [32] -> [39] -> [39] -> [39]
+rw__LL_Main_putReg1 x0 x1 x2 = rw__LL_Main_putReg8 x0 x1 x2
 
 // $LL.OD19.ProgramCounter.incPC31
 rw__LL_OD19_ProgramCounter_incPC31 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC31 arg0 arg1 = if arg1 == 0b1001000 then 0b1001001 else (rw__LL_OD19_ProgramCounter_incPC193 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC31 x0 x1 = if x1 == 0b1001000 then 0b1001001 else (rw__LL_OD19_ProgramCounter_incPC193 x0 x0)
 
 // $LL.Main.putReg
 rw__LL_Main_putReg : [32] -> [32] -> [7] -> [39] -> [39]
-rw__LL_Main_putReg arg0 arg1 arg2 arg3 = rw__LL_Main_putReg11 (take`{32} s0) (take`{7} (drop`{32} s0)) (drop`{39} s0)
-  where
-    s0 : [78]
-    s0 = arg0 # (arg2 # arg3)
+rw__LL_Main_putReg x0 x1 x2 x3 = rw__LL_Main_putReg11 x0 x2 x3
 
 // $LL.OD19.ProgramCounter.incPC25
 rw__LL_OD19_ProgramCounter_incPC25 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC25 arg0 arg1 = if arg1 == 0b0001110 then 0b0001111 else (rw__LL_OD19_ProgramCounter_incPC17 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC25 x0 x1 = if x1 == 0b0001110 then 0b0001111 else (rw__LL_OD19_ProgramCounter_incPC17 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC23
 rw__LL_OD19_ProgramCounter_incPC23 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC23 arg0 arg1 = if arg1 == 0b0011100 then 0b0011101 else (rw__LL_OD19_ProgramCounter_incPC147 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC23 x0 x1 = if x1 == 0b0011100 then 0b0011101 else (rw__LL_OD19_ProgramCounter_incPC147 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC22
 rw__LL_OD19_ProgramCounter_incPC22 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC22 arg0 arg1 = if arg1 == 0b0011001 then 0b0011010 else (rw__LL_OD19_ProgramCounter_incPC119 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC22 x0 x1 = if x1 == 0b0011001 then 0b0011010 else (rw__LL_OD19_ProgramCounter_incPC119 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC18
 rw__LL_OD19_ProgramCounter_incPC18 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC18 arg0 arg1 = if arg1 == 0b0110000 then 0b0110001 else (rw__LL_OD19_ProgramCounter_incPC84 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC18 x0 x1 = if x1 == 0b0110000 then 0b0110001 else (rw__LL_OD19_ProgramCounter_incPC84 x0 x0)
 
 // $LL.Main.repl4
 rw__LL_Main_repl4 : [32] -> [32] -> [39] -> [7] -> [81]
-rw__LL_Main_repl4 arg0 arg1 arg2 arg3 = rw__LL_Main_repl8 (take`{32} s0) (take`{32} (drop`{32} s0)) (take`{7} (drop`{64} s0)) (drop`{71} s0)
-  where
-    s0 : [110]
-    s0 = arg0 # (arg1 # (arg3 # arg2))
+rw__LL_Main_repl4 x0 x1 x2 x3 = rw__LL_Main_repl12 x0 x1 x3 x2
 
 // $LL.OD19.ProgramCounter.incPC17
 rw__LL_OD19_ProgramCounter_incPC17 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC17 arg0 arg1 = if arg1 == 0b0001111 then 0b0010000 else (rw__LL_OD19_ProgramCounter_incPC221 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC17 x0 x1 = if x1 == 0b0001111 then 0b0010000 else (rw__LL_OD19_ProgramCounter_incPC221 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC16
 rw__LL_OD19_ProgramCounter_incPC16 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC16 arg0 arg1 = if arg1 == 0b1000111 then 0b1001000 else (rw__LL_OD19_ProgramCounter_incPC31 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC16 x0 x1 = if x1 == 0b1000111 then 0b1001000 else (rw__LL_OD19_ProgramCounter_incPC31 x0 x0)
+
+// $LL.Main.nextPC
+rw__LL_Main_nextPC : [39] -> [32] -> [7] -> [39]
+rw__LL_Main_nextPC x0 x1 x2 = rw__LL_Main_nextPC3 x0 x1 x2
 
 // $LL.OD19.ProgramCounter.incPC15
 rw__LL_OD19_ProgramCounter_incPC15 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC15 arg0 arg1 = if arg1 == 0b1011010 then 0b1011011 else (rw__LL_OD19_ProgramCounter_incPC141 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC15 x0 x1 = if x1 == 0b1011010 then 0b1011011 else (rw__LL_OD19_ProgramCounter_incPC141 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC14
 rw__LL_OD19_ProgramCounter_incPC14 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC14 arg0 arg1 = if arg1 == 0b0100000 then 0b0100001 else (rw__LL_OD19_ProgramCounter_incPC240 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC14 x0 x1 = if x1 == 0b0100000 then 0b0100001 else (rw__LL_OD19_ProgramCounter_incPC240 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC13
 rw__LL_OD19_ProgramCounter_incPC13 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC13 arg0 arg1 = if arg1 == 0b0001011 then 0b0001100 else (rw__LL_OD19_ProgramCounter_incPC226 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC13 x0 x1 = if x1 == 0b0001011 then 0b0001100 else (rw__LL_OD19_ProgramCounter_incPC226 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC12
 rw__LL_OD19_ProgramCounter_incPC12 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC12 arg0 arg1 = if arg1 == 0b1101010 then 0b1101011 else (rw__LL_OD19_ProgramCounter_incPC75 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC12 x0 x1 = if x1 == 0b1101010 then 0b1101011 else (rw__LL_OD19_ProgramCounter_incPC75 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC10
 rw__LL_OD19_ProgramCounter_incPC10 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC10 arg0 arg1 = if arg1 == 0b1000110 then 0b1000111 else (rw__LL_OD19_ProgramCounter_incPC16 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC10 x0 x1 = if x1 == 0b1000110 then 0b1000111 else (rw__LL_OD19_ProgramCounter_incPC16 x0 x0)
 
 // $LL.Main.repl1
 rw__LL_Main_repl1 : [32] -> [32] -> [39] -> [81]
-rw__LL_Main_repl1 arg0 arg1 arg2 = 0b10000000000000000000000000000000000000000 # ((ext_test3 (take`{32} s0) (drop`{32} s0)) # arg2)
-  where
-    s0 : [64]
-    s0 = arg0 # arg1
+rw__LL_Main_repl1 x0 x1 x2 = 0b10000000000000000000000000000000000000000 # ((rw_Main_test3 x0 x1) # x2)
 
 // $LL.OD19.ProgramCounter.incPC8
 rw__LL_OD19_ProgramCounter_incPC8 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC8 arg0 arg1 = if arg1 == 0b0100111 then 0b0101000 else (rw__LL_OD19_ProgramCounter_incPC219 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC8 x0 x1 = if x1 == 0b0100111 then 0b0101000 else (rw__LL_OD19_ProgramCounter_incPC219 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC5
 rw__LL_OD19_ProgramCounter_incPC5 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC5 arg0 arg1 = if arg1 == 0b0110011 then 0b0110100 else (rw__LL_OD19_ProgramCounter_incPC223 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC5 x0 x1 = if x1 == 0b0110011 then 0b0110100 else (rw__LL_OD19_ProgramCounter_incPC223 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC4
 rw__LL_OD19_ProgramCounter_incPC4 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC4 arg0 arg1 = if arg1 == 0b0010011 then 0b0010100 else (rw__LL_OD19_ProgramCounter_incPC182 (take`{7} s0) (drop`{7} s0))
-  where
-    s0 : [14]
-    s0 = arg0 # arg0
+rw__LL_OD19_ProgramCounter_incPC4 x0 x1 = if x1 == 0b0010011 then 0b0010100 else (rw__LL_OD19_ProgramCounter_incPC182 x0 x0)
 
 // $LL.OD19.ProgramCounter.incPC2
 rw__LL_OD19_ProgramCounter_incPC2 : [7] -> [7] -> [7]
-rw__LL_OD19_ProgramCounter_incPC2 arg0 arg1 = if arg1 == 0b0000010 then 0b0000011 else (rw__LL_OD19_ProgramCounter_incPC150 (take`{7} s0) (drop`{7} s0))
+rw__LL_OD19_ProgramCounter_incPC2 x0 x1 = if x1 == 0b0000010 then 0b0000011 else (rw__LL_OD19_ProgramCounter_incPC150 x0 x0)
+
+// Per-cycle step: outputs # next register values.
+rw_step : [39] -> [33] -> [41]
+rw_step st i = (take`{1} (drop`{40} s5)) # ((take`{1} (drop`{41} s5)) # ((take`{32} (drop`{42} s5)) # (drop`{74} s5)))
   where
-    s0 : [14]
-    s0 = arg0 # arg0
+    s0 : [32]
+    s0 = take`{32} st
+    s1 : [7]
+    s1 = drop`{32} st
+    s2 : [1]
+    s2 = take`{1} i
+    s3 : [32]
+    s3 = drop`{1} i
+    s4 : [72]
+    s4 = s0 # (s1 # (s2 # s3))
+    s5 : [81]
+    s5 = rw__Pure_dispatch (take`{39} s4) (drop`{39} s4)
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [1], __in1 : [32]
@@ -1436,9 +1065,9 @@ rw__LL_OD19_ProgramCounter_incPC2 arg0 arg1 = if arg1 == 0b0000010 then 0b000001
 rw_device : {n} (fin n) => [n][33] -> [n][2]
 rw_device ins = outs
   where
-    rs : [n][81]
-    rs = [rw__Pure_dispatch st i | st <- sts | i <- ins]
+    rs : [n][41]
+    rs = [rw_step st i | st <- sts | i <- ins]
     sts : [1 + n][39]
-    sts = [drop`{42} rw__Pure_start] # [drop`{42} r | r <- rs]
+    sts = [0b000000000000000000000000000000000000000] # [drop`{2} r | r <- rs]
     outs : [n][2]
-    outs = [take`{2} (drop`{40} r) | r <- rs]
+    outs = [take`{2} r | r <- rs]

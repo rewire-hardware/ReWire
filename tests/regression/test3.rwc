@@ -1,53 +1,64 @@
-device top_level:
+$Pure.dispatch : ([8], [1]) -> [17]
+$Pure.dispatch $0 $1 =
+      let $t0 = $1 # $0 in
+      $LL.Pure.dispatch $t0[8 +: 1] $t0[0 +: 8]
 
-inputs [("__in0",1)]
-outputs [("__out0",8)]
-states [("__st0",8)]
+$LL.Main.go10 : ([1], [8]) -> [17]
+$LL.Main.go10 $0 $1 =
+      let $t0 = $1 # $0 in
+      $LL.Main.go8 $t0[1 +: 8]
 
-$Pure.dispatch :: W8 -> W1 -> W17
-$Pure.dispatch $0 $1 = 17'case {1'$1, 8'$0} of
-    {1'@, 8'@} -> $LL.Main.go3
+$LL.Main.go9 : ([16]) -> [17]
+$LL.Main.go9 $0 =
+      $LL.Main.go $0[8 +: 8] $0[0 +: 8]
 
-$Pure.start :: W17
-$Pure.start  = 17'h10000
+$LL.Main.go8 : ([8]) -> [17]
+$LL.Main.go8 $0 =
+      Main.go $0
 
-$LL.Main.go10 :: W1 -> W8 -> W17
-$LL.Main.go10 $0 $1 = 17'case {8'$1, 1'$0} of
-    {8'@, 1'h0} -> $LL.Main.go8
+$LL.Main.go7 : ([8], [8]) -> [17]
+$LL.Main.go7 $0 $1 =
+      1'h1 # $0 # $1
 
-$LL.Main.go9 :: W16 -> W17
-$LL.Main.go9 $0 = 17'case 16'$0 of
-    {8'@, 8'@} -> $LL.Main.go2
+$LL.Main.go5 : ([8], [8]) -> [17]
+$LL.Main.go5 $0 $1 =
+      $LL.Main.go7 $0 $1
 
-$LL.Main.go8 :: W8 -> W17
-$LL.Main.go8 $0 = 17'case 8'$0 of
-    {8'@} -> Main.go
+$LL.Main.go4 : ([17]) -> [17]
+$LL.Main.go4 $0 =
+      $LL.Main.go5 $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.go7 :: W8 -> W8 -> W17
-$LL.Main.go7 $0 $1 = {1'h1, 8'$0, 8'$1}
+$LL.Pure.dispatch : ([1], [8]) -> [17]
+$LL.Pure.dispatch $0 $1 =
+      $LL.Main.go3 $0 $1
 
-$LL.Main.go5 :: W8 -> W8 -> W17
-$LL.Main.go5 $0 $1 = 17'case {8'$0, 8'$1} of
-    {8'@, 8'@} -> $LL.Main.go7
+$LL.Main.go3 : ([1], [8]) -> [17]
+$LL.Main.go3 $0 $1 =
+      $LL.Main.go1 $0 $0 $1
 
-$LL.Main.go4 :: W17 -> W17
-$LL.Main.go4 $0 = 17'case 17'$0 of
-    {1'h0, 8'@, 8'@} -> $LL.Main.go5
+$LL.Main.go2 : ([8], [8]) -> [17]
+$LL.Main.go2 $0 $1 =
+      1'h0 # $0 # $1
 
-$LL.Main.go3 :: W1 -> W8 -> W17
-$LL.Main.go3 $0 $1 = 17'case {1'$0, 1'$0, 8'$1} of
-    {1'@, 1'@, 8'@} -> $LL.Main.go1
+$LL.Main.go1 : ([1], [1], [8]) -> [17]
+$LL.Main.go1 $0 $1 $2 =
+      let $t0 = $2 # $1 in
+      if eq $t0[0 +: 1] 1'h1 then $LL.Main.go8 $t0[1 +: 8]
+            else $LL.Main.go10 $0 $2
 
-$LL.Main.go2 :: W8 -> W8 -> W17
-$LL.Main.go2 $0 $1 = {1'h0, 8'$0, 8'$1}
+$LL.Main.go : ([8], [8]) -> [17]
+$LL.Main.go $0 $1 =
+      $LL.Main.go2 $0 $1
 
-$LL.Main.go1 :: W1 -> W1 -> W8 -> W17
-$LL.Main.go1 $0 $1 $2 = 17'case {8'$2, 1'$1} of
-    {8'@, 1'h1} -> $LL.Main.go8
-    _ -> 17'case {1'$0, 8'$2} of
-      {1'@, 8'@} -> $LL.Main.go10
+Main.go : ([8]) -> [17]
+Main.go $0 =
+      $LL.Main.go4 ($LL.Main.go9 ($0 # $0))
 
-Main.go :: W8 -> W17
-Main.go $0 = 17'case 17'case {8'$0, 8'$0} of
-      {16'@} -> $LL.Main.go9 of
-    {17'@} -> $LL.Main.go4
+device top_level
+      input __in0 : [1]
+      output __out0 : [8]
+      register __st0 : [8] init 8'h0
+      let $in = __st0 # __in0
+      let $res = $Pure.dispatch $in[1 +: 8] $in[0 +: 1]
+      __out0 := $res[8 +: 8]
+      next __st0 := $res[0 +: 8]

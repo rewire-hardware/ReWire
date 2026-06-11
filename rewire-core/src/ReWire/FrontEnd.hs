@@ -8,23 +8,21 @@ module ReWire.FrontEnd
 
 import ReWire.Annotation (noAnn)
 import ReWire.Config (Config, Language (..), getOutFile, target, cycles, inputsFile, defaultInputsFile, source, rtlOpt, testbench, pDebug)
-import ReWire.Core.Interp (interp, Ins, run)
-import ReWire.Core.Parse (parseCore)
-import ReWire.Core.Syntax (Device)
-import ReWire.Core.Transform (mergeSlices, purgeUnused, partialEval, dedupe)
 import ReWire.Error (MonadError, AstError, runSyntaxError, failAt, warnAt)
-import ReWire.Fix (fixPure)
+import ReWire.Mantle.Interp (Ins, run)
+import ReWire.Mantle.Parse (parseMantle)
+import ReWire.Mantle.Syntax (Program, progDevice)
 import ReWire.ModCache (runCache, getDevice, LoadPath)
 import ReWire.Pretty (Pretty, prettyPrint, fastPrint, showt)
 
 import qualified ReWire.Config           as Config
-import qualified ReWire.Core.Check       as Core
-import qualified ReWire.Core.Syntax      as Core
-import qualified ReWire.Core.ToCryptol   as Cryptol
-import qualified ReWire.Core.ToVHDL      as VHDL
-import qualified ReWire.Core.ToVerilog   as Verilog
+import qualified ReWire.Mantle.Check     as Mantle
+import qualified ReWire.Mantle.Interp    as Mantle
+import qualified ReWire.Mantle.ToCryptol as MantleCry
+import qualified ReWire.Mantle.ToVHDL    as MantleH
+import qualified ReWire.Mantle.ToVerilog as MantleV
+import qualified ReWire.Mantle.Transform as Mantle
 
-import Control.Arrow ((>>>))
 import Control.Lens ((^.))
 import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -42,51 +40,47 @@ import qualified Data.Text.IO        as T
 import qualified Data.Yaml           as YAML
 
 -- | Opens and parses a file and, recursively, its imports.
-loadDevice :: (MonadFail m, MonadError AstError m, MonadState AstError m, MonadIO m) => Config -> FilePath -> m Device
-loadDevice conf fp = runCache $ getDevice conf fp
+loadProgram :: (MonadFail m, MonadError AstError m, MonadState AstError m, MonadIO m) => Config -> FilePath -> m Program
+loadProgram conf fp = runCache $ getDevice conf fp
 
 compileFile :: MonadIO m => Config -> FilePath -> m ()
 compileFile conf filename = do
       verb $ "Compiling: " <> pack filename
 
-      runSyntaxError (loadCore >>= Core.check >>= compile)
+      runSyntaxError (load >>= Mantle.check >>= compile)
             >>= either (liftIO . (>> exitFailure) . T.hPutStrLn stderr . prettyPrint) pure
 
-      where loadCore :: (MonadError AstError m, MonadState AstError m, MonadFail m, MonadIO m) => m Core.Device
-            loadCore = case conf^.source of
-                  Haskell -> loadDevice conf filename 
-                  RWCore  -> parseCore filename
+      where load :: (MonadError AstError m, MonadState AstError m, MonadFail m, MonadIO m) => m Program
+            load = case conf^.source of
+                  Haskell -> loadProgram conf filename
+                  RWCore  -> parseMantle filename
                   s       -> failAt noAnn $ "Not a supported source language: " <> pack (show s)
 
-            compile :: (MonadFail m, MonadError AstError m, MonadIO m) => Core.Device -> m ()
+            compile :: (MonadFail m, MonadError AstError m, MonadIO m) => Program -> m ()
             compile a = do
                   when (conf^.testbench && (conf^.target) `notElem` [VHDL, Verilog]) $
                         warnAt conf noAnn "--testbench: no testbench generated (only the Verilog and VHDL targets support testbench generation)."
-                  verb "Partially evaluating/reducing core IR. If this is taking too long, consider disabling with --rtl-opt=0."
-                  let b = fixPure (conf^.rtlOpt) -- TODO: re-work these passes to avoid fix if possible
-                              ( mergeSlices
-                              >>> partialEval
-                              >>> mergeSlices
-                              >>> dedupe
-                              >>> purgeUnused
-                              ) a
-                  b' <- Core.check b
+                  verb "Partially evaluating/reducing mantle IR. If this is taking too long, consider disabling with --rtl-opt=0."
+                  p <- Mantle.check $ Mantle.optimize (conf^.rtlOpt) a
                   case conf^.target of
                         VHDL      -> do
-                              VHDL.compileProgram conf b' >>= writeOutput
-                              writeTestbench VHDL.testbench b'
-                        Cryptol   -> Cryptol.compileProgram conf b' >>= writeOutput
-                        RWCore    -> writeOutput b'
+                              p' <- Mantle.check $ Mantle.inline (conf^.Config.flatten) p
+                              MantleH.compileProgram conf p' >>= writeOutput
+                              writeTestbench $ MantleH.testbench conf $ progDevice p'
+                        Verilog   -> do
+                              p' <- Mantle.check $ Mantle.inline (conf^.Config.flatten) p
+                              MantleV.compileProgram conf p' >>= writeOutput
+                              writeTestbench $ MantleV.testbench conf $ progDevice p'
+                        Cryptol   -> MantleCry.compileProgram conf p >>= writeOutput
+                        RWCore    -> writeOutput p
+                        Mantle    -> writeOutput p
                         Interpret -> do
                               ips  <- loadInputs
-                              verb $ "Interpreting core: running for " <> showt (conf^.cycles) <> " cycles."
-                              outs <- run conf (interp conf b') ips
+                              verb $ "Interpreting mantle: running for " <> showt (conf^.cycles) <> " cycles."
+                              outs <- run conf (Mantle.interp conf p) ips
                               let fout = getOutFile conf filename
-                              verb $ "Interpreting core: done running; writing YAML output to file: " <> pack fout
+                              verb $ "Interpreting mantle: done running; writing YAML output to file: " <> pack fout
                               liftIO $ YAML.encodeFile fout outs
-                        Verilog   -> do
-                              Verilog.compileProgram conf b' >>= writeOutput
-                              writeTestbench Verilog.testbench b'
                         Haskell   -> failAt noAnn "Haskell is not a supported target language."
 
             -- | Inputs for --interpret and --testbench, padded/truncated to
@@ -108,13 +102,13 @@ compileFile conf filename = do
                                     <> "; driving all inputs with zeros."
                               pure $ boundInput (conf^.cycles) mempty
 
-            writeTestbench :: (MonadError AstError m, MonadIO m, Pretty tb) => (Config -> Core.Device -> [Ins] -> tb) -> Core.Device -> m ()
-            writeTestbench gen d = when (conf^.testbench) $ do
+            writeTestbench :: (MonadError AstError m, MonadIO m, Pretty tb) => ([Ins] -> tb) -> m ()
+            writeTestbench gen = when (conf^.testbench) $ do
                   ips <- loadInputs
                   let fout = getOutFile conf filename
                       tbout = dropExtension fout <> "_tb" <.> takeExtension fout
                   verb $ "Writing testbench to file: " <> pack tbout
-                  liftIO $ T.writeFile tbout $ (if conf^.Config.pretty then prettyPrint else fastPrint) $ gen conf d ips
+                  liftIO $ T.writeFile tbout $ (if conf^.Config.pretty then prettyPrint else fastPrint) $ gen ips
 
             writeOutput :: (MonadError AstError m, MonadIO m, Pretty a) => a -> m ()
             writeOutput a = do

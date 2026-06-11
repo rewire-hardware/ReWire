@@ -13,72 +13,100 @@ rw'repl x = join (repeat`{n} x)
 rw'parity : {n} (fin n) => [n] -> Bit
 rw'parity x = foldr (^) False x
 
+rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
+rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
+
 // $Pure.dispatch
 rw__Pure_dispatch : [1] -> [1] -> [2]
-rw__Pure_dispatch arg0 arg1 = rw__LL_Pure_dispatch (take`{1} s0) (drop`{1} s0)
+rw__Pure_dispatch x0 x1 = rw__LL_Pure_dispatch1 (take`{1} s0) (drop`{1} s0)
   where
     s0 : [2]
-    s0 = arg1 # arg0
+    s0 = x1 # x0
 
-// $Pure.start
-rw__Pure_start : [2]
-rw__Pure_start = 0b00
+// $LL.Main.loop3
+rw__LL_Main_loop3 : [1] -> [2]
+rw__LL_Main_loop3 x0 = rw__LL_Main_loop1 x0
+
+// $LL.ReWire.Prelude.&&3
+rw__LL_ReWire_Prelude___3 : [1] -> [1]
+rw__LL_ReWire_Prelude___3 x0 = x0
+
+// $LL.Pure.dispatch1
+rw__LL_Pure_dispatch1 : [1] -> [1] -> [2]
+rw__LL_Pure_dispatch1 x0 x1 = rw__LL_Pure_dispatch x0 x1
 
 // $LL.Main.zookus4
 rw__LL_Main_zookus4 : [2] -> [1]
-rw__LL_Main_zookus4 arg0 = rw__LL_Main_zookus1 (take`{1} arg0) (drop`{1} arg0)
+rw__LL_Main_zookus4 x0 = rw__LL_Main_zookus (take`{1} x0) (drop`{1} x0)
+
+// $LL.Main.loop2
+rw__LL_Main_loop2 : [1] -> [1] -> [2]
+rw__LL_Main_loop2 x0 x1 = rw__LL_Main_loop x0 x1
 
 // $LL.Pure.dispatch
 rw__LL_Pure_dispatch : [1] -> [1] -> [2]
-rw__LL_Pure_dispatch arg0 arg1 = rw__LL_Main_loop (take`{1} s0) (drop`{1} s0)
-  where
-    s0 : [2]
-    s0 = arg1 # arg0
+rw__LL_Pure_dispatch x0 x1 = rw__LL_Main_loop2 x1 x0
 
 // $LL.Main.loop1
 rw__LL_Main_loop1 : [1] -> [2]
-rw__LL_Main_loop1 arg0 = (rw__LL_Main_zookus2 s0) # arg0
-  where
-    s0 : [1]
-    s0 = rw__LL_Main_zookus2 arg0
+rw__LL_Main_loop1 x0 = (rw_Main_zookus (rw_Main_zookus x0)) # x0
+
+// Main.loop1
+rw_Main_loop1 : [1] -> [2]
+rw_Main_loop1 x0 = rw__LL_Main_loop3 x0
 
 // $LL.ReWire.Prelude.&&2
 rw__LL_ReWire_Prelude___2 : [1] -> [1] -> [2] -> [1]
-rw__LL_ReWire_Prelude___2 arg0 arg1 arg2 = if (take`{1} arg2) == 0b1 then (drop`{1} arg2) else (rw__LL_ReWire_Prelude___ s0)
-  where
-    s0 : [2]
-    s0 = arg0 # arg1
+rw__LL_ReWire_Prelude___2 x0 x1 x2 = if (take`{1} x2) == 0b1 then (rw__LL_ReWire_Prelude___3 (drop`{1} x2)) else (rw__LL_ReWire_Prelude___ (x0 # x1))
+
+// $LL.Main.zookus3
+rw__LL_Main_zookus3 : [1] -> [1]
+rw__LL_Main_zookus3 x0 = rw__LL_Main_zookus2 x0
 
 // $LL.Main.loop
 rw__LL_Main_loop : [1] -> [1] -> [2]
-rw__LL_Main_loop arg0 arg1 = rw__LL_Main_loop1 s1
-  where
-    s0 : [2]
-    s0 = arg0 # 0b1
-    s1 : [1]
-    s1 = rw_ReWire_Prelude___ (take`{1} s0) (drop`{1} s0)
+rw__LL_Main_loop x0 x1 = rw_Main_loop1 (rw_ReWire_Prelude___ x0 0b1)
 
 // ReWire.Prelude.&&
 rw_ReWire_Prelude___ : [1] -> [1] -> [1]
-rw_ReWire_Prelude___ arg0 arg1 = rw__LL_ReWire_Prelude___2 (take`{1} s0) (take`{1} (drop`{1} s0)) (drop`{2} s0)
-  where
-    s0 : [4]
-    s0 = arg0 # (arg1 # (arg0 # arg1))
+rw_ReWire_Prelude___ x0 x1 = rw__LL_ReWire_Prelude___2 x0 x1 (x0 # x1)
 
 // $LL.Main.zookus2
 rw__LL_Main_zookus2 : [1] -> [1]
-rw__LL_Main_zookus2 arg0 = rw__LL_Main_zookus4 s0
-  where
-    s0 : [2]
-    s0 = arg0 # arg0
+rw__LL_Main_zookus2 x0 = rw__LL_Main_zookus4 (x0 # x0)
+
+// Main.zookus
+rw_Main_zookus : [1] -> [1]
+rw_Main_zookus x0 = rw__LL_Main_zookus3 x0
+
+// $LL.ReWire.Prelude.&&1
+rw__LL_ReWire_Prelude___1 : [1] -> [1]
+rw__LL_ReWire_Prelude___1 x0 = 0b0
 
 // $LL.Main.zookus1
 rw__LL_Main_zookus1 : [1] -> [1] -> [1]
-rw__LL_Main_zookus1 arg0 arg1 = arg0
+rw__LL_Main_zookus1 x0 x1 = x0
 
 // $LL.ReWire.Prelude.&&
 rw__LL_ReWire_Prelude___ : [2] -> [1]
-rw__LL_ReWire_Prelude___ arg0 = 0b0
+rw__LL_ReWire_Prelude___ x0 = rw__LL_ReWire_Prelude___1 (drop`{1} x0)
+
+// $LL.Main.zookus
+rw__LL_Main_zookus : [1] -> [1] -> [1]
+rw__LL_Main_zookus x0 x1 = rw__LL_Main_zookus1 x0 x1
+
+// Per-cycle step: outputs # next register values.
+rw_step : [1] -> [1] -> [2]
+rw_step st i = (take`{1} s3) # (drop`{1} s3)
+  where
+    s0 : [1]
+    s0 = st
+    s1 : [1]
+    s1 = i
+    s2 : [2]
+    s2 = s0 # s1
+    s3 : [2]
+    s3 = rw__Pure_dispatch (take`{1} s2) (drop`{1} s2)
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [1]
@@ -87,8 +115,8 @@ rw_device : {n} (fin n) => [n][1] -> [n][1]
 rw_device ins = outs
   where
     rs : [n][2]
-    rs = [rw__Pure_dispatch st i | st <- sts | i <- ins]
+    rs = [rw_step st i | st <- sts | i <- ins]
     sts : [1 + n][1]
-    sts = [drop`{1} rw__Pure_start] # [drop`{1} r | r <- rs]
+    sts = [0b0] # [drop`{1} r | r <- rs]
     outs : [n][1]
     outs = [take`{1} r | r <- rs]

@@ -35,6 +35,11 @@ package rw_helpers is
   function rw_gteq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_cond (c : std_logic_vector; a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_repl (n : natural; v : std_logic_vector) return std_logic_vector;
+  function rw_sext (v : std_logic_vector; n : natural) return std_logic_vector;
+  function rw_lts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_lteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_gts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_gteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
 end package;
 
 package body rw_helpers is
@@ -74,7 +79,7 @@ package body rw_helpers is
   function rw_mod (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
     constant n : natural := rw_max(a'length, b'length);
   begin
-    if unsigned(b) = 0 then return std_logic_vector(to_unsigned(0, n) - 1); end if;
+    if unsigned(b) = 0 then return std_logic_vector(resize(unsigned(a), n)); end if;
     return std_logic_vector(resize(resize(unsigned(a), n) mod resize(unsigned(b), n), n));
   end;
   function rw_pow (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
@@ -205,6 +210,26 @@ package body rw_helpers is
     end loop;
     return r;
   end;
+  function rw_sext (v : std_logic_vector; n : natural) return std_logic_vector is
+  begin
+    return std_logic_vector(resize(signed(v), n));
+  end;
+  function rw_lts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) < signed(b));
+  end;
+  function rw_lteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) <= signed(b));
+  end;
+  function rw_gts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) > signed(b));
+  end;
+  function rw_gteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) >= signed(b));
+  end;
 end package body;
 
 library ieee;
@@ -235,94 +260,112 @@ component \ReWire_Prelude_not\ is
       port (arg0 : in std_logic_vector (2 downto 0);
             res : out std_logic_vector (4 downto 0));
       end component;
-      signal \__padding\ : std_logic_vector (1 downto 0);
-      signal \__st0_next\ : std_logic_vector (0 downto 0);
-      signal \__st1_next\ : std_logic_vector (0 downto 0);
       signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
+      signal \__st0_next\ : std_logic_vector (0 downto 0);
       signal \__st1\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
-      signal zll_main_sig34_in : std_logic_vector (2 downto 0);
-      signal rewire_prelude_not_in : std_logic_vector (0 downto 0);
+      signal \__st1_next\ : std_logic_vector (0 downto 0);
+      signal zin : std_logic_vector (2 downto 0);
+      signal zi0 : std_logic_vector (1 downto 0);
+      signal zi1 : std_logic_vector (0 downto 0);
+      signal zi2 : std_logic_vector (2 downto 0);
+      signal zi3 : std_logic_vector (0 downto 0);
+      signal zi4 : std_logic_vector (0 downto 0);
+      signal zi5 : std_logic_vector (0 downto 0);
       signal rewire_prelude_not_out : std_logic_vector (0 downto 0);
-      signal \rewire_prelude_not_inR1\ : std_logic_vector (0 downto 0);
-      signal \rewire_prelude_not_outR1\ : std_logic_vector (0 downto 0);
-      signal zll_main_sig29_in : std_logic_vector (2 downto 0);
-      signal zll_main_sig23_in : std_logic_vector (1 downto 0);
-      signal zll_main_sig24_in : std_logic_vector (4 downto 0);
-      signal zll_main_sig24_out : std_logic_vector (4 downto 0);
-      signal zll_main_sig39_in : std_logic_vector (2 downto 0);
-      signal zll_main_sig46_in : std_logic_vector (1 downto 0);
-      signal zll_main_sig8_in : std_logic_vector (2 downto 0);
-      signal zll_main_sig45_in : std_logic_vector (2 downto 0);
-      signal zll_main_sig16_in : std_logic_vector (4 downto 0);
-      signal zll_main_sig36_in : std_logic_vector (4 downto 0);
-      signal zll_main_sig41_in : std_logic_vector (2 downto 0);
-      signal zll_main_sig35_in : std_logic_vector (2 downto 0);
+      signal zi6 : std_logic_vector (2 downto 0);
+      signal zi7 : std_logic_vector (0 downto 0);
+      signal zi8 : std_logic_vector (0 downto 0);
+      signal zi9 : std_logic_vector (2 downto 0);
+      signal zi10 : std_logic_vector (0 downto 0);
+      signal zi11 : std_logic_vector (0 downto 0);
+      signal zi12 : std_logic_vector (0 downto 0);
+      signal zi13 : std_logic_vector (4 downto 0);
+      signal zi14 : std_logic_vector (0 downto 0);
+      signal zi15 : std_logic_vector (0 downto 0);
+      signal zi16 : std_logic_vector (0 downto 0);
+      signal conn : std_logic_vector (2 downto 0);
       signal zll_main_sig35_out : std_logic_vector (4 downto 0);
-      signal zll_main_sig14_in : std_logic_vector (5 downto 0);
-      signal zll_main_sig11_in : std_logic_vector (5 downto 0);
-      signal zll_main_sig38_in : std_logic_vector (3 downto 0);
-      signal zll_main_sig26_in : std_logic_vector (3 downto 0);
-      signal zll_main_sig47_in : std_logic_vector (3 downto 0);
-      signal zll_main_sig15_in : std_logic_vector (1 downto 0);
+      signal zi17 : std_logic_vector (4 downto 0);
+      signal zi18 : std_logic_vector (5 downto 0);
+      signal zi19 : std_logic_vector (0 downto 0);
+      signal zi20 : std_logic_vector (0 downto 0);
+      signal zi21 : std_logic_vector (0 downto 0);
+      signal zi22 : std_logic_vector (0 downto 0);
+      signal \connR1\ : std_logic_vector (1 downto 0);
       signal zll_main_sig15_out : std_logic_vector (4 downto 0);
-      signal zll_main_sig49_in : std_logic_vector (6 downto 0);
-      signal zll_main_sig32_in : std_logic_vector (6 downto 0);
-      signal zll_main_sig5_in : std_logic_vector (3 downto 0);
-      signal zll_main_sig3_in : std_logic_vector (3 downto 0);
-      signal zll_main_incr3_in : std_logic_vector (1 downto 0);
-      signal zll_main_incr2_in : std_logic_vector (1 downto 0);
-      signal zll_main_incr1_in : std_logic_vector (1 downto 0);
-      signal binop_in : std_logic_vector (1 downto 0);
-      signal msbit_in : std_logic_vector (0 downto 0);
-      signal \zll_main_sig15_inR1\ : std_logic_vector (1 downto 0);
+      signal zi23 : std_logic_vector (4 downto 0);
+      signal zi24 : std_logic_vector (6 downto 0);
+      signal zi25 : std_logic_vector (0 downto 0);
+      signal zi26 : std_logic_vector (0 downto 0);
+      signal zi27 : std_logic_vector (0 downto 0);
+      signal zi28 : std_logic_vector (0 downto 0);
+      signal zi29 : std_logic_vector (1 downto 0);
+      signal zi30 : std_logic_vector (0 downto 0);
+      signal zi31 : std_logic_vector (0 downto 0);
+      signal zi32 : std_logic_vector (0 downto 0);
+      signal \connR2\ : std_logic_vector (1 downto 0);
       signal \zll_main_sig15_outR1\ : std_logic_vector (4 downto 0);
-      signal \zll_main_sig24_inR1\ : std_logic_vector (4 downto 0);
+      signal zll_main_sig24_out : std_logic_vector (4 downto 0);
+      signal \rewire_prelude_not_outR1\ : std_logic_vector (0 downto 0);
+      signal zi33 : std_logic_vector (2 downto 0);
+      signal zi34 : std_logic_vector (0 downto 0);
+      signal zi35 : std_logic_vector (0 downto 0);
+      signal \connR3\ : std_logic_vector (4 downto 0);
       signal \zll_main_sig24_outR1\ : std_logic_vector (4 downto 0);
-      signal pause : std_logic_vector (4 downto 0);
+      signal zres : std_logic_vector (4 downto 0);
 begin
-zll_main_sig34_in <= (\__in0\ & (\__st0\ & \__st1\));
-      rewire_prelude_not_in <= zll_main_sig34_in(2 downto 2);
-      inst : \ReWire_Prelude_not\ port map (rewire_prelude_not_in(0 downto 0), rewire_prelude_not_out);
-      \rewire_prelude_not_inR1\ <= zll_main_sig34_in(2 downto 2);
-      \instR1\ : \ReWire_Prelude_not\ port map (\rewire_prelude_not_inR1\(0 downto 0), \rewire_prelude_not_outR1\);
-      zll_main_sig29_in <= (zll_main_sig34_in(0 downto 0) & zll_main_sig34_in(1 downto 1) & \rewire_prelude_not_outR1\);
-      zll_main_sig23_in <= (zll_main_sig29_in(1 downto 1) & zll_main_sig29_in(2 downto 2));
-      zll_main_sig24_in <= (std_logic_vector'(B"010") & zll_main_sig23_in(1 downto 1) & zll_main_sig23_in(0 downto 0));
-      \instR2\ : \ZLL_Main_sig24\ port map (zll_main_sig24_in(4 downto 0), zll_main_sig24_out);
-      zll_main_sig39_in <= (zll_main_sig34_in(0 downto 0) & zll_main_sig34_in(1 downto 1) & rewire_prelude_not_out);
-      zll_main_sig46_in <= (zll_main_sig39_in(1 downto 1) & zll_main_sig39_in(2 downto 2));
-      zll_main_sig8_in <= (zll_main_sig46_in(1 downto 1) & zll_main_sig46_in(1 downto 1) & zll_main_sig46_in(0 downto 0));
-      zll_main_sig45_in <= zll_main_sig8_in(2 downto 0);
-      zll_main_sig16_in <= (std_logic_vector'(B"00") & zll_main_sig45_in(2 downto 2) & zll_main_sig45_in(1 downto 1) & zll_main_sig45_in(0 downto 0));
-      zll_main_sig36_in <= zll_main_sig16_in(4 downto 0);
-      zll_main_sig41_in <= (zll_main_sig36_in(2 downto 2) & zll_main_sig36_in(1 downto 1) & zll_main_sig36_in(0 downto 0));
-      zll_main_sig35_in <= (zll_main_sig41_in(0 downto 0) & zll_main_sig41_in(1 downto 1) & zll_main_sig41_in(0 downto 0));
-      \instR3\ : \ZLL_Main_sig35\ port map (zll_main_sig35_in(2 downto 0), zll_main_sig35_out);
-      zll_main_sig14_in <= (zll_main_sig41_in(2 downto 2) & zll_main_sig35_out);
-      zll_main_sig11_in <= (zll_main_sig14_in(5 downto 5) & zll_main_sig14_in(4 downto 0));
-      zll_main_sig38_in <= (zll_main_sig11_in(5 downto 5) & zll_main_sig11_in(2 downto 2) & zll_main_sig11_in(1 downto 1) & zll_main_sig11_in(0 downto 0));
-      zll_main_sig26_in <= (zll_main_sig38_in(2 downto 2) & zll_main_sig38_in(3 downto 3) & zll_main_sig38_in(1 downto 1) & zll_main_sig38_in(0 downto 0));
-      zll_main_sig47_in <= (zll_main_sig26_in(2 downto 2) & zll_main_sig26_in(3 downto 3) & zll_main_sig26_in(1 downto 1) & zll_main_sig26_in(0 downto 0));
-      zll_main_sig15_in <= (zll_main_sig47_in(2 downto 2) & zll_main_sig47_in(0 downto 0));
-      \instR4\ : \ZLL_Main_sig15\ port map (zll_main_sig15_in(1 downto 0), zll_main_sig15_out);
-      zll_main_sig49_in <= (zll_main_sig47_in(2 downto 2) & zll_main_sig47_in(3 downto 3) & zll_main_sig15_out);
-      zll_main_sig32_in <= (zll_main_sig49_in(6 downto 6) & zll_main_sig49_in(5 downto 5) & zll_main_sig49_in(4 downto 0));
-      zll_main_sig5_in <= (zll_main_sig32_in(6 downto 6) & zll_main_sig32_in(5 downto 5) & zll_main_sig32_in(1 downto 1) & zll_main_sig32_in(0 downto 0));
-      zll_main_sig3_in <= (zll_main_sig5_in(2 downto 2) & zll_main_sig5_in(3 downto 3) & zll_main_sig5_in(1 downto 1) & zll_main_sig5_in(0 downto 0));
-      zll_main_incr3_in <= (zll_main_sig3_in(3 downto 3) & zll_main_sig3_in(2 downto 2));
-      zll_main_incr2_in <= (zll_main_incr3_in(1 downto 1) & zll_main_incr3_in(0 downto 0));
-      zll_main_incr1_in <= zll_main_incr2_in(1 downto 0);
-      binop_in <= (zll_main_incr1_in(1 downto 1) & zll_main_incr1_in(0 downto 0));
-      msbit_in <= rw_xor(binop_in(1 downto 1), binop_in(0 downto 0));
-      \zll_main_sig15_inR1\ <= (zll_main_sig3_in(1 downto 1) & msbit_in(0 downto 0));
-      \instR5\ : \ZLL_Main_sig15\ port map (\zll_main_sig15_inR1\(1 downto 0), \zll_main_sig15_outR1\);
-      \zll_main_sig24_inR1\ <= \zll_main_sig15_outR1\;
-      \instR6\ : \ZLL_Main_sig24\ port map (\zll_main_sig24_inR1\(4 downto 0), \zll_main_sig24_outR1\);
-      pause <= rw_cond(rw_eq(zll_main_sig39_in(0 downto 0), std_logic_vector'(B"1")), \zll_main_sig24_outR1\, zll_main_sig24_out);
-      \__padding\ <= pause(4 downto 3);
-      \__out0\ <= pause(2 downto 2);
-      \__st0_next\ <= pause(1 downto 1);
-      \__st1_next\ <= pause(0 downto 0);
+zin <= (\__st0\ & \__st1\ & \__in0\);
+      zi0 <= zin(2 downto 1);
+      zi1 <= zin(0 downto 0);
+      zi2 <= (zi1 & zi0);
+      zi3 <= zi2(2 downto 2);
+      zi4 <= zi2(1 downto 1);
+      zi5 <= zi2(0 downto 0);
+      inst : \ReWire_Prelude_not\ port map (zi3, rewire_prelude_not_out);
+      zi6 <= (zi5 & zi4 & rewire_prelude_not_out);
+      zi7 <= zi6(2 downto 2);
+      zi8 <= zi6(1 downto 1);
+      zi9 <= (zi8 & zi8 & zi7);
+      zi10 <= zi9(2 downto 2);
+      zi11 <= zi9(1 downto 1);
+      zi12 <= zi9(0 downto 0);
+      zi13 <= (std_logic_vector'(B"00") & zi10 & zi11 & zi12);
+      zi14 <= zi13(2 downto 2);
+      zi15 <= zi13(1 downto 1);
+      zi16 <= zi13(0 downto 0);
+      conn <= (zi16 & zi15 & zi16);
+      \instR1\ : \ZLL_Main_sig35\ port map (conn, zll_main_sig35_out);
+      zi17 <= zll_main_sig35_out;
+      zi18 <= (zi14 & zi17);
+      zi19 <= zi18(5 downto 5);
+      zi20 <= zi18(2 downto 2);
+      zi21 <= zi18(1 downto 1);
+      zi22 <= zi18(0 downto 0);
+      \connR1\ <= (zi20 & zi22);
+      \instR2\ : \ZLL_Main_sig15\ port map (\connR1\, zll_main_sig15_out);
+      zi23 <= zll_main_sig15_out;
+      zi24 <= (zi20 & zi19 & zi23);
+      zi25 <= zi24(6 downto 6);
+      zi26 <= zi24(5 downto 5);
+      zi27 <= zi24(1 downto 1);
+      zi28 <= zi24(0 downto 0);
+      zi29 <= (zi26 & zi25);
+      zi30 <= zi29(1 downto 1);
+      zi31 <= zi29(0 downto 0);
+      zi32 <= rw_xor(zi30, zi31);
+      \connR2\ <= (zi27 & zi32);
+      \instR3\ : \ZLL_Main_sig15\ port map (\connR2\, \zll_main_sig15_outR1\);
+      \instR4\ : \ZLL_Main_sig24\ port map (\zll_main_sig15_outR1\, zll_main_sig24_out);
+      \instR5\ : \ReWire_Prelude_not\ port map (zi3, \rewire_prelude_not_outR1\);
+      zi33 <= (zi5 & zi4 & \rewire_prelude_not_outR1\);
+      zi34 <= zi33(2 downto 2);
+      zi35 <= zi33(1 downto 1);
+      \connR3\ <= (std_logic_vector'(B"010") & zi35 & zi34);
+      \instR6\ : \ZLL_Main_sig24\ port map (\connR3\, \zll_main_sig24_outR1\);
+      zres <= rw_cond(rw_eq(zi6(0 downto 0), std_logic_vector'(B"1")), zll_main_sig24_out, \zll_main_sig24_outR1\);
+      \__st0_next\ <= zres(1 downto 1);
+      \__st1_next\ <= zres(0 downto 0);
+      \__out0\ <= zres(2 downto 2);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then
@@ -345,12 +388,9 @@ port (arg0 : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of \ReWire_Prelude_not\ is
-signal zll_rewire_prelude_not1_in : std_logic_vector (1 downto 0);
-      signal lit_in : std_logic_vector (0 downto 0);
+
 begin
-zll_rewire_prelude_not1_in <= (arg0 & arg0);
-      lit_in <= zll_rewire_prelude_not1_in(0 downto 0);
-      res <= rw_cond(rw_eq(lit_in(0 downto 0), std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
+res <= rw_cond(rw_eq(arg0, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
 end architecture;
 
 library ieee;
@@ -363,12 +403,14 @@ port (arg0 : in std_logic_vector (2 downto 0);
 end entity;
 
 architecture rtl of \ZLL_Main_sig35\ is
-signal zll_main_sig30_in : std_logic_vector (2 downto 0);
-      signal zll_main_sig50_in : std_logic_vector (2 downto 0);
+signal zi0 : std_logic_vector (0 downto 0);
+      signal zi1 : std_logic_vector (0 downto 0);
+      signal zi2 : std_logic_vector (0 downto 0);
 begin
-zll_main_sig30_in <= arg0;
-      zll_main_sig50_in <= (zll_main_sig30_in(1 downto 1) & zll_main_sig30_in(2 downto 2) & zll_main_sig30_in(0 downto 0));
-      res <= (std_logic_vector'(B"00") & zll_main_sig50_in(1 downto 1) & zll_main_sig50_in(2 downto 2) & zll_main_sig50_in(0 downto 0));
+zi0 <= arg0(2 downto 2);
+      zi1 <= arg0(1 downto 1);
+      zi2 <= arg0(0 downto 0);
+      res <= (std_logic_vector'(B"00") & zi0 & zi1 & zi2);
 end architecture;
 
 library ieee;
@@ -385,22 +427,24 @@ component \ZLL_Main_sig35\ is
       port (arg0 : in std_logic_vector (2 downto 0);
             res : out std_logic_vector (4 downto 0));
       end component;
-      signal zll_main_sig43_in : std_logic_vector (4 downto 0);
-      signal zll_main_sig1_in : std_logic_vector (1 downto 0);
-      signal zll_main_sig35_in : std_logic_vector (2 downto 0);
+      signal zi0 : std_logic_vector (0 downto 0);
+      signal zi1 : std_logic_vector (0 downto 0);
+      signal conn : std_logic_vector (2 downto 0);
       signal zll_main_sig35_out : std_logic_vector (4 downto 0);
-      signal zll_main_sig7_in : std_logic_vector (4 downto 0);
-      signal zll_main_sig17_in : std_logic_vector (4 downto 0);
-      signal zll_main_sig40_in : std_logic_vector (2 downto 0);
+      signal zi2 : std_logic_vector (4 downto 0);
+      signal zi3 : std_logic_vector (0 downto 0);
+      signal zi4 : std_logic_vector (0 downto 0);
+      signal zi5 : std_logic_vector (0 downto 0);
 begin
-zll_main_sig43_in <= arg0;
-      zll_main_sig1_in <= (zll_main_sig43_in(1 downto 1) & zll_main_sig43_in(0 downto 0));
-      zll_main_sig35_in <= (zll_main_sig1_in(1 downto 1) & zll_main_sig1_in(1 downto 1) & zll_main_sig1_in(0 downto 0));
-      inst : \ZLL_Main_sig35\ port map (zll_main_sig35_in(2 downto 0), zll_main_sig35_out);
-      zll_main_sig7_in <= zll_main_sig35_out;
-      zll_main_sig17_in <= zll_main_sig7_in(4 downto 0);
-      zll_main_sig40_in <= (zll_main_sig17_in(2 downto 2) & zll_main_sig17_in(1 downto 1) & zll_main_sig17_in(0 downto 0));
-      res <= (std_logic_vector'(B"10") & zll_main_sig40_in(2 downto 2) & zll_main_sig40_in(1 downto 1) & zll_main_sig40_in(0 downto 0));
+zi0 <= arg0(1 downto 1);
+      zi1 <= arg0(0 downto 0);
+      conn <= (zi0 & zi0 & zi1);
+      inst : \ZLL_Main_sig35\ port map (conn, zll_main_sig35_out);
+      zi2 <= zll_main_sig35_out;
+      zi3 <= zi2(2 downto 2);
+      zi4 <= zi2(1 downto 1);
+      zi5 <= zi2(0 downto 0);
+      res <= (std_logic_vector'(B"10") & zi3 & zi4 & zi5);
 end architecture;
 
 library ieee;
@@ -413,8 +457,10 @@ port (arg0 : in std_logic_vector (1 downto 0);
 end entity;
 
 architecture rtl of \ZLL_Main_sig15\ is
-signal zll_main_sig27_in : std_logic_vector (1 downto 0);
+signal zi0 : std_logic_vector (0 downto 0);
+      signal zi1 : std_logic_vector (0 downto 0);
 begin
-zll_main_sig27_in <= arg0;
-      res <= (std_logic_vector'(B"010") & zll_main_sig27_in(1 downto 1) & zll_main_sig27_in(0 downto 0));
+zi0 <= arg0(1 downto 1);
+      zi1 <= arg0(0 downto 0);
+      res <= (std_logic_vector'(B"010") & zi0 & zi1);
 end architecture;

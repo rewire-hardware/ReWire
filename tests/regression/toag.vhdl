@@ -35,6 +35,11 @@ package rw_helpers is
   function rw_gteq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_cond (c : std_logic_vector; a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_repl (n : natural; v : std_logic_vector) return std_logic_vector;
+  function rw_sext (v : std_logic_vector; n : natural) return std_logic_vector;
+  function rw_lts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_lteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_gts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_gteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
 end package;
 
 package body rw_helpers is
@@ -74,7 +79,7 @@ package body rw_helpers is
   function rw_mod (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
     constant n : natural := rw_max(a'length, b'length);
   begin
-    if unsigned(b) = 0 then return std_logic_vector(to_unsigned(0, n) - 1); end if;
+    if unsigned(b) = 0 then return std_logic_vector(resize(unsigned(a), n)); end if;
     return std_logic_vector(resize(resize(unsigned(a), n) mod resize(unsigned(b), n), n));
   end;
   function rw_pow (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
@@ -205,6 +210,26 @@ package body rw_helpers is
     end loop;
     return r;
   end;
+  function rw_sext (v : std_logic_vector; n : natural) return std_logic_vector is
+  begin
+    return std_logic_vector(resize(signed(v), n));
+  end;
+  function rw_lts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) < signed(b));
+  end;
+  function rw_lteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) <= signed(b));
+  end;
+  function rw_gts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) > signed(b));
+  end;
+  function rw_gteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) >= signed(b));
+  end;
 end package body;
 
 library ieee;
@@ -224,33 +249,45 @@ component \ZLL_Pure_dispatch5\ is
             arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (3 downto 0));
       end component;
-      signal \__resumption_tag_next\ : std_logic_vector (2 downto 0);
       signal \__resumption_tag\ : std_logic_vector (2 downto 0) := std_logic_vector'(B"100");
-      signal zll_pure_dispatch5_in : std_logic_vector (3 downto 0);
+      signal \__resumption_tag_next\ : std_logic_vector (2 downto 0);
+      signal zin : std_logic_vector (3 downto 0);
+      signal zi0 : std_logic_vector (2 downto 0);
+      signal zi1 : std_logic_vector (0 downto 0);
+      signal zi2 : std_logic_vector (3 downto 0);
+      signal zi3 : std_logic_vector (0 downto 0);
+      signal zi4 : std_logic_vector (3 downto 0);
+      signal zi5 : std_logic_vector (0 downto 0);
+      signal zi6 : std_logic_vector (1 downto 0);
+      signal zi7 : std_logic_vector (0 downto 0);
+      signal zi8 : std_logic_vector (2 downto 0);
+      signal zi9 : std_logic_vector (0 downto 0);
+      signal zi10 : std_logic_vector (0 downto 0);
+      signal zi11 : std_logic_vector (3 downto 0);
       signal zll_pure_dispatch5_out : std_logic_vector (3 downto 0);
-      signal \zll_pure_dispatch5_inR1\ : std_logic_vector (3 downto 0);
+      signal zi12 : std_logic_vector (3 downto 0);
       signal \zll_pure_dispatch5_outR1\ : std_logic_vector (3 downto 0);
-      signal zll_pure_dispatch1_in : std_logic_vector (3 downto 0);
-      signal zll_main_go1_in : std_logic_vector (0 downto 0);
-      signal zll_main_go8_in : std_logic_vector (2 downto 0);
-      signal zll_main_go13_in : std_logic_vector (1 downto 0);
-      signal zll_main_go5_in : std_logic_vector (1 downto 0);
-      signal lit_in : std_logic_vector (3 downto 0);
-      signal pause : std_logic_vector (3 downto 0);
+      signal zres : std_logic_vector (3 downto 0);
 begin
-zll_pure_dispatch5_in <= (\__in0\ & \__resumption_tag\);
-      inst : \ZLL_Pure_dispatch5\ port map (zll_pure_dispatch5_in(3 downto 3), zll_pure_dispatch5_in(0 downto 0), zll_pure_dispatch5_out);
-      \zll_pure_dispatch5_inR1\ <= (\__in0\ & \__resumption_tag\);
-      \instR1\ : \ZLL_Pure_dispatch5\ port map (\zll_pure_dispatch5_inR1\(3 downto 3), \zll_pure_dispatch5_inR1\(0 downto 0), \zll_pure_dispatch5_outR1\);
-      zll_pure_dispatch1_in <= (\__in0\ & \__resumption_tag\);
-      zll_main_go1_in <= zll_pure_dispatch1_in(3 downto 3);
-      zll_main_go8_in <= (zll_main_go1_in(0 downto 0) & zll_main_go1_in(0 downto 0) & zll_main_go1_in(0 downto 0));
-      zll_main_go13_in <= (zll_main_go8_in(2 downto 2) & zll_main_go8_in(1 downto 1));
-      zll_main_go5_in <= (zll_main_go1_in(0 downto 0) & zll_main_go1_in(0 downto 0));
-      lit_in <= (\__in0\ & \__resumption_tag\);
-      pause <= rw_cond(rw_eq(lit_in(2 downto 1), std_logic_vector'(B"01")), std_logic_vector'(B"0100"), rw_cond(rw_eq(zll_pure_dispatch1_in(2 downto 1), std_logic_vector'(B"10")), rw_cond(rw_eq(zll_main_go5_in(0 downto 0), std_logic_vector'(B"1")), (std_logic_vector'(B"011") & zll_main_go5_in(1 downto 1)), (zll_main_go13_in(0 downto 0) & std_logic_vector'(B"00") & zll_main_go13_in(1 downto 1))), rw_cond(rw_eq(\zll_pure_dispatch5_inR1\(2 downto 1), std_logic_vector'(B"11")), \zll_pure_dispatch5_outR1\, zll_pure_dispatch5_out)));
-      \__out0\ <= pause(3 downto 3);
-      \__resumption_tag_next\ <= pause(2 downto 0);
+zin <= (\__resumption_tag\ & \__in0\);
+      zi0 <= zin(3 downto 1);
+      zi1 <= zin(0 downto 0);
+      zi2 <= (zi1 & zi0);
+      zi3 <= zi2(3 downto 3);
+      zi4 <= (zi1 & zi0);
+      zi5 <= zi4(3 downto 3);
+      zi6 <= (zi5 & zi5);
+      zi7 <= zi6(1 downto 1);
+      zi8 <= (zi5 & zi5 & zi5);
+      zi9 <= zi8(2 downto 2);
+      zi10 <= zi8(1 downto 1);
+      zi11 <= (zi1 & zi0);
+      inst : \ZLL_Pure_dispatch5\ port map (zi11(3 downto 3), zi11(0 downto 0), zll_pure_dispatch5_out);
+      zi12 <= (zi1 & zi0);
+      \instR1\ : \ZLL_Pure_dispatch5\ port map (zi12(3 downto 3), zi12(0 downto 0), \zll_pure_dispatch5_outR1\);
+      zres <= rw_cond(rw_eq(zi2(2 downto 1), std_logic_vector'(B"01")), std_logic_vector'(B"0100"), rw_cond(rw_eq(zi4(2 downto 1), std_logic_vector'(B"10")), rw_cond(rw_eq(zi6(0 downto 0), std_logic_vector'(B"1")), (std_logic_vector'(B"011") & zi7), (zi10 & std_logic_vector'(B"00") & zi9)), rw_cond(rw_eq(zi11(2 downto 1), std_logic_vector'(B"11")), zll_pure_dispatch5_out, \zll_pure_dispatch5_outR1\)));
+      \__resumption_tag_next\ <= zres(2 downto 0);
+      \__out0\ <= zres(3 downto 3);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then
@@ -259,6 +296,21 @@ zll_pure_dispatch5_in <= (\__in0\ & \__resumption_tag\);
                   \__resumption_tag\ <= \__resumption_tag_next\;
             end if;
       end process;
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \ZLL_Main_go11\ is
+port (arg0 : in std_logic_vector (0 downto 0);
+      res : out std_logic_vector (0 downto 0));
+end entity;
+
+architecture rtl of \ZLL_Main_go11\ is
+
+begin
+res <= arg0;
 end architecture;
 
 library ieee;
@@ -277,28 +329,26 @@ component \ReWirezuPreludezuzaza\ is
             arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
-      signal zll_pure_dispatch3_in : std_logic_vector (1 downto 0);
-      signal zll_main_go9_in : std_logic_vector (1 downto 0);
-      signal zll_main_go6_in : std_logic_vector (2 downto 0);
-      signal zll_main_go3_in : std_logic_vector (1 downto 0);
-      signal zll_main_go10_in : std_logic_vector (1 downto 0);
-      signal rewirezupreludezuzazazuin : std_logic_vector (1 downto 0);
-      signal rewirezupreludezuzaza_out : std_logic_vector (0 downto 0);
-      signal id_in : std_logic_vector (1 downto 0);
-      signal \rewirezupreludezuzazazuinR1\ : std_logic_vector (1 downto 0);
-      signal \rewirezupreludezuzaza_outR1\ : std_logic_vector (0 downto 0);
+      component \ZLL_Main_go11\ is
+      port (arg0 : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (0 downto 0));
+      end component;
+      signal zi0 : std_logic_vector (1 downto 0);
+      signal zll_main_go11_out : std_logic_vector (0 downto 0);
+      signal zi1 : std_logic_vector (1 downto 0);
+      signal zi2 : std_logic_vector (0 downto 0);
+      signal rewirezupreludezuzazazuout : std_logic_vector (0 downto 0);
+      signal conn : std_logic_vector (0 downto 0);
+      signal \rewirezupreludezuzazazuoutR1\ : std_logic_vector (0 downto 0);
 begin
-zll_pure_dispatch3_in <= (arg0 & arg1);
-      zll_main_go9_in <= (zll_pure_dispatch3_in(0 downto 0) & zll_pure_dispatch3_in(1 downto 1));
-      zll_main_go6_in <= (zll_main_go9_in(1 downto 1) & zll_main_go9_in(0 downto 0) & zll_main_go9_in(0 downto 0));
-      zll_main_go3_in <= (zll_main_go6_in(2 downto 2) & zll_main_go6_in(1 downto 1));
-      zll_main_go10_in <= (zll_main_go3_in(1 downto 1) & zll_main_go3_in(0 downto 0));
-      rewirezupreludezuzazazuin <= (zll_main_go10_in(1 downto 1) & zll_main_go10_in(1 downto 1));
-      inst : \ReWirezuPreludezuzaza\ port map (rewirezupreludezuzazazuin(1 downto 1), rewirezupreludezuzazazuin(0 downto 0), rewirezupreludezuzaza_out);
-      id_in <= (zll_main_go6_in(2 downto 2) & zll_main_go6_in(0 downto 0));
-      \rewirezupreludezuzazazuinR1\ <= (rw_cond(rw_eq(id_in(0 downto 0), std_logic_vector'(B"1")), id_in(1 downto 1), rewirezupreludezuzaza_out) & zll_main_go9_in(0 downto 0));
-      \instR1\ : \ReWirezuPreludezuzaza\ port map (\rewirezupreludezuzazazuinR1\(1 downto 1), \rewirezupreludezuzazazuinR1\(0 downto 0), \rewirezupreludezuzaza_outR1\);
-      res <= (\rewirezupreludezuzaza_outR1\ & std_logic_vector'(B"010"));
+zi0 <= (arg1 & arg0);
+      inst : \ZLL_Main_go11\ port map (zi0(1 downto 1), zll_main_go11_out);
+      zi1 <= (arg1 & arg0);
+      zi2 <= zi1(1 downto 1);
+      \instR1\ : \ReWirezuPreludezuzaza\ port map (zi2, zi2, rewirezupreludezuzazazuout);
+      conn <= rw_cond(rw_eq(zi0(0 downto 0), std_logic_vector'(B"1")), zll_main_go11_out, rewirezupreludezuzazazuout);
+      \instR2\ : \ReWirezuPreludezuzaza\ port map (conn, arg0, \rewirezupreludezuzazazuoutR1\);
+      res <= (\rewirezupreludezuzazazuoutR1\ & std_logic_vector'(B"010"));
 end architecture;
 
 library ieee;
@@ -312,14 +362,18 @@ port (arg0 : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of \ReWirezuPreludezuzaza\ is
-signal zzllzurewirezupreludezuzaza2zuin : std_logic_vector (3 downto 0);
-      signal zzllzurewirezupreludezuzaza1zuin : std_logic_vector (1 downto 0);
-      signal lit_in : std_logic_vector (1 downto 0);
-      signal id_in : std_logic_vector (1 downto 0);
+component \ZLL_Main_go11\ is
+      port (arg0 : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (0 downto 0));
+      end component;
+      signal zi0 : std_logic_vector (1 downto 0);
+      signal zll_main_go11_out : std_logic_vector (0 downto 0);
+      signal zi1 : std_logic_vector (1 downto 0);
+      signal zi2 : std_logic_vector (0 downto 0);
 begin
-zzllzurewirezupreludezuzaza2zuin <= (arg1 & arg0 & arg0 & arg1);
-      zzllzurewirezupreludezuzaza1zuin <= (zzllzurewirezupreludezuzaza2zuin(2 downto 2) & zzllzurewirezupreludezuzaza2zuin(3 downto 3));
-      lit_in <= zzllzurewirezupreludezuzaza1zuin(1 downto 0);
-      id_in <= zzllzurewirezupreludezuzaza2zuin(1 downto 0);
-      res <= rw_cond(rw_eq(id_in(1 downto 1), std_logic_vector'(B"1")), id_in(0 downto 0), std_logic_vector'(B"0"));
+zi0 <= (arg0 & arg1);
+      inst : \ZLL_Main_go11\ port map (zi0(0 downto 0), zll_main_go11_out);
+      zi1 <= (arg0 & arg1);
+      zi2 <= zi1(0 downto 0);
+      res <= rw_cond(rw_eq(zi0(1 downto 1), std_logic_vector'(B"1")), zll_main_go11_out, std_logic_vector'(B"0"));
 end architecture;

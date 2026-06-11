@@ -1,137 +1,212 @@
-device top_level:
+$Pure.dispatch : ([16], [1]) -> [26]
+$Pure.dispatch $0 $1 =
+      let $t0 = $1 # $0 in
+      $LL.Pure.dispatch1 $t0[16 +: 1] $t0[8 +: 8] $t0[0 +: 8]
 
-inputs [("__in0",1)]
-outputs [("__out0",8)]
-states [("__st0",8),("__st1",8)]
+$LL.Main.incr38 : ([8], [8]) -> [26]
+$LL.Main.incr38 $1 $2 =
+      $LL.Main.incr21 $1 $2
 
-$Pure.dispatch :: W16 -> W1 -> W26
-$Pure.dispatch $0 $1 = 26'case {1'$1, 16'$0} of
-    {1'@, 8'@, 8'@} -> $LL.Main.sig7
+$LL.Main.incr37 : ([8], [8], [8]) -> [26]
+$LL.Main.incr37 $0 $1 $2 =
+      2'h0 # $0 # $1 # $2
 
-$Pure.start :: W26
-$Pure.start  = 26'h2000001
+$LL.Main.incr36 : ([16]) -> [26]
+$LL.Main.incr36 $0 =
+      $LL.Main.incr38 $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.incr37 :: W8 -> W8 -> W8 -> W26
-$LL.Main.incr37 $0 $1 $2 = {2'h0, 8'$0, 8'$1, 8'$2}
+$LL.Main.incr35 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr35 $0 $1 $3 $4 =
+      $LL.Main.incr13 $0 $1 $3 $4
 
-$LL.Main.incr36 :: W16 -> W26
-$LL.Main.incr36 $0 = 26'case 16'$0 of
-    {8'@, 8'@} -> $LL.Main.begin10
+$LL.Main.incr34 : ([8], [8], [8]) -> [26]
+$LL.Main.incr34 $0 $1 $2 =
+      $LL.Main.incr5 $0 $1 $2
 
-$LL.Main.incr35 :: W8 -> W8 -> W8 -> W8 -> W26
-$LL.Main.incr35 $0 $1 $2 $3 = 26'case {8'$0, 8'$1, 8'$2, 8'$3} of
-    {8'@, 8'@, 8'@, 8'@} -> $LL.Main.incr28
+$LL.Main.incr33 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr33 $0 $1 $2 $3 =
+      $LL.Main.incr2 $1 $0 $2 $3
 
-$LL.Main.incr33 :: W8 -> W8 -> W8 -> W8 -> W26
-$LL.Main.incr33 $0 $1 $2 $3 = 26'case {8'$1, 8'$0, 8'$2, 8'$3} of
-    {8'@, 8'@, 8'@, 8'@} -> $LL.Main.incr19
+$LL.Main.incr32 : ([24]) -> [26]
+$LL.Main.incr32 $0 =
+      $LL.Main.incr34 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.incr32 :: W24 -> W26
-$LL.Main.incr32 $0 = 26'case 24'$0 of
-    {8'@, 8'@, 8'@} -> $LL.Main.incr37
+$LL.Main.incr31 : ([26]) -> [26]
+$LL.Main.incr31 $0 =
+      $LL.Main.incr4 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.incr31 :: W26 -> W26
-$LL.Main.incr31 $0 = 26'case 26'$0 of
-    {2'h0, 8'@, 8'@, 8'@} -> $LL.Main.incr16
+$LL.Main.incr30 : ([8], [26]) -> [26]
+$LL.Main.incr30 $0 $1 =
+      let $t0 = $0 # $1 in
+      $LL.Main.incr27 $t0[26 +: 8] $t0[16 +: 8] $t0[8 +: 8] $t0[0 +: 8]
 
-$LL.Main.incr30 :: W8 -> W26 -> W26
-$LL.Main.incr30 $0 $1 = 26'case {8'$0, 26'$1} of
-    {8'@, 2'h0, 8'@, 8'@, 8'@} -> $LL.Main.incr27
+$LL.Main.incr29 : ([8], [8], [8]) -> [26]
+$LL.Main.incr29 $0 $1 $2 =
+      $LL.Main.incr30 $0 ($LL.Main.incr32 ($2 # $1 # $2))
 
-$LL.Main.begin14 :: W8 -> W8 -> W26
-$LL.Main.begin14 $0 $1 = 26'case {8'$0, 8'$1} of
-    {8'@, 8'@} -> Main.sig
+$LL.Main.sig12 : ([26]) -> [26]
+$LL.Main.sig12 $0 =
+      $LL.Main.sig8 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.incr29 :: W8 -> W8 -> W8 -> W26
-$LL.Main.incr29 $0 $1 $2 = 26'case {8'$0, 26'case {8'$2, 8'$1, 8'$2} of {24'@} -> $LL.Main.incr32} of
-    {8'@, 26'@} -> $LL.Main.incr30
+$LL.Main.incr28 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr28 $0 $1 $3 $4 =
+      $LL.Main.incr7 $1 $0 $3 $4
 
-$LL.Main.sig12 :: W26 -> W26
-$LL.Main.sig12 $0 = 26'case 26'$0 of
-    {2'h0, 8'@, 8'@, 8'@} -> $LL.Main.sig8
+$LL.Main.incr27 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr27 $0 $1 $2 $3 =
+      $LL.Main.incr26 $0 $1 $2 $3
 
-$LL.Main.incr28 :: W8 -> W8 -> W8 -> W8 -> W26
-$LL.Main.incr28 $0 $1 $2 $3 = 26'case {8'$1, 8'$0, 8'$2, 8'$3} of
-    {8'@, 8'@, 8'@, 8'@} -> $LL.Main.incr9
+$LL.Main.incr26 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr26 $0 $1 $2 $3 =
+      $LL.Main.incr33 $1 $0 $2 $3
 
-$LL.Main.incr27 :: W8 -> W8 -> W8 -> W8 -> W26
-$LL.Main.incr27 $0 $1 $2 $3 = 26'case {8'$0, 8'$1, 8'$2, 8'$3} of
-    {8'@, 8'@, 8'@, 8'@} -> $LL.Main.incr26
+Main.incr : ([8], [8]) -> [26]
+Main.incr $0 $1 =
+      $LL.Main.incr31 ($LL.Main.incr32 ($0 # $0 # $1))
 
-$LL.Main.incr26 :: W8 -> W8 -> W8 -> W8 -> W26
-$LL.Main.incr26 $0 $1 $2 $3 = 26'case {8'$1, 8'$0, 8'$2, 8'$3} of
-    {8'@, 8'@, 8'@, 8'@} -> $LL.Main.incr33
+$LL.Main.sig11 : ([8], [8]) -> [26]
+$LL.Main.sig11 $0 $1 =
+      Main.incr $0 $1
 
-Main.incr :: W8 -> W8 -> W26
-Main.incr $0 $1 = 26'case 26'case {8'$0, 8'$0, 8'$1} of
-      {24'@} -> $LL.Main.incr32 of
-    {26'@} -> $LL.Main.incr31
+$LL.Pure.dispatch1 : ([1], [8], [8]) -> [26]
+$LL.Pure.dispatch1 $0 $1 $2 =
+      $LL.Pure.dispatch $0 $1 $2
 
-$LL.Main.sig11 :: W8 -> W8 -> W26
-$LL.Main.sig11 $0 $1 = 26'case {8'$0, 8'$1} of
-    {8'@, 8'@} -> Main.incr
+$LL.Main.sig10 : ([1], [1], [8], [8]) -> [26]
+$LL.Main.sig10 $0 $1 $2 $3 =
+      let $t0 = $2 # $3 # $1 in
+      if eq $t0[0 +: 1] 1'h1 then $LL.Main.sig11 $t0[9 +: 8] $t0[1 +: 8]
+            else $LL.Main.sig9 $0 $2 $3
 
-$LL.Main.sig10 :: W1 -> W1 -> W8 -> W8 -> W26
-$LL.Main.sig10 $0 $1 $2 $3 = 26'case {8'$2, 8'$3, 1'$1} of
-    {8'@, 8'@, 1'h1} -> $LL.Main.sig11
-    _ -> 26'case {1'$0, 8'$2, 8'$3} of
-      {1'@, 8'@, 8'@} -> $LL.Main.sig9
+$LL.Main.sig9 : ([1], [8], [8]) -> [26]
+$LL.Main.sig9 $0 $1 $2 =
+      let $t0 = $2 # $1 # $0 in
+      $LL.Main.sig2 $t0[9 +: 8] $t0[1 +: 8]
 
-$LL.Main.sig9 :: W1 -> W8 -> W8 -> W26
-$LL.Main.sig9 $0 $1 $2 = 26'case {8'$2, 8'$1, 1'$0} of
-    {8'@, 8'@, 1'h0} -> $LL.Main.sig2
+$LL.Main.incr22 : ([8], [8], [26]) -> [26]
+$LL.Main.incr22 $0 $1 $2 =
+      let $t0 = $0 # $1 # $2 in
+      $LL.Main.incr35 $t0[34 +: 8] $t0[26 +: 8] $t0[8 +: 8] $t0[0 +: 8]
 
-$LL.Main.incr22 :: W8 -> W8 -> W26 -> W26
-$LL.Main.incr22 $0 $1 $2 = 26'case {8'$0, 8'$1, 26'$2} of
-    {8'@, 8'@, 2'h1, 8'_, 8'@, 8'@} -> $LL.Main.incr35
+$LL.Main.sig8 : ([8], [8], [8]) -> [26]
+$LL.Main.sig8 $0 $1 $2 =
+      $LL.Main.sig1 $0 $1 $2
 
-$LL.Main.sig8 :: W8 -> W8 -> W8 -> W26
-$LL.Main.sig8 $0 $1 $2 = 26'case {8'$0, 8'$1, 8'$2} of
-    {8'@, 8'@, 8'@} -> $LL.Main.sig5
+$LL.Main.incr21 : ([8], [8]) -> [26]
+$LL.Main.incr21 $1 $2 =
+      $LL.Main.incr15 $1 $2
 
-$LL.Main.begin10 :: W8 -> W8 -> W26
-$LL.Main.begin10 $0 $1 = {10'h100, 8'$0, 8'$1}
+$LL.Main.incr20 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr20 $0 $1 $3 $4 =
+      $LL.Main.incr9 $0 $1 $3 $4
 
-Main.sig :: W8 -> W8 -> W26
-Main.sig $0 $1 = 26'case 26'case {8'$0, 8'$0, 8'$1} of
-      {24'@} -> $LL.Main.sig3 of
-    {26'@} -> $LL.Main.sig12
+Main.sig : ([8], [8]) -> [26]
+Main.sig $0 $1 =
+      $LL.Main.sig12 ($LL.Main.sig3 ($0 # $0 # $1))
 
-$LL.Main.incr19 :: W8 -> W8 -> W8 -> W8 -> W26
-$LL.Main.incr19 $0 $1 $2 $3 = 26'case {8'$0, 8'$1, 26'case {8'$1, 8'$3} of {16'@} -> $LL.Main.incr36} of
-    {8'@, 8'@, 26'@} -> $LL.Main.incr22
+$LL.Main.incr19 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr19 $0 $1 $2 $3 =
+      $LL.Main.incr22 $0 $1 ($LL.Main.incr36 ($1 # $3))
 
-$LL.Main.incr16 :: W8 -> W8 -> W8 -> W26
-$LL.Main.incr16 $0 $1 $2 = 26'case {8'$0, 8'$1, 8'$2} of
-    {8'@, 8'@, 8'@} -> $LL.Main.incr29
+$LL.Main.incr18 : ([8], [8]) -> [26]
+$LL.Main.incr18 $1 $2 =
+      Main.sig $1 $2
 
-$LL.Main.incr14 :: W26 -> W26
-$LL.Main.incr14 $0 = 26'case 26'$0 of
-    {2'h1, 8'_, 8'@, 8'@} -> $LL.Main.begin14
+$LL.Main.incr16 : ([8], [8], [8]) -> [26]
+$LL.Main.incr16 $0 $1 $2 =
+      $LL.Main.incr29 $0 $1 $2
 
-$LL.Main.sig7 :: W1 -> W8 -> W8 -> W26
-$LL.Main.sig7 $0 $1 $2 = 26'case {1'$0, 1'$0, 8'$1, 8'$2} of
-    {1'@, 1'@, 8'@, 8'@} -> $LL.Main.sig10
+$LL.Main.incr15 : ([8], [8]) -> [26]
+$LL.Main.incr15 $1 $2 =
+      10'h100 # $1 # $2
 
-$LL.Main.incr9 :: W8 -> W8 -> W8 -> W8 -> W26
-$LL.Main.incr9 $0 $1 $2 $3 = 26'case 26'case {8'$2, 8'case {8'$1, 8'$0} of {8'@, 8'@} -> Add} of
-      {16'@} -> $LL.Main.incr36 of
-    {26'@} -> $LL.Main.incr14
+$LL.Main.incr14 : ([26]) -> [26]
+$LL.Main.incr14 $0 =
+      $LL.Main.incr $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.sig6 :: W8 -> W8 -> W8 -> W26
-$LL.Main.sig6 $0 $1 $2 = 26'case {8'$1, 8'$0, 8'$2} of
-    {8'@, 8'@, 8'@} -> $LL.Main.sig
+$LL.Main.sig7 : ([1], [8], [8]) -> [26]
+$LL.Main.sig7 $0 $1 $2 =
+      $LL.Main.sig10 $0 $0 $1 $2
 
-$LL.Main.sig5 :: W8 -> W8 -> W8 -> W26
-$LL.Main.sig5 $0 $1 $2 = {2'h2, 8'$0, 8'$1, 8'$2}
+$LL.Main.incr13 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr13 $0 $1 $3 $4 =
+      $LL.Main.incr8 $0 $1 $3 $4
 
-$LL.Main.sig3 :: W24 -> W26
-$LL.Main.sig3 $0 = 26'case 24'$0 of
-    {8'@, 8'@, 8'@} -> $LL.Main.sig6
+$LL.Main.incr10 : ([8], [8]) -> [26]
+$LL.Main.incr10 $1 $2 =
+      $LL.Main.incr18 $1 $2
 
-$LL.Main.sig2 :: W8 -> W8 -> W26
-$LL.Main.sig2 $0 $1 = 26'case {8'$1, 8'$0} of
-    {8'@, 8'@} -> Main.sig
+$LL.Main.incr9 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr9 $0 $1 $3 $4 =
+      $LL.Main.incr14 ($LL.Main.incr36 ($3 # add $1 $0))
 
-$LL.Main.sig :: W8 -> W8 -> W8 -> W26
-$LL.Main.sig $0 $1 $2 = {2'h0, 8'$1, 8'$0, 8'$2}
+$LL.Main.sig6 : ([8], [8], [8]) -> [26]
+$LL.Main.sig6 $0 $1 $2 =
+      $LL.Main.sig $1 $0 $2
+
+$LL.Main.sig5 : ([8], [8], [8]) -> [26]
+$LL.Main.sig5 $0 $1 $2 =
+      2'h2 # $0 # $1 # $2
+
+$LL.Main.incr8 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr8 $0 $1 $3 $4 =
+      $LL.Main.incr28 $0 $1 $3 $4
+
+$LL.Main.incr7 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr7 $0 $1 $3 $4 =
+      $LL.Main.incr20 $0 $1 $3 $4
+
+$LL.Main.incr6 : ([8], [8]) -> [26]
+$LL.Main.incr6 $1 $2 =
+      $LL.Main.incr10 $1 $2
+
+$LL.Main.sig4 : ([8], [8], [8]) -> [26]
+$LL.Main.sig4 $0 $1 $2 =
+      $LL.Main.sig6 $0 $1 $2
+
+$LL.Main.incr5 : ([8], [8], [8]) -> [26]
+$LL.Main.incr5 $0 $1 $2 =
+      $LL.Main.incr37 $0 $1 $2
+
+$LL.Main.incr4 : ([8], [8], [8]) -> [26]
+$LL.Main.incr4 $0 $1 $2 =
+      $LL.Main.incr16 $0 $1 $2
+
+$LL.Main.sig3 : ([24]) -> [26]
+$LL.Main.sig3 $0 =
+      $LL.Main.sig4 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.sig2 : ([8], [8]) -> [26]
+$LL.Main.sig2 $0 $1 =
+      Main.sig $1 $0
+
+$LL.Main.incr2 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr2 $0 $1 $2 $3 =
+      $LL.Main.incr19 $0 $1 $2 $3
+
+$LL.Main.sig1 : ([8], [8], [8]) -> [26]
+$LL.Main.sig1 $0 $1 $2 =
+      $LL.Main.sig5 $0 $1 $2
+
+$LL.Pure.dispatch : ([1], [8], [8]) -> [26]
+$LL.Pure.dispatch $0 $1 $2 =
+      $LL.Main.sig7 $0 $1 $2
+
+$LL.Main.sig : ([8], [8], [8]) -> [26]
+$LL.Main.sig $0 $1 $2 =
+      2'h0 # $1 # $0 # $2
+
+$LL.Main.incr : ([8], [8]) -> [26]
+$LL.Main.incr $1 $2 =
+      $LL.Main.incr6 $1 $2
+
+device top_level
+      input __in0 : [1]
+      output __out0 : [8]
+      register __st0 : [8] init 8'h0
+      register __st1 : [8] init 8'h1
+      let $in = __st0 # __st1 # __in0
+      let $res = $Pure.dispatch $in[1 +: 16] $in[0 +: 1]
+      __out0 := $res[16 +: 8]
+      next __st0 := $res[8 +: 8]
+      next __st1 := $res[0 +: 8]

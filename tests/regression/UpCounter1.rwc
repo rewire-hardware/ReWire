@@ -1,52 +1,93 @@
-device top_level:
+$Pure.dispatch : ([16]) -> [25]
+$Pure.dispatch $0 =
+      $LL.Pure.dispatch1 $0[8 +: 8] $0[0 +: 8]
 
-inputs []
-outputs [("__out0",8)]
-states [("__st0",8)]
+$LL.Main.go16 : ([8]) -> [25]
+$LL.Main.go16 $1 =
+      $LL.Main.go7 $1
 
-$Pure.dispatch :: W16 -> W25
-$Pure.dispatch $0 = 25'case 16'$0 of
-    {8'@, 8'@} -> $LL.Main.go5
+$LL.Main.go15 : ([8]) -> [25]
+$LL.Main.go15 $0 =
+      $LL.Main.go1 $0
 
-$Pure.start :: W25
-$Pure.start  = 25'h1000000
+$LL.Main.go14 : ([16]) -> [25]
+$LL.Main.go14 $0 =
+      $LL.Main.go11 $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.go16 :: W8 -> W25
-$LL.Main.go16 $0 = 25'case 8'$0 of
-    {8'@} -> Main.go
+$LL.Main.go13 : ([8]) -> [25]
+$LL.Main.go13 $1 =
+      17'h100 # $1
 
-$LL.Main.go14 :: W16 -> W25
-$LL.Main.go14 $0 = 25'case 16'$0 of
-    {8'@, 8'@} -> $LL.Main.go9
+$LL.Pure.dispatch1 : ([8], [8]) -> [25]
+$LL.Pure.dispatch1 $1 $2 =
+      $LL.Pure.dispatch $1 $2
 
-$LL.Main.go13 :: W8 -> W25
-$LL.Main.go13 $0 = {17'h100, 8'$0}
+$LL.Main.go12 : ([25]) -> [25]
+$LL.Main.go12 $0 =
+      $LL.Main.go $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.go12 :: W25 -> W25
-$LL.Main.go12 $0 = 25'case 25'$0 of
-    {1'h0, 7'_, 1'h0, 8'@, 8'@} -> $LL.Main.go
+$LL.Main.go11 : ([8], [8]) -> [25]
+$LL.Main.go11 $0 $1 =
+      $LL.Main.go9 $0 $1
 
-$LL.Main.go10 :: W25 -> W25
-$LL.Main.go10 $0 = 25'case 25'$0 of
-    {1'h0, 7'_, 1'h1, 8'_, 8'@} -> $LL.Main.go16
+$LL.Main.go10 : ([25]) -> [25]
+$LL.Main.go10 $0 =
+      $LL.Main.go4 $0[0 +: 8]
 
-$LL.Main.go9 :: W8 -> W8 -> W25
-$LL.Main.go9 $0 $1 = {9'h0, 8'$0, 8'$1}
+$LL.Main.go9 : ([8], [8]) -> [25]
+$LL.Main.go9 $0 $1 =
+      9'h0 # $0 # $1
 
-$LL.Main.go5 :: W8 -> W8 -> W25
-$LL.Main.go5 $0 $1 = 25'case 25'case 8'case {8'$0, 8'h1} of
-        {8'@, 8'@} -> Add of
-      {8'@} -> $LL.Main.go13 of
-    {25'@} -> $LL.Main.go10
+$LL.Main.go8 : ([8], [8]) -> [25]
+$LL.Main.go8 $0 $2 =
+      $LL.Main.go6 $0 $2
 
-$LL.Main.go2 :: W8 -> W8 -> W25
-$LL.Main.go2 $0 $1 = {1'h1, 8'$0, 8'$0, 8'$1}
+$LL.Main.go7 : ([8]) -> [25]
+$LL.Main.go7 $1 =
+      Main.go $1
 
-Main.go :: W8 -> W25
-Main.go $0 = 25'case 25'case {8'$0, 8'$0} of
-      {16'@} -> $LL.Main.go14 of
-    {25'@} -> $LL.Main.go12
+$LL.Main.go6 : ([8], [8]) -> [25]
+$LL.Main.go6 $0 $2 =
+      $LL.Main.go5 $0 $2
 
-$LL.Main.go :: W8 -> W8 -> W25
-$LL.Main.go $0 $1 = 25'case {8'$0, 8'$1} of
-    {8'@, 8'@} -> $LL.Main.go2
+$LL.Pure.dispatch : ([8], [8]) -> [25]
+$LL.Pure.dispatch $1 $2 =
+      $LL.Main.go3 $1 $2
+
+$LL.Main.go5 : ([8], [8]) -> [25]
+$LL.Main.go5 $0 $2 =
+      $LL.Main.go10 ($LL.Main.go15 (add $0 8'h1))
+
+$LL.Main.go4 : ([8]) -> [25]
+$LL.Main.go4 $1 =
+      $LL.Main.go16 $1
+
+$LL.Main.go3 : ([8], [8]) -> [25]
+$LL.Main.go3 $0 $2 =
+      $LL.Main.go8 $0 $2
+
+$LL.Main.go2 : ([8], [8]) -> [25]
+$LL.Main.go2 $0 $1 =
+      1'h1 # $0 # $0 # $1
+
+$LL.Main.go1 : ([8]) -> [25]
+$LL.Main.go1 $1 =
+      $LL.Main.go13 $1
+
+Main.go : ([8]) -> [25]
+Main.go $0 =
+      $LL.Main.go12 ($LL.Main.go14 ($0 # $0))
+
+$LL.Main.go : ([8], [8]) -> [25]
+$LL.Main.go $0 $1 =
+      $LL.Main.go2 $0 $1
+
+device top_level
+      output __out0 : [8]
+      register __resumption_tag : [8] init 8'h0
+      register __st0 : [8] init 8'h0
+      let $in = __resumption_tag # __st0
+      let $res = $Pure.dispatch $in
+      __out0 := $res[16 +: 8]
+      next __resumption_tag := $res[8 +: 8]
+      next __st0 := $res[0 +: 8]

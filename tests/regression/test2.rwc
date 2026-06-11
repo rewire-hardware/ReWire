@@ -1,54 +1,94 @@
-device top_level:
+$Pure.dispatch : ([8], [1]) -> [18]
+$Pure.dispatch $0 $1 =
+      let $t0 = $1 # $0 in
+      $LL.Pure.dispatch $t0[8 +: 1] $t0[0 +: 8]
 
-inputs [("__in0",1)]
-outputs [("__out0",8)]
-states [("__st0",8)]
+$LL.Main.incr17 : ([8]) -> [18]
+$LL.Main.incr17 $1 =
+      10'h100 # $1
 
-$Pure.dispatch :: W8 -> W1 -> W18
-$Pure.dispatch $0 $1 = 18'case {1'$1, 8'$0} of
-    {1'@, 8'@} -> $LL.Main.incr16
+$LL.Main.incr16 : ([1], [8]) -> [18]
+$LL.Main.incr16 $0 $1 =
+      Main.incr $1
 
-$Pure.start :: W18
-$Pure.start  = 18'h20000
+$LL.Main.incr15 : ([8]) -> [18]
+$LL.Main.incr15 $1 =
+      $LL.Main.incr17 $1
 
-$LL.Main.incr17 :: W8 -> W18
-$LL.Main.incr17 $0 = {10'h100, 8'$0}
+$LL.Main.incr14 : ([8], [8]) -> [18]
+$LL.Main.incr14 $0 $1 =
+      $LL.Main.incr13 $0 $1
 
-$LL.Main.incr16 :: W1 -> W8 -> W18
-$LL.Main.incr16 $0 $1 = 18'case 8'$1 of
-    {8'@} -> Main.incr
+$LL.Main.incr13 : ([8], [8]) -> [18]
+$LL.Main.incr13 $0 $1 =
+      2'h0 # $0 # $1
 
-$LL.Main.incr13 :: W8 -> W8 -> W18
-$LL.Main.incr13 $0 $1 = {2'h0, 8'$0, 8'$1}
+Main.incr : ([8]) -> [18]
+Main.incr $0 =
+      $LL.Main.incr6 ($LL.Main.incr4 ($0 # $0))
 
-Main.incr :: W8 -> W18
-Main.incr $0 = 18'case 18'case {8'$0, 8'$0} of
-      {16'@} -> $LL.Main.incr4 of
-    {18'@} -> $LL.Main.incr6
+$LL.Main.incr12 : ([8], [8]) -> [18]
+$LL.Main.incr12 $0 $2 =
+      $LL.Main.incr10 $0 $2
 
-$LL.Main.incr12 :: W8 -> W8 -> W18
-$LL.Main.incr12 $0 $1 = 18'case {8'$0, 8'$1} of
-    {8'@, 8'@} -> $LL.Main.incr10
+$LL.Main.incr11 : ([8], [8]) -> [18]
+$LL.Main.incr11 $0 $2 =
+      $LL.Main.incr7 $0 $2
 
-$LL.Main.incr10 :: W8 -> W8 -> W18
-$LL.Main.incr10 $0 $1 = {2'h2, 8'$0, 8'$1}
+$LL.Main.incr10 : ([8], [8]) -> [18]
+$LL.Main.incr10 $0 $2 =
+      2'h2 # $0 # $2
 
-$LL.Main.incr9 :: W8 -> W18 -> W18
-$LL.Main.incr9 $0 $1 = 18'case {8'$0, 18'$1} of
-    {8'@, 2'h1, 8'_, 8'@} -> $LL.Main.incr12
+$LL.Main.incr9 : ([8], [18]) -> [18]
+$LL.Main.incr9 $0 $1 =
+      let $t0 = $0 # $1 in
+      $LL.Main.incr $t0[18 +: 8] $t0[0 +: 8]
 
-$LL.Main.incr8 :: W8 -> W8 -> W18
-$LL.Main.incr8 $0 $1 = 18'case {8'$0, 8'$1} of
-    {8'@, 8'@} -> $LL.Main.incr5
+$LL.Main.incr8 : ([8], [8]) -> [18]
+$LL.Main.incr8 $0 $1 =
+      $LL.Main.incr5 $0 $1
 
-$LL.Main.incr6 :: W18 -> W18
-$LL.Main.incr6 $0 = 18'case 18'$0 of
-    {2'h0, 8'@, 8'@} -> $LL.Main.incr8
+$LL.Main.incr7 : ([8], [8]) -> [18]
+$LL.Main.incr7 $0 $2 =
+      $LL.Main.incr2 $0 $2
 
-$LL.Main.incr5 :: W8 -> W8 -> W18
-$LL.Main.incr5 $0 $1 = 18'case {8'$0, 18'case 8'$0 of {8'@} -> $LL.Main.incr17} of
-    {8'@, 18'@} -> $LL.Main.incr9
+$LL.Main.incr6 : ([18]) -> [18]
+$LL.Main.incr6 $0 =
+      $LL.Main.incr8 $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.incr4 :: W16 -> W18
-$LL.Main.incr4 $0 = 18'case 16'$0 of
-    {8'@, 8'@} -> $LL.Main.incr13
+$LL.Main.incr5 : ([8], [8]) -> [18]
+$LL.Main.incr5 $0 $1 =
+      $LL.Main.incr9 $0 ($LL.Main.incr3 $0)
+
+$LL.Main.incr4 : ([16]) -> [18]
+$LL.Main.incr4 $0 =
+      $LL.Main.incr14 $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.incr3 : ([8]) -> [18]
+$LL.Main.incr3 $0 =
+      $LL.Main.incr15 $0
+
+$LL.Pure.dispatch : ([1], [8]) -> [18]
+$LL.Pure.dispatch $0 $1 =
+      $LL.Main.incr1 $0 $1
+
+$LL.Main.incr2 : ([8], [8]) -> [18]
+$LL.Main.incr2 $0 $2 =
+      $LL.Main.incr12 $0 $2
+
+$LL.Main.incr1 : ([1], [8]) -> [18]
+$LL.Main.incr1 $0 $1 =
+      $LL.Main.incr16 $0 $1
+
+$LL.Main.incr : ([8], [8]) -> [18]
+$LL.Main.incr $0 $2 =
+      $LL.Main.incr11 $0 $2
+
+device top_level
+      input __in0 : [1]
+      output __out0 : [8]
+      register __st0 : [8] init 8'h0
+      let $in = __st0 # __in0
+      let $res = $Pure.dispatch $in[1 +: 8] $in[0 +: 1]
+      __out0 := $res[8 +: 8]
+      next __st0 := $res[0 +: 8]

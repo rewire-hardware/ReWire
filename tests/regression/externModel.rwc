@@ -1,56 +1,109 @@
-device top_level:
+extern andW32
+      input p0 : [32]
+      input p1 : [32]
+      output p2 : [32]
+      model Main.andModel
 
-inputs [("__in0",32)]
-outputs [("__out0",32)]
-states []
+extern notW32
+      input p0 : [32]
+      output p1 : [32]
+      model Main.notModel
 
-$Pure.dispatch :: W32 -> W32
-$Pure.dispatch $0 = 32'case 32'$0 of
-    {32'@} -> $LL.Main.f
+extern plusW32
+      input p0 : [32]
+      input p1 : [32]
+      output p2 : [32]
+      model Main.plusModel
 
-$Pure.start :: W32
-$Pure.start  = 32'hedcba987
+extern xorW32
+      input p0 : [32]
+      input p1 : [32]
+      output p2 : [32]
+      model Main.xorModel
 
-Main.xorModel :: W32 -> W32 -> W32
-Main.xorModel $0 $1 = 32'case {32'$0, 32'$1} of
-    {64'@} -> $LL.Main.xorModel1
+$Pure.dispatch : ([32]) -> [32]
+$Pure.dispatch $1 =
+      $LL.Pure.dispatch $1
 
-$LL.Main.plusModel1 :: W64 -> W32
-$LL.Main.plusModel1 $0 = 32'case 64'$0 of
-    {32'@, 32'@} -> Add
+Main.xorModel : ([32], [32]) -> [32]
+Main.xorModel $0 $1 =
+      $LL.Main.xorModel1 ($0 # $1)
 
-$LL.Main.xorModel1 :: W64 -> W32
-$LL.Main.xorModel1 $0 = 32'case 64'$0 of
-    {32'@, 32'@} -> XOr
+$LL.Main.plusModel1 : ([64]) -> [32]
+$LL.Main.plusModel1 $0 =
+      $LL.Main.plusModel $0[32 +: 32] $0[0 +: 32]
 
-Main.xorW32 :: W32 -> W32
-Main.xorW32 $0 = 32'case {32'$0, 32'h12345678} of
-    {32'@, 32'@} -> extern (Sig [] "" "" [("",32),("",32)] [("",32)]) "xorW32" "" model Main.xorModel
+$LL.Main.xorModel1 : ([64]) -> [32]
+$LL.Main.xorModel1 $0 =
+      $LL.Main.xorModel $0[32 +: 32] $0[0 +: 32]
 
-Main.plusModel :: W32 -> W32 -> W32
-Main.plusModel $0 $1 = 32'case {32'$0, 32'$1} of
-    {64'@} -> $LL.Main.plusModel1
+Main.notW32 : ([32]) -> [32]
+Main.notW32 $0 =
+      notW32 $0
 
-Main.andModel :: W32 -> W32 -> W32
-Main.andModel $0 $1 = 32'case {32'$0, 32'$1} of
-    {64'@} -> $LL.Main.andModel
+Main.plusW32 : ([32], [32]) -> [32]
+Main.plusW32 $0 $1 =
+      plusW32 $0 $1
 
-Main.notModel :: W32 -> W32
-Main.notModel $0 = 32'case 32'$0 of
-    {32'@} -> Not
+ReWire.Monad.iter1 : ([32]) -> [32]
+ReWire.Monad.iter1 $0 =
+      Main.f $0
 
-$LL.Main.f :: W32 -> W32
-$LL.Main.f $0 = 32'case {32'case 32'$0 of
-      {32'@} -> Main.andW32
-    , 32'case 32'case 32'$0 of
-        {32'@} -> extern (Sig [] "" "" [("",32)] [("",32)]) "notW32" "" model Main.notModel of
-      {32'@} -> Main.xorW32} of
-    {32'@, 32'@} -> extern (Sig [] "" "" [("",32),("",32)] [("",32)]) "plusW32" "" model Main.plusModel
+Main.xorW32 : ([32]) -> [32]
+Main.xorW32 $0 =
+      xorW32 $0 32'h12345678
 
-$LL.Main.andModel :: W64 -> W32
-$LL.Main.andModel $0 = 32'case 64'$0 of
-    {32'@, 32'@} -> And
+Main.plusModel : ([32], [32]) -> [32]
+Main.plusModel $0 $1 =
+      $LL.Main.plusModel1 ($0 # $1)
 
-Main.andW32 :: W32 -> W32
-Main.andW32 $0 = 32'case {32'$0, 32'hf0f0f0f0} of
-    {32'@, 32'@} -> extern (Sig [] "" "" [("",32),("",32)] [("",32)]) "andW32" "" model Main.andModel
+$LL.Main.andModel1 : ([32], [32]) -> [32]
+$LL.Main.andModel1 $0 $1 =
+      and $0 $1
+
+Main.andModel : ([32], [32]) -> [32]
+Main.andModel $0 $1 =
+      $LL.Main.andModel ($0 # $1)
+
+$LL.Main.xorModel : ([32], [32]) -> [32]
+$LL.Main.xorModel $0 $1 =
+      xor $0 $1
+
+$LL.Main.plusModel : ([32], [32]) -> [32]
+$LL.Main.plusModel $0 $1 =
+      add $0 $1
+
+Main.f : ([32]) -> [32]
+Main.f $0 =
+      $LL.Main.f1 $0
+
+$LL.Pure.dispatch : ([32]) -> [32]
+$LL.Pure.dispatch $0 =
+      ReWire.Monad.iter1 $0
+
+$LL.Main.f1 : ([32]) -> [32]
+$LL.Main.f1 $0 =
+      $LL.Main.f $0
+
+Main.notModel : ([32]) -> [32]
+Main.notModel $0 =
+      not $0
+
+$LL.Main.f : ([32]) -> [32]
+$LL.Main.f $0 =
+      Main.plusW32 (Main.andW32 $0) (Main.xorW32 (Main.notW32 $0))
+
+$LL.Main.andModel : ([64]) -> [32]
+$LL.Main.andModel $0 =
+      $LL.Main.andModel1 $0[32 +: 32] $0[0 +: 32]
+
+Main.andW32 : ([32]) -> [32]
+Main.andW32 $0 =
+      andW32 $0 32'hf0f0f0f0
+
+device top_level
+      input __in0 : [32]
+      output __out0 : [32]
+      let $in = __in0
+      let $res = $Pure.dispatch $in
+      __out0 := $res

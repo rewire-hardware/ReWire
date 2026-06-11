@@ -1,49 +1,86 @@
-device top_level:
+$Pure.dispatch : ([1], [1]) -> [2]
+$Pure.dispatch $0 $1 =
+      let $t0 = $1 # $0 in
+      $LL.Pure.dispatch1 $t0[1 +: 1] $t0[0 +: 1]
 
-inputs [("__in0",1)]
-outputs [("__out0",1)]
-states []
+$LL.Main.loop3 : ([1]) -> [2]
+$LL.Main.loop3 $0 =
+      $LL.Main.loop1 $0
 
-$Pure.dispatch :: W1 -> W1 -> W2
-$Pure.dispatch $0 $1 = 2'case {1'$1, 1'$0} of
-    {1'@, 1'@} -> $LL.Pure.dispatch
+"$LL.ReWire.Prelude.&&3" : ([1]) -> [1]
+"$LL.ReWire.Prelude.&&3" $0 =
+      $0
 
-$Pure.start :: W2
-$Pure.start  = 2'h0
+$LL.Pure.dispatch1 : ([1], [1]) -> [2]
+$LL.Pure.dispatch1 $0 $1 =
+      $LL.Pure.dispatch $0 $1
 
-$LL.Main.zookus4 :: W2 -> W1
-$LL.Main.zookus4 $0 = 1'case 2'$0 of
-    {1'@, 1'@} -> $LL.Main.zookus1
+$LL.Main.zookus4 : ([2]) -> [1]
+$LL.Main.zookus4 $0 =
+      $LL.Main.zookus $0[1 +: 1] $0[0 +: 1]
 
-$LL.Pure.dispatch :: W1 -> W1 -> W2
-$LL.Pure.dispatch $0 $1 = 2'case {1'$1, 1'$0} of
-    {1'@, 1'@} -> $LL.Main.loop
+$LL.Main.loop2 : ([1], [1]) -> [2]
+$LL.Main.loop2 $0 $1 =
+      $LL.Main.loop $0 $1
 
-$LL.Main.loop1 :: W1 -> W2
-$LL.Main.loop1 $0 = {1'case 1'case 1'$0 of {1'@} -> $LL.Main.zookus2 of {1'@} -> $LL.Main.zookus2, 1'$0}
+$LL.Pure.dispatch : ([1], [1]) -> [2]
+$LL.Pure.dispatch $0 $1 =
+      $LL.Main.loop2 $1 $0
 
-$LL.ReWire.Prelude.&&2 :: W1 -> W1 -> W2 -> W1
-$LL.ReWire.Prelude.&&2 $0 $1 $2 = 1'case 2'$2 of
-    {1'h1, 1'@} -> Id
-    _ -> 1'case {1'$0, 1'$1} of
-      {2'@} -> $LL.ReWire.Prelude.&&
+$LL.Main.loop1 : ([1]) -> [2]
+$LL.Main.loop1 $0 =
+      Main.zookus (Main.zookus $0) # $0
 
-$LL.Main.loop :: W1 -> W1 -> W2
-$LL.Main.loop $0 $1 = 2'case 1'case {1'$0, 1'h1} of
-      {1'@, 1'@} -> ReWire.Prelude.&& of
-    {1'@} -> $LL.Main.loop1
+Main.loop1 : ([1]) -> [2]
+Main.loop1 $0 =
+      $LL.Main.loop3 $0
 
-ReWire.Prelude.&& :: W1 -> W1 -> W1
-ReWire.Prelude.&& $0 $1 = 1'case {1'$0, 1'$1, 1'$0, 1'$1} of
-    {1'@, 1'@, 2'@} -> $LL.ReWire.Prelude.&&2
+"$LL.ReWire.Prelude.&&2" : ([1], [1], [2]) -> [1]
+"$LL.ReWire.Prelude.&&2" $0 $1 $2 =
+      if eq $2[1 +: 1] 1'h1 then "$LL.ReWire.Prelude.&&3" $2[0 +: 1]
+            else "$LL.ReWire.Prelude.&&" ($0 # $1)
 
-$LL.Main.zookus2 :: W1 -> W1
-$LL.Main.zookus2 $0 = 1'case {1'$0, 1'$0} of
-    {2'@} -> $LL.Main.zookus4
+$LL.Main.zookus3 : ([1]) -> [1]
+$LL.Main.zookus3 $0 =
+      $LL.Main.zookus2 $0
 
-$LL.Main.zookus1 :: W1 -> W1 -> W1
-$LL.Main.zookus1 $0 $1 = 1'$0
+$LL.Main.loop : ([1], [1]) -> [2]
+$LL.Main.loop $0 $1 =
+      Main.loop1 ("ReWire.Prelude.&&" $0 1'h1)
 
-$LL.ReWire.Prelude.&& :: W2 -> W1
-$LL.ReWire.Prelude.&& $0 = 1'case 2'$0 of
-    {1'h0, 1'_} -> 1'h0
+"ReWire.Prelude.&&" : ([1], [1]) -> [1]
+"ReWire.Prelude.&&" $0 $1 =
+      "$LL.ReWire.Prelude.&&2" $0 $1 ($0 # $1)
+
+$LL.Main.zookus2 : ([1]) -> [1]
+$LL.Main.zookus2 $0 =
+      $LL.Main.zookus4 ($0 # $0)
+
+Main.zookus : ([1]) -> [1]
+Main.zookus $0 =
+      $LL.Main.zookus3 $0
+
+"$LL.ReWire.Prelude.&&1" : ([1]) -> [1]
+"$LL.ReWire.Prelude.&&1" $0 =
+      1'h0
+
+$LL.Main.zookus1 : ([1], [1]) -> [1]
+$LL.Main.zookus1 $0 $1 =
+      $0
+
+"$LL.ReWire.Prelude.&&" : ([2]) -> [1]
+"$LL.ReWire.Prelude.&&" $0 =
+      "$LL.ReWire.Prelude.&&1" $0[0 +: 1]
+
+$LL.Main.zookus : ([1], [1]) -> [1]
+$LL.Main.zookus $0 $1 =
+      $LL.Main.zookus1 $0 $1
+
+device top_level
+      input __in0 : [1]
+      output __out0 : [1]
+      register __resumption_tag : [1] init 1'h0
+      let $in = __resumption_tag # __in0
+      let $res = $Pure.dispatch $in[1 +: 1] $in[0 +: 1]
+      __out0 := $res[1 +: 1]
+      next __resumption_tag := $res[0 +: 1]

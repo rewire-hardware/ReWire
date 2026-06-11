@@ -1,558 +1,574 @@
-device top_level:
-
-inputs [("__in0",8)]
-outputs [("__out0",8),("__out1",8),("__out2",8),("__out3",8)]
-states []
-
-$Pure.dispatch :: W8 -> W32
-$Pure.dispatch $0 = 32'case 8'$0 of
-    {8'@} -> $LL.Main.dev69
-
-$Pure.start :: W32
-$Pure.start  = 32'he6668ff0
-
-$LL.Main.dev286 :: W8 -> W3 -> W8 -> W3 -> W3 -> W8
-$LL.Main.dev286 $0 $1 $2 $3 $4 = 8'case {8'$0
-    , 3'$1
-    , 8'$2
-    , 3'$3
-    , 3'case {8'$0, 3'$3, 3'$4, 1'h0} of
-      {8'@, 3'@, 3'@, 1'@} -> $LL.Main.dev45} of
-    {8'@, 3'@, 8'@, 3'@, 3'@} -> $LL.Main.dev151
-
-$LL.Main.dev283 :: W3 -> W3 -> W3
-$LL.Main.dev283 $0 $1 = 3'case 128'case {128'case {128'case 3'$0 of
-          {3'@} -> Resize
-        , 128'case 3'$1 of
-          {3'@} -> Resize} of
-        {128'@, 128'@} -> Sub
-      , 128'h8} of
-      {128'@, 128'@} -> Mod of
-    {128'@} -> Resize
-
-$LL.Main.dev282 :: W3 -> W3 -> W3
-$LL.Main.dev282 $0 $1 = 3'case 128'case {128'case {128'case 3'$0 of
-          {3'@} -> Resize
-        , 128'case 3'$1 of
-          {3'@} -> Resize} of
-        {128'@, 128'@} -> Div
-      , 128'h8} of
-      {128'@, 128'@} -> Mod of
-    {128'@} -> Resize
-
-$LL.Main.dev278 :: W6 -> W3
-$LL.Main.dev278 $0 = 3'case 6'$0 of
-    {3'@, 3'@} -> $LL.Main.dev235
-
-$LL.Main.dev277 :: W8 -> W3 -> W3 -> W1
-$LL.Main.dev277 $0 $1 $2 = 1'case 128'case {128'case 8'$0 of
-        {8'@} -> Resize
-      , 128'case {128'case {128'case {128'h8
-            , 128'case 3'case {3'$1, 3'$2} of
-                {3'@, 3'@} -> $LL.Main.dev261 of
-              {3'@} -> Resize} of
-            {128'@, 128'@} -> Sub
-          , 128'h1} of
-          {128'@, 128'@} -> Sub
-        , 128'h1} of
-        {128'@, 128'@} -> Mul} of
-      {128'@, 128'@} -> RShift of
-    {128'@} -> Resize
-
-$LL.Main.dev276 :: W8 -> W3 -> W3 -> W3 -> W8 -> W3 -> W1
-$LL.Main.dev276 $0 $1 $2 $3 $4 $5 = 1'case {8'$0
-    , 3'$5
-    , 3'$1
-    , 3'$2
-    , 3'$3
-    , 8'$4
-    , 1'case {3'$5, 3'$1} of
-      {3'@, 3'@} -> $LL.Main.dev255} of
-    {8'@, 3'@, 3'@, 3'@, 3'@, 8'@, 1'@} -> $LL.Main.dev5
-
-$LL.Main.dev273 :: W8 -> W8 -> W8
-$LL.Main.dev273 $0 $1 = 8'case {8'$0, 8'$1} of
-    {16'@} -> $LL.Main.dev185
-
-$LL.Main.dev270 :: W3 -> W3 -> W1
-$LL.Main.dev270 $0 $1 = 1'case {128'case 3'$0 of {3'@} -> Resize, 128'case 3'$1 of {3'@} -> Resize} of
-    {128'@, 128'@} -> Lt
-
-$LL.Main.dev268 :: W8 -> W3 -> W8 -> W3 -> W8
-$LL.Main.dev268 $0 $1 $2 $3 = {1'case {8'$0, 3'$1, 3'$3, 8'$2, 3'h0} of
-    {8'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev171
-  , 1'case {8'$0, 3'$1, 3'$3, 8'$2, 3'h1} of
-    {8'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev171
-  , 1'case {8'$0, 3'$1, 3'$3, 8'$2, 3'h2} of
-    {8'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev171
-  , 1'case {8'$0, 3'$1, 3'$3, 8'$2, 3'h3} of
-    {8'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev171
-  , 1'case {8'$0, 3'$1, 3'$3, 8'$2, 3'h4} of
-    {8'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev171
-  , 1'case {8'$0, 3'$1, 3'$3, 8'$2, 3'h5} of
-    {8'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev171
-  , 1'case {8'$0, 3'$1, 3'$3, 8'$2, 3'h6} of
-    {8'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev171
-  , 1'case {8'$0, 3'$1, 3'$3, 8'$2, 3'h7} of
-    {8'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev171}
-
-$LL.Main.dev267 :: W6 -> W1
-$LL.Main.dev267 $0 = 1'case 6'$0 of
-    {3'@, 3'@} -> $LL.Main.dev270
-
-$LL.Main.dev266 :: W3 -> W1
-$LL.Main.dev266 $0 = 1'case 128'case 3'$0 of
-      {3'@} -> Resize of
-    {128'@} -> $LL.Main.dev265
-
-$LL.Main.dev265 :: W128 -> W1
-$LL.Main.dev265 $0 = 1'case 1'case 1'case 128'$0 of
-        {128'@} -> Resize of
-      {1'@} -> MSBit of
-    {1'@} -> ReWire.Prelude.not
-
-$LL.Main.dev262 :: W3 -> W3 -> W3
-$LL.Main.dev262 $0 $1 = 3'case {3'$0, 3'$1} of
-    {6'@} -> $LL.Main.dev278
-
-$LL.Main.dev261 :: W3 -> W3 -> W3
-$LL.Main.dev261 $0 $1 = 3'case {3'$0, 3'$1} of
-    {6'@} -> $LL.Main.dev244
-
-$LL.Main.dev260 :: W3 -> W3 -> W8 -> W1 -> W3
-$LL.Main.dev260 $0 $1 $2 $3 = 3'case {3'$1, 1'$3} of
-    {3'@, 1'h1} -> Id
-    _ -> 3'case {3'$0, 3'$1, 1'h0} of
-      {3'@, 3'@, 1'@} -> $LL.Main.dev158
-
-$LL.Main.dev256 :: W3 -> W3 -> W3
-$LL.Main.dev256 $0 $1 = 3'case {3'$0, 3'$1} of
-    {6'@} -> $LL.Main.dev159
-
-$LL.Main.dev255 :: W3 -> W3 -> W1
-$LL.Main.dev255 $0 $1 = 1'case {3'$0, 3'$1} of
-    {6'@} -> $LL.Main.dev267
-
-$LL.Main.dev254 :: W8 -> W3 -> W3 -> W8 -> W3 -> W8
-$LL.Main.dev254 $0 $1 $2 $3 $4 = {1'case {8'$0, 3'$4, 3'$1, 3'$2, 8'$3, 3'h0} of
-    {8'@, 3'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev276
-  , 1'case {8'$0, 3'$4, 3'$1, 3'$2, 8'$3, 3'h1} of
-    {8'@, 3'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev276
-  , 1'case {8'$0, 3'$4, 3'$1, 3'$2, 8'$3, 3'h2} of
-    {8'@, 3'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev276
-  , 1'case {8'$0, 3'$4, 3'$1, 3'$2, 8'$3, 3'h3} of
-    {8'@, 3'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev276
-  , 1'case {8'$0, 3'$4, 3'$1, 3'$2, 8'$3, 3'h4} of
-    {8'@, 3'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev276
-  , 1'case {8'$0, 3'$4, 3'$1, 3'$2, 8'$3, 3'h5} of
-    {8'@, 3'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev276
-  , 1'case {8'$0, 3'$4, 3'$1, 3'$2, 8'$3, 3'h6} of
-    {8'@, 3'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev276
-  , 1'case {8'$0, 3'$4, 3'$1, 3'$2, 8'$3, 3'h7} of
-    {8'@, 3'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev276}
-
-$LL.Main.dev253 :: W8 -> W8 -> W8
-$LL.Main.dev253 $0 $1 = 8'case {8'$0, 8'$1} of
-    {16'@} -> $LL.Main.dev42
-
-$LL.Main.dev249 :: W8 -> W3 -> W3 -> W8 -> W3 -> W8
-$LL.Main.dev249 $0 $1 $2 $3 $4 = 8'case {8'$0
-    , 3'$1
-    , 3'$2
-    , 8'$3
-    , 3'case {8'$0, 3'$4, 3'$2, 1'h0} of
-      {8'@, 3'@, 3'@, 1'@} -> $LL.Main.dev63} of
-    {8'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev254
-
-$LL.Main.dev244 :: W6 -> W3
-$LL.Main.dev244 $0 = 3'case 6'$0 of
-    {3'@, 3'@} -> $LL.Main.dev282
-
-$LL.Main.dev242 :: W3 -> W3 -> W8 -> W3 -> W3 -> W1
-$LL.Main.dev242 $0 $1 $2 $3 $4 = 1'case 128'case {128'case 8'$2 of
-        {8'@} -> Resize
-      , 128'case {128'case {128'case {128'h8
-            , 128'case 3'case {3'$4
-                , 3'case {3'case {3'$0, 3'$3} of {3'@, 3'@} -> $LL.Main.dev179, 3'$1} of
-                  {3'@, 3'@} -> $LL.Main.dev261} of
-                {3'@, 3'@} -> $LL.Main.dev262 of
-              {3'@} -> Resize} of
-            {128'@, 128'@} -> Sub
-          , 128'h1} of
-          {128'@, 128'@} -> Sub
-        , 128'h1} of
-        {128'@, 128'@} -> Mul} of
-      {128'@, 128'@} -> RShift of
-    {128'@} -> Resize
-
-$LL.Main.dev235 :: W3 -> W3 -> W3
-$LL.Main.dev235 $0 $1 = 3'case 128'case {128'case {128'case 3'$0 of
-          {3'@} -> Resize
-        , 128'case 3'$1 of
-          {3'@} -> Resize} of
-        {128'@, 128'@} -> Add
-      , 128'h8} of
-      {128'@, 128'@} -> Mod of
-    {128'@} -> Resize
-
-$LL.Main.dev234 :: W8 -> W8 -> W3 -> W3 -> W8
-$LL.Main.dev234 $0 $1 $2 $3 = 8'case {8'$0, 3'$3, 8'$1, 3'$2, 3'case {3'h7, 3'$3} of {3'@, 3'@} -> $LL.Main.dev261} of
-    {8'@, 3'@, 8'@, 3'@, 3'@} -> $LL.Main.dev286
-
-$LL.Main.dev231 :: W3 -> W3 -> W3
-$LL.Main.dev231 $0 $1 = 3'case {3'$1, 3'$0} of
-    {3'@, 3'@} -> $LL.Main.dev262
-
-ReWire.Prelude.not :: W1 -> W1
-ReWire.Prelude.not $0 = 1'case {1'$0, 1'$0} of
-    {1'@, 1'@} -> $LL.ReWire.Prelude.not
-
-$LL.Main.dev230 :: W8 -> W3 -> W8 -> W3 -> W8
-$LL.Main.dev230 $0 $1 $2 $3 = 8'case {8'$0, 3'$3, 3'$1, 8'$2, 3'case {3'h7, 3'$3} of {3'@, 3'@} -> $LL.Main.dev261} of
-    {8'@, 3'@, 3'@, 8'@, 3'@} -> $LL.Main.dev249
-
-$LL.Main.dev221 :: W8 -> W3 -> W3 -> W3 -> W1 -> W1
-$LL.Main.dev221 $0 $1 $2 $3 $4 = 1'case {8'$0, 3'$1, 3'$2, 3'$3, 1'$4} of
-    {8'@, 3'@, 3'@, 3'@, 1'h0} -> $LL.Main.dev175
-
-$LL.Main.dev214 :: W3 -> W8 -> W8 -> W3 -> W8
-$LL.Main.dev214 $0 $1 $2 $3 = 8'case {3'$0, 8'$1, 3'$3, 8'$2, 3'case {3'h7, 3'$3} of {3'@, 3'@} -> $LL.Main.dev261} of
-    {3'@, 8'@, 3'@, 8'@, 3'@} -> $LL.Main.dev29
-
-$LL.Main.dev213 :: W3 -> W3 -> W3
-$LL.Main.dev213 $0 $1 = 3'case {3'$0, 3'$1} of
-    {3'@, 3'@} -> $LL.Main.dev262
-
-$LL.Main.dev207 :: W8 -> W8 -> W32
-$LL.Main.dev207 $0 $1 = {8'case {8'$0, 8'$1} of
-    {8'@, 8'@} -> $LL.Main.dev253
-  , 8'case {8'$0, 8'$1} of
-    {8'@, 8'@} -> $LL.Main.dev89
-  , 8'case {8'$0, 8'$1} of
-    {8'@, 8'@} -> $LL.Main.dev32
-  , 8'case {8'$0, 8'$1} of
-    {8'@, 8'@} -> $LL.Main.dev273}
-
-$LL.Main.dev204 :: W8 -> W3 -> W8 -> W3 -> W3 -> W3 -> W1
-$LL.Main.dev204 $0 $1 $2 $3 $4 $5 = 1'case {8'$0
-    , 3'$5
-    , 3'$1
-    , 8'$2
-    , 3'$3
-    , 3'$4
-    , 1'case 3'$5 of
-      {3'@} -> $LL.Main.dev266} of
-    {8'@, 3'@, 3'@, 8'@, 3'@, 3'@, 1'@} -> $LL.Main.dev88
-
-$LL.Main.dev200 :: W3 -> W3 -> W3
-$LL.Main.dev200 $0 $1 = 3'case 128'case {128'case {128'case 3'$0 of
-          {3'@} -> Resize
-        , 128'case 3'$1 of
-          {3'@} -> Resize} of
-        {128'@, 128'@} -> Mul
-      , 128'h8} of
-      {128'@, 128'@} -> Mod of
-    {128'@} -> Resize
-
-$LL.Main.dev197 :: W8 -> W3 -> W3 -> W3 -> W1
-$LL.Main.dev197 $0 $1 $2 $3 = 1'case 128'case {128'case 8'$0 of
-        {8'@} -> Resize
-      , 128'case {128'case {128'case {128'h8
-            , 128'case 3'case {3'case {3'$2, 3'$1} of {3'@, 3'@} -> $LL.Main.dev179, 3'$3} of
-                {3'@, 3'@} -> $LL.Main.dev261 of
-              {3'@} -> Resize} of
-            {128'@, 128'@} -> Sub
-          , 128'h1} of
-          {128'@, 128'@} -> Sub
-        , 128'h1} of
-        {128'@, 128'@} -> Mul} of
-      {128'@, 128'@} -> RShift of
-    {128'@} -> Resize
-
-$LL.Main.dev187 :: W8 -> W8 -> W3 -> W8
-$LL.Main.dev187 $0 $1 $2 = 8'case {3'$2, 8'$0, 8'$1} of
-    {3'@, 8'@, 8'@} -> $LL.Main.dev97
-
-$LL.Main.dev185 :: W16 -> W8
-$LL.Main.dev185 $0 = 8'case 16'$0 of
-    {8'@, 8'@} -> $LL.Main.dev121
-
-$LL.Main.dev179 :: W3 -> W3 -> W3
-$LL.Main.dev179 $0 $1 = 3'case {3'$0, 3'$1} of
-    {6'@} -> $LL.Main.dev152
-
-$LL.Main.dev175 :: W8 -> W3 -> W3 -> W3 -> W1
-$LL.Main.dev175 $0 $1 $2 $3 = 1'case 128'case {128'case 8'$0 of
-        {8'@} -> Resize
-      , 128'case {128'case {128'case {128'h8
-            , 128'case 3'case {3'case {3'$3, 3'$2} of {3'@, 3'@} -> $LL.Main.dev179, 3'$1} of
-                {3'@, 3'@} -> $LL.Main.dev256 of
-              {3'@} -> Resize} of
-            {128'@, 128'@} -> Sub
-          , 128'h1} of
-          {128'@, 128'@} -> Sub
-        , 128'h1} of
-        {128'@, 128'@} -> Mul} of
-      {128'@, 128'@} -> RShift of
-    {128'@} -> Resize
-
-$LL.Main.dev171 :: W8 -> W3 -> W3 -> W8 -> W3 -> W1
-$LL.Main.dev171 $0 $1 $2 $3 $4 = 1'case {8'$0
-    , 3'$1
-    , 3'$2
-    , 8'$3
-    , 3'$4
-    , 1'case {3'$4, 3'$2} of
-      {3'@, 3'@} -> $LL.Main.dev255} of
-    {8'@, 3'@, 3'@, 8'@, 3'@, 1'@} -> $LL.Main.dev67
-
-$LL.Main.dev170 :: W3 -> W3 -> W1 -> W3
-$LL.Main.dev170 $0 $1 $2 = 3'case {3'$0, 3'$1, 1'$2} of
-    {3'@, 3'@, 1'h0} -> $LL.Main.dev213
-
-$LL.Main.dev167 :: W8 -> W8 -> W3 -> W3 -> W3 -> W1 -> W1
-$LL.Main.dev167 $0 $1 $2 $3 $4 $5 = 1'case {8'$1, 3'$3, 3'$4, 1'$5} of
-    {8'@, 3'@, 3'@, 1'h1} -> $LL.Main.dev277
-    _ -> 1'case {8'$0, 3'$2, 3'$3, 3'$4, 1'case 3'$3 of {3'@} -> $LL.Main.dev266} of
-      {8'@, 3'@, 3'@, 3'@, 1'@} -> $LL.Main.dev24
-
-$LL.Main.dev165 :: W3 -> W3 -> W3 -> W3 -> W8 -> W1
-$LL.Main.dev165 $0 $1 $2 $3 $4 = 1'case 128'case {128'case 8'$4 of
-        {8'@} -> Resize
-      , 128'case {128'case {128'case {128'h8
-            , 128'case 3'case {3'case {3'case {3'$0, 3'$1} of {3'@, 3'@} -> $LL.Main.dev179, 3'$2} of
-                  {3'@, 3'@} -> $LL.Main.dev256
-                , 3'$3} of
-                {3'@, 3'@} -> $LL.Main.dev262 of
-              {3'@} -> Resize} of
-            {128'@, 128'@} -> Sub
-          , 128'h1} of
-          {128'@, 128'@} -> Sub
-        , 128'h1} of
-        {128'@, 128'@} -> Mul} of
-      {128'@, 128'@} -> RShift of
-    {128'@} -> Resize
-
-$LL.Main.dev159 :: W6 -> W3
-$LL.Main.dev159 $0 = 3'case 6'$0 of
-    {3'@, 3'@} -> $LL.Main.dev200
-
-$LL.Main.dev158 :: W3 -> W3 -> W1 -> W3
-$LL.Main.dev158 $0 $1 $2 = 3'case {3'$0, 3'$1, 1'$2} of
-    {3'@, 3'@, 1'h0} -> $LL.Main.dev231
-
-$LL.Main.dev152 :: W6 -> W3
-$LL.Main.dev152 $0 = 3'case 6'$0 of
-    {3'@, 3'@} -> $LL.Main.dev283
-
-$LL.Main.dev151 :: W8 -> W3 -> W8 -> W3 -> W3 -> W8
-$LL.Main.dev151 $0 $1 $2 $3 $4 = {1'case {8'$0, 3'$1, 8'$2, 3'$3, 3'$4, 3'h0} of
-    {8'@, 3'@, 8'@, 3'@, 3'@, 3'@} -> $LL.Main.dev204
-  , 1'case {8'$0, 3'$1, 8'$2, 3'$3, 3'$4, 3'h1} of
-    {8'@, 3'@, 8'@, 3'@, 3'@, 3'@} -> $LL.Main.dev204
-  , 1'case {8'$0, 3'$1, 8'$2, 3'$3, 3'$4, 3'h2} of
-    {8'@, 3'@, 8'@, 3'@, 3'@, 3'@} -> $LL.Main.dev204
-  , 1'case {8'$0, 3'$1, 8'$2, 3'$3, 3'$4, 3'h3} of
-    {8'@, 3'@, 8'@, 3'@, 3'@, 3'@} -> $LL.Main.dev204
-  , 1'case {8'$0, 3'$1, 8'$2, 3'$3, 3'$4, 3'h4} of
-    {8'@, 3'@, 8'@, 3'@, 3'@, 3'@} -> $LL.Main.dev204
-  , 1'case {8'$0, 3'$1, 8'$2, 3'$3, 3'$4, 3'h5} of
-    {8'@, 3'@, 8'@, 3'@, 3'@, 3'@} -> $LL.Main.dev204
-  , 1'case {8'$0, 3'$1, 8'$2, 3'$3, 3'$4, 3'h6} of
-    {8'@, 3'@, 8'@, 3'@, 3'@, 3'@} -> $LL.Main.dev204
-  , 1'case {8'$0, 3'$1, 8'$2, 3'$3, 3'$4, 3'h7} of
-    {8'@, 3'@, 8'@, 3'@, 3'@, 3'@} -> $LL.Main.dev204}
-
-$LL.Main.dev124 :: W8 -> W8 -> W8
-$LL.Main.dev124 $0 $1 = 8'case {8'$0, 8'$1, 3'h1} of
-    {8'@, 8'@, 3'@} -> $LL.Main.dev73
-
-$LL.Main.dev121 :: W8 -> W8 -> W8
-$LL.Main.dev121 $0 $1 = 8'case {8'$0, 8'$1, 3'h1} of
-    {8'@, 8'@, 3'@} -> $LL.Main.dev2
-
-$LL.Main.dev115 :: W8 -> W8 -> W8
-$LL.Main.dev115 $0 $1 = 8'case {8'$1, 8'$0} of
-    {8'@, 8'@} -> $LL.Main.dev59
-
-$LL.Main.dev114 :: W3 -> W3 -> W3 -> W3 -> W8 -> W1 -> W1
-$LL.Main.dev114 $0 $1 $2 $3 $4 $5 = 1'case {3'$0, 3'$1, 3'$2, 3'$3, 8'$4, 1'$5} of
-    {3'@, 3'@, 3'@, 3'@, 8'@, 1'h0} -> $LL.Main.dev165
-
-$LL.ReWire.Prelude.not :: W1 -> W1 -> W1
-$LL.ReWire.Prelude.not $0 $1 = 1'case 1'$1 of
-    {1'h1} -> 1'h0
-    _ -> 1'h1
-
-$LL.Main.dev100 :: W8 -> W3 -> W3 -> W3 -> W1
-$LL.Main.dev100 $0 $1 $2 $3 = 1'case 128'case {128'case 8'$0 of
-        {8'@} -> Resize
-      , 128'case {128'case {128'case {128'h8
-            , 128'case 3'case {3'$3, 3'case {3'$1, 3'$2} of {3'@, 3'@} -> $LL.Main.dev261} of
-                {3'@, 3'@} -> $LL.Main.dev262 of
-              {3'@} -> Resize} of
-            {128'@, 128'@} -> Sub
-          , 128'h1} of
-          {128'@, 128'@} -> Sub
-        , 128'h1} of
-        {128'@, 128'@} -> Mul} of
-      {128'@, 128'@} -> RShift of
-    {128'@} -> Resize
-
-$LL.Main.dev97 :: W3 -> W8 -> W8 -> W8
-$LL.Main.dev97 $0 $1 $2 = 8'case {3'$0, 8'$1, 8'$2, 3'h2} of
-    {3'@, 8'@, 8'@, 3'@} -> $LL.Main.dev214
-
-$LL.Main.dev95 :: W8 -> W8 -> W3 -> W8
-$LL.Main.dev95 $0 $1 $2 = 8'case {8'$0, 8'$1, 3'$2, 3'h2} of
-    {8'@, 8'@, 3'@, 3'@} -> $LL.Main.dev234
-
-$LL.Main.dev93 :: W3 -> W8 -> W3 -> W1
-$LL.Main.dev93 $0 $1 $2 = 1'case 128'case {128'case 8'$1 of
-        {8'@} -> Resize
-      , 128'case {128'case {128'case {128'h8
-            , 128'case 3'case {3'$2, 3'$0} of
-                {3'@, 3'@} -> $LL.Main.dev256 of
-              {3'@} -> Resize} of
-            {128'@, 128'@} -> Sub
-          , 128'h1} of
-          {128'@, 128'@} -> Sub
-        , 128'h1} of
-        {128'@, 128'@} -> Mul} of
-      {128'@, 128'@} -> RShift of
-    {128'@} -> Resize
-
-$LL.Main.dev89 :: W8 -> W8 -> W8
-$LL.Main.dev89 $0 $1 = 8'case {8'$0, 8'$1} of
-    {16'@} -> $LL.Main.dev31
-
-$LL.Main.dev88 :: W8 -> W3 -> W3 -> W8 -> W3 -> W3 -> W1 -> W1
-$LL.Main.dev88 $0 $1 $2 $3 $4 $5 $6 = 1'case {8'$0, 3'$1, 3'$2, 3'$5, 1'$6} of
-    {8'@, 3'@, 3'@, 3'@, 1'h1} -> $LL.Main.dev100
-    _ -> 1'case {3'$1, 3'$2, 8'$3, 3'$4, 3'$5, 1'case 3'$1 of {3'@} -> $LL.Main.dev266} of
-      {3'@, 3'@, 8'@, 3'@, 3'@, 1'@} -> $LL.Main.dev74
-
-$LL.Main.dev86 :: W16 -> W8
-$LL.Main.dev86 $0 = 8'case 16'$0 of
-    {8'@, 8'@} -> $LL.Main.dev115
-
-$LL.Main.dev84 :: W8 -> W3 -> W8 -> W8
-$LL.Main.dev84 $0 $1 $2 = 8'case {8'$0, 3'$1, 8'$2, 3'h2} of
-    {8'@, 3'@, 8'@, 3'@} -> $LL.Main.dev230
-
-$LL.Main.dev81 :: W8 -> W3 -> W3 -> W3 -> W1
-$LL.Main.dev81 $0 $1 $2 $3 = 1'case 128'case {128'case 8'$0 of
-        {8'@} -> Resize
-      , 128'case {128'case {128'case {128'h8
-            , 128'case 3'case {3'case {3'$1, 3'$2} of {3'@, 3'@} -> $LL.Main.dev256, 3'$3} of
-                {3'@, 3'@} -> $LL.Main.dev262 of
-              {3'@} -> Resize} of
-            {128'@, 128'@} -> Sub
-          , 128'h1} of
-          {128'@, 128'@} -> Sub
-        , 128'h1} of
-        {128'@, 128'@} -> Mul} of
-      {128'@, 128'@} -> RShift of
-    {128'@} -> Resize
-
-$LL.Main.dev74 :: W3 -> W3 -> W8 -> W3 -> W3 -> W1 -> W1
-$LL.Main.dev74 $0 $1 $2 $3 $4 $5 = 1'case {3'$0, 3'$1, 8'$2, 3'$3, 3'$4, 1'$5} of
-    {3'@, 3'@, 8'@, 3'@, 3'@, 1'h0} -> $LL.Main.dev242
-
-$LL.Main.dev73 :: W8 -> W8 -> W3 -> W8
-$LL.Main.dev73 $0 $1 $2 = 8'case {8'$0, 8'$1, 3'$2, 3'h2} of
-    {8'@, 8'@, 3'@, 3'@} -> $LL.Main.dev
-
-$LL.Main.dev72 :: W8 -> W8 -> W3 -> W3 -> W3 -> W1
-$LL.Main.dev72 $0 $1 $2 $3 $4 = 1'case {8'$0, 8'$1, 3'$2, 3'$4, 3'$3, 1'case 3'$4 of {3'@} -> $LL.Main.dev266} of
-    {8'@, 8'@, 3'@, 3'@, 3'@, 1'@} -> $LL.Main.dev167
-
-$LL.Main.dev69 :: W8 -> W32
-$LL.Main.dev69 $0 = 32'case {8'$0, 8'case 8'$0 of {8'@} -> $LL.Main.x2} of
-    {8'@, 8'@} -> $LL.Main.dev207
-
-$LL.Main.dev67 :: W8 -> W3 -> W3 -> W8 -> W3 -> W1 -> W1
-$LL.Main.dev67 $0 $1 $2 $3 $4 $5 = 1'case {3'$1, 8'$3, 3'$4, 1'$5} of
-    {3'@, 8'@, 3'@, 1'h1} -> $LL.Main.dev93
-    _ -> 1'case {8'$0, 3'$1, 3'$2, 3'$4, 1'case {3'$4, 3'$2} of {3'@, 3'@} -> $LL.Main.dev255} of
-      {8'@, 3'@, 3'@, 3'@, 1'@} -> $LL.Main.dev221
-
-$LL.Main.dev63 :: W8 -> W3 -> W3 -> W1 -> W3
-$LL.Main.dev63 $0 $1 $2 $3 = 3'case {3'$1, 1'$3} of
-    {3'@, 1'h1} -> Id
-    _ -> 3'case {3'$1, 3'$2, 1'h0} of
-      {3'@, 3'@, 1'@} -> $LL.Main.dev170
-
-$LL.Main.dev59 :: W8 -> W8 -> W8
-$LL.Main.dev59 $0 $1 = 8'case {8'$0, 8'$1, 3'h1} of
-    {8'@, 8'@, 3'@} -> $LL.Main.dev187
-
-$LL.Main.dev45 :: W8 -> W3 -> W3 -> W1 -> W3
-$LL.Main.dev45 $0 $1 $2 $3 = 3'case {3'$2, 1'$3} of
-    {3'@, 1'h1} -> Id
-    _ -> 3'case {3'$1, 3'$2, 1'h0} of
-      {3'@, 3'@, 1'@} -> $LL.Main.dev158
-
-$LL.Main.dev42 :: W16 -> W8
-$LL.Main.dev42 $0 = 8'case 16'$0 of
-    {8'@, 8'@} -> $LL.Main.dev8
-
-$LL.Main.dev32 :: W8 -> W8 -> W8
-$LL.Main.dev32 $0 $1 = 8'case {8'$0, 8'$1} of
-    {16'@} -> $LL.Main.dev86
-
-$LL.Main.dev31 :: W16 -> W8
-$LL.Main.dev31 $0 = 8'case 16'$0 of
-    {8'@, 8'@} -> $LL.Main.dev23
-
-$LL.Main.dev29 :: W3 -> W8 -> W3 -> W8 -> W3 -> W8
-$LL.Main.dev29 $0 $1 $2 $3 $4 = 8'case {8'$1
-    , 3'$2
-    , 8'$3
-    , 3'case {3'$0, 3'$4, 8'$3, 1'h0} of
-      {3'@, 3'@, 8'@, 1'@} -> $LL.Main.dev260} of
-    {8'@, 3'@, 8'@, 3'@} -> $LL.Main.dev268
-
-$LL.Main.dev24 :: W8 -> W3 -> W3 -> W3 -> W1 -> W1
-$LL.Main.dev24 $0 $1 $2 $3 $4 = 1'case {8'$0, 3'$1, 3'$2, 3'$3, 1'$4} of
-    {8'@, 3'@, 3'@, 3'@, 1'h0} -> $LL.Main.dev197
-
-$LL.Main.dev23 :: W8 -> W8 -> W8
-$LL.Main.dev23 $0 $1 = 8'case {8'$0, 8'$1, 3'h1} of
-    {8'@, 8'@, 3'@} -> $LL.Main.dev95
-
-$LL.Main.x2 :: W8 -> W8
-$LL.Main.x2 $0 = 8'case {8'$0, 8'h2} of
-    {8'@, 8'@} -> Mul
-
-$LL.Main.dev8 :: W8 -> W8 -> W8
-$LL.Main.dev8 $0 $1 = 8'case {8'$1, 8'$0} of
-    {8'@, 8'@} -> $LL.Main.dev124
-
-$LL.Main.dev5 :: W8 -> W3 -> W3 -> W3 -> W3 -> W8 -> W1 -> W1
-$LL.Main.dev5 $0 $1 $2 $3 $4 $5 $6 = 1'case {8'$0, 3'$1, 3'$3, 3'$4, 1'$6} of
-    {8'@, 3'@, 3'@, 3'@, 1'h1} -> $LL.Main.dev81
-    _ -> 1'case {3'$1, 3'$2, 3'$3, 3'$4, 8'$5, 1'case {3'$1, 3'$2} of {3'@, 3'@} -> $LL.Main.dev255} of
-      {3'@, 3'@, 3'@, 3'@, 8'@, 1'@} -> $LL.Main.dev114
-
-$LL.Main.dev2 :: W8 -> W8 -> W3 -> W8
-$LL.Main.dev2 $0 $1 $2 = 8'case {8'$0, 3'$2, 8'$1} of
-    {8'@, 3'@, 8'@} -> $LL.Main.dev84
-
-$LL.Main.dev :: W8 -> W8 -> W3 -> W3 -> W8
-$LL.Main.dev $0 $1 $2 $3 = {1'case {8'$0, 8'$1, 3'$2, 3'$3, 3'h0} of
-    {8'@, 8'@, 3'@, 3'@, 3'@} -> $LL.Main.dev72
-  , 1'case {8'$0, 8'$1, 3'$2, 3'$3, 3'h1} of
-    {8'@, 8'@, 3'@, 3'@, 3'@} -> $LL.Main.dev72
-  , 1'case {8'$0, 8'$1, 3'$2, 3'$3, 3'h2} of
-    {8'@, 8'@, 3'@, 3'@, 3'@} -> $LL.Main.dev72
-  , 1'case {8'$0, 8'$1, 3'$2, 3'$3, 3'h3} of
-    {8'@, 8'@, 3'@, 3'@, 3'@} -> $LL.Main.dev72
-  , 1'case {8'$0, 8'$1, 3'$2, 3'$3, 3'h4} of
-    {8'@, 8'@, 3'@, 3'@, 3'@} -> $LL.Main.dev72
-  , 1'case {8'$0, 8'$1, 3'$2, 3'$3, 3'h5} of
-    {8'@, 8'@, 3'@, 3'@, 3'@} -> $LL.Main.dev72
-  , 1'case {8'$0, 8'$1, 3'$2, 3'$3, 3'h6} of
-    {8'@, 8'@, 3'@, 3'@, 3'@} -> $LL.Main.dev72
-  , 1'case {8'$0, 8'$1, 3'$2, 3'$3, 3'h7} of
-    {8'@, 8'@, 3'@, 3'@, 3'@} -> $LL.Main.dev72}
+$Pure.dispatch : ([8]) -> [32]
+$Pure.dispatch $1 =
+      $LL.Pure.dispatch $1
+
+$LL.Main.dev286 : ([8], [3], [8], [3], [3]) -> [8]
+$LL.Main.dev286 $0 $1 $2 $3 $4 =
+      $LL.Main.dev281 $0 $1 $2 $3 ($LL.Main.dev45 $0 $3 $4 ($LL.Main.dev284 ($LL.Main.dev285 $0)))
+
+$LL.Main.dev285 : ([8]) -> [3]
+$LL.Main.dev285 $0 =
+      $LL.Main.dev280 $0
+
+$LL.Main.dev284 : ([3]) -> [1]
+$LL.Main.dev284 $0 =
+      $LL.Main.dev269 $0
+
+$LL.Main.dev283 : ([3], [3]) -> [3]
+$LL.Main.dev283 $0 $1 =
+      trunc 3 (umod (sub (zext 128 $0) (zext 128 $1)) 128'h8)
+
+$LL.Main.dev282 : ([3], [3]) -> [3]
+$LL.Main.dev282 $0 $1 =
+      trunc 3 (umod (udiv (zext 128 $0) (zext 128 $1)) 128'h8)
+
+$LL.Main.dev281 : ([8], [3], [8], [3], [3]) -> [8]
+$LL.Main.dev281 $0 $1 $2 $3 $4 =
+      $LL.Main.dev180 $0 $1 $2 $3 $4
+
+$LL.Main.dev280 : ([8]) -> [3]
+$LL.Main.dev280 $0 =
+      3'h7
+
+$LL.Main.dev279 : ([8], [8]) -> [32]
+$LL.Main.dev279 $0 $1 =
+      $LL.Main.dev207 $0 $1
+
+$LL.Main.dev278 : ([6]) -> [3]
+$LL.Main.dev278 $0 =
+      $LL.Main.dev271 $0[3 +: 3] $0[0 +: 3]
+
+$LL.Main.dev277 : ([8], [3], [3]) -> [1]
+$LL.Main.dev277 $0 $1 $2 =
+      trunc 1 (lshr $0 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev264 $1 $2))) 128'h1) 128'h1))
+
+$LL.Main.dev276 : ([8], [3], [3], [3], [8], [3]) -> [1]
+$LL.Main.dev276 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.dev5 $0 $5 $1 $2 $3 $4 ($LL.Main.dev274 $5 $1)
+
+$LL.Main.dev275 : ([8], [8], [3]) -> [8]
+$LL.Main.dev275 $0 $1 $2 =
+      $LL.Main.dev2 $0 $1 $2
+
+$LL.Main.dev274 : ([3], [3]) -> [1]
+$LL.Main.dev274 $0 $1 =
+      $LL.Main.dev255 $0 $1
+
+$LL.Main.dev273 : ([8], [8]) -> [8]
+$LL.Main.dev273 $0 $1 =
+      $LL.Main.dev185 ($0 # $1)
+
+$LL.ReWire.Prelude.not3 : ([1]) -> [1]
+$LL.ReWire.Prelude.not3 $0 =
+      1'h1
+
+$LL.Main.dev272 : ([128]) -> [1]
+$LL.Main.dev272 $0 =
+      $LL.Main.dev265 $0
+
+$LL.Main.dev271 : ([3], [3]) -> [3]
+$LL.Main.dev271 $0 $1 =
+      $LL.Main.dev235 $0 $1
+
+$LL.Main.dev270 : ([3], [3]) -> [1]
+$LL.Main.dev270 $0 $1 =
+      ult (zext 128 $0) (zext 128 $1)
+
+$LL.Main.dev269 : ([3]) -> [1]
+$LL.Main.dev269 $0 =
+      $LL.Main.dev272 (zext 128 $0)
+
+$LL.Main.dev268 : ([8], [3], [8], [3]) -> [8]
+$LL.Main.dev268 $0 $1 $2 $3 =
+      $LL.Main.dev171 $0 $1 $3 $2 3'h0 # $LL.Main.dev171 $0 $1 $3 $2 3'h1 # $LL.Main.dev171 $0 $1 $3 $2 3'h2 # $LL.Main.dev171 $0 $1 $3 $2 3'h3 # $LL.Main.dev171 $0 $1 $3 $2 3'h4 # $LL.Main.dev171 $0 $1 $3 $2 3'h5 # $LL.Main.dev171 $0 $1 $3 $2 3'h6 # $LL.Main.dev171 $0 $1 $3 $2 3'h7
+
+$LL.Main.dev267 : ([6]) -> [1]
+$LL.Main.dev267 $0 =
+      $LL.Main.dev205 $0[3 +: 3] $0[0 +: 3]
+
+$LL.Main.dev265 : ([128]) -> [1]
+$LL.Main.dev265 $0 =
+      ReWire.Prelude.not (let $t0 = trunc 1 $0 in
+      $t0)
+
+$LL.Main.dev264 : ([3], [3]) -> [3]
+$LL.Main.dev264 $0 $1 =
+      $LL.Main.dev261 $0 $1
+
+$LL.Main.dev263 : ([3], [3]) -> [3]
+$LL.Main.dev263 $0 $1 =
+      $LL.Main.dev262 $0 $1
+
+$LL.Main.dev262 : ([3], [3]) -> [3]
+$LL.Main.dev262 $0 $1 =
+      $LL.Main.dev278 ($0 # $1)
+
+$LL.Main.dev261 : ([3], [3]) -> [3]
+$LL.Main.dev261 $0 $1 =
+      $LL.Main.dev244 ($0 # $1)
+
+$LL.Main.dev260 : ([3], [3], [8], [1]) -> [3]
+$LL.Main.dev260 $0 $1 $2 $3 =
+      let $t0 = $1 # $3 in
+      if eq $t0[0 +: 1] 1'h1 then $LL.Main.dev143 $t0[1 +: 3]
+            else $LL.Main.dev158 $0 $1 ($LL.Main.dev284 ($LL.Main.dev285 $2))
+
+$LL.Main.dev256 : ([3], [3]) -> [3]
+$LL.Main.dev256 $0 $1 =
+      $LL.Main.dev159 ($0 # $1)
+
+$LL.Main.dev255 : ([3], [3]) -> [1]
+$LL.Main.dev255 $0 $1 =
+      $LL.Main.dev267 ($0 # $1)
+
+$LL.Main.dev254 : ([8], [3], [3], [8], [3]) -> [8]
+$LL.Main.dev254 $0 $1 $2 $3 $4 =
+      $LL.Main.dev276 $0 $4 $1 $2 $3 3'h0 # $LL.Main.dev276 $0 $4 $1 $2 $3 3'h1 # $LL.Main.dev276 $0 $4 $1 $2 $3 3'h2 # $LL.Main.dev276 $0 $4 $1 $2 $3 3'h3 # $LL.Main.dev276 $0 $4 $1 $2 $3 3'h4 # $LL.Main.dev276 $0 $4 $1 $2 $3 3'h5 # $LL.Main.dev276 $0 $4 $1 $2 $3 3'h6 # $LL.Main.dev276 $0 $4 $1 $2 $3 3'h7
+
+$LL.Main.dev253 : ([8], [8]) -> [8]
+$LL.Main.dev253 $0 $1 =
+      $LL.Main.dev42 ($0 # $1)
+
+$LL.Main.dev251 : ([3], [3]) -> [3]
+$LL.Main.dev251 $0 $1 =
+      $LL.Main.dev179 $0 $1
+
+$LL.Main.dev250 : ([3], [3]) -> [3]
+$LL.Main.dev250 $0 $1 =
+      $LL.Main.dev282 $0 $1
+
+$LL.Main.dev249 : ([8], [3], [3], [8], [3]) -> [8]
+$LL.Main.dev249 $0 $1 $2 $3 $4 =
+      $LL.Main.dev64 $0 $1 $2 $3 ($LL.Main.dev63 $0 $4 $2 ($LL.Main.dev284 ($LL.Main.dev285 $0)))
+
+$LL.Main.dev248 : ([3], [3]) -> [3]
+$LL.Main.dev248 $0 $1 =
+      $LL.Main.dev200 $0 $1
+
+$LL.Main.dev245 : ([8], [8], [3]) -> [8]
+$LL.Main.dev245 $0 $1 $2 =
+      $LL.Main.dev57 $0 $1 $2
+
+$LL.Main.dev244 : ([6]) -> [3]
+$LL.Main.dev244 $0 =
+      $LL.Main.dev250 $0[3 +: 3] $0[0 +: 3]
+
+$LL.Main.dev243 : ([3], [3]) -> [3]
+$LL.Main.dev243 $0 $1 =
+      $LL.Main.dev283 $0 $1
+
+$LL.Main.dev242 : ([3], [3], [8], [3], [3]) -> [1]
+$LL.Main.dev242 $0 $1 $2 $3 $4 =
+      trunc 1 (lshr $2 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev263 $4 ($LL.Main.dev264 ($LL.Main.dev251 $0 $3) $1)))) 128'h1) 128'h1))
+
+$LL.Main.dev238 : ([8], [3], [3], [8], [3]) -> [8]
+$LL.Main.dev238 $0 $1 $2 $3 $4 =
+      $LL.Main.dev254 $0 $1 $2 $3 $4
+
+$LL.Main.x21 : ([8]) -> [8]
+$LL.Main.x21 $0 =
+      $LL.Main.x2 $0
+
+$LL.Main.dev236 : ([8], [8], [3], [3]) -> [8]
+$LL.Main.dev236 $0 $1 $2 $3 =
+      $LL.Main.dev234 $0 $1 $2 $3
+
+$LL.Main.dev235 : ([3], [3]) -> [3]
+$LL.Main.dev235 $0 $1 =
+      trunc 3 (umod (add (zext 128 $0) (zext 128 $1)) 128'h8)
+
+$LL.Main.dev234 : ([8], [8], [3], [3]) -> [8]
+$LL.Main.dev234 $0 $1 $2 $3 =
+      $LL.Main.dev62 $0 $3 $1 $2 ($LL.Main.dev264 ($LL.Main.dev285 $0) $3)
+
+$LL.Main.dev233 : ([3], [3]) -> [3]
+$LL.Main.dev233 $0 $1 =
+      $LL.Main.dev256 $0 $1
+
+$LL.Main.dev231 : ([3], [3]) -> [3]
+$LL.Main.dev231 $0 $1 =
+      $LL.Main.dev263 $1 $0
+
+ReWire.Prelude.not : ([1]) -> [1]
+ReWire.Prelude.not $0 =
+      $LL.ReWire.Prelude.not $0 $0
+
+$LL.Main.dev230 : ([8], [3], [8], [3]) -> [8]
+$LL.Main.dev230 $0 $1 $2 $3 =
+      $LL.Main.dev52 $0 $3 $1 $2 ($LL.Main.dev264 ($LL.Main.dev285 $0) $3)
+
+$LL.Main.dev221 : ([8], [3], [3], [3], [1]) -> [1]
+$LL.Main.dev221 $0 $1 $2 $3 $4 =
+      let $t0 = $0 # $1 # $2 # $3 # $4 in
+      $LL.Main.dev175 $t0[10 +: 8] $t0[7 +: 3] $t0[4 +: 3] $t0[1 +: 3]
+
+$LL.Main.dev216 : ([8], [8], [3], [3]) -> [8]
+$LL.Main.dev216 $0 $1 $2 $3 =
+      $LL.Main.dev $0 $1 $2 $3
+
+$LL.Main.dev214 : ([3], [8], [8], [3]) -> [8]
+$LL.Main.dev214 $0 $1 $2 $3 =
+      $LL.Main.dev145 $0 $1 $3 $2 ($LL.Main.dev264 ($LL.Main.dev285 $2) $3)
+
+$LL.Main.dev207 : ([8], [8]) -> [32]
+$LL.Main.dev207 $0 $1 =
+      $LL.Main.dev61 $0 $1 # $LL.Main.dev161 $0 $1 # $LL.Main.dev182 $0 $1 # $LL.Main.dev27 $0 $1
+
+$LL.Main.dev205 : ([3], [3]) -> [1]
+$LL.Main.dev205 $0 $1 =
+      $LL.Main.dev270 $0 $1
+
+Main.dev : ([8]) -> [32]
+Main.dev $0 =
+      $LL.Main.dev11 $0
+
+$LL.Main.dev204 : ([8], [3], [8], [3], [3], [3]) -> [1]
+$LL.Main.dev204 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.dev88 $0 $5 $1 $2 $3 $4 ($LL.Main.dev284 $5)
+
+$LL.Main.dev200 : ([3], [3]) -> [3]
+$LL.Main.dev200 $0 $1 =
+      trunc 3 (umod (mul (zext 128 $0) (zext 128 $1)) 128'h8)
+
+$LL.Main.dev197 : ([8], [3], [3], [3]) -> [1]
+$LL.Main.dev197 $0 $1 $2 $3 =
+      trunc 1 (lshr $0 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev264 ($LL.Main.dev251 $2 $1) $3))) 128'h1) 128'h1))
+
+$LL.Main.dev196 : ([8], [3], [3], [8], [3]) -> [8]
+$LL.Main.dev196 $0 $1 $2 $3 $4 =
+      $LL.Main.dev249 $0 $1 $2 $3 $4
+
+$LL.Main.dev192 : ([8], [8], [3]) -> [8]
+$LL.Main.dev192 $0 $1 $2 =
+      $LL.Main.dev144 $0 $1 $2
+
+$LL.Main.dev187 : ([8], [8], [3]) -> [8]
+$LL.Main.dev187 $0 $1 $2 =
+      $LL.Main.dev97 $2 $0 $1
+
+$LL.Main.dev185 : ([16]) -> [8]
+$LL.Main.dev185 $0 =
+      $LL.Main.dev28 $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.dev184 : ([8], [8]) -> [8]
+$LL.Main.dev184 $0 $1 =
+      $LL.Main.dev8 $0 $1
+
+$LL.Main.dev182 : ([8], [8]) -> [8]
+$LL.Main.dev182 $0 $1 =
+      $LL.Main.dev32 $0 $1
+
+$LL.Main.dev180 : ([8], [3], [8], [3], [3]) -> [8]
+$LL.Main.dev180 $0 $1 $2 $3 $4 =
+      $LL.Main.dev151 $0 $1 $2 $3 $4
+
+$LL.Main.dev179 : ([3], [3]) -> [3]
+$LL.Main.dev179 $0 $1 =
+      $LL.Main.dev152 ($0 # $1)
+
+$LL.Main.dev175 : ([8], [3], [3], [3]) -> [1]
+$LL.Main.dev175 $0 $1 $2 $3 =
+      trunc 1 (lshr $0 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev233 ($LL.Main.dev251 $3 $2) $1))) 128'h1) 128'h1))
+
+$LL.Main.dev174 : ([8], [3], [8], [3], [3]) -> [8]
+$LL.Main.dev174 $0 $1 $2 $3 $4 =
+      $LL.Main.dev286 $0 $1 $2 $3 $4
+
+$LL.Main.dev171 : ([8], [3], [3], [8], [3]) -> [1]
+$LL.Main.dev171 $0 $1 $2 $3 $4 =
+      $LL.Main.dev67 $0 $1 $2 $3 $4 ($LL.Main.dev274 $4 $2)
+
+$LL.Main.dev170 : ([3], [3], [1]) -> [3]
+$LL.Main.dev170 $0 $1 $2 =
+      let $t0 = $0 # $1 # $2 in
+      $LL.Main.dev33 $t0[4 +: 3] $t0[1 +: 3]
+
+$LL.Main.dev169 : ([8], [8]) -> [32]
+$LL.Main.dev169 $0 $1 =
+      $LL.Main.dev279 $0 $1
+
+$LL.Main.dev167 : ([8], [8], [3], [3], [3], [1]) -> [1]
+$LL.Main.dev167 $0 $1 $2 $3 $4 $5 =
+      let $t0 = $1 # $3 # $4 # $5 in
+      if eq $t0[0 +: 1] 1'h1 then $LL.Main.dev277 $t0[7 +: 8] $t0[4 +: 3] $t0[1 +: 3]
+            else $LL.Main.dev24 $0 $2 $3 $4 ($LL.Main.dev284 $3)
+
+$LL.Main.dev165 : ([3], [3], [3], [3], [8]) -> [1]
+$LL.Main.dev165 $0 $1 $2 $3 $4 =
+      trunc 1 (lshr $4 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev263 ($LL.Main.dev233 ($LL.Main.dev251 $0 $1) $2) $3))) 128'h1) 128'h1))
+
+$LL.Main.dev161 : ([8], [8]) -> [8]
+$LL.Main.dev161 $0 $1 =
+      $LL.Main.dev89 $0 $1
+
+$LL.Main.dev159 : ([6]) -> [3]
+$LL.Main.dev159 $0 =
+      $LL.Main.dev248 $0[3 +: 3] $0[0 +: 3]
+
+$LL.Main.dev158 : ([3], [3], [1]) -> [3]
+$LL.Main.dev158 $0 $1 $2 =
+      let $t0 = $0 # $1 # $2 in
+      $LL.Main.dev231 $t0[4 +: 3] $t0[1 +: 3]
+
+$LL.Main.dev154 : ([3], [8], [3], [8], [3]) -> [8]
+$LL.Main.dev154 $0 $1 $2 $3 $4 =
+      $LL.Main.dev29 $0 $1 $2 $3 $4
+
+$LL.Main.dev152 : ([6]) -> [3]
+$LL.Main.dev152 $0 =
+      $LL.Main.dev243 $0[3 +: 3] $0[0 +: 3]
+
+$LL.Main.dev151 : ([8], [3], [8], [3], [3]) -> [8]
+$LL.Main.dev151 $0 $1 $2 $3 $4 =
+      $LL.Main.dev204 $0 $1 $2 $3 $4 3'h0 # $LL.Main.dev204 $0 $1 $2 $3 $4 3'h1 # $LL.Main.dev204 $0 $1 $2 $3 $4 3'h2 # $LL.Main.dev204 $0 $1 $2 $3 $4 3'h3 # $LL.Main.dev204 $0 $1 $2 $3 $4 3'h4 # $LL.Main.dev204 $0 $1 $2 $3 $4 3'h5 # $LL.Main.dev204 $0 $1 $2 $3 $4 3'h6 # $LL.Main.dev204 $0 $1 $2 $3 $4 3'h7
+
+$LL.Main.dev145 : ([3], [8], [3], [8], [3]) -> [8]
+$LL.Main.dev145 $0 $1 $2 $3 $4 =
+      $LL.Main.dev154 $0 $1 $2 $3 $4
+
+$LL.Main.dev144 : ([8], [8], [3]) -> [8]
+$LL.Main.dev144 $0 $1 $2 =
+      $LL.Main.dev73 $0 $1 $2
+
+$LL.Main.dev143 : ([3]) -> [3]
+$LL.Main.dev143 $0 =
+      $0
+
+$LL.Main.dev131 : ([8], [8]) -> [8]
+$LL.Main.dev131 $0 $1 =
+      $LL.Main.dev23 $0 $1
+
+$LL.Main.dev124 : ([8], [8]) -> [8]
+$LL.Main.dev124 $0 $1 =
+      $LL.Main.dev192 $0 $1 3'h1
+
+$LL.Main.dev121 : ([8], [8]) -> [8]
+$LL.Main.dev121 $0 $1 =
+      $LL.Main.dev275 $0 $1 3'h1
+
+$LL.Main.dev115 : ([8], [8]) -> [8]
+$LL.Main.dev115 $0 $1 =
+      $LL.Main.dev59 $1 $0
+
+$LL.Main.dev114 : ([3], [3], [3], [3], [8], [1]) -> [1]
+$LL.Main.dev114 $0 $1 $2 $3 $4 $5 =
+      let $t0 = $0 # $1 # $2 # $3 # $4 # $5 in
+      $LL.Main.dev165 $t0[18 +: 3] $t0[15 +: 3] $t0[12 +: 3] $t0[9 +: 3] $t0[1 +: 8]
+
+$LL.Main.dev108 : ([8], [8]) -> [8]
+$LL.Main.dev108 $0 $1 =
+      $LL.Main.dev121 $0 $1
+
+$LL.Main.dev106 : ([3], [8], [8], [3]) -> [8]
+$LL.Main.dev106 $0 $1 $2 $3 =
+      $LL.Main.dev214 $0 $1 $2 $3
+
+$LL.ReWire.Prelude.not : ([1], [1]) -> [1]
+$LL.ReWire.Prelude.not $0 $1 =
+      if eq $1 1'h1 then 1'h0
+            else $LL.ReWire.Prelude.not3 $0
+
+$LL.Main.dev100 : ([8], [3], [3], [3]) -> [1]
+$LL.Main.dev100 $0 $1 $2 $3 =
+      trunc 1 (lshr $0 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev263 $3 ($LL.Main.dev264 $1 $2)))) 128'h1) 128'h1))
+
+$LL.Main.dev97 : ([3], [8], [8]) -> [8]
+$LL.Main.dev97 $0 $1 $2 =
+      $LL.Main.dev106 $0 $1 $2 3'h2
+
+$LL.Main.dev95 : ([8], [8], [3]) -> [8]
+$LL.Main.dev95 $0 $1 $2 =
+      $LL.Main.dev236 $0 $1 $2 3'h2
+
+$LL.Main.dev94 : ([8], [3], [8], [3]) -> [8]
+$LL.Main.dev94 $0 $1 $2 $3 =
+      $LL.Main.dev43 $0 $1 $2 $3
+
+$LL.Main.dev93 : ([3], [8], [3]) -> [1]
+$LL.Main.dev93 $0 $1 $2 =
+      trunc 1 (lshr $1 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev233 $2 $0))) 128'h1) 128'h1))
+
+$LL.Main.dev89 : ([8], [8]) -> [8]
+$LL.Main.dev89 $0 $1 =
+      $LL.Main.dev31 ($0 # $1)
+
+$LL.Main.dev88 : ([8], [3], [3], [8], [3], [3], [1]) -> [1]
+$LL.Main.dev88 $0 $1 $2 $3 $4 $5 $6 =
+      let $t0 = $0 # $1 # $2 # $5 # $6 in
+      if eq $t0[0 +: 1] 1'h1 then $LL.Main.dev100 $t0[10 +: 8] $t0[7 +: 3] $t0[4 +: 3] $t0[1 +: 3]
+            else $LL.Main.dev74 $1 $2 $3 $4 $5 ($LL.Main.dev284 $1)
+
+$LL.Main.dev86 : ([16]) -> [8]
+$LL.Main.dev86 $0 =
+      $LL.Main.dev37 $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.dev84 : ([8], [3], [8]) -> [8]
+$LL.Main.dev84 $0 $1 $2 =
+      $LL.Main.dev54 $0 $1 $2 3'h2
+
+$LL.Main.dev81 : ([8], [3], [3], [3]) -> [1]
+$LL.Main.dev81 $0 $1 $2 $3 =
+      trunc 1 (lshr $0 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev263 ($LL.Main.dev233 $1 $2) $3))) 128'h1) 128'h1))
+
+$LL.Main.dev74 : ([3], [3], [8], [3], [3], [1]) -> [1]
+$LL.Main.dev74 $0 $1 $2 $3 $4 $5 =
+      let $t0 = $0 # $1 # $2 # $3 # $4 # $5 in
+      $LL.Main.dev242 $t0[18 +: 3] $t0[15 +: 3] $t0[7 +: 8] $t0[4 +: 3] $t0[1 +: 3]
+
+$LL.Main.dev73 : ([8], [8], [3]) -> [8]
+$LL.Main.dev73 $0 $1 $2 =
+      $LL.Main.dev216 $0 $1 $2 3'h2
+
+$LL.Main.dev72 : ([8], [8], [3], [3], [3]) -> [1]
+$LL.Main.dev72 $0 $1 $2 $3 $4 =
+      $LL.Main.dev167 $0 $1 $2 $4 $3 ($LL.Main.dev284 $4)
+
+$LL.Main.dev69 : ([8]) -> [32]
+$LL.Main.dev69 $0 =
+      $LL.Main.dev169 $0 (Main.x2 $0)
+
+$LL.Main.dev67 : ([8], [3], [3], [8], [3], [1]) -> [1]
+$LL.Main.dev67 $0 $1 $2 $3 $4 $5 =
+      let $t0 = $1 # $3 # $4 # $5 in
+      if eq $t0[0 +: 1] 1'h1 then $LL.Main.dev93 $t0[12 +: 3] $t0[4 +: 8] $t0[1 +: 3]
+            else $LL.Main.dev221 $0 $1 $2 $4 ($LL.Main.dev274 $4 $2)
+
+$LL.Main.dev64 : ([8], [3], [3], [8], [3]) -> [8]
+$LL.Main.dev64 $0 $1 $2 $3 $4 =
+      $LL.Main.dev238 $0 $1 $2 $3 $4
+
+$LL.Main.dev63 : ([8], [3], [3], [1]) -> [3]
+$LL.Main.dev63 $0 $1 $2 $3 =
+      let $t0 = $1 # $3 in
+      if eq $t0[0 +: 1] 1'h1 then $LL.Main.dev143 $t0[1 +: 3]
+            else $LL.Main.dev170 $1 $2 ($LL.Main.dev284 ($LL.Main.dev285 $0))
+
+$LL.Main.dev62 : ([8], [3], [8], [3], [3]) -> [8]
+$LL.Main.dev62 $0 $1 $2 $3 $4 =
+      $LL.Main.dev174 $0 $1 $2 $3 $4
+
+$LL.Main.dev61 : ([8], [8]) -> [8]
+$LL.Main.dev61 $0 $1 =
+      $LL.Main.dev253 $0 $1
+
+$LL.Main.dev59 : ([8], [8]) -> [8]
+$LL.Main.dev59 $0 $1 =
+      $LL.Main.dev51 $0 $1 3'h1
+
+$LL.Main.dev57 : ([8], [8], [3]) -> [8]
+$LL.Main.dev57 $0 $1 $2 =
+      $LL.Main.dev95 $0 $1 $2
+
+$LL.Main.dev54 : ([8], [3], [8], [3]) -> [8]
+$LL.Main.dev54 $0 $1 $2 $3 =
+      $LL.Main.dev230 $0 $1 $2 $3
+
+$LL.Main.dev52 : ([8], [3], [3], [8], [3]) -> [8]
+$LL.Main.dev52 $0 $1 $2 $3 $4 =
+      $LL.Main.dev196 $0 $1 $2 $3 $4
+
+$LL.Main.dev51 : ([8], [8], [3]) -> [8]
+$LL.Main.dev51 $0 $1 $2 =
+      $LL.Main.dev187 $0 $1 $2
+
+$LL.Main.dev45 : ([8], [3], [3], [1]) -> [3]
+$LL.Main.dev45 $0 $1 $2 $3 =
+      let $t0 = $2 # $3 in
+      if eq $t0[0 +: 1] 1'h1 then $LL.Main.dev143 $t0[1 +: 3]
+            else $LL.Main.dev158 $1 $2 ($LL.Main.dev284 ($LL.Main.dev285 $0))
+
+$LL.Main.dev43 : ([8], [3], [8], [3]) -> [8]
+$LL.Main.dev43 $0 $1 $2 $3 =
+      $LL.Main.dev268 $0 $1 $2 $3
+
+$LL.Main.dev42 : ([16]) -> [8]
+$LL.Main.dev42 $0 =
+      $LL.Main.dev184 $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.dev39 : ([8], [8]) -> [8]
+$LL.Main.dev39 $0 $1 =
+      $LL.Main.dev131 $0 $1
+
+$LL.Main.dev37 : ([8], [8]) -> [8]
+$LL.Main.dev37 $0 $1 =
+      $LL.Main.dev115 $0 $1
+
+$LL.Main.dev33 : ([3], [3]) -> [3]
+$LL.Main.dev33 $0 $1 =
+      $LL.Main.dev263 $0 $1
+
+$LL.Main.dev32 : ([8], [8]) -> [8]
+$LL.Main.dev32 $0 $1 =
+      $LL.Main.dev86 ($0 # $1)
+
+$LL.Main.dev31 : ([16]) -> [8]
+$LL.Main.dev31 $0 =
+      $LL.Main.dev39 $0[8 +: 8] $0[0 +: 8]
+
+Main.x2 : ([8]) -> [8]
+Main.x2 $0 =
+      $LL.Main.x21 $0
+
+$LL.Main.dev29 : ([3], [8], [3], [8], [3]) -> [8]
+$LL.Main.dev29 $0 $1 $2 $3 $4 =
+      $LL.Main.dev94 $1 $2 $3 ($LL.Main.dev260 $0 $4 $3 ($LL.Main.dev284 ($LL.Main.dev285 $3)))
+
+$LL.Main.dev28 : ([8], [8]) -> [8]
+$LL.Main.dev28 $0 $1 =
+      $LL.Main.dev108 $0 $1
+
+$LL.Main.dev27 : ([8], [8]) -> [8]
+$LL.Main.dev27 $0 $1 =
+      $LL.Main.dev273 $0 $1
+
+$LL.Main.dev24 : ([8], [3], [3], [3], [1]) -> [1]
+$LL.Main.dev24 $0 $1 $2 $3 $4 =
+      let $t0 = $0 # $1 # $2 # $3 # $4 in
+      $LL.Main.dev197 $t0[10 +: 8] $t0[7 +: 3] $t0[4 +: 3] $t0[1 +: 3]
+
+$LL.Main.dev23 : ([8], [8]) -> [8]
+$LL.Main.dev23 $0 $1 =
+      $LL.Main.dev245 $0 $1 3'h1
+
+$LL.Pure.dispatch : ([8]) -> [32]
+$LL.Pure.dispatch $0 =
+      Main.dev $0
+
+$LL.Main.dev11 : ([8]) -> [32]
+$LL.Main.dev11 $0 =
+      $LL.Main.dev69 $0
+
+$LL.Main.x2 : ([8]) -> [8]
+$LL.Main.x2 $0 =
+      mul $0 8'h2
+
+$LL.Main.dev8 : ([8], [8]) -> [8]
+$LL.Main.dev8 $0 $1 =
+      $LL.Main.dev124 $1 $0
+
+$LL.Main.dev5 : ([8], [3], [3], [3], [3], [8], [1]) -> [1]
+$LL.Main.dev5 $0 $1 $2 $3 $4 $5 $6 =
+      let $t0 = $0 # $1 # $3 # $4 # $6 in
+      if eq $t0[0 +: 1] 1'h1 then $LL.Main.dev81 $t0[10 +: 8] $t0[7 +: 3] $t0[4 +: 3] $t0[1 +: 3]
+            else $LL.Main.dev114 $1 $2 $3 $4 $5 ($LL.Main.dev274 $1 $2)
+
+$LL.Main.dev2 : ([8], [8], [3]) -> [8]
+$LL.Main.dev2 $0 $1 $2 =
+      $LL.Main.dev84 $0 $2 $1
+
+$LL.Main.dev : ([8], [8], [3], [3]) -> [8]
+$LL.Main.dev $0 $1 $2 $3 =
+      $LL.Main.dev72 $0 $1 $2 $3 3'h0 # $LL.Main.dev72 $0 $1 $2 $3 3'h1 # $LL.Main.dev72 $0 $1 $2 $3 3'h2 # $LL.Main.dev72 $0 $1 $2 $3 3'h3 # $LL.Main.dev72 $0 $1 $2 $3 3'h4 # $LL.Main.dev72 $0 $1 $2 $3 3'h5 # $LL.Main.dev72 $0 $1 $2 $3 3'h6 # $LL.Main.dev72 $0 $1 $2 $3 3'h7
+
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      output __out1 : [8]
+      output __out2 : [8]
+      output __out3 : [8]
+      let $in = __in0
+      let $res = $Pure.dispatch $in
+      __out0 := $res[24 +: 8]
+      __out1 := $res[16 +: 8]
+      __out2 := $res[8 +: 8]
+      __out3 := $res[0 +: 8]

@@ -1,34 +1,92 @@
-device top_level:
+$Pure.dispatch : ([2], [1]) -> [4]
+$Pure.dispatch $0 $1 =
+      let $t0 = $1 # $0 in
+      $LL.Pure.dispatch1 $t0[2 +: 1] $t0[1 +: 1] $t0[0 +: 1]
 
-inputs [("__in0",1)]
-outputs [("__out0",1)]
-states [("__st0",1)]
+$LL.Main.convtest15 : ([1], [1]) -> [4]
+$LL.Main.convtest15 $0 $2 =
+      Main.convtest $0 $2
 
-$Pure.dispatch :: W2 -> W1 -> W4
-$Pure.dispatch $0 $1 = 4'case {1'$1, 2'$0} of
-    {1'@, 1'@, 1'@} -> $LL.Pure.dispatch
+$LL.Main.convtest14 : ([1], [1]) -> [4]
+$LL.Main.convtest14 $0 $1 =
+      1'h1 # $0 # $0 # $1
 
-$Pure.start :: W4
-$Pure.start  = 4'h8
+$LL.Main.convtest13 : ([1], [1], [1]) -> [4]
+$LL.Main.convtest13 $0 $1 $2 =
+      $LL.Main.convtest10 $0 $1 $2
 
-$LL.Main.convtest15 :: W1 -> W1 -> W4
-$LL.Main.convtest15 $0 $1 = 4'case {1'$0, 1'$1} of
-    {1'@, 1'@} -> $LL.Main.convtest14
+$LL.Main.convtest12 : ([1]) -> [4]
+$LL.Main.convtest12 $0 =
+      $LL.Main.convtest11 $0
 
-$LL.Main.convtest14 :: W1 -> W1 -> W4
-$LL.Main.convtest14 $0 $1 = {1'h1, 1'$0, 1'$0, 1'$1}
+$LL.Main.convtest11 : ([1]) -> [4]
+$LL.Main.convtest11 $1 =
+      $LL.Main.convtest4 $1
 
-$LL.Main.convtest10 :: W1 -> W1 -> W1 -> W4
-$LL.Main.convtest10 $0 $1 $2 = 4'case {1'$0, 4'case 1'$0 of {1'@} -> $LL.Main.convtest4} of
-    {1'@, 4'@} -> $LL.Main.convtest8
+$LL.Main.convtest10 : ([1], [1], [1]) -> [4]
+$LL.Main.convtest10 $0 $1 $2 =
+      $LL.Main.convtest8 $0 ($LL.Main.convtest12 $0)
 
-$LL.Main.convtest8 :: W1 -> W4 -> W4
-$LL.Main.convtest8 $0 $1 = 4'case {1'$0, 4'$1} of
-    {1'@, 1'h0, 2'_, 1'@} -> $LL.Main.convtest15
+$LL.Main.convtest9 : ([1], [1]) -> [4]
+$LL.Main.convtest9 $0 $1 =
+      $LL.Main.convtest14 $0 $1
 
-$LL.Main.convtest4 :: W1 -> W4
-$LL.Main.convtest4 $0 = {3'h0, 1'$0}
+$LL.Main.convtest8 : ([1], [4]) -> [4]
+$LL.Main.convtest8 $0 $1 =
+      let $t0 = $0 # $1 in
+      $LL.Main.convtest $t0[4 +: 1] $t0[0 +: 1]
 
-$LL.Pure.dispatch :: W1 -> W1 -> W1 -> W4
-$LL.Pure.dispatch $0 $1 $2 = 4'case {1'$1, 1'$0, 1'$2} of
-    {1'@, 1'@, 1'@} -> $LL.Main.convtest10
+$LL.Main.convtest7 : ([1], [1]) -> [4]
+$LL.Main.convtest7 $0 $2 =
+      $LL.Main.convtest2 $0 $2
+
+$LL.Pure.dispatch1 : ([1], [1], [1]) -> [4]
+$LL.Pure.dispatch1 $0 $1 $2 =
+      $LL.Pure.dispatch $0 $1 $2
+
+$LL.Main.convtest6 : ([1], [1]) -> [4]
+$LL.Main.convtest6 $0 $2 =
+      $LL.Main.convtest5 $0 $2
+
+$LL.Main.convtest5 : ([1], [1]) -> [4]
+$LL.Main.convtest5 $0 $2 =
+      $LL.Main.convtest7 $0 $2
+
+$LL.Main.convtest4 : ([1]) -> [4]
+$LL.Main.convtest4 $1 =
+      3'h0 # $1
+
+$LL.Pure.dispatch : ([1], [1], [1]) -> [4]
+$LL.Pure.dispatch $0 $1 $2 =
+      $LL.Main.convtest3 $1 $0 $2
+
+$LL.Main.convtest3 : ([1], [1], [1]) -> [4]
+$LL.Main.convtest3 $0 $1 $2 =
+      $LL.Main.convtest1 $0 $1 $2
+
+$LL.Main.convtest2 : ([1], [1]) -> [4]
+$LL.Main.convtest2 $0 $2 =
+      $LL.Main.convtest15 $0 $2
+
+$LL.Main.convtest1 : ([1], [1], [1]) -> [4]
+$LL.Main.convtest1 $0 $1 $2 =
+      $LL.Main.convtest13 $0 $1 $2
+
+$LL.Main.convtest : ([1], [1]) -> [4]
+$LL.Main.convtest $0 $2 =
+      $LL.Main.convtest6 $0 $2
+
+Main.convtest : ([1], [1]) -> [4]
+Main.convtest $0 $1 =
+      $LL.Main.convtest9 $0 $1
+
+device top_level
+      input __in0 : [1]
+      output __out0 : [1]
+      register __resumption_tag : [1] init 1'h0
+      register __st0 : [1] init 1'h0
+      let $in = __resumption_tag # __st0 # __in0
+      let $res = $Pure.dispatch $in[1 +: 2] $in[0 +: 1]
+      __out0 := $res[2 +: 1]
+      next __resumption_tag := $res[1 +: 1]
+      next __st0 := $res[0 +: 1]

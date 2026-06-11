@@ -1,61 +1,80 @@
-device top_level:
+$Pure.dispatch : ([16], [1]) -> [24]
+$Pure.dispatch $0 $1 =
+      let $t0 = $1 # $0 in
+      $LL.Pure.dispatch2 $t0[16 +: 1] $t0[8 +: 8] $t0[0 +: 8]
 
-inputs [("__in0",1)]
-outputs [("__out0",8)]
-states []
+$LL.Pure.dispatch2 : ([1], [8], [8]) -> [24]
+$LL.Pure.dispatch2 $0 $1 $2 =
+      $LL.Pure.dispatch1 $0 $1 $2
 
-$Pure.dispatch :: W16 -> W1 -> W24
-$Pure.dispatch $0 $1 = 24'case {1'$1, 16'$0} of
-    {1'@, 8'@, 8'@} -> $LL.Pure.dispatch1
+$LL.Main.loop11 : ([8], [8], [1]) -> [24]
+$LL.Main.loop11 $0 $1 $2 =
+      $LL.Main.loop $0 $1 $2
 
-$Pure.start :: W24
-$Pure.start  = 24'h100
+Main.loop : ([8], [8]) -> [24]
+Main.loop $0 $1 =
+      $LL.Main.loop8 ($0 # $1)
 
-Main.loop :: W8 -> W8 -> W24
-Main.loop $0 $1 = 24'case {8'$0, 8'$1} of
-    {16'@} -> $LL.Main.loop8
+$LL.Main.loop10 : ([8], [8]) -> [24]
+$LL.Main.loop10 $0 $1 =
+      $LL.Main.loop6 $0 $1
 
-$LL.Main.loop10 :: W8 -> W8 -> W24
-$LL.Main.loop10 $0 $1 = 24'case {8'$0, 8'$1} of
-    {8'@, 8'@} -> $LL.Main.loop6
+$LL.Pure.dispatch1 : ([1], [8], [8]) -> [24]
+$LL.Pure.dispatch1 $0 $1 $2 =
+      $LL.Pure.dispatch $1 $0 $2
 
-$LL.Pure.dispatch1 :: W1 -> W8 -> W8 -> W24
-$LL.Pure.dispatch1 $0 $1 $2 = 24'case {8'$1, 1'$0, 8'$2} of
-    {8'@, 1'@, 8'@} -> $LL.Pure.dispatch
+$LL.Main.loop9 : ([8], [8]) -> [24]
+$LL.Main.loop9 $0 $1 =
+      $LL.Main.loop1 $0 $1
 
-$LL.Pure.dispatch :: W8 -> W1 -> W8 -> W24
-$LL.Pure.dispatch $0 $1 $2 = 24'case {8'$0, 8'$2, 1'$1} of
-    {8'@, 8'@, 1'@} -> $LL.Main.loop
+$LL.Pure.dispatch : ([8], [1], [8]) -> [24]
+$LL.Pure.dispatch $0 $1 $2 =
+      $LL.Main.loop11 $0 $2 $1
 
-$LL.Main.loop8 :: W16 -> W24
-$LL.Main.loop8 $0 = 24'case 16'$0 of
-    {8'@, 8'@} -> $LL.Main.loop4
+$LL.Main.loop8 : ([16]) -> [24]
+$LL.Main.loop8 $0 =
+      $LL.Main.loop9 $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.loop7 :: W8 -> W8 -> W1 -> W1 -> W24
-$LL.Main.loop7 $0 $1 $2 $3 = 24'case {8'$0, 8'$1, 1'$3} of
-    {8'@, 8'@, 1'h1} -> $LL.Main.loop5
-    _ -> 24'case {8'$0, 8'$1, 1'$2} of
-      {8'@, 8'@, 1'@} -> $LL.Main.loop3
+$LL.Main.loop7 : ([8], [8], [1], [1]) -> [24]
+$LL.Main.loop7 $0 $1 $2 $3 =
+      let $t0 = $0 # $1 # $3 in
+      if eq $t0[0 +: 1] 1'h1 then $LL.Main.loop5 $t0[9 +: 8] $t0[1 +: 8]
+            else $LL.Main.loop3 $0 $1 $2
 
-$LL.Main.loop6 :: W8 -> W8 -> W24
-$LL.Main.loop6 $0 $1 = 24'case {8'$0, 8'case {8'$1, 8'$0} of {8'@, 8'@} -> Add} of
-    {8'@, 8'@} -> Main.loop
+$LL.Main.loop6 : ([8], [8]) -> [24]
+$LL.Main.loop6 $0 $1 =
+      Main.loop $0 (add $1 $0)
 
-$LL.Main.loop5 :: W8 -> W8 -> W24
-$LL.Main.loop5 $0 $1 = 24'case {8'$0, 8'$1} of
-    {8'@, 8'@} -> $LL.Main.loop2
+$LL.Main.loop5 : ([8], [8]) -> [24]
+$LL.Main.loop5 $0 $1 =
+      $LL.Main.loop2 $0 $1
 
-$LL.Main.loop4 :: W8 -> W8 -> W24
-$LL.Main.loop4 $0 $1 = {8'$0, 8'$1, 8'$0}
+$LL.Main.loop4 : ([8], [8]) -> [24]
+$LL.Main.loop4 $0 $1 =
+      $0 # $1 # $0
 
-$LL.Main.loop3 :: W8 -> W8 -> W1 -> W24
-$LL.Main.loop3 $0 $1 $2 = 24'case {8'$0, 8'$1, 1'$2} of
-    {8'@, 8'@, 1'h0} -> $LL.Main.loop10
+$LL.Main.loop3 : ([8], [8], [1]) -> [24]
+$LL.Main.loop3 $0 $1 $2 =
+      let $t0 = $0 # $1 # $2 in
+      $LL.Main.loop10 $t0[9 +: 8] $t0[1 +: 8]
 
-$LL.Main.loop2 :: W8 -> W8 -> W24
-$LL.Main.loop2 $0 $1 = 24'case {8'$1, 8'$0} of
-    {8'@, 8'@} -> Main.loop
+$LL.Main.loop2 : ([8], [8]) -> [24]
+$LL.Main.loop2 $0 $1 =
+      Main.loop $1 $0
 
-$LL.Main.loop :: W8 -> W8 -> W1 -> W24
-$LL.Main.loop $0 $1 $2 = 24'case {8'$0, 8'$1, 1'$2, 1'$2} of
-    {8'@, 8'@, 1'@, 1'@} -> $LL.Main.loop7
+$LL.Main.loop1 : ([8], [8]) -> [24]
+$LL.Main.loop1 $0 $1 =
+      $LL.Main.loop4 $0 $1
+
+$LL.Main.loop : ([8], [8], [1]) -> [24]
+$LL.Main.loop $0 $1 $2 =
+      $LL.Main.loop7 $0 $1 $2 $2
+
+device top_level
+      input __in0 : [1]
+      output __out0 : [8]
+      register __resumption_tag : [16] init 16'h100
+      let $in = __resumption_tag # __in0
+      let $res = $Pure.dispatch $in[1 +: 16] $in[0 +: 1]
+      __out0 := $res[16 +: 8]
+      next __resumption_tag := $res[0 +: 16]

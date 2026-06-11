@@ -1,33 +1,53 @@
-device top_level:
+$Pure.dispatch : ([2]) -> [1]
+$Pure.dispatch $1 =
+      $LL.Pure.dispatch $1
 
-inputs [("__in0",2)]
-outputs [("__out0",1)]
-states []
+Main.startp1 : ([2]) -> [1]
+Main.startp1 $0 =
+      $LL.Main.startp1 $0
 
-$Pure.dispatch :: W2 -> W1
-$Pure.dispatch $0 = 1'case 2'$0 of
-    {2'@} -> $LL.Main.proc4
+$LL.Pure.dispatch : ([2]) -> [1]
+$LL.Pure.dispatch $0 =
+      Main.startp1 $0
 
-$Pure.start :: W1
-$Pure.start  = 1'h0
+$LL.Main.proc7 : ([2]) -> [1]
+$LL.Main.proc7 $0 =
+      if eq $0 2'h2 then 1'h0
+            else 1'h1
 
-$LL.Main.proc7 :: W2 -> W1
-$LL.Main.proc7 $0 = 1'case 2'$0 of
-    {2'h2} -> 1'h0
-    _ -> 1'h1
+$LL.Main.proc4 : ([2]) -> [1]
+$LL.Main.proc4 $0 =
+      $LL.Main.proc $0 $0
 
-$LL.Main.proc4 :: W2 -> W1
-$LL.Main.proc4 $0 = 1'case {2'$0, 2'$0} of
-    {2'@, 2'@} -> $LL.Main.proc
+$LL.Main.proc3 : ([2]) -> [1]
+$LL.Main.proc3 $0 =
+      $LL.Main.proc4 $0
 
-$LL.Main.proc2 :: W2 -> W2 -> W1
-$LL.Main.proc2 $0 $1 = 1'case 2'$1 of
-    {2'h1} -> 1'h0
-    _ -> 1'case 2'$0 of
-      {2'@} -> $LL.Main.proc7
+$LL.Main.proc2 : ([2], [2]) -> [1]
+$LL.Main.proc2 $0 $1 =
+      if eq $1 2'h1 then 1'h0
+            else $LL.Main.proc7 $0
 
-$LL.Main.proc :: W2 -> W2 -> W1
-$LL.Main.proc $0 $1 = 1'case 2'$1 of
-    {2'h0} -> 1'h0
-    _ -> 1'case {2'$0, 2'$0} of
-      {2'@, 2'@} -> $LL.Main.proc2
+$LL.Main.startp1 : ([2]) -> [1]
+$LL.Main.startp1 $0 =
+      $LL.Main.startp $0
+
+Main.proc : ([2]) -> [1]
+Main.proc $0 =
+      $LL.Main.proc3 $0
+
+$LL.Main.startp : ([2]) -> [1]
+$LL.Main.startp $0 =
+      Main.proc $0
+
+$LL.Main.proc : ([2], [2]) -> [1]
+$LL.Main.proc $0 $1 =
+      if eq $1 2'h0 then 1'h0
+            else $LL.Main.proc2 $0 $0
+
+device top_level
+      input __in0 : [2]
+      output __out0 : [1]
+      let $in = __in0
+      let $res = $Pure.dispatch $in
+      __out0 := $res

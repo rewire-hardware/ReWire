@@ -35,6 +35,11 @@ package rw_helpers is
   function rw_gteq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_cond (c : std_logic_vector; a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_repl (n : natural; v : std_logic_vector) return std_logic_vector;
+  function rw_sext (v : std_logic_vector; n : natural) return std_logic_vector;
+  function rw_lts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_lteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_gts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_gteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
 end package;
 
 package body rw_helpers is
@@ -74,7 +79,7 @@ package body rw_helpers is
   function rw_mod (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
     constant n : natural := rw_max(a'length, b'length);
   begin
-    if unsigned(b) = 0 then return std_logic_vector(to_unsigned(0, n) - 1); end if;
+    if unsigned(b) = 0 then return std_logic_vector(resize(unsigned(a), n)); end if;
     return std_logic_vector(resize(resize(unsigned(a), n) mod resize(unsigned(b), n), n));
   end;
   function rw_pow (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
@@ -205,6 +210,26 @@ package body rw_helpers is
     end loop;
     return r;
   end;
+  function rw_sext (v : std_logic_vector; n : natural) return std_logic_vector is
+  begin
+    return std_logic_vector(resize(signed(v), n));
+  end;
+  function rw_lts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) < signed(b));
+  end;
+  function rw_lteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) <= signed(b));
+  end;
+  function rw_gts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) > signed(b));
+  end;
+  function rw_gteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) >= signed(b));
+  end;
 end package body;
 
 library ieee;
@@ -218,26 +243,20 @@ port (\__in0\ : in std_logic_vector (63 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal \__padding\ : std_logic_vector (0 downto 0);
-      signal zll_main_loop_in : std_logic_vector (127 downto 0);
-      signal zll_main_compute_in : std_logic_vector (127 downto 0);
-      signal zll_main_compute4_in : std_logic_vector (127 downto 0);
-      signal id_in : std_logic_vector (63 downto 0);
-      signal reverse_in : std_logic_vector (31 downto 0);
-      signal \id_inR1\ : std_logic_vector (63 downto 0);
-      signal zll_main_loop2_in : std_logic_vector (64 downto 0);
-      signal zll_main_loop3_in : std_logic_vector (64 downto 0);
-      signal pause : std_logic_vector (64 downto 0);
+signal zin : std_logic_vector (127 downto 0);
+      signal zi0 : std_logic_vector (63 downto 0);
+      signal zi1 : std_logic_vector (63 downto 0);
+      signal zi2 : std_logic_vector (31 downto 0);
+      signal zi3 : std_logic_vector (64 downto 0);
+      signal zi4 : std_logic_vector (63 downto 0);
+      signal zres : std_logic_vector (64 downto 0);
 begin
-zll_main_loop_in <= (\__in0\ & \__in1\);
-      zll_main_compute_in <= zll_main_loop_in(127 downto 0);
-      zll_main_compute4_in <= zll_main_compute_in(127 downto 0);
-      id_in <= zll_main_compute4_in(127 downto 64);
-      reverse_in <= id_in(63 downto 32);
-      \id_inR1\ <= zll_main_compute4_in(63 downto 0);
-      zll_main_loop2_in <= (std_logic_vector'(B"0") & ((reverse_in(7 downto 0) & reverse_in(15 downto 8) & reverse_in(23 downto 16) & reverse_in(31 downto 24)) & std_logic_vector'(B"00000000") & \id_inR1\(23 downto 0)));
-      zll_main_loop3_in <= zll_main_loop2_in(64 downto 0);
-      pause <= (std_logic_vector'(B"1") & zll_main_loop3_in(63 downto 0));
-      \__padding\ <= pause(64 downto 64);
-      \__out0\ <= pause(63 downto 0);
+zin <= (\__in0\ & \__in1\);
+      zi0 <= zin(127 downto 64);
+      zi1 <= zin(63 downto 0);
+      zi2 <= zi0(63 downto 32);
+      zi3 <= (std_logic_vector'(B"0") & ((zi2(7 downto 0) & zi2(15 downto 8) & zi2(23 downto 16) & zi2(31 downto 24)) & std_logic_vector'(B"00000000") & zi1(23 downto 0)));
+      zi4 <= zi3(63 downto 0);
+      zres <= (std_logic_vector'(B"1") & zi4);
+      \__out0\ <= zres(63 downto 0);
 end architecture;

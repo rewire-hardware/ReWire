@@ -1,26 +1,63 @@
 module top_level (input logic [31:0] __in0,
   output logic [31:0] __out0);
-  logic [31:0] zll_main_f_in;
-  logic [31:0] main_andw32_in;
-  logic [63:0] andw32_in;
+  logic [31:0] zin;
   logic [31:0] extres;
-  logic [31:0] notw32_in;
+  logic [31:0] zi0;
   logic [31:0] extresR1;
-  logic [31:0] main_xorw32_in;
-  logic [63:0] xorw32_in;
+  logic [31:0] zi1;
   logic [31:0] extresR2;
-  logic [63:0] plusw32_in;
+  logic [31:0] zi2;
   logic [31:0] extresR3;
-  assign zll_main_f_in = __in0;
-  assign main_andw32_in = zll_main_f_in[31:0];
-  assign andw32_in = {main_andw32_in[31:0], 32'hf0f0f0f0};
-  andW32  inst (andw32_in[63:32], andw32_in[31:0], extres[31:0]);
-  assign notw32_in = zll_main_f_in[31:0];
-  notW32  instR1 (notw32_in[31:0], extresR1[31:0]);
-  assign main_xorw32_in = extresR1;
-  assign xorw32_in = {main_xorw32_in[31:0], 32'h12345678};
-  xorW32  instR2 (xorw32_in[63:32], xorw32_in[31:0], extresR2[31:0]);
-  assign plusw32_in = {extres, extresR2};
-  plusW32  instR3 (plusw32_in[63:32], plusw32_in[31:0], extresR3[31:0]);
-  assign __out0 = extresR3;
+  logic [31:0] zres;
+  assign zin = __in0;
+  andW32  inst (zin, 32'hf0f0f0f0, extres[31:0]);
+  assign zi0 = extres;
+  notW32  instR1 (zin, extresR1[31:0]);
+  assign zi1 = extresR1;
+  xorW32  instR2 (zi1, 32'h12345678, extresR2[31:0]);
+  assign zi2 = extresR2;
+  plusW32  instR3 (zi0, zi2, extresR3[31:0]);
+  assign zres = extresR3;
+  assign __out0 = zres;
+endmodule
+
+module Main_xorModel (input logic [31:0] arg0,
+  input logic [31:0] arg1,
+  output logic [31:0] res);
+  logic [63:0] zi0;
+  logic [31:0] zi1;
+  logic [31:0] zi2;
+  assign zi0 = {arg0, arg1};
+  assign zi1 = zi0[63:32];
+  assign zi2 = zi0[31:0];
+  assign res = zi1 ^ zi2;
+endmodule
+
+module Main_plusModel (input logic [31:0] arg0,
+  input logic [31:0] arg1,
+  output logic [31:0] res);
+  logic [63:0] zi0;
+  logic [31:0] zi1;
+  logic [31:0] zi2;
+  assign zi0 = {arg0, arg1};
+  assign zi1 = zi0[63:32];
+  assign zi2 = zi0[31:0];
+  assign res = zi1 + zi2;
+endmodule
+
+module Main_andModel (input logic [31:0] arg0,
+  input logic [31:0] arg1,
+  output logic [31:0] res);
+  logic [63:0] zi0;
+  logic [31:0] zi1;
+  logic [31:0] zi2;
+  assign zi0 = {arg0, arg1};
+  assign zi1 = zi0[63:32];
+  assign zi2 = zi0[31:0];
+  assign res = zi1 & zi2;
+endmodule
+
+module Main_notModel (input logic [31:0] arg0,
+  output logic [31:0] res);
+  assign res = ~arg0;
 endmodule

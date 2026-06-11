@@ -35,21 +35,11 @@ library
       ReWire.BitVector
       ReWire.Builtins
       ReWire.Config
-      ReWire.Core.Analysis
-      ReWire.Core.Check
-      ReWire.Core.Interp
-      ReWire.Core.Mangle
-      ReWire.Core.Parse
-      ReWire.Core.Syntax
-      ReWire.Core.ToCryptol
-      ReWire.Core.ToVerilog
-      ReWire.Core.ToVHDL
-      ReWire.Core.Transform
       ReWire.Crust.KindCheck
       ReWire.Crust.PrimBasis
       ReWire.Crust.Purify
       ReWire.Crust.Syntax
-      ReWire.Crust.ToCore
+      ReWire.Crust.ToMantle
       ReWire.Crust.Transform
       ReWire.Crust.TypeCheck
       ReWire.Crust.Types
@@ -68,6 +58,15 @@ library
       ReWire.HSE.Parse
       ReWire.HSE.Rename
       ReWire.HSE.ToCrust
+      ReWire.Mantle.Check
+      ReWire.Mantle.Interp
+      ReWire.Mantle.Mangle
+      ReWire.Mantle.Parse
+      ReWire.Mantle.Syntax
+      ReWire.Mantle.ToCryptol
+      ReWire.Mantle.ToVerilog
+      ReWire.Mantle.ToVHDL
+      ReWire.Mantle.Transform
       ReWire.ModCache
       ReWire.Orphans
       ReWire.Pass

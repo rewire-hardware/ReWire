@@ -1,19 +1,31 @@
-device top_level:
+$Pure.dispatch : ([8], [8]) -> [17]
+$Pure.dispatch $0 $1 =
+      let $t0 = $1 # $0 in
+      $LL.Pure.dispatch $t0[8 +: 8] $t0[0 +: 8]
 
-inputs [("__in0",8)]
-outputs [("__out0",1),("__out1",8)]
-states [("__st0",8)]
+Main.start' : ([8]) -> [17]
+Main.start' $0 =
+      9'h0 # $0
 
-$Pure.dispatch :: W8 -> W8 -> W17
-$Pure.dispatch $0 $1 = 17'case {8'$1, 8'$0} of
-    {8'@, 8'@} -> $LL.Main.start'
+$LL.Main.start'1 : ([8], [8]) -> [17]
+$LL.Main.start'1 $0 $1 =
+      $LL.Main.start' $0 $1
 
-$Pure.start :: W17
-$Pure.start  = 17'h0
+$LL.Main.start' : ([8], [8]) -> [17]
+$LL.Main.start' $0 $1 =
+      Main.start' $1
 
-Main.start' :: W8 -> W17
-Main.start' $0 = {9'h0, 8'$0}
+$LL.Pure.dispatch : ([8], [8]) -> [17]
+$LL.Pure.dispatch $0 $1 =
+      $LL.Main.start'1 $0 $1
 
-$LL.Main.start' :: W8 -> W8 -> W17
-$LL.Main.start' $0 $1 = 17'case 8'$1 of
-    {8'@} -> Main.start'
+device top_level
+      input __in0 : [8]
+      output __out0 : [1]
+      output __out1 : [8]
+      register __st0 : [8] init 8'h0
+      let $in = __st0 # __in0
+      let $res = $Pure.dispatch $in[8 +: 8] $in[0 +: 8]
+      __out0 := $res[16 +: 1]
+      __out1 := $res[8 +: 8]
+      next __st0 := $res[0 +: 8]
