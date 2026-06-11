@@ -41,6 +41,7 @@ library
       ReWire.Core.Mangle
       ReWire.Core.Parse
       ReWire.Core.Syntax
+      ReWire.Core.ToCryptol
       ReWire.Core.ToVerilog
       ReWire.Core.ToVHDL
       ReWire.Core.Transform
@@ -53,6 +54,7 @@ library
       ReWire.Crust.TypeCheck
       ReWire.Crust.Types
       ReWire.Crust.Util
+      ReWire.Cryptol.Syntax
       ReWire.Error
       ReWire.Fix
       ReWire.Flags

@@ -2,8 +2,10 @@
 
 ReWire is a compiler for a subset of
 [Haskell](http://haskell.org/) to Verilog and VHDL, suitable for synthesis and
-implementation on FPGAs. ReWire enables a semantics-directed style of
-synchronous hardware development, based on reactive resumption monads. See the
+implementation on FPGAs (plus a [Cryptol](https://cryptol.net/) backend
+producing a pure model of the generated hardware, for verification and
+simulation). ReWire enables a semantics-directed style of synchronous hardware
+development, based on reactive resumption monads. See the
 [online documentation](http://rewire-hardware.github.io/ReWire/) for more information.
 
 

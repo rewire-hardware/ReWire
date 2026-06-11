@@ -41,6 +41,7 @@ data-files:
 - tests/regression/*.sv
 - tests/regression/*.rwc
 - tests/regression/*.vhdl
+- tests/regression/*.cry
 - tests/regression/*.yaml
 - rewire-user/src/*.hs
 - rewire-user/src/RWC/*.hs

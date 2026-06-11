@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+* New Cryptol backend (`rwc --cryptol`): translates Core to a self-contained
+  Cryptol module -- one pure function per Core defn plus a `rw_device` stream
+  function modeling the whole device (a sequence of per-cycle inputs to a
+  sequence of per-cycle outputs), bit-for-bit equivalent to the Core
+  interpreter. Intended for verification (e.g., proving equivalence against a
+  hand-written Cryptol spec with SAW) and fast functional simulation.
+  Unclocked externs are declared as uninterpreted functions in a `parameter`
+  block; clocked externs are rejected. The rwc-test cosimulation check gains a
+  fourth leg (when `cryptol` is on the PATH) evaluating `rw_device` against
+  the interpreter trace, and `tests/regression/*.cry` golden tests.
 * The VHDL backend (`rwc --vhdl`) works again, with full feature parity with
   the Verilog backend.
 * New `rwc --testbench[=inputs.yaml]` flag: alongside the Verilog or VHDL
@@ -98,7 +108,7 @@
 * Support for larger tuples; improved Verilog generation (e.g., no more
   single-use modules).
 
-## 2.2–2.3 (2022)
+## 2.2-2.3 (2022)
 
 * Project restructured as a multi-package Stack project; the user-facing
   "standard library" for ReWire programs broken out into the `rewire-user`
@@ -115,7 +125,7 @@
   purification pass, and reactive-resumption-based source language roughly
   as they exist today), targeting VHDL.
 
-## 0.1 (2014–2016)
+## 0.1 (2014-2016)
 
 * Original research prototype: Haskell-subset-to-VHDL compiler based on
   reactive resumption monads.

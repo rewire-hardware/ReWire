@@ -12,7 +12,7 @@ import GHC.IO.Handle (hDuplicate, hDuplicateTo)
 import Data.Char (isHexDigit)
 import Numeric (readHex)
 import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), ArgDescr (..))
-import System.Directory (listDirectory, setCurrentDirectory, getCurrentDirectory, doesFileExist, createDirectoryIfMissing)
+import System.Directory (listDirectory, setCurrentDirectory, getCurrentDirectory, doesFileExist, createDirectoryIfMissing, findExecutable)
 import System.Environment (getArgs)
 import System.Environment (withArgs)
 import System.Exit (exitFailure, ExitCode (..))
@@ -109,6 +109,12 @@ testCompiler flags fn = do
                   cdTestdir
                   withArgs ((fn -<.> "rwc") : ["--from-core", "--vhdl", "-o", ofile "vhdl"] <> extraFlags) RWC.main)
 
+      cryTests <-
+            -- Test: compile Core to Cryptol with RWC (when a .cry golden exists).
+            maybeGolden "cry" (do
+                  cdTestdir
+                  withArgs ((fn -<.> "rwc") : ["--from-core", "--cryptol", "-o", ofile "cry"] <> extraFlags) RWC.main)
+
       cosimTests <-
             -- Test: cosimulation. Drive the generated Verilog (iverilog/vvp)
             -- and VHDL (ghdl) with identical pseudorandom stimulus and check
@@ -118,7 +124,7 @@ testCompiler flags fn = do
                   ex <- doesFileExist $ fn -<.> "vhdl"
                   pure [ testCase (takeBaseName fn <> " (cosim iverilog/ghdl)") (cdTestdir >> runCosim fn) | ex ]
 
-      pure $ ghcTests <> coreTests <> verilogTests <> vhdlTests <> cosimTests
+      pure $ ghcTests <> coreTests <> verilogTests <> vhdlTests <> cryTests <> cosimTests
 
       where extraFlags :: [String]
             extraFlags = if FlagV `elem` flags then ["-v"] else []
@@ -220,8 +226,9 @@ runCosim :: FilePath -> IO ()
 runCosim fn = do
       src <- readFile $ ofl "sv"
       let (ins, outs) = parsePorts src
+          stim        = stimulus (takeBaseName fn) $ dataIns ins
       unless (null outs) $ do
-            writeFile inputsF $ inputsYaml (takeBaseName fn) $ dataIns ins
+            writeFile inputsF $ inputsYaml stim
             rwc ["--testbench=" <> inputsF, "-o", ofl "cosim.sv"]
             rwc ["--vhdl", "--testbench=" <> inputsF, "-o", ofl "cosim.vhdl"]
             -- The interpreter cannot evaluate externs, so the check degrades
@@ -243,6 +250,27 @@ runCosim fn = do
                        <> "\nghdl:     " <> show th
                        <> "\ninterp:   " <> show ti)
                   $ tv == th && tv == ti && length tv == cosimCycles * length outs
+            -- Fourth leg: evaluate the Cryptol backend's rw_device on the same
+            -- stimulus with the cryptol interpreter and compare against the
+            -- interpreter trace. Externs become uninterpreted parameters in
+            -- Cryptol, so this is skipped whenever the interpreter leg failed
+            -- (and when cryptol isn't installed).
+            mcry <- findExecutable "cryptol"
+            case (mcry, iok) of
+                  (Just _, Right ()) -> do
+                        rwc ["--cryptol", "-o", ofl "cosim.cry"]
+                        callCommand $ unwords
+                              [ "cryptol", ofl "cosim.cry"
+                              , "-c", "':set base=16'"
+                              , "-c", "'" <> cryDevice (dataIns ins) stim <> "'"
+                              , ">", ofl "cosim.ctrace" ]
+                        tc <- hexWords <$> readFile (ofl "cosim.ctrace")
+                        let expect = map (concatWord (map snd outs) . map snd) $ chunksOf (length outs) ti
+                        assertBool (  "cryptol/interpreter cosimulation traces differ:"
+                                   <> "\ncryptol: " <> show tc
+                                   <> "\ninterp:  " <> show expect)
+                              $ tc == expect
+                  _ -> pure ()
       where ofl :: String -> FilePath
             ofl ext = fn -<.> ("out." <> ext)
 
@@ -274,27 +302,20 @@ outTrace = mapMaybe entry . lines
                   'x' : rest | [(x, _)] <- readHex $ takeWhile isHexDigit rest -> Just x
                   _                                                           -> Nothing
 
--- | A deterministic pseudorandom interp-style inputs file (one map of
---   input-name-to-value per cycle, decimal values).
-inputsYaml :: String -> [(String, Int)] -> String
-inputsYaml nm ins
-      | null ins  = "[]\n"
-      | otherwise = unlines $ concat $ go (seed0 nm) cosimCycles
-      where go :: Word32 -> Int -> [[String]]
+-- | Deterministic pseudorandom stimulus: one (name, value) pair per data
+--   input per cycle, with the inputs in port order.
+stimulus :: String -> [(String, Int)] -> [[(String, Integer)]]
+stimulus nm ins = go (seed0 nm) cosimCycles
+      where go :: Word32 -> Int -> [[(String, Integer)]]
             go _ 0 = []
-            go s n = let (s', ls) = cyc s in ls : go s' (n - 1)
+            go s n = let (s', vs) = foldl draw (s, []) ins in vs : go s' (n - 1)
 
-            cyc :: Word32 -> (Word32, [String])
-            cyc s0 = fmap (zipWith fmt ("- " : repeat "  ")) $ foldl draw (s0, []) ins
-                  where draw :: (Word32, [(String, Integer)]) -> (String, Int) -> (Word32, [(String, Integer)])
-                        draw (s, acc) (n, w) =
-                              let chunks      = (w + 31) `div` 32
-                                  (s', v)     = foldl (\ (sAcc, vAcc) _ -> let sN = xorshift32 sAcc in (sN, vAcc * (2 ^ (32 :: Integer)) + toInteger sN))
-                                                      (s, 0) [1 .. chunks]
-                              in (s', acc <> [(n, v `mod` (2 ^ toInteger w))])
-
-            fmt :: String -> (String, Integer) -> String
-            fmt pre (n, v) = pre <> n <> ": " <> show v
+            draw :: (Word32, [(String, Integer)]) -> (String, Int) -> (Word32, [(String, Integer)])
+            draw (s, acc) (n, w) =
+                  let chunks      = (w + 31) `div` 32
+                      (s', v)     = foldl (\ (sAcc, vAcc) _ -> let sN = xorshift32 sAcc in (sN, vAcc * (2 ^ (32 :: Integer)) + toInteger sN))
+                                          (s, 0) [1 .. chunks]
+                  in (s', acc <> [(n, v `mod` (2 ^ toInteger w))])
 
             seed0 :: String -> Word32
             seed0 = foldl (\ h c -> h * 31 + fromIntegral (fromEnum c)) 0x12345678
@@ -303,6 +324,43 @@ inputsYaml nm ins
             xorshift32 x0 = let x1 = x0 `xor` (x0 `shiftL` 13)
                                 x2 = x1 `xor` (x1 `shiftR` 17)
                             in       x2 `xor` (x2 `shiftL` 5)
+
+-- | Renders stimulus as an interp-style inputs file (decimal values).
+inputsYaml :: [[(String, Integer)]] -> String
+inputsYaml stim
+      | all null stim = "[]\n"
+      | otherwise     = unlines $ concatMap (zipWith fmt ("- " : repeat "  ")) stim
+      where fmt :: String -> (String, Integer) -> String
+            fmt pre (n, v) = pre <> n <> ": " <> show v
+
+-- | A cryptol expression evaluating the generated device on the stimulus: one
+--   input word per cycle, the data inputs concatenated MSB-first in port
+--   order (mirroring how the Core interpreter and the testbenches feed them).
+cryDevice :: [(String, Int)] -> [[(String, Integer)]] -> String
+cryDevice ins stim = "rw_device ([" <> intercalate ", " (map cyc stim) <> "] : "
+                  <> "[" <> show (length stim) <> "][" <> show (sum $ map snd ins) <> "])"
+      where cyc :: [(String, Integer)] -> String
+            cyc = show . concatWord (map snd ins) . map snd
+
+-- | Concatenate per-wire values (given the wire widths) into one word,
+--   MSB-first.
+concatWord :: [Int] -> [Integer] -> Integer
+concatWord ws vs = foldl (\ acc (w, v) -> acc `shiftL` w + v) 0 $ zip ws vs
+
+-- | All hex literals (0x...) in a cryptol trace, in order: the elements of
+--   the evaluated output sequence (loader messages and warnings never
+--   contain hex literals).
+hexWords :: String -> [Integer]
+hexWords = \ case
+      '0' : 'x' : s | (h, s') <- span isHexDigit s
+                    , [(x, _)] <- readHex h -> x : hexWords s'
+      _ : s                                 -> hexWords s
+      []                                    -> []
+
+chunksOf :: Int -> [a] -> [[a]]
+chunksOf n = \ case
+      [] -> []
+      xs -> take n xs : chunksOf n (drop n xs)
 
 -- | The port list of the generated top_level Verilog module: input and output
 --   names with bit widths.
