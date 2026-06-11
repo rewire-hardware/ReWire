@@ -31,7 +31,6 @@ data-files:
     tests/negative/illtyped-dead-code.hs
     tests/negative/illtyped-use.hs
     tests/negative/kind-error.hs
-    tests/negative/live-error-call.hs
     tests/negative/missing-import.hs
     tests/negative/negative-vec-size.hs
     tests/negative/no-start.hs
@@ -43,6 +42,9 @@ data-files:
     tests/negative/unbounded-recursion.hs
     tests/negative/unknown-var.hs
     tests/negative/unsupported-instance.hs
+    tests/warning/live-error-call.hs
+    tests/warning/missing-inputs.hs
+    tests/warning/testbench-ignored.hs
     tests/regression/Mods/Infix.hs
     tests/regression/Mods/X.hs
     tests/regression/Mods/Y.hs

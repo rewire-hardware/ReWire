@@ -11,6 +11,8 @@ options :: [OptDescr Flag]
 options =
        [ Option ['h'] ["help"]          (NoArg  FlagHelp)                          "This help message."
        , Option ['v'] ["verbose"]       (NoArg  FlagVerbose)                       "More verbose output."
+       , Option ['w'] ["no-warn"]       (NoArg  FlagNoWarn)                        "Suppress warnings."
+       , Option ['W'] []                (ReqArg FlagW           "error")           "-Werror: treat warnings as errors."
        , Option ['d'] ["dump"]          (ReqArg FlagDump        "1,2,...")         "Dump the intermediate form of the corresponding pass number (1-13; see -v output)."
        , Option []    ["flatten"]       (NoArg  FlagFlatten)                       "Flatten RTL output into a single module (currently slow, memory-intensive)."
        , Option ['o'] []                (ReqArg FlagO           "filename.vhdl")   "Name for output file."

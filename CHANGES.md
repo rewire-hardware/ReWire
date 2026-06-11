@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+* Compiler warnings: rwc and rwe can now emit non-fatal warnings
+  (`file:line:col: Warning: ...` on stderr), with `-w`/`--no-warn` to
+  suppress them and `-Werror` to make them fatal. Initial warnings: a live
+  call to the built-in `error` function now compiles to a zero (don't-care)
+  value with a warning instead of failing outright; an explicitly named
+  `--interpret`/`--testbench` inputs file that can't be read warns before
+  driving all inputs with zeros; `--testbench` with a target other than
+  Verilog or VHDL warns that no testbench is generated. New warning test
+  suite (`tests/warning/`): each test declares expected-warning substrings
+  with `-- EXPECT-WARNING:` comments and is checked under default flags,
+  `-Werror` (must fail), and `-w` (must be silent).
 * New Cryptol backend (`rwc --cryptol`): translates Core to a self-contained
   Cryptol module -- one pure function per Core defn plus a `rw_device` stream
   function modeling the whole device (a sequence of per-cycle inputs to a

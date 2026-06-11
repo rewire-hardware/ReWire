@@ -32,6 +32,7 @@ extra-source-files:
 data-files:
 - tests/integration/*.hs
 - tests/negative/*.hs
+- tests/warning/*.hs
 - tests/regression/Mods/*.hs
 - tests/regression/OD19/*.hs
 - tests/regression/Mods/C/*.hs

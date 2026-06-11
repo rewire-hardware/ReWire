@@ -11,6 +11,8 @@ options :: [OptDescr Flag]
 options =
        [ Option ['h'] ["help"]            (NoArg  FlagHelp)                          "This help message."
        , Option ['v'] ["verbose"]         (NoArg  FlagVerbose)                       "More verbose output."
+       , Option ['w'] ["no-warn"]         (NoArg  FlagNoWarn)                        "Suppress warnings."
+       , Option ['W'] []                  (ReqArg FlagW           "error")           "-Werror: treat warnings as errors."
        , Option []    ["verilog"]         (NoArg  FlagVerilog)                       "Produce Verilog output (default)."
        , Option []    ["vhdl"]            (NoArg  FlagVhdl)                          "Produce VHDL output."
        , Option []    ["cryptol"]         (NoArg  FlagCryptol)                       "Produce Cryptol output (a pure model of the device for verification or simulation)."

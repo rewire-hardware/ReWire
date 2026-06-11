@@ -6,7 +6,7 @@ module ReWire.Crust.ToCore (toCore) where
 
 import ReWire.Config (Config, inputSigs, outputSigs, stateSigs, top)
 import ReWire.Annotation (Annote, noAnn, Annotated (ann))
-import ReWire.Error (failAt, AstError, MonadError)
+import ReWire.Error (failAt, warnAt, AstError, MonadError, Warning (..))
 import ReWire.Pretty (showt, prettyPrint)
 import ReWire.Unbound (Name, Fresh, runFreshM, Embed (..) , unbind, n2s)
 import ReWire.BitVector (bitVec, zeros, BV, nbits)
@@ -14,8 +14,10 @@ import ReWire.BitVector (bitVec, zeros, BV, nbits)
 import Control.Arrow ((&&&), first, second)
 import Control.Lens ((^.))
 import Control.Monad (unless)
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader (MonadReader (..), ReaderT (..), asks, lift)
 import Control.Monad.State (StateT (..), MonadState, gets, modify)
+import Data.Containers.ListUtils (nubOrd)
 import Data.Either (partitionEithers)
 import Data.Functor ((<&>))
 import Data.HashMap.Strict (HashMap)
@@ -35,14 +37,24 @@ import qualified ReWire.Crust.Util   as M
 
 type SizeMap       = HashMap M.Ty C.Size
 type GlobalNameMap = HashMap (Name M.Exp) C.Name
-type S             = (SizeMap, GlobalNameMap)
+-- | Warnings are collected here (rather than emitted directly) because this
+--   module's monad has no MonadIO; toCore emits them at the end.
+type S             = (SizeMap, GlobalNameMap, [Warning])
 type ConMap        = (HashMap (Name M.TyConId) [Name M.DataConId], HashMap (Name M.DataConId) M.Ty)
 type TCM m         = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) C.LId) m)
 type StartDefn     = (C.Name, C.Wiring, C.GId, C.GId)
 
 {- HLINT ignore "Redundant flip" -}
-toCore :: (Fresh m, MonadError AstError m, MonadFail m) => Config -> Name M.Exp -> M.FreeProgram -> m C.Device
-toCore conf start (ts, _, vs) = fst <$> flip runStateT mempty (do
+toCore :: (Fresh m, MonadError AstError m, MonadFail m, MonadIO m) => Config -> Name M.Exp -> M.FreeProgram -> m C.Device
+toCore conf start (ts, _, vs) = do
+      (dev, (_, _, ws)) <- flip runStateT mempty $ toCore' conf start (ts, vs)
+      -- Transformations can duplicate expressions, so the same warning can be
+      -- collected several times; emit each distinct one once.
+      mapM_ (\ (Warning an msg) -> warnAt conf an msg) $ nubOrd ws
+      pure dev
+
+toCore' :: (Fresh m, MonadError AstError m, MonadFail m) => Config -> Name M.Exp -> ([M.DataDefn], [M.Defn]) -> StateT S m C.Device
+toCore' conf start (ts, vs) = (do
       mapM_ (\ x -> ((`runReaderT` conMap) . sizeOf (n2s (M.dataName x)) noAnn . M.TyCon noAnn . M.dataName) x) ts
       let intSz = 128 -- TODO(chathhorn)
       updateSzMap $ const $ Map.singleton (M.intTy noAnn) intSz
@@ -131,13 +143,16 @@ arity = length . M.paramTys
 
 transBuiltin :: (MonadError AstError m, Fresh m, MonadState S m) => Annote -> Maybe M.Ty -> Annote -> (M.Builtin, [M.Exp]) -> TCM m C.Exp
 transBuiltin an' t' an theExp = case theExp of
-      -- TODO(chathhorn): possibly make this optional.
-      -- sz     <- sizeOf an' $ M.typeOf e
-      -- pure $ callError an' sz
-      -- callError :: Annote -> C.Size -> C.Exp
-      -- callError an sz = C.Call an sz (C.Extern (C.ExternSig an [] mempty [] [(mempty, sz)]) "error" "error") C.nil [] C.nil
-      (M.Error, [M.LitStr _ _ x]) -> failAt an' $ "Encountered call to built-in \"error\" function that was not eliminated."
-                                               <> "\nErrorMessage: " <> showt x
+      -- | A call to "error" surviving to this point is live (not eliminated
+      --   as unreachable): hardware has no failure mechanism, so it compiles
+      --   to a zero (don't-care) value, with a warning (fatal under -Werror).
+      (M.Error, args) -> do
+            sz <- sizeOf' "rwPrimError" an t'
+            addWarning an' $ "encountered a live call to the built-in \"error\" function; compiling to a zero (don't-care) value of width " <> showt sz <> "."
+                  <> (case args of
+                        [M.LitStr _ _ x] -> "\nError message: " <> showt x
+                        _                -> mempty)
+            pure $ C.Lit an' $ zeros $ fromIntegral sz
       (M.Bits, [arg]) -> transExp arg
       (M.Resize, [arg]) -> do
             sz       <- sizeOf' "rwPrimResize" an t'
@@ -569,20 +584,22 @@ sizeOfW s an visited t = do
       pure s
 
 szMap :: MonadState S m => m SizeMap
-szMap = gets fst
+szMap = gets $ \ (sm, _, _) -> sm
 
 updateSzMap :: MonadState S m => (SizeMap -> SizeMap) -> m ()
-updateSzMap = modify . first
+updateSzMap f = modify $ \ (sm, nm, ws) -> (f sm, nm, ws)
+
+addWarning :: MonadState S m => Annote -> Text -> m ()
+addWarning an msg = modify $ \ (sm, nm, ws) -> (sm, nm, ws <> [Warning an msg])
 
 transName :: MonadState S m => Name M.Exp -> m C.Name
-transName n = gets (Map.lookup n . snd) >>= \ case
+transName n = gets (\ (_, nm, _) -> Map.lookup n nm) >>= \ case
       Just c -> pure c
       _      -> pure $ showt n
 
 buildNameMap :: MonadState S m => [M.Defn] -> m ()
 buildNameMap vs = modify
-                $ second
-                $ const
+                $ (\ nm (sm, _, ws) -> (sm, nm, ws))
                 $ fst
                 $ foldr (build' . M.defnName) mempty vs
 

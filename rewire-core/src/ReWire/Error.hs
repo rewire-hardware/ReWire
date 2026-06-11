@@ -6,11 +6,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Error
-      ( SyntaxErrorT, AstError
+      ( SyntaxErrorT, AstError, Warning (..)
       , MonadError
       , mark
       , failAt, failAt'
       , failNowhere
+      , warnAt
       , filePath
       , runSyntaxError
       , PutMsg (..)
@@ -19,9 +20,11 @@ module ReWire.Error
 import Prelude hiding ((<>), lines, unlines)
 
 import ReWire.Annotation (Annotation (..), Annote (..), toSrcSpanInfo, noAnn)
+import ReWire.Config (Config, noWarn, wError)
 import ReWire.Pretty (($$), text, int, showt, Pretty (pretty), (<>), (<+>), nest, Doc, defaultLayoutOptions, layoutSmart, renderStrict)
 import ReWire.Orphans ()
 
+import Control.Lens ((^.))
 import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 import Control.Monad.Except (MonadError (..), ExceptT (..), runExceptT, throwError)
 import Control.Monad.IO.Class (MonadIO (..))
@@ -31,7 +34,9 @@ import Data.Text (Text, pack)
 import Language.Haskell.Exts.Pretty (prettyPrim)
 import Language.Haskell.Exts.SrcLoc (SrcLoc (..), SrcInfo (..), SrcSpanInfo, noLoc)
 import Language.Haskell.Exts.Syntax (Annotated (..))
+import System.IO (stderr)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 
 data AstError = AstError !Annote !Text
 
@@ -42,12 +47,23 @@ instance PutMsg AstError where
       putMsg msg (AstError an _) = AstError an msg
 
 instance Pretty AstError where
-      pretty (AstError (AstAnnote a) msg) = text (trunc 50 (showt $ nest 4 $ text "...")
-            (doc2Text $ errorHdr (ann a) msg
-            $$ nest 4 (text "In the fragment:")
-            $$ nest 6 (text $ pack $ show $ prettyPrim a))) -- TODO(chathhorn): better way?
-      pretty (AstError a@(MsgAnnote m) msg) = errorHdr (toSrcSpanInfo a) $ msg <> "\n" <> m
-      pretty (AstError a msg)               = errorHdr (toSrcSpanInfo a) msg
+      pretty (AstError an msg) = diagHdr "Error" an msg
+
+-- | A non-fatal diagnostic: printed to stderr when emitted (see 'warnAt'),
+--   or promoted to an 'AstError' under -Werror.
+data Warning = Warning !Annote !Text
+      deriving (Eq, Ord)
+
+instance Pretty Warning where
+      pretty (Warning an msg) = diagHdr "Warning" an msg
+
+diagHdr :: Text -> Annote -> Text -> Doc ann
+diagHdr lbl (AstAnnote a) msg = text $ trunc 50 (showt $ nest 4 $ text "...")
+      $ doc2Text $ msgHdr lbl (ann a) msg
+      $$ nest 4 (text "In the fragment:")
+      $$ nest 6 (text $ pack $ show $ prettyPrim a) -- TODO(chathhorn): better way?
+diagHdr lbl a@(MsgAnnote m) msg = msgHdr lbl (toSrcSpanInfo a) $ msg <> "\n" <> m
+diagHdr lbl a msg               = msgHdr lbl (toSrcSpanInfo a) msg
 
 -- | The point of the newtype and all the annoying boilerplate is to
 --   redefine the "fail" method of the Monad and MonadFail typeclasses.
@@ -67,10 +83,10 @@ instance Monad m => MonadError ex (SyntaxErrorT ex m) where
       throwError e = SyntaxErrorT (throwError e)
       catchError (SyntaxErrorT m) f = SyntaxErrorT (catchError m (unwrap . f))
 
-errorHdr :: SrcSpanInfo -> Text -> Doc ann
-errorHdr l msg = if getPointLoc l == noLoc
-      then text "Error:" <+> pretty msg
-      else loc $$ nest 4 (text "Error:" <+> pretty msg)
+msgHdr :: Text -> SrcSpanInfo -> Text -> Doc ann
+msgHdr lbl l msg = if getPointLoc l == noLoc
+      then text (lbl <> ":") <+> pretty msg
+      else loc $$ nest 4 (text (lbl <> ":") <+> pretty msg)
       where loc :: Doc ann
             loc = text (T.pack file) <> num r <> num c <> text ":"
             num :: Int -> Doc ann
@@ -84,6 +100,15 @@ trunc n t s
 
 failAt :: (MonadError AstError m, Annotation an) => an -> Text -> m a
 failAt an msg = throwError $ AstError (toAnnote an) msg
+
+-- | Emit a warning: printed to stderr immediately (so it isn't lost if a
+--   later pass fails), suppressed by -w, or promoted to an error by -Werror
+--   (which therefore fails on the *first* warning).
+warnAt :: (MonadError AstError m, MonadIO m, Annotation an) => Config -> an -> Text -> m ()
+warnAt conf an msg
+      | conf^.wError = failAt an $ msg <> " [-Werror]"
+      | conf^.noWarn = pure ()
+      | otherwise    = liftIO $ T.hPutStrLn stderr $ doc2Text $ pretty $ Warning (toAnnote an) msg
 
 -- | Like failAt, but include an extra bit of data on failure.
 failAt' :: (MonadError (ex, AstError) m, Annotation an) => ex -> an -> Text -> m a
