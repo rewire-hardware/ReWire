@@ -13,6 +13,7 @@ options =
        , Option ['v'] ["verbose"]         (NoArg  FlagVerbose)                       "More verbose output."
        , Option []    ["verilog"]         (NoArg  FlagVerilog)                       "Produce Verilog output (default)."
        , Option []    ["vhdl"]            (NoArg  FlagVhdl)                          "Produce VHDL output."
+       , Option []    ["cryptol"]         (NoArg  FlagCryptol)                       "Produce Cryptol output (a pure model of the device for verification or simulation)."
        , Option []    ["from-core"]       (NoArg  FlagFromCore)                      "Ingest ReWire core language files instead of Haskell."
        , Option []    ["core"]            (NoArg  FlagCore)                          "Produce ReWire core language output."
        , Option []    ["invert-reset"]    (NoArg  FlagInvertReset)                   "Invert the implicitly generated reset signal."

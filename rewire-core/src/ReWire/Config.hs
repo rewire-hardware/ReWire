@@ -32,7 +32,7 @@ import System.FilePath ((-<.>))
 import qualified Data.HashSet as Set
 import qualified Data.Text.IO as T
 
-data Language = Interpret | VHDL | Verilog | RWCore | Haskell
+data Language = Interpret | VHDL | Verilog | Cryptol | RWCore | Haskell
       deriving (Eq, Ord, Show)
 data ResetFlag = Inverted | Synchronous
       deriving (Eq, Ord, Show, Generic)
@@ -114,6 +114,7 @@ getOutFile :: Config -> FilePath -> FilePath
 getOutFile c filename = flip fromMaybe (c^.outFile) $ case c^.target of
       Verilog   -> filename -<.> "sv"
       VHDL      -> filename -<.> "vhdl"
+      Cryptol   -> filename -<.> "cry"
       Interpret -> filename -<.> "yaml"
       RWCore    -> filename -<.> "rwc"
       Haskell   -> filename -<.> "hs"
@@ -129,6 +130,7 @@ interpret = foldM interp defaultConfig
                           | otherwise             -> Left "Multiple output files specified on the command line."
                   FlagVerilog                     -> pure $ target .~ Verilog   $ c
                   FlagVhdl                        -> pure $ target .~ VHDL      $ c
+                  FlagCryptol                     -> pure $ target .~ Cryptol   $ c
                   FlagInterpret Nothing           -> pure $ target .~ Interpret $ c
                   FlagInterpret (Just ip)         -> pure $ target .~ Interpret $ inputsFile .~ ip $ c
                   FlagTestbench Nothing           -> pure $ testbench .~ True   $ c

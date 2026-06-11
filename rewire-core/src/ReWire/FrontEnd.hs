@@ -20,6 +20,7 @@ import ReWire.Pretty (Pretty, prettyPrint, fastPrint, showt)
 import qualified ReWire.Config           as Config
 import qualified ReWire.Core.Check       as Core
 import qualified ReWire.Core.Syntax      as Core
+import qualified ReWire.Core.ToCryptol   as Cryptol
 import qualified ReWire.Core.ToVHDL      as VHDL
 import qualified ReWire.Core.ToVerilog   as Verilog
 
@@ -72,6 +73,7 @@ compileFile conf filename = do
                         VHDL      -> do
                               VHDL.compileProgram conf b' >>= writeOutput
                               writeTestbench VHDL.testbench b'
+                        Cryptol   -> Cryptol.compileProgram conf b' >>= writeOutput
                         RWCore    -> writeOutput b'
                         Interpret -> do
                               ips  <- loadInputs

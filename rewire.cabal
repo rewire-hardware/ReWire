@@ -290,6 +290,64 @@ data-files:
     tests/regression/wordReduce.vhdl
     tests/regression/wordShift.vhdl
     tests/regression/wordSlice.vhdl
+    tests/regression/case1.cry
+    tests/regression/case2.cry
+    tests/regression/cubehash.cry
+    tests/regression/dependencyGraph.cry
+    tests/regression/dissex.cry
+    tests/regression/dissex2.cry
+    tests/regression/exp2.cry
+    tests/regression/fibo1.cry
+    tests/regression/fibo2.cry
+    tests/regression/fibo3.cry
+    tests/regression/Finite.cry
+    tests/regression/finite2.cry
+    tests/regression/fully.cry
+    tests/regression/funcase.cry
+    tests/regression/gfmult.cry
+    tests/regression/guards.cry
+    tests/regression/HigherOrderBug.cry
+    tests/regression/Infix.cry
+    tests/regression/iter.cry
+    tests/regression/iterSt.cry
+    tests/regression/matchBind.cry
+    tests/regression/ModsMain.cry
+    tests/regression/OD19Filter.cry
+    tests/regression/onestate.cry
+    tests/regression/PackUnpack.cry
+    tests/regression/pats.cry
+    tests/regression/pats2.cry
+    tests/regression/PreludeTest.cry
+    tests/regression/putBug.cry
+    tests/regression/pvartype.cry
+    tests/regression/react.cry
+    tests/regression/records.cry
+    tests/regression/RW_REPL_OD19Filter.cry
+    tests/regression/Sha256_1.cry
+    tests/regression/sigNothing.cry
+    tests/regression/state.cry
+    tests/regression/state0.cry
+    tests/regression/stateTower.cry
+    tests/regression/synonym.cry
+    tests/regression/test2.cry
+    tests/regression/test3.cry
+    tests/regression/TinyISA.cry
+    tests/regression/toag.cry
+    tests/regression/toags.cry
+    tests/regression/uniquification.cry
+    tests/regression/UpCounter1.cry
+    tests/regression/UpCounter2.cry
+    tests/regression/vectorAppend.cry
+    tests/regression/vectorCons.cry
+    tests/regression/vectorIndexProxy.cry
+    tests/regression/vectorPack.cry
+    tests/regression/weird1.cry
+    tests/regression/wordArith.cry
+    tests/regression/wordBitwise.cry
+    tests/regression/wordLit.cry
+    tests/regression/wordReduce.cry
+    tests/regression/wordShift.cry
+    tests/regression/wordSlice.cry
     tests/regression/case1.yaml
     tests/regression/case2.yaml
     tests/regression/cubehash.yaml
