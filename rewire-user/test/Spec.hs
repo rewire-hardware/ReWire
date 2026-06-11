@@ -209,6 +209,7 @@ finiteTests = testGroup "finite numbers"
       , testCase "- wraps"        $ (finite 3 FC.- finite 5 :: Finite 8) @?= finite 6
       , testCase "*"              $ (finite 3 FC.* finite 5 :: Finite 8) @?= finite 7
       , testCase "div"            $ (finite 7 `FC.div` finite 2 :: Finite 8) @?= finite 3
+      , testCase "mod"            $ (finite 7 `FC.mod` finite 2 :: Finite 8) @?= finite 1
       , testCase "=="             $ (finite 3 FC.== (finite 3 :: Finite 8)) @?= True
       , testCase "<"              $ (finite 3 FC.< (finite 5 :: Finite 8)) @?= True
       , testCase "<="             $ (finite 5 FC.<= (finite 5 :: Finite 8)) @?= True

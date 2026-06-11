@@ -27,6 +27,10 @@ a * b = toFinite' $ (fromFinite a :: B.Lit) B.* fromFinite b
 div :: KnownNat n => Finite n -> Finite n -> Finite n
 div a b = toFinite' $ (fromFinite a :: B.Lit) B./ fromFinite b
 
+{-# INLINE mod #-}
+mod :: KnownNat n => Finite n -> Finite n -> Finite n
+mod a b = toFinite' $ (fromFinite a :: B.Lit) B.% fromFinite b
+
 {-# INLINE (==) #-}
 (==) :: Finite n -> Finite n -> Bool
 a == b = (fromFinite a :: B.Lit) B.== (fromFinite b :: B.Lit)

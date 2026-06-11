@@ -53,6 +53,7 @@
   regression test for the bitvector reduction operators, and a much larger
   rewire-user suite (GHC-side device simulation, bit slicing, Finite
   arithmetic).
+* rewire-user: new `mod` operation in `ReWire.FiniteComp`.
 * Fixed GHC-compatible implementations of several rewire-user primitives that
   disagreed with the compiler: `rwPrimBitSlice`/`rwPrimBitIndex` (bits are
   numbered LSB-at-0, Verilog style) and `rwPrimRNAnd`/`rwPrimRNor`/
