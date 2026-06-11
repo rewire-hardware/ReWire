@@ -97,7 +97,7 @@ yamlPrefixes = "- " : repeat "  "
 
 isPure :: HashSet GId -> Exp -> Bool
 isPure m = \ case
-      Call _ _ (Extern (ExternSig _ _ c r _ _) _ _) a _ b
+      Call _ _ (Extern (ExternSig _ _ c r _ _) _ _ _) a _ b
                                 -> T.null c && T.null r && pur a && pur b
       Call _ _ (Global g) a _ b -> purG g && pur a && pur b
       Call _ _ _ a _ b          -> pur a && pur b

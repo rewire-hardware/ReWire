@@ -29,6 +29,7 @@ import Numeric.Natural (Natural)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet        as Set
+import qualified Data.Text           as T
 import qualified ReWire.BitVector    as BV
 import qualified ReWire.Core.Syntax  as C
 import qualified ReWire.Crust.Syntax as M
@@ -266,8 +267,24 @@ transBuiltin an' t' an theExp = case theExp of
             | (arity <$> M.typeOf a) == Just (length args) -> do
             sz       <- sizeOf' "rwPrimExtern" an t'
             args'    <- mapM transExp args
+            -- The model (a reference to a defn that survived neuterExterns'
+            -- checks) is attached to the Core extern for the interpreter and
+            -- the Cryptol backend. A clocked extern is stateful, so a pure
+            -- per-cycle model can't be cycle-accurate.
+            model    <- case a of
+                  M.Var _ _ _ x
+                        | T.null clk && T.null rst -> Just <$> transName x
+                        | otherwise                -> do
+                              addWarning an $ "ignoring the Haskell model for clocked extern " <> s
+                                           <> ": clocked externs are stateful and cannot be modeled by a pure function."
+                              pure Nothing
+                  (M.flattenApp -> (M.Builtin _ _ _ M.Error, _)) -> pure Nothing -- The neutered placeholder.
+                  _ -> do
+                        addWarning an $ "ignoring the Haskell model for extern " <> s
+                                     <> ": the model reference did not survive transformation (rwc bug?)."
+                        pure Nothing
             let argSizes = map C.sizeOf args'
-            pure $ C.Call an sz (C.Extern (externSig an argSizes sz clk rst (ps, as, rs)) s inst) (C.cat args') (map (C.PatVar an) argSizes) C.nil
+            pure $ C.Call an sz (C.Extern (externSig an argSizes sz clk rst (ps, as, rs)) s inst model) (C.cat args') (map (C.PatVar an) argSizes) C.nil
       (M.Extern,  _) -> failAt an "toCore: transExp: encountered not-fully-applied extern (after inlining)."
       (b, _)         -> failAt an ("toCore: transExp: encountered unsupported builtin use: rwPrim" <> showt b <> ".")
 

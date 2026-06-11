@@ -23,7 +23,7 @@ module ReWire.Core.Syntax
 import ReWire.Annotation (Annote, Annotated (ann), noAnn)
 import ReWire.BitVector (BV (..), width, showHex', zeros, ones, (==.))
 import ReWire.Orphans ()
-import ReWire.Pretty (text, Pretty (pretty), Doc, vsep, (<+>), nest, hsep, parens, punctuate, squote, dquotes, braced, TextShow (showt), FromGeneric (..), colon)
+import ReWire.Pretty (text, Pretty (pretty), Doc, vsep, (<+>), nest, hsep, parens, punctuate, squote, dquotes, braced, TextShow (showt), FromGeneric (..), colon, space)
 
 import qualified ReWire.BitVector as BV
 
@@ -72,7 +72,10 @@ data Prim = Add | Sub
 instance Hashable Prim
 
 data Target = Global !GId
-            | Extern !ExternSig !Name !Name
+            | Extern !ExternSig !Name !Name !(Maybe GId)
+              -- ^ Signature, module name, instance name, and (optionally) the
+              --   defn implementing the user-supplied Haskell model, used by
+              --   the interpreter and the Cryptol backend.
             | Prim !Prim
             | Const !BV
             | SetRef !Name
@@ -84,12 +87,13 @@ instance Hashable Target
 
 instance Pretty Target where
       pretty = \ case
-            Global n          -> text n
-            Extern sig n inst -> text "extern" <+> pretty sig <+> dquotes (text n) <+> dquotes (text inst)
-            Const bv          -> ppBV [Lit noAnn bv]
-            SetRef n          -> text "setRef" <+> dquotes (text n)
-            GetRef n          -> text "getRef" <+> dquotes (text n)
-            Prim p            -> text $ showt p
+            Global n            -> text n
+            Extern sig n inst m -> text "extern" <+> pretty sig <+> dquotes (text n) <+> dquotes (text inst)
+                                <> maybe mempty (\ g -> space <> text "model" <+> text g) m
+            Const bv            -> ppBV [Lit noAnn bv]
+            SetRef n            -> text "setRef" <+> dquotes (text n)
+            GetRef n            -> text "getRef" <+> dquotes (text n)
+            Prim p              -> text $ showt p
 
 ppBVTy :: Integral n => n -> Doc an
 ppBVTy n = text "W" <> pretty (fromIntegral n :: Int)

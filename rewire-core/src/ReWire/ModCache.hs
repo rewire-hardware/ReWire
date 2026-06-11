@@ -17,7 +17,7 @@ import ReWire.Crust.Syntax (FreeProgram, Defn (..), Module (Module), Exp, Ty, Ki
 import ReWire.Crust.ToCore (toCore)
 import ReWire.Crust.Transform (removeMain, simplify, liftLambdas, etaAbsDefs, shiftLambdas, neuterExterns, expandTypeSynonyms, inlineAnnotated, normalizeBind, elimCase, purge, purgeAll, inlineExtrudes, reduce)
 import ReWire.Crust.TypeCheck (typeCheck, untype)
-import ReWire.Error (AstError, MonadError)
+import ReWire.Error (AstError, MonadError, Warning (..), warnAt)
 import ReWire.HSE.Annotate (annotate)
 import ReWire.HSE.Cache (LoadPath, getModuleWith)
 import ReWire.HSE.Desugar (desugar)
@@ -110,7 +110,7 @@ getDevice conf fp = do
                   , ("Inlining INLINE-annotated definitions.",                                 inlineAnnotated)
                   , ("Expanding type synonyms.",                                               expandTypeSynonyms)
                   , ("Typechecking, inference.",                                               kindCheck >=> typeCheck start)
-                  , ("Removing Haskell definitions for externs.",                              pure . neuterExterns)
+                  , ("Extracting extern models; removing other Haskell definitions for externs.", neuterExterns')
                   ]
 
             -- Transformations on the typechecked program: each one is
@@ -155,6 +155,12 @@ getDevice conf fp = do
             extraTC :: (Fresh m, MonadIO m, MonadError AstError m) => FreeProgram -> m FreeProgram
             extraTC | conf^.typecheck = verb "Type-checking again (--debug-typecheck)." >=> kindCheck >=> typeCheck start
                     | otherwise       = pure
+
+            neuterExterns' :: (Fresh m, MonadIO m, MonadError AstError m) => FreeProgram -> m FreeProgram
+            neuterExterns' fp = do
+                  (fp', ws) <- neuterExterns fp
+                  mapM_ (\ (Warning a m') -> warnAt conf a m') ws
+                  pure fp'
 
             pass :: MonadIO m => Natural -> Text -> FreeProgram -> m FreeProgram
             pass = passCrust conf
