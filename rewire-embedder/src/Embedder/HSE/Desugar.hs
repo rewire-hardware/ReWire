@@ -75,7 +75,7 @@ desugarFuns = mempty
       }
       where desugarFun :: (MonadState Fresh m, MonadError AstError m) => [(Name Annote, Type Annote)] -> Decl Annote -> m (Decl Annote)
             desugarFun ts = \ case
-                  FunBind l ms@(Match _ _ _ _ _:_) | allUnguarded ms ->
+                  FunBind l ms@(Match {}:_) | allUnguarded ms ->
                         pure $ FunBind l ms
                   FunBind l ms@(Match l' name pats _ _:_) -> do
                         alts <- mapM (toAlt ts) ms

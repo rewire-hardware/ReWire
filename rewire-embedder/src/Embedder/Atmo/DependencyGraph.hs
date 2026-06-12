@@ -20,9 +20,6 @@ import Data.Text (Text, splitOn, pack, empty)
 import Data.Graph (Graph,graphFromEdges,scc, Vertex, Tree (..))
 import Data.Maybe (mapMaybe)
 
-
-
-
 --------------------------------------------------------------
 -- Atmo Dependency Graph
 --------------------------------------------------------------
@@ -42,7 +39,6 @@ import Data.Maybe (mapMaybe)
 -- This means that a function depends on X if it points to X
 -- This means that dependency is a 'forward' topological sort
 -- And so we want our file to use a reverse topological sort
-
 
 -- scc: the strongly connected components of a graph, reverse topological sort
 -- scc (0 > 1 > 2 > 0, 3 > 1) ==
@@ -64,8 +60,11 @@ mkRDecl ds = RDecl (map combineGroup groupedDefns)
       combineDefns :: Defn -> Defn -> Defn
       combineDefns def1 def2 = Defn (defnAnnote def1) (defnName def1) (defnPolyTy def1) (defnAttr def1) (defnBinds def1 ++ defnBinds def2)
       combineGroup :: [Defn] -> Defn
-      combineGroup (d:ds') = foldl combineDefns d ds'
-        
+      combineGroup = \ case
+            d : ds' -> foldl combineDefns d ds'
+            []      -> error "ERROR: mkRDecl: empty definition group"
+
+
 
 def2Decl :: Def -> Maybe Declaration
 def2Decl = \ case
@@ -83,7 +82,6 @@ fvt = \ case
       _ -> []
 
 
-
 getNodeDefn :: Defn -> (Def,Text,[Text])
 getNodeDefn d@(Defn _ n (Poly _ t) _ bs) =
       let tvs :: [Text] = fvt t -- [Name TyConId]
@@ -94,10 +92,6 @@ getNodeDefn d@(Defn _ n (Poly _ t) _ bs) =
       where
       fbConcatMap :: (Exp -> [Text]) -> FunBinding -> [Text]
       fbConcatMap f (FunBinding _ ps rhs) = concatMap dataconsPat ps ++ f rhs -- rhsConcatMap f rhs
-      -- rhsConcatMap :: (Exp -> [Text]) -> Rhs -> [Text]
-      -- rhsConcatMap f (UnGuardedRhs _ e) = f e
-      -- rhsConcatMap f (GuardedRhss _ grhss) = concatMap (grhsConcatMap f) grhss
-      -- grhsConcatMap f (GuardedRhs _ gs e) = concatMap f gs ++ f e
 
 
 tycons :: Exp -> [Text] -- Name TyConId

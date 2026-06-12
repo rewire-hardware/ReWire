@@ -349,22 +349,7 @@ instance Pretty Pat where
 
 ---
 
--- data Rhs = UnGuardedRhs Annote !Exp
---          | GuardedRhss Annote ![GuardedRhs]
---       deriving (Eq, Generic, Show, Typeable, Data)
---       deriving TextShow via FromGeneric Rhs
-
--- instance Hashable Rhs
--- instance NFData Rhs
-
--- data GuardedRhs = GuardedRhs Annote ![Exp] Exp
---       deriving (Eq, Generic, Show, Typeable, Data)
---       deriving TextShow via FromGeneric GuardedRhs
-
--- instance Hashable GuardedRhs
--- instance NFData GuardedRhs
-
-data FunBinding = FunBinding Annote ![Pat] !Exp -- Rhs
+data FunBinding = FunBinding Annote ![Pat] !Exp
       deriving (Eq, Generic, Show, Typeable, Data)
       deriving TextShow via FromGeneric FunBinding
 
@@ -373,20 +358,9 @@ instance NFData FunBinding
 
 instance Pretty FunBinding where
       pretty (FunBinding _ ps rhs) = pFunCase ps rhs
-            -- case rhs of
-            -- UnGuardedRhs _ e -> pFunCase n ps e
-            -- GuardedRhss _ grhss -> vsep $ map (pGuardedFunCase n ps) grhss
 
 pFunCase :: [Pat] -> Exp -> Doc ann
 pFunCase ps e = hsep (map pretty ps) <+> "|->" <+> pretty e
-
--- pGuardedFunCase :: Text -> [Pat] -> GuardedRhs -> Doc ann
--- pGuardedFunCase n ps (GuardedRhs _ gs e) = text n <+> hsep (map pretty ps) <+> pGuards gs
---                                    <> "=" <+> pretty e
---       where
---       pGuards :: [Exp] -> Doc ann
---       pGuards [] = mempty
---       pGuards (g:gs) = "|" <+> pretty g <+> pGuards gs
 
 getPatVars :: (MonadError AstError m) => [Pat] -> m [Text]
 getPatVars [] = return []
@@ -396,11 +370,6 @@ getPatVars (PatTuple _ _ _ ps : ps') = getPatVars ps' >>= \ vs' -> getPatVars ps
 getPatVars (PatWildCard {} : ps) = getPatVars ps
 getPatVars (PatAs _ _ _ n p : ps) = getPatVars [p] >>= \ vs' -> getPatVars ps >>= \ vs -> return $ n : vs ++ vs'
 getPatVars (PatRec _ _ _ fs : ps) = getPatVars (map snd fs) >>= \ vs' -> getPatVars ps >>= \ vs -> return $ vs ++ vs'
-
--- getFunBody :: (MonadError AstError m) => Rhs -> m Exp
--- getFunBody (UnGuardedRhs _ e) = return e
--- getFunBody (GuardedRhss l _) = failAt l "All FunBindings should be unguarded until we resugar function guards"
-
 
 data Defn = Defn
             { defnAnnote :: Annote

@@ -193,8 +193,6 @@ unop tb a b = TyApp a (TyBuiltin a tb) [b]
 binop :: TyBuiltin -> Annote -> Ty -> Ty -> Ty
 binop tb a b c = TyApp a (TyBuiltin a tb) [b,c]
 
--- trinop :: TyBuiltin -> Annote -> Ty -> Ty -> Ty -> Ty
--- trinop tb a b c d = TyApp a (TyBuiltin a tb) [b,c,d]
 
 listTy :: Annote -> Ty -> Ty
 listTy = unop TyList

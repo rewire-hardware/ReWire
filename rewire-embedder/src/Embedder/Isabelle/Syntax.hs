@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE DerivingVia #-}
@@ -429,8 +428,6 @@ printTuple es =  parens $ P.align $ P.fillSep $ punctuate comma (map pretty es)
 
 instance Pretty Term where
   pretty = prettyTerm
-    -- let d = prettyTerm e in
-    -- trace ("print Term: " <> show d) d
 
 
 
@@ -535,17 +532,9 @@ instance Pretty Pttrn where
 
 {- ------------------- Definitions ------------------------------------ -}
 
--- type Def = (Typ, [(Text, Typ)], Term)
--- type Defs = Map.Map Text Def
-
 
 
 {- ------------------- Funs/Primrecs ---------------------------------- -}
-
-
-
--- type FunDef = (FunSig, [([Term], Term)])
--- type Funs = Map.Map Text FunDef
 
 
 
@@ -603,7 +592,7 @@ instance Pretty Decl where
           <+> P.vsep (punctuate " |" (map pretty cons))) <> P.line
     Record name tvs fields ->
       P.nest 2 $ text "record" <+> pretty (Type name (map TVar tvs)) <+> text "="
-          $+$ (P.vsep (map (\(f, t) -> text f <+> "::" <+> dquotes (pretty t)) fields)) <> P.line
+          $+$ P.vsep (map (\(f, t) -> text f <+> "::" <+> dquotes (pretty t)) fields) <> P.line
     TypeSynonym name args ty ->
       text "type_synonym" <+> pretty (Type name (map TVar args)) <+> "=" <+> dquotes (pretty ty) <> P.line
     Definition name ty vs t ->
@@ -657,10 +646,6 @@ instance Pretty Theory where
   pretty thy@(Theory {}) =
         mkHeader thy
     $+$ printDecls thy
-    -- $+$ text "(*"
-    -- $+$ P.fillSep [ text (show (graph thy))]
-    -- $+$ P.fillSep [ text (show (tree thy))]
-    -- $+$ text "*)"
     $+$ mkFooter thy
 
 printDecls :: Theory -> Doc ann

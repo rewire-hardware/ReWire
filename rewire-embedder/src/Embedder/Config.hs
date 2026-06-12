@@ -1,4 +1,4 @@
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Safe #-}
 -- | A thin shim over rewire-core's 'ReWire.Config' adding the embedder's
 --   output-file helpers. The embedder ignores the hardware-oriented config
 --   fields (clock, reset, signal names, etc.).
