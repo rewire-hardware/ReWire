@@ -461,6 +461,9 @@ module
   {-# INLINE ReWire.FiniteComp.div #-}
   ReWire.FiniteComp.div :: ((Finite n) -> ((Finite n) -> (Finite n)))
   a b |-> $ toFinite' (/ (fromFinite a) (fromFinite b))
+  {-# INLINE ReWire.FiniteComp.mod #-}
+  ReWire.FiniteComp.mod :: ((Finite n) -> ((Finite n) -> (Finite n)))
+  a b |-> $ toFinite' (% (fromFinite a) (fromFinite b))
   {-# INLINE ReWire.FiniteComp.== #-}
   ReWire.FiniteComp.== :: ((Finite n) -> ((Finite n) -> Bool))
   a b |-> == (fromFinite a) (fromFinite b)
