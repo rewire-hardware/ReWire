@@ -2,17 +2,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE Safe #-}
--- | The direct Crust-to-Mantle producer (replacing Crust.ToCore plus the
---   Mantle.FromCore bridge; see core-refactor-plan.md, phase 6). Compared to
---   ToCore: pattern matches compile directly to slices, equality guards, and
---   muxes; primitives map to the Mantle operator set (doc/core.md 9.1); the
---   purified state machine becomes an explicit device (registers with
---   initial values evaluated by the Mantle interpreter, per-output and
---   per-register slice equations); externs become per-module declarations
---   with mandatory port names; and clocked extern calls are hoisted into
---   device-level instances by inlining their containing defns into the
---   device body.
-module ReWire.Crust.ToMantle (toMantle) where
+-- | The Crust-to-Hyle producer: pattern matches compile to slices, equality
+--   guards, and muxes; primitives map to the Hyle operator set (doc/hyle.md,
+--   section 3.3); the purified state machine becomes an explicit device
+--   (registers with initial values evaluated by the Hyle interpreter,
+--   per-output and per-register slice equations); externs become per-module
+--   declarations with mandatory port names; and clocked extern calls are
+--   hoisted into device-level instances by inlining their containing defns
+--   into the device body.
+module ReWire.Crust.ToHyle (toHyle) where
 
 import ReWire.Config (Config, inputSigs, outputSigs, stateSigs, top)
 import ReWire.Annotation (Annote, noAnn, Annotated (ann))
@@ -20,7 +18,7 @@ import ReWire.Error (failAt, warnAt, AstError, MonadError, Warning (..))
 import ReWire.Pretty (showt, prettyPrint)
 import ReWire.Unbound (Name, Fresh, runFreshM, Embed (..), unbind, n2s)
 import ReWire.BitVector (BV, bitVec, zeros, nbits)
-import ReWire.Mantle.Interp (evalExp, IEnv (..))
+import ReWire.Hyle.Interp (evalExp, IEnv (..))
 
 import Control.Arrow ((&&&))
 import Control.Lens ((^.))
@@ -46,8 +44,8 @@ import qualified ReWire.BitVector        as BV
 import qualified ReWire.Crust.Syntax     as M
 import qualified ReWire.Crust.Types      as M
 import qualified ReWire.Crust.Util       as M
-import qualified ReWire.Mantle.Syntax    as A
-import qualified ReWire.Mantle.Transform as A
+import qualified ReWire.Hyle.Syntax    as A
+import qualified ReWire.Hyle.Transform as A
 
 type SizeMap       = HashMap M.Ty A.Size
 type GlobalNameMap = HashMap (Name M.Exp) A.GId
@@ -69,16 +67,16 @@ type TCM m  = ReaderT ConMap (ReaderT (HashMap (Name M.Exp) A.Name) m)
 -- | (device name, (inputs, outputs, state wires), loop, state0)
 type StartDefn = (A.Name, ([(A.Name, A.Size)], [(A.Name, A.Size)], [(A.Name, A.Size)]), A.GId, A.GId)
 
-toMantle :: (Fresh m, MonadError AstError m, MonadFail m, MonadIO m) => Config -> Name M.Exp -> M.FreeProgram -> m A.Program
-toMantle conf start (ts, _, vs) = do
-      (p, s) <- flip runStateT s0 $ toMantle' conf start (ts, vs)
+toHyle :: (Fresh m, MonadError AstError m, MonadFail m, MonadIO m) => Config -> Name M.Exp -> M.FreeProgram -> m A.Program
+toHyle conf start (ts, _, vs) = do
+      (p, s) <- flip runStateT s0 $ toHyle' conf start (ts, vs)
       mapM_ (\ (Warning an msg) -> warnAt conf an msg) $ nubOrd $ sWarns s
       pure p
 
-toMantle' :: (Fresh m, MonadError AstError m, MonadFail m) => Config -> Name M.Exp -> ([M.DataDefn], [M.Defn]) -> StateT S m A.Program
-toMantle' conf start (ts, vs) = do
+toHyle' :: (Fresh m, MonadError AstError m, MonadFail m) => Config -> Name M.Exp -> ([M.DataDefn], [M.Defn]) -> StateT S m A.Program
+toHyle' conf start (ts, vs) = do
       mapM_ (\ x -> ((`runReaderT` conMap) . sizeOf (n2s (M.dataName x)) noAnn . M.TyCon noAnn . M.dataName) x) ts
-      let intSz = 128 -- as in ToCore
+      let intSz = 128 -- width of the Integer type
       modify $ \ s -> s { sSizes = Map.singleton (M.intTy noAnn) intSz }
       buildNameMap vs
       vs' <- mapM (transDefn conf start conMap) $ filter (not . M.isPrim . M.defnName) vs
@@ -95,7 +93,7 @@ toMantle' conf start (ts, vs) = do
                         let live = defLoop : others
                             state0Live = any (elem state0 . expCalls . A.defnBody) live
                         hoistInstances $ A.Program exts (live <> [ defState0 | state0Live ]) dev
-            _ -> failAt noAnn $ "toMantle: no definition found: " <> prettyPrint start
+            _ -> failAt noAnn $ "toHyle: no definition found: " <> prettyPrint start
       where conMap :: ConMap
             conMap = ( Map.fromList $ map (M.dataName &&& map projId . M.dataCons) ts
                      , Map.fromList $ map (projId &&& projType) (concatMap M.dataCons ts)
@@ -108,7 +106,7 @@ toMantle' conf start (ts, vs) = do
             projType (M.DataCon _ _ (Embed (M.Poly t))) = runFreshM (snd <$> unbind t)
 
 -- | Assemble the device: registers from the dispatch wires (initial values
---   by evaluating state0 with the Mantle interpreter), and slice equations
+--   by evaluating state0 with the Hyle interpreter), and slice equations
 --   from the loop's result layout (padding | outputs | dispatch). This is
 --   the one remaining home of the resumption-layout arithmetic.
 mkDevice :: (MonadError AstError m, MonadState S m) => A.Name -> ([(A.Name, A.Size)], [(A.Name, A.Size)], [(A.Name, A.Size)]) -> A.Defn -> A.Defn -> [A.Defn] -> m A.Device
@@ -128,7 +126,7 @@ mkDevice topName (inWires, outWires, stWires) defLoop defState0 others = do
           layout   = wireOffsets $ ("__padding", padding) : outWires <> regWires
 
       unless (sum (map snd stInps) == sum loopArgSzs) $
-            failAt an "toMantle: width mismatch between the loop signature and the device's state and input wires"
+            failAt an "toHyle: width mismatch between the loop signature and the device's state and input wires"
 
       regs <- if null regWires then pure []
             else do
@@ -136,7 +134,7 @@ mkDevice topName (inWires, outWires, stWires) defLoop defState0 others = do
                   defns <- pure $ Map.fromList $ map (A.defnName &&& id) $ defLoop : defState0 : others
                   init0 <- evalExp (IEnv defns exts) mempty (A.defnBody defState0)
                         `catchError` \ _ -> failAt (ann defState0)
-                              "toMantle: cannot evaluate the initial state (does it involve an extern?)"
+                              "toHyle: cannot evaluate the initial state (does it involve an extern?)"
                   pure [ A.Register an x sz $ sliceBV init0 off sz | (x, sz, off) <- wireOffsets regWires ]
 
       let inExp    = A.cat [ A.Var an sz x | (x, sz) <- stInps ]
@@ -322,7 +320,7 @@ transExp e = case e of
             sz <- sizeOf' "LitInt" an $ M.typeOf e
             pure $ A.Lit an $ bitVec (fromIntegral sz) n
       M.LitVec _ _ _ es                   -> A.cat <$> mapM transExp es
-      _                                   -> failAt (ann e) $ "toMantle: unsupported expression: " <> prettyPrint e
+      _                                   -> failAt (ann e) $ "toHyle: unsupported expression: " <> prettyPrint e
       where -- | Apply a Match target to the destructed arguments.
             applyF :: (MonadError AstError m, Fresh m, MonadState S m) => Annote -> A.Size -> M.Exp -> [A.Exp] -> TCM m A.Exp
             applyF an sz f args = case M.flattenApp f of
@@ -330,14 +328,14 @@ transExp e = case e of
                         x' <- transName x
                         pure $ A.Call an sz x' args
                   (M.Builtin an' _ _ b, cfgArgs) -> applyBuiltin an sz an' b cfgArgs args
-                  _                             -> failAt an $ "toMantle: unsupported match target:\n" <> prettyPrint f
+                  _                             -> failAt an $ "toHyle: unsupported match target:\n" <> prettyPrint f
 
             ctorRep :: (Fresh m, MonadReader ConMap m, MonadState S m, MonadError AstError m) => Annote -> Maybe M.Ty -> (A.Value, A.Size) -> A.Size -> m (BV, BV)
-            ctorRep an Nothing _ _ = failAt an "toMantle: ctorRep: encountered untyped constructor (rwc bug)."
+            ctorRep an Nothing _ _ = failAt an "toHyle: ctorRep: encountered untyped constructor (rwc bug)."
             ctorRep an (Just t) (v, w) szArgs = do
                   sz <- sizeOf "ctorRep" an t
                   if | w + szArgs <= sz -> pure (bitVec (fromIntegral w) v, zeros $ fromIntegral sz - fromIntegral w - fromIntegral szArgs)
-                     | otherwise        -> failAt an $ "toMantle: failing to calculate the bitvector representation of a constructor of type (sz: "
+                     | otherwise        -> failAt an $ "toHyle: failing to calculate the bitvector representation of a constructor of type (sz: "
                                                     <> showt sz <> " w: " <> showt w <> " szArgs: " <> showt szArgs <> "):\n" <> M.prettyTy t
 
 ---
@@ -401,8 +399,8 @@ transBuiltin an' t' an theExp = case theExp of
       (M.VecGenerate, [f]) -> do
             nElems <- checkVecArgSize "rwPrimVecGenerate" t'
             transExp $ M.LitVec an Nothing Nothing $ map (M.mkApp an f . pure . finite nElems) [0 .. nElems - 1]
-      (M.SetRef, _) -> failAt an "toMantle: references (rwPrimSetRef) are not supported."
-      (M.GetRef, _) -> failAt an "toMantle: references (rwPrimGetRef) are not supported."
+      (M.SetRef, _) -> failAt an "toHyle: references (rwPrimSetRef) are not supported."
+      (M.GetRef, _) -> failAt an "toHyle: references (rwPrimGetRef) are not supported."
       (M.VecConcat, [arg1, arg2]) -> A.cat <$> mapM transExp [arg1, arg2]
       (M.Finite, [arg]) -> do
             arg' <- transExp arg
@@ -462,12 +460,12 @@ transBuiltin an' t' an theExp = case theExp of
             sz    <- sizeOf' "rwPrimExtern" an t'
             args' <- mapM transExp args
             applyExtern an sz (ps, clk, rst, as, rs, s) a args'
-      (M.Extern,  _) -> failAt an "toMantle: transExp: encountered not-fully-applied extern (after inlining)."
-      (b, _)         -> failAt an ("toMantle: transExp: encountered unsupported builtin use: rwPrim" <> showt b <> ".")
+      (M.Extern,  _) -> failAt an "toHyle: transExp: encountered not-fully-applied extern (after inlining)."
+      (b, _)         -> failAt an ("toHyle: transExp: encountered unsupported builtin use: rwPrim" <> showt b <> ".")
 
       where subElems :: (Fresh m, MonadError AstError m, MonadState S m) => Annote -> M.Exp -> Integer -> Natural -> TCM m A.Exp
             subElems an'' arg i nElems = do
-                  tyElem <- maybe (failAt (ann arg) "toMantle: subElems: non-vector type argument to built-in vector function") pure
+                  tyElem <- maybe (failAt (ann arg) "toHyle: subElems: non-vector type argument to built-in vector function") pure
                           $ M.typeOf arg >>= M.vecElemTy
                   szElem <- fromIntegral <$> sizeOf "subElems" an'' tyElem
                   arg'   <- transExp arg
@@ -478,7 +476,7 @@ transBuiltin an' t' an theExp = case theExp of
                       n   = nElems * fromIntegral szElem
 
                   unless (sz >= off + n)
-                        $ failAt an'' $ "toMantle: subElems: invalid bit slice (offset: " <> showt i <> ", num elems: " <> showt nElems <> ") from object size " <> showt sz <> "."
+                        $ failAt an'' $ "toHyle: subElems: invalid bit slice (offset: " <> showt i <> ", num elems: " <> showt nElems <> ") from object size " <> showt sz <> "."
 
                   -- LSB offset of the slice: fields count from the MSB end.
                   let lsbOff = sz - off - n
@@ -495,12 +493,12 @@ transBuiltin an' t' an theExp = case theExp of
             --   literal width, whichever is wider).
             vecIndex :: (MonadError AstError m, Fresh m, MonadState S m) => M.Exp -> M.Exp -> TCM m A.Exp
             vecIndex v i = do
-                  tyVec  <- maybe (failAt an "toMantle: rwPrimIndex: invalid vector argument.") pure $ M.typeOf v
+                  tyVec  <- maybe (failAt an "toHyle: rwPrimIndex: invalid vector argument.") pure $ M.typeOf v
                   szVec  <- sizeOf "rwPrimIndex" an tyVec
-                  n      <- maybe (failAt an "toMantle: rwPrimIndex: invalid Vec argument.") pure $ M.vecSize tyVec
-                  tyElem <- maybe (failAt an "toMantle: rwPrimIndex: non-vector type argument.") pure $ M.vecElemTy tyVec
+                  n      <- maybe (failAt an "toHyle: rwPrimIndex: invalid Vec argument.") pure $ M.vecSize tyVec
+                  tyElem <- maybe (failAt an "toHyle: rwPrimIndex: non-vector type argument.") pure $ M.vecElemTy tyVec
                   szElem <- sizeOf "rwPrimIndex" an tyElem
-                  tyIdx  <- maybe (failAt an "toMantle: rwPrimIndex: invalid index argument.") pure $ M.typeOf i
+                  tyIdx  <- maybe (failAt an "toHyle: rwPrimIndex: invalid index argument.") pure $ M.typeOf i
                   szIdx  <- sizeOf "rwPrimIndex" an tyIdx
                   szLit  <- sizeOf "rwPrimIndex" an $ M.intTy an
 
@@ -550,16 +548,16 @@ applyBuiltin an sz an' b cfgArgs args = case (b, cfgArgs) of
       (_, []) | Just _ <- toPrim b 0 0 -> lift $ lift $ applyPrim an sz b args
       (M.Bits, []) | [a] <- args -> pure a
       (M.Resize, []) | [a] <- args -> resize an sz a
-      _ -> failAt an' $ "toMantle: unsupported builtin in match-target position: rwPrim" <> showt b <> "."
+      _ -> failAt an' $ "toHyle: unsupported builtin in match-target position: rwPrim" <> showt b <> "."
 
--- | Apply a (Core-style, width-implicit) primitive to translated arguments,
---   expanding to the Mantle operator set (doc/core.md 9.1).
+-- | Apply a (width-implicit, Crust-level) primitive to translated arguments,
+--   expanding to the Hyle operator set (doc/hyle.md, section 3.3).
 applyPrim :: (MonadError AstError m, MonadState S m) => Annote -> A.Size -> M.Builtin -> [A.Exp] -> m A.Exp
 applyPrim an sz b args = do
       x <- freshLocal "$t" -- may go unused (MSBit needs one)
       case toPrim b sz (case args of { a : _ -> A.sizeOf a; _ -> 0 }) of
             Just f  -> either (failAt an) pure $ f an x args
-            Nothing -> failAt an $ "toMantle: applyPrim: unsupported primitive: rwPrim" <> showt b <> " with " <> showt (length args) <> " arguments."
+            Nothing -> failAt an $ "toHyle: applyPrim: unsupported primitive: rwPrim" <> showt b <> " with " <> showt (length args) <> " arguments."
 
 -- | The primitive table: given the result width and the (first) operand
 --   width, a pure applicator (taking a pre-generated fresh name for the
@@ -599,7 +597,7 @@ toPrim b sz w = case b of
                   A.Var {} -> A.Slice an (w - 1) 1 a
                   A.Lit {} -> A.Slice an (w - 1) 1 a
                   _        -> A.Let an 1 x a $ A.Slice an (w - 1) 1 $ A.Var an w x
-            else Left "toMantle: MSBit of a zero-width value."
+            else Left "toHyle: MSBit of a zero-width value."
       _             -> Nothing
       where bin :: A.Op -> Maybe (Annote -> A.Name -> [A.Exp] -> Either Text A.Exp)
             bin op = Just $ \ an _ -> two an $ \ a b' -> pure $ A.Prim an sz op [a, b']
@@ -616,12 +614,12 @@ toPrim b sz w = case b of
             two :: Annote -> (A.Exp -> A.Exp -> Either Text A.Exp) -> [A.Exp] -> Either Text A.Exp
             two an k = \ case
                   [a, b'] -> k a b'
-                  es      -> Left $ "toMantle: primitive arity mismatch at " <> showt an <> " (expected 2, got " <> showt (length es) <> ")."
+                  es      -> Left $ "toHyle: primitive arity mismatch at " <> showt an <> " (expected 2, got " <> showt (length es) <> ")."
 
             one :: Annote -> (A.Exp -> Either Text A.Exp) -> [A.Exp] -> Either Text A.Exp
             one an k = \ case
                   [a] -> k a
-                  es  -> Left $ "toMantle: primitive arity mismatch at " <> showt an <> " (expected 1, got " <> showt (length es) <> ")."
+                  es  -> Left $ "toHyle: primitive arity mismatch at " <> showt an <> " (expected 1, got " <> showt (length es) <> ")."
 
 resize :: (MonadError AstError m, MonadState S m) => Annote -> A.Size -> A.Exp -> m A.Exp
 resize an sz a
@@ -701,9 +699,9 @@ applyExtern an sz (ps, clk, rst, as, rs, s) a args = do
                   , A.extInputs new == A.extInputs old
                   , A.extOutputs new == A.extOutputs old
                   , A.extGenerics new == A.extGenerics old = case (A.extModel new, A.extModel old) of
-                        (Just g1, Just g2) | g1 /= g2 -> failAt an $ "toMantle: extern " <> s <> " has conflicting models (" <> g1 <> ", " <> g2 <> ")"
+                        (Just g1, Just g2) | g1 /= g2 -> failAt an $ "toHyle: extern " <> s <> " has conflicting models (" <> g1 <> ", " <> g2 <> ")"
                         (mg, mg')                     -> pure $ old { A.extModel = maybe mg' Just mg }
-                  | otherwise = failAt an $ "toMantle: extern " <> s <> " is used with inconsistent signatures"
+                  | otherwise = failAt an $ "toHyle: extern " <> s <> " is used with inconsistent signatures"
 
 ---
 --- Hoisting clocked externs into device instances.
@@ -804,7 +802,7 @@ hoistInstances p@(A.Program exts ds _)
                               i  <- freshLocal "$x"
                               ex <- gets $ Map.lookup x . sExterns
                               case ex of
-                                    Nothing -> failAt an' $ "toMantle: hoistInstances: unknown extern: " <> x
+                                    Nothing -> failAt an' $ "toHyle: hoistInstances: unknown extern: " <> x
                                     Just e  -> do
                                           let inst   = A.Instance an' i x cs
                                               drives = [ A.SInstIn an' i p arg | ((p, _), arg) <- zip (A.extInputs e) es' ]
@@ -820,7 +818,7 @@ hoistInstances p@(A.Program exts ds _)
                   ([], fst acc, snd acc)
 
 ---
---- Types, sizing, names (carried over from ToCore).
+--- Types, sizing, names.
 ---
 
 arity :: M.Ty -> Int
@@ -844,7 +842,7 @@ merge an s'  = \ case
             Nothing           -> ((v, t) :) <$> merge an s' s
             Just t' | t == t' -> merge an s' s
             Just t'           -> failAt an
-                  $ "toMantle: merge: inconsistent assignment of tyvar " <> v
+                  $ "toHyle: merge: inconsistent assignment of tyvar " <> v
                   <> ": " <> M.prettyTy t <> " vs. " <> M.prettyTy t'
 
 type TySub = [(Text, M.Ty)]
@@ -871,18 +869,18 @@ getCtorType :: MonadReader ConMap m => Name M.DataConId -> m (Maybe M.Ty)
 getCtorType n = asks (Map.lookup n . snd)
 
 ctorTag :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState S m) => Annote -> Maybe M.Ty -> Name M.DataConId -> m (A.Value, A.Size)
-ctorTag an Nothing _  = failAt an "toMantle: ctorTag: encountered untyped constructor (rwc bug)"
+ctorTag an Nothing _  = failAt an "toHyle: ctorTag: encountered untyped constructor (rwc bug)"
 ctorTag an (Just t) d = case M.flattenTyApp t of
       M.TyCon _ c : _ -> do
             ctors <- getCtors c
             case findIndex ((== n2s d) . n2s) ctors of
                   Just idx -> pure (toInteger idx, fromIntegral $ nbits $ genericLength ctors)
-                  Nothing  -> failAt an $ "toMantle: ctorTag: unknown ctor: " <> prettyPrint (n2s d) <> " of type " <> prettyPrint (n2s c)
-      _               -> failAt an $ "toMantle: ctorTag: unexpected type: " <> M.prettyTy t
+                  Nothing  -> failAt an $ "toHyle: ctorTag: unknown ctor: " <> prettyPrint (n2s d) <> " of type " <> prettyPrint (n2s c)
+      _               -> failAt an $ "toHyle: ctorTag: unexpected type: " <> M.prettyTy t
 
 sizeOf' :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState S m) => Text -> Annote -> Maybe M.Ty -> m A.Size
 sizeOf' s an = \ case
-      Nothing -> failAt an "toMantle: encountered an untyped expression (rwc bug)."
+      Nothing -> failAt an "toHyle: encountered an untyped expression (rwc bug)."
       Just t  -> sizeOf s an t
 
 sizeOf :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState S m) => Text -> Annote -> M.Ty -> m A.Size
@@ -894,20 +892,20 @@ sizeOfW s an visited t = do
       sz <- case Map.lookup t m of
             Nothing -> case M.flattenTyApp t of
                   M.TyCon _ (n2s -> "Vec") : [M.evalNat -> Just n, t''] -> (fromIntegral n *) <$> sizeOfW s an visited t''
-                  M.TyCon _ (n2s -> "Vec") : [n, t'']                   -> failAt an $ "toMantle: " <> s <> ": sizeOf: can't determine the size of a Vec."
+                  M.TyCon _ (n2s -> "Vec") : [n, t'']                   -> failAt an $ "toHyle: " <> s <> ": sizeOf: can't determine the size of a Vec."
                                                                                     <> " (Vec " <> M.prettyTy n <> " " <> M.prettyTy t'' <> ")"
                   M.TyCon _ (n2s -> "Finite") : [M.evalNat -> Just n]   -> pure $ fromIntegral $ nbits n
-                  M.TyCon _ (n2s -> "Finite") : [n]                     -> failAt an $ "toMantle: " <> s <> ": sizeOf: can't determine the size of a Finite."
+                  M.TyCon _ (n2s -> "Finite") : [n]                     -> failAt an $ "toHyle: " <> s <> ": sizeOf: can't determine the size of a Finite."
                                                                                     <> " (Finite " <> M.prettyTy n <> ")"
                   M.TyCon _ c              : _
-                        | t `Set.member` visited                        -> failAt an $ "toMantle: " <> s <> ": sizeOf: can't determine the size of a recursive datatype: " <> n2s c
+                        | t `Set.member` visited                        -> failAt an $ "toHyle: " <> s <> ": sizeOf: can't determine the size of a recursive datatype: " <> n2s c
                         | otherwise                                     -> do
                               ctors      <- getCtors c
                               ctorWidths <- mapM (ctorWidth (Set.insert t visited) t) ctors
                               pure $ fromIntegral (nbits $ genericLength ctors) + maximum (0 : ctorWidths)
-                  M.TyApp {}               : _                          -> failAt an $ "toMantle: " <> s <> ": sizeOf: got TyApp after flattening (rwc bug): " <> M.prettyTy t
+                  M.TyApp {}               : _                          -> failAt an $ "toHyle: " <> s <> ": sizeOf: got TyApp after flattening (rwc bug): " <> M.prettyTy t
                   M.TyVar {}               : _                          -> pure 0
-                  _                                                     -> failAt an $ "toMantle: sizeOf: " <> s <> ": couldn't calculate the size of a type: " <> M.prettyTy t
+                  _                                                     -> failAt an $ "toHyle: sizeOf: " <> s <> ": couldn't calculate the size of a type: " <> M.prettyTy t
             Just sz -> pure sz
       modify $ \ st -> st { sSizes = Map.insert t sz $ sSizes st }
       pure sz

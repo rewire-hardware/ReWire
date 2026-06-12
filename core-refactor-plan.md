@@ -1,5 +1,9 @@
 # Migration plan: replacing Core with Mantle
 
+> **Note (2026-06):** after the migration completed, the Mantle IR was
+> renamed *Hyle* (`ReWire.Hyle.*`; spec now at `doc/hyle.md`, formerly
+> `doc/core.md`). This document is historical and keeps the Mantle name.
+
 Companion to `doc/core.md`, which specifies the new IR ("Mantle"). This
 document plans how the codebase gets from here to there. Implementation is
 in progress; `refactor-report.md` (repo root) is the running log of issues

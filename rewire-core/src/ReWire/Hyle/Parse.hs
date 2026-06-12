@@ -1,20 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE Safe #-}
--- | Parser for the Mantle concrete syntax (doc/core.md, section 10).
+-- | Parser for the Hyle concrete syntax (doc/hyle.md, section 10).
 --
 --   The concrete syntax does not carry per-node widths, so parsing is
 --   followed by an elaboration pass that reconstructs the cached sizes
 --   bottom-up: variable sizes from binders, call result sizes from the
 --   signatures of the named defns and externs. Full well-formedness checking
---   (ReWire.Mantle.Check) is separate; elaboration only fails where a size
+--   (ReWire.Hyle.Check) is separate; elaboration only fails where a size
 --   cannot be reconstructed at all.
-module ReWire.Mantle.Parse (parseMantle, parseMantleText) where
+module ReWire.Hyle.Parse (parseHyle, parseHyleText) where
 
 import ReWire.Annotation (Annote, noAnn)
 import ReWire.BitVector (BV, bitVec)
 import ReWire.Error (failAt, MonadError, AstError)
-import ReWire.Mantle.Syntax
+import ReWire.Hyle.Syntax
 import ReWire.Pretty (showt)
 
 import Control.Monad (unless, when, foldM)
@@ -36,11 +36,11 @@ import qualified Text.Megaparsec.Char.Lexer as L
 
 type Parser = Parsec Void Text
 
-parseMantle :: (MonadError AstError m, MonadIO m) => FilePath -> m Program
-parseMantle p = liftIO (T.readFile p) >>= flip parseMantleText p
+parseHyle :: (MonadError AstError m, MonadIO m) => FilePath -> m Program
+parseHyle p = liftIO (T.readFile p) >>= flip parseHyleText p
 
-parseMantleText :: MonadError AstError m => Text -> FilePath -> m Program
-parseMantleText txt p = either (failAt noAnn . pack . errorBundlePretty) elabProgram
+parseHyleText :: MonadError AstError m => Text -> FilePath -> m Program
+parseHyleText txt p = either (failAt noAnn . pack . errorBundlePretty) elabProgram
       $ parse (space *> program <* eof) p txt
 
 ---
@@ -133,7 +133,7 @@ stmt = (SLet noAnn <$> (keyword "let" *> name) <*> (equals *> expr))
             x <- try $ name <* assign
             e <- expr
             -- A dotted target is an instance input port. (Device-local
-            -- names may not contain dots; see ReWire.Mantle.Check.)
+            -- names may not contain dots; see ReWire.Hyle.Check.)
             case T.breakOn "." x of
                   (i, T.stripPrefix "." -> Just p) | not (T.null p) -> pure $ SInstIn noAnn i p e
                   _                                                 -> pure $ SOutput noAnn x e
@@ -312,7 +312,7 @@ elabProgram (Program exts ds dev) = do
 elabDefn :: MonadError AstError m => SigEnv -> Defn -> m Defn
 elabDefn env (Defn an n sig@(Sig _ argSzs _) ps body) = do
       unless (length ps == length argSzs) $
-            failAt an $ "Mantle/Parse: " <> n <> ": parameter count does not match signature"
+            failAt an $ "Hyle/Parse: " <> n <> ": parameter count does not match signature"
       body' <- elabExp env (Map.fromList $ zip ps argSzs) body
       pure $ Defn an n sig ps body'
 
@@ -324,7 +324,7 @@ elabDevice env (Device an n ins outs regs insts body) = do
       where instOuts :: MonadError AstError m => VarEnv -> Instance -> m VarEnv
             instOuts g (Instance an' x ex _) = case Map.lookup ex $ envExterns env of
                   Just e  -> pure $ foldr (\ (p, sz) -> Map.insert (x <> "." <> p) sz) g $ extOutputs e
-                  Nothing -> failAt an' $ "Mantle/Parse: instance " <> x <> ": unknown extern " <> ex
+                  Nothing -> failAt an' $ "Hyle/Parse: instance " <> x <> ": unknown extern " <> ex
 
             elabStmt :: MonadError AstError m => (VarEnv, [Stmt]) -> Stmt -> m (VarEnv, [Stmt])
             elabStmt (g, acc) = \ case
@@ -346,14 +346,14 @@ elabExp env = go
                   Slice an i k e      -> do
                         e' <- go g e
                         unless (fromIntegral i + k <= sizeOf e') $
-                              failAt an $ "Mantle/Parse: slice [" <> showt i <> " +: " <> showt k
+                              failAt an $ "Hyle/Parse: slice [" <> showt i <> " +: " <> showt k
                                        <> "] out of bounds for width " <> showt (sizeOf e')
                         pure $ Slice an i k e'
                   Prim an _ op es     -> do
                         es' <- mapM (go g) es
                         case opResultSize op $ map sizeOf es' of
                               Just sz -> pure $ Prim an sz op es'
-                              Nothing -> failAt an $ "Mantle/Parse: ill-typed application of " <> opName op
+                              Nothing -> failAt an $ "Hyle/Parse: ill-typed application of " <> opName op
                                                   <> " to operand widths " <> showt (map sizeOf es')
                   Call an _ n es      -> mapM (go g) es >>= resolveName g an n
                   XCall an _ n cs es  -> do
@@ -376,9 +376,9 @@ elabExp env = go
                   | null es, Just sz <- Map.lookup n g                  = pure $ Var an sz n
                   | Just (Sig _ _ res) <- Map.lookup n $ envDefns env   = pure $ Call an res n es
                   | Just ex <- Map.lookup n $ envExterns env            = pure $ XCall an (externResultSize ex) n [] es
-                  | otherwise                                           = failAt an $ "Mantle/Parse: unknown name: " <> n
+                  | otherwise                                           = failAt an $ "Hyle/Parse: unknown name: " <> n
 
             lookupExtern :: MonadError AstError m => Annote -> Name -> m Extern
             lookupExtern an n = case Map.lookup n $ envExterns env of
                   Just ex -> pure ex
-                  Nothing -> failAt an $ "Mantle/Parse: unknown extern: " <> n
+                  Nothing -> failAt an $ "Hyle/Parse: unknown extern: " <> n

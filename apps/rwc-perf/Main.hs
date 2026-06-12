@@ -153,7 +153,7 @@ genDefChain n = unlines $
       ]
 
 -- | A stateful device whose state is an n-tuple of words, updated each
---   cycle. Stresses Purify (state threading) and ToMantle (tuple sizing).
+--   cycle. Stresses Purify (state threading) and ToHyle (tuple sizing).
 genStateVars :: Int -> String
 genStateVars n = unlines $
       [ "{-# LANGUAGE DataKinds #-}"

@@ -1,22 +1,21 @@
-# Mantle: the ReWire core intermediate representation
+# Hyle: the ReWire bit-level intermediate representation
 
 **Status: normative (June 2026).** This document specifies the syntax and
-semantics of *Mantle*, the bit-level IR implemented in `ReWire.Mantle.*`,
-which replaced the previous Core IR. The name continues the geological
-convention set by Crust. (The migration history lives in
-`core-refactor-plan.md` and `refactor-report.md`, at the repo root.)
+semantics of *Hyle*, the bit-level IR implemented in `ReWire.Hyle.*`. (The
+name is the Greek ὕλη, "matter": the formless substrate that receives form —
+here, the bit-level substrate into which every ReWire design is lowered.)
 
-Mantle is the IR that the back ends consume: the pipeline becomes
+Hyle is the IR that the back ends consume; the compiler pipeline is
 
-    HSE  →  Crust  →  (purification)  →  Mantle  →  { Verilog, VHDL, Cryptol, interpreter }
+    HSE  →  Crust  →  (purification)  →  Hyle  →  { Verilog, VHDL, Cryptol, interpreter }
 
-Everything upstream of the purified program (Crust, `Crust.Purify`) is
-unchanged by this proposal; Mantle replaces only the bit-level IR and its
-consumers.
+The producer (`Crust.ToHyle`, applied to the purified Crust program) is
+outside the scope of this document: everything below treats Hyle programs as
+given, whether produced by the compiler or written by hand (`--from-core`).
 
 ## 1. Design goals
 
-Mantle is a *pure, first-order, monomorphic, total* functional language over
+Hyle is a *pure, first-order, monomorphic, total* functional language over
 width-indexed bitvectors, together with a synchronous *device* construct
 (registers, instances, and parallel wire equations) that makes the state
 machine explicit. It is deliberately close to a subset of Cryptol: the
@@ -24,29 +23,26 @@ functional fragment admits a syntax-directed, width-preserving embedding into
 Cryptol (§8.4), and the device construct corresponds to the standard Mealy
 stream idiom.
 
-The design goals, each traceable to a defect of the current Core catalogued in
-`rtl-backends.md` (a local design note):
+The design goals:
 
 - **G1 — Explicit widths.** Every expression has a unique width derivable
   from its immediate subterms; all primitives are width-homogeneous; all
   resizing is via explicit `zext`/`sext`/`trunc` coercions. No back end
-  reconstructs context-determined widths (`wcast`/`expWidth` and their VHDL
-  and Cryptol counterparts disappear).
+  reconstructs context-determined widths.
 - **G2 — Explicit state.** Registers are declared IR objects with widths and
-  initial values. The resumption layout (padding ∥ outputs ∥ dispatch) that
-  the interpreter and all three back ends currently re-derive becomes the
-  *producer's* concern, expressed once as ordinary slices and equations.
-- **G3 — No implicit conventions.** Every mux has both arms ("a call with a
-  nil alternative takes its branch" is gone); division by zero has one
-  defined semantics implemented by every target; don't-care values are an
-  explicit, semantically-defined node.
+  initial values. The layout of the machine state is the *producer's*
+  concern, expressed once as ordinary slices and equations — consumers never
+  re-derive it.
+- **G3 — No implicit conventions.** Every mux has both arms; division by
+  zero has one defined semantics implemented by every target; don't-care
+  values are an explicit, semantically-defined node.
 - **G4 — Named, fully-sized ports everywhere**, externs included; sequential
-  (clocked) externs are device-level *instances*, not pretend function calls,
-  resolving the current ambiguity about how many instances a clocked extern
-  call denotes.
+  (clocked) externs are device-level *instances*, not pretend function
+  calls, so the IR fixes exactly how many instances a design contains.
 - **G5 — Abstract names.** Identifiers are arbitrary text; each printer
-  legalizes names for its target (as today, via `Core.Mangle` and the VHDL
-  extended-identifier escapes).
+  legalizes names for its target (`Hyle.Mangle` z-encoding for the RTL
+  targets, VHDL extended-identifier escapes, the Cryptol prefixing scheme;
+  §8.6).
 - **G6 — Semantics first.** The language has a compositional denotational
   semantics; the interpreter is its executable transcription, and each back
   end's correctness is a per-construct refinement statement (§8). This is
@@ -77,8 +73,8 @@ Truncation to width n is ⟨v⟩ₙ ≔ v mod 2ⁿ for v ∈ ℤ (well-defined i
     sliceᵢ,ₖ(x) ≔ ⌊x / 2ⁱ⌋ mod 2ᵏ          ∈ BV(k),       for i + k ≤ m
 
 ⧺ is associative with unit ⟨⟩. Note the *LSB-at-0* indexing convention,
-matching Verilog `x[i+k-1 : i]` and the existing `rwPrimBitSlice`; Cryptol's
-MSB-first sequences require an index flip in the embedding (§8.4).
+matching Verilog `x[i+k-1 : i]` and the source-level `rwPrimBitSlice`;
+Cryptol's MSB-first sequences require an index flip in the embedding (§8.4).
 
 **Streams.** For a set A, A^ω ≔ ℕ → A is the set of streams over A, and A^*
 the set of finite sequences. A function F : A^* → B is used to model a causal
@@ -102,8 +98,9 @@ inert and ignored throughout this document.
 
 There is exactly one type former. There are no polymorphic types, no
 functions-as-values, no sums or products: by the time a program reaches
-Mantle, all of Crust's algebraic data has been compiled to bit-level
-representations, and all higher-order structure has been eliminated.
+Hyle, all of the source language's algebraic data has been compiled to
+bit-level representations, and all higher-order structure has been
+eliminated.
 
 ### 3.2 Expressions
 
@@ -118,10 +115,9 @@ representations, and all higher-order structure has been eliminated.
         | if e₁ then e₂ else e₃            mux (e₁ : [1]); both arms always present
         | let x = e₁ in e₂                 local binding (explicit sharing)
 
-There is no pattern matching: Crust-level patterns are compiled by the
-producer into slices, equality tests, and muxes (they already are, in effect —
-`patMatches`/`patApply` in the current interpreter — but the compilation
-becomes explicit IR rather than a convention shared by four consumers).
+There is no pattern matching: source-level patterns are compiled by the
+producer into slices, equality tests, and muxes, so the compilation is
+explicit IR rather than a convention shared among the consumers.
 
 ### 3.3 Primitives
 
@@ -147,8 +143,9 @@ The greater-than comparisons are definable by operand swap, but are kept as
 primitives so that emitted RTL reads the way the source did (readability of
 the generated IR and RTL is a stated goal). Logical
 negation/conjunction/disjunction of flags are `not`/`and`/`or` at width 1;
-"is nonzero" is `redor`. §9.1 gives the complete mapping from the current
-Core `Prim` set.
+"is nonzero" is `redor`. Signed division and remainder are deliberately
+absent (the source language has no route to them); the SMT-LIB conventions
+of §5.2 extend naturally if `sdiv`/`smod` are ever needed.
 
 ### 3.4 Definitions
 
@@ -157,7 +154,7 @@ Core `Prim` set.
 
 Definitions are first-order, saturated, and closed except for references to
 other definitions and to combinational externs. The call graph (including
-extern→model edges, §3.5) must be acyclic (§4.4); consequently every
+extern→model edges, §3.5) must be acyclic (§4.3); consequently every
 definition denotes a total function (§6.2).
 
 ### 3.5 Extern declarations
@@ -172,7 +169,7 @@ definition denotes a total function (§6.2).
 Port names are mandatory (G4); ports left anonymous in the source-level
 extern descriptor are given synthesized names (`p0, p1, …`) by the producer,
 and the external implementations are expected to match — making the names
-part of the IR removes the per-backend guesswork.
+part of the IR removes any per-backend guesswork.
 
 A **combinational** extern (kind `comb`) is callable in expressions,
 `E⟨c̄⟩(ē)`, with result type [m₁ + ⋯ + m_l] — the concatenation of its
@@ -185,14 +182,12 @@ synthesis already makes when it duplicates or merges combinational logic.)
 
 If a `model f` is given, the interpretation of E is fixed to the denotation
 of f, which must have signature ([n₁], …, [n_k]) → [m₁ + ⋯ + m_l]. Models do
-not see generics (a carried-over limitation of the current extern-model
-design). Model references are call-graph edges for the acyclicity check.
+not see generics. Model references are call-graph edges for the acyclicity
+check.
 
 A **sequential** extern (kind `seq`) is stateful: it may only be
 *instantiated* at device level (§3.6), never called in an expression. Its
-clock and reset port names are emission metadata for the RTL targets. This
-replaces the current encoding where `ExternSig`'s clock/reset fields are a
-de-facto statefulness flag on a value-level call.
+clock and reset port names are emission metadata for the RTL targets.
 
 ### 3.6 Devices
 
@@ -216,10 +211,8 @@ in statements strictly after its binding (no forward references, so
 combinational well-foundedness holds by construction); output names are
 *never* readable (assign-only — VHDL `out` ports aren't readable, and a
 `let` covers the use case). Every output, every register, and every input
-port of every instance must be assigned exactly once; `let` names at device
-level serve double duty as the replacement for the current `SetRef`/`GetRef`
-reference cells (§9.1): they are named wires, emitted by RTL back ends under
-their given names.
+port of every instance must be assigned exactly once. Device-level `let`
+names are named wires, emitted by the RTL back ends under their given names.
 
 A device is a Mealy machine: outputs at cycle t are a function of register
 state at t and inputs at t; registers take their `next` values at t+1; at
@@ -227,7 +220,7 @@ t = 0 registers hold their `init` values. §6.4 makes this precise.
 
 Clock and reset are *not* inputs: the semantics is synchronous and
 cycle-indexed. The device carries emission metadata (clock and reset port
-names, reset synchronicity and polarity — today's `--clock-name` /
+names, reset synchronicity and polarity — the `--clock-name` /
 `--reset-name` / `--sync-reset` / `--invert-reset` configuration) that
 affects only the RTL realization, with a refinement obligation in §8.5.
 
@@ -240,6 +233,9 @@ device. All global names (externs, defns, the device, and within the device
 its locals) are distinct in their respective namespaces.
 
 ## 4. Static semantics
+
+This section is implemented by `Hyle.Check`, which the compiler runs on
+every Hyle program it constructs, parses, or transforms.
 
 ### 4.1 Signatures and contexts
 
@@ -322,9 +318,9 @@ required signature; and the relation
                 body of f has model f′
 
 is acyclic over defn names (with the device body's expressions treated as
-the body of a virtual root). Acyclicity bans recursion outright, as today
-(`Core.Check.checkRecursion`); it is also what makes the semantics in §6 a
-definition rather than a fixpoint assertion.
+the body of a virtual root). Acyclicity bans recursion outright; it is also
+what makes the semantics in §6 a definition rather than a fixpoint
+assertion.
 
 ## 5. Dynamic semantics: values and primitives
 
@@ -338,7 +334,8 @@ with any value of the right width is sound *for the program the producer
 meant*, though it changes the bit-for-bit denotation and therefore golden
 outputs), and back ends may surface it as a comment or synthesis attribute.
 The cosimulation requirement — all targets bit-identical — is what forces a
-single defined value; zero matches what the compiler does today.
+single defined value. The concrete syntax prints it distinctly as `undef n`
+(§10), preserving the provenance in compiler output and golden files.
 
 ### 5.2 Primitive denotations
 
@@ -374,8 +371,8 @@ For x, y in BV of the indicated widths (result truncations are implied by the
 The division-by-zero conventions follow SMT-LIB, deliberately: equivalence
 checking against SMT-backed tools (SAW, the intended consumer of the Cryptol
 back end) then needs no shimming. Every back end must *implement* these
-conventions (a guard mux around `/` and `%` in Verilog and Cryptol; the VHDL
-`rw_helpers` package already guards division) — division is rare and
+conventions (a guard mux around `/` and `%` in Verilog and Cryptol; guarded
+division functions in the VHDL `rw_helpers` package) — division is rare and
 expensive in hardware anyway, so the guard is noise-level (§8).
 
 The `ashr` sign convention at n = 0 is vacuous (BV(0) is unit); `sext` from
@@ -395,8 +392,8 @@ subject to: if E declares `model f`, then η(E)(c̄, x̄) = 𝔉⟦f⟧(x̄) for
 (model semantics fixed, generic-independent; §6.2 defines 𝔉). The denotation
 of a program is a function of η; programs whose externs all carry models (or
 that have none) have an absolute denotation. This is the formal content of
-"unclocked externs are uninterpreted functions" in the current Cryptol back
-end, and of the interpreter's refusal to evaluate model-less externs.
+"unclocked externs are uninterpreted functions" in the Cryptol back end, and
+of the interpreter's refusal to evaluate model-less externs.
 
 ### 6.2 Expressions and definitions
 
@@ -460,10 +457,11 @@ A sequential extern instance ι is modeled by a **strictly causal stream
 function**, given as F_ι : P_ι^* → Q_ι — from the finite history of its
 inputs at cycles 0 … t−1 to its outputs at cycle t. (Strict causality says a
 clocked extern's outputs this cycle depend only on past inputs, i.e. it is
-register-like. A physical extern with a combinational input-to-output path is
-outside this model — as it is outside today's model — and the obligation to
-avoid creating combinational loops through such an extern rests with the
-user, as it does with any RTL instantiation.)
+register-like. A physical extern with a combinational input-to-output path
+is outside this model, and the obligation to avoid creating combinational
+loops through such an extern rests with the user, as it does with any RTL
+instantiation. An explicit per-port `comb` annotation with a device-wide
+acyclicity check is the principled extension, should one ever be needed.)
 
 Given η and a family F = (F_ι), the device denotes the stream function
 
@@ -480,11 +478,10 @@ the familiar Mealy unfolding
 
     s(0) = w̄,    (s(t+1), o(t)) = step(s(t), i(t))
 
-which is precisely what the interpreter (`ReWire.Mantle.Interp`) and the
-Cryptol back end's `rw_device` stream comprehension implement; the
-decomposition of the resumption vector into ⟨padding, outputs, dispatch-tag,
-state⟩ is not their job: the producer has already split it into named
-registers and output equations.
+which is precisely what the interpreter (`ReWire.Hyle.Interp`) and the
+Cryptol back end's `rw_device` stream comprehension implement; how the
+machine state is decomposed into registers, outputs, and equations is the
+producer's concern, settled before the program reaches Hyle.
 
 The interpreter realizes 𝔇 directly (it rejects programs containing
 instances or model-less combinational externs). The finite-trace semantics
@@ -512,9 +509,8 @@ uninterpreted-function reading of η (η(E) is a function, so equal arguments
 give interchangeable calls).
 
 **Defn inlining.** ℰ⟦f(ē)⟧ρ = ℰ⟦e_f[ē/x̄]⟧ρ. Whether a defn is emitted as a
-module/function or inlined is therefore a free choice of a Mantle→Mantle
-pass, not a semantic question — which is where the current backends'
-"inline when uses == 1" heuristic moves (§8, and the migration plan).
+module/function or inlined is therefore a free choice of a Hyle→Hyle pass
+(`Hyle.Transform.inline`), not a semantic question.
 
 **Congruences.** All constructs are congruent: equal-denotation subterms may
 be replaced anywhere. The optimizer needs nothing beyond §5.2's equations and
@@ -528,7 +524,7 @@ erasure of zero-width wires.)
 **Cryptol embedding.** There is a compositional, width-preserving
 translation ⌈·⌉ of the functional fragment into Cryptol with
 ⟦⌈e⌉⟧_Cryptol = ℰ⟦e⟧ (§8.4), and ⌈device⌉ as the standard stream idiom. This
-is the precise sense in which Mantle is "a Cryptol subset": the Cryptol back
+is the precise sense in which Hyle is "a Cryptol subset": the Cryptol back
 end is the embedding plus name legalization.
 
 ## 8. Realization on the targets
@@ -539,40 +535,46 @@ force, every row is a local template — no analysis beyond a topological walk.
 ### 8.1 Common structure
 
 - Each defn ↦ one Verilog module / VHDL entity+architecture / Cryptol
-  function. A prior Mantle→Mantle inline pass decides which defns still
-  exist; back ends do not inline.
+  function. A prior Hyle→Hyle inline pass decides which defns still exist;
+  back ends do not inline.
 - `let` ↦ wire + continuous assign / signal + concurrent assignment /
-  `where`-binding. Since every let has an explicit width, the
-  temporary-hoisting that VHDL required for port actuals is just "introduce
-  a let", performable mechanically by the printer when the actual isn't
-  already atomic.
-- Multi-target lvalues never arise: device equations assign one named target
-  each (this is what replaces Verilog's `assign {a, b} = e` and the VHDL
-  workaround for it).
+  `where`-binding. Since every let has an explicit width, hoisting a
+  non-atomic expression into a named temporary (as VHDL requires for port
+  actuals) is just "introduce a let", performed mechanically by the printer.
+- Multi-target lvalues never arise: device equations assign one named
+  target each.
+- The VHDL back end realizes the operators as function calls into an
+  `rw_helpers` package emitted alongside every design (source in
+  `rewire-core/vhdl/rw_helpers.vhdl`), which implements the §5.2 semantics
+  over `std_logic_vector`: VHDL's strict typing makes inline
+  signed/unsigned conversions noisy, and the fixed function names keep the
+  emitted architecture readable.
 
 ### 8.2 Expressions
 
-| construct        | Verilog                  | VHDL                                          | Cryptol |
-|------------------|--------------------------|-----------------------------------------------|---------|
-| `lit n v`        | `n'h…`                   | sized literal / `x"…"`                        | `(0x… : [n])` or binary |
-| `undef n`        | `n'h0` (+ comment)       | zeros (+ comment)                             | `(zero : [n])` |
-| `e₁ ⧺ e₂`        | `{e₁, e₂}`               | `e₁ & e₂`                                     | `e₁ # e₂` |
-| `e[i +: k]`      | `e[i+k-1 : i]`           | `e(i+k-1 downto i)`                           | `take`{k} (drop`{n-i-k} e)` |
-| `add` …          | `+` etc., widths equal   | `std_logic_vector(unsigned(a) + unsigned(b))` | `+` etc. |
-| `udiv`/`umod`    | guard mux + `/`, `%`     | `rw_helpers` guarded div/mod                  | guard + `/`, `%` |
-| `shl/lshr/ashr`  | `<<`,`>>`,`$signed(a)>>>`| `shift_left/right` with clamped amount        | `<<`, `>>`, `>>$` with width fix |
-| `slt`/`sle`      | `$signed(a) < $signed(b)`| `signed(a) < signed(b)`                       | sign-flip compare |
-| `zext⟨m⟩`        | implicit / `{pad, e}`    | `rw_resize`-style pad                         | `zero # e` |
-| `sext⟨m⟩`        | `$signed` context or rep | `resize(signed(e), m)`                        | rep sign ⧺ e |
-| `if`             | `c ? a : b`              | `when`/`else` (widths now always equal)       | `if c == 1 then a else b` |
-| `f(ē)`           | instantiation + wire     | component instantiation (named ports)         | application |
-| comb extern call | instantiation            | component instantiation                       | `parameter` fn or model call |
+| construct        | Verilog                  | VHDL                                | Cryptol |
+|------------------|--------------------------|-------------------------------------|---------|
+| `lit n v`        | `n'h…`                   | sized literal / `x"…"`              | `(0x… : [n])` or binary |
+| `undef n`        | `n'h0`                   | zeros                               | `(zero : [n])` |
+| `e₁ ⧺ e₂`        | `{e₁, e₂}`               | `e₁ & e₂`                           | `e₁ # e₂` |
+| `e[i +: k]`      | `e[i+k-1 : i]`           | `e(i+k-1 downto i)`                 | `take`{k} (drop`{n-i-k} e)` |
+| `add` …          | `+` etc., widths equal   | `rw_add(a, b)` etc.                 | `+` etc. |
+| `udiv`/`umod`    | guard mux + `/`, `%`     | `rw_div`/`rw_mod` (guarded)         | guard + `/`, `%` |
+| `shl/lshr/ashr`  | `<<`, `>>`, `$unsigned($signed(a) >>> b)` | `rw_shiftl`/`rw_shiftr`/`rw_ashiftr` | `<<`, `>>`, `>>$` |
+| `slt`/`sle`      | `$signed(a) < $signed(b)`| `rw_lts`/`rw_lteqs`                 | sign-flip compare |
+| `zext⟨m⟩`        | `{pad-zeros, e}`         | `rw_resize(e, m)`                   | `rw'resize` (zero-pad) |
+| `sext⟨m⟩`        | `{repl of MSB, e}`       | `rw_sext(e, m)`                     | `rw'sext` |
+| `if`             | `c ? a : b`              | `rw_cond(c, a, b)`                  | `if c == 1 then a else b` |
+| `f(ē)`           | module instantiation + result wire | component instantiation (named ports) | application |
+| comb extern call | module instantiation     | component instantiation             | `parameter` fn or model call |
 
-Because operand and result widths of every operator are equal by
-construction, Verilog's context-determined sizing always agrees with the IR
-(no `wcast`), and VHDL's exact-width rules are satisfied without resizing
-helpers — `rw_helpers` shrinks to the division guards and shift-amount
-clamping, the only places where the *operation* (not the widths) needs help.
+The `$unsigned(...)` around the Verilog arithmetic shift isolates it from
+the parent expression's signedness context (function arguments are
+self-determined); without it, an enclosing unsigned operation would turn
+`>>>` logical. Because operand and result widths of every operator are equal
+by construction, Verilog's context-determined sizing always agrees with the
+IR, and no back end ever inserts an implicit resize: width changes happen
+exactly at the explicit coercions.
 
 ### 8.3 Devices
 
@@ -586,7 +588,7 @@ clamping, the only places where the *operation* (not the widths) needs help.
   assignments; instances ↦ component instantiations (named association;
   clock/reset connected directly, never through an intermediate signal — the
   delta-cycle rule); outputs ↦ concurrent assignments.
-- **Cryptol**: the §6.4 recurrence as the existing `rw_device` idiom:
+- **Cryptol**: the §6.4 recurrence as the `rw_device` idiom:
   `sts = [⟨w̄⟩] # [ step s i | s <- sts | i <- ins ]`, projecting outputs;
   instances are rejected (no pure realization), model-less comb externs go
   to a `parameter` block.
@@ -598,11 +600,11 @@ clamping, the only places where the *operation* (not the widths) needs help.
 non-identity cases: slices flip to MSB-first (`e[i +: k]` on e : [n] becomes
 `take`{k} (drop`{n−i−k} e)`); `udiv`/`umod` wrap Cryptol's (division-by-zero
 erroring) `/`/`%` in the §5.2 guard; coercions and reductions map to small
-fixed helper definitions (the current `rw'resize`/`rw'parity` family); names
-are legalized with the current `rw_`-prefix scheme. Everything else is a
-homomorphism. A device with neither instances nor model-less externs yields
-a closed Cryptol module whose `rw_device` is extensionally 𝔇⟦device⟧ — the
-artifact SAW consumes.
+fixed helper definitions (the `rw'resize`/`rw'sext`/`rw'repl`/`rw'parity`
+family, emitted with every module); names are legalized with the `rw_`-prefix
+scheme (§8.6). Everything else is a homomorphism. A device with neither
+instances nor model-less externs yields a closed Cryptol module whose
+`rw_device` is extensionally 𝔇⟦device⟧ — the artifact SAW consumes.
 
 ### 8.5 Reset refinement (RTL targets)
 
@@ -611,92 +613,57 @@ the configured reset protocol (assert reset for ≥ 1 cycle, deassert; sync or
 async, either polarity), the post-deassertion sampled trace of the emitted
 design equals 𝔇⟦device⟧ applied to the post-deassertion sampled inputs, and
 likewise the no-reset power-on trace (via `initial`/`:=` initials) — this is
-exactly what the existing cosimulation harness checks, generalized from the
-current backends' hand-built state machines to a per-register rule.
+exactly what the cosimulation harness checks, per register.
 
 ### 8.6 Names and zero-width values
 
-Names are legalized per target at print time (Verilog: `Core.Mangle`-style
-z-encoding; VHDL: extended identifiers for anything that isn't a safe basic
-identifier; Cryptol: sanitize + `rw_` prefix + dedup), never in the IR.
-Zero-width wires, ports, registers, lets, and expression positions are
-erased entirely by every printer (sound by §7); a defn or extern whose result
-is [0], or a device port of width [0], simply vanishes from interfaces.
+Names are legalized per target at print time (Verilog and VHDL:
+`Hyle.Mangle` z-encoding, plus VHDL extended identifiers for anything that
+isn't a safe basic identifier; Cryptol: sanitize + `rw_` prefix + dedup),
+never in the IR. Zero-width wires, ports, registers, lets, and expression
+positions are erased entirely by every printer (sound by §7); a defn or
+extern whose result is [0], or a device port of width [0], simply vanishes
+from interfaces.
 
-## 9. Relation to the previous Core IR (historical)
+## 9. Design rationale: an expression language, not a netlist
 
-### 9.1 Construct mapping
-
-| Core (current)                          | Mantle |
-|-----------------------------------------|--------|
-| `Lit a bv`                              | `lit n v` |
-| `LVar a sz i`                           | named parameters / `let` |
-| `Concat a e₁ e₂`                        | `e₁ ⧺ e₂` |
-| `Call sz (Global g) disc ps els`, nil els | `let d = disc in g(d[…+:…], …)` — slices per `PatVar`, match assumed |
-| `Call sz (Global g) disc ps els`        | `let d = disc in if ⋀ eq(d[…], litᵢ) then g(…) else els` |
-| `Call sz (Prim p) …`                    | §3.3 op, same call/guard scheme; see prim table below |
-| `Call sz (Const bv) …`                  | guarded literal |
-| `Call sz (Extern … Nothing) …` unclocked| comb extern call (guarded as above) |
-| `Call sz (Extern … (Just m)) …`         | comb extern call; `model m` on the declaration |
-| clocked extern call                     | device-level `instance` + port equations (hoisted by the producer) |
-| `SetRef r` / `GetRef r`                 | device-level `let r = …` / reference to it (hoisted by the producer) |
-| `Defn`/`Sig`                            | defn (named params instead of positional LIds) |
-| `Device`/`Wiring`/`loop`/`state0`       | `device`: registers + equations; resumption layout becomes explicit producer-emitted slices |
-| `pausePadding`/`dispatchWires`/`resumptionSize` | gone (producer-internal) |
-| nil-else don't-care convention          | unconditional call / explicit `if` |
-| implicit context widths                 | explicit `zext`/`sext`/`trunc` |
-
-Prim mapping for the constructors that don't carry over one-to-one:
-
-| Core `Prim`         | Mantle |
-|---------------------|--------|
-| `LAnd`/`LOr`        | `and`/`or` at [1] over `redor`-coerced operands |
-| `LNot`              | `not(redor(x))` |
-| `XNor`              | `not(xor(x, y))` |
-| `RNAnd`/`RNor`/`RXNor` | `not(red…)` |
-| `MSBit`             | `x[n−1 +: 1]` |
-| `Resize`            | `zext⟨m⟩` or `trunc⟨m⟩` (chosen statically) |
-| `Reverse`           | concatenation of element slices |
-| `Id`                | slices/concatenation (pattern apply) |
-| `Replicate k`       | `rep⟨k⟩` |
-| `RShift`/`RShiftArith` | `lshr`/`ashr` |
-
-### 9.2 Why expression-structured rather than an RTLIL-style netlist
-
-The retargeting postmortem (`rtl-backends.md`) sketched an RTLIL-like
-successor. Mantle adopts every load-bearing item from that sketch — explicit
-widths and conversions (its point 1), fixed-width named ports with explicit
-signedness per operation (2), explicit registers with initials and reset
-metadata (3), no multi-target lvalue shapes (4), mandatory named extern
-ports (5), abstract names legalized per target (6) — but realizes them in a
+The obvious alternative shape for a bit-level hardware IR is an RTLIL-style
+netlist — a graph of fixed-width cells. Hyle keeps the load-bearing
+properties of that shape — explicit widths and conversions, fixed-width
+named ports with explicit signedness per operation, explicit registers with
+initials and reset metadata, no multi-target lvalues, mandatory named extern
+ports, abstract names legalized per target — but realizes them in a
 functional expression language rather than a cell graph, because:
 
 - two of the four consumers (Cryptol, the interpreter) are functional, and
   the project's distinguishing goal — verification via Cryptol/SAW and
   Isabelle — wants readable, structured functional output, which a netlist
   would have to *reconstruct*;
-- the producer (`Crust.Purify`/`ToCore`) already emits a functional program;
-  lowering to a netlist and re-deriving expression structure in two back
-  ends is two transformations where zero are needed;
-- the RTL emission benefits claimed for netlists come from the width/port
+- the producer (`Crust.Purify`/`Crust.ToHyle`) already emits a functional
+  program; lowering to a netlist and re-deriving expression structure in two
+  back ends is two transformations where zero are needed;
+- the RTL emission benefits of a netlist come from the width/port
   explicitness, not from graph structure — with G1–G4, expression emission
   is the same per-template exercise (§8.2);
-- a Mantle→RTLIL (or structural-Verilog-for-Yosys) emitter remains a small
-  addition later, by exactly the §8 argument.
+- a Hyle→RTLIL (or structural-Verilog-for-Yosys) emitter remains a small
+  possible addition, by exactly the §8 argument.
 
 ## 10. Concrete syntax
 
-The textual format (printed by `rwc --core`-equivalent, parsed by the
-`--from-core`-equivalent; round-tripping, used by the `.rwc`-style goldens):
+The textual format, printed by `rwc --core` (and its alias `--hyle`, which
+differs only in the `.hyl` output extension) and parsed by `--from-core`;
+it round-trips, and the `.rwc` golden files in `tests/regression/` use it.
 
 ```
 program  ::= { decl }
 decl     ::= extern | defn | device
 
-extern   ::= "extern" name { genclause | portclause } [ "model" name ]
-genclause ::= "generic" ident { "," ident }
-            | "clock" ident | "reset" ident
-portclause ::= ("input" | "output") ident ":" type
+extern   ::= "extern" name
+             [ "generic" ident { "," ident } ]
+             [ "clock" ident ] [ "reset" ident ]      -- present iff sequential
+             { "input" ident ":" type }
+             { "output" ident ":" type }
+             [ "model" name ]
 
 defn     ::= name ":" "(" [ type { "," type } ] ")" "->" type
              name { ident } "=" exp
@@ -718,13 +685,15 @@ exp      ::= "let" ident "=" exp "in" exp
 cat      ::= app { "#" app }                   -- concat, associative
 app      ::= prim { atom } | name [ "<" nat { "," nat } ">" ] { atom } | atom
 atom     ::= lit | "undef" nat | ident | atom "[" nat "+:" nat "]" | "(" exp ")"
-lit      ::= nat "'h" { hexdigit } | "0'"      -- e.g. 8'hff ; width 0: 0'
+lit      ::= nat "'" [ "h" { hexdigit } ]      -- e.g. 8'hff ; no digits means zero (0', 8')
 prim     ::= "add" | "sub" | … | "zext" nat | "sext" nat | "trunc" nat | "rep" nat
-ident    ::= [A-Za-z_][A-Za-z0-9_.$]* | '"' … '"'   -- quoted form for arbitrary names
+ident    ::= [A-Za-z_$][A-Za-z0-9_.$']* | '"' … '"'   -- quoted form for arbitrary names
 ```
 
-(Annotations are not part of the concrete syntax; the parser fills them with
-file positions, as `Core.Parse` does today.) Example:
+Line comments run from `--` to end of line. An extern is sequential iff it
+declares a `clock` or `reset` name. (Annotations are not part of the
+concrete syntax; the parser, `Hyle.Parse`, fills them with file positions.)
+Example:
 
 ```
 -- f computes (x + y) zero-extended, unless x < y.
@@ -756,22 +725,3 @@ an identifier in a determined position); the printer uses the layout above.
 Operator applications are prefix and parenthesized like Cryptol/Haskell
 application, so the expression fragment reads as (and trivially maps to)
 Cryptol.
-
-## 11. Resolved design questions
-
-Decided at design review (June 2026):
-
-1. **Name.** "Mantle", permanently; no end-of-migration rename back to
-   `ReWire.Core.*`.
-2. **`undef` in goldens.** Prints distinctly as `undef n` (provenance in
-   goldens outweighs diff noise).
-3. **Greater-than prims.** `ugt`/`uge`/`sgt`/`sge` are *included*:
-   readability of the generated IR and RTL is a major goal, and operand
-   swapping works against it.
-4. **Signed division.** Excluded for now (no current source-language route
-   to it); the SMT-LIB conventions extend naturally if `sdiv`/`smod` are
-   ever needed.
-5. **Instance output latency.** Strict causality (§6.4) stands; no support
-   for combinational-feedthrough externs for now (an explicit per-port
-   `comb` annotation with a device-wide acyclicity check is the principled
-   extension if ever required).

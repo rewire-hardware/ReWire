@@ -2,16 +2,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Safe #-}
--- | The Cryptol backend on Mantle: the width-preserving embedding of
---   doc/core.md, section 8.4. Every Mantle defn becomes a Cryptol function
+-- | The Cryptol backend on Hyle: the width-preserving embedding of
+--   doc/hyle.md, section 8.4. Every Hyle defn becomes a Cryptol function
 --   over bitvectors; the device becomes a step function @rw_step@ (registers
 --   and inputs to outputs and next-register values, as one concatenated
 --   vector) wrapped in the standard Mealy stream idiom @rw_device@, matching
---   the Mantle interpreter bit for bit.
+--   the Hyle interpreter bit for bit.
 --
---   Because Mantle widths are explicit and exact, no width reconstruction
+--   Because Hyle widths are explicit and exact, no width reconstruction
 --   happens here: slices flip to Cryptol's MSB-first order, division gets
---   the SMT-LIB division-by-zero guard (doc/core.md, section 5.2), and
+--   the SMT-LIB division-by-zero guard (doc/hyle.md, section 5.2), and
 --   coercions and reductions map to small fixed helpers; everything else is
 --   a per-construct template.
 --
@@ -20,7 +20,7 @@
 --   externs with models become ordinary calls to the model's function.
 --   Devices with instances (sequential externs) are rejected: a pure target
 --   has no equivalent.
-module ReWire.Mantle.ToCryptol (compileProgram) where
+module ReWire.Hyle.ToCryptol (compileProgram) where
 
 import ReWire.Annotation (Annote, Annotated (ann))
 import ReWire.BitVector (zeros, ones)
@@ -29,7 +29,7 @@ import qualified ReWire.BitVector as BV
 import ReWire.Config (Config)
 import ReWire.Cryptol.Syntax (cryptolName)
 import ReWire.Error (failAt, AstError, MonadError)
-import ReWire.Mantle.Syntax
+import ReWire.Hyle.Syntax
 import ReWire.Pretty (showt)
 
 import qualified ReWire.Cryptol.Syntax as Cry
@@ -45,7 +45,7 @@ import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet        as Set
 import qualified Data.Text           as T
 
--- | Global environment: Mantle global names to Cryptol names; extern decls.
+-- | Global environment: Hyle global names to Cryptol names; extern decls.
 data Env = Env
       { envNames   :: HashMap GId Cry.Name
       , envExterns :: HashMap Name Extern
@@ -53,7 +53,7 @@ data Env = Env
       }
 
 -- | Per-defn state: a fresh counter, the where-bindings in creation order,
---   and the local-name map (Mantle locals to legal Cryptol locals).
+--   and the local-name map (Hyle locals to legal Cryptol locals).
 data TCS = TCS
       { tcsCtr    :: !Int
       , tcsBinds  :: ![Cry.Bind]
@@ -128,7 +128,7 @@ fresh = do
       modify $ \ ts -> ts { tcsCtr = ctr + 1 }
       pure $ "s" <> showt ctr
 
--- | Bind a Mantle local name to a fresh Cryptol local.
+-- | Bind a Hyle local name to a fresh Cryptol local.
 bindLocal :: Monad m => Name -> TCM m Cry.Name
 bindLocal x = do
       n <- fresh
@@ -176,7 +176,7 @@ transExp env = go
                         pushBind n (sizeOf e1) e1'
                         go e2
 
--- | A [1]-valued Mantle expression as a Cryptol Bit: comparisons and
+-- | A [1]-valued Hyle expression as a Cryptol Bit: comparisons and
 --   width-1 logical structure translate directly, anything else is indexed.
 transBit :: forall m. MonadError AstError m => Env -> Exp -> TCM m Cry.Exp
 transBit env e = case e of
@@ -201,7 +201,7 @@ transBit env e = case e of
                   SGe | w >= 1 -> Just ">=$"
                   _   -> Nothing
 
--- | Primitive templates (doc/core.md, sections 5.2 and 8.2). Widths are
+-- | Primitive templates (doc/hyle.md, sections 5.2 and 8.2). Widths are
 --   exact by construction, so no resizing happens except where the operator
 --   itself changes width.
 transPrim :: forall m. MonadError AstError m => Env -> Annote -> Size -> Op -> [Exp] -> TCM m Cry.Exp

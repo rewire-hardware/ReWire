@@ -33,7 +33,7 @@ import System.FilePath ((-<.>))
 import qualified Data.HashSet as Set
 import qualified Data.Text.IO as T
 
-data Language = Interpret | VHDL | Verilog | Cryptol | RWCore | Mantle | Haskell
+data Language = Interpret | VHDL | Verilog | Cryptol | RWCore | Hyle | Haskell
       deriving (Eq, Ord, Show)
 data ResetFlag = Inverted | Synchronous
       deriving (Eq, Ord, Show, Generic)
@@ -127,7 +127,7 @@ getOutFile c filename = flip fromMaybe (c^.outFile) $ case c^.target of
       Cryptol   -> filename -<.> "cry"
       Interpret -> filename -<.> "yaml"
       RWCore    -> filename -<.> "rwc"
-      Mantle    -> filename -<.> "mant"
+      Hyle      -> filename -<.> "hyl"
       Haskell   -> filename -<.> "hs"
 
 -- TODO(chathhorn): separate validation pass.
@@ -147,7 +147,7 @@ interpret = foldM interp defaultConfig
                   FlagTestbench Nothing           -> pure $ testbench .~ True   $ c
                   FlagTestbench (Just ip)         -> pure $ testbench .~ True   $ inputsFile .~ ip $ c
                   FlagCore                        -> pure $ target .~ RWCore    $ c
-                  FlagMantle                      -> pure $ target .~ Mantle    $ c
+                  FlagHyle                        -> pure $ target .~ Hyle      $ c
                   FlagFromCore                    -> pure $ source .~ RWCore    $ c
                   FlagClockName (pack -> n)       -> pure $ clock  .~ n         $ c
                   FlagNoClock                     -> pure $ clock  .~ ""        $ reset .~ ""      $ c

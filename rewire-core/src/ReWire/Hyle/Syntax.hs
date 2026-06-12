@@ -3,12 +3,12 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
--- | The Mantle IR: a pure, first-order, monomorphic, total language over
+-- | The Hyle IR: a pure, first-order, monomorphic, total language over
 --   width-indexed bitvectors, plus a synchronous device construct (registers,
 --   sequential-extern instances, parallel wire equations). The syntax and
---   semantics are specified in doc/core.md; this module is the AST and the
---   pretty printer for the concrete syntax (doc/core.md, section 10).
-module ReWire.Mantle.Syntax
+--   semantics are specified in doc/hyle.md; this module is the AST and the
+--   pretty printer for the concrete syntax (doc/hyle.md, section 10).
+module ReWire.Hyle.Syntax
       ( Size, Index, Name, GId, Value
       , SizeAnnotated (..)
       , Op (..), opName, opResultSize
@@ -51,7 +51,7 @@ class SizeAnnotated a where
 
 ---
 
--- | Primitive operations (doc/core.md, section 3.3). Static parameters
+-- | Primitive operations (doc/hyle.md, section 3.3). Static parameters
 --   (target widths, replication counts) are part of the operator.
 data Op = Add | Sub | Mul | UDiv | UMod | Pow
         | And | Or | XOr | Not
@@ -100,7 +100,7 @@ opName = \ case
       Trunc _ -> "trunc"
       Rep _   -> "rep"
 
--- | The typing rule for each operator (doc/core.md, section 3.3): given the
+-- | The typing rule for each operator (doc/hyle.md, section 3.3): given the
 --   operand widths, the result width, or Nothing if the operands are
 --   ill-typed.
 opResultSize :: Op -> [Size] -> Maybe Size
@@ -349,7 +349,7 @@ data Program = Program
 instance Hashable Program
 
 ---
---- Pretty printing (the concrete syntax; see doc/core.md, section 10).
+--- Pretty printing (the concrete syntax; see doc/hyle.md, section 10).
 ---
 
 -- | Keywords and operator names: these print quoted when used as identifiers.

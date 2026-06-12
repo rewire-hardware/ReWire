@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE Safe #-}
--- | The VHDL backend on Mantle, mirroring ReWire.Mantle.ToVerilog (the
+-- | The VHDL backend on Hyle, mirroring ReWire.Hyle.ToVerilog (the
 --   cosimulation check keeps the two aligned). With widths explicit and
 --   exact in the IR, the width-reconstruction machinery of the old backend
 --   (@wcast@/@expWidth@) disappears: every emitted expression already has
@@ -16,16 +16,16 @@
 --   anonymous in the source-level extern descriptor reach this backend with
 --   the @p<i>@ names synthesized by the producer, which the hand-written
 --   VHDL implementations in the test suite already use.
-module ReWire.Mantle.ToVHDL (compileProgram, testbench) where
+module ReWire.Hyle.ToVHDL (compileProgram, testbench) where
 
 import ReWire.Annotation (Annote)
 import ReWire.BitVector (BV, width, bitVec, zeros, ones, lsb1)
 import ReWire.Config (Config, ResetFlag (..), vhdlPackages)
-import ReWire.Mantle.Interp (Ins, subRange, inputValue, yamlPrefixes)
-import ReWire.Mantle.Mangle (mangleFresh, mangleMod)
+import ReWire.Hyle.Interp (Ins, subRange, inputValue, yamlPrefixes)
+import ReWire.Hyle.Mangle (mangleFresh, mangleMod)
 import ReWire.Error (failAt, AstError, MonadError)
-import ReWire.Mantle.Syntax as M
-import ReWire.Mantle.ToVerilog (clockReset)
+import ReWire.Hyle.Syntax as M
+import ReWire.Hyle.ToVerilog (clockReset)
 import ReWire.Pretty (showt)
 
 import qualified ReWire.BitVector  as BV
@@ -250,7 +250,7 @@ clkRstNames e = case extKind e of
 
 -- | A port-map actual: signal references connect directly; anything else is
 --   hoisted into a temporary of exactly the port's width (VHDL port
---   associations are strict about form). Widths always agree by Mantle
+--   associations are strict about form). Widths always agree by Hyle
 --   invariant, so no resizing is involved. Clock signals connect directly by
 --   construction (they are plain signal references).
 connect :: (MonadState TS m, MonadError AstError m) => M.Size -> H.Exp -> m (H.Exp, [H.Stmt])

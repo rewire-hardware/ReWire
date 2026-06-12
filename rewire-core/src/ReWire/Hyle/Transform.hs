@@ -3,19 +3,19 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE Safe #-}
--- | Mantle-to-Mantle transformations. Currently: defn inlining (the
+-- | Hyle-to-Hyle transformations. Currently: defn inlining (the
 --   uses-at-most-once heuristic that used to live in each RTL backend, plus
 --   flatten-everything) and dead-defn purging. Inlining is sound by the
---   substitution property (doc/core.md, section 7); bound names in inlined
+--   substitution property (doc/hyle.md, section 7); bound names in inlined
 --   bodies are freshened to avoid capture. Defns are processed callee-first
 --   (the call graph is acyclic), so chains of single-use defns collapse
 --   fully.
-module ReWire.Mantle.Transform (inline, inlineBy, purgeUnused, partialEval, purgeZeroWidth, dedupe, optimize) where
+module ReWire.Hyle.Transform (inline, inlineBy, purgeUnused, partialEval, purgeZeroWidth, dedupe, optimize) where
 
 import ReWire.Annotation (Annote)
 import ReWire.Fix (fixPure)
-import ReWire.Mantle.Interp (evalExp, evalOp, IEnv (..))
-import ReWire.Mantle.Syntax
+import ReWire.Hyle.Interp (evalExp, evalOp, IEnv (..))
+import ReWire.Hyle.Syntax
 import ReWire.Pretty (showt)
 
 import ReWire.BitVector (BV, nat)
@@ -221,12 +221,11 @@ purgeUnused (Program exts ds dev) = Program exts' ds' dev
             exts' = filter ((`Set.member` liveExts) . extName) exts
 
 ---
---- Optimization passes (ports of the Core-level mergeSlices, partialEval,
---- and dedupe; see core-refactor-plan.md, phase 6).
+--- Optimization passes: slice merging, partial evaluation, dedupe.
 ---
 
 -- | The standard optimization pipeline, iterated to a fixpoint (bounded by
---   the --rtl-opt level, as with the old Core passes).
+--   the --rtl-opt level).
 optimize :: Natural -> Program -> Program
 optimize n = fixPure n $ partialEval >>> purgeZeroWidth >>> dedupe >>> purgeUnused
 

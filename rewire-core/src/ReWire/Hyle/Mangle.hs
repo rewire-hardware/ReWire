@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
-module ReWire.Mantle.Mangle (mangle, mangleFresh, mangleMod) where
+module ReWire.Hyle.Mangle (mangle, mangleFresh, mangleMod) where
 
 import GHC.Utils.Encoding (zEncodeString)   -- this is from the ghc package
 import Data.Char (isAlphaNum)
@@ -12,7 +12,7 @@ import qualified Data.Text as T
 mangle :: Text -> Text
 mangle = pack . zEncodeString . unpack
 
--- | Mangle a Mantle name into an identifier acceptable to the RTL backends
+-- | Mangle a Hyle name into an identifier acceptable to the RTL backends
 --   (when it isn't one already): alphanumerics plus underscores and dollar
 --   signs (the VHDL pretty-printer further escapes names as needed).
 mangleFresh :: Text -> Text

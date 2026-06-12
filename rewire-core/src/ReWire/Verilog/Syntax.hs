@@ -204,7 +204,7 @@ instance Pretty Exp where
             RShift a b      -> ppBinOp a ">>"  b
             LShiftArith a b -> ppBinOp a "<<<" b
             -- | The left operand must be cast to signed for >>> to actually
-            --   sign-extend (matching the interpreter's semantics; doc/core.md 5.2).
+            --   sign-extend (matching the interpreter's semantics; doc/hyle.md 5.2).
             RShiftArith a b -> text "$signed" <> parens (pretty a) <+> text ">>>" <+> mparens b
             LNot a          -> ppUnOp    "!"   a
             Not a           -> ppUnOp    "~"   a

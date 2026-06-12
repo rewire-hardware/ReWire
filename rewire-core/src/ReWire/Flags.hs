@@ -9,7 +9,7 @@ data Flag = FlagO !String
           | FlagVerbose | FlagHelp
           | FlagNoWarn | FlagW !String
           | FlagVerilog | FlagVhdl | FlagCryptol | FlagCore | FlagFromCore
-          | FlagMantle
+          | FlagHyle
           | FlagDump !String
           | FlagFlatten
           | FlagInvertReset

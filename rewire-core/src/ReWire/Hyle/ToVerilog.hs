@@ -3,28 +3,28 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE Safe #-}
--- | The Verilog backend on Mantle. With widths explicit and exact in the IR
---   (doc/core.md, G1), expression emission is a per-construct template: no
+-- | The Verilog backend on Hyle. With widths explicit and exact in the IR
+--   (doc/hyle.md, G1), expression emission is a per-construct template: no
 --   context-width reconstruction (the old @wcast@/@expWidth@), no pattern
---   compilation, no clock plumbing through the module tree (Mantle defns are
+--   compilation, no clock plumbing through the module tree (Hyle defns are
 --   always pure -- sequential externs are device-level instances), and the
 --   state machine is built from the device's explicit registers rather than
 --   reconstructed from the resumption layout.
 --
 --   Defns are emitted one module each (inlining decisions are made upstream
---   by ReWire.Mantle.Transform.inline); the device becomes the top module:
+--   by ReWire.Hyle.Transform.inline); the device becomes the top module:
 --   per-register current/next signals updated in a single clocked process,
 --   wire assignments for the device lets, and one instantiation per
 --   sequential-extern instance.
-module ReWire.Mantle.ToVerilog (compileProgram, testbench, clockReset) where
+module ReWire.Hyle.ToVerilog (compileProgram, testbench, clockReset) where
 
 import ReWire.Annotation (Annote)
 import ReWire.BitVector (BV, width, bitVec, zeros, ones, lsb1, szBitRep)
 import ReWire.Config (Config, ResetFlag (..))
-import ReWire.Mantle.Interp (Ins, subRange, inputValue, yamlPrefixes)
-import ReWire.Mantle.Mangle (mangleFresh, mangleMod)
+import ReWire.Hyle.Interp (Ins, subRange, inputValue, yamlPrefixes)
+import ReWire.Hyle.Mangle (mangleFresh, mangleMod)
 import ReWire.Error (failAt, AstError, MonadError)
-import ReWire.Mantle.Syntax as M
+import ReWire.Hyle.Syntax as M
 import ReWire.Pretty (showt)
 import ReWire.Verilog.Syntax as V
 
@@ -76,7 +76,7 @@ compileDefn xenv (M.Defn _ g (M.Sig _ argSzs _) ps body) = do
       ((e, stmts), (_, sigs)) <- flip runStateT (mempty, []) $ compileExp xenv lenv body
       pure $ V.Module (mangleMod g) (inputs <> outputs) sigs
            $ stmts <> [ Assign (V.Name "res") e | sizeOf body > 0 ]
-      where -- Zero-width parameters and results are erased (doc/core.md,
+      where -- Zero-width parameters and results are erased (doc/hyle.md,
             -- section 8.6): no ports, and references compile to nil.
             live :: [(M.Name, M.Size)]
             live = [ (x, sz) | (x, sz) <- zip ps argSzs, sz > 0 ]
@@ -115,7 +115,7 @@ compileDevice conf xenv (M.Device an top ins outs regs insts body) = do
                  <> map (Output . mkSignal) (live outs)
 
             -- Zero-width wires, ports, and registers are erased
-            -- (doc/core.md, section 8.6).
+            -- (doc/hyle.md, section 8.6).
             live :: [(M.Name, M.Size)] -> [(M.Name, M.Size)]
             live = filter ((> 0) . snd)
 

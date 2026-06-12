@@ -1,5 +1,11 @@
 # Core→Mantle refactor: running report
 
+> **Note (2026-06):** after the migration completed, the Mantle IR was
+> renamed *Hyle* (`ReWire.Hyle.*`; spec now at `doc/hyle.md`, formerly
+> `doc/core.md`); the `--mantle` flag became `--hyle` (extension `.hyl`).
+> The name *Eidos* is reserved for the Crust IR after a future analogous
+> refactor. This document is historical and keeps the Mantle name.
+
 Log of issues, limitations, bugs, deferred work, and notable decisions
 encountered while executing `core-refactor-plan.md`. Newest entries at the
 bottom of each section. Companion docs: `doc/core.md` (the Mantle spec),

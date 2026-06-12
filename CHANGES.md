@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-* The Core IR has been replaced by Mantle (`ReWire.Mantle.*`), a new
-  bit-level intermediate representation specified in `doc/core.md`: a pure,
+* The Core IR has been replaced by Hyle (`ReWire.Hyle.*`), a new
+  bit-level intermediate representation specified in `doc/hyle.md`: a pure,
   first-order, total language over width-indexed bitvectors with explicit
   widths on every operation (resizing only via explicit
   `zext`/`sext`/`trunc`), explicit let-bindings and muxes instead of
@@ -17,7 +17,7 @@
   (`--flatten` inlines everything). Division by zero now has one defined
   semantics on every target (SMT-LIB: `x/0` is all-ones, `x%0` is `x`).
   The `--core`/`--from-core` flags are unchanged but the `.rwc` format is
-  now Mantle's concrete syntax (compiler-generated; the old format has no
+  now Hyle's concrete syntax (compiler-generated; the old format has no
   compatibility parser). Each migration step was gated on the
   cosimulation check; interpreter traces (and the `.yaml` goldens) are
   bit-for-bit unchanged. The migration also fixed a latent Verilog

@@ -258,7 +258,7 @@ cosimCycles = 20
 -- | Three-way agreement check: compile the design with rwc --testbench for
 --   both backends, drive both testbenches with the same pseudorandom inputs
 --   file, and require that the iverilog/vvp trace, the ghdl trace, and the
---   Mantle interpreter (--interpret) output all agree, cycle by cycle. Assumes
+--   Hyle interpreter (--interpret) output all agree, cycle by cycle. Assumes
 --   the working directory is the test directory and the .out.sv output has
 --   been generated. Skipped for degenerate devices with no outputs.
 runCosim :: FilePath -> IO ()
@@ -374,7 +374,7 @@ inputsYaml stim
 
 -- | A cryptol expression evaluating the generated device on the stimulus: one
 --   input word per cycle, the data inputs concatenated MSB-first in port
---   order (mirroring how the Mantle interpreter and the testbenches feed them).
+--   order (mirroring how the Hyle interpreter and the testbenches feed them).
 cryDevice :: [(String, Int)] -> [[(String, Integer)]] -> String
 cryDevice ins stim = "rw_device ([" <> intercalate ", " (map cyc stim) <> "] : "
                   <> "[" <> show (length stim) <> "][" <> show (sum $ map snd ins) <> "])"

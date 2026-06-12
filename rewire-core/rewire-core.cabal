@@ -39,7 +39,7 @@ library
       ReWire.Crust.PrimBasis
       ReWire.Crust.Purify
       ReWire.Crust.Syntax
-      ReWire.Crust.ToMantle
+      ReWire.Crust.ToHyle
       ReWire.Crust.Transform
       ReWire.Crust.TypeCheck
       ReWire.Crust.Types
@@ -58,15 +58,15 @@ library
       ReWire.HSE.Parse
       ReWire.HSE.Rename
       ReWire.HSE.ToCrust
-      ReWire.Mantle.Check
-      ReWire.Mantle.Interp
-      ReWire.Mantle.Mangle
-      ReWire.Mantle.Parse
-      ReWire.Mantle.Syntax
-      ReWire.Mantle.ToCryptol
-      ReWire.Mantle.ToVerilog
-      ReWire.Mantle.ToVHDL
-      ReWire.Mantle.Transform
+      ReWire.Hyle.Check
+      ReWire.Hyle.Interp
+      ReWire.Hyle.Mangle
+      ReWire.Hyle.Parse
+      ReWire.Hyle.Syntax
+      ReWire.Hyle.ToCryptol
+      ReWire.Hyle.ToVerilog
+      ReWire.Hyle.ToVHDL
+      ReWire.Hyle.Transform
       ReWire.ModCache
       ReWire.Orphans
       ReWire.Pass

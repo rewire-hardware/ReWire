@@ -9,19 +9,19 @@ module ReWire.FrontEnd
 import ReWire.Annotation (noAnn)
 import ReWire.Config (Config, Language (..), getOutFile, target, cycles, inputsFile, defaultInputsFile, source, rtlOpt, testbench, pDebug)
 import ReWire.Error (MonadError, AstError, runSyntaxError, failAt, warnAt)
-import ReWire.Mantle.Interp (Ins, run)
-import ReWire.Mantle.Parse (parseMantle)
-import ReWire.Mantle.Syntax (Program, progDevice)
+import ReWire.Hyle.Interp (Ins, run)
+import ReWire.Hyle.Parse (parseHyle)
+import ReWire.Hyle.Syntax (Program, progDevice)
 import ReWire.ModCache (runCache, getDevice, LoadPath)
 import ReWire.Pretty (Pretty, prettyPrint, fastPrint, showt)
 
 import qualified ReWire.Config           as Config
-import qualified ReWire.Mantle.Check     as Mantle
-import qualified ReWire.Mantle.Interp    as Mantle
-import qualified ReWire.Mantle.ToCryptol as MantleCry
-import qualified ReWire.Mantle.ToVHDL    as MantleH
-import qualified ReWire.Mantle.ToVerilog as MantleV
-import qualified ReWire.Mantle.Transform as Mantle
+import qualified ReWire.Hyle.Check     as Hyle
+import qualified ReWire.Hyle.Interp    as Hyle
+import qualified ReWire.Hyle.ToCryptol as HyleCry
+import qualified ReWire.Hyle.ToVHDL    as HyleH
+import qualified ReWire.Hyle.ToVerilog as HyleV
+import qualified ReWire.Hyle.Transform as Hyle
 
 import Control.Lens ((^.))
 import Control.Monad (when)
@@ -47,39 +47,39 @@ compileFile :: MonadIO m => Config -> FilePath -> m ()
 compileFile conf filename = do
       verb $ "Compiling: " <> pack filename
 
-      runSyntaxError (load >>= Mantle.check >>= compile)
+      runSyntaxError (load >>= Hyle.check >>= compile)
             >>= either (liftIO . (>> exitFailure) . T.hPutStrLn stderr . prettyPrint) pure
 
       where load :: (MonadError AstError m, MonadState AstError m, MonadFail m, MonadIO m) => m Program
             load = case conf^.source of
                   Haskell -> loadProgram conf filename
-                  RWCore  -> parseMantle filename
+                  RWCore  -> parseHyle filename
                   s       -> failAt noAnn $ "Not a supported source language: " <> pack (show s)
 
             compile :: (MonadFail m, MonadError AstError m, MonadIO m) => Program -> m ()
             compile a = do
                   when (conf^.testbench && (conf^.target) `notElem` [VHDL, Verilog]) $
                         warnAt conf noAnn "--testbench: no testbench generated (only the Verilog and VHDL targets support testbench generation)."
-                  verb "Partially evaluating/reducing mantle IR. If this is taking too long, consider disabling with --rtl-opt=0."
-                  p <- Mantle.check $ Mantle.optimize (conf^.rtlOpt) a
+                  verb "Partially evaluating/reducing hyle IR. If this is taking too long, consider disabling with --rtl-opt=0."
+                  p <- Hyle.check $ Hyle.optimize (conf^.rtlOpt) a
                   case conf^.target of
                         VHDL      -> do
-                              p' <- Mantle.check $ Mantle.inline (conf^.Config.flatten) p
-                              MantleH.compileProgram conf p' >>= writeOutput
-                              writeTestbench $ MantleH.testbench conf $ progDevice p'
+                              p' <- Hyle.check $ Hyle.inline (conf^.Config.flatten) p
+                              HyleH.compileProgram conf p' >>= writeOutput
+                              writeTestbench $ HyleH.testbench conf $ progDevice p'
                         Verilog   -> do
-                              p' <- Mantle.check $ Mantle.inline (conf^.Config.flatten) p
-                              MantleV.compileProgram conf p' >>= writeOutput
-                              writeTestbench $ MantleV.testbench conf $ progDevice p'
-                        Cryptol   -> MantleCry.compileProgram conf p >>= writeOutput
+                              p' <- Hyle.check $ Hyle.inline (conf^.Config.flatten) p
+                              HyleV.compileProgram conf p' >>= writeOutput
+                              writeTestbench $ HyleV.testbench conf $ progDevice p'
+                        Cryptol   -> HyleCry.compileProgram conf p >>= writeOutput
                         RWCore    -> writeOutput p
-                        Mantle    -> writeOutput p
+                        Hyle      -> writeOutput p
                         Interpret -> do
                               ips  <- loadInputs
-                              verb $ "Interpreting mantle: running for " <> showt (conf^.cycles) <> " cycles."
-                              outs <- run conf (Mantle.interp conf p) ips
+                              verb $ "Interpreting hyle: running for " <> showt (conf^.cycles) <> " cycles."
+                              outs <- run conf (Hyle.interp conf p) ips
                               let fout = getOutFile conf filename
-                              verb $ "Interpreting mantle: done running; writing YAML output to file: " <> pack fout
+                              verb $ "Interpreting hyle: done running; writing YAML output to file: " <> pack fout
                               liftIO $ YAML.encodeFile fout outs
                         Haskell   -> failAt noAnn "Haskell is not a supported target language."
 

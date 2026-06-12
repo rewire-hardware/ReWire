@@ -2,21 +2,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Safe #-}
--- | The Mantle interpreter: a direct transcription of the denotational
---   semantics in doc/core.md (sections 5 and 6). The device denotes a Mealy
+-- | The Hyle interpreter: a direct transcription of the denotational
+--   semantics in doc/hyle.md (sections 5 and 6). The device denotes a Mealy
 --   stream function: registers start at their initial values, outputs and
 --   next-register values are computed from the body's equations each cycle.
 --
 --   Programs containing instances (sequential externs) or calls to
 --   model-less combinational externs cannot be evaluated, as with the Core
 --   interpreter today.
-module ReWire.Mantle.Interp (interp, evalExp, evalOp, IEnv (..), Ins, Outs, run, subRange, inputValue, yamlPrefixes) where
+module ReWire.Hyle.Interp (interp, evalExp, evalOp, IEnv (..), Ins, Outs, run, subRange, inputValue, yamlPrefixes) where
 
 import ReWire.Annotation (Annote, Annotated (ann))
 import ReWire.BitVector (BV, bitVec, nat, width, ones, zeros, ashr)
 import ReWire.Config (Config, verbose)
 import ReWire.Error (failAt, MonadError, AstError)
-import ReWire.Mantle.Syntax
+import ReWire.Hyle.Syntax
 import ReWire.Pretty (showt)
 
 import qualified ReWire.BitVector as BV
@@ -45,7 +45,7 @@ run conf m = \ case
       (ip : ips) -> do
             (b, m') <- runMealyT m ip
             when (conf^.verbose) $ liftIO $ do
-                  T.putStrLn "Debug: Interpreting mantle: completed cycle."
+                  T.putStrLn "Debug: Interpreting hyle: completed cycle."
                   T.putStr $ mconcat $ (\ (k, v) -> "\t" <> k <> ": " <> BV.showHex v <> "\n") <$> Map.toList b
             (b :) <$> run conf m' ips
 
@@ -82,7 +82,7 @@ interp _conf (Program exts ds dev) = unfoldMealyT step sts0
             step :: MonadError AstError m => Sts -> Ins -> m (Outs, Sts)
             step sts ins = do
                   unless (null $ devInstances dev) $
-                        failAt (ann dev) "Mantle/Interp: cannot evaluate a device with extern instances"
+                        failAt (ann dev) "Hyle/Interp: cannot evaluate a device with extern instances"
                   let rho0 = sts <> Map.fromList [ (x, bitVec (fromIntegral sz) $ Map.findWithDefault 0 x ins)
                                                  | (x, sz) <- devInputs dev ]
                   (_, outs, sts') <- foldM stmt (rho0, mempty, sts) $ devBody dev
@@ -93,7 +93,7 @@ interp _conf (Program exts ds dev) = unfoldMealyT step sts0
                   SLet _ x e      -> (\ v -> (Map.insert x v rho, outs, sts)) <$> evalExp env rho e
                   SOutput _ x e   -> (\ v -> (rho, Map.insert x v outs, sts)) <$> evalExp env rho e
                   SNext _ x e     -> (\ v -> (rho, outs, Map.insert x v sts)) <$> evalExp env rho e
-                  SInstIn an _ _ _ -> failAt an "Mantle/Interp: cannot evaluate a device with extern instances"
+                  SInstIn an _ _ _ -> failAt an "Hyle/Interp: cannot evaluate a device with extern instances"
 
 evalExp :: forall m. MonadError AstError m => IEnv -> HashMap Name BV -> Exp -> m BV
 evalExp env = go
@@ -101,16 +101,16 @@ evalExp env = go
             go rho = \ case
                   Lit _ bv      -> pure bv
                   Undef _ sz    -> pure $ zeros $ fromIntegral sz
-                  Var an _ x    -> maybe (failAt an $ "Mantle/Interp: unbound variable: " <> x) pure $ Map.lookup x rho
+                  Var an _ x    -> maybe (failAt an $ "Hyle/Interp: unbound variable: " <> x) pure $ Map.lookup x rho
                   Cat _ e1 e2   -> (<>) <$> go rho e1 <*> go rho e2
                   Slice _ i k e -> slice i k <$> go rho e
                   Prim an _ op es -> mapM (go rho) es >>= evalOp an op
                   Call an _ g es  -> case Map.lookup g $ envDefns env of
-                        Nothing -> failAt an $ "Mantle/Interp: call to unknown definition: " <> g
+                        Nothing -> failAt an $ "Hyle/Interp: call to unknown definition: " <> g
                         Just d  -> mapM (go rho) es >>= apply d
                   XCall an _ x _ es -> case Map.lookup x (envExterns env) >>= extModel of
                         Just g | Just d <- Map.lookup g $ envDefns env -> mapM (go rho) es >>= apply d
-                        _ -> failAt an $ "Mantle/Interp: cannot evaluate extern " <> x
+                        _ -> failAt an $ "Hyle/Interp: cannot evaluate extern " <> x
                                       <> " (no usable Haskell model: see the rwPrimExtern documentation)."
                   If _ _ c t e  -> do
                         c' <- go rho c
@@ -126,7 +126,7 @@ slice :: Index -> Size -> BV -> BV
 slice i k x | k == 0    = BV.nil
             | otherwise = BV.bitVec (fromIntegral k) $ nat x `shiftR` fromIntegral i
 
--- | Primitive denotations (doc/core.md, section 5.2).
+-- | Primitive denotations (doc/hyle.md, section 5.2).
 evalOp :: MonadError AstError m => Annote -> Op -> [BV] -> m BV
 evalOp an op vs = case (op, vs) of
       (Add   , [a, b]) -> arith a b (+)
@@ -161,7 +161,7 @@ evalOp an op vs = case (op, vs) of
       (SExt m, [a])    -> pure $ mkBV (fromIntegral m) $ sint a
       (Trunc m, [a])   -> pure $ slice 0 m a
       (Rep k , [a])    -> pure $ mconcat $ replicate (fromIntegral k) a
-      _                -> failAt an $ "Mantle/Interp: ill-formed primitive application: " <> opName op <> " with " <> showt (length vs) <> " arguments"
+      _                -> failAt an $ "Hyle/Interp: ill-formed primitive application: " <> opName op <> " with " <> showt (length vs) <> " arguments"
       where arith :: Monad m' => BV -> BV -> (Integer -> Integer -> Integer) -> m' BV
             arith a b f = pure $ mkBV (width a) $ nat a `f` nat b
 
