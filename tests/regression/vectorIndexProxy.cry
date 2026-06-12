@@ -15,11 +15,22 @@ rw'parity x = foldr (^) False x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [1056] -> [65]
-rw__Pure_dispatch arg0 = rw__LL_Main_loop4 arg0
+rw__Pure_dispatch arg0 = rw__LL_Main_loop arg0
 
 // $Pure.start
 rw__Pure_start : [65]
 rw__Pure_start = 0b10000000000000000000000000000000000000000000000000000000000000000
+
+// $LL.Main.loop5
+rw__LL_Main_loop5 : [64] -> [65]
+rw__LL_Main_loop5 arg0 = 0b1 # arg0
+
+// Main.compute
+rw_Main_compute : [1024] -> [32] -> [64]
+rw_Main_compute arg0 arg1 = rw__LL_Main_compute1 s0
+  where
+    s0 : [1056]
+    s0 = arg0 # arg1
 
 // $LL.Main.compute3
 rw__LL_Main_compute3 : [1024] -> [32] -> [64]
@@ -58,24 +69,13 @@ rw__LL_Main_compute3 arg0 arg1 = (rw__LL_Main_compute (take`{32} s1) (drop`{32} 
     s15 : [96]
     s15 = arg1 # (drop`{448} s14)
 
-// $LL.Main.loop5
-rw__LL_Main_loop5 : [64] -> [65]
-rw__LL_Main_loop5 arg0 = 0b1 # arg0
-
-// Main.compute
-rw_Main_compute : [1024] -> [32] -> [64]
-rw_Main_compute arg0 arg1 = rw__LL_Main_compute1 s0
-  where
-    s0 : [1056]
-    s0 = arg0 # arg1
-
 // $LL.Main.loop4
-rw__LL_Main_loop4 : [1056] -> [65]
-rw__LL_Main_loop4 arg0 = rw__LL_Main_loop3 (take`{1024} arg0) (drop`{1024} arg0)
+rw__LL_Main_loop4 : [65] -> [65]
+rw__LL_Main_loop4 arg0 = rw__LL_Main_loop5 (drop`{1} arg0)
 
-// $LL.Main.loop3
-rw__LL_Main_loop3 : [1024] -> [32] -> [65]
-rw__LL_Main_loop3 arg0 arg1 = rw__LL_Main_loop1 s1
+// $LL.Main.loop2
+rw__LL_Main_loop2 : [1024] -> [32] -> [65]
+rw__LL_Main_loop2 arg0 arg1 = rw__LL_Main_loop4 s1
   where
     s0 : [1056]
     s0 = arg0 # arg1
@@ -86,16 +86,16 @@ rw__LL_Main_loop3 arg0 arg1 = rw__LL_Main_loop1 s1
 rw__LL_Main_compute1 : [1056] -> [64]
 rw__LL_Main_compute1 arg0 = rw__LL_Main_compute3 (take`{1024} arg0) (drop`{1024} arg0)
 
+// $LL.Main.loop
+rw__LL_Main_loop : [1056] -> [65]
+rw__LL_Main_loop arg0 = rw__LL_Main_loop2 (take`{1024} arg0) (drop`{1024} arg0)
+
 // $LL.Main.compute
 rw__LL_Main_compute : [32] -> [64] -> [8]
 rw__LL_Main_compute arg0 arg1 = (take`{8} s0) + (drop`{8} s0)
   where
     s0 : [16]
     s0 = (drop`{24} arg0) # (take`{8} (drop`{24} arg1))
-
-// $LL.Main.loop1
-rw__LL_Main_loop1 : [65] -> [65]
-rw__LL_Main_loop1 arg0 = rw__LL_Main_loop5 (drop`{1} arg0)
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [1024], __in1 : [32]

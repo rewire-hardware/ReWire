@@ -15,102 +15,102 @@ rw'parity x = foldr (^) False x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [128] -> [129]
-rw__Pure_dispatch arg0 = rw__LL_Main_loop2 arg0
+rw__Pure_dispatch arg0 = rw__LL_Main_loop1 arg0
 
 // $Pure.start
 rw__Pure_start : [129]
 rw__Pure_start = 0b100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
-// $LL.Main.compute29
-rw__LL_Main_compute29 : [64] -> [8]
-rw__LL_Main_compute29 arg0 = rw'resize`{8} s1
+// $LL.Main.loop3
+rw__LL_Main_loop3 : [129] -> [129]
+rw__LL_Main_loop3 arg0 = rw__LL_Main_loop (drop`{1} arg0)
+
+// $LL.Main.compute24
+rw__LL_Main_compute24 : [56] -> [8] -> [8] -> [56] -> [128]
+rw__LL_Main_compute24 arg0 arg1 arg2 arg3 = (rw__LL_Main_compute19 (take`{56} s0) (drop`{56} s0)) # (rw__LL_Main_compute1 (take`{8} s1) (drop`{8} s1))
+  where
+    s0 : [64]
+    s0 = arg0 # arg2
+    s1 : [64]
+    s1 = arg1 # arg3
+
+// $LL.Main.compute19
+rw__LL_Main_compute19 : [56] -> [8] -> [64]
+rw__LL_Main_compute19 arg0 arg1 = rw__LL_Main_compute15 s0
+  where
+    s0 : [64]
+    s0 = arg0 # arg1
+
+// $LL.Main.compute17
+rw__LL_Main_compute17 : [64] -> [64]
+rw__LL_Main_compute17 arg0 = (take`{8} arg0) # (drop`{8} arg0)
+
+// $LL.Main.compute16
+rw__LL_Main_compute16 : [64] -> [8]
+rw__LL_Main_compute16 arg0 = rw'resize`{8} s1
   where
     s0 : [256]
     s0 = (rw'resize`{128} arg0) # 0x00000000000000000000000000000000
     s1 : [128]
     s1 = (take`{128} s0) >> (drop`{128} s0)
 
-// $LL.Main.compute28
-rw__LL_Main_compute28 : [128] -> [128]
-rw__LL_Main_compute28 arg0 = rw__LL_Main_compute4 (take`{64} arg0) (drop`{64} arg0)
+// $LL.Main.compute15
+rw__LL_Main_compute15 : [64] -> [64]
+rw__LL_Main_compute15 arg0 = (take`{56} arg0) # (drop`{56} arg0)
 
-// $LL.Main.compute27
-rw__LL_Main_compute27 : [56] -> [8] -> [64]
-rw__LL_Main_compute27 arg0 arg1 = rw__LL_Main_compute24 s0
-  where
-    s0 : [64]
-    s0 = arg0 # arg1
-
-// $LL.Main.compute25
-rw__LL_Main_compute25 : [64] -> [8] -> [56] -> [128]
-rw__LL_Main_compute25 arg0 arg1 arg2 = rw__LL_Main_compute1 (take`{64} s0) (take`{56} (drop`{64} s0)) (take`{8} (drop`{120} s0)) (drop`{128} s0)
-  where
-    s0 : [136]
-    s0 = arg0 # (arg2 # (arg1 # (rw__LL_Main_compute29 arg0)))
-
-// $LL.Main.loop3
-rw__LL_Main_loop3 : [128] -> [129]
-rw__LL_Main_loop3 arg0 = 0b1 # arg0
-
-// $LL.Main.loop2
-rw__LL_Main_loop2 : [128] -> [129]
-rw__LL_Main_loop2 arg0 = rw__LL_Main_loop s0
-  where
-    s0 : [129]
-    s0 = 0b0 # (rw__LL_Main_compute28 arg0)
-
-// $LL.Main.compute24
-rw__LL_Main_compute24 : [64] -> [64]
-rw__LL_Main_compute24 arg0 = (take`{56} arg0) # (drop`{56} arg0)
-
-// $LL.Main.compute22
-rw__LL_Main_compute22 : [8] -> [56] -> [8] -> [56] -> [128]
-rw__LL_Main_compute22 arg0 arg1 arg2 arg3 = (rw__LL_Main_compute27 (take`{56} s0) (drop`{56} s0)) # (rw__LL_Main_compute (take`{8} s1) (drop`{8} s1))
-  where
-    s0 : [64]
-    s0 = arg1 # arg0
-    s1 : [64]
-    s1 = arg2 # arg3
-
-// $LL.Main.compute14
-rw__LL_Main_compute14 : [64] -> [8]
-rw__LL_Main_compute14 arg0 = take`{8} arg0
-
-// $LL.Main.loop
-rw__LL_Main_loop : [129] -> [129]
-rw__LL_Main_loop arg0 = rw__LL_Main_loop3 (drop`{1} arg0)
-
-// $LL.Main.compute9
-rw__LL_Main_compute9 : [64] -> [64]
-rw__LL_Main_compute9 arg0 = (take`{8} arg0) # (drop`{8} arg0)
-
-// $LL.Main.compute6
-rw__LL_Main_compute6 : [64] -> [64] -> [8] -> [128]
-rw__LL_Main_compute6 arg0 arg1 arg2 = rw__LL_Main_compute25 (take`{64} s0) (take`{8} (drop`{64} s0)) (drop`{72} s0)
+// $LL.Main.compute13
+rw__LL_Main_compute13 : [64] -> [64] -> [8] -> [128]
+rw__LL_Main_compute13 arg0 arg1 arg2 = rw__LL_Main_compute4 (take`{64} s0) (take`{8} (drop`{64} s0)) (drop`{72} s0)
   where
     s0 : [128]
     s0 = arg0 # (arg2 # (drop`{8} arg1))
 
-// $LL.Main.compute4
-rw__LL_Main_compute4 : [64] -> [64] -> [128]
-rw__LL_Main_compute4 arg0 arg1 = rw__LL_Main_compute6 (take`{64} s0) (take`{64} (drop`{64} s0)) (drop`{128} s0)
-  where
-    s0 : [136]
-    s0 = arg1 # (arg0 # (rw__LL_Main_compute14 arg0))
+// $LL.Main.compute12
+rw__LL_Main_compute12 : [128] -> [128]
+rw__LL_Main_compute12 arg0 = rw__LL_Main_compute3 (take`{64} arg0) (drop`{64} arg0)
 
-// $LL.Main.compute1
-rw__LL_Main_compute1 : [64] -> [56] -> [8] -> [8] -> [128]
-rw__LL_Main_compute1 arg0 arg1 arg2 arg3 = rw__LL_Main_compute22 (take`{8} s0) (take`{56} (drop`{8} s0)) (take`{8} (drop`{64} s0)) (drop`{72} s0)
+// $LL.Main.compute11
+rw__LL_Main_compute11 : [64] -> [56] -> [8] -> [8] -> [128]
+rw__LL_Main_compute11 arg0 arg1 arg2 arg3 = rw__LL_Main_compute24 (take`{56} s0) (take`{8} (drop`{56} s0)) (take`{8} (drop`{64} s0)) (drop`{72} s0)
   where
     s0 : [128]
-    s0 = arg3 # (arg1 # (arg2 # (take`{56} arg0)))
+    s0 = arg1 # (arg2 # (arg3 # (take`{56} arg0)))
 
-// $LL.Main.compute
-rw__LL_Main_compute : [8] -> [56] -> [64]
-rw__LL_Main_compute arg0 arg1 = rw__LL_Main_compute9 s0
+// $LL.Main.compute6
+rw__LL_Main_compute6 : [64] -> [8]
+rw__LL_Main_compute6 arg0 = take`{8} arg0
+
+// $LL.Main.compute4
+rw__LL_Main_compute4 : [64] -> [8] -> [56] -> [128]
+rw__LL_Main_compute4 arg0 arg1 arg2 = rw__LL_Main_compute11 (take`{64} s0) (take`{56} (drop`{64} s0)) (take`{8} (drop`{120} s0)) (drop`{128} s0)
+  where
+    s0 : [136]
+    s0 = arg0 # (arg2 # (arg1 # (rw__LL_Main_compute16 arg0)))
+
+// $LL.Main.compute3
+rw__LL_Main_compute3 : [64] -> [64] -> [128]
+rw__LL_Main_compute3 arg0 arg1 = rw__LL_Main_compute13 (take`{64} s0) (take`{64} (drop`{64} s0)) (drop`{128} s0)
+  where
+    s0 : [136]
+    s0 = arg1 # (arg0 # (rw__LL_Main_compute6 arg0))
+
+// $LL.Main.compute1
+rw__LL_Main_compute1 : [8] -> [56] -> [64]
+rw__LL_Main_compute1 arg0 arg1 = rw__LL_Main_compute17 s0
   where
     s0 : [64]
     s0 = arg0 # arg1
+
+// $LL.Main.loop1
+rw__LL_Main_loop1 : [128] -> [129]
+rw__LL_Main_loop1 arg0 = rw__LL_Main_loop3 s0
+  where
+    s0 : [129]
+    s0 = 0b0 # (rw__LL_Main_compute12 arg0)
+
+// $LL.Main.loop
+rw__LL_Main_loop : [128] -> [129]
+rw__LL_Main_loop arg0 = 0b1 # arg0
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [64], __in1 : [64]

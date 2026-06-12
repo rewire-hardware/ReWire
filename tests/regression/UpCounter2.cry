@@ -15,7 +15,7 @@ rw'parity x = foldr (^) False x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [8] -> [1] -> [18]
-rw__Pure_dispatch arg0 arg1 = rw__LL_Main_go24 (take`{1} s0) (drop`{1} s0)
+rw__Pure_dispatch arg0 arg1 = rw__LL_Main_go6 (take`{1} s0) (drop`{1} s0)
   where
     s0 : [9]
     s0 = arg1 # arg0
@@ -25,117 +25,15 @@ rw__Pure_start : [18]
 rw__Pure_start = 0b100000000000000000
 
 // $LL.Main.go33
-rw__LL_Main_go33 : [8] -> [18]
-rw__LL_Main_go33 arg0 = 0b0100000000 # arg0
+rw__LL_Main_go33 : [18] -> [18]
+rw__LL_Main_go33 arg0 = rw__LL_Main_go22 (drop`{10} arg0)
 
-// $LL.Main.go32
-rw__LL_Main_go32 : [18] -> [18]
-rw__LL_Main_go32 arg0 = rw__LL_Main_go31 (drop`{10} arg0)
-
-// $LL.Main.go31
-rw__LL_Main_go31 : [8] -> [18]
-rw__LL_Main_go31 arg0 = rw_Main_go arg0
-
-// $LL.Main.go30
-rw__LL_Main_go30 : [8] -> [18]
-rw__LL_Main_go30 arg0 = rw__LL_Main_go8 s1
+// $LL.Main.msbitW83
+rw__LL_Main_msbitW83 : [8] -> [8]
+rw__LL_Main_msbitW83 arg0 = rw'resize`{8} s0
   where
-    s0 : [16]
-    s0 = arg0 # arg0
-    s1 : [18]
-    s1 = rw__LL_Main_go29 s0
-
-// $LL.Main.go29
-rw__LL_Main_go29 : [16] -> [18]
-rw__LL_Main_go29 arg0 = rw__LL_Main_go28 (take`{8} arg0) (drop`{8} arg0)
-
-// $LL.Main.go28
-rw__LL_Main_go28 : [8] -> [8] -> [18]
-rw__LL_Main_go28 arg0 arg1 = 0b00 # (arg0 # arg1)
-
-// $LL.Main.go24
-rw__LL_Main_go24 : [1] -> [8] -> [18]
-rw__LL_Main_go24 arg0 arg1 = if (drop`{8} s0) == 0b1 then (rw__LL_Main_go21 (take`{8} s0)) else (rw__LL_Main_go (take`{8} s1))
-  where
-    s0 : [9]
-    s0 = arg1 # arg0
-    s1 : [9]
-    s1 = arg1 # arg0
-
-// $LL.Main.go22
-rw__LL_Main_go22 : [18] -> [18]
-rw__LL_Main_go22 arg0 = rw__LL_Main_go15 (take`{8} (drop`{2} arg0)) (drop`{10} arg0)
-
-// $LL.Main.go21
-rw__LL_Main_go21 : [8] -> [18]
-rw__LL_Main_go21 arg0 = rw__LL_Main_go11 arg0
-
-// $LL.Main.go19
-rw__LL_Main_go19 : [8] -> [8] -> [18]
-rw__LL_Main_go19 arg0 arg1 = rw__LL_Main_go32 s1
-  where
-    s0 : [8]
-    s0 = rw__LL_Main_rolW81 arg0
-    s1 : [18]
-    s1 = rw__LL_Main_go33 s0
-
-// $LL.Main.go17
-rw__LL_Main_go17 : [8] -> [8] -> [18]
-rw__LL_Main_go17 arg0 arg1 = rw__LL_Main_go32 s1
-  where
-    s0 : [8]
-    s0 = rw__LL_Main_incW81 arg0
-    s1 : [18]
-    s1 = rw__LL_Main_go33 s0
-
-// $LL.Main.go16
-rw__LL_Main_go16 : [8] -> [8] -> [18]
-rw__LL_Main_go16 arg0 arg1 = rw__LL_Main_go7 (take`{8} s0) (drop`{8} s0)
-  where
-    s0 : [16]
-    s0 = arg0 # arg1
-
-// $LL.Main.incW81
-rw__LL_Main_incW81 : [8] -> [8]
-rw__LL_Main_incW81 arg0 = (take`{8} s0) + (drop`{8} s0)
-  where
-    s0 : [16]
-    s0 = arg0 # 0x01
-
-// $LL.Main.go15
-rw__LL_Main_go15 : [8] -> [8] -> [18]
-rw__LL_Main_go15 arg0 arg1 = rw__LL_Main_go19 (take`{8} s0) (drop`{8} s0)
-  where
-    s0 : [16]
-    s0 = arg0 # arg1
-
-// $LL.Main.go11
-rw__LL_Main_go11 : [8] -> [18]
-rw__LL_Main_go11 arg0 = rw__LL_Main_go22 s1
-  where
-    s0 : [16]
-    s0 = arg0 # arg0
-    s1 : [18]
-    s1 = rw__LL_Main_go29 s0
-
-// $LL.Main.go10
-rw__LL_Main_go10 : [18] -> [18]
-rw__LL_Main_go10 arg0 = rw__LL_Main_go16 (take`{8} (drop`{2} arg0)) (drop`{10} arg0)
-
-// $LL.Main.go9
-rw__LL_Main_go9 : [8] -> [8] -> [18]
-rw__LL_Main_go9 arg0 arg1 = rw__LL_Main_go17 (take`{8} s0) (drop`{8} s0)
-  where
-    s0 : [16]
-    s0 = arg0 # arg1
-
-// $LL.Main.go8
-rw__LL_Main_go8 : [18] -> [18]
-rw__LL_Main_go8 arg0 = rw__LL_Main_go9 (take`{8} (drop`{2} arg0)) (drop`{10} arg0)
-
-// $LL.Main.go7
-rw__LL_Main_go7 : [8] -> [8] -> [18]
-rw__LL_Main_go7 arg0 arg1 = 0b10 # (arg0 # arg1)
+    s0 : [1]
+    s0 = [arg0 @ 0]
 
 // $LL.Main.rolW81
 rw__LL_Main_rolW81 : [8] -> [8]
@@ -144,27 +42,129 @@ rw__LL_Main_rolW81 arg0 = (take`{8} s1) || (drop`{8} s1)
     s0 : [16]
     s0 = arg0 # 0x01
     s1 : [16]
-    s1 = ((take`{8} s0) << (drop`{8} s0)) # (rw__LL_Main_msbitW8 arg0)
+    s1 = ((take`{8} s0) << (drop`{8} s0)) # (rw__LL_Main_msbitW83 arg0)
 
-// $LL.Main.go
-rw__LL_Main_go : [8] -> [18]
-rw__LL_Main_go arg0 = rw__LL_Main_go30 arg0
+// $LL.Main.go31
+rw__LL_Main_go31 : [8] -> [18]
+rw__LL_Main_go31 arg0 = 0b0100000000 # arg0
 
-// Main.go
-rw_Main_go : [8] -> [18]
-rw_Main_go arg0 = rw__LL_Main_go10 s1
+// $LL.Main.go29
+rw__LL_Main_go29 : [18] -> [18]
+rw__LL_Main_go29 arg0 = rw__LL_Main_go16 (take`{8} (drop`{2} arg0)) (drop`{10} arg0)
+
+// $LL.Main.go28
+rw__LL_Main_go28 : [16] -> [18]
+rw__LL_Main_go28 arg0 = rw__LL_Main_go17 (take`{8} arg0) (drop`{8} arg0)
+
+// $LL.Main.go26
+rw__LL_Main_go26 : [8] -> [8] -> [18]
+rw__LL_Main_go26 arg0 arg1 = rw__LL_Main_go33 s1
+  where
+    s0 : [8]
+    s0 = rw__LL_Main_incW81 arg0
+    s1 : [18]
+    s1 = rw__LL_Main_go31 s0
+
+// $LL.Main.go25
+rw__LL_Main_go25 : [8] -> [8] -> [18]
+rw__LL_Main_go25 arg0 arg1 = rw__LL_Main_go23 (take`{8} s0) (drop`{8} s0)
+  where
+    s0 : [16]
+    s0 = arg0 # arg1
+
+// $LL.Main.go23
+rw__LL_Main_go23 : [8] -> [8] -> [18]
+rw__LL_Main_go23 arg0 arg1 = rw__LL_Main_go33 s1
+  where
+    s0 : [8]
+    s0 = rw__LL_Main_rolW81 arg0
+    s1 : [18]
+    s1 = rw__LL_Main_go31 s0
+
+// $LL.Main.go22
+rw__LL_Main_go22 : [8] -> [18]
+rw__LL_Main_go22 arg0 = rw_Main_go arg0
+
+// $LL.Main.incW81
+rw__LL_Main_incW81 : [8] -> [8]
+rw__LL_Main_incW81 arg0 = (take`{8} s0) + (drop`{8} s0)
+  where
+    s0 : [16]
+    s0 = arg0 # 0x01
+
+// $LL.Main.go21
+rw__LL_Main_go21 : [18] -> [18]
+rw__LL_Main_go21 arg0 = rw__LL_Main_go18 (take`{8} (drop`{2} arg0)) (drop`{10} arg0)
+
+// $LL.Main.go18
+rw__LL_Main_go18 : [8] -> [8] -> [18]
+rw__LL_Main_go18 arg0 arg1 = rw__LL_Main_go8 (take`{8} s0) (drop`{8} s0)
+  where
+    s0 : [16]
+    s0 = arg0 # arg1
+
+// $LL.Main.go17
+rw__LL_Main_go17 : [8] -> [8] -> [18]
+rw__LL_Main_go17 arg0 arg1 = 0b00 # (arg0 # arg1)
+
+// $LL.Main.go16
+rw__LL_Main_go16 : [8] -> [8] -> [18]
+rw__LL_Main_go16 arg0 arg1 = rw__LL_Main_go26 (take`{8} s0) (drop`{8} s0)
+  where
+    s0 : [16]
+    s0 = arg0 # arg1
+
+// $LL.Main.go15
+rw__LL_Main_go15 : [8] -> [18]
+rw__LL_Main_go15 arg0 = rw__LL_Main_go12 arg0
+
+// $LL.Main.go12
+rw__LL_Main_go12 : [8] -> [18]
+rw__LL_Main_go12 arg0 = rw__LL_Main_go10 s1
   where
     s0 : [16]
     s0 = arg0 # arg0
     s1 : [18]
-    s1 = rw__LL_Main_go29 s0
+    s1 = rw__LL_Main_go28 s0
 
-// $LL.Main.msbitW8
-rw__LL_Main_msbitW8 : [8] -> [8]
-rw__LL_Main_msbitW8 arg0 = rw'resize`{8} s0
+// $LL.Main.go10
+rw__LL_Main_go10 : [18] -> [18]
+rw__LL_Main_go10 arg0 = rw__LL_Main_go25 (take`{8} (drop`{2} arg0)) (drop`{10} arg0)
+
+// $LL.Main.go8
+rw__LL_Main_go8 : [8] -> [8] -> [18]
+rw__LL_Main_go8 arg0 arg1 = 0b10 # (arg0 # arg1)
+
+// $LL.Main.go6
+rw__LL_Main_go6 : [1] -> [8] -> [18]
+rw__LL_Main_go6 arg0 arg1 = if (drop`{8} s0) == 0b1 then (rw__LL_Main_go15 (take`{8} s0)) else (rw__LL_Main_go1 (take`{8} s1))
   where
-    s0 : [1]
-    s0 = [arg0 @ 0]
+    s0 : [9]
+    s0 = arg1 # arg0
+    s1 : [9]
+    s1 = arg1 # arg0
+
+// $LL.Main.go1
+rw__LL_Main_go1 : [8] -> [18]
+rw__LL_Main_go1 arg0 = rw__LL_Main_go arg0
+
+// Main.go
+rw_Main_go : [8] -> [18]
+rw_Main_go arg0 = rw__LL_Main_go21 s1
+  where
+    s0 : [16]
+    s0 = arg0 # arg0
+    s1 : [18]
+    s1 = rw__LL_Main_go28 s0
+
+// $LL.Main.go
+rw__LL_Main_go : [8] -> [18]
+rw__LL_Main_go arg0 = rw__LL_Main_go29 s1
+  where
+    s0 : [16]
+    s0 = arg0 # arg0
+    s1 : [18]
+    s1 = rw__LL_Main_go28 s0
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [1]

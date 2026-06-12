@@ -6,30 +6,30 @@ states []
 
 $Pure.dispatch :: W128 -> W65
 $Pure.dispatch $0 = 65'case 128'$0 of
-    {128'@} -> $LL.Main.loop3
+    {128'@} -> $LL.Main.loop
 
 $Pure.start :: W65
 $Pure.start  = 65'h10000000000000000
 
-$LL.Main.loop3 :: W128 -> W65
-$LL.Main.loop3 $0 = 65'case {1'h0, 64'case 128'$0 of {128'@} -> $LL.Main.compute3} of
-    {65'@} -> $LL.Main.loop2
-
-$LL.Main.compute3 :: W128 -> W64
-$LL.Main.compute3 $0 = 64'case 128'$0 of
-    {64'@, 64'@} -> $LL.Main.compute1
-
-$LL.Main.compute1 :: W64 -> W64 -> W64
-$LL.Main.compute1 $0 $1 = {32'case 32'case 64'$0 of
+$LL.Main.compute4 :: W64 -> W64 -> W64
+$LL.Main.compute4 $0 $1 = {32'case 32'case 64'$0 of
       {32'@, 32'_} -> Id of
     {8'@, 8'@, 8'@, 8'@} -> Reverse
   , 8'h0
   , 24'case 64'$1 of
     {40'_, 24'@} -> Id}
 
+$LL.Main.loop3 :: W64 -> W65
+$LL.Main.loop3 $0 = {1'h1, 64'$0}
+
 $LL.Main.loop2 :: W65 -> W65
 $LL.Main.loop2 $0 = 65'case 65'$0 of
-    {1'h0, 64'@} -> $LL.Main.loop1
+    {1'h0, 64'@} -> $LL.Main.loop3
 
-$LL.Main.loop1 :: W64 -> W65
-$LL.Main.loop1 $0 = {1'h1, 64'$0}
+$LL.Main.compute :: W128 -> W64
+$LL.Main.compute $0 = 64'case 128'$0 of
+    {64'@, 64'@} -> $LL.Main.compute4
+
+$LL.Main.loop :: W128 -> W65
+$LL.Main.loop $0 = 65'case {1'h0, 64'case 128'$0 of {128'@} -> $LL.Main.compute} of
+    {65'@} -> $LL.Main.loop2

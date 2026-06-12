@@ -1,8 +1,8 @@
 module top_level (input logic [1023:0] __in0,
   input logic [31:0] __in1,
   output logic [63:0] __out0);
-  logic [1055:0] zll_main_loop4_in;
-  logic [1055:0] zll_main_loop3_in;
+  logic [1055:0] zll_main_loop_in;
+  logic [1055:0] zll_main_loop2_in;
   logic [1055:0] main_compute_in;
   logic [1055:0] zll_main_compute1_in;
   logic [1055:0] zll_main_compute3_in;
@@ -38,12 +38,12 @@ module top_level (input logic [1023:0] __in0,
   logic [511:0] id_inR15;
   logic [95:0] zll_main_compute_inR7;
   logic [7:0] zll_main_compute_outR7;
-  logic [64:0] zll_main_loop1_in;
+  logic [64:0] zll_main_loop4_in;
   logic [64:0] zll_main_loop5_in;
   logic [0:0] __padding;
-  assign zll_main_loop4_in = {__in0, __in1};
-  assign zll_main_loop3_in = zll_main_loop4_in[1055:0];
-  assign main_compute_in = {zll_main_loop3_in[1055:32], zll_main_loop3_in[31:0]};
+  assign zll_main_loop_in = {__in0, __in1};
+  assign zll_main_loop2_in = zll_main_loop_in[1055:0];
+  assign main_compute_in = {zll_main_loop2_in[1055:32], zll_main_loop2_in[31:0]};
   assign zll_main_compute1_in = {main_compute_in[1055:32], main_compute_in[31:0]};
   assign zll_main_compute3_in = zll_main_compute1_in[1055:0];
   assign id_in = zll_main_compute3_in[1055:32];
@@ -78,8 +78,8 @@ module top_level (input logic [1023:0] __in0,
   assign id_inR15 = id_inR14[1023:512];
   assign zll_main_compute_inR7 = {zll_main_compute3_in[31:0], id_inR15[63:0]};
   ZLL_Main_compute  instR7 (zll_main_compute_inR7[95:64], zll_main_compute_inR7[63:0], zll_main_compute_outR7);
-  assign zll_main_loop1_in = {1'h0, {zll_main_compute_out, zll_main_compute_outR1, zll_main_compute_outR2, zll_main_compute_outR3, zll_main_compute_outR4, zll_main_compute_outR5, zll_main_compute_outR6, zll_main_compute_outR7}};
-  assign zll_main_loop5_in = zll_main_loop1_in[64:0];
+  assign zll_main_loop4_in = {1'h0, {zll_main_compute_out, zll_main_compute_outR1, zll_main_compute_outR2, zll_main_compute_outR3, zll_main_compute_outR4, zll_main_compute_outR5, zll_main_compute_outR6, zll_main_compute_outR7}};
+  assign zll_main_loop5_in = zll_main_loop4_in[64:0];
   assign {__padding, __out0} = {1'h1, zll_main_loop5_in[63:0]};
 endmodule
 

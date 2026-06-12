@@ -6,122 +6,122 @@ states [("__st0",16)]
 
 $Pure.dispatch :: W16 -> W1 -> W26
 $Pure.dispatch $0 $1 = 26'case {1'$1, 16'$0} of
-    {1'@, 16'@} -> $LL.Main.sig9
+    {1'@, 16'@} -> $LL.Main.sig4
 
 $Pure.start :: W26
 $Pure.start  = 26'h2000001
 
-$LL.Main.incr20 :: W8 -> W8 -> W16 -> W26
-$LL.Main.incr20 $0 $1 $2 = 26'case {8'$0, 8'$1, 16'$2} of
-    {8'@, 8'@, 16'@} -> $LL.Main.incr14
-
-$LL.Main.incr19 :: W8 -> W26 -> W26
-$LL.Main.incr19 $0 $1 = 26'case {8'$0, 26'$1} of
-    {8'@, 2'h0, 8'@, 16'@} -> $LL.Main.incr20
-
-$LL.Main.begin6 :: W16 -> W26
-$LL.Main.begin6 $0 = {10'h100, 16'$0}
+$LL.Main.sig10 :: W1 -> W1 -> W16 -> W26
+$LL.Main.sig10 $0 $1 $2 = 26'case {16'$2, 1'$1} of
+    {16'@, 1'h1} -> $LL.Main.begin6
+    _ -> 26'case {1'$0, 16'$2} of
+      {1'@, 16'@} -> $LL.Main.sig9
 
 $LL.Main.second6 :: W16 -> W16 -> W24
-$LL.Main.second6 $0 $1 = {8'case 16'$0 of {16'@} -> $LL.Main.second, 16'$1}
+$LL.Main.second6 $0 $1 = {8'case 16'$0 of {16'@} -> $LL.Main.second2, 16'$1}
 
-$LL.Main.incr17 :: W16 -> W26
-$LL.Main.incr17 $0 = 26'case 16'$0 of
+$LL.Main.incr20 :: W16 -> W26
+$LL.Main.incr20 $0 = {10'h100, 16'$0}
+
+$LL.Main.incr19 :: W8 -> W16 -> W26
+$LL.Main.incr19 $0 $1 = {2'h0, 8'$0, 16'$1}
+
+$LL.Main.begin6 :: W16 -> W26
+$LL.Main.begin6 $0 = 26'case 16'$0 of
     {16'@} -> Main.sig
 
-$LL.Main.sig10 :: W24 -> W26
-$LL.Main.sig10 $0 = 26'case 24'$0 of
-    {8'@, 16'@} -> $LL.Main.sig5
+$LL.Main.incr16 :: W24 -> W26
+$LL.Main.incr16 $0 = 26'case 24'$0 of
+    {8'@, 16'@} -> $LL.Main.incr19
 
-$LL.Main.first4 :: W16 -> W8
-$LL.Main.first4 $0 = 8'case 16'$0 of
+$LL.Main.first3 :: W16 -> W8
+$LL.Main.first3 $0 = 8'case 16'$0 of
     {8'@, 8'_} -> Id
+
+$LL.Main.incr15 :: W26 -> W26
+$LL.Main.incr15 $0 = 26'case 26'$0 of
+    {2'h1, 8'_, 16'@} -> $LL.Main.begin6
+
+$LL.Main.second5 :: W32 -> W24
+$LL.Main.second5 $0 = 24'case 32'$0 of
+    {16'@, 16'@} -> $LL.Main.second6
 
 Main.incr :: W16 -> W26
 Main.incr $0 = 26'case 26'case 24'case 16'$0 of
         {16'@} -> Main.first of
-      {24'@} -> $LL.Main.sig10 of
-    {26'@} -> $LL.Main.incr2
-
-$LL.Main.incr14 :: W8 -> W8 -> W16 -> W26
-$LL.Main.incr14 $0 $1 $2 = 26'case 26'case {8'$1, 8'case {8'$0, 8'$1} of {8'@, 8'@} -> Add} of
-      {16'@} -> $LL.Main.begin6 of
+      {24'@} -> $LL.Main.incr16 of
     {26'@} -> $LL.Main.incr10
 
 $LL.Main.sig9 :: W1 -> W16 -> W26
-$LL.Main.sig9 $0 $1 = 26'case {1'$0, 1'$0, 16'$1} of
-    {1'@, 1'@, 16'@} -> $LL.Main.sig6
+$LL.Main.sig9 $0 $1 = 26'case {16'$1, 1'$0} of
+    {16'@, 1'h0} -> $LL.Main.sig8
 
-$LL.Main.sig8 :: W8 -> W16 -> W26
-$LL.Main.sig8 $0 $1 = {2'h2, 8'$0, 16'$1}
+$LL.Main.incr13 :: W8 -> W8 -> W16 -> W26
+$LL.Main.incr13 $0 $1 $2 = 26'case {8'$0, 8'$1, 16'$2} of
+    {8'@, 8'@, 16'@} -> $LL.Main.incr3
 
-$LL.Main.sig7 :: W8 -> W16 -> W26
-$LL.Main.sig7 $0 $1 = 26'case {8'$0, 16'$1} of
-    {8'@, 16'@} -> $LL.Main.sig8
+$LL.Main.second2 :: W16 -> W8
+$LL.Main.second2 $0 = 8'case 128'case {128'case 16'$0 of {16'@} -> Resize, 128'h0} of
+      {128'@, 128'@} -> RShift of
+    {128'@} -> Resize
 
-$LL.Main.sig6 :: W1 -> W1 -> W16 -> W26
-$LL.Main.sig6 $0 $1 $2 = 26'case {16'$2, 1'$1} of
-    {16'@, 1'h1} -> $LL.Main.incr17
-    _ -> 26'case {1'$0, 16'$2} of
-      {1'@, 16'@} -> $LL.Main.sig4
+$LL.Main.sig8 :: W16 -> W26
+$LL.Main.sig8 $0 = 26'case 16'$0 of
+    {16'@} -> Main.incr
 
-$LL.Main.sig5 :: W8 -> W16 -> W26
-$LL.Main.sig5 $0 $1 = {2'h0, 8'$0, 16'$1}
+$LL.Main.first2 :: W32 -> W24
+$LL.Main.first2 $0 = 24'case 32'$0 of
+    {16'@, 16'@} -> $LL.Main.first1
 
 Main.sig :: W16 -> W26
 Main.sig $0 = 26'case 26'case 24'case 16'$0 of
         {16'@} -> Main.first of
-      {24'@} -> $LL.Main.sig10 of
-    {26'@} -> $LL.Main.sig2
-
-$LL.Main.second2 :: W32 -> W24
-$LL.Main.second2 $0 = 24'case 32'$0 of
-    {16'@, 16'@} -> $LL.Main.second6
-
-$LL.Main.sig4 :: W1 -> W16 -> W26
-$LL.Main.sig4 $0 $1 = 26'case {16'$1, 1'$0} of
-    {16'@, 1'h0} -> $LL.Main.sig3
-
-$LL.Main.sig3 :: W16 -> W26
-$LL.Main.sig3 $0 = 26'case 16'$0 of
-    {16'@} -> Main.incr
+      {24'@} -> $LL.Main.incr16 of
+    {26'@} -> $LL.Main.sig1
 
 Main.first :: W16 -> W24
 Main.first $0 = 24'case {16'$0, 16'$0} of
-    {32'@} -> $LL.Main.first
+    {32'@} -> $LL.Main.first2
 
 $LL.Main.incr10 :: W26 -> W26
 $LL.Main.incr10 $0 = 26'case 26'$0 of
-    {2'h1, 8'_, 16'@} -> $LL.Main.incr17
+    {2'h0, 8'@, 16'@} -> $LL.Main.incr4
 
-$LL.Main.incr9 :: W8 -> W16 -> W26
-$LL.Main.incr9 $0 $1 = 26'case {8'$0, 16'$1} of
-    {8'@, 16'@} -> $LL.Main.incr3
+$LL.Main.incr9 :: W8 -> W26 -> W26
+$LL.Main.incr9 $0 $1 = 26'case {8'$0, 26'$1} of
+    {8'@, 2'h0, 8'@, 16'@} -> $LL.Main.incr13
 
-$LL.Main.sig2 :: W26 -> W26
-$LL.Main.sig2 $0 = 26'case 26'$0 of
-    {2'h0, 8'@, 16'@} -> $LL.Main.sig7
+$LL.Main.sig5 :: W8 -> W16 -> W26
+$LL.Main.sig5 $0 $1 = 26'case {8'$0, 16'$1} of
+    {8'@, 16'@} -> $LL.Main.sig2
+
+$LL.Main.sig4 :: W1 -> W16 -> W26
+$LL.Main.sig4 $0 $1 = 26'case {1'$0, 1'$0, 16'$1} of
+    {1'@, 1'@, 16'@} -> $LL.Main.sig10
+
+$LL.Main.first1 :: W16 -> W16 -> W24
+$LL.Main.first1 $0 $1 = {8'case 16'$0 of {16'@} -> $LL.Main.first3, 16'$1}
+
+$LL.Main.incr4 :: W8 -> W16 -> W26
+$LL.Main.incr4 $0 $1 = 26'case {8'$0, 16'$1} of
+    {8'@, 16'@} -> $LL.Main.incr
+
+$LL.Main.incr3 :: W8 -> W8 -> W16 -> W26
+$LL.Main.incr3 $0 $1 $2 = 26'case 26'case {8'$1, 8'case {8'$0, 8'$1} of {8'@, 8'@} -> Add} of
+      {16'@} -> $LL.Main.incr20 of
+    {26'@} -> $LL.Main.incr15
 
 Main.second :: W16 -> W24
 Main.second $0 = 24'case {16'$0, 16'$0} of
-    {32'@} -> $LL.Main.second2
+    {32'@} -> $LL.Main.second5
 
-$LL.Main.second :: W16 -> W8
-$LL.Main.second $0 = 8'case 128'case {128'case 16'$0 of {16'@} -> Resize, 128'h0} of
-      {128'@, 128'@} -> RShift of
-    {128'@} -> Resize
+$LL.Main.sig2 :: W8 -> W16 -> W26
+$LL.Main.sig2 $0 $1 = {2'h2, 8'$0, 16'$1}
 
-$LL.Main.first1 :: W16 -> W16 -> W24
-$LL.Main.first1 $0 $1 = {8'case 16'$0 of {16'@} -> $LL.Main.first4, 16'$1}
+$LL.Main.sig1 :: W26 -> W26
+$LL.Main.sig1 $0 = 26'case 26'$0 of
+    {2'h0, 8'@, 16'@} -> $LL.Main.sig5
 
-$LL.Main.incr3 :: W8 -> W16 -> W26
-$LL.Main.incr3 $0 $1 = 26'case {8'$0, 26'case 24'case 16'$1 of {16'@} -> Main.second of {24'@} -> $LL.Main.sig10} of
-    {8'@, 26'@} -> $LL.Main.incr19
-
-$LL.Main.first :: W32 -> W24
-$LL.Main.first $0 = 24'case 32'$0 of
-    {16'@, 16'@} -> $LL.Main.first1
-
-$LL.Main.incr2 :: W26 -> W26
-$LL.Main.incr2 $0 = 26'case 26'$0 of
-    {2'h0, 8'@, 16'@} -> $LL.Main.incr9
+$LL.Main.incr :: W8 -> W16 -> W26
+$LL.Main.incr $0 $1 = 26'case {8'$0, 26'case 24'case 16'$1 of {16'@} -> Main.second of {24'@} -> $LL.Main.incr16} of
+    {8'@, 26'@} -> $LL.Main.incr9

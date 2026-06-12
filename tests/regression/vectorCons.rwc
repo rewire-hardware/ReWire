@@ -6,69 +6,69 @@ states []
 
 $Pure.dispatch :: W128 -> W129
 $Pure.dispatch $0 = 129'case 128'$0 of
-    {128'@} -> $LL.Main.loop2
+    {128'@} -> $LL.Main.loop1
 
 $Pure.start :: W129
 $Pure.start  = 129'h100000000000000000000000000000000
 
-$LL.Main.compute29 :: W64 -> W8
-$LL.Main.compute29 $0 = 8'case 128'case {128'case 64'$0 of {64'@} -> Resize, 128'h0} of
+$LL.Main.loop3 :: W129 -> W129
+$LL.Main.loop3 $0 = 129'case 129'$0 of
+    {1'h0, 128'@} -> $LL.Main.loop
+
+$LL.Main.compute24 :: W56 -> W8 -> W8 -> W56 -> W128
+$LL.Main.compute24 $0 $1 $2 $3 = {64'case {56'$0, 8'$2} of
+    {56'@, 8'@} -> $LL.Main.compute19
+  , 64'case {8'$1, 56'$3} of
+    {8'@, 56'@} -> $LL.Main.compute1}
+
+$LL.Main.compute19 :: W56 -> W8 -> W64
+$LL.Main.compute19 $0 $1 = 64'case {56'$0, 8'$1} of
+    {64'@} -> $LL.Main.compute15
+
+$LL.Main.compute17 :: W64 -> W64
+$LL.Main.compute17 $0 = 64'case 64'$0 of
+    {8'@, 56'@} -> Id
+
+$LL.Main.compute16 :: W64 -> W8
+$LL.Main.compute16 $0 = 8'case 128'case {128'case 64'$0 of {64'@} -> Resize, 128'h0} of
       {128'@, 128'@} -> RShift of
     {128'@} -> Resize
 
-$LL.Main.compute28 :: W128 -> W128
-$LL.Main.compute28 $0 = 128'case 128'$0 of
-    {64'@, 64'@} -> $LL.Main.compute4
-
-$LL.Main.compute27 :: W56 -> W8 -> W64
-$LL.Main.compute27 $0 $1 = 64'case {56'$0, 8'$1} of
-    {64'@} -> $LL.Main.compute24
-
-$LL.Main.compute25 :: W64 -> W8 -> W56 -> W128
-$LL.Main.compute25 $0 $1 $2 = 128'case {64'$0, 56'$2, 8'$1, 8'case 64'$0 of {64'@} -> $LL.Main.compute29} of
-    {64'@, 56'@, 8'@, 8'@} -> $LL.Main.compute1
-
-$LL.Main.loop3 :: W128 -> W129
-$LL.Main.loop3 $0 = {1'h1, 128'$0}
-
-$LL.Main.loop2 :: W128 -> W129
-$LL.Main.loop2 $0 = 129'case {1'h0, 128'case 128'$0 of {128'@} -> $LL.Main.compute28} of
-    {129'@} -> $LL.Main.loop
-
-$LL.Main.compute24 :: W64 -> W64
-$LL.Main.compute24 $0 = 64'case 64'$0 of
+$LL.Main.compute15 :: W64 -> W64
+$LL.Main.compute15 $0 = 64'case 64'$0 of
     {56'@, 8'@} -> Id
 
-$LL.Main.compute22 :: W8 -> W56 -> W8 -> W56 -> W128
-$LL.Main.compute22 $0 $1 $2 $3 = {64'case {56'$1, 8'$0} of
-    {56'@, 8'@} -> $LL.Main.compute27
-  , 64'case {8'$2, 56'$3} of
-    {8'@, 56'@} -> $LL.Main.compute}
+$LL.Main.compute13 :: W64 -> W64 -> W8 -> W128
+$LL.Main.compute13 $0 $1 $2 = 128'case {64'$0, 8'$2, 56'case 64'$1 of {8'_, 56'@} -> Id} of
+    {64'@, 8'@, 56'@} -> $LL.Main.compute4
 
-$LL.Main.compute14 :: W64 -> W8
-$LL.Main.compute14 $0 = 8'case 64'$0 of
+$LL.Main.compute12 :: W128 -> W128
+$LL.Main.compute12 $0 = 128'case 128'$0 of
+    {64'@, 64'@} -> $LL.Main.compute3
+
+$LL.Main.compute11 :: W64 -> W56 -> W8 -> W8 -> W128
+$LL.Main.compute11 $0 $1 $2 $3 = 128'case {56'$1, 8'$2, 8'$3, 56'case 64'$0 of {56'@, 8'_} -> Id} of
+    {56'@, 8'@, 8'@, 56'@} -> $LL.Main.compute24
+
+$LL.Main.compute6 :: W64 -> W8
+$LL.Main.compute6 $0 = 8'case 64'$0 of
     {8'@, 56'_} -> Id
 
-$LL.Main.loop :: W129 -> W129
-$LL.Main.loop $0 = 129'case 129'$0 of
-    {1'h0, 128'@} -> $LL.Main.loop3
+$LL.Main.compute4 :: W64 -> W8 -> W56 -> W128
+$LL.Main.compute4 $0 $1 $2 = 128'case {64'$0, 56'$2, 8'$1, 8'case 64'$0 of {64'@} -> $LL.Main.compute16} of
+    {64'@, 56'@, 8'@, 8'@} -> $LL.Main.compute11
 
-$LL.Main.compute9 :: W64 -> W64
-$LL.Main.compute9 $0 = 64'case 64'$0 of
-    {8'@, 56'@} -> Id
+$LL.Main.compute3 :: W64 -> W64 -> W128
+$LL.Main.compute3 $0 $1 = 128'case {64'$1, 64'$0, 8'case 64'$0 of {64'@} -> $LL.Main.compute6} of
+    {64'@, 64'@, 8'@} -> $LL.Main.compute13
 
-$LL.Main.compute6 :: W64 -> W64 -> W8 -> W128
-$LL.Main.compute6 $0 $1 $2 = 128'case {64'$0, 8'$2, 56'case 64'$1 of {8'_, 56'@} -> Id} of
-    {64'@, 8'@, 56'@} -> $LL.Main.compute25
+$LL.Main.compute1 :: W8 -> W56 -> W64
+$LL.Main.compute1 $0 $1 = 64'case {8'$0, 56'$1} of
+    {64'@} -> $LL.Main.compute17
 
-$LL.Main.compute4 :: W64 -> W64 -> W128
-$LL.Main.compute4 $0 $1 = 128'case {64'$1, 64'$0, 8'case 64'$0 of {64'@} -> $LL.Main.compute14} of
-    {64'@, 64'@, 8'@} -> $LL.Main.compute6
+$LL.Main.loop1 :: W128 -> W129
+$LL.Main.loop1 $0 = 129'case {1'h0, 128'case 128'$0 of {128'@} -> $LL.Main.compute12} of
+    {129'@} -> $LL.Main.loop3
 
-$LL.Main.compute1 :: W64 -> W56 -> W8 -> W8 -> W128
-$LL.Main.compute1 $0 $1 $2 $3 = 128'case {8'$3, 56'$1, 8'$2, 56'case 64'$0 of {56'@, 8'_} -> Id} of
-    {8'@, 56'@, 8'@, 56'@} -> $LL.Main.compute22
-
-$LL.Main.compute :: W8 -> W56 -> W64
-$LL.Main.compute $0 $1 = 64'case {8'$0, 56'$1} of
-    {64'@} -> $LL.Main.compute9
+$LL.Main.loop :: W128 -> W129
+$LL.Main.loop $0 = {1'h1, 128'$0}
