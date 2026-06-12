@@ -276,3 +276,9 @@ bottom of each section. Companion docs: `doc/core.md` (the Mantle spec),
 
 - Plan §5 "new tests to add": width-0 edge cases, div/mod-by-zero stimulus,
   multi-register device naming, parse/print round-trip property.
+  **Done (2026-06-12):** `tests/regression/zerowidth.hs` (unit input port,
+  width-0 register, W 0 concat operand), `tests/regression/divzero.hs`
+  (frequently-zero runtime divisor for the cosim stimulus, plus literal
+  divisions by zero for the partial evaluator), `tests/regression/multireg.hs`
+  (three registers of distinct widths), and a per-test "rwc round-trip"
+  check in rwc-test (prettyPrint-parse fixpoint on every .rwc golden).
