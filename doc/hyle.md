@@ -1,9 +1,7 @@
 # Hyle: the ReWire bit-level intermediate representation
 
-**Status: normative (June 2026).** This document specifies the syntax and
-semantics of *Hyle*, the bit-level IR implemented in `ReWire.Hyle.*`. (The
-name is the Greek ὕλη, "matter": the formless substrate that receives form —
-here, the bit-level substrate into which every ReWire design is lowered.)
+This document specifies the syntax and semantics of *Hyle*, the bit-level IR
+implemented in `ReWire.Hyle.*`.
 
 Hyle is the IR that the back ends consume; the compiler pipeline is
 

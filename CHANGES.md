@@ -9,43 +9,26 @@
   `zext`/`sext`/`trunc`), explicit let-bindings and muxes instead of
   pattern/don't-care conventions, and an explicit device construct --
   named registers with initial values, parallel wire equations, and
-  device-level instances for clocked externs. All four consumers
-  (interpreter, Verilog, VHDL, Cryptol) were rewritten as per-construct
-  templates: the per-backend width-context reconstruction, pattern
-  compilation, resumption-layout arithmetic, and clock-plumbing analyses
-  are gone, and inlining is now a target-independent IR pass
-  (`--flatten` inlines everything). Division by zero now has one defined
+  device-level instances for clocked externs. Division by zero now has one defined
   semantics on every target (SMT-LIB: `x/0` is all-ones, `x%0` is `x`).
   The `--core`/`--from-core` flags are unchanged but the `.rwc` format is
-  now Hyle's concrete syntax (compiler-generated; the old format has no
-  compatibility parser). Each migration step was gated on the
-  cosimulation check; interpreter traces (and the `.yaml` goldens) are
-  bit-for-bit unchanged. The migration also fixed a latent Verilog
-  backend bug found by cosimulation: an arithmetic right shift nested in
-  an unsigned expression context simulated as a logical shift; the shift
-  is now wrapped in `$unsigned(...)` to isolate its signedness.
+  now Hyle's concrete syntax.
+* Fixed a Verilog backend bug found by cosimulation: an arithmetic right
+  shift nested in an unsigned expression context simulated as a logical shift;
+  the shift is now wrapped in `$unsigned(...)` to isolate its signedness.
 * The interpreter can now evaluate externs with a user-supplied Haskell
   model: the seventh argument of `rwPrimExtern` is now compiled like any other
   definition when it is a reference to a top-level definition whose reachable
   definitions are non-recursive, first-order, monomorphic, and synthesizable --
-  the conventional self-referential idiom (`f = extern "f" f`) still means "no
-  model". The model is attached to the extern in the IR (a `model <defn>`
-  declaration in `.rwc` files), the interpreter calls it for unclocked externs, and
-  the Cryptol backend emits a call to it instead of an uninterpreted `parameter`.
-  Implementations that look like real models but fail the usability checks are
-  dropped with a warning, as are models for clocked externs (which are stateful,
-  so a pure per-cycle model can't be cycle-accurate).
-* Compiler warnings: rwc and rwe can now emit non-fatal warnings
+  `f = extern "f" f` still means "no model".
+* Compiler warnings: rwc and rwe now emit non-fatal warnings
   (`file:line:col: Warning: ...` on stderr), with `-w`/`--no-warn` to
   suppress them and `-Werror` to make them fatal. Initial warnings: a live
   call to the built-in `error` function now compiles to a zero (don't-care)
   value with a warning instead of failing outright; an explicitly named
   `--interpret`/`--testbench` inputs file that can't be read warns before
   driving all inputs with zeros; `--testbench` with a target other than
-  Verilog or VHDL warns that no testbench is generated. New warning test
-  suite (`tests/warning/`): each test declares expected-warning substrings
-  with `-- EXPECT-WARNING:` comments and is checked under default flags,
-  `-Werror` (must fail), and `-w` (must be silent).
+  Verilog or VHDL warns that no testbench is generated.
 * New Cryptol backend (`rwc --cryptol`): translates the bit-level IR to a
   self-contained Cryptol module -- one pure function per defn plus a
   `rw_device` stream function modeling the whole device (a sequence of
@@ -53,10 +36,6 @@
   equivalent to the interpreter. Intended for verification (e.g., proving
   equivalence against a hand-written Cryptol spec with SAW) and fast
   functional simulation.
-  Unclocked externs are declared as uninterpreted functions in a `parameter`
-  block; clocked externs are rejected. The rwc-test cosimulation check gains a
-  fourth leg (when `cryptol` is on the PATH) evaluating `rw_device` against
-  the interpreter trace, and `tests/regression/*.cry` golden tests.
 * The VHDL backend (`rwc --vhdl`) works again, with full feature parity with
   the Verilog backend.
 * New `rwc --testbench[=inputs.yaml]` flag: alongside the Verilog or VHDL
