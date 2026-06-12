@@ -3,12 +3,11 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Safe #-}
 module Embedder.Atmo.Syntax
       ( Module (..), DataConId (..), TyConId (..)
       , Ty (..), TyBuiltin(..), Poly (..)
@@ -27,11 +26,10 @@ import Prelude hiding (replicate)
 
 import ReWire.Annotation (Annote, Annotated (ann))
 import ReWire.Orphans ()
-import ReWire.Pretty (empty, text, TextShow (showt), FromGeneric (..), Doc,
+import ReWire.Pretty (empty, text, TextShow (showt), Doc,
   nest, hsep, parens, dquotes, comma, brackets, vsep, (<+>), Pretty (pretty),
   punctuate, line, softline, align, braces, dot)
 import ReWire.SYB (transform)
-import Control.DeepSeq (NFData (..), deepseq)
 import Data.Containers.ListUtils (nubOrdOn)
 import Data.Data (Typeable, Data (..))
 import Data.Hashable (Hashable (..))
@@ -46,7 +44,6 @@ import ReWire.Error (MonadError, AstError)
 
 data Module = Module ![DataDefn] ![RecDefn] ![TypeSynonym] ![Defn]
       deriving (Show, Generic, Data)
-      deriving TextShow via FromGeneric Module
 
 instance Pretty Module where
       pretty (Module cs rs ts ds) = nest 2 $ vsep (text "module" : map pretty cs <> map pretty rs <> map pretty ts <> map pretty ds)
@@ -91,7 +88,6 @@ instance Hashable FieldId
 
 data DataCon = DataCon Annote !Text !Poly
       deriving (Generic, Eq, Show, Typeable, Data)
-      deriving TextShow via FromGeneric DataCon
 
 instance Annotated DataCon where
       ann (DataCon a _ _)  = a
@@ -99,16 +95,13 @@ instance Annotated DataCon where
 instance Pretty DataCon where
       pretty (DataCon _ n t)  = text n <+> text "::" <+> pretty t
 
-instance NFData DataCon
 
 
 data Poly = Poly [Text] Ty
       deriving (Generic, Eq, Show, Typeable, Data)
-      deriving TextShow via FromGeneric Poly
 
 instance Hashable Poly
 
-instance NFData Poly
 
 
 instance Pretty Poly where
@@ -121,7 +114,6 @@ data Ty = TyApp Annote !Ty ![Ty]
         | TyTuple Annote ![Ty]
         | TyBuiltin Annote !TyBuiltin
       deriving (Eq, Ord, Generic, Typeable, Data, Show)
-      deriving TextShow via FromGeneric Ty
 
 instance Hashable Ty
 
@@ -167,7 +159,6 @@ instance Pretty Ty where
             TyApp _ (TyBuiltin _ TyPlus) [t1,t2] -> parens $ pretty t1 <+> text "+" <+> pretty t2
             TyApp _ t ts -> parens $ pretty t <+> hsep (map mparens ts)
 
-instance NFData Ty
 
 untype :: Data d => d -> d
 untype = transform $ \ (_ :: Maybe Ty) -> Nothing
@@ -186,17 +177,13 @@ untype = transform $ \ (_ :: Maybe Ty) -> Nothing
 -- Rather, let's start with PatBinds and complicate it only if we need to
 newtype Binds = BDefs [Defn]
       deriving (Generic,Eq,Show,Typeable,Data)
-      deriving TextShow via FromGeneric Binds
 
 instance Hashable Binds
-instance NFData Binds
 
 data PatBind = PatBind Pat Exp
       deriving (Generic, Eq, Show, Typeable, Data)
-      deriving TextShow via FromGeneric PatBind
 
 instance Hashable PatBind
-instance NFData PatBind
 
 instance Pretty PatBind where
       pretty (PatBind p e) = brackets $ pretty p <+> pretty e
@@ -218,14 +205,12 @@ data Exp = App     Annote !(Maybe Poly) !(Maybe Ty) !Exp ![Exp]
          | RecSel  Annote !(Maybe Poly) !(Maybe Ty) Text Exp
          | RecUpd  Annote !(Maybe Poly) !(Maybe Ty) !Exp ![(Text,Exp)]
       deriving (Generic, Show, Typeable, Data)
-      deriving TextShow via FromGeneric Exp
 
 instance Hashable Exp
 
 instance Eq Exp where
       a == b = hash a == hash b
 
-instance NFData Exp
 
 instance Annotated Exp where
       ann = \ case
@@ -314,11 +299,9 @@ data Pat = PatCon      Annote !(Maybe Poly) !(Maybe Ty) !Text ![Pat]
          | PatAs       Annote !(Maybe Poly) !(Maybe Ty) !Text !Pat -- should only appear in FunBindings
          | PatRec      Annote !(Maybe Poly) !(Maybe Ty) ![(Text,Pat)]
       deriving (Eq, Show, Generic, Typeable, Data)
-      deriving TextShow via FromGeneric Pat
 
 instance Hashable Pat
 
-instance NFData Pat
 
 instance Annotated Pat where
       ann = \ case
@@ -351,10 +334,8 @@ instance Pretty Pat where
 
 data FunBinding = FunBinding Annote ![Pat] !Exp
       deriving (Eq, Generic, Show, Typeable, Data)
-      deriving TextShow via FromGeneric FunBinding
 
 instance Hashable FunBinding
-instance NFData FunBinding
 
 instance Pretty FunBinding where
       pretty (FunBinding _ ps rhs) = pFunCase ps rhs
@@ -379,10 +360,8 @@ data Defn = Defn
             , defnBinds  :: ![FunBinding]
             }
       deriving (Eq, Generic, Show, Typeable, Data)
-      deriving TextShow via FromGeneric Defn
 
 instance Hashable Defn
-instance NFData Defn
 
 instance Annotated Defn where
       ann (Defn a _ _ _ _) = a
@@ -399,11 +378,9 @@ instance Pretty Defn where
 
 data DefnAttr = Inline | NoInline
       deriving (Eq, Generic, Show, Typeable, Data)
-      deriving TextShow via FromGeneric DefnAttr
 
 instance Hashable DefnAttr
 
-instance NFData DefnAttr
 
 ---
 
@@ -417,9 +394,7 @@ data DataDefn = DataDefn
       , dataCons   :: ![DataCon]
       }
       deriving (Eq, Generic, Show, Typeable, Data)
-      deriving TextShow via FromGeneric DataDefn
 
-instance NFData DataDefn
 
 instance Annotated DataDefn where
       ann (DataDefn a _ _ _) = a
@@ -444,9 +419,7 @@ data RecDefn = RecDefn
       , recFields :: ![(Text, Ty)]
       }
       deriving (Eq, Generic, Show, Typeable, Data)
-      deriving TextShow via FromGeneric RecDefn
 
-instance NFData RecDefn
 
 instance Annotated RecDefn where
       ann (RecDefn a _ _ _ _) = a
@@ -464,11 +437,9 @@ data TypeSynonym = TypeSynonym
       , typeSynType   :: !Poly
       }
       deriving (Eq, Generic, Show, Typeable, Data)
-      deriving TextShow via FromGeneric TypeSynonym
 
 instance Hashable TypeSynonym
 
-instance NFData TypeSynonym
 
 instance Annotated TypeSynonym where
       ann (TypeSynonym a _ _) = a
@@ -482,9 +453,6 @@ type FreeProgram = ([DataDefn], [RecDefn], [TypeSynonym], [Defn])
 
 newtype Program = Program ([DataDefn], [RecDefn], [TypeSynonym], [Defn])
       deriving (Generic, Show, Typeable)
-
-instance NFData Program where
-      rnf (Program p) = p `deepseq` ()
 
 instance Pretty Program where
       pretty (Program p) = prettyFP p

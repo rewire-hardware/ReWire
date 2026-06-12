@@ -170,7 +170,7 @@ getDevice conf fp = do
 
 passHSE :: MonadIO m => Config -> Renamer -> Module -> Natural -> Text -> S.Module a -> m (S.Module a)
 passHSE conf rn imps n m = verb' conf msg
-            >=> if (conf^.C.dump) n then printInfoHSE msg rn imps (conf^.C.verbose) else pure
+            >=> if (conf^.C.dump) n then printInfoHSE msg rn (showt imps) (conf^.C.verbose) else pure
       where msg = "[" <> showt n <> "] " <> m
 
 passCrust :: MonadIO m => Config -> Natural -> Text -> FreeProgram -> m FreeProgram
