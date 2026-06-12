@@ -648,8 +648,7 @@ functional expression language rather than a cell graph, because:
 
 ## 10. Concrete syntax
 
-The textual format, printed by `rwc --core` (and its alias `--hyle`, which
-differs only in the `.hyl` output extension) and parsed by `--from-core`;
+The textual format, printed by `rwc --core` and parsed by `--from-core`;
 it round-trips, and the `.rwc` golden files in `tests/regression/` use it.
 
 ```

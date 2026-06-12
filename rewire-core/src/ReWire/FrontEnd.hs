@@ -73,7 +73,6 @@ compileFile conf filename = do
                               writeTestbench $ HyleV.testbench conf $ progDevice p'
                         Cryptol   -> HyleCry.compileProgram conf p >>= writeOutput
                         RWCore    -> writeOutput p
-                        Hyle      -> writeOutput p
                         Interpret -> do
                               ips  <- loadInputs
                               verb $ "Interpreting hyle: running for " <> showt (conf^.cycles) <> " cycles."
