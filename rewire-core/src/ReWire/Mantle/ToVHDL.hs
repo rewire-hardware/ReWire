@@ -12,8 +12,9 @@
 --   arithmetic), not for resizing discipline.
 --
 --   Defn modules never take clock or reset ports (sequential externs are
---   device-level instances). Extern ports connect by name -- anonymous
---   extern ports get the synthesized @p<i>@ names, which the hand-written
+--   device-level instances). Extern ports connect by name; ports left
+--   anonymous in the source-level extern descriptor reach this backend with
+--   the @p<i>@ names synthesized by the producer, which the hand-written
 --   VHDL implementations in the test suite already use.
 module ReWire.Mantle.ToVHDL (compileProgram, testbench) where
 

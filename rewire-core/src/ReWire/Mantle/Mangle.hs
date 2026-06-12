@@ -12,7 +12,7 @@ import qualified Data.Text as T
 mangle :: Text -> Text
 mangle = pack . zEncodeString . unpack
 
--- | Mangle a Core name into an identifier acceptable to the RTL backends
+-- | Mangle a Mantle name into an identifier acceptable to the RTL backends
 --   (when it isn't one already): alphanumerics plus underscores and dollar
 --   signs (the VHDL pretty-printer further escapes names as needed).
 mangleFresh :: Text -> Text

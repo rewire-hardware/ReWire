@@ -80,7 +80,7 @@ getModule conf = getModuleWith translate conf
 
                   pure (m' <> imps, exps)
 
--- Phase 2 (pre-core) transformations.
+-- Phase 2 (pre-mantle) transformations.
 getDevice :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> Cache m Mantle.Program
 getDevice conf fp = do
       (Module ts syns ds,  _)  <- getModule conf "." fp
@@ -132,7 +132,7 @@ getDevice conf fp = do
                   , ("Purifying.",                                       purify start)
                   ]
 
-            -- Final cleanup before translation to core: no --debug-typecheck
+            -- Final cleanup before translation to mantle: no --debug-typecheck
             -- re-typechecking here (e.g., kindCheck fails once purgeAll has
             -- purged type synonyms).
             backPasses =

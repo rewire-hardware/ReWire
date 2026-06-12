@@ -169,9 +169,10 @@ definition denotes a total function (§6.2).
                  outputs   q₁ : [m₁], …, q_l : [m_l]        (named; l ≥ 1)
                  model     f                                 (optional; comb only)
 
-Port names are mandatory (G4); the VHDL back end currently synthesizes
-`p0, p1, …` for unnamed extern ports, and the external implementations are
-expected to match — making the names part of the IR removes the guesswork.
+Port names are mandatory (G4); ports left anonymous in the source-level
+extern descriptor are given synthesized names (`p0, p1, …`) by the producer,
+and the external implementations are expected to match — making the names
+part of the IR removes the per-backend guesswork.
 
 A **combinational** extern (kind `comb`) is callable in expressions,
 `E⟨c̄⟩(ē)`, with result type [m₁ + ⋯ + m_l] — the concatenation of its
@@ -479,16 +480,16 @@ the familiar Mealy unfolding
 
     s(0) = w̄,    (s(t+1), o(t)) = step(s(t), i(t))
 
-which is precisely what the current interpreter (`Core.Interp.interpStart`)
-and the Cryptol back end's `rw_device` stream comprehension implement, with
-the difference that the decomposition of the resumption vector into
-⟨padding, outputs, dispatch-tag, state⟩ is no longer their job: the producer
-has already split it into named registers and output equations.
+which is precisely what the interpreter (`ReWire.Mantle.Interp`) and the
+Cryptol back end's `rw_device` stream comprehension implement; the
+decomposition of the resumption vector into ⟨padding, outputs, dispatch-tag,
+state⟩ is not their job: the producer has already split it into named
+registers and output equations.
 
-The interpreter realizes 𝔇 directly (it must reject programs containing
-instances or model-less combinational externs, as today). The finite-trace
-semantics used by `--interpret` and the `.yaml` goldens is the n-prefix of
-𝔇⟦device⟧ applied to the (zero-extended) input trace.
+The interpreter realizes 𝔇 directly (it rejects programs containing
+instances or model-less combinational externs). The finite-trace semantics
+used by `--interpret` and the `.yaml` goldens is the n-prefix of 𝔇⟦device⟧
+applied to the (zero-extended) input trace.
 
 ## 7. Metatheory
 

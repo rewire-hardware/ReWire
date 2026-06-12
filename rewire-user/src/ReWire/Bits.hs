@@ -216,12 +216,12 @@ rotL n w = (w <<. n) .|. (w >>. (lit (len w) - n))
 
 -- | Less-than.
 {-# INLINE (<) #-}
-(<) :: W n -> W n -> Bit
+(<) :: W n -> W n -> Bool
 (<) = rwPrimLt
 
 -- | Less-than or equal.
 {-# INLINE (<=) #-}
-(<=) :: W n -> W n -> Bit
+(<=) :: W n -> W n -> Bool
 (<=) = rwPrimLtEq
 
 -- | Concatenate.

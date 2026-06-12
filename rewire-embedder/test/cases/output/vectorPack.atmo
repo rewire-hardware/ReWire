@@ -568,10 +568,10 @@ module
   ReWire.Bits.>= :: ((ReWire.W n) -> ((ReWire.W n) -> Bool))
    |-> >=
   {-# INLINE ReWire.Bits.< #-}
-  ReWire.Bits.< :: ((ReWire.W n) -> ((ReWire.W n) -> ReWire.Bit))
+  ReWire.Bits.< :: ((ReWire.W n) -> ((ReWire.W n) -> Bool))
    |-> <
   {-# INLINE ReWire.Bits.<= #-}
-  ReWire.Bits.<= :: ((ReWire.W n) -> ((ReWire.W n) -> ReWire.Bit))
+  ReWire.Bits.<= :: ((ReWire.W n) -> ((ReWire.W n) -> Bool))
    |-> <=
   {-# INLINE ReWire.Bits.<> #-}
   ReWire.Bits.<> :: ((ReWire.W n) -> ((ReWire.W m) -> (ReWire.W ((+ n m)))))

@@ -3,7 +3,7 @@
 
 module top_level where
 
-// Helpers implementing ReWire Core primitive semantics.
+// Helpers implementing ReWire Mantle primitive semantics.
 rw'resize : {m, n} (fin m, fin n) => [n] -> [m]
 rw'resize x = drop`{n} ((zero : [m]) # x)
 

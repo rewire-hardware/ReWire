@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
 -- | Syntax for the subset of VHDL-2008 emitted by the VHDL backend
---   (ReWire.Core.ToVHDL). Everything is typed std_logic_vector; Verilog-style
+--   (ReWire.Mantle.ToVHDL). Everything is typed std_logic_vector; Verilog-style
 --   expression semantics (unsigned arithmetic, width rules) are provided by
 --   functions in an emitted rw_helpers package.
 module ReWire.VHDL.Syntax where

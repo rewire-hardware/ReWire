@@ -14,12 +14,12 @@
    `rewire-core/src/ReWire/Builtins.hs` (re-exported by
    `ReWire.Crust.Syntax`).
 
-5. Add a translation for the new primitive from RWCrust to the RWCore IR (i.e.,
-   define it in terms of RWCore). Extend the `transBuiltin` function in
-   `rewire-core/src/ReWire/Crust/ToCore.hs` with these definitions (there are many
-   examples already there). Some primitives, such as Verilog built-in operators,
-   you'd instead want to also add new built-ins to the RWCore language and then
-   define the RWCore built-ins in terms of Verilog.
+5. Add a translation for the new primitive from RWCrust to the Mantle IR (i.e.,
+   define it in terms of Mantle). Extend the `transBuiltin` function in
+   `rewire-core/src/ReWire/Crust/ToMantle.hs` with these definitions (there are
+   many examples already there). Some primitives, such as Verilog built-in
+   operators, you'd instead want to also add new operators to the Mantle
+   language (`doc/core.md`) and then define those in each back end.
 
 6. For new built-in types (e.g., `Vec`, `ExtDev`), extend
    `rewire-core/src/ReWire/Crust/PrimBasis.hs` with their definition.
@@ -58,9 +58,9 @@
    Debug: [25] Final shifting of lambdas.
    Debug: [26] Final eta-abstraction of definitions.
    Debug: [27] Final purging of unused definitions.
-   Debug: [28] Translating to core & HDL.
-   Debug: [29] Core.
-   Debug: Partially evaluating/reducing core IR. If this is taking too long, consider disabling with --rtl-opt=0.
+   Debug: [28] Translating to mantle & HDL.
+   Debug: [29] Mantle.
+   Debug: Partially evaluating/reducing mantle IR. If this is taking too long, consider disabling with --rtl-opt=0.
    ```
    (Passes 1-5 run once per module; the exact numbering of the later passes
    may shift as passes are added or removed, so check the `-v` output.)
@@ -69,7 +69,7 @@
    in brackets above indicate the current "pass", which are points in the
    compilation process for which IR can be dumped. Passes 1-4 are Haskell
    (HSE), passes 5 through second-to-last are RWCrust, and the final pass is
-   RWCore. The corresponding IR for a certain pass (or several passes) can be
+   Mantle. The corresponding IR for a certain pass (or several passes) can be
    dumped with `-d` flag, e.g., `rwc -d 1,3,4 myfile.hs > output.hs`. Note
    that if you add `-v` you'll also get the `show` output for the IR in
    addition to the `prettyPrint` output.

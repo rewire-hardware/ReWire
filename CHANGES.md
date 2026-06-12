@@ -24,13 +24,13 @@
   backend bug found by cosimulation: an arithmetic right shift nested in
   an unsigned expression context simulated as a logical shift; the shift
   is now wrapped in `$unsigned(...)` to isolate its signedness.
-* The Core interpreter can now evaluate externs with a user-supplied Haskell
+* The interpreter can now evaluate externs with a user-supplied Haskell
   model: the seventh argument of `rwPrimExtern` is now compiled like any other
   definition when it is a reference to a top-level definition whose reachable
   definitions are non-recursive, first-order, monomorphic, and synthesizable --
   the conventional self-referential idiom (`f = extern "f" f`) still means "no
-  model". The model is attached to the extern in the Core IR (a `model <defn>`
-  suffix in `.rwc` files), the interpreter calls it for unclocked externs, and
+  model". The model is attached to the extern in the IR (a `model <defn>`
+  declaration in `.rwc` files), the interpreter calls it for unclocked externs, and
   the Cryptol backend emits a call to it instead of an uninterpreted `parameter`.
   Implementations that look like real models but fail the usability checks are
   dropped with a warning, as are models for clocked externs (which are stateful,
@@ -46,12 +46,13 @@
   suite (`tests/warning/`): each test declares expected-warning substrings
   with `-- EXPECT-WARNING:` comments and is checked under default flags,
   `-Werror` (must fail), and `-w` (must be silent).
-* New Cryptol backend (`rwc --cryptol`): translates Core to a self-contained
-  Cryptol module -- one pure function per Core defn plus a `rw_device` stream
-  function modeling the whole device (a sequence of per-cycle inputs to a
-  sequence of per-cycle outputs), bit-for-bit equivalent to the Core
-  interpreter. Intended for verification (e.g., proving equivalence against a
-  hand-written Cryptol spec with SAW) and fast functional simulation.
+* New Cryptol backend (`rwc --cryptol`): translates the bit-level IR to a
+  self-contained Cryptol module -- one pure function per defn plus a
+  `rw_device` stream function modeling the whole device (a sequence of
+  per-cycle inputs to a sequence of per-cycle outputs), bit-for-bit
+  equivalent to the interpreter. Intended for verification (e.g., proving
+  equivalence against a hand-written Cryptol spec with SAW) and fast
+  functional simulation.
   Unclocked externs are declared as uninterpreted functions in a `parameter`
   block; clocked externs are rejected. The rwc-test cosimulation check gains a
   fourth leg (when `cryptol` is on the PATH) evaluating `rw_device` against
@@ -64,10 +65,10 @@
   outputs each cycle in the same YAML format `--interpret` produces, so a
   simulation trace can be compared directly against the interpreter. The
   rwc-test cosimulation check now uses it for a three-way agreement test
-  (iverilog/vvp vs. ghdl vs. the Core interpreter) with random stimulus.
+  (iverilog/vvp vs. ghdl vs. the interpreter) with random stimulus.
 * Fixed the Verilog backend's arithmetic right shift (`rwPrimRShiftArith`):
   `>>>` on an unsigned operand simulates as a logical shift, so the left
-  operand is now wrapped in `$signed(...)`, matching the Core interpreter's
+  operand is now wrapped in `$signed(...)`, matching the interpreter's
   (sign-extending) semantics.
 * Test coverage expansion across the suites: VHDL golden tests
   (`tests/regression/*.vhdl`, a CLI-flags smoke group exercising verbose
@@ -80,9 +81,9 @@
   disagreed with the compiler: `rwPrimBitSlice`/`rwPrimBitIndex` (bits are
   numbered LSB-at-0, Verilog style) and `rwPrimRNAnd`/`rwPrimRNor`/
   `rwPrimRXNor` (NOT-of-reduction rather than a pairwise fold).
-* The Core interpreter now supports the reduction primitives (`RAnd`,
-  `RNAnd`, `ROr`, `RNor`, `RXOr`, `RXNor`); as a consequence the Core
-  partial evaluator can now constant-fold them.
+* The interpreter now supports the reduction primitives (reduction
+  AND/NAND/OR/NOR/XOR/XNOR); as a consequence the partial evaluator can now
+  constant-fold them.
 
 ## 2.7 (2026-06)
 
