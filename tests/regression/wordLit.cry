@@ -21,39 +21,37 @@ rw__Pure_dispatch : [8] -> [17]
 rw__Pure_dispatch x0 = rw__LL_Pure_dispatch x0
 
 // $LL.Main.loop3
-rw__LL_Main_loop3 : [8] -> [17]
-rw__LL_Main_loop3 x0 = rw__LL_Main_loop2 x0
+rw__LL_Main_loop3 : [16] -> [17]
+rw__LL_Main_loop3 x0 = 0b1 # x0
+
+// Main.loop1
+rw_Main_loop1 : [8] -> [17]
+rw_Main_loop1 x0 = rw__LL_Main_loop x0
 
 // $LL.Main.loop2
 rw__LL_Main_loop2 : [8] -> [17]
-rw__LL_Main_loop2 x0 = rw__LL_Main_loop (0b0 # ((rw'resize`{16} x0) ^ 0x0001))
-
-// Main.loop
-rw_Main_loop : [8] -> [17]
-rw_Main_loop x0 = rw__LL_Main_loop3 x0
-
-// $LL.Main.loop1
-rw__LL_Main_loop1 : [16] -> [17]
-rw__LL_Main_loop1 x0 = 0b1 # x0
-
-// $LL.Main.loop
-rw__LL_Main_loop : [17] -> [17]
-rw__LL_Main_loop x0 = rw__LL_Main_loop1 (drop`{1} x0)
+rw__LL_Main_loop2 x0 = rw__LL_Main_loop1 (0b0 # ((rw'resize`{16} x0) ^ 0x0001))
 
 // $LL.Pure.dispatch
 rw__LL_Pure_dispatch : [8] -> [17]
-rw__LL_Pure_dispatch x0 = rw_Main_loop x0
+rw__LL_Pure_dispatch x0 = rw_Main_loop1 x0
+
+// $LL.Main.loop1
+rw__LL_Main_loop1 : [17] -> [17]
+rw__LL_Main_loop1 x0 = rw__LL_Main_loop3 (drop`{1} x0)
+
+// $LL.Main.loop
+rw__LL_Main_loop : [8] -> [17]
+rw__LL_Main_loop x0 = rw__LL_Main_loop2 x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [16]
-rw_step i = drop`{1} s2
+rw_step i = drop`{1} s1
   where
     s0 : [8]
     s0 = i
-    s1 : [8]
-    s1 = s0
-    s2 : [17]
-    s2 = rw__Pure_dispatch s1
+    s1 : [17]
+    s1 = rw__Pure_dispatch s0
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [8]

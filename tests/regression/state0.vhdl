@@ -13,20 +13,13 @@ package rw_helpers is
   function rw_and (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_or (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_xor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
-  function rw_xnor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_not (a : std_logic_vector) return std_logic_vector;
   function rw_shiftl (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_shiftr (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_ashiftr (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
-  function rw_land (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
-  function rw_lor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
-  function rw_lnot (a : std_logic_vector) return std_logic_vector;
   function rw_rand (a : std_logic_vector) return std_logic_vector;
-  function rw_rnand (a : std_logic_vector) return std_logic_vector;
   function rw_ror (a : std_logic_vector) return std_logic_vector;
-  function rw_rnor (a : std_logic_vector) return std_logic_vector;
   function rw_rxor (a : std_logic_vector) return std_logic_vector;
-  function rw_rxnor (a : std_logic_vector) return std_logic_vector;
   function rw_eq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_neq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_lt (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
@@ -106,11 +99,6 @@ package body rw_helpers is
   begin
     return rw_resize(a, n) xor rw_resize(b, n);
   end;
-  function rw_xnor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
-    constant n : natural := rw_max(a'length, b'length);
-  begin
-    return rw_resize(a, n) xnor rw_resize(b, n);
-  end;
   function rw_not (a : std_logic_vector) return std_logic_vector is
   begin
     return not a;
@@ -131,41 +119,17 @@ package body rw_helpers is
     if unsigned(b) >= a'length then sh := a'length; else sh := to_integer(unsigned(b)); end if;
     return std_logic_vector(shift_right(signed(a), sh));
   end;
-  function rw_land (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v(unsigned(a) /= 0 and unsigned(b) /= 0);
-  end;
-  function rw_lor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v(unsigned(a) /= 0 or unsigned(b) /= 0);
-  end;
-  function rw_lnot (a : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v(unsigned(a) = 0);
-  end;
   function rw_rand (a : std_logic_vector) return std_logic_vector is
   begin
     return rw_b2v((and a) = '1');
-  end;
-  function rw_rnand (a : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v((and a) /= '1');
   end;
   function rw_ror (a : std_logic_vector) return std_logic_vector is
   begin
     return rw_b2v((or a) = '1');
   end;
-  function rw_rnor (a : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v((or a) /= '1');
-  end;
   function rw_rxor (a : std_logic_vector) return std_logic_vector is
   begin
     return rw_b2v((xor a) = '1');
-  end;
-  function rw_rxnor (a : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v((xor a) /= '1');
   end;
   function rw_eq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
     constant n : natural := rw_max(a'length, b'length);
@@ -245,40 +209,22 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal \__resumption_tag\ : std_logic_vector (4 downto 0) := std_logic_vector'(B"10000");
+signal \__resumption_tag\ : std_logic_vector (4 downto 0) := std_logic_vector'(B"01000");
       signal \__resumption_tag_next\ : std_logic_vector (4 downto 0);
-      signal zin : std_logic_vector (7 downto 0);
-      signal zi0 : std_logic_vector (4 downto 0);
+      signal zi0 : std_logic_vector (2 downto 0);
       signal zi1 : std_logic_vector (2 downto 0);
-      signal zi2 : std_logic_vector (7 downto 0);
-      signal zi3 : std_logic_vector (2 downto 0);
-      signal zi4 : std_logic_vector (2 downto 0);
-      signal zi5 : std_logic_vector (7 downto 0);
-      signal zi6 : std_logic_vector (2 downto 0);
-      signal zi7 : std_logic_vector (2 downto 0);
-      signal zi8 : std_logic_vector (7 downto 0);
-      signal zi9 : std_logic_vector (2 downto 0);
       signal zres : std_logic_vector (8 downto 0);
 begin
-zin <= (\__resumption_tag\ & \__in0\);
-      zi0 <= zin(7 downto 3);
-      zi1 <= zin(2 downto 0);
-      zi2 <= (zi1 & zi0);
-      zi3 <= zi2(7 downto 5);
-      zi4 <= zi2(2 downto 0);
-      zi5 <= (zi1 & zi0);
-      zi6 <= zi5(7 downto 5);
-      zi7 <= zi5(2 downto 0);
-      zi8 <= (zi1 & zi0);
-      zi9 <= zi8(7 downto 5);
-      zres <= rw_cond(rw_eq(zi2(4 downto 3), std_logic_vector'(B"01")), (std_logic_vector'(B"1") & zi4 & std_logic_vector'(B"00000")), rw_cond(rw_eq(zi5(4 downto 3), std_logic_vector'(B"10")), (std_logic_vector'(B"000001") & zi7), (std_logic_vector'(B"000010") & zi9)));
+zi0 <= \__resumption_tag\(2 downto 0);
+      zi1 <= \__resumption_tag\(2 downto 0);
+      zres <= rw_cond(rw_eq(\__resumption_tag\(4 downto 3), std_logic_vector'(B"01")), (std_logic_vector'(B"000010") & zi0), rw_cond(rw_eq(\__resumption_tag\(4 downto 3), std_logic_vector'(B"10")), (std_logic_vector'(B"1") & zi1 & std_logic_vector'(B"00000")), (std_logic_vector'(B"000001") & \__in0\)));
       \__resumption_tag_next\ <= zres(4 downto 0);
       \__out0\ <= zres(8 downto 8);
       \__out1\ <= zres(7 downto 5);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then
-                  \__resumption_tag\ <= std_logic_vector'(B"10000");
+                  \__resumption_tag\ <= std_logic_vector'(B"01000");
             elsif rising_edge(clk(0)) then
                   \__resumption_tag\ <= \__resumption_tag_next\;
             end if;

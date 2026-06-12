@@ -4,21 +4,18 @@ extern mymod
       input x : [16]
       output out : [8]
 
-$LL.Main.loop3 : ([8]) -> [9]
-$LL.Main.loop3 $0 =
+$LL.Main.loop2 : ([8]) -> [9]
+$LL.Main.loop2 $0 =
       1'h1 # $0
 
-$LL.Main.loop : ([9]) -> [9]
-$LL.Main.loop $0 =
-      $LL.Main.loop3 $0[0 +: 8]
+$LL.Main.loop1 : ([9]) -> [9]
+$LL.Main.loop1 $0 =
+      $LL.Main.loop2 $0[0 +: 8]
 
 device top_level
       input __in0 : [16]
       output __out0 : [8]
       instance $x2 of mymod
-      let $in = __in0
-      let $h0 = $in
-      let $h1 = $h0
-      $x2.x := $h1
-      let $res = $LL.Main.loop (1'h0 # $x2.out)
+      $x2.x := __in0
+      let $res = $LL.Main.loop1 (1'h0 # $x2.out)
       __out0 := $res[0 +: 8]

@@ -280,7 +280,6 @@ selfGroup = \ case
 --              | Eq | Gt | GtEq | Lt | LtEq
 ----------------------------------------------
 --                Error | Extern
---              | SetRef | GetRef
 --              | Bind | Return
 --              | Signal | Lift | Extrude | Unfold
 --              | VecFromList | VecReplicate | VecReverse | VecSlice | VecRSlice

@@ -1,59 +1,54 @@
 $Pure.dispatch : ([5], [3]) -> [9]
 $Pure.dispatch $0 $1 =
-      let $t2 = $1 # $0 in
-      if eq $t2[3 +: 2] 2'h1 then $LL.Pure.dispatch1 $t2[5 +: 3] $t2[0 +: 3]
-            else let $t1 = $1 # $0 in
-            if eq $t1[3 +: 2] 2'h2 then $LL.Pure.dispatch3 $t1[5 +: 3] $t1[0 +: 3]
-                  else let $t0 = $1 # $0 in
-                  $LL.Pure.dispatch2 $t0[5 +: 3]
+      if eq $0[3 +: 2] 2'h1 then $LL.Pure.dispatch1 $1 $0[0 +: 3]
+            else if eq $0[3 +: 2] 2'h2 then $LL.Pure.dispatch2 $1 $0[0 +: 3] else $LL.Pure.dispatch4 $1
 
-Main.dev : ([3]) -> [9]
-Main.dev $0 =
-      $LL.Main.dev $0
-
-$LL.Pure.dispatch4 : ([3], [3]) -> [9]
-$LL.Pure.dispatch4 $0 $1 =
-      $LL.Main.dev1 $1 $0
-
-$LL.Main.dev3 : ([3]) -> [9]
-$LL.Main.dev3 $0 =
-      6'h2 # $0
+$LL.Pure.dispatch4 : ([3]) -> [9]
+$LL.Pure.dispatch4 $0 =
+      Main.dev1 $0
 
 $LL.Pure.dispatch3 : ([3], [3]) -> [9]
 $LL.Pure.dispatch3 $0 $1 =
-      $LL.Pure.dispatch4 $0 $1
+      $LL.Main.dev1 $1 $0
 
-$LL.Main.dev2 : ([3], [3]) -> [9]
-$LL.Main.dev2 $0 $1 =
-      1'h1 # $0 # 5'h0
+Main.dev1 : ([3]) -> [9]
+Main.dev1 $0 =
+      $LL.Main.dev2 $0
+
+$LL.Main.dev3 : ([3]) -> [9]
+$LL.Main.dev3 $0 =
+      6'h1 # $0
+
+$LL.Main.dev2 : ([3]) -> [9]
+$LL.Main.dev2 $0 =
+      $LL.Main.dev3 $0
 
 $LL.Main.dev1 : ([3], [3]) -> [9]
 $LL.Main.dev1 $0 $1 =
-      6'h1 # $0
+      6'h2 # $0
 
-$LL.Main.dev : ([3]) -> [9]
-$LL.Main.dev $0 =
-      $LL.Main.dev3 $0
-
-$LL.Pure.dispatch2 : ([3]) -> [9]
-$LL.Pure.dispatch2 $0 =
-      Main.dev $0
+$LL.Pure.dispatch2 : ([3], [3]) -> [9]
+$LL.Pure.dispatch2 $0 $1 =
+      $LL.Pure.dispatch $0 $1
 
 $LL.Pure.dispatch1 : ([3], [3]) -> [9]
 $LL.Pure.dispatch1 $0 $1 =
-      $LL.Pure.dispatch $0 $1
+      $LL.Pure.dispatch3 $0 $1
 
 $LL.Pure.dispatch : ([3], [3]) -> [9]
 $LL.Pure.dispatch $0 $1 =
-      $LL.Main.dev2 $1 $0
+      $LL.Main.dev $1 $0
+
+$LL.Main.dev : ([3], [3]) -> [9]
+$LL.Main.dev $0 $1 =
+      1'h1 # $0 # 5'h0
 
 device top_level
       input __in0 : [3]
       output __out0 : [1]
       output __out1 : [3]
-      register __resumption_tag : [5] init 5'h10
-      let $in = __resumption_tag # __in0
-      let $res = $Pure.dispatch $in[3 +: 5] $in[0 +: 3]
+      register __resumption_tag : [5] init 5'h8
+      let $res = $Pure.dispatch __resumption_tag __in0
       __out0 := $res[8 +: 1]
       __out1 := $res[5 +: 3]
       next __resumption_tag := $res[0 +: 5]

@@ -29,7 +29,7 @@ builtinUserQName :: [(Builtin,Text)]
 builtinUserQName = [
       -- | ReWire
       (Error, "ReWire.error"), (Extern, "ReWire.externWithSig"),
-      (SetRef, "ReWire.setRef"), (GetRef, "ReWire.getRef"), (NatVal, "ReWire.natVal"),
+      (NatVal, "ReWire.natVal"),
       (Put, "ReWire.put"), (Get, "ReWire.get"), (Signal, "ReWire.signal"),
       (Lift, "ReWire.lift"), (Extrude, "ReWire.extrude"), (Unfold, "ReWire.unfold"),
       (VecFromList,"ReWire.fromList"),      
@@ -62,7 +62,7 @@ builtinUserName :: [(Builtin,Text)]
 builtinUserName = [
       -- | ReWire
       (Error, "error"), (Extern, "externWithSig"),
-      (SetRef, "setRef"), (GetRef, "getRef"), (NatVal, "natVal"),
+      (NatVal, "natVal"),
       (Put, "put"), (Get, "get"), (Signal, "signal"),
       (Lift, "lift"), (Extrude, "extrude"), (Unfold, "unfold"),
       (VecFromList,"fromList"),      

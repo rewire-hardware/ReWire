@@ -2,46 +2,45 @@ $Pure.dispatch : ([128]) -> [65]
 $Pure.dispatch $1 =
       $LL.Pure.dispatch $1
 
-$LL.Main.compute4 : ([64], [64]) -> [64]
-$LL.Main.compute4 $0 $1 =
-      (let $t0 = $0[32 +: 32] in
-      $t0[0 +: 8] # $t0[8 +: 8] # $t0[16 +: 8] # $t0[24 +: 8]) # 8'h0 # $1[0 +: 24]
-
 Main.compute : ([128]) -> [64]
 Main.compute $0 =
       $LL.Main.compute $0
 
-$LL.Main.loop3 : ([64]) -> [65]
+$LL.Pure.dispatch : ([128]) -> [65]
+$LL.Pure.dispatch $0 =
+      Main.loop $0
+
+$LL.Main.compute4 : ([64], [64]) -> [64]
+$LL.Main.compute4 $0 $1 =
+      $LL.Main.compute3 $0 $1
+
+$LL.Main.loop3 : ([128]) -> [65]
 $LL.Main.loop3 $0 =
-      1'h1 # $0
+      $LL.Main.loop (1'h0 # Main.compute $0)
 
-$LL.Main.compute3 : ([64], [64]) -> [64]
-$LL.Main.compute3 $0 $1 =
-      $LL.Main.compute4 $0 $1
+Main.loop : ([128]) -> [65]
+Main.loop $0 =
+      $LL.Main.loop1 $0
 
-$LL.Main.loop2 : ([65]) -> [65]
+$LL.Main.loop2 : ([64]) -> [65]
 $LL.Main.loop2 $0 =
-      $LL.Main.loop3 $0[0 +: 64]
+      1'h1 # $0
 
 $LL.Main.loop1 : ([128]) -> [65]
 $LL.Main.loop1 $0 =
-      $LL.Main.loop $0
+      $LL.Main.loop3 $0
 
-Main.loop1 : ([128]) -> [65]
-Main.loop1 $0 =
-      $LL.Main.loop1 $0
+$LL.Main.compute3 : ([64], [64]) -> [64]
+$LL.Main.compute3 $0 $1 =
+      $0[32 +: 8] # $0[40 +: 8] # $0[48 +: 8] # $0[56 +: 8] # 8'h0 # $1[0 +: 24]
+
+$LL.Main.loop : ([65]) -> [65]
+$LL.Main.loop $0 =
+      $LL.Main.loop2 $0[0 +: 64]
 
 $LL.Main.compute : ([128]) -> [64]
 $LL.Main.compute $0 =
-      $LL.Main.compute3 $0[64 +: 64] $0[0 +: 64]
-
-$LL.Main.loop : ([128]) -> [65]
-$LL.Main.loop $0 =
-      $LL.Main.loop2 (1'h0 # Main.compute $0)
-
-$LL.Pure.dispatch : ([128]) -> [65]
-$LL.Pure.dispatch $0 =
-      Main.loop1 $0
+      $LL.Main.compute4 $0[64 +: 64] $0[0 +: 64]
 
 device top_level
       input __in0 : [64]

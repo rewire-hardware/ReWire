@@ -13,20 +13,13 @@ package rw_helpers is
   function rw_and (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_or (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_xor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
-  function rw_xnor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_not (a : std_logic_vector) return std_logic_vector;
   function rw_shiftl (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_shiftr (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_ashiftr (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
-  function rw_land (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
-  function rw_lor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
-  function rw_lnot (a : std_logic_vector) return std_logic_vector;
   function rw_rand (a : std_logic_vector) return std_logic_vector;
-  function rw_rnand (a : std_logic_vector) return std_logic_vector;
   function rw_ror (a : std_logic_vector) return std_logic_vector;
-  function rw_rnor (a : std_logic_vector) return std_logic_vector;
   function rw_rxor (a : std_logic_vector) return std_logic_vector;
-  function rw_rxnor (a : std_logic_vector) return std_logic_vector;
   function rw_eq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_neq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_lt (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
@@ -106,11 +99,6 @@ package body rw_helpers is
   begin
     return rw_resize(a, n) xor rw_resize(b, n);
   end;
-  function rw_xnor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
-    constant n : natural := rw_max(a'length, b'length);
-  begin
-    return rw_resize(a, n) xnor rw_resize(b, n);
-  end;
   function rw_not (a : std_logic_vector) return std_logic_vector is
   begin
     return not a;
@@ -131,41 +119,17 @@ package body rw_helpers is
     if unsigned(b) >= a'length then sh := a'length; else sh := to_integer(unsigned(b)); end if;
     return std_logic_vector(shift_right(signed(a), sh));
   end;
-  function rw_land (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v(unsigned(a) /= 0 and unsigned(b) /= 0);
-  end;
-  function rw_lor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v(unsigned(a) /= 0 or unsigned(b) /= 0);
-  end;
-  function rw_lnot (a : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v(unsigned(a) = 0);
-  end;
   function rw_rand (a : std_logic_vector) return std_logic_vector is
   begin
     return rw_b2v((and a) = '1');
-  end;
-  function rw_rnand (a : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v((and a) /= '1');
   end;
   function rw_ror (a : std_logic_vector) return std_logic_vector is
   begin
     return rw_b2v((or a) = '1');
   end;
-  function rw_rnor (a : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v((or a) /= '1');
-  end;
   function rw_rxor (a : std_logic_vector) return std_logic_vector is
   begin
     return rw_b2v((xor a) = '1');
-  end;
-  function rw_rxnor (a : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v((xor a) /= '1');
   end;
   function rw_eq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
     constant n : natural := rw_max(a'length, b'length);
@@ -243,20 +207,10 @@ port (\__in0\ : in std_logic_vector (63 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal zin : std_logic_vector (127 downto 0);
-      signal zi0 : std_logic_vector (63 downto 0);
-      signal zi1 : std_logic_vector (63 downto 0);
-      signal zi2 : std_logic_vector (31 downto 0);
-      signal zi3 : std_logic_vector (64 downto 0);
-      signal zi4 : std_logic_vector (63 downto 0);
+signal zi3 : std_logic_vector (63 downto 0);
       signal zres : std_logic_vector (64 downto 0);
 begin
-zin <= (\__in0\ & \__in1\);
-      zi0 <= zin(127 downto 64);
-      zi1 <= zin(63 downto 0);
-      zi2 <= zi0(63 downto 32);
-      zi3 <= (std_logic_vector'(B"0") & ((zi2(7 downto 0) & zi2(15 downto 8) & zi2(23 downto 16) & zi2(31 downto 24)) & std_logic_vector'(B"00000000") & zi1(23 downto 0)));
-      zi4 <= zi3(63 downto 0);
-      zres <= (std_logic_vector'(B"1") & zi4);
+zi3 <= (\__in0\(39 downto 32) & \__in0\(47 downto 40) & \__in0\(55 downto 48) & \__in0\(63 downto 56) & std_logic_vector'(B"00000000") & \__in1\(23 downto 0));
+      zres <= (std_logic_vector'(B"1") & zi3);
       \__out0\ <= zres(63 downto 0);
 end architecture;

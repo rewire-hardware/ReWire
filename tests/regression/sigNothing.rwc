@@ -1,7 +1,6 @@
 $Pure.dispatch : ([8], [8]) -> [17]
 $Pure.dispatch $0 $1 =
-      let $t0 = $1 # $0 in
-      $LL.Pure.dispatch $t0[8 +: 8] $t0[0 +: 8]
+      $LL.Pure.dispatch $1 $0
 
 Main.start' : ([8]) -> [17]
 Main.start' $0 =
@@ -24,8 +23,7 @@ device top_level
       output __out0 : [1]
       output __out1 : [8]
       register __st0 : [8] init 8'h0
-      let $in = __st0 # __in0
-      let $res = $Pure.dispatch $in[8 +: 8] $in[0 +: 8]
+      let $res = $Pure.dispatch __st0 __in0
       __out0 := $res[16 +: 1]
       __out1 := $res[8 +: 8]
       next __st0 := $res[0 +: 8]

@@ -1,60 +1,32 @@
 module top_level (input logic [1023:0] __in0,
   input logic [31:0] __in1,
   output logic [63:0] __out0);
-  logic [1055:0] zin;
-  logic [1023:0] zi0;
-  logic [31:0] zi1;
-  logic [1055:0] zi2;
-  logic [1023:0] zi3;
-  logic [31:0] zi4;
-  logic [511:0] zi5;
-  logic [7:0] zll_main_compute_out;
-  logic [511:0] zi6;
-  logic [7:0] zll_main_compute_outR1;
-  logic [511:0] zi7;
-  logic [7:0] zll_main_compute_outR2;
-  logic [511:0] zi8;
-  logic [7:0] zll_main_compute_outR3;
-  logic [511:0] zi9;
-  logic [7:0] zll_main_compute_outR4;
-  logic [511:0] zi10;
-  logic [7:0] zll_main_compute_outR5;
-  logic [511:0] zi11;
-  logic [7:0] zll_main_compute_outR6;
-  logic [511:0] zi12;
-  logic [7:0] zll_main_compute_outR7;
-  logic [64:0] zi13;
-  logic [63:0] zi14;
+  logic [7:0] zll_main_compute1_out;
+  logic [7:0] zll_main_compute1_outR1;
+  logic [7:0] zll_main_compute1_outR2;
+  logic [7:0] zll_main_compute1_outR3;
+  logic [7:0] zll_main_compute1_outR4;
+  logic [7:0] zll_main_compute1_outR5;
+  logic [7:0] zll_main_compute1_outR6;
+  logic [7:0] zll_main_compute1_outR7;
+  logic [64:0] zi5;
+  logic [63:0] zi6;
   logic [64:0] zres;
-  assign zin = {__in0, __in1};
-  assign zi0 = zin[1055:32];
-  assign zi1 = zin[31:0];
-  assign zi2 = {zi0, zi1};
-  assign zi3 = zi2[1055:32];
-  assign zi4 = zi2[31:0];
-  assign zi5 = zi3[1023:512];
-  ZLL_Main_compute  inst (zi4, zi5[511:448], zll_main_compute_out);
-  assign zi6 = zi3[1023:512];
-  ZLL_Main_compute  instR1 (zi4, zi6[447:384], zll_main_compute_outR1);
-  assign zi7 = zi3[1023:512];
-  ZLL_Main_compute  instR2 (zi4, zi7[383:320], zll_main_compute_outR2);
-  assign zi8 = zi3[1023:512];
-  ZLL_Main_compute  instR3 (zi4, zi8[319:256], zll_main_compute_outR3);
-  assign zi9 = zi3[1023:512];
-  ZLL_Main_compute  instR4 (zi4, zi9[255:192], zll_main_compute_outR4);
-  assign zi10 = zi3[1023:512];
-  ZLL_Main_compute  instR5 (zi4, zi10[191:128], zll_main_compute_outR5);
-  assign zi11 = zi3[1023:512];
-  ZLL_Main_compute  instR6 (zi4, zi11[127:64], zll_main_compute_outR6);
-  assign zi12 = zi3[1023:512];
-  ZLL_Main_compute  instR7 (zi4, zi12[63:0], zll_main_compute_outR7);
-  assign zi13 = {1'h0, {zll_main_compute_out, zll_main_compute_outR1, zll_main_compute_outR2, zll_main_compute_outR3, zll_main_compute_outR4, zll_main_compute_outR5, zll_main_compute_outR6, zll_main_compute_outR7}};
-  assign zi14 = zi13[63:0];
-  assign zres = {1'h1, zi14};
+  ZLL_Main_compute1  inst (__in1, __in0[1023:960], zll_main_compute1_out);
+  ZLL_Main_compute1  instR1 (__in1, __in0[959:896], zll_main_compute1_outR1);
+  ZLL_Main_compute1  instR2 (__in1, __in0[895:832], zll_main_compute1_outR2);
+  ZLL_Main_compute1  instR3 (__in1, __in0[831:768], zll_main_compute1_outR3);
+  ZLL_Main_compute1  instR4 (__in1, __in0[767:704], zll_main_compute1_outR4);
+  ZLL_Main_compute1  instR5 (__in1, __in0[703:640], zll_main_compute1_outR5);
+  ZLL_Main_compute1  instR6 (__in1, __in0[639:576], zll_main_compute1_outR6);
+  ZLL_Main_compute1  instR7 (__in1, __in0[575:512], zll_main_compute1_outR7);
+  assign zi5 = {1'h0, zll_main_compute1_out, zll_main_compute1_outR1, zll_main_compute1_outR2, zll_main_compute1_outR3, zll_main_compute1_outR4, zll_main_compute1_outR5, zll_main_compute1_outR6, zll_main_compute1_outR7};
+  assign zi6 = zi5[63:0];
+  assign zres = {1'h1, zi6};
   assign __out0 = zres[63:0];
 endmodule
 
-module ZLL_Main_compute (input logic [31:0] arg0,
+module ZLL_Main_compute1 (input logic [31:0] arg0,
   input logic [63:0] arg1,
   output logic [7:0] res);
   assign res = arg0[7:0] + arg1[39:32];

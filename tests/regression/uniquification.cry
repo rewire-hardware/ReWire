@@ -34,14 +34,12 @@ rw__LL_Main_start x0 = rw__LL_Main_start1 x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [2] -> [2]
-rw_step i = s2
+rw_step i = s1
   where
     s0 : [2]
     s0 = i
     s1 : [2]
-    s1 = s0
-    s2 : [2]
-    s2 = rw__Pure_dispatch s1
+    s1 = rw__Pure_dispatch s0
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [2]

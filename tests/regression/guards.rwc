@@ -2,21 +2,20 @@ $Pure.dispatch : ([1]) -> [1]
 $Pure.dispatch $1 =
       $LL.Pure.dispatch $1
 
+$LL.Pure.dispatch : ([1]) -> [1]
+$LL.Pure.dispatch $0 =
+      $LL.Main.start1 $0
+
 $LL.Main.start1 : ([1]) -> [1]
 $LL.Main.start1 $0 =
-      1'h1
+      $LL.Main.start $0
 
 $LL.Main.start : ([1]) -> [1]
 $LL.Main.start $0 =
-      $LL.Main.start1 $0
-
-$LL.Pure.dispatch : ([1]) -> [1]
-$LL.Pure.dispatch $0 =
-      $LL.Main.start $0
+      1'h1
 
 device top_level
       input __in0 : [1]
       output __out0 : [1]
-      let $in = __in0
-      let $res = $Pure.dispatch $in
+      let $res = $Pure.dispatch __in0
       __out0 := $res

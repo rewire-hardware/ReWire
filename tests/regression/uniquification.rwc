@@ -17,6 +17,5 @@ $LL.Main.start $0 =
 device top_level
       input __in0 : [2]
       output __out0 : [2]
-      let $in = __in0
-      let $res = $Pure.dispatch $in
+      let $res = $Pure.dispatch __in0
       __out0 := $res

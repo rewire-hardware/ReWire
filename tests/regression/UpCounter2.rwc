@@ -1,164 +1,160 @@
 $Pure.dispatch : ([8], [1]) -> [18]
 $Pure.dispatch $0 $1 =
-      let $t0 = $1 # $0 in
-      $LL.Pure.dispatch $t0[8 +: 1] $t0[0 +: 8]
+      $LL.Pure.dispatch $1 $0
 
-$LL.Main.go34 : ([8], [8]) -> [18]
-$LL.Main.go34 $0 $1 =
-      $LL.Main.go17 $0 $1
+$LL.Main.go34 : ([8]) -> [18]
+$LL.Main.go34 $0 =
+      $LL.Main.go32 $0
 
-$LL.Main.go33 : ([18]) -> [18]
-$LL.Main.go33 $0 =
-      $LL.Main.go14 $0[0 +: 8]
+$LL.Main.go33 : ([8], [8]) -> [18]
+$LL.Main.go33 $0 $1 =
+      2'h2 # $0 # $1
 
-$LL.Main.msbitW83 : ([8]) -> [8]
+$LL.Main.msbitW83 : ([1]) -> [1]
 $LL.Main.msbitW83 $0 =
+      $0
+
+$LL.Main.go32 : ([8]) -> [18]
+$LL.Main.go32 $0 =
+      $LL.Main.go3 ($LL.Main.go30 ($0 # $0))
+
+$LL.Main.go31 : ([8], [8]) -> [18]
+$LL.Main.go31 $0 $1 =
+      2'h0 # $0 # $1
+
+$LL.Main.go30 : ([16]) -> [18]
+$LL.Main.go30 $0 =
+      $LL.Main.go28 $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.msbitW82 : ([8]) -> [8]
+$LL.Main.msbitW82 $0 =
       zext 8 ($LL.Main.msbitW8 $0[7 +: 1])
+
+$LL.Main.go29 : ([8]) -> [18]
+$LL.Main.go29 $1 =
+      $LL.Main.go17 $1
+
+$LL.Main.go28 : ([8], [8]) -> [18]
+$LL.Main.go28 $0 $1 =
+      $LL.Main.go31 $0 $1
+
+$LL.Main.go26 : ([18]) -> [18]
+$LL.Main.go26 $0 =
+      $LL.Main.go7 $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.go25 : ([1], [8]) -> [18]
+$LL.Main.go25 $0 $1 =
+      if eq $0 1'h1 then $LL.Main.go34 $1
+            else $LL.Main.go $1
+
+$LL.Main.go24 : ([8]) -> [18]
+$LL.Main.go24 $0 =
+      $LL.Main.go29 $0
+
+$LL.Main.go23 : ([18]) -> [18]
+$LL.Main.go23 $0 =
+      $LL.Main.go22 $0[0 +: 8]
+
+$LL.Main.go22 : ([8]) -> [18]
+$LL.Main.go22 $1 =
+      $LL.Main.go11 $1
+
+$LL.Main.msbitW81 : ([8]) -> [8]
+$LL.Main.msbitW81 $0 =
+      $LL.Main.msbitW82 $0
+
+$LL.Main.go21 : ([8], [8]) -> [18]
+$LL.Main.go21 $0 $1 =
+      $LL.Main.go4 $0 $1
+
+$LL.Main.go20 : ([18]) -> [18]
+$LL.Main.go20 $0 =
+      $LL.Main.go10 $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.go18 : ([8]) -> [18]
+$LL.Main.go18 $0 =
+      $LL.Main.go20 ($LL.Main.go30 ($0 # $0))
+
+$LL.Main.go17 : ([8]) -> [18]
+$LL.Main.go17 $1 =
+      10'h100 # $1
 
 $LL.Main.rolW81 : ([8]) -> [8]
 $LL.Main.rolW81 $0 =
       or (shl $0 8'h1) (Main.msbitW8 $0)
 
-$LL.Main.go32 : ([8]) -> [18]
-$LL.Main.go32 $1 =
-      $LL.Main.go31 $1
-
-$LL.Main.go31 : ([8]) -> [18]
-$LL.Main.go31 $1 =
-      10'h100 # $1
-
-$LL.Main.rolW8 : ([8]) -> [8]
-$LL.Main.rolW8 $0 =
-      $LL.Main.rolW81 $0
-
-$LL.Main.go29 : ([18]) -> [18]
-$LL.Main.go29 $0 =
-      $LL.Main.go16 $0[8 +: 8] $0[0 +: 8]
-
-$LL.Main.go28 : ([16]) -> [18]
-$LL.Main.go28 $0 =
-      $LL.Main.go34 $0[8 +: 8] $0[0 +: 8]
-
-$LL.Main.go27 : ([8]) -> [18]
-$LL.Main.go27 $0 =
-      $LL.Main.go32 $0
-
-$LL.Main.go26 : ([8], [8]) -> [18]
-$LL.Main.go26 $0 $1 =
-      $LL.Main.go33 ($LL.Main.go27 (Main.incW8 $0))
-
-$LL.Main.go25 : ([8], [8]) -> [18]
-$LL.Main.go25 $0 $1 =
-      $LL.Main.go23 $0 $1
-
-$LL.Main.go23 : ([8], [8]) -> [18]
-$LL.Main.go23 $0 $1 =
-      $LL.Main.go33 ($LL.Main.go27 (Main.rolW8 $0))
-
-$LL.Main.go22 : ([8]) -> [18]
-$LL.Main.go22 $1 =
+$LL.Main.go15 : ([8]) -> [18]
+$LL.Main.go15 $1 =
       Main.go $1
 
 Main.rolW8 : ([8]) -> [8]
 Main.rolW8 $0 =
       $LL.Main.rolW8 $0
 
-$LL.Main.incW81 : ([8]) -> [8]
-$LL.Main.incW81 $0 =
-      add $0 8'h1
-
-$LL.Main.msbitW82 : ([8]) -> [8]
-$LL.Main.msbitW82 $0 =
-      $LL.Main.msbitW83 $0
-
-$LL.Main.go21 : ([18]) -> [18]
-$LL.Main.go21 $0 =
-      $LL.Main.go18 $0[8 +: 8] $0[0 +: 8]
-
 Main.incW8 : ([8]) -> [8]
 Main.incW8 $0 =
       $LL.Main.incW8 $0
 
-$LL.Main.go18 : ([8], [8]) -> [18]
-$LL.Main.go18 $0 $1 =
-      $LL.Main.go8 $0 $1
-
-$LL.Main.go17 : ([8], [8]) -> [18]
-$LL.Main.go17 $0 $1 =
-      2'h0 # $0 # $1
-
-$LL.Pure.dispatch : ([1], [8]) -> [18]
-$LL.Pure.dispatch $0 $1 =
-      $LL.Main.go6 $0 $1
-
-$LL.Main.go16 : ([8], [8]) -> [18]
-$LL.Main.go16 $0 $1 =
-      $LL.Main.go26 $0 $1
-
-$LL.Main.go15 : ([8]) -> [18]
-$LL.Main.go15 $0 =
-      $LL.Main.go12 $0
-
-$LL.Main.go14 : ([8]) -> [18]
-$LL.Main.go14 $1 =
-      $LL.Main.go11 $1
-
-$LL.Main.go12 : ([8]) -> [18]
-$LL.Main.go12 $0 =
-      $LL.Main.go10 ($LL.Main.go28 ($0 # $0))
-
 $LL.Main.go11 : ([8]) -> [18]
 $LL.Main.go11 $1 =
-      $LL.Main.go22 $1
+      $LL.Main.go15 $1
 
-$LL.Main.go10 : ([18]) -> [18]
-$LL.Main.go10 $0 =
-      $LL.Main.go25 $0[8 +: 8] $0[0 +: 8]
+$LL.Main.incW81 : ([8]) -> [8]
+$LL.Main.incW81 $0 =
+      add $0 8'h1
 
-$LL.Main.msbitW81 : ([1]) -> [1]
-$LL.Main.msbitW81 $0 =
-      $0
+$LL.Main.go10 : ([8], [8]) -> [18]
+$LL.Main.go10 $0 $1 =
+      $LL.Main.go8 $0 $1
 
 $LL.Main.go8 : ([8], [8]) -> [18]
 $LL.Main.go8 $0 $1 =
-      2'h2 # $0 # $1
+      $LL.Main.go23 ($LL.Main.go24 (Main.incW8 $0))
+
+$LL.Main.go7 : ([8], [8]) -> [18]
+$LL.Main.go7 $0 $1 =
+      $LL.Main.go33 $0 $1
+
+Main.msbitW8 : ([8]) -> [8]
+Main.msbitW8 $0 =
+      $LL.Main.msbitW81 $0
+
+$LL.Main.go4 : ([8], [8]) -> [18]
+$LL.Main.go4 $0 $1 =
+      $LL.Main.go23 ($LL.Main.go24 (Main.rolW8 $0))
 
 $LL.Main.incW8 : ([8]) -> [8]
 $LL.Main.incW8 $0 =
       $LL.Main.incW81 $0
 
-Main.msbitW8 : ([8]) -> [8]
-Main.msbitW8 $0 =
-      $LL.Main.msbitW82 $0
+$LL.Pure.dispatch : ([1], [8]) -> [18]
+$LL.Pure.dispatch $0 $1 =
+      $LL.Main.go25 $0 $1
 
-$LL.Main.msbitW8 : ([1]) -> [1]
-$LL.Main.msbitW8 $0 =
-      $LL.Main.msbitW81 $0
+$LL.Main.rolW8 : ([8]) -> [8]
+$LL.Main.rolW8 $0 =
+      $LL.Main.rolW81 $0
 
-$LL.Main.go6 : ([1], [8]) -> [18]
-$LL.Main.go6 $0 $1 =
-      let $t1 = $1 # $0 in
-      if eq $t1[0 +: 1] 1'h1 then $LL.Main.go15 $t1[1 +: 8]
-            else let $t0 = $1 # $0 in
-            $LL.Main.go1 $t0[1 +: 8]
-
-$LL.Main.go1 : ([8]) -> [18]
-$LL.Main.go1 $0 =
-      $LL.Main.go $0
+$LL.Main.go3 : ([18]) -> [18]
+$LL.Main.go3 $0 =
+      $LL.Main.go21 $0[8 +: 8] $0[0 +: 8]
 
 Main.go : ([8]) -> [18]
 Main.go $0 =
-      $LL.Main.go21 ($LL.Main.go28 ($0 # $0))
+      $LL.Main.go26 ($LL.Main.go30 ($0 # $0))
+
+$LL.Main.msbitW8 : ([1]) -> [1]
+$LL.Main.msbitW8 $0 =
+      $LL.Main.msbitW83 $0
 
 $LL.Main.go : ([8]) -> [18]
 $LL.Main.go $0 =
-      $LL.Main.go29 ($LL.Main.go28 ($0 # $0))
+      $LL.Main.go18 $0
 
 device top_level
       input __in0 : [1]
       output __out0 : [8]
       register __st0 : [8] init 8'h0
-      let $in = __st0 # __in0
-      let $res = $Pure.dispatch $in[1 +: 8] $in[0 +: 1]
+      let $res = $Pure.dispatch __st0 __in0
       __out0 := $res[8 +: 8]
       next __st0 := $res[0 +: 8]

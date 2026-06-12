@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ConstraintKinds #-}
 module RWC.Primitives
-      ( Identity, ReacT, A_, R_, StateT, Vec, Finite, PuRe, Ref (..), Proxy (..)
+      ( Identity, ReacT, A_, R_, StateT, Vec, Finite, PuRe, Proxy (..)
       , rwPrimAdd
       , rwPrimAnd
       , rwPrimBind
@@ -17,7 +17,6 @@ module RWC.Primitives
       , rwPrimExtern
       , rwPrimExtrude
       , rwPrimGet
-      , rwPrimGetRef
       , rwPrimGt
       , rwPrimGtEq
       , rwPrimLAnd
@@ -45,7 +44,6 @@ module RWC.Primitives
       , rwPrimRXOr
       , rwPrimResize
       , rwPrimReturn
-      , rwPrimSetRef
       , rwPrimSignal
       , rwPrimSignextend
       , rwPrimSub
@@ -117,7 +115,6 @@ type Finite     = F.Finite
 data R_ -- Ctors generated during program build.
 data A_ -- Ctors generated during program build.
 data Proxy (n :: Nat) = Proxy
-data Ref a = Ref String
 data PuRe s o = Done (A_, s) | Pause (o, (R_, s))
 
 -- Definitions in this file are for ghc compat and ignored by rwc.
@@ -136,12 +133,6 @@ rwPrimExtern :: [(String, Integer)] -- ^ Module parameters (name and integer lit
              -> String              -- ^ Instance name to use in generated Verilog.
              -> a
 rwPrimExtern _ _ _ _ _ _ f _ = f
-
-rwPrimSetRef :: Ref a -> a -> b -> b
-rwPrimSetRef _ _ b = b
-
-rwPrimGetRef :: Ref a -> a
-rwPrimGetRef = GHC.error "Prim: get reference"
 
 rwPrimBind :: GHC.Monad m => m a -> (a -> m b) -> m b
 rwPrimBind = (GHC.>>=)

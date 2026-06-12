@@ -4,43 +4,42 @@ $Pure.dispatch $1 =
 
 Main.compute : ([8]) -> [8]
 Main.compute $0 =
-      $LL.Main.compute1 $0
+      $LL.Main.compute $0
 
 $LL.Main.loop3 : ([8]) -> [9]
 $LL.Main.loop3 $0 =
-      $LL.Main.loop (1'h0 # Main.compute $0)
+      1'h1 # $0
+
+Main.loop1 : ([8]) -> [9]
+Main.loop1 $0 =
+      $LL.Main.loop1 $0
+
+$LL.Main.compute1 : ([8]) -> [8]
+$LL.Main.compute1 $0 =
+      umod (udiv (mul (pow (add $0 8'h1) 8'h2) (sub $0 8'h2)) 8'h3) (add $0 8'h1)
+
+$LL.Main.loop2 : ([9]) -> [9]
+$LL.Main.loop2 $0 =
+      $LL.Main.loop3 $0[0 +: 8]
+
+$LL.Main.compute : ([8]) -> [8]
+$LL.Main.compute $0 =
+      $LL.Main.compute1 $0
+
+$LL.Main.loop1 : ([8]) -> [9]
+$LL.Main.loop1 $0 =
+      $LL.Main.loop $0
 
 $LL.Pure.dispatch : ([8]) -> [9]
 $LL.Pure.dispatch $0 =
       Main.loop1 $0
 
-$LL.Main.loop2 : ([8]) -> [9]
-$LL.Main.loop2 $0 =
-      $LL.Main.loop3 $0
-
-$LL.Main.loop1 : ([8]) -> [9]
-$LL.Main.loop1 $0 =
-      1'h1 # $0
-
-$LL.Main.compute1 : ([8]) -> [8]
-$LL.Main.compute1 $0 =
-      $LL.Main.compute $0
-
-Main.loop1 : ([8]) -> [9]
-Main.loop1 $0 =
-      $LL.Main.loop2 $0
-
-$LL.Main.loop : ([9]) -> [9]
+$LL.Main.loop : ([8]) -> [9]
 $LL.Main.loop $0 =
-      $LL.Main.loop1 $0[0 +: 8]
-
-$LL.Main.compute : ([8]) -> [8]
-$LL.Main.compute $0 =
-      umod (udiv (mul (pow (add $0 8'h1) 8'h2) (sub $0 8'h2)) 8'h3) (add $0 8'h1)
+      $LL.Main.loop2 (1'h0 # Main.compute $0)
 
 device top_level
       input __in0 : [8]
       output __out0 : [8]
-      let $in = __in0
-      let $res = $Pure.dispatch $in
+      let $res = $Pure.dispatch __in0
       __out0 := $res[0 +: 8]

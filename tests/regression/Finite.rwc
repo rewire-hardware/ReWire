@@ -2,29 +2,28 @@ $Pure.dispatch : ([7]) -> [7]
 $Pure.dispatch $1 =
       $LL.Pure.dispatch $1
 
-$LL.Pure.dispatch : ([7]) -> [7]
-$LL.Pure.dispatch $0 =
-      $LL.Main.dev $0
-
-Main.dev1 : ([7]) -> [7]
-Main.dev1 $0 =
-      $LL.Main.dev2 $0
-
 $LL.Main.dev2 : ([7]) -> [7]
 $LL.Main.dev2 $0 =
-      $LL.Main.dev1 $0
+      $0
 
 $LL.Main.dev1 : ([7]) -> [7]
 $LL.Main.dev1 $0 =
-      $0
+      Main.dev (umod (add $0 7'h1) 7'h64)
+
+Main.dev : ([7]) -> [7]
+Main.dev $0 =
+      $LL.Main.dev $0
+
+$LL.Pure.dispatch : ([7]) -> [7]
+$LL.Pure.dispatch $0 =
+      $LL.Main.dev1 $0
 
 $LL.Main.dev : ([7]) -> [7]
 $LL.Main.dev $0 =
-      Main.dev1 (umod (add $0 7'h1) 7'h64)
+      $LL.Main.dev2 $0
 
 device top_level
       input __in0 : [7]
       output __out0 : [7]
-      let $in = __in0
-      let $res = $Pure.dispatch $in
+      let $res = $Pure.dispatch __in0
       __out0 := $res

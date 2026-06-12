@@ -21,152 +21,152 @@ rw__Pure_dispatch : [128] -> [129]
 rw__Pure_dispatch x0 = rw__LL_Pure_dispatch x0
 
 // $LL.Main.compute29
-rw__LL_Main_compute29 : [56] -> [8] -> [8] -> [56] -> [128]
-rw__LL_Main_compute29 x0 x1 x2 x3 = rw__LL_Main_compute24 x0 x1 x2 x3
+rw__LL_Main_compute29 : [64] -> [8]
+rw__LL_Main_compute29 x0 = take`{8} x0
 
 // $LL.Main.compute28
-rw__LL_Main_compute28 : [64] -> [8]
-rw__LL_Main_compute28 x0 = rw__LL_Main_compute16 x0
+rw__LL_Main_compute28 : [64] -> [64] -> [128]
+rw__LL_Main_compute28 x0 x1 = rw__LL_Main_compute20 x0 x1
+
+// $LL.Main.compute27
+rw__LL_Main_compute27 : [64] -> [8] -> [56] -> [128]
+rw__LL_Main_compute27 x0 x1 x2 = rw__LL_Main_compute6 x0 x2 x1 (rw__LL_Main_compute12 x0)
+
+// $LL.Main.compute26
+rw__LL_Main_compute26 : [64] -> [64] -> [8] -> [128]
+rw__LL_Main_compute26 x0 x1 x2 = rw__LL_Main_compute3 x0 x1 x2
 
 // Main.compute
 rw_Main_compute : [128] -> [128]
-rw_Main_compute x0 = rw__LL_Main_compute12 x0
-
-// $LL.Main.loop3
-rw__LL_Main_loop3 : [129] -> [129]
-rw__LL_Main_loop3 x0 = rw__LL_Main_loop (drop`{1} x0)
-
-// $LL.Main.compute27
-rw__LL_Main_compute27 : [64] -> [8]
-rw__LL_Main_compute27 x0 = rw__LL_Main_compute6 x0
-
-// $LL.Main.compute26
-rw__LL_Main_compute26 : [56] -> [8] -> [64]
-rw__LL_Main_compute26 x0 x1 = rw__LL_Main_compute7 x0 x1
+rw_Main_compute x0 = rw__LL_Main_compute21 x0
 
 // $LL.Main.compute25
-rw__LL_Main_compute25 : [64] -> [56] -> [8] -> [8] -> [128]
+rw__LL_Main_compute25 : [8] -> [56] -> [8] -> [56] -> [128]
 rw__LL_Main_compute25 x0 x1 x2 x3 = rw__LL_Main_compute11 x0 x1 x2 x3
 
-// $LL.Pure.dispatch
-rw__LL_Pure_dispatch : [128] -> [129]
-rw__LL_Pure_dispatch x0 = rw_Main_loop1 x0
-
 // $LL.Main.compute24
-rw__LL_Main_compute24 : [56] -> [8] -> [8] -> [56] -> [128]
-rw__LL_Main_compute24 x0 x1 x2 x3 = (rw__LL_Main_compute10 x0 x2) # (rw__LL_Main_compute2 x1 x3)
+rw__LL_Main_compute24 : [64] -> [8] -> [56] -> [128]
+rw__LL_Main_compute24 x0 x1 x2 = rw__LL_Main_compute27 x0 x1 x2
 
 // $LL.Main.compute23
-rw__LL_Main_compute23 : [64] -> [56] -> [8] -> [8] -> [128]
-rw__LL_Main_compute23 x0 x1 x2 x3 = rw__LL_Main_compute25 x0 x1 x2 x3
+rw__LL_Main_compute23 : [56] -> [8] -> [64]
+rw__LL_Main_compute23 x0 x1 = rw__LL_Main_compute10 x0 x1
 
 // $LL.Main.compute22
-rw__LL_Main_compute22 : [64] -> [8] -> [56] -> [128]
-rw__LL_Main_compute22 x0 x1 x2 = rw__LL_Main_compute4 x0 x1 x2
+rw__LL_Main_compute22 : [8] -> [56] -> [64]
+rw__LL_Main_compute22 x0 x1 = x0 # x1
 
 // $LL.Main.compute21
-rw__LL_Main_compute21 : [64] -> [3]
-rw__LL_Main_compute21 x0 = rw__LL_Main_compute x0
+rw__LL_Main_compute21 : [128] -> [128]
+rw__LL_Main_compute21 x0 = rw__LL_Main_compute28 (take`{64} x0) (drop`{64} x0)
 
 // $LL.Main.compute20
-rw__LL_Main_compute20 : [64] -> [64] -> [8] -> [128]
-rw__LL_Main_compute20 x0 x1 x2 = rw__LL_Main_compute8 x0 x1 x2
-
-// Main.loop1
-rw_Main_loop1 : [128] -> [129]
-rw_Main_loop1 x0 = rw__LL_Main_loop2 x0
+rw__LL_Main_compute20 : [64] -> [64] -> [128]
+rw__LL_Main_compute20 x0 x1 = rw__LL_Main_compute26 x1 x0 (rw__LL_Main_compute16 x0)
 
 // $LL.Main.compute19
-rw__LL_Main_compute19 : [56] -> [8] -> [64]
-rw__LL_Main_compute19 x0 x1 = rw__LL_Main_compute15 (x0 # x1)
+rw__LL_Main_compute19 : [64] -> [64]
+rw__LL_Main_compute19 x0 = rw__LL_Main_compute22 (take`{8} x0) (drop`{8} x0)
 
 // $LL.Main.compute18
-rw__LL_Main_compute18 : [56] -> [8] -> [8] -> [56] -> [128]
-rw__LL_Main_compute18 x0 x1 x2 x3 = rw__LL_Main_compute29 x0 x1 x2 x3
+rw__LL_Main_compute18 : [64] -> [56] -> [8] -> [8] -> [128]
+rw__LL_Main_compute18 x0 x1 x2 x3 = rw__LL_Main_compute7 x0 x1 x2 x3
 
 // $LL.Main.compute17
-rw__LL_Main_compute17 : [64] -> [64]
-rw__LL_Main_compute17 x0 = rw__LL_Main_compute5 (take`{8} x0) (drop`{8} x0)
+rw__LL_Main_compute17 : [8] -> [56] -> [64]
+rw__LL_Main_compute17 x0 x1 = rw__LL_Main_compute19 (x0 # x1)
 
 // $LL.Main.compute16
 rw__LL_Main_compute16 : [64] -> [8]
-rw__LL_Main_compute16 x0 = rw'resize`{8} (x0 >> (((0x00000000000000000000000000000008 - (rw'resize`{128} (rw__LL_Main_compute21 x0))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000008))
+rw__LL_Main_compute16 x0 = rw__LL_Main_compute29 x0
+
+// Main.loop
+rw_Main_loop : [128] -> [129]
+rw_Main_loop x0 = rw__LL_Main_loop3 x0
 
 // $LL.Main.compute15
-rw__LL_Main_compute15 : [64] -> [64]
-rw__LL_Main_compute15 x0 = rw__LL_Main_compute26 (take`{56} x0) (drop`{56} x0)
+rw__LL_Main_compute15 : [64] -> [3]
+rw__LL_Main_compute15 x0 = rw__LL_Main_compute9 x0
 
 // $LL.Main.compute14
 rw__LL_Main_compute14 : [64] -> [8] -> [56] -> [128]
-rw__LL_Main_compute14 x0 x1 x2 = rw__LL_Main_compute22 x0 x1 x2
+rw__LL_Main_compute14 x0 x1 x2 = rw__LL_Main_compute24 x0 x1 x2
 
 // $LL.Main.compute13
-rw__LL_Main_compute13 : [64] -> [64] -> [8] -> [128]
-rw__LL_Main_compute13 x0 x1 x2 = rw__LL_Main_compute14 x0 x2 (drop`{8} x1)
+rw__LL_Main_compute13 : [64] -> [64]
+rw__LL_Main_compute13 x0 = rw__LL_Main_compute23 (take`{56} x0) (drop`{56} x0)
+
+// $LL.Main.loop3
+rw__LL_Main_loop3 : [128] -> [129]
+rw__LL_Main_loop3 x0 = rw__LL_Main_loop1 x0
 
 // $LL.Main.compute12
-rw__LL_Main_compute12 : [128] -> [128]
-rw__LL_Main_compute12 x0 = rw__LL_Main_compute9 (take`{64} x0) (drop`{64} x0)
+rw__LL_Main_compute12 : [64] -> [8]
+rw__LL_Main_compute12 x0 = rw__LL_Main_compute8 x0
 
 // $LL.Main.compute11
-rw__LL_Main_compute11 : [64] -> [56] -> [8] -> [8] -> [128]
-rw__LL_Main_compute11 x0 x1 x2 x3 = rw__LL_Main_compute18 x1 x2 x3 (take`{56} x0)
+rw__LL_Main_compute11 : [8] -> [56] -> [8] -> [56] -> [128]
+rw__LL_Main_compute11 x0 x1 x2 x3 = (rw__LL_Main_compute x1 x0) # (rw__LL_Main_compute1 x2 x3)
 
 // $LL.Main.compute10
 rw__LL_Main_compute10 : [56] -> [8] -> [64]
-rw__LL_Main_compute10 x0 x1 = rw__LL_Main_compute19 x0 x1
+rw__LL_Main_compute10 x0 x1 = x0 # x1
 
 // $LL.Main.compute9
-rw__LL_Main_compute9 : [64] -> [64] -> [128]
-rw__LL_Main_compute9 x0 x1 = rw__LL_Main_compute3 x0 x1
+rw__LL_Main_compute9 : [64] -> [3]
+rw__LL_Main_compute9 x0 = 0b111
+
+// $LL.Main.compute8
+rw__LL_Main_compute8 : [64] -> [8]
+rw__LL_Main_compute8 x0 = rw'resize`{8} (x0 >> (((0x00000000000000000000000000000008 - (rw'resize`{128} (rw__LL_Main_compute15 x0))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000008))
+
+// $LL.Main.compute7
+rw__LL_Main_compute7 : [64] -> [56] -> [8] -> [8] -> [128]
+rw__LL_Main_compute7 x0 x1 x2 x3 = rw__LL_Main_compute5 x3 x1 x2 (take`{56} x0)
+
+// $LL.Main.compute6
+rw__LL_Main_compute6 : [64] -> [56] -> [8] -> [8] -> [128]
+rw__LL_Main_compute6 x0 x1 x2 x3 = rw__LL_Main_compute18 x0 x1 x2 x3
+
+// $LL.Pure.dispatch
+rw__LL_Pure_dispatch : [128] -> [129]
+rw__LL_Pure_dispatch x0 = rw_Main_loop x0
 
 // $LL.Main.loop2
 rw__LL_Main_loop2 : [128] -> [129]
-rw__LL_Main_loop2 x0 = rw__LL_Main_loop1 x0
-
-// $LL.Main.compute8
-rw__LL_Main_compute8 : [64] -> [64] -> [8] -> [128]
-rw__LL_Main_compute8 x0 x1 x2 = rw__LL_Main_compute13 x0 x1 x2
-
-// $LL.Main.compute7
-rw__LL_Main_compute7 : [56] -> [8] -> [64]
-rw__LL_Main_compute7 x0 x1 = x0 # x1
-
-// $LL.Main.compute6
-rw__LL_Main_compute6 : [64] -> [8]
-rw__LL_Main_compute6 x0 = take`{8} x0
-
-// $LL.Main.compute5
-rw__LL_Main_compute5 : [8] -> [56] -> [64]
-rw__LL_Main_compute5 x0 x1 = x0 # x1
-
-// $LL.Main.compute4
-rw__LL_Main_compute4 : [64] -> [8] -> [56] -> [128]
-rw__LL_Main_compute4 x0 x1 x2 = rw__LL_Main_compute23 x0 x2 x1 (rw__LL_Main_compute28 x0)
-
-// $LL.Main.compute3
-rw__LL_Main_compute3 : [64] -> [64] -> [128]
-rw__LL_Main_compute3 x0 x1 = rw__LL_Main_compute20 x1 x0 (rw__LL_Main_compute27 x0)
-
-// $LL.Main.compute2
-rw__LL_Main_compute2 : [8] -> [56] -> [64]
-rw__LL_Main_compute2 x0 x1 = rw__LL_Main_compute1 x0 x1
-
-// $LL.Main.compute1
-rw__LL_Main_compute1 : [8] -> [56] -> [64]
-rw__LL_Main_compute1 x0 x1 = rw__LL_Main_compute17 (x0 # x1)
-
-// $LL.Main.compute
-rw__LL_Main_compute : [64] -> [3]
-rw__LL_Main_compute x0 = 0b111
+rw__LL_Main_loop2 x0 = 0b1 # x0
 
 // $LL.Main.loop1
 rw__LL_Main_loop1 : [128] -> [129]
-rw__LL_Main_loop1 x0 = rw__LL_Main_loop3 (0b0 # (rw_Main_compute x0))
+rw__LL_Main_loop1 x0 = rw__LL_Main_loop (0b0 # (rw_Main_compute x0))
+
+// $LL.Main.compute5
+rw__LL_Main_compute5 : [8] -> [56] -> [8] -> [56] -> [128]
+rw__LL_Main_compute5 x0 x1 x2 x3 = rw__LL_Main_compute25 x0 x1 x2 x3
+
+// $LL.Main.compute4
+rw__LL_Main_compute4 : [56] -> [8] -> [64]
+rw__LL_Main_compute4 x0 x1 = rw__LL_Main_compute13 (x0 # x1)
+
+// $LL.Main.compute3
+rw__LL_Main_compute3 : [64] -> [64] -> [8] -> [128]
+rw__LL_Main_compute3 x0 x1 x2 = rw__LL_Main_compute2 x0 x1 x2
+
+// $LL.Main.compute2
+rw__LL_Main_compute2 : [64] -> [64] -> [8] -> [128]
+rw__LL_Main_compute2 x0 x1 x2 = rw__LL_Main_compute14 x0 x2 (drop`{8} x1)
+
+// $LL.Main.compute1
+rw__LL_Main_compute1 : [8] -> [56] -> [64]
+rw__LL_Main_compute1 x0 x1 = rw__LL_Main_compute17 x0 x1
+
+// $LL.Main.compute
+rw__LL_Main_compute : [56] -> [8] -> [64]
+rw__LL_Main_compute x0 x1 = rw__LL_Main_compute4 x0 x1
 
 // $LL.Main.loop
-rw__LL_Main_loop : [128] -> [129]
-rw__LL_Main_loop x0 = 0b1 # x0
+rw__LL_Main_loop : [129] -> [129]
+rw__LL_Main_loop x0 = rw__LL_Main_loop2 (drop`{1} x0)
 
 // Per-cycle step: outputs # next register values.
 rw_step : [128] -> [128]

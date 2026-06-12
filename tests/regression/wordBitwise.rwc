@@ -4,27 +4,11 @@ $Pure.dispatch $1 =
 
 Main.compute : ([24]) -> [8]
 Main.compute $0 =
-      $LL.Main.compute1 $0
-
-$LL.Main.compute3 : ([8], [8], [8]) -> [8]
-$LL.Main.compute3 $0 $1 $2 =
-      $LL.Main.compute $1 $0 $2
-
-$LL.Pure.dispatch : ([24]) -> [9]
-$LL.Pure.dispatch $0 =
-      Main.loop $0
+      $LL.Main.compute $0
 
 $LL.Main.loop3 : ([9]) -> [9]
 $LL.Main.loop3 $0 =
       $LL.Main.loop1 $0[0 +: 8]
-
-$LL.Main.compute2 : ([8], [8], [8]) -> [8]
-$LL.Main.compute2 $0 $1 $2 =
-      $LL.Main.compute3 $0 $1 $2
-
-$LL.Main.compute1 : ([24]) -> [8]
-$LL.Main.compute1 $0 =
-      $LL.Main.compute2 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
 
 $LL.Main.loop2 : ([24]) -> [9]
 $LL.Main.loop2 $0 =
@@ -34,6 +18,18 @@ Main.loop : ([24]) -> [9]
 Main.loop $0 =
       $LL.Main.loop2 $0
 
+$LL.Main.compute3 : ([8], [8], [8]) -> [8]
+$LL.Main.compute3 $0 $1 $2 =
+      or (xor (and $0 $1) $2) (not (xor (and (not $0) (not $1)) $2))
+
+$LL.Main.compute2 : ([8], [8], [8]) -> [8]
+$LL.Main.compute2 $0 $1 $2 =
+      $LL.Main.compute3 $0 $1 $2
+
+$LL.Main.compute1 : ([8], [8], [8]) -> [8]
+$LL.Main.compute1 $0 $1 $2 =
+      $LL.Main.compute2 $0 $1 $2
+
 $LL.Main.loop1 : ([8]) -> [9]
 $LL.Main.loop1 $0 =
       1'h1 # $0
@@ -42,9 +38,13 @@ $LL.Main.loop : ([24]) -> [9]
 $LL.Main.loop $0 =
       $LL.Main.loop3 (1'h0 # Main.compute $0)
 
-$LL.Main.compute : ([8], [8], [8]) -> [8]
-$LL.Main.compute $0 $1 $2 =
-      or (xor (and $1 $0) $2) (not (xor (and (not $1) (not $0)) $2))
+$LL.Main.compute : ([24]) -> [8]
+$LL.Main.compute $0 =
+      $LL.Main.compute1 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
+
+$LL.Pure.dispatch : ([24]) -> [9]
+$LL.Pure.dispatch $0 =
+      Main.loop $0
 
 device top_level
       input __in0 : [8]

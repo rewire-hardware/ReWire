@@ -26,35 +26,43 @@ rw__LL_Main_myRotr5 x0 x1 = rw__LL_Main_myRotr3 x0 x1
 
 // $LL.Main.myArithRotr5
 rw__LL_Main_myArithRotr5 : [8] -> [8] -> [8]
-rw__LL_Main_myArithRotr5 x0 x1 = (x0 << (0x08 - x1)) || (x0 >>$ x1)
-
-// Main.myArithRotr
-rw_Main_myArithRotr : [8] -> [8]
-rw_Main_myArithRotr x0 = rw__LL_Main_myArithRotr1 (x0 # 0x05)
-
-// $LL.Main.myArithRotr4
-rw__LL_Main_myArithRotr4 : [8] -> [8] -> [8]
-rw__LL_Main_myArithRotr4 x0 x1 = rw__LL_Main_myArithRotr5 x0 x1
-
-// Main.myRotr
-rw_Main_myRotr : [8] -> [8]
-rw_Main_myRotr x0 = rw__LL_Main_myRotr2 (x0 # 0x03)
-
-// $LL.Main.myArithRotr3
-rw__LL_Main_myArithRotr3 : [8] -> [8] -> [8]
-rw__LL_Main_myArithRotr3 x0 x1 = rw__LL_Main_myArithRotr2 x0 (if 0x08 == zero then x1 else (x1 % 0x08))
+rw__LL_Main_myArithRotr5 x0 x1 = rw__LL_Main_myArithRotr1 x0 x1
 
 // $LL.Pure.dispatch
 rw__LL_Pure_dispatch : [8] -> [9]
 rw__LL_Pure_dispatch x0 = rw_Main_loop x0
 
+// $LL.Main.myArithRotr4
+rw__LL_Main_myArithRotr4 : [8] -> [8] -> [8]
+rw__LL_Main_myArithRotr4 x0 x1 = rw__LL_Main_myArithRotr2 x0 x1
+
+// Main.myArithRotr
+rw_Main_myArithRotr : [8] -> [8]
+rw_Main_myArithRotr x0 = rw__LL_Main_myArithRotr (x0 # 0x05)
+
 // $LL.Main.loop3
 rw__LL_Main_loop3 : [8] -> [9]
-rw__LL_Main_loop3 x0 = rw__LL_Main_loop2 x0
+rw__LL_Main_loop3 x0 = rw__LL_Main_loop (0b0 # (rw_Main_myArithRotr (rw_Main_myRotr x0)))
+
+// Main.loop
+rw_Main_loop : [8] -> [9]
+rw_Main_loop x0 = rw__LL_Main_loop2 x0
+
+// $LL.Main.loop2
+rw__LL_Main_loop2 : [8] -> [9]
+rw__LL_Main_loop2 x0 = rw__LL_Main_loop3 x0
+
+// $LL.Main.myArithRotr3
+rw__LL_Main_myArithRotr3 : [8] -> [8] -> [8]
+rw__LL_Main_myArithRotr3 x0 x1 = rw__LL_Main_myArithRotr4 x0 x1
 
 // $LL.Main.myRotr4
 rw__LL_Main_myRotr4 : [8] -> [8] -> [8]
 rw__LL_Main_myRotr4 x0 x1 = (x0 << (0x08 - x1)) || (x0 >> x1)
+
+// $LL.Main.loop1
+rw__LL_Main_loop1 : [8] -> [9]
+rw__LL_Main_loop1 x0 = 0b1 # x0
 
 // $LL.Main.myRotr3
 rw__LL_Main_myRotr3 : [8] -> [8] -> [8]
@@ -62,54 +70,44 @@ rw__LL_Main_myRotr3 x0 x1 = rw__LL_Main_myRotr4 x0 x1
 
 // $LL.Main.myArithRotr2
 rw__LL_Main_myArithRotr2 : [8] -> [8] -> [8]
-rw__LL_Main_myArithRotr2 x0 x1 = rw__LL_Main_myArithRotr4 x0 x1
-
-// Main.loop
-rw_Main_loop : [8] -> [9]
-rw_Main_loop x0 = rw__LL_Main_loop3 x0
-
-// $LL.Main.loop2
-rw__LL_Main_loop2 : [8] -> [9]
-rw__LL_Main_loop2 x0 = rw__LL_Main_loop (0b0 # (rw_Main_myArithRotr (rw_Main_myRotr x0)))
+rw__LL_Main_myArithRotr2 x0 x1 = (x0 << (0x08 - x1)) || (x0 >>$ x1)
 
 // $LL.Main.myRotr2
-rw__LL_Main_myRotr2 : [16] -> [8]
-rw__LL_Main_myRotr2 x0 = rw__LL_Main_myRotr1 (take`{8} x0) (drop`{8} x0)
+rw__LL_Main_myRotr2 : [8] -> [8] -> [8]
+rw__LL_Main_myRotr2 x0 x1 = rw__LL_Main_myRotr1 x0 x1
 
 // $LL.Main.myRotr1
 rw__LL_Main_myRotr1 : [8] -> [8] -> [8]
-rw__LL_Main_myRotr1 x0 x1 = rw__LL_Main_myRotr x0 x1
+rw__LL_Main_myRotr1 x0 x1 = rw__LL_Main_myRotr5 x0 (if 0x08 == zero then x1 else (x1 % 0x08))
 
 // $LL.Main.myArithRotr1
-rw__LL_Main_myArithRotr1 : [16] -> [8]
-rw__LL_Main_myArithRotr1 x0 = rw__LL_Main_myArithRotr (take`{8} x0) (drop`{8} x0)
+rw__LL_Main_myArithRotr1 : [8] -> [8] -> [8]
+rw__LL_Main_myArithRotr1 x0 x1 = rw__LL_Main_myArithRotr3 x0 (if 0x08 == zero then x1 else (x1 % 0x08))
 
-// $LL.Main.loop1
-rw__LL_Main_loop1 : [8] -> [9]
-rw__LL_Main_loop1 x0 = 0b1 # x0
+// $LL.Main.myArithRotr
+rw__LL_Main_myArithRotr : [16] -> [8]
+rw__LL_Main_myArithRotr x0 = rw__LL_Main_myArithRotr5 (take`{8} x0) (drop`{8} x0)
+
+// Main.myRotr
+rw_Main_myRotr : [8] -> [8]
+rw_Main_myRotr x0 = rw__LL_Main_myRotr (x0 # 0x03)
 
 // $LL.Main.loop
 rw__LL_Main_loop : [9] -> [9]
 rw__LL_Main_loop x0 = rw__LL_Main_loop1 (drop`{1} x0)
 
 // $LL.Main.myRotr
-rw__LL_Main_myRotr : [8] -> [8] -> [8]
-rw__LL_Main_myRotr x0 x1 = rw__LL_Main_myRotr5 x0 (if 0x08 == zero then x1 else (x1 % 0x08))
-
-// $LL.Main.myArithRotr
-rw__LL_Main_myArithRotr : [8] -> [8] -> [8]
-rw__LL_Main_myArithRotr x0 x1 = rw__LL_Main_myArithRotr3 x0 x1
+rw__LL_Main_myRotr : [16] -> [8]
+rw__LL_Main_myRotr x0 = rw__LL_Main_myRotr2 (take`{8} x0) (drop`{8} x0)
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [8]
-rw_step i = drop`{1} s2
+rw_step i = drop`{1} s1
   where
     s0 : [8]
     s0 = i
-    s1 : [8]
-    s1 = s0
-    s2 : [9]
-    s2 = rw__Pure_dispatch s1
+    s1 : [9]
+    s1 = rw__Pure_dispatch s0
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [8]

@@ -22,34 +22,32 @@ rw__Pure_dispatch x0 = rw__LL_Pure_dispatch x0
 
 // Main.compute1
 rw_Main_compute1 : [8] -> [6]
-rw_Main_compute1 x0 = rw__LL_Main_compute3 x0
-
-// ReWire.Monad.iter1
-rw_ReWire_Monad_iter1 : [8] -> [6]
-rw_ReWire_Monad_iter1 x0 = rw_Main_compute1 x0
-
-// $LL.Main.compute3
-rw__LL_Main_compute3 : [8] -> [6]
-rw__LL_Main_compute3 x0 = rw__LL_Main_compute1 x0
+rw_Main_compute1 x0 = rw__LL_Main_compute1 x0
 
 // $LL.Pure.dispatch
 rw__LL_Pure_dispatch : [8] -> [6]
 rw__LL_Pure_dispatch x0 = rw_ReWire_Monad_iter1 x0
 
+// ReWire.Monad.iter1
+rw_ReWire_Monad_iter1 : [8] -> [6]
+rw_ReWire_Monad_iter1 x0 = rw_Main_compute1 x0
+
 // $LL.Main.compute1
 rw__LL_Main_compute1 : [8] -> [6]
-rw__LL_Main_compute1 x0 = [x0 == (~ zero)] # ((~ [x0 == (~ zero)]) # ([x0 != zero] # ((~ [x0 != zero]) # ([rw'parity x0] # (~ [rw'parity x0])))))
+rw__LL_Main_compute1 x0 = rw__LL_Main_compute x0
+
+// $LL.Main.compute
+rw__LL_Main_compute : [8] -> [6]
+rw__LL_Main_compute x0 = [x0 == (~ zero)] # ((~ [x0 == (~ zero)]) # ([x0 != zero] # ((~ [x0 != zero]) # ([rw'parity x0] # (~ [rw'parity x0])))))
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [6]
-rw_step i = s2
+rw_step i = s1
   where
     s0 : [8]
     s0 = i
-    s1 : [8]
-    s1 = s0
-    s2 : [6]
-    s2 = rw__Pure_dispatch s1
+    s1 : [6]
+    s1 = rw__Pure_dispatch s0
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [8]

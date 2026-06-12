@@ -13,20 +13,13 @@ package rw_helpers is
   function rw_and (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_or (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_xor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
-  function rw_xnor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_not (a : std_logic_vector) return std_logic_vector;
   function rw_shiftl (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_shiftr (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_ashiftr (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
-  function rw_land (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
-  function rw_lor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
-  function rw_lnot (a : std_logic_vector) return std_logic_vector;
   function rw_rand (a : std_logic_vector) return std_logic_vector;
-  function rw_rnand (a : std_logic_vector) return std_logic_vector;
   function rw_ror (a : std_logic_vector) return std_logic_vector;
-  function rw_rnor (a : std_logic_vector) return std_logic_vector;
   function rw_rxor (a : std_logic_vector) return std_logic_vector;
-  function rw_rxnor (a : std_logic_vector) return std_logic_vector;
   function rw_eq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_neq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_lt (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
@@ -106,11 +99,6 @@ package body rw_helpers is
   begin
     return rw_resize(a, n) xor rw_resize(b, n);
   end;
-  function rw_xnor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
-    constant n : natural := rw_max(a'length, b'length);
-  begin
-    return rw_resize(a, n) xnor rw_resize(b, n);
-  end;
   function rw_not (a : std_logic_vector) return std_logic_vector is
   begin
     return not a;
@@ -131,41 +119,17 @@ package body rw_helpers is
     if unsigned(b) >= a'length then sh := a'length; else sh := to_integer(unsigned(b)); end if;
     return std_logic_vector(shift_right(signed(a), sh));
   end;
-  function rw_land (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v(unsigned(a) /= 0 and unsigned(b) /= 0);
-  end;
-  function rw_lor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v(unsigned(a) /= 0 or unsigned(b) /= 0);
-  end;
-  function rw_lnot (a : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v(unsigned(a) = 0);
-  end;
   function rw_rand (a : std_logic_vector) return std_logic_vector is
   begin
     return rw_b2v((and a) = '1');
-  end;
-  function rw_rnand (a : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v((and a) /= '1');
   end;
   function rw_ror (a : std_logic_vector) return std_logic_vector is
   begin
     return rw_b2v((or a) = '1');
   end;
-  function rw_rnor (a : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v((or a) /= '1');
-  end;
   function rw_rxor (a : std_logic_vector) return std_logic_vector is
   begin
     return rw_b2v((xor a) = '1');
-  end;
-  function rw_rxnor (a : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v((xor a) /= '1');
   end;
   function rw_eq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
     constant n : natural := rw_max(a'length, b'length);
@@ -243,47 +207,29 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000001");
+component \ZLL_Main_loop35\ is
+      port (arg0 : in std_logic_vector (7 downto 0);
+            res : out std_logic_vector (18 downto 0));
+      end component;
+      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000001");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal zin : std_logic_vector (7 downto 0);
-      signal zi0 : std_logic_vector (18 downto 0);
-      signal zi1 : std_logic_vector (7 downto 0);
-      signal zi2 : std_logic_vector (15 downto 0);
-      signal zi3 : std_logic_vector (7 downto 0);
-      signal zi4 : std_logic_vector (7 downto 0);
-      signal zi5 : std_logic_vector (18 downto 0);
-      signal zi6 : std_logic_vector (7 downto 0);
-      signal zi7 : std_logic_vector (7 downto 0);
-      signal zi8 : std_logic_vector (7 downto 0);
-      signal zi9 : std_logic_vector (18 downto 0);
-      signal zi10 : std_logic_vector (26 downto 0);
+      signal conn : std_logic_vector (7 downto 0);
+      signal zll_main_loop35_out : std_logic_vector (18 downto 0);
+      signal zi8 : std_logic_vector (18 downto 0);
+      signal zi9 : std_logic_vector (7 downto 0);
+      signal \zll_main_loop35_outR1\ : std_logic_vector (18 downto 0);
+      signal zi10 : std_logic_vector (18 downto 0);
       signal zi11 : std_logic_vector (7 downto 0);
-      signal zi12 : std_logic_vector (7 downto 0);
-      signal zi13 : std_logic_vector (18 downto 0);
-      signal zi14 : std_logic_vector (26 downto 0);
-      signal zi15 : std_logic_vector (7 downto 0);
-      signal zi16 : std_logic_vector (7 downto 0);
       signal zres : std_logic_vector (18 downto 0);
 begin
-zin <= \__st0\;
-      zi0 <= (std_logic_vector'(B"00000000000") & zin);
-      zi1 <= zi0(7 downto 0);
-      zi2 <= (zi1 & zi1);
-      zi3 <= zi2(15 downto 8);
-      zi4 <= zi2(7 downto 0);
-      zi5 <= (std_logic_vector'(B"001") & zi3 & zi4);
-      zi6 <= zi5(15 downto 8);
-      zi7 <= zi5(7 downto 0);
-      zi8 <= rw_add(zi6, std_logic_vector'(B"00000001"));
-      zi9 <= (std_logic_vector'(B"01000000000") & zi8);
-      zi10 <= (zi6 & zi9);
-      zi11 <= zi10(26 downto 19);
-      zi12 <= zi10(7 downto 0);
-      zi13 <= (std_logic_vector'(B"01000000000") & zi12);
-      zi14 <= (zi11 & zi13);
-      zi15 <= zi14(26 downto 19);
-      zi16 <= zi14(7 downto 0);
-      zres <= (std_logic_vector'(B"100") & zi15 & zi16);
+conn <= rw_add(\__st0\, std_logic_vector'(B"00000001"));
+      inst : \ZLL_Main_loop35\ port map (conn, zll_main_loop35_out);
+      zi8 <= zll_main_loop35_out;
+      zi9 <= zi8(7 downto 0);
+      \instR1\ : \ZLL_Main_loop35\ port map (zi9, \zll_main_loop35_outR1\);
+      zi10 <= \zll_main_loop35_outR1\;
+      zi11 <= zi10(7 downto 0);
+      zres <= (std_logic_vector'(B"100") & \__st0\ & zi11);
       \__st0_next\ <= zres(7 downto 0);
       \__out0\ <= zres(15 downto 8);
       process (clk, rst)
@@ -294,4 +240,19 @@ zin <= \__st0\;
                   \__st0\ <= \__st0_next\;
             end if;
       end process;
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \ZLL_Main_loop35\ is
+port (arg0 : in std_logic_vector (7 downto 0);
+      res : out std_logic_vector (18 downto 0));
+end entity;
+
+architecture rtl of \ZLL_Main_loop35\ is
+
+begin
+res <= (std_logic_vector'(B"01000000000") & arg0);
 end architecture;

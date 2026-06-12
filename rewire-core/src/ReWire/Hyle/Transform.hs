@@ -10,7 +10,7 @@
 --   bodies are freshened to avoid capture. Defns are processed callee-first
 --   (the call graph is acyclic), so chains of single-use defns collapse
 --   fully.
-module ReWire.Hyle.Transform (inline, inlineBy, purgeUnused, partialEval, purgeZeroWidth, dedupe, optimize) where
+module ReWire.Hyle.Transform (inline, inlineBy, purgeUnused, partialEval, purgeDevLets, purgeZeroWidth, dedupe, optimize) where
 
 import ReWire.Annotation (Annote)
 import ReWire.Fix (fixPure)
@@ -20,7 +20,6 @@ import ReWire.Pretty (showt)
 
 import ReWire.BitVector (BV, nat)
 import Control.Arrow ((>>>))
-import Data.List (find)
 import Numeric.Natural (Natural)
 
 import qualified ReWire.BitVector as BV
@@ -36,9 +35,11 @@ import qualified Data.HashSet        as Set
 -- | Inline definitions into their call sites: all of them when @flatten@,
 --   otherwise those used at most once. Definitions referenced as extern
 --   models are never inlined (the reference is by name). The inlined-away
---   defns are removed by the final purge.
+--   defns are removed by the final purge; a follow-up partialEval fuses the
+--   slice/concat plumbing exposed by inlining and drops the argument wires
+--   that fusion leaves unused.
 inline :: Bool -> Program -> Program
-inline flatten p@(Program exts ds dev) = inlineBy inlinable p
+inline flatten p@(Program exts ds dev) = (partialEval >>> purgeDevLets >>> purgeUnused) $ inlineBy inlinable p
       where inlinable :: GId -> Bool
             inlinable g = not (g `Set.member` models)
                        && (flatten || Map.findWithDefault 0 g uses <= (1 :: Int))
@@ -166,6 +167,19 @@ stmtExp = \ case
       SNext _ _ e     -> e
       SInstIn _ _ _ e -> e
 
+expFreeVars :: Exp -> HashSet Name
+expFreeVars = \ case
+      Lit {}            -> mempty
+      Undef {}          -> mempty
+      Var _ _ x         -> Set.singleton x
+      Cat _ e1 e2       -> expFreeVars e1 <> expFreeVars e2
+      Slice _ _ _ e     -> expFreeVars e
+      Prim _ _ _ es     -> foldMap expFreeVars es
+      XCall _ _ _ _ es  -> foldMap expFreeVars es
+      If _ _ c t e      -> expFreeVars c <> expFreeVars t <> expFreeVars e
+      Let _ _ x e1 e2   -> expFreeVars e1 <> Set.delete x (expFreeVars e2)
+      Call _ _ _ es     -> foldMap expFreeVars es
+
 expCalls :: Exp -> [GId]
 expCalls = \ case
       Lit {}            -> []
@@ -227,12 +241,17 @@ purgeUnused (Program exts ds dev) = Program exts' ds' dev
 -- | The standard optimization pipeline, iterated to a fixpoint (bounded by
 --   the --rtl-opt level).
 optimize :: Natural -> Program -> Program
-optimize n = fixPure n $ partialEval >>> purgeZeroWidth >>> dedupe >>> purgeUnused
+optimize n = fixPure n $ partialEval >>> purgeDevLets >>> purgeZeroWidth >>> dedupe >>> purgeUnused
 
--- | Constant folding: primitives, muxes, slices, and concatenations of
---   literals fold via the interpreter's own evaluator; calls (and extern
---   calls with models) whose arguments are all literals evaluate fully.
---   Literal-bound lets substitute away.
+-- | Constant folding and wire fusion. Primitives, muxes, slices, and
+--   concatenations of literals fold via the interpreter's own evaluator;
+--   calls (and extern calls with models) whose arguments are all literals
+--   evaluate fully. Lets bound to atomic expressions (literals, variables,
+--   don't-cares) substitute away; lets bound to pure wiring (slices and
+--   concatenations of atoms) are fused through where they are sliced, so
+--   slice-of-concat plumbing simplifies across named wires (both expression
+--   lets and device-level wires). Unused expression lets are dropped here;
+--   unused device wires are dropped by 'purgeDevLets'.
 partialEval :: Program -> Program
 partialEval (Program exts ds dev) = Program exts (map peDefn ds) dev'
       where env :: IEnv
@@ -245,55 +264,89 @@ partialEval (Program exts ds dev) = Program exts (map peDefn ds) dev'
             dev' :: Device
             dev' = dev { devBody = snd $ foldl' peStmt (mempty, []) $ devBody dev }
 
-            peStmt :: (HashMap Name BV, [Stmt]) -> Stmt -> (HashMap Name BV, [Stmt])
-            peStmt (lits, acc) = \ case
-                  SLet an x e -> case pe lits e of
-                        Lit _ bv -> (Map.insert x bv lits, acc <> [SLet an x $ Lit an bv])
-                        e'       -> (lits, acc <> [SLet an x e'])
-                  SOutput an x e   -> (lits, acc <> [SOutput an x $ pe lits e])
-                  SNext an x e     -> (lits, acc <> [SNext an x $ pe lits e])
-                  SInstIn an x q e -> (lits, acc <> [SInstIn an x q $ pe lits e])
+            -- | Device wires bound to pure wiring join the environment so
+            --   later statements fuse through them; the wires themselves
+            --   stay (purgeDevLets drops the ones fusion leaves unused).
+            peStmt :: (HashMap Name Exp, [Stmt]) -> Stmt -> (HashMap Name Exp, [Stmt])
+            peStmt (binds, acc) = \ case
+                  SLet an x e ->
+                        let e' = pe binds e
+                        in (if wiring e' then Map.insert x e' binds else binds, acc <> [SLet an x e'])
+                  SOutput an x e   -> (binds, acc <> [SOutput an x $ pe binds e])
+                  SNext an x e     -> (binds, acc <> [SNext an x $ pe binds e])
+                  SInstIn an x q e -> (binds, acc <> [SInstIn an x q $ pe binds e])
 
-            pe :: HashMap Name BV -> Exp -> Exp
-            pe lits = \ case
-                  e@(Var an _ x)
-                        | Just bv <- Map.lookup x lits -> Lit an bv
-                        | otherwise                    -> e
+            pe :: HashMap Name Exp -> Exp -> Exp
+            pe binds = \ case
+                  e@(Var _ _ x)
+                        | Just b <- Map.lookup x binds, atomic b -> b
+                        | otherwise                              -> e
                   e@Lit {}   -> e
                   e@Undef {} -> e
-                  Cat an e1 e2 -> mergeCat an $ concatMap gather [pe lits e1, pe lits e2]
-                  Slice an i k e -> peSlice an i k $ pe lits e
+                  Cat an e1 e2 -> mergeCat an $ concatMap gather [pe binds e1, pe binds e2]
+                  Slice an i k e -> peSlice binds an i k $ pe binds e
                   Prim an sz op es ->
-                        let es' = map (pe lits) es in
+                        let es' = map (pe binds) es in
                         case mapM litVal es' of
                               Just bvs | Right bv <- evalOp an op bvs -> Lit an bv
-                              _                                       -> Prim an sz op es'
+                              _ -> case (op, es') of
+                                    -- The SMT-LIB division-by-zero equations
+                                    -- (doc/hyle.md, section 5.2), applicable
+                                    -- whenever the divisor is a zero literal.
+                                    (UDiv, [_, Lit _ bv]) | nat bv == 0 -> Lit an $ BV.ones $ fromIntegral sz
+                                    (UMod, [a, Lit _ bv]) | nat bv == 0 -> a
+                                    _                                   -> Prim an sz op es'
                   Call an sz g es ->
-                        let es' = map (pe lits) es in
+                        let es' = map (pe binds) es in
                         case mapM litVal es' of
                               Just _ | Right bv <- evalExp env mempty (Call an sz g es') -> Lit an bv
                               _                                                          -> Call an sz g es'
                   XCall an sz x cs es ->
-                        let es' = map (pe lits) es in
+                        let es' = map (pe binds) es in
                         case mapM litVal es' of
                               Just _ | Just ex <- Map.lookup x $ envExterns env
                                      , Just _  <- extModel ex
                                      , Right bv <- evalExp env mempty (XCall an sz x cs es') -> Lit an bv
                               _                                                              -> XCall an sz x cs es'
-                  If an sz c t e -> case pe lits c of
-                        Lit _ bv | nat bv /= 0 -> pe lits t
-                                 | otherwise   -> pe lits e
-                        c'                     -> If an sz c' (pe lits t) $ pe lits e
-                  Let an sz x e1 e2 -> case pe lits e1 of
-                        Lit _ bv -> pe (Map.insert x bv lits) e2
-                        e1'      -> Let an sz x e1' $ pe lits e2
+                  If an sz c t e -> case pe binds c of
+                        Lit _ bv | nat bv /= 0 -> pe binds t
+                                 | otherwise   -> pe binds e
+                        c'                     -> If an sz c' (pe binds t) $ pe binds e
+                  Let an sz x e1 e2 ->
+                        let e1'    = pe binds e1
+                            -- Invalidate bindings an inner shadowing let
+                            -- would capture (shadowing can only come from
+                            -- hand-written input).
+                            binds' = Map.filter (not . Set.member x . expFreeVars) $ Map.delete x binds
+                            e2'    = pe (if wiring e1' then Map.insert x e1' binds' else binds') e2
+                        in if x `Set.member` expFreeVars e2' then Let an sz x e1' e2' else e2'
 
             litVal :: Exp -> Maybe BV
             litVal = \ case
                   Lit _ bv -> Just bv
                   _        -> Nothing
 
-            -- | Adjacent literals merge; a single piece stands alone.
+            -- | Pure wiring: evaluates to a rearrangement of its free
+            --   variables' bits, with no logic. Fusing through wiring (or
+            --   replicating it) duplicates no hardware.
+            wiring :: Exp -> Bool
+            wiring = \ case
+                  Lit {}        -> True
+                  Undef {}      -> True
+                  Var {}        -> True
+                  Cat _ e1 e2   -> wiring e1 && wiring e2
+                  Slice _ _ _ e -> wiring e
+                  _             -> False
+
+            atomic :: Exp -> Bool
+            atomic = \ case
+                  Lit {}   -> True
+                  Undef {} -> True
+                  Var {}   -> True
+                  _        -> False
+
+            -- | Adjacent literals, don't-cares, and slices of the same base
+            --   merge; a single piece stands alone.
             mergeCat :: Annote -> [Exp] -> Exp
             mergeCat an = go' >>> \ case
                   []  -> Lit an mempty
@@ -301,29 +354,61 @@ partialEval (Program exts ds dev) = Program exts (map peDefn ds) dev'
                   es  -> foldr1 (Cat an) es
                   where go' :: [Exp] -> [Exp]
                         go' = \ case
-                              Lit a bv : Lit _ bv' : es -> go' $ Lit a (bv <> bv') : es
-                              e : es                    -> e : go' es
-                              []                        -> []
+                              Lit a bv : Lit _ bv' : es   -> go' $ Lit a (bv <> bv') : es
+                              Undef a n : Undef _ m : es  -> go' $ Undef a (n + m) : es
+                              -- The left piece supplies the high bits, so
+                              -- adjacency means the left slice begins where
+                              -- the right one ends.
+                              Slice a iL kL b : Slice _ iR kR b' : es
+                                    | b == b', iL == iR + kR -> go' $ unSlice (Slice a iR (kL + kR) b) : es
+                              e : es                      -> e : go' es
+                              []                          -> []
 
-            -- | Slices of literals, identity slices, slices of slices, and
-            --   slices falling within one component of a concatenation.
-            peSlice :: Annote -> Index -> Size -> Exp -> Exp
-            peSlice an i k e
+                        unSlice :: Exp -> Exp
+                        unSlice = \ case
+                              Slice _ 0 k e | k == sizeOf e -> e
+                              e                             -> e
+
+            -- | Slices of literals and don't-cares, identity slices, slices
+            --   of slices, slices of concatenations (split at the piece
+            --   boundaries), and slices of named wires bound to pure wiring
+            --   (fused through the binding).
+            peSlice :: HashMap Name Exp -> Annote -> Index -> Size -> Exp -> Exp
+            peSlice binds an i k e
                   | k == 0                = Lit an mempty
                   | i == 0, k == sizeOf e = e
                   | otherwise = case e of
-                        Lit _ bv       -> Lit an $ subBV bv i k
-                        Slice _ i' _ e' -> peSlice an (i + i') k e'
-                        Cat {}         -> case find (\ (e', _, off) -> fromIntegral off <= i && i + fromIntegral k <= off + fromIntegral (sizeOf e')) pieces of
-                              Just (e', _, off) -> peSlice an (i - off) k e'
-                              Nothing           -> Slice an i k e
-                              where pieces = offs 0 $ reverse $ gather e
-                                    offs _ [] = []
-                                    offs o (e' : es') = (e', sizeOf e', o) : offs (o + fromIntegral (sizeOf e')) es'
-                        _              -> Slice an i k e
+                        Lit _ bv        -> Lit an $ subBV bv i k
+                        Undef _ _       -> Undef an k
+                        Slice _ i' _ e' -> peSlice binds an (i + i') k e'
+                        Var _ _ x | Just b <- Map.lookup x binds, not (atomic b)
+                                        -> peSlice binds an i k b
+                        Cat {}          -> mergeCat an $ map subPiece $ filter overlaps pieces
+                              where pieces :: [(Exp, Index)] -- MSB-first, with LSB offsets
+                                    pieces = snd $ foldr (\ e' (o, acc) -> (o + sizeOf e', (e', o) : acc)) (0, []) $ gather e
+
+                                    overlaps :: (Exp, Index) -> Bool
+                                    overlaps (e', off) = off < i + k && i < off + sizeOf e'
+
+                                    subPiece :: (Exp, Index) -> Exp
+                                    subPiece (e', off) = peSlice binds an (max i off - off) (min (i + k) (off + sizeOf e') - max i off) e'
+                        _               -> Slice an i k e
 
             subBV :: BV -> Index -> Size -> BV
             subBV bv i k = BV.bitVec (fromIntegral k) $ nat bv `div` (2 ^ toInteger i)
+
+-- | Drop device wires (SLets) never read by a later statement (fusion in
+--   'partialEval' is what strands them).
+purgeDevLets :: Program -> Program
+purgeDevLets (Program exts ds dev) = Program exts ds dev'
+      where dev' :: Device
+            dev' = dev { devBody = snd $ foldr keep (mempty, []) $ devBody dev }
+
+            keep :: Stmt -> (HashSet Name, [Stmt]) -> (HashSet Name, [Stmt])
+            keep s (used, acc) = case s of
+                  SLet _ x e | not (x `Set.member` used) -> (used, acc)
+                             | otherwise                 -> (used <> expFreeVars e, s : acc)
+                  _                                      -> (used <> expFreeVars (stmtExp s), s : acc)
 
 -- | Drop zero-width parameters (and the corresponding arguments at call
 --   sites) and zero-width-result defns (calls to them become nil).

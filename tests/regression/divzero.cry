@@ -20,48 +20,46 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 rw__Pure_dispatch : [8] -> [16]
 rw__Pure_dispatch x0 = rw__LL_Pure_dispatch x0
 
-// $LL.Main.f5
-rw__LL_Main_f5 : [8] -> [8] -> [16]
-rw__LL_Main_f5 x0 x1 = rw__LL_Main_f x0 x1
-
-// Main.f
-rw_Main_f : [8] -> [16]
-rw_Main_f x0 = rw__LL_Main_f2 x0
-
 // $LL.Pure.dispatch
 rw__LL_Pure_dispatch : [8] -> [16]
 rw__LL_Pure_dispatch x0 = rw_ReWire_Monad_iter x0
 
+// Main.f1
+rw_Main_f1 : [8] -> [16]
+rw_Main_f1 x0 = rw__LL_Main_f3 x0
+
 // $LL.Main.f4
 rw__LL_Main_f4 : [8] -> [8] -> [16]
-rw__LL_Main_f4 x0 x1 = rw__LL_Main_f5 x0 x1
+rw__LL_Main_f4 x0 x1 = rw__LL_Main_f x0 x1
 
 // $LL.Main.f3
 rw__LL_Main_f3 : [8] -> [16]
-rw__LL_Main_f3 x0 = rw__LL_Main_f4 x0 (if 0x00 == zero then (x0 && 0x03) else ((x0 && 0x03) % 0x00))
+rw__LL_Main_f3 x0 = rw__LL_Main_f2 x0
 
 // $LL.Main.f2
 rw__LL_Main_f2 : [8] -> [16]
-rw__LL_Main_f2 x0 = rw__LL_Main_f3 x0
+rw__LL_Main_f2 x0 = rw__LL_Main_f1 x0 (x0 && 0x03)
 
-// ReWire.Monad.iter
-rw_ReWire_Monad_iter : [8] -> [16]
-rw_ReWire_Monad_iter x0 = rw_Main_f x0
+// $LL.Main.f1
+rw__LL_Main_f1 : [8] -> [8] -> [16]
+rw__LL_Main_f1 x0 x1 = rw__LL_Main_f4 x0 x1
 
 // $LL.Main.f
 rw__LL_Main_f : [8] -> [8] -> [16]
 rw__LL_Main_f x0 x1 = (if x1 == zero then 0xff else (x0 / x1)) # ((if x1 == zero then x0 else (x0 % x1)) ^ 0xff)
 
+// ReWire.Monad.iter
+rw_ReWire_Monad_iter : [8] -> [16]
+rw_ReWire_Monad_iter x0 = rw_Main_f1 x0
+
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [16]
-rw_step i = s2
+rw_step i = s1
   where
     s0 : [8]
     s0 = i
-    s1 : [8]
-    s1 = s0
-    s2 : [16]
-    s2 = rw__Pure_dispatch s1
+    s1 : [16]
+    s1 = rw__Pure_dispatch s0
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [8]

@@ -399,8 +399,6 @@ transBuiltin an' t' an theExp = case theExp of
       (M.VecGenerate, [f]) -> do
             nElems <- checkVecArgSize "rwPrimVecGenerate" t'
             transExp $ M.LitVec an Nothing Nothing $ map (M.mkApp an f . pure . finite nElems) [0 .. nElems - 1]
-      (M.SetRef, _) -> failAt an "toHyle: references (rwPrimSetRef) are not supported."
-      (M.GetRef, _) -> failAt an "toHyle: references (rwPrimGetRef) are not supported."
       (M.VecConcat, [arg1, arg2]) -> A.cat <$> mapM transExp [arg1, arg2]
       (M.Finite, [arg]) -> do
             arg' <- transExp arg

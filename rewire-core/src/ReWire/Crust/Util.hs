@@ -10,7 +10,7 @@ module ReWire.Crust.Util
 
 import ReWire.Annotation (Annote (MsgAnnote))
 import ReWire.Crust.Syntax (Exp (..), Ty (..), MatchPat (..), Pat (..), Defn (..), DefnAttr (..), Builtin (..), Poly (..), FieldId, builtins, flattenApp)
-import ReWire.Crust.Types (proxyTy, nilTy, strTy, arr, typeOf, arrowRight, pairTy, fundamental, mkArrowTy, paramTys, higherOrder, synthable)
+import ReWire.Crust.Types (proxyTy, nilTy, strTy, arr, typeOf, arrowRight, pairTy, mkArrowTy, paramTys, synthable)
 import ReWire.Pretty (pretty)
 import ReWire.SYB (query)
 import ReWire.Unbound (freshVar, Name, Fresh, Embed (Embed), unbind, bind, s2n, unsafeUnbind, Bind, TRec)

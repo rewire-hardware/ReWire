@@ -6,42 +6,41 @@ ReWire.Prelude.not : ([1]) -> [1]
 ReWire.Prelude.not $0 =
       $LL.ReWire.Prelude.not1 $0 $0
 
-$LL.ReWire.Prelude.not2 : ([1]) -> [1]
-$LL.ReWire.Prelude.not2 $0 =
+$LL.ReWire.Prelude.not3 : ([1]) -> [1]
+$LL.ReWire.Prelude.not3 $0 =
       1'h1
-
-Main.loop : ([1]) -> [2]
-Main.loop $0 =
-      $LL.Main.loop3 $0
 
 $LL.Main.loop3 : ([1]) -> [2]
 $LL.Main.loop3 $0 =
       $LL.Main.loop $0
 
-$LL.ReWire.Prelude.not1 : ([1], [1]) -> [1]
-$LL.ReWire.Prelude.not1 $0 $1 =
-      if eq $1 1'h1 then 1'h0
-            else $LL.ReWire.Prelude.not2 $0
-
-$LL.Main.loop2 : ([1]) -> [2]
-$LL.Main.loop2 $0 =
-      1'h1 # $0
-
-$LL.Main.loop1 : ([2]) -> [2]
-$LL.Main.loop1 $0 =
-      $LL.Main.loop2 $0[0 +: 1]
-
 $LL.Pure.dispatch : ([1]) -> [2]
 $LL.Pure.dispatch $0 =
       Main.loop $0
 
+$LL.Main.loop2 : ([2]) -> [2]
+$LL.Main.loop2 $0 =
+      $LL.Main.loop1 $0[0 +: 1]
+
+$LL.Main.loop1 : ([1]) -> [2]
+$LL.Main.loop1 $0 =
+      1'h1 # $0
+
+Main.loop : ([1]) -> [2]
+Main.loop $0 =
+      $LL.Main.loop3 $0
+
 $LL.Main.loop : ([1]) -> [2]
 $LL.Main.loop $0 =
-      $LL.Main.loop1 (1'h0 # ReWire.Prelude.not $0)
+      $LL.Main.loop2 (1'h0 # ReWire.Prelude.not $0)
+
+$LL.ReWire.Prelude.not1 : ([1], [1]) -> [1]
+$LL.ReWire.Prelude.not1 $0 $1 =
+      if eq $1 1'h1 then 1'h0
+            else $LL.ReWire.Prelude.not3 $0
 
 device top_level
       input __in0 : [1]
       output __out0 : [1]
-      let $in = __in0
-      let $res = $Pure.dispatch $in
+      let $res = $Pure.dispatch __in0
       __out0 := $res[0 +: 1]

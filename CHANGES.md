@@ -13,6 +13,18 @@
   semantics on every target (SMT-LIB: `x/0` is all-ones, `x%0` is `x`).
   The `--core`/`--from-core` flags are unchanged but the `.rwc` format is
   now Hyle's concrete syntax.
+* The RTL optimizer now fuses slice/concat plumbing through named wires
+  (both expression lets and device-level wires), splits slices of
+  concatenations at the piece boundaries, coalesces adjacent slices of the
+  same base, folds division by a literal zero, and drops the wires fusion
+  leaves unused -- including the argument wires introduced by inlining.
+  Generated Verilog and VHDL are substantially smaller and more readable
+  (the regression-test corpus shrank by roughly a third); interpreter
+  traces are bit-for-bit unchanged.
+* Removed the vestigial reference primitives (`rwPrimSetRef`,
+  `rwPrimGetRef`, `setRef`, `getRef`, and the `Ref` type): the compiler has
+  rejected them since the Hyle migration and no program ever used them.
+  Device-level named wires are the supported mechanism in the IR.
 * Fixed a Verilog backend bug found by cosimulation: an arithmetic right
   shift nested in an unsigned expression context simulated as a logical shift;
   the shift is now wrapped in `$unsigned(...)` to isolate its signedness.

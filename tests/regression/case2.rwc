@@ -1,3 +1,1 @@
 device top_level
-      let $in = 0'
-      let $res = 1'h1

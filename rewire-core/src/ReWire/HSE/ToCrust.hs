@@ -7,7 +7,7 @@ module ReWire.HSE.ToCrust (toCrust, extendWithGlobs, getImps) where
 
 import ReWire.Annotation hiding (ann)
 import ReWire.Error
-import ReWire.HSE.Exports (Export (..), sDeclHead, exportAll, getExportFixities, transExport, tysynNames, getTypeExports, resolveExports, getInlines)
+import ReWire.HSE.Exports (Export (..), sDeclHead, getExportFixities, transExport, getTypeExports, resolveExports, getInlines)
 import ReWire.HSE.Rename
 import ReWire.Crust.Types ((|->))
 import ReWire.Unbound (fv, s2n, n2s, fresh, Fresh, Name, Embed (..), bind)

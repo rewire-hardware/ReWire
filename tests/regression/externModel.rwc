@@ -25,17 +25,25 @@ $Pure.dispatch : ([32]) -> [32]
 $Pure.dispatch $1 =
       $LL.Pure.dispatch $1
 
-Main.xorModel : ([32], [32]) -> [32]
-Main.xorModel $0 $1 =
-      $LL.Main.xorModel1 ($0 # $1)
-
-$LL.Main.plusModel1 : ([64]) -> [32]
-$LL.Main.plusModel1 $0 =
-      $LL.Main.plusModel $0[32 +: 32] $0[0 +: 32]
+$LL.Pure.dispatch : ([32]) -> [32]
+$LL.Pure.dispatch $0 =
+      ReWire.Monad.iter $0
 
 $LL.Main.xorModel1 : ([64]) -> [32]
 $LL.Main.xorModel1 $0 =
       $LL.Main.xorModel $0[32 +: 32] $0[0 +: 32]
+
+$LL.Main.xorModel : ([32], [32]) -> [32]
+$LL.Main.xorModel $0 $1 =
+      xor $0 $1
+
+$LL.Main.f2 : ([32]) -> [32]
+$LL.Main.f2 $0 =
+      Main.plusW32 (Main.andW32 $0) (Main.xorW32 (Main.notW32 $0))
+
+Main.xorModel : ([32], [32]) -> [32]
+Main.xorModel $0 $1 =
+      $LL.Main.xorModel1 ($0 # $1)
 
 Main.notW32 : ([32]) -> [32]
 Main.notW32 $0 =
@@ -45,65 +53,56 @@ Main.plusW32 : ([32], [32]) -> [32]
 Main.plusW32 $0 $1 =
       plusW32 $0 $1
 
-ReWire.Monad.iter1 : ([32]) -> [32]
-ReWire.Monad.iter1 $0 =
-      Main.f $0
-
-Main.xorW32 : ([32]) -> [32]
-Main.xorW32 $0 =
-      xorW32 $0 32'h12345678
+$LL.Main.plusModel1 : ([64]) -> [32]
+$LL.Main.plusModel1 $0 =
+      $LL.Main.plusModel $0[32 +: 32] $0[0 +: 32]
 
 Main.plusModel : ([32], [32]) -> [32]
 Main.plusModel $0 $1 =
       $LL.Main.plusModel1 ($0 # $1)
 
-$LL.Main.andModel1 : ([32], [32]) -> [32]
-$LL.Main.andModel1 $0 $1 =
-      and $0 $1
+$LL.Main.andModel1 : ([64]) -> [32]
+$LL.Main.andModel1 $0 =
+      $LL.Main.andModel $0[32 +: 32] $0[0 +: 32]
 
-Main.andModel : ([32], [32]) -> [32]
-Main.andModel $0 $1 =
-      $LL.Main.andModel ($0 # $1)
-
-$LL.Main.xorModel : ([32], [32]) -> [32]
-$LL.Main.xorModel $0 $1 =
-      xor $0 $1
+$LL.Main.f : ([32]) -> [32]
+$LL.Main.f $0 =
+      $LL.Main.f2 $0
 
 $LL.Main.plusModel : ([32], [32]) -> [32]
 $LL.Main.plusModel $0 $1 =
       add $0 $1
 
+Main.andModel : ([32], [32]) -> [32]
+Main.andModel $0 $1 =
+      $LL.Main.andModel1 ($0 # $1)
+
 Main.f : ([32]) -> [32]
 Main.f $0 =
-      $LL.Main.f1 $0
-
-$LL.Pure.dispatch : ([32]) -> [32]
-$LL.Pure.dispatch $0 =
-      ReWire.Monad.iter1 $0
-
-$LL.Main.f1 : ([32]) -> [32]
-$LL.Main.f1 $0 =
       $LL.Main.f $0
-
-Main.notModel : ([32]) -> [32]
-Main.notModel $0 =
-      not $0
-
-$LL.Main.f : ([32]) -> [32]
-$LL.Main.f $0 =
-      Main.plusW32 (Main.andW32 $0) (Main.xorW32 (Main.notW32 $0))
-
-$LL.Main.andModel : ([64]) -> [32]
-$LL.Main.andModel $0 =
-      $LL.Main.andModel1 $0[32 +: 32] $0[0 +: 32]
 
 Main.andW32 : ([32]) -> [32]
 Main.andW32 $0 =
       andW32 $0 32'hf0f0f0f0
 
+$LL.Main.andModel : ([32], [32]) -> [32]
+$LL.Main.andModel $0 $1 =
+      and $0 $1
+
+Main.xorW32 : ([32]) -> [32]
+Main.xorW32 $0 =
+      xorW32 $0 32'h12345678
+
+Main.notModel : ([32]) -> [32]
+Main.notModel $0 =
+      not $0
+
+ReWire.Monad.iter : ([32]) -> [32]
+ReWire.Monad.iter $0 =
+      Main.f $0
+
 device top_level
       input __in0 : [32]
       output __out0 : [32]
-      let $in = __in0
-      let $res = $Pure.dispatch $in
+      let $res = $Pure.dispatch __in0
       __out0 := $res

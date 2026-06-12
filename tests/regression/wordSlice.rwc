@@ -2,85 +2,82 @@ $Pure.dispatch : ([16]) -> [9]
 $Pure.dispatch $1 =
       $LL.Pure.dispatch $1
 
-$LL.Main.loop3 : ([16]) -> [9]
-$LL.Main.loop3 $0 =
-      $LL.Main.loop1 $0
+"$LL.ReWire.Prelude.&&3" : ([1], [1], [2]) -> [1]
+"$LL.ReWire.Prelude.&&3" $0 $1 $2 =
+      if eq $2[1 +: 1] 1'h1 then "$LL.ReWire.Prelude.&&2" $2[0 +: 1]
+            else "$LL.ReWire.Prelude.&&1" ($1 # $0)
 
 Main.compute : ([16]) -> [8]
 Main.compute $0 =
-      $LL.Main.compute1 $0
-
-$LL.Main.loop2 : ([8]) -> [9]
-$LL.Main.loop2 $0 =
-      1'h1 # $0
-
-$LL.Main.compute5 : ([16]) -> [8]
-$LL.Main.compute5 $0 =
-      $0[8 +: 8]
-
-"$LL.ReWire.Prelude.&&3" : ([1]) -> [1]
-"$LL.ReWire.Prelude.&&3" $0 =
-      1'h0
-
-$LL.Main.compute4 : ([16], [1]) -> [8]
-$LL.Main.compute4 $0 $1 =
-      let $t1 = $0 # $1 in
-      if eq $t1[0 +: 1] 1'h1 then $LL.Main.compute $t1[1 +: 16]
-            else $LL.Main.compute2 $0 ("ReWire.Prelude.&&" $0[15 +: 1] $0[8 +: 1])
-
-$LL.Main.compute3 : ([16]) -> [8]
-$LL.Main.compute3 $0 =
-      $LL.Main.compute4 $0 ("ReWire.Prelude.&&" $0[15 +: 1] $0[8 +: 1])
-
-Main.loop1 : ([16]) -> [9]
-Main.loop1 $0 =
-      $LL.Main.loop3 $0
+      $LL.Main.compute3 $0
 
 "$LL.ReWire.Prelude.&&2" : ([1]) -> [1]
 "$LL.ReWire.Prelude.&&2" $0 =
       $0
 
-$LL.Main.compute2 : ([16], [1]) -> [8]
-$LL.Main.compute2 $0 $1 =
-      let $t0 = $0 # $1 in
-      $LL.Main.compute5 $t0[1 +: 16]
+"$LL.ReWire.Prelude.&&1" : ([2]) -> [1]
+"$LL.ReWire.Prelude.&&1" $0 =
+      "$LL.ReWire.Prelude.&&" $0[0 +: 1]
 
-$LL.Main.compute1 : ([16]) -> [8]
-$LL.Main.compute1 $0 =
-      $LL.Main.compute3 $0
+$LL.Main.compute5 : ([16], [1]) -> [8]
+$LL.Main.compute5 $0 $1 =
+      $LL.Main.compute2 $0
+
+$LL.Main.compute4 : ([16]) -> [8]
+$LL.Main.compute4 $0 =
+      $0[0 +: 8]
+
+"$LL.ReWire.Prelude.&&" : ([1]) -> [1]
+"$LL.ReWire.Prelude.&&" $0 =
+      1'h0
+
+$LL.Main.loop3 : ([9]) -> [9]
+$LL.Main.loop3 $0 =
+      $LL.Main.loop2 $0[0 +: 8]
+
+Main.loop : ([16]) -> [9]
+Main.loop $0 =
+      $LL.Main.loop $0
+
+$LL.Main.compute3 : ([16]) -> [8]
+$LL.Main.compute3 $0 =
+      $LL.Main.compute $0
+
+$LL.Main.loop2 : ([8]) -> [9]
+$LL.Main.loop2 $0 =
+      1'h1 # $0
+
+$LL.Main.compute2 : ([16]) -> [8]
+$LL.Main.compute2 $0 =
+      $0[8 +: 8]
 
 "ReWire.Prelude.&&" : ([1], [1]) -> [1]
 "ReWire.Prelude.&&" $0 $1 =
-      "$LL.ReWire.Prelude.&&1" $0 $1 ($0 # $1)
+      "$LL.ReWire.Prelude.&&3" $1 $0 ($0 # $1)
 
 $LL.Main.loop1 : ([16]) -> [9]
 $LL.Main.loop1 $0 =
-      $LL.Main.loop (1'h0 # Main.compute $0)
+      $LL.Main.loop3 (1'h0 # Main.compute $0)
 
-"$LL.ReWire.Prelude.&&1" : ([1], [1], [2]) -> [1]
-"$LL.ReWire.Prelude.&&1" $0 $1 $2 =
-      if eq $2[1 +: 1] 1'h1 then "$LL.ReWire.Prelude.&&2" $2[0 +: 1]
-            else "$LL.ReWire.Prelude.&&" ($0 # $1)
+$LL.Main.compute1 : ([16], [1]) -> [8]
+$LL.Main.compute1 $0 $1 =
+      if eq $1 1'h1 then $LL.Main.compute4 $0
+            else $LL.Main.compute5 $0 ("ReWire.Prelude.&&" $0[15 +: 1] $0[8 +: 1])
 
-"$LL.ReWire.Prelude.&&" : ([2]) -> [1]
-"$LL.ReWire.Prelude.&&" $0 =
-      "$LL.ReWire.Prelude.&&3" $0[0 +: 1]
-
-$LL.Main.loop : ([9]) -> [9]
+$LL.Main.loop : ([16]) -> [9]
 $LL.Main.loop $0 =
-      $LL.Main.loop2 $0[0 +: 8]
+      $LL.Main.loop1 $0
 
 $LL.Pure.dispatch : ([16]) -> [9]
 $LL.Pure.dispatch $0 =
-      Main.loop1 $0
+      Main.loop $0
 
 $LL.Main.compute : ([16]) -> [8]
 $LL.Main.compute $0 =
-      $0[0 +: 8]
+      $LL.Main.compute1 $0 ("ReWire.Prelude.&&" $0[15 +: 1] $0[8 +: 1])
 
 device top_level
       input __in0 : [16]
       output __out0 : [8]
-      let $in = __in0
-      let $res = $Pure.dispatch $in
+      let $res = $Pure.dispatch __in0
       __out0 := $res[0 +: 8]

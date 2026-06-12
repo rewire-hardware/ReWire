@@ -19,11 +19,6 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 // Per-cycle step: outputs # next register values.
 rw_step : [0]
 rw_step = (zero : [0])
-  where
-    s0 : [0]
-    s0 = (zero : [0])
-    s1 : [1]
-    s1 = 0b1
 
 // Device: top_level
 // Inputs, MSB-first: (none)

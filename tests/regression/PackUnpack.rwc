@@ -2,563 +2,545 @@ $Pure.dispatch : ([8]) -> [32]
 $Pure.dispatch $1 =
       $LL.Pure.dispatch $1
 
-$LL.Main.dev286 : ([8], [3], [8], [3], [3]) -> [8]
-$LL.Main.dev286 $0 $1 $2 $3 $4 =
-      $LL.Main.dev281 $0 $1 $2 $3 ($LL.Main.dev45 $0 $3 $4 ($LL.Main.dev284 ($LL.Main.dev285 $0)))
+$LL.Main.dev286 : ([6]) -> [3]
+$LL.Main.dev286 $0 =
+      $LL.Main.dev251 $0[3 +: 3] $0[0 +: 3]
 
-$LL.Main.dev285 : ([8]) -> [3]
-$LL.Main.dev285 $0 =
+$LL.Main.dev285 : ([3], [3]) -> [3]
+$LL.Main.dev285 $0 $1 =
+      $LL.Main.dev255 $0 $1
+
+$LL.Main.dev284 : ([3], [3]) -> [3]
+$LL.Main.dev284 $0 $1 =
+      $LL.Main.dev259 $0 $1
+
+$LL.Main.dev283 : ([128]) -> [1]
+$LL.Main.dev283 $0 =
+      $LL.Main.dev243 $0
+
+$LL.Main.dev282 : ([8]) -> [3]
+$LL.Main.dev282 $0 =
       $LL.Main.dev280 $0
 
-$LL.Main.dev284 : ([3]) -> [1]
-$LL.Main.dev284 $0 =
-      $LL.Main.dev269 $0
-
-$LL.Main.dev283 : ([3], [3]) -> [3]
-$LL.Main.dev283 $0 $1 =
-      trunc 3 (umod (sub (zext 128 $0) (zext 128 $1)) 128'h8)
-
-$LL.Main.dev282 : ([3], [3]) -> [3]
-$LL.Main.dev282 $0 $1 =
-      trunc 3 (umod (udiv (zext 128 $0) (zext 128 $1)) 128'h8)
-
-$LL.Main.dev281 : ([8], [3], [8], [3], [3]) -> [8]
-$LL.Main.dev281 $0 $1 $2 $3 $4 =
-      $LL.Main.dev180 $0 $1 $2 $3 $4
+$LL.Main.dev281 : ([8], [8]) -> [8]
+$LL.Main.dev281 $0 $1 =
+      $LL.Main.dev207 $0 $1 3'h1
 
 $LL.Main.dev280 : ([8]) -> [3]
 $LL.Main.dev280 $0 =
       3'h7
 
-$LL.Main.dev279 : ([8], [8]) -> [32]
-$LL.Main.dev279 $0 $1 =
-      $LL.Main.dev207 $0 $1
-
-$LL.Main.dev278 : ([6]) -> [3]
-$LL.Main.dev278 $0 =
-      $LL.Main.dev271 $0[3 +: 3] $0[0 +: 3]
-
-$LL.Main.dev277 : ([8], [3], [3]) -> [1]
-$LL.Main.dev277 $0 $1 $2 =
-      trunc 1 (lshr $0 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev264 $1 $2))) 128'h1) 128'h1))
-
-$LL.Main.dev276 : ([8], [3], [3], [3], [8], [3]) -> [1]
-$LL.Main.dev276 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.dev5 $0 $5 $1 $2 $3 $4 ($LL.Main.dev274 $5 $1)
-
-$LL.Main.dev275 : ([8], [8], [3]) -> [8]
-$LL.Main.dev275 $0 $1 $2 =
-      $LL.Main.dev2 $0 $1 $2
-
-$LL.Main.dev274 : ([3], [3]) -> [1]
-$LL.Main.dev274 $0 $1 =
-      $LL.Main.dev255 $0 $1
-
-$LL.Main.dev273 : ([8], [8]) -> [8]
-$LL.Main.dev273 $0 $1 =
-      $LL.Main.dev185 ($0 # $1)
+$LL.Main.dev278 : ([3], [8], [8], [3], [3], [3]) -> [1]
+$LL.Main.dev278 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.dev52 $5 $0 $1 $2 $3 $4 ($LL.Main.dev224 $5 $4)
 
 $LL.ReWire.Prelude.not3 : ([1]) -> [1]
 $LL.ReWire.Prelude.not3 $0 =
       1'h1
 
-$LL.Main.dev272 : ([128]) -> [1]
-$LL.Main.dev272 $0 =
-      $LL.Main.dev265 $0
+$LL.Main.dev276 : ([3], [3]) -> [3]
+$LL.Main.dev276 $0 $1 =
+      $LL.Main.dev247 $0 $1
 
-$LL.Main.dev271 : ([3], [3]) -> [3]
-$LL.Main.dev271 $0 $1 =
-      $LL.Main.dev235 $0 $1
+$LL.Main.dev275 : ([3], [8], [8], [3], [3]) -> [8]
+$LL.Main.dev275 $0 $1 $2 $3 $4 =
+      $LL.Main.dev217 $0 $1 $2 $3 $4
 
-$LL.Main.dev270 : ([3], [3]) -> [1]
-$LL.Main.dev270 $0 $1 =
-      ult (zext 128 $0) (zext 128 $1)
+$LL.Main.dev274 : ([3], [3]) -> [3]
+$LL.Main.dev274 $0 $1 =
+      trunc 3 (umod (add (zext 128 $0) (zext 128 $1)) 128'h8)
 
-$LL.Main.dev269 : ([3]) -> [1]
+$LL.Main.dev273 : ([3], [3]) -> [3]
+$LL.Main.dev273 $0 $1 =
+      $LL.Main.dev269 ($0 # $1)
+
+$LL.Main.dev272 : ([8], [8]) -> [8]
+$LL.Main.dev272 $0 $1 =
+      $LL.Main.dev129 $0 $1
+
+$LL.Main.dev271 : ([3], [3], [1]) -> [3]
+$LL.Main.dev271 $0 $1 $2 =
+      $LL.Main.dev276 $0 $1
+
+$LL.Main.dev270 : ([3], [8], [8], [3], [3]) -> [8]
+$LL.Main.dev270 $0 $1 $2 $3 $4 =
+      $LL.Main.dev49 $0 $1 $2 $3 $4
+
+$LL.Main.dev269 : ([6]) -> [3]
 $LL.Main.dev269 $0 =
-      $LL.Main.dev272 (zext 128 $0)
+      $LL.Main.dev229 $0[3 +: 3] $0[0 +: 3]
 
-$LL.Main.dev268 : ([8], [3], [8], [3]) -> [8]
-$LL.Main.dev268 $0 $1 $2 $3 =
-      $LL.Main.dev171 $0 $1 $3 $2 3'h0 # $LL.Main.dev171 $0 $1 $3 $2 3'h1 # $LL.Main.dev171 $0 $1 $3 $2 3'h2 # $LL.Main.dev171 $0 $1 $3 $2 3'h3 # $LL.Main.dev171 $0 $1 $3 $2 3'h4 # $LL.Main.dev171 $0 $1 $3 $2 3'h5 # $LL.Main.dev171 $0 $1 $3 $2 3'h6 # $LL.Main.dev171 $0 $1 $3 $2 3'h7
+$LL.Main.dev268 : ([8], [8], [3]) -> [8]
+$LL.Main.dev268 $0 $1 $2 =
+      $LL.Main.dev192 $0 $2 $1
 
-$LL.Main.dev267 : ([6]) -> [1]
-$LL.Main.dev267 $0 =
-      $LL.Main.dev205 $0[3 +: 3] $0[0 +: 3]
+$LL.Main.dev267 : ([3], [3]) -> [3]
+$LL.Main.dev267 $0 $1 =
+      $LL.Main.dev254 ($0 # $1)
 
-$LL.Main.dev265 : ([128]) -> [1]
-$LL.Main.dev265 $0 =
-      ReWire.Prelude.not (let $t0 = trunc 1 $0 in
-      $t0)
+$LL.Main.dev266 : ([8], [8]) -> [8]
+$LL.Main.dev266 $0 $1 =
+      $LL.Main.dev190 $1 $0
 
-$LL.Main.dev264 : ([3], [3]) -> [3]
-$LL.Main.dev264 $0 $1 =
-      $LL.Main.dev261 $0 $1
+$LL.Main.dev264 : ([6]) -> [3]
+$LL.Main.dev264 $0 =
+      $LL.Main.dev196 $0[3 +: 3] $0[0 +: 3]
 
-$LL.Main.dev263 : ([3], [3]) -> [3]
-$LL.Main.dev263 $0 $1 =
-      $LL.Main.dev262 $0 $1
-
-$LL.Main.dev262 : ([3], [3]) -> [3]
+$LL.Main.dev262 : ([8], [8]) -> [8]
 $LL.Main.dev262 $0 $1 =
-      $LL.Main.dev278 ($0 # $1)
+      $LL.Main.dev272 $0 $1
 
-$LL.Main.dev261 : ([3], [3]) -> [3]
-$LL.Main.dev261 $0 $1 =
-      $LL.Main.dev244 ($0 # $1)
+$LL.Main.dev260 : ([3]) -> [1]
+$LL.Main.dev260 $0 =
+      $LL.Main.dev252 $0
 
-$LL.Main.dev260 : ([3], [3], [8], [1]) -> [3]
-$LL.Main.dev260 $0 $1 $2 $3 =
-      let $t0 = $1 # $3 in
-      if eq $t0[0 +: 1] 1'h1 then $LL.Main.dev143 $t0[1 +: 3]
-            else $LL.Main.dev158 $0 $1 ($LL.Main.dev284 ($LL.Main.dev285 $2))
+$LL.Main.dev259 : ([3], [3]) -> [3]
+$LL.Main.dev259 $0 $1 =
+      $LL.Main.dev286 ($0 # $1)
 
-$LL.Main.dev256 : ([3], [3]) -> [3]
-$LL.Main.dev256 $0 $1 =
-      $LL.Main.dev159 ($0 # $1)
+$LL.Main.dev258 : ([3], [3]) -> [1]
+$LL.Main.dev258 $0 $1 =
+      $LL.Main.dev140 ($0 # $1)
 
-$LL.Main.dev255 : ([3], [3]) -> [1]
+$LL.Main.dev257 : ([16]) -> [8]
+$LL.Main.dev257 $0 =
+      $LL.Main.dev262 $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.dev256 : ([3], [3], [3], [8], [1]) -> [1]
+$LL.Main.dev256 $0 $1 $2 $3 $4 =
+      $LL.Main.dev246 $0 $1 $2 $3
+
+$LL.Main.dev255 : ([3], [3]) -> [3]
 $LL.Main.dev255 $0 $1 =
-      $LL.Main.dev267 ($0 # $1)
+      trunc 3 (umod (udiv (zext 128 $0) (zext 128 $1)) 128'h8)
 
-$LL.Main.dev254 : ([8], [3], [3], [8], [3]) -> [8]
-$LL.Main.dev254 $0 $1 $2 $3 $4 =
-      $LL.Main.dev276 $0 $4 $1 $2 $3 3'h0 # $LL.Main.dev276 $0 $4 $1 $2 $3 3'h1 # $LL.Main.dev276 $0 $4 $1 $2 $3 3'h2 # $LL.Main.dev276 $0 $4 $1 $2 $3 3'h3 # $LL.Main.dev276 $0 $4 $1 $2 $3 3'h4 # $LL.Main.dev276 $0 $4 $1 $2 $3 3'h5 # $LL.Main.dev276 $0 $4 $1 $2 $3 3'h6 # $LL.Main.dev276 $0 $4 $1 $2 $3 3'h7
+$LL.Main.dev254 : ([6]) -> [3]
+$LL.Main.dev254 $0 =
+      $LL.Main.dev285 $0[3 +: 3] $0[0 +: 3]
 
-$LL.Main.dev253 : ([8], [8]) -> [8]
-$LL.Main.dev253 $0 $1 =
-      $LL.Main.dev42 ($0 # $1)
+$LL.Main.dev253 : ([8]) -> [32]
+$LL.Main.dev253 $0 =
+      $LL.Main.dev249 $0 (Main.x2 $0)
+
+$LL.Main.dev252 : ([3]) -> [1]
+$LL.Main.dev252 $0 =
+      $LL.Main.dev283 (zext 128 $0)
 
 $LL.Main.dev251 : ([3], [3]) -> [3]
 $LL.Main.dev251 $0 $1 =
-      $LL.Main.dev179 $0 $1
+      $LL.Main.dev250 $0 $1
 
 $LL.Main.dev250 : ([3], [3]) -> [3]
 $LL.Main.dev250 $0 $1 =
-      $LL.Main.dev282 $0 $1
+      trunc 3 (umod (mul (zext 128 $0) (zext 128 $1)) 128'h8)
 
-$LL.Main.dev249 : ([8], [3], [3], [8], [3]) -> [8]
-$LL.Main.dev249 $0 $1 $2 $3 $4 =
-      $LL.Main.dev64 $0 $1 $2 $3 ($LL.Main.dev63 $0 $4 $2 ($LL.Main.dev284 ($LL.Main.dev285 $0)))
+$LL.Main.dev249 : ([8], [8]) -> [32]
+$LL.Main.dev249 $0 $1 =
+      $LL.Main.dev $0 $1
 
-$LL.Main.dev248 : ([3], [3]) -> [3]
-$LL.Main.dev248 $0 $1 =
-      $LL.Main.dev200 $0 $1
+$LL.Main.dev247 : ([3], [3]) -> [3]
+$LL.Main.dev247 $0 $1 =
+      $LL.Main.dev273 $0 $1
 
-$LL.Main.dev245 : ([8], [8], [3]) -> [8]
-$LL.Main.dev245 $0 $1 $2 =
-      $LL.Main.dev57 $0 $1 $2
+$LL.Main.dev246 : ([3], [3], [3], [8]) -> [1]
+$LL.Main.dev246 $0 $1 $2 $3 =
+      trunc 1 (lshr $3 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev235 ($LL.Main.dev74 $0 $1) $2))) 128'h1) 128'h1))
 
-$LL.Main.dev244 : ([6]) -> [3]
-$LL.Main.dev244 $0 =
-      $LL.Main.dev250 $0[3 +: 3] $0[0 +: 3]
+$LL.Main.dev244 : ([8], [3], [8], [3]) -> [8]
+$LL.Main.dev244 $0 $1 $2 $3 =
+      $LL.Main.dev45 $0 $1 $2 $3
 
-$LL.Main.dev243 : ([3], [3]) -> [3]
-$LL.Main.dev243 $0 $1 =
-      $LL.Main.dev283 $0 $1
+$LL.Main.dev243 : ([128]) -> [1]
+$LL.Main.dev243 $0 =
+      ReWire.Prelude.not (let $t0 = trunc 1 $0 in
+      $t0)
 
-$LL.Main.dev242 : ([3], [3], [8], [3], [3]) -> [1]
-$LL.Main.dev242 $0 $1 $2 $3 $4 =
-      trunc 1 (lshr $2 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev263 $4 ($LL.Main.dev264 ($LL.Main.dev251 $0 $3) $1)))) 128'h1) 128'h1))
+$LL.Main.dev241 : ([3], [8], [8], [3]) -> [8]
+$LL.Main.dev241 $0 $1 $2 $3 =
+      $LL.Main.dev113 $0 $1 $2 $3
 
-$LL.Main.dev238 : ([8], [3], [3], [8], [3]) -> [8]
+$LL.Main.dev240 : ([8], [3], [3], [8], [3]) -> [1]
+$LL.Main.dev240 $0 $1 $2 $3 $4 =
+      $LL.Main.dev92 $0 $4 $1 $2 $3 ($LL.Main.dev224 $4 $2)
+
+$LL.Main.dev238 : ([3], [3], [8], [8], [3]) -> [8]
 $LL.Main.dev238 $0 $1 $2 $3 $4 =
-      $LL.Main.dev254 $0 $1 $2 $3 $4
+      $LL.Main.dev73 $0 $1 $4 $2 $3 3'h0 # $LL.Main.dev73 $0 $1 $4 $2 $3 3'h1 # $LL.Main.dev73 $0 $1 $4 $2 $3 3'h2 # $LL.Main.dev73 $0 $1 $4 $2 $3 3'h3 # $LL.Main.dev73 $0 $1 $4 $2 $3 3'h4 # $LL.Main.dev73 $0 $1 $4 $2 $3 3'h5 # $LL.Main.dev73 $0 $1 $4 $2 $3 3'h6 # $LL.Main.dev73 $0 $1 $4 $2 $3 3'h7
+
+$LL.Main.dev237 : ([8], [8]) -> [8]
+$LL.Main.dev237 $0 $1 =
+      $LL.Main.dev178 $0 $1
+
+$LL.Main.dev236 : ([3], [3], [8], [3], [3]) -> [1]
+$LL.Main.dev236 $0 $1 $2 $3 $4 =
+      trunc 1 (lshr $2 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev247 ($LL.Main.dev284 ($LL.Main.dev74 $0 $4) $3) $1))) 128'h1) 128'h1))
+
+$LL.Main.dev235 : ([3], [3]) -> [3]
+$LL.Main.dev235 $0 $1 =
+      $LL.Main.dev267 $0 $1
+
+$LL.Main.dev233 : ([3]) -> [3]
+$LL.Main.dev233 $0 =
+      $0
+
+$LL.Main.dev232 : ([3], [3], [8], [3]) -> [1]
+$LL.Main.dev232 $0 $1 $2 $3 =
+      trunc 1 (lshr $2 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev247 ($LL.Main.dev284 $0 $3) $1))) 128'h1) 128'h1))
+
+$LL.Main.dev230 : ([16]) -> [8]
+$LL.Main.dev230 $0 =
+      $LL.Main.dev219 $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.dev229 : ([3], [3]) -> [3]
+$LL.Main.dev229 $0 $1 =
+      $LL.Main.dev274 $0 $1
+
+$LL.Main.dev227 : ([8], [8]) -> [32]
+$LL.Main.dev227 $0 $1 =
+      $LL.Main.dev99 $0 $1 # $LL.Main.dev168 $0 $1 # $LL.Main.dev182 $0 $1 # $LL.Main.dev202 $0 $1
+
+$LL.Main.dev224 : ([3], [3]) -> [1]
+$LL.Main.dev224 $0 $1 =
+      $LL.Main.dev258 $0 $1
+
+$LL.Main.dev223 : ([3], [3]) -> [3]
+$LL.Main.dev223 $0 $1 =
+      $LL.Main.dev264 ($0 # $1)
+
+ReWire.Prelude.not : ([1]) -> [1]
+ReWire.Prelude.not $0 =
+      $LL.ReWire.Prelude.not1 $0 $0
+
+$LL.Main.dev219 : ([8], [8]) -> [8]
+$LL.Main.dev219 $0 $1 =
+      $LL.Main.dev141 $0 $1
+
+$LL.Main.dev218 : ([16]) -> [8]
+$LL.Main.dev218 $0 =
+      $LL.Main.dev237 $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.dev217 : ([3], [8], [8], [3], [3]) -> [8]
+$LL.Main.dev217 $0 $1 $2 $3 $4 =
+      $LL.Main.dev198 $0 $1 $2 $3 $4
+
+$LL.Main.dev214 : ([3], [3]) -> [1]
+$LL.Main.dev214 $0 $1 =
+      $LL.Main.dev174 $0 $1
+
+$LL.Main.dev213 : ([8], [3], [8], [3]) -> [8]
+$LL.Main.dev213 $0 $1 $2 $3 =
+      $LL.Main.dev97 $0 $1 $2 $3
+
+$LL.Main.dev210 : ([3], [8], [8]) -> [8]
+$LL.Main.dev210 $0 $1 $2 =
+      $LL.Main.dev118 $0 $1 $2 3'h2
+
+$LL.Main.dev209 : ([16]) -> [8]
+$LL.Main.dev209 $0 =
+      $LL.Main.dev180 $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.dev207 : ([8], [8], [3]) -> [8]
+$LL.Main.dev207 $0 $1 $2 =
+      $LL.Main.dev120 $0 $1 $2
+
+$LL.Main.dev203 : ([8], [8]) -> [8]
+$LL.Main.dev203 $0 $1 =
+      $LL.Main.dev4 $0 $1 3'h1
+
+$LL.Main.dev202 : ([8], [8]) -> [8]
+$LL.Main.dev202 $0 $1 =
+      $LL.Main.dev37 $0 $1
+
+$LL.Main.dev201 : ([8], [3], [3], [8], [3]) -> [8]
+$LL.Main.dev201 $0 $1 $2 $3 $4 =
+      $LL.Main.dev170 $0 $1 $2 $3 $4
+
+$LL.Main.dev199 : ([8], [3], [3], [3], [1]) -> [1]
+$LL.Main.dev199 $0 $1 $2 $3 $4 =
+      $LL.Main.dev83 $0 $1 $2 $3
+
+$LL.Main.dev198 : ([3], [8], [8], [3], [3]) -> [8]
+$LL.Main.dev198 $0 $1 $2 $3 $4 =
+      $LL.Main.dev270 $0 $1 $2 $3 ($LL.Main.dev195 $4 $0 $1 ($LL.Main.dev260 ($LL.Main.dev282 $1)))
+
+$LL.Main.dev196 : ([3], [3]) -> [3]
+$LL.Main.dev196 $0 $1 =
+      $LL.Main.dev152 $0 $1
+
+$LL.Main.dev195 : ([3], [3], [8], [1]) -> [3]
+$LL.Main.dev195 $0 $1 $2 $3 =
+      if eq $3 1'h1 then $LL.Main.dev233 $0
+            else $LL.Main.dev271 $0 $1 ($LL.Main.dev260 ($LL.Main.dev282 $2))
+
+Main.dev : ([8]) -> [32]
+Main.dev $0 =
+      $LL.Main.dev173 $0
+
+$LL.Main.dev192 : ([8], [3], [8]) -> [8]
+$LL.Main.dev192 $0 $1 $2 =
+      $LL.Main.dev244 $0 $1 $2 3'h2
+
+$LL.Main.dev190 : ([8], [8]) -> [8]
+$LL.Main.dev190 $0 $1 =
+      $LL.Main.dev136 $0 $1 3'h1
+
+$LL.Main.dev187 : ([8], [3], [8], [3]) -> [8]
+$LL.Main.dev187 $0 $1 $2 $3 =
+      $LL.Main.dev240 $0 $1 $3 $2 3'h0 # $LL.Main.dev240 $0 $1 $3 $2 3'h1 # $LL.Main.dev240 $0 $1 $3 $2 3'h2 # $LL.Main.dev240 $0 $1 $3 $2 3'h3 # $LL.Main.dev240 $0 $1 $3 $2 3'h4 # $LL.Main.dev240 $0 $1 $3 $2 3'h5 # $LL.Main.dev240 $0 $1 $3 $2 3'h6 # $LL.Main.dev240 $0 $1 $3 $2 3'h7
+
+$LL.Main.dev182 : ([8], [8]) -> [8]
+$LL.Main.dev182 $0 $1 =
+      $LL.Main.dev78 $0 $1
+
+$LL.Main.dev180 : ([8], [8]) -> [8]
+$LL.Main.dev180 $0 $1 =
+      $LL.Main.dev266 $0 $1
+
+$LL.Main.dev178 : ([8], [8]) -> [8]
+$LL.Main.dev178 $0 $1 =
+      $LL.Main.dev203 $0 $1
+
+$LL.Main.dev177 : ([3], [3]) -> [3]
+$LL.Main.dev177 $0 $1 =
+      $LL.Main.dev247 $1 $0
+
+$LL.Main.dev175 : ([8], [3], [3], [8], [3]) -> [1]
+$LL.Main.dev175 $0 $1 $2 $3 $4 =
+      $LL.Main.dev157 $4 $0 $1 $2 $3 ($LL.Main.dev260 $4)
 
 $LL.Main.x21 : ([8]) -> [8]
 $LL.Main.x21 $0 =
       $LL.Main.x2 $0
 
-$LL.Main.dev236 : ([8], [8], [3], [3]) -> [8]
-$LL.Main.dev236 $0 $1 $2 $3 =
-      $LL.Main.dev234 $0 $1 $2 $3
-
-$LL.Main.dev235 : ([3], [3]) -> [3]
-$LL.Main.dev235 $0 $1 =
-      trunc 3 (umod (add (zext 128 $0) (zext 128 $1)) 128'h8)
-
-$LL.Main.dev234 : ([8], [8], [3], [3]) -> [8]
-$LL.Main.dev234 $0 $1 $2 $3 =
-      $LL.Main.dev62 $0 $3 $1 $2 ($LL.Main.dev264 ($LL.Main.dev285 $0) $3)
-
-$LL.Main.dev233 : ([3], [3]) -> [3]
-$LL.Main.dev233 $0 $1 =
-      $LL.Main.dev256 $0 $1
-
-$LL.Main.dev231 : ([3], [3]) -> [3]
-$LL.Main.dev231 $0 $1 =
-      $LL.Main.dev263 $1 $0
-
-ReWire.Prelude.not : ([1]) -> [1]
-ReWire.Prelude.not $0 =
-      $LL.ReWire.Prelude.not $0 $0
-
-$LL.Main.dev230 : ([8], [3], [8], [3]) -> [8]
-$LL.Main.dev230 $0 $1 $2 $3 =
-      $LL.Main.dev52 $0 $3 $1 $2 ($LL.Main.dev264 ($LL.Main.dev285 $0) $3)
-
-$LL.Main.dev221 : ([8], [3], [3], [3], [1]) -> [1]
-$LL.Main.dev221 $0 $1 $2 $3 $4 =
-      let $t0 = $0 # $1 # $2 # $3 # $4 in
-      $LL.Main.dev175 $t0[10 +: 8] $t0[7 +: 3] $t0[4 +: 3] $t0[1 +: 3]
-
-$LL.Main.dev216 : ([8], [8], [3], [3]) -> [8]
-$LL.Main.dev216 $0 $1 $2 $3 =
-      $LL.Main.dev $0 $1 $2 $3
-
-$LL.Main.dev214 : ([3], [8], [8], [3]) -> [8]
-$LL.Main.dev214 $0 $1 $2 $3 =
-      $LL.Main.dev145 $0 $1 $3 $2 ($LL.Main.dev264 ($LL.Main.dev285 $2) $3)
-
-$LL.Main.dev207 : ([8], [8]) -> [32]
-$LL.Main.dev207 $0 $1 =
-      $LL.Main.dev61 $0 $1 # $LL.Main.dev161 $0 $1 # $LL.Main.dev182 $0 $1 # $LL.Main.dev27 $0 $1
-
-$LL.Main.dev205 : ([3], [3]) -> [1]
-$LL.Main.dev205 $0 $1 =
-      $LL.Main.dev270 $0 $1
-
-Main.dev : ([8]) -> [32]
-Main.dev $0 =
-      $LL.Main.dev11 $0
-
-$LL.Main.dev204 : ([8], [3], [8], [3], [3], [3]) -> [1]
-$LL.Main.dev204 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.dev88 $0 $5 $1 $2 $3 $4 ($LL.Main.dev284 $5)
-
-$LL.Main.dev200 : ([3], [3]) -> [3]
-$LL.Main.dev200 $0 $1 =
-      trunc 3 (umod (mul (zext 128 $0) (zext 128 $1)) 128'h8)
-
-$LL.Main.dev197 : ([8], [3], [3], [3]) -> [1]
-$LL.Main.dev197 $0 $1 $2 $3 =
-      trunc 1 (lshr $0 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev264 ($LL.Main.dev251 $2 $1) $3))) 128'h1) 128'h1))
-
-$LL.Main.dev196 : ([8], [3], [3], [8], [3]) -> [8]
-$LL.Main.dev196 $0 $1 $2 $3 $4 =
-      $LL.Main.dev249 $0 $1 $2 $3 $4
-
-$LL.Main.dev192 : ([8], [8], [3]) -> [8]
-$LL.Main.dev192 $0 $1 $2 =
-      $LL.Main.dev144 $0 $1 $2
-
-$LL.Main.dev187 : ([8], [8], [3]) -> [8]
-$LL.Main.dev187 $0 $1 $2 =
-      $LL.Main.dev97 $2 $0 $1
-
-$LL.Main.dev185 : ([16]) -> [8]
-$LL.Main.dev185 $0 =
-      $LL.Main.dev28 $0[8 +: 8] $0[0 +: 8]
-
-$LL.Main.dev184 : ([8], [8]) -> [8]
-$LL.Main.dev184 $0 $1 =
-      $LL.Main.dev8 $0 $1
-
-$LL.Main.dev182 : ([8], [8]) -> [8]
-$LL.Main.dev182 $0 $1 =
-      $LL.Main.dev32 $0 $1
-
-$LL.Main.dev180 : ([8], [3], [8], [3], [3]) -> [8]
-$LL.Main.dev180 $0 $1 $2 $3 $4 =
-      $LL.Main.dev151 $0 $1 $2 $3 $4
-
-$LL.Main.dev179 : ([3], [3]) -> [3]
-$LL.Main.dev179 $0 $1 =
-      $LL.Main.dev152 ($0 # $1)
-
-$LL.Main.dev175 : ([8], [3], [3], [3]) -> [1]
-$LL.Main.dev175 $0 $1 $2 $3 =
-      trunc 1 (lshr $0 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev233 ($LL.Main.dev251 $3 $2) $1))) 128'h1) 128'h1))
-
-$LL.Main.dev174 : ([8], [3], [8], [3], [3]) -> [8]
-$LL.Main.dev174 $0 $1 $2 $3 $4 =
-      $LL.Main.dev286 $0 $1 $2 $3 $4
-
-$LL.Main.dev171 : ([8], [3], [3], [8], [3]) -> [1]
-$LL.Main.dev171 $0 $1 $2 $3 $4 =
-      $LL.Main.dev67 $0 $1 $2 $3 $4 ($LL.Main.dev274 $4 $2)
-
-$LL.Main.dev170 : ([3], [3], [1]) -> [3]
-$LL.Main.dev170 $0 $1 $2 =
-      let $t0 = $0 # $1 # $2 in
-      $LL.Main.dev33 $t0[4 +: 3] $t0[1 +: 3]
-
-$LL.Main.dev169 : ([8], [8]) -> [32]
-$LL.Main.dev169 $0 $1 =
-      $LL.Main.dev279 $0 $1
-
-$LL.Main.dev167 : ([8], [8], [3], [3], [3], [1]) -> [1]
-$LL.Main.dev167 $0 $1 $2 $3 $4 $5 =
-      let $t0 = $1 # $3 # $4 # $5 in
-      if eq $t0[0 +: 1] 1'h1 then $LL.Main.dev277 $t0[7 +: 8] $t0[4 +: 3] $t0[1 +: 3]
-            else $LL.Main.dev24 $0 $2 $3 $4 ($LL.Main.dev284 $3)
-
-$LL.Main.dev165 : ([3], [3], [3], [3], [8]) -> [1]
-$LL.Main.dev165 $0 $1 $2 $3 $4 =
-      trunc 1 (lshr $4 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev263 ($LL.Main.dev233 ($LL.Main.dev251 $0 $1) $2) $3))) 128'h1) 128'h1))
-
-$LL.Main.dev161 : ([8], [8]) -> [8]
-$LL.Main.dev161 $0 $1 =
-      $LL.Main.dev89 $0 $1
-
-$LL.Main.dev159 : ([6]) -> [3]
-$LL.Main.dev159 $0 =
-      $LL.Main.dev248 $0[3 +: 3] $0[0 +: 3]
-
-$LL.Main.dev158 : ([3], [3], [1]) -> [3]
-$LL.Main.dev158 $0 $1 $2 =
-      let $t0 = $0 # $1 # $2 in
-      $LL.Main.dev231 $t0[4 +: 3] $t0[1 +: 3]
-
-$LL.Main.dev154 : ([3], [8], [3], [8], [3]) -> [8]
-$LL.Main.dev154 $0 $1 $2 $3 $4 =
-      $LL.Main.dev29 $0 $1 $2 $3 $4
-
-$LL.Main.dev152 : ([6]) -> [3]
-$LL.Main.dev152 $0 =
-      $LL.Main.dev243 $0[3 +: 3] $0[0 +: 3]
-
-$LL.Main.dev151 : ([8], [3], [8], [3], [3]) -> [8]
-$LL.Main.dev151 $0 $1 $2 $3 $4 =
-      $LL.Main.dev204 $0 $1 $2 $3 $4 3'h0 # $LL.Main.dev204 $0 $1 $2 $3 $4 3'h1 # $LL.Main.dev204 $0 $1 $2 $3 $4 3'h2 # $LL.Main.dev204 $0 $1 $2 $3 $4 3'h3 # $LL.Main.dev204 $0 $1 $2 $3 $4 3'h4 # $LL.Main.dev204 $0 $1 $2 $3 $4 3'h5 # $LL.Main.dev204 $0 $1 $2 $3 $4 3'h6 # $LL.Main.dev204 $0 $1 $2 $3 $4 3'h7
-
-$LL.Main.dev145 : ([3], [8], [3], [8], [3]) -> [8]
-$LL.Main.dev145 $0 $1 $2 $3 $4 =
-      $LL.Main.dev154 $0 $1 $2 $3 $4
-
-$LL.Main.dev144 : ([8], [8], [3]) -> [8]
-$LL.Main.dev144 $0 $1 $2 =
-      $LL.Main.dev73 $0 $1 $2
-
-$LL.Main.dev143 : ([3]) -> [3]
-$LL.Main.dev143 $0 =
-      $0
-
-$LL.Main.dev131 : ([8], [8]) -> [8]
-$LL.Main.dev131 $0 $1 =
-      $LL.Main.dev23 $0 $1
-
-$LL.Main.dev124 : ([8], [8]) -> [8]
-$LL.Main.dev124 $0 $1 =
-      $LL.Main.dev192 $0 $1 3'h1
-
-$LL.Main.dev121 : ([8], [8]) -> [8]
-$LL.Main.dev121 $0 $1 =
-      $LL.Main.dev275 $0 $1 3'h1
-
-$LL.Main.dev115 : ([8], [8]) -> [8]
-$LL.Main.dev115 $0 $1 =
-      $LL.Main.dev59 $1 $0
-
-$LL.Main.dev114 : ([3], [3], [3], [3], [8], [1]) -> [1]
-$LL.Main.dev114 $0 $1 $2 $3 $4 $5 =
-      let $t0 = $0 # $1 # $2 # $3 # $4 # $5 in
-      $LL.Main.dev165 $t0[18 +: 3] $t0[15 +: 3] $t0[12 +: 3] $t0[9 +: 3] $t0[1 +: 8]
-
-$LL.Main.dev108 : ([8], [8]) -> [8]
-$LL.Main.dev108 $0 $1 =
-      $LL.Main.dev121 $0 $1
-
-$LL.Main.dev106 : ([3], [8], [8], [3]) -> [8]
-$LL.Main.dev106 $0 $1 $2 $3 =
-      $LL.Main.dev214 $0 $1 $2 $3
-
-$LL.ReWire.Prelude.not : ([1], [1]) -> [1]
-$LL.ReWire.Prelude.not $0 $1 =
-      if eq $1 1'h1 then 1'h0
-            else $LL.ReWire.Prelude.not3 $0
-
-$LL.Main.dev100 : ([8], [3], [3], [3]) -> [1]
-$LL.Main.dev100 $0 $1 $2 $3 =
-      trunc 1 (lshr $0 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev263 $3 ($LL.Main.dev264 $1 $2)))) 128'h1) 128'h1))
-
-$LL.Main.dev97 : ([3], [8], [8]) -> [8]
-$LL.Main.dev97 $0 $1 $2 =
-      $LL.Main.dev106 $0 $1 $2 3'h2
-
-$LL.Main.dev95 : ([8], [8], [3]) -> [8]
-$LL.Main.dev95 $0 $1 $2 =
-      $LL.Main.dev236 $0 $1 $2 3'h2
-
-$LL.Main.dev94 : ([8], [3], [8], [3]) -> [8]
-$LL.Main.dev94 $0 $1 $2 $3 =
-      $LL.Main.dev43 $0 $1 $2 $3
-
-$LL.Main.dev93 : ([3], [8], [3]) -> [1]
-$LL.Main.dev93 $0 $1 $2 =
-      trunc 1 (lshr $1 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev233 $2 $0))) 128'h1) 128'h1))
-
-$LL.Main.dev89 : ([8], [8]) -> [8]
-$LL.Main.dev89 $0 $1 =
-      $LL.Main.dev31 ($0 # $1)
-
-$LL.Main.dev88 : ([8], [3], [3], [8], [3], [3], [1]) -> [1]
-$LL.Main.dev88 $0 $1 $2 $3 $4 $5 $6 =
-      let $t0 = $0 # $1 # $2 # $5 # $6 in
-      if eq $t0[0 +: 1] 1'h1 then $LL.Main.dev100 $t0[10 +: 8] $t0[7 +: 3] $t0[4 +: 3] $t0[1 +: 3]
-            else $LL.Main.dev74 $1 $2 $3 $4 $5 ($LL.Main.dev284 $1)
-
-$LL.Main.dev86 : ([16]) -> [8]
-$LL.Main.dev86 $0 =
-      $LL.Main.dev37 $0[8 +: 8] $0[0 +: 8]
-
-$LL.Main.dev84 : ([8], [3], [8]) -> [8]
-$LL.Main.dev84 $0 $1 $2 =
-      $LL.Main.dev54 $0 $1 $2 3'h2
-
-$LL.Main.dev81 : ([8], [3], [3], [3]) -> [1]
-$LL.Main.dev81 $0 $1 $2 $3 =
-      trunc 1 (lshr $0 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev263 ($LL.Main.dev233 $1 $2) $3))) 128'h1) 128'h1))
-
-$LL.Main.dev74 : ([3], [3], [8], [3], [3], [1]) -> [1]
-$LL.Main.dev74 $0 $1 $2 $3 $4 $5 =
-      let $t0 = $0 # $1 # $2 # $3 # $4 # $5 in
-      $LL.Main.dev242 $t0[18 +: 3] $t0[15 +: 3] $t0[7 +: 8] $t0[4 +: 3] $t0[1 +: 3]
-
-$LL.Main.dev73 : ([8], [8], [3]) -> [8]
-$LL.Main.dev73 $0 $1 $2 =
-      $LL.Main.dev216 $0 $1 $2 3'h2
-
-$LL.Main.dev72 : ([8], [8], [3], [3], [3]) -> [1]
-$LL.Main.dev72 $0 $1 $2 $3 $4 =
-      $LL.Main.dev167 $0 $1 $2 $4 $3 ($LL.Main.dev284 $4)
-
-$LL.Main.dev69 : ([8]) -> [32]
-$LL.Main.dev69 $0 =
-      $LL.Main.dev169 $0 (Main.x2 $0)
-
-$LL.Main.dev67 : ([8], [3], [3], [8], [3], [1]) -> [1]
-$LL.Main.dev67 $0 $1 $2 $3 $4 $5 =
-      let $t0 = $1 # $3 # $4 # $5 in
-      if eq $t0[0 +: 1] 1'h1 then $LL.Main.dev93 $t0[12 +: 3] $t0[4 +: 8] $t0[1 +: 3]
-            else $LL.Main.dev221 $0 $1 $2 $4 ($LL.Main.dev274 $4 $2)
-
-$LL.Main.dev64 : ([8], [3], [3], [8], [3]) -> [8]
-$LL.Main.dev64 $0 $1 $2 $3 $4 =
-      $LL.Main.dev238 $0 $1 $2 $3 $4
-
-$LL.Main.dev63 : ([8], [3], [3], [1]) -> [3]
-$LL.Main.dev63 $0 $1 $2 $3 =
-      let $t0 = $1 # $3 in
-      if eq $t0[0 +: 1] 1'h1 then $LL.Main.dev143 $t0[1 +: 3]
-            else $LL.Main.dev170 $1 $2 ($LL.Main.dev284 ($LL.Main.dev285 $0))
-
-$LL.Main.dev62 : ([8], [3], [8], [3], [3]) -> [8]
-$LL.Main.dev62 $0 $1 $2 $3 $4 =
-      $LL.Main.dev174 $0 $1 $2 $3 $4
-
-$LL.Main.dev61 : ([8], [8]) -> [8]
-$LL.Main.dev61 $0 $1 =
-      $LL.Main.dev253 $0 $1
-
-$LL.Main.dev59 : ([8], [8]) -> [8]
-$LL.Main.dev59 $0 $1 =
-      $LL.Main.dev51 $0 $1 3'h1
-
-$LL.Main.dev57 : ([8], [8], [3]) -> [8]
-$LL.Main.dev57 $0 $1 $2 =
-      $LL.Main.dev95 $0 $1 $2
-
-$LL.Main.dev54 : ([8], [3], [8], [3]) -> [8]
-$LL.Main.dev54 $0 $1 $2 $3 =
-      $LL.Main.dev230 $0 $1 $2 $3
-
-$LL.Main.dev52 : ([8], [3], [3], [8], [3]) -> [8]
-$LL.Main.dev52 $0 $1 $2 $3 $4 =
-      $LL.Main.dev196 $0 $1 $2 $3 $4
-
-$LL.Main.dev51 : ([8], [8], [3]) -> [8]
-$LL.Main.dev51 $0 $1 $2 =
-      $LL.Main.dev187 $0 $1 $2
-
-$LL.Main.dev45 : ([8], [3], [3], [1]) -> [3]
-$LL.Main.dev45 $0 $1 $2 $3 =
-      let $t0 = $2 # $3 in
-      if eq $t0[0 +: 1] 1'h1 then $LL.Main.dev143 $t0[1 +: 3]
-            else $LL.Main.dev158 $1 $2 ($LL.Main.dev284 ($LL.Main.dev285 $0))
-
-$LL.Main.dev43 : ([8], [3], [8], [3]) -> [8]
-$LL.Main.dev43 $0 $1 $2 $3 =
-      $LL.Main.dev268 $0 $1 $2 $3
-
-$LL.Main.dev42 : ([16]) -> [8]
-$LL.Main.dev42 $0 =
-      $LL.Main.dev184 $0[8 +: 8] $0[0 +: 8]
-
-$LL.Main.dev39 : ([8], [8]) -> [8]
-$LL.Main.dev39 $0 $1 =
-      $LL.Main.dev131 $0 $1
-
-$LL.Main.dev37 : ([8], [8]) -> [8]
-$LL.Main.dev37 $0 $1 =
-      $LL.Main.dev115 $0 $1
-
-$LL.Main.dev33 : ([3], [3]) -> [3]
-$LL.Main.dev33 $0 $1 =
-      $LL.Main.dev263 $0 $1
-
-$LL.Main.dev32 : ([8], [8]) -> [8]
-$LL.Main.dev32 $0 $1 =
-      $LL.Main.dev86 ($0 # $1)
-
-$LL.Main.dev31 : ([16]) -> [8]
-$LL.Main.dev31 $0 =
-      $LL.Main.dev39 $0[8 +: 8] $0[0 +: 8]
-
-Main.x2 : ([8]) -> [8]
-Main.x2 $0 =
-      $LL.Main.x21 $0
-
-$LL.Main.dev29 : ([3], [8], [3], [8], [3]) -> [8]
-$LL.Main.dev29 $0 $1 $2 $3 $4 =
-      $LL.Main.dev94 $1 $2 $3 ($LL.Main.dev260 $0 $4 $3 ($LL.Main.dev284 ($LL.Main.dev285 $3)))
-
-$LL.Main.dev28 : ([8], [8]) -> [8]
-$LL.Main.dev28 $0 $1 =
-      $LL.Main.dev108 $0 $1
-
-$LL.Main.dev27 : ([8], [8]) -> [8]
-$LL.Main.dev27 $0 $1 =
-      $LL.Main.dev273 $0 $1
-
-$LL.Main.dev24 : ([8], [3], [3], [3], [1]) -> [1]
-$LL.Main.dev24 $0 $1 $2 $3 $4 =
-      let $t0 = $0 # $1 # $2 # $3 # $4 in
-      $LL.Main.dev197 $t0[10 +: 8] $t0[7 +: 3] $t0[4 +: 3] $t0[1 +: 3]
-
-$LL.Main.dev23 : ([8], [8]) -> [8]
-$LL.Main.dev23 $0 $1 =
-      $LL.Main.dev245 $0 $1 3'h1
+$LL.Main.dev174 : ([3], [3]) -> [1]
+$LL.Main.dev174 $0 $1 =
+      ult (zext 128 $0) (zext 128 $1)
+
+$LL.Main.dev173 : ([8]) -> [32]
+$LL.Main.dev173 $0 =
+      $LL.Main.dev253 $0
+
+$LL.Main.dev170 : ([8], [3], [3], [8], [3]) -> [8]
+$LL.Main.dev170 $0 $1 $2 $3 $4 =
+      $LL.Main.dev131 $0 $1 $2 $3 $4
+
+$LL.Main.dev168 : ([8], [8]) -> [8]
+$LL.Main.dev168 $0 $1 =
+      $LL.Main.dev100 $0 $1
 
 $LL.Pure.dispatch : ([8]) -> [32]
 $LL.Pure.dispatch $0 =
       Main.dev $0
 
-$LL.Main.dev11 : ([8]) -> [32]
-$LL.Main.dev11 $0 =
-      $LL.Main.dev69 $0
+$LL.Main.dev167 : ([3], [3], [8], [8], [3]) -> [8]
+$LL.Main.dev167 $0 $1 $2 $3 $4 =
+      $LL.Main.dev47 $0 $1 $2 $3 $4
+
+$LL.Main.dev160 : ([3], [3], [3], [3], [8]) -> [1]
+$LL.Main.dev160 $0 $1 $2 $3 $4 =
+      trunc 1 (lshr $4 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev247 $2 ($LL.Main.dev235 ($LL.Main.dev74 $3 $0) $1)))) 128'h1) 128'h1))
+
+$LL.Main.dev159 : ([3], [3], [8], [3]) -> [1]
+$LL.Main.dev159 $0 $1 $2 $3 =
+      trunc 1 (lshr $2 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev247 $1 ($LL.Main.dev235 $3 $0)))) 128'h1) 128'h1))
+
+$LL.Main.dev157 : ([3], [8], [3], [3], [8], [1]) -> [1]
+$LL.Main.dev157 $0 $1 $2 $3 $4 $5 =
+      if eq $5 1'h1 then $LL.Main.dev60 $0 $1 $3
+            else $LL.Main.dev256 $0 $2 $3 $4 ($LL.Main.dev260 $0)
+
+$LL.Main.dev152 : ([3], [3]) -> [3]
+$LL.Main.dev152 $0 $1 =
+      trunc 3 (umod (sub (zext 128 $0) (zext 128 $1)) 128'h8)
+
+$LL.Main.dev145 : ([3], [3], [3], [8], [3], [8], [1]) -> [1]
+$LL.Main.dev145 $0 $1 $2 $3 $4 $5 $6 =
+      if eq $6 1'h1 then $LL.Main.dev159 $1 $2 $3 $4
+            else $LL.Main.dev91 $0 $1 $2 $4 $5 ($LL.Main.dev260 $4)
+
+$LL.Main.dev141 : ([8], [8]) -> [8]
+$LL.Main.dev141 $0 $1 =
+      $LL.Main.dev281 $0 $1
+
+$LL.Main.dev140 : ([6]) -> [1]
+$LL.Main.dev140 $0 =
+      $LL.Main.dev214 $0[3 +: 3] $0[0 +: 3]
+
+$LL.Main.dev136 : ([8], [8], [3]) -> [8]
+$LL.Main.dev136 $0 $1 $2 =
+      $LL.Main.dev268 $0 $1 $2
+
+$LL.Main.dev134 : ([3], [3], [8], [8], [3]) -> [8]
+$LL.Main.dev134 $0 $1 $2 $3 $4 =
+      $LL.Main.dev76 $0 $1 $2 $3 $4
+
+$LL.Main.dev131 : ([8], [3], [3], [8], [3]) -> [8]
+$LL.Main.dev131 $0 $1 $2 $3 $4 =
+      $LL.Main.dev107 $0 $1 $3 ($LL.Main.dev195 $4 $2 $3 ($LL.Main.dev260 ($LL.Main.dev282 $3)))
+
+$LL.Main.dev129 : ([8], [8]) -> [8]
+$LL.Main.dev129 $0 $1 =
+      $LL.Main.dev115 $0 $1 3'h1
+
+$LL.Main.dev121 : ([3], [8], [8], [3], [3]) -> [8]
+$LL.Main.dev121 $0 $1 $2 $3 $4 =
+      $LL.Main.dev278 $0 $1 $2 $3 $4 3'h0 # $LL.Main.dev278 $0 $1 $2 $3 $4 3'h1 # $LL.Main.dev278 $0 $1 $2 $3 $4 3'h2 # $LL.Main.dev278 $0 $1 $2 $3 $4 3'h3 # $LL.Main.dev278 $0 $1 $2 $3 $4 3'h4 # $LL.Main.dev278 $0 $1 $2 $3 $4 3'h5 # $LL.Main.dev278 $0 $1 $2 $3 $4 3'h6 # $LL.Main.dev278 $0 $1 $2 $3 $4 3'h7
+
+$LL.Main.dev120 : ([8], [8], [3]) -> [8]
+$LL.Main.dev120 $0 $1 $2 =
+      $LL.Main.dev69 $2 $0 $1
+
+$LL.Main.dev118 : ([3], [8], [8], [3]) -> [8]
+$LL.Main.dev118 $0 $1 $2 $3 =
+      $LL.Main.dev54 $0 $1 $2 $3
+
+$LL.Main.dev115 : ([8], [8], [3]) -> [8]
+$LL.Main.dev115 $0 $1 $2 =
+      $LL.Main.dev38 $0 $1 $2
+
+$LL.Main.dev113 : ([3], [8], [8], [3]) -> [8]
+$LL.Main.dev113 $0 $1 $2 $3 =
+      $LL.Main.dev275 $0 $1 $2 $3 ($LL.Main.dev235 ($LL.Main.dev282 $1) $3)
+
+$LL.Main.dev112 : ([8], [3], [8], [3]) -> [8]
+$LL.Main.dev112 $0 $1 $2 $3 =
+      $LL.Main.dev187 $0 $1 $2 $3
+
+$LL.Main.dev107 : ([8], [3], [8], [3]) -> [8]
+$LL.Main.dev107 $0 $1 $2 $3 =
+      $LL.Main.dev112 $0 $1 $2 $3
+
+$LL.Main.dev105 : ([8], [8]) -> [8]
+$LL.Main.dev105 $0 $1 =
+      $LL.Main.dev257 ($0 # $1)
+
+$LL.Main.dev103 : ([8], [8], [3]) -> [8]
+$LL.Main.dev103 $0 $1 $2 =
+      $LL.Main.dev210 $2 $0 $1
+
+$LL.Main.dev100 : ([8], [8]) -> [8]
+$LL.Main.dev100 $0 $1 =
+      $LL.Main.dev218 ($0 # $1)
+
+$LL.Main.dev99 : ([8], [8]) -> [8]
+$LL.Main.dev99 $0 $1 =
+      $LL.Main.dev105 $0 $1
+
+$LL.Main.dev97 : ([8], [3], [8], [3]) -> [8]
+$LL.Main.dev97 $0 $1 $2 $3 =
+      $LL.Main.dev175 $0 $1 $3 $2 3'h0 # $LL.Main.dev175 $0 $1 $3 $2 3'h1 # $LL.Main.dev175 $0 $1 $3 $2 3'h2 # $LL.Main.dev175 $0 $1 $3 $2 3'h3 # $LL.Main.dev175 $0 $1 $3 $2 3'h4 # $LL.Main.dev175 $0 $1 $3 $2 3'h5 # $LL.Main.dev175 $0 $1 $3 $2 3'h6 # $LL.Main.dev175 $0 $1 $3 $2 3'h7
+
+$LL.Main.dev96 : ([3], [3], [8], [8], [3]) -> [8]
+$LL.Main.dev96 $0 $1 $2 $3 $4 =
+      $LL.Main.dev167 $0 $1 $2 $3 $4
+
+$LL.Main.dev92 : ([8], [3], [3], [3], [8], [1]) -> [1]
+$LL.Main.dev92 $0 $1 $2 $3 $4 $5 =
+      if eq $5 1'h1 then $LL.Main.dev55 $1 $2 $4
+            else $LL.Main.dev199 $0 $1 $2 $3 ($LL.Main.dev224 $1 $3)
+
+$LL.Main.dev91 : ([3], [3], [3], [3], [8], [1]) -> [1]
+$LL.Main.dev91 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.dev160 $0 $1 $2 $3 $4
+
+$LL.ReWire.Prelude.not1 : ([1], [1]) -> [1]
+$LL.ReWire.Prelude.not1 $0 $1 =
+      if eq $1 1'h1 then 1'h0
+            else $LL.ReWire.Prelude.not3 $0
+
+$LL.Main.dev83 : ([8], [3], [3], [3]) -> [1]
+$LL.Main.dev83 $0 $1 $2 $3 =
+      trunc 1 (lshr $0 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev284 ($LL.Main.dev74 $1 $3) $2))) 128'h1) 128'h1))
+
+$LL.Main.dev78 : ([8], [8]) -> [8]
+$LL.Main.dev78 $0 $1 =
+      $LL.Main.dev209 ($0 # $1)
+
+$LL.Main.dev76 : ([3], [3], [8], [8], [3]) -> [8]
+$LL.Main.dev76 $0 $1 $2 $3 $4 =
+      $LL.Main.dev238 $0 $1 $2 $3 $4
+
+$LL.Main.dev74 : ([3], [3]) -> [3]
+$LL.Main.dev74 $0 $1 =
+      $LL.Main.dev223 $0 $1
+
+$LL.Main.dev73 : ([3], [3], [3], [8], [8], [3]) -> [1]
+$LL.Main.dev73 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.dev145 $0 $1 $2 $3 $5 $4 ($LL.Main.dev260 $5)
+
+$LL.Main.dev70 : ([8], [3], [8]) -> [8]
+$LL.Main.dev70 $0 $1 $2 =
+      $LL.Main.dev213 $0 $1 $2 3'h2
+
+$LL.Main.dev69 : ([3], [8], [8]) -> [8]
+$LL.Main.dev69 $0 $1 $2 =
+      $LL.Main.dev241 $0 $1 $2 3'h2
+
+$LL.Main.dev65 : ([3], [3], [8], [3], [3], [1]) -> [1]
+$LL.Main.dev65 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.dev236 $0 $1 $2 $3 $4
+
+$LL.Main.dev60 : ([3], [8], [3]) -> [1]
+$LL.Main.dev60 $0 $1 $2 =
+      trunc 1 (lshr $1 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev235 $0 $2))) 128'h1) 128'h1))
+
+$LL.Main.dev55 : ([3], [3], [8]) -> [1]
+$LL.Main.dev55 $0 $1 $2 =
+      trunc 1 (lshr $2 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev284 $0 $1))) 128'h1) 128'h1))
+
+$LL.Main.dev54 : ([3], [8], [8], [3]) -> [8]
+$LL.Main.dev54 $0 $1 $2 $3 =
+      $LL.Main.dev96 $0 $3 $1 $2 ($LL.Main.dev235 ($LL.Main.dev282 $1) $3)
+
+$LL.Main.dev52 : ([3], [3], [8], [8], [3], [3], [1]) -> [1]
+$LL.Main.dev52 $0 $1 $2 $3 $4 $5 $6 =
+      if eq $6 1'h1 then $LL.Main.dev232 $0 $1 $2 $4
+            else $LL.Main.dev65 $0 $1 $3 $4 $5 ($LL.Main.dev224 $0 $5)
+
+$LL.Main.dev49 : ([3], [8], [8], [3], [3]) -> [8]
+$LL.Main.dev49 $0 $1 $2 $3 $4 =
+      $LL.Main.dev121 $0 $1 $2 $3 $4
+
+$LL.Main.dev47 : ([3], [3], [8], [8], [3]) -> [8]
+$LL.Main.dev47 $0 $1 $2 $3 $4 =
+      $LL.Main.dev134 $0 $1 $2 $3 ($LL.Main.dev9 $0 $4 $2 ($LL.Main.dev260 ($LL.Main.dev282 $2)))
+
+$LL.Main.dev46 : ([3], [3], [1]) -> [3]
+$LL.Main.dev46 $0 $1 $2 =
+      $LL.Main.dev177 $0 $1
+
+$LL.Main.dev45 : ([8], [3], [8], [3]) -> [8]
+$LL.Main.dev45 $0 $1 $2 $3 =
+      $LL.Main.dev201 $0 $3 $1 $2 ($LL.Main.dev235 ($LL.Main.dev282 $2) $3)
 
 $LL.Main.x2 : ([8]) -> [8]
 $LL.Main.x2 $0 =
       mul $0 8'h2
 
-$LL.Main.dev8 : ([8], [8]) -> [8]
-$LL.Main.dev8 $0 $1 =
-      $LL.Main.dev124 $1 $0
+$LL.Main.dev38 : ([8], [8], [3]) -> [8]
+$LL.Main.dev38 $0 $1 $2 =
+      $LL.Main.dev70 $0 $2 $1
 
-$LL.Main.dev5 : ([8], [3], [3], [3], [3], [8], [1]) -> [1]
-$LL.Main.dev5 $0 $1 $2 $3 $4 $5 $6 =
-      let $t0 = $0 # $1 # $3 # $4 # $6 in
-      if eq $t0[0 +: 1] 1'h1 then $LL.Main.dev81 $t0[10 +: 8] $t0[7 +: 3] $t0[4 +: 3] $t0[1 +: 3]
-            else $LL.Main.dev114 $1 $2 $3 $4 $5 ($LL.Main.dev274 $1 $2)
+$LL.Main.dev37 : ([8], [8]) -> [8]
+$LL.Main.dev37 $0 $1 =
+      $LL.Main.dev230 ($0 # $1)
 
-$LL.Main.dev2 : ([8], [8], [3]) -> [8]
-$LL.Main.dev2 $0 $1 $2 =
-      $LL.Main.dev84 $0 $2 $1
+Main.x2 : ([8]) -> [8]
+Main.x2 $0 =
+      $LL.Main.x21 $0
 
-$LL.Main.dev : ([8], [8], [3], [3]) -> [8]
-$LL.Main.dev $0 $1 $2 $3 =
-      $LL.Main.dev72 $0 $1 $2 $3 3'h0 # $LL.Main.dev72 $0 $1 $2 $3 3'h1 # $LL.Main.dev72 $0 $1 $2 $3 3'h2 # $LL.Main.dev72 $0 $1 $2 $3 3'h3 # $LL.Main.dev72 $0 $1 $2 $3 3'h4 # $LL.Main.dev72 $0 $1 $2 $3 3'h5 # $LL.Main.dev72 $0 $1 $2 $3 3'h6 # $LL.Main.dev72 $0 $1 $2 $3 3'h7
+$LL.Main.dev9 : ([3], [3], [8], [1]) -> [3]
+$LL.Main.dev9 $0 $1 $2 $3 =
+      if eq $3 1'h1 then $LL.Main.dev233 $1
+            else $LL.Main.dev46 $0 $1 ($LL.Main.dev260 ($LL.Main.dev282 $2))
+
+$LL.Main.dev4 : ([8], [8], [3]) -> [8]
+$LL.Main.dev4 $0 $1 $2 =
+      $LL.Main.dev103 $0 $1 $2
+
+$LL.Main.dev : ([8], [8]) -> [32]
+$LL.Main.dev $0 $1 =
+      $LL.Main.dev227 $0 $1
 
 device top_level
       input __in0 : [8]
@@ -566,8 +548,7 @@ device top_level
       output __out1 : [8]
       output __out2 : [8]
       output __out3 : [8]
-      let $in = __in0
-      let $res = $Pure.dispatch $in
+      let $res = $Pure.dispatch __in0
       __out0 := $res[24 +: 8]
       __out1 := $res[16 +: 8]
       __out2 := $res[8 +: 8]
