@@ -135,15 +135,15 @@ expandTypeSynonyms (ts, syns0, ds) = (,,) <$> expandSyns ts <*> syns' <*> expand
                   _           -> Nothing
 
 -- | Decides, per extern, whether the user-supplied Haskell implementation
---   (rwPrimExtern's seventh argument) can serve as a model for the Core
+--   (rwPrimExtern's seventh argument) can serve as a model for the
 --   interpreter, and replaces it with an inert placeholder otherwise (so
 --   later transformations don't descend into it). An implementation is kept
 --   only when it is a reference to a top-level definition -- other than the
 --   extern's own enclosing definition, since @f = extern "f" f@ is the
 --   conventional way to declare an extern with no model -- whose reachable
 --   definitions are all non-recursive, first-order, monomorphic, and free of
---   un-synthesizable types; kept references survive to ToCore, which attaches
---   them to the Core extern. Implementations that look like real models but
+--   un-synthesizable types; kept references survive to ToHyle, which
+--   attaches them to the Hyle extern declaration. Implementations that look like real models but
 --   fail these checks are neutered with a warning.
 --
 --   Right after typechecking, an extern application is still a beta-redex
@@ -490,7 +490,7 @@ llExp dn bvs =  \ case
                         lift' $ Lam an tan t $ bind x b''
 
       -- Lifts anything other than a Var in the first Match branch. This case
-      -- is really just normalizing Match (TODO: consider moving to ToCore?).
+      -- is really just normalizing Match (TODO: consider moving to ToHyle?).
       Match an tan t disc p e els -> do
             e' <- llExp' e >>= lift'
             let (v, lvars) = flattenApp e'

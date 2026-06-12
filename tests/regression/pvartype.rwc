@@ -1,50 +1,77 @@
-device top_level:
+$Pure.dispatch : ([1], [1]) -> [3]
+$Pure.dispatch $0 $1 =
+      $LL.Pure.dispatch $1 $0
 
-inputs [("__in0",1)]
-outputs [("__out0",1)]
-states [("__st0",1)]
+$LL.Main.go17 : ([1], [1]) -> [3]
+$LL.Main.go17 $0 $1 =
+      Main.go $1
 
-$Pure.dispatch :: W1 -> W1 -> W3
-$Pure.dispatch $0 $1 = 3'case {1'$1, 1'$0} of
-    {1'@, 1'@} -> $LL.Main.go1
+$LL.Main.go16 : ([2]) -> [1]
+$LL.Main.go16 $0 =
+      $LL.Main.go $0[1 +: 1] $0[0 +: 1]
 
-$Pure.start :: W3
-$Pure.start  = 3'h5
+$LL.Main.go15 : ([1]) -> [1]
+$LL.Main.go15 $0 =
+      $LL.Main.go12 $0
 
-$LL.Main.go16 :: W1 -> W3
-$LL.Main.go16 $0 = {2'h0, 1'$0}
+$LL.Main.go14 : ([1]) -> [3]
+$LL.Main.go14 $1 =
+      2'h2 # $1
 
-$LL.Main.go15 :: W2 -> W1
-$LL.Main.go15 $0 = 1'case 2'$0 of
-    {1'@, 1'@} -> $LL.Main.go11
+$LL.Main.go12 : ([1]) -> [1]
+$LL.Main.go12 $0 =
+      $0
 
-$LL.Main.go11 :: W1 -> W1 -> W1
-$LL.Main.go11 $0 $1 = 1'case {1'$1, 1'$0} of
-    {1'@, 1'h1} -> Id
-    _ -> 1'case {1'$0, 1'$1} of
-      {1'@, 1'@} -> $LL.Main.go
+$LL.Main.go10 : ([3]) -> [3]
+$LL.Main.go10 $0 =
+      $LL.Main.go8 $0[0 +: 1]
 
-$LL.Main.go10 :: W1 -> W3
-$LL.Main.go10 $0 = {2'h2, 1'$0}
+$LL.Main.go9 : ([1]) -> [3]
+$LL.Main.go9 $0 =
+      $LL.Main.go5 $0
 
-$LL.Main.go7 :: W3 -> W3
-$LL.Main.go7 $0 = 3'case 3'$0 of
-    {1'h0, 1'_, 1'@} -> $LL.Main.go6
+$LL.Main.go8 : ([1]) -> [3]
+$LL.Main.go8 $1 =
+      $LL.Main.go4 $1
 
-$LL.Main.go6 :: W1 -> W3
-$LL.Main.go6 $0 = 3'case 1'$0 of
-    {1'@} -> $LL.Main.go10
+$LL.Main.go7 : ([1]) -> [3]
+$LL.Main.go7 $1 =
+      2'h0 # $1
 
-$LL.Main.go1 :: W1 -> W1 -> W3
-$LL.Main.go1 $0 $1 = 3'case 1'$1 of
-    {1'@} -> Main.go
+$LL.Main.go6 : ([1], [1]) -> [1]
+$LL.Main.go6 $0 $1 =
+      let $t0 = $1 # $LL.Main.go15 $0 in
+      if eq $t0[0 +: 1] 1'h1 then $LL.Main.go15 $t0[1 +: 1]
+            else $LL.Main.go2 ($LL.Main.go15 $0) $1
 
-Main.go :: W1 -> W3
-Main.go $0 = 3'case 3'case 1'case {1'$0, 1'$0} of
-        {2'@} -> $LL.Main.go15 of
-      {1'@} -> $LL.Main.go16 of
-    {3'@} -> $LL.Main.go7
+$LL.Main.go5 : ([1]) -> [3]
+$LL.Main.go5 $1 =
+      $LL.Main.go7 $1
 
-$LL.Main.go :: W1 -> W1 -> W1
-$LL.Main.go $0 $1 = 1'case {1'$1, 1'$0} of
-    {1'@, 1'h0} -> Id
+$LL.Main.go4 : ([1]) -> [3]
+$LL.Main.go4 $1 =
+      $LL.Main.go14 $1
+
+$LL.Main.go2 : ([1], [1]) -> [1]
+$LL.Main.go2 $0 $1 =
+      $LL.Main.go15 $1
+
+$LL.Pure.dispatch : ([1], [1]) -> [3]
+$LL.Pure.dispatch $0 $1 =
+      $LL.Main.go17 $0 $1
+
+Main.go : ([1]) -> [3]
+Main.go $0 =
+      $LL.Main.go10 ($LL.Main.go9 ($LL.Main.go16 ($0 # $0)))
+
+$LL.Main.go : ([1], [1]) -> [1]
+$LL.Main.go $0 $1 =
+      $LL.Main.go6 $0 $1
+
+device top_level
+      input __in0 : [1]
+      output __out0 : [1]
+      register __st0 : [1] init 1'h1
+      let $res = $Pure.dispatch __st0 __in0
+      __out0 := $res[1 +: 1]
+      next __st0 := $res[0 +: 1]

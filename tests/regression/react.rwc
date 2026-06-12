@@ -1,32 +1,46 @@
-device top_level:
+$Pure.dispatch : ([1]) -> [2]
+$Pure.dispatch $1 =
+      $LL.Pure.dispatch $1
 
-inputs [("__in0",1)]
-outputs [("__out0",1)]
-states []
+ReWire.Prelude.not : ([1]) -> [1]
+ReWire.Prelude.not $0 =
+      $LL.ReWire.Prelude.not1 $0 $0
 
-$Pure.dispatch :: W1 -> W2
-$Pure.dispatch $0 = 2'case 1'$0 of
-    {1'@} -> $LL.Main.loop
+$LL.ReWire.Prelude.not3 : ([1]) -> [1]
+$LL.ReWire.Prelude.not3 $0 =
+      1'h1
 
-$Pure.start :: W2
-$Pure.start  = 2'h2
+$LL.Main.loop3 : ([1]) -> [2]
+$LL.Main.loop3 $0 =
+      $LL.Main.loop $0
 
-ReWire.Prelude.not :: W1 -> W1
-ReWire.Prelude.not $0 = 1'case {1'$0, 1'$0} of
-    {1'@, 1'@} -> $LL.ReWire.Prelude.not1
+$LL.Pure.dispatch : ([1]) -> [2]
+$LL.Pure.dispatch $0 =
+      Main.loop $0
 
-$LL.ReWire.Prelude.not1 :: W1 -> W1 -> W1
-$LL.ReWire.Prelude.not1 $0 $1 = 1'case 1'$1 of
-    {1'h1} -> 1'h0
-    _ -> 1'h1
+$LL.Main.loop2 : ([2]) -> [2]
+$LL.Main.loop2 $0 =
+      $LL.Main.loop1 $0[0 +: 1]
 
-$LL.Main.loop2 :: W1 -> W2
-$LL.Main.loop2 $0 = {1'h1, 1'$0}
+$LL.Main.loop1 : ([1]) -> [2]
+$LL.Main.loop1 $0 =
+      1'h1 # $0
 
-$LL.Main.loop1 :: W2 -> W2
-$LL.Main.loop1 $0 = 2'case 2'$0 of
-    {1'h0, 1'@} -> $LL.Main.loop2
+Main.loop : ([1]) -> [2]
+Main.loop $0 =
+      $LL.Main.loop3 $0
 
-$LL.Main.loop :: W1 -> W2
-$LL.Main.loop $0 = 2'case {1'h0, 1'case 1'$0 of {1'@} -> ReWire.Prelude.not} of
-    {2'@} -> $LL.Main.loop1
+$LL.Main.loop : ([1]) -> [2]
+$LL.Main.loop $0 =
+      $LL.Main.loop2 (1'h0 # ReWire.Prelude.not $0)
+
+$LL.ReWire.Prelude.not1 : ([1], [1]) -> [1]
+$LL.ReWire.Prelude.not1 $0 $1 =
+      if eq $1 1'h1 then 1'h0
+            else $LL.ReWire.Prelude.not3 $0
+
+device top_level
+      input __in0 : [1]
+      output __out0 : [1]
+      let $res = $Pure.dispatch __in0
+      __out0 := $res[0 +: 1]

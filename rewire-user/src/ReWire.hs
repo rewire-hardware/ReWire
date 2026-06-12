@@ -5,7 +5,7 @@
 module ReWire
       ( module RWC.Primitives
       , error, externWithSig, extern
-      , setRef, getRef, put, get, modify
+      , put, get, modify
       , signal, lift, extrude, unfold
       , natVal, length, len, fromList
       , Bit, W
@@ -37,14 +37,6 @@ externWithSig = rwPrimExtern
 {-# INLINE extern #-}
 extern :: String -> a -> a
 extern n a = externWithSig [] "" "" [] [] n a ""
-
-{-# INLINE setRef #-}
-setRef :: Ref a -> a -> b -> b
-setRef = rwPrimSetRef
-
-{-# INLINE getRef #-}
-getRef :: Ref a -> a
-getRef = rwPrimGetRef
 
 {-# INLINE put #-}
 put :: Monad m => s -> StateT s m ()

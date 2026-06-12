@@ -1,26 +1,21 @@
-device top_level:
+extern mymod
+      clock clk
+      reset rst
+      input x : [16]
+      output out : [8]
 
-inputs [("__in0",16)]
-outputs [("__out0",8)]
-states []
+$LL.Main.loop2 : ([8]) -> [9]
+$LL.Main.loop2 $0 =
+      1'h1 # $0
 
-$Pure.dispatch :: W16 -> W9
-$Pure.dispatch $0 = 9'case 16'$0 of
-    {16'@} -> $LL.Main.loop2
+$LL.Main.loop1 : ([9]) -> [9]
+$LL.Main.loop1 $0 =
+      $LL.Main.loop2 $0[0 +: 8]
 
-$Pure.start :: W9
-$Pure.start  = 9'case 16'h0 of
-    {16'@} -> $LL.Main.loop2
-
-$LL.Main.loop3 :: W8 -> W9
-$LL.Main.loop3 $0 = {1'h1, 8'$0}
-
-$LL.Main.loop2 :: W16 -> W9
-$LL.Main.loop2 $0 = 9'case {1'h0
-    , 8'case 16'$0 of
-      {16'@} -> extern (Sig [] "clk" "rst" [("x",16)] [("out",8)]) "mymod" ""} of
-    {9'@} -> $LL.Main.loop
-
-$LL.Main.loop :: W9 -> W9
-$LL.Main.loop $0 = 9'case 9'$0 of
-    {1'h0, 8'@} -> $LL.Main.loop3
+device top_level
+      input __in0 : [16]
+      output __out0 : [8]
+      instance $x2 of mymod
+      $x2.x := __in0
+      let $res = $LL.Main.loop1 (1'h0 # $x2.out)
+      __out0 := $res[0 +: 8]

@@ -3,7 +3,7 @@
 {-# LANGUAGE Safe #-}
 module ReWire.Crust.Types
       ( TypeAnnotated (typeOf, tyAnn, setTyAnn), maybeSetTyAnn, tupleTy
-      , arr, intTy, strTy, nilTy, refTy, kmonad, (|->)
+      , arr, intTy, strTy, nilTy, kmonad, (|->)
       , codomTy, flattenArrow, pairTy, arrowRight, arrowLeft
       , higherOrder, fundamental, concrete, paramTys
       , finSz, proxyNat, finiteTy, vecSize, vecElemTy, vecTy, evalNat
@@ -181,9 +181,6 @@ ctorNames = \ case
 
 listTy :: Annote -> Ty -> Ty
 listTy an = TyApp an $ TyCon an $ s2n "[_]"
-
-refTy :: Annote -> Ty -> Ty
-refTy an = TyApp an $ TyCon an $ s2n "Ref"
 
 vecTy :: Annote -> Ty -> Ty -> Ty
 vecTy an n = TyApp an $ TyApp an (TyCon an $ s2n "Vec") n

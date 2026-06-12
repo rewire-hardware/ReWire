@@ -3,7 +3,7 @@
 
 module top_level where
 
-// Helpers implementing ReWire Core primitive semantics.
+// Helpers implementing ReWire Hyle primitive semantics.
 rw'resize : {m, n} (fin m, fin n) => [n] -> [m]
 rw'resize x = drop`{n} ((zero : [m]) # x)
 
@@ -13,16 +13,36 @@ rw'repl x = join (repeat`{n} x)
 rw'parity : {n} (fin n) => [n] -> Bit
 rw'parity x = foldr (^) False x
 
+rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
+rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
+
 // $Pure.dispatch
 rw__Pure_dispatch : [1] -> [1]
-rw__Pure_dispatch arg0 = 0b1
+rw__Pure_dispatch x0 = rw__LL_Pure_dispatch x0
 
-// $Pure.start
-rw__Pure_start : [1]
-rw__Pure_start = 0b1
+// $LL.ReWire.Prelude.not3
+rw__LL_ReWire_Prelude_not3 : [1] -> [1]
+rw__LL_ReWire_Prelude_not3 x0 = 0b1
+
+// $LL.Pure.dispatch
+rw__LL_Pure_dispatch : [1] -> [1]
+rw__LL_Pure_dispatch x0 = rw__LL_Main_start1 x0
+
+// $LL.Main.start1
+rw__LL_Main_start1 : [1] -> [1]
+rw__LL_Main_start1 x0 = rw__LL_ReWire_Prelude_not3 x0
+
+// Per-cycle step: outputs # next register values.
+rw_step : [1] -> [1]
+rw_step i = s1
+  where
+    s0 : [1]
+    s0 = i
+    s1 : [1]
+    s1 = rw__Pure_dispatch s0
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [1]
 // Outputs, MSB-first: __out0 : [1]
 rw_device : {n} (fin n) => [n][1] -> [n][1]
-rw_device ins = [rw__Pure_dispatch i | i <- ins]
+rw_device ins = [rw_step i | i <- ins]

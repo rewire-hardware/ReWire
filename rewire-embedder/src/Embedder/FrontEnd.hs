@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE Safe #-}
 module Embedder.FrontEnd
       ( embedFile
@@ -35,5 +34,4 @@ embedModule conf fp = runCache $ getModule conf "." fp >>= \ (m,_) -> writeOutpu
             writeOutput :: (MonadError AstError m, MonadIO m, Pretty a) => a -> m ()
             writeOutput a = do
                   let fout = getAtmoFile conf fp
-                  liftIO $ T.writeFile fout $ if | conf^.Config.pretty -> prettyPrint a
-                                                 | otherwise           -> fastPrint a
+                  liftIO $ T.writeFile fout $ if conf^.Config.pretty then prettyPrint a else fastPrint a

@@ -1,74 +1,161 @@
-device top_level:
+$Pure.dispatch : ([128]) -> [129]
+$Pure.dispatch $1 =
+      $LL.Pure.dispatch $1
 
-inputs [("__in0",64),("__in1",64)]
-outputs [("__out0",64),("__out1",64)]
-states []
+$LL.Main.compute29 : ([64]) -> [8]
+$LL.Main.compute29 $0 =
+      $0[56 +: 8]
 
-$Pure.dispatch :: W128 -> W129
-$Pure.dispatch $0 = 129'case 128'$0 of
-    {128'@} -> $LL.Main.loop2
+$LL.Main.compute28 : ([64], [64]) -> [128]
+$LL.Main.compute28 $0 $1 =
+      $LL.Main.compute20 $0 $1
 
-$Pure.start :: W129
-$Pure.start  = 129'h100000000000000000000000000000000
+$LL.Main.compute27 : ([64], [8], [56]) -> [128]
+$LL.Main.compute27 $0 $1 $2 =
+      $LL.Main.compute6 $0 $2 $1 ($LL.Main.compute12 $0)
 
-$LL.Main.compute29 :: W64 -> W8
-$LL.Main.compute29 $0 = 8'case 128'case {128'case 64'$0 of {64'@} -> Resize, 128'h0} of
-      {128'@, 128'@} -> RShift of
-    {128'@} -> Resize
+$LL.Main.compute26 : ([64], [64], [8]) -> [128]
+$LL.Main.compute26 $0 $1 $2 =
+      $LL.Main.compute3 $0 $1 $2
 
-$LL.Main.compute28 :: W128 -> W128
-$LL.Main.compute28 $0 = 128'case 128'$0 of
-    {64'@, 64'@} -> $LL.Main.compute4
+Main.compute : ([128]) -> [128]
+Main.compute $0 =
+      $LL.Main.compute21 $0
 
-$LL.Main.compute27 :: W56 -> W8 -> W64
-$LL.Main.compute27 $0 $1 = 64'case {56'$0, 8'$1} of
-    {64'@} -> $LL.Main.compute24
+$LL.Main.compute25 : ([8], [56], [8], [56]) -> [128]
+$LL.Main.compute25 $0 $1 $2 $3 =
+      $LL.Main.compute11 $0 $1 $2 $3
 
-$LL.Main.compute25 :: W64 -> W8 -> W56 -> W128
-$LL.Main.compute25 $0 $1 $2 = 128'case {64'$0, 56'$2, 8'$1, 8'case 64'$0 of {64'@} -> $LL.Main.compute29} of
-    {64'@, 56'@, 8'@, 8'@} -> $LL.Main.compute1
+$LL.Main.compute24 : ([64], [8], [56]) -> [128]
+$LL.Main.compute24 $0 $1 $2 =
+      $LL.Main.compute27 $0 $1 $2
 
-$LL.Main.loop3 :: W128 -> W129
-$LL.Main.loop3 $0 = {1'h1, 128'$0}
+$LL.Main.compute23 : ([56], [8]) -> [64]
+$LL.Main.compute23 $0 $1 =
+      $LL.Main.compute10 $0 $1
 
-$LL.Main.loop2 :: W128 -> W129
-$LL.Main.loop2 $0 = 129'case {1'h0, 128'case 128'$0 of {128'@} -> $LL.Main.compute28} of
-    {129'@} -> $LL.Main.loop
+$LL.Main.compute22 : ([8], [56]) -> [64]
+$LL.Main.compute22 $0 $1 =
+      $0 # $1
 
-$LL.Main.compute24 :: W64 -> W64
-$LL.Main.compute24 $0 = 64'case 64'$0 of
-    {56'@, 8'@} -> Id
+$LL.Main.compute21 : ([128]) -> [128]
+$LL.Main.compute21 $0 =
+      $LL.Main.compute28 $0[64 +: 64] $0[0 +: 64]
 
-$LL.Main.compute22 :: W8 -> W56 -> W8 -> W56 -> W128
-$LL.Main.compute22 $0 $1 $2 $3 = {64'case {56'$1, 8'$0} of
-    {56'@, 8'@} -> $LL.Main.compute27
-  , 64'case {8'$2, 56'$3} of
-    {8'@, 56'@} -> $LL.Main.compute}
+$LL.Main.compute20 : ([64], [64]) -> [128]
+$LL.Main.compute20 $0 $1 =
+      $LL.Main.compute26 $1 $0 ($LL.Main.compute16 $0)
 
-$LL.Main.compute14 :: W64 -> W8
-$LL.Main.compute14 $0 = 8'case 64'$0 of
-    {8'@, 56'_} -> Id
+$LL.Main.compute19 : ([64]) -> [64]
+$LL.Main.compute19 $0 =
+      $LL.Main.compute22 $0[56 +: 8] $0[0 +: 56]
 
-$LL.Main.loop :: W129 -> W129
-$LL.Main.loop $0 = 129'case 129'$0 of
-    {1'h0, 128'@} -> $LL.Main.loop3
+$LL.Main.compute18 : ([64], [56], [8], [8]) -> [128]
+$LL.Main.compute18 $0 $1 $2 $3 =
+      $LL.Main.compute7 $0 $1 $2 $3
 
-$LL.Main.compute9 :: W64 -> W64
-$LL.Main.compute9 $0 = 64'case 64'$0 of
-    {8'@, 56'@} -> Id
+$LL.Main.compute17 : ([8], [56]) -> [64]
+$LL.Main.compute17 $0 $1 =
+      $LL.Main.compute19 ($0 # $1)
 
-$LL.Main.compute6 :: W64 -> W64 -> W8 -> W128
-$LL.Main.compute6 $0 $1 $2 = 128'case {64'$0, 8'$2, 56'case 64'$1 of {8'_, 56'@} -> Id} of
-    {64'@, 8'@, 56'@} -> $LL.Main.compute25
+$LL.Main.compute16 : ([64]) -> [8]
+$LL.Main.compute16 $0 =
+      $LL.Main.compute29 $0
 
-$LL.Main.compute4 :: W64 -> W64 -> W128
-$LL.Main.compute4 $0 $1 = 128'case {64'$1, 64'$0, 8'case 64'$0 of {64'@} -> $LL.Main.compute14} of
-    {64'@, 64'@, 8'@} -> $LL.Main.compute6
+Main.loop : ([128]) -> [129]
+Main.loop $0 =
+      $LL.Main.loop3 $0
 
-$LL.Main.compute1 :: W64 -> W56 -> W8 -> W8 -> W128
-$LL.Main.compute1 $0 $1 $2 $3 = 128'case {8'$3, 56'$1, 8'$2, 56'case 64'$0 of {56'@, 8'_} -> Id} of
-    {8'@, 56'@, 8'@, 56'@} -> $LL.Main.compute22
+$LL.Main.compute15 : ([64]) -> [3]
+$LL.Main.compute15 $0 =
+      $LL.Main.compute9 $0
 
-$LL.Main.compute :: W8 -> W56 -> W64
-$LL.Main.compute $0 $1 = 64'case {8'$0, 56'$1} of
-    {64'@} -> $LL.Main.compute9
+$LL.Main.compute14 : ([64], [8], [56]) -> [128]
+$LL.Main.compute14 $0 $1 $2 =
+      $LL.Main.compute24 $0 $1 $2
+
+$LL.Main.compute13 : ([64]) -> [64]
+$LL.Main.compute13 $0 =
+      $LL.Main.compute23 $0[8 +: 56] $0[0 +: 8]
+
+$LL.Main.loop3 : ([128]) -> [129]
+$LL.Main.loop3 $0 =
+      $LL.Main.loop1 $0
+
+$LL.Main.compute12 : ([64]) -> [8]
+$LL.Main.compute12 $0 =
+      $LL.Main.compute8 $0
+
+$LL.Main.compute11 : ([8], [56], [8], [56]) -> [128]
+$LL.Main.compute11 $0 $1 $2 $3 =
+      $LL.Main.compute $1 $0 # $LL.Main.compute1 $2 $3
+
+$LL.Main.compute10 : ([56], [8]) -> [64]
+$LL.Main.compute10 $0 $1 =
+      $0 # $1
+
+$LL.Main.compute9 : ([64]) -> [3]
+$LL.Main.compute9 $0 =
+      3'h7
+
+$LL.Main.compute8 : ([64]) -> [8]
+$LL.Main.compute8 $0 =
+      trunc 8 (lshr $0 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute15 $0))) 128'h1) 128'h8))
+
+$LL.Main.compute7 : ([64], [56], [8], [8]) -> [128]
+$LL.Main.compute7 $0 $1 $2 $3 =
+      $LL.Main.compute5 $3 $1 $2 $0[8 +: 56]
+
+$LL.Main.compute6 : ([64], [56], [8], [8]) -> [128]
+$LL.Main.compute6 $0 $1 $2 $3 =
+      $LL.Main.compute18 $0 $1 $2 $3
+
+$LL.Pure.dispatch : ([128]) -> [129]
+$LL.Pure.dispatch $0 =
+      Main.loop $0
+
+$LL.Main.loop2 : ([128]) -> [129]
+$LL.Main.loop2 $0 =
+      1'h1 # $0
+
+$LL.Main.loop1 : ([128]) -> [129]
+$LL.Main.loop1 $0 =
+      $LL.Main.loop (1'h0 # Main.compute $0)
+
+$LL.Main.compute5 : ([8], [56], [8], [56]) -> [128]
+$LL.Main.compute5 $0 $1 $2 $3 =
+      $LL.Main.compute25 $0 $1 $2 $3
+
+$LL.Main.compute4 : ([56], [8]) -> [64]
+$LL.Main.compute4 $0 $1 =
+      $LL.Main.compute13 ($0 # $1)
+
+$LL.Main.compute3 : ([64], [64], [8]) -> [128]
+$LL.Main.compute3 $0 $1 $2 =
+      $LL.Main.compute2 $0 $1 $2
+
+$LL.Main.compute2 : ([64], [64], [8]) -> [128]
+$LL.Main.compute2 $0 $1 $2 =
+      $LL.Main.compute14 $0 $2 $1[0 +: 56]
+
+$LL.Main.compute1 : ([8], [56]) -> [64]
+$LL.Main.compute1 $0 $1 =
+      $LL.Main.compute17 $0 $1
+
+$LL.Main.compute : ([56], [8]) -> [64]
+$LL.Main.compute $0 $1 =
+      $LL.Main.compute4 $0 $1
+
+$LL.Main.loop : ([129]) -> [129]
+$LL.Main.loop $0 =
+      $LL.Main.loop2 $0[0 +: 128]
+
+device top_level
+      input __in0 : [64]
+      input __in1 : [64]
+      output __out0 : [64]
+      output __out1 : [64]
+      let $in = __in0 # __in1
+      let $res = $Pure.dispatch $in
+      __out0 := $res[64 +: 64]
+      __out1 := $res[0 +: 64]

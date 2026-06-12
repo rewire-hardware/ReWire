@@ -13,7 +13,7 @@ module ReWire.Pass
 
 import ReWire.Config (Config, pDebug)
 import ReWire.HSE.Rename (Renamer, allExports)
-import ReWire.Pretty (TextShow, showt)
+import ReWire.Pretty (showt)
 
 import Control.Monad ((>=>), void, when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
@@ -46,8 +46,11 @@ printHeader hd = do
       liftIO $ T.putStrLn   "-- # ===================================================\n"
 
 -- | Dump the header plus (when verbose) the renamer, exports, imports, and
---   the Show'd module.
-printInfoTop :: (MonadIO m, TextShow imps, TextShow mod) => Text -> Renamer -> imps -> Bool -> mod -> m ()
+--   the Show'd module. The imports and module are taken pre-rendered so
+--   callers can choose the rendering (rwc uses TextShow; the embedder uses
+--   derived Show, whose output is identical, to avoid the considerable
+--   compile-time cost of generic TextShow instances for its syntax types).
+printInfoTop :: MonadIO m => Text -> Renamer -> Text -> Bool -> Text -> m ()
 printInfoTop hd rn imps verbose m = do
       printHeader hd
       when verbose $ liftIO $ T.putStrLn "\n-- ## Renamer:\n"
@@ -55,13 +58,13 @@ printInfoTop hd rn imps verbose m = do
       when verbose $ liftIO $ T.putStrLn "\n-- ## Exports:\n"
       when verbose $ liftIO $ T.putStrLn $ showt $ allExports rn
       when verbose $ liftIO $ T.putStrLn "\n-- ## Show imps:\n"
-      when verbose $ liftIO $ T.putStrLn $ showt imps
+      when verbose $ liftIO $ T.putStrLn imps
       when verbose $ liftIO $ T.putStrLn "\n-- ## Show mod:\n"
-      when verbose $ liftIO $ T.putStrLn $ showt m
+      when verbose $ liftIO $ T.putStrLn m
 
-printInfoHSE :: (MonadIO m, TextShow imps) => Text -> Renamer -> imps -> Bool -> S.Module a -> m (S.Module a)
+printInfoHSE :: MonadIO m => Text -> Renamer -> Text -> Bool -> S.Module a -> m (S.Module a)
 printInfoHSE hd rn imps verbose hse = do
-      printInfoTop hd rn imps verbose $ void hse
+      printInfoTop hd rn imps verbose $ showt $ void hse
       when verbose $ liftIO $ T.putStrLn "\n-- ## Pretty HSE mod:\n"
       liftIO $ putStrLn $ P.prettyPrint $ void hse
       pure hse

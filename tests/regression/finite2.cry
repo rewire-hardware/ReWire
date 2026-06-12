@@ -3,7 +3,7 @@
 
 module top_level where
 
-// Helpers implementing ReWire Core primitive semantics.
+// Helpers implementing ReWire Hyle primitive semantics.
 rw'resize : {m, n} (fin m, fin n) => [n] -> [m]
 rw'resize x = drop`{n} ((zero : [m]) # x)
 
@@ -13,71 +13,80 @@ rw'repl x = join (repeat`{n} x)
 rw'parity : {n} (fin n) => [n] -> Bit
 rw'parity x = foldr (^) False x
 
+rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
+rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
+
 // $Pure.dispatch
 rw__Pure_dispatch : [7] -> [6]
-rw__Pure_dispatch arg0 = rw__LL_Main_loop1 arg0
+rw__Pure_dispatch x0 = rw__LL_Pure_dispatch x0
 
-// $Pure.start
-rw__Pure_start : [6]
-rw__Pure_start = 0b100011
+// Main.compute
+rw_Main_compute : [7] -> [5]
+rw_Main_compute x0 = rw__LL_Main_compute x0
 
 // $LL.Main.compute6
-rw__LL_Main_compute6 : [10] -> [5]
-rw__LL_Main_compute6 arg0 = rw__LL_Main_compute (take`{5} arg0) (drop`{5} arg0)
+rw__LL_Main_compute6 : [5] -> [5] -> [5]
+rw__LL_Main_compute6 x0 x1 = rw__LL_Main_compute5 x0 x1
+
+// $LL.Main.compute5
+rw__LL_Main_compute5 : [5] -> [5] -> [5]
+rw__LL_Main_compute5 x0 x1 = rw'resize`{5} (if 0x00000000000000000000000000000014 == zero then ((rw'resize`{128} x0) + (rw'resize`{128} x1)) else (((rw'resize`{128} x0) + (rw'resize`{128} x1)) % 0x00000000000000000000000000000014))
 
 // $LL.Main.loop3
-rw__LL_Main_loop3 : [5] -> [6]
-rw__LL_Main_loop3 arg0 = 0b1 # arg0
+rw__LL_Main_loop3 : [7] -> [6]
+rw__LL_Main_loop3 x0 = rw__LL_Main_loop x0
+
+// $LL.Main.compute4
+rw__LL_Main_compute4 : [5] -> [5]
+rw__LL_Main_compute4 x0 = rw__LL_Main_compute1 x0 0b00110
+
+// Main.loop1
+rw_Main_loop1 : [7] -> [6]
+rw_Main_loop1 x0 = rw__LL_Main_loop3 x0
 
 // $LL.Main.loop2
 rw__LL_Main_loop2 : [6] -> [6]
-rw__LL_Main_loop2 arg0 = rw__LL_Main_loop3 (drop`{1} arg0)
+rw__LL_Main_loop2 x0 = rw__LL_Main_loop1 (drop`{1} x0)
 
 // $LL.Main.loop1
-rw__LL_Main_loop1 : [7] -> [6]
-rw__LL_Main_loop1 arg0 = rw__LL_Main_loop2 s0
-  where
-    s0 : [6]
-    s0 = 0b0 # (rw__LL_Main_compute1 arg0)
+rw__LL_Main_loop1 : [5] -> [6]
+rw__LL_Main_loop1 x0 = 0b1 # x0
 
-// $LL.Main.compute4
-rw__LL_Main_compute4 : [5] -> [5] -> [5]
-rw__LL_Main_compute4 arg0 arg1 = rw__LL_Main_compute6 s0
-  where
-    s0 : [10]
-    s0 = arg0 # arg1
+// $LL.Main.compute3
+rw__LL_Main_compute3 : [7] -> [5]
+rw__LL_Main_compute3 x0 = rw__LL_Main_compute4 (rw'resize`{5} (if 0b0010100 == zero then x0 else (x0 % 0b0010100)))
+
+// $LL.Pure.dispatch
+rw__LL_Pure_dispatch : [7] -> [6]
+rw__LL_Pure_dispatch x0 = rw_Main_loop1 x0
 
 // $LL.Main.compute2
-rw__LL_Main_compute2 : [5] -> [5]
-rw__LL_Main_compute2 arg0 = rw__LL_Main_compute4 (take`{5} s0) (drop`{5} s0)
-  where
-    s0 : [10]
-    s0 = arg0 # 0b00110
+rw__LL_Main_compute2 : [10] -> [5]
+rw__LL_Main_compute2 x0 = rw__LL_Main_compute6 (take`{5} x0) (drop`{5} x0)
 
 // $LL.Main.compute1
-rw__LL_Main_compute1 : [7] -> [5]
-rw__LL_Main_compute1 arg0 = rw__LL_Main_compute2 s2
-  where
-    s0 : [256]
-    s0 = (rw'resize`{128} arg0) # 0x00000000000000000000000000000014
-    s1 : [128]
-    s1 = (take`{128} s0) % (drop`{128} s0)
-    s2 : [5]
-    s2 = rw'resize`{5} s1
+rw__LL_Main_compute1 : [5] -> [5] -> [5]
+rw__LL_Main_compute1 x0 x1 = rw__LL_Main_compute2 (x0 # x1)
 
 // $LL.Main.compute
-rw__LL_Main_compute : [5] -> [5] -> [5]
-rw__LL_Main_compute arg0 arg1 = rw'resize`{5} s2
+rw__LL_Main_compute : [7] -> [5]
+rw__LL_Main_compute x0 = rw__LL_Main_compute3 x0
+
+// $LL.Main.loop
+rw__LL_Main_loop : [7] -> [6]
+rw__LL_Main_loop x0 = rw__LL_Main_loop2 (0b0 # (rw_Main_compute x0))
+
+// Per-cycle step: outputs # next register values.
+rw_step : [7] -> [5]
+rw_step i = drop`{1} s1
   where
-    s0 : [256]
-    s0 = (rw'resize`{128} arg0) # (rw'resize`{128} arg1)
-    s1 : [256]
-    s1 = ((take`{128} s0) + (drop`{128} s0)) # 0x00000000000000000000000000000014
-    s2 : [128]
-    s2 = (take`{128} s1) % (drop`{128} s1)
+    s0 : [7]
+    s0 = i
+    s1 : [6]
+    s1 = rw__Pure_dispatch s0
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [7]
 // Outputs, MSB-first: __out0 : [5]
 rw_device : {n} (fin n) => [n][7] -> [n][5]
-rw_device ins = [drop`{1} (rw__Pure_dispatch i) | i <- ins]
+rw_device ins = [rw_step i | i <- ins]

@@ -21,7 +21,6 @@ import Data.Tuple (swap)
 import GHC.Generics (Generic (..))
 
 data Builtin = Error | Extern
-             | SetRef | GetRef
              | Bind | Return
              | Put | Get
              | Signal | Lift | Extrude | Unfold

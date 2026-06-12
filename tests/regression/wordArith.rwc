@@ -1,35 +1,45 @@
-device top_level:
+$Pure.dispatch : ([8]) -> [9]
+$Pure.dispatch $1 =
+      $LL.Pure.dispatch $1
 
-inputs [("__in0",8)]
-outputs [("__out0",8)]
-states []
+Main.compute : ([8]) -> [8]
+Main.compute $0 =
+      $LL.Main.compute $0
 
-$Pure.dispatch :: W8 -> W9
-$Pure.dispatch $0 = 9'case 8'$0 of
-    {8'@} -> $LL.Main.loop3
+$LL.Main.loop3 : ([8]) -> [9]
+$LL.Main.loop3 $0 =
+      1'h1 # $0
 
-$Pure.start :: W9
-$Pure.start  = 9'h100
+Main.loop1 : ([8]) -> [9]
+Main.loop1 $0 =
+      $LL.Main.loop1 $0
 
-$LL.Main.loop3 :: W8 -> W9
-$LL.Main.loop3 $0 = 9'case {1'h0, 8'case 8'$0 of {8'@} -> $LL.Main.compute} of
-    {9'@} -> $LL.Main.loop
+$LL.Main.compute1 : ([8]) -> [8]
+$LL.Main.compute1 $0 =
+      umod (udiv (mul (pow (add $0 8'h1) 8'h2) (sub $0 8'h2)) 8'h3) (add $0 8'h1)
 
-$LL.Main.loop1 :: W8 -> W9
-$LL.Main.loop1 $0 = {1'h1, 8'$0}
+$LL.Main.loop2 : ([9]) -> [9]
+$LL.Main.loop2 $0 =
+      $LL.Main.loop3 $0[0 +: 8]
 
-$LL.Main.loop :: W9 -> W9
-$LL.Main.loop $0 = 9'case 9'$0 of
-    {1'h0, 8'@} -> $LL.Main.loop1
+$LL.Main.compute : ([8]) -> [8]
+$LL.Main.compute $0 =
+      $LL.Main.compute1 $0
 
-$LL.Main.compute :: W8 -> W8
-$LL.Main.compute $0 = 8'case {8'case {8'case {8'case {8'case {8'$0, 8'h1} of {8'@, 8'@} -> Add, 8'h2} of
-          {8'@, 8'@} -> Pow
-        , 8'case {8'$0, 8'h2} of
-          {8'@, 8'@} -> Sub} of
-        {8'@, 8'@} -> Mul
-      , 8'h3} of
-      {8'@, 8'@} -> Div
-    , 8'case {8'$0, 8'h1} of
-      {8'@, 8'@} -> Add} of
-    {8'@, 8'@} -> Mod
+$LL.Main.loop1 : ([8]) -> [9]
+$LL.Main.loop1 $0 =
+      $LL.Main.loop $0
+
+$LL.Pure.dispatch : ([8]) -> [9]
+$LL.Pure.dispatch $0 =
+      Main.loop1 $0
+
+$LL.Main.loop : ([8]) -> [9]
+$LL.Main.loop $0 =
+      $LL.Main.loop2 (1'h0 # Main.compute $0)
+
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      let $res = $Pure.dispatch __in0
+      __out0 := $res[0 +: 8]

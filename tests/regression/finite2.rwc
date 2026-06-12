@@ -1,51 +1,65 @@
-device top_level:
+$Pure.dispatch : ([7]) -> [6]
+$Pure.dispatch $1 =
+      $LL.Pure.dispatch $1
 
-inputs [("__in0",7)]
-outputs [("__out0",5)]
-states []
+Main.compute : ([7]) -> [5]
+Main.compute $0 =
+      $LL.Main.compute $0
 
-$Pure.dispatch :: W7 -> W6
-$Pure.dispatch $0 = 6'case 7'$0 of
-    {7'@} -> $LL.Main.loop1
+$LL.Main.compute6 : ([5], [5]) -> [5]
+$LL.Main.compute6 $0 $1 =
+      $LL.Main.compute5 $0 $1
 
-$Pure.start :: W6
-$Pure.start  = 6'h23
+$LL.Main.compute5 : ([5], [5]) -> [5]
+$LL.Main.compute5 $0 $1 =
+      trunc 5 (umod (add (zext 128 $0) (zext 128 $1)) 128'h14)
 
-$LL.Main.compute6 :: W10 -> W5
-$LL.Main.compute6 $0 = 5'case 10'$0 of
-    {5'@, 5'@} -> $LL.Main.compute
+$LL.Main.loop3 : ([7]) -> [6]
+$LL.Main.loop3 $0 =
+      $LL.Main.loop $0
 
-$LL.Main.loop3 :: W5 -> W6
-$LL.Main.loop3 $0 = {1'h1, 5'$0}
+$LL.Main.compute4 : ([5]) -> [5]
+$LL.Main.compute4 $0 =
+      $LL.Main.compute1 $0 5'h6
 
-$LL.Main.loop2 :: W6 -> W6
-$LL.Main.loop2 $0 = 6'case 6'$0 of
-    {1'h0, 5'@} -> $LL.Main.loop3
+Main.loop1 : ([7]) -> [6]
+Main.loop1 $0 =
+      $LL.Main.loop3 $0
 
-$LL.Main.loop1 :: W7 -> W6
-$LL.Main.loop1 $0 = 6'case {1'h0, 5'case 7'$0 of {7'@} -> $LL.Main.compute1} of
-    {6'@} -> $LL.Main.loop2
+$LL.Main.loop2 : ([6]) -> [6]
+$LL.Main.loop2 $0 =
+      $LL.Main.loop1 $0[0 +: 5]
 
-$LL.Main.compute4 :: W5 -> W5 -> W5
-$LL.Main.compute4 $0 $1 = 5'case {5'$0, 5'$1} of
-    {10'@} -> $LL.Main.compute6
+$LL.Main.loop1 : ([5]) -> [6]
+$LL.Main.loop1 $0 =
+      1'h1 # $0
 
-$LL.Main.compute2 :: W5 -> W5
-$LL.Main.compute2 $0 = 5'case {5'$0, 5'h6} of
-    {5'@, 5'@} -> $LL.Main.compute4
+$LL.Main.compute3 : ([7]) -> [5]
+$LL.Main.compute3 $0 =
+      $LL.Main.compute4 (trunc 5 (umod $0 7'h14))
 
-$LL.Main.compute1 :: W7 -> W5
-$LL.Main.compute1 $0 = 5'case 5'case 128'case {128'case 7'case 7'$0 of {7'@} -> Resize of {7'@} -> Resize, 128'h14} of
-        {128'@, 128'@} -> Mod of
-      {128'@} -> Resize of
-    {5'@} -> $LL.Main.compute2
+$LL.Pure.dispatch : ([7]) -> [6]
+$LL.Pure.dispatch $0 =
+      Main.loop1 $0
 
-$LL.Main.compute :: W5 -> W5 -> W5
-$LL.Main.compute $0 $1 = 5'case 128'case {128'case {128'case 5'$0 of
-          {5'@} -> Resize
-        , 128'case 5'$1 of
-          {5'@} -> Resize} of
-        {128'@, 128'@} -> Add
-      , 128'h14} of
-      {128'@, 128'@} -> Mod of
-    {128'@} -> Resize
+$LL.Main.compute2 : ([10]) -> [5]
+$LL.Main.compute2 $0 =
+      $LL.Main.compute6 $0[5 +: 5] $0[0 +: 5]
+
+$LL.Main.compute1 : ([5], [5]) -> [5]
+$LL.Main.compute1 $0 $1 =
+      $LL.Main.compute2 ($0 # $1)
+
+$LL.Main.compute : ([7]) -> [5]
+$LL.Main.compute $0 =
+      $LL.Main.compute3 $0
+
+$LL.Main.loop : ([7]) -> [6]
+$LL.Main.loop $0 =
+      $LL.Main.loop2 (1'h0 # Main.compute $0)
+
+device top_level
+      input __in0 : [7]
+      output __out0 : [5]
+      let $res = $Pure.dispatch __in0
+      __out0 := $res[0 +: 5]

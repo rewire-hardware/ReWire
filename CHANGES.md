@@ -2,38 +2,52 @@
 
 ## Unreleased
 
-* The Core interpreter can now evaluate externs with a user-supplied Haskell
+* The Core IR has been replaced by Hyle (`ReWire.Hyle.*`), a new
+  bit-level intermediate representation specified in `doc/hyle.md`: a pure,
+  first-order, total language over width-indexed bitvectors with explicit
+  widths on every operation (resizing only via explicit
+  `zext`/`sext`/`trunc`), explicit let-bindings and muxes instead of
+  pattern/don't-care conventions, and an explicit device construct --
+  named registers with initial values, parallel wire equations, and
+  device-level instances for clocked externs. Division by zero now has one defined
+  semantics on every target (SMT-LIB: `x/0` is all-ones, `x%0` is `x`).
+  The `--core`/`--from-core` flags are unchanged but the `.rwc` format is
+  now Hyle's concrete syntax.
+* The RTL optimizer now fuses slice/concat plumbing through named wires
+  (both expression lets and device-level wires), splits slices of
+  concatenations at the piece boundaries, coalesces adjacent slices of the
+  same base, folds division by a literal zero, and drops the wires fusion
+  leaves unused -- including the argument wires introduced by inlining.
+  Generated Verilog and VHDL are substantially smaller and more readable
+  (the regression-test corpus shrank by roughly a third); interpreter
+  traces are bit-for-bit unchanged.
+* Removed the vestigial reference primitives (`rwPrimSetRef`,
+  `rwPrimGetRef`, `setRef`, `getRef`, and the `Ref` type): the compiler has
+  rejected them since the Hyle migration and no program ever used them.
+  Device-level named wires are the supported mechanism in the IR.
+* Fixed a Verilog backend bug found by cosimulation: an arithmetic right
+  shift nested in an unsigned expression context simulated as a logical shift;
+  the shift is now wrapped in `$unsigned(...)` to isolate its signedness.
+* The interpreter can now evaluate externs with a user-supplied Haskell
   model: the seventh argument of `rwPrimExtern` is now compiled like any other
   definition when it is a reference to a top-level definition whose reachable
   definitions are non-recursive, first-order, monomorphic, and synthesizable --
-  the conventional self-referential idiom (`f = extern "f" f`) still means "no
-  model". The model is attached to the extern in the Core IR (a `model <defn>`
-  suffix in `.rwc` files), the interpreter calls it for unclocked externs, and
-  the Cryptol backend emits a call to it instead of an uninterpreted `parameter`.
-  Implementations that look like real models but fail the usability checks are
-  dropped with a warning, as are models for clocked externs (which are stateful,
-  so a pure per-cycle model can't be cycle-accurate).
-* Compiler warnings: rwc and rwe can now emit non-fatal warnings
+  `f = extern "f" f` still means "no model".
+* Compiler warnings: rwc and rwe now emit non-fatal warnings
   (`file:line:col: Warning: ...` on stderr), with `-w`/`--no-warn` to
   suppress them and `-Werror` to make them fatal. Initial warnings: a live
   call to the built-in `error` function now compiles to a zero (don't-care)
   value with a warning instead of failing outright; an explicitly named
   `--interpret`/`--testbench` inputs file that can't be read warns before
   driving all inputs with zeros; `--testbench` with a target other than
-  Verilog or VHDL warns that no testbench is generated. New warning test
-  suite (`tests/warning/`): each test declares expected-warning substrings
-  with `-- EXPECT-WARNING:` comments and is checked under default flags,
-  `-Werror` (must fail), and `-w` (must be silent).
-* New Cryptol backend (`rwc --cryptol`): translates Core to a self-contained
-  Cryptol module -- one pure function per Core defn plus a `rw_device` stream
-  function modeling the whole device (a sequence of per-cycle inputs to a
-  sequence of per-cycle outputs), bit-for-bit equivalent to the Core
-  interpreter. Intended for verification (e.g., proving equivalence against a
-  hand-written Cryptol spec with SAW) and fast functional simulation.
-  Unclocked externs are declared as uninterpreted functions in a `parameter`
-  block; clocked externs are rejected. The rwc-test cosimulation check gains a
-  fourth leg (when `cryptol` is on the PATH) evaluating `rw_device` against
-  the interpreter trace, and `tests/regression/*.cry` golden tests.
+  Verilog or VHDL warns that no testbench is generated.
+* New Cryptol backend (`rwc --cryptol`): translates the bit-level IR to a
+  self-contained Cryptol module -- one pure function per defn plus a
+  `rw_device` stream function modeling the whole device (a sequence of
+  per-cycle inputs to a sequence of per-cycle outputs), bit-for-bit
+  equivalent to the interpreter. Intended for verification (e.g., proving
+  equivalence against a hand-written Cryptol spec with SAW) and fast
+  functional simulation.
 * The VHDL backend (`rwc --vhdl`) works again, with full feature parity with
   the Verilog backend.
 * New `rwc --testbench[=inputs.yaml]` flag: alongside the Verilog or VHDL
@@ -42,10 +56,10 @@
   outputs each cycle in the same YAML format `--interpret` produces, so a
   simulation trace can be compared directly against the interpreter. The
   rwc-test cosimulation check now uses it for a three-way agreement test
-  (iverilog/vvp vs. ghdl vs. the Core interpreter) with random stimulus.
+  (iverilog/vvp vs. ghdl vs. the interpreter) with random stimulus.
 * Fixed the Verilog backend's arithmetic right shift (`rwPrimRShiftArith`):
   `>>>` on an unsigned operand simulates as a logical shift, so the left
-  operand is now wrapped in `$signed(...)`, matching the Core interpreter's
+  operand is now wrapped in `$signed(...)`, matching the interpreter's
   (sign-extending) semantics.
 * Test coverage expansion across the suites: VHDL golden tests
   (`tests/regression/*.vhdl`, a CLI-flags smoke group exercising verbose
@@ -58,9 +72,9 @@
   disagreed with the compiler: `rwPrimBitSlice`/`rwPrimBitIndex` (bits are
   numbered LSB-at-0, Verilog style) and `rwPrimRNAnd`/`rwPrimRNor`/
   `rwPrimRXNor` (NOT-of-reduction rather than a pairwise fold).
-* The Core interpreter now supports the reduction primitives (`RAnd`,
-  `RNAnd`, `ROr`, `RNor`, `RXOr`, `RXNor`); as a consequence the Core
-  partial evaluator can now constant-fold them.
+* The interpreter now supports the reduction primitives (reduction
+  AND/NAND/OR/NOR/XOR/XNOR); as a consequence the partial evaluator can now
+  constant-fold them.
 
 ## 2.7 (2026-06)
 

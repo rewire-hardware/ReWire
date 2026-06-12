@@ -59,11 +59,11 @@ getModule conf = getModuleWith translate conf
                             >=> pDebug' "Annotating."
                             >=> pure . annotate
                             >=> pDebug' "[Pass 1] Pre-desugaring."
-                            >=> whenDump 1 (printInfoHSE "[Pass 1] Haskell: Pre-desugaring" rn imps)
+                            >=> whenDump 1 (printInfoHSE "[Pass 1] Haskell: Pre-desugaring" rn (showtImps imps))
                             >=> pDebug' "HSE Desugaring."
                             >=> desugar rn
                             >=> pDebug' "[Pass 2] Post-desugaring."
-                            >=> whenDump 2 (printInfoHSE "[Pass 2] Haskell: Post-desugaring" rn imps)
+                            >=> whenDump 2 (printInfoHSE "[Pass 2] Haskell: Post-desugaring" rn (showtImps imps))
                             >=> pDebug' "[Pass 51] Translating to atmo."
                             >=> toAtmo rn
                             >=> whenDump 3 (printInfoAtmo "[Pass 51] Atmo: Pre-embedding" rn imps)
@@ -82,8 +82,14 @@ getModule conf = getModuleWith translate conf
             embedAST fout a =
                   liftIO $ T.writeFile fout (if conf^.C.pretty then prettyPrint a else fastPrint a)
 
+-- | Derived Show rather than TextShow: generic TextShow instances for the
+--   Atmo syntax types cost minutes of compile time, and the derived-Show
+--   output is identical.
+showtImps :: A.Module -> Text
+showtImps = pack . show
+
 printInfoAtmo :: MonadIO m => Text -> Renamer -> A.Module -> Bool -> (A.Module, Exports) -> m (A.Module, Exports)
 printInfoAtmo hd rn imps verbose m = do
-      printInfoTop hd rn imps verbose m
+      printInfoTop hd rn (showtImps imps) verbose (pack $ show m)
       liftIO $ T.putStrLn $ prettyPrint $ fst m
       pure m

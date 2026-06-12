@@ -3,7 +3,7 @@
 
 module top_level where
 
-// Helpers implementing ReWire Core primitive semantics.
+// Helpers implementing ReWire Hyle primitive semantics.
 rw'resize : {m, n} (fin m, fin n) => [n] -> [m]
 rw'resize x = drop`{n} ((zero : [m]) # x)
 
@@ -13,29 +13,44 @@ rw'repl x = join (repeat`{n} x)
 rw'parity : {n} (fin n) => [n] -> Bit
 rw'parity x = foldr (^) False x
 
+rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
+rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
+
 // $Pure.dispatch
 rw__Pure_dispatch : [7] -> [7]
-rw__Pure_dispatch arg0 = rw__LL_Main_dev arg0
+rw__Pure_dispatch x0 = rw__LL_Pure_dispatch x0
 
-// $Pure.start
-rw__Pure_start : [7]
-rw__Pure_start = 0b1100011
+// $LL.Main.dev2
+rw__LL_Main_dev2 : [7] -> [7]
+rw__LL_Main_dev2 x0 = x0
+
+// $LL.Main.dev1
+rw__LL_Main_dev1 : [7] -> [7]
+rw__LL_Main_dev1 x0 = rw_Main_dev (if 0b1100100 == zero then (x0 + 0b0000001) else ((x0 + 0b0000001) % 0b1100100))
+
+// Main.dev
+rw_Main_dev : [7] -> [7]
+rw_Main_dev x0 = rw__LL_Main_dev x0
+
+// $LL.Pure.dispatch
+rw__LL_Pure_dispatch : [7] -> [7]
+rw__LL_Pure_dispatch x0 = rw__LL_Main_dev1 x0
 
 // $LL.Main.dev
 rw__LL_Main_dev : [7] -> [7]
-rw__LL_Main_dev arg0 = rw'resize`{7} s3
+rw__LL_Main_dev x0 = rw__LL_Main_dev2 x0
+
+// Per-cycle step: outputs # next register values.
+rw_step : [7] -> [7]
+rw_step i = s1
   where
-    s0 : [14]
-    s0 = arg0 # 0b0000001
+    s0 : [7]
+    s0 = i
     s1 : [7]
-    s1 = (take`{7} s0) + (drop`{7} s0)
-    s2 : [256]
-    s2 = (rw'resize`{128} s1) # 0x00000000000000000000000000000064
-    s3 : [128]
-    s3 = (take`{128} s2) % (drop`{128} s2)
+    s1 = rw__Pure_dispatch s0
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [7]
 // Outputs, MSB-first: __out0 : [7]
 rw_device : {n} (fin n) => [n][7] -> [n][7]
-rw_device ins = [rw__Pure_dispatch i | i <- ins]
+rw_device ins = [rw_step i | i <- ins]

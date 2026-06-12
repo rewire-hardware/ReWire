@@ -1,1318 +1,1806 @@
-device top_level:
-
-inputs [("__in0",17)]
-outputs [("__out0",15)]
-states [("__st0",70)]
-
-$Pure.dispatch :: W74 -> W17 -> W143
-$Pure.dispatch $0 $1 = 143'case {17'$1, 74'$0} of
-    {17'@, 4'h1, 70'@} -> $LL.Pure.dispatch7
-    _ -> 143'case {17'$1, 74'$0} of
-      {17'@, 4'h2, 70'@} -> $LL.Pure.dispatch2
-      _ -> 143'case {17'$1, 74'$0} of
-        {17'@, 4'h3, 70'@} -> $LL.Pure.dispatch7
-        _ -> 143'case {17'$1, 74'$0} of
-          {17'@, 4'h4, 70'@} -> $LL.Pure.dispatch7
-          _ -> 143'case {17'$1, 74'$0} of
-            {17'@, 4'h5, 70'@} -> $LL.Pure.dispatch
-            _ -> 143'case {17'$1, 74'$0} of
-              {17'@, 4'h6, 70'@} -> $LL.Pure.dispatch3
-              _ -> 143'case {17'$1, 74'$0} of
-                {17'@, 4'h7, 70'@} -> $LL.Pure.dispatch8
-                _ -> 143'case {17'$1, 74'$0} of
-                  {17'@, 4'h8, 70'@} -> $LL.Pure.dispatch7
-                  _ -> 143'case {17'$1, 74'$0} of
-                    {17'@, 4'h0, 70'@} -> $LL.Pure.dispatch7
-
-$Pure.start :: W143
-$Pure.start  = 143'h400000000000000001400000000000000000
-
-$LL.Main.putReg67 :: W8 -> W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putReg67 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {8'$1, 8'$0, 8'$2, 8'$3, 8'$4, 6'$5, 17'$6, 15'$7} of
-    {8'@, 8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putReg14
-
-$LL.Main.nand9 :: W70 -> W70
-$LL.Main.nand9 $0 = 70'case 70'$0 of
-    {70'@} -> Main.incrPC
-
-$LL.Main.loop226 :: W143 -> W143
-$LL.Main.loop226 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.loop216
-
-$LL.Main.loop225 :: W70 -> W143
-$LL.Main.loop225 $0 = {73'h800000000000000000, 70'$0}
-
-$LL.Main.loop223 :: W9 -> W70 -> W70 -> W143
-$LL.Main.loop223 $0 $1 $2 = 143'case {9'$0, 70'$1, 70'$2} of
-    {9'@, 70'@, 70'@} -> $LL.Main.loop215
-
-$LL.Main.loop222 :: W6 -> W78 -> W70
-$LL.Main.loop222 $0 $1 = 70'case {6'$0, 78'$1} of
-    {6'@, 8'@, 70'@} -> $LL.Main.bnz2
-
-$LL.Main.r27 :: W8 -> W8 -> W6 -> W17 -> W15 -> W8
-$LL.Main.r27 $0 $1 $2 $3 $4 = 8'case {8'$0, 6'$2, 17'$3, 15'$4} of
-    {8'@, 6'@, 17'@, 15'@} -> $LL.Main.r35
-
-$LL.Main.loop221 :: W143 -> W143
-$LL.Main.loop221 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.loop214
-
-$LL.Main.reset46 :: W143 -> W143
-$LL.Main.reset46 $0 = 143'case 143'$0 of
-    {3'h1, 55'_, 15'@, 70'@} -> $LL.Main.reset33
-
-$LL.Main.getDataIn2 :: W17 -> W70 -> W78
-$LL.Main.getDataIn2 $0 $1 = {8'case 17'$0 of {17'@} -> $LL.Main.dataIn, 70'$1}
-
-$LL.Main.loop220 :: W17 -> W70 -> W143
-$LL.Main.loop220 $0 $1 = 143'case 143'case 70'case {17'$0, 70'$1} of
-        {17'@, 70'@} -> $LL.Main.putIns11 of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop221
-
-$LL.Main.putReg66 :: W8 -> W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putReg66 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {8'$0, 8'$2, 8'$3, 8'$4, 6'$5, 17'$6, 15'$7} of
-    {8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putReg47
-
-$LL.Main.putDataOut11 :: W8 -> W1 -> W6 -> W8 -> W15
-$LL.Main.putDataOut11 $0 $1 $2 $3 = 15'case {8'$0, 6'$2, 1'$1, 8'$3} of
-    {8'@, 6'@, 1'@, 8'@} -> $LL.Main.putDataOut
-
-$LL.Main.reset45 :: W70 -> W143
-$LL.Main.reset45 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.reset37
-
-$LL.Main.loop217 :: W143 -> W143
-$LL.Main.loop217 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.loop138
-
-$LL.Main.loop216 :: W70 -> W143
-$LL.Main.loop216 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.loop148
-
-$LL.Main.loop215 :: W9 -> W70 -> W70 -> W143
-$LL.Main.loop215 $0 $1 $2 = 143'case {70'$2, 9'$0} of
-    {70'@, 3'h0, 6'_} -> $LL.Main.loop9
-    _ -> 143'case {70'$2, 9'$0} of
-      {70'@, 3'h1, 6'@} -> $LL.Main.loop100
-      _ -> 143'case {70'$2, 9'$0} of
-        {70'@, 3'h2, 6'@} -> $LL.Main.loop71
-        _ -> 143'case {70'$2, 9'$0} of
-          {70'@, 3'h3, 2'@, 2'@, 2'@} -> $LL.Main.loop187
-          _ -> 143'case {70'$2, 9'$0} of
-            {70'@, 3'h4, 6'@} -> $LL.Main.loop199
+$Pure.dispatch : ([74], [17]) -> [143]
+$Pure.dispatch $0 $1 =
+      if eq $0[70 +: 4] 4'h1 then $LL.Pure.dispatch7 $1 $0[0 +: 70]
+            else if eq $0[70 +: 4] 4'h2 then $LL.Pure.dispatch8 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h3 then $LL.Pure.dispatch8 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h4 then $LL.Pure.dispatch8 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h5 then $LL.Pure.dispatch8 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h6 then $LL.Pure.dispatch2 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h7 then $LL.Pure.dispatch8 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h8 then $LL.Pure.dispatch1 $1 $0[0 +: 70] else $LL.Pure.dispatch5 $1 $0[0 +: 70]
+
+$LL.Main.loop226 : ([70]) -> [143]
+$LL.Main.loop226 $0 =
+      $LL.Main.loop216 $0
+
+$LL.Main.nand9 : ([70]) -> [70]
+$LL.Main.nand9 $1 =
+      Main.incrPC $1
+
+$LL.Main.loop225 : ([70]) -> [143]
+$LL.Main.loop225 $1 =
+      $LL.Main.loop94 $1
+
+Main.putWeOut1 : ([70]) -> [70]
+Main.putWeOut1 $0 =
+      $LL.Main.putWeOut5 1'h0 $0
+
+$LL.Main.putReg67 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg67 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg14 $1 $0 $2 $3 $4 $5 $6 $7
+
+$LL.Main.loop224 : ([70]) -> [143]
+$LL.Main.loop224 $1 =
+      $LL.Main.loop16 ($LL.Main.loop142 (Main.getOut $1))
+
+$LL.Main.putReg66 : ([70], [8]) -> [70]
+$LL.Main.putReg66 $0 $1 =
+      $LL.Main.putReg50 $0 $1
+
+$LL.Main.loop223 : ([6], [8], [70]) -> [70]
+$LL.Main.loop223 $0 $1 $2 =
+      $LL.Main.loop148 $0 $1 $2
+
+$LL.Main.finishInstr4 : ([70]) -> [70]
+$LL.Main.finishInstr4 $1 =
+      $LL.Main.finishInstr1 $1
+
+$LL.Main.reset46 : ([17], [70]) -> [143]
+$LL.Main.reset46 $0 $1 =
+      $LL.Main.reset22 ($LL.Main.loop226 (Main.putIns $0 $1))
+
+$LL.Pure.dispatch8 : ([17], [70]) -> [143]
+$LL.Pure.dispatch8 $0 $1 =
+      $LL.Main.loop198 $0 $1
+
+$LL.Main.st11 : ([70]) -> [70]
+$LL.Main.st11 $0 =
+      $LL.Main.st3 $0
+
+$LL.Main.loop221 : ([143]) -> [143]
+$LL.Main.loop221 $0 =
+      $LL.Main.loop162 $0[0 +: 70]
+
+$LL.Main.loop220 : ([78]) -> [70]
+$LL.Main.loop220 $0 =
+      $LL.Main.loop15 $0[70 +: 8] $0[0 +: 70]
+
+$LL.Main.loop219 : ([70]) -> [143]
+$LL.Main.loop219 $1 =
+      $LL.Main.loop211 $1
+
+$LL.Pure.dispatch7 : ([17], [70]) -> [143]
+$LL.Pure.dispatch7 $0 $1 =
+      $LL.Main.loop201 $0 $1
+
+$LL.Main.putReg65 : ([8], [70]) -> [70]
+$LL.Main.putReg65 $0 $1 =
+      $LL.Main.putReg49 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
+
+$LL.Main.loop218 : ([70], [6]) -> [143]
+$LL.Main.loop218 $0 $1 =
+      $LL.Main.loop135 $0 $1
+
+$LL.Main.getOut2 : ([70], [70]) -> [85]
+$LL.Main.getOut2 $0 $1 =
+      Main.outputs $0 # $1
+
+Main.putDataOut1 : ([8], [70]) -> [70]
+Main.putDataOut1 $0 $1 =
+      $LL.Main.putDataOut2 $0 $1
+
+$LL.Main.loop216 : ([70]) -> [143]
+$LL.Main.loop216 $1 =
+      $LL.Main.loop210 $1
+
+$LL.Main.loop215 : ([70], [6]) -> [143]
+$LL.Main.loop215 $0 $1 =
+      $LL.Main.loop172 $1 $0
+
+$LL.Main.loop212 : ([70]) -> [143]
+$LL.Main.loop212 $1 =
+      $LL.Main.loop202 ($LL.Main.loop226 ($LL.Main.loop220 (Main.getDataIn $1)))
+
+$LL.Main.reset44 : ([76]) -> [70]
+$LL.Main.reset44 $0 =
+      $LL.Main.reset43 $0[70 +: 6] $0[0 +: 70]
+
+$LL.Main.loop211 : ([70]) -> [143]
+$LL.Main.loop211 $1 =
+      $LL.Main.loop119 ($LL.Main.loop142 (Main.getOut $1))
 
-$LL.Main.loop214 :: W70 -> W143
-$LL.Main.loop214 $0 = 143'case 70'$0 of
-    {70'@} -> Main.loop
+$LL.Main.putAddrOut10 : ([6], [85]) -> [70]
+$LL.Main.putAddrOut10 $0 $1 =
+      $LL.Main.putAddrOut5 $0 $1[70 +: 15] $1[0 +: 70]
 
-$LL.Main.loop213 :: W17 -> W70 -> W143
-$LL.Main.loop213 $0 $1 = 143'case 143'case 70'case {17'$0, 70'$1} of
-        {17'@, 70'@} -> $LL.Main.putIns11 of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop181
-
-$LL.Main.r26 :: W8 -> W15 -> W8
-$LL.Main.r26 $0 $1 = 8'$0
-
-$LL.Main.putWeOut10 :: W1 -> W85 -> W70
-$LL.Main.putWeOut10 $0 $1 = 70'case {1'$0, 85'$1} of
-    {1'@, 15'@, 70'@} -> $LL.Main.putWeOut3
-
-$LL.Main.putAddrOut10 :: W6 -> W85 -> W70
-$LL.Main.putAddrOut10 $0 $1 = 70'case {6'$0, 85'$1} of
-    {6'@, 15'@, 70'@} -> $LL.Main.putAddrOut9
-
-$LL.Main.putIns14 :: W17 -> W8 -> W6 -> W8 -> W8 -> W8 -> W17 -> W15 -> W70
-$LL.Main.putIns14 $0 $1 $2 $3 $4 $5 $6 $7 = {8'$4, 8'$5, 8'$3, 8'$1, 6'$2, 17'$0, 15'$7}
+$LL.Main.loop210 : ([70]) -> [143]
+$LL.Main.loop210 $1 =
+      73'h800000000000000000 # $1
 
-$LL.Main.loop211 :: W9 -> W70 -> W143
-$LL.Main.loop211 $0 $1 = 143'case {9'$0, 143'case {70'$1, 70'$1} of {140'@} -> $LL.Main.loop73} of
-    {9'@, 143'@} -> $LL.Main.loop58
+$LL.Main.putWeOut10 : ([1], [15], [70]) -> [70]
+$LL.Main.putWeOut10 $0 $1 $2 =
+      $LL.Main.putWeOut7 $0 $1 $2
 
-$LL.Main.r37 :: W8 -> W8 -> W6 -> W17 -> W15 -> W8
-$LL.Main.r37 $0 $1 $2 $3 $4 = 8'case {8'$1, 6'$2, 17'$3, 15'$4} of
-    {8'@, 6'@, 17'@, 15'@} -> $LL.Main.r35
+$LL.Main.instrIn2 : ([17]) -> [9]
+$LL.Main.instrIn2 $0 =
+      $LL.Main.instrIn $0[8 +: 9] $0[0 +: 8]
 
-$LL.Main.loop209 :: W15 -> W70 -> W143
-$LL.Main.loop209 $0 $1 = {54'h20000000000000, 15'$0, 4'h4, 70'$1}
+$LL.Main.putIns14 : ([8], [8], [17], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putIns14 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putIns $0 $1 $2 $3 $4 $5 $6 $7
 
-$LL.Main.loop207 :: W15 -> W70 -> W143
-$LL.Main.loop207 $0 $1 = {58'h80000000000000, 15'$0, 70'$1}
-
-$LL.Main.r25 :: W8 -> W17 -> W15 -> W8
-$LL.Main.r25 $0 $1 $2 = 8'case {8'$0, 15'$2} of
-    {8'@, 15'@} -> $LL.Main.r26
-
-$LL.Main.putReg64 :: W8 -> W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putReg64 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {8'$3, 8'$0, 8'$1, 8'$2, 8'$4, 6'$5, 17'$6, 15'$7} of
-    {8'@, 8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putReg35
-
-$LL.Main.putReg63 :: W8 -> W70 -> W70
-$LL.Main.putReg63 $0 $1 = 70'case {8'$0, 70'$1, 70'$1} of
-    {8'@, 140'@} -> $LL.Main.putReg21
-
-$LL.Main.loop204 :: W70 -> W143
-$LL.Main.loop204 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.loop178
-
-$LL.Main.loop201 :: W15 -> W70 -> W143
-$LL.Main.loop201 $0 $1 = 143'case {15'$0, 70'$1} of
-    {15'@, 70'@} -> $LL.Main.loop209
-
-$LL.Main.inputs7 :: W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W17
-$LL.Main.inputs7 $0 $1 $2 $3 $4 $5 $6 = 17'case {8'$1, 8'$2, 8'$3, 6'$4, 17'$5, 15'$6} of
-    {8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.inputs6
-
-$LL.Main.putReg62 :: W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putReg62 $0 $1 $2 $3 $4 $5 $6 = 70'case {8'$0, 8'$1, 8'$3, 8'$2, 6'$4, 17'$5, 15'$6} of
-    {8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putReg17
-
-$LL.Main.loop200 :: W15 -> W70 -> W143
-$LL.Main.loop200 $0 $1 = {54'h20000000000000, 15'$0, 4'h0, 70'$1}
-
-$LL.Main.loop199 :: W70 -> W6 -> W143
-$LL.Main.loop199 $0 $1 = 143'case {70'$0, 6'$1} of
-    {70'@, 6'@} -> $LL.Main.loop50
-
-$LL.Main.loop198 :: W15 -> W70 -> W143
-$LL.Main.loop198 $0 $1 = 143'case {15'$0, 70'$1} of
-    {15'@, 70'@} -> $LL.Main.loop200
-
-$LL.Main.inputs6 :: W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W17
-$LL.Main.inputs6 $0 $1 $2 $3 $4 $5 = 17'case {8'$1, 8'$2, 6'$3, 17'$4, 15'$5} of
-    {8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.inputs4
-
-$LL.Main.putReg61 :: W70 -> W8 -> W70
-$LL.Main.putReg61 $0 $1 = 70'case {8'$1, 70'$0} of
-    {8'@, 70'@} -> $LL.Main.putReg63
-
-$LL.Main.loop197 :: W143 -> W143
-$LL.Main.loop197 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.loop166
-
-$LL.Main.outputs7 :: W17 -> W15 -> W15
-$LL.Main.outputs7 $0 $1 = 15'$1
-
-$LL.Main.inputs5 :: W70 -> W17
-$LL.Main.inputs5 $0 = 17'case 70'$0 of
-    {8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.inputs7
-
-$LL.Main.loop193 :: W70 -> W143
-$LL.Main.loop193 $0 = 143'case 143'case 70'case 70'$0 of
-        {70'@} -> Main.incrPC of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop197
-
-$LL.Main.putReg59 :: W8 -> W70 -> W70 -> W70
-$LL.Main.putReg59 $0 $1 $2 = 70'case {8'$0, 70'$1} of
-    {8'@, 70'@} -> $LL.Main.putReg2
-
-$LL.Main.putPC14 :: W6 -> W70 -> W70
-$LL.Main.putPC14 $0 $1 = 70'case {6'$0, 70'$1, 70'$1} of
-    {6'@, 140'@} -> $LL.Main.putPC11
-
-$LL.Main.putPC13 :: W6 -> W70 -> W70
-$LL.Main.putPC13 $0 $1 = 70'case {6'$0, 70'$1} of
-    {6'@, 8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putPC8
-
-$LL.Main.loop187 :: W70 -> W2 -> W2 -> W2 -> W143
-$LL.Main.loop187 $0 $1 $2 $3 = 143'case {70'$0, 2'$1, 2'$2, 2'$3} of
-    {70'@, 2'@, 2'@, 2'@} -> $LL.Main.loop32
-
-$LL.Main.putAddrOut9 :: W6 -> W15 -> W70 -> W70
-$LL.Main.putAddrOut9 $0 $1 $2 = 70'case {15'case {6'$0, 15'$1} of {6'@, 15'@} -> $LL.Main.putAddrOut3, 70'$2} of
-    {15'@, 70'@} -> $LL.Main.putOut5
-
-$LL.Main.getDataIn1 :: W87 -> W78
-$LL.Main.getDataIn1 $0 = 78'case 87'$0 of
-    {17'@, 70'@} -> $LL.Main.getDataIn2
-
-$LL.Main.getReg22 :: W70 -> W78
-$LL.Main.getReg22 $0 = 78'case {70'$0, 70'$0} of
-    {140'@} -> $LL.Main.getReg17
-
-$LL.Main.putReg58 :: W8 -> W70 -> W70
-$LL.Main.putReg58 $0 $1 = 70'case {8'$0, 70'$1, 70'$1} of
-    {8'@, 140'@} -> $LL.Main.putReg46
-
-$LL.Main.putReg57 :: W8 -> W2 -> W10 -> W70 -> W70
-$LL.Main.putReg57 $0 $1 $2 $3 = 70'case {70'$3, 10'$2} of
-    {70'@, 2'h1, 8'@} -> $LL.Main.putReg52
-    _ -> 70'case {8'$0, 2'$1, 2'$1, 8'$0, 70'$3} of
-      {8'@, 2'@, 10'@, 70'@} -> $LL.Main.putReg25
-
-$LL.Main.outputs6 :: W70 -> W15
-$LL.Main.outputs6 $0 = 15'case 70'$0 of
-    {8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.outputs2
-
-$LL.Main.putOut14 :: W15 -> W140 -> W70
-$LL.Main.putOut14 $0 $1 = 70'case {15'$0, 140'$1} of
-    {15'@, 70'@, 70'@} -> $LL.Main.putOut10
-
-$LL.Pure.dispatch8 :: W17 -> W70 -> W143
-$LL.Pure.dispatch8 $0 $1 = 143'case {17'$0, 70'$1} of
-    {17'@, 70'@} -> $LL.Main.loop81
-
-$LL.Main.loop181 :: W143 -> W143
-$LL.Main.loop181 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.loop129
-
-$LL.Main.reset39 :: W70 -> W143
-$LL.Main.reset39 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.reset10
-
-$LL.Main.loop180 :: W70 -> W6 -> W143
-$LL.Main.loop180 $0 $1 = 143'case {6'$1, 70'$0} of
-    {6'@, 70'@} -> $LL.Main.loop142
-
-$LL.Main.loop179 :: W143 -> W143
-$LL.Main.loop179 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.loop116
-
-$LL.Main.loop178 :: W70 -> W143
-$LL.Main.loop178 $0 = 143'case 143'case 85'case 70'$0 of
-        {70'@} -> Main.getOut of
-      {85'@} -> $LL.Main.loop140 of
-    {143'@} -> $LL.Main.loop30
-
-$LL.Main.putReg55 :: W70 -> W8 -> W70
-$LL.Main.putReg55 $0 $1 = 70'case {8'$1, 70'$0} of
-    {8'@, 70'@} -> $LL.Main.putReg16
-
-$LL.Main.reset37 :: W70 -> W143
-$LL.Main.reset37 $0 = 143'case 143'case 85'case 70'$0 of
-        {70'@} -> Main.getOut of
-      {85'@} -> $LL.Main.loop140 of
-    {143'@} -> $LL.Main.reset46
-
-$LL.Main.loop173 :: W143 -> W143
-$LL.Main.loop173 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.loop65
-
-$LL.Main.putReg53 :: W8 -> W140 -> W70
-$LL.Main.putReg53 $0 $1 = 70'case {8'$0, 140'$1} of
-    {8'@, 70'@, 70'@} -> $LL.Main.putReg48
-
-Main.getReg1 :: W70 -> W78
-Main.getReg1 $0 = 78'case {4'h0, 70'$0} of
-    {2'@, 2'@, 70'@} -> $LL.Main.getReg6
-
-$LL.Main.bnz6 :: W70 -> W6 -> W70
-$LL.Main.bnz6 $0 $1 = 70'case {70'$0, 6'$1} of
-    {70'@, 6'@} -> $LL.Main.bnz1
-
-$LL.Main.putReg52 :: W70 -> W8 -> W70
-$LL.Main.putReg52 $0 $1 = 70'case {70'$0, 8'$1} of
-    {70'@, 8'@} -> $LL.Main.putReg7
-
-$LL.Main.putPC12 :: W6 -> W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putPC12 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {6'$0, 8'$1, 8'$2, 8'$3, 8'$4, 17'$6, 15'$7} of
-    {6'@, 8'@, 8'@, 8'@, 8'@, 17'@, 15'@} -> $LL.Main.putPC7
-
-$LL.Main.reset36 :: W15 -> W70 -> W143
-$LL.Main.reset36 $0 $1 = {54'h20000000000000, 15'$0, 4'h1, 70'$1}
-
-$LL.Pure.dispatch7 :: W17 -> W70 -> W143
-$LL.Pure.dispatch7 $0 $1 = 143'case {17'$0, 70'$1} of
-    {17'@, 70'@} -> $LL.Main.loop220
-
-$LL.Main.dataIn2 :: W9 -> W8 -> W8
-$LL.Main.dataIn2 $0 $1 = 8'$1
-
-$LL.Main.loop171 :: W70 -> W143
-$LL.Main.loop171 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.loop49
-
-$LL.Main.loop169 :: W143 -> W143
-$LL.Main.loop169 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.loop63
-
-$LL.Main.putPC11 :: W6 -> W140 -> W70
-$LL.Main.putPC11 $0 $1 = 70'case {6'$0, 140'$1} of
-    {6'@, 70'@, 70'@} -> $LL.Main.putPC10
-
-$LL.Main.loop167 :: W9 -> W70 -> W143
-$LL.Main.loop167 $0 $1 = {64'h0, 9'$0, 70'$1}
-
-$LL.Main.putOut12 :: W15 -> W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putOut12 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {8'$3, 15'$0, 8'$1, 8'$2, 8'$4, 6'$5, 17'$6, 15'$7} of
-    {8'@, 15'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putOut11
-
-$LL.Main.loop166 :: W70 -> W143
-$LL.Main.loop166 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.loop163
-
-Main.getReg :: W2 -> W70 -> W78
-Main.getReg $0 $1 = 78'case {2'$0, 2'$0, 70'$1} of
-    {2'@, 2'@, 70'@} -> $LL.Main.getReg6
-
-$LL.Main.instrIn1 :: W9 -> W8 -> W9
-$LL.Main.instrIn1 $0 $1 = 9'$0
-
-$LL.Main.getReg21 :: W70 -> W78
-$LL.Main.getReg21 $0 = 78'case {70'$0, 70'$0} of
-    {140'@} -> $LL.Main.getReg11
-
-$LL.Main.loop163 :: W70 -> W143
-$LL.Main.loop163 $0 = 143'case 143'case 70'case 76'case 70'$0 of
-          {70'@} -> Main.getPC of
-        {76'@} -> $LL.Main.loop112 of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop31
-
-$LL.Main.putReg51 :: W8 -> W70 -> W70 -> W70
-$LL.Main.putReg51 $0 $1 $2 = 70'case {8'$0, 70'$1} of
-    {8'@, 70'@} -> $LL.Main.putReg5
-
-$LL.Main.r24 :: W70 -> W8
-$LL.Main.r24 $0 = 8'case 70'$0 of
-    {8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.r22
-
-$LL.Main.inputs4 :: W8 -> W8 -> W6 -> W17 -> W15 -> W17
-$LL.Main.inputs4 $0 $1 $2 $3 $4 = 17'case {8'$1, 6'$2, 17'$3, 15'$4} of
-    {8'@, 6'@, 17'@, 15'@} -> $LL.Main.inputs
-
-$LL.Main.loop160 :: W15 -> W70 -> W143
-$LL.Main.loop160 $0 $1 = 143'case {15'$0, 70'$1} of
-    {15'@, 70'@} -> $LL.Main.loop89
-
-$LL.Main.r23 :: W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W8
-$LL.Main.r23 $0 $1 $2 $3 $4 $5 = 8'case {8'$1, 8'$2, 6'$3, 17'$4, 15'$5} of
-    {8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.r27
-
-$LL.Main.loop159 :: W143 -> W143
-$LL.Main.loop159 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.loop38
-
-$LL.Main.putDataOut7 :: W8 -> W15 -> W70 -> W70
-$LL.Main.putDataOut7 $0 $1 $2 = 70'case {15'case {8'$0, 15'$1} of {8'@, 15'@} -> $LL.Main.putDataOut6, 70'$2} of
-    {15'@, 70'@} -> $LL.Main.putOut5
-
-$LL.Main.getReg20 :: W70 -> W70 -> W78
-$LL.Main.getReg20 $0 $1 = {8'case 70'$0 of {70'@} -> $LL.Main.r24, 70'$1}
-
-$LL.Main.reset33 :: W15 -> W70 -> W143
-$LL.Main.reset33 $0 $1 = 143'case {15'$0, 70'$1} of
-    {15'@, 70'@} -> $LL.Main.reset36
-
-$LL.Main.putPC10 :: W6 -> W70 -> W70 -> W70
-$LL.Main.putPC10 $0 $1 $2 = 70'case {6'$0, 70'$1} of
-    {6'@, 70'@} -> $LL.Main.putPC13
-
-$LL.Main.loop158 :: W79 -> W143
-$LL.Main.loop158 $0 = 143'case 79'$0 of
-    {9'@, 70'@} -> $LL.Main.loop167
-
-$LL.Main.putReg49 :: W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putReg49 $0 $1 $2 $3 $4 $5 $6 = 70'case {8'$0, 8'$1, 6'$4, 8'$2, 8'$3, 17'$5, 15'$6} of
-    {8'@, 8'@, 6'@, 8'@, 8'@, 17'@, 15'@} -> $LL.Main.putReg
-
-$LL.Main.putWeOut8 :: W1 -> W15 -> W15
-$LL.Main.putWeOut8 $0 $1 = 15'case {1'$0, 15'$1} of
-    {1'@, 1'@, 6'@, 8'@} -> $LL.Main.putWeOut
-
-$LL.Main.r35 :: W8 -> W6 -> W17 -> W15 -> W8
-$LL.Main.r35 $0 $1 $2 $3 = 8'case {8'$0, 17'$2, 15'$3} of
-    {8'@, 17'@, 15'@} -> $LL.Main.r25
-
-$LL.Main.loop155 :: W70 -> W143
-$LL.Main.loop155 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.loop79
-
-$LL.Main.incrPC1 :: W76 -> W70
-$LL.Main.incrPC1 $0 = 70'case 76'$0 of
-    {6'@, 70'@} -> $LL.Main.incrPC
-
-$LL.Main.putReg48 :: W8 -> W70 -> W70 -> W70
-$LL.Main.putReg48 $0 $1 $2 = 70'case {8'$0, 70'$1} of
-    {8'@, 70'@} -> $LL.Main.putReg37
-
-$LL.Main.putReg47 :: W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putReg47 $0 $1 $2 $3 $4 $5 $6 = 70'case {8'$1, 8'$0, 8'$2, 8'$3, 6'$4, 17'$5, 15'$6} of
-    {8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putReg19
-
-$LL.Main.putReg46 :: W8 -> W140 -> W70
-$LL.Main.putReg46 $0 $1 = 70'case {8'$0, 140'$1} of
-    {8'@, 70'@, 70'@} -> $LL.Main.putReg51
-
-$LL.Main.loop148 :: W70 -> W143
-$LL.Main.loop148 $0 = 143'case 143'case 70'case 76'case 70'$0 of
-          {70'@} -> Main.getPC of
-        {76'@} -> $LL.Main.loop112 of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop110
-
-$LL.Main.getReg18 :: W70 -> W70 -> W78
-$LL.Main.getReg18 $0 $1 = {8'case 70'$0 of {70'@} -> $LL.Main.r15, 70'$1}
-
-$LL.Main.loop147 :: W143 -> W143
-$LL.Main.loop147 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.loop106
-
-$LL.Main.r05 :: W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W8
-$LL.Main.r05 $0 $1 $2 $3 $4 $5 $6 = 8'case {8'$0, 8'$2, 8'$3, 6'$4, 17'$5, 15'$6} of
-    {8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.r13
-
-$LL.Main.putIns12 :: W17 -> W140 -> W70
-$LL.Main.putIns12 $0 $1 = 70'case {17'$0, 140'$1} of
-    {17'@, 70'@, 70'@} -> $LL.Main.putIns1
-
-$LL.Main.bnz4 :: W8 -> W6 -> W1 -> W70 -> W70
-$LL.Main.bnz4 $0 $1 $2 $3 = 70'case {70'$3, 1'$2} of
-    {70'@, 1'h1} -> $LL.Main.nand9
-    _ -> 70'case {6'$1, 1'case {8'$0, 8'h0} of {8'@, 8'@} -> Eq, 70'$3} of
-      {6'@, 1'@, 70'@} -> $LL.Main.bnz3
-
-$LL.Main.putOut11 :: W8 -> W15 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putOut11 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {8'$0, 8'$4, 15'$1, 8'$2, 8'$3, 6'$5, 17'$6, 15'$7} of
-    {8'@, 8'@, 15'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putOut4
-
-$LL.Main.putReg43 :: W8 -> W70 -> W70 -> W70
-$LL.Main.putReg43 $0 $1 $2 = 70'case {8'$0, 70'$1} of
-    {8'@, 70'@} -> $LL.Main.putReg28
-
-$LL.Main.putIns11 :: W17 -> W70 -> W70
-$LL.Main.putIns11 $0 $1 = 70'case {17'$0, 70'$1, 70'$1} of
-    {17'@, 140'@} -> $LL.Main.putIns12
-
-$LL.Main.putDataOut6 :: W8 -> W15 -> W15
-$LL.Main.putDataOut6 $0 $1 = 15'case {8'$0, 15'$1} of
-    {8'@, 1'@, 6'@, 8'@} -> $LL.Main.putDataOut11
-
-$LL.Main.loop142 :: W6 -> W70 -> W143
-$LL.Main.loop142 $0 $1 = 143'case 143'case 70'case 70'case {6'$0, 70'$1} of
-          {6'@, 70'@} -> $LL.Main.putAddrOut1 of
-        {70'@} -> Main.putWeOut of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop173
-
-$LL.Main.pc6 :: W70 -> W6
-$LL.Main.pc6 $0 = 6'case 70'$0 of
-    {8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.pc3
-
-$LL.Main.putReg42 :: W8 -> W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putReg42 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {8'$1, 8'$0, 8'$2, 8'$3, 8'$4, 6'$5, 17'$6, 15'$7} of
-    {8'@, 8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putReg29
-
-$LL.Main.getReg17 :: W140 -> W78
-$LL.Main.getReg17 $0 = 78'case 140'$0 of
-    {70'@, 70'@} -> $LL.Main.getReg15
-
-$LL.Main.inputs2 :: W17 -> W15 -> W17
-$LL.Main.inputs2 $0 $1 = 17'$0
-
-$LL.Main.putReg40 :: W10 -> W70 -> W70
-$LL.Main.putReg40 $0 $1 = 70'case {70'$1, 10'$0} of
-    {70'@, 2'h3, 8'@} -> $LL.Main.putReg18
-
-$LL.Main.loop140 :: W85 -> W143
-$LL.Main.loop140 $0 = 143'case 85'$0 of
-    {15'@, 70'@} -> $LL.Main.loop207
-
-$LL.Main.loop139 :: W70 -> W143
-$LL.Main.loop139 $0 = 143'case 143'case 85'case 70'$0 of
-        {70'@} -> Main.getOut of
-      {85'@} -> $LL.Main.loop140 of
-    {143'@} -> $LL.Main.loop13
-
-$LL.Main.putPC8 :: W6 -> W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putPC8 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {6'$0, 8'$3, 8'$1, 8'$2, 8'$4, 6'$5, 17'$6, 15'$7} of
-    {6'@, 8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putPC6
-
-$LL.Main.loop138 :: W70 -> W143
-$LL.Main.loop138 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.loop139
-
-$LL.Main.putPC7 :: W6 -> W8 -> W8 -> W8 -> W8 -> W17 -> W15 -> W70
-$LL.Main.putPC7 $0 $1 $2 $3 $4 $5 $6 = {8'$3, 8'$4, 8'$2, 8'$1, 6'$0, 17'$5, 15'$6}
-
-$LL.Main.loop135 :: W78 -> W70
-$LL.Main.loop135 $0 = 70'case 78'$0 of
-    {8'@, 70'@} -> Main.putReg1
-
-$LL.Main.getReg16 :: W140 -> W78
-$LL.Main.getReg16 $0 = 78'case 140'$0 of
-    {70'@, 70'@} -> $LL.Main.getReg20
-
-$LL.Main.reset29 :: W143 -> W143
-$LL.Main.reset29 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.reset45
-
-$LL.Main.loop132 :: W6 -> W78 -> W70
-$LL.Main.loop132 $0 $1 = 70'case {6'$0, 78'$1} of
-    {6'@, 8'@, 70'@} -> $LL.Main.st
-
-$LL.Main.loop129 :: W70 -> W143
-$LL.Main.loop129 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.loop20
-
-Main.getIns :: W70 -> W87
-Main.getIns $0 = 87'case {70'$0, 70'$0} of
-    {140'@} -> $LL.Main.getIns2
-
-$LL.Main.loop128 :: W143 -> W143
-$LL.Main.loop128 $0 = 143'case 143'$0 of
-    {3'h1, 55'_, 15'@, 70'@} -> $LL.Main.loop10
-
-$LL.Main.loop127 :: W2 -> W2 -> W78 -> W70
-$LL.Main.loop127 $0 $1 $2 = 70'case {2'$0, 2'$1, 78'$2} of
-    {2'@, 2'@, 8'@, 70'@} -> $LL.Main.loop68
-
-$LL.Main.loop126 :: W143 -> W143
-$LL.Main.loop126 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.loop155
-
-$LL.Main.putIns9 :: W17 -> W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putIns9 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {17'$0, 8'$1, 6'$5, 8'$2, 8'$3, 8'$4, 17'$6, 15'$7} of
-    {17'@, 8'@, 6'@, 8'@, 8'@, 8'@, 17'@, 15'@} -> $LL.Main.putIns14
-
-$LL.Main.putPC6 :: W6 -> W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putPC6 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {6'$0, 8'$4, 8'$1, 8'$2, 8'$3, 6'$5, 17'$6, 15'$7} of
-    {6'@, 8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putPC12
-
-Main.putReg1 :: W8 -> W70 -> W70
-Main.putReg1 $0 $1 = 70'case {8'$0, 4'h0, 8'$0, 70'$1} of
-    {8'@, 2'@, 10'@, 70'@} -> $LL.Main.putReg27
-
-$LL.Main.loop124 :: W70 -> W143
-$LL.Main.loop124 $0 = 143'case 143'case 70'case 76'case 70'$0 of
-          {70'@} -> Main.getPC of
-        {76'@} -> $LL.Main.loop112 of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop217
-
-Main.loop :: W70 -> W143
-Main.loop $0 = 143'case 143'case 79'case 70'$0 of
-        {70'@} -> Main.getInstr of
-      {79'@} -> $LL.Main.loop158 of
-    {143'@} -> $LL.Main.loop18
-
-$LL.Main.loop123 :: W70 -> W143
-$LL.Main.loop123 $0 = 143'case 143'case 85'case 70'$0 of
-        {70'@} -> Main.getOut of
-      {85'@} -> $LL.Main.loop140 of
-    {143'@} -> $LL.Main.loop128
-
-$LL.Main.putReg37 :: W8 -> W70 -> W70
-$LL.Main.putReg37 $0 $1 = 70'case {8'$0, 70'$1} of
-    {8'@, 8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putReg13
-
-$LL.Main.putReg36 :: W70 -> W8 -> W70
-$LL.Main.putReg36 $0 $1 = 70'case {70'$0, 8'$1} of
-    {70'@, 8'@} -> $LL.Main.putReg10
-
-$LL.Main.pc5 :: W6 -> W17 -> W15 -> W6
-$LL.Main.pc5 $0 $1 $2 = 6'case {6'$0, 15'$2} of
-    {6'@, 15'@} -> $LL.Main.pc1
-
-$LL.Main.outputs5 :: W8 -> W6 -> W17 -> W15 -> W15
-$LL.Main.outputs5 $0 $1 $2 $3 = 15'case {6'$1, 17'$2, 15'$3} of
-    {6'@, 17'@, 15'@} -> $LL.Main.outputs
-
-$LL.Main.putReg35 :: W8 -> W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putReg35 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {8'$0, 8'$1, 8'$2, 8'$3, 6'$5, 17'$6, 15'$7} of
-    {8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putReg4
-
-$LL.Main.nand5 :: W8 -> W2 -> W78 -> W70
-$LL.Main.nand5 $0 $1 $2 = 70'case {8'$0, 2'$1, 78'$2} of
-    {8'@, 2'@, 8'@, 70'@} -> $LL.Main.nand3
-
-$LL.Main.nand4 :: W2 -> W2 -> W8 -> W70 -> W70
-$LL.Main.nand4 $0 $1 $2 $3 = 70'case {8'$2, 2'$1, 78'case {2'$0, 70'$3} of {2'@, 70'@} -> Main.getReg} of
-    {8'@, 2'@, 78'@} -> $LL.Main.nand5
-
-$LL.Main.loop121 :: W70 -> W70 -> W143
-$LL.Main.loop121 $0 $1 = {3'h3, 70'$0, 70'$1}
-
-$LL.Main.putAddrOut6 :: W6 -> W1 -> W6 -> W8 -> W15
-$LL.Main.putAddrOut6 $0 $1 $2 $3 = {1'$1, 6'$0, 8'$3}
-
-$LL.Main.incrPC :: W6 -> W70 -> W70
-$LL.Main.incrPC $0 $1 = 70'case {6'case {6'$0, 6'h1} of {6'@, 6'@} -> Add, 70'$1} of
-    {6'@, 70'@} -> $LL.Main.putPC14
-
-$LL.Main.pc4 :: W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W6
-$LL.Main.pc4 $0 $1 $2 $3 $4 $5 = 6'case {8'$1, 8'$2, 6'$3, 17'$4, 15'$5} of
-    {8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.pc2
-
-$LL.Main.putOut10 :: W15 -> W70 -> W70 -> W70
-$LL.Main.putOut10 $0 $1 $2 = 70'case {15'$0, 70'$1} of
-    {15'@, 70'@} -> $LL.Main.putOut1
-
-$LL.Main.r34 :: W70 -> W8
-$LL.Main.r34 $0 = 8'case 70'$0 of
-    {8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.r33
-
-$LL.Main.loop118 :: W143 -> W143
-$LL.Main.loop118 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.loop204
-
-$LL.Main.putReg33 :: W8 -> W70 -> W70
-$LL.Main.putReg33 $0 $1 = 70'case {8'$0, 70'$1, 70'$1} of
-    {8'@, 140'@} -> $LL.Main.putReg32
-
-$LL.Main.putReg32 :: W8 -> W140 -> W70
-$LL.Main.putReg32 $0 $1 = 70'case {8'$0, 140'$1} of
-    {8'@, 70'@, 70'@} -> $LL.Main.putReg43
-
-$LL.Main.getReg15 :: W70 -> W70 -> W78
-$LL.Main.getReg15 $0 $1 = {8'case 70'$0 of {70'@} -> $LL.Main.r0, 70'$1}
-
-$LL.Main.loop116 :: W70 -> W143
-$LL.Main.loop116 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.loop35
-
-$LL.Main.loop113 :: W70 -> W143
-$LL.Main.loop113 $0 = 143'case 143'case 70'case 78'case 70'$0 of
-          {70'@} -> Main.getDataIn of
-        {78'@} -> $LL.Main.loop135 of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop221
-
-$LL.Main.loop112 :: W76 -> W70
-$LL.Main.loop112 $0 = 70'case 76'$0 of
-    {6'@, 70'@} -> $LL.Main.finishInstr1
-
-$LL.Main.r33 :: W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W8
-$LL.Main.r33 $0 $1 $2 $3 $4 $5 $6 = 8'case {8'$1, 8'$2, 8'$3, 6'$4, 17'$5, 15'$6} of
-    {8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.r3
-
-Main.putReg :: W2 -> W8 -> W70 -> W70
-Main.putReg $0 $1 $2 = 70'case {8'$1, 2'$0, 2'$0, 8'$1, 70'$2} of
-    {8'@, 2'@, 10'@, 70'@} -> $LL.Main.putReg27
-
-$LL.Pure.dispatch3 :: W17 -> W70 -> W143
-$LL.Pure.dispatch3 $0 $1 = 143'case {17'$0, 70'$1} of
-    {17'@, 70'@} -> $LL.Main.loop86
-
-$LL.Main.putOut9 :: W8 -> W6 -> W8 -> W15 -> W8 -> W8 -> W17 -> W15 -> W70
-$LL.Main.putOut9 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {8'$0, 6'$1, 17'$6, 8'$2, 15'$3, 8'$4, 8'$5, 15'$7} of
-    {8'@, 6'@, 17'@, 8'@, 15'@, 8'@, 8'@, 15'@} -> $LL.Main.putOut7
-
-$LL.Main.loop110 :: W143 -> W143
-$LL.Main.loop110 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.loop105
-
-$LL.Main.r15 :: W70 -> W8
-$LL.Main.r15 $0 = 8'case 70'$0 of
-    {8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.r14
-
-$LL.Main.getReg14 :: W70 -> W70 -> W78
-$LL.Main.getReg14 $0 $1 = {8'case 70'$0 of {70'@} -> $LL.Main.r34, 70'$1}
-
-Main.getOut :: W70 -> W85
-Main.getOut $0 = 85'case {70'$0, 70'$0} of
-    {140'@} -> $LL.Main.getOut
-
-$LL.Main.loop106 :: W70 -> W143
-$LL.Main.loop106 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.loop124
-
-$LL.Main.loop105 :: W70 -> W143
-$LL.Main.loop105 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.loop25
-
-$LL.Main.loop104 :: W143 -> W143
-$LL.Main.loop104 $0 = 143'case 143'$0 of
-    {3'h1, 55'_, 15'@, 70'@} -> $LL.Main.loop78
-
-$LL.Main.putOut7 :: W8 -> W6 -> W17 -> W8 -> W15 -> W8 -> W8 -> W15 -> W70
-$LL.Main.putOut7 $0 $1 $2 $3 $4 $5 $6 $7 = {8'$5, 8'$6, 8'$0, 8'$3, 6'$1, 17'$2, 15'$4}
-
-$LL.Main.r14 :: W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W8
-$LL.Main.r14 $0 $1 $2 $3 $4 $5 $6 = 8'case {8'$1, 8'$2, 8'$3, 6'$4, 17'$5, 15'$6} of
-    {8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.r13
-
-$LL.Main.r13 :: W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W8
-$LL.Main.r13 $0 $1 $2 $3 $4 $5 = 8'case {8'$0, 8'$2, 6'$3, 17'$4, 15'$5} of
-    {8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.r27
-
-$LL.Main.putReg29 :: W8 -> W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putReg29 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {8'$0, 8'$1, 8'$3, 8'$4, 6'$5, 17'$6, 15'$7} of
-    {8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putReg62
-
-$LL.Main.putReg28 :: W8 -> W70 -> W70
-$LL.Main.putReg28 $0 $1 = 70'case {8'$0, 70'$1} of
-    {8'@, 8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putReg67
-
-$LL.Main.loop101 :: W2 -> W70 -> W2 -> W2 -> W143
-$LL.Main.loop101 $0 $1 $2 $3 = 143'case {2'$0, 2'$2, 2'$3, 70'$1} of
-    {2'@, 2'@, 2'@, 70'@} -> $LL.Main.loop99
-
-$LL.Main.loop100 :: W70 -> W6 -> W143
-$LL.Main.loop100 $0 $1 = 143'case {70'$0, 6'$1} of
-    {70'@, 6'@} -> $LL.Main.loop180
-
-$LL.Main.outputs4 :: W8 -> W8 -> W6 -> W17 -> W15 -> W15
-$LL.Main.outputs4 $0 $1 $2 $3 $4 = 15'case {8'$1, 6'$2, 17'$3, 15'$4} of
-    {8'@, 6'@, 17'@, 15'@} -> $LL.Main.outputs5
-
-$LL.Main.loop99 :: W2 -> W2 -> W2 -> W70 -> W143
-$LL.Main.loop99 $0 $1 $2 $3 = 143'case 143'case 70'case {2'$2
-        , 2'$0
-        , 78'case {2'$1, 70'$3} of
-          {2'@, 70'@} -> Main.getReg} of
-        {2'@, 2'@, 78'@} -> $LL.Main.loop127 of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop88
-
-$LL.Main.getReg13 :: W2 -> W2 -> W70 -> W78
-$LL.Main.getReg13 $0 $1 $2 = 78'case {70'$2, 2'$1} of
-    {70'@, 2'h1} -> $LL.Main.getReg7
-    _ -> 78'case {2'$0, 2'$0, 70'$2} of
-      {2'@, 2'@, 70'@} -> $LL.Main.getReg3
-
-$LL.Main.putReg27 :: W8 -> W2 -> W10 -> W70 -> W70
-$LL.Main.putReg27 $0 $1 $2 $3 = 70'case {70'$3, 10'$2} of
-    {70'@, 2'h0, 8'@} -> $LL.Main.putReg11
-    _ -> 70'case {8'$0, 2'$1, 2'$1, 8'$0, 70'$3} of
-      {8'@, 2'@, 10'@, 70'@} -> $LL.Main.putReg57
-
-Main.getDataIn :: W70 -> W78
-Main.getDataIn $0 = 78'case 87'case 70'$0 of
-      {70'@} -> Main.getIns of
-    {87'@} -> $LL.Main.getDataIn1
-
-$LL.Main.loop95 :: W70 -> W6 -> W143
-$LL.Main.loop95 $0 $1 = 143'case {6'$1, 70'$0} of
-    {6'@, 70'@} -> $LL.Main.loop82
-
-$LL.Main.putOut5 :: W15 -> W70 -> W70
-$LL.Main.putOut5 $0 $1 = 70'case {15'$0, 70'$1, 70'$1} of
-    {15'@, 140'@} -> $LL.Main.putOut14
-
-$LL.Main.putReg25 :: W8 -> W2 -> W10 -> W70 -> W70
-$LL.Main.putReg25 $0 $1 $2 $3 = 70'case {70'$3, 10'$2} of
-    {70'@, 2'h2, 8'@} -> $LL.Main.putReg36
-    _ -> 70'case {2'$1, 8'$0, 70'$3} of
-      {10'@, 70'@} -> $LL.Main.putReg40
-
-$LL.Main.getIns2 :: W140 -> W87
-$LL.Main.getIns2 $0 = 87'case 140'$0 of
-    {70'@, 70'@} -> $LL.Main.getIns1
-
-$LL.Pure.dispatch2 :: W17 -> W70 -> W143
-$LL.Pure.dispatch2 $0 $1 = 143'case {17'$0, 70'$1} of
-    {17'@, 70'@} -> $LL.Main.loop213
-
-$LL.Main.putReg24 :: W8 -> W6 -> W8 -> W8 -> W8 -> W17 -> W15 -> W70
-$LL.Main.putReg24 $0 $1 $2 $3 $4 $5 $6 = {8'$0, 8'$2, 8'$4, 8'$3, 6'$1, 17'$5, 15'$6}
-
-$LL.Main.loop92 :: W143 -> W143
-$LL.Main.loop92 $0 = 143'case 143'$0 of
-    {3'h1, 55'_, 15'@, 70'@} -> $LL.Main.loop2
-
-$LL.Main.loop91 :: W143 -> W143
-$LL.Main.loop91 $0 = 143'case 143'$0 of
-    {3'h1, 55'_, 15'@, 70'@} -> $LL.Main.loop160
-
-$LL.Main.nand3 :: W8 -> W2 -> W8 -> W70 -> W70
-$LL.Main.nand3 $0 $1 $2 $3 = 70'case 70'case {2'$1
-      , 8'case 8'case {8'$0, 8'$2} of
-          {8'@, 8'@} -> And of
-        {8'@} -> Not
-      , 70'$3} of
-      {2'@, 8'@, 70'@} -> Main.putReg of
-    {70'@} -> Main.incrPC
-
-Main.putWeOut1 :: W70 -> W70
-Main.putWeOut1 $0 = 70'case {1'h1, 70'$0} of
-    {1'@, 70'@} -> $LL.Main.putWeOut2
-
-$LL.Main.bnz3 :: W6 -> W1 -> W70 -> W70
-$LL.Main.bnz3 $0 $1 $2 = 70'case {70'$2, 6'$0, 1'$1} of
-    {70'@, 6'@, 1'h0} -> $LL.Main.bnz6
-
-$LL.Main.outputs3 :: W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W15
-$LL.Main.outputs3 $0 $1 $2 $3 $4 $5 = 15'case {8'$1, 8'$2, 6'$3, 17'$4, 15'$5} of
-    {8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.outputs4
-
-$LL.Main.putReg22 :: W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putReg22 $0 $1 $2 $3 $4 $5 $6 = {8'$0, 8'$3, 8'$2, 8'$1, 6'$4, 17'$5, 15'$6}
-
-$LL.Main.putDataOut4 :: W8 -> W85 -> W70
-$LL.Main.putDataOut4 $0 $1 = 70'case {8'$0, 85'$1} of
-    {8'@, 15'@, 70'@} -> $LL.Main.putDataOut7
-
-$LL.Main.getOut1 :: W70 -> W70 -> W85
-$LL.Main.getOut1 $0 $1 = {15'case 70'$0 of {70'@} -> $LL.Main.outputs6, 70'$1}
-
-$LL.Main.putReg21 :: W8 -> W140 -> W70
-$LL.Main.putReg21 $0 $1 = 70'case {8'$0, 140'$1} of
-    {8'@, 70'@, 70'@} -> $LL.Main.putReg59
-
-$LL.Main.loop89 :: W15 -> W70 -> W143
-$LL.Main.loop89 $0 $1 = {54'h20000000000000, 15'$0, 4'h3, 70'$1}
-
-$LL.Main.loop88 :: W143 -> W143
-$LL.Main.loop88 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.loop84
-
-$LL.Main.loop87 :: W2 -> W2 -> W8 -> W70 -> W70
-$LL.Main.loop87 $0 $1 $2 $3 = 70'case {2'$1, 2'$0, 8'$2, 70'$3} of
-    {2'@, 2'@, 8'@, 70'@} -> $LL.Main.nand4
-
-$LL.Main.putReg20 :: W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putReg20 $0 $1 $2 $3 $4 $5 $6 = 70'case {8'$0, 8'$3, 8'$1, 8'$2, 6'$4, 17'$5, 15'$6} of
-    {8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putReg22
-
-$LL.Main.putAddrOut3 :: W6 -> W15 -> W15
-$LL.Main.putAddrOut3 $0 $1 = 15'case {6'$0, 15'$1} of
-    {6'@, 1'@, 6'@, 8'@} -> $LL.Main.putAddrOut6
-
-$LL.Main.reset11 :: W17 -> W70 -> W143
-$LL.Main.reset11 $0 $1 = 143'case 143'case 70'case {17'$0, 70'$1} of
-        {17'@, 70'@} -> $LL.Main.putIns11 of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.reset4
-
-$LL.Main.loop86 :: W17 -> W70 -> W143
-$LL.Main.loop86 $0 $1 = 143'case 143'case 70'case {17'$0, 70'$1} of
-        {17'@, 70'@} -> $LL.Main.putIns11 of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop5
-
-$LL.Main.putDataOut3 :: W8 -> W70 -> W70
-$LL.Main.putDataOut3 $0 $1 = 70'case {8'$0, 85'case 70'$1 of {70'@} -> Main.getOut} of
-    {8'@, 85'@} -> $LL.Main.putDataOut4
-
-$LL.Main.loop84 :: W70 -> W143
-$LL.Main.loop84 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.loop15
-
-$LL.Main.outputs2 :: W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W15
-$LL.Main.outputs2 $0 $1 $2 $3 $4 $5 $6 = 15'case {8'$1, 8'$2, 8'$3, 6'$4, 17'$5, 15'$6} of
-    {8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.outputs3
-
-$LL.Main.putIns4 :: W17 -> W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putIns4 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {17'$0, 8'$4, 8'$1, 8'$2, 8'$3, 6'$5, 17'$6, 15'$7} of
-    {17'@, 8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putIns9
-
-$LL.Main.loop82 :: W6 -> W70 -> W143
-$LL.Main.loop82 $0 $1 = 143'case 143'case 70'case {6'$0, 78'case 70'$1 of {70'@} -> Main.getReg1} of
-        {6'@, 78'@} -> $LL.Main.loop132 of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop159
-
-$LL.Main.loop81 :: W17 -> W70 -> W143
-$LL.Main.loop81 $0 $1 = 143'case 143'case 70'case {17'$0, 70'$1} of
-        {17'@, 70'@} -> $LL.Main.putIns11 of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop169
-
-$LL.Main.loop80 :: W15 -> W70 -> W143
-$LL.Main.loop80 $0 $1 = 143'case {15'$0, 70'$1} of
-    {15'@, 70'@} -> $LL.Main.loop47
-
-$LL.Main.loop79 :: W70 -> W143
-$LL.Main.loop79 $0 = 143'case 143'case 85'case 70'$0 of
-        {70'@} -> Main.getOut of
-      {85'@} -> $LL.Main.loop140 of
-    {143'@} -> $LL.Main.loop91
-
-$LL.Main.loop78 :: W15 -> W70 -> W143
-$LL.Main.loop78 $0 $1 = 143'case {15'$0, 70'$1} of
-    {15'@, 70'@} -> $LL.Main.loop41
-
-$LL.Main.loop76 :: W70 -> W143
-$LL.Main.loop76 $0 = 143'case 143'case 70'case 70'$0 of
-        {70'@} -> Main.incrPC of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop147
-
-$LL.Main.st3 :: W8 -> W70 -> W70
-$LL.Main.st3 $0 $1 = 70'case 70'case {8'$0, 70'$1} of
-      {8'@, 70'@} -> $LL.Main.putDataOut3 of
-    {70'@} -> Main.putWeOut1
-
-$LL.Main.loop73 :: W140 -> W143
-$LL.Main.loop73 $0 = 143'case 140'$0 of
-    {70'@, 70'@} -> $LL.Main.loop121
-
-$LL.Main.reset10 :: W70 -> W143
-$LL.Main.reset10 $0 = 143'case 143'case 70'case 76'case 70'$0 of
-          {70'@} -> Main.getPC of
-        {76'@} -> $LL.Main.loop112 of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.reset29
-
-Main.putWeOut :: W70 -> W70
-Main.putWeOut $0 = 70'case {1'h0, 70'$0} of
-    {1'@, 70'@} -> $LL.Main.putWeOut2
-
-$LL.Main.putReg19 :: W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putReg19 $0 $1 $2 $3 $4 $5 $6 = 70'case {8'$0, 8'$2, 8'$1, 8'$3, 6'$4, 17'$5, 15'$6} of
-    {8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putReg49
-
-$LL.Main.bnz2 :: W6 -> W8 -> W70 -> W70
-$LL.Main.bnz2 $0 $1 $2 = 70'case {8'$1, 6'$0, 1'case {8'$1, 8'h0} of {8'@, 8'@} -> Eq, 70'$2} of
-    {8'@, 6'@, 1'@, 70'@} -> $LL.Main.bnz4
-
-$LL.Main.getPC1 :: W140 -> W76
-$LL.Main.getPC1 $0 = 76'case 140'$0 of
-    {70'@, 70'@} -> $LL.Main.getPC
-
-$LL.Main.getReg12 :: W2 -> W70 -> W78
-$LL.Main.getReg12 $0 $1 = 78'case {70'$1, 2'$0} of
-    {70'@, 2'h3} -> $LL.Main.getReg
-
-$LL.Main.getPC :: W70 -> W70 -> W76
-$LL.Main.getPC $0 $1 = {6'case 70'$0 of {70'@} -> $LL.Main.pc6, 70'$1}
-
-$LL.Main.loop71 :: W70 -> W6 -> W143
-$LL.Main.loop71 $0 $1 = 143'case {70'$0, 6'$1} of
-    {70'@, 6'@} -> $LL.Main.loop95
-
-$LL.Main.getReg11 :: W140 -> W78
-$LL.Main.getReg11 $0 = 78'case 140'$0 of
-    {70'@, 70'@} -> $LL.Main.getReg14
-
-$LL.Main.putReg18 :: W70 -> W8 -> W70
-$LL.Main.putReg18 $0 $1 = 70'case {70'$0, 8'$1} of
-    {70'@, 8'@} -> $LL.Main.putReg55
-
-$LL.Main.getReg10 :: W70 -> W78
-$LL.Main.getReg10 $0 = 78'case {70'$0, 70'$0} of
-    {140'@} -> $LL.Main.getReg2
-
-$LL.Main.loop68 :: W2 -> W2 -> W8 -> W70 -> W70
-$LL.Main.loop68 $0 $1 $2 $3 = 70'case {2'$1, 2'$0, 8'$2, 70'$3} of
-    {2'@, 2'@, 8'@, 70'@} -> $LL.Main.loop87
-
-$LL.Main.finishInstr1 :: W6 -> W70 -> W70
-$LL.Main.finishInstr1 $0 $1 = 70'case 70'case {6'$0, 70'$1} of
-      {6'@, 70'@} -> $LL.Main.putAddrOut1 of
-    {70'@} -> Main.putWeOut
-
-$LL.Main.putReg17 :: W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putReg17 $0 $1 $2 $3 $4 $5 $6 = 70'case {8'$0, 6'$4, 8'$1, 8'$2, 8'$3, 17'$5, 15'$6} of
-    {8'@, 6'@, 8'@, 8'@, 8'@, 17'@, 15'@} -> $LL.Main.putReg24
-
-$LL.Main.instrIn :: W17 -> W9
-$LL.Main.instrIn $0 = 9'case 17'$0 of
-    {9'@, 8'@} -> $LL.Main.instrIn1
-
-$LL.Main.getReg9 :: W70 -> W78
-$LL.Main.getReg9 $0 = 78'case 70'$0 of
-    {70'@} -> $LL.Main.getReg4
-
-$LL.Main.getOut :: W140 -> W85
-$LL.Main.getOut $0 = 85'case 140'$0 of
-    {70'@, 70'@} -> $LL.Main.getOut1
-
-$LL.Main.putReg16 :: W8 -> W70 -> W70
-$LL.Main.putReg16 $0 $1 = 70'case {8'$0, 70'$1, 70'$1} of
-    {8'@, 140'@} -> $LL.Main.putReg53
-
-$LL.Main.dataIn :: W17 -> W8
-$LL.Main.dataIn $0 = 8'case 17'$0 of
-    {9'@, 8'@} -> $LL.Main.dataIn2
-
-$LL.Main.putAddrOut1 :: W6 -> W70 -> W70
-$LL.Main.putAddrOut1 $0 $1 = 70'case {6'$0, 85'case 70'$1 of {70'@} -> Main.getOut} of
-    {6'@, 85'@} -> $LL.Main.putAddrOut10
-
-$LL.Main.putWeOut3 :: W1 -> W15 -> W70 -> W70
-$LL.Main.putWeOut3 $0 $1 $2 = 70'case {15'case {1'$0, 15'$1} of {1'@, 15'@} -> $LL.Main.putWeOut8, 70'$2} of
-    {15'@, 70'@} -> $LL.Main.putOut5
-
-$LL.Main.loop65 :: W70 -> W143
-$LL.Main.loop65 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.loop123
-
-$LL.Main.getIns1 :: W70 -> W70 -> W87
-$LL.Main.getIns1 $0 $1 = {17'case 70'$0 of {70'@} -> $LL.Main.inputs5, 70'$1}
-
-$LL.Main.putWeOut2 :: W1 -> W70 -> W70
-$LL.Main.putWeOut2 $0 $1 = 70'case {1'$0, 85'case 70'$1 of {70'@} -> Main.getOut} of
-    {1'@, 85'@} -> $LL.Main.putWeOut10
-
-$LL.Main.r22 :: W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W8
-$LL.Main.r22 $0 $1 $2 $3 $4 $5 $6 = 8'case {8'$1, 8'$2, 8'$3, 6'$4, 17'$5, 15'$6} of
-    {8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.r23
-
-$LL.Main.loop63 :: W70 -> W143
-$LL.Main.loop63 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.loop193
-
-$LL.Pure.dispatch :: W17 -> W70 -> W143
-$LL.Pure.dispatch $0 $1 = 143'case {17'$0, 70'$1} of
-    {17'@, 70'@} -> $LL.Main.reset11
-
-Main.incrPC :: W70 -> W70
-Main.incrPC $0 = 70'case 76'case 70'$0 of
-      {70'@} -> Main.getPC of
-    {76'@} -> $LL.Main.incrPC1
-
-$LL.Main.getReg7 :: W70 -> W78
-$LL.Main.getReg7 $0 = 78'case 70'$0 of
-    {70'@} -> $LL.Main.getReg10
-
-$LL.Main.loop58 :: W9 -> W143 -> W143
-$LL.Main.loop58 $0 $1 = 143'case {9'$0, 143'$1} of
-    {9'@, 3'h3, 70'@, 70'@} -> $LL.Main.loop223
-
-$LL.Main.getReg6 :: W2 -> W2 -> W70 -> W78
-$LL.Main.getReg6 $0 $1 $2 = 78'case {70'$2, 2'$1} of
-    {70'@, 2'h0} -> $LL.Main.getReg1
-    _ -> 78'case {2'$0, 2'$0, 70'$2} of
-      {2'@, 2'@, 70'@} -> $LL.Main.getReg13
-
-Main.getInstr :: W70 -> W79
-Main.getInstr $0 = 79'case 87'case 70'$0 of
-      {70'@} -> Main.getIns of
-    {87'@} -> $LL.Main.getInstr
-
-$LL.Main.putOut4 :: W8 -> W8 -> W15 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putOut4 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {8'$0, 6'$5, 8'$1, 15'$2, 8'$3, 8'$4, 17'$6, 15'$7} of
-    {8'@, 6'@, 8'@, 15'@, 8'@, 8'@, 17'@, 15'@} -> $LL.Main.putOut9
-
-$LL.Main.loop52 :: W6 -> W70 -> W143
-$LL.Main.loop52 $0 $1 = 143'case 143'case 70'case {6'$0, 78'case 70'$1 of {70'@} -> Main.getReg1} of
-        {6'@, 78'@} -> $LL.Main.loop222 of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop179
-
-$LL.Main.loop50 :: W70 -> W6 -> W143
-$LL.Main.loop50 $0 $1 = 143'case {6'$1, 70'$0} of
-    {6'@, 70'@} -> $LL.Main.loop52
-
-$LL.Main.loop49 :: W70 -> W143
-$LL.Main.loop49 $0 = 143'case 143'case 85'case 70'$0 of
-        {70'@} -> Main.getOut of
-      {85'@} -> $LL.Main.loop140 of
-    {143'@} -> $LL.Main.loop46
-
-$LL.Main.putReg14 :: W8 -> W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putReg14 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {8'$0, 8'$1, 8'$2, 8'$4, 6'$5, 17'$6, 15'$7} of
-    {8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putReg20
-
-$LL.Main.loop47 :: W15 -> W70 -> W143
-$LL.Main.loop47 $0 $1 = {54'h20000000000000, 15'$0, 4'h6, 70'$1}
-
-$LL.Main.bnz1 :: W70 -> W6 -> W70
-$LL.Main.bnz1 $0 $1 = 70'case {6'$1, 70'$0} of
-    {6'@, 70'@} -> $LL.Main.putPC14
-
-$LL.Main.loop46 :: W143 -> W143
-$LL.Main.loop46 $0 = 143'case 143'$0 of
-    {3'h1, 55'_, 15'@, 70'@} -> $LL.Main.loop80
-
-$LL.Main.pc3 :: W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W6
-$LL.Main.pc3 $0 $1 $2 $3 $4 $5 $6 = 6'case {8'$1, 8'$2, 8'$3, 6'$4, 17'$5, 15'$6} of
-    {8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.pc4
-
-$LL.Main.loop41 :: W15 -> W70 -> W143
-$LL.Main.loop41 $0 $1 = {54'h20000000000000, 15'$0, 4'h2, 70'$1}
-
-$LL.Main.putReg13 :: W8 -> W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putReg13 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {8'$2, 8'$0, 8'$1, 8'$3, 8'$4, 6'$5, 17'$6, 15'$7} of
-    {8'@, 8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putReg64
-
-$LL.Main.reset4 :: W143 -> W143
-$LL.Main.reset4 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.reset39
-
-$LL.Main.getInstr1 :: W17 -> W70 -> W79
-$LL.Main.getInstr1 $0 $1 = {9'case 17'$0 of {17'@} -> $LL.Main.instrIn, 70'$1}
-
-$LL.Main.loop38 :: W70 -> W143
-$LL.Main.loop38 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.loop14
-
-$LL.Main.putReg11 :: W70 -> W8 -> W70
-$LL.Main.putReg11 $0 $1 = 70'case {70'$0, 8'$1} of
-    {70'@, 8'@} -> $LL.Main.putReg61
-
-$LL.Main.getReg4 :: W70 -> W78
-$LL.Main.getReg4 $0 = 78'case {70'$0, 70'$0} of
-    {140'@} -> $LL.Main.getReg16
-
-$LL.Main.loop35 :: W70 -> W143
-$LL.Main.loop35 $0 = 143'case 143'case 70'case 76'case 70'$0 of
-          {70'@} -> Main.getPC of
-        {76'@} -> $LL.Main.loop112 of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop126
-
-$LL.Main.r3 :: W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W8
-$LL.Main.r3 $0 $1 $2 $3 $4 $5 = 8'case {8'$1, 8'$2, 6'$3, 17'$4, 15'$5} of
-    {8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.r37
-
-$LL.Main.loop32 :: W70 -> W2 -> W2 -> W2 -> W143
-$LL.Main.loop32 $0 $1 $2 $3 = 143'case {2'$1, 70'$0, 2'$2, 2'$3} of
-    {2'@, 70'@, 2'@, 2'@} -> $LL.Main.loop101
-
-$LL.Main.putWeOut :: W1 -> W1 -> W6 -> W8 -> W15
-$LL.Main.putWeOut $0 $1 $2 $3 = {1'$0, 6'$2, 8'$3}
-
-$LL.Main.pc2 :: W8 -> W8 -> W6 -> W17 -> W15 -> W6
-$LL.Main.pc2 $0 $1 $2 $3 $4 = 6'case {8'$1, 6'$2, 17'$3, 15'$4} of
-    {8'@, 6'@, 17'@, 15'@} -> $LL.Main.pc
-
-$LL.Main.getReg3 :: W2 -> W2 -> W70 -> W78
-$LL.Main.getReg3 $0 $1 $2 = 78'case {70'$2, 2'$1} of
-    {70'@, 2'h2} -> $LL.Main.getReg9
-    _ -> 78'case {2'$0, 70'$2} of
-      {2'@, 70'@} -> $LL.Main.getReg12
-
-$LL.Main.loop31 :: W143 -> W143
-$LL.Main.loop31 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.loop171
-
-$LL.Main.loop30 :: W143 -> W143
-$LL.Main.loop30 $0 = 143'case 143'$0 of
-    {3'h1, 55'_, 15'@, 70'@} -> $LL.Main.loop201
-
-$LL.Main.putReg10 :: W70 -> W8 -> W70
-$LL.Main.putReg10 $0 $1 = 70'case {8'$1, 70'$0} of
-    {8'@, 70'@} -> $LL.Main.putReg33
-
-$LL.Main.inputs1 :: W6 -> W17 -> W15 -> W17
-$LL.Main.inputs1 $0 $1 $2 = 17'case {17'$1, 15'$2} of
-    {17'@, 15'@} -> $LL.Main.inputs2
-
-$LL.Main.getInstr :: W87 -> W79
-$LL.Main.getInstr $0 = 79'case 87'$0 of
-    {17'@, 70'@} -> $LL.Main.getInstr1
-
-$LL.Main.loop25 :: W70 -> W143
-$LL.Main.loop25 $0 = 143'case 143'case 85'case 70'$0 of
-        {70'@} -> Main.getOut of
-      {85'@} -> $LL.Main.loop140 of
-    {143'@} -> $LL.Main.loop92
-
-$LL.Main.loop24 :: W15 -> W70 -> W143
-$LL.Main.loop24 $0 $1 = {54'h20000000000000, 15'$0, 4'h8, 70'$1}
-
-$LL.Main.outputs :: W6 -> W17 -> W15 -> W15
-$LL.Main.outputs $0 $1 $2 = 15'case {17'$1, 15'$2} of
-    {17'@, 15'@} -> $LL.Main.outputs7
-
-$LL.Main.loop21 :: W15 -> W70 -> W143
-$LL.Main.loop21 $0 $1 = {54'h20000000000000, 15'$0, 4'h7, 70'$1}
-
-$LL.Main.loop20 :: W70 -> W143
-$LL.Main.loop20 $0 = 143'case 143'case 70'case 70'$0 of
-        {70'@} -> Main.incrPC of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop226
-
-$LL.Main.pc1 :: W6 -> W15 -> W6
-$LL.Main.pc1 $0 $1 = 6'$0
-
-$LL.Main.loop19 :: W70 -> W143
-$LL.Main.loop19 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.loop113
-
-$LL.Main.putReg7 :: W70 -> W8 -> W70
-$LL.Main.putReg7 $0 $1 = 70'case {8'$1, 70'$0} of
-    {8'@, 70'@} -> $LL.Main.putReg58
-
-$LL.Main.loop18 :: W143 -> W143
-$LL.Main.loop18 $0 = 143'case 143'$0 of
-    {3'h0, 61'_, 9'@, 70'@} -> $LL.Main.loop
-
-$LL.Main.putOut1 :: W15 -> W70 -> W70
-$LL.Main.putOut1 $0 $1 = 70'case {15'$0, 70'$1} of
-    {15'@, 8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putOut12
-
-$LL.Main.loop15 :: W70 -> W143
-$LL.Main.loop15 $0 = 143'case 143'case 70'case 76'case 70'$0 of
-          {70'@} -> Main.getPC of
-        {76'@} -> $LL.Main.loop112 of
-      {70'@} -> $LL.Main.loop225 of
-    {143'@} -> $LL.Main.loop118
-
-$LL.Main.loop14 :: W70 -> W143
-$LL.Main.loop14 $0 = 143'case 143'case 85'case 70'$0 of
-        {70'@} -> Main.getOut of
-      {85'@} -> $LL.Main.loop140 of
-    {143'@} -> $LL.Main.loop104
-
-$LL.Main.loop13 :: W143 -> W143
-$LL.Main.loop13 $0 = 143'case 143'$0 of
-    {3'h1, 55'_, 15'@, 70'@} -> $LL.Main.loop198
-
-Main.getPC :: W70 -> W76
-Main.getPC $0 = 76'case {70'$0, 70'$0} of
-    {140'@} -> $LL.Main.getPC1
-
-$LL.Main.getReg2 :: W140 -> W78
-$LL.Main.getReg2 $0 = 78'case 140'$0 of
-    {70'@, 70'@} -> $LL.Main.getReg18
-
-$LL.Main.loop10 :: W15 -> W70 -> W143
-$LL.Main.loop10 $0 $1 = 143'case {15'$0, 70'$1} of
-    {15'@, 70'@} -> $LL.Main.loop21
-
-$LL.Main.st :: W6 -> W8 -> W70 -> W70
-$LL.Main.st $0 $1 $2 = 70'case {8'$1, 70'case {6'$0, 70'$2} of {6'@, 70'@} -> $LL.Main.putAddrOut1} of
-    {8'@, 70'@} -> $LL.Main.st3
-
-$LL.Main.r0 :: W70 -> W8
-$LL.Main.r0 $0 = 8'case 70'$0 of
-    {8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.r05
-
-$LL.Main.loop9 :: W70 -> W143
-$LL.Main.loop9 $0 = 143'case 70'$0 of
-    {70'@} -> $LL.Main.loop76
-
-$LL.Main.putReg5 :: W8 -> W70 -> W70
-$LL.Main.putReg5 $0 $1 = 70'case {8'$0, 70'$1} of
-    {8'@, 8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putReg42
-
-$LL.Main.putReg4 :: W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putReg4 $0 $1 $2 $3 $4 $5 $6 = {8'$3, 8'$1, 8'$0, 8'$2, 6'$4, 17'$5, 15'$6}
-
-$LL.Main.putDataOut :: W8 -> W6 -> W1 -> W8 -> W15
-$LL.Main.putDataOut $0 $1 $2 $3 = {1'$2, 6'$1, 8'$0}
-
-$LL.Main.loop5 :: W143 -> W143
-$LL.Main.loop5 $0 = 143'case 143'$0 of
-    {3'h2, 70'_, 70'@} -> $LL.Main.loop19
-
-$LL.Main.putReg2 :: W8 -> W70 -> W70
-$LL.Main.putReg2 $0 $1 = 70'case {8'$0, 70'$1} of
-    {8'@, 8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putReg66
-
-$LL.Main.putIns3 :: W17 -> W8 -> W8 -> W8 -> W8 -> W6 -> W17 -> W15 -> W70
-$LL.Main.putIns3 $0 $1 $2 $3 $4 $5 $6 $7 = 70'case {17'$0, 8'$3, 8'$1, 8'$2, 8'$4, 6'$5, 17'$6, 15'$7} of
-    {17'@, 8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putIns4
-
-$LL.Main.getReg1 :: W70 -> W78
-$LL.Main.getReg1 $0 = 78'case 70'$0 of
-    {70'@} -> $LL.Main.getReg22
-
-$LL.Main.putIns2 :: W17 -> W70 -> W70
-$LL.Main.putIns2 $0 $1 = 70'case {17'$0, 70'$1} of
-    {17'@, 8'@, 8'@, 8'@, 8'@, 6'@, 17'@, 15'@} -> $LL.Main.putIns3
-
-$LL.Main.loop2 :: W15 -> W70 -> W143
-$LL.Main.loop2 $0 $1 = 143'case {15'$0, 70'$1} of
-    {15'@, 70'@} -> $LL.Main.loop24
-
-$LL.Main.putIns1 :: W17 -> W70 -> W70 -> W70
-$LL.Main.putIns1 $0 $1 $2 = 70'case {17'$0, 70'$1} of
-    {17'@, 70'@} -> $LL.Main.putIns2
-
-$LL.Main.getReg :: W70 -> W78
-$LL.Main.getReg $0 = 78'case 70'$0 of
-    {70'@} -> $LL.Main.getReg21
-
-$LL.Main.inputs :: W8 -> W6 -> W17 -> W15 -> W17
-$LL.Main.inputs $0 $1 $2 $3 = 17'case {6'$1, 17'$2, 15'$3} of
-    {6'@, 17'@, 15'@} -> $LL.Main.inputs1
-
-$LL.Main.putReg :: W8 -> W8 -> W6 -> W8 -> W8 -> W17 -> W15 -> W70
-$LL.Main.putReg $0 $1 $2 $3 $4 $5 $6 = {8'$3, 8'$0, 8'$1, 8'$4, 6'$2, 17'$5, 15'$6}
-
-$LL.Main.loop :: W9 -> W70 -> W143
-$LL.Main.loop $0 $1 = 143'case {9'$0, 70'$1} of
-    {9'@, 70'@} -> $LL.Main.loop211
-
-$LL.Main.pc :: W8 -> W6 -> W17 -> W15 -> W6
-$LL.Main.pc $0 $1 $2 $3 = 6'case {6'$1, 17'$2, 15'$3} of
-    {6'@, 17'@, 15'@} -> $LL.Main.pc5
+$LL.Main.getInstr2 : ([17], [70]) -> [79]
+$LL.Main.getInstr2 $0 $1 =
+      $LL.Main.getInstr1 $0 $1
+
+$LL.Main.putIns13 : ([17], [70], [70]) -> [70]
+$LL.Main.putIns13 $0 $1 $2 =
+      $LL.Main.putIns1 $0 $1 $2
+
+$LL.Main.loop207 : ([70], [2], [2], [2]) -> [143]
+$LL.Main.loop207 $0 $1 $2 $3 =
+      $LL.Main.loop151 $1 $0 $2 $3
+
+$LL.Main.reset43 : ([6], [70]) -> [70]
+$LL.Main.reset43 $0 $1 =
+      $LL.Main.finishInstr2 $0 $1
+
+$LL.Main.pc7 : ([6], [15]) -> [6]
+$LL.Main.pc7 $0 $1 =
+      $0
+
+$LL.Main.loop206 : ([15], [70]) -> [143]
+$LL.Main.loop206 $0 $1 =
+      $LL.Main.loop191 $0 $1
+
+$LL.Main.putReg64 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg64 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg51 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.st10 : ([8], [70]) -> [70]
+$LL.Main.st10 $0 $1 =
+      $LL.Main.st7 $0 $1
+
+Main.putPC1 : ([6], [70]) -> [70]
+Main.putPC1 $0 $1 =
+      $LL.Main.putPC4 $0 $1
+
+$LL.Main.inputs7 : ([8], [8], [8], [8], [6], [17], [15]) -> [17]
+$LL.Main.inputs7 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.inputs4 $1 $2 $3 $4 $5 $6
+
+$LL.Main.r37 : ([8], [15]) -> [8]
+$LL.Main.r37 $0 $1 =
+      $0
+
+$LL.Main.loop204 : ([15], [70]) -> [143]
+$LL.Main.loop204 $0 $1 =
+      $LL.Main.loop12 $0 $1
+
+$LL.Main.instrIn1 : ([9], [8]) -> [9]
+$LL.Main.instrIn1 $0 $1 =
+      $0
+
+$LL.Main.bnz6 : ([6], [1], [70]) -> [70]
+$LL.Main.bnz6 $0 $1 $2 =
+      $LL.Main.bnz5 $2 $0
+
+$LL.Main.r17 : ([8], [6], [17], [15]) -> [8]
+$LL.Main.r17 $0 $1 $2 $3 =
+      $LL.Main.r27 $0 $2 $3
+
+$LL.Main.putWeOut9 : ([1], [15]) -> [15]
+$LL.Main.putWeOut9 $0 $1 =
+      $LL.Main.putWeOut6 $0 $1[14 +: 1] $1[8 +: 6] $1[0 +: 8]
+
+$LL.Main.loop202 : ([143]) -> [143]
+$LL.Main.loop202 $0 =
+      $LL.Main.loop225 $0[0 +: 70]
+
+$LL.Main.st9 : ([8], [70]) -> [70]
+$LL.Main.st9 $0 $2 =
+      $LL.Main.st8 $0 $2
+
+$LL.Main.bnz5 : ([70], [6]) -> [70]
+$LL.Main.bnz5 $0 $1 =
+      $LL.Main.bnz $0 $1
+
+Main.putIns : ([17], [70]) -> [70]
+Main.putIns $0 $1 =
+      $LL.Main.putIns11 $0 $1
+
+$LL.Main.loop201 : ([17], [70]) -> [143]
+$LL.Main.loop201 $0 $1 =
+      $LL.Main.loop10 ($LL.Main.loop226 (Main.putIns $0 $1))
+
+$LL.Main.putPC14 : ([6], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putPC14 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putPC3 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.getPC2 : ([140]) -> [76]
+$LL.Main.getPC2 $0 =
+      $LL.Main.getPC1 $0[70 +: 70] $0[0 +: 70]
+
+$LL.Main.putReg63 : ([8], [140]) -> [70]
+$LL.Main.putReg63 $0 $1 =
+      $LL.Main.putReg19 $0 $1[70 +: 70] $1[0 +: 70]
+
+$LL.Main.putAddrOut9 : ([6], [1], [6], [8]) -> [15]
+$LL.Main.putAddrOut9 $0 $1 $2 $3 =
+      $LL.Main.putAddrOut1 $1 $0 $2 $3
+
+$LL.Main.putReg62 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg62 $0 $1 $2 =
+      $LL.Main.putReg5 $0 $1 $2
+
+$LL.Main.getReg23 : ([2], [2], [70]) -> [78]
+$LL.Main.getReg23 $0 $1 $2 =
+      if eq $1 2'h0 then $LL.Main.getReg10 $2
+            else $LL.Main.getReg22 $0 $0 $2
+
+$LL.Main.loop200 : ([143]) -> [143]
+$LL.Main.loop200 $0 =
+      $LL.Main.loop178 $0[0 +: 70]
+
+$LL.Main.reset41 : ([143]) -> [143]
+$LL.Main.reset41 $0 =
+      $LL.Main.reset18 $0[70 +: 15] $0[0 +: 70]
+
+$LL.Main.outputs7 : ([70]) -> [15]
+$LL.Main.outputs7 $0 =
+      $LL.Main.outputs2 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
+
+$LL.Main.putOut15 : ([8], [8], [6], [17], [15], [8], [8], [15]) -> [70]
+$LL.Main.putOut15 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $5 # $6 # $1 # $0 # $2 # $3 # $4
+
+$LL.Main.getOut1 : ([140]) -> [85]
+$LL.Main.getOut1 $0 =
+      $LL.Main.getOut $0[70 +: 70] $0[0 +: 70]
+
+$LL.Main.loop198 : ([17], [70]) -> [143]
+$LL.Main.loop198 $0 $1 =
+      $LL.Main.loop202 ($LL.Main.loop226 (Main.putIns $0 $1))
+
+$LL.Main.finishInstr3 : ([70]) -> [70]
+$LL.Main.finishInstr3 $1 =
+      Main.putWeOut1 $1
+
+$LL.Main.getReg22 : ([2], [2], [70]) -> [78]
+$LL.Main.getReg22 $0 $1 $2 =
+      if eq $1 2'h1 then $LL.Main.getReg5 $2
+            else $LL.Main.getReg4 $0 $0 $2
+
+$LL.Main.putAddrOut8 : ([6], [70]) -> [70]
+$LL.Main.putAddrOut8 $0 $1 =
+      $LL.Main.putAddrOut $0 $1
+
+$LL.Main.loop197 : ([70]) -> [143]
+$LL.Main.loop197 $1 =
+      $LL.Main.loop134 ($LL.Main.loop226 ($LL.Main.reset44 (Main.getPC $1)))
+
+$LL.Main.loop196 : ([143]) -> [143]
+$LL.Main.loop196 $0 =
+      $LL.Main.loop144 $0[0 +: 70]
+
+$LL.Main.putReg61 : ([8], [6], [8], [8], [8], [17], [15]) -> [70]
+$LL.Main.putReg61 $0 $1 $2 $3 $4 $5 $6 =
+      $4 # $3 # $0 # $2 # $1 # $5 # $6
+
+$LL.Main.r16 : ([8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r16 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.r11 $0 $1 $2 $3 $4 $5
+
+$LL.Main.r27 : ([8], [17], [15]) -> [8]
+$LL.Main.r27 $0 $1 $2 =
+      $LL.Main.r37 $0 $2
+
+$LL.Main.getReg21 : ([140]) -> [78]
+$LL.Main.getReg21 $0 =
+      $LL.Main.getReg3 $0[70 +: 70] $0[0 +: 70]
+
+$LL.Main.pc6 : ([70]) -> [6]
+$LL.Main.pc6 $0 =
+      $LL.Main.pc $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
+
+$LL.Main.putAddrOut7 : ([6], [15], [70]) -> [70]
+$LL.Main.putAddrOut7 $0 $1 $2 =
+      $LL.Main.putAddrOut6 $0 $1 $2
+
+$LL.Main.getDataIn2 : ([17], [70]) -> [78]
+$LL.Main.getDataIn2 $0 $1 =
+      $LL.Main.getDataIn1 $0 $1
+
+$LL.Main.st8 : ([8], [70]) -> [70]
+$LL.Main.st8 $0 $2 =
+      $LL.Main.st11 (Main.putDataOut1 $0 $2)
+
+$LL.Main.r36 : ([8], [6], [17], [15]) -> [8]
+$LL.Main.r36 $0 $1 $2 $3 =
+      $LL.Main.r17 $0 $1 $2 $3
+
+$LL.Main.st7 : ([8], [70]) -> [70]
+$LL.Main.st7 $0 $2 =
+      $LL.Main.st2 $0 $2
+
+$LL.Main.loop191 : ([15], [70]) -> [143]
+$LL.Main.loop191 $0 $1 =
+      54'h20000000000000 # $0 # 4'h8 # $1
+
+$LL.Main.putOut14 : ([15], [70], [70]) -> [70]
+$LL.Main.putOut14 $0 $1 $2 =
+      $LL.Main.putOut6 $0 $1 $2
+
+$LL.Main.putReg60 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg60 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg21 $0 $1 $2 $4 $5 $6 $7
+
+$LL.Main.putIns12 : ([8], [8], [8], [17], [8], [6], [17], [15]) -> [70]
+$LL.Main.putIns12 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putIns5 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.loop190 : ([9], [143]) -> [143]
+$LL.Main.loop190 $0 $1 =
+      $LL.Main.loop49 $0 $1[70 +: 70] $1[0 +: 70]
+
+$LL.Main.loop188 : ([143]) -> [143]
+$LL.Main.loop188 $0 =
+      $LL.Main.loop71 $0[0 +: 70]
+
+$LL.Main.loop186 : ([70]) -> [143]
+$LL.Main.loop186 $1 =
+      $LL.Main.loop112 $1
+
+$LL.Main.loop185 : ([70]) -> [143]
+$LL.Main.loop185 $0 =
+      $LL.Main.loop188 ($LL.Main.loop226 (Main.incrPC $0))
+
+$LL.Main.r26 : ([8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r26 $0 $1 $2 $3 $4 =
+      $LL.Main.r12 $0 $1 $2 $3 $4
+
+$LL.Main.getIns2 : ([70], [70]) -> [87]
+$LL.Main.getIns2 $0 $1 =
+      Main.inputs $0 # $1
+
+$LL.Main.loop183 : ([9], [70]) -> [143]
+$LL.Main.loop183 $0 $1 =
+      $LL.Main.loop76 $0 $1
+
+$LL.Main.putWeOut8 : ([1], [85]) -> [70]
+$LL.Main.putWeOut8 $0 $1 =
+      $LL.Main.putWeOut4 $0 $1[70 +: 15] $1[0 +: 70]
+
+$LL.Main.putReg59 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg59 $0 $1 $2 =
+      $LL.Main.putReg56 $0 $1 $2
+
+$LL.Main.loop179 : ([143]) -> [143]
+$LL.Main.loop179 $0 =
+      $LL.Main.loop114 $0[70 +: 15] $0[0 +: 70]
+
+$LL.Main.putOut13 : ([15], [70], [70]) -> [70]
+$LL.Main.putOut13 $0 $1 $2 =
+      $LL.Main.putOut14 $0 $1 $2
+
+$LL.Main.loop178 : ([70]) -> [143]
+$LL.Main.loop178 $1 =
+      $LL.Main.loop46 $1
+
+$LL.Main.putReg58 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg58 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg33 $0 $4 $1 $2 $3 $5 $6
+
+$LL.Main.outputs6 : ([17], [15]) -> [15]
+$LL.Main.outputs6 $0 $1 =
+      $LL.Main.outputs $1
+
+$LL.Main.reset38 : ([70]) -> [143]
+$LL.Main.reset38 $1 =
+      $LL.Main.reset34 ($LL.Main.loop226 ($LL.Main.reset44 (Main.getPC $1)))
+
+$LL.Main.nand8 : ([8], [2], [8], [70]) -> [70]
+$LL.Main.nand8 $0 $1 $2 $3 =
+      $LL.Main.nand3 (Main.putReg $1 (not (and $0 $2)) $3)
+
+$LL.Main.putAddrOut6 : ([6], [15], [70]) -> [70]
+$LL.Main.putAddrOut6 $0 $1 $2 =
+      Main.putOut ($LL.Main.putAddrOut4 $0 $1) $2
+
+$LL.Main.putReg57 : ([70], [8]) -> [70]
+$LL.Main.putReg57 $0 $1 =
+      $LL.Main.putReg6 $1 $0
+
+Main.getReg1 : ([2], [70]) -> [78]
+Main.getReg1 $0 $1 =
+      $LL.Main.getReg23 $0 $0 $1
+
+$LL.Main.loop172 : ([6], [70]) -> [143]
+$LL.Main.loop172 $0 $1 =
+      $LL.Main.loop168 ($LL.Main.loop226 ($LL.Main.loop26 $0 (Main.getReg $1)))
+
+$LL.Main.getDataIn1 : ([17], [70]) -> [78]
+$LL.Main.getDataIn1 $0 $1 =
+      Main.dataIn $0 # $1
+
+$LL.Main.loop171 : ([2], [2], [8], [70]) -> [70]
+$LL.Main.loop171 $0 $1 $2 $3 =
+      $LL.Main.loop149 $0 $1 $2 $3
+
+$LL.Main.putOut12 : ([8], [8], [6], [15], [8], [8], [17], [15]) -> [70]
+$LL.Main.putOut12 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putOut15 $0 $1 $2 $6 $3 $4 $5 $7
+
+$LL.Main.putReg56 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg56 $0 $1 $2 =
+      $LL.Main.putReg17 $0 $1 $2
+
+$LL.Main.loop168 : ([143]) -> [143]
+$LL.Main.loop168 $0 =
+      $LL.Main.loop108 $0[0 +: 70]
+
+$LL.Main.loop167 : ([9], [70]) -> [143]
+$LL.Main.loop167 $0 $1 =
+      $LL.Main.loop39 $0 $1
+
+$LL.Main.putIns11 : ([17], [70]) -> [70]
+$LL.Main.putIns11 $0 $1 =
+      $LL.Main.putIns9 $0 $1
+
+$LL.Main.putIns10 : ([17], [140]) -> [70]
+$LL.Main.putIns10 $0 $1 =
+      $LL.Main.putIns8 $0 $1[70 +: 70] $1[0 +: 70]
+
+$LL.Main.putPC13 : ([6], [140]) -> [70]
+$LL.Main.putPC13 $0 $1 =
+      $LL.Main.putPC7 $0 $1[70 +: 70] $1[0 +: 70]
+
+$LL.Main.loop166 : ([70], [2], [2], [2]) -> [143]
+$LL.Main.loop166 $0 $1 $2 $3 =
+      $LL.Main.loop207 $0 $1 $2 $3
+
+$LL.Main.loop165 : ([15], [70]) -> [143]
+$LL.Main.loop165 $0 $1 =
+      $LL.Main.loop163 $0 $1
+
+$LL.Main.getIns1 : ([140]) -> [87]
+$LL.Main.getIns1 $0 =
+      $LL.Main.getIns $0[70 +: 70] $0[0 +: 70]
+
+$LL.Main.loop164 : ([15], [70]) -> [143]
+$LL.Main.loop164 $0 $1 =
+      $LL.Main.loop100 $0 $1
+
+$LL.Main.getInstr1 : ([17], [70]) -> [79]
+$LL.Main.getInstr1 $0 $1 =
+      Main.instrIn $0 # $1
+
+$LL.Main.reset36 : ([70]) -> [143]
+$LL.Main.reset36 $1 =
+      Main.loop $1
+
+$LL.Main.dataIn2 : ([8]) -> [8]
+$LL.Main.dataIn2 $0 =
+      $0
+
+$LL.Main.bnz4 : ([70]) -> [70]
+$LL.Main.bnz4 $0 =
+      Main.incrPC $0
+
+$LL.Main.loop163 : ([15], [70]) -> [143]
+$LL.Main.loop163 $0 $1 =
+      58'h80000000000000 # $0 # $1
+
+$LL.Main.putReg55 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg55 $0 $1 $2 =
+      $LL.Main.putReg65 $0 $1
+
+$LL.Main.putReg54 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg54 $0 $1 $2 =
+      $LL.Main.putReg46 $0 $1
+
+$LL.Main.getReg20 : ([140]) -> [78]
+$LL.Main.getReg20 $0 =
+      $LL.Main.getReg19 $0[70 +: 70] $0[0 +: 70]
+
+$LL.Main.putOut11 : ([15], [70]) -> [70]
+$LL.Main.putOut11 $0 $1 =
+      $LL.Main.putOut $0 ($1 # $1)
+
+$LL.Main.putPC12 : ([6], [70]) -> [70]
+$LL.Main.putPC12 $0 $1 =
+      $LL.Main.putPC13 $0 ($1 # $1)
+
+$LL.Main.loop162 : ([70]) -> [143]
+$LL.Main.loop162 $1 =
+      $LL.Main.loop65 $1
+
+$LL.Main.bnz3 : ([6], [8], [70]) -> [70]
+$LL.Main.bnz3 $0 $1 $2 =
+      $LL.Main.bnz1 $0 $1 (eq $1 8'h0) $2
+
+$LL.Main.putReg53 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg53 $0 $1 $2 =
+      $LL.Main.putReg1 $0 $1 $2
+
+$LL.Main.getReg19 : ([70], [70]) -> [78]
+$LL.Main.getReg19 $0 $1 =
+      $LL.Main.getReg15 $0 $1
+
+$LL.Main.loop158 : ([70]) -> [143]
+$LL.Main.loop158 $1 =
+      $LL.Main.loop224 $1
+
+$LL.Main.putReg52 : ([70], [8]) -> [70]
+$LL.Main.putReg52 $0 $1 =
+      $LL.Main.putReg4 $1 $0
+
+$LL.Main.loop157 : ([70], [6]) -> [143]
+$LL.Main.loop157 $0 $1 =
+      $LL.Main.loop90 $0 $1
+
+$LL.Main.putReg51 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg51 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg34 $0 $2 $3 $4 $5 $6 $7
+
+$LL.Main.bnz2 : ([6], [70]) -> [70]
+$LL.Main.bnz2 $0 $1 =
+      Main.putPC1 $0 $1
+
+$LL.Main.putWeOut7 : ([1], [15], [70]) -> [70]
+$LL.Main.putWeOut7 $0 $1 $2 =
+      $LL.Main.putWeOut1 $0 $1 $2
+
+$LL.Main.putAddrOut5 : ([6], [15], [70]) -> [70]
+$LL.Main.putAddrOut5 $0 $1 $2 =
+      $LL.Main.putAddrOut3 $0 $1 $2
+
+$LL.Main.loop156 : ([6], [8], [70]) -> [70]
+$LL.Main.loop156 $0 $1 $2 =
+      $LL.Main.loop146 $0 $1 $2
+
+$LL.Main.loop155 : ([140]) -> [143]
+$LL.Main.loop155 $0 =
+      $LL.Main.loop105 $0[70 +: 70] $0[0 +: 70]
+
+$LL.Main.loop151 : ([2], [70], [2], [2]) -> [143]
+$LL.Main.loop151 $0 $1 $2 $3 =
+      $LL.Main.loop79 $0 $1 $2 $3
+
+$LL.Main.putReg50 : ([70], [8]) -> [70]
+$LL.Main.putReg50 $0 $1 =
+      $LL.Main.putReg25 $1 $0
+
+$LL.Main.reset34 : ([143]) -> [143]
+$LL.Main.reset34 $0 =
+      $LL.Main.reset7 $0[0 +: 70]
+
+$LL.Main.putReg49 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg49 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg67 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.loop149 : ([2], [2], [8], [70]) -> [70]
+$LL.Main.loop149 $0 $1 $2 $3 =
+      $LL.Main.loop70 $0 $1 $2 $3
+
+$LL.Main.r06 : ([70]) -> [8]
+$LL.Main.r06 $0 =
+      $LL.Main.r05 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
+
+$LL.Main.loop148 : ([6], [8], [70]) -> [70]
+$LL.Main.loop148 $0 $1 $2 =
+      $LL.Main.st5 $0 $1 $2
+
+$LL.Main.putReg48 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg48 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg22 $3 $0 $1 $2 $4 $5 $6 $7
+
+$LL.Main.putIns9 : ([17], [70]) -> [70]
+$LL.Main.putIns9 $0 $1 =
+      $LL.Main.putIns10 $0 ($1 # $1)
+
+$LL.Main.putWeOut6 : ([1], [1], [6], [8]) -> [15]
+$LL.Main.putWeOut6 $0 $1 $2 $3 =
+      $LL.Main.putWeOut2 $0 $1 $2 $3
+
+Main.pc : ([70]) -> [6]
+Main.pc $0 =
+      $LL.Main.pc6 $0
+
+$LL.Main.r14 : ([8], [8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r14 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.r16 $1 $2 $3 $4 $5 $6
+
+$LL.Main.putReg47 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg47 $0 $1 $2 =
+      $LL.Main.putReg54 $0 $1 $2
+
+$LL.Main.loop146 : ([6], [8], [70]) -> [70]
+$LL.Main.loop146 $0 $1 $2 =
+      $LL.Main.loop223 $0 $1 $2
+
+$LL.Main.finishInstr2 : ([6], [70]) -> [70]
+$LL.Main.finishInstr2 $0 $1 =
+      $LL.Main.loop143 (Main.putAddrOut $0 $1)
+
+$LL.Main.loop145 : ([79]) -> [143]
+$LL.Main.loop145 $0 =
+      $LL.Main.loop167 $0[70 +: 9] $0[0 +: 70]
+
+$LL.Main.putReg46 : ([8], [70]) -> [70]
+$LL.Main.putReg46 $0 $1 =
+      $LL.Main.putReg23 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
+
+$LL.Main.loop144 : ([70]) -> [143]
+$LL.Main.loop144 $1 =
+      $LL.Main.loop212 $1
+
+$LL.Main.putDataOut11 : ([8], [70]) -> [70]
+$LL.Main.putDataOut11 $0 $1 =
+      $LL.Main.putDataOut $0 (Main.getOut $1)
+
+$LL.Main.putReg45 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg45 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg42 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.putReg44 : ([70], [8]) -> [70]
+$LL.Main.putReg44 $0 $1 =
+      $LL.Main.putReg57 $0 $1
+
+$LL.Main.r05 : ([8], [8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r05 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.r01 $0 $1 $2 $3 $4 $5 $6
+
+$LL.Main.pc5 : ([8], [8], [8], [6], [17], [15]) -> [6]
+$LL.Main.pc5 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.pc1 $1 $2 $3 $4 $5
+
+$LL.Main.putReg43 : ([70], [8]) -> [70]
+$LL.Main.putReg43 $0 $1 =
+      $LL.Main.putReg24 $1 $0
+
+$LL.Main.putIns8 : ([17], [70], [70]) -> [70]
+$LL.Main.putIns8 $0 $1 $2 =
+      $LL.Main.putIns2 $0 $1 $2
+
+$LL.Main.loop143 : ([70]) -> [70]
+$LL.Main.loop143 $0 =
+      $LL.Main.finishInstr4 $0
+
+$LL.Main.instrIn : ([9], [8]) -> [9]
+$LL.Main.instrIn $0 $1 =
+      $LL.Main.instrIn1 $0 $1
+
+$LL.Main.loop142 : ([85]) -> [143]
+$LL.Main.loop142 $0 =
+      $LL.Main.loop165 $0[70 +: 15] $0[0 +: 70]
+
+$LL.Main.putReg42 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg42 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg40 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.putOut10 : ([15], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putOut10 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putOut5 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.loop139 : ([9], [70], [70]) -> [143]
+$LL.Main.loop139 $0 $1 $2 =
+      if eq $0[6 +: 3] 3'h0 then $LL.Main.loop101 $2
+            else if eq $0[6 +: 3] 3'h1 then $LL.Main.loop157 $2 $0[0 +: 6] else if eq $0[6 +: 3] 3'h2 then $LL.Main.loop48 $2 $0[0 +: 6] else if eq $0[6 +: 3] 3'h3 then $LL.Main.loop166 $2 $0[4 +: 2] $0[2 +: 2] $0[0 +: 2] else $LL.Main.loop218 $2 $0[0 +: 6]
+
+$LL.Main.putOut9 : ([15], [70]) -> [70]
+$LL.Main.putOut9 $0 $1 =
+      $LL.Main.putOut3 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
+
+$LL.Main.loop137 : ([70]) -> [143]
+$LL.Main.loop137 $1 =
+      $LL.Main.loop109 $1
+
+$LL.Main.inputs6 : ([17], [15]) -> [17]
+$LL.Main.inputs6 $0 $1 =
+      $0
+
+$LL.Main.putReg41 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg41 $0 $1 $2 $3 $4 $5 $6 =
+      $3 # $1 # $2 # $0 # $4 # $5 # $6
+
+$LL.Main.reset31 : ([70]) -> [143]
+$LL.Main.reset31 $1 =
+      $LL.Main.reset38 $1
+
+$LL.Main.loop136 : ([143]) -> [143]
+$LL.Main.loop136 $0 =
+      $LL.Main.loop23 $0[0 +: 70]
+
+$LL.Main.loop135 : ([70], [6]) -> [143]
+$LL.Main.loop135 $0 $1 =
+      $LL.Main.loop69 $1 $0
+
+$LL.Main.loop134 : ([143]) -> [143]
+$LL.Main.loop134 $0 =
+      $LL.Main.loop127 $0[0 +: 70]
+
+Main.getIns : ([70]) -> [87]
+Main.getIns $0 =
+      $LL.Main.getIns1 ($0 # $0)
+
+$LL.Main.getReg18 : ([70]) -> [78]
+$LL.Main.getReg18 $0 =
+      $LL.Main.getReg21 ($0 # $0)
+
+$LL.Pure.dispatch5 : ([17], [70]) -> [143]
+$LL.Pure.dispatch5 $0 $1 =
+      $LL.Main.reset46 $0 $1
+
+$LL.Main.putReg40 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg40 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg48 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.nand7 : ([8], [2], [78]) -> [70]
+$LL.Main.nand7 $0 $1 $2 =
+      $LL.Main.nand4 $0 $1 $2[70 +: 8] $2[0 +: 70]
+
+$LL.Main.loop129 : ([2], [2], [8], [70]) -> [70]
+$LL.Main.loop129 $0 $1 $2 $3 =
+      $LL.Main.nand1 $1 $0 $2 $3
+
+$LL.Main.putOut8 : ([8], [15], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putOut8 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putOut2 $4 $0 $1 $2 $3 $5 $6 $7
+
+$LL.Main.nand6 : ([70]) -> [70]
+$LL.Main.nand6 $1 =
+      $LL.Main.nand9 $1
+
+$LL.Main.incrPC2 : ([6], [70]) -> [70]
+$LL.Main.incrPC2 $0 $1 =
+      Main.putPC1 (add $0 6'h1) $1
+
+$LL.Main.loop127 : ([70]) -> [143]
+$LL.Main.loop127 $1 =
+      $LL.Main.loop126 $1
+
+$LL.Main.getReg17 : ([140]) -> [78]
+$LL.Main.getReg17 $0 =
+      $LL.Main.getReg9 $0[70 +: 70] $0[0 +: 70]
+
+$LL.Main.putOut7 : ([15], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putOut7 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putOut10 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.putAddrOut4 : ([6], [15]) -> [15]
+$LL.Main.putAddrOut4 $0 $1 =
+      $LL.Main.putAddrOut2 $0 $1[14 +: 1] $1[8 +: 6] $1[0 +: 8]
+
+$LL.Main.putReg39 : ([70], [8]) -> [70]
+$LL.Main.putReg39 $0 $1 =
+      $LL.Main.putReg43 $0 $1
+
+Main.loop : ([70]) -> [143]
+Main.loop $0 =
+      $LL.Main.loop95 ($LL.Main.loop145 (Main.getInstr $0))
+
+$LL.Main.loop126 : ([70]) -> [143]
+$LL.Main.loop126 $1 =
+      $LL.Main.loop89 ($LL.Main.loop142 (Main.getOut $1))
+
+$LL.Main.getReg16 : ([70], [70]) -> [78]
+$LL.Main.getReg16 $0 $1 =
+      $LL.Main.getReg11 $0 $1
+
+$LL.Main.pc4 : ([8], [6], [17], [15]) -> [6]
+$LL.Main.pc4 $0 $1 $2 $3 =
+      $LL.Main.pc2 $1 $2 $3
+
+$LL.Main.getReg15 : ([70], [70]) -> [78]
+$LL.Main.getReg15 $0 $1 =
+      Main.r3 $0 # $1
+
+$LL.Main.reset29 : ([70]) -> [143]
+$LL.Main.reset29 $1 =
+      $LL.Main.reset31 $1
+
+$LL.Main.finishInstr1 : ([70]) -> [70]
+$LL.Main.finishInstr1 $1 =
+      $LL.Main.finishInstr3 $1
+
+$LL.Main.loop120 : ([6], [8], [70]) -> [70]
+$LL.Main.loop120 $0 $1 $2 =
+      $LL.Main.loop107 $0 $1 $2
+
+$LL.Main.putWeOut5 : ([1], [70]) -> [70]
+$LL.Main.putWeOut5 $0 $1 =
+      $LL.Main.putWeOut $0 $1
+
+$LL.Main.putReg38 : ([10], [70]) -> [70]
+$LL.Main.putReg38 $0 $1 =
+      $LL.Main.putReg39 $1 $0[0 +: 8]
+
+$LL.Main.loop119 : ([143]) -> [143]
+$LL.Main.loop119 $0 =
+      $LL.Main.loop206 $0[70 +: 15] $0[0 +: 70]
+
+$LL.Main.putReg37 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg37 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg58 $0 $3 $1 $2 $4 $5 $6
+
+$LL.Main.r13 : ([70]) -> [8]
+$LL.Main.r13 $0 =
+      $LL.Main.r14 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
+
+Main.putReg1 : ([8], [70]) -> [70]
+Main.putReg1 $0 $1 =
+      $LL.Main.putReg11 $0 2'h0 (2'h0 # $0) $1
+
+$LL.Main.putPC11 : ([6], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putPC11 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putPC14 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.getPC1 : ([70], [70]) -> [76]
+$LL.Main.getPC1 $0 $1 =
+      $LL.Main.getPC $0 $1
+
+$LL.Main.inputs5 : ([8], [8], [6], [17], [15]) -> [17]
+$LL.Main.inputs5 $0 $1 $2 $3 $4 =
+      $LL.Main.inputs $1 $2 $3 $4
+
+$LL.Main.st6 : ([8], [70]) -> [70]
+$LL.Main.st6 $0 $2 =
+      $LL.Main.st4 $0 $2
+
+$LL.Main.putDataOut10 : ([1], [6], [8], [8]) -> [15]
+$LL.Main.putDataOut10 $0 $1 $2 $3 =
+      $0 # $1 # $2
+
+$LL.Main.putOut6 : ([15], [70], [70]) -> [70]
+$LL.Main.putOut6 $0 $1 $2 =
+      $LL.Main.putOut4 $0 $1 $2
+
+$LL.Main.loop115 : ([70]) -> [143]
+$LL.Main.loop115 $1 =
+      $LL.Main.loop104 $1
+
+Main.inputs : ([70]) -> [17]
+Main.inputs $0 =
+      $LL.Main.inputs3 $0
+
+$LL.Main.putReg36 : ([8], [2], [10], [70]) -> [70]
+$LL.Main.putReg36 $0 $1 $2 $3 =
+      if eq $2[8 +: 2] 2'h2 then $LL.Main.putReg7 $3 $2[0 +: 8]
+            else $LL.Main.putReg38 ($1 # $0) $3
+
+$LL.Main.loop114 : ([15], [70]) -> [143]
+$LL.Main.loop114 $0 $1 =
+      $LL.Main.loop88 $0 $1
+
+$LL.Main.putPC10 : ([8], [6], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putPC10 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putPC9 $0 $1 $4 $2 $3 $5 $6 $7
+
+$LL.Main.putDataOut9 : ([8], [15], [70]) -> [70]
+$LL.Main.putDataOut9 $0 $1 $2 =
+      $LL.Main.putDataOut6 $0 $1 $2
+
+$LL.Main.putReg35 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg35 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg61 $0 $4 $1 $2 $3 $5 $6
+
+$LL.Main.loop112 : ([70]) -> [143]
+$LL.Main.loop112 $1 =
+      $LL.Main.loop82 ($LL.Main.loop142 (Main.getOut $1))
+
+Main.putReg : ([2], [8], [70]) -> [70]
+Main.putReg $0 $1 $2 =
+      $LL.Main.putReg11 $1 $0 ($0 # $1) $2
+
+$LL.Main.r23 : ([8], [8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r23 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.r21 $1 $2 $3 $4 $5 $6
+
+$LL.Main.nand5 : ([70]) -> [70]
+$LL.Main.nand5 $1 =
+      $LL.Main.nand6 $1
+
+$LL.Main.loop109 : ([70]) -> [143]
+$LL.Main.loop109 $1 =
+      $LL.Main.loop25 ($LL.Main.loop226 (Main.incrPC $1))
+
+$LL.Main.putOut5 : ([15], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putOut5 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putOut8 $3 $0 $1 $2 $4 $5 $6 $7
+
+$LL.Main.putReg34 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg34 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg12 $1 $0 $2 $3 $4 $5 $6
+
+$LL.Main.loop108 : ([70]) -> [143]
+$LL.Main.loop108 $1 =
+      $LL.Main.loop9 $1
+
+Main.r0 : ([70]) -> [8]
+Main.r0 $0 =
+      $LL.Main.r06 $0
+
+$LL.Main.loop107 : ([6], [8], [70]) -> [70]
+$LL.Main.loop107 $0 $1 $2 =
+      $LL.Main.loop32 $0 $1 $2
+
+$LL.Main.pc3 : ([6], [17], [15]) -> [6]
+$LL.Main.pc3 $0 $1 $2 =
+      $LL.Main.pc7 $0 $2
+
+$LL.Main.putDataOut8 : ([1], [8], [6], [8]) -> [15]
+$LL.Main.putDataOut8 $0 $1 $2 $3 =
+      $LL.Main.putDataOut10 $0 $2 $1 $3
+
+$LL.Main.inputs4 : ([8], [8], [8], [6], [17], [15]) -> [17]
+$LL.Main.inputs4 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.inputs5 $1 $2 $3 $4 $5
+
+$LL.Main.loop105 : ([70], [70]) -> [143]
+$LL.Main.loop105 $0 $1 =
+      $LL.Main.loop42 $0 $1
+
+$LL.Main.loop104 : ([70]) -> [143]
+$LL.Main.loop104 $1 =
+      $LL.Main.loop102 ($LL.Main.loop226 (Main.incrPC $1))
+
+$LL.Main.putPC9 : ([8], [6], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putPC9 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putPC8 $0 $1 $2 $3 $4 $6 $7
+
+$LL.Main.putOut4 : ([15], [70], [70]) -> [70]
+$LL.Main.putOut4 $0 $1 $2 =
+      $LL.Main.putOut9 $0 $1
+
+$LL.Main.reset22 : ([143]) -> [143]
+$LL.Main.reset22 $0 =
+      $LL.Main.reset29 $0[0 +: 70]
+
+$LL.Main.loop102 : ([143]) -> [143]
+$LL.Main.loop102 $0 =
+      $LL.Main.loop14 $0[0 +: 70]
+
+Main.getOut : ([70]) -> [85]
+Main.getOut $0 =
+      $LL.Main.getOut1 ($0 # $0)
+
+$LL.Main.reset20 : ([15], [70]) -> [143]
+$LL.Main.reset20 $0 $1 =
+      54'h20000000000000 # $0 # 4'h3 # $1
+
+$LL.Main.st5 : ([6], [8], [70]) -> [70]
+$LL.Main.st5 $0 $1 $2 =
+      $LL.Main.st10 $1 (Main.putAddrOut $0 $2)
+
+$LL.Main.st4 : ([8], [70]) -> [70]
+$LL.Main.st4 $0 $2 =
+      $LL.Main.st9 $0 $2
+
+$LL.Main.getDataIn : ([87]) -> [78]
+$LL.Main.getDataIn $0 =
+      $LL.Main.getDataIn2 $0[70 +: 17] $0[0 +: 70]
+
+$LL.Main.st3 : ([70]) -> [70]
+$LL.Main.st3 $1 =
+      $LL.Main.st $1
+
+$LL.Main.getReg14 : ([70]) -> [78]
+$LL.Main.getReg14 $0 =
+      $LL.Main.getReg7 $0
+
+$LL.Main.loop101 : ([70]) -> [143]
+$LL.Main.loop101 $0 =
+      $LL.Main.loop185 $0
+
+$LL.Main.putAddrOut3 : ([6], [15], [70]) -> [70]
+$LL.Main.putAddrOut3 $0 $1 $2 =
+      $LL.Main.putAddrOut7 $0 $1 $2
+
+$LL.Main.loop100 : ([15], [70]) -> [143]
+$LL.Main.loop100 $0 $1 =
+      54'h20000000000000 # $0 # 4'h7 # $1
+
+$LL.Main.putPC8 : ([8], [6], [8], [8], [8], [17], [15]) -> [70]
+$LL.Main.putPC8 $0 $1 $2 $3 $4 $5 $6 =
+      $3 # $0 # $4 # $2 # $1 # $5 # $6
+
+$LL.Main.loop99 : ([2], [2], [2], [70]) -> [143]
+$LL.Main.loop99 $0 $1 $2 $3 =
+      $LL.Main.loop221 ($LL.Main.loop226 ($LL.Main.loop $2 $1 (Main.getReg1 $0 $3)))
+
+$LL.Main.putReg33 : ([8], [6], [8], [8], [8], [17], [15]) -> [70]
+$LL.Main.putReg33 $0 $1 $2 $3 $4 $5 $6 =
+      $3 # $4 # $0 # $2 # $1 # $5 # $6
+
+$LL.Main.nand4 : ([8], [2], [8], [70]) -> [70]
+$LL.Main.nand4 $0 $1 $2 $3 =
+      $LL.Main.nand2 $0 $1 $2 $3
+
+$LL.Main.putPC7 : ([6], [70], [70]) -> [70]
+$LL.Main.putPC7 $0 $1 $2 =
+      $LL.Main.putPC1 $0 $1 $2
+
+$LL.Main.pc2 : ([6], [17], [15]) -> [6]
+$LL.Main.pc2 $0 $1 $2 =
+      $LL.Main.pc3 $0 $1 $2
+
+Main.dataIn : ([17]) -> [8]
+Main.dataIn $0 =
+      $LL.Main.dataIn1 $0
+
+$LL.Main.putWeOut4 : ([1], [15], [70]) -> [70]
+$LL.Main.putWeOut4 $0 $1 $2 =
+      $LL.Main.putWeOut10 $0 $1 $2
+
+$LL.Main.r34 : ([8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r34 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.r31 $1 $2 $3 $4 $5
+
+$LL.Main.putDataOut7 : ([8], [1], [6], [8]) -> [15]
+$LL.Main.putDataOut7 $0 $1 $2 $3 =
+      $LL.Main.putDataOut8 $1 $0 $2 $3
+
+$LL.Main.reset18 : ([15], [70]) -> [143]
+$LL.Main.reset18 $0 $1 =
+      $LL.Main.reset20 $0 $1
+
+$LL.Main.putReg32 : ([8], [140]) -> [70]
+$LL.Main.putReg32 $0 $1 =
+      $LL.Main.putReg62 $0 $1[70 +: 70] $1[0 +: 70]
+
+$LL.Main.getReg13 : ([140]) -> [78]
+$LL.Main.getReg13 $0 =
+      $LL.Main.getReg16 $0[70 +: 70] $0[0 +: 70]
+
+Main.getDataIn : ([70]) -> [78]
+Main.getDataIn $0 =
+      $LL.Main.getDataIn (Main.getIns $0)
+
+$LL.Main.r12 : ([8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r12 $0 $1 $2 $3 $4 =
+      $LL.Main.r17 $0 $2 $3 $4
+
+$LL.Main.loop95 : ([143]) -> [143]
+$LL.Main.loop95 $0 =
+      $LL.Main.loop183 $0[70 +: 9] $0[0 +: 70]
+
+$LL.Main.putReg31 : ([8], [2], [10], [70]) -> [70]
+$LL.Main.putReg31 $0 $1 $2 $3 =
+      if eq $2[8 +: 2] 2'h1 then $LL.Main.putReg44 $3 $2[0 +: 8]
+            else $LL.Main.putReg36 $0 $1 ($1 # $0) $3
+
+Main.r1 : ([70]) -> [8]
+Main.r1 $0 =
+      $LL.Main.r13 $0
+
+$LL.Main.loop94 : ([70]) -> [143]
+$LL.Main.loop94 $1 =
+      $LL.Main.reset36 $1
+
+$LL.Main.r22 : ([70]) -> [8]
+$LL.Main.r22 $0 =
+      $LL.Main.r23 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
+
+$LL.Main.putPC6 : ([6], [70], [70]) -> [70]
+$LL.Main.putPC6 $0 $1 $2 =
+      $LL.Main.putPC2 $0 $1
+
+$LL.Main.loop91 : ([143]) -> [143]
+$LL.Main.loop91 $0 =
+      $LL.Main.loop164 $0[70 +: 15] $0[0 +: 70]
+
+$LL.Main.outputs5 : ([8], [8], [8], [6], [17], [15]) -> [15]
+$LL.Main.outputs5 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.outputs3 $1 $2 $3 $4 $5
+
+$LL.Main.loop90 : ([70], [6]) -> [143]
+$LL.Main.loop90 $0 $1 =
+      $LL.Main.loop31 $1 $0
+
+$LL.Main.putDataOut6 : ([8], [15], [70]) -> [70]
+$LL.Main.putDataOut6 $0 $1 $2 =
+      $LL.Main.putDataOut1 $0 $1 $2
+
+$LL.Main.loop89 : ([143]) -> [143]
+$LL.Main.loop89 $0 =
+      $LL.Main.loop4 $0[70 +: 15] $0[0 +: 70]
+
+$LL.Main.loop88 : ([15], [70]) -> [143]
+$LL.Main.loop88 $0 $1 =
+      54'h20000000000000 # $0 # 4'h4 # $1
+
+$LL.Main.bnz1 : ([6], [8], [1], [70]) -> [70]
+$LL.Main.bnz1 $0 $1 $2 $3 =
+      if eq $2 1'h1 then $LL.Main.bnz4 $3
+            else $LL.Main.bnz6 $0 (eq $1 8'h0) $3
+
+$LL.Main.outputs4 : ([8], [6], [17], [15]) -> [15]
+$LL.Main.outputs4 $0 $1 $2 $3 =
+      $LL.Main.outputs1 $1 $2 $3
+
+$LL.Main.putReg30 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg30 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg16 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.loop84 : ([143]) -> [143]
+$LL.Main.loop84 $0 =
+      $LL.Main.loop219 $0[0 +: 70]
+
+$LL.Main.reset17 : ([70]) -> [143]
+$LL.Main.reset17 $1 =
+      $LL.Main.reset41 ($LL.Main.loop142 (Main.getOut $1))
+
+$LL.Main.getPC : ([70], [70]) -> [76]
+$LL.Main.getPC $0 $1 =
+      Main.pc $0 # $1
+
+$LL.Pure.dispatch2 : ([17], [70]) -> [143]
+$LL.Pure.dispatch2 $0 $1 =
+      $LL.Main.loop37 $0 $1
+
+$LL.Main.inputs3 : ([70]) -> [17]
+$LL.Main.inputs3 $0 =
+      $LL.Main.inputs7 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
+
+$LL.Main.getReg12 : ([70], [70]) -> [78]
+$LL.Main.getReg12 $0 $1 =
+      Main.r0 $0 # $1
+
+$LL.Main.loop82 : ([143]) -> [143]
+$LL.Main.loop82 $0 =
+      $LL.Main.loop204 $0[70 +: 15] $0[0 +: 70]
+
+$LL.Main.putDataOut5 : ([8], [15], [70]) -> [70]
+$LL.Main.putDataOut5 $0 $1 $2 =
+      Main.putOut ($LL.Main.putDataOut3 $0 $1) $2
+
+$LL.Pure.dispatch1 : ([17], [70]) -> [143]
+$LL.Pure.dispatch1 $0 $1 =
+      $LL.Main.loop8 $0 $1
+
+$LL.Main.loop79 : ([2], [70], [2], [2]) -> [143]
+$LL.Main.loop79 $0 $1 $2 $3 =
+      $LL.Main.loop29 $0 $2 $3 $1
+
+Main.r3 : ([70]) -> [8]
+Main.r3 $0 =
+      $LL.Main.r3 $0
+
+$LL.Main.putReg29 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg29 $0 $1 $2 =
+      $LL.Main.putReg47 $0 $1 $2
+
+$LL.Main.r21 : ([8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r21 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.r26 $1 $2 $3 $4 $5
+
+$LL.Main.putReg28 : ([8], [140]) -> [70]
+$LL.Main.putReg28 $0 $1 =
+      $LL.Main.putReg59 $0 $1[70 +: 70] $1[0 +: 70]
+
+$LL.Main.putReg27 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg27 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg37 $2 $0 $1 $3 $4 $5 $6
+
+Main.r2 : ([70]) -> [8]
+Main.r2 $0 =
+      $LL.Main.r22 $0
+
+$LL.Main.putDataOut4 : ([8], [1], [6], [8]) -> [15]
+$LL.Main.putDataOut4 $0 $1 $2 $3 =
+      $LL.Main.putDataOut7 $0 $1 $2 $3
+
+$LL.Main.putReg26 : ([8], [70]) -> [70]
+$LL.Main.putReg26 $0 $1 =
+      $LL.Main.putReg45 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
+
+$LL.Main.loop76 : ([9], [70]) -> [143]
+$LL.Main.loop76 $0 $1 =
+      $LL.Main.loop190 $0 ($LL.Main.loop155 ($1 # $1))
+
+$LL.Main.loop75 : ([70]) -> [143]
+$LL.Main.loop75 $1 =
+      $LL.Main.loop18 ($LL.Main.loop226 ($LL.Main.reset44 (Main.getPC $1)))
+
+$LL.Main.getReg11 : ([70], [70]) -> [78]
+$LL.Main.getReg11 $0 $1 =
+      Main.r2 $0 # $1
+
+$LL.Main.loop72 : ([15], [70]) -> [143]
+$LL.Main.loop72 $0 $1 =
+      $LL.Main.loop36 $0 $1
+
+$LL.Main.putIns7 : ([8], [17], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putIns7 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putIns14 $0 $2 $1 $3 $4 $5 $6 $7
+
+$LL.Main.putReg25 : ([8], [70]) -> [70]
+$LL.Main.putReg25 $0 $1 =
+      $LL.Main.putReg63 $0 ($1 # $1)
+
+$LL.Main.putReg24 : ([8], [70]) -> [70]
+$LL.Main.putReg24 $0 $1 =
+      $LL.Main.putReg32 $0 ($1 # $1)
+
+Main.putAddrOut : ([6], [70]) -> [70]
+Main.putAddrOut $0 $1 =
+      $LL.Main.putAddrOut8 $0 $1
+
+$LL.Main.loop71 : ([70]) -> [143]
+$LL.Main.loop71 $1 =
+      $LL.Main.loop197 $1
+
+$LL.Main.r11 : ([8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r11 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.r12 $0 $2 $3 $4 $5
+
+$LL.Main.loop70 : ([2], [2], [8], [70]) -> [70]
+$LL.Main.loop70 $0 $1 $2 $3 =
+      $LL.Main.loop129 $0 $1 $2 $3
+
+$LL.Main.loop69 : ([6], [70]) -> [143]
+$LL.Main.loop69 $0 $1 =
+      $LL.Main.loop136 ($LL.Main.loop226 ($LL.Main.loop54 $0 (Main.getReg $1)))
+
+$LL.Main.loop68 : ([70]) -> [143]
+$LL.Main.loop68 $1 =
+      $LL.Main.loop75 $1
+
+$LL.Main.putWeOut3 : ([1], [6], [8]) -> [15]
+$LL.Main.putWeOut3 $0 $1 $2 =
+      $0 # $1 # $2
+
+$LL.Main.st2 : ([8], [70]) -> [70]
+$LL.Main.st2 $0 $2 =
+      $LL.Main.st6 $0 $2
+
+$LL.Main.putReg23 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg23 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg30 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.loop65 : ([70]) -> [143]
+$LL.Main.loop65 $1 =
+      $LL.Main.loop19 ($LL.Main.loop226 ($LL.Main.reset44 (Main.getPC $1)))
+
+$LL.Main.loop64 : ([15], [70]) -> [143]
+$LL.Main.loop64 $0 $1 =
+      $LL.Main.loop21 $0 $1
+
+$LL.Main.putReg22 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg22 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg58 $0 $1 $2 $3 $5 $6 $7
+
+$LL.Main.loop63 : ([9], [70], [70]) -> [143]
+$LL.Main.loop63 $0 $1 $2 =
+      $LL.Main.loop47 $0 $1 $2
+
+$LL.Main.getOut : ([70], [70]) -> [85]
+$LL.Main.getOut $0 $1 =
+      $LL.Main.getOut2 $0 $1
+
+$LL.Main.putReg21 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg21 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg2 $3 $0 $1 $2 $4 $5 $6
+
+$LL.Main.outputs3 : ([8], [8], [6], [17], [15]) -> [15]
+$LL.Main.outputs3 $0 $1 $2 $3 $4 =
+      $LL.Main.outputs4 $1 $2 $3 $4
+
+$LL.Main.incrPC1 : ([76]) -> [70]
+$LL.Main.incrPC1 $0 =
+      $LL.Main.incrPC $0[70 +: 6] $0[0 +: 70]
+
+$LL.Main.putDataOut3 : ([8], [15]) -> [15]
+$LL.Main.putDataOut3 $0 $1 =
+      $LL.Main.putDataOut4 $0 $1[14 +: 1] $1[8 +: 6] $1[0 +: 8]
+
+$LL.Main.getReg10 : ([70]) -> [78]
+$LL.Main.getReg10 $0 =
+      $LL.Main.getReg18 $0
+
+$LL.Main.nand3 : ([70]) -> [70]
+$LL.Main.nand3 $0 =
+      $LL.Main.nand5 $0
+
+$LL.Main.getReg9 : ([70], [70]) -> [78]
+$LL.Main.getReg9 $0 $1 =
+      $LL.Main.getReg $0 $1
+
+$LL.Main.nand2 : ([8], [2], [8], [70]) -> [70]
+$LL.Main.nand2 $0 $1 $2 $3 =
+      $LL.Main.nand $0 $1 $2 $3
+
+$LL.Main.putReg20 : ([8], [70]) -> [70]
+$LL.Main.putReg20 $0 $1 =
+      $LL.Main.putReg64 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
+
+$LL.Main.loop57 : ([70]) -> [143]
+$LL.Main.loop57 $1 =
+      $LL.Main.loop28 $1
+
+Main.getReg : ([70]) -> [78]
+Main.getReg $0 =
+      $LL.Main.getReg23 2'h0 2'h0 $0
+
+Main.incrPC : ([70]) -> [70]
+Main.incrPC $0 =
+      $LL.Main.incrPC1 (Main.getPC $0)
+
+$LL.Main.inputs2 : ([17], [15]) -> [17]
+$LL.Main.inputs2 $0 $1 =
+      $LL.Main.inputs6 $0 $1
+
+$LL.Main.loop54 : ([6], [78]) -> [70]
+$LL.Main.loop54 $0 $1 =
+      $LL.Main.loop120 $0 $1[70 +: 8] $1[0 +: 70]
+
+$LL.Main.putReg19 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg19 $0 $1 $2 =
+      $LL.Main.putReg15 $0 $1 $2
+
+$LL.Main.inputs1 : ([6], [17], [15]) -> [17]
+$LL.Main.inputs1 $0 $1 $2 =
+      $LL.Main.inputs2 $1 $2
+
+$LL.Main.putWeOut2 : ([1], [1], [6], [8]) -> [15]
+$LL.Main.putWeOut2 $0 $1 $2 $3 =
+      $LL.Main.putWeOut3 $0 $2 $3
+
+Main.getInstr : ([70]) -> [79]
+Main.getInstr $0 =
+      $LL.Main.getInstr (Main.getIns $0)
+
+$LL.Main.loop49 : ([9], [70], [70]) -> [143]
+$LL.Main.loop49 $0 $1 $2 =
+      $LL.Main.loop63 $0 $1 $2
+
+$LL.Main.getReg8 : ([70]) -> [78]
+$LL.Main.getReg8 $0 =
+      $LL.Main.getReg17 ($0 # $0)
+
+$LL.Main.loop48 : ([70], [6]) -> [143]
+$LL.Main.loop48 $0 $1 =
+      $LL.Main.loop215 $0 $1
+
+$LL.Main.getReg7 : ([70]) -> [78]
+$LL.Main.getReg7 $0 =
+      $LL.Main.getReg20 ($0 # $0)
+
+$LL.Main.putReg17 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg17 $0 $1 $2 =
+      $LL.Main.putReg55 $0 $1 $2
+
+$LL.Main.loop47 : ([9], [70], [70]) -> [143]
+$LL.Main.loop47 $0 $1 $2 =
+      $LL.Main.loop139 $0 $1 $2
+
+Main.instrIn : ([17]) -> [9]
+Main.instrIn $0 =
+      $LL.Main.instrIn2 $0
+
+$LL.Main.loop46 : ([70]) -> [143]
+$LL.Main.loop46 $1 =
+      $LL.Main.loop91 ($LL.Main.loop142 (Main.getOut $1))
+
+$LL.Main.reset7 : ([70]) -> [143]
+$LL.Main.reset7 $1 =
+      $LL.Main.reset17 $1
+
+$LL.Main.putReg16 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg16 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg60 $2 $0 $1 $3 $4 $5 $6 $7
+
+$LL.Main.putIns6 : ([17], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putIns6 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putIns3 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.putIns5 : ([8], [8], [8], [17], [8], [6], [17], [15]) -> [70]
+$LL.Main.putIns5 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $0 # $1 # $4 # $2 # $5 # $3 # $7
+
+$LL.Main.r01 : ([8], [8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r01 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.r11 $0 $2 $3 $4 $5 $6
+
+$LL.Main.loop42 : ([70], [70]) -> [143]
+$LL.Main.loop42 $0 $1 =
+      3'h3 # $0 # $1
+
+$LL.Main.putReg15 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg15 $0 $1 $2 =
+      $LL.Main.putReg13 $0 $1 $2
+
+$LL.Main.putReg14 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg14 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg27 $0 $1 $3 $4 $5 $6 $7
+
+$LL.Main.putPC5 : ([8], [6], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putPC5 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putPC10 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.loop39 : ([9], [70]) -> [143]
+$LL.Main.loop39 $0 $1 =
+      64'h0 # $0 # $1
+
+$LL.Main.loop38 : ([143]) -> [143]
+$LL.Main.loop38 $0 =
+      $LL.Main.loop64 $0[70 +: 15] $0[0 +: 70]
+
+$LL.Main.loop37 : ([17], [70]) -> [143]
+$LL.Main.loop37 $0 $1 =
+      $LL.Main.loop196 ($LL.Main.loop226 (Main.putIns $0 $1))
+
+$LL.Main.getReg6 : ([70]) -> [78]
+$LL.Main.getReg6 $0 =
+      $LL.Main.getReg13 ($0 # $0)
+
+$LL.Main.pc1 : ([8], [8], [6], [17], [15]) -> [6]
+$LL.Main.pc1 $0 $1 $2 $3 $4 =
+      $LL.Main.pc4 $1 $2 $3 $4
+
+$LL.Main.loop36 : ([15], [70]) -> [143]
+$LL.Main.loop36 $0 $1 =
+      54'h20000000000000 # $0 # 4'h2 # $1
+
+$LL.Main.putDataOut2 : ([8], [70]) -> [70]
+$LL.Main.putDataOut2 $0 $1 =
+      $LL.Main.putDataOut11 $0 $1
+
+$LL.Main.putWeOut1 : ([1], [15], [70]) -> [70]
+$LL.Main.putWeOut1 $0 $1 $2 =
+      Main.putOut ($LL.Main.putWeOut9 $0 $1) $2
+
+$LL.Main.nand1 : ([2], [2], [8], [70]) -> [70]
+$LL.Main.nand1 $0 $1 $2 $3 =
+      $LL.Main.nand7 $2 $0 (Main.getReg1 $1 $3)
+
+$LL.Main.putReg13 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg13 $0 $1 $2 =
+      $LL.Main.putReg8 $0 $1 $2
+
+$LL.Main.loop32 : ([6], [8], [70]) -> [70]
+$LL.Main.loop32 $0 $1 $2 =
+      $LL.Main.loop5 $0 $1 $2
+
+$LL.Main.loop31 : ([6], [70]) -> [143]
+$LL.Main.loop31 $0 $1 =
+      $LL.Main.loop84 ($LL.Main.loop226 ($LL.Main.loop143 (Main.putAddrOut $0 $1)))
+
+$LL.Main.putReg12 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg12 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg9 $2 $0 $1 $3 $4 $5 $6
+
+$LL.Main.bnz : ([70], [6]) -> [70]
+$LL.Main.bnz $0 $1 =
+      $LL.Main.bnz2 $1 $0
+
+$LL.Main.putAddrOut2 : ([6], [1], [6], [8]) -> [15]
+$LL.Main.putAddrOut2 $0 $1 $2 $3 =
+      $LL.Main.putAddrOut9 $0 $1 $2 $3
+
+$LL.Main.loop30 : ([143]) -> [143]
+$LL.Main.loop30 $0 =
+      $LL.Main.loop158 $0[0 +: 70]
+
+$LL.Main.loop29 : ([2], [2], [2], [70]) -> [143]
+$LL.Main.loop29 $0 $1 $2 $3 =
+      $LL.Main.loop27 $0 $1 $2 $3
+
+$LL.Main.putPC4 : ([6], [70]) -> [70]
+$LL.Main.putPC4 $0 $1 =
+      $LL.Main.putPC12 $0 $1
+
+$LL.Main.outputs2 : ([8], [8], [8], [8], [6], [17], [15]) -> [15]
+$LL.Main.outputs2 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.outputs5 $1 $2 $3 $4 $5 $6
+
+$LL.Main.getReg5 : ([70]) -> [78]
+$LL.Main.getReg5 $0 =
+      $LL.Main.getReg8 $0
+
+$LL.Main.r33 : ([8], [8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r33 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.r34 $1 $2 $3 $4 $5 $6
+
+$LL.Main.putPC3 : ([6], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putPC3 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putPC5 $2 $0 $1 $3 $4 $5 $6 $7
+
+$LL.Main.loop28 : ([70]) -> [143]
+$LL.Main.loop28 $1 =
+      $LL.Main.loop179 ($LL.Main.loop142 (Main.getOut $1))
+
+$LL.Main.loop27 : ([2], [2], [2], [70]) -> [143]
+$LL.Main.loop27 $0 $1 $2 $3 =
+      $LL.Main.loop99 $1 $0 $2 $3
+
+$LL.Main.loop26 : ([6], [78]) -> [70]
+$LL.Main.loop26 $0 $1 =
+      $LL.Main.loop156 $0 $1[70 +: 8] $1[0 +: 70]
+
+$LL.Main.putWeOut : ([1], [70]) -> [70]
+$LL.Main.putWeOut $0 $1 =
+      $LL.Main.putWeOut8 $0 (Main.getOut $1)
+
+$LL.Main.st1 : ([70]) -> [70]
+$LL.Main.st1 $1 =
+      Main.putWeOut $1
+
+$LL.Main.outputs1 : ([6], [17], [15]) -> [15]
+$LL.Main.outputs1 $0 $1 $2 =
+      $LL.Main.outputs6 $1 $2
+
+$LL.Main.loop25 : ([143]) -> [143]
+$LL.Main.loop25 $0 =
+      $LL.Main.loop68 $0[0 +: 70]
+
+$LL.Main.putOut3 : ([15], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putOut3 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putOut7 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.pc : ([8], [8], [8], [8], [6], [17], [15]) -> [6]
+$LL.Main.pc $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.pc5 $1 $2 $3 $4 $5 $6
+
+$LL.Main.putPC2 : ([6], [70]) -> [70]
+$LL.Main.putPC2 $0 $1 =
+      $LL.Main.putPC11 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
+
+$LL.Main.incrPC : ([6], [70]) -> [70]
+$LL.Main.incrPC $0 $1 =
+      $LL.Main.incrPC2 $0 $1
+
+Main.putWeOut : ([70]) -> [70]
+Main.putWeOut $0 =
+      $LL.Main.putWeOut5 1'h1 $0
+
+$LL.Main.loop23 : ([70]) -> [143]
+$LL.Main.loop23 $1 =
+      $LL.Main.loop6 $1
+
+$LL.Main.putReg11 : ([8], [2], [10], [70]) -> [70]
+$LL.Main.putReg11 $0 $1 $2 $3 =
+      if eq $2[8 +: 2] 2'h0 then $LL.Main.putReg66 $3 $2[0 +: 8]
+            else $LL.Main.putReg31 $0 $1 ($1 # $0) $3
+
+$LL.Main.dataIn1 : ([17]) -> [8]
+$LL.Main.dataIn1 $0 =
+      $LL.Main.dataIn $0[8 +: 9] $0[0 +: 8]
+
+$LL.Main.getReg4 : ([2], [2], [70]) -> [78]
+$LL.Main.getReg4 $0 $1 $2 =
+      if eq $1 2'h2 then $LL.Main.getReg1 $2
+            else $LL.Main.getReg2 $0 $2
+
+$LL.Main.putDataOut1 : ([8], [15], [70]) -> [70]
+$LL.Main.putDataOut1 $0 $1 $2 =
+      $LL.Main.putDataOut5 $0 $1 $2
+
+$LL.Main.putOut2 : ([8], [8], [15], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putOut2 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putOut12 $0 $1 $5 $2 $3 $4 $6 $7
+
+$LL.Main.loop21 : ([15], [70]) -> [143]
+$LL.Main.loop21 $0 $1 =
+      54'h20000000000000 # $0 # 4'h1 # $1
+
+$LL.Main.loop20 : ([143]) -> [143]
+$LL.Main.loop20 $0 =
+      $LL.Main.loop137 $0[0 +: 70]
+
+$LL.Main.putIns4 : ([17], [70]) -> [70]
+$LL.Main.putIns4 $0 $1 =
+      $LL.Main.putIns6 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
+
+$LL.Main.putOut1 : ([15], [70]) -> [70]
+$LL.Main.putOut1 $0 $1 =
+      $LL.Main.putOut11 $0 $1
+
+$LL.Main.r31 : ([8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r31 $0 $1 $2 $3 $4 =
+      $LL.Main.r36 $1 $2 $3 $4
+
+$LL.Main.getReg3 : ([70], [70]) -> [78]
+$LL.Main.getReg3 $0 $1 =
+      $LL.Main.getReg12 $0 $1
+
+$LL.Main.loop19 : ([143]) -> [143]
+$LL.Main.loop19 $0 =
+      $LL.Main.loop57 $0[0 +: 70]
+
+$LL.Main.dataIn : ([9], [8]) -> [8]
+$LL.Main.dataIn $0 $1 =
+      $LL.Main.dataIn2 $1
+
+$LL.Main.loop18 : ([143]) -> [143]
+$LL.Main.loop18 $0 =
+      $LL.Main.loop186 $0[0 +: 70]
+
+$LL.Main.getReg2 : ([2], [70]) -> [78]
+$LL.Main.getReg2 $0 $1 =
+      $LL.Main.getReg14 $1
+
+$LL.Main.putIns3 : ([17], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putIns3 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putIns7 $1 $0 $2 $3 $4 $5 $6 $7
+
+$LL.Main.loop17 : ([15], [70]) -> [143]
+$LL.Main.loop17 $0 $1 =
+      54'h20000000000000 # $0 # 4'h5 # $1
+
+$LL.Main.loop16 : ([143]) -> [143]
+$LL.Main.loop16 $0 =
+      $LL.Main.loop72 $0[70 +: 15] $0[0 +: 70]
+
+$LL.Main.putAddrOut1 : ([1], [6], [6], [8]) -> [15]
+$LL.Main.putAddrOut1 $0 $1 $2 $3 =
+      $0 # $1 # $3
+
+$LL.Main.loop15 : ([8], [70]) -> [70]
+$LL.Main.loop15 $0 $1 =
+      Main.putReg1 $0 $1
+
+$LL.Main.loop14 : ([70]) -> [143]
+$LL.Main.loop14 $1 =
+      $LL.Main.loop11 $1
+
+$LL.Main.getIns : ([70], [70]) -> [87]
+$LL.Main.getIns $0 $1 =
+      $LL.Main.getIns2 $0 $1
+
+$LL.Main.nand : ([8], [2], [8], [70]) -> [70]
+$LL.Main.nand $0 $1 $2 $3 =
+      $LL.Main.nand8 $0 $1 $2 $3
+
+$LL.Main.putReg10 : ([8], [140]) -> [70]
+$LL.Main.putReg10 $0 $1 =
+      $LL.Main.putReg3 $0 $1[70 +: 70] $1[0 +: 70]
+
+$LL.Main.putReg9 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg9 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg35 $0 $3 $1 $2 $4 $5 $6
+
+$LL.Main.st : ([70]) -> [70]
+$LL.Main.st $1 =
+      $LL.Main.st1 $1
+
+$LL.Main.r3 : ([70]) -> [8]
+$LL.Main.r3 $0 =
+      $LL.Main.r33 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
+
+$LL.Main.putReg8 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg8 $0 $1 $2 =
+      $LL.Main.putReg20 $0 $1
+
+$LL.Main.loop12 : ([15], [70]) -> [143]
+$LL.Main.loop12 $0 $1 =
+      54'h20000000000000 # $0 # 4'h6 # $1
+
+Main.getPC : ([70]) -> [76]
+Main.getPC $0 =
+      $LL.Main.getPC2 ($0 # $0)
+
+$LL.Main.getReg1 : ([70]) -> [78]
+$LL.Main.getReg1 $0 =
+      $LL.Main.getReg6 $0
+
+$LL.Main.putIns2 : ([17], [70], [70]) -> [70]
+$LL.Main.putIns2 $0 $1 $2 =
+      $LL.Main.putIns13 $0 $1 $2
+
+$LL.Main.putPC1 : ([6], [70], [70]) -> [70]
+$LL.Main.putPC1 $0 $1 $2 =
+      $LL.Main.putPC $0 $1 $2
+
+$LL.Main.loop11 : ([70]) -> [143]
+$LL.Main.loop11 $1 =
+      $LL.Main.loop200 ($LL.Main.loop226 ($LL.Main.reset44 (Main.getPC $1)))
+
+$LL.Main.loop10 : ([143]) -> [143]
+$LL.Main.loop10 $0 =
+      $LL.Main.loop115 $0[0 +: 70]
+
+Main.outputs : ([70]) -> [15]
+Main.outputs $0 =
+      $LL.Main.outputs7 $0
+
+$LL.Main.loop9 : ([70]) -> [143]
+$LL.Main.loop9 $1 =
+      $LL.Main.loop38 ($LL.Main.loop142 (Main.getOut $1))
+
+$LL.Main.putReg7 : ([70], [8]) -> [70]
+$LL.Main.putReg7 $0 $1 =
+      $LL.Main.putReg52 $0 $1
+
+$LL.Main.putAddrOut : ([6], [70]) -> [70]
+$LL.Main.putAddrOut $0 $1 =
+      $LL.Main.putAddrOut10 $0 (Main.getOut $1)
+
+$LL.Main.loop8 : ([17], [70]) -> [143]
+$LL.Main.loop8 $0 $1 =
+      $LL.Main.loop20 ($LL.Main.loop226 (Main.putIns $0 $1))
+
+$LL.Main.putPC : ([6], [70], [70]) -> [70]
+$LL.Main.putPC $0 $1 $2 =
+      $LL.Main.putPC6 $0 $1 $2
+
+$LL.Main.putDataOut : ([8], [85]) -> [70]
+$LL.Main.putDataOut $0 $1 =
+      $LL.Main.putDataOut9 $0 $1[70 +: 15] $1[0 +: 70]
+
+$LL.Main.putReg6 : ([8], [70]) -> [70]
+$LL.Main.putReg6 $0 $1 =
+      $LL.Main.putReg28 $0 ($1 # $1)
+
+$LL.Main.outputs : ([15]) -> [15]
+$LL.Main.outputs $0 =
+      $0
+
+$LL.Main.putOut : ([15], [140]) -> [70]
+$LL.Main.putOut $0 $1 =
+      $LL.Main.putOut13 $0 $1[70 +: 70] $1[0 +: 70]
+
+$LL.Main.putIns1 : ([17], [70], [70]) -> [70]
+$LL.Main.putIns1 $0 $1 $2 =
+      $LL.Main.putIns4 $0 $1
+
+$LL.Main.loop6 : ([70]) -> [143]
+$LL.Main.loop6 $1 =
+      $LL.Main.loop30 ($LL.Main.loop226 ($LL.Main.reset44 (Main.getPC $1)))
+
+$LL.Main.putReg5 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg5 $0 $1 $2 =
+      $LL.Main.putReg53 $0 $1 $2
+
+$LL.Main.loop5 : ([6], [8], [70]) -> [70]
+$LL.Main.loop5 $0 $1 $2 =
+      $LL.Main.bnz3 $0 $1 $2
+
+$LL.Main.putReg4 : ([8], [70]) -> [70]
+$LL.Main.putReg4 $0 $1 =
+      $LL.Main.putReg10 $0 ($1 # $1)
+
+$LL.Main.putReg3 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg3 $0 $1 $2 =
+      $LL.Main.putReg29 $0 $1 $2
+
+$LL.Main.loop4 : ([15], [70]) -> [143]
+$LL.Main.loop4 $0 $1 =
+      $LL.Main.loop17 $0 $1
+
+$LL.Main.inputs : ([8], [6], [17], [15]) -> [17]
+$LL.Main.inputs $0 $1 $2 $3 =
+      $LL.Main.inputs1 $1 $2 $3
+
+$LL.Main.getReg : ([70], [70]) -> [78]
+$LL.Main.getReg $0 $1 =
+      Main.r1 $0 # $1
+
+$LL.Main.putReg2 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg2 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg41 $0 $1 $2 $3 $4 $5 $6
+
+$LL.Main.putReg1 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg1 $0 $1 $2 =
+      $LL.Main.putReg26 $0 $1
+
+$LL.Main.putIns : ([8], [8], [17], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putIns $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putIns12 $0 $1 $4 $2 $3 $5 $6 $7
+
+$LL.Main.loop : ([2], [2], [78]) -> [70]
+$LL.Main.loop $0 $1 $2 =
+      $LL.Main.loop171 $0 $1 $2[70 +: 8] $2[0 +: 70]
+
+$LL.Main.getInstr : ([87]) -> [79]
+$LL.Main.getInstr $0 =
+      $LL.Main.getInstr2 $0[70 +: 17] $0[0 +: 70]
+
+Main.putOut : ([15], [70]) -> [70]
+Main.putOut $0 $1 =
+      $LL.Main.putOut1 $0 $1
+
+device top_level
+      input __in0 : [17]
+      output __out0 : [15]
+      register __resumption_tag : [4] init 4'h0
+      register __st0 : [70] init 70'h0
+      let $res = $Pure.dispatch (__resumption_tag # __st0) __in0
+      __out0 := $res[74 +: 15]
+      next __resumption_tag := $res[70 +: 4]
+      next __st0 := $res[0 +: 70]

@@ -3,647 +3,295 @@ module top_level (input logic [7:0] __in0,
   output logic [7:0] __out1,
   output logic [7:0] __out2,
   output logic [7:0] __out3);
-  logic [7:0] zll_main_dev33_in;
-  logic [7:0] zll_main_x2_in;
-  logic [15:0] binop_in;
-  logic [15:0] zll_main_dev55_in;
-  logic [15:0] zll_main_dev83_in;
-  logic [15:0] zll_main_dev95_in;
-  logic [15:0] zll_main_dev129_in;
-  logic [15:0] zll_main_dev268_in;
-  logic [18:0] zll_main_dev27_in;
-  logic [21:0] zll_main_dev118_in;
-  logic [24:0] zll_main_dev175_in;
+  logic [7:0] zi0;
   logic [0:0] zll_main_dev175_out;
-  logic [24:0] zll_main_dev175_inR1;
   logic [0:0] zll_main_dev175_outR1;
-  logic [24:0] zll_main_dev175_inR2;
   logic [0:0] zll_main_dev175_outR2;
-  logic [24:0] zll_main_dev175_inR3;
   logic [0:0] zll_main_dev175_outR3;
-  logic [24:0] zll_main_dev175_inR4;
   logic [0:0] zll_main_dev175_outR4;
-  logic [24:0] zll_main_dev175_inR5;
   logic [0:0] zll_main_dev175_outR5;
-  logic [24:0] zll_main_dev175_inR6;
   logic [0:0] zll_main_dev175_outR6;
-  logic [24:0] zll_main_dev175_inR7;
   logic [0:0] zll_main_dev175_outR7;
-  logic [15:0] zll_main_dev192_in;
-  logic [15:0] zll_main_dev51_in;
-  logic [15:0] zll_main_dev271_in;
-  logic [15:0] zll_main_dev237_in;
-  logic [18:0] zll_main_dev190_in;
-  logic [21:0] zll_main_dev260_in;
-  logic [5:0] zll_main_dev259_in;
-  logic [2:0] zll_main_dev259_out;
-  logic [24:0] zll_main_dev139_in;
-  logic [14:0] zll_main_dev54_in;
-  logic [6:0] zll_main_dev285_in;
-  logic [6:0] zll_main_dev267_in;
-  logic [5:0] zll_main_dev165_in;
-  logic [2:0] zll_main_dev165_out;
-  logic [3:0] id_in;
-  logic [24:0] zll_main_dev278_in;
-  logic [27:0] zll_main_dev37_in;
-  logic [0:0] zll_main_dev37_out;
-  logic [27:0] zll_main_dev37_inR1;
-  logic [0:0] zll_main_dev37_outR1;
-  logic [27:0] zll_main_dev37_inR2;
-  logic [0:0] zll_main_dev37_outR2;
-  logic [27:0] zll_main_dev37_inR3;
-  logic [0:0] zll_main_dev37_outR3;
-  logic [27:0] zll_main_dev37_inR4;
-  logic [0:0] zll_main_dev37_outR4;
-  logic [27:0] zll_main_dev37_inR5;
-  logic [0:0] zll_main_dev37_outR5;
-  logic [27:0] zll_main_dev37_inR6;
-  logic [0:0] zll_main_dev37_outR6;
-  logic [27:0] zll_main_dev37_inR7;
-  logic [0:0] zll_main_dev37_outR7;
-  logic [15:0] zll_main_dev128_in;
-  logic [15:0] zll_main_dev42_in;
-  logic [15:0] zll_main_dev229_in;
-  logic [18:0] zll_main_dev9_in;
-  logic [21:0] zll_main_dev140_in;
-  logic [5:0] zll_main_dev259_inR1;
-  logic [2:0] zll_main_dev259_outR1;
-  logic [24:0] zll_main_dev279_in;
-  logic [14:0] zll_main_dev7_in;
-  logic [6:0] zll_main_dev171_in;
-  logic [2:0] zll_main_dev171_out;
-  logic [3:0] id_inR1;
-  logic [21:0] zll_main_dev89_in;
-  logic [24:0] zll_main_dev276_in;
-  logic [0:0] zll_main_dev276_out;
-  logic [24:0] zll_main_dev276_inR1;
-  logic [0:0] zll_main_dev276_outR1;
-  logic [24:0] zll_main_dev276_inR2;
-  logic [0:0] zll_main_dev276_outR2;
-  logic [24:0] zll_main_dev276_inR3;
-  logic [0:0] zll_main_dev276_outR3;
-  logic [24:0] zll_main_dev276_inR4;
-  logic [0:0] zll_main_dev276_outR4;
-  logic [24:0] zll_main_dev276_inR5;
-  logic [0:0] zll_main_dev276_outR5;
-  logic [24:0] zll_main_dev276_inR6;
-  logic [0:0] zll_main_dev276_outR6;
-  logic [24:0] zll_main_dev276_inR7;
-  logic [0:0] zll_main_dev276_outR7;
-  logic [15:0] zll_main_dev106_in;
-  logic [15:0] zll_main_dev110_in;
-  logic [15:0] zll_main_dev133_in;
-  logic [15:0] zll_main_dev153_in;
-  logic [18:0] zll_main_dev84_in;
-  logic [18:0] zll_main_dev183_in;
-  logic [21:0] zll_main_dev196_in;
-  logic [5:0] zll_main_dev259_inR2;
-  logic [2:0] zll_main_dev259_outR2;
-  logic [24:0] zll_main_dev194_in;
-  logic [14:0] zll_main_dev215_in;
-  logic [6:0] zll_main_dev171_inR1;
-  logic [2:0] zll_main_dev171_outR1;
-  logic [3:0] id_inR2;
-  logic [24:0] zll_main_dev161_in;
-  logic [27:0] zll_main_dev261_in;
-  logic [0:0] zll_main_dev261_out;
-  logic [27:0] zll_main_dev261_inR1;
-  logic [0:0] zll_main_dev261_outR1;
-  logic [27:0] zll_main_dev261_inR2;
-  logic [0:0] zll_main_dev261_outR2;
-  logic [27:0] zll_main_dev261_inR3;
-  logic [0:0] zll_main_dev261_outR3;
-  logic [27:0] zll_main_dev261_inR4;
-  logic [0:0] zll_main_dev261_outR4;
-  logic [27:0] zll_main_dev261_inR5;
-  logic [0:0] zll_main_dev261_outR5;
-  logic [27:0] zll_main_dev261_inR6;
-  logic [0:0] zll_main_dev261_outR6;
-  logic [27:0] zll_main_dev261_inR7;
-  logic [0:0] zll_main_dev261_outR7;
-  assign zll_main_dev33_in = __in0;
-  assign zll_main_x2_in = zll_main_dev33_in[7:0];
-  assign binop_in = {zll_main_x2_in[7:0], 8'h2};
-  assign zll_main_dev55_in = {zll_main_dev33_in[7:0], binop_in[15:8] * binop_in[7:0]};
-  assign zll_main_dev83_in = {zll_main_dev55_in[15:8], zll_main_dev55_in[7:0]};
-  assign zll_main_dev95_in = {zll_main_dev83_in[15:8], zll_main_dev83_in[7:0]};
-  assign zll_main_dev129_in = zll_main_dev95_in[15:0];
-  assign zll_main_dev268_in = {zll_main_dev129_in[7:0], zll_main_dev129_in[15:8]};
-  assign zll_main_dev27_in = {zll_main_dev268_in[15:8], zll_main_dev268_in[7:0], 3'h1};
-  assign zll_main_dev118_in = {zll_main_dev27_in[18:11], zll_main_dev27_in[10:3], zll_main_dev27_in[2:0], 3'h2};
-  assign zll_main_dev175_in = {zll_main_dev118_in[21:14], zll_main_dev118_in[2:0], zll_main_dev118_in[13:6], zll_main_dev118_in[5:3], 3'h0};
-  ZLL_Main_dev175  inst (zll_main_dev175_in[24:17], zll_main_dev175_in[16:14], zll_main_dev175_in[13:6], zll_main_dev175_in[5:3], zll_main_dev175_in[2:0], zll_main_dev175_out);
-  assign zll_main_dev175_inR1 = {zll_main_dev118_in[21:14], zll_main_dev118_in[2:0], zll_main_dev118_in[13:6], zll_main_dev118_in[5:3], 3'h1};
-  ZLL_Main_dev175  instR1 (zll_main_dev175_inR1[24:17], zll_main_dev175_inR1[16:14], zll_main_dev175_inR1[13:6], zll_main_dev175_inR1[5:3], zll_main_dev175_inR1[2:0], zll_main_dev175_outR1);
-  assign zll_main_dev175_inR2 = {zll_main_dev118_in[21:14], zll_main_dev118_in[2:0], zll_main_dev118_in[13:6], zll_main_dev118_in[5:3], 3'h2};
-  ZLL_Main_dev175  instR2 (zll_main_dev175_inR2[24:17], zll_main_dev175_inR2[16:14], zll_main_dev175_inR2[13:6], zll_main_dev175_inR2[5:3], zll_main_dev175_inR2[2:0], zll_main_dev175_outR2);
-  assign zll_main_dev175_inR3 = {zll_main_dev118_in[21:14], zll_main_dev118_in[2:0], zll_main_dev118_in[13:6], zll_main_dev118_in[5:3], 3'h3};
-  ZLL_Main_dev175  instR3 (zll_main_dev175_inR3[24:17], zll_main_dev175_inR3[16:14], zll_main_dev175_inR3[13:6], zll_main_dev175_inR3[5:3], zll_main_dev175_inR3[2:0], zll_main_dev175_outR3);
-  assign zll_main_dev175_inR4 = {zll_main_dev118_in[21:14], zll_main_dev118_in[2:0], zll_main_dev118_in[13:6], zll_main_dev118_in[5:3], 3'h4};
-  ZLL_Main_dev175  instR4 (zll_main_dev175_inR4[24:17], zll_main_dev175_inR4[16:14], zll_main_dev175_inR4[13:6], zll_main_dev175_inR4[5:3], zll_main_dev175_inR4[2:0], zll_main_dev175_outR4);
-  assign zll_main_dev175_inR5 = {zll_main_dev118_in[21:14], zll_main_dev118_in[2:0], zll_main_dev118_in[13:6], zll_main_dev118_in[5:3], 3'h5};
-  ZLL_Main_dev175  instR5 (zll_main_dev175_inR5[24:17], zll_main_dev175_inR5[16:14], zll_main_dev175_inR5[13:6], zll_main_dev175_inR5[5:3], zll_main_dev175_inR5[2:0], zll_main_dev175_outR5);
-  assign zll_main_dev175_inR6 = {zll_main_dev118_in[21:14], zll_main_dev118_in[2:0], zll_main_dev118_in[13:6], zll_main_dev118_in[5:3], 3'h6};
-  ZLL_Main_dev175  instR6 (zll_main_dev175_inR6[24:17], zll_main_dev175_inR6[16:14], zll_main_dev175_inR6[13:6], zll_main_dev175_inR6[5:3], zll_main_dev175_inR6[2:0], zll_main_dev175_outR6);
-  assign zll_main_dev175_inR7 = {zll_main_dev118_in[21:14], zll_main_dev118_in[2:0], zll_main_dev118_in[13:6], zll_main_dev118_in[5:3], 3'h7};
-  ZLL_Main_dev175  instR7 (zll_main_dev175_inR7[24:17], zll_main_dev175_inR7[16:14], zll_main_dev175_inR7[13:6], zll_main_dev175_inR7[5:3], zll_main_dev175_inR7[2:0], zll_main_dev175_outR7);
-  assign zll_main_dev192_in = {zll_main_dev55_in[15:8], zll_main_dev55_in[7:0]};
-  assign zll_main_dev51_in = {zll_main_dev192_in[15:8], zll_main_dev192_in[7:0]};
-  assign zll_main_dev271_in = zll_main_dev51_in[15:0];
-  assign zll_main_dev237_in = {zll_main_dev271_in[7:0], zll_main_dev271_in[15:8]};
-  assign zll_main_dev190_in = {zll_main_dev237_in[15:8], zll_main_dev237_in[7:0], 3'h1};
-  assign zll_main_dev260_in = {zll_main_dev190_in[18:11], zll_main_dev190_in[10:3], zll_main_dev190_in[2:0], 3'h2};
-  assign zll_main_dev259_in = {3'h7, zll_main_dev260_in[2:0]};
-  ZLL_Main_dev259  instR8 (zll_main_dev259_in[5:3], zll_main_dev259_in[2:0], zll_main_dev259_out);
-  assign zll_main_dev139_in = {zll_main_dev260_in[21:14], zll_main_dev260_in[13:6], zll_main_dev260_in[5:3], zll_main_dev260_in[2:0], zll_main_dev259_out};
-  assign zll_main_dev54_in = {zll_main_dev139_in[16:9], zll_main_dev139_in[8:6], zll_main_dev139_in[2:0], 1'h0};
-  assign zll_main_dev285_in = {zll_main_dev54_in[6:4], zll_main_dev54_in[3:1], 1'h0};
-  assign zll_main_dev267_in = {zll_main_dev285_in[6:4], zll_main_dev285_in[3:1], zll_main_dev285_in[0]};
-  assign zll_main_dev165_in = {zll_main_dev267_in[3:1], zll_main_dev267_in[6:4]};
-  ZLL_Main_dev165  instR9 (zll_main_dev165_in[5:3], zll_main_dev165_in[2:0], zll_main_dev165_out);
-  assign id_in = {zll_main_dev54_in[3:1], zll_main_dev54_in[0]};
-  assign zll_main_dev278_in = {zll_main_dev139_in[24:17], zll_main_dev139_in[16:9], zll_main_dev139_in[8:6], zll_main_dev139_in[5:3], (id_in[0] == 1'h1) ? id_in[3:1] : zll_main_dev165_out};
-  assign zll_main_dev37_in = {zll_main_dev278_in[24:17], zll_main_dev278_in[16:9], zll_main_dev278_in[8:6], zll_main_dev278_in[2:0], zll_main_dev278_in[5:3], 3'h0};
-  ZLL_Main_dev37  instR10 (zll_main_dev37_in[27:20], zll_main_dev37_in[19:12], zll_main_dev37_in[11:9], zll_main_dev37_in[8:6], zll_main_dev37_in[5:3], zll_main_dev37_in[2:0], zll_main_dev37_out);
-  assign zll_main_dev37_inR1 = {zll_main_dev278_in[24:17], zll_main_dev278_in[16:9], zll_main_dev278_in[8:6], zll_main_dev278_in[2:0], zll_main_dev278_in[5:3], 3'h1};
-  ZLL_Main_dev37  instR11 (zll_main_dev37_inR1[27:20], zll_main_dev37_inR1[19:12], zll_main_dev37_inR1[11:9], zll_main_dev37_inR1[8:6], zll_main_dev37_inR1[5:3], zll_main_dev37_inR1[2:0], zll_main_dev37_outR1);
-  assign zll_main_dev37_inR2 = {zll_main_dev278_in[24:17], zll_main_dev278_in[16:9], zll_main_dev278_in[8:6], zll_main_dev278_in[2:0], zll_main_dev278_in[5:3], 3'h2};
-  ZLL_Main_dev37  instR12 (zll_main_dev37_inR2[27:20], zll_main_dev37_inR2[19:12], zll_main_dev37_inR2[11:9], zll_main_dev37_inR2[8:6], zll_main_dev37_inR2[5:3], zll_main_dev37_inR2[2:0], zll_main_dev37_outR2);
-  assign zll_main_dev37_inR3 = {zll_main_dev278_in[24:17], zll_main_dev278_in[16:9], zll_main_dev278_in[8:6], zll_main_dev278_in[2:0], zll_main_dev278_in[5:3], 3'h3};
-  ZLL_Main_dev37  instR13 (zll_main_dev37_inR3[27:20], zll_main_dev37_inR3[19:12], zll_main_dev37_inR3[11:9], zll_main_dev37_inR3[8:6], zll_main_dev37_inR3[5:3], zll_main_dev37_inR3[2:0], zll_main_dev37_outR3);
-  assign zll_main_dev37_inR4 = {zll_main_dev278_in[24:17], zll_main_dev278_in[16:9], zll_main_dev278_in[8:6], zll_main_dev278_in[2:0], zll_main_dev278_in[5:3], 3'h4};
-  ZLL_Main_dev37  instR14 (zll_main_dev37_inR4[27:20], zll_main_dev37_inR4[19:12], zll_main_dev37_inR4[11:9], zll_main_dev37_inR4[8:6], zll_main_dev37_inR4[5:3], zll_main_dev37_inR4[2:0], zll_main_dev37_outR4);
-  assign zll_main_dev37_inR5 = {zll_main_dev278_in[24:17], zll_main_dev278_in[16:9], zll_main_dev278_in[8:6], zll_main_dev278_in[2:0], zll_main_dev278_in[5:3], 3'h5};
-  ZLL_Main_dev37  instR15 (zll_main_dev37_inR5[27:20], zll_main_dev37_inR5[19:12], zll_main_dev37_inR5[11:9], zll_main_dev37_inR5[8:6], zll_main_dev37_inR5[5:3], zll_main_dev37_inR5[2:0], zll_main_dev37_outR5);
-  assign zll_main_dev37_inR6 = {zll_main_dev278_in[24:17], zll_main_dev278_in[16:9], zll_main_dev278_in[8:6], zll_main_dev278_in[2:0], zll_main_dev278_in[5:3], 3'h6};
-  ZLL_Main_dev37  instR16 (zll_main_dev37_inR6[27:20], zll_main_dev37_inR6[19:12], zll_main_dev37_inR6[11:9], zll_main_dev37_inR6[8:6], zll_main_dev37_inR6[5:3], zll_main_dev37_inR6[2:0], zll_main_dev37_outR6);
-  assign zll_main_dev37_inR7 = {zll_main_dev278_in[24:17], zll_main_dev278_in[16:9], zll_main_dev278_in[8:6], zll_main_dev278_in[2:0], zll_main_dev278_in[5:3], 3'h7};
-  ZLL_Main_dev37  instR17 (zll_main_dev37_inR7[27:20], zll_main_dev37_inR7[19:12], zll_main_dev37_inR7[11:9], zll_main_dev37_inR7[8:6], zll_main_dev37_inR7[5:3], zll_main_dev37_inR7[2:0], zll_main_dev37_outR7);
-  assign zll_main_dev128_in = {zll_main_dev55_in[15:8], zll_main_dev55_in[7:0]};
-  assign zll_main_dev42_in = {zll_main_dev128_in[15:8], zll_main_dev128_in[7:0]};
-  assign zll_main_dev229_in = zll_main_dev42_in[15:0];
-  assign zll_main_dev9_in = {zll_main_dev229_in[15:8], zll_main_dev229_in[7:0], 3'h1};
-  assign zll_main_dev140_in = {zll_main_dev9_in[18:11], zll_main_dev9_in[10:3], zll_main_dev9_in[2:0], 3'h2};
-  assign zll_main_dev259_inR1 = {3'h7, zll_main_dev140_in[2:0]};
-  ZLL_Main_dev259  instR18 (zll_main_dev259_inR1[5:3], zll_main_dev259_inR1[2:0], zll_main_dev259_outR1);
-  assign zll_main_dev279_in = {zll_main_dev140_in[21:14], zll_main_dev140_in[13:6], zll_main_dev140_in[5:3], zll_main_dev140_in[2:0], zll_main_dev259_outR1};
-  assign zll_main_dev7_in = {zll_main_dev279_in[2:0], zll_main_dev279_in[24:17], zll_main_dev279_in[8:6], 1'h0};
-  assign zll_main_dev171_in = {zll_main_dev7_in[14:12], zll_main_dev7_in[3:1], 1'h0};
-  ZLL_Main_dev171  instR19 (zll_main_dev171_in[6:4], zll_main_dev171_in[3:1], zll_main_dev171_in[0], zll_main_dev171_out);
-  assign id_inR1 = {zll_main_dev7_in[14:12], zll_main_dev7_in[0]};
-  assign zll_main_dev89_in = {zll_main_dev279_in[24:17], zll_main_dev279_in[16:9], zll_main_dev279_in[5:3], (id_inR1[0] == 1'h1) ? id_inR1[3:1] : zll_main_dev171_out};
-  assign zll_main_dev276_in = {zll_main_dev89_in[2:0], zll_main_dev89_in[21:14], zll_main_dev89_in[13:6], zll_main_dev89_in[5:3], 3'h0};
-  ZLL_Main_dev276  instR20 (zll_main_dev276_in[24:22], zll_main_dev276_in[21:14], zll_main_dev276_in[13:6], zll_main_dev276_in[5:3], zll_main_dev276_in[2:0], zll_main_dev276_out);
-  assign zll_main_dev276_inR1 = {zll_main_dev89_in[2:0], zll_main_dev89_in[21:14], zll_main_dev89_in[13:6], zll_main_dev89_in[5:3], 3'h1};
-  ZLL_Main_dev276  instR21 (zll_main_dev276_inR1[24:22], zll_main_dev276_inR1[21:14], zll_main_dev276_inR1[13:6], zll_main_dev276_inR1[5:3], zll_main_dev276_inR1[2:0], zll_main_dev276_outR1);
-  assign zll_main_dev276_inR2 = {zll_main_dev89_in[2:0], zll_main_dev89_in[21:14], zll_main_dev89_in[13:6], zll_main_dev89_in[5:3], 3'h2};
-  ZLL_Main_dev276  instR22 (zll_main_dev276_inR2[24:22], zll_main_dev276_inR2[21:14], zll_main_dev276_inR2[13:6], zll_main_dev276_inR2[5:3], zll_main_dev276_inR2[2:0], zll_main_dev276_outR2);
-  assign zll_main_dev276_inR3 = {zll_main_dev89_in[2:0], zll_main_dev89_in[21:14], zll_main_dev89_in[13:6], zll_main_dev89_in[5:3], 3'h3};
-  ZLL_Main_dev276  instR23 (zll_main_dev276_inR3[24:22], zll_main_dev276_inR3[21:14], zll_main_dev276_inR3[13:6], zll_main_dev276_inR3[5:3], zll_main_dev276_inR3[2:0], zll_main_dev276_outR3);
-  assign zll_main_dev276_inR4 = {zll_main_dev89_in[2:0], zll_main_dev89_in[21:14], zll_main_dev89_in[13:6], zll_main_dev89_in[5:3], 3'h4};
-  ZLL_Main_dev276  instR24 (zll_main_dev276_inR4[24:22], zll_main_dev276_inR4[21:14], zll_main_dev276_inR4[13:6], zll_main_dev276_inR4[5:3], zll_main_dev276_inR4[2:0], zll_main_dev276_outR4);
-  assign zll_main_dev276_inR5 = {zll_main_dev89_in[2:0], zll_main_dev89_in[21:14], zll_main_dev89_in[13:6], zll_main_dev89_in[5:3], 3'h5};
-  ZLL_Main_dev276  instR25 (zll_main_dev276_inR5[24:22], zll_main_dev276_inR5[21:14], zll_main_dev276_inR5[13:6], zll_main_dev276_inR5[5:3], zll_main_dev276_inR5[2:0], zll_main_dev276_outR5);
-  assign zll_main_dev276_inR6 = {zll_main_dev89_in[2:0], zll_main_dev89_in[21:14], zll_main_dev89_in[13:6], zll_main_dev89_in[5:3], 3'h6};
-  ZLL_Main_dev276  instR26 (zll_main_dev276_inR6[24:22], zll_main_dev276_inR6[21:14], zll_main_dev276_inR6[13:6], zll_main_dev276_inR6[5:3], zll_main_dev276_inR6[2:0], zll_main_dev276_outR6);
-  assign zll_main_dev276_inR7 = {zll_main_dev89_in[2:0], zll_main_dev89_in[21:14], zll_main_dev89_in[13:6], zll_main_dev89_in[5:3], 3'h7};
-  ZLL_Main_dev276  instR27 (zll_main_dev276_inR7[24:22], zll_main_dev276_inR7[21:14], zll_main_dev276_inR7[13:6], zll_main_dev276_inR7[5:3], zll_main_dev276_inR7[2:0], zll_main_dev276_outR7);
-  assign zll_main_dev106_in = {zll_main_dev55_in[15:8], zll_main_dev55_in[7:0]};
-  assign zll_main_dev110_in = {zll_main_dev106_in[15:8], zll_main_dev106_in[7:0]};
-  assign zll_main_dev133_in = zll_main_dev110_in[15:0];
-  assign zll_main_dev153_in = {zll_main_dev133_in[7:0], zll_main_dev133_in[15:8]};
-  assign zll_main_dev84_in = {zll_main_dev153_in[15:8], zll_main_dev153_in[7:0], 3'h1};
-  assign zll_main_dev183_in = {zll_main_dev84_in[2:0], zll_main_dev84_in[18:11], zll_main_dev84_in[10:3]};
-  assign zll_main_dev196_in = {zll_main_dev183_in[18:16], zll_main_dev183_in[15:8], zll_main_dev183_in[7:0], 3'h2};
-  assign zll_main_dev259_inR2 = {3'h7, zll_main_dev196_in[2:0]};
-  ZLL_Main_dev259  instR28 (zll_main_dev259_inR2[5:3], zll_main_dev259_inR2[2:0], zll_main_dev259_outR2);
-  assign zll_main_dev194_in = {zll_main_dev196_in[2:0], zll_main_dev196_in[21:19], zll_main_dev196_in[18:11], zll_main_dev196_in[10:3], zll_main_dev259_outR2};
-  assign zll_main_dev215_in = {zll_main_dev194_in[2:0], zll_main_dev194_in[21:19], zll_main_dev194_in[10:3], 1'h0};
-  assign zll_main_dev171_inR1 = {zll_main_dev215_in[14:12], zll_main_dev215_in[11:9], 1'h0};
-  ZLL_Main_dev171  instR29 (zll_main_dev171_inR1[6:4], zll_main_dev171_inR1[3:1], zll_main_dev171_inR1[0], zll_main_dev171_outR1);
-  assign id_inR2 = {zll_main_dev215_in[14:12], zll_main_dev215_in[0]};
-  assign zll_main_dev161_in = {zll_main_dev194_in[24:22], zll_main_dev194_in[21:19], zll_main_dev194_in[18:11], zll_main_dev194_in[10:3], (id_inR2[0] == 1'h1) ? id_inR2[3:1] : zll_main_dev171_outR1};
-  assign zll_main_dev261_in = {zll_main_dev161_in[24:22], zll_main_dev161_in[21:19], zll_main_dev161_in[18:11], zll_main_dev161_in[10:3], zll_main_dev161_in[2:0], 3'h0};
-  ZLL_Main_dev261  instR30 (zll_main_dev261_in[27:25], zll_main_dev261_in[24:22], zll_main_dev261_in[21:14], zll_main_dev261_in[13:6], zll_main_dev261_in[5:3], zll_main_dev261_in[2:0], zll_main_dev261_out);
-  assign zll_main_dev261_inR1 = {zll_main_dev161_in[24:22], zll_main_dev161_in[21:19], zll_main_dev161_in[18:11], zll_main_dev161_in[10:3], zll_main_dev161_in[2:0], 3'h1};
-  ZLL_Main_dev261  instR31 (zll_main_dev261_inR1[27:25], zll_main_dev261_inR1[24:22], zll_main_dev261_inR1[21:14], zll_main_dev261_inR1[13:6], zll_main_dev261_inR1[5:3], zll_main_dev261_inR1[2:0], zll_main_dev261_outR1);
-  assign zll_main_dev261_inR2 = {zll_main_dev161_in[24:22], zll_main_dev161_in[21:19], zll_main_dev161_in[18:11], zll_main_dev161_in[10:3], zll_main_dev161_in[2:0], 3'h2};
-  ZLL_Main_dev261  instR32 (zll_main_dev261_inR2[27:25], zll_main_dev261_inR2[24:22], zll_main_dev261_inR2[21:14], zll_main_dev261_inR2[13:6], zll_main_dev261_inR2[5:3], zll_main_dev261_inR2[2:0], zll_main_dev261_outR2);
-  assign zll_main_dev261_inR3 = {zll_main_dev161_in[24:22], zll_main_dev161_in[21:19], zll_main_dev161_in[18:11], zll_main_dev161_in[10:3], zll_main_dev161_in[2:0], 3'h3};
-  ZLL_Main_dev261  instR33 (zll_main_dev261_inR3[27:25], zll_main_dev261_inR3[24:22], zll_main_dev261_inR3[21:14], zll_main_dev261_inR3[13:6], zll_main_dev261_inR3[5:3], zll_main_dev261_inR3[2:0], zll_main_dev261_outR3);
-  assign zll_main_dev261_inR4 = {zll_main_dev161_in[24:22], zll_main_dev161_in[21:19], zll_main_dev161_in[18:11], zll_main_dev161_in[10:3], zll_main_dev161_in[2:0], 3'h4};
-  ZLL_Main_dev261  instR34 (zll_main_dev261_inR4[27:25], zll_main_dev261_inR4[24:22], zll_main_dev261_inR4[21:14], zll_main_dev261_inR4[13:6], zll_main_dev261_inR4[5:3], zll_main_dev261_inR4[2:0], zll_main_dev261_outR4);
-  assign zll_main_dev261_inR5 = {zll_main_dev161_in[24:22], zll_main_dev161_in[21:19], zll_main_dev161_in[18:11], zll_main_dev161_in[10:3], zll_main_dev161_in[2:0], 3'h5};
-  ZLL_Main_dev261  instR35 (zll_main_dev261_inR5[27:25], zll_main_dev261_inR5[24:22], zll_main_dev261_inR5[21:14], zll_main_dev261_inR5[13:6], zll_main_dev261_inR5[5:3], zll_main_dev261_inR5[2:0], zll_main_dev261_outR5);
-  assign zll_main_dev261_inR6 = {zll_main_dev161_in[24:22], zll_main_dev161_in[21:19], zll_main_dev161_in[18:11], zll_main_dev161_in[10:3], zll_main_dev161_in[2:0], 3'h6};
-  ZLL_Main_dev261  instR36 (zll_main_dev261_inR6[27:25], zll_main_dev261_inR6[24:22], zll_main_dev261_inR6[21:14], zll_main_dev261_inR6[13:6], zll_main_dev261_inR6[5:3], zll_main_dev261_inR6[2:0], zll_main_dev261_outR6);
-  assign zll_main_dev261_inR7 = {zll_main_dev161_in[24:22], zll_main_dev161_in[21:19], zll_main_dev161_in[18:11], zll_main_dev161_in[10:3], zll_main_dev161_in[2:0], 3'h7};
-  ZLL_Main_dev261  instR37 (zll_main_dev261_inR7[27:25], zll_main_dev261_inR7[24:22], zll_main_dev261_inR7[21:14], zll_main_dev261_inR7[13:6], zll_main_dev261_inR7[5:3], zll_main_dev261_inR7[2:0], zll_main_dev261_outR7);
-  assign {__out0, __out1, __out2, __out3} = {{zll_main_dev175_out, zll_main_dev175_outR1, zll_main_dev175_outR2, zll_main_dev175_outR3, zll_main_dev175_outR4, zll_main_dev175_outR5, zll_main_dev175_outR6, zll_main_dev175_outR7}, {zll_main_dev37_out, zll_main_dev37_outR1, zll_main_dev37_outR2, zll_main_dev37_outR3, zll_main_dev37_outR4, zll_main_dev37_outR5, zll_main_dev37_outR6, zll_main_dev37_outR7}, {zll_main_dev276_out, zll_main_dev276_outR1, zll_main_dev276_outR2, zll_main_dev276_outR3, zll_main_dev276_outR4, zll_main_dev276_outR5, zll_main_dev276_outR6, zll_main_dev276_outR7}, {zll_main_dev261_out, zll_main_dev261_outR1, zll_main_dev261_outR2, zll_main_dev261_outR3, zll_main_dev261_outR4, zll_main_dev261_outR5, zll_main_dev261_outR6, zll_main_dev261_outR7}};
+  logic [2:0] zll_main_dev282_out;
+  logic [2:0] zll_main_dev235_out;
+  logic [2:0] zi7;
+  logic [2:0] zll_main_dev282_outR1;
+  logic [0:0] zll_main_dev260_out;
+  logic [0:0] zi8;
+  logic [2:0] zll_main_dev233_out;
+  logic [2:0] zll_main_dev247_out;
+  logic [2:0] zi10;
+  logic [0:0] zll_main_dev73_out;
+  logic [0:0] zll_main_dev73_outR1;
+  logic [0:0] zll_main_dev73_outR2;
+  logic [0:0] zll_main_dev73_outR3;
+  logic [0:0] zll_main_dev73_outR4;
+  logic [0:0] zll_main_dev73_outR5;
+  logic [0:0] zll_main_dev73_outR6;
+  logic [0:0] zll_main_dev73_outR7;
+  logic [2:0] zll_main_dev282_outR2;
+  logic [2:0] zll_main_dev235_outR1;
+  logic [2:0] zi14;
+  logic [2:0] zll_main_dev282_outR3;
+  logic [0:0] zll_main_dev260_outR1;
+  logic [2:0] zll_main_dev195_out;
+  logic [2:0] zi15;
+  logic [0:0] zll_main_dev240_out;
+  logic [0:0] zll_main_dev240_outR1;
+  logic [0:0] zll_main_dev240_outR2;
+  logic [0:0] zll_main_dev240_outR3;
+  logic [0:0] zll_main_dev240_outR4;
+  logic [0:0] zll_main_dev240_outR5;
+  logic [0:0] zll_main_dev240_outR6;
+  logic [0:0] zll_main_dev240_outR7;
+  logic [2:0] zll_main_dev282_outR4;
+  logic [2:0] zll_main_dev235_outR2;
+  logic [2:0] zi19;
+  logic [2:0] zll_main_dev282_outR5;
+  logic [0:0] zll_main_dev260_outR2;
+  logic [2:0] zll_main_dev195_outR1;
+  logic [2:0] zi20;
+  logic [0:0] zll_main_dev278_out;
+  logic [0:0] zll_main_dev278_outR1;
+  logic [0:0] zll_main_dev278_outR2;
+  logic [0:0] zll_main_dev278_outR3;
+  logic [0:0] zll_main_dev278_outR4;
+  logic [0:0] zll_main_dev278_outR5;
+  logic [0:0] zll_main_dev278_outR6;
+  logic [0:0] zll_main_dev278_outR7;
+  logic [31:0] zres;
+  assign zi0 = __in0 * 8'h2;
+  ZLL_Main_dev175  inst (__in0, 3'h1, 3'h2, zi0, 3'h0, zll_main_dev175_out);
+  ZLL_Main_dev175  instR1 (__in0, 3'h1, 3'h2, zi0, 3'h1, zll_main_dev175_outR1);
+  ZLL_Main_dev175  instR2 (__in0, 3'h1, 3'h2, zi0, 3'h2, zll_main_dev175_outR2);
+  ZLL_Main_dev175  instR3 (__in0, 3'h1, 3'h2, zi0, 3'h3, zll_main_dev175_outR3);
+  ZLL_Main_dev175  instR4 (__in0, 3'h1, 3'h2, zi0, 3'h4, zll_main_dev175_outR4);
+  ZLL_Main_dev175  instR5 (__in0, 3'h1, 3'h2, zi0, 3'h5, zll_main_dev175_outR5);
+  ZLL_Main_dev175  instR6 (__in0, 3'h1, 3'h2, zi0, 3'h6, zll_main_dev175_outR6);
+  ZLL_Main_dev175  instR7 (__in0, 3'h1, 3'h2, zi0, 3'h7, zll_main_dev175_outR7);
+  ZLL_Main_dev282  instR8 (__in0, zll_main_dev282_out);
+  ZLL_Main_dev235  instR9 (zll_main_dev282_out, 3'h2, zll_main_dev235_out);
+  assign zi7 = zll_main_dev235_out;
+  ZLL_Main_dev282  instR10 (__in0, zll_main_dev282_outR1);
+  ZLL_Main_dev260  instR11 (zll_main_dev282_outR1, zll_main_dev260_out);
+  assign zi8 = zll_main_dev260_out;
+  ZLL_Main_dev233  instR12 (zi7, zll_main_dev233_out);
+  ZLL_Main_dev247  instR13 (zi7, 3'h1, zll_main_dev247_out);
+  assign zi10 = (zi8 == 1'h1) ? zll_main_dev233_out : zll_main_dev247_out;
+  ZLL_Main_dev73  instR14 (3'h1, 3'h2, zi10, __in0, zi0, 3'h0, zll_main_dev73_out);
+  ZLL_Main_dev73  instR15 (3'h1, 3'h2, zi10, __in0, zi0, 3'h1, zll_main_dev73_outR1);
+  ZLL_Main_dev73  instR16 (3'h1, 3'h2, zi10, __in0, zi0, 3'h2, zll_main_dev73_outR2);
+  ZLL_Main_dev73  instR17 (3'h1, 3'h2, zi10, __in0, zi0, 3'h3, zll_main_dev73_outR3);
+  ZLL_Main_dev73  instR18 (3'h1, 3'h2, zi10, __in0, zi0, 3'h4, zll_main_dev73_outR4);
+  ZLL_Main_dev73  instR19 (3'h1, 3'h2, zi10, __in0, zi0, 3'h5, zll_main_dev73_outR5);
+  ZLL_Main_dev73  instR20 (3'h1, 3'h2, zi10, __in0, zi0, 3'h6, zll_main_dev73_outR6);
+  ZLL_Main_dev73  instR21 (3'h1, 3'h2, zi10, __in0, zi0, 3'h7, zll_main_dev73_outR7);
+  ZLL_Main_dev282  instR22 (__in0, zll_main_dev282_outR2);
+  ZLL_Main_dev235  instR23 (zll_main_dev282_outR2, 3'h2, zll_main_dev235_outR1);
+  assign zi14 = zll_main_dev235_outR1;
+  ZLL_Main_dev282  instR24 (__in0, zll_main_dev282_outR3);
+  ZLL_Main_dev260  instR25 (zll_main_dev282_outR3, zll_main_dev260_outR1);
+  ZLL_Main_dev195  instR26 (zi14, 3'h1, __in0, zll_main_dev260_outR1, zll_main_dev195_out);
+  assign zi15 = zll_main_dev195_out;
+  ZLL_Main_dev240  instR27 (zi0, 3'h2, zi15, __in0, 3'h0, zll_main_dev240_out);
+  ZLL_Main_dev240  instR28 (zi0, 3'h2, zi15, __in0, 3'h1, zll_main_dev240_outR1);
+  ZLL_Main_dev240  instR29 (zi0, 3'h2, zi15, __in0, 3'h2, zll_main_dev240_outR2);
+  ZLL_Main_dev240  instR30 (zi0, 3'h2, zi15, __in0, 3'h3, zll_main_dev240_outR3);
+  ZLL_Main_dev240  instR31 (zi0, 3'h2, zi15, __in0, 3'h4, zll_main_dev240_outR4);
+  ZLL_Main_dev240  instR32 (zi0, 3'h2, zi15, __in0, 3'h5, zll_main_dev240_outR5);
+  ZLL_Main_dev240  instR33 (zi0, 3'h2, zi15, __in0, 3'h6, zll_main_dev240_outR6);
+  ZLL_Main_dev240  instR34 (zi0, 3'h2, zi15, __in0, 3'h7, zll_main_dev240_outR7);
+  ZLL_Main_dev282  instR35 (__in0, zll_main_dev282_outR4);
+  ZLL_Main_dev235  instR36 (zll_main_dev282_outR4, 3'h2, zll_main_dev235_outR2);
+  assign zi19 = zll_main_dev235_outR2;
+  ZLL_Main_dev282  instR37 (__in0, zll_main_dev282_outR5);
+  ZLL_Main_dev260  instR38 (zll_main_dev282_outR5, zll_main_dev260_outR2);
+  ZLL_Main_dev195  instR39 (zi19, 3'h1, __in0, zll_main_dev260_outR2, zll_main_dev195_outR1);
+  assign zi20 = zll_main_dev195_outR1;
+  ZLL_Main_dev278  instR40 (3'h1, __in0, zi0, 3'h2, zi20, 3'h0, zll_main_dev278_out);
+  ZLL_Main_dev278  instR41 (3'h1, __in0, zi0, 3'h2, zi20, 3'h1, zll_main_dev278_outR1);
+  ZLL_Main_dev278  instR42 (3'h1, __in0, zi0, 3'h2, zi20, 3'h2, zll_main_dev278_outR2);
+  ZLL_Main_dev278  instR43 (3'h1, __in0, zi0, 3'h2, zi20, 3'h3, zll_main_dev278_outR3);
+  ZLL_Main_dev278  instR44 (3'h1, __in0, zi0, 3'h2, zi20, 3'h4, zll_main_dev278_outR4);
+  ZLL_Main_dev278  instR45 (3'h1, __in0, zi0, 3'h2, zi20, 3'h5, zll_main_dev278_outR5);
+  ZLL_Main_dev278  instR46 (3'h1, __in0, zi0, 3'h2, zi20, 3'h6, zll_main_dev278_outR6);
+  ZLL_Main_dev278  instR47 (3'h1, __in0, zi0, 3'h2, zi20, 3'h7, zll_main_dev278_outR7);
+  assign zres = {zll_main_dev175_out, zll_main_dev175_outR1, zll_main_dev175_outR2, zll_main_dev175_outR3, zll_main_dev175_outR4, zll_main_dev175_outR5, zll_main_dev175_outR6, zll_main_dev175_outR7, {zll_main_dev73_out, zll_main_dev73_outR1, zll_main_dev73_outR2, zll_main_dev73_outR3, zll_main_dev73_outR4, zll_main_dev73_outR5, zll_main_dev73_outR6, zll_main_dev73_outR7}, {zll_main_dev240_out, zll_main_dev240_outR1, zll_main_dev240_outR2, zll_main_dev240_outR3, zll_main_dev240_outR4, zll_main_dev240_outR5, zll_main_dev240_outR6, zll_main_dev240_outR7}, {zll_main_dev278_out, zll_main_dev278_outR1, zll_main_dev278_outR2, zll_main_dev278_outR3, zll_main_dev278_outR4, zll_main_dev278_outR5, zll_main_dev278_outR6, zll_main_dev278_outR7}};
+  assign __out0 = zres[31:24];
+  assign __out1 = zres[23:16];
+  assign __out2 = zres[15:8];
+  assign __out3 = zres[7:0];
 endmodule
 
-module ZLL_Main_dev276 (input logic [2:0] arg0,
+module ZLL_Main_dev284 (input logic [2:0] arg0,
+  input logic [2:0] arg1,
+  output logic [2:0] res);
+  logic [127:0] slice_in;
+  assign slice_in = (128'h8 == {8'h80{1'h0}}) ? ({{7'h7d{1'h0}}, arg0} * {{7'h7d{1'h0}}, arg1}) : (({{7'h7d{1'h0}}, arg0} * {{7'h7d{1'h0}}, arg1}) % 128'h8);
+  assign res = slice_in[2:0];
+endmodule
+
+module ZLL_Main_dev282 (input logic [7:0] arg0,
+  output logic [2:0] res);
+  assign res = 3'h7;
+endmodule
+
+module ZLL_Main_dev278 (input logic [2:0] arg0,
   input logic [7:0] arg1,
   input logic [7:0] arg2,
   input logic [2:0] arg3,
   input logic [2:0] arg4,
-  output logic [0:0] res);
-  logic [5:0] zll_main_dev125_in;
-  logic [0:0] zll_main_dev125_out;
-  logic [25:0] zll_main_dev53_in;
-  logic [5:0] zll_main_dev125_inR1;
-  logic [0:0] zll_main_dev125_outR1;
-  logic [17:0] zll_main_dev29_in;
-  logic [17:0] zll_main_dev163_in;
-  logic [7:0] resize_in;
-  logic [5:0] zll_main_dev253_in;
-  logic [2:0] zll_main_dev253_out;
-  logic [5:0] zll_main_dev242_in;
-  logic [2:0] zll_main_dev242_out;
-  logic [2:0] resize_inR1;
-  logic [255:0] binop_in;
-  logic [255:0] binop_inR1;
-  logic [255:0] binop_inR2;
-  logic [255:0] binop_inR3;
-  logic [127:0] resize_inR2;
-  logic [14:0] zll_main_dev69_in;
-  logic [7:0] resize_inR3;
-  logic [5:0] zll_main_dev242_inR1;
-  logic [2:0] zll_main_dev242_outR1;
-  logic [2:0] resize_inR4;
-  logic [255:0] binop_inR4;
-  logic [255:0] binop_inR5;
-  logic [255:0] binop_inR6;
-  logic [255:0] binop_inR7;
-  logic [127:0] resize_inR5;
-  assign zll_main_dev125_in = {arg4, arg0};
-  ZLL_Main_dev125  inst (zll_main_dev125_in[5:3], zll_main_dev125_in[2:0], zll_main_dev125_out);
-  assign zll_main_dev53_in = {arg0, arg1, arg4, arg2, arg3, zll_main_dev125_out};
-  assign zll_main_dev125_inR1 = {zll_main_dev53_in[14:12], zll_main_dev53_in[25:23]};
-  ZLL_Main_dev125  instR1 (zll_main_dev125_inR1[5:3], zll_main_dev125_inR1[2:0], zll_main_dev125_outR1);
-  assign zll_main_dev29_in = {zll_main_dev53_in[25:23], zll_main_dev53_in[14:12], zll_main_dev53_in[11:4], zll_main_dev53_in[3:1], zll_main_dev125_outR1};
-  assign zll_main_dev163_in = {zll_main_dev29_in[17:15], zll_main_dev29_in[14:12], zll_main_dev29_in[11:4], zll_main_dev29_in[3:1], zll_main_dev29_in[0]};
-  assign resize_in = zll_main_dev163_in[11:4];
-  assign zll_main_dev253_in = {zll_main_dev163_in[14:12], zll_main_dev163_in[17:15]};
-  ZLL_Main_dev253  instR2 (zll_main_dev253_in[5:3], zll_main_dev253_in[2:0], zll_main_dev253_out);
-  assign zll_main_dev242_in = {zll_main_dev253_out, zll_main_dev163_in[3:1]};
-  ZLL_Main_dev242  instR3 (zll_main_dev242_in[5:3], zll_main_dev242_in[2:0], zll_main_dev242_out);
-  assign resize_inR1 = zll_main_dev242_out;
-  assign binop_in = {128'h8, 128'(resize_inR1[2:0])};
-  assign binop_inR1 = {binop_in[255:128] - binop_in[127:0], 128'h1};
-  assign binop_inR2 = {binop_inR1[255:128] - binop_inR1[127:0], 128'h1};
-  assign binop_inR3 = {128'(resize_in[7:0]), binop_inR2[255:128] * binop_inR2[127:0]};
-  assign resize_inR2 = binop_inR3[255:128] >> binop_inR3[127:0];
-  assign zll_main_dev69_in = {zll_main_dev53_in[22:15], zll_main_dev53_in[14:12], zll_main_dev53_in[3:1], zll_main_dev53_in[0]};
-  assign resize_inR3 = zll_main_dev69_in[14:7];
-  assign zll_main_dev242_inR1 = {zll_main_dev69_in[6:4], zll_main_dev69_in[3:1]};
-  ZLL_Main_dev242  instR4 (zll_main_dev242_inR1[5:3], zll_main_dev242_inR1[2:0], zll_main_dev242_outR1);
-  assign resize_inR4 = zll_main_dev242_outR1;
-  assign binop_inR4 = {128'h8, 128'(resize_inR4[2:0])};
-  assign binop_inR5 = {binop_inR4[255:128] - binop_inR4[127:0], 128'h1};
-  assign binop_inR6 = {binop_inR5[255:128] - binop_inR5[127:0], 128'h1};
-  assign binop_inR7 = {128'(resize_inR3[7:0]), binop_inR6[255:128] * binop_inR6[127:0]};
-  assign resize_inR5 = binop_inR7[255:128] >> binop_inR7[127:0];
-  assign res = (zll_main_dev69_in[0] == 1'h1) ? resize_inR5[0] : resize_inR2[0];
-endmodule
-
-module ZLL_Main_dev261 (input logic [2:0] arg0,
-  input logic [2:0] arg1,
-  input logic [7:0] arg2,
-  input logic [7:0] arg3,
-  input logic [2:0] arg4,
   input logic [2:0] arg5,
   output logic [0:0] res);
-  logic [5:0] zll_main_dev125_in;
-  logic [0:0] zll_main_dev125_out;
-  logic [28:0] zll_main_dev236_in;
-  logic [5:0] zll_main_dev125_inR1;
-  logic [0:0] zll_main_dev125_outR1;
-  logic [20:0] zll_main_dev217_in;
-  logic [20:0] zll_main_dev10_in;
-  logic [7:0] resize_in;
-  logic [5:0] zll_main_dev253_in;
-  logic [2:0] zll_main_dev253_out;
-  logic [5:0] zll_main_dev242_in;
-  logic [2:0] zll_main_dev242_out;
-  logic [5:0] zll_main_dev165_in;
-  logic [2:0] zll_main_dev165_out;
-  logic [2:0] resize_inR1;
-  logic [255:0] binop_in;
-  logic [255:0] binop_inR1;
-  logic [255:0] binop_inR2;
-  logic [255:0] binop_inR3;
-  logic [127:0] resize_inR2;
-  logic [17:0] zll_main_dev49_in;
-  logic [7:0] resize_inR3;
-  logic [5:0] zll_main_dev242_inR1;
-  logic [2:0] zll_main_dev242_outR1;
-  logic [5:0] zll_main_dev165_inR1;
-  logic [2:0] zll_main_dev165_outR1;
-  logic [2:0] resize_inR4;
-  logic [255:0] binop_inR4;
-  logic [255:0] binop_inR5;
-  logic [255:0] binop_inR6;
-  logic [255:0] binop_inR7;
-  logic [127:0] resize_inR5;
-  assign zll_main_dev125_in = {arg5, arg4};
-  ZLL_Main_dev125  inst (zll_main_dev125_in[5:3], zll_main_dev125_in[2:0], zll_main_dev125_out);
-  assign zll_main_dev236_in = {arg0, arg1, arg5, arg2, arg3, arg4, zll_main_dev125_out};
-  assign zll_main_dev125_inR1 = {zll_main_dev236_in[22:20], zll_main_dev236_in[3:1]};
-  ZLL_Main_dev125  instR1 (zll_main_dev125_inR1[5:3], zll_main_dev125_inR1[2:0], zll_main_dev125_outR1);
-  assign zll_main_dev217_in = {zll_main_dev236_in[28:26], zll_main_dev236_in[25:23], zll_main_dev236_in[22:20], zll_main_dev236_in[19:12], zll_main_dev236_in[3:1], zll_main_dev125_outR1};
-  assign zll_main_dev10_in = {zll_main_dev217_in[20:18], zll_main_dev217_in[17:15], zll_main_dev217_in[14:12], zll_main_dev217_in[11:4], zll_main_dev217_in[3:1], zll_main_dev217_in[0]};
-  assign resize_in = zll_main_dev10_in[11:4];
-  assign zll_main_dev253_in = {zll_main_dev10_in[14:12], zll_main_dev10_in[3:1]};
-  ZLL_Main_dev253  instR2 (zll_main_dev253_in[5:3], zll_main_dev253_in[2:0], zll_main_dev253_out);
-  assign zll_main_dev242_in = {zll_main_dev253_out, zll_main_dev10_in[20:18]};
-  ZLL_Main_dev242  instR3 (zll_main_dev242_in[5:3], zll_main_dev242_in[2:0], zll_main_dev242_out);
-  assign zll_main_dev165_in = {zll_main_dev242_out, zll_main_dev10_in[17:15]};
-  ZLL_Main_dev165  instR4 (zll_main_dev165_in[5:3], zll_main_dev165_in[2:0], zll_main_dev165_out);
-  assign resize_inR1 = zll_main_dev165_out;
-  assign binop_in = {128'h8, 128'(resize_inR1[2:0])};
-  assign binop_inR1 = {binop_in[255:128] - binop_in[127:0], 128'h1};
-  assign binop_inR2 = {binop_inR1[255:128] - binop_inR1[127:0], 128'h1};
-  assign binop_inR3 = {128'(resize_in[7:0]), binop_inR2[255:128] * binop_inR2[127:0]};
-  assign resize_inR2 = binop_inR3[255:128] >> binop_inR3[127:0];
-  assign zll_main_dev49_in = {zll_main_dev236_in[28:26], zll_main_dev236_in[25:23], zll_main_dev236_in[22:20], zll_main_dev236_in[11:4], zll_main_dev236_in[0]};
-  assign resize_inR3 = zll_main_dev49_in[8:1];
-  assign zll_main_dev242_inR1 = {zll_main_dev49_in[11:9], zll_main_dev49_in[17:15]};
-  ZLL_Main_dev242  instR5 (zll_main_dev242_inR1[5:3], zll_main_dev242_inR1[2:0], zll_main_dev242_outR1);
-  assign zll_main_dev165_inR1 = {zll_main_dev242_outR1, zll_main_dev49_in[14:12]};
-  ZLL_Main_dev165  instR6 (zll_main_dev165_inR1[5:3], zll_main_dev165_inR1[2:0], zll_main_dev165_outR1);
-  assign resize_inR4 = zll_main_dev165_outR1;
-  assign binop_inR4 = {128'h8, 128'(resize_inR4[2:0])};
-  assign binop_inR5 = {binop_inR4[255:128] - binop_inR4[127:0], 128'h1};
-  assign binop_inR6 = {binop_inR5[255:128] - binop_inR5[127:0], 128'h1};
-  assign binop_inR7 = {128'(resize_inR3[7:0]), binop_inR6[255:128] * binop_inR6[127:0]};
-  assign resize_inR5 = binop_inR7[255:128] >> binop_inR7[127:0];
-  assign res = (zll_main_dev49_in[0] == 1'h1) ? resize_inR5[0] : resize_inR2[0];
+  logic [0:0] zll_main_dev224_out;
+  logic [0:0] zi0;
+  logic [2:0] zll_main_dev284_out;
+  logic [2:0] zll_main_dev247_out;
+  logic [7:0] slice_in;
+  logic [2:0] zll_main_dev74_out;
+  logic [2:0] zll_main_dev284_outR1;
+  logic [2:0] zll_main_dev247_outR1;
+  logic [7:0] slice_inR1;
+  ZLL_Main_dev224  inst (arg5, arg4, zll_main_dev224_out);
+  assign zi0 = zll_main_dev224_out;
+  ZLL_Main_dev284  instR1 (arg5, arg3, zll_main_dev284_out);
+  ZLL_Main_dev247  instR2 (zll_main_dev284_out, arg0, zll_main_dev247_out);
+  assign slice_in = arg1 >> (((128'h8 - {{7'h7d{1'h0}}, zll_main_dev247_out}) - 128'h1) * 128'h1);
+  ZLL_Main_dev74  instR3 (arg5, arg4, zll_main_dev74_out);
+  ZLL_Main_dev284  instR4 (zll_main_dev74_out, arg3, zll_main_dev284_outR1);
+  ZLL_Main_dev247  instR5 (zll_main_dev284_outR1, arg0, zll_main_dev247_outR1);
+  assign slice_inR1 = arg2 >> (((128'h8 - {{7'h7d{1'h0}}, zll_main_dev247_outR1}) - 128'h1) * 128'h1);
+  assign res = (zi0 == 1'h1) ? slice_in[0] : slice_inR1[0];
 endmodule
 
-module ZLL_Main_dev259 (input logic [2:0] arg0,
-  input logic [2:0] arg1,
-  output logic [2:0] res);
-  logic [5:0] zll_main_dev255_in;
-  logic [5:0] zll_main_dev216_in;
-  logic [2:0] resize_in;
-  logic [2:0] resize_inR1;
-  logic [255:0] binop_in;
-  logic [255:0] binop_inR1;
-  logic [127:0] resize_inR2;
-  assign zll_main_dev255_in = {arg0, arg1};
-  assign zll_main_dev216_in = zll_main_dev255_in[5:0];
-  assign resize_in = zll_main_dev216_in[5:3];
-  assign resize_inR1 = zll_main_dev216_in[2:0];
-  assign binop_in = {128'(resize_in[2:0]), 128'(resize_inR1[2:0])};
-  assign binop_inR1 = {binop_in[255:128] / binop_in[127:0], 128'h8};
-  assign resize_inR2 = binop_inR1[255:128] % binop_inR1[127:0];
-  assign res = resize_inR2[2:0];
+module ZLL_Main_dev260 (input logic [2:0] arg0,
+  output logic [0:0] res);
+  logic [127:0] zi0;
+  logic [0:0] zi1;
+  logic [0:0] zi2;
+  assign zi0 = {{7'h7d{1'h0}}, arg0};
+  assign zi1 = zi0[0];
+  assign zi2 = zi1;
+  assign res = (zi2 == 1'h1) ? 1'h0 : 1'h1;
 endmodule
 
-module ZLL_Main_dev253 (input logic [2:0] arg0,
+module ZLL_Main_dev247 (input logic [2:0] arg0,
   input logic [2:0] arg1,
   output logic [2:0] res);
-  logic [5:0] zll_main_dev264_in;
-  logic [5:0] zll_main_dev248_in;
-  logic [2:0] resize_in;
-  logic [2:0] resize_inR1;
-  logic [255:0] binop_in;
-  logic [255:0] binop_inR1;
-  logic [127:0] resize_inR2;
-  assign zll_main_dev264_in = {arg0, arg1};
-  assign zll_main_dev248_in = zll_main_dev264_in[5:0];
-  assign resize_in = zll_main_dev248_in[5:3];
-  assign resize_inR1 = zll_main_dev248_in[2:0];
-  assign binop_in = {128'(resize_in[2:0]), 128'(resize_inR1[2:0])};
-  assign binop_inR1 = {binop_in[255:128] - binop_in[127:0], 128'h8};
-  assign resize_inR2 = binop_inR1[255:128] % binop_inR1[127:0];
-  assign res = resize_inR2[2:0];
+  logic [127:0] slice_in;
+  assign slice_in = (128'h8 == {8'h80{1'h0}}) ? ({{7'h7d{1'h0}}, arg0} + {{7'h7d{1'h0}}, arg1}) : (({{7'h7d{1'h0}}, arg0} + {{7'h7d{1'h0}}, arg1}) % 128'h8);
+  assign res = slice_in[2:0];
 endmodule
 
-module ZLL_Main_dev242 (input logic [2:0] arg0,
+module ZLL_Main_dev240 (input logic [7:0] arg0,
+  input logic [2:0] arg1,
+  input logic [2:0] arg2,
+  input logic [7:0] arg3,
+  input logic [2:0] arg4,
+  output logic [0:0] res);
+  logic [0:0] zll_main_dev224_out;
+  logic [0:0] zi0;
+  logic [2:0] zll_main_dev284_out;
+  logic [7:0] slice_in;
+  logic [2:0] zll_main_dev74_out;
+  logic [2:0] zll_main_dev284_outR1;
+  logic [7:0] slice_inR1;
+  ZLL_Main_dev224  inst (arg4, arg2, zll_main_dev224_out);
+  assign zi0 = zll_main_dev224_out;
+  ZLL_Main_dev284  instR1 (arg4, arg1, zll_main_dev284_out);
+  assign slice_in = arg3 >> (((128'h8 - {{7'h7d{1'h0}}, zll_main_dev284_out}) - 128'h1) * 128'h1);
+  ZLL_Main_dev74  instR2 (arg4, arg2, zll_main_dev74_out);
+  ZLL_Main_dev284  instR3 (zll_main_dev74_out, arg1, zll_main_dev284_outR1);
+  assign slice_inR1 = arg0 >> (((128'h8 - {{7'h7d{1'h0}}, zll_main_dev284_outR1}) - 128'h1) * 128'h1);
+  assign res = (zi0 == 1'h1) ? slice_in[0] : slice_inR1[0];
+endmodule
+
+module ZLL_Main_dev235 (input logic [2:0] arg0,
   input logic [2:0] arg1,
   output logic [2:0] res);
-  logic [5:0] zll_main_dev275_in;
-  logic [5:0] zll_main_dev213_in;
-  logic [2:0] resize_in;
-  logic [2:0] resize_inR1;
-  logic [255:0] binop_in;
-  logic [255:0] binop_inR1;
-  logic [127:0] resize_inR2;
-  assign zll_main_dev275_in = {arg0, arg1};
-  assign zll_main_dev213_in = zll_main_dev275_in[5:0];
-  assign resize_in = zll_main_dev213_in[5:3];
-  assign resize_inR1 = zll_main_dev213_in[2:0];
-  assign binop_in = {128'(resize_in[2:0]), 128'(resize_inR1[2:0])};
-  assign binop_inR1 = {binop_in[255:128] * binop_in[127:0], 128'h8};
-  assign resize_inR2 = binop_inR1[255:128] % binop_inR1[127:0];
-  assign res = resize_inR2[2:0];
+  logic [127:0] slice_in;
+  assign slice_in = (128'h8 == {8'h80{1'h0}}) ? (({{7'h7d{1'h0}}, arg1} == {8'h80{1'h0}}) ? {8'h80{1'h1}} : ({{7'h7d{1'h0}}, arg0} / {{7'h7d{1'h0}}, arg1})) : ((({{7'h7d{1'h0}}, arg1} == {8'h80{1'h0}}) ? {8'h80{1'h1}} : ({{7'h7d{1'h0}}, arg0} / {{7'h7d{1'h0}}, arg1})) % 128'h8);
+  assign res = slice_in[2:0];
+endmodule
+
+module ZLL_Main_dev233 (input logic [2:0] arg0,
+  output logic [2:0] res);
+  assign res = arg0;
+endmodule
+
+module ZLL_Main_dev224 (input logic [2:0] arg0,
+  input logic [2:0] arg1,
+  output logic [0:0] res);
+  assign res = {{7'h7d{1'h0}}, arg0} < {{7'h7d{1'h0}}, arg1};
+endmodule
+
+module ZLL_Main_dev195 (input logic [2:0] arg0,
+  input logic [2:0] arg1,
+  input logic [7:0] arg2,
+  input logic [0:0] arg3,
+  output logic [2:0] res);
+  logic [2:0] zll_main_dev233_out;
+  logic [2:0] zll_main_dev247_out;
+  ZLL_Main_dev233  inst (arg0, zll_main_dev233_out);
+  ZLL_Main_dev247  instR1 (arg0, arg1, zll_main_dev247_out);
+  assign res = (arg3 == 1'h1) ? zll_main_dev233_out : zll_main_dev247_out;
 endmodule
 
 module ZLL_Main_dev175 (input logic [7:0] arg0,
   input logic [2:0] arg1,
-  input logic [7:0] arg2,
-  input logic [2:0] arg3,
-  input logic [2:0] arg4,
-  output logic [0:0] res);
-  logic [2:0] zll_main_dev152_in;
-  logic [0:0] zll_main_dev152_out;
-  logic [25:0] zll_main_dev226_in;
-  logic [2:0] zll_main_dev152_inR1;
-  logic [0:0] zll_main_dev152_outR1;
-  logic [17:0] zll_main_dev59_in;
-  logic [17:0] zll_main_dev47_in;
-  logic [7:0] resize_in;
-  logic [5:0] zll_main_dev253_in;
-  logic [2:0] zll_main_dev253_out;
-  logic [5:0] zll_main_dev259_in;
-  logic [2:0] zll_main_dev259_out;
-  logic [2:0] resize_inR1;
-  logic [255:0] binop_in;
-  logic [255:0] binop_inR1;
-  logic [255:0] binop_inR2;
-  logic [255:0] binop_inR3;
-  logic [127:0] resize_inR2;
-  logic [14:0] zll_main_dev269_in;
-  logic [7:0] resize_inR3;
-  logic [5:0] zll_main_dev259_inR1;
-  logic [2:0] zll_main_dev259_outR1;
-  logic [2:0] resize_inR4;
-  logic [255:0] binop_inR4;
-  logic [255:0] binop_inR5;
-  logic [255:0] binop_inR6;
-  logic [255:0] binop_inR7;
-  logic [127:0] resize_inR5;
-  assign zll_main_dev152_in = arg4;
-  ZLL_Main_dev152  inst (zll_main_dev152_in[2:0], zll_main_dev152_out);
-  assign zll_main_dev226_in = {arg0, arg4, arg1, arg2, arg3, zll_main_dev152_out};
-  assign zll_main_dev152_inR1 = zll_main_dev226_in[17:15];
-  ZLL_Main_dev152  instR1 (zll_main_dev152_inR1[2:0], zll_main_dev152_outR1);
-  assign zll_main_dev59_in = {zll_main_dev226_in[25:18], zll_main_dev226_in[17:15], zll_main_dev226_in[14:12], zll_main_dev226_in[3:1], zll_main_dev152_outR1};
-  assign zll_main_dev47_in = {zll_main_dev59_in[17:10], zll_main_dev59_in[9:7], zll_main_dev59_in[6:4], zll_main_dev59_in[3:1], zll_main_dev59_in[0]};
-  assign resize_in = zll_main_dev47_in[17:10];
-  assign zll_main_dev253_in = {zll_main_dev47_in[9:7], zll_main_dev47_in[3:1]};
-  ZLL_Main_dev253  instR2 (zll_main_dev253_in[5:3], zll_main_dev253_in[2:0], zll_main_dev253_out);
-  assign zll_main_dev259_in = {zll_main_dev253_out, zll_main_dev47_in[6:4]};
-  ZLL_Main_dev259  instR3 (zll_main_dev259_in[5:3], zll_main_dev259_in[2:0], zll_main_dev259_out);
-  assign resize_inR1 = zll_main_dev259_out;
-  assign binop_in = {128'h8, 128'(resize_inR1[2:0])};
-  assign binop_inR1 = {binop_in[255:128] - binop_in[127:0], 128'h1};
-  assign binop_inR2 = {binop_inR1[255:128] - binop_inR1[127:0], 128'h1};
-  assign binop_inR3 = {128'(resize_in[7:0]), binop_inR2[255:128] * binop_inR2[127:0]};
-  assign resize_inR2 = binop_inR3[255:128] >> binop_inR3[127:0];
-  assign zll_main_dev269_in = {zll_main_dev226_in[17:15], zll_main_dev226_in[14:12], zll_main_dev226_in[11:4], zll_main_dev226_in[0]};
-  assign resize_inR3 = zll_main_dev269_in[8:1];
-  assign zll_main_dev259_inR1 = {zll_main_dev269_in[14:12], zll_main_dev269_in[11:9]};
-  ZLL_Main_dev259  instR4 (zll_main_dev259_inR1[5:3], zll_main_dev259_inR1[2:0], zll_main_dev259_outR1);
-  assign resize_inR4 = zll_main_dev259_outR1;
-  assign binop_inR4 = {128'h8, 128'(resize_inR4[2:0])};
-  assign binop_inR5 = {binop_inR4[255:128] - binop_inR4[127:0], 128'h1};
-  assign binop_inR6 = {binop_inR5[255:128] - binop_inR5[127:0], 128'h1};
-  assign binop_inR7 = {128'(resize_inR3[7:0]), binop_inR6[255:128] * binop_inR6[127:0]};
-  assign resize_inR5 = binop_inR7[255:128] >> binop_inR7[127:0];
-  assign res = (zll_main_dev269_in[0] == 1'h1) ? resize_inR5[0] : resize_inR2[0];
-endmodule
-
-module ZLL_Main_dev171 (input logic [2:0] arg0,
-  input logic [2:0] arg1,
-  input logic [0:0] arg2,
-  output logic [2:0] res);
-  logic [6:0] zll_main_dev184_in;
-  logic [5:0] zll_main_dev165_in;
-  logic [2:0] zll_main_dev165_out;
-  assign zll_main_dev184_in = {arg0, arg1, arg2};
-  assign zll_main_dev165_in = {zll_main_dev184_in[6:4], zll_main_dev184_in[3:1]};
-  ZLL_Main_dev165  inst (zll_main_dev165_in[5:3], zll_main_dev165_in[2:0], zll_main_dev165_out);
-  assign res = zll_main_dev165_out;
-endmodule
-
-module ZLL_Main_dev165 (input logic [2:0] arg0,
-  input logic [2:0] arg1,
-  output logic [2:0] res);
-  logic [5:0] zll_main_dev283_in;
-  logic [5:0] zll_main_dev250_in;
-  logic [2:0] resize_in;
-  logic [2:0] resize_inR1;
-  logic [255:0] binop_in;
-  logic [255:0] binop_inR1;
-  logic [127:0] resize_inR2;
-  assign zll_main_dev283_in = {arg0, arg1};
-  assign zll_main_dev250_in = zll_main_dev283_in[5:0];
-  assign resize_in = zll_main_dev250_in[5:3];
-  assign resize_inR1 = zll_main_dev250_in[2:0];
-  assign binop_in = {128'(resize_in[2:0]), 128'(resize_inR1[2:0])};
-  assign binop_inR1 = {binop_in[255:128] + binop_in[127:0], 128'h8};
-  assign resize_inR2 = binop_inR1[255:128] % binop_inR1[127:0];
-  assign res = resize_inR2[2:0];
-endmodule
-
-module ZLL_Main_dev152 (input logic [2:0] arg0,
-  output logic [0:0] res);
-  logic [2:0] resize_in;
-  logic [127:0] zll_main_dev280_in;
-  logic [127:0] resize_inR1;
-  logic [0:0] msbit_in;
-  logic [0:0] rewire_prelude_not_in;
-  logic [1:0] zll_rewire_prelude_not1_in;
-  logic [0:0] lit_in;
-  assign resize_in = arg0;
-  assign zll_main_dev280_in = 128'(resize_in[2:0]);
-  assign resize_inR1 = zll_main_dev280_in[127:0];
-  assign msbit_in = resize_inR1[0];
-  assign rewire_prelude_not_in = msbit_in[0];
-  assign zll_rewire_prelude_not1_in = {rewire_prelude_not_in[0], rewire_prelude_not_in[0]};
-  assign lit_in = zll_rewire_prelude_not1_in[0];
-  assign res = (lit_in[0] == 1'h1) ? 1'h0 : 1'h1;
-endmodule
-
-module ZLL_Main_dev125 (input logic [2:0] arg0,
-  input logic [2:0] arg1,
-  output logic [0:0] res);
-  logic [5:0] zll_main_dev266_in;
-  logic [5:0] zll_main_dev207_in;
-  logic [2:0] resize_in;
-  logic [2:0] resize_inR1;
-  logic [255:0] binop_in;
-  assign zll_main_dev266_in = {arg0, arg1};
-  assign zll_main_dev207_in = zll_main_dev266_in[5:0];
-  assign resize_in = zll_main_dev207_in[5:3];
-  assign resize_inR1 = zll_main_dev207_in[2:0];
-  assign binop_in = {128'(resize_in[2:0]), 128'(resize_inR1[2:0])};
-  assign res = binop_in[255:128] < binop_in[127:0];
-endmodule
-
-module ZLL_Main_dev37 (input logic [7:0] arg0,
-  input logic [7:0] arg1,
   input logic [2:0] arg2,
-  input logic [2:0] arg3,
+  input logic [7:0] arg3,
   input logic [2:0] arg4,
+  output logic [0:0] res);
+  logic [0:0] zll_main_dev260_out;
+  logic [0:0] zi0;
+  logic [2:0] zll_main_dev235_out;
+  logic [7:0] slice_in;
+  logic [2:0] zll_main_dev74_out;
+  logic [2:0] zll_main_dev235_outR1;
+  logic [7:0] slice_inR1;
+  ZLL_Main_dev260  inst (arg4, zll_main_dev260_out);
+  assign zi0 = zll_main_dev260_out;
+  ZLL_Main_dev235  instR1 (arg4, arg2, zll_main_dev235_out);
+  assign slice_in = arg0 >> (((128'h8 - {{7'h7d{1'h0}}, zll_main_dev235_out}) - 128'h1) * 128'h1);
+  ZLL_Main_dev74  instR2 (arg4, arg1, zll_main_dev74_out);
+  ZLL_Main_dev235  instR3 (zll_main_dev74_out, arg2, zll_main_dev235_outR1);
+  assign slice_inR1 = arg3 >> (((128'h8 - {{7'h7d{1'h0}}, zll_main_dev235_outR1}) - 128'h1) * 128'h1);
+  assign res = (zi0 == 1'h1) ? slice_in[0] : slice_inR1[0];
+endmodule
+
+module ZLL_Main_dev74 (input logic [2:0] arg0,
+  input logic [2:0] arg1,
+  output logic [2:0] res);
+  logic [127:0] slice_in;
+  assign slice_in = (128'h8 == {8'h80{1'h0}}) ? ({{7'h7d{1'h0}}, arg0} - {{7'h7d{1'h0}}, arg1}) : (({{7'h7d{1'h0}}, arg0} - {{7'h7d{1'h0}}, arg1}) % 128'h8);
+  assign res = slice_in[2:0];
+endmodule
+
+module ZLL_Main_dev73 (input logic [2:0] arg0,
+  input logic [2:0] arg1,
+  input logic [2:0] arg2,
+  input logic [7:0] arg3,
+  input logic [7:0] arg4,
   input logic [2:0] arg5,
   output logic [0:0] res);
-  logic [2:0] zll_main_dev152_in;
-  logic [0:0] zll_main_dev152_out;
-  logic [28:0] zll_main_dev35_in;
-  logic [2:0] zll_main_dev152_inR1;
-  logic [0:0] zll_main_dev152_outR1;
-  logic [20:0] zll_main_dev223_in;
-  logic [20:0] zll_main_dev112_in;
-  logic [7:0] resize_in;
-  logic [5:0] zll_main_dev253_in;
-  logic [2:0] zll_main_dev253_out;
-  logic [5:0] zll_main_dev259_in;
-  logic [2:0] zll_main_dev259_out;
-  logic [5:0] zll_main_dev165_in;
-  logic [2:0] zll_main_dev165_out;
-  logic [2:0] resize_inR1;
-  logic [255:0] binop_in;
-  logic [255:0] binop_inR1;
-  logic [255:0] binop_inR2;
-  logic [255:0] binop_inR3;
-  logic [127:0] resize_inR2;
-  logic [17:0] zll_main_dev185_in;
-  logic [7:0] resize_inR3;
-  logic [5:0] zll_main_dev259_inR1;
-  logic [2:0] zll_main_dev259_outR1;
-  logic [5:0] zll_main_dev165_inR1;
-  logic [2:0] zll_main_dev165_outR1;
-  logic [2:0] resize_inR4;
-  logic [255:0] binop_inR4;
-  logic [255:0] binop_inR5;
-  logic [255:0] binop_inR6;
-  logic [255:0] binop_inR7;
-  logic [127:0] resize_inR5;
-  assign zll_main_dev152_in = arg5;
-  ZLL_Main_dev152  inst (zll_main_dev152_in[2:0], zll_main_dev152_out);
-  assign zll_main_dev35_in = {arg0, arg5, arg1, arg2, arg3, arg4, zll_main_dev152_out};
-  assign zll_main_dev152_inR1 = zll_main_dev35_in[20:18];
-  ZLL_Main_dev152  instR1 (zll_main_dev152_inR1[2:0], zll_main_dev152_outR1);
-  assign zll_main_dev223_in = {zll_main_dev35_in[28:21], zll_main_dev35_in[20:18], zll_main_dev35_in[9:7], zll_main_dev35_in[6:4], zll_main_dev35_in[3:1], zll_main_dev152_outR1};
-  assign zll_main_dev112_in = {zll_main_dev223_in[20:13], zll_main_dev223_in[12:10], zll_main_dev223_in[9:7], zll_main_dev223_in[6:4], zll_main_dev223_in[3:1], zll_main_dev223_in[0]};
-  assign resize_in = zll_main_dev112_in[20:13];
-  assign zll_main_dev253_in = {zll_main_dev112_in[12:10], zll_main_dev112_in[9:7]};
-  ZLL_Main_dev253  instR2 (zll_main_dev253_in[5:3], zll_main_dev253_in[2:0], zll_main_dev253_out);
-  assign zll_main_dev259_in = {zll_main_dev253_out, zll_main_dev112_in[3:1]};
-  ZLL_Main_dev259  instR3 (zll_main_dev259_in[5:3], zll_main_dev259_in[2:0], zll_main_dev259_out);
-  assign zll_main_dev165_in = {zll_main_dev112_in[6:4], zll_main_dev259_out};
-  ZLL_Main_dev165  instR4 (zll_main_dev165_in[5:3], zll_main_dev165_in[2:0], zll_main_dev165_out);
-  assign resize_inR1 = zll_main_dev165_out;
-  assign binop_in = {128'h8, 128'(resize_inR1[2:0])};
-  assign binop_inR1 = {binop_in[255:128] - binop_in[127:0], 128'h1};
-  assign binop_inR2 = {binop_inR1[255:128] - binop_inR1[127:0], 128'h1};
-  assign binop_inR3 = {128'(resize_in[7:0]), binop_inR2[255:128] * binop_inR2[127:0]};
-  assign resize_inR2 = binop_inR3[255:128] >> binop_inR3[127:0];
-  assign zll_main_dev185_in = {zll_main_dev35_in[20:18], zll_main_dev35_in[17:10], zll_main_dev35_in[6:4], zll_main_dev35_in[3:1], zll_main_dev35_in[0]};
-  assign resize_inR3 = zll_main_dev185_in[14:7];
-  assign zll_main_dev259_inR1 = {zll_main_dev185_in[17:15], zll_main_dev185_in[3:1]};
-  ZLL_Main_dev259  instR5 (zll_main_dev259_inR1[5:3], zll_main_dev259_inR1[2:0], zll_main_dev259_outR1);
-  assign zll_main_dev165_inR1 = {zll_main_dev185_in[6:4], zll_main_dev259_outR1};
-  ZLL_Main_dev165  instR6 (zll_main_dev165_inR1[5:3], zll_main_dev165_inR1[2:0], zll_main_dev165_outR1);
-  assign resize_inR4 = zll_main_dev165_outR1;
-  assign binop_inR4 = {128'h8, 128'(resize_inR4[2:0])};
-  assign binop_inR5 = {binop_inR4[255:128] - binop_inR4[127:0], 128'h1};
-  assign binop_inR6 = {binop_inR5[255:128] - binop_inR5[127:0], 128'h1};
-  assign binop_inR7 = {128'(resize_inR3[7:0]), binop_inR6[255:128] * binop_inR6[127:0]};
-  assign resize_inR5 = binop_inR7[255:128] >> binop_inR7[127:0];
-  assign res = (zll_main_dev185_in[0] == 1'h1) ? resize_inR5[0] : resize_inR2[0];
+  logic [0:0] zll_main_dev260_out;
+  logic [0:0] zi0;
+  logic [2:0] zll_main_dev235_out;
+  logic [2:0] zll_main_dev247_out;
+  logic [7:0] slice_in;
+  logic [2:0] zll_main_dev74_out;
+  logic [2:0] zll_main_dev235_outR1;
+  logic [2:0] zll_main_dev247_outR1;
+  logic [7:0] slice_inR1;
+  ZLL_Main_dev260  inst (arg5, zll_main_dev260_out);
+  assign zi0 = zll_main_dev260_out;
+  ZLL_Main_dev235  instR1 (arg5, arg1, zll_main_dev235_out);
+  ZLL_Main_dev247  instR2 (arg2, zll_main_dev235_out, zll_main_dev247_out);
+  assign slice_in = arg3 >> (((128'h8 - {{7'h7d{1'h0}}, zll_main_dev247_out}) - 128'h1) * 128'h1);
+  ZLL_Main_dev74  instR3 (arg5, arg0, zll_main_dev74_out);
+  ZLL_Main_dev235  instR4 (zll_main_dev74_out, arg1, zll_main_dev235_outR1);
+  ZLL_Main_dev247  instR5 (arg2, zll_main_dev235_outR1, zll_main_dev247_outR1);
+  assign slice_inR1 = arg4 >> (((128'h8 - {{7'h7d{1'h0}}, zll_main_dev247_outR1}) - 128'h1) * 128'h1);
+  assign res = (zi0 == 1'h1) ? slice_in[0] : slice_inR1[0];
 endmodule

@@ -14,7 +14,7 @@ import ReWire.Crust.KindCheck (kindCheck)
 import ReWire.Crust.PrimBasis (addPrims)
 import ReWire.Crust.Purify (purify)
 import ReWire.Crust.Syntax (FreeProgram, Defn (..), Module (Module), Exp, Ty, Kind, DataConId, TyConId, Program (Program), prettyFP)
-import ReWire.Crust.ToCore (toCore)
+import ReWire.Crust.ToHyle (toHyle)
 import ReWire.Crust.Transform (removeMain, simplify, liftLambdas, etaAbsDefs, shiftLambdas, neuterExterns, expandTypeSynonyms, inlineAnnotated, normalizeBind, elimCase, purge, purgeAll, inlineExtrudes, reduce)
 import ReWire.Crust.TypeCheck (typeCheck, untype)
 import ReWire.Error (AstError, MonadError, Warning (..), warnAt)
@@ -39,7 +39,7 @@ import Numeric.Natural (Natural)
 import qualified Data.Text                    as T
 import qualified Data.Text.IO                 as T
 import qualified Language.Haskell.Exts.Syntax as S (Module (..))
-import qualified ReWire.Core.Syntax           as Core
+import qualified ReWire.Hyle.Syntax         as Hyle
 import qualified ReWire.HSE.Cache             as Cache
 import qualified ReWire.Config                as C
 
@@ -80,8 +80,8 @@ getModule conf = getModuleWith translate conf
 
                   pure (m' <> imps, exps)
 
--- Phase 2 (pre-core) transformations.
-getDevice :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> Cache m Core.Device
+-- Phase 2 (pre-hyle) transformations.
+getDevice :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> Cache m Hyle.Program
 getDevice conf fp = do
       (Module ts syns ds,  _)  <- getModule conf "." fp
 
@@ -89,16 +89,16 @@ getDevice conf fp = do
        >=> runPasses pass pure    nFront frontPasses
        >=> runPasses pass extraTC nMid   midPasses
        >=> runPasses pass pure    nBack  backPasses
-       >=> pass nCore "Translating to core & HDL."
-       >=> toCore conf start
-       >=> verb ("[" <> showt nFinal <> "] Core.")
+       >=> pass nCore "Translating to hyle & HDL."
+       >=> toHyle conf start
+       >=> verb ("[" <> showt nFinal <> "] Hyle.")
        $ (ts, syns, ds)
 
       when ((conf^.C.dump) nFinal) $ liftIO $ do
-            printHeader $ "[" <> showt nFinal <> "] Core"
+            printHeader $ "[" <> showt nFinal <> "] Hyle"
             T.putStrLn $ prettyPrint p
             when (conf^.C.verbose) $ do
-                  T.putStrLn "\n## Show core:\n"
+                  T.putStrLn "\n## Show hyle:\n"
                   T.putStrLn $ showt $ unAnn p
 
       pure p
@@ -132,7 +132,7 @@ getDevice conf fp = do
                   , ("Purifying.",                                       purify start)
                   ]
 
-            -- Final cleanup before translation to core: no --debug-typecheck
+            -- Final cleanup before translation to hyle: no --debug-typecheck
             -- re-typechecking here (e.g., kindCheck fails once purgeAll has
             -- purged type synonyms).
             backPasses =
@@ -170,7 +170,7 @@ getDevice conf fp = do
 
 passHSE :: MonadIO m => Config -> Renamer -> Module -> Natural -> Text -> S.Module a -> m (S.Module a)
 passHSE conf rn imps n m = verb' conf msg
-            >=> if (conf^.C.dump) n then printInfoHSE msg rn imps (conf^.C.verbose) else pure
+            >=> if (conf^.C.dump) n then printInfoHSE msg rn (showt imps) (conf^.C.verbose) else pure
       where msg = "[" <> showt n <> "] " <> m
 
 passCrust :: MonadIO m => Config -> Natural -> Text -> FreeProgram -> m FreeProgram

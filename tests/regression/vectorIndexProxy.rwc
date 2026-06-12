@@ -1,57 +1,63 @@
-device top_level:
+$Pure.dispatch : ([1056]) -> [65]
+$Pure.dispatch $1 =
+      $LL.Pure.dispatch $1
 
-inputs [("__in0",1024),("__in1",32)]
-outputs [("__out0",64)]
-states []
+$LL.Main.loop5 : ([1024], [32]) -> [65]
+$LL.Main.loop5 $0 $1 =
+      $LL.Main.loop4 $0 $1
 
-$Pure.dispatch :: W1056 -> W65
-$Pure.dispatch $0 = 65'case 1056'$0 of
-    {1056'@} -> $LL.Main.loop4
+Main.compute : ([1024], [32]) -> [64]
+Main.compute $0 $1 =
+      $LL.Main.compute ($0 # $1)
 
-$Pure.start :: W65
-$Pure.start  = 65'h10000000000000000
+$LL.Main.loop4 : ([1024], [32]) -> [65]
+$LL.Main.loop4 $0 $1 =
+      $LL.Main.loop3 (1'h0 # Main.compute $0 $1)
 
-$LL.Main.compute3 :: W1024 -> W32 -> W64
-$LL.Main.compute3 $0 $1 = {8'case {32'$1, 64'case 512'case 1024'$0 of {512'@, 512'_} -> Id of {64'@, 448'_} -> Id} of
-    {32'@, 64'@} -> $LL.Main.compute
-  , 8'case {32'$1, 64'case 512'case 1024'$0 of {512'@, 512'_} -> Id of {64'_, 64'@, 384'_} -> Id} of
-    {32'@, 64'@} -> $LL.Main.compute
-  , 8'case {32'$1, 64'case 512'case 1024'$0 of {512'@, 512'_} -> Id of {128'_, 64'@, 320'_} -> Id} of
-    {32'@, 64'@} -> $LL.Main.compute
-  , 8'case {32'$1, 64'case 512'case 1024'$0 of {512'@, 512'_} -> Id of {192'_, 64'@, 256'_} -> Id} of
-    {32'@, 64'@} -> $LL.Main.compute
-  , 8'case {32'$1, 64'case 512'case 1024'$0 of {512'@, 512'_} -> Id of {256'_, 64'@, 192'_} -> Id} of
-    {32'@, 64'@} -> $LL.Main.compute
-  , 8'case {32'$1, 64'case 512'case 1024'$0 of {512'@, 512'_} -> Id of {320'_, 64'@, 128'_} -> Id} of
-    {32'@, 64'@} -> $LL.Main.compute
-  , 8'case {32'$1, 64'case 512'case 1024'$0 of {512'@, 512'_} -> Id of {384'_, 64'@, 64'_} -> Id} of
-    {32'@, 64'@} -> $LL.Main.compute
-  , 8'case {32'$1, 64'case 512'case 1024'$0 of {512'@, 512'_} -> Id of {448'_, 64'@} -> Id} of
-    {32'@, 64'@} -> $LL.Main.compute}
+$LL.Main.loop3 : ([65]) -> [65]
+$LL.Main.loop3 $0 =
+      $LL.Main.loop2 $0[0 +: 64]
 
-$LL.Main.loop5 :: W64 -> W65
-$LL.Main.loop5 $0 = {1'h1, 64'$0}
+$LL.Main.compute3 : ([1024], [32]) -> [64]
+$LL.Main.compute3 $0 $1 =
+      $LL.Main.compute2 $0 $1
 
-Main.compute :: W1024 -> W32 -> W64
-Main.compute $0 $1 = 64'case {1024'$0, 32'$1} of
-    {1056'@} -> $LL.Main.compute1
+$LL.Main.loop2 : ([64]) -> [65]
+$LL.Main.loop2 $0 =
+      1'h1 # $0
 
-$LL.Main.loop4 :: W1056 -> W65
-$LL.Main.loop4 $0 = 65'case 1056'$0 of
-    {1024'@, 32'@} -> $LL.Main.loop3
+Main.loop : ([1056]) -> [65]
+Main.loop $0 =
+      $LL.Main.loop1 $0
 
-$LL.Main.loop3 :: W1024 -> W32 -> W65
-$LL.Main.loop3 $0 $1 = 65'case {1'h0, 64'case {1024'$0, 32'$1} of {1024'@, 32'@} -> Main.compute} of
-    {65'@} -> $LL.Main.loop1
+$LL.Main.loop1 : ([1056]) -> [65]
+$LL.Main.loop1 $0 =
+      $LL.Main.loop $0[32 +: 1024] $0[0 +: 32]
 
-$LL.Main.compute1 :: W1056 -> W64
-$LL.Main.compute1 $0 = 64'case 1056'$0 of
-    {1024'@, 32'@} -> $LL.Main.compute3
+$LL.Main.compute2 : ([1024], [32]) -> [64]
+$LL.Main.compute2 $0 $1 =
+      $LL.Main.compute1 $1 $0[960 +: 64] # $LL.Main.compute1 $1 $0[896 +: 64] # $LL.Main.compute1 $1 $0[832 +: 64] # $LL.Main.compute1 $1 $0[768 +: 64] # $LL.Main.compute1 $1 $0[704 +: 64] # $LL.Main.compute1 $1 $0[640 +: 64] # $LL.Main.compute1 $1 $0[576 +: 64] # $LL.Main.compute1 $1 $0[512 +: 64]
 
-$LL.Main.compute :: W32 -> W64 -> W8
-$LL.Main.compute $0 $1 = 8'case {8'case 32'$0 of {24'_, 8'@} -> Id, 8'case 64'$1 of {24'_, 8'@, 32'_} -> Id} of
-    {8'@, 8'@} -> Add
+$LL.Pure.dispatch : ([1056]) -> [65]
+$LL.Pure.dispatch $0 =
+      Main.loop $0
 
-$LL.Main.loop1 :: W65 -> W65
-$LL.Main.loop1 $0 = 65'case 65'$0 of
-    {1'h0, 64'@} -> $LL.Main.loop5
+$LL.Main.compute1 : ([32], [64]) -> [8]
+$LL.Main.compute1 $0 $1 =
+      add $0[0 +: 8] $1[32 +: 8]
+
+$LL.Main.loop : ([1024], [32]) -> [65]
+$LL.Main.loop $0 $1 =
+      $LL.Main.loop5 $0 $1
+
+$LL.Main.compute : ([1056]) -> [64]
+$LL.Main.compute $0 =
+      $LL.Main.compute3 $0[32 +: 1024] $0[0 +: 32]
+
+device top_level
+      input __in0 : [1024]
+      input __in1 : [32]
+      output __out0 : [64]
+      let $in = __in0 # __in1
+      let $res = $Pure.dispatch $in
+      __out0 := $res[0 +: 64]

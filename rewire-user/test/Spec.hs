@@ -7,7 +7,7 @@
 --   instead of rwc).
 module Main (main) where
 
-import ReWire (W, Vec, Finite, Proxy (..), Identity, ReacT, StateT, fromList, len, extern, setRef, Ref (..), signal, lift, get, modify)
+import ReWire (W, Vec, Finite, Proxy (..), Identity, ReacT, StateT, fromList, len, extern, signal, lift, get, modify)
 import ReWire.Finite (finite)
 import ReWire.Monad (iter, iterSt, extrudeDev)
 
@@ -262,7 +262,6 @@ deviceTests = testGroup "devices (ReacT/StateT)"
       , testCase "signal/lift/modify" $ runDev (extrudeDev counter (lit8 0)) [(), ()]
                                           @?= [lit8 1, lit8 2, lit8 3]
       , testCase "extern is identity" $ extern "some_module" (42 :: Int) @?= 42
-      , testCase "setRef passthrough" $ setRef (Ref "r" :: Ref Int) 1 (2 :: Int) @?= 2
       ]
       where acc :: W 8 -> W 8 -> (W 8, W 8)
             acc i s = (s, s B.+ i)

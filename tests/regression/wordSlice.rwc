@@ -1,63 +1,83 @@
-device top_level:
+$Pure.dispatch : ([16]) -> [9]
+$Pure.dispatch $1 =
+      $LL.Pure.dispatch $1
 
-inputs [("__in0",16)]
-outputs [("__out0",8)]
-states []
+"$LL.ReWire.Prelude.&&3" : ([1], [1], [2]) -> [1]
+"$LL.ReWire.Prelude.&&3" $0 $1 $2 =
+      if eq $2[1 +: 1] 1'h1 then "$LL.ReWire.Prelude.&&2" $2[0 +: 1]
+            else "$LL.ReWire.Prelude.&&1" ($1 # $0)
 
-$Pure.dispatch :: W16 -> W9
-$Pure.dispatch $0 = 9'case 16'$0 of
-    {16'@} -> $LL.Main.loop1
+Main.compute : ([16]) -> [8]
+Main.compute $0 =
+      $LL.Main.compute3 $0
 
-$Pure.start :: W9
-$Pure.start  = 9'h100
+"$LL.ReWire.Prelude.&&2" : ([1]) -> [1]
+"$LL.ReWire.Prelude.&&2" $0 =
+      $0
 
-$LL.Main.loop2 :: W8 -> W9
-$LL.Main.loop2 $0 = {1'h1, 8'$0}
+"$LL.ReWire.Prelude.&&1" : ([2]) -> [1]
+"$LL.ReWire.Prelude.&&1" $0 =
+      "$LL.ReWire.Prelude.&&" $0[0 +: 1]
 
-$LL.Main.compute5 :: W16 -> W8
-$LL.Main.compute5 $0 = 8'case 16'$0 of
-    {8'@, 8'_} -> Id
+$LL.Main.compute5 : ([16], [1]) -> [8]
+$LL.Main.compute5 $0 $1 =
+      $LL.Main.compute2 $0
 
-$LL.Main.compute4 :: W16 -> W1 -> W8
-$LL.Main.compute4 $0 $1 = 8'case {16'$0, 1'$1} of
-    {16'@, 1'h1} -> $LL.Main.compute
-    _ -> 8'case {16'$0
-      , 1'case {1'case 16'$0 of {16'@} -> MSBit, 1'case 16'$0 of {7'_, 1'@, 8'_} -> Id} of
-        {1'@, 1'@} -> ReWire.Prelude.&&} of
-      {16'@, 1'@} -> $LL.Main.compute2
+$LL.Main.compute4 : ([16]) -> [8]
+$LL.Main.compute4 $0 =
+      $0[0 +: 8]
 
-$LL.Main.compute3 :: W16 -> W8
-$LL.Main.compute3 $0 = 8'case {16'$0
-    , 1'case {1'case 16'$0 of {16'@} -> MSBit, 1'case 16'$0 of {7'_, 1'@, 8'_} -> Id} of
-      {1'@, 1'@} -> ReWire.Prelude.&&} of
-    {16'@, 1'@} -> $LL.Main.compute4
+"$LL.ReWire.Prelude.&&" : ([1]) -> [1]
+"$LL.ReWire.Prelude.&&" $0 =
+      1'h0
 
-$LL.Main.compute2 :: W16 -> W1 -> W8
-$LL.Main.compute2 $0 $1 = 8'case {16'$0, 1'$1} of
-    {16'@, 1'h0} -> $LL.Main.compute5
+$LL.Main.loop3 : ([9]) -> [9]
+$LL.Main.loop3 $0 =
+      $LL.Main.loop2 $0[0 +: 8]
 
-ReWire.Prelude.&& :: W1 -> W1 -> W1
-ReWire.Prelude.&& $0 $1 = 1'case {1'$0, 1'$1, 1'$0, 1'$1} of
-    {1'@, 1'@, 2'@} -> $LL.ReWire.Prelude.&&1
+Main.loop : ([16]) -> [9]
+Main.loop $0 =
+      $LL.Main.loop $0
 
-$LL.Main.loop1 :: W16 -> W9
-$LL.Main.loop1 $0 = 9'case {1'h0, 8'case 16'$0 of {16'@} -> $LL.Main.compute3} of
-    {9'@} -> $LL.Main.loop
+$LL.Main.compute3 : ([16]) -> [8]
+$LL.Main.compute3 $0 =
+      $LL.Main.compute $0
 
-$LL.ReWire.Prelude.&&1 :: W1 -> W1 -> W2 -> W1
-$LL.ReWire.Prelude.&&1 $0 $1 $2 = 1'case 2'$2 of
-    {1'h1, 1'@} -> Id
-    _ -> 1'case {1'$0, 1'$1} of
-      {2'@} -> $LL.ReWire.Prelude.&&
+$LL.Main.loop2 : ([8]) -> [9]
+$LL.Main.loop2 $0 =
+      1'h1 # $0
 
-$LL.ReWire.Prelude.&& :: W2 -> W1
-$LL.ReWire.Prelude.&& $0 = 1'case 2'$0 of
-    {1'h0, 1'_} -> 1'h0
+$LL.Main.compute2 : ([16]) -> [8]
+$LL.Main.compute2 $0 =
+      $0[8 +: 8]
 
-$LL.Main.loop :: W9 -> W9
-$LL.Main.loop $0 = 9'case 9'$0 of
-    {1'h0, 8'@} -> $LL.Main.loop2
+"ReWire.Prelude.&&" : ([1], [1]) -> [1]
+"ReWire.Prelude.&&" $0 $1 =
+      "$LL.ReWire.Prelude.&&3" $1 $0 ($0 # $1)
 
-$LL.Main.compute :: W16 -> W8
-$LL.Main.compute $0 = 8'case 16'$0 of
-    {8'_, 8'@} -> Id
+$LL.Main.loop1 : ([16]) -> [9]
+$LL.Main.loop1 $0 =
+      $LL.Main.loop3 (1'h0 # Main.compute $0)
+
+$LL.Main.compute1 : ([16], [1]) -> [8]
+$LL.Main.compute1 $0 $1 =
+      if eq $1 1'h1 then $LL.Main.compute4 $0
+            else $LL.Main.compute5 $0 ("ReWire.Prelude.&&" $0[15 +: 1] $0[8 +: 1])
+
+$LL.Main.loop : ([16]) -> [9]
+$LL.Main.loop $0 =
+      $LL.Main.loop1 $0
+
+$LL.Pure.dispatch : ([16]) -> [9]
+$LL.Pure.dispatch $0 =
+      Main.loop $0
+
+$LL.Main.compute : ([16]) -> [8]
+$LL.Main.compute $0 =
+      $LL.Main.compute1 $0 ("ReWire.Prelude.&&" $0[15 +: 1] $0[8 +: 1])
+
+device top_level
+      input __in0 : [16]
+      output __out0 : [8]
+      let $res = $Pure.dispatch __in0
+      __out0 := $res[0 +: 8]

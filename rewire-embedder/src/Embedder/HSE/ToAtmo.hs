@@ -1,7 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE Safe #-}
 module Embedder.HSE.ToAtmo (toAtmo) where
 
@@ -28,8 +27,6 @@ import qualified Embedder.Atmo.Types           as M
 import Language.Haskell.Exts.Syntax hiding (Annotation, Name, Kind)
 import Embedder.Atmo.Util (isTupleCtor)
 
--- import Debug.Trace (trace)
--- import Embedder.Builtins (tb2s)
 
 
 -- Name Handling:
@@ -62,9 +59,8 @@ toAtmo rn = \ case
       Module _ (Just (ModuleHead _ (ModuleName _ mname) _ exps)) _ _ (reverse -> ds) -> do
             tyDefs <- foldM (transData rn) [] ds
             (recDefs,recEnv) <- transRecs rn ds
-            -- (tyDefs, recDefs) <- partitionEithers $ map (transDataOrRec rn) ds
-            tySyns <- if | isPrimMod mname -> pure [] -- TODO(chathhorn): ignore type synonyms in Embedder.hs module.
-                         | otherwise       -> foldM (transTyDecl rn) [] ds
+            tySyns <- if isPrimMod mname then pure [] -- TODO(chathhorn): ignore type synonyms in Embedder.hs module.
+                      else foldM (transTyDecl rn) [] ds
             tySigs <- foldM (transTySig rn) [] ds
             fnDefs <- foldM (transDef rn recEnv tySigs inls) [] ds
             exps'  <- maybe (pure $ getGlobExps rn ds) (\ (ExportSpecList _ exps') -> foldM (transExport rn ds) [] exps') exps
@@ -91,8 +87,7 @@ isRecDecl (QualConDecl _ _ _ (RecDecl {})) = True
 isRecDecl _ = False
 
 getRecFields :: [QualConDecl l] -> Maybe [(S.Name (), Type ())]
-getRecFields [QualConDecl _ _ _ (RecDecl _ _ fields)]
-  | all isRecDecl [QualConDecl undefined undefined undefined (RecDecl undefined undefined fields)] =
+getRecFields [QualConDecl _ _ _ (RecDecl _ _ fields)] =
       Just $ concatMap flattenField fields
       where
             flattenField :: FieldDecl l -> [(S.Name (), Type ())]
@@ -112,8 +107,8 @@ transRec rn acc = \ case
             do
             when (length cons > 1) $
                   failAt l $ "Multi-constructor record type `" <> unqualText name <> "` is not currently supported (try using a single-constructor record instead)"
-            let tvs   = map transTyVar $ vars
-                n     = rename Type rn $ name
+            let tvs   = map transTyVar vars
+                n     = rename Type rn name
                 retTy = M.mkTyApp l (M.TyCon l n) (map (M.TyVar l) tvs)
             tys'  <- mapM (transTy rn . fmap (const l) . snd) flatFields
             let fieldNames = map (unqualText . fst) flatFields
@@ -124,7 +119,7 @@ transRec rn acc = \ case
 
 
 buildRecEnv :: [Decl Annote] -> RecEnv
-buildRecEnv decls = Map.fromList . mapMaybe extract $ decls
+buildRecEnv = Map.fromList . mapMaybe extract
   where
     extract (DataDecl _ _ _ (sDeclHead -> (_, _)) cons _)
       | Just flatFields <- getRecFields cons
@@ -147,8 +142,8 @@ transData rn acc = \ case
             then pure acc
             else
                   do
-                  let n    = rename Type rn $ name
-                      tvs' = map transTyVar $ vars
+                  let n    = rename Type rn name
+                      tvs' = map transTyVar vars
                   cs'  <- mapM (transCon rn tvs' n) cons
                   pure $ M.DataDefn l n tvs' cs' : acc
       _                                       -> pure acc
@@ -160,17 +155,8 @@ transTyDecl rn syns = \ case
             let n   = rename Type rn $ fst hd
                 lhs = map transTyVar $ snd hd
             t'  <- transTy rn t
-            -- let rhs :: [Name M.Ty]
-            --     rhs = fv t'
-
-            -- let tvs' = map (renumber rhs) lhs
             pure $ M.TypeSynonym l n (lhs |-> t') : syns
       _                              -> pure syns
-
-      -- where renumber :: [Name M.Ty] -> Name M.Ty -> Name M.Ty
-      --       renumber rhs n = fromMaybe n $ find ((== n2s n) . n2s) rhs
--- FOR NOW: Let's operate on the assumption that renumber does nothing...
-      -- It seems like all the numbering for all variables on either side of this should be zero.
       -- lhs used to be tvs'
 -- Name Handling: renumber selects 'n : Name Ty' from 'rhs : [Name Ty]' by
 --   taking one one with a matching n2s (I think that's just the fv name part)
@@ -186,7 +172,7 @@ transTySig :: (MonadError AstError m) => Renamer -> [(S.Name (), M.Ty)] -> Decl 
 transTySig rn sigs = \ case
       TypeSig _ names t -> do
             t' <- transTy rn t
-            pure $ zip (map void names) (repeat t') <> sigs
+            pure $ map ((, t') . void) names <> sigs
       _                 -> pure sigs
 
 -- TODO(mheim): need the simple allUnguarded Match case, and also the non-var PatBind case
@@ -198,8 +184,8 @@ transDef rn recEnv tys inls defs = \ case
             let x' = rename Value rn x
                 t  = fromMaybe (M.TyVar l "a") $ lookup x tys
             -- Elide definition of primitives. Allows providing alternate defs for GHC compat.
-            e' <- if | M.isPrim x' -> pure $ M.mkError (ann e) (Just t) $ "Prim: " <> x'
-                     | otherwise   -> transExp rn recEnv e
+            e' <- if M.isPrim x' then pure $ M.mkError (ann e) (Just t) $ "Prim: " <> x'
+                  else transExp rn recEnv e
             pure $ M.Defn l x' (M.poly' t) (Map.lookup x inls) [M.FunBinding l [] e'] : defs
       FunBind l ms@(Match _l' (void -> name) _ps _rhs _binds : _) -> do
             let name' = rename Value rn name
@@ -225,8 +211,8 @@ transDef rn recEnv tys inls defs = \ case
 transFunMatch :: (MonadError AstError m) => Renamer -> RecEnv -> Match Annote -> m M.FunBinding
 transFunMatch rn recEnv (Match _l name ps (UnGuardedRhs l' e) Nothing) = do
       let name' = rename Value rn name
-      e' <- if | M.isPrim name' -> pure $ M.mkError (ann e) Nothing $ "Prim: " <> name'
-               | otherwise   -> transExp rn recEnv e
+      e' <- if M.isPrim name' then pure $ M.mkError (ann e) Nothing $ "Prim: " <> name'
+            else transExp rn recEnv e
       ps' <- mapM (transPat rn) ps
       pure $ M.FunBinding l' ps' e'
 transFunMatch _ _ m = failAt (ann m) "transFunMatch: unsupported Match type"
@@ -245,7 +231,6 @@ transCon rn tvs tc = \ case
             let tvs' = map (M.TyVar l) tvs
             tys' <- mapM (transTy rn) tys
             let t = M.sig tys' (M.TyApp l (M.TyCon l tc) tvs')
-            -- foldr M.arr (foldl' (M.TyApp l) (M.TyCon l tc) tvs') <$> mapM (transTy rn) tys
             pure $ M.DataCon l (rename Value rn x) (tvs |-> t)
       d                                         -> failAt (ann d) "Unsupported Ctor syntax"
 
@@ -254,9 +239,6 @@ takes ks : [M.Kind] after Renamer
 uses them in creating TyVars (let tvs' = zipWith (M.TyVar l) ks tvs)
 
 -}
-
---Var l x | Just b <- builtin x
---                             -> pure $ M.Builtin l Nothing Nothing b
 
 flattenTyApp :: Type Annote -> [Type Annote]
 flattenTyApp = \ case
@@ -272,9 +254,7 @@ transTy rn = \ case
             [_t] -> error "transTy: impossible given value of t"
             (t1 : ts) -> M.TyApp l <$> transTy rn t1 <*> mapM (transTy rn) ts
       TyCon l x | Just b <- tybuiltin (rename Type rn x)
-                       -> do
-                        -- _ <- trace ("ToAtmo.transTy: TyCon: tybuiltin found: " <> T.unpack (tb2s b)) $ pure ()
-                        pure $ M.TyBuiltin l b
+                       -> pure $ M.TyBuiltin l b
       TyCon l x -> pure $ M.TyCon l (rename Type rn x)
       TyVar l x        -> (pure (M.TyVar l (mkUId $ void x)))
       TyList l a       -> M.listTy l <$> transTy rn a
@@ -304,7 +284,6 @@ transExp rn recEnv = \ case
                         pure $ M.RecVal l Nothing Nothing (zip fieldNames args)
                   (e' : es'') -> pure $ M.mkApp l e' es''
                   _ -> failAt l "transExp: Application with no arguments"
-      -- M.mkApp l <$> transExp rn recEnv e1 <*> (pure <$> transExp rn recEnv e2)
       Lambda l [PVar a x] e  -> do
             (vs',e') <- flattenLam rn (Lambda l [PVar a x] e)
             pure $ M.Lam l Nothing Nothing vs' e'  -- vs' =? map (mkUId . void) vs
@@ -331,7 +310,7 @@ transExp rn recEnv = \ case
             e' <- transExp rn recEnv e
             fieldUpdates' <- mapM (transFieldUpdate rn recEnv) fieldUpdates
             pure $ M.RecUpd l Nothing Nothing e' fieldUpdates'
-      ExpTypeSig _ e t       -> M.setTyAnn <$> (Just . M.poly' <$> transTy rn t) <*> transExp rn recEnv e
+      ExpTypeSig _ e t       -> M.setTyAnn . Just . M.poly' <$> transTy rn t <*> transExp rn recEnv e
       e                      -> failAt (ann e) $ "Unsupported expression syntax: " <> T.pack (show $ void e)
       where getVars :: Pat Annote -> [S.Name ()]
             getVars p = [void x | PVar (_::Annote) x <- query p]
@@ -373,7 +352,7 @@ transPat rn = \ case
       PApp l x ps      -> M.PatCon l Nothing Nothing (rename Value rn x) <$> mapM (transPat rn) ps
       PVar l x         -> pure $ M.PatVar l Nothing Nothing (mkUId $ void x)
       PWildCard l      -> pure $ M.PatWildCard l Nothing Nothing
-      PatTypeSig _ p t -> M.setTyAnn <$> (Just . M.poly' <$> transTy rn t) <*> transPat rn p
+      PatTypeSig _ p t -> M.setTyAnn . Just . M.poly' <$> transTy rn t <*> transPat rn p
       PTuple l _b ps   -> M.PatTuple l Nothing Nothing <$> mapM (transPat rn) ps
       PAsPat l n p     -> case p of
             PRec l _ [] -> pure $ M.PatVar l Nothing Nothing (mkUId $ void n)

@@ -4,7 +4,7 @@ module ReWire.Crust.PrimBasis (addPrims, primDatas) where
 
 import ReWire.Annotation (Annote (MsgAnnote))
 import ReWire.Crust.Syntax (Kind (..), Ty (..), DataCon (..), DataDefn (..), FreeProgram)
-import ReWire.Crust.Types (refTy, strTy, (|->), arr, kmonad, pairTy)
+import ReWire.Crust.Types ((|->), arr, kmonad, pairTy)
 
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -32,7 +32,6 @@ primDatas = map mkData
       , ("PuRe",     KStar `KFun` (KStar `KFun` KStar),                  pureCtors)
       , ("R_",       KStar,                                              [])
       , ("ReacT",    KStar `KFun` (KStar `KFun` (kmonad `KFun` kmonad)), [])
-      , ("Ref",      KStar `KFun` KStar,                                 [refCtor])
       , ("StateT",   KStar `KFun` (kmonad `KFun` kmonad),                [])
       , ("String",   KStar,                                              [])
       , ("Vec",      KNat `KFun` KStar `KFun` KStar,                     [])
@@ -84,11 +83,6 @@ proxyCtor :: DataCon
 proxyCtor = DataCon an (s2n "Proxy") ([s2n "n"] |-> TyApp an (TyCon an $ s2n "Proxy") (TyVar an KNat $ s2n "n"))
       where an :: Annote
             an = MsgAnnote "Prim: Proxy data/type constructor"
-
-refCtor :: DataCon
-refCtor = DataCon an (s2n "Ref") $ [s2n "a"] |-> (strTy an `arr` refTy an (TyVar an KStar $ s2n "a"))
-      where an :: Annote
-            an = MsgAnnote "Prim: Ref data/type constructor"
 
 mkTuple' :: Int -> DataDefn
 mkTuple' n = DataDefn (msg "Prim: tuple") (s2n i) k [ctor]

@@ -3,7 +3,7 @@
 
 module top_level where
 
-// Helpers implementing ReWire Core primitive semantics.
+// Helpers implementing ReWire Hyle primitive semantics.
 rw'resize : {m, n} (fin m, fin n) => [n] -> [m]
 rw'resize x = drop`{n} ((zero : [m]) # x)
 
@@ -13,217 +13,217 @@ rw'repl x = join (repeat`{n} x)
 rw'parity : {n} (fin n) => [n] -> Bit
 rw'parity x = foldr (^) False x
 
+rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
+rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
+
 // $Pure.dispatch
 rw__Pure_dispatch : [16] -> [1] -> [26]
-rw__Pure_dispatch arg0 arg1 = rw__LL_Main_sig4 (take`{1} s0) (take`{8} (drop`{1} s0)) (drop`{9} s0)
-  where
-    s0 : [17]
-    s0 = arg1 # arg0
-
-// $Pure.start
-rw__Pure_start : [26]
-rw__Pure_start = 0b10000000000000000000000001
-
-// $LL.Main.begin14
-rw__LL_Main_begin14 : [8] -> [8] -> [26]
-rw__LL_Main_begin14 arg0 arg1 = rw_Main_sig (take`{8} s0) (drop`{8} s0)
-  where
-    s0 : [16]
-    s0 = arg0 # arg1
+rw__Pure_dispatch x0 x1 = rw__LL_Pure_dispatch x1 (take`{8} x0) (drop`{8} x0)
 
 // $LL.Main.incr38
-rw__LL_Main_incr38 : [8] -> [8] -> [8] -> [8] -> [26]
-rw__LL_Main_incr38 arg0 arg1 arg2 arg3 = rw__LL_Main_incr6 (take`{8} s0) (take`{8} (drop`{8} s0)) (take`{8} (drop`{16} s0)) (drop`{24} s0)
-  where
-    s0 : [32]
-    s0 = arg0 # (arg1 # (arg2 # arg3))
+rw__LL_Main_incr38 : [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr38 x0 x1 x2 = rw__LL_Main_incr27 x0 x1 x2
 
 // $LL.Main.incr37
-rw__LL_Main_incr37 : [8] -> [8] -> [26]
-rw__LL_Main_incr37 arg0 arg1 = 0b0100000000 # (arg0 # arg1)
-
-// $LL.Main.incr36
-rw__LL_Main_incr36 : [8] -> [8] -> [8] -> [26]
-rw__LL_Main_incr36 arg0 arg1 arg2 = 0b00 # (arg0 # (arg1 # arg2))
-
-// $LL.Main.incr35
-rw__LL_Main_incr35 : [8] -> [8] -> [8] -> [8] -> [26]
-rw__LL_Main_incr35 arg0 arg1 arg2 arg3 = rw__LL_Main_incr1 s2
-  where
-    s0 : [16]
-    s0 = arg1 # arg0
-    s1 : [16]
-    s1 = arg2 # ((take`{8} s0) + (drop`{8} s0))
-    s2 : [26]
-    s2 = rw__LL_Main_incr16 s1
-
-// $LL.Main.incr34
-rw__LL_Main_incr34 : [8] -> [8] -> [8] -> [8] -> [26]
-rw__LL_Main_incr34 arg0 arg1 arg2 arg3 = rw__LL_Main_incr35 (take`{8} s0) (take`{8} (drop`{8} s0)) (take`{8} (drop`{16} s0)) (drop`{24} s0)
-  where
-    s0 : [32]
-    s0 = arg1 # (arg0 # (arg2 # arg3))
-
-// $LL.Main.incr33
-rw__LL_Main_incr33 : [8] -> [8] -> [8] -> [8] -> [26]
-rw__LL_Main_incr33 arg0 arg1 arg2 arg3 = rw__LL_Main_incr30 (take`{8} s1) (take`{8} (drop`{8} s1)) (drop`{16} s1)
-  where
-    s0 : [16]
-    s0 = arg1 # arg3
-    s1 : [42]
-    s1 = arg1 # (arg0 # (rw__LL_Main_incr16 s0))
-
-// $LL.Main.incr32
-rw__LL_Main_incr32 : [26] -> [26]
-rw__LL_Main_incr32 arg0 = rw__LL_Main_incr27 (take`{8} (drop`{2} arg0)) (take`{8} (drop`{10} arg0)) (drop`{18} arg0)
-
-// $LL.Main.incr31
-rw__LL_Main_incr31 : [8] -> [8] -> [8] -> [8] -> [26]
-rw__LL_Main_incr31 arg0 arg1 arg2 arg3 = rw__LL_Main_incr28 (take`{8} s0) (take`{8} (drop`{8} s0)) (take`{8} (drop`{16} s0)) (drop`{24} s0)
-  where
-    s0 : [32]
-    s0 = arg0 # (arg1 # (arg2 # arg3))
-
-// $LL.Main.incr30
-rw__LL_Main_incr30 : [8] -> [8] -> [26] -> [26]
-rw__LL_Main_incr30 arg0 arg1 arg2 = rw__LL_Main_incr38 (take`{8} s0) (take`{8} (drop`{8} s0)) (take`{8} (drop`{26} s0)) (drop`{34} s0)
-  where
-    s0 : [42]
-    s0 = arg0 # (arg1 # arg2)
+rw__LL_Main_incr37 : [24] -> [26]
+rw__LL_Main_incr37 x0 = rw__LL_Main_incr11 (take`{8} x0) (take`{8} (drop`{8} x0)) (drop`{16} x0)
 
 // $LL.Main.sig12
 rw__LL_Main_sig12 : [1] -> [1] -> [8] -> [8] -> [26]
-rw__LL_Main_sig12 arg0 arg1 arg2 arg3 = if (drop`{16} s0) == 0b1 then (rw__LL_Main_begin14 (take`{8} s0) (take`{8} (drop`{8} s0))) else (rw__LL_Main_sig2 (take`{1} s1) (take`{8} (drop`{1} s1)) (drop`{9} s1))
-  where
-    s0 : [17]
-    s0 = arg2 # (arg3 # arg1)
-    s1 : [17]
-    s1 = arg0 # (arg2 # arg3)
+rw__LL_Main_sig12 x0 x1 x2 x3 = if x1 == 0b1 then (rw__LL_Main_sig2 x3 x2) else (rw__LL_Main_sig8 x0 x2 x3)
+
+// $LL.Main.incr36
+rw__LL_Main_incr36 : [8] -> [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr36 x0 x1 x2 x3 = rw__LL_Main_incr12 x1 x0 x2 x3
+
+// $LL.Main.incr35
+rw__LL_Main_incr35 : [16] -> [26]
+rw__LL_Main_incr35 x0 = rw__LL_Main_incr15 (take`{8} x0) (drop`{8} x0)
+
+// $LL.Main.incr34
+rw__LL_Main_incr34 : [8] -> [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr34 x0 x1 x2 x3 = rw__LL_Main_incr17 x0 x1 (rw__LL_Main_incr35 (x1 # x3))
+
+// $LL.Main.incr33
+rw__LL_Main_incr33 : [8] -> [8] -> [26]
+rw__LL_Main_incr33 x0 x1 = rw__LL_Main_incr22 x0 x1
+
+// $LL.Main.sig11
+rw__LL_Main_sig11 : [8] -> [8] -> [26]
+rw__LL_Main_sig11 x0 x1 = rw_Main_incr x0 x1
+
+// $LL.Main.incr32
+rw__LL_Main_incr32 : [8] -> [8] -> [26]
+rw__LL_Main_incr32 x0 x1 = 0b0100000000 # (x0 # x1)
+
+// $LL.Main.sig10
+rw__LL_Main_sig10 : [1] -> [8] -> [8] -> [26]
+rw__LL_Main_sig10 x0 x1 x2 = rw__LL_Main_sig12 x0 x0 x1 x2
+
+// $LL.Main.incr31
+rw__LL_Main_incr31 : [8] -> [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr31 x0 x1 x2 x3 = rw__LL_Main_incr23 x0 x1 x2 x3
 
 // Main.incr
 rw_Main_incr : [8] -> [8] -> [26]
-rw_Main_incr arg0 arg1 = rw__LL_Main_incr32 s1
-  where
-    s0 : [24]
-    s0 = arg0 # (arg0 # arg1)
-    s1 : [26]
-    s1 = rw__LL_Main_incr23 s0
+rw_Main_incr x0 x1 = rw__LL_Main_incr28 (rw__LL_Main_incr37 (x0 # (x0 # x1)))
 
-// $LL.Main.incr28
-rw__LL_Main_incr28 : [8] -> [8] -> [8] -> [8] -> [26]
-rw__LL_Main_incr28 arg0 arg1 arg2 arg3 = rw__LL_Main_incr21 (take`{8} s0) (take`{8} (drop`{8} s0)) (take`{8} (drop`{16} s0)) (drop`{24} s0)
-  where
-    s0 : [32]
-    s0 = arg1 # (arg0 # (arg2 # arg3))
+// $LL.Main.incr30
+rw__LL_Main_incr30 : [8] -> [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr30 x0 x1 x2 x3 = rw__LL_Main_incr8 x0 x1 x2 x3
 
-// $LL.Main.incr27
-rw__LL_Main_incr27 : [8] -> [8] -> [8] -> [26]
-rw__LL_Main_incr27 arg0 arg1 arg2 = rw__LL_Main_incr20 (take`{8} s0) (take`{8} (drop`{8} s0)) (drop`{16} s0)
-  where
-    s0 : [24]
-    s0 = arg0 # (arg1 # arg2)
-
-// $LL.Main.incr23
-rw__LL_Main_incr23 : [24] -> [26]
-rw__LL_Main_incr23 arg0 = rw__LL_Main_incr22 (take`{8} arg0) (take`{8} (drop`{8} arg0)) (drop`{16} arg0)
-
-// $LL.Main.sig11
-rw__LL_Main_sig11 : [8] -> [8] -> [8] -> [26]
-rw__LL_Main_sig11 arg0 arg1 arg2 = 0b00 # (arg1 # (arg0 # arg2))
-
-// $LL.Main.incr22
-rw__LL_Main_incr22 : [8] -> [8] -> [8] -> [26]
-rw__LL_Main_incr22 arg0 arg1 arg2 = rw__LL_Main_sig11 (take`{8} s0) (take`{8} (drop`{8} s0)) (drop`{16} s0)
-  where
-    s0 : [24]
-    s0 = arg1 # (arg0 # arg2)
-
-// $LL.Main.incr21
-rw__LL_Main_incr21 : [8] -> [8] -> [8] -> [8] -> [26]
-rw__LL_Main_incr21 arg0 arg1 arg2 arg3 = rw__LL_Main_incr33 (take`{8} s0) (take`{8} (drop`{8} s0)) (take`{8} (drop`{16} s0)) (drop`{24} s0)
-  where
-    s0 : [32]
-    s0 = arg1 # (arg0 # (arg2 # arg3))
-
-// $LL.Main.sig10
-rw__LL_Main_sig10 : [26] -> [26]
-rw__LL_Main_sig10 arg0 = rw__LL_Main_sig7 (take`{8} (drop`{2} arg0)) (take`{8} (drop`{10} arg0)) (drop`{18} arg0)
+// $LL.Main.incr29
+rw__LL_Main_incr29 : [8] -> [26] -> [26]
+rw__LL_Main_incr29 x0 x1 = rw__LL_Main_incr2 x0 (take`{8} (drop`{2} x1)) (take`{8} (drop`{10} x1)) (drop`{18} x1)
 
 // $LL.Main.sig9
 rw__LL_Main_sig9 : [8] -> [8] -> [8] -> [26]
-rw__LL_Main_sig9 arg0 arg1 arg2 = 0b10 # (arg0 # (arg1 # arg2))
+rw__LL_Main_sig9 x0 x1 x2 = 0b10 # (x0 # (x1 # x2))
+
+// $LL.Main.sig8
+rw__LL_Main_sig8 : [1] -> [8] -> [8] -> [26]
+rw__LL_Main_sig8 x0 x1 x2 = rw__LL_Main_sig11 x1 x2
+
+// $LL.Main.incr28
+rw__LL_Main_incr28 : [26] -> [26]
+rw__LL_Main_incr28 x0 = rw__LL_Main_incr25 (take`{8} (drop`{2} x0)) (take`{8} (drop`{10} x0)) (drop`{18} x0)
+
+// $LL.Main.incr27
+rw__LL_Main_incr27 : [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr27 x0 x1 x2 = 0b00 # (x0 # (x1 # x2))
+
+// $LL.Main.incr26
+rw__LL_Main_incr26 : [8] -> [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr26 x0 x1 x2 x3 = rw__LL_Main_incr14 (rw__LL_Main_incr35 (x2 # (x0 + x1)))
+
+// $LL.Main.incr25
+rw__LL_Main_incr25 : [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr25 x0 x1 x2 = rw__LL_Main_incr x0 x1 x2
+
+// $LL.Pure.dispatch1
+rw__LL_Pure_dispatch1 : [1] -> [8] -> [8] -> [26]
+rw__LL_Pure_dispatch1 x0 x1 x2 = rw__LL_Main_sig10 x0 x1 x2
+
+// $LL.Main.incr24
+rw__LL_Main_incr24 : [8] -> [8] -> [26]
+rw__LL_Main_incr24 x0 x1 = rw__LL_Main_incr32 x0 x1
 
 // Main.sig
 rw_Main_sig : [8] -> [8] -> [26]
-rw_Main_sig arg0 arg1 = rw__LL_Main_sig10 s1
-  where
-    s0 : [24]
-    s0 = arg0 # (arg0 # arg1)
-    s1 : [26]
-    s1 = rw__LL_Main_incr23 s0
-
-// $LL.Main.incr20
-rw__LL_Main_incr20 : [8] -> [8] -> [8] -> [26]
-rw__LL_Main_incr20 arg0 arg1 arg2 = rw__LL_Main_incr14 (take`{8} s1) (drop`{8} s1)
-  where
-    s0 : [24]
-    s0 = arg2 # (arg1 # arg2)
-    s1 : [34]
-    s1 = arg0 # (rw__LL_Main_incr4 s0)
+rw_Main_sig x0 x1 = rw__LL_Main_sig7 (rw__LL_Main_sig6 (x0 # (x0 # x1)))
 
 // $LL.Main.sig7
-rw__LL_Main_sig7 : [8] -> [8] -> [8] -> [26]
-rw__LL_Main_sig7 arg0 arg1 arg2 = rw__LL_Main_sig9 (take`{8} s0) (take`{8} (drop`{8} s0)) (drop`{16} s0)
-  where
-    s0 : [24]
-    s0 = arg0 # (arg1 # arg2)
+rw__LL_Main_sig7 : [26] -> [26]
+rw__LL_Main_sig7 x0 = rw__LL_Main_sig1 (take`{8} (drop`{2} x0)) (take`{8} (drop`{10} x0)) (drop`{18} x0)
 
-// $LL.Main.incr16
-rw__LL_Main_incr16 : [16] -> [26]
-rw__LL_Main_incr16 arg0 = rw__LL_Main_incr37 (take`{8} arg0) (drop`{8} arg0)
+// $LL.Main.sig6
+rw__LL_Main_sig6 : [24] -> [26]
+rw__LL_Main_sig6 x0 = rw__LL_Main_sig3 (take`{8} x0) (take`{8} (drop`{8} x0)) (drop`{16} x0)
+
+// $LL.Main.incr23
+rw__LL_Main_incr23 : [8] -> [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr23 x0 x1 x2 x3 = rw__LL_Main_incr5 x0 x1 x2 x3
+
+// $LL.Main.incr22
+rw__LL_Main_incr22 : [8] -> [8] -> [26]
+rw__LL_Main_incr22 x0 x1 = rw__LL_Main_incr21 x0 x1
+
+// $LL.Main.incr21
+rw__LL_Main_incr21 : [8] -> [8] -> [26]
+rw__LL_Main_incr21 x0 x1 = rw_Main_sig x0 x1
+
+// $LL.Main.incr19
+rw__LL_Main_incr19 : [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr19 x0 x1 x2 = rw__LL_Main_incr29 x0 (rw__LL_Main_incr37 (x2 # (x1 # x2)))
+
+// $LL.Main.incr17
+rw__LL_Main_incr17 : [8] -> [8] -> [26] -> [26]
+rw__LL_Main_incr17 x0 x1 x2 = rw__LL_Main_incr30 x0 x1 (take`{8} (drop`{10} x2)) (drop`{18} x2)
+
+// $LL.Main.incr15
+rw__LL_Main_incr15 : [8] -> [8] -> [26]
+rw__LL_Main_incr15 x0 x1 = rw__LL_Main_incr24 x0 x1
 
 // $LL.Main.incr14
-rw__LL_Main_incr14 : [8] -> [26] -> [26]
-rw__LL_Main_incr14 arg0 arg1 = rw__LL_Main_incr31 (take`{8} s0) (take`{8} (drop`{10} s0)) (take`{8} (drop`{18} s0)) (drop`{26} s0)
-  where
-    s0 : [34]
-    s0 = arg0 # arg1
+rw__LL_Main_incr14 : [26] -> [26]
+rw__LL_Main_incr14 x0 = rw__LL_Main_incr13 (take`{8} (drop`{10} x0)) (drop`{18} x0)
 
-// $LL.Main.sig5
-rw__LL_Main_sig5 : [8] -> [8] -> [26]
-rw__LL_Main_sig5 arg0 arg1 = rw_Main_incr (take`{8} s0) (drop`{8} s0)
-  where
-    s0 : [16]
-    s0 = arg0 # arg1
+// $LL.Main.incr13
+rw__LL_Main_incr13 : [8] -> [8] -> [26]
+rw__LL_Main_incr13 x0 x1 = rw__LL_Main_incr33 x0 x1
 
-// $LL.Main.sig4
-rw__LL_Main_sig4 : [1] -> [8] -> [8] -> [26]
-rw__LL_Main_sig4 arg0 arg1 arg2 = rw__LL_Main_sig12 (take`{1} s0) (take`{1} (drop`{1} s0)) (take`{8} (drop`{2} s0)) (drop`{10} s0)
-  where
-    s0 : [18]
-    s0 = arg0 # (arg0 # (arg1 # arg2))
+// $LL.Main.incr12
+rw__LL_Main_incr12 : [8] -> [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr12 x0 x1 x2 x3 = rw__LL_Main_incr6 x1 x0 x2 x3
+
+// $LL.Main.incr11
+rw__LL_Main_incr11 : [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr11 x0 x1 x2 = rw__LL_Main_incr38 x0 x1 x2
+
+// $LL.Main.incr8
+rw__LL_Main_incr8 : [8] -> [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr8 x0 x1 x2 x3 = rw__LL_Main_incr1 x0 x1 x2 x3
 
 // $LL.Main.incr6
 rw__LL_Main_incr6 : [8] -> [8] -> [8] -> [8] -> [26]
-rw__LL_Main_incr6 arg0 arg1 arg2 arg3 = rw__LL_Main_incr34 (take`{8} s0) (take`{8} (drop`{8} s0)) (take`{8} (drop`{16} s0)) (drop`{24} s0)
-  where
-    s0 : [32]
-    s0 = arg1 # (arg0 # (arg2 # arg3))
+rw__LL_Main_incr6 x0 x1 x2 x3 = rw__LL_Main_incr34 x0 x1 x2 x3
+
+// $LL.Main.incr5
+rw__LL_Main_incr5 : [8] -> [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr5 x0 x1 x2 x3 = rw__LL_Main_incr26 x0 x1 x2 x3
+
+// $LL.Pure.dispatch
+rw__LL_Pure_dispatch : [1] -> [8] -> [8] -> [26]
+rw__LL_Pure_dispatch x0 x1 x2 = rw__LL_Pure_dispatch1 x0 x1 x2
+
+// $LL.Main.sig5
+rw__LL_Main_sig5 : [8] -> [8] -> [8] -> [26]
+rw__LL_Main_sig5 x0 x1 x2 = rw__LL_Main_sig4 x1 x0 x2
+
+// $LL.Main.sig4
+rw__LL_Main_sig4 : [8] -> [8] -> [8] -> [26]
+rw__LL_Main_sig4 x0 x1 x2 = 0b00 # (x1 # (x0 # x2))
+
+// $LL.Main.sig3
+rw__LL_Main_sig3 : [8] -> [8] -> [8] -> [26]
+rw__LL_Main_sig3 x0 x1 x2 = rw__LL_Main_sig5 x0 x1 x2
 
 // $LL.Main.sig2
-rw__LL_Main_sig2 : [1] -> [8] -> [8] -> [26]
-rw__LL_Main_sig2 arg0 arg1 arg2 = rw__LL_Main_sig5 (take`{8} s0) (take`{8} (drop`{8} s0))
-  where
-    s0 : [17]
-    s0 = arg1 # (arg2 # arg0)
+rw__LL_Main_sig2 : [8] -> [8] -> [26]
+rw__LL_Main_sig2 x0 x1 = rw_Main_sig x1 x0
 
-// $LL.Main.incr4
-rw__LL_Main_incr4 : [24] -> [26]
-rw__LL_Main_incr4 arg0 = rw__LL_Main_incr36 (take`{8} arg0) (take`{8} (drop`{8} arg0)) (drop`{16} arg0)
+// $LL.Main.incr2
+rw__LL_Main_incr2 : [8] -> [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr2 x0 x1 x2 x3 = rw__LL_Main_incr36 x0 x1 x2 x3
 
 // $LL.Main.incr1
-rw__LL_Main_incr1 : [26] -> [26]
-rw__LL_Main_incr1 arg0 = rw__LL_Main_begin14 (take`{8} (drop`{10} arg0)) (drop`{18} arg0)
+rw__LL_Main_incr1 : [8] -> [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr1 x0 x1 x2 x3 = rw__LL_Main_incr31 x0 x1 x2 x3
+
+// $LL.Main.incr
+rw__LL_Main_incr : [8] -> [8] -> [8] -> [26]
+rw__LL_Main_incr x0 x1 x2 = rw__LL_Main_incr19 x0 x1 x2
+
+// $LL.Main.sig1
+rw__LL_Main_sig1 : [8] -> [8] -> [8] -> [26]
+rw__LL_Main_sig1 x0 x1 x2 = rw__LL_Main_sig x0 x1 x2
+
+// $LL.Main.sig
+rw__LL_Main_sig : [8] -> [8] -> [8] -> [26]
+rw__LL_Main_sig x0 x1 x2 = rw__LL_Main_sig9 x0 x1 x2
+
+// Per-cycle step: outputs # next register values.
+rw_step : [16] -> [1] -> [24]
+rw_step st i = (take`{8} (drop`{2} s3)) # ((take`{8} (drop`{10} s3)) # (drop`{18} s3))
+  where
+    s0 : [8]
+    s0 = take`{8} st
+    s1 : [8]
+    s1 = drop`{8} st
+    s2 : [1]
+    s2 = i
+    s3 : [26]
+    s3 = rw__Pure_dispatch (s0 # s1) s2
 
 // Device: top_level
 // Inputs, MSB-first: __in0 : [1]
@@ -231,9 +231,9 @@ rw__LL_Main_incr1 arg0 = rw__LL_Main_begin14 (take`{8} (drop`{10} arg0)) (drop`{
 rw_device : {n} (fin n) => [n][1] -> [n][8]
 rw_device ins = outs
   where
-    rs : [n][26]
-    rs = [rw__Pure_dispatch st i | st <- sts | i <- ins]
+    rs : [n][24]
+    rs = [rw_step st i | st <- sts | i <- ins]
     sts : [1 + n][16]
-    sts = [drop`{10} rw__Pure_start] # [drop`{10} r | r <- rs]
+    sts = [0x0001] # [drop`{8} r | r <- rs]
     outs : [n][8]
-    outs = [take`{8} (drop`{2} r) | r <- rs]
+    outs = [take`{8} r | r <- rs]

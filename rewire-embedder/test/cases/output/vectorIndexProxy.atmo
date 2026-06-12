@@ -9,8 +9,6 @@ module
   data A_  where
   data Proxy n where
     Proxy :: (Proxy n)
-  data Ref a where
-    Ref :: (String -> (Ref a))
   data PuRe s o where
     Done :: ((A_, s) -> (PuRe s o))
     Pause :: ((o, (R_, s)) -> (PuRe s o))
@@ -104,12 +102,6 @@ module
   {-# INLINE ReWire.extern #-}
   ReWire.extern :: (String -> (a -> a))
   n a |-> externWithSig [] "" "" [] [] n a ""
-  {-# INLINE ReWire.setRef #-}
-  ReWire.setRef :: ((Ref a) -> (a -> (b -> b)))
-   |-> setRef
-  {-# INLINE ReWire.getRef #-}
-  ReWire.getRef :: ((Ref a) -> a)
-   |-> getRef
   {-# INLINE ReWire.put #-}
   ReWire.put :: (s -> (StateT s m ()))
    |-> put
@@ -147,10 +139,6 @@ module
    |-> error "Prim: rwPrimError"
   rwPrimExtern :: ([(String, Integer)] -> (String -> (String -> ([(String, Integer)] -> ([(String, Integer)] -> (String -> (a -> (String -> a))))))))
   _ _ _ _ _ _ f _ |-> error "Prim: rwPrimExtern"
-  rwPrimSetRef :: ((Ref a) -> (a -> (b -> b)))
-  _ _ b |-> error "Prim: rwPrimSetRef"
-  rwPrimGetRef :: ((Ref a) -> a)
-   |-> error "Prim: rwPrimGetRef"
   rwPrimBind :: ((m a) -> (((a -> (m b))) -> (m b)))
    |-> error "Prim: rwPrimBind"
   rwPrimReturn :: (a -> (m a))
@@ -425,6 +413,9 @@ module
   {-# INLINE ReWire.FiniteComp.div #-}
   ReWire.FiniteComp.div :: ((Finite n) -> ((Finite n) -> (Finite n)))
   a b |-> $ toFinite' (/ (fromFinite a) (fromFinite b))
+  {-# INLINE ReWire.FiniteComp.mod #-}
+  ReWire.FiniteComp.mod :: ((Finite n) -> ((Finite n) -> (Finite n)))
+  a b |-> $ toFinite' (% (fromFinite a) (fromFinite b))
   {-# INLINE ReWire.FiniteComp.== #-}
   ReWire.FiniteComp.== :: ((Finite n) -> ((Finite n) -> Bool))
   a b |-> == (fromFinite a) (fromFinite b)
@@ -562,10 +553,10 @@ module
   ReWire.Bits.>= :: ((ReWire.W n) -> ((ReWire.W n) -> Bool))
    |-> >=
   {-# INLINE ReWire.Bits.< #-}
-  ReWire.Bits.< :: ((ReWire.W n) -> ((ReWire.W n) -> ReWire.Bit))
+  ReWire.Bits.< :: ((ReWire.W n) -> ((ReWire.W n) -> Bool))
    |-> <
   {-# INLINE ReWire.Bits.<= #-}
-  ReWire.Bits.<= :: ((ReWire.W n) -> ((ReWire.W n) -> ReWire.Bit))
+  ReWire.Bits.<= :: ((ReWire.W n) -> ((ReWire.W n) -> Bool))
    |-> <=
   {-# INLINE ReWire.Bits.<> #-}
   ReWire.Bits.<> :: ((ReWire.W n) -> ((ReWire.W m) -> (ReWire.W ((+ n m)))))

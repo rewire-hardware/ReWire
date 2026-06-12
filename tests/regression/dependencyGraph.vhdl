@@ -13,20 +13,13 @@ package rw_helpers is
   function rw_and (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_or (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_xor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
-  function rw_xnor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_not (a : std_logic_vector) return std_logic_vector;
   function rw_shiftl (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_shiftr (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_ashiftr (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
-  function rw_land (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
-  function rw_lor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
-  function rw_lnot (a : std_logic_vector) return std_logic_vector;
   function rw_rand (a : std_logic_vector) return std_logic_vector;
-  function rw_rnand (a : std_logic_vector) return std_logic_vector;
   function rw_ror (a : std_logic_vector) return std_logic_vector;
-  function rw_rnor (a : std_logic_vector) return std_logic_vector;
   function rw_rxor (a : std_logic_vector) return std_logic_vector;
-  function rw_rxnor (a : std_logic_vector) return std_logic_vector;
   function rw_eq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_neq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_lt (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
@@ -35,6 +28,11 @@ package rw_helpers is
   function rw_gteq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_cond (c : std_logic_vector; a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
   function rw_repl (n : natural; v : std_logic_vector) return std_logic_vector;
+  function rw_sext (v : std_logic_vector; n : natural) return std_logic_vector;
+  function rw_lts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_lteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_gts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
+  function rw_gteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector;
 end package;
 
 package body rw_helpers is
@@ -74,7 +72,7 @@ package body rw_helpers is
   function rw_mod (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
     constant n : natural := rw_max(a'length, b'length);
   begin
-    if unsigned(b) = 0 then return std_logic_vector(to_unsigned(0, n) - 1); end if;
+    if unsigned(b) = 0 then return std_logic_vector(resize(unsigned(a), n)); end if;
     return std_logic_vector(resize(resize(unsigned(a), n) mod resize(unsigned(b), n), n));
   end;
   function rw_pow (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
@@ -101,11 +99,6 @@ package body rw_helpers is
   begin
     return rw_resize(a, n) xor rw_resize(b, n);
   end;
-  function rw_xnor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
-    constant n : natural := rw_max(a'length, b'length);
-  begin
-    return rw_resize(a, n) xnor rw_resize(b, n);
-  end;
   function rw_not (a : std_logic_vector) return std_logic_vector is
   begin
     return not a;
@@ -126,41 +119,17 @@ package body rw_helpers is
     if unsigned(b) >= a'length then sh := a'length; else sh := to_integer(unsigned(b)); end if;
     return std_logic_vector(shift_right(signed(a), sh));
   end;
-  function rw_land (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v(unsigned(a) /= 0 and unsigned(b) /= 0);
-  end;
-  function rw_lor (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v(unsigned(a) /= 0 or unsigned(b) /= 0);
-  end;
-  function rw_lnot (a : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v(unsigned(a) = 0);
-  end;
   function rw_rand (a : std_logic_vector) return std_logic_vector is
   begin
     return rw_b2v((and a) = '1');
-  end;
-  function rw_rnand (a : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v((and a) /= '1');
   end;
   function rw_ror (a : std_logic_vector) return std_logic_vector is
   begin
     return rw_b2v((or a) = '1');
   end;
-  function rw_rnor (a : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v((or a) /= '1');
-  end;
   function rw_rxor (a : std_logic_vector) return std_logic_vector is
   begin
     return rw_b2v((xor a) = '1');
-  end;
-  function rw_rxnor (a : std_logic_vector) return std_logic_vector is
-  begin
-    return rw_b2v((xor a) /= '1');
   end;
   function rw_eq (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
     constant n : natural := rw_max(a'length, b'length);
@@ -205,6 +174,26 @@ package body rw_helpers is
     end loop;
     return r;
   end;
+  function rw_sext (v : std_logic_vector; n : natural) return std_logic_vector is
+  begin
+    return std_logic_vector(resize(signed(v), n));
+  end;
+  function rw_lts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) < signed(b));
+  end;
+  function rw_lteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) <= signed(b));
+  end;
+  function rw_gts (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) > signed(b));
+  end;
+  function rw_gteqs (a : std_logic_vector; b : std_logic_vector) return std_logic_vector is
+  begin
+    return rw_b2v(signed(a) >= signed(b));
+  end;
 end package body;
 
 library ieee;
@@ -219,131 +208,63 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal \__padding\ : std_logic_vector (31 downto 0);
+signal \__st0\ : std_logic_vector (29 downto 0) := std_logic_vector'(B"000000000000000000000000000000");
       signal \__st0_next\ : std_logic_vector (29 downto 0);
-      signal \__st0\ : std_logic_vector (29 downto 0) := std_logic_vector'(B"000000000000000000000000000000");
-      signal rewire_monad_iterst_in : std_logic_vector (39 downto 0);
-      signal zll_rewire_monad_iterst_in : std_logic_vector (69 downto 0);
-      signal zll_rewire_monad_iterst32_in : std_logic_vector (69 downto 0);
-      signal main_loop_in : std_logic_vector (39 downto 0);
-      signal zll_main_loop3_in : std_logic_vector (39 downto 0);
-      signal zll_main_loop6_in : std_logic_vector (39 downto 0);
-      signal zll_main_loop5_in : std_logic_vector (29 downto 0);
-      signal id_in : std_logic_vector (29 downto 0);
-      signal main_inputtomystate_in : std_logic_vector (24 downto 0);
-      signal zll_main_inputtomystate_in : std_logic_vector (49 downto 0);
-      signal zll_main_inputtomystate18_in : std_logic_vector (49 downto 0);
-      signal zll_main_inputtomystate17_in : std_logic_vector (49 downto 0);
-      signal zll_main_inputtomystate9_in : std_logic_vector (49 downto 0);
-      signal zll_main_inputtomystate1_in : std_logic_vector (24 downto 0);
-      signal zll_main_inputtomystate3_in : std_logic_vector (24 downto 0);
-      signal zll_main_inputtomystate12_in : std_logic_vector (13 downto 0);
-      signal zll_main_inputtomystate14_in : std_logic_vector (24 downto 0);
-      signal zll_main_inputtomystate13_in : std_logic_vector (24 downto 0);
-      signal zll_main_inputtomystate8_in : std_logic_vector (12 downto 0);
-      signal zll_main_inputtomystate16_in : std_logic_vector (24 downto 0);
-      signal zll_main_inputtomystate2_in : std_logic_vector (22 downto 0);
-      signal zll_main_inputtomystate10_in : std_logic_vector (24 downto 0);
-      signal zll_main_inputtomystate11_in : std_logic_vector (18 downto 0);
-      signal zll_main_inputtomystate15_in : std_logic_vector (13 downto 0);
-      signal zll_main_incrpipeline5_in : std_logic_vector (44 downto 0);
-      signal zll_main_incrpipeline4_in : std_logic_vector (44 downto 0);
-      signal \id_inR1\ : std_logic_vector (29 downto 0);
-      signal zll_main_incrpipeline8_in : std_logic_vector (29 downto 0);
-      signal zll_main_incrpipeline6_in : std_logic_vector (29 downto 0);
-      signal \id_inR2\ : std_logic_vector (29 downto 0);
-      signal zll_main_incrpipeline10_in : std_logic_vector (29 downto 0);
-      signal resize_in : std_logic_vector (29 downto 0);
-      signal binop_in : std_logic_vector (255 downto 0);
-      signal \resize_inR1\ : std_logic_vector (127 downto 0);
-      signal zll_main_loop1_in : std_logic_vector (44 downto 0);
-      signal zll_main_loop4_in : std_logic_vector (44 downto 0);
-      signal main_mystatetooutput_in : std_logic_vector (14 downto 0);
-      signal zll_main_mystatetooutput4_in : std_logic_vector (29 downto 0);
-      signal zll_main_mystatetooutput7_in : std_logic_vector (29 downto 0);
-      signal zll_main_mystatetooutput1_in : std_logic_vector (14 downto 0);
-      signal zll_main_mystatetooutput3_in : std_logic_vector (14 downto 0);
-      signal zll_main_mystatetooutput_in : std_logic_vector (8 downto 0);
-      signal zll_main_mystatetooutput2_in : std_logic_vector (14 downto 0);
-      signal zll_main_mystatetooutput8_in : std_logic_vector (12 downto 0);
-      signal zll_main_mystatetooutput5_in : std_logic_vector (14 downto 0);
-      signal zll_main_mystatetooutput6_in : std_logic_vector (8 downto 0);
-      signal zll_rewire_monad_iterst27_in : std_logic_vector (75 downto 0);
-      signal zll_rewire_monad_iterst25_in : std_logic_vector (75 downto 0);
-      signal zll_rewire_monad_iterst36_in : std_logic_vector (77 downto 0);
-      signal zll_rewire_monad_iterst26_in : std_logic_vector (77 downto 0);
-      signal zll_rewire_monad_iterst35_in : std_logic_vector (75 downto 0);
-      signal zll_rewire_monad_iterst22_in : std_logic_vector (75 downto 0);
-      signal zll_rewire_monad_iterst37_in : std_logic_vector (75 downto 0);
-      signal zll_rewire_monad_iterst31_in : std_logic_vector (75 downto 0);
-      signal zll_rewire_monad_iterst15_in : std_logic_vector (29 downto 0);
-      signal zll_rewire_monad_iterst4_in : std_logic_vector (93 downto 0);
-      signal zll_rewire_monad_iterst29_in : std_logic_vector (93 downto 0);
-      signal zll_rewire_monad_iterst33_in : std_logic_vector (45 downto 0);
-      signal pause : std_logic_vector (77 downto 0);
+      signal zi8 : std_logic_vector (3 downto 0);
+      signal zi9 : std_logic_vector (0 downto 0);
+      signal zi13 : std_logic_vector (7 downto 0);
+      signal zi14 : std_logic_vector (0 downto 0);
+      signal zi15 : std_logic_vector (4 downto 0);
+      signal zi19 : std_logic_vector (3 downto 0);
+      signal zi23 : std_logic_vector (8 downto 0);
+      signal zi27 : std_logic_vector (8 downto 0);
+      signal zi28 : std_logic_vector (44 downto 0);
+      signal zi29 : std_logic_vector (14 downto 0);
+      signal zi30 : std_logic_vector (29 downto 0);
+      signal zi31 : std_logic_vector (14 downto 0);
+      signal zi35 : std_logic_vector (44 downto 0);
+      signal zi36 : std_logic_vector (29 downto 0);
+      signal zi38 : std_logic_vector (4 downto 0);
+      signal zi39 : std_logic_vector (3 downto 0);
+      signal zi40 : std_logic_vector (4 downto 0);
+      signal zi41 : std_logic_vector (7 downto 0);
+      signal zi43 : std_logic_vector (8 downto 0);
+      signal zi44 : std_logic_vector (75 downto 0);
+      signal zi45 : std_logic_vector (45 downto 0);
+      signal zi46 : std_logic_vector (29 downto 0);
+      signal zi47 : std_logic_vector (77 downto 0);
+      signal zi50 : std_logic_vector (15 downto 0);
+      signal zi51 : std_logic_vector (29 downto 0);
+      signal zres : std_logic_vector (77 downto 0);
 begin
-rewire_monad_iterst_in <= (\__in0\ & \__st0\);
-      zll_rewire_monad_iterst_in <= (rewire_monad_iterst_in(39 downto 30) & rewire_monad_iterst_in(29 downto 0) & rewire_monad_iterst_in(29 downto 0));
-      zll_rewire_monad_iterst32_in <= (zll_rewire_monad_iterst_in(69 downto 60) & zll_rewire_monad_iterst_in(59 downto 0));
-      main_loop_in <= (zll_rewire_monad_iterst32_in(69 downto 60) & zll_rewire_monad_iterst32_in(59 downto 30));
-      zll_main_loop3_in <= (main_loop_in(39 downto 30) & main_loop_in(29 downto 0));
-      zll_main_loop6_in <= zll_main_loop3_in(39 downto 0);
-      zll_main_loop5_in <= zll_main_loop6_in(29 downto 0);
-      id_in <= zll_main_loop5_in(29 downto 0);
-      main_inputtomystate_in <= (zll_main_loop6_in(39 downto 30) & id_in(29 downto 15));
-      zll_main_inputtomystate_in <= (main_inputtomystate_in(14 downto 0) & main_inputtomystate_in(24 downto 15) & main_inputtomystate_in(24 downto 15) & main_inputtomystate_in(14 downto 0));
-      zll_main_inputtomystate18_in <= (zll_main_inputtomystate_in(49 downto 35) & zll_main_inputtomystate_in(34 downto 25) & zll_main_inputtomystate_in(34 downto 25) & zll_main_inputtomystate_in(49 downto 35));
-      zll_main_inputtomystate17_in <= (zll_main_inputtomystate18_in(49 downto 35) & zll_main_inputtomystate18_in(34 downto 25) & zll_main_inputtomystate18_in(34 downto 25) & zll_main_inputtomystate18_in(49 downto 35));
-      zll_main_inputtomystate9_in <= (zll_main_inputtomystate17_in(49 downto 35) & zll_main_inputtomystate17_in(34 downto 25) & zll_main_inputtomystate17_in(34 downto 25) & zll_main_inputtomystate17_in(49 downto 35));
-      zll_main_inputtomystate1_in <= (zll_main_inputtomystate9_in(34 downto 25) & zll_main_inputtomystate9_in(49 downto 35));
-      zll_main_inputtomystate3_in <= zll_main_inputtomystate1_in(24 downto 0);
-      zll_main_inputtomystate12_in <= (zll_main_inputtomystate3_in(13 downto 9) & zll_main_inputtomystate3_in(8 downto 0));
-      zll_main_inputtomystate14_in <= zll_main_inputtomystate9_in(24 downto 0);
-      zll_main_inputtomystate13_in <= zll_main_inputtomystate17_in(24 downto 0);
-      zll_main_inputtomystate8_in <= (zll_main_inputtomystate13_in(12 downto 9) & zll_main_inputtomystate13_in(8 downto 0));
-      zll_main_inputtomystate16_in <= zll_main_inputtomystate18_in(24 downto 0);
-      zll_main_inputtomystate2_in <= (zll_main_inputtomystate16_in(22 downto 15) & zll_main_inputtomystate16_in(14 downto 14) & zll_main_inputtomystate16_in(13 downto 9) & zll_main_inputtomystate16_in(8 downto 0));
-      zll_main_inputtomystate10_in <= zll_main_inputtomystate_in(24 downto 0);
-      zll_main_inputtomystate11_in <= (zll_main_inputtomystate10_in(18 downto 15) & zll_main_inputtomystate10_in(14 downto 14) & zll_main_inputtomystate10_in(13 downto 9) & zll_main_inputtomystate10_in(8 downto 0));
-      zll_main_inputtomystate15_in <= (zll_main_inputtomystate11_in(18 downto 15) & zll_main_inputtomystate11_in(14 downto 14) & zll_main_inputtomystate11_in(8 downto 0));
-      zll_main_incrpipeline5_in <= (rw_cond(rw_eq(zll_main_inputtomystate10_in(24 downto 23), std_logic_vector'(B"00")), (zll_main_inputtomystate15_in(9 downto 9) & std_logic_vector'(B"1") & zll_main_inputtomystate15_in(13 downto 10) & std_logic_vector'(B"00000") & zll_main_inputtomystate15_in(13 downto 10)), rw_cond(rw_eq(zll_main_inputtomystate16_in(24 downto 23), std_logic_vector'(B"01")), (zll_main_inputtomystate2_in(14 downto 14) & zll_main_inputtomystate2_in(13 downto 9) & std_logic_vector'(B"1") & zll_main_inputtomystate2_in(22 downto 15)), rw_cond(rw_land(rw_eq(zll_main_inputtomystate13_in(24 downto 23), std_logic_vector'(B"10")), rw_land(rw_eq(zll_main_inputtomystate13_in(15 downto 15), std_logic_vector'(B"1")), rw_eq(zll_main_inputtomystate13_in(13 downto 13), std_logic_vector'(B"1")))), (std_logic_vector'(B"10000000000") & zll_main_inputtomystate8_in(12 downto 9)), rw_cond(rw_land(rw_eq(zll_main_inputtomystate14_in(24 downto 23), std_logic_vector'(B"10")), rw_land(rw_eq(zll_main_inputtomystate14_in(15 downto 15), std_logic_vector'(B"1")), rw_eq(zll_main_inputtomystate14_in(13 downto 13), std_logic_vector'(B"0")))), (std_logic_vector'(B"100000") & zll_main_inputtomystate14_in(8 downto 0)), (std_logic_vector'(B"000000") & zll_main_inputtomystate12_in(8 downto 0)))))) & zll_main_loop6_in(29 downto 0));
-      zll_main_incrpipeline4_in <= zll_main_incrpipeline5_in(44 downto 0);
-      \id_inR1\ <= zll_main_incrpipeline4_in(29 downto 0);
-      zll_main_incrpipeline8_in <= (zll_main_incrpipeline4_in(44 downto 30) & \id_inR1\(29 downto 15));
-      zll_main_incrpipeline6_in <= (zll_main_incrpipeline8_in(29 downto 15) & zll_main_incrpipeline8_in(14 downto 0));
-      \id_inR2\ <= zll_main_incrpipeline6_in(29 downto 0);
-      zll_main_incrpipeline10_in <= zll_main_incrpipeline4_in(29 downto 0);
-      resize_in <= zll_main_incrpipeline10_in(29 downto 0);
-      binop_in <= (rw_resize(resize_in(29 downto 0), 128) & rw_repl(128, std_logic_vector'(B"0")));
-      \resize_inR1\ <= rw_shiftr(binop_in(255 downto 128), binop_in(127 downto 0));
-      zll_main_loop1_in <= ((\id_inR2\(29 downto 15) & \id_inR2\(14 downto 0)) & rw_resize(\resize_inR1\(127 downto 0), 15));
-      zll_main_loop4_in <= zll_main_loop1_in(44 downto 0);
-      main_mystatetooutput_in <= zll_main_loop4_in(14 downto 0);
-      zll_main_mystatetooutput4_in <= (main_mystatetooutput_in(14 downto 0) & main_mystatetooutput_in(14 downto 0));
-      zll_main_mystatetooutput7_in <= (zll_main_mystatetooutput4_in(29 downto 15) & zll_main_mystatetooutput4_in(29 downto 15));
-      zll_main_mystatetooutput1_in <= zll_main_mystatetooutput7_in(29 downto 15);
-      zll_main_mystatetooutput3_in <= zll_main_mystatetooutput1_in(14 downto 0);
-      zll_main_mystatetooutput_in <= zll_main_mystatetooutput3_in(8 downto 0);
-      zll_main_mystatetooutput2_in <= zll_main_mystatetooutput7_in(14 downto 0);
-      zll_main_mystatetooutput8_in <= (zll_main_mystatetooutput2_in(13 downto 9) & zll_main_mystatetooutput2_in(7 downto 0));
-      zll_main_mystatetooutput5_in <= zll_main_mystatetooutput4_in(14 downto 0);
-      zll_main_mystatetooutput6_in <= (zll_main_mystatetooutput5_in(13 downto 9) & zll_main_mystatetooutput5_in(3 downto 0));
-      zll_rewire_monad_iterst27_in <= ((rw_cond(rw_land(rw_eq(zll_main_mystatetooutput5_in(14 downto 14), std_logic_vector'(B"1")), rw_eq(zll_main_mystatetooutput5_in(8 downto 8), std_logic_vector'(B"0"))), (std_logic_vector'(B"11") & zll_main_mystatetooutput6_in(8 downto 4) & std_logic_vector'(B"00000") & zll_main_mystatetooutput6_in(3 downto 0)), rw_cond(rw_land(rw_eq(zll_main_mystatetooutput2_in(14 downto 14), std_logic_vector'(B"1")), rw_eq(zll_main_mystatetooutput2_in(8 downto 8), std_logic_vector'(B"1"))), (std_logic_vector'(B"01") & zll_main_mystatetooutput8_in(12 downto 8) & std_logic_vector'(B"1") & zll_main_mystatetooutput8_in(7 downto 0)), (std_logic_vector'(B"0000000") & zll_main_mystatetooutput_in(8 downto 0)))) & zll_main_loop4_in(44 downto 15)) & zll_rewire_monad_iterst32_in(29 downto 0));
-      zll_rewire_monad_iterst25_in <= zll_rewire_monad_iterst27_in(75 downto 0);
-      zll_rewire_monad_iterst36_in <= (std_logic_vector'(B"00") & zll_rewire_monad_iterst25_in(75 downto 30) & zll_rewire_monad_iterst25_in(29 downto 0));
-      zll_rewire_monad_iterst26_in <= zll_rewire_monad_iterst36_in(77 downto 0);
-      zll_rewire_monad_iterst35_in <= (zll_rewire_monad_iterst26_in(75 downto 30) & zll_rewire_monad_iterst26_in(29 downto 0));
-      zll_rewire_monad_iterst22_in <= (zll_rewire_monad_iterst35_in(29 downto 0) & zll_rewire_monad_iterst35_in(75 downto 30));
-      zll_rewire_monad_iterst37_in <= (zll_rewire_monad_iterst22_in(45 downto 30) & zll_rewire_monad_iterst22_in(75 downto 46) & zll_rewire_monad_iterst22_in(29 downto 0));
-      zll_rewire_monad_iterst31_in <= (zll_rewire_monad_iterst37_in(75 downto 60) & zll_rewire_monad_iterst37_in(29 downto 0) & zll_rewire_monad_iterst37_in(59 downto 30));
-      zll_rewire_monad_iterst15_in <= zll_rewire_monad_iterst31_in(59 downto 30);
-      zll_rewire_monad_iterst4_in <= (zll_rewire_monad_iterst31_in(75 downto 60) & ((std_logic_vector'(B"01") & rw_repl(46, std_logic_vector'(B"0"))) & zll_rewire_monad_iterst15_in(29 downto 0)));
-      zll_rewire_monad_iterst29_in <= (zll_rewire_monad_iterst4_in(93 downto 78) & zll_rewire_monad_iterst4_in(77 downto 0));
-      zll_rewire_monad_iterst33_in <= (zll_rewire_monad_iterst29_in(93 downto 78) & zll_rewire_monad_iterst29_in(29 downto 0));
-      pause <= ((std_logic_vector'(B"1") & rw_repl(31, std_logic_vector'(B"0"))) & zll_rewire_monad_iterst33_in(45 downto 30) & zll_rewire_monad_iterst33_in(29 downto 0));
-      \__padding\ <= pause(77 downto 46);
-      \__out0\ <= pause(45 downto 30);
-      \__st0_next\ <= pause(29 downto 0);
+zi8 <= \__in0\(3 downto 0);
+      zi9 <= \__st0\(29 downto 29);
+      zi13 <= \__in0\(7 downto 0);
+      zi14 <= \__st0\(29 downto 29);
+      zi15 <= \__st0\(28 downto 24);
+      zi19 <= \__st0\(27 downto 24);
+      zi23 <= \__st0\(23 downto 15);
+      zi27 <= \__st0\(23 downto 15);
+      zi28 <= (rw_cond(rw_eq(\__in0\(9 downto 8), std_logic_vector'(B"00")), (zi9 & std_logic_vector'(B"1") & zi8 & std_logic_vector'(B"00000") & zi8), rw_cond(rw_eq(\__in0\(9 downto 8), std_logic_vector'(B"01")), (zi14 & zi15 & std_logic_vector'(B"1") & zi13), rw_cond(rw_and(rw_eq(\__in0\(9 downto 8), std_logic_vector'(B"10")), rw_and(rw_eq(\__in0\(0 downto 0), std_logic_vector'(B"1")), rw_eq(\__st0\(28 downto 28), std_logic_vector'(B"1")))), (std_logic_vector'(B"10000000000") & zi19), rw_cond(rw_and(rw_eq(\__in0\(9 downto 8), std_logic_vector'(B"10")), rw_and(rw_eq(\__in0\(0 downto 0), std_logic_vector'(B"1")), rw_eq(\__st0\(28 downto 28), std_logic_vector'(B"0")))), (std_logic_vector'(B"100000") & zi23), (std_logic_vector'(B"000000") & zi27))))) & \__st0\);
+      zi29 <= zi28(44 downto 30);
+      zi30 <= zi28(29 downto 0);
+      zi31 <= zi28(29 downto 15);
+      zi35 <= ((zi29 & zi31) & rw_resize(rw_shiftr(zi30, rw_repl(128, std_logic_vector'(B"0"))), 15));
+      zi36 <= zi35(44 downto 15);
+      zi38 <= zi35(13 downto 9);
+      zi39 <= zi35(3 downto 0);
+      zi40 <= zi35(13 downto 9);
+      zi41 <= zi35(7 downto 0);
+      zi43 <= zi35(8 downto 0);
+      zi44 <= ((rw_cond(rw_and(rw_eq(zi35(14 downto 14), std_logic_vector'(B"1")), rw_eq(zi35(8 downto 8), std_logic_vector'(B"0"))), (std_logic_vector'(B"11") & zi38 & std_logic_vector'(B"00000") & zi39), rw_cond(rw_and(rw_eq(zi35(14 downto 14), std_logic_vector'(B"1")), rw_eq(zi35(8 downto 8), std_logic_vector'(B"1"))), (std_logic_vector'(B"01") & zi40 & std_logic_vector'(B"1") & zi41), (std_logic_vector'(B"0000000") & zi43))) & zi36) & \__st0\);
+      zi45 <= zi44(75 downto 30);
+      zi46 <= zi44(29 downto 0);
+      zi47 <= (std_logic_vector'(B"00") & zi45 & zi46);
+      zi50 <= zi47(75 downto 60);
+      zi51 <= zi47(59 downto 30);
+      zres <= ((std_logic_vector'(B"1") & rw_repl(31, std_logic_vector'(B"0"))) & zi50 & zi51);
+      \__st0_next\ <= zres(29 downto 0);
+      \__out0\ <= zres(45 downto 30);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then

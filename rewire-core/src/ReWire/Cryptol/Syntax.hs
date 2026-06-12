@@ -1,12 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
 -- | Abstract syntax for the fragment of Cryptol emitted by the Cryptol
---   backend (ReWire.Core.ToCryptol). The generated file is a self-contained
---   anonymous module (no module header, so it can be loaded under any file
---   name): a few helper definitions implementing ReWire Core primitives, an
+--   backend (ReWire.Hyle.ToCryptol). The generated file is a
+--   self-contained named module (Cryptol allows loading it under any file
+--   name): a few helper definitions implementing Hyle primitives, an
 --   optional @parameter@ block declaring externs as uninterpreted functions,
---   and one function per Core defn. Helper names contain a tick (@rw'resize@)
---   so they can never collide with generated names (see 'cryptolName').
+--   and one function per Hyle defn. Helper names contain a tick
+--   (@rw'resize@) so they can never collide with generated names (see
+--   'cryptolName').
 module ReWire.Cryptol.Syntax where
 
 import ReWire.BitVector (BV, width, nat)
@@ -51,12 +52,12 @@ instance Pretty Module where
             <> [ppParams params | not $ null params]
             <> map pretty defns
 
--- | Helper definitions emitted with every module, implementing Core
---   primitives that don't map directly to a Cryptol operator. @rw'resize@ is
---   Verilog assignment semantics: truncate or zero-extend to the new width.
+-- | Helper definitions emitted with every module, implementing Hyle
+--   primitives that don't map directly to a Cryptol operator. @rw'resize@
+--   truncates or zero-extends to the new width.
 helpers :: Doc an
 helpers = vsep $ map text
-      [ "// Helpers implementing ReWire Core primitive semantics."
+      [ "// Helpers implementing ReWire Hyle primitive semantics."
       , "rw'resize : {m, n} (fin m, fin n) => [n] -> [m]"
       , "rw'resize x = drop`{n} ((zero : [m]) # x)"
       , ""
@@ -65,6 +66,9 @@ helpers = vsep $ map text
       , ""
       , "rw'parity : {n} (fin n) => [n] -> Bit"
       , "rw'parity x = foldr (^) False x"
+      , ""
+      , "rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]"
+      , "rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x"
       ]
 
 -- | An uninterpreted function declared in a @parameter@ block: name, argument

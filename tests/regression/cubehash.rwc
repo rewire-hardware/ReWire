@@ -1,1307 +1,957 @@
-device top_level:
-
-inputs [("__in0",1)]
-outputs [("__out0",1024)]
-states [("__st0",1024)]
-
-$Pure.dispatch :: W1024 -> W1 -> W2050
-$Pure.dispatch $0 $1 = 2050'case {1'$1, 1024'$0} of
-    {1'@, 1024'@} -> Main.nopipeline
-
-$Pure.start :: W2050
-$Pure.start  = 2050'h200000020000000010000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000001000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-
-Main.rotaccess :: W1024 -> W5 -> W33
-Main.rotaccess $0 $1 = 33'case {1024'$0, 5'$1} of
-    {1029'@} -> $LL.Main.rotaccess3
-
-$LL.Main.swapix425 :: W1024 -> W5 -> W32
-$LL.Main.swapix425 $0 $1 = 32'case 1024'case {1024'$0
-      , 1024'case 128'case {128'case {128'case {128'h20, 128'case 5'$1 of {5'@} -> Resize} of
-              {128'@, 128'@} -> Sub
-            , 128'h1} of
-            {128'@, 128'@} -> Sub
-          , 128'h20} of
-          {128'@, 128'@} -> Mul of
-        {128'@} -> Resize} of
-      {1024'@, 1024'@} -> RShift of
-    {1024'@} -> Resize
-
-Main.rotate1 :: W1024 -> W1024
-Main.rotate1 $0 = 1024'case {32'h7, 1024'$0} of
-    {1056'@} -> $LL.Main.rotate
-
-$LL.Main.addix12 :: W1024 -> W5 -> W32
-$LL.Main.addix12 $0 $1 = 32'case 65'case {1024'$0, 5'$1} of
-      {1024'@, 5'@} -> Main.accesses of
-    {65'@} -> $LL.Main.addix9
-
-$LL.Main.swapix424 :: W1 -> W1 -> W1024 -> W1 -> W5 -> W1 -> W1 -> W32
-$LL.Main.swapix424 $0 $1 $2 $3 $4 $5 $6 = 32'case {1'$0
-    , 1'$1
-    , 1024'$2
-    , 1'$6
-    , 1'$3
-    , 5'$4
-    , 1'$5
-    , 5'case {1'h0, 1'$1, 1'$5, 1'$3, 1'h1} of
-      {5'@} -> Resize} of
-    {1'@, 1'@, 1024'@, 1'@, 1'@, 5'@, 1'@, 5'@} -> $LL.Main.swapix419
-
-$LL.Main.rotaccess12 :: W1024 -> W5 -> W33
-$LL.Main.rotaccess12 $0 $1 = 33'case {1024'$0, 5'case 5'case 5'$1 of {5'@} -> Resize of {5'@} -> $LL.Main.explode5} of
-    {1024'@, 5'@} -> $LL.Main.rotaccess1
-
-$LL.Main.swapix325 :: W1024 -> W5 -> W1 -> W1 -> W1 -> W1 -> W1 -> W32
-$LL.Main.swapix325 $0 $1 $2 $3 $4 $5 $6 = 32'case {1024'$0, 1'$4, 5'$1, 1'$2, 1'$3, 1'$5, 1'$6} of
-    {1024'@, 1'@, 5'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.swapix320
-
-$LL.Main.swapix423 :: W1024 -> W5 -> W1 -> W1 -> W1 -> W1 -> W1 -> W32
-$LL.Main.swapix423 $0 $1 $2 $3 $4 $5 $6 = 32'case {1'$2, 1024'$0, 5'$1, 1'$3, 1'$4, 1'$5, 1'$6} of
-    {1'@, 1024'@, 5'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.swapix46
-
-Main.rot :: W32 -> W1024 -> W5 -> W32
-Main.rot $0 $1 $2 = 32'case {32'$0, 1024'$1, 5'$2} of
-    {1061'@} -> $LL.Main.rot3
-
-$LL.Main.nopipeline25 :: W2050 -> W2050
-$LL.Main.nopipeline25 $0 = 2050'case 2050'$0 of
-    {2'h0, 1024'@, 1024'@} -> $LL.Main.nopipeline23
-
-$LL.Main.swapix225 :: W5 -> W5 -> W5 -> W1024 -> W1 -> W1 -> W1 -> W32
-$LL.Main.swapix225 $0 $1 $2 $3 $4 $5 $6 = 32'case {5'$0, 1024'$3, 1'$6} of
-    {5'@, 1024'@, 1'h1} -> $LL.Main.swapix219
-    _ -> 32'case {5'$1
-      , 5'$2
-      , 1024'$3
-      , 1'$4
-      , 1'$5
-      , 1'case {1'$5, 1'case 1'$4 of {1'@} -> ReWire.Prelude.not} of
-        {1'@, 1'@} -> ReWire.Prelude.&&} of
-      {5'@, 5'@, 1024'@, 1'@, 1'@, 1'@} -> $LL.Main.swapix27
-
-$LL.Main.swapix224 :: W5 -> W5 -> W1024 -> W1 -> W1 -> W1 -> W32
-$LL.Main.swapix224 $0 $1 $2 $3 $4 $5 = 32'case {5'$0, 1024'$2, 1'$5} of
-    {5'@, 1024'@, 1'h1} -> $LL.Main.swapix219
-    _ -> 32'case {5'$1, 1024'$2, 1'case {1'$4, 1'$3} of {1'@, 1'@} -> ReWire.Prelude.&&} of
-      {5'@, 1024'@, 1'@} -> $LL.Main.swapix24
-
-$LL.Main.nopipeline24 :: W1024 -> W2050
-$LL.Main.nopipeline24 $0 = 2050'case 1024'$0 of
-    {1024'@} -> $LL.Main.nopipeline14
-
-$LL.Main.swapix222 :: W1029 -> W32
-$LL.Main.swapix222 $0 = 32'case 1029'$0 of
-    {1024'@, 5'@} -> $LL.Main.swapix210
-
-$LL.Main.rot12 :: W32 -> W32 -> W32
-$LL.Main.rot12 $0 $1 = 32'case {32'$1, 32'$0} of
-    {32'@, 32'@} -> RShiftArith
-
-$LL.Main.nopipeline23 :: W1024 -> W1024 -> W2050
-$LL.Main.nopipeline23 $0 $1 = 2050'case {1024'$0, 1024'$1} of
-    {1024'@, 1024'@} -> $LL.Main.nopipeline12
-
-$LL.Main.swapix124 :: W1024 -> W5 -> W1 -> W5 -> W1 -> W1 -> W32
-$LL.Main.swapix124 $0 $1 $2 $3 $4 $5 = 32'case {1024'$0, 5'$3, 1'$5} of
-    {1024'@, 5'@, 1'h1} -> $LL.Main.swapix425
-    _ -> 32'case {1024'$0
-      , 5'$1
-      , 1'case {1'case 1'$2 of {1'@} -> ReWire.Prelude.not, 1'case 1'$4 of {1'@} -> ReWire.Prelude.not} of
-        {1'@, 1'@} -> ReWire.Prelude.&&} of
-      {1024'@, 5'@, 1'@} -> $LL.Main.swapix18
-
-$LL.Main.swapix322 :: W1024 -> W1 -> W5 -> W5 -> W1 -> W1 -> W32
-$LL.Main.swapix322 $0 $1 $2 $3 $4 $5 = 32'case {1024'$0, 5'$3, 1'$5} of
-    {1024'@, 5'@, 1'h1} -> $LL.Main.swapix425
-    _ -> 32'case {1024'$0
-      , 5'$2
-      , 1'case {1'case 1'$4 of {1'@} -> ReWire.Prelude.not, 1'$1} of
-        {1'@, 1'@} -> ReWire.Prelude.&&} of
-      {1024'@, 5'@, 1'@} -> $LL.Main.swapix18
-
-$LL.Main.swapix123 :: W1024 -> W5 -> W1 -> W1 -> W1 -> W1 -> W1 -> W32
-$LL.Main.swapix123 $0 $1 $2 $3 $4 $5 $6 = 32'case {1024'$0
-    , 5'$1
-    , 1'$2
-    , 1'$3
-    , 1'$4
-    , 1'$5
-    , 1'$6
-    , 5'case {2'h0, 1'$3, 1'$5, 1'$6} of
-      {5'@} -> Resize} of
-    {1024'@, 5'@, 1'@, 1'@, 1'@, 1'@, 1'@, 5'@} -> $LL.Main.swapix120
-
-$LL.Main.swapix421 :: W1024 -> W5 -> W32
-$LL.Main.swapix421 $0 $1 = 32'case {1024'$0
-    , 5'$1
-    , 5'case 5'case 5'$1 of
-        {5'@} -> Resize of
-      {5'@} -> $LL.Main.explode5} of
-    {1024'@, 5'@, 5'@} -> $LL.Main.swapix418
-
-$LL.Main.swapix321 :: W1024 -> W5 -> W32
-$LL.Main.swapix321 $0 $1 = 32'case {1024'$0
-    , 5'$1
-    , 5'case 5'case 5'$1 of
-        {5'@} -> Resize of
-      {5'@} -> $LL.Main.explode5} of
-    {1024'@, 5'@, 5'@} -> $LL.Main.swapix319
-
-$LL.Main.swapix420 :: W1 -> W1 -> W1024 -> W5 -> W1 -> W1 -> W1 -> W32
-$LL.Main.swapix420 $0 $1 $2 $3 $4 $5 $6 = 32'case {1'$0, 1'$1, 1024'$2, 1'$5, 5'$3, 1'$4, 1'$6} of
-    {1'@, 1'@, 1024'@, 1'@, 5'@, 1'@, 1'@} -> $LL.Main.swapix424
-
-$LL.Main.xorix18 :: W1024 -> W5 -> W5 -> W32
-$LL.Main.xorix18 $0 $1 $2 = 32'case {32'case 1024'case {1024'$0
-        , 1024'case 128'case {128'case {128'case {128'h20, 128'case 5'$2 of {5'@} -> Resize} of
-                {128'@, 128'@} -> Sub
-              , 128'h1} of
-              {128'@, 128'@} -> Sub
-            , 128'h20} of
-            {128'@, 128'@} -> Mul of
-          {128'@} -> Resize} of
-        {1024'@, 1024'@} -> RShift of
-      {1024'@} -> Resize
-    , 32'case 1024'case {1024'$0
-        , 1024'case 128'case {128'case {128'case {128'h20, 128'case 5'$1 of {5'@} -> Resize} of
-                {128'@, 128'@} -> Sub
-              , 128'h1} of
-              {128'@, 128'@} -> Sub
-            , 128'h20} of
-            {128'@, 128'@} -> Mul of
-          {128'@} -> Resize} of
-        {1024'@, 1024'@} -> RShift of
-      {1024'@} -> Resize} of
-    {32'@, 32'@} -> XOr
-
-$LL.Main.xorix17 :: W1029 -> W32
-$LL.Main.xorix17 $0 = 32'case 1029'$0 of
-    {1024'@, 5'@} -> $LL.Main.xorix6
-
-$LL.Main.swapix121 :: W1024 -> W5 -> W1 -> W1 -> W1 -> W1 -> W1 -> W32
-$LL.Main.swapix121 $0 $1 $2 $3 $4 $5 $6 = 32'case {1024'$0, 5'$1, 1'$2, 1'$4, 1'$3, 1'$5, 1'$6} of
-    {1024'@, 5'@, 1'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.swapix123
-
-$LL.Main.swapix221 :: W5 -> W1024 -> W5 -> W32
-$LL.Main.swapix221 $0 $1 $2 = 32'case {5'$0, 1024'$1, 5'$2} of
-    {5'@, 1024'@, 1'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.swapix218
-
-$LL.Main.addix9 :: W65 -> W32
-$LL.Main.addix9 $0 = 32'case 65'$0 of
-    {1'@, 32'@, 32'@} -> $LL.Main.addix1
-
-$LL.Main.swapix320 :: W1024 -> W1 -> W5 -> W1 -> W1 -> W1 -> W1 -> W32
-$LL.Main.swapix320 $0 $1 $2 $3 $4 $5 $6 = 32'case {1024'$0, 1'$1, 5'$2, 1'$5, 1'$3, 1'$4, 1'$6} of
-    {1024'@, 1'@, 5'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.swapix316
-
-$LL.Main.xorix15 :: W1024 -> W1 -> W1 -> W1 -> W1 -> W1 -> W32
-$LL.Main.xorix15 $0 $1 $2 $3 $4 $5 = 32'case {1024'$0, 1'$1, 1'$4, 1'$2, 1'$3, 1'$5} of
-    {1024'@, 1'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.xorix9
-
-$LL.Main.swapix219 :: W5 -> W1024 -> W32
-$LL.Main.swapix219 $0 $1 = 32'case 1024'case {1024'$1
-      , 1024'case 128'case {128'case {128'case {128'h20, 128'case 5'$0 of {5'@} -> Resize} of
-              {128'@, 128'@} -> Sub
-            , 128'h1} of
-            {128'@, 128'@} -> Sub
-          , 128'h20} of
-          {128'@, 128'@} -> Mul of
-        {128'@} -> Resize} of
-      {1024'@, 1024'@} -> RShift of
-    {1024'@} -> Resize
-
-ReWire.Prelude.not :: W1 -> W1
-ReWire.Prelude.not $0 = 1'case {1'$0, 1'$0} of
-    {1'@, 1'@} -> $LL.ReWire.Prelude.not2
-
-$LL.Main.swapix419 :: W1 -> W1 -> W1024 -> W1 -> W1 -> W5 -> W1 -> W5 -> W32
-$LL.Main.swapix419 $0 $1 $2 $3 $4 $5 $6 $7 = 32'case {1'$0
-    , 1024'$2
-    , 1'$3
-    , 5'$7
-    , 5'$5
-    , 5'case {1'h1, 1'$1, 1'$6, 1'$4, 1'h0} of
-      {5'@} -> Resize} of
-    {1'@, 1024'@, 1'@, 5'@, 5'@, 5'@} -> $LL.Main.swapix417
-
-$LL.Main.swapix418 :: W1024 -> W5 -> W5 -> W32
-$LL.Main.swapix418 $0 $1 $2 = 32'case {1024'$0, 5'$1, 5'$2} of
-    {1024'@, 5'@, 1'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.swapix423
-
-Main.round :: W1024 -> W1024
-Main.round $0 = 1024'case 1024'case 1024'case 1024'case 1024'case 1024'case 1024'case 1024'case 1024'case 1024'case 1024'$0 of
-                      {1024'@} -> $LL.Main.swap4 of
-                    {1024'@} -> $LL.Main.xor of
-                  {1024'@} -> $LL.Main.swap3 of
-                {1024'@} -> Main.rotate of
-              {1024'@} -> $LL.Main.add of
-            {1024'@} -> $LL.Main.swap2 of
-          {1024'@} -> $LL.Main.xor of
-        {1024'@} -> $LL.Main.swap1 of
-      {1024'@} -> Main.rotate1 of
-    {1024'@} -> $LL.Main.add
-
-$LL.Main.swapix120 :: W1024 -> W5 -> W1 -> W1 -> W1 -> W1 -> W1 -> W5 -> W32
-$LL.Main.swapix120 $0 $1 $2 $3 $4 $5 $6 $7 = 32'case {1024'$0
-    , 5'$7
-    , 5'$1
-    , 1'$2
-    , 1'$4
-    , 5'case {2'h1, 1'$3, 1'$5, 1'$6} of
-      {5'@} -> Resize} of
-    {1024'@, 5'@, 5'@, 1'@, 1'@, 5'@} -> $LL.Main.swapix11
-
-$LL.Main.swapix319 :: W1024 -> W5 -> W5 -> W32
-$LL.Main.swapix319 $0 $1 $2 = 32'case {1024'$0, 5'$1, 5'$2} of
-    {1024'@, 5'@, 1'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.swapix325
-
-$LL.Main.swapix119 :: W1024 -> W5 -> W5 -> W32
-$LL.Main.swapix119 $0 $1 $2 = 32'case {1024'$0, 5'$1, 5'$2} of
-    {1024'@, 5'@, 1'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.swapix121
-
-Main.rotate :: W1024 -> W1024
-Main.rotate $0 = 1024'case {32'hb, 1024'$0} of
-    {1056'@} -> $LL.Main.rotate
-
-$LL.Main.swapix118 :: W1024 -> W5 -> W32
-$LL.Main.swapix118 $0 $1 = 32'case {1024'$0
-    , 5'$1
-    , 5'case 5'case 5'$1 of
-        {5'@} -> Resize of
-      {5'@} -> $LL.Main.explode5} of
-    {1024'@, 5'@, 5'@} -> $LL.Main.swapix119
-
-$LL.ReWire.Prelude.not2 :: W1 -> W1 -> W1
-$LL.ReWire.Prelude.not2 $0 $1 = 1'case 1'$1 of
-    {1'h1} -> 1'h0
-    _ -> 1'h1
-
-$LL.Main.rotate2 :: W32 -> W1024 -> W1024
-$LL.Main.rotate2 $0 $1 = {32'case {32'$0, 1024'$1, 5'h0} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h1} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h2} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h3} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h4} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h5} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h6} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h7} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h8} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h9} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'ha} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'hb} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'hc} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'hd} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'he} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'hf} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h10} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h11} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h12} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h13} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h14} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h15} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h16} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h17} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h18} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h19} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h1a} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h1b} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h1c} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h1d} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h1e} of
-    {32'@, 1024'@, 5'@} -> Main.rot
-  , 32'case {32'$0, 1024'$1, 5'h1f} of
-    {32'@, 1024'@, 5'@} -> Main.rot}
-
-$LL.Main.rot10 :: W32 -> W33 -> W32
-$LL.Main.rot10 $0 $1 = 32'case {32'$0, 33'$1} of
-    {32'@, 1'@, 32'@} -> $LL.Main.rot9
-
-$LL.Main.nopipeline19 :: W1024 -> W1024 -> W1024
-$LL.Main.nopipeline19 $0 $1 = 1024'case 1024'$0 of
-    {1024'@} -> Main.round
-
-$LL.ReWire.Prelude.&&2 :: W2 -> W1
-$LL.ReWire.Prelude.&&2 $0 = 1'case 2'$0 of
-    {1'h0, 1'_} -> 1'h0
-
-$LL.Main.swapix117 :: W1024 -> W5 -> W1 -> W5 -> W1 -> W32
-$LL.Main.swapix117 $0 $1 $2 $3 $4 = 32'case {1024'$0
-    , 5'$1
-    , 1'$2
-    , 5'$3
-    , 1'$4
-    , 1'case {1'case 1'$2 of {1'@} -> ReWire.Prelude.not, 1'case 1'$4 of {1'@} -> ReWire.Prelude.not} of
-      {1'@, 1'@} -> ReWire.Prelude.&&} of
-    {1024'@, 5'@, 1'@, 5'@, 1'@, 1'@} -> $LL.Main.swapix124
-
-$LL.Main.rotaccess10 :: W1024 -> W1 -> W1 -> W1 -> W1 -> W1 -> W33
-$LL.Main.rotaccess10 $0 $1 $2 $3 $4 $5 = 33'case {1024'$0, 1'$2, 1'$1, 1'$3, 1'$4, 1'$5} of
-    {1024'@, 1'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.rotaccess5
-
-$LL.Main.swapix417 :: W1 -> W1024 -> W1 -> W5 -> W5 -> W5 -> W32
-$LL.Main.swapix417 $0 $1 $2 $3 $4 $5 = 32'case {1'$0
-    , 1024'$1
-    , 1'$2
-    , 5'$3
-    , 5'$4
-    , 5'$5
-    , 1'case {1'$0, 1'case 1'$2 of {1'@} -> ReWire.Prelude.not} of
-      {1'@, 1'@} -> ReWire.Prelude.&&} of
-    {1'@, 1024'@, 1'@, 5'@, 5'@, 5'@, 1'@} -> $LL.Main.swapix411
-
-$LL.Main.nopipeline18 :: W1024 -> W2050
-$LL.Main.nopipeline18 $0 = 2050'case 1024'$0 of
-    {1024'@} -> $LL.Main.nopipeline
-
-$LL.Main.rot9 :: W32 -> W1 -> W32 -> W32
-$LL.Main.rot9 $0 $1 $2 = 32'case {1'$1, 32'$0, 32'$2} of
-    {1'@, 32'@, 32'@} -> $LL.Main.rot6
-
-$LL.Main.rot8 :: W32 -> W1024 -> W5 -> W32
-$LL.Main.rot8 $0 $1 $2 = 32'case {32'$0, 33'case {1024'$1, 5'$2} of {1024'@, 5'@} -> Main.rotaccess} of
-    {32'@, 33'@} -> $LL.Main.rot10
-
-$LL.Main.nopipeline17 :: W1 -> W1024 -> W2050
-$LL.Main.nopipeline17 $0 $1 = 2050'case {1024'$1, 1'$0} of
-    {1024'@, 1'h1} -> $LL.Main.nopipeline24
-
-$LL.Main.swapix416 :: W1024 -> W5 -> W32
-$LL.Main.swapix416 $0 $1 = 32'case {1024'$0, 5'$1} of
-    {1024'@, 5'@} -> $LL.Main.swapix425
-
-$LL.Main.swapix115 :: W1024 -> W5 -> W5 -> W1 -> W5 -> W1 -> W1 -> W32
-$LL.Main.swapix115 $0 $1 $2 $3 $4 $5 $6 = 32'case {1024'$0, 5'$1, 1'$6} of
-    {1024'@, 5'@, 1'h1} -> $LL.Main.swapix425
-    _ -> 32'case {1024'$0
-      , 5'$2
-      , 1'$3
-      , 5'$4
-      , 1'$5
-      , 1'case {1'case 1'$3 of {1'@} -> ReWire.Prelude.not, 1'$5} of
-        {1'@, 1'@} -> ReWire.Prelude.&&} of
-      {1024'@, 5'@, 1'@, 5'@, 1'@, 1'@} -> $LL.Main.swapix111
-
-$LL.Main.nopipeline16 :: W2048 -> W2050
-$LL.Main.nopipeline16 $0 = 2050'case 2048'$0 of
-    {1024'@, 1024'@} -> $LL.Main.nopipeline13
-
-$LL.Main.add :: W1024 -> W1024
-$LL.Main.add $0 = {32'case {1024'$0, 5'h0} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h1} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h2} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h3} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h4} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h5} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h6} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h7} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h8} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h9} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'ha} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'hb} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'hc} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'hd} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'he} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'hf} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h10} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h11} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h12} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h13} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h14} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h15} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h16} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h17} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h18} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h19} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h1a} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h1b} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h1c} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h1d} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h1e} of
-    {1024'@, 5'@} -> Main.addix
-  , 32'case {1024'$0, 5'h1f} of
-    {1024'@, 5'@} -> Main.addix}
-
-$LL.Main.nopipeline15 :: W2048 -> W1024
-$LL.Main.nopipeline15 $0 = 1024'case 2048'$0 of
-    {1024'@, 1024'@} -> $LL.Main.nopipeline19
-
-$LL.Main.swapix218 :: W5 -> W1024 -> W1 -> W1 -> W1 -> W1 -> W1 -> W32
-$LL.Main.swapix218 $0 $1 $2 $3 $4 $5 $6 = 32'case {5'$0, 1024'$1, 1'$3, 1'$2, 1'$4, 1'$5, 1'$6} of
-    {5'@, 1024'@, 1'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.swapix2
-
-$LL.Main.accesses13 :: W1029 -> W65
-$LL.Main.accesses13 $0 = 65'case 1029'$0 of
-    {1024'@, 5'@} -> $LL.Main.accesses4
-
-$LL.Main.nopipeline14 :: W1024 -> W2050
-$LL.Main.nopipeline14 $0 = 2050'case 2050'case {1024'$0, 1024'$0} of
-      {2048'@} -> $LL.Main.nopipeline16 of
-    {2050'@} -> $LL.Main.nopipeline25
-
-$LL.Main.nopipeline13 :: W1024 -> W1024 -> W2050
-$LL.Main.nopipeline13 $0 $1 = {2'h0, 1024'$0, 1024'$1}
-
-$LL.Main.swapix217 :: W5 -> W1 -> W1024 -> W1 -> W1 -> W1 -> W1 -> W5 -> W32
-$LL.Main.swapix217 $0 $1 $2 $3 $4 $5 $6 $7 = 32'case {5'$7
-    , 5'$0
-    , 1024'$2
-    , 1'$4
-    , 1'$6
-    , 5'case {1'h1, 1'$3, 1'$1, 1'h0, 1'$5} of
-      {5'@} -> Resize} of
-    {5'@, 5'@, 1024'@, 1'@, 1'@, 5'@} -> $LL.Main.swapix215
-
-$LL.Main.accesses12 :: W1 -> W1 -> W1024 -> W1 -> W1 -> W1 -> W65
-$LL.Main.accesses12 $0 $1 $2 $3 $4 $5 = 65'case {1'$4, 1'$0, 1'$1, 1024'$2, 1'$3, 1'$5} of
-    {1'@, 1'@, 1'@, 1024'@, 1'@, 1'@} -> $LL.Main.accesses8
-
-$LL.Main.xorix11 :: W1024 -> W5 -> W32
-$LL.Main.xorix11 $0 $1 = 32'case {1024'$0, 5'$1} of
-    {1024'@, 1'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.xorix2
-
-$LL.Main.swapix111 :: W1024 -> W5 -> W1 -> W5 -> W1 -> W1 -> W32
-$LL.Main.swapix111 $0 $1 $2 $3 $4 $5 = 32'case {1024'$0, 5'$1, 1'$2, 5'$3, 1'$4, 1'$5} of
-    {1024'@, 5'@, 1'@, 5'@, 1'@, 1'h0} -> $LL.Main.swapix117
-
-Main.swapix4 :: W1024 -> W5 -> W32
-Main.swapix4 $0 $1 = 32'case {1024'$0, 5'$1} of
-    {1029'@} -> $LL.Main.swapix47
-
-$LL.Main.xorix10 :: W1024 -> W1 -> W5 -> W5 -> W32
-$LL.Main.xorix10 $0 $1 $2 $3 = 32'case {1024'$0, 5'$3, 1'$1, 5'$2, 1'case 1'$1 of {1'@} -> ReWire.Prelude.not} of
-    {1024'@, 5'@, 1'@, 5'@, 1'@} -> $LL.Main.xorix7
-
-$LL.Main.swapix216 :: W5 -> W1 -> W1024 -> W1 -> W1 -> W1 -> W1 -> W32
-$LL.Main.swapix216 $0 $1 $2 $3 $4 $5 $6 = 32'case {5'$0, 1'$1, 1024'$2, 1'$3, 1'$5, 1'$4, 1'$6} of
-    {5'@, 1'@, 1024'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.swapix212
-
-$LL.Main.nopipeline12 :: W1024 -> W1024 -> W2050
-$LL.Main.nopipeline12 $0 $1 = {2'h2, 1024'$0, 1024'$1}
-
-$LL.Main.swapix215 :: W5 -> W5 -> W1024 -> W1 -> W1 -> W5 -> W32
-$LL.Main.swapix215 $0 $1 $2 $3 $4 $5 = 32'case {5'$0
-    , 5'$5
-    , 5'$1
-    , 1024'$2
-    , 1'$3
-    , 1'$4
-    , 1'case {1'$4, 1'case 1'$3 of {1'@} -> ReWire.Prelude.not} of
-      {1'@, 1'@} -> ReWire.Prelude.&&} of
-    {5'@, 5'@, 5'@, 1024'@, 1'@, 1'@, 1'@} -> $LL.Main.swapix225
-
-$LL.Main.xorix9 :: W1024 -> W1 -> W1 -> W1 -> W1 -> W1 -> W32
-$LL.Main.xorix9 $0 $1 $2 $3 $4 $5 = 32'case {1024'$0
-    , 1'$1
-    , 1'$5
-    , 1'$2
-    , 1'$3
-    , 1'$4
-    , 5'case {1'h0, 1'$1, 1'$3, 1'$2, 1'$5} of
-      {5'@} -> Resize} of
-    {1024'@, 1'@, 1'@, 1'@, 1'@, 1'@, 5'@} -> $LL.Main.xorix
-
-$LL.Main.rotaccess9 :: W1024 -> W1 -> W1 -> W1 -> W1 -> W1 -> W33
-$LL.Main.rotaccess9 $0 $1 $2 $3 $4 $5 = 33'case {1024'$0
-    , 1'$2
-    , 5'case {1'h0, 1'$1, 1'$4, 1'$3, 1'$5} of
-      {5'@} -> Resize} of
-    {1024'@, 1'@, 5'@} -> $LL.Main.rotaccess8
-
-$LL.Main.swapix18 :: W1024 -> W5 -> W1 -> W32
-$LL.Main.swapix18 $0 $1 $2 = 32'case {1024'$0, 5'$1, 1'$2} of
-    {1024'@, 5'@, 1'h0} -> $LL.Main.swapix416
-
-$LL.Main.swapix214 :: W5 -> W1024 -> W32
-$LL.Main.swapix214 $0 $1 = 32'case {5'$0, 1024'$1} of
-    {5'@, 1024'@} -> $LL.Main.swapix219
-
-$LL.Main.swapix316 :: W1024 -> W1 -> W5 -> W1 -> W1 -> W1 -> W1 -> W32
-$LL.Main.swapix316 $0 $1 $2 $3 $4 $5 $6 = 32'case {1024'$0
-    , 1'$1
-    , 1'$6
-    , 5'$2
-    , 1'$3
-    , 1'$4
-    , 1'$5
-    , 5'case {1'h0, 1'$5, 1'h1, 1'$3, 1'$6} of
-      {5'@} -> Resize} of
-    {1024'@, 1'@, 1'@, 5'@, 1'@, 1'@, 1'@, 5'@} -> $LL.Main.swapix314
-
-$LL.Main.rotaccess8 :: W1024 -> W1 -> W5 -> W33
-$LL.Main.rotaccess8 $0 $1 $2 = {1'$1
-  , 32'case 1024'case {1024'$0
-      , 1024'case 128'case {128'case {128'case {128'h20, 128'case 5'$2 of {5'@} -> Resize} of
-              {128'@, 128'@} -> Sub
-            , 128'h1} of
-            {128'@, 128'@} -> Sub
-          , 128'h20} of
-          {128'@, 128'@} -> Mul of
-        {128'@} -> Resize} of
-      {1024'@, 1024'@} -> RShift of
-    {1024'@} -> Resize}
-
-$LL.Main.xorix7 :: W1024 -> W5 -> W1 -> W5 -> W1 -> W32
-$LL.Main.xorix7 $0 $1 $2 $3 $4 = 32'case {1024'$0, 5'$1, 5'$3, 1'$4} of
-    {1024'@, 5'@, 5'@, 1'h1} -> $LL.Main.xorix18
-    _ -> 32'case {1024'$0, 5'$3, 1'case 1'$2 of {1'@} -> ReWire.Prelude.not} of
-      {1024'@, 5'@, 1'@} -> $LL.Main.xorix3
-
-$LL.Main.nopipeline11 :: W1 -> W1 -> W1024 -> W2050
-$LL.Main.nopipeline11 $0 $1 $2 = 2050'case {1024'$2, 1'$1} of
-    {1024'@, 1'h0} -> $LL.Main.nopipeline18
-    _ -> 2050'case {1'$0, 1024'$2} of
-      {1'@, 1024'@} -> $LL.Main.nopipeline17
-
-$LL.Main.accesses9 :: W1024 -> W5 -> W65
-$LL.Main.accesses9 $0 $1 = 65'case {1024'$0, 5'$1} of
-    {1024'@, 1'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.accesses1
-
-$LL.Main.xorix6 :: W1024 -> W5 -> W32
-$LL.Main.xorix6 $0 $1 = 32'case {1024'$0, 5'case 5'case 5'$1 of {5'@} -> Resize of {5'@} -> $LL.Main.explode5} of
-    {1024'@, 5'@} -> $LL.Main.xorix11
-
-$LL.Main.swapix314 :: W1024 -> W1 -> W1 -> W5 -> W1 -> W1 -> W1 -> W5 -> W32
-$LL.Main.swapix314 $0 $1 $2 $3 $4 $5 $6 $7 = 32'case {1024'$0
-    , 1'$1
-    , 5'$3
-    , 5'$7
-    , 1'$5
-    , 5'case {1'h0, 1'$6, 1'h0, 1'$4, 1'$2} of
-      {5'@} -> Resize} of
-    {1024'@, 1'@, 5'@, 5'@, 1'@, 5'@} -> $LL.Main.swapix312
-
-$LL.Main.swapix312 :: W1024 -> W1 -> W5 -> W5 -> W1 -> W5 -> W32
-$LL.Main.swapix312 $0 $1 $2 $3 $4 $5 = 32'case {1024'$0
-    , 1'$1
-    , 5'$2
-    , 5'$5
-    , 5'$3
-    , 1'$4
-    , 1'case {1'case 1'$4 of {1'@} -> ReWire.Prelude.not, 1'case 1'$1 of {1'@} -> ReWire.Prelude.not} of
-      {1'@, 1'@} -> ReWire.Prelude.&&} of
-    {1024'@, 1'@, 5'@, 5'@, 5'@, 1'@, 1'@} -> $LL.Main.swapix39
-
-$LL.ReWire.Prelude.&&1 :: W1 -> W1 -> W2 -> W1
-$LL.ReWire.Prelude.&&1 $0 $1 $2 = 1'case 2'$2 of
-    {1'h1, 1'@} -> Id
-    _ -> 1'case {1'$0, 1'$1} of
-      {2'@} -> $LL.ReWire.Prelude.&&2
-
-$LL.Main.explode5 :: W5 -> W5
-$LL.Main.explode5 $0 = {1'case 128'case {128'case 5'$0 of {5'@} -> Resize, 128'h4} of
-      {128'@, 128'@} -> RShift of
-    {128'@} -> Resize
-  , 1'case 128'case {128'case 5'$0 of {5'@} -> Resize, 128'h3} of
-      {128'@, 128'@} -> RShift of
-    {128'@} -> Resize
-  , 1'case 128'case {128'case 5'$0 of {5'@} -> Resize, 128'h2} of
-      {128'@, 128'@} -> RShift of
-    {128'@} -> Resize
-  , 1'case 128'case {128'case 5'$0 of {5'@} -> Resize, 128'h1} of
-      {128'@, 128'@} -> RShift of
-    {128'@} -> Resize
-  , 1'case 128'case {128'case 5'$0 of {5'@} -> Resize, 128'h0} of
-      {128'@, 128'@} -> RShift of
-    {128'@} -> Resize}
-
-$LL.Main.swapix411 :: W1 -> W1024 -> W1 -> W5 -> W5 -> W5 -> W1 -> W32
-$LL.Main.swapix411 $0 $1 $2 $3 $4 $5 $6 = 32'case {1024'$1, 5'$3, 1'$6} of
-    {1024'@, 5'@, 1'h1} -> $LL.Main.swapix425
-    _ -> 32'case {1'$0
-      , 1024'$1
-      , 1'$2
-      , 5'$4
-      , 5'$5
-      , 1'case {1'$0, 1'case 1'$2 of {1'@} -> ReWire.Prelude.not} of
-        {1'@, 1'@} -> ReWire.Prelude.&&} of
-      {1'@, 1024'@, 1'@, 5'@, 5'@, 1'@} -> $LL.Main.swapix43
-
-$LL.Main.rot6 :: W1 -> W32 -> W32 -> W32
-$LL.Main.rot6 $0 $1 $2 = 32'case {1'$0, 32'$1, 32'$2, 1'$0} of
-    {1'@, 32'@, 32'@, 1'@} -> $LL.Main.rot2
-
-$LL.Main.addix6 :: W32 -> W1 -> W32 -> W1 -> W32
-$LL.Main.addix6 $0 $1 $2 $3 = 32'case {32'$0, 32'$2, 1'$3} of
-    {32'@, 32'@, 1'h1} -> $LL.Main.addix4
-    _ -> 32'case {32'$2, 1'$1} of
-      {32'@, 1'@} -> $LL.Main.addix5
-
-$LL.Main.rot5 :: W32 -> W32 -> W32
-$LL.Main.rot5 $0 $1 = 32'case {32'$0, 32'$1} of
-    {32'@, 32'@} -> $LL.Main.rot12
-
-$LL.Main.accesses8 :: W1 -> W1 -> W1 -> W1024 -> W1 -> W1 -> W65
-$LL.Main.accesses8 $0 $1 $2 $3 $4 $5 = 65'case {1'$0
-    , 1'$5
-    , 1'$1
-    , 1'$2
-    , 1024'$3
-    , 1'$4
-    , 5'case {1'h0, 1'$4, 1'$2, 1'$0, 1'$5} of
-      {5'@} -> Resize} of
-    {1'@, 1'@, 1'@, 1'@, 1024'@, 1'@, 5'@} -> $LL.Main.accesses5
-
-$LL.Main.rot3 :: W1061 -> W32
-$LL.Main.rot3 $0 = 32'case 1061'$0 of
-    {32'@, 1024'@, 5'@} -> $LL.Main.rot8
-
-Main.nopipeline :: W1 -> W1024 -> W2050
-Main.nopipeline $0 $1 = 2050'case {1'$0, 1'$0, 1024'$1} of
-    {1'@, 1'@, 1024'@} -> $LL.Main.nopipeline11
-
-Main.swapix2 :: W1024 -> W5 -> W32
-Main.swapix2 $0 $1 = 32'case {1024'$0, 5'$1} of
-    {1029'@} -> $LL.Main.swapix222
-
-$LL.Main.swapix212 :: W5 -> W1 -> W1024 -> W1 -> W1 -> W1 -> W1 -> W32
-$LL.Main.swapix212 $0 $1 $2 $3 $4 $5 $6 = 32'case {5'$0
-    , 1'$1
-    , 1024'$2
-    , 1'$3
-    , 1'$4
-    , 1'$6
-    , 1'$5
-    , 5'case {1'h1, 1'$3, 1'$1, 1'h1, 1'$6} of
-      {5'@} -> Resize} of
-    {5'@, 1'@, 1024'@, 1'@, 1'@, 1'@, 1'@, 5'@} -> $LL.Main.swapix217
-
-$LL.Main.swapix16 :: W1029 -> W32
-$LL.Main.swapix16 $0 = 32'case 1029'$0 of
-    {1024'@, 5'@} -> $LL.Main.swapix118
-
-$LL.Main.rotaccess5 :: W1024 -> W1 -> W1 -> W1 -> W1 -> W1 -> W33
-$LL.Main.rotaccess5 $0 $1 $2 $3 $4 $5 = 33'case {1024'$0, 1'$1, 1'$2, 1'$4, 1'$3, 1'$5} of
-    {1024'@, 1'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.rotaccess9
-
-$LL.Main.swap4 :: W1024 -> W1024
-$LL.Main.swap4 $0 = {32'case {1024'$0, 5'h0} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h1} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h2} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h3} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h4} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h5} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h6} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h7} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h8} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h9} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'ha} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'hb} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'hc} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'hd} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'he} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'hf} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h10} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h11} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h12} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h13} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h14} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h15} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h16} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h17} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h18} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h19} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h1a} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h1b} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h1c} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h1d} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h1e} of
-    {1024'@, 5'@} -> Main.swapix4
-  , 32'case {1024'$0, 5'h1f} of
-    {1024'@, 5'@} -> Main.swapix4}
-
-Main.xorix :: W1024 -> W5 -> W32
-Main.xorix $0 $1 = 32'case {1024'$0, 5'$1} of
-    {1029'@} -> $LL.Main.xorix17
-
-ReWire.Prelude.&& :: W1 -> W1 -> W1
-ReWire.Prelude.&& $0 $1 = 1'case {1'$0, 1'$1, 1'$0, 1'$1} of
-    {1'@, 1'@, 2'@} -> $LL.ReWire.Prelude.&&1
-
-$LL.Main.swapix39 :: W1024 -> W1 -> W5 -> W5 -> W5 -> W1 -> W1 -> W32
-$LL.Main.swapix39 $0 $1 $2 $3 $4 $5 $6 = 32'case {1024'$0, 5'$4, 1'$6} of
-    {1024'@, 5'@, 1'h1} -> $LL.Main.swapix425
-    _ -> 32'case {1024'$0
-      , 1'$1
-      , 5'$2
-      , 5'$3
-      , 1'$5
-      , 1'case {1'case 1'$5 of {1'@} -> ReWire.Prelude.not, 1'case 1'$1 of {1'@} -> ReWire.Prelude.not} of
-        {1'@, 1'@} -> ReWire.Prelude.&&} of
-      {1024'@, 1'@, 5'@, 5'@, 1'@, 1'@} -> $LL.Main.swapix32
-
-$LL.Main.addix5 :: W32 -> W1 -> W32
-$LL.Main.addix5 $0 $1 = 32'case {32'$0, 1'$1} of
-    {32'@, 1'h0} -> Id
-
-$LL.Main.swapix210 :: W1024 -> W5 -> W32
-$LL.Main.swapix210 $0 $1 = 32'case {5'$1
-    , 1024'$0
-    , 5'case 5'case 5'$1 of
-        {5'@} -> Resize of
-      {5'@} -> $LL.Main.explode5} of
-    {5'@, 1024'@, 5'@} -> $LL.Main.swapix221
-
-$LL.Main.swapix48 :: W1 -> W1024 -> W1 -> W5 -> W5 -> W32
-$LL.Main.swapix48 $0 $1 $2 $3 $4 = 32'case {1'$0
-    , 1024'$1
-    , 1'$2
-    , 5'$3
-    , 5'$4
-    , 1'case {1'$0, 1'$2} of
-      {1'@, 1'@} -> ReWire.Prelude.&&} of
-    {1'@, 1024'@, 1'@, 5'@, 5'@, 1'@} -> $LL.Main.swapix42
-
-$LL.Main.nopipeline6 :: W2050 -> W2050
-$LL.Main.nopipeline6 $0 = 2050'case 2050'$0 of
-    {2'h1, 1024'_, 1024'@} -> $LL.Main.nopipeline24
-
-$LL.Main.swap2 :: W1024 -> W1024
-$LL.Main.swap2 $0 = {32'case {1024'$0, 5'h0} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h1} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h2} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h3} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h4} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h5} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h6} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h7} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h8} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h9} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'ha} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'hb} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'hc} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'hd} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'he} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'hf} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h10} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h11} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h12} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h13} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h14} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h15} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h16} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h17} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h18} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h19} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h1a} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h1b} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h1c} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h1d} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h1e} of
-    {1024'@, 5'@} -> Main.swapix2
-  , 32'case {1024'$0, 5'h1f} of
-    {1024'@, 5'@} -> Main.swapix2}
-
-$LL.Main.rot2 :: W1 -> W32 -> W32 -> W1 -> W32
-$LL.Main.rot2 $0 $1 $2 $3 = 32'case {32'$2, 1'$3} of
-    {32'@, 1'h1} -> Id
-    _ -> 32'case {32'$1, 32'$2, 1'$0} of
-      {32'@, 32'@, 1'@} -> $LL.Main.rot1
-
-$LL.Main.addix4 :: W32 -> W32 -> W32
-$LL.Main.addix4 $0 $1 = 32'case {32'$1, 32'$0} of
-    {32'@, 32'@} -> Add
-
-Main.swapix3 :: W1024 -> W5 -> W32
-Main.swapix3 $0 $1 = 32'case {1024'$0, 5'$1} of
-    {1029'@} -> $LL.Main.swapix34
-
-$LL.Main.swapix47 :: W1029 -> W32
-$LL.Main.swapix47 $0 = 32'case 1029'$0 of
-    {1024'@, 5'@} -> $LL.Main.swapix421
-
-$LL.Main.swapix46 :: W1 -> W1024 -> W5 -> W1 -> W1 -> W1 -> W1 -> W32
-$LL.Main.swapix46 $0 $1 $2 $3 $4 $5 $6 = 32'case {1'$0, 1'$3, 1024'$1, 5'$2, 1'$4, 1'$5, 1'$6} of
-    {1'@, 1'@, 1024'@, 5'@, 1'@, 1'@, 1'@} -> $LL.Main.swapix420
-
-$LL.Main.rotaccess3 :: W1029 -> W33
-$LL.Main.rotaccess3 $0 = 33'case 1029'$0 of
-    {1024'@, 5'@} -> $LL.Main.rotaccess12
-
-$LL.Main.swap1 :: W1024 -> W1024
-$LL.Main.swap1 $0 = {32'case {1024'$0, 5'h0} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h1} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h2} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h3} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h4} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h5} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h6} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h7} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h8} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h9} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'ha} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'hb} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'hc} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'hd} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'he} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'hf} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h10} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h11} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h12} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h13} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h14} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h15} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h16} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h17} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h18} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h19} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h1a} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h1b} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h1c} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h1d} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h1e} of
-    {1024'@, 5'@} -> Main.swapix1
-  , 32'case {1024'$0, 5'h1f} of
-    {1024'@, 5'@} -> Main.swapix1}
-
-$LL.Main.xor :: W1024 -> W1024
-$LL.Main.xor $0 = {32'case {1024'$0, 5'h0} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h1} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h2} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h3} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h4} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h5} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h6} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h7} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h8} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h9} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'ha} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'hb} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'hc} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'hd} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'he} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'hf} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h10} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h11} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h12} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h13} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h14} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h15} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h16} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h17} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h18} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h19} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h1a} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h1b} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h1c} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h1d} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h1e} of
-    {1024'@, 5'@} -> Main.xorix
-  , 32'case {1024'$0, 5'h1f} of
-    {1024'@, 5'@} -> Main.xorix}
-
-$LL.Main.xorix3 :: W1024 -> W5 -> W1 -> W32
-$LL.Main.xorix3 $0 $1 $2 = 32'case {1024'$0, 5'$1, 1'$2} of
-    {1024'@, 5'@, 1'h0} -> $LL.Main.swapix425
-
-$LL.Main.swapix27 :: W5 -> W5 -> W1024 -> W1 -> W1 -> W1 -> W32
-$LL.Main.swapix27 $0 $1 $2 $3 $4 $5 = 32'case {5'$0, 5'$1, 1024'$2, 1'$3, 1'$4, 1'$5} of
-    {5'@, 5'@, 1024'@, 1'@, 1'@, 1'h0} -> $LL.Main.swapix26
-
-Main.swapix1 :: W1024 -> W5 -> W32
-Main.swapix1 $0 $1 = 32'case {1024'$0, 5'$1} of
-    {1029'@} -> $LL.Main.swapix16
-
-$LL.Main.swapix43 :: W1 -> W1024 -> W1 -> W5 -> W5 -> W1 -> W32
-$LL.Main.swapix43 $0 $1 $2 $3 $4 $5 = 32'case {1'$0, 1024'$1, 1'$2, 5'$3, 5'$4, 1'$5} of
-    {1'@, 1024'@, 1'@, 5'@, 5'@, 1'h0} -> $LL.Main.swapix48
-
-$LL.Main.rot1 :: W32 -> W32 -> W1 -> W32
-$LL.Main.rot1 $0 $1 $2 = 32'case {32'$0, 32'$1, 1'$2} of
-    {32'@, 32'@, 1'h0} -> $LL.Main.rot5
-
-$LL.Main.swapix26 :: W5 -> W5 -> W1024 -> W1 -> W1 -> W32
-$LL.Main.swapix26 $0 $1 $2 $3 $4 = 32'case {5'$0
-    , 5'$1
-    , 1024'$2
-    , 1'$3
-    , 1'$4
-    , 1'case {1'$4, 1'$3} of
-      {1'@, 1'@} -> ReWire.Prelude.&&} of
-    {5'@, 5'@, 1024'@, 1'@, 1'@, 1'@} -> $LL.Main.swapix224
-
-$LL.Main.accesses5 :: W1 -> W1 -> W1 -> W1 -> W1024 -> W1 -> W5 -> W65
-$LL.Main.accesses5 $0 $1 $2 $3 $4 $5 $6 = 65'case {1'$2
-    , 1024'$4
-    , 5'$6
-    , 5'case {1'h1, 1'$5, 1'$3, 1'$0, 1'$1} of
-      {5'@} -> Resize} of
-    {1'@, 1024'@, 5'@, 5'@} -> $LL.Main.accesses
-
-$LL.Main.accesses4 :: W1024 -> W5 -> W65
-$LL.Main.accesses4 $0 $1 = 65'case {1024'$0, 5'case 5'$1 of {5'@} -> Resize} of
-    {1024'@, 5'@} -> $LL.Main.accesses2
-
-$LL.Main.accesses3 :: W1 -> W1024 -> W1 -> W1 -> W1 -> W1 -> W65
-$LL.Main.accesses3 $0 $1 $2 $3 $4 $5 = 65'case {1'$0, 1'$3, 1024'$1, 1'$2, 1'$4, 1'$5} of
-    {1'@, 1'@, 1024'@, 1'@, 1'@, 1'@} -> $LL.Main.accesses12
-
-$LL.Main.accesses2 :: W1024 -> W5 -> W65
-$LL.Main.accesses2 $0 $1 = 65'case {1024'$0, 5'case 5'$1 of {5'@} -> $LL.Main.explode5} of
-    {1024'@, 5'@} -> $LL.Main.accesses9
-
-$LL.Main.swapix42 :: W1 -> W1024 -> W1 -> W5 -> W5 -> W1 -> W32
-$LL.Main.swapix42 $0 $1 $2 $3 $4 $5 = 32'case {1024'$1, 5'$4, 1'$5} of
-    {1024'@, 5'@, 1'h1} -> $LL.Main.swapix425
-    _ -> 32'case {1024'$1, 5'$3, 1'case {1'$0, 1'$2} of {1'@, 1'@} -> ReWire.Prelude.&&} of
-      {1024'@, 5'@, 1'@} -> $LL.Main.swapix18
-
-$LL.Main.rotate :: W1056 -> W1024
-$LL.Main.rotate $0 = 1024'case 1056'$0 of
-    {32'@, 1024'@} -> $LL.Main.rotate2
-
-Main.accesses :: W1024 -> W5 -> W65
-Main.accesses $0 $1 = 65'case {1024'$0, 5'$1} of
-    {1029'@} -> $LL.Main.accesses13
-
-$LL.Main.swap3 :: W1024 -> W1024
-$LL.Main.swap3 $0 = {32'case {1024'$0, 5'h0} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h1} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h2} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h3} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h4} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h5} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h6} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h7} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h8} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h9} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'ha} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'hb} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'hc} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'hd} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'he} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'hf} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h10} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h11} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h12} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h13} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h14} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h15} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h16} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h17} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h18} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h19} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h1a} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h1b} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h1c} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h1d} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h1e} of
-    {1024'@, 5'@} -> Main.swapix3
-  , 32'case {1024'$0, 5'h1f} of
-    {1024'@, 5'@} -> Main.swapix3}
-
-$LL.Main.swapix11 :: W1024 -> W5 -> W5 -> W1 -> W1 -> W5 -> W32
-$LL.Main.swapix11 $0 $1 $2 $3 $4 $5 = 32'case {1024'$0
-    , 5'$1
-    , 5'$2
-    , 1'$3
-    , 5'$5
-    , 1'$4
-    , 1'case {1'case 1'$3 of {1'@} -> ReWire.Prelude.not, 1'$4} of
-      {1'@, 1'@} -> ReWire.Prelude.&&} of
-    {1024'@, 5'@, 5'@, 1'@, 5'@, 1'@, 1'@} -> $LL.Main.swapix115
-
-$LL.Main.xorix2 :: W1024 -> W1 -> W1 -> W1 -> W1 -> W1 -> W32
-$LL.Main.xorix2 $0 $1 $2 $3 $4 $5 = 32'case {1024'$0, 1'$2, 1'$1, 1'$3, 1'$4, 1'$5} of
-    {1024'@, 1'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.xorix1
-
-$LL.Main.nopipeline2 :: W1024 -> W2050
-$LL.Main.nopipeline2 $0 = {1026'h10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-  , 1024'$0}
-
-$LL.Main.swapix24 :: W5 -> W1024 -> W1 -> W32
-$LL.Main.swapix24 $0 $1 $2 = 32'case {5'$0, 1024'$1, 1'$2} of
-    {5'@, 1024'@, 1'h0} -> $LL.Main.swapix214
-
-$LL.Main.swapix34 :: W1029 -> W32
-$LL.Main.swapix34 $0 = 32'case 1029'$0 of
-    {1024'@, 5'@} -> $LL.Main.swapix321
-
-$LL.Main.rotaccess1 :: W1024 -> W5 -> W33
-$LL.Main.rotaccess1 $0 $1 = 33'case {1024'$0, 5'$1} of
-    {1024'@, 1'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.rotaccess10
-
-$LL.Main.swapix33 :: W1024 -> W1 -> W5 -> W5 -> W1 -> W32
-$LL.Main.swapix33 $0 $1 $2 $3 $4 = 32'case {1024'$0
-    , 1'$1
-    , 5'$2
-    , 5'$3
-    , 1'$4
-    , 1'case {1'case 1'$4 of {1'@} -> ReWire.Prelude.not, 1'$1} of
-      {1'@, 1'@} -> ReWire.Prelude.&&} of
-    {1024'@, 1'@, 5'@, 5'@, 1'@, 1'@} -> $LL.Main.swapix322
-
-$LL.Main.xorix1 :: W1024 -> W1 -> W1 -> W1 -> W1 -> W1 -> W32
-$LL.Main.xorix1 $0 $1 $2 $3 $4 $5 = 32'case {1024'$0, 1'$1, 1'$3, 1'$2, 1'$4, 1'$5} of
-    {1024'@, 1'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.xorix15
-
-$LL.Main.swapix32 :: W1024 -> W1 -> W5 -> W5 -> W1 -> W1 -> W32
-$LL.Main.swapix32 $0 $1 $2 $3 $4 $5 = 32'case {1024'$0, 1'$1, 5'$2, 5'$3, 1'$4, 1'$5} of
-    {1024'@, 1'@, 5'@, 5'@, 1'@, 1'h0} -> $LL.Main.swapix33
-
-$LL.Main.accesses1 :: W1024 -> W1 -> W1 -> W1 -> W1 -> W1 -> W65
-$LL.Main.accesses1 $0 $1 $2 $3 $4 $5 = 65'case {1'$1, 1024'$0, 1'$2, 1'$3, 1'$4, 1'$5} of
-    {1'@, 1024'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.accesses3
-
-$LL.Main.addix1 :: W1 -> W32 -> W32 -> W32
-$LL.Main.addix1 $0 $1 $2 = 32'case {32'$2, 1'$0, 32'$1, 1'$0} of
-    {32'@, 1'@, 32'@, 1'@} -> $LL.Main.addix6
-
-$LL.Main.nopipeline :: W1024 -> W2050
-$LL.Main.nopipeline $0 = 2050'case 2050'case 1024'case {1024'$0, 1024'$0} of
-        {2048'@} -> $LL.Main.nopipeline15 of
-      {1024'@} -> $LL.Main.nopipeline2 of
-    {2050'@} -> $LL.Main.nopipeline6
-
-$LL.Main.accesses :: W1 -> W1024 -> W5 -> W5 -> W65
-$LL.Main.accesses $0 $1 $2 $3 = {1'$0
-  , 32'case 1024'case {1024'$1
-      , 1024'case 128'case {128'case {128'case {128'h20, 128'case 5'$2 of {5'@} -> Resize} of
-              {128'@, 128'@} -> Sub
-            , 128'h1} of
-            {128'@, 128'@} -> Sub
-          , 128'h20} of
-          {128'@, 128'@} -> Mul of
-        {128'@} -> Resize} of
-      {1024'@, 1024'@} -> RShift of
-    {1024'@} -> Resize
-  , 32'case 1024'case {1024'$1
-      , 1024'case 128'case {128'case {128'case {128'h20, 128'case 5'$3 of {5'@} -> Resize} of
-              {128'@, 128'@} -> Sub
-            , 128'h1} of
-            {128'@, 128'@} -> Sub
-          , 128'h20} of
-          {128'@, 128'@} -> Mul of
-        {128'@} -> Resize} of
-      {1024'@, 1024'@} -> RShift of
-    {1024'@} -> Resize}
-
-$LL.Main.addix :: W1029 -> W32
-$LL.Main.addix $0 = 32'case 1029'$0 of
-    {1024'@, 5'@} -> $LL.Main.addix12
-
-Main.addix :: W1024 -> W5 -> W32
-Main.addix $0 $1 = 32'case {1024'$0, 5'$1} of
-    {1029'@} -> $LL.Main.addix
-
-$LL.Main.swapix2 :: W5 -> W1024 -> W1 -> W1 -> W1 -> W1 -> W1 -> W32
-$LL.Main.swapix2 $0 $1 $2 $3 $4 $5 $6 = 32'case {5'$0, 1'$4, 1024'$1, 1'$2, 1'$3, 1'$5, 1'$6} of
-    {5'@, 1'@, 1024'@, 1'@, 1'@, 1'@, 1'@} -> $LL.Main.swapix216
-
-$LL.Main.xorix :: W1024 -> W1 -> W1 -> W1 -> W1 -> W1 -> W5 -> W32
-$LL.Main.xorix $0 $1 $2 $3 $4 $5 $6 = 32'case {1024'$0
-    , 1'$5
-    , 5'$6
-    , 5'case {1'h1, 1'$1, 1'$4, 1'$3, 1'$2} of
-      {5'@} -> Resize} of
-    {1024'@, 1'@, 5'@, 5'@} -> $LL.Main.xorix10
+$Pure.dispatch : ([1024], [1]) -> [2050]
+$Pure.dispatch $0 $1 =
+      $LL.Pure.dispatch $1 $0
+
+$LL.Main.rot13 : ([32], [1024], [5]) -> [32]
+$LL.Main.rot13 $0 $1 $2 =
+      $LL.Main.rot8 $0 (Main.rotaccess $1 $2)
+
+Main.rotaccess : ([1024], [5]) -> [33]
+Main.rotaccess $0 $1 =
+      $LL.Main.rotaccess2 ($0 # $1)
+
+$LL.Main.rot12 : ([32], [1], [32]) -> [32]
+$LL.Main.rot12 $0 $1 $2 =
+      $LL.Main.rot1 $0 $1 $2
+
+$LL.Main.rotaccess12 : ([1024], [1], [1], [1], [1], [1]) -> [33]
+$LL.Main.rotaccess12 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.rotaccess $0 $1 $2 $3 $4 $5
+
+$LL.Main.addix12 : ([32]) -> [32]
+$LL.Main.addix12 $0 =
+      $0
+
+$LL.Main.accesses18 : ([5], [1024], [1], [5]) -> [65]
+$LL.Main.accesses18 $0 $1 $2 $3 =
+      $LL.Main.accesses6 $0 $1 $2 $3
+
+$LL.Main.rotate2 : ([1056]) -> [1024]
+$LL.Main.rotate2 $0 =
+      $LL.Main.rotate1 $0[1024 +: 32] $0[0 +: 1024]
+
+$LL.Main.swap11 : ([1024]) -> [1024]
+$LL.Main.swap11 $0 =
+      Main.swapix1 $0 5'h0 # Main.swapix1 $0 5'h1 # Main.swapix1 $0 5'h2 # Main.swapix1 $0 5'h3 # Main.swapix1 $0 5'h4 # Main.swapix1 $0 5'h5 # Main.swapix1 $0 5'h6 # Main.swapix1 $0 5'h7 # Main.swapix1 $0 5'h8 # Main.swapix1 $0 5'h9 # Main.swapix1 $0 5'ha # Main.swapix1 $0 5'hb # Main.swapix1 $0 5'hc # Main.swapix1 $0 5'hd # Main.swapix1 $0 5'he # Main.swapix1 $0 5'hf # Main.swapix1 $0 5'h10 # Main.swapix1 $0 5'h11 # Main.swapix1 $0 5'h12 # Main.swapix1 $0 5'h13 # Main.swapix1 $0 5'h14 # Main.swapix1 $0 5'h15 # Main.swapix1 $0 5'h16 # Main.swapix1 $0 5'h17 # Main.swapix1 $0 5'h18 # Main.swapix1 $0 5'h19 # Main.swapix1 $0 5'h1a # Main.swapix1 $0 5'h1b # Main.swapix1 $0 5'h1c # Main.swapix1 $0 5'h1d # Main.swapix1 $0 5'h1e # Main.swapix1 $0 5'h1f
+
+$LL.Main.swap41 : ([1024]) -> [1024]
+$LL.Main.swap41 $0 =
+      Main.swapix4 $0 5'h0 # Main.swapix4 $0 5'h1 # Main.swapix4 $0 5'h2 # Main.swapix4 $0 5'h3 # Main.swapix4 $0 5'h4 # Main.swapix4 $0 5'h5 # Main.swapix4 $0 5'h6 # Main.swapix4 $0 5'h7 # Main.swapix4 $0 5'h8 # Main.swapix4 $0 5'h9 # Main.swapix4 $0 5'ha # Main.swapix4 $0 5'hb # Main.swapix4 $0 5'hc # Main.swapix4 $0 5'hd # Main.swapix4 $0 5'he # Main.swapix4 $0 5'hf # Main.swapix4 $0 5'h10 # Main.swapix4 $0 5'h11 # Main.swapix4 $0 5'h12 # Main.swapix4 $0 5'h13 # Main.swapix4 $0 5'h14 # Main.swapix4 $0 5'h15 # Main.swapix4 $0 5'h16 # Main.swapix4 $0 5'h17 # Main.swapix4 $0 5'h18 # Main.swapix4 $0 5'h19 # Main.swapix4 $0 5'h1a # Main.swapix4 $0 5'h1b # Main.swapix4 $0 5'h1c # Main.swapix4 $0 5'h1d # Main.swapix4 $0 5'h1e # Main.swapix4 $0 5'h1f
+
+$LL.Main.nopipeline27 : ([1024]) -> [2050]
+$LL.Main.nopipeline27 $0 =
+      $LL.Main.nopipeline2 ($LL.Main.nopipeline16 ($LL.Main.nopipeline26 ($0 # $0)))
+
+$LL.Main.rotaccess11 : ([1024], [5]) -> [33]
+$LL.Main.rotaccess11 $0 $1 =
+      $LL.Main.rotaccess5 $0 (Main.explode5 $1)
+
+$LL.Main.addix11 : ([1029]) -> [32]
+$LL.Main.addix11 $0 =
+      $LL.Main.addix10 $0[5 +: 1024] $0[0 +: 5]
+
+$LL.Main.swapix325 : ([1024], [1], [1], [5], [1], [1], [1], [5]) -> [32]
+$LL.Main.swapix325 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.swapix320 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.nopipeline26 : ([2048]) -> [1024]
+$LL.Main.nopipeline26 $0 =
+      $LL.Main.nopipeline23 $0[1024 +: 1024] $0[0 +: 1024]
+
+$LL.Main.addix10 : ([1024], [5]) -> [32]
+$LL.Main.addix10 $0 $1 =
+      $LL.Main.addix4 $0 $1
+
+$LL.Main.swapix225 : ([1024], [5]) -> [32]
+$LL.Main.swapix225 $0 $1 =
+      trunc 32 (lshr $0 (mul (sub (sub 128'h20 (zext 128 $1)) 128'h1) 128'h20))
+
+$LL.Main.rotaccess10 : ([1024], [1], [1], [1], [1], [1]) -> [33]
+$LL.Main.rotaccess10 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.rotaccess12 $0 $1 $2 $3 $4 $5
+
+$LL.Main.xorix19 : ([1024], [1], [5], [5]) -> [32]
+$LL.Main.xorix19 $0 $1 $2 $3 =
+      $LL.Main.xorix12 $0 $1 $3 $2 (ReWire.Prelude.not $1)
+
+$LL.Main.rotaccess9 : ([1024], [1], [1], [1], [1], [1]) -> [33]
+$LL.Main.rotaccess9 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.rotaccess8 $0 $2 (1'h0 # $3 # $1 # $4 # $5)
+
+$LL.Main.nopipeline25 : ([1024], [1024]) -> [2050]
+$LL.Main.nopipeline25 $0 $1 =
+      $LL.Main.nopipeline24 $0 $1
+
+$LL.Main.nopipeline24 : ([1024], [1024]) -> [2050]
+$LL.Main.nopipeline24 $0 $1 =
+      2'h2 # $0 # $1
+
+$LL.Main.swapix324 : ([1024], [1], [1], [5], [1], [1], [1]) -> [32]
+$LL.Main.swapix324 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix318 $0 $1 $2 $3 $4 $5 $6
+
+$LL.Main.accesses17 : ([1029]) -> [65]
+$LL.Main.accesses17 $0 =
+      $LL.Main.accesses1 $0[5 +: 1024] $0[0 +: 5]
+
+Main.rot : ([32], [1024], [5]) -> [32]
+Main.rot $0 $1 $2 =
+      $LL.Main.rot11 ($0 # $1 # $2)
+
+$LL.Main.accesses16 : ([1024], [5]) -> [65]
+$LL.Main.accesses16 $0 $1 =
+      $LL.Main.accesses5 $0 $1
+
+$LL.Main.swap31 : ([1024]) -> [1024]
+$LL.Main.swap31 $0 =
+      Main.swapix3 $0 5'h0 # Main.swapix3 $0 5'h1 # Main.swapix3 $0 5'h2 # Main.swapix3 $0 5'h3 # Main.swapix3 $0 5'h4 # Main.swapix3 $0 5'h5 # Main.swapix3 $0 5'h6 # Main.swapix3 $0 5'h7 # Main.swapix3 $0 5'h8 # Main.swapix3 $0 5'h9 # Main.swapix3 $0 5'ha # Main.swapix3 $0 5'hb # Main.swapix3 $0 5'hc # Main.swapix3 $0 5'hd # Main.swapix3 $0 5'he # Main.swapix3 $0 5'hf # Main.swapix3 $0 5'h10 # Main.swapix3 $0 5'h11 # Main.swapix3 $0 5'h12 # Main.swapix3 $0 5'h13 # Main.swapix3 $0 5'h14 # Main.swapix3 $0 5'h15 # Main.swapix3 $0 5'h16 # Main.swapix3 $0 5'h17 # Main.swapix3 $0 5'h18 # Main.swapix3 $0 5'h19 # Main.swapix3 $0 5'h1a # Main.swapix3 $0 5'h1b # Main.swapix3 $0 5'h1c # Main.swapix3 $0 5'h1d # Main.swapix3 $0 5'h1e # Main.swapix3 $0 5'h1f
+
+$LL.Main.nopipeline23 : ([1024], [1024]) -> [1024]
+$LL.Main.nopipeline23 $0 $1 =
+      $LL.Main.nopipeline20 $0 $1
+
+$LL.Main.nopipeline22 : ([1024]) -> [2050]
+$LL.Main.nopipeline22 $0 =
+      $LL.Main.nopipeline21 ($LL.Main.nopipeline17 ($0 # $0))
+
+$LL.Main.swapix323 : ([1024], [1], [5], [5], [1], [5], [1]) -> [32]
+$LL.Main.swapix323 $0 $1 $2 $3 $4 $5 $6 =
+      if eq $6 1'h1 then $LL.Main.swapix225 $0 $5
+            else $LL.Main.swapix37 $0 $1 $2 $3 $4 ("ReWire.Prelude.&&" (ReWire.Prelude.not $4) (ReWire.Prelude.not $1))
+
+$LL.Main.rot11 : ([1061]) -> [32]
+$LL.Main.rot11 $0 =
+      $LL.Main.rot2 $0[1029 +: 32] $0[5 +: 1024] $0[0 +: 5]
+
+$LL.Main.swapix224 : ([1], [1], [1], [1], [1024], [5], [1]) -> [32]
+$LL.Main.swapix224 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix216 $6 $0 $1 $2 $3 $4 $5 (1'h1 # $1 # $3 # 1'h1 # $6)
+
+$LL.Main.swapix223 : ([1], [1], [5], [1024], [5]) -> [32]
+$LL.Main.swapix223 $0 $1 $2 $3 $4 =
+      $LL.Main.swapix23 $0 $1 $2 $3 $4 ("ReWire.Prelude.&&" $0 $1)
+
+Main.swap2 : ([1024]) -> [1024]
+Main.swap2 $0 =
+      $LL.Main.swap2 $0
+
+$LL.Main.swapix125 : ([1], [1], [5], [5], [1024], [1]) -> [32]
+$LL.Main.swapix125 $0 $1 $2 $3 $4 $5 =
+      if eq $5 1'h1 then $LL.Main.swapix121 $3 $4
+            else $LL.Main.swapix120 $2 $4 ("ReWire.Prelude.&&" (ReWire.Prelude.not $1) (ReWire.Prelude.not $0))
+
+$LL.Main.swapix322 : ([1024], [5]) -> [32]
+$LL.Main.swapix322 $0 $1 =
+      $LL.Main.swapix225 $0 $1
+
+$LL.Main.accesses15 : ([1024], [1], [1], [1], [1], [1]) -> [65]
+$LL.Main.accesses15 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.accesses13 $2 $0 $1 $3 $4 $5
+
+$LL.Main.swap3 : ([1024]) -> [1024]
+$LL.Main.swap3 $0 =
+      $LL.Main.swap31 $0
+
+$LL.Main.nopipeline21 : ([2050]) -> [2050]
+$LL.Main.nopipeline21 $0 =
+      $LL.Main.nopipeline25 $0[1024 +: 1024] $0[0 +: 1024]
+
+$LL.Main.swapix425 : ([1], [1024], [1], [5], [1], [1], [1]) -> [32]
+$LL.Main.swapix425 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix419 $0 $5 $1 $2 $3 $4 $6
+
+$LL.Main.swapix321 : ([1024], [5]) -> [32]
+$LL.Main.swapix321 $0 $1 =
+      $LL.Main.swapix317 $0 $1
+
+$LL.Main.nopipeline20 : ([1024], [1024]) -> [1024]
+$LL.Main.nopipeline20 $0 $1 =
+      Main.round $0
+
+$LL.Main.xor1 : ([1024]) -> [1024]
+$LL.Main.xor1 $0 =
+      Main.xorix $0 5'h0 # Main.xorix $0 5'h1 # Main.xorix $0 5'h2 # Main.xorix $0 5'h3 # Main.xorix $0 5'h4 # Main.xorix $0 5'h5 # Main.xorix $0 5'h6 # Main.xorix $0 5'h7 # Main.xorix $0 5'h8 # Main.xorix $0 5'h9 # Main.xorix $0 5'ha # Main.xorix $0 5'hb # Main.xorix $0 5'hc # Main.xorix $0 5'hd # Main.xorix $0 5'he # Main.xorix $0 5'hf # Main.xorix $0 5'h10 # Main.xorix $0 5'h11 # Main.xorix $0 5'h12 # Main.xorix $0 5'h13 # Main.xorix $0 5'h14 # Main.xorix $0 5'h15 # Main.xorix $0 5'h16 # Main.xorix $0 5'h17 # Main.xorix $0 5'h18 # Main.xorix $0 5'h19 # Main.xorix $0 5'h1a # Main.xorix $0 5'h1b # Main.xorix $0 5'h1c # Main.xorix $0 5'h1d # Main.xorix $0 5'h1e # Main.xorix $0 5'h1f
+
+$LL.Main.swapix424 : ([1], [1024], [5], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix424 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix48 $0 $1 $3 $2 $4 $5 $6
+
+$LL.Main.swapix320 : ([1024], [1], [1], [5], [1], [1], [1], [5]) -> [32]
+$LL.Main.swapix320 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.swapix35 $0 $1 $3 $4 $7 (1'h0 # $2 # 1'h0 # $6 # $5)
+
+$LL.Main.swapix124 : ([5], [1024], [1], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix124 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix117 $2 $0 $1 $3 $4 $5 $6
+
+$LL.Main.xorix18 : ([1024], [1], [1], [1], [1], [1]) -> [32]
+$LL.Main.xorix18 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.xorix11 $0 $1 $4 $2 $3 $5
+
+$LL.Main.swapix222 : ([1024], [5], [1]) -> [32]
+$LL.Main.swapix222 $0 $1 $2 =
+      $LL.Main.swapix215 $0 $1
+
+$LL.Main.xorix17 : ([1024], [1], [1], [1], [1], [1], [5]) -> [32]
+$LL.Main.xorix17 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.xorix13 $0 $1 $2 $3 $4 $5 $6
+
+$LL.Main.xorix16 : ([1024], [1], [1], [1], [1], [1], [5]) -> [32]
+$LL.Main.xorix16 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.xorix9 $0 $2 $6 (1'h1 # $4 # $5 # $3 # $1)
+
+ReWire.Prelude.not : ([1]) -> [1]
+ReWire.Prelude.not $0 =
+      $LL.ReWire.Prelude.not $0 $0
+
+$LL.Main.nopipeline19 : ([1024], [1024]) -> [2050]
+$LL.Main.nopipeline19 $0 $1 =
+      2'h0 # $0 # $1
+
+Main.round : ([1024]) -> [1024]
+Main.round $0 =
+      Main.add (Main.rotate1 (Main.swap1 (Main.xor (Main.swap2 (Main.add (Main.rotate (Main.swap3 (Main.xor (Main.swap4 $0)))))))))
+
+$LL.Main.xor : ([1024]) -> [1024]
+$LL.Main.xor $0 =
+      $LL.Main.xor1 $0
+
+$LL.Main.swapix422 : ([5], [1], [1024], [5], [1], [1]) -> [32]
+$LL.Main.swapix422 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.swapix413 $0 $1 $2 $3 $4
+
+$LL.Main.swapix221 : ([1], [1], [5], [1024], [5], [1]) -> [32]
+$LL.Main.swapix221 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.swapix223 $0 $1 $2 $3 $4
+
+$LL.Main.rot10 : ([32], [32]) -> [32]
+$LL.Main.rot10 $0 $1 =
+      ashr $1 $0
+
+$LL.Main.swapix220 : ([1024], [5], [1], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix220 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix210 $2 $0 $1 $3 $4 $5 $6
+
+$LL.Main.swapix219 : ([1], [1], [1], [1], [1], [1024], [5], [5]) -> [32]
+$LL.Main.swapix219 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.swapix212 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.addix9 : ([32], [32], [1], [1]) -> [32]
+$LL.Main.addix9 $0 $1 $2 $3 =
+      if eq $3 1'h1 then $LL.Main.addix3 $0 $1
+            else $LL.Main.addix8 $0 $2
+
+$LL.Main.swapix319 : ([1024], [5], [1], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix319 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix33 $0 $3 $1 $2 $4 $5 $6
+
+$LL.Main.swapix122 : ([1024], [5]) -> [32]
+$LL.Main.swapix122 $0 $1 =
+      $LL.Main.swapix116 $0 $1
+
+$LL.Main.swapix318 : ([1024], [1], [1], [5], [1], [1], [1]) -> [32]
+$LL.Main.swapix318 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix38 $0 $1 $2 $3 $4 $6 $5 (1'h0 # $2 # 1'h1 # $5 # $6)
+
+$LL.Main.swapix121 : ([5], [1024]) -> [32]
+$LL.Main.swapix121 $0 $1 =
+      trunc 32 (lshr $1 (mul (sub (sub 128'h20 (zext 128 $0)) 128'h1) 128'h20))
+
+$LL.Main.swapix421 : ([1029]) -> [32]
+$LL.Main.swapix421 $0 =
+      $LL.Main.swapix42 $0[5 +: 1024] $0[0 +: 5]
+
+Main.swap1 : ([1024]) -> [1024]
+Main.swap1 $0 =
+      $LL.Main.swap1 $0
+
+$LL.Main.swapix120 : ([5], [1024], [1]) -> [32]
+$LL.Main.swapix120 $0 $1 $2 =
+      $LL.Main.swapix16 $0 $1
+
+$LL.Main.accesses14 : ([1024], [5]) -> [65]
+$LL.Main.accesses14 $0 $1 =
+      $LL.Main.accesses9 $0 (Main.explode5 $1)
+
+$LL.Main.nopipeline18 : ([1024]) -> [2050]
+$LL.Main.nopipeline18 $1 =
+      $LL.Main.nopipeline21 ($LL.Main.nopipeline17 ($1 # $1))
+
+$LL.Main.swapix217 : ([1], [1], [1024], [5], [1], [1], [1]) -> [32]
+$LL.Main.swapix217 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix28 $0 $1 $4 $2 $3 $5 $6
+
+$LL.Main.swapix119 : ([1], [1], [5], [5], [1024], [5], [1]) -> [32]
+$LL.Main.swapix119 $0 $1 $2 $3 $4 $5 $6 =
+      if eq $6 1'h1 then $LL.Main.swapix225 $4 $5
+            else $LL.Main.swapix110 $0 $1 $2 $3 $4 ("ReWire.Prelude.&&" (ReWire.Prelude.not $1) $0)
+
+$LL.Main.swapix420 : ([1024], [5], [5]) -> [32]
+$LL.Main.swapix420 $0 $1 $2 =
+      $LL.Main.swapix417 $0 $1 $2[4 +: 1] $2[3 +: 1] $2[2 +: 1] $2[1 +: 1] $2[0 +: 1]
+
+$LL.Main.nopipeline17 : ([2048]) -> [2050]
+$LL.Main.nopipeline17 $0 =
+      $LL.Main.nopipeline15 $0[1024 +: 1024] $0[0 +: 1024]
+
+$LL.Main.rot9 : ([32], [32]) -> [32]
+$LL.Main.rot9 $0 $1 =
+      $LL.Main.rot10 $0 $1
+
+$LL.Main.explode51 : ([5]) -> [5]
+$LL.Main.explode51 $0 =
+      trunc 1 (lshr $0 128'h4) # trunc 1 (lshr $0 128'h3) # trunc 1 (lshr $0 128'h2) # trunc 1 (lshr $0 128'h1) # trunc 1 (lshr $0 128'h0)
+
+$LL.Main.swapix118 : ([1], [1], [5], [1], [1], [1024], [1], [5]) -> [32]
+$LL.Main.swapix118 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.swapix11 $0 $1 $2 $5 $7 (2'h1 # $6 # $3 # $4)
+
+$LL.Main.swapix419 : ([1], [1], [1024], [1], [5], [1], [1]) -> [32]
+$LL.Main.swapix419 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix47 $0 $1 $2 $3 $4 $5 $6 (1'h0 # $3 # $5 # $1 # 1'h1)
+
+$LL.Main.addix8 : ([32], [1]) -> [32]
+$LL.Main.addix8 $0 $1 =
+      $LL.Main.addix2 $0
+
+$LL.Main.swapix216 : ([1], [1], [1], [1], [1], [1024], [5], [5]) -> [32]
+$LL.Main.swapix216 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.swapix219 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.accesses13 : ([1], [1024], [1], [1], [1], [1]) -> [65]
+$LL.Main.accesses13 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.accesses7 $0 $3 $1 $2 $4 $5
+
+$LL.Main.swapix417 : ([1024], [5], [1], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix417 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix415 $0 $1 $2 $3 $4 $5 $6
+
+$LL.Main.swapix317 : ([1024], [5]) -> [32]
+$LL.Main.swapix317 $0 $1 =
+      $LL.Main.swapix314 $0 $1 (Main.explode5 $1)
+
+$LL.Main.rot8 : ([32], [33]) -> [32]
+$LL.Main.rot8 $0 $1 =
+      $LL.Main.rot12 $0 $1[32 +: 1] $1[0 +: 32]
+
+$LL.Main.swapix117 : ([1], [5], [1024], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix117 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix14 $3 $0 $1 $2 $4 $5 $6
+
+$LL.Main.rotaccess8 : ([1024], [1], [5]) -> [33]
+$LL.Main.rotaccess8 $0 $1 $2 =
+      $LL.Main.rotaccess1 $0 $1 $2
+
+$LL.Main.swapix116 : ([1024], [5]) -> [32]
+$LL.Main.swapix116 $0 $1 =
+      $LL.Main.swapix19 $1 $0 (Main.explode5 $1)
+
+Main.add : ([1024]) -> [1024]
+Main.add $0 =
+      $LL.Main.add $0
+
+$LL.Main.swapix114 : ([5], [1024]) -> [32]
+$LL.Main.swapix114 $0 $1 =
+      $LL.Main.swapix121 $0 $1
+
+$LL.Main.xorix15 : ([1024], [1], [1], [1], [1], [1]) -> [32]
+$LL.Main.xorix15 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.xorix7 $0 $1 $2 $3 $4 $5
+
+$LL.Main.swapix215 : ([1024], [5]) -> [32]
+$LL.Main.swapix215 $0 $1 =
+      $LL.Main.swapix322 $0 $1
+
+$LL.Main.accesses12 : ([1], [1], [1], [1], [1024], [1], [5]) -> [65]
+$LL.Main.accesses12 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.accesses18 $6 $4 $5 (1'h1 # $0 # $1 # $3 # $2)
+
+$LL.Main.xorix14 : ([1024], [5]) -> [32]
+$LL.Main.xorix14 $0 $1 =
+      $LL.Main.xorix5 $0 (Main.explode5 $1)
+
+$LL.Main.nopipeline16 : ([1024]) -> [2050]
+$LL.Main.nopipeline16 $0 =
+      $LL.Main.nopipeline13 $0
+
+$LL.Main.swapix416 : ([5], [5], [1], [1024], [5], [1], [1]) -> [32]
+$LL.Main.swapix416 $0 $1 $2 $3 $4 $5 $6 =
+      if eq $6 1'h1 then $LL.Main.swapix121 $1 $3
+            else $LL.Main.swapix422 $0 $2 $3 $4 $5 ("ReWire.Prelude.&&" $2 (ReWire.Prelude.not $5))
+
+Main.rotate1 : ([1024]) -> [1024]
+Main.rotate1 $0 =
+      $LL.Main.rotate2 (32'h7 # $0)
+
+$LL.Main.accesses11 : ([1024], [1], [1], [1], [1], [1]) -> [65]
+$LL.Main.accesses11 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.accesses15 $0 $1 $2 $3 $4 $5
+
+$LL.Main.swapix415 : ([1024], [5], [1], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix415 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix424 $2 $0 $1 $3 $4 $5 $6
+
+$LL.Main.nopipeline15 : ([1024], [1024]) -> [2050]
+$LL.Main.nopipeline15 $0 $1 =
+      $LL.Main.nopipeline19 $0 $1
+
+$LL.Main.swapix214 : ([1], [1], [1024], [5], [5], [5]) -> [32]
+$LL.Main.swapix214 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.swapix29 $0 $1 $5 $2 $3 $4 ("ReWire.Prelude.&&" $0 (ReWire.Prelude.not $1))
+
+$LL.Main.swapix213 : ([1029]) -> [32]
+$LL.Main.swapix213 $0 =
+      $LL.Main.swapix25 $0[5 +: 1024] $0[0 +: 5]
+
+Main.swap3 : ([1024]) -> [1024]
+Main.swap3 $0 =
+      $LL.Main.swap3 $0
+
+$LL.Main.swapix212 : ([1], [1], [1], [1], [1], [1024], [5], [5]) -> [32]
+$LL.Main.swapix212 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.swapix24 $1 $3 $5 $6 $7 (1'h1 # $2 # $4 # 1'h0 # $0)
+
+Main.swapix4 : ([1024], [5]) -> [32]
+Main.swapix4 $0 $1 =
+      $LL.Main.swapix421 ($0 # $1)
+
+$LL.Main.rotaccess7 : ([1024], [1], [5]) -> [33]
+$LL.Main.rotaccess7 $0 $1 $2 =
+      $1 # trunc 32 (lshr $0 (mul (sub (sub 128'h20 (zext 128 $2)) 128'h1) 128'h20))
+
+$LL.Main.accesses10 : ([1024], [1], [1], [1], [1], [1]) -> [65]
+$LL.Main.accesses10 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.accesses11 $0 $1 $2 $3 $4 $5
+
+$LL.Main.nopipeline13 : ([1024]) -> [2050]
+$LL.Main.nopipeline13 $1 =
+      $LL.Main.nopipeline $1
+
+$LL.Main.nopipeline12 : ([1024]) -> [2050]
+$LL.Main.nopipeline12 $0 =
+      $LL.Main.nopipeline27 $0
+
+$LL.ReWire.Prelude.not2 : ([1]) -> [1]
+$LL.ReWire.Prelude.not2 $0 =
+      1'h1
+
+$LL.Main.accesses9 : ([1024], [5]) -> [65]
+$LL.Main.accesses9 $0 $1 =
+      $LL.Main.accesses10 $0 $1[4 +: 1] $1[3 +: 1] $1[2 +: 1] $1[1 +: 1] $1[0 +: 1]
+
+$LL.Main.accesses8 : ([1024], [5]) -> [65]
+$LL.Main.accesses8 $0 $1 =
+      $LL.Main.accesses16 $0 $1
+
+$LL.Main.xorix13 : ([1024], [1], [1], [1], [1], [1], [5]) -> [32]
+$LL.Main.xorix13 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.xorix16 $0 $1 $2 $3 $4 $5 $6
+
+$LL.Main.addix7 : ([65]) -> [32]
+$LL.Main.addix7 $0 =
+      $LL.Main.addix6 $0[64 +: 1] $0[32 +: 32] $0[0 +: 32]
+
+$LL.Main.explode5 : ([5]) -> [5]
+$LL.Main.explode5 $0 =
+      $LL.Main.explode51 $0
+
+$LL.Main.rotaccess6 : ([1024], [1], [1], [1], [1], [1]) -> [33]
+$LL.Main.rotaccess6 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.rotaccess9 $0 $1 $2 $3 $4 $5
+
+$LL.Main.swapix414 : ([5], [1], [1024], [5], [1], [5]) -> [32]
+$LL.Main.swapix414 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.swapix46 $0 $1 $2 $3 $4 $5
+
+$LL.Main.swapix113 : ([1029]) -> [32]
+$LL.Main.swapix113 $0 =
+      $LL.Main.swapix122 $0[5 +: 1024] $0[0 +: 5]
+
+$LL.Main.rot7 : ([32], [1024], [5]) -> [32]
+$LL.Main.rot7 $0 $1 $2 =
+      $LL.Main.rot13 $0 $1 $2
+
+$LL.Main.xorix12 : ([1024], [1], [5], [5], [1]) -> [32]
+$LL.Main.xorix12 $0 $1 $2 $3 $4 =
+      if eq $4 1'h1 then $LL.Main.xorix1 $0 $2 $3
+            else $LL.Main.xorix4 $0 $3 (ReWire.Prelude.not $1)
+
+$LL.Main.swapix413 : ([5], [1], [1024], [5], [1]) -> [32]
+$LL.Main.swapix413 $0 $1 $2 $3 $4 =
+      $LL.Main.swapix412 $0 $1 $2 $3 $4 ("ReWire.Prelude.&&" $1 $4)
+
+$LL.Main.swapix211 : ([1024], [5], [1], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix211 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix220 $0 $1 $2 $3 $4 $5 $6
+
+$LL.Main.addix6 : ([1], [32], [32]) -> [32]
+$LL.Main.addix6 $0 $1 $2 =
+      $LL.Main.addix $0 $1 $2
+
+$LL.Main.xorix11 : ([1024], [1], [1], [1], [1], [1]) -> [32]
+$LL.Main.xorix11 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.xorix17 $0 $5 $1 $2 $3 $4 (1'h0 # $3 # $4 # $2 # $5)
+
+$LL.Pure.dispatch : ([1], [1024]) -> [2050]
+$LL.Pure.dispatch $0 $1 =
+      Main.nopipeline $0 $1
+
+$LL.Main.swapix412 : ([5], [1], [1024], [5], [1], [1]) -> [32]
+$LL.Main.swapix412 $0 $1 $2 $3 $4 $5 =
+      if eq $5 1'h1 then $LL.Main.swapix121 $0 $2
+            else $LL.Main.swapix222 $2 $3 ("ReWire.Prelude.&&" $1 $4)
+
+$LL.Main.swapix314 : ([1024], [5], [5]) -> [32]
+$LL.Main.swapix314 $0 $1 $2 =
+      $LL.Main.swapix312 $0 $1 $2[4 +: 1] $2[3 +: 1] $2[2 +: 1] $2[1 +: 1] $2[0 +: 1]
+
+$LL.Main.rotaccess5 : ([1024], [5]) -> [33]
+$LL.Main.rotaccess5 $0 $1 =
+      $LL.Main.rotaccess10 $0 $1[4 +: 1] $1[3 +: 1] $1[2 +: 1] $1[1 +: 1] $1[0 +: 1]
+
+$LL.Main.xorix10 : ([1024], [1], [5], [5]) -> [32]
+$LL.Main.xorix10 $0 $1 $2 $3 =
+      $LL.Main.xorix19 $0 $1 $2 $3
+
+$LL.Main.nopipeline9 : ([1024]) -> [2050]
+$LL.Main.nopipeline9 $0 =
+      $LL.Main.nopipeline22 $0
+
+"$LL.ReWire.Prelude.&&3" : ([1]) -> [1]
+"$LL.ReWire.Prelude.&&3" $0 =
+      1'h0
+
+$LL.Main.swap21 : ([1024]) -> [1024]
+$LL.Main.swap21 $0 =
+      Main.swapix2 $0 5'h0 # Main.swapix2 $0 5'h1 # Main.swapix2 $0 5'h2 # Main.swapix2 $0 5'h3 # Main.swapix2 $0 5'h4 # Main.swapix2 $0 5'h5 # Main.swapix2 $0 5'h6 # Main.swapix2 $0 5'h7 # Main.swapix2 $0 5'h8 # Main.swapix2 $0 5'h9 # Main.swapix2 $0 5'ha # Main.swapix2 $0 5'hb # Main.swapix2 $0 5'hc # Main.swapix2 $0 5'hd # Main.swapix2 $0 5'he # Main.swapix2 $0 5'hf # Main.swapix2 $0 5'h10 # Main.swapix2 $0 5'h11 # Main.swapix2 $0 5'h12 # Main.swapix2 $0 5'h13 # Main.swapix2 $0 5'h14 # Main.swapix2 $0 5'h15 # Main.swapix2 $0 5'h16 # Main.swapix2 $0 5'h17 # Main.swapix2 $0 5'h18 # Main.swapix2 $0 5'h19 # Main.swapix2 $0 5'h1a # Main.swapix2 $0 5'h1b # Main.swapix2 $0 5'h1c # Main.swapix2 $0 5'h1d # Main.swapix2 $0 5'h1e # Main.swapix2 $0 5'h1f
+
+$LL.Main.swapix210 : ([1], [1024], [5], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix210 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix217 $0 $3 $1 $2 $4 $5 $6
+
+$LL.Main.accesses7 : ([1], [1], [1024], [1], [1], [1]) -> [65]
+$LL.Main.accesses7 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.accesses2 $0 $1 $4 $2 $3 $5
+
+$LL.Main.swapix112 : ([1], [1], [5], [1], [1], [1024], [1], [5]) -> [32]
+$LL.Main.swapix112 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.swapix118 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.swapix111 : ([1], [1], [5], [1024], [5], [5]) -> [32]
+$LL.Main.swapix111 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.swapix119 $0 $1 $2 $5 $3 $4 ("ReWire.Prelude.&&" (ReWire.Prelude.not $1) $0)
+
+$LL.Main.swapix110 : ([1], [1], [5], [5], [1024], [1]) -> [32]
+$LL.Main.swapix110 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.swapix18 $0 $1 $2 $3 $4
+
+$LL.Main.rot6 : ([32], [32], [1]) -> [32]
+$LL.Main.rot6 $0 $1 $2 =
+      $LL.Main.rot5 $0 $1
+
+$LL.Main.swap4 : ([1024]) -> [1024]
+$LL.Main.swap4 $0 =
+      $LL.Main.swap41 $0
+
+Main.nopipeline : ([1], [1024]) -> [2050]
+Main.nopipeline $0 $1 =
+      $LL.Main.nopipeline5 $0 $0 $1
+
+Main.swapix2 : ([1024], [5]) -> [32]
+Main.swapix2 $0 $1 =
+      $LL.Main.swapix213 ($0 # $1)
+
+$LL.Main.swapix29 : ([1], [1], [5], [1024], [5], [5], [1]) -> [32]
+$LL.Main.swapix29 $0 $1 $2 $3 $4 $5 $6 =
+      if eq $6 1'h1 then $LL.Main.swapix225 $3 $5
+            else $LL.Main.swapix221 $0 $1 $2 $3 $4 ("ReWire.Prelude.&&" $0 (ReWire.Prelude.not $1))
+
+"$LL.ReWire.Prelude.&&2" : ([2]) -> [1]
+"$LL.ReWire.Prelude.&&2" $0 =
+      "$LL.ReWire.Prelude.&&3" $0[0 +: 1]
+
+$LL.Main.swapix312 : ([1024], [5], [1], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix312 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix31 $0 $1 $2 $3 $4 $5 $6
+
+$LL.Main.accesses6 : ([5], [1024], [1], [5]) -> [65]
+$LL.Main.accesses6 $0 $1 $2 $3 =
+      $LL.Main.accesses3 $0 $1 $2 $3
+
+$LL.Main.swapix311 : ([1029]) -> [32]
+$LL.Main.swapix311 $0 =
+      $LL.Main.swapix321 $0[5 +: 1024] $0[0 +: 5]
+
+$LL.Main.swapix19 : ([5], [1024], [5]) -> [32]
+$LL.Main.swapix19 $0 $1 $2 =
+      $LL.Main.swapix17 $0 $1 $2[4 +: 1] $2[3 +: 1] $2[2 +: 1] $2[1 +: 1] $2[0 +: 1]
+
+$LL.Main.addix5 : ([32], [1], [32]) -> [32]
+$LL.Main.addix5 $0 $1 $2 =
+      $LL.Main.addix9 $0 $2 $1 $1
+
+$LL.Main.xorix9 : ([1024], [1], [5], [5]) -> [32]
+$LL.Main.xorix9 $0 $1 $2 $3 =
+      $LL.Main.xorix10 $0 $1 $2 $3
+
+$LL.Main.nopipeline7 : ([1024]) -> [2050]
+$LL.Main.nopipeline7 $1 =
+      $LL.Main.nopipeline18 $1
+
+Main.xor : ([1024]) -> [1024]
+Main.xor $0 =
+      $LL.Main.xor $0
+
+$LL.Main.addix4 : ([1024], [5]) -> [32]
+$LL.Main.addix4 $0 $1 =
+      $LL.Main.addix7 (Main.accesses $0 $1)
+
+$LL.Main.addix3 : ([32], [32]) -> [32]
+$LL.Main.addix3 $0 $1 =
+      add $0 $1
+
+$LL.Main.accesses5 : ([1024], [5]) -> [65]
+$LL.Main.accesses5 $0 $1 =
+      $LL.Main.accesses14 $0 $1
+
+$LL.Main.rotaccess4 : ([1024], [5]) -> [33]
+$LL.Main.rotaccess4 $0 $1 =
+      $LL.Main.rotaccess11 $0 $1
+
+Main.xorix : ([1024], [5]) -> [32]
+Main.xorix $0 $1 =
+      $LL.Main.xorix3 ($0 # $1)
+
+"ReWire.Prelude.&&" : ([1], [1]) -> [1]
+"ReWire.Prelude.&&" $0 $1 =
+      "$LL.ReWire.Prelude.&&1" $0 $1 ($0 # $1)
+
+$LL.Main.xorix7 : ([1024], [1], [1], [1], [1], [1]) -> [32]
+$LL.Main.xorix7 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.xorix6 $0 $1 $2 $3 $4 $5
+
+$LL.Main.rotate1 : ([32], [1024]) -> [1024]
+$LL.Main.rotate1 $0 $1 =
+      $LL.Main.rotate $0 $1
+
+$LL.Main.swapix18 : ([1], [1], [5], [5], [1024]) -> [32]
+$LL.Main.swapix18 $0 $1 $2 $3 $4 =
+      $LL.Main.swapix125 $0 $1 $2 $3 $4 ("ReWire.Prelude.&&" (ReWire.Prelude.not $1) (ReWire.Prelude.not $0))
+
+$LL.Main.swapix310 : ([1024], [1], [5], [5], [1]) -> [32]
+$LL.Main.swapix310 $0 $1 $2 $3 $4 =
+      $LL.Main.swapix39 $0 $1 $2 $3 $4 ("ReWire.Prelude.&&" (ReWire.Prelude.not $4) $1)
+
+$LL.Main.swapix28 : ([1], [1], [1], [1024], [5], [1], [1]) -> [32]
+$LL.Main.swapix28 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix224 $0 $1 $5 $2 $3 $4 $6
+
+$LL.Main.swapix39 : ([1024], [1], [5], [5], [1], [1]) -> [32]
+$LL.Main.swapix39 $0 $1 $2 $3 $4 $5 =
+      if eq $5 1'h1 then $LL.Main.swapix225 $0 $2
+            else $LL.Main.swapix222 $0 $3 ("ReWire.Prelude.&&" (ReWire.Prelude.not $4) $1)
+
+$LL.Main.swapix48 : ([1], [1024], [1], [5], [1], [1], [1]) -> [32]
+$LL.Main.swapix48 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix425 $0 $1 $2 $3 $4 $5 $6
+
+$LL.Main.swapix27 : ([1024], [5], [5]) -> [32]
+$LL.Main.swapix27 $0 $1 $2 =
+      $LL.Main.swapix211 $0 $1 $2[4 +: 1] $2[3 +: 1] $2[2 +: 1] $2[1 +: 1] $2[0 +: 1]
+
+$LL.Main.swapix38 : ([1024], [1], [1], [5], [1], [1], [1], [5]) -> [32]
+$LL.Main.swapix38 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.swapix325 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.rotaccess3 : ([1024], [1], [1], [1], [1], [1]) -> [33]
+$LL.Main.rotaccess3 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.rotaccess6 $0 $3 $1 $2 $4 $5
+
+"$LL.ReWire.Prelude.&&1" : ([1], [1], [2]) -> [1]
+"$LL.ReWire.Prelude.&&1" $0 $1 $2 =
+      if eq $2[1 +: 1] 1'h1 then "$LL.ReWire.Prelude.&&" $2[0 +: 1]
+            else "$LL.ReWire.Prelude.&&2" ($0 # $1)
+
+$LL.Main.nopipeline6 : ([1], [1024]) -> [2050]
+$LL.Main.nopipeline6 $0 $1 =
+      $LL.Main.nopipeline9 $1
+
+Main.swapix3 : ([1024], [5]) -> [32]
+Main.swapix3 $0 $1 =
+      $LL.Main.swapix311 ($0 # $1)
+
+$LL.Main.accesses4 : ([1], [1], [1], [1], [1024], [1], [5]) -> [65]
+$LL.Main.accesses4 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.accesses12 $0 $1 $2 $3 $4 $5 $6
+
+$LL.Main.nopipeline5 : ([1], [1], [1024]) -> [2050]
+$LL.Main.nopipeline5 $0 $1 $2 =
+      if eq $1 1'h0 then $LL.Main.nopipeline12 $2
+            else $LL.Main.nopipeline6 $0 $2
+
+$LL.Main.swapix37 : ([1024], [1], [5], [5], [1], [1]) -> [32]
+$LL.Main.swapix37 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.swapix310 $0 $1 $2 $3 $4
+
+$LL.Main.rot5 : ([32], [32]) -> [32]
+$LL.Main.rot5 $0 $1 =
+      $LL.Main.rot9 $0 $1
+
+$LL.Main.swapix47 : ([1], [1], [1024], [1], [5], [1], [1], [5]) -> [32]
+$LL.Main.swapix47 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.swapix4 $0 $1 $2 $3 $4 $5 $6 $7
+
+Main.swap4 : ([1024]) -> [1024]
+Main.swap4 $0 =
+      $LL.Main.swap4 $0
+
+$LL.Main.xorix6 : ([1024], [1], [1], [1], [1], [1]) -> [32]
+$LL.Main.xorix6 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.xorix18 $0 $1 $2 $3 $4 $5
+
+$LL.Main.accesses3 : ([5], [1024], [1], [5]) -> [65]
+$LL.Main.accesses3 $0 $1 $2 $3 =
+      $2 # trunc 32 (lshr $1 (mul (sub (sub 128'h20 (zext 128 $0)) 128'h1) 128'h20)) # trunc 32 (lshr $1 (mul (sub (sub 128'h20 (zext 128 $3)) 128'h1) 128'h20))
+
+$LL.Main.swapix36 : ([1024], [1], [5], [1], [5], [5]) -> [32]
+$LL.Main.swapix36 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.swapix323 $0 $1 $5 $2 $3 $4 ("ReWire.Prelude.&&" (ReWire.Prelude.not $3) (ReWire.Prelude.not $1))
+
+$LL.Main.swapix46 : ([5], [1], [1024], [5], [1], [5]) -> [32]
+$LL.Main.swapix46 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.swapix44 $0 $1 $2 $3 $4 $5
+
+$LL.Main.addix2 : ([32]) -> [32]
+$LL.Main.addix2 $0 =
+      $LL.Main.addix1 $0
+
+$LL.Main.swap2 : ([1024]) -> [1024]
+$LL.Main.swap2 $0 =
+      $LL.Main.swap21 $0
+
+$LL.Main.rot3 : ([1], [32], [32], [1]) -> [32]
+$LL.Main.rot3 $0 $1 $2 $3 =
+      if eq $3 1'h1 then $LL.Main.addix12 $2
+            else $LL.Main.rot6 $1 $2 $0
+
+$LL.Main.swapix17 : ([5], [1024], [1], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix17 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix124 $0 $1 $2 $3 $4 $5 $6
+
+Main.swapix1 : ([1024], [5]) -> [32]
+Main.swapix1 $0 $1 =
+      $LL.Main.swapix113 ($0 # $1)
+
+$LL.Main.nopipeline4 : ([1024]) -> [2050]
+$LL.Main.nopipeline4 $1 =
+      $LL.Main.nopipeline7 $1
+
+$LL.Main.swapix16 : ([5], [1024]) -> [32]
+$LL.Main.swapix16 $0 $1 =
+      $LL.Main.swapix114 $0 $1
+
+$LL.Main.xorix5 : ([1024], [5]) -> [32]
+$LL.Main.xorix5 $0 $1 =
+      $LL.Main.xorix $0 $1[4 +: 1] $1[3 +: 1] $1[2 +: 1] $1[1 +: 1] $1[0 +: 1]
+
+$LL.Main.swapix45 : ([1], [1], [1024], [1], [5], [1], [1], [5]) -> [32]
+$LL.Main.swapix45 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.swapix414 $7 $0 $2 $4 $6 (1'h1 # $3 # $5 # $1 # 1'h0)
+
+$LL.Main.addix1 : ([32]) -> [32]
+$LL.Main.addix1 $0 =
+      $LL.Main.addix12 $0
+
+$LL.Main.swapix25 : ([1024], [5]) -> [32]
+$LL.Main.swapix25 $0 $1 =
+      $LL.Main.swapix21 $0 $1
+
+$LL.Main.swapix35 : ([1024], [1], [5], [1], [5], [5]) -> [32]
+$LL.Main.swapix35 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.swapix32 $0 $1 $2 $3 $4 $5
+
+$LL.Main.swap1 : ([1024]) -> [1024]
+$LL.Main.swap1 $0 =
+      $LL.Main.swap11 $0
+
+"$LL.ReWire.Prelude.&&" : ([1]) -> [1]
+"$LL.ReWire.Prelude.&&" $0 =
+      $0
+
+$LL.Main.swapix44 : ([5], [1], [1024], [5], [1], [5]) -> [32]
+$LL.Main.swapix44 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.swapix416 $5 $0 $1 $2 $3 $4 ("ReWire.Prelude.&&" $1 (ReWire.Prelude.not $4))
+
+$LL.Main.swapix15 : ([1], [1], [5], [1], [1024], [1], [1]) -> [32]
+$LL.Main.swapix15 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix1 $0 $1 $2 $3 $6 $4 $5 (2'h0 # $5 # $3 # $6)
+
+$LL.Main.swapix14 : ([1], [1], [5], [1024], [1], [1], [1]) -> [32]
+$LL.Main.swapix14 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix12 $0 $1 $2 $3 $4 $5 $6
+
+$LL.Main.rotaccess2 : ([1029]) -> [33]
+$LL.Main.rotaccess2 $0 =
+      $LL.Main.rotaccess4 $0[5 +: 1024] $0[0 +: 5]
+
+$LL.Main.swapix13 : ([1], [1], [5], [1024], [5], [5]) -> [32]
+$LL.Main.swapix13 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.swapix111 $0 $1 $2 $3 $4 $5
+
+$LL.Main.accesses2 : ([1], [1], [1], [1024], [1], [1]) -> [65]
+$LL.Main.accesses2 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.accesses $0 $1 $5 $2 $3 $4 (1'h0 # $0 # $1 # $2 # $5)
+
+$LL.Main.accesses1 : ([1024], [5]) -> [65]
+$LL.Main.accesses1 $0 $1 =
+      $LL.Main.accesses8 $0 $1
+
+$LL.Main.rot2 : ([32], [1024], [5]) -> [32]
+$LL.Main.rot2 $0 $1 $2 =
+      $LL.Main.rot7 $0 $1 $2
+
+$LL.Main.swapix42 : ([1024], [5]) -> [32]
+$LL.Main.swapix42 $0 $1 =
+      $LL.Main.swapix41 $0 $1
+
+$LL.Main.rotaccess1 : ([1024], [1], [5]) -> [33]
+$LL.Main.rotaccess1 $0 $1 $2 =
+      $LL.Main.rotaccess7 $0 $1 $2
+
+$LL.Main.rot1 : ([32], [1], [32]) -> [32]
+$LL.Main.rot1 $0 $1 $2 =
+      $LL.Main.rot $1 $0 $2
+
+$LL.ReWire.Prelude.not : ([1], [1]) -> [1]
+$LL.ReWire.Prelude.not $0 $1 =
+      if eq $1 1'h1 then 1'h0
+            else $LL.ReWire.Prelude.not2 $0
+
+$LL.Main.swapix24 : ([1], [1], [1024], [5], [5], [5]) -> [32]
+$LL.Main.swapix24 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.swapix22 $0 $1 $2 $3 $4 $5
+
+Main.accesses : ([1024], [5]) -> [65]
+Main.accesses $0 $1 =
+      $LL.Main.accesses17 ($0 # $1)
+
+$LL.Main.xorix4 : ([1024], [5], [1]) -> [32]
+$LL.Main.xorix4 $0 $1 $2 =
+      $LL.Main.swapix225 $0 $1
+
+$LL.Main.swapix23 : ([1], [1], [5], [1024], [5], [1]) -> [32]
+$LL.Main.swapix23 $0 $1 $2 $3 $4 $5 =
+      if eq $5 1'h1 then $LL.Main.swapix121 $2 $3
+            else $LL.Main.swapix222 $3 $4 ("ReWire.Prelude.&&" $0 $1)
+
+$LL.Main.swapix41 : ([1024], [5]) -> [32]
+$LL.Main.swapix41 $0 $1 =
+      $LL.Main.swapix420 $0 $1 (Main.explode5 $1)
+
+$LL.Main.xorix3 : ([1029]) -> [32]
+$LL.Main.xorix3 $0 =
+      $LL.Main.xorix2 $0[5 +: 1024] $0[0 +: 5]
+
+$LL.Main.swapix12 : ([1], [1], [5], [1024], [1], [1], [1]) -> [32]
+$LL.Main.swapix12 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix15 $0 $1 $2 $5 $3 $4 $6
+
+$LL.Main.addix : ([1], [32], [32]) -> [32]
+$LL.Main.addix $0 $1 $2 =
+      $LL.Main.addix5 $1 $0 $2
+
+$LL.Main.xorix2 : ([1024], [5]) -> [32]
+$LL.Main.xorix2 $0 $1 =
+      $LL.Main.xorix14 $0 $1
+
+Main.rotate : ([1024]) -> [1024]
+Main.rotate $0 =
+      $LL.Main.rotate2 (32'hb # $0)
+
+$LL.Main.nopipeline2 : ([2050]) -> [2050]
+$LL.Main.nopipeline2 $0 =
+      $LL.Main.nopipeline4 $0[0 +: 1024]
+
+$LL.Main.xorix1 : ([1024], [5], [5]) -> [32]
+$LL.Main.xorix1 $0 $1 $2 =
+      xor (trunc 32 (lshr $0 (mul (sub (sub 128'h20 (zext 128 $2)) 128'h1) 128'h20))) (trunc 32 (lshr $0 (mul (sub (sub 128'h20 (zext 128 $1)) 128'h1) 128'h20)))
+
+$LL.Main.rot : ([1], [32], [32]) -> [32]
+$LL.Main.rot $0 $1 $2 =
+      $LL.Main.rot3 $0 $1 $2 $0
+
+$LL.Main.rotate : ([32], [1024]) -> [1024]
+$LL.Main.rotate $0 $1 =
+      Main.rot $0 $1 5'h0 # Main.rot $0 $1 5'h1 # Main.rot $0 $1 5'h2 # Main.rot $0 $1 5'h3 # Main.rot $0 $1 5'h4 # Main.rot $0 $1 5'h5 # Main.rot $0 $1 5'h6 # Main.rot $0 $1 5'h7 # Main.rot $0 $1 5'h8 # Main.rot $0 $1 5'h9 # Main.rot $0 $1 5'ha # Main.rot $0 $1 5'hb # Main.rot $0 $1 5'hc # Main.rot $0 $1 5'hd # Main.rot $0 $1 5'he # Main.rot $0 $1 5'hf # Main.rot $0 $1 5'h10 # Main.rot $0 $1 5'h11 # Main.rot $0 $1 5'h12 # Main.rot $0 $1 5'h13 # Main.rot $0 $1 5'h14 # Main.rot $0 $1 5'h15 # Main.rot $0 $1 5'h16 # Main.rot $0 $1 5'h17 # Main.rot $0 $1 5'h18 # Main.rot $0 $1 5'h19 # Main.rot $0 $1 5'h1a # Main.rot $0 $1 5'h1b # Main.rot $0 $1 5'h1c # Main.rot $0 $1 5'h1d # Main.rot $0 $1 5'h1e # Main.rot $0 $1 5'h1f
+
+$LL.Main.rotaccess : ([1024], [1], [1], [1], [1], [1]) -> [33]
+$LL.Main.rotaccess $0 $1 $2 $3 $4 $5 =
+      $LL.Main.rotaccess3 $0 $1 $2 $3 $4 $5
+
+$LL.Main.swapix4 : ([1], [1], [1024], [1], [5], [1], [1], [5]) -> [32]
+$LL.Main.swapix4 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.swapix45 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.swapix22 : ([1], [1], [1024], [5], [5], [5]) -> [32]
+$LL.Main.swapix22 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.swapix214 $0 $1 $2 $3 $4 $5
+
+$LL.Main.swapix33 : ([1024], [1], [5], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix33 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix324 $0 $4 $1 $2 $3 $5 $6
+
+$LL.Main.accesses : ([1], [1], [1], [1], [1024], [1], [5]) -> [65]
+$LL.Main.accesses $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.accesses4 $0 $1 $2 $3 $4 $5 $6
+
+Main.explode5 : ([5]) -> [5]
+Main.explode5 $0 =
+      $LL.Main.explode5 $0
+
+$LL.Main.xorix : ([1024], [1], [1], [1], [1], [1]) -> [32]
+$LL.Main.xorix $0 $1 $2 $3 $4 $5 =
+      $LL.Main.xorix15 $0 $1 $2 $3 $4 $5
+
+$LL.Main.add1 : ([1024]) -> [1024]
+$LL.Main.add1 $0 =
+      Main.addix $0 5'h0 # Main.addix $0 5'h1 # Main.addix $0 5'h2 # Main.addix $0 5'h3 # Main.addix $0 5'h4 # Main.addix $0 5'h5 # Main.addix $0 5'h6 # Main.addix $0 5'h7 # Main.addix $0 5'h8 # Main.addix $0 5'h9 # Main.addix $0 5'ha # Main.addix $0 5'hb # Main.addix $0 5'hc # Main.addix $0 5'hd # Main.addix $0 5'he # Main.addix $0 5'hf # Main.addix $0 5'h10 # Main.addix $0 5'h11 # Main.addix $0 5'h12 # Main.addix $0 5'h13 # Main.addix $0 5'h14 # Main.addix $0 5'h15 # Main.addix $0 5'h16 # Main.addix $0 5'h17 # Main.addix $0 5'h18 # Main.addix $0 5'h19 # Main.addix $0 5'h1a # Main.addix $0 5'h1b # Main.addix $0 5'h1c # Main.addix $0 5'h1d # Main.addix $0 5'h1e # Main.addix $0 5'h1f
+
+Main.addix : ([1024], [5]) -> [32]
+Main.addix $0 $1 =
+      $LL.Main.addix11 ($0 # $1)
+
+$LL.Main.swapix21 : ([1024], [5]) -> [32]
+$LL.Main.swapix21 $0 $1 =
+      $LL.Main.swapix27 $0 $1 (Main.explode5 $1)
+
+$LL.Main.swapix32 : ([1024], [1], [5], [1], [5], [5]) -> [32]
+$LL.Main.swapix32 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.swapix36 $0 $1 $2 $3 $4 $5
+
+$LL.Main.swapix31 : ([1024], [5], [1], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix31 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.swapix319 $0 $1 $2 $3 $4 $5 $6
+
+$LL.Main.swapix11 : ([1], [1], [5], [1024], [5], [5]) -> [32]
+$LL.Main.swapix11 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.swapix13 $0 $1 $2 $3 $4 $5
+
+$LL.Main.nopipeline : ([1024]) -> [2050]
+$LL.Main.nopipeline $1 =
+      1026'h10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # $1
+
+$LL.Main.add : ([1024]) -> [1024]
+$LL.Main.add $0 =
+      $LL.Main.add1 $0
+
+$LL.Main.swapix1 : ([1], [1], [5], [1], [1], [1024], [1], [5]) -> [32]
+$LL.Main.swapix1 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.swapix112 $0 $1 $2 $3 $4 $5 $6 $7
+
+device top_level
+      input __in0 : [1]
+      output __out0 : [1024]
+      register __st0 : [1024] init 1024'h2000000001000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+      let $res = $Pure.dispatch __st0 __in0
+      __out0 := $res[1024 +: 1024]
+      next __st0 := $res[0 +: 1024]

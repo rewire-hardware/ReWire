@@ -1,5 +1,5 @@
 -- Externs with user-supplied Haskell models: the implementation argument
--- (rwPrimExtern's seventh) references a top-level definition, so the Core
+-- (rwPrimExtern's seventh) references a top-level definition, so the
 -- interpreter (and the Cryptol backend) can evaluate the extern. The
 -- hardware implementations live in verilog/w32ops.sv and vhdl/w32ops.vhdl,
 -- and must agree with the models (the cosimulation check enforces this).

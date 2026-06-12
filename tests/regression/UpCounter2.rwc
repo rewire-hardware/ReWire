@@ -1,111 +1,160 @@
-device top_level:
+$Pure.dispatch : ([8], [1]) -> [18]
+$Pure.dispatch $0 $1 =
+      $LL.Pure.dispatch $1 $0
 
-inputs [("__in0",1)]
-outputs [("__out0",8)]
-states [("__st0",8)]
+$LL.Main.go34 : ([8]) -> [18]
+$LL.Main.go34 $0 =
+      $LL.Main.go32 $0
 
-$Pure.dispatch :: W8 -> W1 -> W18
-$Pure.dispatch $0 $1 = 18'case {1'$1, 8'$0} of
-    {1'@, 8'@} -> $LL.Main.go24
+$LL.Main.go33 : ([8], [8]) -> [18]
+$LL.Main.go33 $0 $1 =
+      2'h2 # $0 # $1
 
-$Pure.start :: W18
-$Pure.start  = 18'h20000
+$LL.Main.msbitW83 : ([1]) -> [1]
+$LL.Main.msbitW83 $0 =
+      $0
 
-$LL.Main.go33 :: W8 -> W18
-$LL.Main.go33 $0 = {10'h100, 8'$0}
+$LL.Main.go32 : ([8]) -> [18]
+$LL.Main.go32 $0 =
+      $LL.Main.go3 ($LL.Main.go30 ($0 # $0))
 
-$LL.Main.go32 :: W18 -> W18
-$LL.Main.go32 $0 = 18'case 18'$0 of
-    {2'h1, 8'_, 8'@} -> $LL.Main.go31
+$LL.Main.go31 : ([8], [8]) -> [18]
+$LL.Main.go31 $0 $1 =
+      2'h0 # $0 # $1
 
-$LL.Main.go31 :: W8 -> W18
-$LL.Main.go31 $0 = 18'case 8'$0 of
-    {8'@} -> Main.go
+$LL.Main.go30 : ([16]) -> [18]
+$LL.Main.go30 $0 =
+      $LL.Main.go28 $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.go30 :: W8 -> W18
-$LL.Main.go30 $0 = 18'case 18'case {8'$0, 8'$0} of
-      {16'@} -> $LL.Main.go29 of
-    {18'@} -> $LL.Main.go8
+$LL.Main.msbitW82 : ([8]) -> [8]
+$LL.Main.msbitW82 $0 =
+      zext 8 ($LL.Main.msbitW8 $0[7 +: 1])
 
-$LL.Main.go29 :: W16 -> W18
-$LL.Main.go29 $0 = 18'case 16'$0 of
-    {8'@, 8'@} -> $LL.Main.go28
+$LL.Main.go29 : ([8]) -> [18]
+$LL.Main.go29 $1 =
+      $LL.Main.go17 $1
 
-$LL.Main.go28 :: W8 -> W8 -> W18
-$LL.Main.go28 $0 $1 = {2'h0, 8'$0, 8'$1}
+$LL.Main.go28 : ([8], [8]) -> [18]
+$LL.Main.go28 $0 $1 =
+      $LL.Main.go31 $0 $1
 
-$LL.Main.go24 :: W1 -> W8 -> W18
-$LL.Main.go24 $0 $1 = 18'case {8'$1, 1'$0} of
-    {8'@, 1'h1} -> $LL.Main.go21
-    _ -> 18'case {8'$1, 1'$0} of
-      {8'@, 1'h0} -> $LL.Main.go
+$LL.Main.go26 : ([18]) -> [18]
+$LL.Main.go26 $0 =
+      $LL.Main.go7 $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.go22 :: W18 -> W18
-$LL.Main.go22 $0 = 18'case 18'$0 of
-    {2'h0, 8'@, 8'@} -> $LL.Main.go15
+$LL.Main.go25 : ([1], [8]) -> [18]
+$LL.Main.go25 $0 $1 =
+      if eq $0 1'h1 then $LL.Main.go34 $1
+            else $LL.Main.go $1
 
-$LL.Main.go21 :: W8 -> W18
-$LL.Main.go21 $0 = 18'case 8'$0 of
-    {8'@} -> $LL.Main.go11
+$LL.Main.go24 : ([8]) -> [18]
+$LL.Main.go24 $0 =
+      $LL.Main.go29 $0
 
-$LL.Main.go19 :: W8 -> W8 -> W18
-$LL.Main.go19 $0 $1 = 18'case 18'case 8'case 8'$0 of
-        {8'@} -> $LL.Main.rolW81 of
-      {8'@} -> $LL.Main.go33 of
-    {18'@} -> $LL.Main.go32
+$LL.Main.go23 : ([18]) -> [18]
+$LL.Main.go23 $0 =
+      $LL.Main.go22 $0[0 +: 8]
 
-$LL.Main.go17 :: W8 -> W8 -> W18
-$LL.Main.go17 $0 $1 = 18'case 18'case 8'case 8'$0 of
-        {8'@} -> $LL.Main.incW81 of
-      {8'@} -> $LL.Main.go33 of
-    {18'@} -> $LL.Main.go32
+$LL.Main.go22 : ([8]) -> [18]
+$LL.Main.go22 $1 =
+      $LL.Main.go11 $1
 
-$LL.Main.go16 :: W8 -> W8 -> W18
-$LL.Main.go16 $0 $1 = 18'case {8'$0, 8'$1} of
-    {8'@, 8'@} -> $LL.Main.go7
+$LL.Main.msbitW81 : ([8]) -> [8]
+$LL.Main.msbitW81 $0 =
+      $LL.Main.msbitW82 $0
 
-$LL.Main.incW81 :: W8 -> W8
-$LL.Main.incW81 $0 = 8'case {8'$0, 8'h1} of
-    {8'@, 8'@} -> Add
+$LL.Main.go21 : ([8], [8]) -> [18]
+$LL.Main.go21 $0 $1 =
+      $LL.Main.go4 $0 $1
 
-$LL.Main.go15 :: W8 -> W8 -> W18
-$LL.Main.go15 $0 $1 = 18'case {8'$0, 8'$1} of
-    {8'@, 8'@} -> $LL.Main.go19
+$LL.Main.go20 : ([18]) -> [18]
+$LL.Main.go20 $0 =
+      $LL.Main.go10 $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.go11 :: W8 -> W18
-$LL.Main.go11 $0 = 18'case 18'case {8'$0, 8'$0} of
-      {16'@} -> $LL.Main.go29 of
-    {18'@} -> $LL.Main.go22
+$LL.Main.go18 : ([8]) -> [18]
+$LL.Main.go18 $0 =
+      $LL.Main.go20 ($LL.Main.go30 ($0 # $0))
 
-$LL.Main.go10 :: W18 -> W18
-$LL.Main.go10 $0 = 18'case 18'$0 of
-    {2'h0, 8'@, 8'@} -> $LL.Main.go16
+$LL.Main.go17 : ([8]) -> [18]
+$LL.Main.go17 $1 =
+      10'h100 # $1
 
-$LL.Main.go9 :: W8 -> W8 -> W18
-$LL.Main.go9 $0 $1 = 18'case {8'$0, 8'$1} of
-    {8'@, 8'@} -> $LL.Main.go17
+$LL.Main.rolW81 : ([8]) -> [8]
+$LL.Main.rolW81 $0 =
+      or (shl $0 8'h1) (Main.msbitW8 $0)
 
-$LL.Main.go8 :: W18 -> W18
-$LL.Main.go8 $0 = 18'case 18'$0 of
-    {2'h0, 8'@, 8'@} -> $LL.Main.go9
+$LL.Main.go15 : ([8]) -> [18]
+$LL.Main.go15 $1 =
+      Main.go $1
 
-$LL.Main.go7 :: W8 -> W8 -> W18
-$LL.Main.go7 $0 $1 = {2'h2, 8'$0, 8'$1}
+Main.rolW8 : ([8]) -> [8]
+Main.rolW8 $0 =
+      $LL.Main.rolW8 $0
 
-$LL.Main.rolW81 :: W8 -> W8
-$LL.Main.rolW81 $0 = 8'case {8'case {8'$0, 8'h1} of {8'@, 8'@} -> LShift, 8'case 8'$0 of {8'@} -> $LL.Main.msbitW8} of
-    {8'@, 8'@} -> Or
+Main.incW8 : ([8]) -> [8]
+Main.incW8 $0 =
+      $LL.Main.incW8 $0
 
-$LL.Main.go :: W8 -> W18
-$LL.Main.go $0 = 18'case 8'$0 of
-    {8'@} -> $LL.Main.go30
+$LL.Main.go11 : ([8]) -> [18]
+$LL.Main.go11 $1 =
+      $LL.Main.go15 $1
 
-Main.go :: W8 -> W18
-Main.go $0 = 18'case 18'case {8'$0, 8'$0} of
-      {16'@} -> $LL.Main.go29 of
-    {18'@} -> $LL.Main.go10
+$LL.Main.incW81 : ([8]) -> [8]
+$LL.Main.incW81 $0 =
+      add $0 8'h1
 
-$LL.Main.msbitW8 :: W8 -> W8
-$LL.Main.msbitW8 $0 = 8'case 1'case 8'$0 of
-      {8'@} -> MSBit of
-    {1'@} -> Resize
+$LL.Main.go10 : ([8], [8]) -> [18]
+$LL.Main.go10 $0 $1 =
+      $LL.Main.go8 $0 $1
+
+$LL.Main.go8 : ([8], [8]) -> [18]
+$LL.Main.go8 $0 $1 =
+      $LL.Main.go23 ($LL.Main.go24 (Main.incW8 $0))
+
+$LL.Main.go7 : ([8], [8]) -> [18]
+$LL.Main.go7 $0 $1 =
+      $LL.Main.go33 $0 $1
+
+Main.msbitW8 : ([8]) -> [8]
+Main.msbitW8 $0 =
+      $LL.Main.msbitW81 $0
+
+$LL.Main.go4 : ([8], [8]) -> [18]
+$LL.Main.go4 $0 $1 =
+      $LL.Main.go23 ($LL.Main.go24 (Main.rolW8 $0))
+
+$LL.Main.incW8 : ([8]) -> [8]
+$LL.Main.incW8 $0 =
+      $LL.Main.incW81 $0
+
+$LL.Pure.dispatch : ([1], [8]) -> [18]
+$LL.Pure.dispatch $0 $1 =
+      $LL.Main.go25 $0 $1
+
+$LL.Main.rolW8 : ([8]) -> [8]
+$LL.Main.rolW8 $0 =
+      $LL.Main.rolW81 $0
+
+$LL.Main.go3 : ([18]) -> [18]
+$LL.Main.go3 $0 =
+      $LL.Main.go21 $0[8 +: 8] $0[0 +: 8]
+
+Main.go : ([8]) -> [18]
+Main.go $0 =
+      $LL.Main.go26 ($LL.Main.go30 ($0 # $0))
+
+$LL.Main.msbitW8 : ([1]) -> [1]
+$LL.Main.msbitW8 $0 =
+      $LL.Main.msbitW83 $0
+
+$LL.Main.go : ([8]) -> [18]
+$LL.Main.go $0 =
+      $LL.Main.go18 $0
+
+device top_level
+      input __in0 : [1]
+      output __out0 : [8]
+      register __st0 : [8] init 8'h0
+      let $res = $Pure.dispatch __st0 __in0
+      __out0 := $res[8 +: 8]
+      next __st0 := $res[0 +: 8]

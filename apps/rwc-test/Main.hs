@@ -2,6 +2,10 @@ module Main (main) where
 
 import qualified RWC
 
+import ReWire.Error (runSyntaxError)
+import ReWire.Hyle.Parse (parseHyle, parseHyleText)
+import ReWire.Pretty (prettyPrint)
+
 import Control.Exception (try, finally)
 import Control.Monad (unless, when, msum)
 import Data.Bits (xor, shiftL, shiftR)
@@ -19,6 +23,8 @@ import System.Exit (exitFailure, ExitCode (..))
 import System.FilePath ((</>), (-<.>), takeBaseName, takeDirectory)
 import System.IO (hPutStr, hPutStrLn, hClose, hFlush, openFile, stderr, stdout, Handle, IOMode (WriteMode))
 import System.Process (callCommand)
+
+import qualified Data.Text as T
 import Test.Tasty (defaultMain, sequentialTestGroup, TestTree, DependencyType (..))
 import Test.Tasty.HUnit (testCase, assertFailure, assertBool)
 import Test.Tasty.Golden (goldenVsFileDiff)
@@ -84,6 +90,24 @@ testCompiler flags fn = do
                   cdTestdir
                   withArgs ((fn -<.> "rwc") : ["--from-core", "--interp", "-o", ofile "yaml"] <> extraFlags) RWC.main)
 
+      let roundTripTests =
+            -- Test: parse/print round trip on the .rwc golden. The golden is
+            -- fastPrint output, so the first parse also covers the compact
+            -- printer; the property asserted is that prettyPrint . parse is a
+            -- fixpoint (parsing the pretty-printed program and printing it
+            -- again reproduces the same text).
+            [ testCase (takeBaseName fn <> " (rwc round-trip)") $ do
+                  cdTestdir
+                  r <- runSyntaxError $ do
+                        p1 <- parseHyle $ fn -<.> "rwc"
+                        let t1 = prettyPrint p1
+                        p2 <- parseHyleText t1 $ fn -<.> "rwc"
+                        pure (t1, prettyPrint p2)
+                  case r of
+                        Left err       -> assertFailure $ "round-trip parse failed: " <> T.unpack (prettyPrint err)
+                        Right (t1, t2) -> assertBool "parse . prettyPrint . parse differs from parse" $ t1 == t2
+               ]
+
       let verilogTests =
             -- Test: compile Core to Verilog with RWC.
             [ golden "sv" $ do
@@ -124,7 +148,7 @@ testCompiler flags fn = do
                   ex <- doesFileExist $ fn -<.> "vhdl"
                   pure [ testCase (takeBaseName fn <> " (cosim iverilog/ghdl)") (cdTestdir >> runCosim fn) | ex ]
 
-      pure $ ghcTests <> coreTests <> verilogTests <> vhdlTests <> cryTests <> cosimTests
+      pure $ ghcTests <> coreTests <> roundTripTests <> verilogTests <> vhdlTests <> cryTests <> cosimTests
 
       where extraFlags :: [String]
             extraFlags = if FlagV `elem` flags then ["-v"] else []
@@ -258,7 +282,7 @@ cosimCycles = 20
 -- | Three-way agreement check: compile the design with rwc --testbench for
 --   both backends, drive both testbenches with the same pseudorandom inputs
 --   file, and require that the iverilog/vvp trace, the ghdl trace, and the
---   Core interpreter (--interpret) output all agree, cycle by cycle. Assumes
+--   Hyle interpreter (--interpret) output all agree, cycle by cycle. Assumes
 --   the working directory is the test directory and the .out.sv output has
 --   been generated. Skipped for degenerate devices with no outputs.
 runCosim :: FilePath -> IO ()
@@ -374,7 +398,7 @@ inputsYaml stim
 
 -- | A cryptol expression evaluating the generated device on the stimulus: one
 --   input word per cycle, the data inputs concatenated MSB-first in port
---   order (mirroring how the Core interpreter and the testbenches feed them).
+--   order (mirroring how the Hyle interpreter and the testbenches feed them).
 cryDevice :: [(String, Int)] -> [[(String, Integer)]] -> String
 cryDevice ins stim = "rw_device ([" <> intercalate ", " (map cyc stim) <> "] : "
                   <> "[" <> show (length stim) <> "][" <> show (sum $ map snd ins) <> "])"

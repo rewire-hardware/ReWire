@@ -3,10 +3,11 @@
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Safe #-}
 
 module Embedder.Atmo.ToIsabelle where
 
+import Control.Arrow (second)
 import safe Embedder.Isabelle.Syntax as Isa
     ( Theory(..),
       DatatypeConstructor(..), Decl(..),
@@ -15,14 +16,11 @@ import safe Embedder.Atmo.Syntax as A
     ( FreeProgram, Module (..),
       TypeSynonym(..), DataDefn(..), Defn(..),
       Exp(..), Ty(..), Poly(..),
-      DataCon(..), Pat (..), PatBind (..), FunBinding (..), getPatVars, RecDefn (..),
-      -- getFunBody,
-      )
+      DataCon(..), Pat (..), PatBind (..), FunBinding (..), RecDefn (..))
 import ReWire.Orphans ()
 import ReWire.Error (AstError, MonadError, failAt)
 import Embedder.Atmo.Types (flattenSig, nilTy, pairTy, TypeAnnotated (..))
 import Embedder.Atmo.Util(isPrim, flattenLam)
-import ReWire.Annotation (noAnn)
 
 import System.FilePath(takeBaseName)
 import Data.Char (isDigit)
@@ -31,27 +29,10 @@ import qualified Data.Text as T (Text, pack, splitOn, map, filter, null, head, l
 import Data.Graph (Graph, Vertex, Tree (..))
 import Embedder.Atmo.DependencyGraph (Declaration (..), sortFreeProgram)
 import Embedder.Atmo.FlattenMonadTrans (transMonadT)
-import Embedder.Builtins (TyBuiltin(..))
 import Data.Text (Text, pack)
 
--- import Debug.Trace (trace)
-
----------- Notes --------------
-
--- Name Handling:
-      -- remove Embed, 
-      -- remove Fresh
-      -- remove Bind, bind, unbind
-      -- remove Name, redefine tGlobal and tLocal
-      -- remove n2s, s2n
-
-
----------- ================================================= ----------
 
 ---------- Todos/Questions --------------
--- TODO: Fix Data Definition printing YAY
--- TODO: Fix bindings for datatdefs (etc.) YAY
-   -- we have to unbind Binds, but we can still use tLocal on them if we want their 'prefix'
 -- TODO: Implement Case translation in ReWire-Isabelle [and modify this translation to suit]
 -- TODO: Implement translation of Builtins/Prims (hopefully can be ported over from the Source translation)
 -- TODO: Readability concerns?
@@ -161,7 +142,7 @@ tDefn =  \ case
                   let e = rhs
                   e' <- tExp e
                   return $ Isa.Definition (tGlobal name) tsig [] e'
-   d@(Defn _a name poly _defnattr fbs@(_:_)) -> do
+   d@(Defn _ _ _ _ (_ : _)) -> do
                   fun <- tFun d
                   return $ Isa.Fun [fun]
 
@@ -199,7 +180,7 @@ tDataDefn (DataDefn _ name tvs []) = return $ Datatype (tGlobal name) (map tLoca
 
 tRecDefn :: Monad m => A.RecDefn -> m Isa.Decl
 tRecDefn (RecDefn _ name tvs _poly fields) =
-  return $ Isa.Record (tGlobal name) (map tLocal tvs) (map (\(f, t) -> (f, tType t)) fields)
+  return $ Isa.Record (tGlobal name) (map tLocal tvs) (map (second tType) fields)
 
 
 {- data DataCon = DataCon Annote !(Name DataConId) !Poly) -}
@@ -312,31 +293,23 @@ tExp e | Just pt <- tyAnn e = do
       return $ Isa.TypAnnTerm e' pt'
 tExp (A.Tuple _ _ _ es) = do
       es' <- mapM tExp es
-      return -- $ trace "Tuplex" 
-             $ Isa.Tuplex es'
+      return $ Isa.Tuplex es'
 tExp (A.App _ _ _ e es) = do
       rator <- tExp e
       rands <- mapM tExp es
       return $ Isa.App rator rands
--- tExp (A.Lam _ _ _ [x] (A.App _ _ _ (A.RWUser _ _ _ BindRInf) [m,_loop])) = do
---       let x' = tLocal x
---       m' <- tExp m -- : M a
---       return $ Isa.App (Isa.Free "iterRe") [Isa.Abs [x'] m']
 tExp lam@(A.Lam {}) = do
       (names,e) <- flattenLam lam
       e' <- tExp e
       return $ Isa.Abs (map tLocal names) e'
-tExp (A.Var     _ _mp _mt name) = -- trace ("toIsabelle: Var: " <> show name) $ 
-                                  return $ Free $ tLocal name
-tExp (A.Con     _ _mp _mt name) = -- trace ("toIsabelle: Con: " <> show name) $ 
-                                  return $ Free $ tGlobal name
+tExp (A.Var     _ _mp _mt name) = return $ Free $ tLocal name
+tExp (A.Con     _ _mp _mt name) = return $ Free $ tGlobal name
 tExp c@(A.Case    {}) = do
       let (e',bs') = flattenCase c
       e'' <- tExp e'
       bs'' <- mapM tCase bs'
       return $ Isa.Case e'' bs''
-tExp (A.RWUser _ _mp _mt b) = -- trace ("toIsabelle: Builtin: " <> show b) $ 
-                               return $ Isa.Prim b
+tExp (A.RWUser _ _mp _mt b) = return $ Isa.Prim b
 tExp (A.LitInt  _ _mp     i) = return $ Isa.LitNum (toInteger i)
 tExp (A.LitStr  _ _mp     s) = return $ Isa.LitString s
 tExp (A.LitVec  _ _mp _mt es) = do
@@ -374,7 +347,7 @@ tPat = \ case
       (PatWildCard _a _mp mt) -> PttrnWildCard (fmap tType mt)
       (PatTuple _a _mp mt ps) -> PttrnTuple (fmap tType mt) (map tPat ps)
       (PatAs _a _mp mt n p)   -> PttrnAs (fmap tType mt) (tPat p) (tLocal n)
-      (A.PatRec _ _ mt fields) -> PttrnRecord (fmap tType mt) (map (\(f, p) -> (f, tPat p)) fields)
+      (A.PatRec _ _ mt fields) -> PttrnRecord (fmap tType mt) (map (second tPat) fields)
 
 tPatBind :: (Monad m) => PatBind -> m (Isa.Pttrn, Isa.Term)
 tPatBind (A.PatBind p e) = do
@@ -382,31 +355,10 @@ tPatBind (A.PatBind p e) = do
       e' <- tExp e
       return (p',e')
 
-
--- data Pttrn = PttrnWildCard (Maybe Typ) 
---            | PttrnVar VName (Maybe Typ) 
---            | PttrnCon VName (Maybe Typ) [Pttrn]
---            | PttrnTuple (Maybe Typ) [Pttrn]
---         deriving (Eq, Ord, Show, Typeable, Data)
-
-
-wildPat :: A.Pat
-wildPat = PatWildCard noAnn Nothing Nothing
-
 -- | Case Annote !(Maybe Poly) !(Maybe Ty) !Exp !(Bind Pat Exp) !(Maybe Exp)
 flattenCase :: A.Exp -> (A.Exp, [(Pat,Exp)])
 flattenCase (A.Case _ _ _ e pbs) = (e,map (\ (A.PatBind p e') -> (p,e')) pbs)
 flattenCase _ = error "flattenCase: should prevent this case"
--- flattenCase (A.Case _ _ _ e p e1 me) = flattenCase' e [(p,e1)] me
---       where
---       flattenCase' :: A.Exp -> [(Pat,A.Exp)] -> Maybe A.Exp
---                   -> (A.Exp, [(Pat, A.Exp)])
---       flattenCase' e bs (Just c@(A.Case _ _ _ e' p e1 me)) = if e == e'
---             then flattenCase' e (bs++[(p,e1)]) me
---             else (e,bs ++ [(wildPat, c)])
---       flattenCase' e bs (Just e') = (e,bs ++ [(wildPat, e')])
---       flattenCase' e bs Nothing = (e,bs)
--- flattenCase _ = error "flattenCase: should prevent this case"
 
 tCase :: Monad m => (Pat,Exp) -> m (Pttrn,Term)
 tCase (p,e) = do
@@ -414,64 +366,9 @@ tCase (p,e) = do
       let p' = tPat p
       return (p', e')
 
--- Builtins
-
-
-{-
-data Builtin = Error | Extern
-             | SetRef | GetRef
-             | Bind | Return
-             | Put | Get
-             | Signal | Lift | Extrude | Unfold
-             | VecFromList | VecReplicate | VecReverse | VecSlice | VecRSlice
-             | VecIndex | VecIndexProxy
-             | VecConcat
-             | VecMap | VecFoldR | VecFoldL | VecGenerate
-             | Finite | FiniteMinBound | FiniteMaxBound | ToFinite | ToFiniteMod | FromFinite
-             | NatVal
-             | Bits | Resize | BitSlice | BitIndex
-             | Add | Sub | Mul | Div | Mod | Pow
-             | LAnd | LOr
-             | And | Or
-             | XOr | XNor
-             | LShift | RShift | RShiftArith
-             | Eq | Gt | GtEq | Lt | LtEq
-             | LNot | Not
-             | RAnd | RNAnd | ROr | RNor | RXOr | RXNor
-             | MSBit
-      deriving (Eq, Generic, Show, Typeable, Data, Bounded, Enum)
-
-
-data Prim =
-  -- ReWire Core Primitive Operations
-            Add | Sub
-          | Mul | Div | Mod
-          | Pow
-          | LAnd | LOr
-          | And | Or
-          | XOr | XNor
-          | LShift | RShift
-          | RShiftArith
-          | Eq | Gt | GtEq | Lt | LtEq
-          | Replicate Natural
-          | LNot | Not
-          | RAnd | RNAnd
-          | ROr | RNor | RXOr | RXNor
-          | MSBit
-          | Resize | Reverse
-          | Id
-      deriving (Eq, Ord, Generic, Show, Typeable, Data, Read)
-
--}
-
-
-
 ---------- ================================================= ----------
 
 --- Translating Names
-
--- show Name to keep its Fresh extension, for global variables
--- n2s Name to discard its Fresh extension, for local variables
 
 tGlobal :: T.Text -> T.Text
 tGlobal = filterName . getBaseName
@@ -507,42 +404,3 @@ isPrimException a = let s = show a
 
 isReWire :: Show a => a -> Bool
 isReWire a = isPrefixOf "ReWire." (show a) || isPrim a && not (isPrimException a)
-
-
----------- ================================================= ----------
-
-
-
-{-
-{- Testing area -}
-
-mkVar :: T.Text -> Exp
-mkVar t = Var noAnn Nothing Nothing (s2n t)
-
-mkDefn :: T.Text -> T.Text -> Exp -> Defn
-mkDefn n t e = Defn noAnn (s2n n) (Embed (poly [] (TyCon noAnn (s2n t)))) Nothing (Embed (bind [] e))
-
-{-
-      | Var     Annote !(Maybe Poly) !(Maybe Ty) !(Name Exp)
-
-{ defnAnnote :: Annote
-      , defnName   :: !(Name Exp)
-      , defnPolyTy :: !Poly)
-      , defnAttr   :: !(Maybe DefnAttr)
-      , defnBody   :: !(Bind [Name Exp] Exp)) } 
--}
-
--- d > a,b,c, > e > f,g > h
--- h, [f,g], e, [a,b,c], d == 7, [5,6], 4, [0,1,2], 3 
-
-example :: FreeProgram
-example = ([],[],[ mkDefn "a" "Bool" (mkApp noAnn (mkVar "b") [mkVar "e"])
-                 , mkDefn "b" "Bool" (mkApp noAnn (mkVar "c") [mkVar "e"])
-                 , mkDefn "c" "Bool" (mkApp noAnn (mkVar "a") [mkVar "f"])
-                 , mkDefn "d" "Bool" (mkApp noAnn (mkVar "a") [mkVar "b"])
-                 , mkDefn "e" "Bool" (mkApp noAnn (mkVar "g") [mkVar "h"])
-                 , mkDefn "f" "Bool" (mkApp noAnn (mkVar "g") [mkVar "f"])
-                 , mkDefn "g" "Bool" (mkApp noAnn (mkVar "f") [mkVar "h"])
-                 , mkDefn "h" "Bool" (mkVar "h")])
-
--}

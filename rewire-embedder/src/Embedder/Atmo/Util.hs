@@ -14,7 +14,6 @@ import Embedder.Atmo.Syntax (Exp (..), Ty (..), Pat (..), Defn (..), DefnAttr (.
 import Embedder.Atmo.Types (proxyTy, nilTy, strTy, arr, typeOf, arrowRight, pairTy, fundamental, mkArrowTy, paramTys)
 import Embedder.Builtins ( builtins, Builtin (..), tybuiltins, builtinUserQName, RWUserOp (..) )
 
-import Data.List (foldl')
 import Data.Text (Text, unpack)
 import Data.Maybe(fromMaybe)
 import Numeric.Natural (Natural)
@@ -115,21 +114,19 @@ flattenLam = \ case
 mkLam :: Annote -> Ty -> [Text] -> Exp -> Exp
 mkLam an t = Lam an Nothing (Just t)
 
--- mkLam :: Annote -> [(Ty, Text)] -> Exp -> Exp
--- mkLam an vs b = foldr (\ (t, v) e -> Lam an Nothing (Just t) v e) b vs
 
 
 -- Record helpers for construction
 mkRecVal :: Annote -> [(Text, Exp)] -> Exp
-mkRecVal an fields = RecVal an Nothing Nothing fields
+mkRecVal an = RecVal an Nothing Nothing
 
 mkRecUpd :: Annote -> Exp -> [(Text, Exp)] -> Exp
-mkRecUpd an rec fields = RecUpd an Nothing Nothing rec fields
+mkRecUpd an = RecUpd an Nothing Nothing
 
 mkRecSel :: Annote -> Text -> Exp -> Exp
-mkRecSel an field rec = RecSel an Nothing Nothing field rec
+mkRecSel an = RecSel an Nothing Nothing
 
 -- Record pattern helper
 mkPatRec :: Annote -> [(Text, Pat)] -> Pat
-mkPatRec an fields = PatRec an Nothing Nothing fields
+mkPatRec an = PatRec an Nothing Nothing
 

@@ -1,155 +1,238 @@
-device top_level:
+$Pure.dispatch : ([2], [1]) -> [5]
+$Pure.dispatch $0 $1 =
+      $LL.Pure.dispatch1 $1 $0[1 +: 1] $0[0 +: 1]
 
-inputs [("__in0",1)]
-outputs [("__out0",1)]
-states [("__st0",1),("__st1",1)]
+$LL.Main.incr4 : ([1], [1]) -> [1]
+$LL.Main.incr4 $0 $1 =
+      $LL.Main.incr1 $0 $1
 
-$Pure.dispatch :: W2 -> W1 -> W5
-$Pure.dispatch $0 $1 = 5'case {1'$1, 2'$0} of
-    {1'@, 1'@, 1'@} -> $LL.Main.sig34
+$LL.Main.sig50 : ([5]) -> [5]
+$LL.Main.sig50 $0 =
+      $LL.Main.sig13 $0[1 +: 1] $0[0 +: 1]
 
-$Pure.start :: W5
-$Pure.start  = 5'h17
+$LL.Main.sig49 : ([1], [1], [1]) -> [5]
+$LL.Main.sig49 $0 $1 $2 =
+      $LL.Main.sig36 $0 $1 $2
 
-$LL.Main.sig50 :: W1 -> W1 -> W1 -> W5
-$LL.Main.sig50 $0 $1 $2 = {2'h0, 1'$1, 1'$0, 1'$2}
+$LL.Main.sig48 : ([3]) -> [5]
+$LL.Main.sig48 $0 =
+      $LL.Main.sig49 $0[2 +: 1] $0[1 +: 1] $0[0 +: 1]
 
-$LL.Main.sig49 :: W1 -> W1 -> W5 -> W5
-$LL.Main.sig49 $0 $1 $2 = 5'case {1'$0, 1'$1, 5'$2} of
-    {1'@, 1'@, 2'h1, 1'_, 1'@, 1'@} -> $LL.Main.sig32
+$LL.Main.sig47 : ([2]) -> [5]
+$LL.Main.sig47 $0 =
+      $LL.Main.sig25 $0[1 +: 1] $0[0 +: 1]
 
-$LL.Main.sig47 :: W1 -> W1 -> W1 -> W1 -> W5
-$LL.Main.sig47 $0 $1 $2 $3 = 5'case {1'$1, 1'$0, 5'case {1'$1, 1'$3} of {2'@} -> $LL.Main.sig15} of
-    {1'@, 1'@, 5'@} -> $LL.Main.sig49
+$LL.Main.sig46 : ([1], [1], [1]) -> [5]
+$LL.Main.sig46 $0 $1 $2 =
+      $LL.Main.sig14 $0 $1 $2
 
-$LL.Main.sig46 :: W1 -> W1 -> W5
-$LL.Main.sig46 $0 $1 = 5'case 5'case {1'$0, 1'$0, 1'$1} of
-      {3'@} -> $LL.Main.sig8 of
-    {5'@} -> $LL.Main.sig16
+$LL.Main.sig45 : ([1], [1]) -> [5]
+$LL.Main.sig45 $1 $2 =
+      $LL.Main.sig8 ($LL.Main.sig48 ($1 # $1 # $2))
 
-$LL.Main.sig45 :: W1 -> W1 -> W1 -> W5
-$LL.Main.sig45 $0 $1 $2 = {2'h0, 1'$0, 1'$1, 1'$2}
+$LL.Main.sig44 : ([1], [1]) -> [5]
+$LL.Main.sig44 $1 $2 =
+      $LL.Main.sig35 $1 $2
 
-$LL.Main.sig43 :: W1 -> W1 -> W5
-$LL.Main.sig43 $0 $1 = 5'case {1'$0, 1'$1} of
-    {1'@, 1'@} -> $LL.Main.sig1
+$LL.Main.sig43 : ([1], [1], [1]) -> [5]
+$LL.Main.sig43 $0 $1 $2 =
+      2'h0 # $0 # $1 # $2
 
-$LL.Main.sig41 :: W1 -> W1 -> W1 -> W5
-$LL.Main.sig41 $0 $1 $2 = 5'case {1'$0, 5'case {1'$2, 1'$1, 1'$2} of {3'@} -> $LL.Main.sig35} of
-    {1'@, 5'@} -> $LL.Main.sig14
+ReWire.Prelude.not : ([1]) -> [1]
+ReWire.Prelude.not $0 =
+      $LL.ReWire.Prelude.not2 $0 $0
 
-$LL.Main.sig40 :: W1 -> W1 -> W1 -> W5
-$LL.Main.sig40 $0 $1 $2 = {2'h2, 1'$0, 1'$1, 1'$2}
+$LL.Main.incr3 : ([2]) -> [1]
+$LL.Main.incr3 $0 =
+      $LL.Main.incr2 $0[1 +: 1] $0[0 +: 1]
 
-$LL.Main.sig39 :: W1 -> W1 -> W5
-$LL.Main.sig39 $0 $1 = 5'case {1'$1, 1'$0} of
-    {1'@, 1'@} -> $LL.Main.sig46
+$LL.Pure.dispatch1 : ([1], [1], [1]) -> [5]
+$LL.Pure.dispatch1 $0 $1 $2 =
+      $LL.Pure.dispatch $0 $1 $2
 
-$LL.Main.sig38 :: W1 -> W1 -> W1 -> W1 -> W5
-$LL.Main.sig38 $0 $1 $2 $3 = 5'case {1'$1, 1'$0, 1'$2, 1'$3} of
-    {1'@, 1'@, 1'@, 1'@} -> $LL.Main.sig26
+$LL.Main.sig41 : ([1], [1], [1], [1]) -> [5]
+$LL.Main.sig41 $0 $1 $2 $3 =
+      $LL.Main.sig24 $1 $0 ($LL.Main.sig2 ($1 # $3))
 
-ReWire.Prelude.not :: W1 -> W1
-ReWire.Prelude.not $0 = 1'case {1'$0, 1'$0} of
-    {1'@, 1'@} -> $LL.ReWire.Prelude.not1
+$LL.Main.sig38 : ([1], [1], [1]) -> [5]
+$LL.Main.sig38 $0 $1 $2 =
+      $LL.Main.sig $0 $1 $2
 
-$LL.Main.sig36 :: W1 -> W1 -> W1 -> W5
-$LL.Main.sig36 $0 $1 $2 = 5'case {1'$0, 1'$1, 1'$2} of
-    {1'@, 1'@, 1'@} -> $LL.Main.sig41
+$LL.Main.sig37 : ([5]) -> [5]
+$LL.Main.sig37 $0 =
+      $LL.Main.sig22 $0[2 +: 1] $0[1 +: 1] $0[0 +: 1]
 
-$LL.Main.sig35 :: W3 -> W5
-$LL.Main.sig35 $0 = 5'case 3'$0 of
-    {1'@, 1'@, 1'@} -> $LL.Main.sig30
+$LL.Main.sig36 : ([1], [1], [1]) -> [5]
+$LL.Main.sig36 $0 $1 $2 =
+      $LL.Main.sig34 $1 $0 $2
 
-$LL.Main.sig34 :: W1 -> W1 -> W1 -> W5
-$LL.Main.sig34 $0 $1 $2 = 5'case {1'$2, 1'$1, 1'case 1'$0 of {1'@} -> ReWire.Prelude.not} of
-    {1'@, 1'@, 1'h1} -> $LL.Main.sig39
-    _ -> 5'case {1'$2, 1'$1, 1'case 1'$0 of {1'@} -> ReWire.Prelude.not} of
-      {1'@, 1'@, 1'h0} -> $LL.Main.sig29
+$LL.Main.sig35 : ([1], [1]) -> [5]
+$LL.Main.sig35 $0 $2 =
+      3'h2 # $0 # $2
 
-$LL.Main.sig32 :: W1 -> W1 -> W1 -> W1 -> W5
-$LL.Main.sig32 $0 $1 $2 $3 = 5'case {1'$0, 1'$1, 1'$2, 1'$3} of
-    {1'@, 1'@, 1'@, 1'@} -> $LL.Main.sig5
+$LL.Main.sig34 : ([1], [1], [1]) -> [5]
+$LL.Main.sig34 $0 $1 $2 =
+      2'h0 # $1 # $0 # $2
 
-$LL.Main.incr3 :: W1 -> W1 -> W1
-$LL.Main.incr3 $0 $1 = 1'case {1'$0, 1'$1} of
-    {2'@} -> $LL.Main.incr2
+$LL.Main.sig33 : ([1], [1], [1], [1]) -> [5]
+$LL.Main.sig33 $0 $1 $3 $4 =
+      $LL.Main.sig23 $0 $1 $3 $4
 
-$LL.Main.sig30 :: W1 -> W1 -> W1 -> W5
-$LL.Main.sig30 $0 $1 $2 = 5'case {1'$1, 1'$0, 1'$2} of
-    {1'@, 1'@, 1'@} -> $LL.Main.sig50
+$LL.Main.sig32 : ([1], [1]) -> [5]
+$LL.Main.sig32 $1 $2 =
+      $LL.Main.sig11 $1 $2
 
-$LL.Main.sig29 :: W1 -> W1 -> W5
-$LL.Main.sig29 $0 $1 = 5'case {1'$1, 1'$0} of
-    {1'@, 1'@} -> $LL.Main.sig23
+$LL.Main.sig31 : ([1], [1]) -> [5]
+$LL.Main.sig31 $0 $1 =
+      $LL.Main.sig50 (3'h2 # $0 # $1)
 
-$LL.Main.sig27 :: W1 -> W1 -> W5
-$LL.Main.sig27 $0 $1 = {3'h2, 1'$0, 1'$1}
+$LL.Main.sig30 : ([1], [1], [1], [1]) -> [5]
+$LL.Main.sig30 $0 $1 $3 $4 =
+      $LL.Main.sig50 ($LL.Main.sig47 ($3 # $LL.Main.incr4 $1 $0))
 
-$LL.Main.sig26 :: W1 -> W1 -> W1 -> W1 -> W5
-$LL.Main.sig26 $0 $1 $2 $3 = 5'case {1'$1, 1'$0, 1'$2, 1'$3} of
-    {1'@, 1'@, 1'@, 1'@} -> $LL.Main.sig47
+Main.sig1 : ([1], [1], [1]) -> [5]
+Main.sig1 $0 $1 $2 =
+      $LL.Main.sig18 $0 $1 $2
 
-$LL.Main.sig24 :: W5 -> W5
-$LL.Main.sig24 $0 = 5'case 5'$0 of
-    {2'h1, 1'_, 1'@, 1'@} -> $LL.Main.sig43
+$LL.Main.sig29 : ([1], [1]) -> [5]
+$LL.Main.sig29 $1 $2 =
+      $LL.Main.sig44 $1 $2
 
-$LL.Main.sig23 :: W1 -> W1 -> W5
-$LL.Main.sig23 $0 $1 = 5'case {3'h2, 1'$0, 1'$1} of
-    {5'@} -> $LL.Main.sig24
+$LL.Main.sig28 : ([1], [1]) -> [5]
+$LL.Main.sig28 $1 $2 =
+      $LL.Main.sig45 $1 $2
 
-$LL.Main.incr2 :: W2 -> W1
-$LL.Main.incr2 $0 = 1'case 2'$0 of
-    {1'@, 1'@} -> $LL.Main.incr1
+$LL.Main.incr2 : ([1], [1]) -> [1]
+$LL.Main.incr2 $0 $1 =
+      $LL.Main.incr $0 $1
 
-$LL.Main.sig17 :: W1 -> W1 -> W1 -> W5
-$LL.Main.sig17 $0 $1 $2 = 5'case {1'$0, 1'$1, 1'$2} of
-    {1'@, 1'@, 1'@} -> $LL.Main.sig40
+$LL.Main.sig27 : ([1], [1], [1]) -> [5]
+$LL.Main.sig27 $0 $1 $2 =
+      let $t1 = $1 # $2 # ReWire.Prelude.not $0 in
+      if eq $t1[0 +: 1] 1'h1 then $LL.Main.sig21 $t1[2 +: 1] $t1[1 +: 1]
+            else let $t0 = $1 # $2 # ReWire.Prelude.not $0 in
+            $LL.Main.sig1 $t0[2 +: 1] $t0[1 +: 1]
 
-$LL.Main.sig16 :: W5 -> W5
-$LL.Main.sig16 $0 = 5'case 5'$0 of
-    {2'h0, 1'@, 1'@, 1'@} -> $LL.Main.sig36
+$LL.Main.sig26 : ([1], [1], [1], [1]) -> [5]
+$LL.Main.sig26 $0 $1 $3 $4 =
+      $LL.Main.sig30 $0 $1 $3 $4
 
-$LL.Main.sig15 :: W2 -> W5
-$LL.Main.sig15 $0 = 5'case 2'$0 of
-    {1'@, 1'@} -> $LL.Main.sig27
+$LL.Main.sig25 : ([1], [1]) -> [5]
+$LL.Main.sig25 $1 $2 =
+      $LL.Main.sig32 $1 $2
 
-$LL.Main.sig14 :: W1 -> W5 -> W5
-$LL.Main.sig14 $0 $1 = 5'case {1'$0, 5'$1} of
-    {1'@, 2'h0, 1'@, 1'@, 1'@} -> $LL.Main.sig11
+$LL.Main.sig24 : ([1], [1], [5]) -> [5]
+$LL.Main.sig24 $0 $1 $2 =
+      $LL.Main.sig33 $0 $1 $2[1 +: 1] $2[0 +: 1]
 
-$LL.ReWire.Prelude.not1 :: W1 -> W1 -> W1
-$LL.ReWire.Prelude.not1 $0 $1 = 1'case 1'$1 of
-    {1'h1} -> 1'h0
-    _ -> 1'h1
+$LL.Main.sig23 : ([1], [1], [1], [1]) -> [5]
+$LL.Main.sig23 $0 $1 $3 $4 =
+      $LL.Main.sig26 $0 $1 $3 $4
 
-$LL.Main.incr1 :: W1 -> W1 -> W1
-$LL.Main.incr1 $0 $1 = 1'case 1'case {1'$0, 1'$1} of
-      {1'@, 1'@} -> XOr of
-    {1'@} -> MSBit
+$LL.Main.sig22 : ([1], [1], [1]) -> [5]
+$LL.Main.sig22 $0 $1 $2 =
+      $LL.Main.sig38 $0 $1 $2
 
-$LL.Main.sig11 :: W1 -> W1 -> W1 -> W1 -> W5
-$LL.Main.sig11 $0 $1 $2 $3 = 5'case {1'$0, 1'$1, 1'$2, 1'$3} of
-    {1'@, 1'@, 1'@, 1'@} -> $LL.Main.sig38
+$LL.Pure.dispatch : ([1], [1], [1]) -> [5]
+$LL.Pure.dispatch $0 $1 $2 =
+      Main.sig1 $0 $1 $2
 
-$LL.Main.sig8 :: W3 -> W5
-$LL.Main.sig8 $0 = 5'case 3'$0 of
-    {1'@, 1'@, 1'@} -> $LL.Main.sig45
+$LL.Main.sig21 : ([1], [1]) -> [5]
+$LL.Main.sig21 $0 $1 =
+      $LL.Main.sig3 $0 $1
 
-$LL.Main.sig7 :: W5 -> W5
-$LL.Main.sig7 $0 = 5'case 5'$0 of
-    {2'h0, 1'@, 1'@, 1'@} -> $LL.Main.sig17
+$LL.Main.sig20 : ([1], [1], [1], [1]) -> [5]
+$LL.Main.sig20 $0 $1 $2 $3 =
+      $LL.Main.sig6 $1 $0 $2 $3
 
-$LL.Main.sig5 :: W1 -> W1 -> W1 -> W1 -> W5
-$LL.Main.sig5 $0 $1 $2 $3 = 5'case {1'$1, 1'$0, 1'$2, 1'$3} of
-    {1'@, 1'@, 1'@, 1'@} -> $LL.Main.sig3
+$LL.Main.sig18 : ([1], [1], [1]) -> [5]
+$LL.Main.sig18 $0 $1 $2 =
+      $LL.Main.sig27 $0 $1 $2
 
-$LL.Main.sig3 :: W1 -> W1 -> W1 -> W1 -> W5
-$LL.Main.sig3 $0 $1 $2 $3 = 5'case 5'case {1'$2, 1'case {1'$0, 1'$1} of {1'@, 1'@} -> $LL.Main.incr3} of
-      {2'@} -> $LL.Main.sig15 of
-    {5'@} -> $LL.Main.sig24
+$LL.Main.sig17 : ([1], [1], [1]) -> [5]
+$LL.Main.sig17 $0 $1 $2 =
+      $LL.Main.sig43 $0 $1 $2
 
-$LL.Main.sig1 :: W1 -> W1 -> W5
-$LL.Main.sig1 $0 $1 = 5'case 5'case {1'$0, 1'$0, 1'$1} of
-      {3'@} -> $LL.Main.sig35 of
-    {5'@} -> $LL.Main.sig7
+$LL.Main.sig16 : ([1], [5]) -> [5]
+$LL.Main.sig16 $0 $1 =
+      $LL.Main.sig4 $0 $1[2 +: 1] $1[1 +: 1] $1[0 +: 1]
+
+$LL.Main.incr1 : ([1], [1]) -> [1]
+$LL.Main.incr1 $0 $1 =
+      $LL.Main.incr3 ($0 # $1)
+
+$LL.Main.sig14 : ([1], [1], [1]) -> [5]
+$LL.Main.sig14 $0 $1 $2 =
+      $LL.Main.sig7 $0 $1 $2
+
+$LL.Main.incr : ([1], [1]) -> [1]
+$LL.Main.incr $0 $1 =
+      let $t1 = xor $0 $1 in
+      $t1
+
+$LL.Main.sig13 : ([1], [1]) -> [5]
+$LL.Main.sig13 $1 $2 =
+      $LL.Main.sig28 $1 $2
+
+$LL.Main.sig11 : ([1], [1]) -> [5]
+$LL.Main.sig11 $1 $2 =
+      3'h2 # $1 # $2
+
+$LL.Main.sig10 : ([1], [1], [1]) -> [5]
+$LL.Main.sig10 $0 $1 $2 =
+      $LL.Main.sig17 $0 $1 $2
+
+$LL.ReWire.Prelude.not2 : ([1], [1]) -> [1]
+$LL.ReWire.Prelude.not2 $0 $1 =
+      if eq $1 1'h1 then 1'h0
+            else $LL.ReWire.Prelude.not1 $0
+
+$LL.Main.sig8 : ([5]) -> [5]
+$LL.Main.sig8 $0 =
+      $LL.Main.sig46 $0[2 +: 1] $0[1 +: 1] $0[0 +: 1]
+
+$LL.ReWire.Prelude.not1 : ([1]) -> [1]
+$LL.ReWire.Prelude.not1 $0 =
+      1'h1
+
+$LL.Main.sig7 : ([1], [1], [1]) -> [5]
+$LL.Main.sig7 $0 $1 $2 =
+      2'h2 # $0 # $1 # $2
+
+$LL.Main.sig6 : ([1], [1], [1], [1]) -> [5]
+$LL.Main.sig6 $0 $1 $2 $3 =
+      $LL.Main.sig41 $1 $0 $2 $3
+
+$LL.Main.sig5 : ([3]) -> [5]
+$LL.Main.sig5 $0 =
+      $LL.Main.sig10 $0[2 +: 1] $0[1 +: 1] $0[0 +: 1]
+
+$LL.Main.sig4 : ([1], [1], [1], [1]) -> [5]
+$LL.Main.sig4 $0 $1 $2 $3 =
+      $LL.Main.sig20 $0 $1 $2 $3
+
+$LL.Main.sig3 : ([1], [1]) -> [5]
+$LL.Main.sig3 $0 $1 =
+      $LL.Main.sig37 ($LL.Main.sig48 ($0 # $0 # $1))
+
+$LL.Main.sig2 : ([2]) -> [5]
+$LL.Main.sig2 $0 =
+      $LL.Main.sig29 $0[1 +: 1] $0[0 +: 1]
+
+$LL.Main.sig1 : ([1], [1]) -> [5]
+$LL.Main.sig1 $0 $1 =
+      $LL.Main.sig31 $0 $1
+
+$LL.Main.sig : ([1], [1], [1]) -> [5]
+$LL.Main.sig $0 $1 $2 =
+      $LL.Main.sig16 $0 ($LL.Main.sig5 ($2 # $1 # $2))
+
+device top_level
+      input __in0 : [1]
+      output __out0 : [1]
+      register __st0 : [1] init 1'h1
+      register __st1 : [1] init 1'h1
+      let $res = $Pure.dispatch (__st0 # __st1) __in0
+      __out0 := $res[2 +: 1]
+      next __st0 := $res[1 +: 1]
+      next __st1 := $res[0 +: 1]
