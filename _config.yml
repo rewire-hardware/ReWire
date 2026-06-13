@@ -45,18 +45,10 @@ highlighter: rouge
 future: true
 
 # Exclude non-site files
-exclude: ['bin', 'README.md']
+exclude: ['bin', 'README.md', 'Gemfile', 'Gemfile.lock', 'vendor']
 
-# Use the kramdown Markdown renderer
+# Markdown rendering: kramdown + rouge syntax highlighting.
 markdown: kramdown
-redcarpet:
-    extensions: [
-        'no_intra_emphasis',
-        'fenced_code_blocks',
-        'autolink',
-        'strikethrough',
-        'superscript',
-        'with_toc_data',
-        'tables',
-        'hardwrap'
-    ]
+kramdown:
+    syntax_highlighter: rouge
+    hard_wrap: false

@@ -1,114 +1,89 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
         <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <meta name="viewport" content="width=device-width">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <title>{{ site.title }}{% if page.title %} : {{ page.title }}{% endif %}</title>
-        <meta name="description" content="{{ site.subtitle }}">
+        <meta name="description" content="{{ page.description | default: site.subtitle }}">
 
-        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
         <link rel="stylesheet" href="{{ site.baseurl }}/css/syntax.css">
         <link rel="stylesheet" href="{{ site.baseurl }}/css/main.css">
     </head>
     <body>
+        <a class="skip-link" href="#content">Skip to content</a>
 
-        <div class="container">
-            <div class="row">
-                <div id="header" class="col-sm-12">
-                    {% include header.html %}
-                </div>
-            </div>
+        {% comment %} navigation: 0 = always hide, 1 = always show, 2 = show when posts exist {% endcomment %}
+        {% assign post_count = site.posts | size %}
+        {% assign has_nav = false %}
+        {% if site.navigation != 0 %}
+            {% if site.navigation == 1 or post_count > 0 %}{% assign has_nav = true %}{% endif %}
+        {% endif %}
 
-            <div class="row">
-                {% assign post_count = site.posts|size %}
-                {% if site.navigation != 0 and site.navigation == 1 or post_count > 0 %}
-                    <div id="navigation" class="col-sm-2">
-                        {% include navigation.html %}
-                    </div>
-
-                    <div id="content" class="col-sm-10">
-                        {{ content }}
-                    </div>
-                {% else %}
-                    <div id="content" class="col-sm-12">
-                        {{ content }}
-                    </div>
+        <header class="topbar">
+            <div class="topbar-inner">
+                {% if has_nav %}
+                <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="sidebar">
+                    <span></span><span></span><span></span>
+                </button>
                 {% endif %}
+                {% include header.html %}
+                <nav class="topbar-links">
+                    {% if site.codeurl %}<a href="{{ site.codeurl }}" rel="noopener">GitHub</a>{% endif %}
+                </nav>
             </div>
+        </header>
 
-            {% if page.disqus == 1 %}
-            <div class="row">
-              {% if site.navigation == 1 or post_count > 0 %}
-                <div id="navigation" class="col-sm-2"></div>
-                <div id="disqus" class="col-sm-10">
-                    {% include disqus.html %}
-                </div>
-              {% else %}
-                <div id="disqus" class="col-sm-12">
-                    {% include disqus.html %}
-                </div>
-              {% endif %}
-            </div>
+        <div class="layout{% unless has_nav %} layout--no-nav{% endunless %}">
+            {% if has_nav %}
+            <aside class="sidebar" id="sidebar">
+                {% include navigation.html %}
+            </aside>
+            <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
             {% endif %}
 
-            <div class="row">
-                <div id="footer" class="col-sm-12">
+            <main class="content" id="content">
+                {{ content }}
+
+                {% if page.disqus == 1 %}
+                <section class="comments">{% include disqus.html %}</section>
+                {% endif %}
+
+                <footer class="footer">
                     {% include footer.html %}
-                </div>
-            </div>
+                </footer>
+            </main>
         </div>
 
+        {% if has_nav %}
         <script>
-            function orderNav() {
-                var list,
-                    section,
-                    header,
-                    sections = [],
-                    lists = {},
-                    headers = {};
+            (function () {
+                var toggle = document.getElementById('nav-toggle'),
+                    sidebar = document.getElementById('sidebar'),
+                    backdrop = document.getElementById('sidebar-backdrop');
+                if (!toggle || !sidebar) return;
 
-                var navUl = document.querySelectorAll('#navigation ul')[0],
-                    navLis = document.querySelectorAll('#navigation ul li');
-
-                if (!navUl) return;
-
-                for (var i = 0; i < navLis.length; i++) {
-                    var order, li = navLis[i];
-
-                    if (li.classList.contains('nav-header')) {
-                        section = li.textContent || li.innerText;
-                        sections.push(section);
-                        headers[section] = li;
-                        continue;
-                    }
-
-                    if (!lists[section]) {
-                        lists[section] = [];
-                    }
-
-                    order = parseFloat(li.getAttribute('data-order'))
-                    lists[section].push([order, li]);
+                function setOpen(open) {
+                    document.body.classList.toggle('nav-open', open);
+                    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    if (backdrop) backdrop.hidden = !open;
                 }
 
-                for (var i = 0; i < sections.length; i++) {
-                    section = sections[i];
-                    list = lists[section].sort(function(a, b) {
-                        return a[0] - b[0];
-                    });
-
-                    if (header = headers[section]) {
-                        navUl.appendChild(header);
-                    }
-                    for (var j = 0; j < list.length; j++) {
-                        navUl.appendChild(list[j][1]);
-                    }
-                }
-            }
-
-            if (document.querySelectorAll) orderNav();
+                toggle.addEventListener('click', function () {
+                    setOpen(!document.body.classList.contains('nav-open'));
+                });
+                if (backdrop) backdrop.addEventListener('click', function () { setOpen(false); });
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') setOpen(false);
+                });
+                // Close the drawer after following a link on mobile.
+                sidebar.addEventListener('click', function (e) {
+                    if (e.target.tagName === 'A') setOpen(false);
+                });
+            }());
         </script>
+        {% endif %}
+
         {% if site.google_analytics_id != "" %}
         {% include google_analytics.html %}
         {% endif %}

@@ -65,5 +65,5 @@ Make sure `~/.local/bin` is on your `PATH`. You should then be able to run:
     /Users/me/.local/bin/rwc
     $ rwc --help
 
-See the [Quick Start]({{ site.baseurl }}{% post_url 2016-05-03-quick-start %})
+See the [Quick Start]({% post_url 2016-05-03-quick-start %})
 to compile and run your first design.

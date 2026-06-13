@@ -59,3 +59,38 @@
 .highlight .vg { color: #dd7700 } /* Name.Variable.Global */
 .highlight .vi { color: #3333bb } /* Name.Variable.Instance */
 .highlight .il { color: #0000DD; font-weight: bold } /* Literal.Number.Integer.Long */
+
+/* Dark-mode palette (light-on-dark). Token backgrounds are cleared so they
+   sit cleanly on the dark code card. */
+@media (prefers-color-scheme: dark) {
+    .highlight .hll { background-color: #2c2a17 }
+    .highlight,
+    .highlight .c, .highlight .cm, .highlight .c1 { color: #7d8590 } /* Comments */
+    .highlight .cp, .highlight .cs { color: #ff7b72; font-weight: bold; background: none }
+    .highlight .err { color: #ff7b72; background: none }
+    .highlight .k, .highlight .kc, .highlight .kd,
+    .highlight .kn, .highlight .kp, .highlight .kr { color: #c792ea; font-weight: bold } /* Keywords */
+    .highlight .kt { color: #82aaff; font-weight: bold } /* Types */
+    .highlight .o, .highlight .ow { color: #89ddff } /* Operators */
+    .highlight .m, .highlight .mf, .highlight .mh,
+    .highlight .mi, .highlight .mo, .highlight .il { color: #f78c6c; font-weight: normal } /* Numbers */
+    .highlight .s, .highlight .s1, .highlight .s2, .highlight .sb, .highlight .sc,
+    .highlight .sd, .highlight .sh, .highlight .si, .highlight .sx,
+    .highlight .sr, .highlight .ss { color: #c3e88d; background: none } /* Strings */
+    .highlight .se { color: #f78c6c; background: none }
+    .highlight .nb, .highlight .bp { color: #82aaff } /* Builtins */
+    .highlight .nf { color: #82aaff; font-weight: normal } /* Functions */
+    .highlight .nc, .highlight .nn, .highlight .ne,
+    .highlight .nt { color: #ffcb6b; font-weight: bold } /* Classes / namespaces / tags */
+    .highlight .no { color: #f78c6c; font-weight: bold } /* Constants */
+    .highlight .na, .highlight .nl, .highlight .nv,
+    .highlight .py, .highlight .vc, .highlight .vi { color: #82aaff } /* Names / vars */
+    .highlight .vg { color: #f78c6c }
+    .highlight .nd { color: #82aaff }
+    .highlight .gd { color: #ffdcd7; background-color: #4a1f1f } /* Generic.Deleted */
+    .highlight .gi { color: #d6ffd6; background-color: #15401f } /* Generic.Inserted */
+    .highlight .gh { color: #d7dae3 }
+    .highlight .gu { color: #9aa0b0 }
+    .highlight .gp, .highlight .go { color: #7d8590 }
+    .highlight .w { color: #3a3d4a }
+}

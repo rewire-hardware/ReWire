@@ -3,20 +3,12 @@ layout: default
 title: "ReWire Functional Hardware Description"
 ---
 
-<style>H1{color:Black;}</style>
-<style>H2{color:Blue;}</style>
-<style>H3{color:DarkRed;}</style>
-
-{% comment %} Here is the syntax for figures from jekyll_figure.
-{% figure 4Ps pdf 'Your caption here' %}
-{% endcomment %}
-
-## __ReWire: Functional Hardware Description__
+# ReWire: Functional Hardware Description
 
 [ReWire](https://github.com/rewire-hardware/ReWire) is an open source programming language for designing, implementing, and formally verifying hardware artifacts. ReWire is a language for high-level synthesis based in the functional language [Haskell](https://www.haskell.org). Functional languages are a commonly proposed approach to alleviating the well-known FPGA programmability problem---a.k.a., the three P's (Productivity, Performance and Portability). But the ReWire approach takes this one step further with _Provability_.
 
 
-<img src="{{ site.baseurl }}/images/4Ps.png" style="display: block; margin: 0 auto; max-width: 50%;" alt="Screenshot" />
+<img src="{{ site.baseurl }}/images/4Ps.png" class="hero-image" style="max-width: 26rem;" alt="The four P's: Productivity, Performance, Portability, Provability" />
 
 ReWire programs _are_ Haskell programs. That means, every ReWire program _is_ a Haskell program as well. And so, ReWire inherits many of Haskell's fine qualities, including:
 
@@ -26,7 +18,7 @@ ReWire programs _are_ Haskell programs. That means, every ReWire program _is_ a 
 
 ReWire programs, however, may all be translated directly to synthesizable hardware---Verilog or VHDL---using the ReWire compiler:
 
-<img src="{{ site.baseurl }}/images/ReWire.png" style="display: block; margin: 0 auto; max-width: 75%;" alt="Screenshot" />
+<img src="{{ site.baseurl }}/images/ReWire.png" class="hero-image" style="max-width: 38rem;" alt="The ReWire compilation flow" />
 
 
 Why does all this distinguish us from other research efforts? Read on!
@@ -37,7 +29,7 @@ Why does all this distinguish us from other research efforts? Read on!
     * __A built-in interpreter.__ `rwc --interpret` runs a ReWire device directly, cycle by cycle, with no external simulator, and `rwc --testbench` emits a self-checking Verilog/VHDL testbench so a real simulation can be diffed against the interpreter.
     * __An Isabelle embedder.__ The companion `rwe` tool translates ReWire programs into Isabelle/HOL theories for machine-checked verification.
     * __A modern standard library.__ `import ReWire` gives you reactive-resumption and state monads, bits, and fixed-width words/vectors indexed by type-level naturals (`W 8`, `Vec n a`), all usable from both `rwc` and GHC.
-* ReWire is built with [Haskell Stack](https://docs.haskellstack.org/) (GHC 9.10). See the [installation instructions]({{ site.baseurl }}{% post_url 2016-05-03-installing-rewire %}) and the [quick start]({{ site.baseurl }}{% post_url 2016-05-03-quick-start %}) to get going. An in-repo, example-driven tutorial lives under `tutorial/rewire-by-example`.
+* ReWire is built with [Haskell Stack](https://docs.haskellstack.org/) (GHC 9.10). See the [installation instructions]({% post_url 2016-05-03-installing-rewire %}) and the [quick start]({% post_url 2016-05-03-quick-start %}) to get going. An in-repo, example-driven tutorial lives under `tutorial/rewire-by-example`.
 * Development moves faster than this website; if you have any questions, please send us an [email](mailto:rewire.questions@gmail.com) or open an issue on [GitHub](https://github.com/rewire-hardware/ReWire).
 
 ### __Just Say No! to Semantic Archaeology__
