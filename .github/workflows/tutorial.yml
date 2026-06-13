@@ -42,4 +42,8 @@ jobs:
           publish_dir: tutorial/rewire-by-example/book
           destination_dir: tutorial
           keep_files: true
+          # The rest of gh-pages is a Jekyll site (index.md -> index.html is
+          # built by GitHub Pages). Without this, actions-gh-pages drops a
+          # .nojekyll file that disables Jekyll for the whole site -> 404 at /.
+          enable_jekyll: true
           commit_message: 'Deploy tutorial from ${{ github.sha }}'
