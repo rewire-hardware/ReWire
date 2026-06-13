@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 730 540" role="img"
+     aria-label="The classic three P's of FPGA design — Productivity, Performance, and Portability — form a triangle, to which ReWire adds a fourth vertex: Provability.">
+  <style>
+    :root {
+      --ink: #1f2330;
+      --accent: #6d28d9;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --ink: #e7e9f2;
+        --accent: #a78bfa;
+      }
+    }
+    text {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 31px;
+      font-weight: 600;
+      fill: var(--ink);
+    }
+    .plabel { fill: var(--accent); font-weight: 700; }
+    .edge   { fill: none; stroke: var(--ink);    stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+    .pedge  { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; }
+    .hidden { stroke-dasharray: 1.5 13; }
+    .vtx    { fill: var(--ink); }
+    .pvtx   { fill: var(--accent); }
+    .face   { fill: var(--accent); }
+  </style>
+
+  <!-- Subtle faces to read the shape as a 3-D tetrahedron. -->
+  <polygon class="face" points="270,115 110,445 455,445" opacity="0.05"/>
+  <polygon class="face" points="270,115 455,445 590,220" opacity="0.11"/>
+
+  <!-- Hidden back edge to the Provability vertex (dotted). -->
+  <line class="pedge hidden" x1="110" y1="445" x2="590" y2="220"/>
+
+  <!-- The classic three-P's triangle. -->
+  <polygon class="edge" points="270,115 110,445 455,445"/>
+
+  <!-- Visible edges to the Provability vertex. -->
+  <line class="pedge" x1="270" y1="115" x2="590" y2="220"/>
+  <line class="pedge" x1="455" y1="445" x2="590" y2="220"/>
+
+  <!-- Vertices. -->
+  <circle class="vtx"  cx="270" cy="115" r="6.5"/>
+  <circle class="vtx"  cx="110" cy="445" r="6.5"/>
+  <circle class="vtx"  cx="455" cy="445" r="6.5"/>
+  <circle class="pvtx" cx="590" cy="220" r="8"/>
+
+  <!-- Labels. -->
+  <text x="270" y="72"  text-anchor="middle">Productivity</text>
+  <text x="110" y="491" text-anchor="middle">Performance</text>
+  <text x="455" y="491" text-anchor="middle">Portability</text>
+  <text x="590" y="181" text-anchor="middle" class="plabel">Provability</text>
+</svg>

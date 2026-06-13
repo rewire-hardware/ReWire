@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 300" role="img"
+     aria-label="ReWire is a subset of Haskell; the ReWire compiler translates it into synthesizable HDL, itself a subset of HDL.">
+  <style>
+    :root {
+      --ink: #1f2330;
+      --accent: #6d28d9;
+      --panel: #ffffff;
+      --haskell-fill: #e8ebfb;
+      --haskell-stroke: #45539f;
+      --hdl-fill: #fbecca;
+      --hdl-stroke: #9a6a16;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --ink: #e7e9f2;
+        --accent: #a78bfa;
+        --panel: #121319;
+        --haskell-fill: rgba(120,138,255,0.20);
+        --haskell-stroke: #8e9eff;
+        --hdl-fill: rgba(240,196,110,0.17);
+        --hdl-stroke: #e0b25e;
+      }
+    }
+    text {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-weight: 600;
+      fill: var(--ink);
+    }
+    .big   { font-size: 31px; }
+    .mid   { font-size: 26px; }
+    .small { font-size: 23px; }
+    .cmp   { font-size: 22px; fill: var(--accent); }
+    .ring  { stroke-width: 3; }
+    .inner { fill: var(--panel); stroke: var(--ink); stroke-width: 3; }
+  </style>
+
+  <!-- Haskell (outer) containing ReWire (inner). -->
+  <ellipse class="ring" cx="215" cy="150" rx="195" ry="118" fill="var(--haskell-fill)" stroke="var(--haskell-stroke)"/>
+  <text class="small" x="96" y="159" text-anchor="middle" fill="var(--haskell-stroke)">Haskell</text>
+  <ellipse class="inner" cx="265" cy="150" rx="118" ry="82"/>
+  <text class="big" x="265" y="161" text-anchor="middle">ReWire</text>
+
+  <!-- HDL (outer) containing Synthesizable HDL (inner). -->
+  <ellipse class="ring" cx="765" cy="150" rx="195" ry="118" fill="var(--hdl-fill)" stroke="var(--hdl-stroke)"/>
+  <text class="small" x="887" y="159" text-anchor="middle" fill="var(--hdl-stroke)">HDL</text>
+  <ellipse class="inner" cx="715" cy="150" rx="128" ry="88"/>
+  <text class="mid" x="715" y="145" text-anchor="middle">Synthesizable</text>
+  <text class="mid" x="715" y="179" text-anchor="middle">HDL</text>
+
+  <!-- Compiler arrow. -->
+  <defs>
+    <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+    </marker>
+  </defs>
+  <path d="M 360 100 C 455 38, 555 38, 602 95" fill="none"
+        stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round" marker-end="url(#arrowhead)"/>
+  <text class="cmp" x="481" y="34" text-anchor="middle">ReWire compiler</text>
+</svg>

@@ -8,7 +8,7 @@ title: "ReWire Functional Hardware Description"
 [ReWire](https://github.com/rewire-hardware/ReWire) is an open source programming language for designing, implementing, and formally verifying hardware artifacts. ReWire is a language for high-level synthesis based in the functional language [Haskell](https://www.haskell.org). Functional languages are a commonly proposed approach to alleviating the well-known FPGA programmability problem---a.k.a., the three P's (Productivity, Performance and Portability). But the ReWire approach takes this one step further with _Provability_.
 
 
-<img src="{{ site.baseurl }}/images/4Ps.png" class="hero-image" style="max-width: 26rem;" alt="The four P's: Productivity, Performance, Portability, Provability" />
+<img src="{{ site.baseurl }}/images/4Ps.svg" class="hero-image" style="max-width: 24rem;" alt="The four P's: Productivity, Performance, Portability, and Provability" />
 
 ReWire programs _are_ Haskell programs. That means, every ReWire program _is_ a Haskell program as well. And so, ReWire inherits many of Haskell's fine qualities, including:
 
@@ -18,7 +18,7 @@ ReWire programs _are_ Haskell programs. That means, every ReWire program _is_ a 
 
 ReWire programs, however, may all be translated directly to synthesizable hardware---Verilog or VHDL---using the ReWire compiler:
 
-<img src="{{ site.baseurl }}/images/ReWire.png" class="hero-image" style="max-width: 38rem;" alt="The ReWire compilation flow" />
+<img src="{{ site.baseurl }}/images/ReWire.svg" class="hero-image" style="max-width: 42rem;" alt="The ReWire compilation flow: ReWire, a subset of Haskell, compiles to synthesizable HDL" />
 
 
 Why does all this distinguish us from other research efforts? Read on!
