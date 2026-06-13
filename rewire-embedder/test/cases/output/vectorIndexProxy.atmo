@@ -121,7 +121,7 @@ module
   ReWire.extrude :: ((ReacT i o ((StateT s m)) a) -> (s -> (ReacT i o m a)))
    |-> extrude
   {-# INLINE ReWire.unfold #-}
-  ReWire.unfold :: ((((R_, s) -> (i -> (PuRe s o)))) -> ((PuRe s o) -> (ReacT i o (Identity) ())))
+  ReWire.unfold :: ((((R_, s) -> (i -> (PuRe s o)))) -> (((s -> (PuRe s o))) -> (ReacT i o (Identity) ())))
    |-> unfold
   {-# INLINE ReWire.natVal #-}
   ReWire.natVal :: ((Proxy n) -> Integer)
@@ -153,9 +153,8 @@ module
    |-> error "Prim: rwPrimLift"
   rwPrimExtrude :: ((ReacT i o ((StateT s m)) a) -> (s -> (ReacT i o m a)))
   GHC.ReacT (GHC.StateT m) s |-> error "Prim: rwPrimExtrude"
-  rwPrimUnfold :: ((((R_, s) -> (i -> (PuRe s o)))) -> ((PuRe s o) -> (ReacT i o (Identity) ())))
-  _ Done _ |-> error "Prim: rwPrimUnfold"
-  f Pause (o, b) |-> error "Prim: rwPrimUnfold"
+  rwPrimUnfold :: ((((R_, s) -> (i -> (PuRe s o)))) -> (((s -> (PuRe s o))) -> (ReacT i o (Identity) ())))
+  f s0 |-> error "Prim: rwPrimUnfold"
   rwPrimFinite :: (Integer -> (Finite n))
    |-> error "Prim: rwPrimFinite"
   rwPrimFiniteMinBound :: (Finite n)
