@@ -15,13 +15,9 @@ ReWire programs _are_ Haskell programs. That means, every ReWire program _is_ a 
 * Pure functions and types, monads, equational reasoning, etc.
 * Formal semantics supporting formal reasoning.
 
-
 ReWire programs, however, may all be translated directly to synthesizable hardware---Verilog or VHDL---using the ReWire compiler:
 
 <img src="{{ site.baseurl }}/images/ReWire.svg" class="hero-image" style="max-width: 42rem;" alt="The ReWire compilation flow: ReWire, a subset of Haskell, compiles to synthesizable HDL" />
-
-
-Why does all this distinguish us from other research efforts? Read on!
 
 ## __What's New?__
 * ReWire 2.7 (June 2026). Highlights since the 2.0 era:
@@ -32,16 +28,13 @@ Why does all this distinguish us from other research efforts? Read on!
 * ReWire is built with [Haskell Stack](https://docs.haskellstack.org/) (GHC 9.10). See the [installation instructions]({% post_url 2016-05-03-installing-rewire %}) and the [quick start]({% post_url 2016-05-03-quick-start %}) to get going. An in-repo, example-driven tutorial lives under `tutorial/rewire-by-example`.
 * Development moves faster than this website; if you have any questions, please send us an [email](mailto:rewire.questions@gmail.com) or open an issue on [GitHub](https://github.com/rewire-hardware/ReWire).
 
-### __Just Say No! to Semantic Archaeology__
+## __Just Say No! to Semantic Archaeology__
 
 Say you have a hardware design written in a production hardware description language (HDL) like VHDL or Verilog and you need to formally verify some properties of the design and implementation. Where do you start?
 
 Well, you can't reason directly about the HDL code. Why not? _Because the HDL possesses no formal semantics!_ Using traditional formal methods for hardware (e.g., [Kropf 1999](http://dl.acm.org/citation.cfm?id=519876)), one must laboriously formulate a formal model in the logic of a theorem prover. We call this process _semantic archaeology_ and it is expensive, time-consuming and error-prone (i.e., how do you know that your formal specification is related to the concrete HDL design?). Semantic archaeology is the bane of formal methods.
 
 Because ReWire has a formal semantics, one can reason about hardware designs in ReWire directly on the ReWire code itself just as one would about a normal pure functional program. One can also apply tools and techniques from software verification to hardware verification (e.g., as we have with [Coq](https://coq.inria.fr) and [language-based methods in security](http://dl.acm.org/citation.cfm?id=1662663)). For more information, please consult the reading below or send an [email](mailto:rewire.questions@gmail.com).
-
-
-
 
 ### __Further Reading__
 
