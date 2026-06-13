@@ -2,85 +2,85 @@ $Pure.dispatch : ([16]) -> [25]
 $Pure.dispatch $0 =
       $LL.Pure.dispatch $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.go16 : ([8]) -> [25]
-$LL.Main.go16 $1 =
-      17'h100 # $1
+$LL.Main.go16 : ([25]) -> [25]
+$LL.Main.go16 $0 =
+      $LL.Main.go6 $0[0 +: 8]
 
 $LL.Main.go15 : ([8], [8]) -> [25]
-$LL.Main.go15 $0 $1 =
-      $LL.Main.go $0 $1
+$LL.Main.go15 $0 $2 =
+      $LL.Main.go10 $0 $2
 
-$LL.Main.go14 : ([8], [8]) -> [25]
-$LL.Main.go14 $0 $1 =
-      1'h1 # $0 # $0 # $1
+$LL.Main.go14 : ([8]) -> [25]
+$LL.Main.go14 $1 =
+      17'h100 # $1
 
 $LL.Main.go13 : ([8]) -> [25]
 $LL.Main.go13 $1 =
-      $LL.Main.go6 $1
+      $LL.Main.go14 $1
 
-$LL.Main.go12 : ([8]) -> [25]
-$LL.Main.go12 $0 =
-      $LL.Main.go8 $0
+$LL.Main.go12 : ([8], [8]) -> [25]
+$LL.Main.go12 $0 $2 =
+      $LL.Main.go16 ($LL.Main.go3 (add $0 8'h1))
 
-$LL.Main.go11 : ([25]) -> [25]
-$LL.Main.go11 $0 =
-      $LL.Main.go13 $0[0 +: 8]
+$LL.Main.go11 : ([8], [8]) -> [25]
+$LL.Main.go11 $0 $2 =
+      $LL.Main.go12 $0 $2
 
 $LL.Main.go10 : ([8], [8]) -> [25]
 $LL.Main.go10 $0 $2 =
-      $LL.Main.go1 $0 $2
+      $LL.Main.go11 $0 $2
 
 $LL.Pure.dispatch1 : ([8], [8]) -> [25]
 $LL.Pure.dispatch1 $1 $2 =
-      $LL.Main.go9 $1 $2
-
-$LL.Main.go9 : ([8], [8]) -> [25]
-$LL.Main.go9 $0 $2 =
-      $LL.Main.go10 $0 $2
-
-$LL.Main.go8 : ([8]) -> [25]
-$LL.Main.go8 $1 =
-      $LL.Main.go16 $1
-
-$LL.Main.go7 : ([16]) -> [25]
-$LL.Main.go7 $0 =
-      $LL.Main.go15 $0[8 +: 8] $0[0 +: 8]
-
-$LL.Main.go6 : ([8]) -> [25]
-$LL.Main.go6 $1 =
-      $LL.Main.go2 $1
-
-$LL.Main.go5 : ([8], [8]) -> [25]
-$LL.Main.go5 $0 $2 =
-      $LL.Main.go11 ($LL.Main.go12 (add $0 8'h1))
-
-$LL.Main.go4 : ([25]) -> [25]
-$LL.Main.go4 $0 =
-      $LL.Main.go3 $0[8 +: 8] $0[0 +: 8]
-
-$LL.Main.go3 : ([8], [8]) -> [25]
-$LL.Main.go3 $0 $1 =
-      $LL.Main.go14 $0 $1
-
-$LL.Main.go2 : ([8]) -> [25]
-$LL.Main.go2 $1 =
-      Main.go $1
+      $LL.Main.go15 $1 $2
 
 $LL.Pure.dispatch : ([8], [8]) -> [25]
 $LL.Pure.dispatch $1 $2 =
       $LL.Pure.dispatch1 $1 $2
 
-$LL.Main.go1 : ([8], [8]) -> [25]
-$LL.Main.go1 $0 $2 =
-      $LL.Main.go5 $0 $2
+$LL.Main.go9 : ([8]) -> [25]
+$LL.Main.go9 $1 =
+      Main.go $1
 
-$LL.Main.go : ([8], [8]) -> [25]
-$LL.Main.go $0 $1 =
+$LL.Main.go8 : ([8], [8]) -> [25]
+$LL.Main.go8 $0 $1 =
+      1'h1 # $0 # $0 # $1
+
+$LL.Main.go7 : ([8], [8]) -> [25]
+$LL.Main.go7 $0 $1 =
       9'h0 # $0 # $1
+
+$LL.Main.go6 : ([8]) -> [25]
+$LL.Main.go6 $1 =
+      $LL.Main.go1 $1
+
+$LL.Main.go5 : ([25]) -> [25]
+$LL.Main.go5 $0 =
+      $LL.Main.go $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.go4 : ([8], [8]) -> [25]
+$LL.Main.go4 $0 $1 =
+      $LL.Main.go7 $0 $1
+
+$LL.Main.go3 : ([8]) -> [25]
+$LL.Main.go3 $0 =
+      $LL.Main.go13 $0
+
+$LL.Main.go2 : ([16]) -> [25]
+$LL.Main.go2 $0 =
+      $LL.Main.go4 $0[8 +: 8] $0[0 +: 8]
 
 Main.go : ([8]) -> [25]
 Main.go $0 =
-      $LL.Main.go4 ($LL.Main.go7 ($0 # $0))
+      $LL.Main.go5 ($LL.Main.go2 ($0 # $0))
+
+$LL.Main.go1 : ([8]) -> [25]
+$LL.Main.go1 $1 =
+      $LL.Main.go9 $1
+
+$LL.Main.go : ([8], [8]) -> [25]
+$LL.Main.go $0 $1 =
+      $LL.Main.go8 $0 $1
 
 device top_level
       output __out0 : [8]

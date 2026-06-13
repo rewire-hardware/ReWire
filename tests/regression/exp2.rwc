@@ -1,76 +1,94 @@
 $Pure.dispatch : ([2000], [100]) -> [2101]
 $Pure.dispatch $0 $1 =
-      $LL.Pure.dispatch1 $1 $0[1000 +: 1000] $0[0 +: 1000]
+      $LL.Pure.dispatch $1 $0[1000 +: 1000] $0[0 +: 1000]
 
-$LL.Main.dev16 : ([2101]) -> [2101]
-$LL.Main.dev16 $0 =
-      $LL.Main.dev4 $0[1000 +: 1000] $0[0 +: 1000]
+$LL.Main.dev16 : ([1000]) -> [2101]
+$LL.Main.dev16 $1 =
+      Main.dev $1
 
-$LL.Main.dev15 : ([1000], [100], [1000]) -> [2101]
-$LL.Main.dev15 $0 $1 $2 =
-      $LL.Main.dev2 $0 $1 $2
+$LL.Main.ss'7 : ([1100]) -> [1000]
+$LL.Main.ss'7 $0 =
+      $LL.Main.ss'1 $0[100 +: 1000] $0[0 +: 100]
 
-$LL.Main.ss'7 : ([900], [100]) -> [1000]
-$LL.Main.ss'7 $0 $1 =
-      $0 # $1
+$LL.Main.dev15 : ([2101]) -> [2101]
+$LL.Main.dev15 $0 =
+      $LL.Main.dev8 $0[0 +: 1000]
 
-$LL.Main.dev14 : ([1000]) -> [2101]
-$LL.Main.dev14 $1 =
-      $LL.Main.dev $1
-
-$LL.Main.ss'6 : ([1000], [100]) -> [1000]
+$LL.Main.ss'6 : ([900], [100]) -> [1000]
 $LL.Main.ss'6 $0 $1 =
       $LL.Main.ss'5 $0 $1
 
-$LL.Main.x21 : ([100]) -> [100]
-$LL.Main.x21 $0 =
-      mul $0 100'h2
+$LL.Main.dev14 : ([1000]) -> [2101]
+$LL.Main.dev14 $1 =
+      1101'h10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # $1
 
-$LL.Main.ss'5 : ([1000], [100]) -> [1000]
-$LL.Main.ss'5 $0 $1 =
-      Main.x2 (let $t0 = $LL.Main.ss'2 $0[0 +: 900] $1 in
-      $t0[900 +: 100]) # Main.x2 (let $t1 = $LL.Main.ss'2 $0[0 +: 900] $1 in
-      $t1[800 +: 100]) # Main.x2 (let $t2 = $LL.Main.ss'2 $0[0 +: 900] $1 in
-      $t2[700 +: 100]) # Main.x2 (let $t3 = $LL.Main.ss'2 $0[0 +: 900] $1 in
-      $t3[600 +: 100]) # Main.x2 (let $t4 = $LL.Main.ss'2 $0[0 +: 900] $1 in
-      $t4[500 +: 100]) # Main.x2 (let $t5 = $LL.Main.ss'2 $0[0 +: 900] $1 in
-      $t5[400 +: 100]) # Main.x2 (let $t6 = $LL.Main.ss'2 $0[0 +: 900] $1 in
-      $t6[300 +: 100]) # Main.x2 (let $t7 = $LL.Main.ss'2 $0[0 +: 900] $1 in
-      $t7[200 +: 100]) # Main.x2 (let $t8 = $LL.Main.ss'2 $0[0 +: 900] $1 in
-      $t8[100 +: 100]) # Main.x2 (let $t9 = $LL.Main.ss'2 $0[0 +: 900] $1 in
-      $t9[0 +: 100])
-
-$LL.Main.dev13 : ([1000], [1000]) -> [2101]
-$LL.Main.dev13 $0 $1 =
-      $LL.Main.dev12 $0 $1
+$LL.Main.dev13 : ([2000]) -> [2101]
+$LL.Main.dev13 $0 =
+      $LL.Main.dev5 $0[1000 +: 1000] $0[0 +: 1000]
 
 $LL.Main.dev12 : ([1000], [1000]) -> [2101]
 $LL.Main.dev12 $0 $1 =
       101'h0 # $0 # $1
 
-Main.dev : ([1000]) -> [2101]
-Main.dev $0 =
-      $LL.Main.dev16 ($LL.Main.dev11 ($0 # $0))
+$LL.Main.x21 : ([100]) -> [100]
+$LL.Main.x21 $0 =
+      mul $0 100'h2
 
-$LL.Main.dev11 : ([2000]) -> [2101]
+$LL.Main.dev11 : ([2101]) -> [2101]
 $LL.Main.dev11 $0 =
-      $LL.Main.dev13 $0[1000 +: 1000] $0[0 +: 1000]
+      $LL.Main.dev10 $0[1000 +: 1000] $0[0 +: 1000]
 
-$LL.Main.dev10 : ([2101]) -> [2101]
-$LL.Main.dev10 $0 =
-      $LL.Main.dev8 $0[0 +: 1000]
-
-$LL.Main.ss'4 : ([1000]) -> [1000]
-$LL.Main.ss'4 $0 =
-      $LL.Main.ss' $0[100 +: 900] $0[0 +: 100]
+$LL.Main.dev10 : ([1000], [1000]) -> [2101]
+$LL.Main.dev10 $0 $1 =
+      $LL.Main.dev9 $0 $1
 
 $LL.Main.dev9 : ([1000], [1000]) -> [2101]
 $LL.Main.dev9 $0 $1 =
-      1'h1 # $LL.Main.dev1 $0 # $0 # $1
+      1'h1 # $LL.Main.dev3 $0 # $0 # $1
 
 $LL.Main.dev8 : ([1000]) -> [2101]
 $LL.Main.dev8 $1 =
-      $LL.Main.dev5 $1
+      $LL.Main.dev7 $1
+
+$LL.Main.dev7 : ([1000]) -> [2101]
+$LL.Main.dev7 $1 =
+      $LL.Main.dev16 $1
+
+$LL.Main.dev6 : ([1000], [100], [1000]) -> [2101]
+$LL.Main.dev6 $0 $1 $2 =
+      $LL.Main.dev15 ($LL.Main.dev (Main.ss' $0 $1))
+
+$LL.Main.ss'5 : ([900], [100]) -> [1000]
+$LL.Main.ss'5 $0 $1 =
+      $0 # $1
+
+$LL.Main.dev5 : ([1000], [1000]) -> [2101]
+$LL.Main.dev5 $0 $1 =
+      $LL.Main.dev12 $0 $1
+
+$LL.Main.dev4 : ([1000]) -> [100]
+$LL.Main.dev4 $0 =
+      $0[900 +: 100]
+
+$LL.Main.ss'4 : ([900], [100]) -> [1000]
+$LL.Main.ss'4 $0 $1 =
+      $LL.Main.ss'2 ($0 # $1)
+
+Main.dev : ([1000]) -> [2101]
+Main.dev $0 =
+      $LL.Main.dev11 ($LL.Main.dev13 ($0 # $0))
+
+$LL.Main.dev3 : ([1000]) -> [100]
+$LL.Main.dev3 $0 =
+      $LL.Main.dev4 $0
+
+$LL.Main.ss'3 : ([900], [100]) -> [1000]
+$LL.Main.ss'3 $0 $1 =
+      $LL.Main.ss'4 $0 $1
+
+Main.ss' : ([1000], [100]) -> [1000]
+Main.ss' $0 $1 =
+      $LL.Main.ss'7 ($0 # $1)
 
 $LL.Main.x2 : ([100]) -> [100]
 $LL.Main.x2 $0 =
@@ -78,67 +96,49 @@ $LL.Main.x2 $0 =
 
 $LL.Pure.dispatch1 : ([100], [1000], [1000]) -> [2101]
 $LL.Pure.dispatch1 $0 $1 $2 =
-      $LL.Pure.dispatch $0 $1 $2
+      $LL.Main.dev1 $1 $0 $2
 
-$LL.Main.dev7 : ([1000]) -> [100]
-$LL.Main.dev7 $0 =
-      $0[900 +: 100]
+$LL.Main.ss'2 : ([1000]) -> [1000]
+$LL.Main.ss'2 $0 =
+      $LL.Main.ss'6 $0[100 +: 900] $0[0 +: 100]
 
-Main.ss' : ([1000], [100]) -> [1000]
-Main.ss' $0 $1 =
-      $LL.Main.ss'1 ($0 # $1)
+$LL.Main.dev2 : ([1000]) -> [2101]
+$LL.Main.dev2 $1 =
+      $LL.Main.dev14 $1
 
-$LL.Main.ss'3 : ([900], [100]) -> [1000]
-$LL.Main.ss'3 $0 $1 =
-      $LL.Main.ss'4 ($0 # $1)
-
-$LL.Main.dev6 : ([1000]) -> [2101]
-$LL.Main.dev6 $0 =
-      $LL.Main.dev14 $0
-
-$LL.Main.ss'2 : ([900], [100]) -> [1000]
-$LL.Main.ss'2 $0 $1 =
-      $LL.Main.ss'3 $0 $1
-
-$LL.Pure.dispatch : ([100], [1000], [1000]) -> [2101]
-$LL.Pure.dispatch $0 $1 $2 =
-      $LL.Main.dev15 $1 $0 $2
-
-$LL.Main.dev5 : ([1000]) -> [2101]
-$LL.Main.dev5 $1 =
-      $LL.Main.dev3 $1
-
-$LL.Main.ss'1 : ([1100]) -> [1000]
-$LL.Main.ss'1 $0 =
-      $LL.Main.ss'6 $0[100 +: 1000] $0[0 +: 100]
+$LL.Main.dev1 : ([1000], [100], [1000]) -> [2101]
+$LL.Main.dev1 $0 $1 $2 =
+      $LL.Main.dev6 $0 $1 $2
 
 Main.x2 : ([100]) -> [100]
 Main.x2 $0 =
       $LL.Main.x2 $0
 
-$LL.Main.dev4 : ([1000], [1000]) -> [2101]
-$LL.Main.dev4 $0 $1 =
-      $LL.Main.dev9 $0 $1
+$LL.Pure.dispatch : ([100], [1000], [1000]) -> [2101]
+$LL.Pure.dispatch $0 $1 $2 =
+      $LL.Pure.dispatch1 $0 $1 $2
 
-$LL.Main.dev3 : ([1000]) -> [2101]
-$LL.Main.dev3 $1 =
-      Main.dev $1
-
-$LL.Main.dev2 : ([1000], [100], [1000]) -> [2101]
-$LL.Main.dev2 $0 $1 $2 =
-      $LL.Main.dev10 ($LL.Main.dev6 (Main.ss' $0 $1))
-
-$LL.Main.dev1 : ([1000]) -> [100]
-$LL.Main.dev1 $0 =
-      $LL.Main.dev7 $0
+$LL.Main.ss'1 : ([1000], [100]) -> [1000]
+$LL.Main.ss'1 $0 $1 =
+      $LL.Main.ss' $0 $1
 
 $LL.Main.dev : ([1000]) -> [2101]
-$LL.Main.dev $1 =
-      1101'h10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # $1
+$LL.Main.dev $0 =
+      $LL.Main.dev2 $0
 
-$LL.Main.ss' : ([900], [100]) -> [1000]
+$LL.Main.ss' : ([1000], [100]) -> [1000]
 $LL.Main.ss' $0 $1 =
-      $LL.Main.ss'7 $0 $1
+      Main.x2 (let $t0 = $LL.Main.ss'3 $0[0 +: 900] $1 in
+      $t0[900 +: 100]) # Main.x2 (let $t1 = $LL.Main.ss'3 $0[0 +: 900] $1 in
+      $t1[800 +: 100]) # Main.x2 (let $t2 = $LL.Main.ss'3 $0[0 +: 900] $1 in
+      $t2[700 +: 100]) # Main.x2 (let $t3 = $LL.Main.ss'3 $0[0 +: 900] $1 in
+      $t3[600 +: 100]) # Main.x2 (let $t4 = $LL.Main.ss'3 $0[0 +: 900] $1 in
+      $t4[500 +: 100]) # Main.x2 (let $t5 = $LL.Main.ss'3 $0[0 +: 900] $1 in
+      $t5[400 +: 100]) # Main.x2 (let $t6 = $LL.Main.ss'3 $0[0 +: 900] $1 in
+      $t6[300 +: 100]) # Main.x2 (let $t7 = $LL.Main.ss'3 $0[0 +: 900] $1 in
+      $t7[200 +: 100]) # Main.x2 (let $t8 = $LL.Main.ss'3 $0[0 +: 900] $1 in
+      $t8[100 +: 100]) # Main.x2 (let $t9 = $LL.Main.ss'3 $0[0 +: 900] $1 in
+      $t9[0 +: 100])
 
 device top_level
       input __in0 : [100]

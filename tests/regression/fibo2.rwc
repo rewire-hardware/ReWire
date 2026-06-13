@@ -1,71 +1,71 @@
 $Pure.dispatch : ([16], [1]) -> [24]
 $Pure.dispatch $0 $1 =
-      $LL.Pure.dispatch2 $1 $0[8 +: 8] $0[0 +: 8]
+      $LL.Pure.dispatch1 $1 $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.loop11 : ([8], [8]) -> [24]
-$LL.Main.loop11 $0 $1 =
-      Main.loop $0 $1
+$LL.Main.loop11 : ([8], [8], [1]) -> [24]
+$LL.Main.loop11 $0 $1 $2 =
+      $LL.Main.loop9 $0 $2 $1 $2
 
 $LL.Main.loop10 : ([8], [8]) -> [24]
 $LL.Main.loop10 $0 $1 =
-      $LL.Main.loop6 $0 $1
+      Main.loop1 $0 $1
 
-$LL.Main.loop9 : ([8], [8]) -> [24]
-$LL.Main.loop9 $0 $1 =
-      $LL.Main.loop10 $0 $1
-
-$LL.Pure.dispatch2 : ([1], [8], [8]) -> [24]
+$LL.Pure.dispatch2 : ([8], [1], [8]) -> [24]
 $LL.Pure.dispatch2 $0 $1 $2 =
-      $LL.Pure.dispatch1 $0 $1 $2
+      $LL.Main.loop1 $0 $2 $1
+
+$LL.Main.loop9 : ([8], [1], [8], [1]) -> [24]
+$LL.Main.loop9 $0 $1 $2 $3 =
+      if eq $3 1'h1 then $LL.Main.loop3 $0 $2
+            else $LL.Main.loop6 $0 $2 $1
+
+$LL.Main.loop8 : ([8], [8]) -> [24]
+$LL.Main.loop8 $0 $1 =
+      Main.loop1 $1 (add $0 $1)
+
+Main.loop1 : ([8], [8]) -> [24]
+Main.loop1 $0 $1 =
+      $LL.Main.loop2 ($0 # $1)
+
+$LL.Main.loop7 : ([8], [8]) -> [24]
+$LL.Main.loop7 $0 $1 =
+      $0 # $0 # $1
+
+$LL.Main.loop6 : ([8], [8], [1]) -> [24]
+$LL.Main.loop6 $0 $1 $2 =
+      $LL.Main.loop5 $0 $1
+
+$LL.Main.loop5 : ([8], [8]) -> [24]
+$LL.Main.loop5 $0 $1 =
+      $LL.Main.loop8 $0 $1
+
+$LL.Main.loop4 : ([8], [8]) -> [24]
+$LL.Main.loop4 $0 $1 =
+      $LL.Main.loop $0 $1
 
 $LL.Pure.dispatch1 : ([1], [8], [8]) -> [24]
 $LL.Pure.dispatch1 $0 $1 $2 =
       $LL.Pure.dispatch $0 $1 $2
 
-Main.loop : ([8], [8]) -> [24]
-Main.loop $0 $1 =
-      $LL.Main.loop1 ($0 # $1)
-
-$LL.Main.loop8 : ([8], [8]) -> [24]
-$LL.Main.loop8 $0 $1 =
-      $LL.Main.loop2 $0 $1
-
-$LL.Main.loop7 : ([8], [8], [1]) -> [24]
-$LL.Main.loop7 $0 $1 $2 =
-      $LL.Main.loop4 $0 $1 $2
-
-$LL.Main.loop6 : ([8], [8]) -> [24]
-$LL.Main.loop6 $0 $1 =
-      $0 # $0 # $1
-
-$LL.Main.loop5 : ([8], [8], [1]) -> [24]
-$LL.Main.loop5 $0 $1 $2 =
-      $LL.Main.loop8 $0 $1
-
-$LL.Main.loop4 : ([8], [8], [1]) -> [24]
-$LL.Main.loop4 $0 $1 $2 =
-      $LL.Main.loop3 $0 $1 $2 $2
-
 $LL.Pure.dispatch : ([1], [8], [8]) -> [24]
 $LL.Pure.dispatch $0 $1 $2 =
-      $LL.Main.loop7 $1 $2 $0
+      $LL.Pure.dispatch2 $1 $0 $2
 
-$LL.Main.loop3 : ([8], [8], [1], [1]) -> [24]
-$LL.Main.loop3 $0 $1 $2 $3 =
-      if eq $3 1'h1 then $LL.Main.loop $0 $1
-            else $LL.Main.loop5 $0 $1 $2
+$LL.Main.loop3 : ([8], [8]) -> [24]
+$LL.Main.loop3 $0 $1 =
+      $LL.Main.loop10 $0 $1
 
-$LL.Main.loop2 : ([8], [8]) -> [24]
-$LL.Main.loop2 $0 $1 =
-      Main.loop $1 (add $0 $1)
+$LL.Main.loop2 : ([16]) -> [24]
+$LL.Main.loop2 $0 =
+      $LL.Main.loop4 $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.loop1 : ([16]) -> [24]
-$LL.Main.loop1 $0 =
-      $LL.Main.loop9 $0[8 +: 8] $0[0 +: 8]
+$LL.Main.loop1 : ([8], [8], [1]) -> [24]
+$LL.Main.loop1 $0 $1 $2 =
+      $LL.Main.loop11 $0 $1 $2
 
 $LL.Main.loop : ([8], [8]) -> [24]
 $LL.Main.loop $0 $1 =
-      $LL.Main.loop11 $0 $1
+      $LL.Main.loop7 $0 $1
 
 device top_level
       input __in0 : [1]

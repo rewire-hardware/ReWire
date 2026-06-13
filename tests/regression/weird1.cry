@@ -22,11 +22,11 @@ rw__Pure_dispatch x0 x1 = rw__LL_Pure_dispatch x1 x0
 
 // Main.repl1
 rw_Main_repl1 : [1] -> [2] -> [3]
-rw_Main_repl1 x0 x1 = rw__LL_Main_repl1 x0 x1
+rw_Main_repl1 x0 x1 = rw__LL_Main_repl x0 x1
 
 // $LL.Main.repl1
 rw__LL_Main_repl1 : [1] -> [2] -> [3]
-rw__LL_Main_repl1 x0 x1 = rw__LL_Main_repl x0 x1
+rw__LL_Main_repl1 x0 x1 = 0b0 # x1
 
 // $LL.Pure.dispatch
 rw__LL_Pure_dispatch : [1] -> [2] -> [3]
@@ -34,7 +34,7 @@ rw__LL_Pure_dispatch x0 x1 = rw_Main_repl1 x0 x1
 
 // $LL.Main.repl
 rw__LL_Main_repl : [1] -> [2] -> [3]
-rw__LL_Main_repl x0 x1 = 0b0 # x1
+rw__LL_Main_repl x0 x1 = rw__LL_Main_repl1 x0 x1
 
 // Per-cycle step: outputs # next register values.
 rw_step : [2] -> [1] -> [3]

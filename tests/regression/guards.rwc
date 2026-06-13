@@ -2,17 +2,17 @@ $Pure.dispatch : ([1]) -> [1]
 $Pure.dispatch $1 =
       $LL.Pure.dispatch $1
 
+$LL.ReWire.Prelude.not : ([1]) -> [1]
+$LL.ReWire.Prelude.not $0 =
+      1'h1
+
 $LL.Pure.dispatch : ([1]) -> [1]
 $LL.Pure.dispatch $0 =
-      $LL.Main.start1 $0
-
-$LL.Main.start1 : ([1]) -> [1]
-$LL.Main.start1 $0 =
       $LL.Main.start $0
 
 $LL.Main.start : ([1]) -> [1]
 $LL.Main.start $0 =
-      1'h1
+      $LL.ReWire.Prelude.not $0
 
 device top_level
       input __in0 : [1]

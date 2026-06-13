@@ -6,12 +6,12 @@ module top_level (input logic [0:0] clk,
   logic [15:0] __st0_next;
   logic [25:0] main_sig_out;
   logic [23:0] main_first_out;
-  logic [25:0] zll_main_sig9_out;
+  logic [25:0] zll_main_sig8_out;
   logic [25:0] zi0;
   logic [7:0] zi1;
   logic [15:0] zi2;
   logic [15:0] slice_in;
-  logic [25:0] zll_main_sig9_outR1;
+  logic [25:0] zll_main_sig8_outR1;
   logic [25:0] zi6;
   logic [7:0] zi7;
   logic [15:0] zi9;
@@ -21,13 +21,13 @@ module top_level (input logic [0:0] clk,
   logic [25:0] zres;
   Main_sig  inst (__st0, main_sig_out);
   Main_first  instR1 (__st0, main_first_out);
-  ZLL_Main_sig9  instR2 (main_first_out, zll_main_sig9_out);
-  assign zi0 = zll_main_sig9_out;
+  ZLL_Main_sig8  instR2 (main_first_out, zll_main_sig8_out);
+  assign zi0 = zll_main_sig8_out;
   assign zi1 = zi0[23:16];
   assign zi2 = zi0[15:0];
   assign slice_in = zi2 >> {8'h80{1'h0}};
-  ZLL_Main_sig9  instR3 ({slice_in[7:0], zi2}, zll_main_sig9_outR1);
-  assign zi6 = zll_main_sig9_outR1;
+  ZLL_Main_sig8  instR3 ({slice_in[7:0], zi2}, zll_main_sig8_outR1);
+  assign zi6 = zll_main_sig8_outR1;
   assign zi7 = zi6[23:16];
   assign zi9 = {zi7, zi1 + zi7};
   assign zi10 = {10'h100, zi9};
@@ -46,7 +46,7 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module ZLL_Main_sig9 (input logic [23:0] arg0,
+module ZLL_Main_sig8 (input logic [23:0] arg0,
   output logic [25:0] res);
   logic [7:0] zi0;
   logic [15:0] zi1;
@@ -58,13 +58,13 @@ endmodule
 module Main_sig (input logic [15:0] arg0,
   output logic [25:0] res);
   logic [23:0] main_first_out;
-  logic [25:0] zll_main_sig9_out;
+  logic [25:0] zll_main_sig8_out;
   logic [25:0] zi0;
   logic [7:0] zi1;
   logic [15:0] zi2;
   Main_first  inst (arg0, main_first_out);
-  ZLL_Main_sig9  instR1 (main_first_out, zll_main_sig9_out);
-  assign zi0 = zll_main_sig9_out;
+  ZLL_Main_sig8  instR1 (main_first_out, zll_main_sig8_out);
+  assign zi0 = zll_main_sig8_out;
   assign zi1 = zi0[23:16];
   assign zi2 = zi0[15:0];
   assign res = {2'h2, zi1, zi2};

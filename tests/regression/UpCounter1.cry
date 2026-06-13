@@ -21,84 +21,84 @@ rw__Pure_dispatch : [16] -> [25]
 rw__Pure_dispatch x0 = rw__LL_Pure_dispatch (take`{8} x0) (drop`{8} x0)
 
 // $LL.Main.go16
-rw__LL_Main_go16 : [8] -> [25]
-rw__LL_Main_go16 x0 = 0b00000000100000000 # x0
+rw__LL_Main_go16 : [25] -> [25]
+rw__LL_Main_go16 x0 = rw__LL_Main_go6 (drop`{17} x0)
 
 // $LL.Main.go15
 rw__LL_Main_go15 : [8] -> [8] -> [25]
-rw__LL_Main_go15 x0 x1 = rw__LL_Main_go x0 x1
+rw__LL_Main_go15 x0 x1 = rw__LL_Main_go10 x0 x1
 
 // $LL.Main.go14
-rw__LL_Main_go14 : [8] -> [8] -> [25]
-rw__LL_Main_go14 x0 x1 = 0b1 # (x0 # (x0 # x1))
+rw__LL_Main_go14 : [8] -> [25]
+rw__LL_Main_go14 x0 = 0b00000000100000000 # x0
 
 // $LL.Main.go13
 rw__LL_Main_go13 : [8] -> [25]
-rw__LL_Main_go13 x0 = rw__LL_Main_go6 x0
+rw__LL_Main_go13 x0 = rw__LL_Main_go14 x0
 
 // $LL.Main.go12
-rw__LL_Main_go12 : [8] -> [25]
-rw__LL_Main_go12 x0 = rw__LL_Main_go8 x0
+rw__LL_Main_go12 : [8] -> [8] -> [25]
+rw__LL_Main_go12 x0 x1 = rw__LL_Main_go16 (rw__LL_Main_go3 (x0 + 0x01))
 
 // $LL.Main.go11
-rw__LL_Main_go11 : [25] -> [25]
-rw__LL_Main_go11 x0 = rw__LL_Main_go13 (drop`{17} x0)
+rw__LL_Main_go11 : [8] -> [8] -> [25]
+rw__LL_Main_go11 x0 x1 = rw__LL_Main_go12 x0 x1
 
 // $LL.Main.go10
 rw__LL_Main_go10 : [8] -> [8] -> [25]
-rw__LL_Main_go10 x0 x1 = rw__LL_Main_go1 x0 x1
+rw__LL_Main_go10 x0 x1 = rw__LL_Main_go11 x0 x1
 
 // $LL.Pure.dispatch1
 rw__LL_Pure_dispatch1 : [8] -> [8] -> [25]
-rw__LL_Pure_dispatch1 x0 x1 = rw__LL_Main_go9 x0 x1
-
-// $LL.Main.go9
-rw__LL_Main_go9 : [8] -> [8] -> [25]
-rw__LL_Main_go9 x0 x1 = rw__LL_Main_go10 x0 x1
-
-// $LL.Main.go8
-rw__LL_Main_go8 : [8] -> [25]
-rw__LL_Main_go8 x0 = rw__LL_Main_go16 x0
-
-// $LL.Main.go7
-rw__LL_Main_go7 : [16] -> [25]
-rw__LL_Main_go7 x0 = rw__LL_Main_go15 (take`{8} x0) (drop`{8} x0)
-
-// $LL.Main.go6
-rw__LL_Main_go6 : [8] -> [25]
-rw__LL_Main_go6 x0 = rw__LL_Main_go2 x0
-
-// $LL.Main.go5
-rw__LL_Main_go5 : [8] -> [8] -> [25]
-rw__LL_Main_go5 x0 x1 = rw__LL_Main_go11 (rw__LL_Main_go12 (x0 + 0x01))
-
-// $LL.Main.go4
-rw__LL_Main_go4 : [25] -> [25]
-rw__LL_Main_go4 x0 = rw__LL_Main_go3 (take`{8} (drop`{9} x0)) (drop`{17} x0)
-
-// $LL.Main.go3
-rw__LL_Main_go3 : [8] -> [8] -> [25]
-rw__LL_Main_go3 x0 x1 = rw__LL_Main_go14 x0 x1
-
-// $LL.Main.go2
-rw__LL_Main_go2 : [8] -> [25]
-rw__LL_Main_go2 x0 = rw_Main_go x0
+rw__LL_Pure_dispatch1 x0 x1 = rw__LL_Main_go15 x0 x1
 
 // $LL.Pure.dispatch
 rw__LL_Pure_dispatch : [8] -> [8] -> [25]
 rw__LL_Pure_dispatch x0 x1 = rw__LL_Pure_dispatch1 x0 x1
 
-// $LL.Main.go1
-rw__LL_Main_go1 : [8] -> [8] -> [25]
-rw__LL_Main_go1 x0 x1 = rw__LL_Main_go5 x0 x1
+// $LL.Main.go9
+rw__LL_Main_go9 : [8] -> [25]
+rw__LL_Main_go9 x0 = rw_Main_go x0
 
-// $LL.Main.go
-rw__LL_Main_go : [8] -> [8] -> [25]
-rw__LL_Main_go x0 x1 = 0b000000000 # (x0 # x1)
+// $LL.Main.go8
+rw__LL_Main_go8 : [8] -> [8] -> [25]
+rw__LL_Main_go8 x0 x1 = 0b1 # (x0 # (x0 # x1))
+
+// $LL.Main.go7
+rw__LL_Main_go7 : [8] -> [8] -> [25]
+rw__LL_Main_go7 x0 x1 = 0b000000000 # (x0 # x1)
+
+// $LL.Main.go6
+rw__LL_Main_go6 : [8] -> [25]
+rw__LL_Main_go6 x0 = rw__LL_Main_go1 x0
+
+// $LL.Main.go5
+rw__LL_Main_go5 : [25] -> [25]
+rw__LL_Main_go5 x0 = rw__LL_Main_go (take`{8} (drop`{9} x0)) (drop`{17} x0)
+
+// $LL.Main.go4
+rw__LL_Main_go4 : [8] -> [8] -> [25]
+rw__LL_Main_go4 x0 x1 = rw__LL_Main_go7 x0 x1
+
+// $LL.Main.go3
+rw__LL_Main_go3 : [8] -> [25]
+rw__LL_Main_go3 x0 = rw__LL_Main_go13 x0
+
+// $LL.Main.go2
+rw__LL_Main_go2 : [16] -> [25]
+rw__LL_Main_go2 x0 = rw__LL_Main_go4 (take`{8} x0) (drop`{8} x0)
 
 // Main.go
 rw_Main_go : [8] -> [25]
-rw_Main_go x0 = rw__LL_Main_go4 (rw__LL_Main_go7 (x0 # x0))
+rw_Main_go x0 = rw__LL_Main_go5 (rw__LL_Main_go2 (x0 # x0))
+
+// $LL.Main.go1
+rw__LL_Main_go1 : [8] -> [25]
+rw__LL_Main_go1 x0 = rw__LL_Main_go9 x0
+
+// $LL.Main.go
+rw__LL_Main_go : [8] -> [8] -> [25]
+rw__LL_Main_go x0 x1 = rw__LL_Main_go8 x0 x1
 
 // Per-cycle step: outputs # next register values.
 rw_step : [16] -> [24]

@@ -2,54 +2,54 @@ $Pure.dispatch : ([8], [1]) -> [17]
 $Pure.dispatch $0 $1 =
       $LL.Pure.dispatch $1 $0
 
-$LL.Main.go10 : ([17]) -> [17]
+$LL.Main.go10 : ([8]) -> [17]
 $LL.Main.go10 $0 =
-      $LL.Main.go3 $0[8 +: 8] $0[0 +: 8]
+      Main.go $0
 
-$LL.Main.go9 : ([1], [8]) -> [17]
-$LL.Main.go9 $0 $1 =
-      $LL.Main.go2 $0 $0 $1
-
-$LL.Pure.dispatch : ([1], [8]) -> [17]
-$LL.Pure.dispatch $0 $1 =
-      $LL.Main.go9 $0 $1
+$LL.Main.go9 : ([17]) -> [17]
+$LL.Main.go9 $0 =
+      $LL.Main.go6 $0[8 +: 8] $0[0 +: 8]
 
 $LL.Main.go8 : ([8], [8]) -> [17]
 $LL.Main.go8 $0 $1 =
       1'h0 # $0 # $1
 
-$LL.Main.go7 : ([8]) -> [17]
-$LL.Main.go7 $0 =
-      Main.go $0
+$LL.Main.go7 : ([1], [8]) -> [17]
+$LL.Main.go7 $0 $1 =
+      $LL.Main.go10 $1
 
-$LL.Main.go6 : ([1], [8]) -> [17]
+$LL.Main.go6 : ([8], [8]) -> [17]
 $LL.Main.go6 $0 $1 =
-      $LL.Main.go7 $1
+      $LL.Main.go2 $0 $1
 
-$LL.Main.go5 : ([8], [8]) -> [17]
-$LL.Main.go5 $0 $1 =
-      $LL.Main.go8 $0 $1
+$LL.Pure.dispatch : ([1], [8]) -> [17]
+$LL.Pure.dispatch $0 $1 =
+      $LL.Main.go3 $0 $1
 
-$LL.Main.go4 : ([8], [8]) -> [17]
-$LL.Main.go4 $0 $1 =
+$LL.Main.go5 : ([1], [1], [8]) -> [17]
+$LL.Main.go5 $0 $1 $2 =
+      if eq $1 1'h1 then $LL.Main.go10 $2
+            else $LL.Main.go7 $0 $2
+
+$LL.Main.go4 : ([16]) -> [17]
+$LL.Main.go4 $0 =
+      $LL.Main.go $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.go3 : ([1], [8]) -> [17]
+$LL.Main.go3 $0 $1 =
+      $LL.Main.go5 $0 $0 $1
+
+$LL.Main.go2 : ([8], [8]) -> [17]
+$LL.Main.go2 $0 $1 =
       1'h1 # $0 # $1
 
-$LL.Main.go3 : ([8], [8]) -> [17]
-$LL.Main.go3 $0 $1 =
-      $LL.Main.go4 $0 $1
-
-$LL.Main.go2 : ([1], [1], [8]) -> [17]
-$LL.Main.go2 $0 $1 $2 =
-      if eq $1 1'h1 then $LL.Main.go7 $2
-            else $LL.Main.go6 $0 $2
-
-$LL.Main.go1 : ([16]) -> [17]
-$LL.Main.go1 $0 =
-      $LL.Main.go5 $0[8 +: 8] $0[0 +: 8]
+$LL.Main.go : ([8], [8]) -> [17]
+$LL.Main.go $0 $1 =
+      $LL.Main.go8 $0 $1
 
 Main.go : ([8]) -> [17]
 Main.go $0 =
-      $LL.Main.go10 ($LL.Main.go1 ($0 # $0))
+      $LL.Main.go9 ($LL.Main.go4 ($0 # $0))
 
 device top_level
       input __in0 : [1]

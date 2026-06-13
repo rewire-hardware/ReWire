@@ -4,14 +4,14 @@ $Pure.dispatch $1 =
 
 $LL.Main.start1 : ([1]) -> [1]
 $LL.Main.start1 $0 =
+      $LL.ReWire.Prelude.not2 $0
+
+$LL.ReWire.Prelude.not2 : ([1]) -> [1]
+$LL.ReWire.Prelude.not2 $0 =
       1'h1
 
 $LL.Pure.dispatch : ([1]) -> [1]
 $LL.Pure.dispatch $0 =
-      $LL.Main.start $0
-
-$LL.Main.start : ([1]) -> [1]
-$LL.Main.start $0 =
       $LL.Main.start1 $0
 
 device top_level

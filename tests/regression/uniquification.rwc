@@ -4,15 +4,15 @@ $Pure.dispatch $1 =
 
 $LL.Pure.dispatch : ([2]) -> [2]
 $LL.Pure.dispatch $0 =
-      $LL.Main.start $0
+      $LL.Main.start1 $0
 
 $LL.Main.start1 : ([2]) -> [2]
 $LL.Main.start1 $0 =
-      2'h1
+      $LL.Main.start $0
 
 $LL.Main.start : ([2]) -> [2]
 $LL.Main.start $0 =
-      $LL.Main.start1 $0
+      2'h1
 
 device top_level
       input __in0 : [2]

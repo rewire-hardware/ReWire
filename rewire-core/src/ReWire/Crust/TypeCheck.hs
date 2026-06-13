@@ -522,5 +522,7 @@ globalStartTy = poly [a] $ globalReacT (TyCon an $ s2n "Identity") $ TyVar an KS
             a :: Name Ty
             a = s2n "a"
 
+-- | $Pure.start takes the (unobservable) initial stores as a tuple; its type
+--   mirrors unfold's second argument: s -> PuRe s o.
 globalPureStartTy :: Poly
-globalPureStartTy = poly [] globalPuRe
+globalPureStartTy = poly [] $ sPTy `arr` globalPuRe

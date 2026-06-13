@@ -2,13 +2,13 @@ $Pure.dispatch : ([1]) -> [1]
 $Pure.dispatch $1 =
       $LL.Pure.dispatch $1
 
-$LL.Main.start1 : ([1]) -> [1]
-$LL.Main.start1 $0 =
-      1'h0
-
 $LL.Pure.dispatch : ([1]) -> [1]
 $LL.Pure.dispatch $0 =
       $LL.Main.start $0
+
+$LL.Main.start1 : ([1]) -> [1]
+$LL.Main.start1 $0 =
+      1'h0
 
 $LL.Main.start : ([1]) -> [1]
 $LL.Main.start $0 =

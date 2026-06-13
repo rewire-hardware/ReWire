@@ -3,176 +3,192 @@ $Pure.dispatch $0 =
       $LL.Pure.dispatch $0
 
 $LL.Main.loop43 : ([8], [8]) -> [19]
-$LL.Main.loop43 $0 $3 =
-      $LL.Main.loop38 $0 $3
+$LL.Main.loop43 $0 $2 =
+      $LL.Main.loop39 $0 $2
 
 $LL.Main.loop42 : ([8]) -> [19]
 $LL.Main.loop42 $1 =
-      $LL.Main.loop30 $1
+      $LL.Main.loop20 $1
 
-$LL.Main.loop41 : ([8], [8]) -> [19]
-$LL.Main.loop41 $1 $3 =
-      $LL.Main.loop43 $1 $3
+$LL.Main.loop41 : ([8]) -> [19]
+$LL.Main.loop41 $1 =
+      $LL.Main.loop31 $1
 
 $LL.Main.loop40 : ([8], [8]) -> [19]
-$LL.Main.loop40 $1 $3 =
-      $LL.Main.loop17 $1 $3
+$LL.Main.loop40 $1 $2 =
+      $LL.Main.loop3 $1 ($LL.Main.loop30 (add $1 8'h1))
 
 $LL.Main.loop39 : ([8], [8]) -> [19]
 $LL.Main.loop39 $0 $2 =
-      $LL.Main.loop $0 $2
-
-$LL.Main.loop38 : ([8], [8]) -> [19]
-$LL.Main.loop38 $0 $3 =
-      $LL.Main.loop37 $0 $3
-
-$LL.Main.loop37 : ([8], [8]) -> [19]
-$LL.Main.loop37 $0 $3 =
-      $LL.Main.loop32 $0 ($LL.Main.loop35 $3)
-
-$LL.Main.loop36 : ([8]) -> [19]
-$LL.Main.loop36 $1 =
-      $LL.Main.loop5 $1
-
-$LL.Main.loop35 : ([8]) -> [19]
-$LL.Main.loop35 $0 =
-      $LL.Main.loop23 $0
-
-$LL.Main.loop34 : ([8], [8]) -> [19]
-$LL.Main.loop34 $1 $2 =
-      $LL.Main.loop39 $1 $2
-
-$LL.Main.loop33 : ([8]) -> [19]
-$LL.Main.loop33 $1 =
-      $LL.Main.loop20 $1
-
-$LL.Main.loop32 : ([8], [19]) -> [19]
-$LL.Main.loop32 $0 $1 =
-      $LL.Main.loop24 $0 $1[0 +: 8]
-
-$LL.Main.loop31 : ([8], [8]) -> [19]
-$LL.Main.loop31 $0 $2 =
-      $LL.Main.loop9 $0 $2
-
-$LL.Main.loop30 : ([8]) -> [19]
-$LL.Main.loop30 $0 =
-      11'h200 # $0
-
-$LL.Main.loop29 : ([19]) -> [19]
-$LL.Main.loop29 $1 =
-      $LL.Main.loop13 $1[8 +: 8] $1[0 +: 8]
-
-$LL.Main.loop28 : ([8]) -> [19]
-$LL.Main.loop28 $1 =
-      $LL.Main.loop8 $1
-
-Main.loop : ([8]) -> [19]
-Main.loop $0 =
-      $LL.Main.loop21 ($LL.Main.loop1 $0)
-
-$LL.Main.loop27 : ([8], [8]) -> [19]
-$LL.Main.loop27 $0 $2 =
-      $LL.Main.loop16 $0 $2
-
-$LL.Main.loop26 : ([8], [8]) -> [19]
-$LL.Main.loop26 $1 $2 =
-      $LL.Main.loop27 $1 $2
-
-$LL.Main.loop24 : ([8], [8]) -> [19]
-$LL.Main.loop24 $0 $2 =
-      $LL.Main.loop15 $0 $2
-
-$LL.Main.loop23 : ([8]) -> [19]
-$LL.Main.loop23 $1 =
-      $LL.Main.loop42 $1
-
-$LL.Main.loop21 : ([19]) -> [19]
-$LL.Main.loop21 $0 =
-      $LL.Main.loop10 $0[0 +: 8]
-
-$LL.Main.loop20 : ([8]) -> [19]
-$LL.Main.loop20 $1 =
-      $LL.Main.loop29 ($LL.Main.loop7 ($1 # $1))
-
-$LL.Main.loop19 : ([8], [8]) -> [19]
-$LL.Main.loop19 $0 $1 =
-      3'h1 # $0 # $1
-
-$LL.Main.loop18 : ([8], [19]) -> [19]
-$LL.Main.loop18 $1 $2 =
-      $LL.Main.loop2 $1 $2[0 +: 8]
-
-$LL.Main.loop17 : ([8], [8]) -> [19]
-$LL.Main.loop17 $2 $3 =
-      $LL.Main.loop41 $2 $3
+      $LL.Main.loop24 $0 $2
 
 $LL.Pure.dispatch1 : ([8]) -> [19]
 $LL.Pure.dispatch1 $1 =
+      $LL.Main.loop41 $1
+
+$LL.Main.loop38 : ([8], [8]) -> [19]
+$LL.Main.loop38 $1 $2 =
+      $LL.Main.loop33 $1 $2
+
+$LL.Main.loop37 : ([8], [8]) -> [19]
+$LL.Main.loop37 $0 $1 =
+      $LL.Main.loop8 $0 $1
+
+$LL.Main.loop36 : ([8]) -> [19]
+$LL.Main.loop36 $1 =
+      $LL.Main.loop2 $1
+
+$LL.Main.loop35 : ([8]) -> [19]
+$LL.Main.loop35 $1 =
       $LL.Main.loop36 $1
 
-$LL.Main.loop16 : ([8], [8]) -> [19]
-$LL.Main.loop16 $1 $2 =
-      $LL.Main.loop14 $1 $2
+$LL.Main.loop34 : ([8], [8]) -> [19]
+$LL.Main.loop34 $1 $2 =
+      $LL.Main.loop40 $1 $2
+
+$LL.Main.loop33 : ([8], [8]) -> [19]
+$LL.Main.loop33 $1 $2 =
+      $LL.Main.loop17 $1 $2
+
+$LL.Main.loop32 : ([8], [8]) -> [19]
+$LL.Main.loop32 $0 $3 =
+      $LL.Main.loop27 $0 $3
+
+$LL.Main.loop31 : ([8]) -> [19]
+$LL.Main.loop31 $1 =
+      Main.loop $1
+
+$LL.Main.loop30 : ([8]) -> [19]
+$LL.Main.loop30 $0 =
+      $LL.Main.loop42 $0
+
+$LL.Main.loop29 : ([8], [8]) -> [19]
+$LL.Main.loop29 $0 $2 =
+      $LL.Main.loop43 $0 $2
+
+$LL.Main.loop28 : ([8], [8]) -> [19]
+$LL.Main.loop28 $0 $3 =
+      $LL.Main.loop32 $0 $3
+
+$LL.Main.loop27 : ([8], [8]) -> [19]
+$LL.Main.loop27 $0 $3 =
+      $LL.Main.loop13 $0 ($LL.Main.loop6 $3)
 
 $LL.Pure.dispatch : ([8]) -> [19]
 $LL.Pure.dispatch $1 =
       $LL.Pure.dispatch1 $1
 
-$LL.Main.loop15 : ([8], [8]) -> [19]
-$LL.Main.loop15 $0 $2 =
+$LL.Main.loop26 : ([19]) -> [19]
+$LL.Main.loop26 $1 =
+      $LL.Main.loop38 $1[8 +: 8] $1[0 +: 8]
+
+$LL.Main.loop25 : ([8], [8]) -> [19]
+$LL.Main.loop25 $0 $2 =
+      $LL.Main.loop29 $0 $2
+
+Main.loop : ([8]) -> [19]
+Main.loop $0 =
+      $LL.Main.loop18 ($LL.Main.loop14 $0)
+
+$LL.Main.loop24 : ([8], [8]) -> [19]
+$LL.Main.loop24 $0 $2 =
+      $LL.Main.loop12 $0 $2
+
+$LL.Main.loop23 : ([8], [8]) -> [19]
+$LL.Main.loop23 $0 $3 =
+      $LL.Main.loop $0 $3
+
+$LL.Main.loop22 : ([16]) -> [19]
+$LL.Main.loop22 $0 =
+      $LL.Main.loop37 $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.loop21 : ([8]) -> [19]
+$LL.Main.loop21 $1 =
+      11'h200 # $1
+
+$LL.Main.loop20 : ([8]) -> [19]
+$LL.Main.loop20 $1 =
+      $LL.Main.loop21 $1
+
+$LL.Main.loop19 : ([8]) -> [19]
+$LL.Main.loop19 $1 =
+      11'h0 # $1
+
+$LL.Main.loop18 : ([19]) -> [19]
+$LL.Main.loop18 $0 =
+      $LL.Main.loop9 $0[0 +: 8]
+
+$LL.Main.loop17 : ([8], [8]) -> [19]
+$LL.Main.loop17 $0 $2 =
       $LL.Main.loop34 $0 $2
 
-$LL.Main.loop14 : ([8], [8]) -> [19]
-$LL.Main.loop14 $1 $2 =
-      $LL.Main.loop18 $1 ($LL.Main.loop35 (add $1 8'h1))
+$LL.Main.loop16 : ([8], [8]) -> [19]
+$LL.Main.loop16 $0 $3 =
+      $LL.Main.loop23 $0 $3
 
-$LL.Main.loop13 : ([8], [8]) -> [19]
-$LL.Main.loop13 $1 $2 =
-      $LL.Main.loop26 $1 $2
+$LL.Main.loop15 : ([8]) -> [19]
+$LL.Main.loop15 $1 =
+      $LL.Main.loop26 ($LL.Main.loop22 ($1 # $1))
 
-$LL.Main.loop12 : ([8]) -> [19]
-$LL.Main.loop12 $1 =
-      11'h0 # $1
+$LL.Main.loop14 : ([8]) -> [19]
+$LL.Main.loop14 $0 =
+      $LL.Main.loop4 $0
+
+$LL.Main.loop13 : ([8], [19]) -> [19]
+$LL.Main.loop13 $0 $1 =
+      $LL.Main.loop5 $0 $1[0 +: 8]
+
+$LL.Main.loop12 : ([8], [8]) -> [19]
+$LL.Main.loop12 $0 $2 =
+      3'h4 # $0 # $2
+
+$LL.Main.loop11 : ([8], [8]) -> [19]
+$LL.Main.loop11 $0 $1 =
+      3'h1 # $0 # $1
 
 $LL.Main.loop10 : ([8]) -> [19]
 $LL.Main.loop10 $1 =
-      $LL.Main.loop33 $1
+      $LL.Main.loop15 $1
 
-$LL.Main.loop9 : ([8], [8]) -> [19]
-$LL.Main.loop9 $0 $2 =
-      3'h4 # $0 # $2
+$LL.Main.loop9 : ([8]) -> [19]
+$LL.Main.loop9 $1 =
+      $LL.Main.loop10 $1
 
-$LL.Main.loop8 : ([8]) -> [19]
-$LL.Main.loop8 $1 =
-      $LL.Main.loop12 $1
+$LL.Main.loop8 : ([8], [8]) -> [19]
+$LL.Main.loop8 $0 $1 =
+      $LL.Main.loop11 $0 $1
 
-$LL.Main.loop7 : ([16]) -> [19]
-$LL.Main.loop7 $0 =
-      $LL.Main.loop6 $0[8 +: 8] $0[0 +: 8]
+$LL.Main.loop7 : ([8]) -> [19]
+$LL.Main.loop7 $1 =
+      $LL.Main.loop19 $1
 
-$LL.Main.loop6 : ([8], [8]) -> [19]
-$LL.Main.loop6 $0 $1 =
-      $LL.Main.loop3 $0 $1
+$LL.Main.loop6 : ([8]) -> [19]
+$LL.Main.loop6 $0 =
+      $LL.Main.loop35 $0
 
-$LL.Main.loop5 : ([8]) -> [19]
-$LL.Main.loop5 $1 =
-      Main.loop $1
+$LL.Main.loop5 : ([8], [8]) -> [19]
+$LL.Main.loop5 $0 $2 =
+      $LL.Main.loop25 $0 $2
 
-$LL.Main.loop3 : ([8], [8]) -> [19]
-$LL.Main.loop3 $0 $1 =
-      $LL.Main.loop19 $0 $1
+$LL.Main.loop4 : ([8]) -> [19]
+$LL.Main.loop4 $1 =
+      $LL.Main.loop7 $1
 
-$LL.Main.loop2 : ([8], [8]) -> [19]
-$LL.Main.loop2 $1 $3 =
-      $LL.Main.loop40 $1 $3
+$LL.Main.loop3 : ([8], [19]) -> [19]
+$LL.Main.loop3 $0 $2 =
+      $LL.Main.loop16 $0 $2[0 +: 8]
 
-$LL.Main.loop1 : ([8]) -> [19]
-$LL.Main.loop1 $0 =
-      $LL.Main.loop28 $0
+$LL.Main.loop2 : ([8]) -> [19]
+$LL.Main.loop2 $0 =
+      11'h200 # $0
+
+$LL.Main.loop1 : ([8], [8]) -> [19]
+$LL.Main.loop1 $1 $3 =
+      $LL.Main.loop28 $1 $3
 
 $LL.Main.loop : ([8], [8]) -> [19]
-$LL.Main.loop $0 $2 =
-      $LL.Main.loop31 $0 $2
+$LL.Main.loop $0 $3 =
+      $LL.Main.loop1 $0 $3
 
 device top_level
       output __out0 : [8]

@@ -8,66 +8,66 @@ module top_level (input logic [0:0] clk,
   logic [6:0] __resumption_tag_next;
   logic [31:0] __st0;
   logic [31:0] __st0_next;
-  logic [65:0] zll_main_word013_out;
+  logic [65:0] zll_main_word219_out;
   logic [65:0] zi52;
   logic [31:0] zi53;
-  logic [65:0] zll_main_word013_outR1;
+  logic [65:0] zll_main_word219_outR1;
   logic [65:0] zi58;
   logic [31:0] zi59;
-  logic [65:0] zll_main_word319_out;
+  logic [65:0] zll_main_word149_out;
   logic [65:0] zi122;
   logic [31:0] zi123;
   logic [31:0] zi124;
   logic [0:0] extres;
-  logic [65:0] zll_main_word319_outR1;
+  logic [65:0] zll_main_word149_outR1;
   logic [65:0] zi145;
   logic [31:0] zi146;
   logic [31:0] zi147;
   logic [0:0] main_test1_out;
-  logic [65:0] zll_main_word319_outR2;
+  logic [65:0] zll_main_word149_outR2;
   logic [65:0] zi156;
   logic [31:0] zi157;
   logic [31:0] zi158;
   logic [0:0] extresR1;
-  logic [65:0] zll_main_word319_outR3;
+  logic [65:0] zll_main_word149_outR3;
   logic [65:0] zi201;
   logic [31:0] zi202;
   logic [31:0] zi203;
   logic [0:0] main_test1_outR1;
-  logic [65:0] zll_main_word319_outR4;
+  logic [65:0] zll_main_word149_outR4;
   logic [65:0] zi262;
   logic [31:0] zi263;
   logic [31:0] zi264;
   logic [0:0] extresR2;
   logic [65:0] zres;
-  ZLL_Main_word013  inst (__in1, zll_main_word013_out);
-  assign zi52 = zll_main_word013_out;
+  ZLL_Main_word219  inst (__in1, zll_main_word219_out);
+  assign zi52 = zll_main_word219_out;
   assign zi53 = zi52[31:0];
-  ZLL_Main_word013  instR1 (__in1, zll_main_word013_outR1);
-  assign zi58 = zll_main_word013_outR1;
+  ZLL_Main_word219  instR1 (__in1, zll_main_word219_outR1);
+  assign zi58 = zll_main_word219_outR1;
   assign zi59 = zi58[31:0];
-  ZLL_Main_word319  instR2 ({__st0, __st0}, zll_main_word319_out);
-  assign zi122 = zll_main_word319_out;
+  ZLL_Main_word149  instR2 ({__st0, __st0}, zll_main_word149_out);
+  assign zi122 = zll_main_word149_out;
   assign zi123 = zi122[63:32];
   assign zi124 = zi122[31:0];
   test4  instR3 (__in1, zi123, extres[0]);
-  ZLL_Main_word319  instR4 ({__st0, __st0}, zll_main_word319_outR1);
-  assign zi145 = zll_main_word319_outR1;
+  ZLL_Main_word149  instR4 ({__st0, __st0}, zll_main_word149_outR1);
+  assign zi145 = zll_main_word149_outR1;
   assign zi146 = zi145[63:32];
   assign zi147 = zi145[31:0];
   Main_test1  instR5 (__in1, zi146, main_test1_out);
-  ZLL_Main_word319  instR6 ({__st0, __st0}, zll_main_word319_outR2);
-  assign zi156 = zll_main_word319_outR2;
+  ZLL_Main_word149  instR6 ({__st0, __st0}, zll_main_word149_outR2);
+  assign zi156 = zll_main_word149_outR2;
   assign zi157 = zi156[63:32];
   assign zi158 = zi156[31:0];
   test3  instR7 (__in1, zi157, extresR1[0]);
-  ZLL_Main_word319  instR8 ({__st0, __st0}, zll_main_word319_outR3);
-  assign zi201 = zll_main_word319_outR3;
+  ZLL_Main_word149  instR8 ({__st0, __st0}, zll_main_word149_outR3);
+  assign zi201 = zll_main_word149_outR3;
   assign zi202 = zi201[63:32];
   assign zi203 = zi201[31:0];
   Main_test1  instR9 (__in1, zi202, main_test1_outR1);
-  ZLL_Main_word319  instR10 ({__st0, __st0}, zll_main_word319_outR4);
-  assign zi262 = zll_main_word319_outR4;
+  ZLL_Main_word149  instR10 ({__st0, __st0}, zll_main_word149_outR4);
+  assign zi262 = zll_main_word149_outR4;
   assign zi263 = zi262[63:32];
   assign zi264 = zi262[31:0];
   test2  instR11 (__in1, zi263, extresR2[0]);
@@ -86,9 +86,13 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module ZLL_Main_word013 (input logic [31:0] arg0,
+module ZLL_Main_word149 (input logic [63:0] arg0,
   output logic [65:0] res);
-  assign res = {{2'h1, {6'h20{1'h0}}}, arg0};
+  logic [31:0] zi0;
+  logic [31:0] zi1;
+  assign zi0 = arg0[63:32];
+  assign zi1 = arg0[31:0];
+  assign res = {2'h0, zi0, zi1};
 endmodule
 
 module Main_test1 (input logic [31:0] arg0,
@@ -99,11 +103,7 @@ module Main_test1 (input logic [31:0] arg0,
   assign res = extres;
 endmodule
 
-module ZLL_Main_word319 (input logic [63:0] arg0,
+module ZLL_Main_word219 (input logic [31:0] arg0,
   output logic [65:0] res);
-  logic [31:0] zi0;
-  logic [31:0] zi1;
-  assign zi0 = arg0[63:32];
-  assign zi1 = arg0[31:0];
-  assign res = {2'h0, zi0, zi1};
+  assign res = {{2'h1, {6'h20{1'h0}}}, arg0};
 endmodule

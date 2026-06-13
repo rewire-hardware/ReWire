@@ -71,7 +71,7 @@ module top_level (input logic [0:0] clk,
   logic [31:0] main_swapix3_outR30;
   logic [31:0] main_swapix3_outR31;
   logic [1023:0] zi4;
-  logic [1023:0] zll_main_rotate2_out;
+  logic [1023:0] zll_main_rotate1_out;
   logic [1023:0] main_add_out;
   logic [1023:0] zi5;
   logic [31:0] main_swapix2_out;
@@ -141,15 +141,15 @@ module top_level (input logic [0:0] clk,
   logic [31:0] main_swapix1_outR30;
   logic [31:0] main_swapix1_outR31;
   logic [1023:0] zi7;
-  logic [1023:0] zll_main_rotate2_outR1;
+  logic [1023:0] zll_main_rotate1_outR1;
   logic [1023:0] main_add_outR1;
   logic [1023:0] zi8;
   logic [2049:0] zi9;
   logic [1023:0] zi10;
   logic [2049:0] zll_main_nopipeline17_out;
-  logic [2049:0] zll_main_nopipeline21_out;
+  logic [2049:0] zll_main_nopipeline22_out;
   logic [2049:0] zll_main_nopipeline17_outR1;
-  logic [2049:0] zll_main_nopipeline21_outR1;
+  logic [2049:0] zll_main_nopipeline22_outR1;
   logic [2049:0] zres;
   Main_swapix4  inst (__st0, 5'h0, main_swapix4_out);
   Main_swapix4  instR1 (__st0, 5'h1, main_swapix4_outR1);
@@ -218,8 +218,8 @@ module top_level (input logic [0:0] clk,
   Main_swapix3  instR63 (zi3, 5'h1e, main_swapix3_outR30);
   Main_swapix3  instR64 (zi3, 5'h1f, main_swapix3_outR31);
   assign zi4 = {main_swapix3_out, main_swapix3_outR1, main_swapix3_outR2, main_swapix3_outR3, main_swapix3_outR4, main_swapix3_outR5, main_swapix3_outR6, main_swapix3_outR7, main_swapix3_outR8, main_swapix3_outR9, main_swapix3_outR10, main_swapix3_outR11, main_swapix3_outR12, main_swapix3_outR13, main_swapix3_outR14, main_swapix3_outR15, main_swapix3_outR16, main_swapix3_outR17, main_swapix3_outR18, main_swapix3_outR19, main_swapix3_outR20, main_swapix3_outR21, main_swapix3_outR22, main_swapix3_outR23, main_swapix3_outR24, main_swapix3_outR25, main_swapix3_outR26, main_swapix3_outR27, main_swapix3_outR28, main_swapix3_outR29, main_swapix3_outR30, main_swapix3_outR31};
-  ZLL_Main_rotate2  instR65 ({32'hb, zi4}, zll_main_rotate2_out);
-  Main_add  instR66 (zll_main_rotate2_out, main_add_out);
+  ZLL_Main_rotate1  instR65 ({32'hb, zi4}, zll_main_rotate1_out);
+  Main_add  instR66 (zll_main_rotate1_out, main_add_out);
   assign zi5 = main_add_out;
   Main_swapix2  instR67 (zi5, 5'h0, main_swapix2_out);
   Main_swapix2  instR68 (zi5, 5'h1, main_swapix2_outR1);
@@ -288,16 +288,16 @@ module top_level (input logic [0:0] clk,
   Main_swapix1  instR130 (zi6, 5'h1e, main_swapix1_outR30);
   Main_swapix1  instR131 (zi6, 5'h1f, main_swapix1_outR31);
   assign zi7 = {main_swapix1_out, main_swapix1_outR1, main_swapix1_outR2, main_swapix1_outR3, main_swapix1_outR4, main_swapix1_outR5, main_swapix1_outR6, main_swapix1_outR7, main_swapix1_outR8, main_swapix1_outR9, main_swapix1_outR10, main_swapix1_outR11, main_swapix1_outR12, main_swapix1_outR13, main_swapix1_outR14, main_swapix1_outR15, main_swapix1_outR16, main_swapix1_outR17, main_swapix1_outR18, main_swapix1_outR19, main_swapix1_outR20, main_swapix1_outR21, main_swapix1_outR22, main_swapix1_outR23, main_swapix1_outR24, main_swapix1_outR25, main_swapix1_outR26, main_swapix1_outR27, main_swapix1_outR28, main_swapix1_outR29, main_swapix1_outR30, main_swapix1_outR31};
-  ZLL_Main_rotate2  instR132 ({32'h7, zi7}, zll_main_rotate2_outR1);
-  Main_add  instR133 (zll_main_rotate2_outR1, main_add_outR1);
+  ZLL_Main_rotate1  instR132 ({32'h7, zi7}, zll_main_rotate1_outR1);
+  Main_add  instR133 (zll_main_rotate1_outR1, main_add_outR1);
   assign zi8 = main_add_outR1;
   assign zi9 = {{2'h1, {11'h400{1'h0}}}, zi8};
   assign zi10 = zi9[1023:0];
   ZLL_Main_nopipeline17  instR134 ({zi10, zi10}, zll_main_nopipeline17_out);
-  ZLL_Main_nopipeline21  instR135 (zll_main_nopipeline17_out, zll_main_nopipeline21_out);
+  ZLL_Main_nopipeline22  instR135 (zll_main_nopipeline17_out, zll_main_nopipeline22_out);
   ZLL_Main_nopipeline17  instR136 ({__st0, __st0}, zll_main_nopipeline17_outR1);
-  ZLL_Main_nopipeline21  instR137 (zll_main_nopipeline17_outR1, zll_main_nopipeline21_outR1);
-  assign zres = (__in0 == 1'h0) ? zll_main_nopipeline21_out : zll_main_nopipeline21_outR1;
+  ZLL_Main_nopipeline22  instR137 (zll_main_nopipeline17_outR1, zll_main_nopipeline22_outR1);
+  assign zres = (__in0 == 1'h0) ? zll_main_nopipeline22_out : zll_main_nopipeline22_outR1;
   assign __st0_next = zres[1023:0];
   assign __out0 = zres[2047:1024];
   initial __st0 = {93'h40000000020000001, {10'h3a3{1'h0}}};
@@ -310,89 +310,11 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module ZLL_Main_addix12 (input logic [31:0] arg0,
-  output logic [31:0] res);
-  assign res = arg0;
-endmodule
-
-module ZLL_Main_rotate2 (input logic [1055:0] arg0,
-  output logic [1023:0] res);
-  logic [31:0] zi0;
-  logic [1023:0] zi1;
-  logic [31:0] main_rot_out;
-  logic [31:0] main_rot_outR1;
-  logic [31:0] main_rot_outR2;
-  logic [31:0] main_rot_outR3;
-  logic [31:0] main_rot_outR4;
-  logic [31:0] main_rot_outR5;
-  logic [31:0] main_rot_outR6;
-  logic [31:0] main_rot_outR7;
-  logic [31:0] main_rot_outR8;
-  logic [31:0] main_rot_outR9;
-  logic [31:0] main_rot_outR10;
-  logic [31:0] main_rot_outR11;
-  logic [31:0] main_rot_outR12;
-  logic [31:0] main_rot_outR13;
-  logic [31:0] main_rot_outR14;
-  logic [31:0] main_rot_outR15;
-  logic [31:0] main_rot_outR16;
-  logic [31:0] main_rot_outR17;
-  logic [31:0] main_rot_outR18;
-  logic [31:0] main_rot_outR19;
-  logic [31:0] main_rot_outR20;
-  logic [31:0] main_rot_outR21;
-  logic [31:0] main_rot_outR22;
-  logic [31:0] main_rot_outR23;
-  logic [31:0] main_rot_outR24;
-  logic [31:0] main_rot_outR25;
-  logic [31:0] main_rot_outR26;
-  logic [31:0] main_rot_outR27;
-  logic [31:0] main_rot_outR28;
-  logic [31:0] main_rot_outR29;
-  logic [31:0] main_rot_outR30;
-  logic [31:0] main_rot_outR31;
-  assign zi0 = arg0[1055:1024];
-  assign zi1 = arg0[1023:0];
-  Main_rot  inst (zi0, zi1, 5'h0, main_rot_out);
-  Main_rot  instR1 (zi0, zi1, 5'h1, main_rot_outR1);
-  Main_rot  instR2 (zi0, zi1, 5'h2, main_rot_outR2);
-  Main_rot  instR3 (zi0, zi1, 5'h3, main_rot_outR3);
-  Main_rot  instR4 (zi0, zi1, 5'h4, main_rot_outR4);
-  Main_rot  instR5 (zi0, zi1, 5'h5, main_rot_outR5);
-  Main_rot  instR6 (zi0, zi1, 5'h6, main_rot_outR6);
-  Main_rot  instR7 (zi0, zi1, 5'h7, main_rot_outR7);
-  Main_rot  instR8 (zi0, zi1, 5'h8, main_rot_outR8);
-  Main_rot  instR9 (zi0, zi1, 5'h9, main_rot_outR9);
-  Main_rot  instR10 (zi0, zi1, 5'ha, main_rot_outR10);
-  Main_rot  instR11 (zi0, zi1, 5'hb, main_rot_outR11);
-  Main_rot  instR12 (zi0, zi1, 5'hc, main_rot_outR12);
-  Main_rot  instR13 (zi0, zi1, 5'hd, main_rot_outR13);
-  Main_rot  instR14 (zi0, zi1, 5'he, main_rot_outR14);
-  Main_rot  instR15 (zi0, zi1, 5'hf, main_rot_outR15);
-  Main_rot  instR16 (zi0, zi1, 5'h10, main_rot_outR16);
-  Main_rot  instR17 (zi0, zi1, 5'h11, main_rot_outR17);
-  Main_rot  instR18 (zi0, zi1, 5'h12, main_rot_outR18);
-  Main_rot  instR19 (zi0, zi1, 5'h13, main_rot_outR19);
-  Main_rot  instR20 (zi0, zi1, 5'h14, main_rot_outR20);
-  Main_rot  instR21 (zi0, zi1, 5'h15, main_rot_outR21);
-  Main_rot  instR22 (zi0, zi1, 5'h16, main_rot_outR22);
-  Main_rot  instR23 (zi0, zi1, 5'h17, main_rot_outR23);
-  Main_rot  instR24 (zi0, zi1, 5'h18, main_rot_outR24);
-  Main_rot  instR25 (zi0, zi1, 5'h19, main_rot_outR25);
-  Main_rot  instR26 (zi0, zi1, 5'h1a, main_rot_outR26);
-  Main_rot  instR27 (zi0, zi1, 5'h1b, main_rot_outR27);
-  Main_rot  instR28 (zi0, zi1, 5'h1c, main_rot_outR28);
-  Main_rot  instR29 (zi0, zi1, 5'h1d, main_rot_outR29);
-  Main_rot  instR30 (zi0, zi1, 5'h1e, main_rot_outR30);
-  Main_rot  instR31 (zi0, zi1, 5'h1f, main_rot_outR31);
-  assign res = {main_rot_out, main_rot_outR1, main_rot_outR2, main_rot_outR3, main_rot_outR4, main_rot_outR5, main_rot_outR6, main_rot_outR7, main_rot_outR8, main_rot_outR9, main_rot_outR10, main_rot_outR11, main_rot_outR12, main_rot_outR13, main_rot_outR14, main_rot_outR15, main_rot_outR16, main_rot_outR17, main_rot_outR18, main_rot_outR19, main_rot_outR20, main_rot_outR21, main_rot_outR22, main_rot_outR23, main_rot_outR24, main_rot_outR25, main_rot_outR26, main_rot_outR27, main_rot_outR28, main_rot_outR29, main_rot_outR30, main_rot_outR31};
-endmodule
-
-module ZLL_Main_swapix225 (input logic [1023:0] arg0,
-  input logic [4:0] arg1,
+module ZLL_Main_xorix17 (input logic [4:0] arg0,
+  input logic [1023:0] arg1,
   output logic [31:0] res);
   logic [1023:0] slice_in;
-  assign slice_in = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, arg1}) - 128'h1) * 128'h20);
+  assign slice_in = arg1 >> (((128'h20 - {{7'h7b{1'h0}}, arg0}) - 128'h1) * 128'h20);
   assign res = slice_in[31:0];
 endmodule
 
@@ -412,7 +334,7 @@ module Main_rot (input logic [31:0] arg0,
   logic [32:0] zi14;
   logic [0:0] zi15;
   logic [31:0] zi16;
-  logic [31:0] zll_main_addix12_out;
+  logic [31:0] zll_main_rot9_out;
   Main_explode5  inst (arg2, main_explode5_out);
   assign zi7 = main_explode5_out;
   assign zi8 = zi7[4];
@@ -425,11 +347,11 @@ module Main_rot (input logic [31:0] arg0,
   assign zi14 = {zi8, slice_in[31:0]};
   assign zi15 = zi14[32];
   assign zi16 = zi14[31:0];
-  ZLL_Main_addix12  instR1 (zi16, zll_main_addix12_out);
-  assign res = (zi15 == 1'h1) ? zll_main_addix12_out : $unsigned($signed(zi16) >>> arg0);
+  ZLL_Main_rot9  instR1 (zi16, zll_main_rot9_out);
+  assign res = (zi15 == 1'h1) ? zll_main_rot9_out : $unsigned($signed(zi16) >>> arg0);
 endmodule
 
-module ZLL_Main_nopipeline21 (input logic [2049:0] arg0,
+module ZLL_Main_nopipeline22 (input logic [2049:0] arg0,
   output logic [2049:0] res);
   logic [1023:0] zi0;
   logic [1023:0] zi1;
@@ -438,13 +360,12 @@ module ZLL_Main_nopipeline21 (input logic [2049:0] arg0,
   assign res = {2'h2, zi0, zi1};
 endmodule
 
-module ZLL_Main_swapix222 (input logic [1023:0] arg0,
+module ZLL_Main_swapix219 (input logic [1023:0] arg0,
   input logic [4:0] arg1,
-  input logic [0:0] arg2,
   output logic [31:0] res);
-  logic [31:0] zll_main_swapix225_out;
-  ZLL_Main_swapix225  inst (arg0, arg1, zll_main_swapix225_out);
-  assign res = zll_main_swapix225_out;
+  logic [1023:0] slice_in;
+  assign slice_in = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, arg1}) - 128'h1) * 128'h20);
+  assign res = slice_in[31:0];
 endmodule
 
 module ReWire_Prelude_not (input logic [0:0] arg0,
@@ -452,12 +373,18 @@ module ReWire_Prelude_not (input logic [0:0] arg0,
   assign res = (arg0 == 1'h1) ? 1'h0 : 1'h1;
 endmodule
 
-module ZLL_Main_swapix121 (input logic [4:0] arg0,
-  input logic [1023:0] arg1,
+module ZLL_Main_rot9 (input logic [31:0] arg0,
   output logic [31:0] res);
-  logic [1023:0] slice_in;
-  assign slice_in = arg1 >> (((128'h20 - {{7'h7b{1'h0}}, arg0}) - 128'h1) * 128'h20);
-  assign res = slice_in[31:0];
+  assign res = arg0;
+endmodule
+
+module ZLL_Main_swapix319 (input logic [1023:0] arg0,
+  input logic [4:0] arg1,
+  input logic [0:0] arg2,
+  output logic [31:0] res);
+  logic [31:0] zll_main_swapix219_out;
+  ZLL_Main_swapix219  inst (arg0, arg1, zll_main_swapix219_out);
+  assign res = zll_main_swapix219_out;
 endmodule
 
 module ZLL_Main_nopipeline17 (input logic [2047:0] arg0,
@@ -553,12 +480,12 @@ module Main_swapix4 (input logic [1023:0] arg0,
   logic [0:0] rewire_prelude_not_out;
   logic [0:0] rewirezupreludezuzazazuout;
   logic [0:0] zi11;
-  logic [31:0] zll_main_swapix121_out;
+  logic [31:0] zll_main_xorix17_out;
   logic [0:0] rewirezupreludezuzazazuoutR1;
   logic [0:0] zi13;
-  logic [31:0] zll_main_swapix121_outR1;
+  logic [31:0] zll_main_xorix17_outR1;
   logic [0:0] rewirezupreludezuzazazuoutR2;
-  logic [31:0] zll_main_swapix222_out;
+  logic [31:0] zll_main_swapix319_out;
   Main_explode5  inst (arg1, main_explode5_out);
   assign zi3 = main_explode5_out;
   assign zi4 = zi3[4];
@@ -571,13 +498,86 @@ module Main_swapix4 (input logic [1023:0] arg0,
   ReWire_Prelude_not  instR1 (zi8, rewire_prelude_not_out);
   ReWirezuPreludezuzaza  instR2 (zi4, rewire_prelude_not_out, rewirezupreludezuzazazuout);
   assign zi11 = rewirezupreludezuzazazuout;
-  ZLL_Main_swapix121  instR3 (zi9, arg0, zll_main_swapix121_out);
+  ZLL_Main_xorix17  instR3 (zi9, arg0, zll_main_xorix17_out);
   ReWirezuPreludezuzaza  instR4 (zi4, zi8, rewirezupreludezuzazazuoutR1);
   assign zi13 = rewirezupreludezuzazazuoutR1;
-  ZLL_Main_swapix121  instR5 (zi10, arg0, zll_main_swapix121_outR1);
+  ZLL_Main_xorix17  instR5 (zi10, arg0, zll_main_xorix17_outR1);
   ReWirezuPreludezuzaza  instR6 (zi4, zi8, rewirezupreludezuzazazuoutR2);
-  ZLL_Main_swapix222  instR7 (arg0, arg1, rewirezupreludezuzazazuoutR2, zll_main_swapix222_out);
-  assign res = (zi11 == 1'h1) ? zll_main_swapix121_out : ((zi13 == 1'h1) ? zll_main_swapix121_outR1 : zll_main_swapix222_out);
+  ZLL_Main_swapix319  instR7 (arg0, arg1, rewirezupreludezuzazazuoutR2, zll_main_swapix319_out);
+  assign res = (zi11 == 1'h1) ? zll_main_xorix17_out : ((zi13 == 1'h1) ? zll_main_xorix17_outR1 : zll_main_swapix319_out);
+endmodule
+
+module ZLL_Main_rotate1 (input logic [1055:0] arg0,
+  output logic [1023:0] res);
+  logic [31:0] zi0;
+  logic [1023:0] zi1;
+  logic [31:0] main_rot_out;
+  logic [31:0] main_rot_outR1;
+  logic [31:0] main_rot_outR2;
+  logic [31:0] main_rot_outR3;
+  logic [31:0] main_rot_outR4;
+  logic [31:0] main_rot_outR5;
+  logic [31:0] main_rot_outR6;
+  logic [31:0] main_rot_outR7;
+  logic [31:0] main_rot_outR8;
+  logic [31:0] main_rot_outR9;
+  logic [31:0] main_rot_outR10;
+  logic [31:0] main_rot_outR11;
+  logic [31:0] main_rot_outR12;
+  logic [31:0] main_rot_outR13;
+  logic [31:0] main_rot_outR14;
+  logic [31:0] main_rot_outR15;
+  logic [31:0] main_rot_outR16;
+  logic [31:0] main_rot_outR17;
+  logic [31:0] main_rot_outR18;
+  logic [31:0] main_rot_outR19;
+  logic [31:0] main_rot_outR20;
+  logic [31:0] main_rot_outR21;
+  logic [31:0] main_rot_outR22;
+  logic [31:0] main_rot_outR23;
+  logic [31:0] main_rot_outR24;
+  logic [31:0] main_rot_outR25;
+  logic [31:0] main_rot_outR26;
+  logic [31:0] main_rot_outR27;
+  logic [31:0] main_rot_outR28;
+  logic [31:0] main_rot_outR29;
+  logic [31:0] main_rot_outR30;
+  logic [31:0] main_rot_outR31;
+  assign zi0 = arg0[1055:1024];
+  assign zi1 = arg0[1023:0];
+  Main_rot  inst (zi0, zi1, 5'h0, main_rot_out);
+  Main_rot  instR1 (zi0, zi1, 5'h1, main_rot_outR1);
+  Main_rot  instR2 (zi0, zi1, 5'h2, main_rot_outR2);
+  Main_rot  instR3 (zi0, zi1, 5'h3, main_rot_outR3);
+  Main_rot  instR4 (zi0, zi1, 5'h4, main_rot_outR4);
+  Main_rot  instR5 (zi0, zi1, 5'h5, main_rot_outR5);
+  Main_rot  instR6 (zi0, zi1, 5'h6, main_rot_outR6);
+  Main_rot  instR7 (zi0, zi1, 5'h7, main_rot_outR7);
+  Main_rot  instR8 (zi0, zi1, 5'h8, main_rot_outR8);
+  Main_rot  instR9 (zi0, zi1, 5'h9, main_rot_outR9);
+  Main_rot  instR10 (zi0, zi1, 5'ha, main_rot_outR10);
+  Main_rot  instR11 (zi0, zi1, 5'hb, main_rot_outR11);
+  Main_rot  instR12 (zi0, zi1, 5'hc, main_rot_outR12);
+  Main_rot  instR13 (zi0, zi1, 5'hd, main_rot_outR13);
+  Main_rot  instR14 (zi0, zi1, 5'he, main_rot_outR14);
+  Main_rot  instR15 (zi0, zi1, 5'hf, main_rot_outR15);
+  Main_rot  instR16 (zi0, zi1, 5'h10, main_rot_outR16);
+  Main_rot  instR17 (zi0, zi1, 5'h11, main_rot_outR17);
+  Main_rot  instR18 (zi0, zi1, 5'h12, main_rot_outR18);
+  Main_rot  instR19 (zi0, zi1, 5'h13, main_rot_outR19);
+  Main_rot  instR20 (zi0, zi1, 5'h14, main_rot_outR20);
+  Main_rot  instR21 (zi0, zi1, 5'h15, main_rot_outR21);
+  Main_rot  instR22 (zi0, zi1, 5'h16, main_rot_outR22);
+  Main_rot  instR23 (zi0, zi1, 5'h17, main_rot_outR23);
+  Main_rot  instR24 (zi0, zi1, 5'h18, main_rot_outR24);
+  Main_rot  instR25 (zi0, zi1, 5'h19, main_rot_outR25);
+  Main_rot  instR26 (zi0, zi1, 5'h1a, main_rot_outR26);
+  Main_rot  instR27 (zi0, zi1, 5'h1b, main_rot_outR27);
+  Main_rot  instR28 (zi0, zi1, 5'h1c, main_rot_outR28);
+  Main_rot  instR29 (zi0, zi1, 5'h1d, main_rot_outR29);
+  Main_rot  instR30 (zi0, zi1, 5'h1e, main_rot_outR30);
+  Main_rot  instR31 (zi0, zi1, 5'h1f, main_rot_outR31);
+  assign res = {main_rot_out, main_rot_outR1, main_rot_outR2, main_rot_outR3, main_rot_outR4, main_rot_outR5, main_rot_outR6, main_rot_outR7, main_rot_outR8, main_rot_outR9, main_rot_outR10, main_rot_outR11, main_rot_outR12, main_rot_outR13, main_rot_outR14, main_rot_outR15, main_rot_outR16, main_rot_outR17, main_rot_outR18, main_rot_outR19, main_rot_outR20, main_rot_outR21, main_rot_outR22, main_rot_outR23, main_rot_outR24, main_rot_outR25, main_rot_outR26, main_rot_outR27, main_rot_outR28, main_rot_outR29, main_rot_outR30, main_rot_outR31};
 endmodule
 
 module Main_swapix2 (input logic [1023:0] arg0,
@@ -595,12 +595,12 @@ module Main_swapix2 (input logic [1023:0] arg0,
   logic [0:0] rewire_prelude_not_out;
   logic [0:0] rewirezupreludezuzazazuout;
   logic [0:0] zi11;
-  logic [31:0] zll_main_swapix225_out;
+  logic [31:0] zll_main_swapix219_out;
   logic [0:0] rewirezupreludezuzazazuoutR1;
   logic [0:0] zi13;
-  logic [31:0] zll_main_swapix121_out;
+  logic [31:0] zll_main_swapix219_outR1;
   logic [0:0] rewirezupreludezuzazazuoutR2;
-  logic [31:0] zll_main_swapix222_out;
+  logic [31:0] zll_main_swapix319_out;
   Main_explode5  inst (arg1, main_explode5_out);
   assign zi3 = main_explode5_out;
   assign zi4 = zi3[4];
@@ -613,13 +613,13 @@ module Main_swapix2 (input logic [1023:0] arg0,
   ReWire_Prelude_not  instR1 (zi7, rewire_prelude_not_out);
   ReWirezuPreludezuzaza  instR2 (zi4, rewire_prelude_not_out, rewirezupreludezuzazazuout);
   assign zi11 = rewirezupreludezuzazazuout;
-  ZLL_Main_swapix225  instR3 (arg0, zi9, zll_main_swapix225_out);
+  ZLL_Main_swapix219  instR3 (arg0, zi9, zll_main_swapix219_out);
   ReWirezuPreludezuzaza  instR4 (zi4, zi7, rewirezupreludezuzazazuoutR1);
   assign zi13 = rewirezupreludezuzazazuoutR1;
-  ZLL_Main_swapix121  instR5 (zi10, arg0, zll_main_swapix121_out);
+  ZLL_Main_swapix219  instR5 (arg0, zi10, zll_main_swapix219_outR1);
   ReWirezuPreludezuzaza  instR6 (zi4, zi7, rewirezupreludezuzazazuoutR2);
-  ZLL_Main_swapix222  instR7 (arg0, arg1, rewirezupreludezuzazazuoutR2, zll_main_swapix222_out);
-  assign res = (zi11 == 1'h1) ? zll_main_swapix225_out : ((zi13 == 1'h1) ? zll_main_swapix121_out : zll_main_swapix222_out);
+  ZLL_Main_swapix319  instR7 (arg0, arg1, rewirezupreludezuzazazuoutR2, zll_main_swapix319_out);
+  assign res = (zi11 == 1'h1) ? zll_main_swapix219_out : ((zi13 == 1'h1) ? zll_main_swapix219_outR1 : zll_main_swapix319_out);
 endmodule
 
 module Main_xor (input logic [1023:0] arg0,
@@ -707,7 +707,7 @@ module Main_xorix (input logic [1023:0] arg0,
   logic [0:0] zi11;
   logic [1023:0] slice_in;
   logic [1023:0] slice_inR1;
-  logic [31:0] zll_main_swapix225_out;
+  logic [31:0] zll_main_xorix17_out;
   Main_explode5  inst (arg1, main_explode5_out);
   assign zi3 = main_explode5_out;
   assign zi4 = zi3[4];
@@ -721,8 +721,8 @@ module Main_xorix (input logic [1023:0] arg0,
   assign zi11 = rewire_prelude_not_out;
   assign slice_in = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, zi9}) - 128'h1) * 128'h20);
   assign slice_inR1 = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, zi10}) - 128'h1) * 128'h20);
-  ZLL_Main_swapix225  instR2 (arg0, zi9, zll_main_swapix225_out);
-  assign res = (zi11 == 1'h1) ? (slice_in[31:0] ^ slice_inR1[31:0]) : zll_main_swapix225_out;
+  ZLL_Main_xorix17  instR2 (zi9, arg0, zll_main_xorix17_out);
+  assign res = (zi11 == 1'h1) ? (slice_in[31:0] ^ slice_inR1[31:0]) : zll_main_xorix17_out;
 endmodule
 
 module ReWirezuPreludezuzaza (input logic [0:0] arg0,
@@ -747,14 +747,14 @@ module Main_swapix3 (input logic [1023:0] arg0,
   logic [0:0] rewire_prelude_not_outR1;
   logic [0:0] rewirezupreludezuzazazuout;
   logic [0:0] zi11;
-  logic [31:0] zll_main_swapix225_out;
+  logic [31:0] zll_main_xorix17_out;
   logic [0:0] rewire_prelude_not_outR2;
   logic [0:0] rewirezupreludezuzazazuoutR1;
   logic [0:0] zi13;
-  logic [31:0] zll_main_swapix225_outR1;
+  logic [31:0] zll_main_swapix219_out;
   logic [0:0] rewire_prelude_not_outR3;
   logic [0:0] rewirezupreludezuzazazuoutR2;
-  logic [31:0] zll_main_swapix222_out;
+  logic [31:0] zll_main_swapix319_out;
   Main_explode5  inst (arg1, main_explode5_out);
   assign zi3 = main_explode5_out;
   assign zi4 = zi3[4];
@@ -768,15 +768,15 @@ module Main_swapix3 (input logic [1023:0] arg0,
   ReWire_Prelude_not  instR2 (zi6, rewire_prelude_not_outR1);
   ReWirezuPreludezuzaza  instR3 (rewire_prelude_not_out, rewire_prelude_not_outR1, rewirezupreludezuzazazuout);
   assign zi11 = rewirezupreludezuzazazuout;
-  ZLL_Main_swapix225  instR4 (arg0, zi9, zll_main_swapix225_out);
+  ZLL_Main_xorix17  instR4 (zi9, arg0, zll_main_xorix17_out);
   ReWire_Prelude_not  instR5 (zi4, rewire_prelude_not_outR2);
   ReWirezuPreludezuzaza  instR6 (rewire_prelude_not_outR2, zi6, rewirezupreludezuzazazuoutR1);
   assign zi13 = rewirezupreludezuzazazuoutR1;
-  ZLL_Main_swapix225  instR7 (arg0, zi10, zll_main_swapix225_outR1);
+  ZLL_Main_swapix219  instR7 (arg0, zi10, zll_main_swapix219_out);
   ReWire_Prelude_not  instR8 (zi4, rewire_prelude_not_outR3);
   ReWirezuPreludezuzaza  instR9 (rewire_prelude_not_outR3, zi6, rewirezupreludezuzazazuoutR2);
-  ZLL_Main_swapix222  instR10 (arg0, arg1, rewirezupreludezuzazazuoutR2, zll_main_swapix222_out);
-  assign res = (zi11 == 1'h1) ? zll_main_swapix225_out : ((zi13 == 1'h1) ? zll_main_swapix225_outR1 : zll_main_swapix222_out);
+  ZLL_Main_swapix319  instR10 (arg0, arg1, rewirezupreludezuzazazuoutR2, zll_main_swapix319_out);
+  assign res = (zi11 == 1'h1) ? zll_main_xorix17_out : ((zi13 == 1'h1) ? zll_main_swapix219_out : zll_main_swapix319_out);
 endmodule
 
 module Main_swapix1 (input logic [1023:0] arg0,
@@ -794,13 +794,13 @@ module Main_swapix1 (input logic [1023:0] arg0,
   logic [0:0] rewire_prelude_not_out;
   logic [0:0] rewirezupreludezuzazazuout;
   logic [0:0] zi11;
-  logic [31:0] zll_main_swapix225_out;
+  logic [31:0] zll_main_swapix219_out;
   logic [0:0] rewire_prelude_not_outR1;
   logic [0:0] rewire_prelude_not_outR2;
   logic [0:0] rewirezupreludezuzazazuoutR1;
   logic [0:0] zi13;
-  logic [31:0] zll_main_swapix121_out;
-  logic [31:0] zll_main_swapix121_outR1;
+  logic [31:0] zll_main_swapix219_outR1;
+  logic [31:0] zll_main_xorix17_out;
   Main_explode5  inst (arg1, main_explode5_out);
   assign zi3 = main_explode5_out;
   assign zi4 = zi3[4];
@@ -813,14 +813,14 @@ module Main_swapix1 (input logic [1023:0] arg0,
   ReWire_Prelude_not  instR1 (zi4, rewire_prelude_not_out);
   ReWirezuPreludezuzaza  instR2 (rewire_prelude_not_out, zi5, rewirezupreludezuzazazuout);
   assign zi11 = rewirezupreludezuzazazuout;
-  ZLL_Main_swapix225  instR3 (arg0, zi9, zll_main_swapix225_out);
+  ZLL_Main_swapix219  instR3 (arg0, zi9, zll_main_swapix219_out);
   ReWire_Prelude_not  instR4 (zi4, rewire_prelude_not_outR1);
   ReWire_Prelude_not  instR5 (zi5, rewire_prelude_not_outR2);
   ReWirezuPreludezuzaza  instR6 (rewire_prelude_not_outR1, rewire_prelude_not_outR2, rewirezupreludezuzazazuoutR1);
   assign zi13 = rewirezupreludezuzazazuoutR1;
-  ZLL_Main_swapix121  instR7 (zi10, arg0, zll_main_swapix121_out);
-  ZLL_Main_swapix121  instR8 (arg1, arg0, zll_main_swapix121_outR1);
-  assign res = (zi11 == 1'h1) ? zll_main_swapix225_out : ((zi13 == 1'h1) ? zll_main_swapix121_out : zll_main_swapix121_outR1);
+  ZLL_Main_swapix219  instR7 (arg0, zi10, zll_main_swapix219_outR1);
+  ZLL_Main_xorix17  instR8 (arg1, arg0, zll_main_xorix17_out);
+  assign res = (zi11 == 1'h1) ? zll_main_swapix219_out : ((zi13 == 1'h1) ? zll_main_swapix219_outR1 : zll_main_xorix17_out);
 endmodule
 
 module Main_explode5 (input logic [4:0] arg0,
@@ -856,7 +856,7 @@ module Main_addix (input logic [1023:0] arg0,
   logic [0:0] zi15;
   logic [31:0] zi16;
   logic [31:0] zi17;
-  logic [31:0] zll_main_addix12_out;
+  logic [31:0] zll_main_rot9_out;
   Main_explode5  inst (arg1, main_explode5_out);
   assign zi6 = main_explode5_out;
   assign zi7 = zi6[4];
@@ -872,6 +872,6 @@ module Main_addix (input logic [1023:0] arg0,
   assign zi15 = zi14[64];
   assign zi16 = zi14[63:32];
   assign zi17 = zi14[31:0];
-  ZLL_Main_addix12  instR1 (zi16, zll_main_addix12_out);
-  assign res = (zi15 == 1'h1) ? (zi16 + zi17) : zll_main_addix12_out;
+  ZLL_Main_rot9  instR1 (zi16, zll_main_rot9_out);
+  assign res = (zi15 == 1'h1) ? (zi16 + zi17) : zll_main_rot9_out;
 endmodule

@@ -208,26 +208,26 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZLL_Pure_dispatch4\ is
+component \ZLL_Pure_dispatch5\ is
       port (arg0 : in std_logic_vector (0 downto 0);
             arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (3 downto 0));
       end component;
-      signal \__resumption_tag\ : std_logic_vector (2 downto 0) := std_logic_vector'(B"000");
+      signal \__resumption_tag\ : std_logic_vector (2 downto 0) := std_logic_vector'(B"010");
       signal \__resumption_tag_next\ : std_logic_vector (2 downto 0);
-      signal zll_pure_dispatch4_out : std_logic_vector (3 downto 0);
-      signal \zll_pure_dispatch4_outR1\ : std_logic_vector (3 downto 0);
+      signal zll_pure_dispatch5_out : std_logic_vector (3 downto 0);
+      signal \zll_pure_dispatch5_outR1\ : std_logic_vector (3 downto 0);
       signal zres : std_logic_vector (3 downto 0);
 begin
-inst : \ZLL_Pure_dispatch4\ port map (\__in0\, \__resumption_tag\(0 downto 0), zll_pure_dispatch4_out);
-      \instR1\ : \ZLL_Pure_dispatch4\ port map (\__in0\, \__resumption_tag\(0 downto 0), \zll_pure_dispatch4_outR1\);
-      zres <= rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"01")), zll_pure_dispatch4_out, rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"10")), std_logic_vector'(B"0000"), rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"11")), \zll_pure_dispatch4_outR1\, rw_cond(rw_eq(\__in0\, std_logic_vector'(B"1")), (std_logic_vector'(B"011") & \__in0\), (\__in0\ & std_logic_vector'(B"01") & \__in0\)))));
+inst : \ZLL_Pure_dispatch5\ port map (\__in0\, \__resumption_tag\(0 downto 0), zll_pure_dispatch5_out);
+      \instR1\ : \ZLL_Pure_dispatch5\ port map (\__in0\, \__resumption_tag\(0 downto 0), \zll_pure_dispatch5_outR1\);
+      zres <= rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"01")), rw_cond(rw_eq(\__in0\, std_logic_vector'(B"1")), (std_logic_vector'(B"011") & \__in0\), (\__in0\ & std_logic_vector'(B"00") & \__in0\)), rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"10")), std_logic_vector'(B"0010"), rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"11")), zll_pure_dispatch5_out, \zll_pure_dispatch5_outR1\)));
       \__resumption_tag_next\ <= zres(2 downto 0);
       \__out0\ <= zres(3 downto 3);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then
-                  \__resumption_tag\ <= std_logic_vector'(B"000");
+                  \__resumption_tag\ <= std_logic_vector'(B"010");
             elsif rising_edge(clk(0)) then
                   \__resumption_tag\ <= \__resumption_tag_next\;
             end if;
@@ -238,12 +238,44 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_go8\ is
+entity \ZLL_Pure_dispatch5\ is
+port (arg0 : in std_logic_vector (0 downto 0);
+      arg1 : in std_logic_vector (0 downto 0);
+      res : out std_logic_vector (3 downto 0));
+end entity;
+
+architecture rtl of \ZLL_Pure_dispatch5\ is
+component \ReWirezuPreludezuzaza\ is
+      port (arg0 : in std_logic_vector (0 downto 0);
+            arg1 : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (0 downto 0));
+      end component;
+      component \ZZLLzuReWirezuPreludezuzaza2\ is
+      port (arg0 : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (0 downto 0));
+      end component;
+      signal zzllzurewirezupreludezuzaza2zuout : std_logic_vector (0 downto 0);
+      signal rewirezupreludezuzazazuout : std_logic_vector (0 downto 0);
+      signal conn : std_logic_vector (0 downto 0);
+      signal \rewirezupreludezuzazazuoutR1\ : std_logic_vector (0 downto 0);
+begin
+inst : \ZZLLzuReWirezuPreludezuzaza2\ port map (arg1, zzllzurewirezupreludezuzaza2zuout);
+      \instR1\ : \ReWirezuPreludezuzaza\ port map (arg1, arg1, rewirezupreludezuzazazuout);
+      conn <= rw_cond(rw_eq(arg0, std_logic_vector'(B"1")), zzllzurewirezupreludezuzaza2zuout, rewirezupreludezuzazazuout);
+      \instR2\ : \ReWirezuPreludezuzaza\ port map (conn, arg0, \rewirezupreludezuzazazuoutR1\);
+      res <= (\rewirezupreludezuzazazuoutR1\ & std_logic_vector'(B"100"));
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \ZZLLzuReWirezuPreludezuzaza2\ is
 port (arg0 : in std_logic_vector (0 downto 0);
       res : out std_logic_vector (0 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_go8\ is
+architecture rtl of \ZZLLzuReWirezuPreludezuzaza2\ is
 
 begin
 res <= arg0;
@@ -260,44 +292,12 @@ port (arg0 : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of \ReWirezuPreludezuzaza\ is
-component \ZLL_Main_go8\ is
+component \ZZLLzuReWirezuPreludezuzaza2\ is
       port (arg0 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
-      signal zll_main_go8_out : std_logic_vector (0 downto 0);
+      signal zzllzurewirezupreludezuzaza2zuout : std_logic_vector (0 downto 0);
 begin
-inst : \ZLL_Main_go8\ port map (arg1, zll_main_go8_out);
-      res <= rw_cond(rw_eq(arg0, std_logic_vector'(B"1")), zll_main_go8_out, std_logic_vector'(B"0"));
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Pure_dispatch4\ is
-port (arg0 : in std_logic_vector (0 downto 0);
-      arg1 : in std_logic_vector (0 downto 0);
-      res : out std_logic_vector (3 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Pure_dispatch4\ is
-component \ReWirezuPreludezuzaza\ is
-      port (arg0 : in std_logic_vector (0 downto 0);
-            arg1 : in std_logic_vector (0 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      component \ZLL_Main_go8\ is
-      port (arg0 : in std_logic_vector (0 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      signal zll_main_go8_out : std_logic_vector (0 downto 0);
-      signal rewirezupreludezuzazazuout : std_logic_vector (0 downto 0);
-      signal conn : std_logic_vector (0 downto 0);
-      signal \rewirezupreludezuzazazuoutR1\ : std_logic_vector (0 downto 0);
-begin
-inst : \ZLL_Main_go8\ port map (arg1, zll_main_go8_out);
-      \instR1\ : \ReWirezuPreludezuzaza\ port map (arg1, arg1, rewirezupreludezuzazazuout);
-      conn <= rw_cond(rw_eq(arg0, std_logic_vector'(B"1")), zll_main_go8_out, rewirezupreludezuzazazuout);
-      \instR2\ : \ReWirezuPreludezuzaza\ port map (conn, arg0, \rewirezupreludezuzazazuoutR1\);
-      res <= (\rewirezupreludezuzazazuoutR1\ & std_logic_vector'(B"100"));
+inst : \ZZLLzuReWirezuPreludezuzaza2\ port map (arg1, zzllzurewirezupreludezuzaza2zuout);
+      res <= rw_cond(rw_eq(arg0, std_logic_vector'(B"1")), zzllzurewirezupreludezuzaza2zuout, std_logic_vector'(B"0"));
 end architecture;

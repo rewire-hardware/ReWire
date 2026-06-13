@@ -21,44 +21,40 @@ rw__Pure_dispatch : [1] -> [1] -> [5]
 rw__Pure_dispatch x0 x1 = rw__LL_Pure_dispatch x1 x0
 
 // $LL.ReWire.Monad.iterSt42
-rw__LL_ReWire_Monad_iterSt42 : [1] -> [5]
-rw__LL_ReWire_Monad_iterSt42 x0 = rw__LL_ReWire_Monad_iterSt25 x0
+rw__LL_ReWire_Monad_iterSt42 : [1] -> [1] -> [5]
+rw__LL_ReWire_Monad_iterSt42 x0 x1 = rw__LL_ReWire_Monad_iterSt31 x0 x1
 
-// $LL.ReWire.Monad.iterSt38
-rw__LL_ReWire_Monad_iterSt38 : [1] -> [1] -> [5]
-rw__LL_ReWire_Monad_iterSt38 x0 x1 = rw__LL_ReWire_Monad_iterSt x0 x1
-
-// $LL.ReWire.Monad.iterSt37
-rw__LL_ReWire_Monad_iterSt37 : [1] -> [1] -> [1] -> [5]
-rw__LL_ReWire_Monad_iterSt37 x0 x1 x2 = rw__LL_ReWire_Monad_iterSt7 x1 x2 x0
+// $LL.ReWire.Monad.iterSt40
+rw__LL_ReWire_Monad_iterSt40 : [1] -> [5]
+rw__LL_ReWire_Monad_iterSt40 x0 = 0x4 # x0
 
 // $LL.Main.f7
-rw__LL_Main_f7 : [1] -> [1] -> [2]
-rw__LL_Main_f7 x0 x1 = rw__LL_Main_f5 x0 x1
+rw__LL_Main_f7 : [1] -> [1] -> [1]
+rw__LL_Main_f7 x0 x1 = rw__LL_Main_f2 (x0 # x1)
+
+// $LL.Pure.dispatch
+rw__LL_Pure_dispatch : [1] -> [1] -> [5]
+rw__LL_Pure_dispatch x0 x1 = rw_ReWire_Monad_iterSt1 x0 x1
 
 // $LL.Main.f6
 rw__LL_Main_f6 : [2] -> [2]
-rw__LL_Main_f6 x0 = rw__LL_Main_f7 (take`{1} x0) (drop`{1} x0)
-
-// $LL.ReWire.Monad.iterSt33
-rw__LL_ReWire_Monad_iterSt33 : [1] -> [1] -> [5]
-rw__LL_ReWire_Monad_iterSt33 x0 x1 = 0b100 # (x0 # x1)
-
-// $LL.ReWire.Monad.iterSt32
-rw__LL_ReWire_Monad_iterSt32 : [1] -> [2] -> [3]
-rw__LL_ReWire_Monad_iterSt32 x0 x1 = rw__LL_ReWire_Monad_iterSt23 x0 (take`{1} x1) (drop`{1} x1)
+rw__LL_Main_f6 x0 = rw__LL_Main_f (take`{1} x0) (drop`{1} x0)
 
 // $LL.Main.f5
 rw__LL_Main_f5 : [1] -> [1] -> [2]
-rw__LL_Main_f5 x0 x1 = (rw__LL_Main_f2 x1 x0) # x1
+rw__LL_Main_f5 x0 x1 = (rw__LL_Main_f3 x1 x0) # x1
 
-// $LL.ReWire.Monad.iterSt30
-rw__LL_ReWire_Monad_iterSt30 : [3] -> [5]
-rw__LL_ReWire_Monad_iterSt30 x0 = rw__LL_ReWire_Monad_iterSt16 (take`{2} x0) (drop`{2} x0)
+// ReWire.Monad.iterSt1
+rw_ReWire_Monad_iterSt1 : [1] -> [1] -> [5]
+rw_ReWire_Monad_iterSt1 x0 x1 = rw__LL_ReWire_Monad_iterSt21 (rw__LL_ReWire_Monad_iterSt35 (rw__LL_ReWire_Monad_iterSt15 x0 (x1 # x1)))
 
-// $LL.ReWire.Monad.iterSt26
-rw__LL_ReWire_Monad_iterSt26 : [1] -> [1] -> [1] -> [5]
-rw__LL_ReWire_Monad_iterSt26 x0 x1 x2 = rw__LL_ReWire_Monad_iterSt4 x0 x1 x2
+// $LL.ReWire.Monad.iterSt35
+rw__LL_ReWire_Monad_iterSt35 : [3] -> [5]
+rw__LL_ReWire_Monad_iterSt35 x0 = rw__LL_ReWire_Monad_iterSt34 (take`{2} x0) (drop`{2} x0)
+
+// $LL.ReWire.Monad.iterSt34
+rw__LL_ReWire_Monad_iterSt34 : [2] -> [1] -> [5]
+rw__LL_ReWire_Monad_iterSt34 x0 x1 = rw__LL_ReWire_Monad_iterSt29 x0 x1
 
 // $LL.Main.f4
 rw__LL_Main_f4 : [1] -> [1] -> [1]
@@ -67,93 +63,97 @@ rw__LL_Main_f4 x0 x1 = s0
     s0 : [1]
     s0 = x0 ^ x1
 
-// $LL.ReWire.Monad.iterSt25
-rw__LL_ReWire_Monad_iterSt25 : [1] -> [5]
-rw__LL_ReWire_Monad_iterSt25 x0 = 0x4 # x0
+// $LL.ReWire.Monad.iterSt33
+rw__LL_ReWire_Monad_iterSt33 : [1] -> [1] -> [1] -> [5]
+rw__LL_ReWire_Monad_iterSt33 x0 x1 x2 = rw__LL_ReWire_Monad_iterSt13 x0 x1 x2
 
-// $LL.ReWire.Monad.iterSt24
-rw__LL_ReWire_Monad_iterSt24 : [1] -> [5]
-rw__LL_ReWire_Monad_iterSt24 x0 = rw__LL_ReWire_Monad_iterSt42 x0
-
-// $LL.ReWire.Monad.iterSt23
-rw__LL_ReWire_Monad_iterSt23 : [1] -> [1] -> [1] -> [3]
-rw__LL_ReWire_Monad_iterSt23 x0 x1 x2 = rw__LL_ReWire_Monad_iterSt6 x0 x1 x2
+// $LL.ReWire.Monad.iterSt31
+rw__LL_ReWire_Monad_iterSt31 : [1] -> [1] -> [5]
+rw__LL_ReWire_Monad_iterSt31 x0 x1 = 0b100 # (x0 # x1)
 
 // $LL.Main.f3
 rw__LL_Main_f3 : [1] -> [1] -> [1]
-rw__LL_Main_f3 x0 x1 = rw__LL_Main_f4 x0 x1
-
-// $LL.ReWire.Monad.iterSt22
-rw__LL_ReWire_Monad_iterSt22 : [5] -> [5]
-rw__LL_ReWire_Monad_iterSt22 x0 = rw__LL_ReWire_Monad_iterSt13 (take`{2} (drop`{2} x0)) (drop`{4} x0)
+rw__LL_Main_f3 x0 x1 = rw__LL_Main_f7 x0 x1
 
 // $LL.Main.f2
-rw__LL_Main_f2 : [1] -> [1] -> [1]
-rw__LL_Main_f2 x0 x1 = rw__LL_Main_f x0 x1
+rw__LL_Main_f2 : [2] -> [1]
+rw__LL_Main_f2 x0 = rw__LL_Main_f1 (take`{1} x0) (drop`{1} x0)
+
+// $LL.ReWire.Monad.iterSt29
+rw__LL_ReWire_Monad_iterSt29 : [2] -> [1] -> [5]
+rw__LL_ReWire_Monad_iterSt29 x0 x1 = 0b00 # (x0 # x1)
+
+// $LL.ReWire.Monad.iterSt25
+rw__LL_ReWire_Monad_iterSt25 : [1] -> [1] -> [1] -> [3]
+rw__LL_ReWire_Monad_iterSt25 x0 x1 x2 = rw__LL_ReWire_Monad_iterSt24 x0 x1 x2
+
+// $LL.Main.f1
+rw__LL_Main_f1 : [1] -> [1] -> [1]
+rw__LL_Main_f1 x0 x1 = rw__LL_Main_f4 x0 x1
+
+// $LL.ReWire.Monad.iterSt24
+rw__LL_ReWire_Monad_iterSt24 : [1] -> [1] -> [1] -> [3]
+rw__LL_ReWire_Monad_iterSt24 x0 x1 x2 = (rw_Main_f x0 x1) # x2
+
+// $LL.ReWire.Monad.iterSt23
+rw__LL_ReWire_Monad_iterSt23 : [1] -> [1] -> [1] -> [5]
+rw__LL_ReWire_Monad_iterSt23 x0 x1 x2 = rw__LL_ReWire_Monad_iterSt14 x0 x1 x2
+
+// $LL.ReWire.Monad.iterSt22
+rw__LL_ReWire_Monad_iterSt22 : [2] -> [1] -> [5]
+rw__LL_ReWire_Monad_iterSt22 x0 x1 = rw__LL_ReWire_Monad_iterSt7 x0 x1
+
+// $LL.ReWire.Monad.iterSt21
+rw__LL_ReWire_Monad_iterSt21 : [5] -> [5]
+rw__LL_ReWire_Monad_iterSt21 x0 = rw__LL_ReWire_Monad_iterSt22 (take`{2} (drop`{2} x0)) (drop`{4} x0)
+
+// $LL.ReWire.Monad.iterSt19
+rw__LL_ReWire_Monad_iterSt19 : [1] -> [1] -> [1] -> [5]
+rw__LL_ReWire_Monad_iterSt19 x0 x1 x2 = rw__LL_ReWire_Monad_iterSt23 x0 x1 x2
 
 // Main.f
 rw_Main_f : [1] -> [1] -> [2]
 rw_Main_f x0 x1 = rw__LL_Main_f6 (x0 # x1)
 
 // $LL.ReWire.Monad.iterSt17
-rw__LL_ReWire_Monad_iterSt17 : [2] -> [1] -> [5]
-rw__LL_ReWire_Monad_iterSt17 x0 x1 = 0b00 # (x0 # x1)
+rw__LL_ReWire_Monad_iterSt17 : [1] -> [1] -> [5]
+rw__LL_ReWire_Monad_iterSt17 x0 x1 = rw__LL_ReWire_Monad_iterSt42 x0 x1
 
-// ReWire.Monad.iterSt
-rw_ReWire_Monad_iterSt : [1] -> [1] -> [5]
-rw_ReWire_Monad_iterSt x0 x1 = rw__LL_ReWire_Monad_iterSt22 (rw__LL_ReWire_Monad_iterSt30 (rw__LL_ReWire_Monad_iterSt32 x0 (x1 # x1)))
-
-// $LL.ReWire.Monad.iterSt16
-rw__LL_ReWire_Monad_iterSt16 : [2] -> [1] -> [5]
-rw__LL_ReWire_Monad_iterSt16 x0 x1 = rw__LL_ReWire_Monad_iterSt17 x0 x1
+// $LL.ReWire.Monad.iterSt15
+rw__LL_ReWire_Monad_iterSt15 : [1] -> [2] -> [3]
+rw__LL_ReWire_Monad_iterSt15 x0 x1 = rw__LL_ReWire_Monad_iterSt5 x0 (take`{1} x1) (drop`{1} x1)
 
 // $LL.ReWire.Monad.iterSt14
-rw__LL_ReWire_Monad_iterSt14 : [1] -> [1] -> [1] -> [3]
-rw__LL_ReWire_Monad_iterSt14 x0 x1 x2 = (rw_Main_f x0 x1) # x2
-
-// $LL.Pure.dispatch
-rw__LL_Pure_dispatch : [1] -> [1] -> [5]
-rw__LL_Pure_dispatch x0 x1 = rw_ReWire_Monad_iterSt x0 x1
-
-// $LL.ReWire.Monad.iterSt13
-rw__LL_ReWire_Monad_iterSt13 : [2] -> [1] -> [5]
-rw__LL_ReWire_Monad_iterSt13 x0 x1 = rw__LL_ReWire_Monad_iterSt11 x0 x1
-
-// $LL.ReWire.Monad.iterSt11
-rw__LL_ReWire_Monad_iterSt11 : [2] -> [1] -> [5]
-rw__LL_ReWire_Monad_iterSt11 x0 x1 = rw__LL_ReWire_Monad_iterSt26 x1 (take`{1} x0) (drop`{1} x0)
-
-// $LL.ReWire.Monad.iterSt7
-rw__LL_ReWire_Monad_iterSt7 : [1] -> [1] -> [1] -> [5]
-rw__LL_ReWire_Monad_iterSt7 x0 x1 x2 = rw__LL_ReWire_Monad_iterSt1 x0 x1 x2
-
-// $LL.Main.f1
-rw__LL_Main_f1 : [2] -> [1]
-rw__LL_Main_f1 x0 = rw__LL_Main_f3 (take`{1} x0) (drop`{1} x0)
+rw__LL_ReWire_Monad_iterSt14 : [1] -> [1] -> [1] -> [5]
+rw__LL_ReWire_Monad_iterSt14 x0 x1 x2 = rw__LL_ReWire_Monad_iterSt33 x1 x2 x0
 
 // $LL.Main.f
-rw__LL_Main_f : [1] -> [1] -> [1]
-rw__LL_Main_f x0 x1 = rw__LL_Main_f1 (x0 # x1)
+rw__LL_Main_f : [1] -> [1] -> [2]
+rw__LL_Main_f x0 x1 = rw__LL_Main_f5 x0 x1
 
-// $LL.ReWire.Monad.iterSt6
-rw__LL_ReWire_Monad_iterSt6 : [1] -> [1] -> [1] -> [3]
-rw__LL_ReWire_Monad_iterSt6 x0 x1 x2 = rw__LL_ReWire_Monad_iterSt14 x0 x1 x2
+// $LL.ReWire.Monad.iterSt13
+rw__LL_ReWire_Monad_iterSt13 : [1] -> [1] -> [1] -> [5]
+rw__LL_ReWire_Monad_iterSt13 x0 x1 x2 = rw__LL_ReWire_Monad_iterSt12 x0 (rw__LL_ReWire_Monad_iterSt8 x1)
 
-// $LL.ReWire.Monad.iterSt4
-rw__LL_ReWire_Monad_iterSt4 : [1] -> [1] -> [1] -> [5]
-rw__LL_ReWire_Monad_iterSt4 x0 x1 x2 = rw__LL_ReWire_Monad_iterSt37 x0 x1 x2
+// $LL.ReWire.Monad.iterSt12
+rw__LL_ReWire_Monad_iterSt12 : [1] -> [5] -> [5]
+rw__LL_ReWire_Monad_iterSt12 x0 x1 = rw__LL_ReWire_Monad_iterSt17 x0 (drop`{4} x1)
 
-// $LL.ReWire.Monad.iterSt2
-rw__LL_ReWire_Monad_iterSt2 : [1] -> [5] -> [5]
-rw__LL_ReWire_Monad_iterSt2 x0 x1 = rw__LL_ReWire_Monad_iterSt38 x0 (drop`{4} x1)
+// $LL.ReWire.Monad.iterSt8
+rw__LL_ReWire_Monad_iterSt8 : [1] -> [5]
+rw__LL_ReWire_Monad_iterSt8 x0 = rw__LL_ReWire_Monad_iterSt1 x0
+
+// $LL.ReWire.Monad.iterSt7
+rw__LL_ReWire_Monad_iterSt7 : [2] -> [1] -> [5]
+rw__LL_ReWire_Monad_iterSt7 x0 x1 = rw__LL_ReWire_Monad_iterSt19 x1 (take`{1} x0) (drop`{1} x0)
+
+// $LL.ReWire.Monad.iterSt5
+rw__LL_ReWire_Monad_iterSt5 : [1] -> [1] -> [1] -> [3]
+rw__LL_ReWire_Monad_iterSt5 x0 x1 x2 = rw__LL_ReWire_Monad_iterSt25 x0 x1 x2
 
 // $LL.ReWire.Monad.iterSt1
-rw__LL_ReWire_Monad_iterSt1 : [1] -> [1] -> [1] -> [5]
-rw__LL_ReWire_Monad_iterSt1 x0 x1 x2 = rw__LL_ReWire_Monad_iterSt2 x0 (rw__LL_ReWire_Monad_iterSt24 x1)
-
-// $LL.ReWire.Monad.iterSt
-rw__LL_ReWire_Monad_iterSt : [1] -> [1] -> [5]
-rw__LL_ReWire_Monad_iterSt x0 x1 = rw__LL_ReWire_Monad_iterSt33 x0 x1
+rw__LL_ReWire_Monad_iterSt1 : [1] -> [5]
+rw__LL_ReWire_Monad_iterSt1 x0 = rw__LL_ReWire_Monad_iterSt40 x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [1] -> [1] -> [2]

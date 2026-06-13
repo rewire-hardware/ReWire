@@ -208,26 +208,26 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZLL_Main_go15\ is
+component \ZLL_Main_go17\ is
       port (arg0 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
       signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
-      signal zll_main_go15_out : std_logic_vector (0 downto 0);
+      signal zll_main_go17_out : std_logic_vector (0 downto 0);
       signal zi3 : std_logic_vector (1 downto 0);
-      signal \zll_main_go15_outR1\ : std_logic_vector (0 downto 0);
-      signal \zll_main_go15_outR2\ : std_logic_vector (0 downto 0);
+      signal \zll_main_go17_outR1\ : std_logic_vector (0 downto 0);
+      signal \zll_main_go17_outR2\ : std_logic_vector (0 downto 0);
       signal zi5 : std_logic_vector (0 downto 0);
       signal zi6 : std_logic_vector (2 downto 0);
       signal zi7 : std_logic_vector (0 downto 0);
       signal zres : std_logic_vector (2 downto 0);
 begin
-inst : \ZLL_Main_go15\ port map (\__st0\, zll_main_go15_out);
-      zi3 <= (\__st0\ & zll_main_go15_out);
-      \instR1\ : \ZLL_Main_go15\ port map (zi3(1 downto 1), \zll_main_go15_outR1\);
-      \instR2\ : \ZLL_Main_go15\ port map (\__st0\, \zll_main_go15_outR2\);
-      zi5 <= rw_cond(rw_eq(zi3(0 downto 0), std_logic_vector'(B"1")), \zll_main_go15_outR1\, \zll_main_go15_outR2\);
+inst : \ZLL_Main_go17\ port map (\__st0\, zll_main_go17_out);
+      zi3 <= (\__st0\ & zll_main_go17_out);
+      \instR1\ : \ZLL_Main_go17\ port map (zi3(1 downto 1), \zll_main_go17_outR1\);
+      \instR2\ : \ZLL_Main_go17\ port map (\__st0\, \zll_main_go17_outR2\);
+      zi5 <= rw_cond(rw_eq(zi3(0 downto 0), std_logic_vector'(B"1")), \zll_main_go17_outR1\, \zll_main_go17_outR2\);
       zi6 <= (std_logic_vector'(B"00") & zi5);
       zi7 <= zi6(0 downto 0);
       zres <= (std_logic_vector'(B"10") & zi7);
@@ -247,12 +247,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_go15\ is
+entity \ZLL_Main_go17\ is
 port (arg0 : in std_logic_vector (0 downto 0);
       res : out std_logic_vector (0 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_go15\ is
+architecture rtl of \ZLL_Main_go17\ is
 
 begin
 res <= arg0;

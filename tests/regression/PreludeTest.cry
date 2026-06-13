@@ -18,79 +18,79 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [1] -> [1] -> [2]
-rw__Pure_dispatch x0 x1 = rw__LL_Pure_dispatch1 x1 x0
-
-// $LL.Pure.dispatch1
-rw__LL_Pure_dispatch1 : [1] -> [1] -> [2]
-rw__LL_Pure_dispatch1 x0 x1 = rw__LL_Pure_dispatch x0 x1
-
-// $LL.Main.zookus4
-rw__LL_Main_zookus4 : [2] -> [1]
-rw__LL_Main_zookus4 x0 = rw__LL_Main_zookus1 (take`{1} x0) (drop`{1} x0)
+rw__Pure_dispatch x0 x1 = rw__LL_Pure_dispatch x1 x0
 
 // $LL.Main.loop3
 rw__LL_Main_loop3 : [1] -> [1] -> [2]
-rw__LL_Main_loop3 x0 x1 = rw__LL_Main_loop x0 x1
+rw__LL_Main_loop3 x0 x1 = rw__LL_Main_loop2 x0 x1
 
 // $LL.ReWire.Prelude.&&3
 rw__LL_ReWire_Prelude___3 : [1] -> [1]
 rw__LL_ReWire_Prelude___3 x0 = 0b0
 
+// $LL.Main.zookus4
+rw__LL_Main_zookus4 : [1] -> [1]
+rw__LL_Main_zookus4 x0 = rw__LL_Main_zookus2 (x0 # x0)
+
+// $LL.Pure.dispatch1
+rw__LL_Pure_dispatch1 : [1] -> [1] -> [2]
+rw__LL_Pure_dispatch1 x0 x1 = rw__LL_Main_loop3 x1 x0
+
 // $LL.Main.loop2
-rw__LL_Main_loop2 : [1] -> [2]
-rw__LL_Main_loop2 x0 = rw__LL_Main_loop1 x0
+rw__LL_Main_loop2 : [1] -> [1] -> [2]
+rw__LL_Main_loop2 x0 x1 = rw_Main_loop (rw_ReWire_Prelude___ x0 0b1)
 
 // $LL.ReWire.Prelude.&&2
 rw__LL_ReWire_Prelude___2 : [2] -> [1]
 rw__LL_ReWire_Prelude___2 x0 = rw__LL_ReWire_Prelude___3 (drop`{1} x0)
 
-// Main.loop1
-rw_Main_loop1 : [1] -> [2]
-rw_Main_loop1 x0 = rw__LL_Main_loop2 x0
-
 // $LL.ReWire.Prelude.&&1
 rw__LL_ReWire_Prelude___1 : [1] -> [1]
 rw__LL_ReWire_Prelude___1 x0 = x0
-
-// $LL.Main.zookus3
-rw__LL_Main_zookus3 : [1] -> [1]
-rw__LL_Main_zookus3 x0 = rw__LL_Main_zookus2 x0
-
-// $LL.Main.zookus2
-rw__LL_Main_zookus2 : [1] -> [1]
-rw__LL_Main_zookus2 x0 = rw__LL_Main_zookus4 (x0 # x0)
-
-// $LL.Main.zookus1
-rw__LL_Main_zookus1 : [1] -> [1] -> [1]
-rw__LL_Main_zookus1 x0 x1 = rw__LL_Main_zookus x0 x1
-
-// $LL.Main.zookus
-rw__LL_Main_zookus : [1] -> [1] -> [1]
-rw__LL_Main_zookus x0 x1 = x0
-
-// ReWire.Prelude.&&1
-rw_ReWire_Prelude___1 : [1] -> [1] -> [1]
-rw_ReWire_Prelude___1 x0 x1 = rw__LL_ReWire_Prelude___ x1 x0 (x0 # x1)
-
-// $LL.ReWire.Prelude.&&
-rw__LL_ReWire_Prelude___ : [1] -> [1] -> [2] -> [1]
-rw__LL_ReWire_Prelude___ x0 x1 x2 = if (take`{1} x2) == 0b1 then (rw__LL_ReWire_Prelude___1 (drop`{1} x2)) else (rw__LL_ReWire_Prelude___2 (x1 # x0))
-
-// Main.zookus
-rw_Main_zookus : [1] -> [1]
-rw_Main_zookus x0 = rw__LL_Main_zookus3 x0
 
 // $LL.Main.loop1
 rw__LL_Main_loop1 : [1] -> [2]
 rw__LL_Main_loop1 x0 = (rw_Main_zookus (rw_Main_zookus x0)) # x0
 
-// $LL.Main.loop
-rw__LL_Main_loop : [1] -> [1] -> [2]
-rw__LL_Main_loop x0 x1 = rw_Main_loop1 (rw_ReWire_Prelude___1 x0 0b1)
+// Main.loop
+rw_Main_loop : [1] -> [2]
+rw_Main_loop x0 = rw__LL_Main_loop x0
+
+// $LL.Main.zookus3
+rw__LL_Main_zookus3 : [1] -> [1] -> [1]
+rw__LL_Main_zookus3 x0 x1 = rw__LL_Main_zookus x0 x1
+
+// $LL.ReWire.Prelude.&&
+rw__LL_ReWire_Prelude___ : [1] -> [1] -> [2] -> [1]
+rw__LL_ReWire_Prelude___ x0 x1 x2 = if (take`{1} x2) == 0b1 then (rw__LL_ReWire_Prelude___1 (drop`{1} x2)) else (rw__LL_ReWire_Prelude___2 (x0 # x1))
+
+// $LL.Main.zookus2
+rw__LL_Main_zookus2 : [2] -> [1]
+rw__LL_Main_zookus2 x0 = rw__LL_Main_zookus3 (take`{1} x0) (drop`{1} x0)
+
+// ReWire.Prelude.&&
+rw_ReWire_Prelude___ : [1] -> [1] -> [1]
+rw_ReWire_Prelude___ x0 x1 = rw__LL_ReWire_Prelude___ x0 x1 (x0 # x1)
+
+// Main.zookus
+rw_Main_zookus : [1] -> [1]
+rw_Main_zookus x0 = rw__LL_Main_zookus1 x0
+
+// $LL.Main.zookus1
+rw__LL_Main_zookus1 : [1] -> [1]
+rw__LL_Main_zookus1 x0 = rw__LL_Main_zookus4 x0
 
 // $LL.Pure.dispatch
 rw__LL_Pure_dispatch : [1] -> [1] -> [2]
-rw__LL_Pure_dispatch x0 x1 = rw__LL_Main_loop3 x1 x0
+rw__LL_Pure_dispatch x0 x1 = rw__LL_Pure_dispatch1 x0 x1
+
+// $LL.Main.zookus
+rw__LL_Main_zookus : [1] -> [1] -> [1]
+rw__LL_Main_zookus x0 x1 = x0
+
+// $LL.Main.loop
+rw__LL_Main_loop : [1] -> [2]
+rw__LL_Main_loop x0 = rw__LL_Main_loop1 x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [1] -> [1] -> [2]

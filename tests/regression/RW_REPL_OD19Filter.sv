@@ -9,59 +9,59 @@ module top_level (input logic [0:0] clk,
   logic [6:0] __st1;
   logic [6:0] __st1_next;
   logic [38:0] zi0;
-  logic [80:0] zll_main_repl92_out;
-  logic [80:0] zll_main_repl78_out;
-  logic [80:0] zll_main_repl92_outR1;
-  logic [80:0] zll_main_repl78_outR1;
+  logic [80:0] zll_main_repl114_out;
+  logic [80:0] zll_main_repl101_out;
+  logic [80:0] zll_main_repl114_outR1;
+  logic [80:0] zll_main_repl101_outR1;
   logic [70:0] main_getreg_out;
-  logic [80:0] zll_main_repl58_out;
+  logic [80:0] zll_main_repl99_out;
   logic [80:0] zi11;
   logic [31:0] zi12;
   logic [38:0] zi13;
   logic [0:0] extres;
   logic [70:0] main_getreg_outR1;
-  logic [80:0] zll_main_repl58_outR1;
+  logic [80:0] zll_main_repl99_outR1;
   logic [80:0] zi14;
   logic [31:0] zi15;
   logic [38:0] zi16;
   logic [0:0] extresR1;
   logic [70:0] main_getreg_outR2;
-  logic [80:0] zll_main_repl58_outR2;
+  logic [80:0] zll_main_repl99_outR2;
   logic [80:0] zi17;
   logic [31:0] zi18;
   logic [38:0] zi19;
   logic [0:0] extresR2;
   logic [38:0] main_nextpc_out;
   logic [80:0] zll_main_repl110_out;
-  logic [80:0] zll_main_repl53_out;
+  logic [80:0] zll_main_repl69_out;
   logic [80:0] zres;
   assign zi0 = {__st0, __st1};
-  ZLL_Main_repl92  inst (zi0, __in1, zll_main_repl92_out);
-  ZLL_Main_repl78  instR1 (zi0, __in1, zll_main_repl78_out);
-  ZLL_Main_repl92  instR2 (zi0, __in1, zll_main_repl92_outR1);
-  ZLL_Main_repl78  instR3 (zi0, __in1, zll_main_repl78_outR1);
+  ZLL_Main_repl114  inst (zi0, __in1, zll_main_repl114_out);
+  ZLL_Main_repl101  instR1 (zi0, __in1, zll_main_repl101_out);
+  ZLL_Main_repl114  instR2 (zi0, __in1, zll_main_repl114_outR1);
+  ZLL_Main_repl101  instR3 (zi0, __in1, zll_main_repl101_outR1);
   Main_getReg  instR4 (zi0, main_getreg_out);
-  ZLL_Main_repl58  instR5 (main_getreg_out, zll_main_repl58_out);
-  assign zi11 = zll_main_repl58_out;
+  ZLL_Main_repl99  instR5 (main_getreg_out, zll_main_repl99_out);
+  assign zi11 = zll_main_repl99_out;
   assign zi12 = zi11[70:39];
   assign zi13 = zi11[38:0];
   test2  instR6 (__in1, zi12, extres[0]);
   Main_getReg  instR7 (zi0, main_getreg_outR1);
-  ZLL_Main_repl58  instR8 (main_getreg_outR1, zll_main_repl58_outR1);
-  assign zi14 = zll_main_repl58_outR1;
+  ZLL_Main_repl99  instR8 (main_getreg_outR1, zll_main_repl99_outR1);
+  assign zi14 = zll_main_repl99_outR1;
   assign zi15 = zi14[70:39];
   assign zi16 = zi14[38:0];
   test3  instR9 (__in1, zi15, extresR1[0]);
   Main_getReg  instR10 (zi0, main_getreg_outR2);
-  ZLL_Main_repl58  instR11 (main_getreg_outR2, zll_main_repl58_outR2);
-  assign zi17 = zll_main_repl58_outR2;
+  ZLL_Main_repl99  instR11 (main_getreg_outR2, zll_main_repl99_outR2);
+  assign zi17 = zll_main_repl99_outR2;
   assign zi18 = zi17[70:39];
   assign zi19 = zi17[38:0];
   test4  instR12 (__in1, zi18, extresR2[0]);
   Main_nextPC  instR13 (zi0, main_nextpc_out);
   ZLL_Main_repl110  instR14 (main_nextpc_out, zll_main_repl110_out);
-  ZLL_Main_repl53  instR15 (zll_main_repl110_out, zll_main_repl53_out);
-  assign zres = (__in0 == 1'h0) ? ((__st1 == 7'h0) ? zll_main_repl92_out : ((__st1 == 7'h1) ? zll_main_repl78_out : ((__st1 == 7'h2) ? zll_main_repl92_outR1 : ((__st1 == 7'h3) ? zll_main_repl78_outR1 : ((__st1 == 7'h4) ? {{1'h1, {6'h28{1'h0}}}, extres, zi13} : ((__st1 == 7'h5) ? {{1'h1, {6'h28{1'h0}}}, extresR1, zi16} : ((__st1 == 7'h6) ? {{1'h1, {6'h28{1'h0}}}, extresR2, zi19} : zll_main_repl53_out))))))) : {42'h20000000002, zi0};
+  ZLL_Main_repl69  instR15 (zll_main_repl110_out, zll_main_repl69_out);
+  assign zres = (__in0 == 1'h0) ? ((__st1 == 7'h0) ? zll_main_repl114_out : ((__st1 == 7'h1) ? zll_main_repl101_out : ((__st1 == 7'h2) ? zll_main_repl114_outR1 : ((__st1 == 7'h3) ? zll_main_repl101_outR1 : ((__st1 == 7'h4) ? {{1'h1, {6'h28{1'h0}}}, extres, zi13} : ((__st1 == 7'h5) ? {{1'h1, {6'h28{1'h0}}}, extresR1, zi16} : ((__st1 == 7'h6) ? {{1'h1, {6'h28{1'h0}}}, extresR2, zi19} : zll_main_repl69_out))))))) : {42'h20000000002, zi0};
   assign __st0_next = zres[38:7];
   assign __st1_next = zres[6:0];
   assign __out0 = zres[40];
@@ -76,12 +76,7 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module ZLL_Main_repl110 (input logic [38:0] arg0,
-  output logic [80:0] res);
-  assign res = {{3'h1, {6'h27{1'h0}}}, arg0};
-endmodule
-
-module ZLL_Main_repl92 (input logic [38:0] arg0,
+module ZLL_Main_repl114 (input logic [38:0] arg0,
   input logic [31:0] arg1,
   output logic [80:0] res);
   logic [6:0] zi4;
@@ -90,15 +85,47 @@ module ZLL_Main_repl92 (input logic [38:0] arg0,
   logic [38:0] zi6;
   logic [38:0] main_nextpc_out;
   logic [80:0] zll_main_repl110_outR1;
-  logic [80:0] zll_main_repl53_out;
+  logic [80:0] zll_main_repl69_out;
   assign zi4 = arg0[6:0];
   ZLL_Main_repl110  inst ({arg1, zi4}, zll_main_repl110_out);
   assign zi5 = zll_main_repl110_out;
   assign zi6 = zi5[38:0];
   Main_nextPC  instR1 (zi6, main_nextpc_out);
   ZLL_Main_repl110  instR2 (main_nextpc_out, zll_main_repl110_outR1);
-  ZLL_Main_repl53  instR3 (zll_main_repl110_outR1, zll_main_repl53_out);
-  assign res = zll_main_repl53_out;
+  ZLL_Main_repl69  instR3 (zll_main_repl110_outR1, zll_main_repl69_out);
+  assign res = zll_main_repl69_out;
+endmodule
+
+module ZLL_Main_repl110 (input logic [38:0] arg0,
+  output logic [80:0] res);
+  assign res = {{3'h1, {6'h27{1'h0}}}, arg0};
+endmodule
+
+module ZLL_Main_repl101 (input logic [38:0] arg0,
+  input logic [31:0] arg1,
+  output logic [80:0] res);
+  logic [70:0] main_getreg_out;
+  logic [80:0] zll_main_repl99_out;
+  logic [80:0] zi0;
+  logic [31:0] zi1;
+  logic [38:0] zi2;
+  logic [0:0] extres;
+  Main_getReg  inst (arg0, main_getreg_out);
+  ZLL_Main_repl99  instR1 (main_getreg_out, zll_main_repl99_out);
+  assign zi0 = zll_main_repl99_out;
+  assign zi1 = zi0[70:39];
+  assign zi2 = zi0[38:0];
+  test1  instR2 (arg1, zi1, extres[0]);
+  assign res = {{1'h1, {6'h28{1'h0}}}, extres, zi2};
+endmodule
+
+module ZLL_Main_repl99 (input logic [70:0] arg0,
+  output logic [80:0] res);
+  logic [31:0] zi0;
+  logic [38:0] zi1;
+  assign zi0 = arg0[70:39];
+  assign zi1 = arg0[38:0];
+  assign res = {10'h0, zi0, zi1};
 endmodule
 
 module Main_getReg (input logic [38:0] arg0,
@@ -108,34 +135,7 @@ module Main_getReg (input logic [38:0] arg0,
   assign res = {zi3, arg0};
 endmodule
 
-module ZLL_Main_repl78 (input logic [38:0] arg0,
-  input logic [31:0] arg1,
-  output logic [80:0] res);
-  logic [70:0] main_getreg_out;
-  logic [80:0] zll_main_repl58_out;
-  logic [80:0] zi0;
-  logic [31:0] zi1;
-  logic [38:0] zi2;
-  logic [0:0] extres;
-  Main_getReg  inst (arg0, main_getreg_out);
-  ZLL_Main_repl58  instR1 (main_getreg_out, zll_main_repl58_out);
-  assign zi0 = zll_main_repl58_out;
-  assign zi1 = zi0[70:39];
-  assign zi2 = zi0[38:0];
-  test1  instR2 (arg1, zi1, extres[0]);
-  assign res = {{1'h1, {6'h28{1'h0}}}, extres, zi2};
-endmodule
-
-module ZLL_Main_repl58 (input logic [70:0] arg0,
-  output logic [80:0] res);
-  logic [31:0] zi0;
-  logic [38:0] zi1;
-  assign zi0 = arg0[70:39];
-  assign zi1 = arg0[38:0];
-  assign res = {10'h0, zi0, zi1};
-endmodule
-
-module ZLL_Main_repl53 (input logic [80:0] arg0,
+module ZLL_Main_repl69 (input logic [80:0] arg0,
   output logic [80:0] res);
   logic [38:0] zi0;
   assign zi0 = arg0[38:0];

@@ -2,218 +2,218 @@ $Pure.dispatch : ([16], [1]) -> [26]
 $Pure.dispatch $0 $1 =
       $LL.Pure.dispatch1 $1 $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.incr38 : ([8], [8]) -> [26]
-$LL.Main.incr38 $1 $2 =
-      $LL.Main.incr17 $1 $2
-
-$LL.Main.sig12 : ([1], [8], [8]) -> [26]
+$LL.Main.sig12 : ([8], [8], [8]) -> [26]
 $LL.Main.sig12 $0 $1 $2 =
-      $LL.Main.sig9 $0 $0 $1 $2
-
-$LL.Main.incr37 : ([8], [8], [8]) -> [26]
-$LL.Main.incr37 $0 $1 $2 =
-      $LL.Main.incr6 $0 ($LL.Main.incr16 ($2 # $1 # $2))
+      $LL.Main.sig1 $0 $1 $2
 
 $LL.Main.sig11 : ([8], [8], [8]) -> [26]
 $LL.Main.sig11 $0 $1 $2 =
-      $LL.Main.sig10 $0 $1 $2
+      2'h0 # $1 # $0 # $2
 
-$LL.Main.incr36 : ([26]) -> [26]
-$LL.Main.incr36 $0 =
-      $LL.Main.incr8 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
+$LL.Main.incr38 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr38 $0 $1 $3 $4 =
+      $LL.Main.incr17 $0 $1 $3 $4
+
+$LL.Main.incr37 : ([8], [8], [8]) -> [26]
+$LL.Main.incr37 $0 $1 $2 =
+      $LL.Main.incr33 $0 $1 $2
+
+$LL.Main.incr36 : ([8], [8], [8]) -> [26]
+$LL.Main.incr36 $0 $1 $2 =
+      2'h0 # $0 # $1 # $2
 
 $LL.Main.incr35 : ([16]) -> [26]
 $LL.Main.incr35 $0 =
-      $LL.Main.incr18 $0[8 +: 8] $0[0 +: 8]
+      $LL.Main.incr3 $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.sig10 : ([8], [8], [8]) -> [26]
-$LL.Main.sig10 $0 $1 $2 =
-      $LL.Main.sig8 $0 $1 $2
+$LL.Main.sig10 : ([26]) -> [26]
+$LL.Main.sig10 $0 =
+      $LL.Main.sig12 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.incr34 : ([8], [8]) -> [26]
+$LL.Main.incr34 $1 $2 =
+      $LL.Main.incr8 $1 $2
+
+$LL.Main.incr33 : ([8], [8], [8]) -> [26]
+$LL.Main.incr33 $0 $1 $2 =
+      $LL.Main.sig11 $1 $0 $2
+
+$LL.Main.incr32 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr32 $0 $1 $2 $3 =
+      $LL.Main.incr31 $1 $0 $2 $3
+
+$LL.Main.incr31 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr31 $0 $1 $2 $3 =
+      $LL.Main.incr21 $1 $0 $2 $3
 
 Main.plusW8 : ([8], [8]) -> [8]
 Main.plusW8 $0 $1 =
       add $0 $1
 
-$LL.Main.incr34 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr34 $0 $1 $3 $4 =
-      $LL.Main.incr30 $0 $1 $3 $4
+$LL.Main.sig9 : ([8], [8]) -> [26]
+$LL.Main.sig9 $0 $1 =
+      Main.incr $1 $0
 
-$LL.Main.incr33 : ([8], [8]) -> [26]
-$LL.Main.incr33 $1 $2 =
-      $LL.Main.incr10 $1 $2
+$LL.Main.incr30 : ([8], [8]) -> [26]
+$LL.Main.incr30 $1 $2 =
+      $LL.Main.incr25 $1 $2
 
 Main.incr : ([8], [8]) -> [26]
 Main.incr $0 $1 =
-      $LL.Main.incr36 ($LL.Main.incr16 ($0 # $0 # $1))
-
-$LL.Main.incr32 : ([8], [8], [8]) -> [26]
-$LL.Main.incr32 $0 $1 $2 =
-      $LL.Main.incr37 $0 $1 $2
-
-$LL.Main.incr31 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr31 $0 $1 $2 $3 =
-      $LL.Main.incr11 $0 $1 ($LL.Main.incr ($1 # $3))
-
-$LL.Main.incr30 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr30 $0 $1 $3 $4 =
-      $LL.Main.incr14 $0 $1 $3 $4
+      $LL.Main.incr19 ($LL.Main.sig5 ($0 # $0 # $1))
 
 $LL.Main.incr29 : ([8], [8], [8], [8]) -> [26]
 $LL.Main.incr29 $0 $1 $3 $4 =
-      $LL.Main.incr21 ($LL.Main.incr35 ($3 # Main.plusW8 $0 $1))
+      $LL.Main.incr7 ($LL.Main.incr35 ($3 # Main.plusW8 $0 $1))
+
+$LL.Main.incr28 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr28 $0 $1 $3 $4 =
+      $LL.Main.incr24 $0 $1 $3 $4
+
+$LL.Main.incr27 : ([8], [26]) -> [26]
+$LL.Main.incr27 $0 $1 =
+      $LL.Main.incr1 $0 $1[16 +: 8] $1[8 +: 8] $1[0 +: 8]
+
+$LL.Main.incr26 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr26 $0 $1 $2 $3 =
+      $LL.Main.incr15 $1 $0 ($LL.Main.incr18 ($1 # $3))
+
+Main.sig : ([8], [8]) -> [26]
+Main.sig $0 $1 =
+      $LL.Main.sig10 ($LL.Main.sig5 ($0 # $0 # $1))
+
+$LL.Main.incr25 : ([8], [8]) -> [26]
+$LL.Main.incr25 $1 $2 =
+      $LL.Main.incr9 $1 $2
+
+$LL.Main.incr24 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr24 $0 $1 $3 $4 =
+      $LL.Main.incr2 $0 $1 $3 $4
+
+$LL.Main.sig7 : ([1], [1], [8], [8]) -> [26]
+$LL.Main.sig7 $0 $1 $2 $3 =
+      if eq $1 1'h1 then $LL.Main.sig9 $3 $2
+            else $LL.Main.sig3 $0 $2 $3
+
+$LL.Main.incr23 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr23 $1 $2 $3 $4 =
+      $LL.Main.incr28 $2 $1 $3 $4
+
+$LL.Main.sig6 : ([1], [8], [8]) -> [26]
+$LL.Main.sig6 $0 $1 $2 =
+      $LL.Main.sig7 $0 $0 $1 $2
+
+$LL.Main.incr22 : ([8], [8], [8]) -> [26]
+$LL.Main.incr22 $0 $1 $2 =
+      $LL.Main.incr5 $0 $1 $2
+
+$LL.Main.incr21 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr21 $0 $1 $2 $3 =
+      $LL.Main.incr26 $0 $1 $2 $3
+
+$LL.Main.incr20 : ([8], [8]) -> [26]
+$LL.Main.incr20 $1 $2 =
+      $LL.Main.incr30 $1 $2
+
+$LL.Main.sig5 : ([24]) -> [26]
+$LL.Main.sig5 $0 =
+      $LL.Main.incr37 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
 
 $LL.Pure.dispatch1 : ([1], [8], [8]) -> [26]
 $LL.Pure.dispatch1 $0 $1 $2 =
       $LL.Pure.dispatch $0 $1 $2
 
-$LL.Pure.dispatch : ([1], [8], [8]) -> [26]
-$LL.Pure.dispatch $0 $1 $2 =
-      $LL.Main.sig12 $0 $1 $2
+$LL.Main.incr19 : ([26]) -> [26]
+$LL.Main.incr19 $0 =
+      $LL.Main.incr22 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.incr28 : ([8], [8], [8]) -> [26]
-$LL.Main.incr28 $0 $1 $2 =
-      $LL.Main.incr22 $1 $0 $2
+$LL.Main.incr18 : ([16]) -> [26]
+$LL.Main.incr18 $0 =
+      $LL.Main.incr11 $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.incr27 : ([8], [8], [8]) -> [26]
-$LL.Main.incr27 $0 $1 $2 =
-      $LL.Main.incr28 $0 $1 $2
+$LL.Main.incr17 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr17 $0 $1 $3 $4 =
+      $LL.Main.incr23 $0 $1 $3 $4
 
-$LL.Main.incr26 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr26 $0 $1 $3 $4 =
-      $LL.Main.incr34 $0 $1 $3 $4
+$LL.Main.incr16 : ([8], [8]) -> [26]
+$LL.Main.incr16 $1 $2 =
+      $LL.Main.incr12 $1 $2
 
-$LL.Main.incr25 : ([8], [8]) -> [26]
-$LL.Main.incr25 $1 $2 =
+$LL.Main.incr15 : ([8], [8], [26]) -> [26]
+$LL.Main.incr15 $0 $1 $2 =
+      $LL.Main.incr38 $0 $1 $2[8 +: 8] $2[0 +: 8]
+
+$LL.Main.incr14 : ([24]) -> [26]
+$LL.Main.incr14 $0 =
+      $LL.Main.incr10 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.incr13 : ([8], [8], [8]) -> [26]
+$LL.Main.incr13 $0 $1 $2 =
+      $LL.Main.incr27 $0 ($LL.Main.incr14 ($2 # $1 # $2))
+
+$LL.Main.incr12 : ([8], [8]) -> [26]
+$LL.Main.incr12 $1 $2 =
       10'h100 # $1 # $2
 
-Main.sig : ([8], [8]) -> [26]
-Main.sig $0 $1 =
-      $LL.Main.sig1 ($LL.Main.sig3 ($0 # $0 # $1))
+$LL.Main.sig4 : ([8], [8], [8]) -> [26]
+$LL.Main.sig4 $0 $1 $2 =
+      2'h2 # $0 # $1 # $2
 
-$LL.Main.incr24 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr24 $0 $1 $3 $4 =
-      $LL.Main.incr29 $0 $1 $3 $4
+$LL.Main.incr11 : ([8], [8]) -> [26]
+$LL.Main.incr11 $1 $2 =
+      $LL.Main.incr16 $1 $2
 
-$LL.Main.sig9 : ([1], [1], [8], [8]) -> [26]
-$LL.Main.sig9 $0 $1 $2 $3 =
-      if eq $1 1'h1 then $LL.Main.sig4 $2 $3
-            else $LL.Main.sig7 $0 $2 $3
+$LL.Main.incr10 : ([8], [8], [8]) -> [26]
+$LL.Main.incr10 $0 $1 $2 =
+      $LL.Main.incr6 $0 $1 $2
 
-$LL.Main.sig8 : ([8], [8], [8]) -> [26]
-$LL.Main.sig8 $0 $1 $2 =
-      2'h0 # $0 # $1 # $2
-
-$LL.Main.sig7 : ([1], [8], [8]) -> [26]
-$LL.Main.sig7 $0 $1 $2 =
-      $LL.Main.sig2 $1 $2
-
-$LL.Main.sig6 : ([8], [8], [8]) -> [26]
-$LL.Main.sig6 $0 $1 $2 =
-      $LL.Main.sig $0 $1 $2
-
-$LL.Main.incr23 : ([8], [8]) -> [26]
-$LL.Main.incr23 $1 $2 =
+$LL.Main.incr9 : ([8], [8]) -> [26]
+$LL.Main.incr9 $1 $2 =
       Main.sig $1 $2
 
-$LL.Main.incr22 : ([8], [8], [8]) -> [26]
-$LL.Main.incr22 $0 $1 $2 =
-      2'h0 # $1 # $0 # $2
+$LL.Main.incr8 : ([8], [8]) -> [26]
+$LL.Main.incr8 $0 $2 =
+      10'h100 # $0 # $2
 
-$LL.Main.incr21 : ([26]) -> [26]
-$LL.Main.incr21 $0 =
-      $LL.Main.incr19 $0[8 +: 8] $0[0 +: 8]
+$LL.Main.incr7 : ([26]) -> [26]
+$LL.Main.incr7 $0 =
+      $LL.Main.incr20 $0[8 +: 8] $0[0 +: 8]
 
-$LL.Main.incr20 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr20 $0 $1 $2 $3 =
-      $LL.Main.incr12 $0 $1 $2 $3
+$LL.Main.incr6 : ([8], [8], [8]) -> [26]
+$LL.Main.incr6 $0 $1 $2 =
+      $LL.Main.incr36 $0 $1 $2
 
-$LL.Main.sig5 : ([8], [8], [8]) -> [26]
-$LL.Main.sig5 $0 $1 $2 =
-      $LL.Main.sig6 $0 $1 $2
+$LL.Main.incr5 : ([8], [8], [8]) -> [26]
+$LL.Main.incr5 $0 $1 $2 =
+      $LL.Main.incr13 $0 $1 $2
 
-$LL.Main.incr19 : ([8], [8]) -> [26]
-$LL.Main.incr19 $1 $2 =
-      $LL.Main.incr33 $1 $2
+$LL.Main.sig3 : ([1], [8], [8]) -> [26]
+$LL.Main.sig3 $0 $1 $2 =
+      $LL.Main.sig2 $2 $1
 
-$LL.Main.incr18 : ([8], [8]) -> [26]
-$LL.Main.incr18 $1 $2 =
-      $LL.Main.incr4 $1 $2
-
-$LL.Main.incr17 : ([8], [8]) -> [26]
-$LL.Main.incr17 $1 $2 =
-      $LL.Main.incr3 $1 $2
-
-$LL.Main.incr16 : ([24]) -> [26]
-$LL.Main.incr16 $0 =
-      $LL.Main.incr27 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
-
-$LL.Main.incr14 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr14 $0 $1 $3 $4 =
-      $LL.Main.incr24 $0 $1 $3 $4
-
-$LL.Main.sig4 : ([8], [8]) -> [26]
-$LL.Main.sig4 $0 $1 =
-      Main.incr $0 $1
-
-$LL.Main.incr12 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr12 $0 $1 $2 $3 =
-      $LL.Main.incr31 $0 $1 $2 $3
-
-$LL.Main.incr11 : ([8], [8], [26]) -> [26]
-$LL.Main.incr11 $0 $1 $2 =
-      $LL.Main.incr7 $0 $1 $2[8 +: 8] $2[0 +: 8]
-
-$LL.Main.incr10 : ([8], [8]) -> [26]
-$LL.Main.incr10 $1 $2 =
-      $LL.Main.incr23 $1 $2
-
-$LL.Main.incr8 : ([8], [8], [8]) -> [26]
-$LL.Main.incr8 $0 $1 $2 =
-      $LL.Main.incr32 $0 $1 $2
-
-$LL.Main.sig3 : ([24]) -> [26]
-$LL.Main.sig3 $0 =
-      $LL.Main.sig11 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
+$LL.Main.incr3 : ([8], [8]) -> [26]
+$LL.Main.incr3 $1 $2 =
+      $LL.Main.incr34 $1 $2
 
 $LL.Main.sig2 : ([8], [8]) -> [26]
 $LL.Main.sig2 $0 $1 =
-      Main.sig $0 $1
+      Main.sig $1 $0
 
-$LL.Main.incr7 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr7 $0 $1 $3 $4 =
-      $LL.Main.incr26 $0 $1 $3 $4
-
-$LL.Main.incr6 : ([8], [26]) -> [26]
-$LL.Main.incr6 $0 $1 =
-      $LL.Main.incr5 $0 $1[16 +: 8] $1[8 +: 8] $1[0 +: 8]
-
-$LL.Main.incr5 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr5 $0 $1 $2 $3 =
-      $LL.Main.incr1 $0 $1 $2 $3
-
-$LL.Main.incr4 : ([8], [8]) -> [26]
-$LL.Main.incr4 $1 $2 =
-      $LL.Main.incr25 $1 $2
-
-$LL.Main.sig1 : ([26]) -> [26]
-$LL.Main.sig1 $0 =
-      $LL.Main.sig5 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
-
-$LL.Main.sig : ([8], [8], [8]) -> [26]
-$LL.Main.sig $0 $1 $2 =
-      2'h2 # $0 # $1 # $2
-
-$LL.Main.incr3 : ([8], [8]) -> [26]
-$LL.Main.incr3 $0 $2 =
-      10'h100 # $0 # $2
+$LL.Main.incr2 : ([8], [8], [8], [8]) -> [26]
+$LL.Main.incr2 $0 $1 $3 $4 =
+      $LL.Main.incr29 $0 $1 $3 $4
 
 $LL.Main.incr1 : ([8], [8], [8], [8]) -> [26]
 $LL.Main.incr1 $0 $1 $2 $3 =
-      $LL.Main.incr20 $0 $1 $2 $3
+      $LL.Main.incr32 $0 $1 $2 $3
 
-$LL.Main.incr : ([16]) -> [26]
-$LL.Main.incr $0 =
-      $LL.Main.incr38 $0[8 +: 8] $0[0 +: 8]
+$LL.Main.sig1 : ([8], [8], [8]) -> [26]
+$LL.Main.sig1 $0 $1 $2 =
+      $LL.Main.sig4 $0 $1 $2
+
+$LL.Pure.dispatch : ([1], [8], [8]) -> [26]
+$LL.Pure.dispatch $0 $1 $2 =
+      $LL.Main.sig6 $0 $1 $2
 
 device top_level
       input __in0 : [1]
