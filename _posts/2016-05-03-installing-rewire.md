@@ -8,33 +8,62 @@ order: 2
 
 # Step 1: Install System Requirements
 
-Your system will need to meet a few prerequisites before installing ReWire:
+ReWire is built with [Haskell Stack](https://docs.haskellstack.org/), which
+manages the GHC toolchain (currently GHC 9.10) and all Haskell dependencies for
+you. You only need Stack itself:
 
-* [Haskell Platform](https://www.haskell.org/platform/prior.html), version 7.10.3. Later versions of GHC (8.0 or greater) will not work with ReWire because these later releases do not yet fully support libraries ReWire relies on.
-* Some sort of FPGA development tool suite that supports VHDL. Currently the only tested tools are those from Xilinx:
-   - [ISE](http://www.xilinx.com/products/design-tools/ise-design-suite.html)
-   - [Vivado](http://www.xilinx.com/products/design-tools/vivado.html)
+* On Linux:
 
-  Each of these tools is available in a free "WebPACK" version.
-* (Optional) An FPGA development board. (If you do not have access to a development board, you may still be able to test out your designs in simulation.)
+      $ sudo apt install haskell-stack
 
-For the quick start tutorial we will be using ISE and the (sadly discontinued) [Spartan-3E Starter Kit](http://www.xilinx.com/products/boards-and-kits/hw-spar3e-sk-us-g.html).
+* On macOS (via [Homebrew](https://brew.sh)):
+
+      $ brew install haskell-stack
+
+(See the [Stack install guide](https://docs.haskellstack.org/en/stable/install_and_upgrade/)
+for other platforms. Stack will download the correct GHC the first time you
+build.)
+
+The following tools are *optional*, but useful:
+
+* A VHDL or Verilog synthesis tool suite, if you want to put designs on a real
+  FPGA. The vendor toolchains (AMD/Xilinx Vivado, Intel/Altera Quartus, etc.)
+  all accept the standard Verilog/VHDL that ReWire emits.
+* Open-source simulators for testing designs without a board:
+  [Icarus Verilog](https://steveicarus.github.io/iverilog/) (`iverilog`) and
+  [Verilator](https://www.veripool.org/verilator/) for Verilog, and
+  [GHDL](https://ghdl.github.io/ghdl/) for VHDL. The regression test suite uses
+  these.
+* [Cryptol](https://cryptol.net/), if you want to use the Cryptol backend
+  (`rwc --cryptol`) for verification or simulation.
+
+Note that ReWire also includes a *built-in interpreter* (`rwc --interpret`), so
+you can run and test a design with no external simulator at all.
 
 # Step 2: Acquire ReWire Source
 
-You can download the latest ReWire source code from the [release page](https://github.com/mu-chaco/ReWire/releases) on GitHub.
+Clone the repository from GitHub:
 
-# Step 3: Build ReWire
+    $ git clone https://github.com/rewire-hardware/ReWire
+    $ cd ReWire
 
-Note that depending on your system configuration, the `cabal install` steps below may require administrative privileges.
+# Step 3: Build and Install ReWire
 
-    $ tar xvzf ReWire-<version>.tar.gz
-    $ cd ReWire-<version>
-    $ cabal install --only-dependencies
-    $ cabal configure
-    $ cabal install
+To build everything and install the `rwc` (compiler) and `rwe` (Isabelle
+embedder) executables to `~/.local/bin`:
 
-If everything works correctly, you should now have an `rwc` binary somewhere in your path.
+    $ stack install
+
+The first build will take a while, since Stack fetches GHC and compiles all
+dependencies. To build without installing, use `stack build`; to run the
+compiler straight from the source tree without installing, use
+`stack run rwc -- <args>`.
+
+Make sure `~/.local/bin` is on your `PATH`. You should then be able to run:
 
     $ which rwc
-    /Users/me/Library/Haskell/bin/rwc
+    /Users/me/.local/bin/rwc
+    $ rwc --help
+
+See the [Quick Start]({{ site.baseurl }}{% post_url 2016-05-03-quick-start %})
+to compile and run your first design.

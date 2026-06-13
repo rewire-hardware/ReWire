@@ -13,7 +13,7 @@ title: "ReWire Functional Hardware Description"
 
 ## __ReWire: Functional Hardware Description__
 
-[ReWire](https://github.com/mu-chaco/ReWire) is an open source programming language for designing, implementing, and formally verifying hardware artifacts. ReWire is a language for high-level synthesis based in the functional language [Haskell](https://www.haskell.org). Functional languages are a commonly proposed approach to alleviating the well-known FPGA programmability problem---a.k.a., the three P's (Productivity, Performance and Portability). But the ReWire approach takes this one step further with _Provability_.
+[ReWire](https://github.com/rewire-hardware/ReWire) is an open source programming language for designing, implementing, and formally verifying hardware artifacts. ReWire is a language for high-level synthesis based in the functional language [Haskell](https://www.haskell.org). Functional languages are a commonly proposed approach to alleviating the well-known FPGA programmability problem---a.k.a., the three P's (Productivity, Performance and Portability). But the ReWire approach takes this one step further with _Provability_.
 
 
 <img src="{{ site.baseurl }}/images/4Ps.png" style="display: block; margin: 0 auto; max-width: 50%;" alt="Screenshot" />
@@ -24,7 +24,7 @@ ReWire programs _are_ Haskell programs. That means, every ReWire program _is_ a 
 * Formal semantics supporting formal reasoning.
 
 
-ReWire programs, however, may all be translated directly to VHDL using the ReWire compiler:
+ReWire programs, however, may all be translated directly to synthesizable hardware---Verilog or VHDL---using the ReWire compiler:
 
 <img src="{{ site.baseurl }}/images/ReWire.png" style="display: block; margin: 0 auto; max-width: 75%;" alt="Screenshot" />
 
@@ -32,9 +32,13 @@ ReWire programs, however, may all be translated directly to VHDL using the ReWir
 Why does all this distinguish us from other research efforts? Read on!
 
 ## __What's New?__
-* ReWire, Version 2.0, released on July 21, 2021! This included a number of improvements to the VHDL backend and a swathe of bug fixes.
-* The ReWire language and compiler is currently under intense and active development and is, therefore, something of a moving target. E.g., we have added a Verilog backend, among other things.
-* Our development of the language and compiler has outstripped our now quite dusty website; writing documentation is like eating broccoli. If you have any questions, please send us an [email](mailto:rewire.questions@gmail.com).
+* ReWire 2.7 (June 2026). Highlights since the 2.0 era:
+    * __Multiple backends.__ Verilog is now the default target; VHDL is fully supported (`--vhdl`); and a new Cryptol backend (`--cryptol`) emits a pure model of the generated hardware for verification (e.g., SAW equivalence proofs) and fast functional simulation.
+    * __A built-in interpreter.__ `rwc --interpret` runs a ReWire device directly, cycle by cycle, with no external simulator, and `rwc --testbench` emits a self-checking Verilog/VHDL testbench so a real simulation can be diffed against the interpreter.
+    * __An Isabelle embedder.__ The companion `rwe` tool translates ReWire programs into Isabelle/HOL theories for machine-checked verification.
+    * __A modern standard library.__ `import ReWire` gives you reactive-resumption and state monads, bits, and fixed-width words/vectors indexed by type-level naturals (`W 8`, `Vec n a`), all usable from both `rwc` and GHC.
+* ReWire is built with [Haskell Stack](https://docs.haskellstack.org/) (GHC 9.10). See the [installation instructions]({{ site.baseurl }}{% post_url 2016-05-03-installing-rewire %}) and the [quick start]({{ site.baseurl }}{% post_url 2016-05-03-quick-start %}) to get going. An in-repo, example-driven tutorial lives under `tutorial/rewire-by-example`.
+* Development moves faster than this website; if you have any questions, please send us an [email](mailto:rewire.questions@gmail.com) or open an issue on [GitHub](https://github.com/rewire-hardware/ReWire).
 
 ### __Just Say No! to Semantic Archaeology__
 

@@ -6,6 +6,17 @@ date: 2016-07-04 10:52:04
 order: 5
 ---
 
+> **Note:** This case study predates several changes to ReWire. It hand-rolls a
+> "ReWire prelude" (its own `Bit`/`W8`/`W32` types) and uses the old `nativeVhdl`
+> primitive and VHDL-only flow. Modern ReWire instead provides these via
+> `import ReWire`/`import ReWire.Bits` (e.g. the `W n` word type), uses `extern`
+> in place of `nativeVhdl`, and emits Verilog by default. The overall *design
+> methodology* shown here&mdash;start in Haskell, then refine into the ReWire
+> subset&mdash;is still exactly how you develop a ReWire program. For an
+> up-to-date, runnable version of this and other examples, see the
+> `tutorial/rewire-by-example` tutorial in the
+> [source tree](https://github.com/rewire-hardware/ReWire).
+
 ### What's a Crossbar Switch?
 
 To perform this exercise, I relied primarily on two sources to explain what a crossbar switch is; they are:

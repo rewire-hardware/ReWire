@@ -32,74 +32,92 @@ instance Monad (Re i o) where
 
 where `>=>` is the left-to-right Kleisli composition operator.
 
-We can generalize `Re` to a monad transformer `ReT`, which allows us to mix other kinds of effects with reactivity.
+We can generalize `Re` to a monad transformer `ReacT`, which allows us to mix other kinds of effects with reactivity. (`ReacT` is the type you actually import from the `ReWire` standard library; it was called `ReT` in older versions of ReWire.)
 
 ```` haskell
-newtype ReT i o m a =
-        ReT { deReT :: m (Either a (o, i -> ReT i o m a)) }
+newtype ReacT i o m a =
+        ReacT { deReacT :: m (Either a (o, i -> ReacT i o m a)) }
 
-instance Monad m => Monad (ReT i o m) where
-  return = ReT . return . Left
-  ReT m >>= f = ReT $ do
+instance Monad m => Monad (ReacT i o m) where
+  return = ReacT . return . Left
+  ReacT m >>= f = ReacT $ do
     r <- m
     case r of
-      Left v      -> deReT (f v)
+      Left v      -> deReacT (f v)
       Right (o,k) -> return (Right (o,k >=> f))
 
-instance MonadTrans (ReT i o) where
-  lift m = ReT (m >>= return . Left)
+instance MonadTrans (ReacT i o) where
+  lift m = ReacT (m >>= return . Left)
 ````
 
-One particularly useful operation in `ReT`, which we will actually take as a primitive in ReWire, is called `signal`.
+One particularly useful operation in `ReacT`, which we will actually take as a primitive in ReWire, is called `signal`.
 
 ```` haskell
-signal :: Monad m => o -> ReT i o m i
-signal o = ReT (return (Right (o,return)))
+signal :: Monad m => o -> ReacT i o m i
+signal o = ReacT (return (Right (o,return)))
 ````
 
 Think of `signal o` as meaning "yield the output `o` to the environment, wait for a new input `i`, then return `i`".
 
 # Layered State Monads
 
-ReWire also contains built-in support for _layered state monads_, which enable us to describe circuits with mutable state. Formally, a layered state monad is any monad composed from one or more applications of the state monad transformer `StT` to the base identity monad `I`. While `StT` and `I` are primitives in ReWire, they can be defined in Haskell as follows:
+ReWire also contains built-in support for _layered state monads_, which enable us to describe circuits with mutable state. Formally, a layered state monad is any monad composed from zero or more applications of the state monad transformer `StateT` to the base identity monad `Identity`. ReWire uses the same `StateT` and `Identity` as Haskell's standard libraries; for reference, they can be defined as follows:
 
 ```` haskell
-newtype StT s m a = StT { deStT :: s -> m (a,s) }
+newtype StateT s m a = StateT { runStateT :: s -> m (a,s) }
 
-instance Monad m => Monad (StT s m) where
-  return x    = StT $ \ s -> return (x,s)
-  StT m >>= f = StT $ \ s -> m s >>= \ (x,s) -> deStT (f x) s
+instance Monad m => Monad (StateT s m) where
+  return x       = StateT $ \ s -> return (x,s)
+  StateT m >>= f = StateT $ \ s -> m s >>= \ (x,s) -> runStateT (f x) s
 
-instance MonadTrans (StT s) where
-  lift m = StT $ \ s -> m >>= \ x -> return (x,s)
+instance MonadTrans (StateT s) where
+  lift m = StateT $ \ s -> m >>= \ x -> return (x,s)
 
-newtype I a = I { deI :: I a -> a }
+newtype Identity a = Identity { runIdentity :: a }
 
-instance Monad I where
-  return    = I
-  I x >>= f = f x
+instance Monad Identity where
+  return            = Identity
+  Identity x >>= f  = f x
 ````
 
-These are, in fact, equivalent to `StateT` and `Identity` in Haskell's standard libraries.
+A ReWire device thus has the type `ReacT i o (StateT s1 (StateT s2 (... Identity))) ()`, with one `StateT` layer per register bank; with no state at all it is just `ReacT i o Identity ()`, for which the `ReWire` standard library provides the synonym `Dev i o`. The `extrude` operation lowers a `StateT` layer by supplying its initial value, turning a stateful device into one ready for synthesis:
 
-The monads supported by ReWire are limited to monads composed of 
+```` haskell
+extrude :: Monad m => ReacT i o (StateT s m) a -> s -> ReacT i o m a
+````
 
 # Restrictions
 
-The ReWire language is essentially a subset of Haskell 98. The major restrictions are as follows.
+The ReWire language is essentially a subset of Haskell. The major restrictions are as follows.
 
-* __Type classes__ are not (yet) implemented.
-* The __`type` keyword__ is not (yet) implemented.
+* __Type classes__ are not implemented: programs may not declare their own `class`es or `instance`s.
 * __Polymorphic__ and __higher-order__ functions are only allowed if they can be __eliminated via inlining__.
   - For example, the polymorphic function `fst :: (a,b) -> a` can always be inlined, as can the higher-order (and polymorphic) function `(.) :: (b -> c) -> (a -> b) -> (a -> c)`.
-* __`Data` types__ are allowed, including parametric data types like `Maybe`, but only if they are __first-order__ (i.e., do not contain any function- or monad-typed fields) and __non-recursive__.
-* __Recursive function definitions__ are allowed, but only in a reactive resumption monad. Such definitions must be _tail recursive_ and _guarded_.
-  - FIXME: Insert some examples/nonexamples.
+* __`data` types__ are allowed, including parametric data types like `Maybe`, but only if they are __first-order__ (i.e., do not contain any function- or monad-typed fields) and __non-recursive__.
+* __`type` synonyms__ are supported (including type-level naturals, e.g. `type W n = Vec n Bool`).
+* __Recursive function definitions__ are allowed, but only in a reactive resumption monad. Such definitions must be _tail recursive_ and _guarded_ (by a `signal`).
+  - For instance, `loop n = signal n >>= \ i -> loop (n + i)` is fine, but a non-reactive recursion like `count n = count (n + 1)` is rejected, as is a recursive `data` type.
 
-# Interfacing with VHDL
+A misuse of any of these is reported as a compile-time error rather than producing incorrect hardware.
 
-* Data types -> bit vectors
-* `nativeVhdl`
-* `extrude`
-* `start`
-* `signal`
+# Interfacing with HDL
+
+* __Bit-level types.__ `import ReWire` and `import ReWire.Bits` provide `Bit` (a single bit) and the fixed-width word type `W n`, an `n`-bit word indexed by a type-level natural, together with arithmetic, comparison, bitwise, shift, slicing, and reduction operations. More generally, any first-order `data` type is laid out automatically as a bit vector. The `Vec n a` type (from `ReWire.Vectors`) gives fixed-length vectors.
+* __Externs.__ When you need to drop down to a hand-written HDL module (a primitive the compiler doesn't generate, an IP block, a clocked component), use `extern` (or `externWithSig` for full control over port names, parameters, and clock/reset):
+
+  ```` haskell
+  extern        :: String -> a -> a
+  externWithSig :: [(String, Integer)]  -- module parameters
+                -> String               -- clock signal name (or "")
+                -> String               -- reset signal name (or "")
+                -> [(String, Integer)]  -- input ports (name, width)
+                -> [(String, Integer)]  -- output ports (name, width)
+                -> String               -- module name
+                -> a                    -- Haskell model (for interpreting/Cryptol)
+                -> String               -- instance name
+                -> a
+  ````
+
+  The next-to-last argument is a Haskell definition used as the extern's *model* when interpreting or generating Cryptol; you supply the matching HDL module to the synthesis/simulation toolchain yourself. (`extern` replaces the old `nativeVhdl` primitive.)
+* __`start`.__ Every program designates a top-level device named `start` (override with `--start`), whose type fixes the widths of the generated module's input and output ports.
+* __`signal`.__ `signal o` yields output `o` for one clock cycle and returns the input sampled on the next cycle&mdash;the basic unit of clocked I/O.
