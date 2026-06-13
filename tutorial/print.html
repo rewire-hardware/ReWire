@@ -1,0 +1,862 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>ReWire by Example</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-0392ca55.css">
+        <link rel="stylesheet" href="css/chrome-fc474251.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex-5dad8bfe.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc-1a25fc83.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">ReWire by Example</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="chapter-1-introduction"><a class="header" href="#chapter-1-introduction">Chapter 1: Introduction</a></h1>
+<p>These are the tutorial notes for the ReWire language.</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<h3 id="haskell"><a class="header" href="#haskell">Haskell</a></h3>
+<p>There’s no way of learning ReWire without knowing basic Haskell. Here are some good sources:</p>
+<ul>
+<li><strong>Programming in Haskell</strong> by Graham Hutton.
+This is an excellent, step-by-step introduction to Haskell. Graham also has a lot of online resources (slides, videos, etc.) to go along with the book.</li>
+<li><strong>Learn You a Haskell for Good</strong> by Miran Lipovaca.
+Highly amusing and informative; available <a href="https://learnyouahaskell.com/">here</a>.</li>
+<li><strong>A Gentle Introduction to Haskell</strong> by Hudak, Peterson, and Fasal.
+Available at <a href="http://www.haskell.org/tutorial/">http://www.haskell.org/tutorial/</a>.</li>
+<li><strong>Real World Haskell</strong> by Bryan O’Sullivan.
+Also available online (I believe).</li>
+<li>Google.</li>
+</ul>
+<h3 id="monads-in-haskell"><a class="header" href="#monads-in-haskell">Monads in Haskell</a></h3>
+<p>You have to be comfortable with the basics of “monad wrangling”. You don’t need to understand them in any great depth, but understanding the following ought to do:</p>
+<ol>
+<li>The <code>Identity</code> monad;</li>
+<li>the state monad; and</li>
+<li>the <code>Maybe</code> monad.</li>
+</ol>
+<p>Understanding the basic usage of the <code>StateT</code> monad transformer is important. It’s a shame that they are known as “transformer” instead of “constructor”, because all a monad transformer is is a way to construct monads in a canonical fashion.</p>
+<p>Monads are a concept from Category Theory. I love Category Theory, really I do. But I’d <strong>strongly</strong> recommend avoiding categorical treatments of monads if this is your first time with this material. Rather, check out Graham Hutton or Miran Lipovaca’s texts as they’re both excellent.</p>
+<h4 id="reactive-resumption-monads"><a class="header" href="#reactive-resumption-monads">Reactive Resumption Monads</a></h4>
+<p>These are a particular family of monads that can be used to precisely describe synchronous concurrency (e.g., like clocked computations in hardware). They sound scary, but they’re not. Check out the following papers of mine for the basics if you want. I suspect a lot of readers will just look at its usage in ReWire and get them well enough.</p>
+<ol>
+<li><a href="https://bibbase.org/network/publication/harrison-theessenceofmultitasking-2006">Essence of Multitasking</a> and</li>
+<li><a href="https://bibbase.org/network/publication/harrison-procter-cheapbutfunctionalthreads-2015">Cheap (But Functional) Threads</a>.</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="monad-wrangling-101"><a class="header" href="#monad-wrangling-101">Monad Wrangling 101</a></h1>
+<p>ReWire is a monadic language, meaning that it is organized in terms of various monads (which ones, we’ll get to shortly). There are about a zillion tutorials on monads out there, and most of them are just <em>terrible</em>. This is a shame since the idea of a monad itself is really beautiful and, if you know how to use them correctly, they’re a really important part of functional programming practice. And, furthermore, they are a really important part of programming language semantics, too, and consequently an important part of formal methods properly understood.</p>
+<p>What this section does is introduce the monad idea through a sequence of simple language interpreters. As we add features to the language, we have to change the monad we use to define the new interpreter. We will see four interpreters whose core is a language of simple arithmetic expressions.</p>
+<p>To see all of the monads discussed in this tutorial defined in one convenient Haskell file, download this:
+<a href="monadwrangling/MonadWrangling.hs">MonadWrangling.hs</a>. These monad and monad transformer definitions are in the style of earlier versions of GHC, which were immensely easier to understand than the current mess.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="simple-arithmetic"><a href="#simple-arithmetic" class="header">Simple Arithmetic</a></h1>
+<h2 id="simple-arithmetic-expressions"><a class="header" href="#simple-arithmetic-expressions">Simple Arithmetic Expressions</a></h2>
+<p>The first interpreter, found in <a href="monadwrangling/Arith.hs">Arith.hs</a>, defines a language <code>Exp</code> that has integer constants, negation, and addition. These correspond to the constructors <code>Const</code>, <code>Neg</code>, and <code>Add</code> of the <code>Exp</code> data type. The interpreter <code>eval0</code> does not use a monad and should be fairly self-explanatory.</p>
+<pre><code class="language-haskell">module Arith where
+
+data Exp = Const Int | Neg Exp | Add Exp Exp
+
+instance Show Exp where
+  show (Const i) = show i
+  show (Neg e)   = "-" ++ show e
+  show (Add e1 e2) = show e1 ++ " + " ++ show e2
+
+eval0 :: Exp -&gt; Int
+eval0 (Const i)   = i
+eval0 (Neg e)     = - (eval0 e)
+eval0 (Add e1 e2) = eval0 e1 + eval0 e2
+
+c = Const 99
+n = Neg c
+a = Add c n
+</code></pre>
+<p>Loading this into GHCi gives you what you’d expect:</p>
+<pre><code>λ&gt; a
+99 + -99
+λ&gt; eval0 a
+0
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-identity-monad-is-a-big-nothingburger"><a class="header" href="#the-identity-monad-is-a-big-nothingburger">The <code>Identity</code> Monad is a Big Nothingburger</a></h1>
+<p>We introduce now the <code>Identity</code> monad, which doesn’t really give you anything at all. I introduce it first because it uses Haskell’s built-in monad syntax, and it’s useful to meet that syntax first when the monad is just a big nothing. The code for this section is found in <a href="monadwrangling/IdentityMonad.hs">IdentityMonad.hs</a> and <a href="monadwrangling/IdentityMonadDo.hs">IdentityMonadDo.hs</a>.</p>
+<p>First, here’s the new interpreter <code>eval1</code>. The salient point is that <code>eval0</code> and <code>eval1</code> are doing the same thing, but what’s all this <code>return</code> and <code>&gt;&gt;=</code> business? (They’re explained below if you want to skip ahead.)</p>
+<pre><code class="language-haskell">module IdentityMonad where
+
+import Control.Monad.Identity -- this is new.
+
+data Exp = Const Int | Neg Exp | Add Exp Exp
+
+instance Show Exp where
+  show (Const i) = show i
+  show (Neg e)   = "-" ++ show e
+  show (Add e1 e2) = show e1 ++ " + " ++ show e2
+
+eval1 :: Exp -&gt; Identity Int
+eval1 (Const i)   = return i
+eval1 (Neg e)     = eval1 e &gt;&gt;= \ v -&gt; return (- v)
+eval1 (Add e1 e2) = eval1 e1 &gt;&gt;= \ v1 -&gt; eval1 e2 &gt;&gt;= \ v2 -&gt; return (v1 + v2)
+
+c = Const 99
+n = Neg c
+a = Add c n
+</code></pre>
+<p>The <code>Identity</code> monad has the following definition (it’s actually a simplification).</p>
+<pre><code class="language-haskell">data Identity a = Identity a -- apologies for overloading the constructors.
+return :: a -&gt; Identity a
+return v = Identity v
+(&gt;&gt;=) :: Identity a -&gt; (a -&gt; Identity b) -&gt; Identity b
+(Identity v) &gt;&gt;= f = f v
+</code></pre>
+<p>So, <code>return</code> just injects its argument into <code>Identity</code>. The operation <code>&gt;&gt;=</code> (a.k.a., “bind”) boils down to a backwards apply. It’s just a whole lot of applying and pattern-matching on the <code>Identity</code> constructor, signifying nothing. When you load all this into GHCi, you get just what you’d expect:</p>
+<pre><code>λ&gt; a
+99 + -99
+λ&gt; eval1 a
+Identity 0
+λ&gt; 
+</code></pre>
+<h2 id="lessons-learned"><a class="header" href="#lessons-learned">Lessons Learned</a></h2>
+<p>As people say, <code>eval1</code> and <code>eval0</code> are morally equivalent, in the sense that, if you were so inclined, you could <em>prove</em> the equality <code>eval1 a = Identity (eval0 a)</code> holds for any <code>a</code>.</p>
+<h3 id="monadic-syntactic-sugar-or-saccharine"><a class="header" href="#monadic-syntactic-sugar-or-saccharine">Monadic Syntactic Sugar or Saccharine?</a></h3>
+<p>Haskell overloads its monad syntax, so when we see the <code>&gt;&gt;=</code> and <code>return</code> again, they will be typed in different monads than <code>Identity</code>. Overloading is great for some uses, because it removes clutter. I find for formal methods it can be kind of confusing. So, reader beware!</p>
+<p>There is also another shorthand for <code>&gt;&gt;=</code> that is frequently used called <code>do</code> notation; it’s defined as:</p>
+<pre><code class="language-haskell">   x &gt;&gt;= f = do
+               v &lt;- x
+		       f v
+</code></pre>
+<p>So, the clause of <code>eval1</code> for <code>Neg</code> is as follows when written in <code>do</code> notation:</p>
+<pre><code class="language-haskell">eval1 (Neg e)     = do
+                      v &lt;- eval1 e
+                      return (- v)
+</code></pre>
+<p>The code <code>IdentityMonadDo.hs</code> just reformulates the code in <code>IdentityMonad.hs</code> using <code>do</code> notation.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="2nd-interpreter-errors-and-maybe"><a class="header" href="#2nd-interpreter-errors-and-maybe">2nd Interpreter: Errors and Maybe</a></h1>
+<p>The code for this section is found in <a href="monadwrangling/Errors.hs">Errors.hs</a>. This new interpreter adds a new arithmetic operation <code>Div</code>. I pasted in the <code>eval0</code> with a new case for <code>Div</code>.</p>
+<pre><code class="language-haskell">module Errors where
+
+data Exp = Const Int | Neg Exp | Add Exp Exp
+         | Div Exp Exp                      -- new
+
+instance Show Exp where
+  show (Const i) = show i
+  show (Neg e)   = "-" ++ show e
+  show (Add e1 e2) = show e1 ++ " + " ++ show e2
+  show (Div e1 e2) = show e1 ++ " / " ++ show e2
+
+-- | Same as before, but with a new case
+eval0 :: Exp -&gt; Int
+eval0 (Const i)   = i
+eval0 (Neg e)     = - (eval0 e)
+eval0 (Add e1 e2) = eval0 e1 + eval0 e2
+eval0 (Div e1 e2) = eval0 e1 `div` eval0 e2 -- new
+
+a    = Add c (Neg c)
+        where
+          c = Const 99
+uhoh = Div (Const 1) (Const 0)              -- new
+</code></pre>
+<p>Note that, when you run the <code>Div</code>-extended version of <code>eval0</code>, things don’t always end well:</p>
+<pre><code class="language-haskell">λ&gt; uhoh
+1 / 0
+λ&gt; eval0 uhoh
+*** Exception: divide by zero
+λ&gt; 
+</code></pre>
+<h3 id="why-cant-we-just-check-for-0"><a class="header" href="#why-cant-we-just-check-for-0">Why can’t we just check for 0?</a></h3>
+<p>Think about it this way, what should I replace <code>????</code> with below? There’s no way of handling that exceptional case and it crashes the program.</p>
+<pre><code class="language-haskell">eval0 (Div e1 e2) = if v2 == 0 then ???? else eval0 e1 `div` v2 
+   where
+      v2 = eval0 e2
+</code></pre>
+<p>But with the <code>Maybe</code> monad, we can use its <code>Nothing</code> constructor for this erroneous case; recall the definition of the <code>Maybe</code> data type:</p>
+<pre><code class="language-haskell">data Maybe a = Nothing | Just a
+</code></pre>
+<p>Here’s the definition of <code>eval2</code> whhich is typed in the <code>Maybe</code> monad:</p>
+<pre><code class="language-haskell">eval2 :: Exp -&gt; Maybe Int     -- N.b., the new type
+eval2 (Const i)   = return i
+eval2 (Neg e)     = do
+                      v &lt;- eval2 e
+                      return (- v)
+eval2 (Add e1 e2) = do
+                      v1 &lt;- eval2 e1
+                      v2 &lt;- eval2 e2
+                      return (v1 + v2)
+eval2 (Div e1 e2) = do
+                      v1 &lt;- eval2 e1
+                      v2 &lt;- eval2 e2
+                      if v2==0 then Nothing else return (v1 `div` v2) -- fill in ???? with Nothing
+</code></pre>
+<pre><code class="language-haskell">λ&gt; uhoh
+1 / 0
+λ&gt; eval2 uhoh
+Nothing
+</code></pre>
+<h3 id="maybe-under-the-hood"><a class="header" href="#maybe-under-the-hood">Maybe Under the Hood</a></h3>
+<p>Below is the definition of the <code>Maybe</code> monad. The way to think of a computation <code>x &gt;&gt;= f</code> is that, if <code>x</code> is returns some value (i.e., it’s <code>Just v</code>), then just proceed normally. If an exception is thrown by computing <code>x</code> (i.e., it’s <code>Nothing</code>), then the whole computation <code>x &gt;&gt;= f</code></p>
+<pre><code class="language-haskell">data Maybe a = Nothing | Just a
+
+return :: a -&gt; Maybe a
+return v = Just v
+
+(&gt;&gt;=) :: Maybe a -&gt; (a -&gt; Maybe b) -&gt; Maybe b 
+(Just v) &gt;&gt;= f = f v
+Nothing &gt;&gt;= f  = Nothing
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="3rd-interpreter-adding-a-register"><a class="header" href="#3rd-interpreter-adding-a-register">3rd Interpreter: Adding a Register</a></h1>
+<p>The code for this section is <a href="monadwrangling/Register.hs">Register.hs</a>.</p>
+<pre><code class="language-haskell">module Register where
+
+import Control.Monad.State
+
+data Exp = Const Int | Neg Exp | Add Exp Exp
+         | X  -- new register X
+
+instance Show Exp where
+  show (Const i) = show i
+  show (Neg e)   = "-" ++ show e
+  show (Add e1 e2) = show e1 ++ " + " ++ show e2
+  show X           = "X"
+
+-- | Just a copy 
+eval2 :: Exp -&gt; Maybe Int
+eval2 (Const i)   = return i
+eval2 (Neg e)     = do
+                      v &lt;- eval2 e
+                      return (- v)
+eval2 (Add e1 e2) = do
+                      v1 &lt;- eval2 e1
+                      v2 &lt;- eval2 e2
+                      return (v1 + v2)
+
+eval2 X           = undefined -- How do we do handle this?
+</code></pre>
+<p>Here’s how we handle this:</p>
+<ul>
+<li>Create a new monad from <code>Identity</code> with an <code>Int</code> register: <code>StateT Int Identity</code></li>
+<li>This new monad has two operations
+<ul>
+<li><code>get</code> that reads the current value of the register</li>
+<li><code>put</code> that updates the value of the register</li>
+</ul>
+</li>
+<li><code>StateT Int</code> is known as a <em>monad transformer</em></li>
+</ul>
+<p>The code below does just that</p>
+<pre><code class="language-haskell">readX :: StateT Int Identity Int
+readX = get
+
+eval3 :: Exp -&gt; StateT Int Identity Int
+eval3 (Const i)   = return i
+eval3 (Neg e)     = do
+                      v &lt;- eval3 e
+                      return (- v)
+eval3 (Add e1 e2) = do
+                      v1 &lt;- eval3 e1
+                      v2 &lt;- eval3 e2
+                      return (v1 + v2)
+
+eval3 X           = readX
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="4th-errors--register"><a class="header" href="#4th-errors--register">4th: Errors + Register</a></h1>
+<p>The code for this is <a href="monadwrangling/RegisterError.hs">RegisterError.hs</a>. In this example, we want to add both a possibly error-producing computation along with the register. This is done mostly through monadic means.</p>
+<pre><code class="language-haskell">module Register where
+
+import Control.Monad.State
+
+data Exp = Const Int | Neg Exp | Add Exp Exp
+         | Div Exp Exp  -- Both errors
+         | X            -- and a register X
+
+instance Show Exp where
+  show (Const i) = show i
+  show (Neg e)   = "-" ++ show e
+  show (Add e1 e2) = show e1 ++ " + " ++ show e2
+  show (Div e1 e2) = show e1 ++ " / " ++ show e2
+  show X           = "X"
+</code></pre>
+<p>Here’s how we handle this:</p>
+<ul>
+<li>Create a new monad from <code>Maybe</code> with an <code>Int</code> register: <code>StateT Int Maybe</code></li>
+<li>This new monad has two operations
+<ul>
+<li><code>get</code> that reads the current value of the register</li>
+<li><code>put</code> that updates the value of the register</li>
+</ul>
+</li>
+<li><code>StateT Int</code> is known as a <em>monad transformer</em></li>
+</ul>
+<p>The code below does just that</p>
+<pre><code class="language-haskell">readX :: StateT Int Maybe Int
+readX = get
+
+eval3 :: Exp -&gt; StateT Int Maybe Int
+eval3 (Const i)   = return i
+eval3 (Neg e)     = do
+                      v &lt;- eval3 e
+                      return (- v)
+eval3 (Add e1 e2) = do
+                      v1 &lt;- eval3 e1
+                      v2 &lt;- eval3 e2
+                      return (v1 + v2)
+eval3 (Div e1 e2) = do
+                      v1 &lt;- eval3 e1
+                      v2 &lt;- eval3 e2
+                      if v2==0 then lift Nothing else return (v1 `div` v2)
+                                 -- N.b., this is new.
+
+eval3 X           = readX
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="hello-worlds"><a class="header" href="#hello-worlds">Hello Worlds</a></h1>
+<p>This first chapter introduces ReWire and collects the simplest possible examples.</p>
+<h2 id="what-is-rewire"><a class="header" href="#what-is-rewire">What is ReWire?</a></h2>
+<p>ReWire is a domain-specific language embedded in the Haskell functional programming language (<a href="https://haskell.org">https://haskell.org</a>). <em>Every</em> ReWire program is a Haskell program that can be executed just as any other Haskell program. This fact is simple and also very powerful, because it means that development of a hardware design can proceed <em>incrementally</em>, one function at a time, with the resulting new code being type-checked and/or tested. Once a developer is satisfied with their ReWire design, they can compile it automatically into a synthesizable HDL (hardware description language): Verilog by default, or VHDL.</p>
+<img src="images/ReWireInColor.png" style="height:60%; width:60%">
+<h3 id="mealy-machines-and-rewire-types"><a class="header" href="#mealy-machines-and-rewire-types">Mealy Machines and ReWire types</a></h3>
+<p>There’s a mental model of digital circuitry used by hardware designers known as a Mealy machine. The flavor favored by hardware designers is portrayed below, which will seem odd to those of us who first heard of them from a class in theoretical computer science (e.g., <a href="https://en.wikipedia.org/wiki/Mealy_machine">https://en.wikipedia.org/wiki/Mealy_machine</a>). Mealy machines are finite state machines combined with a clock that on each clock “tick” consume an input of type <code>i</code>, update a store of type <code>s</code>, and produce an output of type <code>o</code>.</p>
+<img src="images/beautifullestmealy.png" style="height:50%; width:50%">
+<p>In ReWire, there is a type corresponding to the Mealy machine above, the monadic type:</p>
+<p><code>ReacT i o (StateT s Identity) ()</code></p>
+<p>And, because it occurs so frequently, we refer to it as a <em>device type</em> some times. Things of this type are those that can be compiled to hardware.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="simple-mealy-1"><a href="#simple-mealy-1" class="header">Simple Mealy</a></h1>
+<h2 id="simple-mealy"><a class="header" href="#simple-mealy">Simple Mealy</a></h2>
+<p>The “theoretical computer science” picture of a Mealy machine is seen below:</p>
+<img src="images/Mealy.png" style="height:17%; width:17%">
+<p>Here <code>si</code> is the start state, and there are two other states, <code>s0</code> and <code>s1</code>. There is also an alphabet consisting of <code>0</code> and <code>1</code>. On the transitions, a red digit denotes an input and a blue digit denotes an output, so, in the machine is currently in state <code>si</code> and receives a <code>1</code> as input, it outputs a <code>0</code> and proceeds to state <code>s1</code>.</p>
+<p>The ReWire code described in the section is found here, <a href="code/SimpleMealy.hs">SimpleMealy.hs</a>, and what follows is a line-by-line description.</p>
+<p>First thing is to import a library with ReWire definitions, etc. What’s <code>DataKinds</code>? Don’t worry about it for now. Collected in a comment is a tabular form of the state transitions.</p>
+<pre><code class="language-haskell">{-# LANGUAGE DataKinds #-}
+import ReWire
+
+-- Current State | Input | Output | Next State
+-- --------------------------------------------
+--    si             0       0          s0
+--    si             1       0          s1
+--    s0             0       0          s0
+--    s0             1       1          s1
+--    s1             0       1          s0
+--    s1             1       0          s1
+</code></pre>
+<p>Next, let’s define the alphabet:</p>
+<pre><code class="language-haskell">data Alphabet = Zero | One
+</code></pre>
+<p><code>Alphabet</code> defines both the inputs and outputs of this Mealy machine.</p>
+<p>Each of the three states and their transitions are defined in the following. Before focusing on the type, note first how each line below corresponds directly to a line in the table above. E.g., if the machine is in state <code>si</code> and receives <code>0</code> as input, it produces output <code>0</code>, and proceeds to state <code>s0</code>.</p>
+<pre><code class="language-haskell">si , s0 , s1 :: Alphabet -&gt; ReacT Alphabet Alphabet Identity ()
+
+si Zero = signal Zero &gt;&gt;= s0
+si One  = signal Zero &gt;&gt;= s1
+
+s0 Zero = signal Zero &gt;&gt;= s0
+s0 One  = signal One  &gt;&gt;= s1
+
+s1 Zero = signal One  &gt;&gt;= s0
+s1 One  = signal Zero &gt;&gt;= s1
+</code></pre>
+<p>We’ll return to the types of <code>si</code>, <code>s0</code>, and <code>s1</code> momentarily.</p>
+<p>Finally, we need to designate a start state, just as with any state machine definition.</p>
+<pre><code class="language-haskell">start :: ReacT Alphabet Alphabet Identity ()
+start = signal Zero &gt;&gt;= si
+</code></pre>
+<h4 id="why-this-type-react-alphabet-alphabet-identity-"><a class="header" href="#why-this-type-react-alphabet-alphabet-identity-">Why this type <code>ReacT Alphabet Alphabet Identity ()</code>?</a></h4>
+<p>We know the type will have the form <code>ReacT i o m a</code> for some types <code>i</code>, <code>o</code>, and <code>a</code> and monad <code>m</code>.</p>
+<ul>
+<li>The input alphabet is <code>Alphabet</code>, so <code>i</code> is <code>Alphabet</code>.</li>
+<li>The output alphabet is <code>Alphabet</code>, so <code>o</code> is also <code>Alphabet</code>.</li>
+<li>We are not using internal storage like registers, so monad <code>m</code> can be just <code>Identity</code>.</li>
+</ul>
+<p>Finally, why <code>()</code> for return type <code>a</code>? Here, we have a choice, but it doesn’t matter in the least what we pick. Because <code>start</code> never, ever, terminates under any circumstances, it won’t ever return any value, so we may as well pick <code>()</code>.</p>
+<p>This non-termination requirement on <code>start</code> is important and makes complete sense if you think about it. Hardware <strong>never</strong> terminates (unless it’s unplugged).</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="fibonacci-of-course"><a href="#fibonacci-of-course" class="header">Fibonacci, of course</a></h1>
+<h2 id="the-obligatory-fibonacci-example"><a class="header" href="#the-obligatory-fibonacci-example">The Obligatory Fibonacci Example</a></h2>
+<p>The following Haskell code (the file is called <a href="code/Fib.hs">Fib.hs</a>) creates an infinite list of <code>Int</code>s in a conventional manner using the <code>fibgen</code> function.</p>
+<pre><code class="language-haskell">module Fibonacci where
+
+fibs :: [Int]
+fibs = fibgen 0 1
+  where
+    fibgen :: Int -&gt; Int -&gt; [Int]
+    fibgen n m = n : fibgen m (n + m)
+</code></pre>
+<p>Loading <code>Fib.hs</code> into GHCi, you can see that it calculates the familiar Fibonacci sequence:</p>
+<pre><code class="language-haskell">ghci&gt; take 10 fibs
+take 10 fibs
+[0,1,1,2,3,5,8,13,21,34]
+</code></pre>
+<h3 id="making-hardware-out-of-this"><a class="header" href="#making-hardware-out-of-this">Making Hardware Out of This.</a></h3>
+<p>In the ReWire code below, <code>fibdev</code> plays the same role as <code>fibgen</code> above. For the moment, just ignore the monadic type, <code>ReacT Bit (W 8) Identity ()</code>. (I’ll explain its significance shortly.) Instead of using Haskell’s <code>Int</code> type, we will compute over eight bit words (i.e., <code>W 8</code>). There is also a definition of <code>start</code>, which is a special symbol that unsurprisingly specifies how to start the device.</p>
+<p>What <code>fibdev</code> does is, given two words <code>n</code> and <code>m</code>, it puts <code>n</code> on the output port using <code>signal</code> and accepts a new input <code>b</code> off of the input port. If bit <code>b</code> is <code>1</code>, then it continues on. However, if <code>b</code> is <code>0</code>, then it calls itself on <code>m</code> and <code>m + n</code> just like <code>fibgen</code> above.</p>
+<pre><code class="language-haskell">{-# LANGUAGE DataKinds #-}
+import Prelude hiding ((+))
+import ReWire
+import ReWire.Bits
+
+start :: ReacT Bit (W 8) Identity ()
+start = fibdev (lit 0) (lit 1)
+
+fibdev :: W 8 -&gt; W 8 -&gt; ReacT Bit (W 8) Identity ()
+fibdev n m = do b &lt;- signal n
+                if b then fibdev n m else fibdev m (n + m)
+</code></pre>
+<h3 id="lessons-learned-1"><a class="header" href="#lessons-learned-1">Lessons Learned.</a></h3>
+<p>There are some lessons to be learned from this example.</p>
+<ul>
+<li>Just like a state machine, every ReWire device has to have a <code>start</code>.</li>
+<li>Most ReWire programs will begin with something like the top three lines of the previous ReWire code.
+<ul>
+<li>There may be Haskell <code>Prelude</code> operations that have a particular meaning in ReWire (e.g., <code>+</code>), and so they may need to be hidden explicitly.</li>
+<li>The other parts of that incantation is performed to use built-in words and their operations.</li>
+</ul>
+</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="carry-save-adders"><a href="#carry-save-adders" class="header">Carry Save Adders</a></h1>
+<h2 id="carry-save-addition"><a class="header" href="#carry-save-addition">Carry Save Addition</a></h2>
+<p>There are three carry-save adders in the tutorial, <a href="code/CSA.hs">CSA.hs</a>, <a href="code/SCSA.hs">SCSA.hs</a>, and <a href="code/PCSA.hs">PCSA.hs</a>, and the first of these is explained in detail below.</p>
+<p>Carry save addition (<a href="https://en.wikipedia.org/wiki/Carry-save_adder">https://en.wikipedia.org/wiki/Carry-save_adder</a>) is defined as function <code>f</code>:</p>
+<pre><code class="language-haskell">f :: W 8 -&gt; W 8 -&gt; W 8 -&gt; (W 8, W 8)
+f a b c = ( ((a .&amp;. b) .|. (a .&amp;. c) .|. (b .&amp;. c) ) &lt;&lt;. lit 1 , (a ^ b) ^ c )
+</code></pre>
+<p>Here, I define <code>f</code> using ReWire’s built-in word constructor, picking <code>W 8</code> for the sake of concreteness.
+I’ll define a few constants for convenience in a running example.</p>
+<pre><code class="language-haskell">_40 , _25 , _20 , _41 , _0 :: W 8
+_40 = lit 40
+_25 = lit 25
+_20 = lit 20
+_41 = lit 41
+_0  = lit 0
+</code></pre>
+<p>Using GHCi, we can test it out, like any Haskell function:</p>
+<pre><code class="language-haskell">λ&gt; :t f
+f :: W 8 -&gt; W 8 -&gt; W 8 -&gt; (W 8, W 8)
+λ&gt; f _40 _25 _20
+(Vector [False,False,True,True,False,False,False,False],Vector [False,False,True,False,False,True,False,True])
+</code></pre>
+<p>What’s this mess? <code>W 8</code> values are represented internally using Haskell’s <code>Data.Vector</code> library and, well, it ain’t pretty. There is a ReWire library you can import to make all this more palatable called <code>ReWire.Interactive</code>:</p>
+<pre><code class="language-haskell">λ&gt; pretty (f _40 _25 _20)
+(48,37)
+λ&gt; pretty (f _41 _25 _20)
+(50,36)
+λ&gt; 
+</code></pre>
+<h3 id="making-a-basic-carry-save-adder"><a class="header" href="#making-a-basic-carry-save-adder">Making a basic carry save adder</a></h3>
+<pre><code class="language-haskell">-- |
+-- | Example 1. CSA
+-- |
+-- | The only thing this does is take its inputs i, computes csa on them, and
+-- | output the results every clock cycle.
+
+csa :: (W 8, W 8, W 8) -&gt; ReacT (W 8, W 8, W 8) (W 8, W 8) Identity ()
+csa (a, b, c) = do
+                   abc' &lt;- signal (f a b c)
+                   csa abc'
+
+start :: ReacT (W 8, W 8, W 8) (W 8, W 8) Identity ()
+start = csa (_0, _0, _0)
+</code></pre>
+<p>First, <code>csa</code> consumes its three inputs <code>a</code>, <code>b</code>, and <code>c</code> as a tuple. Then, it computes the carry save addition on these and puts the result on the output port, <code>signal (f a b c)</code>. Finally, it obtains the next inputs, <code>abc'</code> and continues.</p>
+<p><em>What does the type of <code>csa</code> mean?</em> It’s worth contemplating the type of <code>csa</code>’s codomain, which is <code>ReacT (W 8, W 8, W 8) (W 8, W 8) Identity ()</code>.</p>
+<ul>
+<li>The input type is <code>(W 8, W 8, W 8)</code>, meaning that every it takes three <code>W 8</code>s each clock cycle;</li>
+<li>The output type is <code>(W 8, W 8)</code>, meaning that every it produces two <code>W 8</code>s each clock cycle; and</li>
+<li>It does not use any internal storage or registers, hence the <code>Identity</code> monad is used rather than a state monad.</li>
+</ul>
+<h4 id="running-it-in-ghci"><a class="header" href="#running-it-in-ghci">Running it in GHCi</a></h4>
+<p>You can run this using <code>pretty</code> and <code>runP</code> from <code>ReWire.Interactive</code>. First, define some inputs that look familiar:</p>
+<pre><code class="language-haskell">inputs :: [(W 8 , W 8 , W 8)]
+inputs = (_40 , _25 , _20)
+       : (_41 , _25 , _20)
+       : (_40 , _25 , _20)  : []
+</code></pre>
+<pre><code class="language-haskell">λ&gt; :t pretty
+pretty :: Pretty a =&gt; a -&gt; IO ()
+λ&gt; pretty $ runP start ((_0  , _0  , _0) , (_0  , _0 )) inputs
+((0,0,0),(0,0)) :&gt; ((40,25,20),(0,0)) :&gt; ((41,25,20),(48,37)) :&gt; ((40,25,20),(50,36)) :+&gt; Nothing
+</code></pre>
+<p>(<strong>WARNING:</strong> <code>ReWire.Interactive</code> is currently in <em>super-king-kong-major-hacky</em> form right now.)</p>
+<h4 id="compiling-it-with-rwc"><a class="header" href="#compiling-it-with-rwc">Compiling it with RWC</a></h4>
+<p>First, here’s the entire file as it stands:</p>
+<pre><code class="language-haskell">{-# LANGUAGE DataKinds #-}
+import Prelude hiding ((^))
+import ReWire
+import ReWire.Bits
+
+-- | ReWire compiler will complain if this is imported
+import ReWire.Interactive
+
+f :: W 8 -&gt; W 8 -&gt; W 8 -&gt; (W 8, W 8)
+f a b c = ( ((a .&amp;. b) .|. (a .&amp;. c) .|. (b .&amp;. c) ) &lt;&lt;. lit 1 , (a ^ b) ^ c )
+
+-- Constants for a running example.
+_40 , _25 , _20 , _41 , _0 :: W 8
+_40 = lit 40
+_25 = lit 25
+_20 = lit 20
+_41 = lit 41
+_0  = lit 0
+
+-- |
+-- | Example 1. CSA
+-- |
+-- | The only thing this does is take its inputs i, computes csa on them, and
+-- | output the results every clock cycle.
+
+csa :: (W 8, W 8, W 8) -&gt; ReacT (W 8, W 8, W 8) (W 8, W 8) Identity ()
+csa (a, b, c) = do
+                   abc' &lt;- signal (f a b c)
+                   csa abc'
+
+start :: ReacT (W 8, W 8, W 8) (W 8, W 8) Identity ()
+start = csa (_0, _0, _0)
+
+-- | ReWire compiler will complain if this is here (i.e., comment it before compiling):
+inputs :: [(W 8 , W 8 , W 8)]
+inputs = (_40 , _25 , _20)
+       : (_41 , _25 , _20)
+       : (_40 , _25 , _20)  : []
+</code></pre>
+<p><em>Pro-tip.</em> Because ReWire doesn’t know about things likes lists, <code>ReWire.Interactive</code> and the definition of <code>inputs</code> need to be commented out <em>before</em> compiling with <code>rwc</code>. Otherwise, you will receive a non-informative error message like this:</p>
+<pre><code class="language-haskell">$ rwc CSA.hs --verilog
+Control/Monad/Identity.hs:
+Error: File not found in load-path
+$ 
+</code></pre>
+<p>Assuming these are now commented out, you can proceed to compile CSA.hs with:</p>
+<pre><code class="language-haskell">$ ls -l CSA.* 
+-rw-r--r--  1 william.harrison  staff  1039 Jun 13 09:02 CSA.hs
+$ rwc CSA.hs --verilog
+$ ls -l CSA.*         
+-rw-r--r--  1 william.harrison  staff  1039 Jun 13 09:02 CSA.hs
+-rw-r--r--  1 william.harrison  staff  2159 Jun 13 09:04 CSA.sv
+$ 
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="crossbar-switch"><a class="header" href="#crossbar-switch">Crossbar Switch</a></h1>
+<h2 id="whats-a-crossbar-switch"><a class="header" href="#whats-a-crossbar-switch">What’s a Crossbar Switch?</a></h2>
+<p>To perform this exercise, I relied primarily on two sources to explain what a crossbar switch is; they are:</p>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/Crossbar_switch">Wikipedia</a></li>
+<li><a href="http://www.cs.emory.edu/~cheung/Courses/355/Syllabus/90-parallel/CrossBar.html">The Crossbar Switch</a></li>
+</ul>
+<p>Given these explanations, I generated a Haskell implementation of a crossbar switch like function (see CrossbarSwitch.hs below). All the Haskell and ReWire code for this example can be found below.</p>
+<ul>
+<li><a href="code/CrossbarSwitch.hs">CrossbarSwitch.hs</a></li>
+</ul>
+<p>What follows is an explanation of this code. First, we consider the Haskell definition of a crossbar switch, written in monadic style. Then, we transform the Haskell definition of the switch into proper ReWire. This is important because it gives you a practical introduction to the differences between Haskell and ReWire..</p>
+<h3 id="just-write-it-in-haskell-first-then-add-a-few-bits-to-get-your-program-into-rewire"><a class="header" href="#just-write-it-in-haskell-first-then-add-a-few-bits-to-get-your-program-into-rewire">Just write it in Haskell first, then add a few bits to get your program into ReWire.</a></h3>
+<p>The usual mode of program development is to first write a version of the desired application in Haskell. The reasons to do this boil down to the GHC compiler being vastly more mature than the ReWire compiler, and so, for example, error messages are much more informative. Once all the kinks as it were are worked out in Haskell (e.g., getting something that typechecks, etc.), make whatever small tweaks are needed to get your program into the ReWire subset of Haskell. This section of the tutorial introduces the reader to this mode of program development.</p>
+<h4 id="the-rewire-standard-library"><a class="header" href="#the-rewire-standard-library">The ReWire standard library</a></h4>
+<p>The standard definitions for ReWire programs live in the <code>rewire-user</code> package, which is bundled with the compiler; you bring them into scope with <code>import ReWire</code>. It includes the bit type (<code>Bit</code>), words of arbitrary width (<code>W n</code>, with the width as a type-level natural), and the device monad types (<code>ReacT</code>, <code>StateT</code>, <code>Identity</code>). Operations on words and vectors are in <code>ReWire.Bits</code> and <code>ReWire.Vectors</code>. Everything in these modules works with both <code>rwc</code> and GHC.</p>
+<p>What follows is a crossbar switch function written in Haskell. We will take this as an input specification, by which we mean that it is not terribly important to actually understand what the crossbar function is calculating. Rather, what is interesting is what (little) must change in this specification to transform it into a proper ReWire specification.</p>
+<pre><code class="language-haskell">{-# LANGUAGE DataKinds #-}
+
+import Prelude hiding ((^), (+))
+import ReWire
+
+switch :: t -&gt; t -&gt; Bool -&gt; (t, t)
+switch x _ True  = (x,x)
+switch x y False = (x,y)
+
+type W8 = W 8
+
+data Maybe4 = Maybe4 (Maybe W8) (Maybe W8) (Maybe W8) (Maybe W8)
+
+type Bool16 = (Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool,Bool)
+
+crossbar :: Maybe4 -&gt; Bool16 -&gt; Maybe4 
+crossbar (Maybe4 x10 x20 x30 x40) (c11,c12,c13,c14,c21,c22,c23,c24,c31,c32,c33,c34,c41,c42,c43,c44)
+   = let
+          (x41,y31) = switch x40 Nothing c41
+          (x42,y32) = switch x41 Nothing c42
+          (x43,y33) = switch x42 Nothing c43
+          (_,y34) = switch x43 Nothing c44
+
+          (x31,y21) = switch x30 y31 c31
+          (x32,y22) = switch x31 y32 c32
+          (x33,y23) = switch x32 y33 c33
+          (_,y24) = switch x33 y34 c34
+
+          (x21,y11) = switch x20 y21 c21
+          (x22,y12) = switch x21 y22 c22
+          (x23,y13) = switch x22 y23 c23
+          (_,y14) = switch x23 y24 c24
+
+          (x11,y10) = switch x10 y11 c11
+          (x12,y20) = switch x11 y12 c12
+          (x13,y30) = switch x12 y13 c13
+          (_,y40) = switch x13 y14 c14
+     in
+       Maybe4 y10 y20 y30 y40
+
+data Inp = Inp Maybe4 Bool16 | NoInput
+            
+data Out = Out Maybe4 | Nix
+
+dev :: Inp -&gt; ReacT Inp Out Identity ()
+dev (Inp m4 b16) = signal (Out (crossbar m4 b16)) &gt;&gt;= dev
+dev NoInput      = signal Nix &gt;&gt;= dev
+
+start :: ReacT Inp Out Identity ()
+start = signal Nix &gt;&gt;= dev
+</code></pre>
+<h2 id="crossbar-switch-in-rewire"><a class="header" href="#crossbar-switch-in-rewire">Crossbar Switch in ReWire</a></h2>
+<p>So what must change to compile this with <code>rwc</code>? Happily, the days when this
+section described a long list of tweaks (rewriting <code>let</code> as <code>where</code>, manually
+inlining polymorphic functions, expanding type synonyms, and so on) are gone:
+the code above is already a valid ReWire program, exactly as written in
+<a href="code/CrossbarSwitch.hs">CrossbarSwitch.hs</a>. A few things are still worth
+knowing when adapting a Haskell program for <code>rwc</code>:</p>
+<ul>
+<li>
+<p><strong>Imports.</strong> Import <code>ReWire</code> (and friends like <code>ReWire.Bits</code>) instead of
+<code>Control.Monad.Identity</code>, <code>Control.Monad.State</code>, and so on – the monad
+types (<code>Identity</code>, <code>StateT</code>, <code>ReacT</code>) are built in to ReWire and re-exported
+by the <code>ReWire</code> module.</p>
+</li>
+<li>
+<p><strong>Modules.</strong> If the file has no module header, it is treated as <code>Main</code>, and
+<code>rwc</code> looks for the start symbol <code>Main.start</code> by default. If you put your
+device in a different module, point the compiler at its start symbol with
+<code>--start</code>.</p>
+</li>
+<li>
+<p><strong>Type signatures.</strong> Give every top-level definition a type signature.
+(Signatures are how definitions are checked against their uses, so leaving
+them off leads to error messages pointing at surprising places.)</p>
+</li>
+<li>
+<p><strong>GHC-only code.</strong> Anything <code>rwc</code> can’t compile – lists used at the top
+level, <code>ReWire.Interactive</code> imports for GHCi experimentation, class
+instances – needs to be commented out (or moved to a separate file) before
+compiling. The <code>main</code> definition is the one exception: <code>rwc</code> ignores it.</p>
+</li>
+</ul>
+<p>Once that’s settled, compile with the ReWire compiler <code>rwc</code>:</p>
+<pre><code>$ rwc CrossbarSwitch.hs
+$ ls CrossbarSwitch.*
+CrossbarSwitch.hs CrossbarSwitch.sv
+</code></pre>
+<p>By default <code>rwc</code> produces SystemVerilog (<code>.sv</code>); see <code>rwc --help</code> for other
+targets and options. Depending on how successful one’s translation into
+ReWire is, one may receive error messages from the ReWire compiler. These are
+improving, although there is admittedly much room for improvement as of this
+writing.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-09f2665d.js"></script>
+
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+
+    </div>
+    </body>
+</html>
