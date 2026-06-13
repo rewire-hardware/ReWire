@@ -125,6 +125,12 @@ getDevice conf fp = do
                   , ("Removing unused definitions.",                     purge start)
                   , ("Inlining extrudes.",                               inlineExtrudes)
                   , ("Reducing.",                                        reduce) -- TODO: reduce here really just for the start defn.
+                  -- Inlining extrudes can orphan definitions and reintroduce
+                  -- lambdas (e.g., as bind continuations); purify requires
+                  -- lambda-lifted bodies and purifies every reachable
+                  -- monadic defn, so clean up again before it runs.
+                  , ("Removing unused definitions.",                     purge start)
+                  , ("Lifting lambdas.",                                 liftLambdas)
                   -- TODO: typechecking before or after purify seems to
                   --       subtly effect ordering of things.
                   , ("Shifting lambdas.",                                shiftLambdas)

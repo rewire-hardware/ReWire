@@ -2,85 +2,85 @@ $Pure.dispatch : ([8], [1]) -> [18]
 $Pure.dispatch $0 $1 =
       $LL.Pure.dispatch $1 $0
 
-$LL.Main.incr17 : ([18]) -> [18]
-$LL.Main.incr17 $0 =
-      $LL.Main.incr6 $0[8 +: 8] $0[0 +: 8]
+$LL.Main.incr17 : ([1], [8]) -> [18]
+$LL.Main.incr17 $0 $1 =
+      Main.incr $1
 
 $LL.Main.incr16 : ([8], [8]) -> [18]
 $LL.Main.incr16 $0 $2 =
-      2'h2 # $0 # $2
+      $LL.Main.incr10 $0 $2
 
-$LL.Main.incr15 : ([8]) -> [18]
-$LL.Main.incr15 $1 =
-      10'h100 # $1
+$LL.Main.incr15 : ([8], [8]) -> [18]
+$LL.Main.incr15 $0 $1 =
+      $LL.Main.incr3 $0 $1
 
-$LL.Main.incr14 : ([8], [8]) -> [18]
-$LL.Main.incr14 $0 $2 =
-      $LL.Main.incr8 $0 $2
+$LL.Main.incr14 : ([16]) -> [18]
+$LL.Main.incr14 $0 =
+      $LL.Main.incr9 $0[8 +: 8] $0[0 +: 8]
 
 $LL.Main.incr13 : ([8], [8]) -> [18]
 $LL.Main.incr13 $0 $1 =
       2'h0 # $0 # $1
 
-$LL.Main.incr12 : ([8], [8]) -> [18]
-$LL.Main.incr12 $0 $2 =
-      $LL.Main.incr2 $0 $2
-
-$LL.Main.incr11 : ([16]) -> [18]
-$LL.Main.incr11 $0 =
-      $LL.Main.incr4 $0[8 +: 8] $0[0 +: 8]
-
 Main.incr : ([8]) -> [18]
 Main.incr $0 =
-      $LL.Main.incr17 ($LL.Main.incr11 ($0 # $0))
+      $LL.Main.incr4 ($LL.Main.incr14 ($0 # $0))
+
+$LL.Main.incr12 : ([8], [18]) -> [18]
+$LL.Main.incr12 $0 $1 =
+      $LL.Main.incr $0 $1[0 +: 8]
+
+$LL.Main.incr11 : ([8]) -> [18]
+$LL.Main.incr11 $0 =
+      $LL.Main.incr2 $0
 
 $LL.Main.incr10 : ([8], [8]) -> [18]
-$LL.Main.incr10 $0 $1 =
-      $LL.Main.incr3 $0 ($LL.Main.incr $0)
+$LL.Main.incr10 $0 $2 =
+      $LL.Main.incr6 $0 $2
 
-$LL.Main.incr9 : ([8]) -> [18]
-$LL.Main.incr9 $1 =
-      $LL.Main.incr15 $1
+$LL.Main.incr9 : ([8], [8]) -> [18]
+$LL.Main.incr9 $0 $1 =
+      $LL.Main.incr13 $0 $1
 
 $LL.Main.incr8 : ([8], [8]) -> [18]
 $LL.Main.incr8 $0 $2 =
-      $LL.Main.incr16 $0 $2
-
-$LL.Main.incr7 : ([1], [8]) -> [18]
-$LL.Main.incr7 $0 $1 =
-      $LL.Main.incr5 $0 $1
+      2'h2 # $0 # $2
 
 $LL.Pure.dispatch : ([1], [8]) -> [18]
 $LL.Pure.dispatch $0 $1 =
       $LL.Main.incr7 $0 $1
 
+$LL.Main.incr7 : ([1], [8]) -> [18]
+$LL.Main.incr7 $0 $1 =
+      $LL.Main.incr17 $0 $1
+
 $LL.Main.incr6 : ([8], [8]) -> [18]
-$LL.Main.incr6 $0 $1 =
-      $LL.Main.incr10 $0 $1
-
-$LL.Main.incr5 : ([1], [8]) -> [18]
-$LL.Main.incr5 $0 $1 =
-      Main.incr $1
-
-$LL.Main.incr4 : ([8], [8]) -> [18]
-$LL.Main.incr4 $0 $1 =
-      $LL.Main.incr13 $0 $1
-
-$LL.Main.incr3 : ([8], [18]) -> [18]
-$LL.Main.incr3 $0 $1 =
-      $LL.Main.incr12 $0 $1[0 +: 8]
-
-$LL.Main.incr2 : ([8], [8]) -> [18]
-$LL.Main.incr2 $0 $2 =
+$LL.Main.incr6 $0 $2 =
       $LL.Main.incr1 $0 $2
+
+$LL.Main.incr5 : ([8]) -> [18]
+$LL.Main.incr5 $1 =
+      10'h100 # $1
+
+$LL.Main.incr4 : ([18]) -> [18]
+$LL.Main.incr4 $0 =
+      $LL.Main.incr15 $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.incr3 : ([8], [8]) -> [18]
+$LL.Main.incr3 $0 $1 =
+      $LL.Main.incr12 $0 ($LL.Main.incr11 $0)
+
+$LL.Main.incr2 : ([8]) -> [18]
+$LL.Main.incr2 $1 =
+      $LL.Main.incr5 $1
 
 $LL.Main.incr1 : ([8], [8]) -> [18]
 $LL.Main.incr1 $0 $2 =
-      $LL.Main.incr14 $0 $2
+      $LL.Main.incr8 $0 $2
 
-$LL.Main.incr : ([8]) -> [18]
-$LL.Main.incr $0 =
-      $LL.Main.incr9 $0
+$LL.Main.incr : ([8], [8]) -> [18]
+$LL.Main.incr $0 $2 =
+      $LL.Main.incr16 $0 $2
 
 device top_level
       input __in0 : [1]

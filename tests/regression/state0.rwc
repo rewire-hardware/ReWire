@@ -1,53 +1,53 @@
 $Pure.dispatch : ([5], [3]) -> [9]
 $Pure.dispatch $0 $1 =
-      if eq $0[3 +: 2] 2'h1 then $LL.Pure.dispatch1 $1 $0[0 +: 3]
-            else if eq $0[3 +: 2] 2'h2 then $LL.Pure.dispatch2 $1 $0[0 +: 3] else $LL.Pure.dispatch4 $1
+      if eq $0[3 +: 2] 2'h1 then $LL.Pure.dispatch3 $1
+            else if eq $0[3 +: 2] 2'h2 then $LL.Pure.dispatch1 $1 $0[0 +: 3] else $LL.Pure.dispatch4 $1 $0[0 +: 3]
 
-$LL.Pure.dispatch4 : ([3]) -> [9]
-$LL.Pure.dispatch4 $0 =
-      Main.dev1 $0
+$LL.Pure.dispatch4 : ([3], [3]) -> [9]
+$LL.Pure.dispatch4 $0 $1 =
+      $LL.Pure.dispatch2 $0 $1
 
-$LL.Pure.dispatch3 : ([3], [3]) -> [9]
-$LL.Pure.dispatch3 $0 $1 =
-      $LL.Main.dev1 $1 $0
-
-Main.dev1 : ([3]) -> [9]
-Main.dev1 $0 =
-      $LL.Main.dev2 $0
-
-$LL.Main.dev3 : ([3]) -> [9]
-$LL.Main.dev3 $0 =
-      6'h1 # $0
+$LL.Main.dev3 : ([3], [3]) -> [9]
+$LL.Main.dev3 $0 $1 =
+      6'h2 # $0
 
 $LL.Main.dev2 : ([3]) -> [9]
 $LL.Main.dev2 $0 =
-      $LL.Main.dev3 $0
+      $LL.Main.dev1 $0
 
-$LL.Main.dev1 : ([3], [3]) -> [9]
-$LL.Main.dev1 $0 $1 =
-      6'h2 # $0
+$LL.Pure.dispatch3 : ([3]) -> [9]
+$LL.Pure.dispatch3 $0 =
+      Main.dev $0
+
+Main.dev : ([3]) -> [9]
+Main.dev $0 =
+      $LL.Main.dev2 $0
 
 $LL.Pure.dispatch2 : ([3], [3]) -> [9]
 $LL.Pure.dispatch2 $0 $1 =
-      $LL.Pure.dispatch $0 $1
+      $LL.Main.dev3 $1 $0
 
 $LL.Pure.dispatch1 : ([3], [3]) -> [9]
 $LL.Pure.dispatch1 $0 $1 =
-      $LL.Pure.dispatch3 $0 $1
+      $LL.Pure.dispatch $0 $1
+
+$LL.Main.dev1 : ([3]) -> [9]
+$LL.Main.dev1 $0 =
+      6'h0 # $0
+
+$LL.Main.dev : ([3], [3]) -> [9]
+$LL.Main.dev $0 $1 =
+      1'h1 # $0 # 5'h8
 
 $LL.Pure.dispatch : ([3], [3]) -> [9]
 $LL.Pure.dispatch $0 $1 =
       $LL.Main.dev $1 $0
 
-$LL.Main.dev : ([3], [3]) -> [9]
-$LL.Main.dev $0 $1 =
-      1'h1 # $0 # 5'h0
-
 device top_level
       input __in0 : [3]
       output __out0 : [1]
       output __out1 : [3]
-      register __resumption_tag : [5] init 5'h8
+      register __resumption_tag : [5] init 5'h0
       let $res = $Pure.dispatch __resumption_tag __in0
       __out0 := $res[8 +: 1]
       __out1 := $res[5 +: 3]

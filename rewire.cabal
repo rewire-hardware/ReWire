@@ -28,6 +28,7 @@ data-files:
     tests/integration/SecMemCon.hs
     tests/integration/Sha256_2.hs
     tests/negative/ambiguous-size.hs
+    tests/negative/bind-lhs-pause.hs
     tests/negative/illtyped-dead-code.hs
     tests/negative/illtyped-use.hs
     tests/negative/kind-error.hs
@@ -68,6 +69,7 @@ data-files:
     tests/regression/exp2.hs
     tests/regression/extern.hs
     tests/regression/externModel.hs
+    tests/regression/extrudeApp.hs
     tests/regression/fibo1.hs
     tests/regression/fibo2.hs
     tests/regression/fibo3.hs
@@ -96,6 +98,7 @@ data-files:
     tests/regression/records.hs
     tests/regression/RW_REPL_OD19Filter.hs
     tests/regression/Sha256_1.hs
+    tests/regression/signalFirst.hs
     tests/regression/sigNothing.hs
     tests/regression/state.hs
     tests/regression/state0.hs
@@ -131,6 +134,7 @@ data-files:
     tests/regression/exp2.sv
     tests/regression/extern.sv
     tests/regression/externModel.sv
+    tests/regression/extrudeApp.sv
     tests/regression/fibo1.sv
     tests/regression/fibo2.sv
     tests/regression/fibo3.sv
@@ -159,6 +163,7 @@ data-files:
     tests/regression/records.sv
     tests/regression/RW_REPL_OD19Filter.sv
     tests/regression/Sha256_1.sv
+    tests/regression/signalFirst.sv
     tests/regression/sigNothing.sv
     tests/regression/state.sv
     tests/regression/state0.sv
@@ -194,6 +199,7 @@ data-files:
     tests/regression/exp2.rwc
     tests/regression/extern.rwc
     tests/regression/externModel.rwc
+    tests/regression/extrudeApp.rwc
     tests/regression/fibo1.rwc
     tests/regression/fibo2.rwc
     tests/regression/fibo3.rwc
@@ -222,6 +228,7 @@ data-files:
     tests/regression/records.rwc
     tests/regression/RW_REPL_OD19Filter.rwc
     tests/regression/Sha256_1.rwc
+    tests/regression/signalFirst.rwc
     tests/regression/sigNothing.rwc
     tests/regression/state.rwc
     tests/regression/state0.rwc
@@ -257,6 +264,7 @@ data-files:
     tests/regression/exp2.vhdl
     tests/regression/extern.vhdl
     tests/regression/externModel.vhdl
+    tests/regression/extrudeApp.vhdl
     tests/regression/fibo1.vhdl
     tests/regression/fibo2.vhdl
     tests/regression/fibo3.vhdl
@@ -285,6 +293,7 @@ data-files:
     tests/regression/records.vhdl
     tests/regression/RW_REPL_OD19Filter.vhdl
     tests/regression/Sha256_1.vhdl
+    tests/regression/signalFirst.vhdl
     tests/regression/sigNothing.vhdl
     tests/regression/state.vhdl
     tests/regression/state0.vhdl
@@ -319,6 +328,7 @@ data-files:
     tests/regression/divzero.cry
     tests/regression/exp2.cry
     tests/regression/externModel.cry
+    tests/regression/extrudeApp.cry
     tests/regression/fibo1.cry
     tests/regression/fibo2.cry
     tests/regression/fibo3.cry
@@ -347,6 +357,7 @@ data-files:
     tests/regression/records.cry
     tests/regression/RW_REPL_OD19Filter.cry
     tests/regression/Sha256_1.cry
+    tests/regression/signalFirst.cry
     tests/regression/sigNothing.cry
     tests/regression/state.cry
     tests/regression/state0.cry
@@ -381,6 +392,7 @@ data-files:
     tests/regression/divzero.yaml
     tests/regression/exp2.yaml
     tests/regression/externModel.yaml
+    tests/regression/extrudeApp.yaml
     tests/regression/fibo1.yaml
     tests/regression/fibo2.yaml
     tests/regression/fibo3.yaml
@@ -406,6 +418,7 @@ data-files:
     tests/regression/pvartype.yaml
     tests/regression/react.yaml
     tests/regression/records.yaml
+    tests/regression/signalFirst.yaml
     tests/regression/sigNothing.yaml
     tests/regression/state.yaml
     tests/regression/state0.yaml

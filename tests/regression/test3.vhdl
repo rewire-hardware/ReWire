@@ -208,19 +208,19 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZLL_Main_go7\ is
+component \ZLL_Main_go10\ is
       port (arg0 : in std_logic_vector (7 downto 0);
             res : out std_logic_vector (16 downto 0));
       end component;
       signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal zll_main_go7_out : std_logic_vector (16 downto 0);
-      signal \zll_main_go7_outR1\ : std_logic_vector (16 downto 0);
+      signal zll_main_go10_out : std_logic_vector (16 downto 0);
+      signal \zll_main_go10_outR1\ : std_logic_vector (16 downto 0);
       signal zres : std_logic_vector (16 downto 0);
 begin
-inst : \ZLL_Main_go7\ port map (\__st0\, zll_main_go7_out);
-      \instR1\ : \ZLL_Main_go7\ port map (\__st0\, \zll_main_go7_outR1\);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"1")), zll_main_go7_out, \zll_main_go7_outR1\);
+inst : \ZLL_Main_go10\ port map (\__st0\, zll_main_go10_out);
+      \instR1\ : \ZLL_Main_go10\ port map (\__st0\, \zll_main_go10_outR1\);
+      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"1")), zll_main_go10_out, \zll_main_go10_outR1\);
       \__st0_next\ <= zres(7 downto 0);
       \__out0\ <= zres(15 downto 8);
       process (clk, rst)
@@ -237,12 +237,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_go7\ is
+entity \ZLL_Main_go10\ is
 port (arg0 : in std_logic_vector (7 downto 0);
       res : out std_logic_vector (16 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_go7\ is
+architecture rtl of \ZLL_Main_go10\ is
 
 begin
 res <= (std_logic_vector'(B"1") & arg0 & arg0);

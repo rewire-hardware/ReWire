@@ -20,49 +20,49 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 rw__Pure_dispatch : [24] -> [9]
 rw__Pure_dispatch x0 = rw__LL_Pure_dispatch x0
 
-// Main.compute
-rw_Main_compute : [24] -> [8]
-rw_Main_compute x0 = rw__LL_Main_compute x0
-
-// $LL.Main.loop3
-rw__LL_Main_loop3 : [9] -> [9]
-rw__LL_Main_loop3 x0 = rw__LL_Main_loop1 (drop`{1} x0)
-
-// $LL.Main.loop2
-rw__LL_Main_loop2 : [24] -> [9]
-rw__LL_Main_loop2 x0 = rw__LL_Main_loop x0
-
-// Main.loop
-rw_Main_loop : [24] -> [9]
-rw_Main_loop x0 = rw__LL_Main_loop2 x0
-
 // $LL.Main.compute3
 rw__LL_Main_compute3 : [8] -> [8] -> [8] -> [8]
-rw__LL_Main_compute3 x0 x1 x2 = ((x0 && x1) ^ x2) || (~ (((~ x0) && (~ x1)) ^ x2))
+rw__LL_Main_compute3 x0 x1 x2 = rw__LL_Main_compute x1 x0 x2
+
+// $LL.Main.loop3
+rw__LL_Main_loop3 : [24] -> [9]
+rw__LL_Main_loop3 x0 = rw__LL_Main_loop2 (0b0 # (rw_Main_compute x0))
+
+// Main.compute
+rw_Main_compute : [24] -> [8]
+rw_Main_compute x0 = rw__LL_Main_compute2 x0
 
 // $LL.Main.compute2
-rw__LL_Main_compute2 : [8] -> [8] -> [8] -> [8]
-rw__LL_Main_compute2 x0 x1 x2 = rw__LL_Main_compute3 x0 x1 x2
+rw__LL_Main_compute2 : [24] -> [8]
+rw__LL_Main_compute2 x0 = rw__LL_Main_compute1 (take`{8} x0) (take`{8} (drop`{8} x0)) (drop`{16} x0)
 
 // $LL.Main.compute1
 rw__LL_Main_compute1 : [8] -> [8] -> [8] -> [8]
-rw__LL_Main_compute1 x0 x1 x2 = rw__LL_Main_compute2 x0 x1 x2
-
-// $LL.Main.loop1
-rw__LL_Main_loop1 : [8] -> [9]
-rw__LL_Main_loop1 x0 = 0b1 # x0
-
-// $LL.Main.loop
-rw__LL_Main_loop : [24] -> [9]
-rw__LL_Main_loop x0 = rw__LL_Main_loop3 (0b0 # (rw_Main_compute x0))
+rw__LL_Main_compute1 x0 x1 x2 = rw__LL_Main_compute3 x0 x1 x2
 
 // $LL.Main.compute
-rw__LL_Main_compute : [24] -> [8]
-rw__LL_Main_compute x0 = rw__LL_Main_compute1 (take`{8} x0) (take`{8} (drop`{8} x0)) (drop`{16} x0)
+rw__LL_Main_compute : [8] -> [8] -> [8] -> [8]
+rw__LL_Main_compute x0 x1 x2 = ((x1 && x0) ^ x2) || (~ (((~ x1) && (~ x0)) ^ x2))
+
+// $LL.Main.loop2
+rw__LL_Main_loop2 : [9] -> [9]
+rw__LL_Main_loop2 x0 = rw__LL_Main_loop (drop`{1} x0)
+
+// Main.loop1
+rw_Main_loop1 : [24] -> [9]
+rw_Main_loop1 x0 = rw__LL_Main_loop1 x0
+
+// $LL.Main.loop1
+rw__LL_Main_loop1 : [24] -> [9]
+rw__LL_Main_loop1 x0 = rw__LL_Main_loop3 x0
+
+// $LL.Main.loop
+rw__LL_Main_loop : [8] -> [9]
+rw__LL_Main_loop x0 = 0b1 # x0
 
 // $LL.Pure.dispatch
 rw__LL_Pure_dispatch : [24] -> [9]
-rw__LL_Pure_dispatch x0 = rw_Main_loop x0
+rw__LL_Pure_dispatch x0 = rw_Main_loop1 x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [24] -> [8]

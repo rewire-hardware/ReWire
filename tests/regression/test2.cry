@@ -21,84 +21,84 @@ rw__Pure_dispatch : [8] -> [1] -> [18]
 rw__Pure_dispatch x0 x1 = rw__LL_Pure_dispatch x1 x0
 
 // $LL.Main.incr17
-rw__LL_Main_incr17 : [18] -> [18]
-rw__LL_Main_incr17 x0 = rw__LL_Main_incr6 (take`{8} (drop`{2} x0)) (drop`{10} x0)
+rw__LL_Main_incr17 : [1] -> [8] -> [18]
+rw__LL_Main_incr17 x0 x1 = rw_Main_incr x1
 
 // $LL.Main.incr16
 rw__LL_Main_incr16 : [8] -> [8] -> [18]
-rw__LL_Main_incr16 x0 x1 = 0b10 # (x0 # x1)
+rw__LL_Main_incr16 x0 x1 = rw__LL_Main_incr10 x0 x1
 
 // $LL.Main.incr15
-rw__LL_Main_incr15 : [8] -> [18]
-rw__LL_Main_incr15 x0 = 0b0100000000 # x0
+rw__LL_Main_incr15 : [8] -> [8] -> [18]
+rw__LL_Main_incr15 x0 x1 = rw__LL_Main_incr3 x0 x1
 
 // $LL.Main.incr14
-rw__LL_Main_incr14 : [8] -> [8] -> [18]
-rw__LL_Main_incr14 x0 x1 = rw__LL_Main_incr8 x0 x1
+rw__LL_Main_incr14 : [16] -> [18]
+rw__LL_Main_incr14 x0 = rw__LL_Main_incr9 (take`{8} x0) (drop`{8} x0)
 
 // $LL.Main.incr13
 rw__LL_Main_incr13 : [8] -> [8] -> [18]
 rw__LL_Main_incr13 x0 x1 = 0b00 # (x0 # x1)
 
-// $LL.Main.incr12
-rw__LL_Main_incr12 : [8] -> [8] -> [18]
-rw__LL_Main_incr12 x0 x1 = rw__LL_Main_incr2 x0 x1
-
-// $LL.Main.incr11
-rw__LL_Main_incr11 : [16] -> [18]
-rw__LL_Main_incr11 x0 = rw__LL_Main_incr4 (take`{8} x0) (drop`{8} x0)
-
 // Main.incr
 rw_Main_incr : [8] -> [18]
-rw_Main_incr x0 = rw__LL_Main_incr17 (rw__LL_Main_incr11 (x0 # x0))
+rw_Main_incr x0 = rw__LL_Main_incr4 (rw__LL_Main_incr14 (x0 # x0))
+
+// $LL.Main.incr12
+rw__LL_Main_incr12 : [8] -> [18] -> [18]
+rw__LL_Main_incr12 x0 x1 = rw__LL_Main_incr x0 (drop`{10} x1)
+
+// $LL.Main.incr11
+rw__LL_Main_incr11 : [8] -> [18]
+rw__LL_Main_incr11 x0 = rw__LL_Main_incr2 x0
 
 // $LL.Main.incr10
 rw__LL_Main_incr10 : [8] -> [8] -> [18]
-rw__LL_Main_incr10 x0 x1 = rw__LL_Main_incr3 x0 (rw__LL_Main_incr x0)
+rw__LL_Main_incr10 x0 x1 = rw__LL_Main_incr6 x0 x1
 
 // $LL.Main.incr9
-rw__LL_Main_incr9 : [8] -> [18]
-rw__LL_Main_incr9 x0 = rw__LL_Main_incr15 x0
+rw__LL_Main_incr9 : [8] -> [8] -> [18]
+rw__LL_Main_incr9 x0 x1 = rw__LL_Main_incr13 x0 x1
 
 // $LL.Main.incr8
 rw__LL_Main_incr8 : [8] -> [8] -> [18]
-rw__LL_Main_incr8 x0 x1 = rw__LL_Main_incr16 x0 x1
-
-// $LL.Main.incr7
-rw__LL_Main_incr7 : [1] -> [8] -> [18]
-rw__LL_Main_incr7 x0 x1 = rw__LL_Main_incr5 x0 x1
+rw__LL_Main_incr8 x0 x1 = 0b10 # (x0 # x1)
 
 // $LL.Pure.dispatch
 rw__LL_Pure_dispatch : [1] -> [8] -> [18]
 rw__LL_Pure_dispatch x0 x1 = rw__LL_Main_incr7 x0 x1
 
+// $LL.Main.incr7
+rw__LL_Main_incr7 : [1] -> [8] -> [18]
+rw__LL_Main_incr7 x0 x1 = rw__LL_Main_incr17 x0 x1
+
 // $LL.Main.incr6
 rw__LL_Main_incr6 : [8] -> [8] -> [18]
-rw__LL_Main_incr6 x0 x1 = rw__LL_Main_incr10 x0 x1
+rw__LL_Main_incr6 x0 x1 = rw__LL_Main_incr1 x0 x1
 
 // $LL.Main.incr5
-rw__LL_Main_incr5 : [1] -> [8] -> [18]
-rw__LL_Main_incr5 x0 x1 = rw_Main_incr x1
+rw__LL_Main_incr5 : [8] -> [18]
+rw__LL_Main_incr5 x0 = 0b0100000000 # x0
 
 // $LL.Main.incr4
-rw__LL_Main_incr4 : [8] -> [8] -> [18]
-rw__LL_Main_incr4 x0 x1 = rw__LL_Main_incr13 x0 x1
+rw__LL_Main_incr4 : [18] -> [18]
+rw__LL_Main_incr4 x0 = rw__LL_Main_incr15 (take`{8} (drop`{2} x0)) (drop`{10} x0)
 
 // $LL.Main.incr3
-rw__LL_Main_incr3 : [8] -> [18] -> [18]
-rw__LL_Main_incr3 x0 x1 = rw__LL_Main_incr12 x0 (drop`{10} x1)
+rw__LL_Main_incr3 : [8] -> [8] -> [18]
+rw__LL_Main_incr3 x0 x1 = rw__LL_Main_incr12 x0 (rw__LL_Main_incr11 x0)
 
 // $LL.Main.incr2
-rw__LL_Main_incr2 : [8] -> [8] -> [18]
-rw__LL_Main_incr2 x0 x1 = rw__LL_Main_incr1 x0 x1
+rw__LL_Main_incr2 : [8] -> [18]
+rw__LL_Main_incr2 x0 = rw__LL_Main_incr5 x0
 
 // $LL.Main.incr1
 rw__LL_Main_incr1 : [8] -> [8] -> [18]
-rw__LL_Main_incr1 x0 x1 = rw__LL_Main_incr14 x0 x1
+rw__LL_Main_incr1 x0 x1 = rw__LL_Main_incr8 x0 x1
 
 // $LL.Main.incr
-rw__LL_Main_incr : [8] -> [18]
-rw__LL_Main_incr x0 = rw__LL_Main_incr9 x0
+rw__LL_Main_incr : [8] -> [8] -> [18]
+rw__LL_Main_incr x0 x1 = rw__LL_Main_incr16 x0 x1
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [1] -> [16]

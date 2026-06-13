@@ -2,37 +2,37 @@ $Pure.dispatch : ([1]) -> [2]
 $Pure.dispatch $1 =
       $LL.Pure.dispatch $1
 
-ReWire.Prelude.not : ([1]) -> [1]
-ReWire.Prelude.not $0 =
-      $LL.ReWire.Prelude.not1 $0 $0
+$LL.Main.loop3 : ([1]) -> [2]
+$LL.Main.loop3 $0 =
+      1'h1 # $0
 
 $LL.ReWire.Prelude.not3 : ([1]) -> [1]
 $LL.ReWire.Prelude.not3 $0 =
       1'h1
 
-$LL.Main.loop3 : ([1]) -> [2]
-$LL.Main.loop3 $0 =
+$LL.Main.loop2 : ([2]) -> [2]
+$LL.Main.loop2 $0 =
+      $LL.Main.loop3 $0[0 +: 1]
+
+ReWire.Prelude.not : ([1]) -> [1]
+ReWire.Prelude.not $0 =
+      $LL.ReWire.Prelude.not1 $0 $0
+
+$LL.Main.loop1 : ([1]) -> [2]
+$LL.Main.loop1 $0 =
+      $LL.Main.loop2 (1'h0 # ReWire.Prelude.not $0)
+
+Main.loop : ([1]) -> [2]
+Main.loop $0 =
       $LL.Main.loop $0
 
 $LL.Pure.dispatch : ([1]) -> [2]
 $LL.Pure.dispatch $0 =
       Main.loop $0
 
-$LL.Main.loop2 : ([2]) -> [2]
-$LL.Main.loop2 $0 =
-      $LL.Main.loop1 $0[0 +: 1]
-
-$LL.Main.loop1 : ([1]) -> [2]
-$LL.Main.loop1 $0 =
-      1'h1 # $0
-
-Main.loop : ([1]) -> [2]
-Main.loop $0 =
-      $LL.Main.loop3 $0
-
 $LL.Main.loop : ([1]) -> [2]
 $LL.Main.loop $0 =
-      $LL.Main.loop2 (1'h0 # ReWire.Prelude.not $0)
+      $LL.Main.loop1 $0
 
 $LL.ReWire.Prelude.not1 : ([1], [1]) -> [1]
 $LL.ReWire.Prelude.not1 $0 $1 =

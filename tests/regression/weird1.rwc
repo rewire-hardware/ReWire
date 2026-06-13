@@ -4,11 +4,11 @@ $Pure.dispatch $0 $1 =
 
 Main.repl1 : ([1], [2]) -> [3]
 Main.repl1 $0 $1 =
-      $LL.Main.repl1 $0 $1
+      $LL.Main.repl $0 $1
 
 $LL.Main.repl1 : ([1], [2]) -> [3]
 $LL.Main.repl1 $0 $1 =
-      $LL.Main.repl $0 $1
+      1'h0 # $1
 
 $LL.Pure.dispatch : ([1], [2]) -> [3]
 $LL.Pure.dispatch $0 $1 =
@@ -16,7 +16,7 @@ $LL.Pure.dispatch $0 $1 =
 
 $LL.Main.repl : ([1], [2]) -> [3]
 $LL.Main.repl $0 $1 =
-      1'h0 # $1
+      $LL.Main.repl1 $0 $1
 
 device top_level
       input __in0 : [1]

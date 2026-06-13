@@ -2,61 +2,61 @@ $Pure.dispatch : ([7]) -> [6]
 $Pure.dispatch $1 =
       $LL.Pure.dispatch $1
 
+$LL.Main.loop3 : ([5]) -> [6]
+$LL.Main.loop3 $0 =
+      1'h1 # $0
+
 Main.compute : ([7]) -> [5]
 Main.compute $0 =
-      $LL.Main.compute $0
+      $LL.Main.compute6 $0
 
-$LL.Main.compute6 : ([5], [5]) -> [5]
-$LL.Main.compute6 $0 $1 =
-      $LL.Main.compute5 $0 $1
+$LL.Main.compute6 : ([7]) -> [5]
+$LL.Main.compute6 $0 =
+      $LL.Main.compute $0
 
 $LL.Main.compute5 : ([5], [5]) -> [5]
 $LL.Main.compute5 $0 $1 =
-      trunc 5 (umod (add (zext 128 $0) (zext 128 $1)) 128'h14)
+      $LL.Main.compute4 ($0 # $1)
 
-$LL.Main.loop3 : ([7]) -> [6]
-$LL.Main.loop3 $0 =
-      $LL.Main.loop $0
-
-$LL.Main.compute4 : ([5]) -> [5]
-$LL.Main.compute4 $0 =
-      $LL.Main.compute1 $0 5'h6
-
-Main.loop1 : ([7]) -> [6]
-Main.loop1 $0 =
-      $LL.Main.loop3 $0
-
-$LL.Main.loop2 : ([6]) -> [6]
+$LL.Main.loop2 : ([7]) -> [6]
 $LL.Main.loop2 $0 =
-      $LL.Main.loop1 $0[0 +: 5]
-
-$LL.Main.loop1 : ([5]) -> [6]
-$LL.Main.loop1 $0 =
-      1'h1 # $0
-
-$LL.Main.compute3 : ([7]) -> [5]
-$LL.Main.compute3 $0 =
-      $LL.Main.compute4 (trunc 5 (umod $0 7'h14))
+      $LL.Main.loop1 (1'h0 # Main.compute $0)
 
 $LL.Pure.dispatch : ([7]) -> [6]
 $LL.Pure.dispatch $0 =
       Main.loop1 $0
 
-$LL.Main.compute2 : ([10]) -> [5]
-$LL.Main.compute2 $0 =
-      $LL.Main.compute6 $0[5 +: 5] $0[0 +: 5]
+$LL.Main.compute4 : ([10]) -> [5]
+$LL.Main.compute4 $0 =
+      $LL.Main.compute3 $0[5 +: 5] $0[0 +: 5]
 
-$LL.Main.compute1 : ([5], [5]) -> [5]
-$LL.Main.compute1 $0 $1 =
-      $LL.Main.compute2 ($0 # $1)
+Main.loop1 : ([7]) -> [6]
+Main.loop1 $0 =
+      $LL.Main.loop $0
 
-$LL.Main.compute : ([7]) -> [5]
-$LL.Main.compute $0 =
-      $LL.Main.compute3 $0
+$LL.Main.compute3 : ([5], [5]) -> [5]
+$LL.Main.compute3 $0 $1 =
+      $LL.Main.compute2 $0 $1
+
+$LL.Main.loop1 : ([6]) -> [6]
+$LL.Main.loop1 $0 =
+      $LL.Main.loop3 $0[0 +: 5]
 
 $LL.Main.loop : ([7]) -> [6]
 $LL.Main.loop $0 =
-      $LL.Main.loop2 (1'h0 # Main.compute $0)
+      $LL.Main.loop2 $0
+
+$LL.Main.compute2 : ([5], [5]) -> [5]
+$LL.Main.compute2 $0 $1 =
+      trunc 5 (umod (add (zext 128 $0) (zext 128 $1)) 128'h14)
+
+$LL.Main.compute1 : ([5]) -> [5]
+$LL.Main.compute1 $0 =
+      $LL.Main.compute5 $0 5'h6
+
+$LL.Main.compute : ([7]) -> [5]
+$LL.Main.compute $0 =
+      $LL.Main.compute1 (trunc 5 (umod $0 7'h14))
 
 device top_level
       input __in0 : [7]

@@ -1,1804 +1,1808 @@
 $Pure.dispatch : ([74], [17]) -> [143]
 $Pure.dispatch $0 $1 =
-      if eq $0[70 +: 4] 4'h1 then $LL.Pure.dispatch7 $1 $0[0 +: 70]
-            else if eq $0[70 +: 4] 4'h2 then $LL.Pure.dispatch8 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h3 then $LL.Pure.dispatch8 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h4 then $LL.Pure.dispatch8 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h5 then $LL.Pure.dispatch8 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h6 then $LL.Pure.dispatch2 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h7 then $LL.Pure.dispatch8 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h8 then $LL.Pure.dispatch1 $1 $0[0 +: 70] else $LL.Pure.dispatch5 $1 $0[0 +: 70]
+      if eq $0[70 +: 4] 4'h1 then $LL.Pure.dispatch1 $1 $0[0 +: 70]
+            else if eq $0[70 +: 4] 4'h2 then $LL.Pure.dispatch3 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h3 then $LL.Pure.dispatch7 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h4 then $LL.Pure.dispatch7 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h5 then $LL.Pure.dispatch7 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h6 then $LL.Pure.dispatch $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h7 then $LL.Pure.dispatch7 $1 $0[0 +: 70] else if eq $0[70 +: 4] 4'h8 then $LL.Pure.dispatch8 $1 $0[0 +: 70] else $LL.Pure.dispatch7 $1 $0[0 +: 70]
 
 $LL.Main.loop226 : ([70]) -> [143]
-$LL.Main.loop226 $0 =
-      $LL.Main.loop216 $0
-
-$LL.Main.nand9 : ([70]) -> [70]
-$LL.Main.nand9 $1 =
-      Main.incrPC $1
-
-$LL.Main.loop225 : ([70]) -> [143]
-$LL.Main.loop225 $1 =
-      $LL.Main.loop94 $1
-
-Main.putWeOut1 : ([70]) -> [70]
-Main.putWeOut1 $0 =
-      $LL.Main.putWeOut5 1'h0 $0
-
-$LL.Main.putReg67 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg67 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putReg14 $1 $0 $2 $3 $4 $5 $6 $7
-
-$LL.Main.loop224 : ([70]) -> [143]
-$LL.Main.loop224 $1 =
-      $LL.Main.loop16 ($LL.Main.loop142 (Main.getOut $1))
-
-$LL.Main.putReg66 : ([70], [8]) -> [70]
-$LL.Main.putReg66 $0 $1 =
-      $LL.Main.putReg50 $0 $1
-
-$LL.Main.loop223 : ([6], [8], [70]) -> [70]
-$LL.Main.loop223 $0 $1 $2 =
-      $LL.Main.loop148 $0 $1 $2
-
-$LL.Main.finishInstr4 : ([70]) -> [70]
-$LL.Main.finishInstr4 $1 =
-      $LL.Main.finishInstr1 $1
-
-$LL.Main.reset46 : ([17], [70]) -> [143]
-$LL.Main.reset46 $0 $1 =
-      $LL.Main.reset22 ($LL.Main.loop226 (Main.putIns $0 $1))
-
-$LL.Pure.dispatch8 : ([17], [70]) -> [143]
-$LL.Pure.dispatch8 $0 $1 =
-      $LL.Main.loop198 $0 $1
-
-$LL.Main.st11 : ([70]) -> [70]
-$LL.Main.st11 $0 =
-      $LL.Main.st3 $0
-
-$LL.Main.loop221 : ([143]) -> [143]
-$LL.Main.loop221 $0 =
-      $LL.Main.loop162 $0[0 +: 70]
-
-$LL.Main.loop220 : ([78]) -> [70]
-$LL.Main.loop220 $0 =
-      $LL.Main.loop15 $0[70 +: 8] $0[0 +: 70]
-
-$LL.Main.loop219 : ([70]) -> [143]
-$LL.Main.loop219 $1 =
-      $LL.Main.loop211 $1
-
-$LL.Pure.dispatch7 : ([17], [70]) -> [143]
-$LL.Pure.dispatch7 $0 $1 =
-      $LL.Main.loop201 $0 $1
-
-$LL.Main.putReg65 : ([8], [70]) -> [70]
-$LL.Main.putReg65 $0 $1 =
-      $LL.Main.putReg49 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
-
-$LL.Main.loop218 : ([70], [6]) -> [143]
-$LL.Main.loop218 $0 $1 =
-      $LL.Main.loop135 $0 $1
-
-$LL.Main.getOut2 : ([70], [70]) -> [85]
-$LL.Main.getOut2 $0 $1 =
-      Main.outputs $0 # $1
-
-Main.putDataOut1 : ([8], [70]) -> [70]
-Main.putDataOut1 $0 $1 =
-      $LL.Main.putDataOut2 $0 $1
-
-$LL.Main.loop216 : ([70]) -> [143]
-$LL.Main.loop216 $1 =
-      $LL.Main.loop210 $1
-
-$LL.Main.loop215 : ([70], [6]) -> [143]
-$LL.Main.loop215 $0 $1 =
-      $LL.Main.loop172 $1 $0
-
-$LL.Main.loop212 : ([70]) -> [143]
-$LL.Main.loop212 $1 =
-      $LL.Main.loop202 ($LL.Main.loop226 ($LL.Main.loop220 (Main.getDataIn $1)))
-
-$LL.Main.reset44 : ([76]) -> [70]
-$LL.Main.reset44 $0 =
-      $LL.Main.reset43 $0[70 +: 6] $0[0 +: 70]
-
-$LL.Main.loop211 : ([70]) -> [143]
-$LL.Main.loop211 $1 =
-      $LL.Main.loop119 ($LL.Main.loop142 (Main.getOut $1))
+$LL.Main.loop226 $1 =
+      $LL.Main.loop222 $1
 
 $LL.Main.putAddrOut10 : ([6], [85]) -> [70]
 $LL.Main.putAddrOut10 $0 $1 =
-      $LL.Main.putAddrOut5 $0 $1[70 +: 15] $1[0 +: 70]
+      $LL.Main.putAddrOut9 $0 $1[70 +: 15] $1[0 +: 70]
 
-$LL.Main.loop210 : ([70]) -> [143]
-$LL.Main.loop210 $1 =
+$LL.Main.putReg67 : ([8], [2], [10], [70]) -> [70]
+$LL.Main.putReg67 $0 $1 $2 $3 =
+      if eq $2[8 +: 2] 2'h0 then $LL.Main.putReg30 $3 $2[0 +: 8]
+            else $LL.Main.putReg29 $0 $1 ($1 # $0) $3
+
+$LL.Main.loop225 : ([70]) -> [143]
+$LL.Main.loop225 $1 =
+      $LL.Main.loop26 ($LL.Main.loop217 (Main.getOut $1))
+
+$LL.Main.putReg66 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg66 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg40 $3 $0 $1 $2 $4 $5 $6 $7
+
+$LL.Main.r17 : ([8], [8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r17 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.r12 $1 $2 $3 $4 $5 $6
+
+$LL.Main.putReg65 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg65 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg3 $0 $3 $1 $2 $4 $5 $6
+
+$LL.Main.loop224 : ([17], [70]) -> [143]
+$LL.Main.loop224 $0 $1 =
+      $LL.Main.loop163 ($LL.Main.loop218 (Main.putIns $0 $1))
+
+$LL.Main.loop223 : ([70]) -> [143]
+$LL.Main.loop223 $0 =
+      $LL.Main.loop154 ($LL.Main.loop218 (Main.incrPC $0))
+
+$LL.Main.putDataOut11 : ([8], [15], [70]) -> [70]
+$LL.Main.putDataOut11 $0 $1 $2 =
+      $LL.Main.putDataOut7 $0 $1 $2
+
+$LL.Main.loop222 : ([70]) -> [143]
+$LL.Main.loop222 $1 =
       73'h800000000000000000 # $1
 
-$LL.Main.putWeOut10 : ([1], [15], [70]) -> [70]
-$LL.Main.putWeOut10 $0 $1 $2 =
-      $LL.Main.putWeOut7 $0 $1 $2
-
-$LL.Main.instrIn2 : ([17]) -> [9]
-$LL.Main.instrIn2 $0 =
-      $LL.Main.instrIn $0[8 +: 9] $0[0 +: 8]
-
-$LL.Main.putIns14 : ([8], [8], [17], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putIns14 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putIns $0 $1 $2 $3 $4 $5 $6 $7
-
-$LL.Main.getInstr2 : ([17], [70]) -> [79]
-$LL.Main.getInstr2 $0 $1 =
-      $LL.Main.getInstr1 $0 $1
-
-$LL.Main.putIns13 : ([17], [70], [70]) -> [70]
-$LL.Main.putIns13 $0 $1 $2 =
-      $LL.Main.putIns1 $0 $1 $2
-
-$LL.Main.loop207 : ([70], [2], [2], [2]) -> [143]
-$LL.Main.loop207 $0 $1 $2 $3 =
-      $LL.Main.loop151 $1 $0 $2 $3
-
-$LL.Main.reset43 : ([6], [70]) -> [70]
-$LL.Main.reset43 $0 $1 =
-      $LL.Main.finishInstr2 $0 $1
-
-$LL.Main.pc7 : ([6], [15]) -> [6]
-$LL.Main.pc7 $0 $1 =
-      $0
-
-$LL.Main.loop206 : ([15], [70]) -> [143]
-$LL.Main.loop206 $0 $1 =
-      $LL.Main.loop191 $0 $1
+$LL.Main.loop221 : ([8], [70]) -> [70]
+$LL.Main.loop221 $0 $1 =
+      Main.putReg $0 $1
 
 $LL.Main.putReg64 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
 $LL.Main.putReg64 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putReg51 $0 $1 $2 $3 $4 $5 $6 $7
+      $LL.Main.putReg28 $1 $0 $2 $3 $4 $5 $6 $7
 
-$LL.Main.st10 : ([8], [70]) -> [70]
-$LL.Main.st10 $0 $1 =
-      $LL.Main.st7 $0 $1
+$LL.Main.putDataOut10 : ([8], [85]) -> [70]
+$LL.Main.putDataOut10 $0 $1 =
+      $LL.Main.putDataOut6 $0 $1[70 +: 15] $1[0 +: 70]
 
-Main.putPC1 : ([6], [70]) -> [70]
-Main.putPC1 $0 $1 =
-      $LL.Main.putPC4 $0 $1
-
-$LL.Main.inputs7 : ([8], [8], [8], [8], [6], [17], [15]) -> [17]
-$LL.Main.inputs7 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.inputs4 $1 $2 $3 $4 $5 $6
-
-$LL.Main.r37 : ([8], [15]) -> [8]
-$LL.Main.r37 $0 $1 =
-      $0
-
-$LL.Main.loop204 : ([15], [70]) -> [143]
-$LL.Main.loop204 $0 $1 =
-      $LL.Main.loop12 $0 $1
-
-$LL.Main.instrIn1 : ([9], [8]) -> [9]
-$LL.Main.instrIn1 $0 $1 =
-      $0
-
-$LL.Main.bnz6 : ([6], [1], [70]) -> [70]
-$LL.Main.bnz6 $0 $1 $2 =
-      $LL.Main.bnz5 $2 $0
-
-$LL.Main.r17 : ([8], [6], [17], [15]) -> [8]
-$LL.Main.r17 $0 $1 $2 $3 =
-      $LL.Main.r27 $0 $2 $3
-
-$LL.Main.putWeOut9 : ([1], [15]) -> [15]
-$LL.Main.putWeOut9 $0 $1 =
-      $LL.Main.putWeOut6 $0 $1[14 +: 1] $1[8 +: 6] $1[0 +: 8]
-
-$LL.Main.loop202 : ([143]) -> [143]
-$LL.Main.loop202 $0 =
-      $LL.Main.loop225 $0[0 +: 70]
-
-$LL.Main.st9 : ([8], [70]) -> [70]
-$LL.Main.st9 $0 $2 =
-      $LL.Main.st8 $0 $2
-
-$LL.Main.bnz5 : ([70], [6]) -> [70]
-$LL.Main.bnz5 $0 $1 =
-      $LL.Main.bnz $0 $1
-
-Main.putIns : ([17], [70]) -> [70]
-Main.putIns $0 $1 =
-      $LL.Main.putIns11 $0 $1
-
-$LL.Main.loop201 : ([17], [70]) -> [143]
-$LL.Main.loop201 $0 $1 =
-      $LL.Main.loop10 ($LL.Main.loop226 (Main.putIns $0 $1))
-
-$LL.Main.putPC14 : ([6], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putPC14 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putPC3 $0 $1 $2 $3 $4 $5 $6 $7
-
-$LL.Main.getPC2 : ([140]) -> [76]
-$LL.Main.getPC2 $0 =
-      $LL.Main.getPC1 $0[70 +: 70] $0[0 +: 70]
-
-$LL.Main.putReg63 : ([8], [140]) -> [70]
-$LL.Main.putReg63 $0 $1 =
-      $LL.Main.putReg19 $0 $1[70 +: 70] $1[0 +: 70]
-
-$LL.Main.putAddrOut9 : ([6], [1], [6], [8]) -> [15]
-$LL.Main.putAddrOut9 $0 $1 $2 $3 =
-      $LL.Main.putAddrOut1 $1 $0 $2 $3
-
-$LL.Main.putReg62 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg62 $0 $1 $2 =
-      $LL.Main.putReg5 $0 $1 $2
-
-$LL.Main.getReg23 : ([2], [2], [70]) -> [78]
-$LL.Main.getReg23 $0 $1 $2 =
-      if eq $1 2'h0 then $LL.Main.getReg10 $2
-            else $LL.Main.getReg22 $0 $0 $2
-
-$LL.Main.loop200 : ([143]) -> [143]
-$LL.Main.loop200 $0 =
-      $LL.Main.loop178 $0[0 +: 70]
-
-$LL.Main.reset41 : ([143]) -> [143]
-$LL.Main.reset41 $0 =
-      $LL.Main.reset18 $0[70 +: 15] $0[0 +: 70]
-
-$LL.Main.outputs7 : ([70]) -> [15]
-$LL.Main.outputs7 $0 =
-      $LL.Main.outputs2 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
-
-$LL.Main.putOut15 : ([8], [8], [6], [17], [15], [8], [8], [15]) -> [70]
-$LL.Main.putOut15 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $5 # $6 # $1 # $0 # $2 # $3 # $4
-
-$LL.Main.getOut1 : ([140]) -> [85]
-$LL.Main.getOut1 $0 =
-      $LL.Main.getOut $0[70 +: 70] $0[0 +: 70]
-
-$LL.Main.loop198 : ([17], [70]) -> [143]
-$LL.Main.loop198 $0 $1 =
-      $LL.Main.loop202 ($LL.Main.loop226 (Main.putIns $0 $1))
-
-$LL.Main.finishInstr3 : ([70]) -> [70]
-$LL.Main.finishInstr3 $1 =
-      Main.putWeOut1 $1
-
-$LL.Main.getReg22 : ([2], [2], [70]) -> [78]
-$LL.Main.getReg22 $0 $1 $2 =
-      if eq $1 2'h1 then $LL.Main.getReg5 $2
-            else $LL.Main.getReg4 $0 $0 $2
-
-$LL.Main.putAddrOut8 : ([6], [70]) -> [70]
-$LL.Main.putAddrOut8 $0 $1 =
-      $LL.Main.putAddrOut $0 $1
-
-$LL.Main.loop197 : ([70]) -> [143]
-$LL.Main.loop197 $1 =
-      $LL.Main.loop134 ($LL.Main.loop226 ($LL.Main.reset44 (Main.getPC $1)))
-
-$LL.Main.loop196 : ([143]) -> [143]
-$LL.Main.loop196 $0 =
-      $LL.Main.loop144 $0[0 +: 70]
-
-$LL.Main.putReg61 : ([8], [6], [8], [8], [8], [17], [15]) -> [70]
-$LL.Main.putReg61 $0 $1 $2 $3 $4 $5 $6 =
-      $4 # $3 # $0 # $2 # $1 # $5 # $6
-
-$LL.Main.r16 : ([8], [8], [8], [6], [17], [15]) -> [8]
-$LL.Main.r16 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.r11 $0 $1 $2 $3 $4 $5
-
-$LL.Main.r27 : ([8], [17], [15]) -> [8]
-$LL.Main.r27 $0 $1 $2 =
-      $LL.Main.r37 $0 $2
-
-$LL.Main.getReg21 : ([140]) -> [78]
-$LL.Main.getReg21 $0 =
-      $LL.Main.getReg3 $0[70 +: 70] $0[0 +: 70]
-
-$LL.Main.pc6 : ([70]) -> [6]
-$LL.Main.pc6 $0 =
-      $LL.Main.pc $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
-
-$LL.Main.putAddrOut7 : ([6], [15], [70]) -> [70]
-$LL.Main.putAddrOut7 $0 $1 $2 =
-      $LL.Main.putAddrOut6 $0 $1 $2
-
-$LL.Main.getDataIn2 : ([17], [70]) -> [78]
-$LL.Main.getDataIn2 $0 $1 =
-      $LL.Main.getDataIn1 $0 $1
-
-$LL.Main.st8 : ([8], [70]) -> [70]
-$LL.Main.st8 $0 $2 =
-      $LL.Main.st11 (Main.putDataOut1 $0 $2)
-
-$LL.Main.r36 : ([8], [6], [17], [15]) -> [8]
-$LL.Main.r36 $0 $1 $2 $3 =
-      $LL.Main.r17 $0 $1 $2 $3
-
-$LL.Main.st7 : ([8], [70]) -> [70]
-$LL.Main.st7 $0 $2 =
-      $LL.Main.st2 $0 $2
-
-$LL.Main.loop191 : ([15], [70]) -> [143]
-$LL.Main.loop191 $0 $1 =
-      54'h20000000000000 # $0 # 4'h8 # $1
-
-$LL.Main.putOut14 : ([15], [70], [70]) -> [70]
-$LL.Main.putOut14 $0 $1 $2 =
-      $LL.Main.putOut6 $0 $1 $2
-
-$LL.Main.putReg60 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg60 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putReg21 $0 $1 $2 $4 $5 $6 $7
-
-$LL.Main.putIns12 : ([8], [8], [8], [17], [8], [6], [17], [15]) -> [70]
-$LL.Main.putIns12 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putIns5 $0 $1 $2 $3 $4 $5 $6 $7
-
-$LL.Main.loop190 : ([9], [143]) -> [143]
-$LL.Main.loop190 $0 $1 =
-      $LL.Main.loop49 $0 $1[70 +: 70] $1[0 +: 70]
-
-$LL.Main.loop188 : ([143]) -> [143]
-$LL.Main.loop188 $0 =
-      $LL.Main.loop71 $0[0 +: 70]
-
-$LL.Main.loop186 : ([70]) -> [143]
-$LL.Main.loop186 $1 =
-      $LL.Main.loop112 $1
-
-$LL.Main.loop185 : ([70]) -> [143]
-$LL.Main.loop185 $0 =
-      $LL.Main.loop188 ($LL.Main.loop226 (Main.incrPC $0))
-
-$LL.Main.r26 : ([8], [8], [6], [17], [15]) -> [8]
-$LL.Main.r26 $0 $1 $2 $3 $4 =
-      $LL.Main.r12 $0 $1 $2 $3 $4
+$LL.Main.loop220 : ([70]) -> [143]
+$LL.Main.loop220 $1 =
+      $LL.Main.reset26 $1
 
 $LL.Main.getIns2 : ([70], [70]) -> [87]
 $LL.Main.getIns2 $0 $1 =
-      Main.inputs $0 # $1
+      $LL.Main.getIns1 $0 $1
 
-$LL.Main.loop183 : ([9], [70]) -> [143]
-$LL.Main.loop183 $0 $1 =
-      $LL.Main.loop76 $0 $1
+$LL.Main.loop218 : ([70]) -> [143]
+$LL.Main.loop218 $0 =
+      $LL.Main.loop226 $0
 
-$LL.Main.putWeOut8 : ([1], [85]) -> [70]
-$LL.Main.putWeOut8 $0 $1 =
-      $LL.Main.putWeOut4 $0 $1[70 +: 15] $1[0 +: 70]
+Main.putDataOut : ([8], [70]) -> [70]
+Main.putDataOut $0 $1 =
+      $LL.Main.putDataOut4 $0 $1
 
-$LL.Main.putReg59 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg59 $0 $1 $2 =
-      $LL.Main.putReg56 $0 $1 $2
+$LL.Main.bnz6 : ([8], [6], [1], [70]) -> [70]
+$LL.Main.bnz6 $0 $1 $2 $3 =
+      if eq $2 1'h1 then $LL.Main.bnz2 $3
+            else $LL.Main.bnz4 $1 (eq $0 8'h0) $3
 
-$LL.Main.loop179 : ([143]) -> [143]
-$LL.Main.loop179 $0 =
-      $LL.Main.loop114 $0[70 +: 15] $0[0 +: 70]
+$LL.Main.getReg23 : ([2], [2], [70]) -> [78]
+$LL.Main.getReg23 $0 $1 $2 =
+      if eq $1 2'h0 then $LL.Main.getReg17 $2
+            else $LL.Main.getReg2 $0 $0 $2
 
-$LL.Main.putOut13 : ([15], [70], [70]) -> [70]
-$LL.Main.putOut13 $0 $1 $2 =
-      $LL.Main.putOut14 $0 $1 $2
+$LL.Main.loop217 : ([85]) -> [143]
+$LL.Main.loop217 $0 =
+      $LL.Main.reset41 $0[70 +: 15] $0[0 +: 70]
 
-$LL.Main.loop178 : ([70]) -> [143]
-$LL.Main.loop178 $1 =
-      $LL.Main.loop46 $1
+$LL.Main.putReg63 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg63 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg32 $0 $1 $3 $2 $4 $5 $6
 
-$LL.Main.putReg58 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg58 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.putReg33 $0 $4 $1 $2 $3 $5 $6
+$LL.Main.putReg62 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg62 $0 $1 $2 =
+      $LL.Main.putReg2 $0 $1 $2
 
-$LL.Main.outputs6 : ([17], [15]) -> [15]
-$LL.Main.outputs6 $0 $1 =
-      $LL.Main.outputs $1
+$LL.Main.putOut15 : ([15], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putOut15 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putOut13 $0 $1 $2 $3 $4 $5 $6 $7
 
-$LL.Main.reset38 : ([70]) -> [143]
-$LL.Main.reset38 $1 =
-      $LL.Main.reset34 ($LL.Main.loop226 ($LL.Main.reset44 (Main.getPC $1)))
+$LL.Main.loop215 : ([143]) -> [143]
+$LL.Main.loop215 $0 =
+      $LL.Main.loop83 $0[0 +: 70]
+
+$LL.Main.putWeOut10 : ([1], [15], [70]) -> [70]
+$LL.Main.putWeOut10 $0 $1 $2 =
+      $LL.Main.putWeOut9 $0 $1 $2
+
+$LL.Main.loop212 : ([70]) -> [143]
+$LL.Main.loop212 $1 =
+      $LL.Main.loop59 $1
+
+$LL.Main.getDataIn2 : ([17], [70]) -> [78]
+$LL.Main.getDataIn2 $0 $1 =
+      $LL.Main.getDataIn $0 $1
+
+$LL.Main.putWeOut9 : ([1], [15], [70]) -> [70]
+$LL.Main.putWeOut9 $0 $1 $2 =
+      Main.putOut ($LL.Main.putWeOut2 $0 $1) $2
+
+$LL.Main.putIns14 : ([8], [8], [8], [17], [8], [6], [17], [15]) -> [70]
+$LL.Main.putIns14 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putIns7 $0 $4 $1 $2 $3 $5 $6 $7
+
+$LL.Main.putIns13 : ([8], [17], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putIns13 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putIns $2 $0 $1 $3 $4 $5 $6 $7
+
+Main.putWeOut1 : ([70]) -> [70]
+Main.putWeOut1 $0 =
+      $LL.Main.putWeOut4 1'h1 $0
+
+$LL.Main.putReg61 : ([8], [70]) -> [70]
+$LL.Main.putReg61 $0 $1 =
+      $LL.Main.putReg58 $0 ($1 # $1)
+
+$LL.Main.nand9 : ([70]) -> [70]
+$LL.Main.nand9 $1 =
+      $LL.Main.nand2 $1
+
+$LL.Main.loop211 : ([6], [8], [70]) -> [70]
+$LL.Main.loop211 $0 $1 $2 =
+      $LL.Main.loop58 $0 $1 $2
+
+$LL.Main.loop210 : ([70]) -> [143]
+$LL.Main.loop210 $1 =
+      $LL.Main.loop116 $1
+
+$LL.Main.putReg60 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg60 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg11 $0 $1 $2 $3 $4 $5 $6
+
+Main.putPC1 : ([6], [70]) -> [70]
+Main.putPC1 $0 $1 =
+      $LL.Main.putPC3 $0 $1
+
+$LL.Main.putOut14 : ([6], [8], [8], [8], [8], [15], [17], [15]) -> [70]
+$LL.Main.putOut14 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $2 # $4 # $3 # $1 # $0 # $6 # $5
+
+$LL.Main.st11 : ([70]) -> [70]
+$LL.Main.st11 $1 =
+      $LL.Main.st9 $1
+
+$LL.Main.inputs7 : ([8], [6], [17], [15]) -> [17]
+$LL.Main.inputs7 $0 $1 $2 $3 =
+      $LL.Main.inputs3 $1 $2 $3
+
+$LL.Main.pc7 : ([6], [17], [15]) -> [6]
+$LL.Main.pc7 $0 $1 $2 =
+      $LL.Main.pc2 $0 $2
+
+$LL.Main.r16 : ([8], [15]) -> [8]
+$LL.Main.r16 $0 $1 =
+      $0
+
+$LL.Main.putReg59 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg59 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg12 $0 $1 $2 $3 $4 $5 $6
+
+$LL.Main.loop207 : ([70], [2], [2], [2]) -> [143]
+$LL.Main.loop207 $0 $1 $2 $3 =
+      $LL.Main.loop126 $0 $1 $2 $3
+
+Main.putIns : ([17], [70]) -> [70]
+Main.putIns $0 $1 =
+      $LL.Main.putIns9 $0 $1
+
+$LL.Main.st10 : ([8], [70]) -> [70]
+$LL.Main.st10 $0 $2 =
+      $LL.Main.st6 (Main.putDataOut $0 $2)
+
+$LL.Main.loop206 : ([6], [70]) -> [70]
+$LL.Main.loop206 $0 $1 =
+      $LL.Main.finishInstr4 $0 $1
+
+$LL.Main.getReg22 : ([2], [2], [70]) -> [78]
+$LL.Main.getReg22 $0 $1 $2 =
+      if eq $1 2'h2 then $LL.Main.getReg16 $2
+            else $LL.Main.getReg12 $0 $2
+
+$LL.Main.reset41 : ([15], [70]) -> [143]
+$LL.Main.reset41 $0 $1 =
+      $LL.Main.reset40 $0 $1
+
+$LL.Main.loop202 : ([70]) -> [143]
+$LL.Main.loop202 $1 =
+      $LL.Main.loop86 $1
+
+$LL.Main.reset40 : ([15], [70]) -> [143]
+$LL.Main.reset40 $0 $1 =
+      58'h80000000000000 # $0 # $1
+
+$LL.Main.loop201 : ([9], [70], [70]) -> [143]
+$LL.Main.loop201 $0 $1 $2 =
+      $LL.Main.loop162 $0 $1 $2
+
+$LL.Main.getReg21 : ([140]) -> [78]
+$LL.Main.getReg21 $0 =
+      $LL.Main.getReg4 $0[70 +: 70] $0[0 +: 70]
+
+$LL.Main.outputs7 : ([8], [8], [6], [17], [15]) -> [15]
+$LL.Main.outputs7 $0 $1 $2 $3 $4 =
+      $LL.Main.outputs $1 $2 $3 $4
+
+$LL.Main.finishInstr4 : ([6], [70]) -> [70]
+$LL.Main.finishInstr4 $0 $1 =
+      $LL.Main.finishInstr3 (Main.putAddrOut $0 $1)
+
+$LL.Main.putReg58 : ([8], [140]) -> [70]
+$LL.Main.putReg58 $0 $1 =
+      $LL.Main.putReg37 $0 $1[70 +: 70] $1[0 +: 70]
+
+$LL.Main.putReg57 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg57 $0 $1 $2 =
+      $LL.Main.putReg1 $0 $1
+
+$LL.Pure.dispatch8 : ([17], [70]) -> [143]
+$LL.Pure.dispatch8 $0 $1 =
+      $LL.Main.loop8 $0 $1
+
+$LL.Main.loop199 : ([70], [6]) -> [143]
+$LL.Main.loop199 $0 $1 =
+      $LL.Main.loop27 $0 $1
+
+$LL.Main.r37 : ([8], [6], [17], [15]) -> [8]
+$LL.Main.r37 $0 $1 $2 $3 =
+      $LL.Main.r36 $0 $2 $3
+
+$LL.Main.dataIn2 : ([17]) -> [8]
+$LL.Main.dataIn2 $0 =
+      $LL.Main.dataIn1 $0[8 +: 9] $0[0 +: 8]
+
+$LL.Main.r15 : ([8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r15 $0 $1 $2 $3 $4 =
+      $LL.Main.r37 $0 $2 $3 $4
+
+$LL.Main.loop198 : ([70]) -> [143]
+$LL.Main.loop198 $1 =
+      $LL.Main.loop220 $1
+
+$LL.Main.putOut13 : ([15], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putOut13 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putOut8 $1 $0 $2 $3 $4 $5 $6 $7
+
+$LL.Main.pc6 : ([8], [8], [6], [17], [15]) -> [6]
+$LL.Main.pc6 $0 $1 $2 $3 $4 =
+      $LL.Main.pc $1 $2 $3 $4
+
+$LL.Main.putReg56 : ([8], [70]) -> [70]
+$LL.Main.putReg56 $0 $1 =
+      $LL.Main.putReg4 $0 ($1 # $1)
+
+$LL.Main.putPC14 : ([6], [70]) -> [70]
+$LL.Main.putPC14 $0 $1 =
+      $LL.Main.putPC7 $0 ($1 # $1)
+
+$LL.Main.putReg55 : ([70], [8]) -> [70]
+$LL.Main.putReg55 $0 $1 =
+      $LL.Main.putReg10 $0 $1
+
+$LL.Main.loop195 : ([70]) -> [143]
+$LL.Main.loop195 $1 =
+      $LL.Main.loop163 ($LL.Main.loop218 ($LL.Main.loop125 (Main.getDataIn $1)))
+
+$LL.Main.instrIn2 : ([9], [8]) -> [9]
+$LL.Main.instrIn2 $0 $1 =
+      $LL.Main.instrIn $0 $1
+
+$LL.Main.r36 : ([8], [17], [15]) -> [8]
+$LL.Main.r36 $0 $1 $2 =
+      $LL.Main.r16 $0 $2
+
+$LL.Main.reset39 : ([70]) -> [143]
+$LL.Main.reset39 $1 =
+      $LL.Main.reset25 $1
 
 $LL.Main.nand8 : ([8], [2], [8], [70]) -> [70]
 $LL.Main.nand8 $0 $1 $2 $3 =
-      $LL.Main.nand3 (Main.putReg $1 (not (and $0 $2)) $3)
+      $LL.Main.nand $1 $0 $2 $3
 
-$LL.Main.putAddrOut6 : ([6], [15], [70]) -> [70]
-$LL.Main.putAddrOut6 $0 $1 $2 =
-      Main.putOut ($LL.Main.putAddrOut4 $0 $1) $2
+$LL.Main.loop193 : ([15], [70]) -> [143]
+$LL.Main.loop193 $0 $1 =
+      54'h20000000000000 # $0 # 4'h7 # $1
 
-$LL.Main.putReg57 : ([70], [8]) -> [70]
-$LL.Main.putReg57 $0 $1 =
-      $LL.Main.putReg6 $1 $0
+$LL.Main.loop192 : ([15], [70]) -> [143]
+$LL.Main.loop192 $0 $1 =
+      $LL.Main.loop193 $0 $1
+
+$LL.Main.loop191 : ([2], [2], [8], [70]) -> [70]
+$LL.Main.loop191 $0 $1 $2 $3 =
+      $LL.Main.loop122 $1 $0 $2 $3
+
+$LL.Main.loop190 : ([70]) -> [143]
+$LL.Main.loop190 $1 =
+      $LL.Main.loop36 ($LL.Main.loop217 (Main.getOut $1))
+
+$LL.Pure.dispatch7 : ([17], [70]) -> [143]
+$LL.Pure.dispatch7 $0 $1 =
+      $LL.Main.loop224 $0 $1
+
+$LL.Main.putReg54 : ([70], [8]) -> [70]
+$LL.Main.putReg54 $0 $1 =
+      $LL.Main.putReg16 $1 $0
+
+$LL.Main.r06 : ([8], [8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r06 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.r05 $0 $2 $3 $4 $5 $6
+
+$LL.Main.ld1 : ([70]) -> [70]
+$LL.Main.ld1 $1 =
+      Main.putWeOut $1
+
+$LL.Main.putReg53 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg53 $0 $1 $2 =
+      $LL.Main.putReg $0 $1
+
+$LL.Main.loop189 : ([15], [70]) -> [143]
+$LL.Main.loop189 $0 $1 =
+      54'h20000000000000 # $0 # 4'h5 # $1
+
+$LL.Main.putPC13 : ([6], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putPC13 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putPC1 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.reset35 : ([15], [70]) -> [143]
+$LL.Main.reset35 $0 $1 =
+      $LL.Main.reset23 $0 $1
+
+$LL.Main.putOut12 : ([15], [70], [70]) -> [70]
+$LL.Main.putOut12 $0 $1 $2 =
+      $LL.Main.putOut10 $0 $1 $2
+
+$LL.Main.putWeOut8 : ([1], [1], [6], [8]) -> [15]
+$LL.Main.putWeOut8 $0 $1 $2 $3 =
+      $LL.Main.putWeOut6 $0 $2 $3
+
+$LL.Main.loop187 : ([143]) -> [143]
+$LL.Main.loop187 $0 =
+      $LL.Main.loop167 $0[0 +: 70]
+
+$LL.Main.loop186 : ([70], [6]) -> [143]
+$LL.Main.loop186 $0 $1 =
+      $LL.Main.loop7 $0 $1
+
+$LL.Main.putReg52 : ([8], [140]) -> [70]
+$LL.Main.putReg52 $0 $1 =
+      $LL.Main.putReg27 $0 $1[70 +: 70] $1[0 +: 70]
+
+$LL.Main.putReg51 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg51 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg60 $0 $2 $3 $4 $5 $6 $7
+
+$LL.Main.putOut11 : ([15], [70]) -> [70]
+$LL.Main.putOut11 $0 $1 =
+      $LL.Main.putOut2 $0 $1
+
+$LL.Main.putReg50 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg50 $0 $1 $2 =
+      $LL.Main.putReg42 $0 $1 $2
+
+$LL.Main.loop185 : ([2], [2], [2], [70]) -> [143]
+$LL.Main.loop185 $0 $1 $2 $3 =
+      $LL.Main.loop174 ($LL.Main.loop218 ($LL.Main.loop89 $0 $2 (Main.getReg1 $1 $3)))
+
+$LL.Main.putOut10 : ([15], [70], [70]) -> [70]
+$LL.Main.putOut10 $0 $1 $2 =
+      $LL.Main.putOut9 $0 $1
+
+$LL.Main.loop184 : ([70]) -> [143]
+$LL.Main.loop184 $1 =
+      $LL.Main.loop80 ($LL.Main.loop217 (Main.getOut $1))
+
+$LL.Main.putReg49 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg49 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg31 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.putReg48 : ([6], [8], [8], [8], [8], [17], [15]) -> [70]
+$LL.Main.putReg48 $0 $1 $2 $3 $4 $5 $6 =
+      $1 # $3 # $4 # $2 # $0 # $5 # $6
+
+$LL.Main.loop182 : ([70], [2], [2], [2]) -> [143]
+$LL.Main.loop182 $0 $1 $2 $3 =
+      $LL.Main.loop21 $2 $0 $1 $3
+
+$LL.Main.putReg47 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg47 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg51 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.reset33 : ([17], [70]) -> [143]
+$LL.Main.reset33 $0 $1 =
+      $LL.Main.reset21 ($LL.Main.loop218 (Main.putIns $0 $1))
+
+$LL.Main.loop181 : ([15], [70]) -> [143]
+$LL.Main.loop181 $0 $1 =
+      54'h20000000000000 # $0 # 4'h2 # $1
+
+$LL.Main.st9 : ([70]) -> [70]
+$LL.Main.st9 $1 =
+      Main.putWeOut1 $1
+
+$LL.Main.outputs6 : ([8], [8], [8], [6], [17], [15]) -> [15]
+$LL.Main.outputs6 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.outputs7 $1 $2 $3 $4 $5
+
+$LL.Main.loop178 : ([70]) -> [143]
+$LL.Main.loop178 $1 =
+      $LL.Main.loop146 ($LL.Main.loop217 (Main.getOut $1))
 
 Main.getReg1 : ([2], [70]) -> [78]
 Main.getReg1 $0 $1 =
       $LL.Main.getReg23 $0 $0 $1
 
-$LL.Main.loop172 : ([6], [70]) -> [143]
-$LL.Main.loop172 $0 $1 =
-      $LL.Main.loop168 ($LL.Main.loop226 ($LL.Main.loop26 $0 (Main.getReg $1)))
+$LL.Main.loop177 : ([70]) -> [143]
+$LL.Main.loop177 $1 =
+      $LL.Main.loop184 $1
 
-$LL.Main.getDataIn1 : ([17], [70]) -> [78]
-$LL.Main.getDataIn1 $0 $1 =
-      Main.dataIn $0 # $1
+$LL.Main.reset32 : ([76]) -> [70]
+$LL.Main.reset32 $0 =
+      $LL.Main.loop206 $0[70 +: 6] $0[0 +: 70]
 
-$LL.Main.loop171 : ([2], [2], [8], [70]) -> [70]
-$LL.Main.loop171 $0 $1 $2 $3 =
-      $LL.Main.loop149 $0 $1 $2 $3
+$LL.Main.putDataOut9 : ([8], [1], [6], [8]) -> [15]
+$LL.Main.putDataOut9 $0 $1 $2 $3 =
+      $LL.Main.putDataOut5 $1 $0 $2 $3
 
-$LL.Main.putOut12 : ([8], [8], [6], [15], [8], [8], [17], [15]) -> [70]
-$LL.Main.putOut12 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putOut15 $0 $1 $2 $6 $3 $4 $5 $7
+$LL.Main.putReg46 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg46 $0 $1 $2 =
+      $LL.Main.putReg50 $0 $1 $2
 
-$LL.Main.putReg56 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg56 $0 $1 $2 =
-      $LL.Main.putReg17 $0 $1 $2
+$LL.Main.loop175 : ([6], [8], [70]) -> [70]
+$LL.Main.loop175 $0 $1 $2 =
+      $LL.Main.loop11 $0 $1 $2
 
-$LL.Main.loop168 : ([143]) -> [143]
-$LL.Main.loop168 $0 =
-      $LL.Main.loop108 $0[0 +: 70]
-
-$LL.Main.loop167 : ([9], [70]) -> [143]
-$LL.Main.loop167 $0 $1 =
-      $LL.Main.loop39 $0 $1
-
-$LL.Main.putIns11 : ([17], [70]) -> [70]
-$LL.Main.putIns11 $0 $1 =
-      $LL.Main.putIns9 $0 $1
-
-$LL.Main.putIns10 : ([17], [140]) -> [70]
-$LL.Main.putIns10 $0 $1 =
-      $LL.Main.putIns8 $0 $1[70 +: 70] $1[0 +: 70]
-
-$LL.Main.putPC13 : ([6], [140]) -> [70]
-$LL.Main.putPC13 $0 $1 =
-      $LL.Main.putPC7 $0 $1[70 +: 70] $1[0 +: 70]
-
-$LL.Main.loop166 : ([70], [2], [2], [2]) -> [143]
-$LL.Main.loop166 $0 $1 $2 $3 =
-      $LL.Main.loop207 $0 $1 $2 $3
-
-$LL.Main.loop165 : ([15], [70]) -> [143]
-$LL.Main.loop165 $0 $1 =
-      $LL.Main.loop163 $0 $1
-
-$LL.Main.getIns1 : ([140]) -> [87]
-$LL.Main.getIns1 $0 =
-      $LL.Main.getIns $0[70 +: 70] $0[0 +: 70]
-
-$LL.Main.loop164 : ([15], [70]) -> [143]
-$LL.Main.loop164 $0 $1 =
-      $LL.Main.loop100 $0 $1
-
-$LL.Main.getInstr1 : ([17], [70]) -> [79]
-$LL.Main.getInstr1 $0 $1 =
-      Main.instrIn $0 # $1
-
-$LL.Main.reset36 : ([70]) -> [143]
-$LL.Main.reset36 $1 =
-      Main.loop $1
-
-$LL.Main.dataIn2 : ([8]) -> [8]
-$LL.Main.dataIn2 $0 =
-      $0
-
-$LL.Main.bnz4 : ([70]) -> [70]
-$LL.Main.bnz4 $0 =
-      Main.incrPC $0
-
-$LL.Main.loop163 : ([15], [70]) -> [143]
-$LL.Main.loop163 $0 $1 =
-      58'h80000000000000 # $0 # $1
-
-$LL.Main.putReg55 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg55 $0 $1 $2 =
-      $LL.Main.putReg65 $0 $1
-
-$LL.Main.putReg54 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg54 $0 $1 $2 =
-      $LL.Main.putReg46 $0 $1
-
-$LL.Main.getReg20 : ([140]) -> [78]
-$LL.Main.getReg20 $0 =
-      $LL.Main.getReg19 $0[70 +: 70] $0[0 +: 70]
-
-$LL.Main.putOut11 : ([15], [70]) -> [70]
-$LL.Main.putOut11 $0 $1 =
-      $LL.Main.putOut $0 ($1 # $1)
-
-$LL.Main.putPC12 : ([6], [70]) -> [70]
-$LL.Main.putPC12 $0 $1 =
-      $LL.Main.putPC13 $0 ($1 # $1)
-
-$LL.Main.loop162 : ([70]) -> [143]
-$LL.Main.loop162 $1 =
-      $LL.Main.loop65 $1
-
-$LL.Main.bnz3 : ([6], [8], [70]) -> [70]
-$LL.Main.bnz3 $0 $1 $2 =
-      $LL.Main.bnz1 $0 $1 (eq $1 8'h0) $2
-
-$LL.Main.putReg53 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg53 $0 $1 $2 =
-      $LL.Main.putReg1 $0 $1 $2
-
-$LL.Main.getReg19 : ([70], [70]) -> [78]
-$LL.Main.getReg19 $0 $1 =
-      $LL.Main.getReg15 $0 $1
-
-$LL.Main.loop158 : ([70]) -> [143]
-$LL.Main.loop158 $1 =
-      $LL.Main.loop224 $1
-
-$LL.Main.putReg52 : ([70], [8]) -> [70]
-$LL.Main.putReg52 $0 $1 =
-      $LL.Main.putReg4 $1 $0
-
-$LL.Main.loop157 : ([70], [6]) -> [143]
-$LL.Main.loop157 $0 $1 =
-      $LL.Main.loop90 $0 $1
-
-$LL.Main.putReg51 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg51 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putReg34 $0 $2 $3 $4 $5 $6 $7
-
-$LL.Main.bnz2 : ([6], [70]) -> [70]
-$LL.Main.bnz2 $0 $1 =
-      Main.putPC1 $0 $1
-
-$LL.Main.putWeOut7 : ([1], [15], [70]) -> [70]
-$LL.Main.putWeOut7 $0 $1 $2 =
-      $LL.Main.putWeOut1 $0 $1 $2
-
-$LL.Main.putAddrOut5 : ([6], [15], [70]) -> [70]
-$LL.Main.putAddrOut5 $0 $1 $2 =
-      $LL.Main.putAddrOut3 $0 $1 $2
-
-$LL.Main.loop156 : ([6], [8], [70]) -> [70]
-$LL.Main.loop156 $0 $1 $2 =
-      $LL.Main.loop146 $0 $1 $2
-
-$LL.Main.loop155 : ([140]) -> [143]
-$LL.Main.loop155 $0 =
-      $LL.Main.loop105 $0[70 +: 70] $0[0 +: 70]
-
-$LL.Main.loop151 : ([2], [70], [2], [2]) -> [143]
-$LL.Main.loop151 $0 $1 $2 $3 =
-      $LL.Main.loop79 $0 $1 $2 $3
-
-$LL.Main.putReg50 : ([70], [8]) -> [70]
-$LL.Main.putReg50 $0 $1 =
-      $LL.Main.putReg25 $1 $0
-
-$LL.Main.reset34 : ([143]) -> [143]
-$LL.Main.reset34 $0 =
-      $LL.Main.reset7 $0[0 +: 70]
-
-$LL.Main.putReg49 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg49 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putReg67 $0 $1 $2 $3 $4 $5 $6 $7
-
-$LL.Main.loop149 : ([2], [2], [8], [70]) -> [70]
-$LL.Main.loop149 $0 $1 $2 $3 =
-      $LL.Main.loop70 $0 $1 $2 $3
-
-$LL.Main.r06 : ([70]) -> [8]
-$LL.Main.r06 $0 =
-      $LL.Main.r05 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
-
-$LL.Main.loop148 : ([6], [8], [70]) -> [70]
-$LL.Main.loop148 $0 $1 $2 =
-      $LL.Main.st5 $0 $1 $2
-
-$LL.Main.putReg48 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg48 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putReg22 $3 $0 $1 $2 $4 $5 $6 $7
-
-$LL.Main.putIns9 : ([17], [70]) -> [70]
-$LL.Main.putIns9 $0 $1 =
-      $LL.Main.putIns10 $0 ($1 # $1)
-
-$LL.Main.putWeOut6 : ([1], [1], [6], [8]) -> [15]
-$LL.Main.putWeOut6 $0 $1 $2 $3 =
-      $LL.Main.putWeOut2 $0 $1 $2 $3
-
-Main.pc : ([70]) -> [6]
-Main.pc $0 =
-      $LL.Main.pc6 $0
-
-$LL.Main.r14 : ([8], [8], [8], [8], [6], [17], [15]) -> [8]
-$LL.Main.r14 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.r16 $1 $2 $3 $4 $5 $6
-
-$LL.Main.putReg47 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg47 $0 $1 $2 =
-      $LL.Main.putReg54 $0 $1 $2
-
-$LL.Main.loop146 : ([6], [8], [70]) -> [70]
-$LL.Main.loop146 $0 $1 $2 =
-      $LL.Main.loop223 $0 $1 $2
-
-$LL.Main.finishInstr2 : ([6], [70]) -> [70]
-$LL.Main.finishInstr2 $0 $1 =
-      $LL.Main.loop143 (Main.putAddrOut $0 $1)
-
-$LL.Main.loop145 : ([79]) -> [143]
-$LL.Main.loop145 $0 =
-      $LL.Main.loop167 $0[70 +: 9] $0[0 +: 70]
-
-$LL.Main.putReg46 : ([8], [70]) -> [70]
-$LL.Main.putReg46 $0 $1 =
-      $LL.Main.putReg23 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
-
-$LL.Main.loop144 : ([70]) -> [143]
-$LL.Main.loop144 $1 =
-      $LL.Main.loop212 $1
-
-$LL.Main.putDataOut11 : ([8], [70]) -> [70]
-$LL.Main.putDataOut11 $0 $1 =
-      $LL.Main.putDataOut $0 (Main.getOut $1)
+$LL.Main.loop174 : ([143]) -> [143]
+$LL.Main.loop174 $0 =
+      $LL.Main.loop63 $0[0 +: 70]
 
 $LL.Main.putReg45 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
 $LL.Main.putReg45 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putReg42 $0 $1 $2 $3 $4 $5 $6 $7
+      $LL.Main.putReg66 $2 $0 $1 $3 $4 $5 $6 $7
 
-$LL.Main.putReg44 : ([70], [8]) -> [70]
-$LL.Main.putReg44 $0 $1 =
-      $LL.Main.putReg57 $0 $1
+$LL.Main.putIns12 : ([17], [70], [70]) -> [70]
+$LL.Main.putIns12 $0 $1 $2 =
+      $LL.Main.putIns6 $0 $1 $2
 
-$LL.Main.r05 : ([8], [8], [8], [8], [6], [17], [15]) -> [8]
-$LL.Main.r05 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.r01 $0 $1 $2 $3 $4 $5 $6
+$LL.Main.dataIn1 : ([9], [8]) -> [8]
+$LL.Main.dataIn1 $0 $1 =
+      $LL.Main.dataIn $1
 
-$LL.Main.pc5 : ([8], [8], [8], [6], [17], [15]) -> [6]
-$LL.Main.pc5 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.pc1 $1 $2 $3 $4 $5
+$LL.Main.outputs5 : ([8], [8], [8], [8], [6], [17], [15]) -> [15]
+$LL.Main.outputs5 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.outputs6 $1 $2 $3 $4 $5 $6
 
-$LL.Main.putReg43 : ([70], [8]) -> [70]
-$LL.Main.putReg43 $0 $1 =
-      $LL.Main.putReg24 $1 $0
+$LL.Main.loop172 : ([70]) -> [143]
+$LL.Main.loop172 $1 =
+      $LL.Main.loop100 ($LL.Main.loop218 ($LL.Main.reset32 (Main.getPC $1)))
 
-$LL.Main.putIns8 : ([17], [70], [70]) -> [70]
-$LL.Main.putIns8 $0 $1 $2 =
-      $LL.Main.putIns2 $0 $1 $2
+$LL.Main.loop171 : ([17], [70]) -> [143]
+$LL.Main.loop171 $0 $1 =
+      $LL.Main.loop62 ($LL.Main.loop218 (Main.putIns $0 $1))
 
-$LL.Main.loop143 : ([70]) -> [70]
-$LL.Main.loop143 $0 =
-      $LL.Main.finishInstr4 $0
+$LL.Main.loop169 : ([15], [70]) -> [143]
+$LL.Main.loop169 $0 $1 =
+      $LL.Main.loop189 $0 $1
 
-$LL.Main.instrIn : ([9], [8]) -> [9]
-$LL.Main.instrIn $0 $1 =
-      $LL.Main.instrIn1 $0 $1
+$LL.Main.loop168 : ([9], [70]) -> [143]
+$LL.Main.loop168 $0 $1 =
+      64'h0 # $0 # $1
 
-$LL.Main.loop142 : ([85]) -> [143]
-$LL.Main.loop142 $0 =
-      $LL.Main.loop165 $0[70 +: 15] $0[0 +: 70]
-
-$LL.Main.putReg42 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg42 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putReg40 $0 $1 $2 $3 $4 $5 $6 $7
-
-$LL.Main.putOut10 : ([15], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putOut10 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putOut5 $0 $1 $2 $3 $4 $5 $6 $7
-
-$LL.Main.loop139 : ([9], [70], [70]) -> [143]
-$LL.Main.loop139 $0 $1 $2 =
-      if eq $0[6 +: 3] 3'h0 then $LL.Main.loop101 $2
-            else if eq $0[6 +: 3] 3'h1 then $LL.Main.loop157 $2 $0[0 +: 6] else if eq $0[6 +: 3] 3'h2 then $LL.Main.loop48 $2 $0[0 +: 6] else if eq $0[6 +: 3] 3'h3 then $LL.Main.loop166 $2 $0[4 +: 2] $0[2 +: 2] $0[0 +: 2] else $LL.Main.loop218 $2 $0[0 +: 6]
+$LL.Main.finishInstr3 : ([70]) -> [70]
+$LL.Main.finishInstr3 $0 =
+      $LL.Main.finishInstr2 $0
 
 $LL.Main.putOut9 : ([15], [70]) -> [70]
 $LL.Main.putOut9 $0 $1 =
-      $LL.Main.putOut3 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
+      $LL.Main.putOut15 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
 
-$LL.Main.loop137 : ([70]) -> [143]
-$LL.Main.loop137 $1 =
-      $LL.Main.loop109 $1
+$LL.Main.putPC11 : ([6], [70]) -> [70]
+$LL.Main.putPC11 $0 $1 =
+      $LL.Main.putPC10 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
 
-$LL.Main.inputs6 : ([17], [15]) -> [17]
-$LL.Main.inputs6 $0 $1 =
-      $0
+$LL.Main.loop167 : ([70]) -> [143]
+$LL.Main.loop167 $1 =
+      $LL.Main.loop135 $1
 
-$LL.Main.putReg41 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg41 $0 $1 $2 $3 $4 $5 $6 =
-      $3 # $1 # $2 # $0 # $4 # $5 # $6
+$LL.Main.loop165 : ([70], [70]) -> [143]
+$LL.Main.loop165 $0 $1 =
+      $LL.Main.loop69 $0 $1
 
-$LL.Main.reset31 : ([70]) -> [143]
-$LL.Main.reset31 $1 =
-      $LL.Main.reset38 $1
+$LL.Main.st8 : ([8], [70]) -> [70]
+$LL.Main.st8 $0 $1 =
+      $LL.Main.st4 $0 $1
 
-$LL.Main.loop136 : ([143]) -> [143]
-$LL.Main.loop136 $0 =
-      $LL.Main.loop23 $0[0 +: 70]
+$LL.Main.putPC10 : ([6], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putPC10 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putPC8 $0 $1 $2 $3 $4 $5 $6 $7
 
-$LL.Main.loop135 : ([70], [6]) -> [143]
-$LL.Main.loop135 $0 $1 =
-      $LL.Main.loop69 $1 $0
+$LL.Main.loop163 : ([143]) -> [143]
+$LL.Main.loop163 $0 =
+      $LL.Main.loop198 $0[0 +: 70]
 
-$LL.Main.loop134 : ([143]) -> [143]
-$LL.Main.loop134 $0 =
-      $LL.Main.loop127 $0[0 +: 70]
+$LL.Main.putReg44 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg44 $0 $1 $2 =
+      $LL.Main.putReg5 $0 $1 $2
 
-Main.getIns : ([70]) -> [87]
-Main.getIns $0 =
-      $LL.Main.getIns1 ($0 # $0)
+$LL.Main.putReg43 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg43 $0 $1 $2 =
+      $LL.Main.putReg33 $0 $1 $2
 
-$LL.Main.getReg18 : ([70]) -> [78]
-$LL.Main.getReg18 $0 =
-      $LL.Main.getReg21 ($0 # $0)
+$LL.Main.putReg42 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg42 $0 $1 $2 =
+      $LL.Main.putReg19 $0 $1 $2
 
-$LL.Pure.dispatch5 : ([17], [70]) -> [143]
-$LL.Pure.dispatch5 $0 $1 =
-      $LL.Main.reset46 $0 $1
+$LL.Main.putWeOut7 : ([1], [1], [6], [8]) -> [15]
+$LL.Main.putWeOut7 $0 $1 $2 $3 =
+      $LL.Main.putWeOut8 $0 $1 $2 $3
+
+$LL.Main.getReg20 : ([70]) -> [78]
+$LL.Main.getReg20 $0 =
+      $LL.Main.getReg9 $0
+
+$LL.Main.bnz5 : ([70], [6]) -> [70]
+$LL.Main.bnz5 $0 $1 =
+      $LL.Main.bnz3 $0 $1
+
+$LL.Main.loop162 : ([9], [70], [70]) -> [143]
+$LL.Main.loop162 $0 $1 $2 =
+      $LL.Main.loop $0 $1 $2
+
+$LL.Main.getReg19 : ([70], [70]) -> [78]
+$LL.Main.getReg19 $0 $1 =
+      $LL.Main.getReg18 $0 $1
+
+$LL.Main.putIns11 : ([17], [70], [70]) -> [70]
+$LL.Main.putIns11 $0 $1 $2 =
+      $LL.Main.putIns12 $0 $1 $2
+
+$LL.Main.getReg18 : ([70], [70]) -> [78]
+$LL.Main.getReg18 $0 $1 =
+      Main.r1 $0 # $1
+
+$LL.Main.loop160 : ([2], [2], [2], [70]) -> [143]
+$LL.Main.loop160 $0 $1 $2 $3 =
+      $LL.Main.loop2 $0 $1 $2 $3
+
+$LL.Main.loop158 : ([70]) -> [143]
+$LL.Main.loop158 $1 =
+      $LL.Main.loop40 $1
+
+$LL.Main.getInstr2 : ([17], [70]) -> [79]
+$LL.Main.getInstr2 $0 $1 =
+      $LL.Main.getInstr1 $0 $1
+
+$LL.Main.putReg41 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg41 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg64 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.reset29 : ([70]) -> [143]
+$LL.Main.reset29 $1 =
+      $LL.Main.reset9 $1
 
 $LL.Main.putReg40 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
 $LL.Main.putReg40 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putReg48 $0 $1 $2 $3 $4 $5 $6 $7
+      $LL.Main.putReg13 $0 $1 $2 $3 $5 $6 $7
 
-$LL.Main.nand7 : ([8], [2], [78]) -> [70]
-$LL.Main.nand7 $0 $1 $2 =
-      $LL.Main.nand4 $0 $1 $2[70 +: 8] $2[0 +: 70]
+$LL.Main.putIns10 : ([17], [70]) -> [70]
+$LL.Main.putIns10 $0 $1 =
+      $LL.Main.putIns8 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
 
-$LL.Main.loop129 : ([2], [2], [8], [70]) -> [70]
-$LL.Main.loop129 $0 $1 $2 $3 =
-      $LL.Main.nand1 $1 $0 $2 $3
+$LL.Main.putWeOut6 : ([1], [6], [8]) -> [15]
+$LL.Main.putWeOut6 $0 $1 $2 =
+      $0 # $1 # $2
+
+Main.pc : ([70]) -> [6]
+Main.pc $0 =
+      $LL.Main.pc3 $0
+
+$LL.Main.loop157 : ([6], [70]) -> [143]
+$LL.Main.loop157 $0 $1 =
+      $LL.Main.loop120 ($LL.Main.loop218 ($LL.Main.loop149 $0 (Main.getReg $1)))
+
+$LL.Main.getReg17 : ([70]) -> [78]
+$LL.Main.getReg17 $0 =
+      $LL.Main.getReg10 $0
+
+$LL.Main.loop156 : ([70]) -> [143]
+$LL.Main.loop156 $1 =
+      $LL.Main.loop172 $1
+
+$LL.Main.loop155 : ([143]) -> [143]
+$LL.Main.loop155 $0 =
+      $LL.Main.loop212 $0[0 +: 70]
+
+$LL.Main.loop154 : ([143]) -> [143]
+$LL.Main.loop154 $0 =
+      $LL.Main.loop156 $0[0 +: 70]
+
+$LL.Main.putIns9 : ([17], [70]) -> [70]
+$LL.Main.putIns9 $0 $1 =
+      $LL.Main.putIns1 $0 $1
+
+$LL.Main.getReg16 : ([70]) -> [78]
+$LL.Main.getReg16 $0 =
+      $LL.Main.getReg5 $0
+
+$LL.Main.putAddrOut9 : ([6], [15], [70]) -> [70]
+$LL.Main.putAddrOut9 $0 $1 $2 =
+      $LL.Main.putAddrOut2 $0 $1 $2
+
+$LL.Main.putReg39 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg39 $0 $1 $2 =
+      $LL.Main.putReg53 $0 $1 $2
+
+$LL.Main.pc5 : ([8], [8], [8], [6], [17], [15]) -> [6]
+$LL.Main.pc5 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.pc6 $1 $2 $3 $4 $5
+
+$LL.Main.putDataOut8 : ([8], [15]) -> [15]
+$LL.Main.putDataOut8 $0 $1 =
+      $LL.Main.putDataOut3 $0 $1[14 +: 1] $1[8 +: 6] $1[0 +: 8]
+
+$LL.Main.putDataOut7 : ([8], [15], [70]) -> [70]
+$LL.Main.putDataOut7 $0 $1 $2 =
+      $LL.Main.putDataOut1 $0 $1 $2
+
+$LL.Main.r05 : ([8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r05 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.r15 $0 $2 $3 $4 $5
+
+$LL.Main.putReg38 : ([6], [8], [8], [8], [8], [17], [15]) -> [70]
+$LL.Main.putReg38 $0 $1 $2 $3 $4 $5 $6 =
+      $2 # $4 # $1 # $3 # $0 # $5 # $6
+
+$LL.Main.pc4 : ([6], [17], [15]) -> [6]
+$LL.Main.pc4 $0 $1 $2 =
+      $LL.Main.pc7 $0 $1 $2
+
+$LL.Main.putAddrOut8 : ([6], [1], [6], [8]) -> [15]
+$LL.Main.putAddrOut8 $0 $1 $2 $3 =
+      $LL.Main.putAddrOut7 $0 $1 $2 $3
+
+$LL.Main.putWeOut5 : ([1], [70]) -> [70]
+$LL.Main.putWeOut5 $0 $1 =
+      $LL.Main.putWeOut1 $0 (Main.getOut $1)
+
+$LL.Main.getReg15 : ([70], [70]) -> [78]
+$LL.Main.getReg15 $0 $1 =
+      Main.r0 $0 # $1
+
+$LL.Main.getReg14 : ([70], [70]) -> [78]
+$LL.Main.getReg14 $0 $1 =
+      Main.r2 $0 # $1
+
+$LL.Main.loop151 : ([70]) -> [143]
+$LL.Main.loop151 $1 =
+      $LL.Main.loop30 $1
+
+$LL.Main.putReg37 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg37 $0 $1 $2 =
+      $LL.Main.putReg44 $0 $1 $2
+
+$LL.Main.loop150 : ([70]) -> [143]
+$LL.Main.loop150 $1 =
+      $LL.Main.loop110 ($LL.Main.loop218 ($LL.Main.reset32 (Main.getPC $1)))
+
+$LL.Main.loop149 : ([6], [78]) -> [70]
+$LL.Main.loop149 $0 $1 =
+      $LL.Main.loop175 $0 $1[70 +: 8] $1[0 +: 70]
+
+$LL.Main.putIns8 : ([17], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putIns8 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putIns2 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.putAddrOut7 : ([6], [1], [6], [8]) -> [15]
+$LL.Main.putAddrOut7 $0 $1 $2 $3 =
+      $LL.Main.putAddrOut3 $1 $0 $2 $3
+
+$LL.Main.pc3 : ([70]) -> [6]
+$LL.Main.pc3 $0 =
+      $LL.Main.pc1 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
+
+$LL.Main.putReg36 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg36 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg45 $1 $0 $2 $3 $4 $5 $6 $7
+
+$LL.Main.loop147 : ([70]) -> [143]
+$LL.Main.loop147 $0 =
+      $LL.Main.loop223 $0
+
+$LL.Main.putPC9 : ([6], [70], [70]) -> [70]
+$LL.Main.putPC9 $0 $1 $2 =
+      $LL.Main.putPC11 $0 $1
+
+$LL.Main.getOut2 : ([70], [70]) -> [85]
+$LL.Main.getOut2 $0 $1 =
+      $LL.Main.getOut $0 $1
+
+$LL.Main.loop146 : ([143]) -> [143]
+$LL.Main.loop146 $0 =
+      $LL.Main.loop48 $0[70 +: 15] $0[0 +: 70]
+
+$LL.Main.loop145 : ([6], [70]) -> [143]
+$LL.Main.loop145 $0 $1 =
+      $LL.Main.loop134 ($LL.Main.loop218 ($LL.Main.loop52 $0 (Main.getReg $1)))
 
 $LL.Main.putOut8 : ([8], [15], [8], [8], [8], [6], [17], [15]) -> [70]
 $LL.Main.putOut8 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putOut2 $4 $0 $1 $2 $3 $5 $6 $7
+      $LL.Main.putOut6 $0 $2 $1 $3 $4 $5 $6 $7
+
+$LL.Main.reset26 : ([70]) -> [143]
+$LL.Main.reset26 $1 =
+      Main.loop $1
+
+$LL.Main.putReg35 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg35 $0 $1 $2 =
+      $LL.Main.putReg39 $0 $1 $2
+
+$LL.Main.loop144 : ([70]) -> [143]
+$LL.Main.loop144 $1 =
+      $LL.Main.loop225 $1
+
+$LL.Main.loop142 : ([143]) -> [143]
+$LL.Main.loop142 $0 =
+      $LL.Main.loop73 $0[0 +: 70]
+
+$LL.Main.putWeOut4 : ([1], [70]) -> [70]
+$LL.Main.putWeOut4 $0 $1 =
+      $LL.Main.putWeOut5 $0 $1
+
+$LL.Main.nand7 : ([70]) -> [70]
+$LL.Main.nand7 $1 =
+      Main.incrPC $1
+
+Main.getIns : ([70]) -> [87]
+Main.getIns $0 =
+      $LL.Main.getIns ($0 # $0)
+
+$LL.Main.putOut7 : ([15], [70], [70]) -> [70]
+$LL.Main.putOut7 $0 $1 $2 =
+      $LL.Main.putOut5 $0 $1 $2
+
+$LL.Main.st7 : ([70]) -> [70]
+$LL.Main.st7 $1 =
+      $LL.Main.st11 $1
+
+$LL.Main.putReg34 : ([8], [70]) -> [70]
+$LL.Main.putReg34 $0 $1 =
+      $LL.Main.putReg26 $0 ($1 # $1)
+
+$LL.Main.inputs6 : ([8], [8], [8], [6], [17], [15]) -> [17]
+$LL.Main.inputs6 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.inputs1 $1 $2 $3 $4 $5
+
+Main.loop : ([70]) -> [143]
+Main.loop $0 =
+      $LL.Main.loop94 ($LL.Main.loop53 (Main.getInstr $0))
+
+$LL.Main.putReg33 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg33 $0 $1 $2 =
+      $LL.Main.putReg62 $0 $1 $2
+
+$LL.Main.loop139 : ([15], [70]) -> [143]
+$LL.Main.loop139 $0 $1 =
+      $LL.Main.loop96 $0 $1
+
+$LL.Main.putPC8 : ([6], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putPC8 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putPC13 $0 $1 $2 $3 $4 $5 $6 $7
 
 $LL.Main.nand6 : ([70]) -> [70]
-$LL.Main.nand6 $1 =
-      $LL.Main.nand9 $1
+$LL.Main.nand6 $0 =
+      $LL.Main.nand9 $0
+
+$LL.Main.putOut6 : ([8], [8], [15], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putOut6 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putOut4 $0 $3 $1 $2 $4 $5 $6 $7
+
+$LL.Main.loop137 : ([9], [70]) -> [143]
+$LL.Main.loop137 $0 $1 =
+      $LL.Main.loop124 $0 $1
+
+$LL.Main.reset25 : ([70]) -> [143]
+$LL.Main.reset25 $1 =
+      $LL.Main.reset17 ($LL.Main.loop217 (Main.getOut $1))
 
 $LL.Main.incrPC2 : ([6], [70]) -> [70]
 $LL.Main.incrPC2 $0 $1 =
       Main.putPC1 (add $0 6'h1) $1
 
-$LL.Main.loop127 : ([70]) -> [143]
-$LL.Main.loop127 $1 =
-      $LL.Main.loop126 $1
+$LL.Main.putReg32 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg32 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg38 $4 $0 $1 $2 $3 $5 $6
 
-$LL.Main.getReg17 : ([140]) -> [78]
-$LL.Main.getReg17 $0 =
-      $LL.Main.getReg9 $0[70 +: 70] $0[0 +: 70]
+$LL.Main.loop135 : ([70]) -> [143]
+$LL.Main.loop135 $1 =
+      $LL.Main.loop155 ($LL.Main.loop218 (Main.incrPC $1))
 
-$LL.Main.putOut7 : ([15], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putOut7 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putOut10 $0 $1 $2 $3 $4 $5 $6 $7
+$LL.Main.inputs5 : ([17], [15]) -> [17]
+$LL.Main.inputs5 $0 $1 =
+      $LL.Main.inputs2 $0 $1
 
-$LL.Main.putAddrOut4 : ([6], [15]) -> [15]
-$LL.Main.putAddrOut4 $0 $1 =
-      $LL.Main.putAddrOut2 $0 $1[14 +: 1] $1[8 +: 6] $1[0 +: 8]
+$LL.Main.st6 : ([70]) -> [70]
+$LL.Main.st6 $0 =
+      $LL.Main.st7 $0
 
-$LL.Main.putReg39 : ([70], [8]) -> [70]
-$LL.Main.putReg39 $0 $1 =
-      $LL.Main.putReg43 $0 $1
+$LL.Main.getOut1 : ([140]) -> [85]
+$LL.Main.getOut1 $0 =
+      $LL.Main.getOut2 $0[70 +: 70] $0[0 +: 70]
 
-Main.loop : ([70]) -> [143]
-Main.loop $0 =
-      $LL.Main.loop95 ($LL.Main.loop145 (Main.getInstr $0))
+$LL.Main.putOut5 : ([15], [70], [70]) -> [70]
+$LL.Main.putOut5 $0 $1 $2 =
+      $LL.Main.putOut12 $0 $1 $2
 
-$LL.Main.loop126 : ([70]) -> [143]
-$LL.Main.loop126 $1 =
-      $LL.Main.loop89 ($LL.Main.loop142 (Main.getOut $1))
+$LL.Main.loop134 : ([143]) -> [143]
+$LL.Main.loop134 $0 =
+      $LL.Main.loop1 $0[0 +: 70]
 
-$LL.Main.getReg16 : ([70], [70]) -> [78]
-$LL.Main.getReg16 $0 $1 =
-      $LL.Main.getReg11 $0 $1
+$LL.Main.reset23 : ([15], [70]) -> [143]
+$LL.Main.reset23 $0 $1 =
+      54'h20000000000000 # $0 # 4'h3 # $1
 
-$LL.Main.pc4 : ([8], [6], [17], [15]) -> [6]
-$LL.Main.pc4 $0 $1 $2 $3 =
-      $LL.Main.pc2 $1 $2 $3
-
-$LL.Main.getReg15 : ([70], [70]) -> [78]
-$LL.Main.getReg15 $0 $1 =
-      Main.r3 $0 # $1
-
-$LL.Main.reset29 : ([70]) -> [143]
-$LL.Main.reset29 $1 =
-      $LL.Main.reset31 $1
-
-$LL.Main.finishInstr1 : ([70]) -> [70]
-$LL.Main.finishInstr1 $1 =
-      $LL.Main.finishInstr3 $1
-
-$LL.Main.loop120 : ([6], [8], [70]) -> [70]
-$LL.Main.loop120 $0 $1 $2 =
-      $LL.Main.loop107 $0 $1 $2
-
-$LL.Main.putWeOut5 : ([1], [70]) -> [70]
-$LL.Main.putWeOut5 $0 $1 =
-      $LL.Main.putWeOut $0 $1
-
-$LL.Main.putReg38 : ([10], [70]) -> [70]
-$LL.Main.putReg38 $0 $1 =
-      $LL.Main.putReg39 $1 $0[0 +: 8]
-
-$LL.Main.loop119 : ([143]) -> [143]
-$LL.Main.loop119 $0 =
-      $LL.Main.loop206 $0[70 +: 15] $0[0 +: 70]
-
-$LL.Main.putReg37 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg37 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.putReg58 $0 $3 $1 $2 $4 $5 $6
-
-$LL.Main.r13 : ([70]) -> [8]
-$LL.Main.r13 $0 =
-      $LL.Main.r14 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
-
-Main.putReg1 : ([8], [70]) -> [70]
-Main.putReg1 $0 $1 =
-      $LL.Main.putReg11 $0 2'h0 (2'h0 # $0) $1
-
-$LL.Main.putPC11 : ([6], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putPC11 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putPC14 $0 $1 $2 $3 $4 $5 $6 $7
-
-$LL.Main.getPC1 : ([70], [70]) -> [76]
-$LL.Main.getPC1 $0 $1 =
-      $LL.Main.getPC $0 $1
-
-$LL.Main.inputs5 : ([8], [8], [6], [17], [15]) -> [17]
-$LL.Main.inputs5 $0 $1 $2 $3 $4 =
-      $LL.Main.inputs $1 $2 $3 $4
-
-$LL.Main.st6 : ([8], [70]) -> [70]
-$LL.Main.st6 $0 $2 =
-      $LL.Main.st4 $0 $2
-
-$LL.Main.putDataOut10 : ([1], [6], [8], [8]) -> [15]
-$LL.Main.putDataOut10 $0 $1 $2 $3 =
-      $0 # $1 # $2
-
-$LL.Main.putOut6 : ([15], [70], [70]) -> [70]
-$LL.Main.putOut6 $0 $1 $2 =
-      $LL.Main.putOut4 $0 $1 $2
-
-$LL.Main.loop115 : ([70]) -> [143]
-$LL.Main.loop115 $1 =
-      $LL.Main.loop104 $1
+$LL.Main.loop132 : ([143]) -> [143]
+$LL.Main.loop132 $0 =
+      $LL.Main.loop210 $0[0 +: 70]
 
 Main.inputs : ([70]) -> [17]
 Main.inputs $0 =
-      $LL.Main.inputs3 $0
+      $LL.Main.inputs4 $0
 
-$LL.Main.putReg36 : ([8], [2], [10], [70]) -> [70]
-$LL.Main.putReg36 $0 $1 $2 $3 =
-      if eq $2[8 +: 2] 2'h2 then $LL.Main.putReg7 $3 $2[0 +: 8]
-            else $LL.Main.putReg38 ($1 # $0) $3
+$LL.Main.loop131 : ([6], [8], [70]) -> [70]
+$LL.Main.loop131 $0 $1 $2 =
+      $LL.Main.loop18 $0 $1 $2
 
-$LL.Main.loop114 : ([15], [70]) -> [143]
-$LL.Main.loop114 $0 $1 =
-      $LL.Main.loop88 $0 $1
+$LL.Main.inputs4 : ([70]) -> [17]
+$LL.Main.inputs4 $0 =
+      $LL.Main.inputs $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
 
-$LL.Main.putPC10 : ([8], [6], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putPC10 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putPC9 $0 $1 $4 $2 $3 $5 $6 $7
+$LL.Main.putReg31 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg31 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg17 $1 $0 $2 $3 $4 $5 $6 $7
 
-$LL.Main.putDataOut9 : ([8], [15], [70]) -> [70]
-$LL.Main.putDataOut9 $0 $1 $2 =
-      $LL.Main.putDataOut6 $0 $1 $2
+$LL.Main.r34 : ([70]) -> [8]
+$LL.Main.r34 $0 =
+      $LL.Main.r3 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
 
-$LL.Main.putReg35 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg35 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.putReg61 $0 $4 $1 $2 $3 $5 $6
+Main.putReg1 : ([2], [8], [70]) -> [70]
+Main.putReg1 $0 $1 $2 =
+      $LL.Main.putReg67 $1 $0 ($0 # $1) $2
 
-$LL.Main.loop112 : ([70]) -> [143]
-$LL.Main.loop112 $1 =
-      $LL.Main.loop82 ($LL.Main.loop142 (Main.getOut $1))
+$LL.Main.st5 : ([8], [70]) -> [70]
+$LL.Main.st5 $0 $2 =
+      $LL.Main.st2 $0 $2
 
-Main.putReg : ([2], [8], [70]) -> [70]
-Main.putReg $0 $1 $2 =
-      $LL.Main.putReg11 $1 $0 ($0 # $1) $2
+$LL.Main.putReg30 : ([70], [8]) -> [70]
+$LL.Main.putReg30 $0 $1 =
+      $LL.Main.putReg9 $0 $1
 
-$LL.Main.r23 : ([8], [8], [8], [8], [6], [17], [15]) -> [8]
-$LL.Main.r23 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.r21 $1 $2 $3 $4 $5 $6
+$LL.Main.putIns7 : ([8], [8], [8], [8], [17], [6], [17], [15]) -> [70]
+$LL.Main.putIns7 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putIns4 $0 $1 $2 $5 $3 $4 $6 $7
 
-$LL.Main.nand5 : ([70]) -> [70]
-$LL.Main.nand5 $1 =
-      $LL.Main.nand6 $1
+$LL.Main.putOut4 : ([8], [8], [8], [15], [8], [6], [17], [15]) -> [70]
+$LL.Main.putOut4 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putOut3 $4 $0 $1 $2 $3 $5 $6 $7
 
-$LL.Main.loop109 : ([70]) -> [143]
-$LL.Main.loop109 $1 =
-      $LL.Main.loop25 ($LL.Main.loop226 (Main.incrPC $1))
+$LL.Main.putOut3 : ([8], [8], [8], [8], [15], [6], [17], [15]) -> [70]
+$LL.Main.putOut3 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putOut1 $5 $0 $1 $2 $3 $4 $6 $7
 
-$LL.Main.putOut5 : ([15], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putOut5 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putOut8 $3 $0 $1 $2 $4 $5 $6 $7
+$LL.Main.putReg29 : ([8], [2], [10], [70]) -> [70]
+$LL.Main.putReg29 $0 $1 $2 $3 =
+      if eq $2[8 +: 2] 2'h1 then $LL.Main.putReg55 $3 $2[0 +: 8]
+            else $LL.Main.putReg18 $0 $1 ($1 # $0) $3
 
-$LL.Main.putReg34 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg34 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.putReg12 $1 $0 $2 $3 $4 $5 $6
+$LL.Main.getPC2 : ([70], [70]) -> [76]
+$LL.Main.getPC2 $0 $1 =
+      $LL.Main.getPC $0 $1
 
-$LL.Main.loop108 : ([70]) -> [143]
-$LL.Main.loop108 $1 =
-      $LL.Main.loop9 $1
+$LL.Main.loop127 : ([143]) -> [143]
+$LL.Main.loop127 $0 =
+      $LL.Main.loop177 $0[0 +: 70]
+
+$LL.Main.loop126 : ([70], [2], [2], [2]) -> [143]
+$LL.Main.loop126 $0 $1 $2 $3 =
+      $LL.Main.loop182 $0 $1 $2 $3
+
+$LL.Main.putReg28 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg28 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg24 $0 $1 $3 $4 $5 $6 $7
+
+$LL.Main.loop125 : ([78]) -> [70]
+$LL.Main.loop125 $0 =
+      $LL.Main.loop221 $0[70 +: 8] $0[0 +: 70]
 
 Main.r0 : ([70]) -> [8]
 Main.r0 $0 =
-      $LL.Main.r06 $0
+      $LL.Main.r04 $0
 
-$LL.Main.loop107 : ([6], [8], [70]) -> [70]
-$LL.Main.loop107 $0 $1 $2 =
-      $LL.Main.loop32 $0 $1 $2
+$LL.Main.loop124 : ([9], [70]) -> [143]
+$LL.Main.loop124 $0 $1 =
+      $LL.Main.loop85 $0 ($LL.Main.loop51 ($1 # $1))
 
-$LL.Main.pc3 : ([6], [17], [15]) -> [6]
-$LL.Main.pc3 $0 $1 $2 =
-      $LL.Main.pc7 $0 $2
+$LL.Main.putReg27 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg27 $0 $1 $2 =
+      $LL.Main.putReg35 $0 $1 $2
 
-$LL.Main.putDataOut8 : ([1], [8], [6], [8]) -> [15]
-$LL.Main.putDataOut8 $0 $1 $2 $3 =
-      $LL.Main.putDataOut10 $0 $2 $1 $3
+$LL.Main.getInstr1 : ([17], [70]) -> [79]
+$LL.Main.getInstr1 $0 $1 =
+      Main.instrIn $0 # $1
 
-$LL.Main.inputs4 : ([8], [8], [8], [6], [17], [15]) -> [17]
-$LL.Main.inputs4 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.inputs5 $1 $2 $3 $4 $5
+$LL.Main.inputs3 : ([6], [17], [15]) -> [17]
+$LL.Main.inputs3 $0 $1 $2 =
+      $LL.Main.inputs5 $1 $2
 
-$LL.Main.loop105 : ([70], [70]) -> [143]
-$LL.Main.loop105 $0 $1 =
-      $LL.Main.loop42 $0 $1
-
-$LL.Main.loop104 : ([70]) -> [143]
-$LL.Main.loop104 $1 =
-      $LL.Main.loop102 ($LL.Main.loop226 (Main.incrPC $1))
-
-$LL.Main.putPC9 : ([8], [6], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putPC9 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putPC8 $0 $1 $2 $3 $4 $6 $7
-
-$LL.Main.putOut4 : ([15], [70], [70]) -> [70]
-$LL.Main.putOut4 $0 $1 $2 =
-      $LL.Main.putOut9 $0 $1
-
-$LL.Main.reset22 : ([143]) -> [143]
-$LL.Main.reset22 $0 =
-      $LL.Main.reset29 $0[0 +: 70]
-
-$LL.Main.loop102 : ([143]) -> [143]
-$LL.Main.loop102 $0 =
-      $LL.Main.loop14 $0[0 +: 70]
-
-Main.getOut : ([70]) -> [85]
-Main.getOut $0 =
-      $LL.Main.getOut1 ($0 # $0)
-
-$LL.Main.reset20 : ([15], [70]) -> [143]
-$LL.Main.reset20 $0 $1 =
-      54'h20000000000000 # $0 # 4'h3 # $1
-
-$LL.Main.st5 : ([6], [8], [70]) -> [70]
-$LL.Main.st5 $0 $1 $2 =
-      $LL.Main.st10 $1 (Main.putAddrOut $0 $2)
-
-$LL.Main.st4 : ([8], [70]) -> [70]
-$LL.Main.st4 $0 $2 =
-      $LL.Main.st9 $0 $2
-
-$LL.Main.getDataIn : ([87]) -> [78]
-$LL.Main.getDataIn $0 =
-      $LL.Main.getDataIn2 $0[70 +: 17] $0[0 +: 70]
-
-$LL.Main.st3 : ([70]) -> [70]
-$LL.Main.st3 $1 =
-      $LL.Main.st $1
-
-$LL.Main.getReg14 : ([70]) -> [78]
-$LL.Main.getReg14 $0 =
-      $LL.Main.getReg7 $0
-
-$LL.Main.loop101 : ([70]) -> [143]
-$LL.Main.loop101 $0 =
-      $LL.Main.loop185 $0
-
-$LL.Main.putAddrOut3 : ([6], [15], [70]) -> [70]
-$LL.Main.putAddrOut3 $0 $1 $2 =
-      $LL.Main.putAddrOut7 $0 $1 $2
-
-$LL.Main.loop100 : ([15], [70]) -> [143]
-$LL.Main.loop100 $0 $1 =
-      54'h20000000000000 # $0 # 4'h7 # $1
-
-$LL.Main.putPC8 : ([8], [6], [8], [8], [8], [17], [15]) -> [70]
-$LL.Main.putPC8 $0 $1 $2 $3 $4 $5 $6 =
-      $3 # $0 # $4 # $2 # $1 # $5 # $6
-
-$LL.Main.loop99 : ([2], [2], [2], [70]) -> [143]
-$LL.Main.loop99 $0 $1 $2 $3 =
-      $LL.Main.loop221 ($LL.Main.loop226 ($LL.Main.loop $2 $1 (Main.getReg1 $0 $3)))
-
-$LL.Main.putReg33 : ([8], [6], [8], [8], [8], [17], [15]) -> [70]
-$LL.Main.putReg33 $0 $1 $2 $3 $4 $5 $6 =
-      $3 # $4 # $0 # $2 # $1 # $5 # $6
-
-$LL.Main.nand4 : ([8], [2], [8], [70]) -> [70]
-$LL.Main.nand4 $0 $1 $2 $3 =
-      $LL.Main.nand2 $0 $1 $2 $3
-
-$LL.Main.putPC7 : ([6], [70], [70]) -> [70]
-$LL.Main.putPC7 $0 $1 $2 =
-      $LL.Main.putPC1 $0 $1 $2
-
-$LL.Main.pc2 : ([6], [17], [15]) -> [6]
-$LL.Main.pc2 $0 $1 $2 =
-      $LL.Main.pc3 $0 $1 $2
-
-Main.dataIn : ([17]) -> [8]
-Main.dataIn $0 =
-      $LL.Main.dataIn1 $0
-
-$LL.Main.putWeOut4 : ([1], [15], [70]) -> [70]
-$LL.Main.putWeOut4 $0 $1 $2 =
-      $LL.Main.putWeOut10 $0 $1 $2
-
-$LL.Main.r34 : ([8], [8], [8], [6], [17], [15]) -> [8]
-$LL.Main.r34 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.r31 $1 $2 $3 $4 $5
-
-$LL.Main.putDataOut7 : ([8], [1], [6], [8]) -> [15]
-$LL.Main.putDataOut7 $0 $1 $2 $3 =
-      $LL.Main.putDataOut8 $1 $0 $2 $3
-
-$LL.Main.reset18 : ([15], [70]) -> [143]
-$LL.Main.reset18 $0 $1 =
-      $LL.Main.reset20 $0 $1
-
-$LL.Main.putReg32 : ([8], [140]) -> [70]
-$LL.Main.putReg32 $0 $1 =
-      $LL.Main.putReg62 $0 $1[70 +: 70] $1[0 +: 70]
-
-$LL.Main.getReg13 : ([140]) -> [78]
-$LL.Main.getReg13 $0 =
-      $LL.Main.getReg16 $0[70 +: 70] $0[0 +: 70]
-
-Main.getDataIn : ([70]) -> [78]
-Main.getDataIn $0 =
-      $LL.Main.getDataIn (Main.getIns $0)
-
-$LL.Main.r12 : ([8], [8], [6], [17], [15]) -> [8]
-$LL.Main.r12 $0 $1 $2 $3 $4 =
-      $LL.Main.r17 $0 $2 $3 $4
-
-$LL.Main.loop95 : ([143]) -> [143]
-$LL.Main.loop95 $0 =
-      $LL.Main.loop183 $0[70 +: 9] $0[0 +: 70]
-
-$LL.Main.putReg31 : ([8], [2], [10], [70]) -> [70]
-$LL.Main.putReg31 $0 $1 $2 $3 =
-      if eq $2[8 +: 2] 2'h1 then $LL.Main.putReg44 $3 $2[0 +: 8]
-            else $LL.Main.putReg36 $0 $1 ($1 # $0) $3
-
-Main.r1 : ([70]) -> [8]
-Main.r1 $0 =
-      $LL.Main.r13 $0
-
-$LL.Main.loop94 : ([70]) -> [143]
-$LL.Main.loop94 $1 =
-      $LL.Main.reset36 $1
-
-$LL.Main.r22 : ([70]) -> [8]
-$LL.Main.r22 $0 =
-      $LL.Main.r23 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
-
-$LL.Main.putPC6 : ([6], [70], [70]) -> [70]
-$LL.Main.putPC6 $0 $1 $2 =
-      $LL.Main.putPC2 $0 $1
-
-$LL.Main.loop91 : ([143]) -> [143]
-$LL.Main.loop91 $0 =
-      $LL.Main.loop164 $0[70 +: 15] $0[0 +: 70]
-
-$LL.Main.outputs5 : ([8], [8], [8], [6], [17], [15]) -> [15]
-$LL.Main.outputs5 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.outputs3 $1 $2 $3 $4 $5
-
-$LL.Main.loop90 : ([70], [6]) -> [143]
-$LL.Main.loop90 $0 $1 =
-      $LL.Main.loop31 $1 $0
-
-$LL.Main.putDataOut6 : ([8], [15], [70]) -> [70]
-$LL.Main.putDataOut6 $0 $1 $2 =
-      $LL.Main.putDataOut1 $0 $1 $2
-
-$LL.Main.loop89 : ([143]) -> [143]
-$LL.Main.loop89 $0 =
-      $LL.Main.loop4 $0[70 +: 15] $0[0 +: 70]
-
-$LL.Main.loop88 : ([15], [70]) -> [143]
-$LL.Main.loop88 $0 $1 =
-      54'h20000000000000 # $0 # 4'h4 # $1
-
-$LL.Main.bnz1 : ([6], [8], [1], [70]) -> [70]
-$LL.Main.bnz1 $0 $1 $2 $3 =
-      if eq $2 1'h1 then $LL.Main.bnz4 $3
-            else $LL.Main.bnz6 $0 (eq $1 8'h0) $3
-
-$LL.Main.outputs4 : ([8], [6], [17], [15]) -> [15]
-$LL.Main.outputs4 $0 $1 $2 $3 =
-      $LL.Main.outputs1 $1 $2 $3
-
-$LL.Main.putReg30 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg30 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putReg16 $0 $1 $2 $3 $4 $5 $6 $7
-
-$LL.Main.loop84 : ([143]) -> [143]
-$LL.Main.loop84 $0 =
-      $LL.Main.loop219 $0[0 +: 70]
-
-$LL.Main.reset17 : ([70]) -> [143]
-$LL.Main.reset17 $1 =
-      $LL.Main.reset41 ($LL.Main.loop142 (Main.getOut $1))
-
-$LL.Main.getPC : ([70], [70]) -> [76]
-$LL.Main.getPC $0 $1 =
-      Main.pc $0 # $1
-
-$LL.Pure.dispatch2 : ([17], [70]) -> [143]
-$LL.Pure.dispatch2 $0 $1 =
-      $LL.Main.loop37 $0 $1
-
-$LL.Main.inputs3 : ([70]) -> [17]
-$LL.Main.inputs3 $0 =
-      $LL.Main.inputs7 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
-
-$LL.Main.getReg12 : ([70], [70]) -> [78]
-$LL.Main.getReg12 $0 $1 =
-      Main.r0 $0 # $1
-
-$LL.Main.loop82 : ([143]) -> [143]
-$LL.Main.loop82 $0 =
-      $LL.Main.loop204 $0[70 +: 15] $0[0 +: 70]
-
-$LL.Main.putDataOut5 : ([8], [15], [70]) -> [70]
-$LL.Main.putDataOut5 $0 $1 $2 =
-      Main.putOut ($LL.Main.putDataOut3 $0 $1) $2
-
-$LL.Pure.dispatch1 : ([17], [70]) -> [143]
-$LL.Pure.dispatch1 $0 $1 =
-      $LL.Main.loop8 $0 $1
-
-$LL.Main.loop79 : ([2], [70], [2], [2]) -> [143]
-$LL.Main.loop79 $0 $1 $2 $3 =
-      $LL.Main.loop29 $0 $2 $3 $1
-
-Main.r3 : ([70]) -> [8]
-Main.r3 $0 =
-      $LL.Main.r3 $0
-
-$LL.Main.putReg29 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg29 $0 $1 $2 =
-      $LL.Main.putReg47 $0 $1 $2
-
-$LL.Main.r21 : ([8], [8], [8], [6], [17], [15]) -> [8]
-$LL.Main.r21 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.r26 $1 $2 $3 $4 $5
-
-$LL.Main.putReg28 : ([8], [140]) -> [70]
-$LL.Main.putReg28 $0 $1 =
-      $LL.Main.putReg59 $0 $1[70 +: 70] $1[0 +: 70]
-
-$LL.Main.putReg27 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg27 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.putReg37 $2 $0 $1 $3 $4 $5 $6
-
-Main.r2 : ([70]) -> [8]
-Main.r2 $0 =
-      $LL.Main.r22 $0
-
-$LL.Main.putDataOut4 : ([8], [1], [6], [8]) -> [15]
-$LL.Main.putDataOut4 $0 $1 $2 $3 =
-      $LL.Main.putDataOut7 $0 $1 $2 $3
-
-$LL.Main.putReg26 : ([8], [70]) -> [70]
+$LL.Main.putReg26 : ([8], [140]) -> [70]
 $LL.Main.putReg26 $0 $1 =
-      $LL.Main.putReg45 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
+      $LL.Main.putReg43 $0 $1[70 +: 70] $1[0 +: 70]
 
-$LL.Main.loop76 : ([9], [70]) -> [143]
-$LL.Main.loop76 $0 $1 =
-      $LL.Main.loop190 $0 ($LL.Main.loop155 ($1 # $1))
+$LL.Main.putIns6 : ([17], [70], [70]) -> [70]
+$LL.Main.putIns6 $0 $1 $2 =
+      $LL.Main.putIns3 $0 $1 $2
 
-$LL.Main.loop75 : ([70]) -> [143]
-$LL.Main.loop75 $1 =
-      $LL.Main.loop18 ($LL.Main.loop226 ($LL.Main.reset44 (Main.getPC $1)))
-
-$LL.Main.getReg11 : ([70], [70]) -> [78]
-$LL.Main.getReg11 $0 $1 =
-      Main.r2 $0 # $1
-
-$LL.Main.loop72 : ([15], [70]) -> [143]
-$LL.Main.loop72 $0 $1 =
-      $LL.Main.loop36 $0 $1
-
-$LL.Main.putIns7 : ([8], [17], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putIns7 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putIns14 $0 $2 $1 $3 $4 $5 $6 $7
-
-$LL.Main.putReg25 : ([8], [70]) -> [70]
-$LL.Main.putReg25 $0 $1 =
-      $LL.Main.putReg63 $0 ($1 # $1)
-
-$LL.Main.putReg24 : ([8], [70]) -> [70]
-$LL.Main.putReg24 $0 $1 =
-      $LL.Main.putReg32 $0 ($1 # $1)
-
-Main.putAddrOut : ([6], [70]) -> [70]
-Main.putAddrOut $0 $1 =
-      $LL.Main.putAddrOut8 $0 $1
-
-$LL.Main.loop71 : ([70]) -> [143]
-$LL.Main.loop71 $1 =
-      $LL.Main.loop197 $1
-
-$LL.Main.r11 : ([8], [8], [8], [6], [17], [15]) -> [8]
-$LL.Main.r11 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.r12 $0 $2 $3 $4 $5
-
-$LL.Main.loop70 : ([2], [2], [8], [70]) -> [70]
-$LL.Main.loop70 $0 $1 $2 $3 =
-      $LL.Main.loop129 $0 $1 $2 $3
-
-$LL.Main.loop69 : ([6], [70]) -> [143]
-$LL.Main.loop69 $0 $1 =
-      $LL.Main.loop136 ($LL.Main.loop226 ($LL.Main.loop54 $0 (Main.getReg $1)))
-
-$LL.Main.loop68 : ([70]) -> [143]
-$LL.Main.loop68 $1 =
-      $LL.Main.loop75 $1
-
-$LL.Main.putWeOut3 : ([1], [6], [8]) -> [15]
-$LL.Main.putWeOut3 $0 $1 $2 =
-      $0 # $1 # $2
-
-$LL.Main.st2 : ([8], [70]) -> [70]
-$LL.Main.st2 $0 $2 =
-      $LL.Main.st6 $0 $2
-
-$LL.Main.putReg23 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg23 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putReg30 $0 $1 $2 $3 $4 $5 $6 $7
-
-$LL.Main.loop65 : ([70]) -> [143]
-$LL.Main.loop65 $1 =
-      $LL.Main.loop19 ($LL.Main.loop226 ($LL.Main.reset44 (Main.getPC $1)))
-
-$LL.Main.loop64 : ([15], [70]) -> [143]
-$LL.Main.loop64 $0 $1 =
-      $LL.Main.loop21 $0 $1
-
-$LL.Main.putReg22 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg22 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putReg58 $0 $1 $2 $3 $5 $6 $7
-
-$LL.Main.loop63 : ([9], [70], [70]) -> [143]
-$LL.Main.loop63 $0 $1 $2 =
-      $LL.Main.loop47 $0 $1 $2
-
-$LL.Main.getOut : ([70], [70]) -> [85]
-$LL.Main.getOut $0 $1 =
-      $LL.Main.getOut2 $0 $1
-
-$LL.Main.putReg21 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg21 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.putReg2 $3 $0 $1 $2 $4 $5 $6
-
-$LL.Main.outputs3 : ([8], [8], [6], [17], [15]) -> [15]
-$LL.Main.outputs3 $0 $1 $2 $3 $4 =
-      $LL.Main.outputs4 $1 $2 $3 $4
-
-$LL.Main.incrPC1 : ([76]) -> [70]
-$LL.Main.incrPC1 $0 =
-      $LL.Main.incrPC $0[70 +: 6] $0[0 +: 70]
-
-$LL.Main.putDataOut3 : ([8], [15]) -> [15]
-$LL.Main.putDataOut3 $0 $1 =
-      $LL.Main.putDataOut4 $0 $1[14 +: 1] $1[8 +: 6] $1[0 +: 8]
-
-$LL.Main.getReg10 : ([70]) -> [78]
-$LL.Main.getReg10 $0 =
-      $LL.Main.getReg18 $0
-
-$LL.Main.nand3 : ([70]) -> [70]
-$LL.Main.nand3 $0 =
-      $LL.Main.nand5 $0
-
-$LL.Main.getReg9 : ([70], [70]) -> [78]
-$LL.Main.getReg9 $0 $1 =
-      $LL.Main.getReg $0 $1
-
-$LL.Main.nand2 : ([8], [2], [8], [70]) -> [70]
-$LL.Main.nand2 $0 $1 $2 $3 =
-      $LL.Main.nand $0 $1 $2 $3
-
-$LL.Main.putReg20 : ([8], [70]) -> [70]
-$LL.Main.putReg20 $0 $1 =
-      $LL.Main.putReg64 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
-
-$LL.Main.loop57 : ([70]) -> [143]
-$LL.Main.loop57 $1 =
-      $LL.Main.loop28 $1
+$LL.Main.loop123 : ([6], [70]) -> [143]
+$LL.Main.loop123 $0 $1 =
+      $LL.Main.loop132 ($LL.Main.loop218 ($LL.Main.finishInstr3 (Main.putAddrOut $0 $1)))
 
 Main.getReg : ([70]) -> [78]
 Main.getReg $0 =
       $LL.Main.getReg23 2'h0 2'h0 $0
 
+$LL.Main.loop122 : ([2], [2], [8], [70]) -> [70]
+$LL.Main.loop122 $0 $1 $2 $3 =
+      $LL.Main.loop61 $1 $0 $2 $3
+
+$LL.Main.loop121 : ([15], [70]) -> [143]
+$LL.Main.loop121 $0 $1 =
+      54'h20000000000000 # $0 # 4'h0 # $1
+
+$LL.Main.loop120 : ([143]) -> [143]
+$LL.Main.loop120 $0 =
+      $LL.Main.loop31 $0[0 +: 70]
+
+$LL.Main.reset21 : ([143]) -> [143]
+$LL.Main.reset21 $0 =
+      $LL.Main.reset19 $0[0 +: 70]
+
+$LL.Main.putPC7 : ([6], [140]) -> [70]
+$LL.Main.putPC7 $0 $1 =
+      $LL.Main.putPC6 $0 $1[70 +: 70] $1[0 +: 70]
+
+$LL.Main.putAddrOut6 : ([6], [70]) -> [70]
+$LL.Main.putAddrOut6 $0 $1 =
+      $LL.Main.putAddrOut10 $0 (Main.getOut $1)
+
+Main.getOut : ([70]) -> [85]
+Main.getOut $0 =
+      $LL.Main.getOut1 ($0 # $0)
+
+$LL.Main.nand5 : ([8], [2], [8], [70]) -> [70]
+$LL.Main.nand5 $0 $1 $2 $3 =
+      $LL.Main.nand4 $0 $1 $2 $3
+
+$LL.Main.putDataOut6 : ([8], [15], [70]) -> [70]
+$LL.Main.putDataOut6 $0 $1 $2 =
+      $LL.Main.putDataOut11 $0 $1 $2
+
+$LL.Main.putReg25 : ([70], [8]) -> [70]
+$LL.Main.putReg25 $0 $1 =
+      $LL.Main.putReg56 $1 $0
+
+$LL.Main.loop117 : ([15], [70]) -> [143]
+$LL.Main.loop117 $0 $1 =
+      $LL.Main.loop181 $0 $1
+
+$LL.Main.loop116 : ([70]) -> [143]
+$LL.Main.loop116 $1 =
+      $LL.Main.loop88 ($LL.Main.loop217 (Main.getOut $1))
+
+$LL.Main.putOut2 : ([15], [70]) -> [70]
+$LL.Main.putOut2 $0 $1 =
+      $LL.Main.putOut $0 ($1 # $1)
+
+$LL.Main.putReg24 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg24 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg63 $2 $0 $1 $3 $4 $5 $6
+
+$LL.Main.finishInstr2 : ([70]) -> [70]
+$LL.Main.finishInstr2 $1 =
+      $LL.Main.ld $1
+
+$LL.Main.inputs2 : ([17], [15]) -> [17]
+$LL.Main.inputs2 $0 $1 =
+      $0
+
+$LL.Main.getIns1 : ([70], [70]) -> [87]
+$LL.Main.getIns1 $0 $1 =
+      Main.inputs $0 # $1
+
+$LL.Main.putIns5 : ([17], [140]) -> [70]
+$LL.Main.putIns5 $0 $1 =
+      $LL.Main.putIns11 $0 $1[70 +: 70] $1[0 +: 70]
+
+$LL.Main.putReg23 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg23 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg36 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.putDataOut5 : ([1], [8], [6], [8]) -> [15]
+$LL.Main.putDataOut5 $0 $1 $2 $3 =
+      $LL.Main.putDataOut $0 $2 $1 $3
+
+$LL.Main.pc2 : ([6], [15]) -> [6]
+$LL.Main.pc2 $0 $1 =
+      $0
+
+$LL.Main.getReg13 : ([70], [70]) -> [78]
+$LL.Main.getReg13 $0 $1 =
+      Main.r3 $0 # $1
+
+Main.dataIn : ([17]) -> [8]
+Main.dataIn $0 =
+      $LL.Main.dataIn2 $0
+
+$LL.Pure.dispatch3 : ([17], [70]) -> [143]
+$LL.Pure.dispatch3 $0 $1 =
+      $LL.Main.loop171 $0 $1
+
+$LL.Main.loop114 : ([9], [70], [70]) -> [143]
+$LL.Main.loop114 $0 $1 $2 =
+      if eq $0[6 +: 3] 3'h0 then $LL.Main.loop147 $2
+            else if eq $0[6 +: 3] 3'h1 then $LL.Main.loop199 $2 $0[0 +: 6] else if eq $0[6 +: 3] 3'h2 then $LL.Main.loop3 $2 $0[0 +: 6] else if eq $0[6 +: 3] 3'h3 then $LL.Main.loop207 $2 $0[4 +: 2] $0[2 +: 2] $0[0 +: 2] else $LL.Main.loop186 $2 $0[0 +: 6]
+
+$LL.Main.getReg12 : ([2], [70]) -> [78]
+$LL.Main.getReg12 $0 $1 =
+      $LL.Main.getReg20 $1
+
+$LL.Main.putPC6 : ([6], [70], [70]) -> [70]
+$LL.Main.putPC6 $0 $1 $2 =
+      $LL.Main.putPC5 $0 $1 $2
+
+$LL.Main.loop110 : ([143]) -> [143]
+$LL.Main.loop110 $0 =
+      $LL.Main.loop76 $0[0 +: 70]
+
+Main.getDataIn : ([70]) -> [78]
+Main.getDataIn $0 =
+      $LL.Main.getDataIn1 (Main.getIns $0)
+
+$LL.Main.putReg22 : ([10], [70]) -> [70]
+$LL.Main.putReg22 $0 $1 =
+      $LL.Main.putReg6 $1 $0[0 +: 8]
+
+Main.r1 : ([70]) -> [8]
+Main.r1 $0 =
+      $LL.Main.r1 $0
+
+$LL.Main.r25 : ([8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r25 $0 $1 $2 $3 $4 =
+      $LL.Main.r15 $0 $1 $2 $3 $4
+
+$LL.Main.loop103 : ([143]) -> [143]
+$LL.Main.loop103 $0 =
+      $LL.Main.loop158 $0[0 +: 70]
+
+$LL.Main.reset19 : ([70]) -> [143]
+$LL.Main.reset19 $1 =
+      $LL.Main.reset29 $1
+
+$LL.Main.getDataIn1 : ([87]) -> [78]
+$LL.Main.getDataIn1 $0 =
+      $LL.Main.getDataIn2 $0[70 +: 17] $0[0 +: 70]
+
+$LL.Main.putReg21 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg21 $0 $1 $2 $3 $4 $5 $6 =
+      $0 # $2 # $1 # $3 # $4 # $5 # $6
+
+$LL.Main.putReg20 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg20 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg59 $0 $1 $2 $4 $5 $6 $7
+
+$LL.Main.outputs4 : ([6], [17], [15]) -> [15]
+$LL.Main.outputs4 $0 $1 $2 =
+      $LL.Main.outputs1 $1 $2
+
+$LL.Main.loop100 : ([143]) -> [143]
+$LL.Main.loop100 $0 =
+      $LL.Main.loop144 $0[0 +: 70]
+
+$LL.Main.getReg11 : ([140]) -> [78]
+$LL.Main.getReg11 $0 =
+      $LL.Main.getReg19 $0[70 +: 70] $0[0 +: 70]
+
+$LL.Main.bnz4 : ([6], [1], [70]) -> [70]
+$LL.Main.bnz4 $0 $1 $2 =
+      $LL.Main.bnz5 $2 $0
+
+$LL.Main.outputs3 : ([15]) -> [15]
+$LL.Main.outputs3 $0 =
+      $0
+
+$LL.Main.loop96 : ([15], [70]) -> [143]
+$LL.Main.loop96 $0 $1 =
+      54'h20000000000000 # $0 # 4'h4 # $1
+
+$LL.Main.loop95 : ([70]) -> [143]
+$LL.Main.loop95 $1 =
+      $LL.Main.loop64 ($LL.Main.loop217 (Main.getOut $1))
+
+$LL.Main.loop94 : ([143]) -> [143]
+$LL.Main.loop94 $0 =
+      $LL.Main.loop137 $0[70 +: 9] $0[0 +: 70]
+
+$LL.Main.putAddrOut5 : ([6], [70]) -> [70]
+$LL.Main.putAddrOut5 $0 $1 =
+      $LL.Main.putAddrOut6 $0 $1
+
+$LL.Main.putPC5 : ([6], [70], [70]) -> [70]
+$LL.Main.putPC5 $0 $1 $2 =
+      $LL.Main.putPC4 $0 $1 $2
+
+$LL.Main.putReg19 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg19 $0 $1 $2 =
+      $LL.Main.putReg14 $0 $1
+
+$LL.Main.inputs1 : ([8], [8], [6], [17], [15]) -> [17]
+$LL.Main.inputs1 $0 $1 $2 $3 $4 =
+      $LL.Main.inputs7 $1 $2 $3 $4
+
+$LL.Main.getReg10 : ([70]) -> [78]
+$LL.Main.getReg10 $0 =
+      $LL.Main.getReg1 ($0 # $0)
+
+$LL.Main.putPC4 : ([6], [70], [70]) -> [70]
+$LL.Main.putPC4 $0 $1 $2 =
+      $LL.Main.putPC9 $0 $1 $2
+
+$LL.Main.putReg18 : ([8], [2], [10], [70]) -> [70]
+$LL.Main.putReg18 $0 $1 $2 $3 =
+      if eq $2[8 +: 2] 2'h2 then $LL.Main.putReg7 $3 $2[0 +: 8]
+            else $LL.Main.putReg22 ($1 # $0) $3
+
+$LL.Main.loop89 : ([2], [2], [78]) -> [70]
+$LL.Main.loop89 $0 $1 $2 =
+      $LL.Main.loop39 $0 $1 $2[70 +: 8] $2[0 +: 70]
+
+$LL.Main.loop88 : ([143]) -> [143]
+$LL.Main.loop88 $0 =
+      $LL.Main.loop117 $0[70 +: 15] $0[0 +: 70]
+
+$LL.Main.r12 : ([8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r12 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.r05 $0 $1 $2 $3 $4 $5
+
+$LL.Main.reset17 : ([143]) -> [143]
+$LL.Main.reset17 $0 =
+      $LL.Main.reset35 $0[70 +: 15] $0[0 +: 70]
+
+Main.r3 : ([70]) -> [8]
+Main.r3 $0 =
+      $LL.Main.r34 $0
+
+$LL.Main.bnz3 : ([70], [6]) -> [70]
+$LL.Main.bnz3 $0 $1 =
+      $LL.Main.bnz $1 $0
+
+$LL.Main.getReg9 : ([70]) -> [78]
+$LL.Main.getReg9 $0 =
+      $LL.Main.getReg3 ($0 # $0)
+
+$LL.Main.loop86 : ([70]) -> [143]
+$LL.Main.loop86 $1 =
+      $LL.Main.loop35 ($LL.Main.loop218 (Main.incrPC $1))
+
+$LL.Main.nand4 : ([8], [2], [8], [70]) -> [70]
+$LL.Main.nand4 $0 $1 $2 $3 =
+      $LL.Main.nand8 $0 $1 $2 $3
+
+$LL.Main.putReg17 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg17 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg20 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.loop85 : ([9], [143]) -> [143]
+$LL.Main.loop85 $0 $1 =
+      $LL.Main.loop201 $0 $1[70 +: 70] $1[0 +: 70]
+
+$LL.Main.getReg8 : ([70], [70]) -> [78]
+$LL.Main.getReg8 $0 $1 =
+      $LL.Main.getReg15 $0 $1
+
+$LL.Main.loop84 : ([9], [70]) -> [143]
+$LL.Main.loop84 $0 $1 =
+      $LL.Main.loop168 $0 $1
+
+Main.r2 : ([70]) -> [8]
+Main.r2 $0 =
+      $LL.Main.r21 $0
+
+$LL.Main.putIns4 : ([8], [8], [8], [6], [8], [17], [17], [15]) -> [70]
+$LL.Main.putIns4 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $4 # $0 # $2 # $1 # $3 # $5 # $7
+
+$LL.Main.loop83 : ([70]) -> [143]
+$LL.Main.loop83 $1 =
+      $LL.Main.loop95 $1
+
+$LL.Main.getReg7 : ([70]) -> [78]
+$LL.Main.getReg7 $0 =
+      $LL.Main.getReg $0
+
+$LL.Main.r24 : ([8], [8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r24 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.r2 $1 $2 $3 $4 $5 $6
+
+$LL.Main.loop80 : ([143]) -> [143]
+$LL.Main.loop80 $0 =
+      $LL.Main.loop32 $0[70 +: 15] $0[0 +: 70]
+
+$LL.Main.bnz2 : ([70]) -> [70]
+$LL.Main.bnz2 $0 =
+      Main.incrPC $0
+
+$LL.Main.putReg16 : ([8], [70]) -> [70]
+$LL.Main.putReg16 $0 $1 =
+      $LL.Main.putReg52 $0 ($1 # $1)
+
+$LL.Main.r04 : ([70]) -> [8]
+$LL.Main.r04 $0 =
+      $LL.Main.r01 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
+
+$LL.Main.pc1 : ([8], [8], [8], [8], [6], [17], [15]) -> [6]
+$LL.Main.pc1 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.pc5 $1 $2 $3 $4 $5 $6
+
+$LL.Main.putReg15 : ([8], [70]) -> [70]
+$LL.Main.putReg15 $0 $1 =
+      $LL.Main.putReg47 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
+
+$LL.Main.loop76 : ([70]) -> [143]
+$LL.Main.loop76 $1 =
+      $LL.Main.loop178 $1
+
+$LL.Main.putReg14 : ([8], [70]) -> [70]
+$LL.Main.putReg14 $0 $1 =
+      $LL.Main.putReg23 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
+
+$LL.Main.st4 : ([8], [70]) -> [70]
+$LL.Main.st4 $0 $2 =
+      $LL.Main.st3 $0 $2
+
+$LL.Main.loop75 : ([15], [70]) -> [143]
+$LL.Main.loop75 $0 $1 =
+      54'h20000000000000 # $0 # 4'h6 # $1
+
+Main.putAddrOut : ([6], [70]) -> [70]
+Main.putAddrOut $0 $1 =
+      $LL.Main.putAddrOut5 $0 $1
+
+$LL.Main.getReg6 : ([70], [70]) -> [78]
+$LL.Main.getReg6 $0 $1 =
+      $LL.Main.getReg13 $0 $1
+
+$LL.Main.outputs2 : ([70]) -> [15]
+$LL.Main.outputs2 $0 =
+      $LL.Main.outputs5 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
+
+$LL.Main.instrIn1 : ([17]) -> [9]
+$LL.Main.instrIn1 $0 =
+      $LL.Main.instrIn2 $0[8 +: 9] $0[0 +: 8]
+
+$LL.Main.nand3 : ([8], [2], [78]) -> [70]
+$LL.Main.nand3 $0 $1 $2 =
+      $LL.Main.nand5 $0 $1 $2[70 +: 8] $2[0 +: 70]
+
+$LL.Main.loop73 : ([70]) -> [143]
+$LL.Main.loop73 $1 =
+      $LL.Main.loop195 $1
+
+$LL.Main.putReg13 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg13 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg8 $0 $1 $2 $4 $3 $5 $6
+
+$LL.Main.putReg12 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg12 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg21 $0 $1 $2 $3 $4 $5 $6
+
+$LL.Main.putIns3 : ([17], [70], [70]) -> [70]
+$LL.Main.putIns3 $0 $1 $2 =
+      $LL.Main.putIns10 $0 $1
+
+$LL.Main.outputs1 : ([17], [15]) -> [15]
+$LL.Main.outputs1 $0 $1 =
+      $LL.Main.outputs3 $1
+
+$LL.Main.st3 : ([8], [70]) -> [70]
+$LL.Main.st3 $0 $2 =
+      $LL.Main.st5 $0 $2
+
+$LL.Main.incrPC1 : ([76]) -> [70]
+$LL.Main.incrPC1 $0 =
+      $LL.Main.incrPC $0[70 +: 6] $0[0 +: 70]
+
+$LL.Main.getOut : ([70], [70]) -> [85]
+$LL.Main.getOut $0 $1 =
+      Main.outputs $0 # $1
+
+$LL.Main.putReg11 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg11 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg65 $0 $1 $2 $3 $4 $5 $6
+
+$LL.Main.loop69 : ([70], [70]) -> [143]
+$LL.Main.loop69 $0 $1 =
+      3'h3 # $0 # $1
+
+$LL.Main.loop65 : ([15], [70]) -> [143]
+$LL.Main.loop65 $0 $1 =
+      $LL.Main.loop37 $0 $1
+
+$LL.Main.loop64 : ([143]) -> [143]
+$LL.Main.loop64 $0 =
+      $LL.Main.loop192 $0[70 +: 15] $0[0 +: 70]
+
+$LL.Main.loop63 : ([70]) -> [143]
+$LL.Main.loop63 $1 =
+      $LL.Main.loop150 $1
+
+$LL.Main.reset9 : ([70]) -> [143]
+$LL.Main.reset9 $1 =
+      $LL.Main.reset ($LL.Main.loop218 ($LL.Main.reset32 (Main.getPC $1)))
+
+$LL.Main.getReg5 : ([70]) -> [78]
+$LL.Main.getReg5 $0 =
+      $LL.Main.getReg21 ($0 # $0)
+
+$LL.Main.loop62 : ([143]) -> [143]
+$LL.Main.loop62 $0 =
+      $LL.Main.loop202 $0[0 +: 70]
+
+$LL.Main.putReg10 : ([70], [8]) -> [70]
+$LL.Main.putReg10 $0 $1 =
+      $LL.Main.putReg61 $1 $0
+
+Main.putWeOut : ([70]) -> [70]
+Main.putWeOut $0 =
+      $LL.Main.putWeOut4 1'h0 $0
+
+$LL.Main.loop61 : ([2], [2], [8], [70]) -> [70]
+$LL.Main.loop61 $0 $1 $2 $3 =
+      $LL.Main.nand1 $1 $0 $2 $3
+
+$LL.Main.putPC3 : ([6], [70]) -> [70]
+$LL.Main.putPC3 $0 $1 =
+      $LL.Main.putPC14 $0 $1
+
+$LL.Main.loop60 : ([6], [8], [70]) -> [70]
+$LL.Main.loop60 $0 $1 $2 =
+      $LL.Main.loop131 $0 $1 $2
+
 Main.incrPC : ([70]) -> [70]
 Main.incrPC $0 =
       $LL.Main.incrPC1 (Main.getPC $0)
 
-$LL.Main.inputs2 : ([17], [15]) -> [17]
-$LL.Main.inputs2 $0 $1 =
-      $LL.Main.inputs6 $0 $1
+$LL.Main.loop59 : ([70]) -> [143]
+$LL.Main.loop59 $1 =
+      $LL.Main.loop103 ($LL.Main.loop218 ($LL.Main.reset32 (Main.getPC $1)))
 
-$LL.Main.loop54 : ([6], [78]) -> [70]
-$LL.Main.loop54 $0 $1 =
-      $LL.Main.loop120 $0 $1[70 +: 8] $1[0 +: 70]
+$LL.Main.loop58 : ([6], [8], [70]) -> [70]
+$LL.Main.loop58 $0 $1 $2 =
+      $LL.Main.bnz1 $0 $1 $2
 
-$LL.Main.putReg19 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg19 $0 $1 $2 =
-      $LL.Main.putReg15 $0 $1 $2
+$LL.Main.putDataOut4 : ([8], [70]) -> [70]
+$LL.Main.putDataOut4 $0 $1 =
+      $LL.Main.putDataOut2 $0 $1
 
-$LL.Main.inputs1 : ([6], [17], [15]) -> [17]
-$LL.Main.inputs1 $0 $1 $2 =
-      $LL.Main.inputs2 $1 $2
-
-$LL.Main.putWeOut2 : ([1], [1], [6], [8]) -> [15]
-$LL.Main.putWeOut2 $0 $1 $2 $3 =
-      $LL.Main.putWeOut3 $0 $2 $3
+Main.putReg : ([8], [70]) -> [70]
+Main.putReg $0 $1 =
+      $LL.Main.putReg67 $0 2'h0 (2'h0 # $0) $1
 
 Main.getInstr : ([70]) -> [79]
 Main.getInstr $0 =
       $LL.Main.getInstr (Main.getIns $0)
 
-$LL.Main.loop49 : ([9], [70], [70]) -> [143]
-$LL.Main.loop49 $0 $1 $2 =
-      $LL.Main.loop63 $0 $1 $2
-
-$LL.Main.getReg8 : ([70]) -> [78]
-$LL.Main.getReg8 $0 =
-      $LL.Main.getReg17 ($0 # $0)
-
-$LL.Main.loop48 : ([70], [6]) -> [143]
-$LL.Main.loop48 $0 $1 =
-      $LL.Main.loop215 $0 $1
-
-$LL.Main.getReg7 : ([70]) -> [78]
-$LL.Main.getReg7 $0 =
-      $LL.Main.getReg20 ($0 # $0)
-
-$LL.Main.putReg17 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg17 $0 $1 $2 =
-      $LL.Main.putReg55 $0 $1 $2
-
-$LL.Main.loop47 : ([9], [70], [70]) -> [143]
-$LL.Main.loop47 $0 $1 $2 =
-      $LL.Main.loop139 $0 $1 $2
-
 Main.instrIn : ([17]) -> [9]
 Main.instrIn $0 =
-      $LL.Main.instrIn2 $0
+      $LL.Main.instrIn1 $0
 
-$LL.Main.loop46 : ([70]) -> [143]
-$LL.Main.loop46 $1 =
-      $LL.Main.loop91 ($LL.Main.loop142 (Main.getOut $1))
+$LL.Main.putReg9 : ([70], [8]) -> [70]
+$LL.Main.putReg9 $0 $1 =
+      $LL.Main.putReg34 $1 $0
 
-$LL.Main.reset7 : ([70]) -> [143]
-$LL.Main.reset7 $1 =
-      $LL.Main.reset17 $1
+$LL.Pure.dispatch1 : ([17], [70]) -> [143]
+$LL.Pure.dispatch1 $0 $1 =
+      $LL.Main.reset33 $0 $1
 
-$LL.Main.putReg16 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg16 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putReg60 $2 $0 $1 $3 $4 $5 $6 $7
+$LL.Main.putAddrOut4 : ([6], [15], [70]) -> [70]
+$LL.Main.putAddrOut4 $0 $1 $2 =
+      $LL.Main.putAddrOut $0 $1 $2
 
-$LL.Main.putIns6 : ([17], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putIns6 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putIns3 $0 $1 $2 $3 $4 $5 $6 $7
+$LL.Main.loop53 : ([79]) -> [143]
+$LL.Main.loop53 $0 =
+      $LL.Main.loop84 $0[70 +: 9] $0[0 +: 70]
 
-$LL.Main.putIns5 : ([8], [8], [8], [17], [8], [6], [17], [15]) -> [70]
-$LL.Main.putIns5 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $0 # $1 # $4 # $2 # $5 # $3 # $7
+$LL.Main.ld : ([70]) -> [70]
+$LL.Main.ld $1 =
+      $LL.Main.ld1 $1
 
-$LL.Main.r01 : ([8], [8], [8], [8], [6], [17], [15]) -> [8]
-$LL.Main.r01 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.r11 $0 $2 $3 $4 $5 $6
+$LL.Main.putReg8 : ([8], [8], [8], [6], [8], [17], [15]) -> [70]
+$LL.Main.putReg8 $0 $1 $2 $3 $4 $5 $6 =
+      $2 # $1 # $0 # $4 # $3 # $5 # $6
 
-$LL.Main.loop42 : ([70], [70]) -> [143]
-$LL.Main.loop42 $0 $1 =
-      3'h3 # $0 # $1
+$LL.Main.putPC2 : ([6], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putPC2 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putPC $0 $1 $4 $2 $3 $5 $6 $7
 
-$LL.Main.putReg15 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg15 $0 $1 $2 =
-      $LL.Main.putReg13 $0 $1 $2
+$LL.Main.loop52 : ([6], [78]) -> [70]
+$LL.Main.loop52 $0 $1 =
+      $LL.Main.loop41 $0 $1[70 +: 8] $1[0 +: 70]
 
-$LL.Main.putReg14 : ([8], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg14 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putReg27 $0 $1 $3 $4 $5 $6 $7
+$LL.Main.bnz1 : ([6], [8], [70]) -> [70]
+$LL.Main.bnz1 $0 $1 $2 =
+      $LL.Main.bnz6 $1 $0 (eq $1 8'h0) $2
 
-$LL.Main.putPC5 : ([8], [6], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putPC5 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putPC10 $0 $1 $2 $3 $4 $5 $6 $7
+$LL.Main.inputs : ([8], [8], [8], [8], [6], [17], [15]) -> [17]
+$LL.Main.inputs $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.inputs6 $1 $2 $3 $4 $5 $6
 
-$LL.Main.loop39 : ([9], [70]) -> [143]
-$LL.Main.loop39 $0 $1 =
-      64'h0 # $0 # $1
+$LL.Main.putReg7 : ([70], [8]) -> [70]
+$LL.Main.putReg7 $0 $1 =
+      $LL.Main.putReg54 $0 $1
 
-$LL.Main.loop38 : ([143]) -> [143]
-$LL.Main.loop38 $0 =
-      $LL.Main.loop64 $0[70 +: 15] $0[0 +: 70]
+$LL.Main.putDataOut3 : ([8], [1], [6], [8]) -> [15]
+$LL.Main.putDataOut3 $0 $1 $2 $3 =
+      $LL.Main.putDataOut9 $0 $1 $2 $3
 
-$LL.Main.loop37 : ([17], [70]) -> [143]
-$LL.Main.loop37 $0 $1 =
-      $LL.Main.loop196 ($LL.Main.loop226 (Main.putIns $0 $1))
+$LL.Main.getReg4 : ([70], [70]) -> [78]
+$LL.Main.getReg4 $0 $1 =
+      $LL.Main.getReg14 $0 $1
 
-$LL.Main.getReg6 : ([70]) -> [78]
-$LL.Main.getReg6 $0 =
-      $LL.Main.getReg13 ($0 # $0)
+$LL.Main.putOut1 : ([6], [8], [8], [8], [8], [15], [17], [15]) -> [70]
+$LL.Main.putOut1 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putOut14 $0 $1 $2 $3 $4 $5 $6 $7
 
-$LL.Main.pc1 : ([8], [8], [6], [17], [15]) -> [6]
-$LL.Main.pc1 $0 $1 $2 $3 $4 =
-      $LL.Main.pc4 $1 $2 $3 $4
+$LL.Main.nand2 : ([70]) -> [70]
+$LL.Main.nand2 $1 =
+      $LL.Main.nand7 $1
 
-$LL.Main.loop36 : ([15], [70]) -> [143]
-$LL.Main.loop36 $0 $1 =
-      54'h20000000000000 # $0 # 4'h2 # $1
+$LL.Main.r1 : ([70]) -> [8]
+$LL.Main.r1 $0 =
+      $LL.Main.r17 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
 
 $LL.Main.putDataOut2 : ([8], [70]) -> [70]
 $LL.Main.putDataOut2 $0 $1 =
-      $LL.Main.putDataOut11 $0 $1
+      $LL.Main.putDataOut10 $0 (Main.getOut $1)
 
-$LL.Main.putWeOut1 : ([1], [15], [70]) -> [70]
-$LL.Main.putWeOut1 $0 $1 $2 =
-      Main.putOut ($LL.Main.putWeOut9 $0 $1) $2
+$LL.Main.loop51 : ([140]) -> [143]
+$LL.Main.loop51 $0 =
+      $LL.Main.loop165 $0[70 +: 70] $0[0 +: 70]
+
+$LL.Main.putReg6 : ([70], [8]) -> [70]
+$LL.Main.putReg6 $0 $1 =
+      $LL.Main.putReg25 $0 $1
+
+$LL.Main.r33 : ([8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r33 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.r31 $1 $2 $3 $4 $5
+
+$LL.Main.putDataOut1 : ([8], [15], [70]) -> [70]
+$LL.Main.putDataOut1 $0 $1 $2 =
+      Main.putOut ($LL.Main.putDataOut8 $0 $1) $2
 
 $LL.Main.nand1 : ([2], [2], [8], [70]) -> [70]
 $LL.Main.nand1 $0 $1 $2 $3 =
-      $LL.Main.nand7 $2 $0 (Main.getReg1 $1 $3)
+      $LL.Main.nand3 $2 $1 (Main.getReg1 $0 $3)
 
-$LL.Main.putReg13 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg13 $0 $1 $2 =
-      $LL.Main.putReg8 $0 $1 $2
+$LL.Main.putWeOut3 : ([1], [15], [70]) -> [70]
+$LL.Main.putWeOut3 $0 $1 $2 =
+      $LL.Main.putWeOut10 $0 $1 $2
 
-$LL.Main.loop32 : ([6], [8], [70]) -> [70]
-$LL.Main.loop32 $0 $1 $2 =
-      $LL.Main.loop5 $0 $1 $2
+$LL.Main.putIns2 : ([17], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putIns2 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putIns13 $1 $0 $2 $3 $4 $5 $6 $7
 
-$LL.Main.loop31 : ([6], [70]) -> [143]
-$LL.Main.loop31 $0 $1 =
-      $LL.Main.loop84 ($LL.Main.loop226 ($LL.Main.loop143 (Main.putAddrOut $0 $1)))
+$LL.Main.loop48 : ([15], [70]) -> [143]
+$LL.Main.loop48 $0 $1 =
+      $LL.Main.loop121 $0 $1
 
-$LL.Main.putReg12 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg12 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.putReg9 $2 $0 $1 $3 $4 $5 $6
-
-$LL.Main.bnz : ([70], [6]) -> [70]
+$LL.Main.bnz : ([6], [70]) -> [70]
 $LL.Main.bnz $0 $1 =
-      $LL.Main.bnz2 $1 $0
+      Main.putPC1 $0 $1
 
-$LL.Main.putAddrOut2 : ([6], [1], [6], [8]) -> [15]
-$LL.Main.putAddrOut2 $0 $1 $2 $3 =
-      $LL.Main.putAddrOut9 $0 $1 $2 $3
+$LL.Main.outputs : ([8], [6], [17], [15]) -> [15]
+$LL.Main.outputs $0 $1 $2 $3 =
+      $LL.Main.outputs4 $1 $2 $3
 
-$LL.Main.loop30 : ([143]) -> [143]
-$LL.Main.loop30 $0 =
-      $LL.Main.loop158 $0[0 +: 70]
+$LL.Main.putAddrOut3 : ([1], [6], [6], [8]) -> [15]
+$LL.Main.putAddrOut3 $0 $1 $2 $3 =
+      $0 # $1 # $3
 
-$LL.Main.loop29 : ([2], [2], [2], [70]) -> [143]
-$LL.Main.loop29 $0 $1 $2 $3 =
-      $LL.Main.loop27 $0 $1 $2 $3
+$LL.Main.r32 : ([8], [6], [17], [15]) -> [8]
+$LL.Main.r32 $0 $1 $2 $3 =
+      $LL.Main.r37 $0 $1 $2 $3
 
-$LL.Main.putPC4 : ([6], [70]) -> [70]
-$LL.Main.putPC4 $0 $1 =
-      $LL.Main.putPC12 $0 $1
+$LL.Main.putIns1 : ([17], [70]) -> [70]
+$LL.Main.putIns1 $0 $1 =
+      $LL.Main.putIns5 $0 ($1 # $1)
 
-$LL.Main.outputs2 : ([8], [8], [8], [8], [6], [17], [15]) -> [15]
-$LL.Main.outputs2 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.outputs5 $1 $2 $3 $4 $5 $6
+$LL.Main.putWeOut2 : ([1], [15]) -> [15]
+$LL.Main.putWeOut2 $0 $1 =
+      $LL.Main.putWeOut7 $0 $1[14 +: 1] $1[8 +: 6] $1[0 +: 8]
 
-$LL.Main.getReg5 : ([70]) -> [78]
-$LL.Main.getReg5 $0 =
-      $LL.Main.getReg8 $0
+$LL.Main.loop45 : ([17], [70]) -> [143]
+$LL.Main.loop45 $0 $1 =
+      $LL.Main.loop142 ($LL.Main.loop218 (Main.putIns $0 $1))
 
-$LL.Main.r33 : ([8], [8], [8], [8], [6], [17], [15]) -> [8]
-$LL.Main.r33 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.r34 $1 $2 $3 $4 $5 $6
+$LL.Main.loop43 : ([70]) -> [143]
+$LL.Main.loop43 $1 =
+      $LL.Main.loop215 ($LL.Main.loop218 ($LL.Main.reset32 (Main.getPC $1)))
 
-$LL.Main.putPC3 : ([6], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putPC3 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putPC5 $2 $0 $1 $3 $4 $5 $6 $7
+$LL.Main.putReg5 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg5 $0 $1 $2 =
+      $LL.Main.putReg57 $0 $1 $2
 
-$LL.Main.loop28 : ([70]) -> [143]
-$LL.Main.loop28 $1 =
-      $LL.Main.loop179 ($LL.Main.loop142 (Main.getOut $1))
+$LL.Main.putWeOut1 : ([1], [85]) -> [70]
+$LL.Main.putWeOut1 $0 $1 =
+      $LL.Main.putWeOut $0 $1[70 +: 15] $1[0 +: 70]
 
-$LL.Main.loop27 : ([2], [2], [2], [70]) -> [143]
-$LL.Main.loop27 $0 $1 $2 $3 =
-      $LL.Main.loop99 $1 $0 $2 $3
+$LL.Main.pc : ([8], [6], [17], [15]) -> [6]
+$LL.Main.pc $0 $1 $2 $3 =
+      $LL.Main.pc4 $1 $2 $3
 
-$LL.Main.loop26 : ([6], [78]) -> [70]
-$LL.Main.loop26 $0 $1 =
-      $LL.Main.loop156 $0 $1[70 +: 8] $1[0 +: 70]
+$LL.Main.nand : ([2], [8], [8], [70]) -> [70]
+$LL.Main.nand $0 $1 $2 $3 =
+      $LL.Main.nand6 (Main.putReg1 $0 (not (and $1 $2)) $3)
 
-$LL.Main.putWeOut : ([1], [70]) -> [70]
-$LL.Main.putWeOut $0 $1 =
-      $LL.Main.putWeOut8 $0 (Main.getOut $1)
+$LL.Main.getReg3 : ([140]) -> [78]
+$LL.Main.getReg3 $0 =
+      $LL.Main.getReg6 $0[70 +: 70] $0[0 +: 70]
 
-$LL.Main.st1 : ([70]) -> [70]
-$LL.Main.st1 $1 =
-      Main.putWeOut $1
+$LL.Main.getReg2 : ([2], [2], [70]) -> [78]
+$LL.Main.getReg2 $0 $1 $2 =
+      if eq $1 2'h1 then $LL.Main.getReg7 $2
+            else $LL.Main.getReg22 $0 $0 $2
 
-$LL.Main.outputs1 : ([6], [17], [15]) -> [15]
-$LL.Main.outputs1 $0 $1 $2 =
-      $LL.Main.outputs6 $1 $2
+$LL.Main.loop41 : ([6], [8], [70]) -> [70]
+$LL.Main.loop41 $0 $1 $2 =
+      $LL.Main.loop60 $0 $1 $2
 
-$LL.Main.loop25 : ([143]) -> [143]
-$LL.Main.loop25 $0 =
-      $LL.Main.loop68 $0[0 +: 70]
+$LL.Main.loop40 : ([70]) -> [143]
+$LL.Main.loop40 $1 =
+      $LL.Main.loop5 ($LL.Main.loop217 (Main.getOut $1))
 
-$LL.Main.putOut3 : ([15], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putOut3 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putOut7 $0 $1 $2 $3 $4 $5 $6 $7
+$LL.Main.getDataIn : ([17], [70]) -> [78]
+$LL.Main.getDataIn $0 $1 =
+      Main.dataIn $0 # $1
 
-$LL.Main.pc : ([8], [8], [8], [8], [6], [17], [15]) -> [6]
-$LL.Main.pc $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.pc5 $1 $2 $3 $4 $5 $6
+$LL.Main.loop39 : ([2], [2], [8], [70]) -> [70]
+$LL.Main.loop39 $0 $1 $2 $3 =
+      $LL.Main.loop191 $0 $1 $2 $3
 
-$LL.Main.putPC2 : ([6], [70]) -> [70]
-$LL.Main.putPC2 $0 $1 =
-      $LL.Main.putPC11 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
+$LL.Main.loop37 : ([15], [70]) -> [143]
+$LL.Main.loop37 $0 $1 =
+      54'h20000000000000 # $0 # 4'h8 # $1
+
+$LL.Main.loop36 : ([143]) -> [143]
+$LL.Main.loop36 $0 =
+      $LL.Main.loop65 $0[70 +: 15] $0[0 +: 70]
+
+$LL.Main.st2 : ([8], [70]) -> [70]
+$LL.Main.st2 $0 $2 =
+      $LL.Main.st $0 $2
+
+$LL.Main.getIns : ([140]) -> [87]
+$LL.Main.getIns $0 =
+      $LL.Main.getIns2 $0[70 +: 70] $0[0 +: 70]
+
+$LL.Main.r01 : ([8], [8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r01 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.r06 $0 $1 $2 $3 $4 $5 $6
+
+$LL.Main.loop35 : ([143]) -> [143]
+$LL.Main.loop35 $0 =
+      $LL.Main.loop151 $0[0 +: 70]
+
+$LL.Main.putReg4 : ([8], [140]) -> [70]
+$LL.Main.putReg4 $0 $1 =
+      $LL.Main.putReg46 $0 $1[70 +: 70] $1[0 +: 70]
+
+$LL.Main.getReg1 : ([140]) -> [78]
+$LL.Main.getReg1 $0 =
+      $LL.Main.getReg8 $0[70 +: 70] $0[0 +: 70]
+
+$LL.Main.loop32 : ([15], [70]) -> [143]
+$LL.Main.loop32 $0 $1 =
+      $LL.Main.loop75 $0 $1
+
+$LL.Main.putPC1 : ([6], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putPC1 $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putPC2 $0 $1 $2 $3 $4 $5 $6 $7
+
+$LL.Main.loop31 : ([70]) -> [143]
+$LL.Main.loop31 $1 =
+      $LL.Main.loop43 $1
+
+$LL.Main.loop30 : ([70]) -> [143]
+$LL.Main.loop30 $1 =
+      $LL.Main.loop127 ($LL.Main.loop218 ($LL.Main.reset32 (Main.getPC $1)))
+
+$LL.Main.putWeOut : ([1], [15], [70]) -> [70]
+$LL.Main.putWeOut $0 $1 $2 =
+      $LL.Main.putWeOut3 $0 $1 $2
+
+$LL.Main.loop27 : ([70], [6]) -> [143]
+$LL.Main.loop27 $0 $1 =
+      $LL.Main.loop123 $1 $0
+
+$LL.Main.loop26 : ([143]) -> [143]
+$LL.Main.loop26 $0 =
+      $LL.Main.loop139 $0[70 +: 15] $0[0 +: 70]
+
+$LL.Pure.dispatch : ([17], [70]) -> [143]
+$LL.Pure.dispatch $0 $1 =
+      $LL.Main.loop45 $0 $1
+
+$LL.Main.st1 : ([6], [8], [70]) -> [70]
+$LL.Main.st1 $0 $1 $2 =
+      $LL.Main.st8 $1 (Main.putAddrOut $0 $2)
 
 $LL.Main.incrPC : ([6], [70]) -> [70]
 $LL.Main.incrPC $0 $1 =
       $LL.Main.incrPC2 $0 $1
 
-Main.putWeOut : ([70]) -> [70]
-Main.putWeOut $0 =
-      $LL.Main.putWeOut5 1'h1 $0
+$LL.Main.r21 : ([70]) -> [8]
+$LL.Main.r21 $0 =
+      $LL.Main.r24 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
 
-$LL.Main.loop23 : ([70]) -> [143]
-$LL.Main.loop23 $1 =
-      $LL.Main.loop6 $1
+$LL.Main.loop21 : ([2], [70], [2], [2]) -> [143]
+$LL.Main.loop21 $0 $1 $2 $3 =
+      $LL.Main.loop160 $2 $0 $3 $1
 
-$LL.Main.putReg11 : ([8], [2], [10], [70]) -> [70]
-$LL.Main.putReg11 $0 $1 $2 $3 =
-      if eq $2[8 +: 2] 2'h0 then $LL.Main.putReg66 $3 $2[0 +: 8]
-            else $LL.Main.putReg31 $0 $1 ($1 # $0) $3
+$LL.Main.putReg3 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putReg3 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.putReg48 $4 $0 $1 $2 $3 $5 $6
 
-$LL.Main.dataIn1 : ([17]) -> [8]
-$LL.Main.dataIn1 $0 =
-      $LL.Main.dataIn $0[8 +: 9] $0[0 +: 8]
+$LL.Main.putAddrOut2 : ([6], [15], [70]) -> [70]
+$LL.Main.putAddrOut2 $0 $1 $2 =
+      $LL.Main.putAddrOut4 $0 $1 $2
 
-$LL.Main.getReg4 : ([2], [2], [70]) -> [78]
-$LL.Main.getReg4 $0 $1 $2 =
-      if eq $1 2'h2 then $LL.Main.getReg1 $2
-            else $LL.Main.getReg2 $0 $2
-
-$LL.Main.putDataOut1 : ([8], [15], [70]) -> [70]
-$LL.Main.putDataOut1 $0 $1 $2 =
-      $LL.Main.putDataOut5 $0 $1 $2
-
-$LL.Main.putOut2 : ([8], [8], [15], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putOut2 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putOut12 $0 $1 $5 $2 $3 $4 $6 $7
-
-$LL.Main.loop21 : ([15], [70]) -> [143]
-$LL.Main.loop21 $0 $1 =
-      54'h20000000000000 # $0 # 4'h1 # $1
-
-$LL.Main.loop20 : ([143]) -> [143]
-$LL.Main.loop20 $0 =
-      $LL.Main.loop137 $0[0 +: 70]
-
-$LL.Main.putIns4 : ([17], [70]) -> [70]
-$LL.Main.putIns4 $0 $1 =
-      $LL.Main.putIns6 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
-
-$LL.Main.putOut1 : ([15], [70]) -> [70]
-$LL.Main.putOut1 $0 $1 =
-      $LL.Main.putOut11 $0 $1
+$LL.Main.loop18 : ([6], [8], [70]) -> [70]
+$LL.Main.loop18 $0 $1 $2 =
+      $LL.Main.st1 $0 $1 $2
 
 $LL.Main.r31 : ([8], [8], [6], [17], [15]) -> [8]
 $LL.Main.r31 $0 $1 $2 $3 $4 =
-      $LL.Main.r36 $1 $2 $3 $4
-
-$LL.Main.getReg3 : ([70], [70]) -> [78]
-$LL.Main.getReg3 $0 $1 =
-      $LL.Main.getReg12 $0 $1
-
-$LL.Main.loop19 : ([143]) -> [143]
-$LL.Main.loop19 $0 =
-      $LL.Main.loop57 $0[0 +: 70]
-
-$LL.Main.dataIn : ([9], [8]) -> [8]
-$LL.Main.dataIn $0 $1 =
-      $LL.Main.dataIn2 $1
-
-$LL.Main.loop18 : ([143]) -> [143]
-$LL.Main.loop18 $0 =
-      $LL.Main.loop186 $0[0 +: 70]
-
-$LL.Main.getReg2 : ([2], [70]) -> [78]
-$LL.Main.getReg2 $0 $1 =
-      $LL.Main.getReg14 $1
-
-$LL.Main.putIns3 : ([17], [8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putIns3 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putIns7 $1 $0 $2 $3 $4 $5 $6 $7
-
-$LL.Main.loop17 : ([15], [70]) -> [143]
-$LL.Main.loop17 $0 $1 =
-      54'h20000000000000 # $0 # 4'h5 # $1
-
-$LL.Main.loop16 : ([143]) -> [143]
-$LL.Main.loop16 $0 =
-      $LL.Main.loop72 $0[70 +: 15] $0[0 +: 70]
-
-$LL.Main.putAddrOut1 : ([1], [6], [6], [8]) -> [15]
-$LL.Main.putAddrOut1 $0 $1 $2 $3 =
-      $0 # $1 # $3
-
-$LL.Main.loop15 : ([8], [70]) -> [70]
-$LL.Main.loop15 $0 $1 =
-      Main.putReg1 $0 $1
-
-$LL.Main.loop14 : ([70]) -> [143]
-$LL.Main.loop14 $1 =
-      $LL.Main.loop11 $1
-
-$LL.Main.getIns : ([70], [70]) -> [87]
-$LL.Main.getIns $0 $1 =
-      $LL.Main.getIns2 $0 $1
-
-$LL.Main.nand : ([8], [2], [8], [70]) -> [70]
-$LL.Main.nand $0 $1 $2 $3 =
-      $LL.Main.nand8 $0 $1 $2 $3
-
-$LL.Main.putReg10 : ([8], [140]) -> [70]
-$LL.Main.putReg10 $0 $1 =
-      $LL.Main.putReg3 $0 $1[70 +: 70] $1[0 +: 70]
-
-$LL.Main.putReg9 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg9 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.putReg35 $0 $3 $1 $2 $4 $5 $6
-
-$LL.Main.st : ([70]) -> [70]
-$LL.Main.st $1 =
-      $LL.Main.st1 $1
-
-$LL.Main.r3 : ([70]) -> [8]
-$LL.Main.r3 $0 =
-      $LL.Main.r33 $0[62 +: 8] $0[54 +: 8] $0[46 +: 8] $0[38 +: 8] $0[32 +: 6] $0[15 +: 17] $0[0 +: 15]
-
-$LL.Main.putReg8 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg8 $0 $1 $2 =
-      $LL.Main.putReg20 $0 $1
-
-$LL.Main.loop12 : ([15], [70]) -> [143]
-$LL.Main.loop12 $0 $1 =
-      54'h20000000000000 # $0 # 4'h6 # $1
-
-Main.getPC : ([70]) -> [76]
-Main.getPC $0 =
-      $LL.Main.getPC2 ($0 # $0)
-
-$LL.Main.getReg1 : ([70]) -> [78]
-$LL.Main.getReg1 $0 =
-      $LL.Main.getReg6 $0
-
-$LL.Main.putIns2 : ([17], [70], [70]) -> [70]
-$LL.Main.putIns2 $0 $1 $2 =
-      $LL.Main.putIns13 $0 $1 $2
-
-$LL.Main.putPC1 : ([6], [70], [70]) -> [70]
-$LL.Main.putPC1 $0 $1 $2 =
-      $LL.Main.putPC $0 $1 $2
-
-$LL.Main.loop11 : ([70]) -> [143]
-$LL.Main.loop11 $1 =
-      $LL.Main.loop200 ($LL.Main.loop226 ($LL.Main.reset44 (Main.getPC $1)))
-
-$LL.Main.loop10 : ([143]) -> [143]
-$LL.Main.loop10 $0 =
-      $LL.Main.loop115 $0[0 +: 70]
-
-Main.outputs : ([70]) -> [15]
-Main.outputs $0 =
-      $LL.Main.outputs7 $0
-
-$LL.Main.loop9 : ([70]) -> [143]
-$LL.Main.loop9 $1 =
-      $LL.Main.loop38 ($LL.Main.loop142 (Main.getOut $1))
-
-$LL.Main.putReg7 : ([70], [8]) -> [70]
-$LL.Main.putReg7 $0 $1 =
-      $LL.Main.putReg52 $0 $1
-
-$LL.Main.putAddrOut : ([6], [70]) -> [70]
-$LL.Main.putAddrOut $0 $1 =
-      $LL.Main.putAddrOut10 $0 (Main.getOut $1)
-
-$LL.Main.loop8 : ([17], [70]) -> [143]
-$LL.Main.loop8 $0 $1 =
-      $LL.Main.loop20 ($LL.Main.loop226 (Main.putIns $0 $1))
-
-$LL.Main.putPC : ([6], [70], [70]) -> [70]
-$LL.Main.putPC $0 $1 $2 =
-      $LL.Main.putPC6 $0 $1 $2
-
-$LL.Main.putDataOut : ([8], [85]) -> [70]
-$LL.Main.putDataOut $0 $1 =
-      $LL.Main.putDataOut9 $0 $1[70 +: 15] $1[0 +: 70]
-
-$LL.Main.putReg6 : ([8], [70]) -> [70]
-$LL.Main.putReg6 $0 $1 =
-      $LL.Main.putReg28 $0 ($1 # $1)
-
-$LL.Main.outputs : ([15]) -> [15]
-$LL.Main.outputs $0 =
-      $0
-
-$LL.Main.putOut : ([15], [140]) -> [70]
-$LL.Main.putOut $0 $1 =
-      $LL.Main.putOut13 $0 $1[70 +: 70] $1[0 +: 70]
-
-$LL.Main.putIns1 : ([17], [70], [70]) -> [70]
-$LL.Main.putIns1 $0 $1 $2 =
-      $LL.Main.putIns4 $0 $1
-
-$LL.Main.loop6 : ([70]) -> [143]
-$LL.Main.loop6 $1 =
-      $LL.Main.loop30 ($LL.Main.loop226 ($LL.Main.reset44 (Main.getPC $1)))
-
-$LL.Main.putReg5 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg5 $0 $1 $2 =
-      $LL.Main.putReg53 $0 $1 $2
-
-$LL.Main.loop5 : ([6], [8], [70]) -> [70]
-$LL.Main.loop5 $0 $1 $2 =
-      $LL.Main.bnz3 $0 $1 $2
-
-$LL.Main.putReg4 : ([8], [70]) -> [70]
-$LL.Main.putReg4 $0 $1 =
-      $LL.Main.putReg10 $0 ($1 # $1)
-
-$LL.Main.putReg3 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg3 $0 $1 $2 =
-      $LL.Main.putReg29 $0 $1 $2
-
-$LL.Main.loop4 : ([15], [70]) -> [143]
-$LL.Main.loop4 $0 $1 =
-      $LL.Main.loop17 $0 $1
-
-$LL.Main.inputs : ([8], [6], [17], [15]) -> [17]
-$LL.Main.inputs $0 $1 $2 $3 =
-      $LL.Main.inputs1 $1 $2 $3
-
-$LL.Main.getReg : ([70], [70]) -> [78]
-$LL.Main.getReg $0 $1 =
-      Main.r1 $0 # $1
-
-$LL.Main.putReg2 : ([8], [8], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putReg2 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.putReg41 $0 $1 $2 $3 $4 $5 $6
-
-$LL.Main.putReg1 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg1 $0 $1 $2 =
-      $LL.Main.putReg26 $0 $1
-
-$LL.Main.putIns : ([8], [8], [17], [8], [8], [6], [17], [15]) -> [70]
-$LL.Main.putIns $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.putIns12 $0 $1 $4 $2 $3 $5 $6 $7
-
-$LL.Main.loop : ([2], [2], [78]) -> [70]
-$LL.Main.loop $0 $1 $2 =
-      $LL.Main.loop171 $0 $1 $2[70 +: 8] $2[0 +: 70]
+      $LL.Main.r32 $1 $2 $3 $4
 
 $LL.Main.getInstr : ([87]) -> [79]
 $LL.Main.getInstr $0 =
       $LL.Main.getInstr2 $0[70 +: 17] $0[0 +: 70]
 
+$LL.Main.putDataOut : ([1], [6], [8], [8]) -> [15]
+$LL.Main.putDataOut $0 $1 $2 $3 =
+      $0 # $1 # $2
+
+Main.getPC : ([70]) -> [76]
+Main.getPC $0 =
+      $LL.Main.getPC1 ($0 # $0)
+
+$LL.Main.st : ([8], [70]) -> [70]
+$LL.Main.st $0 $2 =
+      $LL.Main.st10 $0 $2
+
+Main.outputs : ([70]) -> [15]
+Main.outputs $0 =
+      $LL.Main.outputs2 $0
+
+$LL.Main.putReg2 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg2 $0 $1 $2 =
+      $LL.Main.putReg15 $0 $1
+
+$LL.Main.loop15 : ([70], [6]) -> [143]
+$LL.Main.loop15 $0 $1 =
+      $LL.Main.loop145 $1 $0
+
+$LL.Main.putAddrOut1 : ([6], [15]) -> [15]
+$LL.Main.putAddrOut1 $0 $1 =
+      $LL.Main.putAddrOut8 $0 $1[14 +: 1] $1[8 +: 6] $1[0 +: 8]
+
+$LL.Main.instrIn : ([9], [8]) -> [9]
+$LL.Main.instrIn $0 $1 =
+      $0
+
+$LL.Main.r3 : ([8], [8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r3 $0 $1 $2 $3 $4 $5 $6 =
+      $LL.Main.r33 $1 $2 $3 $4 $5 $6
+
+$LL.Main.loop11 : ([6], [8], [70]) -> [70]
+$LL.Main.loop11 $0 $1 $2 =
+      $LL.Main.loop211 $0 $1 $2
+
+$LL.Main.getPC1 : ([140]) -> [76]
+$LL.Main.getPC1 $0 =
+      $LL.Main.getPC2 $0[70 +: 70] $0[0 +: 70]
+
+$LL.Main.putReg1 : ([8], [70]) -> [70]
+$LL.Main.putReg1 $0 $1 =
+      $LL.Main.putReg41 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
+
+$LL.Main.dataIn : ([8]) -> [8]
+$LL.Main.dataIn $0 =
+      $0
+
+$LL.Main.putReg : ([8], [70]) -> [70]
+$LL.Main.putReg $0 $1 =
+      $LL.Main.putReg49 $0 $1[62 +: 8] $1[54 +: 8] $1[46 +: 8] $1[38 +: 8] $1[32 +: 6] $1[15 +: 17] $1[0 +: 15]
+
+$LL.Main.putAddrOut : ([6], [15], [70]) -> [70]
+$LL.Main.putAddrOut $0 $1 $2 =
+      Main.putOut ($LL.Main.putAddrOut1 $0 $1) $2
+
+$LL.Main.putIns : ([8], [8], [17], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putIns $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putIns14 $0 $3 $1 $2 $4 $5 $6 $7
+
+$LL.Main.r2 : ([8], [8], [8], [6], [17], [15]) -> [8]
+$LL.Main.r2 $0 $1 $2 $3 $4 $5 =
+      $LL.Main.r25 $1 $2 $3 $4 $5
+
+$LL.Main.loop8 : ([17], [70]) -> [143]
+$LL.Main.loop8 $0 $1 =
+      $LL.Main.loop187 ($LL.Main.loop218 (Main.putIns $0 $1))
+
+$LL.Main.putPC : ([6], [8], [8], [8], [8], [6], [17], [15]) -> [70]
+$LL.Main.putPC $0 $1 $2 $3 $4 $5 $6 $7 =
+      $LL.Main.putReg48 $0 $1 $2 $3 $4 $6 $7
+
+$LL.Main.loop7 : ([70], [6]) -> [143]
+$LL.Main.loop7 $0 $1 =
+      $LL.Main.loop157 $1 $0
+
+$LL.Main.getPC : ([70], [70]) -> [76]
+$LL.Main.getPC $0 $1 =
+      Main.pc $0 # $1
+
+$LL.Main.loop5 : ([143]) -> [143]
+$LL.Main.loop5 $0 =
+      $LL.Main.loop169 $0[70 +: 15] $0[0 +: 70]
+
+$LL.Main.getReg : ([70]) -> [78]
+$LL.Main.getReg $0 =
+      $LL.Main.getReg11 ($0 # $0)
+
+$LL.Main.loop3 : ([70], [6]) -> [143]
+$LL.Main.loop3 $0 $1 =
+      $LL.Main.loop15 $0 $1
+
+$LL.Main.putOut : ([15], [140]) -> [70]
+$LL.Main.putOut $0 $1 =
+      $LL.Main.putOut7 $0 $1[70 +: 70] $1[0 +: 70]
+
+$LL.Main.loop2 : ([2], [2], [2], [70]) -> [143]
+$LL.Main.loop2 $0 $1 $2 $3 =
+      $LL.Main.loop185 $0 $1 $2 $3
+
 Main.putOut : ([15], [70]) -> [70]
 Main.putOut $0 $1 =
-      $LL.Main.putOut1 $0 $1
+      $LL.Main.putOut11 $0 $1
+
+$LL.Main.reset : ([143]) -> [143]
+$LL.Main.reset $0 =
+      $LL.Main.reset39 $0[0 +: 70]
+
+$LL.Main.loop1 : ([70]) -> [143]
+$LL.Main.loop1 $1 =
+      $LL.Main.loop190 $1
+
+$LL.Main.loop : ([9], [70], [70]) -> [143]
+$LL.Main.loop $0 $1 $2 =
+      $LL.Main.loop114 $0 $1 $2
 
 device top_level
       input __in0 : [17]
       output __out0 : [15]
-      register __resumption_tag : [4] init 4'h0
+      register __resumption_tag : [4] init 4'h1
       register __st0 : [70] init 70'h0
       let $res = $Pure.dispatch (__resumption_tag # __st0) __in0
       __out0 := $res[74 +: 15]

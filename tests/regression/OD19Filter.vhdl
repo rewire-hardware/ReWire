@@ -215,12 +215,12 @@ component \Main_test1\ is
             arg1 : in std_logic_vector (31 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
-      component \ZLL_Main_word013\ is
-      port (arg0 : in std_logic_vector (31 downto 0);
+      component \ZLL_Main_word149\ is
+      port (arg0 : in std_logic_vector (63 downto 0);
             res : out std_logic_vector (65 downto 0));
       end component;
-      component \ZLL_Main_word319\ is
-      port (arg0 : in std_logic_vector (63 downto 0);
+      component \ZLL_Main_word219\ is
+      port (arg0 : in std_logic_vector (31 downto 0);
             res : out std_logic_vector (65 downto 0));
       end component;
       component test2 is
@@ -242,77 +242,77 @@ component \Main_test1\ is
       signal \__resumption_tag_next\ : std_logic_vector (6 downto 0);
       signal \__st0\ : std_logic_vector (31 downto 0) := std_logic_vector'(B"00000000000000000000000000000000");
       signal \__st0_next\ : std_logic_vector (31 downto 0);
-      signal zll_main_word013_out : std_logic_vector (65 downto 0);
+      signal zll_main_word219_out : std_logic_vector (65 downto 0);
       signal zi52 : std_logic_vector (65 downto 0);
       signal zi53 : std_logic_vector (31 downto 0);
-      signal \zll_main_word013_outR1\ : std_logic_vector (65 downto 0);
+      signal \zll_main_word219_outR1\ : std_logic_vector (65 downto 0);
       signal zi58 : std_logic_vector (65 downto 0);
       signal zi59 : std_logic_vector (31 downto 0);
       signal conn : std_logic_vector (63 downto 0);
-      signal zll_main_word319_out : std_logic_vector (65 downto 0);
+      signal zll_main_word149_out : std_logic_vector (65 downto 0);
       signal zi122 : std_logic_vector (65 downto 0);
       signal zi123 : std_logic_vector (31 downto 0);
       signal zi124 : std_logic_vector (31 downto 0);
       signal extres : std_logic_vector (0 downto 0);
       signal \connR1\ : std_logic_vector (63 downto 0);
-      signal \zll_main_word319_outR1\ : std_logic_vector (65 downto 0);
+      signal \zll_main_word149_outR1\ : std_logic_vector (65 downto 0);
       signal zi145 : std_logic_vector (65 downto 0);
       signal zi146 : std_logic_vector (31 downto 0);
       signal zi147 : std_logic_vector (31 downto 0);
       signal main_test1_out : std_logic_vector (0 downto 0);
       signal \connR2\ : std_logic_vector (63 downto 0);
-      signal \zll_main_word319_outR2\ : std_logic_vector (65 downto 0);
+      signal \zll_main_word149_outR2\ : std_logic_vector (65 downto 0);
       signal zi156 : std_logic_vector (65 downto 0);
       signal zi157 : std_logic_vector (31 downto 0);
       signal zi158 : std_logic_vector (31 downto 0);
       signal \extresR1\ : std_logic_vector (0 downto 0);
       signal \connR3\ : std_logic_vector (63 downto 0);
-      signal \zll_main_word319_outR3\ : std_logic_vector (65 downto 0);
+      signal \zll_main_word149_outR3\ : std_logic_vector (65 downto 0);
       signal zi201 : std_logic_vector (65 downto 0);
       signal zi202 : std_logic_vector (31 downto 0);
       signal zi203 : std_logic_vector (31 downto 0);
       signal \main_test1_outR1\ : std_logic_vector (0 downto 0);
       signal \connR4\ : std_logic_vector (63 downto 0);
-      signal \zll_main_word319_outR4\ : std_logic_vector (65 downto 0);
+      signal \zll_main_word149_outR4\ : std_logic_vector (65 downto 0);
       signal zi262 : std_logic_vector (65 downto 0);
       signal zi263 : std_logic_vector (31 downto 0);
       signal zi264 : std_logic_vector (31 downto 0);
       signal \extresR2\ : std_logic_vector (0 downto 0);
       signal zres : std_logic_vector (65 downto 0);
 begin
-inst : \ZLL_Main_word013\ port map (\__in1\, zll_main_word013_out);
-      zi52 <= zll_main_word013_out;
+inst : \ZLL_Main_word219\ port map (\__in1\, zll_main_word219_out);
+      zi52 <= zll_main_word219_out;
       zi53 <= zi52(31 downto 0);
-      \instR1\ : \ZLL_Main_word013\ port map (\__in1\, \zll_main_word013_outR1\);
-      zi58 <= \zll_main_word013_outR1\;
+      \instR1\ : \ZLL_Main_word219\ port map (\__in1\, \zll_main_word219_outR1\);
+      zi58 <= \zll_main_word219_outR1\;
       zi59 <= zi58(31 downto 0);
       conn <= (\__st0\ & \__st0\);
-      \instR2\ : \ZLL_Main_word319\ port map (conn, zll_main_word319_out);
-      zi122 <= zll_main_word319_out;
+      \instR2\ : \ZLL_Main_word149\ port map (conn, zll_main_word149_out);
+      zi122 <= zll_main_word149_out;
       zi123 <= zi122(63 downto 32);
       zi124 <= zi122(31 downto 0);
       \instR3\ : test4 port map (p0 => \__in1\, p1 => zi123, p2 => extres(0 downto 0));
       \connR1\ <= (\__st0\ & \__st0\);
-      \instR4\ : \ZLL_Main_word319\ port map (\connR1\, \zll_main_word319_outR1\);
-      zi145 <= \zll_main_word319_outR1\;
+      \instR4\ : \ZLL_Main_word149\ port map (\connR1\, \zll_main_word149_outR1\);
+      zi145 <= \zll_main_word149_outR1\;
       zi146 <= zi145(63 downto 32);
       zi147 <= zi145(31 downto 0);
       \instR5\ : \Main_test1\ port map (\__in1\, zi146, main_test1_out);
       \connR2\ <= (\__st0\ & \__st0\);
-      \instR6\ : \ZLL_Main_word319\ port map (\connR2\, \zll_main_word319_outR2\);
-      zi156 <= \zll_main_word319_outR2\;
+      \instR6\ : \ZLL_Main_word149\ port map (\connR2\, \zll_main_word149_outR2\);
+      zi156 <= \zll_main_word149_outR2\;
       zi157 <= zi156(63 downto 32);
       zi158 <= zi156(31 downto 0);
       \instR7\ : test3 port map (p0 => \__in1\, p1 => zi157, p2 => \extresR1\(0 downto 0));
       \connR3\ <= (\__st0\ & \__st0\);
-      \instR8\ : \ZLL_Main_word319\ port map (\connR3\, \zll_main_word319_outR3\);
-      zi201 <= \zll_main_word319_outR3\;
+      \instR8\ : \ZLL_Main_word149\ port map (\connR3\, \zll_main_word149_outR3\);
+      zi201 <= \zll_main_word149_outR3\;
       zi202 <= zi201(63 downto 32);
       zi203 <= zi201(31 downto 0);
       \instR9\ : \Main_test1\ port map (\__in1\, zi202, \main_test1_outR1\);
       \connR4\ <= (\__st0\ & \__st0\);
-      \instR10\ : \ZLL_Main_word319\ port map (\connR4\, \zll_main_word319_outR4\);
-      zi262 <= \zll_main_word319_outR4\;
+      \instR10\ : \ZLL_Main_word149\ port map (\connR4\, \zll_main_word149_outR4\);
+      zi262 <= \zll_main_word149_outR4\;
       zi263 <= zi262(63 downto 32);
       zi264 <= zi262(31 downto 0);
       \instR11\ : test2 port map (p0 => \__in1\, p1 => zi263, p2 => \extresR2\(0 downto 0));
@@ -337,15 +337,18 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_word013\ is
-port (arg0 : in std_logic_vector (31 downto 0);
+entity \ZLL_Main_word149\ is
+port (arg0 : in std_logic_vector (63 downto 0);
       res : out std_logic_vector (65 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_word013\ is
-
+architecture rtl of \ZLL_Main_word149\ is
+signal zi0 : std_logic_vector (31 downto 0);
+      signal zi1 : std_logic_vector (31 downto 0);
 begin
-res <= ((std_logic_vector'(B"01") & rw_repl(32, std_logic_vector'(B"0"))) & arg0);
+zi0 <= arg0(63 downto 32);
+      zi1 <= arg0(31 downto 0);
+      res <= (std_logic_vector'(B"00") & zi0 & zi1);
 end architecture;
 
 library ieee;
@@ -374,16 +377,13 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_word319\ is
-port (arg0 : in std_logic_vector (63 downto 0);
+entity \ZLL_Main_word219\ is
+port (arg0 : in std_logic_vector (31 downto 0);
       res : out std_logic_vector (65 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_word319\ is
-signal zi0 : std_logic_vector (31 downto 0);
-      signal zi1 : std_logic_vector (31 downto 0);
+architecture rtl of \ZLL_Main_word219\ is
+
 begin
-zi0 <= arg0(63 downto 32);
-      zi1 <= arg0(31 downto 0);
-      res <= (std_logic_vector'(B"00") & zi0 & zi1);
+res <= ((std_logic_vector'(B"01") & rw_repl(32, std_logic_vector'(B"0"))) & arg0);
 end architecture;

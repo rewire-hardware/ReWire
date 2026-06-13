@@ -160,10 +160,14 @@ rwPrimExtrude (GHC.ReacT (GHC.StateT m)) s =
             GHC.Left y -> GHC.return (GHC.Left y)
             GHC.Right (o,k) -> GHC.return (GHC.Right (o, \ i -> rwPrimExtrude (k i) s'))
 
-rwPrimUnfold :: ((R_, s) -> i -> PuRe s o) -> PuRe s o -> ReacT i o Identity ()
-rwPrimUnfold _ (Done _)      = GHC.return ()
-rwPrimUnfold f (Pause (o,b)) = do i <- GHC.signal o
-                                  rwPrimUnfold f (f b i)
+-- | The seed is a function of the initial state so that a device may pause
+--   before its state registers are initialized (by extrude); the registers
+--   are unobservable until then (the compiler zero-fills them).
+rwPrimUnfold :: ((R_, s) -> i -> PuRe s o) -> (s -> PuRe s o) -> ReacT i o Identity ()
+rwPrimUnfold f s0 = go (s0 (GHC.error "rwPrimUnfold: the initial state is unobservable"))
+      where go (Done _)      = GHC.return ()
+            go (Pause (o,b)) = do i <- GHC.signal o
+                                  go (f b i)
 
 -- | Convert an Integer into a @'Finite' n@, throws an error if >= @n@.
 rwPrimFinite :: KnownNat n => Integer -> Finite n

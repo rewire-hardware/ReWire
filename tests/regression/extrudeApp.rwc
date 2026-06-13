@@ -1,0 +1,113 @@
+$Pure.dispatch : ([16], [8]) -> [25]
+$Pure.dispatch $0 $1 =
+      $LL.Pure.dispatch1 $1 $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.dev21 : ([8], [8]) -> [25]
+$LL.Main.dev21 $0 $1 =
+      $LL.Main.dev15 $0 $1
+
+$LL.Pure.dispatch1 : ([8], [8], [8]) -> [25]
+$LL.Pure.dispatch1 $0 $1 $2 =
+      $LL.Pure.dispatch $0 $1 $2
+
+$LL.Main.dev20 : ([8], [8], [8]) -> [25]
+$LL.Main.dev20 $0 $1 $2 =
+      1'h1 # add $1 $0 # $0 # $2
+
+$LL.Main.dev19 : ([8], [8]) -> [25]
+$LL.Main.dev19 $0 $1 =
+      9'h0 # $0 # $1
+
+$LL.Main.dev18 : ([8], [8], [8]) -> [25]
+$LL.Main.dev18 $0 $1 $2 =
+      $LL.Main.dev $0 ($LL.Main.dev7 $1)
+
+$LL.Main.dev17 : ([8], [8]) -> [25]
+$LL.Main.dev17 $0 $2 =
+      $LL.Main.dev13 $0 $2
+
+Main.dev : ([8], [8]) -> [25]
+Main.dev $0 $1 =
+      $LL.Main.dev21 $0 $1
+
+$LL.Main.dev16 : ([8], [25]) -> [25]
+$LL.Main.dev16 $0 $1 =
+      $LL.Main.dev10 $0 $1[8 +: 8] $1[0 +: 8]
+
+$LL.Main.dev15 : ([8], [8]) -> [25]
+$LL.Main.dev15 $0 $1 =
+      $LL.Main.dev16 $0 ($LL.Main.dev6 ($1 # $1))
+
+$LL.Pure.dispatch : ([8], [8], [8]) -> [25]
+$LL.Pure.dispatch $0 $1 $2 =
+      $LL.Main.dev1 $1 $0 $2
+
+$LL.Main.dev14 : ([8]) -> [25]
+$LL.Main.dev14 $1 =
+      $LL.Main.dev8 $1
+
+$LL.Main.dev13 : ([8], [8]) -> [25]
+$LL.Main.dev13 $0 $2 =
+      $LL.Main.dev3 $0 $2
+
+$LL.Main.dev12 : ([8], [8]) -> [25]
+$LL.Main.dev12 $0 $2 =
+      Main.dev $0 $2
+
+$LL.Main.dev11 : ([8], [8], [8]) -> [25]
+$LL.Main.dev11 $0 $1 $2 =
+      $LL.Main.dev9 $0 $1 $2
+
+$LL.Main.dev10 : ([8], [8], [8]) -> [25]
+$LL.Main.dev10 $0 $1 $2 =
+      $LL.Main.dev11 $0 $1 $2
+
+$LL.Main.dev9 : ([8], [8], [8]) -> [25]
+$LL.Main.dev9 $0 $1 $2 =
+      $LL.Main.dev20 $0 $1 $2
+
+$LL.Main.dev8 : ([8]) -> [25]
+$LL.Main.dev8 $1 =
+      17'h100 # $1
+
+$LL.Main.dev7 : ([8]) -> [25]
+$LL.Main.dev7 $0 =
+      $LL.Main.dev14 $0
+
+$LL.Main.dev6 : ([16]) -> [25]
+$LL.Main.dev6 $0 =
+      $LL.Main.dev4 $0[8 +: 8] $0[0 +: 8]
+
+$LL.Main.dev5 : ([8], [8]) -> [25]
+$LL.Main.dev5 $0 $2 =
+      $LL.Main.dev2 $0 $2
+
+$LL.Main.dev4 : ([8], [8]) -> [25]
+$LL.Main.dev4 $0 $1 =
+      $LL.Main.dev19 $0 $1
+
+$LL.Main.dev3 : ([8], [8]) -> [25]
+$LL.Main.dev3 $0 $2 =
+      $LL.Main.dev5 $0 $2
+
+$LL.Main.dev2 : ([8], [8]) -> [25]
+$LL.Main.dev2 $0 $2 =
+      $LL.Main.dev12 $0 $2
+
+$LL.Main.dev1 : ([8], [8], [8]) -> [25]
+$LL.Main.dev1 $0 $1 $2 =
+      $LL.Main.dev18 $0 $1 $2
+
+$LL.Main.dev : ([8], [25]) -> [25]
+$LL.Main.dev $0 $1 =
+      $LL.Main.dev17 $0 $1[0 +: 8]
+
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      register __resumption_tag : [8] init 8'h3
+      register __st0 : [8] init 8'h0
+      let $res = $Pure.dispatch (__resumption_tag # __st0) __in0
+      __out0 := $res[16 +: 8]
+      next __resumption_tag := $res[8 +: 8]
+      next __st0 := $res[0 +: 8]

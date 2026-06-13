@@ -132,7 +132,12 @@ mkDevice topName (inWires, outWires, stWires) defLoop defState0 others = do
             else do
                   exts  <- gets sExterns
                   defns <- pure $ Map.fromList $ map (A.defnName &&& id) $ defLoop : defState0 : others
-                  init0 <- evalExp (IEnv defns exts) mempty (A.defnBody defState0)
+                  -- state0's arguments (the stores at the initial pause, when
+                  -- the device pauses before extruding) are unobservable;
+                  -- zero-fill them.
+                  let A.Sig _ argSzs _ = A.defnSig defState0
+                      args0            = Map.fromList $ zip (A.defnParams defState0) $ map (zeros . fromIntegral) argSzs
+                  init0 <- evalExp (IEnv defns exts) args0 (A.defnBody defState0)
                         `catchError` \ _ -> failAt (ann defState0)
                               "toHyle: cannot evaluate the initial state (does it involve an extern?)"
                   pure [ A.Register an x sz $ sliceBV init0 off sz | (x, sz, off) <- wireOffsets regWires ]
@@ -208,10 +213,12 @@ transDefn conf start conMap = \ case
                      let ps = zipWith (\ i _ -> "$" <> showt (i :: Int)) [0 ..] xs
                      body <- runReaderT (runReaderT (transExp e') conMap) (Map.fromList $ zip xs ps)
                      pure $ Right $ A.Defn an n' sig ps body
-      where getRegsTy :: MonadError AstError m => M.Ty -> m M.Ty
-            getRegsTy = \ case
+      where -- | state0 takes the (dead) initial stores as arguments when the
+            --   device pauses before extruding; look through them.
+            getRegsTy :: MonadError AstError m => M.Ty -> m M.Ty
+            getRegsTy t = case M.codomTy t of
                   M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "PuRe")) s) _ -> pure s
-                  t                                                     -> failAt (ann t) $ "transDefn: definition of " <> prettyPrint start <> " must have form `" <> prettyPrint start <> " = unfold n m' where m has type PuRe s o."
+                  _                                                     -> failAt (ann t) $ "transDefn: definition of " <> prettyPrint start <> " must have form `" <> prettyPrint start <> " = unfold n m' where m has type PuRe s o."
 
             detuple :: M.Ty -> [M.Ty]
             detuple t = case t of

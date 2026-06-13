@@ -2,138 +2,138 @@ $Pure.dispatch : ([1], [1]) -> [5]
 $Pure.dispatch $0 $1 =
       $LL.Pure.dispatch $1 $0
 
-$LL.ReWire.Monad.iterSt42 : ([1]) -> [5]
-$LL.ReWire.Monad.iterSt42 $1 =
-      $LL.ReWire.Monad.iterSt25 $1
+$LL.ReWire.Monad.iterSt42 : ([1], [1]) -> [5]
+$LL.ReWire.Monad.iterSt42 $0 $2 =
+      $LL.ReWire.Monad.iterSt31 $0 $2
 
-$LL.ReWire.Monad.iterSt38 : ([1], [1]) -> [5]
-$LL.ReWire.Monad.iterSt38 $0 $2 =
-      $LL.ReWire.Monad.iterSt $0 $2
+$LL.ReWire.Monad.iterSt40 : ([1]) -> [5]
+$LL.ReWire.Monad.iterSt40 $1 =
+      4'h4 # $1
 
-$LL.ReWire.Monad.iterSt37 : ([1], [1], [1]) -> [5]
-$LL.ReWire.Monad.iterSt37 $0 $1 $2 =
-      $LL.ReWire.Monad.iterSt7 $1 $2 $0
-
-$LL.Main.f7 : ([1], [1]) -> [2]
+$LL.Main.f7 : ([1], [1]) -> [1]
 $LL.Main.f7 $0 $1 =
-      $LL.Main.f5 $0 $1
+      $LL.Main.f2 ($0 # $1)
+
+$LL.Pure.dispatch : ([1], [1]) -> [5]
+$LL.Pure.dispatch $0 $1 =
+      ReWire.Monad.iterSt1 $0 $1
 
 $LL.Main.f6 : ([2]) -> [2]
 $LL.Main.f6 $0 =
-      $LL.Main.f7 $0[1 +: 1] $0[0 +: 1]
-
-$LL.ReWire.Monad.iterSt33 : ([1], [1]) -> [5]
-$LL.ReWire.Monad.iterSt33 $0 $2 =
-      3'h4 # $0 # $2
-
-$LL.ReWire.Monad.iterSt32 : ([1], [2]) -> [3]
-$LL.ReWire.Monad.iterSt32 $0 $1 =
-      $LL.ReWire.Monad.iterSt23 $0 $1[1 +: 1] $1[0 +: 1]
+      $LL.Main.f $0[1 +: 1] $0[0 +: 1]
 
 $LL.Main.f5 : ([1], [1]) -> [2]
 $LL.Main.f5 $0 $1 =
-      $LL.Main.f2 $1 $0 # $1
+      $LL.Main.f3 $1 $0 # $1
 
-$LL.ReWire.Monad.iterSt30 : ([3]) -> [5]
-$LL.ReWire.Monad.iterSt30 $0 =
-      $LL.ReWire.Monad.iterSt16 $0[1 +: 2] $0[0 +: 1]
+ReWire.Monad.iterSt1 : ([1], [1]) -> [5]
+ReWire.Monad.iterSt1 $0 $1 =
+      $LL.ReWire.Monad.iterSt21 ($LL.ReWire.Monad.iterSt35 ($LL.ReWire.Monad.iterSt15 $0 ($1 # $1)))
 
-$LL.ReWire.Monad.iterSt26 : ([1], [1], [1]) -> [5]
-$LL.ReWire.Monad.iterSt26 $0 $1 $2 =
-      $LL.ReWire.Monad.iterSt4 $0 $1 $2
+$LL.ReWire.Monad.iterSt35 : ([3]) -> [5]
+$LL.ReWire.Monad.iterSt35 $0 =
+      $LL.ReWire.Monad.iterSt34 $0[1 +: 2] $0[0 +: 1]
+
+$LL.ReWire.Monad.iterSt34 : ([2], [1]) -> [5]
+$LL.ReWire.Monad.iterSt34 $0 $1 =
+      $LL.ReWire.Monad.iterSt29 $0 $1
 
 $LL.Main.f4 : ([1], [1]) -> [1]
 $LL.Main.f4 $0 $1 =
       let $t1 = xor $0 $1 in
       $t1
 
-$LL.ReWire.Monad.iterSt25 : ([1]) -> [5]
-$LL.ReWire.Monad.iterSt25 $1 =
-      4'h4 # $1
+$LL.ReWire.Monad.iterSt33 : ([1], [1], [1]) -> [5]
+$LL.ReWire.Monad.iterSt33 $0 $1 $2 =
+      $LL.ReWire.Monad.iterSt13 $0 $1 $2
 
-$LL.ReWire.Monad.iterSt24 : ([1]) -> [5]
-$LL.ReWire.Monad.iterSt24 $0 =
-      $LL.ReWire.Monad.iterSt42 $0
-
-$LL.ReWire.Monad.iterSt23 : ([1], [1], [1]) -> [3]
-$LL.ReWire.Monad.iterSt23 $0 $1 $2 =
-      $LL.ReWire.Monad.iterSt6 $0 $1 $2
+$LL.ReWire.Monad.iterSt31 : ([1], [1]) -> [5]
+$LL.ReWire.Monad.iterSt31 $0 $2 =
+      3'h4 # $0 # $2
 
 $LL.Main.f3 : ([1], [1]) -> [1]
 $LL.Main.f3 $0 $1 =
+      $LL.Main.f7 $0 $1
+
+$LL.Main.f2 : ([2]) -> [1]
+$LL.Main.f2 $0 =
+      $LL.Main.f1 $0[1 +: 1] $0[0 +: 1]
+
+$LL.ReWire.Monad.iterSt29 : ([2], [1]) -> [5]
+$LL.ReWire.Monad.iterSt29 $0 $1 =
+      2'h0 # $0 # $1
+
+$LL.ReWire.Monad.iterSt25 : ([1], [1], [1]) -> [3]
+$LL.ReWire.Monad.iterSt25 $0 $1 $2 =
+      $LL.ReWire.Monad.iterSt24 $0 $1 $2
+
+$LL.Main.f1 : ([1], [1]) -> [1]
+$LL.Main.f1 $0 $1 =
       $LL.Main.f4 $0 $1
 
-$LL.ReWire.Monad.iterSt22 : ([5]) -> [5]
-$LL.ReWire.Monad.iterSt22 $0 =
-      $LL.ReWire.Monad.iterSt13 $0[1 +: 2] $0[0 +: 1]
+$LL.ReWire.Monad.iterSt24 : ([1], [1], [1]) -> [3]
+$LL.ReWire.Monad.iterSt24 $0 $1 $2 =
+      Main.f $0 $1 # $2
 
-$LL.Main.f2 : ([1], [1]) -> [1]
-$LL.Main.f2 $0 $1 =
-      $LL.Main.f $0 $1
+$LL.ReWire.Monad.iterSt23 : ([1], [1], [1]) -> [5]
+$LL.ReWire.Monad.iterSt23 $0 $1 $2 =
+      $LL.ReWire.Monad.iterSt14 $0 $1 $2
+
+$LL.ReWire.Monad.iterSt22 : ([2], [1]) -> [5]
+$LL.ReWire.Monad.iterSt22 $0 $1 =
+      $LL.ReWire.Monad.iterSt7 $0 $1
+
+$LL.ReWire.Monad.iterSt21 : ([5]) -> [5]
+$LL.ReWire.Monad.iterSt21 $0 =
+      $LL.ReWire.Monad.iterSt22 $0[1 +: 2] $0[0 +: 1]
+
+$LL.ReWire.Monad.iterSt19 : ([1], [1], [1]) -> [5]
+$LL.ReWire.Monad.iterSt19 $0 $1 $2 =
+      $LL.ReWire.Monad.iterSt23 $0 $1 $2
 
 Main.f : ([1], [1]) -> [2]
 Main.f $0 $1 =
       $LL.Main.f6 ($0 # $1)
 
-$LL.ReWire.Monad.iterSt17 : ([2], [1]) -> [5]
-$LL.ReWire.Monad.iterSt17 $0 $1 =
-      2'h0 # $0 # $1
+$LL.ReWire.Monad.iterSt17 : ([1], [1]) -> [5]
+$LL.ReWire.Monad.iterSt17 $0 $2 =
+      $LL.ReWire.Monad.iterSt42 $0 $2
 
-ReWire.Monad.iterSt : ([1], [1]) -> [5]
-ReWire.Monad.iterSt $0 $1 =
-      $LL.ReWire.Monad.iterSt22 ($LL.ReWire.Monad.iterSt30 ($LL.ReWire.Monad.iterSt32 $0 ($1 # $1)))
+$LL.ReWire.Monad.iterSt15 : ([1], [2]) -> [3]
+$LL.ReWire.Monad.iterSt15 $0 $1 =
+      $LL.ReWire.Monad.iterSt5 $0 $1[1 +: 1] $1[0 +: 1]
 
-$LL.ReWire.Monad.iterSt16 : ([2], [1]) -> [5]
-$LL.ReWire.Monad.iterSt16 $0 $1 =
-      $LL.ReWire.Monad.iterSt17 $0 $1
-
-$LL.ReWire.Monad.iterSt14 : ([1], [1], [1]) -> [3]
+$LL.ReWire.Monad.iterSt14 : ([1], [1], [1]) -> [5]
 $LL.ReWire.Monad.iterSt14 $0 $1 $2 =
-      Main.f $0 $1 # $2
+      $LL.ReWire.Monad.iterSt33 $1 $2 $0
 
-$LL.Pure.dispatch : ([1], [1]) -> [5]
-$LL.Pure.dispatch $0 $1 =
-      ReWire.Monad.iterSt $0 $1
-
-$LL.ReWire.Monad.iterSt13 : ([2], [1]) -> [5]
-$LL.ReWire.Monad.iterSt13 $0 $1 =
-      $LL.ReWire.Monad.iterSt11 $0 $1
-
-$LL.ReWire.Monad.iterSt11 : ([2], [1]) -> [5]
-$LL.ReWire.Monad.iterSt11 $0 $1 =
-      $LL.ReWire.Monad.iterSt26 $1 $0[1 +: 1] $0[0 +: 1]
-
-$LL.ReWire.Monad.iterSt7 : ([1], [1], [1]) -> [5]
-$LL.ReWire.Monad.iterSt7 $0 $1 $2 =
-      $LL.ReWire.Monad.iterSt1 $0 $1 $2
-
-$LL.Main.f1 : ([2]) -> [1]
-$LL.Main.f1 $0 =
-      $LL.Main.f3 $0[1 +: 1] $0[0 +: 1]
-
-$LL.Main.f : ([1], [1]) -> [1]
+$LL.Main.f : ([1], [1]) -> [2]
 $LL.Main.f $0 $1 =
-      $LL.Main.f1 ($0 # $1)
+      $LL.Main.f5 $0 $1
 
-$LL.ReWire.Monad.iterSt6 : ([1], [1], [1]) -> [3]
-$LL.ReWire.Monad.iterSt6 $0 $1 $2 =
-      $LL.ReWire.Monad.iterSt14 $0 $1 $2
+$LL.ReWire.Monad.iterSt13 : ([1], [1], [1]) -> [5]
+$LL.ReWire.Monad.iterSt13 $0 $1 $2 =
+      $LL.ReWire.Monad.iterSt12 $0 ($LL.ReWire.Monad.iterSt8 $1)
 
-$LL.ReWire.Monad.iterSt4 : ([1], [1], [1]) -> [5]
-$LL.ReWire.Monad.iterSt4 $0 $1 $2 =
-      $LL.ReWire.Monad.iterSt37 $0 $1 $2
+$LL.ReWire.Monad.iterSt12 : ([1], [5]) -> [5]
+$LL.ReWire.Monad.iterSt12 $0 $1 =
+      $LL.ReWire.Monad.iterSt17 $0 $1[0 +: 1]
 
-$LL.ReWire.Monad.iterSt2 : ([1], [5]) -> [5]
-$LL.ReWire.Monad.iterSt2 $0 $1 =
-      $LL.ReWire.Monad.iterSt38 $0 $1[0 +: 1]
+$LL.ReWire.Monad.iterSt8 : ([1]) -> [5]
+$LL.ReWire.Monad.iterSt8 $0 =
+      $LL.ReWire.Monad.iterSt1 $0
 
-$LL.ReWire.Monad.iterSt1 : ([1], [1], [1]) -> [5]
-$LL.ReWire.Monad.iterSt1 $0 $1 $2 =
-      $LL.ReWire.Monad.iterSt2 $0 ($LL.ReWire.Monad.iterSt24 $1)
+$LL.ReWire.Monad.iterSt7 : ([2], [1]) -> [5]
+$LL.ReWire.Monad.iterSt7 $0 $1 =
+      $LL.ReWire.Monad.iterSt19 $1 $0[1 +: 1] $0[0 +: 1]
 
-$LL.ReWire.Monad.iterSt : ([1], [1]) -> [5]
-$LL.ReWire.Monad.iterSt $0 $2 =
-      $LL.ReWire.Monad.iterSt33 $0 $2
+$LL.ReWire.Monad.iterSt5 : ([1], [1], [1]) -> [3]
+$LL.ReWire.Monad.iterSt5 $0 $1 $2 =
+      $LL.ReWire.Monad.iterSt25 $0 $1 $2
+
+$LL.ReWire.Monad.iterSt1 : ([1]) -> [5]
+$LL.ReWire.Monad.iterSt1 $1 =
+      $LL.ReWire.Monad.iterSt40 $1
 
 device top_level
       input __in0 : [1]

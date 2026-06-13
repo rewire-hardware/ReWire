@@ -22,43 +22,43 @@ rw__Pure_dispatch x0 = rw__LL_Pure_dispatch x0
 
 // Main.compute
 rw_Main_compute : [128] -> [64]
-rw_Main_compute x0 = rw__LL_Main_compute x0
+rw_Main_compute x0 = rw__LL_Main_compute2 x0
 
 // $LL.Pure.dispatch
 rw__LL_Pure_dispatch : [128] -> [65]
 rw__LL_Pure_dispatch x0 = rw_Main_loop x0
 
-// $LL.Main.compute4
-rw__LL_Main_compute4 : [64] -> [64] -> [64]
-rw__LL_Main_compute4 x0 x1 = rw__LL_Main_compute3 x0 x1
-
 // $LL.Main.loop3
 rw__LL_Main_loop3 : [128] -> [65]
-rw__LL_Main_loop3 x0 = rw__LL_Main_loop (0b0 # (rw_Main_compute x0))
+rw__LL_Main_loop3 x0 = rw__LL_Main_loop1 (0b0 # (rw_Main_compute x0))
 
 // Main.loop
 rw_Main_loop : [128] -> [65]
-rw_Main_loop x0 = rw__LL_Main_loop1 x0
+rw_Main_loop x0 = rw__LL_Main_loop2 x0
 
 // $LL.Main.loop2
-rw__LL_Main_loop2 : [64] -> [65]
-rw__LL_Main_loop2 x0 = 0b1 # x0
+rw__LL_Main_loop2 : [128] -> [65]
+rw__LL_Main_loop2 x0 = rw__LL_Main_loop3 x0
 
 // $LL.Main.loop1
-rw__LL_Main_loop1 : [128] -> [65]
-rw__LL_Main_loop1 x0 = rw__LL_Main_loop3 x0
+rw__LL_Main_loop1 : [65] -> [65]
+rw__LL_Main_loop1 x0 = rw__LL_Main_loop (drop`{1} x0)
 
-// $LL.Main.compute3
-rw__LL_Main_compute3 : [64] -> [64] -> [64]
-rw__LL_Main_compute3 x0 x1 = (take`{8} (drop`{24} x0)) # ((take`{8} (drop`{16} x0)) # ((take`{8} (drop`{8} x0)) # ((take`{8} x0) # (0x00 # (drop`{40} x1)))))
+// $LL.Main.compute2
+rw__LL_Main_compute2 : [128] -> [64]
+rw__LL_Main_compute2 x0 = rw__LL_Main_compute (take`{64} x0) (drop`{64} x0)
 
 // $LL.Main.loop
-rw__LL_Main_loop : [65] -> [65]
-rw__LL_Main_loop x0 = rw__LL_Main_loop2 (drop`{1} x0)
+rw__LL_Main_loop : [64] -> [65]
+rw__LL_Main_loop x0 = 0b1 # x0
+
+// $LL.Main.compute1
+rw__LL_Main_compute1 : [64] -> [64] -> [64]
+rw__LL_Main_compute1 x0 x1 = (take`{8} (drop`{24} x0)) # ((take`{8} (drop`{16} x0)) # ((take`{8} (drop`{8} x0)) # ((take`{8} x0) # (0x00 # (drop`{40} x1)))))
 
 // $LL.Main.compute
-rw__LL_Main_compute : [128] -> [64]
-rw__LL_Main_compute x0 = rw__LL_Main_compute4 (take`{64} x0) (drop`{64} x0)
+rw__LL_Main_compute : [64] -> [64] -> [64]
+rw__LL_Main_compute x0 x1 = rw__LL_Main_compute1 x0 x1
 
 // Per-cycle step: outputs # next register values.
 rw_step : [128] -> [64]

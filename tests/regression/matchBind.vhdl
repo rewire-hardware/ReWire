@@ -208,37 +208,37 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZLL_Main_loop16\ is
+component \ZLL_Main_loop17\ is
       port (arg0 : in std_logic_vector (18 downto 0);
             res : out std_logic_vector (18 downto 0));
       end component;
-      component \ZLL_Pure_dispatch1\ is
+      component \ZLL_Pure_dispatch2\ is
       port (arg0 : in std_logic_vector (7 downto 0);
             arg1 : in std_logic_vector (7 downto 0);
             res : out std_logic_vector (18 downto 0));
       end component;
-      signal \__resumption_tag\ : std_logic_vector (1 downto 0) := std_logic_vector'(B"00");
+      signal \__resumption_tag\ : std_logic_vector (1 downto 0) := std_logic_vector'(B"10");
       signal \__resumption_tag_next\ : std_logic_vector (1 downto 0);
       signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal zll_pure_dispatch1_out : std_logic_vector (18 downto 0);
-      signal \zll_pure_dispatch1_outR1\ : std_logic_vector (18 downto 0);
+      signal zll_pure_dispatch2_out : std_logic_vector (18 downto 0);
       signal conn : std_logic_vector (18 downto 0);
-      signal zll_main_loop16_out : std_logic_vector (18 downto 0);
+      signal zll_main_loop17_out : std_logic_vector (18 downto 0);
+      signal \zll_pure_dispatch2_outR1\ : std_logic_vector (18 downto 0);
       signal zres : std_logic_vector (18 downto 0);
 begin
-inst : \ZLL_Pure_dispatch1\ port map (\__in0\, \__st0\, zll_pure_dispatch1_out);
-      \instR1\ : \ZLL_Pure_dispatch1\ port map (\__in0\, \__st0\, \zll_pure_dispatch1_outR1\);
+inst : \ZLL_Pure_dispatch2\ port map (\__in0\, \__st0\, zll_pure_dispatch2_out);
       conn <= (std_logic_vector'(B"01000000000") & \__in0\);
-      \instR2\ : \ZLL_Main_loop16\ port map (conn, zll_main_loop16_out);
-      zres <= rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"01")), zll_pure_dispatch1_out, rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"10")), \zll_pure_dispatch1_outR1\, zll_main_loop16_out));
+      \instR1\ : \ZLL_Main_loop17\ port map (conn, zll_main_loop17_out);
+      \instR2\ : \ZLL_Pure_dispatch2\ port map (\__in0\, \__st0\, \zll_pure_dispatch2_outR1\);
+      zres <= rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"01")), zll_pure_dispatch2_out, rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"10")), zll_main_loop17_out, \zll_pure_dispatch2_outR1\));
       \__resumption_tag_next\ <= zres(9 downto 8);
       \__st0_next\ <= zres(7 downto 0);
       \__out0\ <= zres(17 downto 10);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then
-                  \__resumption_tag\ <= std_logic_vector'(B"00");
+                  \__resumption_tag\ <= std_logic_vector'(B"10");
                   \__st0\ <= std_logic_vector'(B"00000000");
             elsif rising_edge(clk(0)) then
                   \__resumption_tag\ <= \__resumption_tag_next\;
@@ -251,44 +251,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_loop16\ is
-port (arg0 : in std_logic_vector (18 downto 0);
-      res : out std_logic_vector (18 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_loop16\ is
-component \ZLL_Main_loop15\ is
-      port (arg0 : in std_logic_vector (7 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      signal zi0 : std_logic_vector (7 downto 0);
-      signal zll_main_loop15_out : std_logic_vector (0 downto 0);
-      signal zi7 : std_logic_vector (8 downto 0);
-      signal zi8 : std_logic_vector (7 downto 0);
-      signal \zll_main_loop15_outR1\ : std_logic_vector (0 downto 0);
-      signal zi9 : std_logic_vector (8 downto 0);
-      signal zi10 : std_logic_vector (7 downto 0);
-begin
-zi0 <= arg0(7 downto 0);
-      inst : \ZLL_Main_loop15\ port map (zi0, zll_main_loop15_out);
-      zi7 <= (zi0 & zll_main_loop15_out);
-      zi8 <= zi7(8 downto 1);
-      \instR1\ : \ZLL_Main_loop15\ port map (zi0, \zll_main_loop15_outR1\);
-      zi9 <= (zi0 & \zll_main_loop15_outR1\);
-      zi10 <= zi9(8 downto 1);
-      res <= rw_cond(rw_eq(zi7(0 downto 0), std_logic_vector'(B"1")), (std_logic_vector'(B"10000001001") & zi8), (std_logic_vector'(B"10000001010") & zi10));
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_loop15\ is
+entity \ZLL_Main_loop21\ is
 port (arg0 : in std_logic_vector (7 downto 0);
       res : out std_logic_vector (0 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_loop15\ is
+architecture rtl of \ZLL_Main_loop21\ is
 signal zi0 : std_logic_vector (0 downto 0);
       signal zi1 : std_logic_vector (0 downto 0);
 begin
@@ -301,21 +269,53 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Pure_dispatch1\ is
+entity \ZLL_Main_loop17\ is
+port (arg0 : in std_logic_vector (18 downto 0);
+      res : out std_logic_vector (18 downto 0));
+end entity;
+
+architecture rtl of \ZLL_Main_loop17\ is
+component \ZLL_Main_loop21\ is
+      port (arg0 : in std_logic_vector (7 downto 0);
+            res : out std_logic_vector (0 downto 0));
+      end component;
+      signal zi0 : std_logic_vector (7 downto 0);
+      signal zll_main_loop21_out : std_logic_vector (0 downto 0);
+      signal zi7 : std_logic_vector (8 downto 0);
+      signal zi8 : std_logic_vector (7 downto 0);
+      signal \zll_main_loop21_outR1\ : std_logic_vector (0 downto 0);
+      signal zi9 : std_logic_vector (8 downto 0);
+      signal zi10 : std_logic_vector (7 downto 0);
+begin
+zi0 <= arg0(7 downto 0);
+      inst : \ZLL_Main_loop21\ port map (zi0, zll_main_loop21_out);
+      zi7 <= (zi0 & zll_main_loop21_out);
+      zi8 <= zi7(8 downto 1);
+      \instR1\ : \ZLL_Main_loop21\ port map (zi0, \zll_main_loop21_outR1\);
+      zi9 <= (zi0 & \zll_main_loop21_outR1\);
+      zi10 <= zi9(8 downto 1);
+      res <= rw_cond(rw_eq(zi7(0 downto 0), std_logic_vector'(B"1")), (std_logic_vector'(B"10000001001") & zi8), (std_logic_vector'(B"10000001000") & zi10));
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \ZLL_Pure_dispatch2\ is
 port (arg0 : in std_logic_vector (7 downto 0);
       arg1 : in std_logic_vector (7 downto 0);
       res : out std_logic_vector (18 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Pure_dispatch1\ is
-component \ZLL_Main_loop16\ is
+architecture rtl of \ZLL_Pure_dispatch2\ is
+component \ZLL_Main_loop17\ is
       port (arg0 : in std_logic_vector (18 downto 0);
             res : out std_logic_vector (18 downto 0));
       end component;
       signal conn : std_logic_vector (18 downto 0);
-      signal zll_main_loop16_out : std_logic_vector (18 downto 0);
+      signal zll_main_loop17_out : std_logic_vector (18 downto 0);
 begin
 conn <= (std_logic_vector'(B"01000000000") & arg1);
-      inst : \ZLL_Main_loop16\ port map (conn, zll_main_loop16_out);
-      res <= zll_main_loop16_out;
+      inst : \ZLL_Main_loop17\ port map (conn, zll_main_loop17_out);
+      res <= zll_main_loop17_out;
 end architecture;

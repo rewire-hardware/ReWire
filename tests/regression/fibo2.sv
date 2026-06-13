@@ -6,14 +6,14 @@ module top_level (input logic [0:0] clk,
   logic [15:0] __resumption_tag_next;
   logic [7:0] zi0;
   logic [7:0] zi1;
-  logic [23:0] main_loop_out;
-  logic [23:0] main_loop_outR1;
+  logic [23:0] main_loop1_out;
+  logic [23:0] main_loop1_outR1;
   logic [23:0] zres;
   assign zi0 = __resumption_tag[15:8];
   assign zi1 = __resumption_tag[7:0];
-  Main_loop  inst (zi0, zi1, main_loop_out);
-  Main_loop  instR1 (zi1, zi0 + zi1, main_loop_outR1);
-  assign zres = (__in0 == 1'h1) ? main_loop_out : main_loop_outR1;
+  Main_loop1  inst (zi0, zi1, main_loop1_out);
+  Main_loop1  instR1 (zi1, zi0 + zi1, main_loop1_outR1);
+  assign zres = (__in0 == 1'h1) ? main_loop1_out : main_loop1_outR1;
   assign __resumption_tag_next = zres[15:0];
   assign __out0 = zres[23:16];
   initial __resumption_tag = 16'h1;
@@ -26,7 +26,7 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module Main_loop (input logic [7:0] arg0,
+module Main_loop1 (input logic [7:0] arg0,
   input logic [7:0] arg1,
   output logic [23:0] res);
   assign res = {arg0, arg0, arg1};

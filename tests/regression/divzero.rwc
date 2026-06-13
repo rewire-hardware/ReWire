@@ -2,37 +2,37 @@ $Pure.dispatch : ([8]) -> [16]
 $Pure.dispatch $1 =
       $LL.Pure.dispatch $1
 
+$LL.Main.f6 : ([8], [8]) -> [16]
+$LL.Main.f6 $0 $1 =
+      udiv $0 $1 # xor (umod $0 $1) 8'hff
+
 $LL.Pure.dispatch : ([8]) -> [16]
 $LL.Pure.dispatch $0 =
       ReWire.Monad.iter $0
 
-Main.f1 : ([8]) -> [16]
-Main.f1 $0 =
-      $LL.Main.f3 $0
-
 $LL.Main.f4 : ([8], [8]) -> [16]
 $LL.Main.f4 $0 $1 =
-      $LL.Main.f $0 $1
+      $LL.Main.f6 $0 $1
 
 $LL.Main.f3 : ([8]) -> [16]
 $LL.Main.f3 $0 =
-      $LL.Main.f2 $0
+      $LL.Main.f1 $0
 
-$LL.Main.f2 : ([8]) -> [16]
-$LL.Main.f2 $0 =
-      $LL.Main.f1 $0 (and $0 8'h3)
+Main.f : ([8]) -> [16]
+Main.f $0 =
+      $LL.Main.f3 $0
 
-$LL.Main.f1 : ([8], [8]) -> [16]
-$LL.Main.f1 $0 $1 =
-      $LL.Main.f4 $0 $1
-
-$LL.Main.f : ([8], [8]) -> [16]
-$LL.Main.f $0 $1 =
-      udiv $0 $1 # xor (umod $0 $1) 8'hff
+$LL.Main.f1 : ([8]) -> [16]
+$LL.Main.f1 $0 =
+      $LL.Main.f $0 (and $0 8'h3)
 
 ReWire.Monad.iter : ([8]) -> [16]
 ReWire.Monad.iter $0 =
-      Main.f1 $0
+      Main.f $0
+
+$LL.Main.f : ([8], [8]) -> [16]
+$LL.Main.f $0 $1 =
+      $LL.Main.f4 $0 $1
 
 device top_level
       input __in0 : [8]
