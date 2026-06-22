@@ -5,7 +5,7 @@ the SHA-256 Cryptographic Hash Function in ReWire", RSP 2016. This is the
 files because it works better with cabal test.
 -}
 
-import ReWire
+import ReWire hiding (Bit)
 
 data Bit = C | S
 

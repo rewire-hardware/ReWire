@@ -315,24 +315,31 @@ runCosim fn = do
                   $ tv == th && tv == ti && length tv == cosimCycles * length outs
             -- Fourth leg: evaluate the Cryptol backend's rw_device on the same
             -- stimulus with the cryptol interpreter and compare against the
-            -- interpreter trace. Externs become uninterpreted parameters in
-            -- Cryptol, so this is skipped whenever the interpreter leg failed
-            -- (and when cryptol isn't installed).
+            -- interpreter trace. Skipped when cryptol isn't installed or the
+            -- interpreter leg failed (model-less externs the interpreter
+            -- reached), and also when the generated Cryptol is a parameterized
+            -- module: model-less externs become uninterpreted `parameter`s,
+            -- and a parameterized module's rw_device cannot be evaluated
+            -- standalone (the interpreter can still succeed when those externs
+            -- aren't reached, e.g. Sha256_2, so the iok check alone isn't
+            -- enough). The simulator and interpreter legs still cover it.
             mcry <- findExecutable "cryptol"
             case (mcry, iok) of
                   (Just _, Right ()) -> do
                         rwc ["--cryptol", "-o", ofl "cosim.cry"]
-                        callCommand $ unwords
-                              [ "cryptol", ofl "cosim.cry"
-                              , "-c", "':set base=16'"
-                              , "-c", "'" <> cryDevice (dataIns ins) stim <> "'"
-                              , ">", ofl "cosim.ctrace" ]
-                        tc <- hexWords <$> readFile (ofl "cosim.ctrace")
-                        let expect = map (concatWord (map snd outs) . map snd) $ chunksOf (length outs) ti
-                        assertBool (  "cryptol/interpreter cosimulation traces differ:"
-                                   <> "\ncryptol: " <> show tc
-                                   <> "\ninterp:  " <> show expect)
-                              $ tc == expect
+                        parameterized <- any (isPrefixOf "parameter") . lines <$> readFile (ofl "cosim.cry")
+                        unless parameterized $ do
+                              callCommand $ unwords
+                                    [ "cryptol", ofl "cosim.cry"
+                                    , "-c", "':set base=16'"
+                                    , "-c", "'" <> cryDevice (dataIns ins) stim <> "'"
+                                    , ">", ofl "cosim.ctrace" ]
+                              tc <- hexWords <$> readFile (ofl "cosim.ctrace")
+                              let expect = map (concatWord (map snd outs) . map snd) $ chunksOf (length outs) ti
+                              assertBool (  "cryptol/interpreter cosimulation traces differ:"
+                                         <> "\ncryptol: " <> show tc
+                                         <> "\ninterp:  " <> show expect)
+                                    $ tc == expect
                   _ -> pure ()
       where ofl :: String -> FilePath
             ofl ext = fn -<.> ("out." <> ext)

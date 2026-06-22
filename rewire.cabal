@@ -26,7 +26,6 @@ data-files:
     tests/integration/InlinedMiniISA.hs
     tests/integration/MiniISA.hs
     tests/integration/SecMemCon.hs
-    tests/integration/Sha256_2.hs
     tests/negative/ambiguous-size.hs
     tests/negative/bind-lhs-pause.hs
     tests/negative/illtyped-dead-code.hs
@@ -98,6 +97,7 @@ data-files:
     tests/regression/records.hs
     tests/regression/RW_REPL_OD19Filter.hs
     tests/regression/Sha256_1.hs
+    tests/regression/Sha256_2.hs
     tests/regression/signalFirst.hs
     tests/regression/sigNothing.hs
     tests/regression/state.hs
@@ -163,6 +163,7 @@ data-files:
     tests/regression/records.sv
     tests/regression/RW_REPL_OD19Filter.sv
     tests/regression/Sha256_1.sv
+    tests/regression/Sha256_2.sv
     tests/regression/signalFirst.sv
     tests/regression/sigNothing.sv
     tests/regression/state.sv
@@ -228,6 +229,7 @@ data-files:
     tests/regression/records.rwc
     tests/regression/RW_REPL_OD19Filter.rwc
     tests/regression/Sha256_1.rwc
+    tests/regression/Sha256_2.rwc
     tests/regression/signalFirst.rwc
     tests/regression/sigNothing.rwc
     tests/regression/state.rwc
@@ -293,6 +295,7 @@ data-files:
     tests/regression/records.vhdl
     tests/regression/RW_REPL_OD19Filter.vhdl
     tests/regression/Sha256_1.vhdl
+    tests/regression/Sha256_2.vhdl
     tests/regression/signalFirst.vhdl
     tests/regression/sigNothing.vhdl
     tests/regression/state.vhdl
@@ -357,6 +360,7 @@ data-files:
     tests/regression/records.cry
     tests/regression/RW_REPL_OD19Filter.cry
     tests/regression/Sha256_1.cry
+    tests/regression/Sha256_2.cry
     tests/regression/signalFirst.cry
     tests/regression/sigNothing.cry
     tests/regression/state.cry
