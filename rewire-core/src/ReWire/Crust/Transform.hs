@@ -494,11 +494,21 @@ llExp dn bvs =  \ case
       Match an tan t disc p e els -> do
             e' <- llExp' e >>= lift'
             let (v, lvars) = flattenApp e'
-            Match an tan t
-                  <$> llExp' (mkTuple an $ lvars <> [disc])
-                  <*> pure (mkTupleMPat an $ (MatchPatVar an Nothing . typeOf <$> lvars) <> [p])
-                  <*> pure v
-                  <*> mapM llExp' els
+            -- Don't fold a bind operator's operands into the match
+            -- discriminant: doing so binds the (possibly pausing) bind LHS
+            -- behind a MatchPatVar, hiding the bind from normalizeBind (which
+            -- recognizes binds only as syntactic `Builtin Bind` applications,
+            -- via dstBind). The pausing LHS would then never get inlined/
+            -- re-associated and would survive to purify. Leave the bind as the
+            -- arm body so normalizeBind can normalize it; it stays syntactic
+            -- through the later lambda-lifting passes for purify.
+            if isBindHead v && not (null lvars)
+                  then Match an tan t <$> llExp' disc <*> pure p <*> pure e' <*> mapM llExp' els
+                  else Match an tan t
+                        <$> llExp' (mkTuple an $ lvars <> [disc])
+                        <*> pure (mkTupleMPat an $ (MatchPatVar an Nothing . typeOf <$> lvars) <> [p])
+                        <*> pure v
+                        <*> mapM llExp' els
       App an tan t e1 e2  -> App an tan t <$> llExp' e1 <*> llExp' e2
       LitList an tan t es -> LitList an tan t <$> mapM llExp' es
       LitVec an tan t es  -> LitVec an tan t <$> mapM llExp' es
@@ -514,6 +524,11 @@ llExp dn bvs =  \ case
             isBuiltin = \ case
                   Builtin {} -> True
                   _          -> False
+
+            isBindHead :: Exp -> Bool
+            isBindHead = \ case
+                  Builtin _ _ _ Bind -> True
+                  _                  -> False
 
 -- | Lifts an expression to a definition and returns an application (to pass
 --   any free variables). Argument is a list of non-global free variables.

@@ -60,6 +60,7 @@ data-files:
     tests/regression/vhdl/w32ops.vhdl
     tests/regression/case1.hs
     tests/regression/case2.hs
+    tests/regression/caseBindBug.hs
     tests/regression/cubehash.hs
     tests/regression/dependencyGraph.hs
     tests/regression/dissex.hs
@@ -126,6 +127,7 @@ data-files:
     tests/regression/zerowidth.hs
     tests/regression/case1.sv
     tests/regression/case2.sv
+    tests/regression/caseBindBug.sv
     tests/regression/cubehash.sv
     tests/regression/dependencyGraph.sv
     tests/regression/dissex.sv
@@ -192,6 +194,7 @@ data-files:
     tests/regression/zerowidth.sv
     tests/regression/case1.rwc
     tests/regression/case2.rwc
+    tests/regression/caseBindBug.rwc
     tests/regression/cubehash.rwc
     tests/regression/dependencyGraph.rwc
     tests/regression/dissex.rwc
@@ -258,6 +261,7 @@ data-files:
     tests/regression/zerowidth.rwc
     tests/regression/case1.vhdl
     tests/regression/case2.vhdl
+    tests/regression/caseBindBug.vhdl
     tests/regression/cubehash.vhdl
     tests/regression/dependencyGraph.vhdl
     tests/regression/dissex.vhdl
@@ -324,6 +328,7 @@ data-files:
     tests/regression/zerowidth.vhdl
     tests/regression/case1.cry
     tests/regression/case2.cry
+    tests/regression/caseBindBug.cry
     tests/regression/cubehash.cry
     tests/regression/dependencyGraph.cry
     tests/regression/dissex.cry
@@ -389,6 +394,7 @@ data-files:
     tests/regression/zerowidth.cry
     tests/regression/case1.yaml
     tests/regression/case2.yaml
+    tests/regression/caseBindBug.yaml
     tests/regression/cubehash.yaml
     tests/regression/dependencyGraph.yaml
     tests/regression/dissex.yaml
