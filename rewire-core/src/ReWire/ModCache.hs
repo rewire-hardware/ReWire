@@ -27,6 +27,7 @@ import ReWire.Pass (runPasses, printHeader, printInfoHSE, verb')
 import ReWire.Pretty (prettyPrint, prettyPrint', showt)
 import ReWire.Unbound (fv, trec, runFreshMT, FreshMT, Name, Fresh, s2n)
 
+import Control.DeepSeq (deepseq)
 import Control.Lens ((^.))
 import Control.Monad ((>=>), when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
@@ -86,9 +87,9 @@ getDevice conf fp = do
       (Module ts syns ds,  _)  <- getModule conf "." fp
 
       p <- pure
-       >=> runPasses pass pure    nFront frontPasses
-       >=> runPasses pass extraTC nMid   midPasses
-       >=> runPasses pass pure    nBack  backPasses
+       >=> runPasses pass forceProg            nFront frontPasses
+       >=> runPasses pass (extraTC >=> forceProg) nMid   midPasses
+       >=> runPasses pass forceProg            nBack  backPasses
        >=> pass nCore "Translating to hyle & HDL."
        >=> toHyle conf start
        >=> verb ("[" <> showt nFinal <> "] Hyle.")
@@ -157,6 +158,15 @@ getDevice conf fp = do
 
             start :: Name Exp
             start = s2n $ conf^.C.start
+
+            -- Force the IR to normal form after each pass. The IR is threaded
+            -- lazily through the pipeline; without this, the lazy
+            -- unbound-generics bind/unbind thunks produced by each pass chain
+            -- through every later pass and are only forced (catastrophically,
+            -- to many GB on large programs) when something finally demands
+            -- them. Forcing here keeps the working set to one pass's output.
+            forceProg :: Monad m => FreeProgram -> m FreeProgram
+            forceProg p = p `deepseq` pure p
 
             extraTC :: (Fresh m, MonadIO m, MonadError AstError m) => FreeProgram -> m FreeProgram
             extraTC | conf^.typecheck = verb "Type-checking again (--debug-typecheck)." >=> kindCheck >=> typeCheck start
