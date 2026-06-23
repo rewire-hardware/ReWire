@@ -97,7 +97,7 @@ data-files:
     tests/regression/records.hs
     tests/regression/RW_REPL_OD19Filter.hs
     tests/regression/SecMemCon.hs
-    tests/regression/Sha256_1.hs
+    tests/regression/Sha256.hs
     tests/regression/Sha256_2.hs
     tests/regression/signalFirst.hs
     tests/regression/sigNothing.hs
@@ -165,7 +165,7 @@ data-files:
     tests/regression/records.sv
     tests/regression/RW_REPL_OD19Filter.sv
     tests/regression/SecMemCon.sv
-    tests/regression/Sha256_1.sv
+    tests/regression/Sha256.sv
     tests/regression/Sha256_2.sv
     tests/regression/signalFirst.sv
     tests/regression/sigNothing.sv
@@ -233,7 +233,7 @@ data-files:
     tests/regression/records.rwc
     tests/regression/RW_REPL_OD19Filter.rwc
     tests/regression/SecMemCon.rwc
-    tests/regression/Sha256_1.rwc
+    tests/regression/Sha256.rwc
     tests/regression/Sha256_2.rwc
     tests/regression/signalFirst.rwc
     tests/regression/sigNothing.rwc
@@ -301,7 +301,7 @@ data-files:
     tests/regression/records.vhdl
     tests/regression/RW_REPL_OD19Filter.vhdl
     tests/regression/SecMemCon.vhdl
-    tests/regression/Sha256_1.vhdl
+    tests/regression/Sha256.vhdl
     tests/regression/Sha256_2.vhdl
     tests/regression/signalFirst.vhdl
     tests/regression/sigNothing.vhdl
@@ -368,7 +368,7 @@ data-files:
     tests/regression/records.cry
     tests/regression/RW_REPL_OD19Filter.cry
     tests/regression/SecMemCon.cry
-    tests/regression/Sha256_1.cry
+    tests/regression/Sha256.cry
     tests/regression/Sha256_2.cry
     tests/regression/signalFirst.cry
     tests/regression/sigNothing.cry
@@ -466,6 +466,8 @@ data-files:
     tests/regression/records.yaml
     tests/regression/SecMemCon.input.yaml
     tests/regression/SecMemCon.yaml
+    tests/regression/Sha256.input.yaml
+    tests/regression/Sha256.yaml
     tests/regression/signalFirst.input.yaml
     tests/regression/signalFirst.yaml
     tests/regression/sigNothing.input.yaml
