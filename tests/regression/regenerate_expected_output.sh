@@ -12,7 +12,16 @@ for file in ./*.hs; do
   ${RWC} --from-core --vhdl "${file/%.hs/.rwc}"
   echo $(basename ${file}) ": compile to Cryptol (${file/%.hs/.cry})"
   ${RWC} --from-core --cryptol "${file/%.hs/.rwc}"
-  echo $(basename ${file}) ": interpret ReWire Core (${file/%.hs/.yaml})"
-  ${RWC} --from-core --interp="${file/%.hs/.input.yaml}" "${file/%.hs/.rwc}"
+  input="${file/%.hs/.input.yaml}"
+  if [[ -f "${input}" ]]; then
+    # Drive the interpreter from the per-test inputs file for exactly as many
+    # cycles as it lists (one per "- " line), matching what rwc-test does.
+    cycles=$(grep -cE '^- ' "${input}")
+    echo $(basename ${file}) ": interpret ReWire Core (${file/%.hs/.yaml}, ${cycles} cycles from $(basename ${input}))"
+    ${RWC} --from-core --interpret="${input}" --cycles "${cycles}" "${file/%.hs/.rwc}"
+  else
+    echo $(basename ${file}) ": interpret ReWire Core (${file/%.hs/.yaml})"
+    ${RWC} --from-core --interp "${file/%.hs/.rwc}"
+  fi
 done
 echo "Done!"
