@@ -1,47 +1,58 @@
-# SecMemCon interpreter stimulus.
+# Per-cycle inputs for the SecMemCon golden (consumed by `rwc --interpret`).
+# __in0 is 46 bits = PortsIn, MSB-first:
+#   data_in(W32) ++ addr_in(W10) ++ go(Bit) ++ rnw(Bit) ++ partition_in(W2)
+# so __in0 = data_in<<14 | addr_in<<4 | go<<3 | rnw<<2 | partition.
+# go=S(1) requests an op; rnw=S(1) read / C(0) write. Memory has 4 cells keyed
+# on addr_in's low two bits (0..3); partition overwrites the high two bits.
+# Output __out0 (33 bits) = ack_out(Bit) ++ data_out(W32); a read drives
+# data_out to the stored value with ack=1 (so e.g. 0x1deadbeef = ack ++ 0xDEADBEEF).
 #
-# Device: a secure-memory controller (ReacT PortsIn PortsOut over StateT (Sigs, Mem)).
-#
-# INPUT ENCODING -- __in0 is 46 bits = PortsIn, fields MSB-first in declaration order:
-#   data_in :W32  -> bits [45:14]
-#   addr_in :W10  -> bits [13:4]   (W10 bit b0 is the MSB ... b9 is the LSB)
-#   go      :Bit  -> bit  [3]      (Bit: C=0, S=1)
-#   rnw     :Bit  -> bit  [2]
-#   partition_in:W2 -> bits [1:0]
-# So __in0 = data_in<<14 | addr_in<<4 | go<<3 | rnw<<2 | partition.
-# In `idle`, (go,rnw)=(S,S)=read, (S,C)=write, otherwise idle.
-# memLookup/memTweak key only on the two W10 LSBs (b8,b9 -> addr value 0..3 selects mem0..mem3)
-# and require the high 8 W10 bits = 0; <&> overwrites the two W10 MSBs with partition_in, so a
-# valid cell access needs partition_in = 0 and addr_in in {0,1,2,3}.
-#
-# OUTPUT ENCODING -- __out0 is 33 bits = PortsOut: ack_out:Bit [32] ++ data_out:W32 [31:0].
-#
-# WHAT THIS SEQUENCE DOES (logical intent): writes/reads cells 1,2,3,0 with distinct payloads
-# (0xDEADBEEF, 0x12345678, 0xCAFEBABE, 0xFFFFFFFF), interleaved idles, plus a partition=3 /
-# all-ones edge probe. Each logical op is held >=2 cycles to survive tick alignment.
-#
-# IMPORTANT (verified): this device NEVER reacts to input. After `reset`, control enters the RAM
-# scrub loop `while_addr_reg_0`, which recurses on a captured state and never decrements
-# addr_reg, so its guard `positiveW10 addr_reg` (addr_reg = onesW10, b9=S) stays true forever.
-# The machine is stuck signalling the captured reset signals every cycle, so __out0 is constant
-# regardless of __in0. The constant is ack_out=C(0) ++ data_out=0xffffffff (data_out_reg init).
-# inputAffectsOutput = false. The sequence is varied anyway, per the harness instructions.
-- __in0: 61209453510680   # write d=0xDEADBEEF a=1 p=0
-- __in0: 61209453510680   # write d=0xDEADBEEF a=1 p=0 (held)
-- __in0: 28               # read  a=1 p=0
-- __in0: 28               # read  a=1 p=0 (held)
-- __in0: 5003999576104    # write d=0x12345678 a=2 p=0
-- __in0: 5003999576104    # write d=0x12345678 a=2 p=0 (held)
-- __in0: 44               # read  a=2 p=0
-- __in0: 44               # read  a=2 p=0 (held)
-- __in0: 0                # idle  go=0
-- __in0: 55798850879544   # write d=0xCAFEBABE a=3 p=0
-- __in0: 55798850879544   # write d=0xCAFEBABE a=3 p=0 (held)
-- __in0: 60               # read  a=3 p=0
-- __in0: 60               # read  a=3 p=0 (held)
-- __in0: 70368744177655   # idle, partition=3, all-ones data/addr edge probe
-- __in0: 12               # read  a=0 p=0
-- __in0: 12               # read  a=0 p=0 (held)
-- __in0: 70368744161288   # write d=0xFFFFFFFF a=0 p=0
-- __in0: 70368744161288   # write d=0xFFFFFFFF a=0 p=0 (held)
-- __in0: 4                # idle  go=0 rnw=1
+# After reset the device scrubs the four cells (to zeroW32, which in this model
+# is the all-ones 0xffffffff) over a few cycles, then enters `idle`. Program:
+#   idle x6              -- let reset + scrub settle
+#   write 0xDEADBEEF @1  -- then read @1  -> 0x1deadbeef
+#   write 0x12345678 @2  -- then read @2  -> 0x112345678
+#   write 0xCAFEBABE @3  -- then read @3  -> 0x1cafebabe
+#   read @1              -- still 0x1deadbeef (per-cell persistence)
+#   read @0              -- unwritten -> 0x1ffffffff (the scrub value)
+# Each op is held a few cycles to clear the idle->pre_*->perform_* pipeline.
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 61209453510680
+- __in0: 61209453510680
+- __in0: 61209453510680
+- __in0: 61209453510680
+- __in0: 28
+- __in0: 28
+- __in0: 28
+- __in0: 28
+- __in0: 5003999576104
+- __in0: 5003999576104
+- __in0: 5003999576104
+- __in0: 5003999576104
+- __in0: 44
+- __in0: 44
+- __in0: 44
+- __in0: 44
+- __in0: 55798850879544
+- __in0: 55798850879544
+- __in0: 55798850879544
+- __in0: 55798850879544
+- __in0: 60
+- __in0: 60
+- __in0: 60
+- __in0: 60
+- __in0: 28
+- __in0: 28
+- __in0: 28
+- __in0: 28
+- __in0: 12
+- __in0: 12
+- __in0: 12
+- __in0: 12
+- __in0: 0
+- __in0: 0

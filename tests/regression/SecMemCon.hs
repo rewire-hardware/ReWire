@@ -82,6 +82,34 @@ positiveW10 :: W10 -> Bool
 positiveW10 W10 { b9 = S } = True
 positiveW10 _              = False
 
+-- The four real memory keys (b0..b7 = C; the cell is selected by b8,b9).
+keyMem3 :: W10
+keyMem3 = W10 C C C C C C C C S S
+
+keyMem2 :: W10
+keyMem2 = W10 C C C C C C C C S C
+
+keyMem1 :: W10
+keyMem1 = W10 C C C C C C C C C S
+
+keyMem0 :: W10
+keyMem0 = W10 C C C C C C C C C C
+
+-- Step from one memory key to the next-lower one during the scrub. The walk is
+-- keyMem3 -> keyMem2 -> keyMem1 -> keyMem0; stepping past keyMem0 yields onesW10,
+-- which `scrubbing` reports as done and ends the loop.
+nextKey :: W10 -> W10
+nextKey (W10 C C C C C C C C S S) = keyMem2
+nextKey (W10 C C C C C C C C S C) = keyMem1
+nextKey (W10 C C C C C C C C C S) = keyMem0
+nextKey _                         = onesW10
+
+-- True while the scrub still has a real memory key to zero. onesW10 is the
+-- post-keyMem0 sentinel, so it reports done.
+scrubbing :: W10 -> Bool
+scrubbing (W10 S S S S S S S S S S) = False
+scrubbing _                         = True
+
 --------------------------------------------
 -- Types for Signals, Ports, & Memory     --
 --------------------------------------------
@@ -187,36 +215,45 @@ reset = do
       set_data_reg zeroW32
       set_data_out_reg zeroW32
       set_partition_reg zeroW2
-      set_addr_reg onesW10
-      setloc zeroW10 zeroW32
+      set_addr_reg keyMem3
 
 scrub_ram :: PortsIn -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) ()
-scrub_ram ips = lift (scrub_ram_act >> get) >>= while_addr_reg_0
-  where
-    scrub_ram_act :: StateT (Sigs, Mem) Identity ()
-    scrub_ram_act = do
-      addr <- get_addr_reg
-      setloc addr zeroW32
-      set_addr_reg (decW10 addr)
+scrub_ram ips = lift get >>= while_addr_reg_0
 
 -- The scrub loop keeps `idle` in tail position (rather than the equivalent
 -- `(... >>= while_addr_reg_0) >>= idle`): a reactive loop must be in tail
 -- position, since its result is consumed only by entering `idle`.
+--
+-- Each iteration signals the current outputs, then performs one scrub step on
+-- the *current* state (carried forward via `get`, not the captured snapshot
+-- `x`) so addr_reg actually advances and the loop terminates once every real
+-- key has been zeroed. addr_reg starts at keyMem3 (set by `reset`) and walks
+-- keyMem3 -> keyMem2 -> keyMem1 -> keyMem0; nextKey then parks it at onesW10,
+-- which `scrubbing` reports as done.
 while_addr_reg_0
       :: (Sigs, Mem)
       -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) ()
 while_addr_reg_0 x = do
   addr <- lift get_addr_reg
-  if positiveW10 addr
+  if scrubbing addr
     then do
       connect x
-      while_addr_reg_0 x
+      x' <- lift (scrub_ram_act >> get)
+      while_addr_reg_0 x'
     else do
       (sigs, _) <- lift get
       ip <- signal (outports sigs)
       idle ip
 
   where
+    -- Zero the real memory key currently in addr_reg and step addr_reg to the
+    -- next-lower key (see nextKey/scrubbing).
+    scrub_ram_act :: StateT (Sigs, Mem) Identity ()
+    scrub_ram_act = do
+      addr <- get_addr_reg
+      setloc addr zeroW32
+      set_addr_reg (nextKey addr)
+
     outports :: Sigs -> PortsOut
     outports s = PortsOut { ack_out = ack_reg s , data_out = data_out_reg s }
 
