@@ -12,7 +12,7 @@ import ReWire.Error (runSyntaxError)
 import ReWire.Hyle.Parse (parseHyle, parseHyleText)
 import ReWire.Pretty (prettyPrint)
 
-import Cosim (runCosim)
+import qualified Cosim
 import TestUtil (withStderrTo, withStdoutTo, sq)
 
 import Control.Exception (try, finally)
@@ -72,11 +72,13 @@ options =
        , Option []    ["color"]        (ReqArg FlagColor "never|always|auto") "When to use colored output (default: auto)."
        ]
 
--- | Build the test tree for one regression program: compile it with GHC and
---   with rwc, interpret it, lower it to each HDL, lint the Verilog, and
---   cosimulate. The .yaml/.vhdl/.cry legs run only when the corresponding
---   golden exists; the HDL-lint and cosimulation legs are skipped under
---   --no-check.
+-- | Build the test tree for one regression program. There are two kinds of
+--   checks: golden tests, which compile/interpret the program and diff each
+--   output against a committed golden file (.rwc, .yaml, .sv, .vhdl, .cry); and
+--   cosimulation tests (see "Cosim"), which simulate the device through the HDL
+--   backends and require them to agree with the rwc interpreter. The
+--   .yaml/.vhdl/.cry golden legs run only when that golden exists; the HDL-lint
+--   and cosimulation legs are skipped under --no-check.
 testCompiler :: [Flag] -> FilePath -> IO [TestTree]
 testCompiler flags fn = do
       let ghcTests =
@@ -85,17 +87,21 @@ testCompiler flags fn = do
             [ testCase (takeBaseName fn <> " (stack ghc)") (cdTestdir >> callCommand ("stack ghc " <> fn))
             | FlagNoGhc `notElem` flags ]
 
-      coreTests <-
+      let coreTests =
             -- Compile Haskell to the Hyle IR (the .rwc golden) with rwc.
-            ([ golden "rwc" $ do
-                 cdTestdir
-                 withArgs (fn : ["--core", "-o", ofile "rwc"] <> extraFlags) RWC.main
-            ] <>)
-            -- Interpret the Hyle IR. When a per-test inputs file
-            -- (<base>.input.yaml) is present, drive the interpreter with it for
-            -- exactly as many cycles as it lists; otherwise fall back to the
-            -- default of all-zero inputs for 10 cycles.
-            <$> do
+            [ golden "rwc" $ do
+                  cdTestdir
+                  withArgs (fn : ["--core", "-o", ofile "rwc"] <> extraFlags) RWC.main
+            ]
+
+      yamlTests <-
+            -- Interpret the Hyle IR and diff against the .yaml golden -- the
+            -- reference the cosimulation tests check the HDL backends against.
+            -- When a per-test inputs file (<base>.input.yaml) is present, drive
+            -- the interpreter with it for exactly as many cycles as it lists;
+            -- otherwise fall back to the default of all-zero inputs for 10
+            -- cycles.
+            do
                   let inF = fn -<.> "input.yaml"
                   hasIn <- doesFileExist inF
                   interpArgs <-
@@ -149,13 +155,11 @@ testCompiler flags fn = do
                   withArgs ((fn -<.> "rwc") : ["--from-core", "--cryptol", "-o", ofile "cry"] <> extraFlags) RWC.main
 
       cosimTests <-
-            -- Cosimulate the backends against each other (see "Cosim"): unless
-            -- --no-check, and only for devices that emit a .vhdl golden.
-            if not check then pure [] else do
-                  hasVhdl <- doesFileExist (fn -<.> "vhdl")
-                  pure [ testCase (takeBaseName fn <> " (cosim iverilog/ghdl)") (cdTestdir >> runCosim fn) | hasVhdl ]
+            -- Cosimulate each backend against the rwc interpreter (see "Cosim"),
+            -- one test per backend, unless --no-check.
+            if check then Cosim.cosimTests fn else pure []
 
-      pure $ ghcTests <> coreTests <> roundTripTests <> verilogTests <> vhdlTests <> cryTests <> cosimTests
+      pure $ ghcTests <> coreTests <> yamlTests <> roundTripTests <> verilogTests <> vhdlTests <> cryTests <> cosimTests
 
       where check :: Bool
             check = FlagNoCheck `notElem` flags
