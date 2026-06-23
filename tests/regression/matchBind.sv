@@ -6,14 +6,14 @@ module top_level (input logic [0:0] clk,
   logic [1:0] __resumption_tag_next;
   logic [7:0] __st0;
   logic [7:0] __st0_next;
-  logic [18:0] zll_pure_dispatch2_out;
-  logic [18:0] zll_main_loop17_out;
-  logic [18:0] zll_pure_dispatch2_outR1;
+  logic [18:0] zll_pure_dispatch1_out;
+  logic [18:0] zll_main_loop13_out;
+  logic [18:0] zll_pure_dispatch1_outR1;
   logic [18:0] zres;
-  ZLL_Pure_dispatch2  inst (__in0, __st0, zll_pure_dispatch2_out);
-  ZLL_Main_loop17  instR1 ({11'h200, __in0}, zll_main_loop17_out);
-  ZLL_Pure_dispatch2  instR2 (__in0, __st0, zll_pure_dispatch2_outR1);
-  assign zres = (__resumption_tag == 2'h1) ? zll_pure_dispatch2_out : ((__resumption_tag == 2'h2) ? zll_main_loop17_out : zll_pure_dispatch2_outR1);
+  ZLL_Pure_dispatch1  inst (__in0, __st0, zll_pure_dispatch1_out);
+  ZLL_Main_loop13  instR1 ({11'h200, __in0}, zll_main_loop13_out);
+  ZLL_Pure_dispatch1  instR2 (__in0, __st0, zll_pure_dispatch1_outR1);
+  assign zres = (__resumption_tag == 2'h1) ? zll_pure_dispatch1_out : ((__resumption_tag == 2'h2) ? zll_main_loop13_out : zll_pure_dispatch1_outR1);
   assign __resumption_tag_next = zres[9:8];
   assign __st0_next = zres[7:0];
   assign __out0 = zres[17:10];
@@ -36,7 +36,7 @@ module ZLL_Main_loop21 (input logic [7:0] arg0,
   assign res = (zi1 == 1'h1) ? 1'h0 : 1'h1;
 endmodule
 
-module ZLL_Main_loop17 (input logic [18:0] arg0,
+module ZLL_Main_loop13 (input logic [18:0] arg0,
   output logic [18:0] res);
   logic [7:0] zi0;
   logic [0:0] zll_main_loop21_out;
@@ -55,10 +55,10 @@ module ZLL_Main_loop17 (input logic [18:0] arg0,
   assign res = (zi7[0] == 1'h1) ? {11'h409, zi8} : {11'h408, zi10};
 endmodule
 
-module ZLL_Pure_dispatch2 (input logic [7:0] arg0,
+module ZLL_Pure_dispatch1 (input logic [7:0] arg0,
   input logic [7:0] arg1,
   output logic [18:0] res);
-  logic [18:0] zll_main_loop17_out;
-  ZLL_Main_loop17  inst ({11'h200, arg1}, zll_main_loop17_out);
-  assign res = zll_main_loop17_out;
+  logic [18:0] zll_main_loop13_out;
+  ZLL_Main_loop13  inst ({11'h200, arg1}, zll_main_loop13_out);
+  assign res = zll_main_loop13_out;
 endmodule

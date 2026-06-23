@@ -18,75 +18,87 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [3] -> [1] -> [4]
-rw__Pure_dispatch x0 x1 = if (take`{2} x0) == 0b01 then (rw__LL_Pure_dispatch2 x1) else (if (take`{2} x0) == 0b10 then (rw__LL_Pure_dispatch3 x1) else (if (take`{2} x0) == 0b11 then (rw__LL_Pure_dispatch5 x1 (drop`{2} x0)) else (rw__LL_Pure_dispatch5 x1 (drop`{2} x0))))
+rw__Pure_dispatch x0 x1 = if (take`{2} x0) == 0b01 then (rw__LL_Pure_dispatch4 x1) else (if (take`{2} x0) == 0b10 then (rw__LL_Pure_dispatch2 x1) else (if (take`{2} x0) == 0b11 then (rw__LL_Pure_dispatch x1 (drop`{2} x0)) else (rw__LL_Pure_dispatch5 x1 (drop`{2} x0))))
+
+// $LL.Main.go14
+rw__LL_Main_go14 : [1] -> [1] -> [4]
+rw__LL_Main_go14 x0 x1 = x1 # (0b00 # x0)
 
 // $LL.Main.go13
-rw__LL_Main_go13 : [1] -> [1] -> [4]
-rw__LL_Main_go13 x0 x1 = rw__LL_Main_go12 x0 x1
+rw__LL_Main_go13 : [1] -> [1] -> [1] -> [1]
+rw__LL_Main_go13 x0 x1 x2 = if x2 == 0b1 then (rw__LL_ReWire_Prelude___2 x0) else (rw__LL_Main_go6 x0 x1)
 
 // $LL.Main.go12
 rw__LL_Main_go12 : [1] -> [1] -> [4]
-rw__LL_Main_go12 x0 x1 = rw__LL_Main_go4 x0 x1
+rw__LL_Main_go12 x0 x1 = rw__LL_Main_go14 x0 x1
 
 // $LL.Main.go11
-rw__LL_Main_go11 : [1] -> [1] -> [1] -> [1]
-rw__LL_Main_go11 x0 x1 x2 = if x2 == 0b1 then (rw__LL_ReWire_Prelude___2 x0) else (rw__LL_Main_go7 x0 x1)
+rw__LL_Main_go11 : [1] -> [1] -> [4]
+rw__LL_Main_go11 x0 x1 = rw__LL_Main_go9 x0 x1
 
-// $LL.Main.go10
-rw__LL_Main_go10 : [1] -> [1] -> [4]
-rw__LL_Main_go10 x0 x1 = rw__LL_Main_go8 x0 x1
+// $LL.Pure.dispatch5
+rw__LL_Pure_dispatch5 : [1] -> [1] -> [4]
+rw__LL_Pure_dispatch5 x0 x1 = rw__LL_Pure_dispatch3 x0 x1
 
 // $LL.ReWire.Prelude.&&3
 rw__LL_ReWire_Prelude___3 : [1] -> [1]
 rw__LL_ReWire_Prelude___3 x0 = 0b0
 
-// $LL.Pure.dispatch5
-rw__LL_Pure_dispatch5 : [1] -> [1] -> [4]
-rw__LL_Pure_dispatch5 x0 x1 = rw__LL_Pure_dispatch4 x0 x1
-
 // $LL.Pure.dispatch4
-rw__LL_Pure_dispatch4 : [1] -> [1] -> [4]
-rw__LL_Pure_dispatch4 x0 x1 = rw__LL_Main_go6 x1 x0
-
-// $LL.Main.go9
-rw__LL_Main_go9 : [1] -> [4]
-rw__LL_Main_go9 x0 = 0b011 # x0
+rw__LL_Pure_dispatch4 : [1] -> [4]
+rw__LL_Pure_dispatch4 x0 = rw__LL_Main_go4 x0
 
 // $LL.ReWire.Prelude.&&2
 rw__LL_ReWire_Prelude___2 : [1] -> [1]
 rw__LL_ReWire_Prelude___2 x0 = x0
 
-// $LL.Main.go8
-rw__LL_Main_go8 : [1] -> [1] -> [4]
-rw__LL_Main_go8 x0 x1 = (rw_ReWire_Prelude___ (rw__LL_Main_go11 x0 x1 x1) x1) # 0b100
-
-// $LL.Main.go7
-rw__LL_Main_go7 : [1] -> [1] -> [1]
-rw__LL_Main_go7 x0 x1 = rw__LL_Main_go1 x0
+// $LL.Main.go10
+rw__LL_Main_go10 : [1] -> [4]
+rw__LL_Main_go10 x0 = 0b011 # x0
 
 // $LL.Pure.dispatch3
-rw__LL_Pure_dispatch3 : [1] -> [4]
-rw__LL_Pure_dispatch3 x0 = rw__LL_Main_go2 x0
+rw__LL_Pure_dispatch3 : [1] -> [1] -> [4]
+rw__LL_Pure_dispatch3 x0 x1 = rw__LL_Main_go8 x1 x0
+
+// $LL.Pure.dispatch2
+rw__LL_Pure_dispatch2 : [1] -> [4]
+rw__LL_Pure_dispatch2 x0 = rw__LL_Main_go2 x0
+
+// $LL.Main.go9
+rw__LL_Main_go9 : [1] -> [1] -> [4]
+rw__LL_Main_go9 x0 x1 = (rw_ReWire_Prelude___ (rw__LL_Main_go13 x0 x1 x1) x1) # 0b100
+
+// $LL.Main.go8
+rw__LL_Main_go8 : [1] -> [1] -> [4]
+rw__LL_Main_go8 x0 x1 = rw__LL_Main_go5 x0 x1
+
+// $LL.Main.go7
+rw__LL_Main_go7 : [1] -> [1] -> [4]
+rw__LL_Main_go7 x0 x1 = rw__LL_Main_go12 x0 x1
+
+// $LL.Pure.dispatch1
+rw__LL_Pure_dispatch1 : [1] -> [1] -> [4]
+rw__LL_Pure_dispatch1 x0 x1 = rw__LL_Main_go5 x1 x0
 
 // $LL.Main.go6
-rw__LL_Main_go6 : [1] -> [1] -> [4]
-rw__LL_Main_go6 x0 x1 = rw__LL_Main_go10 x0 x1
+rw__LL_Main_go6 : [1] -> [1] -> [1]
+rw__LL_Main_go6 x0 x1 = rw__LL_Main_go x0
 
 // $LL.Main.go5
-rw__LL_Main_go5 : [1] -> [4]
-rw__LL_Main_go5 x0 = if x0 == 0b1 then (rw__LL_Main_go9 x0) else (rw__LL_Main_go13 x0 x0)
+rw__LL_Main_go5 : [1] -> [1] -> [4]
+rw__LL_Main_go5 x0 x1 = rw__LL_Main_go11 x0 x1
 
 // $LL.Main.go4
-rw__LL_Main_go4 : [1] -> [1] -> [4]
-rw__LL_Main_go4 x0 x1 = x1 # (0b00 # x0)
+rw__LL_Main_go4 : [1] -> [4]
+rw__LL_Main_go4 x0 = if x0 == 0b1 then (rw__LL_Main_go10 x0) else (rw__LL_Main_go7 x0 x0)
 
 // ReWire.Prelude.&&
 rw_ReWire_Prelude___ : [1] -> [1] -> [1]
 rw_ReWire_Prelude___ x0 x1 = rw__LL_ReWire_Prelude___1 x1 x0 (x0 # x1)
 
-// $LL.Pure.dispatch2
-rw__LL_Pure_dispatch2 : [1] -> [4]
-rw__LL_Pure_dispatch2 x0 = rw__LL_Main_go5 x0
+// $LL.Pure.dispatch
+rw__LL_Pure_dispatch : [1] -> [1] -> [4]
+rw__LL_Pure_dispatch x0 x1 = rw__LL_Pure_dispatch1 x0 x1
 
 // $LL.Main.go2
 rw__LL_Main_go2 : [1] -> [4]
@@ -96,9 +108,9 @@ rw__LL_Main_go2 x0 = 0x2
 rw__LL_ReWire_Prelude___1 : [1] -> [1] -> [2] -> [1]
 rw__LL_ReWire_Prelude___1 x0 x1 x2 = if (take`{1} x2) == 0b1 then (rw__LL_ReWire_Prelude___2 (drop`{1} x2)) else (rw__LL_ReWire_Prelude___ (x1 # x0))
 
-// $LL.Main.go1
-rw__LL_Main_go1 : [1] -> [1]
-rw__LL_Main_go1 x0 = rw_ReWire_Prelude___ x0 x0
+// $LL.Main.go
+rw__LL_Main_go : [1] -> [1]
+rw__LL_Main_go x0 = rw_ReWire_Prelude___ x0 x0
 
 // $LL.ReWire.Prelude.&&
 rw__LL_ReWire_Prelude___ : [2] -> [1]

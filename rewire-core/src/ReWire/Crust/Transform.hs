@@ -359,7 +359,7 @@ normalizeBind (ts, syns, ds) = (ts, syns, ) <$> (uncurry (<>) <$> runStateT (map
                         -- diagnostic.
                         let cands = filter (\ d -> isReacDefn d && inlinable d && not (defnName d `Set.member` recs)) $ ds <> lams
                         e1'   <- ppExp' e1
-                                 >>= flatten cands
+                                 >>= unfoldHead cands
                                  >>= reduceExp
 
                         let b = mkBind a e1' e2'
@@ -408,23 +408,30 @@ normalizeBind (ts, syns, ds) = (ts, syns, ) <$> (uncurry (<>) <$> runStateT (map
                   where arr' :: Maybe Ty -> Maybe Ty -> Maybe Ty
                         arr' = liftM2 arr
 
-            -- Iterate inlining of the candidate reactive definitions into the
-            -- bind LHS to a fixpoint. Two cost-saving refinements that do not
-            -- change the result: (1) each round substitutes only the
-            -- candidates whose names are actually free in the current term
-            -- (substituting an absent name is a no-op), keeping the
-            -- unbound-generics `substs` list short; (2) detect the fixpoint
-            -- with `==` (which short-circuits at the first difference) rather
-            -- than `fix`'s `hash` (which always traverses the whole term).
-            flatten :: (Fresh m, MonadError AstError m) => [Defn] -> Exp -> m Exp
-            flatten ds = boundedFixOn (==) "Bind LHS definition expansion" 100 step
-                  where subs :: [(Name Exp, Exp)]
-                        subs = map defnSubst ds
+            -- Concretize a bind's reactive left-hand side by inlining only its
+            -- head call -- and the chain of head calls that unfolds into --
+            -- until the head is a concrete reactive (a bind, signal, return,
+            -- extrude, ...) or a non-candidate (e.g. a recursive loop, left as
+            -- a tail call). The reactive definitions it merely *calls* in
+            -- tail/continuation position are deliberately NOT inlined here:
+            -- they are concretized incrementally as the surrounding `ppExp'`
+            -- re-walks the result, after their continuations have been
+            -- lambda-lifted and so shared. Inlining the whole reachable
+            -- reactive call graph into one term (the previous approach)
+            -- duplicated every shared helper at every use site and blew up
+            -- (to millions of nodes) on deeply nested devices such as MiniISA.
+            -- After ppExp', the LHS is never itself a bind or Match (those are
+            -- handled by the rules above), so its only reactive sub-term is the
+            -- head call -- hence inlining the head alone suffices.
+            unfoldHead :: (Fresh m, MonadError AstError m) => [Defn] -> Exp -> m Exp
+            unfoldHead cands = boundedFixOn (==) "Bind LHS head expansion" 100 step
+                  where subs :: HashMap (Name Exp) Exp
+                        subs = Map.fromList $ map defnSubst cands
 
-                        step :: Applicative f => Exp -> f Exp
-                        step e = pure $ substs (filter ((`Set.member` fvs) . fst) subs) e
-                              where fvs :: HashSet (Name Exp)
-                                    fvs = Set.fromList $ fv e
+                        step :: (Fresh m, MonadError AstError m) => Exp -> m Exp
+                        step e = case flattenApp e of
+                              (Var _ _ _ f, args) | Just body <- Map.lookup f subs -> reduceExp $ mkApp (ann e) body args
+                              _                                                    -> pure e
 
             isReacDefn :: Defn -> Bool
             isReacDefn Defn { defnPolyTy = Embed (Poly (unsafeUnbind -> (_, t))) } = isReacT t
