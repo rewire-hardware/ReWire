@@ -27,6 +27,7 @@ data-files:
     tests/integration/MiniISA.hs
     tests/integration/SecMemCon.hs
     tests/negative/ambiguous-size.hs
+    tests/negative/bind-lhs-loop.hs
     tests/negative/bind-lhs-pause.hs
     tests/negative/illtyped-dead-code.hs
     tests/negative/illtyped-use.hs

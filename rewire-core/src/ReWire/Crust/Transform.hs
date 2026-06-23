@@ -349,8 +349,17 @@ normalizeBind (ts, syns, ds) = (ts, syns, ) <$> (uncurry (<>) <$> runStateT (map
                         e2'   <- ppExp' e2 >>= lift' -- lift RHS
 
                         lams  <- get
+                        -- Inline reactive definitions on the bind's left-hand
+                        -- side, but leave (mutually) recursive ones as calls
+                        -- (`recs`, below): inlining a recursive reactive loop
+                        -- here would not terminate, and a loop whose result is
+                        -- consumed by the bind belongs in tail position. The
+                        -- residual call survives to purify, which rejects it
+                        -- with a clear "loops ... must be in tail position"
+                        -- diagnostic.
+                        let cands = filter (\ d -> isReacDefn d && inlinable d && not (defnName d `Set.member` recs)) $ ds <> lams
                         e1'   <- ppExp' e1
-                                 >>= flatten (filter (\ d -> isReacDefn d && inlinable d) $ ds <> lams)
+                                 >>= flatten cands
                                  >>= reduceExp
 
                         let b = mkBind a e1' e2'
@@ -404,6 +413,46 @@ normalizeBind (ts, syns, ds) = (ts, syns, ) <$> (uncurry (<>) <$> runStateT (map
 
             isReacDefn :: Defn -> Bool
             isReacDefn Defn { defnPolyTy = Embed (Poly (unsafeUnbind -> (_, t))) } = isReacT t
+
+            -- | Reactive definitions in a recursion cycle, computed once over
+            --   the original program. Lambda-lifted definitions (accumulated in
+            --   `lams`) are created in dependency order and so never close a
+            --   cycle on their own -- every reactive cycle runs through one of
+            --   these originals -- so excluding these from inlining is enough
+            --   to keep the bind-LHS expansion terminating.
+            recs :: HashSet (Name Exp)
+            recs = recursiveDefns $ filter (\ d -> isReacDefn d && inlinable d) ds
+
+-- | The subset of the given definitions that take part in a (mutual) recursion
+--   cycle among themselves -- i.e. a definition reachable from its own body
+--   through references to other definitions in the set. Substituting these
+--   into one another (as normalizeBind does on a bind's left-hand side) would
+--   not terminate.
+recursiveDefns :: [Defn] -> HashSet (Name Exp)
+recursiveDefns ds = Set.fromList $ filter (\ n -> n `Set.member` reachable (refs n)) names
+      where names :: [Name Exp]
+            names = map defnName ds
+
+            nameSet :: HashSet (Name Exp)
+            nameSet = Set.fromList names
+
+            -- | Each definition's references within the set, computed once
+            --   (a body's free-variable scan is expensive, and reachability
+            --   below revisits the same definitions many times).
+            refsMap :: HashMap (Name Exp) (HashSet (Name Exp))
+            refsMap = Map.fromList
+                  [ (defnName d, Set.intersection nameSet $ Set.fromList $ fv $ unembed $ defnBody d) | d <- ds ]
+
+            refs :: Name Exp -> HashSet (Name Exp)
+            refs n = maybe Set.empty id $ Map.lookup n refsMap
+
+            -- | Transitive closure of `refs` starting from a frontier.
+            reachable :: HashSet (Name Exp) -> HashSet (Name Exp)
+            reachable = go Set.empty . Set.toList
+                  where go seen []       = seen
+                        go seen (x : xs)
+                              | x `Set.member` seen = go seen xs
+                              | otherwise           = go (Set.insert x seen) (Set.toList (refs x) <> xs)
 
 -- | So if e :: a -> b, then
 -- > g = e
