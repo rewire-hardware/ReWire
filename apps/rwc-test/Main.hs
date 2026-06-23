@@ -357,7 +357,7 @@ runCosim fn = do
             ofl ext = fn -<.> ("out." <> ext)
 
             inputsF, wk :: FilePath
-            inputsF = ofl "cosim.inputs.yaml"
+            inputsF = ofl "cosim.input.yaml"
             wk      = ofl "ghdlwork"
 
             rwc :: [String] -> IO ()
@@ -521,13 +521,11 @@ main :: IO ()
 main = do
       (flags, _, errs) <- getOpt Permute options <$> getArgs
 
-      let testDirs = ["regression"] -- TODO(chathhorn): re-enable integration tests.
-
       unless (null errs && FlagH `notElem` flags) $ do
             mapM_ (hPutStrLn stderr) errs
             exitUsage
 
-      tests      <- mapM (getTests flags) testDirs
+      goldTests  <- getTests flags "regression"
       negTests   <- getNegTests "negative"
       warnTests  <- getWarnTests "warning"
       smokeTests <- getSmokeTests
@@ -535,7 +533,7 @@ main = do
       -- The tests change the working directory, so restore it on exit (HPC
       -- writes its .tix relative to the final working directory).
       cwd0 <- getCurrentDirectory
-      withArgs (injectTastyArgs flags) (defaultMain $ sequentialTestGroup "Tests" AllFinish $ tests <> [smokeTests, negTests, warnTests])
+      withArgs (injectTastyArgs flags) (defaultMain $ sequentialTestGroup "Tests" AllFinish $ [goldTests, smokeTests, negTests, warnTests])
             `finally` setCurrentDirectory cwd0
 
       where injectTastyArgs :: [Flag] -> [String]

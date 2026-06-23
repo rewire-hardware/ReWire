@@ -90,7 +90,7 @@ families =
       ]
 
 regressionCases :: [String]
-regressionCases = ["gfmult", "Sha256_1", "OD19Filter", "cubehash"]
+regressionCases = ["gfmult", "Sha256", "OD19Filter", "cubehash"]
 
 -- | A single definition containing a chain of n let-bindings, each used
 --   twice by the next (the gfmult shape). Stresses type inference: the
