@@ -1,0 +1,31 @@
+# putBug: convtest b = signal b >> lift (put b) >> convtest b, started via
+#   extrude (convtest zero) zero.  The ReacT input type is Bit, mapped to the
+#   single 1-bit input wire __in0 (0 or 1).
+#
+# Encoding: __in0 is a bare 1-bit value (Bit). The output __out0 is also a Bit.
+#
+# Behavior / "putBug": signal b emits b and reads the next input, but the loop
+# recurses with the SAME b it was called with -- the input read by signal is
+# discarded. Starting from b = zero, the device emits zero forever and its
+# state (resumption_tag, st0) stays 0 regardless of the input. So the input
+# wire CANNOT affect the output: __out0 is identically 0x0 on every cycle.
+#
+# This sequence varies __in0 across all 1-bit values and patterns (held runs,
+# single flips, alternations) purely to demonstrate that none of them perturb
+# the constant-zero output -- the point of the test.
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0

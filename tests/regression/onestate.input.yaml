@@ -1,0 +1,31 @@
+# onestate: input encoding and stimulus
+#
+# ReacT input type: Bit (1 bit). __in0 is a 1-bit wire (MSB index 0), so each
+# cycle is a single 0/1 integer. Value layout: a Bit is just one bit, so the
+# integer is the bit itself (0 or 1).
+#
+# Device behavior: state is W 8 starting at lit 0. `grunt` does `x <- get; put x`
+# (a no-op), and `incr` signals the current state then recurses without ever
+# modifying it. The signalled value (= state = 0) is the only output, and the
+# input Bit is consumed by `signal` but never influences state or output.
+# Therefore __out0 is constant 0x0 for every cycle regardless of input.
+#
+# Stimulus: a varied 1-bit sequence (single highs, single lows, runs of each,
+# and alternating) to exercise the input path even though it is inert. Output
+# is expected to be 0x0 on every one of these 16 cycles.
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1

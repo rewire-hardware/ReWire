@@ -1,0 +1,35 @@
+# extrudeApp interpreter input stimulus.
+#
+# Device (extrudeApp.hs): dev k = do { s <- lift get; i <- signal (s + k); lift (put i); dev k }
+#   top n = extrude (dev n) (lit 0); start = top (lit 3).
+# After purification (extrudeApp.rwc / extrudeApp.sv):
+#   register __resumption_tag holds k = 3 (constant), __st0 holds the previous input.
+#   Each cycle:  __out0 := (__in0 + __resumption_tag) mod 256 = (__in0 + 3) mod 256.
+#   The signaled value is s + k where s is the PREVIOUS input; but the purified
+#   output wire emits the freshly-supplied input plus k, so __out0 = __in0 + 3 every
+#   cycle. __st0 (= previous __in0) is carried but never observable on the output.
+#
+# ReacT input type: W 8 -- a single unsigned 8-bit integer mapped directly onto __in0.
+# Encoding: __in0 = the W 8 value, decimal, truncated to 8 bits.
+# Output: W 8, decoded as the 8-bit unsigned integer on __out0.
+#
+# Sequence exercises: zero, small values, mid-range, and the +3 wraparound
+# boundary (253->0, 254->1, 255->2), plus max value, in a varied order.
+- __in0: 0      # out 3
+- __in0: 1      # out 4
+- __in0: 7      # out 10
+- __in0: 42     # out 45
+- __in0: 100    # out 103
+- __in0: 127    # out 130
+- __in0: 128    # out 131
+- __in0: 200    # out 203
+- __in0: 252    # out 255 (last value before wrap)
+- __in0: 253    # out 0   (wrap)
+- __in0: 254    # out 1   (wrap)
+- __in0: 255    # out 2   (wrap, max input)
+- __in0: 3      # out 6
+- __in0: 250    # out 253
+- __in0: 251    # out 254
+- __in0: 17     # out 20
+- __in0: 64     # out 67
+- __in0: 0      # out 3   (back to zero)

@@ -1,0 +1,39 @@
+# fibo1: Fibonacci state machine driven by a 1-bit ReacT input (Bit).
+#
+# Device: ReacT Bit (W 8) over two W8 state registers (st0, st1), init (st0,st1)=(0,1).
+#   sig:  output st0 via `signal`; read input bit i.
+#         i == True  -> stay in sig (HOLD: state unchanged).
+#         i == False -> incr (ADVANCE: st0:=st1, st1:=(st0+st1) mod 256), then sig.
+#
+# Input encoding: __in0 is a single Bit (MSB index 0). Value 1 = True (hold),
+#                 value 0 = False (advance one Fibonacci step). No padding/tag.
+#
+# Output: __out0 = st0 (W8) for the current cycle. Equivalently, output[N] =
+#   st0 after A(N) advances, where A(N) = count of input==0 in cycles 0..N.
+#
+# This sequence: 2 idle holds (output 0x0), an 8-step Fibonacci climb
+# (1,1,2,3,5,8,13,21), a 2-cycle plateau at 21, a slow toggled climb
+# (advance/hold/advance/hold), then a 6-step burst that drives past the 8-bit
+# wraparound (144,233 -> 121 wrap -> 98,219), exercising the r0+r1 mod-256 add.
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0

@@ -1,0 +1,38 @@
+# externModel interpreter input
+#
+# Device: purely combinational (no registers). Same-cycle output.
+#   __in0  : W32  (single 32-bit unsigned input wire)
+#   __out0 : W32  (single 32-bit unsigned output wire)
+#
+# Behavior (from externModel.hs / start = iter f (lit 0)):
+#   f x = plusW32 (andW32 x 0xF0F0F0F0) (xorW32 (notW32 x) 0x12345678)
+#   so  __out0 = (__in0 & 0xF0F0F0F0) + ((~__in0) ^ 0x12345678)  (mod 2^32)
+# The four externs (andW32, notW32, xorW32, plusW32) are evaluated via their
+# user-supplied Haskell models. The constant initial state (lit 0) is unused
+# because iter ignores the resumption value, so output depends only on __in0.
+#
+# Encoding: each cycle is one decimal integer = the 32-bit __in0 value.
+# inputAffectsOutput = true (output is a direct function of __in0).
+#
+# Sequence (decimal = hex / meaning):
+#   3989547399 = 0xEDCBA987  complement of the xor-constant
+#   ... exercises: all-zeros, all-ones, the and-mask 0xF0F0F0F0 and its
+#   complement, the xor-constant 0x12345678 and its complement, single MSB/LSB
+#   bits (carry edge cases for the add), alternating bit patterns, and a few
+#   mixed words.
+- __in0: 0            # 0x00000000  -> 0xedcba987
+- __in0: 4294967295   # 0xFFFFFFFF  -> 0x03254768
+- __in0: 4042322160   # 0xF0F0F0F0  -> 0x0e2c4a67  (and-mask itself)
+- __in0: 252645135    # 0x0F0F0F0F  -> 0xe2c4a688  (mask complement)
+- __in0: 305419896    # 0x12345678  -> 0x1030506f  (xor-constant)
+- __in0: 3989547399   # 0xEDCBA987  -> 0xe0c0a080  (xor-const complement)
+- __in0: 2147483648   # 0x80000000  -> 0xedcba987  (MSB only)
+- __in0: 1            # 0x00000001  -> 0xedcba986  (LSB only)
+- __in0: 2596069104   # 0x9ABCDEF0  -> 0x08284867
+- __in0: 3735928559   # 0xDEADBEEF  -> 0x0406c848
+- __in0: 3405691582   # 0xCAFEBABE  -> 0xe825c3e9
+- __in0: 2863311530   # 0xAAAAAAAA  -> 0xe801a3cd  (1010...)
+- __in0: 1431655765   # 0x55555555  -> 0x08ef4d22  (0101...)
+- __in0: 2147483647   # 0x7FFFFFFF  -> 0x03254768
+- __in0: 16776960     # 0x00FFFF00  -> 0xee254687  (middle band)
+- __in0: 268435456    # 0x10000000  -> 0x0dcba987  (carry into high nibble)

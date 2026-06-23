@@ -1,0 +1,29 @@
+# Finite.hs interpreter stimulus.
+#
+# Device: dev a = signal a; loop with toFinite' (fromFinite a' + 1).
+# The output is purely combinational in the input (no register state):
+#   __out0 = (__in0 + 1) mod 100, where the +1 is a 7-bit (W 7) add that
+#   wraps at 128, and the result is then reduced modulo 100.
+#
+# Encoding: Finite 100 is a W 7 (7-bit unsigned). __in0:6 (one input wire,
+# bits [6:0]). Each cycle's value is the raw 7-bit integer; values >= 128 are
+# truncated mod 128 before use. The model's `signal`/loop arithmetic makes the
+# output a pure function of the current input, so we just sweep interesting
+# values: 0, small, the 99->0 modulo-100 wrap, the 100..127 over-range region,
+# the 127->0 7-bit add wrap, and the max Finite value 99.
+- __in0: 0     # 0  + 1 = 1
+- __in0: 1     # 1  + 1 = 2
+- __in0: 41    # 41 + 1 = 42
+- __in0: 98    # 98 + 1 = 99
+- __in0: 99    # 99 + 1 = 100 -> mod 100 = 0   (Finite max wrap)
+- __in0: 50    # 50 + 1 = 51
+- __in0: 9     # 9  + 1 = 10
+- __in0: 100   # trunc 100; 100+1 = 101 -> mod 100 = 1  (over-range input)
+- __in0: 101   # trunc 101; 101+1 = 102 -> mod 100 = 2
+- __in0: 126   # 126 + 1 = 127 -> mod 100 = 27
+- __in0: 127   # 127 + 1 = 128 -> 7-bit wrap = 0 -> mod 100 = 0  (add overflow)
+- __in0: 63    # 63 + 1 = 64
+- __in0: 88    # 88 + 1 = 89
+- __in0: 75    # 75 + 1 = 76
+- __in0: 33    # 33 + 1 = 34
+- __in0: 99    # 99 + 1 = 100 -> mod 100 = 0  (max wrap again)

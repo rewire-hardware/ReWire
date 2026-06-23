@@ -1,0 +1,18 @@
+# weird1: filt = repl zero ; repl _ = signal zero >>= repl
+# ReacT input type is Bit (1 bit). Input wire __in0 is 1 bit: __in0 = the Bit input (0 or 1).
+# The device always signals zero and ignores both its input and its argument; state (Bit,Bit)
+# stays at (zero,zero) and the output Bit is always zero. So __in0 is inert: it cannot affect
+# __out0 (verified empirically). We still vary __in0 across all of its possible values to
+# exercise the input path; the expected output is constant '0x0' every cycle.
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1

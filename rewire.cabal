@@ -398,66 +398,122 @@ data-files:
     tests/regression/zerowidth.cry
     tests/regression/case1.yaml
     tests/regression/case2.yaml
+    tests/regression/caseBindBug.input.yaml
     tests/regression/caseBindBug.yaml
+    tests/regression/cubehash.input.yaml
     tests/regression/cubehash.yaml
+    tests/regression/dependencyGraph.input.yaml
     tests/regression/dependencyGraph.yaml
+    tests/regression/dissex.input.yaml
     tests/regression/dissex.yaml
+    tests/regression/dissex2.input.yaml
     tests/regression/dissex2.yaml
+    tests/regression/divzero.input.yaml
     tests/regression/divzero.yaml
+    tests/regression/exp2.input.yaml
     tests/regression/exp2.yaml
+    tests/regression/externModel.input.yaml
     tests/regression/externModel.yaml
+    tests/regression/extrudeApp.input.yaml
     tests/regression/extrudeApp.yaml
+    tests/regression/fibo1.input.yaml
     tests/regression/fibo1.yaml
+    tests/regression/fibo2.input.yaml
     tests/regression/fibo2.yaml
+    tests/regression/fibo3.input.yaml
     tests/regression/fibo3.yaml
+    tests/regression/Finite.input.yaml
     tests/regression/Finite.yaml
+    tests/regression/finite2.input.yaml
     tests/regression/finite2.yaml
+    tests/regression/fully.input.yaml
     tests/regression/fully.yaml
+    tests/regression/funcase.input.yaml
     tests/regression/funcase.yaml
+    tests/regression/gfmult.input.yaml
     tests/regression/gfmult.yaml
+    tests/regression/guards.input.yaml
     tests/regression/guards.yaml
     tests/regression/HigherOrderBug.yaml
     tests/regression/Infix.yaml
+    tests/regression/iter.input.yaml
     tests/regression/iter.yaml
+    tests/regression/iterSt.input.yaml
     tests/regression/iterSt.yaml
+    tests/regression/matchBind.input.yaml
     tests/regression/matchBind.yaml
+    tests/regression/ModsMain.input.yaml
     tests/regression/ModsMain.yaml
+    tests/regression/multireg.input.yaml
     tests/regression/multireg.yaml
+    tests/regression/onestate.input.yaml
     tests/regression/onestate.yaml
+    tests/regression/PackUnpack.input.yaml
     tests/regression/PackUnpack.yaml
+    tests/regression/pats.input.yaml
     tests/regression/pats.yaml
+    tests/regression/pats2.input.yaml
     tests/regression/pats2.yaml
+    tests/regression/PreludeTest.input.yaml
     tests/regression/PreludeTest.yaml
+    tests/regression/putBug.input.yaml
     tests/regression/putBug.yaml
+    tests/regression/pvartype.input.yaml
     tests/regression/pvartype.yaml
+    tests/regression/react.input.yaml
     tests/regression/react.yaml
+    tests/regression/records.input.yaml
     tests/regression/records.yaml
+    tests/regression/SecMemCon.input.yaml
     tests/regression/SecMemCon.yaml
+    tests/regression/signalFirst.input.yaml
     tests/regression/signalFirst.yaml
+    tests/regression/sigNothing.input.yaml
     tests/regression/sigNothing.yaml
+    tests/regression/state.input.yaml
     tests/regression/state.yaml
+    tests/regression/state0.input.yaml
     tests/regression/state0.yaml
+    tests/regression/stateTower.input.yaml
     tests/regression/stateTower.yaml
+    tests/regression/synonym.input.yaml
     tests/regression/synonym.yaml
+    tests/regression/test2.input.yaml
     tests/regression/test2.yaml
+    tests/regression/test3.input.yaml
     tests/regression/test3.yaml
     tests/regression/TinyISA.input.yaml
     tests/regression/TinyISA.yaml
+    tests/regression/toag.input.yaml
     tests/regression/toag.yaml
+    tests/regression/toags.input.yaml
     tests/regression/toags.yaml
+    tests/regression/uniquification.input.yaml
     tests/regression/uniquification.yaml
     tests/regression/UpCounter1.yaml
+    tests/regression/UpCounter2.input.yaml
     tests/regression/UpCounter2.yaml
+    tests/regression/vectorAppend.input.yaml
     tests/regression/vectorAppend.yaml
+    tests/regression/vectorCons.input.yaml
     tests/regression/vectorCons.yaml
+    tests/regression/vectorIndexProxy.input.yaml
     tests/regression/vectorIndexProxy.yaml
+    tests/regression/vectorPack.input.yaml
     tests/regression/vectorPack.yaml
+    tests/regression/weird1.input.yaml
     tests/regression/weird1.yaml
+    tests/regression/wordArith.input.yaml
     tests/regression/wordArith.yaml
+    tests/regression/wordBitwise.input.yaml
     tests/regression/wordBitwise.yaml
+    tests/regression/wordLit.input.yaml
     tests/regression/wordLit.yaml
+    tests/regression/wordReduce.input.yaml
     tests/regression/wordReduce.yaml
+    tests/regression/wordShift.input.yaml
     tests/regression/wordShift.yaml
+    tests/regression/wordSlice.input.yaml
     tests/regression/wordSlice.yaml
     tests/regression/zerowidth.yaml
     rewire-user/src/ReWire.hs

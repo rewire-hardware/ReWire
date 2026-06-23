@@ -1,0 +1,28 @@
+# iterSt: ReacT Bool Bool device built with iterSt f False over state s : Bool (init False).
+#   f i s = (s `xor` i, s)  -- output o = s xor i ; NEW state = s (the OLD state, unchanged!)
+# So the state is permanently stuck at its initial value False (0): f always returns s as the
+# next state, never updating it. Hence each cycle: __out0 = s xor i = 0 xor i = i.
+# The device is effectively a pure pass-through of the input's LSB.
+#
+# Input encoding: ReacT input type is Bool -> __in0 is 1 bit. Values truncated to 1 bit
+# (so 2 -> 0, 3 -> 1). __out0 (1 bit) = __in0[0].
+#
+# Sequence: vary the 1-bit input through a non-trivial bit pattern, hold-runs, single
+# toggles, and a couple of out-of-range values (2, 3) to exercise truncation. Expected
+# __out0 each cycle equals __in0 mod 2.
+- __in0: 1   # out 1
+- __in0: 0   # out 0
+- __in0: 1   # out 1
+- __in0: 1   # out 1  (hold high)
+- __in0: 1   # out 1
+- __in0: 0   # out 0
+- __in0: 0   # out 0  (hold low)
+- __in0: 0   # out 0
+- __in0: 1   # out 1  (single toggle high)
+- __in0: 0   # out 0  (single toggle low)
+- __in0: 1   # out 1
+- __in0: 2   # truncates to 0 -> out 0
+- __in0: 3   # truncates to 1 -> out 1
+- __in0: 0   # out 0
+- __in0: 1   # out 1
+- __in0: 0   # out 0

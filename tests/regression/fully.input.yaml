@@ -1,0 +1,24 @@
+# fully.hs: start = do { signal $ not $ baz zero one; start }
+# Input wire __in0 (1 bit) is the Bit value signaled into start each cycle.
+# Encoding: __in0 is a single Bit (0 or 1).
+# Behavior: baz zero one = (since b=zero -> f = not) = not one = zero;
+#   output = not (baz zero one) = not zero = one. The expression is fully
+#   constant-folded, so __out0 is always 1 regardless of __in0. The input is
+#   inert (never consumed in the output computation). We still vary __in0 to
+#   exercise both bit values and patterns; the trace must stay constant 0x1.
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1

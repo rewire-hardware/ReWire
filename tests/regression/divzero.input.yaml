@@ -1,0 +1,30 @@
+# divzero interpreter stimulus.
+#
+# Device (combinational, iter f): input a = W 8 on __in0, output W 16 on __out0.
+#   b   = (a .&. 3) % 0   == a .&. 3   (x % 0 = x convention)
+#   out = (a / b) ++ ((a % b) ^ (7 / 0))      where 7/0 = 0xff (all-ones)
+#   high8 = (b==0) ? 0xff : a / b
+#   low8  = ((b==0) ? a : a % b) ^ 0xff
+# Encoding: __in0 is the raw 8-bit value of a (one nonneg int per cycle).
+#
+# Sequence exercises all four divisor classes (b = a&3 in {0,1,2,3}):
+#   cycles 0-4 : b==0  -> x/0=0xff, x%0=x conventions (a=0,4,8,252,128)
+#   cycles 5-8 : b==1  -> exact divide, zero remainder (a=1,5,129,253)
+#   cycles 9-11: b==2  -> divide by 2 (a=2,6,254)
+#   cycles 12-15: b==3 -> nonzero quotients & remainders (a=3,7,255,171)
+- __in0: 0
+- __in0: 4
+- __in0: 8
+- __in0: 252
+- __in0: 128
+- __in0: 1
+- __in0: 5
+- __in0: 129
+- __in0: 253
+- __in0: 2
+- __in0: 6
+- __in0: 254
+- __in0: 3
+- __in0: 7
+- __in0: 255
+- __in0: 171

@@ -1,0 +1,51 @@
+# wordSlice interpreter input.
+#
+# Input encoding:
+#   __in0 is a plain 16-bit word (W 16), MSB at bit 15, directly on __in0[15:0].
+#   No tag/ADT layering: the per-cycle value IS the word, given here in decimal.
+#
+# Device semantics (compute w):
+#   bit15 = msbit w ; bit8 = w @. 8
+#   if bit15 && bit8 then output = low  byte w[7:0]
+#                    else output = high byte w[15:8]
+#   Output __out0 (W 8) each cycle = compute(input that cycle); no extra delay.
+#
+# Sequence exercises all four (bit15,bit8) combinations with distinct bytes,
+# plus edge values (all-zero, all-ones, alternating patterns):
+#   cyc  word    hex     bit15 bit8  -> expected __out0
+#    0   49648  0xC1F0    1     1    -> low  0xF0
+#    1   31408  0x7AB0    0     0    -> high 0x7A
+#    2   32853  0x8055    1     0    -> high 0x80
+#    3     341  0x0155    0     1    -> high 0x01
+#    4   33195  0x81AB    1     1    -> low  0xAB
+#    5       0  0x0000    0     0    -> high 0x00
+#    6   65535  0xFFFF    1     1    -> low  0xFF
+#    7   43690  0xAAAA    1     0    -> high 0xAA
+#    8   21845  0x5555    0     1    -> high 0x55
+#    9   32768  0x8000    1     0    -> high 0x80
+#   10     256  0x0100    0     1    -> high 0x01
+#   11   33024  0x8100    1     1    -> low  0x00
+#   12   65280  0xFF00    1     1    -> low  0x00
+#   13     255  0x00FF    0     0    -> high 0x00
+#   14   53261  0xD00D    1     0    -> high 0xD0
+#   15   49391  0xC0EF    1     0    -> high 0xC0
+#   16   4660   0x1234    0     0    -> high 0x12
+#   17   48059  0xBBBB    1     1    -> low  0xBB
+- __in0: 49648
+- __in0: 31408
+- __in0: 32853
+- __in0: 341
+- __in0: 33195
+- __in0: 0
+- __in0: 65535
+- __in0: 43690
+- __in0: 21845
+- __in0: 32768
+- __in0: 256
+- __in0: 33024
+- __in0: 65280
+- __in0: 255
+- __in0: 53261
+- __in0: 49391
+- __in0: 4660
+- __in0: 48059

@@ -1,0 +1,50 @@
+# signalFirst interpreter stimulus.
+#
+# Device (signalFirst.hs):
+#   ReacT input/output type is W 8, so __in0 is a plain 8-bit unsigned integer
+#   (no tag/field layout; values are truncated to 8 bits).
+#
+#   start = signal (lit 0) >>= \ i -> extrude (dev i) (lit 0)
+#   dev k = do { s <- get; i <- signal (s + k); put i; dev k }
+#
+#   The FIRST input is captured into the generated R_ continuation as k (it
+#   becomes the resumption tag) and held forever; the extrude seeds state s = 0.
+#   Behavior reduces to:
+#     out[0] = in[0]            (= s + k with s = 0, k = in[0])
+#     out[n] = in[n] + in[0]    (mod 256), for n >= 1   (k = in[0] held)
+#   The internal "put i" state never reaches the output; only k and the
+#   current input matter.
+#
+# This sequence picks k = in[0] = 128 (0x80) so subsequent inputs demonstrate
+# 8-bit wraparound, and exercises: zero, max-result (0xff), exact overflow to 0,
+# several wraps, and over-width input truncation (256 -> 0).
+#   C0  in=128 -> 128+0   = 0x80
+#   C1  in=0   -> 0+128   = 0x80
+#   C2  in=1   -> 1+128   = 0x81
+#   C3  in=127 -> 127+128 = 0xff   (max, no wrap)
+#   C4  in=128 -> 128+128 = 0x00   (exact overflow wrap)
+#   C5  in=200 -> 328%256 = 0x48   (wrap)
+#   C6  in=255 -> 383%256 = 0x7f   (wrap)
+#   C7  in=256 -> 0+128   = 0x80   (input truncated to 8 bits -> 0)
+#   C8  in=7   -> 7+128   = 0x87
+#   C9  in=130 -> 258%256 = 0x02   (wrap)
+#   C10 in=64  -> 64+128  = 0xc0
+#   C11 in=192 -> 320%256 = 0x40   (wrap)
+#   C12 in=100 -> 100+128 = 0xe4
+#   C13 in=156 -> 284%256 = 0x1c   (wrap)
+#   C14 in=255 -> 383%256 = 0x7f   (wrap)
+- __in0: 128
+- __in0: 0
+- __in0: 1
+- __in0: 127
+- __in0: 128
+- __in0: 200
+- __in0: 255
+- __in0: 256
+- __in0: 7
+- __in0: 130
+- __in0: 64
+- __in0: 192
+- __in0: 100
+- __in0: 156
+- __in0: 255

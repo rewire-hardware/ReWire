@@ -1,0 +1,32 @@
+# test3 input encoding
+#
+# ReacT input type: Bit (1-bit input wire __in0, MSB index 0).
+# Device behavior (see test3.hs / test3.rwc):
+#   tick = lift get >>= \x -> signal x   -- signals the current StateT (W 8) state.
+#   go   = tick >>= \b -> if b then go else go   -- both branches identical.
+#   start = extrude go (lit 0)            -- state initialized to 0.
+# The compiled device feeds the 8-bit state register to Main.go, which returns
+#   1'h1 # st # st (17 bits): __out0 := res[8+:8] = st, next __st0 := res[0+:8] = st.
+# Two dispatch instances both receive the SAME state, and __in0 only selects
+# between them, so __in0 has NO effect on the output. The state register starts
+# at 0 and copies itself each cycle, so __out0 is always 0x0.
+#
+# Per cycle: one Bit value (0 or 1) on __in0. We vary it across cycles to
+# exercise both the True and False arms of the `if b` branch, even though the
+# output cannot change (inputAffectsOutput = false).
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0

@@ -1,0 +1,37 @@
+# matchBind interpreter input stimulus
+#
+# Device (matchBind.hs): ReacT Byte Byte (StateT Byte Identity)
+#   reset = put 0; tick; loop
+#   tick  = o <- get; signal o; put i
+#   loop  = i <- get; (if even i then incr else incr); loop
+#   incr  = signal (lit 2)
+#
+# ReacT input type: Byte = W 8  ->  __in0 is a single 8-bit unsigned integer.
+# Encoding: __in0 is just the raw 8-bit value (no tag/padding; W 8 is a flat W n).
+#
+# Output: __out0 = W 8. Because BOTH branches of loop's `if even i` run `incr`,
+# and incr always does `signal (lit 2)`, every runtime output is the constant 2.
+# The input value only feeds the internal state register (__st0) and flips the
+# purified resumption tag (even input -> next tag 1, odd input -> next tag 0),
+# neither of which is ever reflected in __out0. So inputAffectsOutput = false:
+# the trace is 0x02 every cycle no matter what we feed.
+#
+# The sequence below still varies the input widely to exercise the internal
+# even/odd tag transitions and value edge cases (0, max, alternating parity,
+# repeated holds), confirming output invariance:
+- __in0: 1     # odd  (tag 2 reset branch consumes this)
+- __in0: 2     # even
+- __in0: 2     # hold even
+- __in0: 3     # odd
+- __in0: 3     # hold odd
+- __in0: 0     # even, min value
+- __in0: 255   # odd, max value
+- __in0: 254   # even
+- __in0: 128   # even, MSB only
+- __in0: 129   # odd
+- __in0: 170   # even, 0b10101010
+- __in0: 85    # odd,  0b01010101
+- __in0: 7     # odd
+- __in0: 100   # even
+- __in0: 200   # even
+- __in0: 201   # odd

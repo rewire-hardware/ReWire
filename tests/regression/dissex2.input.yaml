@@ -1,0 +1,39 @@
+# dissex2: a Fibonacci generator over two stacked StateT layers driven by a Bit signal.
+#
+# ReacT input type: Bit (1 bit) -> __in0 is a single bit ([0:0] in the .sv).
+#   __in0 = 1 means "advance"; __in0 = 0 means "hold".
+# Output type: W 8 -> __out0 is an 8-bit unsigned value ([7:0]).
+#
+# State: outer StateT (W 8) starts at 0, inner StateT (W 8) starts at 1: (o,i)=(0,1).
+#   Each cycle the device reads __in0 and, if 1, advances Fibonacci-style:
+#       (o, i) := (i, plus o i)   -- plus is W 8 addition, so it wraps mod 256.
+#   if 0, it holds the pair unchanged. The emitted output for cycle N is the
+#   (post-update) outer value o.
+#
+# This sequence: a leading hold (output frozen at the initial 0), several
+# interleaved holds, then a long run of advances that drives the Fibonacci
+# series past 255 to exercise the 8-bit wraparound of `plus`.
+#   in : 0 1 0 1 1 0 1 1 1 1 1 0 1 1 1 1 0 1 1 1
+#   out: 0 1 1 1 2 2 3 5 8 d 15 15 22 37 59 90 90 e9 79 62  (hex)
+# Notable wraps: cycle 17 outputs 0xe9 (233) and then 233+121=377 wraps to 121;
+#                cycle 18 outputs 0x79 (121) and 233+121=354 wraps to 98 (0x62 at cycle 19).
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1

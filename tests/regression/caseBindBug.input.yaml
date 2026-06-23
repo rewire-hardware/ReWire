@@ -1,0 +1,31 @@
+# caseBindBug interpreter stimulus.
+#
+# ReacT input type: P = P Bit, with Bit = C | S.
+# P has 1 ctor (0 tag bits); its Bit field has 2 ctors -> 1 tag bit (C=0, S=1).
+# So __in0 (1 bit) is exactly the Bit tag: 0 = C, 1 = S.
+#
+# Device behavior (StateT Bit, register __st0 init C=0):
+#   - input S (1): toggle the state, then signal (output) the NEW state.
+#   - input C (0): leave state unchanged, signal (output) the CURRENT state.
+#
+# This sequence mixes runs of S (repeated toggling: 1,1,1 -> 1,0,1), runs of C
+# (holding the state, echoing it on the output), and lone toggles, to exercise
+# both case arms and the full state-toggle/hold dynamics.
+#
+# Expected __out0 per cycle: 1 0 1 1 1 0 0 0 0 1 0 0 1 0 0 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1

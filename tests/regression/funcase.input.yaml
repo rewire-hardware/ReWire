@@ -1,0 +1,26 @@
+# funcase: a purely combinational device.
+#
+# ReacT input type `In` has 4 nullary constructors: IA=0, IB=1, IC=2, ID=3.
+#   tag = ceil(log2 4) = 2 bits, no fields, so __in0 (2 bits) is just the tag.
+# Output type `Out` has 2 nullary constructors: Out1=0, Out2=1 -> __out0 (1 bit) = tag.
+# proc maps IA,IB,IC -> Out1 (0); ID -> Out2 (1).
+# So __out0 == 1 iff __in0 == 3 (ID), else 0. Each cycle is independent.
+#
+# Sequence walks every constructor, including the only "Out2" case (ID=3) in
+# isolation and in runs, and the boundary 2->3->2 transition.
+- __in0: 0   # IA  -> Out1 (0)
+- __in0: 1   # IB  -> Out1 (0)
+- __in0: 2   # IC  -> Out1 (0)
+- __in0: 3   # ID  -> Out2 (1)
+- __in0: 2   # IC  -> Out1 (0)
+- __in0: 3   # ID  -> Out2 (1)
+- __in0: 3   # ID  -> Out2 (1)  (run of ID)
+- __in0: 0   # IA  -> Out1 (0)
+- __in0: 3   # ID  -> Out2 (1)
+- __in0: 1   # IB  -> Out1 (0)
+- __in0: 2   # IC  -> Out1 (0)
+- __in0: 0   # IA  -> Out1 (0)
+- __in0: 3   # ID  -> Out2 (1)
+- __in0: 3   # ID  -> Out2 (1)
+- __in0: 1   # IB  -> Out1 (0)
+- __in0: 0   # IA  -> Out1 (0)

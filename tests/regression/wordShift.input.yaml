@@ -1,0 +1,30 @@
+# wordShift interpreter stimulus.
+#
+# ReacT input type: W 8 (an 8-bit word) supplied directly on __in0[7:0].
+# Encoding: __in0 is just the unsigned 8-bit value (no tag/fields).
+#
+# Device (combinational, no state): __out0 = myArithRotr(myRotr(__in0, 3), 5)
+#   myRotr(w,3)      = (w << 5) | (w >> 3)            -- rotate-right by 3
+#   myArithRotr(w,5) = (w << 3) | (sext(w) >>> 5)     -- "rotate" using ARITHMETIC right shift
+# Output __out0[7:0] is the 8-bit result, MSB-first.
+#
+# The sequence walks single-bit values, alternating patterns (0x55/0xAA),
+# and sign boundary cases (0x7F/0x80/0xFF/0x0F) to exercise the arithmetic
+# right shift's sign extension. Expected outputs (computed from the model):
+#   0x00,0x01,0x02,0xfc,0x08,0x10,0xfc,0xfd,0xaa,0x80,0xff,0xff,0xf0,0xff,0x81,0xc3
+- __in0: 0      # 0x00 -> 0x00
+- __in0: 1      # 0x01 -> 0x01
+- __in0: 2      # 0x02 -> 0x02
+- __in0: 4      # 0x04 -> 0xfc (sign-extension via ashr kicks in)
+- __in0: 8      # 0x08 -> 0x08
+- __in0: 16     # 0x10 -> 0x10
+- __in0: 52     # 0x34 (the lit-52 initial value) -> 0xfc
+- __in0: 85     # 0x55 alternating -> 0xfd
+- __in0: 170    # 0xaa alternating -> 0xaa
+- __in0: 128    # 0x80 MSB only -> 0x80
+- __in0: 127    # 0x7f -> 0xff
+- __in0: 255    # 0xff all ones -> 0xff
+- __in0: 240    # 0xf0 high nibble -> 0xf0
+- __in0: 15     # 0x0f low nibble -> 0xff
+- __in0: 129    # 0x81 -> 0x81
+- __in0: 195    # 0xc3 -> 0xc3

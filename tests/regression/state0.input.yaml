@@ -1,0 +1,51 @@
+# state0: dev i = signal Nothing >> signal Nothing >> signal (Just i) >>= dev,
+# started with dev (lit 0). ReacT input type is W 3 (a 3-bit unsigned),
+# carried straight onto wire __in0 (3 bits, port [2:0]); value truncated to 3 bits.
+#
+# Output type is Maybe (W 3): 2 ctors, width = 1 (tag) + 3 (W3) = 4 bits.
+#   __out0 (1 bit) = ctor tag: 0=Nothing, 1=Just.
+#   __out1 (3 bits) = the W3 payload (0 when Nothing).
+#
+# Behavior (confirmed empirically with the interpreter): the device cycles
+# Nothing, Nothing, Just(captured) on a period of 3. A Just is emitted on
+# cycles 1,4,7,10,... ; the value it shows is the input that was live two
+# cycles earlier, i.e. the inputs sampled on cycles 2,5,8,11,... (cycle == 2
+# mod 3) are the only inputs that affect the output. The very first Just
+# (cycle 1) shows 0, the lit 0 argument of the starting dev. Inputs on all
+# other cycles are inert.
+#
+# This sequence drives the meaningful sample points (cycles 2,5,8,11) with the
+# distinct, interesting W3 values 7 (max), 1, 4, 2, while the inert cycles hold
+# varied values to demonstrate they have no effect on the trace.
+#
+# Expected trace (15 cycles):
+#   C0  Nothing            (init transient)
+#   C1  Just 0             (dev (lit 0) seed)
+#   C2  Nothing
+#   C3  Nothing
+#   C4  Just 7             (= in[2])
+#   C5  Nothing
+#   C6  Nothing
+#   C7  Just 1             (= in[5])
+#   C8  Nothing
+#   C9  Nothing
+#   C10 Just 4             (= in[8])
+#   C11 Nothing
+#   C12 Nothing
+#   C13 Just 2             (= in[11])
+#   C14 Nothing
+- __in0: 3
+- __in0: 6
+- __in0: 7
+- __in0: 1
+- __in0: 5
+- __in0: 1
+- __in0: 0
+- __in0: 2
+- __in0: 4
+- __in0: 6
+- __in0: 3
+- __in0: 2
+- __in0: 7
+- __in0: 0
+- __in0: 5

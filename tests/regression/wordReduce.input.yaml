@@ -1,0 +1,38 @@
+# wordReduce: a purely combinational device computing bitwise reduction
+# operators over an 8-bit input word.
+#
+# Input encoding:
+#   __in0 : W 8  -- an 8-bit unsigned word; the value IS the word directly.
+#
+# Output encoding (__out0 : W 6), MSB-first concatenation of:
+#   bit5 = rAnd  (AND  of all 8 bits)
+#   bit4 = rNAnd (NAND of all 8 bits)
+#   bit3 = rOr   (OR   of all 8 bits)
+#   bit2 = rNor  (NOR  of all 8 bits)
+#   bit1 = rXOr  (parity: 1 iff odd number of set bits)
+#   bit0 = rXNor (1 iff even number of set bits)
+# Note rNAnd=~rAnd, rNor=~rOr, rXNor=~rXOr always; rAnd=1 only for 0xFF,
+# rOr=0 only for 0x00.
+#
+# Sequence (combinational, so each cycle is independent) exercises:
+#   all-zero, all-one, single-bit, parity edges, mixed patterns, edge bytes.
+- __in0: 0     # 00000000: rAnd0 rOr0, even parity -> 010101 (0x15)
+- __in0: 255   # 11111111: rAnd1 rOr1, even(8) parity -> 101001 (0x29)
+- __in0: 1     # 00000001: rOr1, odd parity -> 011010 (0x1a)
+- __in0: 128   # 10000000: rOr1, odd parity -> 011010 (0x1a)
+- __in0: 3     # 00000011: rOr1, even parity -> 011001 (0x19)
+- __in0: 7     # 00000111: rOr1, odd parity -> 011010 (0x1a)
+- __in0: 254   # 11111110: rOr1, odd(7) parity -> 011010 (0x1a)
+- __in0: 127   # 01111111: rOr1, odd(7) parity -> 011010 (0x1a)
+- __in0: 170   # 10101010: rOr1, even(4) parity -> 011001 (0x19)
+- __in0: 85    # 01010101: rOr1, even(4) parity -> 011001 (0x19)
+- __in0: 15    # 00001111: rOr1, even(4) parity -> 011001 (0x19)
+- __in0: 240   # 11110000: rOr1, even(4) parity -> 011001 (0x19)
+- __in0: 16    # 00010000: rOr1, odd parity -> 011010 (0x1a)
+- __in0: 192   # 11000000: rOr1, even(2) parity -> 011001 (0x19)
+- __in0: 31    # 00011111: rOr1, odd(5) parity -> 011010 (0x1a)
+- __in0: 191   # 10111111: rOr1, odd(7) parity -> 011010 (0x1a)
+- __in0: 253   # 11111101: rOr1, odd(7) parity -> 011010 (0x1a)
+- __in0: 0     # back to all-zero -> 010101 (0x15)
+- __in0: 255   # back to all-one -> 101001 (0x29)
+- __in0: 219   # 11011011: rOr1, even(6) parity -> 011001 (0x19)

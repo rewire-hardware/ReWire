@@ -1,0 +1,41 @@
+# multireg interpreter stimulus.
+#
+# Device (multireg.hs): a ReacT (W 4) (W 16) over a three-deep StateT tower
+# holding three registers a:W4, b:W8, c:W16. Per cycle the body computes:
+#   output_k = resize(a_k) + c_k        (16-bit, this is the signal value)
+#   a_{k+1}  = i_k                      (the W4 input becomes a)
+#   b_{k+1}  = resize(a_k) + b_k        (8-bit accumulator of a's)
+#   c_{k+1}  = resize(b_k) + c_k        (16-bit accumulator of b's)
+# Initial register state observed at cycle 0: a=0, b=3, c=5 (so output_0 = 5).
+#
+# Input encoding: the ReacT input type is W 4, mapped directly onto __in0
+# (input logic [3:0]). One nonneg decimal integer per cycle, truncated to 4 bits.
+#
+# Sequence (24 cycles): a 12-cycle burst of the max value 15 to drive b and c
+# upward fast, then a drop to 0, four distinct small values (8,1,2,4),
+# 0/15 alternation, and a final 13,9,6. This walks the registers through a wide
+# range and shows the input (a) feeding into b and then c on successive cycles.
+- __in0: 15
+- __in0: 15
+- __in0: 15
+- __in0: 15
+- __in0: 15
+- __in0: 15
+- __in0: 15
+- __in0: 15
+- __in0: 15
+- __in0: 15
+- __in0: 15
+- __in0: 15
+- __in0: 0
+- __in0: 8
+- __in0: 1
+- __in0: 2
+- __in0: 4
+- __in0: 15
+- __in0: 0
+- __in0: 15
+- __in0: 0
+- __in0: 13
+- __in0: 9
+- __in0: 6

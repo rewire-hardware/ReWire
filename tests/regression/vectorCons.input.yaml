@@ -1,0 +1,65 @@
+# vectorCons interpreter input stimulus.
+#
+# Model (vectorCons.hs): Input = (Vec 8 (W 8), Vec 8 (W 8)) = (v, w).
+#   Each Vec is 8 bytes concatenated MSB-first (element 0 in the high byte).
+#   __in0 encodes v (64b), __in1 encodes w (64b).
+#   compute (v,w): v0=head v, vs=tail v, w7=last w, ws=init w
+#     __out0 = snoc vs w7 = [v1 v2 v3 v4 v5 v6 v7 w7]   (drop v's head, append w's last)
+#     __out1 = cons v0 ws = [v0 w0 w1 w2 w3 w4 w5 w6]   (prepend v's head to w minus its last)
+#   Device is purely combinational: __out reflects the same cycle's __in.
+#
+# Encoding: each input wire is one 64-bit value = the 8 bytes of that Vec,
+#   most-significant byte = element 0. Given as hex below.
+#
+# Sequence exercises: ascending bytes, all-same byte, w==v, boundary bytes
+#   (0x00/0xFF), high-bit-set bytes, one-hot-ish patterns, and a couple of
+#   single-element edge cases where only v0/w7 differ from the rest.
+
+# 1: ascending v, ascending-high w  -> distinct head/tail/last/init bytes
+- __in0: 0x0102030405060708
+  __in1: 0x1112131415161718
+# 2: v all 0xAA, w all 0x55         -> uniform vectors
+- __in0: 0xAAAAAAAAAAAAAAAA
+  __in1: 0x5555555555555555
+# 3: v == w (descending)            -> snoc/cons over identical-shaped data
+- __in0: 0x0807060504030201
+  __in1: 0x0807060504030201
+# 4: v head 0xFF rest 0x00, w last 0xFF rest 0x00 -> isolate head/last
+- __in0: 0xFF00000000000000
+  __in1: 0x00000000000000FF
+# 5: v rest 0xFF head 0x00, w rest 0xFF last 0x00 -> complement of above
+- __in0: 0x00FFFFFFFFFFFFFF
+  __in1: 0xFFFFFFFFFFFFFF00
+# 6: v = 0xDEADBEEFCAFEF00D, w = byte-counting high nibble
+- __in0: 0xDEADBEEFCAFEF00D
+  __in1: 0x0010203040506070
+# 7: all 0xFF vs all 0x00           -> saturated vs empty
+- __in0: 0xFFFFFFFFFFFFFFFF
+  __in1: 0x0000000000000000
+# 8: all 0x00 vs all 0xFF           -> empty vs saturated
+- __in0: 0x0000000000000000
+  __in1: 0xFFFFFFFFFFFFFFFF
+# 9: one-hot per byte (walking bit) v, w shifted variant
+- __in0: 0x0102040810204080
+  __in1: 0x8040201008040201
+# 10: v head distinct, tail = w     -> show snoc/cons mixing
+- __in0: 0x99AABBCCDDEEFF00
+  __in1: 0x123456789ABCDEF0
+# 11: v ascending again, w = 0x80.. high bits set every byte
+- __in0: 0x2122232425262728
+  __in1: 0x8182838485868788
+# 12: only v0 changes from cycle 11 v (head edge)
+- __in0: 0xE122232425262728
+  __in1: 0x8182838485868788
+# 13: only w7 changes (last edge), rest as cycle 11
+- __in0: 0x2122232425262728
+  __in1: 0x81828384858687E8
+# 14: nibble checkerboard
+- __in0: 0x0F0F0F0F0F0F0F0F
+  __in1: 0xF0F0F0F0F0F0F0F0
+# 15: prime-ish bytes
+- __in0: 0x0203050B0D111317
+  __in1: 0x1D1F25292B2F353B
+# 16: max single byte spread
+- __in0: 0x00204060800AB0C0
+  __in1: 0xD0E0F010305070F0

@@ -1,0 +1,26 @@
+# ModsMain: device is `start = do { signal y; start }` with y = YA.
+# It unconditionally signals YA every cycle, IGNORING its input.
+#
+# Input wire __in0 (1 bit) = the ReacT input type BY.X (type X, ctors XA|XB).
+#   X has 2 constructors -> 1-bit tag, no fields: XA = 0, XB = 1.
+# Output __out0 (1 bit) = BX.Y (type Y, ctors YA|YB): YA = 0, YB = 1.
+#   The device always emits YA, so __out0 is constant 0 for every cycle.
+#
+# Sequence: vary the (inert) input across XA/XB and some boundary patterns
+# (single toggles, runs, alternation) to demonstrate it never affects output.
+- __in0: 0   # XA
+- __in0: 1   # XB
+- __in0: 0   # XA
+- __in0: 1   # XB
+- __in0: 1   # XB (held)
+- __in0: 1   # XB (held)
+- __in0: 0   # XA
+- __in0: 0   # XA (held)
+- __in0: 0   # XA (held)
+- __in0: 1   # XB
+- __in0: 0   # XA
+- __in0: 1   # XB
+- __in0: 1   # XB
+- __in0: 0   # XA
+- __in0: 0   # XA
+- __in0: 1   # XB
