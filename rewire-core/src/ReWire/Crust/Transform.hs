@@ -29,7 +29,7 @@ import ReWire.Crust.TypeCheck (typeCheckDefn, unify, unify', TySub)
 import ReWire.Crust.Types (typeOf, tyAnn, setTyAnn, dstArrow, maybeSetTyAnn, poly, poly', flattenArrow, arr, nilTy, ctorNames, resInputTy, codomTy, (|->), arrowRight, arrowLeft, isReacT, prettyTy, synthable, higherOrder, fundamental, concrete)
 import ReWire.Crust.Util (mkApp, mkError, mkLam, inlinable, synthableDefn, mkTupleMPat, mkTuple, mkPairMPat, mkPair, patVars, toVar, transPat, transMPat, isExtrude, extrudeDefn)
 import ReWire.Error (AstError, MonadError, failAt, Warning (..))
-import ReWire.Fix (fix, fix', fixUntil)
+import ReWire.Fix (fix, fix', fixUntil, boundedFixOn)
 import ReWire.SYB (transform, transformM, query)
 import ReWire.Unbound (freshVar, fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, runFreshMT, Name (..), unsafeUnbind, bind, unbind, Subst (..), Alpha, Embed (Embed), Bind)
 
@@ -408,8 +408,23 @@ normalizeBind (ts, syns, ds) = (ts, syns, ) <$> (uncurry (<>) <$> runStateT (map
                   where arr' :: Maybe Ty -> Maybe Ty -> Maybe Ty
                         arr' = liftM2 arr
 
+            -- Iterate inlining of the candidate reactive definitions into the
+            -- bind LHS to a fixpoint. Two cost-saving refinements that do not
+            -- change the result: (1) each round substitutes only the
+            -- candidates whose names are actually free in the current term
+            -- (substituting an absent name is a no-op), keeping the
+            -- unbound-generics `substs` list short; (2) detect the fixpoint
+            -- with `==` (which short-circuits at the first difference) rather
+            -- than `fix`'s `hash` (which always traverses the whole term).
             flatten :: (Fresh m, MonadError AstError m) => [Defn] -> Exp -> m Exp
-            flatten ds = fix "Bind LHS definition expansion" 100 (pure . substs (map defnSubst ds))
+            flatten ds = boundedFixOn (==) "Bind LHS definition expansion" 100 step
+                  where subs :: [(Name Exp, Exp)]
+                        subs = map defnSubst ds
+
+                        step :: Applicative f => Exp -> f Exp
+                        step e = pure $ substs (filter ((`Set.member` fvs) . fst) subs) e
+                              where fvs :: HashSet (Name Exp)
+                                    fvs = Set.fromList $ fv e
 
             isReacDefn :: Defn -> Bool
             isReacDefn Defn { defnPolyTy = Embed (Poly (unsafeUnbind -> (_, t))) } = isReacT t
