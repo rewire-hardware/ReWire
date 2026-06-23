@@ -25,7 +25,6 @@ extra-source-files:
 data-files:
     tests/integration/InlinedMiniISA.hs
     tests/integration/MiniISA.hs
-    tests/integration/SecMemCon.hs
     tests/negative/ambiguous-size.hs
     tests/negative/bind-lhs-loop.hs
     tests/negative/bind-lhs-pause.hs
@@ -98,6 +97,7 @@ data-files:
     tests/regression/react.hs
     tests/regression/records.hs
     tests/regression/RW_REPL_OD19Filter.hs
+    tests/regression/SecMemCon.hs
     tests/regression/Sha256_1.hs
     tests/regression/Sha256_2.hs
     tests/regression/signalFirst.hs
@@ -165,6 +165,7 @@ data-files:
     tests/regression/react.sv
     tests/regression/records.sv
     tests/regression/RW_REPL_OD19Filter.sv
+    tests/regression/SecMemCon.sv
     tests/regression/Sha256_1.sv
     tests/regression/Sha256_2.sv
     tests/regression/signalFirst.sv
@@ -232,6 +233,7 @@ data-files:
     tests/regression/react.rwc
     tests/regression/records.rwc
     tests/regression/RW_REPL_OD19Filter.rwc
+    tests/regression/SecMemCon.rwc
     tests/regression/Sha256_1.rwc
     tests/regression/Sha256_2.rwc
     tests/regression/signalFirst.rwc
@@ -299,6 +301,7 @@ data-files:
     tests/regression/react.vhdl
     tests/regression/records.vhdl
     tests/regression/RW_REPL_OD19Filter.vhdl
+    tests/regression/SecMemCon.vhdl
     tests/regression/Sha256_1.vhdl
     tests/regression/Sha256_2.vhdl
     tests/regression/signalFirst.vhdl
@@ -365,6 +368,7 @@ data-files:
     tests/regression/react.cry
     tests/regression/records.cry
     tests/regression/RW_REPL_OD19Filter.cry
+    tests/regression/SecMemCon.cry
     tests/regression/Sha256_1.cry
     tests/regression/Sha256_2.cry
     tests/regression/signalFirst.cry
@@ -429,6 +433,7 @@ data-files:
     tests/regression/pvartype.yaml
     tests/regression/react.yaml
     tests/regression/records.yaml
+    tests/regression/SecMemCon.yaml
     tests/regression/signalFirst.yaml
     tests/regression/sigNothing.yaml
     tests/regression/state.yaml

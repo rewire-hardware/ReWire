@@ -191,7 +191,7 @@ reset = do
       setloc zeroW10 zeroW32
 
 scrub_ram :: PortsIn -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) ()
-scrub_ram ips = (lift (scrub_ram_act >> get) >>= while_addr_reg_0) >>= idle
+scrub_ram ips = lift (scrub_ram_act >> get) >>= while_addr_reg_0
   where
     scrub_ram_act :: StateT (Sigs, Mem) Identity ()
     scrub_ram_act = do
@@ -199,9 +199,12 @@ scrub_ram ips = (lift (scrub_ram_act >> get) >>= while_addr_reg_0) >>= idle
       setloc addr zeroW32
       set_addr_reg (decW10 addr)
 
+-- The scrub loop keeps `idle` in tail position (rather than the equivalent
+-- `(... >>= while_addr_reg_0) >>= idle`): a reactive loop must be in tail
+-- position, since its result is consumed only by entering `idle`.
 while_addr_reg_0
       :: (Sigs, Mem)
-      -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) PortsIn
+      -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) ()
 while_addr_reg_0 x = do
   addr <- lift get_addr_reg
   if positiveW10 addr
@@ -210,7 +213,8 @@ while_addr_reg_0 x = do
       while_addr_reg_0 x
     else do
       (sigs, _) <- lift get
-      signal (outports sigs)
+      ip <- signal (outports sigs)
+      idle ip
 
   where
     outports :: Sigs -> PortsOut
