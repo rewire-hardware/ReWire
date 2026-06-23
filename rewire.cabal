@@ -23,7 +23,6 @@ build-type:     Simple
 extra-source-files:
     README.md
 data-files:
-    tests/integration/InlinedMiniISA.hs
     tests/integration/MiniISA.hs
     tests/negative/ambiguous-size.hs
     tests/negative/bind-lhs-loop.hs
