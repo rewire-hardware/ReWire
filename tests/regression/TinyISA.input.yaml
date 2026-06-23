@@ -1,0 +1,33 @@
+# Per-cycle inputs for the TinyISA golden (consumed by `rwc --interpret`).
+# __in0 is 17 bits = instrIn(9) ++ dataIn(8); instrIn = tag(3) ++ payload(6),
+# tags in declaration order NOP=0 LD=1 ST=2 NAND=3 BNZ=4; payload is the 6-bit
+# Addr (LD/ST/BNZ) or rd(2)++ra(2)++rb(2) (NAND). dataIn is held at 42 on every
+# cycle (only LD reads it). Each instruction is held for a few cycles so it
+# executes regardless of exact tick alignment. Program:
+#   NOP x3                  -- settle; PC ticks up (addrOut = PC)
+#   LD  5  (data=42) x5     -- R0 <- 42
+#   ST  7          x4       -- store R0: out we=1,addr=7,data=0x2a(42)  [checks LD]
+#   NAND R0 R1 R1  x5       -- R0 <- ~(R1 & R1) = ~0 = 0xff  (R1 stays 0)
+#   ST  7          x4       -- store R0: out we=1,addr=7,data=0xff(255) [checks NAND]
+# Encodings (instr9<<8 | 42): NOP=42 LD5=17706 ST7=34602 NAND R0 R1 R1=50474.
+- __in0: 42
+- __in0: 42
+- __in0: 42
+- __in0: 17706
+- __in0: 17706
+- __in0: 17706
+- __in0: 17706
+- __in0: 17706
+- __in0: 34602
+- __in0: 34602
+- __in0: 34602
+- __in0: 34602
+- __in0: 50474
+- __in0: 50474
+- __in0: 50474
+- __in0: 50474
+- __in0: 50474
+- __in0: 34602
+- __in0: 34602
+- __in0: 34602
+- __in0: 34602

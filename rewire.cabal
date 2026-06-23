@@ -441,6 +441,7 @@ data-files:
     tests/regression/synonym.yaml
     tests/regression/test2.yaml
     tests/regression/test3.yaml
+    tests/regression/TinyISA.input.yaml
     tests/regression/TinyISA.yaml
     tests/regression/toag.yaml
     tests/regression/toags.yaml

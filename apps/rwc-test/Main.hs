@@ -20,7 +20,7 @@ import System.Directory (listDirectory, setCurrentDirectory, getCurrentDirectory
 import System.Environment (getArgs)
 import System.Environment (withArgs)
 import System.Exit (exitFailure, ExitCode (..))
-import System.FilePath ((</>), (-<.>), takeBaseName, takeDirectory)
+import System.FilePath ((</>), (-<.>), takeBaseName, takeDirectory, takeFileName)
 import System.IO (hPutStr, hPutStrLn, hClose, hFlush, openFile, stderr, stdout, Handle, IOMode (WriteMode))
 import System.Process (callCommand)
 
@@ -85,10 +85,22 @@ testCompiler flags fn = do
                  cdTestdir
                  withArgs (fn : ["--core", "-o", ofile "rwc"] <> extraFlags) RWC.main
             ] <>)
-            -- Test: interpret Core.
-            <$> maybeGolden "yaml" (do
-                  cdTestdir
-                  withArgs ((fn -<.> "rwc") : ["--from-core", "--interp", "-o", ofile "yaml"] <> extraFlags) RWC.main)
+            -- Test: interpret Core. When a per-test inputs file
+            -- (<base>.input.yaml) is present, drive the interpreter with it for
+            -- exactly as many cycles as it lists; otherwise fall back to the
+            -- default of all-zero inputs for 10 cycles.
+            <$> do
+                  let inF = fn -<.> "input.yaml"
+                  hasIn <- doesFileExist inF
+                  interpArgs <-
+                        if hasIn
+                              then do
+                                    ncyc <- length . filter ("- " `isPrefixOf`) . lines <$> readFile inF
+                                    pure ["--interpret=" <> takeFileName inF, "--cycles", show ncyc]
+                              else pure ["--interp"]
+                  maybeGolden "yaml" (do
+                        cdTestdir
+                        withArgs ((fn -<.> "rwc") : ["--from-core"] <> interpArgs <> ["-o", ofile "yaml"] <> extraFlags) RWC.main)
 
       let roundTripTests =
             -- Test: parse/print round trip on the .rwc golden. The golden is
