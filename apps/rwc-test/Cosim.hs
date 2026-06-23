@@ -4,6 +4,13 @@
 --   VHDL, Cryptol, and interpreter backends behaviorally aligned. The
 --   interpreter is in turn tied to its committed .yaml golden by the separate
 --   "golden yaml" test, so agreement here anchors every backend to that golden.
+--
+--   The inputs and output traces are read and written with the same `yaml`
+--   package rewire-core uses to read inputs (--interpret/--testbench) and write
+--   the .yaml golden: inputs are per-cycle name->number maps, outputs are
+--   per-cycle name->hex-string maps. A per-cycle map (rather than a positional
+--   list) makes trace comparison robust to wire ordering, matching the
+--   interpreter's `Outs = HashMap Name BV`.
 module Cosim (cosimTests) where
 
 import qualified RWC
@@ -13,8 +20,11 @@ import TestUtil (withStderrTo)
 import Control.Monad (unless)
 import Data.Bits (xor, shiftL, shiftR)
 import Data.Char (isHexDigit)
-import Data.List (isPrefixOf, isSuffixOf, intercalate, stripPrefix)
-import Data.Maybe (fromMaybe, isJust, mapMaybe)
+import Data.HashMap.Strict (HashMap)
+import Data.List (isPrefixOf, isSuffixOf, intercalate)
+import Data.Maybe (isJust)
+import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word32)
 import Numeric (readHex)
 import System.Directory (createDirectoryIfMissing, doesFileExist, findExecutable, setCurrentDirectory)
@@ -24,8 +34,15 @@ import System.Process (callCommand)
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (testCase, assertBool)
 
+import qualified Data.HashMap.Strict as Map
+import qualified Data.Text           as T
+import qualified Data.Yaml           as Yaml
+
 -- | A backend the rwc interpreter is cosimulated against.
 data Backend = IVerilog | Ghdl | Cryptol
+
+-- | A simulation/interpreter output: one wire-name -> value map per cycle.
+type Trace = [HashMap Text Integer]
 
 -- | Number of cycles to cosimulate when a test has no inputs file.
 cosimCycles :: Int
@@ -84,30 +101,40 @@ cosimTests fn = do
             rwc ncyc args = withArgs ((fn -<.> "rwc") : "--from-core" : "--cycles" : show ncyc : args) RWC.main
 
             -- Stimulus fed to every backend, and the cycle count: the per-test
-            -- inputs file if present, else generated pseudorandom inputs.
+            -- inputs file if present (read with the yaml package, exactly as
+            -- rwc itself reads it), else generated pseudorandom inputs written
+            -- back out the same way.
             stimulusFor :: [(String, Int)] -> IO (FilePath, [[(String, Integer)]], Int)
             stimulusFor ins = doesFileExist providedF >>= \ case
-                  True  -> do s <- parseInputs ins <$> readFile providedF
-                              pure (providedF, s, length s)
+                  True  -> do cs <- either (error . Yaml.prettyPrintParseException) (map order) <$> Yaml.decodeFileEither providedF
+                              pure (providedF, cs, length cs)
                   False -> do let s = stimulus (takeBaseName fn) ins
-                              writeFile (ofl "cosim.input.yaml") (inputsYaml s)
+                              Yaml.encodeFile (ofl "cosim.input.yaml") (map toCycle s)
                               pure (ofl "cosim.input.yaml", s, cosimCycles)
                   where providedF = fn -<.> "input.yaml"
 
+                        -- The decoded per-cycle map in port order (for cryptol),
+                        -- absent wires zero -- matching how the loader pads.
+                        order :: HashMap Text Integer -> [(String, Integer)]
+                        order m = [ (n, Map.lookupDefault 0 (T.pack n) m) | (n, _) <- ins ]
+
+                        toCycle :: [(String, Integer)] -> HashMap Text Integer
+                        toCycle c = Map.fromList [ (T.pack n, v) | (n, v) <- c ]
+
             -- The reference output trace from the Hyle interpreter.
-            interpTrace :: FilePath -> Int -> IO [(String, Integer)]
+            interpTrace :: FilePath -> Int -> IO Trace
             interpTrace inputsF ncyc = do
                   withStderrTo (ofl "cosim.interp.err") $ rwc ncyc ["--interpret=" <> inputsF, "-o", ofl "cosim.interp.yaml"]
                   outTrace <$> readFile (ofl "cosim.interp.yaml")
 
-            iverilogTrace :: FilePath -> Int -> IO [(String, Integer)]
+            iverilogTrace :: FilePath -> Int -> IO Trace
             iverilogTrace inputsF ncyc = do
                   rwc ncyc ["--testbench=" <> inputsF, "-o", ofl "cosim.sv"]
                   callCommand $ unwords ["iverilog -g2012 -o", ofl "cosim.vvp", ofl "cosim_tb.sv", ofl "cosim.sv", "verilog/*.sv"]
                   callCommand $ unwords ["vvp", ofl "cosim.vvp", ">", ofl "cosim.vtrace"]
                   outTrace <$> readFile (ofl "cosim.vtrace")
 
-            ghdlTrace :: FilePath -> Int -> IO [(String, Integer)]
+            ghdlTrace :: FilePath -> Int -> IO Trace
             ghdlTrace inputsF ncyc = do
                   rwc ncyc ["--vhdl", "--testbench=" <> inputsF, "-o", ofl "cosim.vhdl"]
                   callCommand $ unwords ["rm -rf", wk] -- a stale workdir makes ghdl bind old units
@@ -128,11 +155,11 @@ cosimTests fn = do
                         IVerilog -> do
                               tv <- iverilogTrace inputsF ncyc
                               assertBool (mismatch "iverilog" tv "interpreter" ti)
-                                    $ tv == ti && length tv == ncyc * length outs
+                                    $ tv == ti && length ti == ncyc
                         Ghdl -> do
                               th <- ghdlTrace inputsF ncyc
                               assertBool (mismatch "ghdl" th "interpreter" ti)
-                                    $ th == ti && length th == ncyc * length outs
+                                    $ th == ti && length ti == ncyc
                         Cryptol -> do
                               rwc ncyc ["--cryptol", "-o", ofl "cosim.cry"]
                               -- A non-interpretable extern would make this a
@@ -146,7 +173,7 @@ cosimTests fn = do
                                           , "-c", "'" <> cryDevice (dataIns ins) stim <> "'"
                                           , ">", ofl "cosim.ctrace" ]
                                     tc <- hexWords <$> readFile (ofl "cosim.ctrace")
-                                    let expect = map (concatWord (map snd outs) . map snd) $ chunksOf (length outs) ti
+                                    let expect = map (concatWord (map snd outs) . portOrder outs) ti
                                     assertBool (  "cryptol/interpreter cosimulation traces differ:"
                                                <> "\ncryptol:     " <> show tc
                                                <> "\ninterpreter: " <> show expect)
@@ -156,67 +183,45 @@ cosimTests fn = do
             -- two simulators to agree with each other.
             simsAgree :: IO ()
             simsAgree = do
-                  (ins, outs) <- parsePorts <$> readFile (ofl "sv")
+                  (ins, _) <- parsePorts <$> readFile (ofl "sv")
                   (inputsF, _, ncyc) <- stimulusFor (dataIns ins)
                   tv <- iverilogTrace inputsF ncyc
                   th <- ghdlTrace inputsF ncyc
                   assertBool (mismatch "iverilog" tv "ghdl" th)
-                        $ tv == th && length tv == ncyc * length outs
+                        $ tv == th && length tv == ncyc
 
             dataIns :: [(String, Int)] -> [(String, Int)]
             dataIns = filter ((`notElem` ["clk", "rst"]) . fst)
 
-            mismatch :: String -> [(String, Integer)] -> String -> [(String, Integer)] -> String
+            mismatch :: String -> Trace -> String -> Trace -> String
             mismatch la a lb b = "cosimulation traces differ (or have the wrong length):\n"
                               <> la <> ": " <> show a <> "\n" <> lb <> ": " <> show b
 
--- | Parse an interp-style inputs file -- the same format inputsYaml writes and
---   rwc --interpret/--testbench read -- into per-cycle wire values in the given
---   port order. A "- name: <decimal>" line starts a cycle; indented
---   "name: <decimal>" lines add further wires to it. Trailing "# ..." comments
---   and blank lines are ignored (matching the YAML loader the simulators and
---   interpreter use). A wire absent from a cycle defaults to zero; the
---   regression inputs files list every data input on every cycle, so this
---   agrees with the loader (which would otherwise carry the previous value
---   forward).
-parseInputs :: [(String, Int)] -> String -> [[(String, Integer)]]
-parseInputs ports = map order . groupCycles . mapMaybe classify . lines
-      where classify :: String -> Maybe (Bool, (String, Integer))
-            classify l = case dropWhile (== ' ') $ takeWhile (/= '#') l of
-                  ""    -> Nothing
-                  s | Just s' <- stripPrefix "- " s -> (True, )  <$> kv s'
-                    | otherwise                     -> (False, ) <$> kv s
+-- | A cycle's output values in output-port order (absent wires zero), for the
+--   positional cryptol comparison.
+portOrder :: [(String, Int)] -> HashMap Text Integer -> [Integer]
+portOrder outs m = [ Map.lookupDefault 0 (T.pack n) m | (n, _) <- outs ]
 
-            kv :: String -> Maybe (String, Integer)
-            kv s = case words s of
-                  [n, v] | ":" `isSuffixOf` n, [(i, "")] <- reads v -> Just (init n, i)
-                  _                                                 -> Nothing
+-- | Parse a trace (the interpreter's .yaml, or a simulator's stdout) into
+--   per-cycle output maps. Simulators wrap the YAML in banner/$finish noise, so
+--   only the list lines ("- name: 'hex'" and indented continuations) are kept
+--   before decoding; the kept lines are a well-formed YAML list. Values are
+--   read as their hex strings (e.g. ghdl pads/upper-cases, the interpreter does
+--   not) and parsed to integers, so comparison is formatting-insensitive.
+outTrace :: String -> Trace
+outTrace s = case Yaml.decodeEither' (encodeUtf8 $ T.pack $ unlines $ filter traceLine $ lines s) of
+      Right cycles -> map (fmap parseHex) (cycles :: [HashMap Text Text])
+      Left _       -> []
+      where traceLine :: String -> Bool
+            traceLine l = case words l of
+                  ["-", n, _] -> ":" `isSuffixOf` n
+                  [n, _]      -> ":" `isSuffixOf` n
+                  _           -> False
 
-            groupCycles :: [(Bool, (String, Integer))] -> [[(String, Integer)]]
-            groupCycles []              = []
-            groupCycles ((_, nv) : rest) = (nv : map snd cont) : groupCycles more
-                  where (cont, more) = span (not . fst) rest
-
-            order :: [(String, Integer)] -> [(String, Integer)]
-            order m = [ (n, fromMaybe 0 $ lookup n m) | (n, _) <- ports ]
-
--- | Output records parsed from a simulation trace or interpreter output: lines
---   of the form "- name: '0xHEX'" (or indented continuation lines); anything
---   else (simulator noise) is ignored. Comparing parsed values makes the check
---   robust to hex-formatting differences (e.g., ghdl pads, the interpreter does
---   not).
-outTrace :: String -> [(String, Integer)]
-outTrace = mapMaybe entry . lines
-      where entry :: String -> Maybe (String, Integer)
-            entry l = case words l of
-                  ["-", n, v] | ":" `isSuffixOf` n -> (init n, ) <$> hexVal v
-                  [n, v]      | ":" `isSuffixOf` n -> (init n, ) <$> hexVal v
-                  _                                -> Nothing
-
-            hexVal :: String -> Maybe Integer
-            hexVal v = case dropWhile (/= 'x') v of
-                  'x' : rest | [(x, _)] <- readHex $ takeWhile isHexDigit rest -> Just x
-                  _                                                            -> Nothing
+            parseHex :: Text -> Integer
+            parseHex t = case readHex $ drop 1 $ dropWhile (/= 'x') $ T.unpack t of
+                  [(x, _)] -> x
+                  _        -> 0
 
 -- | Deterministic pseudorandom stimulus: one (name, value) pair per data input
 --   per cycle, with the inputs in port order.
@@ -240,14 +245,6 @@ stimulus nm ins = go (seed0 nm) cosimCycles
             xorshift32 x0 = let x1 = x0 `xor` (x0 `shiftL` 13)
                                 x2 = x1 `xor` (x1 `shiftR` 17)
                             in       x2 `xor` (x2 `shiftL` 5)
-
--- | Render stimulus as an interp-style inputs file (decimal values).
-inputsYaml :: [[(String, Integer)]] -> String
-inputsYaml stim
-      | all null stim = "[]\n"
-      | otherwise     = unlines $ concatMap (zipWith fmt ("- " : repeat "  ")) stim
-      where fmt :: String -> (String, Integer) -> String
-            fmt pre (n, v) = pre <> n <> ": " <> show v
 
 -- | A cryptol expression evaluating the generated device on the stimulus: one
 --   input word per cycle, the data inputs concatenated MSB-first in port order
@@ -274,11 +271,6 @@ hexWords = \ case
                     , [(x, _)] <- readHex h -> x : hexWords s'
       _ : s                                 -> hexWords s
       []                                    -> []
-
-chunksOf :: Int -> [a] -> [[a]]
-chunksOf n = \ case
-      [] -> []
-      xs -> take n xs : chunksOf n (drop n xs)
 
 -- | The port list of the generated top_level Verilog module: input and output
 --   names with bit widths.

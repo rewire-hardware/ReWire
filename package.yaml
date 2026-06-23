@@ -96,6 +96,9 @@ tests:
     - rewire
     - rewire-core
     - text ^>= 2.1
+    - bytestring ^>= 0.12
+    - unordered-containers ^>= 0.2
+    - yaml ^>= 0.11
     - HUnit ^>= 1.6
     - directory ^>= 1.3
     - process ^>= 1.6
