@@ -649,7 +649,7 @@ functional expression language rather than a cell graph, because:
 ## 10. Concrete syntax
 
 The textual format, printed by `rwc --core` and parsed by `--from-core`;
-it round-trips, and the `.rwc` golden files in `tests/regression/` use it.
+it round-trips, and the `.rwc` golden files in `tests/golden/` use it.
 
 ```
 program  ::= { decl }

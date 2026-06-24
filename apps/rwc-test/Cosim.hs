@@ -1,4 +1,4 @@
--- | Cross-backend cosimulation: simulate a compiled regression device through
+-- | Cross-backend cosimulation: simulate a compiled golden-test device through
 --   each available HDL/Cryptol backend and require it to agree, cycle by cycle,
 --   with the Hyle interpreter (the reference). This is what keeps the Verilog,
 --   VHDL, Cryptol, and interpreter backends behaviorally aligned. The
@@ -48,7 +48,7 @@ type Trace = [HashMap Text Integer]
 cosimCycles :: Int
 cosimCycles = 20
 
--- | The cosimulation tests for one regression program. There is one test per
+-- | The cosimulation tests for one golden test program. There is one test per
 --   backend, named "(cosim rwc/<tool>)", each independently gated on its tool
 --   being installed and (for ghdl/cryptol) its golden file existing -- so e.g.
 --   the cryptol comparison still runs when ghdl is not installed. Every backend

@@ -1,4 +1,4 @@
-# Crafted interpreter input for the "cubehash" regression test.
+# Crafted interpreter input for the "cubehash" golden test.
 #
 # Device (cubehash.hs): a CubeHash-style permutation engine.
 #   start = extrude (nopipeline NoGo) s0

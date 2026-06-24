@@ -1,4 +1,4 @@
--- | rwc-test: the compiler regression suite. Each tests/regression/*.hs is a
+-- | rwc-test: the compiler golden test suite. Each tests/golden/*.hs is a
 --   ReWire program with golden files alongside it; this driver compiles it
 --   (with GHC and with rwc), interprets it, lowers it to Verilog/VHDL/Cryptol,
 --   lints the HDL, and cosimulates the backends against each other (see
@@ -73,7 +73,7 @@ options =
        , Option []    ["color"]        (ReqArg FlagColor "never|always|auto") "When to use colored output (default: auto)."
        ]
 
--- | Build the test tree for one regression program. There are two kinds of
+-- | Build the test tree for one golden test program. There are two kinds of
 --   checks: golden tests, which compile/interpret the program and diff each
 --   output against a committed golden file (.rwc, .yaml, .sv, .vhdl, .cry); and
 --   cosimulation tests (see "Cosim"), which simulate the device through the HDL
@@ -262,7 +262,7 @@ testWarning fn = testCase (takeBaseName fn <> " (expected warning)") $ do
 --   trace, IR dumps) is redirected to a log file next to the other outputs.
 getSmokeTests :: IO TestTree
 getSmokeTests = do
-      dir <- getDataFileName ("tests" </> "regression")
+      dir <- getDataFileName ("tests" </> "golden")
       pure $ testGroup "flags"
             [ smoke dir "fibo1.hs" "dumps" "sv"
                   [ "-v", "--flatten", "--pretty", "--sync-reset", "--invert-reset"
@@ -303,7 +303,7 @@ main = do
             mapM_ (hPutStrLn stderr) errs
             exitUsage
 
-      goldTests  <- testsFrom "regression" (testCompiler flags)
+      goldTests  <- testsFrom "golden" (testCompiler flags)
       negTests   <- testsFrom "negative"   (\ f -> pure [testNegative f])
       warnTests  <- testsFrom "warning"    (\ f -> pure [testWarning f])
       smokeTests <- getSmokeTests
