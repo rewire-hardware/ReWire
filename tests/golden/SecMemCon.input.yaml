@@ -1,0 +1,58 @@
+# Per-cycle inputs for the SecMemCon golden (consumed by `rwc --interpret`).
+# __in0 is 46 bits = PortsIn, MSB-first:
+#   data_in(W32) ++ addr_in(W10) ++ go(Bit) ++ rnw(Bit) ++ partition_in(W2)
+# so __in0 = data_in<<14 | addr_in<<4 | go<<3 | rnw<<2 | partition.
+# go=S(1) requests an op; rnw=S(1) read / C(0) write. Memory has 4 cells keyed
+# on addr_in's low two bits (0..3); partition overwrites the high two bits.
+# Output __out0 (33 bits) = ack_out(Bit) ++ data_out(W32); a read drives
+# data_out to the stored value with ack=1 (so e.g. 0x1deadbeef = ack ++ 0xDEADBEEF).
+#
+# After reset the device scrubs the four cells (to zeroW32, which in this model
+# is the all-ones 0xffffffff) over a few cycles, then enters `idle`. Program:
+#   idle x6              -- let reset + scrub settle
+#   write 0xDEADBEEF @1  -- then read @1  -> 0x1deadbeef
+#   write 0x12345678 @2  -- then read @2  -> 0x112345678
+#   write 0xCAFEBABE @3  -- then read @3  -> 0x1cafebabe
+#   read @1              -- still 0x1deadbeef (per-cell persistence)
+#   read @0              -- unwritten -> 0x1ffffffff (the scrub value)
+# Each op is held a few cycles to clear the idle->pre_*->perform_* pipeline.
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 61209453510680
+- __in0: 61209453510680
+- __in0: 61209453510680
+- __in0: 61209453510680
+- __in0: 28
+- __in0: 28
+- __in0: 28
+- __in0: 28
+- __in0: 5003999576104
+- __in0: 5003999576104
+- __in0: 5003999576104
+- __in0: 5003999576104
+- __in0: 44
+- __in0: 44
+- __in0: 44
+- __in0: 44
+- __in0: 55798850879544
+- __in0: 55798850879544
+- __in0: 55798850879544
+- __in0: 55798850879544
+- __in0: 60
+- __in0: 60
+- __in0: 60
+- __in0: 60
+- __in0: 28
+- __in0: 28
+- __in0: 28
+- __in0: 28
+- __in0: 12
+- __in0: 12
+- __in0: 12
+- __in0: 12
+- __in0: 0
+- __in0: 0

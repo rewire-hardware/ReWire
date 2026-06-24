@@ -1,0 +1,27 @@
+# guards.hs: start = do { signal nonsense; start }
+#   ReacT input type: Bool (1 bit) -> wire __in0 (1 bit, MSB index 0).
+#     Bool encoding: False=0, True=1.
+#   Output type: Bool -> __out0 (1 bit). The signalled value is `nonsense`,
+#     a top-level constant computed from constants a=(1,1,0), b=(1,0,1):
+#       odd' a = False, odd'' b = True  -> first guard False eqBool True = False
+#       odd' b = True,  odd'' b = True  -> second guard True eqBool True = True
+#     so nonsense = True = 0x1 on every cycle.
+#   The input Bool is consumed by `signal` but never reaches the output, so
+#   __out0 is the constant 0x1 regardless of the input. We still vary __in0
+#   (alternating, runs of each value, edges) to exercise the input path.
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0

@@ -19,7 +19,7 @@
   same base, folds division by a literal zero, and drops the wires fusion
   leaves unused -- including the argument wires introduced by inlining.
   Generated Verilog and VHDL are substantially smaller and more readable
-  (the regression-test corpus shrank by roughly a third); interpreter
+  (the golden-test corpus shrank by roughly a third); interpreter
   traces are bit-for-bit unchanged.
 * Removed the vestigial reference primitives (`rwPrimSetRef`,
   `rwPrimGetRef`, `setRef`, `getRef`, and the `Ref` type): the compiler has
@@ -41,6 +41,10 @@
   `--interpret`/`--testbench` inputs file that can't be read warns before
   driving all inputs with zeros; `--testbench` with a target other than
   Verilog or VHDL warns that no testbench is generated.
+* `--cycles` now defaults to the larger of 10 or the number of inputs in the
+  `--interpret=`/`--testbench=` inputs file (rather than always 10), so an
+  inputs file is interpreted/simulated for at least as many cycles as it
+  lists unless `--cycles` is given explicitly.
 * New Cryptol backend (`rwc --cryptol`): translates the bit-level IR to a
   self-contained Cryptol module -- one pure function per defn plus a
   `rw_device` stream function modeling the whole device (a sequence of
@@ -62,9 +66,9 @@
   operand is now wrapped in `$signed(...)`, matching the interpreter's
   (sign-extending) semantics.
 * Test coverage expansion across the suites: VHDL golden tests
-  (`tests/regression/*.vhdl`, a CLI-flags smoke group exercising verbose
+  (`tests/golden/*.vhdl`, a CLI-flags smoke group exercising verbose
   tracing, pass dumps, and signal-naming options, new negative tests, a
-  regression test for the bitvector reduction operators, and a much larger
+  golden test for the bitvector reduction operators, and a much larger
   rewire-user suite (GHC-side device simulation, bit slicing, Finite
   arithmetic).
 * rewire-user: new `mod` operation in `ReWire.FiniteComp`.

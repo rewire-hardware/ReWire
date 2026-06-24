@@ -1,0 +1,37 @@
+# wordArith interpreter input stimulus.
+#
+# Device: start :: Dev (W 8) (W 8); loop i = return (compute i) >>= signal >>= loop
+#   compute w = ((w+1) ** 2 * (w-2) / 3) % (w+1)   -- all 8-bit unsigned, wrapping
+# The output is combinational on the current input:  out[n] = compute(in[n]).
+# Mod-by-zero guard: when (w+1)==0 (i.e. w=255) the `% (w+1)` is skipped and the
+# div-branch value is used directly -> compute(255)=0.
+#
+# Encoding: input is a single W 8 wire __in0; the per-cycle value is just the
+# 8-bit unsigned integer (truncated mod 256).  No tag/field layout.
+#
+# Sequence: small values (0,1,2,3,5,7), the mod-by-zero edge (255), powers of two
+# and boundaries (8,15,16,31,63,64,127,128), and large values (42,100,200,254),
+# then 255 again and back to small (11,17).  Exercises distinct outputs incl.
+# 0x1,0x5,0x4,0x22,0x14,0x6,0x2a,0x37,0x54,0xc and the mod-by-zero case.
+- __in0: 0
+- __in0: 1
+- __in0: 2
+- __in0: 3
+- __in0: 5
+- __in0: 7
+- __in0: 255
+- __in0: 8
+- __in0: 15
+- __in0: 16
+- __in0: 31
+- __in0: 42
+- __in0: 63
+- __in0: 64
+- __in0: 100
+- __in0: 127
+- __in0: 128
+- __in0: 200
+- __in0: 254
+- __in0: 255
+- __in0: 11
+- __in0: 17

@@ -1,0 +1,45 @@
+# Interpreter stimulus for dependencyGraph.
+#
+# Device: a 2-stage MyState pipeline driven by ReacT input `Input`.
+#   ReacT input type:  Input = InputA (W 4) | InputB (W 8) | InputC Bool
+#   ReacT output type: Output = Output Bool MyState
+#   MyState = MyState Bool (Maybe (W 4)) (Either (W 4) (W 8))
+#
+# Input wire __in0 is 10 bits, MSB-first: [tag(2)][field(8)].
+#   tag 0 = InputA: low 4 bits hold the W4    -> value = w4              (0..15)
+#   tag 1 = InputB: low 8 bits hold the W8    -> value = 256 + w8
+#   tag 2 = InputC: low bit holds the Bool    -> 512 = InputC False, 513 = InputC True
+#
+# Behavior: pipeline = Vec 2 MyState [p0, p1] held in the 30-bit register.
+#   each cycle: out = myStateToOutput p1 (old tail); p1 <- p0; p0 <- inputToMyState in p0.
+#   So an input takes ~2 cycles to surface on __out0 -> every logical input is held for 2 cycles.
+#
+# Output __out0 (16 bits) = [Output.bool(1)][MyState(15)] where
+#   MyState = [bool(1)][Maybe(5)=tag1+w4_4][Either(9)=tag1+pad+lowbits].
+#
+# Sequence exercises every Input ctor, both Maybe (Nothing/Just) and Either (Left/Right)
+# shapes, and all three myStateToOutput arms:
+#   (True,Left)->Output True, (True,Right)->Output False, (False,_)->Output False.
+#
+# Expected __out0 trace (hand-derived from the model, all confirmed):
+#   0x0 0x0 0x5 0x5 0x10c 0x10c 0xc005 0xc005 0x410c 0x410c
+#   0x410c 0x410c 0xf60b 0xf60b 0xb 0xb 0x122 0x122
+#
+- __in0: 5     # InputA 5
+- __in0: 5
+- __in0: 268   # InputB 12  (256 + 0x0C)
+- __in0: 268
+- __in0: 513   # InputC True  -> sets MyState bool, Maybe->Nothing
+- __in0: 513
+- __in0: 268   # InputB 12 onto a True state -> (True,Right)
+- __in0: 268
+- __in0: 513   # InputC True
+- __in0: 513
+- __in0: 11    # InputA 11 onto a True state -> (True,Left), Just 11
+- __in0: 11
+- __in0: 512   # InputC False -> clears bool, Maybe->Nothing
+- __in0: 512
+- __in0: 290   # InputB 34  (256 + 0x22)
+- __in0: 290
+- __in0: 513   # InputC True onto a Nothing/Right state -> keeps Either, sets bool
+- __in0: 513

@@ -1,0 +1,30 @@
+# iter.hs: start = iter f False, where f = not.
+#   iter f i = signal (f i) >>= iter f
+# ReacT input type: Bool, output type: Bool (each is W1, 1 bit).
+# The state machine collapses to a purely combinational device:
+#   __out0 = not __in0      (sv: __out0 = (__in0 == 1) ? 0 : 1)
+# So the input directly drives the output every cycle (stateless).
+#
+# Encoding: __in0 is a single 1-bit wire holding the Bool input
+#   (True = 1, False = 0). Output __out0 = not __in0.
+#
+# Sequence below exercises both input values with varied patterns:
+# a single 0, single 1, a run of 1s, a run of 0s, fast alternation,
+# and edges in both directions. Expected output is the bitwise NOT
+# of the input each cycle.
+- __in0: 0      # out 1
+- __in0: 1      # out 0
+- __in0: 1      # out 0  (hold high)
+- __in0: 1      # out 0  (run of 1s)
+- __in0: 0      # out 1  (falling edge)
+- __in0: 0      # out 1  (run of 0s)
+- __in0: 0      # out 1
+- __in0: 1      # out 0  (rising edge)
+- __in0: 0      # out 1  (alternate)
+- __in0: 1      # out 0
+- __in0: 0      # out 1
+- __in0: 1      # out 0
+- __in0: 1      # out 0
+- __in0: 0      # out 1
+- __in0: 1      # out 0
+- __in0: 0      # out 1

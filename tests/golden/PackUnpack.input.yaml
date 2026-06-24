@@ -1,0 +1,38 @@
+# PackUnpack interpreter stimulus.
+#
+# Device (PackUnpack.hs): dev a = signal (unpacklo a b, unpackhi a b,
+#   packlo a b, packhi a b); dev a'   where  b = a * 2 (mod 256), a' = the
+#   value received from the signal (the per-cycle input).  Effectively
+#   combinational: the four 8-bit outputs at cycle N are a pure function of
+#   the W8 input at cycle N (the start value 0b11010101 is only the seed and
+#   is overwritten by the input each cycle).
+#
+# Input encoding: one wire __in0, a W8 (8-bit unsigned), index0 = MSB.
+#   Value supplied as a plain decimal integer (truncated to 8 bits).
+#
+# Outputs (all W8, MSB-first; out integer bit (7-j) = result vector index j):
+#   __out0 = unpacklo a b : interleave low half of a,b -> [a7 b7 a6 b6 a5 b5 a4 b4]
+#   __out1 = unpackhi a b : interleave high half        -> [a3 b3 a2 b2 a1 b1 a0 b0]
+#   __out2 = packlo  a b  : even bits of a then of b     -> [a7 a5 a3 a1 b7 b5 b3 b1]
+#   __out3 = packhi  a b  : odd  bits of a then of b     -> [a6 a4 a2 a0 b6 b4 b2 b0]
+#   where a_i is the weight-2^i bit of a and b = (2*a) mod 256, b_i its bits.
+#
+# Sequence: exercises edge cases and bit patterns -- all-zero, all-ones,
+#   the seed pattern 0b11010101, the b-overflow boundary (0x80 -> b=0),
+#   single-bit walks, alternating 0xAA/0x55, and assorted mixed values.
+- __in0: 0      # a=0,   b=0      -> all outputs 0 (baseline)
+- __in0: 255    # a=0xFF,b=0xFE   all-ones into the permutation
+- __in0: 213    # a=0b11010101 (the seed)  b=0xAA
+- __in0: 170    # a=0xAA b=0x54   alternating, with multiply overflow
+- __in0: 85     # a=0x55 b=0xAA   the other alternating phase
+- __in0: 128    # a=0x80 b=0x00   overflow boundary: b wraps to 0
+- __in0: 1      # a=0x01 b=0x02   lowest single bit
+- __in0: 64     # a=0x40 b=0x80   single bit just below MSB
+- __in0: 240    # a=0xF0 b=0xE0   high nibble set
+- __in0: 15     # a=0x0F b=0x1E   low nibble set
+- __in0: 129    # a=0x81 b=0x02   MSB and LSB set, b overflows
+- __in0: 60     # a=0x3C b=0x78   middle bits
+- __in0: 102    # a=0x66 b=0xCC   0b01100110
+- __in0: 153    # a=0x99 b=0x32   0b10011001, complement-ish of prev
+- __in0: 200    # a=0xC8 b=0x90   assorted
+- __in0: 7      # a=0x07 b=0x0E   low three bits

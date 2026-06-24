@@ -1,0 +1,32 @@
+# uniquification: input encoding and stimulus
+#
+# ReacT input type: Pup () () ()  (the 4th type arg is the only inhabited slot,
+# but all of Q/R/Zuh's fields here are () = 0-width). Pup has 3 constructors
+# in declaration order: Q=0, R=1, Zuh=2. Tag = ceil(log2 3) = 2 bits, and all
+# constructor fields are unit (0 width), so __in0 is a 2-bit wire that is pure
+# tag: 0=Q, 1=R, 2=Zuh, 3=out-of-range tag (no constructor).
+#
+# Device behavior: start = do signal (Z ()); start. The device unconditionally
+# emits Z () every cycle and loops, completely ignoring its input. Output type
+# is G () () () (3 ctors G=0, Z=1, D=2; all fields unit), 2-bit pure tag, so
+# Z () = 0x1 on __out0 for every cycle no matter the input.
+#
+# This sequence sweeps every 2-bit input value (including the spare tag 3) and
+# holds a couple of values for multiple cycles to defeat any tick-alignment
+# dependence; the output must stay 0x1 throughout because the input is inert.
+- __in0: 0    # Q
+- __in0: 1    # R
+- __in0: 2    # Zuh
+- __in0: 3    # out-of-range tag
+- __in0: 0    # Q (hold begins)
+- __in0: 0    # Q held
+- __in0: 0    # Q held
+- __in0: 2    # Zuh (hold begins)
+- __in0: 2    # Zuh held
+- __in0: 2    # Zuh held
+- __in0: 1    # R
+- __in0: 3    # out-of-range tag
+- __in0: 2    # Zuh
+- __in0: 0    # Q
+- __in0: 1    # R
+- __in0: 3    # out-of-range tag

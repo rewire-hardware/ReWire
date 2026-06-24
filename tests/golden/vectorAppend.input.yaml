@@ -1,0 +1,69 @@
+# vectorAppend interpreter inputs.
+#
+# Device is purely combinational (no register state): output at each cycle is
+# compute(v, w) for that cycle's inputs.
+#
+# Input type: Input = (Vec 8 (W 8), Vec 8 (W 8)) = (v, w).
+#   __in0 = v (first tuple field, MSB), __in1 = w (second field).
+#   Each Vec 8 (W 8) is 64 bits, MSB-first: element 0 occupies the high byte.
+#     v: bits [63:56]=v0, [55:48]=v1, [47:40]=v2, [39:32]=v3, ..., [7:0]=v7.
+#
+# compute (v,w) = reverse (take 4 v) ++ empty ++ singleton 0 ++ drop 5 w
+#               = [v3, v2, v1, v0, 0x00, w5, w6, w7]   (a Vec 8 (W 8) = Output).
+#   Only v0..v3 and w5..w7 affect the output; v4..v7 and w0..w4 are inert.
+#
+# Output __out0 (64 bits, MSB-first bytes): v3 v2 v1 v0 00 w5 w6 w7.
+#
+# The sequence below sweeps distinct/edge byte patterns: ascending/descending,
+# all-ones, alternating-bit (0x55/0xAA), powers of two, single hot bytes, and
+# cases that deliberately exercise the inert slots (junk in v4..v7 / w0..w4) to
+# confirm they don't leak into the output. Expected __out0 noted per cycle.
+
+# identity-ish ascending v, descending w
+- __in0: 283686952306183
+  __in1: 17357102489901502592    # expect __out0=0x0302010000a09080
+# all 0xFF in v, mixed w
+- __in0: 18446744073709551615
+  __in1: 81985529216486895       # expect __out0=0xffffffff00abcdef
+# v low nibble distinct, w all 0xFF
+- __in0: 1161981756646125696
+  __in1: 18446744073709551615    # expect __out0=0x4030201000ffffff
+# palindrome-ish v, sequential w
+- __in0: 12302652060662173986
+  __in1: 72623859790382856       # expect __out0=0xddccbbaa00060708
+# only first 4 v matter; trailing junk in v4..v7
+- __in0: 16045690983674386841
+  __in1: 13303533                # expect __out0=0xefbeadde00cafeed
+# only last 3 w matter; leading junk in w0..w4
+- __in0: 1311768464867721216
+  __in1: 18446744073693432588    # expect __out0=0x78563412000a0b0c
+# all zeros (baseline)
+- __in0: 0
+  __in1: 0                       # expect __out0=0x0000000000000000
+# v all zeros, w all set in tail
+- __in0: 0
+  __in1: 16777215                # expect __out0=0x0000000000ffffff
+# max byte values in relevant v slots
+- __in0: 18446744069414584320
+  __in1: 0                       # expect __out0=0xffffffff00000000
+# alternating bits
+- __in0: 6172840429334713770
+  __in1: 12273903644374837845    # expect __out0=0xaa55aa550055aa55
+# powers of two in v
+- __in0: 72624976668147840
+  __in1: 9241421688590303745     # expect __out0=0x0804020100040201
+# single hot byte v[3] only
+- __in0: 549755813888
+  __in1: 1                       # expect __out0=0x8000000000000001
+# single hot byte v[0] only
+- __in0: 9223372036854775808
+  __in1: 8388608                 # expect __out0=0x0000008000800000
+# ascii-ish 'ReWire!!' style
+- __in0: 5937247794160279841
+  __in1: 5222324424516116769     # expect __out0=0x6957655200212121
+# v[3..0] = 0xCAFEBABE bytes
+- __in0: 14627333964952502272
+  __in1: 14593472                # expect __out0=0xbebafeca00deadc0
+# counting up both
+- __in0: 726238597903828560
+  __in1: 798862457694211416      # expect __out0=0x281e140a00424d58

@@ -29,7 +29,7 @@ $ stack install
 
 ## Usage
 
-See `rwc --help` for a list of supported options and the `tests/regression`
+See `rwc --help` for a list of supported options and the `tests/golden`
 directory for some examples. A tutorial is in `tutorial/rewire-by-example`.
 
 ## Changelog

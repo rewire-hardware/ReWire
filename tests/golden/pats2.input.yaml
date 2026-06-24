@@ -1,0 +1,32 @@
+# pats2 interpreter input
+#
+# Device: start = do { signal (not (baz (toBitX False))); start }
+#   baz b = f c where f True = False; f False = True; c = True
+#   => baz _ = f True = False;  not (baz _) = not False = True
+# So the device signals True (1) every cycle, ignoring its input.
+#
+# Input type: ReacT BitX BitX Identity (), where BitX = Bit (1 bit).
+#   __in0 (1 bit) = the input Bit value. It is read but does NOT affect
+#   the output (output is the constant True).
+#
+# Encoding: __in0 = 0 for Bit False (Zero), 1 for Bit True (One).
+#
+# This sequence toggles the input through every value and pattern of
+# runs (alternating, repeated 0s, repeated 1s) to demonstrate input is
+# inert. Expected output: 0x1 on every cycle.
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0

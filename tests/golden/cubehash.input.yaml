@@ -1,0 +1,54 @@
+# Crafted interpreter input for the "cubehash" golden test.
+#
+# Device (cubehash.hs): a CubeHash-style permutation engine.
+#   start = extrude (nopipeline NoGo) s0
+#   nopipeline Go   = lift (modify round); signal current state
+#   nopipeline NoGo = signal current state (state held unchanged)
+# So the StateT-held State (Vec 32 (W 32)) is transformed by `round` on a
+# Go input and held on a NoGo input; the current state is signaled each cycle.
+#
+# Initial state s0 = initialize 32 1 8: word0=0x20, word1=0x01, word2=0x08, rest 0.
+#
+# ReacT input type: Inp = Go | NoGo (2 ctors -> 1-bit tag, MSB-first).
+#   Go = ctor index 0 -> __in0 = 0  (apply `round`, then output new state)
+#   NoGo = ctor index 1 -> __in0 = 1 (hold state, output it unchanged)
+# __in0 is a 1-bit wire (top_level: input logic [0:0] __in0).
+#
+# Output __out0 is the 1024-bit State: 32 words of W 32, MSB-first
+# (word index 0 in the highest 32 bits).
+#
+# This sequence advances the CubeHash round from s0, with NoGo holds interleaved
+# to confirm the state is held unchanged between rounds. The round is a bijection,
+# so the state keeps mixing -- no fixed point is reached:
+#   c0  NoGo: show s0 (word0=0x20, word1=0x01, word2=0x08)
+#   c1  Go  : round(s0)
+#   c2  NoGo: hold round(s0)
+#   c3  Go  : round^2(s0)
+#   c4  NoGo: hold round^2(s0)
+#   c5  NoGo: hold round^2(s0)
+#   c6  Go  : round^3(s0)
+#   c7  NoGo: hold round^3(s0)
+#   c8  Go  : round^4(s0)
+#   c9  Go  : round^5(s0)
+#   c10 NoGo: hold round^5(s0)
+#   c11 Go  : round^6(s0)
+#   c12 NoGo: hold round^6(s0)
+#   c13 NoGo: hold round^6(s0)
+#   c14 Go  : round^7(s0)
+#   c15 NoGo: hold round^7(s0)
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1

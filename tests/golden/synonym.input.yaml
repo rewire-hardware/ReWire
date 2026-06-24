@@ -1,0 +1,44 @@
+# synonym.hs is a Fibonacci stepper exposed through ReacT.
+#
+# ReacT input type: Bit (RT' s = ReacT Bit W' s). The single 1-bit input wire
+# __in0 carries that Bit directly: 0 = False, 1 = True. Output __out0 is a W 8
+# (8-bit unsigned) holding the current Fibonacci value, decoded MSB-first as a
+# plain integer (no tag, it's a bare W 8).
+#
+# Behavior (Mealy): the device holds a running Fibonacci value v (state st0,st1
+# init to 0,1). Each cycle:
+#   - in=1: take one Fibonacci step; output = the new current value.
+#   - in=0: hold; output = the current value unchanged.
+# The output reacts combinationally to the same cycle's input, and the step is
+# applied that same cycle, so each rising "go" pulse advances the sequence by one.
+#
+# The displayed value after k accumulated "go" pulses is:
+#   k:  0  1  2  3  4  5  6  7  8  9 10 11  12  13  14  15  16
+#   v:  0  1  1  2  3  5  8 13 21 34 55 89 144 233 377 610 987
+# Values wrap mod 256 in the 8-bit output (377->0x79, 610->0x62, 987->0xdb).
+#
+# This sequence: idle, single step, hold, a back-to-back double step, a hold
+# plateau, a triple-step burst, a hold, then a long run that drives the value
+# past 255 to exercise the 8-bit wraparound, ending with a hold-then-step.
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1

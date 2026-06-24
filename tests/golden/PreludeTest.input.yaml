@@ -1,0 +1,27 @@
+# PreludeTest input encoding.
+#
+# ReacT input type: Bool (1 bit). __in0 is a single 1-bit wire (MSB index 0).
+#   __in0: 0 => False, __in0: 1 => True.
+#
+# Device behavior: start = loop False. The loop signals (zookus . zookus) a == a
+# (zookus is the identity), then recurses with (a && x && y) where x = y = True,
+# i.e. it recurses with a unchanged. Since the seed is False, a stays False, so
+# the output (the signalled value) is always False. The signal's *returned* value
+# b is discarded, so the external __in0 input never influences the loop state or
+# the output. The output is therefore constantly 0 regardless of input.
+#
+# This sequence still varies __in0 (True/False mixed, runs held for a few cycles
+# to defeat any tick-alignment dependence) to demonstrate the input is inert; the
+# output remains 0 throughout.
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1

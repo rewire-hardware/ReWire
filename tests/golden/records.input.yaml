@@ -1,0 +1,24 @@
+# records.hs: ReacT Bit Bit Identity () device.
+# Input wire __in0 is a single Bit (1 bit). It is the value signaled IN each
+# cycle, but the program ignores it: start always computes
+#   x (foo (bar (S1 zero zero (zero,zero)))) = one
+# (bar -> S1 f1=0 f2=1 f3=(0,1); foo swaps f1/f2 -> f1=1; x = f1 = 1), then
+# loops. So __out0 is the constant 1 every cycle no matter the input.
+# We still vary __in0 across all 1-bit values (and oversize values, truncated
+# to 1 bit) to confirm the input is inert. Output should be 0x1 on every cycle.
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 2
+- __in0: 3

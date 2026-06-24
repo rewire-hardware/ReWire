@@ -1,0 +1,61 @@
+# fibo2 interpreter input stimulus.
+#
+# Device: start = loop 0 1, where
+#   loop n m = do b <- signal n; if b then loop n m else loop m (n+m)
+# ReacT input type is Bit (1 bit), output type is W 8.
+#
+# Encoding: __in0 is the 1-bit Bit input.
+#   __in0 = 1  -> b = True  -> STAY : output n, state (n,m) unchanged.
+#   __in0 = 0  -> b = False -> ADVANCE: output m, state becomes (m, n+m).
+# State starts at (n=0, m=1). Output is the W8 value just signalled.
+# (The all-zero golden simply walks the Fibonacci sequence: 1,1,2,3,5,8,...)
+#
+# This sequence interleaves stays and advances so the trace shows BOTH the
+# stay-output (n, the lower number) and the advance-output (m), plus the
+# 8-bit wraparound past 255 near the end.
+#
+# Hand-derived trace ((n,m) -> out):
+#  c1  in1 stay  (0,1)   out 0
+#  c2  in1 stay  (0,1)   out 0
+#  c3  in0 adv   (0,1)   out 1   -> (1,1)
+#  c4  in1 stay  (1,1)   out 1
+#  c5  in0 adv   (1,1)   out 1   -> (1,2)
+#  c6  in0 adv   (1,2)   out 2   -> (2,3)
+#  c7  in1 stay  (2,3)   out 2
+#  c8  in0 adv   (2,3)   out 3   -> (3,5)
+#  c9  in0 adv   (3,5)   out 5   -> (5,8)
+#  c10 in0 adv   (5,8)   out 8   -> (8,13)
+#  c11 in1 stay  (8,13)  out 8
+#  c12 in1 stay  (8,13)  out 8
+#  c13 in0 adv   (8,13)  out 13(0x0d) -> (13,21)
+#  c14 in0 adv   (13,21) out 21(0x15) -> (21,34)
+#  c15 in0 adv   (21,34) out 34(0x22) -> (34,55)
+#  c16 in0 adv   (34,55) out 55(0x37) -> (55,89)
+#  c17 in0 adv   (55,89) out 89(0x59) -> (89,144)
+#  c18 in0 adv   (89,144)out 144(0x90)-> (144,233)
+#  c19 in1 stay  (144,233) out 144(0x90)
+#  c20 in0 adv   (144,233) out 233(0xe9) -> (233, 121=377&0xff=0x79)
+#  c21 in0 adv   (233,121) out 121(0x79) -> (121, 98=354&0xff=0x62)
+#  c22 in0 adv   (121,98)  out 98(0x62)  -> (98, 219=0xdb)
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0

@@ -1,0 +1,43 @@
+# dissex: a 2-register reactive Fibonacci stepper.
+#
+# Input type: ReacT Bit (W 8) ... -> __in0 is a single bit (width 1, see dissex.sv).
+# Encoding: __in0 = the Bit directly (0 or 1). No tag/field layout for a bare Bit.
+# Output type: W 8 -> __out0 is an 8-bit unsigned value.
+#
+# State: two W8 registers, st0 init 0, st1 init 1 ({__st0,__st1}=16'h1).
+# Per-cycle semantics (confirmed empirically against the interpreter):
+#   in0 = 0 (signal/hold): __out0 = st0; registers unchanged.
+#   in0 = 1 (incr step)   : __out0 = st1; then st0 <- st1, st1 <- (st0 + st1) mod 256.
+# So a run of 1s emits the Fibonacci sequence (mod 256) while a 0 freezes the
+# machine and re-emits the current st0 (distinct from the st1 emitted during a step).
+#
+# This sequence:
+#  - cycles 0-3 : four steps build Fibonacci 1,1,2,3 (st0=3,st1=5).
+#  - cycles 4-5 : hold (in=0) -> emits st0=3 twice, no state change.
+#  - cycles 6-9 : four more steps 5,8,13,21 (0x5,0x8,0xd,0x15).
+#  - cycle 10   : hold -> emits st0=21 (0x15).
+#  - cycles 11-19: nine steps drive past the W8 boundary to exercise overflow
+#                  wraparound (...,0x90,0xe9,0x79,0x62,0xdb,...).
+#  - cycles 20-21: final hold pair -> re-emits the post-overflow st0.
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0

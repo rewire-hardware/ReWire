@@ -1,0 +1,28 @@
+# react: a purely combinational device that outputs NOT of its input.
+#
+# Model (react.hs): loop i = return (not i) >>= signal >>= loop, with input
+# and output type Bool (1 bit each). There is no register/state: the IR device
+# computes __out0 = not __in0 every cycle (confirmed in react.sv / react.rwc).
+#
+# Input encoding: __in0 is a 1-bit wire holding a Bool. False=0, True=1.
+#   Values are truncated to the 1-bit width, so 2 -> 0 and 3 -> 1.
+# Output: __out0 = not __in0  (0 -> 0x1, 1 -> 0x0).
+#
+# This sequence walks both Bool values, includes runs (1,1,1 and 0,0), and
+# two truncation probes (2 -> 0, 3 -> 1) to confirm width truncation.
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 2
+- __in0: 3
+- __in0: 1
+- __in0: 0

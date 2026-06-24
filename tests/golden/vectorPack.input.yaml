@@ -1,0 +1,74 @@
+# Interpreter stimulus for vectorPack.
+#
+# Device: combinational vector shuffle. ReacT input type is
+#   Input = (Vec 8 (W 8), Vec 8 (W 8))  -- a pair of 8-byte vectors (v, w).
+# Each cycle the device signals compute(v,w) and loops; the output type is
+#   Output = (Vec 8 (W 8), Vec 8 (W 8)) -- (v', w').
+# There is no state that affects the output: the result is a pure function of
+# the current input, so each output depends only on that cycle's (v, w).
+#
+# Wire encoding (MSB-first concatenation):
+#   __in0 = v : 64 bits = v[0]<<56 | v[1]<<48 | ... | v[7]   (v[0] is the most-significant byte)
+#   __in1 = w : 64 bits, same layout.
+#   __out0 = v' (same byte layout), __out1 = w'.
+#
+# Semantics (n=8 -> n=4 in the pack helpers, lastIndex=7):
+#   lo  = packlo v w  = [v0,v2,v4,v6, w0,w2,w4,w6]   (evens of v then evens of w)
+#   hi  = packhi v w  = [v1,v3,v5,v7, w1,w3,w5,w7]   (odds  of v then odds  of w)
+#   lo' = packlo hi lo, hi' = packhi hi lo
+#   v'  = unpacklo lo' hi' = [v1,v3,v5,v7, w1,w3,w5,w7]  (odds  of v then odds  of w)
+#   w'  = unpackhi lo' hi' = [v0,v2,v4,v6, w0,w2,w4,w6]  (evens of v then evens of w)
+# So v' selects the odd-indexed bytes of v and w; w' selects the even-indexed bytes.
+#
+# Sequence (16 cycles), varied: zero baseline, ascending bytes, all-FF/all-00,
+# alternating lane patterns, powers of two, deadbeef/counting, A5/5A, AA/55,
+# nibble patterns, sign-boundary bytes, and distinct-byte vectors.
+#
+# all zero baseline -> v'=0, w'=0
+- __in0: 0
+  __in1: 0
+# v=[01..08], w=[11..18] -> v'=[02,04,06,08,12,14,16,18], w'=[01,03,05,07,11,13,15,17]
+- __in0: 72623859790382856
+  __in1: 1230066625199609624
+# v all FF, w all 00 -> v'=FFFFFFFF00000000, w'=FFFFFFFF00000000
+- __in0: 18446744073709551615
+  __in1: 0
+# v all 00, w all FF -> v'=00000000FFFFFFFF, w'=00000000FFFFFFFF
+- __in0: 0
+  __in1: 18446744073709551615
+# v=[FF,00,...], w=[00,FF,...] -> odds(v)=00s,odds(w)=FFs ; evens(v)=FFs,evens(w)=00s
+- __in0: 18374966859414961920
+  __in1: 71777214294589695
+# v powers-of-two desc [80,40,20,10,08,04,02,01], w one-bit-clear [FE,FD,FB,F7,EF,DF,BF,7F]
+- __in0: 9241421688590303745
+  __in1: 18374119097041403775
+# v = deadbeefcafebabe, w = 0123456789abcdef
+- __in0: 16045690984503098046
+  __in1: 81985529216486895
+# v all A5, w all 5A
+- __in0: 11936128518282651045
+  __in1: 6510615555426900570
+# v=[10,20,30,40,50,60,70,80], w=[90,a0,b0,c0,d0,e0,f0,00]
+- __in0: 1161981756646125696
+  __in1: 10421523879919939584
+# low-byte alternating: v=[00,01,...], w=[02,03,...]
+- __in0: 281479271743489
+  __in1: 144961824947896835
+# sign-boundary bytes: v=[7F,80,...], w=[C3,3C,...]
+- __in0: 9187483429707480960
+  __in1: 14068334001739580220
+# v doubling [01,02,04,08,10,20,40,80], w descending [FF,FE,FC,F8,F0,E0,C0,80]
+- __in0: 72624976668147840
+  __in1: 18446459269879480448
+# all zero again (return to baseline)
+- __in0: 0
+  __in1: 0
+# v all AA, w all 55
+- __in0: 12297829382473034410
+  __in1: 6148914691236517205
+# nibble patterns: v=[F0,0F,...], w=[0F,F0,...]
+- __in0: 17298308644996116495
+  __in1: 1148435428713435120
+# distinct bytes: v=[12,34,56,78,9a,bc,de,f0], w=[0f,ed,cb,a9,87,65,43,21]
+- __in0: 1311768467463790320
+  __in1: 1147797409030816545

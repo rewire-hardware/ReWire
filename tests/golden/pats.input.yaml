@@ -1,0 +1,28 @@
+# Test "pats": device is `start :: ReacT Bit Bit Identity ()`.
+#   start = do { signal $ not $ baz False; start }
+# Input wire __in0 is the ReacT resumption input of type Bit (1 bit).
+# Encoding: Bit is 1 bit; __in0 = 0 (False) or 1 (True).
+#
+# Behavior: every cycle the device signals `not (baz False)`.
+#   baz b = f c where { f True = False; f False = True; c = True }
+#   so baz False = f True = False, and not False = True.
+# Output __out0 (Bit, 1 bit) is therefore constant 0x1 (True) every cycle,
+# INDEPENDENT of the input (the IR shows not2 returns 1'h1 unconditionally,
+# discarding its argument). The resumption input is never consumed.
+#
+# Sequence: 14 cycles toggling __in0 through both Bit values plus runs of
+# repeats, to demonstrate the output stays 0x1 regardless of input.
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 1

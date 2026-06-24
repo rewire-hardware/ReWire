@@ -1,0 +1,77 @@
+# wordBitwise interpreter stimulus.
+#
+# Device: purely combinational. ReacT input is a 3-tuple (W 8, W 8, W 8) = (u, v, w).
+# Tuple fields are concatenated MSB-first across the three input wires, so each
+# field maps directly to its own 8-bit wire:
+#   __in0 = u   __in1 = v   __in2 = w   (each 0..255, decimal)
+# Output (W 8 on __out0, decimal/hex) each cycle:
+#   compute(u,v,w) = ((u .&. v) ^ w) .|. bnot ((bnot u .&. bnot v) ^ w)
+# with fixity .&. (5) > ^/~^ (4) > .|. (3); ~^ is XNOR = bnot . (^).
+# No registers, so cycle N output depends only on cycle N input (no lag).
+#
+# Sequence exercises: classic AABBCC test patterns, all-0/all-1 corners,
+# single-wire isolation, alternating 0x55/0xAA bit patterns, single hot bits,
+# arbitrary mixes, nibble splits, and the de Morgan / XNOR term coverage.
+#
+# Expected __out0 per cycle (hex): 7e 00 00 ff ff ff ff ff 07 e0
+#                                  66 e6 ef ff ff ff ff 00 00 ff
+- __in0: 240
+  __in1: 204
+  __in2: 170
+- __in0: 0
+  __in1: 0
+  __in2: 0
+- __in0: 255
+  __in1: 255
+  __in2: 255
+- __in0: 255
+  __in1: 0
+  __in2: 0
+- __in0: 0
+  __in1: 255
+  __in2: 0
+- __in0: 0
+  __in1: 0
+  __in2: 255
+- __in0: 170
+  __in1: 85
+  __in2: 255
+- __in0: 85
+  __in1: 170
+  __in2: 0
+- __in0: 1
+  __in1: 2
+  __in2: 4
+- __in0: 128
+  __in1: 64
+  __in2: 32
+- __in0: 18
+  __in1: 52
+  __in2: 86
+- __in0: 120
+  __in1: 154
+  __in2: 188
+- __in0: 222
+  __in1: 240
+  __in2: 19
+- __in0: 15
+  __in1: 240
+  __in2: 255
+- __in0: 255
+  __in1: 15
+  __in2: 240
+- __in0: 195
+  __in1: 60
+  __in2: 129
+- __in0: 127
+  __in1: 128
+  __in2: 1
+- __in0: 85
+  __in1: 85
+  __in2: 85
+- __in0: 170
+  __in1: 170
+  __in2: 170
+- __in0: 0
+  __in1: 255
+  __in2: 255

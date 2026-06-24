@@ -1,0 +1,315 @@
+import ReWire hiding (Bit)
+
+data Bit = C | S
+data W2 = W2 Bit Bit
+data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
+data W32 = W32 W8 W8 W8 W8
+
+zeroW8 :: W8
+zeroW8 = W8 C C C C C C C C
+
+zeroW32 :: W32
+zeroW32 = W32 zeroW8 zeroW8 zeroW8 zeroW8
+
+data W10 = W10
+      { b0 :: Bit
+      , b1 :: Bit
+      , b2 :: Bit
+      , b3 :: Bit
+      , b4 :: Bit
+      , b5 :: Bit
+      , b6 :: Bit
+      , b7 :: Bit
+      , b8 :: Bit
+      , b9 :: Bit
+      }
+
+data Mem = Mem
+      { mem0 :: W32
+      , mem1 :: W32
+      , mem2 :: W32
+      , mem3 :: W32
+      }
+
+zeroMem :: Mem
+zeroMem = Mem
+      { mem0 = zeroW32
+      , mem1 = zeroW32
+      , mem2 = zeroW32
+      , mem3 = zeroW32
+      }
+
+memLookup :: W10 -> Mem -> W32
+memLookup (W10 C C C C C C C C C C) = mem0
+memLookup (W10 C C C C C C C C C S) = mem1
+memLookup (W10 C C C C C C C C S C) = mem2
+memLookup (W10 C C C C C C C C S S) = mem3
+
+memTweak :: W10 -> W32 -> Mem -> Mem
+memTweak (W10 C C C C C C C C C C) v m = m { mem0 = v }
+memTweak (W10 C C C C C C C C C S) v m = m { mem1 = v }
+memTweak (W10 C C C C C C C C S C) v m = m { mem2 = v }
+memTweak (W10 C C C C C C C C S S) v m = m { mem3 = v }
+
+-- replaces the first two bits of its second argument with its first argument
+(<&>) :: W2 -> W10 -> W10
+(W2 b0 b1) <&> (W10 _ _ b2 b3 b4 b5 b6 b7 b8 b9) = W10 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9
+
+-- Some constants
+zeroW2 :: W2
+zeroW2  = W2 C C
+
+zeroW10 :: W10
+zeroW10 = W10 C C C C C C C C C C
+
+onesW10 :: W10
+onesW10 = W10 S S S S S S S S S S
+
+decW10 :: W10 -> W10
+decW10 w@W10 { b0 = S } = w { b0 = C }
+decW10 w@W10 { b1 = S, b0 = C } = w { b1 = C, b0 = S }
+decW10 w@W10 { b2 = S, b1 = C, b0 = C } = w { b2 = C, b1 = S, b0 = S }
+decW10 w@W10 { b3 = S, b2 = C, b1 = C, b0 = C } = w { b3 = C, b2 = S, b1 = S, b0 = S }
+decW10 w@W10 { b4 = S, b3 = C, b2 = C, b1 = C, b0 = C } = w { b4 = C, b3 = S, b2 = S, b1 = S, b0 = S }
+decW10 w@W10 { b5 = S, b4 = C, b3 = C, b2 = C, b1 = C, b0 = C } = w { b5 = C, b4 = S, b3 = S, b2 = S, b1 = S, b0 = S }
+decW10 w@W10 { b6 = S, b5 = C, b4 = C, b3 = C, b2 = C, b1 = C, b0 = C } = w { b6 = C, b5 = S, b4 = S, b3 = S, b2 = S, b1 = S, b0 = S }
+decW10 w@W10 { b7 = S, b6 = C, b5 = C, b4 = C, b3 = C, b2 = C, b1 = C, b0 = C } = w { b7 = C, b6 = S, b5 = S, b4 = S, b3 = S, b2 = S, b1 = S, b0 = S }
+-- This last case would be wrapping a signed value.
+decW10 w@W10 { b9 = S, b8 = C, b7 = C, b6 = C, b5 = C, b4 = C, b3 = C, b2 = C, b1 = C, b0 = C } = w { b9 = C, b8 = S, b7 = S, b6 = S, b5 = S, b4 = S, b3 = S, b2 = S, b1 = S, b0 = S }
+
+positiveW10 :: W10 -> Bool
+positiveW10 W10 { b9 = S } = True
+positiveW10 _              = False
+
+-- The four real memory keys (b0..b7 = C; the cell is selected by b8,b9).
+keyMem3 :: W10
+keyMem3 = W10 C C C C C C C C S S
+
+keyMem2 :: W10
+keyMem2 = W10 C C C C C C C C S C
+
+keyMem1 :: W10
+keyMem1 = W10 C C C C C C C C C S
+
+keyMem0 :: W10
+keyMem0 = W10 C C C C C C C C C C
+
+-- Step from one memory key to the next-lower one during the scrub. The walk is
+-- keyMem3 -> keyMem2 -> keyMem1 -> keyMem0; stepping past keyMem0 yields onesW10,
+-- which `scrubbing` reports as done and ends the loop.
+nextKey :: W10 -> W10
+nextKey (W10 C C C C C C C C S S) = keyMem2
+nextKey (W10 C C C C C C C C S C) = keyMem1
+nextKey (W10 C C C C C C C C C S) = keyMem0
+nextKey _                         = onesW10
+
+-- True while the scrub still has a real memory key to zero. onesW10 is the
+-- post-keyMem0 sentinel, so it reports done.
+scrubbing :: W10 -> Bool
+scrubbing (W10 S S S S S S S S S S) = False
+scrubbing _                         = True
+
+--------------------------------------------
+-- Types for Signals, Ports, & Memory     --
+--------------------------------------------
+
+data Sigs = Sigs
+  { partition_reg :: W2  {- [0..1] -}
+  , addr_reg      :: W10 {- [0..9] -}
+  , data_reg      :: W32 {- [0..31] -}
+  , ack_reg       :: Bit
+  , data_out_reg  :: W32 {- [0..31] -}
+  }
+
+data PortsIn = PortsIn
+  { data_in       :: W32 {- [0..31] -}
+  , addr_in       :: W10 {- [0..9] -}
+  , go            :: Bit
+  , rnw           :: Bit
+  , partition_in  :: W2 {- [0..1] -}
+  }
+
+data PortsOut = PortsOut
+  { ack_out  :: Bit
+  , data_out :: W32 {- [0..31] -}
+  }
+
+zeroSigs :: Sigs
+zeroSigs = Sigs
+      { partition_reg = zeroW2
+      , addr_reg      = zeroW10
+      , data_reg      = zeroW32
+      , ack_reg       = C
+      , data_out_reg  = zeroW32
+      }
+
+---------------------
+-- Some Helpers
+---------------------
+
+set_partition_reg :: W2 -> StateT (Sigs, Mem) Identity ()
+set_partition_reg w2 = modify (\ (s, m) -> (s { partition_reg = w2 }, m))
+
+get_partition_reg :: StateT (Sigs, Mem) Identity W2
+get_partition_reg = get >>= \ (s, _) -> return (partition_reg s)
+
+set_ack_reg :: Bit -> StateT (Sigs, Mem) Identity ()
+set_ack_reg b = modify (\ (s, m) -> (s { ack_reg = b }, m))
+
+get_ack_reg :: StateT (Sigs, Mem) Identity Bit
+get_ack_reg = get >>= \ (s, _) -> return (ack_reg s)
+
+set_data_reg :: W32 -> StateT (Sigs, Mem) Identity ()
+set_data_reg w32 = modify (\ (s, m) -> (s { data_reg = w32 }, m))
+
+get_data_reg :: StateT (Sigs, Mem) Identity W32
+get_data_reg = get >>= \ (s, _) -> return (data_reg s)
+
+set_data_out_reg :: W32 -> StateT (Sigs, Mem) Identity ()
+set_data_out_reg w32 = modify (\ (s, m) -> (s { data_out_reg = w32 }, m))
+
+get_data_out_reg :: StateT (Sigs, Mem) Identity W32
+get_data_out_reg = get >>= \ (s, _) -> return (data_out_reg s)
+
+set_addr_reg :: W10 -> StateT (Sigs, Mem) Identity ()
+set_addr_reg w10 = modify (\ (s, m) -> (s { addr_reg = w10 }, m))
+
+get_addr_reg :: StateT (Sigs, Mem) Identity W10
+get_addr_reg = get >>= \ (s, _) -> return (addr_reg s)
+
+-- Memory operations
+getloc :: W10 -> StateT (Sigs, Mem) Identity W32
+getloc a = get >>= \ (_, mem) -> return (memLookup a mem)
+
+setloc :: W10 -> W32 -> StateT (Sigs, Mem) Identity ()
+setloc i e = modify (\ (s, m) -> (s, memTweak i e m))
+
+------------------------------------------
+------------------------------------------
+------------------------------------------
+------------------------------------------
+------------------------------------------
+-----      End of ReWire figleaf     -----
+------------------------------------------
+------------------------------------------
+------------------------------------------
+------------------------------------------
+------------------------------------------
+
+connect :: (Sigs, Mem) -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) PortsIn
+connect x = do
+      lift $ put x
+      signal $ outports $ fst x
+  where
+    outports :: Sigs -> PortsOut
+    outports s = PortsOut { ack_out = ack_reg s , data_out = data_out_reg s }
+
+reset :: ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) ()
+reset = do
+      ports <- (lift (reset_act >> get) >>= connect)
+      scrub_ram ports
+  where
+    reset_act = do
+      set_ack_reg C
+      set_data_reg zeroW32
+      set_data_out_reg zeroW32
+      set_partition_reg zeroW2
+      set_addr_reg keyMem3
+
+scrub_ram :: PortsIn -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) ()
+scrub_ram ips = lift get >>= while_addr_reg_0
+
+-- The scrub loop keeps `idle` in tail position (rather than the equivalent
+-- `(... >>= while_addr_reg_0) >>= idle`): a reactive loop must be in tail
+-- position, since its result is consumed only by entering `idle`.
+--
+-- Each iteration signals the current outputs, then performs one scrub step on
+-- the *current* state (carried forward via `get`, not the captured snapshot
+-- `x`) so addr_reg actually advances and the loop terminates once every real
+-- key has been zeroed. addr_reg starts at keyMem3 (set by `reset`) and walks
+-- keyMem3 -> keyMem2 -> keyMem1 -> keyMem0; nextKey then parks it at onesW10,
+-- which `scrubbing` reports as done.
+while_addr_reg_0
+      :: (Sigs, Mem)
+      -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) ()
+while_addr_reg_0 x = do
+  addr <- lift get_addr_reg
+  if scrubbing addr
+    then do
+      connect x
+      x' <- lift (scrub_ram_act >> get)
+      while_addr_reg_0 x'
+    else do
+      (sigs, _) <- lift get
+      ip <- signal (outports sigs)
+      idle ip
+
+  where
+    -- Zero the real memory key currently in addr_reg and step addr_reg to the
+    -- next-lower key (see nextKey/scrubbing).
+    scrub_ram_act :: StateT (Sigs, Mem) Identity ()
+    scrub_ram_act = do
+      addr <- get_addr_reg
+      setloc addr zeroW32
+      set_addr_reg (nextKey addr)
+
+    outports :: Sigs -> PortsOut
+    outports s = PortsOut { ack_out = ack_reg s , data_out = data_out_reg s }
+
+idle :: PortsIn -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) ()
+idle ip = let
+             _go  = go ip
+             _rnw = rnw ip
+             p_i  = partition_in ip
+             a_i  = addr_in ip
+             d_i  = data_in ip
+          in
+            case (_go, _rnw) of
+              (S, S) -> (lift (pre_read p_i a_i >> get) >>= connect) >>= perform_read
+              (S, C) -> (lift (pre_write p_i a_i d_i >> get) >>= connect) >>= perform_write
+              _      -> (lift (pre_idle >> get) >>= connect) >>= idle
+          where
+
+            pre_read :: W2 -> W10 -> StateT (Sigs, Mem) Identity ()
+            pre_read p_i a_i = do
+              set_addr_reg (p_i <&> a_i)
+              set_partition_reg p_i
+              set_ack_reg C
+              set_data_out_reg zeroW32
+
+            pre_write :: W2 -> W10 -> W32 -> StateT (Sigs, Mem) Identity ()
+            pre_write p_i a_i d_i = do
+              set_addr_reg (p_i <&> a_i)
+              set_data_reg d_i
+              set_partition_reg p_i
+              set_ack_reg C
+              set_data_out_reg zeroW32
+
+            pre_idle :: StateT (Sigs, Mem) Identity ()
+            pre_idle = do
+              set_ack_reg C
+              set_data_out_reg zeroW32
+
+perform_read :: PortsIn -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) ()
+perform_read _ = (lift (perform_read_act >> get) >>= connect) >>= idle
+  where
+    perform_read_act = do
+      addr   <- get_addr_reg
+      d_o_r' <- getloc addr
+      set_data_out_reg d_o_r'
+      set_ack_reg S
+
+perform_write :: PortsIn -> ReacT PortsIn PortsOut (StateT (Sigs, Mem) Identity) ()
+perform_write _ = (lift (perform_write_act >> get) >>= connect) >>= idle
+  where
+    perform_write_act = do
+      set_data_out_reg zeroW32
+      addr  <- get_addr_reg
+      _data <- get_data_reg
+      setloc addr _data
+      set_ack_reg S
+
+start :: ReacT PortsIn PortsOut Identity ()
+start = extrude reset (zeroSigs, zeroMem)
+
+main = undefined

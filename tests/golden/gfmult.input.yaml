@@ -1,0 +1,62 @@
+# gfmult: combinational GF(2^128) carryless multiply (GHASH-style).
+#
+# ReacT input type: (Multiplicand_i, Multiplier_i) = (W128, W128) via 'iter multiplyFun'.
+# Both fields are full 128-bit words (no tag/pad), so the tuple maps 1:1 onto the
+# two top_level input wires:
+#   __in0 = input_a (multiplicand), __in1 = input_b (multiplier); each a raw 128-bit int.
+# Output __out0 (128-bit) = a * b in GF(2^128) with the GHASH reduction polynomial
+#   R = 0xE1000000000000000000000000000000.  ReWire uses MSB-at-index-0 bit order, so
+#   input_b!0 is the integer's top bit; the identity element is b = 0x80...0 (b*a = a).
+# The device is purely combinational: __out0 each cycle depends only on that cycle's inputs.
+#
+# Sequence (16 cycles) exercises: zero annihilation, the multiplicative identity, single
+# shift w/o reduction, reduction-heavy low-bit operands, all-ones, patterned masks,
+# commutativity (swapped operands), and two distinct full-width operands.
+# cycle  0: a=0 -> product 0 (a annihilates) -> __out0 = 0x00000000000000000000000000000000
+# cycle  1: b=0 -> product 0 (b annihilates) -> __out0 = 0x00000000000000000000000000000000
+# cycle  2: b=identity (MSB-first bit0) -> product = a -> __out0 = 0x123456789abcdef0fedcba9876543210
+# cycle  3: identity again, different a -> __out0 = 0xdeadbeefcafef00d0123456789abcdef
+# cycle  4: single shift, no reduction -> __out0 = 0x40000000000000000000000000000000
+# cycle  5: both = GF low bit; max reduction passes -> __out0 = 0xe6080000000000000000000000000003
+# cycle  6: all-ones * all-ones -> __out0 = 0xf402aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+# cycle  7: patterned a, all-ones b -> __out0 = 0xfdbb9393939393939393939393939393
+# cycle  8: a=R(prim poly), identity b -> R -> __out0 = 0xe1000000000000000000000000000000
+# cycle  9: alternating nibble patterns -> __out0 = 0x346c2c2c2c2c2c2c2c2c2c2c2c2c2c2c
+# cycle 10: complementary masks -> __out0 = 0xdcabbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+# cycle 11: low-bit operands, reduction -> __out0 = 0x12300000000000000000000000000009
+# cycle 12: two distinct full-width operands -> __out0 = 0xdeb3d2c2016c0dfab78cfbe5685324bc
+# cycle 13: swapped operands (commutative check) -> __out0 = 0xdeb3d2c2016c0dfab78cfbe5685324bc
+# cycle 14: high a, GF-low b -> __out0 = 0xe3f80000000000000000000000000001
+# cycle 15: swapped of previous -> __out0 = 0xe3f80000000000000000000000000001
+- __in0: 0
+  __in1: 24197857203266734881846307747534221840
+- __in0: 24197857203266734881846307747534221840
+  __in1: 0
+- __in0: 24197857203266734881846307747534221840
+  __in1: 170141183460469231731687303715884105728
+- __in0: 295990755076957556440877544977013132783
+  __in1: 170141183460469231731687303715884105728
+- __in0: 170141183460469231731687303715884105728
+  __in1: 85070591730234615865843651857942052864
+- __in0: 1
+  __in1: 1
+- __in0: 340282366920938463463374607431768211455
+  __in1: 340282366920938463463374607431768211455
+- __in0: 20016609818878733144904388672456953615
+  __in1: 340282366920938463463374607431768211455
+- __in0: 299076299051606071403356588563077529600
+  __in1: 170141183460469231731687303715884105728
+- __in0: 181483929024500513847133123963609712776
+  __in1: 22685491128062564230891640495451214097
+- __in0: 226854911280625642308916404954512140970
+  __in1: 113427455640312821154458202477256070485
+- __in0: 3
+  __in1: 2
+- __in0: 24197857203266734881846307747534221840
+  __in1: 338770000845734292517272035000332377840
+- __in0: 338770000845734292517272035000332377840
+  __in1: 24197857203266734881846307747534221840
+- __in0: 170141183460469231731687303715884105727
+  __in1: 1
+- __in0: 1
+  __in1: 170141183460469231731687303715884105727

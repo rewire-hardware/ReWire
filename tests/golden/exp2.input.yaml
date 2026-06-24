@@ -1,0 +1,40 @@
+# exp2: a 10-stage doubling shift register.
+#
+# Device (exp2.hs): ReacT Word Word over StateT (Vec 10 Word), Word = W 100.
+#   state ss : Vec 10 (W 100), initially all zeros.
+#   each cycle: output = head ss; new ss = map (*2) (tail ss `snoc` i).
+# So an input i entered at the LSB end of the vector, is doubled once on entry
+# and once per shift, and reaches the head (output) after 9 more shifts:
+#   output[k+9] = (1024 * input[k]) mod 2^100   (1024 = 2^10),
+#   outputs[0..8] = 0 (pipeline fill latency).
+#
+# Input encoding: input type is Word = W 100, a plain 100-bit unsigned int,
+# so __in0 is just the decimal integer i (truncated to 100 bits). No tag/field
+# layout.
+#
+# This sequence exercises:
+#   distinct small values, zero gaps between pulses, a power-of-two ladder,
+#   and three 100-bit overflow/truncation edge cases at cycles 9-11:
+#     2^89   -> 1024*2^89 = 2^99            (just fits)
+#     2^90   -> 1024*2^90 = 2^100 -> 0      (exact overflow to zero)
+#     2^100-1-> 2^110-1024 trunc = 2^100-1024 (low 10 bits cleared by *1024)
+# Expected __out0 (after 9-cycle latency): 0x400 0x0 0x800 0x1400 0x0
+#   0x1c00 0x3fc00 0x40000 0x0 for inputs at cycles 0,2,3,5,6,7 etc.
+- __in0: 1
+- __in0: 0
+- __in0: 2
+- __in0: 5
+- __in0: 0
+- __in0: 7
+- __in0: 255
+- __in0: 256
+- __in0: 0
+- __in0: 618970019642690137449562112
+- __in0: 1237940039285380274899124224
+- __in0: 1267650600228229401496703205375
+- __in0: 1000000
+- __in0: 0
+- __in0: 42
+- __in0: 0
+- __in0: 999
+- __in0: 0

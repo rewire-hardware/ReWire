@@ -29,7 +29,7 @@ import ReWire.Crust.TypeCheck (typeCheckDefn, unify, unify', TySub)
 import ReWire.Crust.Types (typeOf, tyAnn, setTyAnn, dstArrow, maybeSetTyAnn, poly, poly', flattenArrow, arr, nilTy, ctorNames, resInputTy, codomTy, (|->), arrowRight, arrowLeft, isReacT, prettyTy, synthable, higherOrder, fundamental, concrete)
 import ReWire.Crust.Util (mkApp, mkError, mkLam, inlinable, synthableDefn, mkTupleMPat, mkTuple, mkPairMPat, mkPair, patVars, toVar, transPat, transMPat, isExtrude, extrudeDefn)
 import ReWire.Error (AstError, MonadError, failAt, Warning (..))
-import ReWire.Fix (fix, fix', fixUntil)
+import ReWire.Fix (fix, fix', fixUntil, boundedFixOn)
 import ReWire.SYB (transform, transformM, query)
 import ReWire.Unbound (freshVar, fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, runFreshMT, Name (..), unsafeUnbind, bind, unbind, Subst (..), Alpha, Embed (Embed), Bind)
 
@@ -359,7 +359,7 @@ normalizeBind (ts, syns, ds) = (ts, syns, ) <$> (uncurry (<>) <$> runStateT (map
                         -- diagnostic.
                         let cands = filter (\ d -> isReacDefn d && inlinable d && not (defnName d `Set.member` recs)) $ ds <> lams
                         e1'   <- ppExp' e1
-                                 >>= flatten cands
+                                 >>= unfoldHead cands
                                  >>= reduceExp
 
                         let b = mkBind a e1' e2'
@@ -408,8 +408,30 @@ normalizeBind (ts, syns, ds) = (ts, syns, ) <$> (uncurry (<>) <$> runStateT (map
                   where arr' :: Maybe Ty -> Maybe Ty -> Maybe Ty
                         arr' = liftM2 arr
 
-            flatten :: (Fresh m, MonadError AstError m) => [Defn] -> Exp -> m Exp
-            flatten ds = fix "Bind LHS definition expansion" 100 (pure . substs (map defnSubst ds))
+            -- Concretize a bind's reactive left-hand side by inlining only its
+            -- head call -- and the chain of head calls that unfolds into --
+            -- until the head is a concrete reactive (a bind, signal, return,
+            -- extrude, ...) or a non-candidate (e.g. a recursive loop, left as
+            -- a tail call). The reactive definitions it merely *calls* in
+            -- tail/continuation position are deliberately NOT inlined here:
+            -- they are concretized incrementally as the surrounding `ppExp'`
+            -- re-walks the result, after their continuations have been
+            -- lambda-lifted and so shared. Inlining the whole reachable
+            -- reactive call graph into one term (the previous approach)
+            -- duplicated every shared helper at every use site and blew up
+            -- (to millions of nodes) on deeply nested devices such as MiniISA.
+            -- After ppExp', the LHS is never itself a bind or Match (those are
+            -- handled by the rules above), so its only reactive sub-term is the
+            -- head call -- hence inlining the head alone suffices.
+            unfoldHead :: (Fresh m, MonadError AstError m) => [Defn] -> Exp -> m Exp
+            unfoldHead cands = boundedFixOn (==) "Bind LHS head expansion" 100 step
+                  where subs :: HashMap (Name Exp) Exp
+                        subs = Map.fromList $ map defnSubst cands
+
+                        step :: (Fresh m, MonadError AstError m) => Exp -> m Exp
+                        step e = case flattenApp e of
+                              (Var _ _ _ f, args) | Just body <- Map.lookup f subs -> reduceExp $ mkApp (ann e) body args
+                              _                                                    -> pure e
 
             isReacDefn :: Defn -> Bool
             isReacDefn Defn { defnPolyTy = Embed (Poly (unsafeUnbind -> (_, t))) } = isReacT t

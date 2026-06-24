@@ -1,0 +1,33 @@
+# test2: incr :: ReacT Bit (W 8) (StateT (W 8) Identity) ()
+#
+# Input encoding:
+#   ReacT input type is Bit (1 bit) -> wire __in0 is 1 bit wide ([0:0]).
+#   Each cycle's value is a single integer (0 or 1), truncated to 1 bit.
+#
+# Device behavior:
+#   incr does: r0 <- lift get; lift (put r0); signal r0; incr.
+#   The state (W 8, init 0) is read and written back UNCHANGED every cycle,
+#   so it stays 0 forever. signal always emits the current state (0).
+#   The Bit value delivered by signal is discarded (loop is unconditional).
+#   => __out0 is always 0x00, INDEPENDENT of the input. The input is inert.
+#
+# This sequence still varies the 1-bit input (toggling, runs of 0/1, etc.)
+# to document that no input pattern affects the constant-0 output.
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0

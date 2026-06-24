@@ -1,0 +1,36 @@
+# Device: state.hs -- a 1-bit running-parity (XOR accumulator) with one-cycle delay.
+#
+# ReacT input type is Bool, mapped onto __in0 (1 bit): 0 = False, 1 = True.
+# Output __out0 is Bool (1 bit): the device's current state register.
+#
+# Semantics (confirmed empirically): each cycle the device outputs its current
+# state s, then updates state to (input `xor` s). The state register starts at 0.
+# Therefore output at cycle n = parity (XOR) of all inputs strictly before n.
+# Holding input = 0 freezes the state; holding input = 1 toggles it each cycle.
+#
+# This sequence exercises: an initial toggle pair, a run of 0s that freezes the
+# state, isolated 1s, a long freeze run, and alternating tails -- covering both
+# the hold and toggle behaviors and the one-cycle output delay.
+#
+# Expected __out0 trace (hand-derived from the semantics):
+#   0,1,0,0,0,1,1,0,1,0,0,0,0,1,1,0,1,1,0,0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1

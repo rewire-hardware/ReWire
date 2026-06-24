@@ -37,7 +37,7 @@ options =
        , Option []    ["loadpath"]        (ReqArg FlagLoadPath    "dir1,dir2,...")   "Additional directories for loadpath."
        , Option []    ["interpret"]       (OptArg FlagInterpret   "inputs.yaml")     "Interpret instead of compile, using inputs from the optional argument file (default: inputs.yaml)."
        , Option []    ["testbench"]       (OptArg FlagTestbench   "inputs.yaml")     "Also generate a testbench (foo_tb.sv/foo_tb.vhdl) driving inputs from the optional argument file (default: inputs.yaml) for --cycles cycles."
-       , Option []    ["cycles"]          (ReqArg FlagCycles      "ncycles")         "Number of cycles to interpret (default: 10)."
+       , Option []    ["cycles"]          (ReqArg FlagCycles      "ncycles")         "Number of cycles to interpret or simulate (default: the larger of 10 and the number of inputs in the inputs file)."
        , Option []    ["depth"]           (ReqArg FlagEvalDepth   "depth")           "Partial evaluation depth. Higher values can cause non-termination. (default: 8)."
        , Option []    ["rtl-opt"]         (ReqArg FlagRtlOpt      "level")           "RTL optimization level. Disable with 0. (default: 8)."
        , Option []    ["pretty"]          (NoArg  FlagPretty)                        "Attempt to output prettier RTL at the expense of performance."

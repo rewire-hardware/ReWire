@@ -1,0 +1,51 @@
+# toags: ReacT Bit Bit (StateT Bit (StateT Bit Identity)) Bit
+#
+# Input encoding: __in0 is a single Bit (1 bit). 0 = False, 1 = True.
+#
+# Device semantics (one loop iteration of `go`):
+#   1. signal False           -- emit 0, read input -> x
+#   2. if x then signal False -- emit 0, read input -> y    (only signals when x=1)
+#        else y <- lift get    -- y from a never-written state cell, always 0 (no signal)
+#   3. signal ((y?x:x&&x) && y) -- emit (x && y), read input -> z (z unused)
+#   4. lift (lift (put y))      -- writes the OTHER state cell (get never sees it)
+#   5. loop
+# Since x&&x == x, the step-3 emission is exactly (x && y).
+# An output 1 therefore requires x=1 AND y=1, i.e. two consecutive inputs of 1
+# aligned to the (x-read, y-read) signals of one iteration.
+#
+# Phase behavior: an x=1 iteration spans 3 signal cycles, an x=0 iteration spans
+# only 2 (step 2 does not signal). So a single 0 shifts the period-3 firing phase
+# by -1. This is the most interesting feature this sequence exercises.
+#
+# Sequence (24 cycles):
+#   cyc 1-6  all 1 : steady high -> 1s fire at output cycles 2 and 5 (== 2 mod 3)
+#   cyc 7    = 0   : x=0 iteration (2 cycles) -> phase shift by -1
+#   cyc 8-13 all 1 : after shift, 1s fire at output cycles 10 and 13 (== 1 mod 3)
+#   cyc 14-17 all 0: silence (no x=1, no firing)
+#   cyc 18   = 1   : lone 1 ...
+#   cyc 19   = 0   : ... not followed by a 1 at the y-read -> no fire
+#   cyc 20-24 all 1: re-establish high -> 1 fires at output cycle 22
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1

@@ -1,0 +1,27 @@
+# finite2 input encoding:
+#   ReacT input type is (Finite 128), represented as a 7-bit value on __in0 (0..127).
+#   The Finite value IS the integer (no tag), directly the residue class index.
+# Device behavior (purely combinational, no inter-cycle state):
+#   compute n = toFinite' (fromFinite n :: W 7) + toFinite (lit 6 :: W 3)
+#   i.e. __out0 = ((in mod 20) + 6) mod 20   (a Finite 20, 5-bit output).
+# This sequence exercises:
+#   - the +6 offset with no wrap (in mod 20 in 0..13),
+#   - the wraparound at in mod 20 = 14 (output 0) and 15..19,
+#   - that mod 128 input reduces mod 20 (e.g. 20,40,100 all behave like 0; 127 like 7),
+#   - the full 0..127 input range incl. boundaries 0, 19, 20, 119, 127.
+- __in0: 0      # (0+6)%20  = 6
+- __in0: 1      # (1+6)%20  = 7
+- __in0: 7      # (7+6)%20  = 13
+- __in0: 13     # (13+6)%20 = 19  (largest no-wrap output)
+- __in0: 14     # (14+6)%20 = 0   (wrap to 0)
+- __in0: 15     # (15+6)%20 = 1
+- __in0: 19     # (19+6)%20 = 5
+- __in0: 20     # 20%20=0  -> 6   (input wrap mod 20)
+- __in0: 33     # 33%20=13 -> 19
+- __in0: 40     # 40%20=0  -> 6
+- __in0: 54     # 54%20=14 -> 0   (input wrap then output wrap)
+- __in0: 77     # 77%20=17 -> 3   (the loop's initial seed value 77)
+- __in0: 99     # 99%20=19 -> 5
+- __in0: 100    # 100%20=0 -> 6
+- __in0: 119    # 119%20=19-> 5
+- __in0: 127    # 127%20=7 -> 13  (max Finite 128 value)

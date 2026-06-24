@@ -1,0 +1,38 @@
+# stateTower interpreter input stimulus.
+#
+# Device: sig :: Bit -> ReacT Bit Bit (StateT Bit (StateT Bit Identity)) ()
+#   start = extrude (extrude (sig False) False) True
+# Two state cells: an "outer" StateT and an "inner" StateT. The interpreter's
+# observed behavior is consistent with both cells effectively starting True
+# (outer=True, inner=True).
+#
+# Per cycle k, sig consumes input[k] as its arg i, then:
+#   if (not i) then incr; emit (outer state).
+#   incr: r0 = outer, r1 = inner; outer := r1; inner := r0 xor r1.
+# So input i=0 (False) triggers incr (state advances); i=1 holds the state.
+# The input fed in cycle k takes effect in the SAME cycle: output[k] reflects
+# input[k]. output[0] happens to be 1 for either input (both starting cells
+# are True, so whether or not incr runs, outer stays True on cycle 0).
+#
+# Input encoding: __in0 is a 1-bit Bit (the single ReacT input wire). 0 or 1.
+# Output __out0 is a 1-bit Bit (the value of the outer state cell each cycle).
+#
+# Sequence (16 cycles): a run of incr-triggers (0s), a hold (1s), single
+# toggles, then longer holds and a final run of 0s, exercising both the
+# state-advancing and state-holding paths.
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 0

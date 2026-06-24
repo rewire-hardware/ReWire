@@ -1,0 +1,45 @@
+# toag interpreter input stimulus
+#
+# Device (toag.hs): go :: ReacT Bit Bit Identity Bit, a 3-phase reactive loop.
+#   x <- signal False                                  -- phase A: emit False, bind x = input
+#   y <- case x of True -> signal False; False -> signal x  -- phase B: emit False, bind y = input
+#   z <- signal ((case y of True -> x; False -> x && x) && y) -- phase C: emit (x && y), bind z
+#   go
+#
+# Input/output: __in0 and __out0 are each a single Bit (1 bit; MSB index 0).
+#   - __in0: 0 or 1  (one bit per cycle).
+#
+# Behavior (confirmed empirically with the interpreter):
+#   Phase A and phase B always emit 0 (signal False / x?False:x with x's chosen value).
+#   Phase C (cycle index 1+3k) emits  input[3k] AND input[3k+1]  (the x,y bound in this loop iteration).
+#   All other output cycles are 0. Register __resumption_tag init 3'h2 starts mid-loop so
+#   the first phase-C output lands at cycle index 1.
+#
+# This 18-cycle sequence (6 loop iterations) exercises every AND combination of the
+# (x,y) input pair and varies the inert phase-C input too:
+#   loop k : (A=in[3k], B=in[3k+1], C=in[3k+2]) -> out[1+3k] = A AND B
+#   k=0: (1,1,0) -> out[1]  = 1
+#   k=1: (1,0,1) -> out[4]  = 0   (1 AND 0)
+#   k=2: (0,1,1) -> out[7]  = 0   (0 AND 1)
+#   k=3: (0,0,1) -> out[10] = 0   (0 AND 0)
+#   k=4: (1,1,1) -> out[13] = 1
+#   k=5: (1,1,0) -> out[16] = 1
+# Expected output trace (index:value): 1->1, 4->0, 7->0, 10->0, 13->1, 16->1, all others 0.
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0

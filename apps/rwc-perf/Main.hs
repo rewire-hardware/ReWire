@@ -6,7 +6,7 @@
 --     behavior is visible: a reported exponent near 1 means linear in the
 --     input size, near 2 quadratic, etc. Each family targets a pipeline
 --     stage that has shown super-linear behavior (see the generators below).
---   * The historically slowest tests from the regression suite, as fixed
+--   * The historically slowest tests from the golden test suite, as fixed
 --     reference points.
 --
 -- Run with: stack bench rewire:rwc-perf
@@ -49,8 +49,8 @@ main = do
                   pure (n, t)
             pure (famName fam, rs)
 
-      regression <- fmap (mapMaybe id) $ forM (filter keep regressionCases) $ \ c -> do
-            f <- getDataFileName $ "tests" </> "regression" </> c <.> "hs"
+      golden <- fmap (mapMaybe id) $ forM (filter keep goldenCases) $ \ c -> do
+            f <- getDataFileName $ "tests" </> "golden" </> c <.> "hs"
             t <- timeRwc f $ tmp </> c <.> "sv"
             printf "%-24s %8s %10.2fs\n" c ("-" :: String) t
             pure $ Just (c, t)
@@ -60,7 +60,7 @@ main = do
             forM_ synth $ \ (name, rs) ->
                   putStrLn $ "  " <> name <> ": " <> intercalate ", " (map (printf "%.1f") $ slopes rs)
 
-      unless (null regression) $ pure ()
+      unless (null golden) $ pure ()
 
       where slopes :: [(Int, Double)] -> [Double]
             slopes rs = zipWith slope rs $ drop 1 rs
@@ -89,8 +89,8 @@ families =
       , Family "statevars" [8, 16, 32]    genStateVars
       ]
 
-regressionCases :: [String]
-regressionCases = ["gfmult", "Sha256_1", "OD19Filter", "cubehash"]
+goldenCases :: [String]
+goldenCases = ["gfmult", "Sha256", "OD19Filter", "cubehash"]
 
 -- | A single definition containing a chain of n let-bindings, each used
 --   twice by the next (the gfmult shape). Stresses type inference: the

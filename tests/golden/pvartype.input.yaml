@@ -1,0 +1,33 @@
+# pvartype interpreter input
+#
+# Device model (pvartype.hs):
+#   go = do { lift (id <??> return ()); x <- signal False; go }
+# The ReacT input type is `Bit` -> top_level input __in0 is 1 bit wide (__in0:0).
+# Encoding: __in0 is a single Bit, the value bound to `x` by `signal False`.
+#   0 = False, 1 = True. (Truncated to 1 bit by the interpreter.)
+#
+# Behavior: every cycle the device emits `signal False`, so __out0 is the
+# constant Bit False (0) on every cycle, regardless of __in0. The lift action
+# `id <??> return ()` only reads the StateT Bit (initialized True) and either
+# does return () or return () -- a no-op either way -- and never writes the
+# state, so the state stays True forever and the input `x` is discarded.
+# Therefore __out0 = 0 every cycle and the input does NOT affect the output.
+#
+# We still feed a varied 1-bit sequence (every distinct edge: 0->1, 1->0,
+# held 0s, held 1s) to demonstrate the input is inert.
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
