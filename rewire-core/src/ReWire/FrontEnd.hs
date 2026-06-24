@@ -75,7 +75,7 @@ compileFile conf filename = do
                         RWCore    -> writeOutput p
                         Interpret -> do
                               ips  <- loadInputs
-                              verb $ "Interpreting hyle: running for " <> showt (conf^.cycles) <> " cycles."
+                              verb $ "Interpreting hyle: running for " <> showt (length ips) <> " cycles."
                               outs <- run conf (Hyle.interp conf p) ips
                               let fout = getOutFile conf filename
                               verb $ "Interpreting hyle: done running; writing YAML output to file: " <> pack fout
@@ -92,14 +92,14 @@ compileFile conf filename = do
                   verb $ "Reading inputs: " <> pack (conf^.inputsFile)
                   r <- liftIO $ YAML.decodeFileEither $ conf^.inputsFile
                   case r of
-                        Right ips -> pure $ boundInput (conf^.cycles) ips
+                        Right ips -> pure $ boundInput (effectiveCycles conf ips) ips
                         Left err  -> do
                               exists <- liftIO $ doesFileExist $ conf^.inputsFile
                               when (exists || conf^.inputsFile /= defaultInputsFile) $ warnAt conf noAnn
                                     $ "could not read inputs from " <> pack (conf^.inputsFile)
                                     <> (if exists then " (" <> pack (YAML.prettyPrintParseException err) <> ")" else " (file does not exist)")
                                     <> "; driving all inputs with zeros."
-                              pure $ boundInput (conf^.cycles) mempty
+                              pure $ boundInput (effectiveCycles conf mempty) mempty
 
             writeTestbench :: (MonadError AstError m, MonadIO m, Pretty tb) => ([Ins] -> tb) -> m ()
             writeTestbench gen = when (conf^.testbench) $ do
@@ -117,6 +117,12 @@ compileFile conf filename = do
 
             verb :: MonadIO m => Text -> m ()
             verb = pDebug conf
+
+-- | The number of cycles to interpret/simulate: the explicit --cycles value if
+--   the user gave one, otherwise the larger of 10 or the number of inputs
+--   supplied in the inputs file.
+effectiveCycles :: Config -> [Ins] -> Natural
+effectiveCycles conf ips = fromMaybe (max 10 (fromIntegral (length ips))) (conf^.cycles)
 
 -- | Replicates/truncates inputs to fill up exactly ncycles cycles.
 boundInput :: Natural -> [Ins] -> [Ins]

@@ -58,7 +58,7 @@ data Config = Config
       , _start        :: Text
       , _top          :: Text
       , _loadPath     :: [FilePath]
-      , _cycles       :: Natural
+      , _cycles       :: Maybe Natural -- ^ --cycles: Nothing means derive a default from the inputs (see effectiveCycles).
       , _depth        :: Natural
       , _dump         :: Natural -> Bool
       , _typecheck    :: Bool
@@ -87,7 +87,7 @@ defaultConfig = Config
       , _start        = "Main.start"
       , _top          = "top_level"
       , _loadPath     = []
-      , _cycles       = 10
+      , _cycles       = Nothing
       , _depth        = 8
       , _dump         = const False
       , _typecheck    = False
@@ -163,7 +163,7 @@ interpret = foldM interp defaultConfig
                   FlagOutputNames (pack -> n)     -> pure $ over outputSigs (splitOn' "," n <>) c
                   FlagStart (pack -> n)           -> pure $ start .~ n $ c
                   FlagTop (pack -> n)             -> pure $ top .~ n $ c
-                  FlagCycles n                    -> pure $ cycles .~ read n $ c
+                  FlagCycles n                    -> pure $ cycles .~ Just (read n) $ c
                   FlagEvalDepth n                 -> pure $ depth .~ read n $ c
                   FlagDebugTypeCheck              -> pure $ typecheck .~ True $ c
                   FlagRtlOpt n                    -> pure $ rtlOpt .~ read n $ c

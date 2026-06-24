@@ -41,6 +41,10 @@
   `--interpret`/`--testbench` inputs file that can't be read warns before
   driving all inputs with zeros; `--testbench` with a target other than
   Verilog or VHDL warns that no testbench is generated.
+* `--cycles` now defaults to the larger of 10 or the number of inputs in the
+  `--interpret=`/`--testbench=` inputs file (rather than always 10), so an
+  inputs file is interpreted/simulated for at least as many cycles as it
+  lists unless `--cycles` is given explicitly.
 * New Cryptol backend (`rwc --cryptol`): translates the bit-level IR to a
   self-contained Cryptol module -- one pure function per defn plus a
   `rw_device` stream function modeling the whole device (a sequence of
