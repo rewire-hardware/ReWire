@@ -14,11 +14,11 @@ for file in ./*.hs; do
   ${RWC} --from-core --cryptol "${file/%.hs/.rwc}"
   input="${file/%.hs/.input.yaml}"
   if [[ -f "${input}" ]]; then
-    # Drive the interpreter from the per-test inputs file for exactly as many
-    # cycles as it lists (one per "- " line), matching what rwc-test does.
-    cycles=$(grep -cE '^- ' "${input}")
-    echo $(basename ${file}) ": interpret ReWire Core (${file/%.hs/.yaml}, ${cycles} cycles from $(basename ${input}))"
-    ${RWC} --from-core --interpret="${input}" --cycles "${cycles}" "${file/%.hs/.rwc}"
+    # rwc now defaults --cycles to max(10, #inputs), so the interpreter runs for
+    # one cycle per input listed in the file (every inputs file here has >= 10)
+    # -- the same count rwc-test uses. No need to count inputs and pass --cycles.
+    echo $(basename ${file}) ": interpret ReWire Core (${file/%.hs/.yaml} from $(basename ${input}))"
+    ${RWC} --from-core --interpret="${input}" "${file/%.hs/.rwc}"
   else
     echo $(basename ${file}) ": interpret ReWire Core (${file/%.hs/.yaml})"
     ${RWC} --from-core --interp "${file/%.hs/.rwc}"

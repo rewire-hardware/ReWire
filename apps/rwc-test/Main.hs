@@ -17,7 +17,7 @@ import TestUtil (withStderrTo, withStdoutTo, sq)
 
 import Control.Exception (try, finally)
 import Control.Monad (unless, when, msum)
-import Data.List (isSuffixOf, isInfixOf, isPrefixOf, stripPrefix, intercalate)
+import Data.List (isSuffixOf, isInfixOf, stripPrefix, intercalate)
 import Data.Maybe (fromMaybe, mapMaybe)
 import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), ArgDescr (..))
 import System.Directory (listDirectory, setCurrentDirectory, getCurrentDirectory, doesFileExist)
@@ -98,19 +98,16 @@ testCompiler flags fn = do
       yamlTests <-
             -- Interpret the Hyle IR and diff against the .yaml golden -- the
             -- reference the cosimulation tests check the HDL backends against.
-            -- When a per-test inputs file (<base>.input.yaml) is present, drive
-            -- the interpreter with it for exactly as many cycles as it lists;
-            -- otherwise fall back to the default of all-zero inputs for 10
+            -- With a per-test inputs file (<base>.input.yaml), rwc defaults
+            -- --cycles to max(10, #inputs), driving the interpreter for one
+            -- cycle per listed input (the regenerate_expected_output.sh script
+            -- relies on the same default, so the two stay in agreement);
+            -- otherwise --interp drives all-zero inputs for the default 10
             -- cycles.
             do
                   let inF = fn -<.> "input.yaml"
                   hasIn <- doesFileExist inF
-                  interpArgs <-
-                        if hasIn
-                              then do
-                                    ncyc <- length . filter ("- " `isPrefixOf`) . lines <$> readFile inF
-                                    pure ["--interpret=" <> takeFileName inF, "--cycles", show ncyc]
-                              else pure ["--interp"]
+                  let interpArgs = if hasIn then ["--interpret=" <> takeFileName inF] else ["--interp"]
                   maybeGolden "yaml" $ do
                         cdTestdir
                         withArgs ((fn -<.> "rwc") : ["--from-core"] <> interpArgs <> ["-o", ofile "yaml"] <> extraFlags) RWC.main
