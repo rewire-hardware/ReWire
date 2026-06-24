@@ -1,0 +1,9 @@
+-- EXPECT-ERROR: multiple device declarations
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      __out0 := __in0
+device other_dev
+      input __in0 : [8]
+      output __out0 : [8]
+      __out0 := __in0

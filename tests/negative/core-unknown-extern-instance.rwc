@@ -1,0 +1,6 @@
+-- EXPECT-ERROR: unknown extern
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      instance $x of nosuchmod
+      __out0 := __in0

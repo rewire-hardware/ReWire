@@ -29,6 +29,7 @@ import Data.Text (Text, pack, unpack, splitOn)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import System.FilePath ((-<.>))
+import Text.Read (readMaybe)
 
 import qualified Data.HashSet as Set
 import qualified Data.Text.IO as T
@@ -156,20 +157,28 @@ interpret = foldM interp defaultConfig
                   FlagFlatten                     -> pure $ over outFlags (Set.insert Flatten) c
                   FlagPretty                      -> pure $ over outFlags (Set.insert Pretty) c
                   FlagVerbose                     -> pure $ over outFlags (Set.insert Verbose) c
-                  FlagDump (pack -> d)            -> pure $ over dump (augment $ map (read . unpack) $ splitOn' "," d) c
+                  FlagDump (pack -> d)            -> do
+                        ns <- traverse (readNat "-d/--dump") $ map unpack $ splitOn' "," d
+                        pure $ over dump (augment ns) c
                   FlagVhdlPkgs (pack -> p)        -> pure $ over vhdlPackages (<> splitOn' "," p) c
                   FlagInputNames (pack -> n)      -> pure $ over inputSigs  (splitOn' "," n <>) c
                   FlagStateNames (pack -> n)      -> pure $ over stateSigs  (splitOn' "," n <>) c
                   FlagOutputNames (pack -> n)     -> pure $ over outputSigs (splitOn' "," n <>) c
                   FlagStart (pack -> n)           -> pure $ start .~ n $ c
                   FlagTop (pack -> n)             -> pure $ top .~ n $ c
-                  FlagCycles n                    -> pure $ cycles .~ Just (read n) $ c
-                  FlagEvalDepth n                 -> pure $ depth .~ read n $ c
+                  FlagCycles n                    -> readNat "--cycles" n  >>= \ v -> pure $ cycles .~ Just v $ c
+                  FlagEvalDepth n                 -> readNat "--depth" n   >>= \ v -> pure $ depth .~ v $ c
                   FlagDebugTypeCheck              -> pure $ typecheck .~ True $ c
-                  FlagRtlOpt n                    -> pure $ rtlOpt .~ read n $ c
+                  FlagRtlOpt n                    -> readNat "--rtl-opt" n >>= \ v -> pure $ rtlOpt .~ v $ c
                   FlagNoWarn                      -> pure $ noWarn .~ True $ c
                   FlagW "error"                   -> pure $ wError .~ True $ c
                   FlagW w                         -> Left $ "Unknown warning option: -W" <> pack w
+
+            -- | Parse a non-negative integer flag argument, reporting a clean
+            --   usage error instead of a partial 'read' crash.
+            readNat :: Text -> String -> Either ErrorMsg Natural
+            readNat what s = maybe (Left err) pure $ readMaybe s
+                  where err = "Invalid value for " <> what <> ": '" <> pack s <> "' (expected a non-negative integer)."
 
             augment :: [Natural] -> (Natural -> Bool) -> Natural -> Bool
             augment ns f n | n `elem` ns = True

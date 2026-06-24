@@ -1,0 +1,9 @@
+-- EXPECT-ERROR: definition name does not match its signature
+$LL.Main.foo : ([8]) -> [8]
+$LL.Main.bar $0 =
+      $0
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      let $res = $LL.Main.foo __in0
+      __out0 := $res

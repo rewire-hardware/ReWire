@@ -23,23 +23,68 @@ build-type:     Simple
 extra-source-files:
     README.md
 data-files:
+    tests/negative/ambiguous-infix-nonassoc.hs
     tests/negative/ambiguous-size.hs
     tests/negative/bind-lhs-loop.hs
     tests/negative/bind-lhs-pause.hs
+    tests/negative/char-literal-unsupported.hs
+    tests/negative/cryptol-clocked-extern.hs
+    tests/negative/do-block-rec-stmt.hs
+    tests/negative/empty-record-update.hs
+    tests/negative/existential-ctor.hs
+    tests/negative/export-type-wildcard-unknown.hs
+    tests/negative/export-unknown-constructor.hs
+    tests/negative/export-unknown-type.hs
+    tests/negative/export-unknown-variable.hs
+    tests/negative/extern-clocked-no-clock.hs
+    tests/negative/extern-conflicting-models.hs
+    tests/negative/extern-inconsistent-signatures.hs
+    tests/negative/extrude-extern-initial-state.hs
+    tests/negative/field-init-nonexistent-field.hs
+    tests/negative/field-pattern-nonexistent-field.hs
+    tests/negative/field-update-nonexistent-field.hs
+    tests/negative/finite-out-of-range.hs
+    tests/negative/finite-runtime-arg.hs
+    tests/negative/finite-zero-maxbound.hs
+    tests/negative/finite-zero-minbound.hs
+    tests/negative/from-finite-not-representable.hs
+    tests/negative/fromlist-not-list-literal.hs
     tests/negative/illtyped-dead-code.hs
     tests/negative/illtyped-use.hs
+    tests/negative/import-unexported-symbol.hs
+    tests/negative/inline-mutual-recursion.hs
     tests/negative/kind-error.hs
+    tests/negative/literal-pattern-unsupported.hs
     tests/negative/missing-import.hs
     tests/negative/negative-vec-size.hs
     tests/negative/no-start.hs
     tests/negative/parse-error.hs
+    tests/negative/partial-eval-nonterminating-higher-order.hs
+    tests/negative/partial-type-signature-wildcard.hs
+    tests/negative/pattern-not-enough-args.hs
+    tests/negative/purify-empty-dispatch.hs
+    tests/negative/purify-unsynthesizable-error.hs
+    tests/negative/record-constructor-not-a-record.hs
+    tests/negative/record-pattern-not-a-record.hs
+    tests/negative/record-update-wildcard.hs
     tests/negative/recursive-datatype.hs
+    tests/negative/recursive-type-synonym.hs
+    tests/negative/recursive-type-synonyms-applied.hs
     tests/negative/slice-invalid-range.hs
     tests/negative/slice-nonliteral-index.hs
     tests/negative/start-wrong-type.hs
     tests/negative/unbounded-recursion.hs
+    tests/negative/unknown-constructor-pattern.hs
+    tests/negative/unknown-type-ctor-bogus.hs
     tests/negative/unknown-var.hs
     tests/negative/unsupported-instance.hs
+    tests/negative/unsupported-let-implicit-param.hs
+    tests/negative/unsupported-view-pattern.hs
+    tests/negative/core-defn-name-mismatch.rwc
+    tests/negative/core-multiple-devices.rwc
+    tests/negative/core-no-device.rwc
+    tests/negative/core-slice-out-of-bounds.rwc
+    tests/negative/core-unknown-extern-instance.rwc
     tests/warning/extern-model-clocked.hs
     tests/warning/extern-model-rejected.hs
     tests/warning/live-error-call.hs

@@ -1,0 +1,9 @@
+-- EXPECT-ERROR: out of bounds for width
+$LL.Main.f : ([8]) -> [8]
+$LL.Main.f $0 =
+      $0[4 +: 8]
+device top_level
+      input __in0 : [8]
+      output __out0 : [8]
+      let $res = $LL.Main.f __in0
+      __out0 := $res

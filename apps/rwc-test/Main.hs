@@ -198,15 +198,22 @@ testCompiler flags fn = do
 -- > -- EXPECT-ERROR: <substring of the expected error message>
 --
 --   The test asserts that rwc exits with failure and that its stderr contains
---   every expected substring. These files are never run through GHC or the HDL
---   checkers.
+--   every expected substring. Extra rwc flags may be supplied with a
+--   "-- FLAGS: ..." comment line (e.g. to reach flag-gated errors such as
+--   --cryptol or --no-clock). A ".rwc" fixture is compiled with --from-core,
+--   exercising the Hyle concrete-syntax parser and elaborator; ".rwc" supports
+--   the same "--"-prefixed comment lines, so EXPECT-ERROR/FLAGS work there too.
+--   These files are never run through GHC or the HDL checkers.
 testNegative :: FilePath -> TestTree
 testNegative fn = testCase (takeBaseName fn <> " (expected error)") $ do
       setCurrentDirectory $ takeDirectory fn
-      expected <- mapMaybe (stripPrefix "-- EXPECT-ERROR: ") . lines <$> readFile fn
+      src <- readFile fn
+      let expected = mapMaybe (stripPrefix "-- EXPECT-ERROR: ") $ lines src
+          flags    = concatMap words $ mapMaybe (stripPrefix "-- FLAGS: ") $ lines src
+          fromCore = [ "--from-core" | ".rwc" `isSuffixOf` fn ]
       when (null expected) $ assertFailure $ "no \"-- EXPECT-ERROR:\" line in " <> fn
       let errFile = fn -<.> "out.error"
-      r      <- withStderrTo errFile $ try $ withArgs [fn, "-o", fn -<.> "out.sv"] RWC.main
+      r      <- withStderrTo errFile $ try $ withArgs ([fn, "-o", fn -<.> "out.sv"] <> fromCore <> flags) RWC.main
       errTxt <- readFile errFile
       case r of
             Left (ExitFailure _) -> mapM_ (\ e ->
@@ -303,7 +310,12 @@ main = do
             exitUsage
 
       goldTests  <- testsFrom "golden" (testCompiler flags)
-      negTests   <- testsFrom "negative"   (\ f -> pure [testNegative f])
+      -- Negative tests include both .hs source (compiled normally) and .rwc
+      -- fixtures (compiled with --from-core to exercise the Hyle parser).
+      negTests   <- do
+            dir   <- getDataFileName ("tests" </> "negative")
+            files <- map (dir </>) . filter (\ f -> ".hs" `isSuffixOf` f || ".rwc" `isSuffixOf` f) <$> listDirectory dir
+            pure $ testGroup "negative" $ map testNegative files
       warnTests  <- testsFrom "warning"    (\ f -> pure [testWarning f])
       smokeTests <- getSmokeTests
       -- The integration directory holds full-program golden tests (same legs as
