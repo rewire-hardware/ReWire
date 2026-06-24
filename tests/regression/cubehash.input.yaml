@@ -17,24 +17,25 @@
 # Output __out0 is the 1024-bit State: 32 words of W 32, MSB-first
 # (word index 0 in the highest 32 bits).
 #
-# This sequence drives the round through its full trajectory from s0, with
-# NoGo holds interleaved to confirm the state is stable between rounds:
-#   c0  NoGo: show s0                  -> 0x...20...01...08
-#   c1  Go  : round(s0)                -> 0x8000000000000002100000001
-#   c2  NoGo: hold round(s0)           -> same
-#   c3  Go  : round^2(s0)              -> 0x21...08...
-#   c4  NoGo: hold round^2(s0)         -> same
-#   c5  NoGo: hold round^2(s0)         -> same
-#   c6  Go  : round^3(s0) = 0          -> all-zero fixed point
-#   c7  NoGo: hold 0
-#   c8  Go  : round(0)=0
-#   c9  Go  : 0
-#   c10 NoGo: 0
-#   c11 Go  : 0
-#   c12 NoGo: 0
-#   c13 NoGo: 0
-#   c14 Go  : 0
-#   c15 NoGo: 0
+# This sequence advances the CubeHash round from s0, with NoGo holds interleaved
+# to confirm the state is held unchanged between rounds. The round is a bijection,
+# so the state keeps mixing -- no fixed point is reached:
+#   c0  NoGo: show s0 (word0=0x20, word1=0x01, word2=0x08)
+#   c1  Go  : round(s0)
+#   c2  NoGo: hold round(s0)
+#   c3  Go  : round^2(s0)
+#   c4  NoGo: hold round^2(s0)
+#   c5  NoGo: hold round^2(s0)
+#   c6  Go  : round^3(s0)
+#   c7  NoGo: hold round^3(s0)
+#   c8  Go  : round^4(s0)
+#   c9  Go  : round^5(s0)
+#   c10 NoGo: hold round^5(s0)
+#   c11 Go  : round^6(s0)
+#   c12 NoGo: hold round^6(s0)
+#   c13 NoGo: hold round^6(s0)
+#   c14 Go  : round^7(s0)
+#   c15 NoGo: hold round^7(s0)
 - __in0: 1
 - __in0: 0
 - __in0: 1

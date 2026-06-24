@@ -4,7 +4,7 @@
 import Prelude hiding ((+) , (-) , (^) , round)
 import ReWire
 
-import ReWire.Bits ((^) , (>>>) , (+) , lit)
+import ReWire.Bits ((^) , rotL , (+) , lit)
 import ReWire.Finite (toFinite , fromFinite , finite)
 import ReWire.Vectors (update,index,(!=),map,generate)
 
@@ -58,19 +58,20 @@ rotate rc s = generate $ rot rc s
 
 rot :: W 32 -> State -> Finite 32 -> W 32
 rot rc s f32 | h         = w0
-             | otherwise = w0 >>> rc
+             | otherwise = rotL rc w0
    where
      h :: Bit
      w0 :: W 32
      (h , w0) = rotaccess s f32
 
+-- | The rotate step modifies only the x[0jklm] (h = False) words, rotating each
+--   left by rc; the x[1jklm] words are left unchanged. So read the word at f32
+--   itself and rotate it when its high bit is clear.
 rotaccess :: State -> Finite 32 -> (Bit , W 32)
-rotaccess s f32 = (h , s `index` i0)
+rotaccess s f32 = (h , s `index` f32)
    where
-     h , j , k , l , m :: Bit
-     (h , j , k , l , m) = explode5 (fromFinite f32)
-     i0 :: Finite 32
-     i0 = toFinite (fromList [False , j , k , l , m] :: W 5)
+     h :: Bit
+     (h , _ , _ , _ , _) = explode5 (fromFinite f32)
 
 ----------------------------
 -- swap operations
@@ -137,7 +138,7 @@ swapix4 s f32 | b1 && not b2 = s `index` ttx
      b1 , j , k , l , b2 :: Bit
      (b1 , j , k , l , b2) = explode5 (fromFinite f32)
      ttx , tfx :: Finite 32
-     ttx = toFinite (fromList [False , j , k , l , True] :: W 5)
+     ttx = toFinite (fromList [True , j , k , l , True] :: W 5)
      tfx = toFinite (fromList [True , j , k , l , False] :: W 5)
 
 ----------------------------
@@ -152,7 +153,7 @@ xorix s f32 = if not h
                 then
                      s `index` i0 ^ s `index` i1
                 else
-                     s `index` i0
+                     s `index` i1
   where
      h , j , k , l , m :: Bit
      (h , j , k , l , m) = explode5 (fromFinite f32)
@@ -164,8 +165,11 @@ xorix s f32 = if not h
 -- Single Round
 ----------------------------
 
+-- | One CubeHash round: the ten steps below are listed in application order
+--   (add first, swap4 last). Since (.) composes right-to-left, the first step
+--   applied is the rightmost.
 round :: State -> State
-round = add . rotate (lit 7) . swap1 . xor . swap2 . add . rotate (lit 11) . swap3 . xor . swap4
+round = swap4 . xor . swap3 . rotate (lit 11) . add . swap2 . xor . swap1 . rotate (lit 7) . add
 
 data Inp = Go | NoGo
 type Out = State
