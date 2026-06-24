@@ -75,7 +75,7 @@ sched :: StateT (Oct W32) (StateT (Hex W32) (StateT (Oct W32) (StateT Ctr Identi
 {-# INLINE sched #-}
 sched = lift (get >>= \ s ->
               case s of
-                (Hex w00 a b c d e f g h i j k l m n o) -> put (updateSched s) >>= \ blah -> return w00)
+                (Hex w00 a b c d e f g h i j k l m n o) -> put (updateSched s) >>= \ _ -> return w00)
 
 updateSched :: Hex W32 -> Hex W32
 updateSched (Hex w00 w01 w02 w03 w04 w05 w06 w07 w08 w09 w10 w11 w12 w13 w14 w15) =
@@ -91,7 +91,7 @@ compress :: W32 -> W32 -> StateT (Oct W32) (StateT (Hex W32) (StateT (Oct W32) (
 {-# INLINE compress #-}
 compress k w = do s <- get
                   put (step256 k w s)
-                  
+
 step256 :: W32 -> W32 -> Oct W32 -> Oct W32
 step256 k w (Oct a b c d e f g h) = Oct a' b' c' d' e' f' g' h'
             where
@@ -144,7 +144,7 @@ load5 :: a -> a -> Hex a -> Hex a
 {-# INLINE load5 #-}
 load5 w1 w2 (Hex x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 xa xb xc xd xe xf)
   = Hex x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 w1 w2 xc xd xe xf
-    
+
 load6 :: a -> a -> Hex a -> Hex a
 {-# INLINE load6 #-}
 load6 w1 w2 (Hex x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 xa xb xc xd xe xf)
@@ -156,13 +156,13 @@ load7 w1 w2 (Hex x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 xa xb xc xd xe xf)
   = Hex x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 xa xb xc xd w1 w2
 
 data Inp = Init W32 W32  |
-           Load0 W32 W32 | 
-           Load1 W32 W32 | 
-           Load2 W32 W32 | 
-           Load3 W32 W32 | 
-           Load4 W32 W32 | 
-           Load5 W32 W32 | 
-           Load6 W32 W32 | 
+           Load0 W32 W32 |
+           Load1 W32 W32 |
+           Load2 W32 W32 |
+           Load3 W32 W32 |
+           Load4 W32 W32 |
+           Load5 W32 W32 |
+           Load6 W32 W32 |
            Load7 W32 W32 |
            DigestQ0      |
            DigestQ1      |
@@ -324,7 +324,7 @@ data Ctr = C0  | C1  | C2  | C3  | C4  | C5  | C6  | C7  |
            C32 | C33 | C34 | C35 | C36 | C37 | C38 | C39 |
            C40 | C41 | C42 | C43 | C44 | C45 | C46 | C47 |
            C48 | C49 | C50 | C51 | C52 | C53 | C54 | C55 |
-           C56 | C57 | C58 | C59 | C60 | C61 | C62 | C63 
+           C56 | C57 | C58 | C59 | C60 | C61 | C62 | C63
 
 incCtr :: Ctr -> Ctr
 incCtr C0  = C1
@@ -390,7 +390,7 @@ incCtr C59 = C60
 incCtr C60 = C61
 incCtr C61 = C62
 incCtr C62 = C63
-incCtr C63 = C0 
+incCtr C63 = C0
 
 seed :: Ctr -> W32
 seed C0  = w428a2f98
@@ -466,27 +466,27 @@ rotateR2 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
 
 rotateR6 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
               b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           =  (W32 b26 b27 b28 b29 b30 b31 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 
+           =  (W32 b26 b27 b28 b29 b30 b31 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9
                    b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25)
 
 rotateR7 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
               b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           =  (W32 b25 b26 b27 b28 b29 b30 b31 b0 b1 b2 b3 b4 b5 b6 b7 b8 
+           =  (W32 b25 b26 b27 b28 b29 b30 b31 b0 b1 b2 b3 b4 b5 b6 b7 b8
                    b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24)
 
 rotateR11 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
                b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           = (W32 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31 b0 b1 b2 b3 b4 b5 
+           = (W32 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31 b0 b1 b2 b3 b4 b5
                   b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20)
 
 rotateR13 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
                b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           = (W32 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31 b0 b1 b2 b3 
+           = (W32 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31 b0 b1 b2 b3
                   b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18)
 
 rotateR17 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
                b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31)
-           = (W32 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31  
+           = (W32 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31
                   b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14)
 
 rotateR18 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
@@ -520,14 +520,11 @@ shiftR10 (W32 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
             = (W32 C C C C C C C C C C b0 b1 b2 b3 b4 b5
                    b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21)
 
+-- initial constants
 
 w00000000 :: W32
 w00000000 = W32 C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C C
 
-{-
-initialstateconsts = [ "6a09e667", "bb67ae85", "3c6ef372", "a54ff53a",
-                         "510e527f", "9b05688c", "1f83d9ab", "5be0cd19" ]-}
-                         
 w6a09e667 :: W32
 w6a09e667 = W32 C S S C S C S C C C C C S C C S S S S C C S S C C S S C C S S S
 
@@ -553,73 +550,6 @@ w5be0cd19 :: W32
 w5be0cd19 = W32 C S C S S C S S S S S C C C C C S S C C S S C S C C C S S C C S
 
 -- constants from genhash
-{-
-constantlist = [
-           "428a2f98",
-           "71374491",
-           "b5c0fbcf",
-           "e9b5dba5",
-           "3956c25b",
-           "59f111f1",
-           "923f82a4",
-           "ab1c5ed5",
-           "d807aa98",
-           "12835b01",
-           "243185be",
-           "550c7dc3",
-           "72be5d74",
-           "80deb1fe",
-           "9bdc06a7",
-           "c19bf174",
-           "e49b69c1",
-           "efbe4786",
-           "0fc19dc6",
-           "240ca1cc",
-           "2de92c6f",
-           "4a7484aa",
-           "5cb0a9dc",
-           "76f988da",
-           "983e5152",
-           "a831c66d",
-           "b00327c8",
-           "bf597fc7",
-           "c6e00bf3",
-           "d5a79147",
-           "06ca6351",
-           "14292967",
-           "27b70a85",
-           "2e1b2138",
-           "4d2c6dfc",
-           "53380d13",
-           "650a7354",
-           "766a0abb",
-           "81c2c92e",
-           "92722c85",
-           "a2bfe8a1",
-           "a81a664b",
-           "c24b8b70",
-           "c76c51a3",
-           "d192e819",
-           "d6990624",
-           "f40e3585",
-           "106aa070",
-           "19a4c116",
-           "1e376c08",
-           "2748774c",
-           "34b0bcb5",
-           "391c0cb3",
-           "4ed8aa4a",
-           "5b9cca4f",
-           "682e6ff3",
-           "748f82ee",
-           "78a5636f",
-           "84c87814",
-           "8cc70208",
-           "90befffa",
-           "a4506ceb",
-           "bef9a3f7",
-           "c67178f2"
-           ]-}
 
 w428a2f98 :: W32
 w428a2f98 = W32 C S C C C C S C S C C C S C S C C C S C S S S S S C C S S C C C
