@@ -23,7 +23,6 @@ build-type:     Simple
 extra-source-files:
     README.md
 data-files:
-    tests/integration/MiniISA.hs
     tests/negative/ambiguous-size.hs
     tests/negative/bind-lhs-loop.hs
     tests/negative/bind-lhs-pause.hs
@@ -518,6 +517,13 @@ data-files:
     tests/golden/wordSlice.input.yaml
     tests/golden/wordSlice.yaml
     tests/golden/zerowidth.yaml
+    tests/integration/MiniISA.hs
+    tests/integration/MiniISA.sv
+    tests/integration/MiniISA.rwc
+    tests/integration/MiniISA.vhdl
+    tests/integration/MiniISA.cry
+    tests/integration/MiniISA.input.yaml
+    tests/integration/MiniISA.yaml
     rewire-user/src/ReWire.hs
     rewire-user/src/RWC/Primitives.hs
     rewire-user/src/ReWire/Bits.hs

@@ -1,0 +1,71 @@
+# Crafted instruction stream for the MiniISA golden test.
+#
+# Device (MiniISA.hs): a small accumulator CPU. Tuple-typed I/O, split by rwc
+# into separate ports:
+#   inputs : __in0 = dataIn (8-bit instruction/data), __in1 = rstIn, __in2 = intIn
+#   outputs: __out0 = addrOut (8), __out1 = dataOut (8), __out2 = weOut, __out3 = iackOut
+#
+# Instruction encoding (opcode in the high bits, registers in the low bits;
+# R0=00, R1=01, R2=10, R3=11). Bytes used below:
+#   0xDD clrr R1   0xDE clrr R2   0xE1 incr R1   0xE2 incr R2   0xE5/0xE6 decr
+#   0xD9 not' R1   0xEA rot(left) R2             0x76 mov R1 R2  0xA6 xor R1 R2
+#   0x36 add R1 R2 0x56 sub R1 R2  0x86 or' R1 R2 0xF9 shft(left,logical) R1
+#   0x24 st R1 R0  0x28 st R2 R0   (st writes dataOut=rD, addrOut=rS, weOut=1)
+#
+# A `st rD R0` exposes register rD on dataOut, so the dataOut column is the
+# observable program trace. Verified expectations at each st (one settling
+# cycle after the modifying instruction):
+#   incr R1 x4            -> dataOut 4
+#   not' R1 (~4)          -> dataOut 251
+#   incr R2 x2; rotL x2   -> dataOut 8     (2 -> 4 -> 8)
+#   mov R1 R2             -> dataOut 8
+#   xor R1 R2 (8 ^ 8)     -> dataOut 0
+#   decr R2 (8 - 1)       -> dataOut 7
+#   add R1 R2 (0 + 7)     -> dataOut 7
+#   sub R1 R2 (7 - 7)     -> dataOut 0
+#   incr R1 x3; or' R1 R2 -> dataOut 7     (3 | 7)
+#   shft(left) R1 (7 << 1)-> dataOut 14
+#
+# __in1 = 1 on the first cycle applies the synchronous reset.
+- {__in0: 0x00, __in1: 1, __in2: 0}   # reset
+- {__in0: 0xDD, __in1: 0, __in2: 0}   # clrr R1
+- {__in0: 0xE1, __in1: 0, __in2: 0}   # incr R1
+- {__in0: 0xE1, __in1: 0, __in2: 0}   # incr R1
+- {__in0: 0xE1, __in1: 0, __in2: 0}   # incr R1
+- {__in0: 0xE1, __in1: 0, __in2: 0}   # incr R1
+- {__in0: 0x24, __in1: 0, __in2: 0}   # st R1 R0  -> dataOut 4
+- {__in0: 0x24, __in1: 0, __in2: 0}   # st R1 R0
+- {__in0: 0xD9, __in1: 0, __in2: 0}   # not' R1
+- {__in0: 0x24, __in1: 0, __in2: 0}   # st R1 R0  -> dataOut 251
+- {__in0: 0x24, __in1: 0, __in2: 0}   # st R1 R0
+- {__in0: 0xDE, __in1: 0, __in2: 0}   # clrr R2
+- {__in0: 0xE2, __in1: 0, __in2: 0}   # incr R2
+- {__in0: 0xE2, __in1: 0, __in2: 0}   # incr R2
+- {__in0: 0xEA, __in1: 0, __in2: 0}   # rot(left) R2
+- {__in0: 0xEA, __in1: 0, __in2: 0}   # rot(left) R2
+- {__in0: 0x28, __in1: 0, __in2: 0}   # st R2 R0  -> dataOut 8
+- {__in0: 0x28, __in1: 0, __in2: 0}   # st R2 R0
+- {__in0: 0x76, __in1: 0, __in2: 0}   # mov R1 R2
+- {__in0: 0x24, __in1: 0, __in2: 0}   # st R1 R0  -> dataOut 8
+- {__in0: 0x24, __in1: 0, __in2: 0}   # st R1 R0
+- {__in0: 0xA6, __in1: 0, __in2: 0}   # xor R1 R2
+- {__in0: 0x24, __in1: 0, __in2: 0}   # st R1 R0  -> dataOut 0
+- {__in0: 0x24, __in1: 0, __in2: 0}   # st R1 R0
+- {__in0: 0xE6, __in1: 0, __in2: 0}   # decr R2
+- {__in0: 0x28, __in1: 0, __in2: 0}   # st R2 R0  -> dataOut 7
+- {__in0: 0x28, __in1: 0, __in2: 0}   # st R2 R0
+- {__in0: 0x36, __in1: 0, __in2: 0}   # add R1 R2
+- {__in0: 0x24, __in1: 0, __in2: 0}   # st R1 R0  -> dataOut 7
+- {__in0: 0x24, __in1: 0, __in2: 0}   # st R1 R0
+- {__in0: 0x56, __in1: 0, __in2: 0}   # sub R1 R2
+- {__in0: 0x24, __in1: 0, __in2: 0}   # st R1 R0  -> dataOut 0
+- {__in0: 0x24, __in1: 0, __in2: 0}   # st R1 R0
+- {__in0: 0xE1, __in1: 0, __in2: 0}   # incr R1
+- {__in0: 0xE1, __in1: 0, __in2: 0}   # incr R1
+- {__in0: 0xE1, __in1: 0, __in2: 0}   # incr R1
+- {__in0: 0x86, __in1: 0, __in2: 0}   # or' R1 R2
+- {__in0: 0x24, __in1: 0, __in2: 0}   # st R1 R0  -> dataOut 7
+- {__in0: 0x24, __in1: 0, __in2: 0}   # st R1 R0
+- {__in0: 0xF9, __in1: 0, __in2: 0}   # shft(left) R1
+- {__in0: 0x24, __in1: 0, __in2: 0}   # st R1 R0  -> dataOut 14
+- {__in0: 0x24, __in1: 0, __in2: 0}   # st R1 R0

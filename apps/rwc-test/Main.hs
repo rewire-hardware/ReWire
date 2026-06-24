@@ -42,6 +42,7 @@ data Flag = FlagH
           | FlagV
           | FlagIVerilog String
           | FlagVerilator String
+          | FlagIntegration
           -- Tasty options.
           | FlagP String
           | FlagQ
@@ -62,6 +63,7 @@ options =
        , Option ['v'] ["verbose"]      (NoArg FlagV)                          "More verbose output."
        , Option []    ["no-check"]     (NoArg FlagNoCheck)                    "Disable verification of output HDL with checker."
        , Option []    ["no-ghc"]       (NoArg FlagNoGhc)                      "Disable running tests through ghc."
+       , Option []    ["integration"]  (NoArg FlagIntegration)                "Also run the golden tests in tests/integration (heavyweight examples; off by default)."
        , Option []    ["iverilog"]     (ReqArg FlagIVerilog "command")      $ "Set the command to use for checking generated Verilog with iverilog (default: " <> defaultIVerilog <> ")."
        , Option []    ["verilator"]    (ReqArg FlagVerilator "command")     $ "Set the command to use for checking generated Verilog with verilator (default: " <> defaultVerilator <> ")."
 
@@ -304,6 +306,11 @@ main = do
       negTests   <- testsFrom "negative"   (\ f -> pure [testNegative f])
       warnTests  <- testsFrom "warning"    (\ f -> pure [testWarning f])
       smokeTests <- getSmokeTests
+      -- The integration directory holds full-program golden tests (same legs as
+      -- tests/golden), but they are heavyweight, so they only run under --integration.
+      intgTests  <- if FlagIntegration `elem` flags
+                          then (: []) <$> testsFrom "integration" (testCompiler flags)
+                          else pure []
 
       -- Every leg runs rwc in-process (withArgs/RWC.main) after cd'ing into the
       -- test's directory, so they all mutate process-global cwd and argv; they
@@ -315,7 +322,7 @@ main = do
       cwd0 <- getCurrentDirectory
       withArgs (concatMap toTastyArg flags)
             (defaultMain $ localOption (NumThreads 1)
-                  $ testGroup "Tests" [goldTests, smokeTests, negTests, warnTests])
+                  $ testGroup "Tests" ([goldTests, smokeTests, negTests, warnTests] <> intgTests))
             `finally` setCurrentDirectory cwd0
 
       where toTastyArg :: Flag -> [String]

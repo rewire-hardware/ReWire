@@ -30,7 +30,6 @@ default-extensions:
 extra-source-files:
 - README.md
 data-files:
-- tests/integration/*.hs
 - tests/negative/*.hs
 - tests/warning/*.hs
 - tests/golden/Mods/*.hs
@@ -44,6 +43,12 @@ data-files:
 - tests/golden/*.vhdl
 - tests/golden/*.cry
 - tests/golden/*.yaml
+- tests/integration/*.hs
+- tests/integration/*.sv
+- tests/integration/*.rwc
+- tests/integration/*.vhdl
+- tests/integration/*.cry
+- tests/integration/*.yaml
 - rewire-user/src/*.hs
 - rewire-user/src/RWC/*.hs
 - rewire-user/src/ReWire/*.hs
