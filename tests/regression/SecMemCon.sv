@@ -128,7 +128,7 @@ module top_level (input logic [0:0] clk,
   assign zi2 = main_get_addr_reg_out;
   assign zi3 = zi2[214:205];
   assign zi4 = zi2[204:0];
-  ZLL_Main_setloc4  instR1 ({zi3, {6'h20{1'h1}}}, zi4, zll_main_setloc4_out);
+  ZLL_Main_setloc4  instR1 ({zi3, {6'h20{1'h0}}}, zi4, zll_main_setloc4_out);
   assign zi5 = zll_main_setloc4_out;
   Main_set__addr__reg1  instR2 (((zi2[214] == 1'h0) & ((zi2[213] == 1'h0) & ((zi2[212] == 1'h0) & ((zi2[211] == 1'h0) & ((zi2[210] == 1'h0) & ((zi2[209] == 1'h0) & ((zi2[208] == 1'h0) & ((zi2[207] == 1'h0) & ((zi2[206] == 1'h1) & (zi2[205] == 1'h1)))))))))) ? 10'h2 : (((zi2[214] == 1'h0) & ((zi2[213] == 1'h0) & ((zi2[212] == 1'h0) & ((zi2[211] == 1'h0) & ((zi2[210] == 1'h0) & ((zi2[209] == 1'h0) & ((zi2[208] == 1'h0) & ((zi2[207] == 1'h0) & ((zi2[206] == 1'h1) & (zi2[205] == 1'h0)))))))))) ? 10'h1 : (((zi2[214] == 1'h0) & ((zi2[213] == 1'h0) & ((zi2[212] == 1'h0) & ((zi2[211] == 1'h0) & ((zi2[210] == 1'h0) & ((zi2[209] == 1'h0) & ((zi2[208] == 1'h0) & ((zi2[207] == 1'h0) & ((zi2[206] == 1'h0) & (zi2[205] == 1'h1)))))))))) ? 10'h0 : 10'h3ff)), zi5, main_set_addr_reg1_out);
   ZLL_Main_perform__write32  instR3 (main_set_addr_reg1_out, zll_main_perform_write32_out);
@@ -242,10 +242,10 @@ module top_level (input logic [0:0] clk,
   assign __st0_next = zres[204:128];
   assign __st1_next = zres[127:0];
   assign __out0 = zres[240:208];
-  initial {__resumption_tag, __st0, __st1} = 208'h7fffffffeffffffffffffffffffffffffffffffffffffffff;
+  initial {__resumption_tag, __st0, __st1} = {15'h3, {8'hc1{1'h0}}};
   always @ (posedge clk or posedge rst) begin
     if (rst == 1'h1) begin
-      {__resumption_tag, __st0, __st1} <= 208'h7fffffffeffffffffffffffffffffffffffffffffffffffff;
+      {__resumption_tag, __st0, __st1} <= {15'h3, {8'hc1{1'h0}}};
     end else begin
       {__resumption_tag, __st0, __st1} <= {__resumption_tag_next, __st0_next, __st1_next};
     end
@@ -598,7 +598,7 @@ endmodule
 module Main_set__data__out__reg (input logic [204:0] arg0,
   output logic [204:0] res);
   logic [204:0] zll_main_set_data_out_reg8_out;
-  ZLL_Main_set__data__out__reg8  inst ({6'h20{1'h1}}, arg0, zll_main_set_data_out_reg8_out);
+  ZLL_Main_set__data__out__reg8  inst ({6'h20{1'h0}}, arg0, zll_main_set_data_out_reg8_out);
   assign res = zll_main_set_data_out_reg8_out;
 endmodule
 

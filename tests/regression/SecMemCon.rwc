@@ -381,7 +381,7 @@ $LL.Main.while_addr_reg_044 $1 =
 
 Main.setloc1 : ([10], [205]) -> [205]
 Main.setloc1 $0 $1 =
-      $LL.Main.setloc4 ($0 # 32'hffffffff) $1
+      $LL.Main.setloc4 ($0 # 32'h0) $1
 
 $LL.Main.memTweak24 : ([32], [32], [32], [32], [32]) -> [128]
 $LL.Main.memTweak24 $0 $1 $2 $3 $4 =
@@ -1433,7 +1433,7 @@ $LL.Main.mem21 $0 $1 $2 =
 
 Main.set_data_out_reg : ([205]) -> [205]
 Main.set_data_out_reg $0 =
-      $LL.Main.set_data_out_reg8 32'hffffffff $0
+      $LL.Main.set_data_out_reg8 32'h0 $0
 
 $LL.Main.while_addr_reg_010 : ([205]) -> [413]
 $LL.Main.while_addr_reg_010 $0 =
@@ -1776,8 +1776,8 @@ device top_level
       input __in0 : [46]
       output __out0 : [33]
       register __resumption_tag : [3] init 3'h0
-      register __st0 : [77] init 77'h7fffffffeffffffff
-      register __st1 : [128] init 128'hffffffffffffffffffffffffffffffff
+      register __st0 : [77] init 77'h60000000000000000
+      register __st1 : [128] init 128'h0
       let $res = $Pure.dispatch (__resumption_tag # __st0 # __st1) __in0
       __out0 := $res[208 +: 33]
       next __resumption_tag := $res[205 +: 3]

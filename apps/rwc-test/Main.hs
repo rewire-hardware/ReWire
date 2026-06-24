@@ -28,7 +28,8 @@ import System.IO (hPutStr, hPutStrLn, stderr)
 import System.Process (callCommand)
 
 import qualified Data.Text as T
-import Test.Tasty (defaultMain, sequentialTestGroup, TestTree, DependencyType (..))
+import Test.Tasty (defaultMain, localOption, testGroup, TestTree)
+import Test.Tasty.Runners (NumThreads (..))
 import Test.Tasty.HUnit (testCase, assertFailure, assertBool)
 import Test.Tasty.Golden (goldenVsFileDiff)
 
@@ -262,7 +263,7 @@ testWarning fn = testCase (takeBaseName fn <> " (expected warning)") $ do
 getSmokeTests :: IO TestTree
 getSmokeTests = do
       dir <- getDataFileName ("tests" </> "regression")
-      pure $ sequentialTestGroup "flags" AllFinish
+      pure $ testGroup "flags"
             [ smoke dir "fibo1.hs" "dumps" "sv"
                   [ "-v", "--flatten", "--pretty", "--sync-reset", "--invert-reset"
                   , "--start", "Main.start", "--top", "smoke_top"
@@ -289,7 +290,7 @@ testsFrom :: FilePath -> (FilePath -> IO [TestTree]) -> IO TestTree
 testsFrom dirName build = do
       dir   <- getDataFileName ("tests" </> dirName)
       files <- map (dir </>) . filter (".hs" `isSuffixOf`) <$> listDirectory dir
-      sequentialTestGroup dirName AllFinish . concat <$> mapM build files
+      testGroup dirName . concat <$> mapM build files
 
 exitUsage :: IO ()
 exitUsage = hPutStr stderr (usageInfo "Usage: rwc-test [OPTION...]" options) >> exitFailure
@@ -307,11 +308,17 @@ main = do
       warnTests  <- testsFrom "warning"    (\ f -> pure [testWarning f])
       smokeTests <- getSmokeTests
 
-      -- The tests change the working directory, so restore it on exit (HPC
-      -- writes its .tix relative to the final working directory).
+      -- Every leg runs rwc in-process (withArgs/RWC.main) after cd'ing into the
+      -- test's directory, so they all mutate process-global cwd and argv; they
+      -- must never run concurrently. We enforce that with NumThreads 1 (serial
+      -- execution in tree order) rather than inter-test dependencies, so that
+      -- --pattern selects exactly the matching legs instead of dragging in every
+      -- predecessor as a dependency. We also restore the working directory on
+      -- exit (HPC writes its .tix relative to the final working directory).
       cwd0 <- getCurrentDirectory
       withArgs (concatMap toTastyArg flags)
-            (defaultMain $ sequentialTestGroup "Tests" AllFinish [goldTests, smokeTests, negTests, warnTests])
+            (defaultMain $ localOption (NumThreads 1)
+                  $ testGroup "Tests" [goldTests, smokeTests, negTests, warnTests])
             `finally` setCurrentDirectory cwd0
 
       where toTastyArg :: Flag -> [String]

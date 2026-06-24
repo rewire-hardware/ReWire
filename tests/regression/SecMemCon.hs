@@ -6,7 +6,7 @@ data W8 = W8 Bit Bit Bit Bit Bit Bit Bit Bit
 data W32 = W32 W8 W8 W8 W8
 
 zeroW8 :: W8
-zeroW8 = W8 S S S S S S S S
+zeroW8 = W8 C C C C C C C C
 
 zeroW32 :: W32
 zeroW32 = W32 zeroW8 zeroW8 zeroW8 zeroW8
@@ -24,7 +24,6 @@ data W10 = W10
       , b9 :: Bit
       }
 
--- TODO(chathhorn)
 data Mem = Mem
       { mem0 :: W32
       , mem1 :: W32

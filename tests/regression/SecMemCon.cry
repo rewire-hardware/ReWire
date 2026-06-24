@@ -400,7 +400,7 @@ rw__LL_Main_while_addr_reg_044 x0 = rw__LL_Main_perform_read25 x0
 
 // Main.setloc1
 rw_Main_setloc1 : [10] -> [205] -> [205]
-rw_Main_setloc1 x0 x1 = rw__LL_Main_setloc4 (x0 # 0xffffffff) x1
+rw_Main_setloc1 x0 x1 = rw__LL_Main_setloc4 (x0 # 0x00000000) x1
 
 // $LL.Main.memTweak24
 rw__LL_Main_memTweak24 : [32] -> [32] -> [32] -> [32] -> [32] -> [128]
@@ -1436,7 +1436,7 @@ rw__LL_Main_mem21 x0 x1 x2 = rw__LL_Main_mem24 x1 x2
 
 // Main.set_data_out_reg
 rw_Main_set_data_out_reg : [205] -> [205]
-rw_Main_set_data_out_reg x0 = rw__LL_Main_set_data_out_reg8 0xffffffff x0
+rw_Main_set_data_out_reg x0 = rw__LL_Main_set_data_out_reg8 0x00000000 x0
 
 // $LL.Main.while_addr_reg_010
 rw__LL_Main_while_addr_reg_010 : [205] -> [413]
@@ -1778,6 +1778,6 @@ rw_device ins = outs
     rs : [n][241]
     rs = [rw_step st i | st <- sts | i <- ins]
     sts : [1 + n][208]
-    sts = [0x0007fffffffeffffffffffffffffffffffffffffffffffffffff] # [drop`{33} r | r <- rs]
+    sts = [0x0006000000000000000000000000000000000000000000000000] # [drop`{33} r | r <- rs]
     outs : [n][33]
     outs = [take`{33} r | r <- rs]

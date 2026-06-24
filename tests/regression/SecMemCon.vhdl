@@ -314,9 +314,9 @@ component \Main_addr__in\ is
       end component;
       signal \__resumption_tag\ : std_logic_vector (2 downto 0) := std_logic_vector'(B"000");
       signal \__resumption_tag_next\ : std_logic_vector (2 downto 0);
-      signal \__st0\ : std_logic_vector (76 downto 0) := std_logic_vector'(B"00000000001111111111111111111111111111111111011111111111111111111111111111111");
+      signal \__st0\ : std_logic_vector (76 downto 0) := std_logic_vector'(B"00000000001100000000000000000000000000000000000000000000000000000000000000000");
       signal \__st0_next\ : std_logic_vector (76 downto 0);
-      signal \__st1\ : std_logic_vector (127 downto 0) := std_logic_vector'(B"11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
+      signal \__st1\ : std_logic_vector (127 downto 0) := std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
       signal \__st1_next\ : std_logic_vector (127 downto 0);
       signal zi1 : std_logic_vector (204 downto 0);
       signal main_get_addr_reg_out : std_logic_vector (214 downto 0);
@@ -444,7 +444,7 @@ zi1 <= (\__st0\ & \__st1\);
       zi2 <= main_get_addr_reg_out;
       zi3 <= zi2(214 downto 205);
       zi4 <= zi2(204 downto 0);
-      conn <= (zi3 & rw_repl(32, std_logic_vector'(B"1")));
+      conn <= (zi3 & rw_repl(32, std_logic_vector'(B"0")));
       \instR1\ : \ZLL_Main_setloc4\ port map (conn, zi4, zll_main_setloc4_out);
       zi5 <= zll_main_setloc4_out;
       \connR1\ <= rw_cond(rw_and(rw_eq(zi2(214 downto 214), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(213 downto 213), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(212 downto 212), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(211 downto 211), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(210 downto 210), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(209 downto 209), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(208 downto 208), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(207 downto 207), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(206 downto 206), std_logic_vector'(B"1")), rw_eq(zi2(205 downto 205), std_logic_vector'(B"1"))))))))))), std_logic_vector'(B"0000000010"), rw_cond(rw_and(rw_eq(zi2(214 downto 214), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(213 downto 213), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(212 downto 212), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(211 downto 211), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(210 downto 210), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(209 downto 209), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(208 downto 208), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(207 downto 207), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(206 downto 206), std_logic_vector'(B"1")), rw_eq(zi2(205 downto 205), std_logic_vector'(B"0"))))))))))), std_logic_vector'(B"0000000001"), rw_cond(rw_and(rw_eq(zi2(214 downto 214), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(213 downto 213), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(212 downto 212), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(211 downto 211), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(210 downto 210), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(209 downto 209), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(208 downto 208), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(207 downto 207), std_logic_vector'(B"0")), rw_and(rw_eq(zi2(206 downto 206), std_logic_vector'(B"0")), rw_eq(zi2(205 downto 205), std_logic_vector'(B"1"))))))))))), std_logic_vector'(B"0000000000"), std_logic_vector'(B"1111111111"))));
@@ -567,8 +567,8 @@ zi1 <= (\__st0\ & \__st1\);
       begin
       if rst = std_logic_vector'(B"1") then
                   \__resumption_tag\ <= std_logic_vector'(B"000");
-                  \__st0\ <= std_logic_vector'(B"00000000001111111111111111111111111111111111011111111111111111111111111111111");
-                  \__st1\ <= std_logic_vector'(B"11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
+                  \__st0\ <= std_logic_vector'(B"00000000001100000000000000000000000000000000000000000000000000000000000000000");
+                  \__st1\ <= std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
             elsif rising_edge(clk(0)) then
                   \__resumption_tag\ <= \__resumption_tag_next\;
                   \__st0\ <= \__st0_next\;
@@ -1277,7 +1277,7 @@ component \ZLL_Main_set__data__out__reg8\ is
       signal conn : std_logic_vector (31 downto 0);
       signal zll_main_set_data_out_reg8_out : std_logic_vector (204 downto 0);
 begin
-conn <= rw_repl(32, std_logic_vector'(B"1"));
+conn <= rw_repl(32, std_logic_vector'(B"0"));
       inst : \ZLL_Main_set__data__out__reg8\ port map (conn, arg0, zll_main_set_data_out_reg8_out);
       res <= zll_main_set_data_out_reg8_out;
 end architecture;
