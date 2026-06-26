@@ -5,7 +5,7 @@
 module ReWire.Crust.KindCheck (kindCheck) where
 
 import ReWire.Annotation (Annote)
-import ReWire.Error (failAt, MonadError, AstError)
+import ReWire.Error (failAt, failInternal, MonadError, AstError)
 import ReWire.Crust.Syntax (Ty (..), Kind (..), DataDefn (..), FreeProgram, TyConId, Poly (Poly), Defn (..))
 import ReWire.Unbound (fv, Fresh (fresh), substs, aeq, Subst, s2n, n2s, Name, Embed (Embed), unbind)
 import ReWire.Pretty (prettyPrint, showt)
@@ -114,7 +114,7 @@ redecorate s (DataDefn an i _ cs) = do
       cas <- askCAssumps
       case Map.lookup i cas of
             Just k  -> pure $ DataDefn an i (monoize $ subst s k) cs
-            Nothing -> failAt an $ "Redecorate: no such assumption: " <> showt i
+            Nothing -> failInternal an $ "no such assumption: " <> showt i
 
 assump :: (Fresh m, MonadError AstError m) => DataDefn -> KCM m (Name TyConId, Kind)
 assump = \ case

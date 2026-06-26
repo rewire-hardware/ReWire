@@ -28,7 +28,7 @@ import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Poly (..), Pat (..), M
 import ReWire.Crust.TypeCheck (typeCheckDefn, unify, unify', TySub)
 import ReWire.Crust.Types (typeOf, tyAnn, setTyAnn, dstArrow, maybeSetTyAnn, poly, poly', flattenArrow, arr, nilTy, ctorNames, resInputTy, codomTy, (|->), arrowRight, arrowLeft, isReacT, prettyTy, synthable, higherOrder, fundamental, concrete)
 import ReWire.Crust.Util (mkApp, mkError, mkLam, inlinable, synthableDefn, mkTupleMPat, mkTuple, mkPairMPat, mkPair, patVars, toVar, transPat, transMPat, isExtrude, extrudeDefn)
-import ReWire.Error (AstError, MonadError, failAt, Warning (..))
+import ReWire.Error (AstError, MonadError, failAt, failInternal, Warning (..))
 import ReWire.Fix (fix, fix', fixUntil, boundedFixOn)
 import ReWire.SYB (transform, transformM, query)
 import ReWire.Unbound (freshVar, fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, runFreshMT, Name (..), unsafeUnbind, bind, unbind, Subst (..), Alpha, Embed (Embed), Bind)
@@ -625,7 +625,7 @@ lift dn bvs e | Just t  <- typeOf e
                         unifyVs :: MonadError AstError m => Ty -> Maybe Ty -> m Ty
                         unifyVs t1 = \ case
                               Nothing -> pure t1
-                              Just t2 -> maybe (failAt (ann t1) $ "Mis-typed variables; could not unify: " <> prettyTy t1 <> " with " <> prettyTy t2) pure
+                              Just t2 -> maybe (failInternal (ann t1) $ "Mis-typed variables; could not unify: " <> prettyTy t1 <> " with " <> prettyTy t2) pure
                                        $ unify' t1 t2
 
                         an :: Annote

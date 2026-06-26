@@ -23,7 +23,7 @@ import ReWire.BitVector (BV, width, bitVec, zeros, ones, lsb1, szBitRep)
 import ReWire.Config (Config, ResetFlag (..))
 import ReWire.Hyle.Interp (Ins, subRange, inputValue, yamlPrefixes)
 import ReWire.Hyle.Mangle (mangleFresh, mangleMod)
-import ReWire.Error (failAt, AstError, MonadError)
+import ReWire.Error (failAt, failInternal, AstError, MonadError)
 import ReWire.Hyle.Syntax as M
 import ReWire.Pretty (showt)
 import ReWire.Verilog.Syntax as V
@@ -166,11 +166,11 @@ compileDevice conf xenv (M.Device an top ins outs regs insts body) = do
                   [e] -> do
                         (e', stmts) <- compileExp xenv lenv e
                         pure $ stmts <> [Assign (V.Name x) e']
-                  _   -> failAt an $ "ToVerilog: internal error: output " <> x <> " is not driven exactly once"
+                  _   -> failInternal an $ "internal error: output " <> x <> " is not driven exactly once"
 
             compileInst :: (MonadState SigInfo m', MonadError AstError m') => HashMap (M.Name, M.Name) V.Name -> LEnv -> M.Instance -> m' [V.Stmt]
             compileInst instWires lenv (M.Instance an' x ex cs) = case Map.lookup ex xenv of
-                  Nothing -> failAt an' $ "ToVerilog: instance " <> x <> ": unknown extern: " <> ex
+                  Nothing -> failAt an' $ "instance " <> x <> ": unknown extern: " <> ex
                   Just e  -> do
                         (args, stmts) <- (map fst &&& concatMap snd) <$> mapM (driveIn lenv x) (filter ((> 0) . snd) $ extInputs e)
                         clkrst <- clockRstPorts e
@@ -193,14 +193,14 @@ compileDevice conf xenv (M.Device an top ins outs regs insts body) = do
                         wire what p sig = case (p, sig) of
                               (Nothing, _)      -> pure Nothing
                               (Just p', Just s) -> pure $ Just (p', LVal $ V.Name s)
-                              (Just _, Nothing) -> failAt an $ "ToVerilog: external module requires a " <> what <> " signal, but we have no " <> what <> " to give it."
+                              (Just _, Nothing) -> failAt an $ "external module requires a " <> what <> " signal, but we have no " <> what <> " to give it."
 
             driveIn :: (MonadState SigInfo m', MonadError AstError m') => LEnv -> M.Name -> (M.Name, M.Size) -> m' ((V.Name, V.Exp), [V.Stmt])
             driveIn lenv x (p, _) = case [ e | M.SInstIn _ x' p' e <- body, x' == x, p' == p ] of
                   [e] -> do
                         (e', stmts) <- compileExp xenv lenv e
                         pure ((p, e'), stmts)
-                  _   -> failAt an $ "ToVerilog: internal error: instance input " <> x <> "." <> p <> " is not driven exactly once"
+                  _   -> failInternal an $ "internal error: instance input " <> x <> "." <> p <> " is not driven exactly once"
 
             -- | The single clocked process updating all registers, plus
             --   power-on initials.
@@ -260,7 +260,7 @@ compileExp xenv = go
                   M.Undef _ sz        -> pure (bvToExp $ zeros $ fromIntegral sz, [])
                   M.Var an _ x        -> case Map.lookup x lenv of
                         Just e  -> pure (e, [])
-                        Nothing -> failAt an $ "ToVerilog: unbound variable: " <> x
+                        Nothing -> failInternal an $ "unbound variable: " <> x
                   e@M.Cat {}          -> first V.cat <$> compileExps xenv lenv (gather e)
                   M.Slice _ i k e     -> do
                         (e', stmts) <- go lenv e
@@ -277,7 +277,7 @@ compileExp xenv = go
                   -- the hand-written Verilog implementations don't know the
                   -- synthesized names of anonymous ports.
                   M.XCall an sz x cs es -> case Map.lookup x xenv of
-                        Nothing -> failAt an $ "ToVerilog: unknown extern: " <> x
+                        Nothing -> failAt an $ "unknown extern: " <> x
                         Just ex -> do
                               (es', stmts) <- compileExps xenv lenv $ filter (not . M.isNil) es
                               mr           <- newWire sz "extres"
@@ -347,7 +347,7 @@ compileExp xenv = go
                         (M.Rep k, [a], _)
                               | k == 0    -> pure' V.nil
                               | otherwise -> pure' $ Repl (toLit k) a
-                        _ -> failAt an $ "ToVerilog: ill-formed primitive application: " <> opName op <> " with " <> showt (length es) <> " arguments"
+                        _ -> failInternal an $ "ill-formed primitive application: " <> opName op <> " with " <> showt (length es) <> " arguments"
 
             -- | Slice a compiled expression: ranges on names and literals
             --   directly; anything else through a fresh wire.

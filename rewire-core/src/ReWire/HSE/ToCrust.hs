@@ -118,7 +118,7 @@ transDef rn tys inls defs = \ case
       RulePragmaDecl {}                                         -> pure defs -- TODO(chathhorn): elide
       DeprPragmaDecl {}                                         -> pure defs -- TODO(chathhorn): elide
       WarnPragmaDecl {}                                         -> pure defs -- TODO(chathhorn): elide
-      d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " <> pack (show $ void d)
+      d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " <> pack (prettyPrint $ void d)
 
 transTyVar :: S.TyVarBind () -> Name M.Ty
 transTyVar = \ case
@@ -145,7 +145,7 @@ transTy rn = \ case
       TyInfix l a x b -> M.TyApp l <$> (M.TyApp l (M.TyCon l (s2n $ rename Type rn x')) <$> transTy rn a) <*> transTy rn b
             where x' | PromotedName   _ qn <- x = qn
                      | UnpromotedName _ qn <- x = qn
-      t                -> failAt (ann t) $ "Unsupported type syntax: " <> pack (show t)
+      t                -> failAt (ann t) $ "Unsupported type syntax: " <> pack (prettyPrint $ void t)
 
 freshKVar :: Fresh m => Text -> m M.Kind
 freshKVar n = M.KVar <$> fresh (s2n $ "?K_" <> n)
@@ -175,7 +175,7 @@ transExp rn = \ case
       Lit l (String _ s _)   -> pure $ M.LitStr l Nothing $ pack s
       List l es              -> M.LitList l Nothing Nothing <$> mapM (transExp rn) es
       ExpTypeSig _ e t       -> M.setTyAnn <$> (Just . M.poly' <$> transTy rn t) <*> transExp rn e
-      e                      -> failAt (ann e) $ "Unsupported expression syntax: " <> pack (show $ void e)
+      e                      -> failAt (ann e) $ "Unsupported expression syntax: " <> pack (prettyPrint $ void e)
       where getVars :: Pat Annote -> [S.Name ()]
             getVars p = [void x | PVar (_::Annote) x <- query p]
 
@@ -188,7 +188,7 @@ transPat rn = \ case
       PVar l x         -> pure $ M.PatVar l (Embed Nothing) (Embed Nothing) (mkUId $ void x)
       PWildCard l      -> pure $ M.PatWildCard l (Embed Nothing) (Embed Nothing)
       PatTypeSig _ p t -> M.setTyAnn <$> (Just . M.poly' <$> transTy rn t) <*> transPat rn p
-      p                -> failAt (ann p) $ "Unsupported syntax in a pattern: " <> pack (show $ void p)
+      p                -> failAt (ann p) $ "Unsupported syntax in a pattern: " <> pack (prettyPrint $ void p)
 
 -- Note: runs before desugaring.
 -- TODO(chathhorn): GADT style decls?

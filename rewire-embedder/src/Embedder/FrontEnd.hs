@@ -7,7 +7,7 @@ module Embedder.FrontEnd
       ) where
 
 import Embedder.Config (Config, getAtmoFile, verbose)
-import ReWire.Error (MonadError, AstError, runSyntaxError)
+import ReWire.Error (MonadError, AstError, runSyntaxError, printError)
 import Embedder.ModCache (runCache, LoadPath, getModule)
 import ReWire.Pretty (Pretty, prettyPrint, fastPrint)
 import qualified Embedder.Config         as Config
@@ -19,13 +19,12 @@ import Control.Monad.State (MonadState)
 import Data.Text (pack)
 import qualified Data.Text.IO        as T
 import System.Exit (exitFailure)
-import System.IO (stderr)
 
 embedFile :: MonadIO m => Config -> FilePath -> m ()
 embedFile  conf filename = do
       when (conf^.verbose) $ liftIO $ T.putStrLn $ "Embedding: " <> pack filename
       runSyntaxError (embedModule conf filename)
-            >>= either (liftIO . (>> exitFailure) . T.hPutStrLn stderr . prettyPrint) pure
+            >>= either (\ err -> printError ["."] err >> liftIO exitFailure) pure
 
 -- | Opens and parses a file and, recursively, its imports.
 embedModule :: (MonadFail m, MonadError AstError m, MonadState AstError m, MonadIO m) => Config -> FilePath -> m ()

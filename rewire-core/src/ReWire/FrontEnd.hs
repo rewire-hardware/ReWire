@@ -7,8 +7,8 @@ module ReWire.FrontEnd
       ) where
 
 import ReWire.Annotation (noAnn)
-import ReWire.Config (Config, Language (..), getOutFile, target, cycles, inputsFile, defaultInputsFile, source, rtlOpt, testbench, pDebug)
-import ReWire.Error (MonadError, AstError, runSyntaxError, failAt, warnAt)
+import ReWire.Config (Config, Language (..), getOutFile, target, cycles, inputsFile, defaultInputsFile, source, rtlOpt, testbench, pDebug, loadPath)
+import ReWire.Error (MonadError, AstError, runSyntaxError, failAt, warnAt, printError)
 import ReWire.Hyle.Interp (Ins, run)
 import ReWire.Hyle.Parse (parseHyle)
 import ReWire.Hyle.Syntax (Program, progDevice)
@@ -33,7 +33,6 @@ import Data.Text (Text, pack)
 import Numeric.Natural (Natural)
 import System.Exit (exitFailure)
 import System.FilePath (dropExtension, takeExtension, (<.>))
-import System.IO (stderr)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Text.IO        as T
@@ -48,7 +47,7 @@ compileFile conf filename = do
       verb $ "Compiling: " <> pack filename
 
       runSyntaxError (load >>= Hyle.check >>= compile)
-            >>= either (liftIO . (>> exitFailure) . T.hPutStrLn stderr . prettyPrint) pure
+            >>= either (\ err -> printError (conf ^. loadPath) err >> liftIO exitFailure) pure
 
       where load :: (MonadError AstError m, MonadState AstError m, MonadFail m, MonadIO m) => m Program
             load = case conf^.source of

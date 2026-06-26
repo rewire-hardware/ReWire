@@ -23,7 +23,7 @@ import ReWire.BitVector (BV, width, bitVec, zeros, ones, lsb1)
 import ReWire.Config (Config, ResetFlag (..), vhdlPackages)
 import ReWire.Hyle.Interp (Ins, subRange, inputValue, yamlPrefixes)
 import ReWire.Hyle.Mangle (mangleFresh, mangleMod)
-import ReWire.Error (failAt, AstError, MonadError)
+import ReWire.Error (failAt, failInternal, AstError, MonadError)
 import ReWire.Hyle.Syntax as M
 import ReWire.Hyle.ToVerilog (clockReset)
 import ReWire.Pretty (showt)
@@ -172,11 +172,11 @@ compileDevice conf xenv (M.Device an top ins outs regs insts body) = do
                   [e] -> do
                         (e', stmts) <- compileExp xenv lenv e
                         pure $ stmts <> [H.Assign (H.LVName x) e']
-                  _   -> failAt an $ "ToVHDL: internal error: output " <> x <> " is not driven exactly once"
+                  _   -> failInternal an $ "internal error: output " <> x <> " is not driven exactly once"
 
             compileInst :: (MonadState TS m', MonadError AstError m') => HashMap (M.Name, M.Name) H.Name -> LEnv -> M.Instance -> m' [H.Stmt]
             compileInst instWires lenv (M.Instance an' x ex cs) = case Map.lookup ex xenv of
-                  Nothing -> failAt an' $ "ToVHDL: instance " <> x <> ": unknown extern: " <> ex
+                  Nothing -> failAt an' $ "instance " <> x <> ": unknown extern: " <> ex
                   Just e  -> do
                         addComponent $ extComponent e
                         (args, stmts) <- (map fst &&& concatMap snd) <$> mapM (driveIn lenv x) (filter ((> 0) . snd) $ extInputs e)
@@ -197,7 +197,7 @@ compileDevice conf xenv (M.Device an top ins outs regs insts body) = do
                         port' what p sig = case (p, sig) of
                               (Nothing, _)      -> pure Nothing
                               (Just p', Just s) -> pure $ Just (p', H.Var s)
-                              (Just _, Nothing) -> failAt an $ "ToVHDL: external module requires a " <> what <> " signal, but we have no " <> what <> " to give it."
+                              (Just _, Nothing) -> failAt an $ "external module requires a " <> what <> " signal, but we have no " <> what <> " to give it."
 
             driveIn :: (MonadState TS m', MonadError AstError m') => LEnv -> M.Name -> (M.Name, M.Size) -> m' ((H.Name, H.Exp), [H.Stmt])
             driveIn lenv x (p, sz) = case [ e | M.SInstIn _ x' p' e <- body, x' == x, p' == p ] of
@@ -205,7 +205,7 @@ compileDevice conf xenv (M.Device an top ins outs regs insts body) = do
                         (e', stmts)  <- compileExp xenv lenv e
                         (e'', stmts') <- connect sz e'
                         pure ((p, e''), stmts <> stmts')
-                  _   -> failAt an $ "ToVHDL: internal error: instance input " <> x <> "." <> p <> " is not driven exactly once"
+                  _   -> failInternal an $ "internal error: instance input " <> x <> "." <> p <> " is not driven exactly once"
 
             -- | The state-update process, with an (a)synchronous reset per
             --   the configured reset flags. No configured clock (--no-clock)
@@ -280,7 +280,7 @@ compileExp xenv = go
                   M.Undef _ sz        -> pure (litExp $ zeros $ fromIntegral sz, [])
                   M.Var an _ x        -> case Map.lookup x lenv of
                         Just e  -> pure (e, [])
-                        Nothing -> failAt an $ "ToVHDL: unbound variable: " <> x
+                        Nothing -> failInternal an $ "unbound variable: " <> x
                   e@M.Cat {}          -> first hCat <$> compileExps xenv lenv (gather e)
                   M.Slice _ i k e     -> do
                         (e', stmts) <- go lenv e
@@ -299,7 +299,7 @@ compileExp xenv = go
                         inst <- fresh "inst"
                         pure (H.Var mr, stmts <> hoists <> [H.Instantiate (mangleMod g) inst [] $ map (mempty, ) $ conns <> [H.Var mr]])
                   M.XCall an sz x cs es -> case Map.lookup x xenv of
-                        Nothing -> failAt an $ "ToVHDL: unknown extern: " <> x
+                        Nothing -> failAt an $ "unknown extern: " <> x
                         Just ex -> do
                               addComponent $ extComponent ex
                               let esLive = filter (not . M.isNil) es
@@ -375,7 +375,7 @@ compileExp xenv = go
                         (M.Rep k, [a], _)
                               | k == 0    -> pure' $ H.Lit BV.nil
                               | otherwise -> pure' $ H.FunCall "rw_repl" [H.Num k, a]
-                        _ -> failAt an $ "ToVHDL: ill-formed primitive application: " <> opName op <> " with " <> showt (length es) <> " arguments"
+                        _ -> failInternal an $ "ill-formed primitive application: " <> opName op <> " with " <> showt (length es) <> " arguments"
 
             -- | Slice a compiled expression: slices on names and literals
             --   directly; anything else through a fresh wire.

@@ -184,4 +184,3 @@ instance TextShow a => TextShow (Activation a) where
       showbPrec = genericShowbPrec
 instance TextShow a => TextShow (Annotation a) where
       showbPrec = genericShowbPrec
-

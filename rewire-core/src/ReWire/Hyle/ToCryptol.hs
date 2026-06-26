@@ -28,7 +28,7 @@ import ReWire.BitVector (zeros, ones)
 import qualified ReWire.BitVector as BV
 import ReWire.Config (Config)
 import ReWire.Cryptol.Syntax (cryptolName)
-import ReWire.Error (failAt, AstError, MonadError)
+import ReWire.Error (failAt, failInternal, AstError, MonadError)
 import ReWire.Hyle.Syntax
 import ReWire.Pretty (showt)
 
@@ -65,7 +65,7 @@ type TCM m = StateT TCS m
 compileProgram :: forall m. MonadError AstError m => Config -> Program -> m Cry.Module
 compileProgram _conf (Program exts ds dev) = do
       case devInstances dev of
-            Instance _ _ ex _ : _ -> failAt (ann dev) $ "ToCryptol: clocked extern " <> ex
+            Instance _ _ ex _ : _ -> failAt (ann dev) $ "clocked extern " <> ex
                                   <> " cannot be translated to a pure Cryptol function."
             []                    -> pure ()
       defns <- mapM (transDefn env) ds
@@ -120,7 +120,7 @@ buildNames ds exts = (dnames, extnames)
 defnNm' :: MonadError AstError m => Env -> Annote -> GId -> m Cry.Name
 defnNm' env an g = case Map.lookup g $ envNames env of
       Just n  -> pure n
-      Nothing -> failAt an $ "ToCryptol: unknown definition: " <> g
+      Nothing -> failInternal an $ "unknown definition: " <> g
 
 fresh :: Monad m => TCM m Cry.Name
 fresh = do
@@ -157,17 +157,17 @@ transExp env = go
                   Undef _ sz      -> pure $ Cry.Lit $ zeros $ fromIntegral sz
                   Var an _ x      -> gets (Map.lookup x . tcsLocals) >>= \ case
                         Just n  -> pure $ Cry.Var n
-                        Nothing -> failAt an $ "ToCryptol: unbound variable: " <> x
+                        Nothing -> failInternal an $ "unbound variable: " <> x
                   e@Cat {}        -> Cry.cat <$> mapM go (gather e)
                   Slice _ i k e   -> Cry.slice (sizeOf e) (sizeOf e - fromIntegral i - k) k <$> go e
                   Prim an sz op es -> transPrim env an sz op es
                   Call an _ g es  -> Cry.Call <$> defnNm' env an g <*> mapM go es
                   XCall an _ x cs es -> case Map.lookup x $ envExterns env of
-                        Nothing -> failAt an $ "ToCryptol: unknown extern: " <> x
+                        Nothing -> failAt an $ "unknown extern: " <> x
                         Just ex -> case extModel ex of
                               Just g  -> Cry.Call <$> defnNm' env an g <*> mapM go es
                               Nothing -> case Map.lookup x $ envExtNames env of
-                                    Nothing -> failAt an $ "ToCryptol: unknown extern: " <> x
+                                    Nothing -> failAt an $ "unknown extern: " <> x
                                     Just n  -> Cry.Call n . (map (Cry.Lit . BV.bitVec 32 . toInteger) cs <>) <$> mapM go es
                   If _ _ c t e    -> Cry.If <$> transBit env c <*> go t <*> go e
                   Let _ _ x e1 e2 -> do
@@ -242,7 +242,7 @@ transPrim env an sz op args = case (op, args) of
       (Trunc m, [a])   -> Cry.resize m <$> transExp env a
       (SExt m, [a])    -> (\ a' -> Cry.TCall "rw'sext" (fromIntegral m) [a']) <$> transExp env a
       (Rep k , [a])    -> (\ a' -> Cry.TCall "rw'repl" k [a']) <$> transExp env a
-      _                -> failAt an $ "ToCryptol: ill-formed primitive application: " <> opName op <> " with " <> showt (length args) <> " arguments."
+      _                -> failInternal an $ "ill-formed primitive application: " <> opName op <> " with " <> showt (length args) <> " arguments."
       where bin :: Cry.Name -> Exp -> Exp -> TCM m Cry.Exp
             bin o a b = Cry.BinOp o <$> transExp env a <*> transExp env b
 
@@ -306,13 +306,13 @@ stepDefn env dev = flip evalStateT (TCS 0 [] mempty) $ do
                         pure (outs, nexts)
                   SOutput _ x e -> (\ e' -> (Map.insert x e' outs, nexts)) <$> transExp env e
                   SNext _ x e   -> (\ e' -> (outs, Map.insert x e' nexts)) <$> transExp env e
-                  SInstIn an' _ _ _ -> failAt an' "ToCryptol: internal error: instance input in a device without instances"
+                  SInstIn an' _ _ _ -> failInternal an' "instance input in a device without instances"
 
             catOf :: HashMap Name Cry.Exp -> [(Name, Size)] -> Text -> TCM m [Cry.Exp]
             catOf m ws what = mapM lk ws
                   where lk (x, _) = case Map.lookup x m of
                               Just e  -> pure e
-                              Nothing -> failAt (ann dev) $ "ToCryptol: internal error: " <> what <> " " <> x <> " is never assigned"
+                              Nothing -> failInternal (ann dev) $ what <> " " <> x <> " is never assigned"
 
 -- | The Mealy-machine wrapper around @rw_step@ (the standard stream idiom):
 --   @rw_step@'s result has the layout outputs # next-registers.
