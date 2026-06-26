@@ -1,4 +1,4 @@
--- EXPECT-ERROR: encountered unsynthesizable definition
+-- EXPECT-ERROR: Encountered unsynthesizable definition
 {-# LANGUAGE DataKinds #-}
 import ReWire
 import ReWire.Bits

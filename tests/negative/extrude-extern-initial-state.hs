@@ -1,4 +1,4 @@
--- EXPECT-ERROR: cannot evaluate the initial state
+-- EXPECT-ERROR: Cannot evaluate the initial state
 {-# LANGUAGE DataKinds #-}
 import ReWire
 import ReWire.Bits (lit, (+))

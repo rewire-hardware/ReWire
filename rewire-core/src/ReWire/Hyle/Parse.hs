@@ -25,12 +25,13 @@ import Data.HashMap.Strict (HashMap)
 import Data.Text (Text, pack)
 import Data.Void (Void)
 import Numeric.Natural (Natural)
-import Text.Megaparsec (Parsec, many, try, (<|>), (<?>), manyTill, parse, between, errorBundlePretty, sepBy, sepBy1, notFollowedBy, optional, satisfy, eof, empty, getSourcePos)
+import Text.Megaparsec (Parsec, many, try, (<|>), (<?>), manyTill, parse, between, sepBy, sepBy1, notFollowedBy, optional, satisfy, eof, empty, getSourcePos, attachSourcePos, errorOffset, bundleErrors, bundlePosState, parseErrorTextPretty)
 import Text.Megaparsec.Char (char, space1)
 import Text.Megaparsec.Pos (SourcePos (..), unPos)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet        as Set
+import qualified Data.List.NonEmpty  as NE
 import qualified Data.Text           as T
 import qualified Data.Text.IO        as T
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -41,8 +42,10 @@ parseHyle :: (MonadError AstError m, MonadIO m) => FilePath -> m Program
 parseHyle p = liftIO (T.readFile p) >>= flip parseHyleText p
 
 parseHyleText :: MonadError AstError m => Text -> FilePath -> m Program
-parseHyleText txt p = either (failAt noAnn . pack . errorBundlePretty) elabProgram
-      $ parse (space *> program <* eof) p txt
+parseHyleText txt p = either failParse elabProgram $ parse (space *> program <* eof) p txt
+      where failParse bundle = failAt (srcAnnote (sourceName pos) (lc pos) (lc pos)) (pack $ parseErrorTextPretty e)
+                  where (e, pos)  = NE.head $ fst $ attachSourcePos errorOffset (bundleErrors bundle) (bundlePosState bundle)
+            lc sp = (unPos $ sourceLine sp, unPos $ sourceColumn sp)
 
 ---
 --- Raw parsing. Sizes that aren't manifest in the syntax are filled with 0

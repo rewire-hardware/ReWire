@@ -1,4 +1,4 @@
--- EXPECT-ERROR: no device declaration
+-- EXPECT-ERROR: No device declaration
 $LL.Main.f : ([8]) -> [8]
 $LL.Main.f $0 =
       $0

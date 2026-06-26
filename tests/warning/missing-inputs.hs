@@ -1,5 +1,5 @@
 -- FLAGS: --interpret=missing-inputs.yaml --cycles 2
--- EXPECT-WARNING: could not read inputs from missing-inputs.yaml
+-- EXPECT-WARNING: Could not read inputs from missing-inputs.yaml
 -- An explicitly named inputs file that can't be read warns (the inputs are
 -- then all driven to zero); the default inputs.yaml is allowed to not exist.
 {-# LANGUAGE DataKinds #-}

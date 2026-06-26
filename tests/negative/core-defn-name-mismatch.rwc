@@ -1,4 +1,4 @@
--- EXPECT-ERROR: definition name does not match its signature
+-- EXPECT-ERROR: Definition name does not match its signature
 $LL.Main.foo : ([8]) -> [8]
 $LL.Main.bar $0 =
       $0

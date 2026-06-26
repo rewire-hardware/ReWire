@@ -1,4 +1,4 @@
--- EXPECT-ERROR: external module requires a clock signal
+-- EXPECT-ERROR: External module requires a clock signal
 -- FLAGS: --no-clock
 {-# LANGUAGE DataKinds #-}
 import ReWire ( signal, Identity, ReacT, W, externWithSig )

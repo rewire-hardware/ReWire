@@ -28,6 +28,9 @@ import ReWire.Orphans ()
 
 import Control.Lens ((^.))
 import Control.Monad (guard)
+import Data.Char (toUpper, isUpper, isSpace)
+import Data.Function (on)
+import Data.List (nubBy)
 import Data.Maybe (maybeToList)
 import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 import Control.Monad.Except (MonadError (..), ExceptT (..), runExceptT, throwError)
@@ -84,9 +87,10 @@ sevStyle = \ case
       SevWarning -> color Magenta <> bold
       SevNote    -> color Cyan    <> bold
 
--- | Style for the "file:line:col:" location header.
+-- | Style for the "file:line:col:" location header (bold, default foreground,
+--   as GHC does).
 locStyle :: AnsiStyle
-locStyle = color White <> bold
+locStyle = bold
 
 -- | Style for the gutter: line numbers and the "|" separators.
 gutterStyle :: AnsiStyle
@@ -95,6 +99,21 @@ gutterStyle = color Blue
 -- | A coloured text fragment.
 styled :: AnsiStyle -> Text -> Doc AnsiStyle
 styled s = annotate s . text
+
+-- | Present a diagnostic message as a sentence: capitalise the first letter and
+--   end with terminal punctuation (adding a period when none is present).
+normalizeMsg :: Text -> Text
+normalizeMsg msg = case T.uncons trimmed of
+      Nothing     -> trimmed
+      Just (c, r) -> punct $ if capitalize then T.cons (toUpper c) r else trimmed
+      where trimmed    = T.stripEnd msg
+            -- Don't capitalise a message that opens with a code identifier
+            -- (e.g. "rwPrimFinite: ...", "fromList: ..."): its first token
+            -- already contains an upper-case letter.
+            capitalize = not $ T.any isUpper $ T.takeWhile (not . isSpace) trimmed
+            punct t | T.null t                             = t
+                    | T.last t `elem` ['.', ':', '!', '?'] = t
+                    | otherwise                            = t <> "."
 
 -- | The "file:line:col:" header for an annotation, or Nothing if it has no
 --   usable source position.
@@ -118,7 +137,7 @@ diagBlock sev an msg msrc = vsep $ header : msgLines <> maybeToList excerpt
             indent   = T.replicate (gutterW + 1) " "
             sevDoc   = styled (sevStyle sev) $ sevLabel sev <> ":"
             header   = maybe sevDoc (\ t -> styled locStyle t <+> sevDoc) $ locHeaderText an
-            msgLines = [ text indent <> pretty l | l <- T.lines msg ]
+            msgLines = [ text indent <> pretty l | l <- T.lines $ normalizeMsg msg ]
             excerpt  = do
                   Span _ (sl, sc) (el, ec) <- loc
                   ls <- msrc
@@ -139,7 +158,7 @@ diagBlock sev an msg msrc = vsep $ header : msgLines <> maybeToList excerpt
 -- | Like 'diagBlock' but a plain, colour-free 'Doc' with no source excerpt,
 --   for the pure 'Pretty' rendering (e.g. round-trip test failures).
 plainDiag :: Severity -> Annote -> Text -> Doc ann
-plainDiag sev an msg = vsep $ header : [ text "  " <> pretty l | l <- T.lines msg ]
+plainDiag sev an msg = vsep $ header : [ text "  " <> pretty l | l <- T.lines $ normalizeMsg msg ]
       where header = maybe sevDoc (\ t -> text t <+> sevDoc) $ locHeaderText an
             sevDoc = text $ sevLabel sev <> ":"
 
@@ -240,9 +259,13 @@ printError dirs (AstError an msg labels hints) = printDiag dirs SevError an msg 
 printDiag :: MonadIO m => [FilePath] -> Severity -> Annote -> Text -> [Label] -> [Text] -> m ()
 printDiag dirs sev an msg labels hints = liftIO $ do
       primary <- blockWithSource dirs sev an $ appendContext msg $ annContext an
-      -- Drop labels that resolve to the primary location: a "note" pointing at
-      -- the same place as the error itself is just noise.
-      labelBs <- mapM (uncurry $ blockWithSource dirs SevNote) $ filter ((primSpan an /=) . primSpan . fst) labels
+      -- Drop labels that resolve to the primary location (a "note" pointing at
+      -- the error itself is just noise), and collapse labels that share a
+      -- location into one (e.g. the relocation note and an explicit "first used
+      -- here" landing on the same spot).
+      labelBs <- mapM (uncurry $ blockWithSource dirs SevNote)
+                       $ nubBy ((==) `on` (primSpan . fst))
+                       $ filter ((primSpan an /=) . primSpan . fst) labels
       let hintBs = map (\ h -> diagBlock SevNote noAnn h Nothing) hints
       colour  <- hIsTerminalDevice stderr
       T.hPutStr stderr $ (if colour then doc2Colour else doc2Text) (vsep $ primary : labelBs <> hintBs) <> "\n\n"

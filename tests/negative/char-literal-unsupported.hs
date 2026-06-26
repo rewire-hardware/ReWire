@@ -1,4 +1,4 @@
--- EXPECT-ERROR: unsupported expression syntax
+-- EXPECT-ERROR: Unsupported expression syntax
 {-# LANGUAGE DataKinds #-}
 import ReWire
 import ReWire.Monad (iter, Dev)

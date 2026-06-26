@@ -1,4 +1,4 @@
--- EXPECT-ERROR: invalid bit slice
+-- EXPECT-ERROR: Invalid bit slice
 -- Slice bounds are (msb, lsb): here j < i, which is rejected.
 {-# LANGUAGE DataKinds #-}
 import ReWire

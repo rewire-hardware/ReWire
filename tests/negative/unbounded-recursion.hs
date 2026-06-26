@@ -1,4 +1,4 @@
--- EXPECT-ERROR: unsupported use of recursion
+-- EXPECT-ERROR: Unsupported use of recursion
 {-# LANGUAGE DataKinds #-}
 import Prelude hiding ((^))
 import ReWire

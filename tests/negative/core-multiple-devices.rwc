@@ -1,4 +1,4 @@
--- EXPECT-ERROR: multiple device declarations
+-- EXPECT-ERROR: Multiple device declarations
 device top_level
       input __in0 : [8]
       output __out0 : [8]

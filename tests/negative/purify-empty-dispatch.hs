@@ -1,4 +1,4 @@
--- EXPECT-ERROR: empty dispatch
+-- EXPECT-ERROR: Empty dispatch
 {-# LANGUAGE DataKinds #-}
 import ReWire
 import ReWire.Bits

@@ -1,4 +1,4 @@
--- EXPECT-ERROR: unsupported type syntax
+-- EXPECT-ERROR: Unsupported type syntax
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 import ReWire
