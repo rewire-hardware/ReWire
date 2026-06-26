@@ -194,9 +194,10 @@ neuterExterns' (ts, syns, ds) = ((ts, syns, ds2), warns)
                   _                          -> Just $ Just "only a reference to a top-level definition can be used as a model"
 
             warns :: [Warning]
-            warns = [ Warning (ann e) $ "ignoring the Haskell model for extern " <> exName ex <> ": " <> reason
+            warns = [ Warning (ann d) $ "Ignoring the Haskell model for extern '" <> exName ex <> "': " <> reason
                           <> "; the interpreter will not be able to evaluate this extern."
-                    | App _ _ _ ex e <- concatMap (\ d -> query d :: [Exp]) ds1
+                    | d <- ds1
+                    , App _ _ _ ex e <- query d :: [Exp]
                     , isExtern ex
                     , Just (Just reason) <- [disposition e]
                     ]

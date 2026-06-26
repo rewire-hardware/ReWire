@@ -263,7 +263,7 @@ testWarning fn = testCase (takeBaseName fn <> " (expected warning)") $ do
       (r3, ef3) <- run ["-w"] "nowarn"
       w3        <- readFile ef3
       case r3 of
-            Right () -> assertBool ("expected no warnings under -w; stderr:\n" <> w3) $ not ("Warning" `isInfixOf` w3)
+            Right () -> assertBool ("expected no warnings under -w; stderr:\n" <> w3) $ not ("warning:" `isInfixOf` w3)
             Left e   -> assertFailure $ "expected compilation to succeed under -w, but rwc exited (" <> show e <> "); stderr:\n" <> w3
 
 -- | Compile fixed test programs with flag combinations the golden tests don't

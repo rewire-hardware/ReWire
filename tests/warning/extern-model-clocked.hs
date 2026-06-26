@@ -1,4 +1,4 @@
--- EXPECT-WARNING: ignoring the Haskell model for clocked extern mymod
+-- EXPECT-WARNING: Ignoring the Haskell model for clocked extern 'mymod'
 -- A clocked extern is stateful, so a pure per-cycle model can't be
 -- cycle-accurate; the model is dropped with a warning.
 {-# LANGUAGE DataKinds #-}

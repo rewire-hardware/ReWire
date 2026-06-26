@@ -646,13 +646,13 @@ applyExtern an sz (ps, clk, rst, as, rs, s) a args = do
             M.Var _ _ _ x
                   | T.null clk && T.null rst -> Just <$> transName x
                   | otherwise                -> do
-                        addWarning an $ "ignoring the Haskell model for clocked extern " <> s
-                                     <> ": clocked externs are stateful and cannot be modeled by a pure function."
+                        addWarning an $ "Ignoring the Haskell model for clocked extern '" <> s
+                                     <> "': clocked externs are stateful and cannot be modeled by a pure function."
                         pure Nothing
             (M.flattenApp -> (M.Builtin _ _ _ M.Error, _)) -> pure Nothing -- The neutered placeholder.
             _ -> do
-                  addWarning an $ "ignoring the Haskell model for extern " <> s
-                               <> ": the model reference did not survive transformation (rwc bug?)."
+                  addWarning an $ "Ignoring the Haskell model for extern '" <> s
+                               <> "': the model reference did not survive transformation (rwc bug?)."
                   pure Nothing
 
       let kind | T.null clk && T.null rst = A.Comb
@@ -704,10 +704,10 @@ applyExtern an sz (ps, clk, rst, as, rs, s) a args = do
                   , A.extInputs new == A.extInputs old
                   , A.extOutputs new == A.extOutputs old
                   , A.extGenerics new == A.extGenerics old = case (A.extModel new, A.extModel old) of
-                        (Just g1, Just g2) | g1 /= g2 -> failAt an $ "extern " <> s <> " has conflicting models (" <> g1 <> ", " <> g2 <> ")"
+                        (Just g1, Just g2) | g1 /= g2 -> failAt an $ "Extern '" <> s <> "' has conflicting models (" <> g1 <> ", " <> g2 <> ")."
                         (mg, mg')                     -> pure $ old { A.extModel = maybe mg' Just mg }
-                  | otherwise = failAtWith an ("extern " <> s <> " is used with inconsistent signatures")
-                        [(ann old, "first used here")] []
+                  | otherwise = failAtWith an ("Extern '" <> s <> "' is used with inconsistent signatures.")
+                        [(ann old, "First used here:")] []
 
 ---
 --- Hoisting clocked externs into device instances.

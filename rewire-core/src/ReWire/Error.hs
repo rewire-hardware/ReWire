@@ -23,11 +23,12 @@ import Prelude hiding ((<>), lines, unlines)
 
 import ReWire.Annotation (Annotation (..), Annote, Span (..), annContext, primSpan, toSrcSpanInfo, noAnn)
 import ReWire.Config (Config, noWarn, wError, loadPath)
-import ReWire.Pretty (($$), text, int, showt, Pretty (pretty), (<>), (<+>), vsep, Doc, defaultLayoutOptions, layoutSmart, renderStrict)
+import ReWire.Pretty (text, showt, Pretty (pretty), (<>), (<+>), vsep, Doc, defaultLayoutOptions, layoutSmart, renderStrict)
 import ReWire.Orphans ()
 
 import Control.Lens ((^.))
-import Data.Maybe (maybeToList, catMaybes)
+import Control.Monad (guard)
+import Data.Maybe (maybeToList)
 import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 import Control.Monad.Except (MonadError (..), ExceptT (..), runExceptT, throwError)
 import Control.Monad.IO.Class (MonadIO (..))
@@ -35,11 +36,14 @@ import Control.Monad.State (StateT (..), MonadState (..))
 import Control.Monad.Trans (MonadTrans (..))
 import Data.Text (Text, pack)
 import Language.Haskell.Exts.SrcLoc (SrcLoc (..), SrcInfo (..), noLoc)
+import Prettyprinter (annotate)
+import Prettyprinter.Render.Terminal (AnsiStyle, Color (..), color, bold)
 import System.Directory (doesFileExist)
 import System.FilePath ((</>))
-import System.IO (stderr)
+import System.IO (stderr, hIsTerminalDevice)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import qualified Prettyprinter.Render.Terminal as Term
 
 -- | A secondary location with an explanatory note, attached to an error to
 --   point at a related part of the source (e.g. "first defined here").
@@ -57,8 +61,8 @@ instance PutMsg AstError where
 
 instance Pretty AstError where
       pretty (AstError an msg labels hints) = vsep $
-            blockNoSnip "Error" an (appendContext msg $ annContext an)
-                  : map (uncurry $ blockNoSnip "note") labels <> hintDocs hints
+            plainDiag SevError an (appendContext msg $ annContext an)
+                  : map (uncurry $ plainDiag SevNote) labels <> map (plainDiag SevNote noAnn) hints
 
 -- | A non-fatal diagnostic: printed to stderr when emitted (see 'warnAt'),
 --   or promoted to an 'AstError' under -Werror.
@@ -66,23 +70,78 @@ data Warning = Warning !Annote !Text
       deriving (Eq, Ord)
 
 instance Pretty Warning where
-      pretty (Warning an msg) = blockNoSnip "Warning" an $ appendContext msg $ annContext an
+      pretty (Warning an msg) = plainDiag SevWarning an $ appendContext msg $ annContext an
 
--- | A diagnostic block without a source snippet (the location header, then the
---   labelled message below it), used where the source text isn't available.
-blockNoSnip :: Text -> Annote -> Text -> Doc ann
-blockNoSnip lbl an msg = vsep $ catMaybes [locLine an] <> [text (lbl <> ":") <+> pretty msg]
+-- | The severity of a diagnostic, controlling its label and colour.
+data Severity = SevError | SevWarning | SevNote
 
--- | The "file:line:col:" location header for an annotation, or Nothing if it
---   has no usable source position.
-locLine :: Annote -> Maybe (Doc ann)
-locLine an
+sevLabel :: Severity -> Text
+sevLabel = \ case SevError -> "error"; SevWarning -> "warning"; SevNote -> "note"
+
+sevStyle :: Severity -> AnsiStyle
+sevStyle = \ case
+      SevError   -> color Red     <> bold
+      SevWarning -> color Magenta <> bold
+      SevNote    -> color Cyan    <> bold
+
+-- | Style for the "file:line:col:" location header.
+locStyle :: AnsiStyle
+locStyle = color White <> bold
+
+-- | Style for the gutter: line numbers and the "|" separators.
+gutterStyle :: AnsiStyle
+gutterStyle = color Blue
+
+-- | A coloured text fragment.
+styled :: AnsiStyle -> Text -> Doc AnsiStyle
+styled s = annotate s . text
+
+-- | The "file:line:col:" header for an annotation, or Nothing if it has no
+--   usable source position.
+locHeaderText :: Annote -> Maybe Text
+locHeaderText an
       | getPointLoc l == noLoc = Nothing
-      | otherwise              = Just $ text (T.pack file) <> num r <> num c <> text ":"
+      | otherwise              = Just $ T.pack file <> num r <> num c <> ":"
       where l = toSrcSpanInfo an
-            num :: Int -> Doc ann
-            num n = if n == -1 then mempty else text ":" <> int n
+            num n = if n == -1 then mempty else ":" <> showt n
             SrcLoc file r c = getPointLoc l
+
+-- | A diagnostic block, GHC-style: "file:line:col: severity:" on the header
+--   line, the message indented below it, then the source excerpt with a caret.
+--   On a terminal the location is bold, the severity label and the underlined
+--   source (and its caret) take the severity colour, and the gutter is blue.
+--   With no source lines available the excerpt is omitted.
+diagBlock :: Severity -> Annote -> Text -> Maybe [Text] -> Doc AnsiStyle
+diagBlock sev an msg msrc = vsep $ header : msgLines <> maybeToList excerpt
+      where loc      = primSpan an
+            gutterW  = maybe 1 (\ (Span _ (l, _) _) -> length $ show l) loc
+            indent   = T.replicate (gutterW + 1) " "
+            sevDoc   = styled (sevStyle sev) $ sevLabel sev <> ":"
+            header   = maybe sevDoc (\ t -> styled locStyle t <+> sevDoc) $ locHeaderText an
+            msgLines = [ text indent <> pretty l | l <- T.lines msg ]
+            excerpt  = do
+                  Span _ (sl, sc) (el, ec) <- loc
+                  ls <- msrc
+                  guard $ sl >= 1 && sl <= length ls
+                  let src    = ls !! (sl - 1)
+                      gutter = showt sl
+                      blankG = T.replicate (T.length gutter) " "
+                      endCol = if el == sl then ec else T.length src + 1
+                      n      = max 1 $ endCol - sc       -- width of the highlight
+                      before = T.take (sc - 1) src
+                      under  = T.take n $ T.drop (sc - 1) src
+                      after  = T.drop (sc - 1 + n) src
+                      caret  = T.replicate (max 0 $ sc - 1) " " <> T.replicate n "^"
+                  pure $ vsep [ styled gutterStyle $ blankG <> " |"
+                              , styled gutterStyle (gutter <> " | ") <> text before <> styled (sevStyle sev) under <> text after
+                              , styled gutterStyle (blankG <> " | ") <> styled (sevStyle sev) caret ]
+
+-- | Like 'diagBlock' but a plain, colour-free 'Doc' with no source excerpt,
+--   for the pure 'Pretty' rendering (e.g. round-trip test failures).
+plainDiag :: Severity -> Annote -> Text -> Doc ann
+plainDiag sev an msg = vsep $ header : [ text "  " <> pretty l | l <- T.lines msg ]
+      where header = maybe sevDoc (\ t -> text t <+> sevDoc) $ locHeaderText an
+            sevDoc = text $ sevLabel sev <> ":"
 
 -- | Append a node's context breadcrumbs below its message, one per line.
 appendContext :: Text -> [Text] -> Text
@@ -129,7 +188,7 @@ warnAt :: (MonadError AstError m, MonadIO m, Annotation an) => Config -> an -> T
 warnAt conf an msg
       | conf^.wError = failAt an $ msg <> " [-Werror]"
       | conf^.noWarn = pure ()
-      | otherwise    = printDiag (conf ^. loadPath) "Warning" (toAnnote an) msg [] []
+      | otherwise    = printDiag (conf ^. loadPath) SevWarning (toAnnote an) msg [] []
 
 -- | Like failAt, but include an extra bit of data on failure.
 failAt' :: (MonadError (ex, AstError) m, Annotation an) => ex -> an -> Text -> m a
@@ -147,7 +206,7 @@ relocateErr to e@(AstError from msg labels hints) = case primSpan $ toAnnote to 
             Just fromSpan | spanFile fromSpan == spanFile toSpan -> e
             Just _                                              -> relocated
             Nothing                                             -> AstError (toAnnote to) msg labels hints
-      where relocated = AstError (toAnnote to) msg ((from, "in code expanded here") : labels) hints
+      where relocated = AstError (toAnnote to) msg ((from, "In code expanded here:") : labels) hints
 
 -- | Run an action, relocating any error it raises to the given fallback
 --   location (see 'relocateErr').
@@ -169,38 +228,30 @@ relocatingNoLocTo to m = m `catchError` (throwError . relocateErrNoLoc to)
 failNowhere :: (PutMsg ex, Monad m, MonadState ex m, MonadError ex m) => Text -> m a
 failNowhere msg = get >>= throwError . putMsg msg
 
--- | Print an error to stderr, including a source snippet with a caret under
---   the offending region (and any secondary labels/hints) when the files can
---   be found on the load path.
+-- | Print an error to stderr, GHC-style, with a source excerpt and a caret
+--   under the offending region (plus any secondary "note" blocks) when the
+--   files can be found on the load path.
 printError :: MonadIO m => [FilePath] -> AstError -> m ()
-printError dirs (AstError an msg labels hints) = printDiag dirs "Error" an msg labels hints
+printError dirs (AstError an msg labels hints) = printDiag dirs SevError an msg labels hints
 
--- | Render a diagnostic header, source snippets for the primary and any
---   secondary locations, and any hints, to stderr. Source files are looked up
---   along the given search path.
-printDiag :: MonadIO m => [FilePath] -> Text -> Annote -> Text -> [Label] -> [Text] -> m ()
-printDiag dirs lbl an msg labels hints = liftIO $ do
-      primary     <- renderBlock dirs lbl an $ appendContext msg $ annContext an
+-- | Render a diagnostic (its header, indented message, source excerpt, and any
+--   secondary "note" blocks for labels and hints) to stderr, coloured when
+--   stderr is a terminal. Source files are looked up along the search path.
+printDiag :: MonadIO m => [FilePath] -> Severity -> Annote -> Text -> [Label] -> [Text] -> m ()
+printDiag dirs sev an msg labels hints = liftIO $ do
+      primary <- blockWithSource dirs sev an $ appendContext msg $ annContext an
       -- Drop labels that resolve to the primary location: a "note" pointing at
       -- the same place as the error itself is just noise.
-      labelBlocks <- mapM (uncurry $ renderBlock dirs "note") $ filter ((primSpan an /=) . primSpan . fst) labels
-      T.hPutStrLn stderr $ doc2Text $ vsep $ primary : labelBlocks <> hintDocs hints
+      labelBs <- mapM (uncurry $ blockWithSource dirs SevNote) $ filter ((primSpan an /=) . primSpan . fst) labels
+      let hintBs = map (\ h -> diagBlock SevNote noAnn h Nothing) hints
+      colour  <- hIsTerminalDevice stderr
+      T.hPutStr stderr $ (if colour then doc2Colour else doc2Text) (vsep $ primary : labelBs <> hintBs) <> "\n\n"
 
--- | One diagnostic block: the location header, the offending source line with a
---   caret, then the labelled message below it.
-renderBlock :: [FilePath] -> Text -> Annote -> Text -> IO (Doc ann)
-renderBlock dirs lbl an msg = do
-      snip <- maybe (pure Nothing) (locateSnippet dirs) $ primSpan an
-      pure $ vsep $ catMaybes [locLine an] <> maybeToList snip <> [text (lbl <> ":") <+> pretty msg]
-
--- | Notes (suggestions/hints) rendered below a diagnostic.
-hintDocs :: [Text] -> [Doc ann]
-hintDocs = map $ \ h -> text "note:" <+> pretty h
-
--- | Find a span's source file along the search path and render its offending
---   line with an underline.
-locateSnippet :: [FilePath] -> Span -> IO (Maybe (Doc ann))
-locateSnippet dirs sp = (renderSnippet sp =<<) <$> locateSource dirs (spanFile sp)
+-- | A 'diagBlock' with the source lines read from the load path.
+blockWithSource :: [FilePath] -> Severity -> Annote -> Text -> IO (Doc AnsiStyle)
+blockWithSource dirs sev an msg = do
+      msrc <- maybe (pure Nothing) (locateSource dirs . spanFile) $ primSpan an
+      pure $ diagBlock sev an msg msrc
 
 -- | Read a source file, trying it directly then relative to each search dir.
 locateSource :: [FilePath] -> FilePath -> IO (Maybe [Text])
@@ -210,26 +261,6 @@ locateSource dirs f = go $ f : map (</> f) dirs
             go (c : cs) = do
                   ex <- doesFileExist c
                   if ex then Just . T.lines <$> T.readFile c else go cs
-
--- | The offending source line with a caret underline beneath it, e.g.:
---
--- >    |
--- >  7 |   foo bar baz
--- >    |       ^^^^^^^
---
---   A multi-line span underlines from its start column to the end of the start
---   line. Returns 'Nothing' if the start line is out of range.
-renderSnippet :: Span -> [Text] -> Maybe (Doc ann)
-renderSnippet (Span _ (sl, sc) (el, ec)) ls
-      | sl >= 1, sl <= length ls = Just $ text bar $$ text srcLine $$ text caretLine
-      | otherwise                = Nothing
-      where src        = ls !! (sl - 1)
-            gutter     = showt sl
-            blankG     = T.replicate (T.length gutter) " "
-            bar        = blankG <> " |"
-            srcLine    = gutter <> " | " <> src
-            endCol     = if el == sl then ec else T.length src + 1
-            caretLine  = blankG <> " | " <> T.replicate (max 0 $ sc - 1) " " <> T.replicate (max 1 $ endCol - sc) "^"
 
 filePath :: FilePath -> SrcLoc
 filePath fp = SrcLoc fp (-1) (-1)
@@ -245,3 +276,7 @@ mark an = put $ AstError (toAnnote an) mempty [] []
 
 doc2Text :: Doc a -> Text
 doc2Text = renderStrict . layoutSmart defaultLayoutOptions
+
+-- | Render with ANSI colour escapes (for a terminal).
+doc2Colour :: Doc AnsiStyle -> Text
+doc2Colour = Term.renderStrict . layoutSmart defaultLayoutOptions

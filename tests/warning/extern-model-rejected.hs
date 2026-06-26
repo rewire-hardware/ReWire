@@ -1,4 +1,4 @@
--- EXPECT-WARNING: ignoring the Haskell model for extern someext
+-- EXPECT-WARNING: Ignoring the Haskell model for extern 'someext'
 -- A non-self-referential extern implementation that can't be compiled as an
 -- interpreter model (here: recursive) is neutered with a warning.
 {-# LANGUAGE DataKinds #-}
