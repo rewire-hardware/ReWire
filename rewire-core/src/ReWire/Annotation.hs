@@ -12,7 +12,7 @@ module ReWire.Annotation
       , Span (..)
       , Annotation (..)
       , Annotated (..)
-      , fromSrcSpanInfo, spanSrcSpanInfo
+      , fromSrcSpanInfo, spanSrcSpanInfo, srcAnnote
       , primSpan, annProv, annContext
       , toSrcSpanInfo
       , SrcSpanInfo (..), SrcSpan
@@ -92,6 +92,11 @@ unAnn = transform $ \ (_ :: Annote) -> noAnn
 -- | Build an annotation from a haskell-src-exts source span.
 locAnnote :: SrcSpanInfo -> Annote
 locAnnote ssi = Annote (FromSource $ fromSrcSpanInfo ssi) []
+
+-- | Build an annotation for an explicit source region: a file with 1-based
+--   (line, column) start and end positions.
+srcAnnote :: FilePath -> (Int, Int) -> (Int, Int) -> Annote
+srcAnnote f start end = Annote (FromSource $ Span f start end) []
 
 -- | The source span underlying an annotation, if it has one. Synthesized nodes
 --   yield the span of their first input.

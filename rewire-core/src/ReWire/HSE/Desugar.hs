@@ -425,7 +425,7 @@ desugarFuns = mempty
                   -- NOTE: can't type-annotate params without expanding type synonyms.
                   Match l' _ [p] rhs binds -> pure $ Alt l' p rhs binds
                   Match l' _ ps  rhs binds -> pure $ Alt l' (PTuple l' Boxed ps) rhs binds
-                  m                        -> failAt (ann m) $ "Unsupported decl syntax: " <> pack (show $ void m)
+                  m                        -> failAt (ann m) "unsupported declaration syntax."
 
 -- | Turns
 -- > case e of {...}
@@ -539,7 +539,7 @@ desugarDos = mempty { dsExp = TM $ \ case
                   [Qualifier _ e]          -> pure e
                   Qualifier l' e : stmts   -> App l' (App l' (Var l' $ UnQual l' $ Symbol l' ">>=") e) . Lambda l' [PWildCard l'] <$> transDo l stmts
                   LetStmt l' binds : stmts -> Let l' binds <$> transDo l stmts
-                  s : _                    -> failAt (ann s) $ "Unsupported syntax in do-block: " <> pack (prettyPrint $ void s)
+                  s : _                    -> failAt (ann s) "unsupported syntax in do-block."
                   []                       -> failAt l "Ill-formed do-block"
 
 normTyContext :: Monad m => Desugar m
@@ -566,11 +566,11 @@ desugarTyFuns = mempty { dsType = T $ \ case
 desugarLets :: (MonadState Fresh m, MonadError AstError m) => Desugar m
 desugarLets = mempty { dsExp = TM $ \ case
       Let _ (BDecls _ ds) e -> foldrM transLet e $ filter isPatBind ds
-      n@Let{}               -> failAt (ann n) "Unsupported let syntax"
+      n@Let{}               -> failAt (ann n) "unsupported let syntax."
       e                     -> pure e}
       where transLet :: (MonadState Fresh m, MonadError AstError m) => Decl Annote -> Exp Annote -> m (Exp Annote)
             transLet (PatBind l p (UnGuardedRhs l' e1) Nothing) inner = pure $ Case l e1 [Alt l p (UnGuardedRhs l' inner) Nothing]
-            transLet n _                                              = failAt (ann n) "Unsupported syntax in a let binding"
+            transLet n _                                              = failAt (ann n) "unsupported syntax in a let binding."
 
             isPatBind :: Decl Annote -> Bool
             isPatBind PatBind {} = True
@@ -658,7 +658,7 @@ desugarAsPats = mempty { dsAlt = TM $ \ case
                   PatTypeSig _ p _        -> patToExp p
                   -- PViewPat _exp _pat ->
                   PBangPat _ p            -> patToExp p
-                  p                       -> failAt (ann p) $ "Unsupported pattern: " <> pack (show $ void p)
+                  p                       -> failAt (ann p) "unsupported pattern."
 
 -- | Turns beta-redexes into cases. E.g.:
 -- > (\ x -> e2) e1

@@ -11,7 +11,7 @@
 --   cannot be reconstructed at all.
 module ReWire.Hyle.Parse (parseHyle, parseHyleText) where
 
-import ReWire.Annotation (Annote, noAnn)
+import ReWire.Annotation (Annote, noAnn, srcAnnote)
 import ReWire.BitVector (BV, bitVec)
 import ReWire.Error (failAt, MonadError, AstError)
 import ReWire.Hyle.Syntax
@@ -25,8 +25,9 @@ import Data.HashMap.Strict (HashMap)
 import Data.Text (Text, pack)
 import Data.Void (Void)
 import Numeric.Natural (Natural)
-import Text.Megaparsec (Parsec, many, try, (<|>), (<?>), manyTill, parse, between, errorBundlePretty, sepBy, sepBy1, notFollowedBy, optional, satisfy, eof, empty)
+import Text.Megaparsec (Parsec, many, try, (<|>), (<?>), manyTill, parse, between, errorBundlePretty, sepBy, sepBy1, notFollowedBy, optional, satisfy, eof, empty, getSourcePos)
 import Text.Megaparsec.Char (char, space1)
+import Text.Megaparsec.Pos (SourcePos (..), unPos)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet        as Set
@@ -119,12 +120,12 @@ register = do
       pure $ Register noAnn x sz bv
 
 inst :: Parser Instance
-inst = do
+inst = withSpan $ do
       keyword "instance"
       x  <- name
       ex <- keyword "of" *> name
       cs <- generics
-      pure $ Instance noAnn x ex cs
+      pure $ \ an -> Instance an x ex cs
 
 stmt :: Parser Stmt
 stmt = (SLet noAnn <$> (keyword "let" *> name) <*> (equals *> expr))
@@ -209,9 +210,9 @@ callE = do
 atomE :: Parser Exp
 atomE = do
       a  <- atomBase
-      foldl' (\ e (i, k) -> Slice noAnn i k e) a <$> many sliceSuffix
-      where sliceSuffix :: Parser (Index, Size)
-            sliceSuffix = brackets $ (,) <$> decimal <*> (symbol "+:" *> decimal)
+      foldl' (\ e (an, i, k) -> Slice an i k e) a <$> many sliceSuffix
+      where sliceSuffix :: Parser (Annote, Index, Size)
+            sliceSuffix = withSpan $ brackets $ (\ i k an -> (an, i, k)) <$> decimal <*> (symbol "+:" *> decimal)
 
 atomBase :: Parser Exp
 atomBase = Lit noAnn <$> lit
@@ -249,6 +250,16 @@ lexeme = L.lexeme space
 
 symbol :: Text -> Parser Text
 symbol = L.symbol space
+
+-- | Run a parser that builds a node from an annotation, supplying it the source
+--   span the parser consumed so the node carries a real source location.
+withSpan :: Parser (Annote -> a) -> Parser a
+withSpan p = do
+      s <- getSourcePos
+      f <- p
+      e <- getSourcePos
+      pure $ f $ srcAnnote (sourceName s) (pos s) (pos e)
+      where pos sp = (unPos $ sourceLine sp, unPos $ sourceColumn sp)
 
 keyword :: Text -> Parser ()
 keyword k = lexeme $ try $ string' k *> notFollowedBy identChar

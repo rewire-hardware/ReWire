@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Unsupported syntax in do-block
+-- EXPECT-ERROR: unsupported syntax in do-block
 {-# LANGUAGE RecursiveDo #-}
 import ReWire
 import ReWire.Bits

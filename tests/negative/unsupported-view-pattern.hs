@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Unsupported pattern
+-- EXPECT-ERROR: unsupported pattern
 {-# LANGUAGE ViewPatterns #-}
 import ReWire
 import ReWire.Bits

@@ -898,13 +898,13 @@ sizeOfW s an visited t = do
       sz <- case Map.lookup t m of
             Nothing -> case M.flattenTyApp t of
                   M.TyCon _ (n2s -> "Vec") : [M.evalNat -> Just n, t''] -> (fromIntegral n *) <$> sizeOfW s an visited t''
-                  M.TyCon _ (n2s -> "Vec") : [n, t'']                   -> failAt an $ s <> ": sizeOf: can't determine the size of a Vec."
+                  M.TyCon _ (n2s -> "Vec") : [n, t'']                   -> failAt an $ "can't determine the size of a Vec."
                                                                                     <> " (Vec " <> M.prettyTy n <> " " <> M.prettyTy t'' <> ")"
                   M.TyCon _ (n2s -> "Finite") : [M.evalNat -> Just n]   -> pure $ fromIntegral $ nbits n
-                  M.TyCon _ (n2s -> "Finite") : [n]                     -> failAt an $ s <> ": sizeOf: can't determine the size of a Finite."
+                  M.TyCon _ (n2s -> "Finite") : [n]                     -> failAt an $ "can't determine the size of a Finite."
                                                                                     <> " (Finite " <> M.prettyTy n <> ")"
                   M.TyCon _ c              : _
-                        | t `Set.member` visited                        -> failAt an $ s <> ": sizeOf: can't determine the size of a recursive datatype: " <> n2s c
+                        | t `Set.member` visited                        -> failAt an $ "can't determine the size of a recursive datatype: " <> n2s c
                         | otherwise                                     -> do
                               ctors      <- getCtors c
                               ctorWidths <- mapM (ctorWidth (Set.insert t visited) t) ctors

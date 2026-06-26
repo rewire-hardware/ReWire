@@ -61,7 +61,7 @@ toCrust rn = \ case
 
                   inls :: Map (S.Name ()) M.DefnAttr
                   inls = getInlines (\ b -> if b then M.Inline else M.NoInline) ds
-      m                                                                -> failAt (ann m) "Unsupported module syntax"
+      m                                                                -> failAt (ann m) "unsupported module syntax."
 
 transData :: (MonadError AstError m, Fresh m) => Renamer -> [M.DataDefn] -> Decl Annote -> m [M.DataDefn]
 transData rn datas = \ case
@@ -118,7 +118,7 @@ transDef rn tys inls defs = \ case
       RulePragmaDecl {}                                         -> pure defs -- TODO(chathhorn): elide
       DeprPragmaDecl {}                                         -> pure defs -- TODO(chathhorn): elide
       WarnPragmaDecl {}                                         -> pure defs -- TODO(chathhorn): elide
-      d                                                         -> failAt (ann d) $ "Unsupported definition syntax: " <> pack (prettyPrint $ void d)
+      d                                                         -> failAt (ann d) "unsupported definition syntax."
 
 transTyVar :: S.TyVarBind () -> Name M.Ty
 transTyVar = \ case
@@ -131,7 +131,7 @@ transCon rn ks tvs tc = \ case
             let tvs' = zipWith (M.TyVar l) ks tvs
             t <- foldr M.arr (foldl' (M.TyApp l) (M.TyCon l tc) tvs') <$> mapM (transTy rn) tys
             pure $ M.DataCon l (s2n $ rename Value rn x) (tvs |-> t)
-      d                                         -> failAt (ann d) "Unsupported Ctor syntax"
+      d                                         -> failAt (ann d) "unsupported constructor syntax."
 
 transTy :: (Fresh m, MonadError AstError m) => Renamer -> Type Annote -> m M.Ty
 transTy rn = \ case
@@ -145,7 +145,7 @@ transTy rn = \ case
       TyInfix l a x b -> M.TyApp l <$> (M.TyApp l (M.TyCon l (s2n $ rename Type rn x')) <$> transTy rn a) <*> transTy rn b
             where x' | PromotedName   _ qn <- x = qn
                      | UnpromotedName _ qn <- x = qn
-      t                -> failAt (ann t) $ "Unsupported type syntax: " <> pack (prettyPrint $ void t)
+      t                -> failAt (ann t) "unsupported type syntax."
 
 freshKVar :: Fresh m => Text -> m M.Kind
 freshKVar n = M.KVar <$> fresh (s2n $ "?K_" <> n)
@@ -175,7 +175,7 @@ transExp rn = \ case
       Lit l (String _ s _)   -> pure $ M.LitStr l Nothing $ pack s
       List l es              -> M.LitList l Nothing Nothing <$> mapM (transExp rn) es
       ExpTypeSig _ e t       -> M.setTyAnn <$> (Just . M.poly' <$> transTy rn t) <*> transExp rn e
-      e                      -> failAt (ann e) $ "Unsupported expression syntax: " <> pack (prettyPrint $ void e)
+      e                      -> failAt (ann e) "unsupported expression syntax."
       where getVars :: Pat Annote -> [S.Name ()]
             getVars p = [void x | PVar (_::Annote) x <- query p]
 
@@ -188,7 +188,7 @@ transPat rn = \ case
       PVar l x         -> pure $ M.PatVar l (Embed Nothing) (Embed Nothing) (mkUId $ void x)
       PWildCard l      -> pure $ M.PatWildCard l (Embed Nothing) (Embed Nothing)
       PatTypeSig _ p t -> M.setTyAnn <$> (Just . M.poly' <$> transTy rn t) <*> transPat rn p
-      p                -> failAt (ann p) $ "Unsupported syntax in a pattern: " <> pack (prettyPrint $ void p)
+      p                -> failAt (ann p) "unsupported syntax in a pattern."
 
 -- Note: runs before desugaring.
 -- TODO(chathhorn): GADT style decls?

@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Unsupported definition syntax
+-- EXPECT-ERROR: unsupported definition syntax
 -- Type class instances are not part of the supported Haskell subset.
 {-# LANGUAGE DataKinds #-}
 import ReWire

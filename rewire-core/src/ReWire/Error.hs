@@ -23,18 +23,18 @@ import Prelude hiding ((<>), lines, unlines)
 
 import ReWire.Annotation (Annotation (..), Annote, Span (..), annContext, primSpan, toSrcSpanInfo, noAnn)
 import ReWire.Config (Config, noWarn, wError, loadPath)
-import ReWire.Pretty (($$), text, int, showt, Pretty (pretty), (<>), (<+>), nest, vsep, Doc, defaultLayoutOptions, layoutSmart, renderStrict)
+import ReWire.Pretty (($$), text, int, showt, Pretty (pretty), (<>), (<+>), vsep, Doc, defaultLayoutOptions, layoutSmart, renderStrict)
 import ReWire.Orphans ()
 
 import Control.Lens ((^.))
-import Data.Maybe (maybeToList)
+import Data.Maybe (maybeToList, catMaybes)
 import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 import Control.Monad.Except (MonadError (..), ExceptT (..), runExceptT, throwError)
 import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.State (StateT (..), MonadState (..))
 import Control.Monad.Trans (MonadTrans (..))
-import Data.Text (Text)
-import Language.Haskell.Exts.SrcLoc (SrcLoc (..), SrcInfo (..), SrcSpanInfo, noLoc)
+import Data.Text (Text, pack)
+import Language.Haskell.Exts.SrcLoc (SrcLoc (..), SrcInfo (..), noLoc)
 import System.Directory (doesFileExist)
 import System.FilePath ((</>))
 import System.IO (stderr)
@@ -56,8 +56,9 @@ instance PutMsg AstError where
       putMsg msg (AstError an _ ls hs) = AstError an msg ls hs
 
 instance Pretty AstError where
-      pretty (AstError an msg labels hints) =
-            vsep $ diagHdr "Error" an msg : map (uncurry labelHdr) labels <> hintDocs hints
+      pretty (AstError an msg labels hints) = vsep $
+            blockNoSnip "Error" an (appendContext msg $ annContext an)
+                  : map (uncurry $ blockNoSnip "note") labels <> hintDocs hints
 
 -- | A non-fatal diagnostic: printed to stderr when emitted (see 'warnAt'),
 --   or promoted to an 'AstError' under -Werror.
@@ -65,10 +66,23 @@ data Warning = Warning !Annote !Text
       deriving (Eq, Ord)
 
 instance Pretty Warning where
-      pretty (Warning an msg) = diagHdr "Warning" an msg
+      pretty (Warning an msg) = blockNoSnip "Warning" an $ appendContext msg $ annContext an
 
-diagHdr :: Text -> Annote -> Text -> Doc ann
-diagHdr lbl an msg = msgHdr lbl (toSrcSpanInfo an) $ appendContext msg $ annContext an
+-- | A diagnostic block without a source snippet (the location header, then the
+--   labelled message below it), used where the source text isn't available.
+blockNoSnip :: Text -> Annote -> Text -> Doc ann
+blockNoSnip lbl an msg = vsep $ catMaybes [locLine an] <> [text (lbl <> ":") <+> pretty msg]
+
+-- | The "file:line:col:" location header for an annotation, or Nothing if it
+--   has no usable source position.
+locLine :: Annote -> Maybe (Doc ann)
+locLine an
+      | getPointLoc l == noLoc = Nothing
+      | otherwise              = Just $ text (T.pack file) <> num r <> num c <> text ":"
+      where l = toSrcSpanInfo an
+            num :: Int -> Doc ann
+            num n = if n == -1 then mempty else text ":" <> int n
+            SrcLoc file r c = getPointLoc l
 
 -- | Append a node's context breadcrumbs below its message, one per line.
 appendContext :: Text -> [Text] -> Text
@@ -85,7 +99,7 @@ instance MonadTrans (SyntaxErrorT ex) where
       lift = SyntaxErrorT . lift . lift
 
 instance (PutMsg ex, Monad m) => MonadFail (SyntaxErrorT ex m) where
-      fail = failNowhere . showt
+      fail = failNowhere . pack
 
 instance Monad m => Monad (SyntaxErrorT ex m) where
       (SyntaxErrorT m) >>= f = SyntaxErrorT $ m >>= unwrap . f
@@ -93,16 +107,6 @@ instance Monad m => Monad (SyntaxErrorT ex m) where
 instance Monad m => MonadError ex (SyntaxErrorT ex m) where
       throwError e = SyntaxErrorT (throwError e)
       catchError (SyntaxErrorT m) f = SyntaxErrorT (catchError m (unwrap . f))
-
-msgHdr :: Text -> SrcSpanInfo -> Text -> Doc ann
-msgHdr lbl l msg = if getPointLoc l == noLoc
-      then text (lbl <> ":") <+> pretty msg
-      else loc $$ nest 4 (text (lbl <> ":") <+> pretty msg)
-      where loc :: Doc ann
-            loc = text (T.pack file) <> num r <> num c <> text ":"
-            num :: Int -> Doc ann
-            num n = if n == -1 then mempty else text ":" <> int n
-            SrcLoc file r c = getPointLoc l
 
 failAt :: (MonadError AstError m, Annotation an) => an -> Text -> m a
 failAt an msg = throwError $ AstError (toAnnote an) msg [] []
@@ -176,24 +180,22 @@ printError dirs (AstError an msg labels hints) = printDiag dirs "Error" an msg l
 --   along the given search path.
 printDiag :: MonadIO m => [FilePath] -> Text -> Annote -> Text -> [Label] -> [Text] -> m ()
 printDiag dirs lbl an msg labels hints = liftIO $ do
-      primSnip    <- snippetFor an
+      primary     <- renderBlock dirs lbl an $ appendContext msg $ annContext an
       -- Drop labels that resolve to the primary location: a "note" pointing at
       -- the same place as the error itself is just noise.
-      labelBlocks <- mapM labelBlock $ filter ((primSpan an /=) . primSpan . fst) labels
-      let body = (diagHdr lbl an msg : maybeToList primSnip) <> concat labelBlocks <> hintDocs hints
-      T.hPutStrLn stderr $ doc2Text $ vsep body
-      where snippetFor :: Annote -> IO (Maybe (Doc ann))
-            snippetFor a = maybe (pure Nothing) (locateSnippet dirs) $ primSpan a
-            labelBlock :: Label -> IO [Doc ann]
-            labelBlock (a, note) = (labelHdr a note :) . maybeToList <$> snippetFor a
+      labelBlocks <- mapM (uncurry $ renderBlock dirs "note") $ filter ((primSpan an /=) . primSpan . fst) labels
+      T.hPutStrLn stderr $ doc2Text $ vsep $ primary : labelBlocks <> hintDocs hints
 
--- | A secondary "note:" header pointing at a related source location.
-labelHdr :: Annote -> Text -> Doc ann
-labelHdr a = msgHdr "note" (toSrcSpanInfo a)
+-- | One diagnostic block: the location header, the offending source line with a
+--   caret, then the labelled message below it.
+renderBlock :: [FilePath] -> Text -> Annote -> Text -> IO (Doc ann)
+renderBlock dirs lbl an msg = do
+      snip <- maybe (pure Nothing) (locateSnippet dirs) $ primSpan an
+      pure $ vsep $ catMaybes [locLine an] <> maybeToList snip <> [text (lbl <> ":") <+> pretty msg]
 
--- | Suggested fixes, rendered below a diagnostic.
+-- | Notes (suggestions/hints) rendered below a diagnostic.
 hintDocs :: [Text] -> [Doc ann]
-hintDocs = map $ \ h -> nest 2 $ text "help:" <+> pretty h
+hintDocs = map $ \ h -> text "note:" <+> pretty h
 
 -- | Find a span's source file along the search path and render its offending
 --   line with an underline.
