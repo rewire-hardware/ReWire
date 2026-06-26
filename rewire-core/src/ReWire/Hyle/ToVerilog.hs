@@ -18,7 +18,7 @@
 --   sequential-extern instance.
 module ReWire.Hyle.ToVerilog (compileProgram, testbench, clockReset) where
 
-import ReWire.Annotation (Annote)
+import ReWire.Annotation (Annote, Annotated (ann))
 import ReWire.BitVector (BV, width, bitVec, zeros, ones, lsb1, szBitRep)
 import ReWire.Config (Config, ResetFlag (..))
 import ReWire.Hyle.Interp (Ins, subRange, inputValue, yamlPrefixes)
@@ -193,7 +193,7 @@ compileDevice conf xenv (M.Device an top ins outs regs insts body) = do
                         wire what p sig = case (p, sig) of
                               (Nothing, _)      -> pure Nothing
                               (Just p', Just s) -> pure $ Just (p', LVal $ V.Name s)
-                              (Just _, Nothing) -> failAt an $ "external module requires a " <> what <> " signal, but we have no " <> what <> " to give it."
+                              (Just _, Nothing) -> failAt (ann e) $ "external module requires a " <> what <> " signal, but we have no " <> what <> " to give it."
 
             driveIn :: (MonadState SigInfo m', MonadError AstError m') => LEnv -> M.Name -> (M.Name, M.Size) -> m' ((V.Name, V.Exp), [V.Stmt])
             driveIn lenv x (p, _) = case [ e | M.SInstIn _ x' p' e <- body, x' == x, p' == p ] of

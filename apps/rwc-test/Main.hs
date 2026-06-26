@@ -216,9 +216,14 @@ testNegative fn = testCase (takeBaseName fn <> " (expected error)") $ do
       r      <- withStderrTo errFile $ try $ withArgs ([fn, "-o", fn -<.> "out.sv"] <> fromCore <> flags) RWC.main
       errTxt <- readFile errFile
       case r of
-            Left (ExitFailure _) -> mapM_ (\ e ->
-                  assertBool ("compilation failed as expected, but the error does not mention " <> show e <> "; stderr:\n" <> errTxt)
-                        $ e `isInfixOf` errTxt) expected
+            Left (ExitFailure _) -> do
+                  mapM_ (\ e ->
+                        assertBool ("compilation failed as expected, but the error does not mention " <> show e <> "; stderr:\n" <> errTxt)
+                              $ e `isInfixOf` errTxt) expected
+                  -- The reported error must point back at the offending source
+                  -- file (a located diagnostic), not just print a bare message.
+                  assertBool ("compilation failed as expected, but the error does not reference the source file " <> show (takeFileName fn) <> "; stderr:\n" <> errTxt)
+                        $ takeFileName fn `isInfixOf` errTxt
             Left ExitSuccess     -> assertFailure "expected compilation to fail, but rwc exited successfully"
             Right ()             -> assertFailure "expected compilation to fail, but it succeeded"
 

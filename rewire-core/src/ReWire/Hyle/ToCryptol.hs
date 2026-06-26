@@ -65,7 +65,7 @@ type TCM m = StateT TCS m
 compileProgram :: forall m. MonadError AstError m => Config -> Program -> m Cry.Module
 compileProgram _conf (Program exts ds dev) = do
       case devInstances dev of
-            Instance _ _ ex _ : _ -> failAt (ann dev) $ "clocked extern " <> ex
+            Instance an _ ex _ : _ -> failAt an $ "clocked extern " <> ex
                                   <> " cannot be translated to a pure Cryptol function."
             []                    -> pure ()
       defns <- mapM (transDefn env) ds

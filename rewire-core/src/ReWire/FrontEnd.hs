@@ -8,7 +8,7 @@ module ReWire.FrontEnd
 
 import ReWire.Annotation (noAnn)
 import ReWire.Config (Config, Language (..), getOutFile, target, cycles, inputsFile, defaultInputsFile, source, rtlOpt, testbench, pDebug, loadPath)
-import ReWire.Error (MonadError, AstError, runSyntaxError, failAt, warnAt, printError)
+import ReWire.Error (MonadError, AstError, runSyntaxError, failAt, warnAt, printError, relocatingNoLocTo, filePath)
 import ReWire.Hyle.Interp (Ins, run)
 import ReWire.Hyle.Parse (parseHyle)
 import ReWire.Hyle.Syntax (Program, progDevice)
@@ -46,7 +46,7 @@ compileFile :: MonadIO m => Config -> FilePath -> m ()
 compileFile conf filename = do
       verb $ "Compiling: " <> pack filename
 
-      runSyntaxError (load >>= Hyle.check >>= compile)
+      runSyntaxError (relocatingNoLocTo (filePath filename) $ load >>= Hyle.check >>= compile)
             >>= either (\ err -> printError (conf ^. loadPath) err >> liftIO exitFailure) pure
 
       where load :: (MonadError AstError m, MonadState AstError m, MonadFail m, MonadIO m) => m Program

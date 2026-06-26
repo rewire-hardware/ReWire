@@ -10,7 +10,7 @@ import ReWire.Annotation (Annote (MsgAnnote), ann)
 import ReWire.Crust.Syntax (Exp (..), Ty (..), Kind (..), Poly (..), Pat (..), MatchPat (..), FreeProgram, Defn (..), DataDefn (..), Builtin (..), DataCon (..), DataConId, builtinName)
 import ReWire.Crust.Types (mkArrowTy, poly, arrowRight, (|->), concrete, kblank, tyAnn, setTyAnn, flattenArrow, strTy, intTy, listTy, vecTy, arr, arrowLeft, dstPoly1, zeroP1, minusP1, pickVar, poly1Ty, natP1, prettyTy)
 import ReWire.Crust.Util (transMPat, patVars)
-import ReWire.Error (AstError, MonadError, failAt)
+import ReWire.Error (AstError, MonadError, failAt, relocatingTo)
 import ReWire.Fix (fixOn)
 import ReWire.Pretty (showt, prettyPrint, Pretty (..))
 import ReWire.SYB (transform, query)
@@ -431,7 +431,7 @@ tcDefn start d  = flip evalStateT mempty $ do
           tbody      = iterate arrowRight t !! length vs
 
       (body', _) <- localAssumps (`Map.union` (Map.fromList $ zip vs $ map (poly []) targs))
-                         $ tcExp tbody body
+                         $ relocatingTo an $ tcExp tbody body
 
       s <- gets compress
       let body'' = transform (substTy s) body'

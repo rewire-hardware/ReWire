@@ -8,7 +8,7 @@ import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Pat (..), MatchPat (..
 import ReWire.Crust.TypeCheck (unify')
 import ReWire.Crust.Types (tupleTy, mkArrowTy, typeOf, arrowLeft, paramTys, isReacT, codomTy, (|->), isStateT, dstArrow, dstStateT, dstTyApp, dstReacT, nilTy)
 import ReWire.Crust.Util (mkApp, mkTuplePat, mkTuple, nil, isPrim, patVars, toVar, toPatVar, transPat, transMPat, mkLam)
-import ReWire.Error (failAt, failAtWith, failInternal, MonadError, AstError)
+import ReWire.Error (failAt, failAtWith, failInternal, relocatingTo, MonadError, AstError)
 import ReWire.Pretty (TextShow (showb, showt), fromText, prettyPrint)
 import ReWire.Unbound (freshVar, Fresh, s2n, n2s, bind, Name, Embed (Embed), unbind)
 
@@ -241,7 +241,7 @@ purifyStateDefn rho ms d = do
       (args, e)    <- unbind body
       nstos        <- freshVars "sigma" ms
       let stos      = toVar (ann d) <$> nstos
-      e'           <- purifyStateBody rho stos ms (length ms - length ms') e
+      e'           <- relocatingTo (ann d) $ purifyStateBody rho stos ms (length ms - length ms') e
       pure $ d { defnPolyTy = [] |-> p_pure, defnBody = Embed $ bind (args <> (snd <$> nstos)) e' }
       where Embed body = defnBody d
             Embed phi  = defnPolyTy d
@@ -258,7 +258,7 @@ purifyResDefn start rho ms d = do
 
       nstos         <- freshVars "sto" ms
       let stos       = toVar an <$> nstos
-      e'            <- purifyResBody start rho i o a stos ms e
+      e'            <- relocatingTo an $ purifyResBody start rho i o a stos ms e
 
       if defnName d /= start
             then pure $ d { defnPolyTy = [] |-> pure_ty, defnBody = Embed $ bind (args <> (snd <$> nstos)) e' }
@@ -507,7 +507,7 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
             classifyRCases e >>= \ case
                   RReturn {} -> pure ()
                   RLift {}   -> pure ()
-                  c          -> failAt an
+                  c          -> failAt (ann e)
                         $ "the left-hand side of this bind (" <> showt c
                         <> ") might pause: a signal result may only be consumed by a function call, and loops and extrude must be in tail position."
             -- purify the types of e and g

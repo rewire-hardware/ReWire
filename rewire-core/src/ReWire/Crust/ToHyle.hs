@@ -14,7 +14,7 @@ module ReWire.Crust.ToHyle (toHyle) where
 
 import ReWire.Config (Config, inputSigs, outputSigs, stateSigs, top)
 import ReWire.Annotation (Annote, noAnn, Annotated (ann))
-import ReWire.Error (failAt, failAtWith, failInternal, warnAt, AstError, MonadError, Warning (..))
+import ReWire.Error (failAt, failAtWith, failInternal, warnAt, relocatingTo, AstError, MonadError, Warning (..))
 import ReWire.Pretty (showt, prettyPrint)
 import ReWire.Unbound (Name, Fresh, runFreshM, Embed (..), unbind, n2s)
 import ReWire.BitVector (BV, bitVec, zeros, nbits)
@@ -75,7 +75,7 @@ toHyle conf start (ts, _, vs) = do
 
 toHyle' :: (Fresh m, MonadError AstError m, MonadFail m) => Config -> Name M.Exp -> ([M.DataDefn], [M.Defn]) -> StateT S m A.Program
 toHyle' conf start (ts, vs) = do
-      mapM_ (\ x -> ((`runReaderT` conMap) . sizeOf (n2s (M.dataName x)) noAnn . M.TyCon noAnn . M.dataName) x) ts
+      mapM_ (\ x -> ((`runReaderT` conMap) . sizeOf (n2s (M.dataName x)) (ann x) . M.TyCon (ann x) . M.dataName) x) ts
       let intSz = 128 -- width of the Integer type
       modify $ \ s -> s { sSizes = Map.singleton (M.intTy noAnn) intSz }
       buildNameMap vs
@@ -211,7 +211,7 @@ transDefn conf start conMap = \ case
                      n'   <- transName n
                      sig  <- runReaderT (transType t') conMap
                      let ps = zipWith (\ i _ -> "$" <> showt (i :: Int)) [0 ..] xs
-                     body <- runReaderT (runReaderT (transExp e') conMap) (Map.fromList $ zip xs ps)
+                     body <- relocatingTo an $ runReaderT (runReaderT (transExp e') conMap) (Map.fromList $ zip xs ps)
                      pure $ Right $ A.Defn an n' sig ps body
       where -- | state0 takes the (dead) initial stores as arguments when the
             --   device pauses before extruding; look through them.
@@ -371,7 +371,7 @@ transBuiltin an' t' an theExp = case theExp of
             let nBits = fromIntegral $ j + 1 - i
                 off   = (-i) - fromIntegral nBits
             subElems an arg off nBits
-      (M.BitSlice, _) -> failAt an "rwPrimBitSlice must have arguments (finite j) (finite i) with LitInts"
+      (M.BitSlice, _) -> failAt an' "rwPrimBitSlice must have arguments (finite j) (finite i) with LitInts"
       (M.VecIndex, [arg, i]) -> vecIndex arg i
       (M.VecIndexProxy, [arg, p]) -> do
             i <- checkProxyArg "rwPrimVecIndexProxy" p
@@ -464,7 +464,7 @@ transBuiltin an' t' an theExp = case theExp of
             | (arity <$> M.typeOf a) == Just (length args) -> do
             sz    <- sizeOf' "rwPrimExtern" an t'
             args' <- mapM transExp args
-            applyExtern an sz (ps, clk, rst, as, rs, s) a args'
+            applyExtern an' sz (ps, clk, rst, as, rs, s) a args'
       (M.Extern,  _) -> failInternal an "encountered not-fully-applied extern (after inlining)."
       (b, _)         -> failAt an ("encountered unsupported builtin use: rwPrim" <> showt b <> ".")
 

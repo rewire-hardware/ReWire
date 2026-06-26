@@ -10,6 +10,7 @@ module ReWire.Error
       , MonadError
       , mark
       , failAt, failAt', failAtWith, failInternal
+      , relocateErr, relocatingTo, relocatingNoLocTo
       , failNowhere
       , warnAt
       , filePath
@@ -129,6 +130,37 @@ warnAt conf an msg
 -- | Like failAt, but include an extra bit of data on failure.
 failAt' :: (MonadError (ex, AstError) m, Annotation an) => ex -> an -> Text -> m a
 failAt' ex an msg = throwError (ex, AstError (toAnnote an) msg [] [])
+
+-- | Re-point a diagnostic at a fallback location when it has none, or when it
+--   resolves to a different source file than the fallback — typically because
+--   the error surfaced inside inlined library code while compiling a user
+--   definition. The original location, when it had one, is kept as a secondary
+--   note so the expansion site stays visible.
+relocateErr :: Annotation an => an -> AstError -> AstError
+relocateErr to e@(AstError from msg labels hints) = case primSpan $ toAnnote to of
+      Nothing -> e
+      Just toSpan -> case primSpan from of
+            Just fromSpan | spanFile fromSpan == spanFile toSpan -> e
+            Just _                                              -> relocated
+            Nothing                                             -> AstError (toAnnote to) msg labels hints
+      where relocated = AstError (toAnnote to) msg ((from, "in code expanded here") : labels) hints
+
+-- | Run an action, relocating any error it raises to the given fallback
+--   location (see 'relocateErr').
+relocatingTo :: (MonadError AstError m, Annotation an) => an -> m a -> m a
+relocatingTo to m = m `catchError` (throwError . relocateErr to)
+
+-- | Give a fallback location only to diagnostics that have none, leaving
+--   already-located errors untouched. Used at the top of the pipeline so that
+--   a whole-program error (no single offending node) still names the file
+--   being compiled.
+relocateErrNoLoc :: Annotation an => an -> AstError -> AstError
+relocateErrNoLoc to (AstError from msg labels hints)
+      | Nothing <- primSpan from = AstError (toAnnote to) msg labels hints
+relocateErrNoLoc _ e = e
+
+relocatingNoLocTo :: (MonadError AstError m, Annotation an) => an -> m a -> m a
+relocatingNoLocTo to m = m `catchError` (throwError . relocateErrNoLoc to)
 
 failNowhere :: (PutMsg ex, Monad m, MonadState ex m, MonadError ex m) => Text -> m a
 failNowhere msg = get >>= throwError . putMsg msg

@@ -18,7 +18,7 @@
 --   VHDL implementations in the test suite already use.
 module ReWire.Hyle.ToVHDL (compileProgram, testbench) where
 
-import ReWire.Annotation (Annote)
+import ReWire.Annotation (Annote, Annotated (ann))
 import ReWire.BitVector (BV, width, bitVec, zeros, ones, lsb1)
 import ReWire.Config (Config, ResetFlag (..), vhdlPackages)
 import ReWire.Hyle.Interp (Ins, subRange, inputValue, yamlPrefixes)
@@ -197,7 +197,7 @@ compileDevice conf xenv (M.Device an top ins outs regs insts body) = do
                         port' what p sig = case (p, sig) of
                               (Nothing, _)      -> pure Nothing
                               (Just p', Just s) -> pure $ Just (p', H.Var s)
-                              (Just _, Nothing) -> failAt an $ "external module requires a " <> what <> " signal, but we have no " <> what <> " to give it."
+                              (Just _, Nothing) -> failAt (ann e) $ "external module requires a " <> what <> " signal, but we have no " <> what <> " to give it."
 
             driveIn :: (MonadState TS m', MonadError AstError m') => LEnv -> M.Name -> (M.Name, M.Size) -> m' ((H.Name, H.Exp), [H.Stmt])
             driveIn lenv x (p, sz) = case [ e | M.SInstIn _ x' p' e <- body, x' == x, p' == p ] of

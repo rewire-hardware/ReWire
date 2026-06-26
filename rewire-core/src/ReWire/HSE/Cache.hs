@@ -16,7 +16,7 @@ module ReWire.HSE.Cache
 
 import ReWire.Annotation (Annotation, SrcSpanInfo)
 import ReWire.Config (Config, loadPath, pDebug)
-import ReWire.Error (failAt, AstError, MonadError, filePath)
+import ReWire.Error (failAt, AstError, MonadError, filePath, relocatingTo)
 import ReWire.HSE.Desugar (addMainModuleHead)
 import ReWire.HSE.Parse (tryParseInDir)
 import ReWire.HSE.Rename (Exports, Renamer, fromImps, toFilePath)
@@ -73,12 +73,13 @@ getModuleWith translate conf pwd fp = pDebug conf ("Fetching module: " <> pack f
       where mkRenamer :: FilePath -> S.Module SrcSpanInfo -> Cache mod m Renamer
             mkRenamer pwd' m = extendWithGlobs m . mconcat <$> mapM mkRenamer' (getImps m)
                   where mkRenamer' :: ImportDecl SrcSpanInfo -> Cache mod m Renamer
-                        mkRenamer' (ImportDecl _ (void -> m) quald _ _ _ (fmap void -> as) specs) = do
-                              (_, exps) <- getModuleWith translate conf pwd' $ toFilePath m
+                        mkRenamer' (ImportDecl l (void -> m) quald _ _ _ (fmap void -> as) specs) = do
+                              (_, exps) <- relocatingTo l $ getModuleWith translate conf pwd' $ toFilePath m
                               fromImps m quald exps as specs
 
             loadImports :: Annotation a => FilePath -> S.Module a -> Cache mod m mod
-            loadImports pwd' = fmap mconcat . mapM (fmap fst . getModuleWith translate conf pwd' . toFilePath . void . importModule) . getImps
+            loadImports pwd' = fmap mconcat . mapM loadImp . getImps
+                  where loadImp imp@(ImportDecl l _ _ _ _ _ _ _) = fst <$> relocatingTo l (getModuleWith translate conf pwd' $ toFilePath $ void $ importModule imp)
 
             elideDot :: FilePath -> FilePath
             elideDot = \ case
