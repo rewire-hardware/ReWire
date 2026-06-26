@@ -14,7 +14,7 @@ module ReWire.Crust.ToHyle (toHyle) where
 
 import ReWire.Config (Config, inputSigs, outputSigs, stateSigs, top)
 import ReWire.Annotation (Annote, noAnn, Annotated (ann))
-import ReWire.Error (failAt, warnAt, AstError, MonadError, Warning (..))
+import ReWire.Error (failAt, failAtWith, warnAt, AstError, MonadError, Warning (..))
 import ReWire.Pretty (showt, prettyPrint)
 import ReWire.Unbound (Name, Fresh, runFreshM, Embed (..), unbind, n2s)
 import ReWire.BitVector (BV, bitVec, zeros, nbits)
@@ -706,7 +706,8 @@ applyExtern an sz (ps, clk, rst, as, rs, s) a args = do
                   , A.extGenerics new == A.extGenerics old = case (A.extModel new, A.extModel old) of
                         (Just g1, Just g2) | g1 /= g2 -> failAt an $ "toHyle: extern " <> s <> " has conflicting models (" <> g1 <> ", " <> g2 <> ")"
                         (mg, mg')                     -> pure $ old { A.extModel = maybe mg' Just mg }
-                  | otherwise = failAt an $ "toHyle: extern " <> s <> " is used with inconsistent signatures"
+                  | otherwise = failAtWith an ("extern " <> s <> " is used with inconsistent signatures")
+                        [(ann old, "first used here")] []
 
 ---
 --- Hoisting clocked externs into device instances.

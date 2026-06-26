@@ -8,7 +8,7 @@ import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Pat (..), MatchPat (..
 import ReWire.Crust.TypeCheck (unify')
 import ReWire.Crust.Types (tupleTy, mkArrowTy, typeOf, arrowLeft, paramTys, isReacT, codomTy, (|->), isStateT, dstArrow, dstStateT, dstTyApp, dstReacT, nilTy)
 import ReWire.Crust.Util (mkApp, mkTuplePat, mkTuple, nil, isPrim, patVars, toVar, toPatVar, transPat, transMPat, mkLam)
-import ReWire.Error (failAt, MonadError, AstError)
+import ReWire.Error (failAt, failAtWith, MonadError, AstError)
 import ReWire.Pretty (TextShow (showb, showt), fromText, prettyPrint)
 import ReWire.Unbound (freshVar, Fresh, s2n, n2s, bind, Name, Embed (Embed), unbind)
 
@@ -48,7 +48,8 @@ purify start (ts, syns, ds) = do
       (smds, notSmds)     <- partitionEithers <$> mapM isStateMonadicDefn ds
       (rmds, ods)         <- partitionEithers <$> mapM isReacMonadicDefn notSmds
 
-      maybe (failAt noAnn $ "No definition for start function (" <> prettyPrint start <> ") found!")
+      maybe (failAtWith noAnn ("No definition for start function (" <> prettyPrint start <> ") found!")
+                  [] ["Define a function named " <> prettyPrint start <> ", or select a different entry point with --start=<name>."])
             (projDefnTy >=> checkStartType)
             $ find ((== start) . defnName) rmds
 
