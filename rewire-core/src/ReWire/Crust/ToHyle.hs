@@ -470,7 +470,7 @@ transBuiltin an' t' an theExp = case theExp of
 
       where subElems :: (Fresh m, MonadError AstError m, MonadState S m) => Annote -> M.Exp -> Integer -> Natural -> TCM m A.Exp
             subElems an'' arg i nElems = do
-                  tyElem <- maybe (failAt (ann arg) "subElems: non-vector type argument to built-in vector function") pure
+                  tyElem <- maybe (failAt (ann arg) "non-vector type argument to built-in vector function") pure
                           $ M.typeOf arg >>= M.vecElemTy
                   szElem <- fromIntegral <$> sizeOf "subElems" an'' tyElem
                   arg'   <- transExp arg
@@ -481,7 +481,7 @@ transBuiltin an' t' an theExp = case theExp of
                       n   = nElems * fromIntegral szElem
 
                   unless (sz >= off + n)
-                        $ failAt an'' $ "subElems: invalid bit slice (offset: " <> showt i <> ", num elems: " <> showt nElems <> ") from object size " <> showt sz <> "."
+                        $ failAt an'' $ "invalid bit slice (offset: " <> showt i <> ", num elems: " <> showt nElems <> ") from object size " <> showt sz <> "."
 
                   -- LSB offset of the slice: fields count from the MSB end.
                   let lsbOff = sz - off - n
@@ -808,7 +808,7 @@ hoistInstances p@(A.Program exts ds _)
                               i  <- freshLocal "$x"
                               ex <- gets $ Map.lookup x . sExterns
                               case ex of
-                                    Nothing -> failAt an' $ "hoistInstances: unknown extern: " <> x
+                                    Nothing -> failAt an' $ "unknown extern: " <> x
                                     Just e  -> do
                                           let inst   = A.Instance an' i x cs
                                               drives = [ A.SInstIn an' i p arg | ((p, _), arg) <- zip (A.extInputs e) es' ]
@@ -911,7 +911,7 @@ sizeOfW s an visited t = do
                               pure $ fromIntegral (nbits $ genericLength ctors) + maximum (0 : ctorWidths)
                   M.TyApp {}               : _                          -> failInternal an $ s <> ": sizeOf: got TyApp after flattening (rwc bug): " <> M.prettyTy t
                   M.TyVar {}               : _                          -> pure 0
-                  _                                                     -> failAt an $ "sizeOf: " <> s <> ": couldn't calculate the size of a type: " <> M.prettyTy t
+                  _                                                     -> failAt an $ s <> ": couldn't calculate the size of a type: " <> M.prettyTy t
             Just sz -> pure sz
       modify $ \ st -> st { sSizes = Map.insert t sz $ sSizes st }
       pure sz
