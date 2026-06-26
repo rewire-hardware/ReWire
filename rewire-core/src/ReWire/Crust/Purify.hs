@@ -20,7 +20,7 @@ import Data.Either (partitionEithers)
 import Data.List (find)
 import Data.HashMap.Strict (HashMap)
 import Data.Maybe (fromMaybe, catMaybes, isJust)
-import Data.Text (Text)
+import Data.Text (Text, isPrefixOf)
 
 import qualified Data.HashMap.Strict as Map
 
@@ -241,13 +241,23 @@ purifyStateDefn rho ms d = do
       (args, e)    <- unbind body
       nstos        <- freshVars "sigma" ms
       let stos      = toVar (ann d) <$> nstos
-      e'           <- relocatingTo (ann d) $ purifyStateBody rho stos ms (length ms - length ms') e
+      e'           <- relocatingToDefn d $ purifyStateBody rho stos ms (length ms - length ms') e
       pure $ d { defnPolyTy = [] |-> p_pure, defnBody = Embed $ bind (args <> (snd <$> nstos)) e' }
       where Embed body = defnBody d
             Embed phi  = defnPolyTy d
 
 liftMaybe :: MonadError AstError m => Annote -> Text -> Maybe a -> m a
 liftMaybe an msg = maybe (failAt an msg) pure
+
+-- | Relocate errors raised while purifying a definition's body to that
+--   definition — but only for genuine user definitions. Lambda-lifted and
+--   other synthesized defns ($-prefixed) carry an annotation inherited from
+--   inlined code, so relocating to them would move a good location to a worse
+--   one; leave those errors where they already point.
+relocatingToDefn :: MonadError AstError m => Defn -> m a -> m a
+relocatingToDefn d
+      | "$" `isPrefixOf` n2s (defnName d) = id
+      | otherwise                         = relocatingTo $ ann d
 
 purifyResDefn :: (Fresh m, MonadError AstError m, MonadFail m) => Name Exp -> PureEnv -> [Ty] -> Defn -> StateT PSto m Defn
 purifyResDefn start rho ms d = do
@@ -258,7 +268,7 @@ purifyResDefn start rho ms d = do
 
       nstos         <- freshVars "sto" ms
       let stos       = toVar an <$> nstos
-      e'            <- relocatingTo an $ purifyResBody start rho i o a stos ms e
+      e'            <- relocatingToDefn d $ purifyResBody start rho i o a stos ms e
 
       if defnName d /= start
             then pure $ d { defnPolyTy = [] |-> pure_ty, defnBody = Embed $ bind (args <> (snd <$> nstos)) e' }
