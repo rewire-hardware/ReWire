@@ -14,7 +14,7 @@ module ReWire.Crust.ToHyle (toHyle) where
 
 import ReWire.Config (Config, inputSigs, outputSigs, stateSigs, top)
 import ReWire.Annotation (Annote, noAnn, Annotated (ann))
-import ReWire.Error (failAt, failAtWith, warnAt, AstError, MonadError, Warning (..))
+import ReWire.Error (failAt, failAtWith, failInternal, warnAt, AstError, MonadError, Warning (..))
 import ReWire.Pretty (showt, prettyPrint)
 import ReWire.Unbound (Name, Fresh, runFreshM, Embed (..), unbind, n2s)
 import ReWire.BitVector (BV, bitVec, zeros, nbits)
@@ -93,7 +93,7 @@ toHyle' conf start (ts, vs) = do
                         let live = defLoop : others
                             state0Live = any (elem state0 . expCalls . A.defnBody) live
                         hoistInstances $ A.Program exts (live <> [ defState0 | state0Live ]) dev
-            _ -> failAt noAnn $ "toHyle: no definition found: " <> prettyPrint start
+            _ -> failAt noAnn $ "no definition found: " <> prettyPrint start
       where conMap :: ConMap
             conMap = ( Map.fromList $ map (M.dataName &&& map projId . M.dataCons) ts
                      , Map.fromList $ map (projId &&& projType) (concatMap M.dataCons ts)
@@ -126,7 +126,7 @@ mkDevice topName (inWires, outWires, stWires) defLoop defState0 others = do
           layout   = wireOffsets $ ("__padding", padding) : outWires <> regWires
 
       unless (sum (map snd stInps) == sum loopArgSzs) $
-            failAt an "toHyle: width mismatch between the loop signature and the device's state and input wires"
+            failInternal an "width mismatch between the loop signature and the device's state and input wires"
 
       regs <- if null regWires then pure []
             else do
@@ -139,7 +139,7 @@ mkDevice topName (inWires, outWires, stWires) defLoop defState0 others = do
                       args0            = Map.fromList $ zip (A.defnParams defState0) $ map (zeros . fromIntegral) argSzs
                   init0 <- evalExp (IEnv defns exts) args0 (A.defnBody defState0)
                         `catchError` \ _ -> failAt (ann defState0)
-                              "toHyle: cannot evaluate the initial state (does it involve an extern?)"
+                              "cannot evaluate the initial state (does it involve an extern?)"
                   pure [ A.Register an x sz $ sliceBV init0 off sz | (x, sz, off) <- wireOffsets regWires ]
 
       let inExp    = A.cat [ A.Var an sz x | (x, sz) <- stInps ]
@@ -199,13 +199,13 @@ transDefn conf start conMap = \ case
                                                          , zip (conf^.stateSigs)  (filter (> 0) t_sts')
                                                          )
                                     pure $ Left (conf^.top, wires, loop', state0')
-                              _ -> failAt an $ "transDefn: definition of " <> prettyPrint start <> " must have form `unfold n m' where n and m are global IDs; got " <> prettyPrint e'
-                  _ -> failAt an $ "transDefn: " <> prettyPrint start <> " has unsupported type: " <> M.prettyTy t'
+                              _ -> failAt an $ "definition of " <> prettyPrint start <> " must have form `unfold n m' where n and m are global IDs; got " <> prettyPrint e'
+                  _ -> failAt an $ prettyPrint start <> " has unsupported type: " <> M.prettyTy t'
       M.Defn an n (Embed (M.Poly t)) _ (Embed e) -> do
             (_, t')  <- unbind t
             (xs, e') <- unbind e
-            if | M.higherOrder t'       -> failAt an $ "transDefn: " <> prettyPrint n <> " has unsupported higher-order type."
-               | not $ M.fundamental t' -> failAt an $ "transDefn: " <> prettyPrint n <> " has un-translatable String or Integer arguments."
+            if | M.higherOrder t'       -> failAt an $ prettyPrint n <> " has unsupported higher-order type."
+               | not $ M.fundamental t' -> failAt an $ prettyPrint n <> " has un-translatable String or Integer arguments."
                | otherwise              -> do
                      modify $ \ s -> s { sCtr = 0 }
                      n'   <- transName n
@@ -218,7 +218,7 @@ transDefn conf start conMap = \ case
             getRegsTy :: MonadError AstError m => M.Ty -> m M.Ty
             getRegsTy t = case M.codomTy t of
                   M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "PuRe")) s) _ -> pure s
-                  _                                                     -> failAt (ann t) $ "transDefn: definition of " <> prettyPrint start <> " must have form `" <> prettyPrint start <> " = unfold n m' where m has type PuRe s o."
+                  _                                                     -> failAt (ann t) $ "definition of " <> prettyPrint start <> " must have form `" <> prettyPrint start <> " = unfold n m' where m has type PuRe s o."
 
             detuple :: M.Ty -> [M.Ty]
             detuple t = case t of
@@ -289,7 +289,7 @@ transExp e = case e of
       M.App an _ _ _ _                    -> case M.flattenApp e of
             (M.Builtin an' _ _ b       , args)                               -> transBuiltin (ann e) (M.typeOf e) an' (b, args)
             (e'                        , _) | Just t' <- M.typeOf e'
-                                            , not $ M.concrete t'            -> failAt an $ "transExp: could not infer a concrete type in an application. Inferred type: " <> M.prettyTy t'
+                                            , not $ M.concrete t'            -> failAt an $ "could not infer a concrete type in an application. Inferred type: " <> M.prettyTy t'
             (M.Var _ _ _ x             , args)                               -> do
                   sz    <- sizeOf' ("Applied Var " <> n2s x) an $ M.typeOf e
                   args' <- mapM transExp args
@@ -300,7 +300,7 @@ transExp e = case e of
                   args'      <- mapM transExp args
                   (tag, pad) <- ctorRep an' (M.typeOf e) (v, w) $ sum $ map A.sizeOf args'
                   pure $ A.cat ([A.Lit an' tag, A.Lit an' pad] <> args')
-            _                                                                -> failAt an $ "transExp: encountered ill-formed application:\n" <> prettyPrint e
+            _                                                                -> failInternal an $ "encountered ill-formed application:\n" <> prettyPrint e
       M.Builtin an _ _ b                  -> transBuiltin (ann e) (M.typeOf e) an (b, [])
       M.Var an _ t x                      -> do
             sz <- sizeOf' ("Var " <> n2s x) an t
@@ -327,7 +327,7 @@ transExp e = case e of
             sz <- sizeOf' "LitInt" an $ M.typeOf e
             pure $ A.Lit an $ bitVec (fromIntegral sz) n
       M.LitVec _ _ _ es                   -> A.cat <$> mapM transExp es
-      _                                   -> failAt (ann e) $ "toHyle: unsupported expression: " <> prettyPrint e
+      _                                   -> failAt (ann e) $ "unsupported expression: " <> prettyPrint e
       where -- | Apply a Match target to the destructed arguments.
             applyF :: (MonadError AstError m, Fresh m, MonadState S m) => Annote -> A.Size -> M.Exp -> [A.Exp] -> TCM m A.Exp
             applyF an sz f args = case M.flattenApp f of
@@ -335,14 +335,14 @@ transExp e = case e of
                         x' <- transName x
                         pure $ A.Call an sz x' args
                   (M.Builtin an' _ _ b, cfgArgs) -> applyBuiltin an sz an' b cfgArgs args
-                  _                             -> failAt an $ "toHyle: unsupported match target:\n" <> prettyPrint f
+                  _                             -> failAt an $ "unsupported match target:\n" <> prettyPrint f
 
             ctorRep :: (Fresh m, MonadReader ConMap m, MonadState S m, MonadError AstError m) => Annote -> Maybe M.Ty -> (A.Value, A.Size) -> A.Size -> m (BV, BV)
-            ctorRep an Nothing _ _ = failAt an "toHyle: ctorRep: encountered untyped constructor (rwc bug)."
+            ctorRep an Nothing _ _ = failInternal an "ctorRep: encountered untyped constructor (rwc bug)."
             ctorRep an (Just t) (v, w) szArgs = do
                   sz <- sizeOf "ctorRep" an t
                   if | w + szArgs <= sz -> pure (bitVec (fromIntegral w) v, zeros $ fromIntegral sz - fromIntegral w - fromIntegral szArgs)
-                     | otherwise        -> failAt an $ "toHyle: failing to calculate the bitvector representation of a constructor of type (sz: "
+                     | otherwise        -> failInternal an $ "failing to calculate the bitvector representation of a constructor of type (sz: "
                                                     <> showt sz <> " w: " <> showt w <> " szArgs: " <> showt szArgs <> "):\n" <> M.prettyTy t
 
 ---
@@ -367,11 +367,11 @@ transBuiltin an' t' an theExp = case theExp of
       (M.BitSlice, [arg, M.App _ _ _ (M.Builtin _ _ _ M.Finite) (M.LitInt _ _ j)
                        , M.App _ _ _ (M.Builtin _ _ _ M.Finite) (M.LitInt _ _ i)]) -> do
             unless (j + 1 >= i) $ failAt (ann arg)
-                  $ "transExp: invalid bit slice (j: " <> showt j <> ", i: " <> showt i <> ")."
+                  $ "invalid bit slice (j: " <> showt j <> ", i: " <> showt i <> ")."
             let nBits = fromIntegral $ j + 1 - i
                 off   = (-i) - fromIntegral nBits
             subElems an arg off nBits
-      (M.BitSlice, _) -> failAt an "transExp: rwPrimBitSlice must have arguments (finite j) (finite i) with LitInts"
+      (M.BitSlice, _) -> failAt an "rwPrimBitSlice must have arguments (finite j) (finite i) with LitInts"
       (M.VecIndex, [arg, i]) -> vecIndex arg i
       (M.VecIndexProxy, [arg, p]) -> do
             i <- checkProxyArg "rwPrimVecIndexProxy" p
@@ -413,32 +413,32 @@ transBuiltin an' t' an theExp = case theExp of
                   A.Lit an'' (BV.nat -> i) -> do
                         finSz <- checkFinTypeMax "rwPrimFinite" t'
                         unless (i >= 0 && i < fromIntegral finSz)
-                              $ failAt (ann arg) ("transExp: rwPrimFinite: Integer " <> showt i <> " is not representable in Finite " <> showt finSz <> ".")
+                              $ failAt (ann arg) ("rwPrimFinite: Integer " <> showt i <> " is not representable in Finite " <> showt finSz <> ".")
                         pure $ A.Lit an'' $ bitVec (fromIntegral $ nbits finSz) i
-                  _ -> failAt (ann arg) "transExp: rwPrimFinite: can't determine argument value at compile-time."
+                  _ -> failAt (ann arg) "rwPrimFinite: can't determine argument value at compile-time."
       (M.FiniteMinBound, []) -> do
             finSz <- checkFinTypeMax "rwPrimFiniteMinBound" t'
             unless (finSz > 0)
-                  $ failAt an "transExp: rwPrimFiniteMinBound: Finite 0 is uninhabited."
+                  $ failAt an "rwPrimFiniteMinBound: Finite 0 is uninhabited."
             transExp $ finite finSz 0
       (M.FiniteMaxBound, []) -> do
             finSz <- checkFinTypeMax "rwPrimFiniteMaxBound" t'
             unless (finSz > 0)
-                  $ failAt an "transExp: rwPrimFiniteMaxBound: Finite 0 is uninhabited."
+                  $ failAt an "rwPrimFiniteMaxBound: Finite 0 is uninhabited."
             transExp $ finite finSz $ finSz - 1
       (M.ToFinite, [arg]) -> do
             finSz  <- checkFinTypeMax "rwPrimToFinite" t'
             sz     <- sizeOf' "rwPrimToFinite" an t'
-            argTy  <- maybe (failAt an' $ "transExp: rwPrimToFinite: invalid argument type: " <> showt (M.prettyTy <$> M.typeOf arg)) pure
+            argTy  <- maybe (failAt an' $ "rwPrimToFinite: invalid argument type: " <> showt (M.prettyTy <$> M.typeOf arg)) pure
                         $ M.typeOf arg
             nBits  <- checkVecArgSize "rwPrimToFinite" (Just argTy)
             unless (2 ^ nBits <= (fromIntegral finSz :: Integer))
-                  $ failAt (ann arg) ("transExp: rwPrimToFinite: bitvector argument (size " <> showt nBits <> ") is not representable in Finite " <> showt finSz <> ".")
+                  $ failAt (ann arg) ("rwPrimToFinite: bitvector argument (size " <> showt nBits <> ") is not representable in Finite " <> showt finSz <> ".")
             resize an sz =<< transExp arg
       (M.ToFiniteMod, [arg]) -> do
             finSz   <- checkFinTypeMax "rwPrimToFiniteMod" t'
             sz      <- sizeOf' "rwPrimToFiniteMod" an t'
-            argTy   <- maybe (failAt an' "transExp: rwPrimToFiniteMod: invalid argument type.") pure
+            argTy   <- maybe (failAt an' "rwPrimToFiniteMod: invalid argument type.") pure
                         $ M.typeOf arg
             nBits   <- checkVecArgSize "rwPrimToFiniteMod" (Just argTy)
             arg'    <- transExp arg
@@ -454,7 +454,7 @@ transBuiltin an' t' an theExp = case theExp of
             finSz <- checkFinTypeMax "rwPrimFromFinite" (M.typeOf arg)
             nBits <- checkVecArgSize "rwPrimFromFinite" t'
             unless ((fromIntegral finSz :: Integer) <= 2 ^ nBits)
-                  $ failAt (ann arg) ("transExp: rwPrimFromFinite: Finite " <> showt finSz <> " is not representable in bitvector of size " <> showt nBits <> ".")
+                  $ failAt (ann arg) ("rwPrimFromFinite: Finite " <> showt finSz <> " is not representable in bitvector of size " <> showt nBits <> ".")
             resize an (fromIntegral nBits) =<< transExp arg
       (b, args) | Just _ <- toPrim b 0 0 -> do
             sz    <- sizeOf' (showt b) an t'
@@ -465,12 +465,12 @@ transBuiltin an' t' an theExp = case theExp of
             sz    <- sizeOf' "rwPrimExtern" an t'
             args' <- mapM transExp args
             applyExtern an sz (ps, clk, rst, as, rs, s) a args'
-      (M.Extern,  _) -> failAt an "toHyle: transExp: encountered not-fully-applied extern (after inlining)."
-      (b, _)         -> failAt an ("toHyle: transExp: encountered unsupported builtin use: rwPrim" <> showt b <> ".")
+      (M.Extern,  _) -> failInternal an "encountered not-fully-applied extern (after inlining)."
+      (b, _)         -> failAt an ("encountered unsupported builtin use: rwPrim" <> showt b <> ".")
 
       where subElems :: (Fresh m, MonadError AstError m, MonadState S m) => Annote -> M.Exp -> Integer -> Natural -> TCM m A.Exp
             subElems an'' arg i nElems = do
-                  tyElem <- maybe (failAt (ann arg) "toHyle: subElems: non-vector type argument to built-in vector function") pure
+                  tyElem <- maybe (failAt (ann arg) "subElems: non-vector type argument to built-in vector function") pure
                           $ M.typeOf arg >>= M.vecElemTy
                   szElem <- fromIntegral <$> sizeOf "subElems" an'' tyElem
                   arg'   <- transExp arg
@@ -481,7 +481,7 @@ transBuiltin an' t' an theExp = case theExp of
                       n   = nElems * fromIntegral szElem
 
                   unless (sz >= off + n)
-                        $ failAt an'' $ "toHyle: subElems: invalid bit slice (offset: " <> showt i <> ", num elems: " <> showt nElems <> ") from object size " <> showt sz <> "."
+                        $ failAt an'' $ "subElems: invalid bit slice (offset: " <> showt i <> ", num elems: " <> showt nElems <> ") from object size " <> showt sz <> "."
 
                   -- LSB offset of the slice: fields count from the MSB end.
                   let lsbOff = sz - off - n
@@ -498,12 +498,12 @@ transBuiltin an' t' an theExp = case theExp of
             --   literal width, whichever is wider).
             vecIndex :: (MonadError AstError m, Fresh m, MonadState S m) => M.Exp -> M.Exp -> TCM m A.Exp
             vecIndex v i = do
-                  tyVec  <- maybe (failAt an "toHyle: rwPrimIndex: invalid vector argument.") pure $ M.typeOf v
+                  tyVec  <- maybe (failAt an "rwPrimIndex: invalid vector argument.") pure $ M.typeOf v
                   szVec  <- sizeOf "rwPrimIndex" an tyVec
-                  n      <- maybe (failAt an "toHyle: rwPrimIndex: invalid Vec argument.") pure $ M.vecSize tyVec
-                  tyElem <- maybe (failAt an "toHyle: rwPrimIndex: non-vector type argument.") pure $ M.vecElemTy tyVec
+                  n      <- maybe (failAt an "rwPrimIndex: invalid Vec argument.") pure $ M.vecSize tyVec
+                  tyElem <- maybe (failAt an "rwPrimIndex: non-vector type argument.") pure $ M.vecElemTy tyVec
                   szElem <- sizeOf "rwPrimIndex" an tyElem
-                  tyIdx  <- maybe (failAt an "toHyle: rwPrimIndex: invalid index argument.") pure $ M.typeOf i
+                  tyIdx  <- maybe (failAt an "rwPrimIndex: invalid index argument.") pure $ M.typeOf i
                   szIdx  <- sizeOf "rwPrimIndex" an tyIdx
                   szLit  <- sizeOf "rwPrimIndex" an $ M.intTy an
 
@@ -524,19 +524,19 @@ transBuiltin an' t' an theExp = case theExp of
             lit = M.LitInt an Nothing . fromIntegral
 
             checkProxyArg :: (MonadError AstError m) => Text -> M.Exp -> TCM m Integer
-            checkProxyArg t p = maybe (failAt an' $ "transExp: " <> t <> ": invalid Proxy argument.  " <> prettyPrint p <> " : " <> showt (M.prettyTy <$> M.typeOf p)) (pure . fromIntegral)
+            checkProxyArg t p = maybe (failAt an' $ t <> ": invalid Proxy argument.  " <> prettyPrint p <> " : " <> showt (M.prettyTy <$> M.typeOf p)) (pure . fromIntegral)
                         $ M.typeOf p >>= M.proxyNat
 
             checkVecArgSize :: (MonadError AstError m) => Text -> Maybe M.Ty -> TCM m Natural
-            checkVecArgSize s t = maybe (failAt an' $ "transExp: " <> s <> ": invalid Vec size argument: " <> showt (M.prettyTy <$> t)) pure
+            checkVecArgSize s t = maybe (failAt an' $ s <> ": invalid Vec size argument: " <> showt (M.prettyTy <$> t)) pure
                         $ t >>= M.vecSize
 
             checkVecArgType :: (MonadError AstError m) => Text -> Maybe M.Ty -> TCM m M.Ty
-            checkVecArgType s t = maybe (failAt an' $ "transExp: " <> s <> ": invalid Vec type argument: " <> showt (M.prettyTy <$> t)) pure
+            checkVecArgType s t = maybe (failAt an' $ s <> ": invalid Vec type argument: " <> showt (M.prettyTy <$> t)) pure
                         $ t >>= M.vecElemTy
 
             checkFinTypeMax :: (MonadError AstError m) => Text -> Maybe M.Ty -> TCM m Natural
-            checkFinTypeMax s t = maybe (failAt an' $ "transExp: " <> s <> ": invalid Finite type: "  <> showt (M.prettyTy <$> t)) pure
+            checkFinTypeMax s t = maybe (failAt an' $ s <> ": invalid Finite type: "  <> showt (M.prettyTy <$> t)) pure
                         $ t >>= M.finSz
 
 -- | Builtins in Match-target position (with already-translated arguments
@@ -553,7 +553,7 @@ applyBuiltin an sz an' b cfgArgs args = case (b, cfgArgs) of
       (_, []) | Just _ <- toPrim b 0 0 -> lift $ lift $ applyPrim an sz b args
       (M.Bits, []) | [a] <- args -> pure a
       (M.Resize, []) | [a] <- args -> resize an sz a
-      _ -> failAt an' $ "toHyle: unsupported builtin in match-target position: rwPrim" <> showt b <> "."
+      _ -> failAt an' $ "unsupported builtin in match-target position: rwPrim" <> showt b <> "."
 
 -- | Apply a (width-implicit, Crust-level) primitive to translated arguments,
 --   expanding to the Hyle operator set (doc/hyle.md, section 3.3).
@@ -562,7 +562,7 @@ applyPrim an sz b args = do
       x <- freshLocal "$t" -- may go unused (MSBit needs one)
       case toPrim b sz (case args of { a : _ -> A.sizeOf a; _ -> 0 }) of
             Just f  -> either (failAt an) pure $ f an x args
-            Nothing -> failAt an $ "toHyle: applyPrim: unsupported primitive: rwPrim" <> showt b <> " with " <> showt (length args) <> " arguments."
+            Nothing -> failInternal an $ "applyPrim: unsupported primitive: rwPrim" <> showt b <> " with " <> showt (length args) <> " arguments."
 
 -- | The primitive table: given the result width and the (first) operand
 --   width, a pure applicator (taking a pre-generated fresh name for the
@@ -704,7 +704,7 @@ applyExtern an sz (ps, clk, rst, as, rs, s) a args = do
                   , A.extInputs new == A.extInputs old
                   , A.extOutputs new == A.extOutputs old
                   , A.extGenerics new == A.extGenerics old = case (A.extModel new, A.extModel old) of
-                        (Just g1, Just g2) | g1 /= g2 -> failAt an $ "toHyle: extern " <> s <> " has conflicting models (" <> g1 <> ", " <> g2 <> ")"
+                        (Just g1, Just g2) | g1 /= g2 -> failAt an $ "extern " <> s <> " has conflicting models (" <> g1 <> ", " <> g2 <> ")"
                         (mg, mg')                     -> pure $ old { A.extModel = maybe mg' Just mg }
                   | otherwise = failAtWith an ("extern " <> s <> " is used with inconsistent signatures")
                         [(ann old, "first used here")] []
@@ -808,7 +808,7 @@ hoistInstances p@(A.Program exts ds _)
                               i  <- freshLocal "$x"
                               ex <- gets $ Map.lookup x . sExterns
                               case ex of
-                                    Nothing -> failAt an' $ "toHyle: hoistInstances: unknown extern: " <> x
+                                    Nothing -> failAt an' $ "hoistInstances: unknown extern: " <> x
                                     Just e  -> do
                                           let inst   = A.Instance an' i x cs
                                               drives = [ A.SInstIn an' i p arg | ((p, _), arg) <- zip (A.extInputs e) es' ]
@@ -847,8 +847,8 @@ merge an s'  = \ case
       (v, t) : s -> case lookup v s' of
             Nothing           -> ((v, t) :) <$> merge an s' s
             Just t' | t == t' -> merge an s' s
-            Just t'           -> failAt an
-                  $ "toHyle: merge: inconsistent assignment of tyvar " <> v
+            Just t'           -> failInternal an
+                  $ "merge: inconsistent assignment of tyvar " <> v
                   <> ": " <> M.prettyTy t <> " vs. " <> M.prettyTy t'
 
 type TySub = [(Text, M.Ty)]
@@ -875,18 +875,18 @@ getCtorType :: MonadReader ConMap m => Name M.DataConId -> m (Maybe M.Ty)
 getCtorType n = asks (Map.lookup n . snd)
 
 ctorTag :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState S m) => Annote -> Maybe M.Ty -> Name M.DataConId -> m (A.Value, A.Size)
-ctorTag an Nothing _  = failAt an "toHyle: ctorTag: encountered untyped constructor (rwc bug)"
+ctorTag an Nothing _  = failInternal an "ctorTag: encountered untyped constructor (rwc bug)"
 ctorTag an (Just t) d = case M.flattenTyApp t of
       M.TyCon _ c : _ -> do
             ctors <- getCtors c
             case findIndex ((== n2s d) . n2s) ctors of
                   Just idx -> pure (toInteger idx, fromIntegral $ nbits $ genericLength ctors)
-                  Nothing  -> failAt an $ "toHyle: ctorTag: unknown ctor: " <> prettyPrint (n2s d) <> " of type " <> prettyPrint (n2s c)
-      _               -> failAt an $ "toHyle: ctorTag: unexpected type: " <> M.prettyTy t
+                  Nothing  -> failInternal an $ "ctorTag: unknown ctor: " <> prettyPrint (n2s d) <> " of type " <> prettyPrint (n2s c)
+      _               -> failInternal an $ "ctorTag: unexpected type: " <> M.prettyTy t
 
 sizeOf' :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState S m) => Text -> Annote -> Maybe M.Ty -> m A.Size
 sizeOf' s an = \ case
-      Nothing -> failAt an "toHyle: encountered an untyped expression (rwc bug)."
+      Nothing -> failInternal an "encountered an untyped expression (rwc bug)."
       Just t  -> sizeOf s an t
 
 sizeOf :: (Fresh m, MonadError AstError m, MonadReader ConMap m, MonadState S m) => Text -> Annote -> M.Ty -> m A.Size
@@ -898,20 +898,20 @@ sizeOfW s an visited t = do
       sz <- case Map.lookup t m of
             Nothing -> case M.flattenTyApp t of
                   M.TyCon _ (n2s -> "Vec") : [M.evalNat -> Just n, t''] -> (fromIntegral n *) <$> sizeOfW s an visited t''
-                  M.TyCon _ (n2s -> "Vec") : [n, t'']                   -> failAt an $ "toHyle: " <> s <> ": sizeOf: can't determine the size of a Vec."
+                  M.TyCon _ (n2s -> "Vec") : [n, t'']                   -> failAt an $ s <> ": sizeOf: can't determine the size of a Vec."
                                                                                     <> " (Vec " <> M.prettyTy n <> " " <> M.prettyTy t'' <> ")"
                   M.TyCon _ (n2s -> "Finite") : [M.evalNat -> Just n]   -> pure $ fromIntegral $ nbits n
-                  M.TyCon _ (n2s -> "Finite") : [n]                     -> failAt an $ "toHyle: " <> s <> ": sizeOf: can't determine the size of a Finite."
+                  M.TyCon _ (n2s -> "Finite") : [n]                     -> failAt an $ s <> ": sizeOf: can't determine the size of a Finite."
                                                                                     <> " (Finite " <> M.prettyTy n <> ")"
                   M.TyCon _ c              : _
-                        | t `Set.member` visited                        -> failAt an $ "toHyle: " <> s <> ": sizeOf: can't determine the size of a recursive datatype: " <> n2s c
+                        | t `Set.member` visited                        -> failAt an $ s <> ": sizeOf: can't determine the size of a recursive datatype: " <> n2s c
                         | otherwise                                     -> do
                               ctors      <- getCtors c
                               ctorWidths <- mapM (ctorWidth (Set.insert t visited) t) ctors
                               pure $ fromIntegral (nbits $ genericLength ctors) + maximum (0 : ctorWidths)
-                  M.TyApp {}               : _                          -> failAt an $ "toHyle: " <> s <> ": sizeOf: got TyApp after flattening (rwc bug): " <> M.prettyTy t
+                  M.TyApp {}               : _                          -> failInternal an $ s <> ": sizeOf: got TyApp after flattening (rwc bug): " <> M.prettyTy t
                   M.TyVar {}               : _                          -> pure 0
-                  _                                                     -> failAt an $ "toHyle: sizeOf: " <> s <> ": couldn't calculate the size of a type: " <> M.prettyTy t
+                  _                                                     -> failAt an $ "sizeOf: " <> s <> ": couldn't calculate the size of a type: " <> M.prettyTy t
             Just sz -> pure sz
       modify $ \ st -> st { sSizes = Map.insert t sz $ sSizes st }
       pure sz

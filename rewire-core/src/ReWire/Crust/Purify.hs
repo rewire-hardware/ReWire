@@ -8,7 +8,7 @@ import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Pat (..), MatchPat (..
 import ReWire.Crust.TypeCheck (unify')
 import ReWire.Crust.Types (tupleTy, mkArrowTy, typeOf, arrowLeft, paramTys, isReacT, codomTy, (|->), isStateT, dstArrow, dstStateT, dstTyApp, dstReacT, nilTy)
 import ReWire.Crust.Util (mkApp, mkTuplePat, mkTuple, nil, isPrim, patVars, toVar, toPatVar, transPat, transMPat, mkLam)
-import ReWire.Error (failAt, failAtWith, MonadError, AstError)
+import ReWire.Error (failAt, failAtWith, failInternal, MonadError, AstError)
 import ReWire.Pretty (TextShow (showb, showt), fromText, prettyPrint)
 import ReWire.Unbound (freshVar, Fresh, s2n, n2s, bind, Name, Embed (Embed), unbind)
 
@@ -146,7 +146,7 @@ flattenExtr = \ case
 -- > dispatch (R_g e1 ... ek) i = g_pure e1 ... ek i
 mkDispatch :: (MonadError AstError m, Fresh m) => Ty -> Ty -> [Ty] -> Name Exp -> [(Pat, Exp)] -> m Defn
 mkDispatch i o ms iv = \ case
-      []        -> failAt NoAnnote "Purify: empty dispatch: invalid ReWire (is recursion guarded by signal?)"
+      []        -> failAt NoAnnote "empty dispatch: invalid ReWire (is recursion guarded by signal?)"
       (p : pes) -> do
             disc     <- freshVar "disc"
             let ty    = dispatchTy i o ms
@@ -218,7 +218,7 @@ getStates :: Ty -> [Ty]
 getStates t = fromMaybe [] $ dstTyApp (codomTy t) >>= dstStateT . fst
 
 lookupPure :: MonadError AstError m => Annote -> Name Exp -> PureEnv -> m Ty
-lookupPure an x = maybe (failAt an $ "No pure binding for variable: " <> n2s x) pure . Map.lookup x
+lookupPure an x = maybe (failInternal an $ "No pure binding for variable: " <> n2s x) pure . Map.lookup x
 
 isStateMonadicDefn :: Fresh m => Defn -> m (Either Defn Defn)
 isStateMonadicDefn = \ case
@@ -235,8 +235,8 @@ purifyStateDefn :: (Fresh m, MonadError AstError m) =>
 purifyStateDefn rho ms d = do
       ty           <- poly2Ty phi
       let ms'       = getStates ty
-      unless (length ms' <= length ms && isJust (unifyStateStacks ms ms')) $ failAt (ann d)
-            $ "Purify: state layers of " <> n2s (defnName d) <> " are not a suffix of the canonical state stack (rwc bug)."
+      unless (length ms' <= length ms && isJust (unifyStateStacks ms ms')) $ failInternal (ann d)
+            $ "state layers of " <> n2s (defnName d) <> " are not a suffix of the canonical state stack (rwc bug)."
       p_pure       <- lookupPure (ann d) (defnName d) rho
       (args, e)    <- unbind body
       nstos        <- freshVars "sigma" ms
@@ -252,7 +252,7 @@ liftMaybe an msg = maybe (failAt an msg) pure
 purifyResDefn :: (Fresh m, MonadError AstError m, MonadFail m) => Name Exp -> PureEnv -> [Ty] -> Defn -> StateT PSto m Defn
 purifyResDefn start rho ms d = do
       ty            <- projDefnTy d
-      (i, o, _, a)  <- liftMaybe (ann d) "Purify: failed at purifyResDefn" $ dstReacT $ codomTy ty
+      (i, o, _, a)  <- maybe (failInternal (ann d) "failed at purifyResDefn") pure $ dstReacT $ codomTy ty
       pure_ty       <- purifyTy (ann d) ms $ Just ty
       (args, e)     <- unbind body
 
@@ -286,16 +286,16 @@ purifyResDefn start rho ms d = do
 data TyVariety = Arrow !Ty !Ty | ReacTApp | StateTApp | IdApp | PairApp !Ty !Ty | Pure
 
 purifyTy :: MonadError AstError m => Annote -> [Ty] -> Maybe Ty -> m Ty
-purifyTy an _ Nothing   = failAt an "Purify: purifyTy: encountered untyped expression (rwc bug)."
+purifyTy an _ Nothing   = failInternal an "purifyTy: encountered untyped expression (rwc bug)."
 purifyTy an ms (Just t) = case classifyTy t of
       Arrow t1 t2   -> TyApp an <$> (TyApp an (TyCon an $ s2n "->") <$> purifyTy an ms (Just t1)) <*> purifyTy an ms (Just t2)
-      ReacTApp      -> liftMaybe an ( "Purify: failed to purify ReacT type: " <> prettyPrint t)
+      ReacTApp      -> maybe (failInternal an $ "failed to purify ReacT type: " <> prettyPrint t) pure
                                     $ purifyResTy t
-      StateTApp     -> liftMaybe an ( "Purify: failed to purify StateT type: " <> prettyPrint t)
+      StateTApp     -> maybe (failInternal an $ "failed to purify StateT type: " <> prettyPrint t) pure
                                     $ purifyStateTTy ms t
       PairApp t1 t2 -> TyApp an <$> (TyApp an (TyCon an $ s2n "(,)") <$> purifyTy an ms (Just t1)) <*> purifyTy an ms (Just t2)
       Pure          -> pure t
-      IdApp         -> failAt an "Purify: purifyTy: encountered Identity."
+      IdApp         -> failInternal an "purifyTy: encountered Identity."
 
             -- This takes a Ty of the form
             -- >    T1 -> T2 -> ... -> Tn -> ReacT In Out (StateT S1 (StateT S2 (... (StateT Sm I)))) T
@@ -341,9 +341,9 @@ classifyCases ex = case flattenApp ex of
       (Builtin an _ _ Lift      , [e])    -> pure $ CLift an e
       (Builtin an _ _ Bind      , [e, g]) -> pure $ CBind an e g
       (Match an _ _ disc p e els, [])     -> pure $ CMatch an disc p e els
-      (Builtin an _ _ Error     , _)      -> failAt an "Purify: encountered unsynthesizable definition."
+      (Builtin an _ _ Error     , _)      -> failAt an "encountered unsynthesizable definition."
       (Var an _ t g             , es)     -> pure $ CApply an t g es
-      d                                   -> failAt (ann ex) $ "Purify: unclassifiable case: " <> prettyPrint d
+      d                                   -> failInternal (ann ex) $ "unclassifiable case: " <> prettyPrint d
 
 data Cases = CGet Annote !(Maybe Ty)
            | CReturn Annote !(Maybe Ty) !Exp
@@ -363,7 +363,7 @@ purifyStateBody :: (Fresh m, MonadError AstError m) =>
                      PureEnv -> [Exp] -> [Ty] -> Int -> Exp -> m Exp
 purifyStateBody rho stos stys i = classifyCases >=> \ case
       CGet an _        -> do
-            s <- liftMaybe an ("Purify: state-layer mismatch: length stos == " <> showt (length stos) <> ", i == " <> showt i)
+            s <- maybe (failInternal an $ "state-layer mismatch: length stos == " <> showt (length stos) <> ", i == " <> showt i) pure
                   $ stos `atMay` i
             pure $ mkTuple an $ s : stos
 
@@ -382,7 +382,7 @@ purifyStateBody rho stos stys i = classifyCases >=> \ case
             mkCase an disc (p, e') <$> mapM (purifyStateBody rho stos stys i) els
 
       CBind an e g -> do
-            a           <- liftMaybe (ann e) "Purify: invalid type in bind" $ typeOf e >>= (fmap snd . dstTyApp)
+            a           <- maybe (failInternal (ann e) "invalid type in bind") pure $ typeOf e >>= (fmap snd . dstTyApp)
             ns          <- freshVars "st" $ a : stys
             (f, es)     <- dstApp g
             g_pure_app  <- mkPureApp an rho f $ es <> (toVar an <$> ns)
@@ -393,7 +393,7 @@ purifyStateBody rho stos stys i = classifyCases >=> \ case
       where replaceAtIndex :: MonadError AstError m => Annote -> Int -> a -> [a] -> m [a]
             replaceAtIndex an n item ls = case splitAt n ls of
                   (a, _ : b) | n >= 0 -> pure $ a <> (item : b)
-                  _                   -> failAt an "Purify: replaceAtIndex: invalid index (this should never happen)"
+                  _                   -> failInternal an "replaceAtIndex: invalid index (this should never happen)"
 
 ---------------------------
 -- Purifying Resumption Monadic definitions
@@ -432,11 +432,11 @@ classifyRCases ex = case flattenApp ex of
       (Builtin an _ _ Lift       , [e])    -> pure $ RLift an e
       (Builtin an _ _ Signal     , [e])    -> pure $ RSignal an e
       (Builtin an _ t Extrude    , es)     -> pure $ RExtrude an t es
-      (Builtin an _ _ Error      , _)      -> failAt an "Purify: encountered unsynthesizable definition."
+      (Builtin an _ _ Error      , _)      -> failAt an "encountered unsynthesizable definition."
       (Match an _ _ disc p e els , [])     -> pure $ RMatch an disc p e els
       (Var an _ t x              , [])     -> pure $ RVar an t x
       (Var an _ t x              , es)     -> pure $ RApp an t x es
-      d                                  -> failAt (ann ex) $ "Purify: unclassifiable R-case: " <> prettyPrint d
+      d                                  -> failInternal (ann ex) $ "unclassifiable R-case: " <> prettyPrint d
       where sig :: Exp -> Maybe Exp
             sig ex = case flattenApp ex of
                   (Builtin _ _ _ Signal, [arg]) -> pure arg
@@ -459,7 +459,7 @@ purifyResBody :: (Fresh m, MonadError AstError m)
 purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
       -- purifyResBody (return e)         = "Done (A_ e, (s1, (..., sm)))"
       RReturn _ e | Just t <- typeOf e -> mkLeft "RReturn" e t stos
-      RReturn an _                     -> failAt an "Purify: purifyResBody: untyped expression encountered (rwc bug)."
+      RReturn an _                     -> failInternal an "purifyResBody: untyped expression encountered (rwc bug)."
 
       -- purifyResBody (signal e
       --        >>= g e1 ... ek) = "Pause (e, (R_g e1 ... ek, (s1, (..., sm))))"
@@ -508,12 +508,12 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
                   RReturn {} -> pure ()
                   RLift {}   -> pure ()
                   c          -> failAt an
-                        $ "Purify: the left-hand side of this bind (" <> showt c
+                        $ "the left-hand side of this bind (" <> showt c
                         <> ") might pause: a signal result may only be consumed by a function call, and loops and extrude must be in tail position."
             -- purify the types of e and g
             tg'         <- purifyTy an ms $ typeOf g
             -- ert is the return type of e; ty is the type of the whole expression
-            (ert, _)    <- maybe (failAt (ann tg') "Purify: expecting arrow, encountered non-arrow") pure
+            (ert, _)    <- maybe (failInternal (ann tg') "expecting arrow, encountered non-arrow") pure
                               $ dstArrow tg'
             e'          <- purifyResBody start rho i o ert stos ms e
 
@@ -566,7 +566,7 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
                   checkFullExtrusion (ann e) sts
                   (f, es) <- dstApp e
                   mkPureApp (ann e) rho f $ es <> sts
-            (e, _)                  -> failAt (ann e) $ "Purify: extruded device is non-variable: " <> prettyPrint e
+            (e, _)                  -> failInternal (ann e) $ "extruded device is non-variable: " <> prettyPrint e
 
       RApp an rty rator rands -> do
             rator' <- purifyResBody start rho i o a stos ms (Var an Nothing rty rator)
@@ -583,7 +583,7 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
 
       where checkFullExtrusion :: MonadError AstError m => Annote -> [Exp] -> m ()
             checkFullExtrusion an sts = unless (length sts == length ms) $ failAt an
-                  $ "Purify: partial extrusion: extrude must supply initial values for all "
+                  $ "partial extrusion: extrude must supply initial values for all "
                   <> showt (length ms) <> " state layer(s) of the device (got " <> showt (length sts) <> ")."
 
             mkLeft :: (Fresh m, MonadError AstError m, MonadState PSto m) => Text -> Exp -> Ty -> [Exp] -> m Exp
@@ -669,7 +669,7 @@ mkPureApp an rho rator es = flip (mkApp an) es <$> mkPureVar an rho rator
 dstApp :: MonadError AstError m => Exp -> m (Name Exp, [Exp])
 dstApp e = case flattenApp e of
       (Var _ _ _ n, es) -> pure (n, es)
-      _                 -> failAt (ann e) $ "Purify: tried to dst non-app: " <> showt (unAnn e)
+      _                 -> failInternal (ann e) $ "tried to dst non-app: " <> showt (unAnn e)
 
 -- | Lets are desugared already, so use a case instead (with lifted discriminator).
 mkLet :: Fresh m => Annote -> Pat -> Exp -> Exp -> m Exp

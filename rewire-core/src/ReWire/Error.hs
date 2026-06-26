@@ -9,7 +9,7 @@ module ReWire.Error
       ( SyntaxErrorT, AstError, Warning (..), Label
       , MonadError
       , mark
-      , failAt, failAt', failAtWith
+      , failAt, failAt', failAtWith, failInternal
       , failNowhere
       , warnAt
       , filePath
@@ -109,6 +109,13 @@ failAt an msg = throwError $ AstError (toAnnote an) msg [] []
 -- | Like 'failAt', but attach secondary labelled locations and/or hints.
 failAtWith :: (MonadError AstError m, Annotation an) => an -> Text -> [Label] -> [Text] -> m a
 failAtWith an msg labels hints = throwError $ AstError (toAnnote an) msg labels hints
+
+-- | Report a violated internal invariant: a bug in rwc itself, not a problem
+--   with the user's program. Rendered with a "please report it" hint so the
+--   message can't be mistaken for a complaint about the user's code.
+failInternal :: (MonadError AstError m, Annotation an) => an -> Text -> m a
+failInternal an msg = failAtWith an ("internal error: " <> msg) []
+      ["this is a bug in rwc, not a problem with your program; please report it at https://github.com/rewire-hardware/ReWire/issues"]
 
 -- | Emit a warning: printed to stderr immediately (so it isn't lost if a
 --   later pass fails), suppressed by -w, or promoted to an error by -Werror
