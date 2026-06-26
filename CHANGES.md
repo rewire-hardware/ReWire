@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+* Error reporting overhaul. Diagnostics from `rwc` and `rwe` now show the
+  offending source line with a caret underline beneath the exact span
+  (`file:line:col:`, then the source line, then `^^^`) rather than
+  re-printing a parsed AST fragment, and can carry secondary `note:`
+  locations and `help:` hints (for example, a missing `start` function now
+  suggests `--start=`). Error messages no longer leak internal pass names
+  (`Purify:`, `hyle check:`, `toHyle:`, ...) or dump raw AST -- the
+  "Unsupported ... syntax" errors now show the actual surface syntax.
+  Violated compiler invariants are reported as `internal error: ...` with a
+  "please report it" hint, clearly distinguishing a bug in rwc from a problem
+  with the user's program. Internally, the source annotation threaded through
+  every IR was reduced from an embedded haskell-src-exts AST node (with a
+  large constraint bag and the exactprint dependency) to a compact source
+  span with provenance.
 * The Core IR has been replaced by Hyle (`ReWire.Hyle.*`), a new
   bit-level intermediate representation specified in `doc/hyle.md`: a pure,
   first-order, total language over width-indexed bitvectors with explicit
