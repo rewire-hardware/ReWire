@@ -4,5 +4,3 @@ packages:
 - rewire-user
 - rewire-core
 - rewire-embedder
-extra-deps:
-- unbound-generics-0.4.4
