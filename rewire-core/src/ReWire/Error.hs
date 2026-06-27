@@ -137,7 +137,7 @@ diagBlock sev an msg msrc = vsep $ header : msgLines <> maybeToList excerpt
             indent   = T.replicate (gutterW + 1) " "
             sevDoc   = styled (sevStyle sev) $ sevLabel sev <> ":"
             header   = maybe sevDoc (\ t -> styled locStyle t <+> sevDoc) $ locHeaderText an
-            msgLines = [ text indent <> pretty l | l <- T.lines $ normalizeMsg msg ]
+            msgLines = [ text indent <> styled bold l | l <- T.lines $ normalizeMsg msg ]
             excerpt  = do
                   Span _ (sl, sc) (el, ec) <- loc
                   ls <- msrc
