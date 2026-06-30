@@ -1,43 +1,43 @@
 $Pure.dispatch : ([1]) -> [2]
-$Pure.dispatch $1 =
-      $LL.Pure.dispatch $1
+$Pure.dispatch i =
+      $LL.Pure.dispatch i
 
 $LL.Main.loop3 : ([1]) -> [2]
-$LL.Main.loop3 $0 =
-      1'h1 # $0
+$LL.Main.loop3 rabind =
+      1'h1 # rabind
 
 $LL.ReWire.Prelude.not3 : ([1]) -> [1]
-$LL.ReWire.Prelude.not3 $0 =
+$LL.ReWire.Prelude.not3 $55 =
       1'h1
 
 $LL.Main.loop2 : ([2]) -> [2]
-$LL.Main.loop2 $0 =
-      $LL.Main.loop3 $0[0 +: 1]
+$LL.Main.loop2 disc =
+      $LL.Main.loop3 disc[0 +: 1]
 
 ReWire.Prelude.not : ([1]) -> [1]
-ReWire.Prelude.not $0 =
-      $LL.ReWire.Prelude.not1 $0 $0
+ReWire.Prelude.not $14 =
+      $LL.ReWire.Prelude.not1 $14 $14
 
 $LL.Main.loop1 : ([1]) -> [2]
-$LL.Main.loop1 $0 =
-      $LL.Main.loop2 (1'h0 # ReWire.Prelude.not $0)
+$LL.Main.loop1 i =
+      $LL.Main.loop2 (1'h0 # ReWire.Prelude.not i)
 
 Main.loop : ([1]) -> [2]
-Main.loop $0 =
-      $LL.Main.loop $0
+Main.loop $x =
+      $LL.Main.loop $x
 
 $LL.Pure.dispatch : ([1]) -> [2]
-$LL.Pure.dispatch $0 =
-      Main.loop $0
+$LL.Pure.dispatch i =
+      Main.loop i
 
 $LL.Main.loop : ([1]) -> [2]
-$LL.Main.loop $0 =
-      $LL.Main.loop1 $0
+$LL.Main.loop $x =
+      $LL.Main.loop1 $x
 
 $LL.ReWire.Prelude.not1 : ([1], [1]) -> [1]
-$LL.ReWire.Prelude.not1 $0 $1 =
-      if eq $1 1'h1 then 1'h0
-            else $LL.ReWire.Prelude.not3 $0
+$LL.ReWire.Prelude.not1 $14 $56 =
+      if eq $56 1'h1 then 1'h0
+            else $LL.ReWire.Prelude.not3 $14
 
 device top_level
       input __in0 : [1]

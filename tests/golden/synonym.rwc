@@ -1,199 +1,199 @@
 $Pure.dispatch : ([16], [1]) -> [26]
-$Pure.dispatch $0 $1 =
-      $LL.Pure.dispatch $1 $0[8 +: 8] $0[0 +: 8]
+$Pure.dispatch disc i =
+      $LL.Pure.dispatch i disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.incr38 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr38 $0 $1 $2 $3 =
-      $LL.Main.incr11 $0 $1 $2 $3
+$LL.Main.incr38 $x $x1 sto0 sto1 =
+      $LL.Main.incr11 $x $x1 sto0 sto1
 
 $LL.Main.incr37 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr37 $0 $1 $3 $4 =
-      $LL.Main.incr15 $0 $1 $3 $4
+$LL.Main.incr37 r0 r1 $x1 $x2 =
+      $LL.Main.incr15 r0 r1 $x1 $x2
 
 $LL.Main.sig12 : ([8], [8], [8]) -> [26]
-$LL.Main.sig12 $0 $1 $2 =
-      $LL.Main.sig $0 $1 $2
+$LL.Main.sig12 v $x $x1 =
+      $LL.Main.sig v $x $x1
 
 $LL.Main.incr36 : ([26]) -> [26]
-$LL.Main.incr36 $0 =
-      $LL.Main.incr33 $0[8 +: 8] $0[0 +: 8]
+$LL.Main.incr36 disc =
+      $LL.Main.incr33 disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.sig11 : ([1], [1], [8], [8]) -> [26]
-$LL.Main.sig11 $0 $1 $2 $3 =
-      if eq $1 1'h1 then $LL.Main.sig9 $2 $3
-            else $LL.Main.sig7 $0 $2 $3
+$LL.Main.sig11 i $6 sto0 sto1 =
+      if eq $6 1'h1 then $LL.Main.sig9 sto0 sto1
+            else $LL.Main.sig7 i sto0 sto1
 
 $LL.Main.incr35 : ([8], [8]) -> [26]
-$LL.Main.incr35 $1 $2 =
-      $LL.Main.incr8 $1 $2
+$LL.Main.incr35 $x $x1 =
+      $LL.Main.incr8 $x $x1
 
 $LL.Main.incr34 : ([8], [8], [8]) -> [26]
-$LL.Main.incr34 $0 $1 $2 =
-      $LL.Main.incr25 $0 $1 $2
+$LL.Main.incr34 v s0 $x =
+      $LL.Main.incr25 v s0 $x
 
 $LL.Main.incr33 : ([8], [8]) -> [26]
-$LL.Main.incr33 $1 $2 =
-      $LL.Main.incr7 $1 $2
+$LL.Main.incr33 $x $x1 =
+      $LL.Main.incr7 $x $x1
 
 $LL.Main.incr32 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr32 $0 $1 $3 $4 =
-      $LL.Main.incr4 $0 $1 $3 $4
+$LL.Main.incr32 $x $x1 sto0 sto1 =
+      $LL.Main.incr4 $x $x1 sto0 sto1
 
 $LL.Main.sig10 : ([8], [8]) -> [26]
-$LL.Main.sig10 $0 $1 =
-      Main.sig $1 $0
+$LL.Main.sig10 sto1 sto0 =
+      Main.sig sto0 sto1
 
 $LL.Main.incr31 : ([26]) -> [26]
-$LL.Main.incr31 $0 =
-      $LL.Main.incr30 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
+$LL.Main.incr31 disc =
+      $LL.Main.incr30 disc[16 +: 8] disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.incr30 : ([8], [8], [8]) -> [26]
-$LL.Main.incr30 $0 $1 $2 =
-      $LL.Main.incr17 $0 $1 $2
+$LL.Main.incr30 v $x $x1 =
+      $LL.Main.incr17 v $x $x1
 
 Main.incr : ([8], [8]) -> [26]
-Main.incr $0 $1 =
-      $LL.Main.incr31 ($LL.Main.incr27 ($0 # $0 # $1))
+Main.incr sto0 sto1 =
+      $LL.Main.incr31 ($LL.Main.incr27 (sto0 # sto0 # sto1))
 
 $LL.Main.sig9 : ([8], [8]) -> [26]
-$LL.Main.sig9 $0 $1 =
-      Main.incr $0 $1
+$LL.Main.sig9 sto0 sto1 =
+      Main.incr sto0 sto1
 
 $LL.Main.sig8 : ([26]) -> [26]
-$LL.Main.sig8 $0 =
-      $LL.Main.sig12 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
+$LL.Main.sig8 disc =
+      $LL.Main.sig12 disc[16 +: 8] disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.incr29 : ([8], [26]) -> [26]
-$LL.Main.incr29 $0 $1 =
-      $LL.Main.incr12 $0 $1[16 +: 8] $1[8 +: 8] $1[0 +: 8]
+$LL.Main.incr29 r0 disc =
+      $LL.Main.incr12 r0 disc[16 +: 8] disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.sig7 : ([1], [8], [8]) -> [26]
-$LL.Main.sig7 $0 $1 $2 =
-      $LL.Main.sig10 $2 $1
+$LL.Main.sig7 $5 sto0 sto1 =
+      $LL.Main.sig10 sto1 sto0
 
 $LL.Main.begin12 : ([8], [8]) -> [26]
-$LL.Main.begin12 $1 $2 =
-      Main.sig $1 $2
+$LL.Main.begin12 sto0 sto1 =
+      Main.sig sto0 sto1
 
 $LL.Main.incr28 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr28 $0 $1 $3 $4 =
-      $LL.Main.incr32 $0 $1 $3 $4
+$LL.Main.incr28 $x $x1 sto0 sto1 =
+      $LL.Main.incr32 $x $x1 sto0 sto1
+
+$LL.Main.begin10 : ([8], [8]) -> [26]
+$LL.Main.begin10 s0 s1 =
+      10'h100 # s0 # s1
 
 $LL.Main.incr27 : ([24]) -> [26]
-$LL.Main.incr27 $0 =
-      $LL.Main.sig4 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
-
-$LL.Main.incr26 : ([8], [8]) -> [26]
-$LL.Main.incr26 $1 $2 =
-      10'h100 # $1 # $2
+$LL.Main.incr27 disc =
+      $LL.Main.sig4 disc[16 +: 8] disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.incr25 : ([8], [8], [8]) -> [26]
-$LL.Main.incr25 $0 $1 $2 =
-      2'h0 # $0 # $1 # $2
+$LL.Main.incr25 v s0 s1 =
+      2'h0 # v # s0 # s1
 
 $LL.Main.sig6 : ([1], [8], [8]) -> [26]
-$LL.Main.sig6 $0 $1 $2 =
-      $LL.Main.sig11 $0 $0 $1 $2
+$LL.Main.sig6 i sto0 sto1 =
+      $LL.Main.sig11 i i sto0 sto1
 
 Main.sig : ([8], [8]) -> [26]
-Main.sig $0 $1 =
-      $LL.Main.sig8 ($LL.Main.incr27 ($0 # $0 # $1))
+Main.sig sto0 sto1 =
+      $LL.Main.sig8 ($LL.Main.incr27 (sto0 # sto0 # sto1))
 
 $LL.Main.incr24 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr24 $0 $1 $3 $4 =
-      $LL.Main.incr28 $1 $0 $3 $4
+$LL.Main.incr24 r1 r0 sto0 sto1 =
+      $LL.Main.incr28 r0 r1 sto0 sto1
 
 $LL.Main.sig5 : ([8], [8], [8]) -> [26]
-$LL.Main.sig5 $0 $1 $2 =
-      $LL.Main.sig2 $1 $0 $2
+$LL.Main.sig5 v s0 $x =
+      $LL.Main.sig2 s0 v $x
 
 $LL.Main.sig4 : ([8], [8], [8]) -> [26]
-$LL.Main.sig4 $0 $1 $2 =
-      $LL.Main.sig5 $0 $1 $2
+$LL.Main.sig4 v $x $x1 =
+      $LL.Main.sig5 v $x $x1
 
 $LL.Main.incr22 : ([8], [8], [8]) -> [26]
-$LL.Main.incr22 $0 $1 $2 =
-      $LL.Main.incr29 $0 ($LL.Main.incr10 ($2 # $1 # $2))
+$LL.Main.incr22 r0 sto0 sto1 =
+      $LL.Main.incr29 r0 ($LL.Main.incr10 (sto1 # sto0 # sto1))
 
 $LL.Pure.dispatch1 : ([1], [8], [8]) -> [26]
-$LL.Pure.dispatch1 $0 $1 $2 =
-      $LL.Main.sig6 $0 $1 $2
+$LL.Pure.dispatch1 i s0 $x =
+      $LL.Main.sig6 i s0 $x
 
 $LL.Main.incr20 : ([16]) -> [26]
-$LL.Main.incr20 $0 =
-      $LL.Main.incr35 $0[8 +: 8] $0[0 +: 8]
+$LL.Main.incr20 disc =
+      $LL.Main.incr35 disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.incr17 : ([8], [8], [8]) -> [26]
-$LL.Main.incr17 $0 $1 $2 =
-      $LL.Main.incr22 $0 $1 $2
+$LL.Main.incr17 v s0 $x =
+      $LL.Main.incr22 v s0 $x
 
 $LL.Main.incr16 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr16 $0 $2 $3 $4 =
-      $LL.Main.incr24 $2 $0 $3 $4
+$LL.Main.incr16 r0 r1 s0 $x =
+      $LL.Main.incr24 r1 r0 s0 $x
 
 $LL.Main.incr15 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr15 $0 $1 $3 $4 =
-      $LL.Main.incr16 $0 $1 $3 $4
+$LL.Main.incr15 r0 r1 $x $x1 =
+      $LL.Main.incr16 r0 r1 $x $x1
 
 $LL.Main.incr14 : ([8], [8]) -> [26]
-$LL.Main.incr14 $1 $2 =
-      $LL.Main.begin12 $1 $2
+$LL.Main.incr14 sto0 sto1 =
+      $LL.Main.begin12 sto0 sto1
 
 $LL.Main.incr13 : ([8], [8], [26]) -> [26]
-$LL.Main.incr13 $0 $1 $2 =
-      $LL.Main.incr37 $0 $1 $2[8 +: 8] $2[0 +: 8]
+$LL.Main.incr13 r0 r1 disc =
+      $LL.Main.incr37 r0 r1 disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.incr12 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr12 $0 $1 $2 $3 =
-      $LL.Main.incr9 $0 $1 $2 $3
+$LL.Main.incr12 r0 $x $x1 $x2 =
+      $LL.Main.incr9 r0 $x $x1 $x2
 
 $LL.Main.incr11 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr11 $0 $1 $2 $3 =
-      $LL.Main.incr13 $0 $1 ($LL.Main.incr20 ($1 # $3))
+$LL.Main.incr11 r0 r1 sto0 sto1 =
+      $LL.Main.incr13 r0 r1 ($LL.Main.incr20 (r1 # sto1))
 
 $LL.Main.incr10 : ([24]) -> [26]
-$LL.Main.incr10 $0 =
-      $LL.Main.incr6 $0[16 +: 8] $0[8 +: 8] $0[0 +: 8]
+$LL.Main.incr10 disc =
+      $LL.Main.incr6 disc[16 +: 8] disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.incr9 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr9 $0 $1 $2 $3 =
-      $LL.Main.incr3 $0 $1 $2 $3
+$LL.Main.incr9 r0 v $x $x1 =
+      $LL.Main.incr3 r0 v $x $x1
 
 $LL.Main.incr8 : ([8], [8]) -> [26]
-$LL.Main.incr8 $1 $2 =
-      $LL.Main.incr26 $1 $2
+$LL.Main.incr8 s0 $x =
+      $LL.Main.begin10 s0 $x
 
 $LL.Main.incr7 : ([8], [8]) -> [26]
-$LL.Main.incr7 $1 $2 =
-      $LL.Main.incr14 $1 $2
+$LL.Main.incr7 s0 $x =
+      $LL.Main.incr14 s0 $x
 
 $LL.Main.incr6 : ([8], [8], [8]) -> [26]
-$LL.Main.incr6 $0 $1 $2 =
-      $LL.Main.incr34 $0 $1 $2
+$LL.Main.incr6 v $x $x1 =
+      $LL.Main.incr34 v $x $x1
 
 $LL.Main.incr4 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr4 $0 $1 $3 $4 =
-      $LL.Main.incr36 ($LL.Main.incr20 ($3 # add $0 $1))
+$LL.Main.incr4 r0 r1 sto0 sto1 =
+      $LL.Main.incr36 ($LL.Main.incr20 (sto0 # add r0 r1))
 
 $LL.Pure.dispatch : ([1], [8], [8]) -> [26]
-$LL.Pure.dispatch $0 $1 $2 =
-      $LL.Pure.dispatch1 $0 $1 $2
+$LL.Pure.dispatch i $x $x1 =
+      $LL.Pure.dispatch1 i $x $x1
 
 $LL.Main.incr3 : ([8], [8], [8], [8]) -> [26]
-$LL.Main.incr3 $0 $1 $2 $3 =
-      $LL.Main.incr38 $0 $1 $2 $3
+$LL.Main.incr3 r0 v s0 $x =
+      $LL.Main.incr38 r0 v s0 $x
 
 $LL.Main.sig2 : ([8], [8], [8]) -> [26]
-$LL.Main.sig2 $0 $1 $2 =
-      2'h0 # $1 # $0 # $2
+$LL.Main.sig2 s0 v s1 =
+      2'h0 # v # s0 # s1
 
 $LL.Main.sig1 : ([8], [8], [8]) -> [26]
-$LL.Main.sig1 $0 $1 $2 =
-      2'h2 # $0 # $1 # $2
+$LL.Main.sig1 r0 sto0 sto1 =
+      2'h2 # r0 # sto0 # sto1
 
 $LL.Main.sig : ([8], [8], [8]) -> [26]
-$LL.Main.sig $0 $1 $2 =
-      $LL.Main.sig1 $0 $1 $2
+$LL.Main.sig v s0 $x =
+      $LL.Main.sig1 v s0 $x
 
 device top_level
       input __in0 : [1]

@@ -1,31 +1,31 @@
 $Pure.dispatch : ([1]) -> [1]
-$Pure.dispatch $1 =
-      $LL.Pure.dispatch $1
+$Pure.dispatch i =
+      $LL.Pure.dispatch i
 
 ReWire.Prelude.not1 : ([1]) -> [1]
-ReWire.Prelude.not1 $0 =
-      $LL.ReWire.Prelude.not $0 $0
+ReWire.Prelude.not1 $14 =
+      $LL.ReWire.Prelude.not $14 $14
 
 $LL.ReWire.Prelude.not3 : ([1]) -> [1]
-$LL.ReWire.Prelude.not3 $0 =
+$LL.ReWire.Prelude.not3 $55 =
       1'h1
 
 Main.f1 : ([1]) -> [1]
-Main.f1 $0 =
-      ReWire.Prelude.not1 $0
+Main.f1 $x =
+      ReWire.Prelude.not1 $x
 
 ReWire.Monad.iter1 : ([1]) -> [1]
-ReWire.Monad.iter1 $0 =
-      Main.f1 $0
+ReWire.Monad.iter1 $1 =
+      Main.f1 $1
 
 $LL.Pure.dispatch : ([1]) -> [1]
-$LL.Pure.dispatch $0 =
-      ReWire.Monad.iter1 $0
+$LL.Pure.dispatch i =
+      ReWire.Monad.iter1 i
 
 $LL.ReWire.Prelude.not : ([1], [1]) -> [1]
-$LL.ReWire.Prelude.not $0 $1 =
-      if eq $1 1'h1 then 1'h0
-            else $LL.ReWire.Prelude.not3 $0
+$LL.ReWire.Prelude.not $14 $56 =
+      if eq $56 1'h1 then 1'h0
+            else $LL.ReWire.Prelude.not3 $14
 
 device top_level
       input __in0 : [1]

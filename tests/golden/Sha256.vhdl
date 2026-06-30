@@ -223,14 +223,6 @@ component \Main_dev\ is
             arg3 : in std_logic_vector (5 downto 0);
             res : out std_logic_vector (1296 downto 0));
       end component;
-      component \ZLL_Main_dev107\ is
-      port (arg0 : in std_logic_vector (513 downto 0);
-            arg1 : in std_logic_vector (255 downto 0);
-            arg2 : in std_logic_vector (511 downto 0);
-            arg3 : in std_logic_vector (255 downto 0);
-            arg4 : in std_logic_vector (5 downto 0);
-            res : out std_logic_vector (1296 downto 0));
-      end component;
       signal \__resumption_tag\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"01000000");
       signal \__resumption_tag_next\ : std_logic_vector (7 downto 0);
       signal \__st0\ : std_logic_vector (223 downto 0) := std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
@@ -280,11 +272,11 @@ component \Main_dev\ is
       signal zi50 : std_logic_vector (255 downto 0);
       signal zi52 : std_logic_vector (255 downto 0);
       signal zi53 : std_logic_vector (5 downto 0);
-      signal zll_main_dev107_out : std_logic_vector (1296 downto 0);
+      signal \main_loop_outR1\ : std_logic_vector (1296 downto 0);
       signal zi54 : std_logic_vector (255 downto 0);
       signal zi56 : std_logic_vector (255 downto 0);
       signal zi57 : std_logic_vector (5 downto 0);
-      signal \zll_main_dev107_outR1\ : std_logic_vector (1296 downto 0);
+      signal \main_loop_outR2\ : std_logic_vector (1296 downto 0);
       signal zres : std_logic_vector (1296 downto 0);
 begin
 zi1 <= (\__st0\ & \__st1\);
@@ -326,12 +318,12 @@ zi1 <= (\__st0\ & \__st1\);
       zi50 <= (\__st0\ & \__st1\);
       zi52 <= \__st3\(261 downto 6);
       zi53 <= \__st3\(5 downto 0);
-      \instR3\ : \ZLL_Main_dev107\ port map (\__in0\, zi50, \__st2\, zi52, zi53, zll_main_dev107_out);
+      \instR3\ : \Main_loop\ port map (zi50, \__st2\, zi52, zi53, \main_loop_outR1\);
       zi54 <= (\__st0\ & \__st1\);
       zi56 <= \__st3\(261 downto 6);
       zi57 <= \__st3\(5 downto 0);
-      \instR4\ : \ZLL_Main_dev107\ port map (\__in0\, zi54, \__st2\, zi56, zi57, \zll_main_dev107_outR1\);
-      zres <= rw_cond(rw_eq(\__resumption_tag\(7 downto 6), std_logic_vector'(B"01")), main_dev_out, rw_cond(rw_eq(\__resumption_tag\(7 downto 6), std_logic_vector'(B"10")), rw_cond(rw_eq(zi10, std_logic_vector'(B"1")), \main_dev_outR1\, main_loop_out), rw_cond(rw_eq(\__resumption_tag\(7 downto 6), std_logic_vector'(B"11")), zll_main_dev107_out, \zll_main_dev107_outR1\)));
+      \instR4\ : \Main_loop\ port map (zi54, \__st2\, zi56, zi57, \main_loop_outR2\);
+      zres <= rw_cond(rw_eq(\__resumption_tag\(7 downto 6), std_logic_vector'(B"01")), main_dev_out, rw_cond(rw_eq(\__resumption_tag\(7 downto 6), std_logic_vector'(B"10")), rw_cond(rw_eq(zi10, std_logic_vector'(B"1")), \main_dev_outR1\, main_loop_out), rw_cond(rw_eq(\__resumption_tag\(7 downto 6), std_logic_vector'(B"11")), \main_loop_outR1\, \main_loop_outR2\)));
       \__resumption_tag_next\ <= zres(1037 downto 1030);
       \__st0_next\ <= zres(1029 downto 806);
       \__st1_next\ <= zres(805 downto 774);
@@ -370,33 +362,6 @@ architecture rtl of \ZLL_Main_sigma115\ is
 
 begin
 res <= rw_or(rw_shiftr(arg1, arg0), rw_shiftl(arg1, rw_sub(std_logic_vector'(B"00000000000000000000000000100000"), arg0)));
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_dev107\ is
-port (arg0 : in std_logic_vector (513 downto 0);
-      arg1 : in std_logic_vector (255 downto 0);
-      arg2 : in std_logic_vector (511 downto 0);
-      arg3 : in std_logic_vector (255 downto 0);
-      arg4 : in std_logic_vector (5 downto 0);
-      res : out std_logic_vector (1296 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_dev107\ is
-component \Main_loop\ is
-      port (arg0 : in std_logic_vector (255 downto 0);
-            arg1 : in std_logic_vector (511 downto 0);
-            arg2 : in std_logic_vector (255 downto 0);
-            arg3 : in std_logic_vector (5 downto 0);
-            res : out std_logic_vector (1296 downto 0));
-      end component;
-      signal main_loop_out : std_logic_vector (1296 downto 0);
-begin
-inst : \Main_loop\ port map (arg1, arg2, arg3, arg4, main_loop_out);
-      res <= main_loop_out;
 end architecture;
 
 library ieee;

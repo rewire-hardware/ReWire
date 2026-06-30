@@ -5,12 +5,12 @@ extern mymod
       output out : [8]
 
 $LL.Main.loop2 : ([8]) -> [9]
-$LL.Main.loop2 $0 =
-      1'h1 # $0
+$LL.Main.loop2 rabind =
+      1'h1 # rabind
 
 $LL.Main.loop1 : ([9]) -> [9]
-$LL.Main.loop1 $0 =
-      $LL.Main.loop2 $0[0 +: 8]
+$LL.Main.loop1 disc =
+      $LL.Main.loop2 disc[0 +: 8]
 
 device top_level
       input __in0 : [16]

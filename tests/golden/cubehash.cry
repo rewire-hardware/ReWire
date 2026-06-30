@@ -42,7 +42,7 @@ rw__LL_Main_swapix125 x0 x1 x2 x3 x4 x5 x6 = if x6 == 0b1 then (rw__LL_Main_swap
 
 // $LL.Main.swapix124
 rw__LL_Main_swapix124 : [5] -> [1024] -> [32]
-rw__LL_Main_swapix124 x0 x1 = rw__LL_Main_swapix121 x0 x1
+rw__LL_Main_swapix124 x0 x1 = rw__LL_Main_swapix17 x0 x1
 
 // $LL.Main.rotaccess9
 rw__LL_Main_rotaccess9 : [5] -> [1] -> [1024] -> [1] -> [1] -> [1] -> [33]
@@ -122,7 +122,7 @@ rw__LL_Main_accesses18 x0 x1 x2 x3 = x0 # ((rw'resize`{32} (x2 >> (((0x000000000
 
 // $LL.Main.swapix222
 rw__LL_Main_swapix222 : [5] -> [1] -> [1] -> [5] -> [1024] -> [1] -> [32]
-rw__LL_Main_swapix222 x0 x1 x2 x3 x4 x5 = if x5 == 0b1 then (rw__LL_Main_swapix121 x0 x4) else (rw__LL_Main_swapix117 x3 x4 (rw_ReWire_Prelude___ x1 x2))
+rw__LL_Main_swapix222 x0 x1 x2 x3 x4 x5 = if x5 == 0b1 then (rw__LL_Main_swapix29 x0 x4) else (rw__LL_Main_swapix211 x3 x4 (rw_ReWire_Prelude___ x1 x2))
 
 // $LL.Main.swapix121
 rw__LL_Main_swapix121 : [5] -> [1024] -> [32]
@@ -135,10 +135,6 @@ rw__LL_Main_swapix120 x0 x1 x2 x3 x4 x5 = rw__LL_Main_swapix11 x0 x1 x2 x3 x4 x5
 // Main.swap2
 rw_Main_swap2 : [1024] -> [1024]
 rw_Main_swap2 x0 = rw__LL_Main_swap21 x0
-
-// $LL.Main.initialize65
-rw__LL_Main_initialize65 : [32] -> [32]
-rw__LL_Main_initialize65 x0 = x0
 
 // $LL.Main.swapix119
 rw__LL_Main_swapix119 : [5] -> [1024] -> [5] -> [32]
@@ -231,6 +227,10 @@ rw__LL_Main_accesses16 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_accesses6 x0 x1 x2 x3 
 // $LL.Main.addix8
 rw__LL_Main_addix8 : [1029] -> [32]
 rw__LL_Main_addix8 x0 = rw__LL_Main_addix10 (take`{1024} x0) (drop`{1024} x0)
+
+// $LL.Main.swapix218
+rw__LL_Main_swapix218 : [5] -> [1024] -> [32]
+rw__LL_Main_swapix218 x0 x1 = rw'resize`{32} (x1 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} x0)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))
 
 // $LL.Main.addix7
 rw__LL_Main_addix7 : [32] -> [1] -> [32]
@@ -404,6 +404,10 @@ rw__LL_Main_rotaccess4 x0 x1 x2 x3 x4 = rw__LL_Main_rotaccess7 x0 x1 x2 x4
 rw_Main_add : [1024] -> [1024]
 rw_Main_add x0 = rw__LL_Main_add1 x0
 
+// $LL.Main.xorix15
+rw__LL_Main_xorix15 : [5] -> [1024] -> [32]
+rw__LL_Main_xorix15 x0 x1 = rw'resize`{32} (x1 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} x0)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))
+
 // $LL.Main.swapix315
 rw__LL_Main_swapix315 : [1024] -> [5] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_swapix315 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_swapix323 x0 x2 x1 x3 x4 x5 x6
@@ -430,7 +434,7 @@ rw__LL_Main_rot15 x0 x1 x2 = rw__LL_Main_rot14 x0 x1 x2 x1
 
 // $LL.Main.rot14
 rw__LL_Main_rot14 : [32] -> [1] -> [32] -> [1] -> [32]
-rw__LL_Main_rot14 x0 x1 x2 x3 = if x3 == 0b1 then (rw__LL_Main_initialize65 x2) else (rw__LL_Main_rot12 x0 x2 x1)
+rw__LL_Main_rot14 x0 x1 x2 x3 = if x3 == 0b1 then (rw__LL_Main_rot x2) else (rw__LL_Main_rot12 x0 x2 x1)
 
 // Main.swapix4
 rw_Main_swapix4 : [1024] -> [5] -> [32]
@@ -494,11 +498,15 @@ rw__LL_Main_rot13 x0 x1 = rw__LL_Main_rot11 x0 x1
 
 // $LL.Main.swapix212
 rw__LL_Main_swapix212 : [5] -> [1] -> [1] -> [5] -> [5] -> [1024] -> [1] -> [32]
-rw__LL_Main_swapix212 x0 x1 x2 x3 x4 x5 x6 = if x6 == 0b1 then (rw__LL_Main_swapix121 x4 x5) else (rw__LL_Main_swapix23 x0 x1 x2 x3 x5 (rw_ReWire_Prelude___ x1 (rw_ReWire_Prelude_not x2)))
+rw__LL_Main_swapix212 x0 x1 x2 x3 x4 x5 x6 = if x6 == 0b1 then (rw__LL_Main_swapix218 x4 x5) else (rw__LL_Main_swapix23 x0 x1 x2 x3 x5 (rw_ReWire_Prelude___ x1 (rw_ReWire_Prelude_not x2)))
 
 // $LL.Main.swap41
 rw__LL_Main_swap41 : [1024] -> [1024]
 rw__LL_Main_swap41 x0 = (rw_Main_swapix4 x0 0b00000) # ((rw_Main_swapix4 x0 0b00001) # ((rw_Main_swapix4 x0 0b00010) # ((rw_Main_swapix4 x0 0b00011) # ((rw_Main_swapix4 x0 0b00100) # ((rw_Main_swapix4 x0 0b00101) # ((rw_Main_swapix4 x0 0b00110) # ((rw_Main_swapix4 x0 0b00111) # ((rw_Main_swapix4 x0 0b01000) # ((rw_Main_swapix4 x0 0b01001) # ((rw_Main_swapix4 x0 0b01010) # ((rw_Main_swapix4 x0 0b01011) # ((rw_Main_swapix4 x0 0b01100) # ((rw_Main_swapix4 x0 0b01101) # ((rw_Main_swapix4 x0 0b01110) # ((rw_Main_swapix4 x0 0b01111) # ((rw_Main_swapix4 x0 0b10000) # ((rw_Main_swapix4 x0 0b10001) # ((rw_Main_swapix4 x0 0b10010) # ((rw_Main_swapix4 x0 0b10011) # ((rw_Main_swapix4 x0 0b10100) # ((rw_Main_swapix4 x0 0b10101) # ((rw_Main_swapix4 x0 0b10110) # ((rw_Main_swapix4 x0 0b10111) # ((rw_Main_swapix4 x0 0b11000) # ((rw_Main_swapix4 x0 0b11001) # ((rw_Main_swapix4 x0 0b11010) # ((rw_Main_swapix4 x0 0b11011) # ((rw_Main_swapix4 x0 0b11100) # ((rw_Main_swapix4 x0 0b11101) # ((rw_Main_swapix4 x0 0b11110) # (rw_Main_swapix4 x0 0b11111)))))))))))))))))))))))))))))))
+
+// $LL.Main.swapix211
+rw__LL_Main_swapix211 : [5] -> [1024] -> [1] -> [32]
+rw__LL_Main_swapix211 x0 x1 x2 = rw__LL_Main_swapix219 x0 x1
 
 // $LL.Main.addix5
 rw__LL_Main_addix5 : [1] -> [32] -> [32] -> [32]
@@ -552,6 +560,10 @@ rw_Main_nopipeline1 x0 x1 = rw__LL_Main_nopipeline21 x0 x0 x1
 rw_Main_swapix2 : [1024] -> [5] -> [32]
 rw_Main_swapix2 x0 x1 = rw__LL_Main_swapix216 (x0 # x1)
 
+// $LL.Main.swapix29
+rw__LL_Main_swapix29 : [5] -> [1024] -> [32]
+rw__LL_Main_swapix29 x0 x1 = rw'resize`{32} (x1 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} x0)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))
+
 // $LL.Main.accesses11
 rw__LL_Main_accesses11 : [1024] -> [5] -> [65]
 rw__LL_Main_accesses11 x0 x1 = rw__LL_Main_accesses5 x0 (take`{1} x1) (take`{1} (drop`{1} x1)) (take`{1} (drop`{2} x1)) (take`{1} (drop`{3} x1)) (drop`{4} x1)
@@ -559,6 +571,10 @@ rw__LL_Main_accesses11 x0 x1 = rw__LL_Main_accesses5 x0 (take`{1} x1) (take`{1} 
 // $LL.Main.xorix11
 rw__LL_Main_xorix11 : [5] -> [5] -> [1024] -> [32]
 rw__LL_Main_xorix11 x0 x1 x2 = (rw'resize`{32} (x2 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} x0)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))) ^ (rw'resize`{32} (x2 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} x1)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020)))
+
+// $LL.Main.swapix17
+rw__LL_Main_swapix17 : [5] -> [1024] -> [32]
+rw__LL_Main_swapix17 x0 x1 = rw'resize`{32} (x1 >> (((0x00000000000000000000000000000020 - (rw'resize`{128} x0)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))
 
 // $LL.Main.accesses10
 rw__LL_Main_accesses10 : [1] -> [5] -> [1024] -> [5] -> [65]
@@ -588,10 +604,6 @@ rw__LL_Main_rotaccess2 x0 x1 x2 = rw__LL_Main_rotaccess1 x0 x1 (take`{1} x2) (ta
 rw__LL_Main_rot10 : [32] -> [1024] -> [5] -> [32]
 rw__LL_Main_rot10 x0 x1 x2 = rw__LL_Main_rot6 x0 (rw_Main_rotaccess x1 x2)
 
-// $LL.Main.nopipeline13
-rw__LL_Main_nopipeline13 : [1024] -> [2050]
-rw__LL_Main_nopipeline13 x0 = rw__LL_Main_nopipeline23 (rw__LL_Main_nopipeline11 (x0 # x0))
-
 // $LL.Main.rotaccess1
 rw__LL_Main_rotaccess1 : [5] -> [1024] -> [1] -> [1] -> [1] -> [1] -> [1] -> [33]
 rw__LL_Main_rotaccess1 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_rotaccess x0 x1 x2 x3 x4 x5 x6
@@ -603,6 +615,10 @@ rw__LL_Main_swap21 x0 = rw__LL_Main_swap2 x0
 // $LL.Main.swapix28
 rw__LL_Main_swapix28 : [1024] -> [5] -> [32]
 rw__LL_Main_swapix28 x0 x1 = rw__LL_Main_swapix2 x0 x1
+
+// $LL.Main.addix3
+rw__LL_Main_addix3 : [32] -> [32]
+rw__LL_Main_addix3 x0 = x0
 
 // $LL.Main.xor1
 rw__LL_Main_xor1 : [1024] -> [1024]
@@ -647,10 +663,6 @@ rw__LL_Main_nopipeline11 x0 = rw__LL_Main_nopipeline18 (take`{1024} x0) (drop`{1
 // $LL.Main.swapix310
 rw__LL_Main_swapix310 : [1029] -> [32]
 rw__LL_Main_swapix310 x0 = rw__LL_Main_swapix318 (take`{1024} x0) (drop`{1024} x0)
-
-// $LL.Main.nopipeline10
-rw__LL_Main_nopipeline10 : [1024] -> [2050]
-rw__LL_Main_nopipeline10 x0 = rw__LL_Main_nopipeline13 x0
 
 // $LL.Main.explode5
 rw__LL_Main_explode5 : [5] -> [5]
@@ -762,7 +774,7 @@ rw__LL_Main_swapix38 x0 x1 x2 x3 x4 x5 = rw__LL_Main_swapix35 x0 x1 x2 x3 x4 x5
 
 // $LL.Main.xorix5
 rw__LL_Main_xorix5 : [5] -> [1024] -> [1] -> [32]
-rw__LL_Main_xorix5 x0 x1 x2 = rw__LL_Main_swapix121 x0 x1
+rw__LL_Main_xorix5 x0 x1 x2 = rw__LL_Main_xorix15 x0 x1
 
 // $LL.Main.swapix25
 rw__LL_Main_swapix25 : [5] -> [1024] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
@@ -770,7 +782,7 @@ rw__LL_Main_swapix25 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_swapix214 x2 x0 x1 x3 x4
 
 // $LL.Main.addix
 rw__LL_Main_addix : [32] -> [32]
-rw__LL_Main_addix x0 = rw__LL_Main_initialize65 x0
+rw__LL_Main_addix x0 = rw__LL_Main_addix3 x0
 
 // $LL.Main.xorix4
 rw__LL_Main_xorix4 : [1] -> [1024] -> [1] -> [1] -> [1] -> [1] -> [32]
@@ -854,7 +866,11 @@ rw__LL_Main_rot5 x0 = rw__LL_Main_rot9 (take`{32} x0) (drop`{32} x0)
 
 // $LL.Main.swapix34
 rw__LL_Main_swapix34 : [1024] -> [5] -> [1] -> [5] -> [1] -> [1] -> [32]
-rw__LL_Main_swapix34 x0 x1 x2 x3 x4 x5 = if x5 == 0b1 then (rw__LL_Main_swapix422 x0 x1) else (rw__LL_Main_swapix425 x0 x3 (rw_ReWire_Prelude___ (rw_ReWire_Prelude_not x2) x4))
+rw__LL_Main_swapix34 x0 x1 x2 x3 x4 x5 = if x5 == 0b1 then (rw__LL_Main_swapix422 x0 x1) else (rw__LL_Main_swapix33 x0 x3 (rw_ReWire_Prelude___ (rw_ReWire_Prelude_not x2) x4))
+
+// $LL.Main.swapix33
+rw__LL_Main_swapix33 : [1024] -> [5] -> [1] -> [32]
+rw__LL_Main_swapix33 x0 x1 x2 = rw__LL_Main_swapix325 x0 x1
 
 // $LL.Main.swapix32
 rw__LL_Main_swapix32 : [1024] -> [1] -> [1] -> [1] -> [5] -> [1] -> [1] -> [5] -> [32]
@@ -882,7 +898,7 @@ rw_Main_explode5 x0 = rw__LL_Main_explode5 x0
 
 // $LL.Main.nopipeline1
 rw__LL_Main_nopipeline1 : [1024] -> [2050]
-rw__LL_Main_nopipeline1 x0 = rw__LL_Main_nopipeline10 x0
+rw__LL_Main_nopipeline1 x0 = rw__LL_Main_nopipeline17 x0
 
 // $LL.Main.swap3
 rw__LL_Main_swap3 : [1024] -> [1024]
@@ -959,6 +975,10 @@ rw__LL_Main_rotaccess x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_rotaccess6 x0 x2 x1 x3 
 // $LL.Main.xorix
 rw__LL_Main_xorix : [1] -> [1] -> [1024] -> [1] -> [1] -> [1] -> [5] -> [32]
 rw__LL_Main_xorix x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_xorix2 x0 x1 x2 x3 x4 x5 x6
+
+// $LL.Main.rot
+rw__LL_Main_rot : [32] -> [32]
+rw__LL_Main_rot x0 = x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [1024] -> [1] -> [2048]

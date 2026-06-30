@@ -1,55 +1,55 @@
 $Pure.dispatch : ([8], [1]) -> [17]
-$Pure.dispatch $0 $1 =
-      $LL.Pure.dispatch $1 $0
+$Pure.dispatch disc i =
+      $LL.Pure.dispatch i disc
 
 $LL.Main.go10 : ([8]) -> [17]
-$LL.Main.go10 $0 =
-      Main.go $0
+$LL.Main.go10 sto0 =
+      Main.go sto0
 
 $LL.Main.go9 : ([17]) -> [17]
-$LL.Main.go9 $0 =
-      $LL.Main.go6 $0[8 +: 8] $0[0 +: 8]
+$LL.Main.go9 disc =
+      $LL.Main.go6 disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.go8 : ([8], [8]) -> [17]
-$LL.Main.go8 $0 $1 =
-      1'h0 # $0 # $1
+$LL.Main.go8 v s0 =
+      1'h0 # v # s0
 
 $LL.Main.go7 : ([1], [8]) -> [17]
-$LL.Main.go7 $0 $1 =
-      $LL.Main.go10 $1
+$LL.Main.go7 $1 sto0 =
+      $LL.Main.go10 sto0
 
 $LL.Main.go6 : ([8], [8]) -> [17]
-$LL.Main.go6 $0 $1 =
-      $LL.Main.go2 $0 $1
+$LL.Main.go6 v $x =
+      $LL.Main.go2 v $x
 
 $LL.Pure.dispatch : ([1], [8]) -> [17]
-$LL.Pure.dispatch $0 $1 =
-      $LL.Main.go3 $0 $1
+$LL.Pure.dispatch i $x =
+      $LL.Main.go3 i $x
 
 $LL.Main.go5 : ([1], [1], [8]) -> [17]
-$LL.Main.go5 $0 $1 $2 =
-      if eq $1 1'h1 then $LL.Main.go10 $2
-            else $LL.Main.go7 $0 $2
+$LL.Main.go5 b $2 sto0 =
+      if eq $2 1'h1 then $LL.Main.go10 sto0
+            else $LL.Main.go7 b sto0
 
 $LL.Main.go4 : ([16]) -> [17]
-$LL.Main.go4 $0 =
-      $LL.Main.go $0[8 +: 8] $0[0 +: 8]
+$LL.Main.go4 disc =
+      $LL.Main.go disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.go3 : ([1], [8]) -> [17]
-$LL.Main.go3 $0 $1 =
-      $LL.Main.go5 $0 $0 $1
+$LL.Main.go3 b sto0 =
+      $LL.Main.go5 b b sto0
 
 $LL.Main.go2 : ([8], [8]) -> [17]
-$LL.Main.go2 $0 $1 =
-      1'h1 # $0 # $1
+$LL.Main.go2 rabind sto0 =
+      1'h1 # rabind # sto0
 
 $LL.Main.go : ([8], [8]) -> [17]
-$LL.Main.go $0 $1 =
-      $LL.Main.go8 $0 $1
+$LL.Main.go v $x =
+      $LL.Main.go8 v $x
 
 Main.go : ([8]) -> [17]
-Main.go $0 =
-      $LL.Main.go9 ($LL.Main.go4 ($0 # $0))
+Main.go sto0 =
+      $LL.Main.go9 ($LL.Main.go4 (sto0 # sto0))
 
 device top_level
       input __in0 : [1]

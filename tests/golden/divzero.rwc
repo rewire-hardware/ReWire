@@ -1,38 +1,38 @@
 $Pure.dispatch : ([8]) -> [16]
-$Pure.dispatch $1 =
-      $LL.Pure.dispatch $1
+$Pure.dispatch i =
+      $LL.Pure.dispatch i
 
 $LL.Main.f6 : ([8], [8]) -> [16]
-$LL.Main.f6 $0 $1 =
-      udiv $0 $1 # xor (umod $0 $1) 8'hff
+$LL.Main.f6 a b =
+      udiv a b # xor (umod a b) 8'hff
 
 $LL.Pure.dispatch : ([8]) -> [16]
-$LL.Pure.dispatch $0 =
-      ReWire.Monad.iter $0
+$LL.Pure.dispatch i =
+      ReWire.Monad.iter i
 
 $LL.Main.f4 : ([8], [8]) -> [16]
-$LL.Main.f4 $0 $1 =
-      $LL.Main.f6 $0 $1
+$LL.Main.f4 $x $x1 =
+      $LL.Main.f6 $x $x1
 
 $LL.Main.f3 : ([8]) -> [16]
-$LL.Main.f3 $0 =
-      $LL.Main.f1 $0
+$LL.Main.f3 $x =
+      $LL.Main.f1 $x
 
 Main.f : ([8]) -> [16]
-Main.f $0 =
-      $LL.Main.f3 $0
+Main.f $x =
+      $LL.Main.f3 $x
 
 $LL.Main.f1 : ([8]) -> [16]
-$LL.Main.f1 $0 =
-      $LL.Main.f $0 (and $0 8'h3)
+$LL.Main.f1 a =
+      $LL.Main.f a (and a 8'h3)
 
 ReWire.Monad.iter : ([8]) -> [16]
-ReWire.Monad.iter $0 =
-      Main.f $0
+ReWire.Monad.iter $1 =
+      Main.f $1
 
 $LL.Main.f : ([8], [8]) -> [16]
-$LL.Main.f $0 $1 =
-      $LL.Main.f4 $0 $1
+$LL.Main.f $x $x1 =
+      $LL.Main.f4 $x $x1
 
 device top_level
       input __in0 : [8]

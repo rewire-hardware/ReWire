@@ -1,80 +1,80 @@
 $Pure.dispatch : ([16]) -> [9]
-$Pure.dispatch $1 =
-      $LL.Pure.dispatch $1
+$Pure.dispatch i =
+      $LL.Pure.dispatch i
 
 Main.compute : ([16]) -> [8]
-Main.compute $0 =
-      $LL.Main.compute1 $0
+Main.compute $x =
+      $LL.Main.compute1 $x
 
 $LL.Main.compute5 : ([16]) -> [8]
-$LL.Main.compute5 $0 =
-      $0[0 +: 8]
+$LL.Main.compute5 w =
+      w[0 +: 8]
 
 $LL.Main.loop3 : ([16]) -> [9]
-$LL.Main.loop3 $0 =
-      $LL.Main.loop (1'h0 # Main.compute $0)
+$LL.Main.loop3 i =
+      $LL.Main.loop (1'h0 # Main.compute i)
 
 "$LL.ReWire.Prelude.&&3" : ([1], [1], [2]) -> [1]
-"$LL.ReWire.Prelude.&&3" $0 $1 $2 =
-      if eq $2[1 +: 1] 1'h1 then "$LL.ReWire.Prelude.&&1" $2[0 +: 1]
-            else "$LL.ReWire.Prelude.&&" ($0 # $1)
+"$LL.ReWire.Prelude.&&3" $10 $11 $52 =
+      if eq $52[1 +: 1] 1'h1 then "$LL.ReWire.Prelude.&&1" $52[0 +: 1]
+            else "$LL.ReWire.Prelude.&&" ($10 # $11)
 
 $LL.Main.loop2 : ([8]) -> [9]
-$LL.Main.loop2 $0 =
-      1'h1 # $0
+$LL.Main.loop2 rabind =
+      1'h1 # rabind
 
 "$LL.ReWire.Prelude.&&2" : ([1]) -> [1]
-"$LL.ReWire.Prelude.&&2" $0 =
+"$LL.ReWire.Prelude.&&2" $32 =
       1'h0
 
 "$LL.ReWire.Prelude.&&1" : ([1]) -> [1]
-"$LL.ReWire.Prelude.&&1" $0 =
-      $0
+"$LL.ReWire.Prelude.&&1" b =
+      b
 
 $LL.Main.loop1 : ([16]) -> [9]
-$LL.Main.loop1 $0 =
-      $LL.Main.loop3 $0
+$LL.Main.loop1 $x =
+      $LL.Main.loop3 $x
 
 $LL.Main.compute4 : ([16]) -> [8]
-$LL.Main.compute4 $0 =
-      $LL.Main.compute2 $0 ("ReWire.Prelude.&&" $0[15 +: 1] $0[8 +: 1])
+$LL.Main.compute4 w =
+      $LL.Main.compute2 w ("ReWire.Prelude.&&" w[15 +: 1] w[8 +: 1])
 
 $LL.Main.compute3 : ([16]) -> [8]
-$LL.Main.compute3 $0 =
-      $0[8 +: 8]
+$LL.Main.compute3 w =
+      w[8 +: 8]
 
 Main.loop : ([16]) -> [9]
-Main.loop $0 =
-      $LL.Main.loop1 $0
+Main.loop $x =
+      $LL.Main.loop1 $x
 
 "ReWire.Prelude.&&" : ([1], [1]) -> [1]
-"ReWire.Prelude.&&" $0 $1 =
-      "$LL.ReWire.Prelude.&&3" $0 $1 ($0 # $1)
+"ReWire.Prelude.&&" $10 $11 =
+      "$LL.ReWire.Prelude.&&3" $10 $11 ($10 # $11)
 
 $LL.Pure.dispatch : ([16]) -> [9]
-$LL.Pure.dispatch $0 =
-      Main.loop $0
+$LL.Pure.dispatch i =
+      Main.loop i
 
 $LL.Main.compute2 : ([16], [1]) -> [8]
-$LL.Main.compute2 $0 $1 =
-      if eq $1 1'h1 then $LL.Main.compute5 $0
-            else $LL.Main.compute $0 ("ReWire.Prelude.&&" $0[15 +: 1] $0[8 +: 1])
+$LL.Main.compute2 w $5 =
+      if eq $5 1'h1 then $LL.Main.compute5 w
+            else $LL.Main.compute w ("ReWire.Prelude.&&" w[15 +: 1] w[8 +: 1])
 
 $LL.Main.loop : ([9]) -> [9]
-$LL.Main.loop $0 =
-      $LL.Main.loop2 $0[0 +: 8]
+$LL.Main.loop disc =
+      $LL.Main.loop2 disc[0 +: 8]
 
 $LL.Main.compute1 : ([16]) -> [8]
-$LL.Main.compute1 $0 =
-      $LL.Main.compute4 $0
+$LL.Main.compute1 $x =
+      $LL.Main.compute4 $x
 
 "$LL.ReWire.Prelude.&&" : ([2]) -> [1]
-"$LL.ReWire.Prelude.&&" $0 =
-      "$LL.ReWire.Prelude.&&2" $0[0 +: 1]
+"$LL.ReWire.Prelude.&&" $51 =
+      "$LL.ReWire.Prelude.&&2" $51[0 +: 1]
 
 $LL.Main.compute : ([16], [1]) -> [8]
-$LL.Main.compute $0 $1 =
-      $LL.Main.compute3 $0
+$LL.Main.compute w $4 =
+      $LL.Main.compute3 w
 
 device top_level
       input __in0 : [16]

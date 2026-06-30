@@ -1,312 +1,312 @@
 $Pure.dispatch : ([30], [10]) -> [78]
-$Pure.dispatch $0 $1 =
-      $LL.Pure.dispatch $1 $0
+$Pure.dispatch disc i =
+      $LL.Pure.dispatch i disc
 
 $LL.Main.loop7 : ([40]) -> [46]
-$LL.Main.loop7 $0 =
-      $LL.Main.loop4 $0[30 +: 10] $0[0 +: 30]
+$LL.Main.loop7 $31 =
+      $LL.Main.loop4 $31[30 +: 10] $31[0 +: 30]
 
 $LL.Main.inputToMyState18 : ([8], [1], [5], [9]) -> [15]
-$LL.Main.inputToMyState18 $0 $1 $2 $3 =
-      $LL.Main.inputToMyState14 $0 $1 $2 $3
+$LL.Main.inputToMyState18 $x $x1 $x2 $x3 =
+      $LL.Main.inputToMyState14 $x $x1 $x2 $x3
 
 $LL.Main.incrPipeline10 : ([15], [30]) -> [45]
-$LL.Main.incrPipeline10 $0 $1 =
-      $LL.Main.incrPipeline $0 $1
+$LL.Main.incrPipeline10 $x $x1 =
+      $LL.Main.incrPipeline $x $x1
 
 Main.incrPipeline : ([45]) -> [45]
-Main.incrPipeline $0 =
-      $LL.Main.incrPipeline1 $0
+Main.incrPipeline $x =
+      $LL.Main.incrPipeline1 $x
 
 Main.inputToMyState : ([10], [15]) -> [15]
-Main.inputToMyState $0 $1 =
-      $LL.Main.inputToMyState16 $0 $1 ($0 # $1)
+Main.inputToMyState $1 $2 =
+      $LL.Main.inputToMyState16 $1 $2 ($1 # $2)
 
 $LL.Main.inputToMyState17 : ([10], [15], [25]) -> [15]
-$LL.Main.inputToMyState17 $0 $1 $2 =
-      if and (eq $2[23 +: 2] 2'h2) (and (eq $2[15 +: 1] 1'h1) (eq $2[13 +: 1] 1'h1)) then $LL.Main.inputToMyState $2[14 +: 1] $2[9 +: 4] $2[0 +: 9]
-            else $LL.Main.inputToMyState13 $0 $1 ($0 # $1)
+$LL.Main.inputToMyState17 $1 $2 $24 =
+      if and (eq $24[23 +: 2] 2'h2) (and (eq $24[15 +: 1] 1'h1) (eq $24[13 +: 1] 1'h1)) then $LL.Main.inputToMyState $24[14 +: 1] $24[9 +: 4] $24[0 +: 9]
+            else $LL.Main.inputToMyState13 $1 $2 ($1 # $2)
 
 $LL.Main.incrPipeline9 : ([30]) -> [1]
-$LL.Main.incrPipeline9 $0 =
+$LL.Main.incrPipeline9 $21 =
       1'h1
 
 ReWire.Monad.iterSt1 : ([10], [30]) -> [78]
-ReWire.Monad.iterSt1 $0 $1 =
-      $LL.ReWire.Monad.iterSt32 ($LL.ReWire.Monad.iterSt37 ($LL.ReWire.Monad.iterSt16 $0 ($1 # $1)))
+ReWire.Monad.iterSt1 $3 sto0 =
+      $LL.ReWire.Monad.iterSt32 ($LL.ReWire.Monad.iterSt37 ($LL.ReWire.Monad.iterSt16 $3 (sto0 # sto0)))
 
 $LL.Main.inputToMyState16 : ([10], [15], [25]) -> [15]
-$LL.Main.inputToMyState16 $0 $1 $2 =
-      if eq $2[23 +: 2] 2'h0 then $LL.Main.inputToMyState12 $2[15 +: 4] $2[14 +: 1] $2[9 +: 5] $2[0 +: 9]
-            else $LL.Main.inputToMyState6 $0 $1 ($0 # $1)
+$LL.Main.inputToMyState16 $1 $2 $26 =
+      if eq $26[23 +: 2] 2'h0 then $LL.Main.inputToMyState12 $26[15 +: 4] $26[14 +: 1] $26[9 +: 5] $26[0 +: 9]
+            else $LL.Main.inputToMyState6 $1 $2 ($1 # $2)
 
 $LL.Main.loop6 : ([30], [15]) -> [46]
-$LL.Main.loop6 $0 $1 =
-      Main.myStateToOutput $1 # $0
+$LL.Main.loop6 s' out =
+      Main.myStateToOutput out # s'
 
 $LL.ReWire.Monad.iterSt41 : ([10], [30], [30]) -> [76]
-$LL.ReWire.Monad.iterSt41 $0 $1 $2 =
-      $LL.ReWire.Monad.iterSt29 $0 $1 $2
+$LL.ReWire.Monad.iterSt41 $3 $x $x1 =
+      $LL.ReWire.Monad.iterSt29 $3 $x $x1
 
 $LL.Main.incrPipeline8 : ([30]) -> [30]
-$LL.Main.incrPipeline8 $0 =
-      $LL.Main.incrPipeline2 $0[15 +: 15] $0[0 +: 15]
+$LL.Main.incrPipeline8 $31 =
+      $LL.Main.incrPipeline2 $31[15 +: 15] $31[0 +: 15]
 
 $LL.ReWire.Monad.iterSt40 : ([46], [30]) -> [78]
-$LL.ReWire.Monad.iterSt40 $0 $1 =
-      $LL.ReWire.Monad.iterSt22 $1 $0[30 +: 16] $0[0 +: 30]
+$LL.ReWire.Monad.iterSt40 $9 sto0 =
+      $LL.ReWire.Monad.iterSt22 sto0 $9[30 +: 16] $9[0 +: 30]
 
 $LL.ReWire.Monad.iterSt39 : ([16], [78]) -> [78]
-$LL.ReWire.Monad.iterSt39 $0 $1 =
-      $LL.ReWire.Monad.iterSt7 $0 $1[0 +: 30]
+$LL.ReWire.Monad.iterSt39 o disc =
+      $LL.ReWire.Monad.iterSt7 o disc[0 +: 30]
 
 $LL.Main.inputToMyState15 : ([4], [1], [5], [9]) -> [15]
-$LL.Main.inputToMyState15 $0 $1 $2 $3 =
-      $LL.Main.inputToMyState7 $1 $0 $2 $3
+$LL.Main.inputToMyState15 w4 b $x $x1 =
+      $LL.Main.inputToMyState7 b w4 $x $x1
 
 $LL.ReWire.Monad.iterSt38 : ([46], [30]) -> [78]
-$LL.ReWire.Monad.iterSt38 $0 $1 =
-      2'h0 # $0 # $1
+$LL.ReWire.Monad.iterSt38 v s0 =
+      2'h0 # v # s0
 
 $LL.ReWire.Monad.iterSt37 : ([76]) -> [78]
-$LL.ReWire.Monad.iterSt37 $0 =
-      $LL.ReWire.Monad.iterSt30 $0[30 +: 46] $0[0 +: 30]
+$LL.ReWire.Monad.iterSt37 disc =
+      $LL.ReWire.Monad.iterSt30 disc[30 +: 46] disc[0 +: 30]
 
 $LL.Main.inputToMyState14 : ([8], [1], [5], [9]) -> [15]
-$LL.Main.inputToMyState14 $0 $1 $2 $3 =
-      $LL.Main.inputToMyState11 $1 $0 $2 $3
+$LL.Main.inputToMyState14 w8 b $x $x1 =
+      $LL.Main.inputToMyState11 b w8 $x $x1
 
 $LL.ReWire.Monad.iterSt36 : ([16], [30]) -> [78]
-$LL.ReWire.Monad.iterSt36 $0 $2 =
-      $LL.ReWire.Monad.iterSt13 $0 $2
+$LL.ReWire.Monad.iterSt36 o $x =
+      $LL.ReWire.Monad.iterSt13 o $x
 
 $LL.Main.inputToMyState13 : ([10], [15], [25]) -> [15]
-$LL.Main.inputToMyState13 $0 $1 $2 =
-      if and (eq $2[23 +: 2] 2'h2) (and (eq $2[15 +: 1] 1'h1) (eq $2[13 +: 1] 1'h0)) then $LL.Main.inputToMyState10 $2[14 +: 1] $2[0 +: 9]
-            else $LL.Main.inputToMyState1 ($0 # $1)
+$LL.Main.inputToMyState13 $1 $2 $23 =
+      if and (eq $23[23 +: 2] 2'h2) (and (eq $23[15 +: 1] 1'h1) (eq $23[13 +: 1] 1'h0)) then $LL.Main.inputToMyState10 $23[14 +: 1] $23[0 +: 9]
+            else $LL.Main.inputToMyState1 ($1 # $2)
 
 $LL.Main.incrPipeline7 : ([30]) -> [15]
-$LL.Main.incrPipeline7 $0 =
-      trunc 15 (lshr $0 (mul (sub (sub 128'h2 (zext 128 ($LL.Main.incrPipeline6 $0))) 128'h1) 128'hf))
+$LL.Main.incrPipeline7 v =
+      trunc 15 (lshr v (mul (sub (sub 128'h2 (zext 128 ($LL.Main.incrPipeline6 v))) 128'h1) 128'hf))
 
 $LL.Main.loop5 : ([10], [30]) -> [46]
-$LL.Main.loop5 $0 $1 =
-      $LL.Main.loop1 (Main.incrPipeline (Main.inputToMyState $0 ($LL.Main.loop3 $1) # $1))
+$LL.Main.loop5 i s =
+      $LL.Main.loop1 (Main.incrPipeline (Main.inputToMyState i ($LL.Main.loop3 s) # s))
 
 $LL.Main.incrPipeline6 : ([30]) -> [1]
-$LL.Main.incrPipeline6 $0 =
-      $LL.Main.incrPipeline9 $0
+$LL.Main.incrPipeline6 $x =
+      $LL.Main.incrPipeline9 $x
 
 $LL.Main.incrPipeline5 : ([15], [15]) -> [30]
-$LL.Main.incrPipeline5 $0 $1 =
-      $LL.Main.incrPipeline3 $0 $1
+$LL.Main.incrPipeline5 $x $x1 =
+      $LL.Main.incrPipeline3 $x $x1
 
 $LL.Main.myStateToOutput8 : ([5], [9]) -> [16]
-$LL.Main.myStateToOutput8 $0 $1 =
-      $LL.Main.myStateToOutput7 $1
+$LL.Main.myStateToOutput8 $18 $x =
+      $LL.Main.myStateToOutput7 $x
 
 $LL.Main.myStateToOutput7 : ([9]) -> [16]
-$LL.Main.myStateToOutput7 $0 =
-      7'h0 # $0
+$LL.Main.myStateToOutput7 w4w8 =
+      7'h0 # w4w8
 
 $LL.Main.myStateToOutput6 : ([5], [4]) -> [16]
-$LL.Main.myStateToOutput6 $0 $1 =
-      2'h3 # $0 # 5'h0 # $1
+$LL.Main.myStateToOutput6 mw4 w4 =
+      2'h3 # mw4 # 5'h0 # w4
 
 $LL.ReWire.Monad.iterSt32 : ([78]) -> [78]
-$LL.ReWire.Monad.iterSt32 $0 =
-      $LL.ReWire.Monad.iterSt21 $0[30 +: 46] $0[0 +: 30]
+$LL.ReWire.Monad.iterSt32 disc =
+      $LL.ReWire.Monad.iterSt21 disc[30 +: 46] disc[0 +: 30]
 
 $LL.ReWire.Monad.iterSt30 : ([46], [30]) -> [78]
-$LL.ReWire.Monad.iterSt30 $0 $1 =
-      $LL.ReWire.Monad.iterSt38 $0 $1
+$LL.ReWire.Monad.iterSt30 v $x =
+      $LL.ReWire.Monad.iterSt38 v $x
 
 $LL.Main.myStateToOutput5 : ([5], [4]) -> [16]
-$LL.Main.myStateToOutput5 $0 $1 =
-      $LL.Main.myStateToOutput6 $0 $1
+$LL.Main.myStateToOutput5 $x $x1 =
+      $LL.Main.myStateToOutput6 $x $x1
 
 $LL.Main.inputToMyState12 : ([4], [1], [5], [9]) -> [15]
-$LL.Main.inputToMyState12 $0 $1 $2 $3 =
-      $LL.Main.inputToMyState15 $0 $1 $2 $3
+$LL.Main.inputToMyState12 $x $x1 $x2 $x3 =
+      $LL.Main.inputToMyState15 $x $x1 $x2 $x3
 
 $LL.Main.loop4 : ([10], [30]) -> [46]
-$LL.Main.loop4 $0 $1 =
-      $LL.Main.loop5 $0 $1
+$LL.Main.loop4 $x $x1 =
+      $LL.Main.loop5 $x $x1
 
 $LL.ReWire.Monad.iterSt29 : ([10], [30], [30]) -> [76]
-$LL.ReWire.Monad.iterSt29 $0 $1 $2 =
-      $LL.ReWire.Monad.iterSt8 $0 $1 $2
+$LL.ReWire.Monad.iterSt29 $3 st0 $x =
+      $LL.ReWire.Monad.iterSt8 $3 st0 $x
 
 $LL.Main.myStateToOutput4 : ([5], [8]) -> [16]
-$LL.Main.myStateToOutput4 $0 $1 =
-      2'h1 # $0 # 1'h1 # $1
+$LL.Main.myStateToOutput4 mw4 w8 =
+      2'h1 # mw4 # 1'h1 # w8
 
 $LL.Main.inputToMyState11 : ([1], [8], [5], [9]) -> [15]
-$LL.Main.inputToMyState11 $0 $1 $2 $3 =
-      $LL.Main.inputToMyState2 $0 $1 $2 $3
+$LL.Main.inputToMyState11 $x $x1 $x2 $x3 =
+      $LL.Main.inputToMyState2 $x $x1 $x2 $x3
 
 $LL.Main.inputToMyState10 : ([1], [9]) -> [15]
-$LL.Main.inputToMyState10 $0 $1 =
-      6'h20 # $1
+$LL.Main.inputToMyState10 $11 $x =
+      6'h20 # $x
 
 $LL.Main.myStateToOutput3 : ([15], [15]) -> [16]
-$LL.Main.myStateToOutput3 $0 $1 =
-      if and (eq $1[14 +: 1] 1'h1) (eq $1[8 +: 1] 1'h1) then $LL.Main.myStateToOutput1 $1[9 +: 5] $1[0 +: 8]
-            else $LL.Main.myStateToOutput $0
+$LL.Main.myStateToOutput3 $3 $28 =
+      if and (eq $28[14 +: 1] 1'h1) (eq $28[8 +: 1] 1'h1) then $LL.Main.myStateToOutput1 $28[9 +: 5] $28[0 +: 8]
+            else $LL.Main.myStateToOutput $3
 
 $LL.ReWire.Monad.iterSt27 : ([30], [16], [30]) -> [78]
-$LL.ReWire.Monad.iterSt27 $0 $1 $2 =
-      $LL.ReWire.Monad.iterSt23 $1 $2 $0
+$LL.ReWire.Monad.iterSt27 sto0 m2c m2c1 =
+      $LL.ReWire.Monad.iterSt23 m2c m2c1 sto0
 
 $LL.Main.inputToMyState9 : ([5], [9]) -> [15]
-$LL.Main.inputToMyState9 $0 $1 =
-      6'h0 # $1
+$LL.Main.inputToMyState9 $13 $x =
+      6'h0 # $x
 
 $LL.ReWire.Monad.iterSt26 : ([16], [30], [30]) -> [78]
-$LL.ReWire.Monad.iterSt26 $0 $1 $2 =
-      $LL.ReWire.Monad.iterSt39 $0 ($LL.ReWire.Monad.iterSt12 $1)
+$LL.ReWire.Monad.iterSt26 o s sto0 =
+      $LL.ReWire.Monad.iterSt39 o ($LL.ReWire.Monad.iterSt12 s)
 
 $LL.ReWire.Monad.iterSt25 : ([30], [16], [30]) -> [78]
-$LL.ReWire.Monad.iterSt25 $0 $1 $2 =
-      $LL.ReWire.Monad.iterSt27 $0 $1 $2
+$LL.ReWire.Monad.iterSt25 sto0 m2c $x =
+      $LL.ReWire.Monad.iterSt27 sto0 m2c $x
 
 $LL.Main.incrPipeline4 : ([30]) -> [15]
-$LL.Main.incrPipeline4 $0 =
-      $LL.Main.incrPipeline7 $0
+$LL.Main.incrPipeline4 $x =
+      $LL.Main.incrPipeline7 $x
 
 $LL.Main.incrPipeline3 : ([15], [15]) -> [30]
-$LL.Main.incrPipeline3 $0 $1 =
-      $LL.Main.incrPipeline8 ($0 # $1)
+$LL.Main.incrPipeline3 $1 $2 =
+      $LL.Main.incrPipeline8 ($1 # $2)
 
 Main.loop1 : ([10], [30]) -> [46]
-Main.loop1 $0 $1 =
-      $LL.Main.loop7 ($0 # $1)
+Main.loop1 $4 $5 =
+      $LL.Main.loop7 ($4 # $5)
 
 $LL.ReWire.Monad.iterSt24 : ([30]) -> [78]
-$LL.ReWire.Monad.iterSt24 $1 =
-      $LL.ReWire.Monad.iterSt19 $1
+$LL.ReWire.Monad.iterSt24 $x =
+      $LL.ReWire.Monad.iterSt19 $x
 
 $LL.ReWire.Monad.iterSt23 : ([16], [30], [30]) -> [78]
-$LL.ReWire.Monad.iterSt23 $0 $1 $2 =
-      $LL.ReWire.Monad.iterSt26 $0 $1 $2
+$LL.ReWire.Monad.iterSt23 $x $x1 sto0 =
+      $LL.ReWire.Monad.iterSt26 $x $x1 sto0
 
 $LL.ReWire.Monad.iterSt22 : ([30], [16], [30]) -> [78]
-$LL.ReWire.Monad.iterSt22 $0 $1 $2 =
-      $LL.ReWire.Monad.iterSt25 $0 $1 $2
+$LL.ReWire.Monad.iterSt22 sto0 $x $x1 =
+      $LL.ReWire.Monad.iterSt25 sto0 $x $x1
 
 $LL.ReWire.Monad.iterSt21 : ([46], [30]) -> [78]
-$LL.ReWire.Monad.iterSt21 $0 $1 =
-      $LL.ReWire.Monad.iterSt40 $0 $1
+$LL.ReWire.Monad.iterSt21 v $x =
+      $LL.ReWire.Monad.iterSt40 v $x
 
 $LL.Main.incrPipeline2 : ([15], [15]) -> [30]
-$LL.Main.incrPipeline2 $0 $1 =
-      $0 # $1
+$LL.Main.incrPipeline2 x $x =
+      x # $x
 
 $LL.Main.incrPipeline1 : ([45]) -> [45]
-$LL.Main.incrPipeline1 $0 =
-      $LL.Main.incrPipeline10 $0[30 +: 15] $0[0 +: 30]
+$LL.Main.incrPipeline1 $21 =
+      $LL.Main.incrPipeline10 $21[30 +: 15] $21[0 +: 30]
 
 $LL.Main.inputToMyState8 : ([1], [4], [9]) -> [15]
-$LL.Main.inputToMyState8 $0 $1 $2 =
-      $0 # 1'h1 # $1 # 5'h0 # $1
+$LL.Main.inputToMyState8 b w4 $7 =
+      b # 1'h1 # w4 # 5'h0 # w4
 
 $LL.Main.loop3 : ([30]) -> [15]
-$LL.Main.loop3 $0 =
-      $LL.Main.loop $0
+$LL.Main.loop3 $x =
+      $LL.Main.loop $x
 
 $LL.ReWire.Monad.iterSt19 : ([30]) -> [78]
-$LL.ReWire.Monad.iterSt19 $1 =
-      48'h400000000000 # $1
+$LL.ReWire.Monad.iterSt19 s0 =
+      48'h400000000000 # s0
 
 $LL.Main.loop2 : ([30], [15]) -> [46]
-$LL.Main.loop2 $0 $1 =
-      $LL.Main.loop6 $0 $1
+$LL.Main.loop2 $x $x1 =
+      $LL.Main.loop6 $x $x1
 
 $LL.ReWire.Monad.iterSt16 : ([10], [60]) -> [76]
-$LL.ReWire.Monad.iterSt16 $0 $1 =
-      $LL.ReWire.Monad.iterSt41 $0 $1[30 +: 30] $1[0 +: 30]
+$LL.ReWire.Monad.iterSt16 $3 disc =
+      $LL.ReWire.Monad.iterSt41 $3 disc[30 +: 30] disc[0 +: 30]
 
 $LL.Main.myStateToOutput2 : ([15], [15]) -> [16]
-$LL.Main.myStateToOutput2 $0 $1 =
-      if and (eq $1[14 +: 1] 1'h1) (eq $1[8 +: 1] 1'h0) then $LL.Main.myStateToOutput5 $1[9 +: 5] $1[0 +: 4]
-            else $LL.Main.myStateToOutput3 $0 $0
+$LL.Main.myStateToOutput2 $3 $29 =
+      if and (eq $29[14 +: 1] 1'h1) (eq $29[8 +: 1] 1'h0) then $LL.Main.myStateToOutput5 $29[9 +: 5] $29[0 +: 4]
+            else $LL.Main.myStateToOutput3 $3 $3
 
 $LL.Main.loop1 : ([45]) -> [46]
-$LL.Main.loop1 $0 =
-      $LL.Main.loop2 $0[15 +: 30] $0[0 +: 15]
+$LL.Main.loop1 $30 =
+      $LL.Main.loop2 $30[15 +: 30] $30[0 +: 15]
 
 $LL.ReWire.Monad.iterSt13 : ([16], [30]) -> [78]
-$LL.ReWire.Monad.iterSt13 $0 $2 =
-      32'h80000000 # $0 # $2
+$LL.ReWire.Monad.iterSt13 o sto0 =
+      32'h80000000 # o # sto0
 
 $LL.ReWire.Monad.iterSt12 : ([30]) -> [78]
-$LL.ReWire.Monad.iterSt12 $0 =
-      $LL.ReWire.Monad.iterSt24 $0
+$LL.ReWire.Monad.iterSt12 disc =
+      $LL.ReWire.Monad.iterSt24 disc
 
 $LL.Main.inputToMyState7 : ([1], [4], [5], [9]) -> [15]
-$LL.Main.inputToMyState7 $0 $1 $2 $3 =
-      $LL.Main.inputToMyState8 $0 $1 $3
+$LL.Main.inputToMyState7 b w4 $6 $x =
+      $LL.Main.inputToMyState8 b w4 $x
 
 $LL.Main.inputToMyState6 : ([10], [15], [25]) -> [15]
-$LL.Main.inputToMyState6 $0 $1 $2 =
-      if eq $2[23 +: 2] 2'h1 then $LL.Main.inputToMyState18 $2[15 +: 8] $2[14 +: 1] $2[9 +: 5] $2[0 +: 9]
-            else $LL.Main.inputToMyState17 $0 $1 ($0 # $1)
+$LL.Main.inputToMyState6 $1 $2 $25 =
+      if eq $25[23 +: 2] 2'h1 then $LL.Main.inputToMyState18 $25[15 +: 8] $25[14 +: 1] $25[9 +: 5] $25[0 +: 9]
+            else $LL.Main.inputToMyState17 $1 $2 ($1 # $2)
 
 $LL.Main.loop : ([30]) -> [15]
-$LL.Main.loop $0 =
-      $0[15 +: 15]
+$LL.Main.loop v =
+      v[15 +: 15]
 
 $LL.Main.inputToMyState5 : ([4], [9]) -> [15]
-$LL.Main.inputToMyState5 $0 $1 =
-      $LL.Main.inputToMyState4 $0 $1
+$LL.Main.inputToMyState5 $x $x1 =
+      $LL.Main.inputToMyState4 $x $x1
 
 $LL.Main.inputToMyState4 : ([4], [9]) -> [15]
-$LL.Main.inputToMyState4 $0 $1 =
-      11'h400 # $0
+$LL.Main.inputToMyState4 w4 $10 =
+      11'h400 # w4
 
 $LL.Main.incrPipeline : ([15], [30]) -> [45]
-$LL.Main.incrPipeline $0 $1 =
-      $LL.Main.incrPipeline5 $0 $1[15 +: 15] # $LL.Main.incrPipeline4 $1
+$LL.Main.incrPipeline s ps =
+      $LL.Main.incrPipeline5 s ps[15 +: 15] # $LL.Main.incrPipeline4 ps
 
 $LL.ReWire.Monad.iterSt8 : ([10], [30], [30]) -> [76]
-$LL.ReWire.Monad.iterSt8 $0 $1 $2 =
-      Main.loop1 $0 $1 # $2
+$LL.ReWire.Monad.iterSt8 $3 x sigma0 =
+      Main.loop1 $3 x # sigma0
 
 $LL.ReWire.Monad.iterSt7 : ([16], [30]) -> [78]
-$LL.ReWire.Monad.iterSt7 $0 $2 =
-      $LL.ReWire.Monad.iterSt36 $0 $2
+$LL.ReWire.Monad.iterSt7 o $x1 =
+      $LL.ReWire.Monad.iterSt36 o $x1
 
 $LL.Main.myStateToOutput1 : ([5], [8]) -> [16]
-$LL.Main.myStateToOutput1 $0 $1 =
-      $LL.Main.myStateToOutput4 $0 $1
+$LL.Main.myStateToOutput1 $x $x1 =
+      $LL.Main.myStateToOutput4 $x $x1
 
 $LL.Main.myStateToOutput : ([15]) -> [16]
-$LL.Main.myStateToOutput $0 =
-      $LL.Main.myStateToOutput8 $0[9 +: 5] $0[0 +: 9]
+$LL.Main.myStateToOutput $27 =
+      $LL.Main.myStateToOutput8 $27[9 +: 5] $27[0 +: 9]
 
 $LL.Main.inputToMyState3 : ([1], [5], [9]) -> [15]
-$LL.Main.inputToMyState3 $0 $1 $2 =
-      $LL.Main.inputToMyState9 $1 $2
+$LL.Main.inputToMyState3 $12 $x $x1 =
+      $LL.Main.inputToMyState9 $x $x1
 
 $LL.Main.inputToMyState2 : ([1], [8], [5], [9]) -> [15]
-$LL.Main.inputToMyState2 $0 $1 $2 $3 =
-      $0 # $2 # 1'h1 # $1
+$LL.Main.inputToMyState2 b w8 w4 $8 =
+      b # w4 # 1'h1 # w8
 
 $LL.Main.inputToMyState1 : ([25]) -> [15]
-$LL.Main.inputToMyState1 $0 =
-      $LL.Main.inputToMyState3 $0[14 +: 1] $0[9 +: 5] $0[0 +: 9]
+$LL.Main.inputToMyState1 $22 =
+      $LL.Main.inputToMyState3 $22[14 +: 1] $22[9 +: 5] $22[0 +: 9]
 
 $LL.Main.inputToMyState : ([1], [4], [9]) -> [15]
-$LL.Main.inputToMyState $0 $1 $2 =
-      $LL.Main.inputToMyState5 $1 $2
+$LL.Main.inputToMyState $9 $x $x1 =
+      $LL.Main.inputToMyState5 $x $x1
 
 Main.myStateToOutput : ([15]) -> [16]
-Main.myStateToOutput $0 =
-      $LL.Main.myStateToOutput2 $0 $0
+Main.myStateToOutput $3 =
+      $LL.Main.myStateToOutput2 $3 $3
 
 $LL.Pure.dispatch : ([10], [30]) -> [78]
-$LL.Pure.dispatch $0 $1 =
-      ReWire.Monad.iterSt1 $0 $1
+$LL.Pure.dispatch i $x =
+      ReWire.Monad.iterSt1 i $x
 
 device top_level
       input __in0 : [10]

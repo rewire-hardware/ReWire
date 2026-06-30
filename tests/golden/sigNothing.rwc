@@ -1,22 +1,22 @@
 $Pure.dispatch : ([8], [8]) -> [17]
-$Pure.dispatch $0 $1 =
-      $LL.Pure.dispatch $1 $0
+$Pure.dispatch disc i =
+      $LL.Pure.dispatch i disc
 
 Main.start' : ([8]) -> [17]
-Main.start' $0 =
-      9'h0 # $0
+Main.start' sto0 =
+      9'h0 # sto0
 
 $LL.Main.start'1 : ([8], [8]) -> [17]
-$LL.Main.start'1 $0 $1 =
-      $LL.Main.start' $0 $1
+$LL.Main.start'1 $x sto0 =
+      $LL.Main.start' $x sto0
 
 $LL.Main.start' : ([8], [8]) -> [17]
-$LL.Main.start' $0 $1 =
-      Main.start' $1
+$LL.Main.start' $1 sto0 =
+      Main.start' sto0
 
 $LL.Pure.dispatch : ([8], [8]) -> [17]
-$LL.Pure.dispatch $0 $1 =
-      $LL.Main.start'1 $0 $1
+$LL.Pure.dispatch i $x =
+      $LL.Main.start'1 i $x
 
 device top_level
       input __in0 : [8]

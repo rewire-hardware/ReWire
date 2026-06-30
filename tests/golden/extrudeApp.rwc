@@ -1,106 +1,106 @@
 $Pure.dispatch : ([16], [8]) -> [25]
-$Pure.dispatch $0 $1 =
-      $LL.Pure.dispatch1 $1 $0[8 +: 8] $0[0 +: 8]
+$Pure.dispatch disc i =
+      $LL.Pure.dispatch1 i disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.dev21 : ([8], [8]) -> [25]
-$LL.Main.dev21 $0 $1 =
-      $LL.Main.dev15 $0 $1
+$LL.Main.dev21 $x sto0 =
+      $LL.Main.dev15 $x sto0
 
 $LL.Pure.dispatch1 : ([8], [8], [8]) -> [25]
-$LL.Pure.dispatch1 $0 $1 $2 =
-      $LL.Pure.dispatch $0 $1 $2
+$LL.Pure.dispatch1 i $x $x1 =
+      $LL.Pure.dispatch i $x $x1
 
 $LL.Main.dev20 : ([8], [8], [8]) -> [25]
-$LL.Main.dev20 $0 $1 $2 =
-      1'h1 # add $1 $0 # $0 # $2
+$LL.Main.dev20 k s sto0 =
+      1'h1 # add s k # k # sto0
 
 $LL.Main.dev19 : ([8], [8]) -> [25]
-$LL.Main.dev19 $0 $1 =
-      9'h0 # $0 # $1
+$LL.Main.dev19 v s0 =
+      9'h0 # v # s0
 
 $LL.Main.dev18 : ([8], [8], [8]) -> [25]
-$LL.Main.dev18 $0 $1 $2 =
-      $LL.Main.dev $0 ($LL.Main.dev7 $1)
+$LL.Main.dev18 k i sto0 =
+      $LL.Main.dev k ($LL.Main.dev7 i)
 
 $LL.Main.dev17 : ([8], [8]) -> [25]
-$LL.Main.dev17 $0 $2 =
-      $LL.Main.dev13 $0 $2
+$LL.Main.dev17 k $x1 =
+      $LL.Main.dev13 k $x1
 
 Main.dev : ([8], [8]) -> [25]
-Main.dev $0 $1 =
-      $LL.Main.dev21 $0 $1
+Main.dev $x sto0 =
+      $LL.Main.dev21 $x sto0
 
 $LL.Main.dev16 : ([8], [25]) -> [25]
-$LL.Main.dev16 $0 $1 =
-      $LL.Main.dev10 $0 $1[8 +: 8] $1[0 +: 8]
+$LL.Main.dev16 k disc =
+      $LL.Main.dev10 k disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.dev15 : ([8], [8]) -> [25]
-$LL.Main.dev15 $0 $1 =
-      $LL.Main.dev16 $0 ($LL.Main.dev6 ($1 # $1))
+$LL.Main.dev15 k sto0 =
+      $LL.Main.dev16 k ($LL.Main.dev6 (sto0 # sto0))
 
 $LL.Pure.dispatch : ([8], [8], [8]) -> [25]
-$LL.Pure.dispatch $0 $1 $2 =
-      $LL.Main.dev1 $1 $0 $2
+$LL.Pure.dispatch i store0 $x =
+      $LL.Main.dev1 store0 i $x
 
 $LL.Main.dev14 : ([8]) -> [25]
-$LL.Main.dev14 $1 =
-      $LL.Main.dev8 $1
+$LL.Main.dev14 $x =
+      $LL.Main.dev8 $x
 
 $LL.Main.dev13 : ([8], [8]) -> [25]
-$LL.Main.dev13 $0 $2 =
-      $LL.Main.dev3 $0 $2
+$LL.Main.dev13 k $x =
+      $LL.Main.dev3 k $x
 
 $LL.Main.dev12 : ([8], [8]) -> [25]
-$LL.Main.dev12 $0 $2 =
-      Main.dev $0 $2
+$LL.Main.dev12 k sto0 =
+      Main.dev k sto0
 
 $LL.Main.dev11 : ([8], [8], [8]) -> [25]
-$LL.Main.dev11 $0 $1 $2 =
-      $LL.Main.dev9 $0 $1 $2
+$LL.Main.dev11 k v $x =
+      $LL.Main.dev9 k v $x
 
 $LL.Main.dev10 : ([8], [8], [8]) -> [25]
-$LL.Main.dev10 $0 $1 $2 =
-      $LL.Main.dev11 $0 $1 $2
+$LL.Main.dev10 k $x $x1 =
+      $LL.Main.dev11 k $x $x1
 
 $LL.Main.dev9 : ([8], [8], [8]) -> [25]
-$LL.Main.dev9 $0 $1 $2 =
-      $LL.Main.dev20 $0 $1 $2
+$LL.Main.dev9 $x $x1 sto0 =
+      $LL.Main.dev20 $x $x1 sto0
 
 $LL.Main.dev8 : ([8]) -> [25]
-$LL.Main.dev8 $1 =
-      17'h100 # $1
+$LL.Main.dev8 s0 =
+      17'h100 # s0
 
 $LL.Main.dev7 : ([8]) -> [25]
-$LL.Main.dev7 $0 =
-      $LL.Main.dev14 $0
+$LL.Main.dev7 disc =
+      $LL.Main.dev14 disc
 
 $LL.Main.dev6 : ([16]) -> [25]
-$LL.Main.dev6 $0 =
-      $LL.Main.dev4 $0[8 +: 8] $0[0 +: 8]
+$LL.Main.dev6 disc =
+      $LL.Main.dev4 disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.dev5 : ([8], [8]) -> [25]
-$LL.Main.dev5 $0 $2 =
-      $LL.Main.dev2 $0 $2
+$LL.Main.dev5 $x sto0 =
+      $LL.Main.dev2 $x sto0
 
 $LL.Main.dev4 : ([8], [8]) -> [25]
-$LL.Main.dev4 $0 $1 =
-      $LL.Main.dev19 $0 $1
+$LL.Main.dev4 v $x =
+      $LL.Main.dev19 v $x
 
 $LL.Main.dev3 : ([8], [8]) -> [25]
-$LL.Main.dev3 $0 $2 =
-      $LL.Main.dev5 $0 $2
+$LL.Main.dev3 $x sto0 =
+      $LL.Main.dev5 $x sto0
 
 $LL.Main.dev2 : ([8], [8]) -> [25]
-$LL.Main.dev2 $0 $2 =
-      $LL.Main.dev12 $0 $2
+$LL.Main.dev2 $x sto0 =
+      $LL.Main.dev12 $x sto0
 
 $LL.Main.dev1 : ([8], [8], [8]) -> [25]
-$LL.Main.dev1 $0 $1 $2 =
-      $LL.Main.dev18 $0 $1 $2
+$LL.Main.dev1 $x $x1 sto0 =
+      $LL.Main.dev18 $x $x1 sto0
 
 $LL.Main.dev : ([8], [25]) -> [25]
-$LL.Main.dev $0 $1 =
-      $LL.Main.dev17 $0 $1[0 +: 8]
+$LL.Main.dev k disc =
+      $LL.Main.dev17 k disc[0 +: 8]
 
 device top_level
       input __in0 : [8]

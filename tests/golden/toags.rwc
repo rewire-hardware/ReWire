@@ -1,198 +1,202 @@
 $Pure.dispatch : ([5], [1]) -> [7]
-$Pure.dispatch $0 $1 =
-      if eq $0[3 +: 2] 2'h1 then $LL.Pure.dispatch6 $1 $0[2 +: 1] $0[1 +: 1] $0[0 +: 1]
-            else if eq $0[3 +: 2] 2'h2 then $LL.Pure.dispatch4 $1 $0[2 +: 1] $0[1 +: 1] $0[0 +: 1] else $LL.Pure.dispatch3 $1 $0[1 +: 1] $0[0 +: 1]
+$Pure.dispatch disc i =
+      if eq disc[3 +: 2] 2'h1 then $LL.Pure.dispatch6 i disc[2 +: 1] disc[1 +: 1] disc[0 +: 1]
+            else if eq disc[3 +: 2] 2'h2 then $LL.Pure.dispatch4 i disc[2 +: 1] disc[1 +: 1] disc[0 +: 1] else $LL.Pure.dispatch3 i disc[1 +: 1] disc[0 +: 1]
 
 $LL.Main.go34 : ([1], [1], [1]) -> [7]
-$LL.Main.go34 $0 $1 $2 =
-      $LL.Main.go11 $2 $1 $0
+$LL.Main.go34 sto1 sto0 m2c =
+      $LL.Main.go11 m2c sto0 sto1
 
 $LL.Main.go33 : ([1], [1], [1]) -> [7]
-$LL.Main.go33 $0 $1 $2 =
-      $LL.Main.go2 $2 $1 $0
+$LL.Main.go33 sto1 sto0 m2c =
+      $LL.Main.go2 m2c sto0 sto1
 
 $LL.Pure.dispatch7 : ([1], [1], [1], [1]) -> [7]
-$LL.Pure.dispatch7 $0 $1 $2 $3 =
-      $LL.Main.go3 $1 $0 $2 $3
+$LL.Pure.dispatch7 i store0 s0 $x =
+      $LL.Main.go3 store0 i s0 $x
 
 $LL.Pure.dispatch6 : ([1], [1], [1], [1]) -> [7]
-$LL.Pure.dispatch6 $0 $1 $2 $3 =
-      $LL.Pure.dispatch1 $0 $1 $2 $3
+$LL.Pure.dispatch6 i $x $x1 $x2 =
+      $LL.Pure.dispatch1 i $x $x1 $x2
 
 $LL.Main.go32 : ([1], [1], [1], [1]) -> [7]
-$LL.Main.go32 $0 $1 $2 $3 =
-      $LL.Main.go5 ($LL.Main.go24 ($2 # $0))
+$LL.Main.go32 y z sto0 sto1 =
+      $LL.Main.go5 ($LL.Main.go24 (sto0 # y))
 
 $LL.Pure.dispatch5 : ([1], [1], [1], [1]) -> [7]
-$LL.Pure.dispatch5 $0 $1 $2 $3 =
-      $LL.Pure.dispatch7 $0 $1 $2 $3
+$LL.Pure.dispatch5 i store0 $x $x1 =
+      $LL.Pure.dispatch7 i store0 $x $x1
 
 $LL.Main.go31 : ([1], [1]) -> [7]
-$LL.Main.go31 $1 $2 =
-      $LL.Main.go18 $1 $2
+$LL.Main.go31 s0 $x =
+      $LL.Main.go18 s0 $x
 
 $LL.Main.go30 : ([1], [1], [1]) -> [7]
-$LL.Main.go30 $0 $1 $2 =
-      $LL.Main.go34 $0 $1 $2
+$LL.Main.go30 sto1 sto0 $x =
+      $LL.Main.go34 sto1 sto0 $x
 
 $LL.Main.go29 : ([1], [1], [1]) -> [7]
-$LL.Main.go29 $0 $1 $2 =
-      4'h0 # $0 # $1 # $2
+$LL.Main.go29 v s0 s1 =
+      4'h0 # v # s0 # s1
 
 $LL.Main.go28 : ([1], [1]) -> [7]
-$LL.Main.go28 $1 $2 =
-      $LL.Main.go31 $1 $2
+$LL.Main.go28 $x $x1 =
+      $LL.Main.go31 $x $x1
 
 $LL.Main.go27 : ([1], [1], [1], [1]) -> [7]
-$LL.Main.go27 $0 $1 $2 $3 =
-      $LL.Main.go26 $0 $1 $2 $3
+$LL.Main.go27 $x $x1 sto0 sto1 =
+      $LL.Main.go26 $x $x1 sto0 sto1
 
 $LL.Main.go26 : ([1], [1], [1], [1]) -> [7]
-$LL.Main.go26 $0 $1 $2 $3 =
-      1'h1 # "ReWire.Prelude.&&" ($LL.Main.go1 $0 $1 $1) $1 # 2'h2 # $1 # $2 # $3
+$LL.Main.go26 x y sto0 sto1 =
+      1'h1 # "ReWire.Prelude.&&" ($LL.Main.go1 x y y) y # 2'h2 # y # sto0 # sto1
 
 $LL.Main.go25 : ([1], [7]) -> [7]
-$LL.Main.go25 $0 $1 =
-      $LL.Main.go19 $0 $1[2 +: 1] $1[1 +: 1] $1[0 +: 1]
+$LL.Main.go25 x disc =
+      $LL.Main.go19 x disc[2 +: 1] disc[1 +: 1] disc[0 +: 1]
 
 $LL.Main.go24 : ([2]) -> [7]
-$LL.Main.go24 $0 =
-      $LL.Main.go28 $0[1 +: 1] $0[0 +: 1]
+$LL.Main.go24 disc =
+      $LL.Main.go28 disc[1 +: 1] disc[0 +: 1]
 
 $LL.Main.go23 : ([1]) -> [1]
-$LL.Main.go23 $0 =
-      "ReWire.Prelude.&&" $0 $0
+$LL.Main.go23 x =
+      "ReWire.Prelude.&&" x x
 
 $LL.Main.go22 : ([1], [1], [1]) -> [7]
-$LL.Main.go22 $0 $1 $2 =
-      $LL.Main.go7 $0 $1 $2
+$LL.Main.go22 v $x $x1 =
+      $LL.Main.go7 v $x $x1
 
 $LL.Pure.dispatch4 : ([1], [1], [1], [1]) -> [7]
-$LL.Pure.dispatch4 $0 $1 $2 $3 =
-      $LL.Pure.dispatch5 $0 $1 $2 $3
+$LL.Pure.dispatch4 i $x $x1 $x2 =
+      $LL.Pure.dispatch5 i $x $x1 $x2
 
 $LL.Main.go21 : ([3]) -> [7]
-$LL.Main.go21 $0 =
-      $LL.Main.go22 $0[2 +: 1] $0[1 +: 1] $0[0 +: 1]
+$LL.Main.go21 disc =
+      $LL.Main.go22 disc[2 +: 1] disc[1 +: 1] disc[0 +: 1]
 
 "$LL.ReWire.Prelude.&&3" : ([1]) -> [1]
-"$LL.ReWire.Prelude.&&3" $0 =
-      $0
+"$LL.ReWire.Prelude.&&3" b =
+      b
 
 $LL.Main.go20 : ([1], [1]) -> [7]
-$LL.Main.go20 $1 $2 =
-      $LL.Main.go10 $1 $2
+$LL.Main.go20 sto0 sto1 =
+      $LL.Main.go10 sto0 sto1
 
 $LL.Main.go19 : ([1], [1], [1], [1]) -> [7]
-$LL.Main.go19 $0 $1 $2 $3 =
-      $LL.Main.go6 $0 $1 $2 $3
+$LL.Main.go19 x $x $x1 $x2 =
+      $LL.Main.go6 x $x $x1 $x2
 
 $LL.Main.go18 : ([1], [1]) -> [7]
-$LL.Main.go18 $1 $2 =
-      5'h2 # $1 # $2
+$LL.Main.go18 s0 s1 =
+      5'h2 # s0 # s1
 
 $LL.Main.go17 : ([1], [1], [1]) -> [7]
-$LL.Main.go17 $0 $1 $2 =
-      $LL.Main.go33 $0 $1 $2
+$LL.Main.go17 sto1 sto0 $x =
+      $LL.Main.go33 sto1 sto0 $x
 
 $LL.Main.go16 : ([1], [1]) -> [7]
-$LL.Main.go16 $1 $2 =
-      $LL.Main.go13 $1 $2
+$LL.Main.go16 $x $x1 =
+      $LL.Main.go13 $x $x1
 
 "ReWire.Prelude.&&" : ([1], [1]) -> [1]
-"ReWire.Prelude.&&" $0 $1 =
-      "$LL.ReWire.Prelude.&&2" $0 $1 ($0 # $1)
+"ReWire.Prelude.&&" $10 $11 =
+      "$LL.ReWire.Prelude.&&2" $10 $11 ($10 # $11)
+
+$LL.Main.go15 : ([1]) -> [1]
+$LL.Main.go15 x =
+      x
 
 $LL.Pure.dispatch3 : ([1], [1], [1]) -> [7]
-$LL.Pure.dispatch3 $0 $1 $2 =
-      $LL.Pure.dispatch $0 $1 $2
+$LL.Pure.dispatch3 i $x $x1 =
+      $LL.Pure.dispatch i $x $x1
 
 $LL.Main.go14 : ([1], [1], [1]) -> [7]
-$LL.Main.go14 $0 $1 $2 =
-      if eq $0 1'h1 then $LL.Main.go30 $2 $1 $0
-            else $LL.Main.go17 $2 $1 $0
+$LL.Main.go14 x sto0 sto1 =
+      if eq x 1'h1 then $LL.Main.go30 sto1 sto0 x
+            else $LL.Main.go17 sto1 sto0 x
 
 "$LL.ReWire.Prelude.&&2" : ([1], [1], [2]) -> [1]
-"$LL.ReWire.Prelude.&&2" $0 $1 $2 =
-      if eq $2[1 +: 1] 1'h1 then "$LL.ReWire.Prelude.&&3" $2[0 +: 1]
-            else "$LL.ReWire.Prelude.&&1" ($0 # $1)
+"$LL.ReWire.Prelude.&&2" $10 $11 $52 =
+      if eq $52[1 +: 1] 1'h1 then "$LL.ReWire.Prelude.&&3" $52[0 +: 1]
+            else "$LL.ReWire.Prelude.&&1" ($10 # $11)
 
 $LL.Pure.dispatch2 : ([1], [1], [1], [1]) -> [7]
-$LL.Pure.dispatch2 $0 $1 $2 $3 =
-      $LL.Main.go9 $1 $0 $2 $3
+$LL.Pure.dispatch2 i store0 s0 $x =
+      $LL.Main.go9 store0 i s0 $x
 
 $LL.Main.go13 : ([1], [1]) -> [7]
-$LL.Main.go13 $1 $2 =
-      $LL.Main.go20 $1 $2
+$LL.Main.go13 s0 $x =
+      $LL.Main.go20 s0 $x
 
 $LL.Main.go12 : ([1], [1], [1], [1]) -> [7]
-$LL.Main.go12 $0 $1 $2 $3 =
-      $LL.Main.go $0 $1 $2 $3
+$LL.Main.go12 x v s0 $x =
+      $LL.Main.go x v s0 $x
 
 $LL.Main.go11 : ([1], [1], [1]) -> [7]
-$LL.Main.go11 $0 $1 $2 =
-      4'h9 # $0 # $1 # $2
+$LL.Main.go11 x sto0 sto1 =
+      4'h9 # x # sto0 # sto1
 
 $LL.Main.go10 : ([1], [1]) -> [7]
-$LL.Main.go10 $1 $2 =
-      Main.go $1 $2
+$LL.Main.go10 sto0 sto1 =
+      Main.go sto0 sto1
 
 "$LL.ReWire.Prelude.&&1" : ([2]) -> [1]
-"$LL.ReWire.Prelude.&&1" $0 =
-      "$LL.ReWire.Prelude.&&" $0[0 +: 1]
+"$LL.ReWire.Prelude.&&1" $51 =
+      "$LL.ReWire.Prelude.&&" $51[0 +: 1]
 
 $LL.Pure.dispatch1 : ([1], [1], [1], [1]) -> [7]
-$LL.Pure.dispatch1 $0 $1 $2 $3 =
-      $LL.Pure.dispatch2 $0 $1 $2 $3
+$LL.Pure.dispatch1 i store0 $x $x1 =
+      $LL.Pure.dispatch2 i store0 $x $x1
 
 $LL.Main.go9 : ([1], [1], [1], [1]) -> [7]
-$LL.Main.go9 $0 $1 $2 $3 =
-      $LL.Main.go27 $0 $1 $2 $3
+$LL.Main.go9 $x $x1 sto0 sto1 =
+      $LL.Main.go27 $x $x1 sto0 sto1
 
 $LL.Main.go7 : ([1], [1], [1]) -> [7]
-$LL.Main.go7 $0 $1 $2 =
-      $LL.Main.go29 $0 $1 $2
+$LL.Main.go7 v s0 $x =
+      $LL.Main.go29 v s0 $x
 
 $LL.Main.go6 : ([1], [1], [1], [1]) -> [7]
-$LL.Main.go6 $0 $1 $2 $3 =
-      $LL.Main.go12 $0 $1 $2 $3
+$LL.Main.go6 x v $x $x1 =
+      $LL.Main.go12 x v $x $x1
 
 $LL.Main.go5 : ([7]) -> [7]
-$LL.Main.go5 $0 =
-      $LL.Main.go16 $0[1 +: 1] $0[0 +: 1]
+$LL.Main.go5 disc =
+      $LL.Main.go16 disc[1 +: 1] disc[0 +: 1]
 
 $LL.Main.go4 : ([1], [1]) -> [1]
-$LL.Main.go4 $0 $1 =
-      $LL.Main.go23 $0
+$LL.Main.go4 x $6 =
+      $LL.Main.go23 x
 
 $LL.Pure.dispatch : ([1], [1], [1]) -> [7]
-$LL.Pure.dispatch $0 $1 $2 =
-      $LL.Main.go14 $0 $1 $2
+$LL.Pure.dispatch i s0 $x =
+      $LL.Main.go14 i s0 $x
 
 $LL.Main.go3 : ([1], [1], [1], [1]) -> [7]
-$LL.Main.go3 $0 $1 $2 $3 =
-      $LL.Main.go32 $0 $1 $2 $3
+$LL.Main.go3 $x $x1 sto0 sto1 =
+      $LL.Main.go32 $x $x1 sto0 sto1
 
 "$LL.ReWire.Prelude.&&" : ([1]) -> [1]
-"$LL.ReWire.Prelude.&&" $0 =
+"$LL.ReWire.Prelude.&&" $32 =
       1'h0
 
 $LL.Main.go2 : ([1], [1], [1]) -> [7]
-$LL.Main.go2 $0 $1 $2 =
-      $LL.Main.go25 $0 ($LL.Main.go21 ($1 # $1 # $2))
+$LL.Main.go2 x sto0 sto1 =
+      $LL.Main.go25 x ($LL.Main.go21 (sto0 # sto0 # sto1))
 
 Main.go : ([1], [1]) -> [7]
-Main.go $0 $1 =
-      5'h10 # $0 # $1
+Main.go sto0 sto1 =
+      5'h10 # sto0 # sto1
 
 $LL.Main.go1 : ([1], [1], [1]) -> [1]
-$LL.Main.go1 $0 $1 $2 =
-      if eq $2 1'h1 then "$LL.ReWire.Prelude.&&3" $0
-            else $LL.Main.go4 $0 $1
+$LL.Main.go1 x y $7 =
+      if eq $7 1'h1 then $LL.Main.go15 x
+            else $LL.Main.go4 x y
 
 $LL.Main.go : ([1], [1], [1], [1]) -> [7]
-$LL.Main.go $0 $1 $2 $3 =
-      $LL.Main.go9 $0 $1 $2 $3
+$LL.Main.go $x $x1 sto0 sto1 =
+      $LL.Main.go9 $x $x1 sto0 sto1
 
 device top_level
       input __in0 : [1]

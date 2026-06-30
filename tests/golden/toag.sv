@@ -26,27 +26,18 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module ZZLLzuReWirezuPreludezuzaza2 (input logic [0:0] arg0,
-  output logic [0:0] res);
-  assign res = arg0;
-endmodule
-
 module ZLL_Main_go5 (input logic [0:0] arg0,
   input logic [0:0] arg1,
   output logic [3:0] res);
-  logic [0:0] zzllzurewirezupreludezuzaza2zuout;
   logic [0:0] rewirezupreludezuzazazuout;
   logic [0:0] rewirezupreludezuzazazuoutR1;
-  ZZLLzuReWirezuPreludezuzaza2  inst (arg0, zzllzurewirezupreludezuzaza2zuout);
-  ReWirezuPreludezuzaza  instR1 (arg0, arg0, rewirezupreludezuzazazuout);
-  ReWirezuPreludezuzaza  instR2 ((arg1 == 1'h1) ? zzllzurewirezupreludezuzaza2zuout : rewirezupreludezuzazazuout, arg1, rewirezupreludezuzazazuoutR1);
+  ReWirezuPreludezuzaza  inst (arg0, arg0, rewirezupreludezuzazazuout);
+  ReWirezuPreludezuzaza  instR1 ((arg1 == 1'h1) ? arg0 : rewirezupreludezuzazazuout, arg1, rewirezupreludezuzazazuoutR1);
   assign res = {rewirezupreludezuzazazuoutR1, 3'h4};
 endmodule
 
 module ReWirezuPreludezuzaza (input logic [0:0] arg0,
   input logic [0:0] arg1,
   output logic [0:0] res);
-  logic [0:0] zzllzurewirezupreludezuzaza2zuout;
-  ZZLLzuReWirezuPreludezuzaza2  inst (arg1, zzllzurewirezupreludezuzaza2zuout);
-  assign res = (arg0 == 1'h1) ? zzllzurewirezupreludezuzaza2zuout : 1'h0;
+  assign res = (arg0 == 1'h1) ? arg1 : 1'h0;
 endmodule

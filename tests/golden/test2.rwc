@@ -1,86 +1,86 @@
 $Pure.dispatch : ([8], [1]) -> [18]
-$Pure.dispatch $0 $1 =
-      $LL.Pure.dispatch $1 $0
+$Pure.dispatch disc i =
+      $LL.Pure.dispatch i disc
 
 $LL.Main.incr17 : ([1], [8]) -> [18]
-$LL.Main.incr17 $0 $1 =
-      Main.incr $1
+$LL.Main.incr17 $2 sto0 =
+      Main.incr sto0
 
 $LL.Main.incr16 : ([8], [8]) -> [18]
-$LL.Main.incr16 $0 $2 =
-      $LL.Main.incr10 $0 $2
+$LL.Main.incr16 r0 $x =
+      $LL.Main.incr10 r0 $x
 
 $LL.Main.incr15 : ([8], [8]) -> [18]
-$LL.Main.incr15 $0 $1 =
-      $LL.Main.incr3 $0 $1
+$LL.Main.incr15 v $x =
+      $LL.Main.incr3 v $x
 
 $LL.Main.incr14 : ([16]) -> [18]
-$LL.Main.incr14 $0 =
-      $LL.Main.incr9 $0[8 +: 8] $0[0 +: 8]
+$LL.Main.incr14 disc =
+      $LL.Main.incr9 disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.incr13 : ([8], [8]) -> [18]
-$LL.Main.incr13 $0 $1 =
-      2'h0 # $0 # $1
+$LL.Main.incr13 v s0 =
+      2'h0 # v # s0
 
 Main.incr : ([8]) -> [18]
-Main.incr $0 =
-      $LL.Main.incr4 ($LL.Main.incr14 ($0 # $0))
+Main.incr sto0 =
+      $LL.Main.incr4 ($LL.Main.incr14 (sto0 # sto0))
 
 $LL.Main.incr12 : ([8], [18]) -> [18]
-$LL.Main.incr12 $0 $1 =
-      $LL.Main.incr $0 $1[0 +: 8]
+$LL.Main.incr12 r0 disc =
+      $LL.Main.incr r0 disc[0 +: 8]
 
 $LL.Main.incr11 : ([8]) -> [18]
-$LL.Main.incr11 $0 =
-      $LL.Main.incr2 $0
+$LL.Main.incr11 disc =
+      $LL.Main.incr2 disc
 
 $LL.Main.incr10 : ([8], [8]) -> [18]
-$LL.Main.incr10 $0 $2 =
-      $LL.Main.incr6 $0 $2
+$LL.Main.incr10 $x sto0 =
+      $LL.Main.incr6 $x sto0
 
 $LL.Main.incr9 : ([8], [8]) -> [18]
-$LL.Main.incr9 $0 $1 =
-      $LL.Main.incr13 $0 $1
+$LL.Main.incr9 v $x =
+      $LL.Main.incr13 v $x
 
 $LL.Main.incr8 : ([8], [8]) -> [18]
-$LL.Main.incr8 $0 $2 =
-      2'h2 # $0 # $2
+$LL.Main.incr8 r0 sto0 =
+      2'h2 # r0 # sto0
 
 $LL.Pure.dispatch : ([1], [8]) -> [18]
-$LL.Pure.dispatch $0 $1 =
-      $LL.Main.incr7 $0 $1
+$LL.Pure.dispatch i $x =
+      $LL.Main.incr7 i $x
 
 $LL.Main.incr7 : ([1], [8]) -> [18]
-$LL.Main.incr7 $0 $1 =
-      $LL.Main.incr17 $0 $1
+$LL.Main.incr7 $x sto0 =
+      $LL.Main.incr17 $x sto0
 
 $LL.Main.incr6 : ([8], [8]) -> [18]
-$LL.Main.incr6 $0 $2 =
-      $LL.Main.incr1 $0 $2
+$LL.Main.incr6 $x sto0 =
+      $LL.Main.incr1 $x sto0
 
 $LL.Main.incr5 : ([8]) -> [18]
-$LL.Main.incr5 $1 =
-      10'h100 # $1
+$LL.Main.incr5 s0 =
+      10'h100 # s0
 
 $LL.Main.incr4 : ([18]) -> [18]
-$LL.Main.incr4 $0 =
-      $LL.Main.incr15 $0[8 +: 8] $0[0 +: 8]
+$LL.Main.incr4 disc =
+      $LL.Main.incr15 disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.incr3 : ([8], [8]) -> [18]
-$LL.Main.incr3 $0 $1 =
-      $LL.Main.incr12 $0 ($LL.Main.incr11 $0)
+$LL.Main.incr3 r0 sto0 =
+      $LL.Main.incr12 r0 ($LL.Main.incr11 r0)
 
 $LL.Main.incr2 : ([8]) -> [18]
-$LL.Main.incr2 $1 =
-      $LL.Main.incr5 $1
+$LL.Main.incr2 $x =
+      $LL.Main.incr5 $x
 
 $LL.Main.incr1 : ([8], [8]) -> [18]
-$LL.Main.incr1 $0 $2 =
-      $LL.Main.incr8 $0 $2
+$LL.Main.incr1 $x sto0 =
+      $LL.Main.incr8 $x sto0
 
 $LL.Main.incr : ([8], [8]) -> [18]
-$LL.Main.incr $0 $2 =
-      $LL.Main.incr16 $0 $2
+$LL.Main.incr r0 $x1 =
+      $LL.Main.incr16 r0 $x1
 
 device top_level
       input __in0 : [1]

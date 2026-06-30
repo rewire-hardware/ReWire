@@ -26,7 +26,7 @@ rw__LL_Main_loop79 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_loop48 x1 x2 x0 x3 x4 x5 x
 
 // $LL.Main.loop78
 rw__LL_Main_loop78 : [4] -> [8] -> [16] -> [47]
-rw__LL_Main_loop78 x0 x1 x2 = rw__LL_Main_loop35 x0 x1 x2
+rw__LL_Main_loop78 x0 x1 x2 = rw__LL_Main_loop72 x0 x1 x2
 
 // $LL.Main.loop77
 rw__LL_Main_loop77 : [44] -> [47]
@@ -58,7 +58,7 @@ rw__LL_Main_loop72 x0 x1 x2 = rw__LL_Main_loop47 x0 x1 x2
 
 // $LL.Main.loop71
 rw__LL_Main_loop71 : [4] -> [8] -> [16] -> [47]
-rw__LL_Main_loop71 x0 x1 x2 = rw__LL_Main_loop28 x0 x1 x2
+rw__LL_Main_loop71 x0 x1 x2 = rw__LL_Main_loop78 x0 x1 x2
 
 // $LL.Main.loop70
 rw__LL_Main_loop70 : [32] -> [47]
@@ -154,7 +154,7 @@ rw__LL_Main_loop49 x0 x1 x2 x3 = rw__LL_Main_loop34 x1 x0 x2 x3
 
 // $LL.Main.loop48
 rw__LL_Main_loop48 : [4] -> [8] -> [4] -> [16] -> [4] -> [8] -> [16] -> [47]
-rw__LL_Main_loop48 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_loop69 x2 x1 x3 (rw__LL_Main_loop5 (x0 # (x5 # x6)))
+rw__LL_Main_loop48 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_loop69 x2 x1 x3 (rw__LL_Main_loop40 (x0 # (x5 # x6)))
 
 // $LL.Main.loop47
 rw__LL_Main_loop47 : [4] -> [8] -> [16] -> [47]
@@ -194,7 +194,7 @@ rw__LL_Main_loop41 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop73 x0 x1 x2 x3 x4 x5
 
 // $LL.Main.loop40
 rw__LL_Main_loop40 : [28] -> [47]
-rw__LL_Main_loop40 x0 = rw__LL_Main_loop6 (take`{4} x0) (take`{8} (drop`{4} x0)) (drop`{12} x0)
+rw__LL_Main_loop40 x0 = rw__LL_Main_loop71 (take`{4} x0) (take`{8} (drop`{4} x0)) (drop`{12} x0)
 
 // $LL.Main.loop39
 rw__LL_Main_loop39 : [8] -> [16] -> [4] -> [16] -> [47]
@@ -211,10 +211,6 @@ rw__LL_Main_loop37 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_loop46 x0 x1 x2 x3 x4 x5 x
 // $LL.Main.loop36
 rw__LL_Main_loop36 : [4] -> [4] -> [4] -> [8] -> [16] -> [47]
 rw__LL_Main_loop36 x0 x1 x2 x3 x4 = rw__LL_Main_loop24 x0 x2 x1 x3 x4
-
-// $LL.Main.loop35
-rw__LL_Main_loop35 : [4] -> [8] -> [16] -> [47]
-rw__LL_Main_loop35 x0 x1 x2 = rw__LL_Main_loop11 x0 x1 x2
 
 // $LL.Main.loop34
 rw__LL_Main_loop34 : [4] -> [4] -> [8] -> [16] -> [47]
@@ -239,10 +235,6 @@ rw__LL_Main_loop30 x0 = rw__LL_Main_loop31 (take`{4} x0) (take`{8} (drop`{4} x0)
 // $LL.Main.loop29
 rw__LL_Main_loop29 : [16] -> [4] -> [4] -> [8] -> [16] -> [47]
 rw__LL_Main_loop29 x0 x1 x2 x3 x4 = rw__LL_Main_loop23 x0 x1 x2 x3 x4
-
-// $LL.Main.loop28
-rw__LL_Main_loop28 : [4] -> [8] -> [16] -> [47]
-rw__LL_Main_loop28 x0 x1 x2 = rw__LL_Main_loop72 x0 x1 x2
 
 // $LL.Main.loop27
 rw__LL_Main_loop27 : [4] -> [4] -> [8] -> [16] -> [47]
@@ -308,10 +300,6 @@ rw__LL_Main_loop13 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop44 x1 x2 (rw__LL_Main_loo
 rw__LL_Main_loop12 : [4] -> [8] -> [16] -> [4] -> [8] -> [16] -> [47]
 rw__LL_Main_loop12 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop20 x0 x3 x1 x2 x4 x5
 
-// $LL.Main.loop11
-rw__LL_Main_loop11 : [4] -> [8] -> [16] -> [47]
-rw__LL_Main_loop11 x0 x1 x2 = 0b0110000000000000000 # (x0 # (x1 # x2))
-
 // $LL.Main.loop10
 rw__LL_Main_loop10 : [8] -> [16] -> [4] -> [4] -> [8] -> [16] -> [47]
 rw__LL_Main_loop10 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop68 x0 x1 x2 x3 x4 x5
@@ -327,14 +315,6 @@ rw__LL_Main_loop8 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_loop79 x2 x4 x3 x1 x0 x5 x6
 // $LL.Main.loop7
 rw__LL_Main_loop7 : [16] -> [4] -> [8] -> [4] -> [4] -> [8] -> [16] -> [47]
 rw__LL_Main_loop7 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_loop8 x4 x0 x1 x2 x3 x5 x6
-
-// $LL.Main.loop6
-rw__LL_Main_loop6 : [4] -> [8] -> [16] -> [47]
-rw__LL_Main_loop6 x0 x1 x2 = rw__LL_Main_loop78 x0 x1 x2
-
-// $LL.Main.loop5
-rw__LL_Main_loop5 : [28] -> [47]
-rw__LL_Main_loop5 x0 = rw__LL_Main_loop71 (take`{4} x0) (take`{8} (drop`{4} x0)) (drop`{12} x0)
 
 // $LL.Main.loop4
 rw__LL_Main_loop4 : [4] -> [4] -> [8] -> [4] -> [8] -> [16] -> [47]

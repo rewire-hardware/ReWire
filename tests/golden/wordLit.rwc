@@ -1,30 +1,30 @@
 $Pure.dispatch : ([8]) -> [17]
-$Pure.dispatch $1 =
-      $LL.Pure.dispatch $1
+$Pure.dispatch i =
+      $LL.Pure.dispatch i
 
 $LL.Main.loop3 : ([8]) -> [17]
-$LL.Main.loop3 $0 =
-      $LL.Main.loop2 $0
+$LL.Main.loop3 $x =
+      $LL.Main.loop2 $x
 
 $LL.Main.loop2 : ([8]) -> [17]
-$LL.Main.loop2 $0 =
-      $LL.Main.loop (1'h0 # xor (zext 16 $0) 16'h1)
+$LL.Main.loop2 i =
+      $LL.Main.loop (1'h0 # xor (zext 16 i) 16'h1)
 
 Main.loop1 : ([8]) -> [17]
-Main.loop1 $0 =
-      $LL.Main.loop3 $0
+Main.loop1 $x =
+      $LL.Main.loop3 $x
 
 $LL.Main.loop1 : ([16]) -> [17]
-$LL.Main.loop1 $0 =
-      1'h1 # $0
+$LL.Main.loop1 rabind =
+      1'h1 # rabind
 
 $LL.Main.loop : ([17]) -> [17]
-$LL.Main.loop $0 =
-      $LL.Main.loop1 $0[0 +: 16]
+$LL.Main.loop disc =
+      $LL.Main.loop1 disc[0 +: 16]
 
 $LL.Pure.dispatch : ([8]) -> [17]
-$LL.Pure.dispatch $0 =
-      Main.loop1 $0
+$LL.Pure.dispatch i =
+      Main.loop1 i
 
 device top_level
       input __in0 : [8]

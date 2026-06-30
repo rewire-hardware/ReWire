@@ -1,58 +1,58 @@
 $Pure.dispatch : ([1056]) -> [65]
-$Pure.dispatch $1 =
-      $LL.Pure.dispatch $1
+$Pure.dispatch i =
+      $LL.Pure.dispatch i
 
 $LL.Pure.dispatch : ([1056]) -> [65]
-$LL.Pure.dispatch $0 =
-      Main.loop $0
+$LL.Pure.dispatch i =
+      Main.loop i
 
 Main.compute : ([1024], [32]) -> [64]
-Main.compute $0 $1 =
-      $LL.Main.compute ($0 # $1)
+Main.compute $1 $2 =
+      $LL.Main.compute ($1 # $2)
 
 $LL.Main.loop5 : ([1056]) -> [65]
-$LL.Main.loop5 $0 =
-      $LL.Main.loop $0[32 +: 1024] $0[0 +: 32]
+$LL.Main.loop5 $3 =
+      $LL.Main.loop $3[32 +: 1024] $3[0 +: 32]
 
 $LL.Main.compute3 : ([32], [64]) -> [8]
-$LL.Main.compute3 $0 $1 =
-      add $0[0 +: 8] $1[32 +: 8]
+$LL.Main.compute3 w v' =
+      add w[0 +: 8] v'[32 +: 8]
 
 $LL.Main.loop4 : ([1024], [32]) -> [65]
-$LL.Main.loop4 $0 $1 =
-      $LL.Main.loop3 (1'h0 # Main.compute $0 $1)
+$LL.Main.loop4 v w =
+      $LL.Main.loop3 (1'h0 # Main.compute v w)
 
 $LL.Main.loop3 : ([65]) -> [65]
-$LL.Main.loop3 $0 =
-      $LL.Main.loop1 $0[0 +: 64]
+$LL.Main.loop3 disc =
+      $LL.Main.loop1 disc[0 +: 64]
 
 $LL.Main.loop2 : ([1024], [32]) -> [65]
-$LL.Main.loop2 $0 $1 =
-      $LL.Main.loop4 $0 $1
+$LL.Main.loop2 $x $x1 =
+      $LL.Main.loop4 $x $x1
 
 Main.loop : ([1056]) -> [65]
-Main.loop $0 =
-      $LL.Main.loop5 $0
+Main.loop $x =
+      $LL.Main.loop5 $x
 
 $LL.Main.loop1 : ([64]) -> [65]
-$LL.Main.loop1 $0 =
-      1'h1 # $0
+$LL.Main.loop1 rabind =
+      1'h1 # rabind
 
 $LL.Main.loop : ([1024], [32]) -> [65]
-$LL.Main.loop $0 $1 =
-      $LL.Main.loop2 $0 $1
+$LL.Main.loop m2c $x =
+      $LL.Main.loop2 m2c $x
 
 $LL.Main.compute2 : ([1024], [32]) -> [64]
-$LL.Main.compute2 $0 $1 =
-      $LL.Main.compute1 $0 $1
+$LL.Main.compute2 $x $x1 =
+      $LL.Main.compute1 $x $x1
 
 $LL.Main.compute1 : ([1024], [32]) -> [64]
-$LL.Main.compute1 $0 $1 =
-      $LL.Main.compute3 $1 $0[960 +: 64] # $LL.Main.compute3 $1 $0[896 +: 64] # $LL.Main.compute3 $1 $0[832 +: 64] # $LL.Main.compute3 $1 $0[768 +: 64] # $LL.Main.compute3 $1 $0[704 +: 64] # $LL.Main.compute3 $1 $0[640 +: 64] # $LL.Main.compute3 $1 $0[576 +: 64] # $LL.Main.compute3 $1 $0[512 +: 64]
+$LL.Main.compute1 v w =
+      $LL.Main.compute3 w v[960 +: 64] # $LL.Main.compute3 w v[896 +: 64] # $LL.Main.compute3 w v[832 +: 64] # $LL.Main.compute3 w v[768 +: 64] # $LL.Main.compute3 w v[704 +: 64] # $LL.Main.compute3 w v[640 +: 64] # $LL.Main.compute3 w v[576 +: 64] # $LL.Main.compute3 w v[512 +: 64]
 
 $LL.Main.compute : ([1056]) -> [64]
-$LL.Main.compute $0 =
-      $LL.Main.compute2 $0[32 +: 1024] $0[0 +: 32]
+$LL.Main.compute $4 =
+      $LL.Main.compute2 $4[32 +: 1024] $4[0 +: 32]
 
 device top_level
       input __in0 : [1024]

@@ -171,7 +171,6 @@ module ZLL_Main_putReg67 (input logic [7:0] arg0,
   logic [5:0] zi8;
   logic [16:0] zi9;
   logic [14:0] zi10;
-  logic [69:0] zll_main_putreg52_out;
   logic [7:0] zi16;
   logic [7:0] zi18;
   logic [7:0] zi19;
@@ -197,7 +196,6 @@ module ZLL_Main_putReg67 (input logic [7:0] arg0,
   assign zi8 = arg3[37:32];
   assign zi9 = arg3[31:15];
   assign zi10 = arg3[14:0];
-  ZLL_Main_putReg52  inst (zi8, zi0, zi7, zi5, zi6, zi9, zi10, zll_main_putreg52_out);
   assign zi16 = arg3[69:62];
   assign zi18 = arg3[53:46];
   assign zi19 = arg3[45:38];
@@ -216,7 +214,7 @@ module ZLL_Main_putReg67 (input logic [7:0] arg0,
   assign zi44 = arg3[37:32];
   assign zi45 = arg3[31:15];
   assign zi46 = arg3[14:0];
-  assign res = (arg2[9:8] == 2'h0) ? zll_main_putreg52_out : ((arg1 == 2'h1) ? {zi16, arg0, zi18, zi19, zi20, zi21, zi22} : ((arg1 == 2'h2) ? {zi28, zi29, arg0, zi31, zi32, zi33, zi34} : {zi40, zi41, zi42, arg0, zi44, zi45, zi46}));
+  assign res = (arg2[9:8] == 2'h0) ? {zi0, zi5, zi6, zi7, zi8, zi9, zi10} : ((arg1 == 2'h1) ? {zi16, arg0, zi18, zi19, zi20, zi21, zi22} : ((arg1 == 2'h2) ? {zi28, zi29, arg0, zi31, zi32, zi33, zi34} : {zi40, zi41, zi42, arg0, zi44, zi45, zi46}));
 endmodule
 
 module ZLL_Pure_dispatch8 (input logic [16:0] arg0,
@@ -245,56 +243,14 @@ module ZLL_Main_getReg22 (input logic [1:0] arg0,
   input logic [69:0] arg2,
   output logic [77:0] res);
   logic [7:0] zi3;
-  logic [7:0] zi5;
-  logic [7:0] zi6;
-  logic [5:0] zi7;
-  logic [16:0] zi8;
-  logic [14:0] zi9;
-  logic [7:0] zll_main_r05_out;
   logic [7:0] zi14;
-  logic [7:0] zi15;
-  logic [7:0] zi16;
-  logic [5:0] zi17;
-  logic [16:0] zi18;
-  logic [14:0] zi19;
-  logic [7:0] zll_main_r05_outR1;
   logic [7:0] zi25;
-  logic [7:0] zi26;
-  logic [5:0] zi27;
-  logic [16:0] zi28;
-  logic [14:0] zi29;
-  logic [7:0] zll_main_r15_out;
   logic [7:0] zi36;
-  logic [5:0] zi37;
-  logic [16:0] zi38;
-  logic [14:0] zi39;
-  logic [7:0] zll_main_r37_out;
   assign zi3 = arg2[69:62];
-  assign zi5 = arg2[53:46];
-  assign zi6 = arg2[45:38];
-  assign zi7 = arg2[37:32];
-  assign zi8 = arg2[31:15];
-  assign zi9 = arg2[14:0];
-  ZLL_Main_r05  inst (zi3, zi5, zi6, zi7, zi8, zi9, zll_main_r05_out);
   assign zi14 = arg2[61:54];
-  assign zi15 = arg2[53:46];
-  assign zi16 = arg2[45:38];
-  assign zi17 = arg2[37:32];
-  assign zi18 = arg2[31:15];
-  assign zi19 = arg2[14:0];
-  ZLL_Main_r05  instR1 (zi14, zi15, zi16, zi17, zi18, zi19, zll_main_r05_outR1);
   assign zi25 = arg2[53:46];
-  assign zi26 = arg2[45:38];
-  assign zi27 = arg2[37:32];
-  assign zi28 = arg2[31:15];
-  assign zi29 = arg2[14:0];
-  ZLL_Main_r15  instR2 (zi25, zi26, zi27, zi28, zi29, zll_main_r15_out);
   assign zi36 = arg2[45:38];
-  assign zi37 = arg2[37:32];
-  assign zi38 = arg2[31:15];
-  assign zi39 = arg2[14:0];
-  ZLL_Main_r37  instR3 (zi36, zi37, zi38, zi39, zll_main_r37_out);
-  assign res = (arg1 == 2'h0) ? {zll_main_r05_out, arg2} : ((arg0 == 2'h1) ? {zll_main_r05_outR1, arg2} : ((arg0 == 2'h2) ? {zll_main_r15_out, arg2} : {zll_main_r37_out, arg2}));
+  assign res = (arg1 == 2'h0) ? {zi3, arg2} : ((arg0 == 2'h1) ? {zi14, arg2} : ((arg0 == 2'h2) ? {zi25, arg2} : {zi36, arg2}));
 endmodule
 
 module ZLL_Main_loop207 (input logic [69:0] arg0,
@@ -376,7 +332,7 @@ module ZLL_Main_loop205 (input logic [142:0] arg0,
   logic [7:0] zi57;
   logic [69:0] zll_main_putreg67_out;
   logic [69:0] zi58;
-  logic [69:0] main_incrpc_outR1;
+  logic [69:0] zll_main_nand6_out;
   logic [142:0] zll_main_loop207_outR4;
   logic [142:0] zi59;
   logic [69:0] zi60;
@@ -396,7 +352,7 @@ module ZLL_Main_loop205 (input logic [142:0] arg0,
   logic [7:0] zi68;
   logic [69:0] zi69;
   logic [0:0] zi70;
-  logic [69:0] main_incrpc_outR2;
+  logic [69:0] zll_main_nand6_outR1;
   logic [69:0] main_putpc1_out;
   logic [142:0] zll_main_loop207_outR6;
   logic [142:0] zi72;
@@ -483,8 +439,8 @@ module ZLL_Main_loop205 (input logic [142:0] arg0,
   assign zi57 = ~(zi52 & zi55);
   ZLL_Main_putReg67  instR23 (zi57, zi48, {zi48, zi57}, zi56, zll_main_putreg67_out);
   assign zi58 = zll_main_putreg67_out;
-  Main_incrPC  instR24 (zi58, main_incrpc_outR1);
-  ZLL_Main_loop207  instR25 (main_incrpc_outR1, zll_main_loop207_outR4);
+  ZLL_Main_nand6  instR24 (zi58, zll_main_nand6_out);
+  ZLL_Main_loop207  instR25 (zll_main_nand6_out, zll_main_loop207_outR4);
   assign zi59 = zll_main_loop207_outR4;
   assign zi60 = zi59[69:0];
   Main_getPC  instR26 (zi60, main_getpc_outR1);
@@ -503,9 +459,9 @@ module ZLL_Main_loop205 (input logic [142:0] arg0,
   assign zi68 = zi67[77:70];
   assign zi69 = zi67[69:0];
   assign zi70 = zi68 == 8'h0;
-  Main_incrPC  instR32 (zi69, main_incrpc_outR2);
+  ZLL_Main_nand6  instR32 (zi69, zll_main_nand6_outR1);
   Main_putPC1  instR33 (zi66, zi69, main_putpc1_out);
-  ZLL_Main_loop207  instR34 ((zi70 == 1'h1) ? main_incrpc_outR2 : main_putpc1_out, zll_main_loop207_outR6);
+  ZLL_Main_loop207  instR34 ((zi70 == 1'h1) ? zll_main_nand6_outR1 : main_putpc1_out, zll_main_loop207_outR6);
   assign zi72 = zll_main_loop207_outR6;
   assign zi73 = zi72[69:0];
   Main_getPC  instR35 (zi73, main_getpc_outR2);
@@ -530,15 +486,13 @@ module Main_putPC1 (input logic [5:0] arg0,
   logic [7:0] zi6;
   logic [16:0] zi8;
   logic [14:0] zi9;
-  logic [69:0] zll_main_putreg52_out;
   assign zi3 = arg1[69:62];
   assign zi4 = arg1[61:54];
   assign zi5 = arg1[53:46];
   assign zi6 = arg1[45:38];
   assign zi8 = arg1[31:15];
   assign zi9 = arg1[14:0];
-  ZLL_Main_putReg52  inst (arg0, zi3, zi6, zi4, zi5, zi8, zi9, zll_main_putreg52_out);
-  assign res = zll_main_putreg52_out;
+  assign res = {zi3, zi4, zi5, zi6, arg0, zi8, zi9};
 endmodule
 
 module Main_putIns (input logic [16:0] arg0,
@@ -557,36 +511,6 @@ module Main_putIns (input logic [16:0] arg0,
   assign zi7 = arg1[37:32];
   assign zi9 = arg1[14:0];
   assign res = {zi3, zi4, zi5, zi6, zi7, arg0, zi9};
-endmodule
-
-module ZLL_Main_r37 (input logic [7:0] arg0,
-  input logic [5:0] arg1,
-  input logic [16:0] arg2,
-  input logic [14:0] arg3,
-  output logic [7:0] res);
-  assign res = arg0;
-endmodule
-
-module ZLL_Main_r15 (input logic [7:0] arg0,
-  input logic [7:0] arg1,
-  input logic [5:0] arg2,
-  input logic [16:0] arg3,
-  input logic [14:0] arg4,
-  output logic [7:0] res);
-  logic [7:0] zll_main_r37_out;
-  ZLL_Main_r37  inst (arg0, arg2, arg3, arg4, zll_main_r37_out);
-  assign res = zll_main_r37_out;
-endmodule
-
-module ZLL_Main_putReg52 (input logic [5:0] arg0,
-  input logic [7:0] arg1,
-  input logic [7:0] arg2,
-  input logic [7:0] arg3,
-  input logic [7:0] arg4,
-  input logic [16:0] arg5,
-  input logic [14:0] arg6,
-  output logic [69:0] res);
-  assign res = {arg1, arg3, arg4, arg2, arg0, arg5, arg6};
 endmodule
 
 module Main_getReg1 (input logic [1:0] arg0,
@@ -610,18 +534,6 @@ module ZLL_Main_loop165 (input logic [75:0] arg0,
   assign res = zll_main_finishinstr3_out;
 endmodule
 
-module ZLL_Main_r05 (input logic [7:0] arg0,
-  input logic [7:0] arg1,
-  input logic [7:0] arg2,
-  input logic [5:0] arg3,
-  input logic [16:0] arg4,
-  input logic [14:0] arg5,
-  output logic [7:0] res);
-  logic [7:0] zll_main_r15_out;
-  ZLL_Main_r15  inst (arg0, arg2, arg3, arg4, arg5, zll_main_r15_out);
-  assign res = zll_main_r15_out;
-endmodule
-
 module ZLL_Main_putWeOut2 (input logic [0:0] arg0,
   input logic [69:0] arg1,
   output logic [69:0] res);
@@ -638,6 +550,13 @@ module ZLL_Main_putWeOut2 (input logic [0:0] arg0,
   assign zi5 = zi0[77:70];
   Main_putOut  instR1 ({arg0, zi4, zi5}, zi2, main_putout_out);
   assign res = main_putout_out;
+endmodule
+
+module ZLL_Main_nand6 (input logic [69:0] arg0,
+  output logic [69:0] res);
+  logic [69:0] main_incrpc_out;
+  Main_incrPC  inst (arg0, main_incrpc_out);
+  assign res = main_incrpc_out;
 endmodule
 
 module Main_getIns (input logic [69:0] arg0,

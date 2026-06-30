@@ -1,82 +1,82 @@
 $Pure.dispatch : ([2], [1]) -> [4]
-$Pure.dispatch $0 $1 =
-      $LL.Pure.dispatch1 $1 $0[1 +: 1] $0[0 +: 1]
+$Pure.dispatch disc i =
+      $LL.Pure.dispatch1 i disc[1 +: 1] disc[0 +: 1]
 
 $LL.Pure.dispatch1 : ([1], [1], [1]) -> [4]
-$LL.Pure.dispatch1 $0 $1 $2 =
-      $LL.Pure.dispatch $0 $1 $2
+$LL.Pure.dispatch1 i $x $x1 =
+      $LL.Pure.dispatch i $x $x1
 
 $LL.Main.convtest15 : ([1], [1]) -> [4]
-$LL.Main.convtest15 $0 $2 =
-      $LL.Main.convtest4 $0 $2
+$LL.Main.convtest15 b $x1 =
+      $LL.Main.convtest4 b $x1
 
 $LL.Main.convtest14 : ([1], [1], [1]) -> [4]
-$LL.Main.convtest14 $0 $1 $2 =
-      $LL.Main.convtest11 $0 ($LL.Main.convtest10 $0)
+$LL.Main.convtest14 b $4 sto0 =
+      $LL.Main.convtest11 b ($LL.Main.convtest10 b)
 
 $LL.Main.convtest13 : ([1], [1]) -> [4]
-$LL.Main.convtest13 $0 $1 =
-      $LL.Main.convtest9 $0 $1
+$LL.Main.convtest13 $x sto0 =
+      $LL.Main.convtest9 $x sto0
 
 $LL.Main.convtest12 : ([1], [1], [1]) -> [4]
-$LL.Main.convtest12 $0 $1 $2 =
-      $LL.Main.convtest2 $0 $1 $2
+$LL.Main.convtest12 $x $x1 sto0 =
+      $LL.Main.convtest2 $x $x1 sto0
 
 $LL.Main.convtest11 : ([1], [4]) -> [4]
-$LL.Main.convtest11 $0 $1 =
-      $LL.Main.convtest15 $0 $1[0 +: 1]
+$LL.Main.convtest11 b disc =
+      $LL.Main.convtest15 b disc[0 +: 1]
 
 $LL.Main.convtest10 : ([1]) -> [4]
-$LL.Main.convtest10 $0 =
-      $LL.Main.convtest3 $0
+$LL.Main.convtest10 disc =
+      $LL.Main.convtest3 disc
 
 $LL.Main.convtest9 : ([1], [1]) -> [4]
-$LL.Main.convtest9 $0 $1 =
-      1'h1 # $0 # $0 # $1
+$LL.Main.convtest9 b sto0 =
+      1'h1 # b # b # sto0
 
 $LL.Main.convtest8 : ([1], [1]) -> [4]
-$LL.Main.convtest8 $0 $2 =
-      $LL.Main.convtest7 $0 $2
+$LL.Main.convtest8 $x sto0 =
+      $LL.Main.convtest7 $x sto0
 
 $LL.Main.convtest7 : ([1], [1]) -> [4]
-$LL.Main.convtest7 $0 $2 =
-      $LL.Main.convtest5 $0 $2
+$LL.Main.convtest7 $x sto0 =
+      $LL.Main.convtest5 $x sto0
 
 $LL.Main.convtest6 : ([1], [1], [1]) -> [4]
-$LL.Main.convtest6 $0 $1 $2 =
-      $LL.Main.convtest14 $0 $1 $2
+$LL.Main.convtest6 $x $x1 sto0 =
+      $LL.Main.convtest14 $x $x1 sto0
 
 $LL.Main.convtest5 : ([1], [1]) -> [4]
-$LL.Main.convtest5 $0 $2 =
-      $LL.Main.convtest1 $0 $2
+$LL.Main.convtest5 $x sto0 =
+      $LL.Main.convtest1 $x sto0
 
 $LL.Main.convtest4 : ([1], [1]) -> [4]
-$LL.Main.convtest4 $0 $2 =
-      $LL.Main.convtest8 $0 $2
+$LL.Main.convtest4 b $x =
+      $LL.Main.convtest8 b $x
 
 $LL.Main.convtest3 : ([1]) -> [4]
-$LL.Main.convtest3 $1 =
-      $LL.Main.convtest $1
+$LL.Main.convtest3 $x =
+      $LL.Main.convtest $x
 
 $LL.Pure.dispatch : ([1], [1], [1]) -> [4]
-$LL.Pure.dispatch $0 $1 $2 =
-      $LL.Main.convtest12 $1 $0 $2
+$LL.Pure.dispatch i store0 $x =
+      $LL.Main.convtest12 store0 i $x
 
 $LL.Main.convtest2 : ([1], [1], [1]) -> [4]
-$LL.Main.convtest2 $0 $1 $2 =
-      $LL.Main.convtest6 $0 $1 $2
+$LL.Main.convtest2 $x $x1 sto0 =
+      $LL.Main.convtest6 $x $x1 sto0
 
 $LL.Main.convtest1 : ([1], [1]) -> [4]
-$LL.Main.convtest1 $0 $2 =
-      Main.convtest $0 $2
+$LL.Main.convtest1 b sto0 =
+      Main.convtest b sto0
 
 $LL.Main.convtest : ([1]) -> [4]
-$LL.Main.convtest $1 =
-      3'h0 # $1
+$LL.Main.convtest s0 =
+      3'h0 # s0
 
 Main.convtest : ([1], [1]) -> [4]
-Main.convtest $0 $1 =
-      $LL.Main.convtest13 $0 $1
+Main.convtest $x sto0 =
+      $LL.Main.convtest13 $x sto0
 
 device top_level
       input __in0 : [1]

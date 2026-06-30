@@ -1,342 +1,322 @@
 $Pure.dispatch : ([28], [4]) -> [47]
-$Pure.dispatch $0 $1 =
-      $LL.Pure.dispatch1 $1 $0[24 +: 4] $0[16 +: 8] $0[0 +: 16]
+$Pure.dispatch disc i =
+      $LL.Pure.dispatch1 i disc[24 +: 4] disc[16 +: 8] disc[0 +: 16]
 
 $LL.Main.loop79 : ([4], [4], [8], [16], [4], [8], [16]) -> [47]
-$LL.Main.loop79 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.loop48 $1 $2 $0 $3 $4 $5 $6
+$LL.Main.loop79 a i b $x sto0 sto1 sto2 =
+      $LL.Main.loop48 i b a $x sto0 sto1 sto2
 
 $LL.Main.loop78 : ([4], [8], [16]) -> [47]
-$LL.Main.loop78 $1 $2 $3 =
-      $LL.Main.loop35 $1 $2 $3
+$LL.Main.loop78 s0 $x $x1 =
+      $LL.Main.loop72 s0 $x $x1
 
 $LL.Main.loop77 : ([44]) -> [47]
-$LL.Main.loop77 $0 =
-      $LL.Main.loop26 $0[28 +: 16] $0[24 +: 4] $0[16 +: 8] $0[0 +: 16]
+$LL.Main.loop77 disc =
+      $LL.Main.loop26 disc[28 +: 16] disc[24 +: 4] disc[16 +: 8] disc[0 +: 16]
 
 $LL.Main.loop76 : ([8], [16], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop76 $0 $1 $2 $4 $5 $6 =
-      $LL.Main.loop56 $0 $1 $2 $4 $5 $6
+$LL.Main.loop76 $x $x1 $x2 sto0 sto1 sto2 =
+      $LL.Main.loop56 $x $x1 $x2 sto0 sto1 sto2
 
 $LL.Main.loop75 : ([36]) -> [47]
-$LL.Main.loop75 $0 =
-      $LL.Main.loop25 $0[28 +: 8] $0[24 +: 4] $0[16 +: 8] $0[0 +: 16]
+$LL.Main.loop75 disc =
+      $LL.Main.loop25 disc[28 +: 8] disc[24 +: 4] disc[16 +: 8] disc[0 +: 16]
 
 $LL.Main.loop74 : ([16], [4], [8], [16]) -> [47]
-$LL.Main.loop74 $0 $1 $2 $3 =
-      $LL.Main.loop53 $0 $1 $2 $3
+$LL.Main.loop74 v s0 $x $x1 =
+      $LL.Main.loop53 v s0 $x $x1
 
 $LL.Pure.dispatch2 : ([4], [4], [8], [16]) -> [47]
-$LL.Pure.dispatch2 $0 $1 $2 $3 =
-      $LL.Pure.dispatch $1 $0 $2 $3
+$LL.Pure.dispatch2 i s0 $x $x1 =
+      $LL.Pure.dispatch s0 i $x $x1
 
 $LL.Main.loop73 : ([4], [4], [8], [4], [8], [16]) -> [47]
-$LL.Main.loop73 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop42 $0 $1 $2 $3 $4 $5
+$LL.Main.loop73 a i v s0 $x $x1 =
+      $LL.Main.loop42 a i v s0 $x $x1
 
 $LL.Main.loop72 : ([4], [8], [16]) -> [47]
-$LL.Main.loop72 $0 $2 $3 =
-      $LL.Main.loop47 $0 $2 $3
+$LL.Main.loop72 s0 s1 $x =
+      $LL.Main.loop47 s0 s1 $x
 
 $LL.Main.loop71 : ([4], [8], [16]) -> [47]
-$LL.Main.loop71 $1 $2 $3 =
-      $LL.Main.loop28 $1 $2 $3
+$LL.Main.loop71 $x $x1 $x2 =
+      $LL.Main.loop78 $x $x1 $x2
 
 $LL.Main.loop70 : ([32]) -> [47]
-$LL.Main.loop70 $0 =
-      $LL.Main.loop19 $0[28 +: 4] $0[24 +: 4] $0[16 +: 8] $0[0 +: 16]
+$LL.Main.loop70 disc =
+      $LL.Main.loop19 disc[28 +: 4] disc[24 +: 4] disc[16 +: 8] disc[0 +: 16]
 
 $LL.Main.loop69 : ([4], [8], [16], [47]) -> [47]
-$LL.Main.loop69 $0 $1 $2 $3 =
-      $LL.Main.loop58 $0 $1 $2 $3[24 +: 4] $3[16 +: 8] $3[0 +: 16]
+$LL.Main.loop69 a b c disc =
+      $LL.Main.loop58 a b c disc[24 +: 4] disc[16 +: 8] disc[0 +: 16]
 
 $LL.Main.loop68 : ([8], [16], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop68 $0 $1 $2 $4 $5 $6 =
-      $LL.Main.loop3 $1 $0 $2 ($LL.Main.loop30 ($4 # add (zext 8 $2) $0 # $6))
+$LL.Main.loop68 b c a sto0 sto1 sto2 =
+      $LL.Main.loop3 c b a ($LL.Main.loop30 (sto0 # add (zext 8 a) b # sto2))
 
 $LL.Main.loop67 : ([16], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop67 $1 $2 $3 $4 $5 =
-      $LL.Main.loop2 $1 $2 $3 $4 $5
+$LL.Main.loop67 c a s0 $x $x1 =
+      $LL.Main.loop2 c a s0 $x $x1
 
 $LL.Main.loop66 : ([4], [4], [8], [4], [8], [16]) -> [47]
-$LL.Main.loop66 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop4 $0 $1 $2 $3 $4 $5
+$LL.Main.loop66 $x $x1 $x2 sto0 sto1 sto2 =
+      $LL.Main.loop4 $x $x1 $x2 sto0 sto1 sto2
 
 $LL.Main.loop65 : ([4], [4], [8], [4], [8], [16]) -> [47]
-$LL.Main.loop65 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop41 $0 $1 $2 $3 $4 $5
+$LL.Main.loop65 a i $x $x1 $x2 $x3 =
+      $LL.Main.loop41 a i $x $x1 $x2 $x3
 
 $LL.Main.loop64 : ([16], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop64 $0 $1 $3 $4 $5 =
-      $LL.Main.loop51 $0 $1 $3 $4 $5
+$LL.Main.loop64 $x $x1 sto0 sto1 sto2 =
+      $LL.Main.loop51 $x $x1 sto0 sto1 sto2
 
 $LL.Pure.dispatch1 : ([4], [4], [8], [16]) -> [47]
-$LL.Pure.dispatch1 $0 $1 $2 $3 =
-      $LL.Pure.dispatch2 $0 $1 $2 $3
+$LL.Pure.dispatch1 i $x $x1 $x2 =
+      $LL.Pure.dispatch2 i $x $x1 $x2
 
 $LL.Main.loop63 : ([8], [8], [4], [16]) -> [47]
-$LL.Main.loop63 $0 $1 $2 $3 =
-      11'h200 # $0 # $2 # $1 # $3
+$LL.Main.loop63 v s1 s0 s2 =
+      11'h200 # v # s0 # s1 # s2
 
 $LL.Main.loop62 : ([8], [4], [4], [16]) -> [47]
-$LL.Main.loop62 $0 $1 $2 $3 =
-      15'h1000 # $2 # $1 # $0 # $3
+$LL.Main.loop62 s1 s0 v s2 =
+      15'h1000 # v # s0 # s1 # s2
 
 $LL.Main.loop61 : ([16], [8], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop61 $0 $1 $2 $4 $5 $6 =
-      $LL.Main.loop60 $0 $1 $2 $4 $5 $6
+$LL.Main.loop61 c b a $x1 $x2 $x3 =
+      $LL.Main.loop60 c b a $x1 $x2 $x3
 
 $LL.Main.loop60 : ([16], [8], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop60 $0 $1 $2 $4 $5 $6 =
-      $LL.Main.loop22 $0 $1 $2 $4 $5 $6
+$LL.Main.loop60 c b a $x $x1 $x2 =
+      $LL.Main.loop22 c b a $x $x1 $x2
 
 $LL.Main.loop59 : ([4], [4], [47]) -> [47]
-$LL.Main.loop59 $0 $1 $2 =
-      $LL.Main.loop65 $0 $1 $2[28 +: 8] $2[24 +: 4] $2[16 +: 8] $2[0 +: 16]
+$LL.Main.loop59 a i disc =
+      $LL.Main.loop65 a i disc[28 +: 8] disc[24 +: 4] disc[16 +: 8] disc[0 +: 16]
 
 $LL.Main.loop58 : ([4], [8], [16], [4], [8], [16]) -> [47]
-$LL.Main.loop58 $0 $1 $2 $4 $5 $6 =
-      $LL.Main.loop38 $0 $1 $2 $4 $5 $6
+$LL.Main.loop58 a b c $x1 $x2 $x3 =
+      $LL.Main.loop38 a b c $x1 $x2 $x3
 
 $LL.Main.loop57 : ([16], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop57 $0 $1 $3 $4 $5 =
-      3'h4 # add (zext 16 $1) $0 # $3 # $4 # $5
+$LL.Main.loop57 c a sto0 sto1 sto2 =
+      3'h4 # add (zext 16 a) c # sto0 # sto1 # sto2
 
 $LL.Main.loop56 : ([8], [16], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop56 $0 $1 $2 $4 $5 $6 =
-      $LL.Main.loop13 $0 $1 $2 $4 $5 $6
+$LL.Main.loop56 $x $x1 $x2 sto0 sto1 sto2 =
+      $LL.Main.loop13 $x $x1 $x2 sto0 sto1 sto2
 
 $LL.Main.loop55 : ([16], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop55 $0 $1 $3 $4 $5 =
-      $LL.Main.loop64 $0 $1 $3 $4 $5
+$LL.Main.loop55 $x $x1 sto0 sto1 sto2 =
+      $LL.Main.loop64 $x $x1 sto0 sto1 sto2
 
 $LL.Main.loop54 : ([4], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop54 $0 $1 $2 $3 $4 =
-      $LL.Main.loop21 $0 $1 $2 $3 $4
+$LL.Main.loop54 i $x $x1 $x2 $x3 =
+      $LL.Main.loop21 i $x $x1 $x2 $x3
 
 $LL.Main.loop53 : ([16], [4], [8], [16]) -> [47]
-$LL.Main.loop53 $0 $1 $2 $3 =
-      $LL.Main.loop39 $2 $0 $1 $3
+$LL.Main.loop53 v s0 s1 $x =
+      $LL.Main.loop39 s1 v s0 $x
 
 $LL.Main.loop52 : ([4], [8], [4], [47]) -> [47]
-$LL.Main.loop52 $0 $1 $2 $3 =
-      $LL.Main.loop37 $0 $1 $2 $3[28 +: 16] $3[24 +: 4] $3[16 +: 8] $3[0 +: 16]
+$LL.Main.loop52 a b i disc =
+      $LL.Main.loop37 a b i disc[28 +: 16] disc[24 +: 4] disc[16 +: 8] disc[0 +: 16]
 
 $LL.Main.loop51 : ([16], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop51 $0 $1 $3 $4 $5 =
-      $LL.Main.loop57 $0 $1 $3 $4 $5
+$LL.Main.loop51 $x $x1 sto0 sto1 sto2 =
+      $LL.Main.loop57 $x $x1 sto0 sto1 sto2
 
 $LL.Main.loop50 : ([4], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop50 $0 $1 $2 $3 $4 =
-      $LL.Main.loop59 $1 $0 ($LL.Main.loop75 ($3 # $2 # $3 # $4))
+$LL.Main.loop50 i a sto0 sto1 sto2 =
+      $LL.Main.loop59 a i ($LL.Main.loop75 (sto1 # sto0 # sto1 # sto2))
 
 $LL.Main.loop49 : ([4], [4], [8], [16]) -> [47]
-$LL.Main.loop49 $0 $1 $2 $3 =
-      $LL.Main.loop34 $1 $0 $2 $3
+$LL.Main.loop49 v s0 $x $x1 =
+      $LL.Main.loop34 s0 v $x $x1
 
 $LL.Main.loop48 : ([4], [8], [4], [16], [4], [8], [16]) -> [47]
-$LL.Main.loop48 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.loop69 $2 $1 $3 ($LL.Main.loop5 ($0 # $5 # $6))
+$LL.Main.loop48 i b a c sto0 sto1 sto2 =
+      $LL.Main.loop69 a b c ($LL.Main.loop40 (i # sto1 # sto2))
 
 $LL.Main.loop47 : ([4], [8], [16]) -> [47]
-$LL.Main.loop47 $0 $1 $3 =
-      19'h30000 # $0 # $1 # $3
+$LL.Main.loop47 s0 s1 s2 =
+      19'h30000 # s0 # s1 # s2
 
 $LL.Pure.dispatch : ([4], [4], [8], [16]) -> [47]
-$LL.Pure.dispatch $0 $1 $2 $3 =
-      Main.loop1 $1 $0 $2 $3
+$LL.Pure.dispatch s0 i s1 $x =
+      Main.loop1 i s0 s1 $x
 
 $LL.Main.loop46 : ([4], [8], [4], [16], [4], [8], [16]) -> [47]
-$LL.Main.loop46 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.loop7 $3 $0 $1 $2 $4 $5 $6
+$LL.Main.loop46 a b i v $x $x1 $x2 =
+      $LL.Main.loop7 v a b i $x $x1 $x2
 
 $LL.Main.loop45 : ([8], [4], [16]) -> [47]
-$LL.Main.loop45 $1 $2 $3 =
-      19'h30000 # $2 # $1 # $3
+$LL.Main.loop45 s1 s0 s2 =
+      19'h30000 # s0 # s1 # s2
 
 $LL.Main.loop44 : ([16], [4], [47]) -> [47]
-$LL.Main.loop44 $0 $1 $2 =
-      $LL.Main.loop29 $0 $1 $2[24 +: 4] $2[16 +: 8] $2[0 +: 16]
+$LL.Main.loop44 c a disc =
+      $LL.Main.loop29 c a disc[24 +: 4] disc[16 +: 8] disc[0 +: 16]
 
 $LL.Main.loop43 : ([4], [4], [8], [16]) -> [47]
-$LL.Main.loop43 $0 $1 $2 $3 =
-      $LL.Main.loop27 $0 $1 $2 $3
+$LL.Main.loop43 $x sto0 sto1 sto2 =
+      $LL.Main.loop27 $x sto0 sto1 sto2
 
 Main.loop1 : ([4], [4], [8], [16]) -> [47]
-Main.loop1 $0 $1 $2 $3 =
-      $LL.Main.loop43 $0 $1 $2 $3
+Main.loop1 $x sto0 sto1 sto2 =
+      $LL.Main.loop43 $x sto0 sto1 sto2
 
 $LL.Main.loop42 : ([4], [4], [8], [4], [8], [16]) -> [47]
-$LL.Main.loop42 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop66 $1 $0 $2 $3 $4 $5
+$LL.Main.loop42 a i v s0 s1 $x =
+      $LL.Main.loop66 i a v s0 s1 $x
 
 $LL.Main.loop41 : ([4], [4], [8], [4], [8], [16]) -> [47]
-$LL.Main.loop41 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop73 $0 $1 $2 $3 $4 $5
+$LL.Main.loop41 a i v $x $x1 $x2 =
+      $LL.Main.loop73 a i v $x $x1 $x2
 
 $LL.Main.loop40 : ([28]) -> [47]
-$LL.Main.loop40 $0 =
-      $LL.Main.loop6 $0[24 +: 4] $0[16 +: 8] $0[0 +: 16]
+$LL.Main.loop40 disc =
+      $LL.Main.loop71 disc[24 +: 4] disc[16 +: 8] disc[0 +: 16]
 
 $LL.Main.loop39 : ([8], [16], [4], [16]) -> [47]
-$LL.Main.loop39 $0 $1 $2 $3 =
-      3'h0 # $1 # $2 # $0 # $3
+$LL.Main.loop39 s1 v s0 s2 =
+      3'h0 # v # s0 # s1 # s2
 
 $LL.Main.loop38 : ([4], [8], [16], [4], [8], [16]) -> [47]
-$LL.Main.loop38 $0 $1 $2 $4 $5 $6 =
-      $LL.Main.loop12 $0 $1 $2 $4 $5 $6
+$LL.Main.loop38 a b c $x $x1 $x2 =
+      $LL.Main.loop12 a b c $x $x1 $x2
 
 $LL.Main.loop37 : ([4], [8], [4], [16], [4], [8], [16]) -> [47]
-$LL.Main.loop37 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.loop46 $0 $1 $2 $3 $4 $5 $6
+$LL.Main.loop37 a b i $x $x1 $x2 $x3 =
+      $LL.Main.loop46 a b i $x $x1 $x2 $x3
 
 $LL.Main.loop36 : ([4], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop36 $0 $1 $2 $3 $4 =
-      $LL.Main.loop24 $0 $2 $1 $3 $4
-
-$LL.Main.loop35 : ([4], [8], [16]) -> [47]
-$LL.Main.loop35 $0 $2 $3 =
-      $LL.Main.loop11 $0 $2 $3
+$LL.Main.loop36 v i s0 $x $x1 =
+      $LL.Main.loop24 v s0 i $x $x1
 
 $LL.Main.loop34 : ([4], [4], [8], [16]) -> [47]
-$LL.Main.loop34 $0 $1 $2 $3 =
-      $LL.Main.loop62 $2 $0 $1 $3
+$LL.Main.loop34 s0 v s1 $x =
+      $LL.Main.loop62 s1 s0 v $x
 
 $LL.Main.loop33 : ([4], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop33 $0 $1 $2 $3 $4 =
-      $LL.Main.loop50 $0 $1 $2 $3 $4
+$LL.Main.loop33 $x $x1 sto0 sto1 sto2 =
+      $LL.Main.loop50 $x $x1 sto0 sto1 sto2
 
 $LL.Main.loop32 : ([4], [47]) -> [47]
-$LL.Main.loop32 $0 $1 =
-      $LL.Main.loop54 $0 $1[28 +: 4] $1[24 +: 4] $1[16 +: 8] $1[0 +: 16]
+$LL.Main.loop32 i disc =
+      $LL.Main.loop54 i disc[28 +: 4] disc[24 +: 4] disc[16 +: 8] disc[0 +: 16]
 
 $LL.Main.loop31 : ([4], [8], [16]) -> [47]
-$LL.Main.loop31 $1 $2 $3 =
-      $LL.Main.loop14 $1 $2 $3
+$LL.Main.loop31 $x $x1 $x2 =
+      $LL.Main.loop14 $x $x1 $x2
 
 $LL.Main.loop30 : ([28]) -> [47]
-$LL.Main.loop30 $0 =
-      $LL.Main.loop31 $0[24 +: 4] $0[16 +: 8] $0[0 +: 16]
+$LL.Main.loop30 disc =
+      $LL.Main.loop31 disc[24 +: 4] disc[16 +: 8] disc[0 +: 16]
 
 $LL.Main.loop29 : ([16], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop29 $0 $1 $3 $4 $5 =
-      $LL.Main.loop23 $0 $1 $3 $4 $5
-
-$LL.Main.loop28 : ([4], [8], [16]) -> [47]
-$LL.Main.loop28 $1 $2 $3 =
-      $LL.Main.loop72 $1 $2 $3
+$LL.Main.loop29 c a $x1 $x2 $x3 =
+      $LL.Main.loop23 c a $x1 $x2 $x3
 
 $LL.Main.loop27 : ([4], [4], [8], [16]) -> [47]
-$LL.Main.loop27 $0 $1 $2 $3 =
-      $LL.Main.loop32 $0 ($LL.Main.loop70 ($1 # $1 # $2 # $3))
+$LL.Main.loop27 i sto0 sto1 sto2 =
+      $LL.Main.loop32 i ($LL.Main.loop70 (sto0 # sto0 # sto1 # sto2))
 
 $LL.Main.loop26 : ([16], [4], [8], [16]) -> [47]
-$LL.Main.loop26 $0 $1 $2 $3 =
-      $LL.Main.loop74 $0 $1 $2 $3
+$LL.Main.loop26 v $x $x1 $x2 =
+      $LL.Main.loop74 v $x $x1 $x2
 
 $LL.Main.loop25 : ([8], [4], [8], [16]) -> [47]
-$LL.Main.loop25 $0 $1 $2 $3 =
-      $LL.Main.loop1 $0 $1 $2 $3
+$LL.Main.loop25 v $x $x1 $x2 =
+      $LL.Main.loop1 v $x $x1 $x2
 
 $LL.Main.loop24 : ([4], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop24 $0 $1 $2 $3 $4 =
-      $LL.Main.loop33 $2 $0 $1 $3 $4
+$LL.Main.loop24 v s0 i s1 $x =
+      $LL.Main.loop33 i v s0 s1 $x
 
 $LL.Main.loop23 : ([16], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop23 $0 $1 $3 $4 $5 =
-      $LL.Main.loop67 $0 $1 $3 $4 $5
+$LL.Main.loop23 c a $x $x1 $x2 =
+      $LL.Main.loop67 c a $x $x1 $x2
 
 $LL.Main.loop22 : ([16], [8], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop22 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.loop9 $1 $2 $4 $3 $5 $6
+$LL.Main.loop22 c b a s0 $x $x1 =
+      $LL.Main.loop9 c b s0 a $x $x1
 
 $LL.Main.loop21 : ([4], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop21 $0 $1 $2 $3 $4 =
-      $LL.Main.loop36 $1 $0 $2 $3 $4
+$LL.Main.loop21 i v $x $x1 $x2 =
+      $LL.Main.loop36 v i $x $x1 $x2
 
 $LL.Main.loop20 : ([4], [4], [8], [16], [8], [16]) -> [47]
-$LL.Main.loop20 $0 $1 $2 $4 $5 $6 =
-      $LL.Main.loop $4 $0 $2 $1 $5 $6
+$LL.Main.loop20 a s0 b c s1 $x =
+      $LL.Main.loop c a b s0 s1 $x
 
 $LL.Main.loop19 : ([4], [4], [8], [16]) -> [47]
-$LL.Main.loop19 $0 $1 $2 $3 =
-      $LL.Main.loop49 $0 $1 $2 $3
+$LL.Main.loop19 v $x $x1 $x2 =
+      $LL.Main.loop49 v $x $x1 $x2
 
 $LL.Main.loop18 : ([8], [4], [8], [16]) -> [47]
-$LL.Main.loop18 $0 $1 $2 $3 =
-      $LL.Main.loop63 $0 $2 $1 $3
+$LL.Main.loop18 v s0 s1 $x =
+      $LL.Main.loop63 v s1 s0 $x
 
 $LL.Main.loop17 : ([4], [8], [16], [4], [8], [16]) -> [47]
-$LL.Main.loop17 $0 $1 $2 $4 $5 $6 =
-      $LL.Main.loop76 $1 $2 $0 $4 $5 $6
+$LL.Main.loop17 a b c sto0 sto1 sto2 =
+      $LL.Main.loop76 b c a sto0 sto1 sto2
 
 $LL.Main.loop16 : ([8], [16], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop16 $0 $1 $2 $4 $5 $6 =
-      $LL.Main.loop10 $0 $1 $2 $4 $5 $6
+$LL.Main.loop16 $x $x1 $x2 sto0 sto1 sto2 =
+      $LL.Main.loop10 $x $x1 $x2 sto0 sto1 sto2
 
 $LL.Main.loop15 : ([4], [8], [16]) -> [47]
-$LL.Main.loop15 $1 $2 $3 =
-      $LL.Main.loop45 $2 $1 $3
+$LL.Main.loop15 s0 s1 $x =
+      $LL.Main.loop45 s1 s0 $x
 
 $LL.Main.loop14 : ([4], [8], [16]) -> [47]
-$LL.Main.loop14 $1 $2 $3 =
-      $LL.Main.loop15 $1 $2 $3
+$LL.Main.loop14 s0 $x $x1 =
+      $LL.Main.loop15 s0 $x $x1
 
 $LL.Main.loop13 : ([8], [16], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop13 $0 $1 $2 $4 $5 $6 =
-      $LL.Main.loop44 $1 $2 ($LL.Main.loop40 ($4 # $5 # add (zext 16 $0) $1))
+$LL.Main.loop13 b c a sto0 sto1 sto2 =
+      $LL.Main.loop44 c a ($LL.Main.loop40 (sto0 # sto1 # add (zext 16 b) c))
 
 $LL.Main.loop12 : ([4], [8], [16], [4], [8], [16]) -> [47]
-$LL.Main.loop12 $0 $1 $3 $4 $5 $6 =
-      $LL.Main.loop20 $0 $4 $1 $3 $5 $6
-
-$LL.Main.loop11 : ([4], [8], [16]) -> [47]
-$LL.Main.loop11 $0 $2 $3 =
-      19'h30000 # $0 # $2 # $3
+$LL.Main.loop12 a b c s0 $x $x1 =
+      $LL.Main.loop20 a s0 b c $x $x1
 
 $LL.Main.loop10 : ([8], [16], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop10 $0 $1 $2 $4 $5 $6 =
-      $LL.Main.loop68 $0 $1 $2 $4 $5 $6
+$LL.Main.loop10 $x $x1 $x2 sto0 sto1 sto2 =
+      $LL.Main.loop68 $x $x1 $x2 sto0 sto1 sto2
 
 $LL.Main.loop9 : ([16], [8], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop9 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.loop17 $4 $2 $1 $3 $5 $6
+$LL.Main.loop9 c b s0 a s1 $x =
+      $LL.Main.loop17 a b c s0 s1 $x
 
 $LL.Main.loop8 : ([4], [16], [4], [8], [4], [8], [16]) -> [47]
-$LL.Main.loop8 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.loop79 $2 $4 $3 $1 $0 $5 $6
+$LL.Main.loop8 s0 v a b i s1 $x =
+      $LL.Main.loop79 a i b v s0 s1 $x
 
 $LL.Main.loop7 : ([16], [4], [8], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop7 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.loop8 $4 $0 $1 $2 $3 $5 $6
-
-$LL.Main.loop6 : ([4], [8], [16]) -> [47]
-$LL.Main.loop6 $1 $2 $3 =
-      $LL.Main.loop78 $1 $2 $3
-
-$LL.Main.loop5 : ([28]) -> [47]
-$LL.Main.loop5 $0 =
-      $LL.Main.loop71 $0[24 +: 4] $0[16 +: 8] $0[0 +: 16]
+$LL.Main.loop7 v a b i s0 $x $x1 =
+      $LL.Main.loop8 s0 v a b i $x $x1
 
 $LL.Main.loop4 : ([4], [4], [8], [4], [8], [16]) -> [47]
-$LL.Main.loop4 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop52 $1 $2 $0 ($LL.Main.loop77 ($5 # $3 # $4 # $5))
+$LL.Main.loop4 i a b sto0 sto1 sto2 =
+      $LL.Main.loop52 a b i ($LL.Main.loop77 (sto2 # sto0 # sto1 # sto2))
 
 $LL.Main.loop3 : ([16], [8], [4], [47]) -> [47]
-$LL.Main.loop3 $0 $1 $2 $3 =
-      $LL.Main.loop61 $0 $1 $2 $3[24 +: 4] $3[16 +: 8] $3[0 +: 16]
+$LL.Main.loop3 c b a disc =
+      $LL.Main.loop61 c b a disc[24 +: 4] disc[16 +: 8] disc[0 +: 16]
 
 $LL.Main.loop2 : ([16], [4], [4], [8], [16]) -> [47]
-$LL.Main.loop2 $1 $2 $3 $4 $5 =
-      $LL.Main.loop55 $1 $2 $3 $4 $5
+$LL.Main.loop2 c a s0 s1 $x =
+      $LL.Main.loop55 c a s0 s1 $x
 
 $LL.Main.loop1 : ([8], [4], [8], [16]) -> [47]
-$LL.Main.loop1 $0 $1 $2 $3 =
-      $LL.Main.loop18 $0 $1 $2 $3
+$LL.Main.loop1 v s0 $x $x1 =
+      $LL.Main.loop18 v s0 $x $x1
 
 $LL.Main.loop : ([16], [4], [8], [4], [8], [16]) -> [47]
-$LL.Main.loop $0 $1 $2 $4 $5 $6 =
-      $LL.Main.loop16 $2 $0 $1 $4 $5 $6
+$LL.Main.loop c a b sto0 sto1 sto2 =
+      $LL.Main.loop16 b c a sto0 sto1 sto2
 
 device top_level
       input __in0 : [4]

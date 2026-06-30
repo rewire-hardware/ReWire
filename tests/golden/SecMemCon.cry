@@ -34,7 +34,7 @@ rw__LL_Main_set_data_out_reg15 x0 x1 x2 = (rw__LL_Main_set_data_out_reg2 x0 x1) 
 
 // $LL.Main.go5
 rw__LL_Main_go5 : [1] -> [1] -> [2] -> [1]
-rw__LL_Main_go5 x0 x1 x2 = rw__LL_Main_rnw1 x0 x2
+rw__LL_Main_go5 x0 x1 x2 = rw__LL_Main_go x0 x2
 
 // Main.data_out_reg
 rw_Main_data_out_reg : [77] -> [32]
@@ -179,7 +179,7 @@ rw__LL_Main_perform_write32 x0 = rw__LL_Main_while_addr_reg_044 x0
 
 // $LL.Main.data_reg4
 rw__LL_Main_data_reg4 : [32] -> [1] -> [32] -> [32]
-rw__LL_Main_data_reg4 x0 x1 x2 = rw__LL_Main_mem14 x0 x2
+rw__LL_Main_data_reg4 x0 x1 x2 = rw__LL_Main_data_reg x0 x2
 
 // $LL.Main.data_out_reg3
 rw__LL_Main_data_out_reg3 : [32] -> [32]
@@ -412,7 +412,7 @@ rw__LL_Main_idle96 x0 x1 x2 = rw__LL_Main_idle24 x0 x1 x2
 
 // $LL.Main.set_addr_reg13
 rw__LL_Main_set_addr_reg13 : [10] -> [2] -> [10] -> [32] -> [1] -> [32] -> [77]
-rw__LL_Main_set_addr_reg13 x0 x1 x2 x3 x4 x5 = rw__LL_Main_set_partition_reg4 x0 x1 x3 x4 x5
+rw__LL_Main_set_addr_reg13 x0 x1 x2 x3 x4 x5 = rw__LL_Main_set_addr_reg x0 x1 x3 x4 x5
 
 // $LL.Main.memTweak23
 rw__LL_Main_memTweak23 : [32] -> [32] -> [32] -> [32] -> [32] -> [128]
@@ -420,7 +420,7 @@ rw__LL_Main_memTweak23 x0 x1 x2 x3 x4 = rw__LL_Main_memTweak2 x0 x1 x2 x3 x4
 
 // $LL.Main.mem24
 rw__LL_Main_mem24 : [32] -> [32] -> [32]
-rw__LL_Main_mem24 x0 x1 = rw__LL_Main_mem14 x0 x1
+rw__LL_Main_mem24 x0 x1 = rw__LL_Main_mem22 x0 x1
 
 // $LL.Main.connect4
 rw__LL_Main_connect4 : [205] -> [77]
@@ -790,6 +790,10 @@ rw__LL_Main_rnw4 x0 x1 = rw__LL_Main_rnw1 x0 x1
 rw__LL_Main_while_addr_reg_033 : [10] -> [205] -> [205]
 rw__LL_Main_while_addr_reg_033 x0 x1 = rw__LL_Main_while_addr_reg_0 x0 (rw_Main_setloc1 x0 x1)
 
+// $LL.Main.set_partition_reg12
+rw__LL_Main_set_partition_reg12 : [32] -> [10] -> [2] -> [1] -> [32] -> [77]
+rw__LL_Main_set_partition_reg12 x0 x1 x2 x3 x4 = x2 # (x1 # (x0 # (x3 # x4)))
+
 // $LL.Main.set_data_reg6
 rw__LL_Main_set_data_reg6 : [32] -> [77] -> [128] -> [205]
 rw__LL_Main_set_data_reg6 x0 x1 x2 = rw__LL_Main_set_data_reg4 x0 x1 x2
@@ -949,6 +953,10 @@ rw__LL_Main_while_addr_reg_028 x0 = rw__LL_Main_while_addr_reg_016 (take`{10} x0
 // $LL.Main.get_data_reg4
 rw__LL_Main_get_data_reg4 : [77] -> [128] -> [205] -> [237]
 rw__LL_Main_get_data_reg4 x0 x1 x2 = (rw_Main_data_reg x0) # x2
+
+// $LL.Main.mem32
+rw__LL_Main_mem32 : [32] -> [32]
+rw__LL_Main_mem32 x0 = x0
 
 // $LL.Main.getloc5
 rw__LL_Main_getloc5 : [10] -> [205] -> [77] -> [128] -> [237]
@@ -1160,7 +1168,7 @@ rw__LL_Main_while_addr_reg_023 x0 x1 = rw__LL_Main_while_addr_reg_012 x0 x1
 
 // $LL.Main.mem02
 rw__LL_Main_mem02 : [32] -> [32] -> [32] -> [32]
-rw__LL_Main_mem02 x0 x1 x2 = rw__LL_Main_mem14 x0 x2
+rw__LL_Main_mem02 x0 x1 x2 = rw__LL_Main_mem01 x0 x2
 
 // $LL.Main.<&>4
 rw__LL_Main____4 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [10]
@@ -1172,7 +1180,7 @@ rw__LL_Main_memTweak7 x0 x1 = rw__LL_Main_memTweak12 x0 (take`{32} x1) (take`{32
 
 // $LL.Main.mem31
 rw__LL_Main_mem31 : [32] -> [32] -> [32]
-rw__LL_Main_mem31 x0 x1 = rw__LL_Main_data_out_reg3 x1
+rw__LL_Main_mem31 x0 x1 = rw__LL_Main_mem32 x1
 
 // $LL.Main.idle51
 rw__LL_Main_idle51 : [2] -> [10] -> [205] -> [205]
@@ -1225,6 +1233,10 @@ rw__LL_Main_set_partition_reg6 x0 x1 x2 x3 x4 x5 = rw__LL_Main_set_partition_reg
 // $LL.Main.mem23
 rw__LL_Main_mem23 : [32] -> [32] -> [32] -> [32] -> [32]
 rw__LL_Main_mem23 x0 x1 x2 x3 = rw__LL_Main_mem21 x1 x2 x3
+
+// $LL.Main.mem22
+rw__LL_Main_mem22 : [32] -> [32] -> [32]
+rw__LL_Main_mem22 x0 x1 = x0
 
 // $LL.Main.idle44
 rw__LL_Main_idle44 : [2] -> [205] -> [205]
@@ -1378,6 +1390,10 @@ rw__LL_Main_set_data_out_reg3 x0 x1 x2 x3 x4 x5 = rw__LL_Main_set_data_out_reg1 
 rw__LL_Main_setloc2 : [32] -> [10] -> [205] -> [205] -> [205]
 rw__LL_Main_setloc2 x0 x1 x2 x3 = rw__LL_Main_setloc6 x0 x1 x2 x3
 
+// $LL.Main.mem12
+rw__LL_Main_mem12 : [32] -> [32] -> [32] -> [32]
+rw__LL_Main_mem12 x0 x1 x2 = rw__LL_Main_mem14 x0 x2
+
 // $LL.Main.idle27
 rw__LL_Main_idle27 : [205] -> [205] -> [413]
 rw__LL_Main_idle27 x0 x1 = rw__LL_Main_idle66 x0 x1
@@ -1398,13 +1414,17 @@ rw__LL_Main_addr_in3 x0 x1 = x0
 rw__LL_Main_set_addr_reg1 : [10] -> [77] -> [128] -> [205]
 rw__LL_Main_set_addr_reg1 x0 x1 x2 = rw__LL_Main_set_addr_reg7 x0 x1 x2
 
+// $LL.Main.data_reg
+rw__LL_Main_data_reg : [32] -> [32] -> [32]
+rw__LL_Main_data_reg x0 x1 = x0
+
 // $LL.Main.memTweak4
 rw__LL_Main_memTweak4 : [32] -> [32] -> [32] -> [32] -> [32] -> [128]
 rw__LL_Main_memTweak4 x0 x1 x2 x3 x4 = rw__LL_Main_memTweak6 x0 x2 x3 x4
 
 // $LL.Main.set_partition_reg4
 rw__LL_Main_set_partition_reg4 : [10] -> [2] -> [32] -> [1] -> [32] -> [77]
-rw__LL_Main_set_partition_reg4 x0 x1 x2 x3 x4 = rw__LL_Main_set_addr_reg8 x2 x0 x1 x3 x4
+rw__LL_Main_set_partition_reg4 x0 x1 x2 x3 x4 = rw__LL_Main_set_partition_reg12 x2 x0 x1 x3 x4
 
 // $LL.Main.set_data_reg2
 rw__LL_Main_set_data_reg2 : [32] -> [205] -> [205]
@@ -1452,7 +1472,7 @@ rw__LL_Main_perform_read9 x0 x1 = rw__LL_Main_perform_read28 (rw_Main_set_data_o
 
 // $LL.Main.mem11
 rw__LL_Main_mem11 : [32] -> [32] -> [32] -> [32]
-rw__LL_Main_mem11 x0 x1 x2 = rw__LL_Main_mem02 x0 x1 x2
+rw__LL_Main_mem11 x0 x1 x2 = rw__LL_Main_mem12 x0 x1 x2
 
 // $LL.Main.set_ack_reg2
 rw__LL_Main_set_ack_reg2 : [10] -> [1] -> [2] -> [32] -> [1] -> [32] -> [77]
@@ -1489,6 +1509,10 @@ rw__LL_Main_nextKey1 x0 x1 = if ((take`{1} x1) == 0b0) && (((take`{1} (drop`{1} 
 // $LL.Main.set_partition_reg3
 rw__LL_Main_set_partition_reg3 : [2] -> [2] -> [10] -> [32] -> [1] -> [32] -> [77]
 rw__LL_Main_set_partition_reg3 x0 x1 x2 x3 x4 x5 = rw__LL_Main_set_partition_reg6 x0 x1 x2 x3 x4 x5
+
+// $LL.Main.set_addr_reg
+rw__LL_Main_set_addr_reg : [10] -> [2] -> [32] -> [1] -> [32] -> [77]
+rw__LL_Main_set_addr_reg x0 x1 x2 x3 x4 = rw__LL_Main_set_addr_reg8 x2 x0 x1 x3 x4
 
 // $LL.Main.while_addr_reg_07
 rw__LL_Main_while_addr_reg_07 : [205] -> [205] -> [413]
@@ -1529,6 +1553,10 @@ rw__LL_Main_set_data_reg x0 x1 x2 = rw__LL_Main_set_data_reg2 x0 x1
 // $LL.Main.data_in1
 rw__LL_Main_data_in1 : [32] -> [1] -> [1] -> [2] -> [32]
 rw__LL_Main_data_in1 x0 x1 x2 x3 = rw__LL_Main_data_in5 x0 x2 x3
+
+// $LL.Main.mem01
+rw__LL_Main_mem01 : [32] -> [32] -> [32]
+rw__LL_Main_mem01 x0 x1 = x0
 
 // Main.mem2
 rw_Main_mem2 : [128] -> [32]
@@ -1713,6 +1741,10 @@ rw__LL_Main_go1 x0 x1 x2 x3 x4 = rw__LL_Main_go2 x1 x2 x3 x4
 // $LL.Main.data_out_reg
 rw__LL_Main_data_out_reg : [2] -> [10] -> [32] -> [1] -> [32] -> [32]
 rw__LL_Main_data_out_reg x0 x1 x2 x3 x4 = rw__LL_Main_data_out_reg1 x1 x2 x3 x4
+
+// $LL.Main.go
+rw__LL_Main_go : [1] -> [2] -> [1]
+rw__LL_Main_go x0 x1 = x0
 
 // $LL.Main.setloc
 rw__LL_Main_setloc : [32] -> [10] -> [410] -> [205]

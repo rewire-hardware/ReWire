@@ -96,13 +96,13 @@ rw__LL_Main_begin12 x0 x1 = rw_Main_sig x0 x1
 rw__LL_Main_incr28 : [8] -> [8] -> [8] -> [8] -> [26]
 rw__LL_Main_incr28 x0 x1 x2 x3 = rw__LL_Main_incr32 x0 x1 x2 x3
 
+// $LL.Main.begin10
+rw__LL_Main_begin10 : [8] -> [8] -> [26]
+rw__LL_Main_begin10 x0 x1 = 0b0100000000 # (x0 # x1)
+
 // $LL.Main.incr27
 rw__LL_Main_incr27 : [24] -> [26]
 rw__LL_Main_incr27 x0 = rw__LL_Main_sig4 (take`{8} x0) (take`{8} (drop`{8} x0)) (drop`{16} x0)
-
-// $LL.Main.incr26
-rw__LL_Main_incr26 : [8] -> [8] -> [26]
-rw__LL_Main_incr26 x0 x1 = 0b0100000000 # (x0 # x1)
 
 // $LL.Main.incr25
 rw__LL_Main_incr25 : [8] -> [8] -> [8] -> [26]
@@ -178,7 +178,7 @@ rw__LL_Main_incr9 x0 x1 x2 x3 = rw__LL_Main_incr3 x0 x1 x2 x3
 
 // $LL.Main.incr8
 rw__LL_Main_incr8 : [8] -> [8] -> [26]
-rw__LL_Main_incr8 x0 x1 = rw__LL_Main_incr26 x0 x1
+rw__LL_Main_incr8 x0 x1 = rw__LL_Main_begin10 x0 x1
 
 // $LL.Main.incr7
 rw__LL_Main_incr7 : [8] -> [8] -> [26]

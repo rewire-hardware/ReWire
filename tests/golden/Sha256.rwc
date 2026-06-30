@@ -1,1730 +1,1738 @@
 $Pure.dispatch : ([1038], [514]) -> [1297]
-$Pure.dispatch $0 $1 =
-      if eq $0[1036 +: 2] 2'h1 then $LL.Pure.dispatch4 $1 $0[774 +: 256] $0[262 +: 512] $0[6 +: 256] $0[0 +: 6]
-            else if eq $0[1036 +: 2] 2'h2 then $LL.Pure.dispatch10 $1 $0[1030 +: 6] $0[774 +: 256] $0[262 +: 512] $0[6 +: 256] $0[0 +: 6] else if eq $0[1036 +: 2] 2'h3 then $LL.Pure.dispatch14 $1 $0[774 +: 256] $0[262 +: 512] $0[6 +: 256] $0[0 +: 6] else $LL.Pure.dispatch13 $1 $0[774 +: 256] $0[262 +: 512] $0[6 +: 256] $0[0 +: 6]
+$Pure.dispatch disc i =
+      if eq disc[1036 +: 2] 2'h1 then $LL.Pure.dispatch4 i disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
+            else if eq disc[1036 +: 2] 2'h2 then $LL.Pure.dispatch10 i disc[1030 +: 6] disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6] else if eq disc[1036 +: 2] 2'h3 then $LL.Pure.dispatch14 i disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6] else $LL.Pure.dispatch13 i disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.loop193 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop193 $0 $1 $2 $3 $4 =
-      $LL.Main.loop37 $2 $0 $1 $3 $4
+$LL.Main.loop193 st0 st1 st2 $x $x1 =
+      $LL.Main.loop37 st2 st0 st1 $x $x1
 
 $LL.Main.loop192 : ([6], [512], [256], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop192 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop127 $0 $1 $4 $2 $3 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop192 sigma3 sigma1 sigma0 sigma2 m2c $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 =
+      $LL.Main.loop127 sigma3 sigma1 m2c sigma0 sigma2 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14
 
 $LL.Main.step25640 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25640 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25638 $0 $1 $2 $3 $4 $5 $6 $7 $8
+$LL.Main.step25640 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.step25638 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Main.loop191 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop191 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop144 $0 $1 $2 $3 $4 $5 $6 $10 $7 $8 $9 $11 $12 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop191 b h3 h7 h8 h4 h5 h1 h6 h2 a c $x $x1 $x2 $x3 $x4 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop144 b h3 h7 h8 h4 h5 h1 c h6 h2 a $x $x1 $x2 $x3 $x4 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop190 : ([32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop190 $0 $2 $3 $4 $5 =
-      $0 # $2 # $3 # $4 # $5
+$LL.Main.loop190 w00 sigma0 sigma1 sigma2 sigma3 =
+      w00 # sigma0 # sigma1 # sigma2 # sigma3
 
 Main.maj : ([32], [32], [32]) -> [32]
-Main.maj $0 $1 $2 =
-      $LL.Main.maj1 ($0 # $1 # $2)
+Main.maj $3 $4 $5 =
+      $LL.Main.maj1 ($3 # $4 # $5)
 
 $LL.Main.loop189 : ([32], [32], [32], [32], [32], [32], [32], [32], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop189 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 =
-      $LL.Main.loop156 $1 $2 $5 $3 $4 $7 $0 $6 $8 $9 $10 $11 $12
+$LL.Main.loop189 h6 h3 h7 h4 h5 h8 h2 h1 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop156 h3 h7 h8 h4 h5 h1 h6 h2 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev118 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev118 $0 $1 $2 $3 $4 =
-      Main.loop $1 $2 $3 $4
+$LL.Main.dev118 $38 sto0 sto1 sto2 sto3 =
+      Main.loop sto0 sto1 sto2 sto3
 
 Main.incCtr : ([6]) -> [6]
-Main.incCtr $0 =
-      $LL.Main.incCtr1 $0
+Main.incCtr $x =
+      $LL.Main.incCtr1 $x
 
 $LL.Main.step25639 : ([32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25639 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $7 # $3 # $1 # $0 # $2 # $6 # $4 # $5
+$LL.Main.step25639 d' c' e' b' g' h' f' a' =
+      a' # b' # c' # d' # e' # f' # g' # h'
 
 $LL.Main.updateSched18 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched18 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched14 $0 $1 $2 $3 $4 $11 $5 $6 $7 $8 $9 $10 $12 $13 $14 $15
+$LL.Main.updateSched18 w00 w08 w05 w06 w09 w01 w04 w02 w07 w03 w10 w11 $x $x1 $x2 $x3 =
+      $LL.Main.updateSched14 w00 w08 w05 w06 w09 w11 w01 w04 w02 w07 w03 w10 $x $x1 $x2 $x3
 
 $LL.Main.dev117 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev117 $0 $1 $2 $3 $4 =
-      $LL.Main.dev2 $2 $1 $4 $3
+$LL.Main.dev117 $83 sto0 sto1 sto2 sto3 =
+      $LL.Main.dev2 sto1 sto0 sto3 sto2
 
 $LL.Main.loop188 : ([512], [256], [6], [256], [6]) -> [1036]
-$LL.Main.loop188 $0 $2 $3 $4 $5 =
-      $LL.Main.loop121 $3 $2 $0 $4 $5
+$LL.Main.loop188 st2 st1 ctr st3 $x =
+      $LL.Main.loop121 ctr st1 st2 st3 $x
 
 $LL.Main.dev116 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev116 $1 $2 $3 $4 =
-      $LL.Main.dev61 $1 $2 $3 $4
+$LL.Main.dev116 s0 s1 $x $x1 =
+      $LL.Main.dev61 s0 s1 $x $x1
 
 $LL.Main.dev115 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev115 $0 $2 $3 $4 $5 =
-      $LL.Main.dev91 $0 $2 $3 $4 $5
+$LL.Main.dev115 hw32 $x $x1 $x2 $x3 =
+      $LL.Main.dev91 hw32 $x $x1 $x2 $x3
 
 $LL.Main.step25638 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25638 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step2568 $0 $1 $2 $3 $4 $5 $6 $7 $8
+$LL.Main.step25638 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.step2568 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Main.loop187 : ([256], [512], [256], [6], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop187 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop98 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11
+$LL.Main.loop187 sigma0 sigma1 sigma2 sigma3 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 =
+      $LL.Main.loop98 sigma0 sigma1 sigma2 sigma3 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7
 
 $LL.Main.loop186 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop186 $0 $2 $3 $4 $5 =
-      $LL.Main.loop90 $0 $2 $3 $4 $5
+$LL.Main.loop186 $x sto0 sto1 sto2 sto3 =
+      $LL.Main.loop90 $x sto0 sto1 sto2 sto3
 
 $LL.Main.sigma115 : ([32], [32]) -> [32]
-$LL.Main.sigma115 $0 $1 =
-      $LL.Main.bigsigma021 ($0 # $1)
+$LL.Main.sigma115 $16 $17 =
+      $LL.Main.bigsigma021 ($16 # $17)
 
 $LL.Pure.dispatch16 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Pure.dispatch16 $0 $1 $2 $3 $4 =
-      $LL.Pure.dispatch2 $2 $0 $1 $3 $4
+$LL.Pure.dispatch16 i s0 s1 $x $x1 =
+      $LL.Pure.dispatch2 s1 i s0 $x $x1
 
 $LL.Main.loop185 : ([1036]) -> [1036]
-$LL.Main.loop185 $0 =
-      $LL.Main.loop4 $0[1030 +: 6] $0[774 +: 256] $0[262 +: 512] $0[6 +: 256] $0[0 +: 6]
+$LL.Main.loop185 disc =
+      $LL.Main.loop4 disc[1030 +: 6] disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.loop184 : ([32], [32], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop184 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.loop110 $0 $1 $3 $2 $4 $5 $6
+$LL.Main.loop184 w k st0 st1 $x $x1 $x2 =
+      $LL.Main.loop110 w k st1 st0 $x $x1 $x2
 
 $LL.Main.dev114 : ([256], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev114 $0 $1 $2 $3 $4 =
-      $LL.Main.dev5 $0 $1 $2 $3 $4
+$LL.Main.dev114 s0 v s1 $x $x1 =
+      $LL.Main.dev5 s0 v s1 $x $x1
 
 $LL.Main.loop183 : ([32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop183 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop48 $1 $0 ($2 # $2 # $3 # $4 # $5)
+$LL.Main.loop183 k w sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop48 w k (sigma0 # sigma0 # sigma1 # sigma2 # sigma3)
 
 $LL.Main.loop182 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop182 $0 $2 $3 $4 $5 =
-      $LL.Main.loop27 $0 $2 $3 $4 $5
+$LL.Main.loop182 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop27 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev113 : ([256], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev113 $0 $1 $2 $3 $4 =
-      $LL.Main.dev45 $0 $1 $2 $3 $4
+$LL.Main.dev113 v s0 s1 $x $x1 =
+      $LL.Main.dev45 v s0 s1 $x $x1
 
 $LL.Main.loop181 : ([256], [512], [512], [256], [6]) -> [1062]
-$LL.Main.loop181 $0 $1 $2 $3 $4 =
-      $LL.Main.loop100 $1 $0 $2 $3 $4
+$LL.Main.loop181 st1 st0 st2 st3 $x =
+      $LL.Main.loop100 st0 st1 st2 st3 $x
 
 $LL.Main.dev112 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev112 $0 $1 $3 $4 $5 =
-      $LL.Main.dev80 $3 $1 $0 $4 $5
+$LL.Main.dev112 st2 st1 hw32 st3 $x =
+      $LL.Main.dev80 hw32 st1 st2 st3 $x
 
 $LL.Main.loop180 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop180 $0 $1 $2 $3 $4 =
-      $LL.Main.loop173 $0 ($LL.Main.loop62 ($2 # $1 # $2 # $3 # $4))
+$LL.Main.loop180 ctr sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop173 ctr ($LL.Main.loop62 (sigma1 # sigma0 # sigma1 # sigma2 # sigma3))
 
 $LL.Main.updateSched17 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched17 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched16 $0 $1 $6 $2 $3 $4 $5 $7 $8 $9 $10 $11 $12 $13 $14 $15
+$LL.Main.updateSched17 w00 w05 w01 w04 w02 w03 w06 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.updateSched16 w00 w05 w06 w01 w04 w02 w03 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Main.loop179 : ([256], [514], [512], [256], [6]) -> [1297]
-$LL.Main.loop179 $0 $1 $3 $4 $5 =
-      $LL.Main.loop83 $3 $0 $1 $4 $5
+$LL.Main.loop179 s0 i s1 $x $x1 =
+      $LL.Main.loop83 s1 s0 i $x $x1
 
 $LL.Main.loop178 : ([32], [6], [32], [32], [32], [512], [32], [256], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop178 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop5 $0 $1 $2 $3 $4 $5 $6 $10 $7 $8 $9 $11 $12 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop178 m2c sigma3 m2c1 m2c2 m2c3 sigma1 m2c4 sigma0 sigma2 m2c5 m2c6 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.loop5 m2c sigma3 m2c1 m2c2 m2c3 sigma1 m2c4 m2c6 sigma0 sigma2 m2c5 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Main.dev111 : ([512], [1286]) -> [1030]
-$LL.Main.dev111 $0 $1 =
-      $LL.Main.dev65 $0 $1[1030 +: 256] $1[774 +: 256] $1[262 +: 512] $1[6 +: 256] $1[0 +: 6]
+$LL.Main.dev111 hw32 disc =
+      $LL.Main.dev65 hw32 disc[1030 +: 256] disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.dev110 : ([512], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev110 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.dev37 $0 $1 $2 $3 $4 $5
+$LL.Main.dev110 hw32 st0 $x $x1 $x2 $x3 =
+      $LL.Main.dev37 hw32 st0 $x $x1 $x2 $x3
 
 $LL.Main.dev109 : ([256], [256], [512], [6], [512]) -> [1297]
-$LL.Main.dev109 $0 $1 $2 $3 $4 =
-      $LL.Main.dev76 $4 $1 $2 $0 $3
+$LL.Main.dev109 sto2 sto0 sto1 sto3 m2c =
+      $LL.Main.dev76 m2c sto0 sto1 sto2 sto3
 
 $LL.Main.loop177 : ([32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop177 $0 $2 $3 $4 $5 =
-      $LL.Main.loop21 $0 $2 $3 $4 $5
+$LL.Main.loop177 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop21 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop176 : ([512], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop176 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop61 $0 $1 $3 $4 $5 $6 $7 $8 $9 $10 $11
+$LL.Main.loop176 s w00 j $x $x1 $x2 $x3 $x4 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop61 s w00 $x $x1 $x2 $x3 $x4 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop175 : ([32], [256], [32], [32], [512], [256], [32], [6], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop175 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop15 $0 $1 $9 $2 $3 $4 $5 $6 $7 $8 $10 $11
+$LL.Main.loop175 m2c sigma0 m2c1 m2c2 sigma1 sigma2 m2c3 sigma3 m2c4 m2c5 $x $x1 =
+      $LL.Main.loop15 m2c sigma0 m2c5 m2c1 m2c2 sigma1 sigma2 m2c3 sigma3 m2c4 $x $x1
 
 $LL.Main.bigsigma021 : ([64]) -> [32]
-$LL.Main.bigsigma021 $0 =
-      $LL.Main.bigsigma121 $0[32 +: 32] $0[0 +: 32]
+$LL.Main.bigsigma021 $32 =
+      $LL.Main.bigsigma121 $32[32 +: 32] $32[0 +: 32]
 
 $LL.Main.loop174 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop174 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop91 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop174 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop91 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop173 : ([6], [1062]) -> [1036]
-$LL.Main.loop173 $0 $1 =
-      $LL.Main.loop71 $0 $1[1030 +: 32] $1[774 +: 256] $1[262 +: 512] $1[6 +: 256] $1[0 +: 6]
+$LL.Main.loop173 ctr disc =
+      $LL.Main.loop71 ctr disc[1030 +: 32] disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.dev108 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev108 $1 $2 $3 $4 =
-      $LL.Main.dev98 $1 $3 $2 $4
+$LL.Main.dev108 s0 s1 s2 $x =
+      $LL.Main.dev98 s0 s2 s1 $x
 
 $LL.Main.loop172 : ([32], [32], [6], [32], [32], [32], [32], [512], [32], [32], [256], [256], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop172 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop149 $0 $1 $2 $3 $4 $5 $6 $13 $7 $8 $9 $10 $11 $12 $14 $15 $16 $17 $18 $19
+$LL.Main.loop172 m2c m2c1 sigma3 m2c2 m2c3 m2c4 m2c5 sigma1 m2c6 m2c7 sigma0 sigma2 m2c8 m2c9 $x $x1 $x2 $x3 $x4 $x5 =
+      $LL.Main.loop149 m2c m2c1 sigma3 m2c2 m2c3 m2c4 m2c5 m2c9 sigma1 m2c6 m2c7 sigma0 sigma2 m2c8 $x $x1 $x2 $x3 $x4 $x5
 
 $LL.Main.loop171 : ([6], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop171 $0 $1 $2 $3 $4 =
-      261'h180000000000000000000000000000000000000000000000000000000000000002 # $0 # $1 # $2 # $3 # $4
+$LL.Main.loop171 ctr sto0 sto1 sto2 sto3 =
+      261'h180000000000000000000000000000000000000000000000000000000000000002 # ctr # sto0 # sto1 # sto2 # sto3
 
 $LL.Main.dev107 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev107 $0 $1 $2 $3 $4 =
-      $LL.Main.dev118 $0 $1 $2 $3 $4
+$LL.Main.dev107 $x sto0 sto1 sto2 sto3 =
+      $LL.Main.dev118 $x sto0 sto1 sto2 sto3
 
 $LL.Pure.dispatch15 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Pure.dispatch15 $0 $1 $2 $3 $4 =
-      $LL.Pure.dispatch8 $0 $1 $2 $3 $4
+$LL.Pure.dispatch15 i s0 s1 $x $x1 =
+      $LL.Pure.dispatch8 i s0 s1 $x $x1
 
 $LL.Main.loop170 : ([32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop170 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop82 ($0 # $1) $2 $3 $4 $5
+$LL.Main.loop170 $11 $12 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop82 ($11 # $12) sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop169 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop169 $0 $1 $2 $3 $4 =
-      $LL.Main.loop193 $0 $1 $2 $3 $4
+$LL.Main.loop169 st0 st1 $x $x1 $x2 =
+      $LL.Main.loop193 st0 st1 $x $x1 $x2
 
 $LL.Main.sigma015 : ([32]) -> [32]
-$LL.Main.sigma015 $0 =
-      $LL.Main.sigma012 $0
+$LL.Main.sigma015 $x =
+      $LL.Main.sigma012 $x
 
 $LL.Main.loop168 : ([512], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop168 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 =
-      $LL.Main.loop176 $0 $1 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12
+$LL.Main.loop168 s w00 i $x $x1 $x2 $x3 $x4 $x5 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop176 s w00 $x $x1 $x2 $x3 $x4 $x5 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.step25637 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25637 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 =
-      $LL.Main.step2565 $0 $1 $5 $2 $3 $4 $6 $7 $8 $9
+$LL.Main.step25637 w k b a c d $x $x1 $x2 $x3 =
+      $LL.Main.step2565 w k d b a c $x $x1 $x2 $x3
 
 $LL.Main.loop167 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop167 $0 $2 $3 $4 $5 =
-      $LL.Main.loop128 $0 $2 $3 $4 $5
+$LL.Main.loop167 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop128 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.updateSched16 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched16 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched4 $0 $1 $2 $3 $4 $5 $7 $6 $8 $9 $10 $11 $12 $13 $14 $15
+$LL.Main.updateSched16 w00 w05 w06 w01 w04 w02 w03 w07 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 =
+      $LL.Main.updateSched4 w00 w05 w06 w01 w04 w02 w07 w03 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7
 
 $LL.Main.dev106 : ([512], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev106 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.dev93 $0 $1 $2 $3 $4 $5
+$LL.Main.dev106 hw32 $x $x1 $x2 $x3 $x4 =
+      $LL.Main.dev93 hw32 $x $x1 $x2 $x3 $x4
 
 $LL.Main.dev105 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev105 $1 $2 $3 $4 =
-      $LL.Main.dev67 $1 $2 $3 $4
+$LL.Main.dev105 $x $x1 $x2 $x3 =
+      $LL.Main.dev67 $x $x1 $x2 $x3
 
 $LL.Pure.dispatch14 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Pure.dispatch14 $0 $1 $2 $3 $4 =
-      $LL.Pure.dispatch12 $0 $1 $2 $3 $4
+$LL.Pure.dispatch14 i $x $x1 $x2 $x3 =
+      $LL.Pure.dispatch12 i $x $x1 $x2 $x3
 
 $LL.Main.loop166 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop166 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $16 # $17 # add $14 $8 # add $0 $13 # add $9 $1 # add $3 $6 # add $12 $7 # add $2 $10 # add $11 $4 # add $15 $5 # $19
+$LL.Main.loop166 b h3 f d h7 h8 h4 h5 h1 c h6 g e h2 a h sigma0 sigma1 sigma2 sigma3 =
+      sigma0 # sigma1 # add a h1 # add b h2 # add c h3 # add d h4 # add e h5 # add f h6 # add g h7 # add h h8 # sigma3
 
 $LL.Main.maj3 : ([32], [32], [32]) -> [32]
-$LL.Main.maj3 $0 $1 $2 =
-      $LL.Main.maj2 $0 $1 $2
+$LL.Main.maj3 $x $x1 $x2 =
+      $LL.Main.maj2 $x $x1 $x2
 
 $LL.Main.dev104 : ([256], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev104 $0 $1 $2 $3 $4 =
-      $LL.Main.dev113 $0 $1 $2 $3 $4
+$LL.Main.dev104 v s0 $x $x1 $x2 =
+      $LL.Main.dev113 v s0 $x $x1 $x2
 
 $LL.Main.dev103 : ([6], [256], [512], [256], [512]) -> [1297]
-$LL.Main.dev103 $0 $1 $2 $3 $4 =
-      $LL.Main.dev30 $0 $1 $2 $3 $4
+$LL.Main.dev103 sto3 sto2 sto1 sto0 $x =
+      $LL.Main.dev30 sto3 sto2 sto1 sto0 $x
 
 $LL.Main.loop165 : ([32], [1030]) -> [1062]
-$LL.Main.loop165 $0 $1 =
-      $LL.Main.loop2 $0 $1[774 +: 256] $1[262 +: 512] $1[6 +: 256] $1[0 +: 6]
+$LL.Main.loop165 w00 disc =
+      $LL.Main.loop2 w00 disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.loop164 : ([32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop164 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop162 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11
+$LL.Main.loop164 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop162 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop163 : ([512], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop163 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 =
-      $LL.Main.loop113 $0 $1 $3 $4 $5 $6 $7 $8 $9
+$LL.Main.loop163 s w00 l $x $x1 $x2 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop113 s w00 $x $x1 $x2 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev102 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev102 $1 $2 $3 $4 =
-      $LL.Main.dev53 $1 $2 $3 $4
+$LL.Main.dev102 s0 $x $x1 $x2 =
+      $LL.Main.dev53 s0 $x $x1 $x2
 
 $LL.Main.loop162 : ([32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop162 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop126 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11
+$LL.Main.loop162 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop126 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev101 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev101 $0 $2 $3 $4 $5 =
-      $LL.Main.dev81 $0 $2 $3 $4 $5
+$LL.Main.dev101 hw32 $x1 $x2 $x3 $x4 =
+      $LL.Main.dev81 hw32 $x1 $x2 $x3 $x4
 
 $LL.Main.step25636 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25636 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25618 $0 $1 $2 $3 $4 $5 $6 $7 $8
+$LL.Main.step25636 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.step25618 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Main.loop161 : ([32], [256], [6], [512], [256], [6]) -> [1036]
-$LL.Main.loop161 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop84 $3 $0 $1 $2 $4 $5
+$LL.Main.loop161 st0 st1 ctr st2 $x $x1 =
+      $LL.Main.loop84 st2 st0 st1 ctr $x $x1
 
 $LL.Main.loop160 : ([256], [512], [256], [256], [6]) -> [1030]
-$LL.Main.loop160 $0 $1 $2 $3 $4 =
-      $LL.Main.loop26 $0 $2 $1 $3 $4
+$LL.Main.loop160 st0 st2 st1 st3 $x =
+      $LL.Main.loop26 st0 st1 st2 st3 $x
 
 $LL.Main.updateSched15 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched15 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched7 $15 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 (add (add (Main.sigma1 $6) $7) (add (Main.sigma0 $9) $0))
+$LL.Main.updateSched15 w00 w08 w05 w06 w13 w12 w14 w09 w11 w01 w04 w02 w07 w03 w10 w15 =
+      $LL.Main.updateSched7 w15 w08 w05 w06 w13 w12 w14 w09 w11 w01 w04 w02 w07 w03 w10 (add (add (Main.sigma1 w14) w09) (add (Main.sigma0 w01) w00))
 
 $LL.Main.loop159 : ([32], [32], [32], [32], [32], [256], [32], [256], [32], [32], [512], [256], [6]) -> [1030]
-$LL.Main.loop159 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 =
-      $LL.Main.loop189 $0 $4 $8 $2 $9 $3 $6 $1 $7 $5 $10 $11 $12
+$LL.Main.loop159 h6 h1 h4 h8 h3 st1 h2 st0 h7 h5 st2 st3 $x =
+      $LL.Main.loop189 h6 h3 h7 h4 h5 h8 h2 h1 st0 st1 st2 st3 $x
 
 $LL.Pure.dispatch13 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Pure.dispatch13 $0 $1 $2 $3 $4 =
-      $LL.Pure.dispatch9 $0 $1 $2 $3 $4
+$LL.Pure.dispatch13 i $x $x1 $x2 $x3 =
+      $LL.Pure.dispatch9 i $x $x1 $x2 $x3
 
 $LL.Main.dev100 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev100 $1 $2 $3 $4 =
-      $LL.Main.dev77 $1 $2 $3 $4
+$LL.Main.dev100 $x $x1 $x2 $x3 =
+      $LL.Main.dev77 $x $x1 $x2 $x3
 
 $LL.Main.loop158 : ([256], [6], [512], [256], [6]) -> [1036]
-$LL.Main.loop158 $1 $2 $3 $4 $5 =
-      $LL.Main.loop188 $3 $1 $2 $4 $5
+$LL.Main.loop158 st1 ctr st2 $x $x1 =
+      $LL.Main.loop188 st2 st1 ctr $x $x1
 
 $LL.Main.sigma114 : ([32]) -> [32]
-$LL.Main.sigma114 $0 =
-      $LL.Main.sigma115 32'h11 $0
+$LL.Main.sigma114 $x =
+      $LL.Main.sigma115 32'h11 $x
 
 $LL.Main.step25635 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25635 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step2563 $0 $8 $1 $3 $4 $5 $6 $7 $2
+$LL.Main.step25635 t1 e' b t2 a g' h' f' d' =
+      $LL.Main.step2563 t1 d' e' t2 a g' h' f' b
 
 $LL.Main.dev99 : ([256], [512], [512], [256], [6]) -> [1030]
-$LL.Main.dev99 $1 $2 $3 $4 $5 =
-      $LL.Main.dev82 $3 $1 $2 $4 $5
+$LL.Main.dev99 st1 hw32 st2 $x $x1 =
+      $LL.Main.dev82 st2 st1 hw32 $x $x1
 
 $LL.Main.bigsigma121 : ([32], [32]) -> [32]
-$LL.Main.bigsigma121 $0 $1 =
-      $LL.Main.bigsigma015 $0 $1
+$LL.Main.bigsigma121 $x $x1 =
+      $LL.Main.bigsigma015 $x $x1
 
 $LL.Main.loop157 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.loop157 $0 $2 $3 $4 =
-      $LL.Main.loop93 $3 $0 $2 $4
+$LL.Main.loop157 s0 s1 s2 $x =
+      $LL.Main.loop93 s2 s0 s1 $x
 
 $LL.Main.dev98 : ([256], [256], [512], [6]) -> [1297]
-$LL.Main.dev98 $1 $2 $3 $4 =
-      267'h20000000000000000000000000000000000000000000000000000000000000000 # $1 # $3 # $2 # $4
+$LL.Main.dev98 s0 s2 s1 s3 =
+      267'h20000000000000000000000000000000000000000000000000000000000000000 # s0 # s1 # s2 # s3
 
 $LL.Main.loop156 : ([32], [32], [32], [32], [32], [32], [32], [32], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop156 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 =
-      $LL.Main.loop99 $12 $10 $9 $11 $0 $1 $2 $3 $4 $5 $6 $7 $8[224 +: 32] $8[192 +: 32] $8[160 +: 32] $8[128 +: 32] $8[96 +: 32] $8[64 +: 32] $8[32 +: 32] $8[0 +: 32]
+$LL.Main.loop156 h3 h7 h8 h4 h5 h1 h6 h2 $56 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop99 sigma3 sigma1 sigma0 sigma2 h3 h7 h8 h4 h5 h1 h6 h2 $56[224 +: 32] $56[192 +: 32] $56[160 +: 32] $56[128 +: 32] $56[96 +: 32] $56[64 +: 32] $56[32 +: 32] $56[0 +: 32]
 
 $LL.Main.loop155 : ([6], [256], [256], [512], [32], [32]) -> [1030]
-$LL.Main.loop155 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop140 $4 $5 $1 $3 $2 $0
+$LL.Main.loop155 sigma3 sigma0 sigma2 sigma1 m2c m2c1 =
+      $LL.Main.loop140 m2c m2c1 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop154 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop154 $1 $2 $3 $4 $5 =
-      $LL.Main.loop123 $2 $1 $3 $4 $5
+$LL.Main.loop154 ctr st1 $x $x1 $x2 =
+      $LL.Main.loop123 st1 ctr $x $x1 $x2
 
 $LL.Main.step25634 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25634 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 =
-      $LL.Main.step25637 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9
+$LL.Main.step25634 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 =
+      $LL.Main.step25637 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9
 
 $LL.Main.dev97 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev97 $0 $2 $3 $4 $5 =
-      $LL.Main.dev68 $0 $2 $3 $4 $5
+$LL.Main.dev97 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev68 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.updateSched14 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched14 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched11 $0 $1 $2 $3 $12 $4 $5 $6 $7 $8 $9 $10 $11 $13 $14 $15
+$LL.Main.updateSched14 w00 w08 w05 w06 w09 w11 w01 w04 w02 w07 w03 w10 w12 $x $x1 $x2 =
+      $LL.Main.updateSched11 w00 w08 w05 w06 w12 w09 w11 w01 w04 w02 w07 w03 w10 $x $x1 $x2
 
 $LL.Main.loop153 : ([6], [256], [256], [512], [32], [32]) -> [1030]
-$LL.Main.loop153 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop109 $0 $1 $2 $3 $4 $5
+$LL.Main.loop153 sigma3 sigma0 sigma2 sigma1 $x $x1 =
+      $LL.Main.loop109 sigma3 sigma0 sigma2 sigma1 $x $x1
 
 $LL.Main.dev96 : ([512], [512], [256], [256], [6]) -> [1030]
-$LL.Main.dev96 $0 $2 $3 $4 $5 =
-      $LL.Main.dev60 $2 $3 $0 $4 $5
+$LL.Main.dev96 st2 hw32 st1 st3 $x =
+      $LL.Main.dev60 hw32 st1 st2 st3 $x
 
 $LL.Main.seed1 : ([6]) -> [32]
-$LL.Main.seed1 $0 =
-      trunc 32 (lshr 2048'h428a2f9871374491b5c0fbcfe9b5dba53956c25b59f111f1923f82a4ab1c5ed5d807aa9812835b01243185be550c7dc372be5d7480deb1fe9bdc06a7c19bf174e49b69c1efbe47860fc19dc6240ca1cc2de92c6f4a7484aa5cb0a9dc76f988da983e5152a831c66db00327c8bf597fc7c6e00bf3d5a7914706ca63511429296727b70a852e1b21384d2c6dfc53380d13650a7354766a0abb81c2c92e92722c85a2bfe8a1a81a664bc24b8b70c76c51a3d192e819d6990624f40e3585106aa07019a4c1161e376c082748774c34b0bcb5391c0cb34ed8aa4a5b9cca4f682e6ff3748f82ee78a5636f84c878148cc7020890befffaa4506cebbef9a3f7c67178f2 (mul (sub (sub 128'h40 (zext 128 $0)) 128'h1) 128'h20))
+$LL.Main.seed1 c =
+      trunc 32 (lshr 2048'h428a2f9871374491b5c0fbcfe9b5dba53956c25b59f111f1923f82a4ab1c5ed5d807aa9812835b01243185be550c7dc372be5d7480deb1fe9bdc06a7c19bf174e49b69c1efbe47860fc19dc6240ca1cc2de92c6f4a7484aa5cb0a9dc76f988da983e5152a831c66db00327c8bf597fc7c6e00bf3d5a7914706ca63511429296727b70a852e1b21384d2c6dfc53380d13650a7354766a0abb81c2c92e92722c85a2bfe8a1a81a664bc24b8b70c76c51a3d192e819d6990624f40e3585106aa07019a4c1161e376c082748774c34b0bcb5391c0cb34ed8aa4a5b9cca4f682e6ff3748f82ee78a5636f84c878148cc7020890befffaa4506cebbef9a3f7c67178f2 (mul (sub (sub 128'h40 (zext 128 c)) 128'h1) 128'h20))
 
 $LL.Main.maj2 : ([32], [32], [32]) -> [32]
-$LL.Main.maj2 $0 $1 $2 =
-      xor (xor (and $0 $1) (and $0 $2)) (and $1 $2)
+$LL.Main.maj2 x y z =
+      xor (xor (and x y) (and x z)) (and y z)
 
 $LL.Pure.dispatch12 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Pure.dispatch12 $0 $1 $2 $3 $4 =
-      $LL.Pure.dispatch5 $1 $0 $2 $3 $4
+$LL.Pure.dispatch12 i s0 $x $x1 $x2 =
+      $LL.Pure.dispatch5 s0 i $x $x1 $x2
 
 $LL.Main.loop152 : ([256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop152 $0 $1 $2 $3 $4 =
-      $LL.Main.loop146 $0 $1 $2 $3 $4
+$LL.Main.loop152 st0 st1 $x $x1 $x2 =
+      $LL.Main.loop146 st0 st1 $x $x1 $x2
 
 $LL.Main.loop151 : ([512], [256], [6], [256], [514]) -> [1297]
-$LL.Main.loop151 $0 $1 $2 $3 $4 =
-      $LL.Main.loop67 $4 $3 $0 $1 $2
+$LL.Main.loop151 sto1 sto2 sto3 sto0 m2c =
+      $LL.Main.loop67 m2c sto0 sto1 sto2 sto3
 
 $LL.Main.ch3 : ([32], [32], [32]) -> [32]
-$LL.Main.ch3 $0 $1 $2 =
-      $LL.Main.ch $0 $1 $2
+$LL.Main.ch3 $x $x1 $x2 =
+      $LL.Main.ch $x $x1 $x2
 
 $LL.Main.dev95 : ([512], [1030]) -> [1030]
-$LL.Main.dev95 $0 $1 =
-      $LL.Main.dev23 $0 $1[774 +: 256] $1[262 +: 512] $1[6 +: 256] $1[0 +: 6]
+$LL.Main.dev95 hw32 disc =
+      $LL.Main.dev23 hw32 disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.updateSched13 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched13 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched8 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15
+$LL.Main.updateSched13 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 =
+      $LL.Main.updateSched8 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15
 
 $LL.Main.loop150 : ([512], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop150 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop34 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20
+$LL.Main.loop150 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 $x16 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop34 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 $x16 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev94 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev94 $1 $2 $3 $4 $5 =
-      $LL.Main.dev25 $1 $2 $3 $4 $5
+$LL.Main.dev94 hw32 st1 st2 $x $x1 =
+      $LL.Main.dev25 hw32 st1 st2 $x $x1
 
 $LL.Main.loop149 : ([32], [32], [6], [32], [32], [32], [32], [32], [512], [32], [32], [256], [256], [32], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop149 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop42 $0 $14 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $15 $16 $17 $18 $19
+$LL.Main.loop149 m2c m2c1 sigma3 m2c2 m2c3 m2c4 m2c5 m2c6 sigma1 m2c7 m2c8 sigma0 sigma2 m2c9 m2c10 $x $x1 $x2 $x3 $x4 =
+      $LL.Main.loop42 m2c m2c10 m2c1 sigma3 m2c2 m2c3 m2c4 m2c5 m2c6 sigma1 m2c7 m2c8 sigma0 sigma2 m2c9 $x $x1 $x2 $x3 $x4
 
 $LL.Main.step25633 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25633 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 =
-      $LL.Main.step25619 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9
+$LL.Main.step25633 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 =
+      $LL.Main.step25619 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9
 
 $LL.Main.loop148 : ([6], [512], [256], [256], [512], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop148 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop117 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20
+$LL.Main.loop148 sigma3 sigma1 sigma2 sigma0 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 $x16 =
+      $LL.Main.loop117 sigma3 sigma1 sigma2 sigma0 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 $x16
 
 $LL.Main.loop147 : ([512], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop147 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop150 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20
+$LL.Main.loop147 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 $x16 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop150 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 $x16 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.maj1 : ([96]) -> [32]
-$LL.Main.maj1 $0 =
-      $LL.Main.maj $0[64 +: 32] $0[32 +: 32] $0[0 +: 32]
+$LL.Main.maj1 $51 =
+      $LL.Main.maj $51[64 +: 32] $51[32 +: 32] $51[0 +: 32]
 
 $LL.Main.bigsigma015 : ([32], [32]) -> [32]
-$LL.Main.bigsigma015 $0 $1 =
-      or (lshr $1 $0) (shl $1 (sub 32'h20 $0))
+$LL.Main.bigsigma015 n w =
+      or (lshr w n) (shl w (sub 32'h20 n))
 
 $LL.Main.dev93 : ([512], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev93 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.dev26 $1 $0 $2 $3 $4 $5
+$LL.Main.dev93 hw32 st0 $x $x1 $x2 $x3 =
+      $LL.Main.dev26 st0 hw32 $x $x1 $x2 $x3
 
 $LL.Main.loop146 : ([256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop146 $0 $1 $2 $3 $4 =
-      $LL.Main.loop160 $0 $2 $1 $3 $4
+$LL.Main.loop146 st0 st1 st2 $x $x1 =
+      $LL.Main.loop160 st0 st2 st1 $x $x1
 
 $LL.Main.loop145 : ([512], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop145 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.loop80 $0 $1 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15
+$LL.Main.loop145 s w00 f $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop80 s w00 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop144 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop144 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop13 $0 $1 $11 $2 $3 $4 $5 $6 $7 $8 $9 $10 $12 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop144 b h3 h7 h8 h4 h5 h1 c h6 h2 a d $x $x1 $x2 $x3 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop13 b h3 d h7 h8 h4 h5 h1 c h6 h2 a $x $x1 $x2 $x3 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop143 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop143 $0 $2 $3 $4 $5 =
-      $LL.Main.loop57 $0 $2 $3 $4 $5
+$LL.Main.loop143 ctr $x1 $x2 $x3 $x4 =
+      $LL.Main.loop57 ctr $x1 $x2 $x3 $x4
 
 $LL.Main.loop142 : ([6], [32], [32], [32], [512], [32], [256], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop142 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop178 $9 $0 $1 $2 $3 $4 $5 $6 $7 $8 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop142 sigma3 m2c m2c1 m2c2 sigma1 m2c3 sigma0 sigma2 m2c4 m2c5 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 =
+      $LL.Main.loop178 m2c5 sigma3 m2c m2c1 m2c2 sigma1 m2c3 sigma0 sigma2 m2c4 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9
 
 $LL.Main.dev92 : ([1030]) -> [1297]
-$LL.Main.dev92 $0 =
-      $LL.Main.dev59 $0[774 +: 256] $0[262 +: 512] $0[6 +: 256] $0[0 +: 6]
+$LL.Main.dev92 disc =
+      $LL.Main.dev59 disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.loop141 : ([1036]) -> [1297]
-$LL.Main.loop141 $0 =
-      $LL.Main.loop137 $0[1030 +: 6] $0[774 +: 256] $0[262 +: 512] $0[6 +: 256] $0[0 +: 6]
+$LL.Main.loop141 disc =
+      $LL.Main.loop137 disc[1030 +: 6] disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.dev91 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev91 $1 $2 $3 $4 $5 =
-      $LL.Main.dev94 $1 $2 $3 $4 $5
+$LL.Main.dev91 hw32 st1 $x $x1 $x2 =
+      $LL.Main.dev94 hw32 st1 $x $x1 $x2
 
 $LL.Main.loop140 : ([32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop140 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop183 $0 $1 $2 $3 $4 $5
+$LL.Main.loop140 $x $x1 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop183 $x $x1 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev90 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev90 $1 $2 $3 $4 =
-      $LL.Main.dev84 $1 $2 $3 $4
+$LL.Main.dev90 s0 $x $x1 $x2 =
+      $LL.Main.dev84 s0 $x $x1 $x2
 
 $LL.Main.loop139 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop139 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop131 $0 $1 $13 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $14 $15 $16 $17 $18 $19
+$LL.Main.loop139 b h3 d h7 h8 h4 h5 h1 c h6 e h2 a f $x $x1 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop131 b h3 f d h7 h8 h4 h5 h1 c h6 e h2 a $x $x1 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop138 : ([32], [32], [32], [32], [32], [32], [32], [32], [1286]) -> [1030]
-$LL.Main.loop138 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.loop135 $0 $1 $2 $3 $4 $5 $6 $7 $8[1030 +: 256] $8[774 +: 256] $8[262 +: 512] $8[6 +: 256] $8[0 +: 6]
+$LL.Main.loop138 h6 h1 h4 h8 h3 h2 h7 h5 disc =
+      $LL.Main.loop135 h6 h1 h4 h8 h3 h2 h7 h5 disc[1030 +: 256] disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.dev89 : ([512], [1030]) -> [1030]
-$LL.Main.dev89 $0 $1 =
-      $LL.Main.dev12 $0 $1[774 +: 256] $1[262 +: 512] $1[6 +: 256] $1[0 +: 6]
+$LL.Main.dev89 hw32 disc =
+      $LL.Main.dev12 hw32 disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.loop137 : ([6], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop137 $0 $1 $2 $3 $4 =
-      $LL.Main.loop89 $0 $1 $2 $3 $4
+$LL.Main.loop137 v $x $x1 $x2 $x3 =
+      $LL.Main.loop89 v $x $x1 $x2 $x3
 
 $LL.Main.step25632 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25632 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25622 $0 $1 $2 $3 $4 $5 $6 $7 $8
+$LL.Main.step25632 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.step25622 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Main.sigma113 : ([32]) -> [32]
-$LL.Main.sigma113 $0 =
-      $LL.Main.sigma16 $0
+$LL.Main.sigma113 $x =
+      $LL.Main.sigma16 $x
 
 $LL.Main.step25631 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25631 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 =
-      $LL.Main.step25626 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9
+$LL.Main.step25631 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 =
+      $LL.Main.step25626 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9
 
 $LL.Main.loop136 : ([6], [514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop136 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop102 $1 $0 (eq $0 6'h3f) $2 $3 $4 $5
+$LL.Main.loop136 ctr i sto0 sto1 sto2 sto3 =
+      $LL.Main.loop102 i ctr (eq ctr 6'h3f) sto0 sto1 sto2 sto3
 
 $LL.Main.loop135 : ([32], [32], [32], [32], [32], [32], [32], [32], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop135 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 =
-      $LL.Main.loop16 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12
+$LL.Main.loop135 h6 h1 h4 h8 h3 h2 h7 h5 $x $x1 $x2 $x3 $x4 =
+      $LL.Main.loop16 h6 h1 h4 h8 h3 h2 h7 h5 $x $x1 $x2 $x3 $x4
 
 $LL.Main.loop134 : ([512], [256], [32], [256], [6]) -> [1062]
-$LL.Main.loop134 $0 $1 $2 $4 $5 =
-      $LL.Main.loop6 $2 $1 $0 $4 $5
+$LL.Main.loop134 st2 st1 w00 st3 $x =
+      $LL.Main.loop6 w00 st1 st2 st3 $x
 
 $LL.Main.updateSched12 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched12 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched3 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15
+$LL.Main.updateSched12 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 =
+      $LL.Main.updateSched3 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15
 
 $LL.Main.step25630 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25630 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25640 $0 $1 $2 $3 $4 $5 $6 $8 $7
+$LL.Main.step25630 t1 d e b t2 a c f h' =
+      $LL.Main.step25640 t1 d e b t2 a c h' f
 
 $LL.Main.loop133 : ([32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop133 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop31 $0 $3 $1 $2 $4 $5 $6 $7 $8 $9 $10 $11
+$LL.Main.loop133 h3 h1 h2 h4 $x $x1 $x2 $x3 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop31 h3 h4 h1 h2 $x $x1 $x2 $x3 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev88 : ([512], [512], [256], [256], [256], [6]) -> [1030]
-$LL.Main.dev88 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.dev27 $0 $3 $2 $1 $4 $5
+$LL.Main.dev88 hw32 st2 st1 st0 st3 $x =
+      $LL.Main.dev27 hw32 st0 st1 st2 st3 $x
 
 $LL.Main.loop132 : ([32], [32], [512], [6], [512], [32], [256], [32], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop132 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop50 $0 $1 $2 $10 $3 $4 $5 $6 $7 $8 $9 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20
+$LL.Main.loop132 m2c m2c1 m2c2 sigma3 sigma1 m2c3 sigma2 m2c4 sigma0 m2c5 m2c6 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 =
+      $LL.Main.loop50 m2c m2c1 m2c2 m2c6 sigma3 sigma1 m2c3 sigma2 m2c4 sigma0 m2c5 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9
 
 $LL.Main.step25629 : ([32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25629 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.step25623 $0 $1 $2 $3 $4 $5 $6 $7
+$LL.Main.step25629 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 =
+      $LL.Main.step25623 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7
 
 $LL.Main.loop131 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop131 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop166 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $14 $11 $12 $13 $15 $16 $17 $18 $19
+$LL.Main.loop131 b h3 f d h7 h8 h4 h5 h1 c h6 e h2 a g $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop166 b h3 f d h7 h8 h4 h5 h1 c h6 g e h2 a $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev87 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev87 $1 $2 $3 $4 =
-      267'h50000000000000000000000000000000000000000000000000000000000000000c0 # $1 # $2 # $3 # $4
+$LL.Main.dev87 sto0 sto1 sto2 sto3 =
+      267'h50000000000000000000000000000000000000000000000000000000000000000c0 # sto0 # sto1 # sto2 # sto3
 
 $LL.Main.dev86 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev86 $0 $2 $3 $4 $5 =
-      $LL.Main.dev55 $0 $2 $3 $4 $5
+$LL.Main.dev86 hw32 $x1 $x2 $x3 $x4 =
+      $LL.Main.dev55 hw32 $x1 $x2 $x3 $x4
 
 $LL.Main.loop130 : ([6], [32], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop130 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop35 $1 $0 $2 $3 $4 $5
+$LL.Main.loop130 ctr st0 $x $x1 $x2 $x3 =
+      $LL.Main.loop35 st0 ctr $x $x1 $x2 $x3
 
 $LL.Main.updateSched11 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched11 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched $0 $1 $2 $3 $13 $4 $5 $6 $7 $8 $9 $10 $11 $12 $14 $15
+$LL.Main.updateSched11 w00 w08 w05 w06 w12 w09 w11 w01 w04 w02 w07 w03 w10 w13 $x $x1 =
+      $LL.Main.updateSched w00 w08 w05 w06 w13 w12 w09 w11 w01 w04 w02 w07 w03 w10 $x $x1
 
 $LL.Main.dev85 : ([514], [514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev85 $0 $1 $2 $3 $4 $5 =
-      if eq $1[512 +: 2] 2'h0 then $LL.Main.dev103 $5 $4 $3 $2 $1[0 +: 512]
-            else $LL.Main.dev54 $0 $0 $2 $3 $4 $5
+$LL.Main.dev85 $16 $85 sto0 sto1 sto2 sto3 =
+      if eq $85[512 +: 2] 2'h0 then $LL.Main.dev103 sto3 sto2 sto1 sto0 $85[0 +: 512]
+            else $LL.Main.dev54 $16 $16 sto0 sto1 sto2 sto3
 
 $LL.Main.step25628 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25628 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step2566 $1 $2 $3 $8 $5 $6 $7 (add $0 $4)
+$LL.Main.step25628 t1 d' c' e' t2 g' h' f' b' =
+      $LL.Main.step2566 d' c' e' b' g' h' f' (add t1 t2)
 
 $LL.Main.loop129 : ([512], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop129 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 =
-      $LL.Main.loop77 $0 $1 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18
+$LL.Main.loop129 s w00 c $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop77 s w00 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.updateSched10 : ([512]) -> [512]
-$LL.Main.updateSched10 $0 =
-      $LL.Main.updateSched13 $0[480 +: 32] $0[448 +: 32] $0[416 +: 32] $0[384 +: 32] $0[352 +: 32] $0[320 +: 32] $0[288 +: 32] $0[256 +: 32] $0[224 +: 32] $0[192 +: 32] $0[160 +: 32] $0[128 +: 32] $0[96 +: 32] $0[64 +: 32] $0[32 +: 32] $0[0 +: 32]
+$LL.Main.updateSched10 $61 =
+      $LL.Main.updateSched13 $61[480 +: 32] $61[448 +: 32] $61[416 +: 32] $61[384 +: 32] $61[352 +: 32] $61[320 +: 32] $61[288 +: 32] $61[256 +: 32] $61[224 +: 32] $61[192 +: 32] $61[160 +: 32] $61[128 +: 32] $61[96 +: 32] $61[64 +: 32] $61[32 +: 32] $61[0 +: 32]
 
 $LL.Main.loop128 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop128 $0 $2 $3 $4 $5 =
-      $0 # $2 # $3 # $4 # $5
+$LL.Main.loop128 ctr sigma0 sigma1 sigma2 sigma3 =
+      ctr # sigma0 # sigma1 # sigma2 # sigma3
 
 Main.dev : ([514], [256], [512], [256], [6]) -> [1297]
-Main.dev $0 $1 $2 $3 $4 =
-      $LL.Main.dev85 $0 $0 $1 $2 $3 $4
+Main.dev $16 sto0 sto1 sto2 sto3 =
+      $LL.Main.dev85 $16 $16 sto0 sto1 sto2 sto3
 
 $LL.Main.dev84 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev84 $1 $2 $3 $4 =
-      $LL.Main.dev108 $1 $2 $3 $4
+$LL.Main.dev84 s0 s1 $x $x1 =
+      $LL.Main.dev108 s0 s1 $x $x1
 
 $LL.Main.loop127 : ([6], [512], [32], [256], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop127 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop52 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop127 sigma3 sigma1 m2c sigma0 sigma2 m2c1 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 =
+      $LL.Main.loop52 sigma3 sigma1 m2c sigma0 sigma2 m2c1 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13
 
 $LL.Main.dev83 : ([1030]) -> [1297]
-$LL.Main.dev83 $0 =
-      $LL.Main.dev105 $0[774 +: 256] $0[262 +: 512] $0[6 +: 256] $0[0 +: 6]
+$LL.Main.dev83 disc =
+      $LL.Main.dev105 disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.loop126 : ([32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop126 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop133 $2 $0 $1 $3 $4 $5 $6 $7 $8 $9 $10 $11
+$LL.Main.loop126 h1 h2 h3 $x $x1 $x2 $x3 $x4 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop133 h3 h1 h2 $x $x1 $x2 $x3 $x4 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev82 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev82 $1 $2 $3 $4 $5 =
-      $LL.Main.dev9 $3 $2 $1 $4 $5
+$LL.Main.dev82 st2 st1 hw32 st3 $x =
+      $LL.Main.dev9 hw32 st1 st2 st3 $x
 
 $LL.Main.loop125 : ([32], [32], [512], [32], [32], [6], [32], [512], [32], [256], [32], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop125 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop96 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $13 $11 $12 $14 $15 $16 $17 $18 $19 $20
+$LL.Main.loop125 m2c m2c1 m2c2 m2c3 m2c4 sigma3 m2c5 sigma1 m2c6 sigma2 m2c7 sigma0 m2c8 m2c9 $x $x1 $x2 $x3 $x4 $x5 $x6 =
+      $LL.Main.loop96 m2c m2c1 m2c2 m2c3 m2c4 sigma3 m2c5 sigma1 m2c6 sigma2 m2c7 m2c9 sigma0 m2c8 $x $x1 $x2 $x3 $x4 $x5 $x6
 
 $LL.Main.seed : ([6]) -> [32]
-$LL.Main.seed $0 =
-      $LL.Main.seed1 $0
+$LL.Main.seed $x =
+      $LL.Main.seed1 $x
 
 $LL.Main.loop124 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.loop124 $1 $2 $3 $4 =
-      $LL.Main.loop43 $1 $2 $3 $4
+$LL.Main.loop124 s0 $x $x1 $x2 =
+      $LL.Main.loop43 s0 $x $x1 $x2
 
 $LL.Main.step25627 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25627 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25635 $0 $1 $2 $3 $4 $5 $6 $7 $8
+$LL.Main.step25627 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.step25635 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Main.loop123 : ([256], [6], [512], [256], [6]) -> [1036]
-$LL.Main.loop123 $0 $2 $3 $4 $5 =
-      $LL.Main.loop87 $0 $3 $2 $4 $5
+$LL.Main.loop123 st1 ctr st2 $x $x1 =
+      $LL.Main.loop87 st1 st2 ctr $x $x1
 
 $LL.Main.loop122 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop122 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop191 $9 $0 $1 $2 $3 $4 $5 $6 $7 $8 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop122 h3 h7 h8 h4 h5 h1 h6 h2 a b $x $x1 $x2 $x3 $x4 $x5 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop191 b h3 h7 h8 h4 h5 h1 h6 h2 a $x $x1 $x2 $x3 $x4 $x5 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop121 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop121 $0 $2 $3 $4 $5 =
-      $LL.Main.loop182 $0 $2 $3 $4 $5
+$LL.Main.loop121 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop182 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev81 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev81 $0 $2 $3 $4 $5 =
-      $LL.Main.dev64 $0 $2 $3 $4 $5
+$LL.Main.dev81 hw32 $x $x1 $x2 $x3 =
+      $LL.Main.dev64 hw32 $x $x1 $x2 $x3
 
 $LL.Main.dev80 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev80 $0 $2 $3 $4 $5 =
-      $LL.Main.dev39 $0 $2 $3 $4 $5
+$LL.Main.dev80 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev39 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.bigsigma114 : ([32]) -> [32]
-$LL.Main.bigsigma114 $0 =
-      $LL.Main.sigma115 32'h19 $0
+$LL.Main.bigsigma114 $x =
+      $LL.Main.sigma115 32'h19 $x
 
 $LL.Main.ch2 : ([96]) -> [32]
-$LL.Main.ch2 $0 =
-      $LL.Main.ch3 $0[64 +: 32] $0[32 +: 32] $0[0 +: 32]
+$LL.Main.ch2 $50 =
+      $LL.Main.ch3 $50[64 +: 32] $50[32 +: 32] $50[0 +: 32]
 
 $LL.Main.updateSched9 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched9 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched6 $0 $1 $4 $2 $3 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15
+$LL.Main.updateSched9 w00 w01 w02 w03 w04 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 =
+      $LL.Main.updateSched6 w00 w01 w04 w02 w03 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10
 
 $LL.Main.loop120 : ([6], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop120 $0 $1 $2 $3 $4 =
-      $LL.Main.loop56 $0 $1 $2 $3 $4
+$LL.Main.loop120 v s0 $x $x1 $x2 =
+      $LL.Main.loop56 v s0 $x $x1 $x2
 
 $LL.Main.dev79 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev79 $0 $2 $3 $4 $5 =
-      $LL.Main.dev17 $0 $2 $3 $4 $5
+$LL.Main.dev79 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev17 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev78 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev78 $0 $2 $3 $4 $5 =
-      $LL.Main.dev11 $0 $2 $3 $4 $5
+$LL.Main.dev78 hw32 $x $x1 $x2 $x3 =
+      $LL.Main.dev11 hw32 $x $x1 $x2 $x3
 
 $LL.Main.incCtr1 : ([6]) -> [6]
-$LL.Main.incCtr1 $0 =
-      $LL.Main.incCtr $0
+$LL.Main.incCtr1 $x =
+      $LL.Main.incCtr $x
 
 $LL.Main.loop119 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop119 $0 $2 $3 $4 $5 =
-      $LL.Main.loop40 $0 ($2 # $3 # $4 # Main.incCtr $0)
+$LL.Main.loop119 ctr sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop40 ctr (sigma0 # sigma1 # sigma2 # Main.incCtr ctr)
 
 $LL.Main.dev77 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev77 $1 $2 $3 $4 =
-      $LL.Main.dev41 $1 $2 $3 $4
+$LL.Main.dev77 s0 $x $x1 $x2 =
+      $LL.Main.dev41 s0 $x $x1 $x2
 
 $LL.Main.loop118 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop118 $0 $2 $3 $4 $5 =
-      $LL.Main.loop186 $0 $2 $3 $4 $5
+$LL.Main.loop118 $x sto0 sto1 sto2 sto3 =
+      $LL.Main.loop186 $x sto0 sto1 sto2 sto3
 
 $LL.Main.step25626 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25626 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 =
-      $LL.Main.step25634 $0 $1 $3 $2 $4 $5 $6 $7 $8 $9
+$LL.Main.step25626 w k a b $x $x1 $x2 $x3 $x4 $x5 =
+      $LL.Main.step25634 w k b a $x $x1 $x2 $x3 $x4 $x5
 
 $LL.Main.loop117 : ([6], [512], [256], [256], [512], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop117 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop54 $4 $0 $1 $2 $3 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20
+$LL.Main.loop117 sigma3 sigma1 sigma2 sigma0 m2c $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 =
+      $LL.Main.loop54 m2c sigma3 sigma1 sigma2 sigma0 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15
 
 $LL.Main.dev76 : ([512], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev76 $0 $1 $2 $3 $4 =
-      $LL.Main.dev ($LL.Main.dev92 ($LL.Main.dev16 $0 ($3 # $1 # $2 # $3 # $4)))
+$LL.Main.dev76 hw32 sto0 sto1 sto2 sto3 =
+      $LL.Main.dev ($LL.Main.dev92 ($LL.Main.dev16 hw32 (sto2 # sto0 # sto1 # sto2 # sto3)))
 
 Main.sigma0 : ([32]) -> [32]
-Main.sigma0 $0 =
-      $LL.Main.sigma015 $0
+Main.sigma0 $x =
+      $LL.Main.sigma015 $x
 
 Main.seed : ([6]) -> [32]
-Main.seed $0 =
-      $LL.Main.seed $0
+Main.seed $x =
+      $LL.Main.seed $x
 
 $LL.Main.dev75 : ([256], [512], [512], [256], [6]) -> [1030]
-$LL.Main.dev75 $0 $2 $3 $4 $5 =
-      $LL.Main.dev112 $3 $0 $2 $4 $5
+$LL.Main.dev75 st1 hw32 st2 $x $x1 =
+      $LL.Main.dev112 st2 st1 hw32 $x $x1
 
 $LL.Main.loop116 : ([512], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop116 $0 $1 $2 $3 $4 =
-      $LL.Main.loop14 $1 $0 $2 $3 $4
+$LL.Main.loop116 st0 st1 $x $x1 $x2 =
+      $LL.Main.loop14 st1 st0 $x $x1 $x2
 
 $LL.Main.step25625 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25625 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step2567 $0 $8 $1 $2 $3 $4 $6 $7 $5
+$LL.Main.step25625 t1 b t2 a g' c h' f' e' =
+      $LL.Main.step2567 t1 e' b t2 a g' h' f' c
 
 $LL.Main.loop115 : ([256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop115 $0 $1 $2 $3 $4 =
-      $LL.Main.loop152 $0 $1 $2 $3 $4
+$LL.Main.loop115 st0 $x $x1 $x2 $x3 =
+      $LL.Main.loop152 st0 $x $x1 $x2 $x3
 
 $LL.Main.dev74 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev74 $1 $2 $3 $4 =
-      $LL.Main.dev102 $1 $2 $3 $4
+$LL.Main.dev74 $x $x1 $x2 $x3 =
+      $LL.Main.dev102 $x $x1 $x2 $x3
 
 $LL.Pure.dispatch11 : ([514], [6], [256], [512], [256], [6]) -> [1297]
-$LL.Pure.dispatch11 $0 $1 $2 $3 $4 $5 =
-      $LL.Pure.dispatch7 $1 $0 $2 $3 $4 $5
+$LL.Pure.dispatch11 i store0 $x $x1 $x2 $x3 =
+      $LL.Pure.dispatch7 store0 i $x $x1 $x2 $x3
 
 $LL.Main.dev73 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev73 $1 $2 $3 $4 $5 =
-      $LL.Main.dev31 $1 $2 $3 $4 $5
+$LL.Main.dev73 hw32 st1 st2 st3 $x =
+      $LL.Main.dev31 hw32 st1 st2 st3 $x
 
 $LL.Main.loop114 : ([32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop114 $0 $2 $3 $4 $5 =
-      $LL.Main.loop94 $0 $2 $3 $4 $5
+$LL.Main.loop114 w00 $x $x1 $x2 $x3 =
+      $LL.Main.loop94 w00 $x $x1 $x2 $x3
 
 $LL.Main.dev72 : ([256], [256], [256], [512], [6]) -> [1297]
-$LL.Main.dev72 $0 $1 $2 $3 $4 =
-      11'h0 # $2 # $1 # $3 # $0 # $4
+$LL.Main.dev72 s2 s0 v s1 s3 =
+      11'h0 # v # s0 # s1 # s2 # s3
 
 $LL.Main.dev71 : ([256], [256], [512], [6], [512]) -> [1297]
-$LL.Main.dev71 $0 $1 $2 $3 $4 =
-      $LL.Main.dev109 $0 $1 $2 $3 $4
+$LL.Main.dev71 sto2 sto0 sto1 sto3 $x =
+      $LL.Main.dev109 sto2 sto0 sto1 sto3 $x
 
 $LL.Main.loop113 : ([512], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop113 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.loop32 $0 $1 $3 $4 $5 $6 $7 $8
+$LL.Main.loop113 s w00 m $x $x1 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop32 s w00 $x $x1 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.updateSched8 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched8 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched12 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15
+$LL.Main.updateSched8 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 =
+      $LL.Main.updateSched12 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15
 
 $LL.Main.dev70 : ([512], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev70 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.dev13 $0 $1 $2 $3 $4 $5
+$LL.Main.dev70 $x $x1 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev13 $x $x1 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop112 : ([256], [6], [512], [256], [6]) -> [1297]
-$LL.Main.loop112 $0 $1 $2 $3 $4 =
-      $LL.Main.loop88 $0 $3 $1 $2 $4
+$LL.Main.loop112 s0 v s1 s2 $x =
+      $LL.Main.loop88 s0 s2 v s1 $x
 
 $LL.Main.loop111 : ([32], [512], [6], [512], [256], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop111 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop95 $0 $1 $2 $3 $6 $4 $5 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20
+$LL.Main.loop111 m2c m2c1 sigma3 sigma1 sigma2 sigma0 m2c2 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 =
+      $LL.Main.loop95 m2c m2c1 sigma3 sigma1 m2c2 sigma2 sigma0 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13
 
 $LL.Main.loop110 : ([32], [32], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop110 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.loop72 $0 $1 $2 $4 $3 $5 $6
+$LL.Main.loop110 w k st1 st0 st2 $x $x1 =
+      $LL.Main.loop72 w k st1 st2 st0 $x $x1
 
 $LL.Pure.dispatch10 : ([514], [6], [256], [512], [256], [6]) -> [1297]
-$LL.Pure.dispatch10 $0 $1 $2 $3 $4 $5 =
-      $LL.Pure.dispatch11 $0 $1 $2 $3 $4 $5
+$LL.Pure.dispatch10 i $x $x1 $x2 $x3 $x4 =
+      $LL.Pure.dispatch11 i $x $x1 $x2 $x3 $x4
 
 $LL.Main.updateSched7 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched7 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched2 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15
+$LL.Main.updateSched7 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 =
+      $LL.Main.updateSched2 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15
 
 $LL.Main.bigsigma012 : ([32]) -> [32]
-$LL.Main.bigsigma012 $0 =
-      $LL.Main.sigma115 32'h2 $0
+$LL.Main.bigsigma012 $x =
+      $LL.Main.sigma115 32'h2 $x
 
 $LL.Main.loop109 : ([6], [256], [256], [512], [32], [32]) -> [1030]
-$LL.Main.loop109 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop155 $0 $1 $2 $3 $4 $5
+$LL.Main.loop109 sigma3 sigma0 sigma2 sigma1 m2c $x =
+      $LL.Main.loop155 sigma3 sigma0 sigma2 sigma1 m2c $x
 
 $LL.Main.loop108 : ([32], [32], [512], [6], [512], [32], [256], [32], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop108 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop132 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20
+$LL.Main.loop108 m2c m2c1 m2c2 sigma3 sigma1 m2c3 sigma2 m2c4 sigma0 m2c5 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 =
+      $LL.Main.loop132 m2c m2c1 m2c2 sigma3 sigma1 m2c3 sigma2 m2c4 sigma0 m2c5 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10
 
 $LL.Main.dev69 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev69 $0 $2 $3 $4 $5 =
-      $LL.Main.dev63 $0 $2 $3 $4 $5
+$LL.Main.dev69 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev63 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Pure.dispatch9 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Pure.dispatch9 $0 $1 $2 $3 $4 =
-      $LL.Pure.dispatch15 $0 $1 $2 $3 $4
+$LL.Pure.dispatch9 i s0 $x $x1 $x2 =
+      $LL.Pure.dispatch15 i s0 $x $x1 $x2
 
 $LL.Main.loop107 : ([32], [256], [32], [512], [256], [32], [6], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop107 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop1 $0 $1 $2 $7 $3 $4 $5 $6 $8 $9 $10 $11
+$LL.Main.loop107 m2c sigma0 m2c1 sigma1 sigma2 m2c2 sigma3 m2c3 $x $x1 $x2 $x3 =
+      $LL.Main.loop1 m2c sigma0 m2c1 m2c3 sigma1 sigma2 m2c2 sigma3 $x $x1 $x2 $x3
 
 $LL.Main.step25624 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25624 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25632 $0 $1 $2 $3 $4 $5 $6 $7 $8
+$LL.Main.step25624 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.step25632 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Pure.dispatch8 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Pure.dispatch8 $0 $1 $2 $3 $4 =
-      $LL.Main.dev107 $0 $1 $2 $3 $4
+$LL.Pure.dispatch8 i s0 s1 s2 $x =
+      $LL.Main.dev107 i s0 s1 s2 $x
 
 $LL.Main.dev68 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev68 $0 $2 $3 $4 $5 =
-      $2 # $0 # $4 # $5
+$LL.Main.dev68 hw32 sigma0 sigma1 sigma2 sigma3 =
+      sigma0 # hw32 # sigma2 # sigma3
 
 $LL.Main.bigsigma111 : ([32]) -> [32]
-$LL.Main.bigsigma111 $0 =
-      $LL.Main.bigsigma18 $0
+$LL.Main.bigsigma111 $x =
+      $LL.Main.bigsigma18 $x
 
 $LL.Main.loop106 : ([32], [32], [32], [32], [6], [32], [32], [32], [32], [32], [32], [512], [32], [32], [256], [256], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop106 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop66 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $17 $16 $18 $19
+$LL.Main.loop106 m2c m2c1 m2c2 m2c3 sigma3 m2c4 m2c5 m2c6 m2c7 m2c8 m2c9 sigma1 m2c10 m2c11 sigma0 sigma2 m2c12 m2c13 $x $x1 =
+      $LL.Main.loop66 m2c m2c1 m2c2 m2c3 sigma3 m2c4 m2c5 m2c6 m2c7 m2c8 m2c9 sigma1 m2c10 m2c11 sigma0 sigma2 m2c13 m2c12 $x $x1
 
 $LL.Main.loop105 : ([32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop105 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop17 $0 $6 $1 $2 $3 $4 $5 $7 $8 $9 $10 $11
+$LL.Main.loop105 h3 h4 h5 h1 h6 h2 h7 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop17 h3 h7 h4 h5 h1 h6 h2 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop104 : ([1286]) -> [1030]
-$LL.Main.loop104 $0 =
-      $LL.Main.loop115 $0[1030 +: 256] $0[774 +: 256] $0[262 +: 512] $0[6 +: 256] $0[0 +: 6]
+$LL.Main.loop104 disc =
+      $LL.Main.loop115 disc[1030 +: 256] disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.loop103 : ([6], [32], [32], [512], [32], [256], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop103 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop142 $0 $1 $2 $8 $3 $4 $5 $6 $7 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop103 sigma3 m2c m2c1 sigma1 m2c2 sigma0 sigma2 m2c3 m2c4 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 =
+      $LL.Main.loop142 sigma3 m2c m2c1 m2c4 sigma1 m2c2 sigma0 sigma2 m2c3 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10
 
 $LL.Main.dev67 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev67 $1 $2 $3 $4 =
-      $LL.Main.dev116 $1 $2 $3 $4
+$LL.Main.dev67 s0 $x $x1 $x2 =
+      $LL.Main.dev116 s0 $x $x1 $x2
 
 $LL.Main.loop102 : ([514], [6], [1], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop102 $0 $1 $2 $3 $4 $5 $6 =
-      if eq $2 1'h1 then $LL.Main.loop49 $4 $5 $6 $3 $0
-            else $LL.Main.loop7 (eq $1 6'h3f) $3 $4 $5 $6
+$LL.Main.loop102 i ctr $90 sto0 sto1 sto2 sto3 =
+      if eq $90 1'h1 then $LL.Main.loop49 sto1 sto2 sto3 sto0 i
+            else $LL.Main.loop7 (eq ctr 6'h3f) sto0 sto1 sto2 sto3
 
 $LL.Main.step25623 : ([32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25623 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.step2562 $0 $1 $2 $3 $4 $5 $6 $7
+$LL.Main.step25623 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 =
+      $LL.Main.step2562 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7
 
 $LL.Main.dev66 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev66 $0 $1 $3 $4 =
-      $LL.Main.dev10 $0 $1 $3 $4
+$LL.Main.dev66 s0 s1 s2 $x =
+      $LL.Main.dev10 s0 s1 s2 $x
 
 $LL.Main.dev65 : ([512], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev65 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.dev110 $0 $1 $2 $3 $4 $5
+$LL.Main.dev65 hw32 $x $x1 $x2 $x3 $x4 =
+      $LL.Main.dev110 hw32 $x $x1 $x2 $x3 $x4
 
 Main.loop : ([256], [512], [256], [6]) -> [1297]
-Main.loop $0 $1 $2 $3 =
-      $LL.Main.loop47 ($LL.Main.loop141 ($LL.Main.loop185 ($3 # $0 # $1 # $2 # $3)))
+Main.loop sto0 sto1 sto2 sto3 =
+      $LL.Main.loop47 ($LL.Main.loop141 ($LL.Main.loop185 (sto3 # sto0 # sto1 # sto2 # sto3)))
 
 $LL.Main.step25622 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25622 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25617 $0 $2 $3 $4 $5 $6 $7 $8 (add $1 $0)
+$LL.Main.step25622 t1 d b t2 a g' c h' f' =
+      $LL.Main.step25617 t1 b t2 a g' c h' f' (add d t1)
 
 $LL.Main.dev64 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev64 $1 $2 $3 $4 $5 =
-      $LL.Main.dev8 $1 $2 $3 $4 $5
+$LL.Main.dev64 hw32 st1 $x $x1 $x2 =
+      $LL.Main.dev8 hw32 st1 $x $x1 $x2
 
 $LL.Main.dev63 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev63 $0 $2 $3 $4 $5 =
-      $LL.Main.dev18 $0 $2 $3 $4 $5
+$LL.Main.dev63 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev18 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev62 : ([1297]) -> [1297]
-$LL.Main.dev62 $0 =
-      $LL.Main.dev21 $0[1030 +: 256] $0[774 +: 256] $0[262 +: 512] $0[6 +: 256] $0[0 +: 6]
+$LL.Main.dev62 disc =
+      $LL.Main.dev21 disc[1030 +: 256] disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.loop101 : ([512], [256], [6], [256]) -> [1297]
-$LL.Main.loop101 $0 $1 $2 $3 =
-      Main.loop $1 $0 $3 $2
+$LL.Main.loop101 sto1 sto0 sto3 sto2 =
+      Main.loop sto0 sto1 sto2 sto3
 
 $LL.Main.dev61 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev61 $1 $2 $3 $4 =
-      $LL.Main.dev32 $1 $2 $3 $4
+$LL.Main.dev61 s0 s1 s2 $x =
+      $LL.Main.dev32 s0 s1 s2 $x
 
 $LL.Main.loop100 : ([512], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop100 $0 $1 $2 $3 $4 =
-      $LL.Main.loop44 $0 $0 $1 $2 $3 $4
+$LL.Main.loop100 s sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop44 s s sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev60 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev60 $0 $2 $3 $4 $5 =
-      $LL.Main.dev69 $0 $2 $3 $4 $5
+$LL.Main.dev60 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev69 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev59 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev59 $1 $2 $3 $4 =
-      $LL.Main.dev90 $1 $2 $3 $4
+$LL.Main.dev59 $x $x1 $x2 $x3 =
+      $LL.Main.dev90 $x $x1 $x2 $x3
 
 $LL.Main.step25621 : ([32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25621 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.step25639 $0 $1 $2 $3 $4 $5 $6 $7
+$LL.Main.step25621 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 =
+      $LL.Main.step25639 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7
 
 $LL.Main.loop99 : ([6], [512], [256], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop99 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop192 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop99 sigma3 sigma1 sigma0 sigma2 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 =
+      $LL.Main.loop192 sigma3 sigma1 sigma0 sigma2 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15
 
 $LL.Main.bigsigma110 : ([32]) -> [32]
-$LL.Main.bigsigma110 $0 =
-      $LL.Main.sigma115 32'hb $0
+$LL.Main.bigsigma110 $x =
+      $LL.Main.sigma115 32'hb $x
 
 $LL.Main.loop98 : ([256], [512], [256], [6], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop98 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop58 $0 $4 $1 $2 $3 $5 $6 $7 $8 $9 $10 $11
+$LL.Main.loop98 sigma0 sigma1 sigma2 sigma3 m2c $x $x1 $x2 $x3 $x4 $x5 $x6 =
+      $LL.Main.loop58 sigma0 m2c sigma1 sigma2 sigma3 $x $x1 $x2 $x3 $x4 $x5 $x6
 
 $LL.Main.dev58 : ([512], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev58 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.dev88 $0 $3 $1 $2 $4 $5
+$LL.Main.dev58 hw32 st1 st0 st2 $x $x1 =
+      $LL.Main.dev88 hw32 st2 st1 st0 $x $x1
 
 $LL.Main.loop97 : ([32], [32], [32], [32], [32], [256], [32], [256], [32], [32], [512], [256], [6]) -> [1030]
-$LL.Main.loop97 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 =
-      $LL.Main.loop159 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12
+$LL.Main.loop97 h6 h1 h4 h8 h3 st1 h2 st0 h7 h5 st2 $x $x1 =
+      $LL.Main.loop159 h6 h1 h4 h8 h3 st1 h2 st0 h7 h5 st2 $x $x1
 
 $LL.Main.loop96 : ([32], [32], [512], [32], [32], [6], [32], [512], [32], [256], [32], [32], [256], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop96 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop18 $0 $1 $2 $3 $4 $5 $6 $7 $14 $8 $9 $10 $11 $12 $13 $15 $16 $17 $18 $19 $20
+$LL.Main.loop96 m2c m2c1 m2c2 m2c3 m2c4 sigma3 m2c5 sigma1 m2c6 sigma2 m2c7 m2c8 sigma0 m2c9 m2c10 $x $x1 $x2 $x3 $x4 $x5 =
+      $LL.Main.loop18 m2c m2c1 m2c2 m2c3 m2c4 sigma3 m2c5 sigma1 m2c10 m2c6 sigma2 m2c7 m2c8 sigma0 m2c9 $x $x1 $x2 $x3 $x4 $x5
 
 $LL.Main.step25620 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25620 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25614 $0 $1 $8 $2 $3 $5 $6 $7 $4
+$LL.Main.step25620 t1 d' e' t2 a g' h' f' c' =
+      $LL.Main.step25614 t1 d' c' e' t2 g' h' f' a
 
 $LL.Main.sigma17 : ([32]) -> [32]
-$LL.Main.sigma17 $0 =
-      $LL.Main.sigma115 32'h13 $0
+$LL.Main.sigma17 $x =
+      $LL.Main.sigma115 32'h13 $x
 
 $LL.Main.loop95 : ([32], [512], [6], [512], [32], [256], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop95 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop39 $0 $1 $2 $3 $4 $5 $7 $6 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20
+$LL.Main.loop95 m2c m2c1 sigma3 sigma1 m2c2 sigma2 sigma0 m2c3 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 =
+      $LL.Main.loop39 m2c m2c1 sigma3 sigma1 m2c2 sigma2 m2c3 sigma0 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12
+
+$LL.Main.dev57 : ([514], [256], [512], [256], [6]) -> [1297]
+$LL.Main.dev57 $42 sto0 sto1 sto2 sto3 =
+      Main.loop sto0 sto1 sto2 sto3
 
 $LL.Main.loop94 : ([32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop94 $0 $2 $3 $4 $5 =
-      $LL.Main.loop9 $2 $0 $3 $4 $5
+$LL.Main.loop94 w00 st1 $x $x1 $x2 =
+      $LL.Main.loop9 st1 w00 $x $x1 $x2
 
 $LL.Main.sigma012 : ([32]) -> [32]
-$LL.Main.sigma012 $0 =
-      xor (xor ($LL.Main.sigma09 $0) ($LL.Main.sigma0 $0)) (lshr $0 32'h3)
+$LL.Main.sigma012 x =
+      xor (xor ($LL.Main.sigma09 x) ($LL.Main.sigma0 x)) (lshr x 32'h3)
 
 $LL.Main.loop93 : ([256], [256], [512], [6]) -> [1297]
-$LL.Main.loop93 $0 $1 $3 $4 =
-      267'h20000000000000000000000000000000000000000000000000000000000000000 # $1 # $3 # $0 # $4
+$LL.Main.loop93 s2 s0 s1 s3 =
+      267'h20000000000000000000000000000000000000000000000000000000000000000 # s0 # s1 # s2 # s3
 
 $LL.Main.updateSched6 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched6 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched17 $0 $5 $1 $2 $3 $4 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15
+$LL.Main.updateSched6 w00 w01 w04 w02 w03 w05 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 =
+      $LL.Main.updateSched17 w00 w05 w01 w04 w02 w03 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9
 
 Main.bigsigma1 : ([32]) -> [32]
-Main.bigsigma1 $0 =
-      $LL.Main.bigsigma111 $0
+Main.bigsigma1 $x =
+      $LL.Main.bigsigma111 $x
 
 $LL.Main.loop92 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop92 $0 $2 $3 $4 $5 =
-      $LL.Main.loop79 $0 $2 $3 $4 $5
+$LL.Main.loop92 i $x1 $x2 $x3 $x4 =
+      $LL.Main.loop79 i $x1 $x2 $x3 $x4
 
 $LL.Main.loop91 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop91 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop122 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop91 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop122 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop90 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop90 $0 $2 $3 $4 $5 =
-      $LL.Main.loop19 $0 $2 $3 $4 $5
+$LL.Main.loop90 $x sto0 sto1 sto2 sto3 =
+      $LL.Main.loop19 $x sto0 sto1 sto2 sto3
 
 $LL.Main.loop89 : ([6], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop89 $0 $1 $2 $3 $4 =
-      $LL.Main.loop10 $1 $0 $2 $3 $4
+$LL.Main.loop89 v s0 $x $x1 $x2 =
+      $LL.Main.loop10 s0 v $x $x1 $x2
 
 $LL.Main.dev56 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev56 $1 $2 $3 $4 =
-      267'h5000000000000000000000000000000000000000000000000000000000000000000 # $1 # $2 # $3 # $4
+$LL.Main.dev56 sto0 sto1 sto2 sto3 =
+      267'h5000000000000000000000000000000000000000000000000000000000000000000 # sto0 # sto1 # sto2 # sto3
 
 $LL.Main.dev55 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev55 $0 $2 $3 $4 $5 =
-      $LL.Main.dev22 $0 $2 $3 $4 $5
+$LL.Main.dev55 hw32 $x $x1 $x2 $x3 =
+      $LL.Main.dev22 hw32 $x $x1 $x2 $x3
 
 $LL.Main.step25619 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25619 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 =
-      $LL.Main.step25611 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9
+$LL.Main.step25619 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 =
+      $LL.Main.step25611 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9
 
 $LL.Main.step25618 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25618 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25612 $0 $1 $2 $3 $8 $4 $5 $6 $7
+$LL.Main.step25618 t1 d e b a c f g t2 =
+      $LL.Main.step25612 t1 d e b t2 a c f g
 
 $LL.Main.loop88 : ([256], [256], [6], [512], [6]) -> [1297]
-$LL.Main.loop88 $0 $1 $2 $3 $4 =
-      261'h400000000000000000000000000000000000000000000000000000000000000 # $2 # $0 # $3 # $1 # $4
+$LL.Main.loop88 s0 s2 v s1 s3 =
+      261'h400000000000000000000000000000000000000000000000000000000000000 # v # s0 # s1 # s2 # s3
 
 $LL.Main.loop87 : ([256], [512], [6], [256], [6]) -> [1036]
-$LL.Main.loop87 $0 $1 $3 $4 $5 =
-      $LL.Main.loop73 $3 $0 $1 $4 $5
+$LL.Main.loop87 st1 st2 ctr st3 $x =
+      $LL.Main.loop73 ctr st1 st2 st3 $x
 
 $LL.Main.loop86 : ([6], [514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop86 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop136 $0 $1 $2 $3 $4 $5
+$LL.Main.loop86 $x $x1 sto0 sto1 sto2 sto3 =
+      $LL.Main.loop136 $x $x1 sto0 sto1 sto2 sto3
 
 $LL.Main.sigma16 : ([32]) -> [32]
-$LL.Main.sigma16 $0 =
-      xor (xor ($LL.Main.sigma114 $0) ($LL.Main.sigma17 $0)) (lshr $0 32'ha)
+$LL.Main.sigma16 x =
+      xor (xor ($LL.Main.sigma114 x) ($LL.Main.sigma17 x)) (lshr x 32'ha)
 
 $LL.Main.dev54 : ([514], [514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev54 $0 $1 $2 $3 $4 $5 =
-      if eq $1[512 +: 2] 2'h1 then $LL.Main.dev71 $4 $2 $3 $5 $1[0 +: 512]
-            else $LL.Main.dev117 $0 $2 $3 $4 $5
+$LL.Main.dev54 $16 $84 sto0 sto1 sto2 sto3 =
+      if eq $84[512 +: 2] 2'h1 then $LL.Main.dev71 sto2 sto0 sto1 sto3 $84[0 +: 512]
+            else $LL.Main.dev117 $16 sto0 sto1 sto2 sto3
 
 $LL.Main.loop85 : ([1030]) -> [1297]
-$LL.Main.loop85 $0 =
-      $LL.Main.loop36 $0[774 +: 256] $0[262 +: 512] $0[6 +: 256] $0[0 +: 6]
+$LL.Main.loop85 disc =
+      $LL.Main.loop36 disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.loop84 : ([512], [32], [256], [6], [256], [6]) -> [1036]
-$LL.Main.loop84 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop51 $3 $1 $2 $0 $4 $5
+$LL.Main.loop84 st2 st0 st1 ctr st3 $x =
+      $LL.Main.loop51 ctr st0 st1 st2 st3 $x
 
 $LL.Main.dev53 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev53 $0 $2 $3 $4 =
-      $LL.Main.dev66 $0 $2 $3 $4
+$LL.Main.dev53 s0 s1 $x $x1 =
+      $LL.Main.dev66 s0 s1 $x $x1
 
 $LL.Main.loop83 : ([512], [256], [514], [256], [6]) -> [1297]
-$LL.Main.loop83 $0 $1 $2 $4 $5 =
-      $LL.Main.loop118 $2 $1 $0 $4 $5
+$LL.Main.loop83 s1 s0 i s2 $x =
+      $LL.Main.loop118 i s0 s1 s2 $x
 
 $LL.Main.step25617 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25617 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25613 $0 $1 $2 $3 $4 $5 $6 $7 $8
+$LL.Main.step25617 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.step25613 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Pure.dispatch7 : ([6], [514], [256], [512], [256], [6]) -> [1297]
-$LL.Pure.dispatch7 $0 $1 $2 $3 $4 $5 =
-      $LL.Pure.dispatch3 $0 $2 $1 $3 $4 $5
+$LL.Pure.dispatch7 store0 i s0 $x $x1 $x2 =
+      $LL.Pure.dispatch3 store0 s0 i $x $x1 $x2
 
 $LL.Main.dev52 : ([512], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev52 $0 $1 $2 $3 $4 =
-      $LL.Main.dev1 ($LL.Main.dev83 ($LL.Main.dev15 $0 ($1 # $2 # 256'h6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 # $4)))
+$LL.Main.dev52 hw32 sto0 sto1 sto2 sto3 =
+      $LL.Main.dev1 ($LL.Main.dev83 ($LL.Main.dev15 hw32 (sto0 # sto1 # 256'h6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 # sto3)))
 
 $LL.Main.dev51 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev51 $0 $2 $3 $4 $5 =
-      $LL.Main.dev19 $0 $2 $3 $4 $5
+$LL.Main.dev51 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev19 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop82 : ([64], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop82 $0 $1 $2 $3 $4 =
-      $LL.Main.loop153 $4 $1 $3 $2 $0[32 +: 32] $0[0 +: 32]
+$LL.Main.loop82 $62 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop153 sigma3 sigma0 sigma2 sigma1 $62[32 +: 32] $62[0 +: 32]
 
 Main.updateSched : ([512]) -> [512]
-Main.updateSched $0 =
-      $LL.Main.updateSched10 $0
+Main.updateSched $x =
+      $LL.Main.updateSched10 $x
 
 $LL.Main.step25616 : ([320]) -> [256]
-$LL.Main.step25616 $0 =
-      $LL.Main.step2561 $0[288 +: 32] $0[256 +: 32] $0[224 +: 32] $0[192 +: 32] $0[160 +: 32] $0[128 +: 32] $0[96 +: 32] $0[64 +: 32] $0[32 +: 32] $0[0 +: 32]
+$LL.Main.step25616 $73 =
+      $LL.Main.step2561 $73[288 +: 32] $73[256 +: 32] $73[224 +: 32] $73[192 +: 32] $73[160 +: 32] $73[128 +: 32] $73[96 +: 32] $73[64 +: 32] $73[32 +: 32] $73[0 +: 32]
 
 $LL.Main.dev50 : ([512], [256], [512], [256], [256], [6]) -> [1030]
-$LL.Main.dev50 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.dev70 $2 $1 $3 $0 $4 $5
+$LL.Main.dev50 st2 st0 hw32 st1 st3 $x =
+      $LL.Main.dev70 hw32 st0 st1 st2 st3 $x
 
 $LL.Main.loop81 : ([32], [32], [512], [32], [32], [6], [32], [512], [32], [32], [256], [32], [32], [32], [256], [32], [32], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop81 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop78 $0 $1 $2 $3 $4 $17 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $18 $19 $20
+$LL.Main.loop81 m2c m2c1 m2c2 m2c3 m2c4 sigma3 m2c5 sigma1 m2c6 m2c7 sigma2 m2c8 m2c9 m2c10 sigma0 m2c11 m2c12 m2c13 $x $x1 $x2 =
+      $LL.Main.loop78 m2c m2c1 m2c2 m2c3 m2c4 m2c13 sigma3 m2c5 sigma1 m2c6 m2c7 sigma2 m2c8 m2c9 m2c10 sigma0 m2c11 m2c12 $x $x1 $x2
 
 $LL.Main.loop80 : ([512], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop80 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 =
-      $LL.Main.loop11 $0 $1 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14
+$LL.Main.loop80 s w00 g $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop11 s w00 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.bigsigma010 : ([32]) -> [32]
-$LL.Main.bigsigma010 $0 =
-      $LL.Main.sigma115 32'hd $0
+$LL.Main.bigsigma010 $x =
+      $LL.Main.sigma115 32'hd $x
 
 $LL.Pure.dispatch6 : ([6], [256], [514], [512], [256], [6]) -> [1297]
-$LL.Pure.dispatch6 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop86 $0 $2 $1 $3 $4 $5
+$LL.Pure.dispatch6 store0 s0 i s1 s2 $x =
+      $LL.Main.loop86 store0 i s0 s1 s2 $x
 
 $LL.Main.loop79 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop79 $0 $2 $3 $4 $5 =
-      $LL.Main.loop29 $0 $2 $3 $4 $5
+$LL.Main.loop79 i $x $x1 $x2 $x3 =
+      $LL.Main.loop29 i $x $x1 $x2 $x3
 
 $LL.Main.loop78 : ([32], [32], [512], [32], [32], [32], [6], [32], [512], [32], [32], [256], [32], [32], [32], [256], [32], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop78 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop70 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $18 $12 $13 $14 $15 $16 $17 $19 $20
+$LL.Main.loop78 m2c m2c1 m2c2 m2c3 m2c4 m2c5 sigma3 m2c6 sigma1 m2c7 m2c8 sigma2 m2c9 m2c10 m2c11 sigma0 m2c12 m2c13 m2c14 $x $x1 =
+      $LL.Main.loop70 m2c m2c1 m2c2 m2c3 m2c4 m2c5 sigma3 m2c6 sigma1 m2c7 m2c8 sigma2 m2c14 m2c9 m2c10 m2c11 sigma0 m2c12 m2c13 $x $x1
 
 $LL.Main.step25615 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25615 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 =
-      $LL.Main.step25631 $1 $0 $2 $3 $4 $5 $6 $7 $8 $9
+$LL.Main.step25615 k w $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 =
+      $LL.Main.step25631 w k $x $x1 $x2 $x3 $x4 $x5 $x6 $x7
 
 $LL.Main.bigsigma18 : ([32]) -> [32]
-$LL.Main.bigsigma18 $0 =
-      xor (xor ($LL.Main.bigsigma12 $0) ($LL.Main.bigsigma110 $0)) ($LL.Main.bigsigma114 $0)
+$LL.Main.bigsigma18 x =
+      xor (xor ($LL.Main.bigsigma12 x) ($LL.Main.bigsigma110 x)) ($LL.Main.bigsigma114 x)
 
 $LL.Main.loop77 : ([512], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop77 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 =
-      $LL.Main.loop25 $0 $1 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17
+$LL.Main.loop77 s w00 d $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop25 s w00 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop76 : ([32], [32], [512], [32], [32], [6], [512], [32], [256], [32], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop76 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop125 $0 $1 $2 $3 $4 $5 $12 $6 $7 $8 $9 $10 $11 $13 $14 $15 $16 $17 $18 $19 $20
+$LL.Main.loop76 m2c m2c1 m2c2 m2c3 m2c4 sigma3 sigma1 m2c5 sigma2 m2c6 sigma0 m2c7 m2c8 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 =
+      $LL.Main.loop125 m2c m2c1 m2c2 m2c3 m2c4 sigma3 m2c8 sigma1 m2c5 sigma2 m2c6 sigma0 m2c7 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7
 
 $LL.Main.dev49 : ([1286]) -> [1297]
-$LL.Main.dev49 $0 =
-      $LL.Main.dev48 $0[1030 +: 256] $0[774 +: 256] $0[262 +: 512] $0[6 +: 256] $0[0 +: 6]
+$LL.Main.dev49 disc =
+      $LL.Main.dev48 disc[1030 +: 256] disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.dev48 : ([256], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev48 $0 $1 $2 $3 $4 =
-      $LL.Main.dev29 $0 $1 $2 $3 $4
+$LL.Main.dev48 v $x $x1 $x2 $x3 =
+      $LL.Main.dev29 v $x $x1 $x2 $x3
 
 $LL.Main.updateSched5 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched5 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched1 $0 $1 $2 $3 $9 $4 $5 $6 $7 $8 $10 $11 $12 $13 $14 $15
+$LL.Main.updateSched5 w00 w08 w05 w06 w01 w04 w02 w07 w03 w09 $x $x1 $x2 $x3 $x4 $x5 =
+      $LL.Main.updateSched1 w00 w08 w05 w06 w09 w01 w04 w02 w07 w03 $x $x1 $x2 $x3 $x4 $x5
 
 $LL.Main.loop75 : ([512], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop75 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.loop165 $1 ($3 # Main.updateSched $0 # $5 # $6)
+$LL.Main.loop75 s w00 o sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop165 w00 (sigma0 # Main.updateSched s # sigma2 # sigma3)
 
 $LL.Main.loop74 : ([32], [32], [512], [32], [32], [6], [32], [512], [32], [32], [256], [32], [32], [256], [32], [32], [32], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop74 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop81 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $16 $12 $13 $14 $15 $17 $18 $19 $20
+$LL.Main.loop74 m2c m2c1 m2c2 m2c3 m2c4 sigma3 m2c5 sigma1 m2c6 m2c7 sigma2 m2c8 m2c9 sigma0 m2c10 m2c11 m2c12 $x $x1 $x2 $x3 =
+      $LL.Main.loop81 m2c m2c1 m2c2 m2c3 m2c4 sigma3 m2c5 sigma1 m2c6 m2c7 sigma2 m2c8 m2c12 m2c9 sigma0 m2c10 m2c11 $x $x1 $x2 $x3
 
 $LL.Main.loop73 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop73 $0 $2 $3 $4 $5 =
-      $LL.Main.loop45 $0 $2 $3 $4 $5
+$LL.Main.loop73 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop45 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop72 : ([32], [32], [256], [512], [256], [256], [6]) -> [1030]
-$LL.Main.loop72 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.loop22 $1 $0 $4 $2 $3 $5 $6
+$LL.Main.loop72 w k st1 st2 st0 st3 $x =
+      $LL.Main.loop22 k w st0 st1 st2 st3 $x
 
 $LL.Main.loop71 : ([6], [32], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop71 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop130 $0 $1 $2 $3 $4 $5
+$LL.Main.loop71 ctr $x $x1 $x2 $x3 $x4 =
+      $LL.Main.loop130 ctr $x $x1 $x2 $x3 $x4
 
 $LL.Main.loop70 : ([32], [32], [512], [32], [32], [32], [6], [32], [512], [32], [32], [256], [32], [32], [32], [32], [256], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop70 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop63 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $19 $18 $20
+$LL.Main.loop70 m2c m2c1 m2c2 m2c3 m2c4 m2c5 sigma3 m2c6 sigma1 m2c7 m2c8 sigma2 m2c9 m2c10 m2c11 m2c12 sigma0 m2c13 m2c14 m2c15 $x =
+      $LL.Main.loop63 m2c m2c1 m2c2 m2c3 m2c4 m2c5 sigma3 m2c6 sigma1 m2c7 m2c8 sigma2 m2c9 m2c10 m2c11 m2c12 sigma0 m2c13 m2c15 m2c14 $x
 
 Main.bigsigma0 : ([32]) -> [32]
-Main.bigsigma0 $0 =
-      $LL.Main.bigsigma06 $0
+Main.bigsigma0 $x =
+      $LL.Main.bigsigma06 $x
 
 $LL.Main.sigma09 : ([32]) -> [32]
-$LL.Main.sigma09 $0 =
-      $LL.Main.sigma115 32'h7 $0
+$LL.Main.sigma09 $x =
+      $LL.Main.sigma115 32'h7 $x
 
 $LL.Main.loop69 : ([6], [32], [512], [32], [256], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop69 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop103 $0 $7 $1 $2 $3 $4 $5 $6 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop69 sigma3 m2c sigma1 m2c1 sigma0 sigma2 m2c2 m2c3 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 =
+      $LL.Main.loop103 sigma3 m2c3 m2c sigma1 m2c1 sigma0 sigma2 m2c2 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11
 
 $LL.Main.loop68 : ([32], [32], [32], [6], [32], [32], [32], [32], [32], [32], [512], [32], [32], [256], [256], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop68 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop106 $16 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $17 $18 $19
+$LL.Main.loop68 m2c m2c1 m2c2 sigma3 m2c3 m2c4 m2c5 m2c6 m2c7 m2c8 sigma1 m2c9 m2c10 sigma0 sigma2 m2c11 m2c12 $x $x1 $x2 =
+      $LL.Main.loop106 m2c12 m2c m2c1 m2c2 sigma3 m2c3 m2c4 m2c5 m2c6 m2c7 m2c8 sigma1 m2c9 m2c10 sigma0 sigma2 m2c11 $x $x1 $x2
 
 $LL.Pure.dispatch5 : ([256], [514], [512], [256], [6]) -> [1297]
-$LL.Pure.dispatch5 $0 $1 $2 $3 $4 =
-      $LL.Pure.dispatch $0 $1 $2 $3 $4
+$LL.Pure.dispatch5 s0 i s1 $x $x1 =
+      $LL.Pure.dispatch s0 i s1 $x $x1
 
 $LL.Main.loop67 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop67 $0 $1 $2 $3 $4 =
-      $LL.Main.loop38 $0 ($LL.Main.loop85 ($LL.Main.loop104 ($3 # $1 # $2 # $3 # $4)))
+$LL.Main.loop67 i sto0 sto1 sto2 sto3 =
+      $LL.Main.loop38 i ($LL.Main.loop85 ($LL.Main.loop104 (sto2 # sto0 # sto1 # sto2 # sto3)))
 
 $LL.Main.dev46 : ([512], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev46 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.dev89 $0 ($1 # $3 # $4 # $5)
+$LL.Main.dev46 hw32 hi_1 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev89 hw32 (hi_1 # sigma1 # sigma2 # sigma3)
 
 $LL.Main.dev45 : ([256], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev45 $0 $1 $2 $3 $4 =
-      $LL.Main.dev38 $0 $1 $2 $3 $4
+$LL.Main.dev45 v s0 s1 s2 $x =
+      $LL.Main.dev38 v s0 s1 s2 $x
 
 $LL.Main.updateSched4 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched4 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched5 $0 $8 $1 $2 $3 $4 $5 $6 $7 $9 $10 $11 $12 $13 $14 $15
+$LL.Main.updateSched4 w00 w05 w06 w01 w04 w02 w07 w03 w08 $x $x1 $x2 $x3 $x4 $x5 $x6 =
+      $LL.Main.updateSched5 w00 w08 w05 w06 w01 w04 w02 w07 w03 $x $x1 $x2 $x3 $x4 $x5 $x6
 
 $LL.Main.bigsigma08 : ([32]) -> [32]
-$LL.Main.bigsigma08 $0 =
-      xor (xor ($LL.Main.bigsigma012 $0) ($LL.Main.bigsigma010 $0)) ($LL.Main.bigsigma01 $0)
+$LL.Main.bigsigma08 x =
+      xor (xor ($LL.Main.bigsigma012 x) ($LL.Main.bigsigma010 x)) ($LL.Main.bigsigma01 x)
 
 $LL.Main.step25614 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25614 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25610 $0 $1 $2 $3 $4 $5 $6 $7 $8
+$LL.Main.step25614 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.step25610 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Main.loop66 : ([32], [32], [32], [32], [6], [32], [32], [32], [32], [32], [32], [512], [32], [32], [256], [256], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop66 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop33 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $18 $16 $17 $19
+$LL.Main.loop66 m2c m2c1 m2c2 m2c3 sigma3 m2c4 m2c5 m2c6 m2c7 m2c8 m2c9 sigma1 m2c10 m2c11 sigma0 sigma2 m2c12 m2c13 m2c14 $x =
+      $LL.Main.loop33 m2c m2c1 m2c2 m2c3 sigma3 m2c4 m2c5 m2c6 m2c7 m2c8 m2c9 sigma1 m2c10 m2c11 sigma0 sigma2 m2c14 m2c12 m2c13 $x
 
 $LL.Main.step25613 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25613 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25625 $0 $1 $2 $3 $4 $5 $6 $7 $8
+$LL.Main.step25613 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.step25625 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Main.dev44 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev44 $0 $2 $3 $4 $5 =
-      $LL.Main.dev40 $0 $2 $3 $4 $5
+$LL.Main.dev44 hw32 $x $x1 $x2 $x3 =
+      $LL.Main.dev40 hw32 $x $x1 $x2 $x3
 
 $LL.Main.step25612 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25612 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step256 $0 $1 $2 $3 $4 $5 $6 $7 $8
+$LL.Main.step25612 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.step256 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Main.loop65 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop65 $0 $2 $3 $4 $5 =
-      $LL.Main.loop24 $0 $2 $3 $4 $5
+$LL.Main.loop65 ctr $x1 $x2 $x3 $x4 =
+      $LL.Main.loop24 ctr $x1 $x2 $x3 $x4
 
 $LL.Main.loop64 : ([32], [32], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop64 $0 $1 $2 $3 $4 $5 $6 =
-      Main.step256 $0 $1 $2 # $4 # $5 # $6
+$LL.Main.loop64 k w s sigma0 sigma1 sigma2 sigma3 =
+      Main.step256 k w s # sigma1 # sigma2 # sigma3
 
 $LL.Main.updateSched3 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched3 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched9 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15
+$LL.Main.updateSched3 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 =
+      $LL.Main.updateSched9 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15
+
+$LL.Main.dev43 : ([514], [256], [512], [256], [6]) -> [1297]
+$LL.Main.dev43 $x sto0 sto1 sto2 sto3 =
+      $LL.Main.dev57 $x sto0 sto1 sto2 sto3
 
 $LL.Main.step25611 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25611 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 =
-      $LL.Main.step25629 $2 $3 $4 $5 $6 $7 $8 (add $9 (add (add (Main.bigsigma1 $3) (Main.ch $3 $7 $8)) (add $1 $0)))
+$LL.Main.step25611 w k d e b a c f g h =
+      $LL.Main.step25629 d e b a c f g (add h (add (add (Main.bigsigma1 e) (Main.ch e f g)) (add k w)))
 
 $LL.Main.dev42 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev42 $1 $2 $3 $4 =
-      $LL.Main.dev56 $1 $2 $3 $4
+$LL.Main.dev42 sto0 sto1 sto2 sto3 =
+      $LL.Main.dev56 sto0 sto1 sto2 sto3
 
 $LL.Main.loop63 : ([32], [32], [512], [32], [32], [32], [6], [32], [512], [32], [32], [256], [32], [32], [32], [32], [256], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop63 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop147 $2 $1 $10 $13 $0 $17 $4 $3 $7 $15 $9 $19 $14 $5 $12 $18 $20 $16 $8 $11 $6
+$LL.Main.loop63 m2c m2c1 m2c2 m2c3 m2c4 m2c5 sigma3 m2c6 sigma1 m2c7 m2c8 sigma2 m2c9 m2c10 m2c11 m2c12 sigma0 m2c13 m2c14 m2c15 m2c16 =
+      $LL.Main.loop147 m2c2 m2c1 m2c8 m2c10 m2c m2c13 m2c4 m2c3 m2c6 m2c12 m2c7 m2c15 m2c11 m2c5 m2c9 m2c14 m2c16 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop62 : ([1542]) -> [1062]
-$LL.Main.loop62 $0 =
-      $LL.Main.loop23 $0[1030 +: 512] $0[774 +: 256] $0[262 +: 512] $0[6 +: 256] $0[0 +: 6]
+$LL.Main.loop62 disc =
+      $LL.Main.loop23 disc[1030 +: 512] disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.loop61 : ([512], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop61 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 =
-      $LL.Main.loop163 $0 $1 $3 $4 $5 $6 $7 $8 $9 $10
+$LL.Main.loop61 s w00 k $x $x1 $x2 $x3 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop163 s w00 $x $x1 $x2 $x3 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop60 : ([512], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop60 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop129 $0 $1 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop60 s w00 b $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop129 s w00 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop59 : ([32], [32], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop59 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.loop20 $0 $1 $2 $3 $4 $5 $6
+$LL.Main.loop59 w k $x $x1 $x2 $x3 $x4 =
+      $LL.Main.loop20 w k $x $x1 $x2 $x3 $x4
 
 $LL.Main.dev41 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev41 $0 $2 $3 $4 =
-      $LL.Main.dev6 $0 $2 $3 $4
+$LL.Main.dev41 s0 s1 $x $x1 =
+      $LL.Main.dev6 s0 s1 $x $x1
 
 Main.step256 : ([32], [32], [256]) -> [256]
-Main.step256 $0 $1 $2 =
-      $LL.Main.step25616 ($0 # $1 # $2)
+Main.step256 $13 $14 $15 =
+      $LL.Main.step25616 ($13 # $14 # $15)
 
 $LL.Main.dev40 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev40 $1 $2 $3 $4 $5 =
-      $LL.Main.dev34 $1 $2 $3 $4 $5
+$LL.Main.dev40 hw32 st1 $x $x1 $x2 =
+      $LL.Main.dev34 hw32 st1 $x $x1 $x2
 
 $LL.Main.loop58 : ([256], [32], [512], [256], [6], [32], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop58 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop8 $5 $0 $1 $2 $3 $4 $6 $7 $8 $9 $10 $11
+$LL.Main.loop58 sigma0 m2c sigma1 sigma2 sigma3 m2c1 $x $x1 $x2 $x3 $x4 $x5 =
+      $LL.Main.loop8 m2c1 sigma0 m2c sigma1 sigma2 sigma3 $x $x1 $x2 $x3 $x4 $x5
 
 $LL.Main.dev39 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev39 $0 $2 $3 $4 $5 =
-      $LL.Main.dev97 $0 $2 $3 $4 $5
+$LL.Main.dev39 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev97 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop57 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop57 $0 $2 $3 $4 $5 =
-      $LL.Main.loop12 $0 $2 $3 $4 $5
+$LL.Main.loop57 ctr $x $x1 $x2 $x3 =
+      $LL.Main.loop12 ctr $x $x1 $x2 $x3
 
 $LL.Main.step25610 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25610 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25628 $0 $1 $2 $3 $4 $5 $6 $7 $8
+$LL.Main.step25610 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.step25628 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Main.maj : ([32], [32], [32]) -> [32]
-$LL.Main.maj $0 $1 $2 =
-      $LL.Main.maj3 $0 $1 $2
+$LL.Main.maj $x $x1 $x2 =
+      $LL.Main.maj3 $x $x1 $x2
 
 $LL.Main.step2569 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2569 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25620 $0 $1 $2 $3 $4 $5 $6 $7 $8
+$LL.Main.step2569 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.step25620 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Main.dev38 : ([256], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev38 $0 $1 $2 $3 $4 =
-      3'h4 # $0 # 8'h40 # $1 # $2 # $3 # $4
+$LL.Main.dev38 h_n sto0 sto1 sto2 sto3 =
+      3'h4 # h_n # 8'h40 # sto0 # sto1 # sto2 # sto3
 
 $LL.Main.loop56 : ([6], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop56 $0 $1 $2 $3 $4 =
-      $LL.Main.loop28 $0 $1 $2 $3 $4
+$LL.Main.loop56 v s0 s1 $x $x1 =
+      $LL.Main.loop28 v s0 s1 $x $x1
 
 $LL.Main.dev37 : ([512], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev37 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.dev58 $0 $2 $1 $3 $4 $5
+$LL.Main.dev37 hw32 st0 st1 $x $x1 $x2 =
+      $LL.Main.dev58 hw32 st1 st0 $x $x1 $x2
 
 $LL.Main.loop55 : ([6], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop55 $0 $1 $2 $3 $4 =
-      $LL.Main.loop120 $0 $1 $2 $3 $4
+$LL.Main.loop55 v $x $x1 $x2 $x3 =
+      $LL.Main.loop120 v $x $x1 $x2 $x3
 
 $LL.Main.updateSched2 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched2 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $9 # $11 # $13 # $10 # $2 # $3 # $12 # $1 # $7 # $14 # $8 # $5 # $4 # $6 # $0 # $15
+$LL.Main.updateSched2 w15 w08 w05 w06 w13 w12 w14 w09 w11 w01 w04 w02 w07 w03 w10 $x =
+      w01 # w02 # w03 # w04 # w05 # w06 # w07 # w08 # w09 # w10 # w11 # w12 # w13 # w14 # w15 # $x
 
 $LL.Main.dev35 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev35 $0 $2 $3 $4 $5 =
-      $LL.Main.dev51 $0 $2 $3 $4 $5
+$LL.Main.dev35 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev51 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.bigsigma06 : ([32]) -> [32]
-$LL.Main.bigsigma06 $0 =
-      $LL.Main.bigsigma08 $0
+$LL.Main.bigsigma06 $x =
+      $LL.Main.bigsigma08 $x
 
 $LL.Main.dev34 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev34 $1 $2 $3 $4 $5 =
-      $LL.Main.dev96 $3 $1 $2 $4 $5
+$LL.Main.dev34 hw32 st1 st2 $x $x1 =
+      $LL.Main.dev96 st2 hw32 st1 $x $x1
 
 $LL.Main.dev33 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev33 $0 $2 $3 $4 $5 =
-      $LL.Main.dev78 $0 $2 $3 $4 $5
+$LL.Main.dev33 hw32 $x1 $x2 $x3 $x4 =
+      $LL.Main.dev78 hw32 $x1 $x2 $x3 $x4
 
 $LL.Main.loop54 : ([512], [6], [512], [256], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop54 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop111 $5 $0 $1 $2 $3 $4 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20
+$LL.Main.loop54 m2c sigma3 sigma1 sigma2 sigma0 m2c1 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 =
+      $LL.Main.loop111 m2c1 m2c sigma3 sigma1 sigma2 sigma0 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14
 
 $LL.Main.loop53 : ([32], [32], [32], [32], [32], [32], [256], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop53 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 =
-      $LL.Main.loop97 $0 $1 $2 $3 $4 $9 $5 $6 $7 $8 $10 $11 $12
+$LL.Main.loop53 h6 h1 h4 h8 h3 h2 st0 h7 h5 st1 $x $x1 $x2 =
+      $LL.Main.loop97 h6 h1 h4 h8 h3 st1 h2 st0 h7 h5 $x $x1 $x2
 
 $LL.Main.dev32 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev32 $1 $2 $3 $4 =
-      267'h20000000000000000000000000000000000000000000000000000000000000000 # $1 # $2 # $3 # $4
+$LL.Main.dev32 s0 s1 s2 s3 =
+      267'h20000000000000000000000000000000000000000000000000000000000000000 # s0 # s1 # s2 # s3
 
 $LL.Main.loop52 : ([6], [512], [32], [256], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop52 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop69 $0 $6 $1 $2 $3 $4 $5 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop52 sigma3 sigma1 m2c sigma0 sigma2 m2c1 m2c2 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 =
+      $LL.Main.loop69 sigma3 m2c2 sigma1 m2c sigma0 sigma2 m2c1 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12
 
 $LL.Main.loop51 : ([6], [32], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop51 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop3 $0 ($LL.Main.loop46 (Main.seed $0) $1 $2 $3 $4 $5)
+$LL.Main.loop51 ctr rabind sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop3 ctr ($LL.Main.loop46 (Main.seed ctr) rabind sigma0 sigma1 sigma2 sigma3)
 
 $LL.Pure.dispatch4 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Pure.dispatch4 $0 $1 $2 $3 $4 =
-      $LL.Pure.dispatch1 $0 $1 $2 $3 $4
+$LL.Pure.dispatch4 i $x $x1 $x2 $x3 =
+      $LL.Pure.dispatch1 i $x $x1 $x2 $x3
 
 $LL.Main.loop50 : ([32], [32], [512], [32], [6], [512], [32], [256], [32], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop50 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop76 $0 $1 $2 $11 $3 $4 $5 $6 $7 $8 $9 $10 $12 $13 $14 $15 $16 $17 $18 $19 $20
+$LL.Main.loop50 m2c m2c1 m2c2 m2c3 sigma3 sigma1 m2c4 sigma2 m2c5 sigma0 m2c6 m2c7 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.loop76 m2c m2c1 m2c2 m2c7 m2c3 sigma3 sigma1 m2c4 sigma2 m2c5 sigma0 m2c6 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Pure.dispatch3 : ([6], [256], [514], [512], [256], [6]) -> [1297]
-$LL.Pure.dispatch3 $0 $1 $2 $3 $4 $5 =
-      $LL.Pure.dispatch6 $0 $1 $2 $3 $4 $5
+$LL.Pure.dispatch3 store0 s0 i s1 $x $x1 =
+      $LL.Pure.dispatch6 store0 s0 i s1 $x $x1
 
 $LL.Main.loop49 : ([512], [256], [6], [256], [514]) -> [1297]
-$LL.Main.loop49 $0 $1 $2 $3 $4 =
-      $LL.Main.loop151 $0 $1 $2 $3 $4
+$LL.Main.loop49 sto1 sto2 sto3 sto0 $x =
+      $LL.Main.loop151 sto1 sto2 sto3 sto0 $x
 
 $LL.Main.loop48 : ([32], [32], [1286]) -> [1030]
-$LL.Main.loop48 $0 $1 $2 =
-      $LL.Main.loop59 $0 $1 $2[1030 +: 256] $2[774 +: 256] $2[262 +: 512] $2[6 +: 256] $2[0 +: 6]
+$LL.Main.loop48 w k disc =
+      $LL.Main.loop59 w k disc[1030 +: 256] disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.dev31 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev31 $0 $2 $3 $4 $5 =
-      $LL.Main.dev35 $0 $2 $3 $4 $5
+$LL.Main.dev31 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev35 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop47 : ([1297]) -> [1297]
-$LL.Main.loop47 $0 =
-      $LL.Main.loop55 $0[1030 +: 6] $0[774 +: 256] $0[262 +: 512] $0[6 +: 256] $0[0 +: 6]
+$LL.Main.loop47 disc =
+      $LL.Main.loop55 disc[1030 +: 6] disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.loop46 : ([32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop46 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop170 $0 $1 $2 $3 $4 $5
+$LL.Main.loop46 $x $x1 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop170 $x $x1 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop45 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop45 $0 $2 $3 $4 $5 =
-      $LL.Main.loop167 $0 $2 $3 $4 $5
+$LL.Main.loop45 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop167 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop44 : ([512], [512], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop44 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop148 $5 $3 $4 $2 $0 $1[480 +: 32] $1[448 +: 32] $1[416 +: 32] $1[384 +: 32] $1[352 +: 32] $1[320 +: 32] $1[288 +: 32] $1[256 +: 32] $1[224 +: 32] $1[192 +: 32] $1[160 +: 32] $1[128 +: 32] $1[96 +: 32] $1[64 +: 32] $1[32 +: 32] $1[0 +: 32]
+$LL.Main.loop44 s $59 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop148 sigma3 sigma1 sigma2 sigma0 s $59[480 +: 32] $59[448 +: 32] $59[416 +: 32] $59[384 +: 32] $59[352 +: 32] $59[320 +: 32] $59[288 +: 32] $59[256 +: 32] $59[224 +: 32] $59[192 +: 32] $59[160 +: 32] $59[128 +: 32] $59[96 +: 32] $59[64 +: 32] $59[32 +: 32] $59[0 +: 32]
 
 $LL.Main.dev30 : ([6], [256], [512], [256], [512]) -> [1297]
-$LL.Main.dev30 $0 $1 $2 $3 $4 =
-      $LL.Main.dev52 $4 $3 $2 $1 $0
+$LL.Main.dev30 sto3 sto2 sto1 sto0 m2c =
+      $LL.Main.dev52 m2c sto0 sto1 sto2 sto3
 
 $LL.Main.step2568 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2568 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25624 $0 $1 $3 $4 $5 $8 $6 $7 $2
+$LL.Main.step2568 t1 d e b t2 a c h' g' =
+      $LL.Main.step25624 t1 d b t2 a g' c h' e
 
 $LL.Main.dev29 : ([256], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev29 $0 $1 $2 $3 $4 =
-      $LL.Main.dev114 $1 $0 $2 $3 $4
+$LL.Main.dev29 v s0 $x $x1 $x2 =
+      $LL.Main.dev114 s0 v $x $x1 $x2
 
 $LL.Main.ch1 : ([32], [32], [32]) -> [32]
-$LL.Main.ch1 $0 $1 $2 =
-      xor (and $1 $0) (and (not $1) $2)
+$LL.Main.ch1 y x z =
+      xor (and x y) (and (not x) z)
 
 $LL.Main.ch : ([32], [32], [32]) -> [32]
-$LL.Main.ch $0 $1 $2 =
-      $LL.Main.ch1 $1 $0 $2
+$LL.Main.ch x y $x =
+      $LL.Main.ch1 y x $x
 
 $LL.Main.loop43 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.loop43 $0 $2 $3 $4 =
-      $LL.Main.loop157 $0 $2 $3 $4
+$LL.Main.loop43 s0 s1 $x $x1 =
+      $LL.Main.loop157 s0 s1 $x $x1
 
 $LL.Main.loop42 : ([32], [32], [32], [6], [32], [32], [32], [32], [32], [512], [32], [32], [256], [256], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop42 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop68 $0 $1 $2 $3 $4 $5 $6 $15 $7 $8 $9 $10 $11 $12 $13 $14 $16 $17 $18 $19
+$LL.Main.loop42 m2c m2c1 m2c2 sigma3 m2c3 m2c4 m2c5 m2c6 m2c7 sigma1 m2c8 m2c9 sigma0 sigma2 m2c10 m2c11 $x $x1 $x2 $x3 =
+      $LL.Main.loop68 m2c m2c1 m2c2 sigma3 m2c3 m2c4 m2c5 m2c11 m2c6 m2c7 sigma1 m2c8 m2c9 sigma0 sigma2 m2c10 $x $x1 $x2 $x3
 
 $LL.Main.dev27 : ([512], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev27 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.dev46 $0 $1 $2 $3 $4 $5
+$LL.Main.dev27 $x $x1 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev46 $x $x1 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop41 : ([32], [6], [32], [32], [32], [32], [512], [32], [32], [256], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop41 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop172 $12 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop41 m2c sigma3 m2c1 m2c2 m2c3 m2c4 sigma1 m2c5 m2c6 sigma0 sigma2 m2c7 m2c8 $x $x1 $x2 $x3 $x4 $x5 $x6 =
+      $LL.Main.loop172 m2c8 m2c sigma3 m2c1 m2c2 m2c3 m2c4 sigma1 m2c5 m2c6 sigma0 sigma2 m2c7 $x $x1 $x2 $x3 $x4 $x5 $x6
 
 $LL.Main.loop40 : ([6], [1030]) -> [1036]
-$LL.Main.loop40 $0 $1 =
-      $LL.Main.loop65 $0 $1[774 +: 256] $1[262 +: 512] $1[6 +: 256] $1[0 +: 6]
+$LL.Main.loop40 ctr disc =
+      $LL.Main.loop65 ctr disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.loop39 : ([32], [512], [6], [512], [32], [256], [32], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop39 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop108 $8 $0 $1 $2 $3 $4 $5 $6 $7 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20
+$LL.Main.loop39 m2c m2c1 sigma3 sigma1 m2c2 sigma2 m2c3 sigma0 m2c4 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 =
+      $LL.Main.loop108 m2c4 m2c m2c1 sigma3 sigma1 m2c2 sigma2 m2c3 sigma0 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11
 
 $LL.Main.step2567 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2567 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25627 $0 $1 $2 $3 $4 $5 $6 $7 $8
+$LL.Main.step2567 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.step25627 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Main.dev26 : ([256], [512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev26 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.dev24 $0 $1 $2 $3 $4 $5
+$LL.Main.dev26 st0 hw32 st1 $x $x1 $x2 =
+      $LL.Main.dev24 st0 hw32 st1 $x $x1 $x2
 
 $LL.Main.dev25 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev25 $1 $2 $3 $4 $5 =
-      $LL.Main.dev80 $1 $2 $3 $4 $5
+$LL.Main.dev25 hw32 st1 st2 st3 $x =
+      $LL.Main.dev80 hw32 st1 st2 st3 $x
 
 $LL.Main.step2566 : ([32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2566 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.step25621 $0 $1 $2 $3 $4 $5 $6 $7
+$LL.Main.step2566 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 =
+      $LL.Main.step25621 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7
 
 $LL.Main.dev24 : ([256], [512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev24 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.dev50 $3 $0 $1 $2 $4 $5
+$LL.Main.dev24 st0 hw32 st1 st2 $x $x1 =
+      $LL.Main.dev50 st2 st0 hw32 st1 $x $x1
 
 $LL.Main.updateSched1 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched1 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched18 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15
+$LL.Main.updateSched1 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15 =
+      $LL.Main.updateSched18 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 $x14 $x15
 
 $LL.Main.loop38 : ([514], [1297]) -> [1297]
-$LL.Main.loop38 $0 $1 =
-      $LL.Main.loop92 $0 $1[774 +: 256] $1[262 +: 512] $1[6 +: 256] $1[0 +: 6]
+$LL.Main.loop38 i disc =
+      $LL.Main.loop92 i disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.dev23 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev23 $0 $2 $3 $4 $5 =
-      $LL.Main.dev44 $0 $2 $3 $4 $5
+$LL.Main.dev23 hw32 $x1 $x2 $x3 $x4 =
+      $LL.Main.dev44 hw32 $x1 $x2 $x3 $x4
 
 $LL.Main.loop37 : ([512], [6], [256], [256], [6]) -> [1036]
-$LL.Main.loop37 $0 $1 $2 $3 $4 =
-      $LL.Main.loop180 $1 $2 $0 $3 $4
+$LL.Main.loop37 st2 st0 st1 st3 $x =
+      $LL.Main.loop180 st0 st1 st2 st3 $x
 
 $LL.Main.dev22 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev22 $1 $2 $3 $4 $5 =
-      $LL.Main.dev75 $2 $1 $3 $4 $5
+$LL.Main.dev22 hw32 st1 $x $x1 $x2 =
+      $LL.Main.dev75 st1 hw32 $x $x1 $x2
 
 $LL.Main.dev21 : ([256], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev21 $0 $1 $2 $3 $4 =
-      $LL.Main.dev104 $0 $1 $2 $3 $4
+$LL.Main.dev21 v $x $x1 $x2 $x3 =
+      $LL.Main.dev104 v $x $x1 $x2 $x3
 
 $LL.Main.dev20 : ([512], [1030]) -> [1030]
-$LL.Main.dev20 $0 $1 =
-      $LL.Main.dev101 $0 $1[774 +: 256] $1[262 +: 512] $1[6 +: 256] $1[0 +: 6]
+$LL.Main.dev20 hw32 disc =
+      $LL.Main.dev101 hw32 disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.loop36 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.loop36 $1 $2 $3 $4 =
-      $LL.Main.loop124 $1 $2 $3 $4
+$LL.Main.loop36 $x $x1 $x2 $x3 =
+      $LL.Main.loop124 $x $x1 $x2 $x3
 
 $LL.Main.step2565 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2565 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 =
-      $LL.Main.step25633 $0 $1 $2 $6 $3 $4 $5 $7 $8 $9
+$LL.Main.step2565 w k d b a c e $x $x1 $x2 =
+      $LL.Main.step25633 w k d e b a c $x $x1 $x2
 
 $LL.Main.dev19 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev19 $0 $2 $3 $4 $5 =
-      $LL.Main.dev3 $0 ($2 # $3 # $4 # 6'h0)
+$LL.Main.dev19 hw32 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev3 hw32 (sigma0 # sigma1 # sigma2 # 6'h0)
 
 $LL.Main.loop35 : ([32], [6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop35 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.loop161 $0 $2 $1 $3 $4 $5
+$LL.Main.loop35 st0 ctr st1 $x $x1 $x2 =
+      $LL.Main.loop161 st0 st1 ctr $x $x1 $x2
 
 $LL.Main.loop34 : ([512], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop34 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop60 $0 $1 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20
+$LL.Main.loop34 s w00 a $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop60 s w00 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 $x10 $x11 $x12 $x13 sigma0 sigma1 sigma2 sigma3
 
 $LL.Pure.dispatch2 : ([512], [514], [256], [256], [6]) -> [1297]
-$LL.Pure.dispatch2 $0 $1 $2 $3 $4 =
-      Main.dev $1 $2 $0 $3 $4
+$LL.Pure.dispatch2 s1 i s0 s2 $x =
+      Main.dev i s0 s1 s2 $x
 
 $LL.Main.loop33 : ([32], [32], [32], [32], [6], [32], [32], [32], [32], [32], [32], [512], [32], [32], [256], [256], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop33 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop174 $12 $18 $6 $5 $7 $3 $13 $9 $1 $10 $2 $8 $0 $17 $16 $19 $14 $11 $15 $4
+$LL.Main.loop33 m2c m2c1 m2c2 m2c3 sigma3 m2c4 m2c5 m2c6 m2c7 m2c8 m2c9 sigma1 m2c10 m2c11 sigma0 sigma2 m2c12 m2c13 m2c14 m2c15 =
+      $LL.Main.loop174 m2c10 m2c14 m2c5 m2c4 m2c6 m2c3 m2c11 m2c8 m2c1 m2c9 m2c2 m2c7 m2c m2c13 m2c12 m2c15 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop32 : ([512], [32], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop32 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.loop75 $0 $1 $3 $4 $5 $6 $7
+$LL.Main.loop32 s w00 n $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop75 s w00 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.updateSched : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 =
-      $LL.Main.updateSched15 $0 $1 $2 $3 $4 $5 $14 $6 $7 $8 $9 $10 $11 $12 $13 $15
+$LL.Main.updateSched w00 w08 w05 w06 w13 w12 w09 w11 w01 w04 w02 w07 w03 w10 w14 $x =
+      $LL.Main.updateSched15 w00 w08 w05 w06 w13 w12 w14 w09 w11 w01 w04 w02 w07 w03 w10 $x
 
 Main.sigma1 : ([32]) -> [32]
-Main.sigma1 $0 =
-      $LL.Main.sigma113 $0
+Main.sigma1 $x =
+      $LL.Main.sigma113 $x
 
 $LL.Main.loop31 : ([32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop31 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop30 $0 $1 $4 $2 $3 $5 $6 $7 $8 $9 $10 $11
+$LL.Main.loop31 h3 h4 h1 h2 h5 $x $x1 $x2 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop30 h3 h4 h5 h1 h2 $x $x1 $x2 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop30 : ([32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop30 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop105 $0 $1 $2 $3 $5 $4 $6 $7 $8 $9 $10 $11
+$LL.Main.loop30 h3 h4 h5 h1 h2 h6 $x $x1 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop105 h3 h4 h5 h1 h6 h2 $x $x1 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev18 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev18 $0 $2 $3 $4 $5 =
-      $LL.Main.dev111 $0 ($4 # $2 # $3 # $4 # $5)
+$LL.Main.dev18 hw32 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev111 hw32 (sigma2 # sigma0 # sigma1 # sigma2 # sigma3)
 
 $LL.Main.loop29 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop29 $0 $2 $3 $4 $5 =
-      $LL.Main.loop179 $2 $0 $3 $4 $5
+$LL.Main.loop29 i s0 $x $x1 $x2 =
+      $LL.Main.loop179 s0 i $x $x1 $x2
 
 $LL.Main.loop28 : ([6], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop28 $0 $1 $2 $3 $4 =
-      $LL.Main.loop171 $0 $1 $2 $3 $4
+$LL.Main.loop28 v s0 s1 s2 $x =
+      $LL.Main.loop171 v s0 s1 s2 $x
 
 $LL.Main.dev17 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev17 $0 $2 $3 $4 $5 =
-      $LL.Main.dev14 $0 $2 $3 $4 $5
+$LL.Main.dev17 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev14 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.step2564 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2564 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25636 $0 $1 $2 $3 $4 $5 $6 $7 $8
+$LL.Main.step2564 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.step25636 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Main.loop27 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop27 $0 $2 $3 $4 $5 =
-      $LL.Main.loop119 $0 $2 $3 $4 $5
+$LL.Main.loop27 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop119 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.incCtr : ([6]) -> [6]
-$LL.Main.incCtr $0 =
-      add $0 6'h1
+$LL.Main.incCtr c =
+      add c 6'h1
 
 $LL.Main.loop26 : ([256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop26 $0 $1 $2 $3 $4 =
-      $LL.Main.loop187 $1 $2 $3 $4 $0[224 +: 32] $0[192 +: 32] $0[160 +: 32] $0[128 +: 32] $0[96 +: 32] $0[64 +: 32] $0[32 +: 32] $0[0 +: 32]
+$LL.Main.loop26 $57 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop187 sigma0 sigma1 sigma2 sigma3 $57[224 +: 32] $57[192 +: 32] $57[160 +: 32] $57[128 +: 32] $57[96 +: 32] $57[64 +: 32] $57[32 +: 32] $57[0 +: 32]
 
 $LL.Main.loop25 : ([512], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop25 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 =
-      $LL.Main.loop145 $0 $1 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16
+$LL.Main.loop25 s w00 e $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop145 s w00 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev16 : ([512], [1286]) -> [1030]
-$LL.Main.dev16 $0 $1 =
-      $LL.Main.dev106 $0 $1[1030 +: 256] $1[774 +: 256] $1[262 +: 512] $1[6 +: 256] $1[0 +: 6]
+$LL.Main.dev16 hw32 disc =
+      $LL.Main.dev106 hw32 disc[1030 +: 256] disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.loop24 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop24 $0 $2 $3 $4 $5 =
-      $LL.Main.loop154 $0 $2 $3 $4 $5
+$LL.Main.loop24 ctr $x $x1 $x2 $x3 =
+      $LL.Main.loop154 ctr $x $x1 $x2 $x3
 
 $LL.Main.dev15 : ([512], [1030]) -> [1030]
-$LL.Main.dev15 $0 $1 =
-      $LL.Main.dev33 $0 $1[774 +: 256] $1[262 +: 512] $1[6 +: 256] $1[0 +: 6]
+$LL.Main.dev15 hw32 disc =
+      $LL.Main.dev33 hw32 disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.bigsigma12 : ([32]) -> [32]
-$LL.Main.bigsigma12 $0 =
-      $LL.Main.sigma115 32'h6 $0
+$LL.Main.bigsigma12 $x =
+      $LL.Main.sigma115 32'h6 $x
 
 $LL.Main.loop23 : ([512], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop23 $0 $1 $2 $3 $4 =
-      $LL.Main.loop116 $0 $1 $2 $3 $4
+$LL.Main.loop23 st0 $x $x1 $x2 $x3 =
+      $LL.Main.loop116 st0 $x $x1 $x2 $x3
 
 $LL.Main.dev14 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev14 $0 $2 $3 $4 $5 =
-      $LL.Main.dev95 $0 ($2 # $3 # $4 # 6'h0)
+$LL.Main.dev14 hw32 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev95 hw32 (sigma0 # sigma1 # sigma2 # 6'h0)
 
 $LL.Main.dev13 : ([512], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev13 $0 $1 $2 $3 $4 $5 =
-      $LL.Main.dev20 $0 ($1 # $3 # $4 # $5)
+$LL.Main.dev13 hw32 hi_1 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev20 hw32 (hi_1 # sigma1 # sigma2 # sigma3)
 
 $LL.Main.step2563 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2563 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step2569 $0 $1 $2 $3 $4 $5 $6 $7 $8
+$LL.Main.step2563 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.step2569 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Main.loop22 : ([32], [32], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop22 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.loop64 $0 $1 $2 $3 $4 $5 $6
+$LL.Main.loop22 $x $x1 $x2 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop64 $x $x1 $x2 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.step2562 : ([32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2562 $0 $1 $2 $3 $4 $5 $6 $7 =
-      $LL.Main.step2564 $7 $0 $1 $2 $3 $4 $5 $6 (add (Main.bigsigma0 $3) (Main.maj $3 $2 $4))
+$LL.Main.step2562 d e b a c f g t1 =
+      $LL.Main.step2564 t1 d e b a c f g (add (Main.bigsigma0 a) (Main.maj a b c))
 
 $LL.Main.loop21 : ([32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop21 $0 $2 $3 $4 $5 =
-      $LL.Main.loop190 $0 $2 $3 $4 $5
+$LL.Main.loop21 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop190 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop20 : ([32], [32], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop20 $0 $1 $2 $3 $4 $5 $6 =
-      $LL.Main.loop184 $0 $1 $2 $3 $4 $5 $6
+$LL.Main.loop20 w k st0 $x $x1 $x2 $x3 =
+      $LL.Main.loop184 w k st0 $x $x1 $x2 $x3
 
 $LL.Main.dev12 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev12 $0 $2 $3 $4 $5 =
-      $LL.Main.dev115 $0 $2 $3 $4 $5
+$LL.Main.dev12 hw32 $x1 $x2 $x3 $x4 =
+      $LL.Main.dev115 hw32 $x1 $x2 $x3 $x4
 
 $LL.Main.step2561 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2561 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 =
-      $LL.Main.step25615 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9
+$LL.Main.step2561 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9 =
+      $LL.Main.step25615 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 $x9
 
 $LL.Main.dev11 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev11 $1 $2 $3 $4 $5 =
-      $LL.Main.dev99 $2 $1 $3 $4 $5
+$LL.Main.dev11 hw32 st1 $x $x1 $x2 =
+      $LL.Main.dev99 st1 hw32 $x $x1 $x2
 
 $LL.Main.loop19 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop19 $0 $2 $3 $4 $5 =
-      Main.dev $0 $2 $3 $4 $5
+$LL.Main.loop19 i sto0 sto1 sto2 sto3 =
+      Main.dev i sto0 sto1 sto2 sto3
 
 $LL.Main.loop18 : ([32], [32], [512], [32], [32], [6], [32], [512], [32], [32], [256], [32], [32], [256], [32], [32], [32], [32], [32], [32], [32]) -> [1062]
-$LL.Main.loop18 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20 =
-      $LL.Main.loop74 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 $20
+$LL.Main.loop18 m2c m2c1 m2c2 m2c3 m2c4 sigma3 m2c5 sigma1 m2c6 m2c7 sigma2 m2c8 m2c9 sigma0 m2c10 m2c11 $x $x1 $x2 $x3 $x4 =
+      $LL.Main.loop74 m2c m2c1 m2c2 m2c3 m2c4 sigma3 m2c5 sigma1 m2c6 m2c7 sigma2 m2c8 m2c9 sigma0 m2c10 m2c11 $x $x1 $x2 $x3 $x4
 
 $LL.Main.loop17 : ([32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop17 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop138 $5 $4 $2 $7 $0 $6 $1 $3 ($8 # $8 # $9 # $10 # $11)
+$LL.Main.loop17 h3 h7 h4 h5 h1 h6 h2 h8 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop138 h6 h1 h4 h8 h3 h2 h7 h5 (sigma0 # sigma0 # sigma1 # sigma2 # sigma3)
 
 $LL.Main.dev10 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev10 $1 $2 $3 $4 =
-      $LL.Main.dev87 $1 $2 $3 $4
+$LL.Main.dev10 sto0 sto1 sto2 sto3 =
+      $LL.Main.dev87 sto0 sto1 sto2 sto3
 
 $LL.Main.loop16 : ([32], [32], [32], [32], [32], [32], [32], [32], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop16 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 =
-      $LL.Main.loop53 $0 $1 $2 $3 $4 $5 $8 $6 $7 $9 $10 $11 $12
+$LL.Main.loop16 h6 h1 h4 h8 h3 h2 h7 h5 st0 $x $x1 $x2 $x3 =
+      $LL.Main.loop53 h6 h1 h4 h8 h3 h2 st0 h7 h5 $x $x1 $x2 $x3
 
 $LL.Main.dev9 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev9 $0 $2 $3 $4 $5 =
-      $LL.Main.dev79 $0 $2 $3 $4 $5
+$LL.Main.dev9 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev79 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop15 : ([32], [256], [32], [32], [32], [512], [256], [32], [6], [32], [32], [32]) -> [1030]
-$LL.Main.loop15 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop $0 $1 $2 $3 $4 $5 $6 $10 $7 $8 $9 $11
+$LL.Main.loop15 m2c sigma0 m2c1 m2c2 m2c3 sigma1 sigma2 m2c4 sigma3 m2c5 m2c6 $x =
+      $LL.Main.loop m2c sigma0 m2c1 m2c2 m2c3 sigma1 sigma2 m2c6 m2c4 sigma3 m2c5 $x
 
 $LL.Main.dev8 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev8 $1 $2 $3 $4 $5 =
-      $LL.Main.dev73 $1 $2 $3 $4 $5
+$LL.Main.dev8 hw32 st1 st2 $x $x1 =
+      $LL.Main.dev73 hw32 st1 st2 $x $x1
 
 $LL.Main.loop14 : ([256], [512], [512], [256], [6]) -> [1062]
-$LL.Main.loop14 $0 $1 $2 $3 $4 =
-      $LL.Main.loop181 $0 $1 $2 $3 $4
+$LL.Main.loop14 st1 st0 st2 $x $x1 =
+      $LL.Main.loop181 st1 st0 st2 $x $x1
 
 $LL.Main.loop13 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop13 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop139 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $12 $10 $11 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop13 b h3 d h7 h8 h4 h5 h1 c h6 h2 a e $x $x1 $x2 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop139 b h3 d h7 h8 h4 h5 h1 c h6 e h2 a $x $x1 $x2 sigma0 sigma1 sigma2 sigma3
 
 Main.ch : ([32], [32], [32]) -> [32]
 Main.ch $0 $1 $2 =
       $LL.Main.ch2 ($0 # $1 # $2)
 
 $LL.Main.bigsigma01 : ([32]) -> [32]
-$LL.Main.bigsigma01 $0 =
-      $LL.Main.sigma115 32'h16 $0
+$LL.Main.bigsigma01 $x =
+      $LL.Main.sigma115 32'h16 $x
 
 $LL.Main.loop12 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop12 $1 $2 $3 $4 $5 =
-      $LL.Main.loop158 $2 $1 $3 $4 $5
+$LL.Main.loop12 ctr st1 $x $x1 $x2 =
+      $LL.Main.loop158 st1 ctr $x $x1 $x2
 
 $LL.Main.loop11 : ([512], [32], [32], [32], [32], [32], [32], [32], [32], [32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop11 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 =
-      $LL.Main.loop168 $0 $1 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13
+$LL.Main.loop11 s w00 h $x $x1 $x2 $x3 $x4 $x5 $x6 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop168 s w00 $x $x1 $x2 $x3 $x4 $x5 $x6 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev6 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev6 $0 $2 $3 $4 =
-      $LL.Main.dev42 $0 $2 $3 $4
+$LL.Main.dev6 s0 s1 s2 $x =
+      $LL.Main.dev42 s0 s1 s2 $x
 
 $LL.Main.dev5 : ([256], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev5 $0 $1 $2 $3 $4 =
-      $LL.Main.dev72 $3 $0 $1 $2 $4
+$LL.Main.dev5 s0 v s1 s2 $x =
+      $LL.Main.dev72 s2 s0 v s1 $x
 
 $LL.Main.dev4 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev4 $0 $1 $2 $3 =
-      $LL.Main.dev62 ($LL.Main.dev49 ($2 # $0 # $1 # $2 # $3))
+$LL.Main.dev4 sto0 sto1 sto2 sto3 =
+      $LL.Main.dev62 ($LL.Main.dev49 (sto2 # sto0 # sto1 # sto2 # sto3))
 
 $LL.Main.loop10 : ([256], [6], [512], [256], [6]) -> [1297]
-$LL.Main.loop10 $0 $1 $2 $3 $4 =
-      $LL.Main.loop112 $0 $1 $2 $3 $4
+$LL.Main.loop10 s0 v s1 $x $x1 =
+      $LL.Main.loop112 s0 v s1 $x $x1
 
 $LL.Pure.dispatch1 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Pure.dispatch1 $0 $1 $2 $3 $4 =
-      $LL.Pure.dispatch16 $0 $1 $2 $3 $4
+$LL.Pure.dispatch1 i s0 $x $x1 $x2 =
+      $LL.Pure.dispatch16 i s0 $x $x1 $x2
 
 $LL.Main.step256 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step256 $0 $1 $2 $3 $4 $5 $6 $7 $8 =
-      $LL.Main.step25630 $0 $1 $2 $3 $4 $5 $6 $7 $8
+$LL.Main.step256 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8 =
+      $LL.Main.step25630 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 $x8
 
 $LL.Main.loop9 : ([256], [32], [512], [256], [6]) -> [1062]
-$LL.Main.loop9 $0 $1 $3 $4 $5 =
-      $LL.Main.loop134 $3 $0 $1 $4 $5
+$LL.Main.loop9 st1 w00 st2 $x $x1 =
+      $LL.Main.loop134 st2 st1 w00 $x $x1
 
 $LL.Main.loop8 : ([32], [256], [32], [512], [256], [6], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop8 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop107 $0 $1 $2 $3 $4 $6 $5 $7 $8 $9 $10 $11
+$LL.Main.loop8 m2c sigma0 m2c1 sigma1 sigma2 sigma3 m2c2 $x $x1 $x2 $x3 $x4 =
+      $LL.Main.loop107 m2c sigma0 m2c1 sigma1 sigma2 m2c2 sigma3 $x $x1 $x2 $x3 $x4
 
 $LL.Main.dev3 : ([512], [1030]) -> [1030]
-$LL.Main.dev3 $0 $1 =
-      $LL.Main.dev86 $0 $1[774 +: 256] $1[262 +: 512] $1[6 +: 256] $1[0 +: 6]
+$LL.Main.dev3 hw32 disc =
+      $LL.Main.dev86 hw32 disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.dev2 : ([512], [256], [6], [256]) -> [1297]
-$LL.Main.dev2 $0 $1 $2 $3 =
-      $LL.Main.dev4 $1 $0 $3 $2
+$LL.Main.dev2 sto1 sto0 sto3 sto2 =
+      $LL.Main.dev4 sto0 sto1 sto2 sto3
 
 $LL.Main.loop7 : ([1], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop7 $0 $1 $2 $3 $4 =
-      $LL.Main.loop101 $2 $1 $4 $3
+$LL.Main.loop7 $89 sto0 sto1 sto2 sto3 =
+      $LL.Main.loop101 sto1 sto0 sto3 sto2
 
 $LL.Main.loop6 : ([32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop6 $0 $2 $3 $4 $5 =
-      $LL.Main.loop177 $0 $2 $3 $4 $5
+$LL.Main.loop6 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop177 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.loop5 : ([32], [6], [32], [32], [32], [512], [32], [32], [256], [256], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop5 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 $17 $18 $19 =
-      $LL.Main.loop41 $0 $1 $2 $3 $4 $11 $5 $6 $7 $8 $9 $10 $12 $13 $14 $15 $16 $17 $18 $19
+$LL.Main.loop5 m2c sigma3 m2c1 m2c2 m2c3 sigma1 m2c4 m2c5 sigma0 sigma2 m2c6 m2c7 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7 =
+      $LL.Main.loop41 m2c sigma3 m2c1 m2c2 m2c3 m2c7 sigma1 m2c4 m2c5 sigma0 sigma2 m2c6 $x $x1 $x2 $x3 $x4 $x5 $x6 $x7
 
 $LL.Main.loop4 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop4 $0 $1 $2 $3 $4 =
-      $LL.Main.loop169 $0 $1 $2 $3 $4
+$LL.Main.loop4 st0 $x $x1 $x2 $x3 =
+      $LL.Main.loop169 st0 $x $x1 $x2 $x3
 
 $LL.Main.loop3 : ([6], [1030]) -> [1036]
-$LL.Main.loop3 $0 $1 =
-      $LL.Main.loop143 $0 $1[774 +: 256] $1[262 +: 512] $1[6 +: 256] $1[0 +: 6]
+$LL.Main.loop3 ctr disc =
+      $LL.Main.loop143 ctr disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Pure.dispatch : ([256], [514], [512], [256], [6]) -> [1297]
-$LL.Pure.dispatch $0 $1 $2 $3 $4 =
-      $LL.Main.dev107 $1 $0 $2 $3 $4
+$LL.Pure.dispatch s0 i s1 s2 $x =
+      $LL.Main.dev43 i s0 s1 s2 $x
 
 $LL.Main.loop2 : ([32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop2 $0 $2 $3 $4 $5 =
-      $LL.Main.loop114 $0 $2 $3 $4 $5
+$LL.Main.loop2 w00 $x1 $x2 $x3 $x4 =
+      $LL.Main.loop114 w00 $x1 $x2 $x3 $x4
 
 $LL.Main.loop1 : ([32], [256], [32], [32], [512], [256], [32], [6], [32], [32], [32], [32]) -> [1030]
-$LL.Main.loop1 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop175 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11
+$LL.Main.loop1 m2c sigma0 m2c1 m2c2 sigma1 sigma2 m2c3 sigma3 m2c4 $x $x1 $x2 =
+      $LL.Main.loop175 m2c sigma0 m2c1 m2c2 sigma1 sigma2 m2c3 sigma3 m2c4 $x $x1 $x2
 
 $LL.Main.loop : ([32], [256], [32], [32], [32], [512], [256], [32], [32], [6], [32], [32]) -> [1030]
-$LL.Main.loop $0 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 =
-      $LL.Main.loop164 $3 $0 $8 $4 $10 $2 $7 $11 $1 $5 $6 $9
+$LL.Main.loop m2c sigma0 m2c1 m2c2 m2c3 sigma1 sigma2 m2c4 m2c5 sigma3 m2c6 m2c7 =
+      $LL.Main.loop164 m2c2 m2c m2c5 m2c3 m2c6 m2c1 m2c4 m2c7 sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.dev1 : ([1297]) -> [1297]
-$LL.Main.dev1 $0 =
-      $LL.Main.dev100 $0[774 +: 256] $0[262 +: 512] $0[6 +: 256] $0[0 +: 6]
+$LL.Main.dev1 disc =
+      $LL.Main.dev100 disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.dev : ([1297]) -> [1297]
-$LL.Main.dev $0 =
-      $LL.Main.dev74 $0[774 +: 256] $0[262 +: 512] $0[6 +: 256] $0[0 +: 6]
+$LL.Main.dev disc =
+      $LL.Main.dev74 disc[774 +: 256] disc[262 +: 512] disc[6 +: 256] disc[0 +: 6]
 
 $LL.Main.sigma0 : ([32]) -> [32]
-$LL.Main.sigma0 $0 =
-      $LL.Main.sigma115 32'h12 $0
+$LL.Main.sigma0 $x =
+      $LL.Main.sigma115 32'h12 $x
 
 device top_level
       input __in0 : [514]

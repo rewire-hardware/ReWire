@@ -1,72 +1,80 @@
 $Pure.dispatch : ([1], [1]) -> [3]
-$Pure.dispatch $0 $1 =
-      $LL.Pure.dispatch $1 $0
+$Pure.dispatch disc i =
+      $LL.Pure.dispatch i disc
 
 $LL.Main.go17 : ([1]) -> [1]
-$LL.Main.go17 $0 =
-      $LL.Main.go11 $0
+$LL.Main.go17 $x =
+      $LL.Main.go10 $x
 
 $LL.Main.go16 : ([1]) -> [3]
-$LL.Main.go16 $0 =
-      $LL.Main.go9 $0
+$LL.Main.go16 disc =
+      $LL.Main.go9 disc
 
 $LL.Main.go15 : ([1]) -> [3]
-$LL.Main.go15 $1 =
-      2'h2 # $1
+$LL.Main.go15 sto0 =
+      2'h2 # sto0
 
 $LL.Main.go14 : ([1], [1]) -> [1]
-$LL.Main.go14 $0 $1 =
-      $LL.Main.go17 $1
+$LL.Main.go14 $7 sigma0 =
+      $LL.Main.go12 sigma0
 
 $LL.Main.go13 : ([1], [1]) -> [1]
-$LL.Main.go13 $0 $1 =
-      let $t0 = $1 # $LL.Main.go17 $0 in
-      if eq $t0[0 +: 1] 1'h1 then $LL.Main.go17 $t0[1 +: 1]
-            else $LL.Main.go14 ($LL.Main.go17 $0) $1
+$LL.Main.go13 rf sigma0 =
+      let $t0 = sigma0 # $LL.Main.go17 rf in
+      if eq $t0[0 +: 1] 1'h1 then $LL.Main.go12 $t0[1 +: 1]
+            else $LL.Main.go14 ($LL.Main.go17 rf) sigma0
+
+$LL.Main.go12 : ([1]) -> [1]
+$LL.Main.go12 sigma0 =
+      $LL.Main.go11 sigma0
 
 $LL.Pure.dispatch : ([1], [1]) -> [3]
-$LL.Pure.dispatch $0 $1 =
-      $LL.Main.go5 $0 $1
+$LL.Pure.dispatch i $x =
+      $LL.Main.go5 i $x
 
 $LL.Main.go11 : ([1]) -> [1]
-$LL.Main.go11 $0 =
-      $0
+$LL.Main.go11 sigma0 =
+      sigma0
+
+$LL.Main.go10 : ([1]) -> [1]
+$LL.Main.go10 x =
+      x
 
 $LL.Main.go9 : ([1]) -> [3]
-$LL.Main.go9 $1 =
-      $LL.Main.go2 $1
+$LL.Main.go9 $x =
+      $LL.Main.go2 $x
 
 $LL.Main.go7 : ([1]) -> [3]
-$LL.Main.go7 $1 =
-      $LL.Main.go $1
+$LL.Main.go7 $x =
+      $LL.Main.go $x
 
 $LL.Main.go6 : ([3]) -> [3]
-$LL.Main.go6 $0 =
-      $LL.Main.go7 $0[0 +: 1]
+$LL.Main.go6 disc =
+      $LL.Main.go7 disc[0 +: 1]
 
 $LL.Main.go5 : ([1], [1]) -> [3]
-$LL.Main.go5 $0 $1 =
-      Main.go $1
+$LL.Main.go5 x sto0 =
+      Main.go sto0
 
 $LL.Main.go4 : ([2]) -> [1]
-$LL.Main.go4 $0 =
-      $LL.Main.go1 $0[1 +: 1] $0[0 +: 1]
+$LL.Main.go4 disc =
+      $LL.Main.go1 disc[1 +: 1] disc[0 +: 1]
 
 $LL.Main.go2 : ([1]) -> [3]
-$LL.Main.go2 $1 =
-      2'h0 # $1
+$LL.Main.go2 s0 =
+      2'h0 # s0
 
 Main.go : ([1]) -> [3]
-Main.go $0 =
-      $LL.Main.go6 ($LL.Main.go16 ($LL.Main.go4 ($0 # $0)))
+Main.go sto0 =
+      $LL.Main.go6 ($LL.Main.go16 ($LL.Main.go4 (sto0 # sto0)))
 
 $LL.Main.go1 : ([1], [1]) -> [1]
-$LL.Main.go1 $0 $1 =
-      $LL.Main.go13 $0 $1
+$LL.Main.go1 st0 $x =
+      $LL.Main.go13 st0 $x
 
 $LL.Main.go : ([1]) -> [3]
-$LL.Main.go $1 =
-      $LL.Main.go15 $1
+$LL.Main.go sto0 =
+      $LL.Main.go15 sto0
 
 device top_level
       input __in0 : [1]

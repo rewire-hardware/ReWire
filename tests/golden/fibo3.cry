@@ -60,10 +60,6 @@ rw__LL_Main_sig8 x0 = rw__LL_Main_sig10 (take`{8} x0) (drop`{8} x0)
 rw__LL_Main_incr15 : [26] -> [26]
 rw__LL_Main_incr15 x0 = rw__LL_Main_incr12 (take`{8} (drop`{2} x0)) (drop`{10} x0)
 
-// $LL.Main.sig7
-rw__LL_Main_sig7 : [16] -> [26]
-rw__LL_Main_sig7 x0 = rw_Main_sig x0
-
 // Main.incr
 rw_Main_incr : [16] -> [26]
 rw_Main_incr x0 = rw__LL_Main_incr15 (rw__LL_Main_sig8 (rw_Main_first x0))
@@ -178,7 +174,7 @@ rw_Main_second x0 = rw__LL_Main_second4 (x0 # x0)
 
 // $LL.Main.sig1
 rw__LL_Main_sig1 : [1] -> [1] -> [16] -> [26]
-rw__LL_Main_sig1 x0 x1 x2 = if x1 == 0b1 then (rw__LL_Main_sig7 x2) else (rw__LL_Main_sig x0 x2)
+rw__LL_Main_sig1 x0 x1 x2 = if x1 == 0b1 then (rw__LL_Main_begin6 x2) else (rw__LL_Main_sig x0 x2)
 
 // $LL.Main.second
 rw__LL_Main_second : [16] -> [1]

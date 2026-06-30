@@ -254,10 +254,6 @@ component \Main_addr__in\ is
       port (arg0 : in std_logic_vector (204 downto 0);
             res : out std_logic_vector (76 downto 0));
       end component;
-      component \ZLL_Main_data__out__reg3\ is
-      port (arg0 : in std_logic_vector (31 downto 0);
-            res : out std_logic_vector (31 downto 0));
-      end component;
       component \ZLL_Main_idle102\ is
       port (arg0 : in std_logic_vector (204 downto 0);
             res : out std_logic_vector (412 downto 0));
@@ -274,17 +270,6 @@ component \Main_addr__in\ is
       component \ZLL_Main_idle88\ is
       port (arg0 : in std_logic_vector (204 downto 0);
             res : out std_logic_vector (204 downto 0));
-      end component;
-      component \ZLL_Main_mem02\ is
-      port (arg0 : in std_logic_vector (31 downto 0);
-            arg1 : in std_logic_vector (31 downto 0);
-            arg2 : in std_logic_vector (31 downto 0);
-            res : out std_logic_vector (31 downto 0));
-      end component;
-      component \ZLL_Main_mem14\ is
-      port (arg0 : in std_logic_vector (31 downto 0);
-            arg1 : in std_logic_vector (31 downto 0);
-            res : out std_logic_vector (31 downto 0));
       end component;
       component \ZLL_Main_perform__read28\ is
       port (arg0 : in std_logic_vector (204 downto 0);
@@ -339,8 +324,6 @@ component \Main_addr__in\ is
       signal zi9 : std_logic_vector (9 downto 0);
       signal zi10 : std_logic_vector (204 downto 0);
       signal zi18 : std_logic_vector (31 downto 0);
-      signal zi20 : std_logic_vector (31 downto 0);
-      signal zll_main_mem14_out : std_logic_vector (31 downto 0);
       signal zi21 : std_logic_vector (236 downto 0);
       signal zi22 : std_logic_vector (31 downto 0);
       signal zi23 : std_logic_vector (204 downto 0);
@@ -355,18 +338,9 @@ component \Main_addr__in\ is
       signal zi25 : std_logic_vector (214 downto 0);
       signal zi27 : std_logic_vector (204 downto 0);
       signal zi33 : std_logic_vector (31 downto 0);
-      signal zi35 : std_logic_vector (31 downto 0);
-      signal zi36 : std_logic_vector (31 downto 0);
-      signal zll_main_mem02_out : std_logic_vector (31 downto 0);
       signal zi38 : std_logic_vector (31 downto 0);
-      signal zi39 : std_logic_vector (31 downto 0);
-      signal zi40 : std_logic_vector (31 downto 0);
-      signal \zll_main_mem02_outR1\ : std_logic_vector (31 downto 0);
       signal zi43 : std_logic_vector (31 downto 0);
-      signal zi44 : std_logic_vector (31 downto 0);
-      signal \zll_main_mem14_outR1\ : std_logic_vector (31 downto 0);
       signal zi48 : std_logic_vector (31 downto 0);
-      signal zll_main_data_out_reg3_out : std_logic_vector (31 downto 0);
       signal zi49 : std_logic_vector (236 downto 0);
       signal zi50 : std_logic_vector (31 downto 0);
       signal zi51 : std_logic_vector (204 downto 0);
@@ -460,77 +434,66 @@ zi1 <= (\__st0\ & \__st1\);
       zi9 <= zi8(214 downto 205);
       zi10 <= zi8(204 downto 0);
       zi18 <= zi8(192 downto 161);
-      zi20 <= zi8(159 downto 128);
-      \instR8\ : \ZLL_Main_mem14\ port map (zi18, zi20, zll_main_mem14_out);
-      zi21 <= (zll_main_mem14_out & zi10);
+      zi21 <= (zi18 & zi10);
       zi22 <= zi21(236 downto 205);
       zi23 <= zi21(204 downto 0);
       \connR2\ <= (zi9 & zi22);
-      \instR9\ : \ZLL_Main_setloc4\ port map (\connR2\, zi23, \zll_main_setloc4_outR1\);
-      \instR10\ : \ZLL_Main_perform__read28\ port map (\zll_main_setloc4_outR1\, zll_main_perform_read28_out);
-      \instR11\ : \ZLL_Main_perform__write32\ port map (zll_main_perform_read28_out, \zll_main_perform_write32_outR1\);
-      \instR12\ : \ZLL_Main_while__addr__reg__049\ port map (\zll_main_perform_write32_outR1\, \zll_main_while_addr_reg_049_outR1\);
-      \instR13\ : \ZLL_Main_idle111\ port map (\zll_main_while_addr_reg_049_outR1\, zll_main_idle111_out);
+      \instR8\ : \ZLL_Main_setloc4\ port map (\connR2\, zi23, \zll_main_setloc4_outR1\);
+      \instR9\ : \ZLL_Main_perform__read28\ port map (\zll_main_setloc4_outR1\, zll_main_perform_read28_out);
+      \instR10\ : \ZLL_Main_perform__write32\ port map (zll_main_perform_read28_out, \zll_main_perform_write32_outR1\);
+      \instR11\ : \ZLL_Main_while__addr__reg__049\ port map (\zll_main_perform_write32_outR1\, \zll_main_while_addr_reg_049_outR1\);
+      \instR12\ : \ZLL_Main_idle111\ port map (\zll_main_while_addr_reg_049_outR1\, zll_main_idle111_out);
       zi24 <= (\__st0\ & \__st1\);
-      \instR14\ : \Main_get__addr__reg\ port map (zi24, \main_get_addr_reg_outR2\);
+      \instR13\ : \Main_get__addr__reg\ port map (zi24, \main_get_addr_reg_outR2\);
       zi25 <= \main_get_addr_reg_outR2\;
       zi27 <= zi25(204 downto 0);
       zi33 <= zi25(127 downto 96);
-      zi35 <= zi25(63 downto 32);
-      zi36 <= zi25(31 downto 0);
-      \instR15\ : \ZLL_Main_mem02\ port map (zi33, zi35, zi36, zll_main_mem02_out);
       zi38 <= zi25(95 downto 64);
-      zi39 <= zi25(63 downto 32);
-      zi40 <= zi25(31 downto 0);
-      \instR16\ : \ZLL_Main_mem02\ port map (zi38, zi39, zi40, \zll_main_mem02_outR1\);
       zi43 <= zi25(63 downto 32);
-      zi44 <= zi25(31 downto 0);
-      \instR17\ : \ZLL_Main_mem14\ port map (zi43, zi44, \zll_main_mem14_outR1\);
       zi48 <= zi25(31 downto 0);
-      \instR18\ : \ZLL_Main_data__out__reg3\ port map (zi48, zll_main_data_out_reg3_out);
-      zi49 <= (rw_cond(rw_and(rw_eq(zi25(214 downto 214), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(213 downto 213), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(212 downto 212), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(211 downto 211), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(210 downto 210), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(209 downto 209), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(208 downto 208), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(207 downto 207), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(206 downto 206), std_logic_vector'(B"0")), rw_eq(zi25(205 downto 205), std_logic_vector'(B"0"))))))))))), zll_main_mem02_out, rw_cond(rw_and(rw_eq(zi25(214 downto 214), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(213 downto 213), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(212 downto 212), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(211 downto 211), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(210 downto 210), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(209 downto 209), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(208 downto 208), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(207 downto 207), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(206 downto 206), std_logic_vector'(B"0")), rw_eq(zi25(205 downto 205), std_logic_vector'(B"1"))))))))))), \zll_main_mem02_outR1\, rw_cond(rw_and(rw_eq(zi25(214 downto 214), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(213 downto 213), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(212 downto 212), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(211 downto 211), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(210 downto 210), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(209 downto 209), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(208 downto 208), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(207 downto 207), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(206 downto 206), std_logic_vector'(B"1")), rw_eq(zi25(205 downto 205), std_logic_vector'(B"0"))))))))))), \zll_main_mem14_outR1\, zll_main_data_out_reg3_out))) & zi27);
+      zi49 <= (rw_cond(rw_and(rw_eq(zi25(214 downto 214), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(213 downto 213), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(212 downto 212), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(211 downto 211), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(210 downto 210), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(209 downto 209), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(208 downto 208), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(207 downto 207), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(206 downto 206), std_logic_vector'(B"0")), rw_eq(zi25(205 downto 205), std_logic_vector'(B"0"))))))))))), zi33, rw_cond(rw_and(rw_eq(zi25(214 downto 214), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(213 downto 213), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(212 downto 212), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(211 downto 211), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(210 downto 210), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(209 downto 209), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(208 downto 208), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(207 downto 207), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(206 downto 206), std_logic_vector'(B"0")), rw_eq(zi25(205 downto 205), std_logic_vector'(B"1"))))))))))), zi38, rw_cond(rw_and(rw_eq(zi25(214 downto 214), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(213 downto 213), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(212 downto 212), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(211 downto 211), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(210 downto 210), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(209 downto 209), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(208 downto 208), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(207 downto 207), std_logic_vector'(B"0")), rw_and(rw_eq(zi25(206 downto 206), std_logic_vector'(B"1")), rw_eq(zi25(205 downto 205), std_logic_vector'(B"0"))))))))))), zi43, zi48))) & zi27);
       zi50 <= zi49(236 downto 205);
       zi51 <= zi49(204 downto 0);
-      \instR19\ : \ZLL_Main_set__data__out__reg8\ port map (zi50, zi51, zll_main_set_data_out_reg8_out);
-      \instR20\ : \ZLL_Main_perform__read28\ port map (zll_main_set_data_out_reg8_out, \zll_main_perform_read28_outR1\);
-      \instR21\ : \ZLL_Main_perform__write32\ port map (\zll_main_perform_read28_outR1\, \zll_main_perform_write32_outR2\);
-      \instR22\ : \ZLL_Main_while__addr__reg__049\ port map (\zll_main_perform_write32_outR2\, \zll_main_while_addr_reg_049_outR2\);
-      \instR23\ : \ZLL_Main_idle111\ port map (\zll_main_while_addr_reg_049_outR2\, \zll_main_idle111_outR1\);
+      \instR14\ : \ZLL_Main_set__data__out__reg8\ port map (zi50, zi51, zll_main_set_data_out_reg8_out);
+      \instR15\ : \ZLL_Main_perform__read28\ port map (zll_main_set_data_out_reg8_out, \zll_main_perform_read28_outR1\);
+      \instR16\ : \ZLL_Main_perform__write32\ port map (\zll_main_perform_read28_outR1\, \zll_main_perform_write32_outR2\);
+      \instR17\ : \ZLL_Main_while__addr__reg__049\ port map (\zll_main_perform_write32_outR2\, \zll_main_while_addr_reg_049_outR2\);
+      \instR18\ : \ZLL_Main_idle111\ port map (\zll_main_while_addr_reg_049_outR2\, \zll_main_idle111_outR1\);
       zi52 <= (\__st0\ & \__st1\);
-      \instR24\ : \Main_go\ port map (\__in0\, main_go_out);
-      \instR25\ : \Main_rnw\ port map (\__in0\, main_rnw_out);
+      \instR19\ : \Main_go\ port map (\__in0\, main_go_out);
+      \instR20\ : \Main_rnw\ port map (\__in0\, main_rnw_out);
       zi53 <= (zi52 & \__in0\ & main_go_out & main_rnw_out);
       zi54 <= zi53(252 downto 48);
       zi55 <= zi53(47 downto 2);
-      \instR26\ : \Main_partition__in\ port map (zi55, main_partition_in_out);
+      \instR21\ : \Main_partition__in\ port map (zi55, main_partition_in_out);
       zi56 <= main_partition_in_out;
-      \instR27\ : \Main_addr__in\ port map (zi55, main_addr_in_out);
+      \instR22\ : \Main_addr__in\ port map (zi55, main_addr_in_out);
       zi57 <= main_addr_in_out;
-      \instR28\ : \Mainzuzlzazg\ port map (zi56, zi57, mainzuzlzazgzuout);
-      \instR29\ : \Main_set__addr__reg1\ port map (mainzuzlzazgzuout, zi54, \main_set_addr_reg1_outR1\);
-      \instR30\ : \ZLL_Main_idle113\ port map (zi56, \main_set_addr_reg1_outR1\, zll_main_idle113_out);
-      \instR31\ : \ZLL_Main_perform__write32\ port map (zll_main_idle113_out, \zll_main_perform_write32_outR3\);
-      \instR32\ : \ZLL_Main_while__addr__reg__049\ port map (\zll_main_perform_write32_outR3\, \zll_main_while_addr_reg_049_outR3\);
+      \instR23\ : \Mainzuzlzazg\ port map (zi56, zi57, mainzuzlzazgzuout);
+      \instR24\ : \Main_set__addr__reg1\ port map (mainzuzlzazgzuout, zi54, \main_set_addr_reg1_outR1\);
+      \instR25\ : \ZLL_Main_idle113\ port map (zi56, \main_set_addr_reg1_outR1\, zll_main_idle113_out);
+      \instR26\ : \ZLL_Main_perform__write32\ port map (zll_main_idle113_out, \zll_main_perform_write32_outR3\);
+      \instR27\ : \ZLL_Main_while__addr__reg__049\ port map (\zll_main_perform_write32_outR3\, \zll_main_while_addr_reg_049_outR3\);
       zi61 <= \zll_main_while_addr_reg_049_outR3\;
       zi62 <= zi61(409 downto 205);
-      \instR33\ : \ZLL_Main_idle102\ port map (zi62, zll_main_idle102_out);
+      \instR28\ : \ZLL_Main_idle102\ port map (zi62, zll_main_idle102_out);
       zi64 <= zll_main_idle102_out;
       zi65 <= zi64(204 downto 0);
-      \instR34\ : \ZLL_Main_connect4\ port map (zi62, zll_main_connect4_out);
-      \instR35\ : \ZLL_Main_connect3\ port map (zll_main_connect4_out, zll_main_connect3_out);
-      \instR36\ : \Main_go\ port map (\__in0\, \main_go_outR1\);
-      \instR37\ : \Main_rnw\ port map (\__in0\, \main_rnw_outR1\);
+      \instR29\ : \ZLL_Main_connect4\ port map (zi62, zll_main_connect4_out);
+      \instR30\ : \ZLL_Main_connect3\ port map (zll_main_connect4_out, zll_main_connect3_out);
+      \instR31\ : \Main_go\ port map (\__in0\, \main_go_outR1\);
+      \instR32\ : \Main_rnw\ port map (\__in0\, \main_rnw_outR1\);
       zi66 <= (zi52 & \__in0\ & \main_go_outR1\ & \main_rnw_outR1\);
       zi67 <= zi66(252 downto 48);
       zi68 <= zi66(47 downto 2);
-      \instR38\ : \Main_partition__in\ port map (zi68, \main_partition_in_outR1\);
+      \instR33\ : \Main_partition__in\ port map (zi68, \main_partition_in_outR1\);
       zi69 <= \main_partition_in_outR1\;
-      \instR39\ : \Main_addr__in\ port map (zi68, \main_addr_in_outR1\);
+      \instR34\ : \Main_addr__in\ port map (zi68, \main_addr_in_outR1\);
       zi70 <= \main_addr_in_outR1\;
       zi71 <= zi66(47 downto 16);
       zi76 <= zi71;
-      \instR40\ : \Mainzuzlzazg\ port map (zi69, zi70, \mainzuzlzazgzuoutR1\);
-      \instR41\ : \Main_set__addr__reg1\ port map (\mainzuzlzazgzuoutR1\, zi67, \main_set_addr_reg1_outR2\);
+      \instR35\ : \Mainzuzlzazg\ port map (zi69, zi70, \mainzuzlzazgzuoutR1\);
+      \instR36\ : \Main_set__addr__reg1\ port map (\mainzuzlzazgzuoutR1\, zi67, \main_set_addr_reg1_outR2\);
       zi81 <= \main_set_addr_reg1_outR2\;
       zi86 <= zi81(127 downto 0);
       zi87 <= zi81(204 downto 203);
@@ -538,26 +501,26 @@ zi1 <= (\__st0\ & \__st1\);
       zi90 <= zi81(160 downto 160);
       zi91 <= zi81(159 downto 128);
       \connR3\ <= ((zi87 & zi88 & zi76 & zi90 & zi91) & zi86);
-      \instR42\ : \ZLL_Main_idle113\ port map (zi69, \connR3\, \zll_main_idle113_outR1\);
-      \instR43\ : \ZLL_Main_perform__write32\ port map (\zll_main_idle113_outR1\, \zll_main_perform_write32_outR4\);
-      \instR44\ : \ZLL_Main_while__addr__reg__049\ port map (\zll_main_perform_write32_outR4\, \zll_main_while_addr_reg_049_outR4\);
+      \instR37\ : \ZLL_Main_idle113\ port map (zi69, \connR3\, \zll_main_idle113_outR1\);
+      \instR38\ : \ZLL_Main_perform__write32\ port map (\zll_main_idle113_outR1\, \zll_main_perform_write32_outR4\);
+      \instR39\ : \ZLL_Main_while__addr__reg__049\ port map (\zll_main_perform_write32_outR4\, \zll_main_while_addr_reg_049_outR4\);
       zi92 <= \zll_main_while_addr_reg_049_outR4\;
       zi93 <= zi92(409 downto 205);
-      \instR45\ : \ZLL_Main_idle102\ port map (zi93, \zll_main_idle102_outR1\);
+      \instR40\ : \ZLL_Main_idle102\ port map (zi93, \zll_main_idle102_outR1\);
       zi95 <= \zll_main_idle102_outR1\;
       zi96 <= zi95(204 downto 0);
-      \instR46\ : \ZLL_Main_connect4\ port map (zi93, \zll_main_connect4_outR1\);
-      \instR47\ : \ZLL_Main_connect3\ port map (\zll_main_connect4_outR1\, \zll_main_connect3_outR1\);
-      \instR48\ : \Main_set__ack__reg1\ port map (zi52, main_set_ack_reg1_out);
+      \instR41\ : \ZLL_Main_connect4\ port map (zi93, \zll_main_connect4_outR1\);
+      \instR42\ : \ZLL_Main_connect3\ port map (\zll_main_connect4_outR1\, \zll_main_connect3_outR1\);
+      \instR43\ : \Main_set__ack__reg1\ port map (zi52, main_set_ack_reg1_out);
       zi97 <= main_set_ack_reg1_out;
-      \instR49\ : \ZLL_Main_idle88\ port map (zi97, zll_main_idle88_out);
-      \instR50\ : \ZLL_Main_perform__write32\ port map (zll_main_idle88_out, \zll_main_perform_write32_outR5\);
-      \instR51\ : \ZLL_Main_while__addr__reg__049\ port map (\zll_main_perform_write32_outR5\, \zll_main_while_addr_reg_049_outR5\);
-      \instR52\ : \ZLL_Main_idle111\ port map (\zll_main_while_addr_reg_049_outR5\, \zll_main_idle111_outR2\);
+      \instR44\ : \ZLL_Main_idle88\ port map (zi97, zll_main_idle88_out);
+      \instR45\ : \ZLL_Main_perform__write32\ port map (zll_main_idle88_out, \zll_main_perform_write32_outR5\);
+      \instR46\ : \ZLL_Main_while__addr__reg__049\ port map (\zll_main_perform_write32_outR5\, \zll_main_while_addr_reg_049_outR5\);
+      \instR47\ : \ZLL_Main_idle111\ port map (\zll_main_while_addr_reg_049_outR5\, \zll_main_idle111_outR2\);
       zi98 <= (\__st0\ & \__st1\);
       \connR4\ <= (zi98 & zi98);
-      \instR53\ : \ZLL_Main_while__addr__reg__049\ port map (\connR4\, \zll_main_while_addr_reg_049_outR6\);
-      \instR54\ : \ZLL_Main_while__addr__reg__050\ port map (\zll_main_while_addr_reg_049_outR6\, \zll_main_while_addr_reg_050_outR1\);
+      \instR48\ : \ZLL_Main_while__addr__reg__049\ port map (\connR4\, \zll_main_while_addr_reg_049_outR6\);
+      \instR49\ : \ZLL_Main_while__addr__reg__050\ port map (\zll_main_while_addr_reg_049_outR6\, \zll_main_while_addr_reg_050_outR1\);
       zres <= rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"001")), zll_main_while_addr_reg_050_out, rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"010")), zll_main_idle111_out, rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"011")), \zll_main_idle111_outR1\, rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"100")), rw_cond(rw_and(rw_eq(zi53(1 downto 1), std_logic_vector'(B"1")), rw_eq(zi53(0 downto 0), std_logic_vector'(B"1"))), ((std_logic_vector'(B"1") & rw_repl(171, std_logic_vector'(B"0"))) & zll_main_connect3_out & std_logic_vector'(B"011") & zi65), rw_cond(rw_and(rw_eq(zi66(1 downto 1), std_logic_vector'(B"1")), rw_eq(zi66(0 downto 0), std_logic_vector'(B"0"))), ((std_logic_vector'(B"1") & rw_repl(171, std_logic_vector'(B"0"))) & \zll_main_connect3_outR1\ & std_logic_vector'(B"010") & zi96), \zll_main_idle111_outR2\)), \zll_main_while_addr_reg_050_outR1\))));
       \__resumption_tag_next\ <= zres(207 downto 205);
       \__st0_next\ <= zres(204 downto 128);
@@ -617,20 +580,11 @@ component \Main_set__ack__reg1\ is
       port (arg0 : in std_logic_vector (204 downto 0);
             res : out std_logic_vector (204 downto 0));
       end component;
-      component \ZLL_Main_set__partition__reg4\ is
-      port (arg0 : in std_logic_vector (9 downto 0);
-            arg1 : in std_logic_vector (1 downto 0);
-            arg2 : in std_logic_vector (31 downto 0);
-            arg3 : in std_logic_vector (0 downto 0);
-            arg4 : in std_logic_vector (31 downto 0);
-            res : out std_logic_vector (76 downto 0));
-      end component;
       signal zi4 : std_logic_vector (127 downto 0);
       signal zi6 : std_logic_vector (9 downto 0);
       signal zi7 : std_logic_vector (31 downto 0);
       signal zi8 : std_logic_vector (0 downto 0);
       signal zi9 : std_logic_vector (31 downto 0);
-      signal zll_main_set_partition_reg4_out : std_logic_vector (76 downto 0);
       signal zi10 : std_logic_vector (204 downto 0);
       signal main_set_ack_reg1_out : std_logic_vector (204 downto 0);
       signal zi11 : std_logic_vector (204 downto 0);
@@ -641,11 +595,10 @@ zi4 <= arg1(127 downto 0);
       zi7 <= arg1(192 downto 161);
       zi8 <= arg1(160 downto 160);
       zi9 <= arg1(159 downto 128);
-      inst : \ZLL_Main_set__partition__reg4\ port map (zi6, arg0, zi7, zi8, zi9, zll_main_set_partition_reg4_out);
-      zi10 <= (zll_main_set_partition_reg4_out & zi4);
-      \instR1\ : \Main_set__ack__reg1\ port map (zi10, main_set_ack_reg1_out);
+      zi10 <= ((arg0 & zi6 & zi7 & zi8 & zi9) & zi4);
+      inst : \Main_set__ack__reg1\ port map (zi10, main_set_ack_reg1_out);
       zi11 <= main_set_ack_reg1_out;
-      \instR2\ : \ZLL_Main_idle88\ port map (zi11, zll_main_idle88_out);
+      \instR1\ : \ZLL_Main_idle88\ port map (zi11, zll_main_idle88_out);
       res <= zll_main_idle88_out;
 end architecture;
 
@@ -817,21 +770,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_data__out__reg3\ is
-port (arg0 : in std_logic_vector (31 downto 0);
-      res : out std_logic_vector (31 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_data__out__reg3\ is
-
-begin
-res <= arg0;
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
 entity \ZLL_Main_while__addr__reg__049\ is
 port (arg0 : in std_logic_vector (409 downto 0);
       res : out std_logic_vector (412 downto 0));
@@ -913,28 +851,18 @@ port (arg0 : in std_logic_vector (9 downto 0);
 end entity;
 
 architecture rtl of \Main_set__addr__reg1\ is
-component \ZLL_Main_set__partition__reg4\ is
-      port (arg0 : in std_logic_vector (9 downto 0);
-            arg1 : in std_logic_vector (1 downto 0);
-            arg2 : in std_logic_vector (31 downto 0);
-            arg3 : in std_logic_vector (0 downto 0);
-            arg4 : in std_logic_vector (31 downto 0);
-            res : out std_logic_vector (76 downto 0));
-      end component;
-      signal zi4 : std_logic_vector (127 downto 0);
+signal zi4 : std_logic_vector (127 downto 0);
       signal zi5 : std_logic_vector (1 downto 0);
       signal zi7 : std_logic_vector (31 downto 0);
       signal zi8 : std_logic_vector (0 downto 0);
       signal zi9 : std_logic_vector (31 downto 0);
-      signal zll_main_set_partition_reg4_out : std_logic_vector (76 downto 0);
 begin
 zi4 <= arg1(127 downto 0);
       zi5 <= arg1(204 downto 203);
       zi7 <= arg1(192 downto 161);
       zi8 <= arg1(160 downto 160);
       zi9 <= arg1(159 downto 128);
-      inst : \ZLL_Main_set__partition__reg4\ port map (arg0, zi5, zi7, zi8, zi9, zll_main_set_partition_reg4_out);
-      res <= (zll_main_set_partition_reg4_out & zi4);
+      res <= ((zi5 & arg0 & zi7 & zi8 & zi9) & zi4);
 end architecture;
 
 library ieee;
@@ -967,18 +895,12 @@ port (arg0 : in std_logic_vector (76 downto 0);
 end entity;
 
 architecture rtl of \ZLL_Main_connect3\ is
-component \ZLL_Main_data__out__reg3\ is
-      port (arg0 : in std_logic_vector (31 downto 0);
-            res : out std_logic_vector (31 downto 0));
-      end component;
-      signal zi3 : std_logic_vector (0 downto 0);
+signal zi3 : std_logic_vector (0 downto 0);
       signal zi9 : std_logic_vector (31 downto 0);
-      signal zll_main_data_out_reg3_out : std_logic_vector (31 downto 0);
 begin
 zi3 <= arg0(32 downto 32);
       zi9 <= arg0(31 downto 0);
-      inst : \ZLL_Main_data__out__reg3\ port map (zi9, zll_main_data_out_reg3_out);
-      res <= (zi3 & zll_main_data_out_reg3_out);
+      res <= (zi3 & zi9);
 end architecture;
 
 library ieee;
@@ -1066,58 +988,10 @@ port (arg0 : in std_logic_vector (45 downto 0);
 end entity;
 
 architecture rtl of \Main_rnw\ is
-component \ZLL_Main_rnw1\ is
-      port (arg0 : in std_logic_vector (0 downto 0);
-            arg1 : in std_logic_vector (1 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      signal zi3 : std_logic_vector (0 downto 0);
-      signal zi4 : std_logic_vector (1 downto 0);
-      signal zll_main_rnw1_out : std_logic_vector (0 downto 0);
+signal zi3 : std_logic_vector (0 downto 0);
 begin
 zi3 <= arg0(2 downto 2);
-      zi4 <= arg0(1 downto 0);
-      inst : \ZLL_Main_rnw1\ port map (zi3, zi4, zll_main_rnw1_out);
-      res <= zll_main_rnw1_out;
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_mem14\ is
-port (arg0 : in std_logic_vector (31 downto 0);
-      arg1 : in std_logic_vector (31 downto 0);
-      res : out std_logic_vector (31 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_mem14\ is
-
-begin
-res <= arg0;
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_mem02\ is
-port (arg0 : in std_logic_vector (31 downto 0);
-      arg1 : in std_logic_vector (31 downto 0);
-      arg2 : in std_logic_vector (31 downto 0);
-      res : out std_logic_vector (31 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_mem02\ is
-component \ZLL_Main_mem14\ is
-      port (arg0 : in std_logic_vector (31 downto 0);
-            arg1 : in std_logic_vector (31 downto 0);
-            res : out std_logic_vector (31 downto 0));
-      end component;
-      signal zll_main_mem14_out : std_logic_vector (31 downto 0);
-begin
-inst : \ZLL_Main_mem14\ port map (arg0, arg2, zll_main_mem14_out);
-      res <= zll_main_mem14_out;
+      res <= zi3;
 end architecture;
 
 library ieee;
@@ -1213,22 +1087,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_rnw1\ is
-port (arg0 : in std_logic_vector (0 downto 0);
-      arg1 : in std_logic_vector (1 downto 0);
-      res : out std_logic_vector (0 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_rnw1\ is
-
-begin
-res <= arg0;
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
 entity \Main_scrubbing\ is
 port (arg0 : in std_logic_vector (9 downto 0);
       res : out std_logic_vector (0 downto 0));
@@ -1238,25 +1096,6 @@ architecture rtl of \Main_scrubbing\ is
 
 begin
 res <= rw_cond(rw_and(rw_eq(arg0(9 downto 9), std_logic_vector'(B"1")), rw_and(rw_eq(arg0(8 downto 8), std_logic_vector'(B"1")), rw_and(rw_eq(arg0(7 downto 7), std_logic_vector'(B"1")), rw_and(rw_eq(arg0(6 downto 6), std_logic_vector'(B"1")), rw_and(rw_eq(arg0(5 downto 5), std_logic_vector'(B"1")), rw_and(rw_eq(arg0(4 downto 4), std_logic_vector'(B"1")), rw_and(rw_eq(arg0(3 downto 3), std_logic_vector'(B"1")), rw_and(rw_eq(arg0(2 downto 2), std_logic_vector'(B"1")), rw_and(rw_eq(arg0(1 downto 1), std_logic_vector'(B"1")), rw_eq(arg0(0 downto 0), std_logic_vector'(B"1"))))))))))), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_set__partition__reg4\ is
-port (arg0 : in std_logic_vector (9 downto 0);
-      arg1 : in std_logic_vector (1 downto 0);
-      arg2 : in std_logic_vector (31 downto 0);
-      arg3 : in std_logic_vector (0 downto 0);
-      arg4 : in std_logic_vector (31 downto 0);
-      res : out std_logic_vector (76 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_set__partition__reg4\ is
-
-begin
-res <= (arg1 & arg0 & arg2 & arg3 & arg4);
 end architecture;
 
 library ieee;
@@ -1292,19 +1131,10 @@ port (arg0 : in std_logic_vector (45 downto 0);
 end entity;
 
 architecture rtl of \Main_go\ is
-component \ZLL_Main_rnw1\ is
-      port (arg0 : in std_logic_vector (0 downto 0);
-            arg1 : in std_logic_vector (1 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      signal zi2 : std_logic_vector (0 downto 0);
-      signal zi4 : std_logic_vector (1 downto 0);
-      signal zll_main_rnw1_out : std_logic_vector (0 downto 0);
+signal zi2 : std_logic_vector (0 downto 0);
 begin
 zi2 <= arg0(3 downto 3);
-      zi4 <= arg0(1 downto 0);
-      inst : \ZLL_Main_rnw1\ port map (zi2, zi4, zll_main_rnw1_out);
-      res <= zll_main_rnw1_out;
+      res <= zi2;
 end architecture;
 
 library ieee;

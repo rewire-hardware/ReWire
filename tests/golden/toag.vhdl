@@ -242,21 +242,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZZLLzuReWirezuPreludezuzaza2\ is
-port (arg0 : in std_logic_vector (0 downto 0);
-      res : out std_logic_vector (0 downto 0));
-end entity;
-
-architecture rtl of \ZZLLzuReWirezuPreludezuzaza2\ is
-
-begin
-res <= arg0;
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
 entity \ZLL_Main_go5\ is
 port (arg0 : in std_logic_vector (0 downto 0);
       arg1 : in std_logic_vector (0 downto 0);
@@ -269,19 +254,13 @@ component \ReWirezuPreludezuzaza\ is
             arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
-      component \ZZLLzuReWirezuPreludezuzaza2\ is
-      port (arg0 : in std_logic_vector (0 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      signal zzllzurewirezupreludezuzaza2zuout : std_logic_vector (0 downto 0);
       signal rewirezupreludezuzazazuout : std_logic_vector (0 downto 0);
       signal conn : std_logic_vector (0 downto 0);
       signal \rewirezupreludezuzazazuoutR1\ : std_logic_vector (0 downto 0);
 begin
-inst : \ZZLLzuReWirezuPreludezuzaza2\ port map (arg0, zzllzurewirezupreludezuzaza2zuout);
-      \instR1\ : \ReWirezuPreludezuzaza\ port map (arg0, arg0, rewirezupreludezuzazazuout);
-      conn <= rw_cond(rw_eq(arg1, std_logic_vector'(B"1")), zzllzurewirezupreludezuzaza2zuout, rewirezupreludezuzazazuout);
-      \instR2\ : \ReWirezuPreludezuzaza\ port map (conn, arg1, \rewirezupreludezuzazazuoutR1\);
+inst : \ReWirezuPreludezuzaza\ port map (arg0, arg0, rewirezupreludezuzazazuout);
+      conn <= rw_cond(rw_eq(arg1, std_logic_vector'(B"1")), arg0, rewirezupreludezuzazazuout);
+      \instR1\ : \ReWirezuPreludezuzaza\ port map (conn, arg1, \rewirezupreludezuzazazuoutR1\);
       res <= (\rewirezupreludezuzazazuoutR1\ & std_logic_vector'(B"100"));
 end architecture;
 
@@ -296,12 +275,7 @@ port (arg0 : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of \ReWirezuPreludezuzaza\ is
-component \ZZLLzuReWirezuPreludezuzaza2\ is
-      port (arg0 : in std_logic_vector (0 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      signal zzllzurewirezupreludezuzaza2zuout : std_logic_vector (0 downto 0);
+
 begin
-inst : \ZZLLzuReWirezuPreludezuzaza2\ port map (arg1, zzllzurewirezupreludezuzaza2zuout);
-      res <= rw_cond(rw_eq(arg0, std_logic_vector'(B"1")), zzllzurewirezupreludezuzaza2zuout, std_logic_vector'(B"0"));
+res <= rw_cond(rw_eq(arg0, std_logic_vector'(B"1")), arg1, std_logic_vector'(B"0"));
 end architecture;

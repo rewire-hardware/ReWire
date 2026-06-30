@@ -26,7 +26,7 @@ rw__LL_Main_go14 x0 x1 = x1 # (0b00 # x0)
 
 // $LL.Main.go13
 rw__LL_Main_go13 : [1] -> [1] -> [1] -> [1]
-rw__LL_Main_go13 x0 x1 x2 = if x2 == 0b1 then (rw__LL_ReWire_Prelude___2 x0) else (rw__LL_Main_go6 x0 x1)
+rw__LL_Main_go13 x0 x1 x2 = if x2 == 0b1 then (rw__LL_Main_go3 x0) else (rw__LL_Main_go6 x0 x1)
 
 // $LL.Main.go12
 rw__LL_Main_go12 : [1] -> [1] -> [4]
@@ -91,6 +91,10 @@ rw__LL_Main_go5 x0 x1 = rw__LL_Main_go11 x0 x1
 // $LL.Main.go4
 rw__LL_Main_go4 : [1] -> [4]
 rw__LL_Main_go4 x0 = if x0 == 0b1 then (rw__LL_Main_go10 x0) else (rw__LL_Main_go7 x0 x0)
+
+// $LL.Main.go3
+rw__LL_Main_go3 : [1] -> [1]
+rw__LL_Main_go3 x0 = x0
 
 // ReWire.Prelude.&&
 rw_ReWire_Prelude___ : [1] -> [1] -> [1]

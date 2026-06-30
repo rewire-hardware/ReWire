@@ -147,10 +147,8 @@ module top_level (input logic [0:0] clk,
   logic [1023:0] zi9;
   logic [2049:0] zi10;
   logic [1023:0] zi11;
-  logic [2049:0] zll_main_nopipeline11_out;
-  logic [2049:0] zll_main_nopipeline23_out;
-  logic [2049:0] zll_main_nopipeline11_outR1;
-  logic [2049:0] zll_main_nopipeline23_outR1;
+  logic [2049:0] zll_main_nopipeline17_out;
+  logic [2049:0] zll_main_nopipeline17_outR1;
   logic [2049:0] zres;
   Main_add  inst (__st0, main_add_out);
   assign zi3 = main_add_out;
@@ -295,11 +293,9 @@ module top_level (input logic [0:0] clk,
   assign zi9 = {main_swapix4_out, main_swapix4_outR1, main_swapix4_outR2, main_swapix4_outR3, main_swapix4_outR4, main_swapix4_outR5, main_swapix4_outR6, main_swapix4_outR7, main_swapix4_outR8, main_swapix4_outR9, main_swapix4_outR10, main_swapix4_outR11, main_swapix4_outR12, main_swapix4_outR13, main_swapix4_outR14, main_swapix4_outR15, main_swapix4_outR16, main_swapix4_outR17, main_swapix4_outR18, main_swapix4_outR19, main_swapix4_outR20, main_swapix4_outR21, main_swapix4_outR22, main_swapix4_outR23, main_swapix4_outR24, main_swapix4_outR25, main_swapix4_outR26, main_swapix4_outR27, main_swapix4_outR28, main_swapix4_outR29, main_swapix4_outR30, main_swapix4_outR31};
   assign zi10 = {{2'h1, {11'h400{1'h0}}}, zi9};
   assign zi11 = zi10[1023:0];
-  ZLL_Main_nopipeline11  instR134 ({zi11, zi11}, zll_main_nopipeline11_out);
-  ZLL_Main_nopipeline23  instR135 (zll_main_nopipeline11_out, zll_main_nopipeline23_out);
-  ZLL_Main_nopipeline11  instR136 ({__st0, __st0}, zll_main_nopipeline11_outR1);
-  ZLL_Main_nopipeline23  instR137 (zll_main_nopipeline11_outR1, zll_main_nopipeline23_outR1);
-  assign zres = (__in0 == 1'h0) ? zll_main_nopipeline23_out : zll_main_nopipeline23_outR1;
+  ZLL_Main_nopipeline17  instR134 (zi11, zll_main_nopipeline17_out);
+  ZLL_Main_nopipeline17  instR135 (__st0, zll_main_nopipeline17_outR1);
+  assign zres = (__in0 == 1'h0) ? zll_main_nopipeline17_out : zll_main_nopipeline17_outR1;
   assign __st0_next = zres[1023:0];
   assign __out0 = zres[2047:1024];
   initial __st0 = {93'h40000000020000001, {10'h3a3{1'h0}}};
@@ -312,9 +308,8 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module ZLL_Main_swapix425 (input logic [1023:0] arg0,
+module ZLL_Main_swapix325 (input logic [1023:0] arg0,
   input logic [4:0] arg1,
-  input logic [0:0] arg2,
   output logic [31:0] res);
   logic [31:0] zll_main_swapix422_out;
   ZLL_Main_swapix422  inst (arg0, arg1, zll_main_swapix422_out);
@@ -340,7 +335,6 @@ module Main_rot (input logic [31:0] arg0,
   logic [32:0] zi13;
   logic [0:0] zi14;
   logic [31:0] zi15;
-  logic [31:0] zll_main_initialize65_out;
   Main_explode5  inst (arg2, main_explode5_out);
   assign zi7 = main_explode5_out;
   assign zi8 = zi7[4];
@@ -348,21 +342,7 @@ module Main_rot (input logic [31:0] arg0,
   assign zi13 = {zi8, slice_in[31:0]};
   assign zi14 = zi13[32];
   assign zi15 = zi13[31:0];
-  ZLL_Main_initialize65  instR1 (zi15, zll_main_initialize65_out);
-  assign res = (zi14 == 1'h1) ? zll_main_initialize65_out : ((zi15 << arg0) | (zi15 >> (32'h20 - arg0)));
-endmodule
-
-module ZLL_Main_swapix121 (input logic [4:0] arg0,
-  input logic [1023:0] arg1,
-  output logic [31:0] res);
-  logic [1023:0] slice_in;
-  assign slice_in = arg1 >> (((128'h20 - {{7'h7b{1'h0}}, arg0}) - 128'h1) * 128'h20);
-  assign res = slice_in[31:0];
-endmodule
-
-module ZLL_Main_initialize65 (input logic [31:0] arg0,
-  output logic [31:0] res);
-  assign res = arg0;
+  assign res = (zi14 == 1'h1) ? zi15 : ((zi15 << arg0) | (zi15 >> (32'h20 - arg0)));
 endmodule
 
 module ReWire_Prelude_not (input logic [0:0] arg0,
@@ -370,22 +350,12 @@ module ReWire_Prelude_not (input logic [0:0] arg0,
   assign res = (arg0 == 1'h1) ? 1'h0 : 1'h1;
 endmodule
 
-module ZLL_Main_nopipeline23 (input logic [2049:0] arg0,
-  output logic [2049:0] res);
-  logic [1023:0] zi0;
-  logic [1023:0] zi1;
-  assign zi0 = arg0[2047:1024];
-  assign zi1 = arg0[1023:0];
-  assign res = {2'h2, zi0, zi1};
-endmodule
-
-module ZLL_Main_swapix117 (input logic [4:0] arg0,
+module ZLL_Main_swapix219 (input logic [4:0] arg0,
   input logic [1023:0] arg1,
-  input logic [0:0] arg2,
   output logic [31:0] res);
-  logic [31:0] zll_main_swapix121_out;
-  ZLL_Main_swapix121  inst (arg0, arg1, zll_main_swapix121_out);
-  assign res = zll_main_swapix121_out;
+  logic [1023:0] slice_in;
+  assign slice_in = arg1 >> (((128'h20 - {{7'h7b{1'h0}}, arg0}) - 128'h1) * 128'h20);
+  assign res = slice_in[31:0];
 endmodule
 
 module Main_add (input logic [1023:0] arg0,
@@ -476,8 +446,7 @@ module Main_swapix4 (input logic [1023:0] arg0,
   logic [0:0] rewirezupreludezuzazazuoutR1;
   logic [0:0] zi13;
   logic [31:0] zll_main_swapix422_outR1;
-  logic [0:0] rewirezupreludezuzazazuoutR2;
-  logic [31:0] zll_main_swapix425_out;
+  logic [31:0] zll_main_swapix325_out;
   Main_explode5  inst (arg1, main_explode5_out);
   assign zi3 = main_explode5_out;
   assign zi4 = zi3[4];
@@ -494,9 +463,13 @@ module Main_swapix4 (input logic [1023:0] arg0,
   ReWirezuPreludezuzaza  instR4 (zi4, zi8, rewirezupreludezuzazazuoutR1);
   assign zi13 = rewirezupreludezuzazazuoutR1;
   ZLL_Main_swapix422  instR5 (arg0, zi10, zll_main_swapix422_outR1);
-  ReWirezuPreludezuzaza  instR6 (zi4, zi8, rewirezupreludezuzazazuoutR2);
-  ZLL_Main_swapix425  instR7 (arg0, arg1, rewirezupreludezuzazazuoutR2, zll_main_swapix425_out);
-  assign res = (zi11 == 1'h1) ? zll_main_swapix422_out : ((zi13 == 1'h1) ? zll_main_swapix422_outR1 : zll_main_swapix425_out);
+  ZLL_Main_swapix325  instR6 (arg0, arg1, zll_main_swapix325_out);
+  assign res = (zi11 == 1'h1) ? zll_main_swapix422_out : ((zi13 == 1'h1) ? zll_main_swapix422_outR1 : zll_main_swapix325_out);
+endmodule
+
+module ZLL_Main_nopipeline17 (input logic [1023:0] arg0,
+  output logic [2049:0] res);
+  assign res = {2'h2, arg0, arg0};
 endmodule
 
 module Main_swapix2 (input logic [1023:0] arg0,
@@ -514,12 +487,11 @@ module Main_swapix2 (input logic [1023:0] arg0,
   logic [0:0] rewire_prelude_not_out;
   logic [0:0] rewirezupreludezuzazazuout;
   logic [0:0] zi11;
-  logic [31:0] zll_main_swapix121_out;
+  logic [1023:0] slice_in;
   logic [0:0] rewirezupreludezuzazazuoutR1;
   logic [0:0] zi13;
-  logic [31:0] zll_main_swapix121_outR1;
-  logic [0:0] rewirezupreludezuzazazuoutR2;
-  logic [31:0] zll_main_swapix117_out;
+  logic [1023:0] slice_inR1;
+  logic [31:0] zll_main_swapix219_out;
   Main_explode5  inst (arg1, main_explode5_out);
   assign zi3 = main_explode5_out;
   assign zi4 = zi3[4];
@@ -532,13 +504,12 @@ module Main_swapix2 (input logic [1023:0] arg0,
   ReWire_Prelude_not  instR1 (zi7, rewire_prelude_not_out);
   ReWirezuPreludezuzaza  instR2 (zi4, rewire_prelude_not_out, rewirezupreludezuzazazuout);
   assign zi11 = rewirezupreludezuzazazuout;
-  ZLL_Main_swapix121  instR3 (zi9, arg0, zll_main_swapix121_out);
-  ReWirezuPreludezuzaza  instR4 (zi4, zi7, rewirezupreludezuzazazuoutR1);
+  assign slice_in = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, zi9}) - 128'h1) * 128'h20);
+  ReWirezuPreludezuzaza  instR3 (zi4, zi7, rewirezupreludezuzazazuoutR1);
   assign zi13 = rewirezupreludezuzazazuoutR1;
-  ZLL_Main_swapix121  instR5 (zi10, arg0, zll_main_swapix121_outR1);
-  ReWirezuPreludezuzaza  instR6 (zi4, zi7, rewirezupreludezuzazazuoutR2);
-  ZLL_Main_swapix117  instR7 (arg1, arg0, rewirezupreludezuzazazuoutR2, zll_main_swapix117_out);
-  assign res = (zi11 == 1'h1) ? zll_main_swapix121_out : ((zi13 == 1'h1) ? zll_main_swapix121_outR1 : zll_main_swapix117_out);
+  assign slice_inR1 = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, zi10}) - 128'h1) * 128'h20);
+  ZLL_Main_swapix219  instR4 (arg1, arg0, zll_main_swapix219_out);
+  assign res = (zi11 == 1'h1) ? slice_in[31:0] : ((zi13 == 1'h1) ? slice_inR1[31:0] : zll_main_swapix219_out);
 endmodule
 
 module Main_xor (input logic [1023:0] arg0,
@@ -626,7 +597,7 @@ module Main_xorix (input logic [1023:0] arg0,
   logic [0:0] zi11;
   logic [1023:0] slice_in;
   logic [1023:0] slice_inR1;
-  logic [31:0] zll_main_swapix121_out;
+  logic [1023:0] slice_inR2;
   Main_explode5  inst (arg1, main_explode5_out);
   assign zi3 = main_explode5_out;
   assign zi4 = zi3[4];
@@ -640,23 +611,14 @@ module Main_xorix (input logic [1023:0] arg0,
   assign zi11 = rewire_prelude_not_out;
   assign slice_in = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, zi9}) - 128'h1) * 128'h20);
   assign slice_inR1 = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, zi10}) - 128'h1) * 128'h20);
-  ZLL_Main_swapix121  instR2 (zi10, arg0, zll_main_swapix121_out);
-  assign res = (zi11 == 1'h1) ? (slice_in[31:0] ^ slice_inR1[31:0]) : zll_main_swapix121_out;
+  assign slice_inR2 = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, zi10}) - 128'h1) * 128'h20);
+  assign res = (zi11 == 1'h1) ? (slice_in[31:0] ^ slice_inR1[31:0]) : slice_inR2[31:0];
 endmodule
 
 module ReWirezuPreludezuzaza (input logic [0:0] arg0,
   input logic [0:0] arg1,
   output logic [0:0] res);
   assign res = (arg0 == 1'h1) ? arg1 : 1'h0;
-endmodule
-
-module ZLL_Main_nopipeline11 (input logic [2047:0] arg0,
-  output logic [2049:0] res);
-  logic [1023:0] zi0;
-  logic [1023:0] zi1;
-  assign zi0 = arg0[2047:1024];
-  assign zi1 = arg0[1023:0];
-  assign res = {2'h0, zi0, zi1};
 endmodule
 
 module Main_swapix3 (input logic [1023:0] arg0,
@@ -680,9 +642,7 @@ module Main_swapix3 (input logic [1023:0] arg0,
   logic [0:0] rewirezupreludezuzazazuoutR1;
   logic [0:0] zi13;
   logic [31:0] zll_main_swapix422_outR1;
-  logic [0:0] rewire_prelude_not_outR3;
-  logic [0:0] rewirezupreludezuzazazuoutR2;
-  logic [31:0] zll_main_swapix425_out;
+  logic [31:0] zll_main_swapix325_out;
   Main_explode5  inst (arg1, main_explode5_out);
   assign zi3 = main_explode5_out;
   assign zi4 = zi3[4];
@@ -701,10 +661,8 @@ module Main_swapix3 (input logic [1023:0] arg0,
   ReWirezuPreludezuzaza  instR6 (rewire_prelude_not_outR2, zi6, rewirezupreludezuzazazuoutR1);
   assign zi13 = rewirezupreludezuzazazuoutR1;
   ZLL_Main_swapix422  instR7 (arg0, zi10, zll_main_swapix422_outR1);
-  ReWire_Prelude_not  instR8 (zi4, rewire_prelude_not_outR3);
-  ReWirezuPreludezuzaza  instR9 (rewire_prelude_not_outR3, zi6, rewirezupreludezuzazazuoutR2);
-  ZLL_Main_swapix425  instR10 (arg0, arg1, rewirezupreludezuzazazuoutR2, zll_main_swapix425_out);
-  assign res = (zi11 == 1'h1) ? zll_main_swapix422_out : ((zi13 == 1'h1) ? zll_main_swapix422_outR1 : zll_main_swapix425_out);
+  ZLL_Main_swapix325  instR8 (arg0, arg1, zll_main_swapix325_out);
+  assign res = (zi11 == 1'h1) ? zll_main_swapix422_out : ((zi13 == 1'h1) ? zll_main_swapix422_outR1 : zll_main_swapix325_out);
 endmodule
 
 module Main_swapix1 (input logic [1023:0] arg0,
@@ -722,16 +680,13 @@ module Main_swapix1 (input logic [1023:0] arg0,
   logic [0:0] rewire_prelude_not_out;
   logic [0:0] rewirezupreludezuzazazuout;
   logic [0:0] zi11;
-  logic [31:0] zll_main_swapix121_out;
+  logic [1023:0] slice_in;
   logic [0:0] rewire_prelude_not_outR1;
   logic [0:0] rewire_prelude_not_outR2;
   logic [0:0] rewirezupreludezuzazazuoutR1;
   logic [0:0] zi13;
   logic [31:0] zll_main_swapix422_out;
-  logic [0:0] rewire_prelude_not_outR3;
-  logic [0:0] rewire_prelude_not_outR4;
-  logic [0:0] rewirezupreludezuzazazuoutR2;
-  logic [31:0] zll_main_swapix117_out;
+  logic [31:0] zll_main_swapix219_out;
   Main_explode5  inst (arg1, main_explode5_out);
   assign zi3 = main_explode5_out;
   assign zi4 = zi3[4];
@@ -744,17 +699,14 @@ module Main_swapix1 (input logic [1023:0] arg0,
   ReWire_Prelude_not  instR1 (zi4, rewire_prelude_not_out);
   ReWirezuPreludezuzaza  instR2 (rewire_prelude_not_out, zi5, rewirezupreludezuzazazuout);
   assign zi11 = rewirezupreludezuzazazuout;
-  ZLL_Main_swapix121  instR3 (zi9, arg0, zll_main_swapix121_out);
-  ReWire_Prelude_not  instR4 (zi4, rewire_prelude_not_outR1);
-  ReWire_Prelude_not  instR5 (zi5, rewire_prelude_not_outR2);
-  ReWirezuPreludezuzaza  instR6 (rewire_prelude_not_outR1, rewire_prelude_not_outR2, rewirezupreludezuzazazuoutR1);
+  assign slice_in = arg0 >> (((128'h20 - {{7'h7b{1'h0}}, zi9}) - 128'h1) * 128'h20);
+  ReWire_Prelude_not  instR3 (zi4, rewire_prelude_not_outR1);
+  ReWire_Prelude_not  instR4 (zi5, rewire_prelude_not_outR2);
+  ReWirezuPreludezuzaza  instR5 (rewire_prelude_not_outR1, rewire_prelude_not_outR2, rewirezupreludezuzazazuoutR1);
   assign zi13 = rewirezupreludezuzazazuoutR1;
-  ZLL_Main_swapix422  instR7 (arg0, zi10, zll_main_swapix422_out);
-  ReWire_Prelude_not  instR8 (zi4, rewire_prelude_not_outR3);
-  ReWire_Prelude_not  instR9 (zi5, rewire_prelude_not_outR4);
-  ReWirezuPreludezuzaza  instR10 (rewire_prelude_not_outR3, rewire_prelude_not_outR4, rewirezupreludezuzazazuoutR2);
-  ZLL_Main_swapix117  instR11 (arg1, arg0, rewirezupreludezuzazazuoutR2, zll_main_swapix117_out);
-  assign res = (zi11 == 1'h1) ? zll_main_swapix121_out : ((zi13 == 1'h1) ? zll_main_swapix422_out : zll_main_swapix117_out);
+  ZLL_Main_swapix422  instR6 (arg0, zi10, zll_main_swapix422_out);
+  ZLL_Main_swapix219  instR7 (arg1, arg0, zll_main_swapix219_out);
+  assign res = (zi11 == 1'h1) ? slice_in[31:0] : ((zi13 == 1'h1) ? zll_main_swapix422_out : zll_main_swapix219_out);
 endmodule
 
 module ZLL_Main_rotate1 (input logic [1055:0] arg0,
@@ -863,7 +815,6 @@ module Main_addix (input logic [1023:0] arg0,
   logic [0:0] zi15;
   logic [31:0] zi16;
   logic [31:0] zi17;
-  logic [31:0] zll_main_initialize65_out;
   Main_explode5  inst (arg1, main_explode5_out);
   assign zi6 = main_explode5_out;
   assign zi7 = zi6[4];
@@ -879,6 +830,5 @@ module Main_addix (input logic [1023:0] arg0,
   assign zi15 = zi14[64];
   assign zi16 = zi14[63:32];
   assign zi17 = zi14[31:0];
-  ZLL_Main_initialize65  instR1 (zi16, zll_main_initialize65_out);
-  assign res = (zi15 == 1'h1) ? (zi16 + zi17) : zll_main_initialize65_out;
+  assign res = (zi15 == 1'h1) ? (zi16 + zi17) : zi16;
 endmodule

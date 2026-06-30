@@ -1,154 +1,154 @@
 $Pure.dispatch : ([128]) -> [129]
-$Pure.dispatch $1 =
-      $LL.Pure.dispatch $1
+$Pure.dispatch i =
+      $LL.Pure.dispatch i
 
 $LL.Main.loop3 : ([128]) -> [129]
-$LL.Main.loop3 $0 =
-      $LL.Main.loop2 (1'h0 # Main.compute $0)
+$LL.Main.loop3 i =
+      $LL.Main.loop2 (1'h0 # Main.compute i)
 
 $LL.Main.compute29 : ([64]) -> [3]
-$LL.Main.compute29 $0 =
-      $LL.Main.compute12 $0
+$LL.Main.compute29 $x =
+      $LL.Main.compute12 $x
 
 Main.compute : ([128]) -> [128]
-Main.compute $0 =
-      $LL.Main.compute21 $0
+Main.compute $x =
+      $LL.Main.compute21 $x
 
 $LL.Main.compute28 : ([64]) -> [8]
-$LL.Main.compute28 $0 =
-      $LL.Main.compute11 $0
+$LL.Main.compute28 $x =
+      $LL.Main.compute11 $x
 
 $LL.Main.loop2 : ([129]) -> [129]
-$LL.Main.loop2 $0 =
-      $LL.Main.loop $0[0 +: 128]
+$LL.Main.loop2 disc =
+      $LL.Main.loop disc[0 +: 128]
 
 $LL.Main.compute27 : ([8], [64], [56]) -> [128]
-$LL.Main.compute27 $0 $1 $2 =
-      $LL.Main.compute18 $0 $1 $2 ($LL.Main.compute28 $1)
+$LL.Main.compute27 v0 w vs =
+      $LL.Main.compute18 v0 w vs ($LL.Main.compute28 w)
 
 $LL.Main.compute26 : ([64]) -> [64]
-$LL.Main.compute26 $0 =
-      $LL.Main.compute25 $0[8 +: 56] $0[0 +: 8]
+$LL.Main.compute26 $32 =
+      $LL.Main.compute25 $32[8 +: 56] $32[0 +: 8]
 
 $LL.Main.compute25 : ([56], [8]) -> [64]
-$LL.Main.compute25 $0 $1 =
-      $LL.Main.compute2 $0 $1
+$LL.Main.compute25 $x $x1 =
+      $LL.Main.compute2 $x $x1
 
 $LL.Main.compute24 : ([64]) -> [8]
-$LL.Main.compute24 $0 =
-      $LL.Main.compute1 $0
+$LL.Main.compute24 $x =
+      $LL.Main.compute1 $x
 
 $LL.Main.compute23 : ([8], [56]) -> [64]
-$LL.Main.compute23 $0 $1 =
-      $0 # $1
+$LL.Main.compute23 x $x =
+      x # $x
 
 $LL.Main.compute22 : ([64], [64], [8]) -> [128]
-$LL.Main.compute22 $0 $1 $2 =
-      $LL.Main.compute13 $0 $1 $2
+$LL.Main.compute22 $x $x1 $x2 =
+      $LL.Main.compute13 $x $x1 $x2
 
 $LL.Main.compute21 : ([128]) -> [128]
-$LL.Main.compute21 $0 =
-      $LL.Main.compute7 $0[64 +: 64] $0[0 +: 64]
+$LL.Main.compute21 $7 =
+      $LL.Main.compute7 $7[64 +: 64] $7[0 +: 64]
 
 $LL.Main.compute20 : ([8], [56], [8], [56]) -> [128]
-$LL.Main.compute20 $0 $1 $2 $3 =
-      $LL.Main.compute9 $0 $1 $2 $3
+$LL.Main.compute20 $x $x1 $x2 $x3 =
+      $LL.Main.compute9 $x $x1 $x2 $x3
 
 $LL.Main.compute19 : ([8], [64], [56]) -> [128]
-$LL.Main.compute19 $0 $1 $2 =
-      $LL.Main.compute27 $0 $1 $2
+$LL.Main.compute19 $x $x1 $x2 =
+      $LL.Main.compute27 $x $x1 $x2
 
 $LL.Main.compute18 : ([8], [64], [56], [8]) -> [128]
-$LL.Main.compute18 $0 $1 $2 $3 =
-      $LL.Main.compute3 $0 $1 $2 $3
+$LL.Main.compute18 $x $x1 $x2 $x3 =
+      $LL.Main.compute3 $x $x1 $x2 $x3
 
 $LL.Main.compute17 : ([8], [56], [8], [56]) -> [128]
-$LL.Main.compute17 $0 $1 $2 $3 =
-      $LL.Main.compute6 $1 $2 # $LL.Main.compute15 $0 $3
+$LL.Main.compute17 v0 vs w7 ws =
+      $LL.Main.compute6 vs w7 # $LL.Main.compute15 v0 ws
 
 $LL.Main.compute16 : ([64]) -> [64]
-$LL.Main.compute16 $0 =
-      $LL.Main.compute23 $0[56 +: 8] $0[0 +: 56]
+$LL.Main.compute16 $31 =
+      $LL.Main.compute23 $31[56 +: 8] $31[0 +: 56]
 
 Main.loop1 : ([128]) -> [129]
-Main.loop1 $0 =
-      $LL.Main.loop1 $0
+Main.loop1 $x =
+      $LL.Main.loop1 $x
 
 $LL.Main.compute15 : ([8], [56]) -> [64]
-$LL.Main.compute15 $0 $1 =
-      $LL.Main.compute $0 $1
+$LL.Main.compute15 $x $x1 =
+      $LL.Main.compute $x $x1
 
 $LL.Main.compute14 : ([56], [8]) -> [64]
-$LL.Main.compute14 $0 $1 =
-      $LL.Main.compute26 ($0 # $1)
+$LL.Main.compute14 $3 $4 =
+      $LL.Main.compute26 ($3 # $4)
 
 $LL.Main.compute13 : ([64], [64], [8]) -> [128]
-$LL.Main.compute13 $0 $1 $2 =
-      $LL.Main.compute5 $0 $1 $2
+$LL.Main.compute13 $x $x1 $x2 =
+      $LL.Main.compute5 $x $x1 $x2
 
 $LL.Main.compute12 : ([64]) -> [3]
-$LL.Main.compute12 $0 =
+$LL.Main.compute12 $21 =
       3'h7
 
 $LL.Main.loop1 : ([128]) -> [129]
-$LL.Main.loop1 $0 =
-      $LL.Main.loop3 $0
+$LL.Main.loop1 $x =
+      $LL.Main.loop3 $x
 
 $LL.Main.compute11 : ([64]) -> [8]
-$LL.Main.compute11 $0 =
-      trunc 8 (lshr $0 (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute29 $0))) 128'h1) 128'h8))
+$LL.Main.compute11 v =
+      trunc 8 (lshr v (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute29 v))) 128'h1) 128'h8))
 
 $LL.Main.compute10 : ([8], [64], [56], [8]) -> [128]
-$LL.Main.compute10 $0 $1 $2 $3 =
-      $LL.Main.compute20 $0 $2 $3 $1[8 +: 56]
+$LL.Main.compute10 v0 w vs w7 =
+      $LL.Main.compute20 v0 vs w7 w[8 +: 56]
 
 $LL.Main.compute9 : ([8], [56], [8], [56]) -> [128]
-$LL.Main.compute9 $0 $1 $2 $3 =
-      $LL.Main.compute17 $0 $1 $2 $3
+$LL.Main.compute9 $x $x1 $x2 $x3 =
+      $LL.Main.compute17 $x $x1 $x2 $x3
 
 $LL.Main.loop : ([128]) -> [129]
-$LL.Main.loop $0 =
-      1'h1 # $0
+$LL.Main.loop rabind =
+      1'h1 # rabind
 
 $LL.Main.compute8 : ([64], [64]) -> [128]
-$LL.Main.compute8 $0 $1 =
-      $LL.Main.compute22 $0 $1 ($LL.Main.compute24 $0)
+$LL.Main.compute8 v w =
+      $LL.Main.compute22 v w ($LL.Main.compute24 v)
 
 $LL.Main.compute7 : ([64], [64]) -> [128]
-$LL.Main.compute7 $0 $1 =
-      $LL.Main.compute8 $0 $1
+$LL.Main.compute7 $x $x1 =
+      $LL.Main.compute8 $x $x1
 
 $LL.Main.compute6 : ([56], [8]) -> [64]
-$LL.Main.compute6 $0 $1 =
-      $LL.Main.compute14 $0 $1
+$LL.Main.compute6 $x $x1 =
+      $LL.Main.compute14 $x $x1
 
 $LL.Main.compute5 : ([64], [64], [8]) -> [128]
-$LL.Main.compute5 $0 $1 $2 =
-      $LL.Main.compute4 $2 $1 $0[0 +: 56]
+$LL.Main.compute5 v w v0 =
+      $LL.Main.compute4 v0 w v[0 +: 56]
 
 $LL.Main.compute4 : ([8], [64], [56]) -> [128]
-$LL.Main.compute4 $0 $1 $2 =
-      $LL.Main.compute19 $0 $1 $2
+$LL.Main.compute4 $x $x1 $x2 =
+      $LL.Main.compute19 $x $x1 $x2
 
 $LL.Main.compute3 : ([8], [64], [56], [8]) -> [128]
-$LL.Main.compute3 $0 $1 $2 $3 =
-      $LL.Main.compute10 $0 $1 $2 $3
+$LL.Main.compute3 $x $x1 $x2 $x3 =
+      $LL.Main.compute10 $x $x1 $x2 $x3
 
 $LL.Pure.dispatch : ([128]) -> [129]
-$LL.Pure.dispatch $0 =
-      Main.loop1 $0
+$LL.Pure.dispatch i =
+      Main.loop1 i
 
 $LL.Main.compute2 : ([56], [8]) -> [64]
-$LL.Main.compute2 $0 $1 =
-      $0 # $1
+$LL.Main.compute2 v x =
+      v # x
 
 $LL.Main.compute1 : ([64]) -> [8]
-$LL.Main.compute1 $0 =
-      $0[56 +: 8]
+$LL.Main.compute1 v =
+      v[56 +: 8]
 
 $LL.Main.compute : ([8], [56]) -> [64]
-$LL.Main.compute $0 $1 =
-      $LL.Main.compute16 ($0 # $1)
+$LL.Main.compute $1 $2 =
+      $LL.Main.compute16 ($1 # $2)
 
 device top_level
       input __in0 : [64]

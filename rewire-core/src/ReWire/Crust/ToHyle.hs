@@ -210,7 +210,7 @@ transDefn conf start conMap = \ case
                      modify $ \ s -> s { sCtr = 0 }
                      n'   <- transName n
                      sig  <- runReaderT (transType t') conMap
-                     let ps = zipWith (\ i _ -> "$" <> showt (i :: Int)) [0 ..] xs
+                     let ps = uniquifyLocals xs
                      body <- relocatingTo an $ runReaderT (runReaderT (transExp e') conMap) (Map.fromList $ zip xs ps)
                      pure $ Right $ A.Defn an n' sig ps body
       where -- | state0 takes the (dead) initial stores as arguments when the
@@ -225,6 +225,22 @@ transDefn conf start conMap = \ case
                   M.TyApp _ (M.TyApp _ (M.TyCon _ (n2s -> "Vec")) _) _  -> [t]
                   M.TyApp _ (M.TyCon _ (n2s -> "Finite")) _             -> [t]
                   _                                                     -> M.flattenTyApp t
+
+-- | Give each (already distinct) local binder a readable Hyle name derived
+--   from its source name, disambiguating base-name collisions with a numeric
+--   suffix so the parameter list stays pairwise distinct (cf. 'buildNameMap'
+--   for globals). Source identifiers never begin with '$', so they cannot
+--   clash with the generated '$t'/'$in'/'$res' names.
+uniquifyLocals :: [Name M.Exp] -> [A.Name]
+uniquifyLocals = go mempty
+      where go :: HashSet A.Name -> [Name M.Exp] -> [A.Name]
+            go _    []       = []
+            go used (v : vs) = let nm = pick used (n2s v) (0 :: Int) in nm : go (Set.insert nm used) vs
+
+            pick :: HashSet A.Name -> Text -> Int -> A.Name
+            pick used base i | cand `Set.member` used = pick used base (i + 1)
+                             | otherwise              = cand
+                  where cand = if i == 0 then base else base <> showt i
 
 ---
 --- Expression translation.

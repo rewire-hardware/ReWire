@@ -27,8 +27,6 @@ module top_level (input logic [0:0] clk,
   logic [9:0] zi9;
   logic [204:0] zi10;
   logic [31:0] zi18;
-  logic [31:0] zi20;
-  logic [31:0] zll_main_mem14_out;
   logic [236:0] zi21;
   logic [31:0] zi22;
   logic [204:0] zi23;
@@ -42,18 +40,9 @@ module top_level (input logic [0:0] clk,
   logic [214:0] zi25;
   logic [204:0] zi27;
   logic [31:0] zi33;
-  logic [31:0] zi35;
-  logic [31:0] zi36;
-  logic [31:0] zll_main_mem02_out;
   logic [31:0] zi38;
-  logic [31:0] zi39;
-  logic [31:0] zi40;
-  logic [31:0] zll_main_mem02_outR1;
   logic [31:0] zi43;
-  logic [31:0] zi44;
-  logic [31:0] zll_main_mem14_outR1;
   logic [31:0] zi48;
-  logic [31:0] zll_main_data_out_reg3_out;
   logic [236:0] zi49;
   logic [31:0] zi50;
   logic [204:0] zi51;
@@ -142,101 +131,90 @@ module top_level (input logic [0:0] clk,
   assign zi9 = zi8[214:205];
   assign zi10 = zi8[204:0];
   assign zi18 = zi8[192:161];
-  assign zi20 = zi8[159:128];
-  ZLL_Main_mem14  instR8 (zi18, zi20, zll_main_mem14_out);
-  assign zi21 = {zll_main_mem14_out, zi10};
+  assign zi21 = {zi18, zi10};
   assign zi22 = zi21[236:205];
   assign zi23 = zi21[204:0];
-  ZLL_Main_setloc4  instR9 ({zi9, zi22}, zi23, zll_main_setloc4_outR1);
-  ZLL_Main_perform__read28  instR10 (zll_main_setloc4_outR1, zll_main_perform_read28_out);
-  ZLL_Main_perform__write32  instR11 (zll_main_perform_read28_out, zll_main_perform_write32_outR1);
-  ZLL_Main_while__addr__reg__049  instR12 (zll_main_perform_write32_outR1, zll_main_while_addr_reg_049_outR1);
-  ZLL_Main_idle111  instR13 (zll_main_while_addr_reg_049_outR1, zll_main_idle111_out);
+  ZLL_Main_setloc4  instR8 ({zi9, zi22}, zi23, zll_main_setloc4_outR1);
+  ZLL_Main_perform__read28  instR9 (zll_main_setloc4_outR1, zll_main_perform_read28_out);
+  ZLL_Main_perform__write32  instR10 (zll_main_perform_read28_out, zll_main_perform_write32_outR1);
+  ZLL_Main_while__addr__reg__049  instR11 (zll_main_perform_write32_outR1, zll_main_while_addr_reg_049_outR1);
+  ZLL_Main_idle111  instR12 (zll_main_while_addr_reg_049_outR1, zll_main_idle111_out);
   assign zi24 = {__st0, __st1};
-  Main_get__addr__reg  instR14 (zi24, main_get_addr_reg_outR2);
+  Main_get__addr__reg  instR13 (zi24, main_get_addr_reg_outR2);
   assign zi25 = main_get_addr_reg_outR2;
   assign zi27 = zi25[204:0];
   assign zi33 = zi25[127:96];
-  assign zi35 = zi25[63:32];
-  assign zi36 = zi25[31:0];
-  ZLL_Main_mem02  instR15 (zi33, zi35, zi36, zll_main_mem02_out);
   assign zi38 = zi25[95:64];
-  assign zi39 = zi25[63:32];
-  assign zi40 = zi25[31:0];
-  ZLL_Main_mem02  instR16 (zi38, zi39, zi40, zll_main_mem02_outR1);
   assign zi43 = zi25[63:32];
-  assign zi44 = zi25[31:0];
-  ZLL_Main_mem14  instR17 (zi43, zi44, zll_main_mem14_outR1);
   assign zi48 = zi25[31:0];
-  ZLL_Main_data__out__reg3  instR18 (zi48, zll_main_data_out_reg3_out);
-  assign zi49 = {((zi25[214] == 1'h0) & ((zi25[213] == 1'h0) & ((zi25[212] == 1'h0) & ((zi25[211] == 1'h0) & ((zi25[210] == 1'h0) & ((zi25[209] == 1'h0) & ((zi25[208] == 1'h0) & ((zi25[207] == 1'h0) & ((zi25[206] == 1'h0) & (zi25[205] == 1'h0)))))))))) ? zll_main_mem02_out : (((zi25[214] == 1'h0) & ((zi25[213] == 1'h0) & ((zi25[212] == 1'h0) & ((zi25[211] == 1'h0) & ((zi25[210] == 1'h0) & ((zi25[209] == 1'h0) & ((zi25[208] == 1'h0) & ((zi25[207] == 1'h0) & ((zi25[206] == 1'h0) & (zi25[205] == 1'h1)))))))))) ? zll_main_mem02_outR1 : (((zi25[214] == 1'h0) & ((zi25[213] == 1'h0) & ((zi25[212] == 1'h0) & ((zi25[211] == 1'h0) & ((zi25[210] == 1'h0) & ((zi25[209] == 1'h0) & ((zi25[208] == 1'h0) & ((zi25[207] == 1'h0) & ((zi25[206] == 1'h1) & (zi25[205] == 1'h0)))))))))) ? zll_main_mem14_outR1 : zll_main_data_out_reg3_out)), zi27};
+  assign zi49 = {((zi25[214] == 1'h0) & ((zi25[213] == 1'h0) & ((zi25[212] == 1'h0) & ((zi25[211] == 1'h0) & ((zi25[210] == 1'h0) & ((zi25[209] == 1'h0) & ((zi25[208] == 1'h0) & ((zi25[207] == 1'h0) & ((zi25[206] == 1'h0) & (zi25[205] == 1'h0)))))))))) ? zi33 : (((zi25[214] == 1'h0) & ((zi25[213] == 1'h0) & ((zi25[212] == 1'h0) & ((zi25[211] == 1'h0) & ((zi25[210] == 1'h0) & ((zi25[209] == 1'h0) & ((zi25[208] == 1'h0) & ((zi25[207] == 1'h0) & ((zi25[206] == 1'h0) & (zi25[205] == 1'h1)))))))))) ? zi38 : (((zi25[214] == 1'h0) & ((zi25[213] == 1'h0) & ((zi25[212] == 1'h0) & ((zi25[211] == 1'h0) & ((zi25[210] == 1'h0) & ((zi25[209] == 1'h0) & ((zi25[208] == 1'h0) & ((zi25[207] == 1'h0) & ((zi25[206] == 1'h1) & (zi25[205] == 1'h0)))))))))) ? zi43 : zi48)), zi27};
   assign zi50 = zi49[236:205];
   assign zi51 = zi49[204:0];
-  ZLL_Main_set__data__out__reg8  instR19 (zi50, zi51, zll_main_set_data_out_reg8_out);
-  ZLL_Main_perform__read28  instR20 (zll_main_set_data_out_reg8_out, zll_main_perform_read28_outR1);
-  ZLL_Main_perform__write32  instR21 (zll_main_perform_read28_outR1, zll_main_perform_write32_outR2);
-  ZLL_Main_while__addr__reg__049  instR22 (zll_main_perform_write32_outR2, zll_main_while_addr_reg_049_outR2);
-  ZLL_Main_idle111  instR23 (zll_main_while_addr_reg_049_outR2, zll_main_idle111_outR1);
+  ZLL_Main_set__data__out__reg8  instR14 (zi50, zi51, zll_main_set_data_out_reg8_out);
+  ZLL_Main_perform__read28  instR15 (zll_main_set_data_out_reg8_out, zll_main_perform_read28_outR1);
+  ZLL_Main_perform__write32  instR16 (zll_main_perform_read28_outR1, zll_main_perform_write32_outR2);
+  ZLL_Main_while__addr__reg__049  instR17 (zll_main_perform_write32_outR2, zll_main_while_addr_reg_049_outR2);
+  ZLL_Main_idle111  instR18 (zll_main_while_addr_reg_049_outR2, zll_main_idle111_outR1);
   assign zi52 = {__st0, __st1};
-  Main_go  instR24 (__in0, main_go_out);
-  Main_rnw  instR25 (__in0, main_rnw_out);
+  Main_go  instR19 (__in0, main_go_out);
+  Main_rnw  instR20 (__in0, main_rnw_out);
   assign zi53 = {zi52, __in0, main_go_out, main_rnw_out};
   assign zi54 = zi53[252:48];
   assign zi55 = zi53[47:2];
-  Main_partition__in  instR26 (zi55, main_partition_in_out);
+  Main_partition__in  instR21 (zi55, main_partition_in_out);
   assign zi56 = main_partition_in_out;
-  Main_addr__in  instR27 (zi55, main_addr_in_out);
+  Main_addr__in  instR22 (zi55, main_addr_in_out);
   assign zi57 = main_addr_in_out;
-  Mainzuzlzazg  instR28 (zi56, zi57, mainzuzlzazgzuout);
-  Main_set__addr__reg1  instR29 (mainzuzlzazgzuout, zi54, main_set_addr_reg1_outR1);
-  ZLL_Main_idle113  instR30 (zi56, main_set_addr_reg1_outR1, zll_main_idle113_out);
-  ZLL_Main_perform__write32  instR31 (zll_main_idle113_out, zll_main_perform_write32_outR3);
-  ZLL_Main_while__addr__reg__049  instR32 (zll_main_perform_write32_outR3, zll_main_while_addr_reg_049_outR3);
+  Mainzuzlzazg  instR23 (zi56, zi57, mainzuzlzazgzuout);
+  Main_set__addr__reg1  instR24 (mainzuzlzazgzuout, zi54, main_set_addr_reg1_outR1);
+  ZLL_Main_idle113  instR25 (zi56, main_set_addr_reg1_outR1, zll_main_idle113_out);
+  ZLL_Main_perform__write32  instR26 (zll_main_idle113_out, zll_main_perform_write32_outR3);
+  ZLL_Main_while__addr__reg__049  instR27 (zll_main_perform_write32_outR3, zll_main_while_addr_reg_049_outR3);
   assign zi61 = zll_main_while_addr_reg_049_outR3;
   assign zi62 = zi61[409:205];
-  ZLL_Main_idle102  instR33 (zi62, zll_main_idle102_out);
+  ZLL_Main_idle102  instR28 (zi62, zll_main_idle102_out);
   assign zi64 = zll_main_idle102_out;
   assign zi65 = zi64[204:0];
-  ZLL_Main_connect4  instR34 (zi62, zll_main_connect4_out);
-  ZLL_Main_connect3  instR35 (zll_main_connect4_out, zll_main_connect3_out);
-  Main_go  instR36 (__in0, main_go_outR1);
-  Main_rnw  instR37 (__in0, main_rnw_outR1);
+  ZLL_Main_connect4  instR29 (zi62, zll_main_connect4_out);
+  ZLL_Main_connect3  instR30 (zll_main_connect4_out, zll_main_connect3_out);
+  Main_go  instR31 (__in0, main_go_outR1);
+  Main_rnw  instR32 (__in0, main_rnw_outR1);
   assign zi66 = {zi52, __in0, main_go_outR1, main_rnw_outR1};
   assign zi67 = zi66[252:48];
   assign zi68 = zi66[47:2];
-  Main_partition__in  instR38 (zi68, main_partition_in_outR1);
+  Main_partition__in  instR33 (zi68, main_partition_in_outR1);
   assign zi69 = main_partition_in_outR1;
-  Main_addr__in  instR39 (zi68, main_addr_in_outR1);
+  Main_addr__in  instR34 (zi68, main_addr_in_outR1);
   assign zi70 = main_addr_in_outR1;
   assign zi71 = zi66[47:16];
   assign zi76 = zi71;
-  Mainzuzlzazg  instR40 (zi69, zi70, mainzuzlzazgzuoutR1);
-  Main_set__addr__reg1  instR41 (mainzuzlzazgzuoutR1, zi67, main_set_addr_reg1_outR2);
+  Mainzuzlzazg  instR35 (zi69, zi70, mainzuzlzazgzuoutR1);
+  Main_set__addr__reg1  instR36 (mainzuzlzazgzuoutR1, zi67, main_set_addr_reg1_outR2);
   assign zi81 = main_set_addr_reg1_outR2;
   assign zi86 = zi81[127:0];
   assign zi87 = zi81[204:203];
   assign zi88 = zi81[202:193];
   assign zi90 = zi81[160];
   assign zi91 = zi81[159:128];
-  ZLL_Main_idle113  instR42 (zi69, {{zi87, zi88, zi76, zi90, zi91}, zi86}, zll_main_idle113_outR1);
-  ZLL_Main_perform__write32  instR43 (zll_main_idle113_outR1, zll_main_perform_write32_outR4);
-  ZLL_Main_while__addr__reg__049  instR44 (zll_main_perform_write32_outR4, zll_main_while_addr_reg_049_outR4);
+  ZLL_Main_idle113  instR37 (zi69, {{zi87, zi88, zi76, zi90, zi91}, zi86}, zll_main_idle113_outR1);
+  ZLL_Main_perform__write32  instR38 (zll_main_idle113_outR1, zll_main_perform_write32_outR4);
+  ZLL_Main_while__addr__reg__049  instR39 (zll_main_perform_write32_outR4, zll_main_while_addr_reg_049_outR4);
   assign zi92 = zll_main_while_addr_reg_049_outR4;
   assign zi93 = zi92[409:205];
-  ZLL_Main_idle102  instR45 (zi93, zll_main_idle102_outR1);
+  ZLL_Main_idle102  instR40 (zi93, zll_main_idle102_outR1);
   assign zi95 = zll_main_idle102_outR1;
   assign zi96 = zi95[204:0];
-  ZLL_Main_connect4  instR46 (zi93, zll_main_connect4_outR1);
-  ZLL_Main_connect3  instR47 (zll_main_connect4_outR1, zll_main_connect3_outR1);
-  Main_set__ack__reg1  instR48 (zi52, main_set_ack_reg1_out);
+  ZLL_Main_connect4  instR41 (zi93, zll_main_connect4_outR1);
+  ZLL_Main_connect3  instR42 (zll_main_connect4_outR1, zll_main_connect3_outR1);
+  Main_set__ack__reg1  instR43 (zi52, main_set_ack_reg1_out);
   assign zi97 = main_set_ack_reg1_out;
-  ZLL_Main_idle88  instR49 (zi97, zll_main_idle88_out);
-  ZLL_Main_perform__write32  instR50 (zll_main_idle88_out, zll_main_perform_write32_outR5);
-  ZLL_Main_while__addr__reg__049  instR51 (zll_main_perform_write32_outR5, zll_main_while_addr_reg_049_outR5);
-  ZLL_Main_idle111  instR52 (zll_main_while_addr_reg_049_outR5, zll_main_idle111_outR2);
+  ZLL_Main_idle88  instR44 (zi97, zll_main_idle88_out);
+  ZLL_Main_perform__write32  instR45 (zll_main_idle88_out, zll_main_perform_write32_outR5);
+  ZLL_Main_while__addr__reg__049  instR46 (zll_main_perform_write32_outR5, zll_main_while_addr_reg_049_outR5);
+  ZLL_Main_idle111  instR47 (zll_main_while_addr_reg_049_outR5, zll_main_idle111_outR2);
   assign zi98 = {__st0, __st1};
-  ZLL_Main_while__addr__reg__049  instR53 ({zi98, zi98}, zll_main_while_addr_reg_049_outR6);
-  ZLL_Main_while__addr__reg__050  instR54 (zll_main_while_addr_reg_049_outR6, zll_main_while_addr_reg_050_outR1);
+  ZLL_Main_while__addr__reg__049  instR48 ({zi98, zi98}, zll_main_while_addr_reg_049_outR6);
+  ZLL_Main_while__addr__reg__050  instR49 (zll_main_while_addr_reg_049_outR6, zll_main_while_addr_reg_050_outR1);
   assign zres = (__resumption_tag == 3'h1) ? zll_main_while_addr_reg_050_out : ((__resumption_tag == 3'h2) ? zll_main_idle111_out : ((__resumption_tag == 3'h3) ? zll_main_idle111_outR1 : ((__resumption_tag == 3'h4) ? (((zi53[1] == 1'h1) & (zi53[0] == 1'h1)) ? {{1'h1, {8'hab{1'h0}}}, zll_main_connect3_out, 3'h3, zi65} : (((zi66[1] == 1'h1) & (zi66[0] == 1'h0)) ? {{1'h1, {8'hab{1'h0}}}, zll_main_connect3_outR1, 3'h2, zi96} : zll_main_idle111_outR2)) : zll_main_while_addr_reg_050_outR1)));
   assign __resumption_tag_next = zres[207:205];
   assign __st0_next = zres[204:128];
@@ -267,7 +245,6 @@ module ZLL_Main_idle113 (input logic [1:0] arg0,
   logic [31:0] zi7;
   logic [0:0] zi8;
   logic [31:0] zi9;
-  logic [76:0] zll_main_set_partition_reg4_out;
   logic [204:0] zi10;
   logic [204:0] main_set_ack_reg1_out;
   logic [204:0] zi11;
@@ -277,11 +254,10 @@ module ZLL_Main_idle113 (input logic [1:0] arg0,
   assign zi7 = arg1[192:161];
   assign zi8 = arg1[160];
   assign zi9 = arg1[159:128];
-  ZLL_Main_set__partition__reg4  inst (zi6, arg0, zi7, zi8, zi9, zll_main_set_partition_reg4_out);
-  assign zi10 = {zll_main_set_partition_reg4_out, zi4};
-  Main_set__ack__reg1  instR1 (zi10, main_set_ack_reg1_out);
+  assign zi10 = {{arg0, zi6, zi7, zi8, zi9}, zi4};
+  Main_set__ack__reg1  inst (zi10, main_set_ack_reg1_out);
   assign zi11 = main_set_ack_reg1_out;
-  ZLL_Main_idle88  instR2 (zi11, zll_main_idle88_out);
+  ZLL_Main_idle88  instR1 (zi11, zll_main_idle88_out);
   assign res = zll_main_idle88_out;
 endmodule
 
@@ -369,11 +345,6 @@ module ZLL_Main_perform__write32 (input logic [204:0] arg0,
   assign res = {arg0, arg0};
 endmodule
 
-module ZLL_Main_data__out__reg3 (input logic [31:0] arg0,
-  output logic [31:0] res);
-  assign res = arg0;
-endmodule
-
 module ZLL_Main_while__addr__reg__049 (input logic [409:0] arg0,
   output logic [412:0] res);
   logic [204:0] zi0;
@@ -419,14 +390,12 @@ module Main_set__addr__reg1 (input logic [9:0] arg0,
   logic [31:0] zi7;
   logic [0:0] zi8;
   logic [31:0] zi9;
-  logic [76:0] zll_main_set_partition_reg4_out;
   assign zi4 = arg1[127:0];
   assign zi5 = arg1[204:203];
   assign zi7 = arg1[192:161];
   assign zi8 = arg1[160];
   assign zi9 = arg1[159:128];
-  ZLL_Main_set__partition__reg4  inst (arg0, zi5, zi7, zi8, zi9, zll_main_set_partition_reg4_out);
-  assign res = {zll_main_set_partition_reg4_out, zi4};
+  assign res = {{zi5, arg0, zi7, zi8, zi9}, zi4};
 endmodule
 
 module ZLL_Main_idle88 (input logic [204:0] arg0,
@@ -440,11 +409,9 @@ module ZLL_Main_connect3 (input logic [76:0] arg0,
   output logic [32:0] res);
   logic [0:0] zi3;
   logic [31:0] zi9;
-  logic [31:0] zll_main_data_out_reg3_out;
   assign zi3 = arg0[32];
   assign zi9 = arg0[31:0];
-  ZLL_Main_data__out__reg3  inst (zi9, zll_main_data_out_reg3_out);
-  assign res = {zi3, zll_main_data_out_reg3_out};
+  assign res = {zi3, zi9};
 endmodule
 
 module ZLL_Main_memTweak18 (input logic [31:0] arg0,
@@ -488,27 +455,8 @@ endmodule
 module Main_rnw (input logic [45:0] arg0,
   output logic [0:0] res);
   logic [0:0] zi3;
-  logic [1:0] zi4;
-  logic [0:0] zll_main_rnw1_out;
   assign zi3 = arg0[2];
-  assign zi4 = arg0[1:0];
-  ZLL_Main_rnw1  inst (zi3, zi4, zll_main_rnw1_out);
-  assign res = zll_main_rnw1_out;
-endmodule
-
-module ZLL_Main_mem14 (input logic [31:0] arg0,
-  input logic [31:0] arg1,
-  output logic [31:0] res);
-  assign res = arg0;
-endmodule
-
-module ZLL_Main_mem02 (input logic [31:0] arg0,
-  input logic [31:0] arg1,
-  input logic [31:0] arg2,
-  output logic [31:0] res);
-  logic [31:0] zll_main_mem14_out;
-  ZLL_Main_mem14  inst (arg0, arg2, zll_main_mem14_out);
-  assign res = zll_main_mem14_out;
+  assign res = zi3;
 endmodule
 
 module ZLL_Main_setloc4 (input logic [41:0] arg0,
@@ -575,24 +523,9 @@ module Mainzuzlzazg (input logic [1:0] arg0,
   assign res = {zi1, zi2, zi5, zi6, zi7, zi8, zi9, zi10, zi11, zi12};
 endmodule
 
-module ZLL_Main_rnw1 (input logic [0:0] arg0,
-  input logic [1:0] arg1,
-  output logic [0:0] res);
-  assign res = arg0;
-endmodule
-
 module Main_scrubbing (input logic [9:0] arg0,
   output logic [0:0] res);
   assign res = ((arg0[9] == 1'h1) & ((arg0[8] == 1'h1) & ((arg0[7] == 1'h1) & ((arg0[6] == 1'h1) & ((arg0[5] == 1'h1) & ((arg0[4] == 1'h1) & ((arg0[3] == 1'h1) & ((arg0[2] == 1'h1) & ((arg0[1] == 1'h1) & (arg0[0] == 1'h1)))))))))) ? 1'h0 : 1'h1;
-endmodule
-
-module ZLL_Main_set__partition__reg4 (input logic [9:0] arg0,
-  input logic [1:0] arg1,
-  input logic [31:0] arg2,
-  input logic [0:0] arg3,
-  input logic [31:0] arg4,
-  output logic [76:0] res);
-  assign res = {arg1, arg0, arg2, arg3, arg4};
 endmodule
 
 module Main_set__data__out__reg (input logic [204:0] arg0,
@@ -605,12 +538,8 @@ endmodule
 module Main_go (input logic [45:0] arg0,
   output logic [0:0] res);
   logic [0:0] zi2;
-  logic [1:0] zi4;
-  logic [0:0] zll_main_rnw1_out;
   assign zi2 = arg0[3];
-  assign zi4 = arg0[1:0];
-  ZLL_Main_rnw1  inst (zi2, zi4, zll_main_rnw1_out);
-  assign res = zll_main_rnw1_out;
+  assign res = zi2;
 endmodule
 
 module Main_addr__in (input logic [45:0] arg0,

@@ -1,86 +1,86 @@
 $Pure.dispatch : ([16]) -> [25]
-$Pure.dispatch $0 =
-      $LL.Pure.dispatch $0[8 +: 8] $0[0 +: 8]
+$Pure.dispatch disc =
+      $LL.Pure.dispatch disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.go16 : ([25]) -> [25]
-$LL.Main.go16 $0 =
-      $LL.Main.go6 $0[0 +: 8]
+$LL.Main.go16 disc =
+      $LL.Main.go6 disc[0 +: 8]
 
 $LL.Main.go15 : ([8], [8]) -> [25]
-$LL.Main.go15 $0 $2 =
-      $LL.Main.go10 $0 $2
+$LL.Main.go15 $x sto0 =
+      $LL.Main.go10 $x sto0
 
 $LL.Main.go14 : ([8]) -> [25]
-$LL.Main.go14 $1 =
-      17'h100 # $1
+$LL.Main.go14 s0 =
+      17'h100 # s0
 
 $LL.Main.go13 : ([8]) -> [25]
-$LL.Main.go13 $1 =
-      $LL.Main.go14 $1
+$LL.Main.go13 $x =
+      $LL.Main.go14 $x
 
 $LL.Main.go12 : ([8], [8]) -> [25]
-$LL.Main.go12 $0 $2 =
-      $LL.Main.go16 ($LL.Main.go3 (add $0 8'h1))
+$LL.Main.go12 n sto0 =
+      $LL.Main.go16 ($LL.Main.go3 (add n 8'h1))
 
 $LL.Main.go11 : ([8], [8]) -> [25]
-$LL.Main.go11 $0 $2 =
-      $LL.Main.go12 $0 $2
+$LL.Main.go11 $x sto0 =
+      $LL.Main.go12 $x sto0
 
 $LL.Main.go10 : ([8], [8]) -> [25]
-$LL.Main.go10 $0 $2 =
-      $LL.Main.go11 $0 $2
+$LL.Main.go10 $x sto0 =
+      $LL.Main.go11 $x sto0
 
 $LL.Pure.dispatch1 : ([8], [8]) -> [25]
-$LL.Pure.dispatch1 $1 $2 =
-      $LL.Main.go15 $1 $2
+$LL.Pure.dispatch1 store0 $x =
+      $LL.Main.go15 store0 $x
 
 $LL.Pure.dispatch : ([8], [8]) -> [25]
-$LL.Pure.dispatch $1 $2 =
-      $LL.Pure.dispatch1 $1 $2
+$LL.Pure.dispatch $x $x1 =
+      $LL.Pure.dispatch1 $x $x1
 
 $LL.Main.go9 : ([8]) -> [25]
-$LL.Main.go9 $1 =
-      Main.go $1
+$LL.Main.go9 sto0 =
+      Main.go sto0
 
 $LL.Main.go8 : ([8], [8]) -> [25]
-$LL.Main.go8 $0 $1 =
-      1'h1 # $0 # $0 # $1
+$LL.Main.go8 n sto0 =
+      1'h1 # n # n # sto0
 
 $LL.Main.go7 : ([8], [8]) -> [25]
-$LL.Main.go7 $0 $1 =
-      9'h0 # $0 # $1
+$LL.Main.go7 v s0 =
+      9'h0 # v # s0
 
 $LL.Main.go6 : ([8]) -> [25]
-$LL.Main.go6 $1 =
-      $LL.Main.go1 $1
+$LL.Main.go6 $x =
+      $LL.Main.go1 $x
 
 $LL.Main.go5 : ([25]) -> [25]
-$LL.Main.go5 $0 =
-      $LL.Main.go $0[8 +: 8] $0[0 +: 8]
+$LL.Main.go5 disc =
+      $LL.Main.go disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.go4 : ([8], [8]) -> [25]
-$LL.Main.go4 $0 $1 =
-      $LL.Main.go7 $0 $1
+$LL.Main.go4 v $x =
+      $LL.Main.go7 v $x
 
 $LL.Main.go3 : ([8]) -> [25]
-$LL.Main.go3 $0 =
-      $LL.Main.go13 $0
+$LL.Main.go3 disc =
+      $LL.Main.go13 disc
 
 $LL.Main.go2 : ([16]) -> [25]
-$LL.Main.go2 $0 =
-      $LL.Main.go4 $0[8 +: 8] $0[0 +: 8]
+$LL.Main.go2 disc =
+      $LL.Main.go4 disc[8 +: 8] disc[0 +: 8]
 
 Main.go : ([8]) -> [25]
-Main.go $0 =
-      $LL.Main.go5 ($LL.Main.go2 ($0 # $0))
+Main.go sto0 =
+      $LL.Main.go5 ($LL.Main.go2 (sto0 # sto0))
 
 $LL.Main.go1 : ([8]) -> [25]
-$LL.Main.go1 $1 =
-      $LL.Main.go9 $1
+$LL.Main.go1 sto0 =
+      $LL.Main.go9 sto0
 
 $LL.Main.go : ([8], [8]) -> [25]
-$LL.Main.go $0 $1 =
-      $LL.Main.go8 $0 $1
+$LL.Main.go v $x =
+      $LL.Main.go8 v $x
 
 device top_level
       output __out0 : [8]

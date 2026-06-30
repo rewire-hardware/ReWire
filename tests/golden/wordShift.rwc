@@ -1,86 +1,86 @@
 $Pure.dispatch : ([8]) -> [9]
-$Pure.dispatch $1 =
-      $LL.Pure.dispatch $1
+$Pure.dispatch i =
+      $LL.Pure.dispatch i
 
 Main.myArithRotr : ([8]) -> [8]
-Main.myArithRotr $0 =
-      $LL.Main.myArithRotr4 ($0 # 8'h5)
+Main.myArithRotr sp =
+      $LL.Main.myArithRotr4 (sp # 8'h5)
 
 $LL.Main.myRotr5 : ([8], [8]) -> [8]
-$LL.Main.myRotr5 $0 $1 =
-      or (shl $0 (sub 8'h8 $1)) (lshr $0 $1)
+$LL.Main.myRotr5 w n' =
+      or (shl w (sub 8'h8 n')) (lshr w n')
 
 $LL.Main.myArithRotr5 : ([8], [8]) -> [8]
-$LL.Main.myArithRotr5 $0 $1 =
-      $LL.Main.myArithRotr $0 (umod $1 8'h8)
+$LL.Main.myArithRotr5 w n =
+      $LL.Main.myArithRotr w (umod n 8'h8)
 
 $LL.Main.loop3 : ([8]) -> [9]
-$LL.Main.loop3 $0 =
-      $LL.Main.loop $0
+$LL.Main.loop3 $x =
+      $LL.Main.loop $x
 
 $LL.Main.myRotr4 : ([16]) -> [8]
-$LL.Main.myRotr4 $0 =
-      $LL.Main.myRotr $0[8 +: 8] $0[0 +: 8]
+$LL.Main.myRotr4 $7 =
+      $LL.Main.myRotr $7[8 +: 8] $7[0 +: 8]
 
 $LL.Main.myRotr3 : ([8], [8]) -> [8]
-$LL.Main.myRotr3 $0 $1 =
-      $LL.Main.myRotr5 $0 $1
+$LL.Main.myRotr3 $x $x1 =
+      $LL.Main.myRotr5 $x $x1
 
 $LL.Main.loop2 : ([8]) -> [9]
-$LL.Main.loop2 $0 =
-      1'h1 # $0
+$LL.Main.loop2 rabind =
+      1'h1 # rabind
 
 $LL.Pure.dispatch : ([8]) -> [9]
-$LL.Pure.dispatch $0 =
-      Main.loop1 $0
+$LL.Pure.dispatch i =
+      Main.loop1 i
 
 $LL.Main.loop1 : ([9]) -> [9]
-$LL.Main.loop1 $0 =
-      $LL.Main.loop2 $0[0 +: 8]
+$LL.Main.loop1 disc =
+      $LL.Main.loop2 disc[0 +: 8]
 
 Main.loop1 : ([8]) -> [9]
-Main.loop1 $0 =
-      $LL.Main.loop3 $0
+Main.loop1 $x =
+      $LL.Main.loop3 $x
 
 $LL.Main.loop : ([8]) -> [9]
-$LL.Main.loop $0 =
-      $LL.Main.loop1 (1'h0 # Main.myArithRotr (Main.myRotr $0))
+$LL.Main.loop i =
+      $LL.Main.loop1 (1'h0 # Main.myArithRotr (Main.myRotr i))
 
 $LL.Main.myArithRotr4 : ([16]) -> [8]
-$LL.Main.myArithRotr4 $0 =
-      $LL.Main.myArithRotr2 $0[8 +: 8] $0[0 +: 8]
+$LL.Main.myArithRotr4 $9 =
+      $LL.Main.myArithRotr2 $9[8 +: 8] $9[0 +: 8]
 
 $LL.Main.myArithRotr3 : ([8], [8]) -> [8]
-$LL.Main.myArithRotr3 $0 $1 =
-      or (shl $0 (sub 8'h8 $1)) (ashr $0 $1)
+$LL.Main.myArithRotr3 w n' =
+      or (shl w (sub 8'h8 n')) (ashr w n')
 
 Main.myRotr : ([8]) -> [8]
-Main.myRotr $0 =
-      $LL.Main.myRotr4 ($0 # 8'h3)
+Main.myRotr sp =
+      $LL.Main.myRotr4 (sp # 8'h3)
 
 $LL.Main.myRotr2 : ([8], [8]) -> [8]
-$LL.Main.myRotr2 $0 $1 =
-      $LL.Main.myRotr1 $0 (umod $1 8'h8)
+$LL.Main.myRotr2 w n =
+      $LL.Main.myRotr1 w (umod n 8'h8)
 
 $LL.Main.myRotr1 : ([8], [8]) -> [8]
-$LL.Main.myRotr1 $0 $1 =
-      $LL.Main.myRotr3 $0 $1
+$LL.Main.myRotr1 $x $x1 =
+      $LL.Main.myRotr3 $x $x1
 
 $LL.Main.myArithRotr2 : ([8], [8]) -> [8]
-$LL.Main.myArithRotr2 $0 $1 =
-      $LL.Main.myArithRotr5 $0 $1
+$LL.Main.myArithRotr2 $x $x1 =
+      $LL.Main.myArithRotr5 $x $x1
 
 $LL.Main.myArithRotr1 : ([8], [8]) -> [8]
-$LL.Main.myArithRotr1 $0 $1 =
-      $LL.Main.myArithRotr3 $0 $1
+$LL.Main.myArithRotr1 $x $x1 =
+      $LL.Main.myArithRotr3 $x $x1
 
 $LL.Main.myArithRotr : ([8], [8]) -> [8]
-$LL.Main.myArithRotr $0 $1 =
-      $LL.Main.myArithRotr1 $0 $1
+$LL.Main.myArithRotr $x $x1 =
+      $LL.Main.myArithRotr1 $x $x1
 
 $LL.Main.myRotr : ([8], [8]) -> [8]
-$LL.Main.myRotr $0 $1 =
-      $LL.Main.myRotr2 $0 $1
+$LL.Main.myRotr $x $x1 =
+      $LL.Main.myRotr2 $x $x1
 
 device top_level
       input __in0 : [8]

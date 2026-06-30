@@ -19,10 +19,8 @@ module top_level (input logic [7:0] __in0,
   logic [0:0] zll_main_dev271_out;
   logic [0:0] zi8;
   logic [2:0] zll_main_dev221_out;
-  logic [2:0] zll_main_dev263_outR2;
-  logic [0:0] zll_main_dev271_outR1;
-  logic [2:0] zll_main_dev252_out;
-  logic [2:0] zi9;
+  logic [2:0] zll_main_dev81_out;
+  logic [2:0] zi10;
   logic [0:0] zll_main_dev104_out;
   logic [0:0] zll_main_dev104_outR1;
   logic [0:0] zll_main_dev104_outR2;
@@ -31,15 +29,15 @@ module top_level (input logic [7:0] __in0,
   logic [0:0] zll_main_dev104_outR5;
   logic [0:0] zll_main_dev104_outR6;
   logic [0:0] zll_main_dev104_outR7;
-  logic [2:0] zll_main_dev263_outR3;
+  logic [2:0] zll_main_dev263_outR2;
   logic [2:0] zll_main_dev234_outR1;
-  logic [2:0] zi13;
-  logic [2:0] zll_main_dev263_outR4;
-  logic [0:0] zll_main_dev271_outR2;
-  logic [0:0] zi14;
+  logic [2:0] zi14;
+  logic [2:0] zll_main_dev263_outR3;
+  logic [0:0] zll_main_dev271_outR1;
+  logic [0:0] zi15;
   logic [2:0] zll_main_dev221_outR1;
   logic [2:0] zll_main_dev269_out;
-  logic [2:0] zi16;
+  logic [2:0] zi17;
   logic [0:0] zll_main_dev203_out;
   logic [0:0] zll_main_dev203_outR1;
   logic [0:0] zll_main_dev203_outR2;
@@ -48,17 +46,15 @@ module top_level (input logic [7:0] __in0,
   logic [0:0] zll_main_dev203_outR5;
   logic [0:0] zll_main_dev203_outR6;
   logic [0:0] zll_main_dev203_outR7;
-  logic [2:0] zll_main_dev263_outR5;
+  logic [2:0] zll_main_dev263_outR4;
   logic [2:0] zll_main_dev234_outR2;
-  logic [2:0] zi20;
-  logic [2:0] zll_main_dev263_outR6;
-  logic [0:0] zll_main_dev271_outR3;
-  logic [0:0] zi21;
+  logic [2:0] zi21;
+  logic [2:0] zll_main_dev263_outR5;
+  logic [0:0] zll_main_dev271_outR2;
+  logic [0:0] zi22;
   logic [2:0] zll_main_dev221_outR2;
-  logic [2:0] zll_main_dev263_outR7;
-  logic [0:0] zll_main_dev271_outR4;
-  logic [2:0] zll_main_dev252_outR1;
-  logic [2:0] zi22;
+  logic [2:0] zll_main_dev81_outR1;
+  logic [2:0] zi24;
   logic [0:0] zll_main_dev220_out;
   logic [0:0] zll_main_dev220_outR1;
   logic [0:0] zll_main_dev220_outR2;
@@ -84,54 +80,50 @@ module top_level (input logic [7:0] __in0,
   ZLL_Main_dev271  instR11 (zll_main_dev263_outR1, zll_main_dev271_out);
   assign zi8 = zll_main_dev271_out;
   ZLL_Main_dev221  instR12 (zi7, zll_main_dev221_out);
-  ZLL_Main_dev263  instR13 (__in0, zll_main_dev263_outR2);
-  ZLL_Main_dev271  instR14 (zll_main_dev263_outR2, zll_main_dev271_outR1);
-  ZLL_Main_dev252  instR15 (3'h1, zi7, zll_main_dev271_outR1, zll_main_dev252_out);
-  assign zi9 = (zi8 == 1'h1) ? zll_main_dev221_out : zll_main_dev252_out;
-  ZLL_Main_dev104  instR16 (3'h2, 3'h1, zi0, __in0, zi9, 3'h0, zll_main_dev104_out);
-  ZLL_Main_dev104  instR17 (3'h2, 3'h1, zi0, __in0, zi9, 3'h1, zll_main_dev104_outR1);
-  ZLL_Main_dev104  instR18 (3'h2, 3'h1, zi0, __in0, zi9, 3'h2, zll_main_dev104_outR2);
-  ZLL_Main_dev104  instR19 (3'h2, 3'h1, zi0, __in0, zi9, 3'h3, zll_main_dev104_outR3);
-  ZLL_Main_dev104  instR20 (3'h2, 3'h1, zi0, __in0, zi9, 3'h4, zll_main_dev104_outR4);
-  ZLL_Main_dev104  instR21 (3'h2, 3'h1, zi0, __in0, zi9, 3'h5, zll_main_dev104_outR5);
-  ZLL_Main_dev104  instR22 (3'h2, 3'h1, zi0, __in0, zi9, 3'h6, zll_main_dev104_outR6);
-  ZLL_Main_dev104  instR23 (3'h2, 3'h1, zi0, __in0, zi9, 3'h7, zll_main_dev104_outR7);
+  ZLL_Main_dev81  instR13 (3'h1, zi7, zll_main_dev81_out);
+  assign zi10 = (zi8 == 1'h1) ? zll_main_dev221_out : zll_main_dev81_out;
+  ZLL_Main_dev104  instR14 (3'h2, 3'h1, zi0, __in0, zi10, 3'h0, zll_main_dev104_out);
+  ZLL_Main_dev104  instR15 (3'h2, 3'h1, zi0, __in0, zi10, 3'h1, zll_main_dev104_outR1);
+  ZLL_Main_dev104  instR16 (3'h2, 3'h1, zi0, __in0, zi10, 3'h2, zll_main_dev104_outR2);
+  ZLL_Main_dev104  instR17 (3'h2, 3'h1, zi0, __in0, zi10, 3'h3, zll_main_dev104_outR3);
+  ZLL_Main_dev104  instR18 (3'h2, 3'h1, zi0, __in0, zi10, 3'h4, zll_main_dev104_outR4);
+  ZLL_Main_dev104  instR19 (3'h2, 3'h1, zi0, __in0, zi10, 3'h5, zll_main_dev104_outR5);
+  ZLL_Main_dev104  instR20 (3'h2, 3'h1, zi0, __in0, zi10, 3'h6, zll_main_dev104_outR6);
+  ZLL_Main_dev104  instR21 (3'h2, 3'h1, zi0, __in0, zi10, 3'h7, zll_main_dev104_outR7);
+  ZLL_Main_dev263  instR22 (__in0, zll_main_dev263_outR2);
+  ZLL_Main_dev234  instR23 (zll_main_dev263_outR2, 3'h2, zll_main_dev234_outR1);
+  assign zi14 = zll_main_dev234_outR1;
   ZLL_Main_dev263  instR24 (__in0, zll_main_dev263_outR3);
-  ZLL_Main_dev234  instR25 (zll_main_dev263_outR3, 3'h2, zll_main_dev234_outR1);
-  assign zi13 = zll_main_dev234_outR1;
-  ZLL_Main_dev263  instR26 (__in0, zll_main_dev263_outR4);
-  ZLL_Main_dev271  instR27 (zll_main_dev263_outR4, zll_main_dev271_outR2);
-  assign zi14 = zll_main_dev271_outR2;
-  ZLL_Main_dev221  instR28 (zi13, zll_main_dev221_outR1);
-  ZLL_Main_dev269  instR29 (zi13, 3'h1, zll_main_dev269_out);
-  assign zi16 = (zi14 == 1'h1) ? zll_main_dev221_outR1 : zll_main_dev269_out;
-  ZLL_Main_dev203  instR30 (3'h2, __in0, zi0, zi16, 3'h0, zll_main_dev203_out);
-  ZLL_Main_dev203  instR31 (3'h2, __in0, zi0, zi16, 3'h1, zll_main_dev203_outR1);
-  ZLL_Main_dev203  instR32 (3'h2, __in0, zi0, zi16, 3'h2, zll_main_dev203_outR2);
-  ZLL_Main_dev203  instR33 (3'h2, __in0, zi0, zi16, 3'h3, zll_main_dev203_outR3);
-  ZLL_Main_dev203  instR34 (3'h2, __in0, zi0, zi16, 3'h4, zll_main_dev203_outR4);
-  ZLL_Main_dev203  instR35 (3'h2, __in0, zi0, zi16, 3'h5, zll_main_dev203_outR5);
-  ZLL_Main_dev203  instR36 (3'h2, __in0, zi0, zi16, 3'h6, zll_main_dev203_outR6);
-  ZLL_Main_dev203  instR37 (3'h2, __in0, zi0, zi16, 3'h7, zll_main_dev203_outR7);
+  ZLL_Main_dev271  instR25 (zll_main_dev263_outR3, zll_main_dev271_outR1);
+  assign zi15 = zll_main_dev271_outR1;
+  ZLL_Main_dev221  instR26 (zi14, zll_main_dev221_outR1);
+  ZLL_Main_dev269  instR27 (zi14, 3'h1, zll_main_dev269_out);
+  assign zi17 = (zi15 == 1'h1) ? zll_main_dev221_outR1 : zll_main_dev269_out;
+  ZLL_Main_dev203  instR28 (3'h2, __in0, zi0, zi17, 3'h0, zll_main_dev203_out);
+  ZLL_Main_dev203  instR29 (3'h2, __in0, zi0, zi17, 3'h1, zll_main_dev203_outR1);
+  ZLL_Main_dev203  instR30 (3'h2, __in0, zi0, zi17, 3'h2, zll_main_dev203_outR2);
+  ZLL_Main_dev203  instR31 (3'h2, __in0, zi0, zi17, 3'h3, zll_main_dev203_outR3);
+  ZLL_Main_dev203  instR32 (3'h2, __in0, zi0, zi17, 3'h4, zll_main_dev203_outR4);
+  ZLL_Main_dev203  instR33 (3'h2, __in0, zi0, zi17, 3'h5, zll_main_dev203_outR5);
+  ZLL_Main_dev203  instR34 (3'h2, __in0, zi0, zi17, 3'h6, zll_main_dev203_outR6);
+  ZLL_Main_dev203  instR35 (3'h2, __in0, zi0, zi17, 3'h7, zll_main_dev203_outR7);
+  ZLL_Main_dev263  instR36 (__in0, zll_main_dev263_outR4);
+  ZLL_Main_dev234  instR37 (zll_main_dev263_outR4, 3'h2, zll_main_dev234_outR2);
+  assign zi21 = zll_main_dev234_outR2;
   ZLL_Main_dev263  instR38 (__in0, zll_main_dev263_outR5);
-  ZLL_Main_dev234  instR39 (zll_main_dev263_outR5, 3'h2, zll_main_dev234_outR2);
-  assign zi20 = zll_main_dev234_outR2;
-  ZLL_Main_dev263  instR40 (__in0, zll_main_dev263_outR6);
-  ZLL_Main_dev271  instR41 (zll_main_dev263_outR6, zll_main_dev271_outR3);
-  assign zi21 = zll_main_dev271_outR3;
-  ZLL_Main_dev221  instR42 (zi20, zll_main_dev221_outR2);
-  ZLL_Main_dev263  instR43 (__in0, zll_main_dev263_outR7);
-  ZLL_Main_dev271  instR44 (zll_main_dev263_outR7, zll_main_dev271_outR4);
-  ZLL_Main_dev252  instR45 (3'h1, zi20, zll_main_dev271_outR4, zll_main_dev252_outR1);
-  assign zi22 = (zi21 == 1'h1) ? zll_main_dev221_outR2 : zll_main_dev252_outR1;
-  ZLL_Main_dev220  instR46 (zi22, zi0, 3'h2, __in0, 3'h1, 3'h0, zll_main_dev220_out);
-  ZLL_Main_dev220  instR47 (zi22, zi0, 3'h2, __in0, 3'h1, 3'h1, zll_main_dev220_outR1);
-  ZLL_Main_dev220  instR48 (zi22, zi0, 3'h2, __in0, 3'h1, 3'h2, zll_main_dev220_outR2);
-  ZLL_Main_dev220  instR49 (zi22, zi0, 3'h2, __in0, 3'h1, 3'h3, zll_main_dev220_outR3);
-  ZLL_Main_dev220  instR50 (zi22, zi0, 3'h2, __in0, 3'h1, 3'h4, zll_main_dev220_outR4);
-  ZLL_Main_dev220  instR51 (zi22, zi0, 3'h2, __in0, 3'h1, 3'h5, zll_main_dev220_outR5);
-  ZLL_Main_dev220  instR52 (zi22, zi0, 3'h2, __in0, 3'h1, 3'h6, zll_main_dev220_outR6);
-  ZLL_Main_dev220  instR53 (zi22, zi0, 3'h2, __in0, 3'h1, 3'h7, zll_main_dev220_outR7);
+  ZLL_Main_dev271  instR39 (zll_main_dev263_outR5, zll_main_dev271_outR2);
+  assign zi22 = zll_main_dev271_outR2;
+  ZLL_Main_dev221  instR40 (zi21, zll_main_dev221_outR2);
+  ZLL_Main_dev81  instR41 (3'h1, zi21, zll_main_dev81_outR1);
+  assign zi24 = (zi22 == 1'h1) ? zll_main_dev221_outR2 : zll_main_dev81_outR1;
+  ZLL_Main_dev220  instR42 (zi24, zi0, 3'h2, __in0, 3'h1, 3'h0, zll_main_dev220_out);
+  ZLL_Main_dev220  instR43 (zi24, zi0, 3'h2, __in0, 3'h1, 3'h1, zll_main_dev220_outR1);
+  ZLL_Main_dev220  instR44 (zi24, zi0, 3'h2, __in0, 3'h1, 3'h2, zll_main_dev220_outR2);
+  ZLL_Main_dev220  instR45 (zi24, zi0, 3'h2, __in0, 3'h1, 3'h3, zll_main_dev220_outR3);
+  ZLL_Main_dev220  instR46 (zi24, zi0, 3'h2, __in0, 3'h1, 3'h4, zll_main_dev220_outR4);
+  ZLL_Main_dev220  instR47 (zi24, zi0, 3'h2, __in0, 3'h1, 3'h5, zll_main_dev220_outR5);
+  ZLL_Main_dev220  instR48 (zi24, zi0, 3'h2, __in0, 3'h1, 3'h6, zll_main_dev220_outR6);
+  ZLL_Main_dev220  instR49 (zi24, zi0, 3'h2, __in0, 3'h1, 3'h7, zll_main_dev220_outR7);
   assign zres = {zll_main_dev96_out, zll_main_dev96_outR1, zll_main_dev96_outR2, zll_main_dev96_outR3, zll_main_dev96_outR4, zll_main_dev96_outR5, zll_main_dev96_outR6, zll_main_dev96_outR7, {zll_main_dev104_out, zll_main_dev104_outR1, zll_main_dev104_outR2, zll_main_dev104_outR3, zll_main_dev104_outR4, zll_main_dev104_outR5, zll_main_dev104_outR6, zll_main_dev104_outR7}, {zll_main_dev203_out, zll_main_dev203_outR1, zll_main_dev203_outR2, zll_main_dev203_outR3, zll_main_dev203_outR4, zll_main_dev203_outR5, zll_main_dev203_outR6, zll_main_dev203_outR7}, {zll_main_dev220_out, zll_main_dev220_outR1, zll_main_dev220_outR2, zll_main_dev220_outR3, zll_main_dev220_outR4, zll_main_dev220_outR5, zll_main_dev220_outR6, zll_main_dev220_outR7}};
   assign __out0 = zres[31:24];
   assign __out1 = zres[23:16];
@@ -169,15 +161,6 @@ endmodule
 module ZLL_Main_dev263 (input logic [7:0] arg0,
   output logic [2:0] res);
   assign res = 3'h7;
-endmodule
-
-module ZLL_Main_dev252 (input logic [2:0] arg0,
-  input logic [2:0] arg1,
-  input logic [0:0] arg2,
-  output logic [2:0] res);
-  logic [2:0] zll_main_dev269_out;
-  ZLL_Main_dev269  inst (arg1, arg0, zll_main_dev269_out);
-  assign res = zll_main_dev269_out;
 endmodule
 
 module ZLL_Main_dev248 (input logic [2:0] arg0,
@@ -307,4 +290,12 @@ module ZLL_Main_dev96 (input logic [2:0] arg0,
   ZLL_Main_dev234  instR3 (zll_main_dev281_out, arg0, zll_main_dev234_outR1);
   assign slice_inR1 = arg1 >> (((128'h8 - {{7'h7d{1'h0}}, zll_main_dev234_outR1}) - 128'h1) * 128'h1);
   assign res = (zi0 == 1'h1) ? slice_in[0] : slice_inR1[0];
+endmodule
+
+module ZLL_Main_dev81 (input logic [2:0] arg0,
+  input logic [2:0] arg1,
+  output logic [2:0] res);
+  logic [2:0] zll_main_dev269_out;
+  ZLL_Main_dev269  inst (arg1, arg0, zll_main_dev269_out);
+  assign res = zll_main_dev269_out;
 endmodule

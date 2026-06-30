@@ -1,71 +1,71 @@
 $Pure.dispatch : ([16], [1]) -> [24]
-$Pure.dispatch $0 $1 =
-      $LL.Pure.dispatch1 $1 $0[8 +: 8] $0[0 +: 8]
+$Pure.dispatch disc i =
+      $LL.Pure.dispatch1 i disc[8 +: 8] disc[0 +: 8]
 
 $LL.Main.loop11 : ([8], [8], [1]) -> [24]
-$LL.Main.loop11 $0 $1 $2 =
-      $LL.Main.loop9 $0 $2 $1 $2
+$LL.Main.loop11 n m b =
+      $LL.Main.loop9 n b m b
 
 $LL.Main.loop10 : ([8], [8]) -> [24]
-$LL.Main.loop10 $0 $1 =
-      Main.loop1 $0 $1
+$LL.Main.loop10 $x $x1 =
+      Main.loop1 $x $x1
 
 $LL.Pure.dispatch2 : ([8], [1], [8]) -> [24]
-$LL.Pure.dispatch2 $0 $1 $2 =
-      $LL.Main.loop1 $0 $2 $1
+$LL.Pure.dispatch2 store0 i store1 =
+      $LL.Main.loop1 store0 store1 i
 
 $LL.Main.loop9 : ([8], [1], [8], [1]) -> [24]
-$LL.Main.loop9 $0 $1 $2 $3 =
-      if eq $3 1'h1 then $LL.Main.loop3 $0 $2
-            else $LL.Main.loop6 $0 $2 $1
+$LL.Main.loop9 n b m $4 =
+      if eq $4 1'h1 then $LL.Main.loop3 n m
+            else $LL.Main.loop6 n m b
 
 $LL.Main.loop8 : ([8], [8]) -> [24]
-$LL.Main.loop8 $0 $1 =
-      Main.loop1 $1 (add $0 $1)
+$LL.Main.loop8 n m =
+      Main.loop1 m (add n m)
 
 Main.loop1 : ([8], [8]) -> [24]
 Main.loop1 $0 $1 =
       $LL.Main.loop2 ($0 # $1)
 
 $LL.Main.loop7 : ([8], [8]) -> [24]
-$LL.Main.loop7 $0 $1 =
-      $0 # $0 # $1
+$LL.Main.loop7 n m =
+      n # n # m
 
 $LL.Main.loop6 : ([8], [8], [1]) -> [24]
-$LL.Main.loop6 $0 $1 $2 =
-      $LL.Main.loop5 $0 $1
+$LL.Main.loop6 n m $3 =
+      $LL.Main.loop5 n m
 
 $LL.Main.loop5 : ([8], [8]) -> [24]
-$LL.Main.loop5 $0 $1 =
-      $LL.Main.loop8 $0 $1
+$LL.Main.loop5 m2c $x =
+      $LL.Main.loop8 m2c $x
 
 $LL.Main.loop4 : ([8], [8]) -> [24]
-$LL.Main.loop4 $0 $1 =
-      $LL.Main.loop $0 $1
+$LL.Main.loop4 m2c $x =
+      $LL.Main.loop m2c $x
 
 $LL.Pure.dispatch1 : ([1], [8], [8]) -> [24]
-$LL.Pure.dispatch1 $0 $1 $2 =
-      $LL.Pure.dispatch $0 $1 $2
+$LL.Pure.dispatch1 i $x $x1 =
+      $LL.Pure.dispatch i $x $x1
 
 $LL.Pure.dispatch : ([1], [8], [8]) -> [24]
-$LL.Pure.dispatch $0 $1 $2 =
-      $LL.Pure.dispatch2 $1 $0 $2
+$LL.Pure.dispatch i store0 $x =
+      $LL.Pure.dispatch2 store0 i $x
 
 $LL.Main.loop3 : ([8], [8]) -> [24]
-$LL.Main.loop3 $0 $1 =
-      $LL.Main.loop10 $0 $1
+$LL.Main.loop3 m2c $x =
+      $LL.Main.loop10 m2c $x
 
 $LL.Main.loop2 : ([16]) -> [24]
-$LL.Main.loop2 $0 =
-      $LL.Main.loop4 $0[8 +: 8] $0[0 +: 8]
+$LL.Main.loop2 $5 =
+      $LL.Main.loop4 $5[8 +: 8] $5[0 +: 8]
 
 $LL.Main.loop1 : ([8], [8], [1]) -> [24]
-$LL.Main.loop1 $0 $1 $2 =
-      $LL.Main.loop11 $0 $1 $2
+$LL.Main.loop1 $x $x1 $x2 =
+      $LL.Main.loop11 $x $x1 $x2
 
 $LL.Main.loop : ([8], [8]) -> [24]
-$LL.Main.loop $0 $1 =
-      $LL.Main.loop7 $0 $1
+$LL.Main.loop $x $x1 =
+      $LL.Main.loop7 $x $x1
 
 device top_level
       input __in0 : [1]

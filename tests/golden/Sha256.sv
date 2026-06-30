@@ -51,11 +51,11 @@ module top_level (input logic [0:0] clk,
   logic [255:0] zi50;
   logic [255:0] zi52;
   logic [5:0] zi53;
-  logic [1296:0] zll_main_dev107_out;
+  logic [1296:0] main_loop_outR1;
   logic [255:0] zi54;
   logic [255:0] zi56;
   logic [5:0] zi57;
-  logic [1296:0] zll_main_dev107_outR1;
+  logic [1296:0] main_loop_outR2;
   logic [1296:0] zres;
   assign zi1 = {__st0, __st1};
   assign zi3 = __st3[261:6];
@@ -96,12 +96,12 @@ module top_level (input logic [0:0] clk,
   assign zi50 = {__st0, __st1};
   assign zi52 = __st3[261:6];
   assign zi53 = __st3[5:0];
-  ZLL_Main_dev107  instR3 (__in0, zi50, __st2, zi52, zi53, zll_main_dev107_out);
+  Main_loop  instR3 (zi50, __st2, zi52, zi53, main_loop_outR1);
   assign zi54 = {__st0, __st1};
   assign zi56 = __st3[261:6];
   assign zi57 = __st3[5:0];
-  ZLL_Main_dev107  instR4 (__in0, zi54, __st2, zi56, zi57, zll_main_dev107_outR1);
-  assign zres = (__resumption_tag[7:6] == 2'h1) ? main_dev_out : ((__resumption_tag[7:6] == 2'h2) ? ((zi10 == 1'h1) ? main_dev_outR1 : main_loop_out) : ((__resumption_tag[7:6] == 2'h3) ? zll_main_dev107_out : zll_main_dev107_outR1));
+  Main_loop  instR4 (zi54, __st2, zi56, zi57, main_loop_outR2);
+  assign zres = (__resumption_tag[7:6] == 2'h1) ? main_dev_out : ((__resumption_tag[7:6] == 2'h2) ? ((zi10 == 1'h1) ? main_dev_outR1 : main_loop_out) : ((__resumption_tag[7:6] == 2'h3) ? main_loop_outR1 : main_loop_outR2));
   assign __resumption_tag_next = zres[1037:1030];
   assign __st0_next = zres[1029:806];
   assign __st1_next = zres[805:774];
@@ -122,17 +122,6 @@ module ZLL_Main_sigma115 (input logic [31:0] arg0,
   input logic [31:0] arg1,
   output logic [31:0] res);
   assign res = (arg1 >> arg0) | (arg1 << (32'h20 - arg0));
-endmodule
-
-module ZLL_Main_dev107 (input logic [513:0] arg0,
-  input logic [255:0] arg1,
-  input logic [511:0] arg2,
-  input logic [255:0] arg3,
-  input logic [5:0] arg4,
-  output logic [1296:0] res);
-  logic [1296:0] main_loop_out;
-  Main_loop  inst (arg1, arg2, arg3, arg4, main_loop_out);
-  assign res = main_loop_out;
 endmodule
 
 module Main_dev (input logic [513:0] arg0,

@@ -304,7 +304,7 @@ rw__LL_Main_repl87 x0 x1 = rw__LL_Main_repl78 x1 x0
 
 // $LL.Main.repl86
 rw__LL_Main_repl86 : [39] -> [81]
-rw__LL_Main_repl86 x0 = rw__LL_Main_repl22 x0
+rw__LL_Main_repl86 x0 = rw__LL_Main_repl111 x0
 
 // $LL.Main.getReg5
 rw__LL_Main_getReg5 : [32] -> [7] -> [39] -> [71]
@@ -825,10 +825,6 @@ rw__LL_OD19_ProgramCounter_incPC51 x0 x1 = if x1 == 0b0111110 then 0b0111111 els
 // $LL.OD19.ProgramCounter.incPC50
 rw__LL_OD19_ProgramCounter_incPC50 : [7] -> [7] -> [7]
 rw__LL_OD19_ProgramCounter_incPC50 x0 x1 = if x1 == 0b0001001 then 0b0001010 else (rw__LL_OD19_ProgramCounter_incPC137 x0 x0)
-
-// $LL.Main.repl22
-rw__LL_Main_repl22 : [39] -> [81]
-rw__LL_Main_repl22 x0 = 0b100000000000000000000000000000000000000010 # x0
 
 // $LL.Main.repl21
 rw__LL_Main_repl21 : [39] -> [32] -> [81]

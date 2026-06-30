@@ -84,15 +84,11 @@ rw__LL_Main_maj3 x0 x1 x2 = rw__LL_Main_maj2 x0 x1 x2
 
 // $LL.Main.dev528
 rw__LL_Main_dev528 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev528 x0 x1 x2 x3 = rw__LL_Main_dev398 x0 x1 x2 x3
+rw__LL_Main_dev528 x0 x1 x2 x3 = rw__LL_Main_dev431 x0 x1 x2 x3
 
 // $LL.Main.dev527
 rw__LL_Main_dev527 : [256] -> [256] -> [512] -> [256] -> [6] -> [1289]
 rw__LL_Main_dev527 x0 x1 x2 x3 x4 = rw__LL_Main_dev247 x1 x0 x2 x3 x4
-
-// $LL.Main.dev526
-rw__LL_Main_dev526 : [1030] -> [1289]
-rw__LL_Main_dev526 x0 = rw__LL_Main_dev414 (take`{256} x0) (take`{512} (drop`{256} x0)) (take`{256} (drop`{768} x0)) (drop`{1024} x0)
 
 // Main.maj
 rw_Main_maj : [32] -> [32] -> [32] -> [32]
@@ -148,11 +144,7 @@ rw__LL_Main_dev519 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev433 x0 x1 x3 x2 x4 x5 x
 
 // $LL.Main.dev518
 rw__LL_Main_dev518 : [1030] -> [1289]
-rw__LL_Main_dev518 x0 = rw__LL_Main_dev337 (take`{256} x0) (take`{512} (drop`{256} x0)) (take`{256} (drop`{768} x0)) (drop`{1024} x0)
-
-// $LL.Main.dev517
-rw__LL_Main_dev517 : [1030] -> [1289]
-rw__LL_Main_dev517 x0 = rw__LL_Main_dev229 (take`{256} x0) (take`{512} (drop`{256} x0)) (take`{256} (drop`{768} x0)) (drop`{1024} x0)
+rw__LL_Main_dev518 x0 = rw__LL_Main_dev496 (take`{256} x0) (take`{512} (drop`{256} x0)) (take`{256} (drop`{768} x0)) (drop`{1024} x0)
 
 // $LL.Main.rotateR632
 rw__LL_Main_rotateR632 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
@@ -188,7 +180,7 @@ rw__LL_Main_genhash_99 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 = rw__L
 
 // $LL.Main.dev514
 rw__LL_Main_dev514 : [1289] -> [1289]
-rw__LL_Main_dev514 x0 = rw__LL_Main_dev447 (take`{256} (drop`{259} x0)) (take`{512} (drop`{515} x0)) (take`{256} (drop`{1027} x0)) (drop`{1283} x0)
+rw__LL_Main_dev514 x0 = rw__LL_Main_dev528 (take`{256} (drop`{259} x0)) (take`{512} (drop`{515} x0)) (take`{256} (drop`{1027} x0)) (drop`{1283} x0)
 
 // $LL.Main.dev513
 rw__LL_Main_dev513 : [256] -> [512] -> [256] -> [6] -> [1289]
@@ -212,7 +204,7 @@ rw__LL_Main_genhash_97 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_genhash_11 x4 x0 x1 x2
 
 // $LL.Main.dev512
 rw__LL_Main_dev512 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev512 x0 x1 x2 x3 = rw__LL_Main_dev215 x0 x1 x2 x3
+rw__LL_Main_dev512 x0 x1 x2 x3 = rw__LL_Main_loop84 x0 x1 x2 x3
 
 // $LL.Main.dev511
 rw__LL_Main_dev511 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [512]
@@ -252,7 +244,7 @@ rw__LL_Main_incCtr122 x0 x1 = if x1 == 0b001111 then 0b010000 else (rw__LL_Main_
 
 // $LL.Main.dev509
 rw__LL_Main_dev509 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev509 x0 x1 x2 x3 = rw__LL_Main_dev313 x1 x0 x2 x3
+rw__LL_Main_dev509 x0 x1 x2 x3 = rw__LL_Main_dev488 x1 x0 x2 x3
 
 // $LL.Main.dev508
 rw__LL_Main_dev508 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [512]
@@ -272,15 +264,11 @@ rw__LL_Main_loop85 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 = rw__LL_Main_loop2 x0 
 
 // $LL.Main.loop84
 rw__LL_Main_loop84 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_loop84 x0 x1 x2 x3 = rw__LL_Main_loop12 x1 x0 x2 x3
+rw__LL_Main_loop84 x0 x1 x2 x3 = rw__LL_Main_dev441 x1 x0 x2 x3
 
 // $LL.Main.dev505
 rw__LL_Main_dev505 : [32] -> [512] -> [256] -> [32] -> [256] -> [6] -> [1030]
 rw__LL_Main_dev505 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev93 x0 x3 x2 x1 x4 x5
-
-// $LL.Main.dev504
-rw__LL_Main_dev504 : [1030] -> [1289]
-rw__LL_Main_dev504 x0 = rw__LL_Main_dev496 (take`{256} x0) (take`{512} (drop`{256} x0)) (take`{256} (drop`{768} x0)) (drop`{1024} x0)
 
 // $LL.Main.rotateR1932
 rw__LL_Main_rotateR1932 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
@@ -326,10 +314,6 @@ rw__LL_Main_rotateR1930 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x1
 rw__LL_Pure_dispatch12 : [6] -> [68] -> [256] -> [512] -> [256] -> [6] -> [1289]
 rw__LL_Pure_dispatch12 x0 x1 x2 x3 x4 x5 = rw__LL_Pure_dispatch2 x0 x2 x1 x3 x4 x5
 
-// $LL.Main.dev499
-rw__LL_Main_dev499 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev499 x0 x1 x2 x3 = rw__LL_Main_dev488 x1 x0 x2 x3
-
 // $LL.Main.genhash'95
 rw__LL_Main_genhash_95 : [6] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1036]
 rw__LL_Main_genhash_95 x0 x1 x2 x3 x4 x5 = rw__LL_Main_genhash_64 x0 x1 x2 x3 x4 x5
@@ -356,7 +340,7 @@ rw__LL_Main_rotateR1128 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x1
 
 // $LL.Main.dev496
 rw__LL_Main_dev496 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev496 x0 x1 x2 x3 = rw__LL_Main_dev405 x0 x1 x2 x3
+rw__LL_Main_dev496 x0 x1 x2 x3 = rw__LL_Main_dev467 x0 x1 x2 x3
 
 // $LL.Main.dev495
 rw__LL_Main_dev495 : [256] -> [256] -> [6] -> [512] -> [32] -> [32] -> [1289]
@@ -438,10 +422,6 @@ rw__LL_Main_dev489 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17
 rw__LL_Main_dev488 : [512] -> [256] -> [256] -> [6] -> [1289]
 rw__LL_Main_dev488 x0 x1 x2 x3 = rw__LL_Main_dev455 x1 x0 x2 x3
 
-// $LL.Main.dev487
-rw__LL_Main_dev487 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev487 x0 x1 x2 x3 = rw__LL_Main_dev304 x1 x0 x2 x3
-
 // $LL.Main.dev486
 rw__LL_Main_dev486 : [576] -> [512]
 rw__LL_Main_dev486 x0 = rw__LL_Main_dev100 (take`{32} x0) (take`{32} (drop`{32} x0)) (take`{32} (drop`{64} x0)) (take`{32} (drop`{96} x0)) (take`{32} (drop`{128} x0)) (take`{32} (drop`{160} x0)) (take`{32} (drop`{192} x0)) (take`{32} (drop`{224} x0)) (take`{32} (drop`{256} x0)) (take`{32} (drop`{288} x0)) (take`{32} (drop`{320} x0)) (take`{32} (drop`{352} x0)) (take`{32} (drop`{384} x0)) (take`{32} (drop`{416} x0)) (take`{32} (drop`{448} x0)) (take`{32} (drop`{480} x0)) (take`{32} (drop`{512} x0)) (drop`{544} x0)
@@ -465,10 +445,6 @@ rw__LL_Main_incCtr117 x0 x1 = if x1 == 0b001101 then 0b001110 else (rw__LL_Main_
 // $LL.Main.rotateR1332
 rw__LL_Main_rotateR1332 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_rotateR1332 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 = rw__LL_Main_rotateR1325 x0 x1 x2 x7 x3 x4 x5 x6 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31
-
-// $LL.Main.dev483
-rw__LL_Main_dev483 : [512] -> [256] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev483 x0 x1 x2 x3 = 0b0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # (x2 # (x0 # (x1 # x3)))
 
 // $LL.Main.incCtr116
 rw__LL_Main_incCtr116 : [6] -> [6] -> [6]
@@ -612,7 +588,7 @@ rw__LL_Main_rotateR1927 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x1
 
 // $LL.Main.dev472
 rw__LL_Main_dev472 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev472 x0 x1 x2 x3 = rw__LL_Main_dev27 x0 x1 x2 x3
+rw__LL_Main_dev472 x0 x1 x2 x3 = rw__LL_Main_dev267 x0 x1 x2 x3
 
 // $LL.Main.rotateR2228
 rw__LL_Main_rotateR2228 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
@@ -680,7 +656,7 @@ rw__LL_Main_shiftR1027 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16
 
 // $LL.Main.dev468
 rw__LL_Main_dev468 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev468 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev429 (rw__LL_Main_dev291 (rw__LL_Main_dev13 x1 x0 (x3 # (x2 # (x3 # (x4 # x5))))))
+rw__LL_Main_dev468 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev514 (rw__LL_Main_dev291 (rw__LL_Main_dev13 x1 x0 (x3 # (x2 # (x3 # (x4 # x5))))))
 
 // $LL.Main.rotateR1127
 rw__LL_Main_rotateR1127 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
@@ -850,10 +826,6 @@ rw__LL_Main_rotateR625 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16
 rw__LL_Main_dev448 : [6] -> [256] -> [256] -> [512] -> [32] -> [32] -> [1289]
 rw__LL_Main_dev448 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev284 x0 x4 x1 x2 x3 x5
 
-// $LL.Main.dev447
-rw__LL_Main_dev447 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev447 x0 x1 x2 x3 = rw__LL_Main_dev431 x0 x1 x2 x3
-
 // $LL.Main.rotateR2223
 rw__LL_Main_rotateR2223 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_rotateR2223 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 = rw__LL_Main_rotateR2210 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x22 x14 x15 x16 x17 x18 x19 x20 x21 x23 x24 x25 x26 x27 x28 x29 x30 x31
@@ -884,7 +856,7 @@ rw__LL_Main_dev442 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev244 x0 x1 x4 x2 x3 x5
 
 // $LL.Main.dev441
 rw__LL_Main_dev441 : [512] -> [256] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev441 x0 x1 x2 x3 = rw__LL_Main_dev483 x0 x2 x1 x3
+rw__LL_Main_dev441 x0 x1 x2 x3 = rw__LL_Main_loop88 x0 x2 x1 x3
 
 // $LL.Main.shiftR1026
 rw__LL_Main_shiftR1026 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
@@ -1050,10 +1022,6 @@ rw__LL_Main_dev430 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 = rw__L
 rw__LL_Main_rotateR1829 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_rotateR1829 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 = rw__LL_Main_rotateR1818 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x18 x16 x17 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31
 
-// $LL.Main.dev429
-rw__LL_Main_dev429 : [1289] -> [1289]
-rw__LL_Main_dev429 x0 = rw__LL_Main_dev528 (take`{256} (drop`{259} x0)) (take`{512} (drop`{515} x0)) (take`{256} (drop`{1027} x0)) (drop`{1283} x0)
-
 // $LL.Main.dev428
 rw__LL_Main_dev428 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [512]
 rw__LL_Main_dev428 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 = rw__LL_Main_dev87 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17
@@ -1206,10 +1174,6 @@ rw__LL_Main_dev415 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17
 rw__LL_Main_genhash_77 : [32] -> [512] -> [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1062]
 rw__LL_Main_genhash_77 x0 x1 x2 x3 x4 x5 x6 x7 = rw__LL_Main_genhash_52 x0 x1 x3 x4 x5 x6 x7
 
-// $LL.Main.dev414
-rw__LL_Main_dev414 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev414 x0 x1 x2 x3 = rw__LL_Main_dev267 x0 x1 x2 x3
-
 // $LL.Main.rotateR1330
 rw__LL_Main_rotateR1330 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_rotateR1330 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 = rw__LL_Main_rotateR1313 x0 x1 x2 x16 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31
@@ -1294,10 +1258,6 @@ rw__LL_Main_rotateR2222 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x1
 rw__LL_Main_rotateR725 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_rotateR725 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 = rw__LL_Main_rotateR732 x0 x1 x2 x3 x4 x11 x5 x6 x7 x8 x9 x10 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31
 
-// $LL.Main.loop65
-rw__LL_Main_loop65 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_loop65 x0 x1 x2 x3 = rw__LL_Main_loop84 x0 x1 x2 x3
-
 // $LL.Main.dev408
 rw__LL_Main_dev408 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [512]
 rw__LL_Main_dev408 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 = rw__LL_Main_dev296 x0 x1 x2 x3 x4 x5 x6 x13 x7 x8 x9 x10 x11 x12 x14 x15 x16 x17
@@ -1321,10 +1281,6 @@ rw__LL_Main_rotateR1924 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x1
 // $LL.Main.dev406
 rw__LL_Main_dev406 : [68] -> [256] -> [512] -> [256] -> [6] -> [1289]
 rw__LL_Main_dev406 x0 x1 x2 x3 x4 = rw_Main_loop x1 x2 x3 x4
-
-// $LL.Main.dev405
-rw__LL_Main_dev405 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev405 x0 x1 x2 x3 = rw__LL_Main_dev40 x0 x1 x2 x3
 
 // $LL.Main.dev404
 rw__LL_Main_dev404 : [32] -> [256] -> [512] -> [512] -> [32] -> [256] -> [6] -> [1030]
@@ -1393,10 +1349,6 @@ rw__LL_Main_rotateR1828 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x1
 // $LL.Main.dev399
 rw__LL_Main_dev399 : [32] -> [32] -> [512] -> [512]
 rw__LL_Main_dev399 x0 x1 x2 = rw__LL_Main_dev285 x1 x0 x2
-
-// $LL.Main.dev398
-rw__LL_Main_dev398 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev398 x0 x1 x2 x3 = rw__LL_Main_dev499 x0 x1 x2 x3
 
 // $LL.Main.dev397
 rw__LL_Main_dev397 : [256] -> [256] -> [512] -> [256] -> [6] -> [1289]
@@ -1650,6 +1602,10 @@ rw__LL_Main_dev368 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev301 x0 x1 x2 x4 x3 x5 x
 rw__LL_Main_rotateR2528 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_rotateR2528 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 = rw__LL_Main_rotateR2527 x0 x1 x2 x3 x4 x20 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31
 
+// $LL.Main.digest25
+rw__LL_Main_digest25 : [32] -> [32] -> [32] -> [32] -> [65]
+rw__LL_Main_digest25 x0 x1 x2 x3 = rw__LL_Main_digest21 x0 x1 x3
+
 // $LL.Main.digest04
 rw__LL_Main_digest04 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [65]
 rw__LL_Main_digest04 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_digest08 x0 x1 x3 x4 x5 x6
@@ -1898,10 +1854,6 @@ rw__LL_Main_genhash_66 x0 x1 x2 x3 x4 = rw__LL_Main_genhash_33 x0 x1 x2 x3 x4
 rw__LL_Main_loop56 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
 rw__LL_Main_loop56 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 = rw__LL_Main_loop11 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12
 
-// $LL.Main.dev349
-rw__LL_Main_dev349 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev349 x0 x1 x2 x3 = rw__LL_Main_dev60 x0 x1 x2 x3
-
 // $LL.Main.rotateR721
 rw__LL_Main_rotateR721 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_rotateR721 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 = rw__LL_Main_rotateR729 x1 x0 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31
@@ -2030,10 +1982,6 @@ rw__LL_Main_shiftR318 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 
 rw__LL_Main_step25622 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256]
 rw__LL_Main_step25622 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 = rw__LL_Main_step25611 x0 x1 x2 x7 x3 x4 x5 x6 x8 x9
 
-// $LL.Main.dev337
-rw__LL_Main_dev337 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev337 x0 x1 x2 x3 = rw__LL_Main_dev467 x0 x1 x2 x3
-
 // $LL.Main.incCtr80
 rw__LL_Main_incCtr80 : [6] -> [6] -> [6]
 rw__LL_Main_incCtr80 x0 x1 = if x1 == 0b101001 then 0b101010 else (rw__LL_Main_incCtr82 x0 x0)
@@ -2061,10 +2009,6 @@ rw__LL_Main_loop54 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 = rw__LL_Main_loop74 x0
 // $LL.Main.seed44
 rw__LL_Main_seed44 : [6] -> [6] -> [32]
 rw__LL_Main_seed44 x0 x1 = if x1 == 0b111010 then 0x84c87814 else (rw__LL_Main_seed27 x0 x0)
-
-// $LL.Main.dev334
-rw__LL_Main_dev334 : [1289] -> [1289]
-rw__LL_Main_dev334 x0 = rw__LL_Main_dev299 (take`{256} (drop`{259} x0)) (take`{512} (drop`{515} x0)) (take`{256} (drop`{1027} x0)) (drop`{1283} x0)
 
 // $LL.Main.dev332
 rw__LL_Main_dev332 : [576] -> [512]
@@ -2318,10 +2262,6 @@ rw__LL_Main_digest34 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_digest36 x1 x2 x3 x4 x5 
 rw__LL_Main_dev314 : [256] -> [256] -> [512] -> [256] -> [6] -> [1289]
 rw__LL_Main_dev314 x0 x1 x2 x3 x4 = 0b100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # ((rw_Main_digest2 x0) # (0x00 # (x1 # (x2 # (x3 # x4)))))
 
-// $LL.Main.dev313
-rw__LL_Main_dev313 : [512] -> [256] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev313 x0 x1 x2 x3 = rw__LL_Main_dev455 x1 x0 x2 x3
-
 // $LL.Main.rotateR1822
 rw__LL_Main_rotateR1822 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_rotateR1822 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 = rw__LL_Main_rotateR181 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x23 x14 x15 x16 x17 x18 x19 x20 x21 x22 x24 x25 x26 x27 x28 x29 x30 x31
@@ -2376,7 +2316,7 @@ rw__LL_Main_seed36 x0 x1 = if x1 == 0b100111 then 0x92722c85 else (rw__LL_Main_s
 
 // $LL.Main.dev307
 rw__LL_Main_dev307 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev307 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev334 (rw__LL_Main_dev526 (rw__LL_Main_dev120 x0 x1 (x3 # (x2 # (x3 # (x4 # x5))))))
+rw__LL_Main_dev307 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev514 (rw__LL_Main_dev530 (rw__LL_Main_dev120 x0 x1 (x3 # (x2 # (x3 # (x4 # x5))))))
 
 // $LL.Main.genhash'58
 rw__LL_Main_genhash_58 : [512] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1062]
@@ -2393,10 +2333,6 @@ rw__LL_Main_dev305 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev401 x0 x2 x1 x3 x4 x5 x
 // $LL.Main.seed35
 rw__LL_Main_seed35 : [6] -> [6] -> [32]
 rw__LL_Main_seed35 x0 x1 = if x1 == 0b111110 then 0xbef9a3f7 else (rw__LL_Main_seed8 x0)
-
-// $LL.Main.dev304
-rw__LL_Main_dev304 : [512] -> [256] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev304 x0 x1 x2 x3 = rw__LL_Main_dev455 x1 x0 x2 x3
 
 // $LL.Main.genhash'57
 rw__LL_Main_genhash_57 : [6] -> [1030] -> [1036]
@@ -2421,10 +2357,6 @@ rw__LL_Main_dev301 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev256 x0 x1 x2 x4 x3 x5 x
 // $LL.Main.dev300
 rw__LL_Main_dev300 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
 rw__LL_Main_dev300 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev506 x0 x1 x2 x3 x4 x5 x6
-
-// $LL.Main.dev299
-rw__LL_Main_dev299 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev299 x0 x1 x2 x3 = rw__LL_Main_dev189 x0 x1 x2 x3
 
 // $LL.Main.rotateR1318
 rw__LL_Main_rotateR1318 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
@@ -2464,7 +2396,7 @@ rw__LL_Main_rotateR1915 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x1
 
 // $LL.Main.dev297
 rw__LL_Main_dev297 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev297 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev429 (rw__LL_Main_dev517 (rw__LL_Main_dev328 x1 x0 (x3 # (x2 # (x3 # (x4 # x5))))))
+rw__LL_Main_dev297 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev514 (rw__LL_Main_dev518 (rw__LL_Main_dev328 x1 x0 (x3 # (x2 # (x3 # (x4 # x5))))))
 
 // $LL.Main.dev296
 rw__LL_Main_dev296 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [512]
@@ -2660,7 +2592,7 @@ rw__LL_Main_dev276 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17
 
 // $LL.Main.dev275
 rw__LL_Main_dev275 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev275 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev429 (rw__LL_Main_dev530 (rw__LL_Main_dev68 x0 x1 (x3 # (x2 # (x3 # (x4 # x5))))))
+rw__LL_Main_dev275 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev514 (rw__LL_Main_dev530 (rw__LL_Main_dev68 x0 x1 (x3 # (x2 # (x3 # (x4 # x5))))))
 
 // $LL.Main.dev274
 rw__LL_Main_dev274 : [32] -> [32] -> [512] -> [512]
@@ -2852,7 +2784,7 @@ rw__LL_Main_seed30 x0 x1 = if x1 == 0b000101 then 0x59f111f1 else (rw__LL_Main_s
 
 // $LL.Main.dev250
 rw__LL_Main_dev250 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev250 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev3 (rw__LL_Main_dev504 (rw__LL_Main_dev462 x1 x0 (x3 # (x2 # (x3 # (x4 # x5))))))
+rw__LL_Main_dev250 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev3 (rw__LL_Main_dev518 (rw__LL_Main_dev462 x1 x0 (x3 # (x2 # (x3 # (x4 # x5))))))
 
 // $LL.Main.step25616
 rw__LL_Main_step25616 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256]
@@ -2940,7 +2872,7 @@ rw__LL_Main_genhash_45 x0 x1 x2 x3 x4 = rw__LL_Main_genhash_94 x0 x1 x2 x3 x4
 
 // $LL.Main.digest22
 rw__LL_Main_digest22 : [32] -> [32] -> [32] -> [32] -> [65]
-rw__LL_Main_digest22 x0 x1 x2 x3 = rw__LL_Main_digest06 x0 x1 x2 x3
+rw__LL_Main_digest22 x0 x1 x2 x3 = rw__LL_Main_digest25 x0 x1 x2 x3
 
 // $LL.Main.rotateR68
 rw__LL_Main_rotateR68 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
@@ -2981,10 +2913,6 @@ rw__LL_Main_dev243 x0 = rw__LL_Main_dev92 (take`{256} x0) (take`{512} (drop`{256
 // $LL.Main.dev242
 rw__LL_Main_dev242 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
 rw__LL_Main_dev242 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev143 x2 x0 x1 x3 x4 x5 x6
-
-// $LL.Main.dev241
-rw__LL_Main_dev241 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev241 x0 x1 x2 x3 = rw__LL_Main_dev64 x0 x1 x2 x3
 
 // Main.genhash'
 rw_Main_genhash_ : [256] -> [512] -> [256] -> [6] -> [1036]
@@ -3102,10 +3030,6 @@ rw__LL_Main_step25613 x0 x1 x2 x3 x4 x5 x6 x7 x8 = rw__LL_Main_step25618 x0 x1 x
 rw__LL_Main_seed27 : [6] -> [6] -> [32]
 rw__LL_Main_seed27 x0 x1 = if x1 == 0b111011 then 0x8cc70208 else (rw__LL_Main_seed1 x0 x0)
 
-// $LL.Main.dev229
-rw__LL_Main_dev229 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev229 x0 x1 x2 x3 = rw__LL_Main_dev349 x0 x1 x2 x3
-
 // $LL.Main.rotateR1816
 rw__LL_Main_rotateR1816 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_rotateR1816 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 = rw__LL_Main_rotateR1821 x0 x1 x2 x3 x4 x5 x6 x7 x8 x11 x9 x10 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31
@@ -3176,7 +3100,7 @@ rw__LL_Main_dev223 x0 x1 x2 x3 x4 x5 x6 = x3 # ((rw__LL_Main_dev128 x1 x0 x2) # 
 
 // $LL.Main.dev222
 rw__LL_Main_dev222 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev222 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev514 (rw__LL_Main_dev526 (rw__LL_Main_dev88 x1 x0 (x3 # (x2 # (x3 # (x4 # x5))))))
+rw__LL_Main_dev222 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev514 (rw__LL_Main_dev530 (rw__LL_Main_dev88 x1 x0 (x3 # (x2 # (x3 # (x4 # x5))))))
 
 // $LL.Main.seed25
 rw__LL_Main_seed25 : [6] -> [6] -> [32]
@@ -3206,10 +3130,6 @@ rw__LL_Main_rotateR2518 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x1
 rw__LL_Main_dev219 : [32] -> [32] -> [512] -> [512]
 rw__LL_Main_dev219 x0 x1 x2 = rw__LL_Main_dev240 x1 x0 x2
 
-// $LL.Main.dev218
-rw__LL_Main_dev218 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev218 x0 x1 x2 x3 = 0b0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # (x0 # (x1 # (x2 # x3)))
-
 // $LL.Main.shiftR311
 rw__LL_Main_shiftR311 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_shiftR311 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 = rw__LL_Main_shiftR310 x12 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31
@@ -3237,10 +3157,6 @@ rw__LL_Main_dev216 x0 x1 x2 x3 x4 x5 = if (take`{4} x1) == 0xa then (rw__LL_Main
 // $LL.Main.seed23
 rw__LL_Main_seed23 : [6] -> [6] -> [32]
 rw__LL_Main_seed23 x0 x1 = if x1 == 0b110101 then 0x4ed8aa4a else (rw__LL_Main_seed9 x0 x0)
-
-// $LL.Main.dev215
-rw__LL_Main_dev215 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev215 x0 x1 x2 x3 = rw__LL_Main_dev441 x1 x0 x2 x3
 
 // $LL.Main.dev214
 rw__LL_Main_dev214 : [68] -> [68] -> [256] -> [512] -> [256] -> [6] -> [1289]
@@ -3466,10 +3382,6 @@ rw__LL_Main_dev194 x0 x1 x2 x3 x4 = rw__LL_Main_dev406 x0 x1 x2 x3 x4
 rw__LL_Main_loop40 : [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
 rw__LL_Main_loop40 x0 x1 x2 x3 x4 = rw__LL_Main_loop76 x0 x2 x1 x3 x4
 
-// $LL.Main.dev193
-rw__LL_Main_dev193 : [256] -> [256] -> [512] -> [6] -> [1289]
-rw__LL_Main_dev193 x0 x1 x2 x3 = 0b0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # (x1 # (x2 # (x0 # x3)))
-
 // $LL.Main.dev192
 rw__LL_Main_dev192 : [256] -> [512] -> [256] -> [6] -> [32] -> [32] -> [1289]
 rw__LL_Main_dev192 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev442 x0 x1 x2 x3 x4 x5
@@ -3481,10 +3393,6 @@ rw__LL_Main_seed21 x0 x1 = if x1 == 0b001010 then 0x243185be else (rw__LL_Main_s
 // $LL.Main.rotateR1113
 rw__LL_Main_rotateR1113 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_rotateR1113 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 = rw__LL_Main_rotateR1126 x0 x1 x2 x3 x4 x5 x14 x6 x7 x8 x9 x10 x11 x12 x13 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31
-
-// $LL.Main.loop39
-rw__LL_Main_loop39 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_loop39 x0 x1 x2 x3 = rw__LL_Main_loop65 x0 x1 x2 x3
 
 // $LL.Main.dev190
 rw__LL_Main_dev190 : [32] -> [32] -> [1286] -> [1030]
@@ -3513,10 +3421,6 @@ rw__LL_Main_step2569 x0 x1 x2 x3 x4 x5 x6 x7 = rw__LL_Main_step25639 x0 x1 x2 x3
 // $LL.Main.rotateR214
 rw__LL_Main_rotateR214 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_rotateR214 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 = rw__LL_Main_rotateR230 x0 x1 x2 x3 x4 x5 x6 x8 x7 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31
-
-// $LL.Main.dev189
-rw__LL_Main_dev189 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev189 x0 x1 x2 x3 = rw__LL_Main_dev487 x0 x1 x2 x3
 
 // $LL.Main.rotateR2213
 rw__LL_Main_rotateR2213 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
@@ -3682,10 +3586,6 @@ rw__LL_Main_rotateR2513 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x1
 rw__LL_Main_shiftR1013 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_shiftR1013 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 = rw__LL_Main_shiftR1021 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x23 x24 x25
 
-// $LL.Main.dev172
-rw__LL_Main_dev172 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev172 x0 x1 x2 x3 = 0b0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # (x0 # (x1 # (x2 # x3)))
-
 // $LL.Main.seed19
 rw__LL_Main_seed19 : [6] -> [6] -> [32]
 rw__LL_Main_seed19 x0 x1 = if x1 == 0b100100 then 0x650a7354 else (rw__LL_Main_seed43 x0 x0)
@@ -3769,6 +3669,10 @@ rw__LL_Main_dev165 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17
 // $LL.Main.rotateR2512
 rw__LL_Main_rotateR2512 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_rotateR2512 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 = rw__LL_Main_rotateR258 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x16 x13 x14 x15 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31
+
+// $LL.Main.digest21
+rw__LL_Main_digest21 : [32] -> [32] -> [32] -> [65]
+rw__LL_Main_digest21 x0 x1 x2 = 0b0 # (x0 # x1)
 
 // $LL.Main.shiftR1010
 rw__LL_Main_shiftR1010 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
@@ -3912,7 +3816,7 @@ rw__LL_Main_rotateR1714 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x1
 
 // $LL.Main.loop27
 rw__LL_Main_loop27 : [68] -> [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_loop27 x0 x1 x2 x3 x4 = rw__LL_Main_loop58 x0 (rw__LL_Main_loop (rw__LL_Main_loop26 (x3 # (x1 # (x2 # (x3 # x4))))))
+rw__LL_Main_loop27 x0 x1 x2 x3 x4 = rw__LL_Main_loop58 x0 (rw__LL_Main_dev38 (rw__LL_Main_loop26 (x3 # (x1 # (x2 # (x3 # x4))))))
 
 // $LL.Main.rotateR2210
 rw__LL_Main_rotateR2210 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
@@ -4349,10 +4253,6 @@ rw__LL_Main_dev110 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev242 x0 x1 x2 x3 x4 x5 x
 // $LL.Main.loop24
 rw__LL_Main_loop24 : [256] -> [512] -> [6] -> [256] -> [6] -> [1289]
 rw__LL_Main_loop24 x0 x1 x2 x3 x4 = rw__LL_Main_loop53 x0 x1 x3 x2 x4
-
-// $LL.Main.dev109
-rw__LL_Main_dev109 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev109 x0 x1 x2 x3 = rw__LL_Main_dev218 x0 x1 x2 x3
 
 // $LL.Main.dev108
 rw__LL_Main_dev108 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [512]
@@ -4834,10 +4734,6 @@ rw__LL_Main_dev65 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev327 x3 x0 x1 x2 x4 x5
 rw__LL_Main_loop13 : [6] -> [256] -> [512] -> [256] -> [6] -> [1289]
 rw__LL_Main_loop13 x0 x1 x2 x3 x4 = rw__LL_Main_loop18 x0 x1 x2 x3 x4
 
-// $LL.Main.dev64
-rw__LL_Main_dev64 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev64 x0 x1 x2 x3 = rw__LL_Main_dev193 x2 x0 x1 x3
-
 // $LL.Main.ch
 rw__LL_Main_ch : [32] -> [32] -> [32] -> [32]
 rw__LL_Main_ch x0 x1 x2 = rw__LL_Main_ch3 x0 x1 x2
@@ -4881,10 +4777,6 @@ rw__LL_Main_rotateR193 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16
 // $LL.Main.rotateR114
 rw__LL_Main_rotateR114 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_rotateR114 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 = rw__LL_Main_rotateR113 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31
-
-// $LL.Main.dev60
-rw__LL_Main_dev60 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev60 x0 x1 x2 x3 = rw__LL_Main_dev50 x0 x1 x2 x3
 
 // $LL.Main.rotateR175
 rw__LL_Main_rotateR175 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
@@ -4954,10 +4846,6 @@ rw__LL_Main_incCtr17 x0 x1 = if x1 == 0b011001 then 0b011010 else (rw__LL_Main_i
 rw__LL_Main_seed5 : [6] -> [6] -> [32]
 rw__LL_Main_seed5 x0 x1 = if x1 == 0b101011 then 0xc76c51a3 else (rw__LL_Main_seed52 x0 x0)
 
-// $LL.Main.loop12
-rw__LL_Main_loop12 : [512] -> [256] -> [256] -> [6] -> [1289]
-rw__LL_Main_loop12 x0 x1 x2 x3 = rw__LL_Main_loop88 x0 x2 x1 x3
-
 // $LL.Main.rotateR192
 rw__LL_Main_rotateR192 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_rotateR192 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 = rw__LL_Main_rotateR1928 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x18 x10 x11 x12 x13 x14 x15 x16 x17 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31
@@ -5017,10 +4905,6 @@ rw__LL_Main_dev51 x0 x1 x2 x3 = rw__LL_Main_dev73 x0 x1 x2 x3
 // $LL.Main.rotateR113
 rw__LL_Main_rotateR113 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
 rw__LL_Main_rotateR113 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 = rw__LL_Main_rotateR1127 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x24 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x25 x26 x27 x28 x29 x30 x31
-
-// $LL.Main.dev50
-rw__LL_Main_dev50 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev50 x0 x1 x2 x3 = rw__LL_Main_dev172 x0 x1 x2 x3
 
 // $LL.Main.rotateR133
 rw__LL_Main_rotateR133 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
@@ -5101,10 +4985,6 @@ rw__LL_Main_dev43 x0 x1 x2 = rw__LL_Main_dev477 x0 x1 x2
 // $LL.Main.dev41
 rw__LL_Main_dev41 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [512]
 rw__LL_Main_dev41 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 = rw__LL_Main_dev287 x4 x0 x1 x2 x3 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17
-
-// $LL.Main.dev40
-rw__LL_Main_dev40 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev40 x0 x1 x2 x3 = rw__LL_Main_dev109 x0 x1 x2 x3
 
 // $LL.Main.dev39
 rw__LL_Main_dev39 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [512]
@@ -5233,10 +5113,6 @@ rw__LL_Main_dev28 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 = rw__LL
 // $LL.Pure.dispatch
 rw__LL_Pure_dispatch : [68] -> [256] -> [512] -> [256] -> [6] -> [1289]
 rw__LL_Pure_dispatch x0 x1 x2 x3 x4 = rw__LL_Pure_dispatch8 x0 x1 x2 x3 x4
-
-// $LL.Main.dev27
-rw__LL_Main_dev27 : [256] -> [512] -> [256] -> [6] -> [1289]
-rw__LL_Main_dev27 x0 x1 x2 x3 = rw__LL_Main_dev241 x0 x1 x2 x3
 
 // $LL.Main.rotateR19
 rw__LL_Main_rotateR19 : [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [1] -> [32]
@@ -5441,10 +5317,6 @@ rw__LL_Main_dev4 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 =
 // $LL.Main.dev3
 rw__LL_Main_dev3 : [1289] -> [1289]
 rw__LL_Main_dev3 x0 = rw__LL_Main_dev427 (take`{256} (drop`{259} x0)) (take`{512} (drop`{515} x0)) (take`{256} (drop`{1027} x0)) (drop`{1283} x0)
-
-// $LL.Main.loop
-rw__LL_Main_loop : [1030] -> [1289]
-rw__LL_Main_loop x0 = rw__LL_Main_loop39 (take`{256} x0) (take`{512} (drop`{256} x0)) (take`{256} (drop`{768} x0)) (drop`{1024} x0)
 
 // $LL.Main.seed
 rw__LL_Main_seed : [6] -> [6] -> [32]
