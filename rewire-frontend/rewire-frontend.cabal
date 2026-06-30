@@ -61,7 +61,7 @@ library
       LambdaCase
       TupleSections
       ViewPatterns
-  ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
+  ghc-options: -Wall -Werror -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
       base ==4.20.*
     , containers ==0.7.*

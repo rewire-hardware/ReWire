@@ -17,6 +17,7 @@ author:
 
 ghc-options:
 - -Wall
+- -Werror
 - -fno-warn-name-shadowing
 - -funbox-strict-fields
 - -O2
