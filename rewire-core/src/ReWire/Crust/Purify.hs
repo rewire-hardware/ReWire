@@ -10,7 +10,7 @@ import ReWire.Crust.Types (tupleTy, mkArrowTy, typeOf, arrowLeft, paramTys, isRe
 import ReWire.Crust.Util (mkApp, mkTuplePat, mkTuple, nil, isPrim, patVars, toVar, toPatVar, transPat, transMPat, mkLam)
 import ReWire.Error (failAt, failAtWith, failInternal, relocatingTo, MonadError, AstError)
 import ReWire.Pretty (TextShow (showb, showt), fromText, prettyPrint)
-import ReWire.Unbound (freshVar, Fresh, s2n, n2s, bind, Name, Embed (Embed), unbind)
+import ReWire.Unbound (freshVar, Fresh, s2n, n2s, bind, Bind, Name, Embed (Embed), unbind)
 
 import Control.Arrow (second, (&&&))
 import Control.Monad (unless, zipWithM, (>=>))
@@ -351,6 +351,7 @@ classifyCases ex = case flattenApp ex of
       (Builtin an _ _ Lift      , [e])    -> pure $ CLift an e
       (Builtin an _ _ Bind      , [e, g]) -> pure $ CBind an e g
       (Match an _ _ disc p e els, [])     -> pure $ CMatch an disc p e els
+      (Case an _ _ disc bnd els , [])     -> pure $ CCase an disc bnd els
       (Builtin an _ _ Error     , _)      -> failAt an "encountered unsynthesizable definition."
       (Var an _ t g             , es)     -> pure $ CApply an t g es
       d                                   -> failInternal (ann ex) $ "unclassifiable case: " <> prettyPrint d
@@ -362,6 +363,7 @@ data Cases = CGet Annote !(Maybe Ty)
            | CBind Annote !Exp !Exp
            | CApply Annote !(Maybe Ty) !(Name Exp) ![Exp]
            | CMatch Annote !Exp !MatchPat !Exp !(Maybe Exp)
+           | CCase Annote !Exp !(Bind Pat Exp) !(Maybe Exp)
 
 -- | purifyStateBody
 --   rho  -- pure environment
@@ -390,6 +392,13 @@ purifyStateBody rho stos stys i = classifyCases >=> \ case
             p  <- transMPat mp
             e' <- purifyStateBody rho stos stys i $ mkApp an e $ toVar an <$> patVars p
             mkCase an disc (p, e') <$> mapM (purifyStateBody rho stos stys i) els
+
+      -- disc must be simply-typed, so don't purify it.
+      CCase an disc bnd els -> do
+            (p, e) <- unbind bnd
+            e'     <- purifyStateBody rho stos stys i e
+            els'   <- mapM (purifyStateBody rho stos stys i) els
+            pure $ Case an Nothing (typeOf e') disc (bind p e') els'
 
       CBind an e g -> do
             a           <- maybe (failInternal (ann e) "invalid type in bind") pure $ typeOf e >>= (fmap snd . dstTyApp)
@@ -420,6 +429,7 @@ data RCase = RReturn Annote !Exp
            | RExtrude Annote !(Maybe Ty) ![Exp]                     -- [(e, t)]
            | RApp Annote !(Maybe Ty) !(Name Exp) ![Exp]
            | RMatch Annote !Exp !MatchPat !Exp !(Maybe Exp)
+           | RCaseE Annote !Exp !(Bind Pat Exp) !(Maybe Exp)
 
 instance TextShow RCase where
       showb = \ case
@@ -432,6 +442,7 @@ instance TextShow RCase where
             RExtrude {} -> fromText "RExtrude"
             RApp     {} -> fromText "RApp"
             RMatch   {} -> fromText "RMatch"
+            RCaseE   {} -> fromText "RCaseE"
 
 classifyRCases :: (Fresh m, MonadError AstError m) => Exp -> m RCase
 classifyRCases ex = case flattenApp ex of
@@ -444,6 +455,7 @@ classifyRCases ex = case flattenApp ex of
       (Builtin an _ t Extrude    , es)     -> pure $ RExtrude an t es
       (Builtin an _ _ Error      , _)      -> failAt an "encountered unsynthesizable definition."
       (Match an _ _ disc p e els , [])     -> pure $ RMatch an disc p e els
+      (Case an _ _ disc bnd els  , [])     -> pure $ RCaseE an disc bnd els
       (Var an _ t x              , [])     -> pure $ RVar an t x
       (Var an _ t x              , es)     -> pure $ RApp an t x es
       d                                  -> failInternal (ann ex) $ "unclassifiable R-case: " <> prettyPrint d
@@ -590,6 +602,13 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
             p  <- transMPat mp
             e' <- purifyResBody start rho i o a stos ms $ mkApp an e $ toVar an <$> patVars p
             mkCase an disc (p, e') <$> mapM (purifyResBody start rho i o a stos ms) els
+
+       -- disc must be simply-typed, so don't purify it.
+      RCaseE an disc bnd els -> do
+            (p, e) <- unbind bnd
+            e'     <- purifyResBody start rho i o a stos ms e
+            els'   <- mapM (purifyResBody start rho i o a stos ms) els
+            pure $ Case an Nothing (typeOf e') disc (bind p e') els'
 
       where checkFullExtrusion :: MonadError AstError m => Annote -> [Exp] -> m ()
             checkFullExtrusion an sts = unless (length sts == length ms) $ failAt an

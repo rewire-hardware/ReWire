@@ -25,7 +25,7 @@ import Control.Lens ((^.))
 import Control.Monad (unless, foldM)
 import Control.Monad.Except (catchError)
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Reader (MonadReader (..), ReaderT (..), asks, lift)
+import Control.Monad.Reader (MonadReader (..), ReaderT (..), asks, lift, mapReaderT)
 import Control.Monad.State (StateT (..), MonadState, gets, modify)
 import Data.Containers.ListUtils (nubOrd)
 import Data.Either (partitionEithers)
@@ -232,7 +232,12 @@ transDefn conf start conMap = \ case
 --   for globals). Source identifiers never begin with '$', so they cannot
 --   clash with the generated '$t'/'$in'/'$res' names.
 uniquifyLocals :: [Name M.Exp] -> [A.Name]
-uniquifyLocals = go mempty
+uniquifyLocals = uniquifyLocalsIn mempty
+
+-- | As 'uniquifyLocals', but avoiding a set of names already in scope, so a
+--   case-bound variable never shadows (and so captures) an enclosing binding.
+uniquifyLocalsIn :: HashSet A.Name -> [Name M.Exp] -> [A.Name]
+uniquifyLocalsIn = go
       where go :: HashSet A.Name -> [Name M.Exp] -> [A.Name]
             go _    []       = []
             go used (v : vs) = let nm = pick used (n2s v) (0 :: Int) in nm : go (Set.insert nm used) vs
@@ -241,6 +246,11 @@ uniquifyLocals = go mempty
             pick used base i | cand `Set.member` used = pick used base (i + 1)
                              | otherwise              = cand
                   where cand = if i == 0 then base else base <> showt i
+
+-- | Run a sub-translation with extra local name bindings in scope (used to
+--   bind case-pattern variables to their discriminant slices).
+withLocals :: Monad m => [(Name M.Exp, A.Name)] -> TCM m a -> TCM m a
+withLocals binds = mapReaderT (local (Map.union (Map.fromList binds)))
 
 ---
 --- Expression translation.
@@ -299,6 +309,24 @@ transPat = \ case
       M.MatchPatVar an _ t      -> pure . FVar <$> sizeOf' "MatchPatVar" an t
       M.MatchPatWildCard an _ t -> pure . FWild <$> sizeOf' "MatchPatWildCard" an t
 
+-- | Like 'transPat', but over a binding 'Pat': returns the flat field vector
+--   together with the source binder name of each 'FVar', in field order, so a
+--   case can bind its pattern variables to named discriminant slices.
+patFields :: (MonadError AstError m, Fresh m, MonadState S m, MonadReader ConMap m) => M.Pat -> m ([Field], [Name M.Exp])
+patFields = \ case
+      M.PatCon an _ (Embed t) (Embed d) ps -> do
+            (v, w) <- ctorTag an t d
+            sz     <- sizeOf' ("PatCon " <> n2s d) an t
+            szArgs <- sum <$> mapM (sizeOf' "PatCon args" an . M.typeOf) ps
+            subs   <- mapM patFields ps
+            pure ([FLit $ bitVec (fromIntegral w) v, FWild $ sz - w - szArgs] <> concatMap fst subs, concatMap snd subs)
+      M.PatVar an _ (Embed t) x -> do
+            sz <- sizeOf' "PatVar" an t
+            pure ([FVar sz], [x])
+      M.PatWildCard an _ (Embed t) -> do
+            sz <- sizeOf' "PatWildCard" an t
+            pure ([FWild sz], [])
+
 {- HLINT ignore "Redundant multi-way if" -}
 transExp :: (MonadError AstError m, Fresh m, MonadState S m) => M.Exp -> TCM m A.Exp
 transExp e = case e of
@@ -339,6 +367,20 @@ transExp e = case e of
                   case els' of
                         Just els'' | not (null conds) -> pure $ A.If an sz (conj an conds) res els''
                         _                             -> pure res
+      M.Case an _ t disc bnd els          -> do
+            sz           <- sizeOf' "Case" an t
+            disc'        <- transExp disc
+            (p, body)    <- unbind bnd
+            (fields, ns) <- patFields p
+            els'         <- mapM transExp els
+            destruct an disc' fields $ \ (args, conds) -> do
+                  inScope <- lift $ asks $ Set.fromList . Map.elems
+                  let anames = uniquifyLocalsIn inScope ns
+                  body'  <- withLocals (zip ns anames) $ transExp body
+                  let lets = foldr (\ (nm, slc) acc -> A.Let an (A.sizeOf acc) nm slc acc) body' $ zip anames args
+                  case els' of
+                        Just els'' | not (null conds) -> pure $ A.If an sz (conj an conds) lets els''
+                        _                             -> pure lets
       M.LitInt an _ n                     -> do
             sz <- sizeOf' "LitInt" an $ M.typeOf e
             pure $ A.Lit an $ bitVec (fromIntegral sz) n
