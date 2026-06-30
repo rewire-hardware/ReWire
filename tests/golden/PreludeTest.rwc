@@ -1,79 +1,49 @@
 $Pure.dispatch : ([1], [1]) -> [2]
 $Pure.dispatch disc i =
-      $LL.Pure.dispatch i disc
+      $LL.Main.loop2 disc i
 
-$LL.Main.loop3 : ([1], [1]) -> [2]
-$LL.Main.loop3 $x $x1 =
-      $LL.Main.loop2 $x $x1
-
-"$LL.ReWire.Prelude.&&3" : ([1]) -> [1]
-"$LL.ReWire.Prelude.&&3" $32 =
-      1'h0
-
-$LL.Main.zookus4 : ([1]) -> [1]
-$LL.Main.zookus4 x =
-      $LL.Main.zookus2 (x # x)
-
-$LL.Pure.dispatch1 : ([1], [1]) -> [2]
-$LL.Pure.dispatch1 i store0 =
-      $LL.Main.loop3 store0 i
+"$LL.ReWire.Prelude.&&1" : ([1], [1], [2]) -> [1]
+"$LL.ReWire.Prelude.&&1" $11 $10 $52 =
+      if eq $52[1 +: 1] 1'h1 then (let b = $52[0 +: 1] in
+            b)
+            else "$LL.ReWire.Prelude.&&" ($10 # $11)
 
 $LL.Main.loop2 : ([1], [1]) -> [2]
-$LL.Main.loop2 a b =
-      Main.loop ("ReWire.Prelude.&&" a 1'h1)
+$LL.Main.loop2 $x $x1 =
+      $LL.Main.loop $x $x1
 
-"$LL.ReWire.Prelude.&&2" : ([2]) -> [1]
-"$LL.ReWire.Prelude.&&2" $51 =
-      "$LL.ReWire.Prelude.&&3" $51[0 +: 1]
-
-"$LL.ReWire.Prelude.&&1" : ([1]) -> [1]
-"$LL.ReWire.Prelude.&&1" b =
-      b
+$LL.Main.zookus1 : ([2]) -> [1]
+$LL.Main.zookus1 $61 =
+      let x = $61[1 +: 1] in
+      x
 
 $LL.Main.loop1 : ([1]) -> [2]
-$LL.Main.loop1 a =
-      Main.zookus (Main.zookus a) # a
+$LL.Main.loop1 $2 =
+      Main.zookus (Main.zookus $2) # $2
 
-Main.loop : ([1]) -> [2]
-Main.loop $x =
-      $LL.Main.loop $x
+$LL.Main.loop : ([1], [1]) -> [2]
+$LL.Main.loop a b =
+      Main.loop1 ("ReWire.Prelude.&&" a 1'h1)
 
-$LL.Main.zookus3 : ([1], [1]) -> [1]
-$LL.Main.zookus3 $x $x1 =
-      $LL.Main.zookus $x $x1
+Main.loop1 : ([1]) -> [2]
+Main.loop1 $x =
+      $LL.Main.loop1 $x
 
-"$LL.ReWire.Prelude.&&" : ([1], [1], [2]) -> [1]
-"$LL.ReWire.Prelude.&&" $10 $11 $52 =
-      if eq $52[1 +: 1] 1'h1 then "$LL.ReWire.Prelude.&&1" $52[0 +: 1]
-            else "$LL.ReWire.Prelude.&&2" ($10 # $11)
-
-$LL.Main.zookus2 : ([2]) -> [1]
-$LL.Main.zookus2 $61 =
-      $LL.Main.zookus3 $61[1 +: 1] $61[0 +: 1]
+$LL.Main.zookus : ([1]) -> [1]
+$LL.Main.zookus $3 =
+      $LL.Main.zookus1 ($3 # $3)
 
 "ReWire.Prelude.&&" : ([1], [1]) -> [1]
 "ReWire.Prelude.&&" $10 $11 =
-      "$LL.ReWire.Prelude.&&" $10 $11 ($10 # $11)
+      "$LL.ReWire.Prelude.&&1" $11 $10 ($10 # $11)
 
 Main.zookus : ([1]) -> [1]
 Main.zookus $x =
-      $LL.Main.zookus1 $x
+      $LL.Main.zookus $x
 
-$LL.Main.zookus1 : ([1]) -> [1]
-$LL.Main.zookus1 $x =
-      $LL.Main.zookus4 $x
-
-$LL.Pure.dispatch : ([1], [1]) -> [2]
-$LL.Pure.dispatch i $x =
-      $LL.Pure.dispatch1 i $x
-
-$LL.Main.zookus : ([1], [1]) -> [1]
-$LL.Main.zookus x $43 =
-      x
-
-$LL.Main.loop : ([1]) -> [2]
-$LL.Main.loop $x =
-      $LL.Main.loop1 $x
+"$LL.ReWire.Prelude.&&" : ([2]) -> [1]
+"$LL.ReWire.Prelude.&&" $51 =
+      1'h0
 
 device top_level
       input __in0 : [1]

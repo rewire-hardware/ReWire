@@ -213,7 +213,7 @@ component \ZLL_Main_go5\ is
             arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (3 downto 0));
       end component;
-      signal \__resumption_tag\ : std_logic_vector (2 downto 0) := std_logic_vector'(B"010");
+      signal \__resumption_tag\ : std_logic_vector (2 downto 0) := std_logic_vector'(B"100");
       signal \__resumption_tag_next\ : std_logic_vector (2 downto 0);
       signal zi0 : std_logic_vector (0 downto 0);
       signal zll_main_go5_out : std_logic_vector (3 downto 0);
@@ -225,13 +225,13 @@ zi0 <= \__resumption_tag\(0 downto 0);
       inst : \ZLL_Main_go5\ port map (zi0, \__in0\, zll_main_go5_out);
       zi1 <= \__resumption_tag\(0 downto 0);
       \instR1\ : \ZLL_Main_go5\ port map (zi1, \__in0\, \zll_main_go5_outR1\);
-      zres <= rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"01")), rw_cond(rw_eq(\__in0\, std_logic_vector'(B"1")), (std_logic_vector'(B"011") & \__in0\), (\__in0\ & std_logic_vector'(B"00") & \__in0\)), rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"10")), std_logic_vector'(B"0010"), rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"11")), zll_main_go5_out, \zll_main_go5_outR1\)));
+      zres <= rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"01")), std_logic_vector'(B"0100"), rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"10")), rw_cond(rw_eq(\__in0\, std_logic_vector'(B"1")), (std_logic_vector'(B"000") & \__in0\), (\__in0\ & std_logic_vector'(B"11") & \__in0\)), rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"11")), zll_main_go5_out, \zll_main_go5_outR1\)));
       \__resumption_tag_next\ <= zres(2 downto 0);
       \__out0\ <= zres(3 downto 3);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then
-                  \__resumption_tag\ <= std_logic_vector'(B"010");
+                  \__resumption_tag\ <= std_logic_vector'(B"100");
             elsif rising_edge(clk(0)) then
                   \__resumption_tag\ <= \__resumption_tag_next\;
             end if;
@@ -261,7 +261,7 @@ begin
 inst : \ReWirezuPreludezuzaza\ port map (arg0, arg0, rewirezupreludezuzazazuout);
       conn <= rw_cond(rw_eq(arg1, std_logic_vector'(B"1")), arg0, rewirezupreludezuzazazuout);
       \instR1\ : \ReWirezuPreludezuzaza\ port map (conn, arg1, \rewirezupreludezuzazazuoutR1\);
-      res <= (\rewirezupreludezuzazazuoutR1\ & std_logic_vector'(B"100"));
+      res <= (\rewirezupreludezuzazazuoutR1\ & std_logic_vector'(B"010"));
 end architecture;
 
 library ieee;

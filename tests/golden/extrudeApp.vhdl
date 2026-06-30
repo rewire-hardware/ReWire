@@ -212,9 +212,9 @@ signal \__resumption_tag\ : std_logic_vector (7 downto 0) := std_logic_vector'(B
       signal \__resumption_tag_next\ : std_logic_vector (7 downto 0);
       signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal zres : std_logic_vector (24 downto 0);
+      signal zres : std_logic_vector (23 downto 0);
 begin
-zres <= (std_logic_vector'(B"1") & rw_add(\__in0\, \__resumption_tag\) & \__resumption_tag\ & \__in0\);
+zres <= (rw_add(\__in0\, \__resumption_tag\) & \__resumption_tag\ & \__in0\);
       \__resumption_tag_next\ <= zres(15 downto 8);
       \__st0_next\ <= zres(7 downto 0);
       \__out0\ <= zres(23 downto 16);

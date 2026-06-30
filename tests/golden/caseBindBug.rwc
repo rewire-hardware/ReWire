@@ -1,140 +1,54 @@
-$Pure.dispatch : ([1], [1]) -> [4]
+$Pure.dispatch : ([1], [1]) -> [3]
 $Pure.dispatch disc i =
-      $LL.Pure.dispatch i disc
-
-$LL.Main.go40 : ([1]) -> [4]
-$LL.Main.go40 disc =
-      $LL.Main.go17 disc
-
-$LL.Main.go39 : ([1], [1]) -> [4]
-$LL.Main.go39 rabind sto0 =
-      2'h2 # rabind # sto0
-
-$LL.Main.go38 : ([1]) -> [4]
-$LL.Main.go38 s0 =
-      3'h2 # s0
-
-$LL.Main.go37 : ([1], [4]) -> [4]
-$LL.Main.go37 rabind disc =
-      $LL.Main.go33 rabind disc[0 +: 1]
-
-$LL.Main.go36 : ([1], [1]) -> [4]
-$LL.Main.go36 rabind sto0 =
-      $LL.Main.go37 rabind ($LL.Main.go40 rabind)
-
-$LL.Main.go35 : ([1], [1]) -> [4]
-$LL.Main.go35 v $x =
-      $LL.Main.go36 v $x
-
-$LL.Main.go34 : ([4]) -> [4]
-$LL.Main.go34 disc =
-      $LL.Main.go35 disc[1 +: 1] disc[0 +: 1]
-
-$LL.Main.go33 : ([1], [1]) -> [4]
-$LL.Main.go33 rabind $x1 =
-      $LL.Main.go23 rabind $x1
-
-$LL.Main.go32 : ([1], [1]) -> [4]
-$LL.Main.go32 sto0 m2c =
-      $LL.Main.go10 m2c sto0
-
-$LL.Main.go31 : ([1], [1]) -> [4]
-$LL.Main.go31 v $x =
-      $LL.Main.go30 v $x
-
-$LL.Main.go30 : ([1], [1]) -> [4]
-$LL.Main.go30 v s0 =
-      2'h0 # v # s0
-
-$LL.Main.go29 : ([1]) -> [2]
-$LL.Main.go29 disc =
-      $LL.Main.go19 disc
-
-$LL.Main.go28 : ([1], [1]) -> [4]
-$LL.Main.go28 sto0 $x =
-      $LL.Main.go32 sto0 $x
-
-$LL.Pure.dispatch : ([1], [1]) -> [4]
-$LL.Pure.dispatch i $x =
-      Main.go i $x
-
-$LL.Main.go27 : ([1]) -> [2]
-$LL.Main.go27 sigma0 =
-      sigma0 # sigma0
-
-$LL.Main.go24 : ([2]) -> [4]
-$LL.Main.go24 disc =
-      $LL.Main.go31 disc[1 +: 1] disc[0 +: 1]
-
-$LL.Main.go23 : ([1], [1]) -> [4]
-$LL.Main.go23 rabind $x =
-      $LL.Main.go39 rabind $x
-
-$LL.Main.go21 : ([1]) -> [4]
-$LL.Main.go21 sto0 =
-      $LL.Main.go34 ($LL.Main.go24 ($LL.Main.go9 (sto0 # sto0)))
-
-$LL.Main.go20 : ([1], [1]) -> [2]
-$LL.Main.go20 x sigma0 =
-      $LL.Main.go29 (Main.notb x)
-
-$LL.Main.go19 : ([1]) -> [2]
-$LL.Main.go19 $x =
-      $LL.Main.go27 $x
-
-Main.notb : ([1]) -> [1]
-Main.notb $0 =
-      $LL.Main.notb1 $0 $0
-
-$LL.Main.go17 : ([1]) -> [4]
-$LL.Main.go17 $x =
-      $LL.Main.go38 $x
-
-$LL.Main.go13 : ([1], [1]) -> [4]
-$LL.Main.go13 $11 sto0 =
-      $LL.Main.go11 sto0
-
-$LL.Main.go11 : ([1]) -> [4]
-$LL.Main.go11 sto0 =
-      $LL.Main.go5 sto0
+      Main.go i disc
 
 $LL.Main.notb1 : ([1], [1]) -> [1]
 $LL.Main.notb1 $0 $8 =
       if eq $8 1'h0 then 1'h1
             else $LL.Main.notb $0
 
-$LL.Main.go10 : ([1], [1]) -> [4]
-$LL.Main.go10 g sto0 =
-      if eq g 1'h1 then $LL.Main.go4 sto0
-            else $LL.Main.go13 g sto0
+$LL.Main.go7 : ([1], [1]) -> [3]
+$LL.Main.go7 rabind sto0 =
+      1'h1 # rabind # sto0
 
-$LL.Main.go9 : ([2]) -> [2]
-$LL.Main.go9 disc =
-      $LL.Main.go6 disc[1 +: 1] disc[0 +: 1]
+$LL.Main.go6 : ([1], [1]) -> [2]
+$LL.Main.go6 x sigma0 =
+      $LL.Main.go2 (Main.notb x)
+
+$LL.Main.go5 : ([1], [1]) -> [3]
+$LL.Main.go5 $14 sto0 =
+      if eq $14 1'h1 then (let $t1 = (let $t0 = $LL.Main.go6 sto0 sto0 in
+            let v = $t0[1 +: 1] in
+            let s0 = $t0[0 +: 1] in
+            1'h0 # v # s0) in
+            let v = $t1[1 +: 1] in
+            let s0 = $t1[0 +: 1] in
+            $LL.Main.go4 v s0)
+            else $LL.Main.go $14 sto0
 
 $LL.Main.notb : ([1]) -> [1]
 $LL.Main.notb $7 =
       1'h0
 
-$LL.Main.go6 : ([1], [1]) -> [2]
-$LL.Main.go6 st0 $x =
-      $LL.Main.go20 st0 $x
+Main.notb : ([1]) -> [1]
+Main.notb $0 =
+      $LL.Main.notb1 $0 $0
 
-$LL.Main.go5 : ([1]) -> [4]
-$LL.Main.go5 sto0 =
-      $LL.Main.go34 ($LL.Main.go24 (sto0 # sto0))
+$LL.Main.go4 : ([1], [1]) -> [3]
+$LL.Main.go4 rabind sto0 =
+      $LL.Main.go7 rabind rabind
 
-$LL.Main.go4 : ([1]) -> [4]
-$LL.Main.go4 sto0 =
-      $LL.Main.go21 sto0
+$LL.Main.go2 : ([1]) -> [2]
+$LL.Main.go2 sigma0 =
+      sigma0 # sigma0
 
-$LL.Main.go2 : ([1], [1]) -> [4]
-$LL.Main.go2 $14 sto0 =
-      $LL.Main.go28 sto0 $14
+$LL.Main.go : ([1], [1]) -> [3]
+$LL.Main.go $11 sto0 =
+      $LL.Main.go4 sto0 sto0
 
-Main.go : ([1], [1]) -> [4]
+Main.go : ([1], [1]) -> [3]
 Main.go $x sto0 =
-      $LL.Main.go2 $x sto0
+      $LL.Main.go5 $x sto0
 
 device top_level
       input __in0 : [1]

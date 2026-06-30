@@ -4,14 +4,14 @@ module top_level (input logic [0:0] clk,
   output logic [0:0] __out0);
   logic [0:0] __resumption_tag;
   logic [0:0] __resumption_tag_next;
-  logic [0:0] zi4;
+  logic [0:0] zi3;
   logic [0:0] main_zookus_out;
   logic [0:0] main_zookus_outR1;
   logic [1:0] zres;
-  assign zi4 = (__resumption_tag == 1'h1) ? 1'h1 : 1'h0;
-  Main_zookus  inst (zi4, main_zookus_out);
+  assign zi3 = (__resumption_tag == 1'h1) ? 1'h1 : 1'h0;
+  Main_zookus  inst (zi3, main_zookus_out);
   Main_zookus  instR1 (main_zookus_out, main_zookus_outR1);
-  assign zres = {main_zookus_outR1, zi4};
+  assign zres = {main_zookus_outR1, zi3};
   assign __resumption_tag_next = zres[0];
   assign __out0 = zres[1];
   initial __resumption_tag = 1'h0;

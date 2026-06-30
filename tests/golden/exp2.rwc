@@ -1,144 +1,73 @@
-$Pure.dispatch : ([2000], [100]) -> [2101]
+$Pure.dispatch : ([2000], [100]) -> [2100]
 $Pure.dispatch disc i =
-      $LL.Pure.dispatch i disc[1000 +: 1000] disc[0 +: 1000]
+      let store0 = disc[1000 +: 1000] in
+      let s0 = disc[0 +: 1000] in
+      $LL.Main.dev1 store0 i s0
 
-$LL.Main.dev16 : ([1000]) -> [2101]
-$LL.Main.dev16 sto0 =
+$LL.Main.dev4 : ([1000]) -> [2100]
+$LL.Main.dev4 sto0 =
       Main.dev sto0
 
-$LL.Main.ss'7 : ([1100]) -> [1000]
-$LL.Main.ss'7 $6 =
-      $LL.Main.ss'1 $6[100 +: 1000] $6[0 +: 100]
+$LL.Main.dev3 : ([1000], [100], [1000]) -> [2100]
+$LL.Main.dev3 ss i sto0 =
+      $LL.Main.dev4 (Main.ss' ss i)
 
-$LL.Main.dev15 : ([2101]) -> [2101]
-$LL.Main.dev15 disc =
-      $LL.Main.dev8 disc[0 +: 1000]
-
-$LL.Main.ss'6 : ([900], [100]) -> [1000]
-$LL.Main.ss'6 $x $x1 =
-      $LL.Main.ss'5 $x $x1
-
-$LL.Main.dev14 : ([1000]) -> [2101]
-$LL.Main.dev14 s0 =
-      1101'h10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # s0
-
-$LL.Main.dev13 : ([2000]) -> [2101]
-$LL.Main.dev13 disc =
-      $LL.Main.dev5 disc[1000 +: 1000] disc[0 +: 1000]
-
-$LL.Main.dev12 : ([1000], [1000]) -> [2101]
-$LL.Main.dev12 v s0 =
-      101'h0 # v # s0
-
-$LL.Main.x21 : ([100]) -> [100]
-$LL.Main.x21 x =
-      mul x 100'h2
-
-$LL.Main.dev11 : ([2101]) -> [2101]
-$LL.Main.dev11 disc =
-      $LL.Main.dev10 disc[1000 +: 1000] disc[0 +: 1000]
-
-$LL.Main.dev10 : ([1000], [1000]) -> [2101]
-$LL.Main.dev10 v $x =
-      $LL.Main.dev9 v $x
-
-$LL.Main.dev9 : ([1000], [1000]) -> [2101]
-$LL.Main.dev9 ss sto0 =
-      1'h1 # $LL.Main.dev3 ss # ss # sto0
-
-$LL.Main.dev8 : ([1000]) -> [2101]
-$LL.Main.dev8 $x =
-      $LL.Main.dev7 $x
-
-$LL.Main.dev7 : ([1000]) -> [2101]
-$LL.Main.dev7 sto0 =
-      $LL.Main.dev16 sto0
-
-$LL.Main.dev6 : ([1000], [100], [1000]) -> [2101]
-$LL.Main.dev6 ss i sto0 =
-      $LL.Main.dev15 ($LL.Main.dev (Main.ss' ss i))
-
-$LL.Main.ss'5 : ([900], [100]) -> [1000]
-$LL.Main.ss'5 v x =
+$LL.Main.ss'3 : ([1000]) -> [1000]
+$LL.Main.ss'3 $32 =
+      let v = $32[100 +: 900] in
+      let x = $32[0 +: 100] in
       v # x
 
-$LL.Main.dev5 : ([1000], [1000]) -> [2101]
-$LL.Main.dev5 v $x =
-      $LL.Main.dev12 v $x
+$LL.Main.ss'2 : ([900], [100]) -> [1000]
+$LL.Main.ss'2 $x $x1 =
+      $LL.Main.ss' $x $x1
 
-$LL.Main.dev4 : ([1000]) -> [100]
-$LL.Main.dev4 v =
-      v[900 +: 100]
+$LL.Main.ss'1 : ([1100]) -> [1000]
+$LL.Main.ss'1 $6 =
+      let i = $6[0 +: 100] in
+      Main.x2 (let $t0 = $LL.Main.ss'2 $6[100 +: 900] i in
+      $t0[900 +: 100]) # Main.x2 (let $t1 = $LL.Main.ss'2 $6[100 +: 900] i in
+      $t1[800 +: 100]) # Main.x2 (let $t2 = $LL.Main.ss'2 $6[100 +: 900] i in
+      $t2[700 +: 100]) # Main.x2 (let $t3 = $LL.Main.ss'2 $6[100 +: 900] i in
+      $t3[600 +: 100]) # Main.x2 (let $t4 = $LL.Main.ss'2 $6[100 +: 900] i in
+      $t4[500 +: 100]) # Main.x2 (let $t5 = $LL.Main.ss'2 $6[100 +: 900] i in
+      $t5[400 +: 100]) # Main.x2 (let $t6 = $LL.Main.ss'2 $6[100 +: 900] i in
+      $t6[300 +: 100]) # Main.x2 (let $t7 = $LL.Main.ss'2 $6[100 +: 900] i in
+      $t7[200 +: 100]) # Main.x2 (let $t8 = $LL.Main.ss'2 $6[100 +: 900] i in
+      $t8[100 +: 100]) # Main.x2 (let $t9 = $LL.Main.ss'2 $6[100 +: 900] i in
+      $t9[0 +: 100])
 
-$LL.Main.ss'4 : ([900], [100]) -> [1000]
-$LL.Main.ss'4 $3 $4 =
-      $LL.Main.ss'2 ($3 # $4)
-
-Main.dev : ([1000]) -> [2101]
+Main.dev : ([1000]) -> [2100]
 Main.dev sto0 =
-      $LL.Main.dev11 ($LL.Main.dev13 (sto0 # sto0))
+      $LL.Main.dev sto0 sto0
 
-$LL.Main.dev3 : ([1000]) -> [100]
-$LL.Main.dev3 $x =
-      $LL.Main.dev4 $x
+$LL.Main.ss' : ([900], [100]) -> [1000]
+$LL.Main.ss' $3 $4 =
+      $LL.Main.ss'3 ($3 # $4)
 
-$LL.Main.ss'3 : ([900], [100]) -> [1000]
-$LL.Main.ss'3 $x $x1 =
-      $LL.Main.ss'4 $x $x1
+$LL.Main.x2 : ([100]) -> [100]
+$LL.Main.x2 $5 =
+      mul $5 100'h2
 
 Main.ss' : ([1000], [100]) -> [1000]
 Main.ss' $1 $2 =
-      $LL.Main.ss'7 ($1 # $2)
+      $LL.Main.ss'1 ($1 # $2)
 
-$LL.Main.x2 : ([100]) -> [100]
-$LL.Main.x2 $x =
-      $LL.Main.x21 $x
-
-$LL.Pure.dispatch1 : ([100], [1000], [1000]) -> [2101]
-$LL.Pure.dispatch1 i store0 $x =
-      $LL.Main.dev1 store0 i $x
-
-$LL.Main.ss'2 : ([1000]) -> [1000]
-$LL.Main.ss'2 $32 =
-      $LL.Main.ss'6 $32[100 +: 900] $32[0 +: 100]
-
-$LL.Main.dev2 : ([1000]) -> [2101]
-$LL.Main.dev2 $x =
-      $LL.Main.dev14 $x
-
-$LL.Main.dev1 : ([1000], [100], [1000]) -> [2101]
-$LL.Main.dev1 $x $x1 sto0 =
-      $LL.Main.dev6 $x $x1 sto0
+$LL.Main.dev2 : ([1000]) -> [100]
+$LL.Main.dev2 $33 =
+      $33[900 +: 100]
 
 Main.x2 : ([100]) -> [100]
 Main.x2 $x =
       $LL.Main.x2 $x
 
-$LL.Pure.dispatch : ([100], [1000], [1000]) -> [2101]
-$LL.Pure.dispatch i $x $x1 =
-      $LL.Pure.dispatch1 i $x $x1
+$LL.Main.dev1 : ([1000], [100], [1000]) -> [2100]
+$LL.Main.dev1 $x $x1 sto0 =
+      $LL.Main.dev3 $x $x1 sto0
 
-$LL.Main.ss'1 : ([1000], [100]) -> [1000]
-$LL.Main.ss'1 $x $x1 =
-      $LL.Main.ss' $x $x1
-
-$LL.Main.dev : ([1000]) -> [2101]
-$LL.Main.dev disc =
-      $LL.Main.dev2 disc
-
-$LL.Main.ss' : ([1000], [100]) -> [1000]
-$LL.Main.ss' ss i =
-      Main.x2 (let $t0 = $LL.Main.ss'3 ss[0 +: 900] i in
-      $t0[900 +: 100]) # Main.x2 (let $t1 = $LL.Main.ss'3 ss[0 +: 900] i in
-      $t1[800 +: 100]) # Main.x2 (let $t2 = $LL.Main.ss'3 ss[0 +: 900] i in
-      $t2[700 +: 100]) # Main.x2 (let $t3 = $LL.Main.ss'3 ss[0 +: 900] i in
-      $t3[600 +: 100]) # Main.x2 (let $t4 = $LL.Main.ss'3 ss[0 +: 900] i in
-      $t4[500 +: 100]) # Main.x2 (let $t5 = $LL.Main.ss'3 ss[0 +: 900] i in
-      $t5[400 +: 100]) # Main.x2 (let $t6 = $LL.Main.ss'3 ss[0 +: 900] i in
-      $t6[300 +: 100]) # Main.x2 (let $t7 = $LL.Main.ss'3 ss[0 +: 900] i in
-      $t7[200 +: 100]) # Main.x2 (let $t8 = $LL.Main.ss'3 ss[0 +: 900] i in
-      $t8[100 +: 100]) # Main.x2 (let $t9 = $LL.Main.ss'3 ss[0 +: 900] i in
-      $t9[0 +: 100])
+$LL.Main.dev : ([1000], [1000]) -> [2100]
+$LL.Main.dev ss sto0 =
+      $LL.Main.dev2 ss # ss # sto0
 
 device top_level
       input __in0 : [100]

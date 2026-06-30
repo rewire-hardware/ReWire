@@ -17,124 +17,59 @@ rw'sext : {m, n} (fin m, fin n, n >= 1) => [n] -> [m]
 rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
-rw__Pure_dispatch : [17] -> [8] -> [26]
-rw__Pure_dispatch x0 x1 = if (take`{1} x0) == 0b1 then (rw__LL_Pure_dispatch2 x1 (drop`{9} x0)) else (rw__LL_Pure_dispatch1 x1 (take`{8} (drop`{1} x0)) (drop`{9} x0))
-
-// $LL.Main.dev21
-rw__LL_Main_dev21 : [8] -> [8] -> [26]
-rw__LL_Main_dev21 x0 x1 = rw__LL_Main_dev12 x0 x1
-
-// $LL.Pure.dispatch2
-rw__LL_Pure_dispatch2 : [8] -> [8] -> [26]
-rw__LL_Pure_dispatch2 x0 x1 = rw__LL_Main_start1 x0 x1
-
-// $LL.Main.dev20
-rw__LL_Main_dev20 : [8] -> [8] -> [26]
-rw__LL_Main_dev20 x0 x1 = rw__LL_Main_dev8 x0 (rw__LL_Main_dev14 (x1 # x1))
-
-// $LL.Main.dev19
-rw__LL_Main_dev19 : [8] -> [8] -> [26]
-rw__LL_Main_dev19 x0 x1 = rw__LL_Main_dev15 x0 x1
-
-// $LL.Main.dev18
-rw__LL_Main_dev18 : [8] -> [8] -> [26]
-rw__LL_Main_dev18 x0 x1 = rw__LL_Main_dev2 x0 x1
-
-// $LL.Pure.dispatch1
-rw__LL_Pure_dispatch1 : [8] -> [8] -> [8] -> [26]
-rw__LL_Pure_dispatch1 x0 x1 x2 = rw__LL_Pure_dispatch x0 x1 x2
-
-// $LL.Main.dev17
-rw__LL_Main_dev17 : [8] -> [8] -> [8] -> [26]
-rw__LL_Main_dev17 x0 x1 x2 = rw__LL_Main_dev x0 x1 x2
-
-// Main.dev
-rw_Main_dev : [8] -> [8] -> [26]
-rw_Main_dev x0 x1 = rw__LL_Main_dev3 x0 x1
-
-// $LL.Main.dev16
-rw__LL_Main_dev16 : [8] -> [26]
-rw__LL_Main_dev16 x0 = rw__LL_Main_dev9 x0
-
-// $LL.Main.dev15
-rw__LL_Main_dev15 : [8] -> [8] -> [26]
-rw__LL_Main_dev15 x0 x1 = rw__LL_Main_dev11 x0 x1
-
-// $LL.Main.dev14
-rw__LL_Main_dev14 : [16] -> [26]
-rw__LL_Main_dev14 x0 = rw__LL_Main_dev18 (take`{8} x0) (drop`{8} x0)
-
-// $LL.Main.dev13
-rw__LL_Main_dev13 : [8] -> [8] -> [8] -> [26]
-rw__LL_Main_dev13 x0 x1 x2 = rw__LL_Main_dev6 x0 x1 x2
-
-// $LL.Main.dev12
-rw__LL_Main_dev12 : [8] -> [8] -> [26]
-rw__LL_Main_dev12 x0 x1 = rw__LL_Main_dev4 x0 x1
-
-// $LL.Main.dev11
-rw__LL_Main_dev11 : [8] -> [8] -> [26]
-rw__LL_Main_dev11 x0 x1 = rw__LL_Main_dev21 x0 x1
-
-// $LL.Main.dev10
-rw__LL_Main_dev10 : [8] -> [26]
-rw__LL_Main_dev10 x0 = 0b000000000100000000 # x0
-
-// $LL.Main.dev9
-rw__LL_Main_dev9 : [8] -> [26]
-rw__LL_Main_dev9 x0 = rw__LL_Main_dev10 x0
-
-// $LL.Main.dev8
-rw__LL_Main_dev8 : [8] -> [26] -> [26]
-rw__LL_Main_dev8 x0 x1 = rw__LL_Main_dev5 x0 (take`{8} (drop`{10} x1)) (drop`{18} x1)
-
-// $LL.Main.dev7
-rw__LL_Main_dev7 : [8] -> [26] -> [26]
-rw__LL_Main_dev7 x0 x1 = rw__LL_Main_dev19 x0 (drop`{18} x1)
+rw__Pure_dispatch : [17] -> [8] -> [25]
+rw__Pure_dispatch x0 x1 = if (take`{1} x0) == 0b1 then (rw__LL_Main_start1 x1 s0) else (rw__LL_Main_dev5 s1 x1 s2)
+  where
+    s0 : [8]
+    s0 = drop`{9} x0
+    s1 : [8]
+    s1 = take`{8} (drop`{1} x0)
+    s2 : [8]
+    s2 = drop`{9} x0
 
 // $LL.Main.dev6
-rw__LL_Main_dev6 : [8] -> [8] -> [8] -> [26]
-rw__LL_Main_dev6 x0 x1 x2 = 0b1 # ((x1 + x0) # (0b0 # (x0 # x2)))
+rw__LL_Main_dev6 : [8] -> [8] -> [25]
+rw__LL_Main_dev6 x0 x1 = rw__LL_Main_dev3 x0 x1 x1
 
 // $LL.Main.dev5
-rw__LL_Main_dev5 : [8] -> [8] -> [8] -> [26]
+rw__LL_Main_dev5 : [8] -> [8] -> [8] -> [25]
 rw__LL_Main_dev5 x0 x1 x2 = rw__LL_Main_dev1 x0 x1 x2
 
 // $LL.Main.start1
-rw__LL_Main_start1 : [8] -> [8] -> [26]
+rw__LL_Main_start1 : [8] -> [8] -> [25]
 rw__LL_Main_start1 x0 x1 = rw__LL_Main_start x0 0x00
 
-// $LL.Pure.dispatch
-rw__LL_Pure_dispatch : [8] -> [8] -> [8] -> [26]
-rw__LL_Pure_dispatch x0 x1 x2 = rw__LL_Main_dev17 x1 x0 x2
-
-// $LL.Main.start
-rw__LL_Main_start : [8] -> [8] -> [26]
-rw__LL_Main_start x0 x1 = rw_Main_dev x0 x1
+// Main.dev
+rw_Main_dev : [8] -> [8] -> [25]
+rw_Main_dev x0 x1 = rw__LL_Main_dev6 x0 x1
 
 // $LL.Main.dev4
-rw__LL_Main_dev4 : [8] -> [8] -> [26]
-rw__LL_Main_dev4 x0 x1 = rw_Main_dev x0 x1
+rw__LL_Main_dev4 : [8] -> [8] -> [8] -> [25]
+rw__LL_Main_dev4 x0 x1 x2 = (x1 + x0) # (0b0 # (x0 # x2))
 
 // $LL.Main.dev3
-rw__LL_Main_dev3 : [8] -> [8] -> [26]
-rw__LL_Main_dev3 x0 x1 = rw__LL_Main_dev20 x0 x1
+rw__LL_Main_dev3 : [8] -> [8] -> [8] -> [25]
+rw__LL_Main_dev3 x0 x1 x2 = rw__LL_Main_dev4 x0 x1 x2
 
 // $LL.Main.dev2
-rw__LL_Main_dev2 : [8] -> [8] -> [26]
-rw__LL_Main_dev2 x0 x1 = 0b0000000000 # (x0 # x1)
+rw__LL_Main_dev2 : [8] -> [8] -> [25]
+rw__LL_Main_dev2 x0 x1 = rw_Main_dev x0 x1
+
+// $LL.Main.start
+rw__LL_Main_start : [8] -> [8] -> [25]
+rw__LL_Main_start x0 x1 = rw_Main_dev x0 x1
 
 // $LL.Main.dev1
-rw__LL_Main_dev1 : [8] -> [8] -> [8] -> [26]
-rw__LL_Main_dev1 x0 x1 x2 = rw__LL_Main_dev13 x0 x1 x2
+rw__LL_Main_dev1 : [8] -> [8] -> [8] -> [25]
+rw__LL_Main_dev1 x0 x1 x2 = rw__LL_Main_dev x0 x1
 
 // $LL.Main.dev
-rw__LL_Main_dev : [8] -> [8] -> [8] -> [26]
-rw__LL_Main_dev x0 x1 x2 = rw__LL_Main_dev7 x0 (rw__LL_Main_dev16 x1)
+rw__LL_Main_dev : [8] -> [8] -> [25]
+rw__LL_Main_dev x0 x1 = rw__LL_Main_dev2 x0 x1
 
 // Per-cycle step: outputs # next register values.
 rw_step : [17] -> [8] -> [25]
-rw_step st i = (take`{8} (drop`{1} s3)) # ((take`{9} (drop`{9} s3)) # (drop`{18} s3))
+rw_step st i = (take`{8} s3) # ((take`{9} (drop`{8} s3)) # (drop`{17} s3))
   where
     s0 : [9]
     s0 = take`{9} st
@@ -142,7 +77,7 @@ rw_step st i = (take`{8} (drop`{1} s3)) # ((take`{9} (drop`{9} s3)) # (drop`{18}
     s1 = drop`{9} st
     s2 : [8]
     s2 = i
-    s3 : [26]
+    s3 : [25]
     s3 = rw__Pure_dispatch (s0 # s1) s2
 
 // Device: top_level

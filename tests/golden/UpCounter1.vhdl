@@ -212,14 +212,10 @@ signal \__resumption_tag\ : std_logic_vector (7 downto 0) := std_logic_vector'(B
       signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
       signal zi2 : std_logic_vector (7 downto 0);
-      signal zi3 : std_logic_vector (24 downto 0);
-      signal zi4 : std_logic_vector (7 downto 0);
-      signal zres : std_logic_vector (24 downto 0);
+      signal zres : std_logic_vector (23 downto 0);
 begin
 zi2 <= rw_add(\__resumption_tag\, std_logic_vector'(B"00000001"));
-      zi3 <= (std_logic_vector'(B"00000000100000000") & zi2);
-      zi4 <= zi3(7 downto 0);
-      zres <= (std_logic_vector'(B"1") & zi4 & zi4 & zi4);
+      zres <= (zi2 & zi2 & zi2);
       \__resumption_tag_next\ <= zres(15 downto 8);
       \__st0_next\ <= zres(7 downto 0);
       \__out0\ <= zres(23 downto 16);

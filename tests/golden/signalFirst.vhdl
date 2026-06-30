@@ -211,16 +211,16 @@ architecture rtl of top_level is
 component \Main_dev\ is
       port (arg0 : in std_logic_vector (7 downto 0);
             arg1 : in std_logic_vector (7 downto 0);
-            res : out std_logic_vector (25 downto 0));
+            res : out std_logic_vector (24 downto 0));
       end component;
       signal \__resumption_tag\ : std_logic_vector (8 downto 0) := std_logic_vector'(B"100000000");
       signal \__resumption_tag_next\ : std_logic_vector (8 downto 0);
       signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal main_dev_out : std_logic_vector (25 downto 0);
+      signal main_dev_out : std_logic_vector (24 downto 0);
       signal zi2 : std_logic_vector (7 downto 0);
-      signal \main_dev_outR1\ : std_logic_vector (25 downto 0);
-      signal zres : std_logic_vector (25 downto 0);
+      signal \main_dev_outR1\ : std_logic_vector (24 downto 0);
+      signal zres : std_logic_vector (24 downto 0);
 begin
 inst : \Main_dev\ port map (\__in0\, std_logic_vector'(B"00000000"), main_dev_out);
       zi2 <= \__resumption_tag\(7 downto 0);
@@ -248,11 +248,11 @@ use work.rw_helpers.all;
 entity \Main_dev\ is
 port (arg0 : in std_logic_vector (7 downto 0);
       arg1 : in std_logic_vector (7 downto 0);
-      res : out std_logic_vector (25 downto 0));
+      res : out std_logic_vector (24 downto 0));
 end entity;
 
 architecture rtl of \Main_dev\ is
 
 begin
-res <= (std_logic_vector'(B"1") & rw_add(arg1, arg0) & std_logic_vector'(B"0") & arg0 & arg1);
+res <= (rw_add(arg1, arg0) & std_logic_vector'(B"0") & arg0 & arg1);
 end architecture;

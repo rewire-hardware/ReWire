@@ -1,49 +1,37 @@
 $Pure.dispatch : ([2]) -> [1]
 $Pure.dispatch i =
-      $LL.Pure.dispatch i
+      Main.startp1 i
+
+$LL.Main.proc3 : ([2], [2]) -> [1]
+$LL.Main.proc3 i $7 =
+      if eq $7 2'h0 then 1'h0
+            else $LL.Main.proc1 i i
 
 Main.startp1 : ([2]) -> [1]
 Main.startp1 $x =
       $LL.Main.startp $x
-
-$LL.Main.proc5 : ([2], [2]) -> [1]
-$LL.Main.proc5 i $6 =
-      if eq $6 2'h1 then 1'h0
-            else $LL.Main.proc2 i
-
-$LL.Main.startp1 : ([2]) -> [1]
-$LL.Main.startp1 i =
-      Main.proc i
-
-$LL.Main.proc4 : ([2]) -> [1]
-$LL.Main.proc4 i =
-      $LL.Main.proc1 i i
-
-$LL.Main.startp : ([2]) -> [1]
-$LL.Main.startp $x =
-      $LL.Main.startp1 $x
-
-Main.proc : ([2]) -> [1]
-Main.proc $x =
-      $LL.Main.proc $x
 
 $LL.Main.proc2 : ([2]) -> [1]
 $LL.Main.proc2 $5 =
       if eq $5 2'h2 then 1'h0
             else 1'h1
 
-$LL.Pure.dispatch : ([2]) -> [1]
-$LL.Pure.dispatch i =
-      Main.startp1 i
-
 $LL.Main.proc1 : ([2], [2]) -> [1]
-$LL.Main.proc1 i $7 =
-      if eq $7 2'h0 then 1'h0
-            else $LL.Main.proc5 i i
+$LL.Main.proc1 i $6 =
+      if eq $6 2'h1 then 1'h0
+            else $LL.Main.proc2 i
 
 $LL.Main.proc : ([2]) -> [1]
-$LL.Main.proc $x =
-      $LL.Main.proc4 $x
+$LL.Main.proc $8 =
+      $LL.Main.proc3 $8 $8
+
+$LL.Main.startp : ([2]) -> [1]
+$LL.Main.startp $9 =
+      Main.proc $9
+
+Main.proc : ([2]) -> [1]
+Main.proc $x =
+      $LL.Main.proc $x
 
 device top_level
       input __in0 : [2]

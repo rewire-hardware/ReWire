@@ -207,29 +207,13 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZLL_Main_loop30\ is
-      port (arg0 : in std_logic_vector (7 downto 0);
-            res : out std_logic_vector (18 downto 0));
-      end component;
-      signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000001");
+signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000001");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal conn : std_logic_vector (7 downto 0);
-      signal zll_main_loop30_out : std_logic_vector (18 downto 0);
-      signal zi8 : std_logic_vector (18 downto 0);
-      signal zi9 : std_logic_vector (7 downto 0);
-      signal \zll_main_loop30_outR1\ : std_logic_vector (18 downto 0);
-      signal zi10 : std_logic_vector (18 downto 0);
-      signal zi11 : std_logic_vector (7 downto 0);
-      signal zres : std_logic_vector (18 downto 0);
+      signal zi0 : std_logic_vector (7 downto 0);
+      signal zres : std_logic_vector (15 downto 0);
 begin
-conn <= rw_add(\__st0\, std_logic_vector'(B"00000001"));
-      inst : \ZLL_Main_loop30\ port map (conn, zll_main_loop30_out);
-      zi8 <= zll_main_loop30_out;
-      zi9 <= zi8(7 downto 0);
-      \instR1\ : \ZLL_Main_loop30\ port map (zi9, \zll_main_loop30_outR1\);
-      zi10 <= \zll_main_loop30_outR1\;
-      zi11 <= zi10(7 downto 0);
-      zres <= (std_logic_vector'(B"100") & \__st0\ & zi11);
+zi0 <= rw_add(\__st0\, std_logic_vector'(B"00000001"));
+      zres <= (\__st0\ & zi0);
       \__st0_next\ <= zres(7 downto 0);
       \__out0\ <= zres(15 downto 8);
       process (clk, rst)
@@ -240,19 +224,4 @@ conn <= rw_add(\__st0\, std_logic_vector'(B"00000001"));
                   \__st0\ <= \__st0_next\;
             end if;
       end process;
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_loop30\ is
-port (arg0 : in std_logic_vector (7 downto 0);
-      res : out std_logic_vector (18 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_loop30\ is
-
-begin
-res <= (std_logic_vector'(B"01000000000") & arg0);
 end architecture;

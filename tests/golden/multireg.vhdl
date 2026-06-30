@@ -208,55 +208,19 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZLL_Main_loop40\ is
-      port (arg0 : in std_logic_vector (27 downto 0);
-            res : out std_logic_vector (46 downto 0));
-      end component;
-      signal \__st0\ : std_logic_vector (3 downto 0) := std_logic_vector'(B"0000");
+signal \__st0\ : std_logic_vector (3 downto 0) := std_logic_vector'(B"0000");
       signal \__st0_next\ : std_logic_vector (3 downto 0);
       signal \__st1\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000011");
       signal \__st1_next\ : std_logic_vector (7 downto 0);
       signal \__st2\ : std_logic_vector (15 downto 0) := std_logic_vector'(B"0000000000000101");
       signal \__st2_next\ : std_logic_vector (15 downto 0);
-      signal conn : std_logic_vector (27 downto 0);
-      signal zll_main_loop40_out : std_logic_vector (46 downto 0);
-      signal zi34 : std_logic_vector (46 downto 0);
-      signal zi35 : std_logic_vector (3 downto 0);
-      signal zi37 : std_logic_vector (15 downto 0);
-      signal zi38 : std_logic_vector (27 downto 0);
-      signal zi39 : std_logic_vector (3 downto 0);
-      signal zi40 : std_logic_vector (7 downto 0);
-      signal zi41 : std_logic_vector (15 downto 0);
-      signal zi42 : std_logic_vector (46 downto 0);
-      signal zi43 : std_logic_vector (3 downto 0);
-      signal zi44 : std_logic_vector (7 downto 0);
-      signal \connR1\ : std_logic_vector (27 downto 0);
-      signal \zll_main_loop40_outR1\ : std_logic_vector (46 downto 0);
-      signal zi46 : std_logic_vector (46 downto 0);
-      signal zi47 : std_logic_vector (3 downto 0);
-      signal zi48 : std_logic_vector (7 downto 0);
-      signal zi49 : std_logic_vector (15 downto 0);
-      signal zres : std_logic_vector (46 downto 0);
+      signal zi4 : std_logic_vector (7 downto 0);
+      signal zi5 : std_logic_vector (15 downto 0);
+      signal zres : std_logic_vector (43 downto 0);
 begin
-conn <= (\__in0\ & \__st1\ & \__st2\);
-      inst : \ZLL_Main_loop40\ port map (conn, zll_main_loop40_out);
-      zi34 <= zll_main_loop40_out;
-      zi35 <= zi34(27 downto 24);
-      zi37 <= zi34(15 downto 0);
-      zi38 <= (zi35 & rw_add(rw_resize(\__st0\, 8), \__st1\) & zi37);
-      zi39 <= zi38(27 downto 24);
-      zi40 <= zi38(23 downto 16);
-      zi41 <= zi38(15 downto 0);
-      zi42 <= (std_logic_vector'(B"0110000000000000000") & zi39 & zi40 & zi41);
-      zi43 <= zi42(27 downto 24);
-      zi44 <= zi42(23 downto 16);
-      \connR1\ <= (zi43 & zi44 & rw_add(rw_resize(\__st1\, 16), \__st2\));
-      \instR1\ : \ZLL_Main_loop40\ port map (\connR1\, \zll_main_loop40_outR1\);
-      zi46 <= \zll_main_loop40_outR1\;
-      zi47 <= zi46(27 downto 24);
-      zi48 <= zi46(23 downto 16);
-      zi49 <= zi46(15 downto 0);
-      zres <= (std_logic_vector'(B"100") & rw_add(rw_resize(\__st0\, 16), \__st2\) & zi47 & zi48 & zi49);
+zi4 <= rw_add(rw_resize(\__st0\, 8), \__st1\);
+      zi5 <= rw_add(rw_resize(\__st1\, 16), \__st2\);
+      zres <= (rw_add(rw_resize(\__st0\, 16), \__st2\) & \__in0\ & zi4 & zi5);
       \__st0_next\ <= zres(27 downto 24);
       \__st1_next\ <= zres(23 downto 16);
       \__st2_next\ <= zres(15 downto 0);
@@ -273,24 +237,4 @@ conn <= (\__in0\ & \__st1\ & \__st2\);
                   \__st2\ <= \__st2_next\;
             end if;
       end process;
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_loop40\ is
-port (arg0 : in std_logic_vector (27 downto 0);
-      res : out std_logic_vector (46 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_loop40\ is
-signal zi0 : std_logic_vector (3 downto 0);
-      signal zi1 : std_logic_vector (7 downto 0);
-      signal zi2 : std_logic_vector (15 downto 0);
-begin
-zi0 <= arg0(27 downto 24);
-      zi1 <= arg0(23 downto 16);
-      zi2 <= arg0(15 downto 0);
-      res <= (std_logic_vector'(B"0110000000000000000") & zi0 & zi1 & zi2);
 end architecture;

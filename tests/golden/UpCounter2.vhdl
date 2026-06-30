@@ -208,53 +208,25 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZLL_Main_go21\ is
-      port (arg0 : in std_logic_vector (17 downto 0);
-            res : out std_logic_vector (17 downto 0));
-      end component;
-      component \ZLL_Main_go23\ is
-      port (arg0 : in std_logic_vector (15 downto 0);
-            res : out std_logic_vector (17 downto 0));
-      end component;
-      component \ZLL_Main_go29\ is
+component \ZLL_Main_go2\ is
       port (arg0 : in std_logic_vector (7 downto 0);
-            res : out std_logic_vector (17 downto 0));
+            res : out std_logic_vector (15 downto 0));
       end component;
       signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal conn : std_logic_vector (15 downto 0);
-      signal zll_main_go23_out : std_logic_vector (17 downto 0);
-      signal zi0 : std_logic_vector (17 downto 0);
-      signal zi1 : std_logic_vector (7 downto 0);
-      signal zi3 : std_logic_vector (0 downto 0);
+      signal zi0 : std_logic_vector (0 downto 0);
+      signal conn : std_logic_vector (7 downto 0);
+      signal zll_main_go2_out : std_logic_vector (15 downto 0);
       signal \connR1\ : std_logic_vector (7 downto 0);
-      signal zll_main_go29_out : std_logic_vector (17 downto 0);
-      signal zll_main_go21_out : std_logic_vector (17 downto 0);
-      signal \connR2\ : std_logic_vector (15 downto 0);
-      signal \zll_main_go23_outR1\ : std_logic_vector (17 downto 0);
-      signal zi4 : std_logic_vector (17 downto 0);
-      signal zi5 : std_logic_vector (7 downto 0);
-      signal \connR3\ : std_logic_vector (7 downto 0);
-      signal \zll_main_go29_outR1\ : std_logic_vector (17 downto 0);
-      signal \zll_main_go21_outR1\ : std_logic_vector (17 downto 0);
-      signal zres : std_logic_vector (17 downto 0);
+      signal \zll_main_go2_outR1\ : std_logic_vector (15 downto 0);
+      signal zres : std_logic_vector (15 downto 0);
 begin
-conn <= (\__st0\ & \__st0\);
-      inst : \ZLL_Main_go23\ port map (conn, zll_main_go23_out);
-      zi0 <= zll_main_go23_out;
-      zi1 <= zi0(15 downto 8);
-      zi3 <= zi0(15 downto 15);
-      \connR1\ <= rw_or(rw_shiftl(zi1, std_logic_vector'(B"00000001")), rw_resize(zi3, 8));
-      \instR1\ : \ZLL_Main_go29\ port map (\connR1\, zll_main_go29_out);
-      \instR2\ : \ZLL_Main_go21\ port map (zll_main_go29_out, zll_main_go21_out);
-      \connR2\ <= (\__st0\ & \__st0\);
-      \instR3\ : \ZLL_Main_go23\ port map (\connR2\, \zll_main_go23_outR1\);
-      zi4 <= \zll_main_go23_outR1\;
-      zi5 <= zi4(15 downto 8);
-      \connR3\ <= rw_add(zi5, std_logic_vector'(B"00000001"));
-      \instR4\ : \ZLL_Main_go29\ port map (\connR3\, \zll_main_go29_outR1\);
-      \instR5\ : \ZLL_Main_go21\ port map (\zll_main_go29_outR1\, \zll_main_go21_outR1\);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"1")), zll_main_go21_out, \zll_main_go21_outR1\);
+zi0 <= \__st0\(7 downto 7);
+      conn <= rw_or(rw_shiftl(\__st0\, std_logic_vector'(B"00000001")), rw_resize(zi0, 8));
+      inst : \ZLL_Main_go2\ port map (conn, zll_main_go2_out);
+      \connR1\ <= rw_add(\__st0\, std_logic_vector'(B"00000001"));
+      \instR1\ : \ZLL_Main_go2\ port map (\connR1\, \zll_main_go2_outR1\);
+      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"1")), zll_main_go2_out, \zll_main_go2_outR1\);
       \__st0_next\ <= zres(7 downto 0);
       \__out0\ <= zres(15 downto 8);
       process (clk, rst)
@@ -271,61 +243,13 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_go29\ is
+entity \ZLL_Main_go2\ is
 port (arg0 : in std_logic_vector (7 downto 0);
-      res : out std_logic_vector (17 downto 0));
+      res : out std_logic_vector (15 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_go29\ is
+architecture rtl of \ZLL_Main_go2\ is
 
 begin
-res <= (std_logic_vector'(B"0100000000") & arg0);
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_go23\ is
-port (arg0 : in std_logic_vector (15 downto 0);
-      res : out std_logic_vector (17 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_go23\ is
-signal zi0 : std_logic_vector (7 downto 0);
-      signal zi1 : std_logic_vector (7 downto 0);
-begin
-zi0 <= arg0(15 downto 8);
-      zi1 <= arg0(7 downto 0);
-      res <= (std_logic_vector'(B"00") & zi0 & zi1);
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_go21\ is
-port (arg0 : in std_logic_vector (17 downto 0);
-      res : out std_logic_vector (17 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_go21\ is
-component \ZLL_Main_go23\ is
-      port (arg0 : in std_logic_vector (15 downto 0);
-            res : out std_logic_vector (17 downto 0));
-      end component;
-      signal zi0 : std_logic_vector (7 downto 0);
-      signal conn : std_logic_vector (15 downto 0);
-      signal zll_main_go23_out : std_logic_vector (17 downto 0);
-      signal zi1 : std_logic_vector (17 downto 0);
-      signal zi2 : std_logic_vector (7 downto 0);
-      signal zi3 : std_logic_vector (7 downto 0);
-begin
-zi0 <= arg0(7 downto 0);
-      conn <= (zi0 & zi0);
-      inst : \ZLL_Main_go23\ port map (conn, zll_main_go23_out);
-      zi1 <= zll_main_go23_out;
-      zi2 <= zi1(15 downto 8);
-      zi3 <= zi1(7 downto 0);
-      res <= (std_logic_vector'(B"10") & zi2 & zi3);
+res <= (arg0 & arg0);
 end architecture;

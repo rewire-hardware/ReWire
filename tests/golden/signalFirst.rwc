@@ -1,119 +1,50 @@
-$Pure.dispatch : ([17], [8]) -> [26]
+$Pure.dispatch : ([17], [8]) -> [25]
 $Pure.dispatch disc i =
-      if eq disc[16 +: 1] 1'h1 then $LL.Pure.dispatch2 i disc[0 +: 8]
-            else $LL.Pure.dispatch1 i disc[8 +: 8] disc[0 +: 8]
+      if eq disc[16 +: 1] 1'h1 then (let s0 = disc[0 +: 8] in
+            $LL.Main.start1 i s0)
+            else let store0 = disc[8 +: 8] in
+            let s0 = disc[0 +: 8] in
+            $LL.Main.dev5 store0 i s0
 
-$LL.Main.dev21 : ([8], [8]) -> [26]
-$LL.Main.dev21 $x sto0 =
-      $LL.Main.dev12 $x sto0
+$LL.Main.dev6 : ([8], [8]) -> [25]
+$LL.Main.dev6 $4 sto0 =
+      $LL.Main.dev3 $4 sto0 sto0
 
-$LL.Pure.dispatch2 : ([8], [8]) -> [26]
-$LL.Pure.dispatch2 i $x =
-      $LL.Main.start1 i $x
+$LL.Main.dev5 : ([8], [8], [8]) -> [25]
+$LL.Main.dev5 $x $x1 sto0 =
+      $LL.Main.dev1 $x $x1 sto0
 
-$LL.Main.dev20 : ([8], [8]) -> [26]
-$LL.Main.dev20 k sto0 =
-      $LL.Main.dev8 k ($LL.Main.dev14 (sto0 # sto0))
-
-$LL.Main.dev19 : ([8], [8]) -> [26]
-$LL.Main.dev19 k $x1 =
-      $LL.Main.dev15 k $x1
-
-$LL.Main.dev18 : ([8], [8]) -> [26]
-$LL.Main.dev18 v $x =
-      $LL.Main.dev2 v $x
-
-$LL.Pure.dispatch1 : ([8], [8], [8]) -> [26]
-$LL.Pure.dispatch1 i $x $x1 =
-      $LL.Pure.dispatch i $x $x1
-
-$LL.Main.dev17 : ([8], [8], [8]) -> [26]
-$LL.Main.dev17 $x $x1 sto0 =
-      $LL.Main.dev $x $x1 sto0
-
-Main.dev : ([8], [8]) -> [26]
-Main.dev $x sto0 =
-      $LL.Main.dev3 $x sto0
-
-$LL.Main.dev16 : ([8]) -> [26]
-$LL.Main.dev16 disc =
-      $LL.Main.dev9 disc
-
-$LL.Main.dev15 : ([8], [8]) -> [26]
-$LL.Main.dev15 k $x =
-      $LL.Main.dev11 k $x
-
-$LL.Main.dev14 : ([16]) -> [26]
-$LL.Main.dev14 disc =
-      $LL.Main.dev18 disc[8 +: 8] disc[0 +: 8]
-
-$LL.Main.dev13 : ([8], [8], [8]) -> [26]
-$LL.Main.dev13 $x $x1 sto0 =
-      $LL.Main.dev6 $x $x1 sto0
-
-$LL.Main.dev12 : ([8], [8]) -> [26]
-$LL.Main.dev12 $x sto0 =
-      $LL.Main.dev4 $x sto0
-
-$LL.Main.dev11 : ([8], [8]) -> [26]
-$LL.Main.dev11 $x sto0 =
-      $LL.Main.dev21 $x sto0
-
-$LL.Main.dev10 : ([8]) -> [26]
-$LL.Main.dev10 s0 =
-      18'h100 # s0
-
-$LL.Main.dev9 : ([8]) -> [26]
-$LL.Main.dev9 $x =
-      $LL.Main.dev10 $x
-
-$LL.Main.dev8 : ([8], [26]) -> [26]
-$LL.Main.dev8 k disc =
-      $LL.Main.dev5 k disc[8 +: 8] disc[0 +: 8]
-
-$LL.Main.dev7 : ([8], [26]) -> [26]
-$LL.Main.dev7 k disc =
-      $LL.Main.dev19 k disc[0 +: 8]
-
-$LL.Main.dev6 : ([8], [8], [8]) -> [26]
-$LL.Main.dev6 k s sto0 =
-      1'h1 # add s k # 1'h0 # k # sto0
-
-$LL.Main.dev5 : ([8], [8], [8]) -> [26]
-$LL.Main.dev5 k $x $x1 =
-      $LL.Main.dev1 k $x $x1
-
-$LL.Main.start1 : ([8], [8]) -> [26]
+$LL.Main.start1 : ([8], [8]) -> [25]
 $LL.Main.start1 i sto0 =
       $LL.Main.start i 8'h0
 
-$LL.Pure.dispatch : ([8], [8], [8]) -> [26]
-$LL.Pure.dispatch i store0 $x =
-      $LL.Main.dev17 store0 i $x
+Main.dev : ([8], [8]) -> [25]
+Main.dev $x sto0 =
+      $LL.Main.dev6 $x sto0
 
-$LL.Main.start : ([8], [8]) -> [26]
+$LL.Main.dev4 : ([8], [8], [8]) -> [25]
+$LL.Main.dev4 k s sto0 =
+      add s k # 1'h0 # k # sto0
+
+$LL.Main.dev3 : ([8], [8], [8]) -> [25]
+$LL.Main.dev3 $x $x1 sto0 =
+      $LL.Main.dev4 $x $x1 sto0
+
+$LL.Main.dev2 : ([8], [8]) -> [25]
+$LL.Main.dev2 k sto0 =
+      Main.dev k sto0
+
+$LL.Main.start : ([8], [8]) -> [25]
 $LL.Main.start $x sto0 =
       Main.dev $x sto0
 
-$LL.Main.dev4 : ([8], [8]) -> [26]
-$LL.Main.dev4 k sto0 =
-      Main.dev k sto0
+$LL.Main.dev1 : ([8], [8], [8]) -> [25]
+$LL.Main.dev1 k i sto0 =
+      $LL.Main.dev k i
 
-$LL.Main.dev3 : ([8], [8]) -> [26]
-$LL.Main.dev3 $x sto0 =
-      $LL.Main.dev20 $x sto0
-
-$LL.Main.dev2 : ([8], [8]) -> [26]
-$LL.Main.dev2 v s0 =
-      10'h0 # v # s0
-
-$LL.Main.dev1 : ([8], [8], [8]) -> [26]
-$LL.Main.dev1 k v $x =
-      $LL.Main.dev13 k v $x
-
-$LL.Main.dev : ([8], [8], [8]) -> [26]
-$LL.Main.dev k i sto0 =
-      $LL.Main.dev7 k ($LL.Main.dev16 i)
+$LL.Main.dev : ([8], [8]) -> [25]
+$LL.Main.dev $x sto0 =
+      $LL.Main.dev2 $x sto0
 
 device top_level
       input __in0 : [8]

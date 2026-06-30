@@ -4,18 +4,14 @@ extern mymod
       input x : [16]
       output out : [8]
 
-$LL.Main.loop2 : ([8]) -> [9]
-$LL.Main.loop2 rabind =
-      1'h1 # rabind
-
-$LL.Main.loop1 : ([9]) -> [9]
-$LL.Main.loop1 disc =
-      $LL.Main.loop2 disc[0 +: 8]
+$LL.Main.loop1 : ([8]) -> [8]
+$LL.Main.loop1 rabind =
+      rabind
 
 device top_level
       input __in0 : [16]
       output __out0 : [8]
-      instance $x2 of mymod
-      $x2.x := __in0
-      let $res = $LL.Main.loop1 (1'h0 # $x2.out)
-      __out0 := $res[0 +: 8]
+      instance $x1 of mymod
+      $x1.x := __in0
+      let $res = $LL.Main.loop1 $x1.out
+      __out0 := $res

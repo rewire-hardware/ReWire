@@ -208,33 +208,34 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZLL_Main_go24\ is
-      port (arg0 : in std_logic_vector (1 downto 0);
-            res : out std_logic_vector (3 downto 0));
-      end component;
-      component \ZLL_Main_go34\ is
-      port (arg0 : in std_logic_vector (3 downto 0);
-            res : out std_logic_vector (3 downto 0));
+component \ZLL_Main_go4\ is
+      port (arg0 : in std_logic_vector (0 downto 0);
+            arg1 : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (2 downto 0));
       end component;
       signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
+      signal zi0 : std_logic_vector (0 downto 0);
+      signal zi1 : std_logic_vector (1 downto 0);
+      signal zi2 : std_logic_vector (0 downto 0);
       signal zi3 : std_logic_vector (0 downto 0);
-      signal conn : std_logic_vector (1 downto 0);
-      signal zll_main_go24_out : std_logic_vector (3 downto 0);
-      signal zll_main_go34_out : std_logic_vector (3 downto 0);
-      signal \connR1\ : std_logic_vector (1 downto 0);
-      signal \zll_main_go24_outR1\ : std_logic_vector (3 downto 0);
-      signal \zll_main_go34_outR1\ : std_logic_vector (3 downto 0);
-      signal zres : std_logic_vector (3 downto 0);
+      signal zi4 : std_logic_vector (2 downto 0);
+      signal zi5 : std_logic_vector (0 downto 0);
+      signal zi6 : std_logic_vector (0 downto 0);
+      signal zll_main_go4_out : std_logic_vector (2 downto 0);
+      signal \zll_main_go4_outR1\ : std_logic_vector (2 downto 0);
+      signal zres : std_logic_vector (2 downto 0);
 begin
-zi3 <= rw_cond(rw_eq(\__st0\, std_logic_vector'(B"0")), std_logic_vector'(B"1"), std_logic_vector'(B"0"));
-      conn <= (zi3 & zi3);
-      inst : \ZLL_Main_go24\ port map (conn, zll_main_go24_out);
-      \instR1\ : \ZLL_Main_go34\ port map (zll_main_go24_out, zll_main_go34_out);
-      \connR1\ <= (\__st0\ & \__st0\);
-      \instR2\ : \ZLL_Main_go24\ port map (\connR1\, \zll_main_go24_outR1\);
-      \instR3\ : \ZLL_Main_go34\ port map (\zll_main_go24_outR1\, \zll_main_go34_outR1\);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"1")), zll_main_go34_out, \zll_main_go34_outR1\);
+zi0 <= rw_cond(rw_eq(\__st0\, std_logic_vector'(B"0")), std_logic_vector'(B"1"), std_logic_vector'(B"0"));
+      zi1 <= (zi0 & zi0);
+      zi2 <= zi1(1 downto 1);
+      zi3 <= zi1(0 downto 0);
+      zi4 <= (std_logic_vector'(B"0") & zi2 & zi3);
+      zi5 <= zi4(1 downto 1);
+      zi6 <= zi4(0 downto 0);
+      inst : \ZLL_Main_go4\ port map (zi5, zi6, zll_main_go4_out);
+      \instR1\ : \ZLL_Main_go4\ port map (\__st0\, \__st0\, \zll_main_go4_outR1\);
+      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"1")), zll_main_go4_out, \zll_main_go4_outR1\);
       \__st0_next\ <= zres(0 downto 0);
       \__out0\ <= zres(1 downto 1);
       process (clk, rst)
@@ -251,32 +252,14 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_go34\ is
-port (arg0 : in std_logic_vector (3 downto 0);
-      res : out std_logic_vector (3 downto 0));
+entity \ZLL_Main_go4\ is
+port (arg0 : in std_logic_vector (0 downto 0);
+      arg1 : in std_logic_vector (0 downto 0);
+      res : out std_logic_vector (2 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_go34\ is
-signal zi0 : std_logic_vector (0 downto 0);
-begin
-zi0 <= arg0(1 downto 1);
-      res <= (std_logic_vector'(B"10") & zi0 & zi0);
-end architecture;
+architecture rtl of \ZLL_Main_go4\ is
 
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_go24\ is
-port (arg0 : in std_logic_vector (1 downto 0);
-      res : out std_logic_vector (3 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_go24\ is
-signal zi0 : std_logic_vector (0 downto 0);
-      signal zi1 : std_logic_vector (0 downto 0);
 begin
-zi0 <= arg0(1 downto 1);
-      zi1 <= arg0(0 downto 0);
-      res <= (std_logic_vector'(B"00") & zi0 & zi1);
+res <= (std_logic_vector'(B"1") & arg0 & arg0);
 end architecture;

@@ -410,6 +410,7 @@ normalizeBind (ts, syns, ds) = (ts, syns, ) <$> (uncurry (<>) <$> runStateT (map
             matchBind :: Exp -> Bool
             matchBind = \ case
                   (dstBind -> Just (_, Match {}, _)) -> True
+                  (dstBind -> Just (_, Case {}, _))  -> True
                   _                                  -> False
 
             dstBind :: Exp -> Maybe (Annote, Exp, Exp)

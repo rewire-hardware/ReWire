@@ -213,16 +213,14 @@ component \ReWirezuPreludezuzaza\ is
       end component;
       signal rewirezupreludezuzazazuout : std_logic_vector (0 downto 0);
       signal zi0 : std_logic_vector (0 downto 0);
-      signal zi2 : std_logic_vector (8 downto 0);
-      signal zi3 : std_logic_vector (7 downto 0);
-      signal zres : std_logic_vector (8 downto 0);
+      signal zi2 : std_logic_vector (7 downto 0);
+      signal zres : std_logic_vector (7 downto 0);
 begin
 inst : \ReWirezuPreludezuzaza\ port map (\__in0\(15 downto 15), \__in0\(8 downto 8), rewirezupreludezuzazazuout);
       zi0 <= rewirezupreludezuzazazuout;
-      zi2 <= (std_logic_vector'(B"0") & rw_cond(rw_eq(zi0, std_logic_vector'(B"1")), \__in0\(7 downto 0), \__in0\(15 downto 8)));
-      zi3 <= zi2(7 downto 0);
-      zres <= (std_logic_vector'(B"1") & zi3);
-      \__out0\ <= zres(7 downto 0);
+      zi2 <= rw_cond(rw_eq(zi0, std_logic_vector'(B"1")), \__in0\(7 downto 0), \__in0\(15 downto 8));
+      zres <= zi2;
+      \__out0\ <= zres;
 end architecture;
 
 library ieee;

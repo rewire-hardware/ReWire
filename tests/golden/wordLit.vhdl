@@ -206,12 +206,10 @@ port (\__in0\ : in std_logic_vector (7 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal zi0 : std_logic_vector (16 downto 0);
-      signal zi1 : std_logic_vector (15 downto 0);
-      signal zres : std_logic_vector (16 downto 0);
+signal zi0 : std_logic_vector (15 downto 0);
+      signal zres : std_logic_vector (15 downto 0);
 begin
-zi0 <= (std_logic_vector'(B"0") & rw_xor(rw_resize(\__in0\, 16), std_logic_vector'(B"0000000000000001")));
-      zi1 <= zi0(15 downto 0);
-      zres <= (std_logic_vector'(B"1") & zi1);
-      \__out0\ <= zres(15 downto 0);
+zi0 <= rw_xor(rw_resize(\__in0\, 16), std_logic_vector'(B"0000000000000001"));
+      zres <= zi0;
+      \__out0\ <= zres;
 end architecture;

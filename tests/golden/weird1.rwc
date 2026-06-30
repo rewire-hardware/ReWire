@@ -1,22 +1,14 @@
 $Pure.dispatch : ([2], [1]) -> [3]
 $Pure.dispatch disc i =
-      $LL.Pure.dispatch i disc
+      Main.repl1 i disc
 
 Main.repl1 : ([1], [2]) -> [3]
 Main.repl1 $x sto0 =
       $LL.Main.repl $x sto0
 
-$LL.Main.repl1 : ([1], [2]) -> [3]
-$LL.Main.repl1 $1 sto0 =
-      1'h0 # sto0
-
-$LL.Pure.dispatch : ([1], [2]) -> [3]
-$LL.Pure.dispatch i $x =
-      Main.repl1 i $x
-
 $LL.Main.repl : ([1], [2]) -> [3]
-$LL.Main.repl $x sto0 =
-      $LL.Main.repl1 $x sto0
+$LL.Main.repl $2 sto0 =
+      1'h0 # sto0
 
 device top_level
       input __in0 : [1]

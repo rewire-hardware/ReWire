@@ -1,115 +1,62 @@
 $Pure.dispatch : ([3], [1]) -> [4]
 $Pure.dispatch disc i =
-      if eq disc[1 +: 2] 2'h1 then $LL.Pure.dispatch4 i
-            else if eq disc[1 +: 2] 2'h2 then $LL.Pure.dispatch2 i else if eq disc[1 +: 2] 2'h3 then $LL.Pure.dispatch i disc[0 +: 1] else $LL.Pure.dispatch5 i disc[0 +: 1]
+      if eq disc[1 +: 2] 2'h1 then $LL.Main.go2 i
+            else if eq disc[1 +: 2] 2'h2 then $LL.Main.go1 i else if eq disc[1 +: 2] 2'h3 then (let store0 = disc[0 +: 1] in
+            $LL.Main.go store0 i) else let store0 = disc[0 +: 1] in
+            $LL.Main.go5 store0 i
 
-$LL.Main.go14 : ([1], [1]) -> [4]
-$LL.Main.go14 x m2c =
-      m2c # 2'h0 # x
+$LL.Main.go8 : ([1], [1]) -> [1]
+$LL.Main.go8 x $4 =
+      "ReWire.Prelude.&&" x x
 
-$LL.Main.go13 : ([1], [1], [1]) -> [1]
-$LL.Main.go13 x y $5 =
-      if eq $5 1'h1 then $LL.Main.go3 x
-            else $LL.Main.go6 x y
+$LL.Main.go7 : ([1], [1], [1]) -> [1]
+$LL.Main.go7 x y $5 =
+      if eq $5 1'h1 then x
+            else $LL.Main.go8 x y
 
-$LL.Main.go12 : ([1], [1]) -> [4]
-$LL.Main.go12 $x $x1 =
-      $LL.Main.go14 $x $x1
-
-$LL.Main.go11 : ([1], [1]) -> [4]
-$LL.Main.go11 $x $x1 =
-      $LL.Main.go9 $x $x1
-
-$LL.Pure.dispatch5 : ([1], [1]) -> [4]
-$LL.Pure.dispatch5 i $x =
-      $LL.Pure.dispatch3 i $x
-
-"$LL.ReWire.Prelude.&&3" : ([1]) -> [1]
-"$LL.ReWire.Prelude.&&3" $32 =
-      1'h0
-
-$LL.Pure.dispatch4 : ([1]) -> [4]
-$LL.Pure.dispatch4 i =
-      $LL.Main.go4 i
-
-"$LL.ReWire.Prelude.&&2" : ([1]) -> [1]
-"$LL.ReWire.Prelude.&&2" b =
-      b
-
-$LL.Main.go10 : ([1]) -> [4]
-$LL.Main.go10 x =
-      3'h3 # x
-
-$LL.Pure.dispatch3 : ([1], [1]) -> [4]
-$LL.Pure.dispatch3 i store0 =
-      $LL.Main.go8 store0 i
-
-$LL.Pure.dispatch2 : ([1]) -> [4]
-$LL.Pure.dispatch2 i =
-      $LL.Main.go2 i
-
-$LL.Main.go9 : ([1], [1]) -> [4]
-$LL.Main.go9 x y =
-      "ReWire.Prelude.&&" ($LL.Main.go13 x y y) y # 3'h4
-
-$LL.Main.go8 : ([1], [1]) -> [4]
-$LL.Main.go8 $x $x1 =
-      $LL.Main.go5 $x $x1
-
-$LL.Main.go7 : ([1], [1]) -> [4]
-$LL.Main.go7 m2c $x =
-      $LL.Main.go12 m2c $x
-
-$LL.Pure.dispatch1 : ([1], [1]) -> [4]
-$LL.Pure.dispatch1 i store0 =
-      $LL.Main.go5 store0 i
-
-$LL.Main.go6 : ([1], [1]) -> [1]
-$LL.Main.go6 x $4 =
-      $LL.Main.go x
+$LL.Main.go6 : ([1], [1]) -> [4]
+$LL.Main.go6 x y =
+      "ReWire.Prelude.&&" ($LL.Main.go7 x y y) y # 3'h2
 
 $LL.Main.go5 : ([1], [1]) -> [4]
 $LL.Main.go5 $x $x1 =
-      $LL.Main.go11 $x $x1
+      $LL.Main.go3 $x $x1
 
-$LL.Main.go4 : ([1]) -> [4]
-$LL.Main.go4 x =
-      if eq x 1'h1 then $LL.Main.go10 x
-            else $LL.Main.go7 x x
+"$LL.ReWire.Prelude.&&1" : ([2]) -> [1]
+"$LL.ReWire.Prelude.&&1" $51 =
+      1'h0
 
-$LL.Main.go3 : ([1]) -> [1]
-$LL.Main.go3 x =
-      x
+$LL.Main.go3 : ([1], [1]) -> [4]
+$LL.Main.go3 $x $x1 =
+      $LL.Main.go6 $x $x1
 
 "ReWire.Prelude.&&" : ([1], [1]) -> [1]
 "ReWire.Prelude.&&" $10 $11 =
-      "$LL.ReWire.Prelude.&&1" $11 $10 ($10 # $11)
-
-$LL.Pure.dispatch : ([1], [1]) -> [4]
-$LL.Pure.dispatch i $x =
-      $LL.Pure.dispatch1 i $x
+      "$LL.ReWire.Prelude.&&" $11 $10 ($10 # $11)
 
 $LL.Main.go2 : ([1]) -> [4]
 $LL.Main.go2 z =
-      4'h2
+      4'h4
 
-"$LL.ReWire.Prelude.&&1" : ([1], [1], [2]) -> [1]
-"$LL.ReWire.Prelude.&&1" $11 $10 $52 =
-      if eq $52[1 +: 1] 1'h1 then "$LL.ReWire.Prelude.&&2" $52[0 +: 1]
-            else "$LL.ReWire.Prelude.&&" ($10 # $11)
+$LL.Main.go1 : ([1]) -> [4]
+$LL.Main.go1 x =
+      if eq x 1'h1 then 3'h0 # x
+            else x # 2'h3 # x
 
-$LL.Main.go : ([1]) -> [1]
-$LL.Main.go x =
-      "ReWire.Prelude.&&" x x
+"$LL.ReWire.Prelude.&&" : ([1], [1], [2]) -> [1]
+"$LL.ReWire.Prelude.&&" $11 $10 $52 =
+      if eq $52[1 +: 1] 1'h1 then (let b = $52[0 +: 1] in
+            b)
+            else "$LL.ReWire.Prelude.&&1" ($10 # $11)
 
-"$LL.ReWire.Prelude.&&" : ([2]) -> [1]
-"$LL.ReWire.Prelude.&&" $51 =
-      "$LL.ReWire.Prelude.&&3" $51[0 +: 1]
+$LL.Main.go : ([1], [1]) -> [4]
+$LL.Main.go $x $x1 =
+      $LL.Main.go5 $x $x1
 
 device top_level
       input __in0 : [1]
       output __out0 : [1]
-      register __resumption_tag : [3] init 3'h2
+      register __resumption_tag : [3] init 3'h4
       let $res = $Pure.dispatch __resumption_tag __in0
       __out0 := $res[3 +: 1]
       next __resumption_tag := $res[0 +: 3]

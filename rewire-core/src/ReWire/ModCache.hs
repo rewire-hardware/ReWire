@@ -15,7 +15,7 @@ import ReWire.Crust.PrimBasis (addPrims)
 import ReWire.Crust.Purify (purify)
 import ReWire.Crust.Syntax (FreeProgram, Defn (..), Module (Module), Exp, Ty, Kind, DataConId, TyConId, Program (Program), prettyFP)
 import ReWire.Crust.ToHyle (toHyle)
-import ReWire.Crust.Transform (removeMain, simplify, liftLambdas, etaAbsDefs, shiftLambdas, neuterExterns, expandTypeSynonyms, inlineAnnotated, normalizeBind, elimCase, purge, purgeAll, inlineExtrudes, reduce)
+import ReWire.Crust.Transform (removeMain, simplify, liftLambdas, etaAbsDefs, shiftLambdas, neuterExterns, expandTypeSynonyms, inlineAnnotated, normalizeBind, purge, purgeAll, inlineExtrudes, reduce)
 import ReWire.Crust.TypeCheck (typeCheck, untype)
 import ReWire.Error (AstError, MonadError, Warning (..), warnAt)
 import ReWire.HSE.Annotate (annotate)
@@ -118,7 +118,6 @@ getDevice conf fp = do
             -- followed by re-typechecking when --debug-typecheck is on.
             midPasses =
                   [ ("Removing unused definitions.",                     purge start)
-                  , ("Eliminating pattern bindings (case expressions).", elimCase)
                   , ("Lifting lambdas.",                                 liftLambdas)
                   , ("Partial evaluation.",                              simplify conf)
                   , ("Normalizing bind.",                                normalizeBind)
@@ -136,7 +135,14 @@ getDevice conf fp = do
                   --       subtly effect ordering of things.
                   , ("Shifting lambdas.",                                shiftLambdas)
                   , ("Eta-abstracting definitions.",                     etaAbsDefs)
-                  , ("Purifying.",                                       purify start)
+                  -- Purify emits irrefutable nested cases (a `let`-bound
+                  -- `Done (...)` immediately destructured); the trailing
+                  -- reduce collapses them into direct calls, which also pins
+                  -- the PuRe output type in fragments that never signal (so
+                  -- the --debug-typecheck re-typecheck stays unambiguous). It
+                  -- is fused into the purify pass so that re-typecheck sees the
+                  -- reduced form.
+                  , ("Purifying.",                                       purify start >=> reduce)
                   ]
 
             -- Final cleanup before translation to hyle: no --debug-typecheck

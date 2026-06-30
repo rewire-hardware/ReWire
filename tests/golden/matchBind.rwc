@@ -1,120 +1,50 @@
-$Pure.dispatch : ([10], [8]) -> [19]
+$Pure.dispatch : ([10], [8]) -> [18]
 $Pure.dispatch disc i =
-      if eq disc[8 +: 2] 2'h1 then $LL.Pure.dispatch1 i disc[0 +: 8]
-            else if eq disc[8 +: 2] 2'h2 then $LL.Pure.dispatch2 i disc[0 +: 8] else $LL.Pure.dispatch1 i disc[0 +: 8]
+      if eq disc[8 +: 2] 2'h1 then (let s0 = disc[0 +: 8] in
+            $LL.Main.loop1 i s0)
+            else if eq disc[8 +: 2] 2'h2 then (let s0 = disc[0 +: 8] in
+            $LL.Main.reset i s0) else let s0 = disc[0 +: 8] in
+            $LL.Main.loop1 i s0
 
-$LL.Pure.dispatch2 : ([8], [8]) -> [19]
-$LL.Pure.dispatch2 i $x =
-      $LL.Main.reset9 i $x
-
-$LL.Main.loop21 : ([8]) -> [1]
-$LL.Main.loop21 $x =
-      $LL.Main.loop3 $x
-
-$LL.Main.loop20 : ([8], [8]) -> [19]
-$LL.Main.loop20 v s0 =
-      3'h0 # v # s0
-
-$LL.Main.loop19 : ([8], [8]) -> [19]
-$LL.Main.loop19 rabind sto0 =
-      $LL.Main.loop13 (11'h200 # sto0)
-
-$LL.Main.loop18 : ([8]) -> [19]
-$LL.Main.loop18 sto0 =
+$LL.Main.loop5 : ([8]) -> [18]
+$LL.Main.loop5 sto0 =
       Main.loop sto0
 
-ReWire.Prelude.not : ([1]) -> [1]
-ReWire.Prelude.not $14 =
-      $LL.ReWire.Prelude.not3 $14 $14
+$LL.Main.loop4 : ([8]) -> [1]
+$LL.Main.loop4 $36 =
+      ReWire.Prelude.not (let $t0 = trunc 1 $36 in
+      $t0)
 
-$LL.Main.loop17 : ([8]) -> [19]
-$LL.Main.loop17 $x =
-      $LL.Main.loop15 $x
+$LL.Main.loop3 : ([8], [8]) -> [18]
+$LL.Main.loop3 i sto0 =
+      let $t1 = $LL.Main.loop4 i in
+      if eq $t1 1'h1 then 10'h9 # sto0
+            else 10'h8 # sto0
 
-$LL.Main.loop16 : ([8]) -> [19]
-$LL.Main.loop16 sto0 =
-      11'h408 # sto0
-
-$LL.Main.loop15 : ([8]) -> [19]
-$LL.Main.loop15 sto0 =
-      $LL.Main.loop18 sto0
-
-$LL.ReWire.Prelude.not3 : ([1], [1]) -> [1]
-$LL.ReWire.Prelude.not3 $14 $56 =
+$LL.ReWire.Prelude.not1 : ([1], [1]) -> [1]
+$LL.ReWire.Prelude.not1 $14 $56 =
       if eq $56 1'h1 then 1'h0
             else $LL.ReWire.Prelude.not $14
 
-Main.loop : ([8]) -> [19]
+ReWire.Prelude.not : ([1]) -> [1]
+ReWire.Prelude.not $14 =
+      $LL.ReWire.Prelude.not1 $14 $14
+
+Main.loop : ([8]) -> [18]
 Main.loop sto0 =
-      $LL.Main.loop9 ($LL.Main.loop12 (sto0 # sto0))
+      $LL.Main.loop3 sto0 sto0
 
-$LL.Main.loop14 : ([8], [8]) -> [19]
-$LL.Main.loop14 v $x =
-      $LL.Main.loop11 v $x
-
-$LL.Main.loop13 : ([19]) -> [19]
-$LL.Main.loop13 disc =
-      $LL.Main.loop17 disc[0 +: 8]
-
-$LL.Main.reset14 : ([8]) -> [19]
-$LL.Main.reset14 s0 =
-      11'h200 # s0
-
-$LL.Main.reset13 : ([8]) -> [19]
-$LL.Main.reset13 $x =
-      $LL.Main.reset14 $x
-
-$LL.Main.loop12 : ([16]) -> [19]
-$LL.Main.loop12 disc =
-      $LL.Main.loop7 disc[8 +: 8] disc[0 +: 8]
-
-$LL.Main.loop11 : ([8], [8]) -> [19]
-$LL.Main.loop11 i sto0 =
-      let $t1 = sto0 # $LL.Main.loop21 i in
-      if eq $t1[0 +: 1] 1'h1 then $LL.Main.loop4 $t1[1 +: 8]
-            else let $t0 = sto0 # $LL.Main.loop21 i in
-            $LL.Main.loop $t0[1 +: 8]
+$LL.Main.loop1 : ([8], [8]) -> [18]
+$LL.Main.loop1 rabind sto0 =
+      $LL.Main.loop5 sto0
 
 $LL.ReWire.Prelude.not : ([1]) -> [1]
 $LL.ReWire.Prelude.not $55 =
       1'h1
 
-$LL.Pure.dispatch1 : ([8], [8]) -> [19]
-$LL.Pure.dispatch1 i $x =
-      $LL.Main.loop19 i $x
-
-$LL.Main.loop10 : ([8]) -> [19]
-$LL.Main.loop10 sto0 =
-      11'h409 # sto0
-
-$LL.Main.loop9 : ([19]) -> [19]
-$LL.Main.loop9 disc =
-      $LL.Main.loop14 disc[8 +: 8] disc[0 +: 8]
-
-$LL.Main.loop7 : ([8], [8]) -> [19]
-$LL.Main.loop7 v $x =
-      $LL.Main.loop20 v $x
-
-$LL.Main.reset9 : ([8], [8]) -> [19]
-$LL.Main.reset9 rabind sto0 =
-      $LL.Main.loop13 ($LL.Main.reset4 rabind)
-
-$LL.Main.loop4 : ([8]) -> [19]
-$LL.Main.loop4 sto0 =
-      $LL.Main.loop10 sto0
-
-$LL.Main.loop3 : ([8]) -> [1]
-$LL.Main.loop3 b =
-      ReWire.Prelude.not (let $t0 = trunc 1 b in
-      $t0)
-
-$LL.Main.reset4 : ([8]) -> [19]
-$LL.Main.reset4 disc =
-      $LL.Main.reset13 disc
-
-$LL.Main.loop : ([8]) -> [19]
-$LL.Main.loop sto0 =
-      $LL.Main.loop16 sto0
+$LL.Main.reset : ([8], [8]) -> [18]
+$LL.Main.reset rabind sto0 =
+      $LL.Main.loop5 rabind
 
 device top_level
       input __in0 : [8]

@@ -169,9 +169,7 @@ mkCases an disc = foldr mkCase' . flip (mkCase an disc) Nothing
             mkCase' (p, e) = mkCase an disc (p, e) . Just
 
 mkCase :: Annote -> Exp -> (Pat, Exp) -> Maybe Exp -> Exp
-mkCase an disc (p, e) = Match an Nothing (typeOf e) disc (transPat p) $ mkLam' (p, e)
-      where mkLam' :: (Pat, Exp) -> Exp
-            mkLam' (p, e) = mkLam an (patVars p) e
+mkCase an disc (p, e) = Case an Nothing (typeOf e) disc (bind p e)
 
 mkRDatatype :: [DataCon] -> DataDefn
 mkRDatatype dcs = DataDefn
@@ -700,9 +698,7 @@ dstApp e = case flattenApp e of
       (Var _ _ _ n, es) -> pure (n, es)
       _                 -> failInternal (ann e) $ "tried to dst non-app: " <> showt (unAnn e)
 
--- | Lets are desugared already, so use a case instead (with lifted discriminator).
+-- | Lets are desugared already, so use a single-arm case directly (Hyle has
+--   binding, and ToHyle re-atomizes the discriminant as needed).
 mkLet :: Fresh m => Annote -> Pat -> Exp -> Exp -> m Exp
-mkLet an p e1 e2 = do
-      v <- freshVar "disc"
-      -- Need to lift the discriminator.
-      pure $ mkApp an (Lam an Nothing (arrowLeft <$> typeOf e1) $ bind v $ mkCase an (Var an Nothing (typeOf e1) v) (p, e2) Nothing) [e1]
+mkLet an p e1 e2 = pure $ mkCase an e1 (p, e2) Nothing

@@ -1,53 +1,31 @@
 $Pure.dispatch : ([5], [3]) -> [9]
 $Pure.dispatch disc i =
-      if eq disc[3 +: 2] 2'h1 then $LL.Pure.dispatch3 i
-            else if eq disc[3 +: 2] 2'h2 then $LL.Pure.dispatch1 i disc[0 +: 3] else $LL.Pure.dispatch4 i disc[0 +: 3]
-
-$LL.Pure.dispatch4 : ([3], [3]) -> [9]
-$LL.Pure.dispatch4 i $x =
-      $LL.Pure.dispatch2 i $x
-
-$LL.Main.dev3 : ([3], [3]) -> [9]
-$LL.Main.dev3 i $65 =
-      6'h2 # i
+      if eq disc[3 +: 2] 2'h1 then (let store0 = disc[0 +: 3] in
+            $LL.Main.dev1 store0 i)
+            else if eq disc[3 +: 2] 2'h2 then (let store0 = disc[0 +: 3] in
+            $LL.Main.dev store0 i) else Main.dev1 i
 
 $LL.Main.dev2 : ([3]) -> [9]
-$LL.Main.dev2 $x =
-      $LL.Main.dev1 $x
+$LL.Main.dev2 $1 =
+      6'h2 # $1
 
-$LL.Pure.dispatch3 : ([3]) -> [9]
-$LL.Pure.dispatch3 i =
-      Main.dev i
-
-Main.dev : ([3]) -> [9]
-Main.dev $x =
+Main.dev1 : ([3]) -> [9]
+Main.dev1 $x =
       $LL.Main.dev2 $x
 
-$LL.Pure.dispatch2 : ([3], [3]) -> [9]
-$LL.Pure.dispatch2 i store0 =
-      $LL.Main.dev3 store0 i
-
-$LL.Pure.dispatch1 : ([3], [3]) -> [9]
-$LL.Pure.dispatch1 i $x =
-      $LL.Pure.dispatch i $x
-
-$LL.Main.dev1 : ([3]) -> [9]
-$LL.Main.dev1 i =
-      6'h0 # i
+$LL.Main.dev1 : ([3], [3]) -> [9]
+$LL.Main.dev1 $1 $65 =
+      1'h1 # $1 # 5'h0
 
 $LL.Main.dev : ([3], [3]) -> [9]
-$LL.Main.dev i $65 =
-      1'h1 # i # 5'h8
-
-$LL.Pure.dispatch : ([3], [3]) -> [9]
-$LL.Pure.dispatch i store0 =
-      $LL.Main.dev store0 i
+$LL.Main.dev $1 $65 =
+      6'h1 # $1
 
 device top_level
       input __in0 : [3]
       output __out0 : [1]
       output __out1 : [3]
-      register __resumption_tag : [5] init 5'h0
+      register __resumption_tag : [5] init 5'h10
       let $res = $Pure.dispatch __resumption_tag __in0
       __out0 := $res[8 +: 1]
       __out1 := $res[5 +: 3]

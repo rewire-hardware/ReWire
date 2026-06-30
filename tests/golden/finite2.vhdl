@@ -207,13 +207,11 @@ end entity;
 
 architecture rtl of top_level is
 signal zi0 : std_logic_vector (4 downto 0);
-      signal zi4 : std_logic_vector (5 downto 0);
-      signal zi5 : std_logic_vector (4 downto 0);
-      signal zres : std_logic_vector (5 downto 0);
+      signal zi4 : std_logic_vector (4 downto 0);
+      signal zres : std_logic_vector (4 downto 0);
 begin
 zi0 <= rw_resize(rw_mod(\__in0\, std_logic_vector'(B"0010100")), 5);
-      zi4 <= (std_logic_vector'(B"0") & rw_resize(rw_mod(rw_add(rw_resize(zi0, 128), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000110")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010100")), 5));
-      zi5 <= zi4(4 downto 0);
-      zres <= (std_logic_vector'(B"1") & zi5);
-      \__out0\ <= zres(4 downto 0);
+      zi4 <= rw_resize(rw_mod(rw_add(rw_resize(zi0, 128), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000110")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010100")), 5);
+      zres <= zi4;
+      \__out0\ <= zres;
 end architecture;

@@ -1,178 +1,42 @@
-$Pure.dispatch : ([8]) -> [19]
+$Pure.dispatch : ([8]) -> [16]
 $Pure.dispatch disc =
-      $LL.Pure.dispatch disc
+      $LL.Main.loop disc
 
-$LL.Main.loop43 : ([8], [8]) -> [19]
-$LL.Main.loop43 $x sto0 =
-      $LL.Main.loop39 $x sto0
+$LL.Main.loop7 : ([8], [8]) -> [16]
+$LL.Main.loop7 x sto0 =
+      x # sto0
 
-$LL.Main.loop42 : ([8]) -> [19]
-$LL.Main.loop42 $x =
-      $LL.Main.loop36 $x
+$LL.Main.loop6 : ([8], [8]) -> [16]
+$LL.Main.loop6 x sto0 =
+      $LL.Main.loop2 x (add x 8'h1)
 
-$LL.Main.loop41 : ([8]) -> [19]
-$LL.Main.loop41 sto0 =
-      $LL.Main.loop31 sto0
+$LL.Main.loop5 : ([8], [8]) -> [16]
+$LL.Main.loop5 x sto0 =
+      $LL.Main.loop4 x sto0
 
-$LL.Main.loop40 : ([8], [8]) -> [19]
-$LL.Main.loop40 x sto0 =
-      $LL.Main.loop3 x ($LL.Main.loop30 (add x 8'h1))
+$LL.Main.loop4 : ([8], [8]) -> [16]
+$LL.Main.loop4 $x sto0 =
+      $LL.Main.loop7 $x sto0
 
-$LL.Main.loop39 : ([8], [8]) -> [19]
-$LL.Main.loop39 $x sto0 =
-      $LL.Main.loop24 $x sto0
+$LL.Main.loop3 : ([8]) -> [16]
+$LL.Main.loop3 sto0 =
+      $LL.Main.loop1 sto0 sto0
 
-$LL.Pure.dispatch1 : ([8]) -> [19]
-$LL.Pure.dispatch1 s0 =
-      $LL.Main.loop41 s0
+$LL.Main.loop2 : ([8], [8]) -> [16]
+$LL.Main.loop2 x sto0 =
+      $LL.Main.loop5 x sto0
 
-$LL.Main.loop38 : ([8], [8]) -> [19]
-$LL.Main.loop38 $x $x1 =
-      $LL.Main.loop33 $x $x1
-
-$LL.Main.loop37 : ([8], [8]) -> [19]
-$LL.Main.loop37 v $x =
-      $LL.Main.loop8 v $x
-
-$LL.Main.loop36 : ([8]) -> [19]
-$LL.Main.loop36 s0 =
-      $LL.Main.loop21 s0
-
-$LL.Main.loop34 : ([8], [8]) -> [19]
-$LL.Main.loop34 $x1 sto0 =
-      $LL.Main.loop40 $x1 sto0
-
-$LL.Main.loop33 : ([8], [8]) -> [19]
-$LL.Main.loop33 v $x =
-      $LL.Main.loop17 v $x
-
-$LL.Main.loop32 : ([8], [8]) -> [19]
-$LL.Main.loop32 $x sto0 =
-      $LL.Main.loop27 $x sto0
-
-$LL.Main.loop31 : ([8]) -> [19]
-$LL.Main.loop31 sto0 =
-      Main.loop sto0
-
-$LL.Main.loop30 : ([8]) -> [19]
-$LL.Main.loop30 disc =
-      $LL.Main.loop42 disc
-
-$LL.Main.loop29 : ([8], [8]) -> [19]
-$LL.Main.loop29 x s0 =
-      $LL.Main.loop43 x s0
-
-$LL.Main.loop28 : ([8], [8]) -> [19]
-$LL.Main.loop28 $x sto0 =
-      $LL.Main.loop32 $x sto0
-
-$LL.Main.loop27 : ([8], [8]) -> [19]
-$LL.Main.loop27 x sto0 =
-      $LL.Main.loop13 x ($LL.Main.loop30 sto0)
-
-$LL.Pure.dispatch : ([8]) -> [19]
-$LL.Pure.dispatch $x =
-      $LL.Pure.dispatch1 $x
-
-$LL.Main.loop26 : ([19]) -> [19]
-$LL.Main.loop26 disc =
-      $LL.Main.loop38 disc[8 +: 8] disc[0 +: 8]
-
-$LL.Main.loop25 : ([8], [8]) -> [19]
-$LL.Main.loop25 x $x =
-      $LL.Main.loop29 x $x
-
-Main.loop : ([8]) -> [19]
+Main.loop : ([8]) -> [16]
 Main.loop sto0 =
-      $LL.Main.loop18 ($LL.Main.loop14 sto0)
+      $LL.Main.loop3 sto0
 
-$LL.Main.loop24 : ([8], [8]) -> [19]
-$LL.Main.loop24 $x sto0 =
-      $LL.Main.loop12 $x sto0
+$LL.Main.loop1 : ([8], [8]) -> [16]
+$LL.Main.loop1 $x1 sto0 =
+      $LL.Main.loop6 $x1 sto0
 
-$LL.Main.loop23 : ([8], [8]) -> [19]
-$LL.Main.loop23 x $x =
-      $LL.Main.loop x $x
-
-$LL.Main.loop22 : ([16]) -> [19]
-$LL.Main.loop22 disc =
-      $LL.Main.loop37 disc[8 +: 8] disc[0 +: 8]
-
-$LL.Main.loop21 : ([8]) -> [19]
-$LL.Main.loop21 s0 =
-      11'h200 # s0
-
-$LL.Main.loop19 : ([8]) -> [19]
-$LL.Main.loop19 s0 =
-      11'h0 # s0
-
-$LL.Main.loop18 : ([19]) -> [19]
-$LL.Main.loop18 disc =
-      $LL.Main.loop9 disc[0 +: 8]
-
-$LL.Main.loop17 : ([8], [8]) -> [19]
-$LL.Main.loop17 v s0 =
-      $LL.Main.loop34 v s0
-
-$LL.Main.loop16 : ([8], [8]) -> [19]
-$LL.Main.loop16 x $x1 =
-      $LL.Main.loop23 x $x1
-
-$LL.Main.loop15 : ([8]) -> [19]
-$LL.Main.loop15 sto0 =
-      $LL.Main.loop26 ($LL.Main.loop22 (sto0 # sto0))
-
-$LL.Main.loop14 : ([8]) -> [19]
-$LL.Main.loop14 disc =
-      $LL.Main.loop4 disc
-
-$LL.Main.loop13 : ([8], [19]) -> [19]
-$LL.Main.loop13 x disc =
-      $LL.Main.loop5 x disc[0 +: 8]
-
-$LL.Main.loop12 : ([8], [8]) -> [19]
-$LL.Main.loop12 x sto0 =
-      3'h4 # x # sto0
-
-$LL.Main.loop11 : ([8], [8]) -> [19]
-$LL.Main.loop11 v s0 =
-      3'h1 # v # s0
-
-$LL.Main.loop10 : ([8]) -> [19]
-$LL.Main.loop10 s0 =
-      $LL.Main.loop15 s0
-
-$LL.Main.loop9 : ([8]) -> [19]
-$LL.Main.loop9 $x =
-      $LL.Main.loop10 $x
-
-$LL.Main.loop8 : ([8], [8]) -> [19]
-$LL.Main.loop8 v s0 =
-      $LL.Main.loop11 v s0
-
-$LL.Main.loop7 : ([8]) -> [19]
-$LL.Main.loop7 s0 =
-      $LL.Main.loop19 s0
-
-$LL.Main.loop5 : ([8], [8]) -> [19]
-$LL.Main.loop5 x $x1 =
-      $LL.Main.loop25 x $x1
-
-$LL.Main.loop4 : ([8]) -> [19]
-$LL.Main.loop4 $x =
-      $LL.Main.loop7 $x
-
-$LL.Main.loop3 : ([8], [19]) -> [19]
-$LL.Main.loop3 x disc =
-      $LL.Main.loop16 x disc[0 +: 8]
-
-$LL.Main.loop1 : ([8], [8]) -> [19]
-$LL.Main.loop1 x sto0 =
-      $LL.Main.loop28 x sto0
-
-$LL.Main.loop : ([8], [8]) -> [19]
-$LL.Main.loop x s0 =
-      $LL.Main.loop1 x s0
+$LL.Main.loop : ([8]) -> [16]
+$LL.Main.loop sto0 =
+      Main.loop sto0
 
 device top_level
       output __out0 : [8]

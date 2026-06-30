@@ -13,13 +13,13 @@ module top_level (input logic [0:0] clk,
   ZLL_Main_go5  inst (zi0, __in0, zll_main_go5_out);
   assign zi1 = __resumption_tag[0];
   ZLL_Main_go5  instR1 (zi1, __in0, zll_main_go5_outR1);
-  assign zres = (__resumption_tag[2:1] == 2'h1) ? ((__in0 == 1'h1) ? {3'h3, __in0} : {__in0, 2'h0, __in0}) : ((__resumption_tag[2:1] == 2'h2) ? 4'h2 : ((__resumption_tag[2:1] == 2'h3) ? zll_main_go5_out : zll_main_go5_outR1));
+  assign zres = (__resumption_tag[2:1] == 2'h1) ? 4'h4 : ((__resumption_tag[2:1] == 2'h2) ? ((__in0 == 1'h1) ? {3'h0, __in0} : {__in0, 2'h3, __in0}) : ((__resumption_tag[2:1] == 2'h3) ? zll_main_go5_out : zll_main_go5_outR1));
   assign __resumption_tag_next = zres[2:0];
   assign __out0 = zres[3];
-  initial __resumption_tag = 3'h2;
+  initial __resumption_tag = 3'h4;
   always @ (posedge clk or posedge rst) begin
     if (rst == 1'h1) begin
-      __resumption_tag <= 3'h2;
+      __resumption_tag <= 3'h4;
     end else begin
       __resumption_tag <= __resumption_tag_next;
     end
@@ -33,7 +33,7 @@ module ZLL_Main_go5 (input logic [0:0] arg0,
   logic [0:0] rewirezupreludezuzazazuoutR1;
   ReWirezuPreludezuzaza  inst (arg0, arg0, rewirezupreludezuzazazuout);
   ReWirezuPreludezuzaza  instR1 ((arg1 == 1'h1) ? arg0 : rewirezupreludezuzazazuout, arg1, rewirezupreludezuzazazuoutR1);
-  assign res = {rewirezupreludezuzazazuoutR1, 3'h4};
+  assign res = {rewirezupreludezuzazazuoutR1, 3'h2};
 endmodule
 
 module ReWirezuPreludezuzaza (input logic [0:0] arg0,

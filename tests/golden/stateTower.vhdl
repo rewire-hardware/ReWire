@@ -208,75 +208,26 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ReWire_Prelude_not\ is
+component \ZLL_Main_sig3\ is
       port (arg0 : in std_logic_vector (0 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      component \ZLL_Main_sig30\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (4 downto 0));
-      end component;
-      component \ZLL_Main_sig37\ is
-      port (arg0 : in std_logic_vector (1 downto 0);
-            res : out std_logic_vector (4 downto 0));
-      end component;
-      component \ZLL_Main_sig49\ is
-      port (arg0 : in std_logic_vector (4 downto 0);
-            res : out std_logic_vector (4 downto 0));
+            arg1 : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (2 downto 0));
       end component;
       signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
       signal \__st1\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal \__st1_next\ : std_logic_vector (0 downto 0);
-      signal rewire_prelude_not_out : std_logic_vector (0 downto 0);
-      signal zi3 : std_logic_vector (2 downto 0);
-      signal zi4 : std_logic_vector (0 downto 0);
-      signal zi5 : std_logic_vector (0 downto 0);
-      signal conn : std_logic_vector (2 downto 0);
-      signal zll_main_sig30_out : std_logic_vector (4 downto 0);
-      signal zi6 : std_logic_vector (4 downto 0);
+      signal zi3 : std_logic_vector (0 downto 0);
       signal zi7 : std_logic_vector (0 downto 0);
-      signal zi9 : std_logic_vector (0 downto 0);
-      signal \connR1\ : std_logic_vector (1 downto 0);
-      signal zll_main_sig37_out : std_logic_vector (4 downto 0);
-      signal zi18 : std_logic_vector (4 downto 0);
-      signal zi19 : std_logic_vector (0 downto 0);
-      signal zi24 : std_logic_vector (0 downto 0);
-      signal \connR2\ : std_logic_vector (1 downto 0);
-      signal \zll_main_sig37_outR1\ : std_logic_vector (4 downto 0);
-      signal zll_main_sig49_out : std_logic_vector (4 downto 0);
-      signal \rewire_prelude_not_outR1\ : std_logic_vector (0 downto 0);
-      signal zi25 : std_logic_vector (2 downto 0);
-      signal zi26 : std_logic_vector (0 downto 0);
-      signal zi27 : std_logic_vector (0 downto 0);
-      signal \connR3\ : std_logic_vector (4 downto 0);
-      signal \zll_main_sig49_outR1\ : std_logic_vector (4 downto 0);
-      signal zres : std_logic_vector (4 downto 0);
+      signal zll_main_sig3_out : std_logic_vector (2 downto 0);
+      signal \zll_main_sig3_outR1\ : std_logic_vector (2 downto 0);
+      signal zres : std_logic_vector (2 downto 0);
 begin
-inst : \ReWire_Prelude_not\ port map (\__in0\, rewire_prelude_not_out);
-      zi3 <= (\__st1\ & \__st0\ & rewire_prelude_not_out);
-      zi4 <= zi3(2 downto 2);
-      zi5 <= zi3(1 downto 1);
-      conn <= (zi5 & zi5 & zi4);
-      \instR1\ : \ZLL_Main_sig30\ port map (conn, zll_main_sig30_out);
-      zi6 <= zll_main_sig30_out;
-      zi7 <= zi6(2 downto 2);
-      zi9 <= zi6(0 downto 0);
-      \connR1\ <= (zi9 & zi9);
-      \instR2\ : \ZLL_Main_sig37\ port map (\connR1\, zll_main_sig37_out);
-      zi18 <= zll_main_sig37_out;
-      zi19 <= zi18(1 downto 1);
-      zi24 <= rw_xor(zi7, zi9);
-      \connR2\ <= (zi19 & zi24);
-      \instR3\ : \ZLL_Main_sig37\ port map (\connR2\, \zll_main_sig37_outR1\);
-      \instR4\ : \ZLL_Main_sig49\ port map (\zll_main_sig37_outR1\, zll_main_sig49_out);
-      \instR5\ : \ReWire_Prelude_not\ port map (\__in0\, \rewire_prelude_not_outR1\);
-      zi25 <= (\__st1\ & \__st0\ & \rewire_prelude_not_outR1\);
-      zi26 <= zi25(2 downto 2);
-      zi27 <= zi25(1 downto 1);
-      \connR3\ <= (std_logic_vector'(B"010") & zi27 & zi26);
-      \instR6\ : \ZLL_Main_sig49\ port map (\connR3\, \zll_main_sig49_outR1\);
-      zres <= rw_cond(rw_eq(zi3(0 downto 0), std_logic_vector'(B"1")), zll_main_sig49_out, \zll_main_sig49_outR1\);
+zi3 <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
+      zi7 <= rw_xor(\__st0\, \__st1\);
+      inst : \ZLL_Main_sig3\ port map (\__st1\, zi7, zll_main_sig3_out);
+      \instR1\ : \ZLL_Main_sig3\ port map (\__st0\, \__st1\, \zll_main_sig3_outR1\);
+      zres <= rw_cond(rw_eq(zi3, std_logic_vector'(B"1")), zll_main_sig3_out, \zll_main_sig3_outR1\);
       \__st0_next\ <= zres(1 downto 1);
       \__st1_next\ <= zres(0 downto 0);
       \__out0\ <= zres(2 downto 2);
@@ -296,85 +247,14 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_sig49\ is
-port (arg0 : in std_logic_vector (4 downto 0);
-      res : out std_logic_vector (4 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_sig49\ is
-component \ZLL_Main_sig30\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (4 downto 0));
-      end component;
-      signal zi0 : std_logic_vector (0 downto 0);
-      signal zi1 : std_logic_vector (0 downto 0);
-      signal conn : std_logic_vector (2 downto 0);
-      signal zll_main_sig30_out : std_logic_vector (4 downto 0);
-      signal zi2 : std_logic_vector (4 downto 0);
-      signal zi3 : std_logic_vector (0 downto 0);
-      signal zi4 : std_logic_vector (0 downto 0);
-      signal zi5 : std_logic_vector (0 downto 0);
-begin
-zi0 <= arg0(1 downto 1);
-      zi1 <= arg0(0 downto 0);
-      conn <= (zi0 & zi0 & zi1);
-      inst : \ZLL_Main_sig30\ port map (conn, zll_main_sig30_out);
-      zi2 <= zll_main_sig30_out;
-      zi3 <= zi2(2 downto 2);
-      zi4 <= zi2(1 downto 1);
-      zi5 <= zi2(0 downto 0);
-      res <= (std_logic_vector'(B"10") & zi3 & zi4 & zi5);
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ReWire_Prelude_not\ is
+entity \ZLL_Main_sig3\ is
 port (arg0 : in std_logic_vector (0 downto 0);
-      res : out std_logic_vector (0 downto 0));
+      arg1 : in std_logic_vector (0 downto 0);
+      res : out std_logic_vector (2 downto 0));
 end entity;
 
-architecture rtl of \ReWire_Prelude_not\ is
+architecture rtl of \ZLL_Main_sig3\ is
 
 begin
-res <= rw_cond(rw_eq(arg0, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_sig37\ is
-port (arg0 : in std_logic_vector (1 downto 0);
-      res : out std_logic_vector (4 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_sig37\ is
-signal zi0 : std_logic_vector (0 downto 0);
-      signal zi1 : std_logic_vector (0 downto 0);
-begin
-zi0 <= arg0(1 downto 1);
-      zi1 <= arg0(0 downto 0);
-      res <= (std_logic_vector'(B"010") & zi0 & zi1);
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_sig30\ is
-port (arg0 : in std_logic_vector (2 downto 0);
-      res : out std_logic_vector (4 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_sig30\ is
-signal zi0 : std_logic_vector (0 downto 0);
-      signal zi1 : std_logic_vector (0 downto 0);
-      signal zi2 : std_logic_vector (0 downto 0);
-begin
-zi0 <= arg0(2 downto 2);
-      zi1 <= arg0(1 downto 1);
-      zi2 <= arg0(0 downto 0);
-      res <= (std_logic_vector'(B"00") & zi0 & zi1 & zi2);
+res <= (arg0 & arg0 & arg1);
 end architecture;

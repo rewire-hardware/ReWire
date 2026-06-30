@@ -18,47 +18,35 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [2] -> [1]
-rw__Pure_dispatch x0 = rw__LL_Pure_dispatch x0
+rw__Pure_dispatch x0 = rw_Main_startp1 x0
+
+// $LL.Main.proc3
+rw__LL_Main_proc3 : [2] -> [2] -> [1]
+rw__LL_Main_proc3 x0 x1 = if x1 == 0b00 then 0b0 else (rw__LL_Main_proc1 x0 x0)
 
 // Main.startp1
 rw_Main_startp1 : [2] -> [1]
 rw_Main_startp1 x0 = rw__LL_Main_startp x0
 
-// $LL.Main.proc5
-rw__LL_Main_proc5 : [2] -> [2] -> [1]
-rw__LL_Main_proc5 x0 x1 = if x1 == 0b01 then 0b0 else (rw__LL_Main_proc2 x0)
-
-// $LL.Main.startp1
-rw__LL_Main_startp1 : [2] -> [1]
-rw__LL_Main_startp1 x0 = rw_Main_proc x0
-
-// $LL.Main.proc4
-rw__LL_Main_proc4 : [2] -> [1]
-rw__LL_Main_proc4 x0 = rw__LL_Main_proc1 x0 x0
-
-// $LL.Main.startp
-rw__LL_Main_startp : [2] -> [1]
-rw__LL_Main_startp x0 = rw__LL_Main_startp1 x0
-
-// Main.proc
-rw_Main_proc : [2] -> [1]
-rw_Main_proc x0 = rw__LL_Main_proc x0
-
 // $LL.Main.proc2
 rw__LL_Main_proc2 : [2] -> [1]
 rw__LL_Main_proc2 x0 = if x0 == 0b10 then 0b0 else 0b1
 
-// $LL.Pure.dispatch
-rw__LL_Pure_dispatch : [2] -> [1]
-rw__LL_Pure_dispatch x0 = rw_Main_startp1 x0
-
 // $LL.Main.proc1
 rw__LL_Main_proc1 : [2] -> [2] -> [1]
-rw__LL_Main_proc1 x0 x1 = if x1 == 0b00 then 0b0 else (rw__LL_Main_proc5 x0 x0)
+rw__LL_Main_proc1 x0 x1 = if x1 == 0b01 then 0b0 else (rw__LL_Main_proc2 x0)
 
 // $LL.Main.proc
 rw__LL_Main_proc : [2] -> [1]
-rw__LL_Main_proc x0 = rw__LL_Main_proc4 x0
+rw__LL_Main_proc x0 = rw__LL_Main_proc3 x0 x0
+
+// $LL.Main.startp
+rw__LL_Main_startp : [2] -> [1]
+rw__LL_Main_startp x0 = rw_Main_proc x0
+
+// Main.proc
+rw_Main_proc : [2] -> [1]
+rw_Main_proc x0 = rw__LL_Main_proc x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [2] -> [1]

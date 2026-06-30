@@ -6,10 +6,10 @@ module top_level (input logic [0:0] clk,
   logic [8:0] __resumption_tag_next;
   logic [7:0] __st0;
   logic [7:0] __st0_next;
-  logic [25:0] main_dev_out;
+  logic [24:0] main_dev_out;
   logic [7:0] zi2;
-  logic [25:0] main_dev_outR1;
-  logic [25:0] zres;
+  logic [24:0] main_dev_outR1;
+  logic [24:0] zres;
   Main_dev  inst (__in0, 8'h0, main_dev_out);
   assign zi2 = __resumption_tag[7:0];
   Main_dev  instR1 (zi2, __in0, main_dev_outR1);
@@ -29,6 +29,6 @@ endmodule
 
 module Main_dev (input logic [7:0] arg0,
   input logic [7:0] arg1,
-  output logic [25:0] res);
-  assign res = {1'h1, arg1 + arg0, 1'h0, arg0, arg1};
+  output logic [24:0] res);
+  assign res = {arg1 + arg0, 1'h0, arg0, arg1};
 endmodule

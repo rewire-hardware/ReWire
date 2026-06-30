@@ -1,17 +1,9 @@
 $Pure.dispatch : ([2]) -> [2]
 $Pure.dispatch i =
-      $LL.Pure.dispatch i
-
-$LL.Pure.dispatch : ([2]) -> [2]
-$LL.Pure.dispatch i =
-      $LL.Main.start1 i
-
-$LL.Main.start1 : ([2]) -> [2]
-$LL.Main.start1 $x =
-      $LL.Main.start $x
+      $LL.Main.start i
 
 $LL.Main.start : ([2]) -> [2]
-$LL.Main.start $3 =
+$LL.Main.start $8 =
       2'h1
 
 device top_level

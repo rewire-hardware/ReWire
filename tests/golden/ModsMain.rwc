@@ -1,18 +1,10 @@
 $Pure.dispatch : ([1]) -> [1]
 $Pure.dispatch i =
-      $LL.Pure.dispatch i
-
-$LL.Pure.dispatch : ([1]) -> [1]
-$LL.Pure.dispatch i =
       $LL.Main.start i
 
-$LL.Main.start1 : ([1]) -> [1]
-$LL.Main.start1 $1 =
-      1'h0
-
 $LL.Main.start : ([1]) -> [1]
-$LL.Main.start $x =
-      $LL.Main.start1 $x
+$LL.Main.start $2 =
+      1'h0
 
 device top_level
       input __in0 : [1]

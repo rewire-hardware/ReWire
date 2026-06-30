@@ -214,15 +214,15 @@ component \Main_zookus\ is
       end component;
       signal \__resumption_tag\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
       signal \__resumption_tag_next\ : std_logic_vector (0 downto 0);
-      signal zi4 : std_logic_vector (0 downto 0);
+      signal zi3 : std_logic_vector (0 downto 0);
       signal main_zookus_out : std_logic_vector (0 downto 0);
       signal \main_zookus_outR1\ : std_logic_vector (0 downto 0);
       signal zres : std_logic_vector (1 downto 0);
 begin
-zi4 <= rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"1")), std_logic_vector'(B"1"), std_logic_vector'(B"0"));
-      inst : \Main_zookus\ port map (zi4, main_zookus_out);
+zi3 <= rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"1")), std_logic_vector'(B"1"), std_logic_vector'(B"0"));
+      inst : \Main_zookus\ port map (zi3, main_zookus_out);
       \instR1\ : \Main_zookus\ port map (main_zookus_out, \main_zookus_outR1\);
-      zres <= (\main_zookus_outR1\ & zi4);
+      zres <= (\main_zookus_outR1\ & zi3);
       \__resumption_tag_next\ <= zres(0 downto 0);
       \__out0\ <= zres(1 downto 1);
       process (clk, rst)

@@ -8,40 +8,12 @@ module top_level (input logic [0:0] clk,
   logic [7:0] __st1_next;
   logic [15:0] __st2;
   logic [15:0] __st2_next;
-  logic [46:0] zll_main_loop40_out;
-  logic [46:0] zi34;
-  logic [3:0] zi35;
-  logic [15:0] zi37;
-  logic [27:0] zi38;
-  logic [3:0] zi39;
-  logic [7:0] zi40;
-  logic [15:0] zi41;
-  logic [46:0] zi42;
-  logic [3:0] zi43;
-  logic [7:0] zi44;
-  logic [46:0] zll_main_loop40_outR1;
-  logic [46:0] zi46;
-  logic [3:0] zi47;
-  logic [7:0] zi48;
-  logic [15:0] zi49;
-  logic [46:0] zres;
-  ZLL_Main_loop40  inst ({__in0, __st1, __st2}, zll_main_loop40_out);
-  assign zi34 = zll_main_loop40_out;
-  assign zi35 = zi34[27:24];
-  assign zi37 = zi34[15:0];
-  assign zi38 = {zi35, {4'h0, __st0} + __st1, zi37};
-  assign zi39 = zi38[27:24];
-  assign zi40 = zi38[23:16];
-  assign zi41 = zi38[15:0];
-  assign zi42 = {19'h30000, zi39, zi40, zi41};
-  assign zi43 = zi42[27:24];
-  assign zi44 = zi42[23:16];
-  ZLL_Main_loop40  instR1 ({zi43, zi44, {8'h0, __st1} + __st2}, zll_main_loop40_outR1);
-  assign zi46 = zll_main_loop40_outR1;
-  assign zi47 = zi46[27:24];
-  assign zi48 = zi46[23:16];
-  assign zi49 = zi46[15:0];
-  assign zres = {3'h4, {12'h0, __st0} + __st2, zi47, zi48, zi49};
+  logic [7:0] zi4;
+  logic [15:0] zi5;
+  logic [43:0] zres;
+  assign zi4 = {4'h0, __st0} + __st1;
+  assign zi5 = {8'h0, __st1} + __st2;
+  assign zres = {{12'h0, __st0} + __st2, __in0, zi4, zi5};
   assign __st0_next = zres[27:24];
   assign __st1_next = zres[23:16];
   assign __st2_next = zres[15:0];
@@ -54,15 +26,4 @@ module top_level (input logic [0:0] clk,
       {__st0, __st1, __st2} <= {__st0_next, __st1_next, __st2_next};
     end
   end
-endmodule
-
-module ZLL_Main_loop40 (input logic [27:0] arg0,
-  output logic [46:0] res);
-  logic [3:0] zi0;
-  logic [7:0] zi1;
-  logic [15:0] zi2;
-  assign zi0 = arg0[27:24];
-  assign zi1 = arg0[23:16];
-  assign zi2 = arg0[15:0];
-  assign res = {19'h30000, zi0, zi1, zi2};
 endmodule

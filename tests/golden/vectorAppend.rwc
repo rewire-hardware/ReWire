@@ -1,46 +1,26 @@
-$Pure.dispatch : ([128]) -> [65]
+$Pure.dispatch : ([128]) -> [64]
 $Pure.dispatch i =
-      $LL.Pure.dispatch i
+      Main.loop1 i
 
 Main.compute : ([128]) -> [64]
 Main.compute $x =
-      $LL.Main.compute2 $x
+      $LL.Main.compute $x
 
-$LL.Pure.dispatch : ([128]) -> [65]
-$LL.Pure.dispatch i =
-      Main.loop i
+$LL.Main.loop1 : ([128]) -> [64]
+$LL.Main.loop1 $2 =
+      $LL.Main.loop (Main.compute $2)
 
-$LL.Main.loop3 : ([128]) -> [65]
-$LL.Main.loop3 i =
-      $LL.Main.loop1 (1'h0 # Main.compute i)
+Main.loop1 : ([128]) -> [64]
+Main.loop1 $x =
+      $LL.Main.loop1 $x
 
-Main.loop : ([128]) -> [65]
-Main.loop $x =
-      $LL.Main.loop2 $x
-
-$LL.Main.loop2 : ([128]) -> [65]
-$LL.Main.loop2 $x =
-      $LL.Main.loop3 $x
-
-$LL.Main.loop1 : ([65]) -> [65]
-$LL.Main.loop1 disc =
-      $LL.Main.loop disc[0 +: 64]
-
-$LL.Main.compute2 : ([128]) -> [64]
-$LL.Main.compute2 $3 =
-      $LL.Main.compute $3[64 +: 64] $3[0 +: 64]
-
-$LL.Main.loop : ([64]) -> [65]
+$LL.Main.loop : ([64]) -> [64]
 $LL.Main.loop rabind =
-      1'h1 # rabind
+      rabind
 
-$LL.Main.compute1 : ([64], [64]) -> [64]
-$LL.Main.compute1 v w =
-      v[32 +: 8] # v[40 +: 8] # v[48 +: 8] # v[56 +: 8] # 8'h0 # w[0 +: 24]
-
-$LL.Main.compute : ([64], [64]) -> [64]
-$LL.Main.compute $x $x1 =
-      $LL.Main.compute1 $x $x1
+$LL.Main.compute : ([128]) -> [64]
+$LL.Main.compute $3 =
+      $3[96 +: 8] # $3[104 +: 8] # $3[112 +: 8] # $3[120 +: 8] # 8'h0 # $3[0 +: 24]
 
 device top_level
       input __in0 : [64]
@@ -48,4 +28,4 @@ device top_level
       output __out0 : [64]
       let $in = __in0 # __in1
       let $res = $Pure.dispatch $in
-      __out0 := $res[0 +: 64]
+      __out0 := $res
