@@ -568,22 +568,6 @@ transBuiltin an' t' an theExp = case theExp of
             checkFinTypeMax s t = maybe (failAt an' $ s <> ": invalid Finite type: "  <> showt (M.prettyTy <$> t)) pure
                         $ t >>= M.finSz
 
--- | Builtins in Match-target position (with already-translated arguments
---   from the destructed discriminator). cfgArgs are the untranslated
---   configuration arguments (extern descriptors and the like).
-applyBuiltin :: (MonadError AstError m, Fresh m, MonadState S m) => Annote -> A.Size -> Annote -> M.Builtin -> [M.Exp] -> [A.Exp] -> TCM m A.Exp
-applyBuiltin an sz an' b cfgArgs args = case (b, cfgArgs) of
-      (M.Error, _) -> do
-            addWarning an $ "encountered a live call to the built-in \"error\" function; compiling to a zero (don't-care) value of width " <> showt sz <> "."
-            pure $ A.Undef an sz
-      (M.Extern, M.LitList _ _ _ ps : M.LitStr _ _ clk : M.LitStr _ _ rst : M.LitList _ _ _ as : M.LitList _ _ _ rs : M.LitStr _ _ s : a : M.LitStr _ _ _inst : preArgs) -> do
-            preArgs' <- mapM transExp preArgs
-            applyExtern an sz (ps, clk, rst, as, rs, s) a $ preArgs' <> args
-      (_, []) | Just _ <- toPrim b 0 0 -> lift $ lift $ applyPrim an sz b args
-      (M.Bits, []) | [a] <- args -> pure a
-      (M.Resize, []) | [a] <- args -> resize an sz a
-      _ -> failAt an' $ "unsupported builtin in match-target position: rwPrim" <> showt b <> "."
-
 -- | Apply a (width-implicit, Crust-level) primitive to translated arguments,
 --   expanding to the Hyle operator set (doc/hyle.md, section 3.3).
 applyPrim :: (MonadError AstError m, MonadState S m) => Annote -> A.Size -> M.Builtin -> [A.Exp] -> m A.Exp

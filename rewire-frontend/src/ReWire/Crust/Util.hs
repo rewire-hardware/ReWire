@@ -13,7 +13,7 @@ import ReWire.Crust.Syntax (Exp (..), Ty (..), Pat (..), Defn (..), DefnAttr (..
 import ReWire.Crust.Types (proxyTy, nilTy, strTy, arr, typeOf, arrowRight, pairTy, mkArrowTy, paramTys, synthable)
 import ReWire.Pretty (pretty)
 import ReWire.SYB (query)
-import ReWire.Unbound (freshVar, Name, Fresh, Embed (Embed), unbind, bind, s2n, unsafeUnbind, Bind, TRec)
+import ReWire.Unbound (Name, Fresh, Embed (Embed), unbind, bind, s2n, unsafeUnbind, Bind, TRec)
 
 import Data.Text (Text)
 import Numeric.Natural (Natural)
