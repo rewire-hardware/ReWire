@@ -3,4 +3,5 @@ packages:
 - .
 - rewire-user
 - rewire-core
+- rewire-frontend
 - rewire-embedder

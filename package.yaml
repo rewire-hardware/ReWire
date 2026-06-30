@@ -70,6 +70,7 @@ dependencies:
 library:
   source-dirs: src
   dependencies:
+  - rewire-frontend
   - rewire-core
 
 executables:

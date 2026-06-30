@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+* The `rewire-core` library has been split into two packages: `rewire-frontend`
+  (the haskell-src-exts front end `ReWire.HSE.*` and the Crust IR and its
+  transformations `ReWire.Crust.*`, plus the pass orchestration) and a slimmed
+  `rewire-core` (the Hyle bit-level IR, the Verilog/VHDL/Cryptol RTL backends,
+  and the shared base utilities). `rewire-frontend` depends on `rewire-core`.
+  `ReWire.Annotation`/`ReWire.Error` were first decoupled from haskell-src-exts
+  (the source annotation is a native span; the HSE conversion now lives in
+  `ReWire.HSE.SrcLoc`), so the slimmed `rewire-core` no longer depends on
+  haskell-src-exts. Module names and the `rwc`/`rwe` interfaces are unchanged.
+* Removed the `Match` expression and `MatchPat` pattern language from the Crust
+  IR: `Case` (with its binders) is now carried through purification into the
+  Hyle backend, so source variable names survive into the generated HDL.
 * Error reporting overhaul. Diagnostics from `rwc` and `rwe` now show the
   offending source line with a caret underline beneath the exact span
   (`file:line:col:`, then the source line, then `^^^`) rather than

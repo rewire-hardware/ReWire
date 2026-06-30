@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           rewire-core
+name:           rewire-frontend
 version:        2.7
-synopsis:       A Haskell-to-Verilog/VHDL compiler, core library (Hyle to RTL plus shared base)
-description:    The ReWire core. The Hyle bit-level IR, its checker/optimizer/interpreter/parser, the Verilog/VHDL/Cryptol RTL backends, and the shared base utilities (annotations, diagnostics, config, pretty-printing). Consumed by rewire-frontend.
+synopsis:       A Haskell-to-Verilog/VHDL compiler, front end (HSE plus Crust)
+description:    The ReWire front end. The haskell-src-exts pipeline (ReWire.HSE.*), the Crust typed functional IR and its transformations (ReWire.Crust.*), and the pass-pipeline orchestration. Produces a ReWire.Hyle device; depends on rewire-core for the Hyle IR, RTL backends, and shared base.
 category:       Language
 homepage:       https://github.com/rewire-hardware/ReWire#readme
 bug-reports:    https://github.com/rewire-hardware/ReWire/issues
@@ -22,40 +22,39 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
-    vhdl/rw_helpers.vhdl
 
 source-repository head
   type: git
   location: https://github.com/rewire-hardware/ReWire
-  subdir: rewire-core
+  subdir: rewire-frontend
 
 library
   exposed-modules:
-      ReWire.Annotation
-      ReWire.BitVector
-      ReWire.Config
-      ReWire.Cryptol.Syntax
-      ReWire.Error
-      ReWire.Fix
-      ReWire.Flags
-      ReWire.Hyle.Check
-      ReWire.Hyle.Interp
-      ReWire.Hyle.Mangle
-      ReWire.Hyle.Parse
-      ReWire.Hyle.Syntax
-      ReWire.Hyle.ToCryptol
-      ReWire.Hyle.ToVerilog
-      ReWire.Hyle.ToVHDL
-      ReWire.Hyle.Transform
-      ReWire.Orphans
-      ReWire.Pretty
-      ReWire.SYB
-      ReWire.Unbound
-      ReWire.Verilog.Syntax
-      ReWire.VHDL.Helpers
-      ReWire.VHDL.Syntax
+      ReWire.Builtins
+      ReWire.Crust.KindCheck
+      ReWire.Crust.PrimBasis
+      ReWire.Crust.Purify
+      ReWire.Crust.Syntax
+      ReWire.Crust.ToHyle
+      ReWire.Crust.Transform
+      ReWire.Crust.TypeCheck
+      ReWire.Crust.Types
+      ReWire.Crust.Util
+      ReWire.FrontEnd
+      ReWire.HSE.Annotate
+      ReWire.HSE.Cache
+      ReWire.HSE.Desugar
+      ReWire.HSE.Exports
+      ReWire.HSE.Fixity
+      ReWire.HSE.Orphans
+      ReWire.HSE.Parse
+      ReWire.HSE.Rename
+      ReWire.HSE.SrcLoc
+      ReWire.HSE.ToCrust
+      ReWire.ModCache
+      ReWire.Pass
   other-modules:
-      Paths_rewire_core
+      Paths_rewire_frontend
   hs-source-dirs:
       src
   default-extensions:
@@ -65,22 +64,17 @@ library
   ghc-options: -Wall -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
       base ==4.20.*
-    , bv ==0.5.*
     , containers ==0.7.*
     , deepseq ==1.5.*
     , directory ==1.3.*
-    , exceptions ==0.10.*
     , filepath ==1.5.*
-    , ghc ==9.10.*
-    , ghc-boot ==9.10.*
     , hashable ==1.5.*
+    , haskell-src-exts ==1.23.*
     , lens ==5.3.*
-    , machines ==0.7.*
-    , megaparsec ==9.7.*
     , mtl ==2.3.*
     , prettyprinter ==1.7.*
-    , prettyprinter-ansi-terminal ==1.1.*
-    , template-haskell ==2.22.*
+    , rewire-core >=2.7
+    , split ==0.2.*
     , text ==2.1.*
     , text-show ==3.11.*
     , unbound-generics ==0.4.*

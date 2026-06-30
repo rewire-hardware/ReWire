@@ -637,6 +637,7 @@ library
     , lens ==5.3.*
     , rewire-core
     , rewire-embedder
+    , rewire-frontend
     , rewire-user ==2.7.*
     , text ==2.1.*
   default-language: Haskell2010
