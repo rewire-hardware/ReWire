@@ -3,6 +3,7 @@
 module ReWire.HSE.Parse (tryParseInDir) where
 
 import ReWire.Error
+import ReWire.HSE.SrcLoc () -- the `Annotation SrcLoc` instance.
 
 import qualified Data.Text as Txt
 import Language.Haskell.Exts (parseFileWithMode, ParseResult (..), defaultParseMode, ParseMode (..))

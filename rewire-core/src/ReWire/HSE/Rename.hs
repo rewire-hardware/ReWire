@@ -24,6 +24,8 @@ module ReWire.HSE.Rename
 import ReWire.Annotation (Annotation, Annote, noAnn)
 import ReWire.Error (failAt, mark, MonadError, AstError)
 import ReWire.HSE.Fixity (fixLocalOps, deuniquifyLocalOps)
+import ReWire.HSE.SrcLoc () -- the `Annotation SrcSpanInfo` instance (for `mark`/`failAt`).
+import ReWire.HSE.Orphans () -- TextShow/Hashable/Generic instances over the haskell-src-exts AST.
 import ReWire.Orphans ()
 import ReWire.Pretty (TextShow, FromGeneric (..))
 

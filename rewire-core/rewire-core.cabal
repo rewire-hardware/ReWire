@@ -57,6 +57,7 @@ library
       ReWire.HSE.Orphans
       ReWire.HSE.Parse
       ReWire.HSE.Rename
+      ReWire.HSE.SrcLoc
       ReWire.HSE.ToCrust
       ReWire.Hyle.Check
       ReWire.Hyle.Interp

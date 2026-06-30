@@ -9,6 +9,7 @@ module ReWire.HSE.Fixity
 
 import ReWire.SYB (transformM)
 import ReWire.Error (AstError, mark)
+import ReWire.HSE.SrcLoc () -- the `Annotation SrcSpanInfo` instance (for `mark`).
 
 import Control.Monad (void, (>=>))
 import Control.Monad.Identity (Identity (..))

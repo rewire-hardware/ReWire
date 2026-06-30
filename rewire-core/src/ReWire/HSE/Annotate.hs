@@ -5,6 +5,7 @@ module ReWire.HSE.Annotate
       ) where
 
 import ReWire.Annotation (Annote, Annotation (toAnnote))
+import ReWire.HSE.SrcLoc () -- the `Annotation SrcSpanInfo` instance.
 
 import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
 import Language.Haskell.Exts.Syntax (Module)

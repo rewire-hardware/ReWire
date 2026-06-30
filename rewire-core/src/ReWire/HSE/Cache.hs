@@ -14,7 +14,8 @@ module ReWire.HSE.Cache
       , getModuleWith
       ) where
 
-import ReWire.Annotation (Annotation, SrcSpanInfo)
+import ReWire.Annotation (Annotation)
+import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
 import ReWire.Config (Config, loadPath, pDebug)
 import ReWire.Error (failAt, AstError, MonadError, filePath, relocatingTo)
 import ReWire.HSE.Desugar (addMainModuleHead)

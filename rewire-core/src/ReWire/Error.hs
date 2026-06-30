@@ -21,7 +21,7 @@ module ReWire.Error
 
 import Prelude hiding ((<>), lines, unlines)
 
-import ReWire.Annotation (Annotation (..), Annote, Span (..), annContext, primSpan, toSrcSpanInfo, noAnn)
+import ReWire.Annotation (Annotation (..), Annote, Span (..), annContext, primSpan, srcAnnote, noAnn)
 import ReWire.Config (Config, noWarn, wError, loadPath)
 import ReWire.Pretty (text, showt, Pretty (pretty), (<>), (<+>), vsep, Doc, defaultLayoutOptions, layoutSmart, renderStrict)
 import ReWire.Orphans ()
@@ -38,7 +38,6 @@ import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.State (StateT (..), MonadState (..))
 import Control.Monad.Trans (MonadTrans (..))
 import Data.Text (Text, pack)
-import Language.Haskell.Exts.SrcLoc (SrcLoc (..), SrcInfo (..), noLoc)
 import Prettyprinter (annotate)
 import Prettyprinter.Render.Terminal (AnsiStyle, Color (..), color, bold)
 import System.Directory (doesFileExist)
@@ -118,12 +117,11 @@ normalizeMsg msg = case T.uncons trimmed of
 -- | The "file:line:col:" header for an annotation, or Nothing if it has no
 --   usable source position.
 locHeaderText :: Annote -> Maybe Text
-locHeaderText an
-      | getPointLoc l == noLoc = Nothing
-      | otherwise              = Just $ T.pack file <> num r <> num c <> ":"
-      where l = toSrcSpanInfo an
-            num n = if n == -1 then mempty else ":" <> showt n
-            SrcLoc file r c = getPointLoc l
+locHeaderText an = case primSpan an of
+      Just (Span file (r, c) _) | not (file == "" && r == -1 && c == -1)
+            -> Just $ T.pack file <> num r <> num c <> ":"
+      _   -> Nothing
+      where num n = if n == -1 then mempty else ":" <> showt n
 
 -- | A diagnostic block, GHC-style: "file:line:col: severity:" on the header
 --   line, the message indented below it, then the source excerpt with a caret.
@@ -285,8 +283,8 @@ locateSource dirs f = go $ f : map (</> f) dirs
                   ex <- doesFileExist c
                   if ex then Just . T.lines <$> T.readFile c else go cs
 
-filePath :: FilePath -> SrcLoc
-filePath fp = SrcLoc fp (-1) (-1)
+filePath :: FilePath -> Annote
+filePath fp = srcAnnote fp (-1, -1) (-1, -1)
 
 runSyntaxError :: Monad m => SyntaxErrorT AstError m a -> m (Either AstError a)
 runSyntaxError = runSyntaxError' $ AstError noAnn mempty [] []

@@ -13,7 +13,7 @@ import Embedder.HSE.Desugar (desugar)
 import qualified Embedder.Atmo.Syntax as A (Module (..))
 import qualified Embedder.Atmo.ToIsabelle as AtmoIsabelle
 import Embedder.HSE.ToAtmo (toAtmo)
-import ReWire.Annotation (SrcSpanInfo)
+import Language.Haskell.Exts.SrcLoc (SrcSpanInfo)
 import ReWire.Error (AstError, MonadError)
 import ReWire.HSE.Annotate (annotate)
 import ReWire.HSE.Cache (LoadPath, getModuleWith)

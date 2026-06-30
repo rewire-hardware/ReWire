@@ -5,32 +5,26 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Safe #-}
-{-# OPTIONS_GHC -Wno-missing-methods #-}
+{-# OPTIONS_GHC -Wno-missing-methods #-} -- the intentionally-empty `Data Annote` (SYB leaf).
 module ReWire.Annotation
       ( Annote (Annote, NoAnnote, MsgAnnote)
       , Provenance (..)
       , Span (..)
       , Annotation (..)
       , Annotated (..)
-      , fromSrcSpanInfo, spanSrcSpanInfo, srcAnnote
+      , srcAnnote
       , primSpan, annProv, annContext
-      , toSrcSpanInfo
-      , SrcSpanInfo (..), SrcSpan
       , noAnn, unAnn
       ) where
 
 import ReWire.SYB (transform)
 import ReWire.Unbound (Alpha (..))
-import ReWire.HSE.Orphans ()
 import ReWire.Pretty (TextShow (showb), fromString)
 
 import Control.DeepSeq (NFData (..))
 import Data.Text (Text)
 import Data.Data (Typeable, Data (..))
 import Data.Hashable (Hashable (..))
-import Language.Haskell.Exts.SrcLoc
-      ( SrcLoc, SrcInfo (..), SrcSpanInfo (..), SrcSpan (..)
-      , noLoc, noInfoSpan, mkSrcSpan)
 
 import GHC.Generics (Generic (..))
 
@@ -75,12 +69,6 @@ class Annotation a where
 instance Annotation Annote where
       toAnnote = id
 
-instance Annotation SrcSpanInfo where
-      toAnnote = locAnnote
-
-instance Annotation SrcLoc where
-      toAnnote l = locAnnote $ noInfoSpan $ mkSrcSpan l l
-
 class Annotated a where
       ann :: a -> Annote
 
@@ -88,10 +76,6 @@ class Annotated a where
 --   make dumps readable and to compare terms structurally.
 unAnn :: Data d => d -> d
 unAnn = transform $ \ (_ :: Annote) -> noAnn
-
--- | Build an annotation from a haskell-src-exts source span.
-locAnnote :: SrcSpanInfo -> Annote
-locAnnote ssi = Annote (FromSource $ fromSrcSpanInfo ssi) []
 
 -- | Build an annotation for an explicit source region: a file with 1-based
 --   (line, column) start and end positions.
@@ -105,22 +89,6 @@ primSpan = \ case
       Annote (FromSource s)          _ -> Just s
       Annote (Synthesized _ (s : _)) _ -> Just s
       _                                -> Nothing
-
-fromSrcSpanInfo :: SrcSpanInfo -> Span
-fromSrcSpanInfo (SrcSpanInfo (SrcSpan f sl sc el ec) _) = Span f (sl, sc) (el, ec)
-
-spanSrcSpanInfo :: Span -> SrcSpanInfo
-spanSrcSpanInfo (Span f (sl, sc) (el, ec)) = noInfoSpan $ SrcSpan f sl sc el ec
-
-noSpanInfo :: SrcSpanInfo
-noSpanInfo = noInfoSpan $ mkSrcSpan noLoc noLoc
-
-instance SrcInfo Annote where
-      toSrcInfo a b c = locAnnote $ toSrcInfo a b c
-      fromSrcInfo     = locAnnote . fromSrcInfo
-      fileName        = fileName . toSrcSpanInfo
-      startLine       = startLine . toSrcSpanInfo
-      startColumn     = startColumn . toSrcSpanInfo
 
 -- | Opaque to SYB: 'gfoldl' uses its default (no children), so 'unAnn' and the
 --   generic traversals treat an annotation as an indivisible leaf rather than
@@ -165,11 +133,6 @@ instance NFData Provenance where
       rnf NoProvenance      = ()
 instance NFData Annote where
       rnf (Annote p c) = rnf p `seq` rnf c
-
--- | Recover a haskell-src-exts span for the haskell-src-exts machinery and for
---   the error renderer. Locationless annotations map to 'noLoc'.
-toSrcSpanInfo :: Annote -> SrcSpanInfo
-toSrcSpanInfo an = maybe noSpanInfo spanSrcSpanInfo $ primSpan an
 
 noAnn :: Annote
 noAnn = NoAnnote
