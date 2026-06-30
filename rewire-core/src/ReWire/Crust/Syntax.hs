@@ -11,7 +11,7 @@
 {-# LANGUAGE Trustworthy #-}
 module ReWire.Crust.Syntax
       ( Module (..), DataConId (..), TyConId
-      , Ty (..), Exp (..), Pat (..), MatchPat (..), Builtin (..)
+      , Ty (..), Exp (..), Pat (..), Builtin (..)
       , Defn (..), DefnAttr (..), DataDefn (..), TypeSynonym (..), DataCon (..)
       , FreeProgram, Program (..)
       , Kind (..), FieldId
@@ -149,7 +149,6 @@ instance Subst Ty Kind    where subst _ _ = id; substs _ = id; substBvs _ _ = id
 instance Subst Ty Builtin where subst _ _ = id; substs _ = id; substBvs _ _ = id
 instance Subst Ty Exp
 instance Subst Ty Pat
-instance Subst Ty MatchPat
 instance Subst Ty Poly
 
 instance Annotated Ty where
@@ -193,7 +192,6 @@ data Exp = App     Annote !(Maybe Poly) !(Maybe Ty) !Exp !Exp
          | Var     Annote !(Maybe Poly) !(Maybe Ty) !(Name Exp)
          | Con     Annote !(Maybe Poly) !(Maybe Ty) !(Name DataConId)
          | Case    Annote !(Maybe Poly) !(Maybe Ty) !Exp !(Bind Pat Exp) !(Maybe Exp)
-         | Match   Annote !(Maybe Poly) !(Maybe Ty) !Exp !MatchPat !Exp !(Maybe Exp)
          | Builtin Annote !(Maybe Poly) !(Maybe Ty) !Builtin
          | LitInt  Annote !(Maybe Poly) !Integer
          | LitStr  Annote !(Maybe Poly) !Text
@@ -219,7 +217,6 @@ instance Subst Exp Text     where subst _ _ = id; substs _ = id; substBvs _ _ = 
 instance Subst Exp Ty       where subst _ _ = id; substs _ = id; substBvs _ _ = id
 instance Subst Exp Kind     where subst _ _ = id; substs _ = id; substBvs _ _ = id
 instance Subst Exp Pat      where subst _ _ = id; substs _ = id; substBvs _ _ = id
-instance Subst Exp MatchPat where subst _ _ = id; substs _ = id; substBvs _ _ = id
 instance Subst Exp DefnAttr where subst _ _ = id; substs _ = id; substBvs _ _ = id
 instance Subst Exp Poly     where subst _ _ = id; substs _ = id; substBvs _ _ = id
 instance Subst Exp Builtin  where subst _ _ = id; substs _ = id; substBvs _ _ = id
@@ -234,7 +231,6 @@ instance Annotated Exp where
             Var a _ _ _         -> a
             Con a _ _ _         -> a
             Case a _ _ _ _ _    -> a
-            Match a _ _ _ _ _ _ -> a
             Builtin a _ _ _     -> a
             LitInt a _ _        -> a
             LitStr a _ _        -> a
@@ -249,7 +245,6 @@ typeAnn = \ case
       Var _ t _ _         -> t
       Con _ t _ _         -> t
       Case _ t _ _ _ _    -> t
-      Match _ t _ _ _ _ _ -> t
       Builtin _ t _ _     -> t
       LitInt _ t _        -> t
       LitStr _ t _        -> t
@@ -286,11 +281,6 @@ instance Pretty Exp where
                   pure $ nest 2 $ vsep $
                         [ text "case" <+> pretty e <+> text "of"
                         , pretty p <+> text "->" <+> pretty e1'
-                        ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
-            Match _ pt _ e p e1 e2                     -> ppTyAnnP pt $ runFreshM $
-                  pure $ nest 2 $ vsep $
-                        [ text "match" <+> pretty e <+> text "of"
-                        , pretty p <+> text "->" <+> pretty e1
                         ] ++ maybe [] (\ e2' -> [text "_" <+> text "->" <+> pretty e2']) e2
             Builtin _ pt _ b                           -> ppTyAnn pt $ pretty b
             LitInt _ pt v                              -> ppTyAnn pt $ pretty v
@@ -334,41 +324,6 @@ instance Pretty Pat where
             PatVar _ (Embed pt) (Embed (Just t)) n                      -> ppTyAnn pt $ parens $ text (showt n) <+> "::" <+> pretty t
             PatWildCard _ (Embed pt) (Embed Nothing)                    -> ppTyAnn pt $ text "_"
             PatWildCard _ (Embed pt) (Embed (Just t))                   -> ppTyAnn pt $ parens $ text "_" <+> "::" <+> pretty t
-
-data MatchPat = MatchPatCon Annote !(Maybe Poly) !(Maybe Ty) !(Name DataConId) ![MatchPat]
-              | MatchPatVar Annote !(Maybe Poly) !(Maybe Ty)
-              | MatchPatWildCard Annote !(Maybe Poly) !(Maybe Ty)
-      deriving (Eq, Show, Generic, Typeable, Data)
-      deriving TextShow via FromGeneric MatchPat
-
-instance Hashable MatchPat
-
-instance Alpha MatchPat
-
-instance NFData MatchPat
-
-instance Annotated MatchPat where
-      ann = \ case
-            MatchPatCon a _ _ _ _  -> a
-            MatchPatVar a _ _      -> a
-            MatchPatWildCard a _ _ -> a
-
-instance Parenless MatchPat where
-      parenless = \ case
-            MatchPatCon _ _ _ (n2s -> c) _ | isTupleCtor c -> True
-            MatchPatCon _ _ _ _ []                         -> True
-            MatchPatVar {}                                 -> True
-            MatchPatWildCard {}                            -> True
-            _                                              -> False
-
-instance Pretty MatchPat where
-      pretty = \ case
-            MatchPatCon _ pt _ (n2s -> c) ps | isTupleCtor c -> ppTyAnn pt $ parens $ hsep $ punctuate comma $ map pretty ps
-            MatchPatCon _ pt _ n ps                          -> ppTyAnn pt $ text (n2s n) <+> hsep (map mparens ps)
-            MatchPatVar _ pt Nothing                         -> ppTyAnn pt $ text "*"
-            MatchPatVar _ pt (Just t)                        -> ppTyAnn pt $ parens $ text "*" <+> text "::" <+> pretty t
-            MatchPatWildCard _ pt Nothing                    -> ppTyAnn pt $ text "_"
-            MatchPatWildCard _ pt (Just t)                   -> ppTyAnn pt $ parens $ text "_" <+> text "::" <+> pretty t
 
 ---
 

@@ -299,19 +299,9 @@ destruct an disc fields k = case fields of
                         | BV.width bv == 0 -> (args, conds)
                         | otherwise        -> (args, A.Prim an 1 A.Eq [slice0 an off sz d, A.Lit an bv] : conds)
 
-transPat :: (MonadError AstError m, Fresh m, MonadState S m, MonadReader ConMap m) => M.MatchPat -> m [Field]
-transPat = \ case
-      M.MatchPatCon an _ t d ps -> do
-            (v, w) <- ctorTag an t d
-            sz     <- sizeOf' ("MatchPatCon " <> n2s d) an t
-            szArgs <- sum <$> mapM (sizeOf' "MatchPatCon args" an . M.typeOf) ps
-            ([FLit $ bitVec (fromIntegral w) v, FWild $ sz - w - szArgs] <>) . concat <$> mapM transPat ps
-      M.MatchPatVar an _ t      -> pure . FVar <$> sizeOf' "MatchPatVar" an t
-      M.MatchPatWildCard an _ t -> pure . FWild <$> sizeOf' "MatchPatWildCard" an t
-
--- | Like 'transPat', but over a binding 'Pat': returns the flat field vector
---   together with the source binder name of each 'FVar', in field order, so a
---   case can bind its pattern variables to named discriminant slices.
+-- | Compile a binding 'Pat' to a flat field vector together with the source
+--   binder name of each 'FVar', in field order, so a case can bind its pattern
+--   variables to named discriminant slices.
 patFields :: (MonadError AstError m, Fresh m, MonadState S m, MonadReader ConMap m) => M.Pat -> m ([Field], [Name M.Exp])
 patFields = \ case
       M.PatCon an _ (Embed t) (Embed d) ps -> do
@@ -357,16 +347,6 @@ transExp e = case e of
             (v, w)     <- ctorTag an t d
             (tag, pad) <- ctorRep an t (v, w) 0
             pure $ A.cat [A.Lit an tag, A.Lit an pad]
-      M.Match an _ t disc ps f els        -> do
-            sz     <- sizeOf' "Match" an t
-            disc'  <- transExp disc
-            fields <- transPat ps
-            els'   <- mapM transExp els
-            destruct an disc' fields $ \ (args, conds) -> do
-                  res <- applyF an sz f args
-                  case els' of
-                        Just els'' | not (null conds) -> pure $ A.If an sz (conj an conds) res els''
-                        _                             -> pure res
       M.Case an _ t disc bnd els          -> do
             sz           <- sizeOf' "Case" an t
             disc'        <- transExp disc
@@ -386,16 +366,7 @@ transExp e = case e of
             pure $ A.Lit an $ bitVec (fromIntegral sz) n
       M.LitVec _ _ _ es                   -> A.cat <$> mapM transExp es
       _                                   -> failAt (ann e) $ "unsupported expression: " <> prettyPrint e
-      where -- | Apply a Match target to the destructed arguments.
-            applyF :: (MonadError AstError m, Fresh m, MonadState S m) => Annote -> A.Size -> M.Exp -> [A.Exp] -> TCM m A.Exp
-            applyF an sz f args = case M.flattenApp f of
-                  (M.Var _ _ _ x, [])           -> do
-                        x' <- transName x
-                        pure $ A.Call an sz x' args
-                  (M.Builtin an' _ _ b, cfgArgs) -> applyBuiltin an sz an' b cfgArgs args
-                  _                             -> failAt an $ "unsupported match target:\n" <> prettyPrint f
-
-            ctorRep :: (Fresh m, MonadReader ConMap m, MonadState S m, MonadError AstError m) => Annote -> Maybe M.Ty -> (A.Value, A.Size) -> A.Size -> m (BV, BV)
+      where ctorRep :: (Fresh m, MonadReader ConMap m, MonadState S m, MonadError AstError m) => Annote -> Maybe M.Ty -> (A.Value, A.Size) -> A.Size -> m (BV, BV)
             ctorRep an Nothing _ _ = failInternal an "ctorRep: encountered untyped constructor (rwc bug)."
             ctorRep an (Just t) (v, w) szArgs = do
                   sz <- sizeOf "ctorRep" an t

@@ -15,7 +15,7 @@ module ReWire.Crust.Types
       ) where
 
 import ReWire.Annotation (Annote (MsgAnnote), Annotated (ann), noAnn)
-import ReWire.Crust.Syntax (Exp (..), Ty (..), Poly (Poly), Pat (..), Kind (..), MatchPat (..), flattenTyApp, TyConId)
+import ReWire.Crust.Syntax (Exp (..), Ty (..), Poly (Poly), Pat (..), Kind (..), flattenTyApp, TyConId)
 import ReWire.Unbound (Name, Embed (Embed), unsafeUnbind, n2s, s2n, fv, bind, makeName, name2Integer)
 import ReWire.Pretty (Pretty (pretty), Doc, hsep, text, punctuate, parens, showt, prettyPrint)
 
@@ -51,7 +51,6 @@ instance TypeAnnotated Exp where
             Var _ _ t _           -> t
             Con _ _ t _           -> t
             Case _ _ t _ _ _      -> t
-            Match _ _ t _ _ _ _   -> t
             Builtin _ _ t _       -> t
             LitInt a _ _          -> pure $ intTy a
             LitStr a _ _          -> pure $ strTy a
@@ -63,7 +62,6 @@ instance TypeAnnotated Exp where
             Var _ pt _ _          -> pt
             Con _ pt _ _          -> pt
             Case _ pt _ _ _ _     -> pt
-            Match _ pt _ _ _ _ _  -> pt
             Builtin _ pt _ _      -> pt
             LitInt _ pt _         -> pt
             LitStr _ pt _         -> pt
@@ -75,7 +73,6 @@ instance TypeAnnotated Exp where
             Var a _ t e           -> Var a pt t e
             Con a _ t e           -> Con a pt t e
             Case a _ t e e1 e2    -> Case a pt t e e1 e2
-            Match a _ t e p e1 e2 -> Match a pt t e p e1 e2
             Builtin a _ t b       -> Builtin a pt t b
             LitInt a _ n          -> LitInt a pt n
             LitStr a _ n          -> LitStr a pt n
@@ -95,20 +92,6 @@ instance TypeAnnotated Pat where
             PatCon a _ t c ps          -> PatCon a (Embed pt) t c ps
             PatVar a _ t x             -> PatVar a (Embed pt) t x
             PatWildCard a _ t          -> PatWildCard a (Embed pt) t
-
-instance TypeAnnotated MatchPat where
-      typeOf = \ case
-            MatchPatCon _ _ t _ _   -> t
-            MatchPatVar _ _ t       -> t
-            MatchPatWildCard _ _ t  -> t
-      tyAnn = \ case
-            MatchPatCon _ pt _ _ _  -> pt
-            MatchPatVar _ pt _      -> pt
-            MatchPatWildCard _ pt _ -> pt
-      setTyAnn pt = \ case
-            MatchPatCon a _ t c ps -> MatchPatCon a pt t c ps
-            MatchPatVar a _ t      -> MatchPatVar a pt t
-            MatchPatWildCard a _ t -> MatchPatWildCard a pt t
 
 ---
 

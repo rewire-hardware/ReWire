@@ -14,7 +14,6 @@ module ReWire.Crust.Transform
       , etaAbsDefs
       , purge, purgeAll
       , normalizeBind
-      , elimCase
       , simplify
       , specialize
       , freeTyVarsToNil
@@ -24,10 +23,10 @@ module ReWire.Crust.Transform
 import ReWire.Annotation (Annote (..), Annotated (..))
 import ReWire.Config (Config, depth, start, pDebug)
 import ReWire.Crust.PrimBasis (primDatas)
-import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Poly (..), Pat (..), MatchPat (..), Defn (..), FreeProgram, DataCon (..), DataConId, TyConId, DataDefn (..), Builtin (..), DefnAttr (..), TypeSynonym (..), flattenApp, builtins)
+import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Poly (..), Pat (..), Defn (..), FreeProgram, DataCon (..), DataConId, TyConId, DataDefn (..), Builtin (..), DefnAttr (..), TypeSynonym (..), flattenApp, builtins)
 import ReWire.Crust.TypeCheck (typeCheckDefn, unify, unify', TySub)
-import ReWire.Crust.Types (typeOf, tyAnn, setTyAnn, dstArrow, maybeSetTyAnn, poly, poly', flattenArrow, arr, nilTy, ctorNames, resInputTy, codomTy, (|->), arrowRight, arrowLeft, isReacT, prettyTy, synthable, higherOrder, fundamental, concrete)
-import ReWire.Crust.Util (mkApp, mkError, mkLam, inlinable, synthableDefn, mkTupleMPat, mkTuple, mkPairMPat, mkPair, patVars, toVar, transPat, transMPat, isExtrude, extrudeDefn)
+import ReWire.Crust.Types (typeOf, tyAnn, setTyAnn, dstArrow, poly, poly', flattenArrow, arr, nilTy, ctorNames, resInputTy, codomTy, (|->), arrowRight, arrowLeft, isReacT, prettyTy, synthable, higherOrder, fundamental, concrete)
+import ReWire.Crust.Util (mkApp, mkError, mkLam, inlinable, synthableDefn, patVars, toVar, isExtrude, extrudeDefn)
 import ReWire.Error (AstError, MonadError, failAt, failInternal, Warning (..))
 import ReWire.Fix (fix, fix', fixUntil, boundedFixOn)
 import ReWire.SYB (transform, transformM, query)
@@ -331,20 +330,6 @@ normalizeBind (ts, syns, ds) = (ts, syns, ) <$> (uncurry (<>) <$> runStateT (map
                         let e' = mkBind a (mkApp (ann e2) e2 [Var (ann e2) Nothing tx x]) e3
                         ppExp' $ mkBind a e1 $ Lam (ann e2) Nothing tx (bind x e')
 
-                  -- Bind: if Match is on the LHS, push the bind into the
-                  -- Match arms.
-                  -- > (match disc p e els) >>= f
-                  -- becomes
-                  -- > match disc p e' (els >>= f)
-                  -- > where e' = e >>= f
-                  -- if e has a non-function type, otherwise
-                  -- >       e' = \ x1... -> (e x1... >>= f)
-                  b@(dstBind -> Just (a, Match an tan _ disc p e els, e2)) -> do
-                        pvs <- patVars <$> transMPat p
-                        let e'   = mkLam an pvs $ mkBind a (mkApp an (maybeSetTyAnn tan e) (toVar an <$> pvs)) e2
-                            els' = flip (mkBind a) e2 . maybeSetTyAnn tan <$> els
-                        ppExp' $ Match an Nothing (typeOf b) disc p e' els'
-
                   -- Bind: if Case is on the LHS, push the bind into the arm
                   -- body (the pattern variables are already in scope there) and
                   -- the default.
@@ -379,8 +364,7 @@ normalizeBind (ts, syns, ds) = (ts, syns, ) <$> (uncurry (<>) <$> runStateT (map
                         if leftAssocBind b || matchBind b then ppExp' b
                         else pure b
 
-                  -- Lifts matches/cases in the operator position of an application (for toCore and purification).
-                  App an tan t e@Match {} arg                                   -> App an tan t <$> (ppExp' e >>= lift') <*> ppExp' arg
+                  -- Lifts a case in the operator position of an application (for toCore and purification).
                   App an tan t e@Case {} arg                                    -> App an tan t <$> (ppExp' e >>= lift') <*> ppExp' arg
                   -- Lifts the first argument to extrude (for purification).
                   App an tan t ex@(Builtin _ _ _ Extrude) e | not $ isExtrude e -> App an tan t ex <$> (ppExp' e >>= lift')
@@ -391,7 +375,6 @@ normalizeBind (ts, syns, ds) = (ts, syns, ) <$> (uncurry (<>) <$> runStateT (map
                   Case an tan t disc e els -> do
                         (p, e') <- unbind e
                         Case an tan t <$> ppExp' disc <*> (bind p <$> ppExp dn (Set.fromList (snd <$> patVars p) <> bvs) e') <*> mapM ppExp'  els
-                  Match an tan t disc p e els -> Match an tan t <$> ppExp' disc <*> pure p <*> ppExp' e <*> mapM ppExp' els
                   LitList an tan t es         -> LitList an tan t <$> mapM ppExp' es
                   LitVec an tan t es          -> LitVec an tan t <$> mapM ppExp' es
                   e                           -> pure e
@@ -409,9 +392,8 @@ normalizeBind (ts, syns, ds) = (ts, syns, ) <$> (uncurry (<>) <$> runStateT (map
 
             matchBind :: Exp -> Bool
             matchBind = \ case
-                  (dstBind -> Just (_, Match {}, _)) -> True
-                  (dstBind -> Just (_, Case {}, _))  -> True
-                  _                                  -> False
+                  (dstBind -> Just (_, Case {}, _)) -> True
+                  _                                 -> False
 
             dstBind :: Exp -> Maybe (Annote, Exp, Exp)
             dstBind e = case flattenApp e of
@@ -513,7 +495,6 @@ etaAbsDefs (ts, syns, vs) = (ts, syns, ) <$> mapM etaAbsDefs' vs
 
             appl :: Fresh m => Ty -> Exp -> Exp -> m Exp
             appl t x = \ case
-                  Match an tan t' e1 p e els  -> Match an tan (arrowRight <$> t') (mkPair an e1 x) (mkPairMPat an p $ MatchPatVar an Nothing $ Just t) e <$> mapM (appl t x) els
                   -- Push the applied argument into each case branch (under its
                   -- binder) and the default.
                   Case an tan t' disc bnd els -> do
@@ -522,28 +503,6 @@ etaAbsDefs (ts, syns, vs) = (ts, syns, ) <$> mapM etaAbsDefs' vs
                         els'   <- mapM (appl t x) els
                         pure $ Case an tan (arrowRight <$> t') disc (bind p e') els'
                   e                           -> pure $ mkApp (ann e) e [x]
-
-elimCase :: Fresh m => FreeProgram -> m FreeProgram
-elimCase (ts, syns, ds) = (ts, syns,) <$> mapM ecDefn ds
-      where ecDefn :: Fresh m => Defn -> m Defn
-            ecDefn d@Defn { defnBody = Embed e } = do
-                  (bvs, e') <- unbind e
-                  e''       <- ecExp e'
-                  pure $ d { defnBody = Embed (bind bvs e'') }
-
-            ecExp :: Fresh m => Exp -> m Exp
-            ecExp = \ case
-                  Case an tan t disc b els -> do
-                        (p, b') <- unbind b
-                        Match an tan t <$> ecExp disc <*> pure (transPat p) <*> (mkLam an (patVars p) <$> ecExp b') <*> mapM ecExp els
-                  Match an tan t disc p e els -> Match an tan t <$> ecExp disc <*> pure p <*> ecExp e <*> mapM ecExp els
-                  Lam an tan t b           -> do
-                        (x, b') <- unbind b
-                        Lam an tan t . bind x <$> ecExp b'
-                  App an tan t e1 e2       -> App an tan t <$> ecExp e1 <*> ecExp e2
-                  LitVec an tan t es       -> LitVec an tan t <$> mapM ecExp es
-                  LitList an tan t es      -> LitList an tan t <$> mapM ecExp es
-                  e                        -> pure e
 
 -- | Lifts lambdas and case/match into a top level fun def.
 --   E.g., lifts
@@ -583,26 +542,6 @@ llExp dn bvs =  \ case
                         b'' <- llExp dn (Set.insert x bvs) b'
                         lift' $ Lam an tan t $ bind x b''
 
-      -- Lifts anything other than a Var in the first Match branch. This case
-      -- is really just normalizing Match (TODO: consider moving to ToHyle?).
-      Match an tan t disc p e els -> do
-            e' <- llExp' e >>= lift'
-            let (v, lvars) = flattenApp e'
-            -- Don't fold a bind operator's operands into the match
-            -- discriminant: doing so binds the (possibly pausing) bind LHS
-            -- behind a MatchPatVar, hiding the bind from normalizeBind (which
-            -- recognizes binds only as syntactic `Builtin Bind` applications,
-            -- via dstBind). The pausing LHS would then never get inlined/
-            -- re-associated and would survive to purify. Leave the bind as the
-            -- arm body so normalizeBind can normalize it; it stays syntactic
-            -- through the later lambda-lifting passes for purify.
-            if isBindHead v && not (null lvars)
-                  then Match an tan t <$> llExp' disc <*> pure p <*> pure e' <*> mapM llExp' els
-                  else Match an tan t
-                        <$> llExp' (mkTuple an $ lvars <> [disc])
-                        <*> pure (mkTupleMPat an $ (MatchPatVar an Nothing . typeOf <$> lvars) <> [p])
-                        <*> pure v
-                        <*> mapM llExp' els
       -- Recurse under the case binder, lifting genuine lambdas in the branch;
       -- the discriminant and pattern variables are left in place for ToHyle.
       Case an tan t disc bnd els -> do
@@ -623,11 +562,6 @@ llExp dn bvs =  \ case
             isBuiltin = \ case
                   Builtin {} -> True
                   _          -> False
-
-            isBindHead :: Exp -> Bool
-            isBindHead = \ case
-                  Builtin _ _ _ Bind -> True
-                  _                  -> False
 
 -- | Lifts an expression to a definition and returns an application (to pass
 --   any free variables). Argument is a list of non-global free variables.
@@ -853,7 +787,6 @@ specialize' (ts, syns, vs) = do
                   Case an tan t e p els            -> do
                         (ps, p') <- unbind p
                         Case an tan t <$> specExp e <*> (bind ps <$> specExp p') <*> mapM specExp els
-                  Match an tan t e p e' els        -> Match an tan t <$> specExp e <*> pure p <*> specExp e' <*> mapM specExp els
                   LitList an tan t es              -> LitList an tan t <$> mapM specExp es
                   LitVec an tan t es               -> LitVec an tan t <$> mapM specExp es
                   e@LitInt {}                      -> pure e
@@ -944,12 +877,6 @@ reduceExp = \ case
                   MatchYes sub -> reduceExp $ substs sub e1'
                   MatchMaybe   -> Case an tan t e' <$> (bind p <$> reduceExp e1') <*> mapM reduceExp e2
                   MatchNo      -> maybe (pure $ mkError an t "Pattern match failure: non-exhaustive patterns in case") reduceExp e2
-      Match an tan t e p e1 e2 -> do
-            e'       <- reduceExp e
-            case matchMPat e' p of
-                  MatchYes res -> reduceExp $ setTyAnn tan $ mkApp an e1 (snd <$> res)
-                  MatchMaybe   -> Match an tan t e' p <$> reduceExp e1 <*> mapM reduceExp e2
-                  MatchNo      -> maybe (pure $ mkError an t "Pattern match failure: non-exhaustive patterns in case") reduceExp e2
       LitList an tan t es              -> LitList an tan t <$> mapM reduceExp es
       LitVec an tan t es               -> LitVec an tan t <$> mapM reduceExp es
       e@LitInt {}                      -> pure e
@@ -980,14 +907,3 @@ reduceExp = \ case
                         _                                          -> MatchMaybe
                   PatVar _ _ _ x              -> MatchYes [(x, e)]
                   PatWildCard {}              -> MatchYes []
-
-            matchMPat :: Exp -> MatchPat -> MatchResult
-            matchMPat e = \ case
-                  MatchPatCon _ _ _ i pats    -> case flattenApp e of
-                        (Con _ _ _ c, es)
-                              | c == i && length es == length pats -> mergeMatches $ zipWith matchMPat es pats
-                              | otherwise                          -> MatchNo
-                        _                                          -> MatchMaybe
-                  MatchPatVar {}              -> MatchYes [(s2n "$matchVar", e)]
-                  MatchPatWildCard {}         -> MatchYes []
-

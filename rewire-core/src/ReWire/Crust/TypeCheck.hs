@@ -7,9 +7,8 @@
 module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype, unify, unify', TySub) where
 
 import ReWire.Annotation (Annote (MsgAnnote), ann)
-import ReWire.Crust.Syntax (Exp (..), Ty (..), Kind (..), Poly (..), Pat (..), MatchPat (..), FreeProgram, Defn (..), DataDefn (..), Builtin (..), DataCon (..), DataConId, builtinName)
-import ReWire.Crust.Types (mkArrowTy, poly, arrowRight, (|->), concrete, kblank, tyAnn, setTyAnn, flattenArrow, strTy, intTy, listTy, vecTy, arr, arrowLeft, dstPoly1, zeroP1, minusP1, pickVar, poly1Ty, natP1, prettyTy)
-import ReWire.Crust.Util (transMPat, patVars)
+import ReWire.Crust.Syntax (Exp (..), Ty (..), Kind (..), Poly (..), Pat (..), FreeProgram, Defn (..), DataDefn (..), Builtin (..), DataCon (..), DataConId, builtinName)
+import ReWire.Crust.Types (poly, arrowRight, (|->), concrete, kblank, tyAnn, setTyAnn, flattenArrow, strTy, intTy, listTy, vecTy, arr, arrowLeft, dstPoly1, zeroP1, minusP1, pickVar, poly1Ty, natP1, prettyTy)
 import ReWire.Error (AstError, MonadError, failAt, relocatingTo)
 import ReWire.Fix (fixOn)
 import ReWire.Pretty (showt, prettyPrint, Pretty (..))
@@ -269,18 +268,6 @@ tcPat t = \ case
       PatVar an tan _ x            -> pure $ PatVar an tan (Embed $ Just t) x
       PatWildCard an tan _         -> pure $ PatWildCard an tan (Embed $ Just t)
 
-tcMatchPat :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Ty -> MatchPat -> m MatchPat
-tcMatchPat t = \ case
-      p | Just pt <- tyAnn p -> do
-            -- trace ("   tcPat: " <> show (pretty p) <> " :: " <> unpack (prettyPrint pt)) $ pure ()
-            ta <- inst pt
-            t' <- unify (ann p) ta t
-            setTyAnn (Just pt) <$> tcMatchPat t' (setTyAnn Nothing p)
-      MatchPatCon an tan _ i ps -> do
-            (ps', t') <- tcPatCon an t tcMatchPat i ps
-            pure $ MatchPatCon an tan (Just t') i ps'
-      MatchPatVar an tan _      -> pure $ MatchPatVar an tan $ Just t
-      MatchPatWildCard an tan _ -> pure $ MatchPatWildCard an tan $ Just t
 
 tcExp :: (Fresh m, MonadError AstError m, MonadReader TCEnv m, MonadState TySub m) => Ty -> Exp -> m (Exp, Ty)
 tcExp tt = \ case
@@ -352,20 +339,6 @@ tcExp tt = \ case
                         -- trace "tc: case: tc else" $ pure ()
                         (els', t2) <- tcExp t1 els
                         pure (Case an tan (Just t2) disc' (bind p' e'') (Just els'), t2)
-      Match an tan _ disc p e els -> do
-            -- trace "tcExp: match" $ pure ()
-            tve         <- freshv
-            (disc', tp) <- tcExp tve disc
-            p'          <- tcMatchPat tp p
-            tps         <- map fst . patVars <$> transMPat p'
-            (e', flattenArrow -> (targs, tres))
-                        <- tcExp (mkArrowTy tps tt) e
-            let tm       = mkArrowTy (drop (length tps) targs) tres
-            case els of
-                  Nothing  -> pure (Match an tan (Just tm) disc' p' e' Nothing, tm)
-                  Just els -> do
-                        (els', t2) <- tcExp tm els
-                        pure (Match an tan (Just t2) disc' p' e' (Just els'), t2)
       Builtin an tan _ b -> do
             -- trace ("tcExp: builtin: " <> show b) $ pure ()
             as <- asks as

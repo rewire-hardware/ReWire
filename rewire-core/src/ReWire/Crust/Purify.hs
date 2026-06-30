@@ -4,10 +4,10 @@
 module ReWire.Crust.Purify (purify) where
 
 import ReWire.Annotation (Annote (MsgAnnote, NoAnnote), ann, unAnn, noAnn)
-import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Pat (..), MatchPat (..), DefnAttr (..), DataConId, DataCon (..), Builtin (..), Defn (..), Poly (..), DataDefn (..), FreeProgram, flattenApp)
+import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Pat (..), DefnAttr (..), DataConId, DataCon (..), Builtin (..), Defn (..), Poly (..), DataDefn (..), FreeProgram, flattenApp)
 import ReWire.Crust.TypeCheck (unify')
-import ReWire.Crust.Types (tupleTy, mkArrowTy, typeOf, arrowLeft, paramTys, isReacT, codomTy, (|->), isStateT, dstArrow, dstStateT, dstTyApp, dstReacT, nilTy)
-import ReWire.Crust.Util (mkApp, mkTuplePat, mkTuple, nil, isPrim, patVars, toVar, toPatVar, transPat, transMPat, mkLam)
+import ReWire.Crust.Types (tupleTy, mkArrowTy, typeOf, paramTys, isReacT, codomTy, (|->), isStateT, dstArrow, dstStateT, dstTyApp, dstReacT, nilTy)
+import ReWire.Crust.Util (mkApp, mkTuplePat, mkTuple, nil, isPrim, toVar, toPatVar)
 import ReWire.Error (failAt, failAtWith, failInternal, relocatingTo, MonadError, AstError)
 import ReWire.Pretty (TextShow (showb, showt), fromText, prettyPrint)
 import ReWire.Unbound (freshVar, Fresh, s2n, n2s, bind, Bind, Name, Embed (Embed), unbind)
@@ -348,7 +348,6 @@ classifyCases ex = case flattenApp ex of
       (Builtin an _ _ Put       , [e])    -> pure $ CPut an e
       (Builtin an _ _ Lift      , [e])    -> pure $ CLift an e
       (Builtin an _ _ Bind      , [e, g]) -> pure $ CBind an e g
-      (Match an _ _ disc p e els, [])     -> pure $ CMatch an disc p e els
       (Case an _ _ disc bnd els , [])     -> pure $ CCase an disc bnd els
       (Builtin an _ _ Error     , _)      -> failAt an "encountered unsynthesizable definition."
       (Var an _ t g             , es)     -> pure $ CApply an t g es
@@ -360,7 +359,6 @@ data Cases = CGet Annote !(Maybe Ty)
            | CPut Annote !Exp
            | CBind Annote !Exp !Exp
            | CApply Annote !(Maybe Ty) !(Name Exp) ![Exp]
-           | CMatch Annote !Exp !MatchPat !Exp !(Maybe Exp)
            | CCase Annote !Exp !(Bind Pat Exp) !(Maybe Exp)
 
 -- | purifyStateBody
@@ -384,12 +382,6 @@ purifyStateBody rho stos stys i = classifyCases >=> \ case
       CPut an e        -> mkTuple an . (nil :) <$> replaceAtIndex an i e stos
 
       CApply an _ n es -> mkPureApp an rho n $ es <> stos
-
-      -- disc must be simply-typed, so don't purify it.
-      CMatch an disc mp e els -> do
-            p  <- transMPat mp
-            e' <- purifyStateBody rho stos stys i $ mkApp an e $ toVar an <$> patVars p
-            mkCase an disc (p, e') <$> mapM (purifyStateBody rho stos stys i) els
 
       -- disc must be simply-typed, so don't purify it.
       CCase an disc bnd els -> do
@@ -426,7 +418,6 @@ data RCase = RReturn Annote !Exp
            | RSigK Annote !Ty !Exp !(Name Exp) ![(Exp, Ty)] -- (signal e >>= g e1 ... ek)
            | RExtrude Annote !(Maybe Ty) ![Exp]                     -- [(e, t)]
            | RApp Annote !(Maybe Ty) !(Name Exp) ![Exp]
-           | RMatch Annote !Exp !MatchPat !Exp !(Maybe Exp)
            | RCaseE Annote !Exp !(Bind Pat Exp) !(Maybe Exp)
 
 instance TextShow RCase where
@@ -439,7 +430,6 @@ instance TextShow RCase where
             RSigK    {} -> fromText "RSigK"
             RExtrude {} -> fromText "RExtrude"
             RApp     {} -> fromText "RApp"
-            RMatch   {} -> fromText "RMatch"
             RCaseE   {} -> fromText "RCaseE"
 
 classifyRCases :: (Fresh m, MonadError AstError m) => Exp -> m RCase
@@ -452,7 +442,6 @@ classifyRCases ex = case flattenApp ex of
       (Builtin an _ _ Signal     , [e])    -> pure $ RSignal an e
       (Builtin an _ t Extrude    , es)     -> pure $ RExtrude an t es
       (Builtin an _ _ Error      , _)      -> failAt an "encountered unsynthesizable definition."
-      (Match an _ _ disc p e els , [])     -> pure $ RMatch an disc p e els
       (Case an _ _ disc bnd els  , [])     -> pure $ RCaseE an disc bnd els
       (Var an _ t x              , [])     -> pure $ RVar an t x
       (Var an _ t x              , es)     -> pure $ RApp an t x es
@@ -594,12 +583,6 @@ purifyResBody start rho i o a stos ms = classifyRCases >=> \ case
             -- they're simply typed.
             (f, stos') <- dstApp rator'
             mkPureApp an rho f $ rands <> stos'
-
-       -- disc must be simply-typed, so don't purify it.
-      RMatch an disc mp e els -> do
-            p  <- transMPat mp
-            e' <- purifyResBody start rho i o a stos ms $ mkApp an e $ toVar an <$> patVars p
-            mkCase an disc (p, e') <$> mapM (purifyResBody start rho i o a stos ms) els
 
        -- disc must be simply-typed, so don't purify it.
       RCaseE an disc bnd els -> do

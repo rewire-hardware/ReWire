@@ -3,13 +3,13 @@
 module ReWire.Crust.Util
       ( Fresh, Name, Embed (..), TRec, Bind, FieldId
       , paramTys, isPrim, inlinable, nil, isExtrude, extrudeDefn
-      , mkTuple, mkTuplePat, mkTupleMPat, synthableDefn
-      , mkPair, mkPairPat, mkPairMPat, flattenLam, mkLam
-      , mkApp, mkError, builtin, proxy, patVars, toVar, toPatVar, transPat, transMPat
+      , mkTuple, mkTuplePat, synthableDefn
+      , mkPair, mkPairPat, flattenLam, mkLam
+      , mkApp, mkError, builtin, proxy, patVars, toVar, toPatVar
       ) where
 
 import ReWire.Annotation (Annote (MsgAnnote))
-import ReWire.Crust.Syntax (Exp (..), Ty (..), MatchPat (..), Pat (..), Defn (..), DefnAttr (..), Builtin (..), Poly (..), FieldId, builtins, flattenApp)
+import ReWire.Crust.Syntax (Exp (..), Ty (..), Pat (..), Defn (..), DefnAttr (..), Builtin (..), Poly (..), FieldId, builtins, flattenApp)
 import ReWire.Crust.Types (proxyTy, nilTy, strTy, arr, typeOf, arrowRight, pairTy, mkArrowTy, paramTys, synthable)
 import ReWire.Pretty (pretty)
 import ReWire.SYB (query)
@@ -57,9 +57,6 @@ proxy n = Con an Nothing (Just $ proxyTy an n) $ s2n "Proxy"
 nilPat :: Pat
 nilPat = PatCon (MsgAnnote "nilPat") (Embed Nothing) (Embed $ Just nilTy) (Embed $ s2n "()") []
 
-nilMPat :: MatchPat
-nilMPat = MatchPatCon (MsgAnnote "nilMPat") Nothing (Just nilTy) (s2n "()") []
-
 -- | Get well-typed pat variables.
 patVars :: Pat -> [(Ty, Name Exp)]
 patVars = \ case
@@ -74,18 +71,6 @@ toVar an (vt, v) = Var an Nothing (Just vt) v
 toPatVar :: Annote -> (Ty, Name Exp) -> Pat
 toPatVar an (vt, v) = PatVar an (Embed Nothing) (Embed $ Just vt) v
 
-transPat :: Pat -> MatchPat
-transPat = \ case
-      PatCon an (Embed tan) (Embed t) (Embed c) ps -> MatchPatCon an tan t c $ map transPat ps
-      PatVar an (Embed tan) (Embed t) _            -> MatchPatVar an tan t
-      PatWildCard an (Embed tan) (Embed t)         -> MatchPatWildCard an tan t
-
-transMPat :: Fresh m => MatchPat -> m Pat
-transMPat = \ case
-      MatchPatCon an tan t c ps -> PatCon an (Embed tan) (Embed t) (Embed c) <$> mapM transMPat ps
-      MatchPatVar an tan t      -> PatVar an (Embed tan) (Embed t) <$> freshVar "m2c"
-      MatchPatWildCard an tan t -> pure $ PatWildCard an (Embed tan) (Embed t)
-
 mkPair :: Annote -> Exp -> Exp -> Exp
 mkPair an e1 e2 = mkApp an (Con an Nothing t (s2n "(,)")) [e1, e2]
       where t :: Maybe Ty
@@ -97,17 +82,11 @@ mkPair an e1 e2 = mkApp an (Con an Nothing t (s2n "(,)")) [e1, e2]
 mkPairPat :: Annote -> Pat -> Pat -> Pat
 mkPairPat an p1 p2 = PatCon an (Embed Nothing) (Embed $ pairTy an <$> typeOf p1 <*> typeOf p2) (Embed (s2n "(,)")) [p1, p2]
 
-mkPairMPat :: Annote -> MatchPat -> MatchPat -> MatchPat
-mkPairMPat an p1 p2 = MatchPatCon an Nothing (pairTy an <$> typeOf p1 <*> typeOf p2) (s2n "(,)") [p1, p2]
-
 mkTuple :: Annote -> [Exp] -> Exp
 mkTuple an = foldr (mkPair an) nil
 
 mkTuplePat :: Annote -> [Pat] -> Pat
 mkTuplePat an = foldr (mkPairPat an) nilPat
-
-mkTupleMPat :: Annote -> [MatchPat] -> MatchPat
-mkTupleMPat an = foldr (mkPairMPat an) nilMPat
 
 mkApp :: Annote -> Exp -> [Exp] -> Exp
 mkApp an = foldl' $ \ e -> App an Nothing (arrowRight <$> typeOf e) e
