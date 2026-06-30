@@ -23,7 +23,7 @@ import Data.Text (pack)
 import Language.Haskell.Exts.Syntax
 
 -- | Desugar into lambdas then normalize the lambdas. This differs from the
---   rewire-core pipeline: tuples, records, case flattening, and discriminator
+--   rewire-frontend pipeline: tuples, records, case flattening, and discriminator
 --   lifting are deferred to the Atmo IR, and unguarded multi-clause function
 --   bindings are kept intact (see 'desugarFuns').
 desugar :: MonadError AstError m => Renamer -> Module Annote -> m (Module Annote)
@@ -57,7 +57,7 @@ desugar _rn = flip evalStateT 0 .
       >=> pass desugarAsPats
       )
 
--- | Like rewire-core's desugarFuns, except that unguarded multi-clause
+-- | Like rewire-frontend's desugarFuns, except that unguarded multi-clause
 --   function bindings are kept intact (Atmo represents them directly) and
 --   pattern variables are annotated with their declared types.
 -- > f p1 p2 = rhs1
@@ -110,7 +110,7 @@ desugarFuns = mempty
             allUnguarded _ = error "Infix should be desugered by now."
 
 -- TODO(chathhorn): recursive bindings?
--- | Like rewire-core's desugarLets, but annotates pattern variables with
+-- | Like rewire-frontend's desugarLets, but annotates pattern variables with
 --   their declared types. Turns Lets into Cases. Assumes functions in Lets
 --   are already desugared. E.g.:
 -- > let p = e1

@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           rewire-embedder
+name:           rewire-backend
 version:        2.7
-synopsis:       A ReWire-to-Isabelle embedder
-description:    For verification using the ReWire hardware description language
+synopsis:       A Haskell-to-Verilog/VHDL compiler, the Hyle backend
+description:    The ReWire backend. The Hyle bit-level IR, its checker, optimizer, interpreter, and parser, and the Verilog, VHDL, and Cryptol RTL backends. Builds on rewire-base for shared utilities.
 category:       Language
 homepage:       https://github.com/rewire-hardware/ReWire#readme
 bug-reports:    https://github.com/rewire-hardware/ReWire/issues
@@ -16,37 +16,36 @@ author:         Adam Procter,
                 Ian Graves,
                 William L. Harrison,
                 Matthew Heimerdinger
-maintainer:     Matthew Heimerdinger <matthew.heimerdinger@gmail.com>,
-                Chris Hathhorn <hathhorn@gmail.com>
+maintainer:     Chris Hathhorn <hathhorn@gmail.com>
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
+    vhdl/rw_helpers.vhdl
 
 source-repository head
   type: git
   location: https://github.com/rewire-hardware/ReWire
-  subdir: rewire-embedder
+  subdir: rewire-backend
 
 library
   exposed-modules:
-      Embedder.Atmo.DependencyGraph
-      Embedder.Atmo.Desugar
-      Embedder.Atmo.FlattenMonadTrans
-      Embedder.Atmo.Syntax
-      Embedder.Atmo.ToIsabelle
-      Embedder.Atmo.Types
-      Embedder.Atmo.Util
-      Embedder.Builtins
-      Embedder.Config
-      Embedder.FrontEnd
-      Embedder.HSE.Desugar
-      Embedder.HSE.ToAtmo
-      Embedder.Isabelle.Syntax
-      Embedder.ModCache
+      ReWire.Cryptol.Syntax
+      ReWire.Hyle.Check
+      ReWire.Hyle.Interp
+      ReWire.Hyle.Mangle
+      ReWire.Hyle.Parse
+      ReWire.Hyle.Syntax
+      ReWire.Hyle.ToCryptol
+      ReWire.Hyle.ToVerilog
+      ReWire.Hyle.ToVHDL
+      ReWire.Hyle.Transform
+      ReWire.Verilog.Syntax
+      ReWire.VHDL.Helpers
+      ReWire.VHDL.Syntax
   other-modules:
-      Paths_rewire_embedder
+      Paths_rewire_backend
   hs-source-dirs:
       src
   default-extensions:
@@ -56,16 +55,14 @@ library
   ghc-options: -Wall -Werror -Wunused-packages -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
       base ==4.20.*
-    , containers ==0.7.*
-    , deepseq ==1.5.*
-    , filepath ==1.5.*
+    , ghc-boot ==9.10.*
     , hashable ==1.5.*
-    , haskell-src-exts ==1.23.*
     , lens ==5.3.*
+    , machines ==0.7.*
+    , megaparsec ==9.7.*
     , mtl ==2.3.*
-    , prettyprinter ==1.7.*
     , rewire-base >=2.7
-    , rewire-frontend >=2.7
+    , template-haskell ==2.22.*
     , text ==2.1.*
     , unordered-containers ==0.2.*
   default-language: Haskell2010

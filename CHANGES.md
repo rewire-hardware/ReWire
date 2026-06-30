@@ -2,15 +2,19 @@
 
 ## Unreleased
 
-* The `rewire-core` library has been split into two packages: `rewire-frontend`
-  (the haskell-src-exts front end `ReWire.HSE.*` and the Crust IR and its
-  transformations `ReWire.Crust.*`, plus the pass orchestration) and a slimmed
-  `rewire-core` (the Hyle bit-level IR, the Verilog/VHDL/Cryptol RTL backends,
-  and the shared base utilities). `rewire-frontend` depends on `rewire-core`.
+* The `rewire-core` library has been split into three packages: `rewire-frontend`
+  (the haskell-src-exts front end `ReWire.HSE.*`, the Crust IR and its
+  transformations `ReWire.Crust.*`, and the pass orchestration), `rewire-backend`
+  (the Hyle bit-level IR `ReWire.Hyle.*` and the Verilog/VHDL/Cryptol RTL
+  backends), and `rewire-base` (the shared base utilities: source annotations,
+  diagnostics, config, bit vectors, and pretty-printing). The dependency order is
+  `rewire-base` <- `rewire-backend` <- `rewire-frontend`.
   `ReWire.Annotation`/`ReWire.Error` were first decoupled from haskell-src-exts
   (the source annotation is a native span; the HSE conversion now lives in
-  `ReWire.HSE.SrcLoc`), so the slimmed `rewire-core` no longer depends on
-  haskell-src-exts. Module names and the `rwc`/`rwe` interfaces are unchanged.
+  `ReWire.HSE.SrcLoc`), so only `rewire-frontend` depends on haskell-src-exts.
+  `rewire-embedder` no longer depends on the Hyle backend, building against just
+  `rewire-base` and `rewire-frontend`. Every package now builds with
+  `-Wunused-packages`. Module names and the `rwc`/`rwe` interfaces are unchanged.
 * Removed the `Match` expression and `MatchPat` pattern language from the Crust
   IR: `Case` (with its binders) is now carried through purification into the
   Hyle backend, so source variable names survive into the generated HDL.

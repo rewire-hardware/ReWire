@@ -543,7 +543,7 @@ force, every row is a local template — no analysis beyond a topological walk.
   target each.
 - The VHDL back end realizes the operators as function calls into an
   `rw_helpers` package emitted alongside every design (source in
-  `rewire-core/vhdl/rw_helpers.vhdl`), which implements the §5.2 semantics
+  `rewire-backend/vhdl/rw_helpers.vhdl`), which implements the §5.2 semantics
   over `std_logic_vector`: VHDL's strict typing makes inline
   signed/unsigned conversions noisy, and the fixed function names keep the
   emitted architecture readable.

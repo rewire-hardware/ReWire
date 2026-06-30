@@ -12,6 +12,7 @@ author:
 ghc-options:
 - -Wall
 - -Werror
+- -Wunused-packages
 - -Wcompat
 - -Widentities
 - -Wincomplete-record-updates
@@ -25,15 +26,16 @@ extra-source-files:
 
 dependencies:
 - base >= 4.7 && < 5
-- mtl
-- monad-resumption
-- vector-sized
-- vector
-- finite-typelits
-- ghc-typelits-natnormalise
 
 library:
   source-dirs: src
+  dependencies:
+  - mtl
+  - monad-resumption
+  - vector-sized
+  - vector
+  - finite-typelits
+  - ghc-typelits-natnormalise
 
 tests:
   rewire-user-test:
@@ -47,3 +49,6 @@ tests:
     - rewire-user
     - tasty
     - tasty-hunit
+    - mtl
+    - monad-resumption
+    - ghc-typelits-natnormalise

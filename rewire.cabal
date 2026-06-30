@@ -628,17 +628,14 @@ library
       LambdaCase
       TupleSections
       ViewPatterns
-  ghc-options: -Wall -Werror -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
+  ghc-options: -Wall -Werror -Wunused-packages -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
       base ==4.20.*
-    , directory ==1.3.*
     , filepath ==1.5.*
-    , ghc ==9.10.*
     , lens ==5.3.*
-    , rewire-core
+    , rewire-base
     , rewire-embedder
     , rewire-frontend
-    , rewire-user ==2.7.*
     , text ==2.1.*
   default-language: Haskell2010
 
@@ -652,17 +649,10 @@ executable rwc
       LambdaCase
       TupleSections
       ViewPatterns
-  ghc-options: -Wall -Werror -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
+  ghc-options: -Wall -Werror -Wunused-packages -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
       base ==4.20.*
-    , directory ==1.3.*
-    , filepath ==1.5.*
-    , ghc ==9.10.*
-    , lens ==5.3.*
     , rewire
-    , rewire-embedder
-    , rewire-user ==2.7.*
-    , text ==2.1.*
   default-language: Haskell2010
 
 executable rwe
@@ -675,17 +665,10 @@ executable rwe
       LambdaCase
       TupleSections
       ViewPatterns
-  ghc-options: -Wall -Werror -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
+  ghc-options: -Wall -Werror -Wunused-packages -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
       base ==4.20.*
-    , directory ==1.3.*
-    , filepath ==1.5.*
-    , ghc ==9.10.*
-    , lens ==5.3.*
     , rewire
-    , rewire-embedder
-    , rewire-user ==2.7.*
-    , text ==2.1.*
   default-language: Haskell2010
 
 test-suite rwc-test
@@ -701,20 +684,15 @@ test-suite rwc-test
       LambdaCase
       TupleSections
       ViewPatterns
-  ghc-options: -Wall -Werror -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
+  ghc-options: -Wall -Werror -Wunused-packages -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
-      HUnit ==1.6.*
-    , base ==4.20.*
-    , bytestring ==0.12.*
+      base ==4.20.*
     , directory ==1.3.*
     , filepath ==1.5.*
-    , ghc ==9.10.*
-    , lens ==5.3.*
     , process ==1.6.*
     , rewire
-    , rewire-core
-    , rewire-embedder
-    , rewire-user ==2.7.*
+    , rewire-backend
+    , rewire-base
     , tasty ==1.5.*
     , tasty-golden ==2.3.*
     , tasty-hunit ==0.10.*
@@ -734,18 +712,12 @@ test-suite rwe-test
       LambdaCase
       TupleSections
       ViewPatterns
-  ghc-options: -Wall -Werror -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
+  ghc-options: -Wall -Werror -Wunused-packages -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
-      HUnit ==1.6.*
-    , base ==4.20.*
+      base ==4.20.*
     , directory ==1.3.*
     , filepath ==1.5.*
-    , ghc ==9.10.*
-    , lens ==5.3.*
     , process ==1.6.*
-    , rewire
-    , rewire-embedder
-    , rewire-user ==2.7.*
     , tasty ==1.5.*
     , tasty-hunit ==0.10.*
     , text ==2.1.*
@@ -762,15 +734,10 @@ benchmark rwc-perf
       LambdaCase
       TupleSections
       ViewPatterns
-  ghc-options: -Wall -Werror -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
+  ghc-options: -Wall -Werror -Wunused-packages -fno-warn-name-shadowing -funbox-strict-fields -O2 -optc-O3 -j8 +RTS -A64m -RTS
   build-depends:
       base ==4.20.*
     , directory ==1.3.*
     , filepath ==1.5.*
-    , ghc ==9.10.*
-    , lens ==5.3.*
     , rewire
-    , rewire-embedder
-    , rewire-user ==2.7.*
-    , text ==2.1.*
   default-language: Haskell2010

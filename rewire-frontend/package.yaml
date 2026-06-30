@@ -1,7 +1,7 @@
 name:         rewire-frontend
 version:      2.7
 synopsis:     "A Haskell-to-Verilog/VHDL compiler, front end (HSE plus Crust)"
-description:  "The ReWire front end. The haskell-src-exts pipeline (ReWire.HSE.*), the Crust typed functional IR and its transformations (ReWire.Crust.*), and the pass-pipeline orchestration. Produces a ReWire.Hyle device; depends on rewire-core for the Hyle IR, RTL backends, and shared base."
+description:  "The ReWire front end. The haskell-src-exts pipeline (ReWire.HSE.*), the Crust typed functional IR and its transformations (ReWire.Crust.*), and the pass-pipeline orchestration. Produces a ReWire.Hyle device; depends on rewire-backend for the Hyle IR and RTL backends and on rewire-base for shared utilities."
 license:      BSD3
 license-file: LICENSE
 category:     Language
@@ -18,6 +18,7 @@ author:
 ghc-options:
 - -Wall
 - -Werror
+- -Wunused-packages
 - -fno-warn-name-shadowing
 - -funbox-strict-fields
 - -O2
@@ -32,7 +33,8 @@ extra-source-files:
 - README.md
 
 dependencies:
-- rewire-core >= 2.7
+- rewire-base >= 2.7
+- rewire-backend >= 2.7
 - base ^>= 4.20
 - containers ^>= 0.7
 - deepseq ^>= 1.5
@@ -42,11 +44,8 @@ dependencies:
 - haskell-src-exts ^>= 1.23
 - lens ^>= 5.3
 - mtl ^>= 2.3
-- prettyprinter ^>= 1.7
 - split ^>= 0.2
 - text ^>= 2.1
-- text-show ^>= 3.11
-- unbound-generics ^>= 0.4
 - unordered-containers ^>= 0.2
 - yaml ^>= 0.11
 

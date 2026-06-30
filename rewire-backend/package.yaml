@@ -1,15 +1,13 @@
-name:         rewire-embedder
+name:         rewire-backend
 version:      2.7
-synopsis:     A ReWire-to-Isabelle embedder
-description:  For verification using the ReWire hardware description language
+synopsis:     "A Haskell-to-Verilog/VHDL compiler, the Hyle backend"
+description:  "The ReWire backend. The Hyle bit-level IR, its checker, optimizer, interpreter, and parser, and the Verilog, VHDL, and Cryptol RTL backends. Builds on rewire-base for shared utilities."
 license:      BSD3
 license-file: LICENSE
 category:     Language
 build-type:   Simple
-github:       rewire-hardware/ReWire/rewire-embedder
-maintainer:
-- Matthew Heimerdinger <matthew.heimerdinger@gmail.com>
-- Chris Hathhorn <hathhorn@gmail.com>
+github:       rewire-hardware/ReWire/rewire-backend
+maintainer:   Chris Hathhorn <hathhorn@gmail.com>
 author:
 - Adam Procter
 - Chris Hathhorn <hathhorn@gmail.com>
@@ -33,19 +31,18 @@ default-extensions:
 
 extra-source-files:
 - README.md
+- vhdl/rw_helpers.vhdl
 
 dependencies:
-- rewire-frontend >= 2.7
 - rewire-base >= 2.7
 - base ^>= 4.20
-- containers ^>= 0.7
-- deepseq ^>= 1.5
-- filepath ^>= 1.5
+- ghc-boot ^>= 9.10
 - hashable ^>= 1.5
-- haskell-src-exts ^>= 1.23
 - lens ^>= 5.3
+- machines ^>= 0.7
+- megaparsec ^>= 9.7
 - mtl ^>= 2.3
-- prettyprinter ^>= 1.7
+- template-haskell ^>= 2.22
 - text ^>= 2.1
 - unordered-containers ^>= 0.2
 

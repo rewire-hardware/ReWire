@@ -2,6 +2,7 @@ resolver: lts-24.46
 packages:
 - .
 - rewire-user
-- rewire-core
+- rewire-base
+- rewire-backend
 - rewire-frontend
 - rewire-embedder
