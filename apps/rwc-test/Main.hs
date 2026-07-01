@@ -13,7 +13,7 @@ import ReWire.Hyle.Parse (parseHyle, parseHyleText)
 import ReWire.Pretty (prettyPrint)
 
 import qualified Cosim
-import TestUtil (withStderrTo, withStdoutTo, sq)
+import TestUtil (withStderrTo, withStdoutTo, sq, externArgs)
 
 import Control.Exception (try, finally)
 import Control.Monad (unless, when, msum)
@@ -132,6 +132,9 @@ testCompiler flags fn = do
                         Right (t1, t2) -> assertBool "parse . prettyPrint . parse differs from parse" $ t1 == t2
                ]
 
+      -- Hand-written extern implementations, when the test has any, live in a
+      -- "verilog" subdirectory next to it; "" when there is no such directory.
+      verilogExterns <- externArgs (takeDirectory fn </> "verilog") ".sv"
       let verilogTests =
             -- Compile the Hyle IR to Verilog with rwc.
             [ golden "sv" $ do
@@ -139,8 +142,8 @@ testCompiler flags fn = do
                   withArgs ((fn -<.> "rwc") : ["--from-core", "-o", ofile "sv"] <> extraFlags) RWC.main
             ]
             -- Lint the Verilog with iverilog and verilator (unless --no-check).
-            <> [ testCase (takeBaseName fn <> " (" <> iverilog <> ")")  (cdTestdir >> callCommand (iverilog  <> " " <> verilog <> " " <> ofile "sv")) | check ]
-            <> [ testCase (takeBaseName fn <> " (" <> verilator <> ")") (cdTestdir >> callCommand (verilator <> " " <> verilog <> " " <> ofile "sv")) | check ]
+            <> [ testCase (takeBaseName fn <> " (" <> iverilog <> ")")  (cdTestdir >> callCommand (iverilog  <> " " <> verilogExterns <> " " <> ofile "sv")) | check ]
+            <> [ testCase (takeBaseName fn <> " (" <> verilator <> ")") (cdTestdir >> callCommand (verilator <> " " <> verilogExterns <> " " <> ofile "sv")) | check ]
 
       vhdlTests <-
             -- Compile the Hyle IR to VHDL with rwc (when a .vhdl golden exists).
@@ -176,10 +179,6 @@ testCompiler flags fn = do
             iverilog, verilator :: String
             iverilog  = fromMaybe defaultIVerilog  $ msum [ Just (sq c) | FlagIVerilog  c <- flags ]
             verilator = fromMaybe defaultVerilator $ msum [ Just (sq c) | FlagVerilator c <- flags ]
-
-            -- Hand-written extern implementations live next to the test.
-            verilog :: FilePath
-            verilog = takeDirectory fn </> "verilog" </> "*.sv"
 
             -- Compare a generated output file against its golden, with a
             -- whitespace-insensitive diff.

@@ -15,7 +15,7 @@ module Cosim (cosimTests) where
 
 import qualified RWC
 
-import TestUtil (withStderrTo)
+import TestUtil (withStderrTo, externArgs)
 
 import Control.Monad (unless)
 import Data.Bits (xor, shiftL, shiftR)
@@ -130,7 +130,8 @@ cosimTests fn = do
             iverilogTrace :: FilePath -> Int -> IO Trace
             iverilogTrace inputsF ncyc = do
                   rwc ncyc ["--testbench=" <> inputsF, "-o", ofl "cosim.sv"]
-                  callCommand $ unwords ["iverilog -g2012 -o", ofl "cosim.vvp", ofl "cosim_tb.sv", ofl "cosim.sv", "verilog/*.sv"]
+                  externs <- externArgs "verilog" ".sv"
+                  callCommand $ unwords ["iverilog -g2012 -o", ofl "cosim.vvp", ofl "cosim_tb.sv", ofl "cosim.sv", externs]
                   callCommand $ unwords ["vvp", ofl "cosim.vvp", ">", ofl "cosim.vtrace"]
                   outTrace <$> readFile (ofl "cosim.vtrace")
 
@@ -139,7 +140,8 @@ cosimTests fn = do
                   rwc ncyc ["--vhdl", "--testbench=" <> inputsF, "-o", ofl "cosim.vhdl"]
                   callCommand $ unwords ["rm -rf", wk] -- a stale workdir makes ghdl bind old units
                   createDirectoryIfMissing False wk
-                  callCommand $ unwords ["ghdl -a --std=08 --workdir=" <> wk, ofl "cosim.vhdl", "vhdl/*.vhdl", ofl "cosim_tb.vhdl"]
+                  externs <- externArgs "vhdl" ".vhdl"
+                  callCommand $ unwords ["ghdl -a --std=08 --workdir=" <> wk, ofl "cosim.vhdl", externs, ofl "cosim_tb.vhdl"]
                   callCommand $ unwords ["ghdl -e --std=08 --workdir=" <> wk, "-o", wk </> "tbexe", "tb"]
                   callCommand $ unwords [wk </> "tbexe", "--ieee-asserts=disable", ">", ofl "cosim.htrace"]
                   outTrace <$> readFile (ofl "cosim.htrace")
