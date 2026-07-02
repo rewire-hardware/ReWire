@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Unknown type constructor or not fully-applied type synonym
+-- EXPECT-ERROR: Not in scope: type constructor or class ‘Bogus’
 {-# LANGUAGE DataKinds #-}
 import ReWire
 import ReWire.Monad (iter, Dev)

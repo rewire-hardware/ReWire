@@ -21,7 +21,7 @@ import ReWire.Error (failAt, AstError, MonadError, filePath, relocatingTo)
 import ReWire.HSE.Desugar (addMainModuleHead)
 import ReWire.HSE.Parse (tryParseInDir)
 import ReWire.HSE.Rename (Exports, Renamer, fromImps, toFilePath)
-import ReWire.HSE.ToCrust (extendWithGlobs, getImps)
+import ReWire.HSE.Globs (extendWithGlobs, getImps)
 import ReWire.Pretty (showt)
 
 import Control.Arrow ((***))

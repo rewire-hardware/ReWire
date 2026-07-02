@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Unknown variable: mystery
+-- EXPECT-ERROR: Variable not in scope: mystery
 import ReWire
 import ReWire.Monad (iter, Dev)
 

@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Unsupported constructor syntax
+-- EXPECT-ERROR: unsupported existential data constructor
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ExistentialQuantification #-}
 import ReWire

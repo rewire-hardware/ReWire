@@ -22,40 +22,23 @@ rw__Pure_dispatch x0 = rw_Main_loop x0
 
 // Main.compute
 rw_Main_compute : [7] -> [5]
-rw_Main_compute x0 = rw__LL_Main_compute x0
+rw_Main_compute x0 = rw__LL_Main_compute (rw'resize`{5} (if 0b0010100 == zero then x0 else (x0 % 0b0010100)))
+
+// Main.loop
+rw_Main_loop : [7] -> [5]
+rw_Main_loop x0 = rw__LL_Main_loop1 (rw_Main_compute x0)
 
 // $LL.Main.loop1
 rw__LL_Main_loop1 : [5] -> [5]
 rw__LL_Main_loop1 x0 = x0
 
-// $LL.Main.compute3
-rw__LL_Main_compute3 : [10] -> [5]
-rw__LL_Main_compute3 x0 = rw'resize`{5} (if 0x00000000000000000000000000000014 == zero then ((rw'resize`{128} s0) + (rw'resize`{128} s1)) else (((rw'resize`{128} s0) + (rw'resize`{128} s1)) % 0x00000000000000000000000000000014))
-  where
-    s0 : [5]
-    s0 = take`{5} x0
-    s1 : [5]
-    s1 = drop`{5} x0
-
-// $LL.Main.compute2
-rw__LL_Main_compute2 : [5] -> [5]
-rw__LL_Main_compute2 x0 = rw__LL_Main_compute1 x0 0b00110
-
-// $LL.Main.loop
-rw__LL_Main_loop : [7] -> [5]
-rw__LL_Main_loop x0 = rw__LL_Main_loop1 (rw_Main_compute x0)
-
 // $LL.Main.compute1
 rw__LL_Main_compute1 : [5] -> [5] -> [5]
-rw__LL_Main_compute1 x0 x1 = rw__LL_Main_compute3 (x0 # x1)
-
-// Main.loop
-rw_Main_loop : [7] -> [5]
-rw_Main_loop x0 = rw__LL_Main_loop x0
+rw__LL_Main_compute1 x0 x1 = rw'resize`{5} (if 0x00000000000000000000000000000014 == zero then ((rw'resize`{128} x0) + (rw'resize`{128} x1)) else (((rw'resize`{128} x0) + (rw'resize`{128} x1)) % 0x00000000000000000000000000000014))
 
 // $LL.Main.compute
-rw__LL_Main_compute : [7] -> [5]
-rw__LL_Main_compute x0 = rw__LL_Main_compute2 (rw'resize`{5} (if 0b0010100 == zero then x0 else (x0 % 0b0010100)))
+rw__LL_Main_compute : [5] -> [5]
+rw__LL_Main_compute x0 = rw__LL_Main_compute1 x0 0b00110
 
 // Per-cycle step: outputs # next register values.
 rw_step : [7] -> [5]

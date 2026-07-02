@@ -208,25 +208,17 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZLL_Main_go1\ is
-      port (arg0 : in std_logic_vector (0 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
+signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
-      signal zll_main_go1_out : std_logic_vector (0 downto 0);
-      signal zi0 : std_logic_vector (0 downto 0);
-      signal zi2 : std_logic_vector (0 downto 0);
-      signal zi3 : std_logic_vector (2 downto 0);
-      signal zi4 : std_logic_vector (0 downto 0);
+      signal zi1 : std_logic_vector (0 downto 0);
+      signal zi2 : std_logic_vector (2 downto 0);
+      signal zi3 : std_logic_vector (0 downto 0);
       signal zres : std_logic_vector (2 downto 0);
 begin
-inst : \ZLL_Main_go1\ port map (\__st0\, zll_main_go1_out);
-      zi0 <= zll_main_go1_out;
-      zi2 <= rw_cond(rw_eq(zi0, std_logic_vector'(B"1")), \__st0\, \__st0\);
-      zi3 <= (std_logic_vector'(B"00") & zi2);
-      zi4 <= zi3(0 downto 0);
-      zres <= (std_logic_vector'(B"10") & zi4);
+zi1 <= rw_cond(rw_eq(\__st0\, std_logic_vector'(B"0")), \__st0\, \__st0\);
+      zi2 <= (std_logic_vector'(B"00") & zi1);
+      zi3 <= zi2(0 downto 0);
+      zres <= (std_logic_vector'(B"10") & zi3);
       \__st0_next\ <= zres(0 downto 0);
       \__out0\ <= zres(1 downto 1);
       process (clk, rst)
@@ -237,19 +229,4 @@ inst : \ZLL_Main_go1\ port map (\__st0\, zll_main_go1_out);
                   \__st0\ <= \__st0_next\;
             end if;
       end process;
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_go1\ is
-port (arg0 : in std_logic_vector (0 downto 0);
-      res : out std_logic_vector (0 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_go1\ is
-
-begin
-res <= arg0;
 end architecture;

@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Types do not unify
+-- EXPECT-ERROR: Couldn't match type ‘Bool’
 -- Same as illtyped-use, but the ill-typed defn is unreachable from start:
 -- still caught, since specialization runs before purging.
 {-# LANGUAGE DataKinds #-}

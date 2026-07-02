@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Unknown variable name in export list
+-- EXPECT-ERROR: Not in scope: ‘doesNotExist’
 module Main (start, doesNotExist, main) where
 import ReWire
 import ReWire.Monad (iter, Dev)

@@ -1,139 +1,122 @@
 $Pure.dispatch : ([74], [17]) -> [90]
 $Pure.dispatch disc i =
       if eq disc[70 +: 4] 4'h1 then (let s0 = disc[0 +: 70] in
-            $LL.Main.loop26 i s0)
+            $LL.Main.loop33 i s0)
             else if eq disc[70 +: 4] 4'h2 then (let s0 = disc[0 +: 70] in
             $LL.Main.loop31 i s0) else if eq disc[70 +: 4] 4'h3 then (let s0 = disc[0 +: 70] in
-            $LL.Main.loop31 i s0) else if eq disc[70 +: 4] 4'h4 then (let s0 = disc[0 +: 70] in
-            $LL.Main.loop31 i s0) else if eq disc[70 +: 4] 4'h5 then (let s0 = disc[0 +: 70] in
-            $LL.Main.reset2 i s0) else if eq disc[70 +: 4] 4'h6 then (let s0 = disc[0 +: 70] in
-            $LL.Main.loop10 i s0) else if eq disc[70 +: 4] 4'h7 then (let s0 = disc[0 +: 70] in
-            $LL.Main.loop9 i s0) else if eq disc[70 +: 4] 4'h8 then (let s0 = disc[0 +: 70] in
+            $LL.Main.loop27 i s0) else if eq disc[70 +: 4] 4'h4 then (let s0 = disc[0 +: 70] in
+            $LL.Main.loop14 i s0) else if eq disc[70 +: 4] 4'h5 then (let s0 = disc[0 +: 70] in
+            $LL.Main.loop31 i s0) else if eq disc[70 +: 4] 4'h6 then (let s0 = disc[0 +: 70] in
+            $LL.Main.loop31 i s0) else if eq disc[70 +: 4] 4'h7 then (let s0 = disc[0 +: 70] in
+            $LL.Main.loop31 i s0) else if eq disc[70 +: 4] 4'h8 then (let s0 = disc[0 +: 70] in
             $LL.Main.loop31 i s0) else let s0 = disc[0 +: 70] in
-            $LL.Main.loop31 i s0
+            $LL.Main.reset8 i s0
 
-$LL.Main.loop35 : ([70]) -> [90]
-$LL.Main.loop35 sto0 =
-      let $t1 = (let $t0 = Main.getOut sto0 in
-      let v = $t0[70 +: 15] in
-      let s0 = $t0[0 +: 70] in
-      5'h1 # v # s0) in
-      let v = $t1[70 +: 15] in
+$LL.Main.loop35 : ([15], [70]) -> [90]
+$LL.Main.loop35 rabind sto0 =
+      1'h1 # rabind # 4'h4 # sto0
+
+$LL.Main.reset8 : ([17], [70]) -> [90]
+$LL.Main.reset8 rabind sto0 =
+      let $t1 = (let $t0 = Main.putIns rabind sto0 in
+      20'h10000 # $t0) in
       let s0 = $t1[0 +: 70] in
-      $LL.Main.loop34 v s0
+      $LL.Main.reset5 s0
 
-Main.putWeOut1 : ([70]) -> [70]
-Main.putWeOut1 sigma0 =
-      $LL.Main.putWeOut3 1'h0 sigma0
+$LL.Main.bnz1 : ([6], [1], [70]) -> [70]
+$LL.Main.bnz1 a wild sigma0 =
+      if eq wild 1'h0 then Main.putPC1 a sigma0
+            else Main.incrPC sigma0
 
-$LL.Main.loop34 : ([15], [70]) -> [90]
-$LL.Main.loop34 rabind sto0 =
-      1'h1 # rabind # 4'h1 # sto0
-
-$LL.Main.loop33 : ([9], [70], [70]) -> [90]
-$LL.Main.loop33 $x $x1 sto0 =
-      $LL.Main.loop32 $x $x1 sto0
-
-$LL.Main.reset8 : ([70]) -> [90]
-$LL.Main.reset8 sto0 =
-      let $t1 = (let $t0 = Main.getOut sto0 in
-      let v = $t0[70 +: 15] in
-      let s0 = $t0[0 +: 70] in
-      5'h1 # v # s0) in
-      let v = $t1[70 +: 15] in
+$LL.Main.loop34 : ([70]) -> [90]
+$LL.Main.loop34 sto0 =
+      let $t1 = (let $t0 = Main.incrPC sto0 in
+      20'h10000 # $t0) in
       let s0 = $t1[0 +: 70] in
-      $LL.Main.reset7 v s0
+      $LL.Main.loop17 s0
 
 Main.putDataOut1 : ([8], [70]) -> [70]
-Main.putDataOut1 $x sigma0 =
-      $LL.Main.putDataOut1 $x sigma0
+Main.putDataOut1 d sigma0 =
+      let $t0 = Main.getOut sigma0 in
+      let st0 = $t0[70 +: 15] in
+      let st1 = $t0[0 +: 70] in
+      $LL.Main.putDataOut d st0 st1
 
-$LL.Main.putReg15 : ([8], [70]) -> [70]
-$LL.Main.putReg15 b $217 =
-      let $14 = $217[62 +: 8] in
-      let $16 = $217[46 +: 8] in
-      let $17 = $217[38 +: 8] in
-      let $18 = $217[32 +: 6] in
-      let $19 = $217[15 +: 17] in
-      let $20 = $217[0 +: 15] in
-      $14 # b # $16 # $17 # $18 # $19 # $20
+$LL.Main.loop33 : ([17], [70]) -> [90]
+$LL.Main.loop33 rabind sto0 =
+      let $t1 = (let $t0 = Main.putIns rabind sto0 in
+      20'h10000 # $t0) in
+      let s0 = $t1[0 +: 70] in
+      $LL.Main.loop34 s0
 
-$LL.Main.getReg7 : ([70], [70]) -> [78]
-$LL.Main.getReg7 x sigma0 =
+$LL.Main.getReg4 : ([70], [70]) -> [78]
+$LL.Main.getReg4 x sigma0 =
       Main.r2 x # sigma0
 
-$LL.Main.loop32 : ([9], [70], [70]) -> [90]
-$LL.Main.loop32 instr s sto0 =
-      if eq instr[6 +: 3] 3'h0 then (let $t13 = (let $t12 = Main.incrPC sto0 in
-            20'h10000 # $t12) in
-            let s0 = $t13[0 +: 70] in
-            $LL.Main.loop15 s0)
-            else if eq instr[6 +: 3] 3'h1 then (let a = instr[0 +: 6] in
-            let $t11 = (let $t10 = (let $t9 = Main.putAddrOut a sto0 in
-            $LL.Main.finishInstr $t9) in
-            20'h10000 # $t10) in
-            let s0 = $t11[0 +: 70] in
-            $LL.Main.loop35 s0) else if eq instr[6 +: 3] 3'h2 then (let a = instr[0 +: 6] in
-            let $t8 = (let $t7 = (let $t6 = Main.getReg sto0 in
-            let st0 = $t6[70 +: 8] in
-            let st1 = $t6[0 +: 70] in
-            $LL.Main.loop3 a st0 st1) in
-            20'h10000 # $t7) in
-            let s0 = $t8[0 +: 70] in
-            $LL.Main.loop29 s0) else if eq instr[6 +: 3] 3'h3 then (let rd = instr[4 +: 2] in
-            let r1 = instr[2 +: 2] in
-            let r2 = instr[0 +: 2] in
-            let $t5 = (let $t4 = (let $t3 = Main.getReg1 r1 sto0 in
-            let st0 = $t3[70 +: 8] in
-            let st1 = $t3[0 +: 70] in
-            $LL.Main.loop22 r2 rd st0 st1) in
-            20'h10000 # $t4) in
-            let s0 = $t5[0 +: 70] in
-            $LL.Main.loop14 s0) else let a = instr[0 +: 6] in
-            let $t2 = (let $t1 = (let $t0 = Main.getReg sto0 in
-            let st0 = $t0[70 +: 8] in
-            let st1 = $t0[0 +: 70] in
-            $LL.Main.loop30 a st0 st1) in
-            20'h10000 # $t1) in
-            let s0 = $t2[0 +: 70] in
-            $LL.Main.loop17 s0
+Main.putPC1 : ([6], [70]) -> [70]
+Main.putPC1 a sigma0 =
+      $LL.Main.putPC2 a sigma0 sigma0
 
-$LL.Main.nand3 : ([2], [2], [8], [70]) -> [70]
-$LL.Main.nand3 rb rd a sigma0 =
-      let $t0 = Main.getReg1 rb sigma0 in
-      let st0 = $t0[70 +: 8] in
-      let st1 = $t0[0 +: 70] in
-      $LL.Main.nand rd a st0 st1
+Main.putIns : ([17], [70]) -> [70]
+Main.putIns i sigma0 =
+      $LL.Main.putIns i sigma0 sigma0
+
+$LL.Main.st3 : ([6], [8], [70]) -> [70]
+$LL.Main.st3 a d sigma0 =
+      let $t0 = Main.putAddrOut a sigma0 in
+      $LL.Main.st1 d $t0
+
+$LL.Main.getIns : ([70], [70]) -> [87]
+$LL.Main.getIns s sigma0 =
+      Main.inputs s # sigma0
+
+$LL.Main.loop32 : ([15], [70]) -> [90]
+$LL.Main.loop32 rabind sto0 =
+      1'h1 # rabind # 4'h1 # sto0
 
 $LL.Main.loop31 : ([17], [70]) -> [90]
 $LL.Main.loop31 rabind sto0 =
       let $t1 = (let $t0 = Main.putIns rabind sto0 in
       20'h10000 # $t0) in
       let s0 = $t1[0 +: 70] in
-      $LL.Main.reset6 s0
+      $LL.Main.loop23 s0
 
-$LL.Main.putIns3 : ([17], [70]) -> [70]
-$LL.Main.putIns3 i $226 =
-      let $42 = $226[62 +: 8] in
-      let $43 = $226[54 +: 8] in
-      let $44 = $226[46 +: 8] in
-      let $45 = $226[38 +: 8] in
-      let $46 = $226[32 +: 6] in
-      let $48 = $226[0 +: 15] in
-      $42 # $43 # $44 # $45 # $46 # i # $48
+$LL.Main.putDataOut2 : ([8], [15], [70]) -> [70]
+$LL.Main.putDataOut2 d o sigma0 =
+      Main.putOut (let weOut = o[14 +: 1] in
+      let addrOut = o[8 +: 6] in
+      weOut # addrOut # d) sigma0
 
-$LL.Main.inputs : ([70]) -> [17]
-$LL.Main.inputs $279 =
-      let $94 = $279[15 +: 17] in
-      $94
+$LL.Main.putPC2 : ([6], [70], [70]) -> [70]
+$LL.Main.putPC2 $x $x1 sigma0 =
+      $LL.Main.putPC $x $x1 sigma0
 
-$LL.Main.loop30 : ([6], [8], [70]) -> [70]
-$LL.Main.loop30 $x $x1 sigma0 =
-      $LL.Main.bnz1 $x $x1 sigma0
+$LL.Main.loop30 : ([70]) -> [90]
+$LL.Main.loop30 sto0 =
+      let $t1 = (let $t0 = Main.getOut sto0 in
+      let v = $t0[70 +: 15] in
+      let s0 = $t0[0 +: 70] in
+      5'h1 # v # s0) in
+      let v = $t1[70 +: 15] in
+      let s0 = $t1[0 +: 70] in
+      $LL.Main.loop35 v s0
 
-$LL.Main.putReg14 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg14 $x $x1 sigma0 =
-      $LL.Main.putReg4 $x $x1 sigma0
+$LL.Main.reset5 : ([70]) -> [90]
+$LL.Main.reset5 sto0 =
+      let $t2 = (let $t1 = (let $t0 = Main.getPC sto0 in
+      let st0 = $t0[70 +: 6] in
+      let st1 = $t0[0 +: 70] in
+      $LL.Main.finishInstr1 st0 st1) in
+      20'h10000 # $t1) in
+      let s0 = $t2[0 +: 70] in
+      $LL.Main.reset3 s0
+
+Main.putWeOut1 : ([70]) -> [70]
+Main.putWeOut1 sigma0 =
+      let $t0 = Main.getOut sigma0 in
+      let st0 = $t0[70 +: 15] in
+      let st1 = $t0[0 +: 70] in
+      $LL.Main.putWeOut2 st0 st1
 
 $LL.Main.loop29 : ([70]) -> [90]
 $LL.Main.loop29 sto0 =
@@ -143,197 +126,111 @@ $LL.Main.loop29 sto0 =
       5'h1 # v # s0) in
       let v = $t1[70 +: 15] in
       let s0 = $t1[0 +: 70] in
-      $LL.Main.loop28 v s0
+      $LL.Main.loop18 v s0
 
-Main.putPC1 : ([6], [70]) -> [70]
-Main.putPC1 $x sigma0 =
-      $LL.Main.putPC3 $x sigma0
-
-$LL.Main.getDataIn : ([17], [70]) -> [78]
-$LL.Main.getDataIn i sigma0 =
-      Main.dataIn i # sigma0
-
-Main.putIns : ([17], [70]) -> [70]
-Main.putIns $x sigma0 =
-      $LL.Main.putIns2 $x sigma0
-
-$LL.Main.loop28 : ([15], [70]) -> [90]
-$LL.Main.loop28 rabind sto0 =
+$LL.Main.reset4 : ([15], [70]) -> [90]
+$LL.Main.reset4 rabind sto0 =
       1'h1 # rabind # 4'h7 # sto0
 
-$LL.Main.loop27 : ([15], [70]) -> [90]
+$LL.Main.putWeOut2 : ([15], [70]) -> [70]
+$LL.Main.putWeOut2 $x sigma0 =
+      $LL.Main.putWeOut 1'h1 $x sigma0
+
+$LL.Main.putWeOut1 : ([15], [70]) -> [70]
+$LL.Main.putWeOut1 $x sigma0 =
+      $LL.Main.putWeOut 1'h0 $x sigma0
+
+$LL.Main.nand3 : ([8], [2], [8], [70]) -> [70]
+$LL.Main.nand3 a rd b sigma0 =
+      let $t2 = Main.putReg1 rd (not (and a b)) sigma0 in
+      $LL.Main.nand1 $t2
+
+$LL.Main.loop28 : ([70]) -> [90]
+$LL.Main.loop28 sto0 =
+      let $t1 = (let $t0 = Main.getOut sto0 in
+      let v = $t0[70 +: 15] in
+      let s0 = $t0[0 +: 70] in
+      5'h1 # v # s0) in
+      let v = $t1[70 +: 15] in
+      let s0 = $t1[0 +: 70] in
+      $LL.Main.loop11 v s0
+
+$LL.Main.loop27 : ([17], [70]) -> [90]
 $LL.Main.loop27 rabind sto0 =
-      1'h1 # rabind # 4'h2 # sto0
-
-$LL.Main.putOut3 : ([15], [70]) -> [70]
-$LL.Main.putOut3 o $224 =
-      let $35 = $224[62 +: 8] in
-      let $36 = $224[54 +: 8] in
-      let $37 = $224[46 +: 8] in
-      let $38 = $224[38 +: 8] in
-      let $39 = $224[32 +: 6] in
-      let $40 = $224[15 +: 17] in
-      $35 # $36 # $37 # $38 # $39 # $40 # o
-
-$LL.Main.loop26 : ([17], [70]) -> [90]
-$LL.Main.loop26 rabind sto0 =
       let $t1 = (let $t0 = Main.putIns rabind sto0 in
       20'h10000 # $t0) in
       let s0 = $t1[0 +: 70] in
-      $LL.Main.loop7 s0
+      $LL.Main.loop24 s0
 
-$LL.Main.putReg13 : ([8], [70]) -> [70]
-$LL.Main.putReg13 b $216 =
-      let $8 = $216[54 +: 8] in
-      let $9 = $216[46 +: 8] in
-      let $10 = $216[38 +: 8] in
-      let $11 = $216[32 +: 6] in
-      let $12 = $216[15 +: 17] in
-      let $13 = $216[0 +: 15] in
-      b # $8 # $9 # $10 # $11 # $12 # $13
+$LL.Main.loop26 : ([70]) -> [90]
+$LL.Main.loop26 sto0 =
+      let $t1 = (let $t0 = Main.getOut sto0 in
+      let v = $t0[70 +: 15] in
+      let s0 = $t0[0 +: 70] in
+      5'h1 # v # s0) in
+      let v = $t1[70 +: 15] in
+      let s0 = $t1[0 +: 70] in
+      $LL.Main.loop2 v s0
 
-$LL.Main.putReg12 : ([8], [70]) -> [70]
-$LL.Main.putReg12 b $218 =
-      let $21 = $218[62 +: 8] in
-      let $22 = $218[54 +: 8] in
-      let $24 = $218[38 +: 8] in
-      let $25 = $218[32 +: 6] in
-      let $26 = $218[15 +: 17] in
-      let $27 = $218[0 +: 15] in
-      $21 # $22 # b # $24 # $25 # $26 # $27
+Main.getReg1 : ([2], [70]) -> [78]
+Main.getReg1 $x sigma0 =
+      $LL.Main.getReg3 $x sigma0
 
-$LL.Main.putAddrOut3 : ([6], [15]) -> [15]
-$LL.Main.putAddrOut3 a $230 =
-      let $52 = $230[14 +: 1] in
-      let $54 = $230[0 +: 8] in
-      $52 # a # $54
+$LL.Main.loop25 : ([70]) -> [90]
+$LL.Main.loop25 sto0 =
+      let $t1 = (let $t0 = Main.getOut sto0 in
+      let v = $t0[70 +: 15] in
+      let s0 = $t0[0 +: 70] in
+      5'h1 # v # s0) in
+      let v = $t1[70 +: 15] in
+      let s0 = $t1[0 +: 70] in
+      $LL.Main.loop32 v s0
 
-Main.putWeOut : ([70]) -> [70]
-Main.putWeOut sigma0 =
-      $LL.Main.putWeOut3 1'h1 sigma0
-
-$LL.Main.putReg11 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg11 $x $x1 sigma0 =
-      $LL.Main.putReg10 $x $x1 sigma0
-
-$LL.Main.putOut2 : ([15], [70], [70]) -> [70]
-$LL.Main.putOut2 o s sigma0 =
-      $LL.Main.putOut3 o s
-
-$LL.Main.getReg6 : ([2], [2], [70]) -> [78]
-$LL.Main.getReg6 $59 $213 sigma0 =
-      if eq $213 2'h2 then $LL.Main.getReg7 sigma0 sigma0
-            else $LL.Main.getReg $59 sigma0
-
-$LL.Main.putPC3 : ([6], [70]) -> [70]
-$LL.Main.putPC3 $211 sigma0 =
-      $LL.Main.putPC2 $211 sigma0 sigma0
-
-$LL.Main.bnz2 : ([6], [1], [70]) -> [70]
-$LL.Main.bnz2 a $252 sigma0 =
-      Main.putPC1 a sigma0
-
-$LL.Main.loop24 : ([9], [70]) -> [90]
-$LL.Main.loop24 instr sto0 =
-      $LL.Main.loop33 instr sto0 sto0
-
-$LL.Main.reset7 : ([15], [70]) -> [90]
-$LL.Main.reset7 rabind sto0 =
-      1'h1 # rabind # 4'h3 # sto0
+$LL.Main.loop24 : ([70]) -> [90]
+$LL.Main.loop24 sto0 =
+      let $t1 = (let $t0 = Main.incrPC sto0 in
+      20'h10000 # $t0) in
+      let s0 = $t1[0 +: 70] in
+      $LL.Main.loop16 s0
 
 $LL.Main.loop23 : ([70]) -> [90]
 $LL.Main.loop23 sto0 =
+      Main.loop sto0
+
+$LL.Main.getReg3 : ([2], [70]) -> [78]
+$LL.Main.getReg3 wild sigma0 =
+      if eq wild 2'h0 then $LL.Main.getReg2 sigma0 sigma0
+            else if eq wild 2'h1 then $LL.Main.getReg1 sigma0 sigma0 else if eq wild 2'h2 then $LL.Main.getReg4 sigma0 sigma0 else $LL.Main.getReg sigma0 sigma0
+
+$LL.Main.loop22 : ([9], [70]) -> [90]
+$LL.Main.loop22 instr sto0 =
+      $LL.Main.loop4 instr sto0 sto0
+
+$LL.Main.nand2 : ([2], [2], [8], [70]) -> [70]
+$LL.Main.nand2 rb rd a sigma0 =
+      let $t0 = Main.getReg1 rb sigma0 in
+      let st0 = $t0[70 +: 8] in
+      let st1 = $t0[0 +: 70] in
+      $LL.Main.nand a rd st0 st1
+
+Main.pc : ([70]) -> [6]
+Main.pc ds =
+      let ds5 = ds[32 +: 6] in
+      ds5
+
+$LL.Main.loop21 : ([70]) -> [90]
+$LL.Main.loop21 sto0 =
       let $t2 = (let $t1 = (let $t0 = Main.getPC sto0 in
       let st0 = $t0[70 +: 6] in
       let st1 = $t0[0 +: 70] in
       $LL.Main.finishInstr1 st0 st1) in
       20'h10000 # $t1) in
       let s0 = $t2[0 +: 70] in
-      $LL.Main.loop20 s0
+      $LL.Main.loop28 s0
 
-$LL.Main.reset6 : ([70]) -> [90]
-$LL.Main.reset6 sto0 =
-      Main.loop sto0
-
-$LL.Main.finishInstr1 : ([6], [70]) -> [70]
-$LL.Main.finishInstr1 pc sigma0 =
-      let $t0 = Main.putAddrOut pc sigma0 in
-      $LL.Main.finishInstr $t0
-
-$LL.Main.getReg5 : ([2], [2], [70]) -> [78]
-$LL.Main.getReg5 $59 $215 sigma0 =
-      if eq $215 2'h0 then $LL.Main.getReg4 sigma0 sigma0
-            else $LL.Main.getReg1 $59 $59 sigma0
-
-Main.getReg1 : ([2], [70]) -> [78]
-Main.getReg1 $59 sigma0 =
-      $LL.Main.getReg5 $59 $59 sigma0
-
-$LL.Main.loop22 : ([2], [2], [8], [70]) -> [70]
-$LL.Main.loop22 $x $x1 $x2 sigma0 =
-      $LL.Main.nand3 $x $x1 $x2 sigma0
-
-$LL.Main.st3 : ([8], [70]) -> [70]
-$LL.Main.st3 d sigma0 =
-      let $t0 = Main.putDataOut1 d sigma0 in
-      $LL.Main.st1 $t0
-
-$LL.Main.getReg4 : ([70], [70]) -> [78]
-$LL.Main.getReg4 x sigma0 =
-      Main.r0 x # sigma0
-
-$LL.Main.bnz1 : ([6], [8], [70]) -> [70]
-$LL.Main.bnz1 a v sigma0 =
-      $LL.Main.bnz v a (eq v 8'h0) sigma0
-
-Main.putReg1 : ([8], [70]) -> [70]
-Main.putReg1 $61 sigma0 =
-      $LL.Main.putReg3 $61 2'h0 (2'h0 # $61) sigma0
-
-$LL.Main.putIns2 : ([17], [70]) -> [70]
-$LL.Main.putIns2 $227 sigma0 =
-      $LL.Main.putIns $227 sigma0 sigma0
-
-$LL.Main.getReg3 : ([70], [70]) -> [78]
-$LL.Main.getReg3 x sigma0 =
-      Main.r3 x # sigma0
-
-$LL.Main.putReg10 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg10 b s sigma0 =
-      $LL.Main.putReg12 b s
-
-$LL.Main.putReg9 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg9 b s sigma0 =
-      $LL.Main.putReg5 b s
-
-Main.pc : ([70]) -> [6]
-Main.pc $x =
-      $LL.Main.pc $x
-
-$LL.Main.r1 : ([70]) -> [8]
-$LL.Main.r1 $275 =
-      let $86 = $275[54 +: 8] in
-      $86
-
-$LL.Main.getPC : ([70], [70]) -> [76]
-$LL.Main.getPC s sigma0 =
-      Main.pc s # sigma0
-
-$LL.Main.putAddrOut2 : ([6], [70]) -> [70]
-$LL.Main.putAddrOut2 $231 sigma0 =
-      let $t0 = Main.getOut sigma0 in
-      let st0 = $t0[70 +: 15] in
-      let st1 = $t0[0 +: 70] in
-      $LL.Main.putAddrOut1 $231 st0 st1
-
-$LL.Main.outputs : ([70]) -> [15]
-$LL.Main.outputs $280 =
-      let $96 = $280[0 +: 15] in
-      $96
-
-$LL.Main.putReg8 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg8 b s sigma0 =
-      $LL.Main.putReg15 b s
+$LL.Main.putDataOut : ([8], [15], [70]) -> [70]
+$LL.Main.putDataOut $x $x1 sigma0 =
+      $LL.Main.putDataOut2 $x $x1 sigma0
 
 $LL.Main.loop20 : ([70]) -> [90]
 $LL.Main.loop20 sto0 =
@@ -343,15 +240,39 @@ $LL.Main.loop20 sto0 =
       5'h1 # v # s0) in
       let v = $t1[70 +: 15] in
       let s0 = $t1[0 +: 70] in
-      $LL.Main.loop16 v s0
+      $LL.Main.loop15 v s0
+
+$LL.Main.putIns1 : ([17], [70], [70]) -> [70]
+$LL.Main.putIns1 i s sigma0 =
+      let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let outputs = s[0 +: 15] in
+      r0 # r1 # r2 # r3 # pc # i # outputs
+
+$LL.Main.putWeOut : ([1], [15], [70]) -> [70]
+$LL.Main.putWeOut b o sigma0 =
+      Main.putOut (let addrOut = o[8 +: 6] in
+      let dataOut = o[0 +: 8] in
+      b # addrOut # dataOut) sigma0
+
+$LL.Main.getOut : ([70], [70]) -> [85]
+$LL.Main.getOut s sigma0 =
+      Main.outputs s # sigma0
+
+$LL.Main.loop19 : ([6], [8], [70]) -> [70]
+$LL.Main.loop19 $x $x1 sigma0 =
+      $LL.Main.bnz $x $x1 sigma0
 
 Main.getIns : ([70]) -> [87]
 Main.getIns sigma0 =
       $LL.Main.getIns sigma0 sigma0
 
-$LL.Main.getReg2 : ([70], [70]) -> [78]
-$LL.Main.getReg2 x sigma0 =
-      Main.r1 x # sigma0
+$LL.Main.incrPC : ([6], [70]) -> [70]
+$LL.Main.incrPC pc sigma0 =
+      Main.putPC1 (add pc 6'h1) sigma0
 
 Main.loop : ([70]) -> [90]
 Main.loop sto0 =
@@ -361,45 +282,21 @@ Main.loop sto0 =
       11'h0 # v # s0) in
       let v = $t1[70 +: 9] in
       let s0 = $t1[0 +: 70] in
-      $LL.Main.loop24 v s0
+      $LL.Main.loop22 v s0
 
-$LL.Main.getInstr : ([17], [70]) -> [79]
-$LL.Main.getInstr i sigma0 =
-      Main.instrIn i # sigma0
-
-$LL.Main.putPC2 : ([6], [70], [70]) -> [70]
-$LL.Main.putPC2 $x $x1 sigma0 =
-      $LL.Main.putPC $x $x1 sigma0
-
-$LL.Main.reset2 : ([17], [70]) -> [90]
-$LL.Main.reset2 rabind sto0 =
-      let $t1 = (let $t0 = Main.putIns rabind sto0 in
-      20'h10000 # $t0) in
+$LL.Main.reset3 : ([70]) -> [90]
+$LL.Main.reset3 sto0 =
+      let $t1 = (let $t0 = Main.getOut sto0 in
+      let v = $t0[70 +: 15] in
+      let s0 = $t0[0 +: 70] in
+      5'h1 # v # s0) in
+      let v = $t1[70 +: 15] in
       let s0 = $t1[0 +: 70] in
-      $LL.Main.reset s0
+      $LL.Main.reset4 v s0
 
-$LL.Main.putDataOut3 : ([8], [15], [70]) -> [70]
-$LL.Main.putDataOut3 d o sigma0 =
-      Main.putOut ($LL.Main.putDataOut d o) sigma0
-
-$LL.Main.loop18 : ([70]) -> [90]
-$LL.Main.loop18 sto0 =
-      let $t2 = (let $t1 = (let $t0 = Main.getPC sto0 in
-      let st0 = $t0[70 +: 6] in
-      let st1 = $t0[0 +: 70] in
-      $LL.Main.finishInstr1 st0 st1) in
-      20'h10000 # $t1) in
-      let s0 = $t2[0 +: 70] in
-      $LL.Main.loop4 s0
-
-Main.inputs : ([70]) -> [17]
-Main.inputs $x =
-      $LL.Main.inputs $x
-
-$LL.Main.r3 : ([70]) -> [8]
-$LL.Main.r3 $277 =
-      let $90 = $277[38 +: 8] in
-      $90
+$LL.Main.loop18 : ([15], [70]) -> [90]
+$LL.Main.loop18 rabind sto0 =
+      1'h1 # rabind # 4'h6 # sto0
 
 $LL.Main.loop17 : ([70]) -> [90]
 $LL.Main.loop17 sto0 =
@@ -409,86 +306,93 @@ $LL.Main.loop17 sto0 =
       $LL.Main.finishInstr1 st0 st1) in
       20'h10000 # $t1) in
       let s0 = $t2[0 +: 70] in
-      $LL.Main.loop6 s0
+      $LL.Main.loop26 s0
 
-$LL.Main.putPC1 : ([6], [70]) -> [70]
-$LL.Main.putPC1 a $210 =
-      let $0 = $210[62 +: 8] in
-      let $1 = $210[54 +: 8] in
-      let $2 = $210[46 +: 8] in
-      let $3 = $210[38 +: 8] in
-      let $5 = $210[15 +: 17] in
-      let $6 = $210[0 +: 15] in
-      $0 # $1 # $2 # $3 # a # $5 # $6
-
-Main.putReg : ([2], [8], [70]) -> [70]
-Main.putReg $60 $61 sigma0 =
-      $LL.Main.putReg3 $61 $60 ($60 # $61) sigma0
-
-$LL.Main.getReg1 : ([2], [2], [70]) -> [78]
-$LL.Main.getReg1 $59 $214 sigma0 =
-      if eq $214 2'h1 then $LL.Main.getReg2 sigma0 sigma0
-            else $LL.Main.getReg6 $59 $59 sigma0
-
-$LL.Main.getOut : ([70], [70]) -> [85]
-$LL.Main.getOut s sigma0 =
-      Main.outputs s # sigma0
-
-Main.r0 : ([70]) -> [8]
-Main.r0 $x =
-      $LL.Main.r0 $x
-
-$LL.Main.loop16 : ([15], [70]) -> [90]
-$LL.Main.loop16 rabind sto0 =
-      1'h1 # rabind # 4'h4 # sto0
-
-$LL.Main.loop15 : ([70]) -> [90]
-$LL.Main.loop15 sto0 =
+$LL.Main.loop16 : ([70]) -> [90]
+$LL.Main.loop16 sto0 =
       let $t2 = (let $t1 = (let $t0 = Main.getPC sto0 in
       let st0 = $t0[70 +: 6] in
       let st1 = $t0[0 +: 70] in
       $LL.Main.finishInstr1 st0 st1) in
       20'h10000 # $t1) in
       let s0 = $t2[0 +: 70] in
-      $LL.Main.loop11 s0
+      $LL.Main.loop30 s0
+
+$LL.Main.putReg8 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg8 b s sigma0 =
+      let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let inputs = s[15 +: 17] in
+      let outputs = s[0 +: 15] in
+      r0 # r1 # b # r3 # pc # inputs # outputs
+
+$LL.Main.putReg7 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg7 $x $x1 sigma0 =
+      $LL.Main.putReg8 $x $x1 sigma0
+
+Main.inputs : ([70]) -> [17]
+Main.inputs ds =
+      let ds6 = ds[15 +: 17] in
+      ds6
+
+$LL.Main.putReg6 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg6 $x $x1 sigma0 =
+      $LL.Main.putReg5 $x $x1 sigma0
+
+$LL.Main.st2 : ([70]) -> [70]
+$LL.Main.st2 sigma0 =
+      Main.putWeOut1 sigma0
+
+$LL.Main.loop15 : ([15], [70]) -> [90]
+$LL.Main.loop15 rabind sto0 =
+      1'h1 # rabind # 4'h8 # sto0
+
+Main.putReg1 : ([2], [8], [70]) -> [70]
+Main.putReg1 ds b sigma0 =
+      $LL.Main.putReg3 b ds sigma0
+
+$LL.Main.st1 : ([8], [70]) -> [70]
+$LL.Main.st1 $x sigma0 =
+      $LL.Main.st $x sigma0
+
+Main.r0 : ([70]) -> [8]
+Main.r0 ds =
+      let ds1 = ds[62 +: 8] in
+      ds1
 
 Main.getOut : ([70]) -> [85]
 Main.getOut sigma0 =
       $LL.Main.getOut sigma0 sigma0
 
-$LL.Main.nand2 : ([70]) -> [70]
-$LL.Main.nand2 sigma0 =
-      Main.incrPC sigma0
+$LL.Main.putIns : ([17], [70], [70]) -> [70]
+$LL.Main.putIns $x $x1 sigma0 =
+      $LL.Main.putIns1 $x $x1 sigma0
 
-$LL.Main.loop14 : ([70]) -> [90]
-$LL.Main.loop14 sto0 =
-      let $t2 = (let $t1 = (let $t0 = Main.getPC sto0 in
-      let st0 = $t0[70 +: 6] in
-      let st1 = $t0[0 +: 70] in
-      $LL.Main.finishInstr1 st0 st1) in
-      20'h10000 # $t1) in
-      let s0 = $t2[0 +: 70] in
-      $LL.Main.loop2 s0
-
-$LL.Main.loop13 : ([70]) -> [90]
-$LL.Main.loop13 sto0 =
-      let $t1 = (let $t0 = Main.incrPC sto0 in
+$LL.Main.loop14 : ([17], [70]) -> [90]
+$LL.Main.loop14 rabind sto0 =
+      let $t1 = (let $t0 = Main.putIns rabind sto0 in
       20'h10000 # $t0) in
       let s0 = $t1[0 +: 70] in
-      $LL.Main.loop23 s0
+      $LL.Main.loop12 s0
 
 Main.dataIn : ([17]) -> [8]
-Main.dataIn $x =
-      $LL.Main.dataIn $x
+Main.dataIn ds =
+      let ds2 = ds[0 +: 8] in
+      ds2
 
-$LL.Main.loop12 : ([15], [70]) -> [90]
-$LL.Main.loop12 rabind sto0 =
-      1'h1 # rabind # 4'h0 # sto0
+$LL.Main.getReg2 : ([70], [70]) -> [78]
+$LL.Main.getReg2 x sigma0 =
+      Main.r0 x # sigma0
 
-$LL.Main.st2 : ([6], [8], [70]) -> [70]
-$LL.Main.st2 a d sigma0 =
-      let $t0 = Main.putAddrOut a sigma0 in
-      $LL.Main.st d $t0
+$LL.Main.nand1 : ([70]) -> [70]
+$LL.Main.nand1 sigma0 =
+      Main.incrPC sigma0
+
+$LL.Main.bnz : ([6], [8], [70]) -> [70]
+$LL.Main.bnz a v sigma0 =
+      $LL.Main.bnz1 a (eq v 8'h0) sigma0
 
 Main.getDataIn : ([70]) -> [78]
 Main.getDataIn sigma0 =
@@ -497,129 +401,112 @@ Main.getDataIn sigma0 =
       let st1 = $t0[0 +: 70] in
       $LL.Main.getDataIn st0 st1
 
-Main.r1 : ([70]) -> [8]
-Main.r1 $x =
-      $LL.Main.r1 $x
+$LL.Main.loop13 : ([15], [70]) -> [90]
+$LL.Main.loop13 rabind sto0 =
+      1'h1 # rabind # 4'h3 # sto0
 
-$LL.Main.putWeOut3 : ([1], [70]) -> [70]
-$LL.Main.putWeOut3 $229 sigma0 =
+Main.r1 : ([70]) -> [8]
+Main.r1 ds =
+      let ds2 = ds[54 +: 8] in
+      ds2
+
+$LL.Main.loop12 : ([70]) -> [90]
+$LL.Main.loop12 sto0 =
+      let $t2 = (let $t1 = (let $t0 = Main.getDataIn sto0 in
+      let st0 = $t0[70 +: 8] in
+      let st1 = $t0[0 +: 70] in
+      Main.putReg st0 st1) in
+      20'h10000 # $t1) in
+      let s0 = $t2[0 +: 70] in
+      $LL.Main.loop23 s0
+
+$LL.Main.getReg1 : ([70], [70]) -> [78]
+$LL.Main.getReg1 x sigma0 =
+      Main.r1 x # sigma0
+
+Main.r3 : ([70]) -> [8]
+Main.r3 ds =
+      let ds4 = ds[38 +: 8] in
+      ds4
+
+$LL.Main.loop11 : ([15], [70]) -> [90]
+$LL.Main.loop11 rabind sto0 =
+      1'h1 # rabind # 4'h2 # sto0
+
+$LL.Main.ld : ([70]) -> [70]
+$LL.Main.ld sigma0 =
+      Main.putWeOut sigma0
+
+Main.r2 : ([70]) -> [8]
+Main.r2 ds =
+      let ds3 = ds[46 +: 8] in
+      ds3
+
+$LL.Main.putReg5 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg5 b s sigma0 =
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let inputs = s[15 +: 17] in
+      let outputs = s[0 +: 15] in
+      b # r1 # r2 # r3 # pc # inputs # outputs
+
+Main.putAddrOut : ([6], [70]) -> [70]
+Main.putAddrOut a sigma0 =
       let $t0 = Main.getOut sigma0 in
       let st0 = $t0[70 +: 15] in
       let st1 = $t0[0 +: 70] in
-      $LL.Main.putWeOut1 $229 st0 st1
+      $LL.Main.putAddrOut a st0 st1
 
-$LL.Main.putReg7 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg7 $x $x1 sigma0 =
-      $LL.Main.putReg9 $x $x1 sigma0
+$LL.Main.loop10 : ([70]) -> [90]
+$LL.Main.loop10 sto0 =
+      let $t2 = (let $t1 = (let $t0 = Main.getPC sto0 in
+      let st0 = $t0[70 +: 6] in
+      let st1 = $t0[0 +: 70] in
+      $LL.Main.finishInstr1 st0 st1) in
+      20'h10000 # $t1) in
+      let s0 = $t2[0 +: 70] in
+      $LL.Main.loop20 s0
 
-$LL.Main.loop11 : ([70]) -> [90]
-$LL.Main.loop11 sto0 =
-      let $t1 = (let $t0 = Main.getOut sto0 in
-      let v = $t0[70 +: 15] in
-      let s0 = $t0[0 +: 70] in
-      5'h1 # v # s0) in
-      let v = $t1[70 +: 15] in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop27 v s0
+$LL.Main.putReg4 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg4 b s sigma0 =
+      let r0 = s[62 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let inputs = s[15 +: 17] in
+      let outputs = s[0 +: 15] in
+      r0 # b # r2 # r3 # pc # inputs # outputs
 
-$LL.Main.nand1 : ([8], [2], [8], [70]) -> [70]
-$LL.Main.nand1 a rd b sigma0 =
-      let $t2 = Main.putReg rd (not (and a b)) sigma0 in
-      $LL.Main.nand2 $t2
-
-$LL.Main.loop10 : ([17], [70]) -> [90]
-$LL.Main.loop10 rabind sto0 =
-      let $t1 = (let $t0 = Main.putIns rabind sto0 in
-      20'h10000 # $t0) in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop s0
-
-$LL.Main.putWeOut2 : ([1], [15]) -> [15]
-$LL.Main.putWeOut2 b $228 =
-      let $50 = $228[8 +: 6] in
-      let $51 = $228[0 +: 8] in
-      b # $50 # $51
+$LL.Main.st : ([8], [70]) -> [70]
+$LL.Main.st d sigma0 =
+      let $t0 = Main.putDataOut1 d sigma0 in
+      $LL.Main.st2 $t0
 
 $LL.Main.putOut1 : ([15], [70], [70]) -> [70]
 $LL.Main.putOut1 $x $x1 sigma0 =
-      $LL.Main.putOut2 $x $x1 sigma0
+      $LL.Main.putOut $x $x1 sigma0
 
-Main.r3 : ([70]) -> [8]
-Main.r3 $x =
-      $LL.Main.r3 $x
+$LL.Main.putReg3 : ([8], [2], [70]) -> [70]
+$LL.Main.putReg3 b wild sigma0 =
+      if eq wild 2'h0 then $LL.Main.putReg6 b sigma0 sigma0
+            else if eq wild 2'h1 then $LL.Main.putReg2 b sigma0 sigma0 else if eq wild 2'h2 then $LL.Main.putReg7 b sigma0 sigma0 else $LL.Main.putReg1 b sigma0 sigma0
 
-$LL.Main.putReg6 : ([8], [2], [10], [70]) -> [70]
-$LL.Main.putReg6 $61 $60 $222 sigma0 =
-      if eq $222[8 +: 2] 2'h1 then (let b = $222[0 +: 8] in
-            $LL.Main.putReg2 b sigma0 sigma0)
-            else $LL.Main.putReg1 $61 $60 ($60 # $61) sigma0
+$LL.Main.loop9 : ([70]) -> [90]
+$LL.Main.loop9 sto0 =
+      let $t2 = (let $t1 = (let $t0 = Main.getPC sto0 in
+      let st0 = $t0[70 +: 6] in
+      let st1 = $t0[0 +: 70] in
+      $LL.Main.finishInstr1 st0 st1) in
+      20'h10000 # $t1) in
+      let s0 = $t2[0 +: 70] in
+      $LL.Main.loop29 s0
 
-$LL.Main.loop9 : ([17], [70]) -> [90]
-$LL.Main.loop9 rabind sto0 =
-      let $t1 = (let $t0 = Main.putIns rabind sto0 in
-      20'h10000 # $t0) in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop13 s0
-
-Main.r2 : ([70]) -> [8]
-Main.r2 $x =
-      $LL.Main.r2 $x
-
-$LL.Main.st1 : ([70]) -> [70]
-$LL.Main.st1 sigma0 =
-      Main.putWeOut sigma0
-
-$LL.Main.finishInstr : ([70]) -> [70]
-$LL.Main.finishInstr sigma0 =
-      Main.putWeOut1 sigma0
-
-$LL.Main.bnz : ([8], [6], [1], [70]) -> [70]
-$LL.Main.bnz v a $253 sigma0 =
-      if eq $253 1'h1 then Main.incrPC sigma0
-            else $LL.Main.bnz2 a (eq v 8'h0) sigma0
-
-$LL.Main.st : ([8], [70]) -> [70]
-$LL.Main.st $x sigma0 =
-      $LL.Main.st3 $x sigma0
-
-$LL.Main.putReg5 : ([8], [70]) -> [70]
-$LL.Main.putReg5 b $219 =
-      let $28 = $219[62 +: 8] in
-      let $29 = $219[54 +: 8] in
-      let $30 = $219[46 +: 8] in
-      let $32 = $219[32 +: 6] in
-      let $33 = $219[15 +: 17] in
-      let $34 = $219[0 +: 15] in
-      $28 # $29 # $30 # b # $32 # $33 # $34
-
-Main.putAddrOut : ([6], [70]) -> [70]
-Main.putAddrOut $x sigma0 =
-      $LL.Main.putAddrOut2 $x sigma0
-
-$LL.Main.putOut : ([15], [70]) -> [70]
-$LL.Main.putOut $225 sigma0 =
-      $LL.Main.putOut1 $225 sigma0 sigma0
-
-$LL.Main.loop7 : ([70]) -> [90]
-$LL.Main.loop7 sto0 =
-      let $t1 = (let $t0 = Main.incrPC sto0 in
-      20'h10000 # $t0) in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop18 s0
-
-$LL.Main.loop6 : ([70]) -> [90]
-$LL.Main.loop6 sto0 =
-      let $t1 = (let $t0 = Main.getOut sto0 in
-      let v = $t0[70 +: 15] in
-      let s0 = $t0[0 +: 70] in
-      5'h1 # v # s0) in
-      let v = $t1[70 +: 15] in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop12 v s0
-
-$LL.Main.nand : ([2], [8], [8], [70]) -> [70]
-$LL.Main.nand rd a $x sigma0 =
-      $LL.Main.nand1 a rd $x sigma0
+$LL.Main.finishInstr1 : ([6], [70]) -> [70]
+$LL.Main.finishInstr1 pc sigma0 =
+      let $t0 = Main.putAddrOut pc sigma0 in
+      $LL.Main.ld $t0
 
 Main.incrPC : ([70]) -> [70]
 Main.incrPC sigma0 =
@@ -628,14 +515,19 @@ Main.incrPC sigma0 =
       let st1 = $t0[0 +: 70] in
       $LL.Main.incrPC st0 st1
 
-$LL.Main.putDataOut2 : ([8], [15], [70]) -> [70]
-$LL.Main.putDataOut2 $x $x1 sigma0 =
-      $LL.Main.putDataOut3 $x $x1 sigma0
+$LL.Main.loop7 : ([70]) -> [90]
+$LL.Main.loop7 sto0 =
+      let $t1 = (let $t0 = Main.getOut sto0 in
+      let v = $t0[70 +: 15] in
+      let s0 = $t0[0 +: 70] in
+      5'h1 # v # s0) in
+      let v = $t1[70 +: 15] in
+      let s0 = $t1[0 +: 70] in
+      $LL.Main.loop13 v s0
 
-$LL.Main.dataIn : ([17]) -> [8]
-$LL.Main.dataIn $270 =
-      let $76 = $270[0 +: 8] in
-      $76
+$LL.Main.loop6 : ([2], [2], [8], [70]) -> [70]
+$LL.Main.loop6 rd r2 $x sigma0 =
+      $LL.Main.nand2 r2 rd $x sigma0
 
 Main.getInstr : ([70]) -> [79]
 Main.getInstr sigma0 =
@@ -644,180 +536,159 @@ Main.getInstr sigma0 =
       let st1 = $t0[0 +: 70] in
       $LL.Main.getInstr st0 st1
 
-$LL.Main.loop5 : ([15], [70]) -> [90]
-$LL.Main.loop5 rabind sto0 =
-      1'h1 # rabind # 4'h6 # sto0
-
-Main.instrIn : ([17]) -> [9]
-Main.instrIn $x =
-      $LL.Main.instrIn $x
-
-$LL.Main.pc : ([70]) -> [6]
-$LL.Main.pc $278 =
-      let $92 = $278[32 +: 6] in
-      $92
-
-$LL.Main.putDataOut1 : ([8], [70]) -> [70]
-$LL.Main.putDataOut1 $233 sigma0 =
-      let $t0 = Main.getOut sigma0 in
-      let st0 = $t0[70 +: 15] in
-      let st1 = $t0[0 +: 70] in
-      $LL.Main.putDataOut2 $233 st0 st1
-
-$LL.Main.putReg4 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg4 b s sigma0 =
-      $LL.Main.putReg13 b s
-
-$LL.Main.r0 : ([70]) -> [8]
-$LL.Main.r0 $274 =
-      let $84 = $274[62 +: 8] in
-      $84
-
-$LL.Main.putAddrOut1 : ([6], [15], [70]) -> [70]
-$LL.Main.putAddrOut1 $x $x1 sigma0 =
-      $LL.Main.putAddrOut $x $x1 sigma0
-
-$LL.Main.putPC : ([6], [70], [70]) -> [70]
-$LL.Main.putPC a s sigma0 =
-      $LL.Main.putPC1 a s
-
-$LL.Main.putWeOut1 : ([1], [15], [70]) -> [70]
-$LL.Main.putWeOut1 $x $x1 sigma0 =
-      $LL.Main.putWeOut $x $x1 sigma0
-
-Main.getReg : ([70]) -> [78]
-Main.getReg sigma0 =
-      $LL.Main.getReg5 2'h0 2'h0 sigma0
-
-$LL.Main.putAddrOut : ([6], [15], [70]) -> [70]
-$LL.Main.putAddrOut a o sigma0 =
-      Main.putOut ($LL.Main.putAddrOut3 a o) sigma0
-
-$LL.Main.loop4 : ([70]) -> [90]
-$LL.Main.loop4 sto0 =
-      let $t1 = (let $t0 = Main.getOut sto0 in
-      let v = $t0[70 +: 15] in
-      let s0 = $t0[0 +: 70] in
-      5'h1 # v # s0) in
-      let v = $t1[70 +: 15] in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop5 v s0
-
-$LL.Main.loop3 : ([6], [8], [70]) -> [70]
-$LL.Main.loop3 $x $x1 sigma0 =
-      $LL.Main.st2 $x $x1 sigma0
-
-$LL.Main.putReg3 : ([8], [2], [10], [70]) -> [70]
-$LL.Main.putReg3 $61 $60 $223 sigma0 =
-      if eq $223[8 +: 2] 2'h0 then (let b = $223[0 +: 8] in
-            $LL.Main.putReg14 b sigma0 sigma0)
-            else $LL.Main.putReg6 $61 $60 ($60 # $61) sigma0
-
-$LL.Main.reset : ([70]) -> [90]
-$LL.Main.reset sto0 =
-      let $t2 = (let $t1 = (let $t0 = Main.getPC sto0 in
-      let st0 = $t0[70 +: 6] in
-      let st1 = $t0[0 +: 70] in
-      $LL.Main.finishInstr1 st0 st1) in
-      20'h10000 # $t1) in
-      let s0 = $t2[0 +: 70] in
-      $LL.Main.reset8 s0
-
-$LL.Main.getIns : ([70], [70]) -> [87]
-$LL.Main.getIns s sigma0 =
-      Main.inputs s # sigma0
-
-$LL.Main.getReg : ([2], [70]) -> [78]
-$LL.Main.getReg $212 sigma0 =
-      $LL.Main.getReg3 sigma0 sigma0
-
-$LL.Main.putIns1 : ([17], [70], [70]) -> [70]
-$LL.Main.putIns1 i s sigma0 =
-      $LL.Main.putIns3 i s
+$LL.Main.loop5 : ([6], [8], [70]) -> [70]
+$LL.Main.loop5 $x $x1 sigma0 =
+      $LL.Main.st3 $x $x1 sigma0
 
 $LL.Main.putReg2 : ([8], [70], [70]) -> [70]
 $LL.Main.putReg2 $x $x1 sigma0 =
-      $LL.Main.putReg8 $x $x1 sigma0
+      $LL.Main.putReg4 $x $x1 sigma0
 
-$LL.Main.putWeOut : ([1], [15], [70]) -> [70]
-$LL.Main.putWeOut b o sigma0 =
-      Main.putOut ($LL.Main.putWeOut2 b o) sigma0
+Main.instrIn : ([17]) -> [9]
+Main.instrIn ds =
+      let ds1 = ds[8 +: 9] in
+      ds1
 
-$LL.Main.loop2 : ([70]) -> [90]
-$LL.Main.loop2 sto0 =
-      let $t1 = (let $t0 = Main.getOut sto0 in
-      let v = $t0[70 +: 15] in
-      let s0 = $t0[0 +: 70] in
-      5'h1 # v # s0) in
-      let v = $t1[70 +: 15] in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop1 v s0
+$LL.Main.putOut : ([15], [70], [70]) -> [70]
+$LL.Main.putOut o s sigma0 =
+      let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let inputs = s[15 +: 17] in
+      r0 # r1 # r2 # r3 # pc # inputs # o
 
-$LL.Main.putIns : ([17], [70], [70]) -> [70]
-$LL.Main.putIns $x $x1 sigma0 =
-      $LL.Main.putIns1 $x $x1 sigma0
+$LL.Main.getInstr : ([17], [70]) -> [79]
+$LL.Main.getInstr i sigma0 =
+      Main.instrIn i # sigma0
 
-$LL.Main.putReg1 : ([8], [2], [10], [70]) -> [70]
-$LL.Main.putReg1 $61 $60 $221 sigma0 =
-      if eq $221[8 +: 2] 2'h2 then (let b = $221[0 +: 8] in
-            $LL.Main.putReg11 b sigma0 sigma0)
-            else $LL.Main.putReg ($60 # $61) sigma0
+$LL.Main.putReg1 : ([8], [70], [70]) -> [70]
+$LL.Main.putReg1 $x $x1 sigma0 =
+      $LL.Main.putReg $x $x1 sigma0
 
-$LL.Main.loop1 : ([15], [70]) -> [90]
-$LL.Main.loop1 rabind sto0 =
-      1'h1 # rabind # 4'h8 # sto0
+$LL.Main.getDataIn : ([17], [70]) -> [78]
+$LL.Main.getDataIn i sigma0 =
+      Main.dataIn i # sigma0
 
-$LL.Main.r2 : ([70]) -> [8]
-$LL.Main.r2 $276 =
-      let $88 = $276[46 +: 8] in
-      $88
+$LL.Main.loop4 : ([9], [70], [70]) -> [90]
+$LL.Main.loop4 $x $x1 sto0 =
+      $LL.Main.loop $x $x1 sto0
+
+$LL.Main.putPC : ([6], [70], [70]) -> [70]
+$LL.Main.putPC a s sigma0 =
+      let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let inputs = s[15 +: 17] in
+      let outputs = s[0 +: 15] in
+      r0 # r1 # r2 # r3 # a # inputs # outputs
+
+$LL.Main.getReg : ([70], [70]) -> [78]
+$LL.Main.getReg x sigma0 =
+      Main.r3 x # sigma0
+
+Main.getReg : ([70]) -> [78]
+Main.getReg sigma0 =
+      $LL.Main.getReg3 2'h0 sigma0
+
+Main.putReg : ([8], [70]) -> [70]
+Main.putReg b sigma0 =
+      $LL.Main.putReg3 b 2'h0 sigma0
+
+$LL.Main.putAddrOut1 : ([6], [15], [70]) -> [70]
+$LL.Main.putAddrOut1 a o sigma0 =
+      Main.putOut (let weOut = o[14 +: 1] in
+      let dataOut = o[0 +: 8] in
+      weOut # a # dataOut) sigma0
+
+$LL.Main.putReg : ([8], [70], [70]) -> [70]
+$LL.Main.putReg b s sigma0 =
+      let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let pc = s[32 +: 6] in
+      let inputs = s[15 +: 17] in
+      let outputs = s[0 +: 15] in
+      r0 # r1 # r2 # b # pc # inputs # outputs
+
+$LL.Main.loop2 : ([15], [70]) -> [90]
+$LL.Main.loop2 rabind sto0 =
+      1'h1 # rabind # 4'h5 # sto0
 
 Main.getPC : ([70]) -> [76]
 Main.getPC sigma0 =
       $LL.Main.getPC sigma0 sigma0
 
-$LL.Main.loop : ([70]) -> [90]
-$LL.Main.loop sto0 =
-      let $t2 = (let $t1 = (let $t0 = Main.getDataIn sto0 in
-      let st0 = $t0[70 +: 8] in
-      let st1 = $t0[0 +: 70] in
-      Main.putReg1 st0 st1) in
-      20'h10000 # $t1) in
-      let s0 = $t2[0 +: 70] in
-      $LL.Main.reset6 s0
-
-$LL.Main.instrIn : ([17]) -> [9]
-$LL.Main.instrIn $269 =
-      let $74 = $269[8 +: 9] in
-      $74
-
 Main.outputs : ([70]) -> [15]
-Main.outputs $x =
-      $LL.Main.outputs $x
+Main.outputs ds =
+      let ds7 = ds[0 +: 15] in
+      ds7
 
-$LL.Main.incrPC : ([6], [70]) -> [70]
-$LL.Main.incrPC pc sigma0 =
-      Main.putPC1 (add pc 6'h1) sigma0
+$LL.Main.nand : ([8], [2], [8], [70]) -> [70]
+$LL.Main.nand $x $x1 $x2 sigma0 =
+      $LL.Main.nand3 $x $x1 $x2 sigma0
 
-$LL.Main.putReg : ([10], [70]) -> [70]
-$LL.Main.putReg $220 sigma0 =
-      let b = $220[0 +: 8] in
-      $LL.Main.putReg7 b sigma0 sigma0
+Main.putWeOut : ([70]) -> [70]
+Main.putWeOut sigma0 =
+      let $t0 = Main.getOut sigma0 in
+      let st0 = $t0[70 +: 15] in
+      let st1 = $t0[0 +: 70] in
+      $LL.Main.putWeOut1 st0 st1
 
-$LL.Main.putDataOut : ([8], [15]) -> [15]
-$LL.Main.putDataOut d $232 =
-      let $55 = $232[14 +: 1] in
-      let $56 = $232[8 +: 6] in
-      $55 # $56 # d
+$LL.Main.loop : ([9], [70], [70]) -> [90]
+$LL.Main.loop instr s sto0 =
+      if eq instr[6 +: 3] 3'h0 then (let $t13 = (let $t12 = Main.incrPC sto0 in
+            20'h10000 # $t12) in
+            let s0 = $t13[0 +: 70] in
+            $LL.Main.loop21 s0)
+            else if eq instr[6 +: 3] 3'h1 then (let a = instr[0 +: 6] in
+            let $t11 = (let $t10 = (let $t9 = Main.putAddrOut a sto0 in
+            $LL.Main.ld $t9) in
+            20'h10000 # $t10) in
+            let s0 = $t11[0 +: 70] in
+            $LL.Main.loop7 s0) else if eq instr[6 +: 3] 3'h2 then (let a = instr[0 +: 6] in
+            let $t8 = (let $t7 = (let $t6 = Main.getReg sto0 in
+            let st0 = $t6[70 +: 8] in
+            let st1 = $t6[0 +: 70] in
+            $LL.Main.loop5 a st0 st1) in
+            20'h10000 # $t7) in
+            let s0 = $t8[0 +: 70] in
+            $LL.Main.loop25 s0) else if eq instr[6 +: 3] 3'h3 then (let rd = instr[4 +: 2] in
+            let r1 = instr[2 +: 2] in
+            let r2 = instr[0 +: 2] in
+            let $t5 = (let $t4 = (let $t3 = Main.getReg1 r1 sto0 in
+            let st0 = $t3[70 +: 8] in
+            let st1 = $t3[0 +: 70] in
+            $LL.Main.loop6 rd r2 st0 st1) in
+            20'h10000 # $t4) in
+            let s0 = $t5[0 +: 70] in
+            $LL.Main.loop10 s0) else let a = instr[0 +: 6] in
+            let $t2 = (let $t1 = (let $t0 = Main.getReg sto0 in
+            let st0 = $t0[70 +: 8] in
+            let st1 = $t0[0 +: 70] in
+            $LL.Main.loop19 a st0 st1) in
+            20'h10000 # $t1) in
+            let s0 = $t2[0 +: 70] in
+            $LL.Main.loop9 s0
+
+$LL.Main.getPC : ([70], [70]) -> [76]
+$LL.Main.getPC s sigma0 =
+      Main.pc s # sigma0
+
+$LL.Main.putAddrOut : ([6], [15], [70]) -> [70]
+$LL.Main.putAddrOut $x $x1 sigma0 =
+      $LL.Main.putAddrOut1 $x $x1 sigma0
 
 Main.putOut : ([15], [70]) -> [70]
-Main.putOut $x sigma0 =
-      $LL.Main.putOut $x sigma0
+Main.putOut o sigma0 =
+      $LL.Main.putOut1 o sigma0 sigma0
 
 device top_level
       input __in0 : [17]
       output __out0 : [15]
-      register __resumption_tag : [4] init 4'h5
+      register __resumption_tag : [4] init 4'h0
       register __st0 : [70] init 70'h0
       let $res = $Pure.dispatch (__resumption_tag # __st0) __in0
       __out0 := $res[74 +: 15]

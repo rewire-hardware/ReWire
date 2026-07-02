@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Unsupported syntax in a pattern
+-- EXPECT-ERROR: type not in the ReWire vocabulary: GHC.Types.Int
 {-# LANGUAGE DataKinds #-}
 import ReWire
 import ReWire.Monad (iter, Dev)

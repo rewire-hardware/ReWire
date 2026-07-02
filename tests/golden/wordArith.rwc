@@ -2,25 +2,17 @@ $Pure.dispatch : ([8]) -> [8]
 $Pure.dispatch i =
       Main.loop i
 
-$LL.Main.loop1 : ([8]) -> [8]
-$LL.Main.loop1 $2 =
-      $LL.Main.loop (Main.compute $2)
-
 Main.compute : ([8]) -> [8]
-Main.compute $x =
-      $LL.Main.compute $x
-
-$LL.Main.loop : ([8]) -> [8]
-$LL.Main.loop rabind =
-      rabind
+Main.compute w =
+      umod (udiv (mul (pow (add w 8'h1) 8'h2) (sub w 8'h2)) 8'h3) (add w 8'h1)
 
 Main.loop : ([8]) -> [8]
-Main.loop $x =
-      $LL.Main.loop1 $x
+Main.loop i =
+      $LL.Main.loop1 (Main.compute i)
 
-$LL.Main.compute : ([8]) -> [8]
-$LL.Main.compute $3 =
-      umod (udiv (mul (pow (add $3 8'h1) 8'h2) (sub $3 8'h2)) 8'h3) (add $3 8'h1)
+$LL.Main.loop1 : ([8]) -> [8]
+$LL.Main.loop1 rabind =
+      rabind
 
 device top_level
       input __in0 : [8]

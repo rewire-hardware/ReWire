@@ -2,39 +2,35 @@ $Pure.dispatch : ([16], [8]) -> [24]
 $Pure.dispatch disc i =
       let store0 = disc[8 +: 8] in
       let s0 = disc[0 +: 8] in
-      $LL.Main.dev5 store0 i s0
+      $LL.Main.dev2 store0 i s0
 
 Main.dev : ([8], [8]) -> [24]
-Main.dev $x sto0 =
-      $LL.Main.dev3 $x sto0
-
-$LL.Main.dev6 : ([8], [8]) -> [24]
-$LL.Main.dev6 k sto0 =
-      Main.dev k sto0
+Main.dev k sto0 =
+      $LL.Main.dev5 k sto0 sto0
 
 $LL.Main.dev5 : ([8], [8], [8]) -> [24]
 $LL.Main.dev5 $x $x1 sto0 =
-      $LL.Main.dev $x $x1 sto0
+      $LL.Main.dev4 $x $x1 sto0
 
 $LL.Main.dev4 : ([8], [8], [8]) -> [24]
 $LL.Main.dev4 k s sto0 =
       add s k # k # sto0
 
 $LL.Main.dev3 : ([8], [8]) -> [24]
-$LL.Main.dev3 $5 sto0 =
-      $LL.Main.dev1 $5 sto0 sto0
+$LL.Main.dev3 $x sto0 =
+      $LL.Main.dev $x sto0
 
-$LL.Main.dev2 : ([8], [8]) -> [24]
-$LL.Main.dev2 $x sto0 =
-      $LL.Main.dev6 $x sto0
+$LL.Main.dev2 : ([8], [8], [8]) -> [24]
+$LL.Main.dev2 $x $x1 sto0 =
+      $LL.Main.dev1 $x $x1 sto0
 
 $LL.Main.dev1 : ([8], [8], [8]) -> [24]
-$LL.Main.dev1 $x $x1 sto0 =
-      $LL.Main.dev4 $x $x1 sto0
+$LL.Main.dev1 k i sto0 =
+      $LL.Main.dev3 k i
 
-$LL.Main.dev : ([8], [8], [8]) -> [24]
-$LL.Main.dev k i sto0 =
-      $LL.Main.dev2 k i
+$LL.Main.dev : ([8], [8]) -> [24]
+$LL.Main.dev k sto0 =
+      Main.dev k sto0
 
 device top_level
       input __in0 : [8]

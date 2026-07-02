@@ -31,7 +31,6 @@ source-repository head
 library
   exposed-modules:
       ReWire.Builtins
-      ReWire.Crust.KindCheck
       ReWire.Crust.PrimBasis
       ReWire.Crust.Purify
       ReWire.Crust.Syntax
@@ -48,11 +47,11 @@ library
       ReWire.HSE.Desugar
       ReWire.HSE.Exports
       ReWire.HSE.Fixity
+      ReWire.HSE.Globs
       ReWire.HSE.Orphans
       ReWire.HSE.Parse
       ReWire.HSE.Rename
       ReWire.HSE.SrcLoc
-      ReWire.HSE.ToCrust
       ReWire.ModCache
       ReWire.Pass
   other-modules:

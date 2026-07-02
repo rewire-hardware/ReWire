@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Unknown constructor: Mystery
+-- EXPECT-ERROR: Not in scope: data constructor ‘Mystery’
 import ReWire
 import ReWire.Monad (iter, Dev)
 f :: Bool -> Bool

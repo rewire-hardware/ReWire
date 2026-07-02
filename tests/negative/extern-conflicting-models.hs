@@ -1,5 +1,6 @@
 -- EXPECT-ERROR: has conflicting models
 {-# LANGUAGE DataKinds #-}
+import Prelude hiding ((+))
 import ReWire
 import ReWire.Bits (lit, (+))
 import ReWire.Monad (iter, Dev)

@@ -1,5 +1,6 @@
 -- EXPECT-ERROR: rwPrimFiniteMaxBound: Finite 0 is uninhabited
 {-# LANGUAGE DataKinds #-}
+import Prelude hiding (maxBound)
 import ReWire
 import ReWire.Bits (lit)
 import ReWire.Finite (maxBound, fromFinite)

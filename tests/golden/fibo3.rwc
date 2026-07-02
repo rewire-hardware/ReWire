@@ -2,14 +2,22 @@ $Pure.dispatch : ([16], [1]) -> [25]
 $Pure.dispatch disc i =
       $LL.Main.sig1 i disc
 
-$LL.Main.first1 : ([16], [16]) -> [24]
-$LL.Main.first1 v sigma0 =
-      $LL.Main.first v # sigma0
+$LL.Main.sig1 : ([1], [16]) -> [25]
+$LL.Main.sig1 wild sto0 =
+      if eq wild 1'h0 then Main.incr sto0
+            else Main.sig sto0
 
-$LL.Main.sig3 : ([1], [1], [16]) -> [25]
-$LL.Main.sig3 i $7 sto0 =
-      if eq $7 1'h1 then Main.sig sto0
-            else $LL.Main.sig2 i sto0
+$LL.Main.second2 : ([16]) -> [1]
+$LL.Main.second2 ds =
+      1'h1
+
+$LL.Main.first1 : ([16]) -> [8]
+$LL.Main.first1 eta =
+      eta[8 +: 8]
+
+$LL.Main.second1 : ([16], [16]) -> [24]
+$LL.Main.second1 v sigma0 =
+      $LL.Main.second v # sigma0
 
 Main.incr : ([16]) -> [25]
 Main.incr sto0 =
@@ -21,13 +29,13 @@ Main.incr sto0 =
       let s0 = $t1[0 +: 16] in
       $LL.Main.incr v s0
 
-$LL.Main.begin : ([16]) -> [25]
-$LL.Main.begin sto0 =
-      Main.sig sto0
+$LL.Main.first : ([16], [16]) -> [24]
+$LL.Main.first v sigma0 =
+      $LL.Main.first1 v # sigma0
 
-$LL.Main.first : ([16]) -> [8]
-$LL.Main.first $33 =
-      $33[8 +: 8]
+$LL.Main.incr3 : ([16]) -> [25]
+$LL.Main.incr3 sto0 =
+      Main.sig sto0
 
 Main.sig : ([16]) -> [25]
 Main.sig sto0 =
@@ -39,29 +47,25 @@ Main.sig sto0 =
       let s0 = $t1[0 +: 16] in
       $LL.Main.sig v s0
 
-$LL.Main.second2 : ([16]) -> [8]
-$LL.Main.second2 $34 =
-      trunc 8 (lshr $34 (mul (sub (sub 128'h2 (zext 128 ($LL.Main.second1 $34))) 128'h1) 128'h8))
-
 Main.first : ([16]) -> [24]
 Main.first sigma0 =
-      $LL.Main.first1 sigma0 sigma0
+      $LL.Main.first sigma0 sigma0
 
 $LL.Main.incr2 : ([8], [8], [16]) -> [25]
-$LL.Main.incr2 r0 r1 sto0 =
-      $LL.Main.begin (r1 # add r0 r1)
-
-$LL.Main.sig2 : ([1], [16]) -> [25]
-$LL.Main.sig2 $6 sto0 =
-      Main.incr sto0
+$LL.Main.incr2 $x $x1 sto0 =
+      $LL.Main.incr1 $x $x1 sto0
 
 $LL.Main.incr1 : ([8], [8], [16]) -> [25]
-$LL.Main.incr1 $x $x1 sto0 =
-      $LL.Main.incr2 $x $x1 sto0
+$LL.Main.incr1 r0 r1 sto0 =
+      $LL.Main.incr3 (r1 # add r0 r1)
 
-$LL.Main.second1 : ([16]) -> [1]
-$LL.Main.second1 $35 =
-      1'h1
+Main.second : ([16]) -> [24]
+Main.second sigma0 =
+      $LL.Main.second1 sigma0 sigma0
+
+$LL.Main.second : ([16]) -> [8]
+$LL.Main.second v =
+      trunc 8 (lshr v (mul (sub (sub 128'h2 (zext 128 ($LL.Main.second2 v))) 128'h1) 128'h8))
 
 $LL.Main.incr : ([8], [16]) -> [25]
 $LL.Main.incr r0 sto0 =
@@ -71,19 +75,7 @@ $LL.Main.incr r0 sto0 =
       1'h0 # v # s0) in
       let v = $t1[16 +: 8] in
       let s0 = $t1[0 +: 16] in
-      $LL.Main.incr1 r0 v s0
-
-Main.second : ([16]) -> [24]
-Main.second sigma0 =
-      $LL.Main.second sigma0 sigma0
-
-$LL.Main.sig1 : ([1], [16]) -> [25]
-$LL.Main.sig1 i sto0 =
-      $LL.Main.sig3 i i sto0
-
-$LL.Main.second : ([16], [16]) -> [24]
-$LL.Main.second v sigma0 =
-      $LL.Main.second2 v # sigma0
+      $LL.Main.incr2 r0 v s0
 
 $LL.Main.sig : ([8], [16]) -> [25]
 $LL.Main.sig r0 sto0 =

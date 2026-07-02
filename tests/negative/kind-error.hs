@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Kinds do not unify
+-- EXPECT-ERROR: Couldn't match kind
 -- Vec's first argument is a Nat, not a type.
 {-# LANGUAGE DataKinds #-}
 import ReWire

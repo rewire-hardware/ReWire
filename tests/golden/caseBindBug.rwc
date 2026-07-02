@@ -2,53 +2,45 @@ $Pure.dispatch : ([1], [1]) -> [3]
 $Pure.dispatch disc i =
       Main.go i disc
 
-$LL.Main.notb1 : ([1], [1]) -> [1]
-$LL.Main.notb1 $0 $8 =
-      if eq $8 1'h0 then 1'h1
-            else $LL.Main.notb $0
-
-$LL.Main.go7 : ([1], [1]) -> [3]
-$LL.Main.go7 rabind sto0 =
-      1'h1 # rabind # sto0
-
-$LL.Main.go6 : ([1], [1]) -> [2]
-$LL.Main.go6 x sigma0 =
-      $LL.Main.go2 (Main.notb x)
+$LL.Main.go6 : ([1], [1]) -> [3]
+$LL.Main.go6 rabind sto0 =
+      $LL.Main.go5 rabind rabind
 
 $LL.Main.go5 : ([1], [1]) -> [3]
-$LL.Main.go5 $14 sto0 =
-      if eq $14 1'h1 then (let $t1 = (let $t0 = $LL.Main.go6 sto0 sto0 in
+$LL.Main.go5 rabind sto0 =
+      1'h1 # rabind # sto0
+
+$LL.Main.notb : ([1]) -> [1]
+$LL.Main.notb wild =
+      if eq wild 1'h0 then 1'h1
+            else 1'h0
+
+$LL.Main.go3 : ([1], [1]) -> [2]
+$LL.Main.go3 x sigma0 =
+      $LL.Main.go1 (Main.notb x)
+
+Main.notb : ([1]) -> [1]
+Main.notb $x =
+      $LL.Main.notb $x
+
+$LL.Main.go2 : ([1], [1]) -> [3]
+$LL.Main.go2 wild sto0 =
+      if eq wild 1'h0 then $LL.Main.go6 sto0 sto0
+            else let $t1 = (let $t0 = $LL.Main.go3 sto0 sto0 in
             let v = $t0[1 +: 1] in
             let s0 = $t0[0 +: 1] in
             1'h0 # v # s0) in
             let v = $t1[1 +: 1] in
             let s0 = $t1[0 +: 1] in
-            $LL.Main.go4 v s0)
-            else $LL.Main.go $14 sto0
+            $LL.Main.go6 v s0
 
-$LL.Main.notb : ([1]) -> [1]
-$LL.Main.notb $7 =
-      1'h0
-
-Main.notb : ([1]) -> [1]
-Main.notb $0 =
-      $LL.Main.notb1 $0 $0
-
-$LL.Main.go4 : ([1], [1]) -> [3]
-$LL.Main.go4 rabind sto0 =
-      $LL.Main.go7 rabind rabind
-
-$LL.Main.go2 : ([1]) -> [2]
-$LL.Main.go2 sigma0 =
+$LL.Main.go1 : ([1]) -> [2]
+$LL.Main.go1 sigma0 =
       sigma0 # sigma0
 
-$LL.Main.go : ([1], [1]) -> [3]
-$LL.Main.go $11 sto0 =
-      $LL.Main.go4 sto0 sto0
-
 Main.go : ([1], [1]) -> [3]
-Main.go $x sto0 =
-      $LL.Main.go5 $x sto0
+Main.go ds sto0 =
+      $LL.Main.go2 ds sto0
 
 device top_level
       input __in0 : [1]

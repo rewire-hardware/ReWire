@@ -6,14 +6,14 @@ module top_level (input logic [0:0] clk,
   logic [7:0] __st0_next;
   logic [7:0] __st1;
   logic [7:0] __st1_next;
-  logic [23:0] main_sig_out;
   logic [7:0] zi3;
+  logic [23:0] main_sig_out;
   logic [23:0] main_sig_outR1;
   logic [23:0] zres;
-  Main_sig  inst (__st0, __st1, main_sig_out);
   assign zi3 = __st0 + __st1;
-  Main_sig  instR1 (__st1, zi3, main_sig_outR1);
-  assign zres = (__in0 == 1'h1) ? main_sig_out : main_sig_outR1;
+  Main_sig  inst (__st1, zi3, main_sig_out);
+  Main_sig  instR1 (__st0, __st1, main_sig_outR1);
+  assign zres = (__in0 == 1'h0) ? main_sig_out : main_sig_outR1;
   assign __st0_next = zres[15:8];
   assign __st1_next = zres[7:0];
   assign __out0 = zres[23:16];

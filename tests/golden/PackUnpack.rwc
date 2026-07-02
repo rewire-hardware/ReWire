@@ -2,312 +2,214 @@ $Pure.dispatch : ([8]) -> [32]
 $Pure.dispatch i =
       Main.dev i
 
-$LL.Main.dev152 : ([3], [8], [3], [8], [3], [3]) -> [1]
-$LL.Main.dev152 n w two v one fi =
-      $LL.Main.dev107 n w two v one fi ($LL.Main.dev133 fi n)
+$LL.Main.dev101 : ([3], [3]) -> [3]
+$LL.Main.dev101 $x $x1 =
+      $LL.Main.dev72 $x $x1
 
-$LL.Main.dev151 : ([6]) -> [3]
-$LL.Main.dev151 $25 =
-      let a = $25[3 +: 3] in
-      let b = $25[0 +: 3] in
-      trunc 3 (umod (udiv (zext 128 a) (zext 128 b)) 128'h8)
+$LL.Main.dev100 : ([3], [3]) -> [3]
+$LL.Main.dev100 $x $x1 =
+      $LL.Main.dev70 $x $x1
 
-$LL.Main.dev150 : ([8]) -> [3]
-$LL.Main.dev150 $35 =
-      3'h7
+$LL.Main.dev99 : ([8], [8]) -> [8]
+$LL.Main.dev99 $x $x1 =
+      $LL.Main.dev87 $x $x1
 
-$LL.Main.dev149 : ([3], [3]) -> [3]
-$LL.Main.dev149 $x $x1 =
-      $LL.Main.dev142 $x $x1
+$LL.Main.dev98 : ([3], [3]) -> [3]
+$LL.Main.dev98 eta b =
+      trunc 3 (umod (sub (zext 128 eta) (zext 128 b)) 128'h8)
 
-$LL.Main.dev148 : ([3], [8], [3], [3], [3], [1]) -> [1]
-$LL.Main.dev148 n w two one fi $50 =
-      trunc 1 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev138 ($LL.Main.dev122 ($LL.Main.dev136 fi n) two) one))) 128'h1) 128'h1))
+$LL.Main.dev97 : ([3]) -> [1]
+$LL.Main.dev97 eta =
+      $LL.Main.dev89 (zext 128 eta)
 
-$LL.Main.dev147 : ([6]) -> [3]
-$LL.Main.dev147 $22 =
-      let a = $22[3 +: 3] in
-      let b = $22[0 +: 3] in
-      trunc 3 (umod (add (zext 128 a) (zext 128 b)) 128'h8)
+$LL.Main.dev91 : ([8], [8]) -> [8]
+$LL.Main.dev91 $x $x1 =
+      $LL.Main.dev24 $x $x1
 
-$LL.Main.dev146 : ([8], [3], [3], [1]) -> [3]
-$LL.Main.dev146 v one n' $40 =
-      if eq $40 1'h1 then n'
-            else $LL.Main.dev139 one n' ($LL.Main.dev141 ($LL.Main.dev150 v))
+$LL.Main.dev90 : ([8], [8]) -> [8]
+$LL.Main.dev90 eta w =
+      $LL.Main.dev5 w eta
 
-$LL.Main.dev145 : ([6]) -> [3]
-$LL.Main.dev145 $23 =
-      let a = $23[3 +: 3] in
-      let b = $23[0 +: 3] in
-      trunc 3 (umod (sub (zext 128 a) (zext 128 b)) 128'h8)
-
-$LL.Main.dev143 : ([8], [3], [3], [8], [3]) -> [8]
-$LL.Main.dev143 w two one v $66 =
-      $LL.Main.dev71 w two $66 one v 3'h0 # $LL.Main.dev71 w two $66 one v 3'h1 # $LL.Main.dev71 w two $66 one v 3'h2 # $LL.Main.dev71 w two $66 one v 3'h3 # $LL.Main.dev71 w two $66 one v 3'h4 # $LL.Main.dev71 w two $66 one v 3'h5 # $LL.Main.dev71 w two $66 one v 3'h6 # $LL.Main.dev71 w two $66 one v 3'h7
-
-$LL.Main.dev142 : ([3], [3]) -> [3]
-$LL.Main.dev142 $6 $7 =
-      $LL.Main.dev151 ($6 # $7)
-
-$LL.Main.dev141 : ([3]) -> [1]
-$LL.Main.dev141 $32 =
-      $LL.Main.dev140 (zext 128 $32)
-
-$LL.Main.dev140 : ([128]) -> [1]
-$LL.Main.dev140 $36 =
-      ReWire.Prelude.not (let $t0 = trunc 1 $36 in
+$LL.Main.dev89 : ([128]) -> [1]
+$LL.Main.dev89 eta =
+      $LL.Main.dev84 (let $t0 = trunc 1 eta in
       $t0)
 
-$LL.Main.dev139 : ([3], [3], [1]) -> [3]
-$LL.Main.dev139 one n' $39 =
-      $LL.Main.dev138 n' one
+$LL.Main.dev88 : ([3], [3]) -> [3]
+$LL.Main.dev88 $x $x1 =
+      $LL.Main.dev98 $x $x1
 
-$LL.Main.dev138 : ([3], [3]) -> [3]
-$LL.Main.dev138 $x $x1 =
-      $LL.Main.dev113 $x $x1
+$LL.Main.dev87 : ([8], [8]) -> [8]
+$LL.Main.dev87 eta w =
+      $LL.Main.dev17 w eta
 
-$LL.Main.dev136 : ([3], [3]) -> [3]
-$LL.Main.dev136 $x $x1 =
-      $LL.Main.dev126 $x $x1
+$LL.Main.dev86 : ([8], [8]) -> [8]
+$LL.Main.dev86 $x $x1 =
+      $LL.Main.dev77 $x $x1
 
-$LL.Main.dev135 : ([3], [3]) -> [1]
-$LL.Main.dev135 $12 $13 =
-      $LL.Main.dev117 ($12 # $13)
+$LL.Main.dev85 : ([3], [3], [8], [8], [3]) -> [8]
+$LL.Main.dev85 one two eta w n =
+      $LL.Main.dev41 one two eta w n 3'h0 # $LL.Main.dev41 one two eta w n 3'h1 # $LL.Main.dev41 one two eta w n 3'h2 # $LL.Main.dev41 one two eta w n 3'h3 # $LL.Main.dev41 one two eta w n 3'h4 # $LL.Main.dev41 one two eta w n 3'h5 # $LL.Main.dev41 one two eta w n 3'h6 # $LL.Main.dev41 one two eta w n 3'h7
 
-$LL.Main.dev133 : ([3], [3]) -> [1]
-$LL.Main.dev133 $x $x1 =
-      $LL.Main.dev135 $x $x1
+$LL.Main.dev84 : ([1]) -> [1]
+$LL.Main.dev84 b =
+      if eq b 1'h1 then 1'h0
+            else 1'h1
 
-$LL.Main.dev131 : ([3], [3], [3], [8], [1]) -> [1]
-$LL.Main.dev131 fi two one w $57 =
-      trunc 1 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev149 ($LL.Main.dev136 fi one) two))) 128'h1) 128'h1))
+$LL.Main.dev83 : ([8], [3], [8], [3], [3]) -> [8]
+$LL.Main.dev83 eta two w one n =
+      $LL.Main.dev80 eta two w n one 3'h0 # $LL.Main.dev80 eta two w n one 3'h1 # $LL.Main.dev80 eta two w n one 3'h2 # $LL.Main.dev80 eta two w n one 3'h3 # $LL.Main.dev80 eta two w n one 3'h4 # $LL.Main.dev80 eta two w n one 3'h5 # $LL.Main.dev80 eta two w n one 3'h6 # $LL.Main.dev80 eta two w n one 3'h7
 
-$LL.Main.dev129 : ([3], [8], [3], [1]) -> [3]
-$LL.Main.dev129 one v n' $63 =
-      if eq $63 1'h1 then n'
-            else $LL.Main.dev74 one n' ($LL.Main.dev141 ($LL.Main.dev150 v))
+$LL.Main.dev82 : ([8]) -> [3]
+$LL.Main.dev82 ds =
+      3'h7
 
-$LL.Main.dev126 : ([3], [3]) -> [3]
-$LL.Main.dev126 $2 $3 =
-      $LL.Main.dev145 ($2 # $3)
+$LL.Main.dev81 : ([3], [3], [8], [8], [3]) -> [1]
+$LL.Main.dev81 two one w eta fi =
+      $LL.Main.dev55 two one w fi eta ($LL.Main.dev97 fi)
 
-$LL.Main.dev124 : ([6]) -> [3]
-$LL.Main.dev124 $24 =
-      let a = $24[3 +: 3] in
-      let b = $24[0 +: 3] in
-      trunc 3 (umod (mul (zext 128 a) (zext 128 b)) 128'h8)
+$LL.Main.dev80 : ([8], [3], [8], [3], [3], [3]) -> [1]
+$LL.Main.dev80 eta two w n one fi =
+      $LL.Main.dev2 eta fi two w n one ($LL.Main.dev67 fi n)
 
-$LL.Main.dev123 : ([8], [3], [8], [3], [3]) -> [8]
-$LL.Main.dev123 v one w two $44 =
-      $LL.Main.dev51 v w two ($LL.Main.dev146 v one $44 ($LL.Main.dev141 ($LL.Main.dev150 v)))
+$LL.Main.dev77 : ([8], [8]) -> [8]
+$LL.Main.dev77 $x $x1 =
+      $LL.Main.dev48 $x $x1
 
-$LL.Main.dev122 : ([3], [3]) -> [3]
-$LL.Main.dev122 $x $x1 =
-      $LL.Main.dev99 $x $x1
+$LL.Main.dev74 : ([3], [8], [8], [3]) -> [8]
+$LL.Main.dev74 one w eta two =
+      $LL.Main.dev81 two one w eta 3'h0 # $LL.Main.dev81 two one w eta 3'h1 # $LL.Main.dev81 two one w eta 3'h2 # $LL.Main.dev81 two one w eta 3'h3 # $LL.Main.dev81 two one w eta 3'h4 # $LL.Main.dev81 two one w eta 3'h5 # $LL.Main.dev81 two one w eta 3'h6 # $LL.Main.dev81 two one w eta 3'h7
 
-ReWire.Prelude.not : ([1]) -> [1]
-ReWire.Prelude.not $14 =
-      $LL.ReWire.Prelude.not1 $14 $14
+$LL.Main.dev72 : ([3], [3]) -> [3]
+$LL.Main.dev72 eta b =
+      trunc 3 (umod (udiv (zext 128 eta) (zext 128 b)) 128'h8)
 
-$LL.Main.dev117 : ([6]) -> [1]
-$LL.Main.dev117 $28 =
-      let a = $28[3 +: 3] in
-      let b = $28[0 +: 3] in
-      ult (zext 128 a) (zext 128 b)
+$LL.Main.dev71 : ([3], [3]) -> [3]
+$LL.Main.dev71 $x $x1 =
+      $LL.Main.dev31 $x $x1
 
-$LL.Main.dev113 : ([3], [3]) -> [3]
-$LL.Main.dev113 $0 $1 =
-      $LL.Main.dev147 ($0 # $1)
-
-Main.dev : ([8]) -> [32]
-Main.dev $x =
-      $LL.Main.dev26 $x
-
-$LL.Main.dev107 : ([3], [8], [3], [8], [3], [3], [1]) -> [1]
-$LL.Main.dev107 n w two v one fi $51 =
-      if eq $51 1'h1 then trunc 1 (lshr v (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev138 ($LL.Main.dev122 fi two) one))) 128'h1) 128'h1))
-            else $LL.Main.dev148 n w two one fi ($LL.Main.dev133 fi n)
-
-$LL.Main.dev106 : ([8], [8]) -> [32]
-$LL.Main.dev106 a $3 =
-      $LL.Main.dev76 a $3 # $LL.Main.dev13 a $3 # $LL.Main.dev44 a $3 # $LL.Main.dev65 a $3
-
-$LL.Main.dev105 : ([16]) -> [8]
-$LL.Main.dev105 $70 =
-      let v = $70[8 +: 8] in
-      let w = $70[0 +: 8] in
-      $LL.Main.dev72 w v
-
-$LL.Main.dev104 : ([8], [8]) -> [8]
-$LL.Main.dev104 $13 $14 =
-      $LL.Main.dev59 ($13 # $14)
-
-$LL.Main.dev103 : ([8], [8]) -> [8]
-$LL.Main.dev103 sp sp1 =
-      $LL.Main.dev75 sp sp1 3'h1 3'h2
-
-$LL.Main.dev102 : ([8], [3], [3], [3], [1]) -> [1]
-$LL.Main.dev102 w n two fi $41 =
-      trunc 1 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev122 ($LL.Main.dev136 fi n) two))) 128'h1) 128'h1))
-
-$LL.Main.dev99 : ([3], [3]) -> [3]
-$LL.Main.dev99 $4 $5 =
-      $LL.Main.dev124 ($4 # $5)
-
-$LL.Main.dev94 : ([3], [8], [3], [3], [3], [8], [1]) -> [1]
-$LL.Main.dev94 fi w two n one v $65 =
-      if eq $65 1'h1 then trunc 1 (lshr v (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev138 n ($LL.Main.dev149 fi two)))) 128'h1) 128'h1))
-            else $LL.Main.dev88 fi w two n one ($LL.Main.dev141 fi)
-
-$LL.Main.dev93 : ([8], [8]) -> [8]
-$LL.Main.dev93 $17 $18 =
-      $LL.Main.dev105 ($17 # $18)
-
-$LL.ReWire.Prelude.not1 : ([1], [1]) -> [1]
-$LL.ReWire.Prelude.not1 $14 $56 =
-      if eq $56 1'h1 then 1'h0
-            else $LL.ReWire.Prelude.not $14
-
-$LL.Main.dev88 : ([3], [8], [3], [3], [3], [1]) -> [1]
-$LL.Main.dev88 fi w two n one $64 =
-      trunc 1 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev138 n ($LL.Main.dev149 ($LL.Main.dev136 fi one) two)))) 128'h1) 128'h1))
-
-$LL.Main.x2 : ([8]) -> [8]
-$LL.Main.x2 $2 =
-      mul $2 8'h2
-
-$LL.Main.dev81 : ([8], [3], [8], [3]) -> [8]
-$LL.Main.dev81 w one v $68 =
-      $LL.Main.dev2 w $68 one v ($LL.Main.dev149 ($LL.Main.dev150 v) $68)
-
-$LL.Main.dev78 : ([8], [8]) -> [8]
-$LL.Main.dev78 sp sp1 =
-      $LL.Main.dev56 sp 3'h1 sp1 3'h2
-
-$LL.Main.dev76 : ([8], [8]) -> [8]
-$LL.Main.dev76 $x $x1 =
-      $LL.Main.dev62 $x $x1
-
-$LL.Main.dev75 : ([8], [8], [3], [3]) -> [8]
-$LL.Main.dev75 w v one $54 =
-      $LL.Main.dev69 w $54 v one ($LL.Main.dev149 ($LL.Main.dev150 v) $54)
-
-$LL.Main.dev74 : ([3], [3], [1]) -> [3]
-$LL.Main.dev74 one n' $62 =
-      $LL.Main.dev138 n' one
-
-$LL.Main.dev72 : ([8], [8]) -> [8]
-$LL.Main.dev72 sp sp1 =
-      $LL.Main.dev81 sp 3'h1 sp1 3'h2
-
-$LL.Main.dev71 : ([8], [3], [3], [3], [8], [3]) -> [1]
-$LL.Main.dev71 w two n one v fi =
-      $LL.Main.dev94 fi w two n one v ($LL.Main.dev141 fi)
+$LL.Main.dev70 : ([3], [3]) -> [3]
+$LL.Main.dev70 eta b =
+      trunc 3 (umod (add (zext 128 eta) (zext 128 b)) 128'h8)
 
 $LL.Main.dev69 : ([8], [3], [8], [3], [3]) -> [8]
-$LL.Main.dev69 w two v one $53 =
-      $LL.Main.dev w two v one ($LL.Main.dev67 $53 v one ($LL.Main.dev141 ($LL.Main.dev150 v)))
+$LL.Main.dev69 eta two w one n' =
+      $LL.Main.dev83 eta two w one ($LL.Main.dev57 n' one ($LL.Main.dev97 ($LL.Main.dev82 eta)))
 
-$LL.Main.dev67 : ([3], [8], [3], [1]) -> [3]
-$LL.Main.dev67 n' v one $49 =
-      if eq $49 1'h1 then n'
-            else $LL.Main.dev45 n' one ($LL.Main.dev141 ($LL.Main.dev150 v))
+$LL.Main.dev68 : ([3], [3], [8], [8], [3]) -> [8]
+$LL.Main.dev68 one two eta w n' =
+      $LL.Main.dev85 one two eta w ($LL.Main.dev21 one n' ($LL.Main.dev97 ($LL.Main.dev82 eta)))
 
-$LL.Main.dev65 : ([8], [8]) -> [8]
-$LL.Main.dev65 $x $x1 =
-      $LL.Main.dev104 $x $x1
+$LL.Main.dev67 : ([3], [3]) -> [1]
+$LL.Main.dev67 $x $x1 =
+      $LL.Main.dev52 $x $x1
 
-$LL.Main.dev63 : ([8], [8], [3], [3], [3]) -> [1]
-$LL.Main.dev63 v w n two fi =
-      $LL.Main.dev28 v w n two fi ($LL.Main.dev133 fi n)
+Main.dev : ([8]) -> [32]
+Main.dev a =
+      $LL.Main.dev62 a (Main.x2 a)
 
-$LL.Main.dev62 : ([8], [8]) -> [8]
-$LL.Main.dev62 $15 $16 =
-      $LL.Main.dev53 ($15 # $16)
+$LL.Main.dev62 : ([8], [8]) -> [32]
+$LL.Main.dev62 a b =
+      $LL.Main.dev54 a b # $LL.Main.dev86 a b # $LL.Main.dev99 a b # $LL.Main.dev91 a b
 
-$LL.Main.dev61 : ([16]) -> [8]
-$LL.Main.dev61 $47 =
-      let v = $47[8 +: 8] in
-      let w = $47[0 +: 8] in
-      $LL.Main.dev78 v w
+$LL.Main.dev58 : ([3], [1]) -> [3]
+$LL.Main.dev58 n' wild =
+      if eq wild 1'h0 then $LL.Main.dev38 n'
+            else n'
 
-$LL.Main.dev59 : ([16]) -> [8]
-$LL.Main.dev59 $56 =
-      let v = $56[8 +: 8] in
-      let w = $56[0 +: 8] in
-      $LL.Main.dev103 w v
+$LL.Main.dev57 : ([3], [3], [1]) -> [3]
+$LL.Main.dev57 n' one wild =
+      if eq wild 1'h0 then $LL.Main.dev100 n' one
+            else n'
 
-$LL.Main.dev56 : ([8], [3], [8], [3]) -> [8]
-$LL.Main.dev56 v one w $45 =
-      $LL.Main.dev123 v one w $45 ($LL.Main.dev149 ($LL.Main.dev150 v) $45)
+$LL.Main.dev55 : ([3], [3], [8], [3], [8], [1]) -> [1]
+$LL.Main.dev55 two one w fi eta wild =
+      if eq wild 1'h0 then trunc 1 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev101 ($LL.Main.dev88 fi one) two))) 128'h1) 128'h1))
+            else trunc 1 (lshr eta (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev101 fi two))) 128'h1) 128'h1))
 
-$LL.Main.dev55 : ([8], [8]) -> [8]
-$LL.Main.dev55 $11 $12 =
-      $LL.Main.dev61 ($11 # $12)
+$LL.Main.dev54 : ([8], [8]) -> [8]
+$LL.Main.dev54 $x $x1 =
+      $LL.Main.dev90 $x $x1
 
-$LL.Main.dev53 : ([16]) -> [8]
-$LL.Main.dev53 $61 =
-      let v = $61[8 +: 8] in
-      let w = $61[0 +: 8] in
-      $LL.Main.dev27 v w
+$LL.Main.dev52 : ([3], [3]) -> [1]
+$LL.Main.dev52 eta eta1 =
+      ult (zext 128 eta) (zext 128 eta1)
 
-$LL.Main.dev51 : ([8], [8], [3], [3]) -> [8]
-$LL.Main.dev51 v w two $43 =
-      $LL.Main.dev63 v w $43 two 3'h0 # $LL.Main.dev63 v w $43 two 3'h1 # $LL.Main.dev63 v w $43 two 3'h2 # $LL.Main.dev63 v w $43 two 3'h3 # $LL.Main.dev63 v w $43 two 3'h4 # $LL.Main.dev63 v w $43 two 3'h5 # $LL.Main.dev63 v w $43 two 3'h6 # $LL.Main.dev63 v w $43 two 3'h7
+$LL.Main.dev49 : ([8], [8], [3], [3]) -> [8]
+$LL.Main.dev49 eta w one two =
+      $LL.Main.dev69 eta two w one ($LL.Main.dev101 ($LL.Main.dev82 eta) two)
 
-$LL.ReWire.Prelude.not : ([1]) -> [1]
-$LL.ReWire.Prelude.not $55 =
-      1'h1
+$LL.Main.dev48 : ([8], [8]) -> [8]
+$LL.Main.dev48 sp sp1 =
+      $LL.Main.dev10 3'h1 sp sp1 3'h2
 
-$LL.Main.dev48 : ([8], [3], [3], [3], [8], [1]) -> [1]
-$LL.Main.dev48 v fi two one w $58 =
-      if eq $58 1'h1 then trunc 1 (lshr v (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev149 fi two))) 128'h1) 128'h1))
-            else $LL.Main.dev131 fi two one w ($LL.Main.dev141 fi)
+$LL.Main.dev47 : ([8], [8], [3], [3], [3]) -> [1]
+$LL.Main.dev47 w eta n two fi =
+      $LL.Main.dev34 w eta n two fi ($LL.Main.dev67 fi n)
 
-$LL.Main.dev45 : ([3], [3], [1]) -> [3]
-$LL.Main.dev45 n' one $48 =
-      $LL.Main.dev138 n' one
+$LL.Main.dev41 : ([3], [3], [8], [8], [3], [3]) -> [1]
+$LL.Main.dev41 one two eta w n fi =
+      $LL.Main.dev32 one two eta w fi n ($LL.Main.dev97 fi)
 
-$LL.Main.dev44 : ([8], [8]) -> [8]
-$LL.Main.dev44 $x $x1 =
-      $LL.Main.dev55 $x $x1
+$LL.Main.dev39 : ([8], [8], [3], [3]) -> [8]
+$LL.Main.dev39 w eta two n' =
+      $LL.Main.dev26 w eta two ($LL.Main.dev58 n' ($LL.Main.dev97 ($LL.Main.dev82 eta)))
 
-$LL.Main.dev31 : ([8], [3], [8], [3]) -> [8]
-$LL.Main.dev31 v one w $59 =
-      $LL.Main.dev3 v $59 one w 3'h0 # $LL.Main.dev3 v $59 one w 3'h1 # $LL.Main.dev3 v $59 one w 3'h2 # $LL.Main.dev3 v $59 one w 3'h3 # $LL.Main.dev3 v $59 one w 3'h4 # $LL.Main.dev3 v $59 one w 3'h5 # $LL.Main.dev3 v $59 one w 3'h6 # $LL.Main.dev3 v $59 one w 3'h7
+$LL.Main.dev38 : ([3]) -> [3]
+$LL.Main.dev38 sp =
+      $LL.Main.dev70 sp 3'h1
 
-$LL.Main.dev28 : ([8], [8], [3], [3], [3], [1]) -> [1]
-$LL.Main.dev28 v w n two fi $42 =
-      if eq $42 1'h1 then trunc 1 (lshr v (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev122 fi two))) 128'h1) 128'h1))
-            else $LL.Main.dev102 w n two fi ($LL.Main.dev133 fi n)
+$LL.Main.dev36 : ([8], [8]) -> [8]
+$LL.Main.dev36 sp sp1 =
+      $LL.Main.dev49 sp sp1 3'h1 3'h2
 
-$LL.Main.dev27 : ([8], [8]) -> [8]
-$LL.Main.dev27 sp sp1 =
-      $LL.Main.dev31 sp 3'h1 sp1 3'h2
+$LL.Main.dev34 : ([8], [8], [3], [3], [3], [1]) -> [1]
+$LL.Main.dev34 w eta n two fi wild =
+      if eq wild 1'h0 then trunc 1 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev71 ($LL.Main.dev88 fi n) two))) 128'h1) 128'h1))
+            else trunc 1 (lshr eta (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev71 fi two))) 128'h1) 128'h1))
 
-$LL.Main.dev26 : ([8]) -> [32]
-$LL.Main.dev26 $4 =
-      $LL.Main.dev106 $4 (Main.x2 $4)
+$LL.Main.dev32 : ([3], [3], [8], [8], [3], [3], [1]) -> [1]
+$LL.Main.dev32 one two eta w fi n wild =
+      if eq wild 1'h0 then trunc 1 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev100 n ($LL.Main.dev101 ($LL.Main.dev88 fi one) two)))) 128'h1) 128'h1))
+            else trunc 1 (lshr eta (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev100 n ($LL.Main.dev101 fi two)))) 128'h1) 128'h1))
+
+$LL.Main.dev31 : ([3], [3]) -> [3]
+$LL.Main.dev31 eta b =
+      trunc 3 (umod (mul (zext 128 eta) (zext 128 b)) 128'h8)
+
+$LL.Main.dev26 : ([8], [8], [3], [3]) -> [8]
+$LL.Main.dev26 w eta two n =
+      $LL.Main.dev47 w eta n two 3'h0 # $LL.Main.dev47 w eta n two 3'h1 # $LL.Main.dev47 w eta n two 3'h2 # $LL.Main.dev47 w eta n two 3'h3 # $LL.Main.dev47 w eta n two 3'h4 # $LL.Main.dev47 w eta n two 3'h5 # $LL.Main.dev47 w eta n two 3'h6 # $LL.Main.dev47 w eta n two 3'h7
+
+$LL.Main.dev24 : ([8], [8]) -> [8]
+$LL.Main.dev24 $x $x1 =
+      $LL.Main.dev36 $x $x1
+
+$LL.Main.dev21 : ([3], [3], [1]) -> [3]
+$LL.Main.dev21 one n' wild =
+      if eq wild 1'h0 then $LL.Main.dev100 n' one
+            else n'
+
+$LL.Main.dev17 : ([8], [8]) -> [8]
+$LL.Main.dev17 sp sp1 =
+      $LL.Main.dev39 sp sp1 3'h2 ($LL.Main.dev101 ($LL.Main.dev82 sp1) 3'h2)
+
+$LL.Main.dev10 : ([3], [8], [8], [3]) -> [8]
+$LL.Main.dev10 one eta w two =
+      $LL.Main.dev68 one two eta w ($LL.Main.dev101 ($LL.Main.dev82 eta) two)
 
 Main.x2 : ([8]) -> [8]
-Main.x2 $x =
-      $LL.Main.x2 $x
+Main.x2 x =
+      mul x 8'h2
 
-$LL.Main.dev13 : ([8], [8]) -> [8]
-$LL.Main.dev13 $x $x1 =
-      $LL.Main.dev93 $x $x1
+$LL.Main.dev5 : ([8], [8]) -> [8]
+$LL.Main.dev5 sp sp1 =
+      $LL.Main.dev74 3'h1 sp sp1 3'h2
 
-$LL.Main.dev3 : ([8], [3], [3], [8], [3]) -> [1]
-$LL.Main.dev3 v two one w fi =
-      $LL.Main.dev48 v fi two one w ($LL.Main.dev141 fi)
-
-$LL.Main.dev2 : ([8], [3], [3], [8], [3]) -> [8]
-$LL.Main.dev2 w two one v $67 =
-      $LL.Main.dev143 w two one v ($LL.Main.dev129 one v $67 ($LL.Main.dev141 ($LL.Main.dev150 v)))
-
-$LL.Main.dev : ([8], [3], [8], [3], [3]) -> [8]
-$LL.Main.dev w two v one $52 =
-      $LL.Main.dev152 $52 w two v one 3'h0 # $LL.Main.dev152 $52 w two v one 3'h1 # $LL.Main.dev152 $52 w two v one 3'h2 # $LL.Main.dev152 $52 w two v one 3'h3 # $LL.Main.dev152 $52 w two v one 3'h4 # $LL.Main.dev152 $52 w two v one 3'h5 # $LL.Main.dev152 $52 w two v one 3'h6 # $LL.Main.dev152 $52 w two v one 3'h7
+$LL.Main.dev2 : ([8], [3], [3], [8], [3], [3], [1]) -> [1]
+$LL.Main.dev2 eta fi two w n one wild =
+      if eq wild 1'h0 then trunc 1 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev100 ($LL.Main.dev71 ($LL.Main.dev88 fi n) two) one))) 128'h1) 128'h1))
+            else trunc 1 (lshr eta (mul (sub (sub 128'h8 (zext 128 ($LL.Main.dev100 ($LL.Main.dev71 fi two) one))) 128'h1) 128'h1))
 
 device top_level
       input __in0 : [8]

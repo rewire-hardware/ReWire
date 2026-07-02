@@ -1,4 +1,4 @@
--- EXPECT-ERROR: not terminating (mutually recursive definitions?)
+-- EXPECT-ERROR: Cycle in type synonym declarations
 {-# LANGUAGE DataKinds #-}
 import ReWire
 import ReWire.Bits

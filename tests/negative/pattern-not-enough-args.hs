@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Pattern is not applied to enough arguments
+-- EXPECT-ERROR: The data constructor ‘MkT’ should have 2 arguments, but has been given 1
 import ReWire
 import ReWire.Monad (iter, Dev)
 data T = MkT Bool Bool

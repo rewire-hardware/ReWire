@@ -2,432 +2,312 @@ $Pure.dispatch : ([128]) -> [128]
 $Pure.dispatch i =
       Main.loop i
 
-$LL.Main.compute240 : ([128]) -> [1]
-$LL.Main.compute240 $36 =
-      ReWire.Prelude.not (let $t0 = trunc 1 $36 in
-      $t0)
+$LL.Main.compute162 : ([64], [64]) -> [64]
+$LL.Main.compute162 sp sp1 =
+      $LL.Main.compute143 sp sp1 3'h2 ($LL.Main.compute144 ($LL.Main.compute161 sp1) 3'h2)
 
-$LL.Main.compute239 : ([64]) -> [3]
-$LL.Main.compute239 $35 =
+$LL.Main.compute161 : ([64]) -> [3]
+$LL.Main.compute161 ds =
       3'h7
 
-$LL.Main.compute238 : ([128]) -> [64]
-$LL.Main.compute238 $47 =
-      let v = $47[64 +: 64] in
-      let w = $47[0 +: 64] in
-      $LL.Main.compute29 w v
+$LL.Main.compute160 : ([3], [3]) -> [3]
+$LL.Main.compute160 eta b =
+      trunc 3 (umod (udiv (zext 128 eta) (zext 128 b)) 128'h8)
 
-$LL.Main.compute237 : ([64], [64]) -> [64]
-$LL.Main.compute237 sp sp1 =
-      $LL.Main.compute116 3'h1 sp sp1 3'h2
+$LL.Main.compute159 : ([3], [3]) -> [3]
+$LL.Main.compute159 $x $x1 =
+      $LL.Main.compute124 $x $x1
 
-$LL.Main.compute236 : ([6]) -> [3]
-$LL.Main.compute236 $25 =
-      let a = $25[3 +: 3] in
-      let b = $25[0 +: 3] in
-      trunc 3 (umod (udiv (zext 128 a) (zext 128 b)) 128'h8)
+$LL.Main.compute158 : ([3], [3]) -> [3]
+$LL.Main.compute158 $x $x1 =
+      $LL.Main.compute157 $x $x1
 
-$LL.Main.compute235 : ([64], [64], [3], [3]) -> [64]
-$LL.Main.compute235 v w one $45 =
-      $LL.Main.compute41 v $45 w one ($LL.Main.compute179 ($LL.Main.compute239 v) $45)
+$LL.Main.compute157 : ([3], [3]) -> [3]
+$LL.Main.compute157 eta b =
+      trunc 3 (umod (sub (zext 128 eta) (zext 128 b)) 128'h8)
 
-$LL.Main.compute234 : ([3], [3]) -> [1]
-$LL.Main.compute234 $x $x1 =
-      $LL.Main.compute233 $x $x1
+$LL.Main.compute156 : ([64], [64]) -> [64]
+$LL.Main.compute156 eta w =
+      $LL.Main.compute91 w eta
 
-$LL.Main.compute233 : ([3], [3]) -> [1]
-$LL.Main.compute233 $12 $13 =
-      $LL.Main.compute213 ($12 # $13)
+$LL.Main.compute154 : ([3], [3], [3], [64], [3], [64], [1]) -> [8]
+$LL.Main.compute154 two n fi w one eta wild =
+      if eq wild 1'h0 then trunc 8 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute150 ($LL.Main.compute159 ($LL.Main.compute158 fi n) two) one))) 128'h1) 128'h8))
+            else trunc 8 (lshr eta (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute150 ($LL.Main.compute159 fi two) one))) 128'h1) 128'h8))
 
-$LL.Main.compute232 : ([128]) -> [64]
-$LL.Main.compute232 $61 =
-      let v = $61[64 +: 64] in
-      let w = $61[0 +: 64] in
-      $LL.Main.compute84 w v
+$LL.Main.compute153 : ([3], [64], [64], [3], [3]) -> [64]
+$LL.Main.compute153 two w eta one n =
+      $LL.Main.compute112 two w n eta one 3'h0 # $LL.Main.compute112 two w n eta one 3'h1 # $LL.Main.compute112 two w n eta one 3'h2 # $LL.Main.compute112 two w n eta one 3'h3 # $LL.Main.compute112 two w n eta one 3'h4 # $LL.Main.compute112 two w n eta one 3'h5 # $LL.Main.compute112 two w n eta one 3'h6 # $LL.Main.compute112 two w n eta one 3'h7
 
-$LL.Main.compute231 : ([6]) -> [3]
-$LL.Main.compute231 $23 =
-      let a = $23[3 +: 3] in
-      let b = $23[0 +: 3] in
-      trunc 3 (umod (sub (zext 128 a) (zext 128 b)) 128'h8)
+$LL.Main.compute152 : ([3], [64], [64], [3], [3]) -> [64]
+$LL.Main.compute152 two w eta one n' =
+      $LL.Main.compute153 two w eta one ($LL.Main.compute71 n' one ($LL.Main.compute120 ($LL.Main.compute161 eta)))
 
-$LL.Main.compute230 : ([6]) -> [3]
-$LL.Main.compute230 $24 =
-      let a = $24[3 +: 3] in
-      let b = $24[0 +: 3] in
-      trunc 3 (umod (mul (zext 128 a) (zext 128 b)) 128'h8)
+$LL.Main.compute151 : ([3], [1]) -> [3]
+$LL.Main.compute151 n' wild =
+      if eq wild 1'h0 then $LL.Main.compute141 n'
+            else n'
+
+$LL.Main.compute150 : ([3], [3]) -> [3]
+$LL.Main.compute150 $x $x1 =
+      $LL.Main.compute148 $x $x1
 
 Main.compute : ([128]) -> [128]
-Main.compute $x =
-      $LL.Main.compute81 $x
+Main.compute ds =
+      let v = ds[64 +: 64] in
+      let w = ds[0 +: 64] in
+      $LL.Main.compute46 ($LL.Main.compute69 v w # $LL.Main.compute106 v w)
 
-$LL.Main.compute229 : ([3], [3], [1]) -> [3]
-$LL.Main.compute229 n' one $39 =
-      $LL.Main.compute218 n' one
+$LL.Main.compute148 : ([3], [3]) -> [3]
+$LL.Main.compute148 eta b =
+      trunc 3 (umod (add (zext 128 eta) (zext 128 b)) 128'h8)
 
-$LL.Main.compute228 : ([3], [3]) -> [3]
-$LL.Main.compute228 $4 $5 =
-      $LL.Main.compute230 ($4 # $5)
+$LL.Main.compute146 : ([3], [3]) -> [1]
+$LL.Main.compute146 eta eta1 =
+      ult (zext 128 eta) (zext 128 eta1)
 
-$LL.Main.compute227 : ([64], [64]) -> [64]
-$LL.Main.compute227 $15 $16 =
-      $LL.Main.compute232 ($15 # $16)
+$LL.Main.compute144 : ([3], [3]) -> [3]
+$LL.Main.compute144 $x $x1 =
+      $LL.Main.compute160 $x $x1
 
-$LL.Main.compute225 : ([3], [3]) -> [3]
-$LL.Main.compute225 $2 $3 =
-      $LL.Main.compute231 ($2 # $3)
+$LL.Main.compute143 : ([64], [64], [3], [3]) -> [64]
+$LL.Main.compute143 w eta two n' =
+      $LL.Main.compute139 w eta two ($LL.Main.compute151 n' ($LL.Main.compute120 ($LL.Main.compute161 eta)))
 
-$LL.Main.compute223 : ([3], [3], [64], [3], [64], [3], [1]) -> [8]
-$LL.Main.compute223 two one v fi w n $51 =
-      if eq $51 1'h1 then trunc 8 (lshr v (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute218 ($LL.Main.compute219 fi two) one))) 128'h1) 128'h8))
-            else $LL.Main.compute51 two one fi w n ($LL.Main.compute234 fi n)
+$LL.Main.compute141 : ([3]) -> [3]
+$LL.Main.compute141 sp =
+      $LL.Main.compute148 sp 3'h1
 
-$LL.Main.compute222 : ([3], [3]) -> [3]
-$LL.Main.compute222 $6 $7 =
-      $LL.Main.compute236 ($6 # $7)
+$LL.Main.compute139 : ([64], [64], [3], [3]) -> [64]
+$LL.Main.compute139 w eta two n =
+      $LL.Main.compute121 n w eta two 3'h0 # $LL.Main.compute121 n w eta two 3'h1 # $LL.Main.compute121 n w eta two 3'h2 # $LL.Main.compute121 n w eta two 3'h3 # $LL.Main.compute121 n w eta two 3'h4 # $LL.Main.compute121 n w eta two 3'h5 # $LL.Main.compute121 n w eta two 3'h6 # $LL.Main.compute121 n w eta two 3'h7
 
-$LL.Main.compute221 : ([64], [64]) -> [64]
-$LL.Main.compute221 sp sp1 =
-      $LL.Main.compute56 sp sp1 3'h1 3'h2
+$LL.Main.compute137 : ([1]) -> [1]
+$LL.Main.compute137 b =
+      if eq b 1'h1 then 1'h0
+            else 1'h1
 
-$LL.Main.compute219 : ([3], [3]) -> [3]
-$LL.Main.compute219 $x $x1 =
-      $LL.Main.compute228 $x $x1
+$LL.Main.compute134 : ([64], [3], [64], [3]) -> [64]
+$LL.Main.compute134 w one eta two =
+      $LL.Main.compute78 two w one eta ($LL.Main.compute144 ($LL.Main.compute161 eta) two)
 
-$LL.Main.compute218 : ([3], [3]) -> [3]
-$LL.Main.compute218 $x $x1 =
-      $LL.Main.compute206 $x $x1
+$LL.Main.compute133 : ([64], [3], [64], [3]) -> [64]
+$LL.Main.compute133 eta two w n' =
+      $LL.Main.compute114 eta two w ($LL.Main.compute151 n' ($LL.Main.compute120 ($LL.Main.compute161 eta)))
 
-$LL.Main.compute215 : ([3]) -> [1]
-$LL.Main.compute215 $32 =
-      $LL.Main.compute240 (zext 128 $32)
+$LL.Main.compute132 : ([3], [3]) -> [1]
+$LL.Main.compute132 $x $x1 =
+      $LL.Main.compute146 $x $x1
 
-$LL.Main.compute213 : ([6]) -> [1]
-$LL.Main.compute213 $28 =
-      let a = $28[3 +: 3] in
-      let b = $28[0 +: 3] in
-      ult (zext 128 a) (zext 128 b)
+$LL.Main.compute127 : ([64], [64]) -> [64]
+$LL.Main.compute127 $x $x1 =
+      $LL.Main.compute61 $x $x1
 
-$LL.Main.compute211 : ([6]) -> [3]
-$LL.Main.compute211 $22 =
-      let a = $22[3 +: 3] in
-      let b = $22[0 +: 3] in
-      trunc 3 (umod (add (zext 128 a) (zext 128 b)) 128'h8)
+$LL.Main.compute125 : ([128]) -> [1]
+$LL.Main.compute125 eta =
+      $LL.Main.compute137 (let $t0 = trunc 1 eta in
+      $t0)
 
-$LL.Main.compute210 : ([3], [3], [64], [1]) -> [3]
-$LL.Main.compute210 one n' v $49 =
-      if eq $49 1'h1 then n'
-            else $LL.Main.compute180 one n' ($LL.Main.compute215 ($LL.Main.compute239 v))
+$LL.Main.compute124 : ([3], [3]) -> [3]
+$LL.Main.compute124 eta b =
+      trunc 3 (umod (mul (zext 128 eta) (zext 128 b)) 128'h8)
 
-$LL.Main.compute209 : ([3], [3], [1]) -> [3]
-$LL.Main.compute209 n' one $48 =
-      $LL.Main.compute218 n' one
+$LL.Main.compute123 : ([64], [3], [64], [3], [3]) -> [64]
+$LL.Main.compute123 eta one w two n =
+      $LL.Main.compute18 eta one n w two 3'h0 # $LL.Main.compute18 eta one n w two 3'h1 # $LL.Main.compute18 eta one n w two 3'h2 # $LL.Main.compute18 eta one n w two 3'h3 # $LL.Main.compute18 eta one n w two 3'h4 # $LL.Main.compute18 eta one n w two 3'h5 # $LL.Main.compute18 eta one n w two 3'h6 # $LL.Main.compute18 eta one n w two 3'h7
 
-$LL.Main.compute207 : ([64], [64]) -> [64]
-$LL.Main.compute207 $x $x1 =
-      $LL.Main.compute108 $x $x1
+$LL.Main.compute121 : ([3], [64], [64], [3], [3]) -> [8]
+$LL.Main.compute121 n w eta two fi =
+      $LL.Main.compute117 n w eta fi two ($LL.Main.compute132 fi n)
 
-$LL.Main.compute206 : ([3], [3]) -> [3]
-$LL.Main.compute206 $0 $1 =
-      $LL.Main.compute211 ($0 # $1)
+$LL.Main.compute120 : ([3]) -> [1]
+$LL.Main.compute120 eta =
+      $LL.Main.compute125 (zext 128 eta)
 
-$LL.Main.compute202 : ([3], [3], [3], [3], [64], [1]) -> [8]
-$LL.Main.compute202 fi n two one w $64 =
-      trunc 8 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute218 n ($LL.Main.compute179 ($LL.Main.compute190 fi one) two)))) 128'h1) 128'h8))
+$LL.Main.compute117 : ([3], [64], [64], [3], [3], [1]) -> [8]
+$LL.Main.compute117 n w eta fi two wild =
+      if eq wild 1'h0 then trunc 8 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute159 ($LL.Main.compute158 fi n) two))) 128'h1) 128'h8))
+            else trunc 8 (lshr eta (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute159 fi two))) 128'h1) 128'h8))
 
-ReWire.Prelude.not : ([1]) -> [1]
-ReWire.Prelude.not $14 =
-      $LL.ReWire.Prelude.not $14 $14
-
-$LL.Main.compute200 : ([3], [3], [64], [64], [3], [3]) -> [8]
-$LL.Main.compute200 two one v w n fi =
-      $LL.Main.compute223 two one v fi w n ($LL.Main.compute234 fi n)
-
-$LL.Main.compute199 : ([3], [3], [3], [3], [64], [64], [1]) -> [8]
-$LL.Main.compute199 fi n two one w v $65 =
-      if eq $65 1'h1 then trunc 8 (lshr v (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute218 n ($LL.Main.compute179 fi two)))) 128'h1) 128'h8))
-            else $LL.Main.compute202 fi n two one w ($LL.Main.compute215 fi)
-
-$LL.Main.compute198 : ([128]) -> [128]
-$LL.Main.compute198 $3 =
-      let v' = $3[64 +: 64] in
-      let w' = $3[0 +: 64] in
-      v' # w'
-
-$LL.Main.compute194 : ([64], [64]) -> [64]
-$LL.Main.compute194 sp sp1 =
-      $LL.Main.compute16 3'h1 sp sp1 3'h2
-
-$LL.Main.compute193 : ([128]) -> [64]
-$LL.Main.compute193 $56 =
-      let v = $56[64 +: 64] in
-      let w = $56[0 +: 64] in
-      $LL.Main.compute221 v w
-
-$LL.Main.compute190 : ([3], [3]) -> [3]
-$LL.Main.compute190 $x $x1 =
-      $LL.Main.compute225 $x $x1
-
-$LL.Main.compute185 : ([64], [64]) -> [64]
-$LL.Main.compute185 $x $x1 =
-      $LL.Main.compute97 $x $x1
-
-$LL.Main.compute183 : ([3], [3], [64], [1]) -> [3]
-$LL.Main.compute183 n' one v $63 =
-      if eq $63 1'h1 then n'
-            else $LL.Main.compute11 n' one ($LL.Main.compute215 ($LL.Main.compute239 v))
-
-$LL.Main.compute180 : ([3], [3], [1]) -> [3]
-$LL.Main.compute180 one n' $48 =
-      $LL.Main.compute218 n' one
-
-$LL.Main.compute179 : ([3], [3]) -> [3]
-$LL.Main.compute179 $x $x1 =
-      $LL.Main.compute222 $x $x1
-
-$LL.Main.compute178 : ([64], [3], [64], [3]) -> [64]
-$LL.Main.compute178 w one v $59 =
-      $LL.Main.compute114 $59 w one v 3'h0 # $LL.Main.compute114 $59 w one v 3'h1 # $LL.Main.compute114 $59 w one v 3'h2 # $LL.Main.compute114 $59 w one v 3'h3 # $LL.Main.compute114 $59 w one v 3'h4 # $LL.Main.compute114 $59 w one v 3'h5 # $LL.Main.compute114 $59 w one v 3'h6 # $LL.Main.compute114 $59 w one v 3'h7
-
-$LL.Main.compute175 : ([3], [3], [64], [64], [3]) -> [64]
-$LL.Main.compute175 two one v w $53 =
-      $LL.Main.compute52 two one v w ($LL.Main.compute210 one $53 v ($LL.Main.compute215 ($LL.Main.compute239 v)))
-
-$LL.Main.compute172 : ([64], [64]) -> [64]
-$LL.Main.compute172 sp sp1 =
-      $LL.Main.compute235 sp sp1 3'h1 3'h2
-
-$LL.Main.compute171 : ([128]) -> [64]
-$LL.Main.compute171 $70 =
-      let v = $70[64 +: 64] in
-      let w = $70[0 +: 64] in
-      $LL.Main.compute194 w v
-
-$LL.Main.compute164 : ([3], [3], [64], [1]) -> [3]
-$LL.Main.compute164 n' one v $40 =
-      if eq $40 1'h1 then n'
-            else $LL.Main.compute229 n' one ($LL.Main.compute215 ($LL.Main.compute239 v))
-
-$LL.Main.compute162 : ([3], [3], [64], [64], [3]) -> [64]
-$LL.Main.compute162 two one w v $44 =
-      $LL.Main.compute57 two w v ($LL.Main.compute164 $44 one v ($LL.Main.compute215 ($LL.Main.compute239 v)))
-
-$LL.Main.compute152 : ([3], [64], [64], [3]) -> [64]
-$LL.Main.compute152 one w v $45 =
-      $LL.Main.compute162 $45 one w v ($LL.Main.compute179 ($LL.Main.compute239 v) $45)
-
-Main.loop : ([128]) -> [128]
-Main.loop $x =
-      $LL.Main.loop1 $x
-
-$LL.Main.compute150 : ([3], [3], [64], [3], [1]) -> [8]
-$LL.Main.compute150 two fi w one $57 =
-      trunc 8 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute179 ($LL.Main.compute190 fi one) two))) 128'h1) 128'h8))
-
-$LL.Main.compute142 : ([64], [64]) -> [64]
-$LL.Main.compute142 $x $x1 =
-      $LL.Main.compute227 $x $x1
-
-$LL.ReWire.Prelude.not1 : ([1]) -> [1]
-$LL.ReWire.Prelude.not1 $55 =
-      1'h1
+$LL.Main.compute116 : ([128]) -> [128]
+$LL.Main.compute116 ds =
+      (let v' = ds[64 +: 64] in
+      v') # (let w' = ds[0 +: 64] in
+      w')
 
 $LL.Main.loop1 : ([128]) -> [128]
-$LL.Main.loop1 $2 =
-      $LL.Main.loop (Main.compute $2)
+$LL.Main.loop1 rabind =
+      rabind
 
-$LL.Main.compute133 : ([128]) -> [128]
-$LL.Main.compute133 $5 =
-      let lo = $5[64 +: 64] in
-      let hi = $5[0 +: 64] in
-      $LL.Main.compute101 ($LL.Main.compute68 hi lo # $LL.Main.compute3 hi lo)
+$LL.Main.compute114 : ([64], [3], [64], [3]) -> [64]
+$LL.Main.compute114 eta two w n =
+      $LL.Main.compute16 eta two w n 3'h0 # $LL.Main.compute16 eta two w n 3'h1 # $LL.Main.compute16 eta two w n 3'h2 # $LL.Main.compute16 eta two w n 3'h3 # $LL.Main.compute16 eta two w n 3'h4 # $LL.Main.compute16 eta two w n 3'h5 # $LL.Main.compute16 eta two w n 3'h6 # $LL.Main.compute16 eta two w n 3'h7
 
-$LL.Main.compute122 : ([64], [3], [64], [3], [3], [1]) -> [8]
-$LL.Main.compute122 v two w n fi $42 =
-      if eq $42 1'h1 then trunc 8 (lshr v (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute219 fi two))) 128'h1) 128'h8))
-            else $LL.Main.compute58 two w n fi ($LL.Main.compute234 fi n)
+$LL.Main.compute112 : ([3], [64], [3], [64], [3], [3]) -> [8]
+$LL.Main.compute112 two w n eta one fi =
+      $LL.Main.compute43 two w n fi eta one ($LL.Main.compute120 fi)
 
-$LL.Main.compute119 : ([3], [64], [3], [1]) -> [3]
-$LL.Main.compute119 n' v one $49 =
-      if eq $49 1'h1 then n'
-            else $LL.Main.compute209 n' one ($LL.Main.compute215 ($LL.Main.compute239 v))
+$LL.Main.compute106 : ([64], [64]) -> [64]
+$LL.Main.compute106 $x $x1 =
+      $LL.Main.compute156 $x $x1
 
-$LL.Main.compute117 : ([64], [3], [3], [1]) -> [3]
-$LL.Main.compute117 v n' one $40 =
-      if eq $40 1'h1 then n'
-            else $LL.Main.compute229 n' one ($LL.Main.compute215 ($LL.Main.compute239 v))
+$LL.Main.compute105 : ([64], [64]) -> [64]
+$LL.Main.compute105 $x $x1 =
+      $LL.Main.compute23 $x $x1
 
-$LL.Main.compute116 : ([3], [64], [64], [3]) -> [64]
-$LL.Main.compute116 one v w $54 =
-      $LL.Main.compute175 $54 one v w ($LL.Main.compute179 ($LL.Main.compute239 v) $54)
+$LL.Main.compute101 : ([64], [64]) -> [64]
+$LL.Main.compute101 $x $x1 =
+      $LL.Main.compute58 $x $x1
 
-$LL.Main.compute114 : ([3], [64], [3], [64], [3]) -> [8]
-$LL.Main.compute114 two w one v fi =
-      $LL.Main.compute35 two fi w one v ($LL.Main.compute215 fi)
+$LL.Main.compute100 : ([64], [64]) -> [128]
+$LL.Main.compute100 hi lo =
+      $LL.Main.compute9 ($LL.Main.compute49 hi lo # $LL.Main.compute28 hi lo)
 
-$LL.ReWire.Prelude.not : ([1], [1]) -> [1]
-$LL.ReWire.Prelude.not $14 $56 =
-      if eq $56 1'h1 then 1'h0
-            else $LL.ReWire.Prelude.not1 $14
+$LL.Main.compute97 : ([3], [64], [3], [64], [3]) -> [8]
+$LL.Main.compute97 one eta two w fi =
+      $LL.Main.compute70 one eta fi two w ($LL.Main.compute120 fi)
 
-$LL.Main.compute108 : ([64], [64]) -> [64]
-$LL.Main.compute108 $17 $18 =
-      $LL.Main.compute171 ($17 # $18)
+$LL.Main.compute95 : ([64], [3], [64], [3], [3]) -> [64]
+$LL.Main.compute95 eta one w two n' =
+      $LL.Main.compute123 eta one w two ($LL.Main.compute71 n' one ($LL.Main.compute120 ($LL.Main.compute161 eta)))
 
-$LL.Main.compute101 : ([128]) -> [128]
-$LL.Main.compute101 $4 =
-      let lo' = $4[64 +: 64] in
-      let hi' = $4[0 +: 64] in
-      $LL.Main.compute198 ($LL.Main.compute142 lo' hi' # $LL.Main.compute207 lo' hi')
-
-$LL.Main.compute97 : ([64], [64]) -> [64]
-$LL.Main.compute97 $11 $12 =
-      $LL.Main.compute1 ($11 # $12)
-
-$LL.Main.compute95 : ([3], [3], [64], [64], [3]) -> [64]
-$LL.Main.compute95 two one w v $66 =
-      $LL.Main.compute34 $66 two one w v 3'h0 # $LL.Main.compute34 $66 two one w v 3'h1 # $LL.Main.compute34 $66 two one w v 3'h2 # $LL.Main.compute34 $66 two one w v 3'h3 # $LL.Main.compute34 $66 two one w v 3'h4 # $LL.Main.compute34 $66 two one w v 3'h5 # $LL.Main.compute34 $66 two one w v 3'h6 # $LL.Main.compute34 $66 two one w v 3'h7
+$LL.Main.compute94 : ([3], [3], [64], [3], [64], [3]) -> [8]
+$LL.Main.compute94 two n w one eta fi =
+      $LL.Main.compute154 two n fi w one eta ($LL.Main.compute132 fi n)
 
 $LL.Main.compute91 : ([64], [64]) -> [64]
-$LL.Main.compute91 $11 $12 =
-      $LL.Main.compute238 ($11 # $12)
+$LL.Main.compute91 sp sp1 =
+      $LL.Main.compute134 sp 3'h1 sp1 3'h2
 
-$LL.Main.compute88 : ([3], [3], [64], [3], [64], [1]) -> [8]
-$LL.Main.compute88 two fi w n v $42 =
-      if eq $42 1'h1 then trunc 8 (lshr v (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute219 fi two))) 128'h1) 128'h8))
-            else $LL.Main.compute47 two fi w n ($LL.Main.compute234 fi n)
+Main.loop : ([128]) -> [128]
+Main.loop i =
+      $LL.Main.loop1 (Main.compute i)
 
-$LL.Main.compute85 : ([3], [3], [3], [64], [3], [1]) -> [8]
-$LL.Main.compute85 fi two n w one $50 =
-      trunc 8 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute218 ($LL.Main.compute219 ($LL.Main.compute190 fi n) two) one))) 128'h1) 128'h8))
+$LL.Main.compute86 : ([64], [64]) -> [64]
+$LL.Main.compute86 sp sp1 =
+      $LL.Main.compute56 sp 3'h1 sp1 3'h2
 
-$LL.Main.compute84 : ([64], [64]) -> [64]
-$LL.Main.compute84 sp sp1 =
-      $LL.Main.compute178 sp 3'h1 sp1 3'h2
+$LL.Main.compute78 : ([3], [64], [3], [64], [3]) -> [64]
+$LL.Main.compute78 two w one eta n' =
+      $LL.Main.compute40 two w one eta ($LL.Main.compute31 one n' ($LL.Main.compute120 ($LL.Main.compute161 eta)))
 
-$LL.Main.compute83 : ([3], [64], [3], [64], [3]) -> [8]
-$LL.Main.compute83 two w n v fi =
-      $LL.Main.compute88 two fi w n v ($LL.Main.compute234 fi n)
+$LL.Main.compute75 : ([64], [64]) -> [64]
+$LL.Main.compute75 sp sp1 =
+      $LL.Main.compute41 sp sp1 3'h1 3'h2
 
-$LL.Main.compute81 : ([128]) -> [128]
-$LL.Main.compute81 $6 =
-      let v = $6[64 +: 64] in
-      let w = $6[0 +: 64] in
-      $LL.Main.compute133 ($LL.Main.compute185 v w # $LL.Main.compute17 v w)
+$LL.Main.compute71 : ([3], [3], [1]) -> [3]
+$LL.Main.compute71 n' one wild =
+      if eq wild 1'h0 then $LL.Main.compute150 n' one
+            else n'
 
-$LL.Main.compute79 : ([64], [64]) -> [64]
-$LL.Main.compute79 $13 $14 =
-      $LL.Main.compute193 ($13 # $14)
+$LL.Main.compute70 : ([3], [64], [3], [3], [64], [1]) -> [8]
+$LL.Main.compute70 one eta fi two w wild =
+      if eq wild 1'h0 then trunc 8 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute144 ($LL.Main.compute158 fi one) two))) 128'h1) 128'h8))
+            else trunc 8 (lshr eta (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute144 fi two))) 128'h1) 128'h8))
 
-$LL.Main.compute78 : ([128]) -> [64]
-$LL.Main.compute78 $56 =
-      let v = $56[64 +: 64] in
-      let w = $56[0 +: 64] in
-      $LL.Main.compute237 v w
+$LL.Main.compute69 : ([64], [64]) -> [64]
+$LL.Main.compute69 $x $x1 =
+      $LL.Main.compute65 $x $x1
 
-$LL.Main.compute68 : ([64], [64]) -> [64]
-$LL.Main.compute68 $x $x1 =
-      $LL.Main.compute91 $x $x1
+$LL.Main.compute65 : ([64], [64]) -> [64]
+$LL.Main.compute65 eta w =
+      $LL.Main.compute162 w eta
 
-$LL.Main.compute61 : ([3], [3], [64], [64], [3]) -> [64]
-$LL.Main.compute61 two one w v $67 =
-      $LL.Main.compute95 two one w v ($LL.Main.compute183 $67 one v ($LL.Main.compute215 ($LL.Main.compute239 v)))
+$LL.Main.compute64 : ([64], [3], [3], [3], [64], [3], [1]) -> [8]
+$LL.Main.compute64 eta one n fi w two wild =
+      if eq wild 1'h0 then trunc 8 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute150 ($LL.Main.compute159 ($LL.Main.compute158 fi n) two) one))) 128'h1) 128'h8))
+            else trunc 8 (lshr eta (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute150 ($LL.Main.compute159 fi two) one))) 128'h1) 128'h8))
 
-$LL.Main.compute58 : ([3], [64], [3], [3], [1]) -> [8]
-$LL.Main.compute58 two w n fi $41 =
-      trunc 8 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute219 ($LL.Main.compute190 fi n) two))) 128'h1) 128'h8))
+$LL.Main.compute62 : ([64], [64]) -> [64]
+$LL.Main.compute62 $x $x1 =
+      $LL.Main.compute86 $x $x1
 
-$LL.Main.compute57 : ([3], [64], [64], [3]) -> [64]
-$LL.Main.compute57 two w v $43 =
-      $LL.Main.compute83 two w $43 v 3'h0 # $LL.Main.compute83 two w $43 v 3'h1 # $LL.Main.compute83 two w $43 v 3'h2 # $LL.Main.compute83 two w $43 v 3'h3 # $LL.Main.compute83 two w $43 v 3'h4 # $LL.Main.compute83 two w $43 v 3'h5 # $LL.Main.compute83 two w $43 v 3'h6 # $LL.Main.compute83 two w $43 v 3'h7
+$LL.Main.compute61 : ([64], [64]) -> [64]
+$LL.Main.compute61 eta w =
+      $LL.Main.compute75 w eta
 
-$LL.Main.compute56 : ([64], [64], [3], [3]) -> [64]
-$LL.Main.compute56 v w one $54 =
-      $LL.Main.compute12 $54 v w one ($LL.Main.compute179 ($LL.Main.compute239 v) $54)
+$LL.Main.compute59 : ([128], [64]) -> [128]
+$LL.Main.compute59 ds hi' =
+      $LL.Main.compute36 hi' (let lo' = ds[64 +: 64] in
+      lo')
 
-$LL.Main.compute55 : ([64], [3], [64], [3]) -> [64]
-$LL.Main.compute55 v two w $43 =
-      $LL.Main.compute53 v two w $43 3'h0 # $LL.Main.compute53 v two w $43 3'h1 # $LL.Main.compute53 v two w $43 3'h2 # $LL.Main.compute53 v two w $43 3'h3 # $LL.Main.compute53 v two w $43 3'h4 # $LL.Main.compute53 v two w $43 3'h5 # $LL.Main.compute53 v two w $43 3'h6 # $LL.Main.compute53 v two w $43 3'h7
+$LL.Main.compute58 : ([64], [64]) -> [64]
+$LL.Main.compute58 sp sp1 =
+      $LL.Main.compute133 sp 3'h2 sp1 ($LL.Main.compute144 ($LL.Main.compute161 sp) 3'h2)
 
-$LL.Main.compute53 : ([64], [3], [64], [3], [3]) -> [8]
-$LL.Main.compute53 v two w n fi =
-      $LL.Main.compute122 v two w n fi ($LL.Main.compute234 fi n)
+$LL.Main.compute56 : ([64], [3], [64], [3]) -> [64]
+$LL.Main.compute56 eta one w two =
+      $LL.Main.compute95 eta one w two ($LL.Main.compute144 ($LL.Main.compute161 eta) two)
 
-$LL.Main.compute52 : ([3], [3], [64], [64], [3]) -> [64]
-$LL.Main.compute52 two one v w $52 =
-      $LL.Main.compute200 two one v w $52 3'h0 # $LL.Main.compute200 two one v w $52 3'h1 # $LL.Main.compute200 two one v w $52 3'h2 # $LL.Main.compute200 two one v w $52 3'h3 # $LL.Main.compute200 two one v w $52 3'h4 # $LL.Main.compute200 two one v w $52 3'h5 # $LL.Main.compute200 two one v w $52 3'h6 # $LL.Main.compute200 two one v w $52 3'h7
+$LL.Main.compute50 : ([3], [64], [64], [3]) -> [64]
+$LL.Main.compute50 one eta w two =
+      $LL.Main.compute97 one eta two w 3'h0 # $LL.Main.compute97 one eta two w 3'h1 # $LL.Main.compute97 one eta two w 3'h2 # $LL.Main.compute97 one eta two w 3'h3 # $LL.Main.compute97 one eta two w 3'h4 # $LL.Main.compute97 one eta two w 3'h5 # $LL.Main.compute97 one eta two w 3'h6 # $LL.Main.compute97 one eta two w 3'h7
 
-$LL.Main.compute51 : ([3], [3], [3], [64], [3], [1]) -> [8]
-$LL.Main.compute51 two one fi w n $50 =
-      trunc 8 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute218 ($LL.Main.compute219 ($LL.Main.compute190 fi n) two) one))) 128'h1) 128'h8))
+$LL.Main.compute49 : ([64], [64]) -> [64]
+$LL.Main.compute49 $x $x1 =
+      $LL.Main.compute101 $x $x1
 
-$LL.Main.compute47 : ([3], [3], [64], [3], [1]) -> [8]
-$LL.Main.compute47 two fi w n $41 =
-      trunc 8 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute219 ($LL.Main.compute190 fi n) two))) 128'h1) 128'h8))
+$LL.Main.compute46 : ([128]) -> [128]
+$LL.Main.compute46 ds =
+      $LL.Main.compute5 ds (let hi = ds[0 +: 64] in
+      hi)
 
-$LL.Main.compute41 : ([64], [3], [64], [3], [3]) -> [64]
-$LL.Main.compute41 v two w one $44 =
-      $LL.Main.compute55 v two w ($LL.Main.compute117 v $44 one ($LL.Main.compute215 ($LL.Main.compute239 v)))
+$LL.Main.compute44 : ([64], [64]) -> [64]
+$LL.Main.compute44 $x $x1 =
+      $LL.Main.compute105 $x $x1
 
-$LL.Main.compute39 : ([3], [3], [64], [64], [3], [3]) -> [8]
-$LL.Main.compute39 two n v w one fi =
-      $LL.Main.compute5 fi two n v w one ($LL.Main.compute234 fi n)
+$LL.Main.compute43 : ([3], [64], [3], [3], [64], [3], [1]) -> [8]
+$LL.Main.compute43 two w n fi eta one wild =
+      if eq wild 1'h0 then trunc 8 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute150 n ($LL.Main.compute144 ($LL.Main.compute158 fi one) two)))) 128'h1) 128'h8))
+            else trunc 8 (lshr eta (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute150 n ($LL.Main.compute144 fi two)))) 128'h1) 128'h8))
 
-$LL.Main.compute35 : ([3], [3], [64], [3], [64], [1]) -> [8]
-$LL.Main.compute35 two fi w one v $58 =
-      if eq $58 1'h1 then trunc 8 (lshr v (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute179 fi two))) 128'h1) 128'h8))
-            else $LL.Main.compute150 two fi w one ($LL.Main.compute215 fi)
+$LL.Main.compute41 : ([64], [64], [3], [3]) -> [64]
+$LL.Main.compute41 w eta one two =
+      $LL.Main.compute152 two w eta one ($LL.Main.compute144 ($LL.Main.compute161 eta) two)
 
-$LL.Main.compute34 : ([3], [3], [3], [64], [64], [3]) -> [8]
-$LL.Main.compute34 n two one w v fi =
-      $LL.Main.compute199 fi n two one w v ($LL.Main.compute215 fi)
+$LL.Main.compute40 : ([3], [64], [3], [64], [3]) -> [64]
+$LL.Main.compute40 two w one eta n =
+      $LL.Main.compute94 two n w one eta 3'h0 # $LL.Main.compute94 two n w one eta 3'h1 # $LL.Main.compute94 two n w one eta 3'h2 # $LL.Main.compute94 two n w one eta 3'h3 # $LL.Main.compute94 two n w one eta 3'h4 # $LL.Main.compute94 two n w one eta 3'h5 # $LL.Main.compute94 two n w one eta 3'h6 # $LL.Main.compute94 two n w one eta 3'h7
 
-$LL.Main.compute29 : ([64], [64]) -> [64]
-$LL.Main.compute29 sp sp1 =
-      $LL.Main.compute152 3'h1 sp sp1 3'h2
+$LL.Main.compute36 : ([64], [64]) -> [128]
+$LL.Main.compute36 hi' lo' =
+      $LL.Main.compute116 ($LL.Main.compute44 lo' hi' # $LL.Main.compute127 lo' hi')
 
-$LL.Main.compute17 : ([64], [64]) -> [64]
-$LL.Main.compute17 $x $x1 =
-      $LL.Main.compute79 $x $x1
+$LL.Main.compute31 : ([3], [3], [1]) -> [3]
+$LL.Main.compute31 one n' wild =
+      if eq wild 1'h0 then $LL.Main.compute150 n' one
+            else n'
 
-$LL.Main.compute16 : ([3], [64], [64], [3]) -> [64]
-$LL.Main.compute16 one w v $68 =
-      $LL.Main.compute61 $68 one w v ($LL.Main.compute179 ($LL.Main.compute239 v) $68)
+$LL.Main.compute28 : ([64], [64]) -> [64]
+$LL.Main.compute28 $x $x1 =
+      $LL.Main.compute62 $x $x1
 
-$LL.Main.compute12 : ([3], [64], [64], [3], [3]) -> [64]
-$LL.Main.compute12 two v w one $53 =
-      $LL.Main.compute9 two v w one ($LL.Main.compute119 $53 v one ($LL.Main.compute215 ($LL.Main.compute239 v)))
+$LL.Main.compute23 : ([64], [64]) -> [64]
+$LL.Main.compute23 sp sp1 =
+      $LL.Main.compute50 3'h1 sp sp1 3'h2
 
-$LL.Main.compute11 : ([3], [3], [1]) -> [3]
-$LL.Main.compute11 n' one $62 =
-      $LL.Main.compute218 n' one
+$LL.Main.compute18 : ([64], [3], [3], [64], [3], [3]) -> [8]
+$LL.Main.compute18 eta one n w two fi =
+      $LL.Main.compute64 eta one n fi w two ($LL.Main.compute132 fi n)
 
-$LL.Main.compute9 : ([3], [64], [64], [3], [3]) -> [64]
-$LL.Main.compute9 two v w one $52 =
-      $LL.Main.compute39 two $52 v w one 3'h0 # $LL.Main.compute39 two $52 v w one 3'h1 # $LL.Main.compute39 two $52 v w one 3'h2 # $LL.Main.compute39 two $52 v w one 3'h3 # $LL.Main.compute39 two $52 v w one 3'h4 # $LL.Main.compute39 two $52 v w one 3'h5 # $LL.Main.compute39 two $52 v w one 3'h6 # $LL.Main.compute39 two $52 v w one 3'h7
+$LL.Main.compute16 : ([64], [3], [64], [3], [3]) -> [8]
+$LL.Main.compute16 eta two w n fi =
+      $LL.Main.compute10 eta fi two w n ($LL.Main.compute132 fi n)
 
-$LL.Main.compute6 : ([64], [64]) -> [64]
-$LL.Main.compute6 $13 $14 =
-      $LL.Main.compute78 ($13 # $14)
+$LL.Main.compute10 : ([64], [3], [3], [64], [3], [1]) -> [8]
+$LL.Main.compute10 eta fi two w n wild =
+      if eq wild 1'h0 then trunc 8 (lshr w (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute159 ($LL.Main.compute158 fi n) two))) 128'h1) 128'h8))
+            else trunc 8 (lshr eta (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute159 fi two))) 128'h1) 128'h8))
 
-$LL.Main.compute5 : ([3], [3], [3], [64], [64], [3], [1]) -> [8]
-$LL.Main.compute5 fi two n v w one $51 =
-      if eq $51 1'h1 then trunc 8 (lshr v (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute218 ($LL.Main.compute219 fi two) one))) 128'h1) 128'h8))
-            else $LL.Main.compute85 fi two n w one ($LL.Main.compute234 fi n)
+$LL.Main.compute9 : ([128]) -> [128]
+$LL.Main.compute9 ds =
+      $LL.Main.compute59 ds (let hi' = ds[0 +: 64] in
+      hi')
 
-$LL.Main.compute3 : ([64], [64]) -> [64]
-$LL.Main.compute3 $x $x1 =
-      $LL.Main.compute6 $x $x1
-
-$LL.Main.compute1 : ([128]) -> [64]
-$LL.Main.compute1 $47 =
-      let v = $47[64 +: 64] in
-      let w = $47[0 +: 64] in
-      $LL.Main.compute172 v w
-
-$LL.Main.loop : ([128]) -> [128]
-$LL.Main.loop rabind =
-      rabind
+$LL.Main.compute5 : ([128], [64]) -> [128]
+$LL.Main.compute5 ds hi =
+      $LL.Main.compute100 hi (let lo = ds[64 +: 64] in
+      lo)
 
 device top_level
       input __in0 : [64]

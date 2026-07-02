@@ -22,46 +22,27 @@ rw__Pure_dispatch x0 = rw_Main_loop1 x0
 
 // Main.compute
 rw_Main_compute : [16] -> [8]
-rw_Main_compute x0 = rw__LL_Main_compute1 x0
-
-// $LL.Main.compute2
-rw__LL_Main_compute2 : [16] -> [1] -> [8]
-rw__LL_Main_compute2 x0 x1 = if x1 == 0b1 then (drop`{8} x0) else (rw__LL_Main_compute x0 (rw_ReWire_Prelude___ (take`{1} x0) (take`{1} (drop`{7} x0))))
-
-// $LL.Main.compute1
-rw__LL_Main_compute1 : [16] -> [8]
-rw__LL_Main_compute1 x0 = rw__LL_Main_compute2 x0 (rw_ReWire_Prelude___ (take`{1} x0) (take`{1} (drop`{7} x0)))
+rw_Main_compute x0 = rw__LL_Main_compute1 x0 (rw__LL_Main_compute (take`{1} x0) (take`{1} (drop`{7} x0)))
 
 // $LL.Main.loop1
-rw__LL_Main_loop1 : [16] -> [8]
-rw__LL_Main_loop1 x0 = rw__LL_Main_loop (rw_Main_compute x0)
+rw__LL_Main_loop1 : [8] -> [8]
+rw__LL_Main_loop1 x0 = x0
 
 // Main.loop1
 rw_Main_loop1 : [16] -> [8]
-rw_Main_loop1 x0 = rw__LL_Main_loop1 x0
+rw_Main_loop1 x0 = rw__LL_Main_loop1 (rw_Main_compute x0)
 
-// ReWire.Prelude.&&
-rw_ReWire_Prelude___ : [1] -> [1] -> [1]
-rw_ReWire_Prelude___ x0 x1 = rw__LL_ReWire_Prelude___ x0 x1 (x0 # x1)
+// $LL.Main.compute2
+rw__LL_Main_compute2 : [1] -> [1] -> [1]
+rw__LL_Main_compute2 x0 x1 = if x0 == 0b1 then x1 else 0b0
+
+// $LL.Main.compute1
+rw__LL_Main_compute1 : [16] -> [1] -> [8]
+rw__LL_Main_compute1 x0 x1 = if x1 == 0b0 then (take`{8} x0) else (drop`{8} x0)
 
 // $LL.Main.compute
-rw__LL_Main_compute : [16] -> [1] -> [8]
-rw__LL_Main_compute x0 x1 = take`{8} x0
-
-// $LL.ReWire.Prelude.&&1
-rw__LL_ReWire_Prelude___1 : [2] -> [1]
-rw__LL_ReWire_Prelude___1 x0 = 0b0
-
-// $LL.ReWire.Prelude.&&
-rw__LL_ReWire_Prelude___ : [1] -> [1] -> [2] -> [1]
-rw__LL_ReWire_Prelude___ x0 x1 x2 = if (take`{1} x2) == 0b1 then s0 else (rw__LL_ReWire_Prelude___1 (x0 # x1))
-  where
-    s0 : [1]
-    s0 = drop`{1} x2
-
-// $LL.Main.loop
-rw__LL_Main_loop : [8] -> [8]
-rw__LL_Main_loop x0 = x0
+rw__LL_Main_compute : [1] -> [1] -> [1]
+rw__LL_Main_compute x0 x1 = rw__LL_Main_compute2 x0 x1
 
 // Per-cycle step: outputs # next register values.
 rw_step : [16] -> [8]

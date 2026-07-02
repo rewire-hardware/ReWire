@@ -1,5 +1,6 @@
 -- EXPECT-ERROR: is used with inconsistent signatures
 {-# LANGUAGE DataKinds #-}
+import Prelude hiding ((+))
 import ReWire
 import ReWire.Bits (lit, (+))
 import ReWire.Monad (iter, Dev)

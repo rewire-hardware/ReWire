@@ -1,4 +1,4 @@
--- EXPECT-ERROR: File not found in load-path
+-- EXPECT-ERROR: Could not find module ‘NoSuchModuleXYZ’
 import ReWire
 import NoSuchModuleXYZ
 

@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Unknown class or type name in export list
+-- EXPECT-ERROR: Not in scope: type constructor or class ‘NoSuchType’
 module Main (NoSuchType, start, main) where
 import ReWire
 import ReWire.Monad (iter, Dev)

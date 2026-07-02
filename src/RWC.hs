@@ -41,7 +41,6 @@ options =
        , Option []    ["depth"]           (ReqArg FlagEvalDepth   "depth")           "Partial evaluation depth. Higher values can cause non-termination. (default: 8)."
        , Option []    ["rtl-opt"]         (ReqArg FlagRtlOpt      "level")           "RTL optimization level. Disable with 0. (default: 8)."
        , Option []    ["pretty"]          (NoArg  FlagPretty)                        "Attempt to output prettier RTL at the expense of performance."
-       , Option []    ["ghc-frontend"]    (NoArg  FlagGhcFrontend)                   "Use the experimental GHC-based front end (currently: dump GHC Core, then compile normally)."
        ]
 
 main :: IO ()

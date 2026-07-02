@@ -1,5 +1,6 @@
 -- EXPECT-ERROR: rwPrimFiniteMinBound: Finite 0 is uninhabited
 {-# LANGUAGE DataKinds #-}
+import Prelude hiding (minBound)
 import ReWire
 import ReWire.Bits (lit)
 import ReWire.Finite (minBound, fromFinite)

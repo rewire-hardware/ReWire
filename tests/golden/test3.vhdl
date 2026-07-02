@@ -220,7 +220,7 @@ component \Main_go\ is
 begin
 inst : \Main_go\ port map (\__st0\, main_go_out);
       \instR1\ : \Main_go\ port map (\__st0\, \main_go_outR1\);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"1")), main_go_out, \main_go_outR1\);
+      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), main_go_out, \main_go_outR1\);
       \__st0_next\ <= zres(7 downto 0);
       \__out0\ <= zres(15 downto 8);
       process (clk, rst)

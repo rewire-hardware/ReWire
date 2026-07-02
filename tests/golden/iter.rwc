@@ -2,26 +2,14 @@ $Pure.dispatch : ([1]) -> [1]
 $Pure.dispatch i =
       ReWire.Monad.iter i
 
-$LL.ReWire.Prelude.not2 : ([1], [1]) -> [1]
-$LL.ReWire.Prelude.not2 $14 $56 =
-      if eq $56 1'h1 then 1'h0
-            else $LL.ReWire.Prelude.not1 $14
-
-ReWire.Prelude.not1 : ([1]) -> [1]
-ReWire.Prelude.not1 $14 =
-      $LL.ReWire.Prelude.not2 $14 $14
-
-$LL.ReWire.Prelude.not1 : ([1]) -> [1]
-$LL.ReWire.Prelude.not1 $55 =
-      1'h1
-
-Main.f : ([1]) -> [1]
-Main.f $x =
-      ReWire.Prelude.not1 $x
-
 ReWire.Monad.iter : ([1]) -> [1]
-ReWire.Monad.iter $1 =
-      Main.f $1
+ReWire.Monad.iter i =
+      Main.f1 i
+
+Main.f1 : ([1]) -> [1]
+Main.f1 b =
+      if eq b 1'h1 then 1'h0
+            else 1'h1
 
 device top_level
       input __in0 : [1]

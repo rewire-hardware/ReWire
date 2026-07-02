@@ -27,7 +27,6 @@ data Flag = FlagO !String
           | FlagPretty
           | FlagDebugTypeCheck
           | FlagRtlOpt !String
-          | FlagGhcFrontend
       deriving (Eq, Show, Generic)
 
 instance Hashable Flag

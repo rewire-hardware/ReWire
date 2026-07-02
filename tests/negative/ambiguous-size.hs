@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Ambiguous type variable
+-- EXPECT-ERROR: No instance for ‘KnownNat
 -- The size of the literal is unconstrained: nothing determines n.
 {-# LANGUAGE DataKinds #-}
 import ReWire

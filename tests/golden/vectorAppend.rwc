@@ -1,26 +1,18 @@
 $Pure.dispatch : ([128]) -> [64]
 $Pure.dispatch i =
-      Main.loop1 i
+      Main.loop i
 
-Main.compute : ([128]) -> [64]
-Main.compute $x =
-      $LL.Main.compute $x
-
-$LL.Main.loop1 : ([128]) -> [64]
-$LL.Main.loop1 $2 =
-      $LL.Main.loop (Main.compute $2)
-
-Main.loop1 : ([128]) -> [64]
-Main.loop1 $x =
-      $LL.Main.loop1 $x
-
-$LL.Main.loop : ([64]) -> [64]
-$LL.Main.loop rabind =
+$LL.Main.loop1 : ([64]) -> [64]
+$LL.Main.loop1 rabind =
       rabind
 
-$LL.Main.compute : ([128]) -> [64]
-$LL.Main.compute $3 =
-      $3[96 +: 8] # $3[104 +: 8] # $3[112 +: 8] # $3[120 +: 8] # 8'h0 # $3[0 +: 24]
+Main.compute : ([128]) -> [64]
+Main.compute ds =
+      ds[96 +: 8] # ds[104 +: 8] # ds[112 +: 8] # ds[120 +: 8] # 8'h0 # ds[0 +: 24]
+
+Main.loop : ([128]) -> [64]
+Main.loop i =
+      $LL.Main.loop1 (Main.compute i)
 
 device top_level
       input __in0 : [64]

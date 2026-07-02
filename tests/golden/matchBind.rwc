@@ -1,50 +1,42 @@
 $Pure.dispatch : ([10], [8]) -> [18]
 $Pure.dispatch disc i =
       if eq disc[8 +: 2] 2'h1 then (let s0 = disc[0 +: 8] in
-            $LL.Main.loop1 i s0)
+            $LL.Main.loop5 i s0)
             else if eq disc[8 +: 2] 2'h2 then (let s0 = disc[0 +: 8] in
-            $LL.Main.reset i s0) else let s0 = disc[0 +: 8] in
-            $LL.Main.loop1 i s0
+            $LL.Main.reset3 i s0) else let s0 = disc[0 +: 8] in
+            $LL.Main.loop5 i s0
 
-$LL.Main.loop5 : ([8]) -> [18]
-$LL.Main.loop5 sto0 =
-      Main.loop sto0
+$LL.Main.loop5 : ([8], [8]) -> [18]
+$LL.Main.loop5 rabind sto0 =
+      $LL.Main.reset1 sto0
 
 $LL.Main.loop4 : ([8]) -> [1]
-$LL.Main.loop4 $36 =
-      ReWire.Prelude.not (let $t0 = trunc 1 $36 in
+$LL.Main.loop4 eta =
+      $LL.Main.loop1 (let $t0 = trunc 1 eta in
       $t0)
-
-$LL.Main.loop3 : ([8], [8]) -> [18]
-$LL.Main.loop3 i sto0 =
-      let $t1 = $LL.Main.loop4 i in
-      if eq $t1 1'h1 then 10'h9 # sto0
-            else 10'h8 # sto0
-
-$LL.ReWire.Prelude.not1 : ([1], [1]) -> [1]
-$LL.ReWire.Prelude.not1 $14 $56 =
-      if eq $56 1'h1 then 1'h0
-            else $LL.ReWire.Prelude.not $14
-
-ReWire.Prelude.not : ([1]) -> [1]
-ReWire.Prelude.not $14 =
-      $LL.ReWire.Prelude.not1 $14 $14
 
 Main.loop : ([8]) -> [18]
 Main.loop sto0 =
-      $LL.Main.loop3 sto0 sto0
+      $LL.Main.loop sto0 sto0
 
-$LL.Main.loop1 : ([8], [8]) -> [18]
-$LL.Main.loop1 rabind sto0 =
-      $LL.Main.loop5 sto0
+$LL.Main.reset3 : ([8], [8]) -> [18]
+$LL.Main.reset3 rabind sto0 =
+      $LL.Main.reset1 rabind
 
-$LL.ReWire.Prelude.not : ([1]) -> [1]
-$LL.ReWire.Prelude.not $55 =
-      1'h1
+$LL.Main.reset1 : ([8]) -> [18]
+$LL.Main.reset1 sto0 =
+      Main.loop sto0
 
-$LL.Main.reset : ([8], [8]) -> [18]
-$LL.Main.reset rabind sto0 =
-      $LL.Main.loop5 rabind
+$LL.Main.loop1 : ([1]) -> [1]
+$LL.Main.loop1 b =
+      if eq b 1'h1 then 1'h0
+            else 1'h1
+
+$LL.Main.loop : ([8], [8]) -> [18]
+$LL.Main.loop i sto0 =
+      let $t0 = $LL.Main.loop4 i in
+      if eq $t0 1'h0 then 10'h9 # sto0
+            else 10'h8 # sto0
 
 device top_level
       input __in0 : [8]

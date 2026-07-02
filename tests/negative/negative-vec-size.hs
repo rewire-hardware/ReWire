@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Types do not unify
+-- EXPECT-ERROR: Couldn't match type ‘8 + m0’ with ‘4’
 -- Solving Vec (n + m) ~ Vec 4 under n := 8 would need m := -4, which no
 -- type-level natural can satisfy.
 {-# LANGUAGE DataKinds #-}

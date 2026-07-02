@@ -18,7 +18,7 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [74] -> [17] -> [90]
-rw__Pure_dispatch x0 x1 = if (take`{4} x0) == 0x1 then (rw__LL_Main_loop26 x1 s0) else (if (take`{4} x0) == 0x2 then (rw__LL_Main_loop31 x1 s1) else (if (take`{4} x0) == 0x3 then (rw__LL_Main_loop31 x1 s2) else (if (take`{4} x0) == 0x4 then (rw__LL_Main_loop31 x1 s3) else (if (take`{4} x0) == 0x5 then (rw__LL_Main_reset2 x1 s4) else (if (take`{4} x0) == 0x6 then (rw__LL_Main_loop10 x1 s5) else (if (take`{4} x0) == 0x7 then (rw__LL_Main_loop9 x1 s6) else (if (take`{4} x0) == 0x8 then (rw__LL_Main_loop31 x1 s7) else (rw__LL_Main_loop31 x1 s8))))))))
+rw__Pure_dispatch x0 x1 = if (take`{4} x0) == 0x1 then (rw__LL_Main_loop33 x1 s0) else (if (take`{4} x0) == 0x2 then (rw__LL_Main_loop31 x1 s1) else (if (take`{4} x0) == 0x3 then (rw__LL_Main_loop27 x1 s2) else (if (take`{4} x0) == 0x4 then (rw__LL_Main_loop14 x1 s3) else (if (take`{4} x0) == 0x5 then (rw__LL_Main_loop31 x1 s4) else (if (take`{4} x0) == 0x6 then (rw__LL_Main_loop31 x1 s5) else (if (take`{4} x0) == 0x7 then (rw__LL_Main_loop31 x1 s6) else (if (take`{4} x0) == 0x8 then (rw__LL_Main_loop31 x1 s7) else (rw__LL_Main_reset8 x1 s8))))))))
   where
     s0 : [70]
     s0 = drop`{4} x0
@@ -40,58 +40,654 @@ rw__Pure_dispatch x0 x1 = if (take`{4} x0) == 0x1 then (rw__LL_Main_loop26 x1 s0
     s8 = drop`{4} x0
 
 // $LL.Main.loop35
-rw__LL_Main_loop35 : [70] -> [90]
-rw__LL_Main_loop35 x0 = rw__LL_Main_loop34 s4 s5
-  where
-    s0 : [85]
-    s0 = rw_Main_getOut x0
-    s1 : [15]
-    s1 = take`{15} s0
-    s2 : [70]
-    s2 = drop`{15} s0
-    s3 : [90]
-    s3 = 0b00001 # (s1 # s2)
-    s4 : [15]
-    s4 = take`{15} (drop`{5} s3)
-    s5 : [70]
-    s5 = drop`{20} s3
-
-// Main.putWeOut1
-rw_Main_putWeOut1 : [70] -> [70]
-rw_Main_putWeOut1 x0 = rw__LL_Main_putWeOut3 0b0 x0
-
-// $LL.Main.loop34
-rw__LL_Main_loop34 : [15] -> [70] -> [90]
-rw__LL_Main_loop34 x0 x1 = 0b1 # (x0 # (0x1 # x1))
-
-// $LL.Main.loop33
-rw__LL_Main_loop33 : [9] -> [70] -> [70] -> [90]
-rw__LL_Main_loop33 x0 x1 x2 = rw__LL_Main_loop32 x0 x1 x2
+rw__LL_Main_loop35 : [15] -> [70] -> [90]
+rw__LL_Main_loop35 x0 x1 = 0b1 # (x0 # (0x4 # x1))
 
 // $LL.Main.reset8
-rw__LL_Main_reset8 : [70] -> [90]
-rw__LL_Main_reset8 x0 = rw__LL_Main_reset7 s4 s5
+rw__LL_Main_reset8 : [17] -> [70] -> [90]
+rw__LL_Main_reset8 x0 x1 = rw__LL_Main_reset5 s2
   where
-    s0 : [85]
-    s0 = rw_Main_getOut x0
-    s1 : [15]
-    s1 = take`{15} s0
+    s0 : [70]
+    s0 = rw_Main_putIns x0 x1
+    s1 : [90]
+    s1 = 0x10000 # s0
     s2 : [70]
-    s2 = drop`{15} s0
-    s3 : [90]
-    s3 = 0b00001 # (s1 # s2)
-    s4 : [15]
-    s4 = take`{15} (drop`{5} s3)
-    s5 : [70]
-    s5 = drop`{20} s3
+    s2 = drop`{20} s1
+
+// $LL.Main.bnz1
+rw__LL_Main_bnz1 : [6] -> [1] -> [70] -> [70]
+rw__LL_Main_bnz1 x0 x1 x2 = if x1 == 0b0 then (rw_Main_putPC1 x0 x2) else (rw_Main_incrPC x2)
+
+// $LL.Main.loop34
+rw__LL_Main_loop34 : [70] -> [90]
+rw__LL_Main_loop34 x0 = rw__LL_Main_loop17 s2
+  where
+    s0 : [70]
+    s0 = rw_Main_incrPC x0
+    s1 : [90]
+    s1 = 0x10000 # s0
+    s2 : [70]
+    s2 = drop`{20} s1
 
 // Main.putDataOut1
 rw_Main_putDataOut1 : [8] -> [70] -> [70]
-rw_Main_putDataOut1 x0 x1 = rw__LL_Main_putDataOut1 x0 x1
+rw_Main_putDataOut1 x0 x1 = rw__LL_Main_putDataOut x0 s1 s2
+  where
+    s0 : [85]
+    s0 = rw_Main_getOut x1
+    s1 : [15]
+    s1 = take`{15} s0
+    s2 : [70]
+    s2 = drop`{15} s0
 
-// $LL.Main.putReg15
-rw__LL_Main_putReg15 : [8] -> [70] -> [70]
-rw__LL_Main_putReg15 x0 x1 = s0 # (x0 # (s1 # (s2 # (s3 # (s4 # s5)))))
+// $LL.Main.loop33
+rw__LL_Main_loop33 : [17] -> [70] -> [90]
+rw__LL_Main_loop33 x0 x1 = rw__LL_Main_loop34 s2
+  where
+    s0 : [70]
+    s0 = rw_Main_putIns x0 x1
+    s1 : [90]
+    s1 = 0x10000 # s0
+    s2 : [70]
+    s2 = drop`{20} s1
+
+// $LL.Main.getReg4
+rw__LL_Main_getReg4 : [70] -> [70] -> [78]
+rw__LL_Main_getReg4 x0 x1 = (rw_Main_r2 x0) # x1
+
+// Main.putPC1
+rw_Main_putPC1 : [6] -> [70] -> [70]
+rw_Main_putPC1 x0 x1 = rw__LL_Main_putPC2 x0 x1 x1
+
+// Main.putIns
+rw_Main_putIns : [17] -> [70] -> [70]
+rw_Main_putIns x0 x1 = rw__LL_Main_putIns x0 x1 x1
+
+// $LL.Main.st3
+rw__LL_Main_st3 : [6] -> [8] -> [70] -> [70]
+rw__LL_Main_st3 x0 x1 x2 = rw__LL_Main_st1 x1 s0
+  where
+    s0 : [70]
+    s0 = rw_Main_putAddrOut x0 x2
+
+// $LL.Main.getIns
+rw__LL_Main_getIns : [70] -> [70] -> [87]
+rw__LL_Main_getIns x0 x1 = (rw_Main_inputs x0) # x1
+
+// $LL.Main.loop32
+rw__LL_Main_loop32 : [15] -> [70] -> [90]
+rw__LL_Main_loop32 x0 x1 = 0b1 # (x0 # (0x1 # x1))
+
+// $LL.Main.loop31
+rw__LL_Main_loop31 : [17] -> [70] -> [90]
+rw__LL_Main_loop31 x0 x1 = rw__LL_Main_loop23 s2
+  where
+    s0 : [70]
+    s0 = rw_Main_putIns x0 x1
+    s1 : [90]
+    s1 = 0x10000 # s0
+    s2 : [70]
+    s2 = drop`{20} s1
+
+// $LL.Main.putDataOut2
+rw__LL_Main_putDataOut2 : [8] -> [15] -> [70] -> [70]
+rw__LL_Main_putDataOut2 x0 x1 x2 = rw_Main_putOut (s0 # (s1 # x0)) x2
+  where
+    s0 : [1]
+    s0 = take`{1} x1
+    s1 : [6]
+    s1 = take`{6} (drop`{1} x1)
+
+// $LL.Main.putPC2
+rw__LL_Main_putPC2 : [6] -> [70] -> [70] -> [70]
+rw__LL_Main_putPC2 x0 x1 x2 = rw__LL_Main_putPC x0 x1 x2
+
+// $LL.Main.loop30
+rw__LL_Main_loop30 : [70] -> [90]
+rw__LL_Main_loop30 x0 = rw__LL_Main_loop35 s4 s5
+  where
+    s0 : [85]
+    s0 = rw_Main_getOut x0
+    s1 : [15]
+    s1 = take`{15} s0
+    s2 : [70]
+    s2 = drop`{15} s0
+    s3 : [90]
+    s3 = 0b00001 # (s1 # s2)
+    s4 : [15]
+    s4 = take`{15} (drop`{5} s3)
+    s5 : [70]
+    s5 = drop`{20} s3
+
+// $LL.Main.reset5
+rw__LL_Main_reset5 : [70] -> [90]
+rw__LL_Main_reset5 x0 = rw__LL_Main_reset3 s5
+  where
+    s0 : [76]
+    s0 = rw_Main_getPC x0
+    s1 : [6]
+    s1 = take`{6} s0
+    s2 : [70]
+    s2 = drop`{6} s0
+    s3 : [70]
+    s3 = rw__LL_Main_finishInstr1 s1 s2
+    s4 : [90]
+    s4 = 0x10000 # s3
+    s5 : [70]
+    s5 = drop`{20} s4
+
+// Main.putWeOut1
+rw_Main_putWeOut1 : [70] -> [70]
+rw_Main_putWeOut1 x0 = rw__LL_Main_putWeOut2 s1 s2
+  where
+    s0 : [85]
+    s0 = rw_Main_getOut x0
+    s1 : [15]
+    s1 = take`{15} s0
+    s2 : [70]
+    s2 = drop`{15} s0
+
+// $LL.Main.loop29
+rw__LL_Main_loop29 : [70] -> [90]
+rw__LL_Main_loop29 x0 = rw__LL_Main_loop18 s4 s5
+  where
+    s0 : [85]
+    s0 = rw_Main_getOut x0
+    s1 : [15]
+    s1 = take`{15} s0
+    s2 : [70]
+    s2 = drop`{15} s0
+    s3 : [90]
+    s3 = 0b00001 # (s1 # s2)
+    s4 : [15]
+    s4 = take`{15} (drop`{5} s3)
+    s5 : [70]
+    s5 = drop`{20} s3
+
+// $LL.Main.reset4
+rw__LL_Main_reset4 : [15] -> [70] -> [90]
+rw__LL_Main_reset4 x0 x1 = 0b1 # (x0 # (0x7 # x1))
+
+// $LL.Main.putWeOut2
+rw__LL_Main_putWeOut2 : [15] -> [70] -> [70]
+rw__LL_Main_putWeOut2 x0 x1 = rw__LL_Main_putWeOut 0b1 x0 x1
+
+// $LL.Main.putWeOut1
+rw__LL_Main_putWeOut1 : [15] -> [70] -> [70]
+rw__LL_Main_putWeOut1 x0 x1 = rw__LL_Main_putWeOut 0b0 x0 x1
+
+// $LL.Main.nand3
+rw__LL_Main_nand3 : [8] -> [2] -> [8] -> [70] -> [70]
+rw__LL_Main_nand3 x0 x1 x2 x3 = rw__LL_Main_nand1 s0
+  where
+    s0 : [70]
+    s0 = rw_Main_putReg1 x1 (~ (x0 && x2)) x3
+
+// $LL.Main.loop28
+rw__LL_Main_loop28 : [70] -> [90]
+rw__LL_Main_loop28 x0 = rw__LL_Main_loop11 s4 s5
+  where
+    s0 : [85]
+    s0 = rw_Main_getOut x0
+    s1 : [15]
+    s1 = take`{15} s0
+    s2 : [70]
+    s2 = drop`{15} s0
+    s3 : [90]
+    s3 = 0b00001 # (s1 # s2)
+    s4 : [15]
+    s4 = take`{15} (drop`{5} s3)
+    s5 : [70]
+    s5 = drop`{20} s3
+
+// $LL.Main.loop27
+rw__LL_Main_loop27 : [17] -> [70] -> [90]
+rw__LL_Main_loop27 x0 x1 = rw__LL_Main_loop24 s2
+  where
+    s0 : [70]
+    s0 = rw_Main_putIns x0 x1
+    s1 : [90]
+    s1 = 0x10000 # s0
+    s2 : [70]
+    s2 = drop`{20} s1
+
+// $LL.Main.loop26
+rw__LL_Main_loop26 : [70] -> [90]
+rw__LL_Main_loop26 x0 = rw__LL_Main_loop2 s4 s5
+  where
+    s0 : [85]
+    s0 = rw_Main_getOut x0
+    s1 : [15]
+    s1 = take`{15} s0
+    s2 : [70]
+    s2 = drop`{15} s0
+    s3 : [90]
+    s3 = 0b00001 # (s1 # s2)
+    s4 : [15]
+    s4 = take`{15} (drop`{5} s3)
+    s5 : [70]
+    s5 = drop`{20} s3
+
+// Main.getReg1
+rw_Main_getReg1 : [2] -> [70] -> [78]
+rw_Main_getReg1 x0 x1 = rw__LL_Main_getReg3 x0 x1
+
+// $LL.Main.loop25
+rw__LL_Main_loop25 : [70] -> [90]
+rw__LL_Main_loop25 x0 = rw__LL_Main_loop32 s4 s5
+  where
+    s0 : [85]
+    s0 = rw_Main_getOut x0
+    s1 : [15]
+    s1 = take`{15} s0
+    s2 : [70]
+    s2 = drop`{15} s0
+    s3 : [90]
+    s3 = 0b00001 # (s1 # s2)
+    s4 : [15]
+    s4 = take`{15} (drop`{5} s3)
+    s5 : [70]
+    s5 = drop`{20} s3
+
+// $LL.Main.loop24
+rw__LL_Main_loop24 : [70] -> [90]
+rw__LL_Main_loop24 x0 = rw__LL_Main_loop16 s2
+  where
+    s0 : [70]
+    s0 = rw_Main_incrPC x0
+    s1 : [90]
+    s1 = 0x10000 # s0
+    s2 : [70]
+    s2 = drop`{20} s1
+
+// $LL.Main.loop23
+rw__LL_Main_loop23 : [70] -> [90]
+rw__LL_Main_loop23 x0 = rw_Main_loop x0
+
+// $LL.Main.getReg3
+rw__LL_Main_getReg3 : [2] -> [70] -> [78]
+rw__LL_Main_getReg3 x0 x1 = if x0 == 0b00 then (rw__LL_Main_getReg2 x1 x1) else (if x0 == 0b01 then (rw__LL_Main_getReg1 x1 x1) else (if x0 == 0b10 then (rw__LL_Main_getReg4 x1 x1) else (rw__LL_Main_getReg x1 x1)))
+
+// $LL.Main.loop22
+rw__LL_Main_loop22 : [9] -> [70] -> [90]
+rw__LL_Main_loop22 x0 x1 = rw__LL_Main_loop4 x0 x1 x1
+
+// $LL.Main.nand2
+rw__LL_Main_nand2 : [2] -> [2] -> [8] -> [70] -> [70]
+rw__LL_Main_nand2 x0 x1 x2 x3 = rw__LL_Main_nand x2 x1 s1 s2
+  where
+    s0 : [78]
+    s0 = rw_Main_getReg1 x0 x3
+    s1 : [8]
+    s1 = take`{8} s0
+    s2 : [70]
+    s2 = drop`{8} s0
+
+// Main.pc
+rw_Main_pc : [70] -> [6]
+rw_Main_pc x0 = s0
+  where
+    s0 : [6]
+    s0 = take`{6} (drop`{32} x0)
+
+// $LL.Main.loop21
+rw__LL_Main_loop21 : [70] -> [90]
+rw__LL_Main_loop21 x0 = rw__LL_Main_loop28 s5
+  where
+    s0 : [76]
+    s0 = rw_Main_getPC x0
+    s1 : [6]
+    s1 = take`{6} s0
+    s2 : [70]
+    s2 = drop`{6} s0
+    s3 : [70]
+    s3 = rw__LL_Main_finishInstr1 s1 s2
+    s4 : [90]
+    s4 = 0x10000 # s3
+    s5 : [70]
+    s5 = drop`{20} s4
+
+// $LL.Main.putDataOut
+rw__LL_Main_putDataOut : [8] -> [15] -> [70] -> [70]
+rw__LL_Main_putDataOut x0 x1 x2 = rw__LL_Main_putDataOut2 x0 x1 x2
+
+// $LL.Main.loop20
+rw__LL_Main_loop20 : [70] -> [90]
+rw__LL_Main_loop20 x0 = rw__LL_Main_loop15 s4 s5
+  where
+    s0 : [85]
+    s0 = rw_Main_getOut x0
+    s1 : [15]
+    s1 = take`{15} s0
+    s2 : [70]
+    s2 = drop`{15} s0
+    s3 : [90]
+    s3 = 0b00001 # (s1 # s2)
+    s4 : [15]
+    s4 = take`{15} (drop`{5} s3)
+    s5 : [70]
+    s5 = drop`{20} s3
+
+// $LL.Main.putIns1
+rw__LL_Main_putIns1 : [17] -> [70] -> [70] -> [70]
+rw__LL_Main_putIns1 x0 x1 x2 = s0 # (s1 # (s2 # (s3 # (s4 # (x0 # s5)))))
+  where
+    s0 : [8]
+    s0 = take`{8} x1
+    s1 : [8]
+    s1 = take`{8} (drop`{8} x1)
+    s2 : [8]
+    s2 = take`{8} (drop`{16} x1)
+    s3 : [8]
+    s3 = take`{8} (drop`{24} x1)
+    s4 : [6]
+    s4 = take`{6} (drop`{32} x1)
+    s5 : [15]
+    s5 = drop`{55} x1
+
+// $LL.Main.putWeOut
+rw__LL_Main_putWeOut : [1] -> [15] -> [70] -> [70]
+rw__LL_Main_putWeOut x0 x1 x2 = rw_Main_putOut (x0 # (s0 # s1)) x2
+  where
+    s0 : [6]
+    s0 = take`{6} (drop`{1} x1)
+    s1 : [8]
+    s1 = drop`{7} x1
+
+// $LL.Main.getOut
+rw__LL_Main_getOut : [70] -> [70] -> [85]
+rw__LL_Main_getOut x0 x1 = (rw_Main_outputs x0) # x1
+
+// $LL.Main.loop19
+rw__LL_Main_loop19 : [6] -> [8] -> [70] -> [70]
+rw__LL_Main_loop19 x0 x1 x2 = rw__LL_Main_bnz x0 x1 x2
+
+// Main.getIns
+rw_Main_getIns : [70] -> [87]
+rw_Main_getIns x0 = rw__LL_Main_getIns x0 x0
+
+// $LL.Main.incrPC
+rw__LL_Main_incrPC : [6] -> [70] -> [70]
+rw__LL_Main_incrPC x0 x1 = rw_Main_putPC1 (x0 + 0b000001) x1
+
+// Main.loop
+rw_Main_loop : [70] -> [90]
+rw_Main_loop x0 = rw__LL_Main_loop22 s4 s5
+  where
+    s0 : [79]
+    s0 = rw_Main_getInstr x0
+    s1 : [9]
+    s1 = take`{9} s0
+    s2 : [70]
+    s2 = drop`{9} s0
+    s3 : [90]
+    s3 = 0b00000000000 # (s1 # s2)
+    s4 : [9]
+    s4 = take`{9} (drop`{11} s3)
+    s5 : [70]
+    s5 = drop`{20} s3
+
+// $LL.Main.reset3
+rw__LL_Main_reset3 : [70] -> [90]
+rw__LL_Main_reset3 x0 = rw__LL_Main_reset4 s4 s5
+  where
+    s0 : [85]
+    s0 = rw_Main_getOut x0
+    s1 : [15]
+    s1 = take`{15} s0
+    s2 : [70]
+    s2 = drop`{15} s0
+    s3 : [90]
+    s3 = 0b00001 # (s1 # s2)
+    s4 : [15]
+    s4 = take`{15} (drop`{5} s3)
+    s5 : [70]
+    s5 = drop`{20} s3
+
+// $LL.Main.loop18
+rw__LL_Main_loop18 : [15] -> [70] -> [90]
+rw__LL_Main_loop18 x0 x1 = 0b1 # (x0 # (0x6 # x1))
+
+// $LL.Main.loop17
+rw__LL_Main_loop17 : [70] -> [90]
+rw__LL_Main_loop17 x0 = rw__LL_Main_loop26 s5
+  where
+    s0 : [76]
+    s0 = rw_Main_getPC x0
+    s1 : [6]
+    s1 = take`{6} s0
+    s2 : [70]
+    s2 = drop`{6} s0
+    s3 : [70]
+    s3 = rw__LL_Main_finishInstr1 s1 s2
+    s4 : [90]
+    s4 = 0x10000 # s3
+    s5 : [70]
+    s5 = drop`{20} s4
+
+// $LL.Main.loop16
+rw__LL_Main_loop16 : [70] -> [90]
+rw__LL_Main_loop16 x0 = rw__LL_Main_loop30 s5
+  where
+    s0 : [76]
+    s0 = rw_Main_getPC x0
+    s1 : [6]
+    s1 = take`{6} s0
+    s2 : [70]
+    s2 = drop`{6} s0
+    s3 : [70]
+    s3 = rw__LL_Main_finishInstr1 s1 s2
+    s4 : [90]
+    s4 = 0x10000 # s3
+    s5 : [70]
+    s5 = drop`{20} s4
+
+// $LL.Main.putReg8
+rw__LL_Main_putReg8 : [8] -> [70] -> [70] -> [70]
+rw__LL_Main_putReg8 x0 x1 x2 = s0 # (s1 # (x0 # (s2 # (s3 # (s4 # s5)))))
+  where
+    s0 : [8]
+    s0 = take`{8} x1
+    s1 : [8]
+    s1 = take`{8} (drop`{8} x1)
+    s2 : [8]
+    s2 = take`{8} (drop`{24} x1)
+    s3 : [6]
+    s3 = take`{6} (drop`{32} x1)
+    s4 : [17]
+    s4 = take`{17} (drop`{38} x1)
+    s5 : [15]
+    s5 = drop`{55} x1
+
+// $LL.Main.putReg7
+rw__LL_Main_putReg7 : [8] -> [70] -> [70] -> [70]
+rw__LL_Main_putReg7 x0 x1 x2 = rw__LL_Main_putReg8 x0 x1 x2
+
+// Main.inputs
+rw_Main_inputs : [70] -> [17]
+rw_Main_inputs x0 = s0
+  where
+    s0 : [17]
+    s0 = take`{17} (drop`{38} x0)
+
+// $LL.Main.putReg6
+rw__LL_Main_putReg6 : [8] -> [70] -> [70] -> [70]
+rw__LL_Main_putReg6 x0 x1 x2 = rw__LL_Main_putReg5 x0 x1 x2
+
+// $LL.Main.st2
+rw__LL_Main_st2 : [70] -> [70]
+rw__LL_Main_st2 x0 = rw_Main_putWeOut1 x0
+
+// $LL.Main.loop15
+rw__LL_Main_loop15 : [15] -> [70] -> [90]
+rw__LL_Main_loop15 x0 x1 = 0b1 # (x0 # (0x8 # x1))
+
+// Main.putReg1
+rw_Main_putReg1 : [2] -> [8] -> [70] -> [70]
+rw_Main_putReg1 x0 x1 x2 = rw__LL_Main_putReg3 x1 x0 x2
+
+// $LL.Main.st1
+rw__LL_Main_st1 : [8] -> [70] -> [70]
+rw__LL_Main_st1 x0 x1 = rw__LL_Main_st x0 x1
+
+// Main.r0
+rw_Main_r0 : [70] -> [8]
+rw_Main_r0 x0 = s0
+  where
+    s0 : [8]
+    s0 = take`{8} x0
+
+// Main.getOut
+rw_Main_getOut : [70] -> [85]
+rw_Main_getOut x0 = rw__LL_Main_getOut x0 x0
+
+// $LL.Main.putIns
+rw__LL_Main_putIns : [17] -> [70] -> [70] -> [70]
+rw__LL_Main_putIns x0 x1 x2 = rw__LL_Main_putIns1 x0 x1 x2
+
+// $LL.Main.loop14
+rw__LL_Main_loop14 : [17] -> [70] -> [90]
+rw__LL_Main_loop14 x0 x1 = rw__LL_Main_loop12 s2
+  where
+    s0 : [70]
+    s0 = rw_Main_putIns x0 x1
+    s1 : [90]
+    s1 = 0x10000 # s0
+    s2 : [70]
+    s2 = drop`{20} s1
+
+// Main.dataIn
+rw_Main_dataIn : [17] -> [8]
+rw_Main_dataIn x0 = s0
+  where
+    s0 : [8]
+    s0 = drop`{9} x0
+
+// $LL.Main.getReg2
+rw__LL_Main_getReg2 : [70] -> [70] -> [78]
+rw__LL_Main_getReg2 x0 x1 = (rw_Main_r0 x0) # x1
+
+// $LL.Main.nand1
+rw__LL_Main_nand1 : [70] -> [70]
+rw__LL_Main_nand1 x0 = rw_Main_incrPC x0
+
+// $LL.Main.bnz
+rw__LL_Main_bnz : [6] -> [8] -> [70] -> [70]
+rw__LL_Main_bnz x0 x1 x2 = rw__LL_Main_bnz1 x0 [x1 == 0x00] x2
+
+// Main.getDataIn
+rw_Main_getDataIn : [70] -> [78]
+rw_Main_getDataIn x0 = rw__LL_Main_getDataIn s1 s2
+  where
+    s0 : [87]
+    s0 = rw_Main_getIns x0
+    s1 : [17]
+    s1 = take`{17} s0
+    s2 : [70]
+    s2 = drop`{17} s0
+
+// $LL.Main.loop13
+rw__LL_Main_loop13 : [15] -> [70] -> [90]
+rw__LL_Main_loop13 x0 x1 = 0b1 # (x0 # (0x3 # x1))
+
+// Main.r1
+rw_Main_r1 : [70] -> [8]
+rw_Main_r1 x0 = s0
+  where
+    s0 : [8]
+    s0 = take`{8} (drop`{8} x0)
+
+// $LL.Main.loop12
+rw__LL_Main_loop12 : [70] -> [90]
+rw__LL_Main_loop12 x0 = rw__LL_Main_loop23 s5
+  where
+    s0 : [78]
+    s0 = rw_Main_getDataIn x0
+    s1 : [8]
+    s1 = take`{8} s0
+    s2 : [70]
+    s2 = drop`{8} s0
+    s3 : [70]
+    s3 = rw_Main_putReg s1 s2
+    s4 : [90]
+    s4 = 0x10000 # s3
+    s5 : [70]
+    s5 = drop`{20} s4
+
+// $LL.Main.getReg1
+rw__LL_Main_getReg1 : [70] -> [70] -> [78]
+rw__LL_Main_getReg1 x0 x1 = (rw_Main_r1 x0) # x1
+
+// Main.r3
+rw_Main_r3 : [70] -> [8]
+rw_Main_r3 x0 = s0
+  where
+    s0 : [8]
+    s0 = take`{8} (drop`{24} x0)
+
+// $LL.Main.loop11
+rw__LL_Main_loop11 : [15] -> [70] -> [90]
+rw__LL_Main_loop11 x0 x1 = 0b1 # (x0 # (0x2 # x1))
+
+// $LL.Main.ld
+rw__LL_Main_ld : [70] -> [70]
+rw__LL_Main_ld x0 = rw_Main_putWeOut x0
+
+// Main.r2
+rw_Main_r2 : [70] -> [8]
+rw_Main_r2 x0 = s0
+  where
+    s0 : [8]
+    s0 = take`{8} (drop`{16} x0)
+
+// $LL.Main.putReg5
+rw__LL_Main_putReg5 : [8] -> [70] -> [70] -> [70]
+rw__LL_Main_putReg5 x0 x1 x2 = x0 # (s0 # (s1 # (s2 # (s3 # (s4 # s5)))))
+  where
+    s0 : [8]
+    s0 = take`{8} (drop`{8} x1)
+    s1 : [8]
+    s1 = take`{8} (drop`{16} x1)
+    s2 : [8]
+    s2 = take`{8} (drop`{24} x1)
+    s3 : [6]
+    s3 = take`{6} (drop`{32} x1)
+    s4 : [17]
+    s4 = take`{17} (drop`{38} x1)
+    s5 : [15]
+    s5 = drop`{55} x1
+
+// Main.putAddrOut
+rw_Main_putAddrOut : [6] -> [70] -> [70]
+rw_Main_putAddrOut x0 x1 = rw__LL_Main_putAddrOut x0 s1 s2
+  where
+    s0 : [85]
+    s0 = rw_Main_getOut x1
+    s1 : [15]
+    s1 = take`{15} s0
+    s2 : [70]
+    s2 = drop`{15} s0
+
+// $LL.Main.loop10
+rw__LL_Main_loop10 : [70] -> [90]
+rw__LL_Main_loop10 x0 = rw__LL_Main_loop20 s5
+  where
+    s0 : [76]
+    s0 = rw_Main_getPC x0
+    s1 : [6]
+    s1 = take`{6} s0
+    s2 : [70]
+    s2 = drop`{6} s0
+    s3 : [70]
+    s3 = rw__LL_Main_finishInstr1 s1 s2
+    s4 : [90]
+    s4 = 0x10000 # s3
+    s5 : [70]
+    s5 = drop`{20} s4
+
+// $LL.Main.putReg4
+rw__LL_Main_putReg4 : [8] -> [70] -> [70] -> [70]
+rw__LL_Main_putReg4 x0 x1 x2 = s0 # (x0 # (s1 # (s2 # (s3 # (s4 # s5)))))
   where
     s0 : [8]
     s0 = take`{8} x1
@@ -106,13 +702,224 @@ rw__LL_Main_putReg15 x0 x1 = s0 # (x0 # (s1 # (s2 # (s3 # (s4 # s5)))))
     s5 : [15]
     s5 = drop`{55} x1
 
-// $LL.Main.getReg7
-rw__LL_Main_getReg7 : [70] -> [70] -> [78]
-rw__LL_Main_getReg7 x0 x1 = (rw_Main_r2 x0) # x1
+// $LL.Main.st
+rw__LL_Main_st : [8] -> [70] -> [70]
+rw__LL_Main_st x0 x1 = rw__LL_Main_st2 s0
+  where
+    s0 : [70]
+    s0 = rw_Main_putDataOut1 x0 x1
 
-// $LL.Main.loop32
-rw__LL_Main_loop32 : [9] -> [70] -> [70] -> [90]
-rw__LL_Main_loop32 x0 x1 x2 = if (take`{3} x0) == 0b000 then (rw__LL_Main_loop15 s2) else (if (take`{3} x0) == 0b001 then (rw__LL_Main_loop35 s7) else (if (take`{3} x0) == 0b010 then (rw__LL_Main_loop29 s14) else (if (take`{3} x0) == 0b011 then (rw__LL_Main_loop14 s23) else (rw__LL_Main_loop17 s30))))
+// $LL.Main.putOut1
+rw__LL_Main_putOut1 : [15] -> [70] -> [70] -> [70]
+rw__LL_Main_putOut1 x0 x1 x2 = rw__LL_Main_putOut x0 x1 x2
+
+// $LL.Main.putReg3
+rw__LL_Main_putReg3 : [8] -> [2] -> [70] -> [70]
+rw__LL_Main_putReg3 x0 x1 x2 = if x1 == 0b00 then (rw__LL_Main_putReg6 x0 x2 x2) else (if x1 == 0b01 then (rw__LL_Main_putReg2 x0 x2 x2) else (if x1 == 0b10 then (rw__LL_Main_putReg7 x0 x2 x2) else (rw__LL_Main_putReg1 x0 x2 x2)))
+
+// $LL.Main.loop9
+rw__LL_Main_loop9 : [70] -> [90]
+rw__LL_Main_loop9 x0 = rw__LL_Main_loop29 s5
+  where
+    s0 : [76]
+    s0 = rw_Main_getPC x0
+    s1 : [6]
+    s1 = take`{6} s0
+    s2 : [70]
+    s2 = drop`{6} s0
+    s3 : [70]
+    s3 = rw__LL_Main_finishInstr1 s1 s2
+    s4 : [90]
+    s4 = 0x10000 # s3
+    s5 : [70]
+    s5 = drop`{20} s4
+
+// $LL.Main.finishInstr1
+rw__LL_Main_finishInstr1 : [6] -> [70] -> [70]
+rw__LL_Main_finishInstr1 x0 x1 = rw__LL_Main_ld s0
+  where
+    s0 : [70]
+    s0 = rw_Main_putAddrOut x0 x1
+
+// Main.incrPC
+rw_Main_incrPC : [70] -> [70]
+rw_Main_incrPC x0 = rw__LL_Main_incrPC s1 s2
+  where
+    s0 : [76]
+    s0 = rw_Main_getPC x0
+    s1 : [6]
+    s1 = take`{6} s0
+    s2 : [70]
+    s2 = drop`{6} s0
+
+// $LL.Main.loop7
+rw__LL_Main_loop7 : [70] -> [90]
+rw__LL_Main_loop7 x0 = rw__LL_Main_loop13 s4 s5
+  where
+    s0 : [85]
+    s0 = rw_Main_getOut x0
+    s1 : [15]
+    s1 = take`{15} s0
+    s2 : [70]
+    s2 = drop`{15} s0
+    s3 : [90]
+    s3 = 0b00001 # (s1 # s2)
+    s4 : [15]
+    s4 = take`{15} (drop`{5} s3)
+    s5 : [70]
+    s5 = drop`{20} s3
+
+// $LL.Main.loop6
+rw__LL_Main_loop6 : [2] -> [2] -> [8] -> [70] -> [70]
+rw__LL_Main_loop6 x0 x1 x2 x3 = rw__LL_Main_nand2 x1 x0 x2 x3
+
+// Main.getInstr
+rw_Main_getInstr : [70] -> [79]
+rw_Main_getInstr x0 = rw__LL_Main_getInstr s1 s2
+  where
+    s0 : [87]
+    s0 = rw_Main_getIns x0
+    s1 : [17]
+    s1 = take`{17} s0
+    s2 : [70]
+    s2 = drop`{17} s0
+
+// $LL.Main.loop5
+rw__LL_Main_loop5 : [6] -> [8] -> [70] -> [70]
+rw__LL_Main_loop5 x0 x1 x2 = rw__LL_Main_st3 x0 x1 x2
+
+// $LL.Main.putReg2
+rw__LL_Main_putReg2 : [8] -> [70] -> [70] -> [70]
+rw__LL_Main_putReg2 x0 x1 x2 = rw__LL_Main_putReg4 x0 x1 x2
+
+// Main.instrIn
+rw_Main_instrIn : [17] -> [9]
+rw_Main_instrIn x0 = s0
+  where
+    s0 : [9]
+    s0 = take`{9} x0
+
+// $LL.Main.putOut
+rw__LL_Main_putOut : [15] -> [70] -> [70] -> [70]
+rw__LL_Main_putOut x0 x1 x2 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # x0)))))
+  where
+    s0 : [8]
+    s0 = take`{8} x1
+    s1 : [8]
+    s1 = take`{8} (drop`{8} x1)
+    s2 : [8]
+    s2 = take`{8} (drop`{16} x1)
+    s3 : [8]
+    s3 = take`{8} (drop`{24} x1)
+    s4 : [6]
+    s4 = take`{6} (drop`{32} x1)
+    s5 : [17]
+    s5 = take`{17} (drop`{38} x1)
+
+// $LL.Main.getInstr
+rw__LL_Main_getInstr : [17] -> [70] -> [79]
+rw__LL_Main_getInstr x0 x1 = (rw_Main_instrIn x0) # x1
+
+// $LL.Main.putReg1
+rw__LL_Main_putReg1 : [8] -> [70] -> [70] -> [70]
+rw__LL_Main_putReg1 x0 x1 x2 = rw__LL_Main_putReg x0 x1 x2
+
+// $LL.Main.getDataIn
+rw__LL_Main_getDataIn : [17] -> [70] -> [78]
+rw__LL_Main_getDataIn x0 x1 = (rw_Main_dataIn x0) # x1
+
+// $LL.Main.loop4
+rw__LL_Main_loop4 : [9] -> [70] -> [70] -> [90]
+rw__LL_Main_loop4 x0 x1 x2 = rw__LL_Main_loop x0 x1 x2
+
+// $LL.Main.putPC
+rw__LL_Main_putPC : [6] -> [70] -> [70] -> [70]
+rw__LL_Main_putPC x0 x1 x2 = s0 # (s1 # (s2 # (s3 # (x0 # (s4 # s5)))))
+  where
+    s0 : [8]
+    s0 = take`{8} x1
+    s1 : [8]
+    s1 = take`{8} (drop`{8} x1)
+    s2 : [8]
+    s2 = take`{8} (drop`{16} x1)
+    s3 : [8]
+    s3 = take`{8} (drop`{24} x1)
+    s4 : [17]
+    s4 = take`{17} (drop`{38} x1)
+    s5 : [15]
+    s5 = drop`{55} x1
+
+// $LL.Main.getReg
+rw__LL_Main_getReg : [70] -> [70] -> [78]
+rw__LL_Main_getReg x0 x1 = (rw_Main_r3 x0) # x1
+
+// Main.getReg
+rw_Main_getReg : [70] -> [78]
+rw_Main_getReg x0 = rw__LL_Main_getReg3 0b00 x0
+
+// Main.putReg
+rw_Main_putReg : [8] -> [70] -> [70]
+rw_Main_putReg x0 x1 = rw__LL_Main_putReg3 x0 0b00 x1
+
+// $LL.Main.putAddrOut1
+rw__LL_Main_putAddrOut1 : [6] -> [15] -> [70] -> [70]
+rw__LL_Main_putAddrOut1 x0 x1 x2 = rw_Main_putOut (s0 # (x0 # s1)) x2
+  where
+    s0 : [1]
+    s0 = take`{1} x1
+    s1 : [8]
+    s1 = drop`{7} x1
+
+// $LL.Main.putReg
+rw__LL_Main_putReg : [8] -> [70] -> [70] -> [70]
+rw__LL_Main_putReg x0 x1 x2 = s0 # (s1 # (s2 # (x0 # (s3 # (s4 # s5)))))
+  where
+    s0 : [8]
+    s0 = take`{8} x1
+    s1 : [8]
+    s1 = take`{8} (drop`{8} x1)
+    s2 : [8]
+    s2 = take`{8} (drop`{16} x1)
+    s3 : [6]
+    s3 = take`{6} (drop`{32} x1)
+    s4 : [17]
+    s4 = take`{17} (drop`{38} x1)
+    s5 : [15]
+    s5 = drop`{55} x1
+
+// $LL.Main.loop2
+rw__LL_Main_loop2 : [15] -> [70] -> [90]
+rw__LL_Main_loop2 x0 x1 = 0b1 # (x0 # (0x5 # x1))
+
+// Main.getPC
+rw_Main_getPC : [70] -> [76]
+rw_Main_getPC x0 = rw__LL_Main_getPC x0 x0
+
+// Main.outputs
+rw_Main_outputs : [70] -> [15]
+rw_Main_outputs x0 = s0
+  where
+    s0 : [15]
+    s0 = drop`{55} x0
+
+// $LL.Main.nand
+rw__LL_Main_nand : [8] -> [2] -> [8] -> [70] -> [70]
+rw__LL_Main_nand x0 x1 x2 x3 = rw__LL_Main_nand3 x0 x1 x2 x3
+
+// Main.putWeOut
+rw_Main_putWeOut : [70] -> [70]
+rw_Main_putWeOut x0 = rw__LL_Main_putWeOut1 s1 s2
+  where
+    s0 : [85]
+    s0 = rw_Main_getOut x0
+    s1 : [15]
+    s1 = take`{15} s0
+    s2 : [70]
+    s2 = drop`{15} s0
+
+// $LL.Main.loop
+rw__LL_Main_loop : [9] -> [70] -> [70] -> [90]
+rw__LL_Main_loop x0 x1 x2 = if (take`{3} x0) == 0b000 then (rw__LL_Main_loop21 s2) else (if (take`{3} x0) == 0b001 then (rw__LL_Main_loop7 s7) else (if (take`{3} x0) == 0b010 then (rw__LL_Main_loop25 s14) else (if (take`{3} x0) == 0b011 then (rw__LL_Main_loop10 s23) else (rw__LL_Main_loop9 s30))))
   where
     s0 : [70]
     s0 = rw_Main_incrPC x2
@@ -125,7 +932,7 @@ rw__LL_Main_loop32 x0 x1 x2 = if (take`{3} x0) == 0b000 then (rw__LL_Main_loop15
     s4 : [70]
     s4 = rw_Main_putAddrOut s3 x2
     s5 : [70]
-    s5 = rw__LL_Main_finishInstr s4
+    s5 = rw__LL_Main_ld s4
     s6 : [90]
     s6 = 0x10000 # s5
     s7 : [70]
@@ -139,7 +946,7 @@ rw__LL_Main_loop32 x0 x1 x2 = if (take`{3} x0) == 0b000 then (rw__LL_Main_loop15
     s11 : [70]
     s11 = drop`{8} s9
     s12 : [70]
-    s12 = rw__LL_Main_loop3 s8 s10 s11
+    s12 = rw__LL_Main_loop5 s8 s10 s11
     s13 : [90]
     s13 = 0x10000 # s12
     s14 : [70]
@@ -157,7 +964,7 @@ rw__LL_Main_loop32 x0 x1 x2 = if (take`{3} x0) == 0b000 then (rw__LL_Main_loop15
     s20 : [70]
     s20 = drop`{8} s18
     s21 : [70]
-    s21 = rw__LL_Main_loop22 s17 s15 s19 s20
+    s21 = rw__LL_Main_loop6 s15 s17 s19 s20
     s22 : [90]
     s22 = 0x10000 # s21
     s23 : [70]
@@ -171,959 +978,23 @@ rw__LL_Main_loop32 x0 x1 x2 = if (take`{3} x0) == 0b000 then (rw__LL_Main_loop15
     s27 : [70]
     s27 = drop`{8} s25
     s28 : [70]
-    s28 = rw__LL_Main_loop30 s24 s26 s27
+    s28 = rw__LL_Main_loop19 s24 s26 s27
     s29 : [90]
     s29 = 0x10000 # s28
     s30 : [70]
     s30 = drop`{20} s29
 
-// $LL.Main.nand3
-rw__LL_Main_nand3 : [2] -> [2] -> [8] -> [70] -> [70]
-rw__LL_Main_nand3 x0 x1 x2 x3 = rw__LL_Main_nand x1 x2 s1 s2
-  where
-    s0 : [78]
-    s0 = rw_Main_getReg1 x0 x3
-    s1 : [8]
-    s1 = take`{8} s0
-    s2 : [70]
-    s2 = drop`{8} s0
-
-// $LL.Main.loop31
-rw__LL_Main_loop31 : [17] -> [70] -> [90]
-rw__LL_Main_loop31 x0 x1 = rw__LL_Main_reset6 s2
-  where
-    s0 : [70]
-    s0 = rw_Main_putIns x0 x1
-    s1 : [90]
-    s1 = 0x10000 # s0
-    s2 : [70]
-    s2 = drop`{20} s1
-
-// $LL.Main.putIns3
-rw__LL_Main_putIns3 : [17] -> [70] -> [70]
-rw__LL_Main_putIns3 x0 x1 = s0 # (s1 # (s2 # (s3 # (s4 # (x0 # s5)))))
-  where
-    s0 : [8]
-    s0 = take`{8} x1
-    s1 : [8]
-    s1 = take`{8} (drop`{8} x1)
-    s2 : [8]
-    s2 = take`{8} (drop`{16} x1)
-    s3 : [8]
-    s3 = take`{8} (drop`{24} x1)
-    s4 : [6]
-    s4 = take`{6} (drop`{32} x1)
-    s5 : [15]
-    s5 = drop`{55} x1
-
-// $LL.Main.inputs
-rw__LL_Main_inputs : [70] -> [17]
-rw__LL_Main_inputs x0 = s0
-  where
-    s0 : [17]
-    s0 = take`{17} (drop`{38} x0)
-
-// $LL.Main.loop30
-rw__LL_Main_loop30 : [6] -> [8] -> [70] -> [70]
-rw__LL_Main_loop30 x0 x1 x2 = rw__LL_Main_bnz1 x0 x1 x2
-
-// $LL.Main.putReg14
-rw__LL_Main_putReg14 : [8] -> [70] -> [70] -> [70]
-rw__LL_Main_putReg14 x0 x1 x2 = rw__LL_Main_putReg4 x0 x1 x2
-
-// $LL.Main.loop29
-rw__LL_Main_loop29 : [70] -> [90]
-rw__LL_Main_loop29 x0 = rw__LL_Main_loop28 s4 s5
-  where
-    s0 : [85]
-    s0 = rw_Main_getOut x0
-    s1 : [15]
-    s1 = take`{15} s0
-    s2 : [70]
-    s2 = drop`{15} s0
-    s3 : [90]
-    s3 = 0b00001 # (s1 # s2)
-    s4 : [15]
-    s4 = take`{15} (drop`{5} s3)
-    s5 : [70]
-    s5 = drop`{20} s3
-
-// Main.putPC1
-rw_Main_putPC1 : [6] -> [70] -> [70]
-rw_Main_putPC1 x0 x1 = rw__LL_Main_putPC3 x0 x1
-
-// $LL.Main.getDataIn
-rw__LL_Main_getDataIn : [17] -> [70] -> [78]
-rw__LL_Main_getDataIn x0 x1 = (rw_Main_dataIn x0) # x1
-
-// Main.putIns
-rw_Main_putIns : [17] -> [70] -> [70]
-rw_Main_putIns x0 x1 = rw__LL_Main_putIns2 x0 x1
-
-// $LL.Main.loop28
-rw__LL_Main_loop28 : [15] -> [70] -> [90]
-rw__LL_Main_loop28 x0 x1 = 0b1 # (x0 # (0x7 # x1))
-
-// $LL.Main.loop27
-rw__LL_Main_loop27 : [15] -> [70] -> [90]
-rw__LL_Main_loop27 x0 x1 = 0b1 # (x0 # (0x2 # x1))
-
-// $LL.Main.putOut3
-rw__LL_Main_putOut3 : [15] -> [70] -> [70]
-rw__LL_Main_putOut3 x0 x1 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # x0)))))
-  where
-    s0 : [8]
-    s0 = take`{8} x1
-    s1 : [8]
-    s1 = take`{8} (drop`{8} x1)
-    s2 : [8]
-    s2 = take`{8} (drop`{16} x1)
-    s3 : [8]
-    s3 = take`{8} (drop`{24} x1)
-    s4 : [6]
-    s4 = take`{6} (drop`{32} x1)
-    s5 : [17]
-    s5 = take`{17} (drop`{38} x1)
-
-// $LL.Main.loop26
-rw__LL_Main_loop26 : [17] -> [70] -> [90]
-rw__LL_Main_loop26 x0 x1 = rw__LL_Main_loop7 s2
-  where
-    s0 : [70]
-    s0 = rw_Main_putIns x0 x1
-    s1 : [90]
-    s1 = 0x10000 # s0
-    s2 : [70]
-    s2 = drop`{20} s1
-
-// $LL.Main.putReg13
-rw__LL_Main_putReg13 : [8] -> [70] -> [70]
-rw__LL_Main_putReg13 x0 x1 = x0 # (s0 # (s1 # (s2 # (s3 # (s4 # s5)))))
-  where
-    s0 : [8]
-    s0 = take`{8} (drop`{8} x1)
-    s1 : [8]
-    s1 = take`{8} (drop`{16} x1)
-    s2 : [8]
-    s2 = take`{8} (drop`{24} x1)
-    s3 : [6]
-    s3 = take`{6} (drop`{32} x1)
-    s4 : [17]
-    s4 = take`{17} (drop`{38} x1)
-    s5 : [15]
-    s5 = drop`{55} x1
-
-// $LL.Main.putReg12
-rw__LL_Main_putReg12 : [8] -> [70] -> [70]
-rw__LL_Main_putReg12 x0 x1 = s0 # (s1 # (x0 # (s2 # (s3 # (s4 # s5)))))
-  where
-    s0 : [8]
-    s0 = take`{8} x1
-    s1 : [8]
-    s1 = take`{8} (drop`{8} x1)
-    s2 : [8]
-    s2 = take`{8} (drop`{24} x1)
-    s3 : [6]
-    s3 = take`{6} (drop`{32} x1)
-    s4 : [17]
-    s4 = take`{17} (drop`{38} x1)
-    s5 : [15]
-    s5 = drop`{55} x1
-
-// $LL.Main.putAddrOut3
-rw__LL_Main_putAddrOut3 : [6] -> [15] -> [15]
-rw__LL_Main_putAddrOut3 x0 x1 = s0 # (x0 # s1)
-  where
-    s0 : [1]
-    s0 = take`{1} x1
-    s1 : [8]
-    s1 = drop`{7} x1
-
-// Main.putWeOut
-rw_Main_putWeOut : [70] -> [70]
-rw_Main_putWeOut x0 = rw__LL_Main_putWeOut3 0b1 x0
-
-// $LL.Main.putReg11
-rw__LL_Main_putReg11 : [8] -> [70] -> [70] -> [70]
-rw__LL_Main_putReg11 x0 x1 x2 = rw__LL_Main_putReg10 x0 x1 x2
-
-// $LL.Main.putOut2
-rw__LL_Main_putOut2 : [15] -> [70] -> [70] -> [70]
-rw__LL_Main_putOut2 x0 x1 x2 = rw__LL_Main_putOut3 x0 x1
-
-// $LL.Main.getReg6
-rw__LL_Main_getReg6 : [2] -> [2] -> [70] -> [78]
-rw__LL_Main_getReg6 x0 x1 x2 = if x1 == 0b10 then (rw__LL_Main_getReg7 x2 x2) else (rw__LL_Main_getReg x0 x2)
-
-// $LL.Main.putPC3
-rw__LL_Main_putPC3 : [6] -> [70] -> [70]
-rw__LL_Main_putPC3 x0 x1 = rw__LL_Main_putPC2 x0 x1 x1
-
-// $LL.Main.bnz2
-rw__LL_Main_bnz2 : [6] -> [1] -> [70] -> [70]
-rw__LL_Main_bnz2 x0 x1 x2 = rw_Main_putPC1 x0 x2
-
-// $LL.Main.loop24
-rw__LL_Main_loop24 : [9] -> [70] -> [90]
-rw__LL_Main_loop24 x0 x1 = rw__LL_Main_loop33 x0 x1 x1
-
-// $LL.Main.reset7
-rw__LL_Main_reset7 : [15] -> [70] -> [90]
-rw__LL_Main_reset7 x0 x1 = 0b1 # (x0 # (0x3 # x1))
-
-// $LL.Main.loop23
-rw__LL_Main_loop23 : [70] -> [90]
-rw__LL_Main_loop23 x0 = rw__LL_Main_loop20 s5
-  where
-    s0 : [76]
-    s0 = rw_Main_getPC x0
-    s1 : [6]
-    s1 = take`{6} s0
-    s2 : [70]
-    s2 = drop`{6} s0
-    s3 : [70]
-    s3 = rw__LL_Main_finishInstr1 s1 s2
-    s4 : [90]
-    s4 = 0x10000 # s3
-    s5 : [70]
-    s5 = drop`{20} s4
-
-// $LL.Main.reset6
-rw__LL_Main_reset6 : [70] -> [90]
-rw__LL_Main_reset6 x0 = rw_Main_loop x0
-
-// $LL.Main.finishInstr1
-rw__LL_Main_finishInstr1 : [6] -> [70] -> [70]
-rw__LL_Main_finishInstr1 x0 x1 = rw__LL_Main_finishInstr s0
-  where
-    s0 : [70]
-    s0 = rw_Main_putAddrOut x0 x1
-
-// $LL.Main.getReg5
-rw__LL_Main_getReg5 : [2] -> [2] -> [70] -> [78]
-rw__LL_Main_getReg5 x0 x1 x2 = if x1 == 0b00 then (rw__LL_Main_getReg4 x2 x2) else (rw__LL_Main_getReg1 x0 x0 x2)
-
-// Main.getReg1
-rw_Main_getReg1 : [2] -> [70] -> [78]
-rw_Main_getReg1 x0 x1 = rw__LL_Main_getReg5 x0 x0 x1
-
-// $LL.Main.loop22
-rw__LL_Main_loop22 : [2] -> [2] -> [8] -> [70] -> [70]
-rw__LL_Main_loop22 x0 x1 x2 x3 = rw__LL_Main_nand3 x0 x1 x2 x3
-
-// $LL.Main.st3
-rw__LL_Main_st3 : [8] -> [70] -> [70]
-rw__LL_Main_st3 x0 x1 = rw__LL_Main_st1 s0
-  where
-    s0 : [70]
-    s0 = rw_Main_putDataOut1 x0 x1
-
-// $LL.Main.getReg4
-rw__LL_Main_getReg4 : [70] -> [70] -> [78]
-rw__LL_Main_getReg4 x0 x1 = (rw_Main_r0 x0) # x1
-
-// $LL.Main.bnz1
-rw__LL_Main_bnz1 : [6] -> [8] -> [70] -> [70]
-rw__LL_Main_bnz1 x0 x1 x2 = rw__LL_Main_bnz x1 x0 [x1 == 0x00] x2
-
-// Main.putReg1
-rw_Main_putReg1 : [8] -> [70] -> [70]
-rw_Main_putReg1 x0 x1 = rw__LL_Main_putReg3 x0 0b00 (0b00 # x0) x1
-
-// $LL.Main.putIns2
-rw__LL_Main_putIns2 : [17] -> [70] -> [70]
-rw__LL_Main_putIns2 x0 x1 = rw__LL_Main_putIns x0 x1 x1
-
-// $LL.Main.getReg3
-rw__LL_Main_getReg3 : [70] -> [70] -> [78]
-rw__LL_Main_getReg3 x0 x1 = (rw_Main_r3 x0) # x1
-
-// $LL.Main.putReg10
-rw__LL_Main_putReg10 : [8] -> [70] -> [70] -> [70]
-rw__LL_Main_putReg10 x0 x1 x2 = rw__LL_Main_putReg12 x0 x1
-
-// $LL.Main.putReg9
-rw__LL_Main_putReg9 : [8] -> [70] -> [70] -> [70]
-rw__LL_Main_putReg9 x0 x1 x2 = rw__LL_Main_putReg5 x0 x1
-
-// Main.pc
-rw_Main_pc : [70] -> [6]
-rw_Main_pc x0 = rw__LL_Main_pc x0
-
-// $LL.Main.r1
-rw__LL_Main_r1 : [70] -> [8]
-rw__LL_Main_r1 x0 = s0
-  where
-    s0 : [8]
-    s0 = take`{8} (drop`{8} x0)
-
 // $LL.Main.getPC
 rw__LL_Main_getPC : [70] -> [70] -> [76]
 rw__LL_Main_getPC x0 x1 = (rw_Main_pc x0) # x1
 
-// $LL.Main.putAddrOut2
-rw__LL_Main_putAddrOut2 : [6] -> [70] -> [70]
-rw__LL_Main_putAddrOut2 x0 x1 = rw__LL_Main_putAddrOut1 x0 s1 s2
-  where
-    s0 : [85]
-    s0 = rw_Main_getOut x1
-    s1 : [15]
-    s1 = take`{15} s0
-    s2 : [70]
-    s2 = drop`{15} s0
-
-// $LL.Main.outputs
-rw__LL_Main_outputs : [70] -> [15]
-rw__LL_Main_outputs x0 = s0
-  where
-    s0 : [15]
-    s0 = drop`{55} x0
-
-// $LL.Main.putReg8
-rw__LL_Main_putReg8 : [8] -> [70] -> [70] -> [70]
-rw__LL_Main_putReg8 x0 x1 x2 = rw__LL_Main_putReg15 x0 x1
-
-// $LL.Main.loop20
-rw__LL_Main_loop20 : [70] -> [90]
-rw__LL_Main_loop20 x0 = rw__LL_Main_loop16 s4 s5
-  where
-    s0 : [85]
-    s0 = rw_Main_getOut x0
-    s1 : [15]
-    s1 = take`{15} s0
-    s2 : [70]
-    s2 = drop`{15} s0
-    s3 : [90]
-    s3 = 0b00001 # (s1 # s2)
-    s4 : [15]
-    s4 = take`{15} (drop`{5} s3)
-    s5 : [70]
-    s5 = drop`{20} s3
-
-// Main.getIns
-rw_Main_getIns : [70] -> [87]
-rw_Main_getIns x0 = rw__LL_Main_getIns x0 x0
-
-// $LL.Main.getReg2
-rw__LL_Main_getReg2 : [70] -> [70] -> [78]
-rw__LL_Main_getReg2 x0 x1 = (rw_Main_r1 x0) # x1
-
-// Main.loop
-rw_Main_loop : [70] -> [90]
-rw_Main_loop x0 = rw__LL_Main_loop24 s4 s5
-  where
-    s0 : [79]
-    s0 = rw_Main_getInstr x0
-    s1 : [9]
-    s1 = take`{9} s0
-    s2 : [70]
-    s2 = drop`{9} s0
-    s3 : [90]
-    s3 = 0b00000000000 # (s1 # s2)
-    s4 : [9]
-    s4 = take`{9} (drop`{11} s3)
-    s5 : [70]
-    s5 = drop`{20} s3
-
-// $LL.Main.getInstr
-rw__LL_Main_getInstr : [17] -> [70] -> [79]
-rw__LL_Main_getInstr x0 x1 = (rw_Main_instrIn x0) # x1
-
-// $LL.Main.putPC2
-rw__LL_Main_putPC2 : [6] -> [70] -> [70] -> [70]
-rw__LL_Main_putPC2 x0 x1 x2 = rw__LL_Main_putPC x0 x1 x2
-
-// $LL.Main.reset2
-rw__LL_Main_reset2 : [17] -> [70] -> [90]
-rw__LL_Main_reset2 x0 x1 = rw__LL_Main_reset s2
-  where
-    s0 : [70]
-    s0 = rw_Main_putIns x0 x1
-    s1 : [90]
-    s1 = 0x10000 # s0
-    s2 : [70]
-    s2 = drop`{20} s1
-
-// $LL.Main.putDataOut3
-rw__LL_Main_putDataOut3 : [8] -> [15] -> [70] -> [70]
-rw__LL_Main_putDataOut3 x0 x1 x2 = rw_Main_putOut (rw__LL_Main_putDataOut x0 x1) x2
-
-// $LL.Main.loop18
-rw__LL_Main_loop18 : [70] -> [90]
-rw__LL_Main_loop18 x0 = rw__LL_Main_loop4 s5
-  where
-    s0 : [76]
-    s0 = rw_Main_getPC x0
-    s1 : [6]
-    s1 = take`{6} s0
-    s2 : [70]
-    s2 = drop`{6} s0
-    s3 : [70]
-    s3 = rw__LL_Main_finishInstr1 s1 s2
-    s4 : [90]
-    s4 = 0x10000 # s3
-    s5 : [70]
-    s5 = drop`{20} s4
-
-// Main.inputs
-rw_Main_inputs : [70] -> [17]
-rw_Main_inputs x0 = rw__LL_Main_inputs x0
-
-// $LL.Main.r3
-rw__LL_Main_r3 : [70] -> [8]
-rw__LL_Main_r3 x0 = s0
-  where
-    s0 : [8]
-    s0 = take`{8} (drop`{24} x0)
-
-// $LL.Main.loop17
-rw__LL_Main_loop17 : [70] -> [90]
-rw__LL_Main_loop17 x0 = rw__LL_Main_loop6 s5
-  where
-    s0 : [76]
-    s0 = rw_Main_getPC x0
-    s1 : [6]
-    s1 = take`{6} s0
-    s2 : [70]
-    s2 = drop`{6} s0
-    s3 : [70]
-    s3 = rw__LL_Main_finishInstr1 s1 s2
-    s4 : [90]
-    s4 = 0x10000 # s3
-    s5 : [70]
-    s5 = drop`{20} s4
-
-// $LL.Main.putPC1
-rw__LL_Main_putPC1 : [6] -> [70] -> [70]
-rw__LL_Main_putPC1 x0 x1 = s0 # (s1 # (s2 # (s3 # (x0 # (s4 # s5)))))
-  where
-    s0 : [8]
-    s0 = take`{8} x1
-    s1 : [8]
-    s1 = take`{8} (drop`{8} x1)
-    s2 : [8]
-    s2 = take`{8} (drop`{16} x1)
-    s3 : [8]
-    s3 = take`{8} (drop`{24} x1)
-    s4 : [17]
-    s4 = take`{17} (drop`{38} x1)
-    s5 : [15]
-    s5 = drop`{55} x1
-
-// Main.putReg
-rw_Main_putReg : [2] -> [8] -> [70] -> [70]
-rw_Main_putReg x0 x1 x2 = rw__LL_Main_putReg3 x1 x0 (x0 # x1) x2
-
-// $LL.Main.getReg1
-rw__LL_Main_getReg1 : [2] -> [2] -> [70] -> [78]
-rw__LL_Main_getReg1 x0 x1 x2 = if x1 == 0b01 then (rw__LL_Main_getReg2 x2 x2) else (rw__LL_Main_getReg6 x0 x0 x2)
-
-// $LL.Main.getOut
-rw__LL_Main_getOut : [70] -> [70] -> [85]
-rw__LL_Main_getOut x0 x1 = (rw_Main_outputs x0) # x1
-
-// Main.r0
-rw_Main_r0 : [70] -> [8]
-rw_Main_r0 x0 = rw__LL_Main_r0 x0
-
-// $LL.Main.loop16
-rw__LL_Main_loop16 : [15] -> [70] -> [90]
-rw__LL_Main_loop16 x0 x1 = 0b1 # (x0 # (0x4 # x1))
-
-// $LL.Main.loop15
-rw__LL_Main_loop15 : [70] -> [90]
-rw__LL_Main_loop15 x0 = rw__LL_Main_loop11 s5
-  where
-    s0 : [76]
-    s0 = rw_Main_getPC x0
-    s1 : [6]
-    s1 = take`{6} s0
-    s2 : [70]
-    s2 = drop`{6} s0
-    s3 : [70]
-    s3 = rw__LL_Main_finishInstr1 s1 s2
-    s4 : [90]
-    s4 = 0x10000 # s3
-    s5 : [70]
-    s5 = drop`{20} s4
-
-// Main.getOut
-rw_Main_getOut : [70] -> [85]
-rw_Main_getOut x0 = rw__LL_Main_getOut x0 x0
-
-// $LL.Main.nand2
-rw__LL_Main_nand2 : [70] -> [70]
-rw__LL_Main_nand2 x0 = rw_Main_incrPC x0
-
-// $LL.Main.loop14
-rw__LL_Main_loop14 : [70] -> [90]
-rw__LL_Main_loop14 x0 = rw__LL_Main_loop2 s5
-  where
-    s0 : [76]
-    s0 = rw_Main_getPC x0
-    s1 : [6]
-    s1 = take`{6} s0
-    s2 : [70]
-    s2 = drop`{6} s0
-    s3 : [70]
-    s3 = rw__LL_Main_finishInstr1 s1 s2
-    s4 : [90]
-    s4 = 0x10000 # s3
-    s5 : [70]
-    s5 = drop`{20} s4
-
-// $LL.Main.loop13
-rw__LL_Main_loop13 : [70] -> [90]
-rw__LL_Main_loop13 x0 = rw__LL_Main_loop23 s2
-  where
-    s0 : [70]
-    s0 = rw_Main_incrPC x0
-    s1 : [90]
-    s1 = 0x10000 # s0
-    s2 : [70]
-    s2 = drop`{20} s1
-
-// Main.dataIn
-rw_Main_dataIn : [17] -> [8]
-rw_Main_dataIn x0 = rw__LL_Main_dataIn x0
-
-// $LL.Main.loop12
-rw__LL_Main_loop12 : [15] -> [70] -> [90]
-rw__LL_Main_loop12 x0 x1 = 0b1 # (x0 # (0x0 # x1))
-
-// $LL.Main.st2
-rw__LL_Main_st2 : [6] -> [8] -> [70] -> [70]
-rw__LL_Main_st2 x0 x1 x2 = rw__LL_Main_st x1 s0
-  where
-    s0 : [70]
-    s0 = rw_Main_putAddrOut x0 x2
-
-// Main.getDataIn
-rw_Main_getDataIn : [70] -> [78]
-rw_Main_getDataIn x0 = rw__LL_Main_getDataIn s1 s2
-  where
-    s0 : [87]
-    s0 = rw_Main_getIns x0
-    s1 : [17]
-    s1 = take`{17} s0
-    s2 : [70]
-    s2 = drop`{17} s0
-
-// Main.r1
-rw_Main_r1 : [70] -> [8]
-rw_Main_r1 x0 = rw__LL_Main_r1 x0
-
-// $LL.Main.putWeOut3
-rw__LL_Main_putWeOut3 : [1] -> [70] -> [70]
-rw__LL_Main_putWeOut3 x0 x1 = rw__LL_Main_putWeOut1 x0 s1 s2
-  where
-    s0 : [85]
-    s0 = rw_Main_getOut x1
-    s1 : [15]
-    s1 = take`{15} s0
-    s2 : [70]
-    s2 = drop`{15} s0
-
-// $LL.Main.putReg7
-rw__LL_Main_putReg7 : [8] -> [70] -> [70] -> [70]
-rw__LL_Main_putReg7 x0 x1 x2 = rw__LL_Main_putReg9 x0 x1 x2
-
-// $LL.Main.loop11
-rw__LL_Main_loop11 : [70] -> [90]
-rw__LL_Main_loop11 x0 = rw__LL_Main_loop27 s4 s5
-  where
-    s0 : [85]
-    s0 = rw_Main_getOut x0
-    s1 : [15]
-    s1 = take`{15} s0
-    s2 : [70]
-    s2 = drop`{15} s0
-    s3 : [90]
-    s3 = 0b00001 # (s1 # s2)
-    s4 : [15]
-    s4 = take`{15} (drop`{5} s3)
-    s5 : [70]
-    s5 = drop`{20} s3
-
-// $LL.Main.nand1
-rw__LL_Main_nand1 : [8] -> [2] -> [8] -> [70] -> [70]
-rw__LL_Main_nand1 x0 x1 x2 x3 = rw__LL_Main_nand2 s0
-  where
-    s0 : [70]
-    s0 = rw_Main_putReg x1 (~ (x0 && x2)) x3
-
-// $LL.Main.loop10
-rw__LL_Main_loop10 : [17] -> [70] -> [90]
-rw__LL_Main_loop10 x0 x1 = rw__LL_Main_loop s2
-  where
-    s0 : [70]
-    s0 = rw_Main_putIns x0 x1
-    s1 : [90]
-    s1 = 0x10000 # s0
-    s2 : [70]
-    s2 = drop`{20} s1
-
-// $LL.Main.putWeOut2
-rw__LL_Main_putWeOut2 : [1] -> [15] -> [15]
-rw__LL_Main_putWeOut2 x0 x1 = x0 # (s0 # s1)
-  where
-    s0 : [6]
-    s0 = take`{6} (drop`{1} x1)
-    s1 : [8]
-    s1 = drop`{7} x1
-
-// $LL.Main.putOut1
-rw__LL_Main_putOut1 : [15] -> [70] -> [70] -> [70]
-rw__LL_Main_putOut1 x0 x1 x2 = rw__LL_Main_putOut2 x0 x1 x2
-
-// Main.r3
-rw_Main_r3 : [70] -> [8]
-rw_Main_r3 x0 = rw__LL_Main_r3 x0
-
-// $LL.Main.putReg6
-rw__LL_Main_putReg6 : [8] -> [2] -> [10] -> [70] -> [70]
-rw__LL_Main_putReg6 x0 x1 x2 x3 = if (take`{2} x2) == 0b01 then (rw__LL_Main_putReg2 s0 x3 x3) else (rw__LL_Main_putReg1 x0 x1 (x1 # x0) x3)
-  where
-    s0 : [8]
-    s0 = drop`{2} x2
-
-// $LL.Main.loop9
-rw__LL_Main_loop9 : [17] -> [70] -> [90]
-rw__LL_Main_loop9 x0 x1 = rw__LL_Main_loop13 s2
-  where
-    s0 : [70]
-    s0 = rw_Main_putIns x0 x1
-    s1 : [90]
-    s1 = 0x10000 # s0
-    s2 : [70]
-    s2 = drop`{20} s1
-
-// Main.r2
-rw_Main_r2 : [70] -> [8]
-rw_Main_r2 x0 = rw__LL_Main_r2 x0
-
-// $LL.Main.st1
-rw__LL_Main_st1 : [70] -> [70]
-rw__LL_Main_st1 x0 = rw_Main_putWeOut x0
-
-// $LL.Main.finishInstr
-rw__LL_Main_finishInstr : [70] -> [70]
-rw__LL_Main_finishInstr x0 = rw_Main_putWeOut1 x0
-
-// $LL.Main.bnz
-rw__LL_Main_bnz : [8] -> [6] -> [1] -> [70] -> [70]
-rw__LL_Main_bnz x0 x1 x2 x3 = if x2 == 0b1 then (rw_Main_incrPC x3) else (rw__LL_Main_bnz2 x1 [x0 == 0x00] x3)
-
-// $LL.Main.st
-rw__LL_Main_st : [8] -> [70] -> [70]
-rw__LL_Main_st x0 x1 = rw__LL_Main_st3 x0 x1
-
-// $LL.Main.putReg5
-rw__LL_Main_putReg5 : [8] -> [70] -> [70]
-rw__LL_Main_putReg5 x0 x1 = s0 # (s1 # (s2 # (x0 # (s3 # (s4 # s5)))))
-  where
-    s0 : [8]
-    s0 = take`{8} x1
-    s1 : [8]
-    s1 = take`{8} (drop`{8} x1)
-    s2 : [8]
-    s2 = take`{8} (drop`{16} x1)
-    s3 : [6]
-    s3 = take`{6} (drop`{32} x1)
-    s4 : [17]
-    s4 = take`{17} (drop`{38} x1)
-    s5 : [15]
-    s5 = drop`{55} x1
-
-// Main.putAddrOut
-rw_Main_putAddrOut : [6] -> [70] -> [70]
-rw_Main_putAddrOut x0 x1 = rw__LL_Main_putAddrOut2 x0 x1
-
-// $LL.Main.putOut
-rw__LL_Main_putOut : [15] -> [70] -> [70]
-rw__LL_Main_putOut x0 x1 = rw__LL_Main_putOut1 x0 x1 x1
-
-// $LL.Main.loop7
-rw__LL_Main_loop7 : [70] -> [90]
-rw__LL_Main_loop7 x0 = rw__LL_Main_loop18 s2
-  where
-    s0 : [70]
-    s0 = rw_Main_incrPC x0
-    s1 : [90]
-    s1 = 0x10000 # s0
-    s2 : [70]
-    s2 = drop`{20} s1
-
-// $LL.Main.loop6
-rw__LL_Main_loop6 : [70] -> [90]
-rw__LL_Main_loop6 x0 = rw__LL_Main_loop12 s4 s5
-  where
-    s0 : [85]
-    s0 = rw_Main_getOut x0
-    s1 : [15]
-    s1 = take`{15} s0
-    s2 : [70]
-    s2 = drop`{15} s0
-    s3 : [90]
-    s3 = 0b00001 # (s1 # s2)
-    s4 : [15]
-    s4 = take`{15} (drop`{5} s3)
-    s5 : [70]
-    s5 = drop`{20} s3
-
-// $LL.Main.nand
-rw__LL_Main_nand : [2] -> [8] -> [8] -> [70] -> [70]
-rw__LL_Main_nand x0 x1 x2 x3 = rw__LL_Main_nand1 x1 x0 x2 x3
-
-// Main.incrPC
-rw_Main_incrPC : [70] -> [70]
-rw_Main_incrPC x0 = rw__LL_Main_incrPC s1 s2
-  where
-    s0 : [76]
-    s0 = rw_Main_getPC x0
-    s1 : [6]
-    s1 = take`{6} s0
-    s2 : [70]
-    s2 = drop`{6} s0
-
-// $LL.Main.putDataOut2
-rw__LL_Main_putDataOut2 : [8] -> [15] -> [70] -> [70]
-rw__LL_Main_putDataOut2 x0 x1 x2 = rw__LL_Main_putDataOut3 x0 x1 x2
-
-// $LL.Main.dataIn
-rw__LL_Main_dataIn : [17] -> [8]
-rw__LL_Main_dataIn x0 = s0
-  where
-    s0 : [8]
-    s0 = drop`{9} x0
-
-// Main.getInstr
-rw_Main_getInstr : [70] -> [79]
-rw_Main_getInstr x0 = rw__LL_Main_getInstr s1 s2
-  where
-    s0 : [87]
-    s0 = rw_Main_getIns x0
-    s1 : [17]
-    s1 = take`{17} s0
-    s2 : [70]
-    s2 = drop`{17} s0
-
-// $LL.Main.loop5
-rw__LL_Main_loop5 : [15] -> [70] -> [90]
-rw__LL_Main_loop5 x0 x1 = 0b1 # (x0 # (0x6 # x1))
-
-// Main.instrIn
-rw_Main_instrIn : [17] -> [9]
-rw_Main_instrIn x0 = rw__LL_Main_instrIn x0
-
-// $LL.Main.pc
-rw__LL_Main_pc : [70] -> [6]
-rw__LL_Main_pc x0 = s0
-  where
-    s0 : [6]
-    s0 = take`{6} (drop`{32} x0)
-
-// $LL.Main.putDataOut1
-rw__LL_Main_putDataOut1 : [8] -> [70] -> [70]
-rw__LL_Main_putDataOut1 x0 x1 = rw__LL_Main_putDataOut2 x0 s1 s2
-  where
-    s0 : [85]
-    s0 = rw_Main_getOut x1
-    s1 : [15]
-    s1 = take`{15} s0
-    s2 : [70]
-    s2 = drop`{15} s0
-
-// $LL.Main.putReg4
-rw__LL_Main_putReg4 : [8] -> [70] -> [70] -> [70]
-rw__LL_Main_putReg4 x0 x1 x2 = rw__LL_Main_putReg13 x0 x1
-
-// $LL.Main.r0
-rw__LL_Main_r0 : [70] -> [8]
-rw__LL_Main_r0 x0 = s0
-  where
-    s0 : [8]
-    s0 = take`{8} x0
-
-// $LL.Main.putAddrOut1
-rw__LL_Main_putAddrOut1 : [6] -> [15] -> [70] -> [70]
-rw__LL_Main_putAddrOut1 x0 x1 x2 = rw__LL_Main_putAddrOut x0 x1 x2
-
-// $LL.Main.putPC
-rw__LL_Main_putPC : [6] -> [70] -> [70] -> [70]
-rw__LL_Main_putPC x0 x1 x2 = rw__LL_Main_putPC1 x0 x1
-
-// $LL.Main.putWeOut1
-rw__LL_Main_putWeOut1 : [1] -> [15] -> [70] -> [70]
-rw__LL_Main_putWeOut1 x0 x1 x2 = rw__LL_Main_putWeOut x0 x1 x2
-
-// Main.getReg
-rw_Main_getReg : [70] -> [78]
-rw_Main_getReg x0 = rw__LL_Main_getReg5 0b00 0b00 x0
-
 // $LL.Main.putAddrOut
 rw__LL_Main_putAddrOut : [6] -> [15] -> [70] -> [70]
-rw__LL_Main_putAddrOut x0 x1 x2 = rw_Main_putOut (rw__LL_Main_putAddrOut3 x0 x1) x2
-
-// $LL.Main.loop4
-rw__LL_Main_loop4 : [70] -> [90]
-rw__LL_Main_loop4 x0 = rw__LL_Main_loop5 s4 s5
-  where
-    s0 : [85]
-    s0 = rw_Main_getOut x0
-    s1 : [15]
-    s1 = take`{15} s0
-    s2 : [70]
-    s2 = drop`{15} s0
-    s3 : [90]
-    s3 = 0b00001 # (s1 # s2)
-    s4 : [15]
-    s4 = take`{15} (drop`{5} s3)
-    s5 : [70]
-    s5 = drop`{20} s3
-
-// $LL.Main.loop3
-rw__LL_Main_loop3 : [6] -> [8] -> [70] -> [70]
-rw__LL_Main_loop3 x0 x1 x2 = rw__LL_Main_st2 x0 x1 x2
-
-// $LL.Main.putReg3
-rw__LL_Main_putReg3 : [8] -> [2] -> [10] -> [70] -> [70]
-rw__LL_Main_putReg3 x0 x1 x2 x3 = if (take`{2} x2) == 0b00 then (rw__LL_Main_putReg14 s0 x3 x3) else (rw__LL_Main_putReg6 x0 x1 (x1 # x0) x3)
-  where
-    s0 : [8]
-    s0 = drop`{2} x2
-
-// $LL.Main.reset
-rw__LL_Main_reset : [70] -> [90]
-rw__LL_Main_reset x0 = rw__LL_Main_reset8 s5
-  where
-    s0 : [76]
-    s0 = rw_Main_getPC x0
-    s1 : [6]
-    s1 = take`{6} s0
-    s2 : [70]
-    s2 = drop`{6} s0
-    s3 : [70]
-    s3 = rw__LL_Main_finishInstr1 s1 s2
-    s4 : [90]
-    s4 = 0x10000 # s3
-    s5 : [70]
-    s5 = drop`{20} s4
-
-// $LL.Main.getIns
-rw__LL_Main_getIns : [70] -> [70] -> [87]
-rw__LL_Main_getIns x0 x1 = (rw_Main_inputs x0) # x1
-
-// $LL.Main.getReg
-rw__LL_Main_getReg : [2] -> [70] -> [78]
-rw__LL_Main_getReg x0 x1 = rw__LL_Main_getReg3 x1 x1
-
-// $LL.Main.putIns1
-rw__LL_Main_putIns1 : [17] -> [70] -> [70] -> [70]
-rw__LL_Main_putIns1 x0 x1 x2 = rw__LL_Main_putIns3 x0 x1
-
-// $LL.Main.putReg2
-rw__LL_Main_putReg2 : [8] -> [70] -> [70] -> [70]
-rw__LL_Main_putReg2 x0 x1 x2 = rw__LL_Main_putReg8 x0 x1 x2
-
-// $LL.Main.putWeOut
-rw__LL_Main_putWeOut : [1] -> [15] -> [70] -> [70]
-rw__LL_Main_putWeOut x0 x1 x2 = rw_Main_putOut (rw__LL_Main_putWeOut2 x0 x1) x2
-
-// $LL.Main.loop2
-rw__LL_Main_loop2 : [70] -> [90]
-rw__LL_Main_loop2 x0 = rw__LL_Main_loop1 s4 s5
-  where
-    s0 : [85]
-    s0 = rw_Main_getOut x0
-    s1 : [15]
-    s1 = take`{15} s0
-    s2 : [70]
-    s2 = drop`{15} s0
-    s3 : [90]
-    s3 = 0b00001 # (s1 # s2)
-    s4 : [15]
-    s4 = take`{15} (drop`{5} s3)
-    s5 : [70]
-    s5 = drop`{20} s3
-
-// $LL.Main.putIns
-rw__LL_Main_putIns : [17] -> [70] -> [70] -> [70]
-rw__LL_Main_putIns x0 x1 x2 = rw__LL_Main_putIns1 x0 x1 x2
-
-// $LL.Main.putReg1
-rw__LL_Main_putReg1 : [8] -> [2] -> [10] -> [70] -> [70]
-rw__LL_Main_putReg1 x0 x1 x2 x3 = if (take`{2} x2) == 0b10 then (rw__LL_Main_putReg11 s0 x3 x3) else (rw__LL_Main_putReg (x1 # x0) x3)
-  where
-    s0 : [8]
-    s0 = drop`{2} x2
-
-// $LL.Main.loop1
-rw__LL_Main_loop1 : [15] -> [70] -> [90]
-rw__LL_Main_loop1 x0 x1 = 0b1 # (x0 # (0x8 # x1))
-
-// $LL.Main.r2
-rw__LL_Main_r2 : [70] -> [8]
-rw__LL_Main_r2 x0 = s0
-  where
-    s0 : [8]
-    s0 = take`{8} (drop`{16} x0)
-
-// Main.getPC
-rw_Main_getPC : [70] -> [76]
-rw_Main_getPC x0 = rw__LL_Main_getPC x0 x0
-
-// $LL.Main.loop
-rw__LL_Main_loop : [70] -> [90]
-rw__LL_Main_loop x0 = rw__LL_Main_reset6 s5
-  where
-    s0 : [78]
-    s0 = rw_Main_getDataIn x0
-    s1 : [8]
-    s1 = take`{8} s0
-    s2 : [70]
-    s2 = drop`{8} s0
-    s3 : [70]
-    s3 = rw_Main_putReg1 s1 s2
-    s4 : [90]
-    s4 = 0x10000 # s3
-    s5 : [70]
-    s5 = drop`{20} s4
-
-// $LL.Main.instrIn
-rw__LL_Main_instrIn : [17] -> [9]
-rw__LL_Main_instrIn x0 = s0
-  where
-    s0 : [9]
-    s0 = take`{9} x0
-
-// Main.outputs
-rw_Main_outputs : [70] -> [15]
-rw_Main_outputs x0 = rw__LL_Main_outputs x0
-
-// $LL.Main.incrPC
-rw__LL_Main_incrPC : [6] -> [70] -> [70]
-rw__LL_Main_incrPC x0 x1 = rw_Main_putPC1 (x0 + 0b000001) x1
-
-// $LL.Main.putReg
-rw__LL_Main_putReg : [10] -> [70] -> [70]
-rw__LL_Main_putReg x0 x1 = rw__LL_Main_putReg7 s0 x1 x1
-  where
-    s0 : [8]
-    s0 = drop`{2} x0
-
-// $LL.Main.putDataOut
-rw__LL_Main_putDataOut : [8] -> [15] -> [15]
-rw__LL_Main_putDataOut x0 x1 = s0 # (s1 # x0)
-  where
-    s0 : [1]
-    s0 = take`{1} x1
-    s1 : [6]
-    s1 = take`{6} (drop`{1} x1)
+rw__LL_Main_putAddrOut x0 x1 x2 = rw__LL_Main_putAddrOut1 x0 x1 x2
 
 // Main.putOut
 rw_Main_putOut : [15] -> [70] -> [70]
-rw_Main_putOut x0 x1 = rw__LL_Main_putOut x0 x1
+rw_Main_putOut x0 x1 = rw__LL_Main_putOut1 x0 x1 x1
 
 // Per-cycle step: outputs # next register values.
 rw_step : [74] -> [17] -> [89]
@@ -1147,6 +1018,6 @@ rw_device ins = outs
     rs : [n][89]
     rs = [rw_step st i | st <- sts | i <- ins]
     sts : [1 + n][74]
-    sts = [0b01010000000000000000000000000000000000000000000000000000000000000000000000] # [drop`{15} r | r <- rs]
+    sts = [0b00000000000000000000000000000000000000000000000000000000000000000000000000] # [drop`{15} r | r <- rs]
     outs : [n][15]
     outs = [take`{15} r | r <- rs]

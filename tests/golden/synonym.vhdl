@@ -217,15 +217,15 @@ component \Main_sig\ is
       signal \__st0_next\ : std_logic_vector (7 downto 0);
       signal \__st1\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000001");
       signal \__st1_next\ : std_logic_vector (7 downto 0);
-      signal zi3 : std_logic_vector (7 downto 0);
       signal main_sig_out : std_logic_vector (23 downto 0);
+      signal zi3 : std_logic_vector (7 downto 0);
       signal \main_sig_outR1\ : std_logic_vector (23 downto 0);
       signal zres : std_logic_vector (23 downto 0);
 begin
-zi3 <= rw_add(\__st0\, \__st1\);
-      inst : \Main_sig\ port map (\__st1\, zi3, main_sig_out);
-      \instR1\ : \Main_sig\ port map (\__st0\, \__st1\, \main_sig_outR1\);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"1")), main_sig_out, \main_sig_outR1\);
+inst : \Main_sig\ port map (\__st0\, \__st1\, main_sig_out);
+      zi3 <= rw_add(\__st0\, \__st1\);
+      \instR1\ : \Main_sig\ port map (\__st1\, zi3, \main_sig_outR1\);
+      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), main_sig_out, \main_sig_outR1\);
       \__st0_next\ <= zres(15 downto 8);
       \__st1_next\ <= zres(7 downto 0);
       \__out0\ <= zres(23 downto 16);

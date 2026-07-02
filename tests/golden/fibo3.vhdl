@@ -218,7 +218,6 @@ component \Main_first\ is
       end component;
       signal \__st0\ : std_logic_vector (15 downto 0) := std_logic_vector'(B"0000000000000001");
       signal \__st0_next\ : std_logic_vector (15 downto 0);
-      signal main_sig_out : std_logic_vector (24 downto 0);
       signal main_first_out : std_logic_vector (23 downto 0);
       signal zi0 : std_logic_vector (23 downto 0);
       signal zi1 : std_logic_vector (7 downto 0);
@@ -232,11 +231,11 @@ component \Main_first\ is
       signal zi9 : std_logic_vector (24 downto 0);
       signal zi10 : std_logic_vector (7 downto 0);
       signal zi12 : std_logic_vector (15 downto 0);
+      signal main_sig_out : std_logic_vector (24 downto 0);
       signal \main_sig_outR1\ : std_logic_vector (24 downto 0);
       signal zres : std_logic_vector (24 downto 0);
 begin
-inst : \Main_sig\ port map (\__st0\, main_sig_out);
-      \instR1\ : \Main_first\ port map (\__st0\, main_first_out);
+inst : \Main_first\ port map (\__st0\, main_first_out);
       zi0 <= main_first_out;
       zi1 <= zi0(23 downto 16);
       zi2 <= zi0(15 downto 0);
@@ -249,8 +248,9 @@ inst : \Main_sig\ port map (\__st0\, main_sig_out);
       zi9 <= (std_logic_vector'(B"0") & zi7 & zi8);
       zi10 <= zi9(23 downto 16);
       zi12 <= (zi10 & rw_add(zi4, zi10));
-      \instR2\ : \Main_sig\ port map (zi12, \main_sig_outR1\);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"1")), main_sig_out, \main_sig_outR1\);
+      \instR1\ : \Main_sig\ port map (zi12, main_sig_out);
+      \instR2\ : \Main_sig\ port map (\__st0\, \main_sig_outR1\);
+      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), main_sig_out, \main_sig_outR1\);
       \__st0_next\ <= zres(15 downto 0);
       \__out0\ <= zres(23 downto 16);
       process (clk, rst)
