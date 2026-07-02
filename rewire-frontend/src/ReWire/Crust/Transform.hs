@@ -14,7 +14,7 @@ module ReWire.Crust.Transform
       , etaAbsDefs
       , purge, purgeAll
       , normalizeBind
-      , simplify
+      , simplify, simplifyUntil, synthableDefn, dictFree
       , specialize
       , freeTyVarsToNil
       , removeMain
@@ -25,7 +25,7 @@ import ReWire.Config (Config, depth, start, pDebug)
 import ReWire.Crust.PrimBasis (primDatas)
 import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Poly (..), Pat (..), Defn (..), FreeProgram, DataCon (..), DataConId, TyConId, DataDefn (..), Builtin (..), DefnAttr (..), TypeSynonym (..), flattenApp, builtins)
 import ReWire.Crust.TypeCheck (typeCheckDefn, unify, unify', TySub)
-import ReWire.Crust.Types (typeOf, tyAnn, setTyAnn, dstArrow, poly, poly', flattenArrow, arr, nilTy, ctorNames, resInputTy, codomTy, (|->), arrowRight, arrowLeft, isReacT, prettyTy, synthable, higherOrder, fundamental, concrete)
+import ReWire.Crust.Types (typeOf, tyAnn, setTyAnn, dstArrow, poly, poly', flattenArrow, arr, nilTy, ctorNames, resInputTy, codomTy, (|->), arrowRight, arrowLeft, isReacT, prettyTy, synthable, higherOrder, fundamental, concrete, hasArrow, paramTys)
 import ReWire.Crust.Util (mkApp, mkError, mkLam, inlinable, synthableDefn, patVars, toVar, isExtrude, extrudeDefn)
 import ReWire.Error (AstError, MonadError, failAt, failInternal, Warning (..))
 import ReWire.Fix (fix, fix', fixUntil, boundedFixOn)
@@ -693,7 +693,29 @@ purgeUnused except exceptTs (ts, syns, vs) = (inuseData (fix' extendWithCtorPara
 -- | Repeatedly calls "reduce" and "specialize" -- attempts to remove
 -- higher-order functions by partially evaluating them.
 simplify :: (MonadIO m, Fresh m, MonadError AstError m) => Config -> FreeProgram -> m FreeProgram
-simplify conf = flip evalStateT mempty . fixUntil (\(_, _, vs) -> all synthableDefn vs) "Partial evaluation" (conf^.depth)
+simplify = simplifyUntil $ \ (_, _, vs) -> all synthableDefn vs
+
+-- | No definition's signature mentions a datatype with a function-typed
+--   constructor field (i.e., a class dictionary): the GHC front end's
+--   extended stop condition for 'simplifyUntil'.
+dictFree :: FreeProgram -> Bool
+dictFree (ts, _, vs) = null bad || all ok vs
+      where bad :: [Name TyConId]
+            bad = [ dataName d | d <- ts, any arrowField $ dataCons d ]
+
+            arrowField :: DataCon -> Bool
+            arrowField (DataCon _ _ (Embed (Poly (unsafeUnbind -> (_, t))))) = any hasArrow $ paramTys t
+
+            ok :: Defn -> Bool
+            ok (Defn _ _ (Embed (Poly (unsafeUnbind -> (_, t)))) _ _) = not $ any (`elem` bad) $ ctorNames t
+
+-- | Like 'simplify' with a custom stop condition. The GHC front end keeps
+-- specializing until class dictionaries are gone: a dictionary type looks
+-- synthable (the function types hide inside its constructor fields), so
+-- the 'synthableDefn' condition alone can stop with dictionary-passing
+-- calls still present.
+simplifyUntil :: (MonadIO m, Fresh m, MonadError AstError m) => (FreeProgram -> Bool) -> Config -> FreeProgram -> m FreeProgram
+simplifyUntil done conf = flip evalStateT mempty . fixUntil done "Partial evaluation" (conf^.depth)
                 (
                 verb "> Specializing..."
                 >=> specialize'
