@@ -90,8 +90,9 @@ typeCheckDefn ts vs d = runReaderT (withAssumps ts vs $ tcDefn (s2n "") d) mempt
 
 -- | Type-annotate the AST, but also eliminate uses of polymorphic
 --   definitions by creating new definitions specialized to non-polymorphic types.
-typeCheck :: (Fresh m, MonadError AstError m) => Name Exp -> FreeProgram -> m FreeProgram
-typeCheck start (ts, syns, vs) = (ts, syns, ) <$> runReaderT tc mempty
+-- The first argument bounds the specialization fixpoint (instantiation rounds).
+typeCheck :: (Fresh m, MonadError AstError m) => Natural -> Name Exp -> FreeProgram -> m FreeProgram
+typeCheck specDepth start (ts, syns, vs) = (ts, syns, ) <$> runReaderT tc mempty
       where -- | Make a defn for each specialization of this defn's name in the index.
             conc :: HashMap (Name Exp) [(Ty, Name Exp)] -> Defn -> [Defn]
             conc idx (Defn an n _ b e) = map conc' $ Map.lookupDefault [] n idx
@@ -124,9 +125,6 @@ typeCheck start (ts, syns, vs) = (ts, syns, ) <$> runReaderT tc mempty
             concretes :: Fresh m => Concretes -> [Defn] -> m Concretes
             concretes known = foldM (\ m c -> Map.insert c <$> fresh (fst c) <*> pure m) mempty
                             . Set.filter (not . (`Map.member` known)) . uses
-
-            specDepth :: Natural
-            specDepth = 10 -- TODO: make configurable.
 
             polys :: HashSet (Name Exp)
             polys = foldr polys' mempty vs
