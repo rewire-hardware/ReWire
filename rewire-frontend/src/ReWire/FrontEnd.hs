@@ -7,9 +7,8 @@ module ReWire.FrontEnd
       ) where
 
 import ReWire.Annotation (noAnn)
-import ReWire.Config (Config, Language (..), getOutFile, target, cycles, inputsFile, defaultInputsFile, source, rtlOpt, testbench, pDebug, loadPath, ghcFrontend)
+import ReWire.Config (Config, Language (..), getOutFile, target, cycles, inputsFile, defaultInputsFile, source, rtlOpt, testbench, pDebug, loadPath)
 import ReWire.Error (MonadError, AstError, runSyntaxError, failAt, warnAt, printError, relocatingNoLocTo, filePath)
-import ReWire.GHC.Session (dumpCore)
 import ReWire.Hyle.Interp (Ins, run)
 import ReWire.Hyle.Parse (parseHyle)
 import ReWire.Hyle.Syntax (Program, progDevice)
@@ -52,10 +51,8 @@ compileFile conf filename = do
 
       where load :: (MonadError AstError m, MonadState AstError m, MonadFail m, MonadIO m) => m Program
             load = case conf^.source of
-                  -- The experimental GHC front end: currently dumps the
-                  -- desugared Core for the whole home module graph, then
-                  -- falls through to the usual path.
-                  Haskell | conf^.ghcFrontend -> dumpCore conf filename >> loadProgram conf filename
+                  -- (--ghc-frontend, the experimental GHC front end, is
+                  -- handled inside ModCache.getDevice.)
                   Haskell -> loadProgram conf filename
                   RWCore  -> parseHyle filename
                   s       -> failAt noAnn $ "Not a supported source language: " <> pack (show s)
