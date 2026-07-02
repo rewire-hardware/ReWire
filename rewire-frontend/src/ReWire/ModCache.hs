@@ -121,7 +121,7 @@ getDevice conf fp = do
                   , ("Removing the Main.main definition (before attempting to typecheck it).", pure . removeMain)
                   , ("Inlining INLINE-annotated definitions.",                                 inlineAnnotated)
                   , ("Expanding type synonyms.",                                               expandTypeSynonyms)
-                  , ("Typechecking, inference.",                                               kindCheck >=> typeCheck start)
+                  , ("Typechecking, inference.",                                               kindCheck >=> typeCheck specDepth start)
                   , ("Extracting extern models; removing other Haskell definitions for externs.", neuterExterns')
                   ]
                   -- The GHC bridge annotates nodes liberally for the
@@ -191,8 +191,14 @@ getDevice conf fp = do
             forceProg p = p `deepseq` pure p
 
             extraTC :: (Fresh m, MonadIO m, MonadError AstError m) => FreeProgram -> m FreeProgram
-            extraTC | conf^.typecheck = verb "Type-checking again (--debug-typecheck)." >=> kindCheck >=> typeCheck start
+            extraTC | conf^.typecheck = verb "Type-checking again (--debug-typecheck)." >=> kindCheck >=> typeCheck specDepth start
                     | otherwise       = pure
+
+            -- The bound on the type-specialization fixpoint: at least the
+            -- historical bound of 10; --depth raises it (e.g. for deep
+            -- dictionary chains).
+            specDepth :: Natural
+            specDepth = max 10 $ conf^.C.depth
 
             neuterExterns' :: (Fresh m, MonadIO m, MonadError AstError m) => FreeProgram -> m FreeProgram
             neuterExterns' fp = do
