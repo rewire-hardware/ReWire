@@ -36,6 +36,8 @@ library:
   - vector
   - finite-typelits
   - ghc-typelits-natnormalise
+  - ghc-typelits-knownnat
+  - ghc-typelits-extra
 
 tests:
   rewire-user-test:

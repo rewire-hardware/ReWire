@@ -43,6 +43,8 @@ library
   build-depends:
       base >=4.7 && <5
     , finite-typelits
+    , ghc-typelits-extra
+    , ghc-typelits-knownnat
     , ghc-typelits-natnormalise
     , monad-resumption
     , mtl
