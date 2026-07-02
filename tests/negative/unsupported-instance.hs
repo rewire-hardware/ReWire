@@ -1,5 +1,8 @@
--- EXPECT-ERROR: Unsupported definition syntax
--- Type class instances are not part of the supported Haskell subset.
+-- EXPECT-ERROR: Types do not unify
+-- EXPECT-ERROR: Main.Frob Bool
+-- Multi-method (data-dictionary) class instances compile, but a
+-- single-method class has a newtype dictionary whose class type survives
+-- to the Crust typechecker, so this instance is still rejected.
 {-# LANGUAGE DataKinds #-}
 import ReWire
 import ReWire.Monad (iter, Dev)

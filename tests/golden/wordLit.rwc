@@ -1,17 +1,13 @@
 $Pure.dispatch : ([8]) -> [16]
 $Pure.dispatch i =
-      Main.loop1 i
+      Main.loop i
 
-Main.loop1 : ([8]) -> [16]
-Main.loop1 $x =
-      $LL.Main.loop1 $x
+Main.loop : ([8]) -> [16]
+Main.loop i =
+      $LL.Main.loop1 (xor (zext 16 i) 16'h1)
 
-$LL.Main.loop1 : ([8]) -> [16]
-$LL.Main.loop1 $1 =
-      $LL.Main.loop (xor (zext 16 $1) 16'h1)
-
-$LL.Main.loop : ([16]) -> [16]
-$LL.Main.loop rabind =
+$LL.Main.loop1 : ([16]) -> [16]
+$LL.Main.loop1 rabind =
       rabind
 
 device top_level

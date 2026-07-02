@@ -12,7 +12,7 @@ module ReWire.Config
       , vhdlPackages, inputsFile, defaultInputsFile, outFile
       , noWarn, wError
       , start, top, loadPath, cycles, depth, dump, source, typecheck, rtlOpt
-      , testbench, ghcFrontend
+      , testbench
       , pDebug
       ) where
 
@@ -67,7 +67,6 @@ data Config = Config
       , _testbench    :: Bool
       , _noWarn       :: Bool -- ^ -w: suppress warnings.
       , _wError       :: Bool -- ^ -Werror: warnings are fatal.
-      , _ghcFrontend  :: Bool -- ^ --ghc-frontend: use the (experimental) GHC-based front end.
       }
 
 makeLenses ''Config
@@ -97,7 +96,6 @@ defaultConfig = Config
       , _testbench    = False
       , _noWarn       = False
       , _wError       = False
-      , _ghcFrontend  = False
       }
 
 -- | The default value of the inputsFile field: when the user hasn't named an
@@ -175,7 +173,6 @@ interpret = foldM interp defaultConfig
                   FlagNoWarn                      -> pure $ noWarn .~ True $ c
                   FlagW "error"                   -> pure $ wError .~ True $ c
                   FlagW w                         -> Left $ "Unknown warning option: -W" <> pack w
-                  FlagGhcFrontend                 -> pure $ ghcFrontend .~ True $ c
 
             -- | Parse a non-negative integer flag argument, reporting a clean
             --   usage error instead of a partial 'read' crash.

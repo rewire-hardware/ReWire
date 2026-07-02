@@ -206,35 +206,16 @@ port (\__in0\ : in std_logic_vector (15 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ReWirezuPreludezuzaza\ is
-      port (arg0 : in std_logic_vector (0 downto 0);
-            arg1 : in std_logic_vector (0 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      signal rewirezupreludezuzazazuout : std_logic_vector (0 downto 0);
-      signal zi0 : std_logic_vector (0 downto 0);
-      signal zi2 : std_logic_vector (7 downto 0);
+signal zi0 : std_logic_vector (0 downto 0);
+      signal zi1 : std_logic_vector (0 downto 0);
+      signal zi2 : std_logic_vector (0 downto 0);
+      signal zi3 : std_logic_vector (7 downto 0);
       signal zres : std_logic_vector (7 downto 0);
 begin
-inst : \ReWirezuPreludezuzaza\ port map (\__in0\(15 downto 15), \__in0\(8 downto 8), rewirezupreludezuzazazuout);
-      zi0 <= rewirezupreludezuzazazuout;
-      zi2 <= rw_cond(rw_eq(zi0, std_logic_vector'(B"1")), \__in0\(7 downto 0), \__in0\(15 downto 8));
-      zres <= zi2;
+zi0 <= \__in0\(15 downto 15);
+      zi1 <= \__in0\(8 downto 8);
+      zi2 <= rw_cond(rw_eq(zi0, std_logic_vector'(B"1")), zi1, std_logic_vector'(B"0"));
+      zi3 <= rw_cond(rw_eq(zi2, std_logic_vector'(B"0")), \__in0\(15 downto 8), \__in0\(7 downto 0));
+      zres <= zi3;
       \__out0\ <= zres;
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ReWirezuPreludezuzaza\ is
-port (arg0 : in std_logic_vector (0 downto 0);
-      arg1 : in std_logic_vector (0 downto 0);
-      res : out std_logic_vector (0 downto 0));
-end entity;
-
-architecture rtl of \ReWirezuPreludezuzaza\ is
-
-begin
-res <= rw_cond(rw_eq(arg0, std_logic_vector'(B"1")), arg1, std_logic_vector'(B"0"));
 end architecture;

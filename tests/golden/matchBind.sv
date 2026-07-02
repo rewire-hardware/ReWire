@@ -6,14 +6,14 @@ module top_level (input logic [0:0] clk,
   logic [1:0] __resumption_tag_next;
   logic [7:0] __st0;
   logic [7:0] __st0_next;
-  logic [17:0] zll_main_loop1_out;
   logic [17:0] zll_main_loop5_out;
-  logic [17:0] zll_main_loop1_outR1;
+  logic [17:0] zll_main_reset1_out;
+  logic [17:0] zll_main_loop5_outR1;
   logic [17:0] zres;
-  ZLL_Main_loop1  inst (__in0, __st0, zll_main_loop1_out);
-  ZLL_Main_loop5  instR1 (__in0, zll_main_loop5_out);
-  ZLL_Main_loop1  instR2 (__in0, __st0, zll_main_loop1_outR1);
-  assign zres = (__resumption_tag == 2'h1) ? zll_main_loop1_out : ((__resumption_tag == 2'h2) ? zll_main_loop5_out : zll_main_loop1_outR1);
+  ZLL_Main_loop5  inst (__in0, __st0, zll_main_loop5_out);
+  ZLL_Main_reset1  instR1 (__in0, zll_main_reset1_out);
+  ZLL_Main_loop5  instR2 (__in0, __st0, zll_main_loop5_outR1);
+  assign zres = (__resumption_tag == 2'h1) ? zll_main_loop5_out : ((__resumption_tag == 2'h2) ? zll_main_reset1_out : zll_main_loop5_outR1);
   assign __resumption_tag_next = zres[9:8];
   assign __st0_next = zres[7:0];
   assign __out0 = zres[17:10];
@@ -28,6 +28,14 @@ module top_level (input logic [0:0] clk,
 endmodule
 
 module ZLL_Main_loop5 (input logic [7:0] arg0,
+  input logic [7:0] arg1,
+  output logic [17:0] res);
+  logic [17:0] zll_main_reset1_out;
+  ZLL_Main_reset1  inst (arg1, zll_main_reset1_out);
+  assign res = zll_main_reset1_out;
+endmodule
+
+module ZLL_Main_reset1 (input logic [7:0] arg0,
   output logic [17:0] res);
   logic [0:0] zi0;
   logic [0:0] zi1;
@@ -35,13 +43,5 @@ module ZLL_Main_loop5 (input logic [7:0] arg0,
   assign zi0 = arg0[0];
   assign zi1 = zi0;
   assign zi2 = (zi1 == 1'h1) ? 1'h0 : 1'h1;
-  assign res = (zi2 == 1'h1) ? {10'h9, arg0} : {10'h8, arg0};
-endmodule
-
-module ZLL_Main_loop1 (input logic [7:0] arg0,
-  input logic [7:0] arg1,
-  output logic [17:0] res);
-  logic [17:0] zll_main_loop5_out;
-  ZLL_Main_loop5  inst (arg1, zll_main_loop5_out);
-  assign res = zll_main_loop5_out;
+  assign res = (zi2 == 1'h0) ? {10'h9, arg0} : {10'h8, arg0};
 endmodule

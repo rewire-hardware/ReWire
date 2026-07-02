@@ -3,38 +3,24 @@ $Pure.dispatch i =
       Main.loop i
 
 Main.compute : ([7]) -> [5]
-Main.compute $x =
-      $LL.Main.compute $x
+Main.compute n =
+      $LL.Main.compute (trunc 5 (umod n 7'h14))
+
+Main.loop : ([7]) -> [5]
+Main.loop i =
+      $LL.Main.loop1 (Main.compute i)
 
 $LL.Main.loop1 : ([5]) -> [5]
 $LL.Main.loop1 rabind =
       rabind
 
-$LL.Main.compute3 : ([10]) -> [5]
-$LL.Main.compute3 $22 =
-      let a = $22[5 +: 5] in
-      let b = $22[0 +: 5] in
-      trunc 5 (umod (add (zext 128 a) (zext 128 b)) 128'h14)
-
-$LL.Main.compute2 : ([5]) -> [5]
-$LL.Main.compute2 sp =
-      $LL.Main.compute1 sp 5'h6
-
-$LL.Main.loop : ([7]) -> [5]
-$LL.Main.loop $2 =
-      $LL.Main.loop1 (Main.compute $2)
-
 $LL.Main.compute1 : ([5], [5]) -> [5]
-$LL.Main.compute1 $0 $1 =
-      $LL.Main.compute3 ($0 # $1)
+$LL.Main.compute1 eta b =
+      trunc 5 (umod (add (zext 128 eta) (zext 128 b)) 128'h14)
 
-Main.loop : ([7]) -> [5]
-Main.loop $x =
-      $LL.Main.loop $x
-
-$LL.Main.compute : ([7]) -> [5]
-$LL.Main.compute $3 =
-      $LL.Main.compute2 (trunc 5 (umod $3 7'h14))
+$LL.Main.compute : ([5]) -> [5]
+$LL.Main.compute sp =
+      $LL.Main.compute1 sp 5'h6
 
 device top_level
       input __in0 : [7]

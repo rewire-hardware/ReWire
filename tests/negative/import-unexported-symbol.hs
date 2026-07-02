@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Attempting to import an unexported symbol
+-- EXPECT-ERROR: Module ‘ReWire.Monad’ does not export ‘signal’
 import ReWire
 import ReWire.Monad (iter, Dev, signal)
 start :: Dev Bool Bool

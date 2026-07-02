@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Unknown class or type name in export list
+-- EXPECT-ERROR: Not in scope: data constructor ‘Nonexistent’
 module Main (Foo(Bar, Nonexistent), start, main) where
 import ReWire
 import ReWire.Monad (iter, Dev)

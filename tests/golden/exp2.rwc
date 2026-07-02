@@ -2,72 +2,57 @@ $Pure.dispatch : ([2000], [100]) -> [2100]
 $Pure.dispatch disc i =
       let store0 = disc[1000 +: 1000] in
       let s0 = disc[0 +: 1000] in
-      $LL.Main.dev1 store0 i s0
-
-$LL.Main.dev4 : ([1000]) -> [2100]
-$LL.Main.dev4 sto0 =
-      Main.dev sto0
-
-$LL.Main.dev3 : ([1000], [100], [1000]) -> [2100]
-$LL.Main.dev3 ss i sto0 =
-      $LL.Main.dev4 (Main.ss' ss i)
-
-$LL.Main.ss'3 : ([1000]) -> [1000]
-$LL.Main.ss'3 $32 =
-      let v = $32[100 +: 900] in
-      let x = $32[0 +: 100] in
-      v # x
-
-$LL.Main.ss'2 : ([900], [100]) -> [1000]
-$LL.Main.ss'2 $x $x1 =
-      $LL.Main.ss' $x $x1
-
-$LL.Main.ss'1 : ([1100]) -> [1000]
-$LL.Main.ss'1 $6 =
-      let i = $6[0 +: 100] in
-      Main.x2 (let $t0 = $LL.Main.ss'2 $6[100 +: 900] i in
-      $t0[900 +: 100]) # Main.x2 (let $t1 = $LL.Main.ss'2 $6[100 +: 900] i in
-      $t1[800 +: 100]) # Main.x2 (let $t2 = $LL.Main.ss'2 $6[100 +: 900] i in
-      $t2[700 +: 100]) # Main.x2 (let $t3 = $LL.Main.ss'2 $6[100 +: 900] i in
-      $t3[600 +: 100]) # Main.x2 (let $t4 = $LL.Main.ss'2 $6[100 +: 900] i in
-      $t4[500 +: 100]) # Main.x2 (let $t5 = $LL.Main.ss'2 $6[100 +: 900] i in
-      $t5[400 +: 100]) # Main.x2 (let $t6 = $LL.Main.ss'2 $6[100 +: 900] i in
-      $t6[300 +: 100]) # Main.x2 (let $t7 = $LL.Main.ss'2 $6[100 +: 900] i in
-      $t7[200 +: 100]) # Main.x2 (let $t8 = $LL.Main.ss'2 $6[100 +: 900] i in
-      $t8[100 +: 100]) # Main.x2 (let $t9 = $LL.Main.ss'2 $6[100 +: 900] i in
-      $t9[0 +: 100])
+      $LL.Main.dev store0 i s0
 
 Main.dev : ([1000]) -> [2100]
 Main.dev sto0 =
-      $LL.Main.dev sto0 sto0
+      $LL.Main.dev3 sto0 sto0
 
-$LL.Main.ss' : ([900], [100]) -> [1000]
-$LL.Main.ss' $3 $4 =
-      $LL.Main.ss'3 ($3 # $4)
+$LL.Main.dev4 : ([1000]) -> [100]
+$LL.Main.dev4 eta =
+      eta[900 +: 100]
 
-$LL.Main.x2 : ([100]) -> [100]
-$LL.Main.x2 $5 =
-      mul $5 100'h2
+$LL.Main.dev3 : ([1000], [1000]) -> [2100]
+$LL.Main.dev3 ss sto0 =
+      $LL.Main.dev4 ss # ss # sto0
+
+$LL.Main.dev2 : ([1000], [100], [1000]) -> [2100]
+$LL.Main.dev2 ss i sto0 =
+      $LL.Main.dev1 (Main.ss' ss i)
+
+$LL.Main.ss'1 : ([900], [100]) -> [1000]
+$LL.Main.ss'1 $x $x1 =
+      $LL.Main.ss' $x $x1
 
 Main.ss' : ([1000], [100]) -> [1000]
-Main.ss' $1 $2 =
-      $LL.Main.ss'1 ($1 # $2)
+Main.ss' ss i =
+      Main.x2 (let $t0 = $LL.Main.ss'1 ss[0 +: 900] i in
+      $t0[900 +: 100]) # Main.x2 (let $t1 = $LL.Main.ss'1 ss[0 +: 900] i in
+      $t1[800 +: 100]) # Main.x2 (let $t2 = $LL.Main.ss'1 ss[0 +: 900] i in
+      $t2[700 +: 100]) # Main.x2 (let $t3 = $LL.Main.ss'1 ss[0 +: 900] i in
+      $t3[600 +: 100]) # Main.x2 (let $t4 = $LL.Main.ss'1 ss[0 +: 900] i in
+      $t4[500 +: 100]) # Main.x2 (let $t5 = $LL.Main.ss'1 ss[0 +: 900] i in
+      $t5[400 +: 100]) # Main.x2 (let $t6 = $LL.Main.ss'1 ss[0 +: 900] i in
+      $t6[300 +: 100]) # Main.x2 (let $t7 = $LL.Main.ss'1 ss[0 +: 900] i in
+      $t7[200 +: 100]) # Main.x2 (let $t8 = $LL.Main.ss'1 ss[0 +: 900] i in
+      $t8[100 +: 100]) # Main.x2 (let $t9 = $LL.Main.ss'1 ss[0 +: 900] i in
+      $t9[0 +: 100])
 
-$LL.Main.dev2 : ([1000]) -> [100]
-$LL.Main.dev2 $33 =
-      $33[900 +: 100]
+$LL.Main.dev1 : ([1000]) -> [2100]
+$LL.Main.dev1 sto0 =
+      Main.dev sto0
+
+$LL.Main.dev : ([1000], [100], [1000]) -> [2100]
+$LL.Main.dev $x $x1 sto0 =
+      $LL.Main.dev2 $x $x1 sto0
+
+$LL.Main.ss' : ([900], [100]) -> [1000]
+$LL.Main.ss' eta eta1 =
+      eta # eta1
 
 Main.x2 : ([100]) -> [100]
-Main.x2 $x =
-      $LL.Main.x2 $x
-
-$LL.Main.dev1 : ([1000], [100], [1000]) -> [2100]
-$LL.Main.dev1 $x $x1 sto0 =
-      $LL.Main.dev3 $x $x1 sto0
-
-$LL.Main.dev : ([1000], [1000]) -> [2100]
-$LL.Main.dev ss sto0 =
-      $LL.Main.dev2 ss # ss # sto0
+Main.x2 x =
+      mul x 100'h2
 
 device top_level
       input __in0 : [100]

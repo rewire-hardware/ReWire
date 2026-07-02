@@ -1,40 +1,32 @@
-$Pure.dispatch : ([16], [1]) -> [24]
+$Pure.dispatch : ([17], [1]) -> [25]
 $Pure.dispatch disc i =
-      let store0 = disc[8 +: 8] in
-      let store1 = disc[0 +: 8] in
-      $LL.Main.loop2 store0 store1 i
+      if eq disc[16 +: 1] 1'h1 then (let store0 = disc[8 +: 8] in
+            let store1 = disc[0 +: 8] in
+            $LL.Main.loop1 store0 store1 i)
+            else let store0 = disc[0 +: 8] in
+            $LL.Main.loop2 store0 i
 
-$LL.Main.loop4 : ([8], [8], [1]) -> [24]
-$LL.Main.loop4 m n b =
-      $LL.Main.loop m b n b
+$LL.Main.loop2 : ([8], [1]) -> [25]
+$LL.Main.loop2 m $x =
+      $LL.Main.loop m 8'h0 $x
 
-$LL.Main.loop3 : ([8], [8], [1]) -> [24]
-$LL.Main.loop3 m n $3 =
-      Main.loop m (add n m)
+Main.loop1 : ([8], [8]) -> [25]
+Main.loop1 n m =
+      n # 1'h1 # m # n
 
-$LL.Main.loop2 : ([8], [8], [1]) -> [24]
-$LL.Main.loop2 n m $x =
-      $LL.Main.loop4 m n $x
+$LL.Main.loop1 : ([8], [8], [1]) -> [25]
+$LL.Main.loop1 $x $x1 $x2 =
+      $LL.Main.loop $x $x1 $x2
 
-$LL.Main.loop1 : ([16]) -> [24]
-$LL.Main.loop1 $5 =
-      let n = $5[8 +: 8] in
-      let m = $5[0 +: 8] in
-      n # n # m
-
-Main.loop : ([8], [8]) -> [24]
-Main.loop $0 $1 =
-      $LL.Main.loop1 ($0 # $1)
-
-$LL.Main.loop : ([8], [1], [8], [1]) -> [24]
-$LL.Main.loop m b n $4 =
-      if eq $4 1'h1 then Main.loop n m
-            else $LL.Main.loop3 m n b
+$LL.Main.loop : ([8], [8], [1]) -> [25]
+$LL.Main.loop m n wild =
+      if eq wild 1'h0 then Main.loop1 m (add n m)
+            else Main.loop1 n m
 
 device top_level
       input __in0 : [1]
       output __out0 : [8]
-      register __resumption_tag : [16] init 16'h1
+      register __resumption_tag : [17] init 17'h1
       let $res = $Pure.dispatch __resumption_tag __in0
-      __out0 := $res[16 +: 8]
-      next __resumption_tag := $res[0 +: 16]
+      __out0 := $res[17 +: 8]
+      next __resumption_tag := $res[0 +: 17]

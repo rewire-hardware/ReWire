@@ -1,33 +1,24 @@
 $Pure.dispatch : ([1056]) -> [64]
 $Pure.dispatch i =
-      Main.loop1 i
+      Main.loop i
+
+Main.compute : ([1024], [32]) -> [64]
+Main.compute v w =
+      $LL.Main.compute w v[960 +: 64] # $LL.Main.compute w v[896 +: 64] # $LL.Main.compute w v[832 +: 64] # $LL.Main.compute w v[768 +: 64] # $LL.Main.compute w v[704 +: 64] # $LL.Main.compute w v[640 +: 64] # $LL.Main.compute w v[576 +: 64] # $LL.Main.compute w v[512 +: 64]
+
+$LL.Main.compute : ([32], [64]) -> [8]
+$LL.Main.compute w v' =
+      add w[0 +: 8] v'[32 +: 8]
+
+Main.loop : ([1056]) -> [64]
+Main.loop ds =
+      let v = ds[32 +: 1024] in
+      let w = ds[0 +: 32] in
+      $LL.Main.loop1 (Main.compute v w)
 
 $LL.Main.loop1 : ([64]) -> [64]
 $LL.Main.loop1 rabind =
       rabind
-
-$LL.Main.loop : ([1056]) -> [64]
-$LL.Main.loop $3 =
-      let v = $3[32 +: 1024] in
-      let w = $3[0 +: 32] in
-      $LL.Main.loop1 (Main.compute v w)
-
-Main.compute : ([1024], [32]) -> [64]
-Main.compute $1 $2 =
-      $LL.Main.compute ($1 # $2)
-
-Main.loop1 : ([1056]) -> [64]
-Main.loop1 $x =
-      $LL.Main.loop $x
-
-$LL.Main.compute1 : ([32], [64]) -> [8]
-$LL.Main.compute1 w v' =
-      add w[0 +: 8] v'[32 +: 8]
-
-$LL.Main.compute : ([1056]) -> [64]
-$LL.Main.compute $4 =
-      let w = $4[0 +: 32] in
-      $LL.Main.compute1 w $4[992 +: 64] # $LL.Main.compute1 w $4[928 +: 64] # $LL.Main.compute1 w $4[864 +: 64] # $LL.Main.compute1 w $4[800 +: 64] # $LL.Main.compute1 w $4[736 +: 64] # $LL.Main.compute1 w $4[672 +: 64] # $LL.Main.compute1 w $4[608 +: 64] # $LL.Main.compute1 w $4[544 +: 64]
 
 device top_level
       input __in0 : [1024]

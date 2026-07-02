@@ -6,66 +6,53 @@ $Pure.dispatch disc i =
             $LL.Main.go7 store0 i s0 s1)
             else if eq disc[3 +: 2] 2'h2 then (let s0 = disc[1 +: 1] in
             let s1 = disc[0 +: 1] in
-            $LL.Main.go2 i s0 s1) else let store0 = disc[2 +: 1] in
+            $LL.Main.go5 i s0 s1) else let store0 = disc[2 +: 1] in
             let s0 = disc[1 +: 1] in
             let s1 = disc[0 +: 1] in
-            $LL.Main.go8 store0 i s0 s1
+            $LL.Main.go10 store0 i s0 s1
 
-"$LL.ReWire.Prelude.&&1" : ([1], [1], [2]) -> [1]
-"$LL.ReWire.Prelude.&&1" $11 $10 $52 =
-      if eq $52[1 +: 1] 1'h1 then (let b = $52[0 +: 1] in
-            b)
-            else "$LL.ReWire.Prelude.&&" ($10 # $11)
+$LL.Main.go12 : ([1], [1]) -> [6]
+$LL.Main.go12 sto0 sto1 =
+      Main.go sto0 sto1
 
-"$LL.ReWire.Prelude.&&" : ([2]) -> [1]
-"$LL.ReWire.Prelude.&&" $51 =
-      1'h0
+$LL.Main.go11 : ([1], [1]) -> [1]
+$LL.Main.go11 $x $x1 =
+      $LL.Main.go9 $x $x1
 
-$LL.Main.go10 : ([1], [1]) -> [1]
-$LL.Main.go10 x $6 =
-      "ReWire.Prelude.&&" x x
+$LL.Main.go10 : ([1], [1], [1], [1]) -> [6]
+$LL.Main.go10 $x $x1 sto0 sto1 =
+      $LL.Main.go1 $x $x1 sto0 sto1
 
-$LL.Main.go9 : ([1], [1], [1]) -> [1]
-$LL.Main.go9 y x $7 =
-      if eq $7 1'h1 then x
-            else $LL.Main.go10 x y
-
-$LL.Main.go8 : ([1], [1], [1], [1]) -> [6]
-$LL.Main.go8 $x $x1 sto0 sto1 =
-      $LL.Main.go $x $x1 sto0 sto1
+$LL.Main.go9 : ([1], [1]) -> [1]
+$LL.Main.go9 x y =
+      if eq x 1'h1 then y
+            else 1'h0
 
 $LL.Main.go7 : ([1], [1], [1], [1]) -> [6]
 $LL.Main.go7 $x $x1 sto0 sto1 =
-      $LL.Main.go4 $x $x1 sto0 sto1
+      $LL.Main.go3 $x $x1 sto0 sto1
 
 $LL.Main.go6 : ([1], [1], [1], [1]) -> [6]
-$LL.Main.go6 $x $x1 sto0 sto1 =
-      $LL.Main.go8 $x $x1 sto0 sto1
+$LL.Main.go6 x y sto0 sto1 =
+      $LL.Main.go11 ($LL.Main.go x y) y # 2'h1 # y # sto0 # sto1
 
-$LL.Main.go4 : ([1], [1], [1], [1]) -> [6]
-$LL.Main.go4 y z sto0 sto1 =
-      $LL.Main.go1 sto0 y
+$LL.Main.go5 : ([1], [1], [1]) -> [6]
+$LL.Main.go5 x sto0 sto1 =
+      if eq x 1'h0 then $LL.Main.go10 x sto0 sto0 sto1
+            else 3'h0 # x # sto0 # sto1
 
 $LL.Main.go3 : ([1], [1], [1], [1]) -> [6]
-$LL.Main.go3 x y sto0 sto1 =
-      "ReWire.Prelude.&&" ($LL.Main.go9 y x y) y # 2'h1 # y # sto0 # sto1
+$LL.Main.go3 y z sto0 sto1 =
+      $LL.Main.go12 sto0 y
 
-"ReWire.Prelude.&&" : ([1], [1]) -> [1]
-"ReWire.Prelude.&&" $10 $11 =
-      "$LL.ReWire.Prelude.&&1" $11 $10 ($10 # $11)
+$LL.Main.go1 : ([1], [1], [1], [1]) -> [6]
+$LL.Main.go1 $x $x1 sto0 sto1 =
+      $LL.Main.go6 $x $x1 sto0 sto1
 
-$LL.Main.go2 : ([1], [1], [1]) -> [6]
-$LL.Main.go2 x sto0 sto1 =
-      if eq x 1'h1 then 3'h0 # x # sto0 # sto1
-            else $LL.Main.go6 x sto0 sto0 sto1
-
-$LL.Main.go1 : ([1], [1]) -> [6]
-$LL.Main.go1 sto0 sto1 =
-      Main.go sto0 sto1
-
-$LL.Main.go : ([1], [1], [1], [1]) -> [6]
-$LL.Main.go $x $x1 sto0 sto1 =
-      $LL.Main.go3 $x $x1 sto0 sto1
+$LL.Main.go : ([1], [1]) -> [1]
+$LL.Main.go x wild =
+      if eq wild 1'h0 then $LL.Main.go11 x x
+            else x
 
 Main.go : ([1], [1]) -> [6]
 Main.go sto0 sto1 =

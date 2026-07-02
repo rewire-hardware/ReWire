@@ -1,5 +1,6 @@
 -- EXPECT-ERROR: Cannot evaluate the initial state
 {-# LANGUAGE DataKinds #-}
+import Prelude hiding ((+))
 import ReWire
 import ReWire.Bits (lit, (+))
 ext :: W 8

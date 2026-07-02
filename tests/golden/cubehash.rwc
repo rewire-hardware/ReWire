@@ -2,478 +2,375 @@ $Pure.dispatch : ([1024], [1]) -> [2049]
 $Pure.dispatch disc i =
       Main.nopipeline i disc
 
-$LL.Main.swap2 : ([1024]) -> [1024]
-$LL.Main.swap2 $91 =
-      Main.swapix2 $91 5'h0 # Main.swapix2 $91 5'h1 # Main.swapix2 $91 5'h2 # Main.swapix2 $91 5'h3 # Main.swapix2 $91 5'h4 # Main.swapix2 $91 5'h5 # Main.swapix2 $91 5'h6 # Main.swapix2 $91 5'h7 # Main.swapix2 $91 5'h8 # Main.swapix2 $91 5'h9 # Main.swapix2 $91 5'ha # Main.swapix2 $91 5'hb # Main.swapix2 $91 5'hc # Main.swapix2 $91 5'hd # Main.swapix2 $91 5'he # Main.swapix2 $91 5'hf # Main.swapix2 $91 5'h10 # Main.swapix2 $91 5'h11 # Main.swapix2 $91 5'h12 # Main.swapix2 $91 5'h13 # Main.swapix2 $91 5'h14 # Main.swapix2 $91 5'h15 # Main.swapix2 $91 5'h16 # Main.swapix2 $91 5'h17 # Main.swapix2 $91 5'h18 # Main.swapix2 $91 5'h19 # Main.swapix2 $91 5'h1a # Main.swapix2 $91 5'h1b # Main.swapix2 $91 5'h1c # Main.swapix2 $91 5'h1d # Main.swapix2 $91 5'h1e # Main.swapix2 $91 5'h1f
-
-$LL.Main.nopipeline5 : ([1], [1024]) -> [2049]
-$LL.Main.nopipeline5 $132 sto0 =
-      $LL.Main.nopipeline3 sto0 sto0
-
 Main.rotaccess : ([1024], [5]) -> [33]
-Main.rotaccess $14 $15 =
-      $LL.Main.rotaccess ($14 # $15)
+Main.rotaccess s f32 =
+      (let $t0 = Main.explode5 f32 in
+      let h = $t0[4 +: 1] in
+      h) # trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
 
-$LL.Main.swapix18 : ([1], [5], [1], [5], [1024], [1]) -> [32]
-$LL.Main.swapix18 b1 f32 b2 ftx s $84 =
-      if eq $84 1'h1 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 ftx)) 128'h1) 128'h20))
-            else $LL.Main.swapix12 f32 s ("ReWire.Prelude.&&" (ReWire.Prelude.not b1) (ReWire.Prelude.not b2))
+$LL.Main.swapix314 : ([1024], [5], [5]) -> [32]
+$LL.Main.swapix314 s f32 ds =
+      $LL.Main.swapix39 ds s f32 (let m = ds[0 +: 1] in
+      m)
 
-$LL.Main.swapix38 : ([1024], [5]) -> [32]
-$LL.Main.swapix38 $x $x1 =
-      trunc 32 (lshr $x (mul (sub (sub 128'h20 (zext 128 $x1)) 128'h1) 128'h20))
+$LL.Main.swapix313 : ([1], [1]) -> [1]
+$LL.Main.swapix313 $x $x1 =
+      $LL.Main.swapix412 $x $x1
+
+$LL.Main.swapix412 : ([1], [1]) -> [1]
+$LL.Main.swapix412 x y =
+      if eq x 1'h1 then y
+            else 1'h0
+
+$LL.Main.swapix411 : ([1], [1024], [5], [1], [1], [1]) -> [32]
+$LL.Main.swapix411 j s f32 k l wild =
+      if eq wild 1'h0 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
+            else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h1 # j # k # l # 1'h0))) 128'h1) 128'h20))
+
+$LL.Main.swapix114 : ([1], [1024], [5], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix114 l s f32 m b2 k b1 =
+      $LL.Main.swapix110 l s b1 f32 m b2 k ($LL.Main.swapix313 ($LL.Main.swapix312 b1) b2)
+
+$LL.Main.swapix312 : ([1]) -> [1]
+$LL.Main.swapix312 b =
+      if eq b 1'h1 then 1'h0
+            else 1'h1
 
 Main.rot : ([32], [1024], [5]) -> [32]
-Main.rot $11 $12 $13 =
-      $LL.Main.rot5 ($11 # $12 # $13)
+Main.rot rc s f32 =
+      $LL.Main.rot2 rc (Main.rotaccess s f32)
 
-$LL.Main.accesses4 : ([1024], [5]) -> [65]
-$LL.Main.accesses4 s $63 =
-      $LL.Main.accesses s (Main.explode5 $63)
+$LL.Main.swapix112 : ([1], [1024], [5], [5], [1], [1], [1]) -> [32]
+$LL.Main.swapix112 l s ds f32 m k b2 =
+      $LL.Main.swapix114 l s f32 m b2 k (let b1 = ds[4 +: 1] in
+      b1)
 
-$LL.Main.swapix48 : ([5], [1024], [1]) -> [32]
-$LL.Main.swapix48 f32 s $116 =
-      $LL.Main.swapix44 f32 s
-
-$LL.Main.addix4 : ([65]) -> [32]
-$LL.Main.addix4 $69 =
-      let h = $69[64 +: 1] in
-      let v0 = $69[32 +: 32] in
-      let v1 = $69[0 +: 32] in
-      $LL.Main.addix3 h v1 v0 h
+$LL.Main.accesses4 : ([5], [1], [1], [1024], [1]) -> [65]
+$LL.Main.accesses4 ds m l s k =
+      $LL.Main.accesses2 ds m k l s (let j = ds[3 +: 1] in
+      j)
 
 Main.swap2 : ([1024]) -> [1024]
-Main.swap2 $x =
-      $LL.Main.swap2 $x
+Main.swap2 s =
+      Main.swapix2 s 5'h0 # Main.swapix2 s 5'h1 # Main.swapix2 s 5'h2 # Main.swapix2 s 5'h3 # Main.swapix2 s 5'h4 # Main.swapix2 s 5'h5 # Main.swapix2 s 5'h6 # Main.swapix2 s 5'h7 # Main.swapix2 s 5'h8 # Main.swapix2 s 5'h9 # Main.swapix2 s 5'ha # Main.swapix2 s 5'hb # Main.swapix2 s 5'hc # Main.swapix2 s 5'hd # Main.swapix2 s 5'he # Main.swapix2 s 5'hf # Main.swapix2 s 5'h10 # Main.swapix2 s 5'h11 # Main.swapix2 s 5'h12 # Main.swapix2 s 5'h13 # Main.swapix2 s 5'h14 # Main.swapix2 s 5'h15 # Main.swapix2 s 5'h16 # Main.swapix2 s 5'h17 # Main.swapix2 s 5'h18 # Main.swapix2 s 5'h19 # Main.swapix2 s 5'h1a # Main.swapix2 s 5'h1b # Main.swapix2 s 5'h1c # Main.swapix2 s 5'h1d # Main.swapix2 s 5'h1e # Main.swapix2 s 5'h1f
 
-$LL.Main.rot8 : ([64]) -> [32]
-$LL.Main.rot8 $33 =
-      let n = $33[32 +: 32] in
-      let w = $33[0 +: 32] in
-      or (shl w n) (lshr w (sub 32'h20 n))
+$LL.Main.swapix49 : ([1024], [5], [5]) -> [32]
+$LL.Main.swapix49 s f32 ds =
+      $LL.Main.swapix48 s f32 ds (let b2 = ds[0 +: 1] in
+      b2)
 
-$LL.Main.swapix37 : ([1], [1024], [5], [5], [1], [1]) -> [32]
-$LL.Main.swapix37 b1 s f32 ffx b2 $107 =
-      $LL.Main.swapix31 b1 s f32 ffx b2 ("ReWire.Prelude.&&" (ReWire.Prelude.not b1) b2)
+$LL.Main.swapix48 : ([1024], [5], [5], [1]) -> [32]
+$LL.Main.swapix48 s f32 ds b2 =
+      $LL.Main.swapix4 s f32 ds b2 (let l = ds[1 +: 1] in
+      l)
 
-$LL.Main.accesses3 : ([1029]) -> [65]
-$LL.Main.accesses3 $64 =
-      let s = $64[5 +: 1024] in
-      let f32 = $64[0 +: 5] in
-      $LL.Main.accesses4 s f32
+$LL.Main.accesses3 : ([5], [1024], [1]) -> [65]
+$LL.Main.accesses3 ds s m =
+      $LL.Main.accesses1 ds m s (let l = ds[1 +: 1] in
+      l)
 
-$LL.Main.swapix17 : ([1], [5], [1], [5], [1024], [1]) -> [32]
-$LL.Main.swapix17 b1 f32 b2 ftx s $85 =
-      $LL.Main.swapix18 b1 f32 b2 ftx s ("ReWire.Prelude.&&" (ReWire.Prelude.not b1) (ReWire.Prelude.not b2))
+$LL.Main.addix2 : ([65], [32]) -> [32]
+$LL.Main.addix2 ds v0 =
+      $LL.Main.addix ds v0 (let h = ds[64 +: 1] in
+      h)
 
-ReWire.Prelude.not : ([1]) -> [1]
-ReWire.Prelude.not $14 =
-      $LL.ReWire.Prelude.not $14 $14
+$LL.Main.rot5 : ([33], [32], [32]) -> [32]
+$LL.Main.rot5 ds rc w0 =
+      $LL.Main.rot4 w0 rc (let h = ds[32 +: 1] in
+      h)
 
-$LL.Main.swapix16 : ([1], [5], [1], [5], [5], [1024], [1]) -> [32]
-$LL.Main.swapix16 b1 f32 b2 ftx ffx s $86 =
-      if eq $86 1'h1 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 ffx)) 128'h1) 128'h20))
-            else $LL.Main.swapix17 b1 f32 b2 ftx s ("ReWire.Prelude.&&" (ReWire.Prelude.not b1) b2)
+$LL.Main.swapix311 : ([1], [1024], [5], [1], [1], [1]) -> [32]
+$LL.Main.swapix311 l s f32 j m wild =
+      if eq wild 1'h0 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
+            else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h0 # j # 1'h0 # l # m))) 128'h1) 128'h20))
 
 Main.round : ([1024]) -> [1024]
 Main.round x =
       Main.swap4 (Main.xor (Main.swap3 (Main.rotate (Main.add (Main.swap2 (Main.xor (Main.swap1 (Main.rotate1 (Main.add x)))))))))
 
-$LL.Main.xorix5 : ([5], [1024], [1], [5]) -> [32]
-$LL.Main.xorix5 i0 s h $127 =
-      $LL.Main.xorix3 i0 s h $127 (ReWire.Prelude.not h)
+$LL.Main.swapix211 : ([1], [5], [1], [1], [1024], [5], [1]) -> [32]
+$LL.Main.swapix211 b2 f32 k m s ds j =
+      $LL.Main.swapix210 b2 f32 k m s j (let b1 = ds[4 +: 1] in
+      b1)
 
-$LL.Main.swapix28 : ([1], [5], [1], [1024], [5], [1]) -> [32]
-$LL.Main.swapix28 b2 tfx b1 s f32 $95 =
-      if eq $95 1'h1 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 tfx)) 128'h1) 128'h20))
-            else $LL.Main.swapix21 s f32 ("ReWire.Prelude.&&" b1 b2)
+$LL.Main.swapix47 : ([1024], [5], [5], [1], [1], [1]) -> [32]
+$LL.Main.swapix47 s f32 ds l b2 k =
+      $LL.Main.swapix46 s f32 k ds l b2 (let j = ds[3 +: 1] in
+      j)
 
-$LL.Main.explode5 : ([5]) -> [5]
-$LL.Main.explode5 $58 =
-      trunc 1 (lshr $58 128'h4) # trunc 1 (lshr $58 128'h3) # trunc 1 (lshr $58 128'h2) # trunc 1 (lshr $58 128'h1) # trunc 1 (lshr $58 128'h0)
+$LL.Main.swapix310 : ([5], [1024], [5], [1], [1]) -> [32]
+$LL.Main.swapix310 ds s f32 m l =
+      $LL.Main.swapix3 ds l s f32 m (let b2 = ds[2 +: 1] in
+      b2)
 
-$LL.Main.swapix47 : ([1], [1], [5], [5], [1024], [5]) -> [32]
-$LL.Main.swapix47 b1 b2 f32 ttx s $120 =
-      $LL.Main.swapix42 b1 b2 $120 f32 ttx s ("ReWire.Prelude.&&" b1 (ReWire.Prelude.not b2))
+$LL.Main.swapix210 : ([1], [5], [1], [1], [1024], [1], [1]) -> [32]
+$LL.Main.swapix210 b2 f32 k m s j b1 =
+      $LL.Main.swapix24 b2 f32 b1 k m s j ($LL.Main.swapix313 b1 ($LL.Main.swapix312 b2))
 
-$LL.Main.accesses2 : ([1024], [1], [5], [5]) -> [65]
-$LL.Main.accesses2 s h i0 $60 =
-      h # trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 i0)) 128'h1) 128'h20)) # trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 $60)) 128'h1) 128'h20))
+$LL.Main.swapix110 : ([1], [1024], [1], [5], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix110 l s b1 f32 m b2 k wild =
+      if eq wild 1'h0 then $LL.Main.swapix15 l s f32 m k ($LL.Main.swapix313 ($LL.Main.swapix312 b1) ($LL.Main.swapix312 b2))
+            else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (2'h0 # k # l # m))) 128'h1) 128'h20))
 
-$LL.Main.swap3 : ([1024]) -> [1024]
-$LL.Main.swap3 $102 =
-      Main.swapix3 $102 5'h0 # Main.swapix3 $102 5'h1 # Main.swapix3 $102 5'h2 # Main.swapix3 $102 5'h3 # Main.swapix3 $102 5'h4 # Main.swapix3 $102 5'h5 # Main.swapix3 $102 5'h6 # Main.swapix3 $102 5'h7 # Main.swapix3 $102 5'h8 # Main.swapix3 $102 5'h9 # Main.swapix3 $102 5'ha # Main.swapix3 $102 5'hb # Main.swapix3 $102 5'hc # Main.swapix3 $102 5'hd # Main.swapix3 $102 5'he # Main.swapix3 $102 5'hf # Main.swapix3 $102 5'h10 # Main.swapix3 $102 5'h11 # Main.swapix3 $102 5'h12 # Main.swapix3 $102 5'h13 # Main.swapix3 $102 5'h14 # Main.swapix3 $102 5'h15 # Main.swapix3 $102 5'h16 # Main.swapix3 $102 5'h17 # Main.swapix3 $102 5'h18 # Main.swapix3 $102 5'h19 # Main.swapix3 $102 5'h1a # Main.swapix3 $102 5'h1b # Main.swapix3 $102 5'h1c # Main.swapix3 $102 5'h1d # Main.swapix3 $102 5'h1e # Main.swapix3 $102 5'h1f
+$LL.Main.swapix39 : ([5], [1024], [5], [1]) -> [32]
+$LL.Main.swapix39 ds s f32 m =
+      $LL.Main.swapix310 ds s f32 m (let l = ds[1 +: 1] in
+      l)
+
+$LL.Main.xorix7 : ([1], [1], [1024], [1], [5], [1], [1]) -> [32]
+$LL.Main.xorix7 k j s m i1 l wild =
+      if eq wild 1'h0 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 i1)) 128'h1) 128'h20))
+            else xor (trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h0 # j # k # l # m))) 128'h1) 128'h20))) (trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 i1)) 128'h1) 128'h20)))
 
 Main.swap1 : ([1024]) -> [1024]
-Main.swap1 $x =
-      $LL.Main.swap1 $x
+Main.swap1 s =
+      Main.swapix1 s 5'h0 # Main.swapix1 s 5'h1 # Main.swapix1 s 5'h2 # Main.swapix1 s 5'h3 # Main.swapix1 s 5'h4 # Main.swapix1 s 5'h5 # Main.swapix1 s 5'h6 # Main.swapix1 s 5'h7 # Main.swapix1 s 5'h8 # Main.swapix1 s 5'h9 # Main.swapix1 s 5'ha # Main.swapix1 s 5'hb # Main.swapix1 s 5'hc # Main.swapix1 s 5'hd # Main.swapix1 s 5'he # Main.swapix1 s 5'hf # Main.swapix1 s 5'h10 # Main.swapix1 s 5'h11 # Main.swapix1 s 5'h12 # Main.swapix1 s 5'h13 # Main.swapix1 s 5'h14 # Main.swapix1 s 5'h15 # Main.swapix1 s 5'h16 # Main.swapix1 s 5'h17 # Main.swapix1 s 5'h18 # Main.swapix1 s 5'h19 # Main.swapix1 s 5'h1a # Main.swapix1 s 5'h1b # Main.swapix1 s 5'h1c # Main.swapix1 s 5'h1d # Main.swapix1 s 5'h1e # Main.swapix1 s 5'h1f
 
-$LL.Main.accesses1 : ([1024], [1], [1], [1], [1], [1], [5]) -> [65]
-$LL.Main.accesses1 s l m k j h $61 =
-      $LL.Main.accesses2 s h $61 (1'h1 # j # k # l # m)
+$LL.Main.xorix6 : ([1024], [5], [1]) -> [32]
+$LL.Main.xorix6 s ds m =
+      $LL.Main.xorix3 s ds m (let l = ds[1 +: 1] in
+      l)
 
-$LL.Main.accesses : ([1024], [5]) -> [65]
-$LL.Main.accesses s $62 =
-      let h = $62[4 +: 1] in
-      let j = $62[3 +: 1] in
-      let k = $62[2 +: 1] in
-      let l = $62[1 +: 1] in
-      let m = $62[0 +: 1] in
-      $LL.Main.accesses1 s l m k j h (1'h0 # j # k # l # m)
+$LL.Main.rot4 : ([32], [32], [1]) -> [32]
+$LL.Main.rot4 w0 rc wild =
+      if eq wild 1'h0 then $LL.Main.rot rc w0
+            else w0
 
-$LL.Main.rot7 : ([32], [32], [1], [1]) -> [32]
-$LL.Main.rot7 rc w0 h $75 =
-      if eq $75 1'h1 then w0
-            else $LL.Main.rot2 rc w0 h
+$LL.Main.addix1 : ([65]) -> [32]
+$LL.Main.addix1 ds =
+      $LL.Main.addix2 ds (let v0 = ds[32 +: 32] in
+      v0)
 
-$LL.Main.nopipeline4 : ([1024], [1024]) -> [1024]
-$LL.Main.nopipeline4 x sigma0 =
-      Main.round x
+$LL.Main.accesses2 : ([5], [1], [1], [1], [1024], [1]) -> [65]
+$LL.Main.accesses2 ds m k l s j =
+      (let h = ds[4 +: 1] in
+      h) # trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h0 # j # k # l # m))) 128'h1) 128'h20)) # trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h1 # j # k # l # m))) 128'h1) 128'h20))
 
-$LL.Main.swapix27 : ([1029]) -> [32]
-$LL.Main.swapix27 $101 =
-      let s = $101[5 +: 1024] in
-      let f32 = $101[0 +: 5] in
-      $LL.Main.swapix23 s f32 (Main.explode5 f32)
+$LL.Main.swapix46 : ([1024], [5], [1], [5], [1], [1], [1]) -> [32]
+$LL.Main.swapix46 s f32 k ds l b2 j =
+      $LL.Main.swapix45 j s f32 k l b2 (let b1 = ds[4 +: 1] in
+      b1)
 
-$LL.Main.nopipeline3 : ([1024], [1024]) -> [2049]
-$LL.Main.nopipeline3 x sto0 =
-      1'h1 # x # sto0
+$LL.Main.swapix18 : ([1], [1024], [5], [5], [1], [1]) -> [32]
+$LL.Main.swapix18 l s ds f32 m k =
+      $LL.Main.swapix112 l s ds f32 m k (let b2 = ds[3 +: 1] in
+      b2)
 
-$LL.Main.rot6 : ([32], [32]) -> [32]
-$LL.Main.rot6 $x $x1 =
-      $LL.Main.rot3 $x $x1
+$LL.Main.xorix5 : ([1024], [5], [1], [1], [1]) -> [32]
+$LL.Main.xorix5 s ds m l k =
+      $LL.Main.xorix4 k s ds m l (let j = ds[3 +: 1] in
+      j)
 
 Main.add : ([1024]) -> [1024]
-Main.add $x =
-      $LL.Main.add $x
+Main.add s =
+      Main.addix s 5'h0 # Main.addix s 5'h1 # Main.addix s 5'h2 # Main.addix s 5'h3 # Main.addix s 5'h4 # Main.addix s 5'h5 # Main.addix s 5'h6 # Main.addix s 5'h7 # Main.addix s 5'h8 # Main.addix s 5'h9 # Main.addix s 5'ha # Main.addix s 5'hb # Main.addix s 5'hc # Main.addix s 5'hd # Main.addix s 5'he # Main.addix s 5'hf # Main.addix s 5'h10 # Main.addix s 5'h11 # Main.addix s 5'h12 # Main.addix s 5'h13 # Main.addix s 5'h14 # Main.addix s 5'h15 # Main.addix s 5'h16 # Main.addix s 5'h17 # Main.addix s 5'h18 # Main.addix s 5'h19 # Main.addix s 5'h1a # Main.addix s 5'h1b # Main.addix s 5'h1c # Main.addix s 5'h1d # Main.addix s 5'h1e # Main.addix s 5'h1f
 
-$LL.Main.xor : ([1024]) -> [1024]
-$LL.Main.xor $124 =
-      Main.xorix $124 5'h0 # Main.xorix $124 5'h1 # Main.xorix $124 5'h2 # Main.xorix $124 5'h3 # Main.xorix $124 5'h4 # Main.xorix $124 5'h5 # Main.xorix $124 5'h6 # Main.xorix $124 5'h7 # Main.xorix $124 5'h8 # Main.xorix $124 5'h9 # Main.xorix $124 5'ha # Main.xorix $124 5'hb # Main.xorix $124 5'hc # Main.xorix $124 5'hd # Main.xorix $124 5'he # Main.xorix $124 5'hf # Main.xorix $124 5'h10 # Main.xorix $124 5'h11 # Main.xorix $124 5'h12 # Main.xorix $124 5'h13 # Main.xorix $124 5'h14 # Main.xorix $124 5'h15 # Main.xorix $124 5'h16 # Main.xorix $124 5'h17 # Main.xorix $124 5'h18 # Main.xorix $124 5'h19 # Main.xorix $124 5'h1a # Main.xorix $124 5'h1b # Main.xorix $124 5'h1c # Main.xorix $124 5'h1d # Main.xorix $124 5'h1e # Main.xorix $124 5'h1f
+$LL.Main.xorix4 : ([1], [1024], [5], [1], [1], [1]) -> [32]
+$LL.Main.xorix4 k s ds m l j =
+      $LL.Main.xorix1 k j s ds m l (1'h1 # j # k # l # m)
 
-$LL.Main.swapix36 : ([1024], [5], [1]) -> [32]
-$LL.Main.swapix36 s f32 $105 =
-      $LL.Main.swapix38 s f32
-
-Main.swap3 : ([1024]) -> [1024]
-Main.swap3 $x =
-      $LL.Main.swap3 $x
-
-Main.swapix4 : ([1024], [5]) -> [32]
-Main.swapix4 $26 $27 =
-      $LL.Main.swapix43 ($26 # $27)
-
-$LL.Main.swap1 : ([1024]) -> [1024]
-$LL.Main.swap1 $80 =
-      Main.swapix1 $80 5'h0 # Main.swapix1 $80 5'h1 # Main.swapix1 $80 5'h2 # Main.swapix1 $80 5'h3 # Main.swapix1 $80 5'h4 # Main.swapix1 $80 5'h5 # Main.swapix1 $80 5'h6 # Main.swapix1 $80 5'h7 # Main.swapix1 $80 5'h8 # Main.swapix1 $80 5'h9 # Main.swapix1 $80 5'ha # Main.swapix1 $80 5'hb # Main.swapix1 $80 5'hc # Main.swapix1 $80 5'hd # Main.swapix1 $80 5'he # Main.swapix1 $80 5'hf # Main.swapix1 $80 5'h10 # Main.swapix1 $80 5'h11 # Main.swapix1 $80 5'h12 # Main.swapix1 $80 5'h13 # Main.swapix1 $80 5'h14 # Main.swapix1 $80 5'h15 # Main.swapix1 $80 5'h16 # Main.swapix1 $80 5'h17 # Main.swapix1 $80 5'h18 # Main.swapix1 $80 5'h19 # Main.swapix1 $80 5'h1a # Main.swapix1 $80 5'h1b # Main.swapix1 $80 5'h1c # Main.swapix1 $80 5'h1d # Main.swapix1 $80 5'h1e # Main.swapix1 $80 5'h1f
-
-$LL.ReWire.Prelude.not1 : ([1]) -> [1]
-$LL.ReWire.Prelude.not1 $55 =
-      1'h1
-
-$LL.Main.rotaccess1 : ([1024], [5], [5]) -> [33]
-$LL.Main.rotaccess1 s f32 $78 =
-      let h = $78[4 +: 1] in
-      h # trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
-
-$LL.Main.swapix35 : ([1024], [5], [5]) -> [32]
-$LL.Main.swapix35 s f32 $111 =
-      let b1 = $111[4 +: 1] in
-      let j = $111[3 +: 1] in
-      let b2 = $111[2 +: 1] in
-      let l = $111[1 +: 1] in
-      let m = $111[0 +: 1] in
-      $LL.Main.swapix3 b1 j s m f32 b2 l (1'h0 # j # 1'h1 # l # m)
-
-$LL.Main.xorix4 : ([1029]) -> [32]
-$LL.Main.xorix4 $130 =
-      let s = $130[5 +: 1024] in
-      let f32 = $130[0 +: 5] in
-      $LL.Main.xorix1 s (Main.explode5 f32)
-
-$LL.Main.swapix26 : ([1], [1], [1024], [5], [5], [5]) -> [32]
-$LL.Main.swapix26 b2 b1 s ttx f32 $98 =
-      $LL.Main.swapix22 b2 $98 b1 s ttx f32 ("ReWire.Prelude.&&" b1 (ReWire.Prelude.not b2))
-
-$LL.Main.rot5 : ([1061]) -> [32]
-$LL.Main.rot5 $77 =
-      let rc = $77[1029 +: 32] in
-      let s = $77[5 +: 1024] in
-      let f32 = $77[0 +: 5] in
-      $LL.Main.rot rc (Main.rotaccess s f32)
-
-$LL.ReWire.Prelude.not : ([1], [1]) -> [1]
-$LL.ReWire.Prelude.not $14 $56 =
-      if eq $56 1'h1 then 1'h0
-            else $LL.ReWire.Prelude.not1 $14
-
-$LL.Main.xorix3 : ([5], [1024], [1], [5], [1]) -> [32]
-$LL.Main.xorix3 i0 s h i1 $126 =
-      if eq $126 1'h1 then xor (trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 i0)) 128'h1) 128'h20))) (trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 i1)) 128'h1) 128'h20)))
-            else $LL.Main.xorix2 s i1 (ReWire.Prelude.not h)
-
-$LL.Main.swapix15 : ([1029]) -> [32]
-$LL.Main.swapix15 $90 =
-      let s = $90[5 +: 1024] in
-      let f32 = $90[0 +: 5] in
-      $LL.Main.swapix13 f32 s (Main.explode5 f32)
-
-$LL.Main.addix3 : ([1], [32], [32], [1]) -> [32]
-$LL.Main.addix3 h v1 v0 $68 =
-      if eq $68 1'h1 then add v0 v1
-            else $LL.Main.addix1 v0 h
-
-$LL.Main.add : ([1024]) -> [1024]
-$LL.Main.add $59 =
-      Main.addix $59 5'h0 # Main.addix $59 5'h1 # Main.addix $59 5'h2 # Main.addix $59 5'h3 # Main.addix $59 5'h4 # Main.addix $59 5'h5 # Main.addix $59 5'h6 # Main.addix $59 5'h7 # Main.addix $59 5'h8 # Main.addix $59 5'h9 # Main.addix $59 5'ha # Main.addix $59 5'hb # Main.addix $59 5'hc # Main.addix $59 5'hd # Main.addix $59 5'he # Main.addix $59 5'hf # Main.addix $59 5'h10 # Main.addix $59 5'h11 # Main.addix $59 5'h12 # Main.addix $59 5'h13 # Main.addix $59 5'h14 # Main.addix $59 5'h15 # Main.addix $59 5'h16 # Main.addix $59 5'h17 # Main.addix $59 5'h18 # Main.addix $59 5'h19 # Main.addix $59 5'h1a # Main.addix $59 5'h1b # Main.addix $59 5'h1c # Main.addix $59 5'h1d # Main.addix $59 5'h1e # Main.addix $59 5'h1f
-
-$LL.Main.swapix14 : ([1], [5], [1], [5], [1024], [5]) -> [32]
-$LL.Main.swapix14 b1 f32 b2 ffx s $87 =
-      $LL.Main.swapix16 b1 f32 b2 $87 ffx s ("ReWire.Prelude.&&" (ReWire.Prelude.not b1) b2)
-
-$LL.Main.swap4 : ([1024]) -> [1024]
-$LL.Main.swap4 $113 =
-      Main.swapix4 $113 5'h0 # Main.swapix4 $113 5'h1 # Main.swapix4 $113 5'h2 # Main.swapix4 $113 5'h3 # Main.swapix4 $113 5'h4 # Main.swapix4 $113 5'h5 # Main.swapix4 $113 5'h6 # Main.swapix4 $113 5'h7 # Main.swapix4 $113 5'h8 # Main.swapix4 $113 5'h9 # Main.swapix4 $113 5'ha # Main.swapix4 $113 5'hb # Main.swapix4 $113 5'hc # Main.swapix4 $113 5'hd # Main.swapix4 $113 5'he # Main.swapix4 $113 5'hf # Main.swapix4 $113 5'h10 # Main.swapix4 $113 5'h11 # Main.swapix4 $113 5'h12 # Main.swapix4 $113 5'h13 # Main.swapix4 $113 5'h14 # Main.swapix4 $113 5'h15 # Main.swapix4 $113 5'h16 # Main.swapix4 $113 5'h17 # Main.swapix4 $113 5'h18 # Main.swapix4 $113 5'h19 # Main.swapix4 $113 5'h1a # Main.swapix4 $113 5'h1b # Main.swapix4 $113 5'h1c # Main.swapix4 $113 5'h1d # Main.swapix4 $113 5'h1e # Main.swapix4 $113 5'h1f
-
-$LL.Main.xorix2 : ([1024], [5], [1]) -> [32]
-$LL.Main.xorix2 s i1 $125 =
-      trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 i1)) 128'h1) 128'h20))
-
-$LL.Main.swapix46 : ([1], [1], [5], [5], [1024], [1]) -> [32]
-$LL.Main.swapix46 b1 b2 tfx f32 s $118 =
-      $LL.Main.swapix41 b1 b2 tfx f32 s ("ReWire.Prelude.&&" b1 b2)
-
-$LL.Main.swapix24 : ([1], [1], [1], [1], [1], [1024], [5], [5]) -> [32]
-$LL.Main.swapix24 k b2 m j b1 s f32 $99 =
-      $LL.Main.swapix26 b2 b1 s $99 f32 (1'h1 # j # k # 1'h0 # m)
-
-$LL.Main.swapix23 : ([1024], [5], [5]) -> [32]
-$LL.Main.swapix23 s f32 $100 =
-      let b1 = $100[4 +: 1] in
-      let j = $100[3 +: 1] in
-      let k = $100[2 +: 1] in
-      let b2 = $100[1 +: 1] in
-      let m = $100[0 +: 1] in
-      $LL.Main.swapix24 k b2 m j b1 s f32 (1'h1 # j # k # 1'h1 # m)
+$LL.Main.swapix45 : ([1], [1024], [5], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix45 j s f32 k l b2 b1 =
+      $LL.Main.swapix44 j s f32 k b1 l b2 ($LL.Main.swapix313 b1 ($LL.Main.swapix312 b2))
 
 Main.rotate1 : ([1024]) -> [1024]
-Main.rotate1 $10 =
-      $LL.Main.rotate (32'h7 # $10)
+Main.rotate1 s =
+      Main.rot 32'h7 s 5'h0 # Main.rot 32'h7 s 5'h1 # Main.rot 32'h7 s 5'h2 # Main.rot 32'h7 s 5'h3 # Main.rot 32'h7 s 5'h4 # Main.rot 32'h7 s 5'h5 # Main.rot 32'h7 s 5'h6 # Main.rot 32'h7 s 5'h7 # Main.rot 32'h7 s 5'h8 # Main.rot 32'h7 s 5'h9 # Main.rot 32'h7 s 5'ha # Main.rot 32'h7 s 5'hb # Main.rot 32'h7 s 5'hc # Main.rot 32'h7 s 5'hd # Main.rot 32'h7 s 5'he # Main.rot 32'h7 s 5'hf # Main.rot 32'h7 s 5'h10 # Main.rot 32'h7 s 5'h11 # Main.rot 32'h7 s 5'h12 # Main.rot 32'h7 s 5'h13 # Main.rot 32'h7 s 5'h14 # Main.rot 32'h7 s 5'h15 # Main.rot 32'h7 s 5'h16 # Main.rot 32'h7 s 5'h17 # Main.rot 32'h7 s 5'h18 # Main.rot 32'h7 s 5'h19 # Main.rot 32'h7 s 5'h1a # Main.rot 32'h7 s 5'h1b # Main.rot 32'h7 s 5'h1c # Main.rot 32'h7 s 5'h1d # Main.rot 32'h7 s 5'h1e # Main.rot 32'h7 s 5'h1f
 
-$LL.Main.swapix45 : ([5], [1024], [5]) -> [32]
-$LL.Main.swapix45 f32 s $122 =
-      let b1 = $122[4 +: 1] in
-      let j = $122[3 +: 1] in
-      let k = $122[2 +: 1] in
-      let l = $122[1 +: 1] in
-      let b2 = $122[0 +: 1] in
-      $LL.Main.swapix4 b1 l b2 j f32 s k (1'h1 # j # k # l # 1'h1)
+Main.swap3 : ([1024]) -> [1024]
+Main.swap3 s =
+      Main.swapix3 s 5'h0 # Main.swapix3 s 5'h1 # Main.swapix3 s 5'h2 # Main.swapix3 s 5'h3 # Main.swapix3 s 5'h4 # Main.swapix3 s 5'h5 # Main.swapix3 s 5'h6 # Main.swapix3 s 5'h7 # Main.swapix3 s 5'h8 # Main.swapix3 s 5'h9 # Main.swapix3 s 5'ha # Main.swapix3 s 5'hb # Main.swapix3 s 5'hc # Main.swapix3 s 5'hd # Main.swapix3 s 5'he # Main.swapix3 s 5'hf # Main.swapix3 s 5'h10 # Main.swapix3 s 5'h11 # Main.swapix3 s 5'h12 # Main.swapix3 s 5'h13 # Main.swapix3 s 5'h14 # Main.swapix3 s 5'h15 # Main.swapix3 s 5'h16 # Main.swapix3 s 5'h17 # Main.swapix3 s 5'h18 # Main.swapix3 s 5'h19 # Main.swapix3 s 5'h1a # Main.swapix3 s 5'h1b # Main.swapix3 s 5'h1c # Main.swapix3 s 5'h1d # Main.swapix3 s 5'h1e # Main.swapix3 s 5'h1f
+
+Main.swapix4 : ([1024], [5]) -> [32]
+Main.swapix4 s f32 =
+      $LL.Main.swapix49 s f32 (Main.explode5 f32)
+
+$LL.Main.swapix28 : ([1], [5], [1], [1024], [5], [1]) -> [32]
+$LL.Main.swapix28 b2 f32 m s ds k =
+      $LL.Main.swapix211 b2 f32 k m s ds (let j = ds[3 +: 1] in
+      j)
+
+$LL.Main.nopipeline4 : ([1024], [1024]) -> [2049]
+$LL.Main.nopipeline4 x sto0 =
+      1'h1 # x # sto0
+
+$LL.Main.swapix27 : ([5], [1], [1], [1024], [1], [1]) -> [32]
+$LL.Main.swapix27 f32 k m s j wild =
+      if eq wild 1'h0 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
+            else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h1 # j # k # 1'h0 # m))) 128'h1) 128'h20))
+
+$LL.Main.swapix44 : ([1], [1024], [5], [1], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix44 j s f32 k b1 l b2 wild =
+      if eq wild 1'h0 then $LL.Main.swapix411 j s f32 k l ($LL.Main.swapix313 b1 b2)
+            else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h1 # j # k # l # 1'h1))) 128'h1) 128'h20))
+
+$LL.Main.rot2 : ([32], [33]) -> [32]
+$LL.Main.rot2 rc ds =
+      $LL.Main.rot5 ds rc (let w0 = ds[0 +: 32] in
+      w0)
+
+$LL.Main.accesses1 : ([5], [1], [1024], [1]) -> [65]
+$LL.Main.accesses1 ds m s l =
+      $LL.Main.accesses4 ds m l s (let k = ds[2 +: 1] in
+      k)
 
 $LL.Main.nopipeline2 : ([1024]) -> [2049]
 $LL.Main.nopipeline2 sto0 =
-      $LL.Main.nopipeline3 sto0 sto0
+      $LL.Main.nopipeline4 sto0 sto0
 
-$LL.Main.swapix22 : ([1], [5], [1], [1024], [5], [5], [1]) -> [32]
-$LL.Main.swapix22 b2 tfx b1 s ttx f32 $97 =
-      if eq $97 1'h1 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 ttx)) 128'h1) 128'h20))
-            else $LL.Main.swapix2 b2 tfx b1 s f32 ("ReWire.Prelude.&&" b1 (ReWire.Prelude.not b2))
+$LL.Main.swapix36 : ([1], [1024], [5], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix36 l s f32 j m b2 b1 =
+      $LL.Main.swapix34 b1 l s f32 j m b2 ($LL.Main.swapix313 ($LL.Main.swapix312 b1) ($LL.Main.swapix312 b2))
+
+$LL.Main.xorix3 : ([1024], [5], [1], [1]) -> [32]
+$LL.Main.xorix3 s ds m l =
+      $LL.Main.xorix5 s ds m l (let k = ds[2 +: 1] in
+      k)
 
 Main.nopipeline : ([1], [1024]) -> [2049]
-Main.nopipeline $31 sto0 =
-      $LL.Main.nopipeline $31 $31 sto0
+Main.nopipeline $x sto0 =
+      $LL.Main.nopipeline1 $x sto0
 
 Main.swapix2 : ([1024], [5]) -> [32]
-Main.swapix2 $20 $21 =
-      $LL.Main.swapix27 ($20 # $21)
-
-$LL.Main.rot4 : ([32], [32]) -> [32]
-$LL.Main.rot4 $x $x1 =
-      $LL.Main.rot6 $x $x1
-
-$LL.Main.rot3 : ([32], [32]) -> [32]
-$LL.Main.rot3 $18 $19 =
-      $LL.Main.rot8 ($18 # $19)
-
-"$LL.ReWire.Prelude.&&1" : ([2]) -> [1]
-"$LL.ReWire.Prelude.&&1" $51 =
-      1'h0
+Main.swapix2 s f32 =
+      $LL.Main.swapix25 f32 s (Main.explode5 f32)
 
 Main.xor : ([1024]) -> [1024]
-Main.xor $x =
-      $LL.Main.xor $x
-
-$LL.Main.swapix44 : ([5], [1024]) -> [32]
-$LL.Main.swapix44 sp sp1 =
-      trunc 32 (lshr sp1 (mul (sub (sub 128'h20 (zext 128 sp)) 128'h1) 128'h20))
-
-$LL.Main.swapix43 : ([1029]) -> [32]
-$LL.Main.swapix43 $123 =
-      let s = $123[5 +: 1024] in
-      let f32 = $123[0 +: 5] in
-      $LL.Main.swapix45 f32 s (Main.explode5 f32)
-
-$LL.Main.swapix42 : ([1], [1], [5], [5], [5], [1024], [1]) -> [32]
-$LL.Main.swapix42 b1 b2 tfx f32 ttx s $119 =
-      if eq $119 1'h1 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 ttx)) 128'h1) 128'h20))
-            else $LL.Main.swapix46 b1 b2 tfx f32 s ("ReWire.Prelude.&&" b1 (ReWire.Prelude.not b2))
-
-$LL.Main.rotate : ([1056]) -> [1024]
-$LL.Main.rotate $71 =
-      let rc = $71[1024 +: 32] in
-      let s = $71[0 +: 1024] in
-      Main.rot rc s 5'h0 # Main.rot rc s 5'h1 # Main.rot rc s 5'h2 # Main.rot rc s 5'h3 # Main.rot rc s 5'h4 # Main.rot rc s 5'h5 # Main.rot rc s 5'h6 # Main.rot rc s 5'h7 # Main.rot rc s 5'h8 # Main.rot rc s 5'h9 # Main.rot rc s 5'ha # Main.rot rc s 5'hb # Main.rot rc s 5'hc # Main.rot rc s 5'hd # Main.rot rc s 5'he # Main.rot rc s 5'hf # Main.rot rc s 5'h10 # Main.rot rc s 5'h11 # Main.rot rc s 5'h12 # Main.rot rc s 5'h13 # Main.rot rc s 5'h14 # Main.rot rc s 5'h15 # Main.rot rc s 5'h16 # Main.rot rc s 5'h17 # Main.rot rc s 5'h18 # Main.rot rc s 5'h19 # Main.rot rc s 5'h1a # Main.rot rc s 5'h1b # Main.rot rc s 5'h1c # Main.rot rc s 5'h1d # Main.rot rc s 5'h1e # Main.rot rc s 5'h1f
+Main.xor s =
+      Main.xorix s 5'h0 # Main.xorix s 5'h1 # Main.xorix s 5'h2 # Main.xorix s 5'h3 # Main.xorix s 5'h4 # Main.xorix s 5'h5 # Main.xorix s 5'h6 # Main.xorix s 5'h7 # Main.xorix s 5'h8 # Main.xorix s 5'h9 # Main.xorix s 5'ha # Main.xorix s 5'hb # Main.xorix s 5'hc # Main.xorix s 5'hd # Main.xorix s 5'he # Main.xorix s 5'hf # Main.xorix s 5'h10 # Main.xorix s 5'h11 # Main.xorix s 5'h12 # Main.xorix s 5'h13 # Main.xorix s 5'h14 # Main.xorix s 5'h15 # Main.xorix s 5'h16 # Main.xorix s 5'h17 # Main.xorix s 5'h18 # Main.xorix s 5'h19 # Main.xorix s 5'h1a # Main.xorix s 5'h1b # Main.xorix s 5'h1c # Main.xorix s 5'h1d # Main.xorix s 5'h1e # Main.xorix s 5'h1f
 
 Main.xorix : ([1024], [5]) -> [32]
-Main.xorix $29 $30 =
-      $LL.Main.xorix4 ($29 # $30)
+Main.xorix s f32 =
+      $LL.Main.xorix s (Main.explode5 f32)
 
-$LL.Main.swapix21 : ([1024], [5], [1]) -> [32]
-$LL.Main.swapix21 s f32 $94 =
-      $LL.Main.swapix38 s f32
+$LL.Main.rot1 : ([32], [32]) -> [32]
+$LL.Main.rot1 eta w =
+      or (shl w eta) (lshr w (sub 32'h20 eta))
 
-"ReWire.Prelude.&&" : ([1], [1]) -> [1]
-"ReWire.Prelude.&&" $10 $11 =
-      "$LL.ReWire.Prelude.&&" $11 $10 ($10 # $11)
+$LL.Main.swapix15 : ([1], [1024], [5], [1], [1], [1]) -> [32]
+$LL.Main.swapix15 l s f32 m k wild =
+      if eq wild 1'h0 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 f32)) 128'h1) 128'h20))
+            else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (2'h1 # k # l # m))) 128'h1) 128'h20))
 
-$LL.Main.swapix34 : ([1], [1024], [5], [5], [5], [1], [1]) -> [32]
-$LL.Main.swapix34 b1 s f32 ftx ffx b2 $108 =
-      if eq $108 1'h1 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 ftx)) 128'h1) 128'h20))
-            else $LL.Main.swapix37 b1 s f32 ffx b2 ("ReWire.Prelude.&&" (ReWire.Prelude.not b1) (ReWire.Prelude.not b2))
+$LL.Main.swapix25 : ([5], [1024], [5]) -> [32]
+$LL.Main.swapix25 f32 s ds =
+      $LL.Main.swapix22 f32 s ds (let m = ds[0 +: 1] in
+      m)
 
-$LL.Main.rot2 : ([32], [32], [1]) -> [32]
-$LL.Main.rot2 rc w0 $74 =
-      $LL.Main.rot4 rc w0
+$LL.Main.swapix24 : ([1], [5], [1], [1], [1], [1024], [1], [1]) -> [32]
+$LL.Main.swapix24 b2 f32 b1 k m s j wild =
+      if eq wild 1'h0 then $LL.Main.swapix27 f32 k m s j ($LL.Main.swapix313 b1 b2)
+            else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h1 # j # k # 1'h1 # m))) 128'h1) 128'h20))
 
-$LL.Main.swapix13 : ([5], [1024], [5]) -> [32]
-$LL.Main.swapix13 f32 s $89 =
-      let b1 = $89[4 +: 1] in
-      let b2 = $89[3 +: 1] in
-      let k = $89[2 +: 1] in
-      let l = $89[1 +: 1] in
-      let m = $89[0 +: 1] in
-      $LL.Main.swapix1 m k b1 l f32 b2 s (2'h0 # k # l # m)
+$LL.Main.swapix35 : ([5], [1], [1024], [5], [1], [1], [1]) -> [32]
+$LL.Main.swapix35 ds l s f32 m b2 j =
+      $LL.Main.swapix36 l s f32 j m b2 (let b1 = ds[4 +: 1] in
+      b1)
 
-$LL.Main.addix2 : ([32]) -> [32]
-$LL.Main.addix2 sp =
-      sp
-
-$LL.Main.xorix1 : ([1024], [5]) -> [32]
-$LL.Main.xorix1 s $129 =
-      let h = $129[4 +: 1] in
-      let j = $129[3 +: 1] in
-      let k = $129[2 +: 1] in
-      let l = $129[1 +: 1] in
-      let m = $129[0 +: 1] in
-      $LL.Main.xorix k j m s h l (1'h0 # j # k # l # m)
+$LL.Main.swapix34 : ([1], [1], [1024], [5], [1], [1], [1], [1]) -> [32]
+$LL.Main.swapix34 b1 l s f32 j m b2 wild =
+      if eq wild 1'h0 then $LL.Main.swapix311 l s f32 j m ($LL.Main.swapix313 ($LL.Main.swapix312 b1) b2)
+            else trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 (1'h0 # j # 1'h1 # l # m))) 128'h1) 128'h20))
 
 Main.swapix3 : ([1024], [5]) -> [32]
-Main.swapix3 $23 $24 =
-      $LL.Main.swapix33 ($23 # $24)
-
-"$LL.ReWire.Prelude.&&" : ([1], [1], [2]) -> [1]
-"$LL.ReWire.Prelude.&&" $11 $10 $52 =
-      if eq $52[1 +: 1] 1'h1 then (let b = $52[0 +: 1] in
-            b)
-            else "$LL.ReWire.Prelude.&&1" ($10 # $11)
+Main.swapix3 s f32 =
+      $LL.Main.swapix314 s f32 (Main.explode5 f32)
 
 Main.swap4 : ([1024]) -> [1024]
-Main.swap4 $x =
-      $LL.Main.swap4 $x
+Main.swap4 s =
+      Main.swapix4 s 5'h0 # Main.swapix4 s 5'h1 # Main.swapix4 s 5'h2 # Main.swapix4 s 5'h3 # Main.swapix4 s 5'h4 # Main.swapix4 s 5'h5 # Main.swapix4 s 5'h6 # Main.swapix4 s 5'h7 # Main.swapix4 s 5'h8 # Main.swapix4 s 5'h9 # Main.swapix4 s 5'ha # Main.swapix4 s 5'hb # Main.swapix4 s 5'hc # Main.swapix4 s 5'hd # Main.swapix4 s 5'he # Main.swapix4 s 5'hf # Main.swapix4 s 5'h10 # Main.swapix4 s 5'h11 # Main.swapix4 s 5'h12 # Main.swapix4 s 5'h13 # Main.swapix4 s 5'h14 # Main.swapix4 s 5'h15 # Main.swapix4 s 5'h16 # Main.swapix4 s 5'h17 # Main.swapix4 s 5'h18 # Main.swapix4 s 5'h19 # Main.swapix4 s 5'h1a # Main.swapix4 s 5'h1b # Main.swapix4 s 5'h1c # Main.swapix4 s 5'h1d # Main.swapix4 s 5'h1e # Main.swapix4 s 5'h1f
 
-$LL.Main.swapix33 : ([1029]) -> [32]
-$LL.Main.swapix33 $112 =
-      let s = $112[5 +: 1024] in
-      let f32 = $112[0 +: 5] in
-      $LL.Main.swapix35 s f32 (Main.explode5 f32)
+$LL.Main.addix : ([65], [32], [1]) -> [32]
+$LL.Main.addix ds v0 wild =
+      if eq wild 1'h0 then v0
+            else add v0 (let v1 = ds[0 +: 32] in
+            v1)
 
-Main.swapix1 : ([1024], [5]) -> [32]
-Main.swapix1 $17 $18 =
-      $LL.Main.swapix15 ($17 # $18)
-
-$LL.Main.swapix32 : ([1], [1024], [5], [5], [1], [5]) -> [32]
-$LL.Main.swapix32 b1 s f32 ftx b2 $109 =
-      $LL.Main.swapix34 b1 s f32 ftx $109 b2 ("ReWire.Prelude.&&" (ReWire.Prelude.not b1) (ReWire.Prelude.not b2))
-
-$LL.Main.xorix : ([1], [1], [1], [1024], [1], [1], [5]) -> [32]
-$LL.Main.xorix k j m s h l $128 =
-      $LL.Main.xorix5 $128 s h (1'h1 # j # k # l # m)
-
-Main.rotate : ([1024]) -> [1024]
-Main.rotate $10 =
-      $LL.Main.rotate (32'hb # $10)
-
-Main.accesses : ([1024], [5]) -> [65]
-Main.accesses $5 $6 =
-      $LL.Main.accesses3 ($5 # $6)
-
-$LL.Main.swapix31 : ([1], [1024], [5], [5], [1], [1]) -> [32]
-$LL.Main.swapix31 b1 s f32 ffx b2 $106 =
-      if eq $106 1'h1 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 ffx)) 128'h1) 128'h20))
-            else $LL.Main.swapix36 s f32 ("ReWire.Prelude.&&" (ReWire.Prelude.not b1) b2)
-
-$LL.Main.swapix12 : ([5], [1024], [1]) -> [32]
-$LL.Main.swapix12 f32 s $83 =
-      $LL.Main.swapix44 f32 s
-
-$LL.Main.addix1 : ([32], [1]) -> [32]
-$LL.Main.addix1 v0 $67 =
-      $LL.Main.addix2 v0
-
-$LL.Main.swapix41 : ([1], [1], [5], [5], [1024], [1]) -> [32]
-$LL.Main.swapix41 b1 b2 tfx f32 s $117 =
-      if eq $117 1'h1 then trunc 32 (lshr s (mul (sub (sub 128'h20 (zext 128 tfx)) 128'h1) 128'h20))
-            else $LL.Main.swapix48 f32 s ("ReWire.Prelude.&&" b1 b2)
-
-$LL.Main.swapix4 : ([1], [1], [1], [1], [5], [1024], [1], [5]) -> [32]
-$LL.Main.swapix4 b1 l b2 j f32 s k $121 =
-      $LL.Main.swapix47 b1 b2 f32 $121 s (1'h1 # j # k # l # 1'h0)
-
-$LL.Main.swapix1 : ([1], [1], [1], [1], [5], [1], [1024], [5]) -> [32]
-$LL.Main.swapix1 m k b1 l f32 b2 s $88 =
-      $LL.Main.swapix14 b1 f32 b2 $88 s (2'h1 # k # l # m)
-
-$LL.Main.rot : ([32], [33]) -> [32]
-$LL.Main.rot rc $76 =
-      let h = $76[32 +: 1] in
-      let w0 = $76[0 +: 32] in
-      $LL.Main.rot7 rc w0 h h
-
-$LL.Main.swapix2 : ([1], [5], [1], [1024], [5], [1]) -> [32]
-$LL.Main.swapix2 b2 tfx b1 s f32 $96 =
-      $LL.Main.swapix28 b2 tfx b1 s f32 ("ReWire.Prelude.&&" b1 b2)
-
-$LL.Main.addix : ([1029]) -> [32]
-$LL.Main.addix $70 =
-      let s = $70[5 +: 1024] in
-      let f32 = $70[0 +: 5] in
-      $LL.Main.addix4 (Main.accesses s f32)
-
-Main.explode5 : ([5]) -> [5]
-Main.explode5 $x =
-      $LL.Main.explode5 $x
-
-$LL.Main.rotaccess : ([1029]) -> [33]
-$LL.Main.rotaccess $79 =
-      let s = $79[5 +: 1024] in
-      let f32 = $79[0 +: 5] in
-      $LL.Main.rotaccess1 s f32 (Main.explode5 f32)
-
-Main.addix : ([1024], [5]) -> [32]
-Main.addix $7 $8 =
-      $LL.Main.addix ($7 # $8)
-
-$LL.Main.nopipeline : ([1], [1], [1024]) -> [2049]
-$LL.Main.nopipeline $31 $133 sto0 =
-      if eq $133 1'h0 then (let $t1 = (let $t0 = $LL.Main.nopipeline4 sto0 sto0 in
+$LL.Main.nopipeline1 : ([1], [1024]) -> [2049]
+$LL.Main.nopipeline1 wild sto0 =
+      if eq wild 1'h0 then (let $t1 = (let $t0 = $LL.Main.nopipeline sto0 sto0 in
             1025'h0 # $t0) in
             let s0 = $t1[0 +: 1024] in
             $LL.Main.nopipeline2 s0)
-            else $LL.Main.nopipeline5 $31 sto0
+            else $LL.Main.nopipeline4 sto0 sto0
 
-$LL.Main.swapix3 : ([1], [1], [1024], [1], [5], [1], [1], [5]) -> [32]
-$LL.Main.swapix3 b1 j s m f32 b2 l $110 =
-      $LL.Main.swapix32 b1 s f32 $110 b2 (1'h0 # j # 1'h0 # l # m)
+Main.swapix1 : ([1024], [5]) -> [32]
+Main.swapix1 s f32 =
+      $LL.Main.swapix1 s f32 (Main.explode5 f32)
+
+$LL.Main.swapix14 : ([1024], [5], [5], [1], [1]) -> [32]
+$LL.Main.swapix14 s ds f32 m l =
+      $LL.Main.swapix18 l s ds f32 m (let k = ds[2 +: 1] in
+      k)
+
+$LL.Main.xorix1 : ([1], [1], [1024], [5], [1], [1], [5]) -> [32]
+$LL.Main.xorix1 k j s ds m l i1 =
+      $LL.Main.xorix7 k j s m i1 l ($LL.Main.swapix312 (let h = ds[4 +: 1] in
+      h))
+
+$LL.Main.swapix22 : ([5], [1024], [5], [1]) -> [32]
+$LL.Main.swapix22 f32 s ds m =
+      $LL.Main.swapix2 f32 m s ds (let b2 = ds[1 +: 1] in
+      b2)
+
+$LL.Main.rot : ([32], [32]) -> [32]
+$LL.Main.rot $x $x1 =
+      $LL.Main.rot1 $x $x1
+
+Main.accesses : ([1024], [5]) -> [65]
+Main.accesses s f32 =
+      $LL.Main.accesses s (Main.explode5 f32)
+
+$LL.Main.accesses : ([1024], [5]) -> [65]
+$LL.Main.accesses s ds =
+      $LL.Main.accesses3 ds s (let m = ds[0 +: 1] in
+      m)
+
+$LL.Main.swapix12 : ([1024], [5], [5], [1]) -> [32]
+$LL.Main.swapix12 s ds f32 m =
+      $LL.Main.swapix14 s ds f32 m (let l = ds[1 +: 1] in
+      l)
+
+Main.rotate : ([1024]) -> [1024]
+Main.rotate s =
+      Main.rot 32'hb s 5'h0 # Main.rot 32'hb s 5'h1 # Main.rot 32'hb s 5'h2 # Main.rot 32'hb s 5'h3 # Main.rot 32'hb s 5'h4 # Main.rot 32'hb s 5'h5 # Main.rot 32'hb s 5'h6 # Main.rot 32'hb s 5'h7 # Main.rot 32'hb s 5'h8 # Main.rot 32'hb s 5'h9 # Main.rot 32'hb s 5'ha # Main.rot 32'hb s 5'hb # Main.rot 32'hb s 5'hc # Main.rot 32'hb s 5'hd # Main.rot 32'hb s 5'he # Main.rot 32'hb s 5'hf # Main.rot 32'hb s 5'h10 # Main.rot 32'hb s 5'h11 # Main.rot 32'hb s 5'h12 # Main.rot 32'hb s 5'h13 # Main.rot 32'hb s 5'h14 # Main.rot 32'hb s 5'h15 # Main.rot 32'hb s 5'h16 # Main.rot 32'hb s 5'h17 # Main.rot 32'hb s 5'h18 # Main.rot 32'hb s 5'h19 # Main.rot 32'hb s 5'h1a # Main.rot 32'hb s 5'h1b # Main.rot 32'hb s 5'h1c # Main.rot 32'hb s 5'h1d # Main.rot 32'hb s 5'h1e # Main.rot 32'hb s 5'h1f
+
+$LL.Main.swapix3 : ([5], [1], [1024], [5], [1], [1]) -> [32]
+$LL.Main.swapix3 ds l s f32 m b2 =
+      $LL.Main.swapix35 ds l s f32 m b2 (let j = ds[3 +: 1] in
+      j)
+
+Main.explode5 : ([5]) -> [5]
+Main.explode5 w5 =
+      trunc 1 (lshr w5 128'h4) # trunc 1 (lshr w5 128'h3) # trunc 1 (lshr w5 128'h2) # trunc 1 (lshr w5 128'h1) # trunc 1 (lshr w5 128'h0)
+
+$LL.Main.swapix4 : ([1024], [5], [5], [1], [1]) -> [32]
+$LL.Main.swapix4 s f32 ds b2 l =
+      $LL.Main.swapix47 s f32 ds l b2 (let k = ds[2 +: 1] in
+      k)
+
+$LL.Main.xorix : ([1024], [5]) -> [32]
+$LL.Main.xorix s ds =
+      $LL.Main.xorix6 s ds (let m = ds[0 +: 1] in
+      m)
+
+$LL.Main.swapix2 : ([5], [1], [1024], [5], [1]) -> [32]
+$LL.Main.swapix2 f32 m s ds b2 =
+      $LL.Main.swapix28 b2 f32 m s ds (let k = ds[2 +: 1] in
+      k)
+
+Main.addix : ([1024], [5]) -> [32]
+Main.addix s f32 =
+      $LL.Main.addix1 (Main.accesses s f32)
+
+$LL.Main.nopipeline : ([1024], [1024]) -> [1024]
+$LL.Main.nopipeline x sigma0 =
+      Main.round x
+
+$LL.Main.swapix1 : ([1024], [5], [5]) -> [32]
+$LL.Main.swapix1 s f32 ds =
+      $LL.Main.swapix12 s ds f32 (let m = ds[0 +: 1] in
+      m)
 
 device top_level
       input __in0 : [1]

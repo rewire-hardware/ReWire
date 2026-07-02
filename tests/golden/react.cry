@@ -24,25 +24,13 @@ rw__Pure_dispatch x0 = rw_Main_loop x0
 rw__LL_Main_loop1 : [1] -> [1]
 rw__LL_Main_loop1 x0 = x0
 
-// ReWire.Prelude.not
-rw_ReWire_Prelude_not : [1] -> [1]
-rw_ReWire_Prelude_not x0 = rw__LL_ReWire_Prelude_not1 x0 x0
-
-// $LL.ReWire.Prelude.not1
-rw__LL_ReWire_Prelude_not1 : [1] -> [1] -> [1]
-rw__LL_ReWire_Prelude_not1 x0 x1 = if x1 == 0b1 then 0b0 else (rw__LL_ReWire_Prelude_not x0)
-
 // Main.loop
 rw_Main_loop : [1] -> [1]
-rw_Main_loop x0 = rw__LL_Main_loop x0
+rw_Main_loop x0 = rw__LL_Main_loop1 (rw__LL_Main_loop x0)
 
 // $LL.Main.loop
 rw__LL_Main_loop : [1] -> [1]
-rw__LL_Main_loop x0 = rw__LL_Main_loop1 (rw_ReWire_Prelude_not x0)
-
-// $LL.ReWire.Prelude.not
-rw__LL_ReWire_Prelude_not : [1] -> [1]
-rw__LL_ReWire_Prelude_not x0 = 0b1
+rw__LL_Main_loop x0 = if x0 == 0b1 then 0b0 else 0b1
 
 // Per-cycle step: outputs # next register values.
 rw_step : [1] -> [1]

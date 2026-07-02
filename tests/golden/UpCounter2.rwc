@@ -1,59 +1,47 @@
 $Pure.dispatch : ([8], [1]) -> [16]
 $Pure.dispatch disc i =
-      $LL.Main.go1 i disc
+      $LL.Main.go2 i disc
 
-$LL.Main.rolW8 : ([8]) -> [8]
-$LL.Main.rolW8 $8 =
-      or (shl $8 8'h1) (Main.msbitW8 $8)
-
-$LL.Main.go4 : ([8], [8]) -> [16]
-$LL.Main.go4 rabind sto0 =
-      rabind # sto0
+$LL.Main.go4 : ([8]) -> [16]
+$LL.Main.go4 sto0 =
+      Main.go sto0
 
 $LL.Main.go3 : ([8], [8]) -> [16]
 $LL.Main.go3 rabind sto0 =
-      $LL.Main.go2 (Main.rolW8 rabind)
+      rabind # sto0
 
-$LL.Main.go2 : ([8]) -> [16]
-$LL.Main.go2 sto0 =
-      Main.go sto0
-
-Main.rolW8 : ([8]) -> [8]
-Main.rolW8 $x =
-      $LL.Main.rolW8 $x
-
-$LL.Main.msbitW81 : ([8]) -> [8]
-$LL.Main.msbitW81 $6 =
-      zext 8 ($LL.Main.msbitW8 $6[7 +: 1])
-
-$LL.Main.go1 : ([1], [8]) -> [16]
-$LL.Main.go1 b sto0 =
-      if eq b 1'h1 then $LL.Main.go3 sto0 sto0
+$LL.Main.go2 : ([1], [8]) -> [16]
+$LL.Main.go2 b sto0 =
+      if eq b 1'h0 then $LL.Main.go1 sto0 sto0
             else $LL.Main.go sto0 sto0
 
-Main.incW8 : ([8]) -> [8]
-Main.incW8 $x =
-      $LL.Main.incW8 $x
+Main.rolW8 : ([8]) -> [8]
+Main.rolW8 n =
+      or (shl n 8'h1) (Main.msbitW8 n)
 
-$LL.Main.incW8 : ([8]) -> [8]
-$LL.Main.incW8 $7 =
-      add $7 8'h1
+$LL.Main.go1 : ([8], [8]) -> [16]
+$LL.Main.go1 rabind sto0 =
+      $LL.Main.go4 (Main.incW8 rabind)
+
+Main.incW8 : ([8]) -> [8]
+Main.incW8 n =
+      add n 8'h1
 
 $LL.Main.msbitW8 : ([1]) -> [1]
-$LL.Main.msbitW8 $30 =
-      $30
-
-Main.msbitW8 : ([8]) -> [8]
-Main.msbitW8 $x =
-      $LL.Main.msbitW81 $x
+$LL.Main.msbitW8 eta =
+      eta
 
 $LL.Main.go : ([8], [8]) -> [16]
 $LL.Main.go rabind sto0 =
-      $LL.Main.go2 (Main.incW8 rabind)
+      $LL.Main.go4 (Main.rolW8 rabind)
+
+Main.msbitW8 : ([8]) -> [8]
+Main.msbitW8 n =
+      zext 8 ($LL.Main.msbitW8 n[7 +: 1])
 
 Main.go : ([8]) -> [16]
 Main.go sto0 =
-      $LL.Main.go4 sto0 sto0
+      $LL.Main.go3 sto0 sto0
 
 device top_level
       input __in0 : [1]

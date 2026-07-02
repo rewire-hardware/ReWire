@@ -18,78 +18,47 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [32] -> [32]
-rw__Pure_dispatch x0 = rw_ReWire_Monad_iter x0
-
-// $LL.Main.f1
-rw__LL_Main_f1 : [32] -> [32]
-rw__LL_Main_f1 x0 = rw_Main_plusW32 (rw_Main_andW321 x0) (rw_Main_xorW32 (rw_Main_notW321 x0))
+rw__Pure_dispatch x0 = rw_ReWire_Monad_iter1 x0
 
 // Main.xorModel
 rw_Main_xorModel : [32] -> [32] -> [32]
-rw_Main_xorModel x0 x1 = rw__LL_Main_xorModel (x0 # x1)
+rw_Main_xorModel x0 x1 = x0 ^ x1
 
 // Main.notW321
 rw_Main_notW321 : [32] -> [32]
 rw_Main_notW321 x0 = rw_Main_notModel x0
 
-// Main.plusW32
-rw_Main_plusW32 : [32] -> [32] -> [32]
-rw_Main_plusW32 x0 x1 = rw_Main_plusModel x0 x1
+// Main.plusW321
+rw_Main_plusW321 : [32] -> [32] -> [32]
+rw_Main_plusW321 x0 x1 = rw_Main_plusModel x0 x1
+
+// ReWire.Monad.iter1
+rw_ReWire_Monad_iter1 : [32] -> [32]
+rw_ReWire_Monad_iter1 x0 = rw_Main_f x0
+
+// Main.plusModel
+rw_Main_plusModel : [32] -> [32] -> [32]
+rw_Main_plusModel x0 x1 = x0 + x1
+
+// Main.andModel
+rw_Main_andModel : [32] -> [32] -> [32]
+rw_Main_andModel x0 x1 = x0 && x1
+
+// Main.andW32
+rw_Main_andW32 : [32] -> [32]
+rw_Main_andW32 x0 = rw_Main_andModel x0 0xf0f0f0f0
+
+// Main.f
+rw_Main_f : [32] -> [32]
+rw_Main_f x0 = rw_Main_plusW321 (rw_Main_andW32 x0) (rw_Main_xorW32 (rw_Main_notW321 x0))
 
 // Main.xorW32
 rw_Main_xorW32 : [32] -> [32]
 rw_Main_xorW32 x0 = rw_Main_xorModel x0 0x12345678
 
-// Main.plusModel
-rw_Main_plusModel : [32] -> [32] -> [32]
-rw_Main_plusModel x0 x1 = rw__LL_Main_plusModel (x0 # x1)
-
-// Main.andW321
-rw_Main_andW321 : [32] -> [32]
-rw_Main_andW321 x0 = rw_Main_andModel x0 0xf0f0f0f0
-
-// Main.andModel
-rw_Main_andModel : [32] -> [32] -> [32]
-rw_Main_andModel x0 x1 = rw__LL_Main_andModel (x0 # x1)
-
-// $LL.Main.andModel
-rw__LL_Main_andModel : [64] -> [32]
-rw__LL_Main_andModel x0 = s0 && s1
-  where
-    s0 : [32]
-    s0 = take`{32} x0
-    s1 : [32]
-    s1 = drop`{32} x0
-
-// $LL.Main.xorModel
-rw__LL_Main_xorModel : [64] -> [32]
-rw__LL_Main_xorModel x0 = s0 ^ s1
-  where
-    s0 : [32]
-    s0 = take`{32} x0
-    s1 : [32]
-    s1 = drop`{32} x0
-
-// Main.f
-rw_Main_f : [32] -> [32]
-rw_Main_f x0 = rw__LL_Main_f1 x0
-
-// $LL.Main.plusModel
-rw__LL_Main_plusModel : [64] -> [32]
-rw__LL_Main_plusModel x0 = s0 + s1
-  where
-    s0 : [32]
-    s0 = take`{32} x0
-    s1 : [32]
-    s1 = drop`{32} x0
-
 // Main.notModel
 rw_Main_notModel : [32] -> [32]
 rw_Main_notModel x0 = ~ x0
-
-// ReWire.Monad.iter
-rw_ReWire_Monad_iter : [32] -> [32]
-rw_ReWire_Monad_iter x0 = rw_Main_f x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [32] -> [32]

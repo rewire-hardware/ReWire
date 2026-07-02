@@ -6,26 +6,14 @@ $LL.Main.loop1 : ([1]) -> [1]
 $LL.Main.loop1 rabind =
       rabind
 
-ReWire.Prelude.not : ([1]) -> [1]
-ReWire.Prelude.not $14 =
-      $LL.ReWire.Prelude.not1 $14 $14
-
-$LL.ReWire.Prelude.not1 : ([1], [1]) -> [1]
-$LL.ReWire.Prelude.not1 $14 $56 =
-      if eq $56 1'h1 then 1'h0
-            else $LL.ReWire.Prelude.not $14
-
 Main.loop : ([1]) -> [1]
-Main.loop $x =
-      $LL.Main.loop $x
+Main.loop i =
+      $LL.Main.loop1 ($LL.Main.loop i)
 
 $LL.Main.loop : ([1]) -> [1]
-$LL.Main.loop $1 =
-      $LL.Main.loop1 (ReWire.Prelude.not $1)
-
-$LL.ReWire.Prelude.not : ([1]) -> [1]
-$LL.ReWire.Prelude.not $55 =
-      1'h1
+$LL.Main.loop b =
+      if eq b 1'h1 then 1'h0
+            else 1'h1
 
 device top_level
       input __in0 : [1]

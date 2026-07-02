@@ -223,15 +223,15 @@ component \Main_getReg\ is
             arg1 : in std_logic_vector (38 downto 0);
             res : out std_logic_vector (38 downto 0));
       end component;
-      component \ZLL_Main_repl18\ is
+      component \ZLL_Main_repl10\ is
       port (arg0 : in std_logic_vector (38 downto 0);
             res : out std_logic_vector (72 downto 0));
       end component;
-      component \ZLL_Main_repl19\ is
+      component \ZLL_Main_repl13\ is
       port (arg0 : in std_logic_vector (38 downto 0);
             res : out std_logic_vector (72 downto 0));
       end component;
-      component \ZLL_Main_repl4\ is
+      component \ZLL_Main_repl8\ is
       port (arg0 : in std_logic_vector (31 downto 0);
             arg1 : in std_logic_vector (31 downto 0);
             arg2 : in std_logic_vector (38 downto 0);
@@ -261,7 +261,7 @@ component \Main_getReg\ is
       signal zi4 : std_logic_vector (38 downto 0);
       signal zi5 : std_logic_vector (72 downto 0);
       signal zi6 : std_logic_vector (38 downto 0);
-      signal zll_main_repl18_out : std_logic_vector (72 downto 0);
+      signal zll_main_repl13_out : std_logic_vector (72 downto 0);
       signal main_getreg_out : std_logic_vector (70 downto 0);
       signal zi7 : std_logic_vector (70 downto 0);
       signal zi8 : std_logic_vector (31 downto 0);
@@ -269,12 +269,12 @@ component \Main_getReg\ is
       signal zi10 : std_logic_vector (72 downto 0);
       signal zi11 : std_logic_vector (31 downto 0);
       signal zi12 : std_logic_vector (38 downto 0);
-      signal zll_main_repl4_out : std_logic_vector (72 downto 0);
+      signal zll_main_repl8_out : std_logic_vector (72 downto 0);
       signal \main_putreg_outR1\ : std_logic_vector (38 downto 0);
       signal zi13 : std_logic_vector (38 downto 0);
       signal zi14 : std_logic_vector (72 downto 0);
       signal zi15 : std_logic_vector (38 downto 0);
-      signal \zll_main_repl18_outR1\ : std_logic_vector (72 downto 0);
+      signal \zll_main_repl13_outR1\ : std_logic_vector (72 downto 0);
       signal \main_getreg_outR1\ : std_logic_vector (70 downto 0);
       signal zi16 : std_logic_vector (70 downto 0);
       signal zi17 : std_logic_vector (31 downto 0);
@@ -282,7 +282,7 @@ component \Main_getReg\ is
       signal zi19 : std_logic_vector (72 downto 0);
       signal zi20 : std_logic_vector (31 downto 0);
       signal zi21 : std_logic_vector (38 downto 0);
-      signal \zll_main_repl4_outR1\ : std_logic_vector (72 downto 0);
+      signal \zll_main_repl8_outR1\ : std_logic_vector (72 downto 0);
       signal \main_getreg_outR2\ : std_logic_vector (70 downto 0);
       signal zi22 : std_logic_vector (70 downto 0);
       signal zi23 : std_logic_vector (31 downto 0);
@@ -311,7 +311,7 @@ component \Main_getReg\ is
       signal zi40 : std_logic_vector (38 downto 0);
       signal zi41 : std_logic_vector (72 downto 0);
       signal zi42 : std_logic_vector (38 downto 0);
-      signal zll_main_repl19_out : std_logic_vector (72 downto 0);
+      signal zll_main_repl10_out : std_logic_vector (72 downto 0);
       signal zres : std_logic_vector (72 downto 0);
 begin
 zi0 <= (\__st0\ & \__st1\);
@@ -319,7 +319,7 @@ zi0 <= (\__st0\ & \__st1\);
       zi4 <= main_putreg_out;
       zi5 <= ((std_logic_vector'(B"01") & rw_repl(32, std_logic_vector'(B"0"))) & zi4);
       zi6 <= zi5(38 downto 0);
-      \instR1\ : \ZLL_Main_repl18\ port map (zi6, zll_main_repl18_out);
+      \instR1\ : \ZLL_Main_repl13\ port map (zi6, zll_main_repl13_out);
       \instR2\ : \Main_getReg\ port map (zi0, main_getreg_out);
       zi7 <= main_getreg_out;
       zi8 <= zi7(70 downto 39);
@@ -327,12 +327,12 @@ zi0 <= (\__st0\ & \__st1\);
       zi10 <= (std_logic_vector'(B"00") & zi8 & zi9);
       zi11 <= zi10(70 downto 39);
       zi12 <= zi10(38 downto 0);
-      \instR3\ : \ZLL_Main_repl4\ port map (\__in1\, zi11, zi12, zll_main_repl4_out);
+      \instR3\ : \ZLL_Main_repl8\ port map (\__in1\, zi11, zi12, zll_main_repl8_out);
       \instR4\ : \Main_putReg\ port map (\__in1\, zi0, \main_putreg_outR1\);
       zi13 <= \main_putreg_outR1\;
       zi14 <= ((std_logic_vector'(B"01") & rw_repl(32, std_logic_vector'(B"0"))) & zi13);
       zi15 <= zi14(38 downto 0);
-      \instR5\ : \ZLL_Main_repl18\ port map (zi15, \zll_main_repl18_outR1\);
+      \instR5\ : \ZLL_Main_repl13\ port map (zi15, \zll_main_repl13_outR1\);
       \instR6\ : \Main_getReg\ port map (zi0, \main_getreg_outR1\);
       zi16 <= \main_getreg_outR1\;
       zi17 <= zi16(70 downto 39);
@@ -340,7 +340,7 @@ zi0 <= (\__st0\ & \__st1\);
       zi19 <= (std_logic_vector'(B"00") & zi17 & zi18);
       zi20 <= zi19(70 downto 39);
       zi21 <= zi19(38 downto 0);
-      \instR7\ : \ZLL_Main_repl4\ port map (\__in1\, zi20, zi21, \zll_main_repl4_outR1\);
+      \instR7\ : \ZLL_Main_repl8\ port map (\__in1\, zi20, zi21, \zll_main_repl8_outR1\);
       \instR8\ : \Main_getReg\ port map (zi0, \main_getreg_outR2\);
       zi22 <= \main_getreg_outR2\;
       zi23 <= zi22(70 downto 39);
@@ -369,8 +369,8 @@ zi0 <= (\__st0\ & \__st1\);
       zi40 <= main_nextpc_out;
       zi41 <= ((std_logic_vector'(B"01") & rw_repl(32, std_logic_vector'(B"0"))) & zi40);
       zi42 <= zi41(38 downto 0);
-      \instR15\ : \ZLL_Main_repl19\ port map (zi42, zll_main_repl19_out);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000000")), zll_main_repl18_out, rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000001")), zll_main_repl4_out, rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000010")), \zll_main_repl18_outR1\, rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000011")), \zll_main_repl4_outR1\, rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000100")), ((std_logic_vector'(B"1") & rw_repl(32, std_logic_vector'(B"0"))) & extres & zi27), rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000101")), ((std_logic_vector'(B"1") & rw_repl(32, std_logic_vector'(B"0"))) & \extresR1\ & zi33), rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000110")), ((std_logic_vector'(B"1") & rw_repl(32, std_logic_vector'(B"0"))) & \extresR2\ & zi39), zll_main_repl19_out))))))), (std_logic_vector'(B"1000000000000000000000000000000010") & zi0));
+      \instR15\ : \ZLL_Main_repl10\ port map (zi42, zll_main_repl10_out);
+      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000000")), zll_main_repl13_out, rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000001")), zll_main_repl8_out, rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000010")), \zll_main_repl13_outR1\, rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000011")), \zll_main_repl8_outR1\, rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000100")), ((std_logic_vector'(B"1") & rw_repl(32, std_logic_vector'(B"0"))) & extres & zi27), rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000101")), ((std_logic_vector'(B"1") & rw_repl(32, std_logic_vector'(B"0"))) & \extresR1\ & zi33), rw_cond(rw_eq(\__st1\, std_logic_vector'(B"0000110")), ((std_logic_vector'(B"1") & rw_repl(32, std_logic_vector'(B"0"))) & \extresR2\ & zi39), zll_main_repl10_out))))))), (std_logic_vector'(B"1000000000000000000000000000000010") & zi0));
       \__st0_next\ <= zres(38 downto 7);
       \__st1_next\ <= zres(6 downto 0);
       \__out0\ <= zres(40 downto 40);
@@ -391,32 +391,17 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_repl19\ is
+entity \ZLL_Main_repl13\ is
 port (arg0 : in std_logic_vector (38 downto 0);
       res : out std_logic_vector (72 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_repl19\ is
-
-begin
-res <= (std_logic_vector'(B"1000000000000000000000000000000010") & arg0);
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_repl18\ is
-port (arg0 : in std_logic_vector (38 downto 0);
-      res : out std_logic_vector (72 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_repl18\ is
+architecture rtl of \ZLL_Main_repl13\ is
 component \Main_nextPC\ is
       port (arg0 : in std_logic_vector (38 downto 0);
             res : out std_logic_vector (38 downto 0));
       end component;
-      component \ZLL_Main_repl19\ is
+      component \ZLL_Main_repl10\ is
       port (arg0 : in std_logic_vector (38 downto 0);
             res : out std_logic_vector (72 downto 0));
       end component;
@@ -424,14 +409,29 @@ component \Main_nextPC\ is
       signal zt0 : std_logic_vector (38 downto 0);
       signal zt1 : std_logic_vector (72 downto 0);
       signal s0 : std_logic_vector (38 downto 0);
-      signal zll_main_repl19_out : std_logic_vector (72 downto 0);
+      signal zll_main_repl10_out : std_logic_vector (72 downto 0);
 begin
 inst : \Main_nextPC\ port map (arg0, main_nextpc_out);
       zt0 <= main_nextpc_out;
       zt1 <= ((std_logic_vector'(B"01") & rw_repl(32, std_logic_vector'(B"0"))) & zt0);
       s0 <= zt1(38 downto 0);
-      \instR1\ : \ZLL_Main_repl19\ port map (s0, zll_main_repl19_out);
-      res <= zll_main_repl19_out;
+      \instR1\ : \ZLL_Main_repl10\ port map (s0, zll_main_repl10_out);
+      res <= zll_main_repl10_out;
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \ZLL_Main_repl10\ is
+port (arg0 : in std_logic_vector (38 downto 0);
+      res : out std_logic_vector (72 downto 0));
+end entity;
+
+architecture rtl of \ZLL_Main_repl10\ is
+
+begin
+res <= (std_logic_vector'(B"1000000000000000000000000000000010") & arg0);
 end architecture;
 
 library ieee;
@@ -454,6 +454,29 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
+entity \ZLL_Main_repl8\ is
+port (arg0 : in std_logic_vector (31 downto 0);
+      arg1 : in std_logic_vector (31 downto 0);
+      arg2 : in std_logic_vector (38 downto 0);
+      res : out std_logic_vector (72 downto 0));
+end entity;
+
+architecture rtl of \ZLL_Main_repl8\ is
+component test1 is
+      port (p0 : in std_logic_vector (31 downto 0);
+            p1 : in std_logic_vector (31 downto 0);
+            p2 : out std_logic_vector (0 downto 0));
+      end component;
+      signal extres : std_logic_vector (0 downto 0);
+begin
+inst : test1 port map (p0 => arg0, p1 => arg1, p2 => extres(0 downto 0));
+      res <= ((std_logic_vector'(B"1") & rw_repl(32, std_logic_vector'(B"0"))) & extres & arg2);
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
 entity \Main_putReg\ is
 port (arg0 : in std_logic_vector (31 downto 0);
       arg1 : in std_logic_vector (38 downto 0);
@@ -465,29 +488,6 @@ signal zi0 : std_logic_vector (6 downto 0);
 begin
 zi0 <= arg1(6 downto 0);
       res <= (arg0 & zi0);
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_repl4\ is
-port (arg0 : in std_logic_vector (31 downto 0);
-      arg1 : in std_logic_vector (31 downto 0);
-      arg2 : in std_logic_vector (38 downto 0);
-      res : out std_logic_vector (72 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_repl4\ is
-component test1 is
-      port (p0 : in std_logic_vector (31 downto 0);
-            p1 : in std_logic_vector (31 downto 0);
-            p2 : out std_logic_vector (0 downto 0));
-      end component;
-      signal extres : std_logic_vector (0 downto 0);
-begin
-inst : test1 port map (p0 => arg0, p1 => arg1, p2 => extres(0 downto 0));
-      res <= ((std_logic_vector'(B"1") & rw_repl(32, std_logic_vector'(B"0"))) & extres & arg2);
 end architecture;
 
 library ieee;

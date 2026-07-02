@@ -2,21 +2,17 @@ $Pure.dispatch : ([8]) -> [16]
 $Pure.dispatch i =
       ReWire.Monad.iter1 i
 
+$LL.Main.f1 : ([8], [8]) -> [16]
+$LL.Main.f1 a b =
+      udiv a b # xor (umod a b) 8'hff
+
 ReWire.Monad.iter1 : ([8]) -> [16]
-ReWire.Monad.iter1 $1 =
-      Main.f1 $1
+ReWire.Monad.iter1 i =
+      Main.f i
 
-$LL.Main.f2 : ([8], [8]) -> [16]
-$LL.Main.f2 a $1 =
-      udiv a $1 # xor (umod a $1) 8'hff
-
-$LL.Main.f1 : ([8]) -> [16]
-$LL.Main.f1 $2 =
-      $LL.Main.f2 $2 (and $2 8'h3)
-
-Main.f1 : ([8]) -> [16]
-Main.f1 $x =
-      $LL.Main.f1 $x
+Main.f : ([8]) -> [16]
+Main.f a =
+      $LL.Main.f1 a (and a 8'h3)
 
 device top_level
       input __in0 : [8]

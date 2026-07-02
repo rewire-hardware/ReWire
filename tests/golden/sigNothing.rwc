@@ -7,7 +7,7 @@ Main.start' sto0 =
       9'h0 # sto0
 
 $LL.Main.start' : ([8], [8]) -> [17]
-$LL.Main.start' $2 sto0 =
+$LL.Main.start' ds sto0 =
       Main.start' sto0
 
 device top_level

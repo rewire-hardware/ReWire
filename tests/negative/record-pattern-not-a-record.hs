@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Record pattern found, but not a record
+-- EXPECT-ERROR: Not in scope: ‘f1’
 import ReWire
 import ReWire.Bits
 data S = S Bit Bit

@@ -210,23 +210,23 @@ end entity;
 architecture rtl of top_level is
 signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
-      signal zi6 : std_logic_vector (0 downto 0);
-      signal zi7 : std_logic_vector (2 downto 0);
-      signal zi8 : std_logic_vector (1 downto 0);
-      signal zi9 : std_logic_vector (0 downto 0);
-      signal zi10 : std_logic_vector (3 downto 0);
-      signal zi13 : std_logic_vector (0 downto 0);
-      signal zi14 : std_logic_vector (0 downto 0);
+      signal zi0 : std_logic_vector (0 downto 0);
+      signal zi1 : std_logic_vector (2 downto 0);
+      signal zi2 : std_logic_vector (1 downto 0);
+      signal zi3 : std_logic_vector (0 downto 0);
+      signal zi4 : std_logic_vector (3 downto 0);
+      signal zi7 : std_logic_vector (0 downto 0);
+      signal zi8 : std_logic_vector (0 downto 0);
       signal zres : std_logic_vector (3 downto 0);
 begin
-zi6 <= rw_xor(\__st0\, \__in0\);
-      zi7 <= (zi6 & \__st0\ & \__st0\);
-      zi8 <= zi7(2 downto 1);
-      zi9 <= zi7(0 downto 0);
-      zi10 <= (std_logic_vector'(B"0") & zi8 & zi9);
-      zi13 <= zi10(2 downto 2);
-      zi14 <= zi10(1 downto 1);
-      zres <= (std_logic_vector'(B"10") & zi13 & zi14);
+zi0 <= rw_xor(\__st0\, \__in0\);
+      zi1 <= (zi0 & \__st0\ & \__st0\);
+      zi2 <= zi1(2 downto 1);
+      zi3 <= zi1(0 downto 0);
+      zi4 <= (std_logic_vector'(B"0") & zi2 & zi3);
+      zi7 <= zi4(2 downto 2);
+      zi8 <= zi4(1 downto 1);
+      zres <= (std_logic_vector'(B"10") & zi7 & zi8);
       \__st0_next\ <= zres(0 downto 0);
       \__out0\ <= zres(1 downto 1);
       process (clk, rst)

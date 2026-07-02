@@ -2,58 +2,48 @@ $Pure.dispatch : ([1], [1]) -> [3]
 $Pure.dispatch disc i =
       Main.loop1 i disc
 
+$LL.Main.stateAction5 : ([1], [1], [1]) -> [2]
+$LL.Main.stateAction5 $x $x1 sigma0 =
+      $LL.Main.stateAction3 $x $x1 sigma0
+
+$LL.Main.stateAction4 : ([1], [1]) -> [1]
+$LL.Main.stateAction4 $x $x1 =
+      $LL.Main.stateAction $x $x1
+
+$LL.Main.stateAction3 : ([1], [1], [1]) -> [2]
+$LL.Main.stateAction3 i s sigma0 =
+      $LL.Main.stateAction2 s ($LL.Main.stateAction4 i s)
+
 $LL.Main.loop1 : ([1], [1]) -> [3]
-$LL.Main.loop1 $2 sto0 =
-      let $t1 = (let $t0 = Main.stateAction $2 sto0 in
+$LL.Main.loop1 rabind sto0 =
+      1'h1 # rabind # sto0
+
+Main.loop1 : ([1], [1]) -> [3]
+Main.loop1 i sto0 =
+      let $t1 = (let $t0 = Main.stateAction i sto0 in
       let v = $t0[1 +: 1] in
       let s0 = $t0[0 +: 1] in
       1'h0 # v # s0) in
       let v = $t1[1 +: 1] in
       let s0 = $t1[0 +: 1] in
-      $LL.Main.loop v s0
-
-$LL.Main.stateAction6 : ([1], [1], [1]) -> [2]
-$LL.Main.stateAction6 $x $x1 sigma0 =
-      $LL.Main.stateAction $x $x1 sigma0
-
-$LL.Main.stateAction5 : ([2]) -> [1]
-$LL.Main.stateAction5 $31 =
-      let a = $31[1 +: 1] in
-      let b = $31[0 +: 1] in
-      let $t1 = xor a b in
-      $t1
-
-Main.loop1 : ([1], [1]) -> [3]
-Main.loop1 $x sto0 =
-      $LL.Main.loop1 $x sto0
-
-$LL.Main.stateAction4 : ([1], [1]) -> [1]
-$LL.Main.stateAction4 $14 $15 =
-      $LL.Main.stateAction5 ($14 # $15)
-
-$LL.Main.stateAction3 : ([1], [1]) -> [1]
-$LL.Main.stateAction3 $x $x1 =
-      $LL.Main.stateAction4 $x $x1
+      $LL.Main.loop1 v s0
 
 $LL.Main.stateAction2 : ([1], [1]) -> [2]
-$LL.Main.stateAction2 $3 sigma0 =
-      $LL.Main.stateAction6 $3 sigma0 sigma0
-
-$LL.Main.loop : ([1], [1]) -> [3]
-$LL.Main.loop rabind sto0 =
-      1'h1 # rabind # sto0
+$LL.Main.stateAction2 $x sigma0 =
+      $LL.Main.stateAction1 $x sigma0
 
 $LL.Main.stateAction1 : ([1], [1]) -> [2]
 $LL.Main.stateAction1 s sigma0 =
       s # sigma0
 
-$LL.Main.stateAction : ([1], [1], [1]) -> [2]
-$LL.Main.stateAction i s sigma0 =
-      $LL.Main.stateAction1 s ($LL.Main.stateAction3 i s)
+$LL.Main.stateAction : ([1], [1]) -> [1]
+$LL.Main.stateAction a b =
+      let $t1 = xor a b in
+      $t1
 
 Main.stateAction : ([1], [1]) -> [2]
-Main.stateAction $x sigma0 =
-      $LL.Main.stateAction2 $x sigma0
+Main.stateAction i sigma0 =
+      $LL.Main.stateAction5 i sigma0 sigma0
 
 device top_level
       input __in0 : [1]

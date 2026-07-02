@@ -1,55 +1,51 @@
 $Pure.dispatch : ([17], [8]) -> [25]
 $Pure.dispatch disc i =
-      if eq disc[16 +: 1] 1'h1 then (let s0 = disc[0 +: 8] in
-            $LL.Main.start1 i s0)
-            else let store0 = disc[8 +: 8] in
+      if eq disc[16 +: 1] 1'h1 then (let store0 = disc[8 +: 8] in
             let s0 = disc[0 +: 8] in
-            $LL.Main.dev5 store0 i s0
-
-$LL.Main.dev6 : ([8], [8]) -> [25]
-$LL.Main.dev6 $4 sto0 =
-      $LL.Main.dev3 $4 sto0 sto0
-
-$LL.Main.dev5 : ([8], [8], [8]) -> [25]
-$LL.Main.dev5 $x $x1 sto0 =
-      $LL.Main.dev1 $x $x1 sto0
+            $LL.Main.dev2 store0 i s0)
+            else let s0 = disc[0 +: 8] in
+            $LL.Main.start i s0
 
 $LL.Main.start1 : ([8], [8]) -> [25]
-$LL.Main.start1 i sto0 =
-      $LL.Main.start i 8'h0
-
-Main.dev : ([8], [8]) -> [25]
-Main.dev $x sto0 =
-      $LL.Main.dev6 $x sto0
-
-$LL.Main.dev4 : ([8], [8], [8]) -> [25]
-$LL.Main.dev4 k s sto0 =
-      add s k # 1'h0 # k # sto0
-
-$LL.Main.dev3 : ([8], [8], [8]) -> [25]
-$LL.Main.dev3 $x $x1 sto0 =
-      $LL.Main.dev4 $x $x1 sto0
-
-$LL.Main.dev2 : ([8], [8]) -> [25]
-$LL.Main.dev2 k sto0 =
-      Main.dev k sto0
-
-$LL.Main.start : ([8], [8]) -> [25]
-$LL.Main.start $x sto0 =
+$LL.Main.start1 $x sto0 =
       Main.dev $x sto0
 
-$LL.Main.dev1 : ([8], [8], [8]) -> [25]
-$LL.Main.dev1 k i sto0 =
-      $LL.Main.dev k i
+$LL.Main.dev5 : ([8], [8]) -> [25]
+$LL.Main.dev5 k sto0 =
+      Main.dev k sto0
 
-$LL.Main.dev : ([8], [8]) -> [25]
-$LL.Main.dev $x sto0 =
-      $LL.Main.dev2 $x sto0
+Main.dev : ([8], [8]) -> [25]
+Main.dev k sto0 =
+      $LL.Main.dev4 k sto0 sto0
+
+$LL.Main.dev4 : ([8], [8], [8]) -> [25]
+$LL.Main.dev4 $x $x1 sto0 =
+      $LL.Main.dev3 $x $x1 sto0
+
+$LL.Main.dev3 : ([8], [8], [8]) -> [25]
+$LL.Main.dev3 k s sto0 =
+      add s k # 1'h1 # k # sto0
+
+$LL.Main.start : ([8], [8]) -> [25]
+$LL.Main.start i sto0 =
+      $LL.Main.start1 i 8'h0
+
+$LL.Main.dev2 : ([8], [8], [8]) -> [25]
+$LL.Main.dev2 $x $x1 sto0 =
+      $LL.Main.dev $x $x1 sto0
+
+$LL.Main.dev1 : ([8], [8]) -> [25]
+$LL.Main.dev1 $x sto0 =
+      $LL.Main.dev5 $x sto0
+
+$LL.Main.dev : ([8], [8], [8]) -> [25]
+$LL.Main.dev k i sto0 =
+      $LL.Main.dev1 k i
 
 device top_level
       input __in0 : [8]
       output __out0 : [8]
-      register __resumption_tag : [9] init 9'h100
+      register __resumption_tag : [9] init 9'h0
       register __st0 : [8] init 8'h0
       let $res = $Pure.dispatch (__resumption_tag # __st0) __in0
       __out0 := $res[17 +: 8]

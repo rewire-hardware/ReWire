@@ -22,819 +22,152 @@ $Pure.dispatch : ([39], [33]) -> [73]
 $Pure.dispatch disc i =
       Main.repl1 i disc
 
-$LL.OD19.ProgramCounter.incPC126 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC126 $0 $230 =
-      if eq $230 7'h17 then 7'h18
-            else $LL.OD19.ProgramCounter.incPC67 $0 $0
-
-$LL.Main.repl20 : ([7], [32], [7], [39]) -> [73]
-$LL.Main.repl20 pc w32 $42 sto0 =
-      if eq $42 7'h3 then (let $t1 = (let $t0 = Main.getReg sto0 in
-            let v = $t0[39 +: 32] in
-            let s0 = $t0[0 +: 39] in
-            2'h0 # v # s0) in
-            let v = $t1[39 +: 32] in
-            let s0 = $t1[0 +: 39] in
-            $LL.Main.repl4 w32 v s0)
-            else $LL.Main.repl5 pc w32 pc sto0
-
-$LL.OD19.ProgramCounter.incPC125 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC125 $0 $204 =
-      if eq $204 7'h31 then 7'h32
-            else $LL.OD19.ProgramCounter.incPC119 $0 $0
-
-$LL.OD19.ProgramCounter.incPC124 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC124 $0 $241 =
-      if eq $241 7'hc then 7'hd
-            else $LL.OD19.ProgramCounter.incPC18 $0 $0
-
-$LL.OD19.ProgramCounter.incPC123 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC123 $0 $142 =
-      if eq $142 7'h6f then 7'h70
-            else $LL.OD19.ProgramCounter.incPC82 $0 $0
-
-$LL.OD19.ProgramCounter.incPC122 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC122 $0 $150 =
-      if eq $150 7'h67 then 7'h68
-            else $LL.OD19.ProgramCounter.incPC19 $0 $0
-
-$LL.OD19.ProgramCounter.incPC121 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC121 $0 $156 =
-      if eq $156 7'h61 then 7'h62
-            else $LL.OD19.ProgramCounter.incPC93 $0 $0
+$LL.Main.repl13 : ([39]) -> [73]
+$LL.Main.repl13 sto0 =
+      let $t1 = (let $t0 = Main.nextPC sto0 in
+      34'h100000000 # $t0) in
+      let s0 = $t1[0 +: 39] in
+      $LL.Main.repl10 s0
 
 Main.repl1 : ([33], [39]) -> [73]
-Main.repl1 $5 sto0 =
-      $LL.Main.repl12 $5 $5 sto0
+Main.repl1 $x sto0 =
+      $LL.Main.repl5 $x sto0
 
-$LL.OD19.ProgramCounter.incPC120 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC120 $0 $206 =
-      if eq $206 7'h2f then 7'h30
-            else $LL.OD19.ProgramCounter.incPC85 $0 $0
-
-$LL.OD19.ProgramCounter.incPC119 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC119 $0 $203 =
-      if eq $203 7'h32 then 7'h33
-            else $LL.OD19.ProgramCounter.incPC61 $0 $0
-
-$LL.OD19.ProgramCounter.incPC118 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC118 $0 $245 =
-      if eq $245 7'h8 then 7'h9
-            else $LL.OD19.ProgramCounter.incPC71 $0 $0
-
-$LL.Main.repl19 : ([39]) -> [73]
-$LL.Main.repl19 sto0 =
-      34'h200000002 # sto0
-
-$LL.OD19.ProgramCounter.incPC117 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC117 $0 $212 =
-      if eq $212 7'h29 then 7'h2a
-            else $LL.OD19.ProgramCounter.incPC22 $0 $0
-
-$LL.OD19.ProgramCounter.incPC116 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC116 $0 $192 =
-      if eq $192 7'h3d then 7'h3e
-            else $LL.OD19.ProgramCounter.incPC86 $0 $0
+$LL.Main.repl12 : ([32], [7], [39]) -> [73]
+$LL.Main.repl12 w32 wild sto0 =
+      if eq wild 7'h0 then (let $t15 = (let $t14 = Main.putReg w32 sto0 in
+            34'h100000000 # $t14) in
+            let s0 = $t15[0 +: 39] in
+            $LL.Main.repl13 s0)
+            else if eq wild 7'h1 then (let $t13 = (let $t12 = Main.getReg sto0 in
+            let v = $t12[39 +: 32] in
+            let s0 = $t12[0 +: 39] in
+            2'h0 # v # s0) in
+            let v = $t13[39 +: 32] in
+            let s0 = $t13[0 +: 39] in
+            $LL.Main.repl8 w32 v s0) else if eq wild 7'h2 then (let $t11 = (let $t10 = Main.putReg w32 sto0 in
+            34'h100000000 # $t10) in
+            let s0 = $t11[0 +: 39] in
+            $LL.Main.repl13 s0) else if eq wild 7'h3 then (let $t9 = (let $t8 = Main.getReg sto0 in
+            let v = $t8[39 +: 32] in
+            let s0 = $t8[0 +: 39] in
+            2'h0 # v # s0) in
+            let v = $t9[39 +: 32] in
+            let s0 = $t9[0 +: 39] in
+            $LL.Main.repl8 w32 v s0) else if eq wild 7'h4 then (let $t7 = (let $t6 = Main.getReg sto0 in
+            let v = $t6[39 +: 32] in
+            let s0 = $t6[0 +: 39] in
+            2'h0 # v # s0) in
+            let v = $t7[39 +: 32] in
+            let s0 = $t7[0 +: 39] in
+            $LL.Main.repl4 w32 v s0) else if eq wild 7'h5 then (let $t5 = (let $t4 = Main.getReg sto0 in
+            let v = $t4[39 +: 32] in
+            let s0 = $t4[0 +: 39] in
+            2'h0 # v # s0) in
+            let v = $t5[39 +: 32] in
+            let s0 = $t5[0 +: 39] in
+            $LL.Main.repl9 w32 v s0) else if eq wild 7'h6 then (let $t3 = (let $t2 = Main.getReg sto0 in
+            let v = $t2[39 +: 32] in
+            let s0 = $t2[0 +: 39] in
+            2'h0 # v # s0) in
+            let v = $t3[39 +: 32] in
+            let s0 = $t3[0 +: 39] in
+            $LL.Main.repl7 w32 v s0) else let $t1 = (let $t0 = Main.nextPC sto0 in
+            34'h100000000 # $t0) in
+            let s0 = $t1[0 +: 39] in
+            $LL.Main.repl10 s0
 
 OD19.ProgramCounter.incPC : ([7]) -> [7]
-OD19.ProgramCounter.incPC $0 =
-      $LL.OD19.ProgramCounter.incPC83 $0 $0
-
-$LL.Main.putReg2 : ([32], [39], [39]) -> [39]
-$LL.Main.putReg2 w32 $28 sigma0 =
-      let pc = $28[0 +: 7] in
-      w32 # pc
-
-$LL.OD19.ProgramCounter.incPC115 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC115 $0 $158 =
-      if eq $158 7'h5f then 7'h60
-            else $LL.OD19.ProgramCounter.incPC112 $0 $0
+OD19.ProgramCounter.incPC $x =
+      $LL.OD19.ProgramCounter.incPC $x
 
 Main.test2 : ([32], [32]) -> [1]
 Main.test2 $x $x1 =
       test2 $x $x1
 
-$LL.OD19.ProgramCounter.incPC114 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC114 $0 $252 =
-      if eq $252 7'h1 then 7'h2
-            else $LL.OD19.ProgramCounter.incPC87 $0 $0
-
 Main.test1 : ([32], [32]) -> [1]
 Main.test1 $x $x1 =
       test1 $x $x1
 
-$LL.OD19.ProgramCounter.incPC113 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC113 $0 $164 =
-      if eq $164 7'h59 then 7'h5a
-            else $LL.OD19.ProgramCounter.incPC78 $0 $0
-
-$LL.OD19.ProgramCounter.incPC112 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC112 $0 $157 =
-      if eq $157 7'h60 then 7'h61
-            else $LL.OD19.ProgramCounter.incPC121 $0 $0
-
-$LL.OD19.ProgramCounter.incPC111 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC111 $0 $170 =
-      if eq $170 7'h53 then 7'h54
-            else $LL.OD19.ProgramCounter.incPC46 $0 $0
-
-$LL.OD19.ProgramCounter.incPC110 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC110 $0 $188 =
-      if eq $188 7'h41 then 7'h42
-            else $LL.OD19.ProgramCounter.incPC89 $0 $0
-
-$LL.OD19.ProgramCounter.incPC109 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC109 $0 $190 =
-      if eq $190 7'h3f then 7'h40
-            else $LL.OD19.ProgramCounter.incPC47 $0 $0
-
-$LL.OD19.ProgramCounter.incPC108 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC108 $0 $130 =
-      if eq $130 7'h7b then 7'h7c
-            else $LL.OD19.ProgramCounter.incPC65 $0 $0
-
-$LL.OD19.ProgramCounter.incPC107 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC107 $0 $174 =
-      if eq $174 7'h4f then 7'h50
-            else $LL.OD19.ProgramCounter.incPC94 $0 $0
-
-$LL.Main.repl18 : ([39]) -> [73]
-$LL.Main.repl18 sto0 =
-      let $t1 = (let $t0 = Main.nextPC sto0 in
-      34'h100000000 # $t0) in
-      let s0 = $t1[0 +: 39] in
-      $LL.Main.repl19 s0
-
-$LL.Main.repl17 : ([7], [32], [7], [39]) -> [73]
-$LL.Main.repl17 pc w32 $45 sto0 =
-      if eq $45 7'h0 then (let $t1 = (let $t0 = Main.putReg w32 sto0 in
-            34'h100000000 # $t0) in
-            let s0 = $t1[0 +: 39] in
-            $LL.Main.repl18 s0)
-            else $LL.Main.repl3 pc w32 pc sto0
-
-$LL.OD19.ProgramCounter.incPC106 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC106 $0 $140 =
-      if eq $140 7'h71 then 7'h72
-            else $LL.OD19.ProgramCounter.incPC59 $0 $0
-
-$LL.OD19.ProgramCounter.incPC105 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC105 $0 $151 =
-      if eq $151 7'h66 then 7'h67
-            else $LL.OD19.ProgramCounter.incPC122 $0 $0
-
-$LL.OD19.ProgramCounter.incPC104 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC104 $0 $207 =
-      if eq $207 7'h2e then 7'h2f
-            else $LL.OD19.ProgramCounter.incPC120 $0 $0
-
-$LL.Main.repl16 : ([33], [39]) -> [73]
-$LL.Main.repl16 $47 sto0 =
+$LL.Main.repl10 : ([39]) -> [73]
+$LL.Main.repl10 sto0 =
       34'h200000002 # sto0
 
 Main.getReg : ([39]) -> [71]
 Main.getReg sigma0 =
       $LL.Main.getReg sigma0 sigma0
 
-$LL.OD19.ProgramCounter.incPC103 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC103 $0 $214 =
-      if eq $214 7'h27 then 7'h28
-            else $LL.OD19.ProgramCounter.incPC36 $0 $0
-
-$LL.OD19.ProgramCounter.incPC102 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC102 $0 $249 =
-      if eq $249 7'h4 then 7'h5
-            else $LL.OD19.ProgramCounter.incPC72 $0 $0
-
-$LL.OD19.ProgramCounter.incPC101 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC101 $0 $220 =
-      if eq $220 7'h21 then 7'h22
-            else $LL.OD19.ProgramCounter.incPC37 $0 $0
-
-$LL.OD19.ProgramCounter.incPC100 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC100 $0 $145 =
-      if eq $145 7'h6c then 7'h6d
-            else $LL.OD19.ProgramCounter.incPC2 $0 $0
-
-$LL.OD19.ProgramCounter.incPC99 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC99 $0 $183 =
-      if eq $183 7'h46 then 7'h47
-            else $LL.OD19.ProgramCounter.incPC48 $0 $0
-
-$LL.OD19.ProgramCounter.incPC98 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC98 $0 $178 =
-      if eq $178 7'h4b then 7'h4c
-            else $LL.OD19.ProgramCounter.incPC17 $0 $0
-
-$LL.OD19.ProgramCounter.incPC97 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC97 $0 $232 =
-      if eq $232 7'h15 then 7'h16
-            else $LL.OD19.ProgramCounter.incPC51 $0 $0
-
-$LL.OD19.ProgramCounter.incPC96 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC96 $0 $227 =
-      if eq $227 7'h1a then 7'h1b
-            else $LL.OD19.ProgramCounter.incPC52 $0 $0
-
-$LL.Main.repl15 : ([32], [32], [39]) -> [73]
-$LL.Main.repl15 w32 r sto0 =
-      33'h100000000 # Main.test2 w32 r # sto0
-
-$LL.OD19.ProgramCounter.incPC95 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC95 $0 $242 =
-      if eq $242 7'hb then 7'hc
-            else $LL.OD19.ProgramCounter.incPC124 $0 $0
-
-$LL.OD19.ProgramCounter.incPC94 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC94 $0 $173 =
-      if eq $173 7'h50 then 7'h51
-            else $LL.OD19.ProgramCounter.incPC69 $0 $0
-
-$LL.OD19.ProgramCounter.incPC93 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC93 $0 $155 =
-      if eq $155 7'h62 then 7'h63
-            else $LL.OD19.ProgramCounter.incPC34 $0 $0
-
-$LL.OD19.ProgramCounter.incPC92 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC92 $0 $160 =
-      if eq $160 7'h5d then 7'h5e
-            else $LL.OD19.ProgramCounter.incPC81 $0 $0
-
-$LL.OD19.ProgramCounter.incPC91 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC91 $0 $132 =
-      if eq $132 7'h79 then 7'h7a
-            else $LL.OD19.ProgramCounter.incPC39 $0 $0
-
-$LL.OD19.ProgramCounter.incPC90 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC90 $0 $161 =
-      if eq $161 7'h5c then 7'h5d
-            else $LL.OD19.ProgramCounter.incPC92 $0 $0
-
-$LL.OD19.ProgramCounter.incPC89 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC89 $0 $187 =
-      if eq $187 7'h42 then 7'h43
-            else $LL.OD19.ProgramCounter.incPC33 $0 $0
-
-$LL.OD19.ProgramCounter.incPC88 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC88 $0 $195 =
-      if eq $195 7'h3a then 7'h3b
-            else $LL.OD19.ProgramCounter.incPC64 $0 $0
-
-$LL.Main.repl14 : ([32], [7], [39]) -> [73]
-$LL.Main.repl14 w32 $39 sto0 =
-      if eq $39 7'h6 then (let $t3 = (let $t2 = Main.getReg sto0 in
-            let v = $t2[39 +: 32] in
-            let s0 = $t2[0 +: 39] in
-            2'h0 # v # s0) in
-            let v = $t3[39 +: 32] in
-            let s0 = $t3[0 +: 39] in
-            $LL.Main.repl8 w32 v s0)
-            else let $t1 = (let $t0 = Main.nextPC sto0 in
-            34'h100000000 # $t0) in
-            let s0 = $t1[0 +: 39] in
-            $LL.Main.repl19 s0
-
-$LL.Main.getReg : ([39], [39]) -> [71]
-$LL.Main.getReg $32 sigma0 =
-      let r = $32[7 +: 32] in
-      r # sigma0
-
-$LL.OD19.ProgramCounter.incPC87 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC87 $0 $251 =
-      if eq $251 7'h2 then 7'h3
-            else $LL.OD19.ProgramCounter.incPC14 $0 $0
-
-$LL.OD19.ProgramCounter.incPC86 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC86 $0 $191 =
-      if eq $191 7'h3e then 7'h3f
-            else $LL.OD19.ProgramCounter.incPC109 $0 $0
-
-$LL.OD19.ProgramCounter.incPC85 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC85 $0 $205 =
-      if eq $205 7'h30 then 7'h31
-            else $LL.OD19.ProgramCounter.incPC125 $0 $0
-
-$LL.OD19.ProgramCounter.incPC84 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC84 $0 $147 =
-      if eq $147 7'h6a then 7'h6b
-            else $LL.OD19.ProgramCounter.incPC40 $0 $0
-
-$LL.OD19.ProgramCounter.incPC83 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC83 $0 $253 =
-      if eq $253 7'h0 then 7'h1
-            else $LL.OD19.ProgramCounter.incPC114 $0 $0
-
-$LL.OD19.ProgramCounter.incPC82 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC82 $0 $141 =
-      if eq $141 7'h70 then 7'h71
-            else $LL.OD19.ProgramCounter.incPC106 $0 $0
-
-$LL.OD19.ProgramCounter.incPC81 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC81 $0 $159 =
-      if eq $159 7'h5e then 7'h5f
-            else $LL.OD19.ProgramCounter.incPC115 $0 $0
-
-$LL.OD19.ProgramCounter.incPC80 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC80 $0 $138 =
-      if eq $138 7'h73 then 7'h74
-            else $LL.OD19.ProgramCounter.incPC74 $0 $0
-
-$LL.OD19.ProgramCounter.incPC79 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC79 $0 $162 =
-      if eq $162 7'h5b then 7'h5c
-            else $LL.OD19.ProgramCounter.incPC90 $0 $0
-
-$LL.Main.repl13 : ([7], [32], [7], [39]) -> [73]
-$LL.Main.repl13 pc w32 $40 sto0 =
-      if eq $40 7'h5 then (let $t1 = (let $t0 = Main.getReg sto0 in
-            let v = $t0[39 +: 32] in
-            let s0 = $t0[0 +: 39] in
-            2'h0 # v # s0) in
-            let v = $t1[39 +: 32] in
-            let s0 = $t1[0 +: 39] in
-            $LL.Main.repl10 w32 v s0)
-            else $LL.Main.repl14 w32 pc sto0
-
-$LL.OD19.ProgramCounter.incPC78 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC78 $0 $163 =
-      if eq $163 7'h5a then 7'h5b
-            else $LL.OD19.ProgramCounter.incPC79 $0 $0
-
-$LL.Main.repl12 : ([33], [33], [39]) -> [73]
-$LL.Main.repl12 $5 $48 sto0 =
-      if eq $48[32 +: 1] 1'h0 then (let w32 = $48[0 +: 32] in
-            $LL.Main.repl11 w32 sto0 sto0)
-            else $LL.Main.repl16 $5 sto0
-
-$LL.OD19.ProgramCounter.incPC77 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC77 $0 $135 =
-      if eq $135 7'h76 then 7'h77
-            else $LL.OD19.ProgramCounter.incPC1 $0 $0
-
-$LL.OD19.ProgramCounter.incPC76 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC76 $0 $210 =
-      if eq $210 7'h2b then 7'h2c
-            else $LL.OD19.ProgramCounter.incPC $0 $0
-
-Main.putReg : ([32], [39]) -> [39]
-Main.putReg $x sigma0 =
-      $LL.Main.putReg $x sigma0
-
-$LL.OD19.ProgramCounter.incPC75 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC75 $0 $143 =
-      if eq $143 7'h6e then 7'h6f
-            else $LL.OD19.ProgramCounter.incPC123 $0 $0
-
-$LL.OD19.ProgramCounter.incPC74 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC74 $0 $137 =
-      if eq $137 7'h74 then 7'h75
-            else $LL.OD19.ProgramCounter.incPC7 $0 $0
-
-$LL.OD19.ProgramCounter.incPC73 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC73 $0 $199 =
-      if eq $199 7'h36 then 7'h37
-            else $LL.OD19.ProgramCounter.incPC6 $0 $0
-
-$LL.OD19.ProgramCounter.incPC72 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC72 $0 $248 =
-      if eq $248 7'h5 then 7'h6
-            else $LL.OD19.ProgramCounter.incPC10 $0 $0
-
-$LL.OD19.ProgramCounter.incPC71 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC71 $0 $244 =
-      if eq $244 7'h9 then 7'ha
-            else $LL.OD19.ProgramCounter.incPC57 $0 $0
-
-$LL.OD19.ProgramCounter.incPC70 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC70 $0 $181 =
-      if eq $181 7'h48 then 7'h49
-            else $LL.OD19.ProgramCounter.incPC8 $0 $0
-
-$LL.OD19.ProgramCounter.incPC69 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC69 $0 $172 =
-      if eq $172 7'h51 then 7'h52
-            else $LL.OD19.ProgramCounter.incPC45 $0 $0
-
-$LL.OD19.ProgramCounter.incPC68 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC68 $0 $153 =
-      if eq $153 7'h64 then 7'h65
-            else $LL.OD19.ProgramCounter.incPC4 $0 $0
-
-$LL.OD19.ProgramCounter.incPC67 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC67 $0 $229 =
-      if eq $229 7'h18 then 7'h19
-            else $LL.OD19.ProgramCounter.incPC60 $0 $0
-
-$LL.OD19.ProgramCounter.incPC66 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC66 $0 $234 =
-      if eq $234 7'h13 then 7'h14
-            else $LL.OD19.ProgramCounter.incPC23 $0 $0
-
-$LL.OD19.ProgramCounter.incPC65 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC65 $0 $129 =
-      if eq $129 7'h7c then 7'h7d
-            else $LL.OD19.ProgramCounter.incPC63 $0 $0
-
-$LL.OD19.ProgramCounter.incPC64 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC64 $0 $194 =
-      if eq $194 7'h3b then 7'h3c
-            else $LL.OD19.ProgramCounter.incPC41 $0 $0
-
-$LL.Main.repl11 : ([32], [39], [39]) -> [73]
-$LL.Main.repl11 $x $x1 sto0 =
-      $LL.Main.repl9 $x $x1 sto0
-
-$LL.OD19.ProgramCounter.incPC63 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC63 $0 $128 =
-      if eq $128 7'h7d then 7'h7e
-            else $LL.OD19.ProgramCounter.incPC26 $0
-
-$LL.OD19.ProgramCounter.incPC62 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC62 $0 $196 =
-      if eq $196 7'h39 then 7'h3a
-            else $LL.OD19.ProgramCounter.incPC88 $0 $0
-
-$LL.Main.repl10 : ([32], [32], [39]) -> [73]
-$LL.Main.repl10 w32 r sto0 =
+$LL.Main.repl9 : ([32], [32], [39]) -> [73]
+$LL.Main.repl9 w32 r sto0 =
       33'h100000000 # Main.test3 w32 r # sto0
 
-$LL.Main.repl9 : ([32], [39], [39]) -> [73]
-$LL.Main.repl9 w32 $46 sto0 =
-      let pc = $46[0 +: 7] in
-      $LL.Main.repl17 pc w32 pc sto0
+$LL.Main.getReg : ([39], [39]) -> [71]
+$LL.Main.getReg ds sigma0 =
+      let r = ds[7 +: 32] in
+      r # sigma0
 
-$LL.OD19.ProgramCounter.incPC61 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC61 $0 $202 =
-      if eq $202 7'h33 then 7'h34
-            else $LL.OD19.ProgramCounter.incPC54 $0 $0
-
-$LL.OD19.ProgramCounter.incPC60 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC60 $0 $228 =
-      if eq $228 7'h19 then 7'h1a
-            else $LL.OD19.ProgramCounter.incPC96 $0 $0
+$LL.Main.nextPC : ([39], [39]) -> [39]
+$LL.Main.nextPC ds sigma0 =
+      let r = ds[7 +: 32] in
+      let pc = ds[0 +: 7] in
+      r # OD19.ProgramCounter.incPC pc
 
 $LL.Main.repl8 : ([32], [32], [39]) -> [73]
 $LL.Main.repl8 w32 r sto0 =
+      33'h100000000 # Main.test1 w32 r # sto0
+
+$LL.Main.repl7 : ([32], [32], [39]) -> [73]
+$LL.Main.repl7 w32 r sto0 =
       33'h100000000 # Main.test4 w32 r # sto0
 
-$LL.OD19.ProgramCounter.incPC59 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC59 $0 $139 =
-      if eq $139 7'h72 then 7'h73
-            else $LL.OD19.ProgramCounter.incPC80 $0 $0
+Main.putReg : ([32], [39]) -> [39]
+Main.putReg w32 sigma0 =
+      $LL.Main.putReg1 w32 sigma0 sigma0
 
-$LL.OD19.ProgramCounter.incPC58 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC58 $0 $208 =
-      if eq $208 7'h2d then 7'h2e
-            else $LL.OD19.ProgramCounter.incPC104 $0 $0
+$LL.Main.putReg1 : ([32], [39], [39]) -> [39]
+$LL.Main.putReg1 $x $x1 sigma0 =
+      $LL.Main.putReg $x $x1 sigma0
 
-$LL.OD19.ProgramCounter.incPC57 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC57 $0 $243 =
-      if eq $243 7'ha then 7'hb
-            else $LL.OD19.ProgramCounter.incPC95 $0 $0
-
-$LL.OD19.ProgramCounter.incPC56 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC56 $0 $168 =
-      if eq $168 7'h55 then 7'h56
-            else $LL.OD19.ProgramCounter.incPC28 $0 $0
-
-$LL.OD19.ProgramCounter.incPC55 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC55 $0 $185 =
-      if eq $185 7'h44 then 7'h45
-            else $LL.OD19.ProgramCounter.incPC13 $0 $0
-
-$LL.OD19.ProgramCounter.incPC54 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC54 $0 $201 =
-      if eq $201 7'h34 then 7'h35
-            else $LL.OD19.ProgramCounter.incPC30 $0 $0
-
-$LL.OD19.ProgramCounter.incPC53 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC53 $0 $246 =
-      if eq $246 7'h7 then 7'h8
-            else $LL.OD19.ProgramCounter.incPC118 $0 $0
-
-$LL.OD19.ProgramCounter.incPC52 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC52 $0 $226 =
-      if eq $226 7'h1b then 7'h1c
-            else $LL.OD19.ProgramCounter.incPC32 $0 $0
-
-$LL.OD19.ProgramCounter.incPC51 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC51 $0 $231 =
-      if eq $231 7'h16 then 7'h17
-            else $LL.OD19.ProgramCounter.incPC126 $0 $0
-
-$LL.OD19.ProgramCounter.incPC50 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC50 $0 $217 =
-      if eq $217 7'h24 then 7'h25
-            else $LL.OD19.ProgramCounter.incPC9 $0 $0
-
-$LL.OD19.ProgramCounter.incPC49 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC49 $0 $235 =
-      if eq $235 7'h12 then 7'h13
-            else $LL.OD19.ProgramCounter.incPC66 $0 $0
-
-$LL.OD19.ProgramCounter.incPC48 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC48 $0 $182 =
-      if eq $182 7'h47 then 7'h48
-            else $LL.OD19.ProgramCounter.incPC70 $0 $0
-
-$LL.Main.repl6 : ([7], [32], [7], [39]) -> [73]
-$LL.Main.repl6 pc w32 $43 sto0 =
-      if eq $43 7'h2 then (let $t1 = (let $t0 = Main.putReg w32 sto0 in
-            34'h100000000 # $t0) in
-            let s0 = $t1[0 +: 39] in
-            $LL.Main.repl18 s0)
-            else $LL.Main.repl20 pc w32 pc sto0
-
-$LL.OD19.ProgramCounter.incPC47 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC47 $0 $189 =
-      if eq $189 7'h40 then 7'h41
-            else $LL.OD19.ProgramCounter.incPC110 $0 $0
-
-$LL.OD19.ProgramCounter.incPC46 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC46 $0 $169 =
-      if eq $169 7'h54 then 7'h55
-            else $LL.OD19.ProgramCounter.incPC56 $0 $0
-
-$LL.OD19.ProgramCounter.incPC45 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC45 $0 $171 =
-      if eq $171 7'h52 then 7'h53
-            else $LL.OD19.ProgramCounter.incPC111 $0 $0
-
-$LL.OD19.ProgramCounter.incPC44 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC44 $0 $165 =
-      if eq $165 7'h58 then 7'h59
-            else $LL.OD19.ProgramCounter.incPC113 $0 $0
+$LL.Main.repl5 : ([33], [39]) -> [73]
+$LL.Main.repl5 wild sto0 =
+      if eq wild[32 +: 1] 1'h0 then (let w32 = wild[0 +: 32] in
+            $LL.Main.repl1 w32 sto0 sto0)
+            else 34'h200000002 # sto0
 
 Main.test3 : ([32], [32]) -> [1]
 Main.test3 $x $x1 =
       test3 $x $x1
 
-$LL.Main.putReg1 : ([32], [39], [39]) -> [39]
-$LL.Main.putReg1 $x $x1 sigma0 =
-      $LL.Main.putReg2 $x $x1 sigma0
-
-$LL.OD19.ProgramCounter.incPC43 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC43 $0 $218 =
-      if eq $218 7'h23 then 7'h24
-            else $LL.OD19.ProgramCounter.incPC50 $0 $0
-
-$LL.OD19.ProgramCounter.incPC42 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC42 $0 $179 =
-      if eq $179 7'h4a then 7'h4b
-            else $LL.OD19.ProgramCounter.incPC98 $0 $0
-
-$LL.Main.repl5 : ([7], [32], [7], [39]) -> [73]
-$LL.Main.repl5 pc w32 $41 sto0 =
-      if eq $41 7'h4 then (let $t1 = (let $t0 = Main.getReg sto0 in
-            let v = $t0[39 +: 32] in
-            let s0 = $t0[0 +: 39] in
-            2'h0 # v # s0) in
-            let v = $t1[39 +: 32] in
-            let s0 = $t1[0 +: 39] in
-            $LL.Main.repl15 w32 v s0)
-            else $LL.Main.repl13 pc w32 pc sto0
-
-$LL.OD19.ProgramCounter.incPC41 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC41 $0 $193 =
-      if eq $193 7'h3c then 7'h3d
-            else $LL.OD19.ProgramCounter.incPC116 $0 $0
-
-$LL.Main.repl4 : ([32], [32], [39]) -> [73]
-$LL.Main.repl4 w32 r sto0 =
-      33'h100000000 # Main.test1 w32 r # sto0
-
-$LL.Main.repl3 : ([7], [32], [7], [39]) -> [73]
-$LL.Main.repl3 pc w32 $44 sto0 =
-      if eq $44 7'h1 then (let $t1 = (let $t0 = Main.getReg sto0 in
-            let v = $t0[39 +: 32] in
-            let s0 = $t0[0 +: 39] in
-            2'h0 # v # s0) in
-            let v = $t1[39 +: 32] in
-            let s0 = $t1[0 +: 39] in
-            $LL.Main.repl4 w32 v s0)
-            else $LL.Main.repl6 pc w32 pc sto0
-
 Main.nextPC : ([39]) -> [39]
 Main.nextPC sigma0 =
       $LL.Main.nextPC sigma0 sigma0
 
-$LL.OD19.ProgramCounter.incPC40 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC40 $0 $146 =
-      if eq $146 7'h6b then 7'h6c
-            else $LL.OD19.ProgramCounter.incPC100 $0 $0
+$LL.Main.repl4 : ([32], [32], [39]) -> [73]
+$LL.Main.repl4 w32 r sto0 =
+      33'h100000000 # Main.test2 w32 r # sto0
 
-$LL.OD19.ProgramCounter.incPC39 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC39 $0 $131 =
-      if eq $131 7'h7a then 7'h7b
-            else $LL.OD19.ProgramCounter.incPC108 $0 $0
-
-$LL.Main.putReg : ([32], [39]) -> [39]
-$LL.Main.putReg $29 sigma0 =
-      $LL.Main.putReg1 $29 sigma0 sigma0
-
-$LL.OD19.ProgramCounter.incPC38 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC38 $0 $238 =
-      if eq $238 7'hf then 7'h10
-            else $LL.OD19.ProgramCounter.incPC27 $0 $0
-
-$LL.OD19.ProgramCounter.incPC37 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC37 $0 $219 =
-      if eq $219 7'h22 then 7'h23
-            else $LL.OD19.ProgramCounter.incPC43 $0 $0
-
-$LL.OD19.ProgramCounter.incPC36 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC36 $0 $213 =
-      if eq $213 7'h28 then 7'h29
-            else $LL.OD19.ProgramCounter.incPC117 $0 $0
-
-$LL.OD19.ProgramCounter.incPC35 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC35 $0 $236 =
-      if eq $236 7'h11 then 7'h12
-            else $LL.OD19.ProgramCounter.incPC49 $0 $0
-
-$LL.OD19.ProgramCounter.incPC34 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC34 $0 $154 =
-      if eq $154 7'h63 then 7'h64
-            else $LL.OD19.ProgramCounter.incPC68 $0 $0
+$LL.OD19.ProgramCounter.incPC : ([7]) -> [7]
+$LL.OD19.ProgramCounter.incPC wild =
+      if eq wild 7'h0 then 7'h1
+            else if eq wild 7'h1 then 7'h2 else if eq wild 7'h2 then 7'h3 else if eq wild 7'h3 then 7'h4 else if eq wild 7'h4 then 7'h5 else if eq wild 7'h5 then 7'h6 else if eq wild 7'h6 then 7'h7 else if eq wild 7'h7 then 7'h8 else if eq wild 7'h8 then 7'h9 else if eq wild 7'h9 then 7'ha else if eq wild 7'ha then 7'hb else if eq wild 7'hb then 7'hc else if eq wild 7'hc then 7'hd else if eq wild 7'hd then 7'he else if eq wild 7'he then 7'hf else if eq wild 7'hf then 7'h10 else if eq wild 7'h10 then 7'h11 else if eq wild 7'h11 then 7'h12 else if eq wild 7'h12 then 7'h13 else if eq wild 7'h13 then 7'h14 else if eq wild 7'h14 then 7'h15 else if eq wild 7'h15 then 7'h16 else if eq wild 7'h16 then 7'h17 else if eq wild 7'h17 then 7'h18 else if eq wild 7'h18 then 7'h19 else if eq wild 7'h19 then 7'h1a else if eq wild 7'h1a then 7'h1b else if eq wild 7'h1b then 7'h1c else if eq wild 7'h1c then 7'h1d else if eq wild 7'h1d then 7'h1e else if eq wild 7'h1e then 7'h1f else if eq wild 7'h1f then 7'h20 else if eq wild 7'h20 then 7'h21 else if eq wild 7'h21 then 7'h22 else if eq wild 7'h22 then 7'h23 else if eq wild 7'h23 then 7'h24 else if eq wild 7'h24 then 7'h25 else if eq wild 7'h25 then 7'h26 else if eq wild 7'h26 then 7'h27 else if eq wild 7'h27 then 7'h28 else if eq wild 7'h28 then 7'h29 else if eq wild 7'h29 then 7'h2a else if eq wild 7'h2a then 7'h2b else if eq wild 7'h2b then 7'h2c else if eq wild 7'h2c then 7'h2d else if eq wild 7'h2d then 7'h2e else if eq wild 7'h2e then 7'h2f else if eq wild 7'h2f then 7'h30 else if eq wild 7'h30 then 7'h31 else if eq wild 7'h31 then 7'h32 else if eq wild 7'h32 then 7'h33 else if eq wild 7'h33 then 7'h34 else if eq wild 7'h34 then 7'h35 else if eq wild 7'h35 then 7'h36 else if eq wild 7'h36 then 7'h37 else if eq wild 7'h37 then 7'h38 else if eq wild 7'h38 then 7'h39 else if eq wild 7'h39 then 7'h3a else if eq wild 7'h3a then 7'h3b else if eq wild 7'h3b then 7'h3c else if eq wild 7'h3c then 7'h3d else if eq wild 7'h3d then 7'h3e else if eq wild 7'h3e then 7'h3f else if eq wild 7'h3f then 7'h40 else if eq wild 7'h40 then 7'h41 else if eq wild 7'h41 then 7'h42 else if eq wild 7'h42 then 7'h43 else if eq wild 7'h43 then 7'h44 else if eq wild 7'h44 then 7'h45 else if eq wild 7'h45 then 7'h46 else if eq wild 7'h46 then 7'h47 else if eq wild 7'h47 then 7'h48 else if eq wild 7'h48 then 7'h49 else if eq wild 7'h49 then 7'h4a else if eq wild 7'h4a then 7'h4b else if eq wild 7'h4b then 7'h4c else if eq wild 7'h4c then 7'h4d else if eq wild 7'h4d then 7'h4e else if eq wild 7'h4e then 7'h4f else if eq wild 7'h4f then 7'h50 else if eq wild 7'h50 then 7'h51 else if eq wild 7'h51 then 7'h52 else if eq wild 7'h52 then 7'h53 else if eq wild 7'h53 then 7'h54 else if eq wild 7'h54 then 7'h55 else if eq wild 7'h55 then 7'h56 else if eq wild 7'h56 then 7'h57 else if eq wild 7'h57 then 7'h58 else if eq wild 7'h58 then 7'h59 else if eq wild 7'h59 then 7'h5a else if eq wild 7'h5a then 7'h5b else if eq wild 7'h5b then 7'h5c else if eq wild 7'h5c then 7'h5d else if eq wild 7'h5d then 7'h5e else if eq wild 7'h5e then 7'h5f else if eq wild 7'h5f then 7'h60 else if eq wild 7'h60 then 7'h61 else if eq wild 7'h61 then 7'h62 else if eq wild 7'h62 then 7'h63 else if eq wild 7'h63 then 7'h64 else if eq wild 7'h64 then 7'h65 else if eq wild 7'h65 then 7'h66 else if eq wild 7'h66 then 7'h67 else if eq wild 7'h67 then 7'h68 else if eq wild 7'h68 then 7'h69 else if eq wild 7'h69 then 7'h6a else if eq wild 7'h6a then 7'h6b else if eq wild 7'h6b then 7'h6c else if eq wild 7'h6c then 7'h6d else if eq wild 7'h6d then 7'h6e else if eq wild 7'h6e then 7'h6f else if eq wild 7'h6f then 7'h70 else if eq wild 7'h70 then 7'h71 else if eq wild 7'h71 then 7'h72 else if eq wild 7'h72 then 7'h73 else if eq wild 7'h73 then 7'h74 else if eq wild 7'h74 then 7'h75 else if eq wild 7'h75 then 7'h76 else if eq wild 7'h76 then 7'h77 else if eq wild 7'h77 then 7'h78 else if eq wild 7'h78 then 7'h79 else if eq wild 7'h79 then 7'h7a else if eq wild 7'h7a then 7'h7b else if eq wild 7'h7b then 7'h7c else if eq wild 7'h7c then 7'h7d else if eq wild 7'h7d then 7'h7e else 7'h0
 
 Main.test4 : ([32], [32]) -> [1]
 Main.test4 $x $x1 =
       test4 $x $x1
 
-$LL.OD19.ProgramCounter.incPC33 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC33 $0 $186 =
-      if eq $186 7'h43 then 7'h44
-            else $LL.OD19.ProgramCounter.incPC55 $0 $0
+$LL.Main.repl1 : ([32], [39], [39]) -> [73]
+$LL.Main.repl1 $x $x1 sto0 =
+      $LL.Main.repl $x $x1 sto0
 
-$LL.OD19.ProgramCounter.incPC32 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC32 $0 $225 =
-      if eq $225 7'h1c then 7'h1d
-            else $LL.OD19.ProgramCounter.incPC21 $0 $0
+$LL.Main.repl : ([32], [39], [39]) -> [73]
+$LL.Main.repl w32 ds sto0 =
+      let pc = ds[0 +: 7] in
+      $LL.Main.repl12 w32 pc sto0
 
-$LL.OD19.ProgramCounter.incPC31 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC31 $0 $222 =
-      if eq $222 7'h1f then 7'h20
-            else $LL.OD19.ProgramCounter.incPC3 $0 $0
-
-$LL.OD19.ProgramCounter.incPC30 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC30 $0 $200 =
-      if eq $200 7'h35 then 7'h36
-            else $LL.OD19.ProgramCounter.incPC73 $0 $0
-
-$LL.OD19.ProgramCounter.incPC29 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC29 $0 $215 =
-      if eq $215 7'h26 then 7'h27
-            else $LL.OD19.ProgramCounter.incPC103 $0 $0
-
-$LL.OD19.ProgramCounter.incPC28 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC28 $0 $167 =
-      if eq $167 7'h56 then 7'h57
-            else $LL.OD19.ProgramCounter.incPC25 $0 $0
-
-$LL.OD19.ProgramCounter.incPC27 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC27 $0 $237 =
-      if eq $237 7'h10 then 7'h11
-            else $LL.OD19.ProgramCounter.incPC35 $0 $0
-
-$LL.OD19.ProgramCounter.incPC26 : ([7]) -> [7]
-$LL.OD19.ProgramCounter.incPC26 $127 =
-      7'h0
-
-$LL.OD19.ProgramCounter.incPC25 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC25 $0 $166 =
-      if eq $166 7'h57 then 7'h58
-            else $LL.OD19.ProgramCounter.incPC44 $0 $0
-
-$LL.OD19.ProgramCounter.incPC24 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC24 $0 $197 =
-      if eq $197 7'h38 then 7'h39
-            else $LL.OD19.ProgramCounter.incPC62 $0 $0
-
-$LL.OD19.ProgramCounter.incPC23 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC23 $0 $233 =
-      if eq $233 7'h14 then 7'h15
-            else $LL.OD19.ProgramCounter.incPC97 $0 $0
-
-$LL.OD19.ProgramCounter.incPC22 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC22 $0 $211 =
-      if eq $211 7'h2a then 7'h2b
-            else $LL.OD19.ProgramCounter.incPC76 $0 $0
-
-$LL.OD19.ProgramCounter.incPC21 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC21 $0 $224 =
-      if eq $224 7'h1d then 7'h1e
-            else $LL.OD19.ProgramCounter.incPC11 $0 $0
-
-$LL.OD19.ProgramCounter.incPC20 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC20 $0 $175 =
-      if eq $175 7'h4e then 7'h4f
-            else $LL.OD19.ProgramCounter.incPC107 $0 $0
-
-$LL.OD19.ProgramCounter.incPC19 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC19 $0 $149 =
-      if eq $149 7'h68 then 7'h69
-            else $LL.OD19.ProgramCounter.incPC12 $0 $0
-
-$LL.OD19.ProgramCounter.incPC18 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC18 $0 $240 =
-      if eq $240 7'hd then 7'he
-            else $LL.OD19.ProgramCounter.incPC5 $0 $0
-
-$LL.OD19.ProgramCounter.incPC17 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC17 $0 $177 =
-      if eq $177 7'h4c then 7'h4d
-            else $LL.OD19.ProgramCounter.incPC15 $0 $0
-
-$LL.OD19.ProgramCounter.incPC16 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC16 $0 $133 =
-      if eq $133 7'h78 then 7'h79
-            else $LL.OD19.ProgramCounter.incPC91 $0 $0
-
-$LL.OD19.ProgramCounter.incPC15 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC15 $0 $176 =
-      if eq $176 7'h4d then 7'h4e
-            else $LL.OD19.ProgramCounter.incPC20 $0 $0
-
-$LL.OD19.ProgramCounter.incPC14 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC14 $0 $250 =
-      if eq $250 7'h3 then 7'h4
-            else $LL.OD19.ProgramCounter.incPC102 $0 $0
-
-$LL.OD19.ProgramCounter.incPC13 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC13 $0 $184 =
-      if eq $184 7'h45 then 7'h46
-            else $LL.OD19.ProgramCounter.incPC99 $0 $0
-
-$LL.OD19.ProgramCounter.incPC12 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC12 $0 $148 =
-      if eq $148 7'h69 then 7'h6a
-            else $LL.OD19.ProgramCounter.incPC84 $0 $0
-
-$LL.OD19.ProgramCounter.incPC11 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC11 $0 $223 =
-      if eq $223 7'h1e then 7'h1f
-            else $LL.OD19.ProgramCounter.incPC31 $0 $0
-
-$LL.OD19.ProgramCounter.incPC10 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC10 $0 $247 =
-      if eq $247 7'h6 then 7'h7
-            else $LL.OD19.ProgramCounter.incPC53 $0 $0
-
-$LL.OD19.ProgramCounter.incPC9 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC9 $0 $216 =
-      if eq $216 7'h25 then 7'h26
-            else $LL.OD19.ProgramCounter.incPC29 $0 $0
-
-$LL.OD19.ProgramCounter.incPC8 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC8 $0 $180 =
-      if eq $180 7'h49 then 7'h4a
-            else $LL.OD19.ProgramCounter.incPC42 $0 $0
-
-$LL.OD19.ProgramCounter.incPC7 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC7 $0 $136 =
-      if eq $136 7'h75 then 7'h76
-            else $LL.OD19.ProgramCounter.incPC77 $0 $0
-
-$LL.OD19.ProgramCounter.incPC6 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC6 $0 $198 =
-      if eq $198 7'h37 then 7'h38
-            else $LL.OD19.ProgramCounter.incPC24 $0 $0
-
-$LL.OD19.ProgramCounter.incPC5 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC5 $0 $239 =
-      if eq $239 7'he then 7'hf
-            else $LL.OD19.ProgramCounter.incPC38 $0 $0
-
-$LL.Main.nextPC : ([39], [39]) -> [39]
-$LL.Main.nextPC $30 sigma0 =
-      let r = $30[7 +: 32] in
-      let pc = $30[0 +: 7] in
-      r # OD19.ProgramCounter.incPC pc
-
-$LL.OD19.ProgramCounter.incPC4 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC4 $0 $152 =
-      if eq $152 7'h65 then 7'h66
-            else $LL.OD19.ProgramCounter.incPC105 $0 $0
-
-$LL.OD19.ProgramCounter.incPC3 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC3 $0 $221 =
-      if eq $221 7'h20 then 7'h21
-            else $LL.OD19.ProgramCounter.incPC101 $0 $0
-
-$LL.OD19.ProgramCounter.incPC2 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC2 $0 $144 =
-      if eq $144 7'h6d then 7'h6e
-            else $LL.OD19.ProgramCounter.incPC75 $0 $0
-
-$LL.OD19.ProgramCounter.incPC1 : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC1 $0 $134 =
-      if eq $134 7'h77 then 7'h78
-            else $LL.OD19.ProgramCounter.incPC16 $0 $0
-
-$LL.OD19.ProgramCounter.incPC : ([7], [7]) -> [7]
-$LL.OD19.ProgramCounter.incPC $0 $209 =
-      if eq $209 7'h2c then 7'h2d
-            else $LL.OD19.ProgramCounter.incPC58 $0 $0
+$LL.Main.putReg : ([32], [39], [39]) -> [39]
+$LL.Main.putReg w32 ds sigma0 =
+      let pc = ds[0 +: 7] in
+      w32 # pc
 
 device top_level
       input __in0 : [1]

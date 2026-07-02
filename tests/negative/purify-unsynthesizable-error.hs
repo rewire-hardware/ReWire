@@ -1,5 +1,6 @@
 -- EXPECT-ERROR: Encountered unsynthesizable definition
 {-# LANGUAGE DataKinds #-}
+import Prelude hiding (error)
 import ReWire
 import ReWire.Bits
 grunt :: StateT (W 8) Identity ()

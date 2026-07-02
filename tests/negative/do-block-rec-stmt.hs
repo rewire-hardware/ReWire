@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Unsupported syntax in do-block
+-- EXPECT-ERROR: No instance for ‘GHC.Internal.Control.Monad.Fix.MonadFix
 {-# LANGUAGE RecursiveDo #-}
 import ReWire
 import ReWire.Bits

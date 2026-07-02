@@ -51,8 +51,6 @@ compileFile conf filename = do
 
       where load :: (MonadError AstError m, MonadState AstError m, MonadFail m, MonadIO m) => m Program
             load = case conf^.source of
-                  -- (--ghc-frontend, the experimental GHC front end, is
-                  -- handled inside ModCache.getDevice.)
                   Haskell -> loadProgram conf filename
                   RWCore  -> parseHyle filename
                   s       -> failAt noAnn $ "Not a supported source language: " <> pack (show s)

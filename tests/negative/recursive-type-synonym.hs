@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Type synonym expansion not terminating
+-- EXPECT-ERROR: Cycle in type synonym declarations
 {-# LANGUAGE DataKinds #-}
 import ReWire
 import ReWire.Monad (iter, Dev)

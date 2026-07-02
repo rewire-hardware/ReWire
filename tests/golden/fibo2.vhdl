@@ -208,32 +208,33 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \Main_loop\ is
+component \ZLL_Main_loop\ is
       port (arg0 : in std_logic_vector (7 downto 0);
             arg1 : in std_logic_vector (7 downto 0);
-            res : out std_logic_vector (23 downto 0));
+            arg2 : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (24 downto 0));
       end component;
-      signal \__resumption_tag\ : std_logic_vector (15 downto 0) := std_logic_vector'(B"0000000000000001");
-      signal \__resumption_tag_next\ : std_logic_vector (15 downto 0);
+      signal \__resumption_tag\ : std_logic_vector (16 downto 0) := std_logic_vector'(B"00000000000000001");
+      signal \__resumption_tag_next\ : std_logic_vector (16 downto 0);
       signal zi0 : std_logic_vector (7 downto 0);
       signal zi1 : std_logic_vector (7 downto 0);
-      signal main_loop_out : std_logic_vector (23 downto 0);
-      signal conn : std_logic_vector (7 downto 0);
-      signal \main_loop_outR1\ : std_logic_vector (23 downto 0);
-      signal zres : std_logic_vector (23 downto 0);
+      signal zll_main_loop_out : std_logic_vector (24 downto 0);
+      signal zi2 : std_logic_vector (7 downto 0);
+      signal \zll_main_loop_outR1\ : std_logic_vector (24 downto 0);
+      signal zres : std_logic_vector (24 downto 0);
 begin
 zi0 <= \__resumption_tag\(15 downto 8);
       zi1 <= \__resumption_tag\(7 downto 0);
-      inst : \Main_loop\ port map (zi0, zi1, main_loop_out);
-      conn <= rw_add(zi0, zi1);
-      \instR1\ : \Main_loop\ port map (zi1, conn, \main_loop_outR1\);
-      zres <= rw_cond(rw_eq(\__in0\, std_logic_vector'(B"1")), main_loop_out, \main_loop_outR1\);
-      \__resumption_tag_next\ <= zres(15 downto 0);
-      \__out0\ <= zres(23 downto 16);
+      inst : \ZLL_Main_loop\ port map (zi0, zi1, \__in0\, zll_main_loop_out);
+      zi2 <= \__resumption_tag\(7 downto 0);
+      \instR1\ : \ZLL_Main_loop\ port map (zi2, std_logic_vector'(B"00000000"), \__in0\, \zll_main_loop_outR1\);
+      zres <= rw_cond(rw_eq(\__resumption_tag\(16 downto 16), std_logic_vector'(B"1")), zll_main_loop_out, \zll_main_loop_outR1\);
+      \__resumption_tag_next\ <= zres(16 downto 0);
+      \__out0\ <= zres(24 downto 17);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then
-                  \__resumption_tag\ <= std_logic_vector'(B"0000000000000001");
+                  \__resumption_tag\ <= std_logic_vector'(B"00000000000000001");
             elsif rising_edge(clk(0)) then
                   \__resumption_tag\ <= \__resumption_tag_next\;
             end if;
@@ -244,14 +245,41 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \Main_loop\ is
+entity \Main_loop1\ is
 port (arg0 : in std_logic_vector (7 downto 0);
       arg1 : in std_logic_vector (7 downto 0);
-      res : out std_logic_vector (23 downto 0));
+      res : out std_logic_vector (24 downto 0));
 end entity;
 
-architecture rtl of \Main_loop\ is
+architecture rtl of \Main_loop1\ is
 
 begin
-res <= (arg0 & arg0 & arg1);
+res <= (arg0 & std_logic_vector'(B"1") & arg1 & arg0);
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \ZLL_Main_loop\ is
+port (arg0 : in std_logic_vector (7 downto 0);
+      arg1 : in std_logic_vector (7 downto 0);
+      arg2 : in std_logic_vector (0 downto 0);
+      res : out std_logic_vector (24 downto 0));
+end entity;
+
+architecture rtl of \ZLL_Main_loop\ is
+component \Main_loop1\ is
+      port (arg0 : in std_logic_vector (7 downto 0);
+            arg1 : in std_logic_vector (7 downto 0);
+            res : out std_logic_vector (24 downto 0));
+      end component;
+      signal conn : std_logic_vector (7 downto 0);
+      signal main_loop1_out : std_logic_vector (24 downto 0);
+      signal \main_loop1_outR1\ : std_logic_vector (24 downto 0);
+begin
+conn <= rw_add(arg1, arg0);
+      inst : \Main_loop1\ port map (arg0, conn, main_loop1_out);
+      \instR1\ : \Main_loop1\ port map (arg1, arg0, \main_loop1_outR1\);
+      res <= rw_cond(rw_eq(arg2, std_logic_vector'(B"0")), main_loop1_out, \main_loop1_outR1\);
 end architecture;

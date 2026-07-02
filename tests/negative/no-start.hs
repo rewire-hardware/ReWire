@@ -1,4 +1,4 @@
--- EXPECT-ERROR: No definition for start
+-- EXPECT-ERROR: no definition for the start symbol (Main.start)
 import ReWire
 
 notStart :: Bool -> Bool

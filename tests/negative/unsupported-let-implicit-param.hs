@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Unsupported let syntax
+-- EXPECT-ERROR: not in the ReWire vocabulary
 {-# LANGUAGE ImplicitParams #-}
 import ReWire
 import ReWire.Bits

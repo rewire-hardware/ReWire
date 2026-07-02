@@ -4,192 +4,184 @@ $Pure.dispatch disc i =
             let s1 = disc[262 +: 512] in
             let s2 = disc[6 +: 256] in
             let s3 = disc[0 +: 6] in
-            $LL.Main.dev12 i s0 s1 s2 s3)
+            Main.dev i s0 s1 s2 s3)
             else if eq disc[1036 +: 2] 2'h2 then (let store0 = disc[1030 +: 6] in
             let s0 = disc[774 +: 256] in
             let s1 = disc[262 +: 512] in
             let s2 = disc[6 +: 256] in
             let s3 = disc[0 +: 6] in
-            $LL.Main.loop5 store0 i s0 s1 s2 s3) else if eq disc[1036 +: 2] 2'h3 then (let s0 = disc[774 +: 256] in
+            $LL.Main.loop2 store0 i s0 s1 s2 s3) else if eq disc[1036 +: 2] 2'h3 then (let s0 = disc[774 +: 256] in
             let s1 = disc[262 +: 512] in
             let s2 = disc[6 +: 256] in
             let s3 = disc[0 +: 6] in
-            $LL.Main.dev i s0 s1 s2 s3) else let s0 = disc[774 +: 256] in
+            $LL.Main.dev17 i s0 s1 s2 s3) else let s0 = disc[774 +: 256] in
             let s1 = disc[262 +: 512] in
             let s2 = disc[6 +: 256] in
             let s3 = disc[0 +: 6] in
-            Main.dev i s0 s1 s2 s3
-
-$LL.Main.dev21 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev21 hw32 sigma0 sigma1 sigma2 sigma3 =
-      sigma0 # hw32 # sigma2 # sigma3
-
-$LL.Main.step25610 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step25610 c' h' e' f' g' d' t2 t1 $64 =
-      $LL.Main.step2565 c' h' e' $64 f' g' d' (add t1 t2)
+            $LL.Main.dev17 i s0 s1 s2 s3
 
 Main.maj : ([32], [32], [32]) -> [32]
-Main.maj $3 $4 $5 =
-      $LL.Main.maj ($3 # $4 # $5)
+Main.maj x y z =
+      xor (xor (and x y) (and x z)) (and y z)
+
+$LL.Main.dev19 : ([512], [256], [512], [256], [6]) -> [1030]
+$LL.Main.dev19 hw32 sigma0 sigma1 sigma2 sigma3 =
+      sigma0 # hw32 # sigma2 # sigma3
 
 Main.incCtr : ([6]) -> [6]
-Main.incCtr $x =
-      $LL.Main.incCtr $x
-
-$LL.Main.step2569 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2569 a h' b t2 e c d t1 $69 =
-      $LL.Main.step2568 a h' $69 b t2 c d t1 e
-
-$LL.Main.bigsigma112 : ([32]) -> [32]
-$LL.Main.bigsigma112 $53 =
-      xor (xor ($LL.Main.bigsigma1 $53) ($LL.Main.bigsigma12 $53)) ($LL.Main.bigsigma111 $53)
-
-$LL.Main.dev19 : ([512], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev19 hw32 hi_1 sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.dev8 hw32 hi_1 sigma1 sigma2 sigma3
-
-$LL.Main.bigsigma111 : ([32]) -> [32]
-$LL.Main.bigsigma111 $x =
-      $LL.Main.bigsigma110 32'h19 $x
+Main.incCtr c =
+      add c 6'h1
 
 $LL.Main.dev18 : ([512], [256], [512], [256], [6]) -> [1030]
 $LL.Main.dev18 hw32 sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.dev15 hw32 sigma0 sigma1 sigma2 6'h0
+      $LL.Main.dev7 hw32 sigma0 sigma1 sigma2 6'h0
 
-$LL.Main.bigsigma011 : ([32]) -> [32]
-$LL.Main.bigsigma011 $x =
-      $LL.Main.bigsigma110 32'h2 $x
+$LL.Main.dev17 : ([514], [256], [512], [256], [6]) -> [1297]
+$LL.Main.dev17 _unused sto0 sto1 sto2 sto3 =
+      Main.loop sto0 sto1 sto2 sto3
 
-$LL.Main.dev17 : ([512], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev17 $x $x1 sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.dev9 $x $x1 sigma0 sigma1 sigma2 sigma3
+$LL.Main.loop21 : ([6], [256], [512], [256], [6]) -> [1036]
+$LL.Main.loop21 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop19 $x sigma0 sigma1 sigma2 sigma3
 
-$LL.Main.loop24 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop24 $x sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.loop13 $x sigma0 sigma1 sigma2 sigma3
+$LL.Main.dev16 : ([512], [256], [256], [512], [256], [6]) -> [1030]
+$LL.Main.dev16 $x $x1 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev $x $x1 sigma0 sigma1 sigma2 sigma3
 
-$LL.Main.dev16 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev16 sto0 sto1 sto2 sto3 =
-      267'h5000000000000000000000000000000000000000000000000000000000000000040 # sto0 # sto1 # sto2 # sto3
+$LL.Main.dev15 : ([256], [256], [512], [256], [6]) -> [1297]
+$LL.Main.dev15 h_n sto0 sto1 sto2 sto3 =
+      3'h4 # h_n # 8'h40 # sto0 # sto1 # sto2 # sto3
 
-$LL.Main.bigsigma110 : ([32], [32]) -> [32]
-$LL.Main.bigsigma110 $16 $17 =
-      $LL.Main.bigsigma18 ($16 # $17)
+$LL.Main.bigsigma08 : ([32], [32]) -> [32]
+$LL.Main.bigsigma08 eta w =
+      or (lshr w eta) (shl w (sub 32'h20 eta))
 
-$LL.Main.loop23 : ([32], [32], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop23 k w s sigma0 sigma1 sigma2 sigma3 =
-      Main.step256 k w s # sigma1 # sigma2 # sigma3
-
-$LL.Main.loop22 : ([64], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop22 $62 sigma0 sigma1 sigma2 sigma3 =
-      let k = $62[32 +: 32] in
-      let w = $62[0 +: 32] in
-      $LL.Main.loop1 k w sigma0 sigma0 sigma1 sigma2 sigma3
-
-$LL.Main.updateSched1 : ([32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [512]
-$LL.Main.updateSched1 w03 w04 w05 w09 w12 w13 w08 w15 w14 w01 w06 w11 w10 w02 w07 $x =
-      w01 # w02 # w03 # w04 # w05 # w06 # w07 # w08 # w09 # w10 # w11 # w12 # w13 # w14 # w15 # $x
-
-$LL.Main.loop21 : ([6], [514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop21 ctr i sto0 sto1 sto2 sto3 =
-      $LL.Main.loop11 ctr i (eq ctr 6'h3f) sto0 sto1 sto2 sto3
-
-$LL.Main.bigsigma010 : ([32]) -> [32]
-$LL.Main.bigsigma010 $x =
-      $LL.Main.bigsigma110 32'h16 $x
-
-$LL.Main.bigsigma18 : ([64]) -> [32]
-$LL.Main.bigsigma18 $32 =
-      let n = $32[32 +: 32] in
-      let w = $32[0 +: 32] in
-      or (lshr w n) (shl w (sub 32'h20 n))
-
-$LL.Main.loop20 : ([32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop20 $x $x1 sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.loop $x $x1 sigma0 sigma1 sigma2 sigma3
-
-Main.dev : ([514], [256], [512], [256], [6]) -> [1297]
-Main.dev $16 sto0 sto1 sto2 sto3 =
-      $LL.Main.dev13 $16 $16 sto0 sto1 sto2 sto3
-
-$LL.Main.loop19 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop19 ctr sigma0 sigma1 sigma2 sigma3 =
-      let $t0 = $LL.Main.loop7 sigma1 sigma0 sigma1 sigma2 sigma3 in
+$LL.Main.loop20 : ([6], [256], [512], [256], [6]) -> [1036]
+$LL.Main.loop20 ctr sigma0 sigma1 sigma2 sigma3 =
+      let $t0 = $LL.Main.loop15 sigma1 sigma0 sigma1 sigma2 sigma3 in
       let st0 = $t0[1030 +: 32] in
       let st1 = $t0[774 +: 256] in
       let st2 = $t0[262 +: 512] in
       let st3 = $t0[6 +: 256] in
       let st4 = $t0[0 +: 6] in
-      $LL.Main.loop17 ctr st0 st1 st2 st3 st4
+      $LL.Main.loop9 ctr st0 st1 st2 st3 st4
 
-$LL.Main.loop18 : ([256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop18 $57 sigma0 sigma1 sigma2 sigma3 =
-      let h1 = $57[224 +: 32] in
-      let h2 = $57[192 +: 32] in
-      let h3 = $57[160 +: 32] in
-      let h4 = $57[128 +: 32] in
-      let h5 = $57[96 +: 32] in
-      let h6 = $57[64 +: 32] in
-      let h7 = $57[32 +: 32] in
-      let h8 = $57[0 +: 32] in
-      $LL.Main.loop4 h3 h4 h6 h7 h8 h2 h5 h1 sigma0 sigma0 sigma1 sigma2 sigma3
+$LL.Main.loop19 : ([6], [256], [512], [256], [6]) -> [1036]
+$LL.Main.loop19 ctr sigma0 sigma1 sigma2 sigma3 =
+      ctr # sigma0 # sigma1 # sigma2 # sigma3
 
-$LL.Main.loop17 : ([6], [32], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop17 ctr rabind sigma0 sigma1 sigma2 sigma3 =
-      let $t0 = $LL.Main.loop20 (Main.seed ctr) rabind sigma0 sigma1 sigma2 sigma3 in
+$LL.Main.loop18 : ([514], [256], [512], [256], [6]) -> [1297]
+$LL.Main.loop18 $x sto0 sto1 sto2 sto3 =
+      $LL.Main.loop5 $x sto0 sto1 sto2 sto3
+
+$LL.Main.bigsigma17 : ([32]) -> [32]
+$LL.Main.bigsigma17 $x =
+      $LL.Main.bigsigma08 32'hb $x
+
+$LL.Main.loop17 : ([6], [256], [512], [256], [6]) -> [1036]
+$LL.Main.loop17 ctr sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop21 ctr sigma0 sigma1 sigma2 (Main.incCtr ctr)
+
+$LL.Main.loop16 : ([32], [256], [512], [256], [6]) -> [1062]
+$LL.Main.loop16 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop $x sigma0 sigma1 sigma2 sigma3
+
+$LL.Main.dev14 : ([256], [512], [256], [6]) -> [1297]
+$LL.Main.dev14 sto0 sto1 sto2 sto3 =
+      267'h5000000000000000000000000000000000000000000000000000000000000000000 # sto0 # sto1 # sto2 # sto3
+
+$LL.Main.loop15 : ([512], [256], [512], [256], [6]) -> [1062]
+$LL.Main.loop15 s sigma0 sigma1 sigma2 sigma3 =
+      let w00 = s[480 +: 32] in
+      $LL.Main.loop16 w00 sigma0 (Main.updateSched s) sigma2 sigma3
+
+$LL.Main.dev13 : ([512], [256], [512], [256], [6]) -> [1030]
+$LL.Main.dev13 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev18 $x sigma0 sigma1 sigma2 sigma3
+
+$LL.Main.dev12 : ([256], [512], [256], [6]) -> [1297]
+$LL.Main.dev12 sto0 sto1 sto2 sto3 =
+      267'h50000000000000000000000000000000000000000000000000000000000000000c0 # sto0 # sto1 # sto2 # sto3
+
+$LL.Main.loop14 : ([6], [256], [512], [256], [6]) -> [1297]
+$LL.Main.loop14 ctr sto0 sto1 sto2 sto3 =
+      261'h180000000000000000000000000000000000000000000000000000000000000002 # ctr # sto0 # sto1 # sto2 # sto3
+
+$LL.Main.loop13 : ([514], [1], [256], [512], [256], [6]) -> [1297]
+$LL.Main.loop13 i wild sto0 sto1 sto2 sto3 =
+      if eq wild 1'h0 then Main.loop sto0 sto1 sto2 sto3
+            else let $t1 = (let $t0 = $LL.Main.loop8 sto2 sto0 sto1 sto2 sto3 in
+            let s0 = $t0[774 +: 256] in
+            let s1 = $t0[262 +: 512] in
+            let s2 = $t0[6 +: 256] in
+            let s3 = $t0[0 +: 6] in
+            267'h40 # s0 # s1 # s2 # s3) in
+            let s0 = $t1[774 +: 256] in
+            let s1 = $t1[262 +: 512] in
+            let s2 = $t1[6 +: 256] in
+            let s3 = $t1[0 +: 6] in
+            $LL.Main.loop18 i s0 s1 s2 s3
+
+$LL.Main.bigsigma15 : ([32]) -> [32]
+$LL.Main.bigsigma15 $x =
+      $LL.Main.bigsigma08 32'h19 $x
+
+$LL.Main.loop12 : ([32], [32], [256], [512], [256], [6]) -> [1030]
+$LL.Main.loop12 $x $x1 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop6 $x $x1 sigma0 sigma1 sigma2 sigma3
+
+$LL.Main.bigsigma06 : ([32]) -> [32]
+$LL.Main.bigsigma06 $x =
+      $LL.Main.bigsigma08 32'h2 $x
+
+$LL.Main.dev11 : ([512], [256], [512], [256], [6]) -> [1030]
+$LL.Main.dev11 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev3 $x sigma0 sigma1 sigma2 sigma3
+
+Main.dev : ([514], [256], [512], [256], [6]) -> [1297]
+Main.dev $x sto0 sto1 sto2 sto3 =
+      $LL.Main.dev6 $x sto0 sto1 sto2 sto3
+
+$LL.Main.bigsigma13 : ([32]) -> [32]
+$LL.Main.bigsigma13 $x =
+      $LL.Main.bigsigma08 32'h6 $x
+
+Main.sigma0 : ([32]) -> [32]
+Main.sigma0 x =
+      xor (xor ($LL.Main.sigma03 x) ($LL.Main.sigma02 x)) (lshr x 32'h3)
+
+Main.seed : ([6]) -> [32]
+Main.seed c =
+      trunc 32 (lshr 2048'h428a2f9871374491b5c0fbcfe9b5dba53956c25b59f111f1923f82a4ab1c5ed5d807aa9812835b01243185be550c7dc372be5d7480deb1fe9bdc06a7c19bf174e49b69c1efbe47860fc19dc6240ca1cc2de92c6f4a7484aa5cb0a9dc76f988da983e5152a831c66db00327c8bf597fc7c6e00bf3d5a7914706ca63511429296727b70a852e1b21384d2c6dfc53380d13650a7354766a0abb81c2c92e92722c85a2bfe8a1a81a664bc24b8b70c76c51a3d192e819d6990624f40e3585106aa07019a4c1161e376c082748774c34b0bcb5391c0cb34ed8aa4a5b9cca4f682e6ff3748f82ee78a5636f84c878148cc7020890befffaa4506cebbef9a3f7c67178f2 (mul (sub (sub 128'h40 (zext 128 c)) 128'h1) 128'h20))
+
+$LL.Main.dev10 : ([512], [256], [512], [256], [6]) -> [1030]
+$LL.Main.dev10 hw32 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev11 hw32 sigma0 sigma1 sigma2 6'h0
+
+$LL.Main.loop11 : ([6], [514], [256], [512], [256], [6]) -> [1297]
+$LL.Main.loop11 ctr i sto0 sto1 sto2 sto3 =
+      $LL.Main.loop13 i (eq ctr 6'h3f) sto0 sto1 sto2 sto3
+
+$LL.Main.loop10 : ([32], [32], [32], [32], [32], [32], [32], [32], [256], [256], [512], [256], [6]) -> [1030]
+$LL.Main.loop10 h2 h6 h1 h8 h5 h3 h4 h7 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop7 h2 h4 h5 h8 h3 h7 h6 h1 $x sigma0 sigma1 sigma2 sigma3
+
+$LL.Main.sigma03 : ([32]) -> [32]
+$LL.Main.sigma03 $x =
+      $LL.Main.bigsigma08 32'h7 $x
+
+$LL.Main.loop9 : ([6], [32], [256], [512], [256], [6]) -> [1036]
+$LL.Main.loop9 ctr rabind sigma0 sigma1 sigma2 sigma3 =
+      let $t0 = $LL.Main.loop12 (Main.seed ctr) rabind sigma0 sigma1 sigma2 sigma3 in
       let st1 = $t0[774 +: 256] in
       let st2 = $t0[262 +: 512] in
       let st3 = $t0[6 +: 256] in
       let st4 = $t0[0 +: 6] in
-      $LL.Main.loop2 ctr st1 st2 st3 st4
-
-$LL.Main.loop16 : ([1], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop16 $89 sto0 sto1 sto2 sto3 =
-      Main.loop sto0 sto1 sto2 sto3
-
-$LL.Main.ch : ([96]) -> [32]
-$LL.Main.ch $50 =
-      let x = $50[64 +: 32] in
-      let y = $50[32 +: 32] in
-      let z = $50[0 +: 32] in
-      xor (and x y) (and (not x) z)
-
-$LL.Main.loop15 : ([512], [512], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop15 s $59 sigma0 sigma1 sigma2 sigma3 =
-      let w00 = $59[480 +: 32] in
-      $LL.Main.loop10 w00 sigma0 (Main.updateSched s) sigma2 sigma3
-
-$LL.Main.sigma07 : ([32]) -> [32]
-$LL.Main.sigma07 $54 =
-      xor (xor ($LL.Main.sigma04 $54) ($LL.Main.sigma0 $54)) (lshr $54 32'h3)
-
-$LL.Main.step2568 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2568 a h' g' b t2 c d t1 $68 =
-      $LL.Main.step2561 a h' $68 g' b t2 c t1 (add d t1)
-
-Main.sigma0 : ([32]) -> [32]
-Main.sigma0 $x =
-      $LL.Main.sigma07 $x
-
-Main.seed : ([6]) -> [32]
-Main.seed $x =
-      $LL.Main.seed $x
-
-$LL.Main.step2567 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2567 a h' e' f' g' d' t2 t1 $65 =
-      $LL.Main.step25610 $65 h' e' f' g' d' t2 t1 a
-
-$LL.Main.loop14 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop14 $x sto0 sto1 sto2 sto3 =
-      $LL.Main.loop6 $x sto0 sto1 sto2 sto3
-
-$LL.Main.dev15 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev15 $x sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.dev21 $x sigma0 sigma1 sigma2 sigma3
+      $LL.Main.loop1 ctr st1 st2 st3 st4
 
 Main.loop : ([256], [512], [256], [6]) -> [1297]
 Main.loop sto0 sto1 sto2 sto3 =
-      let $t1 = (let $t0 = $LL.Main.loop19 sto3 sto0 sto1 sto2 sto3 in
+      let $t1 = (let $t0 = $LL.Main.loop20 sto3 sto0 sto1 sto2 sto3 in
       let v = $t0[1030 +: 6] in
       let s0 = $t0[774 +: 256] in
       let s1 = $t0[262 +: 512] in
@@ -201,300 +193,187 @@ Main.loop sto0 sto1 sto2 sto3 =
       let s1 = $t1[262 +: 512] in
       let s2 = $t1[6 +: 256] in
       let s3 = $t1[0 +: 6] in
-      $LL.Main.loop8 v s0 s1 s2 s3
+      $LL.Main.loop14 v s0 s1 s2 s3
 
-$LL.Main.step2566 : ([320]) -> [256]
-$LL.Main.step2566 $73 =
-      let k = $73[288 +: 32] in
-      let w = $73[256 +: 32] in
-      let a = $73[224 +: 32] in
-      let b = $73[192 +: 32] in
-      let c = $73[160 +: 32] in
-      let d = $73[128 +: 32] in
-      let e = $73[96 +: 32] in
-      let f = $73[64 +: 32] in
-      let g = $73[32 +: 32] in
-      let h = $73[0 +: 32] in
-      $LL.Main.step2563 a f g b e c d (add h (add (add (Main.bigsigma1 e) (Main.ch e f g)) (add k w)))
-
-$LL.Main.sigma16 : ([32]) -> [32]
-$LL.Main.sigma16 $x =
-      $LL.Main.bigsigma110 32'h13 $x
-
-$LL.Main.step2565 : ([32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2565 c' h' e' b' f' g' d' $63 =
-      $63 # b' # c' # d' # e' # f' # g' # h'
+$LL.Main.dev9 : ([512], [256], [512], [256], [6]) -> [1030]
+$LL.Main.dev9 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev10 $x sigma0 sigma1 sigma2 sigma3
 
 Main.bigsigma1 : ([32]) -> [32]
-Main.bigsigma1 $x =
-      $LL.Main.bigsigma112 $x
+Main.bigsigma1 x =
+      xor (xor ($LL.Main.bigsigma13 x) ($LL.Main.bigsigma17 x)) ($LL.Main.bigsigma15 x)
 
-$LL.Main.dev13 : ([514], [514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev13 $16 $85 sto0 sto1 sto2 sto3 =
-      if eq $85[512 +: 2] 2'h0 then (let hw32 = $85[0 +: 512] in
-            let $t1 = (let $t0 = $LL.Main.dev6 hw32 sto0 sto1 256'h6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 sto3 in
-            let s0 = $t0[774 +: 256] in
-            let s1 = $t0[262 +: 512] in
-            let s2 = $t0[6 +: 256] in
-            let s3 = $t0[0 +: 6] in
-            267'h40 # s0 # s1 # s2 # s3) in
-            let s0 = $t1[774 +: 256] in
-            let s1 = $t1[262 +: 512] in
-            let s2 = $t1[6 +: 256] in
-            let s3 = $t1[0 +: 6] in
-            $LL.Main.dev3 s0 s1 s2 s3)
-            else $LL.Main.dev11 $16 $16 sto0 sto1 sto2 sto3
+$LL.Main.loop8 : ([256], [256], [512], [256], [6]) -> [1030]
+$LL.Main.loop8 ds sigma0 sigma1 sigma2 sigma3 =
+      let h1 = ds[224 +: 32] in
+      let h2 = ds[192 +: 32] in
+      let h3 = ds[160 +: 32] in
+      let h4 = ds[128 +: 32] in
+      let h5 = ds[96 +: 32] in
+      let h6 = ds[64 +: 32] in
+      let h7 = ds[32 +: 32] in
+      let h8 = ds[0 +: 32] in
+      $LL.Main.loop10 h2 h6 h1 h8 h5 h3 h4 h7 sigma0 sigma0 sigma1 sigma2 sigma3
 
-$LL.Main.dev12 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev12 $81 sto0 sto1 sto2 sto3 =
-      Main.loop sto0 sto1 sto2 sto3
-
-$LL.Main.seed : ([6]) -> [32]
-$LL.Main.seed $92 =
-      trunc 32 (lshr 2048'h428a2f9871374491b5c0fbcfe9b5dba53956c25b59f111f1923f82a4ab1c5ed5d807aa9812835b01243185be550c7dc372be5d7480deb1fe9bdc06a7c19bf174e49b69c1efbe47860fc19dc6240ca1cc2de92c6f4a7484aa5cb0a9dc76f988da983e5152a831c66db00327c8bf597fc7c6e00bf3d5a7914706ca63511429296727b70a852e1b21384d2c6dfc53380d13650a7354766a0abb81c2c92e92722c85a2bfe8a1a81a664bc24b8b70c76c51a3d192e819d6990624f40e3585106aa07019a4c1161e376c082748774c34b0bcb5391c0cb34ed8aa4a5b9cca4f682e6ff3748f82ee78a5636f84c878148cc7020890befffaa4506cebbef9a3f7c67178f2 (mul (sub (sub 128'h40 (zext 128 $92)) 128'h1) 128'h20))
-
-$LL.Main.loop13 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop13 ctr sigma0 sigma1 sigma2 sigma3 =
-      ctr # sigma0 # sigma1 # sigma2 # sigma3
-
-Main.updateSched : ([512]) -> [512]
-Main.updateSched $x =
-      $LL.Main.updateSched $x
-
-$LL.Main.step2564 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2564 a h' e' f' g' b t2 t1 $66 =
-      $LL.Main.step2567 a h' e' f' g' $66 t2 t1 b
-
-$LL.Main.dev11 : ([514], [514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev11 $16 $84 sto0 sto1 sto2 sto3 =
-      if eq $84[512 +: 2] 2'h1 then (let hw32 = $84[0 +: 512] in
-            let $t1 = (let $t0 = $LL.Main.dev4 hw32 sto2 sto0 sto1 sto2 sto3 in
-            let s0 = $t0[774 +: 256] in
-            let s1 = $t0[262 +: 512] in
-            let s2 = $t0[6 +: 256] in
-            let s3 = $t0[0 +: 6] in
-            267'h40 # s0 # s1 # s2 # s3) in
-            let s0 = $t1[774 +: 256] in
-            let s1 = $t1[262 +: 512] in
-            let s2 = $t1[6 +: 256] in
-            let s3 = $t1[0 +: 6] in
-            $LL.Main.dev16 s0 s1 s2 s3)
-            else $LL.Main.dev7 $16 sto0 sto1 sto2 sto3
-
-$LL.Main.dev10 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev10 hw32 sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.dev5 hw32 sigma0 sigma1 sigma2 6'h0
-
-$LL.Main.dev9 : ([512], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev9 hw32 hi_1 sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.dev15 hw32 hi_1 sigma1 sigma2 sigma3
-
-$LL.Main.updateSched : ([512]) -> [512]
-$LL.Main.updateSched $61 =
-      let w00 = $61[480 +: 32] in
-      let w01 = $61[448 +: 32] in
-      let w02 = $61[416 +: 32] in
-      let w03 = $61[384 +: 32] in
-      let w04 = $61[352 +: 32] in
-      let w05 = $61[320 +: 32] in
-      let w06 = $61[288 +: 32] in
-      let w07 = $61[256 +: 32] in
-      let w08 = $61[224 +: 32] in
-      let w09 = $61[192 +: 32] in
-      let w10 = $61[160 +: 32] in
-      let w11 = $61[128 +: 32] in
-      let w12 = $61[96 +: 32] in
-      let w13 = $61[64 +: 32] in
-      let w14 = $61[32 +: 32] in
-      let w15 = $61[0 +: 32] in
-      $LL.Main.updateSched1 w03 w04 w05 w09 w12 w13 w08 w15 w14 w01 w06 w11 w10 w02 w07 (add (add (Main.sigma1 w14) w09) (add (Main.sigma0 w01) w00))
-
-$LL.Main.dev8 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev8 $x sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.dev18 $x sigma0 sigma1 sigma2 sigma3
-
-$LL.Main.loop12 : ([32], [32], [32], [32], [32], [32], [32], [32], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop12 h8 h4 h1 h3 h6 h2 h7 h5 $56 sigma0 sigma1 sigma2 sigma3 =
-      let a = $56[224 +: 32] in
-      let b = $56[192 +: 32] in
-      let c = $56[160 +: 32] in
-      let d = $56[128 +: 32] in
-      let e = $56[96 +: 32] in
-      let f = $56[64 +: 32] in
-      let g = $56[32 +: 32] in
-      let h = $56[0 +: 32] in
+$LL.Main.loop7 : ([32], [32], [32], [32], [32], [32], [32], [32], [256], [256], [512], [256], [6]) -> [1030]
+$LL.Main.loop7 h2 h4 h5 h8 h3 h7 h6 h1 ds sigma0 sigma1 sigma2 sigma3 =
+      let a = ds[224 +: 32] in
+      let b = ds[192 +: 32] in
+      let c = ds[160 +: 32] in
+      let d = ds[128 +: 32] in
+      let e = ds[96 +: 32] in
+      let f = ds[64 +: 32] in
+      let g = ds[32 +: 32] in
+      let h = ds[0 +: 32] in
       sigma0 # sigma1 # add a h1 # add b h2 # add c h3 # add d h4 # add e h5 # add f h6 # add g h7 # add h h8 # sigma3
 
-Main.bigsigma0 : ([32]) -> [32]
-Main.bigsigma0 $x =
-      $LL.Main.bigsigma0 $x
+Main.updateSched : ([512]) -> [512]
+Main.updateSched ds =
+      let w00 = ds[480 +: 32] in
+      let w01 = ds[448 +: 32] in
+      let w02 = ds[416 +: 32] in
+      let w03 = ds[384 +: 32] in
+      let w04 = ds[352 +: 32] in
+      let w05 = ds[320 +: 32] in
+      let w06 = ds[288 +: 32] in
+      let w07 = ds[256 +: 32] in
+      let w08 = ds[224 +: 32] in
+      let w09 = ds[192 +: 32] in
+      let w10 = ds[160 +: 32] in
+      let w11 = ds[128 +: 32] in
+      let w12 = ds[96 +: 32] in
+      let w13 = ds[64 +: 32] in
+      let w14 = ds[32 +: 32] in
+      let w15 = ds[0 +: 32] in
+      w01 # w02 # w03 # w04 # w05 # w06 # w07 # w08 # w09 # w10 # w11 # w12 # w13 # w14 # w15 # add (add (Main.sigma1 w14) w09) (add (Main.sigma0 w01) w00)
 
-$LL.Main.loop11 : ([6], [514], [1], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop11 ctr i $90 sto0 sto1 sto2 sto3 =
-      if eq $90 1'h1 then (let $t2 = (let $t1 = $LL.Main.loop18 sto2 sto0 sto1 sto2 sto3 in
-            let s0 = $t1[774 +: 256] in
-            let s1 = $t1[262 +: 512] in
-            let s2 = $t1[6 +: 256] in
-            let s3 = $t1[0 +: 6] in
-            267'h40 # s0 # s1 # s2 # s3) in
+$LL.Main.dev8 : ([512], [256], [256], [512], [256], [6]) -> [1030]
+$LL.Main.dev8 $x $x1 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev5 $x $x1 sigma0 sigma1 sigma2 sigma3
+
+$LL.Main.loop6 : ([32], [32], [256], [512], [256], [6]) -> [1030]
+$LL.Main.loop6 k w sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop3 k w sigma0 sigma0 sigma1 sigma2 sigma3
+
+$LL.Main.dev7 : ([512], [256], [512], [256], [6]) -> [1030]
+$LL.Main.dev7 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev19 $x sigma0 sigma1 sigma2 sigma3
+
+$LL.Main.dev6 : ([514], [256], [512], [256], [6]) -> [1297]
+$LL.Main.dev6 wild sto0 sto1 sto2 sto3 =
+      if eq wild[512 +: 2] 2'h0 then (let hw32 = wild[0 +: 512] in
+            let $t3 = (let $t2 = $LL.Main.dev9 hw32 sto0 sto1 256'h6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 sto3 in
             let s0 = $t2[774 +: 256] in
             let s1 = $t2[262 +: 512] in
             let s2 = $t2[6 +: 256] in
             let s3 = $t2[0 +: 6] in
-            $LL.Main.loop14 i s0 s1 s2 s3)
-            else $LL.Main.loop16 (eq ctr 6'h3f) sto0 sto1 sto2 sto3
+            267'h40 # s0 # s1 # s2 # s3) in
+            let s0 = $t3[774 +: 256] in
+            let s1 = $t3[262 +: 512] in
+            let s2 = $t3[6 +: 256] in
+            let s3 = $t3[0 +: 6] in
+            $LL.Main.dev14 s0 s1 s2 s3)
+            else if eq wild[512 +: 2] 2'h1 then (let hw32 = wild[0 +: 512] in
+            let $t1 = (let $t0 = $LL.Main.dev16 hw32 sto2 sto0 sto1 sto2 sto3 in
+            let s0 = $t0[774 +: 256] in
+            let s1 = $t0[262 +: 512] in
+            let s2 = $t0[6 +: 256] in
+            let s3 = $t0[0 +: 6] in
+            267'h40 # s0 # s1 # s2 # s3) in
+            let s0 = $t1[774 +: 256] in
+            let s1 = $t1[262 +: 512] in
+            let s2 = $t1[6 +: 256] in
+            let s3 = $t1[0 +: 6] in
+            $LL.Main.dev12 s0 s1 s2 s3) else $LL.Main.dev15 sto2 sto0 sto1 sto2 sto3
 
-$LL.Main.sigma14 : ([32]) -> [32]
-$LL.Main.sigma14 $55 =
-      xor (xor ($LL.Main.sigma11 $55) ($LL.Main.sigma16 $55)) (lshr $55 32'ha)
+$LL.Main.loop5 : ([514], [256], [512], [256], [6]) -> [1297]
+$LL.Main.loop5 i sto0 sto1 sto2 sto3 =
+      Main.dev i sto0 sto1 sto2 sto3
 
-$LL.Main.incCtr : ([6]) -> [6]
-$LL.Main.incCtr $91 =
-      add $91 6'h1
+Main.bigsigma0 : ([32]) -> [32]
+Main.bigsigma0 x =
+      xor (xor ($LL.Main.bigsigma06 x) ($LL.Main.bigsigma01 x)) ($LL.Main.bigsigma03 x)
+
+$LL.Main.dev5 : ([512], [256], [256], [512], [256], [6]) -> [1030]
+$LL.Main.dev5 hw32 hi_1 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev7 hw32 hi_1 sigma1 sigma2 sigma3
+
+$LL.Main.loop4 : ([32], [32], [256], [256], [512], [256], [6]) -> [1030]
+$LL.Main.loop4 k w s sigma0 sigma1 sigma2 sigma3 =
+      Main.step256 k w s # sigma1 # sigma2 # sigma3
+
+$LL.Main.loop3 : ([32], [32], [256], [256], [512], [256], [6]) -> [1030]
+$LL.Main.loop3 $x $x1 $x2 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop4 $x $x1 $x2 sigma0 sigma1 sigma2 sigma3
 
 Main.step256 : ([32], [32], [256]) -> [256]
-Main.step256 $13 $14 $15 =
-      $LL.Main.step2566 ($13 # $14 # $15)
+Main.step256 k w ds =
+      let a = ds[224 +: 32] in
+      let b = ds[192 +: 32] in
+      let c = ds[160 +: 32] in
+      let d = ds[128 +: 32] in
+      let e = ds[96 +: 32] in
+      let f = ds[64 +: 32] in
+      let g = ds[32 +: 32] in
+      let h = ds[0 +: 32] in
+      $LL.Main.step256 b f c a g d e (add h (add (add (Main.bigsigma1 e) (Main.ch e f g)) (add k w)))
+
+$LL.Main.step256 : ([32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
+$LL.Main.step256 b f c a g d e t1 =
+      add t1 (add (Main.bigsigma0 a) (Main.maj a b c)) # a # b # c # add d t1 # e # f # g
 
 $LL.Main.bigsigma03 : ([32]) -> [32]
 $LL.Main.bigsigma03 $x =
-      $LL.Main.bigsigma110 32'hd $x
+      $LL.Main.bigsigma08 32'h16 $x
 
-$LL.Main.step2563 : ([32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2563 a f g b e c d $72 =
-      $LL.Main.step256 a f g b e c d $72 (add (Main.bigsigma0 a) (Main.maj a b c))
+$LL.Main.loop2 : ([6], [514], [256], [512], [256], [6]) -> [1297]
+$LL.Main.loop2 $x $x1 sto0 sto1 sto2 sto3 =
+      $LL.Main.loop11 $x $x1 sto0 sto1 sto2 sto3
 
-$LL.Main.dev7 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev7 $83 sto0 sto1 sto2 sto3 =
-      $LL.Main.dev2 sto2 sto0 sto1 sto2 sto3
-
-$LL.Main.loop10 : ([32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop10 $x sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.loop9 $x sigma0 sigma1 sigma2 sigma3
-
-$LL.Main.sigma04 : ([32]) -> [32]
-$LL.Main.sigma04 $x =
-      $LL.Main.bigsigma110 32'h7 $x
-
-$LL.Main.bigsigma12 : ([32]) -> [32]
-$LL.Main.bigsigma12 $x =
-      $LL.Main.bigsigma110 32'hb $x
-
-$LL.Main.dev6 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev6 $x sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.dev10 $x sigma0 sigma1 sigma2 sigma3
-
-$LL.Main.loop9 : ([32], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop9 w00 sigma0 sigma1 sigma2 sigma3 =
-      w00 # sigma0 # sigma1 # sigma2 # sigma3
-
-$LL.Main.loop8 : ([6], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop8 ctr sto0 sto1 sto2 sto3 =
-      261'h180000000000000000000000000000000000000000000000000000000000000002 # ctr # sto0 # sto1 # sto2 # sto3
-
-$LL.Main.dev5 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev5 $x sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.dev1 $x sigma0 sigma1 sigma2 sigma3
-
-$LL.Main.dev4 : ([512], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev4 $x $x1 sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.dev19 $x $x1 sigma0 sigma1 sigma2 sigma3
+$LL.Main.loop1 : ([6], [256], [512], [256], [6]) -> [1036]
+$LL.Main.loop1 $x sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.loop17 $x sigma0 sigma1 sigma2 sigma3
 
 $LL.Main.sigma11 : ([32]) -> [32]
 $LL.Main.sigma11 $x =
-      $LL.Main.bigsigma110 32'h11 $x
+      $LL.Main.bigsigma08 32'h13 $x
 
-$LL.Main.loop7 : ([512], [256], [512], [256], [6]) -> [1062]
-$LL.Main.loop7 s sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.loop15 s s sigma0 sigma1 sigma2 sigma3
+$LL.Main.loop : ([32], [256], [512], [256], [6]) -> [1062]
+$LL.Main.loop w00 sigma0 sigma1 sigma2 sigma3 =
+      w00 # sigma0 # sigma1 # sigma2 # sigma3
 
-$LL.Main.loop6 : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop6 i sto0 sto1 sto2 sto3 =
-      Main.dev i sto0 sto1 sto2 sto3
-
-$LL.Main.step2562 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2562 a f b t2 e c d t1 $70 =
-      $LL.Main.step2569 a $70 b t2 e c d t1 f
-
-$LL.Main.bigsigma1 : ([32]) -> [32]
-$LL.Main.bigsigma1 $x =
-      $LL.Main.bigsigma110 32'h6 $x
+$LL.Main.dev3 : ([512], [256], [512], [256], [6]) -> [1030]
+$LL.Main.dev3 hw32 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev8 hw32 sigma2 sigma0 sigma1 sigma2 sigma3
 
 Main.sigma1 : ([32]) -> [32]
-Main.sigma1 $x =
-      $LL.Main.sigma14 $x
+Main.sigma1 x =
+      xor (xor ($LL.Main.sigma1 x) ($LL.Main.sigma11 x)) (lshr x 32'ha)
 
-$LL.Main.loop5 : ([6], [514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.loop5 $x $x1 sto0 sto1 sto2 sto3 =
-      $LL.Main.loop21 $x $x1 sto0 sto1 sto2 sto3
-
-$LL.Main.bigsigma0 : ([32]) -> [32]
-$LL.Main.bigsigma0 $52 =
-      xor (xor ($LL.Main.bigsigma011 $52) ($LL.Main.bigsigma03 $52)) ($LL.Main.bigsigma010 $52)
-
-$LL.Main.step2561 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step2561 a h' f' g' b t2 c t1 $67 =
-      $LL.Main.step2564 a h' $67 f' g' b t2 t1 c
-
-$LL.Main.dev3 : ([256], [512], [256], [6]) -> [1297]
-$LL.Main.dev3 sto0 sto1 sto2 sto3 =
-      267'h50000000000000000000000000000000000000000000000000000000000000000c0 # sto0 # sto1 # sto2 # sto3
-
-$LL.Main.loop4 : ([32], [32], [32], [32], [32], [32], [32], [32], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop4 h3 h4 h6 h7 h8 h2 h5 h1 $x sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.loop12 h8 h4 h1 h3 h6 h2 h7 h5 $x sigma0 sigma1 sigma2 sigma3
-
-$LL.Main.loop3 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop3 ctr sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.loop24 ctr sigma0 sigma1 sigma2 (Main.incCtr ctr)
-
-$LL.Main.sigma0 : ([32]) -> [32]
-$LL.Main.sigma0 $x =
-      $LL.Main.bigsigma110 32'h12 $x
-
-$LL.Main.dev2 : ([256], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev2 h_n sto0 sto1 sto2 sto3 =
-      3'h4 # h_n # 8'h0 # sto0 # sto1 # sto2 # sto3
+$LL.Main.sigma02 : ([32]) -> [32]
+$LL.Main.sigma02 $x =
+      $LL.Main.bigsigma08 32'h12 $x
 
 Main.ch : ([32], [32], [32]) -> [32]
-Main.ch $0 $1 $2 =
-      $LL.Main.ch ($0 # $1 # $2)
+Main.ch x y z =
+      xor (and x y) (and (not x) z)
 
-$LL.Main.loop2 : ([6], [256], [512], [256], [6]) -> [1036]
-$LL.Main.loop2 $x sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.loop3 $x sigma0 sigma1 sigma2 sigma3
+$LL.Main.sigma1 : ([32]) -> [32]
+$LL.Main.sigma1 $x =
+      $LL.Main.bigsigma08 32'h11 $x
 
-$LL.Main.step256 : ([32], [32], [32], [32], [32], [32], [32], [32], [32]) -> [256]
-$LL.Main.step256 a f g b e c d t1 $71 =
-      $LL.Main.step2562 a f b $71 e c d t1 g
+$LL.Main.bigsigma01 : ([32]) -> [32]
+$LL.Main.bigsigma01 $x =
+      $LL.Main.bigsigma08 32'hd $x
 
-$LL.Main.dev1 : ([512], [256], [512], [256], [6]) -> [1030]
-$LL.Main.dev1 hw32 sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.dev17 hw32 sigma2 sigma0 sigma1 sigma2 sigma3
-
-$LL.Main.loop1 : ([32], [32], [256], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop1 $x $x1 $x2 sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.loop23 $x $x1 $x2 sigma0 sigma1 sigma2 sigma3
-
-$LL.Main.dev : ([514], [256], [512], [256], [6]) -> [1297]
-$LL.Main.dev $77 sto0 sto1 sto2 sto3 =
-      Main.loop sto0 sto1 sto2 sto3
-
-$LL.Main.loop : ([32], [32], [256], [512], [256], [6]) -> [1030]
-$LL.Main.loop $11 $12 sigma0 sigma1 sigma2 sigma3 =
-      $LL.Main.loop22 ($11 # $12) sigma0 sigma1 sigma2 sigma3
-
-$LL.Main.maj : ([96]) -> [32]
-$LL.Main.maj $51 =
-      let x = $51[64 +: 32] in
-      let y = $51[32 +: 32] in
-      let z = $51[0 +: 32] in
-      xor (xor (and x y) (and x z)) (and y z)
+$LL.Main.dev : ([512], [256], [256], [512], [256], [6]) -> [1030]
+$LL.Main.dev hw32 hi_1 sigma0 sigma1 sigma2 sigma3 =
+      $LL.Main.dev13 hw32 hi_1 sigma1 sigma2 sigma3
 
 device top_level
       input __in0 : [514]
       output __out0 : [258]
-      register __resumption_tag : [8] init 8'h0
+      register __resumption_tag : [8] init 8'h40
       register __st0 : [224] init 224'h0
       register __st1 : [32] init 32'h0
       register __st2 : [512] init 512'h0

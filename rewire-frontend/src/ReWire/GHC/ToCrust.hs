@@ -46,7 +46,7 @@ import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Crust.Types (poly, poly', arr, strTy, listTy, mkArrowTy, plusTy, negTy, concrete, setTyAnn, tyAnn, pairTy, (|->))
 import ReWire.Crust.Util (mkApp, mkError)
 import ReWire.SYB (transform)
-import ReWire.Unbound (Fresh, fresh, s2n, Embed (..), bind, unsafeUnbind)
+import ReWire.Unbound (Fresh, fresh, s2n, n2s, Embed (..), bind, unsafeUnbind)
 
 import qualified ReWire.Crust.Syntax as M
 
@@ -125,7 +125,7 @@ purgeTyAnns (ts, syns, ds) = (ts, syns, transform noPolyE $ transform noPolyP ds
 
             keep :: Maybe M.Poly -> Bool
             keep = \ case
-                  Just (M.Poly (unsafeUnbind -> (_, t))) -> hasNat t
+                  Just (M.Poly (unsafeUnbind -> (_, t))) -> hasNat t && not (monadic t)
                   Nothing                                -> False
 
             hasNat :: M.Ty -> Bool
@@ -133,6 +133,14 @@ purgeTyAnns (ts, syns, ds) = (ts, syns, transform noPolyE $ transform noPolyP ds
                   M.TyNat {}    -> True
                   M.TyApp _ a b -> hasNat a || hasNat b
                   _             -> False
+
+            -- Types that purification rewrites: annotations mentioning them
+            -- would go stale and fail --debug-typecheck's re-inference.
+            monadic :: M.Ty -> Bool
+            monadic = \ case
+                  M.TyCon _ (n2s -> n) -> n `elem` (["ReacT", "StateT", "Identity", "PuRe", "A_", "R_"] :: [Text])
+                  M.TyApp _ a b           -> monadic a || monadic b
+                  _                       -> False
 
 coreToCrust :: (Fresh m, MonadError AstError m) => Config -> [ModGuts] -> m M.FreeProgram
 coreToCrust conf gutss = do

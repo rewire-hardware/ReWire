@@ -9,7 +9,7 @@ module top_level (input logic [0:0] clk,
   logic [15:0] zres;
   Main_go  inst (__st0, main_go_out);
   Main_go  instR1 (__st0, main_go_outR1);
-  assign zres = (__in0 == 1'h1) ? main_go_out : main_go_outR1;
+  assign zres = (__in0 == 1'h0) ? main_go_out : main_go_outR1;
   assign __st0_next = zres[7:0];
   assign __out0 = zres[15:8];
   initial __st0 = 8'h0;

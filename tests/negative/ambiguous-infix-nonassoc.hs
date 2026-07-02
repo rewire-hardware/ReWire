@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Ambiguous infix expression
+-- EXPECT-ERROR: Precedence parsing error
 import ReWire
 infix 4 ===
 (===) :: Bool -> Bool -> Bool

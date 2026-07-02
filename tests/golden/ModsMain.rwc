@@ -3,7 +3,7 @@ $Pure.dispatch i =
       $LL.Main.start i
 
 $LL.Main.start : ([1]) -> [1]
-$LL.Main.start $2 =
+$LL.Main.start _unused =
       1'h0
 
 device top_level

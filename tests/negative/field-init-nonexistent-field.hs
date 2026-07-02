@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Field initializer for nonexistent field
+-- EXPECT-ERROR: Not in scope: ‘nope’
 import ReWire
 import ReWire.Bits
 data S = S { f1 :: Bit }
