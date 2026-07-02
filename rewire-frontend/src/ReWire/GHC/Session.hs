@@ -78,8 +78,8 @@ import GHC.Utils.Panic (handleGhcException)
 -- | A diagnostic collected from GHC's log action: is-error, location, rendered text.
 type Diag = (Bool, Annote, Text)
 
--- | Phase-1 entry point: load Core for the whole home module graph and dump
---   it (a per-module binder summary; the full Core under -v).
+-- | Load Core for the whole home module graph and dump it (a per-module
+--   binder summary; the full Core under -v). For debugging the session.
 dumpCore :: (MonadError AstError m, MonadIO m) => Config -> FilePath -> m ()
 dumpCore conf fp = do
       gutss <- loadCore conf fp
