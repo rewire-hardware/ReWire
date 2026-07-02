@@ -17,7 +17,7 @@ import ReWire.Crust.PrimBasis (addPrims)
 import ReWire.Crust.Purify (purify)
 import ReWire.Crust.Syntax (FreeProgram, Defn (..), Module (Module), Exp, Ty, Kind, DataConId, TyConId, Program (Program), prettyFP)
 import ReWire.Crust.ToHyle (toHyle)
-import ReWire.Crust.Transform (removeMain, simplify, liftLambdas, etaAbsDefs, shiftLambdas, neuterExterns, expandTypeSynonyms, inlineAnnotated, normalizeBind, purge, purgeAll, inlineExtrudes, reduce)
+import ReWire.Crust.Transform (removeMain, simplify, simplifyUntil, synthableDefn, dictFree, liftLambdas, etaAbsDefs, shiftLambdas, neuterExterns, expandTypeSynonyms, inlineAnnotated, normalizeBind, purge, purgeAll, inlineExtrudes, reduce)
 import ReWire.Crust.TypeCheck (typeCheck, untype)
 import ReWire.Error (AstError, MonadError, Warning (..), warnAt)
 import ReWire.HSE.Annotate (annotate)
@@ -135,7 +135,13 @@ getDevice conf fp = do
             midPasses =
                   [ ("Removing unused definitions.",                     purge start)
                   , ("Lifting lambdas.",                                 liftLambdas)
-                  , ("Partial evaluation.",                              simplify conf)
+                  -- On the GHC path, partial evaluation must also finish
+                  -- eliminating class dictionaries (whose types look
+                  -- synthable; the function types hide inside their
+                  -- constructor fields).
+                  , ("Partial evaluation.",                              if conf^.ghcFrontend
+                                                                               then simplifyUntil (\ fp@(_, _, vs) -> all synthableDefn vs && dictFree fp) conf
+                                                                               else simplify conf)
                   , ("Normalizing bind.",                                normalizeBind)
                   , ("Lifting lambdas.",                                 liftLambdas)
                   , ("Removing unused definitions.",                     purge start)

@@ -54,6 +54,7 @@ import Control.Arrow (first)
 import Control.Lens ((^.))
 import Control.Monad (foldM)
 import Control.Monad.Except (catchError)
+import Data.List (elemIndex)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text, pack)
 
@@ -66,15 +67,16 @@ import GHC (ModuleName, moduleName, moduleNameString)
 import GHC.Builtin.Types (integerISDataCon, integerIPDataCon, integerINDataCon, listTyCon, nilDataCon, consDataCon, trueDataCon, falseDataCon, unitDataCon, unitTyCon, boolTyCon, charTyCon, integerTyCon, naturalTyCon)
 import GHC.Builtin.Types.Literals (typeNatAddTyCon, typeNatSubTyCon, typeNatMulTyCon)
 import GHC.Core (CoreExpr, CoreBind, Expr (..), Bind (..), Alt (..), AltCon (..), collectArgs, isTyCoArg)
-import GHC.Core.DataCon (DataCon, dataConName, dataConOrigArgTys, dataConUnivTyVars, dataConExTyCoVars, isTupleDataCon, dataConSourceArity)
+import GHC.Core.DataCon (DataCon, dataConName, dataConOrigArgTys, dataConUnivTyVars, dataConExTyCoVars, isTupleDataCon, dataConSourceArity, dataConTheta)
+import GHC.Core.Class (classAllSelIds, classTyCon)
 import GHC.Core.FVs (exprFreeVars)
 import GHC.Core.Predicate (isEvVarType)
 import GHC.Core.TyCo.Rep (Type (..), TyLit (..), scaledThing)
-import GHC.Core.TyCon (TyCon, tyConName, tyConKind, tyConDataCons, isClassTyCon, isAlgTyCon, isTypeSynonymTyCon, isBoxedTupleTyCon, tyConArity)
-import GHC.Core.Type (expandTypeSynonyms, mkTyVarTys, splitForAllTyCoVars)
+import GHC.Core.TyCon (TyCon, tyConName, tyConKind, tyConDataCons, isClassTyCon, isAlgTyCon, isTypeSynonymTyCon, isBoxedTupleTyCon, tyConArity, isNewTyCon, tyConSingleDataCon)
+import GHC.Core.Type (expandTypeSynonyms, mkTyVarTys, splitForAllTyCoVars, tyConAppTyCon_maybe)
 import GHC.Core.Utils (exprType)
 import GHC.Types.Basic (InlineSpec (..), inlinePragmaSpec)
-import GHC.Types.Id (isClassOpId_maybe, idInlinePragma, isDataConId_maybe)
+import GHC.Types.Id (isClassOpId_maybe, idInlinePragma, isDataConId_maybe, isDFunId)
 import GHC.Types.Literal (Literal (..))
 import GHC.Types.Name (getOccString, nameModule_maybe, nameSrcSpan)
 import GHC.Types.SrcLoc (SrcSpan (..), srcSpanFile, srcSpanStartLine, srcSpanStartCol, srcSpanEndLine, srcSpanEndCol)
@@ -174,11 +176,13 @@ flattenBind = \ case
       Rec bs       -> bs
 
 -- | Top-level binds never translated even when reachable: evidence-typed
---   binds (floated dictionaries; erased everywhere). (rwPrim* binds ARE
---   kept -- with elided bodies -- because the typechecker reads the
---   builtins' type assumptions off their Defn signatures.)
+--   binds (floated dictionaries; erased everywhere), except user-class
+--   dictionaries (DFuns), which are kept as INLINE data definitions.
+--   (rwPrim* binds ARE kept -- with elided bodies -- because the
+--   typechecker reads the builtins' type assumptions off their Defn
+--   signatures.)
 prunedBind :: (Var, CoreExpr, ModuleName) -> Bool
-prunedBind (b, _, _) = isEvVarType (varType b)
+prunedBind (b, _, _) = erasedEv (varType b)
 
 -- | Transitive closure of top-level binds reachable from the roots, with
 --   the same erasures the translation performs (type/coercion arguments,
@@ -203,7 +207,7 @@ reachable bindMap = go mempty
                         | otherwise      -> refs f <> refs a
                   Lam _ e                -> refs e
                   Let (NonRec x r) e
-                        | isEvVarType (varType x) -> refs e
+                        | erasedEv (varType x) -> refs e
                         | otherwise      -> refs r <> refs e
                   Let (Rec bs) e         -> concatMap (refs . snd) bs <> refs e
                   Case s _ _ alts        -> refs s <> concatMap (\ (Alt _ _ e') -> refs e') alts
@@ -212,9 +216,31 @@ reachable bindMap = go mempty
                   Type _                 -> []
                   Coercion _             -> []
 
--- | Arguments the translation erases: types, coercions, and evidence.
+-- | Arguments the translation erases: types, coercions, and evidence --
+--   except evidence for /user/ classes, which is kept as ordinary data
+--   (dictionaries as values; the specializer + case-of-known-constructor
+--   eliminate them).
 erasedArg :: CoreExpr -> Bool
-erasedArg a = isTyCoArg a || isEvVarType (exprType a)
+erasedArg a = isTyCoArg a || erasedEv (exprType a)
+
+-- | Evidence to erase: everything but user-class dictionaries.
+erasedEv :: GHC.Core.TyCo.Rep.Type -> Bool
+erasedEv t = isEvVarType t && not (userPred t)
+
+-- | Is this a user-class predicate type? A class defined in a home module
+--   (approximated by defining-module namespace, like the tycon table's
+--   fallback): built-in evidence (KnownNat, Monad, HasCallStack, ...) is
+--   external and erased; classes in the user's own modules are data.
+userPred :: GHC.Core.TyCo.Rep.Type -> Bool
+userPred t = case tyConAppTyCon_maybe $ expandTypeSynonyms t of
+      Just tc -> isClassTyCon tc && homeishMod (tyConModule tc)
+      _       -> False
+
+homeishMod :: Maybe ModuleName -> Bool
+homeishMod = \ case
+      Nothing -> False
+      Just mn -> not (isPrimModule mn) && not (any (`T.isPrefixOf` pack (moduleNameString mn))
+            (["GHC.", "Data.", "Control.", "System.", "Foreign.", "Text.", "Unsafe."] :: [Text]))
 
 isPrimVar :: Var -> Bool
 isPrimVar v = "rwPrim" `T.isPrefixOf` pack (getOccString v)
@@ -270,7 +296,10 @@ bridgeDefn ctx (b, rhs, mn) = do
             { M.defnAnnote = an
             , M.defnName   = s2n $ qualName mn b
             , M.defnPolyTy = Embed $ poly (map (s2n . pack . getOccString) $ filter isTyVar tvs) t
-            , M.defnAttr   = inlAttr $ inlinePragmaSpec $ idInlinePragma b
+            -- Dictionary definitions (DFuns) are always inlined, so
+            -- case-of-known-constructor can resolve method projections.
+            , M.defnAttr   = if isDFunId b || userPred rho then Just M.Inline
+                             else inlAttr $ inlinePragmaSpec $ idInlinePragma b
             , M.defnBody   = Embed $ bind [] body
             }
       where inlAttr :: InlineSpec -> Maybe M.DefnAttr
@@ -304,7 +333,11 @@ bridgeTy an = go
                   TyConApp tc args     -> bridgeTyConApp an tc args
                   ForAllTy _ t         -> go t -- Quantifiers live in the Poly.
                   FunTy _ _ a r
-                        | isEvVarType a -> go r -- Constraint arrow: dropped.
+                        -- User-class constraint arrows become value arrows
+                        -- (the dictionary is data); built-in evidence is
+                        -- dropped (Crust types have no contexts).
+                        | userPred a    -> arr <$> go a <*> go r
+                        | isEvVarType a -> go r
                         | otherwise     -> arr <$> go a <*> go r
                   LitTy (NumTyLit n)   -> pure $ M.TyNat an $ fromInteger n
                   LitTy l              -> failAt an $ "ghc-frontend: unsupported type-level literal: " <> pack (showSDocUnsafe $ ppr l)
@@ -396,7 +429,7 @@ bridgeExp ctx an e = case e of
 
       Lam b body
             | isTyVar b               -> bridgeExp ctx an body
-            | isEvVarType (varType b) -> bridgeExp ctx an body
+            | erasedEv (varType b) -> bridgeExp ctx an body
             | otherwise               -> do
                   n     <- fresh $ s2n $ pack $ getOccString b
                   argTy <- tryTy an $ varType b
@@ -455,7 +488,7 @@ bindLocal v e ctx = ctx { ctxLocals = IM.insert (uKey v) e $ ctxLocals ctx }
 collectLets :: CoreExpr -> ([(Var, CoreExpr)], CoreExpr)
 collectLets = \ case
       Let (NonRec x r) e
-            | isEvVarType (varType x) -> collectLets e
+            | erasedEv (varType x) -> collectLets e
             | otherwise               -> first ((x, r) :) $ collectLets e
       e                               -> ([], e)
 
@@ -611,11 +644,33 @@ conName dc
                            = pack (moduleNameString mn) <> "." <> pack (getOccString $ dataConName dc)
       | otherwise          = pack $ getOccString $ dataConName dc
 
--- | Class method dispatch: >>=, >>, return, pure at ReacT/StateT/Identity
---   become Bind/Return builtins (dictionary discarded); == at Integer
---   becomes the Eq builtin. Anything else is out of (v1) vocabulary.
+-- | Class method dispatch: user-class methods project the field out of
+--   the dictionary (which is ordinary data); >>=, >>, return, pure at
+--   ReacT/StateT/Identity become Bind/Return builtins (dictionary
+--   discarded); == at Integer becomes the Eq builtin. Anything else is
+--   out of vocabulary.
 bridgeClassOp :: (Fresh m, MonadError AstError m) => Ctx -> Annote -> Var -> [CoreExpr] -> [CoreExpr] -> m M.Exp
 bridgeClassOp ctx an v args vargs
+      | Just cls <- isClassOpId_maybe v
+      , homeishMod (tyConModule $ classTyCon cls) = case vargs of
+            (d : rest) -> do
+                  d' <- bridgeExp ctx an d
+                  if isNewTyCon (classTyCon cls)
+                        -- A newtype dictionary IS its method (casts are
+                        -- erased): selection is the identity.
+                        then mkApp an d' <$> mapM (bridgeExp ctx an) rest
+                        else do
+                              let sels = classAllSelIds cls
+                              i   <- maybe (failAt an $ "ghc-frontend: unknown class method: " <> occ) pure
+                                          $ elemIndex v sels
+                              fld <- fresh $ s2n "dictField"
+                              let pats = [ if j == i then M.PatVar an (Embed Nothing) (Embed Nothing) fld
+                                                     else M.PatWildCard an (Embed Nothing) (Embed Nothing)
+                                         | j <- [0 .. length sels - 1] ]
+                                  pat  = M.PatCon an (Embed Nothing) (Embed Nothing) (Embed $ s2n $ conName $ tyConSingleDataCon $ classTyCon cls) pats
+                                  proj = M.Case an Nothing Nothing d' (bind pat $ M.Var an Nothing Nothing fld) Nothing
+                              mkApp an proj <$> mapM (bridgeExp ctx an) rest
+            _          -> failAt an $ "ghc-frontend: unapplied class method: " <> occ
       | occ `elem` ([">>=", ">>", "return", "pure"] :: [Text]) = case tyArgHead of
             Just tcn | tcn `elem` (["ReacT", "StateT", "Identity"] :: [Text]) -> case occ of
                   ">>=" -> apply $ M.Builtin an Nothing Nothing M.Bind
@@ -776,12 +831,12 @@ bridgeCase ctx an scrut b ty alts = do
                               pure $ M.Case an Nothing resTy scrut' (bind pat rhs') $ Just rest''
 
                         skippableBinder :: Var -> Bool
-                        skippableBinder v = isTyVar v || isEvVarType (varType v)
+                        skippableBinder v = isTyVar v || erasedEv (varType v)
 
             bridgePat :: (Fresh m, MonadError AstError m) => Ctx -> AltCon -> [Var] -> m (M.Pat, Ctx)
             bridgePat ctx' con vs = case con of
                   DataAlt dc -> do
-                        (ps, ctx'') <- foldM patVar ([], ctx') $ filter (\ v -> not (isTyVar v) && not (isEvVarType $ varType v)) vs
+                        (ps, ctx'') <- foldM patVar ([], ctx') $ filter (\ v -> not (isTyVar v) && not (erasedEv $ varType v)) vs
                         pure (M.PatCon an (Embed Nothing) (Embed Nothing) (Embed $ s2n $ conName dc) $ reverse ps, ctx'')
                   LitAlt _   -> failAt an "ghc-frontend: unsupported literal pattern."
                   DEFAULT    -> failAt an "ghc-frontend: unexpected default alternative."
@@ -804,8 +859,15 @@ harvestDatas g
       | otherwise       = mapM harvest $ filter wanted $ mg_tcs g
       where mn = moduleName $ mg_module g
 
+            -- User datatypes; also data-dictionary classes (the dictionary
+            -- constructor's fields are the superclass dictionaries and
+            -- method types, which the generic path below translates).
+            -- Newtype-dictionary classes (single method, no superclass)
+            -- have no data constructor: their dictionaries erase to the
+            -- method value via cast-erasure.
             wanted :: TyCon -> Bool
-            wanted tc = isAlgTyCon tc && not (isClassTyCon tc) && not (isTypeSynonymTyCon tc) && not (isBoxedTupleTyCon tc)
+            wanted tc = isAlgTyCon tc && not (isTypeSynonymTyCon tc) && not (isBoxedTupleTyCon tc)
+                  && not (isClassTyCon tc && isNewTyCon tc)
 
             harvest :: (Fresh m, MonadError AstError m) => TyCon -> m M.DataDefn
             harvest tc = M.DataDefn an (s2n name) (bridgeKind $ tyConKind tc) <$> mapM dataCon (tyConDataCons tc)
@@ -815,7 +877,11 @@ harvestDatas g
                         dataCon :: (Fresh m, MonadError AstError m) => DataCon -> m M.DataCon
                         dataCon dc | not (null $ dataConExTyCoVars dc) = failAt an "ghc-frontend: unsupported existential data constructor."
                                    | otherwise = do
-                              argTys <- mapM (bridgeTy an . expandTypeSynonyms . scaledThing) $ dataConOrigArgTys dc
+                              -- The theta part holds a class dictionary
+                              -- constructor's superclass dictionaries
+                              -- (empty for vanilla datatypes).
+                              argTys <- mapM (bridgeTy an . expandTypeSynonyms)
+                                            $ dataConTheta dc <> map scaledThing (dataConOrigArgTys dc)
                               resTy  <- bridgeTy an $ TyConApp tc $ mkTyVarTys $ dataConUnivTyVars dc
                               pure $ M.DataCon an (s2n $ conName dc)
                                    $ map (s2n . pack . getOccString) (dataConUnivTyVars dc) |-> mkArrowTy argTys resTy
