@@ -9,7 +9,9 @@ module ReWire.ModCache
       ) where
 
 import ReWire.Annotation (unAnn)
-import ReWire.Config (Config, typecheck)
+import ReWire.Config (Config, typecheck, ghcFrontend)
+import ReWire.GHC.Session (loadCore)
+import ReWire.GHC.ToCrust (coreToCrust, purgeTyAnns)
 import ReWire.Crust.KindCheck (kindCheck)
 import ReWire.Crust.PrimBasis (addPrims)
 import ReWire.Crust.Purify (purify)
@@ -84,7 +86,16 @@ getModule conf = getModuleWith translate conf
 -- Phase 2 (pre-hyle) transformations.
 getDevice :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> Cache m Hyle.Program
 getDevice conf fp = do
-      (Module ts syns ds,  _)  <- getModule conf "." fp
+      (Module ts syns ds,  _)  <- if conf^.ghcFrontend
+            -- The GHC front end: parse/typecheck/desugar through an
+            -- in-process GHC session, then bridge the whole home module
+            -- graph's Core to Crust (passes 1-5 of the HSE path collapse
+            -- into one; dump with -d 4).
+            then do
+                  prog <- loadCore conf fp >>= coreToCrust conf
+                  (ts, syns, ds) <- passCrust conf 4 "(GHC) Translating GHC Core to Crust IR." prog
+                  pure (Module ts syns ds, mempty)
+            else getModule conf "." fp
 
       p <- pure
        >=> runPasses pass forceProg            nFront frontPasses
@@ -113,6 +124,11 @@ getDevice conf fp = do
                   , ("Typechecking, inference.",                                               kindCheck >=> typeCheck start)
                   , ("Extracting extern models; removing other Haskell definitions for externs.", neuterExterns')
                   ]
+                  -- The GHC bridge annotates nodes liberally for the
+                  -- typecheck pass, which has now consumed them; strip
+                  -- them, or the annotation binders tax every later
+                  -- substitution (ruinously, during partial evaluation).
+                  <> [ ("Purging type annotations (GHC front end).", pure . purgeTyAnns) | conf^.ghcFrontend ]
 
             -- Transformations on the typechecked program: each one is
             -- followed by re-typechecking when --debug-typecheck is on.

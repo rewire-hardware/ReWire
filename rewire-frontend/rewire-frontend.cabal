@@ -42,6 +42,7 @@ library
       ReWire.Crust.Util
       ReWire.FrontEnd
       ReWire.GHC.Session
+      ReWire.GHC.ToCrust
       ReWire.HSE.Annotate
       ReWire.HSE.Cache
       ReWire.HSE.Desugar
