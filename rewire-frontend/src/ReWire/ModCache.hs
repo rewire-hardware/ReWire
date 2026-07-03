@@ -19,7 +19,6 @@ import ReWire.Crust.ToHyle (toHyle)
 import ReWire.Crust.Transform (removeMain, simplifyUntil, synthableDefn, dictFree, liftLambdas, etaAbsDefs, shiftLambdas, neuterExterns, expandTypeSynonyms, inlineAnnotated, normalizeBind, purge, purgeAll, inlineExtrudes, reduce)
 import ReWire.Crust.TypeCheck (typeCheck, untype)
 import ReWire.Error (AstError, MonadError, Warning (..), warnAt)
-import ReWire.HSE.Cache (LoadPath)
 import ReWire.Pass (runPasses, printHeader, verb')
 import ReWire.Pretty (prettyPrint, prettyPrint', showt)
 import ReWire.Unbound (fv, trec, runFreshMT, FreshMT, Name, Fresh, s2n)
@@ -38,6 +37,8 @@ import qualified Data.Text                    as T
 import qualified Data.Text.IO                 as T
 import qualified ReWire.Hyle.Syntax         as Hyle
 import qualified ReWire.Config                as C
+
+type LoadPath = [FilePath]
 
 runCache :: (MonadIO m, MonadError AstError m) => FreshMT m a -> m a
 runCache = runFreshMT
