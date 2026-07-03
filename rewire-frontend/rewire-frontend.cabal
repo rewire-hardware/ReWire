@@ -7,7 +7,7 @@ cabal-version: 1.12
 name:           rewire-frontend
 version:        2.8
 synopsis:       A Haskell-to-Verilog/VHDL compiler, front end (HSE plus Crust)
-description:    The ReWire front end. The haskell-src-exts pipeline (ReWire.HSE.*), the Crust typed functional IR and its transformations (ReWire.Crust.*), and the pass-pipeline orchestration. Produces a ReWire.Hyle device; depends on rewire-backend for the Hyle IR and RTL backends and on rewire-base for shared utilities.
+description:    The ReWire front end. The GHC driver and Core-to-Crust bridge (ReWire.GHC.*), the Crust typed functional IR and its transformations (ReWire.Crust.*), and the pass-pipeline orchestration. Produces a ReWire.Hyle device; depends on rewire-backend for the Hyle IR and RTL backends and on rewire-base for shared utilities.
 category:       Language
 homepage:       https://github.com/rewire-hardware/ReWire#readme
 bug-reports:    https://github.com/rewire-hardware/ReWire/issues
@@ -42,16 +42,6 @@ library
       ReWire.FrontEnd
       ReWire.GHC.Session
       ReWire.GHC.ToCrust
-      ReWire.HSE.Annotate
-      ReWire.HSE.Cache
-      ReWire.HSE.Desugar
-      ReWire.HSE.Exports
-      ReWire.HSE.Fixity
-      ReWire.HSE.Globs
-      ReWire.HSE.Orphans
-      ReWire.HSE.Parse
-      ReWire.HSE.Rename
-      ReWire.HSE.SrcLoc
       ReWire.ModCache
       ReWire.Pass
   other-modules:
@@ -72,12 +62,16 @@ library
     , ghc ==9.10.*
     , ghc-paths ==0.1.*
     , hashable ==1.5.*
-    , haskell-src-exts ==1.23.*
     , lens ==5.3.*
     , mtl ==2.3.*
+<<<<<<< HEAD
     , rewire-backend >=2.8
     , rewire-base >=2.8
     , split ==0.2.*
+=======
+    , rewire-backend >=2.7
+    , rewire-base >=2.7
+>>>>>>> c2e4ea0 (Move the HSE front end into rewire-embedder; drop haskell-src-exts from rewire-frontend.)
     , text ==2.1.*
     , unordered-containers ==0.2.*
     , yaml ==0.11.*

@@ -18,7 +18,7 @@ import ReWire.Error (AstError, MonadError)
 import ReWire.HSE.Annotate (annotate)
 import ReWire.HSE.Cache (LoadPath, getModuleWith)
 import ReWire.HSE.Rename (Exports, Renamer, fixFixity)
-import ReWire.Pass (printInfoTop, printInfoHSE)
+import ReWire.HSE.PassInfo (printInfoTop, printInfoHSE)
 import ReWire.Pretty (Pretty (..), prettyPrint, fastPrint)
 
 import Control.Lens ((^.))
