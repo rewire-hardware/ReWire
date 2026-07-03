@@ -45,6 +45,7 @@ dependencies:
 - hashable ^>= 1.5
 - lens ^>= 5.3
 - mtl ^>= 2.3
+- process ^>= 1.6
 - text ^>= 2.1
 - unordered-containers ^>= 0.2
 - yaml ^>= 0.11
