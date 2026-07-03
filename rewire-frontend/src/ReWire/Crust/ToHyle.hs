@@ -495,6 +495,9 @@ transBuiltin an' t' an theExp = case theExp of
             args' <- mapM transExp args
             applyExtern an' sz (ps, clk, rst, as, rs, s) a args'
       (M.Extern,  _) -> failInternal an "encountered not-fully-applied extern (after inlining)."
+      (b, _) | b `elem` [M.Bind, M.Return]
+                     -> failAt an ("encountered unsupported builtin use: rwPrim" <> showt b
+                          <> " (a monadic operator at a monad other than the ReacT/StateT/Identity stack?).")
       (b, _)         -> failAt an ("encountered unsupported builtin use: rwPrim" <> showt b <> ".")
 
       where subElems :: (Fresh m, MonadError AstError m, MonadState S m) => Annote -> M.Exp -> Integer -> Natural -> TCM m A.Exp

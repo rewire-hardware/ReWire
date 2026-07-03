@@ -559,8 +559,9 @@ bridgeConApp ctx an v dc args vargs
 
 -- | Class method dispatch: user-class methods project the field out of
 --   the dictionary (which is ordinary data); >>=, >>, return, pure at
---   ReacT/StateT/Identity become Bind/Return builtins (dictionary
---   discarded); == at Integer becomes the Eq builtin. Anything else is
+--   ReacT/StateT/Identity or at an unresolved monad type become Bind/Return
+--   builtins (dictionary discarded; a concrete monad off the reactive stack
+--   is rejected); == at Integer becomes the Eq builtin. Anything else is
 --   out of vocabulary.
 bridgeClassOp :: (Fresh m, MonadError AstError m) => Ctx -> Annote -> Var -> [CoreExpr] -> [CoreExpr] -> m M.Exp
 bridgeClassOp ctx an v args vargs
@@ -585,7 +586,13 @@ bridgeClassOp ctx an v args vargs
                               mkApp an proj <$> mapM (bridgeExp ctx an) rest
             _          -> failAt an $ "ghc-frontend: unapplied class method: " <> occ
       | occ `elem` ([">>=", ">>", "return", "pure"] :: [Text]) = case tyArgHead of
-            Just tcn | tcn `elem` (["ReacT", "StateT", "Identity"] :: [Text]) -> case occ of
+            Just tcn | tcn `notElem` (["ReacT", "StateT", "Identity"] :: [Text])
+                     -> failAt an $ "ghc-frontend: monadic operator at unsupported monad: " <> tcn
+            -- A reactive-stack monad or one not yet resolved (e.g., a type
+            -- variable in the body of a monad-polymorphic helper): emit the
+            -- polymorphic builtin and let the Crust typechecker resolve it
+            -- when the helper is monomorphized.
+            _        -> case occ of
                   ">>=" -> apply $ M.Builtin an Nothing Nothing M.Bind
                   ">>"  -> case vargs of
                         [e1, e2] -> do
@@ -595,8 +602,6 @@ bridgeClassOp ctx an v args vargs
                               pure $ mkApp an (M.Builtin an Nothing Nothing M.Bind) [e1', M.Lam an Nothing Nothing $ bind k e2']
                         _        -> failAt an "ghc-frontend: unsaturated (>>)."
                   _     -> apply $ M.Builtin an Nothing Nothing M.Return -- return/pure
-            Just tcn -> failAt an $ "ghc-frontend: monadic operator at unsupported monad: " <> tcn
-            Nothing  -> failAt an $ "ghc-frontend: monadic operator at unresolvable monad type."
       | occ == "==", Just "Integer" <- tyArgHead = apply $ M.Builtin an Nothing Nothing M.Eq
       | otherwise = failAt an $ "ghc-frontend: unsupported use of a type class method: " <> occ
       where occ :: Text

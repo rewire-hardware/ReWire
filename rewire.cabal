@@ -76,6 +76,8 @@ data-files:
     tests/negative/unknown-var.hs
     tests/negative/unsupported-instance.hs
     tests/negative/unsupported-let-implicit-param.hs
+    tests/negative/unsupported-monad-late.hs
+    tests/negative/unsupported-monad.hs
     tests/negative/core-defn-name-mismatch.rwc
     tests/negative/core-multiple-devices.rwc
     tests/negative/core-no-device.rwc
@@ -124,6 +126,7 @@ data-files:
     tests/golden/iterSt.hs
     tests/golden/matchBind.hs
     tests/golden/ModsMain.hs
+    tests/golden/monadpoly.hs
     tests/golden/multireg.hs
     tests/golden/OD19Filter.hs
     tests/golden/onestate.hs
@@ -192,6 +195,7 @@ data-files:
     tests/golden/iterSt.sv
     tests/golden/matchBind.sv
     tests/golden/ModsMain.sv
+    tests/golden/monadpoly.sv
     tests/golden/multireg.sv
     tests/golden/OD19Filter.sv
     tests/golden/onestate.sv
@@ -260,6 +264,7 @@ data-files:
     tests/golden/iterSt.rwc
     tests/golden/matchBind.rwc
     tests/golden/ModsMain.rwc
+    tests/golden/monadpoly.rwc
     tests/golden/multireg.rwc
     tests/golden/OD19Filter.rwc
     tests/golden/onestate.rwc
@@ -328,6 +333,7 @@ data-files:
     tests/golden/iterSt.vhdl
     tests/golden/matchBind.vhdl
     tests/golden/ModsMain.vhdl
+    tests/golden/monadpoly.vhdl
     tests/golden/multireg.vhdl
     tests/golden/OD19Filter.vhdl
     tests/golden/onestate.vhdl
@@ -395,6 +401,7 @@ data-files:
     tests/golden/iterSt.cry
     tests/golden/matchBind.cry
     tests/golden/ModsMain.cry
+    tests/golden/monadpoly.cry
     tests/golden/multireg.cry
     tests/golden/OD19Filter.cry
     tests/golden/onestate.cry
@@ -484,6 +491,7 @@ data-files:
     tests/golden/matchBind.yaml
     tests/golden/ModsMain.input.yaml
     tests/golden/ModsMain.yaml
+    tests/golden/monadpoly.yaml
     tests/golden/multireg.input.yaml
     tests/golden/multireg.yaml
     tests/golden/onestate.input.yaml
