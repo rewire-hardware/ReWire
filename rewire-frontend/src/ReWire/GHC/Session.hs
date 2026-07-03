@@ -1,6 +1,7 @@
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 -- | The GHC-driven front end, part one: an in-process GHC session that
 --   drives parse -> rename -> typecheck -> desugar over the whole home
 --   module graph and hands back the (-O0, pre-simplifier) desugared Core,
@@ -31,9 +32,12 @@ import ReWire.Annotation (Annote, noAnn, srcAnnote)
 import ReWire.Config (Config, loadPath, start, verbose, pDebug)
 import ReWire.Error (AstError, MonadError, failAt, warnAt)
 
+import Control.Exception (try, SomeException)
 import Control.Lens ((^.))
 import Control.Monad (forM, unless, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import System.Environment (lookupEnv, setEnv)
+import System.Process (readProcess)
 import Data.Containers.ListUtils (nubOrdOn)
 import Data.IORef (IORef, newIORef, readIORef, modifyIORef')
 import Data.Text (Text)
@@ -101,6 +105,7 @@ dumpCore conf fp = do
 loadCore :: (MonadError AstError m, MonadIO m) => Config -> FilePath -> m [ModGuts]
 loadCore conf fp = do
       pDebug conf $ "GHC session: libdir: " <> T.pack libdir
+      discoverPackageDBs conf
       diags <- liftIO $ newIORef ([] :: [Diag])
       -- GhcExceptions (panics, usage errors like a missing plugin package
       -- when GHC_PACKAGE_PATH is unset) are IO exceptions, not SourceErrors.
@@ -147,6 +152,36 @@ loadCore conf fp = do
 
             dMsg :: Diag -> Text
             dMsg (_, _, m) = m
+
+-- | The GHC session needs the package databases rwc was built against
+--   (for rewire-user's library dependencies and the typechecker plugins).
+--   Under `stack run`/`stack exec` (the documented invocation), stack sets
+--   GHC_PACKAGE_PATH and there is nothing to do. For an installed rwc:
+--   honor an explicit RWC_PACKAGE_PATH, or fall back to asking `stack
+--   path --ghc-package-path` (correct when run inside the ReWire
+--   checkout; a different or global stack project would yield databases
+--   without rewire-user's dependencies, and module resolution will fail
+--   with a hint).
+discoverPackageDBs :: MonadIO m => Config -> m ()
+discoverPackageDBs conf = liftIO (lookupEnv "GHC_PACKAGE_PATH") >>= \ case
+      Just _  -> pure ()
+      Nothing -> liftIO (lookupEnv "RWC_PACKAGE_PATH") >>= \ case
+            Just p  -> do
+                  pDebug conf $ "GHC session: using RWC_PACKAGE_PATH: " <> T.pack p
+                  liftIO $ setEnv "GHC_PACKAGE_PATH" p
+            Nothing -> do
+                  r <- liftIO $ try $ readProcess "stack" ["path", "--ghc-package-path"] ""
+                  case r of
+                        Right (strip -> p) | not (null p) -> do
+                              pDebug conf $ "GHC session: package path from `stack path`: " <> T.pack p
+                              liftIO $ setEnv "GHC_PACKAGE_PATH" p
+                        Right _                  -> hint
+                        Left (_ :: SomeException) -> hint
+      where hint :: MonadIO m => m ()
+            hint = pDebug conf "GHC session: no package databases found (GHC_PACKAGE_PATH and RWC_PACKAGE_PATH unset, `stack path` unavailable); module resolution will likely fail. Run rwc under `stack exec`, or set RWC_PACKAGE_PATH to the ghc package path rwc was built with."
+
+            strip :: String -> String
+            strip = T.unpack . T.strip . T.pack
 
 -- | DynFlags for the ReWire session: no code generation, no optimization
 --   (-O0 keeps the reactive class selectors recognizable and the extern
