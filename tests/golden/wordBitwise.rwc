@@ -9,13 +9,13 @@ Main.compute ds =
       let w = ds[0 +: 8] in
       or (xor (and u v) w) (not (xor (and (not u) (not v)) w))
 
-$LL.Main.loop1 : ([8]) -> [8]
-$LL.Main.loop1 rabind =
+$LL.Main.loop : ([8]) -> [8]
+$LL.Main.loop rabind =
       rabind
 
 Main.loop1 : ([24]) -> [8]
 Main.loop1 i =
-      $LL.Main.loop1 (Main.compute i)
+      $LL.Main.loop (Main.compute i)
 
 device top_level
       input __in0 : [8]

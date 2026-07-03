@@ -4,7 +4,7 @@ $Pure.dispatch disc i =
             Main.perform_write i s0)
             else if eq disc[205 +: 3] 3'h2 then (let s0 = disc[0 +: 205] in
             Main.perform_read i s0) else if eq disc[205 +: 3] 3'h3 then (let s0 = disc[0 +: 205] in
-            $LL.Main.while_addr_reg_03 i s0) else if eq disc[205 +: 3] 3'h4 then (let s0 = disc[0 +: 205] in
+            $LL.Main.while_addr_reg_02 i s0) else if eq disc[205 +: 3] 3'h4 then (let s0 = disc[0 +: 205] in
             Main.idle i s0) else let s0 = disc[0 +: 205] in
             Main.scrub_ram i s0
 
@@ -17,10 +17,6 @@ $LL.Main.get_addr_reg : ([205], [205]) -> [215]
 $LL.Main.get_addr_reg ds sigma0 =
       let s = ds[128 +: 77] in
       Main.addr_reg s # sigma0
-
-$LL.Main.perform_write8 : ([205], [205]) -> [412]
-$LL.Main.perform_write8 rabind sto0 =
-      $LL.Main.idle26 rabind rabind
 
 Main.getloc : ([10], [205]) -> [237]
 Main.getloc a sigma0 =
@@ -49,10 +45,6 @@ $LL.Main.getloc1 : ([10], [205], [205]) -> [237]
 $LL.Main.getloc1 $x $x1 sigma0 =
       $LL.Main.getloc $x $x1 sigma0
 
-$LL.Main.perform_write7 : ([205]) -> [205]
-$LL.Main.perform_write7 sigma0 =
-      Main.set_ack_reg sigma0
-
 Main.set_ack_reg1 : ([205]) -> [205]
 Main.set_ack_reg1 sigma0 =
       $LL.Main.set_ack_reg1 sigma0 sigma0
@@ -62,39 +54,43 @@ Main.mem3 ds =
       let ds4 = ds[0 +: 32] in
       ds4
 
-$LL.Main.idle26 : ([205], [205]) -> [412]
-$LL.Main.idle26 rabind sto0 =
-      171'h4000000000000000000000000000000000000000000 # $LL.Main.while_addr_reg_05 ($LL.Main.connect1 rabind) # 3'h4 # sto0
+$LL.Main.idle20 : ([205], [205]) -> [412]
+$LL.Main.idle20 rabind sto0 =
+      171'h4000000000000000000000000000000000000000000 # $LL.Main.connect ($LL.Main.connect1 rabind) # 3'h4 # sto0
 
-$LL.Main.idle25 : ([46], [10], [2], [1], [205]) -> [412]
-$LL.Main.idle25 ip a_i p_i wild sto0 =
+$LL.Main.idle19 : ([46], [10], [2], [1], [205]) -> [412]
+$LL.Main.idle19 ip a_i p_i wild sto0 =
       if eq wild 1'h0 then (let $t5 = (let $t4 = (let $t3 = Main.set_addr_reg1 ("Main.<&>" p_i a_i) sto0 in
-            $LL.Main.idle20 ip p_i $t3) in
+            $LL.Main.idle15 ip p_i $t3) in
             let v = $t4[205 +: 205] in
             let s0 = $t4[0 +: 205] in
             2'h1 # v # s0) in
             let v = $t5[205 +: 205] in
             let s0 = $t5[0 +: 205] in
-            $LL.Main.idle7 v s0)
+            $LL.Main.idle5 v s0)
             else let $t2 = (let $t1 = (let $t0 = Main.set_addr_reg1 ("Main.<&>" p_i a_i) sto0 in
-            $LL.Main.idle14 p_i $t0) in
+            $LL.Main.idle10 p_i $t0) in
             let v = $t1[205 +: 205] in
             let s0 = $t1[0 +: 205] in
             2'h1 # v # s0) in
             let v = $t2[205 +: 205] in
             let s0 = $t2[0 +: 205] in
-            $LL.Main.idle18 v s0
+            $LL.Main.idle13 v s0
 
 Main.set_ack_reg : ([205]) -> [205]
 Main.set_ack_reg sigma0 =
       $LL.Main.set_ack_reg sigma0 sigma0
 
+$LL.Main.perform_read3 : ([205]) -> [205]
+$LL.Main.perform_read3 sigma0 =
+      Main.set_ack_reg sigma0
+
 $LL.Main.set_ack_reg1 : ([205], [205]) -> [205]
 $LL.Main.set_ack_reg1 x sigma0 =
       $LL.Main.set_ack_reg2 1'h0 x
 
-$LL.Main.idle24 : ([46], [2], [205]) -> [205]
-$LL.Main.idle24 ip p_i sigma0 =
+$LL.Main.idle18 : ([46], [2], [205]) -> [205]
+$LL.Main.idle18 ip p_i sigma0 =
       let $t0 = Main.set_data_reg1 (Main.data_in ip) sigma0 in
       $LL.Main.idle2 p_i $t0
 
@@ -106,17 +102,21 @@ $LL.Main.memLookup2 : ([128]) -> [32]
 $LL.Main.memLookup2 $x =
       (undef 32)
 
-$LL.Main.while_addr_reg_09 : ([10], [205]) -> [410]
-$LL.Main.while_addr_reg_09 rabind sigma0 =
-      let $t0 = $LL.Main.while_addr_reg_02 rabind sigma0 in
-      $LL.Main.perform_write5 $t0
+$LL.Main.idle17 : ([205], [205]) -> [412]
+$LL.Main.idle17 rabind sto0 =
+      $LL.Main.idle20 rabind rabind
+
+$LL.Main.while_addr_reg_07 : ([10], [205]) -> [410]
+$LL.Main.while_addr_reg_07 rabind sigma0 =
+      let $t0 = $LL.Main.while_addr_reg_01 rabind sigma0 in
+      $LL.Main.idle8 $t0
 
 Main.set_addr_reg1 : ([10], [205]) -> [205]
 Main.set_addr_reg1 w10 sigma0 =
       $LL.Main.set_addr_reg1 w10 sigma0 sigma0
 
-$LL.Main.perform_write6 : ([10], [205]) -> [205]
-$LL.Main.perform_write6 addr sigma0 =
+$LL.Main.perform_write4 : ([10], [205]) -> [205]
+$LL.Main.perform_write4 addr sigma0 =
       let $t0 = Main.get_data_reg sigma0 in
       let st0 = $t0[205 +: 32] in
       let st1 = $t0[0 +: 205] in
@@ -126,39 +126,31 @@ Main.set_data_reg1 : ([32], [205]) -> [205]
 Main.set_data_reg1 w32 sigma0 =
       $LL.Main.set_data_reg w32 sigma0 sigma0
 
-$LL.Main.perform_read4 : ([10], [205]) -> [410]
-$LL.Main.perform_read4 rabind sigma0 =
-      let $t0 = $LL.Main.perform_read1 rabind sigma0 in
-      $LL.Main.perform_write5 $t0
+$LL.Main.perform_read2 : ([10], [205]) -> [410]
+$LL.Main.perform_read2 rabind sigma0 =
+      let $t0 = $LL.Main.perform_read rabind sigma0 in
+      $LL.Main.idle8 $t0
 
 Main.set_data_out_reg1 : ([32], [205]) -> [205]
 Main.set_data_out_reg1 w32 sigma0 =
       $LL.Main.set_data_out_reg1 w32 sigma0 sigma0
 
-$LL.Main.idle22 : ([205]) -> [205]
-$LL.Main.idle22 sigma0 =
-      Main.set_data_out_reg sigma0
+$LL.Main.idle16 : ([46], [1], [2], [1], [10], [205]) -> [412]
+$LL.Main.idle16 ip ds p_i ds1 a_i sto0 =
+      $LL.Main.idle4 ip a_i p_i ds1 ds sto0
 
-$LL.Main.idle21 : ([46], [1], [2], [1], [10], [205]) -> [412]
-$LL.Main.idle21 ip ds p_i ds1 a_i sto0 =
-      $LL.Main.idle6 ip a_i p_i ds1 ds sto0
+$LL.Main.idle15 : ([46], [2], [205]) -> [410]
+$LL.Main.idle15 ip p_i sigma0 =
+      let $t0 = $LL.Main.idle18 ip p_i sigma0 in
+      $LL.Main.idle8 $t0
 
-$LL.Main.idle20 : ([46], [2], [205]) -> [410]
-$LL.Main.idle20 ip p_i sigma0 =
-      let $t0 = $LL.Main.idle24 ip p_i sigma0 in
-      $LL.Main.perform_write5 $t0
+$LL.Main.idle14 : ([46], [1], [1], [2], [205]) -> [412]
+$LL.Main.idle14 ip ds ds1 p_i sto0 =
+      $LL.Main.idle16 ip ds p_i ds1 (Main.addr_in ip) sto0
 
-$LL.Main.perform_write5 : ([205]) -> [410]
-$LL.Main.perform_write5 sigma0 =
-      sigma0 # sigma0
-
-$LL.Main.idle19 : ([46], [1], [1], [2], [205]) -> [412]
-$LL.Main.idle19 ip ds ds1 p_i sto0 =
-      $LL.Main.idle21 ip ds p_i ds1 (Main.addr_in ip) sto0
-
-$LL.Main.idle18 : ([205], [205]) -> [412]
-$LL.Main.idle18 rabind sto0 =
-      $LL.Main.idle16 rabind rabind
+$LL.Main.idle13 : ([205], [205]) -> [412]
+$LL.Main.idle13 rabind sto0 =
+      $LL.Main.idle11 rabind rabind
 
 $LL.Main.setloc2 : ([10], [205], [205]) -> [205]
 $LL.Main.setloc2 sp x sigma0 =
@@ -173,37 +165,37 @@ Main.perform_write ds sto0 =
       2'h1 # v # s0) in
       let v = $t2[205 +: 205] in
       let s0 = $t2[0 +: 205] in
-      $LL.Main.perform_write8 v s0
+      $LL.Main.idle17 v s0
 
 Main.perform_read : ([46], [205]) -> [412]
 Main.perform_read ds sto0 =
       let $t2 = (let $t1 = (let $t0 = Main.get_addr_reg sto0 in
       let st0 = $t0[205 +: 10] in
       let st1 = $t0[0 +: 205] in
-      $LL.Main.perform_read4 st0 st1) in
+      $LL.Main.perform_read2 st0 st1) in
       let v = $t1[205 +: 205] in
       let s0 = $t1[0 +: 205] in
       2'h1 # v # s0) in
       let v = $t2[205 +: 205] in
       let s0 = $t2[0 +: 205] in
-      $LL.Main.perform_write8 v s0
+      $LL.Main.idle17 v s0
 
-$LL.Main.idle17 : ([46], [1], [205]) -> [412]
-$LL.Main.idle17 ip ds sto0 =
-      $LL.Main.idle13 ip ds (Main.go ip) sto0
+$LL.Main.idle12 : ([46], [1], [205]) -> [412]
+$LL.Main.idle12 ip ds sto0 =
+      $LL.Main.idle9 ip ds (Main.go ip) sto0
 
-$LL.Main.idle16 : ([205], [205]) -> [412]
-$LL.Main.idle16 rabind sto0 =
-      171'h4000000000000000000000000000000000000000000 # $LL.Main.while_addr_reg_05 ($LL.Main.connect1 rabind) # 3'h2 # sto0
+$LL.Main.idle11 : ([205], [205]) -> [412]
+$LL.Main.idle11 rabind sto0 =
+      171'h4000000000000000000000000000000000000000000 # $LL.Main.connect ($LL.Main.connect1 rabind) # 3'h2 # sto0
 
 Main.set_partition_reg : ([2], [205]) -> [205]
 Main.set_partition_reg w2 sigma0 =
       $LL.Main.set_partition_reg w2 sigma0 sigma0
 
-$LL.Main.idle14 : ([2], [205]) -> [410]
-$LL.Main.idle14 p_i sigma0 =
-      let $t0 = $LL.Main.idle3 p_i sigma0 in
-      $LL.Main.perform_write5 $t0
+$LL.Main.idle10 : ([2], [205]) -> [410]
+$LL.Main.idle10 p_i sigma0 =
+      let $t0 = $LL.Main.idle1 p_i sigma0 in
+      $LL.Main.idle8 $t0
 
 $LL.Main.memTweak2 : ([32], [128], [1]) -> [128]
 $LL.Main.memTweak2 v m wild =
@@ -272,29 +264,29 @@ Main.mem0 ds =
       let ds1 = ds[96 +: 32] in
       ds1
 
-$LL.Main.while_addr_reg_08 : ([10], [205]) -> [205]
-$LL.Main.while_addr_reg_08 addr sigma0 =
+$LL.Main.while_addr_reg_06 : ([10], [205]) -> [205]
+$LL.Main.while_addr_reg_06 addr sigma0 =
       Main.set_addr_reg1 (Main.nextKey addr) sigma0
 
-$LL.Main.idle13 : ([46], [1], [1], [205]) -> [412]
-$LL.Main.idle13 ip ds ds1 sto0 =
-      $LL.Main.idle19 ip ds1 ds (Main.partition_in ip) sto0
+$LL.Main.idle9 : ([46], [1], [1], [205]) -> [412]
+$LL.Main.idle9 ip ds ds1 sto0 =
+      $LL.Main.idle14 ip ds1 ds (Main.partition_in ip) sto0
 
-$LL.Main.while_addr_reg_07 : ([10], [205]) -> [205]
-$LL.Main.while_addr_reg_07 $x sigma0 =
-      $LL.Main.while_addr_reg_08 $x sigma0
+$LL.Main.while_addr_reg_05 : ([10], [205]) -> [205]
+$LL.Main.while_addr_reg_05 $x sigma0 =
+      $LL.Main.while_addr_reg_06 $x sigma0
 
 $LL.Main.set_ack_reg : ([205], [205]) -> [205]
 $LL.Main.set_ack_reg x sigma0 =
       $LL.Main.set_ack_reg2 1'h1 x
 
-$LL.Main.while_addr_reg_06 : ([205], [205]) -> [412]
-$LL.Main.while_addr_reg_06 x sto0 =
-      171'h4000000000000000000000000000000000000000000 # $LL.Main.while_addr_reg_05 ($LL.Main.connect1 x) # 3'h3 # sto0
+$LL.Main.while_addr_reg_04 : ([205], [205]) -> [412]
+$LL.Main.while_addr_reg_04 x sto0 =
+      171'h4000000000000000000000000000000000000000000 # $LL.Main.connect ($LL.Main.connect1 x) # 3'h3 # sto0
 
-$LL.Main.while_addr_reg_05 : ([77]) -> [33]
-$LL.Main.while_addr_reg_05 s =
-      Main.ack_reg s # Main.data_out_reg s
+$LL.Main.idle8 : ([205]) -> [410]
+$LL.Main.idle8 sigma0 =
+      sigma0 # sigma0
 
 Main.partition_in : ([46]) -> [2]
 Main.partition_in ds =
@@ -314,13 +306,13 @@ Main.while_addr_reg_0 x sto0 =
       197'h0 # v # s0) in
       let v = $t1[205 +: 10] in
       let s0 = $t1[0 +: 205] in
-      $LL.Main.while_addr_reg_04 x v s0
+      $LL.Main.while_addr_reg_03 x v s0
 
-$LL.Main.while_addr_reg_04 : ([205], [10], [205]) -> [412]
-$LL.Main.while_addr_reg_04 x addr sto0 =
+$LL.Main.while_addr_reg_03 : ([205], [10], [205]) -> [412]
+$LL.Main.while_addr_reg_03 x addr sto0 =
       let $t0 = Main.scrubbing addr in
       if eq $t0 1'h0 then $LL.Main.while_addr_reg_0 sto0 sto0
-            else $LL.Main.while_addr_reg_06 x x
+            else $LL.Main.while_addr_reg_04 x x
 
 $LL.Main.memLookup1 : ([1], [128]) -> [32]
 $LL.Main.memLookup1 wild $x =
@@ -342,7 +334,7 @@ $LL.Main.perform_write3 sigma0 =
       let $t0 = Main.get_addr_reg sigma0 in
       let st0 = $t0[205 +: 10] in
       let st1 = $t0[0 +: 205] in
-      $LL.Main.perform_write6 st0 st1
+      $LL.Main.perform_write4 st0 st1
 
 Main.setloc1 : ([10], [205]) -> [205]
 Main.setloc1 sp sigma0 =
@@ -351,24 +343,24 @@ Main.setloc1 sp sigma0 =
 $LL.Main.perform_write2 : ([205]) -> [410]
 $LL.Main.perform_write2 sigma0 =
       let $t0 = $LL.Main.perform_write3 sigma0 in
-      $LL.Main.perform_write5 $t0
+      $LL.Main.idle8 $t0
 
-$LL.Main.perform_read2 : ([32], [205]) -> [205]
-$LL.Main.perform_read2 d_o_r' sigma0 =
+$LL.Main.perform_read1 : ([32], [205]) -> [205]
+$LL.Main.perform_read1 d_o_r' sigma0 =
       let $t0 = Main.set_data_out_reg1 d_o_r' sigma0 in
-      $LL.Main.perform_write7 $t0
+      $LL.Main.perform_read3 $t0
 
-$LL.Main.idle11 : ([205]) -> [410]
-$LL.Main.idle11 sigma0 =
-      let $t0 = $LL.Main.idle22 sigma0 in
-      $LL.Main.perform_write5 $t0
+$LL.Main.idle7 : ([205]) -> [410]
+$LL.Main.idle7 sigma0 =
+      let $t0 = $LL.Main.idle6 sigma0 in
+      $LL.Main.idle8 $t0
 
-$LL.Main.while_addr_reg_03 : ([46], [205]) -> [412]
-$LL.Main.while_addr_reg_03 _unused sto0 =
+$LL.Main.while_addr_reg_02 : ([46], [205]) -> [412]
+$LL.Main.while_addr_reg_02 _unused sto0 =
       let $t2 = (let $t1 = (let $t0 = Main.get_addr_reg sto0 in
       let st0 = $t0[205 +: 10] in
       let st1 = $t0[0 +: 205] in
-      $LL.Main.while_addr_reg_09 st0 st1) in
+      $LL.Main.while_addr_reg_07 st0 st1) in
       let v = $t1[205 +: 205] in
       let s0 = $t1[0 +: 205] in
       2'h1 # v # s0) in
@@ -385,12 +377,12 @@ $LL.Main.nextKey wild =
       if eq wild 1'h0 then 10'h1
             else 10'h2
 
-$LL.Main.perform_read1 : ([10], [205]) -> [205]
-$LL.Main.perform_read1 addr sigma0 =
+$LL.Main.perform_read : ([10], [205]) -> [205]
+$LL.Main.perform_read addr sigma0 =
       let $t0 = Main.getloc addr sigma0 in
       let st0 = $t0[205 +: 32] in
       let st1 = $t0[0 +: 205] in
-      $LL.Main.perform_read2 st0 st1
+      $LL.Main.perform_read1 st0 st1
 
 $LL.Main.set_partition_reg2 : ([2], [205]) -> [205]
 $LL.Main.set_partition_reg2 w2 ds =
@@ -404,7 +396,7 @@ $LL.Main.set_partition_reg2 w2 ds =
 $LL.Main.perform_write : ([10], [32], [205]) -> [205]
 $LL.Main.perform_write addr _data sigma0 =
       let $t0 = Main.setloc addr _data sigma0 in
-      $LL.Main.perform_write7 $t0
+      $LL.Main.perform_read3 $t0
 
 $LL.Main.set_data_out_reg2 : ([32], [205]) -> [205]
 $LL.Main.set_data_out_reg2 w32 ds =
@@ -418,11 +410,6 @@ $LL.Main.set_data_out_reg2 w32 ds =
 $LL.Main.set_data_out_reg1 : ([32], [205], [205]) -> [205]
 $LL.Main.set_data_out_reg1 w32 x sigma0 =
       $LL.Main.set_data_out_reg2 w32 x
-
-$LL.Main.idle9 : ([205]) -> [205]
-$LL.Main.idle9 sigma0 =
-      let $t0 = Main.set_ack_reg1 sigma0 in
-      $LL.Main.idle22 $t0
 
 "Main.<&>" : ([2], [10]) -> [10]
 "Main.<&>" ds ds1 =
@@ -438,13 +425,17 @@ $LL.Main.idle9 sigma0 =
       let b9 = ds1[0 +: 1] in
       b0 # b1 # b2 # b3 # b4 # b5 # b6 # b7 # b8 # b9
 
-$LL.Main.while_addr_reg_02 : ([10], [205]) -> [205]
-$LL.Main.while_addr_reg_02 addr sigma0 =
-      let $t0 = Main.setloc1 addr sigma0 in
-      $LL.Main.while_addr_reg_07 addr $t0
+$LL.Main.idle6 : ([205]) -> [205]
+$LL.Main.idle6 sigma0 =
+      Main.set_data_out_reg sigma0
 
-$LL.Main.idle7 : ([205], [205]) -> [412]
-$LL.Main.idle7 rabind sto0 =
+$LL.Main.while_addr_reg_01 : ([10], [205]) -> [205]
+$LL.Main.while_addr_reg_01 addr sigma0 =
+      let $t0 = Main.setloc1 addr sigma0 in
+      $LL.Main.while_addr_reg_05 addr $t0
+
+$LL.Main.idle5 : ([205], [205]) -> [412]
+$LL.Main.idle5 rabind sto0 =
       $LL.Main.idle rabind rabind
 
 Main.scrubbing : ([10]) -> [1]
@@ -486,26 +477,30 @@ $LL.Main.memTweak1 v m wild =
             let mem2 = m[32 +: 32] in
             mem0 # mem1 # mem2 # v
 
+$LL.Main.connect : ([77]) -> [33]
+$LL.Main.connect s =
+      Main.ack_reg s # Main.data_out_reg s
+
 $LL.Main.set_addr_reg1 : ([10], [205], [205]) -> [205]
 $LL.Main.set_addr_reg1 w10 x sigma0 =
       $LL.Main.set_addr_reg w10 x
 
-$LL.Main.idle6 : ([46], [10], [2], [1], [1], [205]) -> [412]
-$LL.Main.idle6 ip a_i p_i ds wild sto0 =
-      if eq wild 1'h1 then $LL.Main.idle25 ip a_i p_i ds sto0
+$LL.Main.idle4 : ([46], [10], [2], [1], [1], [205]) -> [412]
+$LL.Main.idle4 ip a_i p_i ds wild sto0 =
+      if eq wild 1'h1 then $LL.Main.idle19 ip a_i p_i ds sto0
             else let $t2 = (let $t1 = (let $t0 = Main.set_ack_reg1 sto0 in
-            $LL.Main.idle11 $t0) in
+            $LL.Main.idle7 $t0) in
             let v = $t1[205 +: 205] in
             let s0 = $t1[0 +: 205] in
             2'h1 # v # s0) in
             let v = $t2[205 +: 205] in
             let s0 = $t2[0 +: 205] in
-            $LL.Main.perform_write8 v s0
+            $LL.Main.idle17 v s0
 
 $LL.Main.while_addr_reg_0 : ([205], [205]) -> [412]
 $LL.Main.while_addr_reg_0 ds sto0 =
       let sigs = ds[128 +: 77] in
-      171'h4000000000000000000000000000000000000000000 # $LL.Main.while_addr_reg_05 sigs # 3'h4 # sto0
+      171'h4000000000000000000000000000000000000000000 # $LL.Main.connect sigs # 3'h4 # sto0
 
 $LL.Main.set_partition_reg : ([2], [205], [205]) -> [205]
 $LL.Main.set_partition_reg w2 x sigma0 =
@@ -515,10 +510,10 @@ $LL.Main.set_data_out_reg : ([205], [205]) -> [205]
 $LL.Main.set_data_out_reg x sigma0 =
       $LL.Main.set_data_out_reg2 32'h0 x
 
-$LL.Main.idle3 : ([2], [205]) -> [205]
-$LL.Main.idle3 p_i sigma0 =
-      let $t0 = Main.set_partition_reg p_i sigma0 in
-      $LL.Main.idle9 $t0
+$LL.Main.idle3 : ([205]) -> [205]
+$LL.Main.idle3 sigma0 =
+      let $t0 = Main.set_ack_reg1 sigma0 in
+      $LL.Main.idle6 $t0
 
 $LL.Main.getloc : ([10], [205], [205]) -> [237]
 $LL.Main.getloc a ds sigma0 =
@@ -568,7 +563,7 @@ Main.addr_reg ds =
 
 $LL.Main.idle2 : ([2], [205]) -> [205]
 $LL.Main.idle2 $x sigma0 =
-      $LL.Main.idle3 $x sigma0
+      $LL.Main.idle1 $x sigma0
 
 $LL.Main.set_addr_reg : ([10], [205]) -> [205]
 $LL.Main.set_addr_reg w10 ds =
@@ -588,6 +583,11 @@ Main.data_reg : ([77]) -> [32]
 Main.data_reg ds =
       let ds3 = ds[33 +: 32] in
       ds3
+
+$LL.Main.idle1 : ([2], [205]) -> [205]
+$LL.Main.idle1 p_i sigma0 =
+      let $t0 = Main.set_partition_reg p_i sigma0 in
+      $LL.Main.idle3 $t0
 
 Main.go : ([46]) -> [1]
 Main.go ds =
@@ -628,11 +628,11 @@ Main.addr_in ds =
 
 $LL.Main.idle : ([205], [205]) -> [412]
 $LL.Main.idle rabind sto0 =
-      171'h4000000000000000000000000000000000000000000 # $LL.Main.while_addr_reg_05 ($LL.Main.connect1 rabind) # 3'h1 # sto0
+      171'h4000000000000000000000000000000000000000000 # $LL.Main.connect ($LL.Main.connect1 rabind) # 3'h1 # sto0
 
 Main.idle : ([46], [205]) -> [412]
 Main.idle ip sto0 =
-      $LL.Main.idle17 ip (Main.rnw ip) sto0
+      $LL.Main.idle12 ip (Main.rnw ip) sto0
 
 Main.setloc : ([10], [32], [205]) -> [205]
 Main.setloc i e sigma0 =

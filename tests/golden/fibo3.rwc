@@ -33,10 +33,6 @@ $LL.Main.first : ([16], [16]) -> [24]
 $LL.Main.first v sigma0 =
       $LL.Main.first1 v # sigma0
 
-$LL.Main.incr3 : ([16]) -> [25]
-$LL.Main.incr3 sto0 =
-      Main.sig sto0
-
 Main.sig : ([16]) -> [25]
 Main.sig sto0 =
       let $t1 = (let $t0 = Main.first sto0 in
@@ -57,7 +53,11 @@ $LL.Main.incr2 $x $x1 sto0 =
 
 $LL.Main.incr1 : ([8], [8], [16]) -> [25]
 $LL.Main.incr1 r0 r1 sto0 =
-      $LL.Main.incr3 (r1 # add r0 r1)
+      $LL.Main.begin (r1 # add r0 r1)
+
+$LL.Main.begin : ([16]) -> [25]
+$LL.Main.begin sto0 =
+      Main.sig sto0
 
 Main.second : ([16]) -> [24]
 Main.second sigma0 =

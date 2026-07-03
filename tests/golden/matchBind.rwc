@@ -1,30 +1,29 @@
-$Pure.dispatch : ([10], [8]) -> [18]
+$Pure.dispatch : ([9], [8]) -> [17]
 $Pure.dispatch disc i =
-      if eq disc[8 +: 2] 2'h1 then (let s0 = disc[0 +: 8] in
-            $LL.Main.loop5 i s0)
-            else if eq disc[8 +: 2] 2'h2 then (let s0 = disc[0 +: 8] in
-            $LL.Main.reset3 i s0) else let s0 = disc[0 +: 8] in
-            $LL.Main.loop5 i s0
-
-$LL.Main.loop5 : ([8], [8]) -> [18]
-$LL.Main.loop5 rabind sto0 =
-      $LL.Main.reset1 sto0
+      if eq disc[8 +: 1] 1'h1 then (let s0 = disc[0 +: 8] in
+            $LL.Main.reset2 i s0)
+            else let s0 = disc[0 +: 8] in
+            $LL.Main.loop3 i s0
 
 $LL.Main.loop4 : ([8]) -> [1]
 $LL.Main.loop4 eta =
       $LL.Main.loop1 (let $t0 = trunc 1 eta in
       $t0)
 
-Main.loop : ([8]) -> [18]
+$LL.Main.loop3 : ([8], [8]) -> [17]
+$LL.Main.loop3 rabind sto0 =
+      $LL.Main.loop2 sto0
+
+Main.loop : ([8]) -> [17]
 Main.loop sto0 =
       $LL.Main.loop sto0 sto0
 
-$LL.Main.reset3 : ([8], [8]) -> [18]
-$LL.Main.reset3 rabind sto0 =
-      $LL.Main.reset1 rabind
+$LL.Main.reset2 : ([8], [8]) -> [17]
+$LL.Main.reset2 rabind sto0 =
+      $LL.Main.loop2 rabind
 
-$LL.Main.reset1 : ([8]) -> [18]
-$LL.Main.reset1 sto0 =
+$LL.Main.loop2 : ([8]) -> [17]
+$LL.Main.loop2 sto0 =
       Main.loop sto0
 
 $LL.Main.loop1 : ([1]) -> [1]
@@ -32,18 +31,18 @@ $LL.Main.loop1 b =
       if eq b 1'h1 then 1'h0
             else 1'h1
 
-$LL.Main.loop : ([8], [8]) -> [18]
+$LL.Main.loop : ([8], [8]) -> [17]
 $LL.Main.loop i sto0 =
       let $t0 = $LL.Main.loop4 i in
-      if eq $t0 1'h0 then 10'h9 # sto0
-            else 10'h8 # sto0
+      if eq $t0 1'h0 then 9'h4 # sto0
+            else 9'h4 # sto0
 
 device top_level
       input __in0 : [8]
       output __out0 : [8]
-      register __resumption_tag : [2] init 2'h2
+      register __resumption_tag : [1] init 1'h1
       register __st0 : [8] init 8'h0
       let $res = $Pure.dispatch (__resumption_tag # __st0) __in0
-      __out0 := $res[10 +: 8]
-      next __resumption_tag := $res[8 +: 2]
+      __out0 := $res[9 +: 8]
+      next __resumption_tag := $res[8 +: 1]
       next __st0 := $res[0 +: 8]

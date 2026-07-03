@@ -4,22 +4,17 @@ $Pure.dispatch disc i =
             $LL.Main.loop1 store0 i)
             else $LL.Main.loop2 i
 
-$LL.Main.loop6 : ([1], [1]) -> [1]
-$LL.Main.loop6 $x $x1 =
-      $LL.Main.y1 $x $x1
+$LL.Main.loop5 : ([1], [1]) -> [1]
+$LL.Main.loop5 $x $x1 =
+      $LL.Main.loop $x $x1
 
-$LL.Main.loop5 : ([1], [1]) -> [3]
-$LL.Main.loop5 a b =
-      Main.loop ($LL.Main.loop6 a 1'h1)
-
-$LL.Main.y1 : ([1], [1]) -> [1]
-$LL.Main.y1 x y =
-      if eq x 1'h1 then y
-            else 1'h0
+$LL.Main.loop4 : ([1], [1]) -> [3]
+$LL.Main.loop4 a b =
+      Main.loop ($LL.Main.loop5 a 1'h1)
 
 $LL.Main.loop2 : ([1]) -> [3]
 $LL.Main.loop2 $x =
-      $LL.Main.loop5 1'h0 $x
+      $LL.Main.loop4 1'h0 $x
 
 Main.loop : ([1]) -> [3]
 Main.loop a =
@@ -32,11 +27,16 @@ $LL.Main.zookus p =
 
 $LL.Main.loop1 : ([1], [1]) -> [3]
 $LL.Main.loop1 $x $x1 =
-      $LL.Main.loop5 $x $x1
+      $LL.Main.loop4 $x $x1
 
 Main.zookus : ([1]) -> [1]
 Main.zookus x =
       $LL.Main.zookus (x # x)
+
+$LL.Main.loop : ([1], [1]) -> [1]
+$LL.Main.loop x y =
+      if eq x 1'h1 then y
+            else 1'h0
 
 device top_level
       input __in0 : [1]

@@ -8,11 +8,7 @@ Main.compute n =
 
 Main.loop : ([7]) -> [5]
 Main.loop i =
-      $LL.Main.loop1 (Main.compute i)
-
-$LL.Main.loop1 : ([5]) -> [5]
-$LL.Main.loop1 rabind =
-      rabind
+      $LL.Main.loop (Main.compute i)
 
 $LL.Main.compute1 : ([5], [5]) -> [5]
 $LL.Main.compute1 eta b =
@@ -21,6 +17,10 @@ $LL.Main.compute1 eta b =
 $LL.Main.compute : ([5]) -> [5]
 $LL.Main.compute sp =
       $LL.Main.compute1 sp 5'h6
+
+$LL.Main.loop : ([5]) -> [5]
+$LL.Main.loop rabind =
+      rabind
 
 device top_level
       input __in0 : [7]

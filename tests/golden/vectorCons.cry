@@ -20,10 +20,6 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 rw__Pure_dispatch : [128] -> [128]
 rw__Pure_dispatch x0 = rw_Main_loop x0
 
-// $LL.Main.loop1
-rw__LL_Main_loop1 : [128] -> [128]
-rw__LL_Main_loop1 x0 = x0
-
 // Main.compute
 rw_Main_compute : [128] -> [128]
 rw_Main_compute x0 = (rw__LL_Main_compute2 (take`{56} (drop`{8} x0)) (rw__LL_Main_compute4 s1)) # (rw__LL_Main_compute (rw__LL_Main_compute1 s0) (take`{56} (drop`{64} x0)))
@@ -41,9 +37,13 @@ rw__LL_Main_compute5 x0 x1 = x0 # x1
 rw__LL_Main_compute4 : [64] -> [8]
 rw__LL_Main_compute4 x0 = rw'resize`{8} (x0 >> (((0x00000000000000000000000000000008 - (rw'resize`{128} (rw__LL_Main_compute3 x0))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000008))
 
+// $LL.Main.loop
+rw__LL_Main_loop : [128] -> [128]
+rw__LL_Main_loop x0 = x0
+
 // Main.loop
 rw_Main_loop : [128] -> [128]
-rw_Main_loop x0 = rw__LL_Main_loop1 (rw_Main_compute x0)
+rw_Main_loop x0 = rw__LL_Main_loop (rw_Main_compute x0)
 
 // $LL.Main.compute3
 rw__LL_Main_compute3 : [64] -> [3]

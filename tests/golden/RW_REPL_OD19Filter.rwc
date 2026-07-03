@@ -22,64 +22,64 @@ $Pure.dispatch : ([39], [33]) -> [73]
 $Pure.dispatch disc i =
       Main.repl1 i disc
 
-$LL.Main.repl13 : ([39]) -> [73]
-$LL.Main.repl13 sto0 =
-      let $t1 = (let $t0 = Main.nextPC sto0 in
-      34'h100000000 # $t0) in
-      let s0 = $t1[0 +: 39] in
-      $LL.Main.repl10 s0
-
 Main.repl1 : ([33], [39]) -> [73]
 Main.repl1 $x sto0 =
-      $LL.Main.repl5 $x sto0
+      $LL.Main.repl4 $x sto0
 
-$LL.Main.repl12 : ([32], [7], [39]) -> [73]
-$LL.Main.repl12 w32 wild sto0 =
+$LL.Main.repl9 : ([32], [7], [39]) -> [73]
+$LL.Main.repl9 w32 wild sto0 =
       if eq wild 7'h0 then (let $t15 = (let $t14 = Main.putReg w32 sto0 in
             34'h100000000 # $t14) in
             let s0 = $t15[0 +: 39] in
-            $LL.Main.repl13 s0)
+            $LL.Main.repl8 s0)
             else if eq wild 7'h1 then (let $t13 = (let $t12 = Main.getReg sto0 in
             let v = $t12[39 +: 32] in
             let s0 = $t12[0 +: 39] in
             2'h0 # v # s0) in
             let v = $t13[39 +: 32] in
             let s0 = $t13[0 +: 39] in
-            $LL.Main.repl8 w32 v s0) else if eq wild 7'h2 then (let $t11 = (let $t10 = Main.putReg w32 sto0 in
+            $LL.Main.repl5 w32 v s0) else if eq wild 7'h2 then (let $t11 = (let $t10 = Main.putReg w32 sto0 in
             34'h100000000 # $t10) in
             let s0 = $t11[0 +: 39] in
-            $LL.Main.repl13 s0) else if eq wild 7'h3 then (let $t9 = (let $t8 = Main.getReg sto0 in
+            $LL.Main.repl8 s0) else if eq wild 7'h3 then (let $t9 = (let $t8 = Main.getReg sto0 in
             let v = $t8[39 +: 32] in
             let s0 = $t8[0 +: 39] in
             2'h0 # v # s0) in
             let v = $t9[39 +: 32] in
             let s0 = $t9[0 +: 39] in
-            $LL.Main.repl8 w32 v s0) else if eq wild 7'h4 then (let $t7 = (let $t6 = Main.getReg sto0 in
+            $LL.Main.repl5 w32 v s0) else if eq wild 7'h4 then (let $t7 = (let $t6 = Main.getReg sto0 in
             let v = $t6[39 +: 32] in
             let s0 = $t6[0 +: 39] in
             2'h0 # v # s0) in
             let v = $t7[39 +: 32] in
             let s0 = $t7[0 +: 39] in
-            $LL.Main.repl4 w32 v s0) else if eq wild 7'h5 then (let $t5 = (let $t4 = Main.getReg sto0 in
+            $LL.Main.repl3 w32 v s0) else if eq wild 7'h5 then (let $t5 = (let $t4 = Main.getReg sto0 in
             let v = $t4[39 +: 32] in
             let s0 = $t4[0 +: 39] in
             2'h0 # v # s0) in
             let v = $t5[39 +: 32] in
             let s0 = $t5[0 +: 39] in
-            $LL.Main.repl9 w32 v s0) else if eq wild 7'h6 then (let $t3 = (let $t2 = Main.getReg sto0 in
+            $LL.Main.repl7 w32 v s0) else if eq wild 7'h6 then (let $t3 = (let $t2 = Main.getReg sto0 in
             let v = $t2[39 +: 32] in
             let s0 = $t2[0 +: 39] in
             2'h0 # v # s0) in
             let v = $t3[39 +: 32] in
             let s0 = $t3[0 +: 39] in
-            $LL.Main.repl7 w32 v s0) else let $t1 = (let $t0 = Main.nextPC sto0 in
+            $LL.Main.repl6 w32 v s0) else let $t1 = (let $t0 = Main.nextPC sto0 in
             34'h100000000 # $t0) in
             let s0 = $t1[0 +: 39] in
-            $LL.Main.repl10 s0
+            $LL.Main.repl2 s0
 
 OD19.ProgramCounter.incPC : ([7]) -> [7]
 OD19.ProgramCounter.incPC $x =
       $LL.OD19.ProgramCounter.incPC $x
+
+$LL.Main.repl8 : ([39]) -> [73]
+$LL.Main.repl8 sto0 =
+      let $t1 = (let $t0 = Main.nextPC sto0 in
+      34'h100000000 # $t0) in
+      let s0 = $t1[0 +: 39] in
+      $LL.Main.repl2 s0
 
 Main.test2 : ([32], [32]) -> [1]
 Main.test2 $x $x1 =
@@ -89,16 +89,12 @@ Main.test1 : ([32], [32]) -> [1]
 Main.test1 $x $x1 =
       test1 $x $x1
 
-$LL.Main.repl10 : ([39]) -> [73]
-$LL.Main.repl10 sto0 =
-      34'h200000002 # sto0
-
 Main.getReg : ([39]) -> [71]
 Main.getReg sigma0 =
       $LL.Main.getReg sigma0 sigma0
 
-$LL.Main.repl9 : ([32], [32], [39]) -> [73]
-$LL.Main.repl9 w32 r sto0 =
+$LL.Main.repl7 : ([32], [32], [39]) -> [73]
+$LL.Main.repl7 w32 r sto0 =
       33'h100000000 # Main.test3 w32 r # sto0
 
 $LL.Main.getReg : ([39], [39]) -> [71]
@@ -112,24 +108,24 @@ $LL.Main.nextPC ds sigma0 =
       let pc = ds[0 +: 7] in
       r # OD19.ProgramCounter.incPC pc
 
-$LL.Main.repl8 : ([32], [32], [39]) -> [73]
-$LL.Main.repl8 w32 r sto0 =
-      33'h100000000 # Main.test1 w32 r # sto0
-
-$LL.Main.repl7 : ([32], [32], [39]) -> [73]
-$LL.Main.repl7 w32 r sto0 =
+$LL.Main.repl6 : ([32], [32], [39]) -> [73]
+$LL.Main.repl6 w32 r sto0 =
       33'h100000000 # Main.test4 w32 r # sto0
 
 Main.putReg : ([32], [39]) -> [39]
 Main.putReg w32 sigma0 =
       $LL.Main.putReg1 w32 sigma0 sigma0
 
+$LL.Main.repl5 : ([32], [32], [39]) -> [73]
+$LL.Main.repl5 w32 r sto0 =
+      33'h100000000 # Main.test1 w32 r # sto0
+
 $LL.Main.putReg1 : ([32], [39], [39]) -> [39]
 $LL.Main.putReg1 $x $x1 sigma0 =
       $LL.Main.putReg $x $x1 sigma0
 
-$LL.Main.repl5 : ([33], [39]) -> [73]
-$LL.Main.repl5 wild sto0 =
+$LL.Main.repl4 : ([33], [39]) -> [73]
+$LL.Main.repl4 wild sto0 =
       if eq wild[32 +: 1] 1'h0 then (let w32 = wild[0 +: 32] in
             $LL.Main.repl1 w32 sto0 sto0)
             else 34'h200000002 # sto0
@@ -142,8 +138,8 @@ Main.nextPC : ([39]) -> [39]
 Main.nextPC sigma0 =
       $LL.Main.nextPC sigma0 sigma0
 
-$LL.Main.repl4 : ([32], [32], [39]) -> [73]
-$LL.Main.repl4 w32 r sto0 =
+$LL.Main.repl3 : ([32], [32], [39]) -> [73]
+$LL.Main.repl3 w32 r sto0 =
       33'h100000000 # Main.test2 w32 r # sto0
 
 $LL.OD19.ProgramCounter.incPC : ([7]) -> [7]
@@ -155,6 +151,10 @@ Main.test4 : ([32], [32]) -> [1]
 Main.test4 $x $x1 =
       test4 $x $x1
 
+$LL.Main.repl2 : ([39]) -> [73]
+$LL.Main.repl2 sto0 =
+      34'h200000002 # sto0
+
 $LL.Main.repl1 : ([32], [39], [39]) -> [73]
 $LL.Main.repl1 $x $x1 sto0 =
       $LL.Main.repl $x $x1 sto0
@@ -162,7 +162,7 @@ $LL.Main.repl1 $x $x1 sto0 =
 $LL.Main.repl : ([32], [39], [39]) -> [73]
 $LL.Main.repl w32 ds sto0 =
       let pc = ds[0 +: 7] in
-      $LL.Main.repl12 w32 pc sto0
+      $LL.Main.repl9 w32 pc sto0
 
 $LL.Main.putReg : ([32], [39], [39]) -> [39]
 $LL.Main.putReg w32 ds sigma0 =

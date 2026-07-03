@@ -23,21 +23,17 @@ rw__Pure_dispatch x0 x1 = if (take`{1} x0) == 0b1 then (rw__LL_Main_loop1 s0 x1)
     s0 : [1]
     s0 = drop`{1} x0
 
-// $LL.Main.loop6
-rw__LL_Main_loop6 : [1] -> [1] -> [1]
-rw__LL_Main_loop6 x0 x1 = rw__LL_Main_y1 x0 x1
-
 // $LL.Main.loop5
-rw__LL_Main_loop5 : [1] -> [1] -> [3]
-rw__LL_Main_loop5 x0 x1 = rw_Main_loop (rw__LL_Main_loop6 x0 0b1)
+rw__LL_Main_loop5 : [1] -> [1] -> [1]
+rw__LL_Main_loop5 x0 x1 = rw__LL_Main_loop x0 x1
 
-// $LL.Main.y1
-rw__LL_Main_y1 : [1] -> [1] -> [1]
-rw__LL_Main_y1 x0 x1 = if x0 == 0b1 then x1 else 0b0
+// $LL.Main.loop4
+rw__LL_Main_loop4 : [1] -> [1] -> [3]
+rw__LL_Main_loop4 x0 x1 = rw_Main_loop (rw__LL_Main_loop5 x0 0b1)
 
 // $LL.Main.loop2
 rw__LL_Main_loop2 : [1] -> [3]
-rw__LL_Main_loop2 x0 = rw__LL_Main_loop5 0b0 x0
+rw__LL_Main_loop2 x0 = rw__LL_Main_loop4 0b0 x0
 
 // Main.loop
 rw_Main_loop : [1] -> [3]
@@ -52,11 +48,15 @@ rw__LL_Main_zookus x0 = s0
 
 // $LL.Main.loop1
 rw__LL_Main_loop1 : [1] -> [1] -> [3]
-rw__LL_Main_loop1 x0 x1 = rw__LL_Main_loop5 x0 x1
+rw__LL_Main_loop1 x0 x1 = rw__LL_Main_loop4 x0 x1
 
 // Main.zookus
 rw_Main_zookus : [1] -> [1]
 rw_Main_zookus x0 = rw__LL_Main_zookus (x0 # x0)
+
+// $LL.Main.loop
+rw__LL_Main_loop : [1] -> [1] -> [1]
+rw__LL_Main_loop x0 x1 = if x0 == 0b1 then x1 else 0b0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [2] -> [1] -> [3]

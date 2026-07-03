@@ -124,14 +124,6 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module ZLL_Main_dev61 (input logic [255:0] arg0,
-  input logic [511:0] arg1,
-  input logic [255:0] arg2,
-  input logic [5:0] arg3,
-  output logic [1103:0] res);
-  assign res = {74'h3000000000000000080, arg0, arg1, arg2, arg3};
-endmodule
-
 module Main_plusW32 (input logic [31:0] arg0,
   input logic [31:0] arg1,
   output logic [31:0] res);
@@ -172,7 +164,7 @@ module Main_dev (input logic [67:0] arg0,
   logic [511:0] zi23;
   logic [255:0] zi24;
   logic [5:0] zi25;
-  logic [1103:0] zll_main_dev61_out;
+  logic [1103:0] main_devsha256$_out;
   logic [31:0] zi26;
   logic [31:0] zi27;
   logic [31:0] zi28;
@@ -199,7 +191,7 @@ module Main_dev (input logic [67:0] arg0,
   logic [511:0] zi49;
   logic [255:0] zi50;
   logic [5:0] zi51;
-  logic [1103:0] zll_main_dev61_outR1;
+  logic [1103:0] main_devsha256$_outR1;
   logic [31:0] zi52;
   logic [31:0] zi53;
   logic [31:0] zi54;
@@ -226,7 +218,7 @@ module Main_dev (input logic [67:0] arg0,
   logic [511:0] zi75;
   logic [255:0] zi76;
   logic [5:0] zi77;
-  logic [1103:0] zll_main_dev61_outR2;
+  logic [1103:0] main_devsha256$_outR2;
   logic [31:0] zi78;
   logic [31:0] zi79;
   logic [31:0] zi80;
@@ -253,7 +245,7 @@ module Main_dev (input logic [67:0] arg0,
   logic [511:0] zi101;
   logic [255:0] zi102;
   logic [5:0] zi103;
-  logic [1103:0] zll_main_dev61_outR3;
+  logic [1103:0] main_devsha256$_outR3;
   logic [31:0] zi104;
   logic [31:0] zi105;
   logic [31:0] zi106;
@@ -280,7 +272,7 @@ module Main_dev (input logic [67:0] arg0,
   logic [511:0] zi127;
   logic [255:0] zi128;
   logic [5:0] zi129;
-  logic [1103:0] zll_main_dev61_outR4;
+  logic [1103:0] main_devsha256$_outR4;
   logic [31:0] zi130;
   logic [31:0] zi131;
   logic [31:0] zi132;
@@ -307,7 +299,7 @@ module Main_dev (input logic [67:0] arg0,
   logic [511:0] zi153;
   logic [255:0] zi154;
   logic [5:0] zi155;
-  logic [1103:0] zll_main_dev61_outR5;
+  logic [1103:0] main_devsha256$_outR5;
   logic [31:0] zi156;
   logic [31:0] zi157;
   logic [31:0] zi158;
@@ -334,7 +326,7 @@ module Main_dev (input logic [67:0] arg0,
   logic [511:0] zi179;
   logic [255:0] zi180;
   logic [5:0] zi181;
-  logic [1103:0] zll_main_dev61_outR6;
+  logic [1103:0] main_devsha256$_outR6;
   logic [31:0] zi182;
   logic [31:0] zi183;
   logic [31:0] zi184;
@@ -361,7 +353,7 @@ module Main_dev (input logic [67:0] arg0,
   logic [511:0] zi205;
   logic [255:0] zi206;
   logic [5:0] zi207;
-  logic [1103:0] zll_main_dev61_outR7;
+  logic [1103:0] main_devsha256$_outR7;
   logic [31:0] zi208;
   logic [31:0] zi209;
   logic [31:0] zi210;
@@ -422,7 +414,7 @@ module Main_dev (input logic [67:0] arg0,
   assign zi23 = zi21[773:262];
   assign zi24 = zi21[261:6];
   assign zi25 = zi21[5:0];
-  ZLL_Main_dev61  inst (zi22, zi23, zi24, zi25, zll_main_dev61_out);
+  Main_devsha256$  inst (zi22, zi23, zi24, zi25, main_devsha256$_out);
   assign zi26 = arg0[63:32];
   assign zi27 = arg0[31:0];
   assign zi28 = arg2[447:416];
@@ -449,7 +441,7 @@ module Main_dev (input logic [67:0] arg0,
   assign zi49 = zi47[773:262];
   assign zi50 = zi47[261:6];
   assign zi51 = zi47[5:0];
-  ZLL_Main_dev61  instR1 (zi48, zi49, zi50, zi51, zll_main_dev61_outR1);
+  Main_devsha256$  instR1 (zi48, zi49, zi50, zi51, main_devsha256$_outR1);
   assign zi52 = arg0[63:32];
   assign zi53 = arg0[31:0];
   assign zi54 = arg2[511:480];
@@ -476,7 +468,7 @@ module Main_dev (input logic [67:0] arg0,
   assign zi75 = zi73[773:262];
   assign zi76 = zi73[261:6];
   assign zi77 = zi73[5:0];
-  ZLL_Main_dev61  instR2 (zi74, zi75, zi76, zi77, zll_main_dev61_outR2);
+  Main_devsha256$  instR2 (zi74, zi75, zi76, zi77, main_devsha256$_outR2);
   assign zi78 = arg0[63:32];
   assign zi79 = arg0[31:0];
   assign zi80 = arg2[511:480];
@@ -503,7 +495,7 @@ module Main_dev (input logic [67:0] arg0,
   assign zi101 = zi99[773:262];
   assign zi102 = zi99[261:6];
   assign zi103 = zi99[5:0];
-  ZLL_Main_dev61  instR3 (zi100, zi101, zi102, zi103, zll_main_dev61_outR3);
+  Main_devsha256$  instR3 (zi100, zi101, zi102, zi103, main_devsha256$_outR3);
   assign zi104 = arg0[63:32];
   assign zi105 = arg0[31:0];
   assign zi106 = arg2[511:480];
@@ -530,7 +522,7 @@ module Main_dev (input logic [67:0] arg0,
   assign zi127 = zi125[773:262];
   assign zi128 = zi125[261:6];
   assign zi129 = zi125[5:0];
-  ZLL_Main_dev61  instR4 (zi126, zi127, zi128, zi129, zll_main_dev61_outR4);
+  Main_devsha256$  instR4 (zi126, zi127, zi128, zi129, main_devsha256$_outR4);
   assign zi130 = arg0[63:32];
   assign zi131 = arg0[31:0];
   assign zi132 = arg2[511:480];
@@ -557,7 +549,7 @@ module Main_dev (input logic [67:0] arg0,
   assign zi153 = zi151[773:262];
   assign zi154 = zi151[261:6];
   assign zi155 = zi151[5:0];
-  ZLL_Main_dev61  instR5 (zi152, zi153, zi154, zi155, zll_main_dev61_outR5);
+  Main_devsha256$  instR5 (zi152, zi153, zi154, zi155, main_devsha256$_outR5);
   assign zi156 = arg0[63:32];
   assign zi157 = arg0[31:0];
   assign zi158 = arg2[511:480];
@@ -584,7 +576,7 @@ module Main_dev (input logic [67:0] arg0,
   assign zi179 = zi177[773:262];
   assign zi180 = zi177[261:6];
   assign zi181 = zi177[5:0];
-  ZLL_Main_dev61  instR6 (zi178, zi179, zi180, zi181, zll_main_dev61_outR6);
+  Main_devsha256$  instR6 (zi178, zi179, zi180, zi181, main_devsha256$_outR6);
   assign zi182 = arg0[63:32];
   assign zi183 = arg0[31:0];
   assign zi184 = arg2[511:480];
@@ -611,7 +603,7 @@ module Main_dev (input logic [67:0] arg0,
   assign zi205 = zi203[773:262];
   assign zi206 = zi203[261:6];
   assign zi207 = zi203[5:0];
-  ZLL_Main_dev61  instR7 (zi204, zi205, zi206, zi207, zll_main_dev61_outR7);
+  Main_devsha256$  instR7 (zi204, zi205, zi206, zi207, main_devsha256$_outR7);
   assign zi208 = arg0[63:32];
   assign zi209 = arg0[31:0];
   assign zi210 = arg2[511:480];
@@ -646,7 +638,7 @@ module Main_dev (input logic [67:0] arg0,
   assign zi239 = arg3[95:64];
   assign zi240 = arg3[63:32];
   assign zi241 = arg3[31:0];
-  assign res = (arg0[67:64] == 4'h0) ? zll_main_dev61_out : ((arg0[67:64] == 4'h1) ? zll_main_dev61_outR1 : ((arg0[67:64] == 4'h2) ? zll_main_dev61_outR2 : ((arg0[67:64] == 4'h3) ? zll_main_dev61_outR3 : ((arg0[67:64] == 4'h4) ? zll_main_dev61_outR4 : ((arg0[67:64] == 4'h5) ? zll_main_dev61_outR5 : ((arg0[67:64] == 4'h6) ? zll_main_dev61_outR6 : ((arg0[67:64] == 4'h7) ? zll_main_dev61_outR7 : ((arg0[67:64] == 4'h8) ? {{2'h3, {7'h48{1'h0}}}, zi230, zi231, zi232, zi233} : ((arg0[67:64] == 4'h9) ? {1'h1, {1'h0, zi234, zi235}, 8'h80, arg1, arg2, arg3, arg4} : ((arg0[67:64] == 4'ha) ? {1'h1, {1'h0, zi236, zi237}, 8'h80, arg1, arg2, arg3, arg4} : ((arg0[67:64] == 4'hb) ? {1'h1, {1'h0, zi238, zi239}, 8'h80, arg1, arg2, arg3, arg4} : {1'h1, {1'h0, zi240, zi241}, 8'h80, arg1, arg2, arg3, arg4})))))))))));
+  assign res = (arg0[67:64] == 4'h0) ? main_devsha256$_out : ((arg0[67:64] == 4'h1) ? main_devsha256$_outR1 : ((arg0[67:64] == 4'h2) ? main_devsha256$_outR2 : ((arg0[67:64] == 4'h3) ? main_devsha256$_outR3 : ((arg0[67:64] == 4'h4) ? main_devsha256$_outR4 : ((arg0[67:64] == 4'h5) ? main_devsha256$_outR5 : ((arg0[67:64] == 4'h6) ? main_devsha256$_outR6 : ((arg0[67:64] == 4'h7) ? main_devsha256$_outR7 : ((arg0[67:64] == 4'h8) ? {{2'h3, {7'h48{1'h0}}}, zi230, zi231, zi232, zi233} : ((arg0[67:64] == 4'h9) ? {1'h1, {1'h0, zi234, zi235}, 8'h80, arg1, arg2, arg3, arg4} : ((arg0[67:64] == 4'ha) ? {1'h1, {1'h0, zi236, zi237}, 8'h80, arg1, arg2, arg3, arg4} : ((arg0[67:64] == 4'hb) ? {1'h1, {1'h0, zi238, zi239}, 8'h80, arg1, arg2, arg3, arg4} : {1'h1, {1'h0, zi240, zi241}, 8'h80, arg1, arg2, arg3, arg4})))))))))));
 endmodule
 
 module Main_loop (input logic [255:0] arg0,
@@ -1559,6 +1551,14 @@ module Main_xorW32 (input logic [31:0] arg0,
   logic [31:0] extres;
   xorW32  inst (arg0, arg1, extres[31:0]);
   assign res = extres;
+endmodule
+
+module Main_devsha256$ (input logic [255:0] arg0,
+  input logic [511:0] arg1,
+  input logic [255:0] arg2,
+  input logic [5:0] arg3,
+  output logic [1103:0] res);
+  assign res = {74'h3000000000000000080, arg0, arg1, arg2, arg3};
 endmodule
 
 module Main_andW32 (input logic [31:0] arg0,

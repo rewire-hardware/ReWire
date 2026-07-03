@@ -26,11 +26,11 @@ rw_Main_compute x0 = if (x0 + 0x01) == zero then (if 0x03 == zero then 0xff else
 
 // Main.loop
 rw_Main_loop : [8] -> [8]
-rw_Main_loop x0 = rw__LL_Main_loop1 (rw_Main_compute x0)
+rw_Main_loop x0 = rw__LL_Main_loop (rw_Main_compute x0)
 
-// $LL.Main.loop1
-rw__LL_Main_loop1 : [8] -> [8]
-rw__LL_Main_loop1 x0 = x0
+// $LL.Main.loop
+rw__LL_Main_loop : [8] -> [8]
+rw__LL_Main_loop x0 = x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [8]

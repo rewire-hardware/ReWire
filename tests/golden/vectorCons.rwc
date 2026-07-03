@@ -2,10 +2,6 @@ $Pure.dispatch : ([128]) -> [128]
 $Pure.dispatch i =
       Main.loop i
 
-$LL.Main.loop1 : ([128]) -> [128]
-$LL.Main.loop1 rabind =
-      rabind
-
 Main.compute : ([128]) -> [128]
 Main.compute ds =
       let v = ds[64 +: 64] in
@@ -20,9 +16,13 @@ $LL.Main.compute4 : ([64]) -> [8]
 $LL.Main.compute4 v =
       trunc 8 (lshr v (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute3 v))) 128'h1) 128'h8))
 
+$LL.Main.loop : ([128]) -> [128]
+$LL.Main.loop rabind =
+      rabind
+
 Main.loop : ([128]) -> [128]
 Main.loop i =
-      $LL.Main.loop1 (Main.compute i)
+      $LL.Main.loop (Main.compute i)
 
 $LL.Main.compute3 : ([64]) -> [3]
 $LL.Main.compute3 ds =

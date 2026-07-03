@@ -18,7 +18,7 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [1038] -> [514] -> [1297]
-rw__Pure_dispatch x0 x1 = if (take`{2} x0) == 0b01 then (rw_Main_dev x1 s0 s1 s2 s3) else (if (take`{2} x0) == 0b10 then (rw__LL_Main_loop2 s4 x1 s5 s6 s7 s8) else (if (take`{2} x0) == 0b11 then (rw__LL_Main_dev17 x1 s9 s10 s11 s12) else (rw__LL_Main_dev17 x1 s13 s14 s15 s16)))
+rw__Pure_dispatch x0 x1 = if (take`{2} x0) == 0b01 then (rw_Main_dev x1 s0 s1 s2 s3) else (if (take`{2} x0) == 0b10 then (rw__LL_Main_loop2 s4 x1 s5 s6 s7 s8) else (rw__LL_Main_dev13 x1 s9 s10 s11 s12))
   where
     s0 : [256]
     s0 = take`{256} (drop`{8} x0)
@@ -46,50 +46,42 @@ rw__Pure_dispatch x0 x1 = if (take`{2} x0) == 0b01 then (rw_Main_dev x1 s0 s1 s2
     s11 = take`{256} (drop`{776} x0)
     s12 : [6]
     s12 = drop`{1032} x0
-    s13 : [256]
-    s13 = take`{256} (drop`{8} x0)
-    s14 : [512]
-    s14 = take`{512} (drop`{264} x0)
-    s15 : [256]
-    s15 = take`{256} (drop`{776} x0)
-    s16 : [6]
-    s16 = drop`{1032} x0
 
 // Main.maj
 rw_Main_maj : [32] -> [32] -> [32] -> [32]
 rw_Main_maj x0 x1 x2 = ((x0 && x1) ^ (x0 && x2)) ^ (x1 && x2)
 
-// $LL.Main.dev19
-rw__LL_Main_dev19 : [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev19 x0 x1 x2 x3 x4 = x1 # (x0 # (x3 # x4))
+// $LL.Main.dev15
+rw__LL_Main_dev15 : [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev15 x0 x1 x2 x3 x4 = x1 # (x0 # (x3 # x4))
 
 // Main.incCtr
 rw_Main_incCtr : [6] -> [6]
 rw_Main_incCtr x0 = x0 + 0b000001
 
-// $LL.Main.dev18
-rw__LL_Main_dev18 : [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev18 x0 x1 x2 x3 x4 = rw__LL_Main_dev7 x0 x1 x2 x3 0b000000
+// $LL.Main.dev14
+rw__LL_Main_dev14 : [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev14 x0 x1 x2 x3 x4 = rw__LL_Main_dev2 x0 x1 x2 x3 0b000000
 
-// $LL.Main.dev17
-rw__LL_Main_dev17 : [514] -> [256] -> [512] -> [256] -> [6] -> [1297]
-rw__LL_Main_dev17 x0 x1 x2 x3 x4 = rw_Main_loop x1 x2 x3 x4
+// $LL.Main.dev13
+rw__LL_Main_dev13 : [514] -> [256] -> [512] -> [256] -> [6] -> [1297]
+rw__LL_Main_dev13 x0 x1 x2 x3 x4 = rw_Main_loop x1 x2 x3 x4
 
 // $LL.Main.loop21
 rw__LL_Main_loop21 : [6] -> [256] -> [512] -> [256] -> [6] -> [1036]
 rw__LL_Main_loop21 x0 x1 x2 x3 x4 = rw__LL_Main_loop19 x0 x1 x2 x3 x4
 
-// $LL.Main.dev16
-rw__LL_Main_dev16 : [512] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev16 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev x0 x1 x2 x3 x4 x5
+// $LL.Main.dev12
+rw__LL_Main_dev12 : [512] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev12 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev x0 x1 x2 x3 x4 x5
 
-// $LL.Main.dev15
-rw__LL_Main_dev15 : [256] -> [256] -> [512] -> [256] -> [6] -> [1297]
-rw__LL_Main_dev15 x0 x1 x2 x3 x4 = 0b100 # (x0 # (0x40 # (x1 # (x2 # (x3 # x4)))))
+// $LL.Main.dev11
+rw__LL_Main_dev11 : [256] -> [256] -> [512] -> [256] -> [6] -> [1297]
+rw__LL_Main_dev11 x0 x1 x2 x3 x4 = 0b100 # (x0 # (0x40 # (x1 # (x2 # (x3 # x4)))))
 
-// $LL.Main.bigsigma08
-rw__LL_Main_bigsigma08 : [32] -> [32] -> [32]
-rw__LL_Main_bigsigma08 x0 x1 = (x1 >> x0) || (x1 << (0x00000020 - x0))
+// $LL.Main.bigsigma04
+rw__LL_Main_bigsigma04 : [32] -> [32] -> [32]
+rw__LL_Main_bigsigma04 x0 x1 = (x1 >> x0) || (x1 << (0x00000020 - x0))
 
 // $LL.Main.loop20
 rw__LL_Main_loop20 : [6] -> [256] -> [512] -> [256] -> [6] -> [1036]
@@ -116,9 +108,9 @@ rw__LL_Main_loop19 x0 x1 x2 x3 x4 = x0 # (x1 # (x2 # (x3 # x4)))
 rw__LL_Main_loop18 : [514] -> [256] -> [512] -> [256] -> [6] -> [1297]
 rw__LL_Main_loop18 x0 x1 x2 x3 x4 = rw__LL_Main_loop5 x0 x1 x2 x3 x4
 
-// $LL.Main.bigsigma17
-rw__LL_Main_bigsigma17 : [32] -> [32]
-rw__LL_Main_bigsigma17 x0 = rw__LL_Main_bigsigma08 0x0000000b x0
+// $LL.Main.bigsigma12
+rw__LL_Main_bigsigma12 : [32] -> [32]
+rw__LL_Main_bigsigma12 x0 = rw__LL_Main_bigsigma04 0x0000000b x0
 
 // $LL.Main.loop17
 rw__LL_Main_loop17 : [6] -> [256] -> [512] -> [256] -> [6] -> [1036]
@@ -128,9 +120,9 @@ rw__LL_Main_loop17 x0 x1 x2 x3 x4 = rw__LL_Main_loop21 x0 x1 x2 x3 (rw_Main_incC
 rw__LL_Main_loop16 : [32] -> [256] -> [512] -> [256] -> [6] -> [1062]
 rw__LL_Main_loop16 x0 x1 x2 x3 x4 = rw__LL_Main_loop x0 x1 x2 x3 x4
 
-// $LL.Main.dev14
-rw__LL_Main_dev14 : [256] -> [512] -> [256] -> [6] -> [1297]
-rw__LL_Main_dev14 x0 x1 x2 x3 = 0b101000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # (x0 # (x1 # (x2 # x3)))
+// $LL.Main.dev10
+rw__LL_Main_dev10 : [256] -> [512] -> [256] -> [6] -> [1297]
+rw__LL_Main_dev10 x0 x1 x2 x3 = 0b101000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # (x0 # (x1 # (x2 # x3)))
 
 // $LL.Main.loop15
 rw__LL_Main_loop15 : [512] -> [256] -> [512] -> [256] -> [6] -> [1062]
@@ -139,13 +131,9 @@ rw__LL_Main_loop15 x0 x1 x2 x3 x4 = rw__LL_Main_loop16 s0 x1 (rw_Main_updateSche
     s0 : [32]
     s0 = take`{32} x0
 
-// $LL.Main.dev13
-rw__LL_Main_dev13 : [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev13 x0 x1 x2 x3 x4 = rw__LL_Main_dev18 x0 x1 x2 x3 x4
-
-// $LL.Main.dev12
-rw__LL_Main_dev12 : [256] -> [512] -> [256] -> [6] -> [1297]
-rw__LL_Main_dev12 x0 x1 x2 x3 = 0b101000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011000000 # (x0 # (x1 # (x2 # x3)))
+// $LL.Main.dev9
+rw__LL_Main_dev9 : [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev9 x0 x1 x2 x3 x4 = rw__LL_Main_dev14 x0 x1 x2 x3 x4
 
 // $LL.Main.loop14
 rw__LL_Main_loop14 : [6] -> [256] -> [512] -> [256] -> [6] -> [1297]
@@ -176,41 +164,41 @@ rw__LL_Main_loop13 x0 x1 x2 x3 x4 x5 = if x1 == 0b0 then (rw_Main_loop x2 x3 x4 
     s9 : [6]
     s9 = drop`{1291} s5
 
-// $LL.Main.bigsigma15
-rw__LL_Main_bigsigma15 : [32] -> [32]
-rw__LL_Main_bigsigma15 x0 = rw__LL_Main_bigsigma08 0x00000019 x0
+// $LL.Main.bigsigma11
+rw__LL_Main_bigsigma11 : [32] -> [32]
+rw__LL_Main_bigsigma11 x0 = rw__LL_Main_bigsigma04 0x00000019 x0
 
 // $LL.Main.loop12
 rw__LL_Main_loop12 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1030]
 rw__LL_Main_loop12 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop6 x0 x1 x2 x3 x4 x5
 
-// $LL.Main.bigsigma06
-rw__LL_Main_bigsigma06 : [32] -> [32]
-rw__LL_Main_bigsigma06 x0 = rw__LL_Main_bigsigma08 0x00000002 x0
+// $LL.Main.bigsigma03
+rw__LL_Main_bigsigma03 : [32] -> [32]
+rw__LL_Main_bigsigma03 x0 = rw__LL_Main_bigsigma04 0x00000002 x0
 
-// $LL.Main.dev11
-rw__LL_Main_dev11 : [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev11 x0 x1 x2 x3 x4 = rw__LL_Main_dev3 x0 x1 x2 x3 x4
+// $LL.Main.dev8
+rw__LL_Main_dev8 : [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev8 x0 x1 x2 x3 x4 = rw__LL_Main_dev1 x0 x1 x2 x3 x4
 
 // Main.dev
 rw_Main_dev : [514] -> [256] -> [512] -> [256] -> [6] -> [1297]
-rw_Main_dev x0 x1 x2 x3 x4 = rw__LL_Main_dev6 x0 x1 x2 x3 x4
+rw_Main_dev x0 x1 x2 x3 x4 = rw__LL_Main_dev4 x0 x1 x2 x3 x4
 
-// $LL.Main.bigsigma13
-rw__LL_Main_bigsigma13 : [32] -> [32]
-rw__LL_Main_bigsigma13 x0 = rw__LL_Main_bigsigma08 0x00000006 x0
+// $LL.Main.bigsigma1
+rw__LL_Main_bigsigma1 : [32] -> [32]
+rw__LL_Main_bigsigma1 x0 = rw__LL_Main_bigsigma04 0x00000006 x0
 
 // Main.sigma0
 rw_Main_sigma0 : [32] -> [32]
-rw_Main_sigma0 x0 = ((rw__LL_Main_sigma03 x0) ^ (rw__LL_Main_sigma02 x0)) ^ (x0 >> 0x00000003)
+rw_Main_sigma0 x0 = ((rw__LL_Main_sigma01 x0) ^ (rw__LL_Main_sigma0 x0)) ^ (x0 >> 0x00000003)
 
 // Main.seed
 rw_Main_seed : [6] -> [32]
 rw_Main_seed x0 = rw'resize`{32} (0x428a2f9871374491b5c0fbcfe9b5dba53956c25b59f111f1923f82a4ab1c5ed5d807aa9812835b01243185be550c7dc372be5d7480deb1fe9bdc06a7c19bf174e49b69c1efbe47860fc19dc6240ca1cc2de92c6f4a7484aa5cb0a9dc76f988da983e5152a831c66db00327c8bf597fc7c6e00bf3d5a7914706ca63511429296727b70a852e1b21384d2c6dfc53380d13650a7354766a0abb81c2c92e92722c85a2bfe8a1a81a664bc24b8b70c76c51a3d192e819d6990624f40e3585106aa07019a4c1161e376c082748774c34b0bcb5391c0cb34ed8aa4a5b9cca4f682e6ff3748f82ee78a5636f84c878148cc7020890befffaa4506cebbef9a3f7c67178f2 >> (((0x00000000000000000000000000000040 - (rw'resize`{128} x0)) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000020))
 
-// $LL.Main.dev10
-rw__LL_Main_dev10 : [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev10 x0 x1 x2 x3 x4 = rw__LL_Main_dev11 x0 x1 x2 x3 0b000000
+// $LL.Main.dev7
+rw__LL_Main_dev7 : [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev7 x0 x1 x2 x3 x4 = rw__LL_Main_dev8 x0 x1 x2 x3 0b000000
 
 // $LL.Main.loop11
 rw__LL_Main_loop11 : [6] -> [514] -> [256] -> [512] -> [256] -> [6] -> [1297]
@@ -220,9 +208,9 @@ rw__LL_Main_loop11 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop13 x1 [x0 == 0b111111] x2
 rw__LL_Main_loop10 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
 rw__LL_Main_loop10 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 = rw__LL_Main_loop7 x0 x6 x4 x3 x5 x7 x1 x2 x8 x9 x10 x11 x12
 
-// $LL.Main.sigma03
-rw__LL_Main_sigma03 : [32] -> [32]
-rw__LL_Main_sigma03 x0 = rw__LL_Main_bigsigma08 0x00000007 x0
+// $LL.Main.sigma01
+rw__LL_Main_sigma01 : [32] -> [32]
+rw__LL_Main_sigma01 x0 = rw__LL_Main_bigsigma04 0x00000007 x0
 
 // $LL.Main.loop9
 rw__LL_Main_loop9 : [6] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1036]
@@ -268,13 +256,13 @@ rw_Main_loop x0 x1 x2 x3 = rw__LL_Main_loop14 s7 s8 s9 s10 s11
     s11 : [6]
     s11 = drop`{1291} s6
 
-// $LL.Main.dev9
-rw__LL_Main_dev9 : [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev9 x0 x1 x2 x3 x4 = rw__LL_Main_dev10 x0 x1 x2 x3 x4
+// $LL.Main.dev6
+rw__LL_Main_dev6 : [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev6 x0 x1 x2 x3 x4 = rw__LL_Main_dev7 x0 x1 x2 x3 x4
 
 // Main.bigsigma1
 rw_Main_bigsigma1 : [32] -> [32]
-rw_Main_bigsigma1 x0 = ((rw__LL_Main_bigsigma13 x0) ^ (rw__LL_Main_bigsigma17 x0)) ^ (rw__LL_Main_bigsigma15 x0)
+rw_Main_bigsigma1 x0 = ((rw__LL_Main_bigsigma1 x0) ^ (rw__LL_Main_bigsigma12 x0)) ^ (rw__LL_Main_bigsigma11 x0)
 
 // $LL.Main.loop8
 rw__LL_Main_loop8 : [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
@@ -355,26 +343,22 @@ rw_Main_updateSched x0 = s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s
     s15 : [32]
     s15 = drop`{480} x0
 
-// $LL.Main.dev8
-rw__LL_Main_dev8 : [512] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev8 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev5 x0 x1 x2 x3 x4 x5
+// $LL.Main.dev5
+rw__LL_Main_dev5 : [512] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev5 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev3 x0 x1 x2 x3 x4 x5
 
 // $LL.Main.loop6
 rw__LL_Main_loop6 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1030]
 rw__LL_Main_loop6 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop3 x0 x1 x2 x2 x3 x4 x5
 
-// $LL.Main.dev7
-rw__LL_Main_dev7 : [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev7 x0 x1 x2 x3 x4 = rw__LL_Main_dev19 x0 x1 x2 x3 x4
-
-// $LL.Main.dev6
-rw__LL_Main_dev6 : [514] -> [256] -> [512] -> [256] -> [6] -> [1297]
-rw__LL_Main_dev6 x0 x1 x2 x3 x4 = if (take`{2} x0) == 0b00 then (rw__LL_Main_dev14 s7 s8 s9 s10) else (if (take`{2} x0) == 0b01 then (rw__LL_Main_dev12 s18 s19 s20 s21) else (rw__LL_Main_dev15 x3 x1 x2 x3 x4))
+// $LL.Main.dev4
+rw__LL_Main_dev4 : [514] -> [256] -> [512] -> [256] -> [6] -> [1297]
+rw__LL_Main_dev4 x0 x1 x2 x3 x4 = if (take`{2} x0) == 0b00 then (rw__LL_Main_dev10 s7 s8 s9 s10) else (if (take`{2} x0) == 0b01 then (rw__LL_Main_dev10 s18 s19 s20 s21) else (rw__LL_Main_dev11 x3 x1 x2 x3 x4))
   where
     s0 : [512]
     s0 = drop`{2} x0
     s1 : [1030]
-    s1 = rw__LL_Main_dev9 s0 x1 x2 0x6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 x4
+    s1 = rw__LL_Main_dev6 s0 x1 x2 0x6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 x4
     s2 : [256]
     s2 = take`{256} s1
     s3 : [512]
@@ -396,7 +380,7 @@ rw__LL_Main_dev6 x0 x1 x2 x3 x4 = if (take`{2} x0) == 0b00 then (rw__LL_Main_dev
     s11 : [512]
     s11 = drop`{2} x0
     s12 : [1030]
-    s12 = rw__LL_Main_dev16 s11 x3 x1 x2 x3 x4
+    s12 = rw__LL_Main_dev12 s11 x3 x1 x2 x3 x4
     s13 : [256]
     s13 = take`{256} s12
     s14 : [512]
@@ -422,11 +406,11 @@ rw__LL_Main_loop5 x0 x1 x2 x3 x4 = rw_Main_dev x0 x1 x2 x3 x4
 
 // Main.bigsigma0
 rw_Main_bigsigma0 : [32] -> [32]
-rw_Main_bigsigma0 x0 = ((rw__LL_Main_bigsigma06 x0) ^ (rw__LL_Main_bigsigma01 x0)) ^ (rw__LL_Main_bigsigma03 x0)
+rw_Main_bigsigma0 x0 = ((rw__LL_Main_bigsigma03 x0) ^ (rw__LL_Main_bigsigma0 x0)) ^ (rw__LL_Main_bigsigma01 x0)
 
-// $LL.Main.dev5
-rw__LL_Main_dev5 : [512] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev5 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev7 x0 x1 x3 x4 x5
+// $LL.Main.dev3
+rw__LL_Main_dev3 : [512] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev3 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev2 x0 x1 x3 x4 x5
 
 // $LL.Main.loop4
 rw__LL_Main_loop4 : [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
@@ -435,6 +419,10 @@ rw__LL_Main_loop4 x0 x1 x2 x3 x4 x5 x6 = (rw_Main_step256 x0 x1 x2) # (x4 # (x5 
 // $LL.Main.loop3
 rw__LL_Main_loop3 : [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
 rw__LL_Main_loop3 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_loop4 x0 x1 x2 x3 x4 x5 x6
+
+// $LL.Main.dev2
+rw__LL_Main_dev2 : [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev2 x0 x1 x2 x3 x4 = rw__LL_Main_dev15 x0 x1 x2 x3 x4
 
 // Main.step256
 rw_Main_step256 : [32] -> [32] -> [256] -> [256]
@@ -461,9 +449,9 @@ rw_Main_step256 x0 x1 x2 = rw__LL_Main_step256 s1 s5 s2 s0 s6 s3 s4 (s7 + (((rw_
 rw__LL_Main_step256 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256]
 rw__LL_Main_step256 x0 x1 x2 x3 x4 x5 x6 x7 = (x7 + ((rw_Main_bigsigma0 x3) + (rw_Main_maj x3 x0 x2))) # (x3 # (x0 # (x2 # ((x5 + x7) # (x6 # (x1 # x4))))))
 
-// $LL.Main.bigsigma03
-rw__LL_Main_bigsigma03 : [32] -> [32]
-rw__LL_Main_bigsigma03 x0 = rw__LL_Main_bigsigma08 0x00000016 x0
+// $LL.Main.bigsigma01
+rw__LL_Main_bigsigma01 : [32] -> [32]
+rw__LL_Main_bigsigma01 x0 = rw__LL_Main_bigsigma04 0x00000016 x0
 
 // $LL.Main.loop2
 rw__LL_Main_loop2 : [6] -> [514] -> [256] -> [512] -> [256] -> [6] -> [1297]
@@ -475,23 +463,23 @@ rw__LL_Main_loop1 x0 x1 x2 x3 x4 = rw__LL_Main_loop17 x0 x1 x2 x3 x4
 
 // $LL.Main.sigma11
 rw__LL_Main_sigma11 : [32] -> [32]
-rw__LL_Main_sigma11 x0 = rw__LL_Main_bigsigma08 0x00000013 x0
+rw__LL_Main_sigma11 x0 = rw__LL_Main_bigsigma04 0x00000013 x0
 
 // $LL.Main.loop
 rw__LL_Main_loop : [32] -> [256] -> [512] -> [256] -> [6] -> [1062]
 rw__LL_Main_loop x0 x1 x2 x3 x4 = x0 # (x1 # (x2 # (x3 # x4)))
 
-// $LL.Main.dev3
-rw__LL_Main_dev3 : [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev3 x0 x1 x2 x3 x4 = rw__LL_Main_dev8 x0 x3 x1 x2 x3 x4
+// $LL.Main.dev1
+rw__LL_Main_dev1 : [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev1 x0 x1 x2 x3 x4 = rw__LL_Main_dev5 x0 x3 x1 x2 x3 x4
 
 // Main.sigma1
 rw_Main_sigma1 : [32] -> [32]
 rw_Main_sigma1 x0 = ((rw__LL_Main_sigma1 x0) ^ (rw__LL_Main_sigma11 x0)) ^ (x0 >> 0x0000000a)
 
-// $LL.Main.sigma02
-rw__LL_Main_sigma02 : [32] -> [32]
-rw__LL_Main_sigma02 x0 = rw__LL_Main_bigsigma08 0x00000012 x0
+// $LL.Main.sigma0
+rw__LL_Main_sigma0 : [32] -> [32]
+rw__LL_Main_sigma0 x0 = rw__LL_Main_bigsigma04 0x00000012 x0
 
 // Main.ch
 rw_Main_ch : [32] -> [32] -> [32] -> [32]
@@ -499,15 +487,15 @@ rw_Main_ch x0 x1 x2 = (x0 && x1) ^ ((~ x0) && x2)
 
 // $LL.Main.sigma1
 rw__LL_Main_sigma1 : [32] -> [32]
-rw__LL_Main_sigma1 x0 = rw__LL_Main_bigsigma08 0x00000011 x0
+rw__LL_Main_sigma1 x0 = rw__LL_Main_bigsigma04 0x00000011 x0
 
-// $LL.Main.bigsigma01
-rw__LL_Main_bigsigma01 : [32] -> [32]
-rw__LL_Main_bigsigma01 x0 = rw__LL_Main_bigsigma08 0x0000000d x0
+// $LL.Main.bigsigma0
+rw__LL_Main_bigsigma0 : [32] -> [32]
+rw__LL_Main_bigsigma0 x0 = rw__LL_Main_bigsigma04 0x0000000d x0
 
 // $LL.Main.dev
 rw__LL_Main_dev : [512] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev13 x0 x1 x3 x4 x5
+rw__LL_Main_dev x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev9 x0 x1 x3 x4 x5
 
 // Per-cycle step: outputs # next register values.
 rw_step : [1038] -> [514] -> [1296]

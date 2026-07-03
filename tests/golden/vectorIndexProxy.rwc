@@ -14,10 +14,10 @@ Main.loop : ([1056]) -> [64]
 Main.loop ds =
       let v = ds[32 +: 1024] in
       let w = ds[0 +: 32] in
-      $LL.Main.loop1 (Main.compute v w)
+      $LL.Main.loop (Main.compute v w)
 
-$LL.Main.loop1 : ([64]) -> [64]
-$LL.Main.loop1 rabind =
+$LL.Main.loop : ([64]) -> [64]
+$LL.Main.loop rabind =
       rabind
 
 device top_level
