@@ -33,9 +33,14 @@ boundedFixOn h m n f a = f a >>= \ a' -> if h a' a then pure a' else boundedFixO
 fix' :: Hashable a => (a -> a) -> a -> a
 fix' = fixOn' hash
 
+-- | Note: the recursive call must reuse the already-forced @f a@ -- passing
+--   the expression @f a@ itself builds an unshared thunk chain that gets
+--   re-evaluated from scratch at every level, making the fixpoint
+--   exponential in the iteration count.
 fixOn' :: Eq b => (a -> b) -> (a -> a) -> a -> a
-fixOn' h f a | h (f a) == h a = a
-             | otherwise      = fixOn' h f (f a)
+fixOn' h f a | h a' == h a = a
+             | otherwise   = fixOn' h f a'
+      where a' = f a
 
 boundedFix :: Monad m => (a -> a -> Bool) -> Natural -> (a -> m a) -> a -> m a
 boundedFix _ 0 _ a = pure a

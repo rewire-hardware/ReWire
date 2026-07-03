@@ -760,8 +760,9 @@ hoistInstances p@(A.Program exts ds _)
                                               , A.defnName d `Set.member` s
                                                     || any (`Set.member` s) (expCalls $ A.defnBody d) ]
 
-                        fix' f s | f s == s  = s
-                                 | otherwise = fix' f $ f s
+                        fix' f s | s' == s   = s
+                                 | otherwise = fix' f s'
+                              where s' = f s
 
             anySeq :: A.Exp -> Bool
             anySeq = \ case

@@ -2,15 +2,16 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE Safe #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module ReWire.SYB
       ( Tr (TId, TM, T), transformTr
       , transform, transformM
-      , query, gmapT
+      , query, queryWith, gmapT
       ) where
 
 import Control.Lens.Plated (transformOnOf, transformMOnOf, universeOnOf)
 import Control.Monad ((>=>))
-import Data.Data (Data, gmapT)
+import Data.Data (Data, Typeable, gmapT, gmapQ, cast)
 import Data.Data.Lens (biplate, uniplate)
 
 data Tr m a = TId
@@ -42,3 +43,11 @@ transformM = transformMOnOf biplate uniplate
 
 query :: (Data a, Data b) => a -> [b]
 query = universeOnOf biplate uniplate
+
+-- | A query in a single generic sweep: collects @f b@ at every node of type
+--   @b@. Unlike 'query' at an expression type, it never re-extracts a node's
+--   children per level, which is quadratic on deeply nested binders.
+queryWith :: forall a b r. (Data a, Typeable b) => (b -> [r]) -> a -> [r]
+queryWith f = go
+      where go :: forall d. Data d => d -> [r]
+            go x = maybe [] f (cast x) <> concat (gmapQ go x)
