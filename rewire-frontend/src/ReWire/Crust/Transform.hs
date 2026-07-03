@@ -29,7 +29,7 @@ import ReWire.Crust.Types (typeOf, tyAnn, setTyAnn, dstArrow, poly, poly', flatt
 import ReWire.Crust.Util (mkApp, mkError, mkLam, inlinable, synthableDefn, patVars, toVar, isExtrude, extrudeDefn)
 import ReWire.Error (AstError, MonadError, failAt, failInternal, Warning (..))
 import ReWire.Fix (fix, fix', fixUntil, boundedFixOn)
-import ReWire.SYB (transform, transformM, query)
+import ReWire.SYB (transform, transformM, query, queryWith)
 import ReWire.Unbound (freshVar, fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, runFreshMT, Name (..), unsafeUnbind, bind, unbind, Subst (..), Alpha, Embed (Embed), Bind)
 
 import Control.Arrow ((&&&))
@@ -672,14 +672,24 @@ purgeUnused except exceptTs (ts, syns, vs) = (inuseData (fix' extendWithCtorPara
                   | otherwise                  = DataDefn an n k $ filter ((`Set.member` ns) . dataConName) cs
 
             -- | Also treat as used: all ctors for types returned by externs and ReacT inputs.
+            --   Collected with the single-sweep queryWith: an expression-typed
+            --   query re-extracts every node's children per level, which is
+            --   quadratic on the deeply bind-nested bodies this pass sees
+            --   mid-pipeline (and was most of rwc's total compile time on
+            --   large programs).
             externCtors :: [Defn] -> [Name TyConId]
-            externCtors ds = concat $ [maybe [] (ctorNames . codomTy) $ typeOf e | e@Builtin {} <- query ds]
+            externCtors ds = concat $ queryWith builtinCtors ds
                   <> [maybe [] ctorNames $ resInputTy t | Defn _ n (Embed (Poly (unsafeUnbind -> (_, t)))) _ _ <- ds, n `Set.member` exceptSet]
+                  where builtinCtors :: Exp -> [[Name TyConId]]
+                        builtinCtors = \ case
+                              e@Builtin {} -> [maybe [] (ctorNames . codomTy) $ typeOf e]
+                              _            -> []
 
+            -- Note: concatMap, not a fold of appends: a left-nested (<>)
+            -- chain is quadratic in the (occurrence-many, un-nubbed) name
+            -- list this receives from externCtors.
             extendWithCtorParams :: [Name TyConId] -> [Name TyConId]
-            extendWithCtorParams = nubOrd . sort . foldr extend' []
-                  where extend' :: Name TyConId -> [Name TyConId] -> [Name TyConId]
-                        extend' n = (<> Map.lookupDefault [] (n2s n) ctorParams)
+            extendWithCtorParams = nubOrd . sort . concatMap (\ n -> Map.lookupDefault [] (n2s n) ctorParams)
 
             -- | Type constructors appearing in ctor fields, by datatype name.
             ctorParams :: HashMap Text [Name TyConId]
