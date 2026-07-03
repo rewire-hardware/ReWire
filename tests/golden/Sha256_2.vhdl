@@ -363,24 +363,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_dev61\ is
-port (arg0 : in std_logic_vector (255 downto 0);
-      arg1 : in std_logic_vector (511 downto 0);
-      arg2 : in std_logic_vector (255 downto 0);
-      arg3 : in std_logic_vector (5 downto 0);
-      res : out std_logic_vector (1103 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_dev61\ is
-
-begin
-res <= (std_logic_vector'(B"11000000000000000000000000000000000000000000000000000000000000000010000000") & arg0 & arg1 & arg2 & arg3);
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
 entity \Main_plusW32\ is
 port (arg0 : in std_logic_vector (31 downto 0);
       arg1 : in std_logic_vector (31 downto 0);
@@ -413,7 +395,7 @@ port (arg0 : in std_logic_vector (67 downto 0);
 end entity;
 
 architecture rtl of \Main_dev\ is
-component \ZLL_Main_dev61\ is
+component \Main_devsha256$\ is
       port (arg0 : in std_logic_vector (255 downto 0);
             arg1 : in std_logic_vector (511 downto 0);
             arg2 : in std_logic_vector (255 downto 0);
@@ -446,7 +428,7 @@ component \ZLL_Main_dev61\ is
       signal zi23 : std_logic_vector (511 downto 0);
       signal zi24 : std_logic_vector (255 downto 0);
       signal zi25 : std_logic_vector (5 downto 0);
-      signal zll_main_dev61_out : std_logic_vector (1103 downto 0);
+      signal \main_devsha256$_out\ : std_logic_vector (1103 downto 0);
       signal zi26 : std_logic_vector (31 downto 0);
       signal zi27 : std_logic_vector (31 downto 0);
       signal zi28 : std_logic_vector (31 downto 0);
@@ -473,7 +455,7 @@ component \ZLL_Main_dev61\ is
       signal zi49 : std_logic_vector (511 downto 0);
       signal zi50 : std_logic_vector (255 downto 0);
       signal zi51 : std_logic_vector (5 downto 0);
-      signal \zll_main_dev61_outR1\ : std_logic_vector (1103 downto 0);
+      signal \main_devsha256$_outR1\ : std_logic_vector (1103 downto 0);
       signal zi52 : std_logic_vector (31 downto 0);
       signal zi53 : std_logic_vector (31 downto 0);
       signal zi54 : std_logic_vector (31 downto 0);
@@ -500,7 +482,7 @@ component \ZLL_Main_dev61\ is
       signal zi75 : std_logic_vector (511 downto 0);
       signal zi76 : std_logic_vector (255 downto 0);
       signal zi77 : std_logic_vector (5 downto 0);
-      signal \zll_main_dev61_outR2\ : std_logic_vector (1103 downto 0);
+      signal \main_devsha256$_outR2\ : std_logic_vector (1103 downto 0);
       signal zi78 : std_logic_vector (31 downto 0);
       signal zi79 : std_logic_vector (31 downto 0);
       signal zi80 : std_logic_vector (31 downto 0);
@@ -527,7 +509,7 @@ component \ZLL_Main_dev61\ is
       signal zi101 : std_logic_vector (511 downto 0);
       signal zi102 : std_logic_vector (255 downto 0);
       signal zi103 : std_logic_vector (5 downto 0);
-      signal \zll_main_dev61_outR3\ : std_logic_vector (1103 downto 0);
+      signal \main_devsha256$_outR3\ : std_logic_vector (1103 downto 0);
       signal zi104 : std_logic_vector (31 downto 0);
       signal zi105 : std_logic_vector (31 downto 0);
       signal zi106 : std_logic_vector (31 downto 0);
@@ -554,7 +536,7 @@ component \ZLL_Main_dev61\ is
       signal zi127 : std_logic_vector (511 downto 0);
       signal zi128 : std_logic_vector (255 downto 0);
       signal zi129 : std_logic_vector (5 downto 0);
-      signal \zll_main_dev61_outR4\ : std_logic_vector (1103 downto 0);
+      signal \main_devsha256$_outR4\ : std_logic_vector (1103 downto 0);
       signal zi130 : std_logic_vector (31 downto 0);
       signal zi131 : std_logic_vector (31 downto 0);
       signal zi132 : std_logic_vector (31 downto 0);
@@ -581,7 +563,7 @@ component \ZLL_Main_dev61\ is
       signal zi153 : std_logic_vector (511 downto 0);
       signal zi154 : std_logic_vector (255 downto 0);
       signal zi155 : std_logic_vector (5 downto 0);
-      signal \zll_main_dev61_outR5\ : std_logic_vector (1103 downto 0);
+      signal \main_devsha256$_outR5\ : std_logic_vector (1103 downto 0);
       signal zi156 : std_logic_vector (31 downto 0);
       signal zi157 : std_logic_vector (31 downto 0);
       signal zi158 : std_logic_vector (31 downto 0);
@@ -608,7 +590,7 @@ component \ZLL_Main_dev61\ is
       signal zi179 : std_logic_vector (511 downto 0);
       signal zi180 : std_logic_vector (255 downto 0);
       signal zi181 : std_logic_vector (5 downto 0);
-      signal \zll_main_dev61_outR6\ : std_logic_vector (1103 downto 0);
+      signal \main_devsha256$_outR6\ : std_logic_vector (1103 downto 0);
       signal zi182 : std_logic_vector (31 downto 0);
       signal zi183 : std_logic_vector (31 downto 0);
       signal zi184 : std_logic_vector (31 downto 0);
@@ -635,7 +617,7 @@ component \ZLL_Main_dev61\ is
       signal zi205 : std_logic_vector (511 downto 0);
       signal zi206 : std_logic_vector (255 downto 0);
       signal zi207 : std_logic_vector (5 downto 0);
-      signal \zll_main_dev61_outR7\ : std_logic_vector (1103 downto 0);
+      signal \main_devsha256$_outR7\ : std_logic_vector (1103 downto 0);
       signal zi208 : std_logic_vector (31 downto 0);
       signal zi209 : std_logic_vector (31 downto 0);
       signal zi210 : std_logic_vector (31 downto 0);
@@ -697,7 +679,7 @@ zi0 <= arg0(63 downto 32);
       zi23 <= zi21(773 downto 262);
       zi24 <= zi21(261 downto 6);
       zi25 <= zi21(5 downto 0);
-      inst : \ZLL_Main_dev61\ port map (zi22, zi23, zi24, zi25, zll_main_dev61_out);
+      inst : \Main_devsha256$\ port map (zi22, zi23, zi24, zi25, \main_devsha256$_out\);
       zi26 <= arg0(63 downto 32);
       zi27 <= arg0(31 downto 0);
       zi28 <= arg2(447 downto 416);
@@ -724,7 +706,7 @@ zi0 <= arg0(63 downto 32);
       zi49 <= zi47(773 downto 262);
       zi50 <= zi47(261 downto 6);
       zi51 <= zi47(5 downto 0);
-      \instR1\ : \ZLL_Main_dev61\ port map (zi48, zi49, zi50, zi51, \zll_main_dev61_outR1\);
+      \instR1\ : \Main_devsha256$\ port map (zi48, zi49, zi50, zi51, \main_devsha256$_outR1\);
       zi52 <= arg0(63 downto 32);
       zi53 <= arg0(31 downto 0);
       zi54 <= arg2(511 downto 480);
@@ -751,7 +733,7 @@ zi0 <= arg0(63 downto 32);
       zi75 <= zi73(773 downto 262);
       zi76 <= zi73(261 downto 6);
       zi77 <= zi73(5 downto 0);
-      \instR2\ : \ZLL_Main_dev61\ port map (zi74, zi75, zi76, zi77, \zll_main_dev61_outR2\);
+      \instR2\ : \Main_devsha256$\ port map (zi74, zi75, zi76, zi77, \main_devsha256$_outR2\);
       zi78 <= arg0(63 downto 32);
       zi79 <= arg0(31 downto 0);
       zi80 <= arg2(511 downto 480);
@@ -778,7 +760,7 @@ zi0 <= arg0(63 downto 32);
       zi101 <= zi99(773 downto 262);
       zi102 <= zi99(261 downto 6);
       zi103 <= zi99(5 downto 0);
-      \instR3\ : \ZLL_Main_dev61\ port map (zi100, zi101, zi102, zi103, \zll_main_dev61_outR3\);
+      \instR3\ : \Main_devsha256$\ port map (zi100, zi101, zi102, zi103, \main_devsha256$_outR3\);
       zi104 <= arg0(63 downto 32);
       zi105 <= arg0(31 downto 0);
       zi106 <= arg2(511 downto 480);
@@ -805,7 +787,7 @@ zi0 <= arg0(63 downto 32);
       zi127 <= zi125(773 downto 262);
       zi128 <= zi125(261 downto 6);
       zi129 <= zi125(5 downto 0);
-      \instR4\ : \ZLL_Main_dev61\ port map (zi126, zi127, zi128, zi129, \zll_main_dev61_outR4\);
+      \instR4\ : \Main_devsha256$\ port map (zi126, zi127, zi128, zi129, \main_devsha256$_outR4\);
       zi130 <= arg0(63 downto 32);
       zi131 <= arg0(31 downto 0);
       zi132 <= arg2(511 downto 480);
@@ -832,7 +814,7 @@ zi0 <= arg0(63 downto 32);
       zi153 <= zi151(773 downto 262);
       zi154 <= zi151(261 downto 6);
       zi155 <= zi151(5 downto 0);
-      \instR5\ : \ZLL_Main_dev61\ port map (zi152, zi153, zi154, zi155, \zll_main_dev61_outR5\);
+      \instR5\ : \Main_devsha256$\ port map (zi152, zi153, zi154, zi155, \main_devsha256$_outR5\);
       zi156 <= arg0(63 downto 32);
       zi157 <= arg0(31 downto 0);
       zi158 <= arg2(511 downto 480);
@@ -859,7 +841,7 @@ zi0 <= arg0(63 downto 32);
       zi179 <= zi177(773 downto 262);
       zi180 <= zi177(261 downto 6);
       zi181 <= zi177(5 downto 0);
-      \instR6\ : \ZLL_Main_dev61\ port map (zi178, zi179, zi180, zi181, \zll_main_dev61_outR6\);
+      \instR6\ : \Main_devsha256$\ port map (zi178, zi179, zi180, zi181, \main_devsha256$_outR6\);
       zi182 <= arg0(63 downto 32);
       zi183 <= arg0(31 downto 0);
       zi184 <= arg2(511 downto 480);
@@ -886,7 +868,7 @@ zi0 <= arg0(63 downto 32);
       zi205 <= zi203(773 downto 262);
       zi206 <= zi203(261 downto 6);
       zi207 <= zi203(5 downto 0);
-      \instR7\ : \ZLL_Main_dev61\ port map (zi204, zi205, zi206, zi207, \zll_main_dev61_outR7\);
+      \instR7\ : \Main_devsha256$\ port map (zi204, zi205, zi206, zi207, \main_devsha256$_outR7\);
       zi208 <= arg0(63 downto 32);
       zi209 <= arg0(31 downto 0);
       zi210 <= arg2(511 downto 480);
@@ -921,7 +903,7 @@ zi0 <= arg0(63 downto 32);
       zi239 <= arg3(95 downto 64);
       zi240 <= arg3(63 downto 32);
       zi241 <= arg3(31 downto 0);
-      res <= rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"0000")), zll_main_dev61_out, rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"0001")), \zll_main_dev61_outR1\, rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"0010")), \zll_main_dev61_outR2\, rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"0011")), \zll_main_dev61_outR3\, rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"0100")), \zll_main_dev61_outR4\, rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"0101")), \zll_main_dev61_outR5\, rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"0110")), \zll_main_dev61_outR6\, rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"0111")), \zll_main_dev61_outR7\, rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"1000")), ((std_logic_vector'(B"11") & rw_repl(72, std_logic_vector'(B"0"))) & zi230 & zi231 & zi232 & zi233), rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"1001")), (std_logic_vector'(B"1") & (std_logic_vector'(B"0") & zi234 & zi235) & std_logic_vector'(B"10000000") & arg1 & arg2 & arg3 & arg4), rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"1010")), (std_logic_vector'(B"1") & (std_logic_vector'(B"0") & zi236 & zi237) & std_logic_vector'(B"10000000") & arg1 & arg2 & arg3 & arg4), rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"1011")), (std_logic_vector'(B"1") & (std_logic_vector'(B"0") & zi238 & zi239) & std_logic_vector'(B"10000000") & arg1 & arg2 & arg3 & arg4), (std_logic_vector'(B"1") & (std_logic_vector'(B"0") & zi240 & zi241) & std_logic_vector'(B"10000000") & arg1 & arg2 & arg3 & arg4)))))))))))));
+      res <= rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"0000")), \main_devsha256$_out\, rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"0001")), \main_devsha256$_outR1\, rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"0010")), \main_devsha256$_outR2\, rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"0011")), \main_devsha256$_outR3\, rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"0100")), \main_devsha256$_outR4\, rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"0101")), \main_devsha256$_outR5\, rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"0110")), \main_devsha256$_outR6\, rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"0111")), \main_devsha256$_outR7\, rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"1000")), ((std_logic_vector'(B"11") & rw_repl(72, std_logic_vector'(B"0"))) & zi230 & zi231 & zi232 & zi233), rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"1001")), (std_logic_vector'(B"1") & (std_logic_vector'(B"0") & zi234 & zi235) & std_logic_vector'(B"10000000") & arg1 & arg2 & arg3 & arg4), rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"1010")), (std_logic_vector'(B"1") & (std_logic_vector'(B"0") & zi236 & zi237) & std_logic_vector'(B"10000000") & arg1 & arg2 & arg3 & arg4), rw_cond(rw_eq(arg0(67 downto 64), std_logic_vector'(B"1011")), (std_logic_vector'(B"1") & (std_logic_vector'(B"0") & zi238 & zi239) & std_logic_vector'(B"10000000") & arg1 & arg2 & arg3 & arg4), (std_logic_vector'(B"1") & (std_logic_vector'(B"0") & zi240 & zi241) & std_logic_vector'(B"10000000") & arg1 & arg2 & arg3 & arg4)))))))))))));
 end architecture;
 
 library ieee;
@@ -1900,6 +1882,24 @@ component \xorW32\ is
 begin
 inst : \xorW32\ port map (p0 => arg0, p1 => arg1, p2 => extres(31 downto 0));
       res <= extres;
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \Main_devsha256$\ is
+port (arg0 : in std_logic_vector (255 downto 0);
+      arg1 : in std_logic_vector (511 downto 0);
+      arg2 : in std_logic_vector (255 downto 0);
+      arg3 : in std_logic_vector (5 downto 0);
+      res : out std_logic_vector (1103 downto 0));
+end entity;
+
+architecture rtl of \Main_devsha256$\ is
+
+begin
+res <= (std_logic_vector'(B"11000000000000000000000000000000000000000000000000000000000000000010000000") & arg0 & arg1 & arg2 & arg3);
 end architecture;
 
 library ieee;

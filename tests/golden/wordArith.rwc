@@ -8,10 +8,10 @@ Main.compute w =
 
 Main.loop : ([8]) -> [8]
 Main.loop i =
-      $LL.Main.loop1 (Main.compute i)
+      $LL.Main.loop (Main.compute i)
 
-$LL.Main.loop1 : ([8]) -> [8]
-$LL.Main.loop1 rabind =
+$LL.Main.loop : ([8]) -> [8]
+$LL.Main.loop rabind =
       rabind
 
 device top_level

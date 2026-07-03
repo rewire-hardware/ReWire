@@ -2,11 +2,11 @@ $Pure.dispatch : ([30], [10]) -> [77]
 $Pure.dispatch disc i =
       ReWire.Monad.iterSt1 i disc
 
-$LL.ReWire.Monad.iterSt5 : ([46], [30]) -> [77]
-$LL.ReWire.Monad.iterSt5 ds sto0 =
+$LL.ReWire.Monad.iterSt3 : ([46], [30]) -> [77]
+$LL.ReWire.Monad.iterSt3 ds sto0 =
       let o = ds[30 +: 16] in
       let s = ds[0 +: 30] in
-      $LL.ReWire.Monad.iterSt2 o s
+      $LL.ReWire.Monad.iterSt o s
 
 Main.incrPipeline : ([45]) -> [45]
 Main.incrPipeline ds =
@@ -34,13 +34,13 @@ $LL.Main.inputToMyState2 ds wild =
 
 ReWire.Monad.iterSt1 : ([10], [30]) -> [77]
 ReWire.Monad.iterSt1 i sto0 =
-      let $t1 = (let $t0 = $LL.ReWire.Monad.iterSt3 i sto0 sto0 in
+      let $t1 = (let $t0 = $LL.ReWire.Monad.iterSt1 i sto0 sto0 in
       let v = $t0[30 +: 46] in
       let s0 = $t0[0 +: 30] in
       1'h0 # v # s0) in
       let v = $t1[30 +: 46] in
       let s0 = $t1[0 +: 30] in
-      $LL.ReWire.Monad.iterSt5 v s0
+      $LL.ReWire.Monad.iterSt3 v s0
 
 $LL.Main.incrPipeline : ([15], [15]) -> [30]
 $LL.Main.incrPipeline eta $x =
@@ -56,8 +56,8 @@ $LL.Main.loop1 ds =
       out) # (let s' = ds[15 +: 30] in
       s')
 
-$LL.ReWire.Monad.iterSt3 : ([10], [30], [30]) -> [76]
-$LL.ReWire.Monad.iterSt3 i x sigma0 =
+$LL.ReWire.Monad.iterSt1 : ([10], [30], [30]) -> [76]
+$LL.ReWire.Monad.iterSt1 i x sigma0 =
       Main.loop i x # sigma0
 
 $LL.Main.myStateToOutput1 : ([9], [5], [1]) -> [16]
@@ -65,16 +65,16 @@ $LL.Main.myStateToOutput1 ds mw4 wild =
       if eq wild 1'h0 then 7'h0 # ds
             else $LL.Main.myStateToOutput mw4 ds
 
-$LL.ReWire.Monad.iterSt2 : ([16], [30]) -> [77]
-$LL.ReWire.Monad.iterSt2 o sto0 =
-      31'h40000000 # o # sto0
-
 $LL.Main.myStateToOutput : ([5], [9]) -> [16]
 $LL.Main.myStateToOutput mw4 wild =
       if eq wild[8 +: 1] 1'h0 then (let w4 = wild[0 +: 4] in
             2'h3 # mw4 # 5'h0 # w4)
             else let w8 = wild[0 +: 8] in
             2'h1 # mw4 # 1'h1 # w8
+
+$LL.ReWire.Monad.iterSt : ([16], [30]) -> [77]
+$LL.ReWire.Monad.iterSt o sto0 =
+      31'h40000000 # o # sto0
 
 $LL.Main.loop : ([30]) -> [15]
 $LL.Main.loop eta =

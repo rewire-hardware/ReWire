@@ -30,11 +30,7 @@ rw__LL_Main_myArithRotr x0 x1 = (x0 << (0x08 - x1)) || (x0 >>$ x1)
 
 // Main.loop
 rw_Main_loop : [8] -> [8]
-rw_Main_loop x0 = rw__LL_Main_loop1 (rw_Main_myArithRotr (rw_Main_myRotr x0))
-
-// $LL.Main.loop1
-rw__LL_Main_loop1 : [8] -> [8]
-rw__LL_Main_loop1 x0 = x0
+rw_Main_loop x0 = rw__LL_Main_loop (rw_Main_myArithRotr (rw_Main_myRotr x0))
 
 // Main.myArithRotr
 rw_Main_myArithRotr : [8] -> [8]
@@ -43,6 +39,10 @@ rw_Main_myArithRotr x0 = rw__LL_Main_myArithRotr x0 0x05
 // Main.myRotr
 rw_Main_myRotr : [8] -> [8]
 rw_Main_myRotr x0 = rw__LL_Main_myRotr x0 0x03
+
+// $LL.Main.loop
+rw__LL_Main_loop : [8] -> [8]
+rw__LL_Main_loop x0 = x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [8]

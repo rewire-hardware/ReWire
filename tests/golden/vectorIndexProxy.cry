@@ -30,16 +30,16 @@ rw__LL_Main_compute x0 x1 = (drop`{24} x0) + (take`{8} (drop`{24} x1))
 
 // Main.loop
 rw_Main_loop : [1056] -> [64]
-rw_Main_loop x0 = rw__LL_Main_loop1 (rw_Main_compute s0 s1)
+rw_Main_loop x0 = rw__LL_Main_loop (rw_Main_compute s0 s1)
   where
     s0 : [1024]
     s0 = take`{1024} x0
     s1 : [32]
     s1 = drop`{1024} x0
 
-// $LL.Main.loop1
-rw__LL_Main_loop1 : [64] -> [64]
-rw__LL_Main_loop1 x0 = x0
+// $LL.Main.loop
+rw__LL_Main_loop : [64] -> [64]
+rw__LL_Main_loop x0 = x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [1056] -> [64]

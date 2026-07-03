@@ -14,10 +14,6 @@ $LL.Main.stateAction3 : ([1], [1], [1]) -> [2]
 $LL.Main.stateAction3 i s sigma0 =
       $LL.Main.stateAction2 s ($LL.Main.stateAction4 i s)
 
-$LL.Main.loop1 : ([1], [1]) -> [3]
-$LL.Main.loop1 rabind sto0 =
-      1'h1 # rabind # sto0
-
 Main.loop1 : ([1], [1]) -> [3]
 Main.loop1 i sto0 =
       let $t1 = (let $t0 = Main.stateAction i sto0 in
@@ -26,7 +22,7 @@ Main.loop1 i sto0 =
       1'h0 # v # s0) in
       let v = $t1[1 +: 1] in
       let s0 = $t1[0 +: 1] in
-      $LL.Main.loop1 v s0
+      $LL.Main.loop v s0
 
 $LL.Main.stateAction2 : ([1], [1]) -> [2]
 $LL.Main.stateAction2 $x sigma0 =
@@ -40,6 +36,10 @@ $LL.Main.stateAction : ([1], [1]) -> [1]
 $LL.Main.stateAction a b =
       let $t1 = xor a b in
       $t1
+
+$LL.Main.loop : ([1], [1]) -> [3]
+$LL.Main.loop rabind sto0 =
+      1'h1 # rabind # sto0
 
 Main.stateAction : ([1], [1]) -> [2]
 Main.stateAction i sigma0 =

@@ -12,11 +12,7 @@ $LL.Main.myArithRotr w n' =
 
 Main.loop : ([8]) -> [8]
 Main.loop i =
-      $LL.Main.loop1 (Main.myArithRotr (Main.myRotr i))
-
-$LL.Main.loop1 : ([8]) -> [8]
-$LL.Main.loop1 rabind =
-      rabind
+      $LL.Main.loop (Main.myArithRotr (Main.myRotr i))
 
 Main.myArithRotr : ([8]) -> [8]
 Main.myArithRotr sp =
@@ -25,6 +21,10 @@ Main.myArithRotr sp =
 Main.myRotr : ([8]) -> [8]
 Main.myRotr sp =
       $LL.Main.myRotr sp 8'h3
+
+$LL.Main.loop : ([8]) -> [8]
+$LL.Main.loop rabind =
+      rabind
 
 device top_level
       input __in0 : [8]

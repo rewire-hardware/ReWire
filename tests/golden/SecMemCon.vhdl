@@ -235,35 +235,39 @@ component \Main_get__addr__reg\ is
             arg1 : in std_logic_vector (9 downto 0);
             res : out std_logic_vector (9 downto 0));
       end component;
+      component \ZLL_Main_connect\ is
+      port (arg0 : in std_logic_vector (76 downto 0);
+            res : out std_logic_vector (32 downto 0));
+      end component;
       component \ZLL_Main_connect1\ is
       port (arg0 : in std_logic_vector (204 downto 0);
             res : out std_logic_vector (76 downto 0));
       end component;
-      component \ZLL_Main_idle22\ is
-      port (arg0 : in std_logic_vector (204 downto 0);
-            res : out std_logic_vector (204 downto 0));
-      end component;
-      component \ZLL_Main_idle3\ is
+      component \ZLL_Main_idle1\ is
       port (arg0 : in std_logic_vector (1 downto 0);
             arg1 : in std_logic_vector (204 downto 0);
             res : out std_logic_vector (204 downto 0));
+      end component;
+      component \ZLL_Main_idle17\ is
+      port (arg0 : in std_logic_vector (204 downto 0);
+            arg1 : in std_logic_vector (204 downto 0);
+            res : out std_logic_vector (411 downto 0));
+      end component;
+      component \ZLL_Main_idle6\ is
+      port (arg0 : in std_logic_vector (204 downto 0);
+            res : out std_logic_vector (204 downto 0));
+      end component;
+      component \ZLL_Main_idle8\ is
+      port (arg0 : in std_logic_vector (204 downto 0);
+            res : out std_logic_vector (409 downto 0));
       end component;
       component \ZLL_Main_memLookup2\ is
       port (arg0 : in std_logic_vector (127 downto 0);
             res : out std_logic_vector (31 downto 0));
       end component;
-      component \ZLL_Main_perform__write5\ is
-      port (arg0 : in std_logic_vector (204 downto 0);
-            res : out std_logic_vector (409 downto 0));
-      end component;
-      component \ZLL_Main_perform__write7\ is
+      component \ZLL_Main_perform__read3\ is
       port (arg0 : in std_logic_vector (204 downto 0);
             res : out std_logic_vector (204 downto 0));
-      end component;
-      component \ZLL_Main_perform__write8\ is
-      port (arg0 : in std_logic_vector (204 downto 0);
-            arg1 : in std_logic_vector (204 downto 0);
-            res : out std_logic_vector (411 downto 0));
       end component;
       component \ZLL_Main_set__data__out__reg2\ is
       port (arg0 : in std_logic_vector (31 downto 0);
@@ -275,10 +279,6 @@ component \Main_get__addr__reg\ is
             arg1 : in std_logic_vector (9 downto 0);
             arg2 : in std_logic_vector (204 downto 0);
             res : out std_logic_vector (204 downto 0));
-      end component;
-      component \ZLL_Main_while__addr__reg__05\ is
-      port (arg0 : in std_logic_vector (76 downto 0);
-            res : out std_logic_vector (32 downto 0));
       end component;
       signal \__resumption_tag\ : std_logic_vector (2 downto 0) := std_logic_vector'(B"000");
       signal \__resumption_tag_next\ : std_logic_vector (2 downto 0);
@@ -299,16 +299,16 @@ component \Main_get__addr__reg\ is
       signal zi10 : std_logic_vector (204 downto 0);
       signal zll_main_setloc1_out : std_logic_vector (204 downto 0);
       signal zi11 : std_logic_vector (204 downto 0);
-      signal zll_main_perform_write7_out : std_logic_vector (204 downto 0);
+      signal zll_main_perform_read3_out : std_logic_vector (204 downto 0);
       signal zi12 : std_logic_vector (204 downto 0);
-      signal zll_main_perform_write5_out : std_logic_vector (409 downto 0);
+      signal zll_main_idle8_out : std_logic_vector (409 downto 0);
       signal zi13 : std_logic_vector (409 downto 0);
       signal zi14 : std_logic_vector (204 downto 0);
       signal zi15 : std_logic_vector (204 downto 0);
       signal zi16 : std_logic_vector (411 downto 0);
       signal zi17 : std_logic_vector (204 downto 0);
       signal zi18 : std_logic_vector (204 downto 0);
-      signal zll_main_perform_write8_out : std_logic_vector (411 downto 0);
+      signal zll_main_idle17_out : std_logic_vector (411 downto 0);
       signal zi19 : std_logic_vector (204 downto 0);
       signal \main_get_addr_reg_outR1\ : std_logic_vector (214 downto 0);
       signal zi20 : std_logic_vector (214 downto 0);
@@ -341,16 +341,16 @@ component \Main_get__addr__reg\ is
       signal zi40 : std_logic_vector (204 downto 0);
       signal zll_main_set_data_out_reg2_out : std_logic_vector (204 downto 0);
       signal zi41 : std_logic_vector (204 downto 0);
-      signal \zll_main_perform_write7_outR1\ : std_logic_vector (204 downto 0);
+      signal \zll_main_perform_read3_outR1\ : std_logic_vector (204 downto 0);
       signal zi42 : std_logic_vector (204 downto 0);
-      signal \zll_main_perform_write5_outR1\ : std_logic_vector (409 downto 0);
+      signal \zll_main_idle8_outR1\ : std_logic_vector (409 downto 0);
       signal zi43 : std_logic_vector (409 downto 0);
       signal zi44 : std_logic_vector (204 downto 0);
       signal zi45 : std_logic_vector (204 downto 0);
       signal zi46 : std_logic_vector (411 downto 0);
       signal zi47 : std_logic_vector (204 downto 0);
       signal zi48 : std_logic_vector (204 downto 0);
-      signal \zll_main_perform_write8_outR1\ : std_logic_vector (411 downto 0);
+      signal \zll_main_idle17_outR1\ : std_logic_vector (411 downto 0);
       signal zi49 : std_logic_vector (204 downto 0);
       signal \main_get_addr_reg_outR2\ : std_logic_vector (214 downto 0);
       signal zi50 : std_logic_vector (214 downto 0);
@@ -372,7 +372,7 @@ component \Main_get__addr__reg\ is
       signal \connR1\ : std_logic_vector (9 downto 0);
       signal main_set_addr_reg1_out : std_logic_vector (204 downto 0);
       signal zi64 : std_logic_vector (204 downto 0);
-      signal \zll_main_perform_write5_outR2\ : std_logic_vector (409 downto 0);
+      signal \zll_main_idle8_outR2\ : std_logic_vector (409 downto 0);
       signal zi65 : std_logic_vector (409 downto 0);
       signal zi66 : std_logic_vector (204 downto 0);
       signal zi67 : std_logic_vector (204 downto 0);
@@ -400,41 +400,41 @@ component \Main_get__addr__reg\ is
       signal zi86 : std_logic_vector (0 downto 0);
       signal zi87 : std_logic_vector (31 downto 0);
       signal zi88 : std_logic_vector (204 downto 0);
-      signal zll_main_idle3_out : std_logic_vector (204 downto 0);
+      signal zll_main_idle1_out : std_logic_vector (204 downto 0);
       signal zi89 : std_logic_vector (204 downto 0);
-      signal \zll_main_perform_write5_outR3\ : std_logic_vector (409 downto 0);
+      signal \zll_main_idle8_outR3\ : std_logic_vector (409 downto 0);
       signal zi90 : std_logic_vector (409 downto 0);
       signal zi91 : std_logic_vector (204 downto 0);
       signal zi92 : std_logic_vector (204 downto 0);
       signal zi93 : std_logic_vector (411 downto 0);
       signal zi94 : std_logic_vector (204 downto 0);
       signal zll_main_connect1_out : std_logic_vector (76 downto 0);
-      signal zll_main_while_addr_reg_05_out : std_logic_vector (32 downto 0);
+      signal zll_main_connect_out : std_logic_vector (32 downto 0);
       signal \mainzuzlzazgzuoutR1\ : std_logic_vector (9 downto 0);
       signal \main_set_addr_reg1_outR2\ : std_logic_vector (204 downto 0);
       signal zi96 : std_logic_vector (204 downto 0);
-      signal \zll_main_idle3_outR1\ : std_logic_vector (204 downto 0);
+      signal \zll_main_idle1_outR1\ : std_logic_vector (204 downto 0);
       signal zi97 : std_logic_vector (204 downto 0);
-      signal \zll_main_perform_write5_outR4\ : std_logic_vector (409 downto 0);
+      signal \zll_main_idle8_outR4\ : std_logic_vector (409 downto 0);
       signal zi98 : std_logic_vector (409 downto 0);
       signal zi99 : std_logic_vector (204 downto 0);
       signal zi100 : std_logic_vector (204 downto 0);
       signal zi101 : std_logic_vector (411 downto 0);
       signal zi102 : std_logic_vector (204 downto 0);
       signal \zll_main_connect1_outR1\ : std_logic_vector (76 downto 0);
-      signal \zll_main_while_addr_reg_05_outR1\ : std_logic_vector (32 downto 0);
+      signal \zll_main_connect_outR1\ : std_logic_vector (32 downto 0);
       signal main_set_ack_reg1_out : std_logic_vector (204 downto 0);
       signal zi104 : std_logic_vector (204 downto 0);
-      signal zll_main_idle22_out : std_logic_vector (204 downto 0);
+      signal zll_main_idle6_out : std_logic_vector (204 downto 0);
       signal zi105 : std_logic_vector (204 downto 0);
-      signal \zll_main_perform_write5_outR5\ : std_logic_vector (409 downto 0);
+      signal \zll_main_idle8_outR5\ : std_logic_vector (409 downto 0);
       signal zi106 : std_logic_vector (409 downto 0);
       signal zi107 : std_logic_vector (204 downto 0);
       signal zi108 : std_logic_vector (204 downto 0);
       signal zi109 : std_logic_vector (411 downto 0);
       signal zi110 : std_logic_vector (204 downto 0);
       signal zi111 : std_logic_vector (204 downto 0);
-      signal \zll_main_perform_write8_outR2\ : std_logic_vector (411 downto 0);
+      signal \zll_main_idle17_outR2\ : std_logic_vector (411 downto 0);
       signal zi112 : std_logic_vector (204 downto 0);
       signal \main_while_addr_reg_0_outR1\ : std_logic_vector (411 downto 0);
       signal zres : std_logic_vector (411 downto 0);
@@ -452,16 +452,16 @@ zi1 <= (\__st0\ & \__st1\);
       zi10 <= zi8(204 downto 0);
       \instR2\ : \ZLL_Main_setloc1\ port map (zi9, zi4, zi10, zll_main_setloc1_out);
       zi11 <= zll_main_setloc1_out;
-      \instR3\ : \ZLL_Main_perform__write7\ port map (zi11, zll_main_perform_write7_out);
-      zi12 <= zll_main_perform_write7_out;
-      \instR4\ : \ZLL_Main_perform__write5\ port map (zi12, zll_main_perform_write5_out);
-      zi13 <= zll_main_perform_write5_out;
+      \instR3\ : \ZLL_Main_perform__read3\ port map (zi11, zll_main_perform_read3_out);
+      zi12 <= zll_main_perform_read3_out;
+      \instR4\ : \ZLL_Main_idle8\ port map (zi12, zll_main_idle8_out);
+      zi13 <= zll_main_idle8_out;
       zi14 <= zi13(409 downto 205);
       zi15 <= zi13(204 downto 0);
       zi16 <= (std_logic_vector'(B"01") & zi14 & zi15);
       zi17 <= zi16(409 downto 205);
       zi18 <= zi16(204 downto 0);
-      \instR5\ : \ZLL_Main_perform__write8\ port map (zi17, zi18, zll_main_perform_write8_out);
+      \instR5\ : \ZLL_Main_idle17\ port map (zi17, zi18, zll_main_idle17_out);
       zi19 <= (\__st0\ & \__st1\);
       \instR6\ : \Main_get__addr__reg\ port map (zi19, \main_get_addr_reg_outR1\);
       zi20 <= \main_get_addr_reg_outR1\;
@@ -494,16 +494,16 @@ zi1 <= (\__st0\ & \__st1\);
       zi40 <= zi38(204 downto 0);
       \instR15\ : \ZLL_Main_set__data__out__reg2\ port map (zi39, zi40, zll_main_set_data_out_reg2_out);
       zi41 <= zll_main_set_data_out_reg2_out;
-      \instR16\ : \ZLL_Main_perform__write7\ port map (zi41, \zll_main_perform_write7_outR1\);
-      zi42 <= \zll_main_perform_write7_outR1\;
-      \instR17\ : \ZLL_Main_perform__write5\ port map (zi42, \zll_main_perform_write5_outR1\);
-      zi43 <= \zll_main_perform_write5_outR1\;
+      \instR16\ : \ZLL_Main_perform__read3\ port map (zi41, \zll_main_perform_read3_outR1\);
+      zi42 <= \zll_main_perform_read3_outR1\;
+      \instR17\ : \ZLL_Main_idle8\ port map (zi42, \zll_main_idle8_outR1\);
+      zi43 <= \zll_main_idle8_outR1\;
       zi44 <= zi43(409 downto 205);
       zi45 <= zi43(204 downto 0);
       zi46 <= (std_logic_vector'(B"01") & zi44 & zi45);
       zi47 <= zi46(409 downto 205);
       zi48 <= zi46(204 downto 0);
-      \instR18\ : \ZLL_Main_perform__write8\ port map (zi47, zi48, \zll_main_perform_write8_outR1\);
+      \instR18\ : \ZLL_Main_idle17\ port map (zi47, zi48, \zll_main_idle17_outR1\);
       zi49 <= (\__st0\ & \__st1\);
       \instR19\ : \Main_get__addr__reg\ port map (zi49, \main_get_addr_reg_outR2\);
       zi50 <= \main_get_addr_reg_outR2\;
@@ -525,8 +525,8 @@ zi1 <= (\__st0\ & \__st1\);
       \connR1\ <= rw_cond(rw_eq(zi54, std_logic_vector'(B"0")), rw_cond(rw_eq(zi55, std_logic_vector'(B"0")), rw_cond(rw_eq(zi56, std_logic_vector'(B"0")), rw_cond(rw_eq(zi57, std_logic_vector'(B"0")), rw_cond(rw_eq(zi58, std_logic_vector'(B"0")), rw_cond(rw_eq(zi59, std_logic_vector'(B"0")), rw_cond(rw_eq(zi60, std_logic_vector'(B"0")), rw_cond(rw_eq(zi61, std_logic_vector'(B"0")), rw_cond(rw_eq(zi62, std_logic_vector'(B"0")), rw_cond(rw_eq(zi63, std_logic_vector'(B"1")), std_logic_vector'(B"0000000000"), std_logic_vector'(B"1111111111")), rw_cond(rw_eq(zi63, std_logic_vector'(B"0")), std_logic_vector'(B"0000000001"), std_logic_vector'(B"0000000010"))), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111")), std_logic_vector'(B"1111111111"));
       \instR21\ : \Main_set__addr__reg1\ port map (\connR1\, zi53, main_set_addr_reg1_out);
       zi64 <= main_set_addr_reg1_out;
-      \instR22\ : \ZLL_Main_perform__write5\ port map (zi64, \zll_main_perform_write5_outR2\);
-      zi65 <= \zll_main_perform_write5_outR2\;
+      \instR22\ : \ZLL_Main_idle8\ port map (zi64, \zll_main_idle8_outR2\);
+      zi65 <= \zll_main_idle8_outR2\;
       zi66 <= zi65(409 downto 205);
       zi67 <= zi65(204 downto 0);
       zi68 <= (std_logic_vector'(B"01") & zi66 & zi67);
@@ -553,44 +553,44 @@ zi1 <= (\__st0\ & \__st1\);
       zi86 <= zi80(160 downto 160);
       zi87 <= zi80(159 downto 128);
       zi88 <= ((zi84 & zi85 & zi82 & zi86 & zi87) & zi83);
-      \instR26\ : \ZLL_Main_idle3\ port map (zi77, zi88, zll_main_idle3_out);
-      zi89 <= zll_main_idle3_out;
-      \instR27\ : \ZLL_Main_perform__write5\ port map (zi89, \zll_main_perform_write5_outR3\);
-      zi90 <= \zll_main_perform_write5_outR3\;
+      \instR26\ : \ZLL_Main_idle1\ port map (zi77, zi88, zll_main_idle1_out);
+      zi89 <= zll_main_idle1_out;
+      \instR27\ : \ZLL_Main_idle8\ port map (zi89, \zll_main_idle8_outR3\);
+      zi90 <= \zll_main_idle8_outR3\;
       zi91 <= zi90(409 downto 205);
       zi92 <= zi90(204 downto 0);
       zi93 <= (std_logic_vector'(B"01") & zi91 & zi92);
       zi94 <= zi93(409 downto 205);
       \instR28\ : \ZLL_Main_connect1\ port map (zi94, zll_main_connect1_out);
-      \instR29\ : \ZLL_Main_while__addr__reg__05\ port map (zll_main_connect1_out, zll_main_while_addr_reg_05_out);
+      \instR29\ : \ZLL_Main_connect\ port map (zll_main_connect1_out, zll_main_connect_out);
       \instR30\ : \Mainzuzlzazg\ port map (zi77, zi79, \mainzuzlzazgzuoutR1\);
       \instR31\ : \Main_set__addr__reg1\ port map (\mainzuzlzazgzuoutR1\, zi71, \main_set_addr_reg1_outR2\);
       zi96 <= \main_set_addr_reg1_outR2\;
-      \instR32\ : \ZLL_Main_idle3\ port map (zi77, zi96, \zll_main_idle3_outR1\);
-      zi97 <= \zll_main_idle3_outR1\;
-      \instR33\ : \ZLL_Main_perform__write5\ port map (zi97, \zll_main_perform_write5_outR4\);
-      zi98 <= \zll_main_perform_write5_outR4\;
+      \instR32\ : \ZLL_Main_idle1\ port map (zi77, zi96, \zll_main_idle1_outR1\);
+      zi97 <= \zll_main_idle1_outR1\;
+      \instR33\ : \ZLL_Main_idle8\ port map (zi97, \zll_main_idle8_outR4\);
+      zi98 <= \zll_main_idle8_outR4\;
       zi99 <= zi98(409 downto 205);
       zi100 <= zi98(204 downto 0);
       zi101 <= (std_logic_vector'(B"01") & zi99 & zi100);
       zi102 <= zi101(409 downto 205);
       \instR34\ : \ZLL_Main_connect1\ port map (zi102, \zll_main_connect1_outR1\);
-      \instR35\ : \ZLL_Main_while__addr__reg__05\ port map (\zll_main_connect1_outR1\, \zll_main_while_addr_reg_05_outR1\);
+      \instR35\ : \ZLL_Main_connect\ port map (\zll_main_connect1_outR1\, \zll_main_connect_outR1\);
       \instR36\ : \Main_set__ack__reg1\ port map (zi71, main_set_ack_reg1_out);
       zi104 <= main_set_ack_reg1_out;
-      \instR37\ : \ZLL_Main_idle22\ port map (zi104, zll_main_idle22_out);
-      zi105 <= zll_main_idle22_out;
-      \instR38\ : \ZLL_Main_perform__write5\ port map (zi105, \zll_main_perform_write5_outR5\);
-      zi106 <= \zll_main_perform_write5_outR5\;
+      \instR37\ : \ZLL_Main_idle6\ port map (zi104, zll_main_idle6_out);
+      zi105 <= zll_main_idle6_out;
+      \instR38\ : \ZLL_Main_idle8\ port map (zi105, \zll_main_idle8_outR5\);
+      zi106 <= \zll_main_idle8_outR5\;
       zi107 <= zi106(409 downto 205);
       zi108 <= zi106(204 downto 0);
       zi109 <= (std_logic_vector'(B"01") & zi107 & zi108);
       zi110 <= zi109(409 downto 205);
       zi111 <= zi109(204 downto 0);
-      \instR39\ : \ZLL_Main_perform__write8\ port map (zi110, zi111, \zll_main_perform_write8_outR2\);
+      \instR39\ : \ZLL_Main_idle17\ port map (zi110, zi111, \zll_main_idle17_outR2\);
       zi112 <= (\__st0\ & \__st1\);
       \instR40\ : \Main_while__addr__reg__0\ port map (zi112, zi112, \main_while_addr_reg_0_outR1\);
-      zres <= rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"001")), zll_main_perform_write8_out, rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"010")), \zll_main_perform_write8_outR1\, rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"011")), main_while_addr_reg_0_out, rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"100")), rw_cond(rw_eq(zi75, std_logic_vector'(B"1")), rw_cond(rw_eq(zi73, std_logic_vector'(B"0")), ((std_logic_vector'(B"1") & rw_repl(170, std_logic_vector'(B"0"))) & zll_main_while_addr_reg_05_out & std_logic_vector'(B"001") & zi94), ((std_logic_vector'(B"1") & rw_repl(170, std_logic_vector'(B"0"))) & \zll_main_while_addr_reg_05_outR1\ & std_logic_vector'(B"010") & zi102)), \zll_main_perform_write8_outR2\), \main_while_addr_reg_0_outR1\))));
+      zres <= rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"001")), zll_main_idle17_out, rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"010")), \zll_main_idle17_outR1\, rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"011")), main_while_addr_reg_0_out, rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"100")), rw_cond(rw_eq(zi75, std_logic_vector'(B"1")), rw_cond(rw_eq(zi73, std_logic_vector'(B"0")), ((std_logic_vector'(B"1") & rw_repl(170, std_logic_vector'(B"0"))) & zll_main_connect_out & std_logic_vector'(B"001") & zi94), ((std_logic_vector'(B"1") & rw_repl(170, std_logic_vector'(B"0"))) & \zll_main_connect_outR1\ & std_logic_vector'(B"010") & zi102)), \zll_main_idle17_outR2\), \main_while_addr_reg_0_outR1\))));
       \__resumption_tag_next\ <= zres(207 downto 205);
       \__st0_next\ <= zres(204 downto 128);
       \__st1_next\ <= zres(127 downto 0);
@@ -607,33 +607,6 @@ zi1 <= (\__st0\ & \__st1\);
                   \__st1\ <= \__st1_next\;
             end if;
       end process;
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_perform__write8\ is
-port (arg0 : in std_logic_vector (204 downto 0);
-      arg1 : in std_logic_vector (204 downto 0);
-      res : out std_logic_vector (411 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_perform__write8\ is
-component \ZLL_Main_connect1\ is
-      port (arg0 : in std_logic_vector (204 downto 0);
-            res : out std_logic_vector (76 downto 0));
-      end component;
-      component \ZLL_Main_while__addr__reg__05\ is
-      port (arg0 : in std_logic_vector (76 downto 0);
-            res : out std_logic_vector (32 downto 0));
-      end component;
-      signal zll_main_connect1_out : std_logic_vector (76 downto 0);
-      signal zll_main_while_addr_reg_05_out : std_logic_vector (32 downto 0);
-begin
-inst : \ZLL_Main_connect1\ port map (arg0, zll_main_connect1_out);
-      \instR1\ : \ZLL_Main_while__addr__reg__05\ port map (zll_main_connect1_out, zll_main_while_addr_reg_05_out);
-      res <= ((std_logic_vector'(B"1") & rw_repl(170, std_logic_vector'(B"0"))) & zll_main_while_addr_reg_05_out & std_logic_vector'(B"100") & arg0);
 end architecture;
 
 library ieee;
@@ -665,27 +638,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_perform__write7\ is
-port (arg0 : in std_logic_vector (204 downto 0);
-      res : out std_logic_vector (204 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_perform__write7\ is
-component \ZLL_Main_set__ack__reg2\ is
-      port (arg0 : in std_logic_vector (0 downto 0);
-            arg1 : in std_logic_vector (204 downto 0);
-            res : out std_logic_vector (204 downto 0));
-      end component;
-      signal zll_main_set_ack_reg2_out : std_logic_vector (204 downto 0);
-begin
-inst : \ZLL_Main_set__ack__reg2\ port map (std_logic_vector'(B"1"), arg0, zll_main_set_ack_reg2_out);
-      res <= zll_main_set_ack_reg2_out;
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
 entity \Main_set__ack__reg1\ is
 port (arg0 : in std_logic_vector (204 downto 0);
       res : out std_logic_vector (204 downto 0));
@@ -707,6 +659,27 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
+entity \ZLL_Main_perform__read3\ is
+port (arg0 : in std_logic_vector (204 downto 0);
+      res : out std_logic_vector (204 downto 0));
+end entity;
+
+architecture rtl of \ZLL_Main_perform__read3\ is
+component \ZLL_Main_set__ack__reg2\ is
+      port (arg0 : in std_logic_vector (0 downto 0);
+            arg1 : in std_logic_vector (204 downto 0);
+            res : out std_logic_vector (204 downto 0));
+      end component;
+      signal zll_main_set_ack_reg2_out : std_logic_vector (204 downto 0);
+begin
+inst : \ZLL_Main_set__ack__reg2\ port map (std_logic_vector'(B"1"), arg0, zll_main_set_ack_reg2_out);
+      res <= zll_main_set_ack_reg2_out;
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
 entity \ZLL_Main_memLookup2\ is
 port (arg0 : in std_logic_vector (127 downto 0);
       res : out std_logic_vector (31 downto 0));
@@ -716,6 +689,33 @@ architecture rtl of \ZLL_Main_memLookup2\ is
 
 begin
 res <= rw_repl(32, std_logic_vector'(B"0"));
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \ZLL_Main_idle17\ is
+port (arg0 : in std_logic_vector (204 downto 0);
+      arg1 : in std_logic_vector (204 downto 0);
+      res : out std_logic_vector (411 downto 0));
+end entity;
+
+architecture rtl of \ZLL_Main_idle17\ is
+component \ZLL_Main_connect\ is
+      port (arg0 : in std_logic_vector (76 downto 0);
+            res : out std_logic_vector (32 downto 0));
+      end component;
+      component \ZLL_Main_connect1\ is
+      port (arg0 : in std_logic_vector (204 downto 0);
+            res : out std_logic_vector (76 downto 0));
+      end component;
+      signal zll_main_connect1_out : std_logic_vector (76 downto 0);
+      signal zll_main_connect_out : std_logic_vector (32 downto 0);
+begin
+inst : \ZLL_Main_connect1\ port map (arg0, zll_main_connect1_out);
+      \instR1\ : \ZLL_Main_connect\ port map (zll_main_connect1_out, zll_main_connect_out);
+      res <= ((std_logic_vector'(B"1") & rw_repl(170, std_logic_vector'(B"0"))) & zll_main_connect_out & std_logic_vector'(B"100") & arg0);
 end architecture;
 
 library ieee;
@@ -741,41 +741,6 @@ zi0 <= arg1(127 downto 0);
       zi3 <= arg1(160 downto 160);
       zi4 <= arg1(159 downto 128);
       res <= ((zi1 & arg0 & zi2 & zi3 & zi4) & zi0);
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_idle22\ is
-port (arg0 : in std_logic_vector (204 downto 0);
-      res : out std_logic_vector (204 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_idle22\ is
-component \Main_set__data__out__reg\ is
-      port (arg0 : in std_logic_vector (204 downto 0);
-            res : out std_logic_vector (204 downto 0));
-      end component;
-      signal main_set_data_out_reg_out : std_logic_vector (204 downto 0);
-begin
-inst : \Main_set__data__out__reg\ port map (arg0, main_set_data_out_reg_out);
-      res <= main_set_data_out_reg_out;
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_perform__write5\ is
-port (arg0 : in std_logic_vector (204 downto 0);
-      res : out std_logic_vector (409 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_perform__write5\ is
-
-begin
-res <= (arg0 & arg0);
 end architecture;
 
 library ieee;
@@ -883,18 +848,15 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_while__addr__reg__05\ is
-port (arg0 : in std_logic_vector (76 downto 0);
-      res : out std_logic_vector (32 downto 0));
+entity \ZLL_Main_idle8\ is
+port (arg0 : in std_logic_vector (204 downto 0);
+      res : out std_logic_vector (409 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_while__addr__reg__05\ is
-signal zi0 : std_logic_vector (0 downto 0);
-      signal zi1 : std_logic_vector (31 downto 0);
+architecture rtl of \ZLL_Main_idle8\ is
+
 begin
-zi0 <= arg0(32 downto 32);
-      zi1 <= arg0(31 downto 0);
-      res <= (zi0 & zi1);
+res <= (arg0 & arg0);
 end architecture;
 
 library ieee;
@@ -912,13 +874,13 @@ component \Main_get__addr__reg\ is
       port (arg0 : in std_logic_vector (204 downto 0);
             res : out std_logic_vector (214 downto 0));
       end component;
+      component \ZLL_Main_connect\ is
+      port (arg0 : in std_logic_vector (76 downto 0);
+            res : out std_logic_vector (32 downto 0));
+      end component;
       component \ZLL_Main_connect1\ is
       port (arg0 : in std_logic_vector (204 downto 0);
             res : out std_logic_vector (76 downto 0));
-      end component;
-      component \ZLL_Main_while__addr__reg__05\ is
-      port (arg0 : in std_logic_vector (76 downto 0);
-            res : out std_logic_vector (32 downto 0));
       end component;
       signal main_get_addr_reg_out : std_logic_vector (214 downto 0);
       signal zt0 : std_logic_vector (214 downto 0);
@@ -938,9 +900,9 @@ component \Main_get__addr__reg\ is
       signal zi9 : std_logic_vector (0 downto 0);
       signal zi10 : std_logic_vector (0 downto 0);
       signal zi11 : std_logic_vector (76 downto 0);
-      signal zll_main_while_addr_reg_05_out : std_logic_vector (32 downto 0);
+      signal zll_main_connect_out : std_logic_vector (32 downto 0);
       signal zll_main_connect1_out : std_logic_vector (76 downto 0);
-      signal \zll_main_while_addr_reg_05_outR1\ : std_logic_vector (32 downto 0);
+      signal \zll_main_connect_outR1\ : std_logic_vector (32 downto 0);
 begin
 inst : \Main_get__addr__reg\ port map (arg1, main_get_addr_reg_out);
       zt0 <= main_get_addr_reg_out;
@@ -960,10 +922,10 @@ inst : \Main_get__addr__reg\ port map (arg1, main_get_addr_reg_out);
       zi9 <= zt1(205 downto 205);
       zi10 <= rw_cond(rw_eq(zi0, std_logic_vector'(B"1")), rw_cond(rw_eq(zi1, std_logic_vector'(B"1")), rw_cond(rw_eq(zi2, std_logic_vector'(B"1")), rw_cond(rw_eq(zi3, std_logic_vector'(B"1")), rw_cond(rw_eq(zi4, std_logic_vector'(B"1")), rw_cond(rw_eq(zi5, std_logic_vector'(B"1")), rw_cond(rw_eq(zi6, std_logic_vector'(B"1")), rw_cond(rw_eq(zi7, std_logic_vector'(B"1")), rw_cond(rw_eq(zi8, std_logic_vector'(B"1")), rw_cond(rw_eq(zi9, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1")), std_logic_vector'(B"1"));
       zi11 <= zt1(204 downto 128);
-      \instR1\ : \ZLL_Main_while__addr__reg__05\ port map (zi11, zll_main_while_addr_reg_05_out);
+      \instR1\ : \ZLL_Main_connect\ port map (zi11, zll_main_connect_out);
       \instR2\ : \ZLL_Main_connect1\ port map (arg0, zll_main_connect1_out);
-      \instR3\ : \ZLL_Main_while__addr__reg__05\ port map (zll_main_connect1_out, \zll_main_while_addr_reg_05_outR1\);
-      res <= rw_cond(rw_eq(zi10, std_logic_vector'(B"0")), ((std_logic_vector'(B"1") & rw_repl(170, std_logic_vector'(B"0"))) & zll_main_while_addr_reg_05_out & std_logic_vector'(B"100") & \s0R1\), ((std_logic_vector'(B"1") & rw_repl(170, std_logic_vector'(B"0"))) & \zll_main_while_addr_reg_05_outR1\ & std_logic_vector'(B"011") & arg0));
+      \instR3\ : \ZLL_Main_connect\ port map (zll_main_connect1_out, \zll_main_connect_outR1\);
+      res <= rw_cond(rw_eq(zi10, std_logic_vector'(B"0")), ((std_logic_vector'(B"1") & rw_repl(170, std_logic_vector'(B"0"))) & zll_main_connect_out & std_logic_vector'(B"100") & \s0R1\), ((std_logic_vector'(B"1") & rw_repl(170, std_logic_vector'(B"0"))) & \zll_main_connect_outR1\ & std_logic_vector'(B"011") & arg0));
 end architecture;
 
 library ieee;
@@ -1046,18 +1008,56 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_idle3\ is
+entity \ZLL_Main_idle6\ is
+port (arg0 : in std_logic_vector (204 downto 0);
+      res : out std_logic_vector (204 downto 0));
+end entity;
+
+architecture rtl of \ZLL_Main_idle6\ is
+component \Main_set__data__out__reg\ is
+      port (arg0 : in std_logic_vector (204 downto 0);
+            res : out std_logic_vector (204 downto 0));
+      end component;
+      signal main_set_data_out_reg_out : std_logic_vector (204 downto 0);
+begin
+inst : \Main_set__data__out__reg\ port map (arg0, main_set_data_out_reg_out);
+      res <= main_set_data_out_reg_out;
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \ZLL_Main_connect\ is
+port (arg0 : in std_logic_vector (76 downto 0);
+      res : out std_logic_vector (32 downto 0));
+end entity;
+
+architecture rtl of \ZLL_Main_connect\ is
+signal zi0 : std_logic_vector (0 downto 0);
+      signal zi1 : std_logic_vector (31 downto 0);
+begin
+zi0 <= arg0(32 downto 32);
+      zi1 <= arg0(31 downto 0);
+      res <= (zi0 & zi1);
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \ZLL_Main_idle1\ is
 port (arg0 : in std_logic_vector (1 downto 0);
       arg1 : in std_logic_vector (204 downto 0);
       res : out std_logic_vector (204 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_idle3\ is
+architecture rtl of \ZLL_Main_idle1\ is
 component \Main_set__ack__reg1\ is
       port (arg0 : in std_logic_vector (204 downto 0);
             res : out std_logic_vector (204 downto 0));
       end component;
-      component \ZLL_Main_idle22\ is
+      component \ZLL_Main_idle6\ is
       port (arg0 : in std_logic_vector (204 downto 0);
             res : out std_logic_vector (204 downto 0));
       end component;
@@ -1069,7 +1069,7 @@ component \Main_set__ack__reg1\ is
       signal zt0 : std_logic_vector (204 downto 0);
       signal main_set_ack_reg1_out : std_logic_vector (204 downto 0);
       signal zi5 : std_logic_vector (204 downto 0);
-      signal zll_main_idle22_out : std_logic_vector (204 downto 0);
+      signal zll_main_idle6_out : std_logic_vector (204 downto 0);
 begin
 zi0 <= arg1(127 downto 0);
       zi1 <= arg1(202 downto 193);
@@ -1079,6 +1079,6 @@ zi0 <= arg1(127 downto 0);
       zt0 <= ((arg0 & zi1 & zi2 & zi3 & zi4) & zi0);
       inst : \Main_set__ack__reg1\ port map (zt0, main_set_ack_reg1_out);
       zi5 <= main_set_ack_reg1_out;
-      \instR1\ : \ZLL_Main_idle22\ port map (zi5, zll_main_idle22_out);
-      res <= zll_main_idle22_out;
+      \instR1\ : \ZLL_Main_idle6\ port map (zi5, zll_main_idle6_out);
+      res <= zll_main_idle6_out;
 end architecture;

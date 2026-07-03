@@ -16,7 +16,7 @@ import ReWire.Crust.PrimBasis (addPrims)
 import ReWire.Crust.Purify (purify)
 import ReWire.Crust.Syntax (FreeProgram, Defn (..), Exp, Ty, Kind, DataConId, TyConId, Program (Program), prettyFP)
 import ReWire.Crust.ToHyle (toHyle)
-import ReWire.Crust.Transform (removeMain, simplifyUntil, synthableDefn, dictFree, liftLambdas, etaAbsDefs, shiftLambdas, neuterExterns, expandTypeSynonyms, inlineAnnotated, normalizeBind, purge, purgeAll, inlineExtrudes, reduce)
+import ReWire.Crust.Transform (removeMain, simplifyUntil, synthableDefn, dictFree, liftLambdas, etaAbsDefs, shiftLambdas, neuterExterns, expandTypeSynonyms, inlineAnnotated, normalizeBind, purge, purgeAll, mergeEquivDefns, inlineExtrudes, reduce)
 import ReWire.Crust.TypeCheck (typeCheck, untype)
 import ReWire.Error (AstError, MonadError, Warning (..), warnAt)
 import ReWire.Pass (runPasses, printHeader, verb')
@@ -107,6 +107,11 @@ getDevice conf fp = do
                   -- monadic defn, so clean up again before it runs.
                   , ("Removing unused definitions.",                     purge start)
                   , ("Lifting lambdas.",                                 liftLambdas)
+                  -- Purify keys resumption states by continuation name, so
+                  -- merge duplicate lifted continuations (normalizeBind and
+                  -- inlineExtrudes copy them per case arm or call site)
+                  -- before it runs.
+                  , ("Merging duplicate definitions.",                   mergeEquivDefns)
                   -- TODO: typechecking before or after purify seems to
                   --       subtly effect ordering of things.
                   , ("Shifting lambdas.",                                shiftLambdas)

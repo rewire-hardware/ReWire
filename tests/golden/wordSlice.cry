@@ -24,13 +24,13 @@ rw__Pure_dispatch x0 = rw_Main_loop1 x0
 rw_Main_compute : [16] -> [8]
 rw_Main_compute x0 = rw__LL_Main_compute1 x0 (rw__LL_Main_compute (take`{1} x0) (take`{1} (drop`{7} x0)))
 
-// $LL.Main.loop1
-rw__LL_Main_loop1 : [8] -> [8]
-rw__LL_Main_loop1 x0 = x0
+// $LL.Main.loop
+rw__LL_Main_loop : [8] -> [8]
+rw__LL_Main_loop x0 = x0
 
 // Main.loop1
 rw_Main_loop1 : [16] -> [8]
-rw_Main_loop1 x0 = rw__LL_Main_loop1 (rw_Main_compute x0)
+rw_Main_loop1 x0 = rw__LL_Main_loop (rw_Main_compute x0)
 
 // $LL.Main.compute2
 rw__LL_Main_compute2 : [1] -> [1] -> [1]

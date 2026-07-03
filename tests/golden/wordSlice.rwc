@@ -6,13 +6,13 @@ Main.compute : ([16]) -> [8]
 Main.compute w =
       $LL.Main.compute1 w ($LL.Main.compute w[15 +: 1] w[8 +: 1])
 
-$LL.Main.loop1 : ([8]) -> [8]
-$LL.Main.loop1 rabind =
+$LL.Main.loop : ([8]) -> [8]
+$LL.Main.loop rabind =
       rabind
 
 Main.loop1 : ([16]) -> [8]
 Main.loop1 i =
-      $LL.Main.loop1 (Main.compute i)
+      $LL.Main.loop (Main.compute i)
 
 $LL.Main.compute2 : ([1], [1]) -> [1]
 $LL.Main.compute2 x y =

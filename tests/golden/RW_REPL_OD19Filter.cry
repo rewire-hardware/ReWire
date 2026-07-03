@@ -26,24 +26,13 @@ parameter
 rw__Pure_dispatch : [39] -> [33] -> [73]
 rw__Pure_dispatch x0 x1 = rw_Main_repl1 x1 x0
 
-// $LL.Main.repl13
-rw__LL_Main_repl13 : [39] -> [73]
-rw__LL_Main_repl13 x0 = rw__LL_Main_repl10 s2
-  where
-    s0 : [39]
-    s0 = rw_Main_nextPC x0
-    s1 : [73]
-    s1 = 0b0100000000000000000000000000000000 # s0
-    s2 : [39]
-    s2 = drop`{34} s1
-
 // Main.repl1
 rw_Main_repl1 : [33] -> [39] -> [73]
-rw_Main_repl1 x0 x1 = rw__LL_Main_repl5 x0 x1
+rw_Main_repl1 x0 x1 = rw__LL_Main_repl4 x0 x1
 
-// $LL.Main.repl12
-rw__LL_Main_repl12 : [32] -> [7] -> [39] -> [73]
-rw__LL_Main_repl12 x0 x1 x2 = if x1 == 0b0000000 then (rw__LL_Main_repl13 s2) else (if x1 == 0b0000001 then (rw__LL_Main_repl8 x0 s7 s8) else (if x1 == 0b0000010 then (rw__LL_Main_repl13 s11) else (if x1 == 0b0000011 then (rw__LL_Main_repl8 x0 s16 s17) else (if x1 == 0b0000100 then (rw__LL_Main_repl4 x0 s22 s23) else (if x1 == 0b0000101 then (rw__LL_Main_repl9 x0 s28 s29) else (if x1 == 0b0000110 then (rw__LL_Main_repl7 x0 s34 s35) else (rw__LL_Main_repl10 s38)))))))
+// $LL.Main.repl9
+rw__LL_Main_repl9 : [32] -> [7] -> [39] -> [73]
+rw__LL_Main_repl9 x0 x1 x2 = if x1 == 0b0000000 then (rw__LL_Main_repl8 s2) else (if x1 == 0b0000001 then (rw__LL_Main_repl5 x0 s7 s8) else (if x1 == 0b0000010 then (rw__LL_Main_repl8 s11) else (if x1 == 0b0000011 then (rw__LL_Main_repl5 x0 s16 s17) else (if x1 == 0b0000100 then (rw__LL_Main_repl3 x0 s22 s23) else (if x1 == 0b0000101 then (rw__LL_Main_repl7 x0 s28 s29) else (if x1 == 0b0000110 then (rw__LL_Main_repl6 x0 s34 s35) else (rw__LL_Main_repl2 s38)))))))
   where
     s0 : [39]
     s0 = rw_Main_putReg x0 x2
@@ -128,6 +117,17 @@ rw__LL_Main_repl12 x0 x1 x2 = if x1 == 0b0000000 then (rw__LL_Main_repl13 s2) el
 rw_OD19_ProgramCounter_incPC : [7] -> [7]
 rw_OD19_ProgramCounter_incPC x0 = rw__LL_OD19_ProgramCounter_incPC x0
 
+// $LL.Main.repl8
+rw__LL_Main_repl8 : [39] -> [73]
+rw__LL_Main_repl8 x0 = rw__LL_Main_repl2 s2
+  where
+    s0 : [39]
+    s0 = rw_Main_nextPC x0
+    s1 : [73]
+    s1 = 0b0100000000000000000000000000000000 # s0
+    s2 : [39]
+    s2 = drop`{34} s1
+
 // Main.test2
 rw_Main_test2 : [32] -> [32] -> [1]
 rw_Main_test2 x0 x1 = ext_test2 x0 x1
@@ -136,17 +136,13 @@ rw_Main_test2 x0 x1 = ext_test2 x0 x1
 rw_Main_test1 : [32] -> [32] -> [1]
 rw_Main_test1 x0 x1 = ext_test1 x0 x1
 
-// $LL.Main.repl10
-rw__LL_Main_repl10 : [39] -> [73]
-rw__LL_Main_repl10 x0 = 0b1000000000000000000000000000000010 # x0
-
 // Main.getReg
 rw_Main_getReg : [39] -> [71]
 rw_Main_getReg x0 = rw__LL_Main_getReg x0 x0
 
-// $LL.Main.repl9
-rw__LL_Main_repl9 : [32] -> [32] -> [39] -> [73]
-rw__LL_Main_repl9 x0 x1 x2 = 0b100000000000000000000000000000000 # ((rw_Main_test3 x0 x1) # x2)
+// $LL.Main.repl7
+rw__LL_Main_repl7 : [32] -> [32] -> [39] -> [73]
+rw__LL_Main_repl7 x0 x1 x2 = 0b100000000000000000000000000000000 # ((rw_Main_test3 x0 x1) # x2)
 
 // $LL.Main.getReg
 rw__LL_Main_getReg : [39] -> [39] -> [71]
@@ -164,25 +160,25 @@ rw__LL_Main_nextPC x0 x1 = s0 # (rw_OD19_ProgramCounter_incPC s1)
     s1 : [7]
     s1 = drop`{32} x0
 
-// $LL.Main.repl8
-rw__LL_Main_repl8 : [32] -> [32] -> [39] -> [73]
-rw__LL_Main_repl8 x0 x1 x2 = 0b100000000000000000000000000000000 # ((rw_Main_test1 x0 x1) # x2)
-
-// $LL.Main.repl7
-rw__LL_Main_repl7 : [32] -> [32] -> [39] -> [73]
-rw__LL_Main_repl7 x0 x1 x2 = 0b100000000000000000000000000000000 # ((rw_Main_test4 x0 x1) # x2)
+// $LL.Main.repl6
+rw__LL_Main_repl6 : [32] -> [32] -> [39] -> [73]
+rw__LL_Main_repl6 x0 x1 x2 = 0b100000000000000000000000000000000 # ((rw_Main_test4 x0 x1) # x2)
 
 // Main.putReg
 rw_Main_putReg : [32] -> [39] -> [39]
 rw_Main_putReg x0 x1 = rw__LL_Main_putReg1 x0 x1 x1
 
+// $LL.Main.repl5
+rw__LL_Main_repl5 : [32] -> [32] -> [39] -> [73]
+rw__LL_Main_repl5 x0 x1 x2 = 0b100000000000000000000000000000000 # ((rw_Main_test1 x0 x1) # x2)
+
 // $LL.Main.putReg1
 rw__LL_Main_putReg1 : [32] -> [39] -> [39] -> [39]
 rw__LL_Main_putReg1 x0 x1 x2 = rw__LL_Main_putReg x0 x1 x2
 
-// $LL.Main.repl5
-rw__LL_Main_repl5 : [33] -> [39] -> [73]
-rw__LL_Main_repl5 x0 x1 = if (take`{1} x0) == 0b0 then (rw__LL_Main_repl1 s0 x1 x1) else (0b1000000000000000000000000000000010 # x1)
+// $LL.Main.repl4
+rw__LL_Main_repl4 : [33] -> [39] -> [73]
+rw__LL_Main_repl4 x0 x1 = if (take`{1} x0) == 0b0 then (rw__LL_Main_repl1 s0 x1 x1) else (0b1000000000000000000000000000000010 # x1)
   where
     s0 : [32]
     s0 = drop`{1} x0
@@ -195,9 +191,9 @@ rw_Main_test3 x0 x1 = ext_test3 x0 x1
 rw_Main_nextPC : [39] -> [39]
 rw_Main_nextPC x0 = rw__LL_Main_nextPC x0 x0
 
-// $LL.Main.repl4
-rw__LL_Main_repl4 : [32] -> [32] -> [39] -> [73]
-rw__LL_Main_repl4 x0 x1 x2 = 0b100000000000000000000000000000000 # ((rw_Main_test2 x0 x1) # x2)
+// $LL.Main.repl3
+rw__LL_Main_repl3 : [32] -> [32] -> [39] -> [73]
+rw__LL_Main_repl3 x0 x1 x2 = 0b100000000000000000000000000000000 # ((rw_Main_test2 x0 x1) # x2)
 
 // $LL.OD19.ProgramCounter.incPC
 rw__LL_OD19_ProgramCounter_incPC : [7] -> [7]
@@ -207,13 +203,17 @@ rw__LL_OD19_ProgramCounter_incPC x0 = if x0 == 0b0000000 then 0b0000001 else (if
 rw_Main_test4 : [32] -> [32] -> [1]
 rw_Main_test4 x0 x1 = ext_test4 x0 x1
 
+// $LL.Main.repl2
+rw__LL_Main_repl2 : [39] -> [73]
+rw__LL_Main_repl2 x0 = 0b1000000000000000000000000000000010 # x0
+
 // $LL.Main.repl1
 rw__LL_Main_repl1 : [32] -> [39] -> [39] -> [73]
 rw__LL_Main_repl1 x0 x1 x2 = rw__LL_Main_repl x0 x1 x2
 
 // $LL.Main.repl
 rw__LL_Main_repl : [32] -> [39] -> [39] -> [73]
-rw__LL_Main_repl x0 x1 x2 = rw__LL_Main_repl12 x0 s0 x2
+rw__LL_Main_repl x0 x1 x2 = rw__LL_Main_repl9 x0 s0 x2
   where
     s0 : [7]
     s0 = drop`{32} x1

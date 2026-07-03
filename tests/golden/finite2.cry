@@ -26,11 +26,7 @@ rw_Main_compute x0 = rw__LL_Main_compute (rw'resize`{5} (if 0b0010100 == zero th
 
 // Main.loop
 rw_Main_loop : [7] -> [5]
-rw_Main_loop x0 = rw__LL_Main_loop1 (rw_Main_compute x0)
-
-// $LL.Main.loop1
-rw__LL_Main_loop1 : [5] -> [5]
-rw__LL_Main_loop1 x0 = x0
+rw_Main_loop x0 = rw__LL_Main_loop (rw_Main_compute x0)
 
 // $LL.Main.compute1
 rw__LL_Main_compute1 : [5] -> [5] -> [5]
@@ -39,6 +35,10 @@ rw__LL_Main_compute1 x0 x1 = rw'resize`{5} (if 0x0000000000000000000000000000001
 // $LL.Main.compute
 rw__LL_Main_compute : [5] -> [5]
 rw__LL_Main_compute x0 = rw__LL_Main_compute1 x0 0b00110
+
+// $LL.Main.loop
+rw__LL_Main_loop : [5] -> [5]
+rw__LL_Main_loop x0 = x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [7] -> [5]

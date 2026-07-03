@@ -13,6 +13,7 @@ module ReWire.Crust.Transform
       , liftLambdas
       , etaAbsDefs
       , purge, purgeAll
+      , mergeEquivDefns
       , normalizeBind
       , simplify, simplifyUntil, synthableDefn, dictFree
       , specialize
@@ -30,7 +31,7 @@ import ReWire.Crust.Util (mkApp, mkError, mkLam, inlinable, synthableDefn, patVa
 import ReWire.Error (AstError, MonadError, failAt, failInternal, Warning (..))
 import ReWire.Fix (fix, fix', fixUntil, boundedFixOn)
 import ReWire.SYB (transform, transformM, query, queryWith)
-import ReWire.Unbound (freshVar, fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, runFreshMT, Name (..), unsafeUnbind, bind, unbind, Subst (..), Alpha, Embed (Embed), Bind)
+import ReWire.Unbound (freshVar, fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, runFreshMT, Name (..), unsafeUnbind, bind, unbind, Subst (..), Alpha, Embed (Embed), Bind, acompare)
 
 import Control.Arrow ((&&&))
 import Control.Lens ((^.))
@@ -43,7 +44,7 @@ import Data.Either (lefts)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet, union, difference)
 import Data.Hashable (Hashable)
-import Data.List (sort)
+import Data.List (sort, sortBy, groupBy)
 import Data.Maybe (catMaybes, isNothing, isJust)
 import Data.Text (Text, isPrefixOf)
 import Data.Tuple (swap)
@@ -330,16 +331,24 @@ normalizeBind (ts, syns, ds) = (ts, syns, ) <$> (uncurry (<>) <$> runStateT (map
                         let e' = mkBind a (mkApp (ann e2) e2 [Var (ann e2) Nothing tx x]) e3
                         ppExp' $ mkBind a e1 $ Lam (ann e2) Nothing tx (bind x e')
 
-                  -- Bind: if Case is on the LHS, push the bind into the arm
-                  -- body (the pattern variables are already in scope there) and
-                  -- the default.
+                  -- Bind: if Case is on the LHS, share the continuation
+                  -- through a single lifted definition, then push the bind
+                  -- into the arm body (the pattern variables are already in
+                  -- scope there) and the default. Pushing the continuation
+                  -- term itself would re-normalize a copy per arm, and each
+                  -- copy's re-association re-exposes its head at a bind LHS
+                  -- where unfoldHead re-inlines the entire reactive body --
+                  -- exponential on chained conditionals. (A lifted
+                  -- continuation that uses extrude still gets re-duplicated
+                  -- per arm by inlineExtrudes, as the raw copies were.)
                   -- > (case disc of p -> e; _ -> els) >>= f
                   -- becomes
-                  -- > case disc of p -> e >>= f; _ -> els >>= f
+                  -- > case disc of p -> e >>= k; _ -> els >>= k    -- k = f, lifted and shared
                   b@(dstBind -> Just (a, Case an _ _ disc bnd els, e2)) -> do
+                        e2'    <- if isAtomic e2 then pure e2 else ppExp' e2 >>= lift'
                         (p, e) <- unbind bnd
-                        let e'   = mkBind a e e2
-                            els' = flip (mkBind a) e2 <$> els
+                        let e'   = mkBind a e e2'
+                            els' = flip (mkBind a) e2' <$> els
                         ppExp' $ Case an Nothing (typeOf b) disc (bind p e') els'
 
                   -- Bind: inline everything on the LHS, lift the RHS.
@@ -384,6 +393,21 @@ normalizeBind (ts, syns, ds) = (ts, syns, ) <$> (uncurry (<>) <$> runStateT (map
 
                         lift' :: (Fresh m, MonadState [Defn] m, MonadError AstError m) => Exp -> m Exp
                         lift' = lift dn bvs
+
+            -- | A cheap, shareable continuation reference: a variable applied
+            --   to atomic arguments (lifting such a reference again would
+            --   only mint a fresh eta-wrapper per case arm).
+            isAtomic :: Exp -> Bool
+            isAtomic e = case flattenApp e of
+                  (Var {}, es) -> all atomicArg es
+                  _            -> False
+                  where atomicArg :: Exp -> Bool
+                        atomicArg = \ case
+                              Var {}    -> True
+                              Con {}    -> True
+                              LitInt {} -> True
+                              LitStr {} -> True
+                              _         -> False
 
             leftAssocBind :: Exp -> Bool
             leftAssocBind = \ case
@@ -606,6 +630,54 @@ lift dn bvs e | Just t  <- typeOf e
             pre :: Text
             pre = "$LL."
 lift _ _ e                                            = pure e
+
+-- | Merges alpha-equivalent lambda-lifted definitions ($LL.*): keeps one
+--   representative per equivalence class and repoints references, iterating
+--   until stable so that chains of continuations that differ only in the
+--   name of an equivalent callee collapse level by level. Purify keys
+--   resumption states by continuation name, so each surviving duplicate
+--   would otherwise become its own resumption state (and its own defn and
+--   instances downstream in hyle and the HDL).
+mergeEquivDefns :: Applicative m => FreeProgram -> m FreeProgram
+mergeEquivDefns (ts, syns, vs) = pure (ts, syns, go vs)
+      where go :: [Defn] -> [Defn]
+            go ds | Map.null renames = ds
+                  | otherwise        = go $ map (renameRefs renames) $ filter (not . (`Map.member` renames) . defnName) ds
+                  where -- The identity filter guards the (upstream) invariant
+                        -- that defn names are unique: a duplicated name could
+                        -- otherwise yield an identity renaming, silently
+                        -- deleting the defn.
+                        renames :: HashMap (Name Exp) (Name Exp)
+                        renames = Map.fromList $ filter (uncurry (/=)) $ concatMap classRenames $ equivClasses $ filter mergeable ds
+
+            mergeable :: Defn -> Bool
+            mergeable d = "$LL." `isPrefixOf` n2s (defnName d)
+
+            equivClasses :: [Defn] -> [[Defn]]
+            equivClasses = groupBy (\ d1 d2 -> cmp d1 d2 == EQ) . sortBy cmp
+
+            -- Alpha-respecting order (annotations ignored); attribute and
+            -- signature must agree for two defns to merge.
+            cmp :: Defn -> Defn -> Ordering
+            cmp (Defn _ _ (Embed pt1) at1 (Embed b1)) (Defn _ _ (Embed pt2) at2 (Embed b2))
+                  = compare (attrKey at1) (attrKey at2) <> acompare pt1 pt2 <> acompare b1 b2
+                  where attrKey :: Maybe DefnAttr -> Int
+                        attrKey = \ case
+                              Nothing       -> 0
+                              Just Inline   -> 1
+                              Just NoInline -> 2
+
+            classRenames :: [Defn] -> [(Name Exp, Name Exp)]
+            classRenames ds = case sortBy (\ d1 d2 -> compare (n2s $ defnName d1, defnName d1) (n2s $ defnName d2, defnName d2)) ds of
+                  rep : rest@(_ : _) -> [ (defnName d, defnName rep) | d <- rest ]
+                  _                  -> []
+
+            renameRefs :: HashMap (Name Exp) (Name Exp) -> Defn -> Defn
+            renameRefs m d@Defn { defnBody = Embed b } = d { defnBody = Embed $ transform rn b }
+                  where rn :: Exp -> Exp
+                        rn = \ case
+                              Var an pt t n | Just n' <- Map.lookup n m -> Var an pt t n'
+                              e                                         -> e
 
 purge :: Applicative m => Name Exp -> FreeProgram -> m FreeProgram
 purge start = pure . purgeUnused (start : (s2n . fst <$> builtins)) (dataName <$> primDatas)

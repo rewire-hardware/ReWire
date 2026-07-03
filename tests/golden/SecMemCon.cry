@@ -18,7 +18,7 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [208] -> [46] -> [412]
-rw__Pure_dispatch x0 x1 = if (take`{3} x0) == 0b001 then (rw_Main_perform_write x1 s0) else (if (take`{3} x0) == 0b010 then (rw_Main_perform_read x1 s1) else (if (take`{3} x0) == 0b011 then (rw__LL_Main_while_addr_reg_03 x1 s2) else (if (take`{3} x0) == 0b100 then (rw_Main_idle x1 s3) else (rw_Main_scrub_ram x1 s4))))
+rw__Pure_dispatch x0 x1 = if (take`{3} x0) == 0b001 then (rw_Main_perform_write x1 s0) else (if (take`{3} x0) == 0b010 then (rw_Main_perform_read x1 s1) else (if (take`{3} x0) == 0b011 then (rw__LL_Main_while_addr_reg_02 x1 s2) else (if (take`{3} x0) == 0b100 then (rw_Main_idle x1 s3) else (rw_Main_scrub_ram x1 s4))))
   where
     s0 : [205]
     s0 = drop`{3} x0
@@ -44,10 +44,6 @@ rw__LL_Main_get_addr_reg x0 x1 = (rw_Main_addr_reg s0) # x1
   where
     s0 : [77]
     s0 = take`{77} x0
-
-// $LL.Main.perform_write8
-rw__LL_Main_perform_write8 : [205] -> [205] -> [412]
-rw__LL_Main_perform_write8 x0 x1 = rw__LL_Main_idle26 x0 x0
 
 // Main.getloc
 rw_Main_getloc : [10] -> [205] -> [237]
@@ -83,10 +79,6 @@ rw_Main_mem1 x0 = s0
 rw__LL_Main_getloc1 : [10] -> [205] -> [205] -> [237]
 rw__LL_Main_getloc1 x0 x1 x2 = rw__LL_Main_getloc x0 x1 x2
 
-// $LL.Main.perform_write7
-rw__LL_Main_perform_write7 : [205] -> [205]
-rw__LL_Main_perform_write7 x0 = rw_Main_set_ack_reg x0
-
 // Main.set_ack_reg1
 rw_Main_set_ack_reg1 : [205] -> [205]
 rw_Main_set_ack_reg1 x0 = rw__LL_Main_set_ack_reg1 x0 x0
@@ -98,18 +90,18 @@ rw_Main_mem3 x0 = s0
     s0 : [32]
     s0 = drop`{96} x0
 
-// $LL.Main.idle26
-rw__LL_Main_idle26 : [205] -> [205] -> [412]
-rw__LL_Main_idle26 x0 x1 = 0b100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # ((rw__LL_Main_while_addr_reg_05 (rw__LL_Main_connect1 x0)) # (0b100 # x1))
+// $LL.Main.idle20
+rw__LL_Main_idle20 : [205] -> [205] -> [412]
+rw__LL_Main_idle20 x0 x1 = 0b100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # ((rw__LL_Main_connect (rw__LL_Main_connect1 x0)) # (0b100 # x1))
 
-// $LL.Main.idle25
-rw__LL_Main_idle25 : [46] -> [10] -> [2] -> [1] -> [205] -> [412]
-rw__LL_Main_idle25 x0 x1 x2 x3 x4 = if x3 == 0b0 then (rw__LL_Main_idle7 s5 s6) else (rw__LL_Main_idle18 s12 s13)
+// $LL.Main.idle19
+rw__LL_Main_idle19 : [46] -> [10] -> [2] -> [1] -> [205] -> [412]
+rw__LL_Main_idle19 x0 x1 x2 x3 x4 = if x3 == 0b0 then (rw__LL_Main_idle5 s5 s6) else (rw__LL_Main_idle13 s12 s13)
   where
     s0 : [205]
     s0 = rw_Main_set_addr_reg1 (rw_Main____ x2 x1) x4
     s1 : [410]
-    s1 = rw__LL_Main_idle20 x0 x2 s0
+    s1 = rw__LL_Main_idle15 x0 x2 s0
     s2 : [205]
     s2 = take`{205} s1
     s3 : [205]
@@ -123,7 +115,7 @@ rw__LL_Main_idle25 x0 x1 x2 x3 x4 = if x3 == 0b0 then (rw__LL_Main_idle7 s5 s6) 
     s7 : [205]
     s7 = rw_Main_set_addr_reg1 (rw_Main____ x2 x1) x4
     s8 : [410]
-    s8 = rw__LL_Main_idle14 x2 s7
+    s8 = rw__LL_Main_idle10 x2 s7
     s9 : [205]
     s9 = take`{205} s8
     s10 : [205]
@@ -139,13 +131,17 @@ rw__LL_Main_idle25 x0 x1 x2 x3 x4 = if x3 == 0b0 then (rw__LL_Main_idle7 s5 s6) 
 rw_Main_set_ack_reg : [205] -> [205]
 rw_Main_set_ack_reg x0 = rw__LL_Main_set_ack_reg x0 x0
 
+// $LL.Main.perform_read3
+rw__LL_Main_perform_read3 : [205] -> [205]
+rw__LL_Main_perform_read3 x0 = rw_Main_set_ack_reg x0
+
 // $LL.Main.set_ack_reg1
 rw__LL_Main_set_ack_reg1 : [205] -> [205] -> [205]
 rw__LL_Main_set_ack_reg1 x0 x1 = rw__LL_Main_set_ack_reg2 0b0 x0
 
-// $LL.Main.idle24
-rw__LL_Main_idle24 : [46] -> [2] -> [205] -> [205]
-rw__LL_Main_idle24 x0 x1 x2 = rw__LL_Main_idle2 x1 s0
+// $LL.Main.idle18
+rw__LL_Main_idle18 : [46] -> [2] -> [205] -> [205]
+rw__LL_Main_idle18 x0 x1 x2 = rw__LL_Main_idle2 x1 s0
   where
     s0 : [205]
     s0 = rw_Main_set_data_reg1 (rw_Main_data_in x0) x2
@@ -158,20 +154,24 @@ rw_Main_scrub_ram x0 x1 = rw_Main_while_addr_reg_0 x1 x1
 rw__LL_Main_memLookup2 : [128] -> [32]
 rw__LL_Main_memLookup2 x0 = 0x00000000
 
-// $LL.Main.while_addr_reg_09
-rw__LL_Main_while_addr_reg_09 : [10] -> [205] -> [410]
-rw__LL_Main_while_addr_reg_09 x0 x1 = rw__LL_Main_perform_write5 s0
+// $LL.Main.idle17
+rw__LL_Main_idle17 : [205] -> [205] -> [412]
+rw__LL_Main_idle17 x0 x1 = rw__LL_Main_idle20 x0 x0
+
+// $LL.Main.while_addr_reg_07
+rw__LL_Main_while_addr_reg_07 : [10] -> [205] -> [410]
+rw__LL_Main_while_addr_reg_07 x0 x1 = rw__LL_Main_idle8 s0
   where
     s0 : [205]
-    s0 = rw__LL_Main_while_addr_reg_02 x0 x1
+    s0 = rw__LL_Main_while_addr_reg_01 x0 x1
 
 // Main.set_addr_reg1
 rw_Main_set_addr_reg1 : [10] -> [205] -> [205]
 rw_Main_set_addr_reg1 x0 x1 = rw__LL_Main_set_addr_reg1 x0 x1 x1
 
-// $LL.Main.perform_write6
-rw__LL_Main_perform_write6 : [10] -> [205] -> [205]
-rw__LL_Main_perform_write6 x0 x1 = rw__LL_Main_perform_write1 x0 s1 s2
+// $LL.Main.perform_write4
+rw__LL_Main_perform_write4 : [10] -> [205] -> [205]
+rw__LL_Main_perform_write4 x0 x1 = rw__LL_Main_perform_write1 x0 s1 s2
   where
     s0 : [237]
     s0 = rw_Main_get_data_reg x1
@@ -184,43 +184,35 @@ rw__LL_Main_perform_write6 x0 x1 = rw__LL_Main_perform_write1 x0 s1 s2
 rw_Main_set_data_reg1 : [32] -> [205] -> [205]
 rw_Main_set_data_reg1 x0 x1 = rw__LL_Main_set_data_reg x0 x1 x1
 
-// $LL.Main.perform_read4
-rw__LL_Main_perform_read4 : [10] -> [205] -> [410]
-rw__LL_Main_perform_read4 x0 x1 = rw__LL_Main_perform_write5 s0
+// $LL.Main.perform_read2
+rw__LL_Main_perform_read2 : [10] -> [205] -> [410]
+rw__LL_Main_perform_read2 x0 x1 = rw__LL_Main_idle8 s0
   where
     s0 : [205]
-    s0 = rw__LL_Main_perform_read1 x0 x1
+    s0 = rw__LL_Main_perform_read x0 x1
 
 // Main.set_data_out_reg1
 rw_Main_set_data_out_reg1 : [32] -> [205] -> [205]
 rw_Main_set_data_out_reg1 x0 x1 = rw__LL_Main_set_data_out_reg1 x0 x1 x1
 
-// $LL.Main.idle22
-rw__LL_Main_idle22 : [205] -> [205]
-rw__LL_Main_idle22 x0 = rw_Main_set_data_out_reg x0
+// $LL.Main.idle16
+rw__LL_Main_idle16 : [46] -> [1] -> [2] -> [1] -> [10] -> [205] -> [412]
+rw__LL_Main_idle16 x0 x1 x2 x3 x4 x5 = rw__LL_Main_idle4 x0 x4 x2 x3 x1 x5
 
-// $LL.Main.idle21
-rw__LL_Main_idle21 : [46] -> [1] -> [2] -> [1] -> [10] -> [205] -> [412]
-rw__LL_Main_idle21 x0 x1 x2 x3 x4 x5 = rw__LL_Main_idle6 x0 x4 x2 x3 x1 x5
-
-// $LL.Main.idle20
-rw__LL_Main_idle20 : [46] -> [2] -> [205] -> [410]
-rw__LL_Main_idle20 x0 x1 x2 = rw__LL_Main_perform_write5 s0
+// $LL.Main.idle15
+rw__LL_Main_idle15 : [46] -> [2] -> [205] -> [410]
+rw__LL_Main_idle15 x0 x1 x2 = rw__LL_Main_idle8 s0
   where
     s0 : [205]
-    s0 = rw__LL_Main_idle24 x0 x1 x2
+    s0 = rw__LL_Main_idle18 x0 x1 x2
 
-// $LL.Main.perform_write5
-rw__LL_Main_perform_write5 : [205] -> [410]
-rw__LL_Main_perform_write5 x0 = x0 # x0
+// $LL.Main.idle14
+rw__LL_Main_idle14 : [46] -> [1] -> [1] -> [2] -> [205] -> [412]
+rw__LL_Main_idle14 x0 x1 x2 x3 x4 = rw__LL_Main_idle16 x0 x1 x3 x2 (rw_Main_addr_in x0) x4
 
-// $LL.Main.idle19
-rw__LL_Main_idle19 : [46] -> [1] -> [1] -> [2] -> [205] -> [412]
-rw__LL_Main_idle19 x0 x1 x2 x3 x4 = rw__LL_Main_idle21 x0 x1 x3 x2 (rw_Main_addr_in x0) x4
-
-// $LL.Main.idle18
-rw__LL_Main_idle18 : [205] -> [205] -> [412]
-rw__LL_Main_idle18 x0 x1 = rw__LL_Main_idle16 x0 x0
+// $LL.Main.idle13
+rw__LL_Main_idle13 : [205] -> [205] -> [412]
+rw__LL_Main_idle13 x0 x1 = rw__LL_Main_idle11 x0 x0
 
 // $LL.Main.setloc2
 rw__LL_Main_setloc2 : [10] -> [205] -> [205] -> [205]
@@ -228,7 +220,7 @@ rw__LL_Main_setloc2 x0 x1 x2 = rw__LL_Main_setloc1 0x00000000 x0 x1
 
 // Main.perform_write
 rw_Main_perform_write : [46] -> [205] -> [412]
-rw_Main_perform_write x0 x1 = rw__LL_Main_perform_write8 s5 s6
+rw_Main_perform_write x0 x1 = rw__LL_Main_idle17 s5 s6
   where
     s0 : [205]
     s0 = rw_Main_set_data_out_reg x1
@@ -247,7 +239,7 @@ rw_Main_perform_write x0 x1 = rw__LL_Main_perform_write8 s5 s6
 
 // Main.perform_read
 rw_Main_perform_read : [46] -> [205] -> [412]
-rw_Main_perform_read x0 x1 = rw__LL_Main_perform_write8 s7 s8
+rw_Main_perform_read x0 x1 = rw__LL_Main_idle17 s7 s8
   where
     s0 : [215]
     s0 = rw_Main_get_addr_reg x1
@@ -256,7 +248,7 @@ rw_Main_perform_read x0 x1 = rw__LL_Main_perform_write8 s7 s8
     s2 : [205]
     s2 = drop`{10} s0
     s3 : [410]
-    s3 = rw__LL_Main_perform_read4 s1 s2
+    s3 = rw__LL_Main_perform_read2 s1 s2
     s4 : [205]
     s4 = take`{205} s3
     s5 : [205]
@@ -268,24 +260,24 @@ rw_Main_perform_read x0 x1 = rw__LL_Main_perform_write8 s7 s8
     s8 : [205]
     s8 = drop`{207} s6
 
-// $LL.Main.idle17
-rw__LL_Main_idle17 : [46] -> [1] -> [205] -> [412]
-rw__LL_Main_idle17 x0 x1 x2 = rw__LL_Main_idle13 x0 x1 (rw_Main_go x0) x2
+// $LL.Main.idle12
+rw__LL_Main_idle12 : [46] -> [1] -> [205] -> [412]
+rw__LL_Main_idle12 x0 x1 x2 = rw__LL_Main_idle9 x0 x1 (rw_Main_go x0) x2
 
-// $LL.Main.idle16
-rw__LL_Main_idle16 : [205] -> [205] -> [412]
-rw__LL_Main_idle16 x0 x1 = 0b100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # ((rw__LL_Main_while_addr_reg_05 (rw__LL_Main_connect1 x0)) # (0b010 # x1))
+// $LL.Main.idle11
+rw__LL_Main_idle11 : [205] -> [205] -> [412]
+rw__LL_Main_idle11 x0 x1 = 0b100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # ((rw__LL_Main_connect (rw__LL_Main_connect1 x0)) # (0b010 # x1))
 
 // Main.set_partition_reg
 rw_Main_set_partition_reg : [2] -> [205] -> [205]
 rw_Main_set_partition_reg x0 x1 = rw__LL_Main_set_partition_reg x0 x1 x1
 
-// $LL.Main.idle14
-rw__LL_Main_idle14 : [2] -> [205] -> [410]
-rw__LL_Main_idle14 x0 x1 = rw__LL_Main_perform_write5 s0
+// $LL.Main.idle10
+rw__LL_Main_idle10 : [2] -> [205] -> [410]
+rw__LL_Main_idle10 x0 x1 = rw__LL_Main_idle8 s0
   where
     s0 : [205]
-    s0 = rw__LL_Main_idle3 x0 x1
+    s0 = rw__LL_Main_idle1 x0 x1
 
 // $LL.Main.memTweak2
 rw__LL_Main_memTweak2 : [32] -> [128] -> [1] -> [128]
@@ -372,29 +364,29 @@ rw_Main_mem0 x0 = s0
     s0 : [32]
     s0 = take`{32} x0
 
-// $LL.Main.while_addr_reg_08
-rw__LL_Main_while_addr_reg_08 : [10] -> [205] -> [205]
-rw__LL_Main_while_addr_reg_08 x0 x1 = rw_Main_set_addr_reg1 (rw_Main_nextKey x0) x1
+// $LL.Main.while_addr_reg_06
+rw__LL_Main_while_addr_reg_06 : [10] -> [205] -> [205]
+rw__LL_Main_while_addr_reg_06 x0 x1 = rw_Main_set_addr_reg1 (rw_Main_nextKey x0) x1
 
-// $LL.Main.idle13
-rw__LL_Main_idle13 : [46] -> [1] -> [1] -> [205] -> [412]
-rw__LL_Main_idle13 x0 x1 x2 x3 = rw__LL_Main_idle19 x0 x2 x1 (rw_Main_partition_in x0) x3
+// $LL.Main.idle9
+rw__LL_Main_idle9 : [46] -> [1] -> [1] -> [205] -> [412]
+rw__LL_Main_idle9 x0 x1 x2 x3 = rw__LL_Main_idle14 x0 x2 x1 (rw_Main_partition_in x0) x3
 
-// $LL.Main.while_addr_reg_07
-rw__LL_Main_while_addr_reg_07 : [10] -> [205] -> [205]
-rw__LL_Main_while_addr_reg_07 x0 x1 = rw__LL_Main_while_addr_reg_08 x0 x1
+// $LL.Main.while_addr_reg_05
+rw__LL_Main_while_addr_reg_05 : [10] -> [205] -> [205]
+rw__LL_Main_while_addr_reg_05 x0 x1 = rw__LL_Main_while_addr_reg_06 x0 x1
 
 // $LL.Main.set_ack_reg
 rw__LL_Main_set_ack_reg : [205] -> [205] -> [205]
 rw__LL_Main_set_ack_reg x0 x1 = rw__LL_Main_set_ack_reg2 0b1 x0
 
-// $LL.Main.while_addr_reg_06
-rw__LL_Main_while_addr_reg_06 : [205] -> [205] -> [412]
-rw__LL_Main_while_addr_reg_06 x0 x1 = 0b100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # ((rw__LL_Main_while_addr_reg_05 (rw__LL_Main_connect1 x0)) # (0b011 # x1))
+// $LL.Main.while_addr_reg_04
+rw__LL_Main_while_addr_reg_04 : [205] -> [205] -> [412]
+rw__LL_Main_while_addr_reg_04 x0 x1 = 0b100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # ((rw__LL_Main_connect (rw__LL_Main_connect1 x0)) # (0b011 # x1))
 
-// $LL.Main.while_addr_reg_05
-rw__LL_Main_while_addr_reg_05 : [77] -> [33]
-rw__LL_Main_while_addr_reg_05 x0 = (rw_Main_ack_reg x0) # (rw_Main_data_out_reg x0)
+// $LL.Main.idle8
+rw__LL_Main_idle8 : [205] -> [410]
+rw__LL_Main_idle8 x0 = x0 # x0
 
 // Main.partition_in
 rw_Main_partition_in : [46] -> [2]
@@ -412,7 +404,7 @@ rw_Main_rnw x0 = s0
 
 // Main.while_addr_reg_0
 rw_Main_while_addr_reg_0 : [205] -> [205] -> [412]
-rw_Main_while_addr_reg_0 x0 x1 = rw__LL_Main_while_addr_reg_04 x0 s4 s5
+rw_Main_while_addr_reg_0 x0 x1 = rw__LL_Main_while_addr_reg_03 x0 s4 s5
   where
     s0 : [215]
     s0 = rw_Main_get_addr_reg x1
@@ -427,9 +419,9 @@ rw_Main_while_addr_reg_0 x0 x1 = rw__LL_Main_while_addr_reg_04 x0 s4 s5
     s5 : [205]
     s5 = drop`{207} s3
 
-// $LL.Main.while_addr_reg_04
-rw__LL_Main_while_addr_reg_04 : [205] -> [10] -> [205] -> [412]
-rw__LL_Main_while_addr_reg_04 x0 x1 x2 = if s0 == 0b0 then (rw__LL_Main_while_addr_reg_0 x2 x2) else (rw__LL_Main_while_addr_reg_06 x0 x0)
+// $LL.Main.while_addr_reg_03
+rw__LL_Main_while_addr_reg_03 : [205] -> [10] -> [205] -> [412]
+rw__LL_Main_while_addr_reg_03 x0 x1 x2 = if s0 == 0b0 then (rw__LL_Main_while_addr_reg_0 x2 x2) else (rw__LL_Main_while_addr_reg_04 x0 x0)
   where
     s0 : [1]
     s0 = rw_Main_scrubbing x1
@@ -454,7 +446,7 @@ rw__LL_Main_connect1 x0 = s0
 
 // $LL.Main.perform_write3
 rw__LL_Main_perform_write3 : [205] -> [205]
-rw__LL_Main_perform_write3 x0 = rw__LL_Main_perform_write6 s1 s2
+rw__LL_Main_perform_write3 x0 = rw__LL_Main_perform_write4 s1 s2
   where
     s0 : [215]
     s0 = rw_Main_get_addr_reg x0
@@ -469,28 +461,28 @@ rw_Main_setloc1 x0 x1 = rw__LL_Main_setloc2 x0 x1 x1
 
 // $LL.Main.perform_write2
 rw__LL_Main_perform_write2 : [205] -> [410]
-rw__LL_Main_perform_write2 x0 = rw__LL_Main_perform_write5 s0
+rw__LL_Main_perform_write2 x0 = rw__LL_Main_idle8 s0
   where
     s0 : [205]
     s0 = rw__LL_Main_perform_write3 x0
 
-// $LL.Main.perform_read2
-rw__LL_Main_perform_read2 : [32] -> [205] -> [205]
-rw__LL_Main_perform_read2 x0 x1 = rw__LL_Main_perform_write7 s0
+// $LL.Main.perform_read1
+rw__LL_Main_perform_read1 : [32] -> [205] -> [205]
+rw__LL_Main_perform_read1 x0 x1 = rw__LL_Main_perform_read3 s0
   where
     s0 : [205]
     s0 = rw_Main_set_data_out_reg1 x0 x1
 
-// $LL.Main.idle11
-rw__LL_Main_idle11 : [205] -> [410]
-rw__LL_Main_idle11 x0 = rw__LL_Main_perform_write5 s0
+// $LL.Main.idle7
+rw__LL_Main_idle7 : [205] -> [410]
+rw__LL_Main_idle7 x0 = rw__LL_Main_idle8 s0
   where
     s0 : [205]
-    s0 = rw__LL_Main_idle22 x0
+    s0 = rw__LL_Main_idle6 x0
 
-// $LL.Main.while_addr_reg_03
-rw__LL_Main_while_addr_reg_03 : [46] -> [205] -> [412]
-rw__LL_Main_while_addr_reg_03 x0 x1 = rw_Main_while_addr_reg_0 s7 s8
+// $LL.Main.while_addr_reg_02
+rw__LL_Main_while_addr_reg_02 : [46] -> [205] -> [412]
+rw__LL_Main_while_addr_reg_02 x0 x1 = rw_Main_while_addr_reg_0 s7 s8
   where
     s0 : [215]
     s0 = rw_Main_get_addr_reg x1
@@ -499,7 +491,7 @@ rw__LL_Main_while_addr_reg_03 x0 x1 = rw_Main_while_addr_reg_0 s7 s8
     s2 : [205]
     s2 = drop`{10} s0
     s3 : [410]
-    s3 = rw__LL_Main_while_addr_reg_09 s1 s2
+    s3 = rw__LL_Main_while_addr_reg_07 s1 s2
     s4 : [205]
     s4 = take`{205} s3
     s5 : [205]
@@ -519,9 +511,9 @@ rw__LL_Main_perform_write1 x0 x1 x2 = rw__LL_Main_perform_write x0 x1 x2
 rw__LL_Main_nextKey : [1] -> [10]
 rw__LL_Main_nextKey x0 = if x0 == 0b0 then 0b0000000001 else 0b0000000010
 
-// $LL.Main.perform_read1
-rw__LL_Main_perform_read1 : [10] -> [205] -> [205]
-rw__LL_Main_perform_read1 x0 x1 = rw__LL_Main_perform_read2 s1 s2
+// $LL.Main.perform_read
+rw__LL_Main_perform_read : [10] -> [205] -> [205]
+rw__LL_Main_perform_read x0 x1 = rw__LL_Main_perform_read1 s1 s2
   where
     s0 : [237]
     s0 = rw_Main_getloc x0 x1
@@ -547,7 +539,7 @@ rw__LL_Main_set_partition_reg2 x0 x1 = (x0 # (s1 # (s2 # (s3 # s4)))) # s0
 
 // $LL.Main.perform_write
 rw__LL_Main_perform_write : [10] -> [32] -> [205] -> [205]
-rw__LL_Main_perform_write x0 x1 x2 = rw__LL_Main_perform_write7 s0
+rw__LL_Main_perform_write x0 x1 x2 = rw__LL_Main_perform_read3 s0
   where
     s0 : [205]
     s0 = rw_Main_setloc x0 x1 x2
@@ -570,13 +562,6 @@ rw__LL_Main_set_data_out_reg2 x0 x1 = (s1 # (s2 # (s3 # (s4 # x0)))) # s0
 // $LL.Main.set_data_out_reg1
 rw__LL_Main_set_data_out_reg1 : [32] -> [205] -> [205] -> [205]
 rw__LL_Main_set_data_out_reg1 x0 x1 x2 = rw__LL_Main_set_data_out_reg2 x0 x1
-
-// $LL.Main.idle9
-rw__LL_Main_idle9 : [205] -> [205]
-rw__LL_Main_idle9 x0 = rw__LL_Main_idle22 s0
-  where
-    s0 : [205]
-    s0 = rw_Main_set_ack_reg1 x0
 
 // Main.<&>
 rw_Main____ : [2] -> [10] -> [10]
@@ -603,16 +588,20 @@ rw_Main____ x0 x1 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # s9)))))
     s9 : [1]
     s9 = drop`{9} x1
 
-// $LL.Main.while_addr_reg_02
-rw__LL_Main_while_addr_reg_02 : [10] -> [205] -> [205]
-rw__LL_Main_while_addr_reg_02 x0 x1 = rw__LL_Main_while_addr_reg_07 x0 s0
+// $LL.Main.idle6
+rw__LL_Main_idle6 : [205] -> [205]
+rw__LL_Main_idle6 x0 = rw_Main_set_data_out_reg x0
+
+// $LL.Main.while_addr_reg_01
+rw__LL_Main_while_addr_reg_01 : [10] -> [205] -> [205]
+rw__LL_Main_while_addr_reg_01 x0 x1 = rw__LL_Main_while_addr_reg_05 x0 s0
   where
     s0 : [205]
     s0 = rw_Main_setloc1 x0 x1
 
-// $LL.Main.idle7
-rw__LL_Main_idle7 : [205] -> [205] -> [412]
-rw__LL_Main_idle7 x0 x1 = rw__LL_Main_idle x0 x0
+// $LL.Main.idle5
+rw__LL_Main_idle5 : [205] -> [205] -> [412]
+rw__LL_Main_idle5 x0 x1 = rw__LL_Main_idle x0 x0
 
 // Main.scrubbing
 rw_Main_scrubbing : [10] -> [1]
@@ -660,18 +649,22 @@ rw__LL_Main_memTweak1 x0 x1 x2 = if x2 == 0b0 then (s0 # (s1 # (x0 # s2))) else 
     s5 : [32]
     s5 = take`{32} (drop`{64} x1)
 
+// $LL.Main.connect
+rw__LL_Main_connect : [77] -> [33]
+rw__LL_Main_connect x0 = (rw_Main_ack_reg x0) # (rw_Main_data_out_reg x0)
+
 // $LL.Main.set_addr_reg1
 rw__LL_Main_set_addr_reg1 : [10] -> [205] -> [205] -> [205]
 rw__LL_Main_set_addr_reg1 x0 x1 x2 = rw__LL_Main_set_addr_reg x0 x1
 
-// $LL.Main.idle6
-rw__LL_Main_idle6 : [46] -> [10] -> [2] -> [1] -> [1] -> [205] -> [412]
-rw__LL_Main_idle6 x0 x1 x2 x3 x4 x5 = if x4 == 0b1 then (rw__LL_Main_idle25 x0 x1 x2 x3 x5) else (rw__LL_Main_perform_write8 s5 s6)
+// $LL.Main.idle4
+rw__LL_Main_idle4 : [46] -> [10] -> [2] -> [1] -> [1] -> [205] -> [412]
+rw__LL_Main_idle4 x0 x1 x2 x3 x4 x5 = if x4 == 0b1 then (rw__LL_Main_idle19 x0 x1 x2 x3 x5) else (rw__LL_Main_idle17 s5 s6)
   where
     s0 : [205]
     s0 = rw_Main_set_ack_reg1 x5
     s1 : [410]
-    s1 = rw__LL_Main_idle11 s0
+    s1 = rw__LL_Main_idle7 s0
     s2 : [205]
     s2 = take`{205} s1
     s3 : [205]
@@ -685,7 +678,7 @@ rw__LL_Main_idle6 x0 x1 x2 x3 x4 x5 = if x4 == 0b1 then (rw__LL_Main_idle25 x0 x
 
 // $LL.Main.while_addr_reg_0
 rw__LL_Main_while_addr_reg_0 : [205] -> [205] -> [412]
-rw__LL_Main_while_addr_reg_0 x0 x1 = 0b100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # ((rw__LL_Main_while_addr_reg_05 s0) # (0b100 # x1))
+rw__LL_Main_while_addr_reg_0 x0 x1 = 0b100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # ((rw__LL_Main_connect s0) # (0b100 # x1))
   where
     s0 : [77]
     s0 = take`{77} x0
@@ -699,11 +692,11 @@ rw__LL_Main_set_data_out_reg : [205] -> [205] -> [205]
 rw__LL_Main_set_data_out_reg x0 x1 = rw__LL_Main_set_data_out_reg2 0x00000000 x0
 
 // $LL.Main.idle3
-rw__LL_Main_idle3 : [2] -> [205] -> [205]
-rw__LL_Main_idle3 x0 x1 = rw__LL_Main_idle9 s0
+rw__LL_Main_idle3 : [205] -> [205]
+rw__LL_Main_idle3 x0 = rw__LL_Main_idle6 s0
   where
     s0 : [205]
-    s0 = rw_Main_set_partition_reg x0 x1
+    s0 = rw_Main_set_ack_reg1 x0
 
 // $LL.Main.getloc
 rw__LL_Main_getloc : [10] -> [205] -> [205] -> [237]
@@ -764,7 +757,7 @@ rw_Main_addr_reg x0 = s0
 
 // $LL.Main.idle2
 rw__LL_Main_idle2 : [2] -> [205] -> [205]
-rw__LL_Main_idle2 x0 x1 = rw__LL_Main_idle3 x0 x1
+rw__LL_Main_idle2 x0 x1 = rw__LL_Main_idle1 x0 x1
 
 // $LL.Main.set_addr_reg
 rw__LL_Main_set_addr_reg : [10] -> [205] -> [205]
@@ -791,6 +784,13 @@ rw_Main_data_reg x0 = s0
   where
     s0 : [32]
     s0 = take`{32} (drop`{12} x0)
+
+// $LL.Main.idle1
+rw__LL_Main_idle1 : [2] -> [205] -> [205]
+rw__LL_Main_idle1 x0 x1 = rw__LL_Main_idle3 s0
+  where
+    s0 : [205]
+    s0 = rw_Main_set_partition_reg x0 x1
 
 // Main.go
 rw_Main_go : [46] -> [1]
@@ -840,11 +840,11 @@ rw_Main_addr_in x0 = s0
 
 // $LL.Main.idle
 rw__LL_Main_idle : [205] -> [205] -> [412]
-rw__LL_Main_idle x0 x1 = 0b100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # ((rw__LL_Main_while_addr_reg_05 (rw__LL_Main_connect1 x0)) # (0b001 # x1))
+rw__LL_Main_idle x0 x1 = 0b100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 # ((rw__LL_Main_connect (rw__LL_Main_connect1 x0)) # (0b001 # x1))
 
 // Main.idle
 rw_Main_idle : [46] -> [205] -> [412]
-rw_Main_idle x0 x1 = rw__LL_Main_idle17 x0 (rw_Main_rnw x0) x1
+rw_Main_idle x0 x1 = rw__LL_Main_idle12 x0 (rw_Main_rnw x0) x1
 
 // Main.setloc
 rw_Main_setloc : [10] -> [32] -> [205] -> [205]

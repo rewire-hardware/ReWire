@@ -3,7 +3,7 @@ module ReWire.Unbound
       ( UB.Alpha (..), UB.Fresh (..), UB.FreshMT (..), UB.Embed (..)
       , UB.TRec (..), UB.Bind (..)
       , UB.Subst (..), UB.SubstName (..)
-      , UB.runFreshM, UB.runFreshMT, UB.aeq
+      , UB.runFreshM, UB.runFreshMT, UB.aeq, UB.acompare
       , UB.trec, UB.untrec, UB.bind, UB.unbind, UB.unembed
       , UB.Name (..), UB.AnyName (..), UB.isFreeName
       , UB.unsafeUnbind

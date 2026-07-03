@@ -51,11 +51,7 @@ module top_level (input logic [0:0] clk,
   logic [255:0] zi37;
   logic [255:0] zi39;
   logic [5:0] zi40;
-  logic [1296:0] zll_main_dev17_out;
-  logic [255:0] zi41;
-  logic [255:0] zi43;
-  logic [5:0] zi44;
-  logic [1296:0] zll_main_dev17_outR1;
+  logic [1296:0] main_loop_outR1;
   logic [1296:0] zres;
   assign zi1 = {__st0, __st1};
   assign zi3 = __st3[261:6];
@@ -96,12 +92,8 @@ module top_level (input logic [0:0] clk,
   assign zi37 = {__st0, __st1};
   assign zi39 = __st3[261:6];
   assign zi40 = __st3[5:0];
-  ZLL_Main_dev17  instR3 (__in0, zi37, __st2, zi39, zi40, zll_main_dev17_out);
-  assign zi41 = {__st0, __st1};
-  assign zi43 = __st3[261:6];
-  assign zi44 = __st3[5:0];
-  ZLL_Main_dev17  instR4 (__in0, zi41, __st2, zi43, zi44, zll_main_dev17_outR1);
-  assign zres = (__resumption_tag[7:6] == 2'h1) ? main_dev_out : ((__resumption_tag[7:6] == 2'h2) ? ((zi10 == 1'h0) ? main_loop_out : main_dev_outR1) : ((__resumption_tag[7:6] == 2'h3) ? zll_main_dev17_out : zll_main_dev17_outR1));
+  Main_loop  instR3 (zi37, __st2, zi39, zi40, main_loop_outR1);
+  assign zres = (__resumption_tag[7:6] == 2'h1) ? main_dev_out : ((__resumption_tag[7:6] == 2'h2) ? ((zi10 == 1'h0) ? main_loop_out : main_dev_outR1) : main_loop_outR1);
   assign __resumption_tag_next = zres[1037:1030];
   assign __st0_next = zres[1029:806];
   assign __st1_next = zres[805:774];
@@ -118,21 +110,18 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module ZLL_Main_dev17 (input logic [513:0] arg0,
-  input logic [255:0] arg1,
-  input logic [511:0] arg2,
-  input logic [255:0] arg3,
-  input logic [5:0] arg4,
-  output logic [1296:0] res);
-  logic [1296:0] main_loop_out;
-  Main_loop  inst (arg1, arg2, arg3, arg4, main_loop_out);
-  assign res = main_loop_out;
-endmodule
-
-module ZLL_Main_bigsigma08 (input logic [31:0] arg0,
+module ZLL_Main_bigsigma04 (input logic [31:0] arg0,
   input logic [31:0] arg1,
   output logic [31:0] res);
   assign res = (arg1 >> arg0) | (arg1 << (32'h20 - arg0));
+endmodule
+
+module ZLL_Main_dev10 (input logic [255:0] arg0,
+  input logic [511:0] arg1,
+  input logic [255:0] arg2,
+  input logic [5:0] arg3,
+  output logic [1296:0] res);
+  assign res = {{3'h5, {9'h108{1'h0}}}, arg0, arg1, arg2, arg3};
 endmodule
 
 module Main_dev (input logic [513:0] arg0,
@@ -142,7 +131,7 @@ module Main_dev (input logic [513:0] arg0,
   input logic [5:0] arg4,
   output logic [1296:0] res);
   logic [511:0] zi0;
-  logic [1029:0] zll_main_dev7_out;
+  logic [1029:0] zll_main_dev2_out;
   logic [1029:0] zi1;
   logic [255:0] zi2;
   logic [511:0] zi3;
@@ -153,8 +142,9 @@ module Main_dev (input logic [513:0] arg0,
   logic [511:0] zi8;
   logic [255:0] zi9;
   logic [5:0] zi10;
+  logic [1296:0] zll_main_dev10_out;
   logic [511:0] zi11;
-  logic [1029:0] zll_main_dev7_outR1;
+  logic [1029:0] zll_main_dev2_outR1;
   logic [1029:0] zi12;
   logic [255:0] zi13;
   logic [511:0] zi14;
@@ -165,9 +155,10 @@ module Main_dev (input logic [513:0] arg0,
   logic [511:0] zi19;
   logic [255:0] zi20;
   logic [5:0] zi21;
+  logic [1296:0] zll_main_dev10_outR1;
   assign zi0 = arg0[511:0];
-  ZLL_Main_dev7  inst (zi0, 256'h6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19, arg2, 256'h6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19, 6'h0, zll_main_dev7_out);
-  assign zi1 = zll_main_dev7_out;
+  ZLL_Main_dev2  inst (zi0, 256'h6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19, arg2, 256'h6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19, 6'h0, zll_main_dev2_out);
+  assign zi1 = zll_main_dev2_out;
   assign zi2 = zi1[1029:774];
   assign zi3 = zi1[773:262];
   assign zi4 = zi1[261:6];
@@ -177,9 +168,10 @@ module Main_dev (input logic [513:0] arg0,
   assign zi8 = zi6[773:262];
   assign zi9 = zi6[261:6];
   assign zi10 = zi6[5:0];
+  ZLL_Main_dev10  instR1 (zi7, zi8, zi9, zi10, zll_main_dev10_out);
   assign zi11 = arg0[511:0];
-  ZLL_Main_dev7  instR1 (zi11, arg3, arg2, arg3, 6'h0, zll_main_dev7_outR1);
-  assign zi12 = zll_main_dev7_outR1;
+  ZLL_Main_dev2  instR2 (zi11, arg3, arg2, arg3, 6'h0, zll_main_dev2_outR1);
+  assign zi12 = zll_main_dev2_outR1;
   assign zi13 = zi12[1029:774];
   assign zi14 = zi12[773:262];
   assign zi15 = zi12[261:6];
@@ -189,7 +181,8 @@ module Main_dev (input logic [513:0] arg0,
   assign zi19 = zi17[773:262];
   assign zi20 = zi17[261:6];
   assign zi21 = zi17[5:0];
-  assign res = (arg0[513:512] == 2'h0) ? {{3'h5, {9'h108{1'h0}}}, zi7, zi8, zi9, zi10} : ((arg0[513:512] == 2'h1) ? {267'h50000000000000000000000000000000000000000000000000000000000000000c0, zi18, zi19, zi20, zi21} : {3'h4, arg3, 8'h40, arg1, arg2, arg3, arg4});
+  ZLL_Main_dev10  instR3 (zi18, zi19, zi20, zi21, zll_main_dev10_outR1);
+  assign res = (arg0[513:512] == 2'h0) ? zll_main_dev10_out : ((arg0[513:512] == 2'h1) ? zll_main_dev10_outR1 : {3'h4, arg3, 8'h40, arg1, arg2, arg3, arg4});
 endmodule
 
 module Main_loop (input logic [255:0] arg0,
@@ -214,10 +207,10 @@ module Main_loop (input logic [255:0] arg0,
   logic [31:0] zi14;
   logic [31:0] zi15;
   logic [31:0] zi16;
-  logic [31:0] zll_main_bigsigma08_out;
-  logic [31:0] zll_main_bigsigma08_outR1;
-  logic [31:0] zll_main_bigsigma08_outR2;
-  logic [31:0] zll_main_bigsigma08_outR3;
+  logic [31:0] zll_main_bigsigma04_out;
+  logic [31:0] zll_main_bigsigma04_outR1;
+  logic [31:0] zll_main_bigsigma04_outR2;
+  logic [31:0] zll_main_bigsigma04_outR3;
   logic [511:0] zi17;
   logic [1061:0] zi18;
   logic [31:0] zi19;
@@ -234,13 +227,13 @@ module Main_loop (input logic [255:0] arg0,
   logic [31:0] zi30;
   logic [31:0] zi31;
   logic [31:0] zi32;
-  logic [31:0] zll_main_bigsigma08_outR4;
-  logic [31:0] zll_main_bigsigma08_outR5;
-  logic [31:0] zll_main_bigsigma08_outR6;
+  logic [31:0] zll_main_bigsigma04_outR4;
+  logic [31:0] zll_main_bigsigma04_outR5;
+  logic [31:0] zll_main_bigsigma04_outR6;
   logic [31:0] zi33;
-  logic [31:0] zll_main_bigsigma08_outR7;
-  logic [31:0] zll_main_bigsigma08_outR8;
-  logic [31:0] zll_main_bigsigma08_outR9;
+  logic [31:0] zll_main_bigsigma04_outR7;
+  logic [31:0] zll_main_bigsigma04_outR8;
+  logic [31:0] zll_main_bigsigma04_outR9;
   logic [1029:0] zi34;
   logic [255:0] zi35;
   logic [511:0] zi36;
@@ -275,11 +268,11 @@ module Main_loop (input logic [255:0] arg0,
   assign zi14 = arg1[95:64];
   assign zi15 = arg1[63:32];
   assign zi16 = arg1[31:0];
-  ZLL_Main_bigsigma08  inst (32'h11, zi15, zll_main_bigsigma08_out);
-  ZLL_Main_bigsigma08  instR1 (32'h13, zi15, zll_main_bigsigma08_outR1);
-  ZLL_Main_bigsigma08  instR2 (32'h7, zi2, zll_main_bigsigma08_outR2);
-  ZLL_Main_bigsigma08  instR3 (32'h12, zi2, zll_main_bigsigma08_outR3);
-  assign zi17 = {zi2, zi3, zi4, zi5, zi6, zi7, zi8, zi9, zi10, zi11, zi12, zi13, zi14, zi15, zi16, (((zll_main_bigsigma08_out ^ zll_main_bigsigma08_outR1) ^ (zi15 >> 32'ha)) + zi10) + (((zll_main_bigsigma08_outR2 ^ zll_main_bigsigma08_outR3) ^ (zi2 >> 32'h3)) + zi1)};
+  ZLL_Main_bigsigma04  inst (32'h11, zi15, zll_main_bigsigma04_out);
+  ZLL_Main_bigsigma04  instR1 (32'h13, zi15, zll_main_bigsigma04_outR1);
+  ZLL_Main_bigsigma04  instR2 (32'h7, zi2, zll_main_bigsigma04_outR2);
+  ZLL_Main_bigsigma04  instR3 (32'h12, zi2, zll_main_bigsigma04_outR3);
+  assign zi17 = {zi2, zi3, zi4, zi5, zi6, zi7, zi8, zi9, zi10, zi11, zi12, zi13, zi14, zi15, zi16, (((zll_main_bigsigma04_out ^ zll_main_bigsigma04_outR1) ^ (zi15 >> 32'ha)) + zi10) + (((zll_main_bigsigma04_outR2 ^ zll_main_bigsigma04_outR3) ^ (zi2 >> 32'h3)) + zi1)};
   assign zi18 = {zi0, arg0, zi17, arg2, arg3};
   assign zi19 = zi18[1061:1030];
   assign zi21 = zi18[773:262];
@@ -295,14 +288,14 @@ module Main_loop (input logic [255:0] arg0,
   assign zi30 = zi18[869:838];
   assign zi31 = zi18[837:806];
   assign zi32 = zi18[805:774];
-  ZLL_Main_bigsigma08  instR4 (32'h6, zi29, zll_main_bigsigma08_outR4);
-  ZLL_Main_bigsigma08  instR5 (32'hb, zi29, zll_main_bigsigma08_outR5);
-  ZLL_Main_bigsigma08  instR6 (32'h19, zi29, zll_main_bigsigma08_outR6);
-  assign zi33 = zi32 + ((((zll_main_bigsigma08_outR4 ^ zll_main_bigsigma08_outR5) ^ zll_main_bigsigma08_outR6) + ((zi29 & zi30) ^ ((~zi29) & zi31))) + (zi24 + zi19));
-  ZLL_Main_bigsigma08  instR7 (32'h2, zi25, zll_main_bigsigma08_outR7);
-  ZLL_Main_bigsigma08  instR8 (32'hd, zi25, zll_main_bigsigma08_outR8);
-  ZLL_Main_bigsigma08  instR9 (32'h16, zi25, zll_main_bigsigma08_outR9);
-  assign zi34 = {{zi33 + (((zll_main_bigsigma08_outR7 ^ zll_main_bigsigma08_outR8) ^ zll_main_bigsigma08_outR9) + (((zi25 & zi26) ^ (zi25 & zi27)) ^ (zi26 & zi27))), zi25, zi26, zi27, zi28 + zi33, zi29, zi30, zi31}, zi21, zi22, zi23};
+  ZLL_Main_bigsigma04  instR4 (32'h6, zi29, zll_main_bigsigma04_outR4);
+  ZLL_Main_bigsigma04  instR5 (32'hb, zi29, zll_main_bigsigma04_outR5);
+  ZLL_Main_bigsigma04  instR6 (32'h19, zi29, zll_main_bigsigma04_outR6);
+  assign zi33 = zi32 + ((((zll_main_bigsigma04_outR4 ^ zll_main_bigsigma04_outR5) ^ zll_main_bigsigma04_outR6) + ((zi29 & zi30) ^ ((~zi29) & zi31))) + (zi24 + zi19));
+  ZLL_Main_bigsigma04  instR7 (32'h2, zi25, zll_main_bigsigma04_outR7);
+  ZLL_Main_bigsigma04  instR8 (32'hd, zi25, zll_main_bigsigma04_outR8);
+  ZLL_Main_bigsigma04  instR9 (32'h16, zi25, zll_main_bigsigma04_outR9);
+  assign zi34 = {{zi33 + (((zll_main_bigsigma04_outR7 ^ zll_main_bigsigma04_outR8) ^ zll_main_bigsigma04_outR9) + (((zi25 & zi26) ^ (zi25 & zi27)) ^ (zi26 & zi27))), zi25, zi26, zi27, zi28 + zi33, zi29, zi30, zi31}, zi21, zi22, zi23};
   assign zi35 = zi34[1029:774];
   assign zi36 = zi34[773:262];
   assign zi37 = zi34[261:6];
@@ -322,7 +315,7 @@ module Main_loop (input logic [255:0] arg0,
   assign res = {261'h180000000000000000000000000000000000000000000000000000000000000002, vR1, s0R1, s1R1, s2R1, s3R1};
 endmodule
 
-module ZLL_Main_dev7 (input logic [511:0] arg0,
+module ZLL_Main_dev2 (input logic [511:0] arg0,
   input logic [255:0] arg1,
   input logic [511:0] arg2,
   input logic [255:0] arg3,

@@ -25,13 +25,9 @@ rw__Pure_dispatch x0 x1 = rw__LL_Main_sig x1 s0 s1
     s1 : [8]
     s1 = drop`{8} x0
 
-// $LL.Main.incr5
-rw__LL_Main_incr5 : [8] -> [8] -> [8] -> [8] -> [24]
-rw__LL_Main_incr5 x0 x1 x2 x3 = rw__LL_Main_incr2 x1 x0 x2 x3
-
 // $LL.Main.incr4
-rw__LL_Main_incr4 : [8] -> [8] -> [24]
-rw__LL_Main_incr4 x0 x1 = rw_Main_sig x0 x1
+rw__LL_Main_incr4 : [8] -> [8] -> [8] -> [8] -> [24]
+rw__LL_Main_incr4 x0 x1 x2 x3 = rw__LL_Main_incr2 x1 x0 x2 x3
 
 // Main.incr
 rw_Main_incr : [8] -> [8] -> [24]
@@ -39,11 +35,11 @@ rw_Main_incr x0 x1 = rw__LL_Main_incr x0 x0 x1
 
 // $LL.Main.incr3
 rw__LL_Main_incr3 : [8] -> [8] -> [8] -> [8] -> [24]
-rw__LL_Main_incr3 x0 x1 x2 x3 = rw__LL_Main_incr5 x1 x0 x1 x3
+rw__LL_Main_incr3 x0 x1 x2 x3 = rw__LL_Main_incr4 x1 x0 x1 x3
 
 // $LL.Main.incr2
 rw__LL_Main_incr2 : [8] -> [8] -> [8] -> [8] -> [24]
-rw__LL_Main_incr2 x0 x1 x2 x3 = rw__LL_Main_incr4 x2 (x0 + x1)
+rw__LL_Main_incr2 x0 x1 x2 x3 = rw__LL_Main_begin x2 (x0 + x1)
 
 // Main.sig
 rw_Main_sig : [8] -> [8] -> [24]
@@ -64,6 +60,10 @@ rw__LL_Main_sig x0 x1 x2 = if x0 == 0b0 then (rw_Main_sig x1 x2) else (rw_Main_i
 // $LL.Main.incr
 rw__LL_Main_incr : [8] -> [8] -> [8] -> [24]
 rw__LL_Main_incr x0 x1 x2 = rw__LL_Main_incr1 x0 x2 x1 x2
+
+// $LL.Main.begin
+rw__LL_Main_begin : [8] -> [8] -> [24]
+rw__LL_Main_begin x0 x1 = rw_Main_sig x0 x1
 
 // Per-cycle step: outputs # next register values.
 rw_step : [16] -> [1] -> [24]
