@@ -34,17 +34,22 @@
 --
 --   * A small base vocabulary (Prelude names that the HSE front end used to
 --     silently rebind to rewire-user definitions) is supported by
---     synthesizing INLINE Crust definitions -- ($), (.), id, not, (&&),
---     (||), fst, snd -- plus DataDefns for Maybe and Either.
+--     synthesizing INLINE Crust definitions ("ReWire.GHC.Vocab");
 --     error/undefined and GHC's pattern-match failure functions map to the
 --     Error builtin.
+--
+--   Name and type classification (primitives, user classes, erasable
+--   evidence, the external tycon and vocabulary tables) lives in
+--   "ReWire.GHC.Recognize".
 module ReWire.GHC.ToCrust (coreToCrust, purgeTyAnns) where
 
-import ReWire.Annotation (Annote (MsgAnnote), noAnn, srcAnnote)
+import ReWire.Annotation (Annote, noAnn)
 import ReWire.Config (Config, start)
 import ReWire.Error (AstError, MonadError, failAt)
-import ReWire.Crust.Types (poly, poly', arr, strTy, listTy, mkArrowTy, plusTy, negTy, concrete, setTyAnn, tyAnn, pairTy, (|->))
+import ReWire.Crust.Types (poly, poly', arr, strTy, listTy, mkArrowTy, plusTy, negTy, concrete, setTyAnn, tyAnn, (|->))
 import ReWire.Crust.Util (mkApp, mkError)
+import ReWire.GHC.Recognize (uKey, spanAnnote, varAnnote, isPrimModule, isPrimVar, homeishMod, qualName, conName, tupleName, splitStart, erasedArg, erasedEv, userPred, tyConModule, tyConKey, tyConTable, vocabTable)
+import ReWire.GHC.Vocab (vocabDatas, vocabDefns)
 import ReWire.SYB (transform)
 import ReWire.Unbound (Fresh, fresh, s2n, n2s, Embed (..), bind, unsafeUnbind)
 
@@ -64,26 +69,23 @@ import qualified Data.Text          as T
 import qualified Data.Text.Encoding as TE
 
 import GHC (ModuleName, moduleName, moduleNameString)
-import GHC.Builtin.Types (integerISDataCon, integerIPDataCon, integerINDataCon, listTyCon, nilDataCon, consDataCon, trueDataCon, falseDataCon, unitDataCon, unitTyCon, boolTyCon, charTyCon, integerTyCon, naturalTyCon)
+import GHC.Builtin.Types (integerISDataCon, integerIPDataCon, integerINDataCon, listTyCon, nilDataCon, consDataCon, unitTyCon, boolTyCon, charTyCon, integerTyCon, naturalTyCon)
 import GHC.Builtin.Types.Literals (typeNatAddTyCon, typeNatSubTyCon, typeNatMulTyCon)
-import GHC.Core (CoreExpr, CoreBind, Expr (..), Bind (..), Alt (..), AltCon (..), collectArgs, isTyCoArg)
-import GHC.Core.DataCon (DataCon, dataConName, dataConOrigArgTys, dataConUnivTyVars, dataConExTyCoVars, isTupleDataCon, dataConSourceArity, dataConTheta)
+import GHC.Core (CoreExpr, CoreBind, Expr (..), Bind (..), Alt (..), AltCon (..), collectArgs)
+import GHC.Core.DataCon (DataCon, dataConOrigArgTys, dataConUnivTyVars, dataConExTyCoVars, dataConTheta)
 import GHC.Core.Class (classAllSelIds, classTyCon)
 import GHC.Core.FVs (exprFreeVars)
 import GHC.Core.Predicate (isEvVarType)
 import GHC.Core.TyCo.Rep (Type (..), TyLit (..), scaledThing)
 import GHC.Core.TyCon (TyCon, tyConName, tyConKind, tyConDataCons, isClassTyCon, isAlgTyCon, isTypeSynonymTyCon, isBoxedTupleTyCon, tyConArity, isNewTyCon, tyConSingleDataCon)
-import GHC.Core.Type (expandTypeSynonyms, mkTyVarTys, splitForAllTyCoVars, tyConAppTyCon_maybe)
+import GHC.Core.Type (expandTypeSynonyms, mkTyVarTys, splitForAllTyCoVars)
 import GHC.Core.Utils (exprType)
 import GHC.Types.Basic (InlineSpec (..), inlinePragmaSpec)
 import GHC.Types.Id (isClassOpId_maybe, idInlinePragma, isDataConId_maybe, isDFunId)
 import GHC.Types.Literal (Literal (..))
 import GHC.Types.Name (getOccString, nameModule_maybe, nameSrcSpan)
-import GHC.Types.SrcLoc (SrcSpan (..), srcSpanFile, srcSpanStartLine, srcSpanStartCol, srcSpanEndLine, srcSpanEndCol)
-import GHC.Types.Unique (getKey)
-import GHC.Types.Var (Var, varName, varType, varUnique, isTyVar)
+import GHC.Types.Var (Var, varName, varType, isTyVar)
 import GHC.Types.Var.Set (elemVarSet)
-import GHC.Data.FastString (unpackFS)
 import GHC.Unit.Module.ModGuts (ModGuts (..))
 import GHC.Utils.Outputable (showSDocUnsafe, ppr)
 
@@ -95,11 +97,6 @@ data Ctx = Ctx
       { ctxTops   :: IM.IntMap Text  -- ^ top-level binder unique -> qualified Crust name.
       , ctxLocals :: IM.IntMap M.Exp -- ^ local binder unique -> replacement expression.
       }
-
--- | IntMap key for a binder (uniques are 64-bit as of GHC 9.10; low bits
---   suffice as map keys within one compilation).
-uKey :: Var -> Int
-uKey = fromIntegral . getKey . varUnique
 
 -- | Strip most of the bridge's type annotations. The bridge annotates
 --   nodes liberally so the typechecker keeps GHC's instantiation decisions
@@ -224,61 +221,6 @@ reachable bindMap = go mempty
                   Type _                 -> []
                   Coercion _             -> []
 
--- | Arguments the translation erases: types, coercions, and evidence --
---   except evidence for /user/ classes, which is kept as ordinary data
---   (dictionaries as values; the specializer + case-of-known-constructor
---   eliminate them).
-erasedArg :: CoreExpr -> Bool
-erasedArg a = isTyCoArg a || erasedEv (exprType a)
-
--- | Evidence to erase: everything but user-class dictionaries.
-erasedEv :: GHC.Core.TyCo.Rep.Type -> Bool
-erasedEv t = isEvVarType t && not (userPred t)
-
--- | Is this a user-class predicate type? A class defined in a home module
---   (approximated by defining-module namespace, like the tycon table's
---   fallback): built-in evidence (KnownNat, Monad, HasCallStack, ...) is
---   external and erased; classes in the user's own modules are data.
-userPred :: GHC.Core.TyCo.Rep.Type -> Bool
-userPred t = case tyConAppTyCon_maybe $ expandTypeSynonyms t of
-      Just tc -> isClassTyCon tc && homeishMod (tyConModule tc)
-      _       -> False
-
-homeishMod :: Maybe ModuleName -> Bool
-homeishMod = \ case
-      Nothing -> False
-      Just mn -> not (isPrimModule mn) && not (any (`T.isPrefixOf` pack (moduleNameString mn))
-            (["GHC.", "Data.", "Control.", "System.", "Foreign.", "Text.", "Unsafe."] :: [Text]))
-
-isPrimVar :: Var -> Bool
-isPrimVar v = "rwPrim" `T.isPrefixOf` pack (getOccString v)
-      && maybe False (isPrimModule . moduleName) (nameModule_maybe $ varName v)
-
--- | In the RWC.Primitives module (the GHC-visible mirror of PrimBasis),
---   type and constructor names map to their bare occurrence names.
-isPrimModule :: ModuleName -> Bool
-isPrimModule = (== "RWC.Primitives") . moduleNameString
-
-qualName :: ModuleName -> Var -> Text
-qualName mn b
-      | isPrimModule mn = pack $ getOccString b
-      | otherwise       = pack (moduleNameString mn) <> "." <> pack (getOccString b)
-
-splitStart :: Text -> (String, String)
-splitStart s = case T.breakOnEnd "." s of
-      ("", occ) -> ("Main", T.unpack occ)
-      (m, occ)  -> (T.unpack $ T.dropEnd 1 m, T.unpack occ)
-
-spanAnnote :: SrcSpan -> Annote
-spanAnnote = \ case
-      RealSrcSpan rs _ -> srcAnnote (unpackFS $ srcSpanFile rs)
-                                    (srcSpanStartLine rs, srcSpanStartCol rs)
-                                    (srcSpanEndLine rs, srcSpanEndCol rs)
-      UnhelpfulSpan _  -> MsgAnnote "ghc-frontend"
-
-varAnnote :: Var -> Annote
-varAnnote = spanAnnote . nameSrcSpan . varName
-
 -- | Bridge a type, returning Nothing if it falls outside the vocabulary
 --   (Crust's Maybe Ty slots are optional; the retained typechecker
 --   re-infers).
@@ -398,30 +340,6 @@ bridgeTyConApp an tc args
             homeish :: ModuleName -> Bool
             homeish mn = not $ any (`T.isPrefixOf` pack (moduleNameString mn))
                   (["GHC.", "Data.", "Control.", "System.", "Foreign.", "Text.", "Unsafe."] :: [Text])
-
-tyConModule :: TyCon -> Maybe ModuleName
-tyConModule = fmap moduleName . nameModule_maybe . tyConName
-
-tupleName :: Int -> Text
-tupleName n = "(" <> T.replicate (n - 1) "," <> ")"
-
--- | External tycons mapped by (defining module, occurrence) to
---   (Crust name, number of leading type args to drop).
-tyConKey :: TyCon -> (String, String)
-tyConKey tc = ( maybe "?" (moduleNameString . moduleName) $ nameModule_maybe $ tyConName tc
-              , getOccString $ tyConName tc )
-
-tyConTable :: [((String, String), (Text, Int))]
-tyConTable =
-      [ (("Data.Vector.Generic.Sized.Internal", "Vector"),   ("Vec", 1))    -- drop the unsized-vector arg
-      , (("Data.Finite.Internal.Integral", "Finite"),        ("Finite", 1)) -- drop the rep (Integer) arg
-      , (("Data.Finite.Internal", "Finite"),                 ("Finite", 0)) -- older finite-typelits
-      , (("Control.Monad.Resumption.Reactive", "ReacT"),     ("ReacT", 0))
-      , (("Control.Monad.Trans.State.Lazy", "StateT"),       ("StateT", 0))
-      , (("GHC.Internal.Data.Functor.Identity", "Identity"), ("Identity", 0))
-      , (("GHC.Internal.Maybe", "Maybe"),                    (maybeTyName, 0))
-      , (("GHC.Internal.Data.Either", "Either"),             (eitherTyName, 0))
-      ]
 
 ---
 --- Expressions.
@@ -639,19 +557,6 @@ bridgeConApp ctx an v dc args vargs
                         , [hd, tl] <- filter (not . erasedArg) as              -> (hd :) <$> listElems tl
                   _ -> failAt an "ghc-frontend: unsupported non-literal list (lists must be literal cons chains)."
 
--- | Crust names for constructors.
-conName :: DataCon -> Text
-conName dc
-      | dc == trueDataCon  = "True"
-      | dc == falseDataCon = "False"
-      | dc == unitDataCon  = "()"
-      | isTupleDataCon dc  = tupleName $ dataConSourceArity dc
-      | Just mn <- moduleName <$> nameModule_maybe (dataConName dc)
-      , isPrimModule mn    = pack $ getOccString $ dataConName dc
-      | Just mn <- moduleName <$> nameModule_maybe (dataConName dc)
-                           = pack (moduleNameString mn) <> "." <> pack (getOccString $ dataConName dc)
-      | otherwise          = pack $ getOccString $ dataConName dc
-
 -- | Class method dispatch: user-class methods project the field out of
 --   the dictionary (which is ordinary data); >>=, >>, return, pure at
 --   ReacT/StateT/Identity become Bind/Return builtins (dictionary
@@ -754,15 +659,6 @@ bridgeBaseVocab ctx an v vargs
             resTy = case vargs of
                   [] -> tryTy an $ varType v -- crude; only for arity-0 uses
                   _  -> pure Nothing
-
--- | Base combinators supported via synthesized (INLINE) Crust definitions;
---   outer key: defining module; inner: occurrence -> Crust name.
-vocabTable :: [(Text, [(Text, Text)])]
-vocabTable =
-      [ ("GHC.Internal.Base",       [ ("$", "GHC.Internal.Base.$"), (".", "GHC.Internal.Base.."), ("id", "GHC.Internal.Base.id") ])
-      , ("GHC.Classes",             [ ("not", "GHC.Classes.not"), ("&&", "GHC.Classes.&&"), ("||", "GHC.Classes.||") ])
-      , ("GHC.Internal.Data.Tuple", [ ("fst", "GHC.Internal.Data.Tuple.fst"), ("snd", "GHC.Internal.Data.Tuple.snd") ])
-      ]
 
 ---
 --- Case expressions.
@@ -894,94 +790,3 @@ harvestDatas g
                               pure $ M.DataCon an (s2n $ conName dc)
                                    $ map (s2n . pack . getOccString) (dataConUnivTyVars dc) |-> mkArrowTy argTys resTy
 
----
---- Synthesized base vocabulary.
----
-
-maybeTyName, eitherTyName :: Text
-maybeTyName  = "GHC.Internal.Maybe.Maybe"
-eitherTyName = "GHC.Internal.Data.Either.Either"
-
-va :: Annote
-va = MsgAnnote "ghc-frontend: base vocabulary"
-
-tv :: Text -> M.Ty
-tv = M.TyVar va M.KStar . s2n
-
-boolT :: M.Ty
-boolT = M.TyCon va $ s2n "Bool"
-
-conE :: Text -> M.Ty -> M.Exp
-conE n t = M.Con va Nothing (Just t) $ s2n n
-
-varE :: M.Exp -> M.Exp -> M.Exp
-varE f x = M.App va Nothing Nothing f x
-
-lamE :: Text -> M.Ty -> M.Exp -> M.Exp
-lamE x t body = M.Lam va Nothing (Just t) $ bind (s2n x) body
-
-vE :: Text -> M.Ty -> M.Exp
-vE x t = M.Var va Nothing (Just t) $ s2n x
-
-vocabDefn :: Text -> M.Poly -> M.Exp -> M.Defn
-vocabDefn n pt body = M.Defn va (s2n n) (Embed pt) (Just M.Inline) (Embed $ bind [] body)
-
-vocabDatas :: [M.DataDefn]
-vocabDatas =
-      [ M.DataDefn va (s2n maybeTyName) (M.KFun M.KStar M.KStar)
-            [ M.DataCon va (s2n "GHC.Internal.Maybe.Nothing") ([s2n "a"] |-> maybeT)
-            , M.DataCon va (s2n "GHC.Internal.Maybe.Just")    ([s2n "a"] |-> arr a maybeT)
-            ]
-      , M.DataDefn va (s2n eitherTyName) (M.KFun M.KStar $ M.KFun M.KStar M.KStar)
-            [ M.DataCon va (s2n "GHC.Internal.Data.Either.Left")  ([s2n "a", s2n "b"] |-> arr a eitherT)
-            , M.DataCon va (s2n "GHC.Internal.Data.Either.Right") ([s2n "a", s2n "b"] |-> arr b eitherT)
-            ]
-      ]
-      where a, b, maybeT, eitherT :: M.Ty
-            a       = tv "a"
-            b       = tv "b"
-            maybeT  = M.TyApp va (M.TyCon va $ s2n maybeTyName) a
-            eitherT = M.TyApp va (M.TyApp va (M.TyCon va $ s2n eitherTyName) a) b
-
-vocabDefns :: [M.Defn]
-vocabDefns =
-      [ vocabDefn "GHC.Internal.Base.$" (poly [s2n "a", s2n "b"] $ arr (arr a b) $ arr a b)
-            $ lamE "f" (arr a b) $ lamE "x" a $ varE (vE "f" $ arr a b) (vE "x" a)
-      , vocabDefn "GHC.Internal.Base.." (poly [s2n "a", s2n "b", s2n "c"] $ arr (arr b c) $ arr (arr a b) $ arr a c)
-            $ lamE "f" (arr b c) $ lamE "g" (arr a b) $ lamE "x" a
-            $ varE (vE "f" $ arr b c) $ varE (vE "g" $ arr a b) (vE "x" a)
-      , vocabDefn "GHC.Internal.Base.id" (poly [s2n "a"] $ arr a a)
-            $ lamE "x" a $ vE "x" a
-      , vocabDefn "GHC.Classes.not" (poly [] $ arr boolT boolT)
-            $ lamE "b" boolT
-            $ M.Case va Nothing (Just boolT) (vE "b" boolT) (bind patTrue $ conE "False" boolT) (Just $ conE "True" boolT)
-      , vocabDefn "GHC.Classes.&&" (poly [] $ arr boolT $ arr boolT boolT)
-            $ lamE "x" boolT $ lamE "y" boolT
-            $ M.Case va Nothing (Just boolT) (vE "x" boolT) (bind patTrue $ vE "y" boolT) (Just $ conE "False" boolT)
-      , vocabDefn "GHC.Classes.||" (poly [] $ arr boolT $ arr boolT boolT)
-            $ lamE "x" boolT $ lamE "y" boolT
-            $ M.Case va Nothing (Just boolT) (vE "x" boolT) (bind patTrue $ conE "True" boolT) (Just $ vE "y" boolT)
-      , vocabDefn "GHC.Internal.Data.Tuple.fst" (poly [s2n "a", s2n "b"] $ arr (pairTy va a b) a)
-            $ lamE "p" (pairTy va a b)
-            $ M.Case va Nothing (Just a) (vE "p" $ pairTy va a b)
-                  (bind (M.PatCon va (Embed Nothing) (Embed Nothing) (Embed $ s2n "(,)")
-                        [ M.PatVar va (Embed Nothing) (Embed $ Just a) $ s2n "x"
-                        , M.PatVar va (Embed Nothing) (Embed $ Just b) $ s2n "y" ])
-                        $ vE "x" a)
-                  Nothing
-      , vocabDefn "GHC.Internal.Data.Tuple.snd" (poly [s2n "a", s2n "b"] $ arr (pairTy va a b) b)
-            $ lamE "p" (pairTy va a b)
-            $ M.Case va Nothing (Just b) (vE "p" $ pairTy va a b)
-                  (bind (M.PatCon va (Embed Nothing) (Embed Nothing) (Embed $ s2n "(,)")
-                        [ M.PatVar va (Embed Nothing) (Embed $ Just a) $ s2n "x"
-                        , M.PatVar va (Embed Nothing) (Embed $ Just b) $ s2n "y" ])
-                        $ vE "y" b)
-                  Nothing
-      ]
-      where a, b, c :: M.Ty
-            a = tv "a"
-            b = tv "b"
-            c = tv "c"
-
-            patTrue :: M.Pat
-            patTrue = M.PatCon va (Embed Nothing) (Embed Nothing) (Embed $ s2n "True") []

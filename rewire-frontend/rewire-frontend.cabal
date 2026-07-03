@@ -40,8 +40,10 @@ library
       ReWire.Crust.Types
       ReWire.Crust.Util
       ReWire.FrontEnd
+      ReWire.GHC.Recognize
       ReWire.GHC.Session
       ReWire.GHC.ToCrust
+      ReWire.GHC.Vocab
       ReWire.ModCache
       ReWire.Pass
   other-modules:
