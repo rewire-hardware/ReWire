@@ -15,6 +15,10 @@
 -- An argument, if given, selects only cases whose names contain it as a
 -- substring. Results are printed as a table; nothing is asserted, so this
 -- is for tracking and comparing, not gating.
+--
+-- Extra rwc flags may be supplied via the RWC_PERF_FLAGS environment
+-- variable (whitespace-separated), e.g. to benchmark a flag-gated pipeline:
+--           RWC_PERF_FLAGS="--eidos" stack bench rewire:rwc-perf
 module Main (main) where
 
 import qualified RWC
@@ -24,7 +28,7 @@ import Data.List (isInfixOf, intercalate)
 import Data.Maybe (mapMaybe)
 import GHC.Clock (getMonotonicTime)
 import System.Directory (createDirectoryIfMissing, getTemporaryDirectory)
-import System.Environment (getArgs, withArgs)
+import System.Environment (getArgs, withArgs, lookupEnv)
 import System.FilePath ((</>), (<.>))
 import System.IO (hSetBuffering, stdout, BufferMode (..))
 import Text.Printf (printf)
@@ -71,8 +75,9 @@ main = do
 -- | Compile a file with rwc (in-process) and return elapsed wall-clock seconds.
 timeRwc :: FilePath -> FilePath -> IO Double
 timeRwc f out = do
+      extra <- maybe [] words <$> lookupEnv "RWC_PERF_FLAGS"
       t0 <- getMonotonicTime
-      withArgs [f, "-o", out] RWC.main
+      withArgs ([f, "-o", out] <> extra) RWC.main
       t1 <- getMonotonicTime
       pure $ t1 - t0
 
@@ -87,6 +92,7 @@ families =
       [ Family "letchain"  [32, 64, 128]  genLetChain
       , Family "defchain"  [64, 128, 256] genDefChain
       , Family "statevars" [8, 16, 32]    genStateVars
+      , Family "whenchain" [4, 8, 16]     genWhenChain
       ]
 
 goldenCases :: [String]
@@ -147,6 +153,42 @@ genDefChain n = unlines $
       [ ""
       , "start :: Dev (W 32) (W 32)"
       , "start = iter f" <> show n <> " (lit 0)"
+      , ""
+      , "main :: IO ()"
+      , "main = undefined"
+      ]
+
+-- | A reactive loop with a chain of n conditional signal points followed by
+--   one unconditional signal (so the recursion is guarded and the program
+--   valid). Each conditional pause splits the continuation, so this stresses
+--   normalizeBind's case-commuting, purify's state minting, and ToHyle's
+--   dispatch construction -- the chained-conditional shape behind the
+--   historical whenchain divergence.
+genWhenChain :: Int -> String
+genWhenChain n = unlines $
+      [ "import ReWire"
+      , ""
+      , "{-# INLINE when #-}"
+      , "when :: Monad m => Bit -> m () -> m ()"
+      , "when b m = case b of"
+      , "      True  -> m"
+      , "      False -> return ()"
+      , ""
+      , "{-# INLINE tick #-}"
+      , "tick :: ReacT Bit Bit (StateT Bit Identity) ()"
+      , "tick = lift get >>= \\ o -> signal o >>= \\ i -> lift (put i)"
+      , ""
+      , "loop :: ReacT Bit Bit (StateT Bit Identity) ()"
+      , "loop = do"
+      , "      b <- lift get"
+      ]
+      <> replicate n "      when b tick"
+      <>
+      [ "      tick"
+      , "      loop"
+      , ""
+      , "start :: ReacT Bit Bit Identity ()"
+      , "start = extrude loop False"
       , ""
       , "main :: IO ()"
       , "main = undefined"
