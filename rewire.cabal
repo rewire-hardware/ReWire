@@ -71,6 +71,7 @@ data-files:
     tests/negative/slice-nonliteral-index.hs
     tests/negative/start-wrong-type.hs
     tests/negative/unbounded-recursion.hs
+    tests/negative/unguarded-recursion.hs
     tests/negative/unknown-constructor-pattern.hs
     tests/negative/unknown-type-ctor-bogus.hs
     tests/negative/unknown-var.hs

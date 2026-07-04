@@ -132,6 +132,11 @@ mkDevice topName (inWires, outWires, stWires) defLoop defState0 others = do
             else do
                   exts  <- gets sExterns
                   defns <- pure $ Map.fromList $ map (A.defnName &&& id) $ defLoop : defState0 : others
+                  -- The interpreter has no step bound: a recursive definition
+                  -- reachable from the initial state (recursion not guarded by
+                  -- signal) would make the evaluation below diverge, so reject
+                  -- it first.
+                  checkInitAcyclic (ann defState0) defns $ A.defnBody defState0
                   -- state0's arguments (the stores at the initial pause, when
                   -- the device pauses before extruding) are unobservable;
                   -- zero-fill them.
@@ -156,6 +161,22 @@ mkDevice topName (inWires, outWires, stWires) defLoop defState0 others = do
            <> [ A.SNext an x $ slice0 an off sz resVar   | (x, sz, off) <- layout, x `Set.member` regNames ]
       where sliceBV :: BV -> A.Index -> A.Size -> BV
             sliceBV bv off sz = bitVec (fromIntegral sz) $ BV.nat bv `div` (2 ^ toInteger off)
+
+-- | Rejects a cyclic call graph reachable from the initial-state expression:
+--   the register-initial evaluation interprets it with no step bound, so a
+--   reachable cycle (recursion not guarded by signal) means divergence, not
+--   an error, without this check.
+checkInitAcyclic :: MonadError AstError m => Annote -> HashMap A.GId A.Defn -> A.Exp -> m ()
+checkInitAcyclic an defns e = () <$ go mempty mempty e
+      where go :: MonadError AstError m => HashSet A.GId -> HashSet A.GId -> A.Exp -> m (HashSet A.GId)
+            go stack done e = foldM goCall done $ expCalls e
+                  where goCall :: MonadError AstError m => HashSet A.GId -> A.GId -> m (HashSet A.GId)
+                        goCall done' g
+                              | g `Set.member` stack = failAt an
+                                    $ "cannot evaluate the initial state: definition is recursive (is recursion guarded by signal?): " <> g
+                              | g `Set.member` done' = pure done'
+                              | Just d <- Map.lookup g defns = Set.insert g <$> go (Set.insert g stack) done' (A.defnBody d)
+                              | otherwise = pure done'
 
 expCalls :: A.Exp -> [A.GId]
 expCalls = \ case
