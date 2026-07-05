@@ -44,6 +44,7 @@ library
       ReWire.Eidos.Pretty
       ReWire.Eidos.PrimBasis
       ReWire.Eidos.Syntax
+      ReWire.Eidos.ToCrust
       ReWire.Eidos.Types
       ReWire.FrontEnd
       ReWire.GHC.Recognize
