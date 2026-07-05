@@ -47,6 +47,7 @@ library
       ReWire.Eidos.Parse
       ReWire.Eidos.Pretty
       ReWire.Eidos.PrimBasis
+      ReWire.Eidos.Procify
       ReWire.Eidos.Simplify
       ReWire.Eidos.Spec
       ReWire.Eidos.Subst

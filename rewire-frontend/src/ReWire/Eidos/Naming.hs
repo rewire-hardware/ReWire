@@ -11,11 +11,18 @@
 --   deterministic per-definition ordinal (pre-order traversal position) —
 --   never from a global fresh counter, which renumbers wholesale on any
 --   upstream change.
-module ReWire.Eidos.Naming (liftedJoinName) where
+module ReWire.Eidos.Naming (liftedJoinName, blockLabel) where
 
 import ReWire.Pretty (showt)
 
 import Data.Text (Text)
+
+-- | The label for a procify-minted block: @$L.\<source>\<ordinal>@, where
+--   the source name is the continuation's, callee's, or join's display
+--   name (the machine fold later derives label-enumeration constructor
+--   names from these, so they fix dispatch order and tag values).
+blockLabel :: Text -> Int -> Text
+blockLabel src i = "$L." <> src <> showt i
 
 -- | The top-level name for a join continuation lifted out of a
 --   definition: @$LL.\<defn>.\<join>\<ordinal>@. The @$LL.@ prefix is the

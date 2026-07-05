@@ -1,5 +1,6 @@
 -- Procify input shape: extrude under case (the signalFirst corpus
--- shape) — the extruded reactive computation is selected by a case.
+-- shape) -- the extruded reactive computation is selected by a case, and
+-- each arm is a lifted-state signal loop.
 data Bool * {
       False :: Bool;
       True :: Bool
@@ -7,16 +8,23 @@ data Bool * {
 
 Main.m1#10 :: ReacT Bool Bool (StateT Bool Identity) ()
 Main.m1#10 =
-      (rwPrimError :: String -> ReacT Bool Bool (StateT Bool Identity) ()) "m1"
+      (rwPrimBind :: ReacT Bool Bool (StateT Bool Identity) Bool -> (Bool -> ReacT Bool Bool (StateT Bool Identity) ()) -> ReacT Bool Bool (StateT Bool Identity) ())
+        ((rwPrimSignal :: Bool -> ReacT Bool Bool (StateT Bool Identity) Bool) (False :: Bool))
+        (\ (i#11 :: Bool) -> Main.m1#10)
 
-Main.m2#11 :: ReacT Bool Bool (StateT Bool Identity) ()
-Main.m2#11 =
-      (rwPrimError :: String -> ReacT Bool Bool (StateT Bool Identity) ()) "m2"
+Main.m2#12 :: ReacT Bool Bool (StateT Bool Identity) ()
+Main.m2#12 =
+      (rwPrimBind :: ReacT Bool Bool (StateT Bool Identity) Bool -> (Bool -> ReacT Bool Bool (StateT Bool Identity) ()) -> ReacT Bool Bool (StateT Bool Identity) ())
+        ((rwPrimLift :: StateT Bool Identity Bool -> ReacT Bool Bool (StateT Bool Identity) Bool) (rwPrimGet :: StateT Bool Identity Bool))
+        (\ (s#13 :: Bool) ->
+              (rwPrimBind :: ReacT Bool Bool (StateT Bool Identity) Bool -> (Bool -> ReacT Bool Bool (StateT Bool Identity) ()) -> ReacT Bool Bool (StateT Bool Identity) ())
+                ((rwPrimSignal :: Bool -> ReacT Bool Bool (StateT Bool Identity) Bool) s#13)
+                (\ (j#14 :: Bool) -> Main.m2#12))
 
 Main.dev#20 :: Bool -> ReacT Bool Bool Identity ((,) () Bool)
 Main.dev#20 (b#21 :: Bool) =
       (rwPrimExtrude :: ReacT Bool Bool (StateT Bool Identity) () -> Bool -> ReacT Bool Bool Identity ((,) () Bool))
-        (case b#21 of s#22 { _ -> Main.m1#10; True -> Main.m2#11 } :: ReacT Bool Bool (StateT Bool Identity) ())
+        (case b#21 of s#22 { _ -> Main.m1#10; True -> Main.m2#12 } :: ReacT Bool Bool (StateT Bool Identity) ())
         b#21
 
 Main.start#30 :: ReacT Bool Bool Identity ((,) () Bool)

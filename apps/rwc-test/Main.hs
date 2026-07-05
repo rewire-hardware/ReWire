@@ -18,6 +18,7 @@ import qualified ReWire.Eidos.ANF as Eidos
 import qualified ReWire.Eidos.Externs as Eidos
 import qualified ReWire.Eidos.Inline as Eidos
 import qualified ReWire.Eidos.Lint as Eidos
+import qualified ReWire.Eidos.Procify as Eidos
 import qualified ReWire.Eidos.Simplify as Eidos
 import qualified ReWire.Eidos.Spec as Eidos
 import qualified ReWire.Eidos.Subst as Eidos
@@ -266,6 +267,34 @@ testEirSpec fn = testCase (takeBaseName fn <> " (eir front passes)") $ do
             Left err -> assertFailure $ "eir front passes failed: " <> T.unpack (prettyPrint err)
             Right () -> pure ()
 
+-- | Runs a fixture through the front passes, ANF, and procify: fixtures
+--   named procin-bindlhs-* must be rejected (the plan's rejection
+--   predicate: a recursive-or-NOINLINE reactive callee at bind-LHS might
+--   pause); every process constructed from the others must pass the
+--   machine-mode lint.
+testEirProcify :: FilePath -> TestTree
+testEirProcify fn = testCase (takeBaseName fn <> " (eir procify)") $ do
+      r <- runSyntaxError $ do
+            p  <- parseEir fn
+            p' <- Eidos.specialize 10 p
+                  >>= Eidos.inlineAnnotated
+                  >>= (fmap fst . Eidos.neuterExterns)
+                  >>= Eidos.simplify 8
+                  >>= Eidos.normalize
+                  >>= Eidos.procify
+            mapM_ (Eidos.lintProc p') $ Eidos.progProcs p'
+            pure $ length $ Eidos.progProcs p'
+      let rejected = "procin-bindlhs" `isInfixOf` takeBaseName fn
+      case r of
+            Left err
+                  | rejected  -> assertBool ("rejection does not mention \"might pause\"; got: " <> T.unpack (prettyPrint err))
+                        $ "might pause" `isInfixOf` T.unpack (prettyPrint err)
+                  | otherwise -> assertFailure $ "eir procify failed: " <> T.unpack (prettyPrint err)
+            Right n
+                  | rejected  -> assertFailure "procify accepted a bind-LHS rejection fixture"
+                  | "procin-" `isInfixOf` takeBaseName fn -> assertBool "no process constructed" $ n >= 1
+                  | otherwise -> pure ()
+
 -- | An .eir fixture that must fail to lint (in the fixture's mode), with a
 --   diagnostic containing each substring declared by "-- EXPECT-LINT-ERROR:"
 --   comment lines.
@@ -423,6 +452,7 @@ main = do
             negDir   <- getDataFileName ("tests" </> "eidos" </> "negative")
             negFiles <- map (negDir </>) . filter (".eir" `isSuffixOf`) <$> listDirectory negDir
             pure $ testGroup "eidos" $ map testEir files <> map testEirRefresh files <> map testEirSpec files
+                                    <> map testEirProcify (filter (("procin-" `isInfixOf`) . takeBaseName) files)
                                     <> map testEirBad negFiles
       smokeTests <- getSmokeTests
       -- The integration directory holds full-program golden tests (same legs as
