@@ -5,74 +5,44 @@
 {-# LANGUAGE Safe #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module ReWire.Crust.Transform
-      ( inlineAnnotated, inlineExtrudes
-      , expandTypeSynonyms, reduce
+      ( inlineExtrudes
+      , reduce
       , neuterExterns
       , shiftLambdas
-      , unshiftLambdas
       , liftLambdas
       , etaAbsDefs
       , purge, purgeAll
       , mergeEquivDefns
       , normalizeBind
-      , simplify, simplifyUntil, synthableDefn, dictFree
-      , specialize
-      , freeTyVarsToNil
-      , removeMain
       ) where
 
 import ReWire.Annotation (Annote (..), Annotated (..))
-import ReWire.Config (Config, depth, start, pDebug)
 import ReWire.Crust.PrimBasis (primDatas)
-import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Poly (..), Pat (..), Defn (..), FreeProgram, DataCon (..), DataConId, TyConId, DataDefn (..), Builtin (..), DefnAttr (..), TypeSynonym (..), flattenApp, builtins)
-import ReWire.Crust.TypeCheck (typeCheckDefn, unify, unify', TySub)
-import ReWire.Crust.Types (typeOf, tyAnn, setTyAnn, dstArrow, poly, poly', flattenArrow, arr, nilTy, ctorNames, resInputTy, codomTy, (|->), arrowRight, arrowLeft, isReacT, prettyTy, synthable, higherOrder, fundamental, concrete, hasArrow, paramTys)
-import ReWire.Crust.Util (mkApp, mkError, mkLam, inlinable, synthableDefn, patVars, toVar, isExtrude, extrudeDefn)
-import ReWire.Error (AstError, MonadError, failAt, failInternal, Warning (..))
-import ReWire.Fix (fix, fix', fixUntil, boundedFixOn)
-import ReWire.SYB (transform, transformM, query, queryWith)
-import ReWire.Unbound (freshVar, fv, Fresh (fresh), s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, runFreshMT, Name (..), unsafeUnbind, bind, unbind, Subst (..), Alpha, Embed (Embed), Bind, acompare)
+import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Poly (..), Pat (..), Defn (..), FreeProgram, DataCon (..), DataConId, TyConId, DataDefn (..), Builtin (..), DefnAttr (..), flattenApp, builtins)
+import ReWire.Crust.TypeCheck (unify')
+import ReWire.Crust.Types (typeOf, tyAnn, setTyAnn, dstArrow, poly', arr, ctorNames, resInputTy, codomTy, (|->), arrowRight, arrowLeft, isReacT, prettyTy, synthable, higherOrder, fundamental, concrete)
+import ReWire.Crust.Util (mkApp, mkError, mkLam, inlinable, patVars, toVar, isExtrude, extrudeDefn)
+import ReWire.Error (AstError, MonadError, failInternal, Warning (..))
+import ReWire.Fix (fix, fix', boundedFixOn)
+import ReWire.SYB (transform, query, queryWith)
+import ReWire.Unbound (freshVar, fv, Fresh, s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, runFreshMT, Name (..), unsafeUnbind, bind, unbind, Subst (..), Embed (Embed), Bind, acompare)
 
 import Control.Arrow ((&&&))
-import Control.Lens ((^.))
-import Control.Monad (liftM2, foldM, foldM_, zipWithM, (>=>))
-import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.State (MonadState, evalStateT, execState, StateT (..), get, gets, modify)
+import Control.Monad (liftM2, foldM)
+import Control.Monad.State (MonadState, execState, StateT (..), get, modify)
 import Data.Containers.ListUtils (nubOrd)
 import Data.Data (Data)
-import Data.Either (lefts)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet, union, difference)
 import Data.Hashable (Hashable)
 import Data.List (sort, sortBy, groupBy)
-import Data.Maybe (catMaybes, isNothing, isJust)
+import Data.Maybe (isJust)
 import Data.Text (Text, isPrefixOf)
 import Data.Tuple (swap)
 
 import qualified Data.Text           as Text
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet        as Set
-
--- | Removes the Main.main function definition, which is unused by rwc.
-removeMain :: FreeProgram -> FreeProgram
-removeMain (ts, syns, ds) = (ts, syns, filter (not . isMain) ds)
-      where isMain :: Defn -> Bool
-            isMain = (== "Main.main") . n2s . defnName
-
--- | Inlines defs marked for inlining.
-inlineAnnotated :: MonadError AstError m => FreeProgram -> m FreeProgram
-inlineAnnotated (ts, syns, ds) = (ts, syns,) <$> (substs <$> subs <*> pure ds)
-      where inlineDefs :: [Defn]
-            inlineDefs = filter isInline ds
-
-            subs :: MonadError AstError m => m [(Name Exp, Exp)]
-            subs = map defnSubst <$> ifix (pure . substs (map defnSubst inlineDefs)) inlineDefs
-
-            ifix :: (Hashable a, MonadError AstError m) => (a -> m a) -> a -> m a
-            ifix = fix "INLINE definition expansion" 500
-
-            isInline :: Defn -> Bool
-            isInline d = defnAttr d == Just Inline
 
 -- | Inlines defs that use the "extrude" primitive for purification.
 inlineExtrudes :: MonadError AstError m => FreeProgram -> m FreeProgram
@@ -91,48 +61,6 @@ defnSubst :: Defn -> (Name Exp, Exp)
 defnSubst (Defn _ n (Embed pt) _ (Embed e)) = runFreshM $ unbind e >>= \ case
       ([], e') -> pure (n, setTyAnn (Just pt) e')
       _        -> error $ "Inlining: definition not inlinable (rwc bug): " <> show n
-
--- | Expands type synonyms.
-expandTypeSynonyms :: (MonadError AstError m, Fresh m) => FreeProgram -> m FreeProgram
-expandTypeSynonyms (ts, syns0, ds) = (,,) <$> expandSyns ts <*> syns' <*> expandSyns ds
-      where toSubst :: TypeSynonym -> (Name TyConId, Bind [Name Ty] Ty)
-            toSubst (TypeSynonym _ n (Embed (Poly t))) = (n, t)
-
-            expandSyns :: (MonadError AstError m, Fresh m, Data d) => d -> m d
-            expandSyns d = subs' >>= flip substs' d
-
-            subs' :: (MonadError AstError m, Fresh m) => m [(Name TyConId, Bind [Name Ty] Ty)]
-            subs' = map toSubst <$> syns'
-
-            -- | First expand type synonyms in type synonym definitions.
-            syns' :: (MonadError AstError m, Fresh m) => m [TypeSynonym]
-            syns' = do
-                  foldM_ checkDupe [] syns0
-                  fix "Type synonym expansion" 100 (substs' $ map toSubst syns0) syns0
-                  where checkDupe :: MonadError AstError m => [Text] -> TypeSynonym -> m [Text]
-                        checkDupe ss (TypeSynonym an n _)
-                              | n2s n `elem` ss = failAt an $ "Duplicate type synonym: " <> n2s n
-                              | otherwise       = pure $ n2s n : ss
-
-            substs' :: (MonadError AstError m, Fresh m, Data d) => [(Name TyConId, Bind [Name Ty] Ty)] -> d -> m d
-            substs' subs' = transformM $ \ case
-                  t@(TyCon _ n)   | Just pt <- lookup n subs'        -> do
-                        (vs, t') <- unbind pt
-                        pure $ if null vs then t' else t
-                  t@(TyApp _ a b) | Just (n, args) <- findTyCon a
-                                  , Just pt        <- lookup n subs' -> do
-                        (vs, t') <- unbind pt
-                        let args' = args <> [b]
-                        pure $ if length vs == length args' then substs (zip vs args') t' else t
-                  t                                                  -> pure t
-
-            findTyCon :: Ty -> Maybe (Name TyConId, [Ty])
-            findTyCon = \ case
-                  TyCon _ n   -> pure (n, [])
-                  TyApp _ a b -> do
-                        (n, args) <- findTyCon a
-                        pure (n, args <> [b])
-                  _           -> Nothing
 
 -- | Decides, per extern, whether the user-supplied Haskell implementation
 --   (rwPrimExtern's seventh argument) can serve as a model for the
@@ -275,19 +203,6 @@ shiftLambdas (ts, syns, vs) = (ts, syns, ) <$> mapM shiftLambdas' vs
                         (v, b') <- unbind b
                         mash $ bind (vs <> [v]) b'
                   _               -> pure e
-
--- | Shifts vars bound by top-level lambdas into defs.
--- > g x1 x2 = e
---   becomes
--- > g = \ x1 -> \ x2 -> e
-unshiftLambdas :: Fresh m => FreeProgram -> m FreeProgram
-unshiftLambdas (ts, syns, vs) = (ts, syns, ) <$> mapM unshiftLambdas' vs
-      where unshiftLambdas' :: Fresh m => Defn -> m Defn
-            unshiftLambdas' (Defn an n (Embed (Poly t)) inl (Embed e)) = Defn an n (Embed $ Poly t) inl . Embed <$> do
-                  (vs, e') <- unbind e
-                  (_, t')  <- unbind t
-                  let (tvs, _) = flattenArrow t'
-                  pure $ bind [] $ mkLam an (zip tvs vs) e'
 
 -- | Inlines everything to the left of ">>=" and
 -- > (m >>= f) >>= g
@@ -685,15 +600,6 @@ purge start = pure . purgeUnused (start : (s2n . fst <$> builtins)) (dataName <$
 purgeAll :: Applicative m => Name Exp -> FreeProgram -> m FreeProgram
 purgeAll start = pure . purgeUnused [start] []
 
--- | Like purge, but only removes defns, without pruning datatypes. Cheaper
---   (datatype pruning needs full scans for extern and ctor uses): meant for
---   keeping the working set small inside the simplify loop, with the
---   datatypes pruned by a full purge afterward.
-purgeDefns :: Applicative m => Name Exp -> FreeProgram -> m FreeProgram
-purgeDefns start (ts, syns, vs) = pure (ts, syns, liveDefns roots vs)
-      where roots :: HashSet (Name Exp)
-            roots = Set.fromList $ start : (s2n . fst <$> builtins)
-
 -- | Definitions transitively reachable from the given roots.
 liveDefns :: HashSet (Name Exp) -> [Defn] -> [Defn]
 liveDefns roots ds = map toDefn $ Set.toList $ execState (live ds') ds'
@@ -772,181 +678,10 @@ purgeUnused except exceptTs (ts, syns, vs) = (inuseData (fix' extendWithCtorPara
             dataConName :: DataCon -> Name DataConId
             dataConName (DataCon _ n _) = n
 
--- | Repeatedly calls "reduce" and "specialize" -- attempts to remove
--- higher-order functions by partially evaluating them.
-simplify :: (MonadIO m, Fresh m, MonadError AstError m) => Config -> FreeProgram -> m FreeProgram
-simplify = simplifyUntil $ \ (_, _, vs) -> all synthableDefn vs
-
--- | No definition's signature mentions a datatype with a function-typed
---   constructor field (i.e., a class dictionary): the GHC front end's
---   extended stop condition for 'simplifyUntil'.
-dictFree :: FreeProgram -> Bool
-dictFree (ts, _, vs) = null bad || all ok vs
-      where bad :: [Name TyConId]
-            bad = [ dataName d | d <- ts, any arrowField $ dataCons d ]
-
-            arrowField :: DataCon -> Bool
-            arrowField (DataCon _ _ (Embed (Poly (unsafeUnbind -> (_, t))))) = any hasArrow $ paramTys t
-
-            ok :: Defn -> Bool
-            ok (Defn _ _ (Embed (Poly (unsafeUnbind -> (_, t)))) _ _) = not $ any (`elem` bad) $ ctorNames t
-
--- | Like 'simplify' with a custom stop condition. The GHC front end keeps
--- specializing until class dictionaries are gone: a dictionary type looks
--- synthable (the function types hide inside its constructor fields), so
--- the 'synthableDefn' condition alone can stop with dictionary-passing
--- calls still present.
-simplifyUntil :: (MonadIO m, Fresh m, MonadError AstError m) => (FreeProgram -> Bool) -> Config -> FreeProgram -> m FreeProgram
-simplifyUntil done conf = flip evalStateT mempty . fixUntil done "Partial evaluation" (conf^.depth)
-                (
-                verb "> Specializing..."
-                >=> specialize'
-                >=> verb "> Purging..."
-                -- Note: only purge defns here; pruning datatypes needs
-                -- relatively expensive full scans and the pipeline runs a
-                -- full purge after this pass anyway.
-                >=> purgeDefns (s2n $ conf^.start)
-                >=> verb "> Reducing..."
-                >=> reduce
-                )
-      where verb :: MonadIO m => Text -> a -> m a
-            verb s a = pDebug conf s >> pure a
-
-type SpecMap = HashMap (Name Exp, AppSig) Defn
-type AppSig = [Maybe Exp]
-
--- | Replaces all free type variables with "()". We presume polymorphic
---   arguments that haven't been inferred to have a more concrete type,
---   must be unused.
-freeTyVarsToNil :: FreeProgram -> FreeProgram
-freeTyVarsToNil (ts, syns, vs) = (ts, syns, map upd vs)
-      where upd :: Defn -> Defn
-            upd d@Defn
-                  { defnPolyTy = Embed (Poly (unsafeUnbind -> (_, t)))
-                  , defnBody   = Embed b
-                  } = d { defnPolyTy = Embed $ poly [] $ sub t
-                        , defnBody   = Embed $ sub b
-                        }
-
-            sub :: (Alpha a, Subst Ty a) => a -> a
-            sub v = substs (map (, nilTy) $ nubOrd $ fv v) v
-
--- | If b only has global variables (not lambda-bound), then
--- > f :: A -> X
--- > f = \ a -> g a b
--- > g :: A -> B -> X
--- > g = g_rhs
---   becomes
--- > f :: A -> X
--- > f = \ a -> g' a
--- > g :: A -> B -> X
--- > g = g_rhs
--- > g' :: A -> X
--- > g' = \ a' -> g_rhs a' b
-{- HLINT ignore "Redundant multi-way if" -}
-specialize :: (MonadError AstError m, Fresh m) => FreeProgram -> m FreeProgram
-specialize = flip evalStateT mempty . specialize'
-
-specialize' :: (MonadError AstError m, Fresh m, MonadState SpecMap m) => FreeProgram -> m FreeProgram
-specialize' (ts, syns, vs) = do
-      vs'     <- mapM specDefn vs
-      newDefs <- gets $ filter isNewDefn . Map.elems
-      pure (ts, syns, vs' <> newDefs)
-      where gs :: HashMap (Name Exp) Defn
-            gs = Map.fromList $ map (defnName &&& id) vs
-
-            isNewDefn :: Defn -> Bool
-            isNewDefn = not . isGlobal . defnName
-
-            isGlobal :: Name Exp -> Bool
-            isGlobal = flip Map.member gs
-
-            specDefn :: (MonadError AstError m, Fresh m, MonadState SpecMap m) => Defn -> m Defn
-            specDefn (Defn ann n pt inl (Embed body)) = do
-                  (vs, body') <- unbind body
-                  (Defn ann n pt inl . Embed) . bind vs <$> specExp body'
-
-            specExp :: (MonadError AstError m, Fresh m, MonadState SpecMap m) => Exp -> m Exp
-            specExp = \ case
-                  e@(App an tan t e' a') | (Var _ _ _ g, args) <- flattenApp e
-                                         , Just d              <- Map.lookup g gs
-                                         , inlinable d
-                                               -> do
-                        args' <- mapM specExp args
-                        let s = sig args'
-                        if | all isNothing s -> App an tan t <$> specExp e' <*> specExp a'
-                           | otherwise       -> do
-                              d'   <- gets (Map.lookup (g, s)) >>= \ case
-                                    Just d'' -> pure d''
-                                    _        -> do
-                                          d'' <- mkDefn s d
-                                          modify $ Map.insert (g, s) d''
-                                          pure d''
-                              t'   <- getTy d'
-                              pure $ mkGApp an (defnName d') t' args' s
-                  App an tan t e arg               -> App an tan t <$> specExp e <*> specExp arg
-                  Lam an tan t b                   -> do
-                        (vs, b') <- unbind b
-                        Lam an tan t . bind vs <$> specExp b'
-                  Case an tan t e p els            -> do
-                        (ps, p') <- unbind p
-                        Case an tan t <$> specExp e <*> (bind ps <$> specExp p') <*> mapM specExp els
-                  LitList an tan t es              -> LitList an tan t <$> mapM specExp es
-                  LitVec an tan t es               -> LitVec an tan t <$> mapM specExp es
-                  e@LitInt {}                      -> pure e
-                  e@LitStr {}                      -> pure e
-                  e@Var {}                         -> pure e
-                  e@Con {}                         -> pure e
-                  e@Builtin {}                     -> pure e
-
-            -- Note: no need to strip annotations (unAnn) on the argument
-            -- here: Eq and Hashable ignore them, so they don't affect the
-            -- SpecMap keying, and the argument is otherwise spliced into the
-            -- specialized defn body as-is.
-            sig :: [Exp] -> AppSig
-            sig = map $ \ e -> if | all isGlobal $ fv e -> Just e
-                                  | otherwise           -> Nothing
-
-            getTy :: Fresh m => Defn -> m Ty
-            getTy Defn { defnPolyTy = Embed (Poly pt) } = snd <$> unbind pt
-
-            mkDefn :: (MonadError AstError m, Fresh m) => AppSig -> Defn -> m Defn
-            mkDefn s _dx@(Defn an g (Embed (Poly bgt)) inl (Embed body)) = do
-                  g'              <- fresh g
-                  gt              <- snd <$> unbind bgt
-                  (tinfo, t')     <- mkTy s gt
-                  (bodyvs, body') <- unbind body
-                  typeCheckDefn ts vs
-                       $ Defn an g' (Embed $ Poly $ bind (fv t') t') inl
-                       $ Embed $ bind []
-                               $ mkLam an (lefts tinfo)
-                               $ mkApp an (mkLam an (zip (fst $ flattenArrow gt) bodyvs) body')
-                               $ map (either (uncurry $ Var an Nothing . Just) id) tinfo
-
-            mkTy :: (Fresh m, MonadError AstError m) => AppSig -> Ty -> m ([Either (Ty, Name Exp) Exp], Ty)
-            mkTy s (flattenArrow -> (gtas, gtr)) = do
-                  (gtas', subs) <- runStateT (zipWithM mkTy' gtas s) mempty
-                  pure $ substs (Map.toList subs) (gtas', foldr arr gtr $ map fst (lefts gtas') <> drop (length gtas') gtas)
-                  where mkTy' :: (Fresh m, MonadState TySub m, MonadError AstError m) => Ty -> Maybe Exp -> m (Either (Ty, Name Exp) Exp)
-                        mkTy' t = \ case
-                              Just e | Just te <- typeOf e -> do
-                                    t' <- unify (ann e) t te
-                                    pure $ Right $ setTyAnn (Just $ poly' t') e
-                              Just e -> pure $ Right $ setTyAnn (Just $ poly' t) e
-                              Nothing -> do
-                                    n <- freshVar "sp"
-                                    pure $ Left (t, n)
-
-            mkGApp :: Annote -> Name Exp -> Ty -> [Exp] -> AppSig -> Exp
-            mkGApp an g t es = mkApp an (Var an Nothing (Just t) g) . catMaybes . zipWith mkGApp' es
-                  where mkGApp' :: Exp -> Maybe Exp -> Maybe Exp
-                        mkGApp' e = maybe (Just e) (const Nothing)
-
 data MatchResult = MatchYes ![(Name Exp, Exp)]
                  | MatchMaybe
                  | MatchNo
       deriving Show
-
 -- | Partially evaluate expressions.
 reduce :: (Fresh m, MonadError AstError m) => FreeProgram -> m FreeProgram
 reduce (ts, syns, vs) = (ts, syns, ) <$> mapM reduceDefn vs

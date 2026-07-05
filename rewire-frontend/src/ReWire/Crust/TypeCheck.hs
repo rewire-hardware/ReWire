@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Safe #-}
 -- {-# LANGUAGE Trustworthy #-}
-module ReWire.Crust.TypeCheck (typeCheck, typeCheckDefn, untype, unify, unify', TySub) where
+module ReWire.Crust.TypeCheck (typeCheck, untype, unify') where
 
 import ReWire.Annotation (Annote (MsgAnnote), ann)
 import ReWire.Crust.Syntax (Exp (..), Ty (..), Kind (..), Poly (..), Pat (..), FreeProgram, Defn (..), DataDefn (..), Builtin (..), DataCon (..), DataConId, builtinName)
@@ -84,9 +84,6 @@ instance Semigroup TCEnv where
 
 instance Monoid TCEnv where
       mempty = TCEnv mempty mempty
-
-typeCheckDefn :: (Fresh m, MonadError AstError m) => [DataDefn] -> [Defn] -> Defn -> m Defn
-typeCheckDefn ts vs d = runReaderT (withAssumps ts vs $ tcDefn (s2n "") d) mempty
 
 -- | Type-annotate the AST, but also eliminate uses of polymorphic
 --   definitions by creating new definitions specialized to non-polymorphic types.
