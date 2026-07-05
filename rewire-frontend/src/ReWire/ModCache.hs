@@ -11,6 +11,7 @@ module ReWire.ModCache
 import ReWire.Annotation (unAnn)
 import ReWire.Config (Config, typecheck)
 import ReWire.Eidos.Pretty (prettyProgram)
+import ReWire.Eidos.ToCrust (eidosToCrust)
 import ReWire.GHC.Session (loadCore)
 import ReWire.GHC.ToCrust (coreToCrust, purgeTyAnns)
 import ReWire.GHC.ToEidos (toEidos)
@@ -57,17 +58,20 @@ runCache = runFreshMT
 getDevice :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> FreshMT m Hyle.Program
 getDevice conf fp = do
       gutss          <- loadCore conf fp
-      -- Under --eidos, additionally bridge Core to the Eidos IR, lint it
-      -- (poly mode), and dump the .eir beside the output; then fall through
-      -- to the regular pipeline. (The Eidos pipeline replaces this one in a
-      -- later migration stage; see doc/eidos.md.)
-      when (conf^.C.eidos) $ do
-            eir <- toEidos conf gutss
-            Eidos.lint Eidos.LintPoly eir
-            let eirFile = fromMaybe fp (conf^.C.outFile) -<.> "eir"
-            verb ("Writing Eidos IR to file: " <> pack eirFile) ()
-            liftIO $ T.writeFile eirFile $ prettyProgram eir
-      prog0          <- coreToCrust conf gutss
+      -- Under --eidos, the front half runs through the Eidos IR: bridge
+      -- Core to Eidos, lint it (poly mode), dump the .eir beside the
+      -- output, and lower onto the retained Crust pipeline through the
+      -- shim (ReWire.Eidos.ToCrust). The shim moves down the pipeline as
+      -- passes are ported; see doc/eidos.md.
+      prog0 <- if conf^.C.eidos
+            then do
+                  eir <- toEidos conf gutss
+                  Eidos.lint Eidos.LintPoly eir
+                  let eirFile = fromMaybe fp (conf^.C.outFile) -<.> "eir"
+                  verb ("Writing Eidos IR to file: " <> pack eirFile) ()
+                  liftIO $ T.writeFile eirFile $ prettyProgram eir
+                  eidosToCrust eir
+            else coreToCrust conf gutss
       (ts, syns, ds) <- passCrust conf 1 "Translating GHC Core to Crust IR." prog0
 
       p <- pure
