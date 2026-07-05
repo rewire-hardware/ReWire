@@ -1,0 +1,25 @@
+-- Procify input shape: extrude under case (the signalFirst corpus
+-- shape) — the extruded reactive computation is selected by a case.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+Main.m1#10 :: ReacT Bool Bool (StateT Bool Identity) ()
+Main.m1#10 =
+      (rwPrimError :: String -> ReacT Bool Bool (StateT Bool Identity) ()) "m1"
+
+Main.m2#11 :: ReacT Bool Bool (StateT Bool Identity) ()
+Main.m2#11 =
+      (rwPrimError :: String -> ReacT Bool Bool (StateT Bool Identity) ()) "m2"
+
+Main.dev#20 :: Bool -> ReacT Bool Bool Identity ((,) () Bool)
+Main.dev#20 (b#21 :: Bool) =
+      (rwPrimExtrude :: ReacT Bool Bool (StateT Bool Identity) () -> Bool -> ReacT Bool Bool Identity ((,) () Bool))
+        (case b#21 of s#22 { _ -> Main.m1#10; True -> Main.m2#11 } :: ReacT Bool Bool (StateT Bool Identity) ())
+        b#21
+
+Main.start#30 :: ReacT Bool Bool Identity ((,) () Bool)
+Main.start#30 = Main.dev#20 (False :: Bool)
+
+top Main.start#30

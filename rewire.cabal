@@ -574,9 +574,21 @@ data-files:
     tests/integration/MiniISA.cry
     tests/integration/MiniISA.input.yaml
     tests/integration/MiniISA.yaml
+    tests/eidos/machine-degen.eir
+    tests/eidos/machine-toggle.eir
     tests/eidos/mono.eir
     tests/eidos/poly.eir
+    tests/eidos/procin-bindlhs-loop.eir
+    tests/eidos/procin-bindlhs-pause.eir
+    tests/eidos/procin-casecommute.eir
+    tests/eidos/procin-entrychain.eir
+    tests/eidos/procin-etabind.eir
+    tests/eidos/procin-extrude-under-case.eir
+    tests/eidos/procin-naked-signal.eir
     tests/eidos/smoke.eir
+    tests/eidos/negative/goto-cycle.eir
+    tests/eidos/negative/input-type.eir
+    tests/eidos/negative/unknown-cell.eir
     rewire-user/src/ReWire.hs
     rewire-user/src/RWC/Primitives.hs
     rewire-user/src/ReWire/Bits.hs

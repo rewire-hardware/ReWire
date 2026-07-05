@@ -1,0 +1,40 @@
+-- Degenerate and multi-process forms (doc/eidos.md section 7.2): a
+-- zero-cell process whose blocks chain by goto (the goto-only subgraph is
+-- acyclic: the cycle crosses a pause), and an undef-celled process with a
+-- reachable halt under a terminator case.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+Main.start#40 :: Bool -> Bool
+Main.start#40 (i#41 :: Bool) = i#41
+
+proc comb : Bool ~> Bool {
+      entry {
+            pause (True :: Bool) -> run#1 ()
+      }
+      block run#1 ((i#2 :: Bool)) {
+            goto out#3 (i#2)
+      }
+      block out#3 ((v#4 :: Bool)) {
+            pause v#4 -> run#1 ()
+      }
+}
+
+proc halty : Bool ~> Bool @ clock clk {
+      state s : Bool := undef;
+      entry {
+            put s (False :: Bool);
+            pause (False :: Bool) -> go#11 ()
+      }
+      block go#11 ((i#12 :: Bool)) {
+            v#13 :: Bool <- get s;
+            case i#12 of {
+                  _ -> halt v#13;
+                  True -> pause v#13 -> go#11 ()
+            }
+      }
+}
+
+top Main.start#40

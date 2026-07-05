@@ -28,7 +28,7 @@ import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet        as IS
 
 inlineAnnotated :: forall m. MonadError AstError m => Program -> m Program
-inlineAnnotated p@(Program datas defns top) = evalStateT go $ nextUniq p
+inlineAnnotated p@(Program datas defns procs top) = evalStateT go $ nextUniq p
       where inls :: IM.IntMap Defn
             inls = IM.fromList [ (idUniq $ defnId d, d) | d <- defns, defnAttr d == Just Inline ]
 
@@ -36,7 +36,7 @@ inlineAnnotated p@(Program datas defns top) = evalStateT go $ nextUniq p
             go = do
                   table  <- foldM (\ acc u -> expand acc mempty u) mempty $ IM.keys inls
                   defns' <- mapM (\ d -> (\ b -> d { defnBody = b }) <$> substVarsRefreshing table (defnBody d)) defns
-                  pure $ Program datas defns' top
+                  pure $ Program datas defns' procs top
 
             -- The definition as a substitution payload: a lambda telescope
             -- over its parameters.

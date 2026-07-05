@@ -1,0 +1,20 @@
+-- Procify input shape: case-commuting depth — a reactive case whose
+-- scrutinee is itself a case, in bind-LHS position.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+Main.loop#10 :: Bool -> ReacT Bool Bool Identity ()
+Main.loop#10 (i#11 :: Bool) =
+      (rwPrimBind :: ReacT Bool Bool Identity Bool -> (Bool -> ReacT Bool Bool Identity ()) -> ReacT Bool Bool Identity ())
+        (case (case i#11 of s1#12 { _ -> (True :: Bool); True -> (False :: Bool) } :: Bool) of s2#13 {
+              _ -> (rwPrimSignal :: Bool -> ReacT Bool Bool Identity Bool) (False :: Bool);
+              True -> (rwPrimSignal :: Bool -> ReacT Bool Bool Identity Bool) (True :: Bool)
+        } :: ReacT Bool Bool Identity Bool)
+        Main.loop#10
+
+Main.start#20 :: ReacT Bool Bool Identity ()
+Main.start#20 = Main.loop#10 (True :: Bool)
+
+top Main.start#20

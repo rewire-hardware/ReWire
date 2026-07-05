@@ -1,0 +1,24 @@
+-- EXPECT-LINT-ERROR: crosses no pause
+-- Signal-guardedness (doc/eidos.md section 7.4): the goto-only subgraph
+-- must be acyclic; a#1 and b#3 goto each other without pausing.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+Main.start#10 :: Bool -> Bool
+Main.start#10 (i#11 :: Bool) = i#11
+
+proc looper : Bool ~> Bool {
+      entry {
+            pause (False :: Bool) -> a#1 ()
+      }
+      block a#1 ((i#2 :: Bool)) {
+            goto b#3 (i#2)
+      }
+      block b#3 ((v#4 :: Bool)) {
+            goto a#1 (v#4)
+      }
+}
+
+top Main.start#10

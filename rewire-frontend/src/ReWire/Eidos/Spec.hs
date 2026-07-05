@@ -52,7 +52,7 @@ import qualified Data.IntMap.Strict  as IM
 type Key = (Uniq, [Ty])
 
 specialize :: forall m. MonadError AstError m => Natural -> Program -> m Program
-specialize bound p@(Program datas defns top) = evalStateT go $ nextUniq p
+specialize bound p@(Program datas defns procs top) = evalStateT go $ nextUniq p
       where templates :: [Defn]
             kept      :: [Defn]
             (templates, kept) = partition isTemplate defns
@@ -77,7 +77,7 @@ specialize bound p@(Program datas defns top) = evalStateT go $ nextUniq p
             go :: StateT Uniq m Program
             go = do
                   (table, clones) <- rounds 0 (mempty, mempty) [] $ concatMap (requests . defnBody) kept
-                  pure $ Program datas (map (rewrite table) $ kept <> clones) top
+                  pure $ Program datas (map (rewrite table) $ kept <> clones) procs top
 
             -- One worklist generation per round.
             rounds :: Natural -> (HashMap Key Id, IM.IntMap Int) -> [Defn] -> [Key] -> StateT Uniq m (HashMap Key Id, [Defn])

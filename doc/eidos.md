@@ -336,7 +336,8 @@ forward-compatible.*
     term ::= pause a → L (a₁, …)           emit a : τ_O; resume at L next cycle
            | goto L (a₁, …)                intra-cycle transfer (saturated)
            | halt a                        terminate with answer a
-           | case a of { C x̄ → term; …; _ → term }
+           | case a of { _ → term; C x̄ → term; …; lit → term; … }
+                                           (default first, as at the P level)
 
 A block's *last* parameter is the resumed input (type `τ_I`); a
 `pause a → L(ā)` supplies all of `L`'s parameters *except* that one, which
@@ -518,7 +519,15 @@ and `[_]` the list type constructors, applied via `tyatom` spines.
             | 'goto' var '(' atom,* ')'
             | 'halt' atom
             | 'case' atom 'of' '{' talt (';' talt)* '}'
+    talt  ::= '_' '->' term
+            | C param* '->' term
+            | int '->' term
     clock ::= '@' 'clock' name
+
+In machine positions, `atom` extends to any parenthesized expression (the
+printer parenthesizes non-atom forms); labels print like variables
+(`L#12`) and carry no signature. Terminator labels may reference blocks
+declared later in the same process.
 
 ## 10. Design rationale
 
@@ -572,6 +581,8 @@ one removable lint rule instead of an axiom of the unifier.
 | minted-name conventions | `ReWire.Eidos.Naming` |
 | the bridge (GHC Core → P) | `ReWire.GHC.ToEidos` |
 | the retained-pipeline shim (P → Crust; dies with stage 2) | `ReWire.Eidos.ToCrust` |
-| §9 (`.eir`) | `ReWire.Eidos.Pretty`, `ReWire.Eidos.Parse` |
+| §9 (`.eir`, both levels) | `ReWire.Eidos.Pretty`, `ReWire.Eidos.Parse` |
+| §7.1 (proc syntax) | `ReWire.Eidos.Syntax` |
+| §7.4 (machine rules, lint machine mode) | `ReWire.Eidos.Lint` |
 | §6 (ANF) | the P→M lowering (later stage) |
-| §7 (procs, machine fold) | `procify` and successors (later stage) |
+| §7.3 (procify, machine fold) | `procify` and successors (later stage) |

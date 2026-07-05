@@ -202,17 +202,23 @@ testCompiler flags fn = do
             diff :: FilePath -> FilePath -> [String]
             diff ref new = ["diff", "-bu", ref, new]
 
+-- | The lint mode for an .eir fixture: machine mode when processes are
+--   present (their rules only fire there), poly mode otherwise.
+fixtureMode :: Eidos.Program -> Eidos.LintMode
+fixtureMode p | null (Eidos.progProcs p) = Eidos.LintPoly
+              | otherwise                = Eidos.LintMachine
+
 -- | Round-trips an .eir fixture — parse, print, re-parse, re-print; the two
 --   prints must agree (the fixpoint property of doc/eidos.md §9) — and lints
---   both parses in poly mode.
+--   both parses (machine mode when the fixture declares processes).
 testEir :: FilePath -> TestTree
 testEir fn = testCase (takeBaseName fn <> " (eir round-trip)") $ do
       r <- runSyntaxError $ do
             p1 <- parseEir fn
-            Eidos.lint Eidos.LintPoly p1
+            Eidos.lint (fixtureMode p1) p1
             let t1 = prettyProgram p1
             p2 <- parseEirText t1 fn
-            Eidos.lint Eidos.LintPoly p2
+            Eidos.lint (fixtureMode p2) p2
             pure (t1, prettyProgram p2)
       case r of
             Left err       -> assertFailure $ "eir round-trip failed: " <> T.unpack (prettyPrint err)
@@ -231,7 +237,7 @@ testEirRefresh fn = testCase (takeBaseName fn <> " (eir refresh)") $ do
                         ds  <- mapM (\ d -> (\ b -> d { Eidos.defnBody = b }) <$> Eidos.refreshExp (Eidos.defnBody d)) $ Eidos.progDefns p
                         dup <- mapM Eidos.refreshDefn ds
                         pure p { Eidos.progDefns = ds <> dup }
-            Eidos.lint Eidos.LintPoly p'
+            Eidos.lint (fixtureMode p') p'
       case r of
             Left err -> assertFailure $ "eir refresh failed: " <> T.unpack (prettyPrint err)
             Right () -> pure ()
@@ -250,11 +256,27 @@ testEirSpec fn = testCase (takeBaseName fn <> " (eir front passes)") $ do
                   >>= Eidos.inlineAnnotated
                   >>= (fmap fst . Eidos.neuterExterns)
                   >>= Eidos.simplify 8
-            Eidos.lint Eidos.LintPoly p'
+            Eidos.lint (fixtureMode p') p'
             mapM_ (Eidos.lintDefn Eidos.LintMono p') $ Eidos.progDefns p'
       case r of
             Left err -> assertFailure $ "eir front passes failed: " <> T.unpack (prettyPrint err)
             Right () -> pure ()
+
+-- | An .eir fixture that must fail to lint (in the fixture's mode), with a
+--   diagnostic containing each substring declared by "-- EXPECT-LINT-ERROR:"
+--   comment lines.
+testEirBad :: FilePath -> TestTree
+testEirBad fn = testCase (takeBaseName fn <> " (eir lint error)") $ do
+      expected <- mapMaybe (stripPrefix "-- EXPECT-LINT-ERROR: ") . lines <$> readFile fn
+      r <- runSyntaxError $ do
+            p <- parseEir fn
+            Eidos.lint (fixtureMode p) p
+      case r of
+            Right () -> assertFailure "fixture linted cleanly (expected a lint error)"
+            Left err -> do
+                  let msg = T.unpack $ prettyPrint err
+                  mapM_ (\ e -> assertBool ("lint error does not mention \"" <> e <> "\"; got: " <> msg)
+                                    $ e `isInfixOf` msg) expected
 
 -- | A test that must fail to compile with rwc. Each test file declares (one or
 --   more of) the expected error with a comment line:
@@ -391,9 +413,12 @@ main = do
       -- Eidos .eir fixtures: the parse/print fixpoint property of
       -- doc/eidos.md §9, plus a poly-mode lint of both parses.
       eirTests   <- do
-            dir   <- getDataFileName ("tests" </> "eidos")
-            files <- map (dir </>) . filter (".eir" `isSuffixOf`) <$> listDirectory dir
+            dir      <- getDataFileName ("tests" </> "eidos")
+            files    <- map (dir </>) . filter (".eir" `isSuffixOf`) <$> listDirectory dir
+            negDir   <- getDataFileName ("tests" </> "eidos" </> "negative")
+            negFiles <- map (negDir </>) . filter (".eir" `isSuffixOf`) <$> listDirectory negDir
             pure $ testGroup "eidos" $ map testEir files <> map testEirRefresh files <> map testEirSpec files
+                                    <> map testEirBad negFiles
       smokeTests <- getSmokeTests
       -- The integration directory holds full-program golden tests (same legs as
       -- tests/golden), but they are heavyweight, so they only run under --integration.

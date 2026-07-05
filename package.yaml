@@ -53,6 +53,7 @@ data-files:
 - tests/integration/*.cry
 - tests/integration/*.yaml
 - tests/eidos/*.eir
+- tests/eidos/negative/*.eir
 - rewire-user/src/*.hs
 - rewire-user/src/RWC/*.hs
 - rewire-user/src/ReWire/*.hs

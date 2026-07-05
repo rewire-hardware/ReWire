@@ -133,7 +133,7 @@ synthableDefn d = Set.member (idOcc $ defnId d) primNames
 -- | No definition's signature mentions a datatype with a function-typed
 --   constructor field (a class dictionary).
 dictFree :: Program -> Bool
-dictFree (Program datas defns _) = null bad || all ok defns
+dictFree (Program datas defns _ _) = null bad || all ok defns
       where bad :: [Text]
             bad = [ dataName d | d <- datas, any arrowField $ dataCons d ]
 
@@ -154,10 +154,11 @@ dictFree (Program datas defns _) = null bad || all ok defns
 --- Purge: definition-level DCE.
 ---
 
--- | Definitions transitively reachable from the device root and the
---   builtin signature carriers. Datatypes are left untouched.
+-- | Definitions transitively reachable from the device root, the builtin
+--   signature carriers, and any process's embedded expressions. Datatypes
+--   are left untouched.
 purge :: Program -> Program
-purge (Program datas defns top) = Program datas [ d | d <- defns, IS.member (idUniq $ defnId d) live ] top
+purge (Program datas defns procs top) = Program datas [ d | d <- defns, IS.member (idUniq $ defnId d) live ] procs top
       where tops :: IS.IntSet
             tops = IS.fromList $ map (idUniq . defnId) defns
 
@@ -165,7 +166,31 @@ purge (Program datas defns top) = Program datas [ d | d <- defns, IS.member (idU
             refs = IM.fromList [ (idUniq $ defnId d, freeUniqs (defnBody d) `IS.intersection` tops) | d <- defns ]
 
             roots :: [Uniq]
-            roots = idUniq top : [ idUniq $ defnId d | d <- defns, Set.member (idOcc $ defnId d) primNames ]
+            roots = idUniq top
+                  : [ idUniq $ defnId d | d <- defns, Set.member (idOcc $ defnId d) primNames ]
+                  <> IS.toList (IS.unions (map procRefs procs) `IS.intersection` tops)
+
+            procRefs :: Proc -> IS.IntSet
+            procRefs pr = IS.unions $ map freeUniqs $ procExps pr
+
+            procExps :: Proc -> [Exp]
+            procExps pr = [ e | Just e <- map cellInit $ procCells pr ]
+                  <> concatMap blockExps (procEntry pr : map snd (procBlocks pr))
+                  where blockExps :: Block -> [Exp]
+                        blockExps b = concatMap cmdExps (blkCmds b) <> termExps (blkTerm b)
+
+                        cmdExps :: Cmd -> [Exp]
+                        cmdExps = \ case
+                              CmdBind _ _ e -> [e]
+                              CmdGet {}     -> []
+                              CmdPut _ _ e  -> [e]
+
+                        termExps :: Term -> [Exp]
+                        termExps = \ case
+                              Pause _ a _ args -> a : args
+                              Goto _ _ args    -> args
+                              Halt _ a         -> [a]
+                              TCase _ a alts   -> a : concatMap (\ (TAlt _ _ _ t) -> termExps t) alts
 
             live :: IS.IntSet
             live = go mempty roots
@@ -180,11 +205,11 @@ purge (Program datas defns top) = Program datas [ d | d <- defns, IS.member (idU
 ---
 
 reduceProgram :: MonadError AstError m => Program -> SimpT m Program
-reduceProgram (Program datas defns top) = do
+reduceProgram (Program datas defns procs top) = do
       let tops = IS.fromList $ map (idUniq . defnId) defns
       defns' <- mapM (\ d -> (\ b -> d { defnBody = b }) <$> reduceExp tops (defnBody d)) defns
       new    <- drainNew
-      pure $ Program datas (defns' <> new) top
+      pure $ Program datas (defns' <> new) procs top
 
 -- | One bottom-up reduction pass over an expression: beta redexes become
 --   lets; lets inline when dead, single-use, or atom-bound; multi-use
@@ -352,7 +377,7 @@ selectAlt scrut alts = case flattenApp scrut of
 --   Leading body lambdas are first promoted into the parameter telescope
 --   (the bridge emits every definition with an empty telescope).
 specialize :: forall m. MonadError AstError m => Program -> SimpT m Program
-specialize (Program datas defns0 top) = do
+specialize (Program datas defns0 procs top) = do
       defns' <- mapM specDefn defns
       new    <- drainNew
       -- Re-add memoized specializations dropped by an earlier purge but
@@ -360,7 +385,7 @@ specialize (Program datas defns0 top) = do
       -- the next purge removes unused ones). Sorted for determinism.
       let have = IS.fromList $ map (idUniq . defnId) $ defns' <> new
       memoed <- gets $ sortOn (idUniq . defnId) . filter (\ d -> not $ IS.member (idUniq $ defnId d) have) . Map.elems . stMemo
-      pure $ Program datas (defns' <> new <> memoed) top
+      pure $ Program datas (defns' <> new <> memoed) procs top
       where defns :: [Defn]
             defns = map promote defns0
 

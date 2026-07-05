@@ -1,0 +1,34 @@
+-- A one-cell toggler: exercises cells (with a closed initial), entry
+-- (write before first pause), get/put commands, a pure-computation
+-- command calling a definition, a pause-and-goto-free terminator case,
+-- and a self-pausing block (doc/eidos.md sections 7.1 and 7.4).
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+Main.not#1 :: Bool -> Bool
+Main.not#1 (b#2 :: Bool) =
+      case b#2 of scrut#3 { _ -> (True :: Bool); True -> (False :: Bool) } :: Bool
+
+Main.start#20 :: Bool -> Bool
+Main.start#20 (i#21 :: Bool) = i#21
+
+proc main : Bool ~> Bool {
+      state acc : Bool := (False :: Bool);
+      entry {
+            x#10 :: Bool <- (False :: Bool);
+            put acc x#10;
+            pause x#10 -> step#11 ()
+      }
+      block step#11 ((inp#12 :: Bool)) {
+            a#13 :: Bool <- get acc;
+            b#14 :: Bool <- Main.not#1 a#13;
+            put acc b#14;
+            case b#14 of {
+                  _ -> pause b#14 -> step#11 ()
+            }
+      }
+}
+
+top Main.start#20

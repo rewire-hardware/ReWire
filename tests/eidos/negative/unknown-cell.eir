@@ -1,0 +1,22 @@
+-- EXPECT-LINT-ERROR: nknown state cell: nosuch
+-- Cell reads and writes target declared cells by name.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+Main.start#10 :: Bool -> Bool
+Main.start#10 (i#11 :: Bool) = i#11
+
+proc main : Bool ~> Bool {
+      state s : Bool := (False :: Bool);
+      entry {
+            put nosuch (False :: Bool);
+            pause (False :: Bool) -> go#1 ()
+      }
+      block go#1 ((i#2 :: Bool)) {
+            pause i#2 -> go#1 ()
+      }
+}
+
+top Main.start#10

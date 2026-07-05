@@ -42,7 +42,7 @@ import qualified Data.IntSet        as IS
 -- | Returns the neutered program and the warnings for discarded models
 --   (emitted by the caller, which holds the Config).
 neuterExterns :: forall m. MonadError AstError m => Program -> m (Program, [Warning])
-neuterExterns p@(Program datas defns top) = do
+neuterExterns p@(Program datas defns procs top) = do
       defns' <- runSimpT p $ mapM reduce1 defns
           -- Stage 1: neuter self-referential implementations silently
           -- (the no-model idiom), so they don't appear as spurious cycles
@@ -57,7 +57,7 @@ neuterExterns p@(Program datas defns top) = do
                   , (ex, e) <- externApps $ defnBody d
                   , Just (Just reason) <- [disposition dmap1 e]
                   ]
-      pure (Program datas ds2 top, warns)
+      pure (Program datas ds2 procs top, warns)
       where tops :: IS.IntSet
             tops = IS.fromList $ map (idUniq . defnId) defns
 

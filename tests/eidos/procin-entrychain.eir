@@ -1,0 +1,24 @@
+-- Procify input shape: a state0-style entry chain — several binds of
+-- returns before the first pause, with non-alpha-equal lambda
+-- continuations.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+Main.loop#10 :: Bool -> ReacT Bool Bool Identity ()
+Main.loop#10 (i#11 :: Bool) =
+      (rwPrimBind :: ReacT Bool Bool Identity Bool -> (Bool -> ReacT Bool Bool Identity ()) -> ReacT Bool Bool Identity ())
+        ((rwPrimSignal :: Bool -> ReacT Bool Bool Identity Bool) i#11)
+        Main.loop#10
+
+Main.start#20 :: ReacT Bool Bool Identity ()
+Main.start#20 =
+      (rwPrimBind :: ReacT Bool Bool Identity Bool -> (Bool -> ReacT Bool Bool Identity ()) -> ReacT Bool Bool Identity ())
+        ((rwPrimReturn :: Bool -> ReacT Bool Bool Identity Bool) (False :: Bool))
+        (\ (x#21 :: Bool) ->
+              (rwPrimBind :: ReacT Bool Bool Identity Bool -> (Bool -> ReacT Bool Bool Identity ()) -> ReacT Bool Bool Identity ())
+                ((rwPrimReturn :: Bool -> ReacT Bool Bool Identity Bool) (case x#21 of s#22 { _ -> (True :: Bool); True -> x#21 } :: Bool))
+                (\ (y#23 :: Bool) -> Main.loop#10 y#23))
+
+top Main.start#20

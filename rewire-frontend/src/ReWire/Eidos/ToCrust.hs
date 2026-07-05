@@ -67,7 +67,7 @@ import qualified Data.IntSet         as IS
 --   keep regenerated goldens from churning. (This lift belongs to the
 --   shim epoch: the machine-level pipeline consumes joins directly.)
 eidosToCrust :: (Fresh m, MonadError AstError m) => Program -> m M.FreeProgram
-eidosToCrust (liftJoins -> Program datas defns _top) = do
+eidosToCrust (liftJoins -> Program datas defns _procs _top) = do
       let tops = IS.fromList $ map (idUniq . defnId) defns
       ds <- mapM (lowerDefn tops) defns
       pure $ addPrims (map lowerData datas, [], ds)
@@ -79,7 +79,7 @@ eidosToCrust (liftJoins -> Program datas defns _top) = do
 data LSt = LSt { lsSup :: !Uniq, lsOrd :: !Int, lsNew :: ![Defn] }
 
 liftJoins :: Program -> Program
-liftJoins p@(Program datas defns top) = Program datas defns' top
+liftJoins p@(Program datas defns procs top) = Program datas defns' procs top
       where tops :: IS.IntSet
             tops = IS.fromList $ map (idUniq . defnId) defns
 
