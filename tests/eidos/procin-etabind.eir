@@ -1,0 +1,18 @@
+-- Procify input shape: an eta-reduced bind — the continuation is a
+-- top-level definition reference, not a lambda (the react/cubehash
+-- corpus shape).
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+Main.loop#10 :: Bool -> ReacT Bool Bool Identity ()
+Main.loop#10 (i#11 :: Bool) =
+      (rwPrimBind :: ReacT Bool Bool Identity Bool -> (Bool -> ReacT Bool Bool Identity ()) -> ReacT Bool Bool Identity ())
+        ((rwPrimSignal :: Bool -> ReacT Bool Bool Identity Bool) i#11)
+        Main.loop#10
+
+Main.start#20 :: ReacT Bool Bool Identity ()
+Main.start#20 = Main.loop#10 (False :: Bool)
+
+top Main.start#20

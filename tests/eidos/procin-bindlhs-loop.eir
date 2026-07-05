@@ -1,0 +1,16 @@
+-- Procify input shape (negative for the M3 procify pass, well-formed at
+-- the P level): a recursive reactive callee in bind-LHS position — the
+-- rejection class of procify's predicate (recursive-or-NOINLINE reactive
+-- callee at bind-LHS). Mirrors tests/negative/bind-lhs-loop.hs.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+Main.badloop#10 :: ReacT Bool Bool Identity ()
+Main.badloop#10 =
+      (rwPrimBind :: ReacT Bool Bool Identity () -> (() -> ReacT Bool Bool Identity ()) -> ReacT Bool Bool Identity ())
+        Main.badloop#10
+        (\ (u#11 :: ()) -> Main.badloop#10)
+
+top Main.badloop#10

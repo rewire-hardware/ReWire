@@ -149,6 +149,7 @@ toEidos conf gutss = evalStateT go 0
                   pure $ addPrims E.Program
                         { E.progDatas = datas
                         , E.progDefns = defs <> vocab
+                        , E.progProcs = []
                         , E.progTop   = top
                         }
 

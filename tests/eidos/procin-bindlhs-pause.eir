@@ -1,0 +1,21 @@
+-- Procify input shape (negative for the M3 procify pass, well-formed at
+-- the P level): a pausing computation in bind-LHS position — the LHS
+-- signals and then computes, so it cannot lower to an intra-cycle block.
+-- Mirrors tests/negative/bind-lhs-pause.hs.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+Main.loop#10 :: Bool -> ReacT Bool Bool Identity ()
+Main.loop#10 (i#11 :: Bool) =
+      (rwPrimBind :: ReacT Bool Bool Identity Bool -> (Bool -> ReacT Bool Bool Identity ()) -> ReacT Bool Bool Identity ())
+        ((rwPrimBind :: ReacT Bool Bool Identity Bool -> (Bool -> ReacT Bool Bool Identity Bool) -> ReacT Bool Bool Identity Bool)
+              ((rwPrimSignal :: Bool -> ReacT Bool Bool Identity Bool) i#11)
+              (\ (j#12 :: Bool) -> (rwPrimReturn :: Bool -> ReacT Bool Bool Identity Bool) j#12))
+        Main.loop#10
+
+Main.start#20 :: ReacT Bool Bool Identity ()
+Main.start#20 = Main.loop#10 (False :: Bool)
+
+top Main.start#20

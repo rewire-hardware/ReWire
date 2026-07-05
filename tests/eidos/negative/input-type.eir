@@ -1,0 +1,26 @@
+-- EXPECT-LINT-ERROR: not the process input type
+-- A pause target's last parameter is the resumed input, typed by the
+-- process input type (doc/eidos.md section 7.1).
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+data Wide * {
+      W0 :: Wide;
+      W1 :: Wide
+}
+
+Main.start#10 :: Bool -> Bool
+Main.start#10 (i#11 :: Bool) = i#11
+
+proc main : Bool ~> Bool {
+      entry {
+            pause (False :: Bool) -> go#1 ((W0 :: Wide))
+      }
+      block go#1 ((x#2 :: Wide), (i#3 :: Wide)) {
+            pause (True :: Bool) -> go#1 ((W1 :: Wide))
+      }
+}
+
+top Main.start#10

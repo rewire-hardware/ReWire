@@ -1,0 +1,13 @@
+-- Procify input shape (doc/eidos.md section 6; wired to procify's unit
+-- tests at the M3 stage): a naked signal — the whole reactive body is a
+-- single rwPrimSignal application, no bind spine.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+Main.start#10 :: ReacT Bool Bool Identity Bool
+Main.start#10 =
+      (rwPrimSignal :: Bool -> ReacT Bool Bool Identity Bool) (False :: Bool)
+
+top Main.start#10

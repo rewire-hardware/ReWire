@@ -25,6 +25,7 @@ module ReWire.Eidos.Syntax
       , Exp (..), Arg (..), Bind (..), Alt (..), AltCon (..)
       , Defn (..), DefnAttr (..), SpecOrigin (..)
       , DataDefn (..), DataCon (..)
+      , Proc (..), Cell (..), Block (..), Cmd (..), Term (..), TAlt (..)
       , Program (..)
       ) where
 
@@ -237,12 +238,74 @@ data DataDefn = DataDefn
 data DataCon = DataCon Annote !DataConId !Sig
       deriving (Show, Generic, Typeable, Data, NFData)
 
--- | A whole program: datatypes, definitions, and the designated device
---   root. The concrete syntax reserves room for process declarations (the
---   M level, doc/eidos.md §7); they are introduced by a later stage.
+---
+--- The M level (doc/eidos.md §7): processes.
+---
+
+-- | A process (doc/eidos.md §7.1): input/output types, an optional clock
+--   name, named state cells (one per retired state layer), the reset
+--   block (@entry@: parameterless, implicitly labeled), and labeled
+--   blocks. Cell and process names are their own (Text) namespaces;
+--   labels are 'Id's in the binder-unique discipline.
+data Proc = Proc
+      { procAnnote :: Annote
+      , procName   :: !Text
+      , procInTy   :: !Ty
+      , procOutTy  :: !Ty
+      , procClock  :: !(Maybe Text)
+      , procCells  :: ![Cell]
+      , procEntry  :: !Block
+      , procBlocks :: ![(Id, Block)]
+      }
+      deriving (Show, Generic, Typeable, Data, NFData)
+
+-- | A state cell: name, type, and initial value — a closed pure
+--   expression evaluated at compile time, or 'Nothing' (@undef@) for a
+--   cell first written before any read on every path from entry.
+data Cell = Cell
+      { cellAnnote :: Annote
+      , cellName   :: !Text
+      , cellTy     :: !Ty
+      , cellInit   :: !(Maybe Exp)
+      }
+      deriving (Show, Generic, Typeable, Data, NFData)
+
+-- | A block: parameters (a pause target's *last* parameter is the
+--   resumed input, typed by the process input type), commands, and a
+--   terminator.
+data Block = Block
+      { blkAnnote :: Annote
+      , blkParams :: ![Id]
+      , blkCmds   :: ![Cmd]
+      , blkTerm   :: !Term
+      }
+      deriving (Show, Generic, Typeable, Data, NFData)
+
+-- | A command: a pure computation, a cell read, or a cell write.
+data Cmd = CmdBind Annote !Id !Exp
+         | CmdGet  Annote !Id !Text
+         | CmdPut  Annote !Text !Exp
+      deriving (Show, Generic, Typeable, Data, NFData)
+
+-- | A block terminator (doc/eidos.md §7.1). A @pause@ supplies all of
+--   its target's parameters except the last (the resumed input, supplied
+--   by the machine); a @goto@ supplies all of them.
+data Term = Pause Annote !Exp !Id ![Exp]
+          | Goto  Annote !Id ![Exp]
+          | Halt  Annote !Exp
+          | TCase Annote !Exp ![TAlt]
+      deriving (Show, Generic, Typeable, Data, NFData)
+
+-- | A terminator-case alternative (default first, as at the P level).
+data TAlt = TAlt Annote !AltCon ![Id] !Term
+      deriving (Show, Generic, Typeable, Data, NFData)
+
+-- | A whole program: datatypes, definitions, processes (the M level;
+--   empty until procification), and the designated device root.
 data Program = Program
       { progDatas :: ![DataDefn]
       , progDefns :: ![Defn]
+      , progProcs :: ![Proc]
       , progTop   :: !Id
       }
       deriving (Show, Generic, Typeable, Data, NFData)
