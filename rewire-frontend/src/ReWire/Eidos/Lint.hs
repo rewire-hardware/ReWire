@@ -55,7 +55,7 @@
 --   TODO(eidos): primitive occurrence types are trusted (scope/closedness
 --   checked, but not compared against a builtin signature table); the
 --   bridge stage carries the rwPrim* signatures and should land the table.
-module ReWire.Eidos.Lint (LintMode (..), lint, lintDefn) where
+module ReWire.Eidos.Lint (LintMode (..), lint, lintDefn, lintProc) where
 
 import ReWire.Annotation (Annote, ann, noAnn)
 import ReWire.Builtins (builtins)
@@ -92,6 +92,13 @@ lint mode p = checkProgram (mkEnv mode p) p
 --   name distinctness, datatype well-formedness, and the @top@ rule).
 lintDefn :: MonadError AstError m => LintMode -> Program -> Defn -> m ()
 lintDefn mode p d = checkDefn (mkEnv mode p) d
+
+-- | Check a single process (the §7.4 machine rules) against a program's
+--   global context — usable while the program's definitions still carry
+--   the reactive fragment the process was compiled from (the whole-program
+--   machine mode would reject those).
+lintProc :: MonadError AstError m => Program -> Proc -> m ()
+lintProc p = checkProc (mkEnv LintMachine p)
 
 ---
 --- Environments.

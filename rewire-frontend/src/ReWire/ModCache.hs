@@ -42,6 +42,7 @@ import qualified ReWire.Eidos.ANF             as Eidos
 import qualified ReWire.Eidos.Externs         as Eidos
 import qualified ReWire.Eidos.Inline          as Eidos
 import qualified ReWire.Eidos.Lint            as Eidos
+import qualified ReWire.Eidos.Procify         as Eidos
 import qualified ReWire.Eidos.Simplify        as Eidos
 import qualified ReWire.Eidos.Spec            as Eidos
 import qualified ReWire.Eidos.Syntax          as Eidos
@@ -93,7 +94,12 @@ getDevice conf fp = do
             then do
                   a <- verb "Normalizing to ANF (eidos)." eirPE >>= Eidos.normalize
                   Eidos.lint Eidos.LintMonoANF a
-                  pure a
+                  -- Procify constructs (and lint-checks) the process; the
+                  -- compiled output still lowers through the P-level shim
+                  -- until the machine-step fold and its adapter land.
+                  pr <- verb "Procifying (eidos)." a >>= Eidos.procify
+                  mapM_ (Eidos.lintProc pr) $ Eidos.progProcs pr
+                  pure pr
             else pure eirPE
       when (conf^.C.eidos) $ do
             let eirFile = fromMaybe fp (conf^.C.outFile) -<.> "eir"
