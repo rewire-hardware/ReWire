@@ -1,0 +1,15 @@
+-- A minimal monomorphic Eidos-P program: one datatype, one defn with a
+-- case, a string-literal error start. Exercises data/defn/case/atoms.
+data Main.Reg * { Main.R0 :: Main.Reg; Main.R1 :: Main.Reg }
+
+Main.flip#1 :: Main.Reg -> Main.Reg
+Main.flip#1 (r#2 :: Main.Reg) =
+      case r#2 of s#3 {
+            _ -> (Main.R0 :: Main.Reg);
+            Main.R0 -> (Main.R1 :: Main.Reg)
+      } :: Main.Reg
+
+Main.start#4 :: ReacT Bool Bool Identity ()
+Main.start#4 = (rwPrimError :: String -> ReacT Bool Bool Identity ()) "unimplemented"
+
+top Main.start#4

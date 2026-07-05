@@ -1,0 +1,48 @@
+-- Parser smoke test: exercises the .eir grammar (doc/eidos.md, section 9):
+-- empty data, tuple constructors, polymorphism and type arguments, attrs
+-- and provenance (including the empty 'from ()'), joins (including
+-- zero-arity), prefix and infix nat operators, vec literals, string
+-- escapes, negative integer literals, rec groups, and lambda atoms.
+data Main.Empty * { }
+
+data (,) (* -> * -> *) { (,) :: forall (c#5 :: *) (d#6 :: *) . c#5 -> d#6 -> (,) c#5 d#6 }
+
+data Main.B * { Main.T :: Main.B; Main.F :: Main.B }
+
+data Main.Pair (* -> * -> *) { Main.MkPair :: forall (a#1 :: *) (b#2 :: *) . a#1 -> b#2 -> Main.Pair a#1 b#2 }
+
+Main.idf#10 :: forall (a#11 :: *) . a#11 -> a#11
+inline Main.idf#10 (x#12 :: a#11) = x#12
+
+Main.f#20 :: Vec 8 Main.B -> Vec (4 + 4) Main.B
+noinline from Main.g (Vec 8 Main.B, + 2 6) Main.f#20 (v#21 :: Vec 8 Main.B) =
+      let x#22 :: Vec (+ 4 4) Main.B = Main.idf#10 @(Vec 8 Main.B) v#21 in
+      let join k#23 ((b#24 :: Vec 8 Main.B)) = b#24 in
+      let join k0#26 () = jump k#23 (x#22) in
+      case (rwPrimMSBit :: Vec 8 Main.B -> Main.B) x#22 of w#25 {
+            _ -> jump k0#26 ();
+            Main.T -> jump k#23 (v#21)
+      } :: Vec 8 Main.B
+
+Main.lits#30 :: Integer -> (,) Integer String
+from Main.h () Main.lits#30 (n#31 :: Integer) =
+      let s#32 :: String = "hi\n\t\"\\there" in
+      let m#33 :: Integer = case n#31 of q#34 {
+            _ -> (rwPrimAdd :: Integer -> Integer -> Integer) q#34 (1 :: Integer);
+            0 -> (-5 :: Integer)
+      } :: Integer in
+      ((,) :: Integer -> String -> (,) Integer String) m#33 s#32
+
+Main.vecs#40 :: Vec 3 Integer -> Vec 0 Integer -> Vec 3 Integer
+Main.vecs#40 (v#41 :: Vec 3 Integer) =
+      let u#42 :: Vec 3 Integer = (vec [ (1 :: Integer), (2 :: Integer), (3 :: Integer) ] :: Vec 3 Integer) in
+      \ (w#44 :: Vec 0 Integer) -> u#42
+
+Main.recs#50 :: Integer -> Integer
+Main.recs#50 (n#51 :: Integer) =
+      let rec {
+            ev#52 :: Integer = od#53;
+            od#53 :: Integer = ev#52
+      } in ev#52
+
+top Main.f#20

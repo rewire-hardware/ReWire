@@ -1,0 +1,19 @@
+-- Exercises polymorphic signatures, type arguments, lets (nonrec, join and
+-- jump), lambdas in argument position, attrs, provenance, vector literals,
+-- and nat-expression types.
+Main.const#1 :: forall (a#2 :: *) (b#3 :: *). a#2 -> b#3 -> a#2
+inline Main.const#1 (x#4 :: a#2) (y#5 :: b#3) = x#4
+
+Main.dup#6 :: Vec 2 Bool -> Vec (1 + 1) Bool
+from Main.dup (Bool) Main.dup#6 (v#7 :: Vec 2 Bool) =
+      let w#8 :: Vec 2 Bool = v#7 in
+      let join k#9 ((z#10 :: Vec 2 Bool)) =
+            (vec [ (rwPrimVecIndex :: Vec 2 Bool -> Finite 2 -> Bool) z#10 (0 :: Finite 2)
+                 , Main.const#1 @Bool @(Vec 2 Bool) ((rwPrimVecIndex :: Vec 2 Bool -> Finite 2 -> Bool) z#10 (1 :: Finite 2)) w#8
+                 ] :: Vec (1 + 1) Bool)
+      in jump k#9 (w#8)
+
+Main.start#11 :: ReacT Bool Bool Identity ()
+Main.start#11 = (rwPrimError :: String -> ReacT Bool Bool Identity ()) "unimplemented"
+
+top Main.start#11
