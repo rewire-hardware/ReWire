@@ -139,14 +139,28 @@ getDevice conf fp = do
 
             -- Transformations on the typechecked program: each one is
             -- followed by re-typechecking when --debug-typecheck is on.
-            midPasses =
+            -- Under --eidos the pipeline enters here (position C): the
+            -- Eidos side has already purged, lambda-lifted (the LiftNonRep
+            -- policy inside its partial evaluator), and partially
+            -- evaluated to the synthable/dictionary-free fixpoint. The
+            -- one lift decodes the shim's beta-redex let/case encoding the
+            -- way the retained pipeline always has: redex lambdas become
+            -- $LL definitions, so sharing becomes a call boundary — never
+            -- substitution, whose duplication is exponential in let
+            -- nesting (reduce-as-decoder OOMs on gfmult).
+            midPasses
+                  | conf^.C.eidos = ("Lifting lambdas.", liftLambdas) : midTail
+                  | otherwise =
                   [ ("Removing unused definitions.",                     purge start)
                   , ("Lifting lambdas.",                                 liftLambdas)
                   -- Partial evaluation must also finish eliminating class
                   -- dictionaries (whose types look synthable; the function
                   -- types hide inside their constructor fields).
                   , ("Partial evaluation.",                              simplifyUntil (\ fp@(_, _, vs) -> all synthableDefn vs && dictFree fp) conf)
-                  , ("Normalizing bind.",                                normalizeBind)
+                  ] <> midTail
+
+            midTail =
+                  [ ("Normalizing bind.",                                normalizeBind)
                   , ("Lifting lambdas.",                                 liftLambdas)
                   , ("Removing unused definitions.",                     purge start)
                   , ("Inlining extrudes.",                               inlineExtrudes)
