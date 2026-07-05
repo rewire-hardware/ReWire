@@ -1,31 +1,26 @@
 $Pure.dispatch : ([1], [1]) -> [3]
 $Pure.dispatch disc i =
-      $LL.Main.go3 i disc
-
-$LL.Main.go3 : ([1], [1]) -> [3]
-$LL.Main.go3 x sto0 =
-      Main.go sto0
+      $LL.Main.go i disc
 
 $LL.Main.go2 : ([1], [1]) -> [1]
-$LL.Main.go2 rf sigma0 =
-      let $t0 = $LL.Main.go1 rf in
-      if eq $t0 1'h0 then sigma0
+$LL.Main.go2 wild sigma0 =
+      if eq wild 1'h0 then sigma0
             else sigma0
 
-$LL.Main.go1 : ([1]) -> [1]
-$LL.Main.go1 x =
-      x
+$LL.Main.go1 : ([1]) -> [3]
+$LL.Main.go1 sto0 =
+      2'h2 # sto0
+
+$LL.Main.go : ([1], [1]) -> [3]
+$LL.Main.go x sto0 =
+      Main.go sto0
 
 Main.go : ([1]) -> [3]
 Main.go sto0 =
       let $t1 = (let $t0 = $LL.Main.go2 sto0 sto0 in
       2'h0 # $t0) in
       let s0 = $t1[0 +: 1] in
-      $LL.Main.go s0
-
-$LL.Main.go : ([1]) -> [3]
-$LL.Main.go sto0 =
-      2'h2 # sto0
+      $LL.Main.go1 s0
 
 device top_level
       input __in0 : [1]

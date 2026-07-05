@@ -26,6 +26,7 @@ data Flag = FlagO !String
           | FlagEvalDepth !String
           | FlagPretty
           | FlagDebugTypeCheck
+          | FlagDebugLint
           | FlagEidos
           | FlagRtlOpt !String
       deriving (Eq, Show, Generic)

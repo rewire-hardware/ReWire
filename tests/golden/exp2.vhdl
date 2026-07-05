@@ -212,80 +212,35 @@ component \Main_x2\ is
       port (arg0 : in std_logic_vector (99 downto 0);
             res : out std_logic_vector (99 downto 0));
       end component;
-      component \ZLL_Main_ss$1\ is
-      port (arg0 : in std_logic_vector (899 downto 0);
-            arg1 : in std_logic_vector (99 downto 0);
-            res : out std_logic_vector (999 downto 0));
-      end component;
       signal \__resumption_tag\ : std_logic_vector (999 downto 0) := std_logic_vector'(B"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
       signal \__resumption_tag_next\ : std_logic_vector (999 downto 0);
       signal \__st0\ : std_logic_vector (999 downto 0) := std_logic_vector'(B"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
       signal \__st0_next\ : std_logic_vector (999 downto 0);
-      signal \zll_main_ss$1_out\ : std_logic_vector (999 downto 0);
-      signal zi3 : std_logic_vector (999 downto 0);
       signal main_x2_out : std_logic_vector (99 downto 0);
-      signal \zll_main_ss$1_outR1\ : std_logic_vector (999 downto 0);
-      signal zi4 : std_logic_vector (999 downto 0);
       signal \main_x2_outR1\ : std_logic_vector (99 downto 0);
-      signal \zll_main_ss$1_outR2\ : std_logic_vector (999 downto 0);
-      signal zi5 : std_logic_vector (999 downto 0);
       signal \main_x2_outR2\ : std_logic_vector (99 downto 0);
-      signal \zll_main_ss$1_outR3\ : std_logic_vector (999 downto 0);
-      signal zi6 : std_logic_vector (999 downto 0);
       signal \main_x2_outR3\ : std_logic_vector (99 downto 0);
-      signal \zll_main_ss$1_outR4\ : std_logic_vector (999 downto 0);
-      signal zi7 : std_logic_vector (999 downto 0);
       signal \main_x2_outR4\ : std_logic_vector (99 downto 0);
-      signal \zll_main_ss$1_outR5\ : std_logic_vector (999 downto 0);
-      signal zi8 : std_logic_vector (999 downto 0);
       signal \main_x2_outR5\ : std_logic_vector (99 downto 0);
-      signal \zll_main_ss$1_outR6\ : std_logic_vector (999 downto 0);
-      signal zi9 : std_logic_vector (999 downto 0);
       signal \main_x2_outR6\ : std_logic_vector (99 downto 0);
-      signal \zll_main_ss$1_outR7\ : std_logic_vector (999 downto 0);
-      signal zi10 : std_logic_vector (999 downto 0);
       signal \main_x2_outR7\ : std_logic_vector (99 downto 0);
-      signal \zll_main_ss$1_outR8\ : std_logic_vector (999 downto 0);
-      signal zi11 : std_logic_vector (999 downto 0);
       signal \main_x2_outR8\ : std_logic_vector (99 downto 0);
-      signal \zll_main_ss$1_outR9\ : std_logic_vector (999 downto 0);
-      signal zi12 : std_logic_vector (999 downto 0);
       signal \main_x2_outR9\ : std_logic_vector (99 downto 0);
-      signal zi13 : std_logic_vector (999 downto 0);
+      signal zi3 : std_logic_vector (999 downto 0);
       signal zres : std_logic_vector (2099 downto 0);
 begin
-inst : \ZLL_Main_ss$1\ port map (\__resumption_tag\(899 downto 0), \__in0\, \zll_main_ss$1_out\);
-      zi3 <= \zll_main_ss$1_out\;
-      \instR1\ : \Main_x2\ port map (zi3(999 downto 900), main_x2_out);
-      \instR2\ : \ZLL_Main_ss$1\ port map (\__resumption_tag\(899 downto 0), \__in0\, \zll_main_ss$1_outR1\);
-      zi4 <= \zll_main_ss$1_outR1\;
-      \instR3\ : \Main_x2\ port map (zi4(899 downto 800), \main_x2_outR1\);
-      \instR4\ : \ZLL_Main_ss$1\ port map (\__resumption_tag\(899 downto 0), \__in0\, \zll_main_ss$1_outR2\);
-      zi5 <= \zll_main_ss$1_outR2\;
-      \instR5\ : \Main_x2\ port map (zi5(799 downto 700), \main_x2_outR2\);
-      \instR6\ : \ZLL_Main_ss$1\ port map (\__resumption_tag\(899 downto 0), \__in0\, \zll_main_ss$1_outR3\);
-      zi6 <= \zll_main_ss$1_outR3\;
-      \instR7\ : \Main_x2\ port map (zi6(699 downto 600), \main_x2_outR3\);
-      \instR8\ : \ZLL_Main_ss$1\ port map (\__resumption_tag\(899 downto 0), \__in0\, \zll_main_ss$1_outR4\);
-      zi7 <= \zll_main_ss$1_outR4\;
-      \instR9\ : \Main_x2\ port map (zi7(599 downto 500), \main_x2_outR4\);
-      \instR10\ : \ZLL_Main_ss$1\ port map (\__resumption_tag\(899 downto 0), \__in0\, \zll_main_ss$1_outR5\);
-      zi8 <= \zll_main_ss$1_outR5\;
-      \instR11\ : \Main_x2\ port map (zi8(499 downto 400), \main_x2_outR5\);
-      \instR12\ : \ZLL_Main_ss$1\ port map (\__resumption_tag\(899 downto 0), \__in0\, \zll_main_ss$1_outR6\);
-      zi9 <= \zll_main_ss$1_outR6\;
-      \instR13\ : \Main_x2\ port map (zi9(399 downto 300), \main_x2_outR6\);
-      \instR14\ : \ZLL_Main_ss$1\ port map (\__resumption_tag\(899 downto 0), \__in0\, \zll_main_ss$1_outR7\);
-      zi10 <= \zll_main_ss$1_outR7\;
-      \instR15\ : \Main_x2\ port map (zi10(299 downto 200), \main_x2_outR7\);
-      \instR16\ : \ZLL_Main_ss$1\ port map (\__resumption_tag\(899 downto 0), \__in0\, \zll_main_ss$1_outR8\);
-      zi11 <= \zll_main_ss$1_outR8\;
-      \instR17\ : \Main_x2\ port map (zi11(199 downto 100), \main_x2_outR8\);
-      \instR18\ : \ZLL_Main_ss$1\ port map (\__resumption_tag\(899 downto 0), \__in0\, \zll_main_ss$1_outR9\);
-      zi12 <= \zll_main_ss$1_outR9\;
-      \instR19\ : \Main_x2\ port map (zi12(99 downto 0), \main_x2_outR9\);
-      zi13 <= (main_x2_out & \main_x2_outR1\ & \main_x2_outR2\ & \main_x2_outR3\ & \main_x2_outR4\ & \main_x2_outR5\ & \main_x2_outR6\ & \main_x2_outR7\ & \main_x2_outR8\ & \main_x2_outR9\);
-      zres <= (zi13(999 downto 900) & zi13 & zi13);
+inst : \Main_x2\ port map (\__resumption_tag\(899 downto 800), main_x2_out);
+      \instR1\ : \Main_x2\ port map (\__resumption_tag\(799 downto 700), \main_x2_outR1\);
+      \instR2\ : \Main_x2\ port map (\__resumption_tag\(699 downto 600), \main_x2_outR2\);
+      \instR3\ : \Main_x2\ port map (\__resumption_tag\(599 downto 500), \main_x2_outR3\);
+      \instR4\ : \Main_x2\ port map (\__resumption_tag\(499 downto 400), \main_x2_outR4\);
+      \instR5\ : \Main_x2\ port map (\__resumption_tag\(399 downto 300), \main_x2_outR5\);
+      \instR6\ : \Main_x2\ port map (\__resumption_tag\(299 downto 200), \main_x2_outR6\);
+      \instR7\ : \Main_x2\ port map (\__resumption_tag\(199 downto 100), \main_x2_outR7\);
+      \instR8\ : \Main_x2\ port map (\__resumption_tag\(99 downto 0), \main_x2_outR8\);
+      \instR9\ : \Main_x2\ port map (\__in0\, \main_x2_outR9\);
+      zi3 <= (main_x2_out & \main_x2_outR1\ & \main_x2_outR2\ & \main_x2_outR3\ & \main_x2_outR4\ & \main_x2_outR5\ & \main_x2_outR6\ & \main_x2_outR7\ & \main_x2_outR8\ & \main_x2_outR9\);
+      zres <= (zi3(999 downto 900) & zi3 & zi3);
       \__resumption_tag_next\ <= zres(1999 downto 1000);
       \__st0_next\ <= zres(999 downto 0);
       \__out0\ <= zres(2099 downto 2000);
@@ -299,22 +254,6 @@ inst : \ZLL_Main_ss$1\ port map (\__resumption_tag\(899 downto 0), \__in0\, \zll
                   \__st0\ <= \__st0_next\;
             end if;
       end process;
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_ss$1\ is
-port (arg0 : in std_logic_vector (899 downto 0);
-      arg1 : in std_logic_vector (99 downto 0);
-      res : out std_logic_vector (999 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_ss$1\ is
-
-begin
-res <= (arg0 & arg1);
 end architecture;
 
 library ieee;

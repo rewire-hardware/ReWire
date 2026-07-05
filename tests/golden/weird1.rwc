@@ -1,9 +1,9 @@
 $Pure.dispatch : ([2], [1]) -> [3]
 $Pure.dispatch disc i =
-      Main.repl1 i disc
+      Main.repl i disc
 
-Main.repl1 : ([1], [2]) -> [3]
-Main.repl1 ds sto0 =
+Main.repl : ([1], [2]) -> [3]
+Main.repl ds sto0 =
       1'h0 # sto0
 
 device top_level

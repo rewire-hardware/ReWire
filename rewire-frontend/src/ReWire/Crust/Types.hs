@@ -5,7 +5,7 @@ module ReWire.Crust.Types
       ( TypeAnnotated (typeOf, tyAnn, setTyAnn), maybeSetTyAnn, tupleTy
       , arr, intTy, strTy, nilTy, kmonad, (|->)
       , codomTy, flattenArrow, pairTy, arrowRight, arrowLeft
-      , higherOrder, fundamental, concrete, paramTys, hasArrow
+      , higherOrder, fundamental, concrete, paramTys, hasArrow, reacOrStateT
       , finSz, proxyNat, finiteTy, vecSize, vecElemTy, vecTy, evalNat
       , mkArrowTy, poly, poly', listTy, kblank, plusTy, plus
       , isReacT, isStateT, ctorNames, resInputTy

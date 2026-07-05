@@ -1,9 +1,9 @@
 $Pure.dispatch : ([1]) -> [1]
 $Pure.dispatch i =
-      $LL.Main.start i
+      $LL.Main.start1 i
 
-$LL.Main.start : ([1]) -> [1]
-$LL.Main.start _unused =
+$LL.Main.start1 : ([1]) -> [1]
+$LL.Main.start1 _unused =
       1'h1
 
 device top_level

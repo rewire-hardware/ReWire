@@ -209,21 +209,32 @@ port (\__in0\ : in std_logic_vector (7 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZLL_Main_dev\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (2 downto 0));
-      end component;
-      component \ZLL_Main_dev19\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
+component \ZLL_Main_dev11\ is
+      port (arg0 : in std_logic_vector (7 downto 0);
             arg1 : in std_logic_vector (2 downto 0);
             arg2 : in std_logic_vector (7 downto 0);
-            arg3 : in std_logic_vector (7 downto 0);
+            arg3 : in std_logic_vector (2 downto 0);
             arg4 : in std_logic_vector (2 downto 0);
             arg5 : in std_logic_vector (2 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
-      component \ZLL_Main_dev21\ is
+      component \ZLL_Main_dev12\ is
+      port (arg0 : in std_logic_vector (7 downto 0);
+            arg1 : in std_logic_vector (7 downto 0);
+            arg2 : in std_logic_vector (2 downto 0);
+            arg3 : in std_logic_vector (2 downto 0);
+            res : out std_logic_vector (0 downto 0));
+      end component;
+      component \ZLL_Main_dev14\ is
+      port (arg0 : in std_logic_vector (7 downto 0);
+            arg1 : in std_logic_vector (7 downto 0);
+            arg2 : in std_logic_vector (2 downto 0);
+            arg3 : in std_logic_vector (2 downto 0);
+            arg4 : in std_logic_vector (2 downto 0);
+            arg5 : in std_logic_vector (2 downto 0);
+            res : out std_logic_vector (0 downto 0));
+      end component;
+      component \ZLL_Main_dev22\ is
       port (arg0 : in std_logic_vector (7 downto 0);
             arg1 : in std_logic_vector (7 downto 0);
             arg2 : in std_logic_vector (2 downto 0);
@@ -231,158 +242,75 @@ component \ZLL_Main_dev\ is
             arg4 : in std_logic_vector (2 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
-      component \ZLL_Main_dev3\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      component \ZLL_Main_dev31\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (2 downto 0));
-      end component;
-      component \ZLL_Main_dev33\ is
-      port (arg0 : in std_logic_vector (7 downto 0);
-            res : out std_logic_vector (2 downto 0));
-      end component;
-      component \ZLL_Main_dev35\ is
-      port (arg0 : in std_logic_vector (7 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            arg2 : in std_logic_vector (7 downto 0);
-            arg3 : in std_logic_vector (2 downto 0);
-            arg4 : in std_logic_vector (2 downto 0);
-            arg5 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      component \ZLL_Main_dev36\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            arg2 : in std_logic_vector (7 downto 0);
-            arg3 : in std_logic_vector (7 downto 0);
-            arg4 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      component \ZLL_Main_dev45\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (2 downto 0));
-      end component;
       signal zi0 : std_logic_vector (7 downto 0);
-      signal zll_main_dev36_out : std_logic_vector (0 downto 0);
-      signal \zll_main_dev36_outR1\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev36_outR2\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev36_outR3\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev36_outR4\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev36_outR5\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev36_outR6\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev36_outR7\ : std_logic_vector (0 downto 0);
-      signal zll_main_dev33_out : std_logic_vector (2 downto 0);
-      signal zll_main_dev45_out : std_logic_vector (2 downto 0);
-      signal zi1 : std_logic_vector (2 downto 0);
-      signal \zll_main_dev33_outR1\ : std_logic_vector (2 downto 0);
-      signal zll_main_dev3_out : std_logic_vector (0 downto 0);
-      signal zi2 : std_logic_vector (0 downto 0);
-      signal zll_main_dev_out : std_logic_vector (2 downto 0);
-      signal zi3 : std_logic_vector (2 downto 0);
-      signal zll_main_dev19_out : std_logic_vector (0 downto 0);
-      signal \zll_main_dev19_outR1\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev19_outR2\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev19_outR3\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev19_outR4\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev19_outR5\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev19_outR6\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev19_outR7\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev33_outR2\ : std_logic_vector (2 downto 0);
-      signal \zll_main_dev45_outR1\ : std_logic_vector (2 downto 0);
-      signal zi4 : std_logic_vector (2 downto 0);
-      signal \zll_main_dev33_outR3\ : std_logic_vector (2 downto 0);
-      signal \zll_main_dev3_outR1\ : std_logic_vector (0 downto 0);
-      signal zi5 : std_logic_vector (0 downto 0);
-      signal zll_main_dev31_out : std_logic_vector (2 downto 0);
-      signal zi6 : std_logic_vector (2 downto 0);
-      signal zll_main_dev21_out : std_logic_vector (0 downto 0);
-      signal \zll_main_dev21_outR1\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev21_outR2\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev21_outR3\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev21_outR4\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev21_outR5\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev21_outR6\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev21_outR7\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev33_outR4\ : std_logic_vector (2 downto 0);
-      signal \zll_main_dev45_outR2\ : std_logic_vector (2 downto 0);
-      signal zi7 : std_logic_vector (2 downto 0);
-      signal \zll_main_dev33_outR5\ : std_logic_vector (2 downto 0);
-      signal \zll_main_dev3_outR2\ : std_logic_vector (0 downto 0);
-      signal zi8 : std_logic_vector (0 downto 0);
-      signal \zll_main_dev_outR1\ : std_logic_vector (2 downto 0);
-      signal zi9 : std_logic_vector (2 downto 0);
-      signal zll_main_dev35_out : std_logic_vector (0 downto 0);
-      signal \zll_main_dev35_outR1\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev35_outR2\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev35_outR3\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev35_outR4\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev35_outR5\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev35_outR6\ : std_logic_vector (0 downto 0);
-      signal \zll_main_dev35_outR7\ : std_logic_vector (0 downto 0);
+      signal zll_main_dev12_out : std_logic_vector (0 downto 0);
+      signal \zll_main_dev12_outR1\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev12_outR2\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev12_outR3\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev12_outR4\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev12_outR5\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev12_outR6\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev12_outR7\ : std_logic_vector (0 downto 0);
+      signal zll_main_dev14_out : std_logic_vector (0 downto 0);
+      signal \zll_main_dev14_outR1\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev14_outR2\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev14_outR3\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev14_outR4\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev14_outR5\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev14_outR6\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev14_outR7\ : std_logic_vector (0 downto 0);
+      signal zll_main_dev22_out : std_logic_vector (0 downto 0);
+      signal \zll_main_dev22_outR1\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev22_outR2\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev22_outR3\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev22_outR4\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev22_outR5\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev22_outR6\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev22_outR7\ : std_logic_vector (0 downto 0);
+      signal zll_main_dev11_out : std_logic_vector (0 downto 0);
+      signal \zll_main_dev11_outR1\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev11_outR2\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev11_outR3\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev11_outR4\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev11_outR5\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev11_outR6\ : std_logic_vector (0 downto 0);
+      signal \zll_main_dev11_outR7\ : std_logic_vector (0 downto 0);
       signal zres : std_logic_vector (31 downto 0);
 begin
 zi0 <= rw_mul(\__in0\, std_logic_vector'(B"00000010"));
-      inst : \ZLL_Main_dev36\ port map (std_logic_vector'(B"010"), std_logic_vector'(B"001"), zi0, \__in0\, std_logic_vector'(B"000"), zll_main_dev36_out);
-      \instR1\ : \ZLL_Main_dev36\ port map (std_logic_vector'(B"010"), std_logic_vector'(B"001"), zi0, \__in0\, std_logic_vector'(B"001"), \zll_main_dev36_outR1\);
-      \instR2\ : \ZLL_Main_dev36\ port map (std_logic_vector'(B"010"), std_logic_vector'(B"001"), zi0, \__in0\, std_logic_vector'(B"010"), \zll_main_dev36_outR2\);
-      \instR3\ : \ZLL_Main_dev36\ port map (std_logic_vector'(B"010"), std_logic_vector'(B"001"), zi0, \__in0\, std_logic_vector'(B"011"), \zll_main_dev36_outR3\);
-      \instR4\ : \ZLL_Main_dev36\ port map (std_logic_vector'(B"010"), std_logic_vector'(B"001"), zi0, \__in0\, std_logic_vector'(B"100"), \zll_main_dev36_outR4\);
-      \instR5\ : \ZLL_Main_dev36\ port map (std_logic_vector'(B"010"), std_logic_vector'(B"001"), zi0, \__in0\, std_logic_vector'(B"101"), \zll_main_dev36_outR5\);
-      \instR6\ : \ZLL_Main_dev36\ port map (std_logic_vector'(B"010"), std_logic_vector'(B"001"), zi0, \__in0\, std_logic_vector'(B"110"), \zll_main_dev36_outR6\);
-      \instR7\ : \ZLL_Main_dev36\ port map (std_logic_vector'(B"010"), std_logic_vector'(B"001"), zi0, \__in0\, std_logic_vector'(B"111"), \zll_main_dev36_outR7\);
-      \instR8\ : \ZLL_Main_dev33\ port map (\__in0\, zll_main_dev33_out);
-      \instR9\ : \ZLL_Main_dev45\ port map (zll_main_dev33_out, std_logic_vector'(B"010"), zll_main_dev45_out);
-      zi1 <= zll_main_dev45_out;
-      \instR10\ : \ZLL_Main_dev33\ port map (\__in0\, \zll_main_dev33_outR1\);
-      \instR11\ : \ZLL_Main_dev3\ port map (\zll_main_dev33_outR1\, zll_main_dev3_out);
-      zi2 <= zll_main_dev3_out;
-      \instR12\ : \ZLL_Main_dev\ port map (zi1, std_logic_vector'(B"001"), zll_main_dev_out);
-      zi3 <= rw_cond(rw_eq(zi2, std_logic_vector'(B"0")), zll_main_dev_out, zi1);
-      \instR13\ : \ZLL_Main_dev19\ port map (std_logic_vector'(B"001"), std_logic_vector'(B"010"), \__in0\, zi0, zi3, std_logic_vector'(B"000"), zll_main_dev19_out);
-      \instR14\ : \ZLL_Main_dev19\ port map (std_logic_vector'(B"001"), std_logic_vector'(B"010"), \__in0\, zi0, zi3, std_logic_vector'(B"001"), \zll_main_dev19_outR1\);
-      \instR15\ : \ZLL_Main_dev19\ port map (std_logic_vector'(B"001"), std_logic_vector'(B"010"), \__in0\, zi0, zi3, std_logic_vector'(B"010"), \zll_main_dev19_outR2\);
-      \instR16\ : \ZLL_Main_dev19\ port map (std_logic_vector'(B"001"), std_logic_vector'(B"010"), \__in0\, zi0, zi3, std_logic_vector'(B"011"), \zll_main_dev19_outR3\);
-      \instR17\ : \ZLL_Main_dev19\ port map (std_logic_vector'(B"001"), std_logic_vector'(B"010"), \__in0\, zi0, zi3, std_logic_vector'(B"100"), \zll_main_dev19_outR4\);
-      \instR18\ : \ZLL_Main_dev19\ port map (std_logic_vector'(B"001"), std_logic_vector'(B"010"), \__in0\, zi0, zi3, std_logic_vector'(B"101"), \zll_main_dev19_outR5\);
-      \instR19\ : \ZLL_Main_dev19\ port map (std_logic_vector'(B"001"), std_logic_vector'(B"010"), \__in0\, zi0, zi3, std_logic_vector'(B"110"), \zll_main_dev19_outR6\);
-      \instR20\ : \ZLL_Main_dev19\ port map (std_logic_vector'(B"001"), std_logic_vector'(B"010"), \__in0\, zi0, zi3, std_logic_vector'(B"111"), \zll_main_dev19_outR7\);
-      \instR21\ : \ZLL_Main_dev33\ port map (\__in0\, \zll_main_dev33_outR2\);
-      \instR22\ : \ZLL_Main_dev45\ port map (\zll_main_dev33_outR2\, std_logic_vector'(B"010"), \zll_main_dev45_outR1\);
-      zi4 <= \zll_main_dev45_outR1\;
-      \instR23\ : \ZLL_Main_dev33\ port map (\__in0\, \zll_main_dev33_outR3\);
-      \instR24\ : \ZLL_Main_dev3\ port map (\zll_main_dev33_outR3\, \zll_main_dev3_outR1\);
-      zi5 <= \zll_main_dev3_outR1\;
-      \instR25\ : \ZLL_Main_dev31\ port map (zi4, std_logic_vector'(B"001"), zll_main_dev31_out);
-      zi6 <= rw_cond(rw_eq(zi5, std_logic_vector'(B"0")), zll_main_dev31_out, zi4);
-      \instR26\ : \ZLL_Main_dev21\ port map (zi0, \__in0\, zi6, std_logic_vector'(B"010"), std_logic_vector'(B"000"), zll_main_dev21_out);
-      \instR27\ : \ZLL_Main_dev21\ port map (zi0, \__in0\, zi6, std_logic_vector'(B"010"), std_logic_vector'(B"001"), \zll_main_dev21_outR1\);
-      \instR28\ : \ZLL_Main_dev21\ port map (zi0, \__in0\, zi6, std_logic_vector'(B"010"), std_logic_vector'(B"010"), \zll_main_dev21_outR2\);
-      \instR29\ : \ZLL_Main_dev21\ port map (zi0, \__in0\, zi6, std_logic_vector'(B"010"), std_logic_vector'(B"011"), \zll_main_dev21_outR3\);
-      \instR30\ : \ZLL_Main_dev21\ port map (zi0, \__in0\, zi6, std_logic_vector'(B"010"), std_logic_vector'(B"100"), \zll_main_dev21_outR4\);
-      \instR31\ : \ZLL_Main_dev21\ port map (zi0, \__in0\, zi6, std_logic_vector'(B"010"), std_logic_vector'(B"101"), \zll_main_dev21_outR5\);
-      \instR32\ : \ZLL_Main_dev21\ port map (zi0, \__in0\, zi6, std_logic_vector'(B"010"), std_logic_vector'(B"110"), \zll_main_dev21_outR6\);
-      \instR33\ : \ZLL_Main_dev21\ port map (zi0, \__in0\, zi6, std_logic_vector'(B"010"), std_logic_vector'(B"111"), \zll_main_dev21_outR7\);
-      \instR34\ : \ZLL_Main_dev33\ port map (\__in0\, \zll_main_dev33_outR4\);
-      \instR35\ : \ZLL_Main_dev45\ port map (\zll_main_dev33_outR4\, std_logic_vector'(B"010"), \zll_main_dev45_outR2\);
-      zi7 <= \zll_main_dev45_outR2\;
-      \instR36\ : \ZLL_Main_dev33\ port map (\__in0\, \zll_main_dev33_outR5\);
-      \instR37\ : \ZLL_Main_dev3\ port map (\zll_main_dev33_outR5\, \zll_main_dev3_outR2\);
-      zi8 <= \zll_main_dev3_outR2\;
-      \instR38\ : \ZLL_Main_dev\ port map (zi7, std_logic_vector'(B"001"), \zll_main_dev_outR1\);
-      zi9 <= rw_cond(rw_eq(zi8, std_logic_vector'(B"0")), \zll_main_dev_outR1\, zi7);
-      \instR39\ : \ZLL_Main_dev35\ port map (\__in0\, std_logic_vector'(B"010"), zi0, zi9, std_logic_vector'(B"001"), std_logic_vector'(B"000"), zll_main_dev35_out);
-      \instR40\ : \ZLL_Main_dev35\ port map (\__in0\, std_logic_vector'(B"010"), zi0, zi9, std_logic_vector'(B"001"), std_logic_vector'(B"001"), \zll_main_dev35_outR1\);
-      \instR41\ : \ZLL_Main_dev35\ port map (\__in0\, std_logic_vector'(B"010"), zi0, zi9, std_logic_vector'(B"001"), std_logic_vector'(B"010"), \zll_main_dev35_outR2\);
-      \instR42\ : \ZLL_Main_dev35\ port map (\__in0\, std_logic_vector'(B"010"), zi0, zi9, std_logic_vector'(B"001"), std_logic_vector'(B"011"), \zll_main_dev35_outR3\);
-      \instR43\ : \ZLL_Main_dev35\ port map (\__in0\, std_logic_vector'(B"010"), zi0, zi9, std_logic_vector'(B"001"), std_logic_vector'(B"100"), \zll_main_dev35_outR4\);
-      \instR44\ : \ZLL_Main_dev35\ port map (\__in0\, std_logic_vector'(B"010"), zi0, zi9, std_logic_vector'(B"001"), std_logic_vector'(B"101"), \zll_main_dev35_outR5\);
-      \instR45\ : \ZLL_Main_dev35\ port map (\__in0\, std_logic_vector'(B"010"), zi0, zi9, std_logic_vector'(B"001"), std_logic_vector'(B"110"), \zll_main_dev35_outR6\);
-      \instR46\ : \ZLL_Main_dev35\ port map (\__in0\, std_logic_vector'(B"010"), zi0, zi9, std_logic_vector'(B"001"), std_logic_vector'(B"111"), \zll_main_dev35_outR7\);
-      zres <= (zll_main_dev36_out & \zll_main_dev36_outR1\ & \zll_main_dev36_outR2\ & \zll_main_dev36_outR3\ & \zll_main_dev36_outR4\ & \zll_main_dev36_outR5\ & \zll_main_dev36_outR6\ & \zll_main_dev36_outR7\ & (zll_main_dev19_out & \zll_main_dev19_outR1\ & \zll_main_dev19_outR2\ & \zll_main_dev19_outR3\ & \zll_main_dev19_outR4\ & \zll_main_dev19_outR5\ & \zll_main_dev19_outR6\ & \zll_main_dev19_outR7\) & (zll_main_dev21_out & \zll_main_dev21_outR1\ & \zll_main_dev21_outR2\ & \zll_main_dev21_outR3\ & \zll_main_dev21_outR4\ & \zll_main_dev21_outR5\ & \zll_main_dev21_outR6\ & \zll_main_dev21_outR7\) & (zll_main_dev35_out & \zll_main_dev35_outR1\ & \zll_main_dev35_outR2\ & \zll_main_dev35_outR3\ & \zll_main_dev35_outR4\ & \zll_main_dev35_outR5\ & \zll_main_dev35_outR6\ & \zll_main_dev35_outR7\));
+      inst : \ZLL_Main_dev12\ port map (\__in0\, zi0, std_logic_vector'(B"010"), std_logic_vector'(B"000"), zll_main_dev12_out);
+      \instR1\ : \ZLL_Main_dev12\ port map (\__in0\, zi0, std_logic_vector'(B"010"), std_logic_vector'(B"001"), \zll_main_dev12_outR1\);
+      \instR2\ : \ZLL_Main_dev12\ port map (\__in0\, zi0, std_logic_vector'(B"010"), std_logic_vector'(B"010"), \zll_main_dev12_outR2\);
+      \instR3\ : \ZLL_Main_dev12\ port map (\__in0\, zi0, std_logic_vector'(B"010"), std_logic_vector'(B"011"), \zll_main_dev12_outR3\);
+      \instR4\ : \ZLL_Main_dev12\ port map (\__in0\, zi0, std_logic_vector'(B"010"), std_logic_vector'(B"100"), \zll_main_dev12_outR4\);
+      \instR5\ : \ZLL_Main_dev12\ port map (\__in0\, zi0, std_logic_vector'(B"010"), std_logic_vector'(B"101"), \zll_main_dev12_outR5\);
+      \instR6\ : \ZLL_Main_dev12\ port map (\__in0\, zi0, std_logic_vector'(B"010"), std_logic_vector'(B"110"), \zll_main_dev12_outR6\);
+      \instR7\ : \ZLL_Main_dev12\ port map (\__in0\, zi0, std_logic_vector'(B"010"), std_logic_vector'(B"111"), \zll_main_dev12_outR7\);
+      \instR8\ : \ZLL_Main_dev14\ port map (\__in0\, zi0, std_logic_vector'(B"100"), std_logic_vector'(B"010"), std_logic_vector'(B"001"), std_logic_vector'(B"000"), zll_main_dev14_out);
+      \instR9\ : \ZLL_Main_dev14\ port map (\__in0\, zi0, std_logic_vector'(B"100"), std_logic_vector'(B"010"), std_logic_vector'(B"001"), std_logic_vector'(B"001"), \zll_main_dev14_outR1\);
+      \instR10\ : \ZLL_Main_dev14\ port map (\__in0\, zi0, std_logic_vector'(B"100"), std_logic_vector'(B"010"), std_logic_vector'(B"001"), std_logic_vector'(B"010"), \zll_main_dev14_outR2\);
+      \instR11\ : \ZLL_Main_dev14\ port map (\__in0\, zi0, std_logic_vector'(B"100"), std_logic_vector'(B"010"), std_logic_vector'(B"001"), std_logic_vector'(B"011"), \zll_main_dev14_outR3\);
+      \instR12\ : \ZLL_Main_dev14\ port map (\__in0\, zi0, std_logic_vector'(B"100"), std_logic_vector'(B"010"), std_logic_vector'(B"001"), std_logic_vector'(B"100"), \zll_main_dev14_outR4\);
+      \instR13\ : \ZLL_Main_dev14\ port map (\__in0\, zi0, std_logic_vector'(B"100"), std_logic_vector'(B"010"), std_logic_vector'(B"001"), std_logic_vector'(B"101"), \zll_main_dev14_outR5\);
+      \instR14\ : \ZLL_Main_dev14\ port map (\__in0\, zi0, std_logic_vector'(B"100"), std_logic_vector'(B"010"), std_logic_vector'(B"001"), std_logic_vector'(B"110"), \zll_main_dev14_outR6\);
+      \instR15\ : \ZLL_Main_dev14\ port map (\__in0\, zi0, std_logic_vector'(B"100"), std_logic_vector'(B"010"), std_logic_vector'(B"001"), std_logic_vector'(B"111"), \zll_main_dev14_outR7\);
+      \instR16\ : \ZLL_Main_dev22\ port map (\__in0\, zi0, std_logic_vector'(B"100"), std_logic_vector'(B"010"), std_logic_vector'(B"000"), zll_main_dev22_out);
+      \instR17\ : \ZLL_Main_dev22\ port map (\__in0\, zi0, std_logic_vector'(B"100"), std_logic_vector'(B"010"), std_logic_vector'(B"001"), \zll_main_dev22_outR1\);
+      \instR18\ : \ZLL_Main_dev22\ port map (\__in0\, zi0, std_logic_vector'(B"100"), std_logic_vector'(B"010"), std_logic_vector'(B"010"), \zll_main_dev22_outR2\);
+      \instR19\ : \ZLL_Main_dev22\ port map (\__in0\, zi0, std_logic_vector'(B"100"), std_logic_vector'(B"010"), std_logic_vector'(B"011"), \zll_main_dev22_outR3\);
+      \instR20\ : \ZLL_Main_dev22\ port map (\__in0\, zi0, std_logic_vector'(B"100"), std_logic_vector'(B"010"), std_logic_vector'(B"100"), \zll_main_dev22_outR4\);
+      \instR21\ : \ZLL_Main_dev22\ port map (\__in0\, zi0, std_logic_vector'(B"100"), std_logic_vector'(B"010"), std_logic_vector'(B"101"), \zll_main_dev22_outR5\);
+      \instR22\ : \ZLL_Main_dev22\ port map (\__in0\, zi0, std_logic_vector'(B"100"), std_logic_vector'(B"010"), std_logic_vector'(B"110"), \zll_main_dev22_outR6\);
+      \instR23\ : \ZLL_Main_dev22\ port map (\__in0\, zi0, std_logic_vector'(B"100"), std_logic_vector'(B"010"), std_logic_vector'(B"111"), \zll_main_dev22_outR7\);
+      \instR24\ : \ZLL_Main_dev11\ port map (\__in0\, std_logic_vector'(B"001"), zi0, std_logic_vector'(B"010"), std_logic_vector'(B"100"), std_logic_vector'(B"000"), zll_main_dev11_out);
+      \instR25\ : \ZLL_Main_dev11\ port map (\__in0\, std_logic_vector'(B"001"), zi0, std_logic_vector'(B"010"), std_logic_vector'(B"100"), std_logic_vector'(B"001"), \zll_main_dev11_outR1\);
+      \instR26\ : \ZLL_Main_dev11\ port map (\__in0\, std_logic_vector'(B"001"), zi0, std_logic_vector'(B"010"), std_logic_vector'(B"100"), std_logic_vector'(B"010"), \zll_main_dev11_outR2\);
+      \instR27\ : \ZLL_Main_dev11\ port map (\__in0\, std_logic_vector'(B"001"), zi0, std_logic_vector'(B"010"), std_logic_vector'(B"100"), std_logic_vector'(B"011"), \zll_main_dev11_outR3\);
+      \instR28\ : \ZLL_Main_dev11\ port map (\__in0\, std_logic_vector'(B"001"), zi0, std_logic_vector'(B"010"), std_logic_vector'(B"100"), std_logic_vector'(B"100"), \zll_main_dev11_outR4\);
+      \instR29\ : \ZLL_Main_dev11\ port map (\__in0\, std_logic_vector'(B"001"), zi0, std_logic_vector'(B"010"), std_logic_vector'(B"100"), std_logic_vector'(B"101"), \zll_main_dev11_outR5\);
+      \instR30\ : \ZLL_Main_dev11\ port map (\__in0\, std_logic_vector'(B"001"), zi0, std_logic_vector'(B"010"), std_logic_vector'(B"100"), std_logic_vector'(B"110"), \zll_main_dev11_outR6\);
+      \instR31\ : \ZLL_Main_dev11\ port map (\__in0\, std_logic_vector'(B"001"), zi0, std_logic_vector'(B"010"), std_logic_vector'(B"100"), std_logic_vector'(B"111"), \zll_main_dev11_outR7\);
+      zres <= (zll_main_dev12_out & \zll_main_dev12_outR1\ & \zll_main_dev12_outR2\ & \zll_main_dev12_outR3\ & \zll_main_dev12_outR4\ & \zll_main_dev12_outR5\ & \zll_main_dev12_outR6\ & \zll_main_dev12_outR7\ & zll_main_dev14_out & \zll_main_dev14_outR1\ & \zll_main_dev14_outR2\ & \zll_main_dev14_outR3\ & \zll_main_dev14_outR4\ & \zll_main_dev14_outR5\ & \zll_main_dev14_outR6\ & \zll_main_dev14_outR7\ & zll_main_dev22_out & \zll_main_dev22_outR1\ & \zll_main_dev22_outR2\ & \zll_main_dev22_outR3\ & \zll_main_dev22_outR4\ & \zll_main_dev22_outR5\ & \zll_main_dev22_outR6\ & \zll_main_dev22_outR7\ & zll_main_dev11_out & \zll_main_dev11_outR1\ & \zll_main_dev11_outR2\ & \zll_main_dev11_outR3\ & \zll_main_dev11_outR4\ & \zll_main_dev11_outR5\ & \zll_main_dev11_outR6\ & \zll_main_dev11_outR7\);
       \__out0\ <= zres(31 downto 24);
       \__out1\ <= zres(23 downto 16);
       \__out2\ <= zres(15 downto 8);
@@ -393,165 +321,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_dev45\ is
-port (arg0 : in std_logic_vector (2 downto 0);
-      arg1 : in std_logic_vector (2 downto 0);
-      res : out std_logic_vector (2 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_dev45\ is
-
-begin
-res <= rw_resize(rw_mod(rw_div(rw_resize(arg0, 128), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3);
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_dev41\ is
-port (arg0 : in std_logic_vector (2 downto 0);
-      arg1 : in std_logic_vector (2 downto 0);
-      res : out std_logic_vector (2 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_dev41\ is
-
-begin
-res <= rw_resize(rw_mod(rw_sub(rw_resize(arg0, 128), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3);
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_dev36\ is
-port (arg0 : in std_logic_vector (2 downto 0);
-      arg1 : in std_logic_vector (2 downto 0);
-      arg2 : in std_logic_vector (7 downto 0);
-      arg3 : in std_logic_vector (7 downto 0);
-      arg4 : in std_logic_vector (2 downto 0);
-      res : out std_logic_vector (0 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_dev36\ is
-component \ZLL_Main_dev3\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      component \ZLL_Main_dev41\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (2 downto 0));
-      end component;
-      component \ZLL_Main_dev45\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (2 downto 0));
-      end component;
-      signal zll_main_dev3_out : std_logic_vector (0 downto 0);
-      signal zi0 : std_logic_vector (0 downto 0);
-      signal zll_main_dev41_out : std_logic_vector (2 downto 0);
-      signal zll_main_dev45_out : std_logic_vector (2 downto 0);
-      signal \zll_main_dev45_outR1\ : std_logic_vector (2 downto 0);
-begin
-inst : \ZLL_Main_dev3\ port map (arg4, zll_main_dev3_out);
-      zi0 <= zll_main_dev3_out;
-      \instR1\ : \ZLL_Main_dev41\ port map (arg4, arg1, zll_main_dev41_out);
-      \instR2\ : \ZLL_Main_dev45\ port map (zll_main_dev41_out, arg0, zll_main_dev45_out);
-      \instR3\ : \ZLL_Main_dev45\ port map (arg4, arg0, \zll_main_dev45_outR1\);
-      res <= rw_cond(rw_eq(zi0, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg2, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000"), rw_resize(zll_main_dev45_out, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))), 1), rw_resize(rw_shiftr(arg3, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000"), rw_resize(\zll_main_dev45_outR1\, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))), 1));
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_dev35\ is
-port (arg0 : in std_logic_vector (7 downto 0);
-      arg1 : in std_logic_vector (2 downto 0);
-      arg2 : in std_logic_vector (7 downto 0);
-      arg3 : in std_logic_vector (2 downto 0);
-      arg4 : in std_logic_vector (2 downto 0);
-      arg5 : in std_logic_vector (2 downto 0);
-      res : out std_logic_vector (0 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_dev35\ is
-component \ZLL_Main_dev\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (2 downto 0));
-      end component;
-      component \ZLL_Main_dev10\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (2 downto 0));
-      end component;
-      component \ZLL_Main_dev41\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (2 downto 0));
-      end component;
-      component \ZLL_Main_dev6\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      signal zll_main_dev6_out : std_logic_vector (0 downto 0);
-      signal zi0 : std_logic_vector (0 downto 0);
-      signal zll_main_dev41_out : std_logic_vector (2 downto 0);
-      signal zll_main_dev10_out : std_logic_vector (2 downto 0);
-      signal zll_main_dev_out : std_logic_vector (2 downto 0);
-      signal \zll_main_dev10_outR1\ : std_logic_vector (2 downto 0);
-      signal \zll_main_dev_outR1\ : std_logic_vector (2 downto 0);
-begin
-inst : \ZLL_Main_dev6\ port map (arg5, arg3, zll_main_dev6_out);
-      zi0 <= zll_main_dev6_out;
-      \instR1\ : \ZLL_Main_dev41\ port map (arg5, arg3, zll_main_dev41_out);
-      \instR2\ : \ZLL_Main_dev10\ port map (zll_main_dev41_out, arg1, zll_main_dev10_out);
-      \instR3\ : \ZLL_Main_dev\ port map (zll_main_dev10_out, arg4, zll_main_dev_out);
-      \instR4\ : \ZLL_Main_dev10\ port map (arg5, arg1, \zll_main_dev10_outR1\);
-      \instR5\ : \ZLL_Main_dev\ port map (\zll_main_dev10_outR1\, arg4, \zll_main_dev_outR1\);
-      res <= rw_cond(rw_eq(zi0, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg2, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000"), rw_resize(zll_main_dev_out, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))), 1), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000"), rw_resize(\zll_main_dev_outR1\, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))), 1));
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_dev33\ is
-port (arg0 : in std_logic_vector (7 downto 0);
-      res : out std_logic_vector (2 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_dev33\ is
-
-begin
-res <= std_logic_vector'(B"111");
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_dev31\ is
-port (arg0 : in std_logic_vector (2 downto 0);
-      arg1 : in std_logic_vector (2 downto 0);
-      res : out std_logic_vector (2 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_dev31\ is
-
-begin
-res <= rw_resize(rw_mod(rw_add(rw_resize(arg0, 128), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3);
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_dev21\ is
+entity \ZLL_Main_dev22\ is
 port (arg0 : in std_logic_vector (7 downto 0);
       arg1 : in std_logic_vector (7 downto 0);
       arg2 : in std_logic_vector (2 downto 0);
@@ -560,158 +330,101 @@ port (arg0 : in std_logic_vector (7 downto 0);
       res : out std_logic_vector (0 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_dev21\ is
-component \ZLL_Main_dev10\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (2 downto 0));
-      end component;
-      component \ZLL_Main_dev41\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (2 downto 0));
-      end component;
-      component \ZLL_Main_dev6\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      signal zll_main_dev6_out : std_logic_vector (0 downto 0);
-      signal zi0 : std_logic_vector (0 downto 0);
-      signal zll_main_dev41_out : std_logic_vector (2 downto 0);
-      signal zll_main_dev10_out : std_logic_vector (2 downto 0);
-      signal \zll_main_dev10_outR1\ : std_logic_vector (2 downto 0);
+architecture rtl of \ZLL_Main_dev22\ is
+signal zi0 : std_logic_vector (0 downto 0);
 begin
-inst : \ZLL_Main_dev6\ port map (arg4, arg2, zll_main_dev6_out);
-      zi0 <= zll_main_dev6_out;
-      \instR1\ : \ZLL_Main_dev41\ port map (arg4, arg2, zll_main_dev41_out);
-      \instR2\ : \ZLL_Main_dev10\ port map (zll_main_dev41_out, arg3, zll_main_dev10_out);
-      \instR3\ : \ZLL_Main_dev10\ port map (arg4, arg3, \zll_main_dev10_outR1\);
-      res <= rw_cond(rw_eq(zi0, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000"), rw_resize(zll_main_dev10_out, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))), 1), rw_resize(rw_shiftr(arg1, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000"), rw_resize(\zll_main_dev10_outR1\, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))), 1));
+zi0 <= rw_lt(rw_resize(arg4, 128), rw_resize(arg2, 128));
+      res <= rw_cond(rw_eq(zi0, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg1, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000"), rw_resize(rw_resize(rw_mod(rw_mul(rw_resize(rw_resize(rw_mod(rw_sub(rw_resize(arg4, 128), rw_resize(arg2, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3), 128), rw_resize(arg3, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))), 1), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000"), rw_resize(rw_resize(rw_mod(rw_mul(rw_resize(arg4, 128), rw_resize(arg3, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))), 1));
 end architecture;
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_dev19\ is
-port (arg0 : in std_logic_vector (2 downto 0);
-      arg1 : in std_logic_vector (2 downto 0);
-      arg2 : in std_logic_vector (7 downto 0);
-      arg3 : in std_logic_vector (7 downto 0);
+entity \ZLL_Main_dev16\ is
+port (arg0 : in std_logic_vector (0 downto 0);
+      res : out std_logic_vector (0 downto 0));
+end entity;
+
+architecture rtl of \ZLL_Main_dev16\ is
+
+begin
+res <= rw_cond(rw_eq(arg0, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \ZLL_Main_dev14\ is
+port (arg0 : in std_logic_vector (7 downto 0);
+      arg1 : in std_logic_vector (7 downto 0);
+      arg2 : in std_logic_vector (2 downto 0);
+      arg3 : in std_logic_vector (2 downto 0);
       arg4 : in std_logic_vector (2 downto 0);
       arg5 : in std_logic_vector (2 downto 0);
       res : out std_logic_vector (0 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_dev19\ is
-component \ZLL_Main_dev\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (2 downto 0));
-      end component;
-      component \ZLL_Main_dev3\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
+architecture rtl of \ZLL_Main_dev14\ is
+component \ZLL_Main_dev16\ is
+      port (arg0 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
-      component \ZLL_Main_dev41\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (2 downto 0));
-      end component;
-      component \ZLL_Main_dev45\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (2 downto 0));
-      end component;
-      signal zll_main_dev3_out : std_logic_vector (0 downto 0);
+      signal zt0 : std_logic_vector (0 downto 0);
+      signal zll_main_dev16_out : std_logic_vector (0 downto 0);
       signal zi0 : std_logic_vector (0 downto 0);
-      signal zll_main_dev41_out : std_logic_vector (2 downto 0);
-      signal zll_main_dev45_out : std_logic_vector (2 downto 0);
-      signal zll_main_dev_out : std_logic_vector (2 downto 0);
-      signal \zll_main_dev45_outR1\ : std_logic_vector (2 downto 0);
-      signal \zll_main_dev_outR1\ : std_logic_vector (2 downto 0);
 begin
-inst : \ZLL_Main_dev3\ port map (arg5, zll_main_dev3_out);
-      zi0 <= zll_main_dev3_out;
-      \instR1\ : \ZLL_Main_dev41\ port map (arg5, arg0, zll_main_dev41_out);
-      \instR2\ : \ZLL_Main_dev45\ port map (zll_main_dev41_out, arg1, zll_main_dev45_out);
-      \instR3\ : \ZLL_Main_dev\ port map (arg4, zll_main_dev45_out, zll_main_dev_out);
-      \instR4\ : \ZLL_Main_dev45\ port map (arg5, arg1, \zll_main_dev45_outR1\);
-      \instR5\ : \ZLL_Main_dev\ port map (arg4, \zll_main_dev45_outR1\, \zll_main_dev_outR1\);
-      res <= rw_cond(rw_eq(zi0, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg3, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000"), rw_resize(zll_main_dev_out, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))), 1), rw_resize(rw_shiftr(arg2, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000"), rw_resize(\zll_main_dev_outR1\, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))), 1));
+zt0 <= rw_resize(rw_resize(arg5, 128), 1);
+      inst : \ZLL_Main_dev16\ port map (zt0, zll_main_dev16_out);
+      zi0 <= zll_main_dev16_out;
+      res <= rw_cond(rw_eq(zi0, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg1, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000"), rw_resize(rw_resize(rw_mod(rw_add(rw_resize(arg2, 128), rw_resize(rw_resize(rw_mod(rw_div(rw_resize(rw_resize(rw_mod(rw_sub(rw_resize(arg5, 128), rw_resize(arg4, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3), 128), rw_resize(arg3, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))), 1), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000"), rw_resize(rw_resize(rw_mod(rw_add(rw_resize(arg2, 128), rw_resize(rw_resize(rw_mod(rw_div(rw_resize(arg5, 128), rw_resize(arg3, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))), 1));
 end architecture;
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_dev10\ is
-port (arg0 : in std_logic_vector (2 downto 0);
-      arg1 : in std_logic_vector (2 downto 0);
-      res : out std_logic_vector (2 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_dev10\ is
-
-begin
-res <= rw_resize(rw_mod(rw_mul(rw_resize(arg0, 128), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3);
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_dev6\ is
-port (arg0 : in std_logic_vector (2 downto 0);
-      arg1 : in std_logic_vector (2 downto 0);
+entity \ZLL_Main_dev12\ is
+port (arg0 : in std_logic_vector (7 downto 0);
+      arg1 : in std_logic_vector (7 downto 0);
+      arg2 : in std_logic_vector (2 downto 0);
+      arg3 : in std_logic_vector (2 downto 0);
       res : out std_logic_vector (0 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_dev6\ is
-
-begin
-res <= rw_lt(rw_resize(arg0, 128), rw_resize(arg1, 128));
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_dev3\ is
-port (arg0 : in std_logic_vector (2 downto 0);
-      res : out std_logic_vector (0 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_dev3\ is
-signal zi0 : std_logic_vector (127 downto 0);
-      signal zi1 : std_logic_vector (0 downto 0);
-      signal zi2 : std_logic_vector (0 downto 0);
-begin
-zi0 <= rw_resize(arg0, 128);
-      zi1 <= rw_resize(zi0, 1);
-      zi2 <= zi1;
-      res <= rw_cond(rw_eq(zi2, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_dev\ is
-port (arg0 : in std_logic_vector (2 downto 0);
-      arg1 : in std_logic_vector (2 downto 0);
-      res : out std_logic_vector (2 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_dev\ is
-component \ZLL_Main_dev31\ is
-      port (arg0 : in std_logic_vector (2 downto 0);
-            arg1 : in std_logic_vector (2 downto 0);
-            res : out std_logic_vector (2 downto 0));
+architecture rtl of \ZLL_Main_dev12\ is
+component \ZLL_Main_dev16\ is
+      port (arg0 : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (0 downto 0));
       end component;
-      signal zll_main_dev31_out : std_logic_vector (2 downto 0);
+      signal zt0 : std_logic_vector (0 downto 0);
+      signal zll_main_dev16_out : std_logic_vector (0 downto 0);
+      signal zi0 : std_logic_vector (0 downto 0);
 begin
-inst : \ZLL_Main_dev31\ port map (arg0, arg1, zll_main_dev31_out);
-      res <= zll_main_dev31_out;
+zt0 <= rw_resize(rw_resize(arg3, 128), 1);
+      inst : \ZLL_Main_dev16\ port map (zt0, zll_main_dev16_out);
+      zi0 <= zll_main_dev16_out;
+      res <= rw_cond(rw_eq(zi0, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg1, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000"), rw_resize(rw_resize(rw_mod(rw_div(rw_resize(rw_resize(rw_mod(rw_sub(rw_resize(arg3, 128), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3), 128), rw_resize(arg2, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))), 1), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000"), rw_resize(rw_resize(rw_mod(rw_div(rw_resize(arg3, 128), rw_resize(arg2, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))), 1));
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \ZLL_Main_dev11\ is
+port (arg0 : in std_logic_vector (7 downto 0);
+      arg1 : in std_logic_vector (2 downto 0);
+      arg2 : in std_logic_vector (7 downto 0);
+      arg3 : in std_logic_vector (2 downto 0);
+      arg4 : in std_logic_vector (2 downto 0);
+      arg5 : in std_logic_vector (2 downto 0);
+      res : out std_logic_vector (0 downto 0));
+end entity;
+
+architecture rtl of \ZLL_Main_dev11\ is
+signal zi0 : std_logic_vector (0 downto 0);
+begin
+zi0 <= rw_lt(rw_resize(arg5, 128), rw_resize(arg4, 128));
+      res <= rw_cond(rw_eq(zi0, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg2, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000"), rw_resize(rw_resize(rw_mod(rw_add(rw_resize(rw_resize(rw_mod(rw_mul(rw_resize(rw_resize(rw_mod(rw_sub(rw_resize(arg5, 128), rw_resize(arg4, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3), 128), rw_resize(arg3, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3), 128), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))), 1), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000"), rw_resize(rw_resize(rw_mod(rw_add(rw_resize(rw_resize(rw_mod(rw_mul(rw_resize(arg5, 128), rw_resize(arg3, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3), 128), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000")), 3), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))), 1));
 end architecture;

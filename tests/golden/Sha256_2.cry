@@ -24,18 +24,18 @@ parameter
 
 // $Pure.dispatch
 rw__Pure_dispatch : [1038] -> [68] -> [1104]
-rw__Pure_dispatch x0 x1 = if (take`{2} x0) == 0b01 then (rw__LL_Main_loop7 s0 x1 s1 s2 s3 s4) else (if (take`{2} x0) == 0b10 then (rw_Main_dev x1 s5 s6 s7 s8) else (rw__LL_Main_dev53 x1 s9 s10 s11 s12))
+rw__Pure_dispatch x0 x1 = if (take`{2} x0) == 0b01 then (rw_Main_dev x1 s0 s1 s2 s3) else (if (take`{2} x0) == 0b10 then (rw__LL_Main_loop6 s4 x1 s5 s6 s7 s8) else (rw__LL_Main_dev30 x1 s9 s10 s11 s12))
   where
-    s0 : [6]
-    s0 = take`{6} (drop`{2} x0)
-    s1 : [256]
-    s1 = take`{256} (drop`{8} x0)
-    s2 : [512]
-    s2 = take`{512} (drop`{264} x0)
-    s3 : [256]
-    s3 = take`{256} (drop`{776} x0)
+    s0 : [256]
+    s0 = take`{256} (drop`{8} x0)
+    s1 : [512]
+    s1 = take`{512} (drop`{264} x0)
+    s2 : [256]
+    s2 = take`{256} (drop`{776} x0)
+    s3 : [6]
+    s3 = drop`{1032} x0
     s4 : [6]
-    s4 = drop`{1032} x0
+    s4 = take`{6} (drop`{2} x0)
     s5 : [256]
     s5 = take`{256} (drop`{8} x0)
     s6 : [512]
@@ -53,144 +53,46 @@ rw__Pure_dispatch x0 x1 = if (take`{2} x0) == 0b01 then (rw__LL_Main_loop7 s0 x1
     s12 : [6]
     s12 = drop`{1032} x0
 
-// $LL.Main.dev60
-rw__LL_Main_dev60 : [256] -> [256] -> [512] -> [256] -> [6] -> [1104]
-rw__LL_Main_dev60 x0 x1 x2 x3 x4 = 0b1 # ((rw_Main_digest2 x0) # (0x80 # (x1 # (x2 # (x3 # x4)))))
-
 // Main.maj
 rw_Main_maj : [32] -> [32] -> [32] -> [32]
 rw_Main_maj x0 x1 x2 = rw_Main_xorW32 (rw_Main_xorW32 (rw_Main_andW32 x0 x1) (rw_Main_andW32 x0 x2)) (rw_Main_andW32 x1 x2)
+
+// $LL.Main.dev32
+rw__LL_Main_dev32 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev32 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev18 x0 x1 x2 x3 x4 x5 x6
 
 // Main.incCtr
 rw_Main_incCtr : [6] -> [6]
 rw_Main_incCtr x0 = rw__LL_Main_incCtr x0
 
-// $LL.Main.dev59
-rw__LL_Main_dev59 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev59 x0 x1 x2 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (x1 # (x0 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))
+// $LL.Main.dev31
+rw__LL_Main_dev31 : [256] -> [256] -> [512] -> [256] -> [6] -> [1104]
+rw__LL_Main_dev31 x0 x1 x2 x3 x4 = 0b1 # ((rw_Main_digest3 x0) # (0x40 # (x1 # (x2 # (x3 # x4)))))
+
+// $LL.Main.incCtr
+rw__LL_Main_incCtr : [6] -> [6]
+rw__LL_Main_incCtr x0 = if x0 == 0b000000 then 0b000001 else (if x0 == 0b000001 then 0b000010 else (if x0 == 0b000010 then 0b000011 else (if x0 == 0b000011 then 0b000100 else (if x0 == 0b000100 then 0b000101 else (if x0 == 0b000101 then 0b000110 else (if x0 == 0b000110 then 0b000111 else (if x0 == 0b000111 then 0b001000 else (if x0 == 0b001000 then 0b001001 else (if x0 == 0b001001 then 0b001010 else (if x0 == 0b001010 then 0b001011 else (if x0 == 0b001011 then 0b001100 else (if x0 == 0b001100 then 0b001101 else (if x0 == 0b001101 then 0b001110 else (if x0 == 0b001110 then 0b001111 else (if x0 == 0b001111 then 0b010000 else (if x0 == 0b010000 then 0b010001 else (if x0 == 0b010001 then 0b010010 else (if x0 == 0b010010 then 0b010011 else (if x0 == 0b010011 then 0b010100 else (if x0 == 0b010100 then 0b010101 else (if x0 == 0b010101 then 0b010110 else (if x0 == 0b010110 then 0b010111 else (if x0 == 0b010111 then 0b011000 else (if x0 == 0b011000 then 0b011001 else (if x0 == 0b011001 then 0b011010 else (if x0 == 0b011010 then 0b011011 else (if x0 == 0b011011 then 0b011100 else (if x0 == 0b011100 then 0b011101 else (if x0 == 0b011101 then 0b011110 else (if x0 == 0b011110 then 0b011111 else (if x0 == 0b011111 then 0b100000 else (if x0 == 0b100000 then 0b100001 else (if x0 == 0b100001 then 0b100010 else (if x0 == 0b100010 then 0b100011 else (if x0 == 0b100011 then 0b100100 else (if x0 == 0b100100 then 0b100101 else (if x0 == 0b100101 then 0b100110 else (if x0 == 0b100110 then 0b100111 else (if x0 == 0b100111 then 0b101000 else (if x0 == 0b101000 then 0b101001 else (if x0 == 0b101001 then 0b101010 else (if x0 == 0b101010 then 0b101011 else (if x0 == 0b101011 then 0b101100 else (if x0 == 0b101100 then 0b101101 else (if x0 == 0b101101 then 0b101110 else (if x0 == 0b101110 then 0b101111 else (if x0 == 0b101111 then 0b110000 else (if x0 == 0b110000 then 0b110001 else (if x0 == 0b110001 then 0b110010 else (if x0 == 0b110010 then 0b110011 else (if x0 == 0b110011 then 0b110100 else (if x0 == 0b110100 then 0b110101 else (if x0 == 0b110101 then 0b110110 else (if x0 == 0b110110 then 0b110111 else (if x0 == 0b110111 then 0b111000 else (if x0 == 0b111000 then 0b111001 else (if x0 == 0b111001 then 0b111010 else (if x0 == 0b111010 then 0b111011 else (if x0 == 0b111011 then 0b111100 else (if x0 == 0b111100 then 0b111101 else (if x0 == 0b111101 then 0b111110 else (if x0 == 0b111110 then 0b111111 else 0b000000))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+
+// $LL.Main.loop8
+rw__LL_Main_loop8 : [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_loop8 x0 x1 x2 x3 x4 = rw__LL_Main_loop2 s3 s4 s1 s5 s6 s2 s7 s0 x1 x1 x2 x3 x4
   where
     s0 : [32]
-    s0 = take`{32} x2
+    s0 = take`{32} x0
     s1 : [32]
-    s1 = take`{32} (drop`{32} x2)
+    s1 = take`{32} (drop`{32} x0)
     s2 : [32]
-    s2 = take`{32} (drop`{64} x2)
+    s2 = take`{32} (drop`{64} x0)
     s3 : [32]
-    s3 = take`{32} (drop`{96} x2)
+    s3 = take`{32} (drop`{96} x0)
     s4 : [32]
-    s4 = take`{32} (drop`{128} x2)
+    s4 = take`{32} (drop`{128} x0)
     s5 : [32]
-    s5 = take`{32} (drop`{160} x2)
+    s5 = take`{32} (drop`{160} x0)
     s6 : [32]
-    s6 = take`{32} (drop`{192} x2)
+    s6 = take`{32} (drop`{192} x0)
     s7 : [32]
-    s7 = take`{32} (drop`{224} x2)
-    s8 : [32]
-    s8 = take`{32} (drop`{320} x2)
-    s9 : [32]
-    s9 = take`{32} (drop`{352} x2)
-    s10 : [32]
-    s10 = take`{32} (drop`{384} x2)
-    s11 : [32]
-    s11 = take`{32} (drop`{416} x2)
-    s12 : [32]
-    s12 = take`{32} (drop`{448} x2)
-    s13 : [32]
-    s13 = drop`{480} x2
-
-// $LL.Main.genhash'12
-rw__LL_Main_genhash_12 : [6] -> [256] -> [512] -> [256] -> [6] -> [1036]
-rw__LL_Main_genhash_12 x0 x1 x2 x3 x4 = x0 # (x1 # (x2 # (x3 # x4)))
-
-// $LL.Main.dev58
-rw__LL_Main_dev58 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev58 x0 x1 x2 = s0 # (s1 # (s2 # (s3 # (x0 # (x1 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))
-  where
-    s0 : [32]
-    s0 = take`{32} x2
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x2)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x2)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x2)
-    s4 : [32]
-    s4 = take`{32} (drop`{192} x2)
-    s5 : [32]
-    s5 = take`{32} (drop`{224} x2)
-    s6 : [32]
-    s6 = take`{32} (drop`{256} x2)
-    s7 : [32]
-    s7 = take`{32} (drop`{288} x2)
-    s8 : [32]
-    s8 = take`{32} (drop`{320} x2)
-    s9 : [32]
-    s9 = take`{32} (drop`{352} x2)
-    s10 : [32]
-    s10 = take`{32} (drop`{384} x2)
-    s11 : [32]
-    s11 = take`{32} (drop`{416} x2)
-    s12 : [32]
-    s12 = take`{32} (drop`{448} x2)
-    s13 : [32]
-    s13 = drop`{480} x2
-
-// $LL.Main.dev57
-rw__LL_Main_dev57 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev57 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev55 x1 x0 x2 x3 x4 x5 x6
-
-// $LL.Main.dev56
-rw__LL_Main_dev56 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev56 x0 x1 x2 x3 x4 x5 x6 = x3 # ((rw__LL_Main_dev47 x1 x0 x2) # (x5 # x6))
-
-// $LL.Main.dev55
-rw__LL_Main_dev55 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev55 x0 x1 x2 x3 x4 x5 x6 = x3 # ((rw__LL_Main_dev9 x0 x1 x2) # (x5 # x6))
-
-// $LL.Main.dev54
-rw__LL_Main_dev54 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev54 x0 x1 x2 = rw__LL_Main_dev24 x1 x0 x2
-
-// $LL.Main.dev53
-rw__LL_Main_dev53 : [68] -> [256] -> [512] -> [256] -> [6] -> [1104]
-rw__LL_Main_dev53 x0 x1 x2 x3 x4 = rw_Main_loop x1 x2 x3 x4
-
-// $LL.Main.dev52
-rw__LL_Main_dev52 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev52 x0 x1 x2 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (x0 # (x1 # (s10 # (s11 # (s12 # s13))))))))))))))
-  where
-    s0 : [32]
-    s0 = take`{32} x2
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x2)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x2)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x2)
-    s4 : [32]
-    s4 = take`{32} (drop`{128} x2)
-    s5 : [32]
-    s5 = take`{32} (drop`{160} x2)
-    s6 : [32]
-    s6 = take`{32} (drop`{192} x2)
-    s7 : [32]
-    s7 = take`{32} (drop`{224} x2)
-    s8 : [32]
-    s8 = take`{32} (drop`{256} x2)
-    s9 : [32]
-    s9 = take`{32} (drop`{288} x2)
-    s10 : [32]
-    s10 = take`{32} (drop`{384} x2)
-    s11 : [32]
-    s11 = take`{32} (drop`{416} x2)
-    s12 : [32]
-    s12 = take`{32} (drop`{448} x2)
-    s13 : [32]
-    s13 = drop`{480} x2
-
-// $LL.Main.dev51
-rw__LL_Main_dev51 : [256] -> [256] -> [512] -> [256] -> [6] -> [1104]
-rw__LL_Main_dev51 x0 x1 x2 x3 x4 = 0b1 # ((rw_Main_digest0 x0) # (0x80 # (x1 # (x2 # (x3 # x4)))))
+    s7 = drop`{224} x0
 
 // Main.shiftR10
 rw_Main_shiftR10 : [32] -> [32]
@@ -241,9 +143,9 @@ rw_Main_shiftR10 x0 = 0b0000000000 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (
     s21 : [1]
     s21 = take`{1} (drop`{21} x0)
 
-// $LL.Main.dev50
-rw__LL_Main_dev50 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev50 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev56 x0 x1 x2 x3 x4 x5 x6
+// $LL.Main.dev30
+rw__LL_Main_dev30 : [68] -> [256] -> [512] -> [256] -> [6] -> [1104]
+rw__LL_Main_dev30 x0 x1 x2 x3 x4 = rw_Main_loop x1 x2 x3 x4
 
 // Main.rotateR22
 rw_Main_rotateR22 : [32] -> [32]
@@ -314,50 +216,13 @@ rw_Main_rotateR22 x0 = s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # (s17 # (s
     s31 : [1]
     s31 = drop`{31} x0
 
-// $LL.Main.genhash'11
-rw__LL_Main_genhash_11 : [32] -> [256] -> [512] -> [256] -> [6] -> [1062]
-rw__LL_Main_genhash_11 x0 x1 x2 x3 x4 = rw__LL_Main_genhash_1 x0 x1 x2 x3 x4
+// $LL.Main.dev29
+rw__LL_Main_dev29 : [256] -> [512] -> [256] -> [6] -> [1104]
+rw__LL_Main_dev29 x0 x1 x2 x3 = 0b11000000000000000000000000000000000000000000000000000000000000000000000000 # (x0 # (x1 # (x2 # x3)))
 
-// $LL.Main.dev49
-rw__LL_Main_dev49 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev49 x0 x1 x2 x3 x4 x5 x6 = x3 # ((rw__LL_Main_dev38 x0 x1 x2) # (x5 # x6))
-
-// $LL.Main.dev48
-rw__LL_Main_dev48 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev48 x0 x1 x2 = x0 # (x1 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))
-  where
-    s0 : [32]
-    s0 = take`{32} (drop`{64} x2)
-    s1 : [32]
-    s1 = take`{32} (drop`{96} x2)
-    s2 : [32]
-    s2 = take`{32} (drop`{128} x2)
-    s3 : [32]
-    s3 = take`{32} (drop`{160} x2)
-    s4 : [32]
-    s4 = take`{32} (drop`{192} x2)
-    s5 : [32]
-    s5 = take`{32} (drop`{224} x2)
-    s6 : [32]
-    s6 = take`{32} (drop`{256} x2)
-    s7 : [32]
-    s7 = take`{32} (drop`{288} x2)
-    s8 : [32]
-    s8 = take`{32} (drop`{320} x2)
-    s9 : [32]
-    s9 = take`{32} (drop`{352} x2)
-    s10 : [32]
-    s10 = take`{32} (drop`{384} x2)
-    s11 : [32]
-    s11 = take`{32} (drop`{416} x2)
-    s12 : [32]
-    s12 = take`{32} (drop`{448} x2)
-    s13 : [32]
-    s13 = drop`{480} x2
-
-// $LL.Main.dev47
-rw__LL_Main_dev47 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev47 x0 x1 x2 = rw__LL_Main_dev21 x0 x1 x2
+// $LL.Main.dev28
+rw__LL_Main_dev28 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev28 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev1 x1 x0 x3 x2 x3 x4 x5
 
 // Main.digest1
 rw_Main_digest1 : [256] -> [65]
@@ -367,14 +232,6 @@ rw_Main_digest1 x0 = 0b0 # (s0 # s1)
     s0 = take`{32} (drop`{64} x0)
     s1 : [32]
     s1 = take`{32} (drop`{96} x0)
-
-// $LL.Main.dev46
-rw__LL_Main_dev46 : [256] -> [256] -> [512] -> [256] -> [6] -> [1104]
-rw__LL_Main_dev46 x0 x1 x2 x3 x4 = 0b1 # ((rw_Main_digest1 x0) # (0x80 # (x1 # (x2 # (x3 # x4)))))
-
-// $LL.Main.dev45
-rw__LL_Main_dev45 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev45 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev49 x0 x1 x2 x3 x4 x5 x6
 
 // Main.notW32
 rw_Main_notW32 : [32] -> [32]
@@ -453,9 +310,9 @@ rw_Main_rotateR11 x0 = s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s27 # (s28 # (s
     s31 : [1]
     s31 = drop`{31} x0
 
-// $LL.Main.dev44
-rw__LL_Main_dev44 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev44 x0 x1 x2 = s0 # (s1 # (x0 # (x1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))
+// $LL.Main.dev27
+rw__LL_Main_dev27 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev27 x0 x1 x2 x3 x4 x5 x6 = x3 # ((s0 # (s1 # (x1 # (x0 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))) # (x5 # x6))
   where
     s0 : [32]
     s0 = take`{32} x2
@@ -486,25 +343,50 @@ rw__LL_Main_dev44 x0 x1 x2 = s0 # (s1 # (x0 # (x1 # (s2 # (s3 # (s4 # (s5 # (s6 
     s13 : [32]
     s13 = drop`{480} x2
 
-// $LL.Main.dev43
-rw__LL_Main_dev43 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev43 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev28 x1 x0 x2 x3 x4 x5 x6
+// $LL.Main.dev26
+rw__LL_Main_dev26 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev26 x0 x1 x2 x3 x4 x5 x6 = x3 # ((s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (x1 # (x0 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))) # (x5 # x6))
+  where
+    s0 : [32]
+    s0 = take`{32} x2
+    s1 : [32]
+    s1 = take`{32} (drop`{32} x2)
+    s2 : [32]
+    s2 = take`{32} (drop`{64} x2)
+    s3 : [32]
+    s3 = take`{32} (drop`{96} x2)
+    s4 : [32]
+    s4 = take`{32} (drop`{128} x2)
+    s5 : [32]
+    s5 = take`{32} (drop`{160} x2)
+    s6 : [32]
+    s6 = take`{32} (drop`{192} x2)
+    s7 : [32]
+    s7 = take`{32} (drop`{224} x2)
+    s8 : [32]
+    s8 = take`{32} (drop`{320} x2)
+    s9 : [32]
+    s9 = take`{32} (drop`{352} x2)
+    s10 : [32]
+    s10 = take`{32} (drop`{384} x2)
+    s11 : [32]
+    s11 = take`{32} (drop`{416} x2)
+    s12 : [32]
+    s12 = take`{32} (drop`{448} x2)
+    s13 : [32]
+    s13 = drop`{480} x2
 
-// $LL.Main.loop8
-rw__LL_Main_loop8 : [6] -> [68] -> [256] -> [512] -> [256] -> [6] -> [1104]
-rw__LL_Main_loop8 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop x1 x0 x2 x3 x4 x5
+// $LL.Main.genhash'11
+rw__LL_Main_genhash_11 : [6] -> [256] -> [512] -> [256] -> [6] -> [1036]
+rw__LL_Main_genhash_11 x0 x1 x2 x3 x4 = rw__LL_Main_genhash_9 x0 x1 x2 x3 (rw_Main_incCtr x0)
 
-// $LL.Main.dev42
-rw__LL_Main_dev42 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev42 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev5 x0 x1 x2 x3 x4 x5 x6
+// $LL.Main.dev25
+rw__LL_Main_dev25 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev25 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev16 x0 x1 x2 x3 x4 x5 x6
 
-// $LL.Main.dev41
-rw__LL_Main_dev41 : [256] -> [256] -> [512] -> [256] -> [6] -> [1104]
-rw__LL_Main_dev41 x0 x1 x2 x3 x4 = 0b1 # ((rw_Main_digest3 x0) # (0x80 # (x1 # (x2 # (x3 # x4)))))
-
-// $LL.Main.loop7
-rw__LL_Main_loop7 : [6] -> [68] -> [256] -> [512] -> [256] -> [6] -> [1104]
-rw__LL_Main_loop7 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop8 x0 x1 x2 x3 x4 x5
+// $LL.Main.genhash'10
+rw__LL_Main_genhash_10 : [6] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_genhash_10 x0 x1 x2 x3 x4 x5 = rw__LL_Main_genhash_7 x0 x1 x2 x2 x3 x4 x5
 
 // Main.digest2
 rw_Main_digest2 : [256] -> [65]
@@ -515,13 +397,30 @@ rw_Main_digest2 x0 = 0b0 # (s0 # s1)
     s1 : [32]
     s1 = take`{32} (drop`{160} x0)
 
-// $LL.Main.dev40
-rw__LL_Main_dev40 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev40 x0 x1 x2 = rw__LL_Main_dev23 x0 x1 x2
-
-// $LL.Main.incCtr
-rw__LL_Main_incCtr : [6] -> [6]
-rw__LL_Main_incCtr x0 = if x0 == 0b000000 then 0b000001 else (if x0 == 0b000001 then 0b000010 else (if x0 == 0b000010 then 0b000011 else (if x0 == 0b000011 then 0b000100 else (if x0 == 0b000100 then 0b000101 else (if x0 == 0b000101 then 0b000110 else (if x0 == 0b000110 then 0b000111 else (if x0 == 0b000111 then 0b001000 else (if x0 == 0b001000 then 0b001001 else (if x0 == 0b001001 then 0b001010 else (if x0 == 0b001010 then 0b001011 else (if x0 == 0b001011 then 0b001100 else (if x0 == 0b001100 then 0b001101 else (if x0 == 0b001101 then 0b001110 else (if x0 == 0b001110 then 0b001111 else (if x0 == 0b001111 then 0b010000 else (if x0 == 0b010000 then 0b010001 else (if x0 == 0b010001 then 0b010010 else (if x0 == 0b010010 then 0b010011 else (if x0 == 0b010011 then 0b010100 else (if x0 == 0b010100 then 0b010101 else (if x0 == 0b010101 then 0b010110 else (if x0 == 0b010110 then 0b010111 else (if x0 == 0b010111 then 0b011000 else (if x0 == 0b011000 then 0b011001 else (if x0 == 0b011001 then 0b011010 else (if x0 == 0b011010 then 0b011011 else (if x0 == 0b011011 then 0b011100 else (if x0 == 0b011100 then 0b011101 else (if x0 == 0b011101 then 0b011110 else (if x0 == 0b011110 then 0b011111 else (if x0 == 0b011111 then 0b100000 else (if x0 == 0b100000 then 0b100001 else (if x0 == 0b100001 then 0b100010 else (if x0 == 0b100010 then 0b100011 else (if x0 == 0b100011 then 0b100100 else (if x0 == 0b100100 then 0b100101 else (if x0 == 0b100101 then 0b100110 else (if x0 == 0b100110 then 0b100111 else (if x0 == 0b100111 then 0b101000 else (if x0 == 0b101000 then 0b101001 else (if x0 == 0b101001 then 0b101010 else (if x0 == 0b101010 then 0b101011 else (if x0 == 0b101011 then 0b101100 else (if x0 == 0b101100 then 0b101101 else (if x0 == 0b101101 then 0b101110 else (if x0 == 0b101110 then 0b101111 else (if x0 == 0b101111 then 0b110000 else (if x0 == 0b110000 then 0b110001 else (if x0 == 0b110001 then 0b110010 else (if x0 == 0b110010 then 0b110011 else (if x0 == 0b110011 then 0b110100 else (if x0 == 0b110100 then 0b110101 else (if x0 == 0b110101 then 0b110110 else (if x0 == 0b110110 then 0b110111 else (if x0 == 0b110111 then 0b111000 else (if x0 == 0b111000 then 0b111001 else (if x0 == 0b111001 then 0b111010 else (if x0 == 0b111010 then 0b111011 else (if x0 == 0b111011 then 0b111100 else (if x0 == 0b111100 then 0b111101 else (if x0 == 0b111101 then 0b111110 else (if x0 == 0b111110 then 0b111111 else 0b000000))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+// $LL.Main.loop7
+rw__LL_Main_loop7 : [68] -> [6] -> [256] -> [512] -> [256] -> [6] -> [1104]
+rw__LL_Main_loop7 x0 x1 x2 x3 x4 x5 = if x1 == 0b111111 then (rw__LL_Main_loop4 x0 s6 s7 s8 s9) else (rw_Main_loop x2 x3 x4 x5)
+  where
+    s0 : [1030]
+    s0 = rw__LL_Main_loop8 x4 x2 x3 x4 x5
+    s1 : [256]
+    s1 = take`{256} s0
+    s2 : [512]
+    s2 = take`{512} (drop`{256} s0)
+    s3 : [256]
+    s3 = take`{256} (drop`{768} s0)
+    s4 : [6]
+    s4 = drop`{1024} s0
+    s5 : [1104]
+    s5 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s1 # (s2 # (s3 # s4)))
+    s6 : [256]
+    s6 = take`{256} (drop`{74} s5)
+    s7 : [512]
+    s7 = take`{512} (drop`{330} s5)
+    s8 : [256]
+    s8 = take`{256} (drop`{842} s5)
+    s9 : [6]
+    s9 = drop`{1098} s5
 
 // Main.rotateR19
 rw_Main_rotateR19 : [32] -> [32]
@@ -592,45 +491,62 @@ rw_Main_rotateR19 x0 = s13 # (s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s
     s31 : [1]
     s31 = drop`{31} x0
 
+// $LL.Main.dev24
+rw__LL_Main_dev24 : [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev24 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev20 x1 x0 x2 x3 x4 x5 x6
+
+// $LL.Main.dev23
+rw__LL_Main_dev23 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev23 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev13 x0 x1 x2 x3 x4 x5 x6
+
 // Main.dev
 rw_Main_dev : [68] -> [256] -> [512] -> [256] -> [6] -> [1104]
-rw_Main_dev x0 x1 x2 x3 x4 = rw__LL_Main_dev13 x0 x1 x2 x3 x4
+rw_Main_dev x0 x1 x2 x3 x4 = rw__LL_Main_dev17 x0 x1 x2 x3 x4
 
-// $LL.Main.dev39
-rw__LL_Main_dev39 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev39 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev25 x1 x0 x4 x2 x3 x4 x5
+// $LL.Main.genhash'9
+rw__LL_Main_genhash_9 : [6] -> [256] -> [512] -> [256] -> [6] -> [1036]
+rw__LL_Main_genhash_9 x0 x1 x2 x3 x4 = rw__LL_Main_genhash_3 x0 x1 x2 x3 x4
+
+// $LL.Main.dev22
+rw__LL_Main_dev22 : [256] -> [256] -> [512] -> [256] -> [6] -> [1104]
+rw__LL_Main_dev22 x0 x1 x2 x3 x4 = 0b1 # ((rw_Main_digest2 x0) # (0x40 # (x1 # (x2 # (x3 # x4)))))
 
 // $LL.Main.loop6
-rw__LL_Main_loop6 : [68] -> [256] -> [512] -> [256] -> [6] -> [1104]
-rw__LL_Main_loop6 x0 x1 x2 x3 x4 = rw__LL_Main_loop4 x0 x1 x2 x3 x4
+rw__LL_Main_loop6 : [6] -> [68] -> [256] -> [512] -> [256] -> [6] -> [1104]
+rw__LL_Main_loop6 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop3 x0 x1 x2 x3 x4 x5
 
-// $LL.Main.dev38
-rw__LL_Main_dev38 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev38 x0 x1 x2 = rw__LL_Main_dev27 x0 x1 x2
+// $LL.Main.genhash'8
+rw__LL_Main_genhash_8 : [32] -> [256] -> [512] -> [256] -> [6] -> [1062]
+rw__LL_Main_genhash_8 x0 x1 x2 x3 x4 = x0 # (x1 # (x2 # (x3 # x4)))
 
-// $LL.Main.dev37
-rw__LL_Main_dev37 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev37 x0 x1 x2 x3 x4 x5 x6 = x3 # ((rw__LL_Main_dev6 x0 x1 x2) # (x5 # x6))
+// $LL.Main.dev21
+rw__LL_Main_dev21 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev21 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev14 x0 x1 x2 x3 x4 x5 x6
 
-// $LL.Main.dev36
-rw__LL_Main_dev36 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev36 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev17 x0 x1 x2 x3 x4 x5 x6
-
-// $LL.Main.dev35
-rw__LL_Main_dev35 : [256] -> [512] -> [256] -> [6] -> [1104]
-rw__LL_Main_dev35 x0 x1 x2 x3 = 0b11000000000000000000000000000000000000000000000000000000000000000000000000 # (x0 # (x1 # (x2 # x3)))
-
-// $LL.Main.genhash'10
-rw__LL_Main_genhash_10 : [6] -> [256] -> [512] -> [256] -> [6] -> [1036]
-rw__LL_Main_genhash_10 x0 x1 x2 x3 x4 = rw__LL_Main_genhash_ x0 x1 x2 x3 (rw_Main_incCtr x0)
+// $LL.Main.loop5
+rw__LL_Main_loop5 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_loop5 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 = x9 # (x10 # ((rw_Main_plusW32 s0 x6) # ((rw_Main_plusW32 s1 x2) # ((rw_Main_plusW32 s2 x5) # ((rw_Main_plusW32 s3 x4) # ((rw_Main_plusW32 s4 x1) # ((rw_Main_plusW32 s5 x7) # ((rw_Main_plusW32 s6 x0) # ((rw_Main_plusW32 s7 x3) # x12)))))))))
+  where
+    s0 : [32]
+    s0 = take`{32} x8
+    s1 : [32]
+    s1 = take`{32} (drop`{32} x8)
+    s2 : [32]
+    s2 = take`{32} (drop`{64} x8)
+    s3 : [32]
+    s3 = take`{32} (drop`{96} x8)
+    s4 : [32]
+    s4 = take`{32} (drop`{128} x8)
+    s5 : [32]
+    s5 = take`{32} (drop`{160} x8)
+    s6 : [32]
+    s6 = take`{32} (drop`{192} x8)
+    s7 : [32]
+    s7 = drop`{224} x8
 
 // Main.sigma0
 rw_Main_sigma0 : [32] -> [32]
 rw_Main_sigma0 x0 = rw_Main_xorW32 (rw_Main_xorW32 (rw_Main_rotateR7 x0) (rw_Main_rotateR18 x0)) (rw_Main_shiftR3 x0)
-
-// $LL.Main.dev34
-rw__LL_Main_dev34 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev34 x0 x1 x2 = rw__LL_Main_dev12 x0 x1 x2
 
 // Main.seed
 rw_Main_seed : [6] -> [32]
@@ -705,33 +621,69 @@ rw_Main_rotateR18 x0 = s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s
     s31 : [1]
     s31 = drop`{31} x0
 
-// $LL.Main.genhash'9
-rw__LL_Main_genhash_9 : [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_genhash_9 x0 x1 x2 x3 x4 x5 x6 = (rw_Main_step256 x1 x0 x2) # (x4 # (x5 # x6))
+// $LL.Main.genhash'7
+rw__LL_Main_genhash_7 : [6] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_genhash_7 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_genhash_5 x0 x1 x2 x3 x4 x5 x6
 
-// $LL.Main.dev33
-rw__LL_Main_dev33 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev33 x0 x1 x2 = rw__LL_Main_dev14 x0 x1 x2
+// $LL.Main.dev20
+rw__LL_Main_dev20 : [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev20 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev3 x0 x1 x2 x4 x5 x6
 
-// $LL.Main.genhash'8
-rw__LL_Main_genhash_8 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_genhash_8 x0 x1 x2 x3 x4 x5 = rw__LL_Main_genhash_3 x0 x1 x2 x2 x3 x4 x5
+// $LL.Main.genhash'6
+rw__LL_Main_genhash_6 : [6] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1036]
+rw__LL_Main_genhash_6 x0 x1 x2 x3 x4 x5 = rw__LL_Main_genhash_2 x0 s1 s2 s3 s4
+  where
+    s0 : [1030]
+    s0 = rw__LL_Main_genhash_10 x0 x1 x2 x3 x4 x5
+    s1 : [256]
+    s1 = take`{256} s0
+    s2 : [512]
+    s2 = take`{512} (drop`{256} s0)
+    s3 : [256]
+    s3 = take`{256} (drop`{768} s0)
+    s4 : [6]
+    s4 = drop`{1024} s0
 
-// $LL.Main.step256
-rw__LL_Main_step256 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256]
-rw__LL_Main_step256 x0 x1 x2 x3 x4 x5 x6 x7 = (rw_Main_plusW32 x7 (rw_Main_plusW32 (rw_Main_bigsigma0 x3) (rw_Main_maj x3 x0 x6))) # (x3 # (x0 # (x6 # ((rw_Main_plusW32 x5 x7) # (x4 # (x1 # x2))))))
+// $LL.Main.loop4
+rw__LL_Main_loop4 : [68] -> [256] -> [512] -> [256] -> [6] -> [1104]
+rw__LL_Main_loop4 x0 x1 x2 x3 x4 = rw__LL_Main_loop1 x0 x1 x2 x3 x4
 
-// $LL.Main.dev32
-rw__LL_Main_dev32 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev32 x0 x1 x2 = rw__LL_Main_dev34 x0 x1 x2
+// $LL.Main.dev19
+rw__LL_Main_dev19 : [256] -> [512] -> [256] -> [6] -> [1104]
+rw__LL_Main_dev19 x0 x1 x2 x3 = 0b11000000000000000000000000000000000000000000000000000000000000000001000000 # (x0 # (x1 # (x2 # x3)))
 
-// $LL.Main.dev31
-rw__LL_Main_dev31 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev31 x0 x1 x2 = rw__LL_Main_dev30 x0 x1 x2
-
-// $LL.Main.dev30
-rw__LL_Main_dev30 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev30 x0 x1 x2 = rw__LL_Main_dev58 x0 x1 x2
+// $LL.Main.dev18
+rw__LL_Main_dev18 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev18 x0 x1 x2 x3 x4 x5 x6 = x3 # ((s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (x1 # (x0 # (s12 # s13))))))))))))))) # (x5 # x6))
+  where
+    s0 : [32]
+    s0 = take`{32} x2
+    s1 : [32]
+    s1 = take`{32} (drop`{32} x2)
+    s2 : [32]
+    s2 = take`{32} (drop`{64} x2)
+    s3 : [32]
+    s3 = take`{32} (drop`{96} x2)
+    s4 : [32]
+    s4 = take`{32} (drop`{128} x2)
+    s5 : [32]
+    s5 = take`{32} (drop`{160} x2)
+    s6 : [32]
+    s6 = take`{32} (drop`{192} x2)
+    s7 : [32]
+    s7 = take`{32} (drop`{224} x2)
+    s8 : [32]
+    s8 = take`{32} (drop`{256} x2)
+    s9 : [32]
+    s9 = take`{32} (drop`{288} x2)
+    s10 : [32]
+    s10 = take`{32} (drop`{320} x2)
+    s11 : [32]
+    s11 = take`{32} (drop`{352} x2)
+    s12 : [32]
+    s12 = take`{32} (drop`{448} x2)
+    s13 : [32]
+    s13 = drop`{480} x2
 
 // Main.rotateR6
 rw_Main_rotateR6 : [32] -> [32]
@@ -804,7 +756,7 @@ rw_Main_rotateR6 x0 = s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 # (s2 #
 
 // Main.loop
 rw_Main_loop : [256] -> [512] -> [256] -> [6] -> [1104]
-rw_Main_loop x0 x1 x2 x3 = rw__LL_Main_loop1 s7 s8 s9 s10 s11
+rw_Main_loop x0 x1 x2 x3 = rw__LL_Main_loop s7 s8 s9 s10 s11
   where
     s0 : [1036]
     s0 = rw_Main_genhash_ x0 x1 x2 x3
@@ -830,17 +782,6 @@ rw_Main_loop x0 x1 x2 x3 = rw__LL_Main_loop1 s7 s8 s9 s10 s11
     s10 = take`{256} (drop`{842} s6)
     s11 : [6]
     s11 = drop`{1098} s6
-
-// $LL.Main.genhash'7
-rw__LL_Main_genhash_7 : [512] -> [256] -> [512] -> [256] -> [6] -> [1062]
-rw__LL_Main_genhash_7 x0 x1 x2 x3 x4 = rw__LL_Main_genhash_11 s0 x1 (rw_Main_updateSched x0) x3 x4
-  where
-    s0 : [32]
-    s0 = take`{32} x0
-
-// $LL.Main.loop5
-rw__LL_Main_loop5 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_loop5 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 = rw__LL_Main_loop3 x7 x6 x3 x2 x0 x1 x4 x5 x8 x9 x10 x11 x12
 
 // Main.rotateR25
 rw_Main_rotateR25 : [32] -> [32]
@@ -910,18 +851,6 @@ rw_Main_rotateR25 x0 = s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 
     s30 = take`{1} (drop`{30} x0)
     s31 : [1]
     s31 = drop`{31} x0
-
-// $LL.Main.dev29
-rw__LL_Main_dev29 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev29 x0 x1 x2 x3 x4 x5 x6 = x3 # ((rw__LL_Main_dev40 x1 x0 x2) # (x5 # x6))
-
-// $LL.Main.dev28
-rw__LL_Main_dev28 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev28 x0 x1 x2 x3 x4 x5 x6 = x3 # ((rw__LL_Main_dev32 x1 x0 x2) # (x5 # x6))
-
-// $LL.Main.dev27
-rw__LL_Main_dev27 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev27 x0 x1 x2 = rw__LL_Main_dev52 x0 x1 x2
 
 // Main.rotateR13
 rw_Main_rotateR13 : [32] -> [32]
@@ -996,46 +925,9 @@ rw_Main_rotateR13 x0 = s19 # (s20 # (s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s
 rw_Main_bigsigma1 : [32] -> [32]
 rw_Main_bigsigma1 x0 = rw_Main_xorW32 (rw_Main_xorW32 (rw_Main_rotateR6 x0) (rw_Main_rotateR11 x0)) (rw_Main_rotateR25 x0)
 
-// $LL.Main.dev26
-rw__LL_Main_dev26 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev26 x0 x1 x2 = rw__LL_Main_dev59 x1 x0 x2
-
-// $LL.Main.dev25
-rw__LL_Main_dev25 : [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev25 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev3 x1 x0 x2 x3 x4 x5 x6
-
-// $LL.Main.dev24
-rw__LL_Main_dev24 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev24 x0 x1 x2 = x1 # (x0 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))
-  where
-    s0 : [32]
-    s0 = take`{32} (drop`{64} x2)
-    s1 : [32]
-    s1 = take`{32} (drop`{96} x2)
-    s2 : [32]
-    s2 = take`{32} (drop`{128} x2)
-    s3 : [32]
-    s3 = take`{32} (drop`{160} x2)
-    s4 : [32]
-    s4 = take`{32} (drop`{192} x2)
-    s5 : [32]
-    s5 = take`{32} (drop`{224} x2)
-    s6 : [32]
-    s6 = take`{32} (drop`{256} x2)
-    s7 : [32]
-    s7 = take`{32} (drop`{288} x2)
-    s8 : [32]
-    s8 = take`{32} (drop`{320} x2)
-    s9 : [32]
-    s9 = take`{32} (drop`{352} x2)
-    s10 : [32]
-    s10 = take`{32} (drop`{384} x2)
-    s11 : [32]
-    s11 = take`{32} (drop`{416} x2)
-    s12 : [32]
-    s12 = take`{32} (drop`{448} x2)
-    s13 : [32]
-    s13 = drop`{480} x2
+// $LL.Main.genhash'5
+rw__LL_Main_genhash_5 : [6] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_genhash_5 x0 x1 x2 x3 x4 x5 x6 = (rw_Main_step256 (rw_Main_seed x0) x1 x2) # (x4 # (x5 # x6))
 
 // Main.updateSched
 rw_Main_updateSched : [512] -> [512]
@@ -1074,17 +966,245 @@ rw_Main_updateSched x0 = s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s
     s15 : [32]
     s15 = drop`{480} x0
 
-// $LL.Main.dev23
-rw__LL_Main_dev23 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev23 x0 x1 x2 = rw__LL_Main_dev22 x0 x1 x2
-
 // Main.genhash'
 rw_Main_genhash_ : [256] -> [512] -> [256] -> [6] -> [1036]
-rw_Main_genhash_ x0 x1 x2 x3 = rw__LL_Main_genhash_2 x3 x0 x1 x2 x3
+rw_Main_genhash_ x0 x1 x2 x3 = rw__LL_Main_genhash_1 x3 x0 x1 x2 x3
 
-// $LL.Main.dev22
-rw__LL_Main_dev22 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev22 x0 x1 x2 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (x0 # (x1 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))
+// $LL.Main.genhash'4
+rw__LL_Main_genhash_4 : [512] -> [256] -> [512] -> [256] -> [6] -> [1062]
+rw__LL_Main_genhash_4 x0 x1 x2 x3 x4 = rw__LL_Main_genhash_ s0 x1 (rw_Main_updateSched x0) x3 x4
+  where
+    s0 : [32]
+    s0 = take`{32} x0
+
+// Main.xorW32
+rw_Main_xorW32 : [32] -> [32] -> [32]
+rw_Main_xorW32 x0 x1 = ext_xorW32 x0 x1
+
+// $LL.Main.dev17
+rw__LL_Main_dev17 : [68] -> [256] -> [512] -> [256] -> [6] -> [1104]
+rw__LL_Main_dev17 x0 x1 x2 x3 x4 = if (take`{4} x0) == 0x0 then (rw__LL_Main_dev19 s8 s9 s10 s11) else (if (take`{4} x0) == 0x1 then (rw__LL_Main_dev19 s20 s21 s22 s23) else (if (take`{4} x0) == 0x2 then (rw__LL_Main_dev19 s32 s33 s34 s35) else (if (take`{4} x0) == 0x3 then (rw__LL_Main_dev19 s44 s45 s46 s47) else (if (take`{4} x0) == 0x4 then (rw__LL_Main_dev19 s56 s57 s58 s59) else (if (take`{4} x0) == 0x5 then (rw__LL_Main_dev19 s68 s69 s70 s71) else (if (take`{4} x0) == 0x6 then (rw__LL_Main_dev19 s80 s81 s82 s83) else (if (take`{4} x0) == 0x7 then (rw__LL_Main_dev19 s92 s93 s94 s95) else (if (take`{4} x0) == 0x8 then (rw__LL_Main_dev29 s104 s105 s106 s107) else (if (take`{4} x0) == 0x9 then (rw__LL_Main_dev12 x3 x1 x2 x3 x4) else (if (take`{4} x0) == 0xa then (rw__LL_Main_dev10 x3 x1 x2 x3 x4) else (if (take`{4} x0) == 0xb then (rw__LL_Main_dev22 x3 x1 x2 x3 x4) else (rw__LL_Main_dev31 x3 x1 x2 x3 x4))))))))))))
+  where
+    s0 : [32]
+    s0 = take`{32} (drop`{4} x0)
+    s1 : [32]
+    s1 = drop`{36} x0
+    s2 : [1030]
+    s2 = rw__LL_Main_dev2 s1 s0 x1 x2 0x6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 x4
+    s3 : [256]
+    s3 = take`{256} s2
+    s4 : [512]
+    s4 = take`{512} (drop`{256} s2)
+    s5 : [256]
+    s5 = take`{256} (drop`{768} s2)
+    s6 : [6]
+    s6 = drop`{1024} s2
+    s7 : [1104]
+    s7 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s3 # (s4 # (s5 # s6)))
+    s8 : [256]
+    s8 = take`{256} (drop`{74} s7)
+    s9 : [512]
+    s9 = take`{512} (drop`{330} s7)
+    s10 : [256]
+    s10 = take`{256} (drop`{842} s7)
+    s11 : [6]
+    s11 = drop`{1098} s7
+    s12 : [32]
+    s12 = take`{32} (drop`{4} x0)
+    s13 : [32]
+    s13 = drop`{36} x0
+    s14 : [1030]
+    s14 = rw__LL_Main_dev7 s12 s13 x2 x1 x2 x3 x4
+    s15 : [256]
+    s15 = take`{256} s14
+    s16 : [512]
+    s16 = take`{512} (drop`{256} s14)
+    s17 : [256]
+    s17 = take`{256} (drop`{768} s14)
+    s18 : [6]
+    s18 = drop`{1024} s14
+    s19 : [1104]
+    s19 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s15 # (s16 # (s17 # s18)))
+    s20 : [256]
+    s20 = take`{256} (drop`{74} s19)
+    s21 : [512]
+    s21 = take`{512} (drop`{330} s19)
+    s22 : [256]
+    s22 = take`{256} (drop`{842} s19)
+    s23 : [6]
+    s23 = drop`{1098} s19
+    s24 : [32]
+    s24 = take`{32} (drop`{4} x0)
+    s25 : [32]
+    s25 = drop`{36} x0
+    s26 : [1030]
+    s26 = rw__LL_Main_dev4 s24 s25 x2 x1 x2 x3 x4
+    s27 : [256]
+    s27 = take`{256} s26
+    s28 : [512]
+    s28 = take`{512} (drop`{256} s26)
+    s29 : [256]
+    s29 = take`{256} (drop`{768} s26)
+    s30 : [6]
+    s30 = drop`{1024} s26
+    s31 : [1104]
+    s31 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s27 # (s28 # (s29 # s30)))
+    s32 : [256]
+    s32 = take`{256} (drop`{74} s31)
+    s33 : [512]
+    s33 = take`{512} (drop`{330} s31)
+    s34 : [256]
+    s34 = take`{256} (drop`{842} s31)
+    s35 : [6]
+    s35 = drop`{1098} s31
+    s36 : [32]
+    s36 = take`{32} (drop`{4} x0)
+    s37 : [32]
+    s37 = drop`{36} x0
+    s38 : [1030]
+    s38 = rw__LL_Main_dev8 s36 s37 x2 x1 x2 x3 x4
+    s39 : [256]
+    s39 = take`{256} s38
+    s40 : [512]
+    s40 = take`{512} (drop`{256} s38)
+    s41 : [256]
+    s41 = take`{256} (drop`{768} s38)
+    s42 : [6]
+    s42 = drop`{1024} s38
+    s43 : [1104]
+    s43 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s39 # (s40 # (s41 # s42)))
+    s44 : [256]
+    s44 = take`{256} (drop`{74} s43)
+    s45 : [512]
+    s45 = take`{512} (drop`{330} s43)
+    s46 : [256]
+    s46 = take`{256} (drop`{842} s43)
+    s47 : [6]
+    s47 = drop`{1098} s43
+    s48 : [32]
+    s48 = take`{32} (drop`{4} x0)
+    s49 : [32]
+    s49 = drop`{36} x0
+    s50 : [1030]
+    s50 = rw__LL_Main_dev25 s48 s49 x2 x1 x2 x3 x4
+    s51 : [256]
+    s51 = take`{256} s50
+    s52 : [512]
+    s52 = take`{512} (drop`{256} s50)
+    s53 : [256]
+    s53 = take`{256} (drop`{768} s50)
+    s54 : [6]
+    s54 = drop`{1024} s50
+    s55 : [1104]
+    s55 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s51 # (s52 # (s53 # s54)))
+    s56 : [256]
+    s56 = take`{256} (drop`{74} s55)
+    s57 : [512]
+    s57 = take`{512} (drop`{330} s55)
+    s58 : [256]
+    s58 = take`{256} (drop`{842} s55)
+    s59 : [6]
+    s59 = drop`{1098} s55
+    s60 : [32]
+    s60 = take`{32} (drop`{4} x0)
+    s61 : [32]
+    s61 = drop`{36} x0
+    s62 : [1030]
+    s62 = rw__LL_Main_dev s61 s60 x2 x1 x2 x3 x4
+    s63 : [256]
+    s63 = take`{256} s62
+    s64 : [512]
+    s64 = take`{512} (drop`{256} s62)
+    s65 : [256]
+    s65 = take`{256} (drop`{768} s62)
+    s66 : [6]
+    s66 = drop`{1024} s62
+    s67 : [1104]
+    s67 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s63 # (s64 # (s65 # s66)))
+    s68 : [256]
+    s68 = take`{256} (drop`{74} s67)
+    s69 : [512]
+    s69 = take`{512} (drop`{330} s67)
+    s70 : [256]
+    s70 = take`{256} (drop`{842} s67)
+    s71 : [6]
+    s71 = drop`{1098} s67
+    s72 : [32]
+    s72 = take`{32} (drop`{4} x0)
+    s73 : [32]
+    s73 = drop`{36} x0
+    s74 : [1030]
+    s74 = rw__LL_Main_dev21 s73 s72 x2 x1 x2 x3 x4
+    s75 : [256]
+    s75 = take`{256} s74
+    s76 : [512]
+    s76 = take`{512} (drop`{256} s74)
+    s77 : [256]
+    s77 = take`{256} (drop`{768} s74)
+    s78 : [6]
+    s78 = drop`{1024} s74
+    s79 : [1104]
+    s79 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s75 # (s76 # (s77 # s78)))
+    s80 : [256]
+    s80 = take`{256} (drop`{74} s79)
+    s81 : [512]
+    s81 = take`{512} (drop`{330} s79)
+    s82 : [256]
+    s82 = take`{256} (drop`{842} s79)
+    s83 : [6]
+    s83 = drop`{1098} s79
+    s84 : [32]
+    s84 = take`{32} (drop`{4} x0)
+    s85 : [32]
+    s85 = drop`{36} x0
+    s86 : [1030]
+    s86 = rw__LL_Main_dev32 s85 s84 x2 x1 x2 x3 x4
+    s87 : [256]
+    s87 = take`{256} s86
+    s88 : [512]
+    s88 = take`{512} (drop`{256} s86)
+    s89 : [256]
+    s89 = take`{256} (drop`{768} s86)
+    s90 : [6]
+    s90 = drop`{1024} s86
+    s91 : [1104]
+    s91 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s87 # (s88 # (s89 # s90)))
+    s92 : [256]
+    s92 = take`{256} (drop`{74} s91)
+    s93 : [512]
+    s93 = take`{512} (drop`{330} s91)
+    s94 : [256]
+    s94 = take`{256} (drop`{842} s91)
+    s95 : [6]
+    s95 = drop`{1098} s91
+    s96 : [32]
+    s96 = take`{32} (drop`{4} x0)
+    s97 : [32]
+    s97 = drop`{36} x0
+    s98 : [1030]
+    s98 = rw__LL_Main_dev11 s97 s96 x1 x2 x3 0b000000
+    s99 : [256]
+    s99 = take`{256} s98
+    s100 : [512]
+    s100 = take`{512} (drop`{256} s98)
+    s101 : [256]
+    s101 = take`{256} (drop`{768} s98)
+    s102 : [6]
+    s102 = drop`{1024} s98
+    s103 : [1104]
+    s103 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s99 # (s100 # (s101 # s102)))
+    s104 : [256]
+    s104 = take`{256} (drop`{74} s103)
+    s105 : [512]
+    s105 = take`{512} (drop`{330} s103)
+    s106 : [256]
+    s106 = take`{256} (drop`{842} s103)
+    s107 : [6]
+    s107 = drop`{1098} s103
+
+// $LL.Main.dev16
+rw__LL_Main_dev16 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev16 x0 x1 x2 x3 x4 x5 x6 = x3 # ((s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (x0 # (x1 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))) # (x5 # x6))
   where
     s0 : [32]
     s0 = take`{32} x2
@@ -1115,22 +1235,6 @@ rw__LL_Main_dev22 x0 x1 x2 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (x0 # (x1 # (s6 
     s13 : [32]
     s13 = drop`{480} x2
 
-// Main.xorW32
-rw_Main_xorW32 : [32] -> [32] -> [32]
-rw_Main_xorW32 x0 x1 = ext_xorW32 x0 x1
-
-// $LL.Main.dev21
-rw__LL_Main_dev21 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev21 x0 x1 x2 = rw__LL_Main_dev2 x0 x1 x2
-
-// $LL.Main.dev20
-rw__LL_Main_dev20 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev20 x0 x1 x2 = rw__LL_Main_dev26 x0 x1 x2
-
-// $LL.Main.loop4
-rw__LL_Main_loop4 : [68] -> [256] -> [512] -> [256] -> [6] -> [1104]
-rw__LL_Main_loop4 x0 x1 x2 x3 x4 = rw_Main_dev x0 x1 x2 x3 x4
-
 // Main.bigsigma0
 rw_Main_bigsigma0 : [32] -> [32]
 rw_Main_bigsigma0 x0 = rw_Main_xorW32 (rw_Main_xorW32 (rw_Main_rotateR2 x0) (rw_Main_rotateR13 x0)) (rw_Main_rotateR22 x0)
@@ -1144,319 +1248,25 @@ rw_Main_digest3 x0 = 0b0 # (s0 # s1)
     s1 : [32]
     s1 = drop`{224} x0
 
-// $LL.Main.dev19
-rw__LL_Main_dev19 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev19 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev37 x0 x1 x2 x3 x4 x5 x6
+// $LL.Main.step256
+rw__LL_Main_step256 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256]
+rw__LL_Main_step256 x0 x1 x2 x3 x4 x5 x6 x7 = (rw_Main_plusW32 x7 (rw_Main_plusW32 (rw_Main_bigsigma0 x0) (rw_Main_maj x0 x4 x3))) # (x0 # (x4 # (x3 # ((rw_Main_plusW32 x1 x7) # (x2 # (x5 # x6))))))
 
-// $LL.Main.genhash'6
-rw__LL_Main_genhash_6 : [6] -> [256] -> [512] -> [256] -> [6] -> [1036]
-rw__LL_Main_genhash_6 x0 x1 x2 x3 x4 = rw__LL_Main_genhash_10 x0 x1 x2 x3 x4
+// $LL.Main.genhash'3
+rw__LL_Main_genhash_3 : [6] -> [256] -> [512] -> [256] -> [6] -> [1036]
+rw__LL_Main_genhash_3 x0 x1 x2 x3 x4 = x0 # (x1 # (x2 # (x3 # x4)))
 
-// Main.devsha256'
-rw_Main_devsha256_ : [256] -> [512] -> [256] -> [6] -> [1104]
-rw_Main_devsha256_ x0 x1 x2 x3 = 0b11000000000000000000000000000000000000000000000000000000000000000010000000 # (x0 # (x1 # (x2 # x3)))
-
-// $LL.Main.genhash'5
-rw__LL_Main_genhash_5 : [6] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1036]
-rw__LL_Main_genhash_5 x0 x1 x2 x3 x4 x5 = rw__LL_Main_genhash_6 x0 s1 s2 s3 s4
-  where
-    s0 : [1030]
-    s0 = rw__LL_Main_genhash_4 (rw_Main_seed x0) x1 x2 x3 x4 x5
-    s1 : [256]
-    s1 = take`{256} s0
-    s2 : [512]
-    s2 = take`{512} (drop`{256} s0)
-    s3 : [256]
-    s3 = take`{256} (drop`{768} s0)
-    s4 : [6]
-    s4 = drop`{1024} s0
-
-// $LL.Main.genhash'4
-rw__LL_Main_genhash_4 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_genhash_4 x0 x1 x2 x3 x4 x5 = rw__LL_Main_genhash_8 x0 x1 x2 x3 x4 x5
-
-// $LL.Main.loop3
-rw__LL_Main_loop3 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_loop3 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 = x9 # (x10 # ((rw_Main_plusW32 s0 x3) # ((rw_Main_plusW32 s1 x1) # ((rw_Main_plusW32 s2 x5) # ((rw_Main_plusW32 s3 x0) # ((rw_Main_plusW32 s4 x6) # ((rw_Main_plusW32 s5 x7) # ((rw_Main_plusW32 s6 x2) # ((rw_Main_plusW32 s7 x4) # x12)))))))))
-  where
-    s0 : [32]
-    s0 = take`{32} x8
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x8)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x8)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x8)
-    s4 : [32]
-    s4 = take`{32} (drop`{128} x8)
-    s5 : [32]
-    s5 = take`{32} (drop`{160} x8)
-    s6 : [32]
-    s6 = take`{32} (drop`{192} x8)
-    s7 : [32]
-    s7 = drop`{224} x8
-
-// $LL.Main.dev17
-rw__LL_Main_dev17 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev17 x0 x1 x2 x3 x4 x5 x6 = x3 # ((rw__LL_Main_dev20 x0 x1 x2) # (x5 # x6))
-
-// $LL.Main.dev16
-rw__LL_Main_dev16 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev16 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev15 x0 x1 x2 x3 x4 x5
-
-// Main.step256
-rw_Main_step256 : [32] -> [32] -> [256] -> [256]
-rw_Main_step256 x0 x1 x2 = rw__LL_Main_step256 s1 s5 s6 s0 s4 s3 s2 (rw_Main_plusW32 s7 (rw_Main_plusW32 (rw_Main_plusW32 (rw_Main_bigsigma1 s4) (rw_Main_ch s4 s5 s6)) (rw_Main_plusW32 x0 x1)))
-  where
-    s0 : [32]
-    s0 = take`{32} x2
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x2)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x2)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x2)
-    s4 : [32]
-    s4 = take`{32} (drop`{128} x2)
-    s5 : [32]
-    s5 = take`{32} (drop`{160} x2)
-    s6 : [32]
-    s6 = take`{32} (drop`{192} x2)
-    s7 : [32]
-    s7 = drop`{224} x2
+// $LL.Main.genhash'2
+rw__LL_Main_genhash_2 : [6] -> [256] -> [512] -> [256] -> [6] -> [1036]
+rw__LL_Main_genhash_2 x0 x1 x2 x3 x4 = rw__LL_Main_genhash_11 x0 x1 x2 x3 x4
 
 // $LL.Main.dev15
 rw__LL_Main_dev15 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev15 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev57 x1 x0 x3 x2 x3 x4 x5
+rw__LL_Main_dev15 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev23 x0 x1 x3 x2 x3 x4 x5
 
 // $LL.Main.dev14
-rw__LL_Main_dev14 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev14 x0 x1 x2 = rw__LL_Main_dev44 x0 x1 x2
-
-// $LL.Main.dev13
-rw__LL_Main_dev13 : [68] -> [256] -> [512] -> [256] -> [6] -> [1104]
-rw__LL_Main_dev13 x0 x1 x2 x3 x4 = if (take`{4} x0) == 0x0 then (rw_Main_devsha256_ s8 s9 s10 s11) else (if (take`{4} x0) == 0x1 then (rw_Main_devsha256_ s20 s21 s22 s23) else (if (take`{4} x0) == 0x2 then (rw_Main_devsha256_ s32 s33 s34 s35) else (if (take`{4} x0) == 0x3 then (rw_Main_devsha256_ s44 s45 s46 s47) else (if (take`{4} x0) == 0x4 then (rw_Main_devsha256_ s56 s57 s58 s59) else (if (take`{4} x0) == 0x5 then (rw_Main_devsha256_ s68 s69 s70 s71) else (if (take`{4} x0) == 0x6 then (rw_Main_devsha256_ s80 s81 s82 s83) else (if (take`{4} x0) == 0x7 then (rw_Main_devsha256_ s92 s93 s94 s95) else (if (take`{4} x0) == 0x8 then (rw__LL_Main_dev35 s104 s105 s106 s107) else (if (take`{4} x0) == 0x9 then (rw__LL_Main_dev51 x3 x1 x2 x3 x4) else (if (take`{4} x0) == 0xa then (rw__LL_Main_dev46 x3 x1 x2 x3 x4) else (if (take`{4} x0) == 0xb then (rw__LL_Main_dev60 x3 x1 x2 x3 x4) else (rw__LL_Main_dev41 x3 x1 x2 x3 x4))))))))))))
-  where
-    s0 : [32]
-    s0 = take`{32} (drop`{4} x0)
-    s1 : [32]
-    s1 = drop`{36} x0
-    s2 : [1030]
-    s2 = rw__LL_Main_dev16 s0 s1 x1 x2 0x6a09e667bb67ae853c6ef372a54ff53a510e527f9b05688c1f83d9ab5be0cd19 x4
-    s3 : [256]
-    s3 = take`{256} s2
-    s4 : [512]
-    s4 = take`{512} (drop`{256} s2)
-    s5 : [256]
-    s5 = take`{256} (drop`{768} s2)
-    s6 : [6]
-    s6 = drop`{1024} s2
-    s7 : [1104]
-    s7 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s3 # (s4 # (s5 # s6)))
-    s8 : [256]
-    s8 = take`{256} (drop`{74} s7)
-    s9 : [512]
-    s9 = take`{512} (drop`{330} s7)
-    s10 : [256]
-    s10 = take`{256} (drop`{842} s7)
-    s11 : [6]
-    s11 = drop`{1098} s7
-    s12 : [32]
-    s12 = take`{32} (drop`{4} x0)
-    s13 : [32]
-    s13 = drop`{36} x0
-    s14 : [1030]
-    s14 = rw__LL_Main_dev19 s12 s13 x2 x1 x2 x3 x4
-    s15 : [256]
-    s15 = take`{256} s14
-    s16 : [512]
-    s16 = take`{512} (drop`{256} s14)
-    s17 : [256]
-    s17 = take`{256} (drop`{768} s14)
-    s18 : [6]
-    s18 = drop`{1024} s14
-    s19 : [1104]
-    s19 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s15 # (s16 # (s17 # s18)))
-    s20 : [256]
-    s20 = take`{256} (drop`{74} s19)
-    s21 : [512]
-    s21 = take`{512} (drop`{330} s19)
-    s22 : [256]
-    s22 = take`{256} (drop`{842} s19)
-    s23 : [6]
-    s23 = drop`{1098} s19
-    s24 : [32]
-    s24 = take`{32} (drop`{4} x0)
-    s25 : [32]
-    s25 = drop`{36} x0
-    s26 : [1030]
-    s26 = rw__LL_Main_dev42 s25 s24 x2 x1 x2 x3 x4
-    s27 : [256]
-    s27 = take`{256} s26
-    s28 : [512]
-    s28 = take`{512} (drop`{256} s26)
-    s29 : [256]
-    s29 = take`{256} (drop`{768} s26)
-    s30 : [6]
-    s30 = drop`{1024} s26
-    s31 : [1104]
-    s31 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s27 # (s28 # (s29 # s30)))
-    s32 : [256]
-    s32 = take`{256} (drop`{74} s31)
-    s33 : [512]
-    s33 = take`{512} (drop`{330} s31)
-    s34 : [256]
-    s34 = take`{256} (drop`{842} s31)
-    s35 : [6]
-    s35 = drop`{1098} s31
-    s36 : [32]
-    s36 = take`{32} (drop`{4} x0)
-    s37 : [32]
-    s37 = drop`{36} x0
-    s38 : [1030]
-    s38 = rw__LL_Main_dev1 s36 s37 x2 x1 x2 x3 x4
-    s39 : [256]
-    s39 = take`{256} s38
-    s40 : [512]
-    s40 = take`{512} (drop`{256} s38)
-    s41 : [256]
-    s41 = take`{256} (drop`{768} s38)
-    s42 : [6]
-    s42 = drop`{1024} s38
-    s43 : [1104]
-    s43 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s39 # (s40 # (s41 # s42)))
-    s44 : [256]
-    s44 = take`{256} (drop`{74} s43)
-    s45 : [512]
-    s45 = take`{512} (drop`{330} s43)
-    s46 : [256]
-    s46 = take`{256} (drop`{842} s43)
-    s47 : [6]
-    s47 = drop`{1098} s43
-    s48 : [32]
-    s48 = take`{32} (drop`{4} x0)
-    s49 : [32]
-    s49 = drop`{36} x0
-    s50 : [1030]
-    s50 = rw__LL_Main_dev11 s49 s48 x2 x1 x2 x3 x4
-    s51 : [256]
-    s51 = take`{256} s50
-    s52 : [512]
-    s52 = take`{512} (drop`{256} s50)
-    s53 : [256]
-    s53 = take`{256} (drop`{768} s50)
-    s54 : [6]
-    s54 = drop`{1024} s50
-    s55 : [1104]
-    s55 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s51 # (s52 # (s53 # s54)))
-    s56 : [256]
-    s56 = take`{256} (drop`{74} s55)
-    s57 : [512]
-    s57 = take`{512} (drop`{330} s55)
-    s58 : [256]
-    s58 = take`{256} (drop`{842} s55)
-    s59 : [6]
-    s59 = drop`{1098} s55
-    s60 : [32]
-    s60 = take`{32} (drop`{4} x0)
-    s61 : [32]
-    s61 = drop`{36} x0
-    s62 : [1030]
-    s62 = rw__LL_Main_dev36 s60 s61 x2 x1 x2 x3 x4
-    s63 : [256]
-    s63 = take`{256} s62
-    s64 : [512]
-    s64 = take`{512} (drop`{256} s62)
-    s65 : [256]
-    s65 = take`{256} (drop`{768} s62)
-    s66 : [6]
-    s66 = drop`{1024} s62
-    s67 : [1104]
-    s67 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s63 # (s64 # (s65 # s66)))
-    s68 : [256]
-    s68 = take`{256} (drop`{74} s67)
-    s69 : [512]
-    s69 = take`{512} (drop`{330} s67)
-    s70 : [256]
-    s70 = take`{256} (drop`{842} s67)
-    s71 : [6]
-    s71 = drop`{1098} s67
-    s72 : [32]
-    s72 = take`{32} (drop`{4} x0)
-    s73 : [32]
-    s73 = drop`{36} x0
-    s74 : [1030]
-    s74 = rw__LL_Main_dev45 s72 s73 x2 x1 x2 x3 x4
-    s75 : [256]
-    s75 = take`{256} s74
-    s76 : [512]
-    s76 = take`{512} (drop`{256} s74)
-    s77 : [256]
-    s77 = take`{256} (drop`{768} s74)
-    s78 : [6]
-    s78 = drop`{1024} s74
-    s79 : [1104]
-    s79 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s75 # (s76 # (s77 # s78)))
-    s80 : [256]
-    s80 = take`{256} (drop`{74} s79)
-    s81 : [512]
-    s81 = take`{512} (drop`{330} s79)
-    s82 : [256]
-    s82 = take`{256} (drop`{842} s79)
-    s83 : [6]
-    s83 = drop`{1098} s79
-    s84 : [32]
-    s84 = take`{32} (drop`{4} x0)
-    s85 : [32]
-    s85 = drop`{36} x0
-    s86 : [1030]
-    s86 = rw__LL_Main_dev43 s84 s85 x2 x1 x2 x3 x4
-    s87 : [256]
-    s87 = take`{256} s86
-    s88 : [512]
-    s88 = take`{512} (drop`{256} s86)
-    s89 : [256]
-    s89 = take`{256} (drop`{768} s86)
-    s90 : [6]
-    s90 = drop`{1024} s86
-    s91 : [1104]
-    s91 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s87 # (s88 # (s89 # s90)))
-    s92 : [256]
-    s92 = take`{256} (drop`{74} s91)
-    s93 : [512]
-    s93 = take`{512} (drop`{330} s91)
-    s94 : [256]
-    s94 = take`{256} (drop`{842} s91)
-    s95 : [6]
-    s95 = drop`{1098} s91
-    s96 : [32]
-    s96 = take`{32} (drop`{4} x0)
-    s97 : [32]
-    s97 = drop`{36} x0
-    s98 : [1030]
-    s98 = rw__LL_Main_dev s96 s97 x1 x2 x3 0b000000
-    s99 : [256]
-    s99 = take`{256} s98
-    s100 : [512]
-    s100 = take`{512} (drop`{256} s98)
-    s101 : [256]
-    s101 = take`{256} (drop`{768} s98)
-    s102 : [6]
-    s102 = drop`{1024} s98
-    s103 : [1104]
-    s103 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s99 # (s100 # (s101 # s102)))
-    s104 : [256]
-    s104 = take`{256} (drop`{74} s103)
-    s105 : [512]
-    s105 = take`{512} (drop`{330} s103)
-    s106 : [256]
-    s106 = take`{256} (drop`{842} s103)
-    s107 : [6]
-    s107 = drop`{1098} s103
-
-// $LL.Main.dev12
-rw__LL_Main_dev12 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev12 x0 x1 x2 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (x0 # (x1 # (s12 # s13))))))))))))))
+rw__LL_Main_dev14 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev14 x0 x1 x2 x3 x4 x5 x6 = x3 # ((s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (x1 # (x0 # (s10 # (s11 # (s12 # s13))))))))))))))) # (x5 # x6))
   where
     s0 : [32]
     s0 = take`{32} x2
@@ -1479,37 +1289,91 @@ rw__LL_Main_dev12 x0 x1 x2 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 
     s9 : [32]
     s9 = take`{32} (drop`{288} x2)
     s10 : [32]
-    s10 = take`{32} (drop`{320} x2)
+    s10 = take`{32} (drop`{384} x2)
     s11 : [32]
-    s11 = take`{32} (drop`{352} x2)
+    s11 = take`{32} (drop`{416} x2)
     s12 : [32]
     s12 = take`{32} (drop`{448} x2)
     s13 : [32]
     s13 = drop`{480} x2
 
-// $LL.Main.dev11
-rw__LL_Main_dev11 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev11 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev29 x0 x1 x2 x3 x4 x5 x6
+// $LL.Main.loop3
+rw__LL_Main_loop3 : [6] -> [68] -> [256] -> [512] -> [256] -> [6] -> [1104]
+rw__LL_Main_loop3 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop7 x1 x0 x2 x3 x4 x5
+
+// Main.step256
+rw_Main_step256 : [32] -> [32] -> [256] -> [256]
+rw_Main_step256 x0 x1 x2 = rw__LL_Main_step256 s0 s3 s4 s2 s1 s5 s6 (rw_Main_plusW32 s7 (rw_Main_plusW32 (rw_Main_plusW32 (rw_Main_bigsigma1 s4) (rw_Main_ch s4 s5 s6)) (rw_Main_plusW32 x0 x1)))
+  where
+    s0 : [32]
+    s0 = take`{32} x2
+    s1 : [32]
+    s1 = take`{32} (drop`{32} x2)
+    s2 : [32]
+    s2 = take`{32} (drop`{64} x2)
+    s3 : [32]
+    s3 = take`{32} (drop`{96} x2)
+    s4 : [32]
+    s4 = take`{32} (drop`{128} x2)
+    s5 : [32]
+    s5 = take`{32} (drop`{160} x2)
+    s6 : [32]
+    s6 = take`{32} (drop`{192} x2)
+    s7 : [32]
+    s7 = drop`{224} x2
+
+// $LL.Main.dev13
+rw__LL_Main_dev13 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev13 x0 x1 x2 x3 x4 x5 x6 = x3 # ((x1 # (x0 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))) # (x5 # x6))
+  where
+    s0 : [32]
+    s0 = take`{32} (drop`{64} x2)
+    s1 : [32]
+    s1 = take`{32} (drop`{96} x2)
+    s2 : [32]
+    s2 = take`{32} (drop`{128} x2)
+    s3 : [32]
+    s3 = take`{32} (drop`{160} x2)
+    s4 : [32]
+    s4 = take`{32} (drop`{192} x2)
+    s5 : [32]
+    s5 = take`{32} (drop`{224} x2)
+    s6 : [32]
+    s6 = take`{32} (drop`{256} x2)
+    s7 : [32]
+    s7 = take`{32} (drop`{288} x2)
+    s8 : [32]
+    s8 = take`{32} (drop`{320} x2)
+    s9 : [32]
+    s9 = take`{32} (drop`{352} x2)
+    s10 : [32]
+    s10 = take`{32} (drop`{384} x2)
+    s11 : [32]
+    s11 = take`{32} (drop`{416} x2)
+    s12 : [32]
+    s12 = take`{32} (drop`{448} x2)
+    s13 : [32]
+    s13 = drop`{480} x2
+
+// $LL.Main.loop2
+rw__LL_Main_loop2 : [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_loop2 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 = rw__LL_Main_loop5 x4 x1 x2 x6 x0 x5 x7 x3 x8 x9 x10 x11 x12
 
 // Main.andW32
 rw_Main_andW32 : [32] -> [32] -> [32]
 rw_Main_andW32 x0 x1 = ext_andW32 x0 x1
 
-// $LL.Main.genhash'3
-rw__LL_Main_genhash_3 : [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_genhash_3 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_genhash_9 x1 x0 x2 x3 x4 x5 x6
+// $LL.Main.loop1
+rw__LL_Main_loop1 : [68] -> [256] -> [512] -> [256] -> [6] -> [1104]
+rw__LL_Main_loop1 x0 x1 x2 x3 x4 = rw_Main_dev x0 x1 x2 x3 x4
 
-// $LL.Main.dev10
-rw__LL_Main_dev10 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev10 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev50 x0 x1 x3 x2 x3 x4 x5
+// $LL.Main.dev12
+rw__LL_Main_dev12 : [256] -> [256] -> [512] -> [256] -> [6] -> [1104]
+rw__LL_Main_dev12 x0 x1 x2 x3 x4 = 0b1 # ((rw_Main_digest0 x0) # (0x40 # (x1 # (x2 # (x3 # x4)))))
 
-// $LL.Main.dev9
-rw__LL_Main_dev9 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev9 x0 x1 x2 = rw__LL_Main_dev54 x0 x1 x2
-
-// $LL.Main.dev8
-rw__LL_Main_dev8 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev8 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev10 x1 x0 x2 x3 x4 x5
+// $LL.Main.dev11
+rw__LL_Main_dev11 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev11 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev5 x0 x1 x2 x3 x4 x5
 
 // Main.rotateR17
 rw_Main_rotateR17 : [32] -> [32]
@@ -1580,51 +1444,9 @@ rw_Main_rotateR17 x0 = s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s22 # (s
     s31 : [1]
     s31 = drop`{31} x0
 
-// $LL.Main.dev7
-rw__LL_Main_dev7 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev7 x0 x1 x2 = rw__LL_Main_dev48 x0 x1 x2
-
-// $LL.Main.loop2
-rw__LL_Main_loop2 : [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_loop2 x0 x1 x2 x3 x4 = rw__LL_Main_loop5 s7 s2 s0 s6 s4 s5 s1 s3 x1 x1 x2 x3 x4
-  where
-    s0 : [32]
-    s0 = take`{32} x0
-    s1 : [32]
-    s1 = take`{32} (drop`{32} x0)
-    s2 : [32]
-    s2 = take`{32} (drop`{64} x0)
-    s3 : [32]
-    s3 = take`{32} (drop`{96} x0)
-    s4 : [32]
-    s4 = take`{32} (drop`{128} x0)
-    s5 : [32]
-    s5 = take`{32} (drop`{160} x0)
-    s6 : [32]
-    s6 = take`{32} (drop`{192} x0)
-    s7 : [32]
-    s7 = drop`{224} x0
-
-// $LL.Main.genhash'2
-rw__LL_Main_genhash_2 : [6] -> [256] -> [512] -> [256] -> [6] -> [1036]
-rw__LL_Main_genhash_2 x0 x1 x2 x3 x4 = rw__LL_Main_genhash_5 x0 s1 s2 s3 s4 s5
-  where
-    s0 : [1062]
-    s0 = rw__LL_Main_genhash_7 x2 x1 x2 x3 x4
-    s1 : [32]
-    s1 = take`{32} s0
-    s2 : [256]
-    s2 = take`{256} (drop`{32} s0)
-    s3 : [512]
-    s3 = take`{512} (drop`{288} s0)
-    s4 : [256]
-    s4 = take`{256} (drop`{800} s0)
-    s5 : [6]
-    s5 = drop`{1056} s0
-
-// $LL.Main.loop1
-rw__LL_Main_loop1 : [6] -> [256] -> [512] -> [256] -> [6] -> [1104]
-rw__LL_Main_loop1 x0 x1 x2 x3 x4 = 0xc0000000000000001 # (x0 # (x1 # (x2 # (x3 # x4))))
+// $LL.Main.dev10
+rw__LL_Main_dev10 : [256] -> [256] -> [512] -> [256] -> [6] -> [1104]
+rw__LL_Main_dev10 x0 x1 x2 x3 x4 = 0b1 # ((rw_Main_digest1 x0) # (0x40 # (x1 # (x2 # (x3 # x4)))))
 
 // Main.rotateR7
 rw_Main_rotateR7 : [32] -> [32]
@@ -1699,14 +1521,6 @@ rw_Main_rotateR7 x0 = s25 # (s26 # (s27 # (s28 # (s29 # (s30 # (s31 # (s0 # (s1 
 rw_Main_sigma1 : [32] -> [32]
 rw_Main_sigma1 x0 = rw_Main_xorW32 (rw_Main_xorW32 (rw_Main_rotateR17 x0) (rw_Main_rotateR19 x0)) (rw_Main_shiftR10 x0)
 
-// $LL.Main.dev6
-rw__LL_Main_dev6 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev6 x0 x1 x2 = rw__LL_Main_dev7 x0 x1 x2
-
-// $LL.Main.dev5
-rw__LL_Main_dev5 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev5 x0 x1 x2 x3 x4 x5 x6 = x3 # ((rw__LL_Main_dev33 x1 x0 x2) # (x5 # x6))
-
 // Main.rotateR2
 rw_Main_rotateR2 : [32] -> [32]
 rw_Main_rotateR2 x0 = s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (s14 # (s15 # (s16 # (s17 # (s18 # (s19 # (s20 # (s21 # (s22 # (s23 # (s24 # (s25 # (s26 # (s27 # (s28 # s29))))))))))))))))))))))))))))))
@@ -1776,25 +1590,58 @@ rw_Main_rotateR2 x0 = s30 # (s31 # (s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7
     s31 : [1]
     s31 = drop`{31} x0
 
+// $LL.Main.dev9
+rw__LL_Main_dev9 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev9 x0 x1 x2 x3 x4 x5 x6 = x3 # ((s0 # (s1 # (s2 # (s3 # (x1 # (x0 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # s13))))))))))))))) # (x5 # x6))
+  where
+    s0 : [32]
+    s0 = take`{32} x2
+    s1 : [32]
+    s1 = take`{32} (drop`{32} x2)
+    s2 : [32]
+    s2 = take`{32} (drop`{64} x2)
+    s3 : [32]
+    s3 = take`{32} (drop`{96} x2)
+    s4 : [32]
+    s4 = take`{32} (drop`{192} x2)
+    s5 : [32]
+    s5 = take`{32} (drop`{224} x2)
+    s6 : [32]
+    s6 = take`{32} (drop`{256} x2)
+    s7 : [32]
+    s7 = take`{32} (drop`{288} x2)
+    s8 : [32]
+    s8 = take`{32} (drop`{320} x2)
+    s9 : [32]
+    s9 = take`{32} (drop`{352} x2)
+    s10 : [32]
+    s10 = take`{32} (drop`{384} x2)
+    s11 : [32]
+    s11 = take`{32} (drop`{416} x2)
+    s12 : [32]
+    s12 = take`{32} (drop`{448} x2)
+    s13 : [32]
+    s13 = drop`{480} x2
+
+// $LL.Main.dev8
+rw__LL_Main_dev8 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev8 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev9 x1 x0 x2 x3 x4 x5 x6
+
+// $LL.Main.dev7
+rw__LL_Main_dev7 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev7 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev13 x1 x0 x2 x3 x4 x5 x6
+
 // $LL.Main.seed
 rw__LL_Main_seed : [6] -> [32]
 rw__LL_Main_seed x0 = if x0 == 0b000000 then 0x428a2f98 else (if x0 == 0b000001 then 0x71374491 else (if x0 == 0b000010 then 0xb5c0fbcf else (if x0 == 0b000011 then 0xe9b5dba5 else (if x0 == 0b000100 then 0x3956c25b else (if x0 == 0b000101 then 0x59f111f1 else (if x0 == 0b000110 then 0x923f82a4 else (if x0 == 0b000111 then 0xab1c5ed5 else (if x0 == 0b001000 then 0xd807aa98 else (if x0 == 0b001001 then 0x12835b01 else (if x0 == 0b001010 then 0x243185be else (if x0 == 0b001011 then 0x550c7dc3 else (if x0 == 0b001100 then 0x72be5d74 else (if x0 == 0b001101 then 0x80deb1fe else (if x0 == 0b001110 then 0x9bdc06a7 else (if x0 == 0b001111 then 0xc19bf174 else (if x0 == 0b010000 then 0xe49b69c1 else (if x0 == 0b010001 then 0xefbe4786 else (if x0 == 0b010010 then 0x0fc19dc6 else (if x0 == 0b010011 then 0x240ca1cc else (if x0 == 0b010100 then 0x2de92c6f else (if x0 == 0b010101 then 0x4a7484aa else (if x0 == 0b010110 then 0x5cb0a9dc else (if x0 == 0b010111 then 0x76f988da else (if x0 == 0b011000 then 0x983e5152 else (if x0 == 0b011001 then 0xa831c66d else (if x0 == 0b011010 then 0xb00327c8 else (if x0 == 0b011011 then 0xbf597fc7 else (if x0 == 0b011100 then 0xc6e00bf3 else (if x0 == 0b011101 then 0xd5a79147 else (if x0 == 0b011110 then 0x06ca6351 else (if x0 == 0b011111 then 0x14292967 else (if x0 == 0b100000 then 0x27b70a85 else (if x0 == 0b100001 then 0x2e1b2138 else (if x0 == 0b100010 then 0x4d2c6dfc else (if x0 == 0b100011 then 0x53380d13 else (if x0 == 0b100100 then 0x650a7354 else (if x0 == 0b100101 then 0x766a0abb else (if x0 == 0b100110 then 0x81c2c92e else (if x0 == 0b100111 then 0x92722c85 else (if x0 == 0b101000 then 0xa2bfe8a1 else (if x0 == 0b101001 then 0xa81a664b else (if x0 == 0b101010 then 0xc24b8b70 else (if x0 == 0b101011 then 0xc76c51a3 else (if x0 == 0b101100 then 0xd192e819 else (if x0 == 0b101101 then 0xd6990624 else (if x0 == 0b101110 then 0xf40e3585 else (if x0 == 0b101111 then 0x106aa070 else (if x0 == 0b110000 then 0x19a4c116 else (if x0 == 0b110001 then 0x1e376c08 else (if x0 == 0b110010 then 0x2748774c else (if x0 == 0b110011 then 0x34b0bcb5 else (if x0 == 0b110100 then 0x391c0cb3 else (if x0 == 0b110101 then 0x4ed8aa4a else (if x0 == 0b110110 then 0x5b9cca4f else (if x0 == 0b110111 then 0x682e6ff3 else (if x0 == 0b111000 then 0x748f82ee else (if x0 == 0b111001 then 0x78a5636f else (if x0 == 0b111010 then 0x84c87814 else (if x0 == 0b111011 then 0x8cc70208 else (if x0 == 0b111100 then 0x90befffa else (if x0 == 0b111101 then 0xa4506ceb else (if x0 == 0b111110 then 0xbef9a3f7 else 0xc67178f2))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
 
-// $LL.Main.dev4
-rw__LL_Main_dev4 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev4 x0 x1 x2 x3 x4 x5 x6 = x3 # ((rw__LL_Main_dev31 x0 x1 x2) # (x5 # x6))
+// $LL.Main.loop
+rw__LL_Main_loop : [6] -> [256] -> [512] -> [256] -> [6] -> [1104]
+rw__LL_Main_loop x0 x1 x2 x3 x4 = 0xc0000000000000002 # (x0 # (x1 # (x2 # (x3 # x4))))
 
-// Main.ch
-rw_Main_ch : [32] -> [32] -> [32] -> [32]
-rw_Main_ch x0 x1 x2 = rw_Main_xorW32 (rw_Main_andW32 x0 x1) (rw_Main_andW32 (rw_Main_notW32 x0) x2)
-
-// $LL.Main.dev3
-rw__LL_Main_dev3 : [32] -> [32] -> [256] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev3 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev8 x1 x0 x2 x4 x5 x6
-
-// $LL.Main.dev2
-rw__LL_Main_dev2 : [32] -> [32] -> [512] -> [512]
-rw__LL_Main_dev2 x0 x1 x2 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (x0 # x1))))))))))))))
+// $LL.Main.dev6
+rw__LL_Main_dev6 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev6 x0 x1 x2 x3 x4 x5 x6 = x3 # ((s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 # (s9 # (s10 # (s11 # (s12 # (s13 # (x1 # x0))))))))))))))) # (x5 # x6))
   where
     s0 : [32]
     s0 = take`{32} x2
@@ -1825,13 +1672,50 @@ rw__LL_Main_dev2 x0 x1 x2 = s0 # (s1 # (s2 # (s3 # (s4 # (s5 # (s6 # (s7 # (s8 #
     s13 : [32]
     s13 = take`{32} (drop`{416} x2)
 
+// Main.ch
+rw_Main_ch : [32] -> [32] -> [32] -> [32]
+rw_Main_ch x0 x1 x2 = rw_Main_xorW32 (rw_Main_andW32 x0 x1) (rw_Main_andW32 (rw_Main_notW32 x0) x2)
+
+// $LL.Main.dev5
+rw__LL_Main_dev5 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev5 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev24 x1 x0 x4 x2 x3 x4 x5
+
+// $LL.Main.dev4
+rw__LL_Main_dev4 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev4 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev27 x1 x0 x2 x3 x4 x5 x6
+
 // $LL.Main.genhash'1
-rw__LL_Main_genhash_1 : [32] -> [256] -> [512] -> [256] -> [6] -> [1062]
-rw__LL_Main_genhash_1 x0 x1 x2 x3 x4 = x0 # (x1 # (x2 # (x3 # x4)))
+rw__LL_Main_genhash_1 : [6] -> [256] -> [512] -> [256] -> [6] -> [1036]
+rw__LL_Main_genhash_1 x0 x1 x2 x3 x4 = rw__LL_Main_genhash_6 x0 s1 s2 s3 s4 s5
+  where
+    s0 : [1062]
+    s0 = rw__LL_Main_genhash_4 x2 x1 x2 x3 x4
+    s1 : [32]
+    s1 = take`{32} s0
+    s2 : [256]
+    s2 = take`{256} (drop`{32} s0)
+    s3 : [512]
+    s3 = take`{512} (drop`{288} s0)
+    s4 : [256]
+    s4 = take`{256} (drop`{800} s0)
+    s5 : [6]
+    s5 = drop`{1056} s0
 
 // $LL.Main.genhash'
-rw__LL_Main_genhash_ : [6] -> [256] -> [512] -> [256] -> [6] -> [1036]
-rw__LL_Main_genhash_ x0 x1 x2 x3 x4 = rw__LL_Main_genhash_12 x0 x1 x2 x3 x4
+rw__LL_Main_genhash_ : [32] -> [256] -> [512] -> [256] -> [6] -> [1062]
+rw__LL_Main_genhash_ x0 x1 x2 x3 x4 = rw__LL_Main_genhash_8 x0 x1 x2 x3 x4
+
+// $LL.Main.dev3
+rw__LL_Main_dev3 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev3 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev28 x0 x1 x2 x3 x4 x5
+
+// $LL.Main.dev2
+rw__LL_Main_dev2 : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev2 x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev15 x0 x1 x2 x3 x4 x5
+
+// $LL.Main.dev1
+rw__LL_Main_dev1 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev1 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev6 x1 x0 x2 x3 x4 x5 x6
 
 // Main.digest0
 rw_Main_digest0 : [256] -> [65]
@@ -1842,38 +1726,9 @@ rw_Main_digest0 x0 = 0b0 # (s0 # s1)
     s1 : [32]
     s1 = take`{32} (drop`{32} x0)
 
-// $LL.Main.dev1
-rw__LL_Main_dev1 : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev1 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev4 x0 x1 x2 x3 x4 x5 x6
-
-// $LL.Main.loop
-rw__LL_Main_loop : [68] -> [6] -> [256] -> [512] -> [256] -> [6] -> [1104]
-rw__LL_Main_loop x0 x1 x2 x3 x4 x5 = if x1 == 0b111111 then (rw__LL_Main_loop6 x0 s6 s7 s8 s9) else (rw_Main_loop x2 x3 x4 x5)
-  where
-    s0 : [1030]
-    s0 = rw__LL_Main_loop2 x4 x2 x3 x4 x5
-    s1 : [256]
-    s1 = take`{256} s0
-    s2 : [512]
-    s2 = take`{512} (drop`{256} s0)
-    s3 : [256]
-    s3 = take`{256} (drop`{768} s0)
-    s4 : [6]
-    s4 = drop`{1024} s0
-    s5 : [1104]
-    s5 = 0b00000000000000000000000000000000000000000000000000000000000000000001000000 # (s1 # (s2 # (s3 # s4)))
-    s6 : [256]
-    s6 = take`{256} (drop`{74} s5)
-    s7 : [512]
-    s7 = take`{512} (drop`{330} s5)
-    s8 : [256]
-    s8 = take`{256} (drop`{842} s5)
-    s9 : [6]
-    s9 = drop`{1098} s5
-
 // $LL.Main.dev
-rw__LL_Main_dev : [32] -> [32] -> [256] -> [512] -> [256] -> [6] -> [1030]
-rw__LL_Main_dev x0 x1 x2 x3 x4 x5 = rw__LL_Main_dev39 x1 x0 x2 x3 x4 x5
+rw__LL_Main_dev : [32] -> [32] -> [512] -> [256] -> [512] -> [256] -> [6] -> [1030]
+rw__LL_Main_dev x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_dev26 x0 x1 x2 x3 x4 x5 x6
 
 // Main.shiftR3
 rw_Main_shiftR3 : [32] -> [32]
@@ -1966,6 +1821,6 @@ rw_device ins = outs
     rs : [n][1103]
     rs = [rw_step st i | st <- sts | i <- ins]
     sts : [1 + n][1038]
-    sts = [0b100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000] # [drop`{65} r | r <- rs]
+    sts = [0b010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000] # [drop`{65} r | r <- rs]
     outs : [n][65]
     outs = [take`{65} r | r <- rs]

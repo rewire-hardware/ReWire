@@ -4,41 +4,16 @@ $Pure.dispatch i =
 
 Main.compute : ([128]) -> [128]
 Main.compute ds =
-      let v = ds[64 +: 64] in
       let w = ds[0 +: 64] in
-      $LL.Main.compute2 ds[64 +: 56] ($LL.Main.compute4 w) # $LL.Main.compute ($LL.Main.compute1 v) ds[8 +: 56]
-
-$LL.Main.compute5 : ([56], [8]) -> [64]
-$LL.Main.compute5 eta eta1 =
-      eta # eta1
-
-$LL.Main.compute4 : ([64]) -> [8]
-$LL.Main.compute4 v =
-      trunc 8 (lshr v (mul (sub (sub 128'h8 (zext 128 ($LL.Main.compute3 v))) 128'h1) 128'h8))
-
-$LL.Main.loop : ([128]) -> [128]
-$LL.Main.loop rabind =
-      rabind
+      ds[64 +: 56] # trunc 8 (lshr w 128'h0) # ds[120 +: 8] # ds[8 +: 56]
 
 Main.loop : ([128]) -> [128]
 Main.loop i =
       $LL.Main.loop (Main.compute i)
 
-$LL.Main.compute3 : ([64]) -> [3]
-$LL.Main.compute3 ds =
-      3'h7
-
-$LL.Main.compute2 : ([56], [8]) -> [64]
-$LL.Main.compute2 $x $x1 =
-      $LL.Main.compute5 $x $x1
-
-$LL.Main.compute1 : ([64]) -> [8]
-$LL.Main.compute1 eta =
-      eta[56 +: 8]
-
-$LL.Main.compute : ([8], [56]) -> [64]
-$LL.Main.compute eta $x =
-      eta # $x
+$LL.Main.loop : ([128]) -> [128]
+$LL.Main.loop rabind =
+      rabind
 
 device top_level
       input __in0 : [64]

@@ -10,14 +10,14 @@ module top_level (input logic [0:0] clk,
   logic [9:0] zres;
   assign zi0 = __resumption_tag[2:0];
   assign zi1 = __resumption_tag[2:0];
-  assign zres = (__resumption_tag[5:3] == 3'h1) ? {7'h4, __in0} : ((__resumption_tag[5:3] == 3'h2) ? {1'h1, zi0, 6'h8} : ((__resumption_tag[5:3] == 3'h3) ? 10'h0 : ((__resumption_tag[5:3] == 3'h4) ? {7'h2, zi1} : 10'h208)));
+  assign zres = (__resumption_tag[5:3] == 3'h1) ? {7'h3, __in0} : ((__resumption_tag[5:3] == 3'h2) ? 10'h208 : ((__resumption_tag[5:3] == 3'h3) ? {7'h4, zi0} : ((__resumption_tag[5:3] == 3'h4) ? {1'h1, zi1, 6'h8} : 10'h10)));
   assign __resumption_tag_next = zres[5:0];
   assign __out0 = zres[9];
   assign __out1 = zres[8:6];
-  initial __resumption_tag = 6'h18;
+  initial __resumption_tag = 6'h0;
   always @ (posedge clk or posedge rst) begin
     if (rst == 1'h1) begin
-      __resumption_tag <= 6'h18;
+      __resumption_tag <= 6'h0;
     end else begin
       __resumption_tag <= __resumption_tag_next;
     end

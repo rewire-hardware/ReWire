@@ -2,19 +2,19 @@ $Pure.dispatch : ([16]) -> [24]
 $Pure.dispatch disc =
       let store0 = disc[8 +: 8] in
       let s0 = disc[0 +: 8] in
-      $LL.Main.go1 store0 s0
+      $LL.Main.go3 store0 s0
 
 $LL.Main.go3 : ([8], [8]) -> [24]
-$LL.Main.go3 n sto0 =
-      $LL.Main.go2 (add n 8'h1)
+$LL.Main.go3 $x sto0 =
+      $LL.Main.go2 $x sto0
 
-$LL.Main.go2 : ([8]) -> [24]
-$LL.Main.go2 sto0 =
+$LL.Main.go2 : ([8], [8]) -> [24]
+$LL.Main.go2 n sto0 =
+      $LL.Main.go1 (add n 8'h1)
+
+$LL.Main.go1 : ([8]) -> [24]
+$LL.Main.go1 sto0 =
       Main.go sto0
-
-$LL.Main.go1 : ([8], [8]) -> [24]
-$LL.Main.go1 $x sto0 =
-      $LL.Main.go3 $x sto0
 
 $LL.Main.go : ([8], [8]) -> [24]
 $LL.Main.go n sto0 =

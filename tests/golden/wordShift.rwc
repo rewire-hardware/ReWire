@@ -2,29 +2,29 @@ $Pure.dispatch : ([8]) -> [8]
 $Pure.dispatch i =
       Main.loop i
 
+$LL.Main.loop : ([8]) -> [8]
+$LL.Main.loop rabind =
+      rabind
+
 $LL.Main.myRotr : ([8], [8]) -> [8]
 $LL.Main.myRotr w n' =
       or (shl w (sub 8'h8 n')) (lshr w n')
+
+Main.loop : ([8]) -> [8]
+Main.loop i =
+      $LL.Main.loop (Main.myArithRotr$s1 (Main.myRotr$s1 i))
 
 $LL.Main.myArithRotr : ([8], [8]) -> [8]
 $LL.Main.myArithRotr w n' =
       or (shl w (sub 8'h8 n')) (ashr w n')
 
-Main.loop : ([8]) -> [8]
-Main.loop i =
-      $LL.Main.loop (Main.myArithRotr (Main.myRotr i))
+Main.myRotr$s1 : ([8]) -> [8]
+Main.myRotr$s1 w =
+      $LL.Main.myRotr w 8'h3
 
-Main.myArithRotr : ([8]) -> [8]
-Main.myArithRotr sp =
-      $LL.Main.myArithRotr sp 8'h5
-
-Main.myRotr : ([8]) -> [8]
-Main.myRotr sp =
-      $LL.Main.myRotr sp 8'h3
-
-$LL.Main.loop : ([8]) -> [8]
-$LL.Main.loop rabind =
-      rabind
+Main.myArithRotr$s1 : ([8]) -> [8]
+Main.myArithRotr$s1 w =
+      $LL.Main.myArithRotr w 8'h5
 
 device top_level
       input __in0 : [8]

@@ -1,32 +1,28 @@
 $Pure.dispatch : ([16]) -> [8]
 $Pure.dispatch i =
-      Main.loop1 i
+      Main.loop i
 
 Main.compute : ([16]) -> [8]
 Main.compute w =
-      $LL.Main.compute1 w ($LL.Main.compute w[15 +: 1] w[8 +: 1])
+      $LL.Main.compute w ($LL.Main.compute1 w w[15 +: 1])
 
 $LL.Main.loop : ([8]) -> [8]
 $LL.Main.loop rabind =
       rabind
 
-Main.loop1 : ([16]) -> [8]
-Main.loop1 i =
+Main.loop : ([16]) -> [8]
+Main.loop i =
       $LL.Main.loop (Main.compute i)
 
-$LL.Main.compute2 : ([1], [1]) -> [1]
-$LL.Main.compute2 x y =
-      if eq x 1'h1 then y
+$LL.Main.compute1 : ([16], [1]) -> [1]
+$LL.Main.compute1 w s =
+      if eq s 1'h1 then w[8 +: 1]
             else 1'h0
 
-$LL.Main.compute1 : ([16], [1]) -> [8]
-$LL.Main.compute1 w wild =
+$LL.Main.compute : ([16], [1]) -> [8]
+$LL.Main.compute w wild =
       if eq wild 1'h0 then w[8 +: 8]
             else w[0 +: 8]
-
-$LL.Main.compute : ([1], [1]) -> [1]
-$LL.Main.compute $x $x1 =
-      $LL.Main.compute2 $x $x1
 
 device top_level
       input __in0 : [16]

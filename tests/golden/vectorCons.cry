@@ -22,44 +22,18 @@ rw__Pure_dispatch x0 = rw_Main_loop x0
 
 // Main.compute
 rw_Main_compute : [128] -> [128]
-rw_Main_compute x0 = (rw__LL_Main_compute2 (take`{56} (drop`{8} x0)) (rw__LL_Main_compute4 s1)) # (rw__LL_Main_compute (rw__LL_Main_compute1 s0) (take`{56} (drop`{64} x0)))
+rw_Main_compute x0 = (take`{56} (drop`{8} x0)) # ((rw'resize`{8} (s0 >> 0x00000000000000000000000000000000)) # ((take`{8} x0) # (take`{56} (drop`{64} x0))))
   where
     s0 : [64]
-    s0 = take`{64} x0
-    s1 : [64]
-    s1 = drop`{64} x0
-
-// $LL.Main.compute5
-rw__LL_Main_compute5 : [56] -> [8] -> [64]
-rw__LL_Main_compute5 x0 x1 = x0 # x1
-
-// $LL.Main.compute4
-rw__LL_Main_compute4 : [64] -> [8]
-rw__LL_Main_compute4 x0 = rw'resize`{8} (x0 >> (((0x00000000000000000000000000000008 - (rw'resize`{128} (rw__LL_Main_compute3 x0))) - 0x00000000000000000000000000000001) * 0x00000000000000000000000000000008))
-
-// $LL.Main.loop
-rw__LL_Main_loop : [128] -> [128]
-rw__LL_Main_loop x0 = x0
+    s0 = drop`{64} x0
 
 // Main.loop
 rw_Main_loop : [128] -> [128]
 rw_Main_loop x0 = rw__LL_Main_loop (rw_Main_compute x0)
 
-// $LL.Main.compute3
-rw__LL_Main_compute3 : [64] -> [3]
-rw__LL_Main_compute3 x0 = 0b111
-
-// $LL.Main.compute2
-rw__LL_Main_compute2 : [56] -> [8] -> [64]
-rw__LL_Main_compute2 x0 x1 = rw__LL_Main_compute5 x0 x1
-
-// $LL.Main.compute1
-rw__LL_Main_compute1 : [64] -> [8]
-rw__LL_Main_compute1 x0 = take`{8} x0
-
-// $LL.Main.compute
-rw__LL_Main_compute : [8] -> [56] -> [64]
-rw__LL_Main_compute x0 x1 = x0 # x1
+// $LL.Main.loop
+rw__LL_Main_loop : [128] -> [128]
+rw__LL_Main_loop x0 = x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [128] -> [128]

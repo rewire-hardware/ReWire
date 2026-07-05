@@ -6,12 +6,12 @@ module top_level (input logic [0:0] clk,
   logic [0:0] __resumption_tag_next;
   logic [7:0] __st0;
   logic [7:0] __st0_next;
-  logic [16:0] zll_main_loop2_out;
-  logic [16:0] zll_main_loop2_outR1;
+  logic [16:0] zll_main_loop1_out;
+  logic [16:0] zll_main_loop1_outR1;
   logic [16:0] zres;
-  ZLL_Main_loop2  inst (__in0, zll_main_loop2_out);
-  ZLL_Main_loop2  instR1 (__st0, zll_main_loop2_outR1);
-  assign zres = (__resumption_tag == 1'h1) ? zll_main_loop2_out : zll_main_loop2_outR1;
+  ZLL_Main_loop1  inst (__in0, zll_main_loop1_out);
+  ZLL_Main_loop1  instR1 (__st0, zll_main_loop1_outR1);
+  assign zres = (__resumption_tag == 1'h1) ? zll_main_loop1_out : zll_main_loop1_outR1;
   assign __resumption_tag_next = zres[8];
   assign __st0_next = zres[7:0];
   assign __out0 = zres[16:9];
@@ -25,7 +25,7 @@ module top_level (input logic [0:0] clk,
   end
 endmodule
 
-module ZLL_Main_loop2 (input logic [7:0] arg0,
+module ZLL_Main_loop1 (input logic [7:0] arg0,
   output logic [16:0] res);
   logic [0:0] zi0;
   logic [0:0] zi1;

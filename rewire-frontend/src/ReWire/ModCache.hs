@@ -13,13 +13,11 @@ import ReWire.Config (Config, typecheck)
 import ReWire.Eidos.Pretty (prettyProgram)
 import ReWire.Eidos.ToCrust (eidosToCrust)
 import ReWire.GHC.Session (loadCore)
-import ReWire.GHC.ToCrust (coreToCrust, purgeTyAnns)
 import ReWire.GHC.ToEidos (toEidos)
-import ReWire.Crust.PrimBasis (addPrims)
 import ReWire.Crust.Purify (purify)
 import ReWire.Crust.Syntax (FreeProgram, Defn (..), Exp, Ty, Kind, DataConId, TyConId, Program (Program), prettyFP)
 import ReWire.Crust.ToHyle (toHyle)
-import ReWire.Crust.Transform (removeMain, simplifyUntil, synthableDefn, dictFree, liftLambdas, etaAbsDefs, shiftLambdas, neuterExterns, expandTypeSynonyms, inlineAnnotated, normalizeBind, purge, purgeAll, mergeEquivDefns, inlineExtrudes, reduce)
+import ReWire.Crust.Transform (liftLambdas, etaAbsDefs, shiftLambdas, neuterExterns, normalizeBind, purge, purgeAll, mergeEquivDefns, inlineExtrudes, reduce)
 import ReWire.Crust.TypeCheck (typeCheck, untype)
 import ReWire.Error (AstError, MonadError, Warning (..), warnAt)
 import ReWire.Pass (runPasses, printHeader, verb')
@@ -45,6 +43,7 @@ import qualified ReWire.Eidos.Inline          as Eidos
 import qualified ReWire.Eidos.Lint            as Eidos
 import qualified ReWire.Eidos.Simplify        as Eidos
 import qualified ReWire.Eidos.Spec            as Eidos
+import qualified ReWire.Eidos.Syntax          as Eidos
 import qualified ReWire.Hyle.Syntax         as Hyle
 import qualified ReWire.Config                as C
 
@@ -62,35 +61,35 @@ runCache = runFreshMT
 getDevice :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> FreshMT m Hyle.Program
 getDevice conf fp = do
       gutss          <- loadCore conf fp
-      -- Under --eidos, the front half runs through the Eidos IR: bridge
+      -- The front half runs through the Eidos IR (doc/eidos.md): bridge
       -- Core to Eidos, lint it (poly mode), specialize away polymorphism,
       -- inline INLINE-annotated definitions, lint again (mono mode),
       -- neuter externs (before the partial evaluator, always), partially
       -- evaluate to the synthable/dictionary-free fixpoint, lint once
-      -- more, dump the .eir beside the output, and lower onto the
-      -- retained Crust pipeline through the shim (ReWire.Eidos.ToCrust),
-      -- entering at the extern-neutering pass. The shim moves down the
-      -- pipeline as passes are ported; see doc/eidos.md.
-      prog0 <- if conf^.C.eidos
-            then do
-                  eir <- toEidos conf gutss
-                  Eidos.lint Eidos.LintPoly eir
-                  eir' <- verb "Specializing polymorphic definitions (eidos)." eir
-                        >>= Eidos.specialize specDepth
-                        >>= verb "Inlining INLINE-annotated definitions (eidos)."
-                        >>= Eidos.inlineAnnotated
-                  Eidos.lint Eidos.LintMono eir'
-                  (eir'', ws) <- verb "Extracting extern models (eidos)." eir'
-                        >>= Eidos.neuterExterns
-                  mapM_ (\ (Warning a m') -> warnAt conf a m') ws
-                  eir''' <- verb "Partial evaluation (eidos)." eir''
-                        >>= Eidos.simplify (conf^.C.depth)
-                  Eidos.lint Eidos.LintMono eir'''
-                  let eirFile = fromMaybe fp (conf^.C.outFile) -<.> "eir"
-                  verb ("Writing Eidos IR to file: " <> pack eirFile) ()
-                  liftIO $ T.writeFile eirFile $ prettyProgram eir'''
-                  eidosToCrust eir'''
-            else coreToCrust conf gutss
+      -- more, dump the .eir beside the output under --eidos, and lower
+      -- onto the retained Crust pipeline through the shim
+      -- (ReWire.Eidos.ToCrust). --debug-lint adds a lint after the
+      -- remaining passes.
+      eir <- toEidos conf gutss
+      Eidos.lint Eidos.LintPoly eir
+      eirSpec <- verb "Specializing polymorphic definitions (eidos)." eir
+            >>= Eidos.specialize specDepth
+      lintDebug Eidos.LintMono eirSpec
+      eirInl <- verb "Inlining INLINE-annotated definitions (eidos)." eirSpec
+            >>= Eidos.inlineAnnotated
+      Eidos.lint Eidos.LintMono eirInl
+      (eirExt, ws) <- verb "Extracting extern models (eidos)." eirInl
+            >>= Eidos.neuterExterns
+      mapM_ (\ (Warning a m') -> warnAt conf a m') ws
+      lintDebug Eidos.LintMono eirExt
+      eirPE <- verb "Partial evaluation (eidos)." eirExt
+            >>= Eidos.simplify (conf^.C.depth)
+      Eidos.lint Eidos.LintMono eirPE
+      when (conf^.C.eidos) $ do
+            let eirFile = fromMaybe fp (conf^.C.outFile) -<.> "eir"
+            verb ("Writing Eidos IR to file: " <> pack eirFile) ()
+            liftIO $ T.writeFile eirFile $ prettyProgram eirPE
+      prog0 <- eidosToCrust eirPE
       (ts, syns, ds) <- passCrust conf 1 "Translating GHC Core to Crust IR." prog0
 
       p <- pure
@@ -111,56 +110,35 @@ getDevice conf fp = do
 
       pure p
 
-      where -- Transformations applied up to and including typechecking.
-            -- Under --eidos the front half has already run at the Eidos
-            -- level: prims come from the shim, Main.main never survives
+      where -- The Eidos front half has replaced the retired Crust front
+            -- passes: prims come from the shim, Main.main never survives
             -- the bridge's reachability pruning, INLINE inlining and
             -- specialization (in place of typechecking) ran on Eidos,
             -- synonyms were expanded by the bridge, and the shim's
-            -- annotations are all concrete (exactly the ones the
-            -- annotation purge keeps) — so only extern neutering remains.
-            frontPasses
-                  | conf^.C.eidos =
+            -- annotations are all concrete. The Crust-side extern pass
+            -- remains: the shim reintroduces beta redexes around extern
+            -- applications (its let encoding), and this pass's targeted
+            -- reduction restores the extern spine shape the back end
+            -- expects (neutering itself already happened on Eidos, so it
+            -- warns nothing).
+            frontPasses =
                   [ ("Extracting extern models; removing other Haskell definitions for externs.", neuterExterns')
                   ]
-                  | otherwise =
-                  [ ("Adding primitives.",                                                     pure . addPrims)
-                  , ("Removing the Main.main definition (before attempting to typecheck it).", pure . removeMain)
-                  , ("Inlining INLINE-annotated definitions.",                                 inlineAnnotated)
-                  , ("Expanding type synonyms.",                                               expandTypeSynonyms)
-                  , ("Typechecking; specializing polymorphic definitions.",                    typeCheck specDepth start)
-                  , ("Extracting extern models; removing other Haskell definitions for externs.", neuterExterns')
-                  -- The bridge annotates nodes liberally for the typecheck
-                  -- pass, which has now consumed them; strip them, or the
-                  -- annotation binders tax every later substitution
-                  -- (ruinously, during partial evaluation).
-                  , ("Purging type annotations.",                        pure . purgeTyAnns)
-                  ]
 
-            -- Transformations on the typechecked program: each one is
+            -- Transformations on the retained Crust pipeline: each one is
             -- followed by re-typechecking when --debug-typecheck is on.
-            -- Under --eidos the pipeline enters here (position C): the
-            -- Eidos side has already purged, lambda-lifted (the LiftNonRep
-            -- policy inside its partial evaluator), and partially
-            -- evaluated to the synthable/dictionary-free fixpoint. The
-            -- one lift decodes the shim's beta-redex let/case encoding the
-            -- way the retained pipeline always has: redex lambdas become
-            -- $LL definitions, so sharing becomes a call boundary — never
-            -- substitution, whose duplication is exponential in let
-            -- nesting (reduce-as-decoder OOMs on gfmult).
-            midPasses
-                  | conf^.C.eidos = ("Lifting lambdas.", liftLambdas) : midTail
-                  | otherwise =
-                  [ ("Removing unused definitions.",                     purge start)
-                  , ("Lifting lambdas.",                                 liftLambdas)
-                  -- Partial evaluation must also finish eliminating class
-                  -- dictionaries (whose types look synthable; the function
-                  -- types hide inside their constructor fields).
-                  , ("Partial evaluation.",                              simplifyUntil (\ fp@(_, _, vs) -> all synthableDefn vs && dictFree fp) conf)
-                  ] <> midTail
-
-            midTail =
-                  [ ("Normalizing bind.",                                normalizeBind)
+            -- The Eidos side has already purged, lambda-lifted (the
+            -- LiftNonRep policy inside its partial evaluator), and
+            -- partially evaluated to the synthable/dictionary-free
+            -- fixpoint. The one lift decodes the shim's beta-redex
+            -- let/case encoding the way the retained pipeline always has:
+            -- redex lambdas become $LL definitions, so sharing becomes a
+            -- call boundary — never substitution, whose duplication is
+            -- exponential in let nesting (reduce-as-decoder OOMs on
+            -- gfmult).
+            midPasses =
+                  [ ("Lifting lambdas.",                                 liftLambdas)
+                  , ("Normalizing bind.",                                normalizeBind)
                   , ("Lifting lambdas.",                                 liftLambdas)
                   , ("Removing unused definitions.",                     purge start)
                   , ("Inlining extrudes.",                               inlineExtrudes)
@@ -236,6 +214,13 @@ getDevice conf fp = do
 
             pass :: MonadIO m => Natural -> Text -> FreeProgram -> m FreeProgram
             pass = passCrust conf
+
+            -- The standing lints (post-bridge, post-inline, post-PE) run
+            -- always; --debug-lint re-lints after the remaining Eidos
+            -- passes too.
+            lintDebug :: MonadError AstError m => Eidos.LintMode -> Eidos.Program -> m ()
+            lintDebug mode p | conf^.C.debugLint = Eidos.lint mode p
+                             | otherwise         = pure ()
 
             verb :: MonadIO m => Text -> a -> m a
             verb = verb' conf

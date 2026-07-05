@@ -1,9 +1,9 @@
 $Pure.dispatch : ([2]) -> [1]
 $Pure.dispatch i =
-      Main.startp1 i
+      Main.startp i
 
-Main.startp1 : ([2]) -> [1]
-Main.startp1 i =
+Main.startp : ([2]) -> [1]
+Main.startp i =
       Main.proc i
 
 Main.proc : ([2]) -> [1]

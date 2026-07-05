@@ -210,15 +210,15 @@ end entity;
 architecture rtl of top_level is
 signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
-      signal zi1 : std_logic_vector (0 downto 0);
-      signal zi2 : std_logic_vector (2 downto 0);
-      signal zi3 : std_logic_vector (0 downto 0);
+      signal zi0 : std_logic_vector (0 downto 0);
+      signal zi1 : std_logic_vector (2 downto 0);
+      signal zi2 : std_logic_vector (0 downto 0);
       signal zres : std_logic_vector (2 downto 0);
 begin
-zi1 <= rw_cond(rw_eq(\__st0\, std_logic_vector'(B"0")), \__st0\, \__st0\);
-      zi2 <= (std_logic_vector'(B"00") & zi1);
-      zi3 <= zi2(0 downto 0);
-      zres <= (std_logic_vector'(B"10") & zi3);
+zi0 <= rw_cond(rw_eq(\__st0\, std_logic_vector'(B"0")), \__st0\, \__st0\);
+      zi1 <= (std_logic_vector'(B"00") & zi0);
+      zi2 <= zi1(0 downto 0);
+      zres <= (std_logic_vector'(B"10") & zi2);
       \__st0_next\ <= zres(0 downto 0);
       \__out0\ <= zres(1 downto 1);
       process (clk, rst)

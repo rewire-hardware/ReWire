@@ -208,30 +208,30 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZLL_Main_go8\ is
+component \ZLL_Main_go4\ is
       port (arg0 : in std_logic_vector (0 downto 0);
             arg1 : in std_logic_vector (0 downto 0);
             arg2 : in std_logic_vector (0 downto 0);
             arg3 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (5 downto 0));
       end component;
-      signal \__resumption_tag\ : std_logic_vector (2 downto 0) := std_logic_vector'(B"100");
+      signal \__resumption_tag\ : std_logic_vector (2 downto 0) := std_logic_vector'(B"010");
       signal \__resumption_tag_next\ : std_logic_vector (2 downto 0);
       signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
       signal \__st1\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal \__st1_next\ : std_logic_vector (0 downto 0);
-      signal zi1 : std_logic_vector (0 downto 0);
-      signal zll_main_go8_out : std_logic_vector (5 downto 0);
+      signal zll_main_go4_out : std_logic_vector (5 downto 0);
+      signal zi3 : std_logic_vector (0 downto 0);
       signal zi6 : std_logic_vector (0 downto 0);
-      signal \zll_main_go8_outR1\ : std_logic_vector (5 downto 0);
+      signal \zll_main_go4_outR1\ : std_logic_vector (5 downto 0);
       signal zres : std_logic_vector (5 downto 0);
 begin
-zi1 <= \__resumption_tag\(0 downto 0);
-      inst : \ZLL_Main_go8\ port map (\__in0\, \__st0\, \__st0\, \__st1\, zll_main_go8_out);
+inst : \ZLL_Main_go4\ port map (\__in0\, \__st0\, \__st0\, \__st1\, zll_main_go4_out);
+      zi3 <= \__resumption_tag\(0 downto 0);
       zi6 <= \__resumption_tag\(0 downto 0);
-      \instR1\ : \ZLL_Main_go8\ port map (zi6, \__in0\, \__st0\, \__st1\, \zll_main_go8_outR1\);
-      zres <= rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"01")), (std_logic_vector'(B"0100") & \__st0\ & zi1), rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"10")), rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), zll_main_go8_out, (std_logic_vector'(B"000") & \__in0\ & \__st0\ & \__st1\)), \zll_main_go8_outR1\));
+      \instR1\ : \ZLL_Main_go4\ port map (zi6, \__in0\, \__st0\, \__st1\, \zll_main_go4_outR1\);
+      zres <= rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"01")), rw_cond(rw_eq(\__in0\, std_logic_vector'(B"0")), zll_main_go4_out, (std_logic_vector'(B"000") & \__in0\ & \__st0\ & \__st1\)), rw_cond(rw_eq(\__resumption_tag\(2 downto 1), std_logic_vector'(B"10")), (std_logic_vector'(B"0010") & \__st0\ & zi3), \zll_main_go4_outR1\));
       \__resumption_tag_next\ <= zres(4 downto 2);
       \__st0_next\ <= zres(1 downto 1);
       \__st1_next\ <= zres(0 downto 0);
@@ -239,7 +239,7 @@ zi1 <= \__resumption_tag\(0 downto 0);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then
-                  \__resumption_tag\ <= std_logic_vector'(B"100");
+                  \__resumption_tag\ <= std_logic_vector'(B"010");
                   \__st0\ <= std_logic_vector'(B"0");
                   \__st1\ <= std_logic_vector'(B"1");
             elsif rising_edge(clk(0)) then
@@ -257,39 +257,39 @@ use work.rw_helpers.all;
 entity \ZLL_Main_go8\ is
 port (arg0 : in std_logic_vector (0 downto 0);
       arg1 : in std_logic_vector (0 downto 0);
-      arg2 : in std_logic_vector (0 downto 0);
-      arg3 : in std_logic_vector (0 downto 0);
-      res : out std_logic_vector (5 downto 0));
+      res : out std_logic_vector (0 downto 0));
 end entity;
 
 architecture rtl of \ZLL_Main_go8\ is
-component \ZLL_Main_go2\ is
-      port (arg0 : in std_logic_vector (0 downto 0);
-            arg1 : in std_logic_vector (0 downto 0);
-            res : out std_logic_vector (0 downto 0));
-      end component;
-      signal zll_main_go2_out : std_logic_vector (0 downto 0);
-      signal conn : std_logic_vector (0 downto 0);
-      signal \zll_main_go2_outR1\ : std_logic_vector (0 downto 0);
+
 begin
-inst : \ZLL_Main_go2\ port map (arg0, arg0, zll_main_go2_out);
-      conn <= rw_cond(rw_eq(arg1, std_logic_vector'(B"0")), zll_main_go2_out, arg0);
-      \instR1\ : \ZLL_Main_go2\ port map (conn, arg1, \zll_main_go2_outR1\);
-      res <= (\zll_main_go2_outR1\ & std_logic_vector'(B"01") & arg1 & arg2 & arg3);
+res <= rw_cond(rw_eq(arg1, std_logic_vector'(B"1")), arg0, std_logic_vector'(B"0"));
 end architecture;
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_go2\ is
+entity \ZLL_Main_go4\ is
 port (arg0 : in std_logic_vector (0 downto 0);
       arg1 : in std_logic_vector (0 downto 0);
-      res : out std_logic_vector (0 downto 0));
+      arg2 : in std_logic_vector (0 downto 0);
+      arg3 : in std_logic_vector (0 downto 0);
+      res : out std_logic_vector (5 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_go2\ is
-
+architecture rtl of \ZLL_Main_go4\ is
+component \ZLL_Main_go8\ is
+      port (arg0 : in std_logic_vector (0 downto 0);
+            arg1 : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (0 downto 0));
+      end component;
+      signal zll_main_go8_out : std_logic_vector (0 downto 0);
+      signal conn : std_logic_vector (0 downto 0);
+      signal \zll_main_go8_outR1\ : std_logic_vector (0 downto 0);
 begin
-res <= rw_cond(rw_eq(arg0, std_logic_vector'(B"1")), arg1, std_logic_vector'(B"0"));
+inst : \ZLL_Main_go8\ port map (arg0, arg0, zll_main_go8_out);
+      conn <= rw_cond(rw_eq(arg1, std_logic_vector'(B"0")), zll_main_go8_out, arg0);
+      \instR1\ : \ZLL_Main_go8\ port map (arg1, conn, \zll_main_go8_outR1\);
+      res <= (\zll_main_go8_outR1\ & std_logic_vector'(B"10") & arg1 & arg2 & arg3);
 end architecture;

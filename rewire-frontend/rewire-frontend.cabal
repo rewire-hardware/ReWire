@@ -42,6 +42,7 @@ library
       ReWire.Eidos.Externs
       ReWire.Eidos.Inline
       ReWire.Eidos.Lint
+      ReWire.Eidos.Naming
       ReWire.Eidos.Parse
       ReWire.Eidos.Pretty
       ReWire.Eidos.PrimBasis
@@ -54,7 +55,6 @@ library
       ReWire.FrontEnd
       ReWire.GHC.Recognize
       ReWire.GHC.Session
-      ReWire.GHC.ToCrust
       ReWire.GHC.ToEidos
       ReWire.GHC.Vocab
       ReWire.ModCache

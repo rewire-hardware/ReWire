@@ -18,7 +18,7 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [28] -> [4] -> [44]
-rw__Pure_dispatch x0 x1 = rw_Main_loop1 x1 s0 s1 s2
+rw__Pure_dispatch x0 x1 = rw_Main_loop x1 s0 s1 s2
   where
     s0 : [4]
     s0 = take`{4} x0
@@ -27,57 +27,57 @@ rw__Pure_dispatch x0 x1 = rw_Main_loop1 x1 s0 s1 s2
     s2 : [16]
     s2 = drop`{12} x0
 
-// $LL.Main.loop12
-rw__LL_Main_loop12 : [4] -> [16] -> [4] -> [8] -> [16] -> [44]
-rw__LL_Main_loop12 x0 x1 x2 x3 x4 = rw__LL_Main_loop11 x1 x0 x2 x3 x4
-
 // $LL.Main.loop11
-rw__LL_Main_loop11 : [16] -> [4] -> [4] -> [8] -> [16] -> [44]
-rw__LL_Main_loop11 x0 x1 x2 x3 x4 = ((rw'resize`{16} x1) + x0) # (x2 # (x3 # x4))
+rw__LL_Main_loop11 : [4] -> [16] -> [8] -> [4] -> [8] -> [16] -> [44]
+rw__LL_Main_loop11 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop6 x2 x1 x0 x3 ((rw'resize`{8} x0) + x2) x5
 
 // $LL.Main.loop10
-rw__LL_Main_loop10 : [4] -> [8] -> [16] -> [4] -> [8] -> [16] -> [44]
-rw__LL_Main_loop10 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop x1 x2 x0 x3 x4 x5
+rw__LL_Main_loop10 : [4] -> [16] -> [4] -> [8] -> [16] -> [44]
+rw__LL_Main_loop10 x0 x1 x2 x3 x4 = ((rw'resize`{16} x0) + x1) # (x2 # (x3 # x4))
 
 // $LL.Main.loop9
-rw__LL_Main_loop9 : [4] -> [4] -> [4] -> [8] -> [16] -> [44]
-rw__LL_Main_loop9 x0 x1 x2 x3 x4 = rw__LL_Main_loop2 x0 x1 x2 x3 x4
+rw__LL_Main_loop9 : [4] -> [4] -> [8] -> [4] -> [8] -> [16] -> [44]
+rw__LL_Main_loop9 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop1 x0 x2 x1 x5 x3 x4 x5
+
+// $LL.Main.loop8
+rw__LL_Main_loop8 : [4] -> [16] -> [8] -> [4] -> [8] -> [16] -> [44]
+rw__LL_Main_loop8 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop2 x0 x1 x3 x4 ((rw'resize`{16} x2) + x1)
+
+// Main.loop
+rw_Main_loop : [4] -> [4] -> [8] -> [16] -> [44]
+rw_Main_loop x0 x1 x2 x3 = rw__LL_Main_loop5 x0 x1 x1 x2 x3
 
 // $LL.Main.loop7
-rw__LL_Main_loop7 : [8] -> [16] -> [4] -> [4] -> [8] -> [16] -> [44]
-rw__LL_Main_loop7 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop12 x2 x1 x3 x4 ((rw'resize`{16} x0) + x1)
+rw__LL_Main_loop7 : [4] -> [4] -> [8] -> [4] -> [8] -> [16] -> [44]
+rw__LL_Main_loop7 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop9 x0 x1 x2 x3 x4 x5
 
 // $LL.Main.loop6
-rw__LL_Main_loop6 : [4] -> [8] -> [4] -> [16] -> [4] -> [8] -> [16] -> [44]
-rw__LL_Main_loop6 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_loop4 x1 x0 x2 x3 x4 x5 x6
+rw__LL_Main_loop6 : [8] -> [16] -> [4] -> [4] -> [8] -> [16] -> [44]
+rw__LL_Main_loop6 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop8 x2 x1 x0 x3 x4 x5
 
 // $LL.Main.loop5
-rw__LL_Main_loop5 : [4] -> [4] -> [8] -> [4] -> [8] -> [16] -> [44]
-rw__LL_Main_loop5 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop6 x0 x2 x1 x5 x3 x4 x5
+rw__LL_Main_loop5 : [4] -> [4] -> [4] -> [8] -> [16] -> [44]
+rw__LL_Main_loop5 x0 x1 x2 x3 x4 = rw__LL_Main_loop3 x0 x1 x2 x3 x4
 
 // $LL.Main.loop4
-rw__LL_Main_loop4 : [8] -> [4] -> [4] -> [16] -> [4] -> [8] -> [16] -> [44]
-rw__LL_Main_loop4 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_loop10 x2 x0 x3 x1 x5 x6
-
-// Main.loop1
-rw_Main_loop1 : [4] -> [4] -> [8] -> [16] -> [44]
-rw_Main_loop1 x0 x1 x2 x3 = rw__LL_Main_loop9 x0 x1 x1 x2 x3
+rw__LL_Main_loop4 : [4] -> [4] -> [8] -> [16] -> [4] -> [8] -> [16] -> [44]
+rw__LL_Main_loop4 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_loop x1 x3 x2 x0 x5 x6
 
 // $LL.Main.loop3
-rw__LL_Main_loop3 : [8] -> [16] -> [4] -> [4] -> [8] -> [16] -> [44]
-rw__LL_Main_loop3 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop7 x0 x1 x2 x3 x4 x5
+rw__LL_Main_loop3 : [4] -> [4] -> [4] -> [8] -> [16] -> [44]
+rw__LL_Main_loop3 x0 x1 x2 x3 x4 = rw__LL_Main_loop7 x0 x1 x3 x2 x3 x4
 
 // $LL.Main.loop2
-rw__LL_Main_loop2 : [4] -> [4] -> [4] -> [8] -> [16] -> [44]
-rw__LL_Main_loop2 x0 x1 x2 x3 x4 = rw__LL_Main_loop1 x0 x1 x3 x2 x3 x4
+rw__LL_Main_loop2 : [4] -> [16] -> [4] -> [8] -> [16] -> [44]
+rw__LL_Main_loop2 x0 x1 x2 x3 x4 = rw__LL_Main_loop10 x0 x1 x2 x3 x4
 
 // $LL.Main.loop1
-rw__LL_Main_loop1 : [4] -> [4] -> [8] -> [4] -> [8] -> [16] -> [44]
-rw__LL_Main_loop1 x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop5 x0 x1 x2 x3 x4 x5
+rw__LL_Main_loop1 : [4] -> [8] -> [4] -> [16] -> [4] -> [8] -> [16] -> [44]
+rw__LL_Main_loop1 x0 x1 x2 x3 x4 x5 x6 = rw__LL_Main_loop4 x0 x2 x1 x3 x4 x5 x6
 
 // $LL.Main.loop
-rw__LL_Main_loop : [8] -> [16] -> [4] -> [4] -> [8] -> [16] -> [44]
-rw__LL_Main_loop x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop3 x0 x1 x2 x3 ((rw'resize`{8} x2) + x0) x5
+rw__LL_Main_loop : [4] -> [16] -> [8] -> [4] -> [8] -> [16] -> [44]
+rw__LL_Main_loop x0 x1 x2 x3 x4 x5 = rw__LL_Main_loop11 x0 x1 x2 x3 x4 x5
 
 // Per-cycle step: outputs # next register values.
 rw_step : [28] -> [4] -> [44]

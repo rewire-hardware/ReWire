@@ -18,27 +18,27 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [8] -> [1] -> [16]
-rw__Pure_dispatch x0 x1 = rw__LL_Main_incr x1 x0
+rw__Pure_dispatch x0 x1 = rw__LL_Main_incr1 x1 x0
 
 // $LL.Main.incr3
 rw__LL_Main_incr3 : [8] -> [8] -> [16]
-rw__LL_Main_incr3 x0 x1 = rw__LL_Main_incr1 x0 x0
+rw__LL_Main_incr3 x0 x1 = x0 # x1
 
 // Main.incr
 rw_Main_incr : [8] -> [16]
-rw_Main_incr x0 = rw__LL_Main_incr3 x0 x0
+rw_Main_incr x0 = rw__LL_Main_incr2 x0 x0
 
 // $LL.Main.incr2
 rw__LL_Main_incr2 : [8] -> [8] -> [16]
-rw__LL_Main_incr2 x0 x1 = x0 # x1
+rw__LL_Main_incr2 x0 x1 = rw__LL_Main_incr x0 x0
 
 // $LL.Main.incr1
-rw__LL_Main_incr1 : [8] -> [8] -> [16]
-rw__LL_Main_incr1 x0 x1 = rw__LL_Main_incr2 x0 x1
+rw__LL_Main_incr1 : [1] -> [8] -> [16]
+rw__LL_Main_incr1 x0 x1 = rw_Main_incr x1
 
 // $LL.Main.incr
-rw__LL_Main_incr : [1] -> [8] -> [16]
-rw__LL_Main_incr x0 x1 = rw_Main_incr x1
+rw__LL_Main_incr : [8] -> [8] -> [16]
+rw__LL_Main_incr x0 x1 = rw__LL_Main_incr3 x0 x1
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [1] -> [16]
