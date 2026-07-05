@@ -564,6 +564,14 @@ one removable lint rule instead of an axiom of the unifier.
 | §3 (P syntax) | `ReWire.Eidos.Syntax` |
 | §5 (`typeOf`, nats, spines) | `ReWire.Eidos.Types` |
 | §4 (lint modes poly/mono) | `ReWire.Eidos.Lint` |
+| §2/§8 (uniqueness, the refreshing clone, substitution) | `ReWire.Eidos.Subst` |
+| §8 (specialization) | `ReWire.Eidos.Spec` (types), `ReWire.Eidos.Simplify` (values) |
+| §8 (INLINE inlining) | `ReWire.Eidos.Inline` |
+| §8 (partial evaluation, LiftNonRep, purge) | `ReWire.Eidos.Simplify` |
+| extern neutering | `ReWire.Eidos.Externs` |
+| minted-name conventions | `ReWire.Eidos.Naming` |
+| the bridge (GHC Core → P) | `ReWire.GHC.ToEidos` |
+| the retained-pipeline shim (P → Crust; dies with stage 2) | `ReWire.Eidos.ToCrust` |
 | §9 (`.eir`) | `ReWire.Eidos.Pretty`, `ReWire.Eidos.Parse` |
 | §6 (ANF) | the P→M lowering (later stage) |
 | §7 (procs, machine fold) | `procify` and successors (later stage) |
