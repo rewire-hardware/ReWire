@@ -26,6 +26,7 @@ options =
        , Option []    ["debug-typecheck"] (NoArg  FlagDebugTypeCheck)                "Re-run type-checking after every transformation to possibly catch compiler bugs."
        , Option []    ["debug-lint"]      (NoArg  FlagDebugLint)                     "Re-lint the Eidos IR after every front-half pass to possibly catch compiler bugs."
        , Option []    ["eidos"]           (NoArg  FlagEidos)                         "Dump the Eidos IR (.eir) beside the output; see doc/eidos.md."
+       , Option []    ["procify"]         (NoArg  FlagProcify)                       "Normalize the Eidos IR to ANF before lowering (the machine-level pipeline, in development; see doc/eidos.md)."
        , Option []    ["flatten"]         (NoArg  FlagFlatten)                       "Flatten RTL output into a single module (currently slow, memory-intensive)."
        , Option ['o'] []                  (ReqArg FlagO           "filename")        "Name for output file."
        , Option ['p'] ["vhdl-packages"]   (ReqArg FlagVhdlPkgs    "pkg1,pkg2,...")   "Packages to use for external VHDL components (e.g., ieee.std_logic_1164.all)."

@@ -11,7 +11,7 @@ module ReWire.Config
       , inputSigs, stateSigs, outputSigs
       , vhdlPackages, inputsFile, defaultInputsFile, outFile
       , noWarn, wError
-      , start, top, loadPath, cycles, depth, dump, source, typecheck, rtlOpt, eidos, debugLint
+      , start, top, loadPath, cycles, depth, dump, source, typecheck, rtlOpt, eidos, debugLint, procify
       , testbench
       , pDebug
       ) where
@@ -65,6 +65,7 @@ data Config = Config
       , _typecheck    :: Bool
       , _eidos        :: Bool
       , _debugLint    :: Bool
+      , _procify      :: Bool
       , _rtlOpt       :: Natural
       , _testbench    :: Bool
       , _noWarn       :: Bool -- ^ -w: suppress warnings.
@@ -96,6 +97,7 @@ defaultConfig = Config
       , _typecheck    = False
       , _eidos        = False
       , _debugLint    = False
+      , _procify      = False
       , _rtlOpt       = 8
       , _testbench    = False
       , _noWarn       = False
@@ -175,6 +177,7 @@ interpret = foldM interp defaultConfig
                   FlagDebugTypeCheck              -> pure $ typecheck .~ True $ c
                   FlagEidos                       -> pure $ eidos .~ True $ c
                   FlagDebugLint                   -> pure $ debugLint .~ True $ c
+                  FlagProcify                     -> pure $ procify .~ True $ c
                   FlagRtlOpt n                    -> readNat "--rtl-opt" n >>= \ v -> pure $ rtlOpt .~ v $ c
                   FlagNoWarn                      -> pure $ noWarn .~ True $ c
                   FlagW "error"                   -> pure $ wError .~ True $ c

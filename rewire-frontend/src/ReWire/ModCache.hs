@@ -38,6 +38,7 @@ import System.FilePath ((-<.>))
 
 import qualified Data.Text                    as T
 import qualified Data.Text.IO                 as T
+import qualified ReWire.Eidos.ANF             as Eidos
 import qualified ReWire.Eidos.Externs         as Eidos
 import qualified ReWire.Eidos.Inline          as Eidos
 import qualified ReWire.Eidos.Lint            as Eidos
@@ -85,11 +86,20 @@ getDevice conf fp = do
       eirPE <- verb "Partial evaluation (eidos)." eirExt
             >>= Eidos.simplify (conf^.C.depth)
       Eidos.lint Eidos.LintMono eirPE
+      -- Under --procify (the machine-level pipeline, in development), the
+      -- program additionally normalizes to procify's ANF input form; the
+      -- retained shim lowers the introduced lets like any others.
+      eirPE' <- if conf^.C.procify
+            then do
+                  a <- verb "Normalizing to ANF (eidos)." eirPE >>= Eidos.normalize
+                  Eidos.lint Eidos.LintMonoANF a
+                  pure a
+            else pure eirPE
       when (conf^.C.eidos) $ do
             let eirFile = fromMaybe fp (conf^.C.outFile) -<.> "eir"
             verb ("Writing Eidos IR to file: " <> pack eirFile) ()
-            liftIO $ T.writeFile eirFile $ prettyProgram eirPE
-      prog0 <- eidosToCrust eirPE
+            liftIO $ T.writeFile eirFile $ prettyProgram eirPE'
+      prog0 <- eidosToCrust eirPE'
       (ts, syns, ds) <- passCrust conf 1 "Translating GHC Core to Crust IR." prog0
 
       p <- pure

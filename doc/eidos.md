@@ -302,17 +302,28 @@ at the Hyle level.
 The ANF productions are shared with the full P grammar (they are a
 restriction, not a new syntax): in mono+ANF mode every definition body is
 
-    e ::= let x :: τ = r in e  |  ret a
+    e ::= let x :: τ = r in e  |  ret a  |  jump L (ā)
     r ::= a  |  x a₁ … a_k  |  C ā  |  p ā  |  case a of x { alt; … } :: τ
         | proj_i a  |  xcall …            (M-level forms, §7)
     a ::= x  |  lit :: τ                  atoms
 
-with reactive primitives (`rwPrimBind`, `rwPrimSignal`, `rwPrimGet`, …)
-still permitted in `r` — that is what procify consumes and eliminates.
-Join points survive into this form (their bodies are ANF like any other);
-`ret a` marks a tail. The normalization from full P to mono+ANF is a small
-ordered ruleset (eta-expansion, argument- and subject-naming, alternative
-flattening, let-flattening, top-level-lambda restoration).
+Join points survive into this form (their bodies are ANF like any other;
+jumps are tails with atom arguments); `ret a` marks a tail. The
+normalization from full P to mono+ANF is a small ordered ruleset
+(eta-expansion to signature arity with parameters in the telescope,
+argument- and subject-naming, alternative flattening, let-flattening).
+
+The *reactive fragment is exempt from naming* — it is procify's input
+skeleton, and its structure must survive: a spine whose type mentions the
+reactive stack (`rwPrimBind`, `rwPrimSignal`, `rwPrimGet`, …) stays a
+spine, keeping its lambda (continuation) arguments in place with
+A-normalized bodies and its reactive arguments in place (a pure let may
+wrap them), while its pure non-atom arguments are named; and a case with
+a reactive result type stays in tail position (scrutinee named,
+alternatives A-normalized) — procify turns it into a terminator case. A
+case whose alternatives jump (the scope of a join point) likewise stays
+in tail position, since jumps are tail-only. Any other pure-resulted
+case or call is named like any other computation.
 
 ## 7. Eidos-M: the process calculus
 

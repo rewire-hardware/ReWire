@@ -14,6 +14,7 @@ import ReWire.Error (runSyntaxError)
 import ReWire.Hyle.Parse (parseHyle, parseHyleText)
 import ReWire.Pretty (prettyPrint)
 
+import qualified ReWire.Eidos.ANF as Eidos
 import qualified ReWire.Eidos.Externs as Eidos
 import qualified ReWire.Eidos.Inline as Eidos
 import qualified ReWire.Eidos.Lint as Eidos
@@ -258,6 +259,9 @@ testEirSpec fn = testCase (takeBaseName fn <> " (eir front passes)") $ do
                   >>= Eidos.simplify 8
             Eidos.lint (fixtureMode p') p'
             mapM_ (Eidos.lintDefn Eidos.LintMono p') $ Eidos.progDefns p'
+            p'' <- Eidos.normalize p'
+            Eidos.lint (fixtureMode p'') p''
+            mapM_ (Eidos.lintDefn Eidos.LintMonoANF p'') $ Eidos.progDefns p''
       case r of
             Left err -> assertFailure $ "eir front passes failed: " <> T.unpack (prettyPrint err)
             Right () -> pure ()
@@ -374,6 +378,7 @@ getSmokeTests = do
             , smoke dir "fibo1.hs"    "typecheck" "rwc"  ["--debug-typecheck", "--core"]
             , smoke dir "fibo1.hs"    "debuglint" "rwc"  ["--debug-lint", "--core"]
             , smoke dir "fibo1.hs"    "eirdump"   "rwc"  ["--eidos", "--core"]
+            , smoke dir "fibo1.hs"    "procify"   "rwc"  ["--procify", "--core"]
             ]
       where smoke :: FilePath -> FilePath -> String -> String -> [String] -> TestTree
             smoke dir file name ext args = testCase (takeBaseName file <> " (flags: " <> name <> ")") $ do
