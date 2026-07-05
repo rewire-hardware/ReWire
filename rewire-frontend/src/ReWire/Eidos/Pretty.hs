@@ -38,6 +38,7 @@ import ReWire.Builtins (builtinName)
 import ReWire.Eidos.Syntax
 import ReWire.Pretty (Doc, Pretty (pretty), text, int, vsep, hsep, nest, align, parens, brackets, dquotes, punctuate, comma, semi, (<+>), prettyPrint')
 
+import Data.Char (isAlpha, isAlphaNum)
 import Data.List (intersperse)
 import Data.Text (Text)
 
@@ -51,9 +52,39 @@ prettyProgram = prettyPrint' . ppProgram
 --- Names.
 ---
 
--- | A unique-carrying name occurrence: @occ#uniq@.
+-- | A unique-carrying name occurrence: @occ#uniq@. Occurrence text that
+--   does not lex as an identifier (operator names, reserved words) prints
+--   backtick-quoted: @`GHC.Classes.&&`#5@.
 ppName :: Text -> Uniq -> Doc an
-ppName occ u = text occ <> text "#" <> int u
+ppName occ u = ppOcc occ <> text "#" <> int u
+
+-- | Like 'ppOcc', but the tuple, unit, and list constructor names print
+--   bare (they have their own lexemes in the grammar).
+ppOcc' :: Text -> Doc an
+ppOcc' occ
+      | occ `elem` (["[]", "[_]"] :: [Text]) = text occ
+      | T.isPrefixOf "(" occ                 = text occ
+      | otherwise                            = ppOcc occ
+
+-- | Occurrence text, backtick-quoted unless it lexes as an identifier.
+ppOcc :: Text -> Doc an
+ppOcc occ
+      | lexable   = text occ
+      | otherwise = text "`" <> text occ <> text "`"
+      where lexable :: Bool
+            lexable = case T.uncons occ of
+                  Just (c, _) -> (isAlpha c || c == '_' || c == '$')
+                        && T.all (\ ch -> isAlphaNum ch || ch `elem` ("_.$'" :: String)) occ
+                        && occ `notElem` reservedOccs
+                  Nothing     -> False
+
+            reservedOccs :: [Text]
+            reservedOccs =
+                  [ "let", "in", "rec", "join", "jump", "case", "of", "top", "data"
+                  , "forall", "inline", "noinline", "from", "list", "vec"
+                  , "proc", "entry", "block", "state", "put", "get", "pause", "goto", "halt", "undef"
+                  , "Nat", "_"
+                  ]
 
 -- | A term name occurrence: @x#12@ (the type is read off the binder).
 ppId :: Id -> Doc an
@@ -156,7 +187,7 @@ ppCase t e x alts = vsep
 ppAlt :: Alt -> Doc an
 ppAlt (Alt _ c xs e) = case c of
       DefaultAlt -> text "_" <+> text "->" <+> align (ppExp e)
-      DataAlt d  -> hsep (text d : map ppBinder xs) <+> text "->" <+> align (ppExp e)
+      DataAlt d  -> hsep (ppOcc' d : map ppBinder xs) <+> text "->" <+> align (ppExp e)
       LitAlt n   -> pretty n <+> text "->" <+> align (ppExp e)
 
 -- | A local binding (the part between @let@ and @in@).
@@ -191,7 +222,7 @@ ppArg = \ case
 ppAtom :: Exp -> Doc an
 ppAtom = \ case
       Var _ x        -> ppId x
-      Con _ t c      -> parens $ text c <+> text "::" <+> ppTy t
+      Con _ t c      -> parens $ ppOcc' c <+> text "::" <+> ppTy t
       Prim _ t p     -> parens $ text (builtinName p) <+> text "::" <+> ppTy t
       LitInt _ t n   -> parens $ pretty n <+> text "::" <+> ppTy t
       LitStr _ s     -> ppStrLit s
@@ -233,18 +264,18 @@ ppAttrs attr orig = maybe [] (pure . ppAttr) attr <> maybe [] (pure . ppOrigin) 
                   NoInline -> text "noinline"
 
             ppOrigin :: SpecOrigin -> Doc an
-            ppOrigin (SpecOrigin f ts) = text "from" <+> text f <+> parens (hsep $ punctuate comma $ map ppTy ts)
+            ppOrigin (SpecOrigin f ts) = text "from" <+> ppOcc f <+> parens (hsep $ punctuate comma $ map ppTy ts)
 
 -- | @data T kind { C1 :: sig1; ... }@.
 ppDataDefn :: DataDefn -> Doc an
 ppDataDefn (DataDefn _ n k cs) = vsep
-      [ nest 6 $ vsep $ (text "data" <+> text n <+> ppKind k <+> text "{")
+      [ nest 6 $ vsep $ (text "data" <+> ppOcc' n <+> ppKind k <+> text "{")
                       : punctuate semi (map ppDataCon cs)
       , text "}"
       ]
 
 ppDataCon :: DataCon -> Doc an
-ppDataCon (DataCon _ c sig) = text c <+> text "::" <+> ppSig sig
+ppDataCon (DataCon _ c sig) = ppOcc' c <+> text "::" <+> ppSig sig
 
 -- | A whole program: datatypes, definitions, and the @top@ designation,
 --   separated by blank lines.

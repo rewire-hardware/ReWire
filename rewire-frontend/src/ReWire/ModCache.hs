@@ -10,8 +10,10 @@ module ReWire.ModCache
 
 import ReWire.Annotation (unAnn)
 import ReWire.Config (Config, typecheck)
+import ReWire.Eidos.Pretty (prettyProgram)
 import ReWire.GHC.Session (loadCore)
 import ReWire.GHC.ToCrust (coreToCrust, purgeTyAnns)
+import ReWire.GHC.ToEidos (toEidos)
 import ReWire.Crust.PrimBasis (addPrims)
 import ReWire.Crust.Purify (purify)
 import ReWire.Crust.Syntax (FreeProgram, Defn (..), Exp, Ty, Kind, DataConId, TyConId, Program (Program), prettyFP)
@@ -30,11 +32,14 @@ import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.State.Strict (MonadState)
 import Data.Containers.ListUtils (nubOrd)
 import Data.List (genericLength)
-import Data.Text (Text)
+import Data.Maybe (fromMaybe)
+import Data.Text (Text, pack)
 import Numeric.Natural (Natural)
+import System.FilePath ((-<.>))
 
 import qualified Data.Text                    as T
 import qualified Data.Text.IO                 as T
+import qualified ReWire.Eidos.Lint            as Eidos
 import qualified ReWire.Hyle.Syntax         as Hyle
 import qualified ReWire.Config                as C
 
@@ -51,7 +56,18 @@ runCache = runFreshMT
 -- Pre-hyle transformations.
 getDevice :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError m) => Config -> FilePath -> FreshMT m Hyle.Program
 getDevice conf fp = do
-      prog0          <- loadCore conf fp >>= coreToCrust conf
+      gutss          <- loadCore conf fp
+      -- Under --eidos, additionally bridge Core to the Eidos IR, lint it
+      -- (poly mode), and dump the .eir beside the output; then fall through
+      -- to the regular pipeline. (The Eidos pipeline replaces this one in a
+      -- later migration stage; see doc/eidos.md.)
+      when (conf^.C.eidos) $ do
+            eir <- toEidos conf gutss
+            Eidos.lint Eidos.LintPoly eir
+            let eirFile = fromMaybe fp (conf^.C.outFile) -<.> "eir"
+            verb ("Writing Eidos IR to file: " <> pack eirFile) ()
+            liftIO $ T.writeFile eirFile $ prettyProgram eir
+      prog0          <- coreToCrust conf gutss
       (ts, syns, ds) <- passCrust conf 1 "Translating GHC Core to Crust IR." prog0
 
       p <- pure

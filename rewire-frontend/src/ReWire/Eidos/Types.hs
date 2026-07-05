@@ -157,17 +157,98 @@ evalNat t = case t of
                   "-" | x >= y -> pure $ x - y
                   _   -> Nothing
 
--- | Normalize a type by folding every closed type-level-natural subterm to
---   its literal. Type equality throughout the compiler is structural
---   equality after 'natNorm' (annotations are already ignored by 'Eq Ty').
+-- | Normalize a type: every type-level-natural subterm is put into a
+--   canonical linear form (a sorted sum of coefficient-scaled atoms plus a
+--   constant), so equal-modulo-arithmetic types — including OPEN ones,
+--   e.g. @0 + m + n@ vs @n + m@, whose equality GHC's type-lits plugins
+--   already proved — compare structurally equal. Type equality throughout
+--   the compiler is structural equality after 'natNorm' (annotations are
+--   already ignored by 'Eq Ty'). Subtraction does not distribute (naturals
+--   truncate): @a - b@ normalizes its operands and is otherwise an atom.
 natNorm :: Ty -> Ty
-natNorm t
-      | Just n <- evalNat t = TyNat (ann' t) n
-      | otherwise           = case t of
+natNorm t = case sumOf t of
+      Just s  -> rebuild (ann t) s
+      Nothing -> case t of
             TyApp an a b -> TyApp an (natNorm a) (natNorm b)
             Arrow an a b -> Arrow an (natNorm a) (natNorm b)
             _            -> t
-      where ann' :: Ty -> Annote
-            ann' = \ case
-                  TyNat an _ -> an
-                  ty         -> ann ty
+
+-- A linear sum: constant + coefficient-scaled atoms (atoms canonically
+-- ordered). Nothing when the type is not a natural-typed expression.
+sumOf :: Ty -> Maybe (Natural, [(Ty, Natural)])
+sumOf t = case t of
+      TyNat _ n -> pure (n, [])
+      _         -> case flattenTyApp t of
+            (TyCon _ "+", [a, b]) -> add <$> sumOf a <*> sumOf b
+            (TyCon _ "*", [a, b]) -> do
+                  sa <- sumOf a
+                  sb <- sumOf b
+                  mul sa sb
+            (TyCon _ "-", [a, b]) -> pure (0, [(subAtom a b, 1)])
+            (TyCon _ op, _) | op `elem` (["+", "*", "-"] :: [Text]) -> Nothing
+            _ | isNatAtom t -> pure (0, [(natNormAtom t, 1)])
+              | otherwise   -> Nothing
+      where add :: (Natural, [(Ty, Natural)]) -> (Natural, [(Ty, Natural)]) -> (Natural, [(Ty, Natural)])
+            add (c1, as1) (c2, as2) = (c1 + c2, mergeAtoms $ as1 <> as2)
+
+            -- Only multiplication with at least one constant side stays
+            -- linear; a product of two open sums is kept as an atom.
+            mul :: (Natural, [(Ty, Natural)]) -> (Natural, [(Ty, Natural)]) -> Maybe (Natural, [(Ty, Natural)])
+            mul (c1, []) (c2, as2) = pure (c1 * c2, [ (a, c1 * k) | (a, k) <- as2, c1 > 0 ])
+            mul (c1, as1) (c2, []) = mul (c2, []) (c1, as1)
+            mul _ _                = Nothing
+
+            subAtom :: Ty -> Ty -> Ty
+            subAtom a b = TyApp (ann t) (TyApp (ann t) (TyCon (ann t) "-") (natNorm a)) (natNorm b)
+
+            isNatAtom :: Ty -> Bool
+            isNatAtom = \ case
+                  TyVarT _ v  -> tvKind v == KNat
+                  _           -> False
+
+            natNormAtom :: Ty -> Ty
+            natNormAtom = id
+
+mergeAtoms :: [(Ty, Natural)] -> [(Ty, Natural)]
+mergeAtoms = foldr insert []
+      where insert :: (Ty, Natural) -> [(Ty, Natural)] -> [(Ty, Natural)]
+            insert (a, k) [] = [(a, k)]
+            insert (a, k) ((b, j) : rest) = case cmpTy a b of
+                  EQ -> (b, k + j) : rest
+                  LT -> (a, k) : (b, j) : rest
+                  GT -> (b, j) : insert (a, k) rest
+
+-- Rebuild the canonical form: constant first (omitted when zero and atoms
+-- exist), then coefficient-scaled atoms in canonical order, right-nested.
+rebuild :: Annote -> (Natural, [(Ty, Natural)]) -> Ty
+rebuild an (c, atoms) = case terms of
+      []       -> TyNat an c
+      (t : ts) -> foldl (\ acc u -> plus acc u) t ts
+      where terms :: [Ty]
+            terms = [ TyNat an c | c > 0 || null atoms ]
+                  <> [ scale a k | (a, k) <- atoms, k > 0 ]
+
+            plus :: Ty -> Ty -> Ty
+            plus a b = TyApp an (TyApp an (TyCon an "+") a) b
+
+            scale :: Ty -> Natural -> Ty
+            scale a 1 = a
+            scale a k = TyApp an (TyApp an (TyCon an "*") (TyNat an k)) a
+
+-- A deterministic structural ordering on types (annotations ignored;
+-- variables by unique), for canonicalizing sums.
+cmpTy :: Ty -> Ty -> Ordering
+cmpTy a b = case (a, b) of
+      (TyCon _ c, TyCon _ c')          -> compare c c'
+      (TyVarT _ v, TyVarT _ v')        -> compare v v'
+      (TyNat _ n, TyNat _ n')          -> compare n n'
+      (TyApp _ t u, TyApp _ t' u')     -> cmpTy t t' <> cmpTy u u'
+      (Arrow _ t u, Arrow _ t' u')     -> cmpTy t t' <> cmpTy u u'
+      _                                -> compare (tag a) (tag b)
+      where tag :: Ty -> Int
+            tag = \ case
+                  TyCon {}  -> 0
+                  TyApp {}  -> 1
+                  TyVarT {} -> 2
+                  TyNat {}  -> 3
+                  Arrow {}  -> 4
