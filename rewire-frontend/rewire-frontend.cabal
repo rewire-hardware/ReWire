@@ -39,11 +39,13 @@ library
       ReWire.Crust.TypeCheck
       ReWire.Crust.Types
       ReWire.Crust.Util
+      ReWire.Eidos.Externs
       ReWire.Eidos.Inline
       ReWire.Eidos.Lint
       ReWire.Eidos.Parse
       ReWire.Eidos.Pretty
       ReWire.Eidos.PrimBasis
+      ReWire.Eidos.Simplify
       ReWire.Eidos.Spec
       ReWire.Eidos.Subst
       ReWire.Eidos.Syntax

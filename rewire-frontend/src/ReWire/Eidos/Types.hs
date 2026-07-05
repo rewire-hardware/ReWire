@@ -16,6 +16,7 @@ module ReWire.Eidos.Types
       , flattenTyApp, mkTyApp
       , flattenApp
       , evalNat, natNorm
+      , hasArrow, higherOrder, fundamental, reacOrStateT, synthable
       ) where
 
 import ReWire.Annotation (Annote, ann)
@@ -45,6 +46,47 @@ instantiate (Sig tvs t) ts
       | length tvs == length ts = substTv (Map.fromList $ zip tvs ts) t
       | otherwise               = error $ "Eidos.instantiate: signature quantifies "
             <> show (length tvs) <> " variables, applied to " <> show (length ts)
+
+-- | An arrow anywhere in the type.
+hasArrow :: Ty -> Bool
+hasArrow = \ case
+      Arrow {}      -> True
+      TyApp _ t1 t2 -> hasArrow t1 || hasArrow t2
+      _             -> False
+
+-- | A function type with a function-typed parameter or result
+--   (the retained pipeline's notion, 'ReWire.Crust.Types.higherOrder').
+higherOrder :: Ty -> Bool
+higherOrder (flattenArrow -> (doms, res)) = any hasArrow $ res : doms
+
+-- | No String, Integer, or list constructors anywhere in the type.
+fundamental :: Ty -> Bool
+fundamental = \ case
+      TyCon _ "String"  -> False
+      TyCon _ "Integer" -> False
+      TyCon _ "[_]"     -> False
+      TyCon _ "[]"      -> False
+      Arrow _ t1 t2     -> fundamental t1 && fundamental t2
+      TyApp _ t1 t2     -> fundamental t1 && fundamental t2
+      _                 -> True
+
+-- | Mentions a reactive-monad-stack constructor.
+reacOrStateT :: Ty -> Bool
+reacOrStateT = \ case
+      TyCon _ "ReacT"    -> True
+      TyCon _ "StateT"   -> True
+      TyCon _ "Identity" -> True
+      Arrow _ t1 t2      -> reacOrStateT t1 || reacOrStateT t2
+      TyApp _ t1 t2      -> reacOrStateT t1 || reacOrStateT t2
+      _                  -> False
+
+-- | Representable in hardware: first-order, fundamental, and no reactive
+--   types in parameter position (the partial evaluator's per-definition
+--   goal; matches 'ReWire.Crust.Types.synthable').
+synthable :: Ty -> Bool
+synthable t = not (higherOrder t)
+           && fundamental t
+           && not (any reacOrStateT $ fst $ flattenArrow t)
 
 mkArrow :: Annote -> Ty -> Ty -> Ty
 mkArrow = Arrow

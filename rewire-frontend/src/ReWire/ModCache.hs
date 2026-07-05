@@ -40,8 +40,10 @@ import System.FilePath ((-<.>))
 
 import qualified Data.Text                    as T
 import qualified Data.Text.IO                 as T
+import qualified ReWire.Eidos.Externs         as Eidos
 import qualified ReWire.Eidos.Inline          as Eidos
 import qualified ReWire.Eidos.Lint            as Eidos
+import qualified ReWire.Eidos.Simplify        as Eidos
 import qualified ReWire.Eidos.Spec            as Eidos
 import qualified ReWire.Hyle.Syntax         as Hyle
 import qualified ReWire.Config                as C
@@ -62,11 +64,13 @@ getDevice conf fp = do
       gutss          <- loadCore conf fp
       -- Under --eidos, the front half runs through the Eidos IR: bridge
       -- Core to Eidos, lint it (poly mode), specialize away polymorphism,
-      -- inline INLINE-annotated definitions, lint again (mono mode), dump
-      -- the .eir beside the output, and lower onto the retained Crust
-      -- pipeline through the shim (ReWire.Eidos.ToCrust), entering at the
-      -- extern-neutering pass. The shim moves down the pipeline as passes
-      -- are ported; see doc/eidos.md.
+      -- inline INLINE-annotated definitions, lint again (mono mode),
+      -- neuter externs (before the partial evaluator, always), partially
+      -- evaluate to the synthable/dictionary-free fixpoint, lint once
+      -- more, dump the .eir beside the output, and lower onto the
+      -- retained Crust pipeline through the shim (ReWire.Eidos.ToCrust),
+      -- entering at the extern-neutering pass. The shim moves down the
+      -- pipeline as passes are ported; see doc/eidos.md.
       prog0 <- if conf^.C.eidos
             then do
                   eir <- toEidos conf gutss
@@ -76,10 +80,16 @@ getDevice conf fp = do
                         >>= verb "Inlining INLINE-annotated definitions (eidos)."
                         >>= Eidos.inlineAnnotated
                   Eidos.lint Eidos.LintMono eir'
+                  (eir'', ws) <- verb "Extracting extern models (eidos)." eir'
+                        >>= Eidos.neuterExterns
+                  mapM_ (\ (Warning a m') -> warnAt conf a m') ws
+                  eir''' <- verb "Partial evaluation (eidos)." eir''
+                        >>= Eidos.simplify (conf^.C.depth)
+                  Eidos.lint Eidos.LintMono eir'''
                   let eirFile = fromMaybe fp (conf^.C.outFile) -<.> "eir"
                   verb ("Writing Eidos IR to file: " <> pack eirFile) ()
-                  liftIO $ T.writeFile eirFile $ prettyProgram eir'
-                  eidosToCrust eir'
+                  liftIO $ T.writeFile eirFile $ prettyProgram eir'''
+                  eidosToCrust eir'''
             else coreToCrust conf gutss
       (ts, syns, ds) <- passCrust conf 1 "Translating GHC Core to Crust IR." prog0
 
