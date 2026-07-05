@@ -14,8 +14,10 @@ import ReWire.Error (runSyntaxError)
 import ReWire.Hyle.Parse (parseHyle, parseHyleText)
 import ReWire.Pretty (prettyPrint)
 
+import qualified ReWire.Eidos.Externs as Eidos
 import qualified ReWire.Eidos.Inline as Eidos
 import qualified ReWire.Eidos.Lint as Eidos
+import qualified ReWire.Eidos.Simplify as Eidos
 import qualified ReWire.Eidos.Spec as Eidos
 import qualified ReWire.Eidos.Subst as Eidos
 import qualified ReWire.Eidos.Syntax as Eidos
@@ -234,20 +236,24 @@ testEirRefresh fn = testCase (takeBaseName fn <> " (eir refresh)") $ do
             Left err -> assertFailure $ "eir refresh failed: " <> T.unpack (prettyPrint err)
             Right () -> pure ()
 
--- | Specializes and INLINE-inlines an .eir fixture, then re-lints: the
---   whole program in poly mode (scope, types, uniqueness) and each
---   definition in mono mode (mono signatures, closed types — the
+-- | Runs an .eir fixture through the Eidos front-half passes —
+--   specialize, INLINE-inline, neuter externs, partially evaluate — then
+--   re-lints: the whole program in poly mode (scope, types, uniqueness)
+--   and each definition in mono mode (mono signatures, closed types — the
 --   whole-program device rule is skipped since not every fixture's top is
 --   device-typed).
 testEirSpec :: FilePath -> TestTree
-testEirSpec fn = testCase (takeBaseName fn <> " (eir specialize+inline)") $ do
+testEirSpec fn = testCase (takeBaseName fn <> " (eir front passes)") $ do
       r <- runSyntaxError $ do
             p  <- parseEir fn
-            p' <- Eidos.specialize 10 p >>= Eidos.inlineAnnotated
+            p' <- Eidos.specialize 10 p
+                  >>= Eidos.inlineAnnotated
+                  >>= (fmap fst . Eidos.neuterExterns)
+                  >>= Eidos.simplify 8
             Eidos.lint Eidos.LintPoly p'
             mapM_ (Eidos.lintDefn Eidos.LintMono p') $ Eidos.progDefns p'
       case r of
-            Left err -> assertFailure $ "eir specialize+inline failed: " <> T.unpack (prettyPrint err)
+            Left err -> assertFailure $ "eir front passes failed: " <> T.unpack (prettyPrint err)
             Right () -> pure ()
 
 -- | A test that must fail to compile with rwc. Each test file declares (one or

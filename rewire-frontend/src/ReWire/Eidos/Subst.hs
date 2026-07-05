@@ -25,7 +25,7 @@ module ReWire.Eidos.Subst
       ( maxUniq, nextUniq
       , refreshExp, refreshDefn, instantiateDefn
       , substVars, substVarsRefreshing
-      , occCounts
+      , occCounts, freeUniqs
       ) where
 
 import ReWire.Eidos.Syntax
@@ -38,6 +38,7 @@ import Data.Text (Text)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.IntMap.Strict  as IM
+import qualified Data.IntSet         as IS
 
 -- | The largest unique occurring anywhere in a program (binders and
 --   occurrences; the primitive basis' negative uniques never win).
@@ -279,6 +280,33 @@ substVarsRefreshing s = go
 ---
 --- Occurrence analysis.
 ---
+
+-- | The free variables of an expression, by unique: occurrences whose
+--   binding site is not within the expression. (Global binder uniqueness
+--   makes this a plain set difference — no shadowing is possible.)
+freeUniqs :: Exp -> IS.IntSet
+freeUniqs e = IM.keysSet (occCounts e) IS.\\ binderUniqs e
+      where binderUniqs :: Exp -> IS.IntSet
+            binderUniqs = \ case
+                  Lam _ x b       -> IS.insert (idUniq x) $ binderUniqs b
+                  Let _ b body    -> bnd b <> binderUniqs body
+                  App _ f a       -> binderUniqs f <> arg a
+                  Jump _ _ es     -> IS.unions $ map binderUniqs es
+                  Case _ _ s x as -> IS.insert (idUniq x) $ binderUniqs s <> IS.unions [ IS.fromList (map idUniq xs) <> binderUniqs b | Alt _ _ xs b <- as ]
+                  LitList _ _ es  -> IS.unions $ map binderUniqs es
+                  LitVec _ _ es   -> IS.unions $ map binderUniqs es
+                  _               -> mempty
+
+            bnd :: Bind -> IS.IntSet
+            bnd = \ case
+                  NonRec x rhs -> IS.insert (idUniq x) $ binderUniqs rhs
+                  Rec bs       -> IS.fromList (map (idUniq . fst) bs) <> IS.unions (map (binderUniqs . snd) bs)
+                  Join j ps b  -> IS.fromList (idUniq (jpId j) : map idUniq ps) <> binderUniqs b
+
+            arg :: Arg -> IS.IntSet
+            arg = \ case
+                  EArg x -> binderUniqs x
+                  _      -> mempty
 
 -- | Variable- and jump-occurrence counts by unique (an occurrence of a
 --   join label at a jump counts for the label's Id). Dead binders are
