@@ -23,14 +23,23 @@
 --     constructor alternative becomes the innermost default, and the
 --     Core-ordered leading default becomes the innermost arm.
 --
---   * Type arguments are erased after use: the head's and the whole
---     spine's instantiated types are pinned as type annotations (tyAnn)
---     when concrete, which is how GHC's instantiation decisions reach the
---     retained typechecker.
+--   * The input is monomorphic (specialization and INLINE inlining have
+--     run at the Eidos level), so every lowered type slot is concrete and
+--     the type annotations (tyAnn) pinned on heads and spines are exactly
+--     the concrete ones the retained pipeline's annotation purge would
+--     keep. Integer literals get their types pinned as annotations too —
+--     Crust literal nodes have no type slot, nothing downstream re-infers,
+--     and the widths are not otherwise recoverable.
+--
+--   * The output enters the retained pipeline at the extern-neutering
+--     pass, with the Crust primitive basis applied here (a retained-tail
+--     requirement: the R_/A_/PuRe placeholders and friends).
 module ReWire.Eidos.ToCrust (eidosToCrust) where
 
 import ReWire.Annotation (Annote)
+import ReWire.Builtins (Builtin (VecFromList))
 import ReWire.Error (AstError, MonadError, failAt)
+import ReWire.Crust.PrimBasis (addPrims)
 import ReWire.Crust.Types (poly, poly', arr, plusTy, negTy, concrete, setTyAnn)
 import ReWire.Crust.Util (mkApp, mkError)
 import ReWire.Eidos.Syntax
@@ -45,13 +54,14 @@ import Data.Maybe (fromMaybe)
 import qualified Data.IntMap.Strict  as IM
 import qualified Data.IntSet         as IS
 
--- | Lower a lint-clean Eidos-P program to a Crust FreeProgram (fed to the
---   pipeline at its head, before addPrims).
+-- | Lower a lint-clean, monomorphic Eidos-P program to a Crust
+--   FreeProgram with the Crust primitive basis applied, ready to enter the
+--   retained pipeline at the extern-neutering pass.
 eidosToCrust :: (Fresh m, MonadError AstError m) => Program -> m M.FreeProgram
 eidosToCrust (Program datas defns _top) = do
       let tops = IS.fromList $ map (idUniq . defnId) defns
       ds <- mapM (lowerDefn tops) defns
-      pure (map lowerData datas, [], ds)
+      pure $ addPrims (map lowerData datas, [], ds)
 
 ---
 --- Names and types.
@@ -140,17 +150,25 @@ lowerExp tops locals e0 = go locals e0
 
             -- Application spines (and bare heads): erase type arguments,
             -- annotate the head and (when applied) the outermost node with
-            -- their instantiated types.
+            -- their instantiated types. A saturated fromList of a list
+            -- literal becomes a vector literal (the retained typechecker's
+            -- embedded rule, reproduced here while the shim enters the
+            -- pipeline downstream of it).
             spine :: (Fresh m, MonadError AstError m) => Locals -> Exp -> m M.Exp
             spine lcl e = do
                   let (h, args)  = flattenApp e
                       eas        = [ a | EArg a <- args ]
-                  h'  <- lowerHead lcl h [ t | TArg t <- args ]
-                  as' <- mapM (go lcl) eas
-                  let app = mkApp (ann' h) h' as'
-                  if null eas then pure app else do
-                        let t = lowerTy $ typeOf e
-                        pure $ maybeAnn t app
+                  case (h, eas) of
+                        (Prim an _ p, [arg']) | p == VecFromList -> case arg' of
+                              LitList _ _ els -> M.LitVec an Nothing (Just $ lowerTy $ typeOf e) <$> mapM (go lcl) els
+                              _               -> failAt an "fromList: argument not a list literal."
+                        _ -> do
+                              h'  <- lowerHead lcl h [ t | TArg t <- args ]
+                              as' <- mapM (go lcl) eas
+                              let app = mkApp (ann' h) h' as'
+                              if null eas then pure app else do
+                                    let t = lowerTy $ typeOf e
+                                    pure $ maybeAnn t app
 
             lowerHead :: (Fresh m, MonadError AstError m) => Locals -> Exp -> [Ty] -> m M.Exp
             lowerHead lcl h targs = case h of
@@ -174,7 +192,9 @@ lowerExp tops locals e0 = go locals e0
                   Prim an t p -> do
                         let t' = lowerTy t
                         pure $ maybeAnn t' $ M.Builtin an Nothing (Just t') p
-                  LitInt an _ n -> pure $ M.LitInt an Nothing n
+                  -- Pin the literal's type: Crust literal nodes have no
+                  -- type slot, and nothing downstream re-infers widths.
+                  LitInt an t n -> pure $ maybeAnn (lowerTy t) $ M.LitInt an Nothing n
                   _ -> go lcl h
                   where instTy :: Sig -> [Ty] -> Ty
                         instTy sig ts
@@ -232,7 +252,7 @@ lowerExp tops locals e0 = go locals e0
                               pure $ M.App an Nothing resTy (M.Lam an Nothing scrutTy $ bind n rhs') scrut'
                         [Alt aan (DataAlt c) xs rhs] -> do
                               let lcl0 = IM.insert (idUniq cb) scrut' lcl
-                              (pat, lcl') <- lowerPat aan lcl0 c xs
+                              (pat, lcl') <- lowerPat aan lcl0 (sigTy $ idSig cb) c xs
                               rhs'        <- go lcl' rhs
                               pure $ M.Case an Nothing resTy scrut' (bind pat rhs') Nothing
                         _ -> do
@@ -241,12 +261,12 @@ lowerExp tops locals e0 = go locals e0
                               body <- case alts of
                                     (Alt _ DefaultAlt [] rhs : rest) -> do
                                           mdef <- Just <$> go lcl' rhs
-                                          cascade lcl' an sv resTy mdef rest
-                                    rest -> cascade lcl' an sv resTy Nothing rest
+                                          cascade lcl' an sv (sigTy $ idSig cb) resTy mdef rest
+                                    rest -> cascade lcl' an sv (sigTy $ idSig cb) resTy Nothing rest
                               pure $ M.App an Nothing resTy (M.Lam an Nothing scrutTy $ bind n body) scrut'
 
-            cascade :: (Fresh m, MonadError AstError m) => Locals -> Annote -> M.Exp -> Maybe M.Ty -> Maybe M.Exp -> [Alt] -> m M.Exp
-            cascade lcl an sv resTy mdef alts = do
+            cascade :: (Fresh m, MonadError AstError m) => Locals -> Annote -> M.Exp -> Ty -> Maybe M.Ty -> Maybe M.Exp -> [Alt] -> m M.Exp
+            cascade lcl an sv patTy resTy mdef alts = do
                   (arms, innermost) <- case (mdef, reverse alts) of
                         (Just d, _) -> pure (alts, Just d)
                         (Nothing, Alt _ (DataAlt _) [] rhs : rest@(_ : _)) -> do
@@ -268,14 +288,17 @@ lowerExp tops locals e0 = go locals e0
 
                         lowerAltPat :: (Fresh m, MonadError AstError m) => Annote -> AltCon -> [Id] -> m (M.Pat, Locals)
                         lowerAltPat aan c xs = case c of
-                              DataAlt dc -> lowerPat aan lcl dc xs
+                              DataAlt dc -> lowerPat aan lcl patTy dc xs
                               LitAlt _   -> failAt aan "eidos-shim: unsupported literal pattern."
                               DefaultAlt -> failAt aan "eidos-shim: unexpected default alternative."
 
-            lowerPat :: (Fresh m, MonadError AstError m) => Annote -> Locals -> DataConId -> [Id] -> m (M.Pat, Locals)
-            lowerPat an lcl c xs = do
+            -- The pattern's type slot holds the constructed (scrutinee)
+            -- type, as the retained typechecker's tcPat fills it; the
+            -- backend reads constructor tags off it.
+            lowerPat :: (Fresh m, MonadError AstError m) => Annote -> Locals -> Ty -> DataConId -> [Id] -> m (M.Pat, Locals)
+            lowerPat an lcl pt c xs = do
                   (ps, lcl') <- foldM patVar ([], lcl) xs
-                  pure (M.PatCon an (Embed Nothing) (Embed Nothing) (Embed $ s2n c) $ reverse ps, lcl')
+                  pure (M.PatCon an (Embed Nothing) (Embed $ Just $ lowerTy pt) (Embed $ s2n c) $ reverse ps, lcl')
                   where patVar :: (Fresh m, MonadError AstError m) => ([M.Pat], Locals) -> Id -> m ([M.Pat], Locals)
                         patVar (ps, l) x = do
                               (n, l') <- bindLocal an l x

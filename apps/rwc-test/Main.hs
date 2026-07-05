@@ -14,7 +14,9 @@ import ReWire.Error (runSyntaxError)
 import ReWire.Hyle.Parse (parseHyle, parseHyleText)
 import ReWire.Pretty (prettyPrint)
 
+import qualified ReWire.Eidos.Inline as Eidos
 import qualified ReWire.Eidos.Lint as Eidos
+import qualified ReWire.Eidos.Spec as Eidos
 import qualified ReWire.Eidos.Subst as Eidos
 import qualified ReWire.Eidos.Syntax as Eidos
 
@@ -232,6 +234,22 @@ testEirRefresh fn = testCase (takeBaseName fn <> " (eir refresh)") $ do
             Left err -> assertFailure $ "eir refresh failed: " <> T.unpack (prettyPrint err)
             Right () -> pure ()
 
+-- | Specializes and INLINE-inlines an .eir fixture, then re-lints: the
+--   whole program in poly mode (scope, types, uniqueness) and each
+--   definition in mono mode (mono signatures, closed types — the
+--   whole-program device rule is skipped since not every fixture's top is
+--   device-typed).
+testEirSpec :: FilePath -> TestTree
+testEirSpec fn = testCase (takeBaseName fn <> " (eir specialize+inline)") $ do
+      r <- runSyntaxError $ do
+            p  <- parseEir fn
+            p' <- Eidos.specialize 10 p >>= Eidos.inlineAnnotated
+            Eidos.lint Eidos.LintPoly p'
+            mapM_ (Eidos.lintDefn Eidos.LintMono p') $ Eidos.progDefns p'
+      case r of
+            Left err -> assertFailure $ "eir specialize+inline failed: " <> T.unpack (prettyPrint err)
+            Right () -> pure ()
+
 -- | A test that must fail to compile with rwc. Each test file declares (one or
 --   more of) the expected error with a comment line:
 --
@@ -367,7 +385,7 @@ main = do
       eirTests   <- do
             dir   <- getDataFileName ("tests" </> "eidos")
             files <- map (dir </>) . filter (".eir" `isSuffixOf`) <$> listDirectory dir
-            pure $ testGroup "eidos" $ map testEir files <> map testEirRefresh files
+            pure $ testGroup "eidos" $ map testEir files <> map testEirRefresh files <> map testEirSpec files
       smokeTests <- getSmokeTests
       -- The integration directory holds full-program golden tests (same legs as
       -- tests/golden), but they are heavyweight, so they only run under --integration.

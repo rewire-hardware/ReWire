@@ -205,15 +205,22 @@ The linter checks a program in one of four cumulative modes:
 - **poly** (post-bridge): the rules of §4.2–§4.4.
 - **mono** (post-specialization): additionally, every *definition* signature
   has `g = 0` (constructor signatures stay parametric, §3.6, and are
-  covered at occurrences, which carry instantiated types),
-  every type is nat-closed, and the type grammar is restricted to the
-  *representable closure*: `Vec n τ`, `Finite n`, `Bool`, `()`, tuples,
-  monomorphic ADTs, `Integer`, `Proxy n`, `String` (literal positions
-  only), with arrows only in definition signatures — plus the reactive
-  types (`ReacT`, `StateT`, `Identity`), which are permitted *only* until
-  purification.
-- **mono+ANF** (procify's input contract): additionally the ANF restriction
-  of §6.
+  covered at occurrences, which carry instantiated types) and every type is
+  nat-closed. Value binders may still be higher-order and the type grammar
+  is still open here: specialization eliminates polymorphism, not functions
+  — first-orderization is the partial evaluator's job, which runs after it.
+  Builtin-named definitions (`rwPrim*`) are exempt: they are the builtins'
+  type assumptions riding to the retained pipeline as polymorphic signature
+  carriers (error-stub bodies, never referenced as variables — references
+  become `Prim` occurrences at the bridge), and they check in poly mode
+  until an Eidos-level builtin signature table replaces them.
+- **mono+ANF** (procify's input contract): additionally, value binders are
+  first-order and the type grammar is restricted to the *representable
+  closure*: `Vec n τ`, `Finite n`, `Bool`, `()`, tuples, monomorphic ADTs,
+  `Integer`, `Proxy n`, `String` (literal positions only), with arrows only
+  in definition signatures — plus the reactive types (`ReacT`, `StateT`,
+  `Identity`), which are permitted *only* until purification — plus the ANF
+  restriction of §6.
 - **machine** (post-procify): the rules of §7.4; reactive types are out of
   the grammar entirely.
 
@@ -246,8 +253,10 @@ interesting rules (all others are structural):
 ### 4.3 Definition and program rules
 
 Parameters match the signature's arrow prefix; the body checks against the
-remainder. `top` names a definition of type `ReacT τ_i τ_o Identity ()`
-(the device signature; checked in mono mode). Data constructor signatures
+remainder. `top` names a definition of type `ReacT τ_i τ_o Identity τ`
+(the device signature; checked in mono mode — the result type `τ` is
+unconstrained, since a non-halting device never produces it; the halt
+policy is the machine level's concern, §7.3). Data constructor signatures
 quantify exactly the parameters of their datatype and construct exactly it.
 
 ### 4.4 Uniqueness and scoping
@@ -417,6 +426,27 @@ Every pass over Eidos:
 `--debug-lint` re-lints between passes in the mode of the pipeline
 position, including after purification (machine mode) — the predecessor
 pipeline's back half was uncheckable by construction.
+
+**Specialization** (poly → mono) is a worklist over instantiation
+requests. A request is a spine `f @τ̄ …` in a monomorphic body whose head
+is a polymorphic definition; since local binders are monomorphic and type
+arguments saturate quantifier lists (§4.2), every request's `τ̄` is closed.
+Each new `(f, natNorm τ̄)` mints a clone by pure type substitution through
+the refreshing clone primitive, named `f$i` (per-origin counter, discovery
+order) with provenance `from f (τ̄)`; requesting spines rewrite to the
+clone with the type arguments erased; the clone's own body is scanned for
+further requests. Polymorphic definitions are templates and are dropped.
+The worklist runs in generations, bounded by the instantiation budget
+(`--depth`): only an instantiation *chain* deeper than the budget — poly
+recursion — is rejected; fan-out is unbounded.
+
+**INLINE inlining** (mono; before further lowering) replaces every
+occurrence of an `inline`-attributed definition with its body as a lambda
+telescope over its parameters (application sites become beta redexes for
+the partial evaluator), refreshing every inserted copy. Mutual recursion
+among `inline` definitions is rejected. Inlining runs after
+specialization: substituting under a type-argument spine would strand the
+arguments on a non-variable head.
 
 ## 9. Concrete syntax (.eir)
 
