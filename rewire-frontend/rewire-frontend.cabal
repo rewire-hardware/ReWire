@@ -39,6 +39,11 @@ library
       ReWire.Crust.TypeCheck
       ReWire.Crust.Types
       ReWire.Crust.Util
+      ReWire.Eidos.Lint
+      ReWire.Eidos.Parse
+      ReWire.Eidos.Pretty
+      ReWire.Eidos.Syntax
+      ReWire.Eidos.Types
       ReWire.FrontEnd
       ReWire.GHC.Recognize
       ReWire.GHC.Session
@@ -65,6 +70,7 @@ library
     , ghc-paths ==0.1.*
     , hashable ==1.5.*
     , lens ==5.3.*
+    , megaparsec ==9.7.*
     , mtl ==2.3.*
     , process ==1.6.*
     , rewire-backend >=2.8

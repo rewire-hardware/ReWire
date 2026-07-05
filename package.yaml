@@ -52,6 +52,7 @@ data-files:
 - tests/integration/*.vhdl
 - tests/integration/*.cry
 - tests/integration/*.yaml
+- tests/eidos/*.eir
 - rewire-user/src/*.hs
 - rewire-user/src/RWC/*.hs
 - rewire-user/src/ReWire/*.hs
@@ -102,6 +103,7 @@ tests:
     - rewire
     - rewire-base
     - rewire-backend
+    - rewire-frontend
     - text ^>= 2.1
     - unordered-containers ^>= 0.2
     - yaml ^>= 0.11

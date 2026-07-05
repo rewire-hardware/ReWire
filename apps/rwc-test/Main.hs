@@ -8,9 +8,13 @@ module Main (main) where
 
 import qualified RWC
 
+import ReWire.Eidos.Parse (parseEir, parseEirText)
+import ReWire.Eidos.Pretty (prettyProgram)
 import ReWire.Error (runSyntaxError)
 import ReWire.Hyle.Parse (parseHyle, parseHyleText)
 import ReWire.Pretty (prettyPrint)
+
+import qualified ReWire.Eidos.Lint as Eidos
 
 import qualified Cosim
 import TestUtil (withStderrTo, withStdoutTo, sq, externArgs)
@@ -191,6 +195,22 @@ testCompiler flags fn = do
             diff :: FilePath -> FilePath -> [String]
             diff ref new = ["diff", "-bu", ref, new]
 
+-- | Round-trips an .eir fixture — parse, print, re-parse, re-print; the two
+--   prints must agree (the fixpoint property of doc/eidos.md §9) — and lints
+--   both parses in poly mode.
+testEir :: FilePath -> TestTree
+testEir fn = testCase (takeBaseName fn <> " (eir round-trip)") $ do
+      r <- runSyntaxError $ do
+            p1 <- parseEir fn
+            Eidos.lint Eidos.LintPoly p1
+            let t1 = prettyProgram p1
+            p2 <- parseEirText t1 fn
+            Eidos.lint Eidos.LintPoly p2
+            pure (t1, prettyProgram p2)
+      case r of
+            Left err       -> assertFailure $ "eir round-trip failed: " <> T.unpack (prettyPrint err)
+            Right (t1, t2) -> assertBool "parse . prettyProgram . parse differs from parse" $ t1 == t2
+
 -- | A test that must fail to compile with rwc. Each test file declares (one or
 --   more of) the expected error with a comment line:
 --
@@ -321,6 +341,12 @@ main = do
             files <- map (dir </>) . filter (\ f -> ".hs" `isSuffixOf` f || ".rwc" `isSuffixOf` f) <$> listDirectory dir
             pure $ testGroup "negative" $ map testNegative files
       warnTests  <- testsFrom "warning"    (\ f -> pure [testWarning f])
+      -- Eidos .eir fixtures: the parse/print fixpoint property of
+      -- doc/eidos.md §9, plus a poly-mode lint of both parses.
+      eirTests   <- do
+            dir   <- getDataFileName ("tests" </> "eidos")
+            files <- map (dir </>) . filter (".eir" `isSuffixOf`) <$> listDirectory dir
+            pure $ testGroup "eidos" $ map testEir files
       smokeTests <- getSmokeTests
       -- The integration directory holds full-program golden tests (same legs as
       -- tests/golden), but they are heavyweight, so they only run under --integration.
@@ -338,7 +364,7 @@ main = do
       cwd0 <- getCurrentDirectory
       withArgs (concatMap toTastyArg flags)
             (defaultMain $ localOption (NumThreads 1)
-                  $ testGroup "Tests" ([goldTests, smokeTests, negTests, warnTests] <> intgTests))
+                  $ testGroup "Tests" ([goldTests, smokeTests, negTests, warnTests, eirTests] <> intgTests))
             `finally` setCurrentDirectory cwd0
 
       where toTastyArg :: Flag -> [String]
