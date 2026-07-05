@@ -156,12 +156,23 @@ identStartChar = satisfy $ \ c -> isAlpha c || c == '_' || c == '$'
 identChar :: Parser Char
 identChar = satisfy $ \ c -> isAlphaNum c || c `elem` ("_.$'" :: String)
 
--- | Raw (non-lexeme) dotted identifier text.
+-- | Raw (non-lexeme) dotted identifier text, or a backtick-quoted name
+--   (arbitrary text; the printer quotes occurrences that do not lex as
+--   identifiers, e.g. operator names).
 identRaw :: Parser Text
-identRaw = do
-      c  <- identStartChar
-      cs <- many identChar
-      pure $ pack $ c : cs
+identRaw = quoted <|> plain
+      where plain :: Parser Text
+            plain = do
+                  c  <- identStartChar
+                  cs <- many identChar
+                  pure $ pack $ c : cs
+
+            quoted :: Parser Text
+            quoted = do
+                  _  <- char '`'
+                  cs <- many $ satisfy (/= '`')
+                  _  <- char '`'
+                  pure $ pack cs
 
 -- | A unique-carrying name token, @occ#uniq@ (term variables, type
 --   variables, labels). Reserved words are admitted as occurrence text:
@@ -193,9 +204,14 @@ tupleName = lexeme (try $ do
       pure $ pack $ "(" <> cs <> ")")
       <?> "tuple constructor"
 
--- | A constructor name position: bare or the @(,)@ family.
+-- | A constructor name position: bare, the @(,)@ family, or the list type
+--   constructors (which appear as declared datatype names in dumps).
 conName :: Parser Text
-conName = bareName <|> tupleName
+conName = bareName <|> tupleName <|> listConName
+
+listConName :: Parser Text
+listConName = lexeme (try ("[_]" <$ symbol "[_]") <|> try ("[]" <$ symbol "[]"))
+      <?> "list constructor"
 
 -- | The default-alternative wildcard (@_@ alone is also a valid identifier
 --   start, so it needs the same guards as a keyword).

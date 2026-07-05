@@ -42,12 +42,14 @@ library
       ReWire.Eidos.Lint
       ReWire.Eidos.Parse
       ReWire.Eidos.Pretty
+      ReWire.Eidos.PrimBasis
       ReWire.Eidos.Syntax
       ReWire.Eidos.Types
       ReWire.FrontEnd
       ReWire.GHC.Recognize
       ReWire.GHC.Session
       ReWire.GHC.ToCrust
+      ReWire.GHC.ToEidos
       ReWire.GHC.Vocab
       ReWire.ModCache
       ReWire.Pass
