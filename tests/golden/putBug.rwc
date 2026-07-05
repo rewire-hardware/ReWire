@@ -1,39 +1,39 @@
 $Pure.dispatch : ([3], [1]) -> [4]
 $Pure.dispatch disc i =
-      if eq disc[2 +: 1] 1'h1 then (let s0 = disc[0 +: 1] in
-            $LL.Main.convtest2 i s0)
-            else let store0 = disc[1 +: 1] in
+      if eq disc[2 +: 1] 1'h1 then (let store0 = disc[1 +: 1] in
             let s0 = disc[0 +: 1] in
-            $LL.Main.convtest3 store0 i s0
+            $LL.Main.convtest2 store0 i s0)
+            else let s0 = disc[0 +: 1] in
+            $LL.Main.convtest$s11 i s0
 
-$LL.Main.convtest4 : ([1], [1]) -> [4]
-$LL.Main.convtest4 $x sto0 =
-      $LL.Main.convtest $x sto0
+$LL.Main.convtest$s11 : ([1], [1]) -> [4]
+$LL.Main.convtest$s11 _unused sto0 =
+      4'h4
 
-$LL.Main.convtest3 : ([1], [1], [1]) -> [4]
-$LL.Main.convtest3 $x $x1 sto0 =
+$LL.Main.convtest3 : ([1], [1]) -> [4]
+$LL.Main.convtest3 b sto0 =
+      Main.convtest b sto0
+
+$LL.Main.convtest2 : ([1], [1], [1]) -> [4]
+$LL.Main.convtest2 $x $x1 sto0 =
       $LL.Main.convtest1 $x $x1 sto0
-
-$LL.Main.convtest2 : ([1], [1]) -> [4]
-$LL.Main.convtest2 $x sto0 =
-      $LL.Main.convtest1 1'h0 $x sto0
 
 $LL.Main.convtest1 : ([1], [1], [1]) -> [4]
 $LL.Main.convtest1 b _unused sto0 =
-      $LL.Main.convtest4 b b
+      $LL.Main.convtest b b
 
 $LL.Main.convtest : ([1], [1]) -> [4]
-$LL.Main.convtest b sto0 =
-      Main.convtest b sto0
+$LL.Main.convtest $x sto0 =
+      $LL.Main.convtest3 $x sto0
 
 Main.convtest : ([1], [1]) -> [4]
 Main.convtest b sto0 =
-      b # 1'h0 # b # sto0
+      b # 1'h1 # b # sto0
 
 device top_level
       input __in0 : [1]
       output __out0 : [1]
-      register __resumption_tag : [2] init 2'h2
+      register __resumption_tag : [2] init 2'h0
       register __st0 : [1] init 1'h0
       let $res = $Pure.dispatch (__resumption_tag # __st0) __in0
       __out0 := $res[3 +: 1]

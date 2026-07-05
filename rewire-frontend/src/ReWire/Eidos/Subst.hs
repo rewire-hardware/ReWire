@@ -25,7 +25,7 @@ module ReWire.Eidos.Subst
       ( maxUniq, nextUniq
       , refreshExp, refreshDefn, instantiateDefn
       , substVars, substVarsRefreshing
-      , occCounts, freeUniqs
+      , occCounts, freeUniqs, occIds
       ) where
 
 import ReWire.Eidos.Syntax
@@ -280,6 +280,31 @@ substVarsRefreshing s = go
 ---
 --- Occurrence analysis.
 ---
+
+-- | One representative occurrence Id per occurring unique. An occurrence
+--   carries its binder's signature, so this recovers binder Ids (e.g. for
+--   captured locals) without an enclosing environment.
+occIds :: Exp -> IM.IntMap Id
+occIds = \ case
+      Var _ v         -> IM.singleton (idUniq v) v
+      App _ f a       -> occIds f <> argIds a
+      Lam _ _ b       -> occIds b
+      Let _ b body    -> bindIds' b <> occIds body
+      Jump _ _ es     -> IM.unions $ map occIds es
+      Case _ _ s _ as -> occIds s <> IM.unions [ occIds b | Alt _ _ _ b <- as ]
+      LitList _ _ es  -> IM.unions $ map occIds es
+      LitVec _ _ es   -> IM.unions $ map occIds es
+      _               -> mempty
+      where argIds :: Arg -> IM.IntMap Id
+            argIds = \ case
+                  EArg e -> occIds e
+                  _      -> mempty
+
+            bindIds' :: Bind -> IM.IntMap Id
+            bindIds' = \ case
+                  NonRec _ rhs -> occIds rhs
+                  Rec bs       -> IM.unions $ map (occIds . snd) bs
+                  Join _ _ b   -> occIds b
 
 -- | The free variables of an expression, by unique: occurrences whose
 --   binding site is not within the expression. (Global binder uniqueness

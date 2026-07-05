@@ -1,48 +1,52 @@
 $Pure.dispatch : ([3], [1]) -> [4]
 $Pure.dispatch disc i =
-      if eq disc[1 +: 2] 2'h1 then (let store0 = disc[0 +: 1] in
-            $LL.Main.go4 store0 i)
-            else if eq disc[1 +: 2] 2'h2 then $LL.Main.go i else $LL.Main.go6 i
+      if eq disc[1 +: 2] 2'h1 then $LL.Main.go6 i
+            else if eq disc[1 +: 2] 2'h2 then (let store0 = disc[0 +: 1] in
+            $LL.Main.go3 store0 i) else $LL.Main.go8 i
 
-$LL.Main.go7 : ([1], [1]) -> [4]
+$LL.Main.go8 : ([1]) -> [4]
+$LL.Main.go8 z =
+      4'h2
+
+$LL.Main.go7 : ([1], [1]) -> [1]
 $LL.Main.go7 $x $x1 =
       $LL.Main.go5 $x $x1
 
 $LL.Main.go6 : ([1]) -> [4]
-$LL.Main.go6 z =
-      4'h4
+$LL.Main.go6 x =
+      if eq x 1'h0 then x # 2'h2 # x
+            else 3'h2 # x
 
-$LL.Main.go5 : ([1], [1]) -> [4]
+$LL.Main.go5 : ([1], [1]) -> [1]
 $LL.Main.go5 x y =
-      $LL.Main.go2 ($LL.Main.go1 x y) y # 3'h0
+      $LL.Main.go1 y x
 
 $LL.Main.go4 : ([1], [1]) -> [4]
 $LL.Main.go4 $x $x1 =
-      $LL.Main.go7 $x $x1
+      $LL.Main.go $x $x1
 
-$LL.Main.go3 : ([1], [1]) -> [1]
-$LL.Main.go3 x y =
-      if eq x 1'h1 then y
-            else 1'h0
+$LL.Main.go3 : ([1], [1]) -> [4]
+$LL.Main.go3 $x $x1 =
+      $LL.Main.go4 $x $x1
 
 $LL.Main.go2 : ([1], [1]) -> [1]
-$LL.Main.go2 $x $x1 =
-      $LL.Main.go3 $x $x1
-
-$LL.Main.go1 : ([1], [1]) -> [1]
-$LL.Main.go1 x wild =
-      if eq wild 1'h0 then $LL.Main.go2 x x
+$LL.Main.go2 x wild =
+      if eq wild 1'h0 then $LL.Main.go7 x x
             else x
 
-$LL.Main.go : ([1]) -> [4]
-$LL.Main.go x =
-      if eq x 1'h0 then x # 2'h1 # x
-            else 3'h1 # x
+$LL.Main.go1 : ([1], [1]) -> [1]
+$LL.Main.go1 y s =
+      if eq s 1'h1 then y
+            else 1'h0
+
+$LL.Main.go : ([1], [1]) -> [4]
+$LL.Main.go x y =
+      $LL.Main.go7 ($LL.Main.go2 x y) y # 3'h0
 
 device top_level
       input __in0 : [1]
       output __out0 : [1]
-      register __resumption_tag : [3] init 3'h4
+      register __resumption_tag : [3] init 3'h2
       let $res = $Pure.dispatch __resumption_tag __in0
       __out0 := $res[3 +: 1]
       next __resumption_tag := $res[0 +: 3]

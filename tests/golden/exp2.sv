@@ -6,70 +6,30 @@ module top_level (input logic [0:0] clk,
   logic [999:0] __resumption_tag_next;
   logic [999:0] __st0;
   logic [999:0] __st0_next;
-  logic [999:0] zll_main_ss$1_out;
-  logic [999:0] zi3;
   logic [99:0] main_x2_out;
-  logic [999:0] zll_main_ss$1_outR1;
-  logic [999:0] zi4;
   logic [99:0] main_x2_outR1;
-  logic [999:0] zll_main_ss$1_outR2;
-  logic [999:0] zi5;
   logic [99:0] main_x2_outR2;
-  logic [999:0] zll_main_ss$1_outR3;
-  logic [999:0] zi6;
   logic [99:0] main_x2_outR3;
-  logic [999:0] zll_main_ss$1_outR4;
-  logic [999:0] zi7;
   logic [99:0] main_x2_outR4;
-  logic [999:0] zll_main_ss$1_outR5;
-  logic [999:0] zi8;
   logic [99:0] main_x2_outR5;
-  logic [999:0] zll_main_ss$1_outR6;
-  logic [999:0] zi9;
   logic [99:0] main_x2_outR6;
-  logic [999:0] zll_main_ss$1_outR7;
-  logic [999:0] zi10;
   logic [99:0] main_x2_outR7;
-  logic [999:0] zll_main_ss$1_outR8;
-  logic [999:0] zi11;
   logic [99:0] main_x2_outR8;
-  logic [999:0] zll_main_ss$1_outR9;
-  logic [999:0] zi12;
   logic [99:0] main_x2_outR9;
-  logic [999:0] zi13;
+  logic [999:0] zi3;
   logic [2099:0] zres;
-  ZLL_Main_ss$1  inst (__resumption_tag[899:0], __in0, zll_main_ss$1_out);
-  assign zi3 = zll_main_ss$1_out;
-  Main_x2  instR1 (zi3[999:900], main_x2_out);
-  ZLL_Main_ss$1  instR2 (__resumption_tag[899:0], __in0, zll_main_ss$1_outR1);
-  assign zi4 = zll_main_ss$1_outR1;
-  Main_x2  instR3 (zi4[899:800], main_x2_outR1);
-  ZLL_Main_ss$1  instR4 (__resumption_tag[899:0], __in0, zll_main_ss$1_outR2);
-  assign zi5 = zll_main_ss$1_outR2;
-  Main_x2  instR5 (zi5[799:700], main_x2_outR2);
-  ZLL_Main_ss$1  instR6 (__resumption_tag[899:0], __in0, zll_main_ss$1_outR3);
-  assign zi6 = zll_main_ss$1_outR3;
-  Main_x2  instR7 (zi6[699:600], main_x2_outR3);
-  ZLL_Main_ss$1  instR8 (__resumption_tag[899:0], __in0, zll_main_ss$1_outR4);
-  assign zi7 = zll_main_ss$1_outR4;
-  Main_x2  instR9 (zi7[599:500], main_x2_outR4);
-  ZLL_Main_ss$1  instR10 (__resumption_tag[899:0], __in0, zll_main_ss$1_outR5);
-  assign zi8 = zll_main_ss$1_outR5;
-  Main_x2  instR11 (zi8[499:400], main_x2_outR5);
-  ZLL_Main_ss$1  instR12 (__resumption_tag[899:0], __in0, zll_main_ss$1_outR6);
-  assign zi9 = zll_main_ss$1_outR6;
-  Main_x2  instR13 (zi9[399:300], main_x2_outR6);
-  ZLL_Main_ss$1  instR14 (__resumption_tag[899:0], __in0, zll_main_ss$1_outR7);
-  assign zi10 = zll_main_ss$1_outR7;
-  Main_x2  instR15 (zi10[299:200], main_x2_outR7);
-  ZLL_Main_ss$1  instR16 (__resumption_tag[899:0], __in0, zll_main_ss$1_outR8);
-  assign zi11 = zll_main_ss$1_outR8;
-  Main_x2  instR17 (zi11[199:100], main_x2_outR8);
-  ZLL_Main_ss$1  instR18 (__resumption_tag[899:0], __in0, zll_main_ss$1_outR9);
-  assign zi12 = zll_main_ss$1_outR9;
-  Main_x2  instR19 (zi12[99:0], main_x2_outR9);
-  assign zi13 = {main_x2_out, main_x2_outR1, main_x2_outR2, main_x2_outR3, main_x2_outR4, main_x2_outR5, main_x2_outR6, main_x2_outR7, main_x2_outR8, main_x2_outR9};
-  assign zres = {zi13[999:900], zi13, zi13};
+  Main_x2  inst (__resumption_tag[899:800], main_x2_out);
+  Main_x2  instR1 (__resumption_tag[799:700], main_x2_outR1);
+  Main_x2  instR2 (__resumption_tag[699:600], main_x2_outR2);
+  Main_x2  instR3 (__resumption_tag[599:500], main_x2_outR3);
+  Main_x2  instR4 (__resumption_tag[499:400], main_x2_outR4);
+  Main_x2  instR5 (__resumption_tag[399:300], main_x2_outR5);
+  Main_x2  instR6 (__resumption_tag[299:200], main_x2_outR6);
+  Main_x2  instR7 (__resumption_tag[199:100], main_x2_outR7);
+  Main_x2  instR8 (__resumption_tag[99:0], main_x2_outR8);
+  Main_x2  instR9 (__in0, main_x2_outR9);
+  assign zi3 = {main_x2_out, main_x2_outR1, main_x2_outR2, main_x2_outR3, main_x2_outR4, main_x2_outR5, main_x2_outR6, main_x2_outR7, main_x2_outR8, main_x2_outR9};
+  assign zres = {zi3[999:900], zi3, zi3};
   assign __resumption_tag_next = zres[1999:1000];
   assign __st0_next = zres[999:0];
   assign __out0 = zres[2099:2000];
@@ -81,12 +41,6 @@ module top_level (input logic [0:0] clk,
       {__resumption_tag, __st0} <= {__resumption_tag_next, __st0_next};
     end
   end
-endmodule
-
-module ZLL_Main_ss$1 (input logic [899:0] arg0,
-  input logic [99:0] arg1,
-  output logic [999:0] res);
-  assign res = {arg0, arg1};
 endmodule
 
 module Main_x2 (input logic [99:0] arg0,

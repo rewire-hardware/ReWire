@@ -4,19 +4,11 @@ $Pure.dispatch i =
 
 Main.compute : ([7]) -> [5]
 Main.compute n =
-      $LL.Main.compute (trunc 5 (umod n 7'h14))
+      trunc 5 (umod (add (zext 128 (trunc 5 (umod n 7'h14))) 128'h6) 128'h14)
 
 Main.loop : ([7]) -> [5]
 Main.loop i =
       $LL.Main.loop (Main.compute i)
-
-$LL.Main.compute1 : ([5], [5]) -> [5]
-$LL.Main.compute1 eta b =
-      trunc 5 (umod (add (zext 128 eta) (zext 128 b)) 128'h14)
-
-$LL.Main.compute : ([5]) -> [5]
-$LL.Main.compute sp =
-      $LL.Main.compute1 sp 5'h6
 
 $LL.Main.loop : ([5]) -> [5]
 $LL.Main.loop rabind =

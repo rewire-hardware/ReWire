@@ -18,47 +18,43 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [8] -> [1] -> [16]
-rw__Pure_dispatch x0 x1 = rw__LL_Main_go2 x1 x0
+rw__Pure_dispatch x0 x1 = rw__LL_Main_go4 x1 x0
 
 // $LL.Main.go4
-rw__LL_Main_go4 : [8] -> [16]
-rw__LL_Main_go4 x0 = rw_Main_go x0
+rw__LL_Main_go4 : [1] -> [8] -> [16]
+rw__LL_Main_go4 x0 x1 = if x0 == 0b0 then (rw__LL_Main_go1 x1 x1) else (rw__LL_Main_go x1 x1)
 
 // $LL.Main.go3
-rw__LL_Main_go3 : [8] -> [8] -> [16]
-rw__LL_Main_go3 x0 x1 = x0 # x1
+rw__LL_Main_go3 : [8] -> [16]
+rw__LL_Main_go3 x0 = rw_Main_go x0
 
 // $LL.Main.go2
-rw__LL_Main_go2 : [1] -> [8] -> [16]
-rw__LL_Main_go2 x0 x1 = if x0 == 0b0 then (rw__LL_Main_go1 x1 x1) else (rw__LL_Main_go x1 x1)
+rw__LL_Main_go2 : [8] -> [8] -> [16]
+rw__LL_Main_go2 x0 x1 = x0 # x1
 
 // Main.rolW8
 rw_Main_rolW8 : [8] -> [8]
 rw_Main_rolW8 x0 = (x0 << 0x01) || (rw_Main_msbitW8 x0)
 
-// $LL.Main.go1
-rw__LL_Main_go1 : [8] -> [8] -> [16]
-rw__LL_Main_go1 x0 x1 = rw__LL_Main_go4 (rw_Main_incW8 x0)
-
 // Main.incW8
 rw_Main_incW8 : [8] -> [8]
 rw_Main_incW8 x0 = x0 + 0x01
 
-// $LL.Main.msbitW8
-rw__LL_Main_msbitW8 : [1] -> [1]
-rw__LL_Main_msbitW8 x0 = x0
-
-// $LL.Main.go
-rw__LL_Main_go : [8] -> [8] -> [16]
-rw__LL_Main_go x0 x1 = rw__LL_Main_go4 (rw_Main_rolW8 x0)
+// $LL.Main.go1
+rw__LL_Main_go1 : [8] -> [8] -> [16]
+rw__LL_Main_go1 x0 x1 = rw__LL_Main_go3 (rw_Main_incW8 x0)
 
 // Main.msbitW8
 rw_Main_msbitW8 : [8] -> [8]
-rw_Main_msbitW8 x0 = rw'resize`{8} (rw__LL_Main_msbitW8 (take`{1} x0))
+rw_Main_msbitW8 x0 = rw'resize`{8} (take`{1} x0)
+
+// $LL.Main.go
+rw__LL_Main_go : [8] -> [8] -> [16]
+rw__LL_Main_go x0 x1 = rw__LL_Main_go3 (rw_Main_rolW8 x0)
 
 // Main.go
 rw_Main_go : [8] -> [16]
-rw_Main_go x0 = rw__LL_Main_go3 x0 x0
+rw_Main_go x0 = rw__LL_Main_go2 x0 x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [1] -> [16]

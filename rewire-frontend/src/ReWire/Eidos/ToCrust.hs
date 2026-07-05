@@ -40,8 +40,10 @@ import ReWire.Annotation (Annote)
 import ReWire.Builtins (Builtin (VecFromList))
 import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Crust.PrimBasis (addPrims)
-import ReWire.Crust.Types (poly, poly', arr, plusTy, negTy, concrete, setTyAnn)
+import ReWire.Crust.Types (poly, poly', arr, plusTy, negTy, concrete, reacOrStateT, setTyAnn)
 import ReWire.Crust.Util (mkApp, mkError)
+import ReWire.Eidos.Naming (liftedJoinName)
+import ReWire.Eidos.Subst (nextUniq, freeUniqs, occIds)
 import ReWire.Eidos.Syntax
 import ReWire.Eidos.Types (typeOf, flattenApp, instantiate)
 import ReWire.Unbound (Fresh, fresh, s2n, bind, Embed (..), Name)
@@ -49,19 +51,123 @@ import ReWire.Unbound (Fresh, fresh, s2n, bind, Embed (..), Name)
 import qualified ReWire.Crust.Syntax as M
 
 import Control.Monad (foldM)
-import Data.Maybe (fromMaybe)
+import Control.Monad.State.Strict (State, runState, get, put)
+import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Text (Text)
 
 import qualified Data.IntMap.Strict  as IM
 import qualified Data.IntSet         as IS
 
 -- | Lower a lint-clean, monomorphic Eidos-P program to a Crust
 --   FreeProgram with the Crust primitive basis applied, ready to enter the
---   retained pipeline at the extern-neutering pass.
+--   retained pipeline. Join points are lifted first, to top-level
+--   definitions with occurrence-stable names (ReWire.Eidos.Naming): the
+--   retained purify keys resumption states by continuation name, so
+--   continuations must reach it as named definitions, and stable names
+--   keep regenerated goldens from churning. (This lift belongs to the
+--   shim epoch: the machine-level pipeline consumes joins directly.)
 eidosToCrust :: (Fresh m, MonadError AstError m) => Program -> m M.FreeProgram
-eidosToCrust (Program datas defns _top) = do
+eidosToCrust (liftJoins -> Program datas defns _top) = do
       let tops = IS.fromList $ map (idUniq . defnId) defns
       ds <- mapM (lowerDefn tops) defns
       pure $ addPrims (map lowerData datas, [], ds)
+
+---
+--- Lifting join points to occurrence-stably named definitions.
+---
+
+data LSt = LSt { lsSup :: !Uniq, lsOrd :: !Int, lsNew :: ![Defn] }
+
+liftJoins :: Program -> Program
+liftJoins p@(Program datas defns top) = Program datas defns' top
+      where tops :: IS.IntSet
+            tops = IS.fromList $ map (idUniq . defnId) defns
+
+            -- Uniques at or above the initial supply are lifted
+            -- definitions, not capturable locals.
+            sup0 :: Uniq
+            sup0 = nextUniq p
+
+            defns' :: [Defn]
+            defns' = fst $ foldl step ([], sup0) defns
+
+            step :: ([Defn], Uniq) -> Defn -> ([Defn], Uniq)
+            step (acc, sup) d =
+                  let (b', st) = runState (lj (idOcc $ defnId d) (defnBody d)) $ LSt sup 1 []
+                  in (acc <> (d { defnBody = b' } : reverse (lsNew st)), lsSup st)
+
+            lj :: Text -> Exp -> State LSt Exp
+            lj focc = go
+                  where go :: Exp -> State LSt Exp
+                        go e = case e of
+                              Let an (Join j ps b) body -> do
+                                    b' <- go b
+                                    let capUs = IS.filter (< sup0) (freeUniqs b' IS.\\ tops)
+                                                      IS.\\ IS.fromList (map idUniq ps)
+                                        caps  = mapMaybe (`IM.lookup` occIds b') $ IS.toList capUs
+                                        t     = foldr (Arrow an . sigTy . idSig) (typeOf b') $ caps <> ps
+                                    st <- get
+                                    let u  = lsSup st
+                                        i  = lsOrd st
+                                        x  = Id { idOcc  = liftedJoinName focc (idOcc $ jpId j) i
+                                                , idUniq = u
+                                                , idSig  = Sig [] t
+                                                }
+                                    put st { lsSup = u + 1, lsOrd = i + 1
+                                           , lsNew = Defn an x (caps <> ps) b' Nothing Nothing : lsNew st }
+                                    go $ rejump (idUniq $ jpId j) x caps body
+                              App an f a       -> App an <$> go f <*> goArg a
+                              Lam an x b       -> Lam an x <$> go b
+                              Let an b body    -> Let an <$> goBind b <*> go body
+                              Jump an j es     -> Jump an j <$> mapM go es
+                              Case an t s cb alts -> do
+                                    s'    <- go s
+                                    alts' <- mapM (\ (Alt aan c xs b) -> Alt aan c xs <$> go b) alts
+                                    pure $ Case an t s' cb alts'
+                              LitList an t es  -> LitList an t <$> mapM go es
+                              LitVec an t es   -> LitVec an t <$> mapM go es
+                              _                -> pure e
+
+                        goArg :: Arg -> State LSt Arg
+                        goArg = \ case
+                              EArg e -> EArg <$> go e
+                              t      -> pure t
+
+                        goBind :: Bind -> State LSt Bind
+                        goBind = \ case
+                              NonRec x rhs -> NonRec x <$> go rhs
+                              Rec bs       -> Rec <$> mapM (\ (x, rhs) -> (x, ) <$> go rhs) bs
+                              Join j ps b  -> Join j ps <$> go b
+
+            -- Rewrite every jump to the lifted join into a call, deeply
+            -- (jumps to an outer join from a transitively-tail position
+            -- sit inside nested join bindings' bodies too).
+            rejump :: Uniq -> Id -> [Id] -> Exp -> Exp
+            rejump ju x caps = go
+                  where go :: Exp -> Exp
+                        go e = case e of
+                              Jump an j es
+                                    | idUniq (jpId j) == ju ->
+                                          foldl (App an) (Var an x) $ map (EArg . Var an) caps <> map (EArg . go) es
+                                    | otherwise             -> Jump an j $ map go es
+                              App an f a       -> App an (go f) $ goArg a
+                              Lam an y b       -> Lam an y $ go b
+                              Let an b body    -> Let an (goBind b) $ go body
+                              Case an t s cb alts -> Case an t (go s) cb [ Alt aan c xs (go b) | Alt aan c xs b <- alts ]
+                              LitList an t es  -> LitList an t $ map go es
+                              LitVec an t es   -> LitVec an t $ map go es
+                              _                -> e
+
+                        goArg :: Arg -> Arg
+                        goArg = \ case
+                              EArg e -> EArg $ go e
+                              t      -> t
+
+                        goBind :: Bind -> Bind
+                        goBind = \ case
+                              NonRec y rhs -> NonRec y $ go rhs
+                              Rec bs       -> Rec [ (y, go rhs) | (y, rhs) <- bs ]
+                              Join j ps b  -> Join j ps $ go b
 
 ---
 --- Names and types.
@@ -165,7 +271,12 @@ lowerExp tops locals e0 = go locals e0
                         _ -> do
                               h'  <- lowerHead lcl h [ t | TArg t <- args ]
                               as' <- mapM (go lcl) eas
-                              let app = mkApp (ann' h) h' as'
+                              -- Rebuilt spine nodes carry the spine's own
+                              -- annotation (the use site), not the head's:
+                              -- backend diagnostics read it (e.g. extern
+                              -- errors must point at the extern's use, not
+                              -- at the inlined rewire-user wrapper).
+                              let app = mkApp (annOf e) h' as'
                               if null eas then pure app else do
                                     let t = lowerTy $ typeOf e
                                     pure $ maybeAnn t app
@@ -311,9 +422,6 @@ lowerExp tops locals e0 = go locals e0
                   let t = Just $ lowerTy $ sigTy $ idSig x
                   pure (n, IM.insert (idUniq x) (M.Var an Nothing t n) lcl)
 
-            ann' :: Exp -> Annote
-            ann' = annOf
-
 -- | Order a let-telescope's bindings innermost-first by demand (the
 --   deleted bridge's algorithm, re-keyed on Eidos uniques): place a
 --   binding as soon as no still-unplaced binding's rhs references it;
@@ -387,9 +495,14 @@ occUniqs = go
 --- Small helpers.
 ---
 
+-- | Pin a type annotation when it carries information the retained
+--   pipeline can use: concrete (widths are not re-derivable) and
+--   non-reactive. Reactive-typed annotations would go stale when purify
+--   re-signs the definitions they mention, breaking the --debug-typecheck
+--   re-check downstream of it (and no width ever hides in a ReacT type).
 maybeAnn :: M.Ty -> M.Exp -> M.Exp
-maybeAnn t e | concrete t = setTyAnn (Just $ poly' t) e
-             | otherwise  = e
+maybeAnn t e | concrete t, not (reacOrStateT t) = setTyAnn (Just $ poly' t) e
+             | otherwise                        = e
 
 annOf :: Exp -> Annote
 annOf = \ case

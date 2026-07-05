@@ -1,43 +1,43 @@
 $Pure.dispatch : ([1], [1]) -> [4]
 $Pure.dispatch disc i =
-      ReWire.Monad.iterSt i disc
+      ReWire.Monad.iterSt$1$s2 i disc
 
-ReWire.Monad.iterSt : ([1], [1]) -> [4]
-ReWire.Monad.iterSt i sto0 =
-      let $t1 = (let $t0 = $LL.ReWire.Monad.iterSt i sto0 sto0 in
+$LL.ReWire.Monad.iterSt$1$s13 : ([1], [1]) -> [4]
+$LL.ReWire.Monad.iterSt$1$s13 $x sto0 =
+      $LL.ReWire.Monad.iterSt$1$s12 $x sto0
+
+$LL.ReWire.Monad.iterSt$1$s12 : ([1], [1]) -> [4]
+$LL.ReWire.Monad.iterSt$1$s12 o sto0 =
+      2'h2 # o # sto0
+
+$LL.ReWire.Monad.iterSt$1$s11 : ([2], [1]) -> [4]
+$LL.ReWire.Monad.iterSt$1$s11 ds sto0 =
+      let o = ds[1 +: 1] in
+      let s = ds[0 +: 1] in
+      $LL.ReWire.Monad.iterSt$1$s13 o s
+
+ReWire.Monad.iterSt$1$s2 : ([1], [1]) -> [4]
+ReWire.Monad.iterSt$1$s2 i sto0 =
+      let $t1 = (let $t0 = $LL.ReWire.Monad.iterSt$1$s2 i sto0 sto0 in
       let v = $t0[1 +: 2] in
       let s0 = $t0[0 +: 1] in
       1'h0 # v # s0) in
       let v = $t1[1 +: 2] in
       let s0 = $t1[0 +: 1] in
-      $LL.ReWire.Monad.iterSt2 v s0
+      $LL.ReWire.Monad.iterSt$1$s11 v s0
 
-$LL.Main.f2 : ([1], [1]) -> [1]
-$LL.Main.f2 $x $x1 =
-      $LL.Main.f $x $x1
+$LL.ReWire.Monad.iterSt$1$s21 : ([1], [1], [1]) -> [3]
+$LL.ReWire.Monad.iterSt$1$s21 i x sigma0 =
+      Main.f i x # sigma0
 
-$LL.ReWire.Monad.iterSt2 : ([2], [1]) -> [4]
-$LL.ReWire.Monad.iterSt2 ds sto0 =
-      let o = ds[1 +: 1] in
-      let s = ds[0 +: 1] in
-      $LL.ReWire.Monad.iterSt1 o s
+Main.f : ([1], [1]) -> [2]
+Main.f i s =
+      (let $t1 = xor s i in
+      $t1) # s
 
-Main.f1 : ([1], [1]) -> [2]
-Main.f1 i s =
-      $LL.Main.f2 s i # s
-
-$LL.ReWire.Monad.iterSt1 : ([1], [1]) -> [4]
-$LL.ReWire.Monad.iterSt1 o sto0 =
-      2'h2 # o # sto0
-
-$LL.ReWire.Monad.iterSt : ([1], [1], [1]) -> [3]
-$LL.ReWire.Monad.iterSt i x sigma0 =
-      Main.f1 i x # sigma0
-
-$LL.Main.f : ([1], [1]) -> [1]
-$LL.Main.f a b =
-      let $t1 = xor a b in
-      $t1
+$LL.ReWire.Monad.iterSt$1$s2 : ([1], [1], [1]) -> [3]
+$LL.ReWire.Monad.iterSt$1$s2 $x $x1 sigma0 =
+      $LL.ReWire.Monad.iterSt$1$s21 $x $x1 sigma0
 
 device top_level
       input __in0 : [1]

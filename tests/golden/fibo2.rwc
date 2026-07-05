@@ -4,24 +4,29 @@ $Pure.dispatch disc i =
             let store1 = disc[0 +: 8] in
             $LL.Main.loop1 store0 store1 i)
             else let store0 = disc[0 +: 8] in
-            $LL.Main.loop2 store0 i
+            $LL.Main.loop$s11 store0 i
 
-$LL.Main.loop2 : ([8], [1]) -> [25]
-$LL.Main.loop2 m $x =
-      $LL.Main.loop m 8'h0 $x
-
-Main.loop1 : ([8], [8]) -> [25]
-Main.loop1 n m =
-      n # 1'h1 # m # n
+$LL.Main.loop$s11 : ([8], [1]) -> [25]
+$LL.Main.loop$s11 $x $x1 =
+      $LL.Main.loop$s1 $x $x1
 
 $LL.Main.loop1 : ([8], [8], [1]) -> [25]
-$LL.Main.loop1 $x $x1 $x2 =
-      $LL.Main.loop $x $x1 $x2
+$LL.Main.loop1 m n $x =
+      $LL.Main.loop n m $x
+
+Main.loop : ([8], [8]) -> [25]
+Main.loop n m =
+      n # 1'h1 # m # n
 
 $LL.Main.loop : ([8], [8], [1]) -> [25]
-$LL.Main.loop m n wild =
-      if eq wild 1'h0 then Main.loop1 m (add n m)
-            else Main.loop1 n m
+$LL.Main.loop n m wild =
+      if eq wild 1'h0 then Main.loop m (add n m)
+            else Main.loop n m
+
+$LL.Main.loop$s1 : ([8], [1]) -> [25]
+$LL.Main.loop$s1 m wild =
+      if eq wild 1'h0 then Main.loop m (add 8'h0 m)
+            else Main.loop 8'h0 m
 
 device top_level
       input __in0 : [1]

@@ -1,15 +1,19 @@
 $Pure.dispatch : ([1]) -> [1]
 $Pure.dispatch i =
-      ReWire.Monad.iter i
+      ReWire.Monad.iter$1$s2 i
 
-ReWire.Monad.iter : ([1]) -> [1]
-ReWire.Monad.iter i =
-      Main.f1 i
-
-Main.f1 : ([1]) -> [1]
-Main.f1 b =
-      if eq b 1'h1 then 1'h0
+$LL.Main.f : ([1]) -> [1]
+$LL.Main.f s =
+      if eq s 1'h1 then 1'h0
             else 1'h1
+
+ReWire.Monad.iter$1$s2 : ([1]) -> [1]
+ReWire.Monad.iter$1$s2 i =
+      Main.f i
+
+Main.f : ([1]) -> [1]
+Main.f $x =
+      $LL.Main.f $x
 
 device top_level
       input __in0 : [1]

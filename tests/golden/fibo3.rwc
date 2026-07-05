@@ -1,23 +1,14 @@
 $Pure.dispatch : ([16], [1]) -> [25]
 $Pure.dispatch disc i =
-      $LL.Main.sig1 i disc
+      $LL.Main.sig i disc
 
-$LL.Main.sig1 : ([1], [16]) -> [25]
-$LL.Main.sig1 wild sto0 =
-      if eq wild 1'h0 then Main.incr sto0
-            else Main.sig sto0
+$LL.Main.second : ([16], [16]) -> [24]
+$LL.Main.second v sigma0 =
+      trunc 8 (lshr v 128'h0) # sigma0
 
-$LL.Main.second2 : ([16]) -> [1]
-$LL.Main.second2 ds =
-      1'h1
-
-$LL.Main.first1 : ([16]) -> [8]
-$LL.Main.first1 eta =
-      eta[8 +: 8]
-
-$LL.Main.second1 : ([16], [16]) -> [24]
-$LL.Main.second1 v sigma0 =
-      $LL.Main.second v # sigma0
+$LL.Main.incr2 : ([8], [8], [16]) -> [25]
+$LL.Main.incr2 r0 r1 sto0 =
+      $LL.Main.begin (r1 # add r0 r1)
 
 Main.incr : ([16]) -> [25]
 Main.incr sto0 =
@@ -29,43 +20,9 @@ Main.incr sto0 =
       let s0 = $t1[0 +: 16] in
       $LL.Main.incr v s0
 
-$LL.Main.first : ([16], [16]) -> [24]
-$LL.Main.first v sigma0 =
-      $LL.Main.first1 v # sigma0
-
-Main.sig : ([16]) -> [25]
-Main.sig sto0 =
-      let $t1 = (let $t0 = Main.first sto0 in
-      let v = $t0[16 +: 8] in
-      let s0 = $t0[0 +: 16] in
-      1'h0 # v # s0) in
-      let v = $t1[16 +: 8] in
-      let s0 = $t1[0 +: 16] in
-      $LL.Main.sig v s0
-
-Main.first : ([16]) -> [24]
-Main.first sigma0 =
-      $LL.Main.first sigma0 sigma0
-
-$LL.Main.incr2 : ([8], [8], [16]) -> [25]
-$LL.Main.incr2 $x $x1 sto0 =
-      $LL.Main.incr1 $x $x1 sto0
-
 $LL.Main.incr1 : ([8], [8], [16]) -> [25]
-$LL.Main.incr1 r0 r1 sto0 =
-      $LL.Main.begin (r1 # add r0 r1)
-
-$LL.Main.begin : ([16]) -> [25]
-$LL.Main.begin sto0 =
-      Main.sig sto0
-
-Main.second : ([16]) -> [24]
-Main.second sigma0 =
-      $LL.Main.second1 sigma0 sigma0
-
-$LL.Main.second : ([16]) -> [8]
-$LL.Main.second v =
-      trunc 8 (lshr v (mul (sub (sub 128'h2 (zext 128 ($LL.Main.second2 v))) 128'h1) 128'h8))
+$LL.Main.incr1 $x $x1 sto0 =
+      $LL.Main.incr2 $x $x1 sto0
 
 $LL.Main.incr : ([8], [16]) -> [25]
 $LL.Main.incr r0 sto0 =
@@ -75,11 +32,42 @@ $LL.Main.incr r0 sto0 =
       1'h0 # v # s0) in
       let v = $t1[16 +: 8] in
       let s0 = $t1[0 +: 16] in
-      $LL.Main.incr2 r0 v s0
+      $LL.Main.incr1 r0 v s0
 
-$LL.Main.sig : ([8], [16]) -> [25]
-$LL.Main.sig r0 sto0 =
+Main.sig : ([16]) -> [25]
+Main.sig sto0 =
+      let $t1 = (let $t0 = Main.first sto0 in
+      let v = $t0[16 +: 8] in
+      let s0 = $t0[0 +: 16] in
+      1'h0 # v # s0) in
+      let v = $t1[16 +: 8] in
+      let s0 = $t1[0 +: 16] in
+      $LL.Main.sig1 v s0
+
+$LL.Main.begin : ([16]) -> [25]
+$LL.Main.begin sto0 =
+      Main.sig sto0
+
+$LL.Main.sig1 : ([8], [16]) -> [25]
+$LL.Main.sig1 r0 sto0 =
       1'h1 # r0 # sto0
+
+Main.first : ([16]) -> [24]
+Main.first sigma0 =
+      $LL.Main.first sigma0 sigma0
+
+$LL.Main.sig : ([1], [16]) -> [25]
+$LL.Main.sig wild sto0 =
+      if eq wild 1'h0 then Main.incr sto0
+            else Main.sig sto0
+
+Main.second : ([16]) -> [24]
+Main.second sigma0 =
+      $LL.Main.second sigma0 sigma0
+
+$LL.Main.first : ([16], [16]) -> [24]
+$LL.Main.first v sigma0 =
+      v[8 +: 8] # sigma0
 
 device top_level
       input __in0 : [1]

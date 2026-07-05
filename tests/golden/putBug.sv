@@ -6,30 +6,19 @@ module top_level (input logic [0:0] clk,
   logic [1:0] __resumption_tag_next;
   logic [0:0] __st0;
   logic [0:0] __st0_next;
-  logic [3:0] zll_main_convtest1_out;
-  logic [0:0] zi2;
-  logic [3:0] zll_main_convtest1_outR1;
+  logic [0:0] zi1;
   logic [3:0] zres;
-  ZLL_Main_convtest1  inst (1'h0, __in0, __st0, zll_main_convtest1_out);
-  assign zi2 = __resumption_tag[0];
-  ZLL_Main_convtest1  instR1 (zi2, __in0, __st0, zll_main_convtest1_outR1);
-  assign zres = (__resumption_tag[1] == 1'h1) ? zll_main_convtest1_out : zll_main_convtest1_outR1;
+  assign zi1 = __resumption_tag[0];
+  assign zres = (__resumption_tag[1] == 1'h1) ? {zi1, 1'h1, zi1, zi1} : 4'h4;
   assign __resumption_tag_next = zres[2:1];
   assign __st0_next = zres[0];
   assign __out0 = zres[3];
-  initial {__resumption_tag, __st0} = 3'h4;
+  initial {__resumption_tag, __st0} = 3'h0;
   always @ (posedge clk or posedge rst) begin
     if (rst == 1'h1) begin
-      {__resumption_tag, __st0} <= 3'h4;
+      {__resumption_tag, __st0} <= 3'h0;
     end else begin
       {__resumption_tag, __st0} <= {__resumption_tag_next, __st0_next};
     end
   end
-endmodule
-
-module ZLL_Main_convtest1 (input logic [0:0] arg0,
-  input logic [0:0] arg1,
-  input logic [0:0] arg2,
-  output logic [3:0] res);
-  assign res = {arg0, 1'h0, arg0, arg0};
 endmodule

@@ -11,8 +11,8 @@ Main.loop i =
       $LL.Main.loop1 ($LL.Main.loop i)
 
 $LL.Main.loop : ([1]) -> [1]
-$LL.Main.loop b =
-      if eq b 1'h1 then 1'h0
+$LL.Main.loop s =
+      if eq s 1'h1 then 1'h0
             else 1'h1
 
 device top_level

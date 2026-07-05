@@ -22,19 +22,11 @@ rw__Pure_dispatch x0 = rw_Main_loop x0
 
 // Main.compute
 rw_Main_compute : [7] -> [5]
-rw_Main_compute x0 = rw__LL_Main_compute (rw'resize`{5} (if 0b0010100 == zero then x0 else (x0 % 0b0010100)))
+rw_Main_compute x0 = rw'resize`{5} (if 0x00000000000000000000000000000014 == zero then ((rw'resize`{128} (if 0b0010100 == zero then x0 else (x0 % 0b0010100))) + 0x00000000000000000000000000000006) else (((rw'resize`{128} (if 0b0010100 == zero then x0 else (x0 % 0b0010100))) + 0x00000000000000000000000000000006) % 0x00000000000000000000000000000014))
 
 // Main.loop
 rw_Main_loop : [7] -> [5]
 rw_Main_loop x0 = rw__LL_Main_loop (rw_Main_compute x0)
-
-// $LL.Main.compute1
-rw__LL_Main_compute1 : [5] -> [5] -> [5]
-rw__LL_Main_compute1 x0 x1 = rw'resize`{5} (if 0x00000000000000000000000000000014 == zero then ((rw'resize`{128} x0) + (rw'resize`{128} x1)) else (((rw'resize`{128} x0) + (rw'resize`{128} x1)) % 0x00000000000000000000000000000014))
-
-// $LL.Main.compute
-rw__LL_Main_compute : [5] -> [5]
-rw__LL_Main_compute x0 = rw__LL_Main_compute1 x0 0b00110
 
 // $LL.Main.loop
 rw__LL_Main_loop : [5] -> [5]

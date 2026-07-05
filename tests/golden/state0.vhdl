@@ -209,7 +209,7 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal \__resumption_tag\ : std_logic_vector (5 downto 0) := std_logic_vector'(B"011000");
+signal \__resumption_tag\ : std_logic_vector (5 downto 0) := std_logic_vector'(B"000000");
       signal \__resumption_tag_next\ : std_logic_vector (5 downto 0);
       signal zi0 : std_logic_vector (2 downto 0);
       signal zi1 : std_logic_vector (2 downto 0);
@@ -217,14 +217,14 @@ signal \__resumption_tag\ : std_logic_vector (5 downto 0) := std_logic_vector'(B
 begin
 zi0 <= \__resumption_tag\(2 downto 0);
       zi1 <= \__resumption_tag\(2 downto 0);
-      zres <= rw_cond(rw_eq(\__resumption_tag\(5 downto 3), std_logic_vector'(B"001")), (std_logic_vector'(B"0000100") & \__in0\), rw_cond(rw_eq(\__resumption_tag\(5 downto 3), std_logic_vector'(B"010")), (std_logic_vector'(B"1") & zi0 & std_logic_vector'(B"001000")), rw_cond(rw_eq(\__resumption_tag\(5 downto 3), std_logic_vector'(B"011")), std_logic_vector'(B"0000000000"), rw_cond(rw_eq(\__resumption_tag\(5 downto 3), std_logic_vector'(B"100")), (std_logic_vector'(B"0000010") & zi1), std_logic_vector'(B"1000001000")))));
+      zres <= rw_cond(rw_eq(\__resumption_tag\(5 downto 3), std_logic_vector'(B"001")), (std_logic_vector'(B"0000011") & \__in0\), rw_cond(rw_eq(\__resumption_tag\(5 downto 3), std_logic_vector'(B"010")), std_logic_vector'(B"1000001000"), rw_cond(rw_eq(\__resumption_tag\(5 downto 3), std_logic_vector'(B"011")), (std_logic_vector'(B"0000100") & zi0), rw_cond(rw_eq(\__resumption_tag\(5 downto 3), std_logic_vector'(B"100")), (std_logic_vector'(B"1") & zi1 & std_logic_vector'(B"001000")), std_logic_vector'(B"0000010000")))));
       \__resumption_tag_next\ <= zres(5 downto 0);
       \__out0\ <= zres(9 downto 9);
       \__out1\ <= zres(8 downto 6);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then
-                  \__resumption_tag\ <= std_logic_vector'(B"011000");
+                  \__resumption_tag\ <= std_logic_vector'(B"000000");
             elsif rising_edge(clk(0)) then
                   \__resumption_tag\ <= \__resumption_tag_next\;
             end if;

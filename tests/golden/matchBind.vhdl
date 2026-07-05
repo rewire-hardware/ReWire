@@ -208,7 +208,7 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZLL_Main_loop2\ is
+component \ZLL_Main_loop1\ is
       port (arg0 : in std_logic_vector (7 downto 0);
             res : out std_logic_vector (16 downto 0));
       end component;
@@ -216,13 +216,13 @@ component \ZLL_Main_loop2\ is
       signal \__resumption_tag_next\ : std_logic_vector (0 downto 0);
       signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal zll_main_loop2_out : std_logic_vector (16 downto 0);
-      signal \zll_main_loop2_outR1\ : std_logic_vector (16 downto 0);
+      signal zll_main_loop1_out : std_logic_vector (16 downto 0);
+      signal \zll_main_loop1_outR1\ : std_logic_vector (16 downto 0);
       signal zres : std_logic_vector (16 downto 0);
 begin
-inst : \ZLL_Main_loop2\ port map (\__in0\, zll_main_loop2_out);
-      \instR1\ : \ZLL_Main_loop2\ port map (\__st0\, \zll_main_loop2_outR1\);
-      zres <= rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"1")), zll_main_loop2_out, \zll_main_loop2_outR1\);
+inst : \ZLL_Main_loop1\ port map (\__in0\, zll_main_loop1_out);
+      \instR1\ : \ZLL_Main_loop1\ port map (\__st0\, \zll_main_loop1_outR1\);
+      zres <= rw_cond(rw_eq(\__resumption_tag\, std_logic_vector'(B"1")), zll_main_loop1_out, \zll_main_loop1_outR1\);
       \__resumption_tag_next\ <= zres(8 downto 8);
       \__st0_next\ <= zres(7 downto 0);
       \__out0\ <= zres(16 downto 9);
@@ -242,12 +242,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_loop2\ is
+entity \ZLL_Main_loop1\ is
 port (arg0 : in std_logic_vector (7 downto 0);
       res : out std_logic_vector (16 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_loop2\ is
+architecture rtl of \ZLL_Main_loop1\ is
 signal zi0 : std_logic_vector (0 downto 0);
       signal zi1 : std_logic_vector (0 downto 0);
       signal zi2 : std_logic_vector (0 downto 0);

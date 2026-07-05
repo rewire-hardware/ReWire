@@ -2,13 +2,13 @@ $Pure.dispatch : ([7]) -> [7]
 $Pure.dispatch i =
       $LL.Main.dev i
 
+Main.dev : ([7]) -> [7]
+Main.dev a =
+      a
+
 $LL.Main.dev : ([7]) -> [7]
 $LL.Main.dev a' =
-      Main.dev1 (umod (add a' 7'h1) 7'h64)
-
-Main.dev1 : ([7]) -> [7]
-Main.dev1 a =
-      a
+      Main.dev (umod (add a' 7'h1) 7'h64)
 
 device top_level
       input __in0 : [7]

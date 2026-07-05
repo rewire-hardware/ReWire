@@ -724,15 +724,32 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_swapix18\ is
+entity \ZLL_Main_nopipeline3\ is
+port (arg0 : in std_logic_vector (1023 downto 0);
+      arg1 : in std_logic_vector (1023 downto 0);
+      res : out std_logic_vector (2048 downto 0));
+end entity;
+
+architecture rtl of \ZLL_Main_nopipeline3\ is
+
+begin
+res <= (std_logic_vector'(B"1") & arg0 & arg1);
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \ZLL_Main_swapix17\ is
 port (arg0 : in std_logic_vector (0 downto 0);
+      arg1 : in std_logic_vector (0 downto 0);
       res : out std_logic_vector (0 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_swapix18\ is
+architecture rtl of \ZLL_Main_swapix17\ is
 
 begin
-res <= rw_cond(rw_eq(arg0, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
+res <= rw_cond(rw_eq(arg1, std_logic_vector'(B"1")), arg0, std_logic_vector'(B"0"));
 end architecture;
 
 library ieee;
@@ -838,8 +855,9 @@ component \Main_explode5\ is
             arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
-      component \ZLL_Main_swapix18\ is
+      component \ZLL_Main_swapix17\ is
       port (arg0 : in std_logic_vector (0 downto 0);
+            arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
       signal main_explode5_out : std_logic_vector (4 downto 0);
@@ -854,10 +872,9 @@ component \Main_explode5\ is
       signal zi8 : std_logic_vector (0 downto 0);
       signal zi9 : std_logic_vector (0 downto 0);
       signal zi10 : std_logic_vector (0 downto 0);
-      signal zll_main_swapix18_out : std_logic_vector (0 downto 0);
       signal zll_main_swapix12_out : std_logic_vector (0 downto 0);
       signal zi11 : std_logic_vector (0 downto 0);
-      signal \zll_main_swapix12_outR1\ : std_logic_vector (0 downto 0);
+      signal zll_main_swapix17_out : std_logic_vector (0 downto 0);
       signal zi12 : std_logic_vector (0 downto 0);
 begin
 inst : \Main_explode5\ port map (arg1, main_explode5_out);
@@ -872,28 +889,11 @@ inst : \Main_explode5\ port map (arg1, main_explode5_out);
       zi8 <= zi7;
       zi9 <= zi0(4 downto 4);
       zi10 <= zi9;
-      \instR1\ : \ZLL_Main_swapix18\ port map (zi2, zll_main_swapix18_out);
-      \instR2\ : \ZLL_Main_swapix12\ port map (zi10, zll_main_swapix18_out, zll_main_swapix12_out);
+      \instR1\ : \ZLL_Main_swapix12\ port map (zi2, zi10, zll_main_swapix12_out);
       zi11 <= zll_main_swapix12_out;
-      \instR3\ : \ZLL_Main_swapix12\ port map (zi10, zi2, \zll_main_swapix12_outR1\);
-      zi12 <= \zll_main_swapix12_outR1\;
+      \instR2\ : \ZLL_Main_swapix17\ port map (zi2, zi10, zll_main_swapix17_out);
+      zi12 <= zll_main_swapix17_out;
       res <= rw_cond(rw_eq(zi11, std_logic_vector'(B"0")), rw_cond(rw_eq(zi12, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"1") & zi8 & zi6 & zi4 & std_logic_vector'(B"0")), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32)), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"1") & zi8 & zi6 & zi4 & std_logic_vector'(B"1")), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32));
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_nopipeline3\ is
-port (arg0 : in std_logic_vector (1023 downto 0);
-      arg1 : in std_logic_vector (1023 downto 0);
-      res : out std_logic_vector (2048 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_nopipeline3\ is
-
-begin
-res <= (std_logic_vector'(B"1") & arg0 & arg1);
 end architecture;
 
 library ieee;
@@ -916,8 +916,9 @@ component \Main_explode5\ is
             arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
-      component \ZLL_Main_swapix18\ is
+      component \ZLL_Main_swapix17\ is
       port (arg0 : in std_logic_vector (0 downto 0);
+            arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
       signal main_explode5_out : std_logic_vector (4 downto 0);
@@ -932,10 +933,9 @@ component \Main_explode5\ is
       signal zi8 : std_logic_vector (0 downto 0);
       signal zi9 : std_logic_vector (0 downto 0);
       signal zi10 : std_logic_vector (0 downto 0);
-      signal zll_main_swapix18_out : std_logic_vector (0 downto 0);
       signal zll_main_swapix12_out : std_logic_vector (0 downto 0);
       signal zi11 : std_logic_vector (0 downto 0);
-      signal \zll_main_swapix12_outR1\ : std_logic_vector (0 downto 0);
+      signal zll_main_swapix17_out : std_logic_vector (0 downto 0);
       signal zi12 : std_logic_vector (0 downto 0);
 begin
 inst : \Main_explode5\ port map (arg1, main_explode5_out);
@@ -950,11 +950,10 @@ inst : \Main_explode5\ port map (arg1, main_explode5_out);
       zi8 <= zi7;
       zi9 <= zi0(4 downto 4);
       zi10 <= zi9;
-      \instR1\ : \ZLL_Main_swapix18\ port map (zi4, zll_main_swapix18_out);
-      \instR2\ : \ZLL_Main_swapix12\ port map (zi10, zll_main_swapix18_out, zll_main_swapix12_out);
+      \instR1\ : \ZLL_Main_swapix12\ port map (zi4, zi10, zll_main_swapix12_out);
       zi11 <= zll_main_swapix12_out;
-      \instR3\ : \ZLL_Main_swapix12\ port map (zi10, zi4, \zll_main_swapix12_outR1\);
-      zi12 <= \zll_main_swapix12_outR1\;
+      \instR2\ : \ZLL_Main_swapix17\ port map (zi4, zi10, zll_main_swapix17_out);
+      zi12 <= zll_main_swapix17_out;
       res <= rw_cond(rw_eq(zi11, std_logic_vector'(B"0")), rw_cond(rw_eq(zi12, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"1") & zi8 & zi6 & std_logic_vector'(B"0") & zi2), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32)), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"1") & zi8 & zi6 & std_logic_vector'(B"1") & zi2), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32));
 end architecture;
 
@@ -1056,7 +1055,7 @@ component \Main_explode5\ is
       port (arg0 : in std_logic_vector (4 downto 0);
             res : out std_logic_vector (4 downto 0));
       end component;
-      component \ZLL_Main_swapix18\ is
+      component \ZLL_Main_swapix11\ is
       port (arg0 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
@@ -1072,7 +1071,7 @@ component \Main_explode5\ is
       signal zi8 : std_logic_vector (0 downto 0);
       signal zi9 : std_logic_vector (4 downto 0);
       signal zi10 : std_logic_vector (0 downto 0);
-      signal zll_main_swapix18_out : std_logic_vector (0 downto 0);
+      signal zll_main_swapix11_out : std_logic_vector (0 downto 0);
       signal zi11 : std_logic_vector (0 downto 0);
 begin
 inst : \Main_explode5\ port map (arg1, main_explode5_out);
@@ -1087,8 +1086,8 @@ inst : \Main_explode5\ port map (arg1, main_explode5_out);
       zi8 <= zi7;
       zi9 <= (std_logic_vector'(B"1") & zi8 & zi6 & zi4 & zi2);
       zi10 <= zi0(4 downto 4);
-      \instR1\ : \ZLL_Main_swapix18\ port map (zi10, zll_main_swapix18_out);
-      zi11 <= zll_main_swapix18_out;
+      \instR1\ : \ZLL_Main_swapix11\ port map (zi10, zll_main_swapix11_out);
+      zi11 <= zll_main_swapix11_out;
       res <= rw_cond(rw_eq(zi11, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(zi9, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_xor(rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"0") & zi8 & zi6 & zi4 & zi2), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(zi9, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32)));
 end architecture;
 
@@ -1107,13 +1106,18 @@ component \Main_explode5\ is
       port (arg0 : in std_logic_vector (4 downto 0);
             res : out std_logic_vector (4 downto 0));
       end component;
+      component \ZLL_Main_swapix11\ is
+      port (arg0 : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (0 downto 0));
+      end component;
       component \ZLL_Main_swapix12\ is
       port (arg0 : in std_logic_vector (0 downto 0);
             arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
-      component \ZLL_Main_swapix18\ is
+      component \ZLL_Main_swapix17\ is
       port (arg0 : in std_logic_vector (0 downto 0);
+            arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
       signal main_explode5_out : std_logic_vector (4 downto 0);
@@ -1128,12 +1132,11 @@ component \Main_explode5\ is
       signal zi8 : std_logic_vector (0 downto 0);
       signal zi9 : std_logic_vector (0 downto 0);
       signal zi10 : std_logic_vector (0 downto 0);
-      signal zll_main_swapix18_out : std_logic_vector (0 downto 0);
-      signal \zll_main_swapix18_outR1\ : std_logic_vector (0 downto 0);
+      signal zll_main_swapix11_out : std_logic_vector (0 downto 0);
       signal zll_main_swapix12_out : std_logic_vector (0 downto 0);
       signal zi11 : std_logic_vector (0 downto 0);
-      signal \zll_main_swapix18_outR2\ : std_logic_vector (0 downto 0);
-      signal \zll_main_swapix12_outR1\ : std_logic_vector (0 downto 0);
+      signal \zll_main_swapix11_outR1\ : std_logic_vector (0 downto 0);
+      signal zll_main_swapix17_out : std_logic_vector (0 downto 0);
       signal zi12 : std_logic_vector (0 downto 0);
 begin
 inst : \Main_explode5\ port map (arg1, main_explode5_out);
@@ -1148,14 +1151,34 @@ inst : \Main_explode5\ port map (arg1, main_explode5_out);
       zi8 <= zi7;
       zi9 <= zi0(4 downto 4);
       zi10 <= zi9;
-      \instR1\ : \ZLL_Main_swapix18\ port map (zi10, zll_main_swapix18_out);
-      \instR2\ : \ZLL_Main_swapix18\ port map (zi6, \zll_main_swapix18_outR1\);
-      \instR3\ : \ZLL_Main_swapix12\ port map (zll_main_swapix18_out, \zll_main_swapix18_outR1\, zll_main_swapix12_out);
+      \instR1\ : \ZLL_Main_swapix11\ port map (zi10, zll_main_swapix11_out);
+      \instR2\ : \ZLL_Main_swapix12\ port map (zi6, zll_main_swapix11_out, zll_main_swapix12_out);
       zi11 <= zll_main_swapix12_out;
-      \instR4\ : \ZLL_Main_swapix18\ port map (zi10, \zll_main_swapix18_outR2\);
-      \instR5\ : \ZLL_Main_swapix12\ port map (\zll_main_swapix18_outR2\, zi6, \zll_main_swapix12_outR1\);
-      zi12 <= \zll_main_swapix12_outR1\;
+      \instR3\ : \ZLL_Main_swapix11\ port map (zi10, \zll_main_swapix11_outR1\);
+      \instR4\ : \ZLL_Main_swapix17\ port map (zi6, \zll_main_swapix11_outR1\, zll_main_swapix17_out);
+      zi12 <= zll_main_swapix17_out;
       res <= rw_cond(rw_eq(zi11, std_logic_vector'(B"0")), rw_cond(rw_eq(zi12, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"0") & zi8 & std_logic_vector'(B"0") & zi4 & zi2), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32)), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"0") & zi8 & std_logic_vector'(B"1") & zi4 & zi2), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32));
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \ZLL_Main_swapix12\ is
+port (arg0 : in std_logic_vector (0 downto 0);
+      arg1 : in std_logic_vector (0 downto 0);
+      res : out std_logic_vector (0 downto 0));
+end entity;
+
+architecture rtl of \ZLL_Main_swapix12\ is
+component \ZLL_Main_swapix11\ is
+      port (arg0 : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (0 downto 0));
+      end component;
+      signal zll_main_swapix11_out : std_logic_vector (0 downto 0);
+begin
+inst : \ZLL_Main_swapix11\ port map (arg0, zll_main_swapix11_out);
+      res <= rw_cond(rw_eq(arg1, std_logic_vector'(B"1")), zll_main_swapix11_out, std_logic_vector'(B"0"));
 end architecture;
 
 library ieee;
@@ -1173,13 +1196,18 @@ component \Main_explode5\ is
       port (arg0 : in std_logic_vector (4 downto 0);
             res : out std_logic_vector (4 downto 0));
       end component;
+      component \ZLL_Main_swapix11\ is
+      port (arg0 : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (0 downto 0));
+      end component;
       component \ZLL_Main_swapix12\ is
       port (arg0 : in std_logic_vector (0 downto 0);
             arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
-      component \ZLL_Main_swapix18\ is
+      component \ZLL_Main_swapix17\ is
       port (arg0 : in std_logic_vector (0 downto 0);
+            arg1 : in std_logic_vector (0 downto 0);
             res : out std_logic_vector (0 downto 0));
       end component;
       signal main_explode5_out : std_logic_vector (4 downto 0);
@@ -1194,12 +1222,11 @@ component \Main_explode5\ is
       signal zi8 : std_logic_vector (0 downto 0);
       signal zi9 : std_logic_vector (0 downto 0);
       signal zi10 : std_logic_vector (0 downto 0);
-      signal zll_main_swapix18_out : std_logic_vector (0 downto 0);
-      signal zll_main_swapix12_out : std_logic_vector (0 downto 0);
+      signal zll_main_swapix11_out : std_logic_vector (0 downto 0);
+      signal zll_main_swapix17_out : std_logic_vector (0 downto 0);
       signal zi11 : std_logic_vector (0 downto 0);
-      signal \zll_main_swapix18_outR1\ : std_logic_vector (0 downto 0);
-      signal \zll_main_swapix18_outR2\ : std_logic_vector (0 downto 0);
-      signal \zll_main_swapix12_outR1\ : std_logic_vector (0 downto 0);
+      signal \zll_main_swapix11_outR1\ : std_logic_vector (0 downto 0);
+      signal zll_main_swapix12_out : std_logic_vector (0 downto 0);
       signal zi12 : std_logic_vector (0 downto 0);
 begin
 inst : \Main_explode5\ port map (arg1, main_explode5_out);
@@ -1214,13 +1241,12 @@ inst : \Main_explode5\ port map (arg1, main_explode5_out);
       zi8 <= zi7;
       zi9 <= zi0(4 downto 4);
       zi10 <= zi9;
-      \instR1\ : \ZLL_Main_swapix18\ port map (zi10, zll_main_swapix18_out);
-      \instR2\ : \ZLL_Main_swapix12\ port map (zll_main_swapix18_out, zi8, zll_main_swapix12_out);
-      zi11 <= zll_main_swapix12_out;
-      \instR3\ : \ZLL_Main_swapix18\ port map (zi10, \zll_main_swapix18_outR1\);
-      \instR4\ : \ZLL_Main_swapix18\ port map (zi8, \zll_main_swapix18_outR2\);
-      \instR5\ : \ZLL_Main_swapix12\ port map (\zll_main_swapix18_outR1\, \zll_main_swapix18_outR2\, \zll_main_swapix12_outR1\);
-      zi12 <= \zll_main_swapix12_outR1\;
+      \instR1\ : \ZLL_Main_swapix11\ port map (zi10, zll_main_swapix11_out);
+      \instR2\ : \ZLL_Main_swapix17\ port map (zi8, zll_main_swapix11_out, zll_main_swapix17_out);
+      zi11 <= zll_main_swapix17_out;
+      \instR3\ : \ZLL_Main_swapix11\ port map (zi10, \zll_main_swapix11_outR1\);
+      \instR4\ : \ZLL_Main_swapix12\ port map (zi8, \zll_main_swapix11_outR1\, zll_main_swapix12_out);
+      zi12 <= zll_main_swapix12_out;
       res <= rw_cond(rw_eq(zi11, std_logic_vector'(B"0")), rw_cond(rw_eq(zi12, std_logic_vector'(B"0")), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize(arg1, 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"01") & zi6 & zi4 & zi2), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32)), rw_resize(rw_shiftr(arg0, rw_mul(rw_sub(rw_sub(std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"), rw_resize((std_logic_vector'(B"00") & zi6 & zi4 & zi2), 128)), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")), std_logic_vector'(B"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000"))), 32));
 end architecture;
 
@@ -1228,16 +1254,15 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.rw_helpers.all;
-entity \ZLL_Main_swapix12\ is
+entity \ZLL_Main_swapix11\ is
 port (arg0 : in std_logic_vector (0 downto 0);
-      arg1 : in std_logic_vector (0 downto 0);
       res : out std_logic_vector (0 downto 0));
 end entity;
 
-architecture rtl of \ZLL_Main_swapix12\ is
+architecture rtl of \ZLL_Main_swapix11\ is
 
 begin
-res <= rw_cond(rw_eq(arg0, std_logic_vector'(B"1")), arg1, std_logic_vector'(B"0"));
+res <= rw_cond(rw_eq(arg0, std_logic_vector'(B"1")), std_logic_vector'(B"0"), std_logic_vector'(B"1"));
 end architecture;
 
 library ieee;

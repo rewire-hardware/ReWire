@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Types do not unify
+-- EXPECT-ERROR: Main.Frob Bool is expected
 -- EXPECT-ERROR: Main.Frob Bool
 -- Multi-method (data-dictionary) class instances compile, but a
 -- single-method class has a newtype dictionary whose class type survives

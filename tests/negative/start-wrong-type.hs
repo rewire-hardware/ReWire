@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Types do not unify
+-- EXPECT-ERROR: The top definition must have type ReacT i o Identity
 -- start must have a ReacT type.
 {-# LANGUAGE DataKinds #-}
 import ReWire

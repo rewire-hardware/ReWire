@@ -208,53 +208,26 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-component \ZLL_Main_convtest1\ is
-      port (arg0 : in std_logic_vector (0 downto 0);
-            arg1 : in std_logic_vector (0 downto 0);
-            arg2 : in std_logic_vector (0 downto 0);
-            res : out std_logic_vector (3 downto 0));
-      end component;
-      signal \__resumption_tag\ : std_logic_vector (1 downto 0) := std_logic_vector'(B"10");
+signal \__resumption_tag\ : std_logic_vector (1 downto 0) := std_logic_vector'(B"00");
       signal \__resumption_tag_next\ : std_logic_vector (1 downto 0);
       signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
-      signal zll_main_convtest1_out : std_logic_vector (3 downto 0);
-      signal zi2 : std_logic_vector (0 downto 0);
-      signal \zll_main_convtest1_outR1\ : std_logic_vector (3 downto 0);
+      signal zi1 : std_logic_vector (0 downto 0);
       signal zres : std_logic_vector (3 downto 0);
 begin
-inst : \ZLL_Main_convtest1\ port map (std_logic_vector'(B"0"), \__in0\, \__st0\, zll_main_convtest1_out);
-      zi2 <= \__resumption_tag\(0 downto 0);
-      \instR1\ : \ZLL_Main_convtest1\ port map (zi2, \__in0\, \__st0\, \zll_main_convtest1_outR1\);
-      zres <= rw_cond(rw_eq(\__resumption_tag\(1 downto 1), std_logic_vector'(B"1")), zll_main_convtest1_out, \zll_main_convtest1_outR1\);
+zi1 <= \__resumption_tag\(0 downto 0);
+      zres <= rw_cond(rw_eq(\__resumption_tag\(1 downto 1), std_logic_vector'(B"1")), (zi1 & std_logic_vector'(B"1") & zi1 & zi1), std_logic_vector'(B"0100"));
       \__resumption_tag_next\ <= zres(2 downto 1);
       \__st0_next\ <= zres(0 downto 0);
       \__out0\ <= zres(3 downto 3);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then
-                  \__resumption_tag\ <= std_logic_vector'(B"10");
+                  \__resumption_tag\ <= std_logic_vector'(B"00");
                   \__st0\ <= std_logic_vector'(B"0");
             elsif rising_edge(clk(0)) then
                   \__resumption_tag\ <= \__resumption_tag_next\;
                   \__st0\ <= \__st0_next\;
             end if;
       end process;
-end architecture;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.rw_helpers.all;
-entity \ZLL_Main_convtest1\ is
-port (arg0 : in std_logic_vector (0 downto 0);
-      arg1 : in std_logic_vector (0 downto 0);
-      arg2 : in std_logic_vector (0 downto 0);
-      res : out std_logic_vector (3 downto 0));
-end entity;
-
-architecture rtl of \ZLL_Main_convtest1\ is
-
-begin
-res <= (arg0 & std_logic_vector'(B"0") & arg0 & arg0);
 end architecture;

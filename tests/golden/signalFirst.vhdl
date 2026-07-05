@@ -213,18 +213,18 @@ component \Main_dev\ is
             arg1 : in std_logic_vector (7 downto 0);
             res : out std_logic_vector (24 downto 0));
       end component;
-      signal \__resumption_tag\ : std_logic_vector (8 downto 0) := std_logic_vector'(B"000000000");
+      signal \__resumption_tag\ : std_logic_vector (8 downto 0) := std_logic_vector'(B"100000000");
       signal \__resumption_tag_next\ : std_logic_vector (8 downto 0);
       signal \__st0\ : std_logic_vector (7 downto 0) := std_logic_vector'(B"00000000");
       signal \__st0_next\ : std_logic_vector (7 downto 0);
-      signal zi1 : std_logic_vector (7 downto 0);
       signal main_dev_out : std_logic_vector (24 downto 0);
+      signal zi2 : std_logic_vector (7 downto 0);
       signal \main_dev_outR1\ : std_logic_vector (24 downto 0);
       signal zres : std_logic_vector (24 downto 0);
 begin
-zi1 <= \__resumption_tag\(7 downto 0);
-      inst : \Main_dev\ port map (zi1, \__in0\, main_dev_out);
-      \instR1\ : \Main_dev\ port map (\__in0\, std_logic_vector'(B"00000000"), \main_dev_outR1\);
+inst : \Main_dev\ port map (\__in0\, std_logic_vector'(B"00000000"), main_dev_out);
+      zi2 <= \__resumption_tag\(7 downto 0);
+      \instR1\ : \Main_dev\ port map (zi2, \__in0\, \main_dev_outR1\);
       zres <= rw_cond(rw_eq(\__resumption_tag\(8 downto 8), std_logic_vector'(B"1")), main_dev_out, \main_dev_outR1\);
       \__resumption_tag_next\ <= zres(16 downto 8);
       \__st0_next\ <= zres(7 downto 0);
@@ -232,7 +232,7 @@ zi1 <= \__resumption_tag\(7 downto 0);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then
-                  \__resumption_tag\ <= std_logic_vector'(B"000000000");
+                  \__resumption_tag\ <= std_logic_vector'(B"100000000");
                   \__st0\ <= std_logic_vector'(B"00000000");
             elsif rising_edge(clk(0)) then
                   \__resumption_tag\ <= \__resumption_tag_next\;
@@ -254,5 +254,5 @@ end entity;
 architecture rtl of \Main_dev\ is
 
 begin
-res <= (rw_add(arg1, arg0) & std_logic_vector'(B"1") & arg0 & arg1);
+res <= (rw_add(arg1, arg0) & std_logic_vector'(B"0") & arg0 & arg1);
 end architecture;

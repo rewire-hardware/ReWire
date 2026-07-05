@@ -1,67 +1,63 @@
 $Pure.dispatch : ([5], [1]) -> [6]
 $Pure.dispatch disc i =
-      if eq disc[3 +: 2] 2'h1 then (let store0 = disc[2 +: 1] in
+      if eq disc[3 +: 2] 2'h1 then (let s0 = disc[1 +: 1] in
+            let s1 = disc[0 +: 1] in
+            $LL.Main.go2 i s0 s1)
+            else if eq disc[3 +: 2] 2'h2 then (let store0 = disc[2 +: 1] in
             let s0 = disc[1 +: 1] in
             let s1 = disc[0 +: 1] in
-            $LL.Main.go6 store0 i s0 s1)
-            else if eq disc[3 +: 2] 2'h2 then (let s0 = disc[1 +: 1] in
-            let s1 = disc[0 +: 1] in
-            $LL.Main.go4 i s0 s1) else let store0 = disc[2 +: 1] in
+            $LL.Main.go1 store0 i s0 s1) else let store0 = disc[2 +: 1] in
             let s0 = disc[1 +: 1] in
             let s1 = disc[0 +: 1] in
-            $LL.Main.go8 store0 i s0 s1
+            $LL.Main.go4 store0 i s0 s1
 
-$LL.Main.go9 : ([1], [1]) -> [6]
-$LL.Main.go9 sto0 sto1 =
-      Main.go sto0 sto1
-
-$LL.Main.go8 : ([1], [1], [1], [1]) -> [6]
-$LL.Main.go8 $x $x1 sto0 sto1 =
-      $LL.Main.go1 $x $x1 sto0 sto1
-
-$LL.Main.go7 : ([1], [1]) -> [1]
-$LL.Main.go7 x y =
-      if eq x 1'h1 then y
+$LL.Main.go8 : ([1], [1]) -> [1]
+$LL.Main.go8 y s =
+      if eq s 1'h1 then y
             else 1'h0
 
-$LL.Main.go6 : ([1], [1], [1], [1]) -> [6]
-$LL.Main.go6 $x $x1 sto0 sto1 =
-      $LL.Main.go3 $x $x1 sto0 sto1
+$LL.Main.go7 : ([1], [1], [1], [1]) -> [6]
+$LL.Main.go7 $x $x1 sto0 sto1 =
+      $LL.Main.go $x $x1 sto0 sto1
+
+$LL.Main.go6 : ([1], [1]) -> [6]
+$LL.Main.go6 sto0 sto1 =
+      Main.go sto0 sto1
 
 $LL.Main.go5 : ([1], [1], [1], [1]) -> [6]
-$LL.Main.go5 x y sto0 sto1 =
-      $LL.Main.go2 ($LL.Main.go x y) y # 2'h1 # y # sto0 # sto1
+$LL.Main.go5 y z sto0 sto1 =
+      $LL.Main.go6 sto0 y
 
-$LL.Main.go4 : ([1], [1], [1]) -> [6]
-$LL.Main.go4 x sto0 sto1 =
-      if eq x 1'h0 then $LL.Main.go8 x sto0 sto0 sto1
+$LL.Main.go4 : ([1], [1], [1], [1]) -> [6]
+$LL.Main.go4 $x $x1 sto0 sto1 =
+      $LL.Main.go7 $x $x1 sto0 sto1
+
+$LL.Main.go3 : ([1], [1]) -> [1]
+$LL.Main.go3 x wild =
+      if eq wild 1'h0 then $LL.Main.go8 x x
+            else x
+
+$LL.Main.go2 : ([1], [1], [1]) -> [6]
+$LL.Main.go2 x sto0 sto1 =
+      if eq x 1'h0 then $LL.Main.go4 x sto0 sto0 sto1
             else 3'h0 # x # sto0 # sto1
-
-$LL.Main.go3 : ([1], [1], [1], [1]) -> [6]
-$LL.Main.go3 y z sto0 sto1 =
-      $LL.Main.go9 sto0 y
-
-$LL.Main.go2 : ([1], [1]) -> [1]
-$LL.Main.go2 $x $x1 =
-      $LL.Main.go7 $x $x1
 
 $LL.Main.go1 : ([1], [1], [1], [1]) -> [6]
 $LL.Main.go1 $x $x1 sto0 sto1 =
       $LL.Main.go5 $x $x1 sto0 sto1
 
-$LL.Main.go : ([1], [1]) -> [1]
-$LL.Main.go x wild =
-      if eq wild 1'h0 then $LL.Main.go2 x x
-            else x
+$LL.Main.go : ([1], [1], [1], [1]) -> [6]
+$LL.Main.go x y sto0 sto1 =
+      $LL.Main.go8 y ($LL.Main.go3 x y) # 2'h2 # y # sto0 # sto1
 
 Main.go : ([1], [1]) -> [6]
 Main.go sto0 sto1 =
-      4'h4 # sto0 # sto1
+      4'h2 # sto0 # sto1
 
 device top_level
       input __in0 : [1]
       output __out0 : [1]
-      register __resumption_tag : [3] init 3'h4
+      register __resumption_tag : [3] init 3'h2
       register __st0 : [1] init 1'h0
       register __st1 : [1] init 1'h1
       let $res = $Pure.dispatch (__resumption_tag # __st0 # __st1) __in0
