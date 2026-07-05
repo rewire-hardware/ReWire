@@ -105,14 +105,18 @@ primNames = Set.fromList $ map fst builtins
 -- | Partial evaluation to the synthable, dictionary-free fixpoint,
 --   bounded by the given depth.
 simplify :: forall m. MonadError AstError m => Natural -> Program -> m Program
-simplify depth p = runSimpT p $ go depth p
-      where go :: Natural -> Program -> SimpT m Program
-            go n pr
-                  | done pr   = pure pr
-                  | n == 0    = failAt noAnn
-                        $ "Partial evaluation not terminating (mutually recursive definitions?). Not synthable: "
-                        <> intercalate ", " (stuck pr)
-                  | otherwise = step pr >>= go (n - 1)
+simplify depth p = runSimpT p $ go (max 1 depth) p
+      where -- At least one round always runs (the retired loop's
+            -- behavior): the done conditions are signature-level, so a
+            -- program can arrive converged by them with unreduced bodies.
+            go :: Natural -> Program -> SimpT m Program
+            go n pr = do
+                  pr' <- step pr
+                  if | done pr'  -> pure pr'
+                     | n <= 1    -> failAt noAnn
+                           $ "Partial evaluation not terminating (mutually recursive definitions?). Not synthable: "
+                           <> intercalate ", " (stuck pr')
+                     | otherwise -> go (n - 1) pr'
 
             step :: Program -> SimpT m Program
             step = specialize >=> (pure . purge) >=> reduceProgram

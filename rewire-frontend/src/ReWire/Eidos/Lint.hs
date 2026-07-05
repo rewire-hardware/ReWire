@@ -27,8 +27,10 @@
 --     "the process pauses" — and the reactive types are out of the
 --     grammar entirely. The @top@ device-type rule is suspended when
 --     processes are present (the process is the machine).
---   * 'LintMonoANF': reserved for a later stage of the Eidos migration
---     (§6); requesting it is an error for now.
+--   * 'LintMonoANF' (procify's input contract): additionally, value
+--     binders are first-order and definition bodies are in the ANF shape
+--     of §6 (let chains over simple right-hand sides; the reactive
+--     fragment — procify's input skeleton — is exempt from naming).
 --
 --   There is no inference and no unification anywhere: every binder carries
 --   its type, so every expression synthesizes, and checking an expression
@@ -37,12 +39,12 @@
 --   'ReWire.Eidos.Types.typeOf', which is total on programs this module
 --   accepts.
 --
---   TODO(eidos): mono+ANF mode (when it lands) must enforce the full
+--   TODO(eidos): mono+ANF mode does not yet enforce the full
 --   representable-closure type grammar of §4.1 (a permit-list of type
 --   constructors — Vec, Finite, Bool, (), tuples, monomorphic ADTs,
 --   Integer, Proxy, String in literal positions — plus
---   ReacT/StateT/Identity until purification); mono mode checks
---   no-polymorphism and nat-closure.
+--   ReacT/StateT/Identity until purification); it checks the ANF shape,
+--   first-order value binders, no-polymorphism, and nat-closure.
 --   TODO(eidos): type arguments and constructor fields are not kind-checked
 --   (there is no kind table for built-in type constructors); type-variable
 --   occurrences are checked against their binders' kinds.
@@ -57,10 +59,11 @@ module ReWire.Eidos.Lint (LintMode (..), lint, lintDefn) where
 
 import ReWire.Annotation (Annote, ann, noAnn)
 import ReWire.Builtins (builtins)
-import ReWire.Error (AstError, MonadError, failAt, failAtWith, failInternal)
+import ReWire.Eidos.ANF (hasJump)
+import ReWire.Error (AstError, MonadError, failAt, failAtWith)
 import ReWire.Eidos.Pretty ()
 import ReWire.Eidos.Syntax
-import ReWire.Eidos.Types (natNorm, evalNat, instantiate, substTv, flattenApp, flattenArrow, flattenTyApp, reacOrStateT)
+import ReWire.Eidos.Types (natNorm, evalNat, instantiate, substTv, flattenApp, flattenArrow, flattenTyApp, reacOrStateT, typeOf)
 import ReWire.Pretty (prettyPrint, showt)
 
 import Control.Monad (foldM, foldM_, unless, void, when, zipWithM_)
@@ -79,31 +82,16 @@ import qualified Data.HashSet        as Set
 data LintMode = LintPoly | LintMono | LintMonoANF | LintMachine
       deriving (Eq, Ord, Show)
 
-modeName :: LintMode -> Text
-modeName = \ case
-      LintPoly    -> "poly"
-      LintMono    -> "mono"
-      LintMonoANF -> "mono+ANF"
-      LintMachine -> "machine"
-
 -- | Check a whole program in the given mode; succeeds exactly when every
 --   rule of the mode holds.
 lint :: MonadError AstError m => LintMode -> Program -> m ()
-lint mode p = do
-      checkImplemented mode
-      checkProgram (mkEnv mode p) p
+lint mode p = checkProgram (mkEnv mode p) p
 
 -- | Check a single definition against a program's global context: every
 --   rule except the whole-program ones (global binder uniqueness, global
 --   name distinctness, datatype well-formedness, and the @top@ rule).
 lintDefn :: MonadError AstError m => LintMode -> Program -> Defn -> m ()
-lintDefn mode p d = do
-      checkImplemented mode
-      checkDefn (mkEnv mode p) d
-
-checkImplemented :: MonadError AstError m => LintMode -> m ()
-checkImplemented m = when (m == LintMonoANF) $ failInternal noAnn
-      $ "Eidos lint: mode " <> modeName m <> " is not yet implemented"
+lintDefn mode p d = checkDefn (mkEnv mode p) d
 
 ---
 --- Environments.
@@ -506,13 +494,94 @@ checkDataDefn env (DataDefn an t k cs) = do
 --   the builtins' type assumptions riding to the retained pipeline as
 --   polymorphic signature carriers (error-stub bodies, never referenced
 --   as variables); they check in poly mode until the Eidos-level builtin
---   signature table lands.
+--   signature table lands. In mono+ANF mode the body must additionally be
+--   in the ANF shape of doc/eidos.md §6 ('checkANF').
 checkDefn :: MonadError AstError m => Env -> Defn -> m ()
 checkDefn env0 d@(Defn _ x0 _ _ _ _)
       | envMode env0 >= LintMono, Set.member (idOcc x0) primNames = checkDefn' (env0 { envMode = LintPoly }) d
-      | otherwise                                                 = checkDefn' env0 d
+      | otherwise = do
+            checkDefn' env0 d
+            when (envMode env0 == LintMonoANF) $ checkANF d
       where primNames :: HashSet Text
             primNames = Set.fromList $ map fst builtins
+
+-- | The ANF shape (doc/eidos.md §6): a definition body is a let chain
+--   over simple right-hand sides ending in an atom, a jump, a reactive
+--   spine, or a reactive case — the reactive fragment is exempt from
+--   naming (it is procify's input skeleton): reactive spines keep lambda
+--   (continuation) arguments and in-place reactive arguments; a reactive
+--   case stays in tail position. Types were already checked; this is
+--   purely structural.
+checkANF :: forall m. MonadError AstError m => Defn -> m ()
+checkANF d = tailOk $ defnBody d
+      where tailOk :: Exp -> m ()
+            tailOk e = case e of
+                  _ | atomOk e -> pure ()
+                  Jump an _ es -> mapM_ (atom an "jump argument") es
+                  Let _ (NonRec _ r) body -> rOk r >> tailOk body
+                  Let _ (Join _ _ b) body -> tailOk b >> tailOk body
+                  Case an t _ _ _
+                        | reacOrStateT t || hasJump e -> caseOk e
+                        | otherwise -> failAt an "ANF: a pure case in tail position (must be let-bound)"
+                  App {}
+                        | reacOrStateT (typeOf e) || hasArrowTy (typeOf e) -> spineOk e
+                        | otherwise -> failAt (ann e) "ANF: a pure application in tail position (must be let-bound)"
+                  Lam _ _ b -> tailOk b -- residual reactive-continuation lambda
+                  _ -> failAt (ann e) "ANF: not a let chain ending in an atom, jump, or reactive tail"
+
+            rOk :: Exp -> m ()
+            rOk r = case r of
+                  _ | atomOk r -> pure ()
+                  Case {}      -> caseOk r
+                  App {}       -> spineOk r
+                  Lam {}       -> pure () -- never minted on the pipeline; tolerated in fixtures
+                  _            -> failAt (ann r) "ANF: right-hand side is not a simple computation"
+
+            caseOk :: Exp -> m ()
+            caseOk (Case an _ s _ alts) = do
+                  atom an "case scrutinee" s
+                  mapM_ (\ (Alt _ _ _ b) -> tailOk b) alts
+            caseOk e = failAt (ann e) "ANF: expected a case (rwc bug)"
+
+            -- Arguments are atoms, except the naming-exempt forms: lambda
+            -- and function-typed arguments (continuations, higher-order
+            -- primitive arguments, partial applications) and reactive
+            -- arguments, all normalized in place.
+            spineOk :: Exp -> m ()
+            spineOk e = do
+                  let (_, args) = flattenApp e
+                  mapM_ argOk [ a | EArg a <- args ]
+                  where argOk :: Exp -> m ()
+                        argOk a
+                              | atomOk a                = pure ()
+                              | Lam {} <- a             = tailOk a
+                              | (Prim {}, _) <- flattenApp a = spineOk a
+                              | hasArrowTy $ typeOf a   = case a of
+                                    App {} -> spineOk a
+                                    _      -> pure ()
+                              | reacOrStateT $ typeOf a = tailOk a
+                              | otherwise               = failAt (ann a)
+                                    "ANF: a representable non-atom argument (must be let-bound)"
+
+            hasArrowTy :: Ty -> Bool
+            hasArrowTy = \ case
+                  Arrow {}      -> True
+                  TyApp _ t1 t2 -> hasArrowTy t1 || hasArrowTy t2
+                  _             -> False
+
+            atom :: Annote -> Text -> Exp -> m ()
+            atom an what e = unless (atomOk e) $ failAt an $ "ANF: " <> what <> " is not an atom"
+
+            atomOk :: Exp -> Bool
+            atomOk = \ case
+                  Var {}         -> True
+                  LitInt {}      -> True
+                  LitStr {}      -> True
+                  Con _ t _      -> null $ fst $ flattenArrow t
+                  Prim _ t _     -> null $ fst $ flattenArrow t
+                  LitList _ _ es -> all atomOk es
+                  LitVec _ _ es  -> all atomOk es
+                  _              -> False
 
 checkDefn' :: MonadError AstError m => Env -> Defn -> m ()
 checkDefn' env (Defn an x ps body _ _) = do

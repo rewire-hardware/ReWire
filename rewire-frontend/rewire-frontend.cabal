@@ -39,6 +39,7 @@ library
       ReWire.Crust.TypeCheck
       ReWire.Crust.Types
       ReWire.Crust.Util
+      ReWire.Eidos.ANF
       ReWire.Eidos.Externs
       ReWire.Eidos.Inline
       ReWire.Eidos.Lint

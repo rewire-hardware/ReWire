@@ -24,13 +24,13 @@ rw__Pure_dispatch x0 = rw_Main_startp x0
 rw_Main_startp : [2] -> [1]
 rw_Main_startp x0 = rw_Main_proc x0
 
-// Main.proc
-rw_Main_proc : [2] -> [1]
-rw_Main_proc x0 = rw__LL_Main_proc x0
-
 // $LL.Main.proc
 rw__LL_Main_proc : [2] -> [1]
 rw__LL_Main_proc x0 = if x0 == 0b00 then 0b0 else (if x0 == 0b01 then 0b0 else (if x0 == 0b10 then 0b0 else 0b1))
+
+// Main.proc
+rw_Main_proc : [2] -> [1]
+rw_Main_proc x0 = rw__LL_Main_proc x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [2] -> [1]
