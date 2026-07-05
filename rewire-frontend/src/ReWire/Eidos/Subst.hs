@@ -23,7 +23,7 @@
 --     program's maximum ('nextUniq').
 module ReWire.Eidos.Subst
       ( maxUniq, nextUniq
-      , refreshExp, refreshDefn
+      , refreshExp, refreshDefn, instantiateDefn
       , substVars, substVarsRefreshing
       , occCounts
       ) where
@@ -34,6 +34,7 @@ import ReWire.SYB (queryWith)
 
 import Control.Monad.State.Strict (MonadState, get, put)
 import Data.HashMap.Strict (HashMap)
+import Data.Text (Text)
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.IntMap.Strict  as IM
@@ -97,6 +98,24 @@ refreshDefn (Defn an x params body attr orig) = do
             freshTv v = do
                   u <- freshU
                   pure v { tvUniq = u }
+
+-- | Clone a definition at a type instantiation (the specializer's flavor
+--   of the audited clone): the signature's variables are substituted away
+--   by the given type arguments (the clone is monomorphic when they are
+--   closed), every type in the parameters and body follows, and every
+--   binder is refreshed. The clone is named by the given occurrence text
+--   with a fresh unique; self-references in the body are NOT remapped —
+--   they still name the origin at its instantiated type arguments, for
+--   the caller's spine rewrite to resolve.
+instantiateDefn :: MonadState Uniq m => Text -> [Ty] -> Defn -> m Defn
+instantiateDefn occ ts (Defn an x params body attr orig) = do
+      let Sig tvs t = idSig x
+          rtv       = Map.fromList $ zip tvs ts
+      u <- freshU
+      let x' = x { idOcc = occ, idUniq = u, idSig = Sig [] $ substTv rtv t }
+      (r1, params') <- bindIds rn0 { rnTvs = rtv } params
+      body' <- rex r1 body
+      pure $ Defn an x' params' body' attr orig
 
 -- | A fresh Id with the same occurrence text and a renamed signature.
 freshLike :: MonadState Uniq m => HashMap TyVar Ty -> Id -> m Id

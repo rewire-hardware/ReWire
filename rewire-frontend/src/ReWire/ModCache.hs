@@ -40,7 +40,9 @@ import System.FilePath ((-<.>))
 
 import qualified Data.Text                    as T
 import qualified Data.Text.IO                 as T
+import qualified ReWire.Eidos.Inline          as Eidos
 import qualified ReWire.Eidos.Lint            as Eidos
+import qualified ReWire.Eidos.Spec            as Eidos
 import qualified ReWire.Hyle.Syntax         as Hyle
 import qualified ReWire.Config                as C
 
@@ -59,18 +61,25 @@ getDevice :: (MonadIO m, MonadFail m, MonadError AstError m, MonadState AstError
 getDevice conf fp = do
       gutss          <- loadCore conf fp
       -- Under --eidos, the front half runs through the Eidos IR: bridge
-      -- Core to Eidos, lint it (poly mode), dump the .eir beside the
-      -- output, and lower onto the retained Crust pipeline through the
-      -- shim (ReWire.Eidos.ToCrust). The shim moves down the pipeline as
-      -- passes are ported; see doc/eidos.md.
+      -- Core to Eidos, lint it (poly mode), specialize away polymorphism,
+      -- inline INLINE-annotated definitions, lint again (mono mode), dump
+      -- the .eir beside the output, and lower onto the retained Crust
+      -- pipeline through the shim (ReWire.Eidos.ToCrust), entering at the
+      -- extern-neutering pass. The shim moves down the pipeline as passes
+      -- are ported; see doc/eidos.md.
       prog0 <- if conf^.C.eidos
             then do
                   eir <- toEidos conf gutss
                   Eidos.lint Eidos.LintPoly eir
+                  eir' <- verb "Specializing polymorphic definitions (eidos)." eir
+                        >>= Eidos.specialize specDepth
+                        >>= verb "Inlining INLINE-annotated definitions (eidos)."
+                        >>= Eidos.inlineAnnotated
+                  Eidos.lint Eidos.LintMono eir'
                   let eirFile = fromMaybe fp (conf^.C.outFile) -<.> "eir"
                   verb ("Writing Eidos IR to file: " <> pack eirFile) ()
-                  liftIO $ T.writeFile eirFile $ prettyProgram eir
-                  eidosToCrust eir
+                  liftIO $ T.writeFile eirFile $ prettyProgram eir'
+                  eidosToCrust eir'
             else coreToCrust conf gutss
       (ts, syns, ds) <- passCrust conf 1 "Translating GHC Core to Crust IR." prog0
 
@@ -93,7 +102,18 @@ getDevice conf fp = do
       pure p
 
       where -- Transformations applied up to and including typechecking.
-            frontPasses =
+            -- Under --eidos the front half has already run at the Eidos
+            -- level: prims come from the shim, Main.main never survives
+            -- the bridge's reachability pruning, INLINE inlining and
+            -- specialization (in place of typechecking) ran on Eidos,
+            -- synonyms were expanded by the bridge, and the shim's
+            -- annotations are all concrete (exactly the ones the
+            -- annotation purge keeps) — so only extern neutering remains.
+            frontPasses
+                  | conf^.C.eidos =
+                  [ ("Extracting extern models; removing other Haskell definitions for externs.", neuterExterns')
+                  ]
+                  | otherwise =
                   [ ("Adding primitives.",                                                     pure . addPrims)
                   , ("Removing the Main.main definition (before attempting to typecheck it).", pure . removeMain)
                   , ("Inlining INLINE-annotated definitions.",                                 inlineAnnotated)

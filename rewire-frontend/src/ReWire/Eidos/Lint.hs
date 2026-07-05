@@ -12,10 +12,14 @@
 --
 --   * 'LintPoly' (post-bridge): the rules of §4.2–§4.4.
 --   * 'LintMono' (post-specialization): additionally, every definition
---     signature is monomorphic, every type is nat-closed, and value binders
---     are first-order. Datatypes stay parametric through specialization
---     (§3.6), so constructor signatures are exempt from the mono rules;
---     'Con' occurrences carry instantiated types, which are not.
+--     signature is monomorphic and every type is nat-closed. Datatypes stay
+--     parametric through specialization (§3.6), so constructor signatures
+--     are exempt from the mono rules; 'Con' occurrences carry instantiated
+--     types, which are not. Builtin-named definitions (rwPrim*) are the
+--     builtins' type assumptions riding as polymorphic signature carriers
+--     and check in poly mode. Value binders may still be higher-order here:
+--     first-orderization is the partial evaluator's job, downstream of
+--     specialization, so the first-order rule belongs to mono+ANF.
 --   * 'LintMonoANF' and 'LintMachine': reserved for later stages of the
 --     Eidos migration (§6, §7.4); requesting them is an error for now.
 --
@@ -26,11 +30,12 @@
 --   'ReWire.Eidos.Types.typeOf', which is total on programs this module
 --   accepts.
 --
---   TODO(eidos): mono mode does not yet enforce the full representable-
---   closure type grammar of §4.1 (a permit-list of type constructors — Vec,
---   Finite, Bool, (), tuples, monomorphic ADTs, Integer, Proxy, String in
---   literal positions — plus ReacT/StateT/Identity until purification); it
---   checks no-polymorphism, nat-closure, and first-order value binders.
+--   TODO(eidos): mono+ANF mode (when it lands) must enforce the full
+--   representable-closure type grammar of §4.1 (a permit-list of type
+--   constructors — Vec, Finite, Bool, (), tuples, monomorphic ADTs,
+--   Integer, Proxy, String in literal positions — plus
+--   ReacT/StateT/Identity until purification); mono mode checks
+--   no-polymorphism and nat-closure.
 --   TODO(eidos): type arguments and constructor fields are not kind-checked
 --   (there is no kind table for built-in type constructors); type-variable
 --   occurrences are checked against their binders' kinds.
@@ -44,6 +49,7 @@
 module ReWire.Eidos.Lint (LintMode (..), lint, lintDefn) where
 
 import ReWire.Annotation (Annote, ann, noAnn)
+import ReWire.Builtins (builtins)
 import ReWire.Error (AstError, MonadError, failAt, failAtWith, failInternal)
 import ReWire.Eidos.Pretty ()
 import ReWire.Eidos.Syntax
@@ -153,7 +159,8 @@ checkProgram env p@(Program datas defns top) = do
 
 -- | @top@ resolves to a definition, its occurrence signature matches the
 --   binder's, and (in mono mode) the definition has the device type
---   @ReacT i o Identity ()@ (doc/eidos.md §4.3).
+--   @ReacT i o Identity a@ (doc/eidos.md §4.3; the result type is
+--   unconstrained — a non-halting device never produces it).
 checkTop :: MonadError AstError m => Env -> [Defn] -> Id -> m ()
 checkTop env defns top = case [ d | d <- defns, idUniq (defnId d) == idUniq top ] of
       []    -> failAt noAnn $ "top: designated device root " <> prettyPrint top <> " does not name a definition"
@@ -162,8 +169,8 @@ checkTop env defns top = case [ d | d <- defns, idUniq (defnId d) == idUniq top 
             when (envMode env >= LintMono) $ checkDeviceTy (defnAnnote d) $ sigTy $ idSig $ defnId d
       where checkDeviceTy :: MonadError AstError m => Annote -> Ty -> m ()
             checkDeviceTy an t = case flattenTyApp $ natNorm t of
-                  (TyCon _ "ReacT", [_, _, TyCon _ "Identity", TyCon _ "()"]) -> pure ()
-                  _ -> failAt an $ "the top definition must have type ReacT i o Identity (), not " <> prettyPrint t
+                  (TyCon _ "ReacT", [_, _, TyCon _ "Identity", _]) -> pure ()
+                  _ -> failAt an $ "the top definition must have type ReacT i o Identity a, not " <> prettyPrint t
 
 ---
 --- Global binder uniqueness (doc/eidos.md §2, §4.4).
@@ -284,9 +291,20 @@ checkDataDefn env (DataDefn an t k cs) = do
 
 -- | Parameters match a prefix of the signature's arrow spine; the body
 --   checks against the remainder. In mono mode the signature quantifies
---   nothing.
+--   nothing — except the builtin-named definitions (rwPrim*), which are
+--   the builtins' type assumptions riding to the retained pipeline as
+--   polymorphic signature carriers (error-stub bodies, never referenced
+--   as variables); they check in poly mode until the Eidos-level builtin
+--   signature table lands.
 checkDefn :: MonadError AstError m => Env -> Defn -> m ()
-checkDefn env (Defn an x ps body _ _) = do
+checkDefn env0 d@(Defn _ x0 _ _ _ _)
+      | envMode env0 >= LintMono, Set.member (idOcc x0) primNames = checkDefn' (env0 { envMode = LintPoly }) d
+      | otherwise                                                 = checkDefn' env0 d
+      where primNames :: HashSet Text
+            primNames = Set.fromList $ map fst builtins
+
+checkDefn' :: MonadError AstError m => Env -> Defn -> m ()
+checkDefn' env (Defn an x ps body _ _) = do
       let Sig tvs sigT = idSig x
       when (envMode env >= LintMono) $ unless (null tvs) $ failAt an
             $ "definition " <> prettyPrint x <> " has a polymorphic signature (mono mode)"
@@ -318,14 +336,15 @@ checkLocalBinder env an what x = do
       checkTy env an t
 
 -- | A local *value* binder (parameter, lambda/let/case/pattern binder):
---   additionally first-order in mono mode. Join point labels are exempt —
---   a label's signature is its continuation's function type, and a label
---   is not a value.
+--   additionally first-order in mono+ANF mode (higher-order binders
+--   survive specialization; the partial evaluator eliminates them before
+--   the ANF stage). Join point labels are exempt — a label's signature is
+--   its continuation's function type, and a label is not a value.
 checkValueBinder :: MonadError AstError m => Env -> Annote -> Text -> Id -> m ()
 checkValueBinder env an what x = do
       checkLocalBinder env an what x
-      when (envMode env >= LintMono && hasArrow (sigTy $ idSig x)) $ failAt an
-            $ what <> " " <> prettyPrint x <> " has a function type (higher-order binders are not representable in mono mode)"
+      when (envMode env >= LintMonoANF && hasArrow (sigTy $ idSig x)) $ failAt an
+            $ what <> " " <> prettyPrint x <> " has a function type (higher-order binders are not representable past the ANF stage)"
       where hasArrow :: Ty -> Bool
             hasArrow = \ case
                   Arrow {}    -> True
