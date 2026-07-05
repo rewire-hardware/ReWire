@@ -15,12 +15,15 @@ import ReWire.Hyle.Parse (parseHyle, parseHyleText)
 import ReWire.Pretty (prettyPrint)
 
 import qualified ReWire.Eidos.Lint as Eidos
+import qualified ReWire.Eidos.Subst as Eidos
+import qualified ReWire.Eidos.Syntax as Eidos
 
 import qualified Cosim
 import TestUtil (withStderrTo, withStdoutTo, sq, externArgs)
 
 import Control.Exception (try, finally)
 import Control.Monad (unless, when, msum)
+import Control.Monad.State.Strict (evalState)
 import Data.List (isSuffixOf, isInfixOf, stripPrefix, intercalate)
 import Data.Maybe (fromMaybe, mapMaybe)
 import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), ArgDescr (..))
@@ -211,6 +214,24 @@ testEir fn = testCase (takeBaseName fn <> " (eir round-trip)") $ do
             Left err       -> assertFailure $ "eir round-trip failed: " <> T.unpack (prettyPrint err)
             Right (t1, t2) -> assertBool "parse . prettyProgram . parse differs from parse" $ t1 == t2
 
+-- | Refreshes every definition body of an .eir fixture (and clones one
+--   whole definition alongside) through the audited clone primitives, then
+--   re-lints: scoping, typing, and the global-uniqueness invariant must
+--   all survive the refresh.
+testEirRefresh :: FilePath -> TestTree
+testEirRefresh fn = testCase (takeBaseName fn <> " (eir refresh)") $ do
+      r <- runSyntaxError $ do
+            p <- parseEir fn
+            let u0  = Eidos.nextUniq p
+                p'  = flip evalState u0 $ do
+                        ds  <- mapM (\ d -> (\ b -> d { Eidos.defnBody = b }) <$> Eidos.refreshExp (Eidos.defnBody d)) $ Eidos.progDefns p
+                        dup <- mapM Eidos.refreshDefn ds
+                        pure p { Eidos.progDefns = ds <> dup }
+            Eidos.lint Eidos.LintPoly p'
+      case r of
+            Left err -> assertFailure $ "eir refresh failed: " <> T.unpack (prettyPrint err)
+            Right () -> pure ()
+
 -- | A test that must fail to compile with rwc. Each test file declares (one or
 --   more of) the expected error with a comment line:
 --
@@ -346,7 +367,7 @@ main = do
       eirTests   <- do
             dir   <- getDataFileName ("tests" </> "eidos")
             files <- map (dir </>) . filter (".eir" `isSuffixOf`) <$> listDirectory dir
-            pure $ testGroup "eidos" $ map testEir files
+            pure $ testGroup "eidos" $ map testEir files <> map testEirRefresh files
       smokeTests <- getSmokeTests
       -- The integration directory holds full-program golden tests (same legs as
       -- tests/golden), but they are heavyweight, so they only run under --integration.
