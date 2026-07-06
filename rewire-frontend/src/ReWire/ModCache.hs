@@ -42,6 +42,7 @@ import qualified ReWire.Eidos.ANF             as Eidos
 import qualified ReWire.Eidos.Externs         as Eidos
 import qualified ReWire.Eidos.Inline          as Eidos
 import qualified ReWire.Eidos.Lint            as Eidos
+import qualified ReWire.Eidos.ProcOpt         as Eidos
 import qualified ReWire.Eidos.Procify         as Eidos
 import qualified ReWire.Eidos.Simplify        as Eidos
 import qualified ReWire.Eidos.Spec            as Eidos
@@ -97,12 +98,8 @@ getDevice conf fp = do
                   -- Procify constructs (and lint-checks) the process; the
                   -- compiled output still lowers through the P-level shim
                   -- until the machine-step fold and its adapter land.
-                  pr <- verb "Procifying (eidos)." a >>= Eidos.procify
-                  -- TODO(eidos, M3b): wire ReWire.Eidos.ProcOpt (epsilon
-                  -- inlining + alpha-equal block merge) here once its
-                  -- unbound-capture bug is fixed (it currently breaks
-                  -- fibo3/TinyISA/wordLit); the MiniISA tag-parity gate
-                  -- depends on it.
+                  pr0 <- verb "Procifying (eidos)." a >>= Eidos.procify
+                  let pr = pr0 { Eidos.progProcs = map Eidos.optimizeProc $ Eidos.progProcs pr0 }
                   mapM_ (Eidos.lintProc pr) $ Eidos.progProcs pr
                   pure pr
             else pure eirPE

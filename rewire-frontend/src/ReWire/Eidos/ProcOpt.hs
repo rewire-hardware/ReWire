@@ -20,6 +20,7 @@
 module ReWire.Eidos.ProcOpt (optimizeProc) where
 
 import ReWire.Eidos.Pretty ()
+import ReWire.Eidos.Subst (substVars)
 import ReWire.Eidos.Syntax
 import ReWire.Pretty (prettyPrint)
 
@@ -64,18 +65,16 @@ inlineEpsilon pr = pr { procEntry  = retermB $ procEntry pr
                               , Goto _ l' as <- [blkTerm b]
                               , idUniq l' /= idUniq l ]
 
-            -- Follow (acyclic) epsilon chains from a goto site.
+            -- Follow (acyclic) epsilon chains from a goto site. Arguments
+            -- can be compound (primitive applications are
+            -- naming-transparent in ANF), so the substitution is a full
+            -- expression substitution, not an atom swap.
             resolve :: Id -> [Exp] -> (Id, [Exp])
             resolve l as = case IM.lookup (idUniq l) eps of
                   Just (ps, l', as') ->
                         let sub = IM.fromList $ zip (map idUniq ps) as
-                        in resolve l' $ map (substAtom sub) as'
+                        in resolve l' $ map (substVars sub) as'
                   Nothing            -> (l, as)
-
-            substAtom :: IM.IntMap Exp -> Exp -> Exp
-            substAtom sub = \ case
-                  Var _ x | Just e <- IM.lookup (idUniq x) sub -> e
-                  e                                            -> e
 
             retermB :: Block -> Block
             retermB b = b { blkTerm = reterm $ blkTerm b }
