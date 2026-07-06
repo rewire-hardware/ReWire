@@ -10,9 +10,10 @@
 --   bodies are freshened to avoid capture. Defns are processed callee-first
 --   (the call graph is acyclic), so chains of single-use defns collapse
 --   fully.
-module ReWire.Hyle.Transform (inline, inlineBy, purgeUnused, partialEval, purgeDevLets, purgeZeroWidth, dedupe, optimize) where
+module ReWire.Hyle.Transform (inline, inlineBy, purgeUnused, partialEval, purgeDevLets, purgeZeroWidth, dedupe, optimize, hoistInstances) where
 
 import ReWire.Annotation (Annote)
+import ReWire.Error (AstError, MonadError, failAt)
 import ReWire.Fix (fixPure)
 import ReWire.Hyle.Interp (evalExp, evalOp, IEnv (..))
 import ReWire.Hyle.Syntax
@@ -20,11 +21,12 @@ import ReWire.Pretty (showt)
 
 import ReWire.BitVector (BV, nat)
 import Control.Arrow ((>>>))
+import Control.Monad (foldM)
 import Numeric.Natural (Natural)
 
 import qualified ReWire.BitVector as BV
 
-import Control.Monad.State.Strict (State, evalState, gets, modify)
+import Control.Monad.State.Strict (State, StateT, evalState, evalStateT, get, put, gets, modify)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
 import Data.Maybe (fromMaybe)
@@ -488,3 +490,123 @@ dedupe (Program exts ds dev) = Program (map ddExt exts) (map ddDefn ds) dev'
                               $ Map.lookup (sig, ps, body) bodies) mempty ds
                   where bodies :: HashMap (Sig, [Name], Exp) GId
                         bodies = foldr (\ (Defn _ g sig ps body) -> Map.insert (sig, ps, body) g) mempty ds
+
+---
+--- Hoisting clocked externs into device instances.
+---
+
+-- | Defns containing (transitively) calls to sequential externs are inlined
+--   into the device body; sequential-extern calls in the device body then
+--   become instances: nested lets are flattened to device-level lets (sound:
+--   the language is pure and total) and each seq-XCall is replaced by the
+--   concatenation of a fresh instance's output ports, with its inputs driven
+--   from the call's arguments.
+hoistInstances :: forall m. MonadError AstError m => Program -> m Program
+hoistInstances p@(Program exts ds _)
+      | Set.null clocked = pure p
+      | otherwise = flip evalStateT (0 :: Int) $ do
+            let Program exts' ds' dev' = inlineBy (`Set.member` clocked) p
+            (insts, stmts) <- foldM hoistStmt ([], []) $ devBody dev'
+            pure $ Program exts' ds' $ dev' { devInstances = reverse insts, devBody = reverse stmts }
+      where externs :: HashMap Name Extern
+            externs = Map.fromList $ map (\ e -> (extName e, e)) exts
+
+            isSeq :: Name -> Bool
+            isSeq x = case extKind <$> Map.lookup x externs of
+                  Just (Seq _ _) -> True
+                  _              -> False
+
+            -- | Defns whose bodies transitively contain seq-extern calls.
+            clocked :: HashSet GId
+            clocked = fixSet step direct
+                  where direct = Set.fromList [ defnName d | d <- ds, anySeq $ defnBody d ]
+
+                        fixSet f s | s' == s   = s
+                                   | otherwise = fixSet f s'
+                              where s' = f s
+
+                        step s = Set.fromList [ defnName d
+                                              | d <- ds
+                                              , defnName d `Set.member` s
+                                                    || any (`Set.member` s) (expCalls $ defnBody d) ]
+
+            anySeq :: Exp -> Bool
+            anySeq = \ case
+                  XCall _ _ x _ es -> isSeq x || any anySeq es
+                  Cat _ e1 e2      -> anySeq e1 || anySeq e2
+                  Slice _ _ _ e    -> anySeq e
+                  Prim _ _ _ es    -> any anySeq es
+                  Call _ _ _ es    -> any anySeq es
+                  If _ _ c t e     -> anySeq c || anySeq t || anySeq e
+                  Let _ _ _ e1 e2  -> anySeq e1 || anySeq e2
+                  _                -> False
+
+            freshHoisted :: Name -> StateT Int m Name
+            freshHoisted pfx = do
+                  i <- get
+                  put $ i + 1
+                  pure $ pfx <> showt i
+
+            -- | Flatten an expression's nested lets to device-level lets
+            --   (renamed fresh), then convert its seq-XCalls.
+            hoistStmt :: ([Instance], [Stmt]) -> Stmt -> StateT Int m ([Instance], [Stmt])
+            hoistStmt (insts, stmts) stmt = do
+                  let (an, rebuild, e) = openStmt stmt
+                  (e', insts', stmts') <- hoistExp an mempty (insts, stmts) e
+                  pure (insts', rebuild e' : stmts')
+
+            openStmt :: Stmt -> (Annote, Exp -> Stmt, Exp)
+            openStmt = \ case
+                  SLet an x e      -> (an, SLet an x, e)
+                  SOutput an x e   -> (an, SOutput an x, e)
+                  SNext an x e     -> (an, SNext an x, e)
+                  SInstIn an x q e -> (an, SInstIn an x q, e)
+
+            -- | Bottom-up: substitute renamed lets, lift each Let binding to
+            --   a device-level SLet, and convert seq-XCalls to instances.
+            hoistExp :: Annote -> HashMap Name Exp -> ([Instance], [Stmt]) -> Exp -> StateT Int m (Exp, [Instance], [Stmt])
+            hoistExp an sub acc@(insts, stmts) = \ case
+                  e@Lit {}   -> pure (e, insts, stmts)
+                  e@Undef {} -> pure (e, insts, stmts)
+                  e@(Var _ _ x) -> pure (fromMaybe e $ Map.lookup x sub, insts, stmts)
+                  Cat an' e1 e2 -> do
+                        (e1', i1, s1) <- hoistExp an sub acc e1
+                        (e2', i2, s2) <- hoistExp an sub (i1, s1) e2
+                        pure (Cat an' e1' e2', i2, s2)
+                  Slice an' i k e -> do
+                        (e', i1, s1) <- hoistExp an sub acc e
+                        pure (Slice an' i k e', i1, s1)
+                  Prim an' sz op es -> do
+                        (es', i1, s1) <- hoistExps an sub acc es
+                        pure (Prim an' sz op es', i1, s1)
+                  Call an' sz g es -> do
+                        (es', i1, s1) <- hoistExps an sub acc es
+                        pure (Call an' sz g es', i1, s1)
+                  If an' sz c t e -> do
+                        (c', i1, s1) <- hoistExp an sub acc c
+                        (t', i2, s2) <- hoistExp an sub (i1, s1) t
+                        (e', i3, s3) <- hoistExp an sub (i2, s2) e
+                        pure (If an' sz c' t' e', i3, s3)
+                  Let an' _ x e1 e2 -> do
+                        (e1', i1, s1) <- hoistExp an sub acc e1
+                        x' <- freshHoisted "$h"
+                        hoistExp an (Map.insert x (Var an' (sizeOf e1') x') sub) (i1, SLet an' x' e1' : s1) e2
+                  XCall an' sz x cs es
+                        | isSeq x -> do
+                              (es', i1, s1) <- hoistExps an sub acc es
+                              i  <- freshHoisted "$x"
+                              case Map.lookup x externs of
+                                    Nothing -> failAt an' $ "unknown extern: " <> x
+                                    Just e  -> do
+                                          let inst   = Instance an' i x cs
+                                              drives = [ SInstIn an' i p arg | ((p, _), arg) <- zip (extInputs e) es' ]
+                                              result = cat [ Var an' psz (i <> "." <> q) | (q, psz) <- extOutputs e ]
+                                          pure (result, inst : i1, reverse drives <> s1)
+                        | otherwise -> do
+                              (es', i1, s1) <- hoistExps an sub acc es
+                              pure (XCall an' sz x cs es', i1, s1)
+
+            hoistExps :: Annote -> HashMap Name Exp -> ([Instance], [Stmt]) -> [Exp] -> StateT Int m ([Exp], [Instance], [Stmt])
+            hoistExps an sub acc = foldM
+                  (\ (es', i1, s1) e -> (\ (e', i2, s2) -> (es' <> [e'], i2, s2)) <$> hoistExp an sub (i1, s1) e)
+                  ([], fst acc, snd acc)

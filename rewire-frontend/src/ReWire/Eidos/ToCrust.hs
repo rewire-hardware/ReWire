@@ -34,7 +34,7 @@
 --   * The output enters the retained pipeline at the extern-neutering
 --     pass, with the Crust primitive basis applied here (a retained-tail
 --     requirement: the R_/A_/PuRe placeholders and friends).
-module ReWire.Eidos.ToCrust (eidosToCrust, lowerExp, lowerTy, Locals, bindLocals) where
+module ReWire.Eidos.ToCrust (eidosToCrust, lowerExp, lowerTy, Locals, bindLocals, liftJoins) where
 
 import ReWire.Annotation (Annote)
 import ReWire.Builtins (Builtin (VecFromList))
