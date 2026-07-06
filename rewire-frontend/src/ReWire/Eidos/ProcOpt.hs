@@ -55,7 +55,44 @@ machineSummary pr = "proc " <> procName pr
       <> ", states=" <> tshow nStates <> " (+entry)"
       <> ", tag=" <> tshow (nbits $ nStates + 1) <> " bits"
       <> ", cells=" <> tshow (length $ procCells pr)
-      where nStates :: Int
+      <> ", merge-headroom=" <> tshow hBlocks <> "/" <> tshow hStates
+      where -- The blocks/states a coarsest-partition (bisimulation-style)
+            -- merge would remove beyond the alpha-equal merge: iterated
+            -- partition refinement with label occurrences keyed by their
+            -- current class (plan §12 Q5's measurement).
+            hBlocks, hStates :: Int
+            (hBlocks, hStates) = ( length blocks - IM.size (classesOf final)
+                                 , nStates - length (nubClasses [ IM.findWithDefault (-1) u final | b <- procEntry pr : map snd blocks, u <- pt (blkTerm b) ])
+                                 )
+
+            blocks :: [(Id, Block)]
+            blocks = procBlocks pr
+
+            final :: IM.IntMap Int
+            final = refineTo $ mkPart (const 0)
+
+            refineTo :: IM.IntMap Int -> IM.IntMap Int
+            refineTo p = let p' = mkPart (\ u -> IM.findWithDefault (-1) u p)
+                         in if p' == p then p else refineTo p'
+
+            -- Partition the blocks by their canonical rendering with each
+            -- label occurrence replaced by its class under the previous
+            -- partition.
+            mkPart :: (Uniq -> Uniq) -> IM.IntMap Int
+            mkPart cls = IM.fromList
+                  [ (idUniq l, c)
+                  | (l, b) <- blocks
+                  , let c = Map.findWithDefault 0 (blockKeyBy cls b) keyIx ]
+                  where keyIx :: Map.HashMap Text Int
+                        keyIx = Map.fromList $ flip zip [0 ..] [ blockKeyBy cls b | (_, b) <- blocks ]
+
+            classesOf :: IM.IntMap Int -> IM.IntMap ()
+            classesOf p = IM.fromList [ (c, ()) | c <- IM.elems p ]
+
+            nubClasses :: [Int] -> [Int]
+            nubClasses = IM.keys . IM.fromList . map (, ())
+
+            nStates :: Int
             nStates = IM.size $ IM.fromList
                   [ (u, ()) | b <- procEntry pr : map snd (procBlocks pr), u <- pt (blkTerm b) ]
 
@@ -193,7 +230,13 @@ mergeBlocks pr = case dups of
 --   compared by identity (label agreement is what the merge fixpoint
 --   converges on).
 blockKey :: Block -> Text
-blockKey b0 = prettyPrint canon
+blockKey = blockKeyBy id
+
+-- | As 'blockKey', but with label occurrences mapped through the given
+--   function first (used by the partition-refinement diagnostic, which
+--   keys labels by their current equivalence class).
+blockKeyBy :: (Uniq -> Uniq) -> Block -> Text
+blockKeyBy relab b0 = prettyPrint canon
       where canon :: Block
             canon = evalState (renB b0) (-2000000000, mempty)
 
@@ -228,10 +271,13 @@ blockKey b0 = prettyPrint canon
 
             renT :: Term -> State (Uniq, IM.IntMap Uniq) Term
             renT = \ case
-                  Pause an a l as -> Pause an <$> renE a <*> pure l <*> mapM renE as
-                  Goto an l as    -> Goto an l <$> mapM renE as
+                  Pause an a l as -> Pause an <$> renE a <*> pure (renL l) <*> mapM renE as
+                  Goto an l as    -> Goto an (renL l) <$> mapM renE as
                   Halt an a       -> Halt an <$> renE a
                   TCase an a alts -> TCase an <$> renE a <*> mapM renA alts
+
+            renL :: Id -> Id
+            renL l = l { idUniq = relab $ idUniq l }
 
             renA :: TAlt -> State (Uniq, IM.IntMap Uniq) TAlt
             renA (TAlt an c xs t) = do
