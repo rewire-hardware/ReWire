@@ -1,26 +1,22 @@
 $Pure.dispatch : ([8], [1]) -> [16]
 $Pure.dispatch disc i =
-      $LL.Main.incr1 i disc
+      $L._unused4 i disc
 
-$LL.Main.incr3 : ([8], [8]) -> [16]
-$LL.Main.incr3 r0 sto0 =
-      r0 # sto0
+$L._unused3 : ([8], [8]) -> [16]
+$L._unused3 r0 s0 =
+      r0 # s0
 
-Main.incr : ([8]) -> [16]
-Main.incr sto0 =
-      $LL.Main.incr2 sto0 sto0
+$L.r02 : ([8], [8]) -> [16]
+$L.r02 r0 s0 =
+      $L._unused3 r0 r0
 
-$LL.Main.incr2 : ([8], [8]) -> [16]
-$LL.Main.incr2 r0 sto0 =
-      $LL.Main.incr r0 r0
+$L.Main.incr1 : ([8]) -> [16]
+$L.Main.incr1 s0 =
+      $L.r02 s0 s0
 
-$LL.Main.incr1 : ([1], [8]) -> [16]
-$LL.Main.incr1 _unused sto0 =
-      Main.incr sto0
-
-$LL.Main.incr : ([8], [8]) -> [16]
-$LL.Main.incr $x sto0 =
-      $LL.Main.incr3 $x sto0
+$L._unused4 : ([1], [8]) -> [16]
+$L._unused4 _unused $x =
+      $L.Main.incr1 $x
 
 device top_level
       input __in0 : [1]

@@ -1,14 +1,22 @@
 $Pure.dispatch : ([8]) -> [6]
 $Pure.dispatch i =
-      ReWire.Monad.iter$1$s2 i
+      $L.$x4 i
 
 Main.compute : ([8]) -> [6]
 Main.compute w =
       redand w # not (redand w) # redor w # not (redor w) # redxor w # not (redxor w)
 
-ReWire.Monad.iter$1$s2 : ([8]) -> [6]
-ReWire.Monad.iter$1$s2 i =
-      Main.compute i
+$L.ReWire.Monad.iter$1$s23 : ([8]) -> [6]
+$L.ReWire.Monad.iter$1$s23 i =
+      $LL.L.ReWire.Monad.iter$1$s23 (Main.compute i)
+
+$LL.L.ReWire.Monad.iter$1$s23 : ([6]) -> [6]
+$LL.L.ReWire.Monad.iter$1$s23 $a =
+      $a
+
+$L.$x4 : ([8]) -> [6]
+$L.$x4 $x =
+      $L.ReWire.Monad.iter$1$s23 $x
 
 device top_level
       input __in0 : [8]

@@ -1,33 +1,26 @@
-$Pure.dispatch : ([8], [1]) -> [17]
+$Pure.dispatch : ([8], [1]) -> [16]
 $Pure.dispatch disc i =
-      $LL.Main.incr i disc
+      $L._unused4 i disc
 
-$LL.Main.grunt : ([8], [8]) -> [8]
-$LL.Main.grunt $x sigma0 =
-      $x
+$L.Main.grunt5 : ([8]) -> [16]
+$L.Main.grunt5 s0 =
+      $L.$x6 s0 s0
 
-$LL.Main.incr2 : ([8], [8]) -> [17]
-$LL.Main.incr2 x sto0 =
-      1'h1 # x # sto0
+$L._unused2 : ([8]) -> [16]
+$L._unused2 s0 =
+      $L.x3 s0 s0
 
-Main.incr : ([8]) -> [17]
-Main.incr sto0 =
-      let $t1 = (let $t0 = Main.grunt sto0 in
-      9'h0 # $t0) in
-      let s0 = $t1[0 +: 8] in
-      $LL.Main.incr1 s0
+$L._unused4 : ([1], [8]) -> [16]
+$L._unused4 _unused $x =
+      $L.Main.grunt5 $x
 
-$LL.Main.incr1 : ([8]) -> [17]
-$LL.Main.incr1 sto0 =
-      $LL.Main.incr2 sto0 sto0
+$L.x3 : ([8], [8]) -> [16]
+$L.x3 x s0 =
+      x # s0
 
-$LL.Main.incr : ([1], [8]) -> [17]
-$LL.Main.incr _unused sto0 =
-      Main.incr sto0
-
-Main.grunt : ([8]) -> [8]
-Main.grunt sigma0 =
-      $LL.Main.grunt sigma0 sigma0
+$L.$x6 : ([8], [8]) -> [16]
+$L.$x6 $x s0 =
+      $L._unused2 $x
 
 device top_level
       input __in0 : [1]

@@ -1,49 +1,41 @@
 $Pure.dispatch : ([16], [1]) -> [24]
 $Pure.dispatch disc i =
-      let s0 = disc[8 +: 8] in
+      let s = disc[8 +: 8] in
       let s1 = disc[0 +: 8] in
-      $LL.Main.sig i s0 s1
+      $L.i6 i s s1
 
-$LL.Main.sig1 : ([8], [8], [8]) -> [24]
-$LL.Main.sig1 r0 sto0 sto1 =
-      r0 # sto0 # sto1
+$L.Main.sig4 : ([8], [8]) -> [24]
+$L.Main.sig4 s0 $x =
+      $L.r05 s0 s0 $x
 
-$LL.Main.incr4 : ([8], [8], [8], [8]) -> [24]
-$LL.Main.incr4 r0 r1 sto0 sto1 =
-      $LL.Main.incr3 r0 r1 r1 sto1
+$LL.L.r19 : ([8], [8], [8], [8]) -> [24]
+$LL.L.r19 r1 r0 s1 s' =
+      $L._unused10 r0 r1 s' s1
 
-Main.incr : ([8], [8]) -> [24]
-Main.incr sto0 sto1 =
-      $LL.Main.incr1 sto0 sto0 sto1
+$L.r08 : ([8], [8], [8]) -> [24]
+$L.r08 r0 s0 s1 =
+      $L.r19 r0 s1 s0 s1
 
-$LL.Main.incr3 : ([8], [8], [8], [8]) -> [24]
-$LL.Main.incr3 $x $x1 sto0 sto1 =
-      $LL.Main.incr2 $x $x1 sto0 sto1
+$L.Main.incr7 : ([8], [8]) -> [24]
+$L.Main.incr7 s0 $x =
+      $L.r08 s0 s0 $x
 
-$LL.Main.incr2 : ([8], [8], [8], [8]) -> [24]
-$LL.Main.incr2 r0 r1 sto0 sto1 =
-      $LL.Main.begin sto0 (add r0 r1)
+$L._unused10 : ([8], [8], [8], [8]) -> [24]
+$L._unused10 r0 r1 s0 s1 =
+      $L.Main.sig4 s0 (add r0 r1)
 
-Main.sig : ([8], [8]) -> [24]
-Main.sig sto0 sto1 =
-      $LL.Main.sig1 sto0 sto0 sto1
+$L.r05 : ([8], [8], [8]) -> [24]
+$L.r05 r0 s0 s1 =
+      r0 # s0 # s1
 
-$LL.Main.begin : ([8], [8]) -> [24]
-$LL.Main.begin sto0 sto1 =
-      Main.sig sto0 sto1
+$L.i6 : ([1], [8], [8]) -> [24]
+$L.i6 i s0 s1 =
+      if eq i 1'h0 then $L.Main.sig4 s0 s1
+            else $L.Main.incr7 s0 s1
 
-$LL.Main.sig : ([1], [8], [8]) -> [24]
-$LL.Main.sig wild sto0 sto1 =
-      if eq wild 1'h0 then Main.sig sto0 sto1
-            else Main.incr sto0 sto1
-
-$LL.Main.incr1 : ([8], [8], [8]) -> [24]
-$LL.Main.incr1 r0 sto0 sto1 =
-      $LL.Main.incr r0 sto1 sto0 sto1
-
-$LL.Main.incr : ([8], [8], [8], [8]) -> [24]
-$LL.Main.incr $x $x1 sto0 sto1 =
-      $LL.Main.incr4 $x $x1 sto0 sto1
+$L.r19 : ([8], [8], [8], [8]) -> [24]
+$L.r19 r0 r1 s0 s1 =
+      $LL.L.r19 r1 r0 s1 r1
 
 device top_level
       input __in0 : [1]

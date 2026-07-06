@@ -1,10 +1,6 @@
 $Pure.dispatch : ([24]) -> [8]
 $Pure.dispatch i =
-      Main.loop i
-
-$LL.Main.loop : ([8]) -> [8]
-$LL.Main.loop rabind =
-      rabind
+      $L.$x4 i
 
 Main.compute : ([24]) -> [8]
 Main.compute ds =
@@ -13,9 +9,17 @@ Main.compute ds =
       let w = ds[0 +: 8] in
       or (xor (and u v) w) (not (xor (and (not u) (not v)) w))
 
-Main.loop : ([24]) -> [8]
-Main.loop i =
-      $LL.Main.loop (Main.compute i)
+$L.Main.loop3 : ([24]) -> [8]
+$L.Main.loop3 i =
+      $L.$x5 (Main.compute i)
+
+$L.$x5 : ([8]) -> [8]
+$L.$x5 $x =
+      $x
+
+$L.$x4 : ([24]) -> [8]
+$L.$x4 $x =
+      $L.Main.loop3 $x
 
 device top_level
       input __in0 : [8]

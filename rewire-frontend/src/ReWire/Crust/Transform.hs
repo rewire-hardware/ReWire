@@ -5,37 +5,32 @@
 {-# LANGUAGE Safe #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module ReWire.Crust.Transform
-      ( inlineExtrudes
-      , reduce
+      ( reduce
       , neuterExterns
       , shiftLambdas
       , liftLambdas
       , etaAbsDefs
-      , purge, purgeAll
-      , mergeEquivDefns
-      , normalizeBind
+      , purgeAll
       ) where
 
 import ReWire.Annotation (Annote (..), Annotated (..))
-import ReWire.Crust.PrimBasis (primDatas)
-import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Poly (..), Pat (..), Defn (..), FreeProgram, DataCon (..), DataConId, TyConId, DataDefn (..), Builtin (..), DefnAttr (..), flattenApp, builtins)
+import ReWire.Crust.Syntax (Exp (..), Kind (..), Ty (..), Poly (..), Pat (..), Defn (..), FreeProgram, DataCon (..), DataConId, TyConId, DataDefn (..), Builtin (..), flattenApp)
 import ReWire.Crust.TypeCheck (unify')
-import ReWire.Crust.Types (typeOf, tyAnn, setTyAnn, dstArrow, poly', arr, ctorNames, resInputTy, codomTy, (|->), arrowRight, arrowLeft, isReacT, prettyTy, synthable, higherOrder, fundamental, concrete)
-import ReWire.Crust.Util (mkApp, mkError, mkLam, inlinable, patVars, toVar, isExtrude, extrudeDefn)
+import ReWire.Crust.Types (typeOf, tyAnn, setTyAnn, dstArrow, poly', arr, ctorNames, resInputTy, codomTy, (|->), arrowRight, prettyTy, synthable, higherOrder, fundamental, concrete)
+import ReWire.Crust.Util (mkApp, mkError, mkLam, patVars, toVar)
 import ReWire.Error (AstError, MonadError, failInternal, Warning (..))
-import ReWire.Fix (fix, fix', boundedFixOn)
+import ReWire.Fix (fix')
 import ReWire.SYB (transform, query, queryWith)
-import ReWire.Unbound (freshVar, fv, Fresh, s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, runFreshMT, Name (..), unsafeUnbind, bind, unbind, Subst (..), Embed (Embed), Bind, acompare)
+import ReWire.Unbound (freshVar, fv, Fresh, s2n, n2s, substs, subst, unembed, isFreeName, runFreshM, runFreshMT, Name (..), unsafeUnbind, bind, unbind, Subst (..), Embed (Embed), Bind)
 
 import Control.Arrow ((&&&))
-import Control.Monad (liftM2, foldM)
+import Control.Monad (foldM)
 import Control.Monad.State (MonadState, execState, StateT (..), get, modify)
 import Data.Containers.ListUtils (nubOrd)
 import Data.Data (Data)
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet, union, difference)
-import Data.Hashable (Hashable)
-import Data.List (sort, sortBy, groupBy)
+import Data.List (sort)
 import Data.Maybe (isJust)
 import Data.Text (Text, isPrefixOf)
 import Data.Tuple (swap)
@@ -43,24 +38,6 @@ import Data.Tuple (swap)
 import qualified Data.Text           as Text
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet        as Set
-
--- | Inlines defs that use the "extrude" primitive for purification.
-inlineExtrudes :: MonadError AstError m => FreeProgram -> m FreeProgram
-inlineExtrudes (ts, syns, ds) = (ts, syns,) <$> inlineExtrudes ds
-      where inlineExtrudes :: MonadError AstError m => [Defn] -> m [Defn]
-            inlineExtrudes = ifix (pure . inlineExtrudes')
-
-            inlineExtrudes' :: [Defn] -> [Defn]
-            inlineExtrudes' ds' = substs (map defnSubst $ filter extrudeDefn ds') ds'
-
-            ifix :: (Hashable a, MonadError AstError m) => (a -> m a) -> a -> m a
-            ifix = fix "Inlining definitions that use 'extrude'" 100
-
-
-defnSubst :: Defn -> (Name Exp, Exp)
-defnSubst (Defn _ n (Embed pt) _ (Embed e)) = runFreshM $ unbind e >>= \ case
-      ([], e') -> pure (n, setTyAnn (Just pt) e')
-      _        -> error $ "Inlining: definition not inlinable (rwc bug): " <> show n
 
 -- | Decides, per extern, whether the user-supplied Haskell implementation
 --   (rwPrimExtern's seventh argument) can serve as a model for the
@@ -204,214 +181,6 @@ shiftLambdas (ts, syns, vs) = (ts, syns, ) <$> mapM shiftLambdas' vs
                         mash $ bind (vs <> [v]) b'
                   _               -> pure e
 
--- | Inlines everything to the left of ">>=" and
--- > (m >>= f) >>= g
--- > (m >>= (\ x -> s)) >>= g
--- becomes
--- > m >>= (\ x -> f x >>= g)
--- > m >>= (\ x -> s >>= g)
--- also
--- > m >>= f
--- becomes
--- > m >>= \ x -> f x
--- and bind RHS is then lambda-lifted. Also lifts to a global definition:
--- - the first argument to `extrude` to a global definition.
--- - any `match` expression that appears in the operator position of an application.
-normalizeBind :: (Fresh m, MonadError AstError m) => FreeProgram -> m FreeProgram
-normalizeBind (ts, syns, ds) = (ts, syns, ) <$> (uncurry (<>) <$> runStateT (mapM ppDefn ds) [])
-      where ppDefn :: (MonadState [Defn] m, MonadError AstError m, Fresh m) => Defn -> m Defn
-            ppDefn d@Defn { defnName = dn, defnBody = Embed e } = do
-                  (xs, e') <- unbind e
-                  e''      <- ppExp (n2s dn) (Set.fromList xs) e'
-                  pure $ d { defnBody = Embed (bind xs e'') }
-
-            ppExp :: (MonadState [Defn] m, MonadError AstError m, Fresh m) => Text -> HashSet (Name Exp) -> Exp -> m Exp
-            ppExp dn bvs = \ case
-                  -- Bind: associate to the right (case with a lambda on the right).
-                  -- > (ma >>= \ a -> mb) >>= fb
-                  -- becomes
-                  -- > ma >>= (\ a -> (mb >>= fb))
-                  (dstBind -> Just (a, dstBind -> Just (_, e1, Lam _ _ tx e2), e3)) -> do
-                        -- TODO(chathhorn): note eliding type annotation.
-                        (x, e2') <- unbind e2
-                        ppExp' $ mkBind a e1 $ Lam (ann e2') Nothing tx $ bind x $ mkBind a e2' e3
-
-                  -- Bind: associate to the right.
-                  -- > (m >>= fa) >>= fb
-                  -- becomes
-                  -- > m >>= (\ x -> fa x >>= fb)
-                  (dstBind -> Just (a, dstBind -> Just (_, e1, e2), e3)) -> do
-                        let tx = arrowLeft <$> typeOf e2
-                        x <- freshVar "rabind"
-                        let e' = mkBind a (mkApp (ann e2) e2 [Var (ann e2) Nothing tx x]) e3
-                        ppExp' $ mkBind a e1 $ Lam (ann e2) Nothing tx (bind x e')
-
-                  -- Bind: if Case is on the LHS, share the continuation
-                  -- through a single lifted definition, then push the bind
-                  -- into the arm body (the pattern variables are already in
-                  -- scope there) and the default. Pushing the continuation
-                  -- term itself would re-normalize a copy per arm, and each
-                  -- copy's re-association re-exposes its head at a bind LHS
-                  -- where unfoldHead re-inlines the entire reactive body --
-                  -- exponential on chained conditionals. (A lifted
-                  -- continuation that uses extrude still gets re-duplicated
-                  -- per arm by inlineExtrudes, as the raw copies were.)
-                  -- > (case disc of p -> e; _ -> els) >>= f
-                  -- becomes
-                  -- > case disc of p -> e >>= k; _ -> els >>= k    -- k = f, lifted and shared
-                  b@(dstBind -> Just (a, Case an _ _ disc bnd els, e2)) -> do
-                        e2'    <- if isAtomic e2 then pure e2 else ppExp' e2 >>= lift'
-                        (p, e) <- unbind bnd
-                        let e'   = mkBind a e e2'
-                            els' = flip (mkBind a) e2' <$> els
-                        ppExp' $ Case an Nothing (typeOf b) disc (bind p e') els'
-
-                  -- Bind: inline everything on the LHS, lift the RHS.
-                  (dstBind -> Just (a, e1, e2)) -> do
-                        e2'   <- ppExp' e2 >>= lift' -- lift RHS
-
-                        lams  <- get
-                        -- Inline reactive definitions on the bind's left-hand
-                        -- side, but leave (mutually) recursive ones as calls
-                        -- (`recs`, below): inlining a recursive reactive loop
-                        -- here would not terminate, and a loop whose result is
-                        -- consumed by the bind belongs in tail position. The
-                        -- residual call survives to purify, which rejects it
-                        -- with a clear "loops ... must be in tail position"
-                        -- diagnostic.
-                        let cands = filter (\ d -> isReacDefn d && inlinable d && not (defnName d `Set.member` recs)) $ ds <> lams
-                        e1'   <- ppExp' e1
-                                 >>= unfoldHead cands
-                                 >>= reduceExp
-
-                        let b = mkBind a e1' e2'
-                        if leftAssocBind b || matchBind b then ppExp' b
-                        else pure b
-
-                  -- Lifts a case in the operator position of an application (for toCore and purification).
-                  App an tan t e@Case {} arg                                    -> App an tan t <$> (ppExp' e >>= lift') <*> ppExp' arg
-                  -- Lifts the first argument to extrude (for purification).
-                  App an tan t ex@(Builtin _ _ _ Extrude) e | not $ isExtrude e -> App an tan t ex <$> (ppExp' e >>= lift')
-                  App an tan t e1 e2 -> App an tan t <$> ppExp' e1 <*> ppExp' e2
-                  Lam an tan t  e -> do
-                        (x, e') <- unbind e
-                        Lam an tan t . bind x <$> ppExp dn (Set.insert x bvs) e'
-                  Case an tan t disc e els -> do
-                        (p, e') <- unbind e
-                        Case an tan t <$> ppExp' disc <*> (bind p <$> ppExp dn (Set.fromList (snd <$> patVars p) <> bvs) e') <*> mapM ppExp'  els
-                  LitList an tan t es         -> LitList an tan t <$> mapM ppExp' es
-                  LitVec an tan t es          -> LitVec an tan t <$> mapM ppExp' es
-                  e                           -> pure e
-
-                  where ppExp' :: (MonadState [Defn] m, MonadError AstError m, Fresh m) => Exp -> m Exp
-                        ppExp' = ppExp dn bvs
-
-                        lift' :: (Fresh m, MonadState [Defn] m, MonadError AstError m) => Exp -> m Exp
-                        lift' = lift dn bvs
-
-            -- | A cheap, shareable continuation reference: a variable applied
-            --   to atomic arguments (lifting such a reference again would
-            --   only mint a fresh eta-wrapper per case arm).
-            isAtomic :: Exp -> Bool
-            isAtomic e = case flattenApp e of
-                  (Var {}, es) -> all atomicArg es
-                  _            -> False
-                  where atomicArg :: Exp -> Bool
-                        atomicArg = \ case
-                              Var {}    -> True
-                              Con {}    -> True
-                              LitInt {} -> True
-                              LitStr {} -> True
-                              _         -> False
-
-            leftAssocBind :: Exp -> Bool
-            leftAssocBind = \ case
-                  (dstBind -> Just (_, dstBind -> Just (_, _, _), _)) -> True
-                  _                                                   -> False
-
-            matchBind :: Exp -> Bool
-            matchBind = \ case
-                  (dstBind -> Just (_, Case {}, _)) -> True
-                  _                                 -> False
-
-            dstBind :: Exp -> Maybe (Annote, Exp, Exp)
-            dstBind e = case flattenApp e of
-                  (Builtin a _ _ Bind, [e1, e2]) -> Just (a, e1, e2)
-                  _                              -> Nothing
-
-            mkBind :: Annote -> Exp -> Exp -> Exp
-            mkBind a e1 e2 = mkApp a (Builtin a Nothing (typeOf e1 `arr'` typeOf e2 `arr'` (arrowRight <$> typeOf e2)) Bind) [e1, e2]
-                  where arr' :: Maybe Ty -> Maybe Ty -> Maybe Ty
-                        arr' = liftM2 arr
-
-            -- Concretize a bind's reactive left-hand side by inlining only its
-            -- head call -- and the chain of head calls that unfolds into --
-            -- until the head is a concrete reactive (a bind, signal, return,
-            -- extrude, ...) or a non-candidate (e.g. a recursive loop, left as
-            -- a tail call). The reactive definitions it merely *calls* in
-            -- tail/continuation position are deliberately NOT inlined here:
-            -- they are concretized incrementally as the surrounding `ppExp'`
-            -- re-walks the result, after their continuations have been
-            -- lambda-lifted and so shared. Inlining the whole reachable
-            -- reactive call graph into one term (the previous approach)
-            -- duplicated every shared helper at every use site and blew up
-            -- (to millions of nodes) on deeply nested devices such as MiniISA.
-            -- After ppExp', the LHS is never itself a bind or Match (those are
-            -- handled by the rules above), so its only reactive sub-term is the
-            -- head call -- hence inlining the head alone suffices.
-            unfoldHead :: (Fresh m, MonadError AstError m) => [Defn] -> Exp -> m Exp
-            unfoldHead cands = boundedFixOn (==) "Bind LHS head expansion" 100 step
-                  where subs :: HashMap (Name Exp) Exp
-                        subs = Map.fromList $ map defnSubst cands
-
-                        step :: (Fresh m, MonadError AstError m) => Exp -> m Exp
-                        step e = case flattenApp e of
-                              (Var _ _ _ f, args) | Just body <- Map.lookup f subs -> reduceExp $ mkApp (ann e) body args
-                              _                                                    -> pure e
-
-            isReacDefn :: Defn -> Bool
-            isReacDefn Defn { defnPolyTy = Embed (Poly (unsafeUnbind -> (_, t))) } = isReacT t
-
-            -- | Reactive definitions in a recursion cycle, computed once over
-            --   the original program. Lambda-lifted definitions (accumulated in
-            --   `lams`) are created in dependency order and so never close a
-            --   cycle on their own -- every reactive cycle runs through one of
-            --   these originals -- so excluding these from inlining is enough
-            --   to keep the bind-LHS expansion terminating.
-            recs :: HashSet (Name Exp)
-            recs = recursiveDefns $ filter (\ d -> isReacDefn d && inlinable d) ds
-
--- | The subset of the given definitions that take part in a (mutual) recursion
---   cycle among themselves -- i.e. a definition reachable from its own body
---   through references to other definitions in the set. Substituting these
---   into one another (as normalizeBind does on a bind's left-hand side) would
---   not terminate.
-recursiveDefns :: [Defn] -> HashSet (Name Exp)
-recursiveDefns ds = Set.fromList $ filter (\ n -> n `Set.member` reachable (refs n)) names
-      where names :: [Name Exp]
-            names = map defnName ds
-
-            nameSet :: HashSet (Name Exp)
-            nameSet = Set.fromList names
-
-            -- | Each definition's references within the set, computed once
-            --   (a body's free-variable scan is expensive, and reachability
-            --   below revisits the same definitions many times).
-            refsMap :: HashMap (Name Exp) (HashSet (Name Exp))
-            refsMap = Map.fromList
-                  [ (defnName d, Set.intersection nameSet $ Set.fromList $ fv $ unembed $ defnBody d) | d <- ds ]
-
-            refs :: Name Exp -> HashSet (Name Exp)
-            refs n = maybe Set.empty id $ Map.lookup n refsMap
-
-            -- | Transitive closure of `refs` starting from a frontier.
-            reachable :: HashSet (Name Exp) -> HashSet (Name Exp)
-            reachable = go Set.empty . Set.toList
-                  where go seen []       = seen
-                        go seen (x : xs)
-                              | x `Set.member` seen = go seen xs
-                              | otherwise           = go (Set.insert x seen) (Set.toList (refs x) <> xs)
-
 -- | So if e :: a -> b, then
 -- > g = e
 --   becomes
@@ -546,60 +315,6 @@ lift dn bvs e | Just t  <- typeOf e
             pre = "$LL."
 lift _ _ e                                            = pure e
 
--- | Merges alpha-equivalent lambda-lifted definitions ($LL.*): keeps one
---   representative per equivalence class and repoints references, iterating
---   until stable so that chains of continuations that differ only in the
---   name of an equivalent callee collapse level by level. Purify keys
---   resumption states by continuation name, so each surviving duplicate
---   would otherwise become its own resumption state (and its own defn and
---   instances downstream in hyle and the HDL).
-mergeEquivDefns :: Applicative m => FreeProgram -> m FreeProgram
-mergeEquivDefns (ts, syns, vs) = pure (ts, syns, go vs)
-      where go :: [Defn] -> [Defn]
-            go ds | Map.null renames = ds
-                  | otherwise        = go $ map (renameRefs renames) $ filter (not . (`Map.member` renames) . defnName) ds
-                  where -- The identity filter guards the (upstream) invariant
-                        -- that defn names are unique: a duplicated name could
-                        -- otherwise yield an identity renaming, silently
-                        -- deleting the defn.
-                        renames :: HashMap (Name Exp) (Name Exp)
-                        renames = Map.fromList $ filter (uncurry (/=)) $ concatMap classRenames $ equivClasses $ filter mergeable ds
-
-            mergeable :: Defn -> Bool
-            mergeable d = "$LL." `isPrefixOf` n2s (defnName d)
-
-            equivClasses :: [Defn] -> [[Defn]]
-            equivClasses = groupBy (\ d1 d2 -> cmp d1 d2 == EQ) . sortBy cmp
-
-            -- Alpha-respecting order (annotations ignored); attribute and
-            -- signature must agree for two defns to merge.
-            cmp :: Defn -> Defn -> Ordering
-            cmp (Defn _ _ (Embed pt1) at1 (Embed b1)) (Defn _ _ (Embed pt2) at2 (Embed b2))
-                  = compare (attrKey at1) (attrKey at2) <> acompare pt1 pt2 <> acompare b1 b2
-                  where attrKey :: Maybe DefnAttr -> Int
-                        attrKey = \ case
-                              Nothing       -> 0
-                              Just Inline   -> 1
-                              Just NoInline -> 2
-
-            classRenames :: [Defn] -> [(Name Exp, Name Exp)]
-            classRenames ds = case sortBy (\ d1 d2 -> compare (n2s $ defnName d1, defnName d1) (n2s $ defnName d2, defnName d2)) ds of
-                  rep : rest@(_ : _) -> [ (defnName d, defnName rep) | d <- rest ]
-                  _                  -> []
-
-            renameRefs :: HashMap (Name Exp) (Name Exp) -> Defn -> Defn
-            renameRefs m d@Defn { defnBody = Embed b } = d { defnBody = Embed $ transform rn b }
-                  where rn :: Exp -> Exp
-                        rn = \ case
-                              Var an pt t n | Just n' <- Map.lookup n m -> Var an pt t n'
-                              e                                         -> e
-
-purge :: Applicative m => Name Exp -> FreeProgram -> m FreeProgram
-purge start = pure . purgeUnused (start : (s2n . fst <$> builtins)) (dataName <$> primDatas)
-
-purgeAll :: Applicative m => Name Exp -> FreeProgram -> m FreeProgram
-purgeAll start = pure . purgeUnused [start] []
-
 -- | Definitions transitively reachable from the given roots.
 liveDefns :: HashSet (Name Exp) -> [Defn] -> [Defn]
 liveDefns roots ds = map toDefn $ Set.toList $ execState (live ds') ds'
@@ -625,6 +340,9 @@ liveDefns roots ds = map toDefn $ Set.toList $ execState (live ds') ds'
                      | otherwise                     = error $ "Something went wrong: can't find symbol: " <> show n
 
 -- | Remove all definitions and types unused by those in the given lists.
+purgeAll :: Applicative m => Name Exp -> FreeProgram -> m FreeProgram
+purgeAll start = pure . purgeUnused [start] []
+
 purgeUnused :: [Name Exp] -> [Name TyConId] -> FreeProgram -> FreeProgram
 -- Note: collect ctor names with a query instead of `fv $ trec vs'`: no
 -- binder can capture a DataConId, so every occurrence is free, and closing

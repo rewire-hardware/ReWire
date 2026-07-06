@@ -1,44 +1,53 @@
 $Pure.dispatch : ([3], [1]) -> [4]
 $Pure.dispatch disc i =
-      if eq disc[1 +: 2] 2'h1 then (let store0 = disc[0 +: 1] in
-            $LL.Main.go2 store0 i)
-            else if eq disc[1 +: 2] 2'h2 then $LL.Main.go1 i else $LL.Main.go3 i
+      if eq disc[1 +: 2] 2'h0 then $L.z4 i
+            else if eq disc[1 +: 2] 2'h1 then (let e = disc[0 +: 1] in
+            $L.y3 e i) else $L.x2 i
 
-$LL.Main.go6 : ([1], [1]) -> [1]
-$LL.Main.go6 y s =
+$LL.L.y35 : ([1]) -> [1]
+$LL.L.y35 $a =
+      $a
+
+$LL.L.y34 : ([1], [1]) -> [1]
+$LL.L.y34 y s =
       if eq s 1'h1 then y
             else 1'h0
 
-$LL.Main.go5 : ([1], [1]) -> [4]
-$LL.Main.go5 $x $x1 =
-      $LL.Main.go $x $x1
+$L.z4 : ([1]) -> [4]
+$L.z4 z =
+      4'h4
 
-$LL.Main.go4 : ([1], [1]) -> [1]
-$LL.Main.go4 x wild =
-      if eq wild 1'h0 then $LL.Main.go6 x x
+$LL.L.y33 : ([1], [1]) -> [1]
+$LL.L.y33 x wild =
+      if eq wild 1'h0 then $LL.L.y35 ($LL.L.y3 x x)
             else x
 
-$LL.Main.go3 : ([1]) -> [4]
-$LL.Main.go3 x =
+$L.x2 : ([1]) -> [4]
+$L.x2 x =
       if eq x 1'h0 then x # 2'h1 # x
             else 3'h1 # x
 
-$LL.Main.go2 : ([1], [1]) -> [4]
-$LL.Main.go2 $x $x1 =
-      $LL.Main.go5 $x $x1
+$LL.L.y32 : ([1], [1]) -> [4]
+$LL.L.y32 y $a =
+      $LL.L.y31 ($LL.L.y34 y $a)
 
-$LL.Main.go1 : ([1]) -> [4]
-$LL.Main.go1 z =
-      4'h0
+$LL.L.y31 : ([1]) -> [4]
+$LL.L.y31 $a =
+      $a # 3'h0
 
-$LL.Main.go : ([1], [1]) -> [4]
-$LL.Main.go x y =
-      $LL.Main.go6 y ($LL.Main.go4 x y) # 3'h4
+$LL.L.y3 : ([1], [1]) -> [1]
+$LL.L.y3 x s =
+      if eq s 1'h1 then x
+            else 1'h0
+
+$L.y3 : ([1], [1]) -> [4]
+$L.y3 x y =
+      $LL.L.y32 y ($LL.L.y33 x y)
 
 device top_level
       input __in0 : [1]
       output __out0 : [1]
-      register __resumption_tag : [3] init 3'h0
+      register __resumption_tag : [3] init 3'h4
       let $res = $Pure.dispatch __resumption_tag __in0
       __out0 := $res[3 +: 1]
       next __resumption_tag := $res[0 +: 3]

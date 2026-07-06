@@ -1,36 +1,28 @@
 $Pure.dispatch : ([2000], [100]) -> [2100]
 $Pure.dispatch disc i =
-      let store0 = disc[1000 +: 1000] in
-      let s0 = disc[0 +: 1000] in
-      $LL.Main.dev$12 store0 i s0
+      let e = disc[1000 +: 1000] in
+      let s = disc[0 +: 1000] in
+      $L.i3 e i s
+
+$L.i3 : ([1000], [100], [1000]) -> [2100]
+$L.i3 ss i s0 =
+      $L.Main.dev$11 (Main.ss' ss i)
+
+$L.ss2 : ([1000], [1000]) -> [2100]
+$L.ss2 ss s0 =
+      ss[900 +: 100] # ss # s0
 
 Main.ss' : ([1000], [100]) -> [1000]
 Main.ss' ss i =
       Main.x2 ss[800 +: 100] # Main.x2 ss[700 +: 100] # Main.x2 ss[600 +: 100] # Main.x2 ss[500 +: 100] # Main.x2 ss[400 +: 100] # Main.x2 ss[300 +: 100] # Main.x2 ss[200 +: 100] # Main.x2 ss[100 +: 100] # Main.x2 ss[0 +: 100] # Main.x2 i
 
-$LL.Main.dev$13 : ([1000]) -> [2100]
-$LL.Main.dev$13 sto0 =
-      Main.dev$1 sto0
-
-Main.dev$1 : ([1000]) -> [2100]
-Main.dev$1 sto0 =
-      $LL.Main.dev$1 sto0 sto0
-
-$LL.Main.dev$12 : ([1000], [100], [1000]) -> [2100]
-$LL.Main.dev$12 $x $x1 sto0 =
-      $LL.Main.dev$11 $x $x1 sto0
+$L.Main.dev$11 : ([1000]) -> [2100]
+$L.Main.dev$11 s0 =
+      $L.ss2 s0 s0
 
 Main.x2 : ([100]) -> [100]
 Main.x2 x =
       mul x 100'h2
-
-$LL.Main.dev$11 : ([1000], [100], [1000]) -> [2100]
-$LL.Main.dev$11 ss i sto0 =
-      $LL.Main.dev$13 (Main.ss' ss i)
-
-$LL.Main.dev$1 : ([1000], [1000]) -> [2100]
-$LL.Main.dev$1 ss sto0 =
-      ss[900 +: 100] # ss # sto0
 
 device top_level
       input __in0 : [100]

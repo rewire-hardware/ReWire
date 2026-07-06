@@ -1,37 +1,29 @@
 $Pure.dispatch : ([17], [1]) -> [25]
 $Pure.dispatch disc i =
-      if eq disc[16 +: 1] 1'h1 then (let store0 = disc[8 +: 8] in
-            let store1 = disc[0 +: 8] in
-            $LL.Main.loop1 store0 store1 i)
-            else let store0 = disc[0 +: 8] in
-            $LL.Main.loop$s11 store0 i
+      if eq disc[16 +: 1] 1'h0 then (let e = disc[8 +: 8] in
+            let e1 = disc[0 +: 8] in
+            $L.b5 e e1 i)
+            else let e = disc[0 +: 8] in
+            $L.b3 e i
 
-$LL.Main.loop$s11 : ([8], [1]) -> [25]
-$LL.Main.loop$s11 $x $x1 =
-      $LL.Main.loop$s1 $x $x1
+$L.Main.loop4 : ([8], [8]) -> [25]
+$L.Main.loop4 n m =
+      n # 1'h0 # n # m
 
-$LL.Main.loop1 : ([8], [8], [1]) -> [25]
-$LL.Main.loop1 m n $x =
-      $LL.Main.loop n m $x
+$L.b3 : ([8], [1]) -> [25]
+$L.b3 m b =
+      if eq b 1'h0 then $L.Main.loop4 m (add 8'h0 m)
+            else $L.Main.loop4 8'h0 m
 
-Main.loop : ([8], [8]) -> [25]
-Main.loop n m =
-      n # 1'h1 # m # n
-
-$LL.Main.loop : ([8], [8], [1]) -> [25]
-$LL.Main.loop n m wild =
-      if eq wild 1'h0 then Main.loop m (add n m)
-            else Main.loop n m
-
-$LL.Main.loop$s1 : ([8], [1]) -> [25]
-$LL.Main.loop$s1 m wild =
-      if eq wild 1'h0 then Main.loop m (add 8'h0 m)
-            else Main.loop 8'h0 m
+$L.b5 : ([8], [8], [1]) -> [25]
+$L.b5 n m b =
+      if eq b 1'h0 then $L.Main.loop4 m (add n m)
+            else $L.Main.loop4 n m
 
 device top_level
       input __in0 : [1]
       output __out0 : [8]
-      register __resumption_tag : [17] init 17'h1
+      register __resumption_tag : [17] init 17'h10001
       let $res = $Pure.dispatch __resumption_tag __in0
       __out0 := $res[17 +: 8]
       next __resumption_tag := $res[0 +: 17]

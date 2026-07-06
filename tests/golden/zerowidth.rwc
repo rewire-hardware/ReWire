@@ -1,42 +1,34 @@
 $Pure.dispatch : ([8]) -> [16]
 $Pure.dispatch disc =
-      $LL.Main.loop2 disc
+      $L._unused6 disc
 
-$LL.Main.loop7 : ([8], [8]) -> [16]
-$LL.Main.loop7 x sto0 =
-      $LL.Main.loop5 x sto0
+$LL.L.x3 : ([8], [8]) -> [16]
+$LL.L.x3 x s' =
+      $L._unused4 x s'
 
-$LL.Main.loop6 : ([8], [8]) -> [16]
-$LL.Main.loop6 $x1 sto0 =
-      $LL.Main.loop7 $x1 sto0
+$L._unused5 : ([8], [8]) -> [16]
+$L._unused5 x s0 =
+      x # s0
 
-$LL.Main.loop5 : ([8], [8]) -> [16]
-$LL.Main.loop5 $x sto0 =
-      $LL.Main.loop4 $x sto0
+$L._unused6 : ([8]) -> [16]
+$L._unused6 $x =
+      $L.Main.loop1 $x
 
-$LL.Main.loop4 : ([8], [8]) -> [16]
-$LL.Main.loop4 x sto0 =
-      x # sto0
+$L.z2 : ([8]) -> [16]
+$L.z2 s0 =
+      $L.x3 s0 s0
 
-Main.loop : ([8]) -> [16]
-Main.loop sto0 =
-      $LL.Main.loop1 sto0
+$L.Main.loop1 : ([8]) -> [16]
+$L.Main.loop1 s0 =
+      $L.z2 s0
 
-$LL.Main.loop3 : ([8], [8]) -> [16]
-$LL.Main.loop3 $x1 sto0 =
-      $LL.Main.loop $x1 sto0
+$L._unused4 : ([8], [8]) -> [16]
+$L._unused4 x s0 =
+      $L._unused5 x s0
 
-$LL.Main.loop2 : ([8]) -> [16]
-$LL.Main.loop2 sto0 =
-      Main.loop sto0
-
-$LL.Main.loop1 : ([8]) -> [16]
-$LL.Main.loop1 sto0 =
-      $LL.Main.loop3 sto0 sto0
-
-$LL.Main.loop : ([8], [8]) -> [16]
-$LL.Main.loop x sto0 =
-      $LL.Main.loop6 x (add x 8'h1)
+$L.x3 : ([8], [8]) -> [16]
+$L.x3 x s0 =
+      $LL.L.x3 x (add x 8'h1)
 
 device top_level
       output __out0 : [8]

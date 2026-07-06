@@ -1,46 +1,26 @@
 $Pure.dispatch : ([17], [8]) -> [25]
 $Pure.dispatch disc i =
-      if eq disc[16 +: 1] 1'h1 then (let s0 = disc[0 +: 8] in
-            $LL.Main.start1 i s0)
-            else let store0 = disc[8 +: 8] in
-            let s0 = disc[0 +: 8] in
-            $LL.Main.dev5 store0 i s0
+      if eq disc[16 +: 1] 1'h0 then (let e = disc[8 +: 8] in
+            let s = disc[0 +: 8] in
+            $L.i4 e i s)
+            else let s = disc[0 +: 8] in
+            $L.i1 i s
 
-Main.dev : ([8], [8]) -> [25]
-Main.dev k sto0 =
-      $LL.Main.dev3 k sto0 sto0
+$L.i4 : ([8], [8], [8]) -> [25]
+$L.i4 k i s0 =
+      $L.Main.dev2 k i
 
-$LL.Main.dev5 : ([8], [8], [8]) -> [25]
-$LL.Main.dev5 $x $x1 sto0 =
-      $LL.Main.dev4 $x $x1 sto0
+$L.Main.dev2 : ([8], [8]) -> [25]
+$L.Main.dev2 k s0 =
+      $L.s3 k s0 s0
 
-$LL.Main.dev4 : ([8], [8], [8]) -> [25]
-$LL.Main.dev4 k i sto0 =
-      $LL.Main.dev2 k i
+$L.i1 : ([8], [8]) -> [25]
+$L.i1 i s0 =
+      $L.Main.dev2 i 8'h0
 
-$LL.Main.start1 : ([8], [8]) -> [25]
-$LL.Main.start1 i sto0 =
-      $LL.Main.start i 8'h0
-
-$LL.Main.dev3 : ([8], [8], [8]) -> [25]
-$LL.Main.dev3 $x $x1 sto0 =
-      $LL.Main.dev $x $x1 sto0
-
-$LL.Main.dev2 : ([8], [8]) -> [25]
-$LL.Main.dev2 $x sto0 =
-      $LL.Main.dev1 $x sto0
-
-$LL.Main.start : ([8], [8]) -> [25]
-$LL.Main.start $x sto0 =
-      Main.dev $x sto0
-
-$LL.Main.dev1 : ([8], [8]) -> [25]
-$LL.Main.dev1 k sto0 =
-      Main.dev k sto0
-
-$LL.Main.dev : ([8], [8], [8]) -> [25]
-$LL.Main.dev k s sto0 =
-      add s k # 1'h0 # k # sto0
+$L.s3 : ([8], [8], [8]) -> [25]
+$L.s3 k s s0 =
+      add s k # 1'h0 # k # s0
 
 device top_level
       input __in0 : [8]

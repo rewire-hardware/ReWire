@@ -18,43 +18,35 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [8] -> [16]
-rw__Pure_dispatch x0 = rw__LL_Main_loop2 x0
+rw__Pure_dispatch x0 = rw__L__unused6 x0
 
-// $LL.Main.loop7
-rw__LL_Main_loop7 : [8] -> [8] -> [16]
-rw__LL_Main_loop7 x0 x1 = rw__LL_Main_loop5 x0 x1
+// $LL.L.x3
+rw__LL_L_x3 : [8] -> [8] -> [16]
+rw__LL_L_x3 x0 x1 = rw__L__unused4 x0 x1
 
-// $LL.Main.loop6
-rw__LL_Main_loop6 : [8] -> [8] -> [16]
-rw__LL_Main_loop6 x0 x1 = rw__LL_Main_loop7 x0 x1
+// $L._unused5
+rw__L__unused5 : [8] -> [8] -> [16]
+rw__L__unused5 x0 x1 = x0 # x1
 
-// $LL.Main.loop5
-rw__LL_Main_loop5 : [8] -> [8] -> [16]
-rw__LL_Main_loop5 x0 x1 = rw__LL_Main_loop4 x0 x1
+// $L._unused6
+rw__L__unused6 : [8] -> [16]
+rw__L__unused6 x0 = rw__L_Main_loop1 x0
 
-// $LL.Main.loop4
-rw__LL_Main_loop4 : [8] -> [8] -> [16]
-rw__LL_Main_loop4 x0 x1 = x0 # x1
+// $L.z2
+rw__L_z2 : [8] -> [16]
+rw__L_z2 x0 = rw__L_x3 x0 x0
 
-// Main.loop
-rw_Main_loop : [8] -> [16]
-rw_Main_loop x0 = rw__LL_Main_loop1 x0
+// $L.Main.loop1
+rw__L_Main_loop1 : [8] -> [16]
+rw__L_Main_loop1 x0 = rw__L_z2 x0
 
-// $LL.Main.loop3
-rw__LL_Main_loop3 : [8] -> [8] -> [16]
-rw__LL_Main_loop3 x0 x1 = rw__LL_Main_loop x0 x1
+// $L._unused4
+rw__L__unused4 : [8] -> [8] -> [16]
+rw__L__unused4 x0 x1 = rw__L__unused5 x0 x1
 
-// $LL.Main.loop2
-rw__LL_Main_loop2 : [8] -> [16]
-rw__LL_Main_loop2 x0 = rw_Main_loop x0
-
-// $LL.Main.loop1
-rw__LL_Main_loop1 : [8] -> [16]
-rw__LL_Main_loop1 x0 = rw__LL_Main_loop3 x0 x0
-
-// $LL.Main.loop
-rw__LL_Main_loop : [8] -> [8] -> [16]
-rw__LL_Main_loop x0 x1 = rw__LL_Main_loop6 x0 (x0 + 0x01)
+// $L.x3
+rw__L_x3 : [8] -> [8] -> [16]
+rw__L_x3 x0 x1 = rw__LL_L_x3 x0 (x0 + 0x01)
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [16]

@@ -231,13 +231,10 @@ signal \__st0\ : std_logic_vector (29 downto 0) := std_logic_vector'(B"000000000
       signal zi20 : std_logic_vector (3 downto 0);
       signal zi21 : std_logic_vector (7 downto 0);
       signal zi22 : std_logic_vector (29 downto 0);
-      signal zi23 : std_logic_vector (75 downto 0);
-      signal zi24 : std_logic_vector (45 downto 0);
+      signal zi23 : std_logic_vector (45 downto 0);
+      signal zi24 : std_logic_vector (15 downto 0);
       signal zi25 : std_logic_vector (29 downto 0);
-      signal zi26 : std_logic_vector (76 downto 0);
-      signal zi29 : std_logic_vector (15 downto 0);
-      signal zi30 : std_logic_vector (29 downto 0);
-      signal zres : std_logic_vector (76 downto 0);
+      signal zres : std_logic_vector (45 downto 0);
 begin
 zi1 <= \__in0\(3 downto 0);
       zi2 <= \__st0\(29 downto 29);
@@ -260,13 +257,10 @@ zi1 <= \__in0\(3 downto 0);
       zi20 <= zi16(3 downto 0);
       zi21 <= zi16(7 downto 0);
       zi22 <= zi14(44 downto 15);
-      zi23 <= ((rw_cond(rw_eq(zi17, std_logic_vector'(B"0")), (std_logic_vector'(B"0000000") & zi19), rw_cond(rw_eq(zi16(8 downto 8), std_logic_vector'(B"0")), (std_logic_vector'(B"11") & zi18 & std_logic_vector'(B"00000") & zi20), (std_logic_vector'(B"01") & zi18 & std_logic_vector'(B"1") & zi21))) & zi22) & \__st0\);
-      zi24 <= zi23(75 downto 30);
+      zi23 <= (rw_cond(rw_eq(zi17, std_logic_vector'(B"0")), (std_logic_vector'(B"0000000") & zi19), rw_cond(rw_eq(zi16(8 downto 8), std_logic_vector'(B"0")), (std_logic_vector'(B"11") & zi18 & std_logic_vector'(B"00000") & zi20), (std_logic_vector'(B"01") & zi18 & std_logic_vector'(B"1") & zi21))) & zi22);
+      zi24 <= zi23(45 downto 30);
       zi25 <= zi23(29 downto 0);
-      zi26 <= (std_logic_vector'(B"0") & zi24 & zi25);
-      zi29 <= zi26(75 downto 60);
-      zi30 <= zi26(59 downto 30);
-      zres <= (std_logic_vector'(B"1000000000000000000000000000000") & zi29 & zi30);
+      zres <= (zi24 & zi25);
       \__st0_next\ <= zres(29 downto 0);
       \__out0\ <= zres(45 downto 30);
       process (clk, rst)

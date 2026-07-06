@@ -1,15 +1,23 @@
 $Pure.dispatch : ([2]) -> [1]
 $Pure.dispatch i =
-      Main.startp i
+      $L.$x5 i
 
-Main.startp : ([2]) -> [1]
-Main.startp i =
-      Main.proc i
+$LL.L.Main.startp$s12 : ([1]) -> [1]
+$LL.L.Main.startp$s12 $a =
+      $a
 
 $LL.Main.proc : ([2]) -> [1]
 $LL.Main.proc wild =
       if eq wild 2'h0 then 1'h0
             else if eq wild 2'h1 then 1'h0 else if eq wild 2'h2 then 1'h0 else 1'h1
+
+$L.$x5 : ([2]) -> [1]
+$L.$x5 $x =
+      $L.Main.startp4 $x
+
+$L.Main.startp4 : ([2]) -> [1]
+$L.Main.startp4 i =
+      $LL.L.Main.startp$s12 (Main.proc i)
 
 Main.proc : ([2]) -> [1]
 Main.proc $x =

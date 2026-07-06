@@ -508,7 +508,10 @@ checkDefn env0 d@(Defn _ x0 _ _ _ _)
       | envMode env0 >= LintMono, Set.member (idOcc x0) primNames = checkDefn' (env0 { envMode = LintPoly }) d
       | otherwise = do
             checkDefn' env0 d
-            when (envMode env0 == LintMonoANF) $ checkANF d
+            -- Only the reactive fragment is A-normalized at this stage
+            -- (the pure fragment's ANF arrives with the machine-level
+            -- Hyle translation).
+            when (envMode env0 == LintMonoANF && reacOrStateT (sigTy $ idSig x0)) $ checkANF d
       where primNames :: HashSet Text
             primNames = Set.fromList $ map fst builtins
 

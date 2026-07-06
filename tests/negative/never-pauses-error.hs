@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Encountered unsynthesizable definition
+-- EXPECT-ERROR: never pauses (no machine to generate)
 {-# LANGUAGE DataKinds #-}
 import Prelude hiding (error)
 import ReWire

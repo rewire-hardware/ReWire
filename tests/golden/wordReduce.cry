@@ -18,15 +18,23 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [8] -> [6]
-rw__Pure_dispatch x0 = rw_ReWire_Monad_iter_1_s2 x0
+rw__Pure_dispatch x0 = rw__L__x4 x0
 
 // Main.compute
 rw_Main_compute : [8] -> [6]
 rw_Main_compute x0 = [x0 == (~ zero)] # ((~ [x0 == (~ zero)]) # ([x0 != zero] # ((~ [x0 != zero]) # ([rw'parity x0] # (~ [rw'parity x0])))))
 
-// ReWire.Monad.iter$1$s2
-rw_ReWire_Monad_iter_1_s2 : [8] -> [6]
-rw_ReWire_Monad_iter_1_s2 x0 = rw_Main_compute x0
+// $L.ReWire.Monad.iter$1$s23
+rw__L_ReWire_Monad_iter_1_s23 : [8] -> [6]
+rw__L_ReWire_Monad_iter_1_s23 x0 = rw__LL_L_ReWire_Monad_iter_1_s23 (rw_Main_compute x0)
+
+// $LL.L.ReWire.Monad.iter$1$s23
+rw__LL_L_ReWire_Monad_iter_1_s23 : [6] -> [6]
+rw__LL_L_ReWire_Monad_iter_1_s23 x0 = x0
+
+// $L.$x4
+rw__L__x4 : [8] -> [6]
+rw__L__x4 x0 = rw__L_ReWire_Monad_iter_1_s23 x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [6]

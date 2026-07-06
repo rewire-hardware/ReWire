@@ -1,19 +1,23 @@
 $Pure.dispatch : ([1]) -> [1]
 $Pure.dispatch i =
-      Main.loop i
+      $L.$x3 i
 
-$LL.Main.loop1 : ([1]) -> [1]
-$LL.Main.loop1 rabind =
-      rabind
+$L.$x3 : ([1]) -> [1]
+$L.$x3 $x =
+      $L.Main.loop2 $x
 
-Main.loop : ([1]) -> [1]
-Main.loop i =
-      $LL.Main.loop1 ($LL.Main.loop i)
+$L.Main.loop2 : ([1]) -> [1]
+$L.Main.loop2 i =
+      $L.$x4 ($LL.L.Main.loop2 i)
 
-$LL.Main.loop : ([1]) -> [1]
-$LL.Main.loop s =
+$LL.L.Main.loop2 : ([1]) -> [1]
+$LL.L.Main.loop2 s =
       if eq s 1'h1 then 1'h0
             else 1'h1
+
+$L.$x4 : ([1]) -> [1]
+$L.$x4 $x =
+      $x
 
 device top_level
       input __in0 : [1]

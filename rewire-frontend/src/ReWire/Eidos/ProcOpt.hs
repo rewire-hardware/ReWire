@@ -17,6 +17,12 @@
 --     each round of merging can unify the targets of further blocks.
 --     This is what restores state-count parity — an INLINE-duplicated
 --     continuation mints many identical pause targets.
+--
+--   * /Unreachable-block purge/: procify drops the continuation of a
+--     computation that cannot return (an error at monadic type), which
+--     orphans the blocks compiled for it. Orphaned pause targets would
+--     otherwise mint machine states (and dispatch entries) and mask the
+--     never-pauses lint, so blocks unreachable from the entry are removed.
 module ReWire.Eidos.ProcOpt (optimizeProc, machineSummary) where
 
 import ReWire.Eidos.Pretty ()
@@ -33,7 +39,7 @@ import qualified Data.IntMap.Strict  as IM
 import qualified Data.Text           as T
 
 optimizeProc :: Proc -> Proc
-optimizeProc = fixpoint (mergeBlocks . inlineEpsilon)
+optimizeProc = fixpoint (purgeUnreachable . mergeBlocks . inlineEpsilon)
       where fixpoint :: (Proc -> Proc) -> Proc -> Proc
             fixpoint f pr = let pr' = f pr in if sameShape pr pr' then pr' else fixpoint f pr'
 
@@ -117,6 +123,34 @@ inlineEpsilon pr = pr { procEntry  = retermB $ procEntry pr
                   Goto an l as    -> let (l', as') = resolve l as in Goto an l' as'
                   TCase an a alts -> TCase an a [ TAlt aan c xs (reterm t) | TAlt aan c xs t <- alts ]
                   t               -> t
+
+---
+--- Unreachable-block purge.
+---
+
+purgeUnreachable :: Proc -> Proc
+purgeUnreachable pr = pr { procBlocks = [ (l, b) | (l, b) <- procBlocks pr, IM.member (idUniq l) reach ] }
+      where ltab :: IM.IntMap Block
+            ltab = IM.fromList [ (idUniq l, b) | (l, b) <- procBlocks pr ]
+
+            reach :: IM.IntMap ()
+            reach = go mempty $ succs $ procEntry pr
+
+            go :: IM.IntMap () -> [Uniq] -> IM.IntMap ()
+            go seen = \ case
+                  []     -> seen
+                  u : us | IM.member u seen -> go seen us
+                         | otherwise        -> go (IM.insert u () seen)
+                                             $ maybe us ((<> us) . succs) $ IM.lookup u ltab
+
+            succs :: Block -> [Uniq]
+            succs = ts . blkTerm
+                  where ts :: Term -> [Uniq]
+                        ts = \ case
+                              Pause _ _ l _  -> [idUniq l]
+                              Goto _ l _     -> [idUniq l]
+                              TCase _ _ alts -> concat [ ts t | TAlt _ _ _ t <- alts ]
+                              Halt _ _       -> []
 
 ---
 --- Alpha-equal block merge.

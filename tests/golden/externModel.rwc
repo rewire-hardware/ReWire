@@ -23,7 +23,11 @@ extern xorW32
 
 $Pure.dispatch : ([32]) -> [32]
 $Pure.dispatch i =
-      ReWire.Monad.iter$1$s2 i
+      $L.$x4 i
+
+$LL.L.ReWire.Monad.iter$1$s23 : ([32]) -> [32]
+$LL.L.ReWire.Monad.iter$1$s23 $a =
+      $a
 
 Main.xorModel : ([32], [32]) -> [32]
 Main.xorModel $x $x1 =
@@ -41,9 +45,9 @@ Main.plusModel : ([32], [32]) -> [32]
 Main.plusModel $x $x1 =
       add $x $x1
 
-ReWire.Monad.iter$1$s2 : ([32]) -> [32]
-ReWire.Monad.iter$1$s2 i =
-      Main.f i
+$L.ReWire.Monad.iter$1$s23 : ([32]) -> [32]
+$L.ReWire.Monad.iter$1$s23 i =
+      $LL.L.ReWire.Monad.iter$1$s23 (Main.f i)
 
 Main.andModel : ([32], [32]) -> [32]
 Main.andModel $x $x1 =
@@ -64,6 +68,10 @@ Main.andW32 $x $x1 =
 Main.notModel : ([32]) -> [32]
 Main.notModel $x =
       not $x
+
+$L.$x4 : ([32]) -> [32]
+$L.$x4 $x =
+      $L.ReWire.Monad.iter$1$s23 $x
 
 device top_level
       input __in0 : [32]
