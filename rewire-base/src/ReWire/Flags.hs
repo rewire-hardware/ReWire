@@ -27,6 +27,7 @@ data Flag = FlagO !String
           | FlagPretty
           | FlagDebugLint
           | FlagEidos
+          | FlagNoHalt
           | FlagRtlOpt !String
       deriving (Eq, Show, Generic)
 
