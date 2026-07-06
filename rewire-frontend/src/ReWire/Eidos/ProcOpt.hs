@@ -69,12 +69,19 @@ inlineEpsilon pr = pr { procEntry  = retermB $ procEntry pr
             -- can be compound (primitive applications are
             -- naming-transparent in ANF), so the substitution is a full
             -- expression substitution, not an atom swap.
+            -- Bounded by the block count: a mutual epsilon cycle (an
+            -- unguarded pauseless loop, rejected by the machine lint
+            -- downstream) must not hang here first.
             resolve :: Id -> [Exp] -> (Id, [Exp])
-            resolve l as = case IM.lookup (idUniq l) eps of
-                  Just (ps, l', as') ->
-                        let sub = IM.fromList $ zip (map idUniq ps) as
-                        in resolve l' $ map (substVars sub) as'
-                  Nothing            -> (l, as)
+            resolve = go (length $ procBlocks pr)
+                  where go :: Int -> Id -> [Exp] -> (Id, [Exp])
+                        go fuel l as
+                              | fuel <= 0 = (l, as)
+                              | otherwise = case IM.lookup (idUniq l) eps of
+                                    Just (ps, l', as') ->
+                                          let sub = IM.fromList $ zip (map idUniq ps) as
+                                          in go (fuel - 1) l' $ map (substVars sub) as'
+                                    Nothing            -> (l, as)
 
             retermB :: Block -> Block
             retermB b = b { blkTerm = reterm $ blkTerm b }
