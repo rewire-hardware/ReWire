@@ -208,7 +208,7 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal \__resumption_tag\ : std_logic_vector (1 downto 0) := std_logic_vector'(B"00");
+signal \__resumption_tag\ : std_logic_vector (1 downto 0) := std_logic_vector'(B"10");
       signal \__resumption_tag_next\ : std_logic_vector (1 downto 0);
       signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
@@ -216,14 +216,14 @@ signal \__resumption_tag\ : std_logic_vector (1 downto 0) := std_logic_vector'(B
       signal zres : std_logic_vector (3 downto 0);
 begin
 zi1 <= \__resumption_tag\(0 downto 0);
-      zres <= rw_cond(rw_eq(\__resumption_tag\(1 downto 1), std_logic_vector'(B"1")), (zi1 & std_logic_vector'(B"1") & zi1 & zi1), std_logic_vector'(B"0100"));
+      zres <= rw_cond(rw_eq(\__resumption_tag\(1 downto 1), std_logic_vector'(B"0")), (zi1 & std_logic_vector'(B"0") & zi1 & zi1), std_logic_vector'(B"0000"));
       \__resumption_tag_next\ <= zres(2 downto 1);
       \__st0_next\ <= zres(0 downto 0);
       \__out0\ <= zres(3 downto 3);
       process (clk, rst)
       begin
       if rst = std_logic_vector'(B"1") then
-                  \__resumption_tag\ <= std_logic_vector'(B"00");
+                  \__resumption_tag\ <= std_logic_vector'(B"10");
                   \__st0\ <= std_logic_vector'(B"0");
             elsif rising_edge(clk(0)) then
                   \__resumption_tag\ <= \__resumption_tag_next\;

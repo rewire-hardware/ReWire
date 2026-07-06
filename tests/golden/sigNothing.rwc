@@ -1,14 +1,14 @@
 $Pure.dispatch : ([8], [8]) -> [17]
 $Pure.dispatch disc i =
-      $LL.Main.start' i disc
+      $L.ds2 i disc
 
-Main.start' : ([8]) -> [17]
-Main.start' sto0 =
-      9'h0 # sto0
+$L.ds2 : ([8], [8]) -> [17]
+$L.ds2 ds $x =
+      $L.Main.start'1 $x
 
-$LL.Main.start' : ([8], [8]) -> [17]
-$LL.Main.start' ds sto0 =
-      Main.start' sto0
+$L.Main.start'1 : ([8]) -> [17]
+$L.Main.start'1 s0 =
+      9'h0 # s0
 
 device top_level
       input __in0 : [8]

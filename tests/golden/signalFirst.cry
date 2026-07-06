@@ -18,50 +18,30 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [17] -> [8] -> [25]
-rw__Pure_dispatch x0 x1 = if (take`{1} x0) == 0b1 then (rw__LL_Main_start1 x1 s0) else (rw__LL_Main_dev5 s1 x1 s2)
+rw__Pure_dispatch x0 x1 = if (take`{1} x0) == 0b0 then (rw__L_i4 s0 x1 s1) else (rw__L_i1 x1 s2)
   where
     s0 : [8]
-    s0 = drop`{9} x0
+    s0 = take`{8} (drop`{1} x0)
     s1 : [8]
-    s1 = take`{8} (drop`{1} x0)
+    s1 = drop`{9} x0
     s2 : [8]
     s2 = drop`{9} x0
 
-// Main.dev
-rw_Main_dev : [8] -> [8] -> [25]
-rw_Main_dev x0 x1 = rw__LL_Main_dev3 x0 x1 x1
+// $L.i4
+rw__L_i4 : [8] -> [8] -> [8] -> [25]
+rw__L_i4 x0 x1 x2 = rw__L_Main_dev2 x0 x1
 
-// $LL.Main.dev5
-rw__LL_Main_dev5 : [8] -> [8] -> [8] -> [25]
-rw__LL_Main_dev5 x0 x1 x2 = rw__LL_Main_dev4 x0 x1 x2
+// $L.Main.dev2
+rw__L_Main_dev2 : [8] -> [8] -> [25]
+rw__L_Main_dev2 x0 x1 = rw__L_s3 x0 x1 x1
 
-// $LL.Main.dev4
-rw__LL_Main_dev4 : [8] -> [8] -> [8] -> [25]
-rw__LL_Main_dev4 x0 x1 x2 = rw__LL_Main_dev2 x0 x1
+// $L.i1
+rw__L_i1 : [8] -> [8] -> [25]
+rw__L_i1 x0 x1 = rw__L_Main_dev2 x0 0x00
 
-// $LL.Main.start1
-rw__LL_Main_start1 : [8] -> [8] -> [25]
-rw__LL_Main_start1 x0 x1 = rw__LL_Main_start x0 0x00
-
-// $LL.Main.dev3
-rw__LL_Main_dev3 : [8] -> [8] -> [8] -> [25]
-rw__LL_Main_dev3 x0 x1 x2 = rw__LL_Main_dev x0 x1 x2
-
-// $LL.Main.dev2
-rw__LL_Main_dev2 : [8] -> [8] -> [25]
-rw__LL_Main_dev2 x0 x1 = rw__LL_Main_dev1 x0 x1
-
-// $LL.Main.start
-rw__LL_Main_start : [8] -> [8] -> [25]
-rw__LL_Main_start x0 x1 = rw_Main_dev x0 x1
-
-// $LL.Main.dev1
-rw__LL_Main_dev1 : [8] -> [8] -> [25]
-rw__LL_Main_dev1 x0 x1 = rw_Main_dev x0 x1
-
-// $LL.Main.dev
-rw__LL_Main_dev : [8] -> [8] -> [8] -> [25]
-rw__LL_Main_dev x0 x1 x2 = (x1 + x0) # (0b0 # (x0 # x2))
+// $L.s3
+rw__L_s3 : [8] -> [8] -> [8] -> [25]
+rw__L_s3 x0 x1 x2 = (x1 + x0) # (0b0 # (x0 # x2))
 
 // Per-cycle step: outputs # next register values.
 rw_step : [17] -> [8] -> [25]

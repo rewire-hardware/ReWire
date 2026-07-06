@@ -1,10 +1,16 @@
-$Pure.dispatch : ([30], [10]) -> [77]
+$Pure.dispatch : ([30], [10]) -> [46]
 $Pure.dispatch disc i =
-      ReWire.Monad.iterSt$1$s2 i disc
+      $L.$x8 i disc
 
-$LL.ReWire.Monad.iterSt$1$s13 : ([16], [30]) -> [77]
-$LL.ReWire.Monad.iterSt$1$s13 o sto0 =
-      31'h40000000 # o # sto0
+$LL.Main.loop : ([45]) -> [46]
+$LL.Main.loop ds =
+      Main.myStateToOutput (let out = ds[0 +: 15] in
+      out) # (let s' = ds[15 +: 30] in
+      s')
+
+$LL.L.x12 : ([30], [46]) -> [46]
+$LL.L.x12 s0 $a =
+      $L.ds6 $a s0
 
 Main.incrPipeline : ([45]) -> [45]
 Main.incrPipeline ds =
@@ -14,39 +20,20 @@ Main.incrPipeline ds =
 
 Main.inputToMyState : ([10], [15]) -> [15]
 Main.inputToMyState ds ds1 =
-      $LL.Main.inputToMyState2 ds1 ds
+      $LL.Main.inputToMyState1 ds1 ds
 
-$LL.ReWire.Monad.iterSt$1$s21 : ([10], [30], [30]) -> [76]
-$LL.ReWire.Monad.iterSt$1$s21 i x sigma0 =
-      Main.loop i x # sigma0
+$L.$x8 : ([10], [30]) -> [46]
+$L.$x8 $x $x1 =
+      $L.ReWire.Monad.iterSt$1$s25 $x $x1
 
-$LL.Main.myStateToOutput1 : ([5], [9], [1]) -> [16]
-$LL.Main.myStateToOutput1 mw4 ds wild =
-      if eq wild 1'h0 then 7'h0 # ds
-            else $LL.Main.myStateToOutput mw4 ds
+$LL.Main.inputToMyState$s11 : ([9], [5]) -> [15]
+$LL.Main.inputToMyState$s11 ds wild =
+      if eq wild[4 +: 1] 1'h0 then 6'h20 # ds
+            else let w4 = wild[0 +: 4] in
+            11'h400 # w4
 
-Main.loop : ([10], [30]) -> [46]
-Main.loop i s =
-      $LL.Main.loop (Main.incrPipeline (Main.inputToMyState i s[15 +: 15] # s))
-
-$LL.Main.loop : ([45]) -> [46]
-$LL.Main.loop ds =
-      Main.myStateToOutput (let out = ds[0 +: 15] in
-      out) # (let s' = ds[15 +: 30] in
-      s')
-
-ReWire.Monad.iterSt$1$s2 : ([10], [30]) -> [77]
-ReWire.Monad.iterSt$1$s2 i sto0 =
-      let $t1 = (let $t0 = $LL.ReWire.Monad.iterSt$1$s2 i sto0 sto0 in
-      let v = $t0[30 +: 46] in
-      let s0 = $t0[0 +: 30] in
-      1'h0 # v # s0) in
-      let v = $t1[30 +: 46] in
-      let s0 = $t1[0 +: 30] in
-      $LL.ReWire.Monad.iterSt$1$s1 v s0
-
-$LL.Main.inputToMyState2 : ([15], [10]) -> [15]
-$LL.Main.inputToMyState2 ds wild =
+$LL.Main.inputToMyState1 : ([15], [10]) -> [15]
+$LL.Main.inputToMyState1 ds wild =
       if eq wild[8 +: 2] 2'h0 then (let w4 = wild[0 +: 4] in
             let b = ds[14 +: 1] in
             b # 1'h1 # w4 # 5'h0 # w4)
@@ -54,49 +41,60 @@ $LL.Main.inputToMyState2 ds wild =
             let b = ds[14 +: 1] in
             let w4 = ds[9 +: 5] in
             b # w4 # 1'h1 # w8) else let ds1 = wild[0 +: 1] in
-            $LL.Main.inputToMyState1 ds ds1
+            $LL.Main.inputToMyState ds ds1
 
-$LL.ReWire.Monad.iterSt$1$s11 : ([16], [30]) -> [77]
-$LL.ReWire.Monad.iterSt$1$s11 $x sto0 =
-      $LL.ReWire.Monad.iterSt$1$s13 $x sto0
+Main.loop : ([10], [30]) -> [46]
+Main.loop i s =
+      $LL.Main.loop (Main.incrPipeline (Main.inputToMyState i s[15 +: 15] # s))
 
-$LL.ReWire.Monad.iterSt$1$s1 : ([46], [30]) -> [77]
-$LL.ReWire.Monad.iterSt$1$s1 ds sto0 =
-      let o = ds[30 +: 16] in
-      let s = ds[0 +: 30] in
-      $LL.ReWire.Monad.iterSt$1$s11 o s
-
-$LL.Main.inputToMyState1 : ([15], [1]) -> [15]
-$LL.Main.inputToMyState1 ds wild =
+$LL.Main.inputToMyState : ([15], [1]) -> [15]
+$LL.Main.inputToMyState ds wild =
       if eq wild 1'h0 then (let w8 = ds[0 +: 9] in
             6'h0 # w8)
             else let ds2 = ds[9 +: 5] in
             let ds3 = ds[0 +: 9] in
-            $LL.Main.inputToMyState ds3 ds2
+            $LL.Main.inputToMyState$s11 ds3 ds2
 
-$LL.Main.inputToMyState : ([9], [5]) -> [15]
-$LL.Main.inputToMyState ds wild =
-      if eq wild[4 +: 1] 1'h0 then 6'h20 # ds
-            else let w4 = wild[0 +: 4] in
-            11'h400 # w4
+$L.ds6 : ([46], [30]) -> [46]
+$L.ds6 ds s0 =
+      let o = ds[30 +: 16] in
+      let s = ds[0 +: 30] in
+      $L.arm9 o s s0
 
-$LL.ReWire.Monad.iterSt$1$s2 : ([10], [30], [30]) -> [76]
-$LL.ReWire.Monad.iterSt$1$s2 $x $x1 sigma0 =
-      $LL.ReWire.Monad.iterSt$1$s21 $x $x1 sigma0
+$LL.Main.myStateToOutput1 : ([5], [9]) -> [16]
+$LL.Main.myStateToOutput1 mw4 wild =
+      if eq wild[8 +: 1] 1'h0 then (let w4 = wild[0 +: 4] in
+            2'h3 # mw4 # 5'h0 # w4)
+            else let w8 = wild[0 +: 8] in
+            2'h1 # mw4 # 1'h1 # w8
+
+$L.arm9 : ([16], [30], [30]) -> [46]
+$L.arm9 o s s0 =
+      $L._unused7 o s
+
+$L.x10 : ([10], [30], [30]) -> [46]
+$L.x10 i x s0 =
+      $LL.L.x12 s0 (Main.loop i x)
+
+$L._unused7 : ([16], [30]) -> [46]
+$L._unused7 o s0 =
+      o # s0
 
 Main.myStateToOutput : ([15]) -> [16]
 Main.myStateToOutput ds =
       let ds1 = ds[14 +: 1] in
       let mw4 = ds[9 +: 5] in
       let ds2 = ds[0 +: 9] in
-      $LL.Main.myStateToOutput1 mw4 ds2 ds1
+      $LL.Main.myStateToOutput ds2 mw4 ds1
 
-$LL.Main.myStateToOutput : ([5], [9]) -> [16]
-$LL.Main.myStateToOutput mw4 wild =
-      if eq wild[8 +: 1] 1'h0 then (let w4 = wild[0 +: 4] in
-            2'h3 # mw4 # 5'h0 # w4)
-            else let w8 = wild[0 +: 8] in
-            2'h1 # mw4 # 1'h1 # w8
+$L.ReWire.Monad.iterSt$1$s25 : ([10], [30]) -> [46]
+$L.ReWire.Monad.iterSt$1$s25 i s0 =
+      $L.x10 i s0 s0
+
+$LL.Main.myStateToOutput : ([9], [5], [1]) -> [16]
+$LL.Main.myStateToOutput ds mw4 wild =
+      if eq wild 1'h0 then 7'h0 # ds
+            else $LL.Main.myStateToOutput1 mw4 ds
 
 device top_level
       input __in0 : [10]

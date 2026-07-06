@@ -232,6 +232,7 @@ component \andW32\ is
       signal \extresR2\ : std_logic_vector (31 downto 0);
       signal zi2 : std_logic_vector (31 downto 0);
       signal \extresR3\ : std_logic_vector (31 downto 0);
+      signal zi3 : std_logic_vector (31 downto 0);
       signal zres : std_logic_vector (31 downto 0);
 begin
 inst : \andW32\ port map (p0 => \__in0\, p1 => std_logic_vector'(B"11110000111100001111000011110000"), p2 => extres(31 downto 0));
@@ -241,7 +242,8 @@ inst : \andW32\ port map (p0 => \__in0\, p1 => std_logic_vector'(B"1111000011110
       \instR2\ : \xorW32\ port map (p0 => zi1, p1 => std_logic_vector'(B"00010010001101000101011001111000"), p2 => \extresR2\(31 downto 0));
       zi2 <= \extresR2\;
       \instR3\ : \plusW32\ port map (p0 => zi0, p1 => zi2, p2 => \extresR3\(31 downto 0));
-      zres <= \extresR3\;
+      zi3 <= \extresR3\;
+      zres <= zi3;
       \__out0\ <= zres;
 end architecture;
 

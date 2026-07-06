@@ -212,23 +212,11 @@ signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"0");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
       signal zi0 : std_logic_vector (0 downto 0);
       signal zi1 : std_logic_vector (0 downto 0);
-      signal zi2 : std_logic_vector (1 downto 0);
-      signal zi3 : std_logic_vector (0 downto 0);
-      signal zi4 : std_logic_vector (0 downto 0);
-      signal zi5 : std_logic_vector (2 downto 0);
-      signal zi6 : std_logic_vector (0 downto 0);
-      signal zi7 : std_logic_vector (0 downto 0);
-      signal zres : std_logic_vector (2 downto 0);
+      signal zres : std_logic_vector (1 downto 0);
 begin
 zi0 <= rw_xor(\__in0\, \__st0\);
       zi1 <= zi0;
-      zi2 <= (\__st0\ & zi1);
-      zi3 <= zi2(1 downto 1);
-      zi4 <= zi2(0 downto 0);
-      zi5 <= (std_logic_vector'(B"0") & zi3 & zi4);
-      zi6 <= zi5(1 downto 1);
-      zi7 <= zi5(0 downto 0);
-      zres <= (std_logic_vector'(B"1") & zi6 & zi7);
+      zres <= (\__st0\ & zi1);
       \__st0_next\ <= zres(0 downto 0);
       \__out0\ <= zres(1 downto 1);
       process (clk, rst)

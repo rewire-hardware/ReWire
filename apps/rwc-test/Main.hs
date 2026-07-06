@@ -407,7 +407,6 @@ getSmokeTests = do
             , smoke dir "fibo1.hs"    "typecheck" "rwc"  ["--debug-typecheck", "--core"]
             , smoke dir "fibo1.hs"    "debuglint" "rwc"  ["--debug-lint", "--core"]
             , smoke dir "fibo1.hs"    "eirdump"   "rwc"  ["--eidos", "--core"]
-            , smoke dir "fibo1.hs"    "procify"   "rwc"  ["--procify", "--core"]
             ]
       where smoke :: FilePath -> FilePath -> String -> String -> [String] -> TestTree
             smoke dir file name ext args = testCase (takeBaseName file <> " (flags: " <> name <> ")") $ do

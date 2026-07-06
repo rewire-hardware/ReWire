@@ -1,61 +1,49 @@
 $Pure.dispatch : ([28], [4]) -> [44]
 $Pure.dispatch disc i =
-      let s0 = disc[24 +: 4] in
+      let s = disc[24 +: 4] in
       let s1 = disc[16 +: 8] in
       let s2 = disc[0 +: 16] in
-      Main.loop i s0 s1 s2
+      $L.$x16 i s s1 s2
 
-$LL.Main.loop11 : ([4], [16], [8], [4], [8], [16]) -> [44]
-$LL.Main.loop11 a c b sto0 sto1 sto2 =
-      $LL.Main.loop6 b c a sto0 (add (zext 8 a) b) sto2
+$L.c12 : ([4], [4], [8], [16], [4], [8], [16]) -> [44]
+$L.c12 i a b c s0 s1 s2 =
+      $LL.L.c12 a c b s1 s2 i
 
-$LL.Main.loop10 : ([4], [16], [4], [8], [16]) -> [44]
-$LL.Main.loop10 a c sto0 sto1 sto2 =
-      add (zext 16 a) c # sto0 # sto1 # sto2
+$L.Main.loop9 : ([4], [4], [8], [16]) -> [44]
+$L.Main.loop9 i s0 $x $x1 =
+      $L.a10 i s0 s0 $x $x1
 
-$LL.Main.loop9 : ([4], [4], [8], [4], [8], [16]) -> [44]
-$LL.Main.loop9 i a b sto0 sto1 sto2 =
-      $LL.Main.loop1 i b a sto2 sto0 sto1 sto2
+$L._unused13 : ([4], [8], [16], [4], [8], [16]) -> [44]
+$L._unused13 a b c s0 s1 s2 =
+      $LL.L._unused13 c a s0 b s2 (add (zext 8 a) b)
 
-$LL.Main.loop8 : ([4], [16], [8], [4], [8], [16]) -> [44]
-$LL.Main.loop8 a c b sto0 sto1 sto2 =
-      $LL.Main.loop2 a c sto0 sto1 (add (zext 16 b) c)
+$L.$x16 : ([4], [4], [8], [16]) -> [44]
+$L.$x16 $x $x1 $x2 $x3 =
+      $L.Main.loop9 $x $x1 $x2 $x3
 
-Main.loop : ([4], [4], [8], [16]) -> [44]
-Main.loop i sto0 sto1 sto2 =
-      $LL.Main.loop5 i sto0 sto0 sto1 sto2
+$LL.L._unused13 : ([16], [4], [4], [8], [16], [8]) -> [44]
+$LL.L._unused13 c a s0 b s2 s' =
+      $L._unused14 a b c s0 s' s2
 
-$LL.Main.loop7 : ([4], [4], [8], [4], [8], [16]) -> [44]
-$LL.Main.loop7 $x $x1 $x2 sto0 sto1 sto2 =
-      $LL.Main.loop9 $x $x1 $x2 sto0 sto1 sto2
+$LL.L.c12 : ([4], [16], [8], [8], [16], [4]) -> [44]
+$LL.L.c12 a c b s1 s2 s' =
+      $L._unused13 a b c s' s1 s2
 
-$LL.Main.loop6 : ([8], [16], [4], [4], [8], [16]) -> [44]
-$LL.Main.loop6 b c a sto0 sto1 sto2 =
-      $LL.Main.loop8 a c b sto0 sto1 sto2
+$L._unused15 : ([4], [16], [4], [8], [16]) -> [44]
+$L._unused15 a c s0 s1 s2 =
+      add (zext 16 a) c # s0 # s1 # s2
 
-$LL.Main.loop5 : ([4], [4], [4], [8], [16]) -> [44]
-$LL.Main.loop5 $x $x1 sto0 sto1 sto2 =
-      $LL.Main.loop3 $x $x1 sto0 sto1 sto2
+$L.b11 : ([4], [4], [8], [4], [8], [16]) -> [44]
+$L.b11 i a b s0 s1 s2 =
+      $L.c12 i a b s2 s0 s1 s2
 
-$LL.Main.loop4 : ([4], [4], [8], [16], [4], [8], [16]) -> [44]
-$LL.Main.loop4 i a b c sto0 sto1 sto2 =
-      $LL.Main.loop a c b i sto1 sto2
+$L._unused14 : ([4], [8], [16], [4], [8], [16]) -> [44]
+$L._unused14 a b c s0 s1 s2 =
+      $L._unused15 a c s0 s1 (add (zext 16 b) c)
 
-$LL.Main.loop3 : ([4], [4], [4], [8], [16]) -> [44]
-$LL.Main.loop3 i a sto0 sto1 sto2 =
-      $LL.Main.loop7 i a sto1 sto0 sto1 sto2
-
-$LL.Main.loop2 : ([4], [16], [4], [8], [16]) -> [44]
-$LL.Main.loop2 $x $x1 sto0 sto1 sto2 =
-      $LL.Main.loop10 $x $x1 sto0 sto1 sto2
-
-$LL.Main.loop1 : ([4], [8], [4], [16], [4], [8], [16]) -> [44]
-$LL.Main.loop1 i b a $x sto0 sto1 sto2 =
-      $LL.Main.loop4 i a b $x sto0 sto1 sto2
-
-$LL.Main.loop : ([4], [16], [8], [4], [8], [16]) -> [44]
-$LL.Main.loop $x $x1 $x2 sto0 sto1 sto2 =
-      $LL.Main.loop11 $x $x1 $x2 sto0 sto1 sto2
+$L.a10 : ([4], [4], [4], [8], [16]) -> [44]
+$L.a10 i a s0 s1 $x =
+      $L.b11 i a s1 s0 s1 $x
 
 device top_level
       input __in0 : [4]

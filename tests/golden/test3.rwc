@@ -1,19 +1,19 @@
 $Pure.dispatch : ([8], [1]) -> [16]
 $Pure.dispatch disc i =
-      $LL.Main.go i disc
+      $L.b2 i disc
 
-$LL.Main.go1 : ([8], [8]) -> [16]
-$LL.Main.go1 rabind sto0 =
-      rabind # sto0
+$L.b2 : ([1], [8]) -> [16]
+$L.b2 b s0 =
+      if eq b 1'h0 then $L.Main.tick3 s0
+            else $L.Main.tick3 s0
 
-$LL.Main.go : ([1], [8]) -> [16]
-$LL.Main.go wild sto0 =
-      if eq wild 1'h0 then Main.go sto0
-            else Main.go sto0
+$L.Main.tick3 : ([8]) -> [16]
+$L.Main.tick3 s0 =
+      $L.$x4 s0 s0
 
-Main.go : ([8]) -> [16]
-Main.go sto0 =
-      $LL.Main.go1 sto0 sto0
+$L.$x4 : ([8], [8]) -> [16]
+$L.$x4 $x s0 =
+      $x # s0
 
 device top_level
       input __in0 : [1]

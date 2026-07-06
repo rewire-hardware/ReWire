@@ -1,73 +1,35 @@
-$Pure.dispatch : ([16], [1]) -> [25]
+$Pure.dispatch : ([16], [1]) -> [24]
 $Pure.dispatch disc i =
-      $LL.Main.sig i disc
+      $L.i5 i disc
 
-$LL.Main.second : ([16], [16]) -> [24]
-$LL.Main.second v sigma0 =
-      trunc 8 (lshr v 128'h0) # sigma0
+$L.r18 : ([8], [8], [16]) -> [24]
+$L.r18 r0 r1 s0 =
+      $LL.L.r18 r1 (add r0 r1)
 
-$LL.Main.incr2 : ([8], [8], [16]) -> [25]
-$LL.Main.incr2 r0 r1 sto0 =
-      $LL.Main.begin (r1 # add r0 r1)
+$L.Main.first14 : ([16]) -> [24]
+$L.Main.first14 s0 =
+      $L.r04 s0[8 +: 8] s0
 
-Main.incr : ([16]) -> [25]
-Main.incr sto0 =
-      let $t1 = (let $t0 = Main.first sto0 in
-      let v = $t0[16 +: 8] in
-      let s0 = $t0[0 +: 16] in
-      1'h0 # v # s0) in
-      let v = $t1[16 +: 8] in
-      let s0 = $t1[0 +: 16] in
-      $LL.Main.incr v s0
+$LL.L.r18 : ([8], [8]) -> [24]
+$LL.L.r18 r1 $a =
+      $L.Main.first14 (r1 # $a)
 
-$LL.Main.incr1 : ([8], [8], [16]) -> [25]
-$LL.Main.incr1 $x $x1 sto0 =
-      $LL.Main.incr2 $x $x1 sto0
+$L.Main.first12 : ([16]) -> [24]
+$L.Main.first12 s0 =
+      $L.Main.second10 s0[8 +: 8] s0
 
-$LL.Main.incr : ([8], [16]) -> [25]
-$LL.Main.incr r0 sto0 =
-      let $t1 = (let $t0 = Main.second sto0 in
-      let v = $t0[16 +: 8] in
-      let s0 = $t0[0 +: 16] in
-      1'h0 # v # s0) in
-      let v = $t1[16 +: 8] in
-      let s0 = $t1[0 +: 16] in
-      $LL.Main.incr1 r0 v s0
+$L.i5 : ([1], [16]) -> [24]
+$L.i5 i s0 =
+      if eq i 1'h0 then $L.Main.first12 s0
+            else $L.Main.first14 s0
 
-Main.sig : ([16]) -> [25]
-Main.sig sto0 =
-      let $t1 = (let $t0 = Main.first sto0 in
-      let v = $t0[16 +: 8] in
-      let s0 = $t0[0 +: 16] in
-      1'h0 # v # s0) in
-      let v = $t1[16 +: 8] in
-      let s0 = $t1[0 +: 16] in
-      $LL.Main.sig1 v s0
+$L.r04 : ([8], [16]) -> [24]
+$L.r04 r0 s0 =
+      r0 # s0
 
-$LL.Main.begin : ([16]) -> [25]
-$LL.Main.begin sto0 =
-      Main.sig sto0
-
-$LL.Main.sig1 : ([8], [16]) -> [25]
-$LL.Main.sig1 r0 sto0 =
-      1'h1 # r0 # sto0
-
-Main.first : ([16]) -> [24]
-Main.first sigma0 =
-      $LL.Main.first sigma0 sigma0
-
-$LL.Main.sig : ([1], [16]) -> [25]
-$LL.Main.sig wild sto0 =
-      if eq wild 1'h0 then Main.incr sto0
-            else Main.sig sto0
-
-Main.second : ([16]) -> [24]
-Main.second sigma0 =
-      $LL.Main.second sigma0 sigma0
-
-$LL.Main.first : ([16], [16]) -> [24]
-$LL.Main.first v sigma0 =
-      v[8 +: 8] # sigma0
+$L.Main.second10 : ([8], [16]) -> [24]
+$L.Main.second10 r0 s0 =
+      $L.r18 r0 (trunc 8 (lshr s0 128'h0)) s0
 
 device top_level
       input __in0 : [1]

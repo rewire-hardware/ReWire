@@ -1,40 +1,55 @@
 $Pure.dispatch : ([2], [1]) -> [3]
 $Pure.dispatch disc i =
-      let s0 = disc[1 +: 1] in
+      let s = disc[1 +: 1] in
       let s1 = disc[0 +: 1] in
-      Main.sig i s0 s1
+      $L.$x6 i s s1
 
-$LL.Main.sig5 : ([1], [1], [1], [1]) -> [3]
-$LL.Main.sig5 rabind rabind1 sto0 sto1 =
-      $LL.Main.sig3 sto0 (let $t1 = xor rabind1 rabind in
+$L.Main.sig4 : ([1], [1], [1]) -> [3]
+$L.Main.sig4 i s0 s1 =
+      $LL.L.Main.sig41 s1 s0 ($LL.L.Main.sig4 i)
+
+$LL.L.r110 : ([1], [1], [1], [1]) -> [3]
+$LL.L.r110 s1 r1 r0 s' =
+      $L._unused11 r0 r1 s' s1
+
+$L._unused11 : ([1], [1], [1], [1]) -> [3]
+$L._unused11 r0 r1 s0 s1 =
+      $L._unused7 s0 (let $t1 = xor r0 r1 in
       $t1)
 
-$LL.Main.sig4 : ([1], [1], [1]) -> [3]
-$LL.Main.sig4 rabind sto0 sto1 =
-      $LL.Main.sig rabind sto1 sto0 sto1
+$L.r09 : ([1], [1], [1]) -> [3]
+$L.r09 r0 s0 s1 =
+      $L.r110 r0 s1 s0 s1
 
-$LL.Main.sig3 : ([1], [1]) -> [3]
-$LL.Main.sig3 sto0 sto1 =
-      $LL.Main.sig1 sto0 sto0 sto1
+$L.r110 : ([1], [1], [1], [1]) -> [3]
+$L.r110 r0 r1 s0 s1 =
+      $LL.L.r110 s1 r1 r0 r1
 
-Main.sig : ([1], [1], [1]) -> [3]
-Main.sig i sto0 sto1 =
-      let $t0 = $LL.Main.sig2 i in
-      if eq $t0 1'h0 then $LL.Main.sig3 sto0 sto1
-            else $LL.Main.sig4 sto0 sto0 sto1
+$LL.L.Main.sig41 : ([1], [1], [1]) -> [3]
+$LL.L.Main.sig41 s1 s0 $a =
+      if eq $a 1'h0 then $L._unused7 s0 s1
+            else $L.Main.incr8 s0 s1
 
-$LL.Main.sig2 : ([1]) -> [1]
-$LL.Main.sig2 s =
+$L.$x6 : ([1], [1], [1]) -> [3]
+$L.$x6 $x $x1 $x2 =
+      $L.Main.sig4 $x $x1 $x2
+
+$L.Main.incr8 : ([1], [1]) -> [3]
+$L.Main.incr8 s0 $x =
+      $L.r09 s0 s0 $x
+
+$L.r05 : ([1], [1], [1]) -> [3]
+$L.r05 r0 s0 s1 =
+      r0 # s0 # s1
+
+$LL.L.Main.sig4 : ([1]) -> [1]
+$LL.L.Main.sig4 s =
       if eq s 1'h1 then 1'h0
             else 1'h1
 
-$LL.Main.sig1 : ([1], [1], [1]) -> [3]
-$LL.Main.sig1 r0 sto0 sto1 =
-      r0 # sto0 # sto1
-
-$LL.Main.sig : ([1], [1], [1], [1]) -> [3]
-$LL.Main.sig rabind rabind1 sto0 sto1 =
-      $LL.Main.sig5 rabind1 rabind rabind1 sto1
+$L._unused7 : ([1], [1]) -> [3]
+$L._unused7 s0 $x =
+      $L.r05 s0 s0 $x
 
 device top_level
       input __in0 : [1]

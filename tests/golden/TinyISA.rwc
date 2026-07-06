@@ -1,592 +1,885 @@
-$Pure.dispatch : ([73], [17]) -> [89]
+$Pure.dispatch : ([73], [17]) -> [88]
 $Pure.dispatch disc i =
-      if eq disc[70 +: 3] 3'h1 then (let s0 = disc[0 +: 70] in
-            $LL.Main.reset3 i s0)
-            else if eq disc[70 +: 3] 3'h2 then (let s0 = disc[0 +: 70] in
-            $LL.Main.loop13 i s0) else if eq disc[70 +: 3] 3'h3 then (let s0 = disc[0 +: 70] in
-            $LL.Main.loop7 i s0) else if eq disc[70 +: 3] 3'h4 then (let s0 = disc[0 +: 70] in
-            $LL.Main.loop2 i s0) else let s0 = disc[0 +: 70] in
-            $LL.Main.loop20 i s0
+      if eq disc[70 +: 3] 3'h0 then (let s = disc[0 +: 70] in
+            $L.i15 i s)
+            else if eq disc[70 +: 3] 3'h1 then (let s = disc[0 +: 70] in
+            $L.i58 i s) else if eq disc[70 +: 3] 3'h2 then (let s = disc[0 +: 70] in
+            $L.i87 i s) else if eq disc[70 +: 3] 3'h3 then (let s = disc[0 +: 70] in
+            $L.i117 i s) else let s = disc[0 +: 70] in
+            $L.i225 i s
 
-$LL.Main.loop23 : ([15], [70]) -> [89]
-$LL.Main.loop23 rabind sto0 =
-      1'h1 # rabind # 3'h4 # sto0
+$LL.L.s53 : ([70], [17]) -> [88]
+$LL.L.s53 s0 $a =
+      $L.i51 $a s0
 
-$LL.Main.bnz1 : ([6], [1], [70]) -> [70]
-$LL.Main.bnz1 a wild sigma0 =
-      if eq wild 1'h0 then Main.putPC a sigma0
-            else Main.incrPC sigma0
+$L.Main.getOut90 : ([70]) -> [88]
+$L.Main.getOut90 s0 =
+      $L.s91 s0 s0
 
-Main.putDataOut : ([8], [70]) -> [70]
-Main.putDataOut d sigma0 =
-      let $t0 = Main.getOut sigma0 in
-      let st0 = $t0[70 +: 15] in
-      let st1 = $t0[0 +: 70] in
-      $LL.Main.putDataOut1 d st0 st1
+$LL.L.x181 : ([2], [70], [2], [8]) -> [88]
+$LL.L.x181 rb s0 rd $a =
+      $L.Main.getReg165 rd $a rb s0
 
-$LL.Main.nand3 : ([2], [2], [8], [70]) -> [70]
-$LL.Main.nand3 rd rb a sigma0 =
-      let $t0 = Main.getReg rb sigma0 in
-      let st0 = $t0[70 +: 8] in
-      let st1 = $t0[0 +: 70] in
-      $LL.Main.nand2 rd a st0 st1
+$LL.L.x179 : ([2], [2], [70], [8]) -> [88]
+$LL.L.x179 rd rb s0 $a =
+      $L.Main.getReg165 rd $a rb s0
 
-$LL.Main.incrPC : ([6], [70]) -> [70]
-$LL.Main.incrPC pc sigma0 =
-      Main.putPC (add pc 6'h1) sigma0
+$L.Main.getReg174 : ([2], [2], [2], [70]) -> [88]
+$L.Main.getReg174 rd rb ds s0 =
+      if eq ds 2'h0 then $L.arm176 rd rb s0
+            else if eq ds 2'h1 then $L.arm178 rd rb s0 else if eq ds 2'h2 then $L.arm180 rd rb s0 else $L.arm182 rd rb s0
 
-Main.putPC : ([6], [70]) -> [70]
-Main.putPC a sigma0 =
-      $LL.Main.putPC1 a sigma0 sigma0
+$LL.L.s35 : ([70], [6]) -> [88]
+$LL.L.s35 s0 $a =
+      $L.Main.getOut32 $a s0
 
-$LL.Main.loop22 : ([70]) -> [89]
-$LL.Main.loop22 sto0 =
-      let $t1 = (let $t0 = Main.getOut sto0 in
-      let v = $t0[70 +: 15] in
-      let s0 = $t0[0 +: 70] in
-      4'h1 # v # s0) in
-      let v = $t1[70 +: 15] in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop6 v s0
+$LL.L.o2321 : ([15]) -> [15]
+$LL.L.o2321 $a =
+      $a
 
-Main.putWeOut$s2 : ([70]) -> [70]
-Main.putWeOut$s2 sigma0 =
-      let $t0 = Main.getOut sigma0 in
-      let st0 = $t0[70 +: 15] in
-      let st1 = $t0[0 +: 70] in
-      $LL.Main.putWeOut$s2 st0 st1
+$L.Main.putOut133 : ([15], [70]) -> [88]
+$L.Main.putOut133 o s0 =
+      $L.s134 o s0 s0
 
-Main.getReg$s1 : ([70]) -> [78]
-Main.getReg$s1 sigma0 =
-      $LL.Main.getReg3 sigma0 sigma0
+$LL.L.s89 : ([70]) -> [70]
+$LL.L.s89 $a =
+      $a
 
-Main.putIns : ([17], [70]) -> [70]
-Main.putIns i sigma0 =
-      $LL.Main.putIns i sigma0 sigma0
+$L.Main.putOut139 : ([8], [15], [70]) -> [88]
+$L.Main.putOut139 d o s0 =
+      $L.s140 o d s0 s0
 
-$LL.Main.nand2 : ([2], [8], [8], [70]) -> [70]
-$LL.Main.nand2 $x $x1 $x2 sigma0 =
-      $LL.Main.nand1 $x $x1 $x2 sigma0
+$L.arm173 : ([2], [8], [70]) -> [88]
+$L.arm173 rd a s0 =
+      $L.x172 rd a s0 s0
 
-$LL.Main.bnz : ([6], [8], [70]) -> [70]
-$LL.Main.bnz a v sigma0 =
-      $LL.Main.bnz1 a (eq v 8'h0) sigma0
+$L.i117 : ([17], [70]) -> [88]
+$L.i117 $x $x1 =
+      $L.Main.putIns118 $x $x1
 
-$LL.Main.loop21 : ([70]) -> [89]
-$LL.Main.loop21 sto0 =
-      let $t1 = (let $t0 = Main.getOut sto0 in
-      let v = $t0[70 +: 15] in
-      let s0 = $t0[0 +: 70] in
-      4'h1 # v # s0) in
-      let v = $t1[70 +: 15] in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop23 v s0
+$L.s161 : ([8], [70], [70]) -> [88]
+$L.s161 b s s0 =
+      $L.Main.getPC40 (let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let inputs = s[15 +: 17] in
+      let outputs = s[0 +: 15] in
+      $LL.L.s89 (r0 # r1 # b # r3 # pc # inputs # outputs))
 
-$LL.Main.loop20 : ([17], [70]) -> [89]
-$LL.Main.loop20 rabind sto0 =
-      let $t1 = (let $t0 = Main.putIns rabind sto0 in
-      19'h10000 # $t0) in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop19 s0
+$LL.L.s76 : ([6], [70], [15]) -> [88]
+$LL.L.s76 a s0 $a =
+      $L.o72 a $a s0
 
-$LL.Main.getDataIn : ([17], [70]) -> [78]
-$LL.Main.getDataIn i sigma0 =
-      Main.dataIn i # sigma0
+$L.arm178 : ([2], [2], [70]) -> [88]
+$L.arm178 rd rb s0 =
+      $L.x177 rd rb s0 s0
 
-$LL.Main.putPC1 : ([6], [70], [70]) -> [70]
-$LL.Main.putPC1 $x $x1 sigma0 =
-      $LL.Main.putPC $x $x1 sigma0
+$L.arm160 : ([8], [70]) -> [88]
+$L.arm160 b s0 =
+      $L.s159 b s0 s0
 
-$LL.Main.loop19 : ([70]) -> [89]
-$LL.Main.loop19 sto0 =
-      let $t2 = (let $t1 = (let $t0 = Main.getDataIn sto0 in
-      let st0 = $t0[70 +: 8] in
-      let st1 = $t0[0 +: 70] in
-      Main.putReg$s1 st0 st1) in
-      19'h10000 # $t1) in
-      let s0 = $t2[0 +: 70] in
-      $LL.Main.loop15 s0
+$L.o14 : ([15], [70]) -> [88]
+$L.o14 o s0 =
+      o # 3'h0 # s0
 
-$LL.Main.putAddrOut1 : ([6], [15], [70]) -> [70]
-$LL.Main.putAddrOut1 a o sigma0 =
-      Main.putOut (let weOut = o[14 +: 1] in
+$L.arm164 : ([8], [70]) -> [88]
+$L.arm164 b s0 =
+      $L.s163 b s0 s0
+
+$L.x193 : ([6], [70], [70]) -> [88]
+$L.x193 a x s0 =
+      $LL.L.x193 a s0 (Main.r0 x)
+
+$L.arm162 : ([8], [70]) -> [88]
+$L.arm162 b s0 =
+      $L.s161 b s0 s0
+
+$LL.L.s33 : ([6], [70], [15]) -> [88]
+$LL.L.s33 a s0 $a =
+      $L.o29 a $a s0
+
+$L.s27 : ([70], [70]) -> [88]
+$L.s27 s s0 =
+      $LL.L.s27 s0 (Main.outputs s)
+
+$LL.L.x177 : ([2], [2], [70], [8]) -> [88]
+$LL.L.x177 rb rd s0 $a =
+      $L.Main.getReg165 rd $a rb s0
+
+$L.s96 : ([15], [70], [70]) -> [88]
+$L.s96 o s s0 =
+      $L.Main.getOut90 (let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let inputs = s[15 +: 17] in
+      $LL.L.s89 (r0 # r1 # r2 # r3 # pc # inputs # o))
+
+$L.Main.getOut97 : ([70]) -> [88]
+$L.Main.getOut97 s0 =
+      $L.s98 s0 s0
+
+$L.arm176 : ([2], [2], [70]) -> [88]
+$L.arm176 rd rb s0 =
+      $L.x175 rd rb s0 s0
+
+$L.Main.putOut30 : ([15], [70]) -> [88]
+$L.Main.putOut30 o s0 =
+      $L.s31 o s0 s0
+
+$L.o138 : ([6], [8], [15], [70]) -> [88]
+$L.o138 a d o s0 =
+      $LL.L.o1381 s0 d (let weOut = o[14 +: 1] in
       let dataOut = o[0 +: 8] in
-      weOut # a # dataOut) sigma0
+      $LL.L.o2321 (weOut # a # dataOut))
 
-$LL.Main.loop18 : ([70]) -> [89]
-$LL.Main.loop18 sto0 =
-      let $t1 = (let $t0 = Main.getOut sto0 in
-      let v = $t0[70 +: 15] in
-      let s0 = $t0[0 +: 70] in
-      4'h1 # v # s0) in
-      let v = $t1[70 +: 15] in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop3 v s0
+$L.Main.getReg$s1143 : ([6], [70]) -> [88]
+$L.Main.getReg$s1143 a s0 =
+      $L.x144 a s0 s0
 
-$LL.Main.putDataOut1 : ([8], [15], [70]) -> [70]
-$LL.Main.putDataOut1 $x $x1 sigma0 =
-      $LL.Main.putDataOut $x $x1 sigma0
+$L.Main.putPC38 : ([6], [70]) -> [88]
+$L.Main.putPC38 a s0 =
+      $L.s39 a s0 s0
 
-$LL.Main.loop17 : ([6], [8], [70]) -> [70]
-$LL.Main.loop17 $x $x1 sigma0 =
-      $LL.Main.bnz $x $x1 sigma0
+$LL.L.o661 : ([70], [15]) -> [88]
+$LL.L.o661 s0 $a =
+      $L.Main.putOut67 $a s0
 
-$LL.Main.getReg4 : ([70], [70]) -> [78]
-$LL.Main.getReg4 x sigma0 =
-      Main.r3 x # sigma0
+$LL.L.o126 : ([70], [15]) -> [88]
+$LL.L.o126 s0 $a =
+      $L.Main.putOut127 $a s0
 
-$LL.Main.putReg8 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg8 $x $x1 sigma0 =
-      $LL.Main.putReg7 $x $x1 sigma0
+$L.Main.getOut75 : ([6], [70]) -> [88]
+$L.Main.getOut75 a s0 =
+      $L.s76 a s0 s0
 
-$LL.Main.st3 : ([6], [8], [70]) -> [70]
-$LL.Main.st3 a d sigma0 =
-      let $t0 = Main.putAddrOut a sigma0 in
-      $LL.Main.st1 d $t0
+$L.s17 : ([17], [70], [70]) -> [88]
+$L.s17 i s s0 =
+      $L.Main.getIns196 (let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let outputs = s[0 +: 15] in
+      $LL.L.s89 (r0 # r1 # r2 # r3 # pc # i # outputs))
 
-Main.getReg : ([2], [70]) -> [78]
-Main.getReg $x sigma0 =
-      $LL.Main.getReg $x sigma0
+$L.Main.getOut26 : ([70]) -> [88]
+$L.Main.getOut26 s0 =
+      $L.s27 s0 s0
 
-$LL.Main.getReg3 : ([70], [70]) -> [78]
-$LL.Main.getReg3 x sigma0 =
-      Main.r0 x # sigma0
+$L.x168 : ([2], [8], [70], [70]) -> [88]
+$L.x168 rd a x s0 =
+      $LL.L.x168 rd s0 a (Main.r1 x)
 
-$LL.Main.reset3 : ([17], [70]) -> [89]
-$LL.Main.reset3 rabind sto0 =
-      let $t1 = (let $t0 = Main.putIns rabind sto0 in
-      19'h10000 # $t0) in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop12 s0
+$L.i225 : ([17], [70]) -> [88]
+$L.i225 $x $x1 =
+      $L.Main.putIns226 $x $x1
 
-Main.putWeOut$s1 : ([70]) -> [70]
-Main.putWeOut$s1 sigma0 =
-      let $t0 = Main.getOut sigma0 in
-      let st0 = $t0[70 +: 15] in
-      let st1 = $t0[0 +: 70] in
-      $LL.Main.putWeOut$s1 st0 st1
+$L.v185 : ([6], [8], [70]) -> [88]
+$L.v185 a v s0 =
+      $LL.L.v185 a s0 (eq v 8'h0)
 
-$LL.Main.putReg7 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg7 b s sigma0 =
-      let r0 = s[62 +: 8] in
+$L.s60 : ([17], [70], [70]) -> [88]
+$L.s60 i s s0 =
+      $L.Main.getIns52 (let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let outputs = s[0 +: 15] in
+      $LL.L.s89 (r0 # r1 # r2 # r3 # pc # i # outputs))
+
+$L.s49 : ([8], [70], [70]) -> [88]
+$L.s49 b s s0 =
+      $L.Main.getIns196 (let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
       let r3 = s[38 +: 8] in
       let pc = s[32 +: 6] in
       let inputs = s[15 +: 17] in
       let outputs = s[0 +: 15] in
-      r0 # b # r2 # r3 # pc # inputs # outputs
+      $LL.L.s89 (b # r1 # r2 # r3 # pc # inputs # outputs))
 
-Main.putReg$s1 : ([8], [70]) -> [70]
-Main.putReg$s1 b sigma0 =
-      $LL.Main.putReg b sigma0 sigma0
+$LL.L.o291 : ([70], [15]) -> [88]
+$LL.L.o291 s0 $a =
+      $L.Main.putOut30 $a s0
 
-$LL.Main.st2 : ([70]) -> [70]
-$LL.Main.st2 sigma0 =
-      Main.putWeOut$s2 sigma0
+$L.Main.getOut141 : ([6], [8], [70]) -> [88]
+$L.Main.getOut141 a d s0 =
+      $L.s142 a d s0 s0
 
-$LL.Main.putReg6 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg6 $x $x1 sigma0 =
-      $LL.Main.putReg5 $x $x1 sigma0
+$L.i58 : ([17], [70]) -> [88]
+$L.i58 $x $x1 =
+      $L.Main.putIns59 $x $x1
 
-$LL.Main.putReg5 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg5 b s sigma0 =
-      let r0 = s[62 +: 8] in
+$L.s134 : ([15], [70], [70]) -> [88]
+$L.s134 o s s0 =
+      $L.Main.getOut129 (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
       let r3 = s[38 +: 8] in
       let pc = s[32 +: 6] in
       let inputs = s[15 +: 17] in
-      let outputs = s[0 +: 15] in
-      r0 # r1 # b # r3 # pc # inputs # outputs
+      $LL.L.s89 (r0 # r1 # r2 # r3 # pc # inputs # o))
 
-$LL.Main.finishInstr1 : ([6], [70]) -> [70]
-$LL.Main.finishInstr1 pc sigma0 =
-      let $t0 = Main.putAddrOut pc sigma0 in
-      $LL.Main.finishInstr $t0
+$LL.L.s136 : ([8], [70], [15]) -> [88]
+$LL.L.s136 d s0 $a =
+      $L.o132 d $a s0
 
-$LL.Main.putReg4 : ([8], [2], [70]) -> [70]
-$LL.Main.putReg4 b wild sigma0 =
-      if eq wild 2'h0 then $LL.Main.putReg b sigma0 sigma0
-            else if eq wild 2'h1 then $LL.Main.putReg8 b sigma0 sigma0 else if eq wild 2'h2 then $LL.Main.putReg6 b sigma0 sigma0 else $LL.Main.putReg2 b sigma0 sigma0
-
-$LL.Main.nand1 : ([2], [8], [8], [70]) -> [70]
-$LL.Main.nand1 rd a b sigma0 =
-      let $t2 = Main.putReg rd (not (and a b)) sigma0 in
-      $LL.Main.nand $t2
-
-$LL.Main.getOut : ([70], [70]) -> [85]
-$LL.Main.getOut s sigma0 =
-      Main.outputs s # sigma0
-
-$LL.Main.putReg3 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg3 b s sigma0 =
-      let r0 = s[62 +: 8] in
+$L.s31 : ([15], [70], [70]) -> [88]
+$L.s31 o s s0 =
+      $L.Main.getOut26 (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
       let pc = s[32 +: 6] in
       let inputs = s[15 +: 17] in
+      $LL.L.s89 (r0 # r1 # r2 # r3 # pc # inputs # o))
+
+$L.s102 : ([15], [70], [70]) -> [88]
+$L.s102 o s s0 =
+      $L.Main.getOut97 (let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let inputs = s[15 +: 17] in
+      $LL.L.s89 (r0 # r1 # r2 # r3 # pc # inputs # o))
+
+$L.arm158 : ([8], [70]) -> [88]
+$L.arm158 b s0 =
+      $L.s157 b s0 s0
+
+$L.s130 : ([70], [70]) -> [88]
+$L.s130 s s0 =
+      $LL.L.s130 s0 (Main.outputs s)
+
+$LL.L.i195 : ([70], [9]) -> [88]
+$LL.L.i195 s0 $a =
+      $L.instr6 $a s0
+
+$L.o126 : ([15], [70]) -> [88]
+$L.o126 o s0 =
+      $LL.L.o126 s0 (let addrOut = o[8 +: 6] in
+      let dataOut = o[0 +: 8] in
+      $LL.L.o2321 (1'h1 # addrOut # dataOut))
+
+$L.Main.putOut127 : ([15], [70]) -> [88]
+$L.Main.putOut127 o s0 =
+      $L.s128 o s0 s0
+
+$L.Main.putOut101 : ([15], [70]) -> [88]
+$L.Main.putOut101 o s0 =
+      $L.s102 o s0 s0
+
+$L.s82 : ([6], [70], [70]) -> [88]
+$L.s82 a s s0 =
+      $L.Main.getPC77 (let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let inputs = s[15 +: 17] in
       let outputs = s[0 +: 15] in
-      r0 # r1 # r2 # b # pc # inputs # outputs
+      $LL.L.s89 (r0 # r1 # r2 # r3 # a # inputs # outputs))
+
+$L.Main.putOut67 : ([15], [70]) -> [88]
+$L.Main.putOut67 o s0 =
+      $L.s68 o s0 s0
+
+$L.Main.getPC83 : ([70]) -> [88]
+$L.Main.getPC83 s0 =
+      $L.s84 s0 s0
+
+$L.x181 : ([2], [2], [70], [70]) -> [88]
+$L.x181 rd rb x s0 =
+      $LL.L.x181 rb s0 rd (Main.r3 x)
+
+$L.s227 : ([17], [70], [70]) -> [88]
+$L.s227 i s s0 =
+      $L.Main.getPC34 (let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let outputs = s[0 +: 15] in
+      $LL.L.s89 (r0 # r1 # r2 # r3 # pc # i # outputs))
+
+$L.s7 : ([9], [70], [70]) -> [88]
+$L.s7 instr s s0 =
+      if eq instr[6 +: 3] 3'h0 then $L.Main.getPC40 s0
+            else if eq instr[6 +: 3] 3'h1 then (let a = instr[0 +: 6] in
+            $L.Main.getOut103 a s0) else if eq instr[6 +: 3] 3'h2 then (let a = instr[0 +: 6] in
+            $L.Main.getReg$s1143 a s0) else if eq instr[6 +: 3] 3'h3 then (let rd = instr[4 +: 2] in
+            let r1 = instr[2 +: 2] in
+            let r2 = instr[0 +: 2] in
+            $L.Main.getReg174 rd r2 r1 s0) else let a = instr[0 +: 6] in
+            $L.Main.getReg$s1192 a s0
+
+$L.Main.putIns226 : ([17], [70]) -> [88]
+$L.Main.putIns226 i s0 =
+      $L.s227 i s0 s0
+
+$LL.L.s70 : ([70], [15]) -> [88]
+$LL.L.s70 s0 $a =
+      $L.o66 $a s0
+
+$L.s35 : ([70], [70]) -> [88]
+$L.s35 s s0 =
+      $LL.L.s35 s0 (Main.pc s)
+
+$L.s84 : ([70], [70]) -> [88]
+$L.s84 s s0 =
+      $LL.L.s84 s0 (Main.pc s)
+
+$L.x179 : ([2], [2], [70], [70]) -> [88]
+$L.x179 rd rb x s0 =
+      $LL.L.x179 rd rb s0 (Main.r2 x)
+
+$LL.L.o1381 : ([70], [8], [15]) -> [88]
+$LL.L.o1381 s0 d $a =
+      $L.Main.putOut139 d $a s0
+
+$L.Main.putIns118 : ([17], [70]) -> [88]
+$L.Main.putIns118 i s0 =
+      $L.s119 i s0 s0
+
+$LL.L.o94 : ([70], [15]) -> [88]
+$LL.L.o94 s0 $a =
+      $L.Main.putOut95 $a s0
+
+$L.i87 : ([17], [70]) -> [88]
+$L.i87 $x $x1 =
+      $L.Main.putIns88 $x $x1
+
+$LL.L.s62 : ([70], [15]) -> [88]
+$LL.L.s62 s0 $a =
+      $L.o57 $a s0
+
+$LL.L.s91 : ([70], [15]) -> [88]
+$LL.L.s91 s0 $a =
+      $L.o86 $a s0
 
 Main.pc : ([70]) -> [6]
 Main.pc ds =
       let ds5 = ds[32 +: 6] in
       ds5
 
-$LL.Main.loop16 : ([70]) -> [89]
-$LL.Main.loop16 sto0 =
-      let $t1 = (let $t0 = Main.incrPC sto0 in
-      19'h10000 # $t0) in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop12 s0
+$LL.L.s104 : ([6], [70], [15]) -> [88]
+$LL.L.s104 a s0 $a =
+      $L.o100 a $a s0
 
-$LL.Main.loop15 : ([70]) -> [89]
-$LL.Main.loop15 sto0 =
-      Main.loop sto0
+$L.Main.getOut69 : ([70]) -> [88]
+$L.Main.getOut69 s0 =
+      $L.s70 s0 s0
 
-$LL.Main.loop14 : ([70]) -> [89]
-$LL.Main.loop14 sto0 =
-      let $t1 = (let $t0 = Main.getOut sto0 in
-      let v = $t0[70 +: 15] in
-      let s0 = $t0[0 +: 70] in
-      4'h1 # v # s0) in
-      let v = $t1[70 +: 15] in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop10 v s0
+$L.Main.getOut135 : ([8], [70]) -> [88]
+$L.Main.getOut135 d s0 =
+      $L.s136 d s0 s0
 
-$LL.Main.putPC : ([6], [70], [70]) -> [70]
-$LL.Main.putPC a s sigma0 =
-      let r0 = s[62 +: 8] in
+$L.s78 : ([70], [70]) -> [88]
+$L.s78 s s0 =
+      $LL.L.s78 s0 (Main.pc s)
+
+$L.o29 : ([6], [15], [70]) -> [88]
+$L.o29 a o s0 =
+      $LL.L.o291 s0 (let weOut = o[14 +: 1] in
+      let dataOut = o[0 +: 8] in
+      $LL.L.o2321 (weOut # a # dataOut))
+
+$L.s89 : ([17], [70], [70]) -> [88]
+$L.s89 i s s0 =
+      $L.Main.getPC83 (let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let outputs = s[0 +: 15] in
+      $LL.L.s89 (r0 # r1 # r2 # r3 # pc # i # outputs))
+
+$L.Main.getOut129 : ([70]) -> [88]
+$L.Main.getOut129 s0 =
+      $L.s130 s0 s0
+
+$L.Main.getReg$s1192 : ([6], [70]) -> [88]
+$L.Main.getReg$s1192 a s0 =
+      $L.x193 a s0 s0
+
+$LL.L.s142 : ([6], [70], [8], [15]) -> [88]
+$LL.L.s142 a s0 d $a =
+      $L.o138 a d $a s0
+
+$L.s91 : ([70], [70]) -> [88]
+$L.s91 s s0 =
+      $LL.L.s91 s0 (Main.outputs s)
+
+$L.s121 : ([70], [70]) -> [88]
+$L.s121 s s0 =
+      $LL.L.s121 s0 (Main.outputs s)
+
+$L.x144 : ([6], [70], [70]) -> [88]
+$L.x144 a x s0 =
+      $LL.L.x144 s0 a (Main.r0 x)
+
+$L.Main.putIns59 : ([17], [70]) -> [88]
+$L.Main.putIns59 i s0 =
+      $L.s60 i s0 s0
+
+$L.s68 : ([15], [70], [70]) -> [88]
+$L.s68 o s s0 =
+      $L.Main.getOut61 (let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let inputs = s[15 +: 17] in
+      $LL.L.s89 (r0 # r1 # r2 # r3 # pc # inputs # o))
+
+$L.Main.putOut95 : ([15], [70]) -> [88]
+$L.Main.putOut95 o s0 =
+      $L.s96 o s0 s0
+
+$LL.L.s27 : ([70], [15]) -> [88]
+$LL.L.s27 s0 $a =
+      $L.o23 $a s0
+
+$L.Main.putIns88 : ([17], [70]) -> [88]
+$L.Main.putIns88 i s0 =
+      $L.s89 i s0 s0
+
+$L.o72 : ([6], [15], [70]) -> [88]
+$L.o72 a o s0 =
+      $LL.L.o721 s0 (let weOut = o[14 +: 1] in
+      let dataOut = o[0 +: 8] in
+      $LL.L.o2321 (weOut # a # dataOut))
+
+$L.Main.getOut61 : ([70]) -> [88]
+$L.Main.getOut61 s0 =
+      $L.s62 s0 s0
+
+$L.s119 : ([17], [70], [70]) -> [88]
+$L.s119 i s s0 =
+      $L.Main.getPC40 (let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let outputs = s[0 +: 15] in
+      $LL.L.s89 (r0 # r1 # r2 # r3 # pc # i # outputs))
+
+$L.Main.getIns52 : ([70]) -> [88]
+$L.Main.getIns52 s0 =
+      $L.s53 s0 s0
+
+$L.i15 : ([17], [70]) -> [88]
+$L.i15 $x $x1 =
+      $L.Main.putIns16 $x $x1
+
+$L.s39 : ([6], [70], [70]) -> [88]
+$L.s39 a s s0 =
+      $L.Main.getPC34 (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
       let r3 = s[38 +: 8] in
       let inputs = s[15 +: 17] in
       let outputs = s[0 +: 15] in
-      r0 # r1 # r2 # r3 # a # inputs # outputs
+      $LL.L.s89 (r0 # r1 # r2 # r3 # a # inputs # outputs))
 
-$LL.Main.putAddrOut : ([6], [15], [70]) -> [70]
-$LL.Main.putAddrOut $x $x1 sigma0 =
-      $LL.Main.putAddrOut1 $x $x1 sigma0
+$LL.L.x172 : ([2], [8], [70], [8]) -> [88]
+$LL.L.x172 rd a s0 $a =
+      $L.Main.putReg156 rd (not (and a $a)) s0
 
-$LL.Main.putReg2 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg2 $x $x1 sigma0 =
-      $LL.Main.putReg3 $x $x1 sigma0
+$LL.L.x168 : ([2], [70], [8], [8]) -> [88]
+$LL.L.x168 rd s0 a $a =
+      $L.Main.putReg156 rd (not (and a $a)) s0
 
-Main.getIns : ([70]) -> [87]
-Main.getIns sigma0 =
-      $LL.Main.getIns sigma0 sigma0
-
-Main.loop : ([70]) -> [89]
-Main.loop sto0 =
-      let $t1 = (let $t0 = Main.getInstr sto0 in
-      let v = $t0[70 +: 9] in
-      let s0 = $t0[0 +: 70] in
-      10'h0 # v # s0) in
-      let v = $t1[70 +: 9] in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop11 v s0
-
-$LL.Main.loop13 : ([17], [70]) -> [89]
-$LL.Main.loop13 rabind sto0 =
-      let $t1 = (let $t0 = Main.putIns rabind sto0 in
-      19'h10000 # $t0) in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop s0
-
-$LL.Main.loop12 : ([70]) -> [89]
-$LL.Main.loop12 sto0 =
-      let $t2 = (let $t1 = (let $t0 = Main.getPC sto0 in
-      let st0 = $t0[70 +: 6] in
-      let st1 = $t0[0 +: 70] in
-      $LL.Main.finishInstr1 st0 st1) in
-      19'h10000 # $t1) in
-      let s0 = $t2[0 +: 70] in
-      $LL.Main.loop14 s0
-
-$LL.Main.loop11 : ([9], [70]) -> [89]
-$LL.Main.loop11 instr sto0 =
-      $LL.Main.loop4 instr sto0 sto0
-
-$LL.Main.getInstr : ([17], [70]) -> [79]
-$LL.Main.getInstr i sigma0 =
-      Main.instrIn i # sigma0
+$L.s163 : ([8], [70], [70]) -> [88]
+$L.s163 b s s0 =
+      $L.Main.getPC40 (let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let pc = s[32 +: 6] in
+      let inputs = s[15 +: 17] in
+      let outputs = s[0 +: 15] in
+      $LL.L.s89 (r0 # r1 # r2 # b # pc # inputs # outputs))
 
 Main.inputs : ([70]) -> [17]
 Main.inputs ds =
       let ds6 = ds[15 +: 17] in
       ds6
 
-$LL.Main.loop10 : ([15], [70]) -> [89]
-$LL.Main.loop10 rabind sto0 =
-      1'h1 # rabind # 3'h3 # sto0
+$L.Main.getOut18 : ([70]) -> [88]
+$L.Main.getOut18 s0 =
+      $L.s19 s0 s0
 
-Main.putReg : ([2], [8], [70]) -> [70]
-Main.putReg ds b sigma0 =
-      $LL.Main.putReg4 b ds sigma0
+$L.s53 : ([70], [70]) -> [88]
+$L.s53 s s0 =
+      $LL.L.s53 s0 (Main.inputs s)
 
-$LL.Main.getReg2 : ([70], [70]) -> [78]
-$LL.Main.getReg2 x sigma0 =
-      Main.r2 x # sigma0
-
-$LL.Main.loop9 : ([6], [8], [70]) -> [70]
-$LL.Main.loop9 $x $x1 sigma0 =
-      $LL.Main.st3 $x $x1 sigma0
-
-$LL.Main.loop8 : ([2], [2], [8], [70]) -> [70]
-$LL.Main.loop8 $x $x1 $x2 sigma0 =
-      $LL.Main.nand3 $x $x1 $x2 sigma0
+$L.arm180 : ([2], [2], [70]) -> [88]
+$L.arm180 rd rb s0 =
+      $L.x179 rd rb s0 s0
 
 Main.r0 : ([70]) -> [8]
 Main.r0 ds =
       let ds1 = ds[62 +: 8] in
       ds1
 
-Main.getOut : ([70]) -> [85]
-Main.getOut sigma0 =
-      $LL.Main.getOut sigma0 sigma0
+$L.s98 : ([70], [70]) -> [88]
+$L.s98 s s0 =
+      $LL.L.s98 s0 (Main.outputs s)
 
-$LL.Main.putReg1 : ([8], [70], [70]) -> [70]
-$LL.Main.putReg1 b s sigma0 =
-      let r1 = s[54 +: 8] in
-      let r2 = s[46 +: 8] in
-      let r3 = s[38 +: 8] in
-      let pc = s[32 +: 6] in
-      let inputs = s[15 +: 17] in
-      let outputs = s[0 +: 15] in
-      b # r1 # r2 # r3 # pc # inputs # outputs
+$L.Main.getPC77 : ([70]) -> [88]
+$L.Main.getPC77 s0 =
+      $L.s78 s0 s0
 
-$LL.Main.putWeOut$s2 : ([15], [70]) -> [70]
-$LL.Main.putWeOut$s2 o sigma0 =
-      Main.putOut (let addrOut = o[8 +: 6] in
+$LL.L.s197 : ([70], [17]) -> [88]
+$LL.L.s197 s0 $a =
+      $L.i195 $a s0
+
+$L.o100 : ([6], [15], [70]) -> [88]
+$L.o100 a o s0 =
+      $LL.L.o1001 s0 (let weOut = o[14 +: 1] in
       let dataOut = o[0 +: 8] in
-      1'h1 # addrOut # dataOut) sigma0
+      $LL.L.o2321 (weOut # a # dataOut))
+
+$L.arm169 : ([2], [8], [70]) -> [88]
+$L.arm169 rd a s0 =
+      $L.x168 rd a s0 s0
+
+$LL.L.s41 : ([70], [6]) -> [88]
+$LL.L.s41 s0 $a =
+      $L.Main.putPC38 (add $a 6'h1) s0
 
 Main.dataIn : ([17]) -> [8]
 Main.dataIn ds =
       let ds2 = ds[0 +: 8] in
       ds2
 
-$LL.Main.putReg : ([8], [70], [70]) -> [70]
-$LL.Main.putReg $x $x1 sigma0 =
-      $LL.Main.putReg1 $x $x1 sigma0
+$L.s19 : ([70], [70]) -> [88]
+$L.s19 s s0 =
+      $LL.L.s19 s0 (Main.outputs s)
 
-Main.getDataIn : ([70]) -> [78]
-Main.getDataIn sigma0 =
-      let $t0 = Main.getIns sigma0 in
-      let st0 = $t0[70 +: 17] in
-      let st1 = $t0[0 +: 70] in
-      $LL.Main.getDataIn st0 st1
+$LL.L.s98 : ([70], [15]) -> [88]
+$LL.L.s98 s0 $a =
+      $L.o94 $a s0
+
+$LL.L.x144 : ([70], [6], [8]) -> [88]
+$LL.L.x144 s0 a $a =
+      $L.Main.getOut141 a $a s0
+
+$L.i195 : ([17], [70]) -> [88]
+$L.i195 i s0 =
+      $LL.L.i195 s0 (Main.instrIn i)
+
+$L.Main.putOut24 : ([15], [70]) -> [88]
+$L.Main.putOut24 o s0 =
+      $L.s25 o s0 s0
 
 Main.r1 : ([70]) -> [8]
 Main.r1 ds =
       let ds2 = ds[54 +: 8] in
       ds2
 
-$LL.Main.putWeOut$s1 : ([15], [70]) -> [70]
-$LL.Main.putWeOut$s1 o sigma0 =
-      Main.putOut (let addrOut = o[8 +: 6] in
+$LL.L.o721 : ([70], [15]) -> [88]
+$LL.L.o721 s0 $a =
+      $L.Main.putOut73 $a s0
+
+$L.s76 : ([6], [70], [70]) -> [88]
+$L.s76 a s s0 =
+      $LL.L.s76 a s0 (Main.outputs s)
+
+$L.s41 : ([70], [70]) -> [88]
+$L.s41 s s0 =
+      $LL.L.s41 s0 (Main.pc s)
+
+$L.s159 : ([8], [70], [70]) -> [88]
+$L.s159 b s s0 =
+      $L.Main.getPC40 (let r0 = s[62 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let inputs = s[15 +: 17] in
+      let outputs = s[0 +: 15] in
+      $LL.L.s89 (r0 # b # r2 # r3 # pc # inputs # outputs))
+
+$L.o57 : ([15], [70]) -> [88]
+$L.o57 o s0 =
+      o # 3'h1 # s0
+
+$L.Main.getPC34 : ([70]) -> [88]
+$L.Main.getPC34 s0 =
+      $L.s35 s0 s0
+
+$LL.L.x170 : ([70], [8], [2], [8]) -> [88]
+$LL.L.x170 s0 a rd $a =
+      $L.Main.putReg156 rd (not (and a $a)) s0
+
+$L.o23 : ([15], [70]) -> [88]
+$L.o23 o s0 =
+      $LL.L.o23 s0 (let addrOut = o[8 +: 6] in
       let dataOut = o[0 +: 8] in
-      1'h0 # addrOut # dataOut) sigma0
-
-$LL.Main.loop7 : ([17], [70]) -> [89]
-$LL.Main.loop7 rabind sto0 =
-      let $t1 = (let $t0 = Main.putIns rabind sto0 in
-      19'h10000 # $t0) in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop15 s0
-
-$LL.Main.loop6 : ([15], [70]) -> [89]
-$LL.Main.loop6 rabind sto0 =
-      1'h1 # rabind # 3'h2 # sto0
+      $LL.L.o2321 (1'h0 # addrOut # dataOut))
 
 Main.r3 : ([70]) -> [8]
 Main.r3 ds =
       let ds4 = ds[38 +: 8] in
       ds4
 
+$LL.L.s19 : ([70], [15]) -> [88]
+$LL.L.s19 s0 $a =
+      $L.o14 $a s0
+
+$L.Main.putReg$s148 : ([8], [70]) -> [88]
+$L.Main.putReg$s148 b s0 =
+      $L.s49 b s0 s0
+
+$L.i51 : ([17], [70]) -> [88]
+$L.i51 i s0 =
+      $LL.L.i51 s0 (Main.dataIn i)
+
+$L.Main.putIns16 : ([17], [70]) -> [88]
+$L.Main.putIns16 i s0 =
+      $L.s17 i s0 s0
+
 Main.r2 : ([70]) -> [8]
 Main.r2 ds =
       let ds3 = ds[46 +: 8] in
       ds3
 
-$LL.Main.putIns1 : ([17], [70], [70]) -> [70]
-$LL.Main.putIns1 i s sigma0 =
-      let r0 = s[62 +: 8] in
-      let r1 = s[54 +: 8] in
-      let r2 = s[46 +: 8] in
-      let r3 = s[38 +: 8] in
-      let pc = s[32 +: 6] in
-      let outputs = s[0 +: 15] in
-      r0 # r1 # r2 # r3 # pc # i # outputs
+$LL.L.s130 : ([70], [15]) -> [88]
+$LL.L.s130 s0 $a =
+      $L.o126 $a s0
 
-Main.putAddrOut : ([6], [70]) -> [70]
-Main.putAddrOut a sigma0 =
-      let $t0 = Main.getOut sigma0 in
-      let st0 = $t0[70 +: 15] in
-      let st1 = $t0[0 +: 70] in
-      $LL.Main.putAddrOut a st0 st1
+$L.s104 : ([6], [70], [70]) -> [88]
+$L.s104 a s s0 =
+      $LL.L.s104 a s0 (Main.outputs s)
 
-$LL.Main.getReg1 : ([70], [70]) -> [78]
-$LL.Main.getReg1 x sigma0 =
-      Main.r1 x # sigma0
+$L.Main.putReg156 : ([2], [8], [70]) -> [88]
+$L.Main.putReg156 ds b s0 =
+      if eq ds 2'h0 then $L.arm158 b s0
+            else if eq ds 2'h1 then $L.arm160 b s0 else if eq ds 2'h2 then $L.arm162 b s0 else $L.arm164 b s0
 
-$LL.Main.putOut1 : ([15], [70], [70]) -> [70]
-$LL.Main.putOut1 o s sigma0 =
-      let r0 = s[62 +: 8] in
+$L.s70 : ([70], [70]) -> [88]
+$L.s70 s s0 =
+      $LL.L.s70 s0 (Main.outputs s)
+
+$L.instr6 : ([9], [70]) -> [88]
+$L.instr6 instr s0 =
+      $L.s7 instr s0 s0
+
+$L.o86 : ([15], [70]) -> [88]
+$L.o86 o s0 =
+      o # 3'h2 # s0
+
+$L.o132 : ([8], [15], [70]) -> [88]
+$L.o132 d o s0 =
+      $LL.L.o132 s0 (let weOut = o[14 +: 1] in
+      let addrOut = o[8 +: 6] in
+      $LL.L.o2321 (weOut # addrOut # d))
+
+$L.x172 : ([2], [8], [70], [70]) -> [88]
+$L.x172 rd a x s0 =
+      $LL.L.x172 rd a s0 (Main.r3 x)
+
+$LL.L.v185 : ([6], [70], [1]) -> [88]
+$LL.L.v185 a s0 $a =
+      if eq $a 1'h0 then $L.Main.putPC38 a s0
+            else $L.Main.getPC40 s0
+
+$L.s74 : ([15], [70], [70]) -> [88]
+$L.s74 o s s0 =
+      $L.Main.getOut69 (let r0 = s[62 +: 8] in
       let r1 = s[54 +: 8] in
       let r2 = s[46 +: 8] in
       let r3 = s[38 +: 8] in
       let pc = s[32 +: 6] in
       let inputs = s[15 +: 17] in
-      r0 # r1 # r2 # r3 # pc # inputs # o
+      $LL.L.s89 (r0 # r1 # r2 # r3 # pc # inputs # o))
 
-$LL.Main.putIns : ([17], [70], [70]) -> [70]
-$LL.Main.putIns $x $x1 sigma0 =
-      $LL.Main.putIns1 $x $x1 sigma0
+$L.s62 : ([70], [70]) -> [88]
+$L.s62 s s0 =
+      $LL.L.s62 s0 (Main.outputs s)
 
-$LL.Main.getIns : ([70], [70]) -> [87]
-$LL.Main.getIns s sigma0 =
-      Main.inputs s # sigma0
+$L.s157 : ([8], [70], [70]) -> [88]
+$L.s157 b s s0 =
+      $L.Main.getPC40 (let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let inputs = s[15 +: 17] in
+      let outputs = s[0 +: 15] in
+      $LL.L.s89 (b # r1 # r2 # r3 # pc # inputs # outputs))
 
-$LL.Main.loop5 : ([9], [70], [70]) -> [89]
-$LL.Main.loop5 instr s sto0 =
-      if eq instr[6 +: 3] 3'h0 then (let $t13 = (let $t12 = Main.incrPC sto0 in
-            19'h10000 # $t12) in
-            let s0 = $t13[0 +: 70] in
-            $LL.Main.loop12 s0)
-            else if eq instr[6 +: 3] 3'h1 then (let a = instr[0 +: 6] in
-            let $t11 = (let $t10 = (let $t9 = Main.putAddrOut a sto0 in
-            $LL.Main.finishInstr $t9) in
-            19'h10000 # $t10) in
-            let s0 = $t11[0 +: 70] in
-            $LL.Main.loop22 s0) else if eq instr[6 +: 3] 3'h2 then (let a = instr[0 +: 6] in
-            let $t8 = (let $t7 = (let $t6 = Main.getReg$s1 sto0 in
-            let st0 = $t6[70 +: 8] in
-            let st1 = $t6[0 +: 70] in
-            $LL.Main.loop9 a st0 st1) in
-            19'h10000 # $t7) in
-            let s0 = $t8[0 +: 70] in
-            $LL.Main.loop21 s0) else if eq instr[6 +: 3] 3'h3 then (let rd = instr[4 +: 2] in
-            let r1 = instr[2 +: 2] in
-            let r2 = instr[0 +: 2] in
-            let $t5 = (let $t4 = (let $t3 = Main.getReg r1 sto0 in
-            let st0 = $t3[70 +: 8] in
-            let st1 = $t3[0 +: 70] in
-            $LL.Main.loop8 rd r2 st0 st1) in
-            19'h10000 # $t4) in
-            let s0 = $t5[0 +: 70] in
-            $LL.Main.loop12 s0) else let a = instr[0 +: 6] in
-            let $t2 = (let $t1 = (let $t0 = Main.getReg$s1 sto0 in
-            let st0 = $t0[70 +: 8] in
-            let st1 = $t0[0 +: 70] in
-            $LL.Main.loop17 a st0 st1) in
-            19'h10000 # $t1) in
-            let s0 = $t2[0 +: 70] in
-            $LL.Main.loop12 s0
+$LL.L.s121 : ([70], [15]) -> [88]
+$LL.L.s121 s0 $a =
+      $L.o116 $a s0
 
-$LL.Main.putOut : ([15], [70], [70]) -> [70]
-$LL.Main.putOut $x $x1 sigma0 =
-      $LL.Main.putOut1 $x $x1 sigma0
+$L.Main.getPC40 : ([70]) -> [88]
+$L.Main.getPC40 s0 =
+      $L.s41 s0 s0
 
-Main.incrPC : ([70]) -> [70]
-Main.incrPC sigma0 =
-      let $t0 = Main.getPC sigma0 in
-      let st0 = $t0[70 +: 6] in
-      let st1 = $t0[0 +: 70] in
-      $LL.Main.incrPC st0 st1
+$L.x170 : ([2], [8], [70], [70]) -> [88]
+$L.x170 rd a x s0 =
+      $LL.L.x170 s0 a rd (Main.r2 x)
 
-Main.getInstr : ([70]) -> [79]
-Main.getInstr sigma0 =
-      let $t0 = Main.getIns sigma0 in
-      let st0 = $t0[70 +: 17] in
-      let st1 = $t0[0 +: 70] in
-      $LL.Main.getInstr st0 st1
+$L.Main.putPC81 : ([6], [70]) -> [88]
+$L.Main.putPC81 a s0 =
+      $L.s82 a s0 s0
 
-$LL.Main.loop4 : ([9], [70], [70]) -> [89]
-$LL.Main.loop4 $x $x1 sto0 =
-      $LL.Main.loop5 $x $x1 sto0
+$L.s25 : ([15], [70], [70]) -> [88]
+$L.s25 o s s0 =
+      $L.Main.getOut18 (let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let inputs = s[15 +: 17] in
+      $LL.L.s89 (r0 # r1 # r2 # r3 # pc # inputs # o))
 
-$LL.Main.st1 : ([8], [70]) -> [70]
-$LL.Main.st1 $x sigma0 =
-      $LL.Main.st $x sigma0
+$L.arm167 : ([2], [8], [70]) -> [88]
+$L.arm167 rd a s0 =
+      $L.x166 rd a s0 s0
+
+$L.x166 : ([2], [8], [70], [70]) -> [88]
+$L.x166 rd a x s0 =
+      $LL.L.x172 rd a s0 (Main.r0 x)
 
 Main.instrIn : ([17]) -> [9]
 Main.instrIn ds =
       let ds1 = ds[8 +: 9] in
       ds1
 
-$LL.Main.nand : ([70]) -> [70]
-$LL.Main.nand sigma0 =
-      Main.incrPC sigma0
+$L.s33 : ([6], [70], [70]) -> [88]
+$L.s33 a s s0 =
+      $LL.L.s33 a s0 (Main.outputs s)
 
-$LL.Main.finishInstr : ([70]) -> [70]
-$LL.Main.finishInstr sigma0 =
-      Main.putWeOut$s1 sigma0
+$L.o94 : ([15], [70]) -> [88]
+$L.o94 o s0 =
+      $LL.L.o94 s0 (let addrOut = o[8 +: 6] in
+      let dataOut = o[0 +: 8] in
+      $LL.L.o2321 (1'h0 # addrOut # dataOut))
 
-$LL.Main.getReg : ([2], [70]) -> [78]
-$LL.Main.getReg wild sigma0 =
-      if eq wild 2'h0 then $LL.Main.getReg3 sigma0 sigma0
-            else if eq wild 2'h1 then $LL.Main.getReg1 sigma0 sigma0 else if eq wild 2'h2 then $LL.Main.getReg2 sigma0 sigma0 else $LL.Main.getReg4 sigma0 sigma0
+$L.s142 : ([6], [8], [70], [70]) -> [88]
+$L.s142 a d s s0 =
+      $LL.L.s142 a s0 d (Main.outputs s)
 
-$LL.Main.putDataOut : ([8], [15], [70]) -> [70]
-$LL.Main.putDataOut d o sigma0 =
-      Main.putOut (let weOut = o[14 +: 1] in
-      let addrOut = o[8 +: 6] in
-      weOut # addrOut # d) sigma0
+$L.arm182 : ([2], [2], [70]) -> [88]
+$L.arm182 rd rb s0 =
+      $L.x181 rd rb s0 s0
 
-$LL.Main.getPC : ([70], [70]) -> [76]
-$LL.Main.getPC s sigma0 =
-      Main.pc s # sigma0
+$L.s136 : ([8], [70], [70]) -> [88]
+$L.s136 d s s0 =
+      $LL.L.s136 d s0 (Main.outputs s)
 
-$LL.Main.loop3 : ([15], [70]) -> [89]
-$LL.Main.loop3 rabind sto0 =
-      1'h1 # rabind # 3'h0 # sto0
+$LL.L.i51 : ([70], [8]) -> [88]
+$LL.L.i51 s0 $a =
+      $L.Main.putReg$s148 $a s0
 
-$LL.Main.loop2 : ([17], [70]) -> [89]
-$LL.Main.loop2 rabind sto0 =
-      let $t1 = (let $t0 = Main.putIns rabind sto0 in
-      19'h10000 # $t0) in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop16 s0
+$L.Main.getOut120 : ([70]) -> [88]
+$L.Main.getOut120 s0 =
+      $L.s121 s0 s0
 
-Main.getPC : ([70]) -> [76]
-Main.getPC sigma0 =
-      $LL.Main.getPC sigma0 sigma0
+$L.o66 : ([15], [70]) -> [88]
+$L.o66 o s0 =
+      $LL.L.o661 s0 (let addrOut = o[8 +: 6] in
+      let dataOut = o[0 +: 8] in
+      $LL.L.o2321 (1'h0 # addrOut # dataOut))
 
-$LL.Main.loop1 : ([70]) -> [89]
-$LL.Main.loop1 sto0 =
-      let $t2 = (let $t1 = (let $t0 = Main.getPC sto0 in
-      let st0 = $t0[70 +: 6] in
-      let st1 = $t0[0 +: 70] in
-      $LL.Main.finishInstr1 st0 st1) in
-      19'h10000 # $t1) in
-      let s0 = $t2[0 +: 70] in
-      $LL.Main.loop18 s0
+$L.s128 : ([15], [70], [70]) -> [88]
+$L.s128 o s s0 =
+      $L.Main.getOut120 (let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let inputs = s[15 +: 17] in
+      $LL.L.s89 (r0 # r1 # r2 # r3 # pc # inputs # o))
+
+$L.s140 : ([15], [8], [70], [70]) -> [88]
+$L.s140 o d s s0 =
+      $L.Main.getOut135 d (let r0 = s[62 +: 8] in
+      let r1 = s[54 +: 8] in
+      let r2 = s[46 +: 8] in
+      let r3 = s[38 +: 8] in
+      let pc = s[32 +: 6] in
+      let inputs = s[15 +: 17] in
+      $LL.L.s89 (r0 # r1 # r2 # r3 # pc # inputs # o))
+
+$L.Main.getOut32 : ([6], [70]) -> [88]
+$L.Main.getOut32 a s0 =
+      $L.s33 a s0 s0
+
+$L.s197 : ([70], [70]) -> [88]
+$L.s197 s s0 =
+      $LL.L.s197 s0 (Main.inputs s)
+
+$LL.L.o1001 : ([70], [15]) -> [88]
+$LL.L.o1001 s0 $a =
+      $L.Main.putOut101 $a s0
+
+$L.arm171 : ([2], [8], [70]) -> [88]
+$L.arm171 rd a s0 =
+      $L.x170 rd a s0 s0
+
+$L.x175 : ([2], [2], [70], [70]) -> [88]
+$L.x175 rd rb x s0 =
+      $LL.L.x177 rb rd s0 (Main.r0 x)
+
+$LL.L.s84 : ([70], [6]) -> [88]
+$LL.L.s84 s0 $a =
+      $L.Main.putPC81 (add $a 6'h1) s0
+
+$LL.L.o23 : ([70], [15]) -> [88]
+$LL.L.o23 s0 $a =
+      $L.Main.putOut24 $a s0
+
+$L.Main.putOut73 : ([15], [70]) -> [88]
+$L.Main.putOut73 o s0 =
+      $L.s74 o s0 s0
+
+$L.Main.getOut103 : ([6], [70]) -> [88]
+$L.Main.getOut103 a s0 =
+      $L.s104 a s0 s0
+
+$L.x177 : ([2], [2], [70], [70]) -> [88]
+$L.x177 rd rb x s0 =
+      $LL.L.x177 rb rd s0 (Main.r1 x)
 
 Main.outputs : ([70]) -> [15]
 Main.outputs ds =
       let ds7 = ds[0 +: 15] in
       ds7
 
-$LL.Main.st : ([8], [70]) -> [70]
-$LL.Main.st d sigma0 =
-      let $t0 = Main.putDataOut d sigma0 in
-      $LL.Main.st2 $t0
+$LL.L.o132 : ([70], [15]) -> [88]
+$LL.L.o132 s0 $a =
+      $L.Main.putOut133 $a s0
 
-$LL.Main.loop : ([70]) -> [89]
-$LL.Main.loop sto0 =
-      let $t1 = (let $t0 = Main.incrPC sto0 in
-      19'h10000 # $t0) in
-      let s0 = $t1[0 +: 70] in
-      $LL.Main.loop1 s0
+$L.o116 : ([15], [70]) -> [88]
+$L.o116 o s0 =
+      o # 3'h3 # s0
 
-Main.putOut : ([15], [70]) -> [70]
-Main.putOut o sigma0 =
-      $LL.Main.putOut o sigma0 sigma0
+$L.Main.getIns196 : ([70]) -> [88]
+$L.Main.getIns196 s0 =
+      $L.s197 s0 s0
+
+$L.Main.getReg165 : ([2], [8], [2], [70]) -> [88]
+$L.Main.getReg165 rd a ds s0 =
+      if eq ds 2'h0 then $L.arm167 rd a s0
+            else if eq ds 2'h1 then $L.arm169 rd a s0 else if eq ds 2'h2 then $L.arm171 rd a s0 else $L.arm173 rd a s0
+
+$LL.L.x193 : ([6], [70], [8]) -> [88]
+$LL.L.x193 a s0 $a =
+      $L.v185 a $a s0
+
+$LL.L.s78 : ([70], [6]) -> [88]
+$LL.L.s78 s0 $a =
+      $L.Main.getOut75 $a s0
 
 device top_level
       input __in0 : [17]
       output __out0 : [15]
-      register __resumption_tag : [3] init 3'h1
+      register __resumption_tag : [3] init 3'h4
       register __st0 : [70] init 70'h0
       let $res = $Pure.dispatch (__resumption_tag # __st0) __in0
       __out0 := $res[73 +: 15]

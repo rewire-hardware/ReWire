@@ -1,37 +1,44 @@
 $Pure.dispatch : ([9], [8]) -> [17]
 $Pure.dispatch disc i =
-      if eq disc[8 +: 1] 1'h1 then (let s0 = disc[0 +: 8] in
-            $LL.Main.reset1 i s0)
-            else let s0 = disc[0 +: 8] in
-            $LL.Main.loop2 i s0
+      if eq disc[8 +: 1] 1'h0 then (let s = disc[0 +: 8] in
+            $L.ds8 i s)
+            else let s = disc[0 +: 8] in
+            $L.i11 i s
 
-$LL.Main.loop3 : ([1]) -> [1]
-$LL.Main.loop3 s =
+$L.Main.loop4 : ([8]) -> [17]
+$L.Main.loop4 s0 =
+      $L.i5 s0 s0
+
+$LL.L.i52 : ([1]) -> [1]
+$LL.L.i52 s =
       if eq s 1'h1 then 1'h0
             else 1'h1
 
-$LL.Main.loop2 : ([8], [8]) -> [17]
-$LL.Main.loop2 rabind sto0 =
-      $LL.Main.loop1 sto0
+$L.i11 : ([8], [8]) -> [17]
+$L.i11 i s0 =
+      $L.Main.loop4 i
 
-$LL.Main.loop1 : ([8]) -> [17]
-$LL.Main.loop1 sto0 =
-      Main.loop sto0
+$LL.L.i51 : ([8], [1]) -> [17]
+$LL.L.i51 s0 $a =
+      if eq $a 1'h0 then $L.Main.incr7 s0
+            else $L.Main.incr7 s0
 
-Main.loop : ([8]) -> [17]
-Main.loop sto0 =
-      $LL.Main.loop sto0 sto0
+$L.i5 : ([8], [8]) -> [17]
+$L.i5 i s0 =
+      $LL.L.i5 s0 (let $t0 = trunc 1 i in
+      $t0)
 
-$LL.Main.reset1 : ([8], [8]) -> [17]
-$LL.Main.reset1 rabind sto0 =
-      $LL.Main.loop1 rabind
+$L.Main.incr7 : ([8]) -> [17]
+$L.Main.incr7 s0 =
+      9'h4 # s0
 
-$LL.Main.loop : ([8], [8]) -> [17]
-$LL.Main.loop i sto0 =
-      let $t1 = $LL.Main.loop3 (let $t0 = trunc 1 i in
-      $t0) in
-      if eq $t1 1'h0 then 9'h4 # sto0
-            else 9'h4 # sto0
+$LL.L.i5 : ([8], [1]) -> [17]
+$LL.L.i5 s0 $a =
+      $LL.L.i51 s0 ($LL.L.i52 $a)
+
+$L.ds8 : ([8], [8]) -> [17]
+$L.ds8 ds $x =
+      $L.Main.loop4 $x
 
 device top_level
       input __in0 : [8]

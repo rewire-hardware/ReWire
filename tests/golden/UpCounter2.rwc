@@ -1,19 +1,23 @@
 $Pure.dispatch : ([8], [1]) -> [16]
 $Pure.dispatch disc i =
-      $LL.Main.go4 i disc
+      $L.b2 i disc
 
-$LL.Main.go4 : ([1], [8]) -> [16]
-$LL.Main.go4 b sto0 =
-      if eq b 1'h0 then $LL.Main.go1 sto0 sto0
-            else $LL.Main.go sto0 sto0
+$L.$x8 : ([8], [8]) -> [16]
+$L.$x8 $x s0 =
+      $x # s0
 
-$LL.Main.go3 : ([8]) -> [16]
-$LL.Main.go3 sto0 =
-      Main.go sto0
+$L.b2 : ([1], [8]) -> [16]
+$L.b2 b s0 =
+      if eq b 1'h0 then $L.arm5 s0
+            else $L.arm7 s0
 
-$LL.Main.go2 : ([8], [8]) -> [16]
-$LL.Main.go2 rabind sto0 =
-      rabind # sto0
+$L.Main.go1 : ([8]) -> [16]
+$L.Main.go1 s0 =
+      $L.$x8 s0 s0
+
+$L.n6 : ([8], [8]) -> [16]
+$L.n6 n s0 =
+      $L.Main.go1 (Main.rolW8 n)
 
 Main.rolW8 : ([8]) -> [8]
 Main.rolW8 n =
@@ -23,21 +27,21 @@ Main.incW8 : ([8]) -> [8]
 Main.incW8 n =
       add n 8'h1
 
-$LL.Main.go1 : ([8], [8]) -> [16]
-$LL.Main.go1 rabind sto0 =
-      $LL.Main.go3 (Main.incW8 rabind)
+$L.arm5 : ([8]) -> [16]
+$L.arm5 s0 =
+      $L.n4 s0 s0
+
+$L.arm7 : ([8]) -> [16]
+$L.arm7 s0 =
+      $L.n6 s0 s0
+
+$L.n4 : ([8], [8]) -> [16]
+$L.n4 n s0 =
+      $L.Main.go1 (Main.incW8 n)
 
 Main.msbitW8 : ([8]) -> [8]
 Main.msbitW8 n =
       zext 8 n[7 +: 1]
-
-$LL.Main.go : ([8], [8]) -> [16]
-$LL.Main.go rabind sto0 =
-      $LL.Main.go3 (Main.rolW8 rabind)
-
-Main.go : ([8]) -> [16]
-Main.go sto0 =
-      $LL.Main.go2 sto0 sto0
 
 device top_level
       input __in0 : [1]

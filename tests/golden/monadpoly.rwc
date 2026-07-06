@@ -1,66 +1,45 @@
-$Pure.dispatch : ([1], [1]) -> [3]
+$Pure.dispatch : ([1], [1]) -> [2]
 $Pure.dispatch disc i =
-      $LL.Main.dev i disc
+      $L.b5 i disc
 
-Main.whenB$1$s1 : ([1], [1]) -> [1]
-Main.whenB$1$s1 $x sigma0 =
-      $LL.Main.whenB$1$s1 $x sigma0
+$L.Main.whenB$2$s17 : ([1], [1]) -> [2]
+$L.Main.whenB$2$s17 b s0 =
+      if eq b 1'h0 then $L.Main.dev1 s0
+            else $L._unused9 s0
 
-$LL.Main.dev7 : ([1], [1]) -> [3]
-$LL.Main.dev7 s sto0 =
-      let $t1 = (let $t0 = $LL.Main.dev2 s sto0 in
-      2'h0 # $t0) in
-      let s0 = $t1[0 +: 1] in
-      $LL.Main.dev4 s s0
+$L.b5 : ([1], [1]) -> [2]
+$L.b5 $x $x1 =
+      $L.Main.whenB$2$s17 $x $x1
 
-Main.dev : ([1]) -> [3]
-Main.dev sto0 =
-      $LL.Main.dev5 sto0 sto0
+$L.Main.dev1 : ([1]) -> [2]
+$L.Main.dev1 s0 =
+      $L.Main.whenB$1$s111 s0 s0 s0
 
-$LL.Main.dev6 : ([1], [1]) -> [3]
-$LL.Main.dev6 $x sto0 =
-      $LL.Main.dev7 $x sto0
+$L._unused3 : ([1], [1]) -> [2]
+$L._unused3 s s0 =
+      if eq s 1'h0 then $L.arm10 s s0
+            else $L._unused4 s s0
 
-$LL.Main.dev5 : ([1], [1]) -> [3]
-$LL.Main.dev5 s sto0 =
-      let $t1 = (let $t0 = Main.whenB$1$s1 s sto0 in
-      2'h0 # $t0) in
-      let s0 = $t1[0 +: 1] in
-      $LL.Main.dev6 s s0
+$L.Main.whenB$1$s111 : ([1], [1], [1]) -> [2]
+$L.Main.whenB$1$s111 s b s0 =
+      if eq b 1'h0 then $L._unused3 s s0
+            else $L.arm12 s s0
 
-$LL.Main.dev4 : ([1], [1]) -> [3]
-$LL.Main.dev4 $x sto0 =
-      $LL.Main.dev1 $x sto0
+$L._unused9 : ([1]) -> [2]
+$L._unused9 s0 =
+      2'h2
 
-Main.thenB$1$s1 : ([1]) -> [1]
-Main.thenB$1$s1 sigma0 =
-      1'h1
+$L.arm12 : ([1], [1]) -> [2]
+$L.arm12 s s0 =
+      $L._unused3 s 1'h0
 
-$LL.Main.dev3 : ([1]) -> [3]
-$LL.Main.dev3 sto0 =
-      Main.dev sto0
+$L.arm10 : ([1], [1]) -> [2]
+$L.arm10 s s0 =
+      $L._unused4 s 1'h1
 
-$LL.Main.dev2 : ([1], [1]) -> [1]
-$LL.Main.dev2 wild sigma0 =
-      if eq wild 1'h0 then 1'h1
-            else sigma0
-
-$LL.Main.dev1 : ([1], [1]) -> [3]
-$LL.Main.dev1 s sto0 =
-      1'h1 # s # sto0
-
-$LL.Main.dev : ([1], [1]) -> [3]
-$LL.Main.dev b sto0 =
-      if eq b 1'h0 then $LL.Main.dev3 sto0
-            else let $t1 = (let $t0 = Main.thenB$1$s1 sto0 in
-            2'h0 # $t0) in
-            let s0 = $t1[0 +: 1] in
-            $LL.Main.dev3 s0
-
-$LL.Main.whenB$1$s1 : ([1], [1]) -> [1]
-$LL.Main.whenB$1$s1 wild sigma0 =
-      if eq wild 1'h0 then sigma0
-            else 1'h0
+$L._unused4 : ([1], [1]) -> [2]
+$L._unused4 s s0 =
+      s # s0
 
 device top_level
       input __in0 : [1]

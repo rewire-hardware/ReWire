@@ -1,43 +1,41 @@
-$Pure.dispatch : ([1], [1]) -> [4]
+$Pure.dispatch : ([1], [1]) -> [2]
 $Pure.dispatch disc i =
-      ReWire.Monad.iterSt$1$s2 i disc
+      $L.$x9 i disc
 
-$LL.ReWire.Monad.iterSt$1$s13 : ([1], [1]) -> [4]
-$LL.ReWire.Monad.iterSt$1$s13 $x sto0 =
-      $LL.ReWire.Monad.iterSt$1$s12 $x sto0
+$LL.L.x11 : ([1], [2]) -> [2]
+$LL.L.x11 s0 $a =
+      $L.ds7 $a s0
 
-$LL.ReWire.Monad.iterSt$1$s12 : ([1], [1]) -> [4]
-$LL.ReWire.Monad.iterSt$1$s12 o sto0 =
-      2'h2 # o # sto0
-
-$LL.ReWire.Monad.iterSt$1$s11 : ([2], [1]) -> [4]
-$LL.ReWire.Monad.iterSt$1$s11 ds sto0 =
+$L.ds7 : ([2], [1]) -> [2]
+$L.ds7 ds s0 =
       let o = ds[1 +: 1] in
       let s = ds[0 +: 1] in
-      $LL.ReWire.Monad.iterSt$1$s13 o s
+      $L.arm10 o s s0
 
-ReWire.Monad.iterSt$1$s2 : ([1], [1]) -> [4]
-ReWire.Monad.iterSt$1$s2 i sto0 =
-      let $t1 = (let $t0 = $LL.ReWire.Monad.iterSt$1$s2 i sto0 sto0 in
-      let v = $t0[1 +: 2] in
-      let s0 = $t0[0 +: 1] in
-      1'h0 # v # s0) in
-      let v = $t1[1 +: 2] in
-      let s0 = $t1[0 +: 1] in
-      $LL.ReWire.Monad.iterSt$1$s11 v s0
+$L.x11 : ([1], [1], [1]) -> [2]
+$L.x11 i x s0 =
+      $LL.L.x11 s0 (Main.f i x)
 
-$LL.ReWire.Monad.iterSt$1$s21 : ([1], [1], [1]) -> [3]
-$LL.ReWire.Monad.iterSt$1$s21 i x sigma0 =
-      Main.f i x # sigma0
+$L.ReWire.Monad.iterSt$1$s26 : ([1], [1]) -> [2]
+$L.ReWire.Monad.iterSt$1$s26 i s0 =
+      $L.x11 i s0 s0
 
 Main.f : ([1], [1]) -> [2]
 Main.f i s =
       (let $t1 = xor s i in
       $t1) # s
 
-$LL.ReWire.Monad.iterSt$1$s2 : ([1], [1], [1]) -> [3]
-$LL.ReWire.Monad.iterSt$1$s2 $x $x1 sigma0 =
-      $LL.ReWire.Monad.iterSt$1$s21 $x $x1 sigma0
+$L.$x9 : ([1], [1]) -> [2]
+$L.$x9 $x $x1 =
+      $L.ReWire.Monad.iterSt$1$s26 $x $x1
+
+$L._unused8 : ([1], [1]) -> [2]
+$L._unused8 o s0 =
+      o # s0
+
+$L.arm10 : ([1], [1], [1]) -> [2]
+$L.arm10 o s s0 =
+      $L._unused8 o s
 
 device top_level
       input __in0 : [1]

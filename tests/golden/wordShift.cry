@@ -18,31 +18,39 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [8] -> [8]
-rw__Pure_dispatch x0 = rw_Main_loop x0
+rw__Pure_dispatch x0 = rw__L__x4 x0
 
-// $LL.Main.loop
-rw__LL_Main_loop : [8] -> [8]
-rw__LL_Main_loop x0 = x0
+// $LL.Main.myArithRotr$s1
+rw__LL_Main_myArithRotr_s1 : [8] -> [8] -> [8]
+rw__LL_Main_myArithRotr_s1 x0 x1 = (x0 << (0x08 - x1)) || (x0 >>$ x1)
 
-// $LL.Main.myRotr
-rw__LL_Main_myRotr : [8] -> [8] -> [8]
-rw__LL_Main_myRotr x0 x1 = (x0 << (0x08 - x1)) || (x0 >> x1)
+// $L.Main.loop3
+rw__L_Main_loop3 : [8] -> [8]
+rw__L_Main_loop3 x0 = rw__LL_L_Main_loop3 (rw_Main_myRotr_s1 x0)
 
-// Main.loop
-rw_Main_loop : [8] -> [8]
-rw_Main_loop x0 = rw__LL_Main_loop (rw_Main_myArithRotr_s1 (rw_Main_myRotr_s1 x0))
+// $LL.Main.myRotr$s1
+rw__LL_Main_myRotr_s1 : [8] -> [8] -> [8]
+rw__LL_Main_myRotr_s1 x0 x1 = (x0 << (0x08 - x1)) || (x0 >> x1)
 
-// $LL.Main.myArithRotr
-rw__LL_Main_myArithRotr : [8] -> [8] -> [8]
-rw__LL_Main_myArithRotr x0 x1 = (x0 << (0x08 - x1)) || (x0 >>$ x1)
+// $L.$x5
+rw__L__x5 : [8] -> [8]
+rw__L__x5 x0 = x0
+
+// $LL.L.Main.loop3
+rw__LL_L_Main_loop3 : [8] -> [8]
+rw__LL_L_Main_loop3 x0 = rw__L__x5 (rw_Main_myArithRotr_s1 x0)
 
 // Main.myRotr$s1
 rw_Main_myRotr_s1 : [8] -> [8]
-rw_Main_myRotr_s1 x0 = rw__LL_Main_myRotr x0 0x03
+rw_Main_myRotr_s1 x0 = rw__LL_Main_myRotr_s1 x0 0x03
 
 // Main.myArithRotr$s1
 rw_Main_myArithRotr_s1 : [8] -> [8]
-rw_Main_myArithRotr_s1 x0 = rw__LL_Main_myArithRotr x0 0x05
+rw_Main_myArithRotr_s1 x0 = rw__LL_Main_myArithRotr_s1 x0 0x05
+
+// $L.$x4
+rw__L__x4 : [8] -> [8]
+rw__L__x4 x0 = rw__L_Main_loop3 x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [8]

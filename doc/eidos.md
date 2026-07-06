@@ -26,9 +26,10 @@ and static rules are in force:
   restriction of P (§6) and produces M; the translation to Hyle is a fold
   over M.
 
-  *Status:* the M level is normative for the `procify` pass and is
-  implemented in a later stage of the Eidos migration than the P level; its
-  productions are reserved in the concrete syntax from day one.
+  *Status:* the M level is normative for the `procify` pass and is the
+  compiler's sole purification route (the predecessor's monad-transformer
+  elimination is deleted); the remaining migration stages replace the
+  retained Crust tail with a direct M → Hyle fold.
 
 ## 1. Design goals
 
@@ -327,10 +328,8 @@ case or call is named like any other computation.
 
 ## 7. Eidos-M: the process calculus
 
-*Normative target of the `procify` pass; implemented in a later migration
-stage. This section fixes the grammar, static rules, and machine-step
-contract so that everything upstream (naming, `.eir`, lint modes) is
-forward-compatible.*
+*Normative target of the `procify` pass. This section fixes the grammar,
+static rules, and machine-step contract.*
 
 ### 7.1 Processes
 
@@ -591,9 +590,9 @@ one removable lint rule instead of an axiom of the unifier.
 | extern neutering | `ReWire.Eidos.Externs` |
 | minted-name conventions | `ReWire.Eidos.Naming` |
 | the bridge (GHC Core → P) | `ReWire.GHC.ToEidos` |
-| the retained-pipeline shim (P → Crust; dies with stage 2) | `ReWire.Eidos.ToCrust` |
+| the retained-tail lowering (P/M → Crust; dies with the T stages) | `ReWire.Eidos.ToCrust` (expressions/types), `ReWire.Eidos.ToCrustM` (the machine-step contract, §7.3) |
 | §9 (`.eir`, both levels) | `ReWire.Eidos.Pretty`, `ReWire.Eidos.Parse` |
 | §7.1 (proc syntax) | `ReWire.Eidos.Syntax` |
 | §7.4 (machine rules, lint machine mode) | `ReWire.Eidos.Lint` |
-| §6 (ANF) | the P→M lowering (later stage) |
-| §7.3 (procify, machine fold) | `procify` and successors (later stage) |
+| §6 (ANF, reactive fragment) | `ReWire.Eidos.ANF` |
+| §7.3 (procify) | `ReWire.Eidos.Procify`; cleanups in `ReWire.Eidos.ProcOpt` |

@@ -1,53 +1,45 @@
 $Pure.dispatch : ([16], [1]) -> [24]
 $Pure.dispatch disc i =
-      let s0 = disc[8 +: 8] in
+      let s = disc[8 +: 8] in
       let s1 = disc[0 +: 8] in
-      $LL.Main.sig1 i s0 s1
+      $L.i3 i s s1
 
-$LL.Main.incr5 : ([8], [8], [8]) -> [24]
-$LL.Main.incr5 r0 sto0 sto1 =
-      $LL.Main.incr2 r0 sto1 sto0 sto1
+$LL.L.r16 : ([8], [8], [8], [8]) -> [24]
+$LL.L.r16 r0 s1 r1 s' =
+      $L._unused7 r0 r1 s' s1
+
+$L.i3 : ([1], [8], [8]) -> [24]
+$L.i3 i s0 s1 =
+      if eq i 1'h0 then $L.Main.sig1 s0 s1
+            else $L.Main.incr4 s0 s1
+
+$L.r16 : ([8], [8], [8], [8]) -> [24]
+$L.r16 r0 r1 s0 s1 =
+      $LL.L.r16 r0 s1 r1 r1
+
+$L.Main.incr4 : ([8], [8]) -> [24]
+$L.Main.incr4 s0 $x =
+      $L.r05 s0 s0 $x
 
 Main.plusW8 : ([8], [8]) -> [8]
 Main.plusW8 $x $x1 =
       add $x $x1
 
-Main.incr : ([8], [8]) -> [24]
-Main.incr sto0 sto1 =
-      $LL.Main.incr5 sto0 sto0 sto1
+$L.r02 : ([8], [8], [8]) -> [24]
+$L.r02 r0 s0 s1 =
+      r0 # s0 # s1
 
-$LL.Main.sig1 : ([1], [8], [8]) -> [24]
-$LL.Main.sig1 wild sto0 sto1 =
-      if eq wild 1'h0 then Main.sig sto0 sto1
-            else Main.incr sto0 sto1
+$L.Main.sig1 : ([8], [8]) -> [24]
+$L.Main.sig1 s0 $x =
+      $L.r02 s0 s0 $x
 
-$LL.Main.incr4 : ([8], [8], [8], [8]) -> [24]
-$LL.Main.incr4 r1 r0 sto0 sto1 =
-      $LL.Main.incr sto0 (Main.plusW8 r0 r1)
+$L.r05 : ([8], [8], [8]) -> [24]
+$L.r05 r0 s0 s1 =
+      $L.r16 r0 s1 s0 s1
 
-Main.sig : ([8], [8]) -> [24]
-Main.sig sto0 sto1 =
-      $LL.Main.sig sto0 sto0 sto1
-
-$LL.Main.sig : ([8], [8], [8]) -> [24]
-$LL.Main.sig r0 sto0 sto1 =
-      r0 # sto0 # sto1
-
-$LL.Main.incr3 : ([8], [8], [8], [8]) -> [24]
-$LL.Main.incr3 r0 r1 sto0 sto1 =
-      $LL.Main.incr1 r1 r0 r1 sto1
-
-$LL.Main.incr2 : ([8], [8], [8], [8]) -> [24]
-$LL.Main.incr2 $x $x1 sto0 sto1 =
-      $LL.Main.incr3 $x $x1 sto0 sto1
-
-$LL.Main.incr1 : ([8], [8], [8], [8]) -> [24]
-$LL.Main.incr1 $x $x1 sto0 sto1 =
-      $LL.Main.incr4 $x $x1 sto0 sto1
-
-$LL.Main.incr : ([8], [8]) -> [24]
-$LL.Main.incr sto0 sto1 =
-      Main.sig sto0 sto1
+$L._unused7 : ([8], [8], [8], [8]) -> [24]
+$L._unused7 r0 r1 s0 s1 =
+      $L.Main.sig1 s0 (Main.plusW8 r0 r1)
 
 device top_level
       input __in0 : [1]

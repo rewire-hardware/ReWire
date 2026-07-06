@@ -4,14 +4,14 @@ extern mymod
       input x : [16]
       output out : [8]
 
-$LL.Main.loop : ([8]) -> [8]
-$LL.Main.loop rabind =
-      rabind
+$L.$x5 : ([8]) -> [8]
+$L.$x5 $x =
+      $x
 
 device top_level
       input __in0 : [16]
       output __out0 : [8]
       instance $x1 of mymod
       $x1.x := __in0
-      let $res = $LL.Main.loop $x1.out
+      let $res = $L.$x5 $x1.out
       __out0 := $res

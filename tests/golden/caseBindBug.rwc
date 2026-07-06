@@ -1,51 +1,44 @@
-$Pure.dispatch : ([1], [1]) -> [3]
+$Pure.dispatch : ([1], [1]) -> [2]
 $Pure.dispatch disc i =
-      Main.go i disc
+      $L.$x4 i disc
 
-$LL.Main.go5 : ([1], [1]) -> [3]
-$LL.Main.go5 wild sto0 =
-      if eq wild 1'h0 then $LL.Main.go1 sto0 sto0
-            else let $t1 = (let $t0 = $LL.Main.go3 sto0 sto0 in
-            let v = $t0[1 +: 1] in
-            let s0 = $t0[0 +: 1] in
-            1'h0 # v # s0) in
-            let v = $t1[1 +: 1] in
-            let s0 = $t1[0 +: 1] in
-            $LL.Main.go1 v s0
-
-$LL.Main.go4 : ([1], [1]) -> [1]
-$LL.Main.go4 x sigma0 =
-      Main.notb x
-
-$LL.Main.go3 : ([1], [1]) -> [2]
-$LL.Main.go3 rabind sigma0 =
-      let $t0 = $LL.Main.go4 rabind sigma0 in
-      $LL.Main.go $t0
+$L.x14 : ([1], [1]) -> [2]
+$L.x14 x s0 =
+      $L.arm8 (Main.notb x)
 
 $LL.Main.notb : ([1]) -> [1]
 $LL.Main.notb wild =
       if eq wild 1'h0 then 1'h1
             else 1'h0
 
-$LL.Main.go2 : ([1], [1]) -> [3]
-$LL.Main.go2 rabind sto0 =
-      1'h1 # rabind # sto0
+$L.arm8 : ([1]) -> [2]
+$L.arm8 s0 =
+      $L.Main.emit6 s0 s0
 
-$LL.Main.go1 : ([1], [1]) -> [3]
-$LL.Main.go1 rabind sto0 =
-      $LL.Main.go2 rabind rabind
+$L.Main.go3 : ([1], [1]) -> [2]
+$L.Main.go3 ds s0 =
+      if eq ds 1'h0 then $L.arm8 s0
+            else $L.arm15 s0
+
+$L.Main.emit6 : ([1], [1]) -> [2]
+$L.Main.emit6 x s0 =
+      $L._unused7 x x
 
 Main.notb : ([1]) -> [1]
 Main.notb $x =
       $LL.Main.notb $x
 
-$LL.Main.go : ([1]) -> [2]
-$LL.Main.go sigma0 =
-      sigma0 # sigma0
+$L.arm15 : ([1]) -> [2]
+$L.arm15 s0 =
+      $L.x14 s0 s0
 
-Main.go : ([1], [1]) -> [3]
-Main.go ds sto0 =
-      $LL.Main.go5 ds sto0
+$L._unused7 : ([1], [1]) -> [2]
+$L._unused7 x s0 =
+      x # s0
+
+$L.$x4 : ([1], [1]) -> [2]
+$L.$x4 $x $x1 =
+      $L.Main.go3 $x $x1
 
 device top_level
       input __in0 : [1]

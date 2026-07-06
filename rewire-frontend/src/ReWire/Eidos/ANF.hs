@@ -38,12 +38,22 @@ import ReWire.Eidos.Types (typeOf, flattenApp, flattenArrow, hasArrow, reacOrSta
 
 import Control.Monad.State.Strict (StateT, evalStateT, get, put)
 
+-- | Only the reactive fragment normalizes at this stage: procify
+--   consumes the reactive skeleton, and the adapter lowers pure
+--   expressions in any shape. Normalizing the pure fragment here would
+--   feed its (large, partially-evaluated) bodies through the retained
+--   pipeline's let decoding one lifted definition per let — the measured
+--   M2 cliff. The pure fragment's ANF arrives with the machine-level
+--   Hyle translation, which consumes it directly.
 normalize :: forall m. MonadError AstError m => Program -> m Program
 normalize p@(Program datas defns procs top) = evalStateT go $ nextUniq p
       where go :: StateT Uniq m Program
             go = do
-                  defns' <- mapM normDefn defns
+                  defns' <- mapM (\ d -> if reactiveDefn d then normDefn d else pure d) defns
                   pure $ Program datas defns' procs top
+
+            reactiveDefn :: Defn -> Bool
+            reactiveDefn d = reacOrStateT $ sigTy $ idSig $ defnId d
 
 type NM m = StateT Uniq m
 

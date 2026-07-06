@@ -2,7 +2,7 @@
 -- (here: both whens skip when the state is False, so the loop calls itself
 -- without pausing). The register-initial evaluation would diverge on it;
 -- the compiler must reject it instead of hanging.
--- EXPECT-ERROR: evaluate the initial state: definition is recursive (is recursion guarded by signal?)
+-- EXPECT-ERROR: a cycle of gotos crosses no pause (is recursion guarded by signal?)
 import ReWire
 
 {-# INLINE when #-}

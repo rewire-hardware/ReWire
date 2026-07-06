@@ -55,12 +55,12 @@ data-files:
     tests/negative/literal-pattern-unsupported.hs
     tests/negative/missing-import.hs
     tests/negative/negative-vec-size.hs
+    tests/negative/never-pauses-error.hs
+    tests/negative/never-pauses-return.hs
     tests/negative/no-start.hs
     tests/negative/parse-error.hs
     tests/negative/partial-eval-nonterminating-higher-order.hs
     tests/negative/pattern-not-enough-args.hs
-    tests/negative/purify-empty-dispatch.hs
-    tests/negative/purify-unsynthesizable-error.hs
     tests/negative/record-constructor-not-a-record.hs
     tests/negative/record-pattern-not-a-record.hs
     tests/negative/record-update-wildcard.hs

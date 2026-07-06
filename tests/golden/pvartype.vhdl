@@ -208,17 +208,19 @@ port (clk : in std_logic_vector (0 downto 0);
 end entity;
 
 architecture rtl of top_level is
-signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
+component \ZL___unused2\ is
+      port (arg0 : in std_logic_vector (0 downto 0);
+            res : out std_logic_vector (1 downto 0));
+      end component;
+      signal \__st0\ : std_logic_vector (0 downto 0) := std_logic_vector'(B"1");
       signal \__st0_next\ : std_logic_vector (0 downto 0);
-      signal zi0 : std_logic_vector (0 downto 0);
-      signal zi1 : std_logic_vector (2 downto 0);
-      signal zi2 : std_logic_vector (0 downto 0);
-      signal zres : std_logic_vector (2 downto 0);
+      signal \zl__unused2_out\ : std_logic_vector (1 downto 0);
+      signal \zl__unused2_outR1\ : std_logic_vector (1 downto 0);
+      signal zres : std_logic_vector (1 downto 0);
 begin
-zi0 <= rw_cond(rw_eq(\__st0\, std_logic_vector'(B"0")), \__st0\, \__st0\);
-      zi1 <= (std_logic_vector'(B"00") & zi0);
-      zi2 <= zi1(0 downto 0);
-      zres <= (std_logic_vector'(B"10") & zi2);
+inst : \ZL___unused2\ port map (\__st0\, \zl__unused2_out\);
+      \instR1\ : \ZL___unused2\ port map (\__st0\, \zl__unused2_outR1\);
+      zres <= rw_cond(rw_eq(\__st0\, std_logic_vector'(B"0")), \zl__unused2_out\, \zl__unused2_outR1\);
       \__st0_next\ <= zres(0 downto 0);
       \__out0\ <= zres(1 downto 1);
       process (clk, rst)
@@ -229,4 +231,19 @@ zi0 <= rw_cond(rw_eq(\__st0\, std_logic_vector'(B"0")), \__st0\, \__st0\);
                   \__st0\ <= \__st0_next\;
             end if;
       end process;
+end architecture;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.rw_helpers.all;
+entity \ZL___unused2\ is
+port (arg0 : in std_logic_vector (0 downto 0);
+      res : out std_logic_vector (1 downto 0));
+end entity;
+
+architecture rtl of \ZL___unused2\ is
+
+begin
+res <= (std_logic_vector'(B"0") & arg0);
 end architecture;

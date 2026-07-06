@@ -32,7 +32,6 @@ library
   exposed-modules:
       ReWire.Builtins
       ReWire.Crust.PrimBasis
-      ReWire.Crust.Purify
       ReWire.Crust.Syntax
       ReWire.Crust.ToHyle
       ReWire.Crust.Transform

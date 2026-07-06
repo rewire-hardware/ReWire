@@ -18,15 +18,15 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [8] -> [16]
-rw__Pure_dispatch x0 = rw_Main_loop x0
+rw__Pure_dispatch x0 = rw__L__x4 x0
 
-// Main.loop
-rw_Main_loop : [8] -> [16]
-rw_Main_loop x0 = rw__LL_Main_loop ((rw'resize`{16} x0) ^ 0x0001)
+// $L.$x5
+rw__L__x5 : [16] -> [16]
+rw__L__x5 x0 = x0
 
-// $LL.Main.loop
-rw__LL_Main_loop : [16] -> [16]
-rw__LL_Main_loop x0 = x0
+// $L.$x4
+rw__L__x4 : [8] -> [16]
+rw__L__x4 x0 = rw__L__x5 ((rw'resize`{16} x0) ^ 0x0001)
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [16]

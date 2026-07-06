@@ -1,4 +1,4 @@
--- EXPECT-ERROR: Empty dispatch
+-- EXPECT-ERROR: never pauses (no machine to generate)
 {-# LANGUAGE DataKinds #-}
 import ReWire
 import ReWire.Bits

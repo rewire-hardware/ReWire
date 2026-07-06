@@ -1,28 +1,20 @@
 $Pure.dispatch : ([16]) -> [24]
 $Pure.dispatch disc =
-      let store0 = disc[8 +: 8] in
-      let s0 = disc[0 +: 8] in
-      $LL.Main.go3 store0 s0
+      let e = disc[8 +: 8] in
+      let s = disc[0 +: 8] in
+      $L.ds3 e s
 
-$LL.Main.go3 : ([8], [8]) -> [24]
-$LL.Main.go3 $x sto0 =
-      $LL.Main.go2 $x sto0
+$L.n2 : ([8], [8]) -> [24]
+$L.n2 n s0 =
+      n # n # s0
 
-$LL.Main.go2 : ([8], [8]) -> [24]
-$LL.Main.go2 n sto0 =
-      $LL.Main.go1 (add n 8'h1)
+$L.Main.go1 : ([8]) -> [24]
+$L.Main.go1 s0 =
+      $L.n2 s0 s0
 
-$LL.Main.go1 : ([8]) -> [24]
-$LL.Main.go1 sto0 =
-      Main.go sto0
-
-$LL.Main.go : ([8], [8]) -> [24]
-$LL.Main.go n sto0 =
-      n # n # sto0
-
-Main.go : ([8]) -> [24]
-Main.go sto0 =
-      $LL.Main.go sto0 sto0
+$L.ds3 : ([8], [8]) -> [24]
+$L.ds3 n s0 =
+      $L.Main.go1 (add n 8'h1)
 
 device top_level
       output __out0 : [8]

@@ -8,19 +8,17 @@ module ReWire.ModCache
       , LoadPath
       ) where
 
-import ReWire.Annotation (unAnn)
+import ReWire.Annotation (noAnn, unAnn)
 import ReWire.Config (Config, typecheck)
 import ReWire.Eidos.Pretty (prettyProgram)
-import ReWire.Eidos.ToCrust (eidosToCrust)
 import ReWire.Eidos.ToCrustM (eidosToCrustM)
 import ReWire.GHC.Session (loadCore)
 import ReWire.GHC.ToEidos (toEidos)
-import ReWire.Crust.Purify (purify)
 import ReWire.Crust.Syntax (FreeProgram, Defn (..), Exp, Ty, Kind, DataConId, TyConId, Program (Program), prettyFP)
 import ReWire.Crust.ToHyle (toHyle)
-import ReWire.Crust.Transform (liftLambdas, etaAbsDefs, shiftLambdas, neuterExterns, normalizeBind, purge, purgeAll, mergeEquivDefns, inlineExtrudes, reduce)
+import ReWire.Crust.Transform (liftLambdas, etaAbsDefs, shiftLambdas, neuterExterns, purgeAll, reduce)
 import ReWire.Crust.TypeCheck (typeCheck, untype)
-import ReWire.Error (AstError, MonadError, Warning (..), warnAt)
+import ReWire.Error (AstError, MonadError, Warning (..), failAt, warnAt)
 import ReWire.Pass (runPasses, printHeader, verb')
 import ReWire.Pretty (prettyPrint, prettyPrint', showt)
 import ReWire.Unbound (fv, trec, runFreshMT, FreshMT, Name, Fresh, s2n)
@@ -89,39 +87,29 @@ getDevice conf fp = do
       eirPE <- verb "Partial evaluation (eidos)." eirExt
             >>= Eidos.simplify (conf^.C.depth)
       Eidos.lint Eidos.LintMono eirPE
-      -- Under --procify (the machine-level pipeline, in development), the
-      -- program additionally normalizes to procify's ANF input form; the
-      -- retained shim lowers the introduced lets like any others.
-      eirPE' <- if conf^.C.procify
-            then do
-                  a <- verb "Normalizing to ANF (eidos)." eirPE >>= Eidos.normalize
-                  Eidos.lint Eidos.LintMonoANF a
-                  -- Procify constructs (and lint-checks) the process; the
-                  -- compiled output still lowers through the P-level shim
-                  -- until the machine-step fold and its adapter land.
-                  pr0 <- verb "Procifying (eidos)." a >>= Eidos.procify
-                  let pr = pr0 { Eidos.progProcs = map Eidos.optimizeProc $ Eidos.progProcs pr0 }
-                  mapM_ (Eidos.lintProc pr) $ Eidos.progProcs pr
-                  mapM_ (flip verb () . Eidos.machineSummary) $ Eidos.progProcs pr
-                  pure pr
-            else pure eirPE
+      -- The machine half: normalize the reactive fragment to ANF,
+      -- procify it, clean the block graph, and check the machine rules.
+      eirANF <- verb "Normalizing to ANF (eidos)." eirPE >>= Eidos.normalize
+      Eidos.lint Eidos.LintMonoANF eirANF
+      pr0 <- verb "Procifying (eidos)." eirANF >>= Eidos.procify
+      let eirPE' = pr0 { Eidos.progProcs = map Eidos.optimizeProc $ Eidos.progProcs pr0 }
+      mapM_ (Eidos.lintProc eirPE') $ Eidos.progProcs eirPE'
+      mapM_ (flip verb () . Eidos.machineSummary) $ Eidos.progProcs eirPE'
       when (conf^.C.eidos) $ do
             let eirFile = fromMaybe fp (conf^.C.outFile) -<.> "eir"
             verb ("Writing Eidos IR to file: " <> pack eirFile) ()
             liftIO $ T.writeFile eirFile $ prettyProgram eirPE'
-      -- With a process constructed, the machine adapter owns the
-      -- lowering (the retired purifier's output shape), and the reactive
-      -- Crust passes are skipped; otherwise the ordinary shim lowers the
-      -- P-level program onto the full retained pipeline.
-      let machineMode = conf^.C.procify && not (null $ Eidos.progProcs eirPE')
-      prog0 <- if machineMode
-            then eidosToCrustM (conf^.C.start) eirPE'
-            else eidosToCrust eirPE'
+      -- The machine adapter owns the lowering (the retired purifier's
+      -- output shape). Every well-formed device has a reactive root
+      -- (the mono lint's device rule), hence a process.
+      when (null $ Eidos.progProcs eirPE') $ failAt noAnn
+            "no process was constructed for the device root (rwc bug)."
+      prog0 <- eidosToCrustM (conf^.C.start) eirPE'
       (ts, syns, ds) <- passCrust conf 1 "Translating GHC Core to Crust IR." prog0
 
       p <- pure
        >=> runPasses pass forceProg            nFront frontPasses
-       >=> runPasses pass (extraTC >=> forceProg) nMid   (if machineMode then machineMids else midPasses)
+       >=> runPasses pass (extraTC >=> forceProg) nMid   midPasses
        >=> runPasses pass forceProg            nBack  backPasses
        >=> pass nCore "Translating to hyle & HDL."
        >=> toHyle conf start
@@ -166,41 +154,9 @@ getDevice conf fp = do
             -- The machine adapter's output is post-purify-shaped: only
             -- the shim-encoding decoder (the lift) and the purifier's
             -- fused reduce remain before the back passes.
-            machineMids =
-                  [ ("Lifting lambdas.",                                 liftLambdas)
-                  , ("Reducing.",                                        reduce)
-                  ]
-
             midPasses =
                   [ ("Lifting lambdas.",                                 liftLambdas)
-                  , ("Normalizing bind.",                                normalizeBind)
-                  , ("Lifting lambdas.",                                 liftLambdas)
-                  , ("Removing unused definitions.",                     purge start)
-                  , ("Inlining extrudes.",                               inlineExtrudes)
-                  , ("Reducing.",                                        reduce) -- TODO: reduce here really just for the start defn.
-                  -- Inlining extrudes can orphan definitions and reintroduce
-                  -- lambdas (e.g., as bind continuations); purify requires
-                  -- lambda-lifted bodies and purifies every reachable
-                  -- monadic defn, so clean up again before it runs.
-                  , ("Removing unused definitions.",                     purge start)
-                  , ("Lifting lambdas.",                                 liftLambdas)
-                  -- Purify keys resumption states by continuation name, so
-                  -- merge duplicate lifted continuations (normalizeBind and
-                  -- inlineExtrudes copy them per case arm or call site)
-                  -- before it runs.
-                  , ("Merging duplicate definitions.",                   mergeEquivDefns)
-                  -- TODO: typechecking before or after purify seems to
-                  --       subtly effect ordering of things.
-                  , ("Shifting lambdas.",                                shiftLambdas)
-                  , ("Eta-abstracting definitions.",                     etaAbsDefs)
-                  -- Purify emits irrefutable nested cases (a `let`-bound
-                  -- `Done (...)` immediately destructured); the trailing
-                  -- reduce collapses them into direct calls, which also pins
-                  -- the PuRe output type in fragments that never signal (so
-                  -- the --debug-typecheck re-typecheck stays unambiguous). It
-                  -- is fused into the purify pass so that re-typecheck sees the
-                  -- reduced form.
-                  , ("Purifying.",                                       purify start >=> reduce)
+                  , ("Reducing.",                                        reduce)
                   ]
 
             -- Final cleanup before translation to hyle: no --debug-typecheck

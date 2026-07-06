@@ -18,28 +18,36 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [1056] -> [64]
-rw__Pure_dispatch x0 = rw_Main_loop x0
+rw__Pure_dispatch x0 = rw__L__x4 x0
 
 // Main.compute
 rw_Main_compute : [1024] -> [32] -> [64]
 rw_Main_compute x0 x1 = (rw__LL_Main_compute x1 (take`{64} x0)) # ((rw__LL_Main_compute x1 (take`{64} (drop`{64} x0))) # ((rw__LL_Main_compute x1 (take`{64} (drop`{128} x0))) # ((rw__LL_Main_compute x1 (take`{64} (drop`{192} x0))) # ((rw__LL_Main_compute x1 (take`{64} (drop`{256} x0))) # ((rw__LL_Main_compute x1 (take`{64} (drop`{320} x0))) # ((rw__LL_Main_compute x1 (take`{64} (drop`{384} x0))) # (rw__LL_Main_compute x1 (take`{64} (drop`{448} x0)))))))))
 
-// Main.loop
-rw_Main_loop : [1056] -> [64]
-rw_Main_loop x0 = rw__LL_Main_loop (rw_Main_compute s0 s1)
+// $LL.Main.compute
+rw__LL_Main_compute : [32] -> [64] -> [8]
+rw__LL_Main_compute x0 x1 = (drop`{24} x0) + (take`{8} (drop`{24} x1))
+
+// $L.Main.loop3
+rw__L_Main_loop3 : [1056] -> [64]
+rw__L_Main_loop3 x0 = rw__L_arm6 s0 s1
   where
     s0 : [1024]
     s0 = take`{1024} x0
     s1 : [32]
     s1 = drop`{1024} x0
 
-// $LL.Main.compute
-rw__LL_Main_compute : [32] -> [64] -> [8]
-rw__LL_Main_compute x0 x1 = (drop`{24} x0) + (take`{8} (drop`{24} x1))
+// $L.$x5
+rw__L__x5 : [64] -> [64]
+rw__L__x5 x0 = x0
 
-// $LL.Main.loop
-rw__LL_Main_loop : [64] -> [64]
-rw__LL_Main_loop x0 = x0
+// $L.arm6
+rw__L_arm6 : [1024] -> [32] -> [64]
+rw__L_arm6 x0 x1 = rw__L__x5 (rw_Main_compute x0 x1)
+
+// $L.$x4
+rw__L__x4 : [1056] -> [64]
+rw__L__x4 x0 = rw__L_Main_loop3 x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [1056] -> [64]

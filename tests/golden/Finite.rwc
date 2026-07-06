@@ -1,14 +1,14 @@
 $Pure.dispatch : ([7]) -> [7]
 $Pure.dispatch i =
-      $LL.Main.dev i
+      $L.a'4 i
 
-Main.dev : ([7]) -> [7]
-Main.dev a =
+$L.Main.dev3 : ([7]) -> [7]
+$L.Main.dev3 a =
       a
 
-$LL.Main.dev : ([7]) -> [7]
-$LL.Main.dev a' =
-      Main.dev (umod (add a' 7'h1) 7'h64)
+$L.a'4 : ([7]) -> [7]
+$L.a'4 a' =
+      $L.Main.dev3 (umod (add a' 7'h1) 7'h64)
 
 device top_level
       input __in0 : [7]

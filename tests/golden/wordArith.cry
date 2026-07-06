@@ -18,19 +18,23 @@ rw'sext x = if x @ 0 then ~ (rw'resize (~ x)) else rw'resize x
 
 // $Pure.dispatch
 rw__Pure_dispatch : [8] -> [8]
-rw__Pure_dispatch x0 = rw_Main_loop x0
+rw__Pure_dispatch x0 = rw__L__x4 x0
 
 // Main.compute
 rw_Main_compute : [8] -> [8]
 rw_Main_compute x0 = if (x0 + 0x01) == zero then (if 0x03 == zero then 0xff else ((((x0 + 0x01) ^^ 0x02) * (x0 - 0x02)) / 0x03)) else ((if 0x03 == zero then 0xff else ((((x0 + 0x01) ^^ 0x02) * (x0 - 0x02)) / 0x03)) % (x0 + 0x01))
 
-// Main.loop
-rw_Main_loop : [8] -> [8]
-rw_Main_loop x0 = rw__LL_Main_loop (rw_Main_compute x0)
+// $L.Main.loop3
+rw__L_Main_loop3 : [8] -> [8]
+rw__L_Main_loop3 x0 = rw__L__x5 (rw_Main_compute x0)
 
-// $LL.Main.loop
-rw__LL_Main_loop : [8] -> [8]
-rw__LL_Main_loop x0 = x0
+// $L.$x5
+rw__L__x5 : [8] -> [8]
+rw__L__x5 x0 = x0
+
+// $L.$x4
+rw__L__x4 : [8] -> [8]
+rw__L__x4 x0 = rw__L_Main_loop3 x0
 
 // Per-cycle step: outputs # next register values.
 rw_step : [8] -> [8]
