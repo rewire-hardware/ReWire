@@ -12,6 +12,7 @@ import ReWire.Annotation (noAnn, unAnn)
 import ReWire.Config (Config, typecheck)
 import ReWire.Eidos.Pretty (prettyProgram)
 import ReWire.Eidos.ToCrustM (eidosToCrustM)
+import ReWire.Eidos.ToHyle (eidosToHyle)
 import ReWire.GHC.Session (loadCore)
 import ReWire.GHC.ToEidos (toEidos)
 import ReWire.Crust.Syntax (FreeProgram, Defn (..), Exp, Ty, Kind, DataConId, TyConId, Program (Program), prettyFP)
@@ -104,17 +105,21 @@ getDevice conf fp = do
       -- (the mono lint's device rule), hence a process.
       when (null $ Eidos.progProcs eirPE') $ failAt noAnn
             "no process was constructed for the device root (rwc bug)."
-      prog0 <- eidosToCrustM (conf^.C.start) eirPE'
-      (ts, syns, ds) <- passCrust conf 1 "Translating GHC Core to Crust IR." prog0
-
-      p <- pure
-       >=> runPasses pass forceProg            nFront frontPasses
-       >=> runPasses pass (extraTC >=> forceProg) nMid   midPasses
-       >=> runPasses pass forceProg            nBack  backPasses
-       >=> pass nCore "Translating to hyle & HDL."
-       >=> toHyle conf start
-       >=> verb ("[" <> showt nFinal <> "] Hyle.")
-       $ (ts, syns, ds)
+      p <- if conf^.C.hyleM
+            then do
+                  verb "Translating Eidos directly to Hyle (--hyle-m)." ()
+                  eidosToHyle conf eirPE'
+            else do
+                  prog0 <- eidosToCrustM (conf^.C.start) eirPE'
+                  (ts, syns, ds) <- passCrust conf 1 "Translating GHC Core to Crust IR." prog0
+                  pure
+                   >=> runPasses pass forceProg            nFront frontPasses
+                   >=> runPasses pass (extraTC >=> forceProg) nMid   midPasses
+                   >=> runPasses pass forceProg            nBack  backPasses
+                   >=> pass nCore "Translating to hyle & HDL."
+                   >=> toHyle conf start
+                   >=> verb ("[" <> showt nFinal <> "] Hyle.")
+                   $ (ts, syns, ds)
 
       when ((conf^.C.dump) nFinal) $ liftIO $ do
             printHeader $ "[" <> showt nFinal <> "] Hyle"

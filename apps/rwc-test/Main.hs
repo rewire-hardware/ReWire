@@ -34,7 +34,8 @@ import Data.List (isSuffixOf, isInfixOf, stripPrefix, intercalate)
 import Data.Maybe (fromMaybe, mapMaybe)
 import System.Console.GetOpt (getOpt, usageInfo, OptDescr (..), ArgOrder (..), ArgDescr (..))
 import System.Directory (listDirectory, setCurrentDirectory, getCurrentDirectory, doesFileExist)
-import System.Environment (getArgs, withArgs)
+import System.Environment (getArgs, withArgs, lookupEnv)
+import System.IO.Unsafe (unsafePerformIO)
 import System.Exit (exitFailure, ExitCode (..))
 import System.FilePath ((</>), (-<.>), takeBaseName, takeDirectory, takeFileName)
 import System.IO (hPutStr, hPutStrLn, stderr)
@@ -180,8 +181,15 @@ testCompiler flags fn = do
       where check :: Bool
             check = FlagNoCheck `notElem` flags
 
+            -- RWC_TEST_FLAGS: extra rwc flags for every invocation (for
+            -- sweeping the suite under an alternate pipeline, e.g.
+            -- --hyle-m, against swapped goldens).
             extraFlags :: [String]
-            extraFlags = ["-v" | FlagV `elem` flags]
+            extraFlags = ["-v" | FlagV `elem` flags] <> envFlags
+
+            envFlags :: [String]
+            {-# NOINLINE envFlags #-}
+            envFlags = unsafePerformIO $ maybe [] words <$> lookupEnv "RWC_TEST_FLAGS"
 
             cdTestdir :: IO ()
             cdTestdir = setCurrentDirectory $ takeDirectory fn

@@ -54,6 +54,7 @@ library
       ReWire.Eidos.Syntax
       ReWire.Eidos.ToCrust
       ReWire.Eidos.ToCrustM
+      ReWire.Eidos.ToHyle
       ReWire.Eidos.Types
       ReWire.FrontEnd
       ReWire.GHC.Recognize
