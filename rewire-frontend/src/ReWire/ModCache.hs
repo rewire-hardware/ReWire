@@ -101,6 +101,7 @@ getDevice conf fp = do
                   pr0 <- verb "Procifying (eidos)." a >>= Eidos.procify
                   let pr = pr0 { Eidos.progProcs = map Eidos.optimizeProc $ Eidos.progProcs pr0 }
                   mapM_ (Eidos.lintProc pr) $ Eidos.progProcs pr
+                  mapM_ (flip verb () . Eidos.machineSummary) $ Eidos.progProcs pr
                   pure pr
             else pure eirPE
       when (conf^.C.eidos) $ do
