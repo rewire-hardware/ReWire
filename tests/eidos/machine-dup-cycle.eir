@@ -1,0 +1,31 @@
+-- Sanity fixture for the merge-headroom diagnostic: two structurally
+-- identical mutually-referencing state pairs (a#1 <-> b#2 and a#3 <-> b#4)
+-- that the alpha-equal merge cannot unify (labels compared by identity)
+-- but coarsest-partition refinement can.
+data Bool * {
+      False :: Bool;
+      True :: Bool
+}
+
+Main.start#20 :: Bool -> Bool
+Main.start#20 (i#21 :: Bool) = i#21
+
+proc main : Bool ~> Bool {
+      entry {
+            pause (False :: Bool) -> a#1 ()
+      }
+      block a#1 ((i#11 :: Bool)) {
+            pause i#11 -> b#2 ()
+      }
+      block b#2 ((i#12 :: Bool)) {
+            pause i#12 -> a#3 ()
+      }
+      block a#3 ((i#13 :: Bool)) {
+            pause i#13 -> b#4 ()
+      }
+      block b#4 ((i#14 :: Bool)) {
+            pause i#14 -> a#1 ()
+      }
+}
+
+top Main.start#20
