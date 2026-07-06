@@ -25,8 +25,8 @@ extra-source-files:
 data-files:
     tests/negative/ambiguous-infix-nonassoc.hs
     tests/negative/ambiguous-size.hs
-    tests/negative/bind-lhs-loop.hs
     tests/negative/bind-lhs-pause.hs
+    tests/negative/bind-lhs-unbounded.hs
     tests/negative/cryptol-clocked-extern.hs
     tests/negative/do-block-rec-stmt.hs
     tests/negative/empty-record-update.hs
@@ -148,6 +148,7 @@ data-files:
     tests/golden/state.hs
     tests/golden/state0.hs
     tests/golden/stateTower.hs
+    tests/golden/subfsm.hs
     tests/golden/synonym.hs
     tests/golden/test2.hs
     tests/golden/test3.hs
@@ -217,6 +218,7 @@ data-files:
     tests/golden/state.sv
     tests/golden/state0.sv
     tests/golden/stateTower.sv
+    tests/golden/subfsm.sv
     tests/golden/synonym.sv
     tests/golden/test2.sv
     tests/golden/test3.sv
@@ -286,6 +288,7 @@ data-files:
     tests/golden/state.rwc
     tests/golden/state0.rwc
     tests/golden/stateTower.rwc
+    tests/golden/subfsm.rwc
     tests/golden/synonym.rwc
     tests/golden/test2.rwc
     tests/golden/test3.rwc
@@ -355,6 +358,7 @@ data-files:
     tests/golden/state.vhdl
     tests/golden/state0.vhdl
     tests/golden/stateTower.vhdl
+    tests/golden/subfsm.vhdl
     tests/golden/synonym.vhdl
     tests/golden/test2.vhdl
     tests/golden/test3.vhdl
@@ -423,6 +427,7 @@ data-files:
     tests/golden/state.cry
     tests/golden/state0.cry
     tests/golden/stateTower.cry
+    tests/golden/subfsm.cry
     tests/golden/synonym.cry
     tests/golden/test2.cry
     tests/golden/test3.cry
@@ -527,6 +532,8 @@ data-files:
     tests/golden/state0.yaml
     tests/golden/stateTower.input.yaml
     tests/golden/stateTower.yaml
+    tests/golden/subfsm.input.yaml
+    tests/golden/subfsm.yaml
     tests/golden/synonym.input.yaml
     tests/golden/synonym.yaml
     tests/golden/test2.input.yaml

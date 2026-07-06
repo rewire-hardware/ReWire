@@ -276,7 +276,7 @@ testEirSpec fn = testCase (takeBaseName fn <> " (eir front passes)") $ do
             Right () -> pure ()
 
 -- | Runs a fixture through the front passes, ANF, and procify: fixtures
---   named procin-bindlhs-* must be rejected (the plan's rejection
+--   with EXPECT-PROCIFY-ERROR comments must be rejected (the
 --   predicate: a recursive-or-NOINLINE reactive callee at bind-LHS might
 --   pause); every process constructed from the others must pass the
 --   machine-mode lint.
@@ -292,14 +292,14 @@ testEirProcify fn = testCase (takeBaseName fn <> " (eir procify)") $ do
                   >>= Eidos.procify
             mapM_ (Eidos.lintProc p') $ Eidos.progProcs p'
             pure $ length $ Eidos.progProcs p'
-      let rejected = "procin-bindlhs" `isInfixOf` takeBaseName fn
+      expected <- mapMaybe (stripPrefix "-- EXPECT-PROCIFY-ERROR: ") . lines <$> readFile fn
       case r of
             Left err
-                  | rejected  -> assertBool ("rejection does not mention \"might pause\"; got: " <> T.unpack (prettyPrint err))
-                        $ "might pause" `isInfixOf` T.unpack (prettyPrint err)
+                  | not (null expected) -> mapM_ (\ e -> assertBool ("rejection does not mention " <> show e <> "; got: " <> T.unpack (prettyPrint err))
+                        $ e `isInfixOf` T.unpack (prettyPrint err)) expected
                   | otherwise -> assertFailure $ "eir procify failed: " <> T.unpack (prettyPrint err)
             Right n
-                  | rejected  -> assertFailure "procify accepted a bind-LHS rejection fixture"
+                  | not (null expected) -> assertFailure "procify accepted a rejection fixture"
                   | "procin-" `isInfixOf` takeBaseName fn -> assertBool "no process constructed" $ n >= 1
                   | otherwise -> pure ()
 

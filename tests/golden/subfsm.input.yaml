@@ -1,0 +1,19 @@
+# Drive the counter sub-FSM: True holds it counting, False makes it
+# return its count to the outer loop (which then reports the doubled
+# count for one cycle and restarts).
+- __in0: 1
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 1
+- __in0: 0
+- __in0: 0
+- __in0: 1
+- __in0: 0
+- __in0: 1
+- __in0: 0

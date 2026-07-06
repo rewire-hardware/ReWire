@@ -23,11 +23,15 @@
 --   * join points become blocks; jumps become gotos;
 --   * a reactive call is compiled once per continuation — block-graph
 --     splicing memoized on @(definition, continuation)@, the retired
---     unfoldHead's successor; recursion closes through the memo table.
---     The rejection predicate (deliberately stronger than the memo could
---     compile; the relaxation switch is plan §12 Q3): a
---     recursive-or-NOINLINE reactive callee on the left-hand side of a
---     bind might pause, and is rejected with a located error.
+--     unfoldHead's successor; recursion closes through the memo table
+--     (a tail self-call recurs under the same continuation, so it hits
+--     the memo and becomes a goto). Two shapes are rejected with located
+--     errors: a NOINLINE reactive callee on the left-hand side of a bind
+--     (the user's opt-out from per-continuation splicing), and recursion
+--     THROUGH a bind's left-hand side (re-entering a definition whose
+--     splice is still open mints a fresh continuation per iteration —
+--     each pending continuation is a resumption-stack frame, and the
+--     machine has no stack).
 --
 --   Blocks are closure-converted afterward: a fixpoint over the block
 --   graph computes each block's live-in locals, which become leading
@@ -66,7 +70,7 @@ procify p@(Program datas defns procs top)
       | (TyCon _ "ReacT", [ti, to, _, _]) <- flattenTyApp $ sigTy $ idSig top
       , [] <- fst (flattenArrow $ sigTy $ idSig top) = do
             let cells = stackCells $ maxStack [ typeOf $ defnBody d | d <- reactives ]
-            pr <- evalStateT (compileRoot ti to cells) $ PSt (nextUniq p) [] mempty 1
+            pr <- evalStateT (compileRoot ti to cells) $ PSt (nextUniq p) [] mempty 1 mempty
             pure $ Program datas defns (procs <> [pr]) top
       | otherwise = pure p
       where dmap :: IM.IntMap Defn
@@ -77,22 +81,6 @@ procify p@(Program datas defns procs top)
             reactives :: [Defn]
             reactives = [ d | d <- defns, reacOrStateT $ sigTy $ idSig $ defnId d
                             , null $ sigTVs $ idSig $ defnId d ]
-
-            -- Reactive definitions in a (mutual) recursion, by unique.
-            recs :: IS.IntSet
-            recs = IS.fromList [ idUniq $ defnId d | d <- reactives, reaches (refs d) (idUniq $ defnId d) mempty ]
-                  where refs :: Defn -> [Uniq]
-                        refs d = IS.toList $ freeUniqs (defnBody d) `IS.intersection` reactUs
-
-                        reactUs :: IS.IntSet
-                        reactUs = IS.fromList $ map (idUniq . defnId) reactives
-
-                        reaches :: [Uniq] -> Uniq -> IS.IntSet -> Bool
-                        reaches [] _ _ = False
-                        reaches (u : us) goal seen
-                              | u == goal        = True
-                              | IS.member u seen = reaches us goal seen
-                              | otherwise        = reaches (maybe [] refs (IM.lookup u dmap) <> us) goal (IS.insert u seen)
 
             -- The state cells: one per layer of the deepest reactive
             -- stack, outermost first, named s0, s1, ....
@@ -248,26 +236,36 @@ procify p@(Program datas defns procs top)
                               _            -> t
 
             -- A reactive call: compiled once per continuation (memoized
-            -- block-graph splicing). The rejection predicate: a
-            -- recursive-or-NOINLINE callee under a user continuation
-            -- (bind-LHS) might pause mid-computation.
+            -- block-graph splicing; plan §12 Q3 resolved as accept).
+            -- Rejected: NOINLINE at bind-LHS (the splicing opt-out), and
+            -- re-entry into a definition whose splice is still open under
+            -- a fresh continuation (recursion through a bind's LHS needs
+            -- an unbounded resumption stack; only tail recursion — which
+            -- re-enters under the SAME continuation and hits the memo —
+            -- compiles to a finite machine).
             call :: Cx -> Annote -> Id -> [Exp] -> K -> PM m ([Cmd], Term)
             call cx an f args k = do
                   d <- maybe (failAt an $ "procify: call to an unknown reactive definition: " <> idOcc f) pure
                         $ IM.lookup (idUniq f) dmap
-                  let recd     = IS.member (idUniq f) recs
-                      noinline = defnAttr d == Just NoInline
+                  let noinline = defnAttr d == Just NoInline
                       bindLhs  = case k of { KHalt -> False; KLabel {} -> True }
-                  when (bindLhs && (recd || noinline)) $ failAt an
+                  when (bindLhs && noinline) $ failAt an
                         $ "the reactive computation " <> idOcc f <> " on the left-hand side of a bind might pause"
-                        <> " (a recursive or NOINLINE reactive definition may only be called in tail position)"
+                        <> " (a NOINLINE reactive definition may only be called in tail position)"
                   mm <- gets $ Map.lookup (idUniq f, kKey k) . stMemo
                   l  <- case mm of
                         Just l  -> pure l
                         Nothing -> do
+                              active <- gets stActive
+                              when (IS.member (idUniq f) active) $ failAt an
+                                    $ "the reactive computation " <> idOcc f <> " recurses on the left-hand side of a bind,"
+                                    <> " which would need an unbounded resumption stack"
+                                    <> " (recursion must reach itself in tail position to compile to a finite machine)"
                               l <- freshLabel (idOcc f) (map (sigTy . idSig) $ defnParams d) $ cxOut cx
-                              modify $ \ st -> st { stMemo = Map.insert (idUniq f, kKey k) l $ stMemo st }
+                              modify $ \ st -> st { stMemo   = Map.insert (idUniq f, kKey k) l $ stMemo st
+                                                  , stActive = IS.insert (idUniq f) $ stActive st }
                               (cmds, term) <- compile cx (defnBody d) k
+                              modify $ \ st -> st { stActive = IS.delete (idUniq f) $ stActive st }
                               emitBlock l $ Block an (defnParams d) cmds term
                               pure l
                   pure ([], Goto an l args)
@@ -314,6 +312,7 @@ data PSt = PSt
       , stBlocks :: ![(Id, Block)]
       , stMemo   :: !(Map.HashMap (Uniq, Uniq) Id)
       , stOrd    :: !Int
+      , stActive :: !IS.IntSet -- ^ Definitions whose splice is in progress.
       }
 
 type PM m = StateT PSt m

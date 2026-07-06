@@ -1,7 +1,9 @@
 -- EXPECT-ERROR: might pause
--- The left-hand side of the bind in start is a (recursive, pausing) device:
--- purify's Done-only treatment of bind would miscompile it, so it must be
--- rejected. (Loops must be in tail position.)
+-- EXPECT-ERROR: NOINLINE
+-- The left-hand side of the bind in start is a NOINLINE (pausing) device:
+-- NOINLINE is the user's opt-out from procify's per-continuation block
+-- splicing, so the call is rejected. (Without the pragma this program
+-- compiles by splicing -- see tests/golden/subfsm.hs.)
 {-# LANGUAGE DataKinds #-}
 import Prelude hiding ((+))
 import ReWire

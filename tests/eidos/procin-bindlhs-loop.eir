@@ -1,7 +1,9 @@
--- Procify input shape (negative for the M3 procify pass, well-formed at
--- the P level): a recursive reactive callee in bind-LHS position — the
--- rejection class of procify's predicate (recursive-or-NOINLINE reactive
--- callee at bind-LHS). Mirrors tests/negative/bind-lhs-loop.hs.
+-- EXPECT-PROCIFY-ERROR: unbounded resumption stack
+-- Procify input shape (negative): recursion THROUGH a bind's left-hand
+-- side — badloop re-enters its own open splice under a fresh
+-- continuation, so it would need an unbounded resumption stack (only
+-- tail recursion compiles to a finite machine). Mirrors
+-- tests/negative/bind-lhs-unbounded.hs.
 data Bool * {
       False :: Bool;
       True :: Bool
